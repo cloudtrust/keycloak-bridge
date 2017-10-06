@@ -1,7 +1,7 @@
 package users
 
 import (
-	keycloak "github.com/elca-kairos-py/keycloak-client/client"
+	keycloak "github.com/cloudtrust/keycloak-client/client"
 	"context"
 	"github.com/pkg/errors"
 	"io"

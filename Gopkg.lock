@@ -2,16 +2,16 @@
 
 
 [[projects]]
+  branch = "initial"
+  name = "github.com/cloudtrust/keycloak-client"
+  packages = ["client"]
+  revision = "796d222b9b442ac04824371d03d9fc7f6a7ffcca"
+
+[[projects]]
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
   revision = "346938d642f2ec3594ed81d874461961cd0faa76"
   version = "v1.1.0"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/elca-kairos-py/keycloak-client"
-  packages = ["client"]
-  revision = "796d222b9b442ac04824371d03d9fc7f6a7ffcca"
 
 [[projects]]
   branch = "master"
@@ -118,6 +118,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "854e093896d0bcc84152af4a038e6b5f6a11ddadd517289af3421f0021372bc5"
+  inputs-digest = "b5f8b27c02a02cc1ee3cbbff5bf22a61d7d83895b87f3071fe9c4ce15a43ff59"
   solver-name = "gps-cdcl"
   solver-version = 1

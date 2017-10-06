@@ -2,7 +2,7 @@ package users
 
 import (
 	"testing"
-	keycloak "github.com/elca-kairos-py/keycloak-client/client"
+	keycloak "github.com/cloudtrust/keycloak-client/client"
 	"errors"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/assert"

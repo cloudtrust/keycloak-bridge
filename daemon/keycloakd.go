@@ -4,7 +4,7 @@ import (
 	user_server "github.com/cloudtrust/keycloak-bridge/transport/grpc/users/flatbuffers/server"
 	user_fb "github.com/cloudtrust/keycloak-bridge/transport/grpc/users/flatbuffers/schema"
 	"github.com/google/flatbuffers/go"
-	keycloak_client "github.com/elca-kairos-py/keycloak-client/client"
+	keycloak_client "github.com/cloudtrust/keycloak-client/client"
 	user_service "github.com/cloudtrust/keycloak-bridge/services/users"
 	http_monitoring "github.com/cloudtrust/keycloak-bridge/transport/http/monitoring"
 	bucket "github.com/juju/ratelimit"
