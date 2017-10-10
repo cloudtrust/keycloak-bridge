@@ -8,6 +8,7 @@ import (
 	user_service "github.com/cloudtrust/keycloak-bridge/services/users"
 	http_monitoring "github.com/cloudtrust/keycloak-bridge/transport/http/monitoring"
 	bucket "github.com/juju/ratelimit"
+	"github.com/asaskevich/EventBus"
 	"github.com/gorilla/mux"
 	"github.com/go-kit/kit/ratelimit"
 	"github.com/go-kit/kit/log"
@@ -23,6 +24,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/pprof"
+	"github.com/cloudtrust/keycloak-bridge/transport/http/event-receiver"
 )
 
 var VERSION string
@@ -141,6 +143,8 @@ func main() {
 		route.Handle("/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
 		route.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
 		route.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
+
+		route.Handle("/event-receiver", http.HandlerFunc(event_receiver.MakeReceiver()))
 
 		route.Handle("/version", http.HandlerFunc(http_monitoring.MakeVersion(VERSION)))
 		logger.Log("addr", httpAddr)
