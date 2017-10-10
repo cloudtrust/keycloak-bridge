@@ -1,16 +1,11 @@
 package main
 
 import (
-	user_server "github.com/cloudtrust/keycloak-bridge/transport/grpc/users/flatbuffers/server"
-	user_fb "github.com/cloudtrust/keycloak-bridge/transport/grpc/users/flatbuffers/schema"
+	user_server "github.com/cloudtrust/keycloak-bridge/services/users/transport"
+	user_fb "github.com/cloudtrust/keycloak-bridge/services/users/transport/flatbuffer"
 	"github.com/google/flatbuffers/go"
 	keycloak_client "github.com/cloudtrust/keycloak-client/client"
-	user_service "github.com/cloudtrust/keycloak-bridge/services/users"
-	http_monitoring "github.com/cloudtrust/keycloak-bridge/transport/http/monitoring"
-	bucket "github.com/juju/ratelimit"
-	"github.com/asaskevich/EventBus"
 	"github.com/gorilla/mux"
-	"github.com/go-kit/kit/ratelimit"
 	"github.com/go-kit/kit/log"
 	"net"
 	"fmt"
@@ -20,11 +15,12 @@ import (
 	"google.golang.org/grpc"
 	"time"
 	"github.com/go-kit/kit/endpoint"
-	"context"
-	"io"
 	"net/http"
 	"net/http/pprof"
-	"github.com/cloudtrust/keycloak-bridge/transport/http/event-receiver"
+	//"github.com/cloudtrust/keycloak-bridge/transport/http/event-receiver"
+	keycloak "github.com/cloudtrust/keycloak-bridge/services/users/modules/keycloak"
+	"github.com/cloudtrust/keycloak-bridge/services/users/components"
+	"github.com/cloudtrust/keycloak-bridge/services/users/endpoints"
 )
 
 var VERSION string
@@ -82,12 +78,19 @@ func main() {
 	/*
 	Backend Service
 	 */
-	var getUsersService user_service.Service
+	var keycloakModule keycloak.Service
+	{
+		keycloakModule = keycloak.NewBasicService(keycloakClient)
+	}
+
+
+	var userComponent components.Service
 	{
 		var logger = log.With(logger)
-		getUsersService = user_service.NewBasicService(keycloakClient)
-		getUsersService = user_service.MakeServiceLoggingMiddleware(logger)(getUsersService)
+		userComponent = components.NewBasicService(keycloakModule)
+		userComponent = components.MakeServiceLoggingMiddleware(logger)(userComponent)
 	}
+
 
 	/*
 	Endpoint configurations
@@ -96,16 +99,16 @@ func main() {
 	{
 		var logger = log.With(logger, "Method", "GetUsers")
 		var innerLogger = log.With(logger, "InnerMethod", "GetUser")
-		getUsersEndpoint = user_service.MakeGetUsersEndpoint(
-			getUsersService,
-			user_service.MakeEndpointLoggingMiddleware(innerLogger, "outer_req_id", "inner_req_id", ),
-			user_service.MakeEndpointSnowflakeMiddleware("inner_req_id"),
+		getUsersEndpoint = endpoints.MakeGetUsersEndpoint(
+			userComponent,
+			endpoints.MakeEndpointLoggingMiddleware(innerLogger, "outer_req_id", "inner_req_id", ),
+			endpoints.MakeEndpointSnowflakeMiddleware("inner_req_id"),
 		)
-		getUsersEndpoint = user_service.MakeEndpointLoggingMiddleware(logger, "outer_req_id")(getUsersEndpoint)
-		getUsersEndpoint = user_service.MakeEndpointSnowflakeMiddleware("outer_req_id")(getUsersEndpoint)
+		getUsersEndpoint = endpoints.MakeEndpointLoggingMiddleware(logger, "outer_req_id")(getUsersEndpoint)
+		getUsersEndpoint = endpoints.MakeEndpointSnowflakeMiddleware("outer_req_id")(getUsersEndpoint)
 	}
 
-	var endpoints = user_service.Endpoints{
+	var endpoints = endpoints.Endpoints{
 		GetUsersEndpoint:getUsersEndpoint,
 	}
 
@@ -138,82 +141,25 @@ func main() {
 
 		route := mux.NewRouter()
 
-		route.Handle("/debug/pprof/", http.HandlerFunc(pprof.Index))
-		route.Handle("/debug/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))
-		route.Handle("/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
-		route.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
-		route.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
+		//debug
+		debugSubroute := route.PathPrefix("debug").Subrouter()
+		debugSubroute.HandleFunc("/debug/pprof/", http.HandlerFunc(pprof.Index))
+		debugSubroute.HandleFunc("/debug/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))
+		debugSubroute.HandleFunc("/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
+		debugSubroute.HandleFunc("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
+		debugSubroute.HandleFunc("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
 
-		route.Handle("/event-receiver", http.HandlerFunc(event_receiver.MakeReceiver()))
+		//event
+		//eventSubroute := route.PathPrefix("event").Subrouter()
+		//eventSubroute.Handle("/", http.HandlerFunc(event_receiver.MakeReceiver()))
+		//eventSubroute.Handle("/", http.HandlerFunc(event_receiver.MakeReceiver()))
 
-		route.Handle("/version", http.HandlerFunc(http_monitoring.MakeVersion(VERSION)))
+		//other
+
 		logger.Log("addr", httpAddr)
+
 		errc <- http.ListenAndServe(httpAddr, route)
 	}()
 
-
-	/*
-	Run the client multiple times.
-	test is a bad name.
-	 */
-	for i:=0; i<4; i++ {
-		test()
-	}
-
 	logger.Log("error", <-errc)
-}
-
-func test() {
-	var grpcAddr= fmt.Sprintf("127.0.0.1:5555")
-
-	var logger= log.NewLogfmtLogger(os.Stdout)
-	{
-		logger = log.With(logger, "time", log.DefaultTimestampUTC, "caller", "client")
-		defer logger.Log("msg", "Goodbye")
-	}
-
-	var conn *grpc.ClientConn
-	{
-		var err error
-		conn, err = grpc.Dial(grpcAddr, grpc.WithInsecure(), grpc.WithCodec(flatbuffers.FlatbuffersCodec{}))
-		if err != nil {
-			fmt.Println("I failed :(")
-			return
-		}
-	}
-	defer conn.Close()
-
-	var userService = user_service.NewGrpcService(conn)
-	var getUsersEndpoint endpoint.Endpoint
-	{
-		var logger = log.With(logger, "Method", "getUsers")
-		var innerLogger  = log.With(logger, "InnerMethod", "getUser")
-		var rateLimiter = bucket.NewBucket(1 * time.Millisecond, 2)
-		getUsersEndpoint = user_service.MakeGetUsersEndpoint(
-			userService,
-			ratelimit.NewTokenBucketThrottler(rateLimiter, nil),
-			user_service.MakeEndpointLoggingMiddleware(innerLogger, ),
-		)
-		getUsersEndpoint = user_service.MakeEndpointLoggingMiddleware(logger, )(getUsersEndpoint)
-	}
-
-	var endpointService = user_service.Endpoints{
-		GetUsersEndpoint:getUsersEndpoint,
-	}
-
-	var userResultc <-chan string;
-	var userErrc <-chan error;
-	userResultc, userErrc = endpointService.GetUsers(context.Background(), "master")
-	loop:for {
-		select{
-		case result := <-userResultc:
-			fmt.Println(result)
-		case err := <-userErrc:
-			if err == io.EOF {
-				break loop
-			}
-			fmt.Println(err)
-			break loop
-		}
-	}
 }
