@@ -1,8 +1,6 @@
 package main
 
 import (
-	user_server "github.com/cloudtrust/keycloak-bridge/services/users/transport"
-	user_fb "github.com/cloudtrust/keycloak-bridge/services/users/transport/flatbuffer"
 	"github.com/google/flatbuffers/go"
 	keycloak_client "github.com/cloudtrust/keycloak-client/client"
 	"github.com/gorilla/mux"
@@ -17,13 +15,20 @@ import (
 	"github.com/go-kit/kit/endpoint"
 	"net/http"
 	"net/http/pprof"
-	//"github.com/cloudtrust/keycloak-bridge/transport/http/event-receiver"
-	keycloak "github.com/cloudtrust/keycloak-bridge/services/users/modules/keycloak"
-	"github.com/cloudtrust/keycloak-bridge/services/users/components"
-	"github.com/cloudtrust/keycloak-bridge/services/users/endpoints"
+
+	events_components "github.com/cloudtrust/keycloak-bridge/services/events/components"
+	events_console "github.com/cloudtrust/keycloak-bridge/services/events/modules/console"
+	events_endpoints "github.com/cloudtrust/keycloak-bridge/services/events/endpoints"
+	events_transport "github.com/cloudtrust/keycloak-bridge/services/events/transport"
+
+	users_transport "github.com/cloudtrust/keycloak-bridge/services/users/transport"
+	users_flatbuf "github.com/cloudtrust/keycloak-bridge/services/users/transport/flatbuffer"
+	users_components "github.com/cloudtrust/keycloak-bridge/services/users/components"
+	users_endpoints "github.com/cloudtrust/keycloak-bridge/services/users/endpoints"
+	users_keycloak "github.com/cloudtrust/keycloak-bridge/services/users/modules/keycloak"
 )
 
-var VERSION string
+var VERSION string = "123"
 
 func main() {
 
@@ -75,20 +80,22 @@ func main() {
 		}
 	}
 
-	/*
-	Backend Service
-	 */
-	var keycloakModule keycloak.Service
+
+	/********
+	User stack
+	 *********/
+
+	var keycloakModule users_keycloak.Service
 	{
-		keycloakModule = keycloak.NewBasicService(keycloakClient)
+		keycloakModule = users_keycloak.NewBasicService(keycloakClient)
 	}
 
 
-	var userComponent components.Service
+	var userComponent users_components.Service
 	{
 		var logger = log.With(logger)
-		userComponent = components.NewBasicService(keycloakModule)
-		userComponent = components.MakeServiceLoggingMiddleware(logger)(userComponent)
+		userComponent = users_components.NewBasicService(keycloakModule)
+		userComponent = users_components.MakeServiceLoggingMiddleware(logger)(userComponent)
 	}
 
 
@@ -99,16 +106,16 @@ func main() {
 	{
 		var logger = log.With(logger, "Method", "GetUsers")
 		var innerLogger = log.With(logger, "InnerMethod", "GetUser")
-		getUsersEndpoint = endpoints.MakeGetUsersEndpoint(
+		getUsersEndpoint = users_endpoints.MakeGetUsersEndpoint(
 			userComponent,
-			endpoints.MakeEndpointLoggingMiddleware(innerLogger, "outer_req_id", "inner_req_id", ),
-			endpoints.MakeEndpointSnowflakeMiddleware("inner_req_id"),
+			users_endpoints.MakeEndpointLoggingMiddleware(innerLogger, "outer_req_id", "inner_req_id", ),
+			users_endpoints.MakeEndpointSnowflakeMiddleware("inner_req_id"),
 		)
-		getUsersEndpoint = endpoints.MakeEndpointLoggingMiddleware(logger, "outer_req_id")(getUsersEndpoint)
-		getUsersEndpoint = endpoints.MakeEndpointSnowflakeMiddleware("outer_req_id")(getUsersEndpoint)
+		getUsersEndpoint = users_endpoints.MakeEndpointLoggingMiddleware(logger, "outer_req_id")(getUsersEndpoint)
+		getUsersEndpoint = users_endpoints.MakeEndpointSnowflakeMiddleware("outer_req_id")(getUsersEndpoint)
 	}
 
-	var endpoints = endpoints.Endpoints{
+	var users_endpoints = users_endpoints.Endpoints{
 		GetUsersEndpoint:getUsersEndpoint,
 	}
 
@@ -117,9 +124,9 @@ func main() {
 		The above Endpoints is used as a GRPC endpoint directly, shortcutting go-kit's facilities.
 	 */
 	go func() {
-		var userServer = user_server.NewGrpcServer(endpoints)
+		var userServer = users_transport.NewGrpcServer(users_endpoints)
 		var userGrpcServer = grpc.NewServer(grpc.CustomCodec(flatbuffers.FlatbuffersCodec{}))
-		user_fb.RegisterUserServiceServer(userGrpcServer, userServer)
+		users_flatbuf.RegisterUserServiceServer(userGrpcServer, userServer)
 		var lis net.Listener
 		{
 			var err error
@@ -133,6 +140,35 @@ func main() {
 		errc <- userGrpcServer.Serve(lis)
 	}()
 
+
+
+	/*
+	Event stack
+	 */
+	var consoleModule events_console.Service
+	{
+		consoleModule = events_console.NewBasicService()
+		consoleModule = events_console.MakeServiceLoggingMiddleware(logger)(consoleModule)
+	}
+
+
+	var eventComponent events_components.Service
+	{
+		eventComponent = events_components.NewBasicService(consoleModule)
+		eventComponent = events_components.MakeServiceLoggingMiddleware(logger)(eventComponent)
+	}
+
+	var eventConsumerEndpoint endpoint.Endpoint
+	{
+		eventConsumerEndpoint = events_endpoints.MakeKeycloakEventsReceiverEndpoint(eventComponent)
+		eventConsumerEndpoint = events_endpoints.MakeEndpointLoggingMiddleware(logger)(eventConsumerEndpoint)
+	}
+
+	var events_endpoints = events_endpoints.Endpoints{
+		KeycloakEventsReceiverEndpoint:eventConsumerEndpoint,
+	}
+
+
 	/*
 	HTTP monitoring routes.
 	  */
@@ -141,18 +177,19 @@ func main() {
 
 		route := mux.NewRouter()
 
+		route.Handle("/version", http.HandlerFunc(MakeVersion(VERSION)))
+
 		//debug
-		debugSubroute := route.PathPrefix("debug").Subrouter()
-		debugSubroute.HandleFunc("/debug/pprof/", http.HandlerFunc(pprof.Index))
-		debugSubroute.HandleFunc("/debug/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))
-		debugSubroute.HandleFunc("/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
-		debugSubroute.HandleFunc("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
-		debugSubroute.HandleFunc("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
+		debugSubroute := route.PathPrefix("/debug").Subrouter()
+		debugSubroute.HandleFunc("/pprof/", http.HandlerFunc(pprof.Index))
+		debugSubroute.HandleFunc("/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))
+		debugSubroute.HandleFunc("/pprof/profile", http.HandlerFunc(pprof.Profile))
+		debugSubroute.HandleFunc("/pprof/symbol", http.HandlerFunc(pprof.Symbol))
+		debugSubroute.HandleFunc("/pprof/trace", http.HandlerFunc(pprof.Trace))
 
 		//event
-		//eventSubroute := route.PathPrefix("event").Subrouter()
-		//eventSubroute.Handle("/", http.HandlerFunc(event_receiver.MakeReceiver()))
-		//eventSubroute.Handle("/", http.HandlerFunc(event_receiver.MakeReceiver()))
+		eventSubroute := route.PathPrefix("/event").Subrouter()
+		eventSubroute.Handle("/{id}", events_transport.MakeReceiverHandler(events_endpoints.KeycloakEventsReceiverEndpoint, logger))
 
 		//other
 
@@ -161,5 +198,13 @@ func main() {
 		errc <- http.ListenAndServe(httpAddr, route)
 	}()
 
+
+
 	logger.Log("error", <-errc)
+}
+
+func MakeVersion(version string) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(fmt.Sprintf("Application version : %s\n", version)))
+	}
 }

@@ -14,9 +14,9 @@ type Service interface {
 
 /*
  */
-func NewBasicService(client keycloak.Service) Service {
+func NewBasicService(keycloakModule keycloak.Service) Service {
 	return &basicService{
-		module:client,
+		module:keycloakModule,
 	}
 }
 

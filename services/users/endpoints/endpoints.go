@@ -16,7 +16,6 @@ Endpoints wraps a service behind a set of endpoints.
  */
 type Endpoints struct {
 	GetUsersEndpoint endpoint.Endpoint
-	KeycloakEventsReceiverEndpoint endpoint.Endpoint
 }
 
 /*
