@@ -13,19 +13,18 @@ import (
 Endpoints wraps a service behind a set of endpoints.
  */
 type Endpoints struct {
-	KeycloakEventsReceiverEndpoint endpoint.Endpoint
+	MakeKeycloakEventsMultiplexerEndpoint endpoint.Endpoint
 }
 
 
 /*
-KeycloakEventsReceiverEndpoint returns an endpoint.
+KeycloakEventsMultiplexerEndpoint returns an endpoint.
  */
-func MakeKeycloakEventsReceiverEndpoint(s components.Service) endpoint.Endpoint {
+func MakeKeycloakEventsMultiplexerEndpoint(multiplexer components.Service) endpoint.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
-		switch keycloakEventReceiverRequest := req.(type) {
-		case transport.KeycloakEventReceiverRequest:
-			s.ConsumeEvents(ctx, keycloakEventReceiverRequest.Event)
-			return "ok", nil
+		switch eventMultiplexerRequest := req.(type) {
+		case transport.EventMultiplexerRequest:
+			return multiplexer.Event(ctx, eventMultiplexerRequest.Type, eventMultiplexerRequest.Object)
 		default:
 			return nil, errors.New("Wrong request type")
 		}

@@ -23,11 +23,11 @@ type serviceLoggingMiddleware struct {
 /*
 serviceLoggingMiddleware implements Service
  */
-func (s *serviceLoggingMiddleware)ConsumeEvents(ctx context.Context, event string) {
+func (s *serviceLoggingMiddleware)Event(ctx context.Context, eventType string, obj []byte) (interface{}, error) {
 	defer func(begin time.Time) {
-		s.log.Log("method", "ConsumeEvents", "event", event, "took", time.Since(begin))
+		s.log.Log("method", "Event", eventType, "took", time.Since(begin))
 	}(time.Now())
-	s.next.ConsumeEvents(ctx, event)
+	s.next.Event(ctx, eventType, obj)
 }
 
 /*

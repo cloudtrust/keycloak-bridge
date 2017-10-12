@@ -11,7 +11,6 @@ import (
 	"github.com/google/flatbuffers/go"
 	"time"
 	"encoding/base64"
-	"fmt"
 )
 
 var UID int64 = 1234
@@ -19,8 +18,8 @@ var REALM string = "realm"
 
 func TestEventTransport_decodeKeycloakEventsReceiverRequest_ValidAdminEvent(t *testing.T) {
 	var req1 *http.Request
+	var byteAdminEvent []byte = createAdminEvent()
 	{
-		byteAdminEvent := createAdminEvent()
 		stringAdminEvent := base64.StdEncoding.EncodeToString(byteAdminEvent)
 		body := strings.NewReader("{\"type\": \"AdminEvent\", \"Object\": \"" + stringAdminEvent + "\"}")
 		req1 = httptest.NewRequest("POST", "http://localhost:8888/event/id", body)
@@ -31,18 +30,19 @@ func TestEventTransport_decodeKeycloakEventsReceiverRequest_ValidAdminEvent(t *t
 		var err error
 		res, err = decodeKeycloakEventsReceiverRequest(nil, req1)
 		assert.Nil(t, err)
-		assert.IsType(t, events.AdminEvent{}, res)
+		assert.IsType(t, EventMultiplexerRequest{}, res)
 	}
 
-	var adminEvent events.AdminEvent = res.(events.AdminEvent)
-	assert.Equal(t, events.OperationTypeACTION, int(adminEvent.OperationType()))
-	assert.Equal(t, UID, adminEvent.Uid())
+	var eventMuxReq EventMultiplexerRequest = res.(EventMultiplexerRequest)
+	assert.Equal(t, "AdminEvent", eventMuxReq.Type)
+	assert.Equal(t, byteAdminEvent, eventMuxReq.Object)
 }
+
 
 func TestEventTransport_decodeKeycloakEventsReceiverRequest_ValidEvent(t *testing.T) {
 	var req1 *http.Request
+	var byteEvent []byte = createEvent()
 	{
-		byteEvent := createEvent()
 		stringEvent := base64.StdEncoding.EncodeToString(byteEvent)
 		body := strings.NewReader("{\"type\": \"Event\", \"Object\": \"" + stringEvent + "\"}")
 		req1 = httptest.NewRequest("POST", "http://localhost:8888/event/id", body)
@@ -53,12 +53,12 @@ func TestEventTransport_decodeKeycloakEventsReceiverRequest_ValidEvent(t *testin
 		var err error
 		res, err = decodeKeycloakEventsReceiverRequest(nil, req1)
 		assert.Nil(t, err)
-		assert.IsType(t, events.Event{}, res)
+		assert.IsType(t, EventMultiplexerRequest{}, res)
 	}
 
-	var event events.Event = res.(events.Event)
-	assert.Equal(t, REALM, string(event.RealmId()))
-	assert.Equal(t, UID, event.Uid())
+	var eventMuxReq EventMultiplexerRequest = res.(EventMultiplexerRequest)
+	assert.Equal(t, "Event", eventMuxReq.Type)
+	assert.Equal(t, byteEvent, eventMuxReq.Object)
 }
 
 func TestEventTransport_decodeKeycloakEventsReceiverRequest_UnknownType(t *testing.T) {
@@ -70,13 +70,10 @@ func TestEventTransport_decodeKeycloakEventsReceiverRequest_UnknownType(t *testi
 		req1 = httptest.NewRequest("POST", "http://localhost:8888/event/id", body)
 	}
 
-	var res interface{}
-	{
-		var err error
-		res, err = decodeKeycloakEventsReceiverRequest(nil, req1)
-		assert.Nil(t, res)
-		assert.NotNil(t, err)
-	}
+	var err error
+	_, err = decodeKeycloakEventsReceiverRequest(nil, req1)
+	assert.NotNil(t, err)
+	assert.IsType(t, ErrInvalidArgument{}, err)
 }
 
 func TestEventTransport_decodeKeycloakEventsReceiverRequest_InvalidObject(t *testing.T) {
@@ -86,25 +83,12 @@ func TestEventTransport_decodeKeycloakEventsReceiverRequest_InvalidObject(t *tes
 		req1 = httptest.NewRequest("POST", "http://localhost:8888/event/id", body)
 	}
 
-	var res interface{}
-	{
-		var err error
-		res, err = decodeKeycloakEventsReceiverRequest(nil, req1)
-		assert.Nil(t, res)
-		assert.NotNil(t, err)
-		fmt.Println(err.Error())
-	}
+	var err error
+	_, err = decodeKeycloakEventsReceiverRequest(nil, req1)
+	assert.NotNil(t, err)
+	assert.IsType(t, ErrInvalidArgument{}, err)
 }
 
-
-func TestFlat_FlatAndUnflat(t *testing.T) {
-	byteAdminEvent := createAdminEvent()
-	var adminEvent *events.AdminEvent
-	adminEvent= events.GetRootAsAdminEvent(byteAdminEvent, 0)
-
-	assert.Equal(t, int8(3), (*adminEvent).OperationType())
-	assert.Equal(t, UID, (*adminEvent).Uid())
-}
 
 func createAdminEvent() ([]byte){
 	builder := flatbuffers.NewBuilder(0)

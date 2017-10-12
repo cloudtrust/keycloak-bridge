@@ -7,7 +7,6 @@ import (
 	"github.com/go-kit/kit/endpoint"
 	httptransport "github.com/go-kit/kit/transport/http"
 	"encoding/json"
-	"github.com/cloudtrust/keycloak-bridge/services/events/transport/flatbuffers/events"
 	"github.com/go-kit/kit/log"
 )
 
@@ -28,12 +27,9 @@ type KeycloakEventReceiverRequest struct {
 	Object string
 }
 
-
-func MakeReceiverHandler(e endpoint.Endpoint, log log.Logger) *httptransport.Server{
-	return httptransport.NewServer(e,
-		decodeKeycloakEventsReceiverRequest,
-		encodeResponse,
-		httptransport.ServerErrorEncoder(MakeErrorHandler(log)))
+type EventMultiplexerRequest struct {
+	Type string
+	Object []byte
 }
 
 func decodeKeycloakEventsReceiverRequest(_ context.Context, r *http.Request) (res interface{}, err error) {
@@ -42,7 +38,7 @@ func decodeKeycloakEventsReceiverRequest(_ context.Context, r *http.Request) (re
 	{
 		var err error
 		if err = json.NewDecoder(r.Body).Decode(&request); err != nil {
-			return nil, err
+			return EventMultiplexerRequest{}, err
 		}
 	}
 
@@ -52,24 +48,41 @@ func decodeKeycloakEventsReceiverRequest(_ context.Context, r *http.Request) (re
 		bEvent, err = base64.StdEncoding.DecodeString(request.Object)
 
 		if err != nil {
-			return nil, err
+			return EventMultiplexerRequest{}, err
 		}
 	}
 
-	switch objType:=request.Type; objType {
-	case "AdminEvent":
-		var adminEvent *events.AdminEvent
-		adminEvent= events.GetRootAsAdminEvent(bEvent, 0)
-		return *adminEvent, nil
-	case "Event":
-		var event *events.Event
-		event= events.GetRootAsEvent(bEvent, 0)
-		return *event, nil
-	default:
-		var err ErrInvalidArgument
-		err.InvalidParam = "Type"
-		return nil, err
+
+	var objType string =request.Type
+	{
+		if !(objType == "AdminEvent" || objType == "Event"){
+			var err ErrInvalidArgument
+			err.InvalidParam = "Type"
+			return EventMultiplexerRequest{}, err
+		}
 	}
+
+	// Check valid buffer (at least 4 bytes)
+	if len(bEvent) < 4 {
+		var err ErrInvalidArgument
+		err.InvalidParam = "Object"
+		return EventMultiplexerRequest{}, err
+	}
+
+
+	res = EventMultiplexerRequest{
+		Type : objType,
+		Object: bEvent,
+	}
+
+	return res, nil
+}
+
+func MakeReceiverHandler(e endpoint.Endpoint, log log.Logger) *httptransport.Server{
+	return httptransport.NewServer(e,
+		decodeKeycloakEventsReceiverRequest,
+		encodeResponse,
+		httptransport.ServerErrorEncoder(MakeErrorHandler(log)))
 }
 
 func encodeResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {

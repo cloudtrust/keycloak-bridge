@@ -10,7 +10,7 @@ import (
 This is the interface that console module implement.
  */
 type Service interface {
-	PrintEvent(ctx context.Context, event string)
+	Print(ctx context.Context, args ...string)
 }
 
 /*
@@ -22,6 +22,8 @@ func NewBasicService() Service {
 type basicService struct {
 }
 
-func (u *basicService)PrintEvent(ctx context.Context, event string){
-	fmt.Println(event)
+func (u *basicService)Print(ctx context.Context, args ...string){
+	fmt.Println(args)
 }
+
+
