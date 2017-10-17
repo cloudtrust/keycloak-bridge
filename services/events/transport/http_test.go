@@ -30,10 +30,10 @@ func TestEventTransport_decodeKeycloakEventsReceiverRequest_ValidAdminEvent(t *t
 		var err error
 		res, err = decodeKeycloakEventsReceiverRequest(nil, req1)
 		assert.Nil(t, err)
-		assert.IsType(t, EventMultiplexerRequest{}, res)
+		assert.IsType(t, EventRequest{}, res)
 	}
 
-	var eventMuxReq EventMultiplexerRequest = res.(EventMultiplexerRequest)
+	var eventMuxReq EventRequest = res.(EventRequest)
 	assert.Equal(t, "AdminEvent", eventMuxReq.Type)
 	assert.Equal(t, byteAdminEvent, eventMuxReq.Object)
 }
@@ -53,10 +53,10 @@ func TestEventTransport_decodeKeycloakEventsReceiverRequest_ValidEvent(t *testin
 		var err error
 		res, err = decodeKeycloakEventsReceiverRequest(nil, req1)
 		assert.Nil(t, err)
-		assert.IsType(t, EventMultiplexerRequest{}, res)
+		assert.IsType(t, EventRequest{}, res)
 	}
 
-	var eventMuxReq EventMultiplexerRequest = res.(EventMultiplexerRequest)
+	var eventMuxReq EventRequest = res.(EventRequest)
 	assert.Equal(t, "Event", eventMuxReq.Type)
 	assert.Equal(t, byteEvent, eventMuxReq.Object)
 }

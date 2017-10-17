@@ -21,7 +21,7 @@
 
 [[projects]]
   name = "github.com/go-kit/kit"
-  packages = ["endpoint","log","ratelimit"]
+  packages = ["endpoint","log","ratelimit","transport/http"]
   revision = "4dc7be5d2d12881735283bcab7352178e190fc71"
   version = "v0.6.0"
 
@@ -124,6 +124,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "e8bcf119bdd21c1c638e69479353c6a016212920e0edab209c412a488d379dd9"
+  inputs-digest = "cd7be5ae25c8095d9d6f40d16417bc479bfbb12ac90d2c0965d903448786cbc4"
   solver-name = "gps-cdcl"
   solver-version = 1

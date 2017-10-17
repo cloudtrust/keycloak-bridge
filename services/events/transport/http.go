@@ -24,10 +24,10 @@ Request for KeycloakEventReceiver endpoint
  */
 type KeycloakEventReceiverRequest struct {
 	Type string
-	Object string
+	Obj string
 }
 
-type EventMultiplexerRequest struct {
+type EventRequest struct {
 	Type string
 	Object []byte
 }
@@ -38,17 +38,17 @@ func decodeKeycloakEventsReceiverRequest(_ context.Context, r *http.Request) (re
 	{
 		var err error
 		if err = json.NewDecoder(r.Body).Decode(&request); err != nil {
-			return EventMultiplexerRequest{}, err
+			return EventRequest{}, err
 		}
 	}
 
 	var bEvent []byte
 	{
 		var err error
-		bEvent, err = base64.StdEncoding.DecodeString(request.Object)
+		bEvent, err = base64.StdEncoding.DecodeString(request.Obj)
 
 		if err != nil {
-			return EventMultiplexerRequest{}, err
+			return EventRequest{}, err
 		}
 	}
 
@@ -57,20 +57,20 @@ func decodeKeycloakEventsReceiverRequest(_ context.Context, r *http.Request) (re
 	{
 		if !(objType == "AdminEvent" || objType == "Event"){
 			var err ErrInvalidArgument
-			err.InvalidParam = "Type"
-			return EventMultiplexerRequest{}, err
+			err.InvalidParam = "type"
+			return EventRequest{}, err
 		}
 	}
 
 	// Check valid buffer (at least 4 bytes)
 	if len(bEvent) < 4 {
 		var err ErrInvalidArgument
-		err.InvalidParam = "Object"
-		return EventMultiplexerRequest{}, err
+		err.InvalidParam = "obj"
+		return EventRequest{}, err
 	}
 
 
-	res = EventMultiplexerRequest{
+	res = EventRequest{
 		Type : objType,
 		Object: bEvent,
 	}

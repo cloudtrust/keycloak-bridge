@@ -152,20 +152,33 @@ func main() {
 	}
 
 
-	var eventComponent events_components.Service
+	var adminEventComponent events_components.AdminEventService
 	{
-		eventComponent = events_components.NewBasicService(consoleModule)
-		eventComponent = events_components.MakeServiceLoggingMiddleware(logger)(eventComponent)
+		var fns = [] (func(map[string]string) error){consoleModule.Print}
+		adminEventComponent = events_components.NewAdminEventService(fns, fns, fns, fns)
+		adminEventComponent = events_components.MakeServiceLoggingAdminEventMiddleware(logger)(adminEventComponent)
+	}
+
+	var eventComponent events_components.EventService
+	{
+		var fns = [] (func(map[string]string) error){consoleModule.Print}
+		eventComponent = events_components.NewEventService(fns, fns)
+	}
+
+	var muxComponent events_components.MuxService
+	{
+		muxComponent = events_components.NewMuxService(eventComponent, adminEventComponent)
+		muxComponent = events_components.MakeServiceLoggingMuxMiddleware(logger)(muxComponent)
 	}
 
 	var eventConsumerEndpoint endpoint.Endpoint
 	{
-		eventConsumerEndpoint = events_endpoints.MakeKeycloakEventsReceiverEndpoint(eventComponent)
+		eventConsumerEndpoint = events_endpoints.MakeKeycloakEventsEndpoint(muxComponent)
 		eventConsumerEndpoint = events_endpoints.MakeEndpointLoggingMiddleware(logger)(eventConsumerEndpoint)
 	}
 
 	var events_endpoints = events_endpoints.Endpoints{
-		KeycloakEventsReceiverEndpoint:eventConsumerEndpoint,
+		MakeKeycloakEventsEndpoint:eventConsumerEndpoint,
 	}
 
 
@@ -189,7 +202,7 @@ func main() {
 
 		//event
 		eventSubroute := route.PathPrefix("/event").Subrouter()
-		eventSubroute.Handle("/{id}", events_transport.MakeReceiverHandler(events_endpoints.KeycloakEventsReceiverEndpoint, logger))
+		eventSubroute.Handle("/receiver", events_transport.MakeReceiverHandler(events_endpoints.MakeKeycloakEventsEndpoint, logger))
 
 		//other
 

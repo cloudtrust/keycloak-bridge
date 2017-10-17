@@ -2,7 +2,6 @@ package console
 
 import (
 	"time"
-	"context"
 	"github.com/go-kit/kit/log"
 )
 
@@ -23,11 +22,11 @@ type serviceLoggingMiddleware struct {
 /*
 serviceLoggingMiddleware implements Service
  */
-func (s *serviceLoggingMiddleware)Print(ctx context.Context, args ...string) {
+func (s *serviceLoggingMiddleware)Print(args ...string) {
 	defer func(begin time.Time) {
 		s.log.Log("method", "Print", "args", args, "took", time.Since(begin))
 	}(time.Now())
-	s.next.Print(ctx, args...)
+	s.next.Print(args...)
 }
 
 /*

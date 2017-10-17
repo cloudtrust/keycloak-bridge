@@ -14,7 +14,6 @@ import (
 
 	"github.com/go-kit/kit/examples/shipping/cargo"
 	"github.com/go-kit/kit/examples/shipping/location"
-	"gopkg.in/h2non/gentleman.v2/plugins/body"
 )
 
 // MakeHandler returns a handler for the booking service.
@@ -143,6 +142,9 @@ func decodeChangeDestinationRequest(_ context.Context, r *http.Request) (interfa
 		return nil, errBadRoute
 	}
 
+	var body struct {
+		Destination string `json:"destination"`
+	}
 
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		return nil, err
