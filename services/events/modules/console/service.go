@@ -2,7 +2,7 @@ package console
 
 
 import (
-	"fmt"
+	"github.com/go-kit/kit/log"
 )
 
 /*
@@ -14,35 +14,20 @@ type Service interface {
 
 /*
  */
-func NewBasicService() Service {
-	return &basicService{}
+func NewBasicService(logger *log.Logger) Service {
+	return &basicService{
+		logger: logger,
+	}
 }
 
 type basicService struct {
+	logger *log.Logger
 }
 
 func (u *basicService)Print(m map[string]string) error{
 	for k, v := range m{
-		fmt.Println(k, "=", v)
+		(*u.logger).Log(k, v)
 	}
 	return nil
 }
 
-
-/*
-
- */
-type KeycloakStatisticsProcessor interface{
-	Stats(map[string]string) (interface{}, error)
-}
-
-func NewKeycloakStatisticsProcessor() KeycloakStatisticsProcessor {
-	return &keycloakStatisticsProcessor{}
-}
-
-type keycloakStatisticsProcessor struct {}
-
-func (k *keycloakStatisticsProcessor) Stats(map[string]string) (interface{}, error){
-	fmt.Println("Stats")
-	return nil, nil
-}

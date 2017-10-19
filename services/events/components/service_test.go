@@ -8,6 +8,9 @@ import (
 	"time"
 	"errors"
 	"fmt"
+	//"github.com/go-kit/kit/log"
+	//events_console "github.com/cloudtrust/keycloak-bridge/services/events/modules/console"
+	//"os"
 )
 
 var UID int64 = 1234
@@ -186,6 +189,7 @@ func TestEventComponents_eventToMap(t *testing.T) {
 
 	fmt.Print(m)
 }
+
 
 func createEvent(eventType int8) (*events.Event){
 	return events.GetRootAsEvent(createEventBytes(eventType), 0)

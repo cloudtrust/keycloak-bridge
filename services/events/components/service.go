@@ -166,16 +166,18 @@ func apply(funcs [](func(map[string]string) error), param map[string]string) (in
 	errors := make(chan error, len(funcs))
 	var wg sync.WaitGroup
 
-	for _, v := range funcs{
-		wg.Add(1)
-		go func(wg1 *sync.WaitGroup) {
+	//Wait for the execution of all the function of the array
+	wg.Add(len(funcs))
+
+	for _, f := range funcs{
+		go func(wg1 *sync.WaitGroup, fn func(map[string]string) error) {
 			defer (*wg1).Done()
 
-			err := v(param)
+			err := fn(param)
 			if err != nil {
 				errors <- err
 			}
-		}(&wg)
+		}(&wg, f)
 	}
 
 	wg.Wait()

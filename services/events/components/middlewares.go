@@ -19,7 +19,7 @@ type serviceLoggingMuxMiddleware struct {
 
 func (s *serviceLoggingMuxMiddleware)Event(ctx context.Context, eventType string, obj []byte) (interface{}, error) {
 	defer func(begin time.Time) {
-		s.log.Log("method", "Event", "type", eventType, "took", time.Since(begin))
+		s.log.Log("method", "Component.Event", "type", eventType, "took", time.Since(begin))
 	}(time.Now())
 	return s.next.Event(ctx, eventType, obj)
 }
@@ -48,7 +48,7 @@ type serviceLoggingAdminEventMiddleware struct {
 
 func (s *serviceLoggingAdminEventMiddleware)AdminEvent(ctx context.Context, adminEvent *events.AdminEvent) (interface{}, error) {
 	defer func(begin time.Time) {
-		s.log.Log("method", "AdminEvent", "took", time.Since(begin))
+		s.log.Log("method", "Component.AdminEvent", "took", time.Since(begin))
 	}(time.Now())
 	return s.next.AdminEvent(ctx, adminEvent)
 }
@@ -75,7 +75,7 @@ type serviceLoggingEventMiddleware struct {
 
 func (s *serviceLoggingEventMiddleware)Event(ctx context.Context, event *events.Event) (interface{}, error) {
 	defer func(begin time.Time) {
-		s.log.Log("method", "Event", "took", time.Since(begin))
+		s.log.Log("method", "Component.Event", "took", time.Since(begin))
 	}(time.Now())
 	return s.next.Event(ctx, event)
 }
