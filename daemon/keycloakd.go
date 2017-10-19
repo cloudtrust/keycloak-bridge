@@ -18,6 +18,7 @@ import (
 
 	events_components "github.com/cloudtrust/keycloak-bridge/services/events/components"
 	events_console "github.com/cloudtrust/keycloak-bridge/services/events/modules/console"
+	events_statistics "github.com/cloudtrust/keycloak-bridge/services/events/modules/statistics"
 	events_endpoints "github.com/cloudtrust/keycloak-bridge/services/events/endpoints"
 	events_transport "github.com/cloudtrust/keycloak-bridge/services/events/transport"
 
@@ -147,21 +148,27 @@ func main() {
 	 */
 	var consoleModule events_console.Service
 	{
-		consoleModule = events_console.NewBasicService()
+		var loggerEvent= log.NewLogfmtLogger(os.Stdout)
+		consoleModule = events_console.NewBasicService(&loggerEvent)
 		consoleModule = events_console.MakeServiceLoggingMiddleware(logger)(consoleModule)
+	}
+
+	var statisticsModule events_statistics.KeycloakStatisticsProcessor
+	{
+		statisticsModule = events_statistics.NewKeycloakStatisticsProcessor("http://172.17.0.2:8086", "rpo", "rpo", "cloudtrust_grafana_test" )
 	}
 
 
 	var adminEventComponent events_components.AdminEventService
 	{
-		var fns = [] (func(map[string]string) error){consoleModule.Print}
+		var fns = [] (func(map[string]string) error){consoleModule.Print, statisticsModule.Stats}
 		adminEventComponent = events_components.NewAdminEventService(fns, fns, fns, fns)
 		adminEventComponent = events_components.MakeServiceLoggingAdminEventMiddleware(logger)(adminEventComponent)
 	}
 
 	var eventComponent events_components.EventService
 	{
-		var fns = [] (func(map[string]string) error){consoleModule.Print}
+		var fns = [] (func(map[string]string) error){consoleModule.Print, statisticsModule.Stats}
 		eventComponent = events_components.NewEventService(fns, fns)
 	}
 
