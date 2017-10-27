@@ -68,7 +68,7 @@ type eventService struct {
 }
 
 func (u *eventService) Event(ctx context.Context, event *events.Event) (interface{}, error) {
-	var eventType int = int((*event).Type())
+	var eventType int = int(event.Type())
 	var eventTypeName string = events.EnumNamesEventType[eventType]
 	var eventMap map[string]string = eventToMap(event)
 
@@ -125,36 +125,36 @@ func (u *adminEventService) AdminEvent(ctx context.Context, adminEvent *events.A
 
 func adminEventToMap(adminEvent *events.AdminEvent) map[string]string{
 	var adminEventMap map[string]string = make(map[string]string)
-	adminEventMap["uid"] = fmt.Sprint((*adminEvent).Uid())
-	adminEventMap["time"] = fmt.Sprint((*adminEvent).Time())
-	adminEventMap["realmId"] = string((*adminEvent).RealmId())
-	adminEventMap["authDetails"] = fmt.Sprint((*adminEvent).AuthDetails(nil))
-	adminEventMap["resourceType"] = string((*adminEvent).ResourceType())
-	adminEventMap["operationType"] = events.EnumNamesOperationType[int((*adminEvent).OperationType())]
-	adminEventMap["resourcePath"] = string((*adminEvent).ResourcePath())
-	adminEventMap["representation"] = string((*adminEvent).Representation())
-	adminEventMap["error"] = string((*adminEvent).Error())
+	adminEventMap["uid"] = fmt.Sprint(adminEvent.Uid())
+	adminEventMap["time"] = fmt.Sprint(adminEvent.Time())
+	adminEventMap["realmId"] = string(adminEvent.RealmId())
+	adminEventMap["authDetails"] = fmt.Sprint(adminEvent.AuthDetails(nil))
+	adminEventMap["resourceType"] = string(adminEvent.ResourceType())
+	adminEventMap["operationType"] = events.EnumNamesOperationType[int(adminEvent.OperationType())]
+	adminEventMap["resourcePath"] = string(adminEvent.ResourcePath())
+	adminEventMap["representation"] = string(adminEvent.Representation())
+	adminEventMap["error"] = string(adminEvent.Error())
 	return adminEventMap
 }
 
 func eventToMap(event *events.Event) map[string]string{
 	var eventMap map[string]string = make(map[string]string)
-	eventMap["uid"]=fmt.Sprint((*event).Uid())
-	eventMap["time"]=fmt.Sprint((*event).Time())
-	eventMap["type"]=events.EnumNamesEventType[int((*event).Type())]
-	eventMap["realmId"]=string((*event).RealmId())
-	eventMap["clientId"]=string((*event).ClientId())
-	eventMap["userId"]=string((*event).UserId())
-	eventMap["sessionId"]=string((*event).SessionId())
-	eventMap["ipAddress"]=string((*event).IpAddress())
-	eventMap["error"]=string((*event).Error())
+	eventMap["uid"]=fmt.Sprint(event.Uid())
+	eventMap["time"]=fmt.Sprint(event.Time())
+	eventMap["type"]=events.EnumNamesEventType[int(event.Type())]
+	eventMap["realmId"]=string(event.RealmId())
+	eventMap["clientId"]=string(event.ClientId())
+	eventMap["userId"]=string(event.UserId())
+	eventMap["sessionId"]=string(event.SessionId())
+	eventMap["ipAddress"]=string(event.IpAddress())
+	eventMap["error"]=string(event.Error())
 
 	var detailsString string
-	var detailsLength int = (*event).DetailsLength()
+	var detailsLength int = event.DetailsLength()
 	for i:=0; i<detailsLength; i++{
 		tuple := new(events.Tuple)
-		(*event).Details(tuple,i)
-		detailsString += (string((*tuple).Key())+":"+string((*tuple).Value())+",")
+		event.Details(tuple,i)
+		detailsString += (string(tuple.Key())+":"+string(tuple.Value())+",")
 	}
 
 	eventMap["details"]="{"+fmt.Sprint(detailsString)+"}"
@@ -171,7 +171,7 @@ func apply(funcs [](func(map[string]string) error), param map[string]string) (in
 
 	for _, f := range funcs{
 		go func(wg1 *sync.WaitGroup, fn func(map[string]string) error) {
-			defer (*wg1).Done()
+			defer wg1.Done()
 
 			err := fn(param)
 			if err != nil {

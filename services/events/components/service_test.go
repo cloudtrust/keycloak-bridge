@@ -11,6 +11,7 @@ import (
 	//"github.com/go-kit/kit/log"
 	//events_console "github.com/cloudtrust/keycloak-bridge/services/events/modules/console"
 	//"os"
+	"golang.org/x/net/context"
 )
 
 var UID int64 = 1234
@@ -125,14 +126,14 @@ func TestEventComponents_NewMuxService(t *testing.T) {
 
 	{
 		var event []byte = createEventBytes(events.EventTypeCLIENT_DELETE)
-		_, err := muxService.Event(nil, "Event", event)
+		_, err := muxService.Event(context.Background(), "Event", event)
 		assert.Equal(t, "Event", <-ch)
 		assert.Nil(t, err)
 	}
 
 	{
-		var adminEvent []byte = createEventBytes(events.EventTypeCLIENT_DELETE)
-		_, err := muxService.Event(nil, "AdminEvent", adminEvent)
+		var adminEvent []byte = createAdminEventBytes(events.OperationTypeDELETE)
+		_, err := muxService.Event(context.Background(), "AdminEvent", adminEvent)
 		assert.Equal(t, "AdminEvent", <-ch)
 		assert.Nil(t, err)
 	}
