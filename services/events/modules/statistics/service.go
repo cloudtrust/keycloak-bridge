@@ -1,7 +1,6 @@
 package statistics
 
 import (
-	"fmt"
 	"time"
 	influx_client "github.com/influxdata/influxdb/client/v2"
 )

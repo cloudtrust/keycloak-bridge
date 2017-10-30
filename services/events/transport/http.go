@@ -24,7 +24,7 @@ Request for KeycloakEventReceiver endpoint
  */
 type KeycloakEventReceiverRequest struct {
 	Type string
-	Object string
+	Object string `json:"Obj"`
 }
 
 type EventRequest struct {

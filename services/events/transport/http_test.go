@@ -21,7 +21,7 @@ var REALM string = "realm"
 func TestEventTransport_decodeKeycloakEventsReceiverRequest_ValidAdminEvent(t *testing.T) {
 	var byteAdminEvent []byte = createAdminEvent()
 	var stringAdminEvent = base64.StdEncoding.EncodeToString(byteAdminEvent)
-	var body = strings.NewReader("{\"type\": \"AdminEvent\", \"Object\": \"" + stringAdminEvent + "\"}")
+	var body = strings.NewReader("{\"type\": \"AdminEvent\", \"Obj\": \"" + stringAdminEvent + "\"}")
 	var req *http.Request = httptest.NewRequest("POST", "http://localhost:8888/event/id", body)
 
 	var res interface{}
@@ -39,7 +39,7 @@ func TestEventTransport_decodeKeycloakEventsReceiverRequest_ValidEvent(t *testin
 
 	var byteEvent []byte = createEvent()
 	var stringEvent string = base64.StdEncoding.EncodeToString(byteEvent)
-	var body io.Reader = strings.NewReader("{\"type\": \"Event\", \"Object\": \"" + stringEvent + "\"}")
+	var body io.Reader = strings.NewReader("{\"type\": \"Event\", \"Obj\": \"" + stringEvent + "\"}")
 	var req *http.Request = httptest.NewRequest("POST", "http://localhost:8888/event/id", body)
 
 	var res interface{}
@@ -56,7 +56,7 @@ func TestEventTransport_decodeKeycloakEventsReceiverRequest_ValidEvent(t *testin
 func TestEventTransport_decodeKeycloakEventsReceiverRequest_UnknownType(t *testing.T) {
 	var byteEvent []byte = createEvent()
 	var stringEvent string = base64.StdEncoding.EncodeToString(byteEvent)
-	var body io.Reader = strings.NewReader("{\"type\": \"Unknown\", \"Object\": \"" + stringEvent + "\"}")
+	var body io.Reader = strings.NewReader("{\"type\": \"Unknown\", \"Obj\": \"" + stringEvent + "\"}")
 	var req *http.Request = httptest.NewRequest("POST", "http://localhost:8888/event/id", body)
 
 	var err error
@@ -66,7 +66,7 @@ func TestEventTransport_decodeKeycloakEventsReceiverRequest_UnknownType(t *testi
 }
 
 func TestEventTransport_decodeKeycloakEventsReceiverRequest_InvalidObject(t *testing.T) {
-	var body = strings.NewReader("{\"type\": \"Event\", \"Object\": \"test\"}")
+	var body = strings.NewReader("{\"type\": \"Event\", \"Obj\": \"test\"}")
 	var req *http.Request = httptest.NewRequest("POST", "http://localhost:8888/event/id", body)
 
 	var err error
