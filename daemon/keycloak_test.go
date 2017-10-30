@@ -30,11 +30,11 @@ type grpcService struct {
 	client user_fb.UserServiceClient
 }
 
-func (g *grpcService)GetUsers(ctx context.Context, realm string) (<-chan string, <-chan error) {
+func (g *grpcService) GetUsers(ctx context.Context, realm string) (<-chan string, <-chan error) {
 	var resultc = make(chan string)
 	var errc = make(chan error)
-	var builder= flatbuffers.NewBuilder(0)
-	var brealm= builder.CreateString(realm)
+	var builder = flatbuffers.NewBuilder(0)
+	var brealm = builder.CreateString(realm)
 	user_fb.UserRequestStart(builder)
 	user_fb.UserRequestAddRealm(builder, brealm)
 	builder.Finish(user_fb.UserReplyEnd(builder))
@@ -69,9 +69,9 @@ func (g *grpcService)GetUsers(ctx context.Context, realm string) (<-chan string,
 
 
 func TestMain_Main(t *testing.T) {
-	var grpcAddr= fmt.Sprintf("127.0.0.1:5555")
+	var grpcAddr = fmt.Sprintf("127.0.0.1:5555")
 
-	var logger= log.NewLogfmtLogger(os.Stdout)
+	var logger = log.NewLogfmtLogger(os.Stdout)
 	{
 		logger = log.With(logger, "time", log.DefaultTimestampUTC, "caller", "client")
 		defer logger.Log("msg", "Goodbye")
@@ -92,7 +92,7 @@ func TestMain_Main(t *testing.T) {
 	var getUsersEndpoint endpoint.Endpoint
 	{
 		var logger = log.With(logger, "Method", "getUsers")
-		var innerLogger  = log.With(logger, "InnerMethod", "getUser")
+		var innerLogger = log.With(logger, "InnerMethod", "getUser")
 		var rateLimiter = bucket.NewBucket(1 * time.Millisecond, 2)
 		getUsersEndpoint = endpoints.MakeGetUsersEndpoint(
 			userService,

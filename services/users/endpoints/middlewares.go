@@ -5,6 +5,7 @@ import (
 	"time"
 	"context"
 	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/metrics"
 )
 
 /*
@@ -18,6 +19,17 @@ func MakeEndpointSnowflakeMiddleware(key interface{}) endpoint.Middleware {
 				snowflake++
 			}()
 			return next(context.WithValue(ctx, key, snowflake), req)
+		}
+	}
+}
+
+func MakeTSMiddleware(h metrics.Histogram) endpoint.Middleware {
+	return func(next endpoint.Endpoint) endpoint.Endpoint {
+		return func(ctx context.Context, req interface{}) (interface{}, error) {
+			defer func(begin time.Time) {
+				h.Observe(time.Since(begin).Seconds())
+			}(time.Now())
+			return next(ctx, req)
 		}
 	}
 }

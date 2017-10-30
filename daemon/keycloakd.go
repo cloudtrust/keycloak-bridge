@@ -27,6 +27,9 @@ import (
 	users_components "github.com/cloudtrust/keycloak-bridge/services/users/components"
 	users_endpoints "github.com/cloudtrust/keycloak-bridge/services/users/endpoints"
 	users_keycloak "github.com/cloudtrust/keycloak-bridge/services/users/modules/keycloak"
+  	sentry "github.com/getsentry/raven-go"
+	influx_client "github.com/influxdata/influxdb/client/v2"
+	gokit_influx "github.com/go-kit/kit/metrics/influx"
 )
 
 var VERSION string = "123"
@@ -39,30 +42,41 @@ func main() {
 	var (
 		grpcAddr= fmt.Sprintf("127.0.0.1:5555")
 		httpConfig = keycloak_client.HttpConfig{
-			Addr:     "http://172.17.0.2:8080",
+			Addr:     "http://localhost:8080",
 			Username: "admin",
 			Password: "admin",
-			Timeout:  time.Second * 5,
+			Timeout:  5 * time.Second,
 		}
-		httpAddr = fmt.Sprintf("0.0.0.0:8888")
+		influxHttpConfig = influx_client.HTTPConfig{
+			Addr: "http://localhost:8086",
+			Username: "rpo",
+			Password: "rpo",
+		}
+		influxBatchPointsConfig = influx_client.BatchPointsConfig{
+			Precision: "s",
+			Database: "keycloak",
+			RetentionPolicy: "",
+			WriteConsistency: "",
+		}
+		httpAddr = fmt.Sprintf("localhost:8888")
+		sentryDNS = fmt.Sprintf("https://99360b38b8c947baaa222a5367cd74bc:579dc85095114b6198ab0f605d0dc576@sentry-cloudtrust.dev.elca.ch/2")
 	)
-
 
 	/*
 	Critical errors channel
 	 */
-	var errc= make(chan error)
+	var errc = make(chan error)
 
 	/*
 	Logger
 	 */
-	var logger= log.NewLogfmtLogger(os.Stdout)
+	var logger = log.NewLogfmtLogger(os.Stdout)
 	{
 		logger = log.With(logger, "time", log.DefaultTimestampUTC, "caller", log.DefaultCaller)
 		defer logger.Log("msg", "Goodbye")
 	}
 	go func() {
-		c := make(chan os.Signal, 1)
+		var c = make(chan os.Signal, 1)
 		signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
 		errc <- fmt.Errorf("%s", <-c)
 	}()
@@ -76,11 +90,48 @@ func main() {
 		var err error
 		keycloakClient, err = keycloak_client.NewHttpClient(httpConfig)
 		if err != nil {
-			logger.Log("Couldn't create keycloak client", err)
+			logger.Log("Couldn't create Keycloak client", err)
 			return
 		}
 	}
 
+	/*
+	Sentry
+	 */
+	var sentryClient *sentry.Client
+	{
+		var logger = log.With(logger, "sentry config", sentryDNS)
+		var err error
+		sentryClient, err = sentry.New(sentryDNS)
+		if err != nil {
+			logger.Log("Couldn't create Sentry client", err)
+			return
+		}
+	}
+
+	//Influx Client instantiation
+	var influxClient influx_client.Client
+	{
+		var logger = log.With(logger, "module", "influx")
+		{
+			var err error
+			influxClient, err = influx_client.NewHTTPClient(influxHttpConfig)
+			if err != nil {
+				logger.Log("Couldn't create Influx client", err)
+				return
+			}
+		}
+	}
+
+	//Influx go-kit handler
+	var in *gokit_influx.Influx
+	{
+		in = gokit_influx.New(
+			map[string]string{"service": "users"},
+			influxBatchPointsConfig,
+			log.With(logger, "msg", "go-kit influx"),
+		)
+	}
 
 	/********
 	User stack
@@ -113,6 +164,7 @@ func main() {
 			users_endpoints.MakeEndpointSnowflakeMiddleware("inner_req_id"),
 		)
 		getUsersEndpoint = users_endpoints.MakeEndpointLoggingMiddleware(logger, "outer_req_id")(getUsersEndpoint)
+		getUsersEndpoint = users_endpoints.MakeTSMiddleware(in.NewHistogram("get_users_statistics"))(getUsersEndpoint)
 		getUsersEndpoint = users_endpoints.MakeEndpointSnowflakeMiddleware("outer_req_id")(getUsersEndpoint)
 	}
 
@@ -142,7 +194,6 @@ func main() {
 	}()
 
 
-
 	/*
 	Event stack
 	 */
@@ -155,7 +206,7 @@ func main() {
 
 	var statisticsModule events_statistics.KeycloakStatisticsProcessor
 	{
-		statisticsModule = events_statistics.NewKeycloakStatisticsProcessor("http://172.17.0.2:8086", "rpo", "rpo", "cloudtrust_grafana_test" )
+		statisticsModule = events_statistics.NewKeycloakStatisticsProcessor(influxClient, influxBatchPointsConfig)
 	}
 
 
@@ -176,6 +227,8 @@ func main() {
 	{
 		muxComponent = events_components.NewMuxService(eventComponent, adminEventComponent)
 		muxComponent = events_components.MakeServiceLoggingMuxMiddleware(logger)(muxComponent)
+		muxComponent = events_components.MakeServiceErrorMiddleware(logger, sentryClient)(muxComponent)
+
 	}
 
 	var eventConsumerEndpoint endpoint.Endpoint
@@ -184,7 +237,7 @@ func main() {
 		eventConsumerEndpoint = events_endpoints.MakeEndpointLoggingMiddleware(logger)(eventConsumerEndpoint)
 	}
 
-	var events_endpoints = events_endpoints.Endpoints{
+	var events_endpoints = events_endpoints.Endpoints {
 		MakeKeycloakEventsEndpoint:eventConsumerEndpoint,
 	}
 
@@ -193,14 +246,14 @@ func main() {
 	HTTP monitoring routes.
 	  */
 	go func() {
-		logger := log.With(logger, "transport", "HTTP")
+		var logger = log.With(logger, "transport", "HTTP")
 
-		route := mux.NewRouter()
+		var route *mux.Router = mux.NewRouter()
 
 		route.Handle("/version", http.HandlerFunc(MakeVersion(VERSION)))
 
 		//debug
-		debugSubroute := route.PathPrefix("/debug").Subrouter()
+		var debugSubroute *mux.Router = route.PathPrefix("/debug").Subrouter()
 		debugSubroute.HandleFunc("/pprof/", http.HandlerFunc(pprof.Index))
 		debugSubroute.HandleFunc("/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))
 		debugSubroute.HandleFunc("/pprof/profile", http.HandlerFunc(pprof.Profile))
@@ -208,7 +261,7 @@ func main() {
 		debugSubroute.HandleFunc("/pprof/trace", http.HandlerFunc(pprof.Trace))
 
 		//event
-		eventSubroute := route.PathPrefix("/event").Subrouter()
+		var eventSubroute *mux.Router = route.PathPrefix("/event").Subrouter()
 		eventSubroute.Handle("/receiver", events_transport.MakeReceiverHandler(events_endpoints.MakeKeycloakEventsEndpoint, logger))
 
 		//other
@@ -218,7 +271,11 @@ func main() {
 		errc <- http.ListenAndServe(httpAddr, route)
 	}()
 
-
+	//Influx Handling
+	go func() {
+		var tic = time.NewTicker(1 * time.Second)
+		in.WriteLoop(tic.C, influxClient)
+	}()
 
 	logger.Log("error", <-errc)
 }
