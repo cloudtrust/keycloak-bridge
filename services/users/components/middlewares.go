@@ -12,7 +12,6 @@ Service Middleware declarations
 type Middleware func(Service) Service
 
 
-
 /*
 Logging Middleware
  */
@@ -24,7 +23,7 @@ type serviceLoggingMiddleware struct {
 /*
 serviceLoggingMiddleware implements Service
  */
-func (s *serviceLoggingMiddleware)GetUsers(ctx context.Context, realm string) (<-chan string, <-chan error) {
+func (s *serviceLoggingMiddleware) GetUsers(ctx context.Context, realm string) (<-chan string, <-chan error) {
 	defer func(begin time.Time) {
 		s.log.Log("method", "GetUsers", "realm", realm, "took", time.Since(begin))
 	}(time.Now())
@@ -35,7 +34,7 @@ func (s *serviceLoggingMiddleware)GetUsers(ctx context.Context, realm string) (<
 Logging middleware for backend services.
  */
 func MakeServiceLoggingMiddleware(log log.Logger) Middleware {
-	return func(next Service) Service{
+	return func(next Service) Service {
 		return &serviceLoggingMiddleware {
 			log: log,
 			next: next,

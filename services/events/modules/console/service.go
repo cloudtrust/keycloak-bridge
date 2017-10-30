@@ -1,6 +1,5 @@
 package console
 
-
 import (
 	"github.com/go-kit/kit/log"
 )
@@ -15,7 +14,7 @@ type Service interface {
 /*
  */
 func NewBasicService(logger *log.Logger) Service {
-	return &basicService{
+	return &basicService {
 		logger: logger,
 	}
 }
@@ -24,8 +23,8 @@ type basicService struct {
 	logger *log.Logger
 }
 
-func (u *basicService)Print(m map[string]string) error{
-	for k, v := range m{
+func (u *basicService)Print(m map[string]string) error {
+	for k, v := range m {
 		(*u.logger).Log(k, v)
 	}
 	return nil

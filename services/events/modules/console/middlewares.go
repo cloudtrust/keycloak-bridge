@@ -22,7 +22,7 @@ type serviceLoggingMiddleware struct {
 /*
 serviceLoggingMiddleware implements Service
  */
-func (s *serviceLoggingMiddleware)Print(m map[string]string) error {
+func (s *serviceLoggingMiddleware) Print(m map[string]string) error {
 	defer func(begin time.Time) {
 		s.log.Log("method", "Console.Print", "args", m, "took", time.Since(begin))
 	}(time.Now())
@@ -33,7 +33,7 @@ func (s *serviceLoggingMiddleware)Print(m map[string]string) error {
 Logging middleware for backend services.
  */
 func MakeServiceLoggingMiddleware(log log.Logger) Middleware {
-	return func(next Service) Service{
+	return func(next Service) Service {
 		return &serviceLoggingMiddleware {
 			log: log,
 			next: next,

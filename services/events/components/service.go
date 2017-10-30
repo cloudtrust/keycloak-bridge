@@ -9,14 +9,12 @@ import (
 	"sync"
 )
 
-
 /*
 This is the interface that user services implement.
  */
 type MuxService interface {
 	Event(ctx context.Context, eventType string, obj []byte) (interface{}, error)
 }
-
 
 /*
  */
@@ -32,15 +30,15 @@ type muxService struct {
 	adminEventService AdminEventService
 }
 
-func (u *muxService)Event(ctx context.Context, eventType string, obj []byte) (interface{}, error) {
+func (u *muxService) Event(ctx context.Context, eventType string, obj []byte) (interface{}, error) {
 	switch eventType {
 	case "AdminEvent":
 		var adminEvent *events.AdminEvent
-		adminEvent= events.GetRootAsAdminEvent(obj, 0)
+		adminEvent = events.GetRootAsAdminEvent(obj, 0)
 		return u.adminEventService.AdminEvent(ctx, adminEvent)
 	case "Event":
 		var event *events.Event
-		event= events.GetRootAsEvent(obj, 0)
+		event = events.GetRootAsEvent(obj, 0)
 		return u.eventService.Event(ctx, event)
 	default:
 		var err transport.ErrInvalidArgument
@@ -105,7 +103,7 @@ type adminEventService struct {
 
 func (u *adminEventService) AdminEvent(ctx context.Context, adminEvent *events.AdminEvent) (interface{}, error) {
 	var adminEventMap map[string]string = adminEventToMap(adminEvent)
-	switch operationType :=adminEvent.OperationType(); operationType{
+	switch operationType := adminEvent.OperationType(); operationType{
 	case events.OperationTypeCREATE:
 		return apply(u.modulesToCallForCreate, adminEventMap)
 	case events.OperationTypeUPDATE:
@@ -123,7 +121,7 @@ func (u *adminEventService) AdminEvent(ctx context.Context, adminEvent *events.A
 	return nil, nil
 }
 
-func adminEventToMap(adminEvent *events.AdminEvent) map[string]string{
+func adminEventToMap(adminEvent *events.AdminEvent) map[string]string {
 	var adminEventMap map[string]string = make(map[string]string)
 	adminEventMap["uid"] = fmt.Sprint(adminEvent.Uid())
 	adminEventMap["time"] = fmt.Sprint(adminEvent.Time())
@@ -137,7 +135,7 @@ func adminEventToMap(adminEvent *events.AdminEvent) map[string]string{
 	return adminEventMap
 }
 
-func eventToMap(event *events.Event) map[string]string{
+func eventToMap(event *events.Event) map[string]string {
 	var eventMap map[string]string = make(map[string]string)
 	eventMap["uid"]=fmt.Sprint(event.Uid())
 	eventMap["time"]=fmt.Sprint(event.Time())
@@ -151,19 +149,19 @@ func eventToMap(event *events.Event) map[string]string{
 
 	var detailsString string
 	var detailsLength int = event.DetailsLength()
-	for i:=0; i<detailsLength; i++{
-		tuple := new(events.Tuple)
+	for i := 0; i < detailsLength; i++ {
+		var tuple *events.Tuple = new(events.Tuple)
 		event.Details(tuple,i)
-		detailsString += (string(tuple.Key())+":"+string(tuple.Value())+",")
+		detailsString += (string(tuple.Key()) + ":" + string(tuple.Value()) + ",")
 	}
 
-	eventMap["details"]="{"+fmt.Sprint(detailsString)+"}"
+	eventMap["details"] = "{"+fmt.Sprint(detailsString)+"}"
 	return eventMap
 }
 
-func apply(funcs [](func(map[string]string) error), param map[string]string) (interface{}, error){
+func apply(funcs [](func(map[string]string) error), param map[string]string) (interface{}, error) {
 
-	errors := make(chan error, len(funcs))
+	var errors = make(chan error, len(funcs))
 	var wg sync.WaitGroup
 
 	//Wait for the execution of all the function of the array
@@ -173,7 +171,7 @@ func apply(funcs [](func(map[string]string) error), param map[string]string) (in
 		go func(wg1 *sync.WaitGroup, fn func(map[string]string) error) {
 			defer wg1.Done()
 
-			err := fn(param)
+			var err error = fn(param)
 			if err != nil {
 				errors <- err
 			}
@@ -190,7 +188,6 @@ func apply(funcs [](func(map[string]string) error), param map[string]string) (in
 	default:
 		return "ok", nil
 	}
-
 
 	return "ok", nil
 }

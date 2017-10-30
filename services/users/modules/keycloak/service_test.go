@@ -17,24 +17,21 @@ type mockKeycloakClient struct {
 
 var ThatsNoGood = errors.New("That's too much man!")
 
-func (m *mockKeycloakClient)GetRealms() ([]keycloak.RealmRepresentation, error) {
+func (m *mockKeycloakClient) GetRealms() ([]keycloak.RealmRepresentation, error) {
 	return nil,nil
 }
 
-func (m *mockKeycloakClient)GetUsers(realm string) ([]keycloak.UserRepresentation, error){
+func (m *mockKeycloakClient) GetUsers(realm string) ([]keycloak.UserRepresentation, error) {
 	if m.fail {
 		return nil, ThatsNoGood
 	}
 	return m.users,nil
 }
 
-
-
-
 func TestBasicService_GetUsers(t *testing.T) {
 	var namesInit = [3]string{"john", "paul", "james"}
 	var usersInit [3]keycloak.UserRepresentation
-	for i,n := range namesInit {
+	for i, n := range namesInit {
 		usersInit[i] = keycloak.UserRepresentation{
 			Username:&n,
 		}
@@ -46,7 +43,7 @@ func TestBasicService_GetUsers(t *testing.T) {
 
 	resultc, errc := getUserService.GetUsers(context.Background(), "master")
 	var names [3]string
-	loop:for i:=0; i < 4; i++ {
+	loop:for i := 0; i < 4; i++ {
 		select {
 		case name := <-resultc:
 			require.Condition(t,
@@ -65,8 +62,6 @@ func TestBasicService_GetUsers(t *testing.T) {
 	}
 }
 
-
-
 type mockService struct {
 	names []string
 }
@@ -75,7 +70,7 @@ func NewMockService(names []string) Service {
 	return &mockService{names:names}
 }
 
-func (m *mockService)GetUsers(ctx context.Context, realm string) (<-chan string, <-chan error) {
+func (m *mockService) GetUsers(ctx context.Context, realm string) (<-chan string, <-chan error) {
 	var resultc = make(chan string)
 	var errc = make(chan error)
 	go func() {

@@ -88,7 +88,7 @@ func MakeGetUsersEndpoint(s components.Service, mids ...endpoint.Middleware) end
 /*
 Endpoints implements Service
  */
-func (u *Endpoints)GetUsers(ctx context.Context, realm string) (<-chan string, <-chan error) {
+func (u *Endpoints) GetUsers(ctx context.Context, realm string) (<-chan string, <-chan error) {
 	var resultc = make(chan string)
 	var errc = make(chan error)
 	var req = GetUsersRequest{realm}

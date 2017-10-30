@@ -24,7 +24,7 @@ Request for KeycloakEventReceiver endpoint
  */
 type KeycloakEventReceiverRequest struct {
 	Type string
-	Obj string
+	Object string
 }
 
 type EventRequest struct {
@@ -36,8 +36,8 @@ func decodeKeycloakEventsReceiverRequest(_ context.Context, r *http.Request) (re
 
 	var request KeycloakEventReceiverRequest
 	{
-		var err error
-		if err = json.NewDecoder(r.Body).Decode(&request); err != nil {
+		var err error = json.NewDecoder(r.Body).Decode(&request)
+		if err != nil {
 			return EventRequest{}, err
 		}
 	}
@@ -45,7 +45,7 @@ func decodeKeycloakEventsReceiverRequest(_ context.Context, r *http.Request) (re
 	var bEvent []byte
 	{
 		var err error
-		bEvent, err = base64.StdEncoding.DecodeString(request.Obj)
+		bEvent, err = base64.StdEncoding.DecodeString(request.Object)
 
 		if err != nil {
 			return EventRequest{}, err
@@ -70,15 +70,15 @@ func decodeKeycloakEventsReceiverRequest(_ context.Context, r *http.Request) (re
 	}
 
 
-	res = EventRequest{
-		Type : objType,
+	res = EventRequest {
+		Type: objType,
 		Object: bEvent,
 	}
 
 	return res, nil
 }
 
-func MakeReceiverHandler(e endpoint.Endpoint, log log.Logger) *httptransport.Server{
+func MakeReceiverHandler(e endpoint.Endpoint, log log.Logger) *httptransport.Server {
 	return httptransport.NewServer(e,
 		decodeKeycloakEventsReceiverRequest,
 		encodeResponse,
@@ -90,7 +90,7 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response interface
 	return nil
 }
 
-func MakeErrorHandler(logger log.Logger) httptransport.ErrorEncoder{
+func MakeErrorHandler(logger log.Logger) httptransport.ErrorEncoder {
 	var errorHandler httptransport.ErrorEncoder
 	errorHandler = func (ctx context.Context, err error, w http.ResponseWriter){
 		logger.Log(err.Error())

@@ -21,7 +21,7 @@ func MakeEndpointLoggingMiddleware(logger log.Logger, keys ...interface{}) endpo
 				va_list = append(va_list, key, ctx.Value(key))
 			}
 			defer func(begin time.Time) {
-				va_list=append(va_list, "took", time.Since(begin))
+				va_list = append(va_list, "took", time.Since(begin))
 				logger.Log( va_list...)
 			}(time.Now())
 			return next(ctx, req)

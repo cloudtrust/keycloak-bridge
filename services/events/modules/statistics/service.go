@@ -3,7 +3,7 @@ package statistics
 import (
 	"fmt"
 	"time"
-	"github.com/influxdata/influxdb/client/v2"
+	influx_client "github.com/influxdata/influxdb/client/v2"
 )
 
 /*
@@ -13,56 +13,51 @@ type KeycloakStatisticsProcessor interface{
 	Stats(map[string]string) error
 }
 
-func NewKeycloakStatisticsProcessor(host string, username string, password string, database string) KeycloakStatisticsProcessor {
+
+func NewKeycloakStatisticsProcessor(influxClient influx_client.Client, batchPointsConfig influx_client.BatchPointsConfig) KeycloakStatisticsProcessor {
 	return &keycloakStatisticsProcessor{
-		config: client.HTTPConfig{
-			Addr: host,
-			Username: username,
-			Password: password,
-		},
-		database: database,
+		clientInflux: influxClient,
+		batchPointConfig: batchPointsConfig,
 	}
 }
 
 type keycloakStatisticsProcessor struct {
-	config client.HTTPConfig
-	database string
+	clientInflux     influx_client.Client
+	batchPointConfig influx_client.BatchPointsConfig
 }
 
-func (k *keycloakStatisticsProcessor) Stats(m map[string]string) error{
-
-	c, err := client.NewHTTPClient(k.config)
-
-	if err != nil {
-		fmt.Println("Error creating InfluxDB Client: ", err.Error())
-		return err
-	}
-
-	defer c.Close()
-
+func (k *keycloakStatisticsProcessor) Stats(m map[string]string) error {
 
 	// Create a new point batch
-	bp, _ := client.NewBatchPoints(client.BatchPointsConfig{
-		Database:  k.database,
-		Precision: "s",
-	})
+	var batchPoints influx_client.BatchPoints
+	{
+		var err error
+		batchPoints, err = influx_client.NewBatchPoints(k.batchPointConfig)
+		if err != nil {
+			return err
+		}
+	}
 
 	// Create a point and add to batch
-	tags := map[string]string{"type": m["type"], "realm": m["realmId"], "userId": m["userId"]}
-	fields := map[string]interface{}{
+	var tags = map[string]string{"type": m["type"], "realm": m["realmId"], "userId": m["userId"]}
+	var fields = map[string]interface{} {
 		"uid":   m["uid"],
 	}
-	pt, err := client.NewPoint("event_statistics", tags, fields, time.Now())
-	if err != nil {
-		fmt.Println("Error: ", err.Error())
+
+	var point *influx_client.Point
+	{
+		var err error
+		point, err = influx_client.NewPoint("event_statistics", tags, fields, time.Now())
+		if err != nil {
+			return err
+		}
+		batchPoints.AddPoint(point)
 	}
-	bp.AddPoint(pt)
 
 	// Write the batch
-	// Write the batch
-	err2 := c.Write(bp)
-	if err2 != nil {
-		fmt.Println("Error: ", err2.Error())
+	var err = k.clientInflux.Write(batchPoints)
+	if err != nil {
+		return err
 	}
 
 	return nil

@@ -26,7 +26,7 @@ type basicService struct {
 	client keycloak.Client
 }
 
-func (u *basicService)GetUsers(ctx context.Context, realm string) (<-chan string, <-chan error) {
+func (u *basicService) GetUsers(ctx context.Context, realm string) (<-chan string, <-chan error) {
 	var resultc = make(chan string)
 	var errc = make(chan error)
 	var representations []keycloak.UserRepresentation
@@ -41,7 +41,7 @@ func (u *basicService)GetUsers(ctx context.Context, realm string) (<-chan string
 			return resultc, errc
 		}
 	}
-	go func(){
+	go func() {
 		for _,r := range representations {
 			resultc <- *r.Username
 		}
