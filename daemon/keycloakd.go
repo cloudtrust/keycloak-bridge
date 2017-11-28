@@ -15,6 +15,8 @@ import (
 	"github.com/go-kit/kit/endpoint"
 	"net/http"
 	"net/http/pprof"
+	"github.com/spf13/viper"
+	"github.com/spf13/pflag"
 
 	events_components "github.com/cloudtrust/keycloak-bridge/services/events/components"
 	events_console "github.com/cloudtrust/keycloak-bridge/services/events/modules/console"
@@ -32,25 +34,45 @@ import (
 	gokit_influx "github.com/go-kit/kit/metrics/influx"
 )
 
-var VERSION string = "123"
+var (
+	VERSION string = "123"
+)
+
+type componentConfig struct {
+	configFile string
+	ComponentName string
+	ComponentHTTPAddress string
+	ComponentGRPCAddress string
+	KeycloakURL string
+}
 
 func main() {
 
 	/*
+	Logger
+	*/
+	var logger = log.NewLogfmtLogger(os.Stdout)
+	{
+		logger = log.With(logger, "time", log.DefaultTimestampUTC, "caller", log.DefaultCaller)
+		defer logger.Log("msg", "Goodbye")
+	}
+
+	/*
 	Configurations
 	 */
+	config := config(log.With(logger, "component", "config_loader"))
 	var (
-		grpcAddr= fmt.Sprintf("127.0.0.1:5555")
+		grpcAddr= fmt.Sprintf(config["component-grpc-address"].(string))
 		httpConfig = keycloak_client.HttpConfig{
-			Addr:     "http://localhost:8080",
-			Username: "admin",
-			Password: "admin",
+			Addr:     config["keycloak-url"].(string),
+			Username: config["keycloak-username"].(string),
+			Password: config["keycloak-password"].(string),
 			Timeout:  5 * time.Second,
 		}
 		influxHttpConfig = influx_client.HTTPConfig{
-			Addr: "http://localhost:8086",
-			Username: "rpo",
-			Password: "rpo",
+			Addr: config["influx-url"].(string),
+			Username: config["influx-username"].(string),
+			Password: config["influx-password"].(string),
 		}
 		influxBatchPointsConfig = influx_client.BatchPointsConfig{
 			Precision: "s",
@@ -58,23 +80,14 @@ func main() {
 			RetentionPolicy: "",
 			WriteConsistency: "",
 		}
-		httpAddr = fmt.Sprintf("localhost:8888")
-		sentryDNS = fmt.Sprintf("https://99360b38b8c947baaa222a5367cd74bc:579dc85095114b6198ab0f605d0dc576@sentry-cloudtrust.dev.elca.ch/2")
+		httpAddr = fmt.Sprintf(config["component-http-address"].(string))
+		sentryDSN = fmt.Sprintf(config["sentry-dsn"].(string))
 	)
 
 	/*
 	Critical errors channel
 	 */
 	var errc = make(chan error)
-
-	/*
-	Logger
-	 */
-	var logger = log.NewLogfmtLogger(os.Stdout)
-	{
-		logger = log.With(logger, "time", log.DefaultTimestampUTC, "caller", log.DefaultCaller)
-		defer logger.Log("msg", "Goodbye")
-	}
 	go func() {
 		var c = make(chan os.Signal, 1)
 		signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
@@ -86,7 +99,7 @@ func main() {
 	 */
 	var keycloakClient keycloak_client.Client
 	{
-		var logger = log.With(logger, "gRPC config", grpcAddr, "Keycloak Config", httpConfig)
+		var logger = log.With(logger, "Keycloak Config", httpConfig.Addr)
 		var err error
 		keycloakClient, err = keycloak_client.NewHttpClient(httpConfig)
 		if err != nil {
@@ -100,9 +113,9 @@ func main() {
 	 */
 	var sentryClient *sentry.Client
 	{
-		var logger = log.With(logger, "sentry config", sentryDNS)
+		var logger = log.With(logger, "sentry config", sentryDSN)
 		var err error
-		sentryClient, err = sentry.New(sentryDNS)
+		sentryClient, err = sentry.New(sentryDSN)
 		if err != nil {
 			logger.Log("Couldn't create Sentry client", err)
 			return
@@ -199,7 +212,8 @@ func main() {
 	 */
 	var consoleModule events_console.Service
 	{
-		var loggerEvent= log.NewLogfmtLogger(os.Stdout)
+		var loggerEvent= log.NewJSONLogger(os.Stdout)
+		loggerEvent = log.With(logger, "ts", log.DefaultTimestampUTC, "caller", log.DefaultCaller)
 		consoleModule = events_console.NewBasicService(&loggerEvent)
 		consoleModule = events_console.MakeServiceLoggingMiddleware(logger)(consoleModule)
 	}
@@ -284,4 +298,60 @@ func MakeVersion(version string) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(fmt.Sprintf("Application version : %s\n", version)))
 	}
+}
+
+
+func config(logger log.Logger) map[string]interface{} {
+
+	logger.Log("msg", "Loading configuration & command args")
+
+	/*
+	Component default
+	 */
+	viper.SetDefault("config-file", "./conf/DEV/keycloak_bridge.yaml")
+	viper.SetDefault("component-name", "keycloak-bridge")
+	viper.SetDefault("component-http-address", "127.0.0.1:8888")
+	viper.SetDefault("component-grpc-address", "127.0.0.1:5555")
+
+	/*
+	Keycloak client default
+	*/
+	viper.SetDefault("keycloak-url", "http://localhost:8080")
+	viper.SetDefault("keycloak-username", "admin")
+	viper.SetDefault("keycloak-password", "admin")
+
+	/*
+	Influx DB client default
+	*/
+	viper.SetDefault("influx-url", "http://localhost:8080")
+	viper.SetDefault("influx-username", "admin")
+	viper.SetDefault("influx-password", "admin")
+
+	/*
+	Sentry client default
+	 */
+	viper.SetDefault("sentry-dsn", "https://99360b38b8c947baaa222a5367cd74bc:579dc85095114b6198ab0f605d0dc576@sentry-cloudtrust.dev.elca.ch/2")
+
+	/*
+	First level of overhide
+	 */
+	pflag.String("config-file", viper.GetString("config-file"), "The configuration file path can be relative or absolute.")
+	viper.BindPFlag("config-file", pflag.Lookup("config-file"))
+	pflag.Parse()
+
+	/*
+	Load & log Config
+	 */
+	viper.SetConfigFile(viper.GetString("config-file"))
+	err := viper.ReadInConfig()
+	if err != nil {
+		logger.Log("msg", err)
+	}
+
+	var config = viper.AllSettings()
+	for k, v := range config {
+		logger.Log(k, v.(string))
+	}
+
+	return config
 }
