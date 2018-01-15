@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"net/http/pprof"
@@ -33,6 +34,8 @@ import (
 	sentry "github.com/getsentry/raven-go"
 	gokit_influx "github.com/go-kit/kit/metrics/influx"
 	influx_client "github.com/influxdata/influxdb/client/v2"
+	stdopentracing "github.com/opentracing/opentracing-go"
+	jaegerConfig "github.com/uber/jaeger-client-go/config"
 )
 
 var (
@@ -46,6 +49,15 @@ type componentConfig struct {
 	ComponentGRPCAddress string
 	KeycloakURL          string
 }
+
+var (
+	// Version of the component.
+	Version = "1.0.0"
+	// Environment is filled by the compiler.
+	Environment = "unknown"
+	// GitCommit is filled by the compiler.
+	GitCommit = "unknown"
+)
 
 func main() {
 
@@ -76,13 +88,26 @@ func main() {
 			Password: config["influx-password"].(string),
 		}
 		influxBatchPointsConfig = influx_client.BatchPointsConfig{
-			Precision:        "s",
-			Database:         "keycloak",
-			RetentionPolicy:  "",
-			WriteConsistency: "",
+			Precision:        config["influx-precision"].(string),
+			Database:         config["influx-database"].(string),
+			RetentionPolicy:  config["influx-retention-policy"].(string),
+			WriteConsistency: config["influx-write-consistency"].(string),
 		}
-		httpAddr  = fmt.Sprintf(config["component-http-address"].(string))
-		sentryDSN = fmt.Sprintf(config["sentry-dsn"].(string))
+
+		httpAddr            = fmt.Sprintf(config["component-http-address"].(string))
+		sentryDSN           = fmt.Sprintf(config["sentry-dsn"].(string))
+		jaegerConfiguration = jaegerConfig.Configuration{
+			Sampler: &jaegerConfig.SamplerConfig{
+				Type:              config["jaeger-sampler-type"].(string),
+				Param:             float64(config["jaeger-sampler-param"].(int)),
+				SamplingServerURL: config["jaeger-sampler-url"].(string),
+			},
+			Reporter: &jaegerConfig.ReporterConfig{
+				LogSpans:            config["jaeger-reporter-logspan"].(bool),
+				BufferFlushInterval: time.Duration(config["jaeger-reporter-flushinterval-ms"].(int)) * time.Millisecond,
+			},
+		}
+		jaegerName = config["jaeger-service-name"].(string)
 	)
 
 	/*
@@ -147,6 +172,21 @@ func main() {
 		)
 	}
 
+	//Tracer
+	var tracer stdopentracing.Tracer
+	var closer io.Closer
+	{
+		var err error
+		tracer, closer, err = jaegerConfiguration.New(
+			jaegerName,
+		)
+		if err != nil {
+			logger.Log("error", err)
+		}
+	}
+	stdopentracing.SetGlobalTracer(tracer)
+	defer closer.Close()
+
 	/********
 	User stack
 	 *********/
@@ -174,13 +214,14 @@ func main() {
 			userComponent,
 			users_endpoints.MakeEndpointLoggingMiddleware(innerLogger, "outer_req_id", "inner_req_id"),
 			users_endpoints.MakeEndpointSnowflakeMiddleware("inner_req_id"),
+			users_endpoints.MakeEndpointTracingMiddleware(tracer, "getUsers"),
 		)
 		getUsersEndpoint = users_endpoints.MakeEndpointLoggingMiddleware(logger, "outer_req_id")(getUsersEndpoint)
 		getUsersEndpoint = users_endpoints.MakeTSMiddleware(in.NewHistogram("get_users_statistics"))(getUsersEndpoint)
 		getUsersEndpoint = users_endpoints.MakeEndpointSnowflakeMiddleware("outer_req_id")(getUsersEndpoint)
 	}
 
-	var users_endpoints = users_endpoints.Endpoints{
+	var usersEndpoints = users_endpoints.Endpoints{
 		GetUsersEndpoint: getUsersEndpoint,
 	}
 
@@ -189,7 +230,7 @@ func main() {
 			The above Endpoints is used as a GRPC endpoint directly, shortcutting go-kit's facilities.
 	*/
 	go func() {
-		var userServer = users_transport.NewGrpcServer(users_endpoints)
+		var userServer = users_transport.NewGrpcServer(usersEndpoints)
 		var userGrpcServer = grpc.NewServer(grpc.CustomCodec(flatbuffers.FlatbuffersCodec{}))
 		users_flatbuf.RegisterUserServiceServer(userGrpcServer, userServer)
 		var lis net.Listener
@@ -299,11 +340,12 @@ func MakeVersion(version string) func(http.ResponseWriter, *http.Request) {
 func config(logger log.Logger) map[string]interface{} {
 
 	logger.Log("msg", "Loading configuration & command args")
+	var configFile = fmt.Sprintf("conf/%s/vault_bridge.yaml", Environment)
 
 	/*
 		Component default
 	*/
-	viper.SetDefault("config-file", "./conf/DEV/keycloak_bridge.yaml")
+	viper.SetDefault("config-file", configFile)
 	viper.SetDefault("component-name", "keycloak-bridge")
 	viper.SetDefault("component-http-address", "127.0.0.1:8888")
 	viper.SetDefault("component-grpc-address", "127.0.0.1:5555")
@@ -318,14 +360,28 @@ func config(logger log.Logger) map[string]interface{} {
 	/*
 		Influx DB client default
 	*/
-	viper.SetDefault("influx-url", "http://localhost:8080")
+	viper.SetDefault("influx-url", "http://localhost:8086")
 	viper.SetDefault("influx-username", "admin")
 	viper.SetDefault("influx-password", "admin")
+	viper.SetDefault("influx-database", "metrics")
+	viper.SetDefault("influx-precision", "ms")
+	viper.SetDefault("influx-retention-policy", "")
+	viper.SetDefault("influx-write-consistency", "")
 
 	/*
 		Sentry client default
 	*/
-	viper.SetDefault("sentry-dsn", "https://99360b38b8c947baaa222a5367cd74bc:579dc85095114b6198ab0f605d0dc576@sentry-cloudtrust.dev.elca.ch/2")
+	viper.SetDefault("sentry-dsn", "https://1b7fa325246a4aa4a4100b72b5a62038:9723f394f672468d9f95a717499cfa86@sentry.io/271870")
+
+	/*
+		Jaeger default
+	*/
+	viper.SetDefault("jaeger-service-name", "vault_bridge")
+	viper.SetDefault("jaeger-sampler-type", "const")
+	viper.SetDefault("jaeger-sampler-param", 1)
+	viper.SetDefault("jaeger-sampler-url", "http://127.0.0.1:5775/")
+	viper.SetDefault("jaeger-reporter-logspan", false)
+	viper.SetDefault("jaeger-reporter-flushinterval-ms", 1000)
 
 	/*
 		First level of overhide
@@ -345,7 +401,7 @@ func config(logger log.Logger) map[string]interface{} {
 
 	var config = viper.AllSettings()
 	for k, v := range config {
-		logger.Log(k, v.(string))
+		logger.Log(k, v)
 	}
 
 	return config

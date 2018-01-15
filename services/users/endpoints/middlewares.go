@@ -7,6 +7,10 @@ import (
 	"github.com/go-kit/kit/endpoint"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/metrics"
+
+	stdopentracing "github.com/opentracing/opentracing-go"
+	otext "github.com/opentracing/opentracing-go/ext"
+	otlog "github.com/opentracing/opentracing-go/log"
 )
 
 /*
@@ -52,6 +56,36 @@ func MakeEndpointLoggingMiddleware(logger log.Logger, keys ...interface{}) endpo
 				logger.Log(vaList...)
 			}(time.Now())
 			return next(ctx, req)
+		}
+	}
+}
+
+//MakeEndpointTracingMiddleware wraps Endpoint with a tracer
+func MakeEndpointTracingMiddleware(tracer stdopentracing.Tracer, operationName string) endpoint.Middleware {
+	return func(next endpoint.Endpoint) endpoint.Endpoint {
+		return func(ctx context.Context, request interface{}) (interface{}, error) {
+			var span = stdopentracing.SpanFromContext(ctx)
+			if span == nil {
+				//create a new root span.
+				span = tracer.StartSpan(operationName)
+
+				span.LogFields(otlog.String("operation", operationName),
+					otlog.String("microservice_level", "endpoint"))
+
+				otext.SpanKindRPCServer.Set(span)
+				ctx = stdopentracing.ContextWithSpan(ctx, span)
+				defer span.Finish()
+				return next(ctx, request)
+			}
+			cspan := stdopentracing.StartSpan(operationName, stdopentracing.ChildOf(span.Context()))
+			defer cspan.Finish()
+			//defer span.Finish()
+			cspan.LogFields(otlog.String("operation", operationName),
+				otlog.String("microservice_level", "endpoint"))
+
+			otext.SpanKindRPCServer.Set(cspan)
+			ctx = stdopentracing.ContextWithSpan(ctx, cspan)
+			return next(ctx, request)
 		}
 	}
 }
