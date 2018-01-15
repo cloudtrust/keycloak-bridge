@@ -2,16 +2,17 @@ package components
 
 import (
 	"context"
-	"github.com/cloudtrust/keycloak-bridge/services/events/transport/flatbuffers/events"
-	"github.com/cloudtrust/keycloak-bridge/services/events/transport"
-	"strings"
 	"fmt"
+	"strings"
 	"sync"
+
+	"github.com/cloudtrust/keycloak-bridge/services/events/transport"
+	"github.com/cloudtrust/keycloak-bridge/services/events/transport/flatbuffers/events"
 )
 
 /*
-This is the interface that user services implement.
- */
+MuxService is the interface that user services implement.
+*/
 type MuxService interface {
 	Event(ctx context.Context, eventType string, obj []byte) (interface{}, error)
 }
@@ -20,13 +21,13 @@ type MuxService interface {
  */
 func NewMuxService(eventService EventService, adminEventService AdminEventService) MuxService {
 	return &muxService{
-		eventService: eventService,
+		eventService:      eventService,
 		adminEventService: adminEventService,
 	}
 }
 
 type muxService struct {
-	eventService EventService
+	eventService      EventService
 	adminEventService AdminEventService
 }
 
@@ -47,34 +48,33 @@ func (u *muxService) Event(ctx context.Context, eventType string, obj []byte) (i
 	}
 }
 
-
 type EventService interface {
 	Event(ctx context.Context, event *events.Event) (interface{}, error)
 }
 
 func NewEventService(modulesToCallForStandardEvent []func(map[string]string) error,
-					 modulesToCallForErrorEvent []func(map[string]string) error) EventService {
+	modulesToCallForErrorEvent []func(map[string]string) error) EventService {
 	return &eventService{
 		fnsStandard: modulesToCallForStandardEvent,
-		fnsError: modulesToCallForErrorEvent,
+		fnsError:    modulesToCallForErrorEvent,
 	}
 }
 
 type eventService struct {
 	fnsStandard []func(map[string]string) error
-	fnsError []func(map[string]string) error
+	fnsError    []func(map[string]string) error
 }
 
 func (u *eventService) Event(ctx context.Context, event *events.Event) (interface{}, error) {
-	var eventType int = int(event.Type())
-	var eventTypeName string = events.EnumNamesEventType[eventType]
-	var eventMap map[string]string = eventToMap(event)
+	var eventType = int(event.Type())
+	var eventTypeName = events.EnumNamesEventType[eventType]
+	var eventMap = eventToMap(event)
 
-	if (strings.HasSuffix(eventTypeName, "_ERROR")){
+	if strings.HasSuffix(eventTypeName, "_ERROR") {
 		return apply(u.fnsError, eventMap)
-	}else{
-		return apply(u.fnsStandard, eventMap)
 	}
+
+	return apply(u.fnsStandard, eventMap)
 
 }
 
@@ -82,15 +82,15 @@ type AdminEventService interface {
 	AdminEvent(ctx context.Context, adminEvent *events.AdminEvent) (interface{}, error)
 }
 
-func NewAdminEventService(modulesToCallForCreate[]func(map[string]string) error,
-						modulesToCallForUpdate []func(map[string]string) error,
-						modulesToCallForDelete []func(map[string]string) error,
-						modulesToCallForAction []func(map[string]string) error) AdminEventService {
+func NewAdminEventService(modulesToCallForCreate []func(map[string]string) error,
+	modulesToCallForUpdate []func(map[string]string) error,
+	modulesToCallForDelete []func(map[string]string) error,
+	modulesToCallForAction []func(map[string]string) error) AdminEventService {
 	return &adminEventService{
-				modulesToCallForCreate: modulesToCallForCreate,
-				modulesToCallForUpdate: modulesToCallForUpdate,
-				modulesToCallForDelete: modulesToCallForDelete,
-				modulesToCallForAction: modulesToCallForAction,
+		modulesToCallForCreate: modulesToCallForCreate,
+		modulesToCallForUpdate: modulesToCallForUpdate,
+		modulesToCallForDelete: modulesToCallForDelete,
+		modulesToCallForAction: modulesToCallForAction,
 	}
 }
 
@@ -102,8 +102,8 @@ type adminEventService struct {
 }
 
 func (u *adminEventService) AdminEvent(ctx context.Context, adminEvent *events.AdminEvent) (interface{}, error) {
-	var adminEventMap map[string]string = adminEventToMap(adminEvent)
-	switch operationType := adminEvent.OperationType(); operationType{
+	var adminEventMap = adminEventToMap(adminEvent)
+	switch operationType := adminEvent.OperationType(); operationType {
 	case events.OperationTypeCREATE:
 		return apply(u.modulesToCallForCreate, adminEventMap)
 	case events.OperationTypeUPDATE:
@@ -118,11 +118,11 @@ func (u *adminEventService) AdminEvent(ctx context.Context, adminEvent *events.A
 		return nil, err
 	}
 
-	return nil, nil
+	//return nil, nil
 }
 
 func adminEventToMap(adminEvent *events.AdminEvent) map[string]string {
-	var adminEventMap map[string]string = make(map[string]string)
+	var adminEventMap = make(map[string]string)
 	adminEventMap["uid"] = fmt.Sprint(adminEvent.Uid())
 	adminEventMap["time"] = fmt.Sprint(adminEvent.Time())
 	adminEventMap["realmId"] = string(adminEvent.RealmId())
@@ -136,26 +136,26 @@ func adminEventToMap(adminEvent *events.AdminEvent) map[string]string {
 }
 
 func eventToMap(event *events.Event) map[string]string {
-	var eventMap map[string]string = make(map[string]string)
-	eventMap["uid"]=fmt.Sprint(event.Uid())
-	eventMap["time"]=fmt.Sprint(event.Time())
-	eventMap["type"]=events.EnumNamesEventType[int(event.Type())]
-	eventMap["realmId"]=string(event.RealmId())
-	eventMap["clientId"]=string(event.ClientId())
-	eventMap["userId"]=string(event.UserId())
-	eventMap["sessionId"]=string(event.SessionId())
-	eventMap["ipAddress"]=string(event.IpAddress())
-	eventMap["error"]=string(event.Error())
+	var eventMap = make(map[string]string)
+	eventMap["uid"] = fmt.Sprint(event.Uid())
+	eventMap["time"] = fmt.Sprint(event.Time())
+	eventMap["type"] = events.EnumNamesEventType[int(event.Type())]
+	eventMap["realmId"] = string(event.RealmId())
+	eventMap["clientId"] = string(event.ClientId())
+	eventMap["userId"] = string(event.UserId())
+	eventMap["sessionId"] = string(event.SessionId())
+	eventMap["ipAddress"] = string(event.IpAddress())
+	eventMap["error"] = string(event.Error())
 
 	var detailsString string
-	var detailsLength int = event.DetailsLength()
+	var detailsLength = event.DetailsLength()
 	for i := 0; i < detailsLength; i++ {
-		var tuple *events.Tuple = new(events.Tuple)
-		event.Details(tuple,i)
+		var tuple = new(events.Tuple)
+		event.Details(tuple, i)
 		detailsString += (string(tuple.Key()) + ":" + string(tuple.Value()) + ",")
 	}
 
-	eventMap["details"] = "{"+fmt.Sprint(detailsString)+"}"
+	eventMap["details"] = "{" + fmt.Sprint(detailsString) + "}"
 	return eventMap
 }
 
@@ -167,11 +167,11 @@ func apply(funcs [](func(map[string]string) error), param map[string]string) (in
 	//Wait for the execution of all the function of the array
 	wg.Add(len(funcs))
 
-	for _, f := range funcs{
+	for _, f := range funcs {
 		go func(wg1 *sync.WaitGroup, fn func(map[string]string) error) {
 			defer wg1.Done()
 
-			var err error = fn(param)
+			var err = fn(param)
 			if err != nil {
 				errors <- err
 			}
@@ -191,4 +191,3 @@ func apply(funcs [](func(map[string]string) error), param map[string]string) (in
 
 	return "ok", nil
 }
-

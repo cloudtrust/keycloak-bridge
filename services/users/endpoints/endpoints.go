@@ -1,39 +1,38 @@
 package endpoints
 
 import (
-	"github.com/go-kit/kit/endpoint"
 	"context"
-	"io"
-	"github.com/pkg/errors"
 	"fmt"
+	"io"
+
 	"github.com/cloudtrust/keycloak-bridge/services/users/components"
+	"github.com/go-kit/kit/endpoint"
+	"github.com/pkg/errors"
 )
-
-
 
 /*
 Endpoints wraps a service behind a set of endpoints.
- */
+*/
 type Endpoints struct {
 	GetUsersEndpoint endpoint.Endpoint
 }
 
 /*
 Request for GetUsers endpoint
- */
+*/
 type GetUsersRequest struct {
 	realm string
 }
 
 /*
 Response from GetUsers endpoint
- */
+*/
 type GetUsersResponse func() (string, error)
 
 /*
 GetUsersEndpoint returns a generator of users.
 This generator is a wrapper over an endpoint that can be composed upon using mids
- */
+*/
 func MakeGetUsersEndpoint(s components.Service, mids ...endpoint.Middleware) endpoint.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		switch getUsersRequest := req.(type) {
@@ -47,20 +46,20 @@ func MakeGetUsersEndpoint(s components.Service, mids ...endpoint.Middleware) end
 				select {
 				case u := <-userc:
 					return u, nil
-				case err := <- errc:
+				case err := <-errc:
 					return nil, err
 				}
 			}
 			for _, m := range mids {
-				secondStageEndpoint=m(secondStageEndpoint)
+				secondStageEndpoint = m(secondStageEndpoint)
 			}
 			var response GetUsersResponse
 			response = func() (string, error) {
 				var user string
 				{
-					var i_user interface{}
+					var iUser interface{}
 					var err error
-					i_user,err = secondStageEndpoint(ctx, nil)
+					iUser, err = secondStageEndpoint(ctx, nil)
 					if err != nil {
 						switch err {
 						case io.EOF:
@@ -70,7 +69,7 @@ func MakeGetUsersEndpoint(s components.Service, mids ...endpoint.Middleware) end
 						}
 					}
 					var ok bool
-					user, ok = i_user.(string)
+					user, ok = iUser.(string)
 					if !ok {
 						return "", errors.Wrap(err, "Unexpected value type")
 					}
@@ -79,25 +78,24 @@ func MakeGetUsersEndpoint(s components.Service, mids ...endpoint.Middleware) end
 			}
 			return response, nil
 		default:
-			return nil,errors.New("Wrong request type")
+			return nil, errors.New("Wrong request type")
 		}
 	}
 }
 
-
 /*
 Endpoints implements Service
- */
+*/
 func (u *Endpoints) GetUsers(ctx context.Context, realm string) (<-chan string, <-chan error) {
 	var resultc = make(chan string)
 	var errc = make(chan error)
 	var req = GetUsersRequest{realm}
 	var resp GetUsersResponse
 	{
-		var i_resp interface{}
+		var iResp interface{}
 		{
 			var err error
-			i_resp, err = u.GetUsersEndpoint(ctx, req)
+			iResp, err = u.GetUsersEndpoint(ctx, req)
 			if err != nil {
 				go func() {
 					errc <- errors.Wrap(err, "Couldn't get users")
@@ -107,7 +105,7 @@ func (u *Endpoints) GetUsers(ctx context.Context, realm string) (<-chan string, 
 			}
 		}
 		var ok bool
-		resp, ok = i_resp.(GetUsersResponse)
+		resp, ok = iResp.(GetUsersResponse)
 		if !ok {
 			go func() {
 				errc <- errors.New(fmt.Sprintf("Wrong return type. Expected GetUsersResponse"))
@@ -116,7 +114,7 @@ func (u *Endpoints) GetUsers(ctx context.Context, realm string) (<-chan string, 
 			return resultc, errc
 		}
 	}
-	go func(){
+	go func() {
 		for {
 			var user string
 			var err error
@@ -132,7 +130,3 @@ func (u *Endpoints) GetUsers(ctx context.Context, realm string) (<-chan string, 
 	}()
 	return resultc, errc
 }
-
-
-
-

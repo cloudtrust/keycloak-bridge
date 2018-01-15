@@ -1,28 +1,27 @@
 package transport
 
-
 import (
-	"testing"
-	"net/http"
-	"net/http/httptest"
-	"github.com/stretchr/testify/assert"
-	"strings"
-	"github.com/cloudtrust/keycloak-bridge/services/events/transport/flatbuffers/events"
-	"github.com/google/flatbuffers/go"
-	"time"
+	"context"
 	"encoding/base64"
 	"io"
-	"context"
+	"net/http/httptest"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/cloudtrust/keycloak-bridge/services/events/transport/flatbuffers/events"
+	"github.com/google/flatbuffers/go"
+	"github.com/stretchr/testify/assert"
 )
 
 var UID int64 = 1234
-var REALM string = "realm"
+var REALM = "realm"
 
 func TestEventTransport_decodeKeycloakEventsReceiverRequest_ValidAdminEvent(t *testing.T) {
-	var byteAdminEvent []byte = createAdminEvent()
+	var byteAdminEvent = createAdminEvent()
 	var stringAdminEvent = base64.StdEncoding.EncodeToString(byteAdminEvent)
 	var body = strings.NewReader("{\"type\": \"AdminEvent\", \"Obj\": \"" + stringAdminEvent + "\"}")
-	var req *http.Request = httptest.NewRequest("POST", "http://localhost:8888/event/id", body)
+	var req = httptest.NewRequest("POST", "http://localhost:8888/event/id", body)
 
 	var res interface{}
 	var err error
@@ -30,17 +29,17 @@ func TestEventTransport_decodeKeycloakEventsReceiverRequest_ValidAdminEvent(t *t
 	assert.Nil(t, err)
 	assert.IsType(t, EventRequest{}, res)
 
-	var eventMuxReq EventRequest = res.(EventRequest)
+	var eventMuxReq = res.(EventRequest)
 	assert.Equal(t, "AdminEvent", eventMuxReq.Type)
 	assert.Equal(t, byteAdminEvent, eventMuxReq.Object)
 }
 
 func TestEventTransport_decodeKeycloakEventsReceiverRequest_ValidEvent(t *testing.T) {
 
-	var byteEvent []byte = createEvent()
-	var stringEvent string = base64.StdEncoding.EncodeToString(byteEvent)
+	var byteEvent = createEvent()
+	var stringEvent = base64.StdEncoding.EncodeToString(byteEvent)
 	var body io.Reader = strings.NewReader("{\"type\": \"Event\", \"Obj\": \"" + stringEvent + "\"}")
-	var req *http.Request = httptest.NewRequest("POST", "http://localhost:8888/event/id", body)
+	var req = httptest.NewRequest("POST", "http://localhost:8888/event/id", body)
 
 	var res interface{}
 	var err error
@@ -48,16 +47,16 @@ func TestEventTransport_decodeKeycloakEventsReceiverRequest_ValidEvent(t *testin
 	assert.Nil(t, err)
 	assert.IsType(t, EventRequest{}, res)
 
-	var eventMuxReq EventRequest = res.(EventRequest)
+	var eventMuxReq = res.(EventRequest)
 	assert.Equal(t, "Event", eventMuxReq.Type)
 	assert.Equal(t, byteEvent, eventMuxReq.Object)
 }
 
 func TestEventTransport_decodeKeycloakEventsReceiverRequest_UnknownType(t *testing.T) {
-	var byteEvent []byte = createEvent()
-	var stringEvent string = base64.StdEncoding.EncodeToString(byteEvent)
+	var byteEvent = createEvent()
+	var stringEvent = base64.StdEncoding.EncodeToString(byteEvent)
 	var body io.Reader = strings.NewReader("{\"type\": \"Unknown\", \"Obj\": \"" + stringEvent + "\"}")
-	var req *http.Request = httptest.NewRequest("POST", "http://localhost:8888/event/id", body)
+	var req = httptest.NewRequest("POST", "http://localhost:8888/event/id", body)
 
 	var err error
 	_, err = decodeKeycloakEventsReceiverRequest(context.Background(), req)
@@ -67,7 +66,7 @@ func TestEventTransport_decodeKeycloakEventsReceiverRequest_UnknownType(t *testi
 
 func TestEventTransport_decodeKeycloakEventsReceiverRequest_InvalidObject(t *testing.T) {
 	var body = strings.NewReader("{\"type\": \"Event\", \"Obj\": \"test\"}")
-	var req *http.Request = httptest.NewRequest("POST", "http://localhost:8888/event/id", body)
+	var req = httptest.NewRequest("POST", "http://localhost:8888/event/id", body)
 
 	var err error
 	_, err = decodeKeycloakEventsReceiverRequest(context.Background(), req)
@@ -75,25 +74,25 @@ func TestEventTransport_decodeKeycloakEventsReceiverRequest_InvalidObject(t *tes
 	assert.IsType(t, ErrInvalidArgument{}, err)
 }
 
-func createAdminEvent() ([]byte){
-	var builder *flatbuffers.Builder = flatbuffers.NewBuilder(0)
+func createAdminEvent() []byte {
+	var builder = flatbuffers.NewBuilder(0)
 	events.AdminEventStart(builder)
 	events.AdminEventAddTime(builder, time.Now().Unix())
-	events.AdminEventAddUid(builder, UID)
+	events.AdminEventAddUID(builder, UID)
 	events.AdminEventAddOperationType(builder, events.OperationTypeACTION)
-	var adminEventOffset flatbuffers.UOffsetT = events.AdminEventEnd(builder)
+	var adminEventOffset = events.AdminEventEnd(builder)
 	builder.Finish(adminEventOffset)
 	return builder.FinishedBytes()
 }
 
-func createEvent() ([]byte){
-	var builder *flatbuffers.Builder = flatbuffers.NewBuilder(0)
-	var realmStr flatbuffers.UOffsetT = builder.CreateString(REALM)
+func createEvent() []byte {
+	var builder = flatbuffers.NewBuilder(0)
+	var realmStr = builder.CreateString(REALM)
 	events.EventStart(builder)
 	events.EventAddTime(builder, time.Now().Unix())
 	events.EventAddUid(builder, UID)
 	events.EventAddRealmId(builder, realmStr)
-	var eventOffset flatbuffers.UOffsetT = events.EventEnd(builder)
+	var eventOffset = events.EventEnd(builder)
 	builder.Finish(eventOffset)
 	return builder.FinishedBytes()
 }

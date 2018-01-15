@@ -1,34 +1,35 @@
 package transport
 
 import (
-	"encoding/base64"
-	"net/http"
 	"context"
-	"github.com/go-kit/kit/endpoint"
-	httptransport "github.com/go-kit/kit/transport/http"
+	"encoding/base64"
 	"encoding/json"
+	"net/http"
+
+	"github.com/go-kit/kit/endpoint"
 	"github.com/go-kit/kit/log"
+	httptransport "github.com/go-kit/kit/transport/http"
 )
 
 // ErrInvalidArgument is returned when one or more arguments are invalid.
-type ErrInvalidArgument struct{
+type ErrInvalidArgument struct {
 	InvalidParam string
 }
 
-func (e ErrInvalidArgument) Error() string{
+func (e ErrInvalidArgument) Error() string {
 	return "Invalid argument: " + e.InvalidParam
 }
 
 /*
-Request for KeycloakEventReceiver endpoint
- */
+KeycloakEventReceiverRequest is the Request for KeycloakEventReceiver endpoint
+*/
 type KeycloakEventReceiverRequest struct {
-	Type string
+	Type   string
 	Object string `json:"Obj"`
 }
 
 type EventRequest struct {
-	Type string
+	Type   string
 	Object []byte
 }
 
@@ -36,7 +37,7 @@ func decodeKeycloakEventsReceiverRequest(_ context.Context, r *http.Request) (re
 
 	var request KeycloakEventReceiverRequest
 	{
-		var err error = json.NewDecoder(r.Body).Decode(&request)
+		var err = json.NewDecoder(r.Body).Decode(&request)
 		if err != nil {
 			return EventRequest{}, err
 		}
@@ -52,10 +53,9 @@ func decodeKeycloakEventsReceiverRequest(_ context.Context, r *http.Request) (re
 		}
 	}
 
-
-	var objType string =request.Type
+	var objType = request.Type
 	{
-		if !(objType == "AdminEvent" || objType == "Event"){
+		if !(objType == "AdminEvent" || objType == "Event") {
 			var err ErrInvalidArgument
 			err.InvalidParam = "type"
 			return EventRequest{}, err
@@ -69,9 +69,8 @@ func decodeKeycloakEventsReceiverRequest(_ context.Context, r *http.Request) (re
 		return EventRequest{}, err
 	}
 
-
-	res = EventRequest {
-		Type: objType,
+	res = EventRequest{
+		Type:   objType,
 		Object: bEvent,
 	}
 
@@ -92,7 +91,7 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response interface
 
 func MakeErrorHandler(logger log.Logger) httptransport.ErrorEncoder {
 	var errorHandler httptransport.ErrorEncoder
-	errorHandler = func (ctx context.Context, err error, w http.ResponseWriter){
+	errorHandler = func(ctx context.Context, err error, w http.ResponseWriter) {
 		logger.Log(err.Error())
 
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
@@ -108,7 +107,3 @@ func MakeErrorHandler(logger log.Logger) httptransport.ErrorEncoder {
 	}
 	return errorHandler
 }
-
-
-
-

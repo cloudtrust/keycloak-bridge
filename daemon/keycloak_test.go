@@ -2,27 +2,27 @@ package main
 
 import (
 	"context"
-	"github.com/pkg/errors"
-	"github.com/google/flatbuffers/go"
-	user_fb "github.com/cloudtrust/keycloak-bridge/services/users/transport/flatbuffer"
-	"google.golang.org/grpc"
-	"github.com/cloudtrust/keycloak-bridge/services/users/components"
-	"time"
 	"fmt"
 	"io"
 	"os"
+	"testing"
+	"time"
+
+	"github.com/cloudtrust/keycloak-bridge/services/users/components"
+	"github.com/cloudtrust/keycloak-bridge/services/users/endpoints"
+	user_fb "github.com/cloudtrust/keycloak-bridge/services/users/transport/flatbuffer"
 	"github.com/go-kit/kit/endpoint"
 	"github.com/go-kit/kit/log"
-	bucket "github.com/juju/ratelimit"
 	"github.com/go-kit/kit/ratelimit"
-	"github.com/cloudtrust/keycloak-bridge/services/users/endpoints"
-	"testing"
+	"github.com/google/flatbuffers/go"
+	bucket "github.com/juju/ratelimit"
+	"github.com/pkg/errors"
+	"google.golang.org/grpc"
 )
-
 
 func NewGrpcService(conn *grpc.ClientConn) components.Service {
 	return &grpcService{
-		client:user_fb.NewUserServiceClient(conn),
+		client: user_fb.NewUserServiceClient(conn),
 	}
 }
 
@@ -47,26 +47,24 @@ func (g *grpcService) GetUsers(ctx context.Context, realm string) (<-chan string
 				errc <- errors.Wrap(err, "Couldn't get users stream")
 				return
 			}()
-			return resultc,errc
+			return resultc, errc
 		}
 	}
 	go func() {
 		for {
-			var i_user *user_fb.UserReply
+			var iUser *user_fb.UserReply
 			var err error
-			i_user, err = stream.Recv()
+			iUser, err = stream.Recv()
 			if err != nil {
 				errc <- err
 				return
 			}
-			var user = string(i_user.Names(0))
+			var user = string(iUser.Names(0))
 			resultc <- user
 		}
 	}()
 	return resultc, errc
 }
-
-
 
 func TestMain_Main(t *testing.T) {
 	var grpcAddr = fmt.Sprintf("127.0.0.1:5555")
@@ -93,25 +91,26 @@ func TestMain_Main(t *testing.T) {
 	{
 		var logger = log.With(logger, "Method", "getUsers")
 		var innerLogger = log.With(logger, "InnerMethod", "getUser")
-		var rateLimiter = bucket.NewBucket(1 * time.Millisecond, 2)
+		var rateLimiter = bucket.NewBucket(1*time.Millisecond, 2)
 		getUsersEndpoint = endpoints.MakeGetUsersEndpoint(
 			userService,
 			ratelimit.NewTokenBucketThrottler(rateLimiter, nil),
-			endpoints.MakeEndpointLoggingMiddleware(innerLogger, ),
+			endpoints.MakeEndpointLoggingMiddleware(innerLogger),
 		)
-		getUsersEndpoint = endpoints.MakeEndpointLoggingMiddleware(logger, )(getUsersEndpoint)
+		getUsersEndpoint = endpoints.MakeEndpointLoggingMiddleware(logger)(getUsersEndpoint)
 	}
 
 	var endpointService = endpoints.Endpoints{
-		GetUsersEndpoint:getUsersEndpoint,
+		GetUsersEndpoint: getUsersEndpoint,
 	}
 
-	var userResultc <-chan string;
-	var userErrc <-chan error;
+	var userResultc <-chan string
+	var userErrc <-chan error
 	userResultc, userErrc = endpointService.GetUsers(context.Background(), "master")
 
-	loop:for {
-		select{
+loop:
+	for {
+		select {
 		case result := <-userResultc:
 			fmt.Println(result)
 		case err := <-userErrc:

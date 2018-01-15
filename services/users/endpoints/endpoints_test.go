@@ -1,12 +1,13 @@
 package endpoints
 
 import (
-	"testing"
 	"context"
-	"github.com/stretchr/testify/require"
-	"github.com/stretchr/testify/assert"
 	"io"
+	"testing"
+
 	"github.com/cloudtrust/keycloak-bridge/services/users/modules/keycloak"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_GetUsers(t *testing.T) {
@@ -14,16 +15,17 @@ func Test_GetUsers(t *testing.T) {
 	var getUsersService = NewMockService(namesInit[:])
 	var getUsersEndpoint = MakeGetUsersEndpoint(getUsersService)
 	var getUsersEndpoints = &Endpoints{
-		GetUsersEndpoint:getUsersEndpoint,
+		GetUsersEndpoint: getUsersEndpoint,
 	}
 	resultc, errc := getUsersEndpoints.GetUsers(context.Background(), "master")
 	var names [3]string
-	loop:for i:=0; i < 4; i++ {
+loop:
+	for i := 0; i < 4; i++ {
 		select {
 		case name := <-resultc:
 			require.Condition(t,
 				func() (success bool) {
-					success = i<3
+					success = i < 3
 					return success
 				},
 				"should return only 3 names!",
@@ -43,7 +45,7 @@ type mockService struct {
 }
 
 func NewMockService(names []string) keycloak.Service {
-	return &mockService{names:names}
+	return &mockService{names: names}
 }
 
 func (m *mockService) GetUsers(ctx context.Context, realm string) (<-chan string, <-chan error) {
@@ -51,7 +53,7 @@ func (m *mockService) GetUsers(ctx context.Context, realm string) (<-chan string
 	var errc = make(chan error)
 	go func() {
 		for _, n := range m.names {
-			resultc<-n
+			resultc <- n
 		}
 		errc <- io.EOF
 	}()

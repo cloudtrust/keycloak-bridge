@@ -1,15 +1,16 @@
 package keycloak
 
 import (
-	"io"
 	"context"
+	"io"
+
 	keycloak "github.com/cloudtrust/keycloak-client/client"
 	"github.com/pkg/errors"
 )
 
 /*
 This is the interface that user services implement.
- */
+*/
 type Service interface {
 	GetUsers(ctx context.Context, realm string) (<-chan string, <-chan error)
 }
@@ -18,7 +19,7 @@ type Service interface {
  */
 func NewBasicService(client keycloak.Client) Service {
 	return &basicService{
-		client:client,
+		client: client,
 	}
 }
 
@@ -34,7 +35,7 @@ func (u *basicService) GetUsers(ctx context.Context, realm string) (<-chan strin
 		var err error
 		representations, err = u.client.GetUsers(realm)
 		if err != nil {
-			go func(){
+			go func() {
 				errc <- errors.Wrap(err, "Couldn't get users!")
 				return
 			}()
@@ -42,7 +43,7 @@ func (u *basicService) GetUsers(ctx context.Context, realm string) (<-chan strin
 		}
 	}
 	go func() {
-		for _,r := range representations {
+		for _, r := range representations {
 			resultc <- *r.Username
 		}
 		errc <- io.EOF

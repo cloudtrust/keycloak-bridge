@@ -34,7 +34,7 @@ type sentryClient interface {
 
 
 /*
-MuxService Middleware
+MuxMiddleware is the MuxService middleware
  */
 type MuxMiddleware func(MuxService) MuxService
 
@@ -89,9 +89,8 @@ func MakeServiceErrorMiddleware(log log.Logger, client sentryClient) MuxMiddlewa
 }
 
 /*
-AdminEventService Middleware
+AdminEventMiddleware is AdminEventService Middleware
  */
-
 type AdminEventMiddleware func(AdminEventService) AdminEventService
 
 type serviceLoggingAdminEventMiddleware struct {
@@ -116,9 +115,8 @@ func MakeServiceLoggingAdminEventMiddleware(log log.Logger) AdminEventMiddleware
 }
 
 /*
-EventService Middleware
+EventMiddleware is EventService Middleware
  */
-
 type EventMiddleware func(EventService) EventService
 
 type serviceLoggingEventMiddleware struct {

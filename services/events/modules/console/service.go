@@ -5,13 +5,14 @@ import (
 )
 
 /*
-This is the interface that console module implement.
+Service is the interface that console module implement.
  */
 type Service interface {
 	Print(map[string]string) error
 }
 
 /*
+NewBasicService returns Service 
  */
 func NewBasicService(logger *log.Logger) Service {
 	return &basicService {

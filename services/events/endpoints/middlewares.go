@@ -8,21 +8,21 @@ import (
 )
 
 /*
-Logging Middleware for Endpoints.
+MakeEndpointLoggingMiddleware returns the Logging Middleware for Endpoints.
  */
 func MakeEndpointLoggingMiddleware(logger log.Logger, keys ...interface{}) endpoint.Middleware {
 
 	return func(next endpoint.Endpoint) endpoint.Endpoint {
 		return func(ctx context.Context, req interface{}) (resp interface{}, err error) {
-			var va_list []interface{}
-			va_list = append(va_list,"Method", "Endpoint", )
-			va_list = append(va_list,"err", err, )
+			var vaList []interface{}
+			vaList = append(vaList,"Method", "Endpoint", )
+			vaList = append(vaList,"err", err, )
 			for _, key := range keys {
-				va_list = append(va_list, key, ctx.Value(key))
+				vaList = append(vaList, key, ctx.Value(key))
 			}
 			defer func(begin time.Time) {
-				va_list = append(va_list, "took", time.Since(begin))
-				logger.Log( va_list...)
+				vaList = append(vaList, "took", time.Since(begin))
+				logger.Log( vaList...)
 			}(time.Now())
 			return next(ctx, req)
 		}

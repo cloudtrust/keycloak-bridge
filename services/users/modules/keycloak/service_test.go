@@ -1,31 +1,32 @@
 package keycloak
 
 import (
-	"testing"
-	keycloak "github.com/cloudtrust/keycloak-client/client"
-	"errors"
-	"github.com/stretchr/testify/require"
-	"github.com/stretchr/testify/assert"
-	"io"
 	"context"
+	"errors"
+	"io"
+	"testing"
+
+	keycloak "github.com/cloudtrust/keycloak-client/client"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type mockKeycloakClient struct {
 	users []keycloak.UserRepresentation
-	fail bool
+	fail  bool
 }
 
-var ThatsNoGood = errors.New("That's too much man!")
+var ErrThatsNoGood = errors.New("That's too much man")
 
 func (m *mockKeycloakClient) GetRealms() ([]keycloak.RealmRepresentation, error) {
-	return nil,nil
+	return nil, nil
 }
 
 func (m *mockKeycloakClient) GetUsers(realm string) ([]keycloak.UserRepresentation, error) {
 	if m.fail {
-		return nil, ThatsNoGood
+		return nil, ErrThatsNoGood
 	}
-	return m.users,nil
+	return m.users, nil
 }
 
 func TestBasicService_GetUsers(t *testing.T) {
@@ -33,22 +34,23 @@ func TestBasicService_GetUsers(t *testing.T) {
 	var usersInit [3]keycloak.UserRepresentation
 	for i, n := range namesInit {
 		usersInit[i] = keycloak.UserRepresentation{
-			Username:&n,
+			Username: &n,
 		}
 	}
 	var getUserService = NewBasicService(&mockKeycloakClient{
 		usersInit[:],
 		false,
-		})
+	})
 
 	resultc, errc := getUserService.GetUsers(context.Background(), "master")
 	var names [3]string
-	loop:for i := 0; i < 4; i++ {
+loop:
+	for i := 0; i < 4; i++ {
 		select {
 		case name := <-resultc:
 			require.Condition(t,
 				func() (success bool) {
-					success = i<3
+					success = i < 3
 					return success
 				},
 				"should return only 3 names!",
@@ -67,7 +69,7 @@ type mockService struct {
 }
 
 func NewMockService(names []string) Service {
-	return &mockService{names:names}
+	return &mockService{names: names}
 }
 
 func (m *mockService) GetUsers(ctx context.Context, realm string) (<-chan string, <-chan error) {
@@ -75,7 +77,7 @@ func (m *mockService) GetUsers(ctx context.Context, realm string) (<-chan string
 	var errc = make(chan error)
 	go func() {
 		for _, n := range m.names {
-			resultc<-n
+			resultc <- n
 		}
 		errc <- io.EOF
 	}()

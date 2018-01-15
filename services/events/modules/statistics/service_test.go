@@ -1,22 +1,23 @@
 package statistics
 
 import (
-	"time"
 	"testing"
+	"time"
+
 	influx_client "github.com/influxdata/influxdb/client/v2"
 )
 
 // Default configuration for tests
-var influxHttpConfig = influx_client.HTTPConfig {
-	Addr: "http://localhost:8086",
+var influxHTTPConfig = influx_client.HTTPConfig{
+	Addr:     "http://localhost:8086",
 	Username: "rpo",
 	Password: "rpo",
 }
 
-var influxBatchPointsConfig = influx_client.BatchPointsConfig {
-	Precision: "s",
-	Database: "cloudtrust_grafana_test",
-	RetentionPolicy: "",
+var influxBatchPointsConfig = influx_client.BatchPointsConfig{
+	Precision:        "s",
+	Database:         "cloudtrust_grafana_test",
+	RetentionPolicy:  "",
 	WriteConsistency: "",
 }
 
@@ -26,7 +27,7 @@ func TestStatisticsModule(t *testing.T) {
 	var influxClient influx_client.Client
 	{
 		var err error
-		influxClient, err = influx_client.NewHTTPClient(influxHttpConfig)
+		influxClient, err = influx_client.NewHTTPClient(influxHTTPConfig)
 		if err != nil {
 			t.Errorf("%s: Cannot create Influx client.\nError: %s", t.Name(), err)
 		}
@@ -45,7 +46,7 @@ func TestStatisticsModule(t *testing.T) {
 
 	// Create a point and add to batch
 	var tags = map[string]string{"cpu": "cpu-total"}
-	var fields = map[string]interface{} {
+	var fields = map[string]interface{}{
 		"idle":   100.1,
 		"system": 3.3,
 		"user":   464.6,
@@ -68,14 +69,13 @@ func TestStatisticsModule(t *testing.T) {
 	}
 }
 
-
 func TestStatisticsModule2(t *testing.T) {
 
 	// Make client
 	var influxClient influx_client.Client
 	{
 		var err error
-		influxClient, err = influx_client.NewHTTPClient(influxHttpConfig)
+		influxClient, err = influx_client.NewHTTPClient(influxHTTPConfig)
 		if err != nil {
 			t.Errorf("%s: Cannot create Influx client.\nError: %s", t.Name(), err)
 
@@ -93,11 +93,10 @@ func TestStatisticsModule2(t *testing.T) {
 		}
 	}
 
-
 	// Create a point and add to batch
-	var tags = map[string]string{"event": "login", "realm": "realmId",}
-	var fields = map[string]interface{} {
-		"connexion":   1,
+	var tags = map[string]string{"event": "login", "realm": "realmId"}
+	var fields = map[string]interface{}{
+		"connexion": 1,
 	}
 
 	var point *influx_client.Point
@@ -119,10 +118,14 @@ func TestStatisticsModule2(t *testing.T) {
 
 /*
 Mock for influx
- */
-type mockInflux struct {}
+*/
+type mockInflux struct{}
 
-func (client *mockInflux) Ping(timeout time.Duration) (time.Duration, string, error) {return 1 * time.Second, "" , nil}
-func (client *mockInflux) Write(bp influx_client.BatchPoints) error {return nil}
-func (client *mockInflux) Query(q influx_client.Query) (*influx_client.Response, error) {return nil, nil}
-func (client *mockInflux) Close() error {return nil}
+func (client *mockInflux) Ping(timeout time.Duration) (time.Duration, string, error) {
+	return 1 * time.Second, "", nil
+}
+func (client *mockInflux) Write(bp influx_client.BatchPoints) error { return nil }
+func (client *mockInflux) Query(q influx_client.Query) (*influx_client.Response, error) {
+	return nil, nil
+}
+func (client *mockInflux) Close() error { return nil }

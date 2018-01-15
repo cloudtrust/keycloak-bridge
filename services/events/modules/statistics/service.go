@@ -2,20 +2,20 @@ package statistics
 
 import (
 	"time"
+
 	influx_client "github.com/influxdata/influxdb/client/v2"
 )
 
 /*
 Keycloak statistics processor
- */
-type KeycloakStatisticsProcessor interface{
+*/
+type KeycloakStatisticsProcessor interface {
 	Stats(map[string]string) error
 }
 
-
 func NewKeycloakStatisticsProcessor(influxClient influx_client.Client, batchPointsConfig influx_client.BatchPointsConfig) KeycloakStatisticsProcessor {
 	return &keycloakStatisticsProcessor{
-		clientInflux: influxClient,
+		clientInflux:     influxClient,
 		batchPointConfig: batchPointsConfig,
 	}
 }
@@ -39,8 +39,8 @@ func (k *keycloakStatisticsProcessor) Stats(m map[string]string) error {
 
 	// Create a point and add to batch
 	var tags = map[string]string{"type": m["type"], "realm": m["realmId"], "userId": m["userId"]}
-	var fields = map[string]interface{} {
-		"uid":   m["uid"],
+	var fields = map[string]interface{}{
+		"uid": m["uid"],
 	}
 
 	var point *influx_client.Point
