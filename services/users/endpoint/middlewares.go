@@ -2,6 +2,7 @@ package endpoints
 
 import (
 	"context"
+	"strconv"
 	"time"
 
 	"github.com/go-kit/kit/endpoint"
@@ -31,8 +32,9 @@ import (
 func MakeTSMiddleware(h metrics.Histogram) endpoint.Middleware {
 	return func(next endpoint.Endpoint) endpoint.Endpoint {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
+			var correlationID = ctx.Value("id").(uint64)
 			defer func(begin time.Time) {
-				h.Observe(time.Since(begin).Seconds())
+				h.With("id", strconv.FormatUint(correlationID, 10)).Observe(time.Since(begin).Seconds())
 			}(time.Now())
 			return next(ctx, req)
 		}
@@ -69,7 +71,7 @@ func MakeEndpointTracingMiddleware(tracer stdopentracing.Tracer, operationName s
 			if span == nil {
 				//create a new root span.
 				span = tracer.StartSpan(operationName)
-
+				span.SetTag("jaeger-debug-id", ctx.Value("id"))
 				span.LogFields(otlog.String("operation", operationName),
 					otlog.String("microservice_level", "endpoint"))
 
@@ -80,7 +82,7 @@ func MakeEndpointTracingMiddleware(tracer stdopentracing.Tracer, operationName s
 			}
 			cspan := stdopentracing.StartSpan(operationName, stdopentracing.ChildOf(span.Context()))
 			defer cspan.Finish()
-			//defer span.Finish()
+			defer span.Finish()
 			cspan.LogFields(otlog.String("operation", operationName),
 				otlog.String("microservice_level", "endpoint"))
 

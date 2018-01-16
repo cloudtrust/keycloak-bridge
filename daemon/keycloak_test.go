@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 	"testing"
 
 	"github.com/cloudtrust/keycloak-bridge/services/users/component"
@@ -13,6 +14,7 @@ import (
 	"github.com/google/flatbuffers/go"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 )
 
 func NewGrpcService(conn *grpc.ClientConn) components.Service {
@@ -35,8 +37,9 @@ func (g *grpcService) GetUsers(ctx context.Context, realm string) (<-chan string
 	builder.Finish(user_fb.UserReplyEnd(builder))
 	var stream user_fb.UserService_GetUsersClient
 	{
+		var ctx = metadata.NewOutgoingContext(context.Background(), metadata.New(map[string]string{"id": strconv.FormatUint(128, 10)}))
 		var err error
-		stream, err = g.client.GetUsers(context.Background(), builder)
+		stream, err = g.client.GetUsers(ctx, builder)
 		if err != nil {
 			go func() {
 				errc <- errors.Wrap(err, "Couldn't get users stream")
@@ -84,7 +87,10 @@ func TestMain_Main(t *testing.T) {
 	var userService = NewGrpcService(conn)
 	var userResultc <-chan string
 	var userErrc <-chan error
-	userResultc, userErrc = userService.GetUsers(context.Background(), "master")
+
+	var ctx = metadata.NewOutgoingContext(context.Background(), metadata.New(map[string]string{"id": strconv.FormatUint(128, 10)}))
+
+	userResultc, userErrc = userService.GetUsers(ctx, "master")
 
 loop:
 	for {
