@@ -3,7 +3,7 @@ package server
 import (
 	"io"
 
-	"github.com/cloudtrust/keycloak-bridge/services/users/endpoints"
+	"github.com/cloudtrust/keycloak-bridge/services/users/endpoint"
 	"github.com/cloudtrust/keycloak-bridge/services/users/transport/flatbuffer"
 	"github.com/google/flatbuffers/go"
 )

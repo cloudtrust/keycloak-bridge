@@ -20,15 +20,15 @@ import (
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 
-	events_components "github.com/cloudtrust/keycloak-bridge/services/events/components"
-	events_endpoints "github.com/cloudtrust/keycloak-bridge/services/events/endpoints"
-	events_console "github.com/cloudtrust/keycloak-bridge/services/events/modules/console"
-	events_statistics "github.com/cloudtrust/keycloak-bridge/services/events/modules/statistics"
+	events_components "github.com/cloudtrust/keycloak-bridge/services/events/component"
+	events_endpoints "github.com/cloudtrust/keycloak-bridge/services/events/endpoint"
+	events_console "github.com/cloudtrust/keycloak-bridge/services/events/module/console"
+	events_statistics "github.com/cloudtrust/keycloak-bridge/services/events/module/statistics"
 	events_transport "github.com/cloudtrust/keycloak-bridge/services/events/transport"
 
-	users_components "github.com/cloudtrust/keycloak-bridge/services/users/components"
-	users_endpoints "github.com/cloudtrust/keycloak-bridge/services/users/endpoints"
-	users_keycloak "github.com/cloudtrust/keycloak-bridge/services/users/modules/keycloak"
+	users_components "github.com/cloudtrust/keycloak-bridge/services/users/component"
+	users_endpoints "github.com/cloudtrust/keycloak-bridge/services/users/endpoint"
+	users_keycloak "github.com/cloudtrust/keycloak-bridge/services/users/module/keycloak"
 	users_transport "github.com/cloudtrust/keycloak-bridge/services/users/transport"
 	users_flatbuf "github.com/cloudtrust/keycloak-bridge/services/users/transport/flatbuffer"
 	sentry "github.com/getsentry/raven-go"
@@ -38,17 +38,17 @@ import (
 	jaegerConfig "github.com/uber/jaeger-client-go/config"
 )
 
-var (
-	VERSION = "123"
-)
+// var (
+// 	VERSION = "123"
+// )
 
-type componentConfig struct {
-	configFile           string
-	ComponentName        string
-	ComponentHTTPAddress string
-	ComponentGRPCAddress string
-	KeycloakURL          string
-}
+// type componentConfig struct {
+// 	configFile           string
+// 	ComponentName        string
+// 	ComponentHTTPAddress string
+// 	ComponentGRPCAddress string
+// 	KeycloakURL          string
+// }
 
 var (
 	// Version of the component.
@@ -125,11 +125,11 @@ func main() {
 	*/
 	var keycloakClient keycloak_client.Client
 	{
-		var logger = log.With(logger, "Keycloak Config", httpConfig.Addr)
+		var logger = log.With(logger, "keycloak_config", httpConfig.Addr)
 		var err error
 		keycloakClient, err = keycloak_client.NewHttpClient(httpConfig)
 		if err != nil {
-			logger.Log("Couldn't create Keycloak client", err)
+			logger.Log("msg", "Couldn't create Keycloak client", "error", err)
 			return
 		}
 	}
@@ -139,11 +139,11 @@ func main() {
 	*/
 	var sentryClient *sentry.Client
 	{
-		var logger = log.With(logger, "sentry config", sentryDSN)
+		var logger = log.With(logger, "sentry_config", sentryDSN)
 		var err error
 		sentryClient, err = sentry.New(sentryDSN)
 		if err != nil {
-			logger.Log("Couldn't create Sentry client", err)
+			logger.Log("msg", "Couldn't create Sentry client", "error", err)
 			return
 		}
 	}
@@ -156,7 +156,7 @@ func main() {
 			var err error
 			influxClient, err = influx_client.NewHTTPClient(influxHTTPConfig)
 			if err != nil {
-				logger.Log("Couldn't create Influx client", err)
+				logger.Log("msg", "Couldn't create Influx client", "error", err)
 				return
 			}
 		}
@@ -219,6 +219,7 @@ func main() {
 		getUsersEndpoint = users_endpoints.MakeEndpointLoggingMiddleware(logger, "outer_req_id")(getUsersEndpoint)
 		getUsersEndpoint = users_endpoints.MakeTSMiddleware(in.NewHistogram("get_users_statistics"))(getUsersEndpoint)
 		getUsersEndpoint = users_endpoints.MakeEndpointSnowflakeMiddleware("outer_req_id")(getUsersEndpoint)
+		getUsersEndpoint = users_endpoints.MakeEndpointTracingMiddleware(tracer, "getUsers")(getUsersEndpoint)
 	}
 
 	var usersEndpoints = users_endpoints.Endpoints{
@@ -246,9 +247,9 @@ func main() {
 		errc <- userGrpcServer.Serve(lis)
 	}()
 
-	/*
+	/********
 		Event stack
-	*/
+	*********/
 	var consoleModule events_console.Service
 	{
 		var loggerEvent = log.NewJSONLogger(os.Stdout)
@@ -287,6 +288,7 @@ func main() {
 	{
 		eventConsumerEndpoint = events_endpoints.MakeKeycloakEventsEndpoint(muxComponent)
 		eventConsumerEndpoint = events_endpoints.MakeEndpointLoggingMiddleware(logger)(eventConsumerEndpoint)
+		eventConsumerEndpoint = events_endpoints.MakeEndpointTracingMiddleware(tracer, "events")(eventConsumerEndpoint)
 	}
 
 	var eventsEndpoints = events_endpoints.Endpoints{
@@ -301,7 +303,7 @@ func main() {
 
 		var route = mux.NewRouter()
 
-		route.Handle("/version", http.HandlerFunc(MakeVersion(VERSION)))
+		route.Handle("/version", http.HandlerFunc(MakeVersion(Version)))
 
 		//debug
 		var debugSubroute = route.PathPrefix("/debug").Subrouter()

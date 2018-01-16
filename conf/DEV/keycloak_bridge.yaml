@@ -11,8 +11,7 @@ influx-database: keycloak
 influx-precision: ms
 influx-retention-policy: ""
 influx-write-consistency: ""
-influx-counter-table-name: "vault_counter"
-influx-histogram-table-name: "vault_histogram"
+
 
 # Keycloak configs
 keycloak-url: http://localhost:8080

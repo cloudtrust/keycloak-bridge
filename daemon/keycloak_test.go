@@ -7,7 +7,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/cloudtrust/keycloak-bridge/services/users/components"
+	"github.com/cloudtrust/keycloak-bridge/services/users/component"
 	user_fb "github.com/cloudtrust/keycloak-bridge/services/users/transport/flatbuffer"
 	"github.com/go-kit/kit/log"
 	"github.com/google/flatbuffers/go"
