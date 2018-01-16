@@ -2,10 +2,22 @@
 
 
 [[projects]]
-  branch = "initial"
+  name = "github.com/VividCortex/gohistogram"
+  packages = ["."]
+  revision = "51564d9861991fb0ad0f531c99ef602d0f9866e6"
+  version = "v1.0.0"
+
+[[projects]]
+  name = "github.com/certifi/gocertifi"
+  packages = ["."]
+  revision = "3fd9e1adb12b72d2f3f82191d49be9b93c69f67c"
+  version = "2017.07.27"
+
+[[projects]]
+  branch = "master"
   name = "github.com/cloudtrust/keycloak-client"
   packages = ["client"]
-  revision = "796d222b9b442ac04824371d03d9fc7f6a7ffcca"
+  revision = "0e8e8ec23fa0312b9479a67c3f6c2f9c81d9b448"
 
 [[projects]]
   name = "github.com/davecgh/go-spew"
@@ -15,9 +27,15 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/getsentry/raven-go"
+  packages = ["."]
+  revision = "1452f6376ddb15c546b6d7567e1d9518765391b5"
+
+[[projects]]
   name = "github.com/go-kit/kit"
-  packages = ["endpoint","log","ratelimit"]
-  revision = "f7593d19082ad15f6376f12c746d71d680aa1666"
+  packages = ["endpoint","log","metrics","metrics/generic","metrics/influx","metrics/internal/lv","ratelimit","transport/http"]
+  revision = "a9ca6725cbbea455e61c6bc8a1ed28e81eb3493b"
+  version = "v0.5.0"
 
 [[projects]]
   name = "github.com/go-logfmt/logfmt"
@@ -35,7 +53,7 @@
   branch = "master"
   name = "github.com/golang/protobuf"
   packages = ["proto","ptypes","ptypes/any","ptypes/duration","ptypes/timestamp"]
-  revision = "17ce1425424ab154092bbb43af630bd647f3bb0d"
+  revision = "130e6b02ab059e7b717a096f397c5b60111cae74"
 
 [[projects]]
   name = "github.com/google/flatbuffers"
@@ -54,6 +72,12 @@
   packages = ["."]
   revision = "24fca303ac6da784b9e8269f724ddeb0b2eea5e7"
   version = "v1.5.0"
+
+[[projects]]
+  name = "github.com/influxdata/influxdb"
+  packages = ["client/v2","models","pkg/escape"]
+  revision = "a7c3d3c0f7b74f71919047adbc4933460967a576"
+  version = "v1.3.6"
 
 [[projects]]
   branch = "master"
@@ -89,19 +113,19 @@
   branch = "master"
   name = "golang.org/x/net"
   packages = ["context","http2","http2/hpack","idna","internal/timeseries","lex/httplex","publicsuffix","trace"]
-  revision = "859d1a86bb617c0c20d154590c3c5d3fcb670b07"
+  revision = "a04bdaca5b32abe1c069418fb7088ae607de5bd0"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/text"
   packages = ["collate","collate/build","internal/colltab","internal/gen","internal/tag","internal/triegen","internal/ucd","language","secure/bidirule","transform","unicode/bidi","unicode/cldr","unicode/norm","unicode/rangetable"]
-  revision = "ab5ac5f9a8deb4855a60fab02bc61a4ec770bd49"
+  revision = "825fc78a2fd6fa0a5447e300189e3219e05e1f25"
 
 [[projects]]
   branch = "master"
   name = "google.golang.org/genproto"
   packages = ["googleapis/rpc/status"]
-  revision = "595979c8a7bf586b2d293fb42246bf91a0b893d9"
+  revision = "f676e0f3ac6395ff1a529ae59a6670878a8371a6"
 
 [[projects]]
   name = "google.golang.org/grpc"
@@ -112,12 +136,12 @@
 [[projects]]
   name = "gopkg.in/h2non/gentleman.v2"
   packages = [".","context","middleware","mux","plugin","plugins/body","plugins/bodytype","plugins/cookies","plugins/headers","plugins/multipart","plugins/query","plugins/timeout","plugins/url","utils"]
-  revision = "306092e612855f1ce485d8bd35361a0d10fac40f"
-  version = "v2.0.0"
+  revision = "f37ccc165695fb91e0e782d862b84397118b7151"
+  version = "v2.0.2"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "b5f8b27c02a02cc1ee3cbbff5bf22a61d7d83895b87f3071fe9c4ce15a43ff59"
+  inputs-digest = "5080c5b299d9a7c598342e8dbef37ded47b235c41e6d271362482c0092aef325"
   solver-name = "gps-cdcl"
   solver-version = 1

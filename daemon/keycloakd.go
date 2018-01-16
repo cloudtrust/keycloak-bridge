@@ -1,15 +1,9 @@
 package main
 
 import (
-	user_server "github.com/cloudtrust/keycloak-bridge/transport/grpc/users/flatbuffers/server"
-	user_fb "github.com/cloudtrust/keycloak-bridge/transport/grpc/users/flatbuffers/schema"
 	"github.com/google/flatbuffers/go"
 	keycloak_client "github.com/cloudtrust/keycloak-client/client"
-	user_service "github.com/cloudtrust/keycloak-bridge/services/users"
-	http_monitoring "github.com/cloudtrust/keycloak-bridge/transport/http/monitoring"
-	bucket "github.com/juju/ratelimit"
 	"github.com/gorilla/mux"
-	"github.com/go-kit/kit/ratelimit"
 	"github.com/go-kit/kit/log"
 	"net"
 	"fmt"
@@ -19,46 +13,83 @@ import (
 	"google.golang.org/grpc"
 	"time"
 	"github.com/go-kit/kit/endpoint"
-	"context"
-	"io"
 	"net/http"
 	"net/http/pprof"
+	"github.com/spf13/viper"
+	"github.com/spf13/pflag"
+
+	events_components "github.com/cloudtrust/keycloak-bridge/services/events/components"
+	events_console "github.com/cloudtrust/keycloak-bridge/services/events/modules/console"
+	events_statistics "github.com/cloudtrust/keycloak-bridge/services/events/modules/statistics"
+	events_endpoints "github.com/cloudtrust/keycloak-bridge/services/events/endpoints"
+	events_transport "github.com/cloudtrust/keycloak-bridge/services/events/transport"
+
+	users_transport "github.com/cloudtrust/keycloak-bridge/services/users/transport"
+	users_flatbuf "github.com/cloudtrust/keycloak-bridge/services/users/transport/flatbuffer"
+	users_components "github.com/cloudtrust/keycloak-bridge/services/users/components"
+	users_endpoints "github.com/cloudtrust/keycloak-bridge/services/users/endpoints"
+	users_keycloak "github.com/cloudtrust/keycloak-bridge/services/users/modules/keycloak"
+  	sentry "github.com/getsentry/raven-go"
+	influx_client "github.com/influxdata/influxdb/client/v2"
+	gokit_influx "github.com/go-kit/kit/metrics/influx"
 )
 
-var VERSION string
+var (
+	VERSION string = "123"
+)
+
+type componentConfig struct {
+	configFile string
+	ComponentName string
+	ComponentHTTPAddress string
+	ComponentGRPCAddress string
+	KeycloakURL string
+}
 
 func main() {
 
 	/*
-	Configurations
-	 */
-	var (
-		grpcAddr= fmt.Sprintf("127.0.0.1:5555")
-		httpConfig = keycloak_client.HttpConfig{
-			Addr:     "http://172.17.0.2:8080",
-			Username: "admin",
-			Password: "admin",
-			Timeout:  time.Second * 5,
-		}
-		httpAddr = fmt.Sprintf("0.0.0.0:8888")
-	)
-
-
-	/*
-	Critical errors channel
-	 */
-	var errc= make(chan error)
-
-	/*
 	Logger
-	 */
-	var logger= log.NewLogfmtLogger(os.Stdout)
+	*/
+	var logger = log.NewLogfmtLogger(os.Stdout)
 	{
 		logger = log.With(logger, "time", log.DefaultTimestampUTC, "caller", log.DefaultCaller)
 		defer logger.Log("msg", "Goodbye")
 	}
+
+	/*
+	Configurations
+	 */
+	config := config(log.With(logger, "component", "config_loader"))
+	var (
+		grpcAddr= fmt.Sprintf(config["component-grpc-address"].(string))
+		httpConfig = keycloak_client.HttpConfig{
+			Addr:     config["keycloak-url"].(string),
+			Username: config["keycloak-username"].(string),
+			Password: config["keycloak-password"].(string),
+			Timeout:  5 * time.Second,
+		}
+		influxHttpConfig = influx_client.HTTPConfig{
+			Addr: config["influx-url"].(string),
+			Username: config["influx-username"].(string),
+			Password: config["influx-password"].(string),
+		}
+		influxBatchPointsConfig = influx_client.BatchPointsConfig{
+			Precision: "s",
+			Database: "keycloak",
+			RetentionPolicy: "",
+			WriteConsistency: "",
+		}
+		httpAddr = fmt.Sprintf(config["component-http-address"].(string))
+		sentryDSN = fmt.Sprintf(config["sentry-dsn"].(string))
+	)
+
+	/*
+	Critical errors channel
+	 */
+	var errc = make(chan error)
 	go func() {
-		c := make(chan os.Signal, 1)
+		var c = make(chan os.Signal, 1)
 		signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
 		errc <- fmt.Errorf("%s", <-c)
 	}()
@@ -68,24 +99,70 @@ func main() {
 	 */
 	var keycloakClient keycloak_client.Client
 	{
-		var logger = log.With(logger, "gRPC config", grpcAddr, "Keycloak Config", httpConfig)
+		var logger = log.With(logger, "Keycloak Config", httpConfig.Addr)
 		var err error
 		keycloakClient, err = keycloak_client.NewHttpClient(httpConfig)
 		if err != nil {
-			logger.Log("Couldn't create keycloak client", err)
+			logger.Log("Couldn't create Keycloak client", err)
 			return
 		}
 	}
 
 	/*
-	Backend Service
+	Sentry
 	 */
-	var getUsersService user_service.Service
+	var sentryClient *sentry.Client
+	{
+		var logger = log.With(logger, "sentry config", sentryDSN)
+		var err error
+		sentryClient, err = sentry.New(sentryDSN)
+		if err != nil {
+			logger.Log("Couldn't create Sentry client", err)
+			return
+		}
+	}
+
+	//Influx Client instantiation
+	var influxClient influx_client.Client
+	{
+		var logger = log.With(logger, "module", "influx")
+		{
+			var err error
+			influxClient, err = influx_client.NewHTTPClient(influxHttpConfig)
+			if err != nil {
+				logger.Log("Couldn't create Influx client", err)
+				return
+			}
+		}
+	}
+
+	//Influx go-kit handler
+	var in *gokit_influx.Influx
+	{
+		in = gokit_influx.New(
+			map[string]string{"service": "users"},
+			influxBatchPointsConfig,
+			log.With(logger, "msg", "go-kit influx"),
+		)
+	}
+
+	/********
+	User stack
+	 *********/
+
+	var keycloakModule users_keycloak.Service
+	{
+		keycloakModule = users_keycloak.NewBasicService(keycloakClient)
+	}
+
+
+	var userComponent users_components.Service
 	{
 		var logger = log.With(logger)
-		getUsersService = user_service.NewBasicService(keycloakClient)
-		getUsersService = user_service.MakeServiceLoggingMiddleware(logger)(getUsersService)
+		userComponent = users_components.NewBasicService(keycloakModule)
+		userComponent = users_components.MakeServiceLoggingMiddleware(logger)(userComponent)
 	}
+
 
 	/*
 	Endpoint configurations
@@ -94,16 +171,17 @@ func main() {
 	{
 		var logger = log.With(logger, "Method", "GetUsers")
 		var innerLogger = log.With(logger, "InnerMethod", "GetUser")
-		getUsersEndpoint = user_service.MakeGetUsersEndpoint(
-			getUsersService,
-			user_service.MakeEndpointLoggingMiddleware(innerLogger, "outer_req_id", "inner_req_id", ),
-			user_service.MakeEndpointSnowflakeMiddleware("inner_req_id"),
+		getUsersEndpoint = users_endpoints.MakeGetUsersEndpoint(
+			userComponent,
+			users_endpoints.MakeEndpointLoggingMiddleware(innerLogger, "outer_req_id", "inner_req_id", ),
+			users_endpoints.MakeEndpointSnowflakeMiddleware("inner_req_id"),
 		)
-		getUsersEndpoint = user_service.MakeEndpointLoggingMiddleware(logger, "outer_req_id")(getUsersEndpoint)
-		getUsersEndpoint = user_service.MakeEndpointSnowflakeMiddleware("outer_req_id")(getUsersEndpoint)
+		getUsersEndpoint = users_endpoints.MakeEndpointLoggingMiddleware(logger, "outer_req_id")(getUsersEndpoint)
+		getUsersEndpoint = users_endpoints.MakeTSMiddleware(in.NewHistogram("get_users_statistics"))(getUsersEndpoint)
+		getUsersEndpoint = users_endpoints.MakeEndpointSnowflakeMiddleware("outer_req_id")(getUsersEndpoint)
 	}
 
-	var endpoints = user_service.Endpoints{
+	var users_endpoints = users_endpoints.Endpoints{
 		GetUsersEndpoint:getUsersEndpoint,
 	}
 
@@ -112,9 +190,9 @@ func main() {
 		The above Endpoints is used as a GRPC endpoint directly, shortcutting go-kit's facilities.
 	 */
 	go func() {
-		var userServer = user_server.NewGrpcServer(endpoints)
+		var userServer = users_transport.NewGrpcServer(users_endpoints)
 		var userGrpcServer = grpc.NewServer(grpc.CustomCodec(flatbuffers.FlatbuffersCodec{}))
-		user_fb.RegisterUserServiceServer(userGrpcServer, userServer)
+		users_flatbuf.RegisterUserServiceServer(userGrpcServer, userServer)
 		var lis net.Listener
 		{
 			var err error
@@ -128,88 +206,152 @@ func main() {
 		errc <- userGrpcServer.Serve(lis)
 	}()
 
+
+	/*
+	Event stack
+	 */
+	var consoleModule events_console.Service
+	{
+		var loggerEvent= log.NewJSONLogger(os.Stdout)
+		loggerEvent = log.With(logger, "ts", log.DefaultTimestampUTC, "caller", log.DefaultCaller)
+		consoleModule = events_console.NewBasicService(&loggerEvent)
+		consoleModule = events_console.MakeServiceLoggingMiddleware(logger)(consoleModule)
+	}
+
+	var statisticsModule events_statistics.KeycloakStatisticsProcessor
+	{
+		statisticsModule = events_statistics.NewKeycloakStatisticsProcessor(influxClient, influxBatchPointsConfig)
+	}
+
+
+	var adminEventComponent events_components.AdminEventService
+	{
+		var fns = [] (func(map[string]string) error){consoleModule.Print, statisticsModule.Stats}
+		adminEventComponent = events_components.NewAdminEventService(fns, fns, fns, fns)
+		adminEventComponent = events_components.MakeServiceLoggingAdminEventMiddleware(logger)(adminEventComponent)
+	}
+
+	var eventComponent events_components.EventService
+	{
+		var fns = [] (func(map[string]string) error){consoleModule.Print, statisticsModule.Stats}
+		eventComponent = events_components.NewEventService(fns, fns)
+	}
+
+	var muxComponent events_components.MuxService
+	{
+		muxComponent = events_components.NewMuxService(eventComponent, adminEventComponent)
+		muxComponent = events_components.MakeServiceLoggingMuxMiddleware(logger)(muxComponent)
+		muxComponent = events_components.MakeServiceErrorMiddleware(logger, sentryClient)(muxComponent)
+
+	}
+
+	var eventConsumerEndpoint endpoint.Endpoint
+	{
+		eventConsumerEndpoint = events_endpoints.MakeKeycloakEventsEndpoint(muxComponent)
+		eventConsumerEndpoint = events_endpoints.MakeEndpointLoggingMiddleware(logger)(eventConsumerEndpoint)
+	}
+
+	var events_endpoints = events_endpoints.Endpoints {
+		MakeKeycloakEventsEndpoint:eventConsumerEndpoint,
+	}
+
+
 	/*
 	HTTP monitoring routes.
 	  */
 	go func() {
-		logger := log.With(logger, "transport", "HTTP")
+		var logger = log.With(logger, "transport", "HTTP")
 
-		route := mux.NewRouter()
+		var route *mux.Router = mux.NewRouter()
 
-		route.Handle("/debug/pprof/", http.HandlerFunc(pprof.Index))
-		route.Handle("/debug/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))
-		route.Handle("/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
-		route.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
-		route.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
+		route.Handle("/version", http.HandlerFunc(MakeVersion(VERSION)))
 
-		route.Handle("/version", http.HandlerFunc(http_monitoring.MakeVersion(VERSION)))
+		//debug
+		var debugSubroute *mux.Router = route.PathPrefix("/debug").Subrouter()
+		debugSubroute.HandleFunc("/pprof/", http.HandlerFunc(pprof.Index))
+		debugSubroute.HandleFunc("/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))
+		debugSubroute.HandleFunc("/pprof/profile", http.HandlerFunc(pprof.Profile))
+		debugSubroute.HandleFunc("/pprof/symbol", http.HandlerFunc(pprof.Symbol))
+		debugSubroute.HandleFunc("/pprof/trace", http.HandlerFunc(pprof.Trace))
+
+		//event
+		var eventSubroute *mux.Router = route.PathPrefix("/event").Subrouter()
+		eventSubroute.Handle("/receiver", events_transport.MakeReceiverHandler(events_endpoints.MakeKeycloakEventsEndpoint, logger))
+
+		//other
+
 		logger.Log("addr", httpAddr)
+
 		errc <- http.ListenAndServe(httpAddr, route)
 	}()
 
-
-	/*
-	Run the client multiple times.
-	test is a bad name.
-	 */
-	for i:=0; i<4; i++ {
-		test()
-	}
+	//Influx Handling
+	go func() {
+		var tic = time.NewTicker(1 * time.Second)
+		in.WriteLoop(tic.C, influxClient)
+	}()
 
 	logger.Log("error", <-errc)
 }
 
-func test() {
-	var grpcAddr= fmt.Sprintf("127.0.0.1:5555")
+func MakeVersion(version string) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(fmt.Sprintf("Application version : %s\n", version)))
+	}
+}
 
-	var logger= log.NewLogfmtLogger(os.Stdout)
-	{
-		logger = log.With(logger, "time", log.DefaultTimestampUTC, "caller", "client")
-		defer logger.Log("msg", "Goodbye")
+
+func config(logger log.Logger) map[string]interface{} {
+
+	logger.Log("msg", "Loading configuration & command args")
+
+	/*
+	Component default
+	 */
+	viper.SetDefault("config-file", "./conf/DEV/keycloak_bridge.yaml")
+	viper.SetDefault("component-name", "keycloak-bridge")
+	viper.SetDefault("component-http-address", "127.0.0.1:8888")
+	viper.SetDefault("component-grpc-address", "127.0.0.1:5555")
+
+	/*
+	Keycloak client default
+	*/
+	viper.SetDefault("keycloak-url", "http://localhost:8080")
+	viper.SetDefault("keycloak-username", "admin")
+	viper.SetDefault("keycloak-password", "admin")
+
+	/*
+	Influx DB client default
+	*/
+	viper.SetDefault("influx-url", "http://localhost:8080")
+	viper.SetDefault("influx-username", "admin")
+	viper.SetDefault("influx-password", "admin")
+
+	/*
+	Sentry client default
+	 */
+	viper.SetDefault("sentry-dsn", "https://99360b38b8c947baaa222a5367cd74bc:579dc85095114b6198ab0f605d0dc576@sentry-cloudtrust.dev.elca.ch/2")
+
+	/*
+	First level of overhide
+	 */
+	pflag.String("config-file", viper.GetString("config-file"), "The configuration file path can be relative or absolute.")
+	viper.BindPFlag("config-file", pflag.Lookup("config-file"))
+	pflag.Parse()
+
+	/*
+	Load & log Config
+	 */
+	viper.SetConfigFile(viper.GetString("config-file"))
+	err := viper.ReadInConfig()
+	if err != nil {
+		logger.Log("msg", err)
 	}
 
-	var conn *grpc.ClientConn
-	{
-		var err error
-		conn, err = grpc.Dial(grpcAddr, grpc.WithInsecure(), grpc.WithCodec(flatbuffers.FlatbuffersCodec{}))
-		if err != nil {
-			fmt.Println("I failed :(")
-			return
-		}
-	}
-	defer conn.Close()
-
-	var userService = user_service.NewGrpcService(conn)
-	var getUsersEndpoint endpoint.Endpoint
-	{
-		var logger = log.With(logger, "Method", "getUsers")
-		var innerLogger  = log.With(logger, "InnerMethod", "getUser")
-		var rateLimiter = bucket.NewBucket(1 * time.Millisecond, 2)
-		getUsersEndpoint = user_service.MakeGetUsersEndpoint(
-			userService,
-			ratelimit.NewTokenBucketThrottler(rateLimiter, nil),
-			user_service.MakeEndpointLoggingMiddleware(innerLogger, ),
-		)
-		getUsersEndpoint = user_service.MakeEndpointLoggingMiddleware(logger, )(getUsersEndpoint)
+	var config = viper.AllSettings()
+	for k, v := range config {
+		logger.Log(k, v.(string))
 	}
 
-	var endpointService = user_service.Endpoints{
-		GetUsersEndpoint:getUsersEndpoint,
-	}
-
-	var userResultc <-chan string;
-	var userErrc <-chan error;
-	userResultc, userErrc = endpointService.GetUsers(context.Background(), "master")
-	loop:for {
-		select{
-		case result := <-userResultc:
-			fmt.Println(result)
-		case err := <-userErrc:
-			if err == io.EOF {
-				break loop
-			}
-			fmt.Println(err)
-			break loop
-		}
-	}
+	return config
 }

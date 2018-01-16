@@ -23,7 +23,7 @@
 
 [[constraint]]
   name = "github.com/go-kit/kit"
-  branch = "master"
+  version = "0.5.0"
 
 [[constraint]]
   name = "github.com/google/flatbuffers"

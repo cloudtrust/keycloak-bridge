@@ -2,22 +2,22 @@ package server
 
 import (
 	"github.com/google/flatbuffers/go"
-	"github.com/cloudtrust/keycloak-bridge/transport/grpc/users/flatbuffers/schema"
-	"github.com/cloudtrust/keycloak-bridge/services/users"
+	"github.com/cloudtrust/keycloak-bridge/services/users/transport/flatbuffer"
 	"io"
+	"github.com/cloudtrust/keycloak-bridge/services/users/endpoints"
 )
 
 /*
 A grpcServer is essentially just a set of endpoints that can be called via GRPC.
  */
 type grpcServer struct {
-	endpoints users.Endpoints
+	endpoints endpoints.Endpoints
 }
 
 /*
 Returns a new UserServiceServer
  */
-func NewGrpcServer(endpoints users.Endpoints) schema.UserServiceServer {
+func NewGrpcServer(endpoints endpoints.Endpoints) flatbuffer.UserServiceServer {
 	return &grpcServer{
 		endpoints:endpoints,
 	}
@@ -26,7 +26,7 @@ func NewGrpcServer(endpoints users.Endpoints) schema.UserServiceServer {
 /*
 grpcServer implements fb.UserServiceServer
  */
-func (u *grpcServer)GetUsers(m *schema.UserRequest, s schema.UserService_GetUsersServer) error {
+func (u *grpcServer)GetUsers(m *flatbuffer.UserRequest, s flatbuffer.UserService_GetUsersServer) error {
 	var realm = string(m.Realm())
 	var userc <- chan string
 	var errc <- chan error
@@ -36,12 +36,12 @@ func (u *grpcServer)GetUsers(m *schema.UserRequest, s schema.UserService_GetUser
 		case user := <-userc:
 			var b = flatbuffers.NewBuilder(0)
 			var name = b.CreateString(user)
-			schema.UserReplyStartNamesVector(b,1)
+			flatbuffer.UserReplyStartNamesVector(b,1)
 			b.PrependUOffsetT(name)
 			var names = b.EndVector(1)
-			schema.UserReplyStart(b)
-			schema.UserReplyAddNames(b, names)
-			b.Finish(schema.UserReplyEnd(b))
+			flatbuffer.UserReplyStart(b)
+			flatbuffer.UserReplyAddNames(b, names)
+			b.Finish(flatbuffer.UserReplyEnd(b))
 			if err := s.Send(b); err != nil {
 				return err
 			}

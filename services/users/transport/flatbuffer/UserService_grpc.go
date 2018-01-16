@@ -2,7 +2,7 @@
 //If you make any local changes, they will be lost
 //source: users
 
-package schema
+package flatbuffer
 
 import "github.com/google/flatbuffers/go"
 

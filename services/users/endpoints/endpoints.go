@@ -1,4 +1,4 @@
-package users
+package endpoints
 
 import (
 	"github.com/go-kit/kit/endpoint"
@@ -6,7 +6,10 @@ import (
 	"io"
 	"github.com/pkg/errors"
 	"fmt"
+	"github.com/cloudtrust/keycloak-bridge/services/users/components"
 )
+
+
 
 /*
 Endpoints wraps a service behind a set of endpoints.
@@ -31,7 +34,7 @@ type GetUsersResponse func() (string, error)
 GetUsersEndpoint returns a generator of users.
 This generator is a wrapper over an endpoint that can be composed upon using mids
  */
-func MakeGetUsersEndpoint(s Service, mids ...endpoint.Middleware) endpoint.Endpoint {
+func MakeGetUsersEndpoint(s components.Service, mids ...endpoint.Middleware) endpoint.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		switch getUsersRequest := req.(type) {
 		case GetUsersRequest:
@@ -85,7 +88,7 @@ func MakeGetUsersEndpoint(s Service, mids ...endpoint.Middleware) endpoint.Endpo
 /*
 Endpoints implements Service
  */
-func (u *Endpoints)GetUsers(ctx context.Context, realm string) (<-chan string, <-chan error) {
+func (u *Endpoints) GetUsers(ctx context.Context, realm string) (<-chan string, <-chan error) {
 	var resultc = make(chan string)
 	var errc = make(chan error)
 	var req = GetUsersRequest{realm}
@@ -129,3 +132,7 @@ func (u *Endpoints)GetUsers(ctx context.Context, realm string) (<-chan string, <
 	}()
 	return resultc, errc
 }
+
+
+
+

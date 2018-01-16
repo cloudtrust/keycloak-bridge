@@ -1,4 +1,4 @@
-package users
+package endpoints
 
 import (
 	"testing"
@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/assert"
 	"io"
+	"github.com/cloudtrust/keycloak-bridge/services/users/modules/keycloak"
 )
 
 func Test_GetUsers(t *testing.T) {
@@ -35,4 +36,24 @@ func Test_GetUsers(t *testing.T) {
 		}
 	}
 	assert.Equal(t, namesInit, names)
+}
+
+type mockService struct {
+	names []string
+}
+
+func NewMockService(names []string) keycloak.Service {
+	return &mockService{names:names}
+}
+
+func (m *mockService) GetUsers(ctx context.Context, realm string) (<-chan string, <-chan error) {
+	var resultc = make(chan string)
+	var errc = make(chan error)
+	go func() {
+		for _, n := range m.names {
+			resultc<-n
+		}
+		errc <- io.EOF
+	}()
+	return resultc, errc
 }
