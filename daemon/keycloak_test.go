@@ -6,16 +6,11 @@ import (
 	"io"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/cloudtrust/keycloak-bridge/services/users/components"
-	"github.com/cloudtrust/keycloak-bridge/services/users/endpoints"
 	user_fb "github.com/cloudtrust/keycloak-bridge/services/users/transport/flatbuffer"
-	"github.com/go-kit/kit/endpoint"
 	"github.com/go-kit/kit/log"
-	"github.com/go-kit/kit/ratelimit"
 	"github.com/google/flatbuffers/go"
-	bucket "github.com/juju/ratelimit"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 )
@@ -87,37 +82,20 @@ func TestMain_Main(t *testing.T) {
 	defer conn.Close()
 
 	var userService = NewGrpcService(conn)
-	var getUsersEndpoint endpoint.Endpoint
-	{
-		var logger = log.With(logger, "Method", "getUsers")
-		var innerLogger = log.With(logger, "InnerMethod", "getUser")
-		var rateLimiter = bucket.NewBucket(1*time.Millisecond, 2)
-		getUsersEndpoint = endpoints.MakeGetUsersEndpoint(
-			userService,
-			ratelimit.NewTokenBucketThrottler(rateLimiter, nil),
-			endpoints.MakeEndpointLoggingMiddleware(innerLogger),
-		)
-		getUsersEndpoint = endpoints.MakeEndpointLoggingMiddleware(logger)(getUsersEndpoint)
-	}
-
-	var endpointService = endpoints.Endpoints{
-		GetUsersEndpoint: getUsersEndpoint,
-	}
-
 	var userResultc <-chan string
 	var userErrc <-chan error
-	userResultc, userErrc = endpointService.GetUsers(context.Background(), "master")
+	userResultc, userErrc = userService.GetUsers(context.Background(), "master")
 
 loop:
 	for {
 		select {
 		case result := <-userResultc:
-			fmt.Println(result)
+			t.Log(result)
 		case err := <-userErrc:
 			if err == io.EOF {
 				break loop
 			}
-			fmt.Println(err)
+			t.Log(err)
 			break loop
 		}
 	}

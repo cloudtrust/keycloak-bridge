@@ -340,7 +340,7 @@ func MakeVersion(version string) func(http.ResponseWriter, *http.Request) {
 func config(logger log.Logger) map[string]interface{} {
 
 	logger.Log("msg", "Loading configuration & command args")
-	var configFile = fmt.Sprintf("conf/%s/vault_bridge.yaml", Environment)
+	var configFile = fmt.Sprintf("conf/%s/keycloak_bridge.yaml", Environment)
 
 	/*
 		Component default
@@ -376,7 +376,7 @@ func config(logger log.Logger) map[string]interface{} {
 	/*
 		Jaeger default
 	*/
-	viper.SetDefault("jaeger-service-name", "vault_bridge")
+	viper.SetDefault("jaeger-service-name", "keycloak_bridge")
 	viper.SetDefault("jaeger-sampler-type", "const")
 	viper.SetDefault("jaeger-sampler-param", 1)
 	viper.SetDefault("jaeger-sampler-url", "http://127.0.0.1:5775/")
