@@ -213,13 +213,13 @@ func main() {
 		getUsersEndpoint = users_endpoints.MakeGetUsersEndpoint(
 			userComponent,
 			users_endpoints.MakeEndpointLoggingMiddleware(innerLogger, "outer_req_id", "inner_req_id"),
-			users_endpoints.MakeEndpointSnowflakeMiddleware("inner_req_id"),
+			//users_endpoints.MakeEndpointSnowflakeMiddleware("inner_req_id"),
 			users_endpoints.MakeEndpointTracingMiddleware(tracer, "getUsers"),
 		)
 		getUsersEndpoint = users_endpoints.MakeEndpointLoggingMiddleware(logger, "outer_req_id")(getUsersEndpoint)
 		getUsersEndpoint = users_endpoints.MakeTSMiddleware(in.NewHistogram("get_users_statistics"))(getUsersEndpoint)
-		getUsersEndpoint = users_endpoints.MakeEndpointSnowflakeMiddleware("outer_req_id")(getUsersEndpoint)
-		getUsersEndpoint = users_endpoints.MakeEndpointTracingMiddleware(tracer, "getUsers")(getUsersEndpoint)
+		//getUsersEndpoint = users_endpoints.MakeEndpointSnowflakeMiddleware("outer_req_id")(getUsersEndpoint)
+		//getUsersEndpoint = users_endpoints.MakeEndpointTracingMiddleware(tracer, "getUsers")(getUsersEndpoint)
 	}
 
 	var usersEndpoints = users_endpoints.Endpoints{
@@ -239,7 +239,7 @@ func main() {
 			var err error
 			lis, err = net.Listen("tcp", grpcAddr)
 			if err != nil {
-				logger.Log("Couldn't initialize listener", err)
+				logger.Log("msg", "Couldn't initialize listener", "error", err)
 				errc <- err
 				return
 			}

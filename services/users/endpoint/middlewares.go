@@ -13,20 +13,20 @@ import (
 	otlog "github.com/opentracing/opentracing-go/log"
 )
 
-/*
-Snowflake middleware. Currently an incrementing int. Not distributed. Sucks.
-*/
-func MakeEndpointSnowflakeMiddleware(key interface{}) endpoint.Middleware {
-	var snowflake = 0
-	return func(next endpoint.Endpoint) endpoint.Endpoint {
-		return func(ctx context.Context, req interface{}) (interface{}, error) {
-			defer func() {
-				snowflake++
-			}()
-			return next(context.WithValue(ctx, key, snowflake), req)
-		}
-	}
-}
+// /*
+// Snowflake middleware. Currently an incrementing int. Not distributed. Sucks.
+// */
+// func MakeEndpointSnowflakeMiddleware(key interface{}) endpoint.Middleware {
+// 	var snowflake = 0
+// 	return func(next endpoint.Endpoint) endpoint.Endpoint {
+// 		return func(ctx context.Context, req interface{}) (interface{}, error) {
+// 			defer func() {
+// 				snowflake++
+// 			}()
+// 			return next(context.WithValue(ctx, key, snowflake), req)
+// 		}
+// 	}
+// }
 
 func MakeTSMiddleware(h metrics.Histogram) endpoint.Middleware {
 	return func(next endpoint.Endpoint) endpoint.Endpoint {
@@ -47,6 +47,7 @@ func MakeEndpointLoggingMiddleware(logger log.Logger, keys ...interface{}) endpo
 	return func(next endpoint.Endpoint) endpoint.Endpoint {
 		return func(ctx context.Context, req interface{}) (resp interface{}, err error) {
 			var vaList []interface{}
+			vaList = append(vaList, "id", ctx.Value("id"))
 			vaList = append(vaList, "err", err)
 			for _, key := range keys {
 				vaList = append(vaList, key, ctx.Value(key))

@@ -51,7 +51,7 @@
 
 [[projects]]
   name = "github.com/go-kit/kit"
-  packages = ["endpoint","log","metrics","metrics/generic","metrics/influx","metrics/internal/lv","ratelimit","transport/http"]
+  packages = ["endpoint","log","metrics","metrics/generic","metrics/influx","metrics/internal/lv","transport/http"]
   revision = "a9ca6725cbbea455e61c6bc8a1ed28e81eb3493b"
   version = "v0.5.0"
 
@@ -102,12 +102,6 @@
   packages = ["client/v2","models","pkg/escape"]
   revision = "a7c3d3c0f7b74f71919047adbc4933460967a576"
   version = "v1.3.6"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/juju/ratelimit"
-  packages = ["."]
-  revision = "5b9ff866471762aa2ab2dced63c9fb6f53921342"
 
 [[projects]]
   branch = "master"
@@ -244,6 +238,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "afab3a1c735d6ffc804dd413da8898c76854f051a9c1016475d261e7abdf311b"
+  inputs-digest = "7e98a12f186e911fb2070ed87dd8d3d431fbd0ee51558a19ba2fc59ac37bd83e"
   solver-name = "gps-cdcl"
   solver-version = 1

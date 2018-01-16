@@ -25,7 +25,7 @@ serviceLoggingMiddleware implements Service
 */
 func (s *serviceLoggingMiddleware) GetUsers(ctx context.Context, realm string) (<-chan string, <-chan error) {
 	defer func(begin time.Time) {
-		s.log.Log("method", "GetUsers", "realm", realm, "took", time.Since(begin))
+		s.log.Log("method", "GetUsers", "id", ctx.Value("id"), "realm", realm, "took", time.Since(begin))
 	}(time.Now())
 	return s.next.GetUsers(ctx, realm)
 }
