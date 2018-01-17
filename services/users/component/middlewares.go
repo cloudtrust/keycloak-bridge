@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/go-kit/kit/log"
+	"google.golang.org/grpc/metadata"
 )
 
 /*
@@ -24,8 +25,9 @@ type serviceLoggingMiddleware struct {
 serviceLoggingMiddleware implements Service
 */
 func (s *serviceLoggingMiddleware) GetUsers(ctx context.Context, realm string) (<-chan string, <-chan error) {
+	var md, _ = metadata.FromIncomingContext(ctx)
 	defer func(begin time.Time) {
-		s.log.Log("method", "GetUsers", "id", ctx.Value("id"), "realm", realm, "took", time.Since(begin))
+		s.log.Log("method", "GetUsers", "id", md["id"][0], "realm", realm, "took", time.Since(begin))
 	}(time.Now())
 	return s.next.GetUsers(ctx, realm)
 }

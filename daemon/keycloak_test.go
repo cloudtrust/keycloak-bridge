@@ -37,7 +37,7 @@ func (g *grpcService) GetUsers(ctx context.Context, realm string) (<-chan string
 	builder.Finish(user_fb.UserReplyEnd(builder))
 	var stream user_fb.UserService_GetUsersClient
 	{
-		var ctx = metadata.NewOutgoingContext(context.Background(), metadata.New(map[string]string{"id": strconv.FormatUint(128, 10)}))
+		var ctx = metadata.NewOutgoingContext(context.Background(), metadata.New(map[string]string{"id": strconv.FormatUint(1423, 10)}))
 		var err error
 		stream, err = g.client.GetUsers(ctx, builder)
 		if err != nil {
@@ -87,10 +87,7 @@ func TestMain_Main(t *testing.T) {
 	var userService = NewGrpcService(conn)
 	var userResultc <-chan string
 	var userErrc <-chan error
-
-	var ctx = metadata.NewOutgoingContext(context.Background(), metadata.New(map[string]string{"id": strconv.FormatUint(128, 10)}))
-
-	userResultc, userErrc = userService.GetUsers(ctx, "master")
+	userResultc, userErrc = userService.GetUsers(context.Background(), "master")
 
 loop:
 	for {

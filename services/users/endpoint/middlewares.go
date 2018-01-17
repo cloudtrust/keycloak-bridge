@@ -2,12 +2,12 @@ package endpoints
 
 import (
 	"context"
-	"strconv"
 	"time"
 
 	"github.com/go-kit/kit/endpoint"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/metrics"
+	"google.golang.org/grpc/metadata"
 
 	stdopentracing "github.com/opentracing/opentracing-go"
 	otext "github.com/opentracing/opentracing-go/ext"
@@ -32,9 +32,13 @@ import (
 func MakeTSMiddleware(h metrics.Histogram) endpoint.Middleware {
 	return func(next endpoint.Endpoint) endpoint.Endpoint {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
-			var correlationID = ctx.Value("id").(uint64)
+			var md, _ = metadata.FromIncomingContext(ctx)
+			//var correlationID, err = strconv.ParseInt(md["id"][0], 10, 64)
+			//if err != nil {
+			//	return nil, err
+			//}
 			defer func(begin time.Time) {
-				h.With("id", strconv.FormatUint(correlationID, 10)).Observe(time.Since(begin).Seconds())
+				h.With("id", md["id"][0]).Observe(time.Since(begin).Seconds())
 			}(time.Now())
 			return next(ctx, req)
 		}
@@ -49,7 +53,9 @@ func MakeEndpointLoggingMiddleware(logger log.Logger, keys ...interface{}) endpo
 	return func(next endpoint.Endpoint) endpoint.Endpoint {
 		return func(ctx context.Context, req interface{}) (resp interface{}, err error) {
 			var vaList []interface{}
-			vaList = append(vaList, "id", ctx.Value("id"))
+			var md, _ = metadata.FromIncomingContext(ctx)
+			var correlationID = md["id"][0]
+			vaList = append(vaList, "id", correlationID)
 			vaList = append(vaList, "err", err)
 			for _, key := range keys {
 				vaList = append(vaList, key, ctx.Value(key))
@@ -67,11 +73,14 @@ func MakeEndpointLoggingMiddleware(logger log.Logger, keys ...interface{}) endpo
 func MakeEndpointTracingMiddleware(tracer stdopentracing.Tracer, operationName string) endpoint.Middleware {
 	return func(next endpoint.Endpoint) endpoint.Endpoint {
 		return func(ctx context.Context, request interface{}) (interface{}, error) {
+			var md, _ = metadata.FromIncomingContext(ctx)
+			var correlationID = md["id"][0]
+
 			var span = stdopentracing.SpanFromContext(ctx)
 			if span == nil {
 				//create a new root span.
 				span = tracer.StartSpan(operationName)
-				span.SetTag("jaeger-debug-id", ctx.Value("id"))
+				span.SetTag("jaeger-debug-id", correlationID)
 				span.LogFields(otlog.String("operation", operationName),
 					otlog.String("microservice_level", "endpoint"))
 
