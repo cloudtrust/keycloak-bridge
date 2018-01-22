@@ -1,0 +1,14 @@
+namespace fb;
+
+table GetUsersRequest {
+    pack:int = 0;
+    realm:string;
+}
+
+table GetUsersResponse {
+    names:[string];
+}
+
+rpc_service UserService {
+  GetUsers(GetUsersRequest):GetUsersResponse;
+}

@@ -1,37 +1,38 @@
 package main
 
 import (
-	"github.com/google/flatbuffers/go"
-	keycloak_client "github.com/cloudtrust/keycloak-client/client"
-	"github.com/gorilla/mux"
-	"github.com/go-kit/kit/log"
-	"net"
 	"fmt"
+	"net"
+	"net/http"
+	"net/http/pprof"
 	"os"
 	"os/signal"
 	"syscall"
-	"google.golang.org/grpc"
 	"time"
+
+	keycloak_client "github.com/cloudtrust/keycloak-client/client"
 	"github.com/go-kit/kit/endpoint"
-	"net/http"
-	"net/http/pprof"
-	"github.com/spf13/viper"
+	"github.com/go-kit/kit/log"
+	"github.com/google/flatbuffers/go"
+	"github.com/gorilla/mux"
 	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
+	"google.golang.org/grpc"
 
 	events_components "github.com/cloudtrust/keycloak-bridge/services/events/components"
+	events_endpoints "github.com/cloudtrust/keycloak-bridge/services/events/endpoints"
 	events_console "github.com/cloudtrust/keycloak-bridge/services/events/modules/console"
 	events_statistics "github.com/cloudtrust/keycloak-bridge/services/events/modules/statistics"
-	events_endpoints "github.com/cloudtrust/keycloak-bridge/services/events/endpoints"
 	events_transport "github.com/cloudtrust/keycloak-bridge/services/events/transport"
 
-	users_transport "github.com/cloudtrust/keycloak-bridge/services/users/transport"
-	users_flatbuf "github.com/cloudtrust/keycloak-bridge/services/users/transport/flatbuffer"
 	users_components "github.com/cloudtrust/keycloak-bridge/services/users/components"
 	users_endpoints "github.com/cloudtrust/keycloak-bridge/services/users/endpoints"
 	users_keycloak "github.com/cloudtrust/keycloak-bridge/services/users/modules/keycloak"
-  	sentry "github.com/getsentry/raven-go"
-	influx_client "github.com/influxdata/influxdb/client/v2"
+	users_transport "github.com/cloudtrust/keycloak-bridge/services/users/transport"
+	users_fb "github.com/cloudtrust/keycloak-bridge/services/users/transport/fb"
+	sentry "github.com/getsentry/raven-go"
 	gokit_influx "github.com/go-kit/kit/metrics/influx"
+	influx_client "github.com/influxdata/influxdb/client/v2"
 )
 
 var (
@@ -39,17 +40,17 @@ var (
 )
 
 type componentConfig struct {
-	configFile string
-	ComponentName string
+	configFile           string
+	ComponentName        string
 	ComponentHTTPAddress string
 	ComponentGRPCAddress string
-	KeycloakURL string
+	KeycloakURL          string
 }
 
 func main() {
 
 	/*
-	Logger
+		Logger
 	*/
 	var logger = log.NewLogfmtLogger(os.Stdout)
 	{
@@ -58,11 +59,11 @@ func main() {
 	}
 
 	/*
-	Configurations
-	 */
+		Configurations
+	*/
 	config := config(log.With(logger, "component", "config_loader"))
 	var (
-		grpcAddr= fmt.Sprintf(config["component-grpc-address"].(string))
+		grpcAddr   = fmt.Sprintf(config["component-grpc-address"].(string))
 		httpConfig = keycloak_client.HttpConfig{
 			Addr:     config["keycloak-url"].(string),
 			Username: config["keycloak-username"].(string),
@@ -70,23 +71,23 @@ func main() {
 			Timeout:  5 * time.Second,
 		}
 		influxHttpConfig = influx_client.HTTPConfig{
-			Addr: config["influx-url"].(string),
+			Addr:     config["influx-url"].(string),
 			Username: config["influx-username"].(string),
 			Password: config["influx-password"].(string),
 		}
 		influxBatchPointsConfig = influx_client.BatchPointsConfig{
-			Precision: "s",
-			Database: "keycloak",
-			RetentionPolicy: "",
+			Precision:        "s",
+			Database:         "keycloak",
+			RetentionPolicy:  "",
 			WriteConsistency: "",
 		}
-		httpAddr = fmt.Sprintf(config["component-http-address"].(string))
+		httpAddr  = fmt.Sprintf(config["component-http-address"].(string))
 		sentryDSN = fmt.Sprintf(config["sentry-dsn"].(string))
 	)
 
 	/*
-	Critical errors channel
-	 */
+		Critical errors channel
+	*/
 	var errc = make(chan error)
 	go func() {
 		var c = make(chan os.Signal, 1)
@@ -95,8 +96,8 @@ func main() {
 	}()
 
 	/*
-	Create the keycloak client
-	 */
+		Create the keycloak client
+	*/
 	var keycloakClient keycloak_client.Client
 	{
 		var logger = log.With(logger, "Keycloak Config", httpConfig.Addr)
@@ -109,8 +110,8 @@ func main() {
 	}
 
 	/*
-	Sentry
-	 */
+		Sentry
+	*/
 	var sentryClient *sentry.Client
 	{
 		var logger = log.With(logger, "sentry config", sentryDSN)
@@ -155,7 +156,6 @@ func main() {
 		keycloakModule = users_keycloak.NewBasicService(keycloakClient)
 	}
 
-
 	var userComponent users_components.Service
 	{
 		var logger = log.With(logger)
@@ -163,36 +163,33 @@ func main() {
 		userComponent = users_components.MakeServiceLoggingMiddleware(logger)(userComponent)
 	}
 
-
 	/*
-	Endpoint configurations
-	 */
+		Endpoint configurations
+	*/
 	var getUsersEndpoint endpoint.Endpoint
 	{
 		var logger = log.With(logger, "Method", "GetUsers")
 		var innerLogger = log.With(logger, "InnerMethod", "GetUser")
 		getUsersEndpoint = users_endpoints.MakeGetUsersEndpoint(
 			userComponent,
-			users_endpoints.MakeEndpointLoggingMiddleware(innerLogger, "outer_req_id", "inner_req_id", ),
-			users_endpoints.MakeEndpointSnowflakeMiddleware("inner_req_id"),
+			users_endpoints.MakeEndpointLoggingMiddleware(innerLogger, "outer_req_id", "inner_req_id"),
 		)
 		getUsersEndpoint = users_endpoints.MakeEndpointLoggingMiddleware(logger, "outer_req_id")(getUsersEndpoint)
 		getUsersEndpoint = users_endpoints.MakeTSMiddleware(in.NewHistogram("get_users_statistics"))(getUsersEndpoint)
-		getUsersEndpoint = users_endpoints.MakeEndpointSnowflakeMiddleware("outer_req_id")(getUsersEndpoint)
 	}
 
 	var users_endpoints = users_endpoints.Endpoints{
-		GetUsersEndpoint:getUsersEndpoint,
+		GetUsersEndpoint: getUsersEndpoint,
 	}
 
 	/*
-	GRPC server instantiation :
-		The above Endpoints is used as a GRPC endpoint directly, shortcutting go-kit's facilities.
-	 */
+		GRPC server instantiation :
+			The above Endpoints is used as a GRPC endpoint directly, shortcutting go-kit's facilities.
+	*/
 	go func() {
 		var userServer = users_transport.NewGrpcServer(users_endpoints)
 		var userGrpcServer = grpc.NewServer(grpc.CustomCodec(flatbuffers.FlatbuffersCodec{}))
-		users_flatbuf.RegisterUserServiceServer(userGrpcServer, userServer)
+		users_fb.RegisterUserServiceServer(userGrpcServer, userServer)
 		var lis net.Listener
 		{
 			var err error
@@ -206,13 +203,12 @@ func main() {
 		errc <- userGrpcServer.Serve(lis)
 	}()
 
-
 	/*
-	Event stack
-	 */
+		Event stack
+	*/
 	var consoleModule events_console.Service
 	{
-		var loggerEvent= log.NewJSONLogger(os.Stdout)
+		var loggerEvent = log.NewJSONLogger(os.Stdout)
 		loggerEvent = log.With(logger, "ts", log.DefaultTimestampUTC, "caller", log.DefaultCaller)
 		consoleModule = events_console.NewBasicService(&loggerEvent)
 		consoleModule = events_console.MakeServiceLoggingMiddleware(logger)(consoleModule)
@@ -223,17 +219,16 @@ func main() {
 		statisticsModule = events_statistics.NewKeycloakStatisticsProcessor(influxClient, influxBatchPointsConfig)
 	}
 
-
 	var adminEventComponent events_components.AdminEventService
 	{
-		var fns = [] (func(map[string]string) error){consoleModule.Print, statisticsModule.Stats}
+		var fns = [](func(map[string]string) error){consoleModule.Print, statisticsModule.Stats}
 		adminEventComponent = events_components.NewAdminEventService(fns, fns, fns, fns)
 		adminEventComponent = events_components.MakeServiceLoggingAdminEventMiddleware(logger)(adminEventComponent)
 	}
 
 	var eventComponent events_components.EventService
 	{
-		var fns = [] (func(map[string]string) error){consoleModule.Print, statisticsModule.Stats}
+		var fns = [](func(map[string]string) error){consoleModule.Print, statisticsModule.Stats}
 		eventComponent = events_components.NewEventService(fns, fns)
 	}
 
@@ -251,14 +246,13 @@ func main() {
 		eventConsumerEndpoint = events_endpoints.MakeEndpointLoggingMiddleware(logger)(eventConsumerEndpoint)
 	}
 
-	var events_endpoints = events_endpoints.Endpoints {
-		MakeKeycloakEventsEndpoint:eventConsumerEndpoint,
+	var events_endpoints = events_endpoints.Endpoints{
+		MakeKeycloakEventsEndpoint: eventConsumerEndpoint,
 	}
 
-
 	/*
-	HTTP monitoring routes.
-	  */
+		HTTP monitoring routes.
+	*/
 	go func() {
 		var logger = log.With(logger, "transport", "HTTP")
 
@@ -287,7 +281,7 @@ func main() {
 
 	//Influx Handling
 	go func() {
-		var tic = time.NewTicker(1 * time.Second)
+		var tic = time.NewTicker(10 * time.Second)
 		in.WriteLoop(tic.C, influxClient)
 	}()
 
@@ -300,48 +294,47 @@ func MakeVersion(version string) func(http.ResponseWriter, *http.Request) {
 	}
 }
 
-
 func config(logger log.Logger) map[string]interface{} {
 
 	logger.Log("msg", "Loading configuration & command args")
 
 	/*
-	Component default
-	 */
+		Component default
+	*/
 	viper.SetDefault("config-file", "./conf/DEV/keycloak_bridge.yaml")
 	viper.SetDefault("component-name", "keycloak-bridge")
 	viper.SetDefault("component-http-address", "127.0.0.1:8888")
 	viper.SetDefault("component-grpc-address", "127.0.0.1:5555")
 
 	/*
-	Keycloak client default
+		Keycloak client default
 	*/
 	viper.SetDefault("keycloak-url", "http://localhost:8080")
 	viper.SetDefault("keycloak-username", "admin")
 	viper.SetDefault("keycloak-password", "admin")
 
 	/*
-	Influx DB client default
+		Influx DB client default
 	*/
 	viper.SetDefault("influx-url", "http://localhost:8080")
 	viper.SetDefault("influx-username", "admin")
 	viper.SetDefault("influx-password", "admin")
 
 	/*
-	Sentry client default
-	 */
+		Sentry client default
+	*/
 	viper.SetDefault("sentry-dsn", "https://99360b38b8c947baaa222a5367cd74bc:579dc85095114b6198ab0f605d0dc576@sentry-cloudtrust.dev.elca.ch/2")
 
 	/*
-	First level of overhide
-	 */
+		First level of overhide
+	*/
 	pflag.String("config-file", viper.GetString("config-file"), "The configuration file path can be relative or absolute.")
 	viper.BindPFlag("config-file", pflag.Lookup("config-file"))
 	pflag.Parse()
 
 	/*
-	Load & log Config
-	 */
+		Load & log Config
+	*/
 	viper.SetConfigFile(viper.GetString("config-file"))
 	err := viper.ReadInConfig()
 	if err != nil {
