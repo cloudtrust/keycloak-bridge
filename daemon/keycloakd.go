@@ -342,14 +342,14 @@ func MakeVersion(version string) func(http.ResponseWriter, *http.Request) {
 func config(logger log.Logger) map[string]interface{} {
 
 	logger.Log("msg", "Loading configuration & command args")
-	var configFile = fmt.Sprintf("conf/%s/keycloak_bridge.yaml", Environment)
+	var configFile = "./conf/DEV/keycloak_bridge.yaml"
 
 	/*
 		Component default
 	*/
 	viper.SetDefault("config-file", configFile)
 	viper.SetDefault("component-name", "keycloak-bridge")
-	viper.SetDefault("component-http-address", "127.0.0.1:8888")
+	viper.SetDefault("component-http-address", "0.0.0.0:8888")
 	viper.SetDefault("component-grpc-address", "127.0.0.1:5555")
 
 	/*
@@ -365,7 +365,7 @@ func config(logger log.Logger) map[string]interface{} {
 	viper.SetDefault("influx-url", "http://localhost:8086")
 	viper.SetDefault("influx-username", "admin")
 	viper.SetDefault("influx-password", "admin")
-	viper.SetDefault("influx-database", "metrics")
+	viper.SetDefault("influx-database", "keycloak")
 	viper.SetDefault("influx-precision", "ms")
 	viper.SetDefault("influx-retention-policy", "")
 	viper.SetDefault("influx-write-consistency", "")

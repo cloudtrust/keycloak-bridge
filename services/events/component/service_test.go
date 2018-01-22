@@ -212,7 +212,7 @@ func createAdminEventBytes(operationType int8) []byte {
 	var builder = flatbuffers.NewBuilder(0)
 	events.AdminEventStart(builder)
 	events.AdminEventAddTime(builder, time.Now().Unix())
-	events.AdminEventAddUID(builder, UID)
+	events.AdminEventAddUid(builder, UID)
 	events.AdminEventAddOperationType(builder, operationType)
 	var adminEventOffset = events.AdminEventEnd(builder)
 	builder.Finish(adminEventOffset)

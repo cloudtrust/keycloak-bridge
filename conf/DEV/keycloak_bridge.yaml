@@ -1,6 +1,6 @@
 # Component configs
 component-name: keycloak-bridge
-component-http-address: 127.0.0.1:8888
+component-http-address: 0.0.0.0:8888
 component-grpc-address: 127.0.0.1:5555
 
 # Influx DB configs

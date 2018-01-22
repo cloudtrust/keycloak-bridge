@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/go-kit/kit/endpoint"
@@ -34,7 +35,7 @@ type EventRequest struct {
 }
 
 func decodeKeycloakEventsReceiverRequest(_ context.Context, r *http.Request) (res interface{}, err error) {
-
+	fmt.Printf("decodeKeycloakEventsReceiverRequest\n")
 	var request KeycloakEventReceiverRequest
 	{
 		var err = json.NewDecoder(r.Body).Decode(&request)

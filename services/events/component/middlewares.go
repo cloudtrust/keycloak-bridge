@@ -1,16 +1,17 @@
 package components
 
 import (
-	"time"
 	"context"
-	"github.com/go-kit/kit/log"
+	"time"
+
 	"github.com/cloudtrust/keycloak-bridge/services/events/transport/flatbuffers/events"
 	sentry "github.com/getsentry/raven-go"
+	"github.com/go-kit/kit/log"
 )
 
 /*
 Sentry interface
- */
+*/
 type sentryClient interface {
 	SetDSN(dsn string) error
 	SetRelease(release string)
@@ -32,14 +33,13 @@ type sentryClient interface {
 	SetIncludePaths(p []string)
 }
 
-
 /*
 MuxMiddleware is the MuxService middleware
- */
+*/
 type MuxMiddleware func(MuxService) MuxService
 
 type serviceLoggingMuxMiddleware struct {
-	log log.Logger
+	log  log.Logger
 	next MuxService
 }
 
@@ -50,11 +50,10 @@ func (s *serviceLoggingMuxMiddleware) Event(ctx context.Context, eventType strin
 	return s.next.Event(ctx, eventType, obj)
 }
 
-
 func MakeServiceLoggingMuxMiddleware(log log.Logger) MuxMiddleware {
-	return func(next MuxService) MuxService{
-		return &serviceLoggingMuxMiddleware {
-			log: log,
+	return func(next MuxService) MuxService {
+		return &serviceLoggingMuxMiddleware{
+			log:  log,
 			next: next,
 		}
 	}
@@ -62,17 +61,17 @@ func MakeServiceLoggingMuxMiddleware(log log.Logger) MuxMiddleware {
 
 /*
 Error Middleware
- */
+*/
 type serviceErrorMiddleware struct {
-	log log.Logger
+	log    log.Logger
 	client sentryClient
-	next MuxService
+	next   MuxService
 }
 
 func (s *serviceErrorMiddleware) Event(ctx context.Context, eventType string, obj []byte) (interface{}, error) {
 	var i, err = s.next.Event(ctx, eventType, obj)
 	if err != nil {
-		s.log.Log("Send error to Sentry:", err)
+		s.log.Log("msg", "Send error to Sentry:", "error", err)
 		s.client.CaptureErrorAndWait(err, nil)
 	}
 	return i, err
@@ -80,21 +79,21 @@ func (s *serviceErrorMiddleware) Event(ctx context.Context, eventType string, ob
 
 func MakeServiceErrorMiddleware(log log.Logger, client sentryClient) MuxMiddleware {
 	return func(next MuxService) MuxService {
-		return &serviceErrorMiddleware {
-			log: log,
+		return &serviceErrorMiddleware{
+			log:    log,
 			client: client,
-			next: next,
+			next:   next,
 		}
 	}
 }
 
 /*
 AdminEventMiddleware is AdminEventService Middleware
- */
+*/
 type AdminEventMiddleware func(AdminEventService) AdminEventService
 
 type serviceLoggingAdminEventMiddleware struct {
-	log log.Logger
+	log  log.Logger
 	next AdminEventService
 }
 
@@ -106,9 +105,9 @@ func (s *serviceLoggingAdminEventMiddleware) AdminEvent(ctx context.Context, adm
 }
 
 func MakeServiceLoggingAdminEventMiddleware(log log.Logger) AdminEventMiddleware {
-	return func(next AdminEventService) AdminEventService{
-		return &serviceLoggingAdminEventMiddleware {
-			log: log,
+	return func(next AdminEventService) AdminEventService {
+		return &serviceLoggingAdminEventMiddleware{
+			log:  log,
 			next: next,
 		}
 	}
@@ -116,11 +115,11 @@ func MakeServiceLoggingAdminEventMiddleware(log log.Logger) AdminEventMiddleware
 
 /*
 EventMiddleware is EventService Middleware
- */
+*/
 type EventMiddleware func(EventService) EventService
 
 type serviceLoggingEventMiddleware struct {
-	log log.Logger
+	log  log.Logger
 	next EventService
 }
 
@@ -132,9 +131,9 @@ func (s *serviceLoggingEventMiddleware) Event(ctx context.Context, event *events
 }
 
 func MakeServiceLoggingEventMiddleware(log log.Logger) EventMiddleware {
-	return func(next EventService) EventService{
-		return &serviceLoggingEventMiddleware {
-			log: log,
+	return func(next EventService) EventService {
+		return &serviceLoggingEventMiddleware{
+			log:  log,
 			next: next,
 		}
 	}

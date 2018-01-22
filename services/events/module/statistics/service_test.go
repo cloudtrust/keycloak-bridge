@@ -5,6 +5,7 @@ import (
 	"time"
 
 	influx_client "github.com/influxdata/influxdb/client/v2"
+	"github.com/stretchr/testify/assert"
 )
 
 // Default configuration for tests
@@ -129,3 +130,17 @@ func (client *mockInflux) Query(q influx_client.Query) (*influx_client.Response,
 	return nil, nil
 }
 func (client *mockInflux) Close() error { return nil }
+
+func Test_Stats(t *testing.T) {
+
+	var mInflux = mockInflux{}
+	var ksp = NewKeycloakStatisticsProcessor(&mInflux, influxBatchPointsConfig)
+	var m = map[string]string{
+		"type":    "dummyType",
+		"realmId": "dummyId",
+		"userId":  "dummyId",
+	}
+	var err error
+	err = ksp.Stats(m)
+	assert.Equal(t, err, nil)
+}
