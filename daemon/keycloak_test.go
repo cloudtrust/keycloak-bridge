@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/cloudtrust/keycloak-bridge/services/users/component"
-	user_fb "github.com/cloudtrust/keycloak-bridge/services/users/transport/flatbuffer"
+	user_fb "github.com/cloudtrust/keycloak-bridge/services/users/transport/flatbuffer/fb"
 	"github.com/go-kit/kit/log"
 	"github.com/google/flatbuffers/go"
 	"github.com/pkg/errors"
