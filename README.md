@@ -1,14 +1,22 @@
 # keycloak-bridge
 Bridge services dedicated to keycloak interactions
 
-# BUILD
+
+## Launch
 
 ```bash
-go build  -ldflags "-X main.VERSION=0.0.1" daemon/keycloakd.go
-```
+./script/build.sh --env <value>
+``` 
 
-# RUN
+```bash
+./bin/keycloackBridge
+``` 
 
-```Bash
-keycloakd --config-file="./conf/DEV/keycloak_bridge.yaml"
-```
+When you launch the keycloack bridge, the parameters are read from ``` conf/ENV/keycloak_bridge.yaml ```.
+
+For loading a different configuratiuon file launch the sevice with the following command: 
+
+```bash
+./bin/keycloackBridge --config-file "path/to/the/file.yaml".
+``` 
+
