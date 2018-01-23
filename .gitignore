@@ -13,4 +13,13 @@
 # Project-local glide cache, RE: https://github.com/Masterminds/glide/issues/736
 .glide/
 
-vendor/
+.DS_Store
+.vscode/*
+vendor/*
+vendor.orig/*
+bin/*
+debug
+
+# Flatbuffers generated files
+/services/users/transport/flatbuffer/fb/*
+/services/events/transport/flatbuffers/fb/*
