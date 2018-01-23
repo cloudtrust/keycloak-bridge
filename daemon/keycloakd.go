@@ -24,7 +24,7 @@ import (
 	events_endpoints "github.com/cloudtrust/keycloak-bridge/services/events/endpoint"
 	events_console "github.com/cloudtrust/keycloak-bridge/services/events/module/console"
 	events_statistics "github.com/cloudtrust/keycloak-bridge/services/events/module/statistics"
-	events_transport "github.com/cloudtrust/keycloak-bridge/services/events/transport"
+	events_transport_http "github.com/cloudtrust/keycloak-bridge/services/events/transport/http"
 
 	users_components "github.com/cloudtrust/keycloak-bridge/services/users/component"
 	users_endpoints "github.com/cloudtrust/keycloak-bridge/services/users/endpoint"
@@ -315,7 +315,12 @@ func main() {
 
 		//event
 		var eventSubroute = route.PathPrefix("/event").Subrouter()
-		eventSubroute.Handle("/receiver", events_transport.MakeReceiverHandler(eventsEndpoints.KeycloakEvents, logger))
+		var eventHandler http.Handler
+		{
+			eventHandler = events_transport_http.MakeReceiverHandler(eventsEndpoints.KeycloakEvents, logger)
+			eventHandler = events_transport_http.MakeTracingMiddleware(tracer, "event")(eventHandler)
+		}
+		eventSubroute.Handle("/receiver", eventHandler)
 
 		//other
 
@@ -349,7 +354,7 @@ func config(logger log.Logger) map[string]interface{} {
 	*/
 	viper.SetDefault("config-file", configFile)
 	viper.SetDefault("component-name", "keycloak-bridge")
-	viper.SetDefault("component-http-address", "0.0.0.0:8888")
+	viper.SetDefault("component-http-address", "127.0.0.1:8888")
 	viper.SetDefault("component-grpc-address", "127.0.0.1:5555")
 
 	/*

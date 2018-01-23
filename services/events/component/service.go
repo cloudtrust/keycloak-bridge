@@ -6,8 +6,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/cloudtrust/keycloak-bridge/services/events/transport"
 	"github.com/cloudtrust/keycloak-bridge/services/events/transport/flatbuffers/events"
+	"github.com/cloudtrust/keycloak-bridge/services/events/transport/http"
 )
 
 /*

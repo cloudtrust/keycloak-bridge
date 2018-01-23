@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/cloudtrust/keycloak-bridge/services/events/component"
-	"github.com/cloudtrust/keycloak-bridge/services/events/transport"
+	"github.com/cloudtrust/keycloak-bridge/services/events/transport/http"
 	"github.com/go-kit/kit/endpoint"
 	"github.com/pkg/errors"
 )

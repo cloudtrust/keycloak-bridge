@@ -71,7 +71,7 @@ type serviceErrorMiddleware struct {
 func (s *serviceErrorMiddleware) Event(ctx context.Context, eventType string, obj []byte) (interface{}, error) {
 	var i, err = s.next.Event(ctx, eventType, obj)
 	if err != nil {
-		s.log.Log("msg", "Send error to Sentry:", "error", err)
+		s.log.Log("msg", "Send error to Sentry", "error", err)
 		s.client.CaptureErrorAndWait(err, nil)
 	}
 	return i, err
