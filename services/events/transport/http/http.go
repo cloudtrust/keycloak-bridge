@@ -28,6 +28,7 @@ type KeycloakEventReceiverRequest struct {
 	Object string `json:"Obj"`
 }
 
+//EventRequest has the fields Type and Object
 type EventRequest struct {
 	Type   string
 	Object []byte
@@ -76,6 +77,7 @@ func decodeKeycloakEventsReceiverRequest(_ context.Context, r *http.Request) (re
 	return res, nil
 }
 
+//MakeReceiverHandler follows the go-kit transport layer
 func MakeReceiverHandler(e endpoint.Endpoint, log log.Logger) *httptransport.Server {
 	return httptransport.NewServer(e,
 		decodeKeycloakEventsReceiverRequest,
@@ -88,6 +90,7 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response interface
 	return nil
 }
 
+//MakeErrorHandler returns the encoded error
 func MakeErrorHandler(logger log.Logger) httptransport.ErrorEncoder {
 	var errorHandler httptransport.ErrorEncoder
 	errorHandler = func(ctx context.Context, err error, w http.ResponseWriter) {

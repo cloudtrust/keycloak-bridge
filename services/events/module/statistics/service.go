@@ -7,12 +7,13 @@ import (
 )
 
 /*
-Keycloak statistics processor
+KeycloakStatisticsProcessor interface
 */
 type KeycloakStatisticsProcessor interface {
 	Stats(map[string]string) error
 }
 
+//NewKeycloakStatisticsProcessor instantiates KeycloakStatisticsProcessor
 func NewKeycloakStatisticsProcessor(influxClient influx_client.Client, batchPointsConfig influx_client.BatchPointsConfig) KeycloakStatisticsProcessor {
 	return &keycloakStatisticsProcessor{
 		clientInflux:     influxClient,

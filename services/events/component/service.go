@@ -17,8 +17,7 @@ type MuxService interface {
 	Event(ctx context.Context, eventType string, obj []byte) (interface{}, error)
 }
 
-/*
- */
+//NewMuxService instantiates MuxService
 func NewMuxService(eventService EventService, adminEventService AdminEventService) MuxService {
 	return &muxService{
 		eventService:      eventService,
@@ -48,10 +47,12 @@ func (u *muxService) Event(ctx context.Context, eventType string, obj []byte) (i
 	}
 }
 
+//EventService interface
 type EventService interface {
 	Event(ctx context.Context, event *events.Event) (interface{}, error)
 }
 
+//NewEventService instantiates EventService
 func NewEventService(modulesToCallForStandardEvent []func(map[string]string) error,
 	modulesToCallForErrorEvent []func(map[string]string) error) EventService {
 	return &eventService{
@@ -78,10 +79,12 @@ func (u *eventService) Event(ctx context.Context, event *events.Event) (interfac
 
 }
 
+//AdminEventService interface
 type AdminEventService interface {
 	AdminEvent(ctx context.Context, adminEvent *events.AdminEvent) (interface{}, error)
 }
 
+//NewAdminEventService instantiates AdminEventService
 func NewAdminEventService(modulesToCallForCreate []func(map[string]string) error,
 	modulesToCallForUpdate []func(map[string]string) error,
 	modulesToCallForDelete []func(map[string]string) error,

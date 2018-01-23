@@ -50,6 +50,7 @@ func (s *serviceLoggingMuxMiddleware) Event(ctx context.Context, eventType strin
 	return s.next.Event(ctx, eventType, obj)
 }
 
+//MakeServiceLoggingMuxMiddleware wraps the MuxService with logging
 func MakeServiceLoggingMuxMiddleware(log log.Logger) MuxMiddleware {
 	return func(next MuxService) MuxService {
 		return &serviceLoggingMuxMiddleware{
@@ -77,6 +78,7 @@ func (s *serviceErrorMiddleware) Event(ctx context.Context, eventType string, ob
 	return i, err
 }
 
+//MakeServiceErrorMiddleware wraps the MuxService with error tracking
 func MakeServiceErrorMiddleware(log log.Logger, client sentryClient) MuxMiddleware {
 	return func(next MuxService) MuxService {
 		return &serviceErrorMiddleware{
@@ -104,6 +106,7 @@ func (s *serviceLoggingAdminEventMiddleware) AdminEvent(ctx context.Context, adm
 	return s.next.AdminEvent(ctx, adminEvent)
 }
 
+//MakeServiceLoggingAdminEventMiddleware wraps AdminEventService with logging
 func MakeServiceLoggingAdminEventMiddleware(log log.Logger) AdminEventMiddleware {
 	return func(next AdminEventService) AdminEventService {
 		return &serviceLoggingAdminEventMiddleware{
@@ -130,6 +133,7 @@ func (s *serviceLoggingEventMiddleware) Event(ctx context.Context, event *events
 	return s.next.Event(ctx, event)
 }
 
+//MakeServiceLoggingEventMiddleware wraps the EventService with logging
 func MakeServiceLoggingEventMiddleware(log log.Logger) EventMiddleware {
 	return func(next EventService) EventService {
 		return &serviceLoggingEventMiddleware{
