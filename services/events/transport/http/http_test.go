@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cloudtrust/keycloak-bridge/services/events/transport/flatbuffers/events"
+	events "github.com/cloudtrust/keycloak-bridge/services/events/transport/flatbuffers/fb"
 	"github.com/google/flatbuffers/go"
 	"github.com/stretchr/testify/assert"
 )

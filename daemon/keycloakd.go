@@ -30,7 +30,7 @@ import (
 	users_endpoints "github.com/cloudtrust/keycloak-bridge/services/users/endpoint"
 	users_keycloak "github.com/cloudtrust/keycloak-bridge/services/users/module/keycloak"
 	users_transport "github.com/cloudtrust/keycloak-bridge/services/users/transport"
-	users_flatbuf "github.com/cloudtrust/keycloak-bridge/services/users/transport/flatbuffer"
+	users_flatbuf "github.com/cloudtrust/keycloak-bridge/services/users/transport/flatbuffer/fb"
 	sentry "github.com/getsentry/raven-go"
 	gokit_influx "github.com/go-kit/kit/metrics/influx"
 	influx_client "github.com/influxdata/influxdb/client/v2"

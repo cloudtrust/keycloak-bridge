@@ -4,7 +4,7 @@ import (
 	"io"
 
 	"github.com/cloudtrust/keycloak-bridge/services/users/endpoint"
-	"github.com/cloudtrust/keycloak-bridge/services/users/transport/flatbuffer"
+	flatbuffer "github.com/cloudtrust/keycloak-bridge/services/users/transport/flatbuffer/fb"
 	"github.com/google/flatbuffers/go"
 )
 

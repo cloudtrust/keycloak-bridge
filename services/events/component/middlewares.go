@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/cloudtrust/keycloak-bridge/services/events/transport/flatbuffers/events"
+	events "github.com/cloudtrust/keycloak-bridge/services/events/transport/flatbuffers/fb"
 	sentry "github.com/getsentry/raven-go"
 	"github.com/go-kit/kit/log"
 )
