@@ -45,7 +45,7 @@ type serviceLoggingMuxMiddleware struct {
 
 func (s *serviceLoggingMuxMiddleware) Event(ctx context.Context, eventType string, obj []byte) (interface{}, error) {
 	defer func(begin time.Time) {
-		s.log.Log("method", "Component.Event", "type", eventType, "took", time.Since(begin))
+		s.log.Log("method", "Component.Event", "type", eventType, "id", ctx.Value("id").(string), "took", time.Since(begin))
 	}(time.Now())
 	return s.next.Event(ctx, eventType, obj)
 }
@@ -72,7 +72,7 @@ type serviceErrorMiddleware struct {
 func (s *serviceErrorMiddleware) Event(ctx context.Context, eventType string, obj []byte) (interface{}, error) {
 	var i, err = s.next.Event(ctx, eventType, obj)
 	if err != nil {
-		s.log.Log("msg", "Send error to Sentry", "error", err)
+		s.log.Log("msg", "Send error to Sentry", "id", ctx.Value("id").(string), "error", err)
 		s.client.CaptureErrorAndWait(err, nil)
 	}
 	return i, err
@@ -101,7 +101,7 @@ type serviceLoggingAdminEventMiddleware struct {
 
 func (s *serviceLoggingAdminEventMiddleware) AdminEvent(ctx context.Context, adminEvent *events.AdminEvent) (interface{}, error) {
 	defer func(begin time.Time) {
-		s.log.Log("method", "Component.AdminEvent", "took", time.Since(begin))
+		s.log.Log("method", "Component.AdminEvent", "id", ctx.Value("id").(string), "took", time.Since(begin))
 	}(time.Now())
 	return s.next.AdminEvent(ctx, adminEvent)
 }
@@ -128,7 +128,7 @@ type serviceLoggingEventMiddleware struct {
 
 func (s *serviceLoggingEventMiddleware) Event(ctx context.Context, event *events.Event) (interface{}, error) {
 	defer func(begin time.Time) {
-		s.log.Log("method", "Component.Event", "took", time.Since(begin))
+		s.log.Log("method", "Component.Event", "id", ctx.Value("id").(string), "took", time.Since(begin))
 	}(time.Now())
 	return s.next.Event(ctx, event)
 }

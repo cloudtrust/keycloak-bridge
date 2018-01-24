@@ -29,3 +29,5 @@ jaeger-sampler-param: 1
 jaeger-sampler-url: http://127.0.0.1:5775/
 jaeger-reporter-logspan: false
 jaeger-reporter-flushinterval-ms: 1000
+
+

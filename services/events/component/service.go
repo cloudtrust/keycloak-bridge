@@ -121,7 +121,6 @@ func (u *adminEventService) AdminEvent(ctx context.Context, adminEvent *events.A
 		return nil, err
 	}
 
-	//return nil, nil
 }
 
 func adminEventToMap(adminEvent *events.AdminEvent) map[string]string {

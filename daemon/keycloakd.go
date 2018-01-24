@@ -38,18 +38,6 @@ import (
 	jaegerConfig "github.com/uber/jaeger-client-go/config"
 )
 
-// var (
-// 	VERSION = "123"
-// )
-
-// type componentConfig struct {
-// 	configFile           string
-// 	ComponentName        string
-// 	ComponentHTTPAddress string
-// 	ComponentGRPCAddress string
-// 	KeycloakURL          string
-// }
-
 var (
 	// Version of the component.
 	Version = "1.0.0"
@@ -289,6 +277,8 @@ func main() {
 		eventConsumerEndpoint = events_endpoints.MakeKeycloakEventsEndpoint(muxComponent)
 		eventConsumerEndpoint = events_endpoints.MakeEndpointLoggingMiddleware(logger)(eventConsumerEndpoint)
 		eventConsumerEndpoint = events_endpoints.MakeEndpointTracingMiddleware(tracer, "events")(eventConsumerEndpoint)
+		eventConsumerEndpoint = events_endpoints.MakeCorrelationIDMiddleware()(eventConsumerEndpoint)
+
 	}
 
 	var eventsEndpoints = events_endpoints.Endpoints{
@@ -356,6 +346,10 @@ func config(logger log.Logger) map[string]interface{} {
 	viper.SetDefault("component-name", "keycloak-bridge")
 	viper.SetDefault("component-http-address", "127.0.0.1:8888")
 	viper.SetDefault("component-grpc-address", "127.0.0.1:5555")
+
+	// Flaki generator default.
+	viper.SetDefault("flaki-node-id", 0)
+	viper.SetDefault("flaki-component-id", 0)
 
 	/*
 		Keycloak client default

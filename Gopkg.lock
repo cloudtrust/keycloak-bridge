@@ -21,6 +21,12 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/cloudtrust/flaki"
+  packages = ["."]
+  revision = "fe713078385dab5701618dd05f67547a97246eab"
+
+[[projects]]
+  branch = "master"
   name = "github.com/cloudtrust/keycloak-client"
   packages = ["client"]
   revision = "0e8e8ec23fa0312b9479a67c3f6c2f9c81d9b448"
@@ -58,7 +64,6 @@
     "metrics/generic",
     "metrics/influx",
     "metrics/internal/lv",
-    "transport/grpc",
     "transport/http"
   ]
   revision = "a9ca6725cbbea455e61c6bc8a1ed28e81eb3493b"
@@ -346,6 +351,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "517acae03fd38bdd9e9a463a964be5a9af50653c6ab6452344321c3212b68b36"
+  inputs-digest = "904b917ee35cb30fdb1f3f1fe8b44d7f5c5fbdc41bdb8f70889683df5743188b"
   solver-name = "gps-cdcl"
   solver-version = 1
