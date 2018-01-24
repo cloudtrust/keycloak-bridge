@@ -3,16 +3,14 @@ package main
 import (
 	"context"
 	"fmt"
-	"io"
 	"os"
 	"strconv"
 	"testing"
 
-	"github.com/cloudtrust/keycloak-bridge/services/users/component"
-	user_fb "github.com/cloudtrust/keycloak-bridge/services/users/transport/flatbuffer/fb"
+	"github.com/cloudtrust/keycloak-bridge/services/users/components"
+	user_fb "github.com/cloudtrust/keycloak-bridge/services/users/transport/fb"
 	"github.com/go-kit/kit/log"
 	"github.com/google/flatbuffers/go"
-	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
@@ -27,41 +25,28 @@ type grpcService struct {
 	client user_fb.UserServiceClient
 }
 
-func (g *grpcService) GetUsers(ctx context.Context, realm string) (<-chan string, <-chan error) {
-	var resultc = make(chan string)
-	var errc = make(chan error)
+func (g *grpcService) GetUsers(ctx context.Context, realm string) ([]string, error) {
 	var builder = flatbuffers.NewBuilder(0)
 	var brealm = builder.CreateString(realm)
-	user_fb.UserRequestStart(builder)
-	user_fb.UserRequestAddRealm(builder, brealm)
-	builder.Finish(user_fb.UserReplyEnd(builder))
-	var stream user_fb.UserService_GetUsersClient
+	user_fb.GetUsersRequestStart(builder)
+	user_fb.GetUsersRequestAddRealm(builder, brealm)
+	builder.Finish(user_fb.GetUsersRequestEnd(builder))
+	var resp *user_fb.GetUsersResponse
 	{
 		var ctx = metadata.NewOutgoingContext(context.Background(), metadata.New(map[string]string{"id": strconv.FormatUint(1423, 10)}))
 		var err error
-		stream, err = g.client.GetUsers(ctx, builder)
+		resp, err = g.client.GetUsers(context.Background(), builder)
 		if err != nil {
-			go func() {
-				errc <- errors.Wrap(err, "Couldn't get users stream")
-				return
-			}()
-			return resultc, errc
+			return nil, err
 		}
 	}
-	go func() {
-		for {
-			var iUser *user_fb.UserReply
-			var err error
-			iUser, err = stream.Recv()
-			if err != nil {
-				errc <- err
-				return
-			}
-			var user = string(iUser.Names(0))
-			resultc <- user
+	var users []string
+	{
+		for i := 0; i < resp.NamesLength(); i++ {
+			users = append(users, string(resp.Names(i)))
 		}
-	}()
-	return resultc, errc
+	}
+	return users, nil
 }
 
 func TestMain_Main(t *testing.T) {
@@ -85,21 +70,7 @@ func TestMain_Main(t *testing.T) {
 	defer conn.Close()
 
 	var userService = NewGrpcService(conn)
-	var userResultc <-chan string
-	var userErrc <-chan error
-	userResultc, userErrc = userService.GetUsers(context.Background(), "master")
 
-loop:
-	for {
-		select {
-		case result := <-userResultc:
-			t.Log(result)
-		case err := <-userErrc:
-			if err == io.EOF {
-				break loop
-			}
-			t.Log(err)
-			break loop
-		}
-	}
+	var users, err = userService.GetUsers(context.Background(), "master")
+	t.Log("result", users, "error", err)
 }

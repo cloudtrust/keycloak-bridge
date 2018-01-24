@@ -2,12 +2,20 @@ package endpoints
 
 import (
 	"context"
+<<<<<<< HEAD:services/users/endpoint/endpoints.go
 	"fmt"
 	"io"
 
 	"github.com/cloudtrust/keycloak-bridge/services/users/component"
 	"github.com/go-kit/kit/endpoint"
 	"github.com/pkg/errors"
+=======
+	"errors"
+	"reflect"
+
+	"github.com/cloudtrust/keycloak-bridge/services/users/components"
+	"github.com/go-kit/kit/endpoint"
+>>>>>>> origin/refactor_user:services/users/endpoints/endpoints.go
 )
 
 /*
@@ -21,13 +29,19 @@ type Endpoints struct {
 Request for GetUsers endpoint
 */
 type GetUsersRequest struct {
-	realm string
+	Realm string
 }
 
 /*
 Response from GetUsers endpoint
 */
+<<<<<<< HEAD:services/users/endpoint/endpoints.go
 type GetUsersResponse func() (string, error)
+=======
+type GetUsersResponse struct {
+	Users []string
+}
+>>>>>>> origin/refactor_user:services/users/endpoints/endpoints.go
 
 /*
 GetUsersEndpoint returns a generator of users.
@@ -37,11 +51,12 @@ func MakeGetUsersEndpoint(s components.Service, mids ...endpoint.Middleware) end
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		switch getUsersRequest := req.(type) {
 		case GetUsersRequest:
-			var userc <-chan string
-			var errc <-chan error
-			{
-				userc, errc = s.GetUsers(ctx, getUsersRequest.realm)
+			var realm = getUsersRequest.Realm
+			var users, err = s.GetUsers(ctx, realm)
+			var response = GetUsersResponse{
+				Users: users,
 			}
+<<<<<<< HEAD:services/users/endpoint/endpoints.go
 			var secondStageEndpoint = func(ctx context.Context, req interface{}) (interface{}, error) {
 				select {
 				case u := <-userc:
@@ -79,9 +94,14 @@ func MakeGetUsersEndpoint(s components.Service, mids ...endpoint.Middleware) end
 			return response, nil
 		default:
 			return nil, errors.New("Wrong request type")
+=======
+			return response, err
+>>>>>>> origin/refactor_user:services/users/endpoints/endpoints.go
 		}
+		return nil, errors.New("request has wrong type " + reflect.TypeOf(req).Name())
 	}
 }
+<<<<<<< HEAD:services/users/endpoint/endpoints.go
 
 /*
 Endpoints implements Service
@@ -130,3 +150,5 @@ func (u *Endpoints) GetUsers(ctx context.Context, realm string) (<-chan string, 
 	}()
 	return resultc, errc
 }
+=======
+>>>>>>> origin/refactor_user:services/users/endpoints/endpoints.go

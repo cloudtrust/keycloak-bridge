@@ -24,8 +24,12 @@ type serviceLoggingMiddleware struct {
 /*
 serviceLoggingMiddleware implements Service
 */
+<<<<<<< HEAD:services/users/component/middlewares.go
 func (s *serviceLoggingMiddleware) GetUsers(ctx context.Context, realm string) (<-chan string, <-chan error) {
 	var md, _ = metadata.FromIncomingContext(ctx)
+=======
+func (s *serviceLoggingMiddleware) GetUsers(ctx context.Context, realm string) ([]string, error) {
+>>>>>>> origin/refactor_user:services/users/components/middlewares.go
 	defer func(begin time.Time) {
 		s.log.Log("method", "GetUsers", "id", md["id"][0], "realm", realm, "took", time.Since(begin))
 	}(time.Now())
