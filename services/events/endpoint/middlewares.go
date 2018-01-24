@@ -16,8 +16,8 @@ import (
 	otlog "github.com/opentracing/opentracing-go/log"
 )
 
-// MakeCorrelationIDMiddleware makes a middleware that adds a correlation ID
-// in the context if there is not already one.
+// MakeCorrelationIDMiddleware makes a middleware that takes the id from Keycloak and
+// includes it in the context
 func MakeCorrelationIDMiddleware() endpoint.Middleware {
 	return func(next endpoint.Endpoint) endpoint.Endpoint {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
