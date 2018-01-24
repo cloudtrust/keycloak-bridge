@@ -14,7 +14,7 @@ import (
 // Client API for UserService service
 type UserServiceClient interface{
   GetUsers(ctx context.Context, in *flatbuffers.Builder, 
-  	opts... grpc.CallOption) (UserService_GetUsersClient, error)  
+  	opts... grpc.CallOption) (* GetUsersResponse, error)  
 }
 
 type userServiceClient struct {
@@ -26,56 +26,36 @@ func NewUserServiceClient(cc *grpc.ClientConn) UserServiceClient {
 }
 
 func (c *userServiceClient) GetUsers(ctx context.Context, in *flatbuffers.Builder, 
-	opts... grpc.CallOption) (UserService_GetUsersClient, error) {
-  stream, err := grpc.NewClientStream(ctx, &_UserService_serviceDesc.Streams[0], c.cc, "/fb.UserService/GetUsers", opts...)
+	opts... grpc.CallOption) (* GetUsersResponse, error) {
+  out := new(GetUsersResponse)
+  err := grpc.Invoke(ctx, "/fb.UserService/GetUsers", in, out, c.cc, opts...)
   if err != nil { return nil, err }
-  x := &userServiceGetUsersClient{stream}
-  if err := x.ClientStream.SendMsg(in); err != nil { return nil, err }
-  if err := x.ClientStream.CloseSend(); err != nil { return nil, err }
-  return x,nil
-}
-
-type UserService_GetUsersClient interface {
-  Recv() (*UserReply, error)
-  grpc.ClientStream
-}
-
-type userServiceGetUsersClient struct{
-  grpc.ClientStream
-}
-
-func (x *userServiceGetUsersClient) Recv() (*UserReply, error) {
-  m := new(UserReply)
-  if err := x.ClientStream.RecvMsg(m); err != nil { return nil, err }
-  return m, nil
+  return out, nil
 }
 
 // Server API for UserService service
 type UserServiceServer interface {
-  GetUsers(*UserRequest, UserService_GetUsersServer) error  
+  GetUsers(context.Context, *GetUsersRequest) (*flatbuffers.Builder, error)  
 }
 
 func RegisterUserServiceServer(s *grpc.Server, srv UserServiceServer) {
   s.RegisterService(&_UserService_serviceDesc, srv)
 }
 
-func _UserService_GetUsers_Handler(srv interface{}, stream grpc.ServerStream) error {
-  m := new(UserRequest)
-  if err := stream.RecvMsg(m); err != nil { return err }
-  return srv.(UserServiceServer).GetUsers(m, &userServiceGetUsersServer{stream})
-}
-
-type UserService_GetUsersServer interface { 
-  Send(* flatbuffers.Builder) error
-  grpc.ServerStream
-}
-
-type userServiceGetUsersServer struct {
-  grpc.ServerStream
-}
-
-func (x *userServiceGetUsersServer) Send(m *flatbuffers.Builder) error {
-  return x.ServerStream.SendMsg(m)
+func _UserService_GetUsers_Handler(srv interface{}, ctx context.Context,
+	dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+  in := new(GetUsersRequest)
+  if err := dec(in); err != nil { return nil, err }
+  if interceptor == nil { return srv.(UserServiceServer).GetUsers(ctx, in) }
+  info := &grpc.UnaryServerInfo{
+    Server: srv,
+    FullMethod: "/fb.UserService/GetUsers",
+  }
+  
+  handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+    return srv.(UserServiceServer).GetUsers(ctx, req.(* GetUsersRequest))
+  }
+  return interceptor(ctx, in, info, handler)
 }
 
 
@@ -83,13 +63,12 @@ var _UserService_serviceDesc = grpc.ServiceDesc{
   ServiceName: "fb.UserService",
   HandlerType: (*UserServiceServer)(nil),
   Methods: []grpc.MethodDesc{
+    {
+      MethodName: "GetUsers",
+      Handler: _UserService_GetUsers_Handler, 
+    },
   },
   Streams: []grpc.StreamDesc{
-    {
-      StreamName: "GetUsers",
-      Handler: _UserService_GetUsers_Handler, 
-      ServerStreams: true,
-    },
   },
 }
 

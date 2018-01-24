@@ -3,11 +3,7 @@ package components
 import (
 	"context"
 
-<<<<<<< HEAD:services/users/component/service.go
 	keycloak "github.com/cloudtrust/keycloak-bridge/services/users/module/keycloak"
-=======
-	keycloak "github.com/cloudtrust/keycloak-bridge/services/users/modules/keycloak"
->>>>>>> origin/refactor_user:services/users/components/service.go
 )
 
 /*

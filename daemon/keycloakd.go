@@ -2,10 +2,7 @@ package main
 
 import (
 	"fmt"
-<<<<<<< HEAD
 	"io"
-=======
->>>>>>> origin/refactor_user
 	"net"
 	"net/http"
 	"net/http/pprof"
@@ -23,7 +20,6 @@ import (
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 
-<<<<<<< HEAD
 	events_components "github.com/cloudtrust/keycloak-bridge/services/events/component"
 	events_endpoints "github.com/cloudtrust/keycloak-bridge/services/events/endpoint"
 	events_console "github.com/cloudtrust/keycloak-bridge/services/events/module/console"
@@ -34,28 +30,12 @@ import (
 	users_endpoints "github.com/cloudtrust/keycloak-bridge/services/users/endpoint"
 	users_keycloak "github.com/cloudtrust/keycloak-bridge/services/users/module/keycloak"
 	users_transport "github.com/cloudtrust/keycloak-bridge/services/users/transport"
-	users_flatbuf "github.com/cloudtrust/keycloak-bridge/services/users/transport/flatbuffer/fb"
+	users_fb "github.com/cloudtrust/keycloak-bridge/services/users/transport/flatbuffer/fb"
 	sentry "github.com/getsentry/raven-go"
 	gokit_influx "github.com/go-kit/kit/metrics/influx"
 	influx_client "github.com/influxdata/influxdb/client/v2"
 	stdopentracing "github.com/opentracing/opentracing-go"
 	jaegerConfig "github.com/uber/jaeger-client-go/config"
-=======
-	events_components "github.com/cloudtrust/keycloak-bridge/services/events/components"
-	events_endpoints "github.com/cloudtrust/keycloak-bridge/services/events/endpoints"
-	events_console "github.com/cloudtrust/keycloak-bridge/services/events/modules/console"
-	events_statistics "github.com/cloudtrust/keycloak-bridge/services/events/modules/statistics"
-	events_transport "github.com/cloudtrust/keycloak-bridge/services/events/transport"
-
-	users_components "github.com/cloudtrust/keycloak-bridge/services/users/components"
-	users_endpoints "github.com/cloudtrust/keycloak-bridge/services/users/endpoints"
-	users_keycloak "github.com/cloudtrust/keycloak-bridge/services/users/modules/keycloak"
-	users_transport "github.com/cloudtrust/keycloak-bridge/services/users/transport"
-	users_fb "github.com/cloudtrust/keycloak-bridge/services/users/transport/fb"
-	sentry "github.com/getsentry/raven-go"
-	gokit_influx "github.com/go-kit/kit/metrics/influx"
-	influx_client "github.com/influxdata/influxdb/client/v2"
->>>>>>> origin/refactor_user
 )
 
 var (
@@ -67,17 +47,6 @@ var (
 	GitCommit = "unknown"
 )
 
-<<<<<<< HEAD
-=======
-type componentConfig struct {
-	configFile           string
-	ComponentName        string
-	ComponentHTTPAddress string
-	ComponentGRPCAddress string
-	KeycloakURL          string
-}
-
->>>>>>> origin/refactor_user
 func main() {
 
 	/*
@@ -101,17 +70,12 @@ func main() {
 			Password: config["keycloak-password"].(string),
 			Timeout:  5 * time.Second,
 		}
-<<<<<<< HEAD
 		influxHTTPConfig = influx_client.HTTPConfig{
-=======
-		influxHttpConfig = influx_client.HTTPConfig{
->>>>>>> origin/refactor_user
 			Addr:     config["influx-url"].(string),
 			Username: config["influx-username"].(string),
 			Password: config["influx-password"].(string),
 		}
 		influxBatchPointsConfig = influx_client.BatchPointsConfig{
-<<<<<<< HEAD
 			Precision:        config["influx-precision"].(string),
 			Database:         config["influx-database"].(string),
 			RetentionPolicy:  config["influx-retention-policy"].(string),
@@ -132,15 +96,6 @@ func main() {
 			},
 		}
 		jaegerName = config["jaeger-service-name"].(string)
-=======
-			Precision:        "s",
-			Database:         "keycloak",
-			RetentionPolicy:  "",
-			WriteConsistency: "",
-		}
-		httpAddr  = fmt.Sprintf(config["component-http-address"].(string))
-		sentryDSN = fmt.Sprintf(config["sentry-dsn"].(string))
->>>>>>> origin/refactor_user
 	)
 
 	/*
@@ -246,25 +201,13 @@ func main() {
 		getUsersEndpoint = users_endpoints.MakeGetUsersEndpoint(
 			userComponent,
 			users_endpoints.MakeEndpointLoggingMiddleware(innerLogger, "outer_req_id", "inner_req_id"),
-<<<<<<< HEAD
-			//users_endpoints.MakeEndpointSnowflakeMiddleware("inner_req_id"),
 			users_endpoints.MakeEndpointTracingMiddleware(tracer, "getUsers"),
 		)
 		getUsersEndpoint = users_endpoints.MakeEndpointLoggingMiddleware(logger, "outer_req_id")(getUsersEndpoint)
 		getUsersEndpoint = users_endpoints.MakeTSMiddleware(in.NewHistogram("get_users_statistics"))(getUsersEndpoint)
-		//getUsersEndpoint = users_endpoints.MakeEndpointSnowflakeMiddleware("outer_req_id")(getUsersEndpoint)
-		//getUsersEndpoint = users_endpoints.MakeEndpointTracingMiddleware(tracer, "getUsers")(getUsersEndpoint)
 	}
 
 	var usersEndpoints = users_endpoints.Endpoints{
-=======
-		)
-		getUsersEndpoint = users_endpoints.MakeEndpointLoggingMiddleware(logger, "outer_req_id")(getUsersEndpoint)
-		getUsersEndpoint = users_endpoints.MakeTSMiddleware(in.NewHistogram("get_users_statistics"))(getUsersEndpoint)
-	}
-
-	var users_endpoints = users_endpoints.Endpoints{
->>>>>>> origin/refactor_user
 		GetUsersEndpoint: getUsersEndpoint,
 	}
 
@@ -289,15 +232,9 @@ func main() {
 		errc <- userGrpcServer.Serve(lis)
 	}()
 
-<<<<<<< HEAD
-	/********
-		Event stack
-	*********/
-=======
 	/*
 		Event stack
 	*/
->>>>>>> origin/refactor_user
 	var consoleModule events_console.Service
 	{
 		var loggerEvent = log.NewJSONLogger(os.Stdout)
@@ -338,20 +275,11 @@ func main() {
 		eventConsumerEndpoint = events_endpoints.MakeEndpointLoggingMiddleware(logger)(eventConsumerEndpoint)
 		eventConsumerEndpoint = events_endpoints.MakeEndpointTracingMiddleware(tracer, "events")(eventConsumerEndpoint)
 		eventConsumerEndpoint = events_endpoints.MakeCorrelationIDMiddleware()(eventConsumerEndpoint)
-
-<<<<<<< HEAD
 	}
-
 	var eventsEndpoints = events_endpoints.Endpoints{
 		KeycloakEvents: eventConsumerEndpoint,
 	}
 
-=======
-	var events_endpoints = events_endpoints.Endpoints{
-		MakeKeycloakEventsEndpoint: eventConsumerEndpoint,
-	}
-
->>>>>>> origin/refactor_user
 	/*
 		HTTP monitoring routes.
 	*/
@@ -409,11 +337,7 @@ func config(logger log.Logger) map[string]interface{} {
 	/*
 		Component default
 	*/
-<<<<<<< HEAD
 	viper.SetDefault("config-file", configFile)
-=======
-	viper.SetDefault("config-file", "./conf/DEV/keycloak_bridge.yaml")
->>>>>>> origin/refactor_user
 	viper.SetDefault("component-name", "keycloak-bridge")
 	viper.SetDefault("component-http-address", "127.0.0.1:8888")
 	viper.SetDefault("component-grpc-address", "127.0.0.1:5555")
@@ -443,7 +367,6 @@ func config(logger log.Logger) map[string]interface{} {
 	/*
 		Sentry client default
 	*/
-<<<<<<< HEAD
 	viper.SetDefault("sentry-dsn", "https://1b7fa325246a4aa4a4100b72b5a62038:9723f394f672468d9f95a717499cfa86@sentry.io/271870")
 
 	/*
@@ -457,11 +380,6 @@ func config(logger log.Logger) map[string]interface{} {
 	viper.SetDefault("jaeger-reporter-flushinterval-ms", 1000)
 
 	/*
-=======
-	viper.SetDefault("sentry-dsn", "https://99360b38b8c947baaa222a5367cd74bc:579dc85095114b6198ab0f605d0dc576@sentry-cloudtrust.dev.elca.ch/2")
-
-	/*
->>>>>>> origin/refactor_user
 		First level of overhide
 	*/
 	pflag.String("config-file", viper.GetString("config-file"), "The configuration file path can be relative or absolute.")

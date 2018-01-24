@@ -21,12 +21,6 @@
 
 [[projects]]
   branch = "master"
-  name = "github.com/cloudtrust/flaki"
-  packages = ["."]
-  revision = "fe713078385dab5701618dd05f67547a97246eab"
-
-[[projects]]
-  branch = "master"
   name = "github.com/cloudtrust/keycloak-client"
   packages = ["client"]
   revision = "0e8e8ec23fa0312b9479a67c3f6c2f9c81d9b448"
@@ -57,7 +51,6 @@
 
 [[projects]]
   name = "github.com/go-kit/kit"
-<<<<<<< HEAD
   packages = [
     "endpoint",
     "log",
@@ -65,15 +58,11 @@
     "metrics/generic",
     "metrics/influx",
     "metrics/internal/lv",
+    "transport/grpc",
     "transport/http"
   ]
-  revision = "a9ca6725cbbea455e61c6bc8a1ed28e81eb3493b"
-  version = "v0.5.0"
-=======
-  packages = ["endpoint","log","metrics","metrics/generic","metrics/influx","metrics/internal/lv","ratelimit","transport/grpc","transport/http"]
   revision = "4dc7be5d2d12881735283bcab7352178e190fc71"
   version = "v0.6.0"
->>>>>>> origin/refactor_user
 
 [[projects]]
   name = "github.com/go-logfmt/logfmt"
@@ -120,7 +109,6 @@
 [[projects]]
   branch = "master"
   name = "github.com/hashicorp/hcl"
-<<<<<<< HEAD
   packages = [
     ".",
     "hcl/ast",
@@ -132,9 +120,6 @@
     "json/scanner",
     "json/token"
   ]
-=======
-  packages = [".","hcl/ast","hcl/parser","hcl/scanner","hcl/strconv","hcl/token","json/parser","json/scanner","json/token"]
->>>>>>> origin/refactor_user
   revision = "23c074d0eceb2b8a5bfdbb271ab780cde70f05a8"
 
 [[projects]]
@@ -178,24 +163,6 @@
 [[projects]]
   name = "github.com/pelletier/go-toml"
   packages = ["."]
-  revision = "16398bac157da96aa88f98a2df640c7f32af1da2"
-  version = "v1.0.1"
-
-[[projects]]
-  name = "github.com/magiconair/properties"
-  packages = ["."]
-  revision = "d419a98cdbed11a922bf76f257b7c4be79b50e73"
-  version = "v1.7.4"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/mitchellh/mapstructure"
-  packages = ["."]
-  revision = "b4575eea38cca1123ec2dc90c26529b5c5acfcff"
-
-[[projects]]
-  name = "github.com/pelletier/go-toml"
-  packages = ["."]
   revision = "acdc4509485b587f5e675510c4f2c63e90ff68a8"
   version = "v1.1.0"
 
@@ -213,18 +180,12 @@
 
 [[projects]]
   name = "github.com/spf13/afero"
-<<<<<<< HEAD
   packages = [
     ".",
     "mem"
   ]
-  revision = "ec3a3111d1e1bdff38a61e09d5a5f5e974905611"
-  version = "v1.0.1"
-=======
-  packages = [".","mem"]
   revision = "bb8f1927f2a9d3ab41c9340aa034f6b803f4359c"
   version = "v1.0.2"
->>>>>>> origin/refactor_user
 
 [[projects]]
   name = "github.com/spf13/cast"
@@ -304,11 +265,7 @@
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix"]
-<<<<<<< HEAD
   revision = "fff93fa7cd278d84afc205751523809c464168ab"
-=======
-  revision = "2c42eef0765b9837fbdab12011af7830f55f88f0"
->>>>>>> origin/refactor_user
 
 [[projects]]
   branch = "master"
@@ -389,10 +346,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-<<<<<<< HEAD
-  inputs-digest = "904b917ee35cb30fdb1f3f1fe8b44d7f5c5fbdc41bdb8f70889683df5743188b"
-=======
-  inputs-digest = "80ea8877470fac5807ebc8785b45deb9b861d8084b6add0f476dc7b0f964500b"
->>>>>>> origin/refactor_user
+  inputs-digest = "bd85ba6d31c36409716bd2d4c796904fe11728cd0c744f0cc546fdb3f3050966"
   solver-name = "gps-cdcl"
   solver-version = 1

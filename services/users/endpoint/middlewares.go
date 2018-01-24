@@ -14,29 +14,10 @@ import (
 	otlog "github.com/opentracing/opentracing-go/log"
 )
 
-// /*
-// Snowflake middleware. Currently an incrementing int. Not distributed. Sucks.
-// */
-// func MakeEndpointSnowflakeMiddleware(key interface{}) endpoint.Middleware {
-// 	var snowflake = 0
-// 	return func(next endpoint.Endpoint) endpoint.Endpoint {
-// 		return func(ctx context.Context, req interface{}) (interface{}, error) {
-// 			defer func() {
-// 				snowflake++
-// 			}()
-// 			return next(context.WithValue(ctx, key, snowflake), req)
-// 		}
-// 	}
-// }
-
 func MakeTSMiddleware(h metrics.Histogram) endpoint.Middleware {
 	return func(next endpoint.Endpoint) endpoint.Endpoint {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
 			var md, _ = metadata.FromIncomingContext(ctx)
-			//var correlationID, err = strconv.ParseInt(md["id"][0], 10, 64)
-			//if err != nil {
-			//	return nil, err
-			//}
 			defer func(begin time.Time) {
 				h.With("id", md["id"][0]).Observe(time.Since(begin).Seconds())
 			}(time.Now())
