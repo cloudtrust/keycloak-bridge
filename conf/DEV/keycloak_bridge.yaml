@@ -14,7 +14,7 @@ influx-write-consistency: ""
 
 
 # Keycloak configs
-keycloak-url: http://localhost:8080
+keycloak-url: http://127.0.0.1:8080
 keycloak-username: admin
 keycloak-password: admin
 

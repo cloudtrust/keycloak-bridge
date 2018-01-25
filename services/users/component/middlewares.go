@@ -27,7 +27,7 @@ serviceLoggingMiddleware implements Service
 func (s *serviceLoggingMiddleware) GetUsers(ctx context.Context, realm string) ([]string, error) {
 	var md, _ = metadata.FromIncomingContext(ctx)
 	defer func(begin time.Time) {
-		s.log.Log("method", "GetUsers", "id", md["id"][0], "realm", realm, "took", time.Since(begin))
+		s.log.Log("method", "GetUsers", "realm", realm, "id", md["id"][0], "took", time.Since(begin))
 	}(time.Now())
 	return s.next.GetUsers(ctx, realm)
 }

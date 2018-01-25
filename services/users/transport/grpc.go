@@ -41,12 +41,19 @@ func encodeGrpcGetUsersResponse(_ context.Context, response interface{}) (interf
 	var resp = response.(endpoints.GetUsersResponse)
 	var b = flatbuffers.NewBuilder(0)
 	var users = resp.Users
-	fb.GetUsersResponseStart(b)
-	fb.GetUsersResponseStartNamesVector(b, len(users))
-	for _, u := range users {
-		b.PrependUOffsetT(b.CreateString(u))
+	var userOffs = []flatbuffers.UOffsetT{}
+	{
+		for _, u := range users {
+			userOffs = append(userOffs, b.CreateString(u))
+		}
 	}
-	b.EndVector(len(users))
+	fb.GetUsersResponseStartNamesVector(b, len(users))
+	for _, u := range userOffs {
+		b.PrependUOffsetT(u)
+	}
+	var names = b.EndVector(len(users))
+	fb.GetUsersResponseStart(b)
+	fb.GetUsersResponseAddNames(b, names)
 	b.Finish(fb.GetUsersResponseEnd(b))
 	return b, nil
 }
