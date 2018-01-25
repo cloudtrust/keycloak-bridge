@@ -1,6 +1,6 @@
-
+<!-- [![Build Status](https://travis-ci.org/cloudtrust/keycloak-bridge.svg?branch=master)](https://travis-ci.org/cloudtrust/keacloak-bridge) 
 [![Coverage Status](https://coveralls.io/repos/github/cloudtrust/keycloak-bridge/badge.svg?branch=master)](https://coveralls.io/github/cloudtrust/keycloak-bridge?branch=master)
-[![Go Report Card](https://goreportcard.com/badge/github.com/cloudtrust/keycloak-bridge)](https://goreportcard.com/report/github.com/cloudtrust/keycloak-bridge)
+[![Go Report Card](https://goreportcard.com/badge/github.com/cloudtrust/keycloak-bridge)](https://goreportcard.com/report/github.com/cloudtrust/keycloak-bridge) -->
 
 # keycloak-bridge
 Bridge services dedicated to keycloak interactions
