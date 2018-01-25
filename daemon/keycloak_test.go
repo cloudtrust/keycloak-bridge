@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/cloudtrust/keycloak-bridge/services/users/components"
-	user_fb "github.com/cloudtrust/keycloak-bridge/services/users/transport/fb"
+	"github.com/cloudtrust/keycloak-bridge/services/users/component"
+	user_fb "github.com/cloudtrust/keycloak-bridge/services/users/transport/flatbuffer/fb"
 	"github.com/go-kit/kit/log"
 	"github.com/google/flatbuffers/go"
 	"google.golang.org/grpc"
@@ -35,7 +35,7 @@ func (g *grpcService) GetUsers(ctx context.Context, realm string) ([]string, err
 	{
 		var ctx = metadata.NewOutgoingContext(context.Background(), metadata.New(map[string]string{"id": strconv.FormatUint(1423, 10)}))
 		var err error
-		resp, err = g.client.GetUsers(context.Background(), builder)
+		resp, err = g.client.GetUsers(ctx, builder)
 		if err != nil {
 			return nil, err
 		}
