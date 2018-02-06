@@ -5,7 +5,7 @@ function usage()
 	bold=$(tput bold)
 	normal=$(tput sgr0)
 	echo "NAME"
-	echo "    build.sh - Build flaki-service"
+	echo "    build.sh - Build keycloak-bridge"
 	echo "SYNOPSIS"
 	echo "    ${bold}build.sh${normal} ${bold}--env${normal} environment"
 }
@@ -36,8 +36,8 @@ if [ -z ${ENV} ]; then
 fi
 
 # Directories flatbuffer.
-FLATBUF_EVENT_DIR="./services/events/transport/flatbuffers"
-FLATBUF_USER_DIR="./services/users/transport/flatbuffer"
+FLATBUF_EVENT_DIR="./pkg/event/flatbuffer"
+FLATBUF_USER_DIR="./pkg/user/flatbuffer"
 
 # Delete the old dirs.
 echo "==> Removing old directories..."
@@ -46,28 +46,28 @@ mkdir -p bin/
 rm -f "$FLATBUF_EVENT_DIR"/fb/*
 rm -f "$FLATBUF_USER_DIR"/fb/*
 
-# Get the git commit.
-GIT_COMMIT="$(git rev-parse HEAD)"
-
-# Override the variables GitCommit and Environment in the main package.
-LD_FLAGS="-X main.GitCommit=${GIT_COMMIT} -X main.Environment=${ENV}"
-
 # Flatbuffers.
 echo
 echo "==> Flatbuffers:"
 flatc --grpc --go -o "$FLATBUF_EVENT_DIR" "$FLATBUF_EVENT_DIR"/event.fbs 
 ls -hl "$FLATBUF_EVENT_DIR"/fb
-flatc --grpc --go -o "$FLATBUF_USER_DIR" "$FLATBUF_USER_DIR"/users.fbs 
+flatc --grpc --go -o "$FLATBUF_USER_DIR" "$FLATBUF_USER_DIR"/user.fbs 
 ls -hl "$FLATBUF_USER_DIR"/fb
 
 # Build.
 echo
 echo "==> Build:"
 
-export CGO_ENABLED="0"
+cd cmd
 
-go build  -ldflags "$LD_FLAGS" -o bin/keycloakBridge ./daemon/keycloakd.go
+# Get the git commit.
+GIT_COMMIT="$(git rev-parse HEAD)"
+
+# Override the variables GitCommit and Environment in the main package.
+LD_FLAGS="-X main.GitCommit=${GIT_COMMIT} -X main.Environment=${ENV}"
+
+go build -ldflags "$LD_FLAGS" -o ../bin/keycloakd
 echo "Build commit '${GIT_COMMIT}' for '${ENV}' environment."
-ls -hl bin/
+ls -hl ../bin/
 
 exit 0
