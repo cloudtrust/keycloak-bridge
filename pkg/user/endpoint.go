@@ -9,8 +9,8 @@ import (
 
 // Endpoints wraps a service behind a set of endpoints.
 type Endpoints struct {
-	mws              []endpoint.Middleware
-	GetUsersEndpoint endpoint.Endpoint
+	mws           []endpoint.Middleware
+	FetchEndpoint endpoint.Endpoint
 }
 
 // NewEndpoints returns Endpoints with the middlware mws. MWs are used to apply middlware
@@ -25,12 +25,12 @@ func NewEndpoints(mws ...endpoint.Middleware) *Endpoints {
 // MakeGetUsersEndpoint makes the GetUsersEndpoint and apply the middelwares mws and Endpoints.mws.
 // GetUsersEndpoint returns a generator of users. This generator is a wrapper over an endpoint
 // that can be composed upon using mws.
-func (es *Endpoints) MakeGetUsersEndpoint(s KeycloakComponent, mws ...endpoint.Middleware) *Endpoints {
+func (es *Endpoints) MakeGetUsersEndpoint(c KeycloakComponent, mws ...endpoint.Middleware) *Endpoints {
 	var e endpoint.Endpoint = func(ctx context.Context, req interface{}) (interface{}, error) {
 		switch getUsersRequest := req.(type) {
 		case GetUsersRequest:
 			var realm = getUsersRequest.Realm
-			var users, err = s.GetUsers(ctx, realm)
+			var users, err = c.GetUsers(ctx, realm)
 			var response = GetUsersResponse{Users: users}
 			return response, err
 		default:
@@ -39,7 +39,7 @@ func (es *Endpoints) MakeGetUsersEndpoint(s KeycloakComponent, mws ...endpoint.M
 
 	}
 	e = es.applyMids(e, mws...)
-	es.GetUsersEndpoint = e
+	es.FetchEndpoint = e
 	return es
 }
 
@@ -59,7 +59,7 @@ func (es *Endpoints) GetUsers(ctx context.Context, realm string) ([]string, erro
 	{
 		var usersPreCast interface{}
 		var err error
-		usersPreCast, err = es.GetUsersEndpoint(ctx, nil)
+		usersPreCast, err = es.FetchEndpoint(ctx, nil)
 		if err != nil {
 			return []string{}, err
 		}

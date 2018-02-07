@@ -3,32 +3,32 @@ package event
 import (
 	"context"
 
-	events "github.com/cloudtrust/keycloak-bridge/services/events/transport/flatbuffers/fb"
+	"github.com/cloudtrust/keycloak-bridge/pkg/event/flatbuffer/fb"
 )
 
 /*
 Mock MuxService for Testing
 */
-type mockMuxService struct{}
+type mockMuxComponent struct{}
 
-func (u *mockMuxService) Event(ctx context.Context, eventType string, obj []byte) (interface{}, error) {
+func (u *mockMuxComponent) Event(ctx context.Context, eventType string, obj []byte) (interface{}, error) {
 	return eventType, nil
 }
 
 /*
 Mock AdminEventService for Testing
 */
-type mockAdminEventService struct{}
+type mockAdminComponent struct{}
 
-func (u *mockAdminEventService) AdminEvent(ctx context.Context, adminEvent *events.AdminEvent) (interface{}, error) {
+func (u *mockAdminComponent) AdminEvent(ctx context.Context, adminEvent *fb.AdminEvent) (interface{}, error) {
 	return "", nil
 }
 
 /*
 Mock EventService for Testing
 */
-type mockEventService struct{}
+type mockComponent struct{}
 
-func (u *mockEventService) Event(ctx context.Context, event *events.Event) (interface{}, error) {
+func (u *mockComponent) Event(ctx context.Context, event *fb.Event) (interface{}, error) {
 	return "", nil
 }

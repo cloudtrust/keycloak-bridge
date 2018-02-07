@@ -9,16 +9,14 @@ import (
 	"testing"
 	"time"
 
-	events "github.com/cloudtrust/keycloak-bridge/services/events/transport/flatbuffers/fb"
+	"github.com/cloudtrust/keycloak-bridge/pkg/event/flatbuffer/fb"
+
 	"github.com/google/flatbuffers/go"
 	"github.com/stretchr/testify/assert"
 )
 
-var UID int64 = 1234
-var REALM = "realm"
-
 func TestEventTransport_decodeKeycloakEventsReceiverRequest_ValidAdminEvent(t *testing.T) {
-	var byteAdminEvent = createAdminEvent()
+	var byteAdminEvent = createhttpAdminEvent(1234)
 	var stringAdminEvent = base64.StdEncoding.EncodeToString(byteAdminEvent)
 	var body = strings.NewReader("{\"type\": \"AdminEvent\", \"Obj\": \"" + stringAdminEvent + "\"}")
 	var req = httptest.NewRequest("POST", "http://localhost:8888/event/id", body)
@@ -36,7 +34,7 @@ func TestEventTransport_decodeKeycloakEventsReceiverRequest_ValidAdminEvent(t *t
 
 func TestEventTransport_decodeKeycloakEventsReceiverRequest_ValidEvent(t *testing.T) {
 
-	var byteEvent = createEvent()
+	var byteEvent = createhttpEvent(1234, "realm")
 	var stringEvent = base64.StdEncoding.EncodeToString(byteEvent)
 	var body io.Reader = strings.NewReader("{\"type\": \"Event\", \"Obj\": \"" + stringEvent + "\"}")
 	var req = httptest.NewRequest("POST", "http://localhost:8888/event/id", body)
@@ -53,7 +51,7 @@ func TestEventTransport_decodeKeycloakEventsReceiverRequest_ValidEvent(t *testin
 }
 
 func TestEventTransport_decodeKeycloakEventsReceiverRequest_UnknownType(t *testing.T) {
-	var byteEvent = createEvent()
+	var byteEvent = createhttpEvent(1234, "realm")
 	var stringEvent = base64.StdEncoding.EncodeToString(byteEvent)
 	var body io.Reader = strings.NewReader("{\"type\": \"Unknown\", \"Obj\": \"" + stringEvent + "\"}")
 	var req = httptest.NewRequest("POST", "http://localhost:8888/event/id", body)
@@ -74,25 +72,25 @@ func TestEventTransport_decodeKeycloakEventsReceiverRequest_InvalidObject(t *tes
 	assert.IsType(t, ErrInvalidArgument{}, err)
 }
 
-func createAdminEvent() []byte {
+func createhttpAdminEvent(uid int64) []byte {
 	var builder = flatbuffers.NewBuilder(0)
-	events.AdminEventStart(builder)
-	events.AdminEventAddTime(builder, time.Now().Unix())
-	events.AdminEventAddUid(builder, UID)
-	events.AdminEventAddOperationType(builder, events.OperationTypeACTION)
-	var adminEventOffset = events.AdminEventEnd(builder)
+	fb.AdminEventStart(builder)
+	fb.AdminEventAddTime(builder, time.Now().Unix())
+	fb.AdminEventAddUid(builder, uid)
+	fb.AdminEventAddOperationType(builder, fb.OperationTypeACTION)
+	var adminEventOffset = fb.AdminEventEnd(builder)
 	builder.Finish(adminEventOffset)
 	return builder.FinishedBytes()
 }
 
-func createEvent() []byte {
+func createhttpEvent(uid int64, realm string) []byte {
 	var builder = flatbuffers.NewBuilder(0)
-	var realmStr = builder.CreateString(REALM)
-	events.EventStart(builder)
-	events.EventAddTime(builder, time.Now().Unix())
-	events.EventAddUid(builder, UID)
-	events.EventAddRealmId(builder, realmStr)
-	var eventOffset = events.EventEnd(builder)
+	var realmStr = builder.CreateString(realm)
+	fb.EventStart(builder)
+	fb.EventAddTime(builder, time.Now().Unix())
+	fb.EventAddUid(builder, uid)
+	fb.EventAddRealmId(builder, realmStr)
+	var eventOffset = fb.EventEnd(builder)
 	builder.Finish(eventOffset)
 	return builder.FinishedBytes()
 }

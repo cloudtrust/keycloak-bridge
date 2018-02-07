@@ -7,7 +7,6 @@ import (
 	"net/http"
 
 	"github.com/go-kit/kit/endpoint"
-	"github.com/go-kit/kit/log"
 	httptransport "github.com/go-kit/kit/transport/http"
 )
 
@@ -78,11 +77,11 @@ func decodeKeycloakEventsReceiverRequest(_ context.Context, r *http.Request) (re
 }
 
 //MakeReceiverHandler follows the go-kit transport layer
-func MakeReceiverHandler(e endpoint.Endpoint, log log.Logger) *httptransport.Server {
+func MakeReceiverHandler(e endpoint.Endpoint) *httptransport.Server {
 	return httptransport.NewServer(e,
 		decodeKeycloakEventsReceiverRequest,
 		encodeResponse,
-		httptransport.ServerErrorEncoder(MakeErrorHandler(log)))
+		httptransport.ServerErrorEncoder(MakeErrorHandler()))
 }
 
 func encodeResponse(_ context.Context, w http.ResponseWriter, response interface{}) error {
@@ -91,10 +90,9 @@ func encodeResponse(_ context.Context, w http.ResponseWriter, response interface
 }
 
 //MakeErrorHandler returns the encoded error
-func MakeErrorHandler(logger log.Logger) httptransport.ErrorEncoder {
+func MakeErrorHandler() httptransport.ErrorEncoder {
 	var errorHandler httptransport.ErrorEncoder
 	errorHandler = func(ctx context.Context, err error, w http.ResponseWriter) {
-		logger.Log(err.Error())
 
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		switch err {

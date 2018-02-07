@@ -6,21 +6,30 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-kit/kit/log"
+	sentry "github.com/getsentry/raven-go"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestErrorMiddlewareComponents_LoggingErrorMiddleware(t *testing.T) {
-	var mockMuxService MuxService = &mockMuxServiceErr{}
-	var calledLog = false
+	var mockMuxComponent MuxComponent = &mockMuxServiceErr{}
 	var calledSentry = false
-	var mockLogger log.Logger = &mockLogger{Called: &calledLog}
-	var mockSentry sentryClient = &mockSentry{Called: &calledSentry}
+	var mockSentry Sentry = &mockSentry{Called: calledSentry}
 
-	var m = MakeServiceErrorMiddleware(mockLogger, mockSentry)(mockMuxService)
+	var m = MakeComponentTrackingMW(mockSentry)(mockMuxComponent)
 	m.Event(nil, "test", nil)
-	assert.True(t, calledLog)
 	assert.True(t, calledSentry)
+}
+
+// Mock Sentry.
+type mockSentry struct {
+	Called        bool
+	CorrelationID string
+}
+
+func (client *mockSentry) CaptureError(err error, tags map[string]string, interfaces ...sentry.Interface) string {
+	client.Called = true
+	client.CorrelationID = tags["correlation_id"]
+	return ""
 }
 
 /*

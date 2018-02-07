@@ -68,7 +68,7 @@ func (c *component) Event(ctx context.Context, event *fb.Event) (interface{}, er
 		return apply(c.fErrEvent, eventMap)
 	}
 
-	return apply(u.fStdEvent, eventMap)
+	return apply(c.fStdEvent, eventMap)
 }
 
 // AdminComponent is the admin event component interface.

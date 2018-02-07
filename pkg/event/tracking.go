@@ -4,38 +4,34 @@ import (
 	"context"
 
 	sentry "github.com/getsentry/raven-go"
-	"github.com/go-kit/kit/log"
 )
 
+// Sentry interface.
 type Sentry interface {
 	CaptureError(err error, tags map[string]string, interfaces ...sentry.Interface) string
 }
 
-/*
-Error Middleware
-*/
-type serviceErrorMiddleware struct {
-	log    log.Logger
+// Tracking middleware at component level.
+type trackingComponentMW struct {
 	client Sentry
-	next   MuxService
+	next   MuxComponent
 }
 
-func (s *serviceErrorMiddleware) Event(ctx context.Context, eventType string, obj []byte) (interface{}, error) {
-	var i, err = s.next.Event(ctx, eventType, obj)
-	if err != nil {
-		s.log.Log("msg", "Send error to Sentry", "id", ctx.Value("id").(string), "error", err)
-		s.client.CaptureError(err, nil)
-	}
-	return i, err
-}
-
-//MakeServiceErrorMiddleware wraps the MuxService with error tracking
-func MakeServiceErrorMiddleware(log log.Logger, client Sentry) MuxMiddleware {
-	return func(next MuxService) MuxService {
-		return &serviceErrorMiddleware{
-			log:    log,
+// MakeComponentTrackingMW makes an error tracking middleware, where the errors are sent to Sentry.
+func MakeComponentTrackingMW(client Sentry) func(MuxComponent) MuxComponent {
+	return func(next MuxComponent) MuxComponent {
+		return &trackingComponentMW{
 			client: client,
 			next:   next,
 		}
 	}
+}
+
+// trackingComponentMW implements MuxComponent.
+func (m *trackingComponentMW) Event(ctx context.Context, eventType string, obj []byte) (interface{}, error) {
+	var r, err = m.next.Event(ctx, eventType, obj)
+	if err != nil {
+		m.client.CaptureError(err, map[string]string{"correlation_id": ctx.Value("correlation_id").(string)})
+	}
+	return r, err
 }

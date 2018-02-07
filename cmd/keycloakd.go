@@ -19,7 +19,6 @@ import (
 	keycloak_client "github.com/cloudtrust/keycloak-client/client"
 	"github.com/garyburd/redigo/redis"
 	sentry "github.com/getsentry/raven-go"
-	"github.com/go-kit/kit/endpoint"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/metrics"
 	gokit_influx "github.com/go-kit/kit/metrics/influx"
@@ -260,7 +259,7 @@ func main() {
 		// NextID.
 		var getUsersHandler grpc_transport.Handler
 		{
-			getUsersHandler = user.MakeGRPCGetUsersHandler(userEndpoints.GetUsersEndpoint)
+			getUsersHandler = user.MakeGRPCGetUsersHandler(userEndpoints.FetchEndpoint)
 			getUsersHandler = user.MakeGRPCTracingMW(tracer, "grpc_server_getusers")(getUsersHandler)
 		}
 
@@ -275,76 +274,71 @@ func main() {
 	var consoleModule event.ConsoleModule
 	{
 		consoleModule = event.NewConsoleModule(log.With(logger, "svc", "event", "module", "console"))
-		consoleModule = event.MakeServiceLoggingMiddleware(logger)(consoleModule)
+		consoleModule = event.MakeConsoleModuleLoggingMW(log.With(logger, "svc", "event", "mw", "module"))(consoleModule)
 	}
 
 	var statisticModule event.StatisticModule
 	{
 		statisticModule = event.NewStatisticModule(influxMetrics, influxBatchPointsConfig)
+		statisticModule = event.MakeStatisticModuleLoggingMW(log.With(logger, "svc", "event", "mw", "module"))(statisticModule)
 	}
 
-	var adminEventComponent event.AdminEventService
+	var eventAdminComponent event.AdminComponent
 	{
 		var fns = [](func(map[string]string) error){consoleModule.Print, statisticModule.Stats}
-		adminEventComponent = event.NewAdminEventService(fns, fns, fns, fns)
-		adminEventComponent = event.MakeServiceLoggingAdminEventMiddleware(logger)(adminEventComponent)
+		eventAdminComponent = event.NewAdminComponent(fns, fns, fns, fns)
+		eventAdminComponent = event.MakeAdminComponentLoggingMW(log.With(logger, "svc", "event", "mw", "component"))(eventAdminComponent)
 	}
 
-	var eventComponent event.EventService
+	var eventComponent event.Component
 	{
 		var fns = [](func(map[string]string) error){consoleModule.Print, statisticModule.Stats}
-		eventComponent = event.NewEventService(fns, fns)
+		eventComponent = event.NewComponent(fns, fns)
 	}
 
-	var muxComponent event.MuxService
+	var muxComponent event.MuxComponent
 	{
-		muxComponent = event.NewMuxService(eventComponent, adminEventComponent)
-		muxComponent = event.MakeServiceLoggingMuxMiddleware(logger)(muxComponent)
-		muxComponent = event.MakeServiceErrorMiddleware(logger, sentryClient)(muxComponent)
-
+		muxComponent = event.NewMuxComponent(eventComponent, eventAdminComponent)
+		muxComponent = event.MakeMuxComponentLoggingMW(log.With(logger, "svc", "event", "mw", "component"))(muxComponent)
 	}
 
-	var eventConsumerEndpoint endpoint.Endpoint
-	{
-		eventConsumerEndpoint = event.MakeKeycloakEventsEndpoint(muxComponent)
-		eventConsumerEndpoint = middleware.MakeEndpointLoggingMW(log.With(logger, "svc", "event", "mw", "endpoint"))(eventConsumerEndpoint)
-		eventConsumerEndpoint = middleware.MakeEndpointTracingMiddleware(tracer, "events")(eventConsumerEndpoint)
-		eventConsumerEndpoint = middleware.MakeCorrelationIDMiddleware()(eventConsumerEndpoint)
-	}
-	var eventsEndpoints = event.Endpoints{
-		KeycloakEvents: eventConsumerEndpoint,
-	}
+	var eventEndpoints = event.NewEndpoints()
+	eventEndpoints.MakeKeycloakEndpoint(
+		muxComponent,
+		middleware.MakeEndpointLoggingMW(log.With(logger, "svc", "event", "mw", "endpoint")),
+		// middleware.MakeEndpointTracingMiddleware(tracer, "events")(eventConsumerEndpoint)
+		// middleware.MakeCorrelationIDMiddleware()(eventConsumerEndpoint)
+	)
 
 	/*
 		HTTP monitoring routes.
 	*/
 	go func() {
-		var logger = log.With(logger, "transport", "HTTP")
+		var logger = log.With(logger, "transport", "http")
+		logger.Log("addr", httpAddr)
 
 		var route = mux.NewRouter()
 
 		route.Handle("/", http.HandlerFunc(MakeVersion(componentName, Version, Environment, GitCommit)))
 
-		//debug
-		var debugSubroute = route.PathPrefix("/debug").Subrouter()
-		debugSubroute.HandleFunc("/pprof/", http.HandlerFunc(pprof.Index))
-		debugSubroute.HandleFunc("/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))
-		debugSubroute.HandleFunc("/pprof/profile", http.HandlerFunc(pprof.Profile))
-		debugSubroute.HandleFunc("/pprof/symbol", http.HandlerFunc(pprof.Symbol))
-		debugSubroute.HandleFunc("/pprof/trace", http.HandlerFunc(pprof.Trace))
-
 		//event
 		var eventSubroute = route.PathPrefix("/event").Subrouter()
 		var eventHandler http.Handler
 		{
-			eventHandler = event.MakeReceiverHandler(eventsEndpoints.KeycloakEvents, logger)
-			eventHandler = event.MakeTracingMiddleware(tracer, "event")(eventHandler)
+			eventHandler = event.MakeReceiverHandler(eventEndpoints.FetchEndpoint)
+			//eventHandler = event.MakeTracingMiddleware(tracer, "event")(eventHandler)
 		}
 		eventSubroute.Handle("/receiver", eventHandler)
 
-		//other
-
-		logger.Log("addr", httpAddr)
+		//debug
+		if pprofRouteEnabled {
+			var debugSubroute = route.PathPrefix("/debug").Subrouter()
+			debugSubroute.HandleFunc("/pprof/", http.HandlerFunc(pprof.Index))
+			debugSubroute.HandleFunc("/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))
+			debugSubroute.HandleFunc("/pprof/profile", http.HandlerFunc(pprof.Profile))
+			debugSubroute.HandleFunc("/pprof/symbol", http.HandlerFunc(pprof.Symbol))
+			debugSubroute.HandleFunc("/pprof/trace", http.HandlerFunc(pprof.Trace))
+		}
 
 		errc <- http.ListenAndServe(httpAddr, route)
 	}()

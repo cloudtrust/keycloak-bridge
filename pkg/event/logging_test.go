@@ -1,51 +1,50 @@
 package event
 
 import (
-	"fmt"
 	"testing"
 
-	"github.com/go-kit/kit/log"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestEventMiddlewareComponents_LoggingMuxMiddleware(t *testing.T) {
-	var mockMuxService MuxService = &mockMuxService{}
-	var called = false
-	var mockLogger log.Logger = &mockLogger{Called: &called}
+	var mockMuxComponent MuxComponent = &mockMuxComponent{}
+	var mockLogger = &mockLogger{Called: false}
 
-	var m = MakeServiceLoggingMuxMiddleware(mockLogger)(mockMuxService)
+	var m = MakeMuxComponentLoggingMW(mockLogger)(mockMuxComponent)
 	m.Event(nil, "test", nil)
-	assert.True(t, called)
+	assert.True(t, mockLogger.Called)
 }
 func TestEventMiddlewareComponents_LoggingAdminEventMiddleware(t *testing.T) {
-	var mockAdminEventService AdminEventService = &mockAdminEventService{}
-	var called = false
-	var mockLogger log.Logger = &mockLogger{Called: &called}
+	var mockAdminComponent AdminComponent = &mockAdminComponent{}
+	var mockLogger = &mockLogger{Called: false}
 
-	var m = MakeServiceLoggingAdminEventMiddleware(mockLogger)(mockAdminEventService)
+	var m = MakeAdminComponentLoggingMW(mockLogger)(mockAdminComponent)
 	m.AdminEvent(nil, nil)
-	assert.True(t, called)
+	assert.True(t, mockLogger.Called)
 }
 
 func TestEventMiddlewareComponents_LoggingEventMiddleware(t *testing.T) {
-	var mockEventService EventService = &mockEventService{}
-	var called = false
-	var mockLogger log.Logger = &mockLogger{Called: &called}
+	var mockComponent Component = &mockComponent{}
+	var mockLogger = &mockLogger{Called: false}
 
-	var m = MakeServiceLoggingEventMiddleware(mockLogger)(mockEventService)
+	var m = MakeComponentLoggingMW(mockLogger)(mockComponent)
 	m.Event(nil, nil)
-	assert.True(t, called)
+	assert.True(t, mockLogger.Called)
 }
 
-/*
-Mock Logger for testing
-*/
+// Mock Logger.
 type mockLogger struct {
-	Called *bool
+	Called        bool
+	CorrelationID string
 }
 
 func (l *mockLogger) Log(keyvals ...interface{}) error {
-	*(l.Called) = true
-	fmt.Println(keyvals)
+	l.Called = true
+
+	for i, kv := range keyvals {
+		if kv == "correlation_id" {
+			l.CorrelationID = keyvals[i+1].(string)
+		}
+	}
 	return nil
 }

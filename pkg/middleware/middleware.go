@@ -101,8 +101,6 @@ func MakeCorrelationIDMiddleware() endpoint.Middleware {
 			}
 			var newCtx = context.WithValue(ctx, "id", strconv.FormatInt(id, 10))
 			return next(newCtx, req)
-
 		}
-
 	}
 }

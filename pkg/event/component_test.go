@@ -12,11 +12,40 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var UID int64 = 1234
-var REALM = "realm"
+func TestMuxComponent(t *testing.T) {
+	var ch = make(chan string, 1)
 
-func TestEventComponents_NewEventService(t *testing.T) {
-	var eventService EventService
+	var fnEvent = func(eventMap map[string]string) error {
+		ch <- "Event"
+		return nil
+	}
+
+	var fnAdminEvent = func(eventMap map[string]string) error {
+		ch <- "AdminEvent"
+		return nil
+	}
+
+	var tEvent = [](func(map[string]string) error){fnEvent}
+	var tAdminEvent = [](func(map[string]string) error){fnAdminEvent}
+
+	var eventComponent = NewComponent(tEvent, tEvent)
+	var adminEventService = NewAdminComponent(tAdminEvent, tAdminEvent, tAdminEvent, tAdminEvent)
+
+	var muxComponent MuxComponent = NewMuxComponent(eventComponent, adminEventService)
+
+	var event = createEventBytes(fb.EventTypeCLIENT_DELETE, 1234, "realm")
+	var _, err = muxComponent.Event(context.Background(), "Event", event)
+	assert.Equal(t, "Event", <-ch)
+	assert.Nil(t, err)
+
+	var adminEvent = createAdminEventBytes(fb.OperationTypeDELETE, 1234)
+	var _, err2 = muxComponent.Event(context.Background(), "AdminEvent", adminEvent)
+	assert.Equal(t, "AdminEvent", <-ch)
+	assert.Nil(t, err2)
+
+}
+func TestComponent(t *testing.T) {
+	var eventComponent Component
 	{
 		var fnStd = func(eventMap map[string]string) error {
 			return nil
@@ -28,26 +57,25 @@ func TestEventComponents_NewEventService(t *testing.T) {
 
 		var tStd = [](func(map[string]string) error){fnStd}
 		var tErr = [](func(map[string]string) error){fnErr}
-		eventService = NewEventService(tStd, tErr)
+		eventComponent = NewComponent(tStd, tErr)
 	}
 
 	{
 		var eventStd = createEvent(fb.EventTypeCLIENT_DELETE)
-		var res, err = eventService.Event(nil, eventStd)
+		var res, err = eventComponent.Event(nil, eventStd)
 		assert.Equal(t, "ok", res)
 		assert.Nil(t, err)
 	}
 
 	{
 		var eventErr = createEvent(fb.EventTypeCLIENT_DELETE_ERROR)
-		var res, err = eventService.Event(nil, eventErr)
+		var res, err = eventComponent.Event(nil, eventErr)
 		assert.NotNil(t, err)
 		assert.Nil(t, res)
 	}
 }
-
-func TestEventComponents_NewAdminEventService(t *testing.T) {
-	var adminEventService AdminEventService
+func TestAdminComponent(t *testing.T) {
+	var adminEventComponent AdminComponent
 	var ch = make(chan string, 1)
 	{
 		var fnCreate = func(eventMap map[string]string) error {
@@ -74,20 +102,20 @@ func TestEventComponents_NewAdminEventService(t *testing.T) {
 		var tUpdate = [](func(map[string]string) error){fnUpdate}
 		var tDelete = [](func(map[string]string) error){fnDelete}
 		var tAction = [](func(map[string]string) error){fnAction}
-		adminEventService = NewAdminEventService(tCreate, tUpdate, tDelete, tAction)
+		adminEventComponent = NewAdminComponent(tCreate, tUpdate, tDelete, tAction)
 	}
 
 	var fn = func(operationType int8) {
 		var adminEvt *fb.AdminEvent = createAdminEvent(fb.OperationTypeCREATE)
-		var _, err = adminEventService.AdminEvent(nil, adminEvt)
+		var _, err = adminEventComponent.AdminEvent(nil, adminEvt)
 
 		assert.Equal(t, getOperationTypeName(fb.OperationTypeCREATE), <-ch)
 		assert.Nil(t, err)
 	}
 
 	var operationTypes = [4]int8{fb.OperationTypeCREATE,
-		flatbuffer.OperationTypeUPDATE,
-		flatbuffer.OperationTypeDELETE,
+		fb.OperationTypeUPDATE,
+		fb.OperationTypeDELETE,
 		fb.OperationTypeACTION}
 
 	for _, element := range operationTypes {
@@ -95,50 +123,11 @@ func TestEventComponents_NewAdminEventService(t *testing.T) {
 	}
 }
 
-func TestEventComponents_NewMuxService(t *testing.T) {
-
-	var muxService MuxService
-	var ch = make(chan string, 1)
-	{
-		var fnEvent = func(eventMap map[string]string) error {
-			ch <- "Event"
-			return nil
-		}
-
-		var fnAdminEvent = func(eventMap map[string]string) error {
-			ch <- "AdminEvent"
-			return nil
-		}
-
-		var tEvent = [](func(map[string]string) error){fnEvent}
-		var tAdminEvent = [](func(map[string]string) error){fnAdminEvent}
-
-		var eventService = NewEventService(tEvent, tEvent)
-		var adminEventService = NewAdminEventService(tAdminEvent, tAdminEvent, tAdminEvent, tAdminEvent)
-
-		muxService = NewMuxService(eventService, adminEventService)
-	}
-
-	{
-		var event = createEventBytes(fb.EventTypeCLIENT_DELETE)
-		var _, err = muxService.Event(context.Background(), "Event", event)
-		assert.Equal(t, "Event", <-ch)
-		assert.Nil(t, err)
-	}
-
-	{
-		var adminEvent = createAdminEventBytes(fb.OperationTypeDELETE)
-		var _, err = muxService.Event(context.Background(), "AdminEvent", adminEvent)
-		assert.Equal(t, "AdminEvent", <-ch)
-		assert.Nil(t, err)
-	}
-}
-
-func TestEventComponents_eventToMap(t *testing.T) {
+func TestEventToMap(t *testing.T) {
 
 	var builder = flatbuffers.NewBuilder(0)
 
-	var realmStr = builder.CreateString(REALM)
+	var realmStr = builder.CreateString("realm")
 	var clientIDStr = builder.CreateString("clientId")
 	var userIDStr = builder.CreateString("userId")
 	var sessionIDStr = builder.CreateString("sessionId")
@@ -156,7 +145,7 @@ func TestEventComponents_eventToMap(t *testing.T) {
 	var value2 = builder.CreateString("value2")
 	fb.TupleStart(builder)
 	fb.TupleAddKey(builder, key2)
-	FinishedBytes.TupleAddValue(builder, value2)
+	fb.TupleAddValue(builder, value2)
 	var detail2 = fb.TupleEnd(builder)
 
 	fb.EventStartDetailsVector(builder, 2)
@@ -165,7 +154,7 @@ func TestEventComponents_eventToMap(t *testing.T) {
 	var details = builder.EndVector(2)
 
 	fb.EventStart(builder)
-	fb.EventAddUid(builder, UID)
+	fb.EventAddUid(builder, 1234)
 	fb.EventAddTime(builder, time.Now().Unix())
 	fb.EventAddType(builder, 0)
 	fb.EventAddRealmId(builder, realmStr)
@@ -185,14 +174,14 @@ func TestEventComponents_eventToMap(t *testing.T) {
 }
 
 func createEvent(eventType int8) *fb.Event {
-	return fb.GetRootAsEvent(createEventBytes(eventType), 0)
+	return fb.GetRootAsEvent(createEventBytes(eventType, 1234, "realm"), 0)
 }
 
-func createEventBytes(eventType int8) []byte {
+func createEventBytes(eventType int8, uid int64, realm string) []byte {
 	var builder = flatbuffers.NewBuilder(0)
-	var realmStr = builder.CreateString(REALM)
+	var realmStr = builder.CreateString(realm)
 	fb.EventStart(builder)
-	fb.EventAddUid(builder, UID)
+	fb.EventAddUid(builder, uid)
 	fb.EventAddTime(builder, time.Now().Unix())
 	fb.EventAddType(builder, eventType)
 	fb.EventAddRealmId(builder, realmStr)
@@ -202,14 +191,14 @@ func createEventBytes(eventType int8) []byte {
 }
 
 func createAdminEvent(operationType int8) *fb.AdminEvent {
-	return fb.GetRootAsAdminEvent(createAdminEventBytes(operationType), 0)
+	return fb.GetRootAsAdminEvent(createAdminEventBytes(operationType, 1234), 0)
 }
 
-func createAdminEventBytes(operationType int8) []byte {
+func createAdminEventBytes(operationType int8, uid int64) []byte {
 	var builder = flatbuffers.NewBuilder(0)
-	flatbuffer.AdminEventStart(builder)
+	fb.AdminEventStart(builder)
 	fb.AdminEventAddTime(builder, time.Now().Unix())
-	fb.AdminEventAddUid(builder, UID)
+	fb.AdminEventAddUid(builder, uid)
 	fb.AdminEventAddOperationType(builder, operationType)
 	var adminEventOffset = fb.AdminEventEnd(builder)
 	builder.Finish(adminEventOffset)

@@ -99,7 +99,7 @@ func MakeConsoleModuleLoggingMW(log log.Logger) func(ConsoleModule) ConsoleModul
 // consoleModuleLoggingMW implements ConsoleModule.
 func (m *consoleModuleLoggingMW) Print(mp map[string]string) error {
 	defer func(begin time.Time) {
-		m.logger.Log("method", "Print", "args", mp, "correlation_id", ctx.Value("correlation_id").(string), "took", time.Since(begin))
+		m.logger.Log("method", "Print", "args", mp, "took", time.Since(begin))
 	}(time.Now())
 	return m.next.Print(mp)
 }
@@ -123,7 +123,7 @@ func MakeStatisticModuleLoggingMW(log log.Logger) func(StatisticModule) Statisti
 // statisticModuleLoggingMW implements StatisticModule.
 func (m *statisticModuleLoggingMW) Stats(mp map[string]string) error {
 	defer func(begin time.Time) {
-		m.logger.Log("method", "Stats", "args", mp, "correlation_id", ctx.Value("correlation_id").(string), "took", time.Since(begin))
+		m.logger.Log("method", "Stats", "args", mp, "took", time.Since(begin))
 	}(time.Now())
 	return m.next.Stats(mp)
 }
