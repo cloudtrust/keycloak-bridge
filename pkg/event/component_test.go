@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"testing"
 	"time"
 
@@ -61,14 +62,14 @@ func TestComponent(t *testing.T) {
 	}
 
 	{
-		var eventStd = createEvent(fb.EventTypeCLIENT_DELETE)
+		var eventStd = createEvent(fb.EventTypeCLIENT_DELETE, 1234, "realm")
 		var res, err = eventComponent.Event(nil, eventStd)
 		assert.Equal(t, "ok", res)
 		assert.Nil(t, err)
 	}
 
 	{
-		var eventErr = createEvent(fb.EventTypeCLIENT_DELETE_ERROR)
+		var eventErr = createEvent(fb.EventTypeCLIENT_DELETE_ERROR, 1234, "realm")
 		var res, err = eventComponent.Event(nil, eventErr)
 		assert.NotNil(t, err)
 		assert.Nil(t, res)
@@ -106,7 +107,7 @@ func TestAdminComponent(t *testing.T) {
 	}
 
 	var fn = func(operationType int8) {
-		var adminEvt *fb.AdminEvent = createAdminEvent(fb.OperationTypeCREATE)
+		var adminEvt *fb.AdminEvent = createAdminEvent(fb.OperationTypeCREATE, 1234)
 		var _, err = adminEventComponent.AdminEvent(nil, adminEvt)
 
 		assert.Equal(t, getOperationTypeName(fb.OperationTypeCREATE), <-ch)
@@ -124,57 +125,77 @@ func TestAdminComponent(t *testing.T) {
 }
 
 func TestEventToMap(t *testing.T) {
+	var uid int64 = 1234
+	var time = time.Now().Unix()
+	var etype int8 = 0
+	var realmID = "realm"
+	var clientID = "client"
+	var userID = "user"
+	var sessionID = "session"
+	var ipAddr = "ipAddress"
+	var error = "error"
 
-	var builder = flatbuffers.NewBuilder(0)
+	var event *fb.Event
+	{
+		var builder = flatbuffers.NewBuilder(0)
 
-	var realmStr = builder.CreateString("realm")
-	var clientIDStr = builder.CreateString("clientId")
-	var userIDStr = builder.CreateString("userId")
-	var sessionIDStr = builder.CreateString("sessionId")
-	var ipAddressStr = builder.CreateString("ipAddress")
-	var errorStr = builder.CreateString("error")
+		var realm = builder.CreateString(realmID)
+		var clientID = builder.CreateString(clientID)
+		var userID = builder.CreateString(userID)
+		var sessionID = builder.CreateString(sessionID)
+		var ipAddress = builder.CreateString(ipAddr)
+		var error = builder.CreateString(error)
 
-	var key1 = builder.CreateString("key1")
-	var value1 = builder.CreateString("value1")
-	fb.TupleStart(builder)
-	fb.TupleAddKey(builder, key1)
-	fb.TupleAddValue(builder, value1)
-	var detail1 = fb.TupleEnd(builder)
+		var key1 = builder.CreateString("key1")
+		var value1 = builder.CreateString("value1")
+		fb.TupleStart(builder)
+		fb.TupleAddKey(builder, key1)
+		fb.TupleAddValue(builder, value1)
+		var detail1 = fb.TupleEnd(builder)
 
-	var key2 = builder.CreateString("key2")
-	var value2 = builder.CreateString("value2")
-	fb.TupleStart(builder)
-	fb.TupleAddKey(builder, key2)
-	fb.TupleAddValue(builder, value2)
-	var detail2 = fb.TupleEnd(builder)
+		var key2 = builder.CreateString("key2")
+		var value2 = builder.CreateString("value2")
+		fb.TupleStart(builder)
+		fb.TupleAddKey(builder, key2)
+		fb.TupleAddValue(builder, value2)
+		var detail2 = fb.TupleEnd(builder)
 
-	fb.EventStartDetailsVector(builder, 2)
-	builder.PrependUOffsetT(detail1)
-	builder.PrependUOffsetT(detail2)
-	var details = builder.EndVector(2)
+		fb.EventStartDetailsVector(builder, 2)
+		builder.PrependUOffsetT(detail1)
+		builder.PrependUOffsetT(detail2)
+		var details = builder.EndVector(2)
 
-	fb.EventStart(builder)
-	fb.EventAddUid(builder, 1234)
-	fb.EventAddTime(builder, time.Now().Unix())
-	fb.EventAddType(builder, 0)
-	fb.EventAddRealmId(builder, realmStr)
-	fb.EventAddClientId(builder, clientIDStr)
-	fb.EventAddUserId(builder, userIDStr)
-	fb.EventAddSessionId(builder, sessionIDStr)
-	fb.EventAddIpAddress(builder, ipAddressStr)
-	fb.EventAddError(builder, errorStr)
-	fb.EventAddDetails(builder, details)
-	var eventOffset = fb.EventEnd(builder)
-	builder.Finish(eventOffset)
-	var event = fb.GetRootAsEvent(builder.FinishedBytes(), 0)
+		fb.EventStart(builder)
+		fb.EventAddUid(builder, uid)
+		fb.EventAddTime(builder, time)
+		fb.EventAddType(builder, etype)
+		fb.EventAddRealmId(builder, realm)
+		fb.EventAddClientId(builder, clientID)
+		fb.EventAddUserId(builder, userID)
+		fb.EventAddSessionId(builder, sessionID)
+		fb.EventAddIpAddress(builder, ipAddress)
+		fb.EventAddError(builder, error)
+		fb.EventAddDetails(builder, details)
+		var eventOffset = fb.EventEnd(builder)
+		builder.Finish(eventOffset)
+		event = fb.GetRootAsEvent(builder.FinishedBytes(), 0)
+	}
 
 	var m = eventToMap(event)
+	assert.Equal(t, strconv.FormatInt(uid, 10), m["uid"])
+	assert.Equal(t, strconv.FormatInt(time, 10), m["time"])
+	assert.Equal(t, fb.EnumNamesEventType[int(etype)], m["type"])
+	assert.Equal(t, realmID, m["realmId"])
+	assert.Equal(t, clientID, m["clientId"])
+	assert.Equal(t, userID, m["userId"])
+	assert.Equal(t, sessionID, m["sessionId"])
+	assert.Equal(t, ipAddr, m["ipAddress"])
+	assert.Equal(t, error, m["error"])
 
-	fmt.Print(m)
 }
 
-func createEvent(eventType int8) *fb.Event {
-	return fb.GetRootAsEvent(createEventBytes(eventType, 1234, "realm"), 0)
+func createEvent(eventType int8, uid int64, realm string) *fb.Event {
+	return fb.GetRootAsEvent(createEventBytes(eventType, uid, realm), 0)
 }
 
 func createEventBytes(eventType int8, uid int64, realm string) []byte {
@@ -190,8 +211,8 @@ func createEventBytes(eventType int8, uid int64, realm string) []byte {
 	return builder.FinishedBytes()
 }
 
-func createAdminEvent(operationType int8) *fb.AdminEvent {
-	return fb.GetRootAsAdminEvent(createAdminEventBytes(operationType, 1234), 0)
+func createAdminEvent(operationType int8, uid int64) *fb.AdminEvent {
+	return fb.GetRootAsAdminEvent(createAdminEventBytes(operationType, uid), 0)
 }
 
 func createAdminEventBytes(operationType int8, uid int64) []byte {
@@ -207,4 +228,40 @@ func createAdminEventBytes(operationType int8, uid int64) []byte {
 
 func getOperationTypeName(key int8) string {
 	return fb.EnumNamesOperationType[int(key)]
+}
+
+// Mock MuxComponent.
+type mockMuxComponent struct {
+	fail bool
+}
+
+func (c *mockMuxComponent) Event(ctx context.Context, eventType string, obj []byte) (interface{}, error) {
+	if c.fail {
+		return "", fmt.Errorf("fail")
+	}
+	return "", nil
+}
+
+// Mock AdminComponent.
+type mockAdminComponent struct {
+	fail bool
+}
+
+func (c *mockAdminComponent) AdminEvent(ctx context.Context, adminEvent *fb.AdminEvent) (interface{}, error) {
+	if c.fail {
+		return "", fmt.Errorf("fail")
+	}
+	return "", nil
+}
+
+// Mock Component.
+type mockComponent struct {
+	fail bool
+}
+
+func (c *mockComponent) Event(ctx context.Context, event *fb.Event) (interface{}, error) {
+	if c.fail {
+		return "", fmt.Errorf("fail")
+	}
+	return "", nil
 }

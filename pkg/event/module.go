@@ -1,6 +1,7 @@
 package event
 
 import (
+	"context"
 	"time"
 
 	"github.com/go-kit/kit/log"
@@ -9,7 +10,7 @@ import (
 
 // ConsoleModule is the interface of the console module.
 type ConsoleModule interface {
-	Print(map[string]string) error
+	Print(context.Context, map[string]string) error
 }
 
 type consoleModule struct {
@@ -23,7 +24,7 @@ func NewConsoleModule(logger log.Logger) ConsoleModule {
 	}
 }
 
-func (cm *consoleModule) Print(m map[string]string) error {
+func (cm *consoleModule) Print(_ context.Context, m map[string]string) error {
 	for k, v := range m {
 		cm.logger.Log(k, v)
 	}
@@ -32,7 +33,7 @@ func (cm *consoleModule) Print(m map[string]string) error {
 
 // StatisticModule is the interface of the keycloak statistic module.
 type StatisticModule interface {
-	Stats(map[string]string) error
+	Stats(context.Context, map[string]string) error
 }
 
 type Influx interface {
@@ -56,7 +57,7 @@ func NewStatisticModule(influx Influx, batchPointsConfig influx.BatchPointsConfi
 	}
 }
 
-func (sm *statisticModule) Stats(m map[string]string) error {
+func (sm *statisticModule) Stats(_ context.Context, m map[string]string) error {
 
 	// Create a new point batch
 	var batchPoints influx.BatchPoints

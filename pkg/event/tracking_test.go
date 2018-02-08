@@ -3,21 +3,39 @@ package event
 import (
 	"context"
 	"fmt"
+	"math/rand"
+	"strconv"
 	"testing"
 	"time"
 
+	"github.com/cloudtrust/keycloak-bridge/pkg/event/flatbuffer/fb"
 	sentry "github.com/getsentry/raven-go"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestErrorMiddlewareComponents_LoggingErrorMiddleware(t *testing.T) {
-	var mockMuxComponent MuxComponent = &mockMuxServiceErr{}
-	var calledSentry = false
-	var mockSentry Sentry = &mockSentry{Called: calledSentry}
+func TestComponentTrackingMW(t *testing.T) {
+	var mockSentry = &mockSentry{}
 
-	var m = MakeComponentTrackingMW(mockSentry)(mockMuxComponent)
-	m.Event(nil, "test", nil)
-	assert.True(t, calledSentry)
+	var m = MakeComponentTrackingMW(mockSentry)(&mockMuxComponent{fail: true})
+
+	// Context with correlation ID.
+	rand.Seed(time.Now().UnixNano())
+	var id = strconv.FormatUint(rand.Uint64(), 10)
+	var ctx = context.WithValue(context.Background(), "correlation_id", id)
+
+	// Event.
+	var uid = rand.Int63()
+	mockSentry.Called = false
+	mockSentry.CorrelationID = ""
+	m.Event(ctx, "Event", createEventBytes(fb.EventTypeCLIENT_DELETE, uid, "realm"))
+	assert.True(t, mockSentry.Called)
+	assert.Equal(t, id, mockSentry.CorrelationID)
+
+	// Event without correlation ID.
+	var f = func() {
+		m.Event(context.Background(), "Event", createEventBytes(fb.EventTypeCLIENT_DELETE, uid, "realm"))
+	}
+	assert.Panics(t, f)
 }
 
 // Mock Sentry.

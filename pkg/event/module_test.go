@@ -1,6 +1,7 @@
 package event
 
 import (
+	"context"
 	"testing"
 
 	influx "github.com/influxdata/influxdb/client/v2"
@@ -12,7 +13,7 @@ func TestConsoleModule(t *testing.T) {
 
 	var consoleModule = NewConsoleModule(mockLogger)
 	assert.False(t, mockLogger.Called)
-	var err = consoleModule.Print(map[string]string{"key": "val"})
+	var err = consoleModule.Print(context.Background(), map[string]string{"key": "val"})
 	assert.Nil(t, err)
 	assert.True(t, mockLogger.Called)
 }
@@ -27,7 +28,7 @@ func TestStatisticsModule(t *testing.T) {
 
 	var statisticModule = NewStatisticModule(mockInflux, batchPointsConfig)
 	assert.False(t, mockInflux.Called)
-	var err = statisticModule.Stats(map[string]string{"key": "val"})
+	var err = statisticModule.Stats(context.Background(), map[string]string{"key": "val"})
 	assert.Nil(t, err)
 	assert.True(t, mockInflux.Called)
 }
@@ -41,3 +42,13 @@ func (i *mockInflux) Write(bp influx.BatchPoints) error {
 	i.Called = true
 	return nil
 }
+
+// Mock ConsoleModule.
+type mockConsoleModule struct{}
+
+func (m *mockConsoleModule) Print(context.Context, map[string]string) error { return nil }
+
+// Mock StatisticModule
+type mockStatisticModule struct{}
+
+func (m *mockStatisticModule) Stats(context.Context, map[string]string) error { return nil }

@@ -47,3 +47,8 @@ func (es *Endpoints) applyMids(e endpoint.Endpoint, mws ...endpoint.Middleware) 
 	}
 	return e
 }
+
+// Implements Service.
+func (es *Endpoints) Event(ctx context.Context, eventType string, obj []byte) (interface{}, error) {
+	return es.FetchEndpoint(ctx, nil)
+}
