@@ -25,7 +25,7 @@ func NewEndpoints(mws ...endpoint.Middleware) *Endpoints {
 // MakeGetUsersEndpoint makes the GetUsersEndpoint and apply the middelwares mws and Endpoints.mws.
 // GetUsersEndpoint returns a generator of users. This generator is a wrapper over an endpoint
 // that can be composed upon using mws.
-func (es *Endpoints) MakeGetUsersEndpoint(c KeycloakComponent, mws ...endpoint.Middleware) *Endpoints {
+func (es *Endpoints) MakeGetUsersEndpoint(c Component, mws ...endpoint.Middleware) *Endpoints {
 	var e endpoint.Endpoint = func(ctx context.Context, req interface{}) (interface{}, error) {
 		switch getUsersRequest := req.(type) {
 		case GetUsersRequest:

@@ -23,11 +23,11 @@ func TestMuxComponentLoggingMW(t *testing.T) {
 
 	// Event.
 	var uid = rand.Int63()
-	mockLogger.Called = false
-	mockLogger.CorrelationID = ""
+	mockLogger.called = false
+	mockLogger.correlationID = ""
 	m.Event(ctx, "Event", createEventBytes(fb.EventTypeCLIENT_DELETE, uid, "realm"))
-	assert.True(t, mockLogger.Called)
-	assert.Equal(t, id, mockLogger.CorrelationID)
+	assert.True(t, mockLogger.called)
+	assert.Equal(t, id, mockLogger.correlationID)
 
 	// Event without correlation ID.
 	var f = func() {
@@ -48,11 +48,11 @@ func TestComponentLoggingMW(t *testing.T) {
 
 	// Event.
 	var uid = rand.Int63()
-	mockLogger.Called = false
-	mockLogger.CorrelationID = ""
+	mockLogger.called = false
+	mockLogger.correlationID = ""
 	m.Event(ctx, createEvent(fb.EventTypeCLIENT_INFO, uid, "realm"))
-	assert.True(t, mockLogger.Called)
-	assert.Equal(t, id, mockLogger.CorrelationID)
+	assert.True(t, mockLogger.called)
+	assert.Equal(t, id, mockLogger.correlationID)
 
 	// Event without correlation ID.
 	var f = func() {
@@ -73,11 +73,11 @@ func TestAdminComponentLoggingMW(t *testing.T) {
 
 	// Event.
 	var uid = rand.Int63()
-	mockLogger.Called = false
-	mockLogger.CorrelationID = ""
+	mockLogger.called = false
+	mockLogger.correlationID = ""
 	m.AdminEvent(ctx, createAdminEvent(fb.OperationTypeCREATE, uid))
-	assert.True(t, mockLogger.Called)
-	assert.Equal(t, id, mockLogger.CorrelationID)
+	assert.True(t, mockLogger.called)
+	assert.Equal(t, id, mockLogger.correlationID)
 
 	// Event without correlation ID.
 	var f = func() {
@@ -98,17 +98,9 @@ func TestConsoleModuleLoggingMW(t *testing.T) {
 
 	// Print.
 	var mp = map[string]string{"key": "val"}
-	mockLogger.Called = false
-	mockLogger.CorrelationID = ""
+	mockLogger.called = false
 	m.Print(ctx, mp)
-	assert.True(t, mockLogger.Called)
-	assert.Equal(t, id, mockLogger.CorrelationID)
-
-	// Print without correlation ID.
-	var f = func() {
-		m.Print(context.Background(), mp)
-	}
-	assert.Panics(t, f)
+	assert.True(t, mockLogger.called)
 }
 
 func TestStatisticModuleLoggingMW(t *testing.T) {
@@ -124,31 +116,23 @@ func TestStatisticModuleLoggingMW(t *testing.T) {
 
 	// Stats.
 	var mp = map[string]string{"key": "val"}
-	mockLogger.Called = false
-	mockLogger.CorrelationID = ""
+	mockLogger.called = false
 	m.Stats(ctx, mp)
-	assert.True(t, mockLogger.Called)
-	assert.Equal(t, id, mockLogger.CorrelationID)
-
-	// Print without correlation ID.
-	var f = func() {
-		m.Stats(context.Background(), mp)
-	}
-	assert.Panics(t, f)
+	assert.True(t, mockLogger.called)
 }
 
 // Mock Logger.
 type mockLogger struct {
-	Called        bool
-	CorrelationID string
+	called        bool
+	correlationID string
 }
 
 func (l *mockLogger) Log(keyvals ...interface{}) error {
-	l.Called = true
+	l.called = true
 
 	for i, kv := range keyvals {
 		if kv == "correlation_id" {
-			l.CorrelationID = keyvals[i+1].(string)
+			l.correlationID = keyvals[i+1].(string)
 		}
 	}
 	return nil

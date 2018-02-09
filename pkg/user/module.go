@@ -6,28 +6,30 @@ import (
 	keycloak "github.com/cloudtrust/keycloak-client/client"
 )
 
-/*
-This is the interface that user services implement.
-*/
-type KeycloakModule interface {
+// Module is the interface of the user module.
+type Module interface {
 	GetUsers(ctx context.Context, realm string) ([]string, error)
 }
 
-type keycloakModule struct {
-	client keycloak.Client
+type Keycloak interface {
+	GetUsers(string) ([]keycloak.UserRepresentation, error)
 }
 
-func NewKeycloakModule(client keycloak.Client) KeycloakModule {
-	return &keycloakModule{
-		client: client,
+type module struct {
+	keycloak Keycloak
+}
+
+func NewModule(keycloak Keycloak) Module {
+	return &module{
+		keycloak: keycloak,
 	}
 }
 
-func (m *keycloakModule) GetUsers(ctx context.Context, realm string) ([]string, error) {
+func (m *module) GetUsers(ctx context.Context, realm string) ([]string, error) {
 	var representations []keycloak.UserRepresentation
 	{
 		var err error
-		representations, err = m.client.GetUsers(realm)
+		representations, err = m.keycloak.GetUsers(realm)
 		if err != nil {
 			return nil, err
 		}

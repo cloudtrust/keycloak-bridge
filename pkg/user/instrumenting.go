@@ -4,19 +4,53 @@ import (
 	"context"
 	"time"
 
-	"github.com/go-kit/kit/endpoint"
 	"github.com/go-kit/kit/metrics"
-	"google.golang.org/grpc/metadata"
 )
 
-func MakeTSMiddleware(h metrics.Histogram) endpoint.Middleware {
-	return func(next endpoint.Endpoint) endpoint.Endpoint {
-		return func(ctx context.Context, req interface{}) (interface{}, error) {
-			var md, _ = metadata.FromIncomingContext(ctx)
-			defer func(begin time.Time) {
-				h.With("id", md["id"][0]).Observe(time.Since(begin).Seconds())
-			}(time.Now())
-			return next(ctx, req)
+// Instrumenting middleware for the user component.
+type componentInstrumentingMW struct {
+	h    metrics.Histogram
+	next Component
+}
+
+// MakeComponentInstrumentingMW makes an instrumenting middleware for the user component.
+func MakeComponentInstrumentingMW(h metrics.Histogram) func(Component) Component {
+	return func(next Component) Component {
+		return &componentInstrumentingMW{
+			h:    h,
+			next: next,
 		}
 	}
+}
+
+// componentInstrumentingMW implements Component.
+func (m *componentInstrumentingMW) GetUsers(ctx context.Context, realm string) ([]string, error) {
+	defer func(begin time.Time) {
+		m.h.With("correlation_id", ctx.Value("correlation_id").(string)).Observe(time.Since(begin).Seconds())
+	}(time.Now())
+	return m.next.GetUsers(ctx, realm)
+}
+
+// Instrumenting middleware at module level.
+type moduleInstrumentingMW struct {
+	h    metrics.Histogram
+	next Module
+}
+
+// MakeModuleInstrumentingMW makes an instrumenting middleware (at module level).
+func MakeModuleInstrumentingMW(h metrics.Histogram) func(Module) Module {
+	return func(next Module) Module {
+		return &moduleInstrumentingMW{
+			h:    h,
+			next: next,
+		}
+	}
+}
+
+// moduleInstrumentingMW implements Module.
+func (m *moduleInstrumentingMW) GetUsers(ctx context.Context, realm string) ([]string, error) {
+	defer func(begin time.Time) {
+		m.h.With("correlation_id", ctx.Value("correlation_id").(string)).Observe(time.Since(begin).Seconds())
+	}(time.Now())
+	return m.next.GetUsers(ctx, realm)
 }

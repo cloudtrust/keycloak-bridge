@@ -36,23 +36,27 @@ if [ -z ${ENV} ]; then
 fi
 
 # Directories flatbuffer.
-FLATBUF_EVENT_DIR="./pkg/event/flatbuffer"
-FLATBUF_USER_DIR="./pkg/user/flatbuffer"
+FB_EVENT_DIR="./pkg/event/flatbuffer"
+FB_USER_DIR="./pkg/user/flatbuffer"
+FB_FLAKI_DIR="./flaki/flatbuffer"
+
 
 # Delete the old dirs.
 echo "==> Removing old directories..."
 rm -f bin/*
 mkdir -p bin/
-rm -f "$FLATBUF_EVENT_DIR"/fb/*
-rm -f "$FLATBUF_USER_DIR"/fb/*
+rm -f "$FB_EVENT_DIR"/fb/*
+rm -f "$FB_USER_DIR"/fb/*
 
 # Flatbuffers.
 echo
 echo "==> Flatbuffers:"
-flatc --grpc --go -o "$FLATBUF_EVENT_DIR" "$FLATBUF_EVENT_DIR"/event.fbs 
-ls -hl "$FLATBUF_EVENT_DIR"/fb
-flatc --grpc --go -o "$FLATBUF_USER_DIR" "$FLATBUF_USER_DIR"/user.fbs 
-ls -hl "$FLATBUF_USER_DIR"/fb
+flatc --grpc --go -o "$FB_EVENT_DIR" "$FB_EVENT_DIR"/event.fbs 
+ls -hl "$FB_EVENT_DIR"/fb
+flatc --grpc --go -o "$FB_USER_DIR" "$FB_USER_DIR"/user.fbs 
+ls -hl "$FB_USER_DIR"/fb
+flatc --grpc --go -o "$FB_FLAKI_DIR" "$FB_FLAKI_DIR"/flaki.fbs 
+ls -hl "$FB_FLAKI_DIR"/fb
 
 # Build.
 echo

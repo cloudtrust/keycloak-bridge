@@ -1,0 +1,18 @@
+namespace fb;
+
+// The response message containing the unique ID or an error
+table FlakiReply {
+    id:string;
+    error:string;
+}
+
+table EmptyRequest {
+}
+
+rpc_service Flaki {
+  NextID(EmptyRequest):FlakiReply;
+  NextValidID(EmptyRequest):FlakiReply;
+}
+
+root_type FlakiReply;
+

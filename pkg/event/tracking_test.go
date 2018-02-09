@@ -2,7 +2,6 @@ package event
 
 import (
 	"context"
-	"fmt"
 	"math/rand"
 	"strconv"
 	"testing"
@@ -25,11 +24,11 @@ func TestComponentTrackingMW(t *testing.T) {
 
 	// Event.
 	var uid = rand.Int63()
-	mockSentry.Called = false
-	mockSentry.CorrelationID = ""
+	mockSentry.called = false
+	mockSentry.correlationID = ""
 	m.Event(ctx, "Event", createEventBytes(fb.EventTypeCLIENT_DELETE, uid, "realm"))
-	assert.True(t, mockSentry.Called)
-	assert.Equal(t, id, mockSentry.CorrelationID)
+	assert.True(t, mockSentry.called)
+	assert.Equal(t, id, mockSentry.correlationID)
 
 	// Event without correlation ID.
 	var f = func() {
@@ -40,30 +39,12 @@ func TestComponentTrackingMW(t *testing.T) {
 
 // Mock Sentry.
 type mockSentry struct {
-	Called        bool
-	CorrelationID string
+	called        bool
+	correlationID string
 }
 
 func (client *mockSentry) CaptureError(err error, tags map[string]string, interfaces ...sentry.Interface) string {
-	client.Called = true
-	client.CorrelationID = tags["correlation_id"]
+	client.called = true
+	client.correlationID = tags["correlation_id"]
 	return ""
-}
-
-/*
-Mock MuxService returning an error for testing Sentry
-*/
-type mockMuxServiceErr struct{}
-
-type MyError struct {
-	When time.Time
-	What string
-}
-
-func (e MyError) Error() string {
-	return fmt.Sprintf("%v: %v", e.When, e.What)
-}
-
-func (u *mockMuxServiceErr) Event(ctx context.Context, eventType string, obj []byte) (interface{}, error) {
-	return eventType, MyError{time.Now(), "Error for Sentry"}
 }

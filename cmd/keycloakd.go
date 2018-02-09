@@ -12,11 +12,13 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/cloudtrust/keycloak-bridge/flaki"
 	"github.com/cloudtrust/keycloak-bridge/pkg/event"
 	"github.com/cloudtrust/keycloak-bridge/pkg/middleware"
 	"github.com/cloudtrust/keycloak-bridge/pkg/user"
 	"github.com/cloudtrust/keycloak-bridge/pkg/user/flatbuffer/fb"
-	keycloak_client "github.com/cloudtrust/keycloak-client/client"
+	keycloak "github.com/cloudtrust/keycloak-client/client"
+
 	"github.com/garyburd/redigo/redis"
 	sentry "github.com/getsentry/raven-go"
 	"github.com/go-kit/kit/log"
@@ -42,12 +44,6 @@ var (
 	GitCommit = "unknown"
 )
 
-type mockFlakiService struct{}
-
-func (f *mockFlakiService) NextValidIDString() string {
-	return "0"
-}
-
 func main() {
 
 	// Logger.
@@ -63,7 +59,9 @@ func main() {
 		grpcAddr      = config["component-grpc-address"].(string)
 		httpAddr      = config["component-http-address"].(string)
 
-		keycloakHTTPConfig = keycloak_client.HttpConfig{
+		flakiAddr = config["flaki-url"].(string)
+
+		keycloakHTTPConfig = keycloak.HttpConfig{
 			Addr:     fmt.Sprintf("http://%s", config["keycloak-url"].(string)),
 			Username: config["keycloak-username"].(string),
 			Password: config["keycloak-password"].(string),
@@ -140,10 +138,10 @@ func main() {
 	}()
 
 	// Keycloak client.
-	var keycloakClient keycloak_client.Client
+	var keycloakClient keycloak.Client
 	{
 		var err error
-		keycloakClient, err = keycloak_client.NewHttpClient(keycloakHTTPConfig)
+		keycloakClient, err = keycloak.NewHttpClient(keycloakHTTPConfig)
 		if err != nil {
 			logger.Log("msg", "could not create Keycloak client", "error", err)
 			return
@@ -219,22 +217,35 @@ func main() {
 
 	}
 
+	// Flaki client.
+	var flakiClient *flaki.Client
+	{
+		var err error
+		flakiClient = flaki.NewClient(flakiAddr, tracer)
+		// Test connection.
+		err = flakiClient.Ping()
+		if err != nil {
+			logger.Log("msg", "could not create Flaki client", "error", err)
+			return
+		}
+	}
+
 	// User service.
-	var keycloakModule user.KeycloakModule
+	var userModule user.Module
 	{
-		keycloakModule = user.NewKeycloakModule(keycloakClient)
+		userModule = user.NewModule(keycloakClient)
 	}
 
-	var keycloakComponent user.KeycloakComponent
+	var userComponent user.Component
 	{
-		keycloakComponent = user.NewKeycloakComponent(keycloakModule)
-		keycloakComponent = user.MakeComponentLoggingMW(log.With(logger, "svc", "user", "mw", "component"))(keycloakComponent)
+		userComponent = user.NewComponent(userModule)
+		userComponent = user.MakeComponentLoggingMW(log.With(logger, "svc", "user", "mw", "component"))(userComponent)
 	}
 
-	var userEndpoints = user.NewEndpoints(middleware.MakeEndpointCorrelationIDMW(&mockFlakiService{}))
+	var userEndpoints = user.NewEndpoints(middleware.MakeEndpointCorrelationIDMW(flakiClient))
 
 	userEndpoints.MakeGetUsersEndpoint(
-		keycloakComponent,
+		userComponent,
 		middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("getusers_endpoint")),
 		middleware.MakeEndpointLoggingMW(log.With(logger, "svc", "user", "mw", "endpoint", "unit", "getusers")),
 		middleware.MakeEndpointTracingMW(tracer, "getusers_endpoint"),
@@ -260,7 +271,7 @@ func main() {
 		var getUsersHandler grpc_transport.Handler
 		{
 			getUsersHandler = user.MakeGRPCGetUsersHandler(userEndpoints.FetchEndpoint)
-			getUsersHandler = user.MakeGRPCTracingMW(tracer, "grpc_server_getusers")(getUsersHandler)
+			getUsersHandler = middleware.MakeGRPCTracingMW(tracer, "grpc_server_getusers")(getUsersHandler)
 		}
 
 		var grpcServer = user.NewGRPCServer(getUsersHandler)
@@ -285,14 +296,14 @@ func main() {
 
 	var eventAdminComponent event.AdminComponent
 	{
-		var fns = [](func(map[string]string) error){consoleModule.Print, statisticModule.Stats}
+		var fns = []event.FuncEvent{consoleModule.Print, statisticModule.Stats}
 		eventAdminComponent = event.NewAdminComponent(fns, fns, fns, fns)
 		eventAdminComponent = event.MakeAdminComponentLoggingMW(log.With(logger, "svc", "event", "mw", "component"))(eventAdminComponent)
 	}
 
 	var eventComponent event.Component
 	{
-		var fns = [](func(map[string]string) error){consoleModule.Print, statisticModule.Stats}
+		var fns = []event.FuncEvent{consoleModule.Print, statisticModule.Stats}
 		eventComponent = event.NewComponent(fns, fns)
 	}
 
@@ -402,6 +413,9 @@ func config(logger log.Logger) map[string]interface{} {
 	viper.SetDefault("component-name", "keycloak-bridge")
 	viper.SetDefault("component-http-address", "0.0.0.0:8888")
 	viper.SetDefault("component-grpc-address", "0.0.0.0:5555")
+
+	// Flaki default.
+	viper.SetDefault("flaki-url", "127.0.0.1:9999")
 
 	// Keycloak default.
 	viper.SetDefault("keycloak-url", "127.0.0.1:8080")

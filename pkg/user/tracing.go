@@ -3,54 +3,63 @@ package user
 import (
 	"context"
 
-	grpc_transport "github.com/go-kit/kit/transport/grpc"
 	opentracing "github.com/opentracing/opentracing-go"
-	otag "github.com/opentracing/opentracing-go/ext"
-	"google.golang.org/grpc/metadata"
 )
 
-type grpcTracingMW struct {
-	next          grpc_transport.Handler
-	tracer        opentracing.Tracer
-	operationName string
+// Tracing middleware at component level.
+type componentTracingMW struct {
+	tracer opentracing.Tracer
+	next   Component
 }
 
-// MakeGRPCTracingMW try to extract an existing span from the HTTP headers. It it exists, we
-// continue the span, if not we create a new one.
-func MakeGRPCTracingMW(tracer opentracing.Tracer, operationName string) func(grpc_transport.Handler) grpc_transport.Handler {
-	return func(next grpc_transport.Handler) grpc_transport.Handler {
-		return &grpcTracingMW{
-			next:          next,
-			tracer:        tracer,
-			operationName: operationName,
+// MakeComponentTracingMW makes a tracing middleware at component level.
+func MakeComponentTracingMW(tracer opentracing.Tracer) func(Component) Component {
+	return func(next Component) Component {
+		return &componentTracingMW{
+			tracer: tracer,
+			next:   next,
 		}
 	}
 }
 
-// ServeGRPC try to extract an existing span from the GRPC metadata. It it exists, we
-// continue the span, if not we create a new one.
-func (m *grpcTracingMW) ServeGRPC(ctx context.Context, request interface{}) (context.Context, interface{}, error) {
-	var md, _ = metadata.FromIncomingContext(ctx)
+// componentTracingMW implements Component.
+func (m *componentTracingMW) GetUsers(ctx context.Context, realm string) ([]string, error) {
+	if span := opentracing.SpanFromContext(ctx); span != nil {
+		span = m.tracer.StartSpan("component_component", opentracing.ChildOf(span.Context()))
+		defer span.Finish()
+		span.SetTag("correlation_id", ctx.Value("correlation_id").(string))
 
-	// Extract metadata.
-	var carrier = make(opentracing.TextMapCarrier)
-	for k, v := range md {
-		carrier.Set(k, v[0])
+		ctx = opentracing.ContextWithSpan(ctx, span)
 	}
 
-	var sc, err = m.tracer.Extract(opentracing.TextMap, carrier)
-	var span opentracing.Span
-	if err != nil {
-		span = m.tracer.StartSpan(m.operationName)
-	} else {
-		span = m.tracer.StartSpan(m.operationName, opentracing.ChildOf(sc))
+	return m.next.GetUsers(ctx, realm)
+}
+
+// Tracing middleware at module level.
+type moduleTracingMW struct {
+	tracer opentracing.Tracer
+	next   Module
+}
+
+// MakeModuleTracingMW makes a tracing middleware at component level.
+func MakeModuleTracingMW(tracer opentracing.Tracer) func(Module) Module {
+	return func(next Module) Module {
+		return &moduleTracingMW{
+			tracer: tracer,
+			next:   next,
+		}
 	}
-	defer span.Finish()
+}
 
-	// Set tags.
-	otag.Component.Set(span, "user-service")
-	span.SetTag("transport", "grpc")
-	otag.SpanKindRPCServer.Set(span)
+// moduleTracingMW implements Module.
+func (m *moduleTracingMW) GetUsers(ctx context.Context, realm string) ([]string, error) {
+	if span := opentracing.SpanFromContext(ctx); span != nil {
+		span = m.tracer.StartSpan("user_module", opentracing.ChildOf(span.Context()))
+		defer span.Finish()
+		span.SetTag("correlation_id", ctx.Value("correlation_id").(string))
 
-	return m.next.ServeGRPC(opentracing.ContextWithSpan(ctx, span), request)
+		ctx = opentracing.ContextWithSpan(ctx, span)
+	}
+
+	return m.next.GetUsers(ctx, realm)
 }

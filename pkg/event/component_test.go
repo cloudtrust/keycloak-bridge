@@ -16,18 +16,18 @@ import (
 func TestMuxComponent(t *testing.T) {
 	var ch = make(chan string, 1)
 
-	var fnEvent = func(eventMap map[string]string) error {
+	var fnEvent = func(ctx context.Context, eventMap map[string]string) error {
 		ch <- "Event"
 		return nil
 	}
 
-	var fnAdminEvent = func(eventMap map[string]string) error {
+	var fnAdminEvent = func(ctx context.Context, eventMap map[string]string) error {
 		ch <- "AdminEvent"
 		return nil
 	}
 
-	var tEvent = [](func(map[string]string) error){fnEvent}
-	var tAdminEvent = [](func(map[string]string) error){fnAdminEvent}
+	var tEvent = []FuncEvent{fnEvent}
+	var tAdminEvent = []FuncEvent{fnAdminEvent}
 
 	var eventComponent = NewComponent(tEvent, tEvent)
 	var adminEventService = NewAdminComponent(tAdminEvent, tAdminEvent, tAdminEvent, tAdminEvent)
@@ -48,16 +48,16 @@ func TestMuxComponent(t *testing.T) {
 func TestComponent(t *testing.T) {
 	var eventComponent Component
 	{
-		var fnStd = func(eventMap map[string]string) error {
+		var fnStd = func(ctx context.Context, eventMap map[string]string) error {
 			return nil
 		}
 
-		var fnErr = func(eventMap map[string]string) error {
+		var fnErr = func(ctx context.Context, eventMap map[string]string) error {
 			return errors.New("Failed")
 		}
 
-		var tStd = [](func(map[string]string) error){fnStd}
-		var tErr = [](func(map[string]string) error){fnErr}
+		var tStd = []FuncEvent{fnStd}
+		var tErr = []FuncEvent{fnErr}
 		eventComponent = NewComponent(tStd, tErr)
 	}
 
@@ -79,30 +79,30 @@ func TestAdminComponent(t *testing.T) {
 	var adminEventComponent AdminComponent
 	var ch = make(chan string, 1)
 	{
-		var fnCreate = func(eventMap map[string]string) error {
+		var fnCreate = func(ctx context.Context, eventMap map[string]string) error {
 			ch <- "CREATE"
 			return nil
 		}
 
-		var fnUpdate = func(eventMap map[string]string) error {
+		var fnUpdate = func(ctx context.Context, eventMap map[string]string) error {
 			ch <- "UPDATE"
 			return nil
 		}
 
-		var fnDelete = func(eventMap map[string]string) error {
+		var fnDelete = func(ctx context.Context, eventMap map[string]string) error {
 			ch <- "DELETE"
 			return nil
 		}
 
-		var fnAction = func(eventMap map[string]string) error {
+		var fnAction = func(ctx context.Context, eventMap map[string]string) error {
 			ch <- "ACTION"
 			return nil
 		}
 
-		var tCreate = [](func(map[string]string) error){fnCreate}
-		var tUpdate = [](func(map[string]string) error){fnUpdate}
-		var tDelete = [](func(map[string]string) error){fnDelete}
-		var tAction = [](func(map[string]string) error){fnAction}
+		var tCreate = [](FuncEvent){fnCreate}
+		var tUpdate = [](FuncEvent){fnUpdate}
+		var tDelete = [](FuncEvent){fnDelete}
+		var tAction = [](FuncEvent){fnAction}
 		adminEventComponent = NewAdminComponent(tCreate, tUpdate, tDelete, tAction)
 	}
 

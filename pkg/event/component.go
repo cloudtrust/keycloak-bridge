@@ -46,13 +46,13 @@ type Component interface {
 }
 
 type component struct {
-	fStdEvent []func(map[string]string) error
-	fErrEvent []func(map[string]string) error
+	fStdEvent []FuncEvent
+	fErrEvent []FuncEvent
 }
 
 // NewComponent returns an event component.
-func NewComponent(modulesToCallForStandardEvent []func(map[string]string) error,
-	modulesToCallForErrorEvent []func(map[string]string) error) Component {
+func NewComponent(modulesToCallForStandardEvent []FuncEvent,
+	modulesToCallForErrorEvent []FuncEvent) Component {
 	return &component{
 		fStdEvent: modulesToCallForStandardEvent,
 		fErrEvent: modulesToCallForErrorEvent,
@@ -65,10 +65,10 @@ func (c *component) Event(ctx context.Context, event *fb.Event) (interface{}, er
 	var eventMap = eventToMap(event)
 
 	if strings.HasSuffix(eventTypeName, "_ERROR") {
-		return apply(c.fErrEvent, eventMap)
+		return apply(ctx, c.fErrEvent, eventMap)
 	}
 
-	return apply(c.fStdEvent, eventMap)
+	return apply(ctx, c.fStdEvent, eventMap)
 }
 
 // AdminComponent is the admin event component interface.
@@ -76,18 +76,20 @@ type AdminComponent interface {
 	AdminEvent(ctx context.Context, adminEvent *fb.AdminEvent) (interface{}, error)
 }
 
+type FuncEvent = func(context.Context, map[string]string) error
+
 type adminComponent struct {
-	modulesToCallForCreate []func(map[string]string) error
-	modulesToCallForUpdate []func(map[string]string) error
-	modulesToCallForDelete []func(map[string]string) error
-	modulesToCallForAction []func(map[string]string) error
+	modulesToCallForCreate []FuncEvent
+	modulesToCallForUpdate []FuncEvent
+	modulesToCallForDelete []FuncEvent
+	modulesToCallForAction []FuncEvent
 }
 
 // NewAdminComponent returns an admin event component.
-func NewAdminComponent(modulesToCallForCreate []func(map[string]string) error,
-	modulesToCallForUpdate []func(map[string]string) error,
-	modulesToCallForDelete []func(map[string]string) error,
-	modulesToCallForAction []func(map[string]string) error) AdminComponent {
+func NewAdminComponent(modulesToCallForCreate []FuncEvent,
+	modulesToCallForUpdate []FuncEvent,
+	modulesToCallForDelete []FuncEvent,
+	modulesToCallForAction []FuncEvent) AdminComponent {
 	return &adminComponent{
 		modulesToCallForCreate: modulesToCallForCreate,
 		modulesToCallForUpdate: modulesToCallForUpdate,
@@ -100,13 +102,13 @@ func (c *adminComponent) AdminEvent(ctx context.Context, adminEvent *fb.AdminEve
 	var adminEventMap = adminEventToMap(adminEvent)
 	switch operationType := adminEvent.OperationType(); operationType {
 	case fb.OperationTypeCREATE:
-		return apply(c.modulesToCallForCreate, adminEventMap)
+		return apply(ctx, c.modulesToCallForCreate, adminEventMap)
 	case fb.OperationTypeUPDATE:
-		return apply(c.modulesToCallForUpdate, adminEventMap)
+		return apply(ctx, c.modulesToCallForUpdate, adminEventMap)
 	case fb.OperationTypeDELETE:
-		return apply(c.modulesToCallForDelete, adminEventMap)
+		return apply(ctx, c.modulesToCallForDelete, adminEventMap)
 	case fb.OperationTypeACTION:
-		return apply(c.modulesToCallForAction, adminEventMap)
+		return apply(ctx, c.modulesToCallForAction, adminEventMap)
 	default:
 		return nil, ErrInvalidArgument{InvalidParam: "OperationType"}
 	}
@@ -150,7 +152,7 @@ func eventToMap(event *fb.Event) map[string]string {
 	return eventMap
 }
 
-func apply(fs [](func(map[string]string) error), param map[string]string) (interface{}, error) {
+func apply(ctx context.Context, fs [](FuncEvent), param map[string]string) (interface{}, error) {
 	var errors = make(chan error, len(fs))
 	var wg sync.WaitGroup
 
@@ -158,10 +160,10 @@ func apply(fs [](func(map[string]string) error), param map[string]string) (inter
 	wg.Add(len(fs))
 
 	for _, f := range fs {
-		go func(wg *sync.WaitGroup, f func(map[string]string) error) {
+		go func(wg *sync.WaitGroup, f FuncEvent) {
 			defer wg.Done()
 
-			var err = f(param)
+			var err = f(ctx, param)
 			if err != nil {
 				errors <- err
 			}

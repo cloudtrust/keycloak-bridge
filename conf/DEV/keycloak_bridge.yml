@@ -1,7 +1,10 @@
 # Component configs
 component-name: keycloak-bridge
-component-http-address: 0.0.0.0:8888
-component-grpc-address: 0.0.0.0:5555
+component-http-address: 0.0.0.0:8000
+component-grpc-address: 0.0.0.0:8001
+
+# Flaki ID generator
+flaki-url: 127.0.0.1:9000
 
 # Keycloak configs
 keycloak-url: 127.0.0.1:8080

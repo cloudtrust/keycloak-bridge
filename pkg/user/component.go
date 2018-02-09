@@ -4,20 +4,20 @@ import (
 	"context"
 )
 
-type KeycloakComponent interface {
+type Component interface {
 	GetUsers(ctx context.Context, realm string) ([]string, error)
 }
 
-type keycloakComponent struct {
-	module KeycloakModule
+type component struct {
+	module Module
 }
 
-func NewKeycloakComponent(module KeycloakModule) KeycloakComponent {
-	return &keycloakComponent{
+func NewComponent(module Module) Component {
+	return &component{
 		module: module,
 	}
 }
 
-func (c *keycloakComponent) GetUsers(ctx context.Context, realm string) ([]string, error) {
+func (c *component) GetUsers(ctx context.Context, realm string) ([]string, error) {
 	return c.module.GetUsers(ctx, realm)
 }

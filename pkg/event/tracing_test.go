@@ -15,7 +15,7 @@ import (
 
 func TestMuxComponentTracingMW(t *testing.T) {
 	var mockSpan = &mockSpan{}
-	var mockTracer = &mockTracer{Span: mockSpan}
+	var mockTracer = &mockTracer{span: mockSpan}
 	var mockMuxComponent = &mockMuxComponent{}
 
 	// Context with correlation ID and span.
@@ -28,11 +28,11 @@ func TestMuxComponentTracingMW(t *testing.T) {
 
 	// Event.
 	var uid = rand.Int63()
-	mockTracer.Called = false
-	mockTracer.Span.CorrelationID = ""
+	mockTracer.called = false
+	mockTracer.span.correlationID = ""
 	m.Event(ctx, "Event", createEventBytes(fb.EventTypeCLIENT_DELETE, uid, "realm"))
-	assert.True(t, mockTracer.Called)
-	assert.Equal(t, id, mockTracer.Span.CorrelationID)
+	assert.True(t, mockTracer.called)
+	assert.Equal(t, id, mockTracer.span.correlationID)
 
 	// Event without correlation ID.
 	var f = func() {
@@ -42,7 +42,7 @@ func TestMuxComponentTracingMW(t *testing.T) {
 }
 func TestComponentTracingMW(t *testing.T) {
 	var mockSpan = &mockSpan{}
-	var mockTracer = &mockTracer{Span: mockSpan}
+	var mockTracer = &mockTracer{span: mockSpan}
 	var mockComponent = &mockComponent{}
 
 	// Context with correlation ID and span.
@@ -55,11 +55,11 @@ func TestComponentTracingMW(t *testing.T) {
 
 	// Event.
 	var uid = rand.Int63()
-	mockTracer.Called = false
-	mockTracer.Span.CorrelationID = ""
+	mockTracer.called = false
+	mockTracer.span.correlationID = ""
 	m.Event(ctx, createEvent(fb.EventTypeCLIENT_INFO, uid, "realm"))
-	assert.True(t, mockTracer.Called)
-	assert.Equal(t, id, mockTracer.Span.CorrelationID)
+	assert.True(t, mockTracer.called)
+	assert.Equal(t, id, mockTracer.span.correlationID)
 
 	// Event without correlation ID.
 	var f = func() {
@@ -70,7 +70,7 @@ func TestComponentTracingMW(t *testing.T) {
 
 func TestAdminComponentTracingMW(t *testing.T) {
 	var mockSpan = &mockSpan{}
-	var mockTracer = &mockTracer{Span: mockSpan}
+	var mockTracer = &mockTracer{span: mockSpan}
 	var mockAdminComponent = &mockAdminComponent{}
 
 	// Context with correlation ID and span.
@@ -83,11 +83,11 @@ func TestAdminComponentTracingMW(t *testing.T) {
 
 	// Event.
 	var uid = rand.Int63()
-	mockTracer.Called = false
-	mockTracer.Span.CorrelationID = ""
+	mockTracer.called = false
+	mockTracer.span.correlationID = ""
 	m.AdminEvent(ctx, createAdminEvent(fb.OperationTypeCREATE, uid))
-	assert.True(t, mockTracer.Called)
-	assert.Equal(t, id, mockTracer.Span.CorrelationID)
+	assert.True(t, mockTracer.called)
+	assert.Equal(t, id, mockTracer.span.correlationID)
 
 	// Event without correlation ID.
 	var f = func() {
@@ -98,7 +98,7 @@ func TestAdminComponentTracingMW(t *testing.T) {
 
 func TestConsoleModuleTracingMW(t *testing.T) {
 	var mockSpan = &mockSpan{}
-	var mockTracer = &mockTracer{Span: mockSpan}
+	var mockTracer = &mockTracer{span: mockSpan}
 	var mockConsoleModule = &mockConsoleModule{}
 
 	// Context with correlation ID and span.
@@ -111,11 +111,11 @@ func TestConsoleModuleTracingMW(t *testing.T) {
 
 	// Print.
 	var mp = map[string]string{"key": "val"}
-	mockTracer.Called = false
-	mockTracer.Span.CorrelationID = ""
+	mockTracer.called = false
+	mockTracer.span.correlationID = ""
 	m.Print(ctx, mp)
-	assert.True(t, mockTracer.Called)
-	assert.Equal(t, id, mockTracer.Span.CorrelationID)
+	assert.True(t, mockTracer.called)
+	assert.Equal(t, id, mockTracer.span.correlationID)
 
 	// Event without correlation ID.
 	var f = func() {
@@ -126,7 +126,7 @@ func TestConsoleModuleTracingMW(t *testing.T) {
 
 func TestStatisticModuleTracingMW(t *testing.T) {
 	var mockSpan = &mockSpan{}
-	var mockTracer = &mockTracer{Span: mockSpan}
+	var mockTracer = &mockTracer{span: mockSpan}
 	var mockStatisticModule = &mockStatisticModule{}
 
 	// Context with correlation ID and span.
@@ -139,11 +139,11 @@ func TestStatisticModuleTracingMW(t *testing.T) {
 
 	// Stats.
 	var mp = map[string]string{"key": "val"}
-	mockTracer.Called = false
-	mockTracer.Span.CorrelationID = ""
+	mockTracer.called = false
+	mockTracer.span.correlationID = ""
 	m.Stats(ctx, mp)
-	assert.True(t, mockTracer.Called)
-	assert.Equal(t, id, mockTracer.Span.CorrelationID)
+	assert.True(t, mockTracer.called)
+	assert.Equal(t, id, mockTracer.span.correlationID)
 
 	// Stats without correlation ID.
 	var f = func() {
@@ -154,13 +154,13 @@ func TestStatisticModuleTracingMW(t *testing.T) {
 
 // Mock Tracer.
 type mockTracer struct {
-	Called bool
-	Span   *mockSpan
+	called bool
+	span   *mockSpan
 }
 
 func (t *mockTracer) StartSpan(operationName string, opts ...opentracing.StartSpanOption) opentracing.Span {
-	t.Called = true
-	return t.Span
+	t.called = true
+	return t.span
 }
 func (t *mockTracer) Inject(sm opentracing.SpanContext, format interface{}, carrier interface{}) error {
 	return nil
@@ -171,12 +171,12 @@ func (t *mockTracer) Extract(format interface{}, carrier interface{}) (opentraci
 
 // Mock Span.
 type mockSpan struct {
-	CorrelationID string
+	correlationID string
 }
 
 func (s *mockSpan) SetTag(key string, value interface{}) opentracing.Span {
 	if key == "correlation_id" {
-		s.CorrelationID = value.(string)
+		s.correlationID = value.(string)
 	}
 	return s
 }

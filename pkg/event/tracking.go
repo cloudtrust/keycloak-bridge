@@ -13,15 +13,15 @@ type Sentry interface {
 
 // Tracking middleware at component level.
 type trackingComponentMW struct {
-	client Sentry
+	sentry Sentry
 	next   MuxComponent
 }
 
 // MakeComponentTrackingMW makes an error tracking middleware, where the errors are sent to Sentry.
-func MakeComponentTrackingMW(client Sentry) func(MuxComponent) MuxComponent {
+func MakeComponentTrackingMW(sentry Sentry) func(MuxComponent) MuxComponent {
 	return func(next MuxComponent) MuxComponent {
 		return &trackingComponentMW{
-			client: client,
+			sentry: sentry,
 			next:   next,
 		}
 	}
@@ -31,7 +31,7 @@ func MakeComponentTrackingMW(client Sentry) func(MuxComponent) MuxComponent {
 func (m *trackingComponentMW) Event(ctx context.Context, eventType string, obj []byte) (interface{}, error) {
 	var r, err = m.next.Event(ctx, eventType, obj)
 	if err != nil {
-		m.client.CaptureError(err, map[string]string{"correlation_id": ctx.Value("correlation_id").(string)})
+		m.sentry.CaptureError(err, map[string]string{"correlation_id": ctx.Value("correlation_id").(string)})
 	}
 	return r, err
 }
