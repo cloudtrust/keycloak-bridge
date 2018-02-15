@@ -55,7 +55,7 @@ func MakeComponentTracingMW(tracer opentracing.Tracer) func(Component) Component
 // componentTracingMW implements Component.
 func (m *componentTracingMW) Event(ctx context.Context, event *fb.Event) (interface{}, error) {
 	if span := opentracing.SpanFromContext(ctx); span != nil {
-		span = m.tracer.StartSpan("component_component", opentracing.ChildOf(span.Context()))
+		span = m.tracer.StartSpan("event_component", opentracing.ChildOf(span.Context()))
 		defer span.Finish()
 		span.SetTag("correlation_id", ctx.Value("correlation_id").(string))
 
@@ -84,7 +84,7 @@ func MakeAdminComponentTracingMW(tracer opentracing.Tracer) func(AdminComponent)
 // adminComponentTracingMW implements Component.
 func (m *adminComponentTracingMW) AdminEvent(ctx context.Context, adminEvent *fb.AdminEvent) (interface{}, error) {
 	if span := opentracing.SpanFromContext(ctx); span != nil {
-		span = m.tracer.StartSpan("admin_component", opentracing.ChildOf(span.Context()))
+		span = m.tracer.StartSpan("adminevent_component", opentracing.ChildOf(span.Context()))
 		defer span.Finish()
 		span.SetTag("correlation_id", ctx.Value("correlation_id").(string))
 
@@ -142,7 +142,7 @@ func MakeStatisticModuleTracingMW(tracer opentracing.Tracer) func(StatisticModul
 // statisticModuleTracingMW implements StatisticModule.
 func (m *statisticModuleTracingMW) Stats(ctx context.Context, mp map[string]string) error {
 	if span := opentracing.SpanFromContext(ctx); span != nil {
-		span = m.tracer.StartSpan("console_module", opentracing.ChildOf(span.Context()))
+		span = m.tracer.StartSpan("statistic_module", opentracing.ChildOf(span.Context()))
 		defer span.Finish()
 		span.SetTag("correlation_id", ctx.Value("correlation_id").(string))
 

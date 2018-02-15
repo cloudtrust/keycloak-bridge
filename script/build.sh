@@ -38,7 +38,7 @@ fi
 # Directories flatbuffer.
 FB_EVENT_DIR="./pkg/event/flatbuffer"
 FB_USER_DIR="./pkg/user/flatbuffer"
-FB_FLAKI_DIR="./flaki/flatbuffer"
+FB_FLAKI_DIR="./pkg/flaki/flatbuffer"
 
 
 # Delete the old dirs.

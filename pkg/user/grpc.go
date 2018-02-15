@@ -7,6 +7,7 @@ import (
 	"github.com/go-kit/kit/endpoint"
 	grpc_transport "github.com/go-kit/kit/transport/grpc"
 	"github.com/google/flatbuffers/go"
+	"google.golang.org/grpc/metadata"
 )
 
 type grpcServer struct {
@@ -19,6 +20,7 @@ func MakeGRPCGetUsersHandler(e endpoint.Endpoint) *grpc_transport.Server {
 		e,
 		decodeGRPCRequest,
 		encodeGRPCReply,
+		grpc_transport.ServerBefore(fetchGRPCCorrelationID),
 	)
 }
 
@@ -27,11 +29,28 @@ func NewGRPCServer(getUsers grpc_transport.Handler) fb.UserServiceServer {
 	return &grpcServer{getUsers: getUsers}
 }
 
+// fetchGRPCCorrelationID reads the correlation ID from the GRPC metadata.
+// If the id is not zero, we put it in the context.
+func fetchGRPCCorrelationID(ctx context.Context, md metadata.MD) context.Context {
+	var val = md["correlation_id"]
+
+	// If there is no id in the metadata, return current context.
+	if val == nil || val[0] == "" {
+		return ctx
+	}
+
+	// If there is an id in the metadata, add it to the context.
+	var id = val[0]
+	return context.WithValue(ctx, "correlation_id", id)
+}
+
+// decodeGRPCRequest decodes the flatbuffer request.
 func decodeGRPCRequest(_ context.Context, req interface{}) (interface{}, error) {
 	var r = req.(*fb.GetUsersRequest)
 	return GetUsersRequest{Realm: string(r.Realm())}, nil
 }
 
+// encodeHTTPReply encodes the flatbuffer reply.
 func encodeGRPCReply(_ context.Context, res interface{}) (interface{}, error) {
 	var r = res.(GetUsersResponse)
 	var b = flatbuffers.NewBuilder(0)
@@ -52,9 +71,7 @@ func encodeGRPCReply(_ context.Context, res interface{}) (interface{}, error) {
 	return b, nil
 }
 
-/*
-grpcServer implements fb.UserServiceServer
-*/
+// Implement the flatbuffer UserServiceServer interface.
 func (u *grpcServer) GetUsers(ctx context.Context, req *fb.GetUsersRequest) (*flatbuffers.Builder, error) {
 	var _, resp, err = u.getUsers.ServeGRPC(ctx, req)
 	if err != nil {

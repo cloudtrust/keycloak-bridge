@@ -12,8 +12,9 @@ import (
 	"syscall"
 	"time"
 
-	fb_flaki "github.com/cloudtrust/keycloak-bridge/flaki/flatbuffer/fb"
 	"github.com/cloudtrust/keycloak-bridge/pkg/event"
+	fb_flaki "github.com/cloudtrust/keycloak-bridge/pkg/flaki/flatbuffer/fb"
+	"github.com/cloudtrust/keycloak-bridge/pkg/health"
 	"github.com/cloudtrust/keycloak-bridge/pkg/middleware"
 	"github.com/cloudtrust/keycloak-bridge/pkg/user"
 	"github.com/cloudtrust/keycloak-bridge/pkg/user/flatbuffer/fb"
@@ -214,7 +215,6 @@ func main() {
 			return
 		}
 		defer closer.Close()
-
 	}
 
 	// Flaki.
@@ -257,9 +257,9 @@ func main() {
 	var userEndpoint endpoint.Endpoint
 	{
 		userEndpoint = user.MakeUserEndpoint(userComponent)
-		userEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("getusers_endpoint"))(userEndpoint)
+		userEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("user_endpoint"))(userEndpoint)
 		userEndpoint = middleware.MakeEndpointLoggingMW(log.With(userLogger, "mw", "endpoint", "unit", "getusers"))(userEndpoint)
-		userEndpoint = middleware.MakeEndpointTracingMW(tracer, "getusers_endpoint")(userEndpoint)
+		userEndpoint = middleware.MakeEndpointTracingMW(tracer, "user_endpoint")(userEndpoint)
 		userEndpoint = middleware.MakeEndpointCorrelationIDMW(flakiClient, tracer)(userEndpoint)
 	}
 
@@ -337,7 +337,7 @@ func main() {
 	var muxComponent event.MuxComponent
 	{
 		muxComponent = event.NewMuxComponent(eventComponent, eventAdminComponent)
-		muxComponent = event.MakeMuxComponentInstrumentingMW(influxMetrics.NewHistogram("component"))(muxComponent)
+		muxComponent = event.MakeMuxComponentInstrumentingMW(influxMetrics.NewHistogram("mux_component"))(muxComponent)
 		muxComponent = event.MakeMuxComponentLoggingMW(log.With(eventLogger, "mw", "component", "unit", "mux"))(muxComponent)
 		muxComponent = event.MakeMuxComponentTracingMW(tracer)(muxComponent)
 	}
@@ -355,27 +355,109 @@ func main() {
 		Endpoint: eventEndpoint,
 	}
 
-	/*
-		HTTP monitoring routes.
-	*/
+	// Health service.
+	var healthLogger = log.With(logger, "svc", "health")
+
+	var healthComponent health.Component
+	{
+		var influxHM = health.NewInfluxModule(influxMetrics)
+		var jaegerHM = health.NewJaegerModule(tracer)
+		var redisHM = health.NewRedisModule(redisConn)
+		var sentryHM = health.NewSentryModule(sentryClient, http.DefaultClient)
+		var keycloakHM = health.NewKeycloakModule(keycloakClient)
+
+		healthComponent = health.NewComponent(influxHM, jaegerHM, redisHM, sentryHM, keycloakHM)
+	}
+
+	var influxHealthEndpoint endpoint.Endpoint
+	{
+		influxHealthEndpoint = health.MakeInfluxHealthCheckEndpoint(healthComponent)
+		influxHealthEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("influx_health_endpoint"))(influxHealthEndpoint)
+		influxHealthEndpoint = middleware.MakeEndpointLoggingMW(log.With(healthLogger, "mw", "endpoint", "unit", "influx"))(influxHealthEndpoint)
+		influxHealthEndpoint = middleware.MakeEndpointTracingMW(tracer, "influx_health_endpoint")(influxHealthEndpoint)
+		influxHealthEndpoint = middleware.MakeEndpointCorrelationIDMW(flakiClient, tracer)(influxHealthEndpoint)
+	}
+	var jaegerHealthEndpoint endpoint.Endpoint
+	{
+		jaegerHealthEndpoint = health.MakeJaegerHealthCheckEndpoint(healthComponent)
+		jaegerHealthEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("jaeger_health_endpoint"))(jaegerHealthEndpoint)
+		jaegerHealthEndpoint = middleware.MakeEndpointLoggingMW(log.With(healthLogger, "mw", "endpoint", "unit", "jaeger"))(jaegerHealthEndpoint)
+		jaegerHealthEndpoint = middleware.MakeEndpointTracingMW(tracer, "jaeger_health_endpoint")(jaegerHealthEndpoint)
+		jaegerHealthEndpoint = middleware.MakeEndpointCorrelationIDMW(flakiClient, tracer)(jaegerHealthEndpoint)
+	}
+	var redisHealthEndpoint endpoint.Endpoint
+	{
+		redisHealthEndpoint = health.MakeRedisHealthCheckEndpoint(healthComponent)
+		redisHealthEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("redis_health_endpoint"))(redisHealthEndpoint)
+		redisHealthEndpoint = middleware.MakeEndpointLoggingMW(log.With(healthLogger, "mw", "endpoint", "unit", "redis"))(redisHealthEndpoint)
+		redisHealthEndpoint = middleware.MakeEndpointTracingMW(tracer, "redis_health_endpoint")(redisHealthEndpoint)
+		redisHealthEndpoint = middleware.MakeEndpointCorrelationIDMW(flakiClient, tracer)(redisHealthEndpoint)
+	}
+	var sentryHealthEndpoint endpoint.Endpoint
+	{
+		sentryHealthEndpoint = health.MakeSentryHealthCheckEndpoint(healthComponent)
+		sentryHealthEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("sentry_health_endpoint"))(sentryHealthEndpoint)
+		sentryHealthEndpoint = middleware.MakeEndpointLoggingMW(log.With(healthLogger, "mw", "endpoint", "unit", "sentry"))(sentryHealthEndpoint)
+		sentryHealthEndpoint = middleware.MakeEndpointTracingMW(tracer, "sentry_health_endpoint")(sentryHealthEndpoint)
+		sentryHealthEndpoint = middleware.MakeEndpointCorrelationIDMW(flakiClient, tracer)(sentryHealthEndpoint)
+	}
+
+	var keycloakHealthEndpoint endpoint.Endpoint
+	{
+		keycloakHealthEndpoint = health.MakeKeycloakHealthCheckEndpoint(healthComponent)
+		keycloakHealthEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("keycloak_health_endpoint"))(keycloakHealthEndpoint)
+		keycloakHealthEndpoint = middleware.MakeEndpointLoggingMW(log.With(healthLogger, "mw", "endpoint", "unit", "keycloak"))(keycloakHealthEndpoint)
+		keycloakHealthEndpoint = middleware.MakeEndpointTracingMW(tracer, "keycloak_health_endpoint")(keycloakHealthEndpoint)
+		keycloakHealthEndpoint = middleware.MakeEndpointCorrelationIDMW(flakiClient, tracer)(keycloakHealthEndpoint)
+	}
+
+	var healthEndpoints = health.Endpoints{
+		InfluxHealthCheck:   influxHealthEndpoint,
+		JaegerHealthCheck:   jaegerHealthEndpoint,
+		RedisHealthCheck:    redisHealthEndpoint,
+		SentryHealthCheck:   sentryHealthEndpoint,
+		KeycloakHealthCheck: keycloakHealthEndpoint,
+	}
+
 	go func() {
 		var logger = log.With(logger, "transport", "http")
 		logger.Log("addr", httpAddr)
 
 		var route = mux.NewRouter()
 
+		// Version.
 		route.Handle("/", http.HandlerFunc(MakeVersion(componentName, Version, Environment, GitCommit)))
 
-		//event
+		// Event.
 		var eventSubroute = route.PathPrefix("/event").Subrouter()
 		var eventHandler http.Handler
 		{
 			eventHandler = event.MakeReceiverHandler(eventEndpoints.Endpoint)
-			//eventHandler = event.MakeTracingMiddleware(tracer, "event")(eventHandler)
+			eventHandler = middleware.MakeHTTPTracingMW(tracer, "event")(eventHandler)
 		}
 		eventSubroute.Handle("/receiver", eventHandler)
 
-		//debug
+		// Health checks.
+		var healthSubroute = route.PathPrefix("/health").Subrouter()
+
+		healthSubroute.Handle("", http.HandlerFunc(health.MakeHealthChecksHandler(healthEndpoints)))
+
+		var influxHealthCheckHandler = health.MakeInfluxHealthCheckHandler(healthEndpoints.InfluxHealthCheck)
+		healthSubroute.Handle("/influx", influxHealthCheckHandler)
+
+		var jaegerHealthCheckHandler = health.MakeJaegerHealthCheckHandler(healthEndpoints.JaegerHealthCheck)
+		healthSubroute.Handle("/jaeger", jaegerHealthCheckHandler)
+
+		var redisHealthCheckHandler = health.MakeRedisHealthCheckHandler(healthEndpoints.RedisHealthCheck)
+		healthSubroute.Handle("/redis", redisHealthCheckHandler)
+
+		var sentryHealthCheckHandler = health.MakeSentryHealthCheckHandler(healthEndpoints.SentryHealthCheck)
+		healthSubroute.Handle("/sentry", sentryHealthCheckHandler)
+
+		var keycloakHealthCheckHandler = health.MakeKeycloakHealthCheckHandler(healthEndpoints.KeycloakHealthCheck)
+		healthSubroute.Handle("/keycloak", keycloakHealthCheckHandler)
+
+		// Debug.
 		if pprofRouteEnabled {
 			var debugSubroute = route.PathPrefix("/debug").Subrouter()
 			debugSubroute.HandleFunc("/pprof/", http.HandlerFunc(pprof.Index))
@@ -428,7 +510,7 @@ func MakeVersion(componentName, version, environment, gitCommit string) func(htt
 			Commit:  gitCommit,
 		}
 
-		var j, err = json.Marshal(infos)
+		var j, err = json.MarshalIndent(infos, "", "  ")
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 		} else {

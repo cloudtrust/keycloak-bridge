@@ -50,7 +50,7 @@ func main() {
 		var closer io.Closer
 		var err error
 
-		tracer, closer, err = jaegerConfig.New("flaki-client")
+		tracer, closer, err = jaegerConfig.New("keycloak-user-client")
 		if err != nil {
 			logger.Log("error", err)
 			return

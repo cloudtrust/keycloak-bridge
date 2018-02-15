@@ -25,7 +25,7 @@ func MakeComponentTracingMW(tracer opentracing.Tracer) func(Component) Component
 // componentTracingMW implements Component.
 func (m *componentTracingMW) GetUsers(ctx context.Context, realm string) ([]string, error) {
 	if span := opentracing.SpanFromContext(ctx); span != nil {
-		span = m.tracer.StartSpan("component_component", opentracing.ChildOf(span.Context()))
+		span = m.tracer.StartSpan("user_component", opentracing.ChildOf(span.Context()))
 		defer span.Finish()
 		span.SetTag("correlation_id", ctx.Value("correlation_id").(string))
 

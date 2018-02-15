@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/cloudtrust/keycloak-bridge/flaki/flatbuffer/fb"
+	"github.com/cloudtrust/keycloak-bridge/pkg/flaki/flatbuffer/fb"
 	"github.com/go-kit/kit/endpoint"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/metrics"
@@ -97,13 +97,10 @@ func MakeEndpointCorrelationIDMW(flaki fb.FlakiClient, tracer opentracing.Tracer
 
 			if id == nil {
 				// Propagate opentracing span
-				var octx = context.Background()
 				if span := opentracing.SpanFromContext(ctx); span != nil {
 					span = tracer.StartSpan("get_correlation_id", opentracing.ChildOf(span.Context()))
 					otag.SpanKindRPCClient.Set(span)
-
 					defer span.Finish()
-
 					ctx = opentracing.ContextWithSpan(ctx, span)
 
 					// Propagate the opentracing span.
@@ -114,7 +111,7 @@ func MakeEndpointCorrelationIDMW(flaki fb.FlakiClient, tracer opentracing.Tracer
 					}
 
 					var md = metadata.New(carrier)
-					octx = metadata.NewOutgoingContext(context.Background(), md)
+					ctx = metadata.NewOutgoingContext(ctx, md)
 				}
 
 				// Empty request.
@@ -122,7 +119,7 @@ func MakeEndpointCorrelationIDMW(flaki fb.FlakiClient, tracer opentracing.Tracer
 				fb.EmptyRequestStart(b)
 				b.Finish(fb.EmptyRequestEnd(b))
 
-				var reply, err = flaki.NextValidID(octx, b)
+				var reply, err = flaki.NextValidID(ctx, b)
 				if err != nil {
 					return "", err
 				}
