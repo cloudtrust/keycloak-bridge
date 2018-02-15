@@ -2,102 +2,108 @@ package main
 
 import (
 	"context"
-	"github.com/pkg/errors"
-	"github.com/google/flatbuffers/go"
-	user_fb "github.com/cloudtrust/keycloak-bridge/services/users/transport/flatbuffer"
-	"google.golang.org/grpc"
-	"github.com/cloudtrust/keycloak-bridge/services/users/components"
-	"fmt"
 	"io"
 	"os"
+	"time"
+
+	"github.com/cloudtrust/keycloak-bridge/pkg/user/flatbuffer/fb"
 	"github.com/go-kit/kit/log"
+	"github.com/google/flatbuffers/go"
+	opentracing "github.com/opentracing/opentracing-go"
+	otag "github.com/opentracing/opentracing-go/ext"
+	jaeger_client "github.com/uber/jaeger-client-go/config"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 )
 
-
-func NewGrpcService(conn *grpc.ClientConn) components.Service {
-	return &grpcService{
-		client:user_fb.NewUserServiceClient(conn),
-	}
-}
-
-type grpcService struct {
-	client user_fb.UserServiceClient
-}
-
-func (g *grpcService)GetUsers(ctx context.Context, realm string) (<-chan string, <-chan error) {
-	var resultc = make(chan string)
-	var errc = make(chan error)
-	var builder= flatbuffers.NewBuilder(0)
-	var brealm= builder.CreateString(realm)
-	user_fb.UserRequestStart(builder)
-	user_fb.UserRequestAddRealm(builder, brealm)
-	builder.Finish(user_fb.UserReplyEnd(builder))
-	var stream user_fb.UserService_GetUsersClient
-	{
-		var err error
-		stream, err = g.client.GetUsers(context.Background(), builder)
-		if err != nil {
-			go func() {
-				errc <- errors.Wrap(err, "Couldn't get users stream")
-				return
-			}()
-			return resultc,errc
-		}
-	}
-	go func() {
-		for {
-			var i_user *user_fb.UserReply
-			var err error
-			i_user, err = stream.Recv()
-			if err != nil {
-				errc <- err
-				return
-			}
-			var user = string(i_user.Names(0))
-			resultc <- user
-		}
-	}()
-	return resultc, errc
-}
-
-
+const (
+	address = "172.19.0.3:5555"
+)
 
 func main() {
-	var grpcAddr= fmt.Sprintf("127.0.0.1:5555")
 
-	var logger= log.NewLogfmtLogger(os.Stdout)
+	// Logger.
+	var logger = log.NewLogfmtLogger(os.Stdout)
 	{
-		logger = log.With(logger, "time", log.DefaultTimestampUTC, "caller", "client")
+		logger = log.With(logger, "time", log.DefaultTimestampUTC, "caller", log.DefaultCaller)
 		defer logger.Log("msg", "Goodbye")
 	}
+	logger = log.With(logger, "transport", "grpc")
 
-	var conn *grpc.ClientConn
+	// Jaeger tracer config.
+	var jaegerConfig = jaeger_client.Configuration{
+		Sampler: &jaeger_client.SamplerConfig{
+			Type:              "const",
+			Param:             1,
+			SamplingServerURL: "http://127.0.0.1:5775",
+		},
+		Reporter: &jaeger_client.ReporterConfig{
+			LogSpans:            false,
+			BufferFlushInterval: 1000 * time.Millisecond,
+		},
+	}
+
+	// Jaeger client.
+	var tracer opentracing.Tracer
 	{
+		var logger = log.With(logger, "component", "jaeger")
+		var closer io.Closer
 		var err error
-		conn, err = grpc.Dial(grpcAddr, grpc.WithInsecure(), grpc.WithCodec(flatbuffers.FlatbuffersCodec{}))
+
+		tracer, closer, err = jaegerConfig.New("flaki-client")
 		if err != nil {
-			fmt.Println("I failed :(")
+			logger.Log("error", err)
 			return
 		}
+		defer closer.Close()
 	}
-	defer conn.Close()
 
-	var userService = NewGrpcService(conn)
+	// Set up a connection to the server.
+	var clienConn *grpc.ClientConn
+	{
+		var err error
+		clienConn, err = grpc.Dial(address, grpc.WithInsecure(), grpc.WithCodec(flatbuffers.FlatbuffersCodec{}))
+		if err != nil {
+			logger.Log("error", err)
+		}
+		defer clienConn.Close()
+	}
 
-	var userResultc <-chan string;
-	var userErrc <-chan error;
-	userResultc, userErrc = userService.GetUsers(context.Background(), "master")
+	// Client.
+	var client = fb.NewUserServiceClient(clienConn)
 
-	loop:for {
-		select{
-		case result := <-userResultc:
-			fmt.Println(result)
-		case err := <-userErrc:
-			if err == io.EOF {
-				break loop
-			}
-			fmt.Println("Failed", err)
-			break loop
+	var span = tracer.StartSpan("grpc_client_getusers")
+	otag.SpanKindRPCClient.Set(span)
+	defer span.Finish()
+
+	// Propagate the opentracing span.
+	var carrier = make(opentracing.TextMapCarrier)
+	var err = tracer.Inject(span.Context(), opentracing.TextMap, carrier)
+	if err != nil {
+		logger.Log("error", err)
+		return
+	}
+
+	var md = metadata.New(carrier)
+	var correlationIDMD = metadata.New(map[string]string{"correlation_id": "1"})
+
+	var builder = flatbuffers.NewBuilder(0)
+	var brealm = builder.CreateString("master")
+	fb.GetUsersRequestStart(builder)
+	fb.GetUsersRequestAddRealm(builder, brealm)
+	builder.Finish(fb.GetUsersRequestEnd(builder))
+
+	var reply *fb.GetUsersResponse
+	{
+		var err error
+		var ctx = metadata.NewOutgoingContext(opentracing.ContextWithSpan(context.Background(), span), metadata.Join(md, correlationIDMD))
+		reply, err = client.GetUsers(ctx, builder)
+		if err != nil {
+			logger.Log("error", err)
+			return
+		}
+		for i := 0; i < reply.NamesLength(); i++ {
+			logger.Log("name", string(reply.Names(i)))
 		}
 	}
 }

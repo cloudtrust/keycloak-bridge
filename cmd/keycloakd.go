@@ -12,15 +12,15 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/cloudtrust/keycloak-bridge/flaki"
+	fb_flaki "github.com/cloudtrust/keycloak-bridge/flaki/flatbuffer/fb"
 	"github.com/cloudtrust/keycloak-bridge/pkg/event"
 	"github.com/cloudtrust/keycloak-bridge/pkg/middleware"
 	"github.com/cloudtrust/keycloak-bridge/pkg/user"
 	"github.com/cloudtrust/keycloak-bridge/pkg/user/flatbuffer/fb"
 	keycloak "github.com/cloudtrust/keycloak-client/client"
-
 	"github.com/garyburd/redigo/redis"
 	sentry "github.com/getsentry/raven-go"
+	"github.com/go-kit/kit/endpoint"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/metrics"
 	gokit_influx "github.com/go-kit/kit/metrics/influx"
@@ -118,7 +118,7 @@ func main() {
 		defer redisConn.Close()
 
 		// Create logger that duplicates logs to stdout and redis.
-		logger = log.NewJSONLogger(io.MultiWriter(os.Stdout, NewLogstashRedisWriter(redisConn)))
+		logger = log.NewJSONLogger(io.MultiWriter(os.Stdout, NewLogstashRedisWriter(redisConn, componentName)))
 		logger = log.With(logger, "ts", log.DefaultTimestampUTC, "caller", log.DefaultCaller)
 	}
 	defer logger.Log("msg", "goodbye")
@@ -217,39 +217,55 @@ func main() {
 
 	}
 
-	// Flaki client.
-	var flakiClient *flaki.Client
+	// Flaki.
+	var flakiClient fb_flaki.FlakiClient
 	{
-		var err error
-		flakiClient = flaki.NewClient(flakiAddr, tracer)
-		// Test connection.
-		err = flakiClient.Ping()
-		if err != nil {
-			logger.Log("msg", "could not create Flaki client", "error", err)
-			return
+		// Set up a connection to the flaki-service.
+		var conn *grpc.ClientConn
+		{
+			var err error
+			conn, err = grpc.Dial(flakiAddr, grpc.WithInsecure(), grpc.WithCodec(flatbuffers.FlatbuffersCodec{}))
+			if err != nil {
+				logger.Log("msg", "could not connect to flaki-service", "error", err)
+				return
+			}
+			defer conn.Close()
 		}
+
+		flakiClient = fb_flaki.NewFlakiClient(conn)
 	}
 
 	// User service.
+	var userLogger = log.With(logger, "svc", "user")
+
 	var userModule user.Module
 	{
 		userModule = user.NewModule(keycloakClient)
+		userModule = user.MakeModuleInstrumentingMW(influxMetrics.NewHistogram("user_module"))(userModule)
+		userModule = user.MakeModuleLoggingMW(log.With(userLogger, "mw", "module"))(userModule)
+		userModule = user.MakeModuleTracingMW(tracer)(userModule)
 	}
 
 	var userComponent user.Component
 	{
 		userComponent = user.NewComponent(userModule)
-		userComponent = user.MakeComponentLoggingMW(log.With(logger, "svc", "user", "mw", "component"))(userComponent)
+		userComponent = user.MakeComponentInstrumentingMW(influxMetrics.NewHistogram("user_component"))(userComponent)
+		userComponent = user.MakeComponentLoggingMW(log.With(userLogger, "mw", "component"))(userComponent)
+		userComponent = user.MakeComponentTracingMW(tracer)(userComponent)
 	}
 
-	var userEndpoints = user.NewEndpoints(middleware.MakeEndpointCorrelationIDMW(flakiClient))
+	var userEndpoint endpoint.Endpoint
+	{
+		userEndpoint = user.MakeUserEndpoint(userComponent)
+		userEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("getusers_endpoint"))(userEndpoint)
+		userEndpoint = middleware.MakeEndpointLoggingMW(log.With(userLogger, "mw", "endpoint", "unit", "getusers"))(userEndpoint)
+		userEndpoint = middleware.MakeEndpointTracingMW(tracer, "getusers_endpoint")(userEndpoint)
+		userEndpoint = middleware.MakeEndpointCorrelationIDMW(flakiClient, tracer)(userEndpoint)
+	}
 
-	userEndpoints.MakeGetUsersEndpoint(
-		userComponent,
-		middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("getusers_endpoint")),
-		middleware.MakeEndpointLoggingMW(log.With(logger, "svc", "user", "mw", "endpoint", "unit", "getusers")),
-		middleware.MakeEndpointTracingMW(tracer, "getusers_endpoint"),
-	)
+	var userEndpoints = user.Endpoints{
+		Endpoint: userEndpoint,
+	}
 
 	// GRPC server.
 	go func() {
@@ -267,10 +283,10 @@ func main() {
 			}
 		}
 
-		// NextID.
+		// User Handler.
 		var getUsersHandler grpc_transport.Handler
 		{
-			getUsersHandler = user.MakeGRPCGetUsersHandler(userEndpoints.FetchEndpoint)
+			getUsersHandler = user.MakeGRPCGetUsersHandler(userEndpoints.Endpoint)
 			getUsersHandler = middleware.MakeGRPCTracingMW(tracer, "grpc_server_getusers")(getUsersHandler)
 		}
 
@@ -282,44 +298,62 @@ func main() {
 	}()
 
 	// Event service.
+	var eventLogger = log.With(logger, "svc", "event")
+
 	var consoleModule event.ConsoleModule
 	{
-		consoleModule = event.NewConsoleModule(log.With(logger, "svc", "event", "module", "console"))
-		consoleModule = event.MakeConsoleModuleLoggingMW(log.With(logger, "svc", "event", "mw", "module"))(consoleModule)
+		consoleModule = event.NewConsoleModule(log.With(eventLogger, "module", "console"))
+		consoleModule = event.MakeConsoleModuleInstrumentingMW(influxMetrics.NewHistogram("console_module"))(consoleModule)
+		consoleModule = event.MakeConsoleModuleLoggingMW(log.With(eventLogger, "mw", "module", "unit", "console"))(consoleModule)
+		consoleModule = event.MakeConsoleModuleTracingMW(tracer)(consoleModule)
 	}
 
 	var statisticModule event.StatisticModule
 	{
 		statisticModule = event.NewStatisticModule(influxMetrics, influxBatchPointsConfig)
-		statisticModule = event.MakeStatisticModuleLoggingMW(log.With(logger, "svc", "event", "mw", "module"))(statisticModule)
+		statisticModule = event.MakeStatisticModuleInstrumentingMW(influxMetrics.NewHistogram("statistic_module"))(statisticModule)
+		statisticModule = event.MakeStatisticModuleLoggingMW(log.With(eventLogger, "mw", "module", "unit", "statistic"))(statisticModule)
+		statisticModule = event.MakeStatisticModuleTracingMW(tracer)(statisticModule)
 	}
 
 	var eventAdminComponent event.AdminComponent
 	{
 		var fns = []event.FuncEvent{consoleModule.Print, statisticModule.Stats}
 		eventAdminComponent = event.NewAdminComponent(fns, fns, fns, fns)
-		eventAdminComponent = event.MakeAdminComponentLoggingMW(log.With(logger, "svc", "event", "mw", "component"))(eventAdminComponent)
+		eventAdminComponent = event.MakeAdminComponentInstrumentingMW(influxMetrics.NewHistogram("admin_component"))(eventAdminComponent)
+		eventAdminComponent = event.MakeAdminComponentLoggingMW(log.With(eventLogger, "mw", "component", "unit", "admin event"))(eventAdminComponent)
+		eventAdminComponent = event.MakeAdminComponentTracingMW(tracer)(eventAdminComponent)
 	}
 
 	var eventComponent event.Component
 	{
 		var fns = []event.FuncEvent{consoleModule.Print, statisticModule.Stats}
 		eventComponent = event.NewComponent(fns, fns)
+		eventComponent = event.MakeComponentInstrumentingMW(influxMetrics.NewHistogram("component"))(eventComponent)
+		eventComponent = event.MakeComponentLoggingMW(log.With(eventLogger, "mw", "component", "unit", "event"))(eventComponent)
+		eventComponent = event.MakeComponentTracingMW(tracer)(eventComponent)
 	}
 
 	var muxComponent event.MuxComponent
 	{
 		muxComponent = event.NewMuxComponent(eventComponent, eventAdminComponent)
-		muxComponent = event.MakeMuxComponentLoggingMW(log.With(logger, "svc", "event", "mw", "component"))(muxComponent)
+		muxComponent = event.MakeMuxComponentInstrumentingMW(influxMetrics.NewHistogram("component"))(muxComponent)
+		muxComponent = event.MakeMuxComponentLoggingMW(log.With(eventLogger, "mw", "component", "unit", "mux"))(muxComponent)
+		muxComponent = event.MakeMuxComponentTracingMW(tracer)(muxComponent)
 	}
 
-	var eventEndpoints = event.NewEndpoints()
-	eventEndpoints.MakeKeycloakEndpoint(
-		muxComponent,
-		middleware.MakeEndpointLoggingMW(log.With(logger, "svc", "event", "mw", "endpoint")),
-		// middleware.MakeEndpointTracingMiddleware(tracer, "events")(eventConsumerEndpoint)
-		// middleware.MakeCorrelationIDMiddleware()(eventConsumerEndpoint)
-	)
+	var eventEndpoint endpoint.Endpoint
+	{
+		eventEndpoint = event.MakeEventEndpoint(muxComponent)
+		eventEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("event_endpoint"))(eventEndpoint)
+		eventEndpoint = middleware.MakeEndpointLoggingMW(log.With(eventLogger, "mw", "endpoint"))(eventEndpoint)
+		eventEndpoint = middleware.MakeEndpointTracingMW(tracer, "event_endpoint")(eventEndpoint)
+		eventEndpoint = middleware.MakeEndpointCorrelationIDMW(flakiClient, tracer)(eventEndpoint)
+	}
+
+	var eventEndpoints = event.Endpoints{
+		Endpoint: eventEndpoint,
+	}
 
 	/*
 		HTTP monitoring routes.
@@ -336,7 +370,7 @@ func main() {
 		var eventSubroute = route.PathPrefix("/event").Subrouter()
 		var eventHandler http.Handler
 		{
-			eventHandler = event.MakeReceiverHandler(eventEndpoints.FetchEndpoint)
+			eventHandler = event.MakeReceiverHandler(eventEndpoints.Endpoint)
 			//eventHandler = event.MakeTracingMiddleware(tracer, "event")(eventHandler)
 		}
 		eventSubroute.Handle("/receiver", eventHandler)
@@ -409,13 +443,13 @@ func config(logger log.Logger) map[string]interface{} {
 	logger.Log("msg", "load configuration and command args")
 
 	// Component default.
-	viper.SetDefault("config-file", "./conf/DEV/keycloak_bridge.yml")
+	viper.SetDefault("config-file", "./conf/DEV/keycloakd.yml")
 	viper.SetDefault("component-name", "keycloak-bridge")
 	viper.SetDefault("component-http-address", "0.0.0.0:8888")
 	viper.SetDefault("component-grpc-address", "0.0.0.0:5555")
 
 	// Flaki default.
-	viper.SetDefault("flaki-url", "127.0.0.1:9999")
+	viper.SetDefault("flaki-url", "127.0.0.1:9000")
 
 	// Keycloak default.
 	viper.SetDefault("keycloak-url", "127.0.0.1:8080")

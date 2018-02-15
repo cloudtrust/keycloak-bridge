@@ -15,11 +15,13 @@ type logstashLog struct {
 
 type redisWriter struct {
 	con redis.Conn
+	key string
 }
 
-func NewLogstashRedisWriter(con redis.Conn) *redisWriter {
+func NewLogstashRedisWriter(con redis.Conn, key string) *redisWriter {
 	return &redisWriter{
 		con: con,
+		key: key,
 	}
 }
 
@@ -33,7 +35,7 @@ func (w *redisWriter) Write(p []byte) (int, error) {
 		return 0, err
 	}
 
-	err = w.con.Send("RPUSH", "flaki-service", logstashLog)
+	err = w.con.Send("RPUSH", w.key, logstashLog)
 	if err != nil {
 		return 0, err
 	}

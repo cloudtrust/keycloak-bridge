@@ -5,10 +5,12 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/cloudtrust/keycloak-bridge/flaki/flatbuffer/fb"
 	"github.com/go-kit/kit/endpoint"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/metrics"
 	grpc_transport "github.com/go-kit/kit/transport/grpc"
+	"github.com/google/flatbuffers/go"
 	opentracing "github.com/opentracing/opentracing-go"
 	otag "github.com/opentracing/opentracing-go/ext"
 	"google.golang.org/grpc/metadata"
@@ -86,23 +88,46 @@ func (m *grpcTracingMW) ServeGRPC(ctx context.Context, request interface{}) (con
 	return m.next.ServeGRPC(opentracing.ContextWithSpan(ctx, span), request)
 }
 
-type FlakiClient interface {
-	GetCorrelationID(context.Context) (string, error)
-}
-
 // MakeEndpointCorrelationIDMW makes a middleware that adds a correlation ID
 // in the context if there is not already one.
-func MakeEndpointCorrelationIDMW(flaki FlakiClient) endpoint.Middleware {
+func MakeEndpointCorrelationIDMW(flaki fb.FlakiClient, tracer opentracing.Tracer) endpoint.Middleware {
 	return func(next endpoint.Endpoint) endpoint.Endpoint {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
 			var id = ctx.Value("correlation_id")
 
 			if id == nil {
-				var corrID, err = flaki.GetCorrelationID(ctx)
-				if err != nil {
-					return nil, err
+				// Propagate opentracing span
+				var octx = context.Background()
+				if span := opentracing.SpanFromContext(ctx); span != nil {
+					span = tracer.StartSpan("get_correlation_id", opentracing.ChildOf(span.Context()))
+					otag.SpanKindRPCClient.Set(span)
+
+					defer span.Finish()
+
+					ctx = opentracing.ContextWithSpan(ctx, span)
+
+					// Propagate the opentracing span.
+					var carrier = make(opentracing.TextMapCarrier)
+					var err = tracer.Inject(span.Context(), opentracing.TextMap, carrier)
+					if err != nil {
+						return "", err
+					}
+
+					var md = metadata.New(carrier)
+					octx = metadata.NewOutgoingContext(context.Background(), md)
 				}
-				ctx = context.WithValue(ctx, "correlation_id", corrID)
+
+				// Empty request.
+				var b = flatbuffers.NewBuilder(0)
+				fb.EmptyRequestStart(b)
+				b.Finish(fb.EmptyRequestEnd(b))
+
+				var reply, err = flaki.NextValidID(octx, b)
+				if err != nil {
+					return "", err
+				}
+
+				ctx = context.WithValue(ctx, "correlation_id", string(reply.Id()))
 			}
 			return next(ctx, req)
 		}
