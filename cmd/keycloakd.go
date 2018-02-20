@@ -18,7 +18,7 @@ import (
 	"github.com/cloudtrust/keycloak-bridge/pkg/middleware"
 	"github.com/cloudtrust/keycloak-bridge/pkg/user"
 	"github.com/cloudtrust/keycloak-bridge/pkg/user/flatbuffer/fb"
-	keycloak "github.com/cloudtrust/keycloak-client/client"
+	keycloak "github.com/cloudtrust/keycloak-client"
 	"github.com/garyburd/redigo/redis"
 	sentry "github.com/getsentry/raven-go"
 	"github.com/go-kit/kit/endpoint"
@@ -62,7 +62,7 @@ func main() {
 
 		flakiAddr = config["flaki-url"].(string)
 
-		keycloakHTTPConfig = keycloak.HttpConfig{
+		keycloakConfig = keycloak.Config{
 			Addr:     fmt.Sprintf("http://%s", config["keycloak-url"].(string)),
 			Username: config["keycloak-username"].(string),
 			Password: config["keycloak-password"].(string),
@@ -139,10 +139,10 @@ func main() {
 	}()
 
 	// Keycloak client.
-	var keycloakClient keycloak.Client
+	var keycloakClient *keycloak.Client
 	{
 		var err error
-		keycloakClient, err = keycloak.NewHttpClient(keycloakHTTPConfig)
+		keycloakClient, err = keycloak.New(keycloakConfig)
 		if err != nil {
 			logger.Log("msg", "could not create Keycloak client", "error", err)
 			return
@@ -364,7 +364,7 @@ func main() {
 		var jaegerHM = health.NewJaegerModule(tracer)
 		var redisHM = health.NewRedisModule(redisConn)
 		var sentryHM = health.NewSentryModule(sentryClient, http.DefaultClient)
-		var keycloakHM = health.NewKeycloakModule(keycloakClient)
+		var keycloakHM = health.NewKeycloakModule(keycloakClient, Version)
 
 		healthComponent = health.NewComponent(influxHM, jaegerHM, redisHM, sentryHM, keycloakHM)
 	}

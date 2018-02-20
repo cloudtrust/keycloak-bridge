@@ -3,7 +3,7 @@ package user
 import (
 	"context"
 
-	keycloak "github.com/cloudtrust/keycloak-client/client"
+	keycloak "github.com/cloudtrust/keycloak-client"
 )
 
 // Module is the interface of the user module.
@@ -12,7 +12,7 @@ type Module interface {
 }
 
 type Keycloak interface {
-	GetUsers(string) ([]keycloak.UserRepresentation, error)
+	GetUsers(realmName string, paramKV ...string) ([]keycloak.UserRepresentation, error)
 }
 
 type module struct {

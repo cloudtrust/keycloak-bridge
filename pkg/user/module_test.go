@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	keycloak "github.com/cloudtrust/keycloak-client/client"
+	keycloak "github.com/cloudtrust/keycloak-client"
 	"github.com/stretchr/testify/assert"
 )
 
