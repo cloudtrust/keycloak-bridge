@@ -4,6 +4,7 @@ import (
 	sentry "github.com/getsentry/raven-go"
 )
 
+// Sentry is the interface of the NOOP Sentry.
 type Sentry interface {
 	URL() string
 }
@@ -13,11 +14,6 @@ type NoopSentry struct{}
 
 // CaptureError does nothing for the receiver NoopSentry.
 func (s *NoopSentry) CaptureError(err error, tags map[string]string, interfaces ...sentry.Interface) string {
-	return ""
-}
-
-// CaptureErrorAndWait does nothing for the receiver NoopSentry.
-func (s *NoopSentry) CaptureErrorAndWait(err error, tags map[string]string, interfaces ...sentry.Interface) string {
 	return ""
 }
 

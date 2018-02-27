@@ -1,5 +1,7 @@
 package event
 
+//go:generate mockgen -destination=./mock/module.go -package=mock -mock_names=ConsoleModule=ConsoleModule,StatisticModule=StatisticModule,Influx=Influx github.com/cloudtrust/keycloak-bridge/pkg/event ConsoleModule,StatisticModule,Influx
+
 import (
 	"context"
 	"time"
@@ -38,10 +40,6 @@ type StatisticModule interface {
 
 type Influx interface {
 	Write(bp influx.BatchPoints) error
-}
-
-type BatchPoints interface {
-	AddPoint(p *influx.Point)
 }
 
 type statisticModule struct {

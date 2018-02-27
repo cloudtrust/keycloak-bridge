@@ -1,4 +1,4 @@
-package health
+package health_test
 
 import (
 	"context"
@@ -6,28 +6,29 @@ import (
 	"testing"
 	"time"
 
+	. "github.com/cloudtrust/keycloak-bridge/pkg/health"
+	"github.com/cloudtrust/keycloak-bridge/pkg/health/mock"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestInfluxHealthChecks(t *testing.T) {
-	var mockInflux = &mockInflux{fail: false}
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+	var mockInflux = mock.NewInflux(mockCtrl)
 
 	var m = NewInfluxModule(mockInflux)
 
-	mockInflux.called = false
+	mockInflux.EXPECT().Ping(5*time.Second).Return(1*time.Second, "", nil).Times(1)
 	var report = m.HealthChecks(context.Background())[0]
-	assert.True(t, mockInflux.called)
 	assert.Equal(t, "ping", report.Name)
 	assert.NotZero(t, report.Duration)
 	assert.Equal(t, OK, report.Status)
 	assert.Zero(t, report.Error)
 
 	// Influx fail.
-	mockInflux.fail = true
-	mockInflux.called = false
+	mockInflux.EXPECT().Ping(5*time.Second).Return(0*time.Second, "", fmt.Errorf("fail")).Times(1)
 	report = m.HealthChecks(context.Background())[0]
-	fmt.Println(report)
-	assert.True(t, mockInflux.called)
 	assert.Equal(t, "ping", report.Name)
 	assert.NotZero(t, report.Duration)
 	assert.Equal(t, KO, report.Status)
@@ -35,51 +36,16 @@ func TestInfluxHealthChecks(t *testing.T) {
 }
 
 func TestNoopInfluxHealthChecks(t *testing.T) {
-	var mockInflux = &mockInflux{fail: false, s: "NOOP"}
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+	var mockInflux = mock.NewInflux(mockCtrl)
 
 	var m = NewInfluxModule(mockInflux)
 
-	mockInflux.called = false
+	mockInflux.EXPECT().Ping(5*time.Second).Return(1*time.Second, "NOOP", nil).Times(1)
 	var report = m.HealthChecks(context.Background())[0]
-	assert.True(t, mockInflux.called)
 	assert.Equal(t, "ping", report.Name)
 	assert.Equal(t, "N/A", report.Duration)
 	assert.Equal(t, Deactivated, report.Status)
 	assert.Zero(t, report.Error)
-}
-
-// Mock Influx.
-type mockInflux struct {
-	called bool
-	fail   bool
-	s      string
-}
-
-func (i *mockInflux) Ping(timeout time.Duration) (time.Duration, string, error) {
-	i.called = true
-	if i.fail {
-		return time.Duration(0), "", fmt.Errorf("fail")
-	}
-	return time.Duration(1 * time.Second), i.s, nil
-}
-
-// Mock Influx module.
-type mockInfluxModule struct {
-	fail bool
-}
-
-func (m *mockInfluxModule) HealthChecks(context.Context) []InfluxHealthReport {
-	if m.fail {
-		return []InfluxHealthReport{InfluxHealthReport{
-			Name:     "influx",
-			Duration: time.Duration(1 * time.Second).String(),
-			Status:   KO,
-			Error:    "fail",
-		}}
-	}
-	return []InfluxHealthReport{InfluxHealthReport{
-		Name:     "influx",
-		Duration: time.Duration(1 * time.Second).String(),
-		Status:   OK,
-	}}
 }

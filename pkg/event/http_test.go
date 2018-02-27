@@ -16,7 +16,7 @@ import (
 )
 
 func TestEventTransport_decodeKeycloakEventsReceiverRequest_ValidAdminEvent(t *testing.T) {
-	var byteAdminEvent = createhttpAdminEvent(1234)
+	var byteAdminEvent = createHTTPAdminEvent(1234)
 	var stringAdminEvent = base64.StdEncoding.EncodeToString(byteAdminEvent)
 	var body = strings.NewReader("{\"type\": \"AdminEvent\", \"Obj\": \"" + stringAdminEvent + "\"}")
 	var req = httptest.NewRequest("POST", "http://localhost:8888/event/id", body)
@@ -34,7 +34,7 @@ func TestEventTransport_decodeKeycloakEventsReceiverRequest_ValidAdminEvent(t *t
 
 func TestEventTransport_decodeKeycloakEventsReceiverRequest_ValidEvent(t *testing.T) {
 
-	var byteEvent = createhttpEvent(1234, "realm")
+	var byteEvent = createHTTPEvent(1234, "realm")
 	var stringEvent = base64.StdEncoding.EncodeToString(byteEvent)
 	var body io.Reader = strings.NewReader("{\"type\": \"Event\", \"Obj\": \"" + stringEvent + "\"}")
 	var req = httptest.NewRequest("POST", "http://localhost:8888/event/id", body)
@@ -51,7 +51,7 @@ func TestEventTransport_decodeKeycloakEventsReceiverRequest_ValidEvent(t *testin
 }
 
 func TestEventTransport_decodeKeycloakEventsReceiverRequest_UnknownType(t *testing.T) {
-	var byteEvent = createhttpEvent(1234, "realm")
+	var byteEvent = createHTTPEvent(1234, "realm")
 	var stringEvent = base64.StdEncoding.EncodeToString(byteEvent)
 	var body io.Reader = strings.NewReader("{\"type\": \"Unknown\", \"Obj\": \"" + stringEvent + "\"}")
 	var req = httptest.NewRequest("POST", "http://localhost:8888/event/id", body)
@@ -72,7 +72,7 @@ func TestEventTransport_decodeKeycloakEventsReceiverRequest_InvalidObject(t *tes
 	assert.IsType(t, ErrInvalidArgument{}, err)
 }
 
-func createhttpAdminEvent(uid int64) []byte {
+func createHTTPAdminEvent(uid int64) []byte {
 	var builder = flatbuffers.NewBuilder(0)
 	fb.AdminEventStart(builder)
 	fb.AdminEventAddTime(builder, time.Now().Unix())
@@ -83,7 +83,7 @@ func createhttpAdminEvent(uid int64) []byte {
 	return builder.FinishedBytes()
 }
 
-func createhttpEvent(uid int64, realm string) []byte {
+func createHTTPEvent(uid int64, realm string) []byte {
 	var builder = flatbuffers.NewBuilder(0)
 	var realmStr = builder.CreateString(realm)
 	fb.EventStart(builder)

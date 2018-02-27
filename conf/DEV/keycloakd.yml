@@ -4,7 +4,7 @@ component-http-address: 0.0.0.0:8888
 component-grpc-address: 0.0.0.0:5555
 
 # Flaki ID generator
-flaki-url: 172.19.0.1:9000
+flaki-url: 172.19.0.1:5555
 
 # Keycloak configs
 keycloak-url: 127.0.0.1:8080
@@ -13,13 +13,13 @@ keycloak-password: admin
 keycloak-timeout-ms: 5000
 
 # Redis
-redis-url: 172.19.0.1:6379
+#redis-url: 172.19.0.1:6379
 redis-password: redis
 redis-database: 0
 redis-write-interval-ms: 1000
 
 # Influx DB configs
-influx-url: 172.19.0.1:8086
+#influx-url: 172.19.0.1:8086
 influx-username: flaki
 influx-password: flaki
 influx-database: flakimetrics
@@ -29,12 +29,12 @@ influx-write-consistency: ""
 influx-write-interval-ms: 1000
 
 # Sentry configs
-sentry-dsn: ""
+#sentry-dsn: "https://9daea4ff2b3743fa8b18ed1a17d58051:c16ceab18b73411698f7ce11b469982c@sentry.io/270124"
 
 # Jaeger configs
 jaeger-sampler-type: const
 jaeger-sampler-param: 1
-jaeger-sampler-url: 172.19.0.1:5775
+jaeger-sampler-url: 127.0.0.1:5775
 jaeger-reporter-logspan: false
 jaeger-write-interval-ms: 1000
 

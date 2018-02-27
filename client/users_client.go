@@ -85,7 +85,7 @@ func main() {
 	}
 
 	var md = metadata.New(carrier)
-	var correlationIDMD = metadata.New(map[string]string{"correlation_id": "1"})
+	var correlationIDMD = metadata.New(map[string]string{})
 
 	var builder = flatbuffers.NewBuilder(0)
 	var brealm = builder.CreateString("master")

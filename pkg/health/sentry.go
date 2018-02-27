@@ -1,5 +1,7 @@
 package health
 
+//go:generate mockgen -destination=./mock/sentry.go -package=mock -mock_names=SentryModule=SentryModule,Sentry=Sentry github.com/cloudtrust/keycloak-bridge/pkg/health SentryModule,Sentry
+
 import (
 	"context"
 	"fmt"
@@ -9,10 +11,17 @@ import (
 	"time"
 )
 
+// SentryModule is the health check module for sentry.
 type SentryModule interface {
 	HealthChecks(context.Context) []SentryHealthReport
 }
 
+type sentryModule struct {
+	sentry     Sentry
+	httpClient HTTPClient
+}
+
+// SentryHealthReport is the health report returned by the sentry module.
 type SentryHealthReport struct {
 	Name     string
 	Duration string
@@ -20,21 +29,18 @@ type SentryHealthReport struct {
 	Error    string
 }
 
+// Sentry is the interface of the sentry client.
 type Sentry interface {
 	URL() string
 }
 
-type httpClient interface {
+// HTTPClient is the interface of the http client.
+type HTTPClient interface {
 	Get(string) (*http.Response, error)
 }
 
-type sentryModule struct {
-	sentry     Sentry
-	httpClient httpClient
-}
-
 // NewSentryModule returns the sentry health module.
-func NewSentryModule(sentry Sentry, httpClient httpClient) SentryModule {
+func NewSentryModule(sentry Sentry, httpClient HTTPClient) SentryModule {
 	return &sentryModule{
 		sentry:     sentry,
 		httpClient: httpClient,
@@ -48,7 +54,7 @@ func (m *sentryModule) HealthChecks(context.Context) []SentryHealthReport {
 	return reports
 }
 
-func sentryPingCheck(sentry Sentry, httpClient httpClient) SentryHealthReport {
+func sentryPingCheck(sentry Sentry, httpClient HTTPClient) SentryHealthReport {
 	var dsn = sentry.URL()
 
 	// If sentry is deactivated.
@@ -78,7 +84,7 @@ func sentryPingCheck(sentry Sentry, httpClient httpClient) SentryHealthReport {
 	}
 }
 
-func getSentryStatus(dsn string, httpClient httpClient) (Status, error) {
+func getSentryStatus(dsn string, httpClient HTTPClient) (Status, error) {
 
 	// Build sentry health url from sentry dsn. The health url is <sentryURL>/_health
 	var url string

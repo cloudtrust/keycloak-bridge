@@ -1,5 +1,7 @@
 package event
 
+//go:generate mockgen -destination=./mock/tracing.go -package=mock -mock_names=Tracer=Tracer,Span=Span,SpanContext=SpanContext github.com/opentracing/opentracing-go Tracer,Span,SpanContext
+
 import (
 	"context"
 
@@ -24,7 +26,7 @@ func MakeMuxComponentTracingMW(tracer opentracing.Tracer) func(MuxComponent) Mux
 }
 
 // muxComponentTracingMW implements MuxComponent.
-func (m *muxComponentTracingMW) Event(ctx context.Context, eventType string, obj []byte) (interface{}, error) {
+func (m *muxComponentTracingMW) Event(ctx context.Context, eventType string, obj []byte) error {
 	if span := opentracing.SpanFromContext(ctx); span != nil {
 		span = m.tracer.StartSpan("mux_component", opentracing.ChildOf(span.Context()))
 		defer span.Finish()
@@ -53,7 +55,7 @@ func MakeComponentTracingMW(tracer opentracing.Tracer) func(Component) Component
 }
 
 // componentTracingMW implements Component.
-func (m *componentTracingMW) Event(ctx context.Context, event *fb.Event) (interface{}, error) {
+func (m *componentTracingMW) Event(ctx context.Context, event *fb.Event) error {
 	if span := opentracing.SpanFromContext(ctx); span != nil {
 		span = m.tracer.StartSpan("event_component", opentracing.ChildOf(span.Context()))
 		defer span.Finish()
@@ -82,9 +84,9 @@ func MakeAdminComponentTracingMW(tracer opentracing.Tracer) func(AdminComponent)
 }
 
 // adminComponentTracingMW implements Component.
-func (m *adminComponentTracingMW) AdminEvent(ctx context.Context, adminEvent *fb.AdminEvent) (interface{}, error) {
+func (m *adminComponentTracingMW) AdminEvent(ctx context.Context, adminEvent *fb.AdminEvent) error {
 	if span := opentracing.SpanFromContext(ctx); span != nil {
-		span = m.tracer.StartSpan("adminevent_component", opentracing.ChildOf(span.Context()))
+		span = m.tracer.StartSpan("admin_event_component", opentracing.ChildOf(span.Context()))
 		defer span.Finish()
 		span.SetTag("correlation_id", ctx.Value("correlation_id").(string))
 

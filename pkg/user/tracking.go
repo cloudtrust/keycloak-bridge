@@ -1,5 +1,7 @@
 package user
 
+//go:generate mockgen -destination=./mock/tracking.go -package=mock -mock_names=Sentry=Sentry github.com/cloudtrust/keycloak-bridge/pkg/user Sentry
+
 import (
 	"context"
 

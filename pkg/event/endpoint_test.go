@@ -1,15 +1,39 @@
 package event
 
 import (
+	"context"
+	"math/rand"
+	"strconv"
 	"testing"
+	"time"
+
+	"github.com/cloudtrust/keycloak-bridge/pkg/event/flatbuffer/fb"
+	"github.com/cloudtrust/keycloak-bridge/pkg/event/mock"
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
 )
 
-func TestNewEndpoints(t *testing.T) {
-	/*var endpoints = NewEndpoints()
+func TestEventEndpoint(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+	var mockMuxComponent = mock.NewMuxComponent(mockCtrl)
 
-	endpoints = endpoints.MakeKeycloakEndpoint(&mockMuxComponent{})
+	var e = MakeEventEndpoint(mockMuxComponent)
 
-	var r, err = endpoints.Event(context.Background(), "Event", createEventBytes(int8(0), 0, "realm"))
+	// Context with correlation ID.
+	rand.Seed(time.Now().UnixNano())
+	var corrID = strconv.FormatUint(rand.Uint64(), 10)
+	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
+
+	// Event.
+	var uid = rand.Int63()
+	var req = EventRequest{
+		Type:   "Event",
+		Object: createEventBytes(fb.EventTypeCLIENT_DELETE, uid, "realm"),
+	}
+	mockMuxComponent.EXPECT().Event(ctx, req.Type, req.Object).Return(nil).Times(1)
+
+	var i, err = e(ctx, req)
 	assert.Nil(t, err)
-	fmt.Println(r)*/
+	assert.Nil(t, i)
 }

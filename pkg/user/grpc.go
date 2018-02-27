@@ -1,5 +1,7 @@
 package user
 
+//go:generate mockgen -destination=./mock/grpc.go -package=mock -mock_names=Handler=Handler github.com/go-kit/kit/transport/grpc Handler
+
 import (
 	"context"
 

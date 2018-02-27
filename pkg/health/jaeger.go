@@ -1,13 +1,21 @@
 package health
 
+//go:generate mockgen -destination=./mock/jaeger.go -package=mock -mock_names=JaegerModule=JaegerModule,Jaeger=Jaeger github.com/cloudtrust/keycloak-bridge/pkg/health JaegerModule,Jaeger
+
 import (
 	"context"
 )
 
+// JaegerModule is the health check module for jaeger.
 type JaegerModule interface {
 	HealthChecks(context.Context) []JaegerHealthReport
 }
 
+type jaegerModule struct {
+	jaeger Jaeger
+}
+
+// JaegerHealthReport is the health report returned by the jaeger module.
 type JaegerHealthReport struct {
 	Name     string
 	Duration string
@@ -15,12 +23,9 @@ type JaegerHealthReport struct {
 	Error    string
 }
 
+// Jaeger is the interface of the jaeger client.
 type Jaeger interface {
-	//Ping(timeout time.Duration) (time.Duration, string, error)
-}
-
-type jaegerModule struct {
-	jaeger Jaeger
+	//Ping(timeout time.Duration) (time.Duration, error)
 }
 
 // NewJaegerModule returns the jaeger health module.

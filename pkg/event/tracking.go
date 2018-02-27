@@ -1,5 +1,7 @@
 package event
 
+//go:generate mockgen -destination=./mock/tracking.go -package=mock -mock_names=Sentry=Sentry github.com/cloudtrust/keycloak-bridge/pkg/event Sentry
+
 import (
 	"context"
 
@@ -28,10 +30,10 @@ func MakeComponentTrackingMW(sentry Sentry) func(MuxComponent) MuxComponent {
 }
 
 // trackingComponentMW implements MuxComponent.
-func (m *trackingComponentMW) Event(ctx context.Context, eventType string, obj []byte) (interface{}, error) {
-	var r, err = m.next.Event(ctx, eventType, obj)
+func (m *trackingComponentMW) Event(ctx context.Context, eventType string, obj []byte) error {
+	var err = m.next.Event(ctx, eventType, obj)
 	if err != nil {
 		m.sentry.CaptureError(err, map[string]string{"correlation_id": ctx.Value("correlation_id").(string)})
 	}
-	return r, err
+	return err
 }

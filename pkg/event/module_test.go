@@ -4,22 +4,28 @@ import (
 	"context"
 	"testing"
 
+	"github.com/cloudtrust/keycloak-bridge/pkg/event/mock"
+	"github.com/golang/mock/gomock"
 	influx "github.com/influxdata/influxdb/client/v2"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestConsoleModule(t *testing.T) {
-	var mockLogger = &mockLogger{called: false}
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+	var mockLogger = mock.NewLogger(mockCtrl)
 
 	var consoleModule = NewConsoleModule(mockLogger)
-	assert.False(t, mockLogger.called)
+
+	mockLogger.EXPECT().Log("key", "val").Return(nil).Times(1)
 	var err = consoleModule.Print(context.Background(), map[string]string{"key": "val"})
 	assert.Nil(t, err)
-	assert.True(t, mockLogger.called)
 }
 
 func TestStatisticsModule(t *testing.T) {
-	var mockInflux = &mockInflux{called: false}
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+	var mockInflux = mock.NewInflux(mockCtrl)
 
 	var batchPointsConfig = influx.BatchPointsConfig{
 		Precision: "s",
@@ -27,38 +33,7 @@ func TestStatisticsModule(t *testing.T) {
 	}
 
 	var statisticModule = NewStatisticModule(mockInflux, batchPointsConfig)
-	assert.False(t, mockInflux.called)
+	mockInflux.EXPECT().Write(gomock.Any()).Return(nil).Times(1)
 	var err = statisticModule.Stats(context.Background(), map[string]string{"key": "val"})
 	assert.Nil(t, err)
-	assert.True(t, mockInflux.called)
-}
-
-// Mock Influx client.
-type mockInflux struct {
-	called bool
-}
-
-func (i *mockInflux) Write(bp influx.BatchPoints) error {
-	i.called = true
-	return nil
-}
-
-// Mock ConsoleModule.
-type mockConsoleModule struct {
-	called bool
-}
-
-func (m *mockConsoleModule) Print(context.Context, map[string]string) error {
-	m.called = true
-	return nil
-}
-
-// Mock StatisticModule
-type mockStatisticModule struct {
-	called bool
-}
-
-func (m *mockStatisticModule) Stats(context.Context, map[string]string) error {
-	m.called = true
-	return nil
 }

@@ -4,51 +4,67 @@ import (
 	"time"
 
 	"github.com/go-kit/kit/metrics"
-	gokit_influx "github.com/go-kit/kit/metrics/influx"
+	metric "github.com/go-kit/kit/metrics/influx"
 	influx "github.com/influxdata/influxdb/client/v2"
 )
 
+// Influx is the influx client interface.
+type Influx interface {
+	Ping(timeout time.Duration) (time.Duration, string, error)
+	Write(bp influx.BatchPoints) error
+	Close() error
+}
+
+// Metrics is the interface of the go-kit metrics.
+type Metrics interface {
+	NewCounter(name string) *metric.Counter
+	NewGauge(name string) *metric.Gauge
+	NewHistogram(name string) *metric.Histogram
+	WriteLoop(c <-chan time.Time, w metric.BatchPointsWriter)
+}
+
 // InfluxMetrics sends metrics to the Influx DB.
 type InfluxMetrics struct {
-	client influx.Client
-	gokit  *gokit_influx.Influx
+	influx  Influx
+	metrics Metrics
 }
 
 // NewMetrics returns an InfluxMetrics.
-func NewMetrics(client influx.Client, gokit *gokit_influx.Influx) *InfluxMetrics {
+func NewMetrics(influx Influx, metrics Metrics) *InfluxMetrics {
 	return &InfluxMetrics{
-		client: client,
-		gokit:  gokit,
+		influx:  influx,
+		metrics: metrics,
 	}
 }
 
 // NewCounter returns a go-kit Counter.
 func (m *InfluxMetrics) NewCounter(name string) metrics.Counter {
-	return m.gokit.NewCounter(name)
+	return m.metrics.NewCounter(name)
 }
 
 // NewGauge returns a go-kit Gauge.
 func (m *InfluxMetrics) NewGauge(name string) metrics.Gauge {
-	return m.gokit.NewGauge(name)
+	return m.metrics.NewGauge(name)
 }
 
 // NewHistogram returns a go-kit Histogram.
 func (m *InfluxMetrics) NewHistogram(name string) metrics.Histogram {
-	return m.gokit.NewHistogram(name)
+	return m.metrics.NewHistogram(name)
+}
+
+// Write writes the data to the Influx DB.
+func (m *InfluxMetrics) Write(bp influx.BatchPoints) error {
+	return m.influx.Write(bp)
 }
 
 // WriteLoop writes the data to the Influx DB.
 func (m *InfluxMetrics) WriteLoop(c <-chan time.Time) {
-	m.gokit.WriteLoop(c, m.client)
+	m.metrics.WriteLoop(c, m.influx)
 }
 
-// WriteLoop writes the data to the Influx DB.
-func (m *InfluxMetrics) Write(bp influx.BatchPoints) error {
-	return m.client.Write(bp)
-}
-
+// Ping test the connection to the Influx DB.
 func (m *InfluxMetrics) Ping(timeout time.Duration) (time.Duration, string, error) {
-	return m.client.Ping(timeout)
+	return m.influx.Ping(timeout)
 }
 
 // NoopMetrics is an Influx metrics that does nothing.
@@ -57,10 +73,10 @@ type NoopMetrics struct{}
 func (m *NoopMetrics) NewCounter(name string) metrics.Counter     { return &NoopCounter{} }
 func (m *NoopMetrics) NewGauge(name string) metrics.Gauge         { return &NoopGauge{} }
 func (m *NoopMetrics) NewHistogram(name string) metrics.Histogram { return &NoopHistogram{} }
-func (m *NoopMetrics) WriteLoop(c <-chan time.Time)               {}
 func (m *NoopMetrics) Write(bp influx.BatchPoints) error          { return nil }
+func (m *NoopMetrics) WriteLoop(c <-chan time.Time)               {}
 func (m *NoopMetrics) Ping(timeout time.Duration) (time.Duration, string, error) {
-	return time.Duration(0), "Noop", nil
+	return time.Duration(0), "NOOP", nil
 }
 
 // NoopCounter is a Counter that does nothing.

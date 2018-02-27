@@ -1,5 +1,11 @@
 package middleware
 
+//go:generate mockgen -destination=./mock/logging.go -package=mock -mock_names=Logger=Logger github.com/go-kit/kit/log Logger
+//go:generate mockgen -destination=./mock/instrumenting.go -package=mock -mock_names=Histogram=Histogram github.com/go-kit/kit/metrics Histogram
+//go:generate mockgen -destination=./mock/tracing.go -package=mock -mock_names=Tracer=Tracer,Span=Span,SpanContext=SpanContext github.com/opentracing/opentracing-go Tracer,Span,SpanContext
+//go:generate mockgen -destination=./mock/EventComponent.go -package=mock -mock_names=MuxComponent=MuxComponent,Component=EventComponent,AdminComponent=AdminEventComponent github.com/cloudtrust/keycloak-bridge/pkg/event MuxComponent,Component,AdminComponent
+//go:generate mockgen -destination=./mock/healthComponent.go -package=mock -mock_names=Component=HealthComponent github.com/cloudtrust/keycloak-bridge/pkg/health Component
+
 import (
 	"context"
 	"net/http"

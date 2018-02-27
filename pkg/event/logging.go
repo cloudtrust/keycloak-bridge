@@ -1,5 +1,7 @@
 package event
 
+//go:generate mockgen -destination=./mock/logging.go -package=mock -mock_names=Logger=Logger github.com/go-kit/kit/log Logger
+
 import (
 	"context"
 	"time"
@@ -25,7 +27,7 @@ func MakeMuxComponentLoggingMW(log log.Logger) func(MuxComponent) MuxComponent {
 }
 
 // muxComponentLoggingMW implements MuxComponent.
-func (m *muxComponentLoggingMW) Event(ctx context.Context, eventType string, obj []byte) (interface{}, error) {
+func (m *muxComponentLoggingMW) Event(ctx context.Context, eventType string, obj []byte) error {
 	defer func(begin time.Time) {
 		m.logger.Log("unit", "Event", "type", eventType, "correlation_id", ctx.Value("correlation_id").(string), "took", time.Since(begin))
 	}(time.Now())
@@ -49,7 +51,7 @@ func MakeComponentLoggingMW(log log.Logger) func(Component) Component {
 }
 
 // componentLoggingMW implements Component.
-func (m *componentLoggingMW) Event(ctx context.Context, event *fb.Event) (interface{}, error) {
+func (m *componentLoggingMW) Event(ctx context.Context, event *fb.Event) error {
 	defer func(begin time.Time) {
 		m.logger.Log("unit", "Event", "correlation_id", ctx.Value("correlation_id").(string), "took", time.Since(begin))
 	}(time.Now())
@@ -73,7 +75,7 @@ func MakeAdminComponentLoggingMW(log log.Logger) func(AdminComponent) AdminCompo
 }
 
 // adminComponentLoggingMW implements AdminComponent.
-func (m *adminComponentLoggingMW) AdminEvent(ctx context.Context, adminEvent *fb.AdminEvent) (interface{}, error) {
+func (m *adminComponentLoggingMW) AdminEvent(ctx context.Context, adminEvent *fb.AdminEvent) error {
 	defer func(begin time.Time) {
 		m.logger.Log("unit", "AdminEvent", "correlation_id", ctx.Value("correlation_id").(string), "took", time.Since(begin))
 	}(time.Now())

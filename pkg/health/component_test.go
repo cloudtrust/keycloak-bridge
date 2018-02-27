@@ -1,20 +1,33 @@
-package health
+package health_test
 
 import (
 	"context"
 	"testing"
 	"time"
 
+	. "github.com/cloudtrust/keycloak-bridge/pkg/health"
+	"github.com/cloudtrust/keycloak-bridge/pkg/health/mock"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestHealthChecks(t *testing.T) {
-	var mockInfluxModule = &mockInfluxModule{fail: false}
-	var mockJaegerModule = &mockJaegerModule{fail: false}
-	var mockRedisModule = &mockRedisModule{fail: false}
-	var mockSentryModule = &mockSentryModule{fail: false}
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
 
-	var c = NewComponent(mockInfluxModule, mockJaegerModule, mockRedisModule, mockSentryModule)
+	var mockInfluxModule = mock.NewInfluxModule(mockCtrl)
+	var mockJaegerModule = mock.NewJaegerModule(mockCtrl)
+	var mockRedisModule = mock.NewRedisModule(mockCtrl)
+	var mockSentryModule = mock.NewSentryModule(mockCtrl)
+	var mockKeycoakModule = mock.NewKeycloakModule(mockCtrl)
+
+	mockInfluxModule.EXPECT().HealthChecks(context.Background()).Return([]InfluxHealthReport{{Name: "influx", Duration: (1 * time.Second).String(), Status: OK}}).Times(1)
+	mockJaegerModule.EXPECT().HealthChecks(context.Background()).Return([]JaegerHealthReport{{Name: "jaeger", Duration: (1 * time.Second).String(), Status: OK}}).Times(1)
+	mockRedisModule.EXPECT().HealthChecks(context.Background()).Return([]RedisHealthReport{{Name: "redis", Duration: (1 * time.Second).String(), Status: OK}}).Times(1)
+	mockSentryModule.EXPECT().HealthChecks(context.Background()).Return([]SentryHealthReport{{Name: "sentry", Duration: (1 * time.Second).String(), Status: OK}}).Times(1)
+	mockKeycoakModule.EXPECT().HealthChecks(context.Background()).Return([]KeycloakHealthReport{{Name: "keycloak", Duration: (1 * time.Second).String(), Status: OK}}).Times(1)
+
+	var c = NewComponent(mockInfluxModule, mockJaegerModule, mockRedisModule, mockSentryModule, mockKeycoakModule)
 
 	// Influx.
 	var ir = c.InfluxHealthChecks(context.Background()).Reports[0]
@@ -43,14 +56,31 @@ func TestHealthChecks(t *testing.T) {
 	assert.NotZero(t, sr.Duration)
 	assert.Equal(t, OK, sr.Status)
 	assert.Zero(t, sr.Error)
+
+	// Keycloak.
+	var kr = c.KeycloakHealthChecks(context.Background()).Reports[0]
+	assert.Equal(t, "keycloak", kr.Name)
+	assert.NotZero(t, kr.Duration)
+	assert.Equal(t, OK, kr.Status)
+	assert.Zero(t, kr.Error)
 }
 func TestHealthChecksFail(t *testing.T) {
-	var mockInfluxModule = &mockInfluxModule{fail: true}
-	var mockJaegerModule = &mockJaegerModule{fail: true}
-	var mockRedisModule = &mockRedisModule{fail: true}
-	var mockSentryModule = &mockSentryModule{fail: true}
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
 
-	var c = NewComponent(mockInfluxModule, mockJaegerModule, mockRedisModule, mockSentryModule)
+	var mockInfluxModule = mock.NewInfluxModule(mockCtrl)
+	var mockJaegerModule = mock.NewJaegerModule(mockCtrl)
+	var mockRedisModule = mock.NewRedisModule(mockCtrl)
+	var mockSentryModule = mock.NewSentryModule(mockCtrl)
+	var mockKeycoakModule = mock.NewKeycloakModule(mockCtrl)
+
+	mockInfluxModule.EXPECT().HealthChecks(context.Background()).Return([]InfluxHealthReport{{Name: "influx", Duration: (1 * time.Second).String(), Status: KO, Error: "fail"}}).Times(1)
+	mockJaegerModule.EXPECT().HealthChecks(context.Background()).Return([]JaegerHealthReport{{Name: "jaeger", Duration: (1 * time.Second).String(), Status: KO, Error: "fail"}}).Times(1)
+	mockRedisModule.EXPECT().HealthChecks(context.Background()).Return([]RedisHealthReport{{Name: "redis", Duration: (1 * time.Second).String(), Status: KO, Error: "fail"}}).Times(1)
+	mockSentryModule.EXPECT().HealthChecks(context.Background()).Return([]SentryHealthReport{{Name: "sentry", Duration: (1 * time.Second).String(), Status: KO, Error: "fail"}}).Times(1)
+	mockKeycoakModule.EXPECT().HealthChecks(context.Background()).Return([]KeycloakHealthReport{{Name: "keycloak", Duration: (1 * time.Second).String(), Status: KO, Error: "fail"}}).Times(1)
+
+	var c = NewComponent(mockInfluxModule, mockJaegerModule, mockRedisModule, mockSentryModule, mockKeycoakModule)
 
 	// Influx.
 	var ir = c.InfluxHealthChecks(context.Background()).Reports[0]
@@ -79,75 +109,11 @@ func TestHealthChecksFail(t *testing.T) {
 	assert.NotZero(t, sr.Duration)
 	assert.Equal(t, KO, sr.Status)
 	assert.Equal(t, "fail", sr.Error)
-}
 
-// Mock component.
-type mockComponent struct {
-	fail         bool
-	influxCalled bool
-	jaegerCalled bool
-	redisCalled  bool
-	sentryCalled bool
-}
-
-func (c *mockComponent) InfluxHealthChecks(context.Context) HealthReports {
-	var r = HealthReport{
-		Name:     "influx",
-		Duration: time.Duration(1 * time.Second).String(),
-		Status:   OK,
-		Error:    "",
-	}
-
-	if c.fail {
-		r.Status = KO
-		r.Error = "fail"
-	}
-
-	return HealthReports{Reports: []HealthReport{r}}
-}
-
-func (c *mockComponent) JaegerHealthChecks(context.Context) HealthReports {
-	var r = HealthReport{
-		Name:     "jaeger",
-		Duration: time.Duration(1 * time.Second).String(),
-		Status:   OK,
-		Error:    "",
-	}
-
-	if c.fail {
-		r.Status = KO
-		r.Error = "fail"
-	}
-
-	return HealthReports{Reports: []HealthReport{r}}
-}
-func (c *mockComponent) RedisHealthChecks(context.Context) HealthReports {
-	var r = HealthReport{
-		Name:     "redis",
-		Duration: time.Duration(1 * time.Second).String(),
-		Status:   OK,
-		Error:    "",
-	}
-
-	if c.fail {
-		r.Status = KO
-		r.Error = "fail"
-	}
-
-	return HealthReports{Reports: []HealthReport{r}}
-}
-func (c *mockComponent) SentryHealthChecks(context.Context) HealthReports {
-	var r = HealthReport{
-		Name:     "sentry",
-		Duration: time.Duration(1 * time.Second).String(),
-		Status:   OK,
-		Error:    "",
-	}
-
-	if c.fail {
-		r.Status = KO
-		r.Error = "fail"
-	}
-
-	return HealthReports{Reports: []HealthReport{r}}
+	// Keycloak.
+	var kr = c.KeycloakHealthChecks(context.Background()).Reports[0]
+	assert.Equal(t, "keycloak", kr.Name)
+	assert.NotZero(t, kr.Duration)
+	assert.Equal(t, KO, kr.Status)
+	assert.Equal(t, "fail", kr.Error)
 }

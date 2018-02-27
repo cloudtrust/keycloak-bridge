@@ -1,5 +1,7 @@
 package event
 
+//go:generate mockgen -destination=./mock/component.go -package=mock -mock_names=MuxComponent=MuxComponent,Component=Component,AdminComponent=AdminComponent github.com/cloudtrust/keycloak-bridge/pkg/event MuxComponent,Component,AdminComponent
+
 import (
 	"context"
 	"fmt"
@@ -11,7 +13,7 @@ import (
 
 // MuxComponent is the Mux component interface.
 type MuxComponent interface {
-	Event(ctx context.Context, eventType string, obj []byte) (interface{}, error)
+	Event(ctx context.Context, eventType string, obj []byte) error
 }
 
 type muxComponent struct {
@@ -27,7 +29,7 @@ func NewMuxComponent(component Component, adminComponent AdminComponent) MuxComp
 	}
 }
 
-func (c *muxComponent) Event(ctx context.Context, eventType string, obj []byte) (interface{}, error) {
+func (c *muxComponent) Event(ctx context.Context, eventType string, obj []byte) error {
 	switch eventType {
 	case "Event":
 		var event = fb.GetRootAsEvent(obj, 0)
@@ -36,13 +38,13 @@ func (c *muxComponent) Event(ctx context.Context, eventType string, obj []byte) 
 		var adminEvent = fb.GetRootAsAdminEvent(obj, 0)
 		return c.adminComponent.AdminEvent(ctx, adminEvent)
 	default:
-		return nil, ErrInvalidArgument{InvalidParam: "Type"}
+		return ErrInvalidArgument{InvalidParam: "Type"}
 	}
 }
 
 // Component is the event component interface.
 type Component interface {
-	Event(ctx context.Context, event *fb.Event) (interface{}, error)
+	Event(ctx context.Context, event *fb.Event) error
 }
 
 type component struct {
@@ -59,7 +61,7 @@ func NewComponent(modulesToCallForStandardEvent []FuncEvent,
 	}
 }
 
-func (c *component) Event(ctx context.Context, event *fb.Event) (interface{}, error) {
+func (c *component) Event(ctx context.Context, event *fb.Event) error {
 	var eventType = int(event.Type())
 	var eventTypeName = fb.EnumNamesEventType[eventType]
 	var eventMap = eventToMap(event)
@@ -73,7 +75,7 @@ func (c *component) Event(ctx context.Context, event *fb.Event) (interface{}, er
 
 // AdminComponent is the admin event component interface.
 type AdminComponent interface {
-	AdminEvent(ctx context.Context, adminEvent *fb.AdminEvent) (interface{}, error)
+	AdminEvent(ctx context.Context, adminEvent *fb.AdminEvent) error
 }
 
 type FuncEvent = func(context.Context, map[string]string) error
@@ -98,7 +100,7 @@ func NewAdminComponent(modulesToCallForCreate []FuncEvent,
 	}
 }
 
-func (c *adminComponent) AdminEvent(ctx context.Context, adminEvent *fb.AdminEvent) (interface{}, error) {
+func (c *adminComponent) AdminEvent(ctx context.Context, adminEvent *fb.AdminEvent) error {
 	var adminEventMap = adminEventToMap(adminEvent)
 	switch operationType := adminEvent.OperationType(); operationType {
 	case fb.OperationTypeCREATE:
@@ -110,7 +112,7 @@ func (c *adminComponent) AdminEvent(ctx context.Context, adminEvent *fb.AdminEve
 	case fb.OperationTypeACTION:
 		return apply(ctx, c.modulesToCallForAction, adminEventMap)
 	default:
-		return nil, ErrInvalidArgument{InvalidParam: "OperationType"}
+		return ErrInvalidArgument{InvalidParam: "OperationType"}
 	}
 }
 
@@ -152,7 +154,7 @@ func eventToMap(event *fb.Event) map[string]string {
 	return eventMap
 }
 
-func apply(ctx context.Context, fs [](FuncEvent), param map[string]string) (interface{}, error) {
+func apply(ctx context.Context, fs [](FuncEvent), param map[string]string) error {
 	var errors = make(chan error, len(fs))
 	var wg sync.WaitGroup
 
@@ -175,11 +177,10 @@ func apply(ctx context.Context, fs [](FuncEvent), param map[string]string) (inte
 	select {
 	case err, ok := <-errors:
 		if ok {
-			return nil, err
+			return err
 		}
 	default:
-		return "ok", nil
+		return nil
 	}
-
-	return "ok", nil
+	return nil
 }

@@ -1,14 +1,22 @@
 package health
 
+//go:generate mockgen -destination=./mock/redis.go -package=mock -mock_names=RedisModule=RedisModule,Redis=Redis github.com/cloudtrust/keycloak-bridge/pkg/health RedisModule,Redis
+
 import (
 	"context"
 	"time"
 )
 
+// RedisModule is the health check module for redis.
 type RedisModule interface {
 	HealthChecks(context.Context) []RedisHealthReport
 }
 
+type redisModule struct {
+	redis Redis
+}
+
+// RedisHealthReport is the health report returned by the redis module.
 type RedisHealthReport struct {
 	Name     string
 	Duration string
@@ -16,12 +24,9 @@ type RedisHealthReport struct {
 	Error    string
 }
 
+// Redis is the interface of the redis client.
 type Redis interface {
 	Do(cmd string, args ...interface{}) (interface{}, error)
-}
-
-type redisModule struct {
-	redis Redis
 }
 
 // NewRedisModule returns the redis health module.

@@ -1,5 +1,7 @@
 package health
 
+//go:generate mockgen -destination=./mock/keycloak.go -package=mock -mock_names=Keycloak=Keycloak,KeycloakModule=KeycloakModule github.com/cloudtrust/keycloak-bridge/pkg/health Keycloak,KeycloakModule
+
 import (
 	"context"
 	"fmt"
@@ -16,18 +18,12 @@ const (
 	vuserName = "version"
 )
 
-// healthCheckUser is the user used for the health tests.
-var healthCheckUser = keycloak_client.UserRepresentation{
-	Username:  str("health.check"),
-	FirstName: str("Health"),
-	LastName:  str("Check"),
-	Email:     str("health.check@cloudtrust.ch"),
-}
-
+// KeycloakModule is the health check module for keycloak.
 type KeycloakModule interface {
 	HealthChecks(context.Context) []KeycloakHealthReport
 }
 
+// KeycloakHealthReport is the health report returned by the keycloak module.
 type KeycloakHealthReport struct {
 	Name     string
 	Duration string
@@ -35,6 +31,7 @@ type KeycloakHealthReport struct {
 	Error    string
 }
 
+// Keycloak is the interface of the keycloak client.
 type Keycloak interface {
 	GetRealms() ([]keycloak_client.RealmRepresentation, error)
 	CreateRealm(realmName keycloak_client.RealmRepresentation) error
@@ -63,7 +60,16 @@ func NewKeycloakModule(keycloak Keycloak, version string) KeycloakModule {
 func (m *keycloakModule) HealthChecks(context.Context) []KeycloakHealthReport {
 	var reports = []KeycloakHealthReport{}
 	reports = append(reports, keycloakCreateUserCheck(m.keycloak))
+	reports = append(reports, keycloakDeleteUserCheck(m.keycloak))
 	return reports
+}
+
+// healthCheckUser is the user used for the health tests.
+var healthCheckUser = keycloak_client.UserRepresentation{
+	Username:  str("health.check"),
+	FirstName: str("Health"),
+	LastName:  str("Check"),
+	Email:     str("health.check@cloudtrust.ch"),
 }
 
 func keycloakCreateUserCheck(keycloak Keycloak) KeycloakHealthReport {
@@ -98,6 +104,45 @@ func keycloakCreateUserCheck(keycloak Keycloak) KeycloakHealthReport {
 	var err = keycloak.CreateUser(testRealm, healthCheckUser)
 	if err != nil {
 		report.Error = "could not create user: " + err.Error()
+		return report
+	}
+	var duration = time.Since(now)
+
+	report.Status = OK
+	report.Duration = duration.String()
+	return report
+}
+
+func keycloakDeleteUserCheck(keycloak Keycloak) KeycloakHealthReport {
+	var report = KeycloakHealthReport{
+		Name:     "delete user",
+		Duration: "N/A",
+		Status:   KO,
+	}
+
+	// Get user ID.
+	var userID string
+	{
+		var err error
+		var users []keycloak_client.UserRepresentation
+		users, err = keycloak.GetUsers(testRealm, "username", *healthCheckUser.Username)
+		if err != nil {
+			report.Error = "could not get user: " + err.Error()
+			return report
+		}
+		if len(users) != 0 {
+			if users[0].Id == nil {
+				report.Error = "user id should not be nil: " + err.Error()
+				return report
+			}
+			userID = *users[0].Id
+		}
+	}
+
+	var now = time.Now()
+	var err = keycloak.DeleteUser(testRealm, userID)
+	if err != nil {
+		report.Error = "could not delete user: " + err.Error()
 		return report
 	}
 	var duration = time.Since(now)
@@ -142,56 +187,6 @@ var tstUsers = []struct {
 	lastname  string
 }{
 	{"John", "Doe"},
-	{"Tracey", "Briggs"},
-	{"Karen", "Sutton"},
-	{"Cesar", "Mathis"},
-	{"Ryan", "Kennedy"},
-	{"Kent", "Phillips"},
-	{"Loretta", "Curtis"},
-	{"Derrick", "Cox"},
-	{"Greg", "Wilkins"},
-	{"Andy", "Reynolds"},
-	{"Toni", "Meyer"},
-	{"Joyce", "Sullivan"},
-	{"Johanna", "Fitzgerald"},
-	{"Judith", "Barnett"},
-	{"Joanne", "Ward"},
-	{"Bethany", "Johnson"},
-	{"Maria", "Murphy"},
-	{"Mattie", "Quinn"},
-	{"Erick", "Robbins"},
-	{"Beulah", "Greer"},
-	{"Patty", "Wong"},
-	{"Gayle", "Garrett"},
-	{"Stewart", "Floyd"},
-	{"Wilbur", "Schneider"},
-	{"Diana", "Logan"},
-	{"Eduardo", "Mitchell"},
-	{"Lela", "Hernandez"},
-	{"Homer", "Miles"},
-	{"Audrey", "Park"},
-	{"Rebecca", "Fuller"},
-	{"Jeremiah", "Andrews"},
-	{"Cedric", "Reyes"},
-	{"Lee", "Griffin"},
-	{"Ebony", "Knight"},
-	{"Gilbert", "Franklin"},
-	{"Jessie", "Norman"},
-	{"Cary", "Wells"},
-	{"Arlene", "James"},
-	{"Jerry", "Chavez"},
-	{"Marco", "Weber"},
-	{"Celia", "Guerrero"},
-	{"Faye", "Massey"},
-	{"Jorge", "Mccarthy"},
-	{"Jennifer", "Colon"},
-	{"Angel", "Jordan"},
-	{"Bennie", "Hubbard"},
-	{"Terrance", "Norris"},
-	{"May", "Sharp"},
-	{"Glenda", "Hogan"},
-	{"Lucia", "Nelson"},
-	{"Kathleen", "Sanchez"},
 }
 
 func createTestUsers(keycloak Keycloak, version string) error {
@@ -209,7 +204,7 @@ func createTestUsers(keycloak Keycloak, version string) error {
 		}
 	}
 
-	// The version of the test realm is stroed in a user.
+	// The version of the test realm is stored in a user.
 	var username = vuserName
 	var err = keycloak.CreateUser(testRealm, keycloak_client.UserRepresentation{
 		Username:  &username,

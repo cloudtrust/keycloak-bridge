@@ -3,7 +3,6 @@ package event
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strconv"
 	"testing"
 	"time"
@@ -32,18 +31,17 @@ func TestMuxComponent(t *testing.T) {
 	var eventComponent = NewComponent(tEvent, tEvent)
 	var adminEventService = NewAdminComponent(tAdminEvent, tAdminEvent, tAdminEvent, tAdminEvent)
 
-	var muxComponent MuxComponent = NewMuxComponent(eventComponent, adminEventService)
+	var muxComponent = NewMuxComponent(eventComponent, adminEventService)
 
 	var event = createEventBytes(fb.EventTypeCLIENT_DELETE, 1234, "realm")
-	var _, err = muxComponent.Event(context.Background(), "Event", event)
+	var err = muxComponent.Event(context.Background(), "Event", event)
 	assert.Equal(t, "Event", <-ch)
 	assert.Nil(t, err)
 
 	var adminEvent = createAdminEventBytes(fb.OperationTypeDELETE, 1234)
-	var _, err2 = muxComponent.Event(context.Background(), "AdminEvent", adminEvent)
+	var err2 = muxComponent.Event(context.Background(), "AdminEvent", adminEvent)
 	assert.Equal(t, "AdminEvent", <-ch)
 	assert.Nil(t, err2)
-
 }
 func TestComponent(t *testing.T) {
 	var eventComponent Component
@@ -63,16 +61,14 @@ func TestComponent(t *testing.T) {
 
 	{
 		var eventStd = createEvent(fb.EventTypeCLIENT_DELETE, 1234, "realm")
-		var res, err = eventComponent.Event(nil, eventStd)
-		assert.Equal(t, "ok", res)
+		var err = eventComponent.Event(nil, eventStd)
 		assert.Nil(t, err)
 	}
 
 	{
 		var eventErr = createEvent(fb.EventTypeCLIENT_DELETE_ERROR, 1234, "realm")
-		var res, err = eventComponent.Event(nil, eventErr)
+		var err = eventComponent.Event(nil, eventErr)
 		assert.NotNil(t, err)
-		assert.Nil(t, res)
 	}
 }
 func TestAdminComponent(t *testing.T) {
@@ -108,7 +104,7 @@ func TestAdminComponent(t *testing.T) {
 
 	var fn = func(operationType int8) {
 		var adminEvt *fb.AdminEvent = createAdminEvent(fb.OperationTypeCREATE, 1234)
-		var _, err = adminEventComponent.AdminEvent(nil, adminEvt)
+		var err = adminEventComponent.AdminEvent(nil, adminEvt)
 
 		assert.Equal(t, getOperationTypeName(fb.OperationTypeCREATE), <-ch)
 		assert.Nil(t, err)
@@ -228,40 +224,4 @@ func createAdminEventBytes(operationType int8, uid int64) []byte {
 
 func getOperationTypeName(key int8) string {
 	return fb.EnumNamesOperationType[int(key)]
-}
-
-// Mock MuxComponent.
-type mockMuxComponent struct {
-	fail bool
-}
-
-func (c *mockMuxComponent) Event(ctx context.Context, eventType string, obj []byte) (interface{}, error) {
-	if c.fail {
-		return "", fmt.Errorf("fail")
-	}
-	return "", nil
-}
-
-// Mock AdminComponent.
-type mockAdminComponent struct {
-	fail bool
-}
-
-func (c *mockAdminComponent) AdminEvent(ctx context.Context, adminEvent *fb.AdminEvent) (interface{}, error) {
-	if c.fail {
-		return "", fmt.Errorf("fail")
-	}
-	return "", nil
-}
-
-// Mock Component.
-type mockComponent struct {
-	fail bool
-}
-
-func (c *mockComponent) Event(ctx context.Context, event *fb.Event) (interface{}, error) {
-	if c.fail {
-		return "", fmt.Errorf("fail")
-	}
-	return "", nil
 }
