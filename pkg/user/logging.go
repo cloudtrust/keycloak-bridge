@@ -6,6 +6,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/cloudtrust/keycloak-bridge/pkg/user/flatbuffer/fb"
 	"github.com/go-kit/kit/log"
 )
 
@@ -26,11 +27,11 @@ func MakeComponentLoggingMW(log log.Logger) func(Component) Component {
 }
 
 // componentLoggingMW implements Component.
-func (m *componentLoggingMW) GetUsers(ctx context.Context, realm string) ([]string, error) {
+func (m *componentLoggingMW) GetUsers(ctx context.Context, req *fb.GetUsersRequest) (*fb.GetUsersResponse, error) {
 	defer func(begin time.Time) {
-		m.logger.Log("unit", "user", "realm", realm, "correlation_id", ctx.Value("correlation_id").(string), "took", time.Since(begin))
+		m.logger.Log("unit", "user", "realm", string(req.Realm()), "correlation_id", ctx.Value("correlation_id").(string), "took", time.Since(begin))
 	}(time.Now())
-	return m.next.GetUsers(ctx, realm)
+	return m.next.GetUsers(ctx, req)
 }
 
 // Logging middleware for the user module.

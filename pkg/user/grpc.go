@@ -48,29 +48,12 @@ func fetchGRPCCorrelationID(ctx context.Context, md metadata.MD) context.Context
 
 // decodeGRPCRequest decodes the flatbuffer request.
 func decodeGRPCRequest(_ context.Context, req interface{}) (interface{}, error) {
-	var r = req.(*fb.GetUsersRequest)
-	return GetUsersRequest{Realm: string(r.Realm())}, nil
+	return req, nil
 }
 
 // encodeHTTPReply encodes the flatbuffer reply.
 func encodeGRPCReply(_ context.Context, res interface{}) (interface{}, error) {
-	var r = res.(GetUsersResponse)
-	var b = flatbuffers.NewBuilder(0)
-
-	var userOffs = []flatbuffers.UOffsetT{}
-	for _, u := range r.Users {
-		userOffs = append(userOffs, b.CreateString(u))
-	}
-
-	fb.GetUsersResponseStartNamesVector(b, len(r.Users))
-	for _, u := range userOffs {
-		b.PrependUOffsetT(u)
-	}
-	var names = b.EndVector(len(r.Users))
-	fb.GetUsersResponseStart(b)
-	fb.GetUsersResponseAddNames(b, names)
-	b.Finish(fb.GetUsersResponseEnd(b))
-	return b, nil
+	return res, nil
 }
 
 // Implement the flatbuffer UserServiceServer interface.

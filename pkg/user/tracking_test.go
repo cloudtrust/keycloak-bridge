@@ -2,47 +2,45 @@ package user
 
 import (
 	"context"
+	"fmt"
 	"math/rand"
 	"strconv"
 	"testing"
 	"time"
 
-	sentry "github.com/getsentry/raven-go"
+	"github.com/cloudtrust/keycloak-bridge/pkg/user/mock"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestComponentTrackingMW(t *testing.T) {
-	var mockSentry = &mockSentry{}
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+	var mockComponent = mock.NewComponent(mockCtrl)
+	var mockSentry = mock.NewSentry(mockCtrl)
 
-	var m = MakeComponentTrackingMW(mockSentry)(&mockComponent{fail: true})
+	var m = MakeComponentTrackingMW(mockSentry)(mockComponent)
 
 	// Context with correlation ID.
 	rand.Seed(time.Now().UnixNano())
-	var id = strconv.FormatUint(rand.Uint64(), 10)
-	var ctx = context.WithValue(context.Background(), "correlation_id", id)
+	var corrID = strconv.FormatUint(rand.Uint64(), 10)
+	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
 
-	// Event.
-	mockSentry.called = false
-	mockSentry.correlationID = ""
-	m.GetUsers(ctx, "realm")
-	assert.True(t, mockSentry.called)
-	assert.Equal(t, id, mockSentry.correlationID)
+	// User without error (sentry is not called).
+	var req = fbUsersRequest("realm")
+	var names = []string{"john", "jane", "doe"}
+	mockComponent.EXPECT().GetUsers(ctx, req).Return(fbUsersResponse(names), nil).Times(1)
+	m.GetUsers(ctx, req)
 
-	// Event without correlation ID.
+	// User with error.
+	mockComponent.EXPECT().GetUsers(ctx, req).Return(nil, fmt.Errorf("fail")).Times(1)
+	mockSentry.EXPECT().CaptureError(fmt.Errorf("fail"), map[string]string{"correlation_id": corrID}).Return("").Times(1)
+	m.GetUsers(ctx, req)
+
+	// User with error, without correlation ID.
+	mockComponent.EXPECT().GetUsers(context.Background(), req).Return(nil, fmt.Errorf("fail")).Times(1)
 	var f = func() {
-		m.GetUsers(context.Background(), "realm")
+		m.GetUsers(context.Background(), req)
 	}
 	assert.Panics(t, f)
-}
-
-// Mock Sentry.
-type mockSentry struct {
-	called        bool
-	correlationID string
-}
-
-func (client *mockSentry) CaptureError(err error, tags map[string]string, interfaces ...sentry.Interface) string {
-	client.called = true
-	client.correlationID = tags["correlation_id"]
-	return ""
 }

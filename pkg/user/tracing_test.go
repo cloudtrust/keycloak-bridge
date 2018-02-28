@@ -7,102 +7,87 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cloudtrust/keycloak-bridge/pkg/user/mock"
+	"github.com/golang/mock/gomock"
 	opentracing "github.com/opentracing/opentracing-go"
-	olog "github.com/opentracing/opentracing-go/log"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestComponentTracingMW(t *testing.T) {
-	var mockSpan = &mockSpan{}
-	var mockTracer = &mockTracer{span: mockSpan}
-	var mockComponent = &mockComponent{}
-
-	// Context with correlation ID and span.
-	rand.Seed(time.Now().UnixNano())
-	var id = strconv.FormatUint(rand.Uint64(), 10)
-	var ctx = context.WithValue(context.Background(), "correlation_id", id)
-	ctx = opentracing.ContextWithSpan(ctx, mockTracer.StartSpan("event"))
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+	var mockTracer = mock.NewTracer(mockCtrl)
+	var mockSpan = mock.NewSpan(mockCtrl)
+	var mockSpanContext = mock.NewSpanContext(mockCtrl)
+	var mockComponent = mock.NewComponent(mockCtrl)
 
 	var m = MakeComponentTracingMW(mockTracer)(mockComponent)
 
-	// Event.
-	mockTracer.called = false
-	mockTracer.span.correlationID = ""
-	m.GetUsers(ctx, "realm")
-	assert.True(t, mockTracer.called)
-	assert.Equal(t, id, mockTracer.span.correlationID)
+	// Context with correlation ID and span.
+	rand.Seed(time.Now().UnixNano())
+	var corrID = strconv.FormatUint(rand.Uint64(), 10)
+	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
+	ctx = opentracing.ContextWithSpan(ctx, mockSpan)
 
-	// Event without correlation ID.
+	// User.
+	var req = fbUsersRequest("realm")
+	var names = []string{"john", "jane", "doe"}
+	mockComponent.EXPECT().GetUsers(gomock.Any(), req).Return(fbUsersResponse(names), nil).Times(1)
+	mockTracer.EXPECT().StartSpan("user_component", gomock.Any()).Return(mockSpan).Times(1)
+	mockSpan.EXPECT().Context().Return(mockSpanContext).Times(1)
+	mockSpan.EXPECT().Finish().Return().Times(1)
+	mockSpan.EXPECT().SetTag("correlation_id", corrID).Return(mockSpan).Times(1)
+	m.GetUsers(ctx, req)
+
+	// User without tracer.
+	mockComponent.EXPECT().GetUsers(gomock.Any(), req).Return(fbUsersResponse(names), nil).Times(1)
+	m.GetUsers(context.Background(), req)
+
+	// User without correlation ID.
+	mockTracer.EXPECT().StartSpan("user_component", gomock.Any()).Return(mockSpan).Times(1)
+	mockSpan.EXPECT().Context().Return(mockSpanContext).Times(1)
+	mockSpan.EXPECT().Finish().Return().Times(1)
 	var f = func() {
-		m.GetUsers(opentracing.ContextWithSpan(context.Background(), mockTracer.StartSpan("user")), "realm")
+		m.GetUsers(opentracing.ContextWithSpan(context.Background(), mockSpan), req)
 	}
 	assert.Panics(t, f)
 }
 
 func TestModuleTracingMW(t *testing.T) {
-	var mockSpan = &mockSpan{}
-	var mockTracer = &mockTracer{span: mockSpan}
-	var mockModule = &mockModule{}
-
-	// Context with correlation ID and span.
-	rand.Seed(time.Now().UnixNano())
-	var id = strconv.FormatUint(rand.Uint64(), 10)
-	var ctx = context.WithValue(context.Background(), "correlation_id", id)
-	ctx = opentracing.ContextWithSpan(ctx, mockTracer.StartSpan("event"))
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+	var mockTracer = mock.NewTracer(mockCtrl)
+	var mockSpan = mock.NewSpan(mockCtrl)
+	var mockSpanContext = mock.NewSpanContext(mockCtrl)
+	var mockModule = mock.NewModule(mockCtrl)
 
 	var m = MakeModuleTracingMW(mockTracer)(mockModule)
 
-	// Print.
-	mockTracer.called = false
-	mockTracer.span.correlationID = ""
-	m.GetUsers(ctx, "realm")
-	assert.True(t, mockTracer.called)
-	assert.Equal(t, id, mockTracer.span.correlationID)
+	// Context with correlation ID and span.
+	rand.Seed(time.Now().UnixNano())
+	var corrID = strconv.FormatUint(rand.Uint64(), 10)
+	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
+	ctx = opentracing.ContextWithSpan(ctx, mockSpan)
 
-	// Event without correlation ID.
+	// User.
+	var names = []string{"john", "jane", "doe"}
+	mockModule.EXPECT().GetUsers(gomock.Any(), "realm").Return(names, nil).Times(1)
+	mockTracer.EXPECT().StartSpan("user_module", gomock.Any()).Return(mockSpan).Times(1)
+	mockSpan.EXPECT().Context().Return(mockSpanContext).Times(1)
+	mockSpan.EXPECT().Finish().Return().Times(1)
+	mockSpan.EXPECT().SetTag("correlation_id", corrID).Return(mockSpan).Times(1)
+	m.GetUsers(ctx, "realm")
+
+	// User without tracer.
+	mockModule.EXPECT().GetUsers(gomock.Any(), "realm").Return(names, nil).Times(1)
+	m.GetUsers(context.Background(), "realm")
+
+	// User without correlation ID.
+	mockTracer.EXPECT().StartSpan("user_moduleMakeUserEndpoint", gomock.Any()).Return(mockSpan).Times(1)
+	mockSpan.EXPECT().Context().Return(mockSpanContext).Times(1)
+	mockSpan.EXPECT().Finish().Return().Times(1)
 	var f = func() {
-		m.GetUsers(opentracing.ContextWithSpan(context.Background(), mockTracer.StartSpan("user")), "realm")
+		m.GetUsers(opentracing.ContextWithSpan(context.Background(), mockSpan), "realm")
 	}
 	assert.Panics(t, f)
 }
-
-// Mock Tracer.
-type mockTracer struct {
-	called bool
-	span   *mockSpan
-}
-
-func (t *mockTracer) StartSpan(operationName string, opts ...opentracing.StartSpanOption) opentracing.Span {
-	t.called = true
-	return t.span
-}
-func (t *mockTracer) Inject(sm opentracing.SpanContext, format interface{}, carrier interface{}) error {
-	return nil
-}
-func (t *mockTracer) Extract(format interface{}, carrier interface{}) (opentracing.SpanContext, error) {
-	return nil, nil
-}
-
-// Mock Span.
-type mockSpan struct {
-	correlationID string
-}
-
-func (s *mockSpan) SetTag(key string, value interface{}) opentracing.Span {
-	if key == "correlation_id" {
-		s.correlationID = value.(string)
-	}
-	return s
-}
-func (s *mockSpan) Finish()                                                     {}
-func (s *mockSpan) FinishWithOptions(opts opentracing.FinishOptions)            {}
-func (s *mockSpan) Context() opentracing.SpanContext                            { return nil }
-func (s *mockSpan) SetOperationName(operationName string) opentracing.Span      { return s }
-func (s *mockSpan) LogFields(fields ...olog.Field)                              {}
-func (s *mockSpan) LogKV(alternatingKeyValues ...interface{})                   {}
-func (s *mockSpan) SetBaggageItem(restrictedKey, value string) opentracing.Span { return s }
-func (s *mockSpan) BaggageItem(restrictedKey string) string                     { return "" }
-func (s *mockSpan) Tracer() opentracing.Tracer                                  { return nil }
-func (s *mockSpan) LogEvent(event string)                                       {}
-func (s *mockSpan) LogEventWithPayload(event string, payload interface{})       {}
-func (s *mockSpan) Log(data opentracing.LogData)                                {}

@@ -6,6 +6,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/cloudtrust/keycloak-bridge/pkg/user/flatbuffer/fb"
 	"github.com/go-kit/kit/metrics"
 )
 
@@ -26,11 +27,11 @@ func MakeComponentInstrumentingMW(h metrics.Histogram) func(Component) Component
 }
 
 // componentInstrumentingMW implements Component.
-func (m *componentInstrumentingMW) GetUsers(ctx context.Context, realm string) ([]string, error) {
+func (m *componentInstrumentingMW) GetUsers(ctx context.Context, req *fb.GetUsersRequest) (*fb.GetUsersResponse, error) {
 	defer func(begin time.Time) {
 		m.h.With("correlation_id", ctx.Value("correlation_id").(string)).Observe(time.Since(begin).Seconds())
 	}(time.Now())
-	return m.next.GetUsers(ctx, realm)
+	return m.next.GetUsers(ctx, req)
 }
 
 // Instrumenting middleware at module level.

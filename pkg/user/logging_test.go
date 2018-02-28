@@ -7,70 +7,63 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cloudtrust/keycloak-bridge/pkg/user/mock"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestComponentLoggingMW(t *testing.T) {
-	var mockLogger = &mockLogger{}
-	var mockComponent = &mockComponent{}
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+	var mockComponent = mock.NewComponent(mockCtrl)
+	var mockLogger = mock.NewLogger(mockCtrl)
+
 	var m = MakeComponentLoggingMW(mockLogger)(mockComponent)
 
 	// Context with correlation ID.
 	rand.Seed(time.Now().UnixNano())
-	var id = strconv.FormatUint(rand.Uint64(), 10)
-	var ctx = context.WithValue(context.Background(), "correlation_id", id)
+	var corrID = strconv.FormatUint(rand.Uint64(), 10)
+	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
 
 	// User.
-	mockLogger.called = false
-	mockLogger.correlationID = ""
-	m.GetUsers(ctx, "realm")
-	assert.True(t, mockLogger.called)
-	assert.Equal(t, id, mockLogger.correlationID)
+	var req = fbUsersRequest("realm")
+	var names = []string{"john", "jane", "doe"}
+	// User.
+	mockComponent.EXPECT().GetUsers(ctx, req).Return(fbUsersResponse(names), nil).Times(1)
+	mockLogger.EXPECT().Log("unit", "user", "realm", string(req.Realm()), "correlation_id", corrID, "took", gomock.Any()).Return(nil).Times(1)
+	m.GetUsers(ctx, req)
 
 	// User without correlation ID.
+	mockComponent.EXPECT().GetUsers(context.Background(), req).Return(fbUsersResponse(names), nil).Times(1)
 	var f = func() {
-		m.GetUsers(context.Background(), "realm")
+		m.GetUsers(context.Background(), req)
 	}
 	assert.Panics(t, f)
 }
 
 func TestModuleLoggingMW(t *testing.T) {
-	var mockLogger = &mockLogger{}
-	var mockModule = &mockModule{}
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+	var mockModule = mock.NewModule(mockCtrl)
+	var mockLogger = mock.NewLogger(mockCtrl)
+
 	var m = MakeModuleLoggingMW(mockLogger)(mockModule)
 
 	// Context with correlation ID.
 	rand.Seed(time.Now().UnixNano())
-	var id = strconv.FormatUint(rand.Uint64(), 10)
-	var ctx = context.WithValue(context.Background(), "correlation_id", id)
+	var corrID = strconv.FormatUint(rand.Uint64(), 10)
+	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
 
-	// Print.
-	mockLogger.called = false
-	mockLogger.correlationID = ""
+	// User.
+	var names = []string{"john", "jane", "doe"}
+	mockModule.EXPECT().GetUsers(ctx, "realm").Return(names, nil).Times(1)
+	mockLogger.EXPECT().Log("unit", "user", "realm", "realm", "correlation_id", corrID, "took", gomock.Any()).Return(nil).Times(1)
 	m.GetUsers(ctx, "realm")
-	assert.True(t, mockLogger.called)
-	assert.Equal(t, id, mockLogger.correlationID)
 
-	// Print without correlation ID.
+	// User without correlation ID.
+	mockModule.EXPECT().GetUsers(context.Background(), "realm").Return(names, nil).Times(1)
 	var f = func() {
 		m.GetUsers(context.Background(), "realm")
 	}
 	assert.Panics(t, f)
-}
-
-// Mock Logger.
-type mockLogger struct {
-	called        bool
-	correlationID string
-}
-
-func (l *mockLogger) Log(keyvals ...interface{}) error {
-	l.called = true
-
-	for i, kv := range keyvals {
-		if kv == "correlation_id" {
-			l.correlationID = keyvals[i+1].(string)
-		}
-	}
-	return nil
 }

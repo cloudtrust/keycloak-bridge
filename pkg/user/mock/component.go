@@ -6,6 +6,7 @@ package mock
 
 import (
 	context "context"
+	fb "github.com/cloudtrust/keycloak-bridge/pkg/user/flatbuffer/fb"
 	gomock "github.com/golang/mock/gomock"
 	reflect "reflect"
 )
@@ -34,9 +35,9 @@ func (m *Component) EXPECT() *ComponentMockRecorder {
 }
 
 // GetUsers mocks base method
-func (m *Component) GetUsers(arg0 context.Context, arg1 string) ([]string, error) {
+func (m *Component) GetUsers(arg0 context.Context, arg1 *fb.GetUsersRequest) (*fb.GetUsersResponse, error) {
 	ret := m.ctrl.Call(m, "GetUsers", arg0, arg1)
-	ret0, _ := ret[0].([]string)
+	ret0, _ := ret[0].(*fb.GetUsersResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

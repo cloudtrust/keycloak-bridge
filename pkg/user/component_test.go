@@ -5,33 +5,45 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/cloudtrust/keycloak-bridge/pkg/user/flatbuffer/fb"
+	"github.com/cloudtrust/keycloak-bridge/pkg/user/mock"
+	"github.com/golang/mock/gomock"
+	flatbuffers "github.com/google/flatbuffers/go"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestComponent(t *testing.T) {
-	var users = []string{"john", "jane", "doe"}
-	var mockModule = &mockModule{
-		called: false,
-		fail:   false,
-		users:  users,
-	}
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+	var mockModule = mock.NewModule(mockCtrl)
 
 	var c = NewComponent(mockModule)
-	var names, err = c.GetUsers(context.Background(), "realm")
+
+	var users = []string{"john", "jane", "doe"}
+	var req = fbUsersRequest("master")
+
+	mockModule.EXPECT().GetUsers(context.Background(), "master").Return(users, nil).Times(1)
+	var reply, err = c.GetUsers(context.Background(), req)
 	assert.Nil(t, err)
-	assert.Equal(t, users, names)
-}
+	assert.Equal(t, len(users), reply.NamesLength())
 
-// Mock Component.
-type mockComponent struct {
-	called bool
-	fail   bool
-	users  []string
-}
-
-func (c *mockComponent) GetUsers(ctx context.Context, realm string) ([]string, error) {
-	if c.fail {
-		return nil, fmt.Errorf("fail")
+	for i := 0; i < reply.NamesLength(); i++ {
+		assert.Contains(t, users, string(reply.Names(i)))
 	}
-	return c.users, nil
+
+	// Module error.
+	mockModule.EXPECT().GetUsers(context.Background(), "master").Return(nil, fmt.Errorf("fail")).Times(1)
+	reply, err = c.GetUsers(context.Background(), req)
+	assert.Nil(t, reply)
+	assert.NotNil(t, err)
+}
+
+func fbUsersRequest(realm string) *fb.GetUsersRequest {
+	var b = flatbuffers.NewBuilder(0)
+	var brealm = b.CreateString(realm)
+	fb.GetUsersRequestStart(b)
+	fb.GetUsersRequestAddRealm(b, brealm)
+	b.Finish(fb.GetUsersRequestEnd(b))
+
+	return fb.GetRootAsGetUsersRequest(b.FinishedBytes(), 0)
 }

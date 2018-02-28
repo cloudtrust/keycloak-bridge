@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cloudtrust/keycloak-bridge/pkg/event"
 	"github.com/cloudtrust/keycloak-bridge/pkg/event/flatbuffer/fb"
 	fb_flaki "github.com/cloudtrust/keycloak-bridge/pkg/flaki/flatbuffer/fb"
 	"github.com/cloudtrust/keycloak-bridge/pkg/health"
@@ -14,6 +15,7 @@ import (
 	"github.com/golang/mock/gomock"
 	flatbuffers "github.com/google/flatbuffers/go"
 	opentracing "github.com/opentracing/opentracing-go"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestEndpointCorrelationIDMW(t *testing.T) {
@@ -55,87 +57,112 @@ func TestEndpointCorrelationIDMW(t *testing.T) {
 	m(opentracing.ContextWithSpan(context.Background(), mockSpan), nil)
 }
 
-/*
 func TestEndpointLoggingMW(t *testing.T) {
-	var mockLogger = &mockLogger{}
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+	var mockLogger = mock.NewLogger(mockCtrl)
+	var mockMuxComponent = mock.NewMuxComponent(mockCtrl)
+
+	var m = MakeEndpointLoggingMW(mockLogger)(event.MakeEventEndpoint(mockMuxComponent))
 
 	// Context with correlation ID.
 	rand.Seed(time.Now().UnixNano())
-	var id = strconv.FormatUint(rand.Uint64(), 10)
-	var ctx = context.WithValue(context.Background(), "correlation_id", id)
-
-	var endpoints = event.NewEndpoints(MakeEndpointLoggingMW(mockLogger))
-
-	// Event.
 	var uid = rand.Int63()
-	endpoints = endpoints.MakeKeycloakEndpoint(&mockMuxComponent{fail: false})
-	mockLogger.called = false
-	mockLogger.correlationID = ""
-	endpoints.Event(ctx, "Event", createEventBytes(fb.EventTypeCLIENT_DELETE, uid, "realm"))
-	assert.True(t, mockLogger.called)
-	assert.Equal(t, id, mockLogger.correlationID)
+	var corrID = strconv.FormatUint(rand.Uint64(), 10)
+	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
 
-	// Event without correlation ID.
+	// With correlation ID.
+	var req = event.EventRequest{
+		Type:   "Event",
+		Object: createEventBytes(fb.EventTypeCLIENT_DELETE, uid, "realm"),
+	}
+	mockLogger.EXPECT().Log("correlation_id", corrID, "took", gomock.Any()).Return(nil).Times(1)
+	mockMuxComponent.EXPECT().Event(ctx, req.Type, req.Object).Return(nil).Times(1)
+	m(ctx, req)
+
+	// Without correlation ID.
+	mockMuxComponent.EXPECT().Event(context.Background(), req.Type, req.Object).Return(nil).Times(1)
 	var f = func() {
-		endpoints.Event(context.Background(), "Event", createEventBytes(fb.EventTypeCLIENT_DELETE, uid, "realm"))
+		m(context.Background(), req)
 	}
 	assert.Panics(t, f)
-
 }
 
 func TestEndpointInstrumentingMW(t *testing.T) {
-	var mockHistogram = &mockHistogram{}
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+	var mockHistogram = mock.NewHistogram(mockCtrl)
+	var mockMuxComponent = mock.NewMuxComponent(mockCtrl)
+
+	var m = MakeEndpointInstrumentingMW(mockHistogram)(event.MakeEventEndpoint(mockMuxComponent))
 
 	// Context with correlation ID.
 	rand.Seed(time.Now().UnixNano())
-	var id = strconv.FormatUint(rand.Uint64(), 10)
-	var ctx = context.WithValue(context.Background(), "correlation_id", id)
-
-	var endpoints = event.NewEndpoints(MakeEndpointInstrumentingMW(mockHistogram))
-
-	// Event.
 	var uid = rand.Int63()
-	endpoints = endpoints.MakeKeycloakEndpoint(&mockMuxComponent{fail: false})
-	mockHistogram.called = false
-	mockHistogram.correlationID = ""
-	endpoints.Event(ctx, "Event", createEventBytes(fb.EventTypeCLIENT_DELETE, uid, "realm"))
-	assert.True(t, mockHistogram.called)
-	assert.Equal(t, id, mockHistogram.correlationID)
+	var corrID = strconv.FormatUint(rand.Uint64(), 10)
+	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
 
-	// Event without correlation ID.
+	// With correlation ID.
+	var req = event.EventRequest{
+		Type:   "Event",
+		Object: createEventBytes(fb.EventTypeCLIENT_DELETE, uid, "realm"),
+	}
+	mockHistogram.EXPECT().With("correlation_id", corrID).Return(mockHistogram).Times(1)
+	mockHistogram.EXPECT().Observe(gomock.Any()).Return().Times(1)
+	mockMuxComponent.EXPECT().Event(ctx, req.Type, req.Object).Return(nil).Times(1)
+	m(ctx, req)
+
+	// Without correlation ID.
+	mockMuxComponent.EXPECT().Event(context.Background(), req.Type, req.Object).Return(nil).Times(1)
 	var f = func() {
-		endpoints.Event(context.Background(), "Event", createEventBytes(fb.EventTypeCLIENT_DELETE, uid, "realm"))
+		m(context.Background(), req)
 	}
 	assert.Panics(t, f)
 }
 
 func TestEndpointTracingMW(t *testing.T) {
-	var mockSpan = &mockSpan{}
-	var mockTracer = &mockTracer{span: mockSpan}
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+	var mockMuxComponent = mock.NewMuxComponent(mockCtrl)
+	var mockTracer = mock.NewTracer(mockCtrl)
+	var mockSpan = mock.NewSpan(mockCtrl)
+	var mockSpanContext = mock.NewSpanContext(mockCtrl)
 
-	// Context with correlation ID and span.
+	var m = MakeEndpointTracingMW(mockTracer, "operationName")(event.MakeEventEndpoint(mockMuxComponent))
+
+	// Context with correlation ID.
 	rand.Seed(time.Now().UnixNano())
-	var id = strconv.FormatUint(rand.Uint64(), 10)
-	var ctx = context.WithValue(context.Background(), "correlation_id", id)
-	ctx = opentracing.ContextWithSpan(ctx, mockTracer.StartSpan("keycloak"))
-
-	var endpoints = event.NewEndpoints(MakeEndpointTracingMW(mockTracer, "keycloak"))
-
-	// Event.
 	var uid = rand.Int63()
-	endpoints = endpoints.MakeKeycloakEndpoint(&mockMuxComponent{fail: false})
-	mockTracer.called = false
-	endpoints.Event(ctx, "Event", createEventBytes(fb.EventTypeCLIENT_DELETE, uid, "realm"))
-	assert.True(t, mockTracer.called)
-	assert.Equal(t, id, mockTracer.span.correlationID)
+	var corrID = strconv.FormatUint(rand.Uint64(), 10)
+	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
+	ctx = opentracing.ContextWithSpan(ctx, mockSpan)
 
-	// Event without correlation ID.
+	// With correlation ID.
+	var req = event.EventRequest{
+		Type:   "Event",
+		Object: createEventBytes(fb.EventTypeCLIENT_DELETE, uid, "realm"),
+	}
+	mockTracer.EXPECT().StartSpan("operationName", gomock.Any()).Return(mockSpan).Times(1)
+	mockSpan.EXPECT().Context().Return(mockSpanContext).Times(1)
+	mockSpan.EXPECT().Finish().Return().Times(1)
+	mockSpan.EXPECT().SetTag("correlation_id", corrID).Return(mockSpan).Times(1)
+	mockMuxComponent.EXPECT().Event(gomock.Any(), req.Type, req.Object).Return(nil).Times(1)
+	m(ctx, req)
+
+	// Without tracer.
+	mockMuxComponent.EXPECT().Event(gomock.Any(), req.Type, req.Object).Return(nil).Times(1)
+	m(context.Background(), req)
+
+	// Stats without correlation ID.
+	mockTracer.EXPECT().StartSpan("operationName", gomock.Any()).Return(mockSpan).Times(1)
+	mockSpan.EXPECT().Context().Return(mockSpanContext).Times(1)
+	mockSpan.EXPECT().Finish().Return().Times(1)
 	var f = func() {
-		endpoints.Event(opentracing.ContextWithSpan(context.Background(), mockTracer.StartSpan("keycloak")), "Event", createEventBytes(fb.EventTypeCLIENT_DELETE, uid, "realm"))
+		m(opentracing.ContextWithSpan(context.Background(), mockSpan), req)
 	}
 	assert.Panics(t, f)
 }
-*/
+
 func createEventBytes(eventType int8, uid int64, realm string) []byte {
 	var builder = flatbuffers.NewBuilder(0)
 	var realmStr = builder.CreateString(realm)

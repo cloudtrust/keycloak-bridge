@@ -5,6 +5,7 @@ package user
 import (
 	"context"
 
+	"github.com/cloudtrust/keycloak-bridge/pkg/user/flatbuffer/fb"
 	opentracing "github.com/opentracing/opentracing-go"
 )
 
@@ -25,7 +26,7 @@ func MakeComponentTracingMW(tracer opentracing.Tracer) func(Component) Component
 }
 
 // componentTracingMW implements Component.
-func (m *componentTracingMW) GetUsers(ctx context.Context, realm string) ([]string, error) {
+func (m *componentTracingMW) GetUsers(ctx context.Context, req *fb.GetUsersRequest) (*fb.GetUsersResponse, error) {
 	if span := opentracing.SpanFromContext(ctx); span != nil {
 		span = m.tracer.StartSpan("user_component", opentracing.ChildOf(span.Context()))
 		defer span.Finish()
@@ -34,7 +35,7 @@ func (m *componentTracingMW) GetUsers(ctx context.Context, realm string) ([]stri
 		ctx = opentracing.ContextWithSpan(ctx, span)
 	}
 
-	return m.next.GetUsers(ctx, realm)
+	return m.next.GetUsers(ctx, req)
 }
 
 // Tracing middleware at module level.

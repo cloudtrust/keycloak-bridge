@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/cloudtrust/keycloak-bridge/pkg/user/flatbuffer/fb"
 	"github.com/go-kit/kit/endpoint"
 )
 
@@ -13,32 +14,13 @@ type Endpoints struct {
 }
 
 // MakeUserEndpoint makes the user endpoint.
-// GetUsersEndpoint returns a generator of users. This generator is a wrapper over an endpoint
-// that can be composed upon using mws.
 func MakeUserEndpoint(c Component) endpoint.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
-		switch getUsersRequest := req.(type) {
-		case GetUsersRequest:
-			var realm = getUsersRequest.Realm
-			var users, err = c.GetUsers(ctx, realm)
-			var response = GetUsersResponse{Users: users}
-			return response, err
+		switch r := req.(type) {
+		case *fb.GetUsersRequest:
+			return c.GetUsers(ctx, r)
 		default:
 			return nil, fmt.Errorf("wrong request type: %T", req)
 		}
 	}
-}
-
-/*
-Request for GetUsers endpoint
-*/
-type GetUsersRequest struct {
-	Realm string
-}
-
-/*
-Response from GetUsers endpoint
-*/
-type GetUsersResponse struct {
-	Users []string
 }
