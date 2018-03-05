@@ -23,7 +23,7 @@ func TestEventEndpoint(t *testing.T) {
 	// Context with correlation ID.
 	rand.Seed(time.Now().UnixNano())
 	var corrID = strconv.FormatUint(rand.Uint64(), 10)
-	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
+	var ctx = context.WithValue(context.Background(), CorrelationIDKey, corrID)
 
 	// Event.
 	var uid = rand.Int63()

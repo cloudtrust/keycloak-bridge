@@ -36,9 +36,9 @@ func (m *InfluxModule) EXPECT() *InfluxModuleMockRecorder {
 }
 
 // HealthChecks mocks base method
-func (m *InfluxModule) HealthChecks(arg0 context.Context) []health.InfluxHealthReport {
+func (m *InfluxModule) HealthChecks(arg0 context.Context) []health.InfluxReport {
 	ret := m.ctrl.Call(m, "HealthChecks", arg0)
-	ret0, _ := ret[0].([]health.InfluxHealthReport)
+	ret0, _ := ret[0].([]health.InfluxReport)
 	return ret0
 }
 

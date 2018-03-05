@@ -11,6 +11,13 @@ import (
 	"github.com/cloudtrust/keycloak-bridge/pkg/event/flatbuffer/fb"
 )
 
+type key int
+
+const (
+	// CorrelationIDKey is the key for the correlation ID in the context.
+	CorrelationIDKey key = iota
+)
+
 // MuxComponent is the Mux component interface.
 type MuxComponent interface {
 	Event(ctx context.Context, eventType string, obj []byte) error
@@ -78,6 +85,7 @@ type AdminComponent interface {
 	AdminEvent(ctx context.Context, adminEvent *fb.AdminEvent) error
 }
 
+// FuncEvent is the function to call for a given event.
 type FuncEvent = func(context.Context, map[string]string) error
 
 type adminComponent struct {

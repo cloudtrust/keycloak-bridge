@@ -1,23 +1,25 @@
 package health
 
-//go:generate mockgen -destination=./mock/influx.go -package=mock -mock_names=InfluxModule=InfluxModule,Influx=Influx github.com/cloudtrust/keycloak-bridge/pkg/health InfluxModule,Influx
+//go:generate mockgen -destination=./mock/influx.go -package=mock -mock_names=InfluxModule=InfluxModule,Influx=Influx  github.com/cloudtrust/keycloak-bridge/pkg/health InfluxModule,Influx
 
 import (
 	"context"
+	"fmt"
 	"time"
 )
 
 // InfluxModule is the health check module for influx.
 type InfluxModule interface {
-	HealthChecks(context.Context) []InfluxHealthReport
+	HealthChecks(context.Context) []InfluxReport
 }
 
 type influxModule struct {
-	influx Influx
+	influx  Influx
+	enabled bool
 }
 
-// InfluxHealthReport is the health report returned by the influx module.
-type InfluxHealthReport struct {
+// InfluxReport is the health report returned by the influx module.
+type InfluxReport struct {
 	Name     string
 	Duration string
 	Status   Status
@@ -30,40 +32,47 @@ type Influx interface {
 }
 
 // NewInfluxModule returns the influx health module.
-func NewInfluxModule(influx Influx) InfluxModule {
-	return &influxModule{influx: influx}
+func NewInfluxModule(influx Influx, enabled bool) InfluxModule {
+	return &influxModule{
+		influx:  influx,
+		enabled: enabled,
+	}
 }
 
 // HealthChecks executes all health checks for influx.
-func (m *influxModule) HealthChecks(context.Context) []InfluxHealthReport {
-	var reports = []InfluxHealthReport{}
-	reports = append(reports, influxPing(m.influx))
+func (m *influxModule) HealthChecks(context.Context) []InfluxReport {
+	var reports = []InfluxReport{}
+	reports = append(reports, m.influxPing())
 	return reports
 }
 
-func influxPing(influx Influx) InfluxHealthReport {
-	var d, s, err = influx.Ping(5 * time.Second)
+func (m *influxModule) influxPing() InfluxReport {
+	var healthCheckName = "ping"
 
-	// If influx is deactivated.
-	if s == "NOOP" {
-		return InfluxHealthReport{
-			Name:     "ping",
+	if !m.enabled {
+		return InfluxReport{
+			Name:     healthCheckName,
 			Duration: "N/A",
 			Status:   Deactivated,
 		}
 	}
 
-	var status = OK
-	var error = ""
-	if err != nil {
-		status = KO
-		error = err.Error()
+	var d, _, err = m.influx.Ping(5 * time.Second)
+
+	var error string
+	var s Status
+	switch {
+	case err != nil:
+		error = fmt.Sprintf("could not ping influx: %v", err.Error())
+		s = KO
+	default:
+		s = OK
 	}
 
-	return InfluxHealthReport{
-		Name:     "ping",
+	return InfluxReport{
+		Name:     healthCheckName,
 		Duration: d.String(),
-		Status:   status,
+		Status:   s,
 		Error:    error,
 	}
 }

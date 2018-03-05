@@ -123,7 +123,7 @@ func TestAdminComponent(t *testing.T) {
 func TestEventToMap(t *testing.T) {
 	var uid int64 = 1234
 	var time = time.Now().Unix()
-	var etype int8 = 0
+	var etype int8
 	var realmID = "realm"
 	var clientID = "client"
 	var userID = "user"

@@ -32,11 +32,11 @@ func TestEndpointCorrelationIDMW(t *testing.T) {
 	rand.Seed(time.Now().UnixNano())
 	var flakiID = strconv.FormatUint(rand.Uint64(), 10)
 	var corrID = strconv.FormatUint(rand.Uint64(), 10)
-	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
+	var ctx = context.WithValue(context.Background(), CorrelationIDKey, corrID)
 	ctx = opentracing.ContextWithSpan(ctx, mockSpan)
 
 	// Context with correlation ID.
-	mockHealthComponent.EXPECT().InfluxHealthChecks(ctx).Return(health.HealthReports{}).Times(1)
+	mockHealthComponent.EXPECT().InfluxHealthChecks(ctx).Return(health.Reports{}).Times(1)
 	m(ctx, nil)
 
 	// Without correlation ID.
@@ -48,7 +48,7 @@ func TestEndpointCorrelationIDMW(t *testing.T) {
 	var reply = fb_flaki.GetRootAsFlakiReply(b.FinishedBytes(), 0)
 
 	mockFlakiClient.EXPECT().NextValidID(gomock.Any(), gomock.Any()).Return(reply, nil).Times(1)
-	mockHealthComponent.EXPECT().InfluxHealthChecks(gomock.Any()).Return(health.HealthReports{}).Times(1)
+	mockHealthComponent.EXPECT().InfluxHealthChecks(gomock.Any()).Return(health.Reports{}).Times(1)
 	mockTracer.EXPECT().StartSpan("get_correlation_id", gomock.Any()).Return(mockSpan).Times(1)
 	mockTracer.EXPECT().Inject(gomock.Any(), opentracing.TextMap, gomock.Any())
 	mockSpan.EXPECT().Context().Return(mockSpanContext).Times(2)
@@ -69,7 +69,7 @@ func TestEndpointLoggingMW(t *testing.T) {
 	rand.Seed(time.Now().UnixNano())
 	var uid = rand.Int63()
 	var corrID = strconv.FormatUint(rand.Uint64(), 10)
-	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
+	var ctx = context.WithValue(context.Background(), CorrelationIDKey, corrID)
 
 	// With correlation ID.
 	var req = event.EventRequest{
@@ -100,14 +100,14 @@ func TestEndpointInstrumentingMW(t *testing.T) {
 	rand.Seed(time.Now().UnixNano())
 	var uid = rand.Int63()
 	var corrID = strconv.FormatUint(rand.Uint64(), 10)
-	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
+	var ctx = context.WithValue(context.Background(), CorrelationIDKey, corrID)
 
 	// With correlation ID.
 	var req = event.EventRequest{
 		Type:   "Event",
 		Object: createEventBytes(fb.EventTypeCLIENT_DELETE, uid, "realm"),
 	}
-	mockHistogram.EXPECT().With("correlation_id", corrID).Return(mockHistogram).Times(1)
+	mockHistogram.EXPECT().With(MetricCorrelationIDKey, corrID).Return(mockHistogram).Times(1)
 	mockHistogram.EXPECT().Observe(gomock.Any()).Return().Times(1)
 	mockMuxComponent.EXPECT().Event(ctx, req.Type, req.Object).Return(nil).Times(1)
 	m(ctx, req)
@@ -134,7 +134,7 @@ func TestEndpointTracingMW(t *testing.T) {
 	rand.Seed(time.Now().UnixNano())
 	var uid = rand.Int63()
 	var corrID = strconv.FormatUint(rand.Uint64(), 10)
-	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
+	var ctx = context.WithValue(context.Background(), CorrelationIDKey, corrID)
 	ctx = opentracing.ContextWithSpan(ctx, mockSpan)
 
 	// With correlation ID.
@@ -145,7 +145,7 @@ func TestEndpointTracingMW(t *testing.T) {
 	mockTracer.EXPECT().StartSpan("operationName", gomock.Any()).Return(mockSpan).Times(1)
 	mockSpan.EXPECT().Context().Return(mockSpanContext).Times(1)
 	mockSpan.EXPECT().Finish().Return().Times(1)
-	mockSpan.EXPECT().SetTag("correlation_id", corrID).Return(mockSpan).Times(1)
+	mockSpan.EXPECT().SetTag(TracingCorrelationIDKey, corrID).Return(mockSpan).Times(1)
 	mockMuxComponent.EXPECT().Event(gomock.Any(), req.Type, req.Object).Return(nil).Times(1)
 	m(ctx, req)
 

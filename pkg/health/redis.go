@@ -1,23 +1,25 @@
 package health
 
-//go:generate mockgen -destination=./mock/redis.go -package=mock -mock_names=RedisModule=RedisModule,Redis=Redis github.com/cloudtrust/keycloak-bridge/pkg/health RedisModule,Redis
+//go:generate mockgen -destination=./mock/redis.go -package=mock -mock_names=RedisModule=RedisModule,Redis=Redis  github.com/cloudtrust/keycloak-bridge/pkg/health RedisModule,Redis
 
 import (
 	"context"
+	"fmt"
 	"time"
 )
 
 // RedisModule is the health check module for redis.
 type RedisModule interface {
-	HealthChecks(context.Context) []RedisHealthReport
+	HealthChecks(context.Context) []RedisReport
 }
 
 type redisModule struct {
-	redis Redis
+	redis   Redis
+	enabled bool
 }
 
-// RedisHealthReport is the health report returned by the redis module.
-type RedisHealthReport struct {
+// RedisReport is the health report returned by the redis module.
+type RedisReport struct {
 	Name     string
 	Duration string
 	Status   Status
@@ -30,42 +32,49 @@ type Redis interface {
 }
 
 // NewRedisModule returns the redis health module.
-func NewRedisModule(redis Redis) RedisModule {
-	return &redisModule{redis: redis}
+func NewRedisModule(redis Redis, enabled bool) RedisModule {
+	return &redisModule{
+		redis:   redis,
+		enabled: enabled,
+	}
 }
 
 // HealthChecks executes all health checks for Redis.
-func (m *redisModule) HealthChecks(context.Context) []RedisHealthReport {
-	var reports = []RedisHealthReport{}
-	reports = append(reports, redisPingCheck(m.redis))
+func (m *redisModule) HealthChecks(context.Context) []RedisReport {
+	var reports = []RedisReport{}
+	reports = append(reports, m.redisPingCheck())
 	return reports
 }
 
-func redisPingCheck(redis Redis) RedisHealthReport {
-	// If redis is deactivated.
-	if redis == nil {
-		return RedisHealthReport{
-			Name:     "ping",
+func (m *redisModule) redisPingCheck() RedisReport {
+	var healthCheckName = "ping"
+
+	if !m.enabled {
+		return RedisReport{
+			Name:     healthCheckName,
 			Duration: "N/A",
 			Status:   Deactivated,
 		}
 	}
 
 	var now = time.Now()
-	var _, err = redis.Do("PING")
+	var _, err = m.redis.Do("PING")
 	var duration = time.Since(now)
 
-	var status = OK
-	var error = ""
-	if err != nil {
-		status = KO
-		error = err.Error()
+	var error string
+	var s Status
+	switch {
+	case err != nil:
+		error = fmt.Sprintf("could not ping redis: %v", err.Error())
+		s = KO
+	default:
+		s = OK
 	}
 
-	return RedisHealthReport{
-		Name:     "ping",
+	return RedisReport{
+		Name:     healthCheckName,
 		Duration: duration.String(),
-		Status:   status,
+		Status:   s,
 		Error:    error,
 	}
 }

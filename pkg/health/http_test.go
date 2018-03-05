@@ -24,7 +24,7 @@ func TestInfluxHealthCheckHandler(t *testing.T) {
 	var h = MakeInfluxHealthCheckHandler(MakeInfluxHealthCheckEndpoint(mockComponent))
 
 	// Health success.
-	mockComponent.EXPECT().InfluxHealthChecks(context.Background()).Return(HealthReports{Reports: []HealthReport{{Name: "influx", Duration: (1 * time.Second).String(), Status: OK}}}).Times(1)
+	mockComponent.EXPECT().InfluxHealthChecks(context.Background()).Return(Reports{Reports: []Report{{Name: "influx", Duration: (1 * time.Second).String(), Status: OK}}}).Times(1)
 
 	// HTTP request.
 	var req = httptest.NewRequest("GET", "http://cloudtrust.io/health/influx", nil)
@@ -58,7 +58,7 @@ func TestJaegerHealthCheckHandler(t *testing.T) {
 	var h = MakeJaegerHealthCheckHandler(MakeJaegerHealthCheckEndpoint(mockComponent))
 
 	// Health success.
-	mockComponent.EXPECT().JaegerHealthChecks(context.Background()).Return(HealthReports{Reports: []HealthReport{{Name: "jaeger", Duration: (1 * time.Second).String(), Status: OK}}}).Times(1)
+	mockComponent.EXPECT().JaegerHealthChecks(context.Background()).Return(Reports{Reports: []Report{{Name: "jaeger", Duration: (1 * time.Second).String(), Status: OK}}}).Times(1)
 
 	// HTTP request.
 	var req = httptest.NewRequest("GET", "http://cloudtrust.io/health/jaeger", nil)
@@ -93,7 +93,7 @@ func TestRedisHealthCheckHandler(t *testing.T) {
 	var h = MakeRedisHealthCheckHandler(MakeRedisHealthCheckEndpoint(mockComponent))
 
 	// Health success.
-	mockComponent.EXPECT().RedisHealthChecks(context.Background()).Return(HealthReports{Reports: []HealthReport{{Name: "redis", Duration: (1 * time.Second).String(), Status: OK}}}).Times(1)
+	mockComponent.EXPECT().RedisHealthChecks(context.Background()).Return(Reports{Reports: []Report{{Name: "redis", Duration: (1 * time.Second).String(), Status: OK}}}).Times(1)
 
 	// HTTP request.
 	var req = httptest.NewRequest("GET", "http://cloudtrust.io/health/redis", nil)
@@ -128,7 +128,7 @@ func TestSentryHealthCheckHandler(t *testing.T) {
 	var h = MakeSentryHealthCheckHandler(MakeSentryHealthCheckEndpoint(mockComponent))
 
 	// Health success.
-	mockComponent.EXPECT().SentryHealthChecks(context.Background()).Return(HealthReports{Reports: []HealthReport{{Name: "sentry", Duration: (1 * time.Second).String(), Status: OK}}}).Times(1)
+	mockComponent.EXPECT().SentryHealthChecks(context.Background()).Return(Reports{Reports: []Report{{Name: "sentry", Duration: (1 * time.Second).String(), Status: OK}}}).Times(1)
 
 	// HTTP request.
 	var req = httptest.NewRequest("GET", "http://cloudtrust.io/health/sentry", nil)
@@ -163,7 +163,7 @@ func TestKeycloakHealthCheckHandler(t *testing.T) {
 	var h = MakeKeycloakHealthCheckHandler(MakeKeycloakHealthCheckEndpoint(mockComponent))
 
 	// Health success.
-	mockComponent.EXPECT().KeycloakHealthChecks(context.Background()).Return(HealthReports{Reports: []HealthReport{{Name: "keycloak", Duration: (1 * time.Second).String(), Status: OK}}}).Times(1)
+	mockComponent.EXPECT().KeycloakHealthChecks(context.Background()).Return(Reports{Reports: []Report{{Name: "keycloak", Duration: (1 * time.Second).String(), Status: OK}}}).Times(1)
 
 	// HTTP request.
 	var req = httptest.NewRequest("GET", "http://cloudtrust.io/health/keycloak", nil)
@@ -196,11 +196,11 @@ func TestHealthChecksHandler(t *testing.T) {
 	var mockComponent = mock.NewComponent(mockCtrl)
 
 	// Health success.
-	mockComponent.EXPECT().InfluxHealthChecks(context.Background()).Return(HealthReports{Reports: []HealthReport{{Name: "influx", Duration: (1 * time.Second).String(), Status: OK}}}).Times(1)
-	mockComponent.EXPECT().JaegerHealthChecks(context.Background()).Return(HealthReports{Reports: []HealthReport{{Name: "jaeger", Duration: (1 * time.Second).String(), Status: OK}}}).Times(1)
-	mockComponent.EXPECT().RedisHealthChecks(context.Background()).Return(HealthReports{Reports: []HealthReport{{Name: "redis", Duration: (1 * time.Second).String(), Status: OK}}}).Times(1)
-	mockComponent.EXPECT().SentryHealthChecks(context.Background()).Return(HealthReports{Reports: []HealthReport{{Name: "sentry", Duration: (1 * time.Second).String(), Status: OK}}}).Times(1)
-	mockComponent.EXPECT().KeycloakHealthChecks(context.Background()).Return(HealthReports{Reports: []HealthReport{{Name: "keycloak", Duration: (1 * time.Second).String(), Status: OK}}}).Times(1)
+	mockComponent.EXPECT().InfluxHealthChecks(context.Background()).Return(Reports{Reports: []Report{{Name: "influx", Duration: (1 * time.Second).String(), Status: OK}}}).Times(1)
+	mockComponent.EXPECT().JaegerHealthChecks(context.Background()).Return(Reports{Reports: []Report{{Name: "jaeger", Duration: (1 * time.Second).String(), Status: OK}}}).Times(1)
+	mockComponent.EXPECT().RedisHealthChecks(context.Background()).Return(Reports{Reports: []Report{{Name: "redis", Duration: (1 * time.Second).String(), Status: OK}}}).Times(1)
+	mockComponent.EXPECT().SentryHealthChecks(context.Background()).Return(Reports{Reports: []Report{{Name: "sentry", Duration: (1 * time.Second).String(), Status: OK}}}).Times(1)
+	mockComponent.EXPECT().KeycloakHealthChecks(context.Background()).Return(Reports{Reports: []Report{{Name: "keycloak", Duration: (1 * time.Second).String(), Status: OK}}}).Times(1)
 
 	var es = Endpoints{
 		InfluxHealthCheck:   MakeInfluxHealthCheckEndpoint(mockComponent),
@@ -242,11 +242,11 @@ func TestHealthChecksHandlerFail(t *testing.T) {
 	var mockComponent = mock.NewComponent(mockCtrl)
 
 	// Health fail.
-	mockComponent.EXPECT().InfluxHealthChecks(context.Background()).Return(HealthReports{Reports: []HealthReport{{Name: "influx", Duration: (1 * time.Second).String(), Status: KO, Error: "fail"}}}).Times(1)
-	mockComponent.EXPECT().JaegerHealthChecks(context.Background()).Return(HealthReports{Reports: []HealthReport{{Name: "jaeger", Duration: (1 * time.Second).String(), Status: KO, Error: "fail"}}}).Times(1)
-	mockComponent.EXPECT().RedisHealthChecks(context.Background()).Return(HealthReports{Reports: []HealthReport{{Name: "redis", Duration: (1 * time.Second).String(), Status: KO, Error: "fail"}}}).Times(1)
-	mockComponent.EXPECT().SentryHealthChecks(context.Background()).Return(HealthReports{Reports: []HealthReport{{Name: "sentry", Duration: (1 * time.Second).String(), Status: KO, Error: "fail"}}}).Times(1)
-	mockComponent.EXPECT().KeycloakHealthChecks(context.Background()).Return(HealthReports{Reports: []HealthReport{{Name: "keycloak", Duration: (1 * time.Second).String(), Status: KO, Error: "fail"}}}).Times(1)
+	mockComponent.EXPECT().InfluxHealthChecks(context.Background()).Return(Reports{Reports: []Report{{Name: "influx", Duration: (1 * time.Second).String(), Status: KO, Error: "fail"}}}).Times(1)
+	mockComponent.EXPECT().JaegerHealthChecks(context.Background()).Return(Reports{Reports: []Report{{Name: "jaeger", Duration: (1 * time.Second).String(), Status: KO, Error: "fail"}}}).Times(1)
+	mockComponent.EXPECT().RedisHealthChecks(context.Background()).Return(Reports{Reports: []Report{{Name: "redis", Duration: (1 * time.Second).String(), Status: KO, Error: "fail"}}}).Times(1)
+	mockComponent.EXPECT().SentryHealthChecks(context.Background()).Return(Reports{Reports: []Report{{Name: "sentry", Duration: (1 * time.Second).String(), Status: KO, Error: "fail"}}}).Times(1)
+	mockComponent.EXPECT().KeycloakHealthChecks(context.Background()).Return(Reports{Reports: []Report{{Name: "keycloak", Duration: (1 * time.Second).String(), Status: KO, Error: "fail"}}}).Times(1)
 
 	var es = Endpoints{
 		InfluxHealthCheck:   MakeInfluxHealthCheckEndpoint(mockComponent),
@@ -300,5 +300,5 @@ func TestHTTPErrorHandler(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
 	assert.Equal(t, "application/json; charset=utf-8", resp.Header.Get("Content-Type"))
-	assert.Equal(t, "500 Internal Server Error", string(body))
+	assert.Equal(t, "fail", string(body))
 }

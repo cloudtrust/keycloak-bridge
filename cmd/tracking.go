@@ -18,9 +18,7 @@ func (s *NoopSentry) CaptureError(err error, tags map[string]string, interfaces 
 }
 
 // URL does nothing for the receiver NoopSentry.
-func (s *NoopSentry) URL() string {
-	return ""
-}
+func (s *NoopSentry) URL() string { return "" }
 
 // Close does nothing for the receiver NoopSentry.
 func (s *NoopSentry) Close() {}

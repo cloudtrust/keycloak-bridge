@@ -70,30 +70,52 @@ func (m *InfluxMetrics) Ping(timeout time.Duration) (time.Duration, string, erro
 // NoopMetrics is an Influx metrics that does nothing.
 type NoopMetrics struct{}
 
-func (m *NoopMetrics) NewCounter(name string) metrics.Counter     { return &NoopCounter{} }
-func (m *NoopMetrics) NewGauge(name string) metrics.Gauge         { return &NoopGauge{} }
+// NewCounter returns a Counter that does nothing.
+func (m *NoopMetrics) NewCounter(name string) metrics.Counter { return &NoopCounter{} }
+
+// NewGauge returns a Gauge that does nothing.
+func (m *NoopMetrics) NewGauge(name string) metrics.Gauge { return &NoopGauge{} }
+
+// NewHistogram returns an Histogram that does nothing.
 func (m *NoopMetrics) NewHistogram(name string) metrics.Histogram { return &NoopHistogram{} }
-func (m *NoopMetrics) Write(bp influx.BatchPoints) error          { return nil }
-func (m *NoopMetrics) WriteLoop(c <-chan time.Time)               {}
+
+// Write does nothing.
+func (m *NoopMetrics) Write(bp influx.BatchPoints) error { return nil }
+
+// WriteLoop does nothing.
+func (m *NoopMetrics) WriteLoop(c <-chan time.Time) {}
+
+// Ping does nothing.
 func (m *NoopMetrics) Ping(timeout time.Duration) (time.Duration, string, error) {
-	return time.Duration(0), "NOOP", nil
+	return time.Duration(0), "", nil
 }
 
 // NoopCounter is a Counter that does nothing.
 type NoopCounter struct{}
 
+// With does nothing.
 func (c *NoopCounter) With(labelValues ...string) metrics.Counter { return c }
-func (c *NoopCounter) Add(delta float64)                          {}
+
+// Add does nothing.
+func (c *NoopCounter) Add(delta float64) {}
 
 // NoopGauge is a Gauge that does nothing.
 type NoopGauge struct{}
 
+// With does nothing.
 func (g *NoopGauge) With(labelValues ...string) metrics.Gauge { return g }
-func (g *NoopGauge) Set(value float64)                        {}
-func (g *NoopGauge) Add(delta float64)                        {}
+
+// Set does nothing.
+func (g *NoopGauge) Set(value float64) {}
+
+// Add does nothing.
+func (g *NoopGauge) Add(delta float64) {}
 
 // NoopHistogram is an Histogram that does nothing.
 type NoopHistogram struct{}
 
+// With does nothing.
 func (h *NoopHistogram) With(labelValues ...string) metrics.Histogram { return h }
-func (h *NoopHistogram) Observe(value float64)                        {}
+
+// Observe does nothing.
+func (h *NoopHistogram) Observe(value float64) {}

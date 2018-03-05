@@ -13,6 +13,6 @@ func TestNoopMetrics(t *testing.T) {
 	var duration, s, err = noopMetrics.Ping(1 * time.Second)
 
 	assert.Equal(t, time.Duration(0), duration)
-	assert.Equal(t, "NOOP", s)
+	assert.Zero(t, "", s)
 	assert.Nil(t, err)
 }

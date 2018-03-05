@@ -35,9 +35,9 @@ func (m *RedisModule) EXPECT() *RedisModuleMockRecorder {
 }
 
 // HealthChecks mocks base method
-func (m *RedisModule) HealthChecks(arg0 context.Context) []health.RedisHealthReport {
+func (m *RedisModule) HealthChecks(arg0 context.Context) []health.RedisReport {
 	ret := m.ctrl.Call(m, "HealthChecks", arg0)
-	ret0, _ := ret[0].([]health.RedisHealthReport)
+	ret0, _ := ret[0].([]health.RedisReport)
 	return ret0
 }
 

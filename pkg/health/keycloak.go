@@ -9,6 +9,7 @@ import (
 	"time"
 
 	keycloak_client "github.com/cloudtrust/keycloak-client"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -20,11 +21,11 @@ const (
 
 // KeycloakModule is the health check module for keycloak.
 type KeycloakModule interface {
-	HealthChecks(context.Context) []KeycloakHealthReport
+	HealthChecks(context.Context) []KeycloakReport
 }
 
-// KeycloakHealthReport is the health report returned by the keycloak module.
-type KeycloakHealthReport struct {
+// KeycloakReport is the health report returned by the keycloak module.
+type KeycloakReport struct {
 	Name     string
 	Duration string
 	Status   Status
@@ -57,99 +58,101 @@ func NewKeycloakModule(keycloak Keycloak, version string) KeycloakModule {
 }
 
 // HealthChecks executes all health checks for Keycloak.
-func (m *keycloakModule) HealthChecks(context.Context) []KeycloakHealthReport {
-	var reports = []KeycloakHealthReport{}
-	reports = append(reports, keycloakCreateUserCheck(m.keycloak))
-	reports = append(reports, keycloakDeleteUserCheck(m.keycloak))
+func (m *keycloakModule) HealthChecks(context.Context) []KeycloakReport {
+	var reports = []KeycloakReport{}
+	reports = append(reports, m.keycloakCreateUserCheck())
+	reports = append(reports, m.keycloakDeleteUserCheck())
 	return reports
 }
 
 // healthCheckUser is the user used for the health tests.
 var healthCheckUser = keycloak_client.UserRepresentation{
-	Username:  str("health.check"),
-	FirstName: str("Health"),
-	LastName:  str("Check"),
-	Email:     str("health.check@cloudtrust.ch"),
+	Username:  Str("health.check"),
+	FirstName: Str("Health"),
+	LastName:  Str("Check"),
+	Email:     Str("health.check@cloudtrust.ch"),
 }
 
-func keycloakCreateUserCheck(keycloak Keycloak) KeycloakHealthReport {
-	var report = KeycloakHealthReport{
-		Name:     "create user",
-		Duration: "N/A",
-		Status:   KO,
-	}
+func (m *keycloakModule) keycloakCreateUserCheck() KeycloakReport {
+	var healthCheckName = "create user"
+
+	var error string
+	var s Status
+
 	// Delete health check user if it exists.
-	var users []keycloak_client.UserRepresentation
-	{
-		var err error
-		users, err = keycloak.GetUsers(testRealm, "username", *healthCheckUser.Username)
-		if err != nil {
-			report.Error = "could not get user: " + err.Error()
-			return report
-		}
-		if len(users) != 0 {
-			if users[0].Id == nil {
-				report.Error = "cuser id should not be nil: " + err.Error()
-				return report
-			}
-			var err = keycloak.DeleteUser(testRealm, *users[0].Id)
-			if err != nil {
-				report.Error = "could not delete user: " + err.Error()
-				return report
-			}
-		}
-	}
+	m.keycloakDeleteUserCheck()
 
 	var now = time.Now()
-	var err = keycloak.CreateUser(testRealm, healthCheckUser)
-	if err != nil {
-		report.Error = "could not create user: " + err.Error()
-		return report
-	}
+	var err = m.keycloak.CreateUser(testRealm, healthCheckUser)
 	var duration = time.Since(now)
 
-	report.Status = OK
-	report.Duration = duration.String()
-	return report
-}
-
-func keycloakDeleteUserCheck(keycloak Keycloak) KeycloakHealthReport {
-	var report = KeycloakHealthReport{
-		Name:     "delete user",
-		Duration: "N/A",
-		Status:   KO,
+	switch {
+	case err != nil:
+		error = fmt.Sprintf("could not create user: %v", err.Error())
+		s = KO
+	default:
+		s = OK
 	}
 
+	return KeycloakReport{
+		Name:     healthCheckName,
+		Duration: duration.String(),
+		Status:   s,
+		Error:    error,
+	}
+}
+
+func (m *keycloakModule) keycloakDeleteUserCheck() KeycloakReport {
+	var healthCheckName = "delete user"
+
+	var error string
+	var s Status
 	// Get user ID.
 	var userID string
 	{
-		var err error
-		var users []keycloak_client.UserRepresentation
-		users, err = keycloak.GetUsers(testRealm, "username", *healthCheckUser.Username)
-		if err != nil {
-			report.Error = "could not get user: " + err.Error()
-			return report
-		}
-		if len(users) != 0 {
-			if users[0].Id == nil {
-				report.Error = "user id should not be nil: " + err.Error()
-				return report
-			}
+		var users, err = m.keycloak.GetUsers(testRealm, "username", *healthCheckUser.Username)
+
+		switch {
+		case err != nil:
+			error = fmt.Sprintf("could not get user: %v", err.Error())
+			s = KO
+		case len(users) == 0:
+			error = fmt.Sprintf("could not find user to delete")
+			s = KO
+		case users[0].Id == nil:
+			error = fmt.Sprintf("user id should not be nil")
+			s = KO
+		default:
 			userID = *users[0].Id
+		}
+	}
+	if userID == "" {
+		return KeycloakReport{
+			Name:     healthCheckName,
+			Duration: "N/A",
+			Status:   s,
+			Error:    error,
 		}
 	}
 
 	var now = time.Now()
-	var err = keycloak.DeleteUser(testRealm, userID)
-	if err != nil {
-		report.Error = "could not delete user: " + err.Error()
-		return report
-	}
+	var err = m.keycloak.DeleteUser(testRealm, userID)
 	var duration = time.Since(now)
 
-	report.Status = OK
-	report.Duration = duration.String()
-	return report
+	switch {
+	case err != nil:
+		error = fmt.Sprintf("could not delete user: %v", err.Error())
+		s = KO
+	default:
+		s = OK
+	}
+
+	return KeycloakReport{
+		Name:     healthCheckName,
+		Duration: duration.String(),
+		Status:   s,
+		Error:    error,
+	}
 }
 
 func updateTestRealm(keycloak Keycloak, version string) error {
@@ -160,12 +163,12 @@ func updateTestRealm(keycloak Keycloak, version string) error {
 		var err = createTestRealm(keycloak, version)
 		if err != nil {
 			keycloak.DeleteRealm(testRealm)
-			return fmt.Errorf("could not create test realm: %v", err)
+			return errors.Wrap(err, "could not create test realm")
 		}
 		err = createTestUsers(keycloak, version)
 		if err != nil {
 			keycloak.DeleteRealm(testRealm)
-			return fmt.Errorf("could not create test users: %v", err)
+			return errors.Wrap(err, "could not create test users")
 		}
 	}
 	return nil
@@ -200,7 +203,7 @@ func createTestUsers(keycloak Keycloak, version string) error {
 			Email:     &email,
 		})
 		if err != nil {
-			return fmt.Errorf("could not create test users: %v", err)
+			return errors.Wrap(err, "could not create test users")
 		}
 	}
 
@@ -211,11 +214,11 @@ func createTestUsers(keycloak Keycloak, version string) error {
 		FirstName: &version,
 	})
 	if err != nil {
-		return fmt.Errorf("could not create version user: %v", err)
+		return errors.Wrap(err, "could not create version user")
 	}
 	return nil
 }
 
-func str(s string) *string {
+func Str(s string) *string {
 	return &s
 }

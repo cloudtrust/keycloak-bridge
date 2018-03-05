@@ -35,9 +35,9 @@ func (m *SentryModule) EXPECT() *SentryModuleMockRecorder {
 }
 
 // HealthChecks mocks base method
-func (m *SentryModule) HealthChecks(arg0 context.Context) []health.SentryHealthReport {
+func (m *SentryModule) HealthChecks(arg0 context.Context) []health.SentryReport {
 	ret := m.ctrl.Call(m, "HealthChecks", arg0)
-	ret0, _ := ret[0].([]health.SentryHealthReport)
+	ret0, _ := ret[0].([]health.SentryReport)
 	return ret0
 }
 

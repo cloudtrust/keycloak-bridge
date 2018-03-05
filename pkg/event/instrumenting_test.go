@@ -24,12 +24,12 @@ func TestMuxComponentInstrumentingMW(t *testing.T) {
 	// Context with correlation ID.
 	rand.Seed(time.Now().UnixNano())
 	var corrID = strconv.FormatUint(rand.Uint64(), 10)
-	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
+	var ctx = context.WithValue(context.Background(), CorrelationIDKey, corrID)
 
 	// Event.
 	var uid = rand.Int63()
 	mockMuxComponent.EXPECT().Event(ctx, "Event", createEventBytes(fb.EventTypeCLIENT_DELETE, uid, "realm")).Return(nil).Times(1)
-	mockHistogram.EXPECT().With("correlation_id", corrID).Return(mockHistogram).Times(1)
+	mockHistogram.EXPECT().With(MetricCorrelationIDKey, corrID).Return(mockHistogram).Times(1)
 	mockHistogram.EXPECT().Observe(gomock.Any()).Return().Times(1)
 	m.Event(ctx, "Event", createEventBytes(fb.EventTypeCLIENT_DELETE, uid, "realm"))
 
@@ -52,12 +52,12 @@ func TestComponentInstrumentingMW(t *testing.T) {
 	// Context with correlation ID.
 	rand.Seed(time.Now().UnixNano())
 	var corrID = strconv.FormatUint(rand.Uint64(), 10)
-	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
+	var ctx = context.WithValue(context.Background(), CorrelationIDKey, corrID)
 
 	// Event.
 	var uid = rand.Int63()
 	mockComponent.EXPECT().Event(ctx, createEvent(fb.EventTypeCLIENT_INFO, uid, "realm")).Return(nil).Times(1)
-	mockHistogram.EXPECT().With("correlation_id", corrID).Return(mockHistogram).Times(1)
+	mockHistogram.EXPECT().With(MetricCorrelationIDKey, corrID).Return(mockHistogram).Times(1)
 	mockHistogram.EXPECT().Observe(gomock.Any()).Return().Times(1)
 	m.Event(ctx, createEvent(fb.EventTypeCLIENT_INFO, uid, "realm"))
 
@@ -80,12 +80,12 @@ func TestAdminComponentInstrumentingMW(t *testing.T) {
 	// Context with correlation ID.
 	rand.Seed(time.Now().UnixNano())
 	var corrID = strconv.FormatUint(rand.Uint64(), 10)
-	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
+	var ctx = context.WithValue(context.Background(), CorrelationIDKey, corrID)
 
 	// Event.
 	var uid = rand.Int63()
 	mockAdminComponent.EXPECT().AdminEvent(ctx, createAdminEvent(fb.OperationTypeCREATE, uid)).Return(nil).Times(1)
-	mockHistogram.EXPECT().With("correlation_id", corrID).Return(mockHistogram).Times(1)
+	mockHistogram.EXPECT().With(MetricCorrelationIDKey, corrID).Return(mockHistogram).Times(1)
 	mockHistogram.EXPECT().Observe(gomock.Any()).Return().Times(1)
 	m.AdminEvent(ctx, createAdminEvent(fb.OperationTypeCREATE, uid))
 
@@ -108,12 +108,12 @@ func TestConsoleModuleInstrumentingMW(t *testing.T) {
 	// Context with correlation ID.
 	rand.Seed(time.Now().UnixNano())
 	var corrID = strconv.FormatUint(rand.Uint64(), 10)
-	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
+	var ctx = context.WithValue(context.Background(), CorrelationIDKey, corrID)
 
 	// Print.
 	var mp = map[string]string{"key": "val"}
 	mockConsoleModule.EXPECT().Print(ctx, mp).Return(nil).Times(1)
-	mockHistogram.EXPECT().With("correlation_id", corrID).Return(mockHistogram).Times(1)
+	mockHistogram.EXPECT().With(MetricCorrelationIDKey, corrID).Return(mockHistogram).Times(1)
 	mockHistogram.EXPECT().Observe(gomock.Any()).Return().Times(1)
 	m.Print(ctx, mp)
 }
@@ -129,12 +129,12 @@ func TestStatisticModuleInstrumentingMW(t *testing.T) {
 	// Context with correlation ID.
 	rand.Seed(time.Now().UnixNano())
 	var corrID = strconv.FormatUint(rand.Uint64(), 10)
-	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
+	var ctx = context.WithValue(context.Background(), CorrelationIDKey, corrID)
 
 	// Stats.
 	var mp = map[string]string{"key": "val"}
 	mockStatisticModule.EXPECT().Stats(ctx, mp).Return(nil).Times(1)
-	mockHistogram.EXPECT().With("correlation_id", corrID).Return(mockHistogram).Times(1)
+	mockHistogram.EXPECT().With(MetricCorrelationIDKey, corrID).Return(mockHistogram).Times(1)
 	mockHistogram.EXPECT().Observe(gomock.Any()).Return().Times(1)
 	m.Stats(ctx, mp)
 }

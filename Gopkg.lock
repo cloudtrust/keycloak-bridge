@@ -20,6 +20,12 @@
   version = "2018.01.18"
 
 [[projects]]
+  branch = "alpha"
+  name = "github.com/cloudtrust/flaki-service"
+  packages = ["cmd/mock"]
+  revision = "a029846e12edb7b9200efbadd7f3d031d66bb8bd"
+
+[[projects]]
   branch = "master"
   name = "github.com/cloudtrust/keycloak-client"
   packages = ["."]
@@ -36,6 +42,12 @@
   name = "github.com/coreos/go-oidc"
   packages = ["."]
   revision = "065b426bd41667456c1a924468f507673629c46b"
+
+[[projects]]
+  name = "github.com/coreos/go-systemd"
+  packages = ["dbus"]
+  revision = "40e2722dffead74698ca12a750f64ef313ddce05"
+  version = "v16"
 
 [[projects]]
   name = "github.com/davecgh/go-spew"
@@ -78,6 +90,12 @@
   packages = ["."]
   revision = "259ab82a6cad3992b4e21ff5cac294ccb06474bc"
   version = "v1.7.0"
+
+[[projects]]
+  name = "github.com/godbus/dbus"
+  packages = ["."]
+  revision = "a389bdde4dd695d414e47b755e95e72b7826432c"
+  version = "v4.1.0"
 
 [[projects]]
   branch = "master"
@@ -286,6 +304,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "6ce4e39fc2abcdb7ff8b3921ba21016da3c478161bc120afa3bdad360ab5286c"
+  inputs-digest = "b4baf21810ebe45df4d72bb23601a2b68bfff6a4c1c40eac9bdc66f02f6a2682"
   solver-name = "gps-cdcl"
   solver-version = 1

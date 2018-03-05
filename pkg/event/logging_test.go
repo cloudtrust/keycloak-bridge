@@ -24,12 +24,12 @@ func TestMuxComponentLoggingMW(t *testing.T) {
 	// Context with correlation ID.
 	rand.Seed(time.Now().UnixNano())
 	var corrID = strconv.FormatUint(rand.Uint64(), 10)
-	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
+	var ctx = context.WithValue(context.Background(), CorrelationIDKey, corrID)
 
 	// Event.
 	var uid = rand.Int63()
 	mockMuxComponent.EXPECT().Event(ctx, "Event", createEventBytes(fb.EventTypeCLIENT_DELETE, uid, "realm")).Return(nil).Times(1)
-	mockLogger.EXPECT().Log("unit", "Event", "type", "Event", "correlation_id", corrID, "took", gomock.Any()).Return(nil).Times(1)
+	mockLogger.EXPECT().Log("unit", "Event", "type", "Event", LoggingCorrelationIDKey, corrID, "took", gomock.Any()).Return(nil).Times(1)
 	m.Event(ctx, "Event", createEventBytes(fb.EventTypeCLIENT_DELETE, uid, "realm"))
 
 	// Event without correlation ID.
@@ -51,12 +51,12 @@ func TestComponentLoggingMW(t *testing.T) {
 	// Context with correlation ID.
 	rand.Seed(time.Now().UnixNano())
 	var corrID = strconv.FormatUint(rand.Uint64(), 10)
-	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
+	var ctx = context.WithValue(context.Background(), CorrelationIDKey, corrID)
 
 	// Event.
 	var uid = rand.Int63()
 	mockComponent.EXPECT().Event(ctx, createEvent(fb.EventTypeCLIENT_INFO, uid, "realm")).Return(nil).Times(1)
-	mockLogger.EXPECT().Log("unit", "Event", "correlation_id", corrID, "took", gomock.Any()).Return(nil).Times(1)
+	mockLogger.EXPECT().Log("unit", "Event", LoggingCorrelationIDKey, corrID, "took", gomock.Any()).Return(nil).Times(1)
 	m.Event(ctx, createEvent(fb.EventTypeCLIENT_INFO, uid, "realm"))
 
 	// Event without correlation ID.
@@ -78,12 +78,12 @@ func TestAdminComponentLoggingMW(t *testing.T) {
 	// Context with correlation ID.
 	rand.Seed(time.Now().UnixNano())
 	var corrID = strconv.FormatUint(rand.Uint64(), 10)
-	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
+	var ctx = context.WithValue(context.Background(), CorrelationIDKey, corrID)
 
 	// Event.
 	var uid = rand.Int63()
 	mockAdminComponent.EXPECT().AdminEvent(ctx, createAdminEvent(fb.OperationTypeCREATE, uid)).Return(nil).Times(1)
-	mockLogger.EXPECT().Log("unit", "AdminEvent", "correlation_id", corrID, "took", gomock.Any()).Return(nil).Times(1)
+	mockLogger.EXPECT().Log("unit", "AdminEvent", LoggingCorrelationIDKey, corrID, "took", gomock.Any()).Return(nil).Times(1)
 	m.AdminEvent(ctx, createAdminEvent(fb.OperationTypeCREATE, uid))
 
 	// Event without correlation ID.
@@ -105,7 +105,7 @@ func TestConsoleModuleLoggingMW(t *testing.T) {
 	// Context with correlation ID.
 	rand.Seed(time.Now().UnixNano())
 	var corrID = strconv.FormatUint(rand.Uint64(), 10)
-	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
+	var ctx = context.WithValue(context.Background(), CorrelationIDKey, corrID)
 
 	// Print.
 	var mp = map[string]string{"key": "val"}
@@ -125,7 +125,7 @@ func TestStatisticModuleLoggingMW(t *testing.T) {
 	// Context with correlation ID.
 	rand.Seed(time.Now().UnixNano())
 	var corrID = strconv.FormatUint(rand.Uint64(), 10)
-	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
+	var ctx = context.WithValue(context.Background(), CorrelationIDKey, corrID)
 
 	// Stats.
 	var mp = map[string]string{"key": "val"}

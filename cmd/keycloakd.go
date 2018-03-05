@@ -19,6 +19,7 @@ import (
 	"github.com/cloudtrust/keycloak-bridge/pkg/user"
 	"github.com/cloudtrust/keycloak-bridge/pkg/user/flatbuffer/fb"
 	keycloak "github.com/cloudtrust/keycloak-client"
+	"github.com/coreos/go-systemd/dbus"
 	"github.com/garyburd/redigo/redis"
 	sentry "github.com/getsentry/raven-go"
 	"github.com/go-kit/kit/endpoint"
@@ -56,21 +57,31 @@ func main() {
 	// Configurations.
 	var config = config(log.With(logger, "unit", "config"))
 	var (
+		// Component
 		componentName = config["component-name"].(string)
-		grpcAddr      = config["component-grpc-address"].(string)
-		httpAddr      = config["component-http-address"].(string)
+		grpcAddr      = config["component-grpc-host-port"].(string)
+		httpAddr      = config["component-http-host-port"].(string)
 
-		flakiAddr = config["flaki-url"].(string)
+		// Flaki
+		flakiAddr = config["flaki-host-port"].(string)
 
 		keycloakConfig = keycloak.Config{
-			Addr:     fmt.Sprintf("http://%s", config["keycloak-url"].(string)),
+			Addr:     fmt.Sprintf("http://%s", config["keycloak-host-port"].(string)),
 			Username: config["keycloak-username"].(string),
 			Password: config["keycloak-password"].(string),
 			Timeout:  time.Duration(config["keycloak-timeout-ms"].(int)) * time.Millisecond,
 		}
 
+		// Enabled units
+		influxEnabled     = config["influx"].(bool)
+		sentryEnabled     = config["sentry"].(bool)
+		redisEnabled      = config["redis"].(bool)
+		jaegerEnabled     = config["jaeger"].(bool)
+		pprofRouteEnabled = config["pprof-route-enabled"].(bool)
+
+		// Influx
 		influxHTTPConfig = influx.HTTPConfig{
-			Addr:     fmt.Sprintf("http://%s", config["influx-url"].(string)),
+			Addr:     fmt.Sprintf("http://%s", config["influx-host-port"].(string)),
 			Username: config["influx-username"].(string),
 			Password: config["influx-password"].(string),
 		}
@@ -81,30 +92,30 @@ func main() {
 			WriteConsistency: config["influx-write-consistency"].(string),
 		}
 		influxWriteInterval = time.Duration(config["influx-write-interval-ms"].(int)) * time.Millisecond
-		jaegerConfig        = jaeger.Configuration{
-			Disabled: !config["jaeger"].(bool),
+
+		// Jaeger
+		jaegerConfig = jaeger.Configuration{
+			Disabled: !jaegerEnabled,
 			Sampler: &jaeger.SamplerConfig{
 				Type:              config["jaeger-sampler-type"].(string),
 				Param:             float64(config["jaeger-sampler-param"].(int)),
-				SamplingServerURL: fmt.Sprintf("http://%s", config["jaeger-sampler-url"].(string)),
+				SamplingServerURL: fmt.Sprintf("http://%s", config["jaeger-sampler-host-port"].(string)),
 			},
 			Reporter: &jaeger.ReporterConfig{
 				LogSpans:            config["jaeger-reporter-logspan"].(bool),
 				BufferFlushInterval: time.Duration(config["jaeger-write-interval-ms"].(int)) * time.Millisecond,
 			},
 		}
+		jaegerCollectorHealthcheckURL = config["jaeger-collector-healthcheck-host-port"].(string)
 
-		redisURL           = config["redis-url"].(string)
+		// Sentry
+		sentryDSN = fmt.Sprintf(config["sentry-dsn"].(string))
+
+		// Redis
+		redisURL           = config["redis-host-port"].(string)
 		redisPassword      = config["redis-password"].(string)
 		redisDatabase      = config["redis-database"].(int)
 		redisWriteInterval = time.Duration(config["redis-write-interval-ms"].(int)) * time.Millisecond
-
-		sentryDSN = fmt.Sprintf(config["sentry-dsn"].(string))
-
-		influxEnabled     = config["influx"].(bool)
-		sentryEnabled     = config["sentry"].(bool)
-		redisEnabled      = config["redis"].(bool)
-		pprofRouteEnabled = config["pprof-route-enabled"].(bool)
 	)
 
 	// Redis.
@@ -215,6 +226,17 @@ func main() {
 			return
 		}
 		defer closer.Close()
+	}
+
+	// Systemd D-Bus connection.
+	var systemDConn *dbus.Conn
+	{
+		var err error
+		systemDConn, err = dbus.New()
+		if err != nil {
+			logger.Log("msg", "could not create systemd D-Bus connection", "error", err)
+			return
+		}
 	}
 
 	// Flaki.
@@ -360,10 +382,10 @@ func main() {
 
 	var healthComponent health.Component
 	{
-		var influxHM = health.NewInfluxModule(influxMetrics)
-		var jaegerHM = health.NewJaegerModule(tracer)
-		var redisHM = health.NewRedisModule(redisConn)
-		var sentryHM = health.NewSentryModule(sentryClient, http.DefaultClient)
+		var influxHM = health.NewInfluxModule(influxMetrics, influxEnabled)
+		var jaegerHM = health.NewJaegerModule(systemDConn, http.DefaultClient, jaegerCollectorHealthcheckURL, jaegerEnabled)
+		var redisHM = health.NewRedisModule(redisConn, redisEnabled)
+		var sentryHM = health.NewSentryModule(sentryClient, http.DefaultClient, sentryEnabled)
 		var keycloakHM = health.NewKeycloakModule(keycloakClient, Version)
 
 		healthComponent = health.NewComponent(influxHM, jaegerHM, redisHM, sentryHM, keycloakHM)
@@ -527,21 +549,21 @@ func config(logger log.Logger) map[string]interface{} {
 	// Component default.
 	viper.SetDefault("config-file", "./conf/DEV/keycloakd.yml")
 	viper.SetDefault("component-name", "keycloak-bridge")
-	viper.SetDefault("component-http-address", "0.0.0.0:8888")
-	viper.SetDefault("component-grpc-address", "0.0.0.0:5555")
+	viper.SetDefault("component-http-host-port", "0.0.0.0:8888")
+	viper.SetDefault("component-grpc-host-port", "0.0.0.0:5555")
 
 	// Flaki default.
-	viper.SetDefault("flaki-url", "127.0.0.1:9000")
+	viper.SetDefault("flaki-host-port", "127.0.0.1:9000")
 
 	// Keycloak default.
-	viper.SetDefault("keycloak-url", "127.0.0.1:8080")
+	viper.SetDefault("keycloak-host-port", "127.0.0.1:8080")
 	viper.SetDefault("keycloak-username", "admin")
 	viper.SetDefault("keycloak-password", "admin")
 	viper.SetDefault("keycloak-timeout-ms", 5000)
 
 	// Influx DB client default.
 	viper.SetDefault("influx", false)
-	viper.SetDefault("influx-url", "")
+	viper.SetDefault("influx-host-port", "")
 	viper.SetDefault("influx-username", "")
 	viper.SetDefault("influx-password", "")
 	viper.SetDefault("influx-database", "")
@@ -558,16 +580,17 @@ func config(logger log.Logger) map[string]interface{} {
 	viper.SetDefault("jaeger", false)
 	viper.SetDefault("jaeger-sampler-type", "")
 	viper.SetDefault("jaeger-sampler-param", 0)
-	viper.SetDefault("jaeger-sampler-url", "")
+	viper.SetDefault("jaeger-sampler-host-port", "")
 	viper.SetDefault("jaeger-reporter-logspan", false)
 	viper.SetDefault("jaeger-write-interval-ms", 1000)
+	viper.SetDefault("jaeger-collector-healthcheck-host-port", "")
 
 	// Debug routes enabled.
 	viper.SetDefault("pprof-route-enabled", true)
 
 	// Redis.
 	viper.SetDefault("redis", false)
-	viper.SetDefault("redis-url", "")
+	viper.SetDefault("redis-host-port", "")
 	viper.SetDefault("redis-password", "")
 	viper.SetDefault("redis-database", 0)
 	viper.SetDefault("redis-write-interval-ms", 1000)
@@ -585,11 +608,11 @@ func config(logger log.Logger) map[string]interface{} {
 	}
 	var config = viper.AllSettings()
 
-	// If the URL is not set, we consider the components disabled.
-	config["influx"] = config["influx-url"].(string) != ""
+	// If the host/port is not set, we consider the components deactivated.
+	config["influx"] = config["influx-host-port"].(string) != ""
 	config["sentry"] = config["sentry-dsn"].(string) != ""
-	config["jaeger"] = config["jaeger-sampler-url"].(string) != ""
-	config["redis"] = config["redis-url"].(string) != ""
+	config["jaeger"] = config["jaeger-sampler-host-port"].(string) != ""
+	config["redis"] = config["redis-host-port"].(string) != ""
 
 	for k, v := range config {
 		logger.Log(k, v)

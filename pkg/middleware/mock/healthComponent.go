@@ -35,9 +35,9 @@ func (m *HealthComponent) EXPECT() *HealthComponentMockRecorder {
 }
 
 // InfluxHealthChecks mocks base method
-func (m *HealthComponent) InfluxHealthChecks(arg0 context.Context) health.HealthReports {
+func (m *HealthComponent) InfluxHealthChecks(arg0 context.Context) health.Reports {
 	ret := m.ctrl.Call(m, "InfluxHealthChecks", arg0)
-	ret0, _ := ret[0].(health.HealthReports)
+	ret0, _ := ret[0].(health.Reports)
 	return ret0
 }
 
@@ -47,9 +47,9 @@ func (mr *HealthComponentMockRecorder) InfluxHealthChecks(arg0 interface{}) *gom
 }
 
 // JaegerHealthChecks mocks base method
-func (m *HealthComponent) JaegerHealthChecks(arg0 context.Context) health.HealthReports {
+func (m *HealthComponent) JaegerHealthChecks(arg0 context.Context) health.Reports {
 	ret := m.ctrl.Call(m, "JaegerHealthChecks", arg0)
-	ret0, _ := ret[0].(health.HealthReports)
+	ret0, _ := ret[0].(health.Reports)
 	return ret0
 }
 
@@ -59,9 +59,9 @@ func (mr *HealthComponentMockRecorder) JaegerHealthChecks(arg0 interface{}) *gom
 }
 
 // KeycloakHealthChecks mocks base method
-func (m *HealthComponent) KeycloakHealthChecks(arg0 context.Context) health.HealthReports {
+func (m *HealthComponent) KeycloakHealthChecks(arg0 context.Context) health.Reports {
 	ret := m.ctrl.Call(m, "KeycloakHealthChecks", arg0)
-	ret0, _ := ret[0].(health.HealthReports)
+	ret0, _ := ret[0].(health.Reports)
 	return ret0
 }
 
@@ -71,9 +71,9 @@ func (mr *HealthComponentMockRecorder) KeycloakHealthChecks(arg0 interface{}) *g
 }
 
 // RedisHealthChecks mocks base method
-func (m *HealthComponent) RedisHealthChecks(arg0 context.Context) health.HealthReports {
+func (m *HealthComponent) RedisHealthChecks(arg0 context.Context) health.Reports {
 	ret := m.ctrl.Call(m, "RedisHealthChecks", arg0)
-	ret0, _ := ret[0].(health.HealthReports)
+	ret0, _ := ret[0].(health.Reports)
 	return ret0
 }
 
@@ -83,9 +83,9 @@ func (mr *HealthComponentMockRecorder) RedisHealthChecks(arg0 interface{}) *gomo
 }
 
 // SentryHealthChecks mocks base method
-func (m *HealthComponent) SentryHealthChecks(arg0 context.Context) health.HealthReports {
+func (m *HealthComponent) SentryHealthChecks(arg0 context.Context) health.Reports {
 	ret := m.ctrl.Call(m, "SentryHealthChecks", arg0)
-	ret0, _ := ret[0].(health.HealthReports)
+	ret0, _ := ret[0].(health.Reports)
 	return ret0
 }
 

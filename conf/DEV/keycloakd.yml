@@ -1,25 +1,25 @@
 # Component configs
 component-name: keycloak-bridge
-component-http-address: 0.0.0.0:8880
-component-grpc-address: 0.0.0.0:5550
+component-http-host-port: 0.0.0.0:8880
+component-grpc-host-port: 0.0.0.0:5550
 
 # Flaki ID generator
-flaki-url: 127.0.0.1:5555
+flaki-host-port: 127.0.0.1:5555
 
 # Keycloak configs
-keycloak-url: 10.244.18.2:8080
+keycloak-host-port: 10.244.18.2:8080
 keycloak-username: admin
 keycloak-password: admin
 keycloak-timeout-ms: 5000
 
 # Redis
-#redis-url: 172.19.0.1:6379
+#redis-host-port: 172.19.0.1:6379
 redis-password: redis
 redis-database: 0
 redis-write-interval-ms: 1000
 
 # Influx DB configs
-#influx-url: 172.19.0.1:8086
+#influx-host-port: 172.19.0.1:8086
 influx-username: flaki
 influx-password: flaki
 influx-database: flakimetrics
@@ -34,9 +34,10 @@ influx-write-interval-ms: 1000
 # Jaeger configs
 jaeger-sampler-type: const
 jaeger-sampler-param: 1
-jaeger-sampler-url: 127.0.0.1:5775
+jaeger-sampler-host-port: 127.0.0.1:5775
 jaeger-reporter-logspan: false
 jaeger-write-interval-ms: 1000
+jaeger-collector-healthcheck-host-port: 127.0.0.1:14269
 
 # Debug routes
 pprof-route-enabled: true

@@ -22,21 +22,21 @@ func TestComponentTrackingMW(t *testing.T) {
 
 	var m = MakeComponentTrackingMW(mockSentry)(mockMuxComponent)
 
-	// Context with correlation ID.
 	rand.Seed(time.Now().UnixNano())
 	var corrID = strconv.FormatUint(rand.Uint64(), 10)
-	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
+	var ctx = context.WithValue(context.Background(), CorrelationIDKey, corrID)
+	var uid = rand.Int63()
+	var event = createEventBytes(fb.EventTypeCLIENT_DELETE, uid, "realm")
 
 	// Event.
-	var uid = rand.Int63()
-	mockMuxComponent.EXPECT().Event(ctx, "Event", createEventBytes(fb.EventTypeCLIENT_DELETE, uid, "realm")).Return(fmt.Errorf("fail")).Times(1)
-	mockSentry.EXPECT().CaptureError(fmt.Errorf("fail"), map[string]string{"correlation_id": corrID}).Return("").Times(1)
+	mockMuxComponent.EXPECT().Event(ctx, "Event", event).Return(fmt.Errorf("fail")).Times(1)
+	mockSentry.EXPECT().CaptureError(fmt.Errorf("fail"), map[string]string{TracingCorrelationIDKey: corrID}).Return("").Times(1)
 	m.Event(ctx, "Event", createEventBytes(fb.EventTypeCLIENT_DELETE, uid, "realm"))
 
 	// Event without correlation ID.
-	mockMuxComponent.EXPECT().Event(context.Background(), "Event", createEventBytes(fb.EventTypeCLIENT_DELETE, uid, "realm")).Return(fmt.Errorf("fail")).Times(1)
+	mockMuxComponent.EXPECT().Event(context.Background(), "Event", event).Return(fmt.Errorf("fail")).Times(1)
 	var f = func() {
-		m.Event(context.Background(), "Event", createEventBytes(fb.EventTypeCLIENT_DELETE, uid, "realm"))
+		m.Event(context.Background(), "Event", event)
 	}
 	assert.Panics(t, f)
 }

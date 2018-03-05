@@ -9,6 +9,11 @@ import (
 	opentracing "github.com/opentracing/opentracing-go"
 )
 
+const (
+	// TracingCorrelationIDKey is the key for the correlation ID in the trace.
+	TracingCorrelationIDKey = "correlation_id"
+)
+
 // Tracing middleware at component level.
 type muxComponentTracingMW struct {
 	tracer opentracing.Tracer
@@ -30,7 +35,7 @@ func (m *muxComponentTracingMW) Event(ctx context.Context, eventType string, obj
 	if span := opentracing.SpanFromContext(ctx); span != nil {
 		span = m.tracer.StartSpan("mux_component", opentracing.ChildOf(span.Context()))
 		defer span.Finish()
-		span.SetTag("correlation_id", ctx.Value("correlation_id").(string))
+		span.SetTag(TracingCorrelationIDKey, ctx.Value(CorrelationIDKey).(string))
 
 		ctx = opentracing.ContextWithSpan(ctx, span)
 	}
@@ -59,7 +64,7 @@ func (m *componentTracingMW) Event(ctx context.Context, event *fb.Event) error {
 	if span := opentracing.SpanFromContext(ctx); span != nil {
 		span = m.tracer.StartSpan("event_component", opentracing.ChildOf(span.Context()))
 		defer span.Finish()
-		span.SetTag("correlation_id", ctx.Value("correlation_id").(string))
+		span.SetTag(TracingCorrelationIDKey, ctx.Value(CorrelationIDKey).(string))
 
 		ctx = opentracing.ContextWithSpan(ctx, span)
 	}
@@ -88,7 +93,7 @@ func (m *adminComponentTracingMW) AdminEvent(ctx context.Context, adminEvent *fb
 	if span := opentracing.SpanFromContext(ctx); span != nil {
 		span = m.tracer.StartSpan("admin_event_component", opentracing.ChildOf(span.Context()))
 		defer span.Finish()
-		span.SetTag("correlation_id", ctx.Value("correlation_id").(string))
+		span.SetTag(TracingCorrelationIDKey, ctx.Value(CorrelationIDKey).(string))
 
 		ctx = opentracing.ContextWithSpan(ctx, span)
 	}
@@ -117,7 +122,7 @@ func (m *consoleModuleTracingMW) Print(ctx context.Context, mp map[string]string
 	if span := opentracing.SpanFromContext(ctx); span != nil {
 		span = m.tracer.StartSpan("console_module", opentracing.ChildOf(span.Context()))
 		defer span.Finish()
-		span.SetTag("correlation_id", ctx.Value("correlation_id").(string))
+		span.SetTag(TracingCorrelationIDKey, ctx.Value(CorrelationIDKey).(string))
 
 		ctx = opentracing.ContextWithSpan(ctx, span)
 	}
@@ -146,7 +151,7 @@ func (m *statisticModuleTracingMW) Stats(ctx context.Context, mp map[string]stri
 	if span := opentracing.SpanFromContext(ctx); span != nil {
 		span = m.tracer.StartSpan("statistic_module", opentracing.ChildOf(span.Context()))
 		defer span.Finish()
-		span.SetTag("correlation_id", ctx.Value("correlation_id").(string))
+		span.SetTag(TracingCorrelationIDKey, ctx.Value(CorrelationIDKey).(string))
 
 		ctx = opentracing.ContextWithSpan(ctx, span)
 	}

@@ -45,8 +45,8 @@ func (c *flakiClient) NextValidID(ctx context.Context, in *flatbuffers.Builder,
 
 // Server API for Flaki service
 type FlakiServer interface {
-  NextID(context.Context, *EmptyRequest) (*flatbuffers.Builder, error)  
-  NextValidID(context.Context, *EmptyRequest) (*flatbuffers.Builder, error)  
+  NextID(context.Context, *FlakiRequest) (*flatbuffers.Builder, error)  
+  NextValidID(context.Context, *FlakiRequest) (*flatbuffers.Builder, error)  
 }
 
 func RegisterFlakiServer(s *grpc.Server, srv FlakiServer) {
@@ -55,7 +55,7 @@ func RegisterFlakiServer(s *grpc.Server, srv FlakiServer) {
 
 func _Flaki_NextID_Handler(srv interface{}, ctx context.Context,
 	dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-  in := new(EmptyRequest)
+  in := new(FlakiRequest)
   if err := dec(in); err != nil { return nil, err }
   if interceptor == nil { return srv.(FlakiServer).NextID(ctx, in) }
   info := &grpc.UnaryServerInfo{
@@ -64,7 +64,7 @@ func _Flaki_NextID_Handler(srv interface{}, ctx context.Context,
   }
   
   handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-    return srv.(FlakiServer).NextID(ctx, req.(* EmptyRequest))
+    return srv.(FlakiServer).NextID(ctx, req.(* FlakiRequest))
   }
   return interceptor(ctx, in, info, handler)
 }
@@ -72,7 +72,7 @@ func _Flaki_NextID_Handler(srv interface{}, ctx context.Context,
 
 func _Flaki_NextValidID_Handler(srv interface{}, ctx context.Context,
 	dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-  in := new(EmptyRequest)
+  in := new(FlakiRequest)
   if err := dec(in); err != nil { return nil, err }
   if interceptor == nil { return srv.(FlakiServer).NextValidID(ctx, in) }
   info := &grpc.UnaryServerInfo{
@@ -81,7 +81,7 @@ func _Flaki_NextValidID_Handler(srv interface{}, ctx context.Context,
   }
   
   handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-    return srv.(FlakiServer).NextValidID(ctx, req.(* EmptyRequest))
+    return srv.(FlakiServer).NextValidID(ctx, req.(* FlakiRequest))
   }
   return interceptor(ctx, in, info, handler)
 }

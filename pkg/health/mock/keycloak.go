@@ -201,9 +201,9 @@ func (m *KeycloakModule) EXPECT() *KeycloakModuleMockRecorder {
 }
 
 // HealthChecks mocks base method
-func (m *KeycloakModule) HealthChecks(arg0 context.Context) []health.KeycloakHealthReport {
+func (m *KeycloakModule) HealthChecks(arg0 context.Context) []health.KeycloakReport {
 	ret := m.ctrl.Call(m, "HealthChecks", arg0)
-	ret0, _ := ret[0].([]health.KeycloakHealthReport)
+	ret0, _ := ret[0].([]health.KeycloakReport)
 	return ret0
 }
 

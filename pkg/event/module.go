@@ -38,6 +38,7 @@ type StatisticModule interface {
 	Stats(context.Context, map[string]string) error
 }
 
+// Influx is the influx DB interface.
 type Influx interface {
 	Write(bp influx.BatchPoints) error
 }

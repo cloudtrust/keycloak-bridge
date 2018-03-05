@@ -25,7 +25,7 @@ func TestSentryHealthChecks(t *testing.T) {
 	}))
 	defer s.Close()
 
-	var m = NewSentryModule(mockSentry, s.Client())
+	var m = NewSentryModule(mockSentry, s.Client(), true)
 
 	var report = m.HealthChecks(context.Background())[0]
 	assert.Equal(t, "ping", report.Name)
@@ -39,15 +39,13 @@ func TestNoopSentryHealthChecks(t *testing.T) {
 	defer mockCtrl.Finish()
 	var mockSentry = mock.NewSentry(mockCtrl)
 
-	mockSentry.EXPECT().URL().Return("").Times(1)
-
 	var s = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("ok"))
 	}))
 	defer s.Close()
 
-	var m = NewSentryModule(mockSentry, s.Client())
+	var m = NewSentryModule(mockSentry, s.Client(), false)
 
 	var report = m.HealthChecks(context.Background())[0]
 	assert.Equal(t, "ping", report.Name)

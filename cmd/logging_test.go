@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/cloudtrust/keycloak-bridge/cmd/mock"
+	"github.com/cloudtrust/flaki-service/cmd/mock"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )

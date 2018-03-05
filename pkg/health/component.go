@@ -32,20 +32,20 @@ func (s Status) String() string {
 
 // Component is the health component interface.
 type Component interface {
-	InfluxHealthChecks(context.Context) HealthReports
-	JaegerHealthChecks(context.Context) HealthReports
-	RedisHealthChecks(context.Context) HealthReports
-	SentryHealthChecks(context.Context) HealthReports
-	KeycloakHealthChecks(context.Context) HealthReports
+	InfluxHealthChecks(context.Context) Reports
+	JaegerHealthChecks(context.Context) Reports
+	RedisHealthChecks(context.Context) Reports
+	SentryHealthChecks(context.Context) Reports
+	KeycloakHealthChecks(context.Context) Reports
 }
 
-// HealthReports contains the results of all health tests for a given module.
-type HealthReports struct {
-	Reports []HealthReport
+// Reports contains the results of all health tests for a given module.
+type Reports struct {
+	Reports []Report
 }
 
-// HealthReport contains the result of one health test.
-type HealthReport struct {
+// Report contains the result of one health test.
+type Report struct {
 	Name     string
 	Duration string
 	Status   Status
@@ -73,51 +73,51 @@ func NewComponent(influx InfluxModule, jaeger JaegerModule, redis RedisModule, s
 }
 
 // InfluxHealthChecks uses the health component to test the Influx health.
-func (c *component) InfluxHealthChecks(ctx context.Context) HealthReports {
+func (c *component) InfluxHealthChecks(ctx context.Context) Reports {
 	var reports = c.influx.HealthChecks(ctx)
-	var hr = HealthReports{}
+	var hr = Reports{}
 	for _, r := range reports {
-		hr.Reports = append(hr.Reports, HealthReport(r))
+		hr.Reports = append(hr.Reports, Report(r))
 	}
 	return hr
 }
 
 // JaegerHealthChecks uses the health component to test the Jaeger health.
-func (c *component) JaegerHealthChecks(ctx context.Context) HealthReports {
+func (c *component) JaegerHealthChecks(ctx context.Context) Reports {
 	var reports = c.jaeger.HealthChecks(ctx)
-	var hr = HealthReports{}
+	var hr = Reports{}
 	for _, r := range reports {
-		hr.Reports = append(hr.Reports, HealthReport(r))
+		hr.Reports = append(hr.Reports, Report(r))
 	}
 	return hr
 }
 
 // RedisHealthChecks uses the health component to test the Redis health.
-func (c *component) RedisHealthChecks(ctx context.Context) HealthReports {
+func (c *component) RedisHealthChecks(ctx context.Context) Reports {
 	var reports = c.redis.HealthChecks(ctx)
-	var hr = HealthReports{}
+	var hr = Reports{}
 	for _, r := range reports {
-		hr.Reports = append(hr.Reports, HealthReport(r))
+		hr.Reports = append(hr.Reports, Report(r))
 	}
 	return hr
 }
 
 // SentryHealthChecks uses the health component to test the Sentry health.
-func (c *component) SentryHealthChecks(ctx context.Context) HealthReports {
+func (c *component) SentryHealthChecks(ctx context.Context) Reports {
 	var reports = c.sentry.HealthChecks(ctx)
-	var hr = HealthReports{}
+	var hr = Reports{}
 	for _, r := range reports {
-		hr.Reports = append(hr.Reports, HealthReport(r))
+		hr.Reports = append(hr.Reports, Report(r))
 	}
 	return hr
 }
 
 // KeycloakHealthChecks uses the health component to test the Keycloak health.
-func (c *component) KeycloakHealthChecks(ctx context.Context) HealthReports {
+func (c *component) KeycloakHealthChecks(ctx context.Context) Reports {
 	var reports = c.keycloak.HealthChecks(ctx)
-	var hr = HealthReports{}
+	var hr = Reports{}
 	for _, r := range reports {
-		hr.Reports = append(hr.Reports, HealthReport(r))
+		hr.Reports = append(hr.Reports, Report(r))
 	}
 	return hr
 }
