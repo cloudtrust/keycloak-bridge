@@ -23,17 +23,16 @@ func TestEventEndpoint(t *testing.T) {
 	// Context with correlation ID.
 	rand.Seed(time.Now().UnixNano())
 	var corrID = strconv.FormatUint(rand.Uint64(), 10)
-	var ctx = context.WithValue(context.Background(), CorrelationIDKey, corrID)
-
-	// Event.
+	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
 	var uid = rand.Int63()
 	var req = EventRequest{
 		Type:   "Event",
 		Object: createEventBytes(fb.EventTypeCLIENT_DELETE, uid, "realm"),
 	}
-	mockMuxComponent.EXPECT().Event(ctx, req.Type, req.Object).Return(nil).Times(1)
 
-	var i, err = e(ctx, req)
+	// Event.
+	mockMuxComponent.EXPECT().Event(ctx, req.Type, req.Object).Return(nil).Times(1)
+	var rep, err = e(ctx, req)
 	assert.Nil(t, err)
-	assert.Nil(t, i)
+	assert.Nil(t, rep)
 }

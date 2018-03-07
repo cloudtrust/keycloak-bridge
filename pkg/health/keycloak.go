@@ -5,7 +5,8 @@ package health
 import (
 	"context"
 	"fmt"
-	"strings"
+	"regexp"
+	"strconv"
 	"time"
 
 	keycloak_client "github.com/cloudtrust/keycloak-client"
@@ -51,10 +52,14 @@ type keycloakModule struct {
 	keycloak Keycloak
 }
 
-// NewKeycloakModule returns the keycloak health module.
-func NewKeycloakModule(keycloak Keycloak, version string) KeycloakModule {
-	updateTestRealm(keycloak, version)
-	return &keycloakModule{keycloak: keycloak}
+// NewKeycloakModule update the test realm and returns the keycloak health module.
+func NewKeycloakModule(keycloak Keycloak, version string) (KeycloakModule, error) {
+	var m = &keycloakModule{keycloak: keycloak}
+	var v, err = NewVersion(version)
+	if err != nil {
+		return nil, errors.Wrap(err, "invalid version number")
+	}
+	return m, m.updateTestRealm(v)
 }
 
 // HealthChecks executes all health checks for Keycloak.
@@ -105,33 +110,18 @@ func (m *keycloakModule) keycloakCreateUserCheck() KeycloakReport {
 func (m *keycloakModule) keycloakDeleteUserCheck() KeycloakReport {
 	var healthCheckName = "delete user"
 
-	var error string
-	var s Status
 	// Get user ID.
 	var userID string
 	{
-		var users, err = m.keycloak.GetUsers(testRealm, "username", *healthCheckUser.Username)
-
-		switch {
-		case err != nil:
-			error = fmt.Sprintf("could not get user: %v", err.Error())
-			s = KO
-		case len(users) == 0:
-			error = fmt.Sprintf("could not find user to delete")
-			s = KO
-		case users[0].Id == nil:
-			error = fmt.Sprintf("user id should not be nil")
-			s = KO
-		default:
-			userID = *users[0].Id
-		}
-	}
-	if userID == "" {
-		return KeycloakReport{
-			Name:     healthCheckName,
-			Duration: "N/A",
-			Status:   s,
-			Error:    error,
+		var err error
+		userID, err = m.getUserID(testRealm, *healthCheckUser.Username)
+		if err != nil {
+			return KeycloakReport{
+				Name:     healthCheckName,
+				Duration: "N/A",
+				Status:   KO,
+				Error:    err.Error(),
+			}
 		}
 	}
 
@@ -139,6 +129,8 @@ func (m *keycloakModule) keycloakDeleteUserCheck() KeycloakReport {
 	var err = m.keycloak.DeleteUser(testRealm, userID)
 	var duration = time.Since(now)
 
+	var error string
+	var s Status
 	switch {
 	case err != nil:
 		error = fmt.Sprintf("could not delete user: %v", err.Error())
@@ -155,70 +147,115 @@ func (m *keycloakModule) keycloakDeleteUserCheck() KeycloakReport {
 	}
 }
 
-func updateTestRealm(keycloak Keycloak, version string) error {
-	// Check the test realm version. If the realm does not exists, we receive an error.
-	var vuser, err = keycloak.GetUser(testRealm, vuserName)
-	if err != nil || vuser.FirstName == nil || *vuser.FirstName != version {
-		// The test realm does not exits or is not up to date, so we create/update it.
-		var err = createTestRealm(keycloak, version)
-		if err != nil {
-			keycloak.DeleteRealm(testRealm)
-			return errors.Wrap(err, "could not create test realm")
-		}
-		err = createTestUsers(keycloak, version)
-		if err != nil {
-			keycloak.DeleteRealm(testRealm)
-			return errors.Wrap(err, "could not create test users")
+func (m *keycloakModule) getUserID(realm, username string) (string, error) {
+	var users, err = m.keycloak.GetUsers(realm, "username", username)
+	if err != nil {
+		return "", fmt.Errorf("could not get user: %v", err.Error())
+	}
+
+	for _, user := range users {
+		if user.Username != nil && *user.Username == username && user.Id != nil {
+			return *user.Id, nil
 		}
 	}
+	return "", fmt.Errorf("coult not get userID for '%v' in realm '%v'", username, realm)
+}
+
+func (m *keycloakModule) updateTestRealm(v *Version) error {
+
+	// Check the test realm version. If the realm does not exists, we receive an error.
+	var vuserID string
+	{
+		var err error
+		vuserID, err = m.getUserID(testRealm, vuserName)
+		if err != nil {
+			return m.createTestRealm(v)
+		}
+	}
+
+	var vuser, err = m.keycloak.GetUser(testRealm, vuserID)
+	if err != nil || vuser.FirstName == nil {
+		// Check it the test realm is up to date.
+		var currentVersion, err = NewVersion(*vuser.FirstName)
+		if err != nil {
+			return m.createTestRealm(v)
+		}
+
+		// Update realm
+		if v.Superior(currentVersion) {
+			return m.createTestRealm(v)
+		}
+	}
+
 	return nil
 }
 
-func createTestRealm(keycloak Keycloak, version string) error {
+func (m *keycloakModule) createTestRealm(v *Version) error {
 	// Delete old realm.
-	keycloak.DeleteRealm(testRealm)
+	m.keycloak.DeleteRealm(testRealm)
 
 	// Create new realm.
-	var realm = testRealm
-	return keycloak.CreateRealm(keycloak_client.RealmRepresentation{
-		Realm: &realm,
-	})
-}
-
-var tstUsers = []struct {
-	firstname string
-	lastname  string
-}{
-	{"John", "Doe"},
-}
-
-func createTestUsers(keycloak Keycloak, version string) error {
-	for _, u := range tstUsers {
-		var username = strings.ToLower(u.firstname + "." + u.lastname)
-		var email = username + "@cloudtrust.ch"
-		var err = keycloak.CreateUser(testRealm, keycloak_client.UserRepresentation{
-			Username:  &username,
-			FirstName: &u.firstname,
-			LastName:  &u.lastname,
-			Email:     &email,
-		})
+	{
+		var realm = testRealm
+		var err = m.keycloak.CreateRealm(keycloak_client.RealmRepresentation{Realm: &realm})
 		if err != nil {
-			return errors.Wrap(err, "could not create test users")
+			return errors.Wrap(err, "could not create test realm")
 		}
 	}
-
-	// The version of the test realm is stored in a user.
-	var username = vuserName
-	var err = keycloak.CreateUser(testRealm, keycloak_client.UserRepresentation{
-		Username:  &username,
-		FirstName: &version,
-	})
-	if err != nil {
-		return errors.Wrap(err, "could not create version user")
+	// Create version user (the test realm is versionned, and the current version is stored as the Firstname of vuser).
+	{
+		var username = vuserName
+		var err = m.keycloak.CreateUser(testRealm, keycloak_client.UserRepresentation{
+			Username:  &username,
+			FirstName: Str(v.String()),
+		})
+		if err != nil {
+			return errors.Wrap(err, "could not create version user")
+		}
 	}
 	return nil
 }
 
-func Str(s string) *string {
-	return &s
+// Str returns a pointer to str.
+func Str(str string) *string {
+	return &str
+}
+
+// Version contains the version of the component. The format is major.minor.
+type Version struct {
+	Major int
+	Minor int
+}
+
+// NewVersion returns a Version representaion of the string v.
+func NewVersion(v string) (*Version, error) {
+	var r, err = regexp.Compile("^([0-9]+)\\.([0-9]+)$")
+	if err != nil {
+		return nil, errors.Wrap(err, "could not compile regexp to check version")
+	}
+
+	var matches = r.FindStringSubmatch(v)
+	if len(matches) != 3 {
+		return nil, fmt.Errorf("version should be major.minor: '%s'", v)
+	}
+	var major, _ = strconv.Atoi(matches[1])
+	var minor, _ = strconv.Atoi(matches[2])
+
+	return &Version{Major: major, Minor: minor}, nil
+}
+
+// Superior returns true if the version v is superior to v2, false otherwise.
+func (v *Version) Superior(v2 *Version) bool {
+	switch {
+	case v.Major > v2.Major:
+		return true
+	case v.Major == v2.Major && v.Minor > v2.Minor:
+		return true
+	default:
+		return false
+	}
+}
+
+func (v *Version) String() string {
+	return fmt.Sprintf("%d.%d", v.Major, v.Minor)
 }

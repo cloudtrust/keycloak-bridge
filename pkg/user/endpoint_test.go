@@ -23,7 +23,7 @@ func TestGetUsersEndpoint(t *testing.T) {
 
 	rand.Seed(time.Now().UnixNano())
 	var corrID = strconv.FormatUint(rand.Uint64(), 10)
-	var ctx = context.WithValue(context.Background(), CorrelationIDKey, corrID)
+	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
 	var req = fbUsersRequest("master")
 	var names = []string{"john", "jane", "doe"}
 	var reply = fbUsersResponse(names)

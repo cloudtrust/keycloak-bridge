@@ -11,13 +11,6 @@ import (
 	"github.com/cloudtrust/keycloak-bridge/pkg/event/flatbuffer/fb"
 )
 
-type key int
-
-const (
-	// CorrelationIDKey is the key for the correlation ID in the context.
-	CorrelationIDKey key = iota
-)
-
 // MuxComponent is the Mux component interface.
 type MuxComponent interface {
 	Event(ctx context.Context, eventType string, obj []byte) error

@@ -10,11 +10,6 @@ import (
 	"github.com/go-kit/kit/metrics"
 )
 
-const (
-	// MetricCorrelationIDKey is the key for the correlation ID in the metric DB.
-	MetricCorrelationIDKey = "correlation_id"
-)
-
 // Instrumenting middleware for the mux component.
 type muxComponentInstrumentingMW struct {
 	h    metrics.Histogram
@@ -34,7 +29,7 @@ func MakeMuxComponentInstrumentingMW(h metrics.Histogram) func(MuxComponent) Mux
 // muxComponentInstrumentingMW implements MuxComponent.
 func (m *muxComponentInstrumentingMW) Event(ctx context.Context, eventType string, obj []byte) error {
 	defer func(begin time.Time) {
-		m.h.With(MetricCorrelationIDKey, ctx.Value(CorrelationIDKey).(string)).Observe(time.Since(begin).Seconds())
+		m.h.With("correlation_id", ctx.Value("correlation_id").(string)).Observe(time.Since(begin).Seconds())
 	}(time.Now())
 	return m.next.Event(ctx, eventType, obj)
 }
@@ -58,7 +53,7 @@ func MakeComponentInstrumentingMW(h metrics.Histogram) func(Component) Component
 // componentInstrumentingMW implements Component.
 func (m *componentInstrumentingMW) Event(ctx context.Context, event *fb.Event) error {
 	defer func(begin time.Time) {
-		m.h.With(MetricCorrelationIDKey, ctx.Value(CorrelationIDKey).(string)).Observe(time.Since(begin).Seconds())
+		m.h.With("correlation_id", ctx.Value("correlation_id").(string)).Observe(time.Since(begin).Seconds())
 	}(time.Now())
 	return m.next.Event(ctx, event)
 }
@@ -82,7 +77,7 @@ func MakeAdminComponentInstrumentingMW(h metrics.Histogram) func(AdminComponent)
 // adminComponentInstrumentingMW implements AdminComponent.
 func (m *adminComponentInstrumentingMW) AdminEvent(ctx context.Context, adminEvent *fb.AdminEvent) error {
 	defer func(begin time.Time) {
-		m.h.With(MetricCorrelationIDKey, ctx.Value(CorrelationIDKey).(string)).Observe(time.Since(begin).Seconds())
+		m.h.With("correlation_id", ctx.Value("correlation_id").(string)).Observe(time.Since(begin).Seconds())
 	}(time.Now())
 	return m.next.AdminEvent(ctx, adminEvent)
 }
@@ -93,7 +88,7 @@ type consoleModuleInstrumentingMW struct {
 	next ConsoleModule
 }
 
-// MakeConsoleModuleInstrumentingMW makes an instrumenting middleware (at module level).
+// MakeConsoleModuleInstrumentingMW makes an instrumenting middleware at module level.
 func MakeConsoleModuleInstrumentingMW(h metrics.Histogram) func(ConsoleModule) ConsoleModule {
 	return func(next ConsoleModule) ConsoleModule {
 		return &consoleModuleInstrumentingMW{
@@ -106,7 +101,7 @@ func MakeConsoleModuleInstrumentingMW(h metrics.Histogram) func(ConsoleModule) C
 // consoleModuleInstrumentingMW implements Module.
 func (m *consoleModuleInstrumentingMW) Print(ctx context.Context, mp map[string]string) error {
 	defer func(begin time.Time) {
-		m.h.With(MetricCorrelationIDKey, ctx.Value(CorrelationIDKey).(string)).Observe(time.Since(begin).Seconds())
+		m.h.With("correlation_id", ctx.Value("correlation_id").(string)).Observe(time.Since(begin).Seconds())
 	}(time.Now())
 	return m.next.Print(ctx, mp)
 }
@@ -117,7 +112,7 @@ type statisticModuleInstrumentingMW struct {
 	next StatisticModule
 }
 
-// MakeStatisticModuleInstrumentingMW makes an instrumenting middleware (at module level).
+// MakeStatisticModuleInstrumentingMW makes an instrumenting middleware at module level.
 func MakeStatisticModuleInstrumentingMW(h metrics.Histogram) func(StatisticModule) StatisticModule {
 	return func(next StatisticModule) StatisticModule {
 		return &statisticModuleInstrumentingMW{
@@ -130,7 +125,7 @@ func MakeStatisticModuleInstrumentingMW(h metrics.Histogram) func(StatisticModul
 // consoleModuleInstrumentingMW implements Module.
 func (m *statisticModuleInstrumentingMW) Stats(ctx context.Context, mp map[string]string) error {
 	defer func(begin time.Time) {
-		m.h.With(MetricCorrelationIDKey, ctx.Value(CorrelationIDKey).(string)).Observe(time.Since(begin).Seconds())
+		m.h.With("correlation_id", ctx.Value("correlation_id").(string)).Observe(time.Since(begin).Seconds())
 	}(time.Now())
 	return m.next.Stats(ctx, mp)
 }

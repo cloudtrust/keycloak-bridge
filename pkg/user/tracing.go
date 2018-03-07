@@ -26,11 +26,11 @@ func MakeComponentTracingMW(tracer opentracing.Tracer) func(Component) Component
 }
 
 // componentTracingMW implements Component.
-func (m *componentTracingMW) GetUsers(ctx context.Context, req *fb.GetUsersRequest) (*fb.GetUsersResponse, error) {
+func (m *componentTracingMW) GetUsers(ctx context.Context, req *fb.GetUsersRequest) (*fb.GetUsersReply, error) {
 	if span := opentracing.SpanFromContext(ctx); span != nil {
 		span = m.tracer.StartSpan("user_component", opentracing.ChildOf(span.Context()))
 		defer span.Finish()
-		span.SetTag(TracingCorrelationIDKey, ctx.Value(CorrelationIDKey).(string))
+		span.SetTag("correlation_id", ctx.Value("correlation_id").(string))
 
 		ctx = opentracing.ContextWithSpan(ctx, span)
 	}
@@ -59,7 +59,7 @@ func (m *moduleTracingMW) GetUsers(ctx context.Context, realm string) ([]string,
 	if span := opentracing.SpanFromContext(ctx); span != nil {
 		span = m.tracer.StartSpan("user_module", opentracing.ChildOf(span.Context()))
 		defer span.Finish()
-		span.SetTag(TracingCorrelationIDKey, ctx.Value(CorrelationIDKey).(string))
+		span.SetTag("correlation_id", ctx.Value("correlation_id").(string))
 
 		ctx = opentracing.ContextWithSpan(ctx, span)
 	}

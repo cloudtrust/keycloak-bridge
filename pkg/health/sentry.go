@@ -93,7 +93,6 @@ func (m *sentryModule) sentryPingCheck() SentryReport {
 }
 
 func pingSentry(dsn string, httpClient SentryHTTPClient) error {
-
 	// Build sentry health url from sentry dsn. The health url is <sentryURL>/_health
 	var url string
 	if idx := strings.LastIndex(dsn, "/api/"); idx != -1 {

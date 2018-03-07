@@ -22,13 +22,13 @@ func TestComponentInstrumentingMW(t *testing.T) {
 
 	rand.Seed(time.Now().UnixNano())
 	var corrID = strconv.FormatUint(rand.Uint64(), 10)
-	var ctx = context.WithValue(context.Background(), CorrelationIDKey, corrID)
+	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
 	var req = fbUsersRequest("realm")
 	var reply = fbUsersResponse([]string{"john", "jane", "doe"})
 
 	// GetUsers.
 	mockComponent.EXPECT().GetUsers(ctx, req).Return(reply, nil).Times(1)
-	mockHistogram.EXPECT().With(InstrumentingCorrelationIDKey, corrID).Return(mockHistogram).Times(1)
+	mockHistogram.EXPECT().With("correlation_id", corrID).Return(mockHistogram).Times(1)
 	mockHistogram.EXPECT().Observe(gomock.Any()).Return().Times(1)
 	m.GetUsers(ctx, req)
 
@@ -50,12 +50,12 @@ func TestModuleInstrumentingMW(t *testing.T) {
 
 	rand.Seed(time.Now().UnixNano())
 	var corrID = strconv.FormatUint(rand.Uint64(), 10)
-	var ctx = context.WithValue(context.Background(), CorrelationIDKey, corrID)
+	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
 	var names = []string{"john", "jane", "doe"}
 
 	// GetUsers.
 	mockModule.EXPECT().GetUsers(ctx, "realm").Return(names, nil).Times(1)
-	mockHistogram.EXPECT().With(InstrumentingCorrelationIDKey, corrID).Return(mockHistogram).Times(1)
+	mockHistogram.EXPECT().With("correlation_id", corrID).Return(mockHistogram).Times(1)
 	mockHistogram.EXPECT().Observe(gomock.Any()).Return().Times(1)
 	m.GetUsers(ctx, "realm")
 

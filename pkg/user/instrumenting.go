@@ -27,9 +27,9 @@ func MakeComponentInstrumentingMW(h metrics.Histogram) func(Component) Component
 }
 
 // componentInstrumentingMW implements Component.
-func (m *componentInstrumentingMW) GetUsers(ctx context.Context, req *fb.GetUsersRequest) (*fb.GetUsersResponse, error) {
+func (m *componentInstrumentingMW) GetUsers(ctx context.Context, req *fb.GetUsersRequest) (*fb.GetUsersReply, error) {
 	defer func(begin time.Time) {
-		m.h.With(InstrumentingCorrelationIDKey, ctx.Value(CorrelationIDKey).(string)).Observe(time.Since(begin).Seconds())
+		m.h.With("correlation_id", ctx.Value("correlation_id").(string)).Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
 	return m.next.GetUsers(ctx, req)
@@ -54,7 +54,7 @@ func MakeModuleInstrumentingMW(h metrics.Histogram) func(Module) Module {
 // moduleInstrumentingMW implements Module.
 func (m *moduleInstrumentingMW) GetUsers(ctx context.Context, realm string) ([]string, error) {
 	defer func(begin time.Time) {
-		m.h.With(InstrumentingCorrelationIDKey, ctx.Value(CorrelationIDKey).(string)).Observe(time.Since(begin).Seconds())
+		m.h.With("correlation_id", ctx.Value("correlation_id").(string)).Observe(time.Since(begin).Seconds())
 	}(time.Now())
 
 	return m.next.GetUsers(ctx, realm)

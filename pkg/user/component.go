@@ -10,27 +10,9 @@ import (
 	"github.com/pkg/errors"
 )
 
-type key int
-
-const (
-	// CorrelationIDKey is the key for the correlation ID in the context.
-	CorrelationIDKey key = iota
-
-	// GRPCCorrelationIDKey is the key for the correlation ID in the GRPC metadata.
-	GRPCCorrelationIDKey = "correlation_id"
-	// LoggingCorrelationIDKey is the key for the correlation ID in the trace.
-	LoggingCorrelationIDKey = "correlation_id"
-	// InstrumentingCorrelationIDKey is the key for the correlation ID in the metric DB.
-	InstrumentingCorrelationIDKey = "correlation_id"
-	// TracingCorrelationIDKey is the key for the correlation ID in the trace.
-	TracingCorrelationIDKey = "correlation_id"
-	// TrackingCorrelationIDKey is the key for the correlation ID in sentry.
-	TrackingCorrelationIDKey = "correlation_id"
-)
-
 // Component is the user component interface.
 type Component interface {
-	GetUsers(ctx context.Context, req *fb.GetUsersRequest) (*fb.GetUsersResponse, error)
+	GetUsers(ctx context.Context, req *fb.GetUsersRequest) (*fb.GetUsersReply, error)
 }
 
 type component struct {
@@ -44,7 +26,7 @@ func NewComponent(module Module) Component {
 	}
 }
 
-func (c *component) GetUsers(ctx context.Context, req *fb.GetUsersRequest) (*fb.GetUsersResponse, error) {
+func (c *component) GetUsers(ctx context.Context, req *fb.GetUsersRequest) (*fb.GetUsersReply, error) {
 	var users, err = c.module.GetUsers(ctx, string(req.Realm()))
 	if err != nil {
 		return nil, errors.Wrap(err, "module could not get users")
@@ -52,7 +34,7 @@ func (c *component) GetUsers(ctx context.Context, req *fb.GetUsersRequest) (*fb.
 	return fbUsersResponse(users), nil
 }
 
-func fbUsersResponse(users []string) *fb.GetUsersResponse {
+func fbUsersResponse(users []string) *fb.GetUsersReply {
 	var b = flatbuffers.NewBuilder(0)
 
 	var userOffsets = []flatbuffers.UOffsetT{}
@@ -60,14 +42,14 @@ func fbUsersResponse(users []string) *fb.GetUsersResponse {
 		userOffsets = append(userOffsets, b.CreateString(u))
 	}
 
-	fb.GetUsersResponseStartNamesVector(b, len(users))
+	fb.GetUsersReplyStartNamesVector(b, len(users))
 	for _, u := range userOffsets {
 		b.PrependUOffsetT(u)
 	}
 	var names = b.EndVector(len(users))
-	fb.GetUsersResponseStart(b)
-	fb.GetUsersResponseAddNames(b, names)
-	b.Finish(fb.GetUsersResponseEnd(b))
+	fb.GetUsersReplyStart(b)
+	fb.GetUsersReplyAddNames(b, names)
+	b.Finish(fb.GetUsersReplyEnd(b))
 
-	return fb.GetRootAsGetUsersResponse(b.FinishedBytes(), 0)
+	return fb.GetRootAsGetUsersReply(b.FinishedBytes(), 0)
 }

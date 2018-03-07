@@ -27,7 +27,7 @@ func MakeHTTPGetUsersHandler(e endpoint.Endpoint) *http_transport.Server {
 func fetchHTTPCorrelationID(ctx context.Context, req *http.Request) context.Context {
 	var correlationID = req.Header.Get("X-Correlation-ID")
 	if correlationID != "" {
-		ctx = context.WithValue(ctx, CorrelationIDKey, correlationID)
+		ctx = context.WithValue(ctx, "correlation_id", correlationID)
 	}
 	return ctx
 }
@@ -47,7 +47,7 @@ func encodeHTTPReply(_ context.Context, w http.ResponseWriter, rep interface{}) 
 	w.Header().Set("Content-Type", "application/octet-stream")
 	w.WriteHeader(http.StatusOK)
 
-	var reply = rep.(*fb.GetUsersResponse)
+	var reply = rep.(*fb.GetUsersReply)
 
 	var usersNames []string
 	for i := 0; i < reply.NamesLength(); i++ {
@@ -60,14 +60,14 @@ func encodeHTTPReply(_ context.Context, w http.ResponseWriter, rep interface{}) 
 		userOffsets = append(userOffsets, b.CreateString(u))
 	}
 
-	fb.GetUsersResponseStartNamesVector(b, len(usersNames))
+	fb.GetUsersReplyStartNamesVector(b, len(usersNames))
 	for _, u := range userOffsets {
 		b.PrependUOffsetT(u)
 	}
 	var names = b.EndVector(len(usersNames))
-	fb.GetUsersResponseStart(b)
-	fb.GetUsersResponseAddNames(b, names)
-	b.Finish(fb.GetUsersResponseEnd(b))
+	fb.GetUsersReplyStart(b)
+	fb.GetUsersReplyAddNames(b, names)
+	b.Finish(fb.GetUsersReplyEnd(b))
 
 	w.Write(b.FinishedBytes())
 	return nil

@@ -14,7 +14,7 @@ import (
 // Client API for UserService service
 type UserServiceClient interface{
   GetUsers(ctx context.Context, in *flatbuffers.Builder, 
-  	opts... grpc.CallOption) (* GetUsersResponse, error)  
+  	opts... grpc.CallOption) (* GetUsersReply, error)  
 }
 
 type userServiceClient struct {
@@ -26,8 +26,8 @@ func NewUserServiceClient(cc *grpc.ClientConn) UserServiceClient {
 }
 
 func (c *userServiceClient) GetUsers(ctx context.Context, in *flatbuffers.Builder, 
-	opts... grpc.CallOption) (* GetUsersResponse, error) {
-  out := new(GetUsersResponse)
+	opts... grpc.CallOption) (* GetUsersReply, error) {
+  out := new(GetUsersReply)
   err := grpc.Invoke(ctx, "/fb.UserService/GetUsers", in, out, c.cc, opts...)
   if err != nil { return nil, err }
   return out, nil

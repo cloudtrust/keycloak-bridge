@@ -27,7 +27,7 @@ func TestMuxComponentTracingMW(t *testing.T) {
 
 	rand.Seed(time.Now().UnixNano())
 	var corrID = strconv.FormatUint(rand.Uint64(), 10)
-	var ctx = context.WithValue(context.Background(), CorrelationIDKey, corrID)
+	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
 	ctx = opentracing.ContextWithSpan(ctx, mockSpan)
 	var uid = rand.Int63()
 	var event = createEventBytes(fb.EventTypeCLIENT_DELETE, uid, "realm")
@@ -37,7 +37,7 @@ func TestMuxComponentTracingMW(t *testing.T) {
 	mockTracer.EXPECT().StartSpan("mux_component", gomock.Any()).Return(mockSpan).Times(1)
 	mockSpan.EXPECT().Context().Return(mockSpanContext).Times(1)
 	mockSpan.EXPECT().Finish().Return().Times(1)
-	mockSpan.EXPECT().SetTag(TracingCorrelationIDKey, corrID).Return(mockSpan).Times(1)
+	mockSpan.EXPECT().SetTag("correlation_id", corrID).Return(mockSpan).Times(1)
 	m.Event(ctx, "Event", event)
 
 	// Event error.
@@ -45,7 +45,7 @@ func TestMuxComponentTracingMW(t *testing.T) {
 	mockTracer.EXPECT().StartSpan("mux_component", gomock.Any()).Return(mockSpan).Times(1)
 	mockSpan.EXPECT().Context().Return(mockSpanContext).Times(1)
 	mockSpan.EXPECT().Finish().Return().Times(1)
-	mockSpan.EXPECT().SetTag(TracingCorrelationIDKey, corrID).Return(mockSpan).Times(1)
+	mockSpan.EXPECT().SetTag("correlation_id", corrID).Return(mockSpan).Times(1)
 	m.Event(ctx, "Event", event)
 
 	// Event without tracer.
@@ -64,38 +64,46 @@ func TestMuxComponentTracingMW(t *testing.T) {
 func TestComponentTracingMW(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
+	var mockComponent = mock.NewComponent(mockCtrl)
 	var mockTracer = mock.NewTracer(mockCtrl)
 	var mockSpan = mock.NewSpan(mockCtrl)
 	var mockSpanContext = mock.NewSpanContext(mockCtrl)
-	var mockComponent = mock.NewComponent(mockCtrl)
 
 	var m = MakeComponentTracingMW(mockTracer)(mockComponent)
 
-	// Context with correlation ID and span.
 	rand.Seed(time.Now().UnixNano())
 	var corrID = strconv.FormatUint(rand.Uint64(), 10)
-	var ctx = context.WithValue(context.Background(), CorrelationIDKey, corrID)
+	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
 	ctx = opentracing.ContextWithSpan(ctx, mockSpan)
+	var uid = rand.Int63()
+	var event = createEvent(fb.EventTypeCLIENT_INFO, uid, "realm")
 
 	// Event.
-	var uid = rand.Int63()
-	mockComponent.EXPECT().Event(gomock.Any(), createEvent(fb.EventTypeCLIENT_INFO, uid, "realm")).Return(nil).Times(1)
+	mockComponent.EXPECT().Event(gomock.Any(), event).Return(nil).Times(1)
 	mockTracer.EXPECT().StartSpan("event_component", gomock.Any()).Return(mockSpan).Times(1)
 	mockSpan.EXPECT().Context().Return(mockSpanContext).Times(1)
 	mockSpan.EXPECT().Finish().Return().Times(1)
-	mockSpan.EXPECT().SetTag(TracingCorrelationIDKey, corrID).Return(mockSpan).Times(1)
-	m.Event(ctx, createEvent(fb.EventTypeCLIENT_INFO, uid, "realm"))
+	mockSpan.EXPECT().SetTag("correlation_id", corrID).Return(mockSpan).Times(1)
+	m.Event(ctx, event)
+
+	// Event error.
+	mockComponent.EXPECT().Event(gomock.Any(), event).Return(fmt.Errorf("fail")).Times(1)
+	mockTracer.EXPECT().StartSpan("event_component", gomock.Any()).Return(mockSpan).Times(1)
+	mockSpan.EXPECT().Context().Return(mockSpanContext).Times(1)
+	mockSpan.EXPECT().Finish().Return().Times(1)
+	mockSpan.EXPECT().SetTag("correlation_id", corrID).Return(mockSpan).Times(1)
+	m.Event(ctx, event)
 
 	// Event without tracer.
-	mockComponent.EXPECT().Event(gomock.Any(), createEvent(fb.EventTypeCLIENT_INFO, uid, "realm")).Return(nil).Times(1)
-	m.Event(context.Background(), createEvent(fb.EventTypeCLIENT_INFO, uid, "realm"))
+	mockComponent.EXPECT().Event(gomock.Any(), event).Return(nil).Times(1)
+	m.Event(context.Background(), event)
 
 	// Event without correlation ID.
 	mockTracer.EXPECT().StartSpan("event_component", gomock.Any()).Return(mockSpan).Times(1)
 	mockSpan.EXPECT().Context().Return(mockSpanContext).Times(1)
 	mockSpan.EXPECT().Finish().Return().Times(1)
 	var f = func() {
-		m.Event(opentracing.ContextWithSpan(context.Background(), mockSpan), createEvent(fb.EventTypeCLIENT_INFO, uid, "realm"))
+		m.Event(opentracing.ContextWithSpan(context.Background(), mockSpan), event)
 	}
 	assert.Panics(t, f)
 }
@@ -103,38 +111,46 @@ func TestComponentTracingMW(t *testing.T) {
 func TestAdminComponentTracingMW(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
+	var mockAdminComponent = mock.NewAdminComponent(mockCtrl)
 	var mockTracer = mock.NewTracer(mockCtrl)
 	var mockSpan = mock.NewSpan(mockCtrl)
 	var mockSpanContext = mock.NewSpanContext(mockCtrl)
-	var mockAdminComponent = mock.NewAdminComponent(mockCtrl)
 
 	var m = MakeAdminComponentTracingMW(mockTracer)(mockAdminComponent)
 
-	// Context with correlation ID and span.
 	rand.Seed(time.Now().UnixNano())
 	var corrID = strconv.FormatUint(rand.Uint64(), 10)
-	var ctx = context.WithValue(context.Background(), CorrelationIDKey, corrID)
+	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
 	ctx = opentracing.ContextWithSpan(ctx, mockSpan)
+	var uid = rand.Int63()
+	var event = createAdminEvent(fb.OperationTypeCREATE, uid)
 
 	// AdminEvent.
-	var uid = rand.Int63()
-	mockAdminComponent.EXPECT().AdminEvent(gomock.Any(), createAdminEvent(fb.OperationTypeCREATE, uid)).Return(nil).Times(1)
+	mockAdminComponent.EXPECT().AdminEvent(gomock.Any(), event).Return(nil).Times(1)
 	mockTracer.EXPECT().StartSpan("admin_event_component", gomock.Any()).Return(mockSpan).Times(1)
 	mockSpan.EXPECT().Context().Return(mockSpanContext).Times(1)
 	mockSpan.EXPECT().Finish().Return().Times(1)
-	mockSpan.EXPECT().SetTag(TracingCorrelationIDKey, corrID).Return(mockSpan).Times(1)
-	m.AdminEvent(ctx, createAdminEvent(fb.OperationTypeCREATE, uid))
+	mockSpan.EXPECT().SetTag("correlation_id", corrID).Return(mockSpan).Times(1)
+	m.AdminEvent(ctx, event)
+
+	// AdminEvent error.
+	mockAdminComponent.EXPECT().AdminEvent(gomock.Any(), event).Return(fmt.Errorf("fail")).Times(1)
+	mockTracer.EXPECT().StartSpan("admin_event_component", gomock.Any()).Return(mockSpan).Times(1)
+	mockSpan.EXPECT().Context().Return(mockSpanContext).Times(1)
+	mockSpan.EXPECT().Finish().Return().Times(1)
+	mockSpan.EXPECT().SetTag("correlation_id", corrID).Return(mockSpan).Times(1)
+	m.AdminEvent(ctx, event)
 
 	// AdminEvent without tracer.
-	mockAdminComponent.EXPECT().AdminEvent(gomock.Any(), createAdminEvent(fb.OperationTypeCREATE, uid)).Return(nil).Times(1)
-	m.AdminEvent(context.Background(), createAdminEvent(fb.OperationTypeCREATE, uid))
+	mockAdminComponent.EXPECT().AdminEvent(gomock.Any(), event).Return(nil).Times(1)
+	m.AdminEvent(context.Background(), event)
 
 	// AdminEvent without correlation ID.
 	mockTracer.EXPECT().StartSpan("admin_event_component", gomock.Any()).Return(mockSpan).Times(1)
 	mockSpan.EXPECT().Context().Return(mockSpanContext).Times(1)
 	mockSpan.EXPECT().Finish().Return().Times(1)
 	var f = func() {
-		m.AdminEvent(opentracing.ContextWithSpan(context.Background(), mockSpan), createAdminEvent(fb.OperationTypeCREATE, uid))
+		m.AdminEvent(opentracing.ContextWithSpan(context.Background(), mockSpan), event)
 	}
 	assert.Panics(t, f)
 }
@@ -142,26 +158,33 @@ func TestAdminComponentTracingMW(t *testing.T) {
 func TestConsoleModuleTracingMW(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
+	var mockConsoleModule = mock.NewConsoleModule(mockCtrl)
 	var mockTracer = mock.NewTracer(mockCtrl)
 	var mockSpan = mock.NewSpan(mockCtrl)
 	var mockSpanContext = mock.NewSpanContext(mockCtrl)
-	var mockConsoleModule = mock.NewConsoleModule(mockCtrl)
 
 	var m = MakeConsoleModuleTracingMW(mockTracer)(mockConsoleModule)
 
-	// Context with correlation ID and span.
 	rand.Seed(time.Now().UnixNano())
 	var corrID = strconv.FormatUint(rand.Uint64(), 10)
-	var ctx = context.WithValue(context.Background(), CorrelationIDKey, corrID)
+	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
 	ctx = opentracing.ContextWithSpan(ctx, mockSpan)
+	var mp = map[string]string{"key": "val"}
 
 	// Print.
-	var mp = map[string]string{"key": "val"}
 	mockConsoleModule.EXPECT().Print(gomock.Any(), mp).Return(nil).Times(1)
 	mockTracer.EXPECT().StartSpan("console_module", gomock.Any()).Return(mockSpan).Times(1)
 	mockSpan.EXPECT().Context().Return(mockSpanContext).Times(1)
 	mockSpan.EXPECT().Finish().Return().Times(1)
-	mockSpan.EXPECT().SetTag(TracingCorrelationIDKey, corrID).Return(mockSpan).Times(1)
+	mockSpan.EXPECT().SetTag("correlation_id", corrID).Return(mockSpan).Times(1)
+	m.Print(ctx, mp)
+
+	// Print error.
+	mockConsoleModule.EXPECT().Print(gomock.Any(), mp).Return(fmt.Errorf("fail")).Times(1)
+	mockTracer.EXPECT().StartSpan("console_module", gomock.Any()).Return(mockSpan).Times(1)
+	mockSpan.EXPECT().Context().Return(mockSpanContext).Times(1)
+	mockSpan.EXPECT().Finish().Return().Times(1)
+	mockSpan.EXPECT().SetTag("correlation_id", corrID).Return(mockSpan).Times(1)
 	m.Print(ctx, mp)
 
 	// Print without tracer.
@@ -181,26 +204,33 @@ func TestConsoleModuleTracingMW(t *testing.T) {
 func TestStatisticModuleTracingMW(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
+	var mockStatisticModule = mock.NewStatisticModule(mockCtrl)
 	var mockTracer = mock.NewTracer(mockCtrl)
 	var mockSpan = mock.NewSpan(mockCtrl)
 	var mockSpanContext = mock.NewSpanContext(mockCtrl)
-	var mockStatisticModule = mock.NewStatisticModule(mockCtrl)
 
 	var m = MakeStatisticModuleTracingMW(mockTracer)(mockStatisticModule)
 
-	// Context with correlation ID and span.
 	rand.Seed(time.Now().UnixNano())
 	var corrID = strconv.FormatUint(rand.Uint64(), 10)
-	var ctx = context.WithValue(context.Background(), CorrelationIDKey, corrID)
+	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
 	ctx = opentracing.ContextWithSpan(ctx, mockSpan)
+	var mp = map[string]string{"key": "val"}
 
 	// Stats.
-	var mp = map[string]string{"key": "val"}
 	mockStatisticModule.EXPECT().Stats(gomock.Any(), mp).Return(nil).Times(1)
 	mockTracer.EXPECT().StartSpan("statistic_module", gomock.Any()).Return(mockSpan).Times(1)
 	mockSpan.EXPECT().Context().Return(mockSpanContext).Times(1)
 	mockSpan.EXPECT().Finish().Return().Times(1)
-	mockSpan.EXPECT().SetTag(TracingCorrelationIDKey, corrID).Return(mockSpan).Times(1)
+	mockSpan.EXPECT().SetTag("correlation_id", corrID).Return(mockSpan).Times(1)
+	m.Stats(ctx, mp)
+
+	// Stats.
+	mockStatisticModule.EXPECT().Stats(gomock.Any(), mp).Return(fmt.Errorf("fail")).Times(1)
+	mockTracer.EXPECT().StartSpan("statistic_module", gomock.Any()).Return(mockSpan).Times(1)
+	mockSpan.EXPECT().Context().Return(mockSpanContext).Times(1)
+	mockSpan.EXPECT().Finish().Return().Times(1)
+	mockSpan.EXPECT().SetTag("correlation_id", corrID).Return(mockSpan).Times(1)
 	m.Stats(ctx, mp)
 
 	// Stats without tracer.

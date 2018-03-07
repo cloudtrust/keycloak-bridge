@@ -93,7 +93,7 @@ func main() {
 	fb.GetUsersRequestAddRealm(b, brealm)
 	b.Finish(fb.GetUsersRequestEnd(b))
 
-	var reply *fb.GetUsersResponse
+	var reply *fb.GetUsersReply
 	{
 		var err error
 		var ctx = metadata.NewOutgoingContext(opentracing.ContextWithSpan(context.Background(), span), metadata.Join(md, correlationIDMD))

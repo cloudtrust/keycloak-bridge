@@ -8,11 +8,6 @@ import (
 	sentry "github.com/getsentry/raven-go"
 )
 
-const (
-	// TrackingCorrelationIDKey is the key for the correlation ID in sentry.
-	TrackingCorrelationIDKey = "correlation_id"
-)
-
 // Sentry interface.
 type Sentry interface {
 	CaptureError(err error, tags map[string]string, interfaces ...sentry.Interface) string
@@ -38,7 +33,7 @@ func MakeComponentTrackingMW(sentry Sentry) func(MuxComponent) MuxComponent {
 func (m *trackingComponentMW) Event(ctx context.Context, eventType string, obj []byte) error {
 	var err = m.next.Event(ctx, eventType, obj)
 	if err != nil {
-		m.sentry.CaptureError(err, map[string]string{TrackingCorrelationIDKey: ctx.Value(CorrelationIDKey).(string)})
+		m.sentry.CaptureError(err, map[string]string{"correlation_id": ctx.Value("correlation_id").(string)})
 	}
 	return err
 }

@@ -363,7 +363,11 @@ func main() {
 		var jaegerHM = health.NewJaegerModule(systemDConn, http.DefaultClient, jaegerCollectorHealthcheckURL, jaegerEnabled)
 		var redisHM = health.NewRedisModule(redisConn, redisEnabled)
 		var sentryHM = health.NewSentryModule(sentryClient, http.DefaultClient, sentryEnabled)
-		var keycloakHM = health.NewKeycloakModule(keycloakClient, Version)
+		var keycloakHM, err = health.NewKeycloakModule(keycloakClient, Version)
+		if err != nil {
+			logger.Log("msg", "could not create keycloak health check module", "error", err)
+			return
+		}
 
 		healthComponent = health.NewComponent(influxHM, jaegerHM, redisHM, sentryHM, keycloakHM)
 	}

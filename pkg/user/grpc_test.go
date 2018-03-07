@@ -62,14 +62,14 @@ func TestFetchGRPCCorrelationID(t *testing.T) {
 
 	rand.Seed(time.Now().UnixNano())
 	var corrID = strconv.FormatUint(rand.Uint64(), 10)
-	var md = metadata.New(map[string]string{GRPCCorrelationIDKey: corrID})
+	var md = metadata.New(map[string]string{"correlation_id": corrID})
 	var ctx = metadata.NewIncomingContext(context.Background(), md)
 	var req = fbUsersRequest("master")
 	var names = []string{"john", "jane", "doe"}
 	var reply = fbUsersResponse(names)
 
 	// GetUsers.
-	mockComponent.EXPECT().GetUsers(context.WithValue(ctx, CorrelationIDKey, corrID), req).Return(reply, nil).Times(1)
+	mockComponent.EXPECT().GetUsers(context.WithValue(ctx, "correlation_id", corrID), req).Return(reply, nil).Times(1)
 	s.GetUsers(ctx, req)
 
 	// GetUsers without correlation ID.

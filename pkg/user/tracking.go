@@ -31,10 +31,10 @@ func MakeComponentTrackingMW(sentry Sentry) func(Component) Component {
 }
 
 // trackingComponentMW implements Component.
-func (m *trackingComponentMW) GetUsers(ctx context.Context, req *fb.GetUsersRequest) (*fb.GetUsersResponse, error) {
+func (m *trackingComponentMW) GetUsers(ctx context.Context, req *fb.GetUsersRequest) (*fb.GetUsersReply, error) {
 	var users, err = m.next.GetUsers(ctx, req)
 	if err != nil {
-		m.sentry.CaptureError(err, map[string]string{TrackingCorrelationIDKey: ctx.Value(CorrelationIDKey).(string)})
+		m.sentry.CaptureError(err, map[string]string{"correlation_id": ctx.Value("correlation_id").(string)})
 	}
 	return users, err
 }

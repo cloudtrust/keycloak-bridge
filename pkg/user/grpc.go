@@ -35,7 +35,7 @@ func NewGRPCServer(getUsers grpc_transport.Handler) fb.UserServiceServer {
 // fetchGRPCCorrelationID reads the correlation ID from the GRPC metadata.
 // If the id is not zero, we put it in the context.
 func fetchGRPCCorrelationID(ctx context.Context, md metadata.MD) context.Context {
-	var val = md[GRPCCorrelationIDKey]
+	var val = md["correlation_id"]
 
 	// If there is no id in the metadata, return current context.
 	if val == nil || val[0] == "" {
@@ -43,7 +43,7 @@ func fetchGRPCCorrelationID(ctx context.Context, md metadata.MD) context.Context
 	}
 
 	// If there is an id in the metadata, add it to the context.
-	return context.WithValue(ctx, CorrelationIDKey, val[0])
+	return context.WithValue(ctx, "correlation_id", val[0])
 }
 
 // decodeGRPCRequest decodes the flatbuffer request.
@@ -63,7 +63,7 @@ func (s *grpcServer) GetUsers(ctx context.Context, req *fb.GetUsersRequest) (*fl
 		return nil, errors.Wrap(err, "grpc server could not return next ID")
 	}
 
-	var reply = rep.(*fb.GetUsersResponse)
+	var reply = rep.(*fb.GetUsersReply)
 
 	var usersNames []string
 	for i := 0; i < reply.NamesLength(); i++ {
@@ -76,14 +76,14 @@ func (s *grpcServer) GetUsers(ctx context.Context, req *fb.GetUsersRequest) (*fl
 		userOffsets = append(userOffsets, b.CreateString(u))
 	}
 
-	fb.GetUsersResponseStartNamesVector(b, len(usersNames))
+	fb.GetUsersReplyStartNamesVector(b, len(usersNames))
 	for _, u := range userOffsets {
 		b.PrependUOffsetT(u)
 	}
 	var names = b.EndVector(len(usersNames))
-	fb.GetUsersResponseStart(b)
-	fb.GetUsersResponseAddNames(b, names)
-	b.Finish(fb.GetUsersResponseEnd(b))
+	fb.GetUsersReplyStart(b)
+	fb.GetUsersReplyAddNames(b, names)
+	b.Finish(fb.GetUsersReplyEnd(b))
 
 	return b, nil
 }

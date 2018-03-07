@@ -90,7 +90,7 @@ func TestEndpointCorrelationIDMW(t *testing.T) {
 	rand.Seed(time.Now().UnixNano())
 	var flakiID = strconv.FormatUint(rand.Uint64(), 10)
 	var corrID = strconv.FormatUint(rand.Uint64(), 10)
-	var ctx = context.WithValue(context.Background(), CorrelationIDKey, corrID)
+	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
 	ctx = opentracing.ContextWithSpan(ctx, mockSpan)
 
 	// Context with correlation ID.
@@ -127,7 +127,7 @@ func TestEndpointLoggingMW(t *testing.T) {
 	rand.Seed(time.Now().UnixNano())
 	var uid = rand.Int63()
 	var corrID = strconv.FormatUint(rand.Uint64(), 10)
-	var ctx = context.WithValue(context.Background(), CorrelationIDKey, corrID)
+	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
 
 	// With correlation ID.
 	var req = event.EventRequest{
@@ -158,14 +158,14 @@ func TestEndpointInstrumentingMW(t *testing.T) {
 	rand.Seed(time.Now().UnixNano())
 	var uid = rand.Int63()
 	var corrID = strconv.FormatUint(rand.Uint64(), 10)
-	var ctx = context.WithValue(context.Background(), CorrelationIDKey, corrID)
+	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
 
 	// With correlation ID.
 	var req = event.EventRequest{
 		Type:   "Event",
 		Object: createEventBytes(fb.EventTypeCLIENT_DELETE, uid, "realm"),
 	}
-	mockHistogram.EXPECT().With(InstrumentingCorrelationIDKey, corrID).Return(mockHistogram).Times(1)
+	mockHistogram.EXPECT().With("correlation_id", corrID).Return(mockHistogram).Times(1)
 	mockHistogram.EXPECT().Observe(gomock.Any()).Return().Times(1)
 	mockMuxComponent.EXPECT().Event(ctx, req.Type, req.Object).Return(nil).Times(1)
 	m(ctx, req)
@@ -192,7 +192,7 @@ func TestEndpointTracingMW(t *testing.T) {
 	rand.Seed(time.Now().UnixNano())
 	var uid = rand.Int63()
 	var corrID = strconv.FormatUint(rand.Uint64(), 10)
-	var ctx = context.WithValue(context.Background(), CorrelationIDKey, corrID)
+	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
 	ctx = opentracing.ContextWithSpan(ctx, mockSpan)
 
 	// With correlation ID.
@@ -203,7 +203,7 @@ func TestEndpointTracingMW(t *testing.T) {
 	mockTracer.EXPECT().StartSpan("operationName", gomock.Any()).Return(mockSpan).Times(1)
 	mockSpan.EXPECT().Context().Return(mockSpanContext).Times(1)
 	mockSpan.EXPECT().Finish().Return().Times(1)
-	mockSpan.EXPECT().SetTag(TracingCorrelationIDKey, corrID).Return(mockSpan).Times(1)
+	mockSpan.EXPECT().SetTag("correlation_id", corrID).Return(mockSpan).Times(1)
 	mockMuxComponent.EXPECT().Event(gomock.Any(), req.Type, req.Object).Return(nil).Times(1)
 	m(ctx, req)
 

@@ -26,7 +26,7 @@ func TestComponentTracingMW(t *testing.T) {
 
 	rand.Seed(time.Now().UnixNano())
 	var corrID = strconv.FormatUint(rand.Uint64(), 10)
-	var ctx = context.WithValue(context.Background(), CorrelationIDKey, corrID)
+	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
 	ctx = opentracing.ContextWithSpan(ctx, mockSpan)
 	var req = fbUsersRequest("realm")
 	var reply = fbUsersResponse([]string{"john", "jane", "doe"})
@@ -44,7 +44,7 @@ func TestComponentTracingMW(t *testing.T) {
 	mockTracer.EXPECT().StartSpan("user_component", gomock.Any()).Return(mockSpan).Times(1)
 	mockSpan.EXPECT().Context().Return(mockSpanContext).Times(1)
 	mockSpan.EXPECT().Finish().Return().Times(1)
-	mockSpan.EXPECT().SetTag(TracingCorrelationIDKey, corrID).Return(mockSpan).Times(1)
+	mockSpan.EXPECT().SetTag("correlation_id", corrID).Return(mockSpan).Times(1)
 	m.GetUsers(ctx, req)
 
 	// GetUsers without tracer.
@@ -73,7 +73,7 @@ func TestModuleTracingMW(t *testing.T) {
 
 	rand.Seed(time.Now().UnixNano())
 	var corrID = strconv.FormatUint(rand.Uint64(), 10)
-	var ctx = context.WithValue(context.Background(), CorrelationIDKey, corrID)
+	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
 	ctx = opentracing.ContextWithSpan(ctx, mockSpan)
 	var names = []string{"john", "jane", "doe"}
 
@@ -82,7 +82,7 @@ func TestModuleTracingMW(t *testing.T) {
 	mockTracer.EXPECT().StartSpan("user_module", gomock.Any()).Return(mockSpan).Times(1)
 	mockSpan.EXPECT().Context().Return(mockSpanContext).Times(1)
 	mockSpan.EXPECT().Finish().Return().Times(1)
-	mockSpan.EXPECT().SetTag(InstrumentingCorrelationIDKey, corrID).Return(mockSpan).Times(1)
+	mockSpan.EXPECT().SetTag("correlation_id", corrID).Return(mockSpan).Times(1)
 	m.GetUsers(ctx, "realm")
 
 	// GetUsers error.
@@ -90,7 +90,7 @@ func TestModuleTracingMW(t *testing.T) {
 	mockTracer.EXPECT().StartSpan("user_module", gomock.Any()).Return(mockSpan).Times(1)
 	mockSpan.EXPECT().Context().Return(mockSpanContext).Times(1)
 	mockSpan.EXPECT().Finish().Return().Times(1)
-	mockSpan.EXPECT().SetTag(InstrumentingCorrelationIDKey, corrID).Return(mockSpan).Times(1)
+	mockSpan.EXPECT().SetTag("correlation_id", corrID).Return(mockSpan).Times(1)
 	m.GetUsers(ctx, "realm")
 
 	// GetUsers without tracer.

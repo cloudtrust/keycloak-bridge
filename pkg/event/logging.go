@@ -10,11 +10,6 @@ import (
 	"github.com/go-kit/kit/log"
 )
 
-const (
-	// LoggingCorrelationIDKey is the key for the correlation ID in the trace.
-	LoggingCorrelationIDKey = "correlation_id"
-)
-
 // Logging middleware for the mux component.
 type muxComponentLoggingMW struct {
 	logger log.Logger
@@ -34,7 +29,7 @@ func MakeMuxComponentLoggingMW(log log.Logger) func(MuxComponent) MuxComponent {
 // muxComponentLoggingMW implements MuxComponent.
 func (m *muxComponentLoggingMW) Event(ctx context.Context, eventType string, obj []byte) error {
 	defer func(begin time.Time) {
-		m.logger.Log("unit", "Event", "type", eventType, LoggingCorrelationIDKey, ctx.Value(CorrelationIDKey).(string), "took", time.Since(begin))
+		m.logger.Log("unit", "Event", "type", eventType, "correlation_id", ctx.Value("correlation_id").(string), "took", time.Since(begin))
 	}(time.Now())
 	return m.next.Event(ctx, eventType, obj)
 }
@@ -58,7 +53,7 @@ func MakeComponentLoggingMW(log log.Logger) func(Component) Component {
 // componentLoggingMW implements Component.
 func (m *componentLoggingMW) Event(ctx context.Context, event *fb.Event) error {
 	defer func(begin time.Time) {
-		m.logger.Log("unit", "Event", LoggingCorrelationIDKey, ctx.Value(CorrelationIDKey).(string), "took", time.Since(begin))
+		m.logger.Log("unit", "Event", "correlation_id", ctx.Value("correlation_id").(string), "took", time.Since(begin))
 	}(time.Now())
 	return m.next.Event(ctx, event)
 }
@@ -82,7 +77,7 @@ func MakeAdminComponentLoggingMW(log log.Logger) func(AdminComponent) AdminCompo
 // adminComponentLoggingMW implements AdminComponent.
 func (m *adminComponentLoggingMW) AdminEvent(ctx context.Context, adminEvent *fb.AdminEvent) error {
 	defer func(begin time.Time) {
-		m.logger.Log("unit", "AdminEvent", LoggingCorrelationIDKey, ctx.Value(CorrelationIDKey).(string), "took", time.Since(begin))
+		m.logger.Log("unit", "AdminEvent", "correlation_id", ctx.Value("correlation_id").(string), "took", time.Since(begin))
 	}(time.Now())
 	return m.next.AdminEvent(ctx, adminEvent)
 }
