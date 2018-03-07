@@ -21,23 +21,22 @@ func TestComponentTrackingMW(t *testing.T) {
 
 	var m = MakeComponentTrackingMW(mockSentry)(mockComponent)
 
-	// Context with correlation ID.
 	rand.Seed(time.Now().UnixNano())
 	var corrID = strconv.FormatUint(rand.Uint64(), 10)
-	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
-
-	// User without error (sentry is not called).
+	var ctx = context.WithValue(context.Background(), CorrelationIDKey, corrID)
 	var req = fbUsersRequest("realm")
-	var names = []string{"john", "jane", "doe"}
-	mockComponent.EXPECT().GetUsers(ctx, req).Return(fbUsersResponse(names), nil).Times(1)
+	var reply = fbUsersResponse([]string{"john", "jane", "doe"})
+
+	// GetUsers.
+	mockComponent.EXPECT().GetUsers(ctx, req).Return(reply, nil).Times(1)
 	m.GetUsers(ctx, req)
 
-	// User with error.
+	// GetUsers error.
 	mockComponent.EXPECT().GetUsers(ctx, req).Return(nil, fmt.Errorf("fail")).Times(1)
-	mockSentry.EXPECT().CaptureError(fmt.Errorf("fail"), map[string]string{"correlation_id": corrID}).Return("").Times(1)
+	mockSentry.EXPECT().CaptureError(fmt.Errorf("fail"), map[string]string{TrackingCorrelationIDKey: corrID}).Return("").Times(1)
 	m.GetUsers(ctx, req)
 
-	// User with error, without correlation ID.
+	// GetUsers without correlation ID.
 	mockComponent.EXPECT().GetUsers(context.Background(), req).Return(nil, fmt.Errorf("fail")).Times(1)
 	var f = func() {
 		m.GetUsers(context.Background(), req)

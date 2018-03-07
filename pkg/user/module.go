@@ -31,21 +31,17 @@ func NewModule(keycloak KeycloakClient) Module {
 }
 
 func (m *module) GetUsers(ctx context.Context, realm string) ([]string, error) {
-	var representations []keycloak.UserRepresentation
-	{
-		var err error
-		representations, err = m.keycloak.GetUsers(realm)
-		if err != nil {
-			return nil, errors.Wrapf(err, "keycloak client could not get users for realm '%v'", realm)
-		}
+	var usersRepresentation, err = m.keycloak.GetUsers(realm)
+	if err != nil {
+		return nil, errors.Wrapf(err, "keycloak client could not get users for realm '%v'", realm)
 	}
+
 	var users []string
-	{
-		for _, r := range representations {
-			if r.Username != nil {
-				users = append(users, *r.Username)
-			}
+	for _, r := range usersRepresentation {
+		if r.Username != nil {
+			users = append(users, *r.Username)
 		}
 	}
+
 	return users, nil
 }

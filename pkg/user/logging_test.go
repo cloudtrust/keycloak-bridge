@@ -20,21 +20,19 @@ func TestComponentLoggingMW(t *testing.T) {
 
 	var m = MakeComponentLoggingMW(mockLogger)(mockComponent)
 
-	// Context with correlation ID.
 	rand.Seed(time.Now().UnixNano())
 	var corrID = strconv.FormatUint(rand.Uint64(), 10)
-	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
-
-	// User.
+	var ctx = context.WithValue(context.Background(), CorrelationIDKey, corrID)
 	var req = fbUsersRequest("realm")
-	var names = []string{"john", "jane", "doe"}
-	// User.
-	mockComponent.EXPECT().GetUsers(ctx, req).Return(fbUsersResponse(names), nil).Times(1)
-	mockLogger.EXPECT().Log("unit", "user", "realm", string(req.Realm()), "correlation_id", corrID, "took", gomock.Any()).Return(nil).Times(1)
+	var reply = fbUsersResponse([]string{"john", "jane", "doe"})
+
+	// GetUsers.
+	mockComponent.EXPECT().GetUsers(ctx, req).Return(reply, nil).Times(1)
+	mockLogger.EXPECT().Log("unit", "user", "realm", string(req.Realm()), LoggingCorrelationIDKey, corrID, "took", gomock.Any()).Return(nil).Times(1)
 	m.GetUsers(ctx, req)
 
-	// User without correlation ID.
-	mockComponent.EXPECT().GetUsers(context.Background(), req).Return(fbUsersResponse(names), nil).Times(1)
+	// GetUsers without correlation ID.
+	mockComponent.EXPECT().GetUsers(context.Background(), req).Return(reply, nil).Times(1)
 	var f = func() {
 		m.GetUsers(context.Background(), req)
 	}
@@ -49,15 +47,14 @@ func TestModuleLoggingMW(t *testing.T) {
 
 	var m = MakeModuleLoggingMW(mockLogger)(mockModule)
 
-	// Context with correlation ID.
 	rand.Seed(time.Now().UnixNano())
 	var corrID = strconv.FormatUint(rand.Uint64(), 10)
-	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
+	var ctx = context.WithValue(context.Background(), CorrelationIDKey, corrID)
+	var names = []string{"john", "jane", "doe"}
 
 	// User.
-	var names = []string{"john", "jane", "doe"}
 	mockModule.EXPECT().GetUsers(ctx, "realm").Return(names, nil).Times(1)
-	mockLogger.EXPECT().Log("unit", "user", "realm", "realm", "correlation_id", corrID, "took", gomock.Any()).Return(nil).Times(1)
+	mockLogger.EXPECT().Log("unit", "user", "realm", "realm", CorrelationIDKey, corrID, "took", gomock.Any()).Return(nil).Times(1)
 	m.GetUsers(ctx, "realm")
 
 	// User without correlation ID.

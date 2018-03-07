@@ -1,5 +1,7 @@
 package main
 
+//go:generate mockgen -source=instrumenting.go -destination=./mock/instrumenting.go -package=mock -mock_names=Influx=Influx,GoKitMetrics=GoKitMetrics github.com/cloudtrust/keycloak-bridge/cmd Influx,GoKitMetrics
+
 import (
 	"time"
 
@@ -8,15 +10,15 @@ import (
 	influx "github.com/influxdata/influxdb/client/v2"
 )
 
-// Influx is the influx client interface.
+// Influx is the Influx client interface.
 type Influx interface {
 	Ping(timeout time.Duration) (time.Duration, string, error)
 	Write(bp influx.BatchPoints) error
 	Close() error
 }
 
-// Metrics is the interface of the go-kit metrics.
-type Metrics interface {
+// GoKitMetrics is the interface of the go-kit metrics.
+type GoKitMetrics interface {
 	NewCounter(name string) *metric.Counter
 	NewGauge(name string) *metric.Gauge
 	NewHistogram(name string) *metric.Histogram
@@ -26,11 +28,11 @@ type Metrics interface {
 // InfluxMetrics sends metrics to the Influx DB.
 type InfluxMetrics struct {
 	influx  Influx
-	metrics Metrics
+	metrics GoKitMetrics
 }
 
 // NewMetrics returns an InfluxMetrics.
-func NewMetrics(influx Influx, metrics Metrics) *InfluxMetrics {
+func NewMetrics(influx Influx, metrics GoKitMetrics) *InfluxMetrics {
 	return &InfluxMetrics{
 		influx:  influx,
 		metrics: metrics,

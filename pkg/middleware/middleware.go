@@ -6,10 +6,13 @@ package middleware
 //go:generate mockgen -destination=./mock/eventComponent.go -package=mock -mock_names=MuxComponent=MuxComponent,Component=EventComponent,AdminComponent=AdminEventComponent github.com/cloudtrust/keycloak-bridge/pkg/event MuxComponent,Component,AdminComponent
 //go:generate mockgen -destination=./mock/healthComponent.go -package=mock -mock_names=Component=HealthComponent github.com/cloudtrust/keycloak-bridge/pkg/health Component
 //go:generate mockgen -destination=./mock/flakiClient.go -package=mock -mock_names=FlakiClient=FlakiClient github.com/cloudtrust/keycloak-bridge/pkg/flaki/flatbuffer/fb FlakiClient
+//go:generate mockgen -destination=./mock/grpc.go -package=mock -mock_names=Handler=Handler github.com/go-kit/kit/transport/grpc Handler
 
 import (
 	"context"
+	"math/rand"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/cloudtrust/keycloak-bridge/pkg/flaki/flatbuffer/fb"
@@ -20,6 +23,7 @@ import (
 	"github.com/google/flatbuffers/go"
 	opentracing "github.com/opentracing/opentracing-go"
 	otag "github.com/opentracing/opentracing-go/ext"
+	"github.com/pkg/errors"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -31,8 +35,8 @@ const (
 
 	// LoggingCorrelationIDKey is the key for the correlation ID in the trace.
 	LoggingCorrelationIDKey = "correlation_id"
-	// MetricCorrelationIDKey is the key for the correlation ID in the metric DB.
-	MetricCorrelationIDKey = "correlation_id"
+	// InstrumentingCorrelationIDKey is the key for the correlation ID in the metric DB.
+	InstrumentingCorrelationIDKey = "correlation_id"
 	// TracingCorrelationIDKey is the key for the correlation ID in the trace.
 	TracingCorrelationIDKey = "correlation_id"
 	// TrackingCorrelationIDKey is the key for the correlation ID in sentry.
@@ -41,10 +45,9 @@ const (
 
 // MakeHTTPTracingMW try to extract an existing span from the HTTP headers. It it exists, we
 // continue the span, if not we create a new one.
-func MakeHTTPTracingMW(tracer opentracing.Tracer, operationName string) func(http.Handler) http.Handler {
+func MakeHTTPTracingMW(tracer opentracing.Tracer, componentName, operationName string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
 			var sc, err = tracer.Extract(opentracing.HTTPHeaders, opentracing.HTTPHeadersCarrier(r.Header))
 
 			var span opentracing.Span
@@ -56,7 +59,7 @@ func MakeHTTPTracingMW(tracer opentracing.Tracer, operationName string) func(htt
 			defer span.Finish()
 
 			// Set tags.
-			otag.Component.Set(span, operationName)
+			otag.Component.Set(span, componentName)
 			span.SetTag("transport", "http")
 			otag.SpanKindRPCServer.Set(span)
 
@@ -66,26 +69,27 @@ func MakeHTTPTracingMW(tracer opentracing.Tracer, operationName string) func(htt
 }
 
 type grpcTracingMW struct {
-	next          grpc_transport.Handler
 	tracer        opentracing.Tracer
+	componentName string
 	operationName string
+	next          grpc_transport.Handler
 }
 
-// MakeGRPCTracingMW try to extract an existing span from the HTTP headers. It it exists, we
-// continue the span, if not we create a new one.
-func MakeGRPCTracingMW(tracer opentracing.Tracer, operationName string) func(grpc_transport.Handler) grpc_transport.Handler {
+// MakeGRPCTracingMW makes a tracing middleware at transport level.
+func MakeGRPCTracingMW(tracer opentracing.Tracer, componentName, operationName string) func(grpc_transport.Handler) grpc_transport.Handler {
 	return func(next grpc_transport.Handler) grpc_transport.Handler {
 		return &grpcTracingMW{
-			next:          next,
 			tracer:        tracer,
+			componentName: componentName,
 			operationName: operationName,
+			next:          next,
 		}
 	}
 }
 
 // ServeGRPC try to extract an existing span from the GRPC metadata. It it exists, we
 // continue the span, if not we create a new one.
-func (m *grpcTracingMW) ServeGRPC(ctx context.Context, request interface{}) (context.Context, interface{}, error) {
+func (m *grpcTracingMW) ServeGRPC(ctx context.Context, req interface{}) (context.Context, interface{}, error) {
 	var md, _ = metadata.FromIncomingContext(ctx)
 
 	// Extract metadata.
@@ -104,11 +108,11 @@ func (m *grpcTracingMW) ServeGRPC(ctx context.Context, request interface{}) (con
 	defer span.Finish()
 
 	// Set tags.
-	otag.Component.Set(span, m.operationName)
+	otag.Component.Set(span, m.componentName)
 	span.SetTag("transport", "grpc")
 	otag.SpanKindRPCServer.Set(span)
 
-	return m.next.ServeGRPC(opentracing.ContextWithSpan(ctx, span), request)
+	return m.next.ServeGRPC(opentracing.ContextWithSpan(ctx, span), req)
 }
 
 // MakeEndpointCorrelationIDMW makes a middleware that adds a correlation ID
@@ -119,7 +123,6 @@ func MakeEndpointCorrelationIDMW(flaki fb.FlakiClient, tracer opentracing.Tracer
 			var id = ctx.Value(CorrelationIDKey)
 
 			if id == nil {
-				// Propagate opentracing span
 				if span := opentracing.SpanFromContext(ctx); span != nil {
 					span = tracer.StartSpan("get_correlation_id", opentracing.ChildOf(span.Context()))
 					otag.SpanKindRPCClient.Set(span)
@@ -130,24 +133,29 @@ func MakeEndpointCorrelationIDMW(flaki fb.FlakiClient, tracer opentracing.Tracer
 					var carrier = make(opentracing.TextMapCarrier)
 					var err = tracer.Inject(span.Context(), opentracing.TextMap, carrier)
 					if err != nil {
-						return "", err
+						return nil, errors.Wrap(err, "could not inject tracer")
 					}
 
 					var md = metadata.New(carrier)
 					ctx = metadata.NewOutgoingContext(ctx, md)
 				}
 
-				// Empty request.
+				// Flaki request.
 				var b = flatbuffers.NewBuilder(0)
 				fb.FlakiRequestStart(b)
 				b.Finish(fb.FlakiRequestEnd(b))
 
 				var reply, err = flaki.NextValidID(ctx, b)
+				var corrID string
+				// If we cannot get ID from Flaki, we generate a random one.
 				if err != nil {
-					return "", err
+					rand.Seed(time.Now().UnixNano())
+					corrID = strconv.FormatUint(rand.Uint64(), 10)
+				} else {
+					corrID = string(reply.Id())
 				}
 
-				ctx = context.WithValue(ctx, CorrelationIDKey, string(reply.Id()))
+				ctx = context.WithValue(ctx, CorrelationIDKey, corrID)
 			}
 			return next(ctx, req)
 		}
@@ -172,7 +180,7 @@ func MakeEndpointInstrumentingMW(h metrics.Histogram) endpoint.Middleware {
 	return func(next endpoint.Endpoint) endpoint.Endpoint {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
 			defer func(begin time.Time) {
-				h.With(MetricCorrelationIDKey, ctx.Value(CorrelationIDKey).(string)).Observe(time.Since(begin).Seconds())
+				h.With(InstrumentingCorrelationIDKey, ctx.Value(CorrelationIDKey).(string)).Observe(time.Since(begin).Seconds())
 			}(time.Now())
 			return next(ctx, req)
 		}

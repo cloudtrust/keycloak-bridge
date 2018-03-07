@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	address = "10.244.18.8:5555" //"10.244.18.8:5555"
+	address = "10.244.18.2:5550"
 )
 
 func main() {
@@ -87,17 +87,17 @@ func main() {
 	var md = metadata.New(carrier)
 	var correlationIDMD = metadata.New(map[string]string{})
 
-	var builder = flatbuffers.NewBuilder(0)
-	var brealm = builder.CreateString("master")
-	fb.GetUsersRequestStart(builder)
-	fb.GetUsersRequestAddRealm(builder, brealm)
-	builder.Finish(fb.GetUsersRequestEnd(builder))
+	var b = flatbuffers.NewBuilder(0)
+	var brealm = b.CreateString("master")
+	fb.GetUsersRequestStart(b)
+	fb.GetUsersRequestAddRealm(b, brealm)
+	b.Finish(fb.GetUsersRequestEnd(b))
 
 	var reply *fb.GetUsersResponse
 	{
 		var err error
 		var ctx = metadata.NewOutgoingContext(opentracing.ContextWithSpan(context.Background(), span), metadata.Join(md, correlationIDMD))
-		reply, err = client.GetUsers(ctx, builder)
+		reply, err = client.GetUsers(ctx, b)
 		if err != nil {
 			logger.Log("error", err)
 			return

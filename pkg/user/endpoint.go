@@ -13,8 +13,8 @@ type Endpoints struct {
 	Endpoint endpoint.Endpoint
 }
 
-// MakeUserEndpoint makes the user endpoint.
-func MakeUserEndpoint(c Component) endpoint.Endpoint {
+// MakeGetUsersEndpoint makes the user endpoint.
+func MakeGetUsersEndpoint(c Component) endpoint.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		switch r := req.(type) {
 		case *fb.GetUsersRequest:

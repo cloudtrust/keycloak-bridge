@@ -39,7 +39,7 @@ import (
 
 var (
 	// Version of the component.
-	Version = "1.0.0"
+	Version = "1.0"
 	// Environment is filled by the compiler.
 	Environment = "unknown"
 	// GitCommit is filled by the compiler.
@@ -53,6 +53,7 @@ func main() {
 	{
 		logger = log.With(logger, "ts", log.DefaultTimestampUTC, "caller", log.DefaultCaller)
 	}
+	defer logger.Log("msg", "goodbye")
 
 	// Configurations.
 	var config = config(log.With(logger, "unit", "config"))
@@ -119,7 +120,14 @@ func main() {
 	)
 
 	// Redis.
+	type Redis interface {
+		Close() error
+		Do(commandName string, args ...interface{}) (reply interface{}, err error)
+		Send(commandName string, args ...interface{}) error
+		Flush() error
+	}
 	var redisConn redis.Conn
+
 	if redisEnabled {
 		var err error
 		redisConn, err = redis.Dial("tcp", redisURL, redis.DialDatabase(redisDatabase), redis.DialPassword(redisPassword))
@@ -133,7 +141,6 @@ func main() {
 		logger = log.NewJSONLogger(io.MultiWriter(os.Stdout, NewLogstashRedisWriter(redisConn, componentName)))
 		logger = log.With(logger, "ts", log.DefaultTimestampUTC, "caller", log.DefaultCaller)
 	}
-	defer logger.Log("msg", "goodbye")
 
 	// Add component name and version to the logger tags.
 	logger = log.With(logger, "component_name", componentName, "component_version", Version)
@@ -278,7 +285,7 @@ func main() {
 
 	var userEndpoint endpoint.Endpoint
 	{
-		userEndpoint = user.MakeUserEndpoint(userComponent)
+		userEndpoint = user.MakeGetUsersEndpoint(userComponent)
 		userEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("user_endpoint"))(userEndpoint)
 		userEndpoint = middleware.MakeEndpointLoggingMW(log.With(userLogger, "mw", "endpoint", "unit", "getusers"))(userEndpoint)
 		userEndpoint = middleware.MakeEndpointTracingMW(tracer, "user_endpoint")(userEndpoint)
@@ -288,36 +295,6 @@ func main() {
 	var userEndpoints = user.Endpoints{
 		Endpoint: userEndpoint,
 	}
-
-	// GRPC server.
-	go func() {
-		var logger = log.With(logger, "transport", "grpc")
-		logger.Log("addr", grpcAddr)
-
-		var lis net.Listener
-		{
-			var err error
-			lis, err = net.Listen("tcp", grpcAddr)
-			if err != nil {
-				logger.Log("msg", "could not initialise listener", "error", err)
-				errc <- err
-				return
-			}
-		}
-
-		// User Handler.
-		var getUsersHandler grpc_transport.Handler
-		{
-			getUsersHandler = user.MakeGRPCGetUsersHandler(userEndpoints.Endpoint)
-			getUsersHandler = middleware.MakeGRPCTracingMW(tracer, "grpc_server_getusers")(getUsersHandler)
-		}
-
-		var grpcServer = user.NewGRPCServer(getUsersHandler)
-		var userServer = grpc.NewServer(grpc.CustomCodec(flatbuffers.FlatbuffersCodec{}))
-		fb.RegisterUserServiceServer(userServer, grpcServer)
-
-		errc <- userServer.Serve(lis)
-	}()
 
 	// Event service.
 	var eventLogger = log.With(logger, "svc", "event")
@@ -343,7 +320,7 @@ func main() {
 		var fns = []event.FuncEvent{consoleModule.Print, statisticModule.Stats}
 		eventAdminComponent = event.NewAdminComponent(fns, fns, fns, fns)
 		eventAdminComponent = event.MakeAdminComponentInstrumentingMW(influxMetrics.NewHistogram("admin_component"))(eventAdminComponent)
-		eventAdminComponent = event.MakeAdminComponentLoggingMW(log.With(eventLogger, "mw", "component", "unit", "admin event"))(eventAdminComponent)
+		eventAdminComponent = event.MakeAdminComponentLoggingMW(log.With(eventLogger, "mw", "component", "unit", "admin_event"))(eventAdminComponent)
 		eventAdminComponent = event.MakeAdminComponentTracingMW(tracer)(eventAdminComponent)
 	}
 
@@ -441,6 +418,36 @@ func main() {
 		KeycloakHealthCheck: keycloakHealthEndpoint,
 	}
 
+	// GRPC server.
+	go func() {
+		var logger = log.With(logger, "transport", "grpc")
+		logger.Log("addr", grpcAddr)
+
+		var lis net.Listener
+		{
+			var err error
+			lis, err = net.Listen("tcp", grpcAddr)
+			if err != nil {
+				logger.Log("msg", "could not initialise listener", "error", err)
+				errc <- err
+				return
+			}
+		}
+
+		// User Handler.
+		var getUsersHandler grpc_transport.Handler
+		{
+			getUsersHandler = user.MakeGRPCGetUsersHandler(userEndpoints.Endpoint)
+			getUsersHandler = middleware.MakeGRPCTracingMW(tracer, componentName, "grpc_server_getusers")(getUsersHandler)
+		}
+
+		var grpcServer = user.NewGRPCServer(getUsersHandler)
+		var userServer = grpc.NewServer(grpc.CustomCodec(flatbuffers.FlatbuffersCodec{}))
+		fb.RegisterUserServiceServer(userServer, grpcServer)
+
+		errc <- userServer.Serve(lis)
+	}()
+
 	go func() {
 		var logger = log.With(logger, "transport", "http")
 		logger.Log("addr", httpAddr)
@@ -455,9 +462,17 @@ func main() {
 		var eventHandler http.Handler
 		{
 			eventHandler = event.MakeReceiverHandler(eventEndpoints.Endpoint)
-			eventHandler = middleware.MakeHTTPTracingMW(tracer, "event")(eventHandler)
+			eventHandler = middleware.MakeHTTPTracingMW(tracer, componentName, "http_server_event")(eventHandler)
 		}
 		eventSubroute.Handle("/receiver", eventHandler)
+
+		// Users.
+		var getUsersHandler http.Handler
+		{
+			getUsersHandler = user.MakeHTTPGetUsersHandler(userEndpoints.Endpoint)
+			getUsersHandler = middleware.MakeHTTPTracingMW(tracer, componentName, "http_server_getusers")(getUsersHandler)
+		}
+		route.Handle("/getusers", getUsersHandler)
 
 		// Health checks.
 		var healthSubroute = route.PathPrefix("/health").Subrouter()

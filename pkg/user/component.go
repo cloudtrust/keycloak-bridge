@@ -10,6 +10,24 @@ import (
 	"github.com/pkg/errors"
 )
 
+type key int
+
+const (
+	// CorrelationIDKey is the key for the correlation ID in the context.
+	CorrelationIDKey key = iota
+
+	// GRPCCorrelationIDKey is the key for the correlation ID in the GRPC metadata.
+	GRPCCorrelationIDKey = "correlation_id"
+	// LoggingCorrelationIDKey is the key for the correlation ID in the trace.
+	LoggingCorrelationIDKey = "correlation_id"
+	// InstrumentingCorrelationIDKey is the key for the correlation ID in the metric DB.
+	InstrumentingCorrelationIDKey = "correlation_id"
+	// TracingCorrelationIDKey is the key for the correlation ID in the trace.
+	TracingCorrelationIDKey = "correlation_id"
+	// TrackingCorrelationIDKey is the key for the correlation ID in sentry.
+	TrackingCorrelationIDKey = "correlation_id"
+)
+
 // Component is the user component interface.
 type Component interface {
 	GetUsers(ctx context.Context, req *fb.GetUsersRequest) (*fb.GetUsersResponse, error)

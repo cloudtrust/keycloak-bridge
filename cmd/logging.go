@@ -4,8 +4,11 @@ package main
 
 import (
 	"encoding/json"
+
+	"github.com/pkg/errors"
 )
 
+// logstashLog is the logstash log format.
 type logstashLog struct {
 	Timestamp       string            `json:"@timestamp"`
 	LogstashVersion int               `json:"@version"`
@@ -13,7 +16,7 @@ type logstashLog struct {
 	Message         string            `json:"@message, omitempty"`
 }
 
-// RedisWriter is the writer that writes logs to redis in logstash format.
+// RedisWriter encodes logs in logstash format and writes them to Redis.
 type RedisWriter struct {
 	redis Redis
 	key   string
@@ -32,32 +35,36 @@ func NewLogstashRedisWriter(redis Redis, key string) *RedisWriter {
 	}
 }
 
-// Write writes logs into a redis DB.
-func (w *RedisWriter) Write(p []byte) (int, error) {
-	// The current logs are json formatted by the go-kit JSONLogger.
-	var logs = decodeJSON(p)
+// Write encodes logs in logstash format and writes them to Redis.
+func (w *RedisWriter) Write(data []byte) (int, error) {
+	// The current logs are JSON formatted by the go-kit JSONLogger.
+	var logs = make(map[string]string)
+	{
+		var err = json.Unmarshal(data, &logs)
+		if err != nil {
+			return 0, errors.Wrap(err, "could not decode JSON logs")
+		}
+	}
 
 	// Encode to logstash format.
-	var logstashLog, err = logstashEncode(logs)
-	if err != nil {
-		return 0, err
+	var logstashLog []byte
+	{
+		var err error
+		logstashLog, err = logstashEncode(logs)
+		if err != nil {
+			return 0, errors.Wrap(err, "could not encode logs to logstash format")
+		}
 	}
 
-	err = w.redis.Send("RPUSH", w.key, logstashLog)
+	// Write to Redis.
+	var err = w.redis.Send("RPUSH", w.key, logstashLog)
 	if err != nil {
-		return 0, err
+		return 0, errors.Wrap(err, "could not write logs to Redis")
 	}
-	return len(p), nil
-}
-
-func decodeJSON(d []byte) map[string]string {
-	var logs = make(map[string]string)
-	json.Unmarshal(d, &logs)
-	return logs
+	return len(data), nil
 }
 
 func logstashEncode(m map[string]string) ([]byte, error) {
-
 	var timestamp = m["ts"]
 	delete(m, "ts")
 	var msg = m["msg"]
@@ -70,8 +77,22 @@ func logstashEncode(m map[string]string) ([]byte, error) {
 		Message:         msg,
 	}
 
-	var err error
-	var ll []byte
-	ll, err = json.Marshal(l)
-	return ll, err
+	return json.Marshal(l)
 }
+
+// NoopRedis is a Redis client that does nothing.
+type NoopRedis struct{}
+
+// Close does nothing.
+func (r *NoopRedis) Close() error { return nil }
+
+// Do does nothing.
+func (r *NoopRedis) Do(commandName string, args ...interface{}) (reply interface{}, err error) {
+	return nil, nil
+}
+
+// Send does nothing.
+func (r *NoopRedis) Send(commandName string, args ...interface{}) error { return nil }
+
+// Flush does nothing.
+func (r *NoopRedis) Flush() error { return nil }

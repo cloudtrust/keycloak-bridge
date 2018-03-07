@@ -9,6 +9,7 @@ import (
 	"github.com/go-kit/kit/endpoint"
 	grpc_transport "github.com/go-kit/kit/transport/grpc"
 	"github.com/google/flatbuffers/go"
+	"github.com/pkg/errors"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -34,7 +35,7 @@ func NewGRPCServer(getUsers grpc_transport.Handler) fb.UserServiceServer {
 // fetchGRPCCorrelationID reads the correlation ID from the GRPC metadata.
 // If the id is not zero, we put it in the context.
 func fetchGRPCCorrelationID(ctx context.Context, md metadata.MD) context.Context {
-	var val = md["correlation_id"]
+	var val = md[GRPCCorrelationIDKey]
 
 	// If there is no id in the metadata, return current context.
 	if val == nil || val[0] == "" {
@@ -42,8 +43,7 @@ func fetchGRPCCorrelationID(ctx context.Context, md metadata.MD) context.Context
 	}
 
 	// If there is an id in the metadata, add it to the context.
-	var id = val[0]
-	return context.WithValue(ctx, "correlation_id", id)
+	return context.WithValue(ctx, CorrelationIDKey, val[0])
 }
 
 // decodeGRPCRequest decodes the flatbuffer request.
@@ -52,15 +52,38 @@ func decodeGRPCRequest(_ context.Context, req interface{}) (interface{}, error) 
 }
 
 // encodeHTTPReply encodes the flatbuffer reply.
-func encodeGRPCReply(_ context.Context, res interface{}) (interface{}, error) {
-	return res, nil
+func encodeGRPCReply(_ context.Context, rep interface{}) (interface{}, error) {
+	return rep, nil
 }
 
 // Implement the flatbuffer UserServiceServer interface.
-func (u *grpcServer) GetUsers(ctx context.Context, req *fb.GetUsersRequest) (*flatbuffers.Builder, error) {
-	var _, resp, err = u.getUsers.ServeGRPC(ctx, req)
+func (s *grpcServer) GetUsers(ctx context.Context, req *fb.GetUsersRequest) (*flatbuffers.Builder, error) {
+	var _, rep, err = s.getUsers.ServeGRPC(ctx, req)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "grpc server could not return next ID")
 	}
-	return resp.(*flatbuffers.Builder), err
+
+	var reply = rep.(*fb.GetUsersResponse)
+
+	var usersNames []string
+	for i := 0; i < reply.NamesLength(); i++ {
+		usersNames = append(usersNames, string(reply.Names(i)))
+	}
+
+	var b = flatbuffers.NewBuilder(0)
+	var userOffsets = []flatbuffers.UOffsetT{}
+	for _, u := range usersNames {
+		userOffsets = append(userOffsets, b.CreateString(u))
+	}
+
+	fb.GetUsersResponseStartNamesVector(b, len(usersNames))
+	for _, u := range userOffsets {
+		b.PrependUOffsetT(u)
+	}
+	var names = b.EndVector(len(usersNames))
+	fb.GetUsersResponseStart(b)
+	fb.GetUsersResponseAddNames(b, names)
+	b.Finish(fb.GetUsersResponseEnd(b))
+
+	return b, nil
 }

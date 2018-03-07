@@ -2,6 +2,7 @@ package user
 
 import (
 	"context"
+	"fmt"
 	"math/rand"
 	"strconv"
 	"testing"
@@ -16,34 +17,41 @@ import (
 func TestComponentTracingMW(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
+	var mockComponent = mock.NewComponent(mockCtrl)
 	var mockTracer = mock.NewTracer(mockCtrl)
 	var mockSpan = mock.NewSpan(mockCtrl)
 	var mockSpanContext = mock.NewSpanContext(mockCtrl)
-	var mockComponent = mock.NewComponent(mockCtrl)
 
 	var m = MakeComponentTracingMW(mockTracer)(mockComponent)
 
-	// Context with correlation ID and span.
 	rand.Seed(time.Now().UnixNano())
 	var corrID = strconv.FormatUint(rand.Uint64(), 10)
-	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
+	var ctx = context.WithValue(context.Background(), CorrelationIDKey, corrID)
 	ctx = opentracing.ContextWithSpan(ctx, mockSpan)
-
-	// User.
 	var req = fbUsersRequest("realm")
-	var names = []string{"john", "jane", "doe"}
-	mockComponent.EXPECT().GetUsers(gomock.Any(), req).Return(fbUsersResponse(names), nil).Times(1)
+	var reply = fbUsersResponse([]string{"john", "jane", "doe"})
+
+	// GetUsers.
+	mockComponent.EXPECT().GetUsers(gomock.Any(), req).Return(reply, nil).Times(1)
 	mockTracer.EXPECT().StartSpan("user_component", gomock.Any()).Return(mockSpan).Times(1)
 	mockSpan.EXPECT().Context().Return(mockSpanContext).Times(1)
 	mockSpan.EXPECT().Finish().Return().Times(1)
 	mockSpan.EXPECT().SetTag("correlation_id", corrID).Return(mockSpan).Times(1)
 	m.GetUsers(ctx, req)
 
-	// User without tracer.
-	mockComponent.EXPECT().GetUsers(gomock.Any(), req).Return(fbUsersResponse(names), nil).Times(1)
+	// GetUsers error.
+	mockComponent.EXPECT().GetUsers(gomock.Any(), req).Return(nil, fmt.Errorf("fail")).Times(1)
+	mockTracer.EXPECT().StartSpan("user_component", gomock.Any()).Return(mockSpan).Times(1)
+	mockSpan.EXPECT().Context().Return(mockSpanContext).Times(1)
+	mockSpan.EXPECT().Finish().Return().Times(1)
+	mockSpan.EXPECT().SetTag(TracingCorrelationIDKey, corrID).Return(mockSpan).Times(1)
+	m.GetUsers(ctx, req)
+
+	// GetUsers without tracer.
+	mockComponent.EXPECT().GetUsers(gomock.Any(), req).Return(reply, nil).Times(1)
 	m.GetUsers(context.Background(), req)
 
-	// User without correlation ID.
+	// GetUsers without correlation ID.
 	mockTracer.EXPECT().StartSpan("user_component", gomock.Any()).Return(mockSpan).Times(1)
 	mockSpan.EXPECT().Context().Return(mockSpanContext).Times(1)
 	mockSpan.EXPECT().Finish().Return().Times(1)
@@ -63,27 +71,34 @@ func TestModuleTracingMW(t *testing.T) {
 
 	var m = MakeModuleTracingMW(mockTracer)(mockModule)
 
-	// Context with correlation ID and span.
 	rand.Seed(time.Now().UnixNano())
 	var corrID = strconv.FormatUint(rand.Uint64(), 10)
-	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
+	var ctx = context.WithValue(context.Background(), CorrelationIDKey, corrID)
 	ctx = opentracing.ContextWithSpan(ctx, mockSpan)
-
-	// User.
 	var names = []string{"john", "jane", "doe"}
+
+	// GetUsers.
 	mockModule.EXPECT().GetUsers(gomock.Any(), "realm").Return(names, nil).Times(1)
 	mockTracer.EXPECT().StartSpan("user_module", gomock.Any()).Return(mockSpan).Times(1)
 	mockSpan.EXPECT().Context().Return(mockSpanContext).Times(1)
 	mockSpan.EXPECT().Finish().Return().Times(1)
-	mockSpan.EXPECT().SetTag("correlation_id", corrID).Return(mockSpan).Times(1)
+	mockSpan.EXPECT().SetTag(InstrumentingCorrelationIDKey, corrID).Return(mockSpan).Times(1)
 	m.GetUsers(ctx, "realm")
 
-	// User without tracer.
+	// GetUsers error.
+	mockModule.EXPECT().GetUsers(gomock.Any(), "realm").Return(nil, fmt.Errorf("fail")).Times(1)
+	mockTracer.EXPECT().StartSpan("user_module", gomock.Any()).Return(mockSpan).Times(1)
+	mockSpan.EXPECT().Context().Return(mockSpanContext).Times(1)
+	mockSpan.EXPECT().Finish().Return().Times(1)
+	mockSpan.EXPECT().SetTag(InstrumentingCorrelationIDKey, corrID).Return(mockSpan).Times(1)
+	m.GetUsers(ctx, "realm")
+
+	// GetUsers without tracer.
 	mockModule.EXPECT().GetUsers(gomock.Any(), "realm").Return(names, nil).Times(1)
 	m.GetUsers(context.Background(), "realm")
 
-	// User without correlation ID.
-	mockTracer.EXPECT().StartSpan("user_moduleMakeUserEndpoint", gomock.Any()).Return(mockSpan).Times(1)
+	// GetUsers without correlation ID.
+	mockTracer.EXPECT().StartSpan("user_module", gomock.Any()).Return(mockSpan).Times(1)
 	mockSpan.EXPECT().Context().Return(mockSpanContext).Times(1)
 	mockSpan.EXPECT().Finish().Return().Times(1)
 	var f = func() {
