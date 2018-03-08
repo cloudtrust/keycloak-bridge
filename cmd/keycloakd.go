@@ -576,8 +576,8 @@ func config(logger log.Logger) map[string]interface{} {
 
 	// Keycloak default.
 	viper.SetDefault("keycloak-host-port", "127.0.0.1:8080")
-	viper.SetDefault("keycloak-username", "admin")
-	viper.SetDefault("keycloak-password", "admin")
+	viper.SetDefault("keycloak-username", "")
+	viper.SetDefault("keycloak-password", "")
 	viper.SetDefault("keycloak-timeout-ms", 5000)
 
 	// Influx DB client default.

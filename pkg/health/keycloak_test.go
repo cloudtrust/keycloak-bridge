@@ -1,6 +1,8 @@
 package health_test
 
 import (
+	"context"
+	"fmt"
 	"math/rand"
 	"strconv"
 	"testing"
@@ -35,10 +37,98 @@ func TestNewKeycloakModule(t *testing.T) {
 	vUser.Id = Str(userID)
 	var users = []keycloak_client.UserRepresentation{hcUser, vUser}
 
+	// Wrong version number.
+	{
+		var _, err = NewKeycloakModule(mockKeycloak, "1.0.0")
+		assert.NotNil(t, err)
+	}
 	// Test realm already up to date.
 	mockKeycloak.EXPECT().GetUsers("__internal", "username", "version").Return(users, nil).Times(1)
 	mockKeycloak.EXPECT().GetUser("__internal", userID).Return(vUser, nil).Times(1)
 	NewKeycloakModule(mockKeycloak, "1.0")
+
+	// Test realm does not exist.
+	mockKeycloak.EXPECT().GetUsers("__internal", "username", "version").Return(nil, fmt.Errorf("fail")).Times(1)
+	mockKeycloak.EXPECT().DeleteRealm("__internal").Return(nil).Times(1)
+	mockKeycloak.EXPECT().CreateRealm(gomock.Any()).Return(nil).Times(1)
+	mockKeycloak.EXPECT().CreateUser("__internal", gomock.Any()).Return(nil).Times(1)
+	NewKeycloakModule(mockKeycloak, "1.0")
+}
+
+func TestKeycloakHealthChecks(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+	var mockKeycloak = mock.NewKeycloak(mockCtrl)
+
+	rand.Seed(time.Now().UnixNano())
+	var hcUserID = strconv.FormatUint(rand.Uint64(), 10)
+	hcUser.Id = Str(hcUserID)
+	var vUserID = strconv.FormatUint(rand.Uint64(), 10)
+	vUser.Id = Str(vUserID)
+	var users = []keycloak_client.UserRepresentation{hcUser, vUser}
+
+	mockKeycloak.EXPECT().GetUsers("__internal", "username", "version").Return(users, nil).Times(1)
+	mockKeycloak.EXPECT().GetUser("__internal", vUserID).Return(vUser, nil).Times(1)
+	var m, err = NewKeycloakModule(mockKeycloak, "1.0")
+	assert.Nil(t, err)
+
+	// HealthChecks
+	{
+		// keycloakCreateUserCheck
+		mockKeycloak.EXPECT().GetUsers("__internal", "username", "health.check").Return(users, nil).Times(1)
+		mockKeycloak.EXPECT().DeleteUser("__internal", hcUserID).Return(nil).Times(1)
+		mockKeycloak.EXPECT().CreateUser("__internal", gomock.Any()).Return(nil).Times(1)
+		// keycloakDeleteUserCheck
+		mockKeycloak.EXPECT().GetUsers("__internal", "username", "health.check").Return(users, nil).Times(1)
+		mockKeycloak.EXPECT().DeleteUser("__internal", hcUserID).Return(nil).Times(1)
+		var reports = m.HealthChecks(context.Background())
+		assert.Equal(t, 2, len(reports))
+		// Create user report
+		{
+			var report = reports[0]
+			assert.Equal(t, "create user", report.Name)
+			assert.NotZero(t, report.Duration)
+			assert.Equal(t, OK, report.Status)
+			assert.Zero(t, report.Error)
+		}
+		// Delete user report
+		{
+			var report = reports[1]
+			assert.Equal(t, "delete user", report.Name)
+			assert.NotZero(t, report.Duration)
+			assert.Equal(t, OK, report.Status)
+			assert.Zero(t, report.Error)
+		}
+	}
+
+	// Keycloak fail.
+	{
+		// keycloakCreateUserCheck
+		mockKeycloak.EXPECT().GetUsers("__internal", "username", "health.check").Return(users, nil).Times(1)
+		mockKeycloak.EXPECT().DeleteUser("__internal", hcUserID).Return(nil).Times(1)
+		mockKeycloak.EXPECT().CreateUser("__internal", gomock.Any()).Return(fmt.Errorf("fail")).Times(1)
+		// keycloakDeleteUserCheck
+		mockKeycloak.EXPECT().GetUsers("__internal", "username", "health.check").Return(users, nil).Times(1)
+		mockKeycloak.EXPECT().DeleteUser("__internal", hcUserID).Return(fmt.Errorf("fail")).Times(1)
+		var reports = m.HealthChecks(context.Background())
+		assert.Equal(t, 2, len(reports))
+		// Create user report
+		{
+			var report = reports[0]
+			assert.Equal(t, "create user", report.Name)
+			assert.NotZero(t, report.Duration)
+			assert.Equal(t, KO, report.Status)
+			assert.NotZero(t, report.Error)
+		}
+		// Delete user report
+		{
+			var report = reports[1]
+			assert.Equal(t, "delete user", report.Name)
+			assert.NotZero(t, report.Duration)
+			assert.Equal(t, KO, report.Status)
+			assert.NotZero(t, report.Error)
+		}
+	}
 }
 
 func TestVersion(t *testing.T) {
