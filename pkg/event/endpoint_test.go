@@ -25,7 +25,7 @@ func TestEventEndpoint(t *testing.T) {
 	var corrID = strconv.FormatUint(rand.Uint64(), 10)
 	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
 	var uid = rand.Int63()
-	var req = EventRequest{
+	var req = Request{
 		Type:   "Event",
 		Object: createEventBytes(fb.EventTypeCLIENT_DELETE, uid, "realm"),
 	}

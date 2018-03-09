@@ -463,9 +463,10 @@ func main() {
 
 		// Event.
 		var eventSubroute = route.PathPrefix("/event").Subrouter()
+
 		var eventHandler http.Handler
 		{
-			eventHandler = event.MakeReceiverHandler(eventEndpoints.Endpoint)
+			eventHandler = event.MakeHTTPEventHandler(eventEndpoints.Endpoint)
 			eventHandler = middleware.MakeHTTPTracingMW(tracer, componentName, "http_server_event")(eventHandler)
 		}
 		eventSubroute.Handle("/receiver", eventHandler)

@@ -3,94 +3,176 @@ package event
 import (
 	"context"
 	"encoding/base64"
-	"io"
+	"fmt"
+	"io/ioutil"
+	"math/rand"
+	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/cloudtrust/keycloak-bridge/pkg/event/flatbuffer/fb"
-
-	"github.com/google/flatbuffers/go"
+	"github.com/cloudtrust/keycloak-bridge/pkg/event/mock"
+	"github.com/golang/mock/gomock"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestEventTransport_decodeKeycloakEventsReceiverRequest_ValidAdminEvent(t *testing.T) {
-	var byteAdminEvent = createHTTPAdminEvent(1234)
-	var stringAdminEvent = base64.StdEncoding.EncodeToString(byteAdminEvent)
-	var body = strings.NewReader("{\"type\": \"AdminEvent\", \"Obj\": \"" + stringAdminEvent + "\"}")
+func TestHTTPEventHandler(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+	var mockComponent = mock.NewMuxComponent(mockCtrl)
+
+	var eventHandler = MakeHTTPEventHandler(MakeEventEndpoint(mockComponent))
+
+	rand.Seed(time.Now().UnixNano())
+	var uid = rand.Int63()
+	var eventByte = createEventBytes(fb.OperationTypeCREATE, uid, "realm")
+	var eventString = base64.StdEncoding.EncodeToString(eventByte)
+
+	// HTTP request.
+	var body = strings.NewReader(fmt.Sprintf(`{"type": "Event", "Obj": "%s"}`, eventString))
+	var httpReq = httptest.NewRequest("POST", "http://localhost:8888/event/id", body)
+	var w = httptest.NewRecorder()
+
+	// Event.
+	{
+		mockComponent.EXPECT().Event(context.Background(), "Event", eventByte).Return(nil).Times(1)
+		eventHandler.ServeHTTP(w, httpReq)
+		var res = w.Result()
+		var body, err = ioutil.ReadAll(res.Body)
+		assert.Nil(t, err)
+		assert.Equal(t, http.StatusOK, res.StatusCode)
+		assert.Equal(t, "", res.Header.Get("Content-Type"))
+		assert.Equal(t, 0, len(body))
+	}
+}
+func TestHTTPErrorHandler(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+	var mockComponent = mock.NewMuxComponent(mockCtrl)
+
+	var eventHandler = MakeHTTPEventHandler(MakeEventEndpoint(mockComponent))
+
+	rand.Seed(time.Now().UnixNano())
+	var uid = rand.Int63()
+	var eventByte = createEventBytes(fb.OperationTypeCREATE, uid, "realm")
+	var eventString = base64.StdEncoding.EncodeToString(eventByte)
+
+	// Internal server error.
+	{
+		// HTTP request.
+		var body = strings.NewReader(fmt.Sprintf(`{"type": "Event", "Obj": "%s"}`, eventString))
+		var httpReq = httptest.NewRequest("POST", "http://localhost:8888/event/id", body)
+		var w = httptest.NewRecorder()
+
+		mockComponent.EXPECT().Event(context.Background(), "Event", eventByte).Return(fmt.Errorf("fail")).Times(1)
+		eventHandler.ServeHTTP(w, httpReq)
+		var res = w.Result()
+		var data, err = ioutil.ReadAll(res.Body)
+		assert.Nil(t, err)
+		assert.Equal(t, http.StatusInternalServerError, res.StatusCode)
+		assert.Equal(t, "application/json; charset=utf-8", res.Header.Get("Content-Type"))
+		assert.NotZero(t, string(data))
+	}
+
+	// Bad request.
+	{
+		// Bad HTTP request.
+		var body = strings.NewReader(fmt.Sprintf(`{"type": "Unknown", "Obj": "%s"}`, eventString))
+		var httpReq = httptest.NewRequest("POST", "http://localhost:8888/event/id", body)
+		var w = httptest.NewRecorder()
+
+		eventHandler.ServeHTTP(w, httpReq)
+		var res = w.Result()
+		var data, err = ioutil.ReadAll(res.Body)
+		assert.Nil(t, err)
+		assert.Equal(t, http.StatusBadRequest, res.StatusCode)
+		assert.Equal(t, "application/json; charset=utf-8", res.Header.Get("Content-Type"))
+		assert.NotZero(t, string(data))
+	}
+}
+
+func TestDecodeValidAdminEvent(t *testing.T) {
+	rand.Seed(time.Now().UnixNano())
+	var uid = rand.Int63()
+	var eventByte = createAdminEventBytes(fb.OperationTypeACTION, uid)
+	var eventString = base64.StdEncoding.EncodeToString(eventByte)
+	var body = strings.NewReader(fmt.Sprintf(`{"type": "AdminEvent", "Obj": "%s"}`, eventString))
 	var req = httptest.NewRequest("POST", "http://localhost:8888/event/id", body)
 
-	var res interface{}
-	var err error
-	res, err = decodeKeycloakEventsReceiverRequest(context.Background(), req)
+	var res, err = decodeHTTPRequest(context.Background(), req)
 	assert.Nil(t, err)
-	assert.IsType(t, EventRequest{}, res)
 
-	var eventMuxReq = res.(EventRequest)
-	assert.Equal(t, "AdminEvent", eventMuxReq.Type)
-	assert.Equal(t, byteAdminEvent, eventMuxReq.Object)
+	var r, ok = res.(Request)
+	assert.True(t, ok)
+	assert.Equal(t, "AdminEvent", r.Type)
+	assert.Equal(t, eventByte, r.Object)
 }
 
-func TestEventTransport_decodeKeycloakEventsReceiverRequest_ValidEvent(t *testing.T) {
-
-	var byteEvent = createHTTPEvent(1234, "realm")
-	var stringEvent = base64.StdEncoding.EncodeToString(byteEvent)
-	var body io.Reader = strings.NewReader("{\"type\": \"Event\", \"Obj\": \"" + stringEvent + "\"}")
+func TestDecodeValidEvent(t *testing.T) {
+	rand.Seed(time.Now().UnixNano())
+	var uid = rand.Int63()
+	var eventByte = createEventBytes(fb.OperationTypeCREATE, uid, "realm")
+	var eventString = base64.StdEncoding.EncodeToString(eventByte)
+	var body = strings.NewReader(fmt.Sprintf(`{"type": "Event", "Obj": "%s"}`, eventString))
 	var req = httptest.NewRequest("POST", "http://localhost:8888/event/id", body)
 
-	var res interface{}
-	var err error
-	res, err = decodeKeycloakEventsReceiverRequest(context.Background(), req)
+	var res, err = decodeHTTPRequest(context.Background(), req)
 	assert.Nil(t, err)
-	assert.IsType(t, EventRequest{}, res)
 
-	var eventMuxReq = res.(EventRequest)
-	assert.Equal(t, "Event", eventMuxReq.Type)
-	assert.Equal(t, byteEvent, eventMuxReq.Object)
+	var r, ok = res.(Request)
+	assert.True(t, ok)
+	assert.Equal(t, "Event", r.Type)
+	assert.Equal(t, eventByte, r.Object)
 }
 
-func TestEventTransport_decodeKeycloakEventsReceiverRequest_UnknownType(t *testing.T) {
-	var byteEvent = createHTTPEvent(1234, "realm")
-	var stringEvent = base64.StdEncoding.EncodeToString(byteEvent)
-	var body io.Reader = strings.NewReader("{\"type\": \"Unknown\", \"Obj\": \"" + stringEvent + "\"}")
+func TestDecodeUnknownEvent(t *testing.T) {
+	rand.Seed(time.Now().UnixNano())
+	var uid = rand.Int63()
+	var eventByte = createEventBytes(fb.OperationTypeCREATE, uid, "realm")
+	var eventString = base64.StdEncoding.EncodeToString(eventByte)
+	var body = strings.NewReader(fmt.Sprintf(`{"type": "Unknown", "Obj": "%s"}`, eventString))
 	var req = httptest.NewRequest("POST", "http://localhost:8888/event/id", body)
 
-	var err error
-	_, err = decodeKeycloakEventsReceiverRequest(context.Background(), req)
+	var res, err = decodeHTTPRequest(context.Background(), req)
 	assert.NotNil(t, err)
-	assert.IsType(t, ErrInvalidArgument{}, err)
+	assert.IsType(t, ErrInvalidArgument{}, errors.Cause(err))
+	assert.Nil(t, res)
 }
 
-func TestEventTransport_decodeKeycloakEventsReceiverRequest_InvalidObject(t *testing.T) {
-	var body = strings.NewReader("{\"type\": \"Event\", \"Obj\": \"test\"}")
+func TestDecodeInvalidObject(t *testing.T) {
+	var body = strings.NewReader(`{"type": "Event", "Obj": "test"}`)
 	var req = httptest.NewRequest("POST", "http://localhost:8888/event/id", body)
 
-	var err error
-	_, err = decodeKeycloakEventsReceiverRequest(context.Background(), req)
+	var res, err = decodeHTTPRequest(context.Background(), req)
 	assert.NotNil(t, err)
-	assert.IsType(t, ErrInvalidArgument{}, err)
+	assert.IsType(t, ErrInvalidArgument{}, errors.Cause(err))
+	assert.Nil(t, res)
 }
 
-func createHTTPAdminEvent(uid int64) []byte {
-	var builder = flatbuffers.NewBuilder(0)
-	fb.AdminEventStart(builder)
-	fb.AdminEventAddTime(builder, time.Now().Unix())
-	fb.AdminEventAddUid(builder, uid)
-	fb.AdminEventAddOperationType(builder, fb.OperationTypeACTION)
-	var adminEventOffset = fb.AdminEventEnd(builder)
-	builder.Finish(adminEventOffset)
-	return builder.FinishedBytes()
-}
+func TestFetchHTTPCorrelationID(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+	var mockComponent = mock.NewMuxComponent(mockCtrl)
 
-func createHTTPEvent(uid int64, realm string) []byte {
-	var builder = flatbuffers.NewBuilder(0)
-	var realmStr = builder.CreateString(realm)
-	fb.EventStart(builder)
-	fb.EventAddTime(builder, time.Now().Unix())
-	fb.EventAddUid(builder, uid)
-	fb.EventAddRealmId(builder, realmStr)
-	var eventOffset = fb.EventEnd(builder)
-	builder.Finish(eventOffset)
-	return builder.FinishedBytes()
+	var eventHandler = MakeHTTPEventHandler(MakeEventEndpoint(mockComponent))
+
+	rand.Seed(time.Now().UnixNano())
+	var corrID = strconv.FormatUint(rand.Uint64(), 10)
+	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
+	var uid = rand.Int63()
+	var eventByte = createEventBytes(fb.OperationTypeCREATE, uid, "realm")
+	var eventString = base64.StdEncoding.EncodeToString(eventByte)
+
+	// HTTP request.
+	var body = strings.NewReader(fmt.Sprintf(`{"type": "Event", "Obj": "%s"}`, eventString))
+	var httpReq = httptest.NewRequest("POST", "http://localhost:8888/event/id", body)
+	httpReq.Header.Add("X-Correlation-ID", corrID)
+	var w = httptest.NewRecorder()
+
+	mockComponent.EXPECT().Event(ctx, "Event", eventByte).Return(nil).Times(1)
+	eventHandler.ServeHTTP(w, httpReq)
 }

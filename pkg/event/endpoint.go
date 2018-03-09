@@ -16,7 +16,7 @@ type Endpoints struct {
 func MakeEventEndpoint(c MuxComponent) endpoint.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		switch r := req.(type) {
-		case EventRequest:
+		case Request:
 			return nil, c.Event(ctx, r.Type, r.Object)
 		default:
 			return nil, fmt.Errorf("request has wrong type: %T", req)
