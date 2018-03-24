@@ -36,10 +36,9 @@ if [ -z ${ENV} ]; then
 fi
 
 # Directories flatbuffer.
-FB_EVENT_DIR="./pkg/event/flatbuffer"
-FB_USER_DIR="./pkg/user/flatbuffer"
-FB_FLAKI_DIR="./pkg/flaki/flatbuffer"
-
+FB_EVENT_DIR="./api/event"
+FB_USER_DIR="./api/user"
+FB_FLAKI_DIR="./api/flaki"
 
 # Delete the old dirs.
 echo "==> Removing old directories..."

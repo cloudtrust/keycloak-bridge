@@ -6,7 +6,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/cloudtrust/keycloak-bridge/pkg/event/flatbuffer/fb"
+	"github.com/cloudtrust/keycloak-bridge/api/event/fb"
 	"github.com/go-kit/kit/log"
 )
 

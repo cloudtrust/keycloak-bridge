@@ -5,7 +5,7 @@ package event
 import (
 	"context"
 
-	"github.com/cloudtrust/keycloak-bridge/pkg/event/flatbuffer/fb"
+	"github.com/cloudtrust/keycloak-bridge/api/event/fb"
 	opentracing "github.com/opentracing/opentracing-go"
 )
 

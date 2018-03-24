@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cloudtrust/keycloak-bridge/pkg/user/flatbuffer/fb"
+	"github.com/cloudtrust/keycloak-bridge/api/user/fb"
 	"github.com/cloudtrust/keycloak-bridge/pkg/user/mock"
 	"github.com/golang/mock/gomock"
 	flatbuffers "github.com/google/flatbuffers/go"

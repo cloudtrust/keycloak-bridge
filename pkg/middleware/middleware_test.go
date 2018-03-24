@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cloudtrust/keycloak-bridge/api/event/fb"
+	fb_flaki "github.com/cloudtrust/keycloak-bridge/api/flaki/fb"
 	"github.com/cloudtrust/keycloak-bridge/pkg/event"
-	"github.com/cloudtrust/keycloak-bridge/pkg/event/flatbuffer/fb"
-	fb_flaki "github.com/cloudtrust/keycloak-bridge/pkg/flaki/flatbuffer/fb"
 	"github.com/cloudtrust/keycloak-bridge/pkg/health"
 	"github.com/cloudtrust/keycloak-bridge/pkg/middleware/mock"
 	"github.com/golang/mock/gomock"

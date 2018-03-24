@@ -5,7 +5,7 @@ package user
 import (
 	"context"
 
-	"github.com/cloudtrust/keycloak-bridge/pkg/user/flatbuffer/fb"
+	"github.com/cloudtrust/keycloak-bridge/api/user/fb"
 	opentracing "github.com/opentracing/opentracing-go"
 )
 

@@ -1,4 +1,4 @@
-package main
+package keycloakd
 
 //go:generate mockgen -source=logging.go -destination=./mock/logging.go -package=mock -mock_names=Redis=Redis github.com/cloudtrust/keycloak-bridge/cmd Redis
 

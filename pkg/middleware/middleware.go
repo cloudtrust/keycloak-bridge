@@ -5,7 +5,7 @@ package middleware
 //go:generate mockgen -destination=./mock/tracing.go -package=mock -mock_names=Tracer=Tracer,Span=Span,SpanContext=SpanContext github.com/opentracing/opentracing-go Tracer,Span,SpanContext
 //go:generate mockgen -destination=./mock/eventComponent.go -package=mock -mock_names=MuxComponent=MuxComponent,Component=EventComponent,AdminComponent=AdminEventComponent github.com/cloudtrust/keycloak-bridge/pkg/event MuxComponent,Component,AdminComponent
 //go:generate mockgen -destination=./mock/healthComponent.go -package=mock -mock_names=Component=HealthComponent github.com/cloudtrust/keycloak-bridge/pkg/health Component
-//go:generate mockgen -destination=./mock/flakiClient.go -package=mock -mock_names=FlakiClient=FlakiClient github.com/cloudtrust/keycloak-bridge/pkg/flaki/flatbuffer/fb FlakiClient
+//go:generate mockgen -destination=./mock/flakiClient.go -package=mock -mock_names=FlakiClient=FlakiClient github.com/cloudtrust/keycloak-bridge/api/flaki/fb FlakiClient
 //go:generate mockgen -destination=./mock/grpc.go -package=mock -mock_names=Handler=Handler github.com/go-kit/kit/transport/grpc Handler
 
 import (
@@ -15,7 +15,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/cloudtrust/keycloak-bridge/pkg/flaki/flatbuffer/fb"
+	"github.com/cloudtrust/keycloak-bridge/api/flaki/fb"
 	"github.com/go-kit/kit/endpoint"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/metrics"

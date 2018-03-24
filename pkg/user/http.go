@@ -5,7 +5,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/cloudtrust/keycloak-bridge/pkg/user/flatbuffer/fb"
+	"github.com/cloudtrust/keycloak-bridge/api/user/fb"
 	"github.com/go-kit/kit/endpoint"
 	http_transport "github.com/go-kit/kit/transport/http"
 	"github.com/google/flatbuffers/go"

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/cloudtrust/keycloak-bridge/pkg/event/flatbuffer/fb"
+	"github.com/cloudtrust/keycloak-bridge/api/event/fb"
 )
 
 // MuxComponent is the Mux component interface.

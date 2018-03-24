@@ -9,15 +9,17 @@ import (
 	"net/http/pprof"
 	"os"
 	"os/signal"
+	"sort"
 	"syscall"
 	"time"
 
+	fb_flaki "github.com/cloudtrust/keycloak-bridge/api/flaki/fb"
+	"github.com/cloudtrust/keycloak-bridge/api/user/fb"
+	"github.com/cloudtrust/keycloak-bridge/internal/keycloakd"
 	"github.com/cloudtrust/keycloak-bridge/pkg/event"
-	fb_flaki "github.com/cloudtrust/keycloak-bridge/pkg/flaki/flatbuffer/fb"
 	"github.com/cloudtrust/keycloak-bridge/pkg/health"
 	"github.com/cloudtrust/keycloak-bridge/pkg/middleware"
 	"github.com/cloudtrust/keycloak-bridge/pkg/user"
-	"github.com/cloudtrust/keycloak-bridge/pkg/user/flatbuffer/fb"
 	keycloak "github.com/cloudtrust/keycloak-client"
 	"github.com/coreos/go-systemd/dbus"
 	"github.com/garyburd/redigo/redis"
@@ -138,7 +140,7 @@ func main() {
 		defer redisConn.Close()
 
 		// Create logger that duplicates logs to stdout and redis.
-		logger = log.NewJSONLogger(io.MultiWriter(os.Stdout, NewLogstashRedisWriter(redisConn, componentName)))
+		logger = log.NewJSONLogger(io.MultiWriter(os.Stdout, keycloakd.NewLogstashRedisWriter(redisConn, componentName)))
 		logger = log.With(logger, "ts", log.DefaultTimestampUTC, "caller", log.DefaultCaller)
 	}
 
@@ -634,8 +636,14 @@ func config(logger log.Logger) map[string]interface{} {
 	config["jaeger"] = config["jaeger-sampler-host-port"].(string) != ""
 	config["redis"] = config["redis-host-port"].(string) != ""
 
-	for k, v := range config {
-		logger.Log(k, v)
+	// Log config in alphabetical order.
+	var keys []string
+	for k := range config {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		logger.Log(k, config[k])
 	}
 
 	return config

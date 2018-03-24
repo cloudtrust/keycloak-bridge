@@ -1,10 +1,10 @@
-package main
+package keycloakd
 
 import (
 	"testing"
 	"time"
 
-	"github.com/cloudtrust/keycloak-bridge/cmd/mock"
+	"github.com/cloudtrust/keycloak-bridge/internal/keycloakd/mock"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )

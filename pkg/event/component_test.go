@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cloudtrust/keycloak-bridge/pkg/event/flatbuffer/fb"
+	"github.com/cloudtrust/keycloak-bridge/api/event/fb"
 	"github.com/google/flatbuffers/go"
 	"github.com/stretchr/testify/assert"
 )

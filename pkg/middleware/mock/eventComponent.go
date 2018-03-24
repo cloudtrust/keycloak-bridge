@@ -6,7 +6,7 @@ package mock
 
 import (
 	context "context"
-	fb "github.com/cloudtrust/keycloak-bridge/pkg/event/flatbuffer/fb"
+	fb "github.com/cloudtrust/keycloak-bridge/api/event/fb"
 	gomock "github.com/golang/mock/gomock"
 	reflect "reflect"
 )

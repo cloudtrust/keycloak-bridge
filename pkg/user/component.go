@@ -5,7 +5,7 @@ package user
 import (
 	"context"
 
-	"github.com/cloudtrust/keycloak-bridge/pkg/user/flatbuffer/fb"
+	"github.com/cloudtrust/keycloak-bridge/api/user/fb"
 	"github.com/google/flatbuffers/go"
 	"github.com/pkg/errors"
 )

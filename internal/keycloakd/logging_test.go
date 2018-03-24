@@ -1,10 +1,10 @@
-package main
+package keycloakd
 
 import (
 	"encoding/json"
 	"testing"
 
-	"github.com/cloudtrust/flaki-service/cmd/mock"
+	"github.com/cloudtrust/keycloak-bridge/internal/keycloakd/mock"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )

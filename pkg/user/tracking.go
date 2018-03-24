@@ -5,7 +5,7 @@ package user
 import (
 	"context"
 
-	"github.com/cloudtrust/keycloak-bridge/pkg/user/flatbuffer/fb"
+	"github.com/cloudtrust/keycloak-bridge/api/user/fb"
 	sentry "github.com/getsentry/raven-go"
 )
 
