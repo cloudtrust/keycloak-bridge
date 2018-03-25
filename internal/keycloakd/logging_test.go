@@ -26,7 +26,7 @@ func TestLogstashEncode(t *testing.T) {
 		"msg":               "logstash log",
 		"caller":            "flakid.go:120",
 		"component_name":    "flaki-service",
-		"component_version": "1.0.0",
+		"component_version": "1.0",
 		"environment":       "DEV",
 		"git_commit":        "5fb7de0d7ae3f3d5f5d6a322b2344bdab645fd33",
 		"ts":                "2018-02-13T06:27:07.123915229Z",
@@ -45,11 +45,25 @@ func TestLogstashEncode(t *testing.T) {
 	var fields = m["@fields"].(map[string]interface{})
 	assert.Equal(t, "flakid.go:120", fields["caller"])
 	assert.Equal(t, "flaki-service", fields["component_name"])
-	assert.Equal(t, "1.0.0", fields["component_version"])
+	assert.Equal(t, "1.0", fields["component_version"])
 	assert.Equal(t, "DEV", fields["environment"])
 	assert.Equal(t, "5fb7de0d7ae3f3d5f5d6a322b2344bdab645fd33", fields["git_commit"])
 	var _, ok = fields["ts"]
 	assert.False(t, ok)
 	_, ok = fields["msg"]
 	assert.False(t, ok)
+}
+
+func TestNoopRedis(t *testing.T) {
+	var noopRedis = &NoopRedis{}
+
+	assert.Nil(t, noopRedis.Close())
+
+	var reply, err = noopRedis.Do("")
+	assert.Nil(t, reply)
+	assert.Nil(t, err)
+
+	assert.Nil(t, noopRedis.Send(""))
+
+	assert.Nil(t, noopRedis.Flush())
 }
