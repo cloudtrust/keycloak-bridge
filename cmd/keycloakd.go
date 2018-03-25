@@ -574,7 +574,7 @@ func config(logger log.Logger) map[string]interface{} {
 	viper.SetDefault("component-grpc-host-port", "0.0.0.0:5555")
 
 	// Flaki default.
-	viper.SetDefault("flaki-host-port", "127.0.0.1:9000")
+	viper.SetDefault("flaki-host-port", "")
 
 	// Keycloak default.
 	viper.SetDefault("keycloak-host-port", "127.0.0.1:8080")
