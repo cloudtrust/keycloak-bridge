@@ -20,12 +20,6 @@
   version = "2018.01.18"
 
 [[projects]]
-  name = "github.com/cloudtrust/flaki-service"
-  packages = ["cmd/mock"]
-  revision = "8ca7eaaad9998d10ca3599b35e789d444b3e8252"
-  version = "1.0"
-
-[[projects]]
   branch = "master"
   name = "github.com/cloudtrust/keycloak-client"
   packages = ["."]
@@ -63,10 +57,7 @@
 
 [[projects]]
   name = "github.com/garyburd/redigo"
-  packages = [
-    "internal",
-    "redis"
-  ]
+  packages = ["internal","redis"]
   revision = "a69d19351219b6dd56f274f96d85a7014a2ec34e"
   version = "v1.6.0"
 
@@ -74,20 +65,11 @@
   branch = "master"
   name = "github.com/getsentry/raven-go"
   packages = ["."]
-  revision = "563b81fc02b75d664e54da31f787c2cc2186780b"
+  revision = "7562301a6763c9ac631b0a2011b4aa0e064e45d4"
 
 [[projects]]
   name = "github.com/go-kit/kit"
-  packages = [
-    "endpoint",
-    "log",
-    "metrics",
-    "metrics/generic",
-    "metrics/influx",
-    "metrics/internal/lv",
-    "transport/grpc",
-    "transport/http"
-  ]
+  packages = ["endpoint","log","metrics","metrics/generic","metrics/influx","metrics/internal/lv","transport/grpc","transport/http"]
   revision = "4dc7be5d2d12881735283bcab7352178e190fc71"
   version = "v0.6.0"
 
@@ -117,13 +99,7 @@
 
 [[projects]]
   name = "github.com/golang/protobuf"
-  packages = [
-    "proto",
-    "ptypes",
-    "ptypes/any",
-    "ptypes/duration",
-    "ptypes/timestamp"
-  ]
+  packages = ["proto","ptypes","ptypes/any","ptypes/duration","ptypes/timestamp"]
   revision = "925541529c1fa6821df4e44ce2723319eb2be768"
   version = "v1.0.0"
 
@@ -148,28 +124,14 @@
 [[projects]]
   branch = "master"
   name = "github.com/hashicorp/hcl"
-  packages = [
-    ".",
-    "hcl/ast",
-    "hcl/parser",
-    "hcl/scanner",
-    "hcl/strconv",
-    "hcl/token",
-    "json/parser",
-    "json/scanner",
-    "json/token"
-  ]
-  revision = "23c074d0eceb2b8a5bfdbb271ab780cde70f05a8"
+  packages = [".","hcl/ast","hcl/parser","hcl/printer","hcl/scanner","hcl/strconv","hcl/token","json/parser","json/scanner","json/token"]
+  revision = "f40e974e75af4e271d97ce0fc917af5898ae7bda"
 
 [[projects]]
   name = "github.com/influxdata/influxdb"
-  packages = [
-    "client/v2",
-    "models",
-    "pkg/escape"
-  ]
-  revision = "6ac835404e7e64ea7299a6eebcce1ab1ef15fe3c"
-  version = "v1.5.0"
+  packages = ["client/v2","models","pkg/escape"]
+  revision = "cdae4ccde4c67c3390d8ae8a1a06bd3b4cdce5c5"
+  version = "v1.5.1"
 
 [[projects]]
   branch = "master"
@@ -191,11 +153,7 @@
 
 [[projects]]
   name = "github.com/opentracing/opentracing-go"
-  packages = [
-    ".",
-    "ext",
-    "log"
-  ]
+  packages = [".","ext","log"]
   revision = "1949ddbfd147afd4d964a9f00b24eb291e0e7c38"
   version = "v1.0.2"
 
@@ -220,18 +178,12 @@
 [[projects]]
   branch = "master"
   name = "github.com/pquerna/cachecontrol"
-  packages = [
-    ".",
-    "cacheobject"
-  ]
+  packages = [".","cacheobject"]
   revision = "525d0eb5f91d30e3b1548de401b7ef9ea6898520"
 
 [[projects]]
   name = "github.com/spf13/afero"
-  packages = [
-    ".",
-    "mem"
-  ]
+  packages = [".","mem"]
   revision = "bb8f1927f2a9d3ab41c9340aa034f6b803f4359c"
   version = "v1.0.2"
 
@@ -256,8 +208,8 @@
 [[projects]]
   name = "github.com/spf13/viper"
   packages = ["."]
-  revision = "25b30aa063fc18e48662b86996252eabdcf2f0c7"
-  version = "v1.0.0"
+  revision = "b5e8006cbee93ec955a89ab31e0e3ce3204f3736"
+  version = "v1.0.2"
 
 [[projects]]
   name = "github.com/stretchr/testify"
@@ -267,23 +219,9 @@
 
 [[projects]]
   name = "github.com/uber/jaeger-client-go"
-  packages = [
-    ".",
-    "config",
-    "internal/baggage",
-    "internal/baggage/remote",
-    "internal/spanlog",
-    "log",
-    "rpcmetrics",
-    "thrift-gen/agent",
-    "thrift-gen/baggage",
-    "thrift-gen/jaeger",
-    "thrift-gen/sampling",
-    "thrift-gen/zipkincore",
-    "utils"
-  ]
-  revision = "3ac96c6e679cb60a74589b0d0aa7c70a906183f7"
-  version = "v2.11.2"
+  packages = [".","config","internal/baggage","internal/baggage/remote","internal/spanlog","internal/throttler","log","rpcmetrics","thrift-gen/agent","thrift-gen/baggage","thrift-gen/jaeger","thrift-gen/sampling","thrift-gen/zipkincore","utils"]
+  revision = "c107110d057826281414cb964f167bce5be17588"
+  version = "v2.12.0"
 
 [[projects]]
   name = "github.com/uber/jaeger-lib"
@@ -294,75 +232,36 @@
 [[projects]]
   branch = "master"
   name = "golang.org/x/crypto"
-  packages = [
-    "ed25519",
-    "ed25519/internal/edwards25519"
-  ]
-  revision = "85f98707c97e11569271e4d9b3d397e079c4f4d0"
+  packages = ["ed25519","ed25519/internal/edwards25519"]
+  revision = "88942b9c40a4c9d203b82b3731787b672d6e809b"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
-  packages = [
-    "context",
-    "context/ctxhttp",
-    "http2",
-    "http2/hpack",
-    "idna",
-    "internal/timeseries",
-    "lex/httplex",
-    "publicsuffix",
-    "trace"
-  ]
-  revision = "d25186b37f34ebdbbea8f488ef055638dfab272d"
+  packages = ["context","context/ctxhttp","http2","http2/hpack","idna","internal/timeseries","lex/httplex","publicsuffix","trace"]
+  revision = "6078986fec03a1dcc236c34816c71b0e05018fda"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/oauth2"
-  packages = [
-    ".",
-    "internal"
-  ]
-  revision = "2f32c3ac0fa4fb807a0fcefb0b6f2468a0d99bd0"
+  packages = [".","internal"]
+  revision = "fdc9e635145ae97e6c2cb777c48305600cf515cb"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix"]
-  revision = "dd2ff4accc098aceecb86b36eaa7829b2a17b1c9"
+  revision = "91ee8cde435411ca3f1cd365e8f20131aed4d0a1"
 
 [[projects]]
   name = "golang.org/x/text"
-  packages = [
-    "collate",
-    "collate/build",
-    "internal/colltab",
-    "internal/gen",
-    "internal/tag",
-    "internal/triegen",
-    "internal/ucd",
-    "language",
-    "secure/bidirule",
-    "transform",
-    "unicode/bidi",
-    "unicode/cldr",
-    "unicode/norm",
-    "unicode/rangetable"
-  ]
+  packages = ["collate","collate/build","internal/colltab","internal/gen","internal/tag","internal/triegen","internal/ucd","language","secure/bidirule","transform","unicode/bidi","unicode/cldr","unicode/norm","unicode/rangetable"]
   revision = "f21a4dfb5e38f5895301dc265a8def02365cc3d0"
   version = "v0.3.0"
 
 [[projects]]
   name = "google.golang.org/appengine"
-  packages = [
-    "internal",
-    "internal/base",
-    "internal/datastore",
-    "internal/log",
-    "internal/remote_api",
-    "internal/urlfetch",
-    "urlfetch"
-  ]
+  packages = ["internal","internal/base","internal/datastore","internal/log","internal/remote_api","internal/urlfetch","urlfetch"]
   revision = "150dc57a1b433e64154302bdc40b6bb8aefa313a"
   version = "v1.0.0"
 
@@ -370,68 +269,25 @@
   branch = "master"
   name = "google.golang.org/genproto"
   packages = ["googleapis/rpc/status"]
-  revision = "df60624c1e9b9d2973e889c7a1cff73155da81c4"
+  revision = "ab0870e398d5dd054b868c0db1481ab029b9a9f2"
 
 [[projects]]
   name = "google.golang.org/grpc"
-  packages = [
-    ".",
-    "balancer",
-    "balancer/base",
-    "balancer/roundrobin",
-    "codes",
-    "connectivity",
-    "credentials",
-    "encoding",
-    "encoding/proto",
-    "grpclb/grpc_lb_v1/messages",
-    "grpclog",
-    "internal",
-    "keepalive",
-    "metadata",
-    "naming",
-    "peer",
-    "resolver",
-    "resolver/dns",
-    "resolver/passthrough",
-    "stats",
-    "status",
-    "tap",
-    "transport"
-  ]
+  packages = [".","balancer","balancer/base","balancer/roundrobin","codes","connectivity","credentials","encoding","encoding/proto","grpclb/grpc_lb_v1/messages","grpclog","internal","keepalive","metadata","naming","peer","resolver","resolver/dns","resolver/passthrough","stats","status","tap","transport"]
   revision = "8e4536a86ab602859c20df5ebfd0bd4228d08655"
   version = "v1.10.0"
 
 [[projects]]
   name = "gopkg.in/h2non/gentleman.v2"
-  packages = [
-    ".",
-    "context",
-    "middleware",
-    "mux",
-    "plugin",
-    "plugins/body",
-    "plugins/bodytype",
-    "plugins/cookies",
-    "plugins/headers",
-    "plugins/multipart",
-    "plugins/query",
-    "plugins/timeout",
-    "plugins/url",
-    "utils"
-  ]
+  packages = [".","context","middleware","mux","plugin","plugins/body","plugins/bodytype","plugins/cookies","plugins/headers","plugins/multipart","plugins/query","plugins/timeout","plugins/url","utils"]
   revision = "e0f81be2f4064ea7aa7470e9daddd2dc8e8152c7"
   version = "v2.0.3"
 
 [[projects]]
   name = "gopkg.in/square/go-jose.v2"
-  packages = [
-    ".",
-    "cipher",
-    "json"
-  ]
-  revision = "6ee92191fea850cdcab9a18867abf5f521cdbadb"
-  version = "v2.1.4"
+  packages = [".","cipher","json"]
+  revision = "552e98edab5d620205ff1a8960bf52a5a10aad03"
+  version = "v2.1.5"
 
 [[projects]]
   name = "gopkg.in/yaml.v2"
@@ -442,6 +298,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "b4baf21810ebe45df4d72bb23601a2b68bfff6a4c1c40eac9bdc66f02f6a2682"
+  inputs-digest = "4c9983954764d2fb87603b4ca9577eff4276139f29247417bf5deb4b619ac616"
   solver-name = "gps-cdcl"
   solver-version = 1

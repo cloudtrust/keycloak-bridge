@@ -49,7 +49,6 @@ var (
 )
 
 func main() {
-
 	// Logger.
 	var logger = log.NewJSONLogger(os.Stdout)
 	{
@@ -569,7 +568,7 @@ func config(logger log.Logger) map[string]interface{} {
 	logger.Log("msg", "load configuration and command args")
 
 	// Component default.
-	viper.SetDefault("config-file", "./conf/DEV/keycloakd.yml")
+	viper.SetDefault("config-file", "./configs/keycloakd.yml")
 	viper.SetDefault("component-name", "keycloak-bridge")
 	viper.SetDefault("component-http-host-port", "0.0.0.0:8888")
 	viper.SetDefault("component-grpc-host-port", "0.0.0.0:5555")

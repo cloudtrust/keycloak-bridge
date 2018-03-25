@@ -25,7 +25,7 @@ See the repository [keycloak-service](https://github.com/cloudtrust/keycloak-ser
 
 ## Configuration
 
-Configuration is done with a YAML file, e.g. ```./conf/DEV/keycloakd.yml```.
+Configuration is done with a YAML file, e.g. ```./configs/keycloakd.yml```.
 Default configurations are provided, that is if an entry is not present in the configuration file, it will be set to its default value.
 
 The documentation for the [Redis](https://cloudtrust.github.io/doc/chapter-godevel/logging.html), [Influx](https://cloudtrust.github.io/doc/chapter-godevel/instrumenting.html), [Sentry](https://cloudtrust.github.io/doc/chapter-godevel/tracking.html), [Jaeger](https://cloudtrust.github.io/doc/chapter-godevel/tracing.html) and [Debug](https://cloudtrust.github.io/doc/chapter-godevel/debugging.html) configuration are common to all microservices and is provided in the Cloudtrust Gitbook.
@@ -68,7 +68,7 @@ Launch the keycloak bridge:
 ```
 
 It is recommended to always provides an absolute path to the configuration file when the service is started, even though absolute and relative paths are supported.
-If no configuration file is passed, the service will try to load the default config file at ```./conf/DEV/keycloakd.yml```, and if it fails it launches the service with the default parameters.
+If no configuration file is passed, the service will try to load the default config file at ```./configs/keycloakd.yml```, and if it fails it launches the service with the default parameters.
 
 ### Keycloak events
 
@@ -77,8 +77,7 @@ The keycloak event-emitter module sends all events to the bridge's event endpoin
 ### gRPC and HTTP clients
 
 All applications can interact with the bridge using either HTTP or gRPC.
-The applications need to implement its own client. The Flatbuffer schema is available in ``pkg/user/flatbuffer/user.fbs`
-There is an example in the directory `client`.
+The applications need to implement its own client. The Flatbuffer schema is available in `api/user/user.fbs`, see the directory `/examples`.
 
 ### Health
 
@@ -107,8 +106,8 @@ Gomock is used to automatically genarate mocks. See the Cloudtrust [Gitbook](htt
 
 The unit tests don't cover:
 
-- http client example (```./client/http/http.go```)
-- grpc client example (```./client/grpc/grpc.go```)
+- http client example (```./examples/http/http.go```)
+- grpc client example (```./examples/grpc/grpc.go```)
 - keycloakd  (```./cmd/keycloakd.go```)
 
 The first two are provided as example.

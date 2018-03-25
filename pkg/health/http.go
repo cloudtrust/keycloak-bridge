@@ -57,12 +57,23 @@ func makeReport(e endpoint.Endpoint) string {
 	return reportsStatus(reports)
 }
 
-// reportsStatus returs 'OK' if all tests passed.
+// reportsStatus parse all test report and return a general status for the component.
 func reportsStatus(reports Reports) string {
+	var degraded = false
 	for _, r := range reports.Reports {
-		if r.Status != OK {
+		switch r.Status {
+		case Deactivated:
+			// If the status is Deactivated, we do not need to go through all tests reports, all
+			// status will be the same.
+			return Deactivated.String()
+		case KO:
 			return KO.String()
+		case Degraded:
+			degraded = true
 		}
+	}
+	if degraded {
+		return Degraded.String()
 	}
 	return OK.String()
 }
@@ -147,6 +158,9 @@ func encodeHealthCheckReply(_ context.Context, w http.ResponseWriter, res interf
 // healthCheckErrorHandler encodes the health check reply when there is an error.
 func healthCheckErrorHandler(ctx context.Context, err error, w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+
+	// Write error.
+	var reply, _ = json.MarshalIndent(map[string]string{"error": err.Error()}, "", "  ")
 	w.WriteHeader(http.StatusInternalServerError)
-	w.Write([]byte(err.Error()))
+	w.Write(reply)
 }
