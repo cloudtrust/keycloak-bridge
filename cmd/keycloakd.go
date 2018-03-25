@@ -13,10 +13,10 @@ import (
 	"syscall"
 	"time"
 
-	fb_flaki "github.com/cloudtrust/keycloak-bridge/api/flaki/fb"
 	"github.com/cloudtrust/keycloak-bridge/api/user/fb"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakd"
 	"github.com/cloudtrust/keycloak-bridge/pkg/event"
+	fb_flaki "github.com/cloudtrust/keycloak-bridge/pkg/flaki/fb"
 	"github.com/cloudtrust/keycloak-bridge/pkg/health"
 	"github.com/cloudtrust/keycloak-bridge/pkg/middleware"
 	"github.com/cloudtrust/keycloak-bridge/pkg/user"
@@ -187,7 +187,7 @@ func main() {
 		}
 		defer sentryClient.Close()
 	} else {
-		sentryClient = &NoopSentry{}
+		sentryClient = &keycloakd.NoopSentry{}
 	}
 
 	// Influx client.
@@ -217,9 +217,9 @@ func main() {
 			log.With(logger, "unit", "go-kit influx"),
 		)
 
-		influxMetrics = NewMetrics(influxClient, gokitInflux)
+		influxMetrics = keycloakd.NewMetrics(influxClient, gokitInflux)
 	} else {
-		influxMetrics = &NoopMetrics{}
+		influxMetrics = &keycloakd.NoopMetrics{}
 	}
 
 	// Jaeger client.

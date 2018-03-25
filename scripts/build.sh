@@ -38,7 +38,7 @@ fi
 # Directories flatbuffer.
 FB_EVENT_DIR="./api/event"
 FB_USER_DIR="./api/user"
-FB_FLAKI_DIR="./api/flaki"
+FB_FLAKI_DIR="./pkg/flaki"
 
 # Delete the old dirs.
 echo "==> Removing old directories..."

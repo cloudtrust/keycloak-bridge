@@ -9,19 +9,23 @@ import (
 	"os"
 	"time"
 
-	"github.com/cloudtrust/keycloak-bridge/pkg/user/flatbuffer/fb"
+	"github.com/cloudtrust/keycloak-bridge/api/user/fb"
 	"github.com/go-kit/kit/log"
 	"github.com/google/flatbuffers/go"
 	opentracing "github.com/opentracing/opentracing-go"
 	otag "github.com/opentracing/opentracing-go/ext"
+	"github.com/spf13/pflag"
 	jaeger_client "github.com/uber/jaeger-client-go/config"
 )
 
-const (
-	address = "10.244.18.2:8880"
+var (
+	host = pflag.String("host", "127.0.0.1", "keycloak bridge host")
+	port = pflag.String("port", "8888", "keycloak bridge port")
 )
 
 func main() {
+	// Configuration flags.
+	pflag.Parse()
 
 	// Logger.
 	var logger = log.NewLogfmtLogger(os.Stdout)
@@ -75,7 +79,7 @@ func main() {
 	{
 		var err error
 		var req *http.Request
-		var url = fmt.Sprintf("http://%s/getusers", address)
+		var url = fmt.Sprintf("http://%s:%s/getusers", *host, *port)
 
 		req, err = http.NewRequest("POST", url, bytes.NewReader(b.FinishedBytes()))
 		if err != nil {
