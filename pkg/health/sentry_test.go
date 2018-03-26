@@ -17,8 +17,6 @@ func TestSentryHealthChecks(t *testing.T) {
 	defer mockCtrl.Finish()
 	var mockSentry = mock.NewSentry(mockCtrl)
 
-	mockSentry.EXPECT().URL().Return("https://a:b@sentry.io/api/1/store/").Times(1)
-
 	var s = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("ok"))
@@ -27,6 +25,7 @@ func TestSentryHealthChecks(t *testing.T) {
 
 	var m = NewSentryModule(mockSentry, s.Client(), true)
 
+	mockSentry.EXPECT().URL().Return("http://a:b@sentry.io/api/1/store/").Times(1)
 	var report = m.HealthChecks(context.Background())[0]
 	assert.Equal(t, "ping", report.Name)
 	assert.NotZero(t, report.Duration)

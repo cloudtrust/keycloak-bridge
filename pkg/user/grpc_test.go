@@ -31,7 +31,7 @@ func TestNewGRPCServer(t *testing.T) {
 	var data, err = s.GetUsers(context.Background(), req)
 	assert.Nil(t, err)
 	// Decode and check reply.
-	var r = fb.GetRootAsGetUsersResponse(data.FinishedBytes(), 0)
+	var r = fb.GetRootAsGetUsersReply(data.FinishedBytes(), 0)
 	for i := 0; i < r.NamesLength(); i++ {
 		assert.Contains(t, names, string(r.Names(i)))
 	}

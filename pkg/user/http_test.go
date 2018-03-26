@@ -51,11 +51,12 @@ func TestHTTPGetUsersHandler(t *testing.T) {
 	assert.Equal(t, http.StatusOK, res.StatusCode)
 	assert.Equal(t, "application/octet-stream", res.Header.Get("Content-Type"))
 	// Decode and check reply.
-	var r = fb.GetRootAsGetUsersResponse(body, 0)
+	var r = fb.GetRootAsGetUsersReply(body, 0)
 	for i := 0; i < r.NamesLength(); i++ {
 		assert.Contains(t, names, string(r.Names(i)))
 	}
 }
+
 func TestHTTPErrorHandler(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -87,6 +88,7 @@ func TestHTTPErrorHandler(t *testing.T) {
 	assert.Equal(t, "application/octet-stream", res.Header.Get("Content-Type"))
 	assert.Equal(t, "fail", string(body))
 }
+
 func TestFetchHTTPCorrelationID(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()

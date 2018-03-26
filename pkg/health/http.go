@@ -22,62 +22,6 @@ type Check struct {
 	Error    string `json:"error,omitempty"`
 }
 
-// MakeHealthChecksHandler makes a HTTP handler for all health checks.
-func MakeHealthChecksHandler(es Endpoints) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-
-		var report = map[string]string{}
-
-		// Make all tests
-		report["influx"] = makeReport(es.InfluxHealthCheck)
-		report["jaeger"] = makeReport(es.JaegerHealthCheck)
-		report["redis"] = makeReport(es.RedisHealthCheck)
-		report["sentry"] = makeReport(es.SentryHealthCheck)
-		report["keycloak"] = makeReport(es.KeycloakHealthCheck)
-
-		// Write report.
-		var j, err = json.MarshalIndent(report, "", "  ")
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-		} else {
-			w.WriteHeader(http.StatusOK)
-			w.Write(j)
-		}
-	}
-}
-
-func makeReport(e endpoint.Endpoint) string {
-	var hr, err = e(context.Background(), nil)
-	var reports = hr.(Reports)
-
-	if err != nil {
-		return KO.String()
-	}
-	return reportsStatus(reports)
-}
-
-// reportsStatus parse all test report and return a general status for the component.
-func reportsStatus(reports Reports) string {
-	var degraded = false
-	for _, r := range reports.Reports {
-		switch r.Status {
-		case Deactivated:
-			// If the status is Deactivated, we do not need to go through all tests reports, all
-			// status will be the same.
-			return Deactivated.String()
-		case KO:
-			return KO.String()
-		case Degraded:
-			degraded = true
-		}
-	}
-	if degraded {
-		return Degraded.String()
-	}
-	return OK.String()
-}
-
 // MakeInfluxHealthCheckHandler makes a HTTP handler for the Influx HealthCheck endpoint.
 func MakeInfluxHealthCheckHandler(e endpoint.Endpoint) *http_transport.Server {
 	return http_transport.NewServer(e,
@@ -123,6 +67,15 @@ func MakeKeycloakHealthCheckHandler(e endpoint.Endpoint) *http_transport.Server 
 	)
 }
 
+// MakeAllHealthChecksHandler makes a HTTP handler for all health checks.
+func MakeAllHealthChecksHandler(e endpoint.Endpoint) *http_transport.Server {
+	return http_transport.NewServer(e,
+		decodeHealthCheckRequest,
+		encodeAllHealthChecksReply,
+		http_transport.ServerErrorEncoder(healthCheckErrorHandler),
+	)
+}
+
 // decodeHealthCheckRequest decodes the health check request.
 func decodeHealthCheckRequest(_ context.Context, r *http.Request) (res interface{}, err error) {
 	return nil, nil
@@ -150,6 +103,23 @@ func encodeHealthCheckReply(_ context.Context, w http.ResponseWriter, res interf
 	} else {
 		w.WriteHeader(http.StatusOK)
 		w.Write(d)
+	}
+
+	return nil
+}
+
+// encodeAllHealthChecksReply encodes the health checks reply.
+func encodeAllHealthChecksReply(_ context.Context, w http.ResponseWriter, rep interface{}) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+
+	var reply = rep.(map[string]string)
+	var data, err = json.MarshalIndent(reply, "", "  ")
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+	} else {
+		w.WriteHeader(http.StatusOK)
+		w.Write(data)
 	}
 
 	return nil

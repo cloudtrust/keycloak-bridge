@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"github.com/cloudtrust/keycloak-bridge/api/event/fb"
-	fb_flaki "github.com/cloudtrust/keycloak-bridge/api/flaki/fb"
 	"github.com/cloudtrust/keycloak-bridge/pkg/event"
+	fb_flaki "github.com/cloudtrust/keycloak-bridge/pkg/flaki/fb"
 	"github.com/cloudtrust/keycloak-bridge/pkg/health"
 	"github.com/cloudtrust/keycloak-bridge/pkg/middleware/mock"
 	"github.com/golang/mock/gomock"
@@ -130,7 +130,7 @@ func TestEndpointLoggingMW(t *testing.T) {
 	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
 
 	// With correlation ID.
-	var req = event.EventRequest{
+	var req = event.Request{
 		Type:   "Event",
 		Object: createEventBytes(fb.EventTypeCLIENT_DELETE, uid, "realm"),
 	}
@@ -161,7 +161,7 @@ func TestEndpointInstrumentingMW(t *testing.T) {
 	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
 
 	// With correlation ID.
-	var req = event.EventRequest{
+	var req = event.Request{
 		Type:   "Event",
 		Object: createEventBytes(fb.EventTypeCLIENT_DELETE, uid, "realm"),
 	}
@@ -196,7 +196,7 @@ func TestEndpointTracingMW(t *testing.T) {
 	ctx = opentracing.ContextWithSpan(ctx, mockSpan)
 
 	// With correlation ID.
-	var req = event.EventRequest{
+	var req = event.Request{
 		Type:   "Event",
 		Object: createEventBytes(fb.EventTypeCLIENT_DELETE, uid, "realm"),
 	}

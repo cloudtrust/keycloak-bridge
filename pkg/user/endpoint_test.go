@@ -32,7 +32,7 @@ func TestGetUsersEndpoint(t *testing.T) {
 	{
 		mockComponent.EXPECT().GetUsers(ctx, req).Return(reply, nil).Times(1)
 		var reply, err = e(ctx, req)
-		var r = reply.(*fb.GetUsersResponse)
+		var r = reply.(*fb.GetUsersReply)
 		assert.Nil(t, err)
 		assert.Equal(t, len(names), r.NamesLength())
 		for i := 0; i < r.NamesLength(); i++ {

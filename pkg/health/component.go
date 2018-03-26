@@ -37,6 +37,7 @@ type Component interface {
 	RedisHealthChecks(context.Context) Reports
 	SentryHealthChecks(context.Context) Reports
 	KeycloakHealthChecks(context.Context) Reports
+	AllHealthChecks(context.Context) map[string]string
 }
 
 // Reports contains the results of all health tests for a given module.
@@ -120,4 +121,38 @@ func (c *component) KeycloakHealthChecks(ctx context.Context) Reports {
 		hr.Reports = append(hr.Reports, Report(r))
 	}
 	return hr
+}
+
+// AllChecks call all component checks and build a general health report.
+func (c *component) AllHealthChecks(ctx context.Context) map[string]string {
+	var reports = map[string]string{}
+
+	reports["influx"] = determineStatus(c.InfluxHealthChecks(ctx))
+	reports["jaeger"] = determineStatus(c.JaegerHealthChecks(ctx))
+	reports["keycloak"] = determineStatus(c.KeycloakHealthChecks(ctx))
+	reports["redis"] = determineStatus(c.RedisHealthChecks(ctx))
+	reports["sentry"] = determineStatus(c.SentryHealthChecks(ctx))
+
+	return reports
+}
+
+// determineStatus parse all the tests reports and output a global status.
+func determineStatus(reports Reports) string {
+	var degraded = false
+	for _, r := range reports.Reports {
+		switch r.Status {
+		case Deactivated:
+			// If the status is Deactivated, we do not need to go through all tests reports, all
+			// status will be the same.
+			return Deactivated.String()
+		case KO:
+			return KO.String()
+		case Degraded:
+			degraded = true
+		}
+	}
+	if degraded {
+		return Degraded.String()
+	}
+	return OK.String()
 }

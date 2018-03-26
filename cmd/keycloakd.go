@@ -415,12 +415,22 @@ func main() {
 		keycloakHealthEndpoint = middleware.MakeEndpointCorrelationIDMW(flakiClient, tracer)(keycloakHealthEndpoint)
 	}
 
+	var allHealthEndpoint endpoint.Endpoint
+	{
+		allHealthEndpoint = health.MakeAllHealthChecksEndpoint(healthComponent)
+		allHealthEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("allchecks_health_endpoint"))(allHealthEndpoint)
+		allHealthEndpoint = middleware.MakeEndpointLoggingMW(log.With(healthLogger, "mw", "endpoint", "unit", "AllHealthCheck"))(allHealthEndpoint)
+		allHealthEndpoint = middleware.MakeEndpointTracingMW(tracer, "allchecks_health_endpoint")(allHealthEndpoint)
+		allHealthEndpoint = middleware.MakeEndpointCorrelationIDMW(flakiClient, tracer)(allHealthEndpoint)
+	}
+
 	var healthEndpoints = health.Endpoints{
 		InfluxHealthCheck:   influxHealthEndpoint,
 		JaegerHealthCheck:   jaegerHealthEndpoint,
 		RedisHealthCheck:    redisHealthEndpoint,
 		SentryHealthCheck:   sentryHealthEndpoint,
 		KeycloakHealthCheck: keycloakHealthEndpoint,
+		AllHealthChecks:     allHealthEndpoint,
 	}
 
 	// GRPC server.
@@ -453,6 +463,7 @@ func main() {
 		errc <- userServer.Serve(lis)
 	}()
 
+	// HTTP Server.
 	go func() {
 		var logger = log.With(logger, "transport", "http")
 		logger.Log("addr", httpAddr)
@@ -483,7 +494,8 @@ func main() {
 		// Health checks.
 		var healthSubroute = route.PathPrefix("/health").Subrouter()
 
-		healthSubroute.Handle("", http.HandlerFunc(health.MakeHealthChecksHandler(healthEndpoints)))
+		var allHealthChecksHandler = health.MakeAllHealthChecksHandler(healthEndpoints.AllHealthChecks)
+		healthSubroute.Handle("", allHealthChecksHandler)
 
 		var influxHealthCheckHandler = health.MakeInfluxHealthCheckHandler(healthEndpoints.InfluxHealthCheck)
 		healthSubroute.Handle("/influx", influxHealthCheckHandler)

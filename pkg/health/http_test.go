@@ -50,6 +50,7 @@ func TestInfluxHealthCheckHandler(t *testing.T) {
 		assert.Zero(t, m["error"])
 	}
 }
+
 func TestJaegerHealthCheckHandler(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -195,93 +196,63 @@ func TestHealthChecksHandler(t *testing.T) {
 	defer mockCtrl.Finish()
 	var mockComponent = mock.NewComponent(mockCtrl)
 
+	var h = MakeAllHealthChecksHandler(MakeAllHealthChecksEndpoint(mockComponent))
+
 	// Health success.
-	mockComponent.EXPECT().InfluxHealthChecks(context.Background()).Return(Reports{Reports: []Report{{Name: "influx", Duration: (1 * time.Second).String(), Status: OK}}}).Times(1)
-	mockComponent.EXPECT().JaegerHealthChecks(context.Background()).Return(Reports{Reports: []Report{{Name: "jaeger", Duration: (1 * time.Second).String(), Status: OK}}}).Times(1)
-	mockComponent.EXPECT().RedisHealthChecks(context.Background()).Return(Reports{Reports: []Report{{Name: "redis", Duration: (1 * time.Second).String(), Status: OK}}}).Times(1)
-	mockComponent.EXPECT().SentryHealthChecks(context.Background()).Return(Reports{Reports: []Report{{Name: "sentry", Duration: (1 * time.Second).String(), Status: OK}}}).Times(1)
-	mockComponent.EXPECT().KeycloakHealthChecks(context.Background()).Return(Reports{Reports: []Report{{Name: "keycloak", Duration: (1 * time.Second).String(), Status: OK}}}).Times(1)
-
-	var es = Endpoints{
-		InfluxHealthCheck:   MakeInfluxHealthCheckEndpoint(mockComponent),
-		JaegerHealthCheck:   MakeJaegerHealthCheckEndpoint(mockComponent),
-		RedisHealthCheck:    MakeRedisHealthCheckEndpoint(mockComponent),
-		SentryHealthCheck:   MakeSentryHealthCheckEndpoint(mockComponent),
-		KeycloakHealthCheck: MakeKeycloakHealthCheckEndpoint(mockComponent),
-	}
-
-	var h = MakeHealthChecksHandler(es)
+	mockComponent.EXPECT().AllHealthChecks(context.Background()).Return(map[string]string{"influx": OK.String(), "jaeger": OK.String(), "keycloak": OK.String(), "redis": OK.String(), "sentry": OK.String()}).Times(1)
 
 	// HTTP request.
-	var s = httptest.NewServer(http.HandlerFunc(h))
-	defer s.Close()
+	var req = httptest.NewRequest("GET", "http://cloudtrust.io/health", nil)
+	var w = httptest.NewRecorder()
 
 	// Health check.
-	var resp, err = s.Client().Get(s.URL)
+	h.ServeHTTP(w, req)
+	var resp = w.Result()
+	var body, err = ioutil.ReadAll(resp.Body)
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	assert.Equal(t, "application/json; charset=utf-8", resp.Header.Get("Content-Type"))
 
-	var body []byte
-	{
-		var err error
-		body, err = ioutil.ReadAll(resp.Body)
-		assert.Nil(t, err)
-		var m = map[string]string{}
-		json.Unmarshal(body, &m)
-		assert.Equal(t, OK.String(), m["influx"])
-		assert.Equal(t, OK.String(), m["jaeger"])
-		assert.Equal(t, OK.String(), m["redis"])
-		assert.Equal(t, OK.String(), m["sentry"])
-		assert.Equal(t, OK.String(), m["keycloak"])
-	}
+	var m = map[string]string{}
+	json.Unmarshal(body, &m)
+	assert.Equal(t, "OK", m["influx"])
+	assert.Equal(t, "OK", m["jaeger"])
+	assert.Equal(t, "OK", m["keycloak"])
+	assert.Equal(t, "OK", m["redis"])
+	assert.Equal(t, "OK", m["sentry"])
 }
+
 func TestHealthChecksHandlerFail(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 	var mockComponent = mock.NewComponent(mockCtrl)
 
-	// Health fail.
-	mockComponent.EXPECT().InfluxHealthChecks(context.Background()).Return(Reports{Reports: []Report{{Name: "influx", Duration: (1 * time.Second).String(), Status: KO, Error: "fail"}}}).Times(1)
-	mockComponent.EXPECT().JaegerHealthChecks(context.Background()).Return(Reports{Reports: []Report{{Name: "jaeger", Duration: (1 * time.Second).String(), Status: KO, Error: "fail"}}}).Times(1)
-	mockComponent.EXPECT().RedisHealthChecks(context.Background()).Return(Reports{Reports: []Report{{Name: "redis", Duration: (1 * time.Second).String(), Status: KO, Error: "fail"}}}).Times(1)
-	mockComponent.EXPECT().SentryHealthChecks(context.Background()).Return(Reports{Reports: []Report{{Name: "sentry", Duration: (1 * time.Second).String(), Status: KO, Error: "fail"}}}).Times(1)
-	mockComponent.EXPECT().KeycloakHealthChecks(context.Background()).Return(Reports{Reports: []Report{{Name: "keycloak", Duration: (1 * time.Second).String(), Status: KO, Error: "fail"}}}).Times(1)
+	var h = MakeAllHealthChecksHandler(MakeAllHealthChecksEndpoint(mockComponent))
 
-	var es = Endpoints{
-		InfluxHealthCheck:   MakeInfluxHealthCheckEndpoint(mockComponent),
-		JaegerHealthCheck:   MakeJaegerHealthCheckEndpoint(mockComponent),
-		RedisHealthCheck:    MakeRedisHealthCheckEndpoint(mockComponent),
-		SentryHealthCheck:   MakeSentryHealthCheckEndpoint(mockComponent),
-		KeycloakHealthCheck: MakeKeycloakHealthCheckEndpoint(mockComponent),
-	}
-
-	var h = MakeHealthChecksHandler(es)
+	// Health success.
+	mockComponent.EXPECT().AllHealthChecks(context.Background()).Return(map[string]string{"influx": KO.String(), "jaeger": Deactivated.String(), "keycloak": KO.String(), "redis": Degraded.String(), "sentry": KO.String()}).Times(1)
 
 	// HTTP request.
-	var s = httptest.NewServer(http.HandlerFunc(h))
-	defer s.Close()
+	var req = httptest.NewRequest("GET", "http://cloudtrust.io/health", nil)
+	var w = httptest.NewRecorder()
 
 	// Health check.
-	var resp, err = s.Client().Get(s.URL)
+	h.ServeHTTP(w, req)
+	var resp = w.Result()
+	var body, err = ioutil.ReadAll(resp.Body)
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	assert.Equal(t, "application/json; charset=utf-8", resp.Header.Get("Content-Type"))
 
-	var body []byte
-	{
-		var err error
-		body, err = ioutil.ReadAll(resp.Body)
-		assert.Nil(t, err)
-		var m = map[string]string{}
-		json.Unmarshal(body, &m)
-		assert.Equal(t, KO.String(), m["influx"])
-		assert.Equal(t, KO.String(), m["jaeger"])
-		assert.Equal(t, KO.String(), m["redis"])
-		assert.Equal(t, KO.String(), m["sentry"])
-		assert.Equal(t, KO.String(), m["keycloak"])
-	}
+	var m = map[string]string{}
+	json.Unmarshal(body, &m)
+	assert.Equal(t, "KO", m["influx"])
+	assert.Equal(t, "Deactivated", m["jaeger"])
+	assert.Equal(t, "KO", m["keycloak"])
+	assert.Equal(t, "Degraded", m["redis"])
+	assert.Equal(t, "KO", m["sentry"])
 }
+
 func TestHTTPErrorHandler(t *testing.T) {
 	var e = func(ctx context.Context, request interface{}) (response interface{}, err error) {
 		return nil, fmt.Errorf("fail")
@@ -300,5 +271,11 @@ func TestHTTPErrorHandler(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
 	assert.Equal(t, "application/json; charset=utf-8", resp.Header.Get("Content-Type"))
-	assert.Equal(t, "fail", string(body))
+	// Decode JSON and check error value.
+	{
+		var m = map[string]string{}
+		var err = json.Unmarshal(body, &m)
+		assert.Nil(t, err)
+		assert.Equal(t, "fail", m["error"])
+	}
 }

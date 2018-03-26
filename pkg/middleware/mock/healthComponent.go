@@ -34,6 +34,18 @@ func (m *HealthComponent) EXPECT() *HealthComponentMockRecorder {
 	return m.recorder
 }
 
+// AllHealthChecks mocks base method
+func (m *HealthComponent) AllHealthChecks(arg0 context.Context) map[string]string {
+	ret := m.ctrl.Call(m, "AllHealthChecks", arg0)
+	ret0, _ := ret[0].(map[string]string)
+	return ret0
+}
+
+// AllHealthChecks indicates an expected call of AllHealthChecks
+func (mr *HealthComponentMockRecorder) AllHealthChecks(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AllHealthChecks", reflect.TypeOf((*HealthComponent)(nil).AllHealthChecks), arg0)
+}
+
 // InfluxHealthChecks mocks base method
 func (m *HealthComponent) InfluxHealthChecks(arg0 context.Context) health.Reports {
 	ret := m.ctrl.Call(m, "InfluxHealthChecks", arg0)
