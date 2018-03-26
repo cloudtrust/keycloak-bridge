@@ -1,4 +1,4 @@
-package keycloakd
+package keycloakb
 
 import (
 	sentry "github.com/getsentry/raven-go"

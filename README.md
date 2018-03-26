@@ -25,7 +25,7 @@ See the repository [keycloak-service](https://github.com/cloudtrust/keycloak-ser
 
 ## Configuration
 
-Configuration is done with a YAML file, e.g. ```./configs/keycloakd.yml```.
+Configuration is done with a YAML file, e.g. ```./configs/keycloak_bridge.yml```.
 Default configurations are provided, that is if an entry is not present in the configuration file, it will be set to its default value.
 
 The documentation for the [Redis](https://cloudtrust.github.io/doc/chapter-godevel/logging.html), [Influx](https://cloudtrust.github.io/doc/chapter-godevel/instrumenting.html), [Sentry](https://cloudtrust.github.io/doc/chapter-godevel/tracking.html), [Jaeger](https://cloudtrust.github.io/doc/chapter-godevel/tracing.html) and [Debug](https://cloudtrust.github.io/doc/chapter-godevel/debugging.html) configuration are common to all microservices and is provided in the Cloudtrust Gitbook.
@@ -64,11 +64,11 @@ keycloak-timeout-ms | Keycloak requests timeout in milliseconds | 5000
 Launch the keycloak bridge:
 
 ```bash
-./bin/keycloakd --config-file <path/to/config/file.yml>
+./bin/keycloak_bridge --config-file <path/to/config/file.yml>
 ```
 
 It is recommended to always provides an absolute path to the configuration file when the service is started, even though absolute and relative paths are supported.
-If no configuration file is passed, the service will try to load the default config file at ```./configs/keycloakd.yml```, and if it fails it launches the service with the default parameters.
+If no configuration file is passed, the service will try to load the default config file at ```./configs/keycloak_bridge.yml```, and if it fails it launches the service with the default parameters.
 
 ### Keycloak events
 
@@ -108,11 +108,11 @@ The unit tests don't cover:
 
 - http client example (```./examples/http/http.go```)
 - grpc client example (```./examples/grpc/grpc.go```)
-- keycloakd  (```./cmd/keycloakd.go```)
+- keycloak_bridge (```./cmd/keycloak_bridge.go```)
 
 The first two are provided as example.
 
-The ```keycloakd.go``` is mostly just the main function doing all the wiring, it is difficult to test it with unit tests. It is covered by our integration tests.
+The ```keycloak_bridge.go``` is mostly just the main function doing all the wiring, it is difficult to test it with unit tests. It is covered by our integration tests.
 
 ## Limitations
 

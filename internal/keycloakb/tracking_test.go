@@ -1,4 +1,4 @@
-package keycloakd
+package keycloakb
 
 import (
 	"fmt"

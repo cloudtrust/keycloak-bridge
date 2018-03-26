@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/cloudtrust/keycloak-bridge/api/user/fb"
-	"github.com/cloudtrust/keycloak-bridge/internal/keycloakd"
+	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/cloudtrust/keycloak-bridge/pkg/event"
 	fb_flaki "github.com/cloudtrust/keycloak-bridge/pkg/flaki/fb"
 	"github.com/cloudtrust/keycloak-bridge/pkg/health"
@@ -139,7 +139,7 @@ func main() {
 		defer redisConn.Close()
 
 		// Create logger that duplicates logs to stdout and redis.
-		logger = log.NewJSONLogger(io.MultiWriter(os.Stdout, keycloakd.NewLogstashRedisWriter(redisConn, componentName)))
+		logger = log.NewJSONLogger(io.MultiWriter(os.Stdout, keycloakb.NewLogstashRedisWriter(redisConn, componentName)))
 		logger = log.With(logger, "ts", log.DefaultTimestampUTC, "caller", log.DefaultCaller)
 	}
 
@@ -186,7 +186,7 @@ func main() {
 		}
 		defer sentryClient.Close()
 	} else {
-		sentryClient = &keycloakd.NoopSentry{}
+		sentryClient = &keycloakb.NoopSentry{}
 	}
 
 	// Influx client.
@@ -216,9 +216,9 @@ func main() {
 			log.With(logger, "unit", "go-kit influx"),
 		)
 
-		influxMetrics = keycloakd.NewMetrics(influxClient, gokitInflux)
+		influxMetrics = keycloakb.NewMetrics(influxClient, gokitInflux)
 	} else {
-		influxMetrics = &keycloakd.NoopMetrics{}
+		influxMetrics = &keycloakb.NoopMetrics{}
 	}
 
 	// Jaeger client.
@@ -580,7 +580,7 @@ func config(logger log.Logger) map[string]interface{} {
 	logger.Log("msg", "load configuration and command args")
 
 	// Component default.
-	viper.SetDefault("config-file", "./configs/keycloakd.yml")
+	viper.SetDefault("config-file", "./configs/keycloak_bridge.yml")
 	viper.SetDefault("component-name", "keycloak-bridge")
 	viper.SetDefault("component-http-host-port", "0.0.0.0:8888")
 	viper.SetDefault("component-grpc-host-port", "0.0.0.0:5555")
