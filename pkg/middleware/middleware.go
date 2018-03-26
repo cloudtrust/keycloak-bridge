@@ -134,7 +134,7 @@ func MakeEndpointCorrelationIDMW(flaki fb.FlakiClient, tracer opentracing.Tracer
 				// If we cannot get ID from Flaki, we generate a random one.
 				if err != nil {
 					rand.Seed(time.Now().UnixNano())
-					corrID = strconv.FormatUint(rand.Uint64(), 10)
+					corrID = "degraded-" + strconv.FormatUint(rand.Uint64(), 10)
 				} else {
 					corrID = string(reply.Id())
 				}

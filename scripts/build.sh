@@ -69,7 +69,7 @@ GIT_COMMIT="$(git rev-parse HEAD)"
 # Override the variables GitCommit and Environment in the main package.
 LD_FLAGS="-X main.GitCommit=${GIT_COMMIT} -X main.Environment=${ENV}"
 
-go build -ldflags "$LD_FLAGS" -o ../bin/keycloakd
+go build -ldflags "$LD_FLAGS" -o ../bin/keycloak_bridge 
 echo "Build commit '${GIT_COMMIT}' for '${ENV}' environment."
 ls -hl ../bin/
 

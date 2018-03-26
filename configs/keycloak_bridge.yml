@@ -1,15 +1,15 @@
 # Component configs
 component-name: keycloak-bridge
-component-http-host-port: 0.0.0.0:8880
-component-grpc-host-port: 0.0.0.0:5550
+component-http-host-port: 0.0.0.0:8888
+component-grpc-host-port: 0.0.0.0:5555
 
 # Flaki ID generator
-flaki-host-port: 127.0.0.1:5555
+flaki-host-port: flaki:5555
 
 # Keycloak configs
-keycloak-host-port: 
-keycloak-username: 
-keycloak-password: 
+keycloak-host-port: 127.0.0.1:8080
+keycloak-username: admin
+keycloak-password: admin
 keycloak-timeout-ms: 5000
 
 # Redis
