@@ -2,6 +2,7 @@ package event
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"math/rand"
 	"strconv"
@@ -19,8 +20,9 @@ func TestComponentTrackingMW(t *testing.T) {
 	defer mockCtrl.Finish()
 	var mockMuxComponent = mock.NewMuxComponent(mockCtrl)
 	var mockSentry = mock.NewSentry(mockCtrl)
+	var mockLogger = mock.NewLogger(mockCtrl)
 
-	var m = MakeComponentTrackingMW(mockSentry)(mockMuxComponent)
+	var m = MakeMuxComponentTrackingMW(mockSentry, mockLogger)(mockMuxComponent)
 
 	rand.Seed(time.Now().UnixNano())
 	var corrID = strconv.FormatUint(rand.Uint64(), 10)
@@ -33,8 +35,15 @@ func TestComponentTrackingMW(t *testing.T) {
 	m.Event(ctx, "Event", event)
 
 	// Event error.
+	var expected = map[string]string{
+		"correlation_id": corrID,
+		"event_type":     "Event",
+		"obj":            base64.StdEncoding.EncodeToString(event),
+	}
 	mockMuxComponent.EXPECT().Event(ctx, "Event", event).Return(fmt.Errorf("fail")).Times(1)
-	mockSentry.EXPECT().CaptureError(fmt.Errorf("fail"), map[string]string{"correlation_id": corrID}).Return("").Times(1)
+	mockSentry.EXPECT().CaptureError(fmt.Errorf("fail"), expected).Return("").Times(1)
+	mockLogger.EXPECT().Log("unit", "Event", "correlation_id", corrID, "event_type", "Event", "obj", gomock.Any(), "error", "fail").Return(nil).Times(1)
+
 	m.Event(ctx, "Event", event)
 
 	// Event without correlation ID.

@@ -282,6 +282,7 @@ func main() {
 		userComponent = user.MakeComponentInstrumentingMW(influxMetrics.NewHistogram("user_component"))(userComponent)
 		userComponent = user.MakeComponentLoggingMW(log.With(userLogger, "mw", "component"))(userComponent)
 		userComponent = user.MakeComponentTracingMW(tracer)(userComponent)
+		userComponent = user.MakeComponentTrackingMW(sentryClient, log.With(userLogger, "mw", "component"))(userComponent)
 	}
 
 	var userEndpoint endpoint.Endpoint
@@ -340,6 +341,7 @@ func main() {
 		muxComponent = event.MakeMuxComponentInstrumentingMW(influxMetrics.NewHistogram("mux_component"))(muxComponent)
 		muxComponent = event.MakeMuxComponentLoggingMW(log.With(eventLogger, "mw", "component", "unit", "mux"))(muxComponent)
 		muxComponent = event.MakeMuxComponentTracingMW(tracer)(muxComponent)
+		muxComponent = event.MakeMuxComponentTrackingMW(sentryClient, log.With(eventLogger, "mw", "component"))(muxComponent)
 	}
 
 	var eventEndpoint endpoint.Endpoint

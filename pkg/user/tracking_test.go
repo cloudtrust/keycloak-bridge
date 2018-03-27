@@ -18,8 +18,9 @@ func TestComponentTrackingMW(t *testing.T) {
 	defer mockCtrl.Finish()
 	var mockComponent = mock.NewComponent(mockCtrl)
 	var mockSentry = mock.NewSentry(mockCtrl)
+	var mockLogger = mock.NewLogger(mockCtrl)
 
-	var m = MakeComponentTrackingMW(mockSentry)(mockComponent)
+	var m = MakeComponentTrackingMW(mockSentry, mockLogger)(mockComponent)
 
 	rand.Seed(time.Now().UnixNano())
 	var corrID = strconv.FormatUint(rand.Uint64(), 10)
@@ -32,8 +33,14 @@ func TestComponentTrackingMW(t *testing.T) {
 	m.GetUsers(ctx, req)
 
 	// GetUsers error.
+	var expected = map[string]string{
+		"correlation_id": corrID,
+		"realm":          "realm",
+		"pack":           "0",
+	}
 	mockComponent.EXPECT().GetUsers(ctx, req).Return(nil, fmt.Errorf("fail")).Times(1)
-	mockSentry.EXPECT().CaptureError(fmt.Errorf("fail"), map[string]string{"correlation_id": corrID}).Return("").Times(1)
+	mockSentry.EXPECT().CaptureError(fmt.Errorf("fail"), expected).Return("").Times(1)
+	mockLogger.EXPECT().Log("unit", "GetUsers", "correlation_id", corrID, "realm", "realm", "pack", "0", "error", "fail").Return(nil).Times(1)
 	m.GetUsers(ctx, req)
 
 	// GetUsers without correlation ID.

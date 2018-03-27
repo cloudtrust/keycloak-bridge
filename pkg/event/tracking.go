@@ -4,8 +4,10 @@ package event
 
 import (
 	"context"
+	"encoding/base64"
 
 	sentry "github.com/getsentry/raven-go"
+	"github.com/go-kit/kit/log"
 )
 
 // Sentry interface.
@@ -14,26 +16,38 @@ type Sentry interface {
 }
 
 // Tracking middleware at component level.
-type trackingComponentMW struct {
+type trackingMuxComponentMW struct {
 	sentry Sentry
+	logger log.Logger
 	next   MuxComponent
 }
 
-// MakeComponentTrackingMW makes an error tracking middleware, where the errors are sent to Sentry.
-func MakeComponentTrackingMW(sentry Sentry) func(MuxComponent) MuxComponent {
+// MakeMuxComponentTrackingMW makes an error tracking middleware, where the errors are sent to Sentry.
+func MakeMuxComponentTrackingMW(sentry Sentry, logger log.Logger) func(MuxComponent) MuxComponent {
 	return func(next MuxComponent) MuxComponent {
-		return &trackingComponentMW{
+		return &trackingMuxComponentMW{
 			sentry: sentry,
+			logger: logger,
 			next:   next,
 		}
 	}
 }
 
 // trackingComponentMW implements MuxComponent.
-func (m *trackingComponentMW) Event(ctx context.Context, eventType string, obj []byte) error {
+func (m *trackingMuxComponentMW) Event(ctx context.Context, eventType string, obj []byte) error {
 	var err = m.next.Event(ctx, eventType, obj)
 	if err != nil {
-		m.sentry.CaptureError(err, map[string]string{"correlation_id": ctx.Value("correlation_id").(string)})
+		var corrID = ctx.Value("correlation_id").(string)
+		var b64Obj = base64.StdEncoding.EncodeToString(obj)
+
+		var tags = map[string]string{
+			"correlation_id": corrID,
+			"event_type":     eventType,
+			"obj":            b64Obj,
+		}
+
+		m.sentry.CaptureError(err, tags)
+		m.logger.Log("unit", "Event", "correlation_id", corrID, "event_type", eventType, "obj", b64Obj, "error", err.Error())
 	}
 	return err
 }
