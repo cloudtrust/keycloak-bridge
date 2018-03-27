@@ -1,0 +1,43 @@
+# Component configs
+component-name: keycloak-bridge
+component-http-host-port: 0.0.0.0:8888
+component-grpc-host-port: 0.0.0.0:5555
+
+# Flaki ID generator
+flaki-host-port: flaki:5555
+
+# Keycloak configs
+keycloak-host-port: 127.0.0.1:8080
+keycloak-username: admin
+keycloak-password: admin
+keycloak-timeout-ms: 5000
+
+# Redis
+redis-host-port: 
+redis-password: 
+redis-database: 0
+redis-write-interval-ms: 1000
+
+# Influx DB configs
+influx-host-port: 
+influx-username: 
+influx-password: 
+influx-database: 
+influx-precision: s
+influx-retention-policy: ""
+influx-write-consistency: ""
+influx-write-interval-ms: 1000
+
+# Sentry configs
+sentry-dsn: 
+
+# Jaeger configs
+jaeger-sampler-type: const
+jaeger-sampler-param: 1
+jaeger-sampler-host-port: 
+jaeger-reporter-logspan: false
+jaeger-write-interval-ms: 1000
+jaeger-collector-healthcheck-host-port: 
+
+# Debug routes
+pprof-route-enabled: true

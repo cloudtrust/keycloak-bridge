@@ -1,0 +1,17 @@
+namespace fb;
+
+// The request is empty
+table FlakiRequest {
+}
+
+// The response message containing the unique ID
+table FlakiReply {
+    id:string;
+}
+
+rpc_service Flaki {
+  NextID(FlakiRequest):FlakiReply;
+  NextValidID(FlakiRequest):FlakiReply;
+}
+
+root_type FlakiReply;
