@@ -15,7 +15,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/cloudtrust/keycloak-bridge/pkg/flaki/fb"
+	"github.com/cloudtrust/keycloak-bridge/api/flaki/fb"
 	"github.com/go-kit/kit/endpoint"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/metrics"

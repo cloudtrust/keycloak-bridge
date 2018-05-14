@@ -7,7 +7,7 @@ function usage()
 	echo "NAME"
 	echo "    build.sh - Build keycloak-bridge"
 	echo "SYNOPSIS"
-	echo "    ${bold}build.sh${normal} ${bold}--env${normal} environment"
+	echo "    ${bold}build.sh${normal} ${bold}--version${normal} version ${bold}--env${normal} environment"
 }
 
 #
@@ -24,13 +24,16 @@ do
 		--env ) shift
 				ENV=$1
 				;;
+		--version ) shift
+				VERSION=$1
+				;;
 		* ) 	usage
 				exit 1
 	esac
 	shift
 done
 
-if [ -z ${ENV} ]; then
+if [ -z ${ENV} ] || [ -z ${VERSION} ]; then
 	usage
 	exit 1
 fi
@@ -38,7 +41,7 @@ fi
 # Directories flatbuffer.
 FB_EVENT_DIR="./api/event"
 FB_USER_DIR="./api/user"
-FB_FLAKI_DIR="./pkg/flaki"
+FB_FLAKI_DIR="./api/flaki"
 
 # Delete the old dirs.
 echo "==> Removing old directories..."
@@ -46,6 +49,8 @@ rm -f bin/*
 mkdir -p bin/
 rm -f "$FB_EVENT_DIR"/fb/*
 rm -f "$FB_USER_DIR"/fb/*
+rm -f "$FB_FLAKI_DIR"/fb/*
+
 
 # Flatbuffers.
 echo
@@ -65,9 +70,10 @@ cd cmd
 
 # Get the git commit.
 GIT_COMMIT="$(git rev-parse HEAD)"
+GIT_DIRTY="$(test -n "`git status --porcelain`" && echo "+CHANGES" || true)"
 
 # Override the variables GitCommit and Environment in the main package.
-LD_FLAGS="-X main.GitCommit=${GIT_COMMIT} -X main.Environment=${ENV}"
+LD_FLAGS="-X main.GitCommit=${GIT_COMMIT}${GIT_DIRTY} -X main.Environment=${ENV} -X main.Version=${VERSION}"
 
 go build -ldflags "$LD_FLAGS" -o ../bin/keycloak_bridge 
 echo "Build commit '${GIT_COMMIT}' for '${ENV}' environment."
