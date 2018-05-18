@@ -1,5 +1,7 @@
 package health_test
 
+//go:generate mockgen -destination=./mock/redis.go -package=mock -mock_names=RedisModule=RedisModule,Redis=Redis  github.com/cloudtrust/keycloak-bridge/pkg/health RedisModule,Redis
+
 import (
 	"context"
 	"fmt"

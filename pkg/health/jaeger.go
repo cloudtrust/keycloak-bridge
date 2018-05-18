@@ -1,7 +1,5 @@
 package health
 
-//go:generate mockgen -destination=./mock/jaeger.go -package=mock -mock_names=JaegerModule=JaegerModule,SystemDConn=SystemDConn  github.com/cloudtrust/keycloak-bridge/pkg/health JaegerModule,SystemDConn
-
 import (
 	"context"
 	"fmt"

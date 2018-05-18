@@ -1,5 +1,7 @@
 package health_test
 
+//go:generate mockgen -destination=./mock/influx.go -package=mock -mock_names=InfluxModule=InfluxModule,Influx=Influx  github.com/cloudtrust/keycloak-bridge/pkg/health InfluxModule,Influx
+
 import (
 	"context"
 	"fmt"

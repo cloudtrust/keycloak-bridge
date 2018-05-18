@@ -1,5 +1,7 @@
+# For the keys representing duration (i.e. the key ending with "-interval" or "-validity"), 
+# the Go syntax is used. Valid units are "h", "m", "s", "ms", "us", "ns", e.g. "2h30m10s".
+
 # Component configs
-component-name: keycloak-bridge
 component-http-host-port: 0.0.0.0:8888
 component-grpc-host-port: 0.0.0.0:5555
 
@@ -7,16 +9,22 @@ component-grpc-host-port: 0.0.0.0:5555
 flaki-host-port: flaki:5555
 
 # Keycloak configs
-keycloak-host-port: 127.0.0.1:8080
+keycloak-host-port: keycloak:80
 keycloak-username: admin
 keycloak-password: admin
-keycloak-timeout-ms: 5000
+keycloak-timeout: 5s
 
 # Redis
 redis-host-port: 
 redis-password: 
 redis-database: 0
-redis-write-interval-ms: 1000
+redis-write-interval: 1s
+
+# Cockroach configs
+cockroach-host-port: localhost:26257
+cockroach-username: cockroach
+cockroach-password: cockroach
+cockroach-config-database: config
 
 # Influx DB configs
 influx-host-port: 
@@ -26,7 +34,7 @@ influx-database:
 influx-precision: s
 influx-retention-policy: ""
 influx-write-consistency: ""
-influx-write-interval-ms: 1000
+influx-write-interval: 1s
 
 # Sentry configs
 sentry-dsn: 
@@ -36,7 +44,7 @@ jaeger-sampler-type: const
 jaeger-sampler-param: 1
 jaeger-sampler-host-port: 
 jaeger-reporter-logspan: false
-jaeger-write-interval-ms: 1000
+jaeger-write-interval: 1s
 jaeger-collector-healthcheck-host-port: 
 
 # Debug routes

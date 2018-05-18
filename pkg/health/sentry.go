@@ -1,7 +1,5 @@
 package health
 
-//go:generate mockgen -destination=./mock/sentry.go -package=mock -mock_names=SentryModule=SentryModule,Sentry=Sentry  github.com/cloudtrust/keycloak-bridge/pkg/health SentryModule,Sentry
-
 import (
 	"context"
 	"fmt"

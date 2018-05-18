@@ -1,7 +1,5 @@
 package health
 
-//go:generate mockgen -destination=./mock/keycloak.go -package=mock -mock_names=Keycloak=Keycloak,KeycloakModule=KeycloakModule github.com/cloudtrust/keycloak-bridge/pkg/health Keycloak,KeycloakModule
-
 import (
 	"context"
 	"fmt"
@@ -57,7 +55,7 @@ func NewKeycloakModule(keycloak Keycloak, version string) (KeycloakModule, error
 	var m = &keycloakModule{keycloak: keycloak}
 	var v, err = NewVersion(version)
 	if err != nil {
-		return nil, errors.Wrap(err, "invalid version number")
+		return nil, errors.Wrapf(err, "invalid version number: %s", version)
 	}
 	return m, m.updateTestRealm(v)
 }
@@ -174,7 +172,10 @@ func (m *keycloakModule) updateTestRealm(v *Version) error {
 	}
 
 	var vuser, err = m.keycloak.GetUser(testRealm, vuserID)
-	if err != nil || vuser.FirstName == nil {
+	if err != nil {
+		return err
+	}
+	if vuser.FirstName != nil {
 		// Check it the test realm is up to date.
 		var currentVersion, err = NewVersion(*vuser.FirstName)
 		if err != nil {

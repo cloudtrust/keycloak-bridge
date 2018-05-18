@@ -1,5 +1,7 @@
 package health_test
 
+//go:generate mockgen -destination=./mock/keycloak.go -package=mock -mock_names=Keycloak=Keycloak,KeycloakModule=KeycloakModule github.com/cloudtrust/keycloak-bridge/pkg/health Keycloak,KeycloakModule
+
 import (
 	"context"
 	"fmt"

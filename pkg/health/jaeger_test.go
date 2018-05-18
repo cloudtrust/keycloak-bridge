@@ -1,5 +1,7 @@
 package health_test
 
+//go:generate mockgen -destination=./mock/jaeger.go -package=mock -mock_names=JaegerModule=JaegerModule,SystemDConn=SystemDConn  github.com/cloudtrust/keycloak-bridge/pkg/health JaegerModule,SystemDConn
+
 import (
 	"context"
 	"fmt"
@@ -24,7 +26,7 @@ func TestJaegerHealthChecks(t *testing.T) {
 	}))
 	defer s.Close()
 
-	var m = NewJaegerModule(mockSystemDConn, s.Client(), "jaeger-collector:14269", true)
+	var m = NewJaegerModule(mockSystemDConn, s.Client(), s.URL[7:], true)
 
 	var units = []dbus.UnitStatus{{Name: "agent.service", ActiveState: "active"}}
 
