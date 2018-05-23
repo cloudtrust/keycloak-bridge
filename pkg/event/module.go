@@ -1,6 +1,6 @@
 package event
 
-//go:generate mockgen -destination=./mock/module.go -package=mock -mock_names=ConsoleModule=ConsoleModule,StatisticModule=StatisticModule,Influx=Influx github.com/cloudtrust/keycloak-bridge/pkg/event ConsoleModule,StatisticModule,Influx
+//go:generate mockgen -destination=./mock/module.go -package=mock -mock_names=ConsoleModule=ConsoleModule,StatisticModule=StatisticModule,Influx=Influx,ESClient=ESClient github.com/cloudtrust/keycloak-bridge/pkg/event ConsoleModule,StatisticModule,Influx,ESClient
 
 import (
 	"context"
@@ -15,18 +15,31 @@ type ConsoleModule interface {
 	Print(context.Context, map[string]string) error
 }
 
+// ESClient is the interface of the elasticsearch client.
+type ESClient interface {
+	IndexData(esIndex, esType, id string, data interface{}) error
+}
+
 type consoleModule struct {
-	logger log.Logger
+	esClient ESClient
+	esIndex  string
+	logger   log.Logger
 }
 
 // NewConsoleModule returns a Console module.
-func NewConsoleModule(logger log.Logger) ConsoleModule {
+func NewConsoleModule(logger log.Logger, esc ESClient, esIndex string) ConsoleModule {
 	return &consoleModule{
-		logger: logger,
+		esClient: esc,
+		esIndex:  esIndex,
+		logger:   logger,
 	}
 }
 
 func (cm *consoleModule) Print(_ context.Context, m map[string]string) error {
+	// Index data
+	cm.esClient.IndexData(cm.esIndex, m["type"], m["uid"], m)
+
+	// Log
 	for k, v := range m {
 		cm.logger.Log(k, v)
 	}

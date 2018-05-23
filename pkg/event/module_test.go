@@ -14,11 +14,25 @@ func TestConsoleModule(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 	var mockLogger = mock.NewLogger(mockCtrl)
+	var mockES = mock.NewESClient(mockCtrl)
 
-	var consoleModule = NewConsoleModule(mockLogger)
+	var (
+		esIndex = "index"
+		esType  = "type"
+		uid     = "uid"
+		m       = map[string]string{
+			"type": esType,
+			"uid":  uid,
+		}
+	)
+	var consoleModule = NewConsoleModule(mockLogger, mockES, "index")
 
-	mockLogger.EXPECT().Log("key", "val").Return(nil).Times(1)
-	var err = consoleModule.Print(context.Background(), map[string]string{"key": "val"})
+	for k, v := range m {
+		mockLogger.EXPECT().Log(k, v).Return(nil).Times(1)
+	}
+
+	mockES.EXPECT().IndexData(esIndex, esType, uid, m).Return(nil).Times(1)
+	var err = consoleModule.Print(context.Background(), m)
 	assert.Nil(t, err)
 }
 

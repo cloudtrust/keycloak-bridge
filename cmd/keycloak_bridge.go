@@ -17,6 +17,7 @@ import (
 
 	fb_flaki "github.com/cloudtrust/keycloak-bridge/api/flaki/fb"
 	"github.com/cloudtrust/keycloak-bridge/api/user/fb"
+	"github.com/cloudtrust/keycloak-bridge/internal/elasticsearch"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/cloudtrust/keycloak-bridge/pkg/event"
 	"github.com/cloudtrust/keycloak-bridge/pkg/export"
@@ -74,12 +75,17 @@ func main() {
 		// Flaki
 		flakiAddr = c.GetString("flaki-host-port")
 
+		// Keycloak
 		keycloakConfig = keycloak.Config{
 			Addr:     fmt.Sprintf("http://%s", c.GetString("keycloak-host-port")),
 			Username: c.GetString("keycloak-username"),
 			Password: c.GetString("keycloak-password"),
 			Timeout:  c.GetDuration("keycloak-timeout"),
 		}
+
+		// Elasticsearch
+		esAddr  = c.GetString("es-host-port")
+		esIndex = c.GetString("es-index-name")
 
 		// Enabled units
 		cockroachEnabled  = c.GetBool("cockroach")
@@ -306,6 +312,9 @@ func main() {
 		}
 	}
 
+	// Elasticsearch client.
+	var esClient = elasticsearch.NewClient(esAddr, http.DefaultClient)
+
 	// User service.
 	var userLogger = log.With(logger, "svc", "user")
 
@@ -344,7 +353,7 @@ func main() {
 
 	var consoleModule event.ConsoleModule
 	{
-		consoleModule = event.NewConsoleModule(log.With(eventLogger, "module", "console"))
+		consoleModule = event.NewConsoleModule(log.With(eventLogger, "module", "console"), esClient, esIndex)
 		consoleModule = event.MakeConsoleModuleInstrumentingMW(influxMetrics.NewHistogram("console_module"))(consoleModule)
 		consoleModule = event.MakeConsoleModuleLoggingMW(log.With(eventLogger, "mw", "module", "unit", "console"))(consoleModule)
 		consoleModule = event.MakeConsoleModuleTracingMW(tracer)(consoleModule)
@@ -648,6 +657,10 @@ func config(logger log.Logger) *viper.Viper {
 	v.SetDefault("keycloak-username", "")
 	v.SetDefault("keycloak-password", "")
 	v.SetDefault("keycloak-timeout", "5s")
+
+	// Elasticsearch default.
+	v.SetDefault("es-host-port", "elasticsearch-data:9200")
+	v.SetDefault("es-index-name", "keycloak_business")
 
 	// Influx DB client default.
 	v.SetDefault("influx", false)
