@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math/rand"
 	"net"
 	"net/http"
 	"net/http/pprof"
@@ -15,23 +16,31 @@ import (
 	"syscall"
 	"time"
 
+	common "github.com/cloudtrust/common-healthcheck"
+	"github.com/cloudtrust/go-jobs"
+	"github.com/cloudtrust/go-jobs/job"
+	job_lock "github.com/cloudtrust/go-jobs/lock"
+	job_status "github.com/cloudtrust/go-jobs/status"
 	fb_flaki "github.com/cloudtrust/keycloak-bridge/api/flaki/fb"
 	"github.com/cloudtrust/keycloak-bridge/api/user/fb"
 	"github.com/cloudtrust/keycloak-bridge/internal/elasticsearch"
+	"github.com/cloudtrust/keycloak-bridge/internal/idgenerator"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
+	"github.com/cloudtrust/keycloak-bridge/internal/redis"
 	"github.com/cloudtrust/keycloak-bridge/pkg/event"
 	"github.com/cloudtrust/keycloak-bridge/pkg/export"
 	"github.com/cloudtrust/keycloak-bridge/pkg/health"
+	health_job "github.com/cloudtrust/keycloak-bridge/pkg/job"
 	"github.com/cloudtrust/keycloak-bridge/pkg/middleware"
 	"github.com/cloudtrust/keycloak-bridge/pkg/user"
 	keycloak "github.com/cloudtrust/keycloak-client"
 	"github.com/coreos/go-systemd/dbus"
-	"github.com/garyburd/redigo/redis"
 	sentry "github.com/getsentry/raven-go"
 	"github.com/go-kit/kit/endpoint"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/metrics"
 	gokit_influx "github.com/go-kit/kit/metrics/influx"
+	"github.com/go-kit/kit/ratelimit"
 	grpc_transport "github.com/go-kit/kit/transport/grpc"
 	"github.com/google/flatbuffers/go"
 	"github.com/gorilla/mux"
@@ -41,6 +50,7 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	jaeger "github.com/uber/jaeger-client-go/config"
+	"golang.org/x/time/rate"
 	"google.golang.org/grpc"
 )
 
@@ -56,6 +66,18 @@ var (
 	// GitCommit is filled by the compiler.
 	GitCommit = "unknown"
 )
+
+const (
+	influxKey   = "influx"
+	jaegerKey   = "jaeger"
+	redisKey    = "redis"
+	sentryKey   = "sentry"
+	keycloakKey = "keycloak"
+)
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
 
 func main() {
 	// Logger.
@@ -90,9 +112,9 @@ func main() {
 		// Enabled units
 		cockroachEnabled  = c.GetBool("cockroach")
 		influxEnabled     = c.GetBool("influx")
-		sentryEnabled     = c.GetBool("sentry")
-		redisEnabled      = c.GetBool("redis")
 		jaegerEnabled     = c.GetBool("jaeger")
+		redisEnabled      = c.GetBool("redis")
+		sentryEnabled     = c.GetBool("sentry")
 		pprofRouteEnabled = c.GetBool("pprof-route-enabled")
 
 		// Influx
@@ -134,10 +156,37 @@ func main() {
 		redisWriteInterval = c.GetDuration("redis-write-interval")
 
 		// Cockroach
-		cockroachHostPort = c.GetString("cockroach-host-port")
-		cockroachUsername = c.GetString("cockroach-username")
-		cockroachPassword = c.GetString("cockroach-password")
-		cockroachConfigDB = c.GetString("cockroach-config-database")
+		cockroachHostPort      = c.GetString("cockroach-host-port")
+		cockroachUsername      = c.GetString("cockroach-username")
+		cockroachPassword      = c.GetString("cockroach-password")
+		cockroachDB            = c.GetString("cockroach-database")
+		cockroachCleanInterval = c.GetDuration("cockroach-clean-interval")
+
+		// Jobs
+		healthChecksValidity = map[string]time.Duration{
+			influxKey:   c.GetDuration("job-influx-health-validity"),
+			jaegerKey:   c.GetDuration("job-jaeger-health-validity"),
+			redisKey:    c.GetDuration("job-redis-health-validity"),
+			sentryKey:   c.GetDuration("job-sentry-health-validity"),
+			keycloakKey: c.GetDuration("job-keycloak-health-validity"),
+		}
+
+		// Rate limiting
+		rateLimit = map[string]int{
+			"event":              c.GetInt("rate-event"),
+			"user":               c.GetInt("rate-user"),
+			"influxHealthExec":   c.GetInt("rate-influx-health-exec"),
+			"influxHealthRead":   c.GetInt("rate-influx-health-read"),
+			"jaegerHealthExec":   c.GetInt("rate-jaeger-health-exec"),
+			"jaegerHealthRead":   c.GetInt("rate-jaeger-health-read"),
+			"redisHealthExec":    c.GetInt("rate-redis-health-exec"),
+			"redisHealthRead":    c.GetInt("rate-redis-health-read"),
+			"sentryHealthExec":   c.GetInt("rate-sentry-health-exec"),
+			"sentryHealthRead":   c.GetInt("rate-sentry-health-read"),
+			"keycloakHealthExec": c.GetInt("rate-keycloak-health-exec"),
+			"keycloakHealthRead": c.GetInt("rate-keycloak-health-read"),
+			"allHealth":          c.GetInt("rate-all-health"),
+		}
 	)
 
 	// Redis.
@@ -147,11 +196,11 @@ func main() {
 		Send(commandName string, args ...interface{}) error
 		Flush() error
 	}
-	var redisConn redis.Conn
 
+	var redisConn Redis = &keycloakb.NoopRedis{}
 	if redisEnabled {
 		var err error
-		redisConn, err = redis.Dial("tcp", redisURL, redis.DialDatabase(redisDatabase), redis.DialPassword(redisPassword))
+		redisConn, err = redis.NewResilientConn(redisURL, redisPassword, redisDatabase)
 		if err != nil {
 			logger.Log("msg", "could not create redis client", "error", err)
 			return
@@ -302,10 +351,10 @@ func main() {
 		QueryRow(query string, args ...interface{}) *sql.Row
 	}
 
-	var cConfigDB Cockroach
+	var cockroachConn Cockroach
 	if cockroachEnabled {
 		var err error
-		cConfigDB, err = sql.Open("postgres", fmt.Sprintf("postgresql://%s:%s@%s/%s?sslmode=disable", cockroachUsername, cockroachPassword, cockroachHostPort, cockroachConfigDB))
+		cockroachConn, err = sql.Open("postgres", fmt.Sprintf("postgresql://%s:%s@%s/%s?sslmode=disable", cockroachUsername, cockroachPassword, cockroachHostPort, cockroachDB))
 		if err != nil {
 			logger.Log("msg", "could not create cockroach DB connection for config DB", "error", err)
 			return
@@ -343,6 +392,8 @@ func main() {
 		userEndpoint = middleware.MakeEndpointTracingMW(tracer, "user_endpoint")(userEndpoint)
 		userEndpoint = middleware.MakeEndpointCorrelationIDMW(flakiClient, tracer)(userEndpoint)
 	}
+	// Rate limiting
+	userEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["user"]))(userEndpoint)
 
 	var userEndpoints = user.Endpoints{
 		Endpoint: userEndpoint,
@@ -353,7 +404,7 @@ func main() {
 
 	var consoleModule event.ConsoleModule
 	{
-		consoleModule = event.NewConsoleModule(log.With(eventLogger, "module", "console"), esClient, esIndex)
+		consoleModule = event.NewConsoleModule(log.With(eventLogger, "module", "console"), esClient, esIndex, ComponentName, ComponentID)
 		consoleModule = event.MakeConsoleModuleInstrumentingMW(influxMetrics.NewHistogram("console_module"))(consoleModule)
 		consoleModule = event.MakeConsoleModuleLoggingMW(log.With(eventLogger, "mw", "module", "unit", "console"))(consoleModule)
 		consoleModule = event.MakeConsoleModuleTracingMW(tracer)(consoleModule)
@@ -403,13 +454,16 @@ func main() {
 		eventEndpoint = middleware.MakeEndpointCorrelationIDMW(flakiClient, tracer)(eventEndpoint)
 	}
 
+	// Rate limiting
+	eventEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["event"]))(eventEndpoint)
+
 	var eventEndpoints = event.Endpoints{
 		Endpoint: eventEndpoint,
 	}
 
 	// Export configuration
 	var exportModule = export.NewModule(keycloakClient)
-	var cfgStorageModue = export.NewConfigStorageModule(cConfigDB)
+	var cfgStorageModue = export.NewConfigStorageModule(cockroachConn)
 
 	var exportComponent = export.NewComponent(ComponentName, Version, exportModule, cfgStorageModue)
 	var exportEndpoint = export.MakeExportEndpoint(exportComponent)
@@ -418,79 +472,218 @@ func main() {
 	// Health service.
 	var healthLogger = log.With(logger, "svc", "health")
 
-	var healthComponent health.Component
+	var cockroachModule *health.StorageModule
 	{
-		var influxHM = health.NewInfluxModule(influxMetrics, influxEnabled)
-		var jaegerHM = health.NewJaegerModule(systemDConn, http.DefaultClient, jaegerCollectorHealthcheckURL, jaegerEnabled)
-		var redisHM = health.NewRedisModule(redisConn, redisEnabled)
-		var sentryHM = health.NewSentryModule(sentryClient, http.DefaultClient, sentryEnabled)
-		var keycloakHM, err = health.NewKeycloakModule(keycloakClient, Version)
+		cockroachModule = health.NewStorageModule(ComponentName, ComponentID, cockroachConn)
+	}
+
+	var influxHM health.InfluxHealthChecker
+	{
+		influxHM = common.NewInfluxModule(influxMetrics, influxEnabled)
+		influxHM = common.MakeInfluxModuleLoggingMW(log.With(healthLogger, "mw", "module"))(influxHM)
+	}
+	var jaegerHM health.JaegerHealthChecker
+	{
+		jaegerHM = common.NewJaegerModule(systemDConn, http.DefaultClient, jaegerCollectorHealthcheckURL, jaegerEnabled)
+		jaegerHM = common.MakeJaegerModuleLoggingMW(log.With(healthLogger, "mw", "module"))(jaegerHM)
+	}
+	var redisHM health.RedisHealthChecker
+	{
+		redisHM = common.NewRedisModule(redisConn, redisEnabled)
+		redisHM = common.MakeRedisModuleLoggingMW(log.With(healthLogger, "mw", "module"))(redisHM)
+	}
+	var sentryHM health.SentryHealthChecker
+	{
+		sentryHM = common.NewSentryModule(sentryClient, http.DefaultClient, sentryEnabled)
+		sentryHM = common.MakeSentryModuleLoggingMW(log.With(healthLogger, "mw", "module"))(sentryHM)
+	}
+	var keycloakHM health.KeycloakHealthChecker
+	{
+		var err error
+		keycloakHM, err = health.NewKeycloakModule(keycloakClient, Version)
 		if err != nil {
 			logger.Log("msg", "could not create keycloak health check module", "error", err)
 			return
 		}
-
-		healthComponent = health.NewComponent(influxHM, jaegerHM, redisHM, sentryHM, keycloakHM)
 	}
 
-	var influxHealthEndpoint endpoint.Endpoint
+	var healthComponent health.HealthChecker
 	{
-		influxHealthEndpoint = health.MakeInfluxHealthCheckEndpoint(healthComponent)
-		influxHealthEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("influx_health_endpoint"))(influxHealthEndpoint)
-		influxHealthEndpoint = middleware.MakeEndpointLoggingMW(log.With(healthLogger, "mw", "endpoint", "unit", "influx"))(influxHealthEndpoint)
-		influxHealthEndpoint = middleware.MakeEndpointTracingMW(tracer, "influx_health_endpoint")(influxHealthEndpoint)
-		influxHealthEndpoint = middleware.MakeEndpointCorrelationIDMW(flakiClient, tracer)(influxHealthEndpoint)
-	}
-	var jaegerHealthEndpoint endpoint.Endpoint
-	{
-		jaegerHealthEndpoint = health.MakeJaegerHealthCheckEndpoint(healthComponent)
-		jaegerHealthEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("jaeger_health_endpoint"))(jaegerHealthEndpoint)
-		jaegerHealthEndpoint = middleware.MakeEndpointLoggingMW(log.With(healthLogger, "mw", "endpoint", "unit", "jaeger"))(jaegerHealthEndpoint)
-		jaegerHealthEndpoint = middleware.MakeEndpointTracingMW(tracer, "jaeger_health_endpoint")(jaegerHealthEndpoint)
-		jaegerHealthEndpoint = middleware.MakeEndpointCorrelationIDMW(flakiClient, tracer)(jaegerHealthEndpoint)
-	}
-	var redisHealthEndpoint endpoint.Endpoint
-	{
-		redisHealthEndpoint = health.MakeRedisHealthCheckEndpoint(healthComponent)
-		redisHealthEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("redis_health_endpoint"))(redisHealthEndpoint)
-		redisHealthEndpoint = middleware.MakeEndpointLoggingMW(log.With(healthLogger, "mw", "endpoint", "unit", "redis"))(redisHealthEndpoint)
-		redisHealthEndpoint = middleware.MakeEndpointTracingMW(tracer, "redis_health_endpoint")(redisHealthEndpoint)
-		redisHealthEndpoint = middleware.MakeEndpointCorrelationIDMW(flakiClient, tracer)(redisHealthEndpoint)
-	}
-	var sentryHealthEndpoint endpoint.Endpoint
-	{
-		sentryHealthEndpoint = health.MakeSentryHealthCheckEndpoint(healthComponent)
-		sentryHealthEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("sentry_health_endpoint"))(sentryHealthEndpoint)
-		sentryHealthEndpoint = middleware.MakeEndpointLoggingMW(log.With(healthLogger, "mw", "endpoint", "unit", "sentry"))(sentryHealthEndpoint)
-		sentryHealthEndpoint = middleware.MakeEndpointTracingMW(tracer, "sentry_health_endpoint")(sentryHealthEndpoint)
-		sentryHealthEndpoint = middleware.MakeEndpointCorrelationIDMW(flakiClient, tracer)(sentryHealthEndpoint)
+		healthComponent = health.NewComponent(influxHM, jaegerHM, redisHM, sentryHM, keycloakHM, cockroachModule, healthChecksValidity)
+		healthComponent = health.MakeComponentLoggingMW(log.With(healthLogger, "mw", "component"))(healthComponent)
 	}
 
-	var keycloakHealthEndpoint endpoint.Endpoint
+	var influxExecHealthEndpoint endpoint.Endpoint
 	{
-		keycloakHealthEndpoint = health.MakeKeycloakHealthCheckEndpoint(healthComponent)
-		keycloakHealthEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("keycloak_health_endpoint"))(keycloakHealthEndpoint)
-		keycloakHealthEndpoint = middleware.MakeEndpointLoggingMW(log.With(healthLogger, "mw", "endpoint", "unit", "keycloak"))(keycloakHealthEndpoint)
-		keycloakHealthEndpoint = middleware.MakeEndpointTracingMW(tracer, "keycloak_health_endpoint")(keycloakHealthEndpoint)
-		keycloakHealthEndpoint = middleware.MakeEndpointCorrelationIDMW(flakiClient, tracer)(keycloakHealthEndpoint)
+		influxExecHealthEndpoint = health.MakeExecInfluxHealthCheckEndpoint(healthComponent)
+		influxExecHealthEndpoint = middleware.MakeEndpointLoggingMW(log.With(healthLogger, "mw", "endpoint", "unit", "ExecInfluxHealthCheck"))(influxExecHealthEndpoint)
+		influxExecHealthEndpoint = middleware.MakeEndpointCorrelationIDMW(flakiClient, tracer)(influxExecHealthEndpoint)
 	}
-
+	var influxReadHealthEndpoint endpoint.Endpoint
+	{
+		influxReadHealthEndpoint = health.MakeReadInfluxHealthCheckEndpoint(healthComponent)
+		influxReadHealthEndpoint = middleware.MakeEndpointLoggingMW(log.With(healthLogger, "mw", "endpoint", "unit", "ReadInfluxHealthCheck"))(influxReadHealthEndpoint)
+		influxReadHealthEndpoint = middleware.MakeEndpointCorrelationIDMW(flakiClient, tracer)(influxReadHealthEndpoint)
+	}
+	var jaegerExecHealthEndpoint endpoint.Endpoint
+	{
+		jaegerExecHealthEndpoint = health.MakeExecJaegerHealthCheckEndpoint(healthComponent)
+		jaegerExecHealthEndpoint = middleware.MakeEndpointLoggingMW(log.With(healthLogger, "mw", "endpoint", "unit", "ExecJaegerHealthCheck"))(jaegerExecHealthEndpoint)
+		jaegerExecHealthEndpoint = middleware.MakeEndpointCorrelationIDMW(flakiClient, tracer)(jaegerExecHealthEndpoint)
+	}
+	var jaegerReadHealthEndpoint endpoint.Endpoint
+	{
+		jaegerReadHealthEndpoint = health.MakeReadJaegerHealthCheckEndpoint(healthComponent)
+		jaegerReadHealthEndpoint = middleware.MakeEndpointLoggingMW(log.With(healthLogger, "mw", "endpoint", "unit", "ReadJaegerHealthCheck"))(jaegerReadHealthEndpoint)
+		jaegerReadHealthEndpoint = middleware.MakeEndpointCorrelationIDMW(flakiClient, tracer)(jaegerReadHealthEndpoint)
+	}
+	var redisExecHealthEndpoint endpoint.Endpoint
+	{
+		redisExecHealthEndpoint = health.MakeExecRedisHealthCheckEndpoint(healthComponent)
+		redisExecHealthEndpoint = middleware.MakeEndpointLoggingMW(log.With(healthLogger, "mw", "endpoint", "unit", "ExecRedisHealthCheck"))(redisExecHealthEndpoint)
+		redisExecHealthEndpoint = middleware.MakeEndpointCorrelationIDMW(flakiClient, tracer)(redisExecHealthEndpoint)
+	}
+	var redisReadHealthEndpoint endpoint.Endpoint
+	{
+		redisReadHealthEndpoint = health.MakeReadRedisHealthCheckEndpoint(healthComponent)
+		redisReadHealthEndpoint = middleware.MakeEndpointLoggingMW(log.With(healthLogger, "mw", "endpoint", "unit", "ReadRedisHealthCheck"))(redisReadHealthEndpoint)
+		redisReadHealthEndpoint = middleware.MakeEndpointCorrelationIDMW(flakiClient, tracer)(redisReadHealthEndpoint)
+	}
+	var sentryExecHealthEndpoint endpoint.Endpoint
+	{
+		sentryExecHealthEndpoint = health.MakeExecSentryHealthCheckEndpoint(healthComponent)
+		sentryExecHealthEndpoint = middleware.MakeEndpointLoggingMW(log.With(healthLogger, "mw", "endpoint", "unit", "ExecSentryHealthCheck"))(sentryExecHealthEndpoint)
+		sentryExecHealthEndpoint = middleware.MakeEndpointCorrelationIDMW(flakiClient, tracer)(sentryExecHealthEndpoint)
+	}
+	var sentryReadHealthEndpoint endpoint.Endpoint
+	{
+		sentryReadHealthEndpoint = health.MakeReadSentryHealthCheckEndpoint(healthComponent)
+		sentryReadHealthEndpoint = middleware.MakeEndpointLoggingMW(log.With(healthLogger, "mw", "endpoint", "unit", "ReadSentryHealthCheck"))(sentryReadHealthEndpoint)
+		sentryReadHealthEndpoint = middleware.MakeEndpointCorrelationIDMW(flakiClient, tracer)(sentryReadHealthEndpoint)
+	}
+	var keycloakExecHealthEndpoint endpoint.Endpoint
+	{
+		keycloakExecHealthEndpoint = health.MakeExecKeycloakHealthCheckEndpoint(healthComponent)
+		keycloakExecHealthEndpoint = middleware.MakeEndpointLoggingMW(log.With(healthLogger, "mw", "endpoint", "unit", "ExecKeycloakHealthCheck"))(keycloakExecHealthEndpoint)
+		keycloakExecHealthEndpoint = middleware.MakeEndpointCorrelationIDMW(flakiClient, tracer)(keycloakExecHealthEndpoint)
+	}
+	var keycloakReadHealthEndpoint endpoint.Endpoint
+	{
+		keycloakReadHealthEndpoint = health.MakeReadKeycloakHealthCheckEndpoint(healthComponent)
+		keycloakReadHealthEndpoint = middleware.MakeEndpointLoggingMW(log.With(healthLogger, "mw", "endpoint", "unit", "ReadKeycloakHealthCheck"))(keycloakReadHealthEndpoint)
+		keycloakReadHealthEndpoint = middleware.MakeEndpointCorrelationIDMW(flakiClient, tracer)(keycloakReadHealthEndpoint)
+	}
 	var allHealthEndpoint endpoint.Endpoint
 	{
 		allHealthEndpoint = health.MakeAllHealthChecksEndpoint(healthComponent)
-		allHealthEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("allchecks_health_endpoint"))(allHealthEndpoint)
 		allHealthEndpoint = middleware.MakeEndpointLoggingMW(log.With(healthLogger, "mw", "endpoint", "unit", "AllHealthCheck"))(allHealthEndpoint)
-		allHealthEndpoint = middleware.MakeEndpointTracingMW(tracer, "allchecks_health_endpoint")(allHealthEndpoint)
 		allHealthEndpoint = middleware.MakeEndpointCorrelationIDMW(flakiClient, tracer)(allHealthEndpoint)
 	}
 
+	// Rate limiting
+	influxExecHealthEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["influxHealthExec"]))(influxExecHealthEndpoint)
+	influxReadHealthEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["influxHealthRead"]))(influxReadHealthEndpoint)
+	jaegerExecHealthEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["jaegerHealthExec"]))(jaegerExecHealthEndpoint)
+	jaegerReadHealthEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["jaegerHealthRead"]))(jaegerReadHealthEndpoint)
+	redisExecHealthEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["redisHealthExec"]))(redisExecHealthEndpoint)
+	redisReadHealthEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["redisHealthRead"]))(redisReadHealthEndpoint)
+	sentryExecHealthEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["sentryHealthExec"]))(sentryExecHealthEndpoint)
+	sentryReadHealthEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["sentryHealthRead"]))(sentryReadHealthEndpoint)
+	keycloakExecHealthEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["keycloakHealthExec"]))(keycloakExecHealthEndpoint)
+	keycloakReadHealthEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["keycloakHealthRead"]))(keycloakReadHealthEndpoint)
+	allHealthEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["allHealth"]))(allHealthEndpoint)
+
 	var healthEndpoints = health.Endpoints{
-		InfluxHealthCheck:   influxHealthEndpoint,
-		JaegerHealthCheck:   jaegerHealthEndpoint,
-		RedisHealthCheck:    redisHealthEndpoint,
-		SentryHealthCheck:   sentryHealthEndpoint,
-		KeycloakHealthCheck: keycloakHealthEndpoint,
-		AllHealthChecks:     allHealthEndpoint,
+		InfluxExecHealthCheck:   influxExecHealthEndpoint,
+		InfluxReadHealthCheck:   influxReadHealthEndpoint,
+		JaegerExecHealthCheck:   jaegerExecHealthEndpoint,
+		JaegerReadHealthCheck:   jaegerReadHealthEndpoint,
+		RedisExecHealthCheck:    redisExecHealthEndpoint,
+		RedisReadHealthCheck:    redisReadHealthEndpoint,
+		SentryExecHealthCheck:   sentryExecHealthEndpoint,
+		SentryReadHealthCheck:   sentryReadHealthEndpoint,
+		KeycloakExecHealthCheck: keycloakExecHealthEndpoint,
+		KeycloakReadHealthCheck: keycloakReadHealthEndpoint,
+		AllHealthChecks:         allHealthEndpoint,
+	}
+
+	// Jobs
+	{
+		var ctrl = controller.NewController(ComponentName, ComponentID, idgenerator.New(flakiClient, tracer), &job_lock.NoopLocker{}, controller.EnableStatusStorage(job_status.New(cockroachConn)))
+
+		var influxJob *job.Job
+		{
+			var err error
+			influxJob, err = health_job.MakeInfluxJob(influxHM, healthChecksValidity[influxKey], cockroachModule)
+			if err != nil {
+				logger.Log("msg", "could not create influx health job", "error", err)
+				return
+			}
+			ctrl.Register(influxJob)
+			ctrl.Schedule("@minutely", influxJob.Name())
+		}
+
+		var jaegerJob *job.Job
+		{
+			var err error
+			jaegerJob, err = health_job.MakeJaegerJob(jaegerHM, healthChecksValidity[jaegerKey], cockroachModule)
+			if err != nil {
+				logger.Log("msg", "could not create jaeger health job", "error", err)
+				return
+			}
+			ctrl.Register(jaegerJob)
+			ctrl.Schedule("@minutely", jaegerJob.Name())
+		}
+
+		var redisJob *job.Job
+		{
+			var err error
+			redisJob, err = health_job.MakeRedisJob(redisHM, healthChecksValidity[redisKey], cockroachModule)
+			if err != nil {
+				logger.Log("msg", "could not create redis health job", "error", err)
+				return
+			}
+			ctrl.Register(redisJob)
+			ctrl.Schedule("@minutely", redisJob.Name())
+		}
+
+		var sentryJob *job.Job
+		{
+			var err error
+			sentryJob, err = health_job.MakeSentryJob(sentryHM, healthChecksValidity[sentryKey], cockroachModule)
+			if err != nil {
+				logger.Log("msg", "could not create sentry health job", "error", err)
+				return
+			}
+			ctrl.Register(sentryJob)
+			ctrl.Schedule("@minutely", sentryJob.Name())
+		}
+
+		var keycloakJob *job.Job
+		{
+			var err error
+			keycloakJob, err = health_job.MakeKeycloakJob(keycloakHM, healthChecksValidity[keycloakKey], cockroachModule)
+			if err != nil {
+				logger.Log("msg", "could not create keycloak health job", "error", err)
+				return
+			}
+			ctrl.Register(keycloakJob)
+			ctrl.Schedule("@minutely", keycloakJob.Name())
+		}
+
+		var cleanJob *job.Job
+		{
+			var err error
+			cleanJob, err = health_job.MakeCleanCockroachJob(cockroachModule, log.With(logger, "job", "clean health checks"))
+			if err != nil {
+				logger.Log("msg", "could not create clean job", "error", err)
+				return
+			}
+			ctrl.Register(cleanJob)
+			ctrl.Schedule(fmt.Sprintf("@every %s", cockroachCleanInterval), cleanJob.Name())
+
+		}
+		ctrl.Start()
 	}
 
 	// GRPC server.
@@ -531,7 +724,7 @@ func main() {
 		var route = mux.NewRouter()
 
 		// Version.
-		route.Handle("/", http.HandlerFunc(MakeVersion(ComponentName, Version, Environment, GitCommit)))
+		route.Handle("/", http.HandlerFunc(makeVersion(ComponentName, ComponentID, Version, Environment, GitCommit)))
 
 		// Event.
 		var eventSubroute = route.PathPrefix("/event").Subrouter()
@@ -558,23 +751,23 @@ func main() {
 		// Health checks.
 		var healthSubroute = route.PathPrefix("/health").Subrouter()
 
-		var allHealthChecksHandler = health.MakeAllHealthChecksHandler(healthEndpoints.AllHealthChecks)
+		var allHealthChecksHandler = health.MakeHealthCheckHandler(healthEndpoints.AllHealthChecks)
 		healthSubroute.Handle("", allHealthChecksHandler)
 
-		var influxHealthCheckHandler = health.MakeInfluxHealthCheckHandler(healthEndpoints.InfluxHealthCheck)
-		healthSubroute.Handle("/influx", influxHealthCheckHandler)
+		healthSubroute.Handle("/influx", health.MakeHealthCheckHandler(healthEndpoints.InfluxReadHealthCheck)).Methods("GET")
+		healthSubroute.Handle("/influx", health.MakeHealthCheckHandler(healthEndpoints.InfluxExecHealthCheck)).Methods("POST")
 
-		var jaegerHealthCheckHandler = health.MakeJaegerHealthCheckHandler(healthEndpoints.JaegerHealthCheck)
-		healthSubroute.Handle("/jaeger", jaegerHealthCheckHandler)
+		healthSubroute.Handle("/jaeger", health.MakeHealthCheckHandler(healthEndpoints.JaegerReadHealthCheck)).Methods("GET")
+		healthSubroute.Handle("/jaeger", health.MakeHealthCheckHandler(healthEndpoints.JaegerExecHealthCheck)).Methods("POST")
 
-		var redisHealthCheckHandler = health.MakeRedisHealthCheckHandler(healthEndpoints.RedisHealthCheck)
-		healthSubroute.Handle("/redis", redisHealthCheckHandler)
+		healthSubroute.Handle("/redis", health.MakeHealthCheckHandler(healthEndpoints.RedisReadHealthCheck)).Methods("GET")
+		healthSubroute.Handle("/redis", health.MakeHealthCheckHandler(healthEndpoints.RedisExecHealthCheck)).Methods("POST")
 
-		var sentryHealthCheckHandler = health.MakeSentryHealthCheckHandler(healthEndpoints.SentryHealthCheck)
-		healthSubroute.Handle("/sentry", sentryHealthCheckHandler)
+		healthSubroute.Handle("/sentry", health.MakeHealthCheckHandler(healthEndpoints.SentryReadHealthCheck)).Methods("GET")
+		healthSubroute.Handle("/sentry", health.MakeHealthCheckHandler(healthEndpoints.SentryExecHealthCheck)).Methods("POST")
 
-		var keycloakHealthCheckHandler = health.MakeKeycloakHealthCheckHandler(healthEndpoints.KeycloakHealthCheck)
-		healthSubroute.Handle("/keycloak", keycloakHealthCheckHandler)
+		healthSubroute.Handle("/keycloak", health.MakeHealthCheckHandler(healthEndpoints.KeycloakReadHealthCheck)).Methods("GET")
+		healthSubroute.Handle("/keycloak", health.MakeHealthCheckHandler(healthEndpoints.KeycloakExecHealthCheck)).Methods("POST")
 
 		// Debug.
 		if pprofRouteEnabled {
@@ -610,8 +803,8 @@ func main() {
 	logger.Log("error", <-errc)
 }
 
-// MakeVersion makes a HTTP handler that returns information about the version of the bridge.
-func MakeVersion(componentName, version, environment, gitCommit string) func(http.ResponseWriter, *http.Request) {
+// makeVersion makes a HTTP handler that returns information about the version of the bridge.
+func makeVersion(componentName, ComponentID, version, environment, gitCommit string) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 
@@ -659,7 +852,7 @@ func config(logger log.Logger) *viper.Viper {
 	v.SetDefault("keycloak-timeout", "5s")
 
 	// Elasticsearch default.
-	v.SetDefault("es-host-port", "elasticsearch-data:9200")
+	v.SetDefault("es-host-port", "elasticsearch:9200")
 	v.SetDefault("es-index-name", "keycloak_business")
 
 	// Influx DB client default.
@@ -701,7 +894,30 @@ func config(logger log.Logger) *viper.Viper {
 	v.SetDefault("cockroach-host-port", "")
 	v.SetDefault("cockroach-username", "")
 	v.SetDefault("cockroach-password", "")
-	v.SetDefault("cockroach-config-database", "")
+	v.SetDefault("cockroach-database", "")
+	v.SetDefault("cockroach-clean-interval", "24h")
+
+	// Jobs
+	v.SetDefault("job-influx-health-validity", "1m")
+	v.SetDefault("job-jaeger-health-validity", "1m")
+	v.SetDefault("job-redis-health-validity", "1m")
+	v.SetDefault("job-sentry-health-validity", "1m")
+	v.SetDefault("job-keycloak-health-validity", "1m")
+
+	// Rate limiting (in requests/second)
+	v.SetDefault("rate-event", 1000)
+	v.SetDefault("rate-user", 1000)
+	v.SetDefault("rate-influx-health-exec", 1000)
+	v.SetDefault("rate-influx-health-read", 1000)
+	v.SetDefault("rate-jaeger-health-exec", 1000)
+	v.SetDefault("rate-jaeger-health-read", 1000)
+	v.SetDefault("rate-redis-health-exec", 1000)
+	v.SetDefault("rate-redis-health-read", 1000)
+	v.SetDefault("rate-sentry-health-exec", 1000)
+	v.SetDefault("rate-sentry-health-read", 1000)
+	v.SetDefault("rate-keycloak-health-exec", 1000)
+	v.SetDefault("rate-keycloak-health-read", 1000)
+	v.SetDefault("rate-all-health", 1000)
 
 	// First level of override.
 	pflag.String("config-file", v.GetString("config-file"), "The configuration file path can be relative or absolute.")

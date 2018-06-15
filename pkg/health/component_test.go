@@ -1,12 +1,20 @@
 package health_test
 
-//go:generate mockgen -destination=./mock/component.go -package=mock -mock_names=Component=Component github.com/cloudtrust/keycloak-bridge/pkg/health Component
+//go:generate mockgen -destination=./mock/influx.go -package=mock -mock_names=InfluxHealthChecker=InfluxHealthChecker github.com/cloudtrust/common-healthcheck InfluxHealthChecker
+//go:generate mockgen -destination=./mock/jaeger.go -package=mock -mock_names=JaegerHealthChecker=JaegerHealthChecker github.com/cloudtrust/common-healthcheck JaegerHealthChecker
+//go:generate mockgen -destination=./mock/redis.go -package=mock -mock_names=RedisHealthChecker=RedisHealthChecker github.com/cloudtrust/common-healthcheck RedisHealthChecker
+//go:generate mockgen -destination=./mock/sentry.go -package=mock -mock_names=SentryHealthChecker=SentryHealthChecker github.com/cloudtrust/common-healthcheck SentryHealthChecker
+//go:generate mockgen -destination=./mock/keycloak.go -package=mock -mock_names=KeycloakHealthChecker=KeycloakHealthChecker github.com/cloudtrust/keycloak-bridge/pkg/health KeycloakHealthChecker
+//go:generate mockgen -destination=./mock/storage.go -package=mock -mock_names=StoreModule=StoreModule github.com/cloudtrust/keycloak-bridge/pkg/health StoreModule
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"testing"
 	"time"
 
+	common "github.com/cloudtrust/common-healthcheck"
 	. "github.com/cloudtrust/keycloak-bridge/pkg/health"
 	"github.com/cloudtrust/keycloak-bridge/pkg/health/mock"
 	"github.com/golang/mock/gomock"
@@ -16,145 +24,197 @@ import (
 func TestHealthChecks(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
-	var mockInfluxModule = mock.NewInfluxModule(mockCtrl)
-	var mockJaegerModule = mock.NewJaegerModule(mockCtrl)
-	var mockRedisModule = mock.NewRedisModule(mockCtrl)
-	var mockSentryModule = mock.NewSentryModule(mockCtrl)
-	var mockKeycoakModule = mock.NewKeycloakModule(mockCtrl)
+	var mockInfluxModule = mock.NewInfluxHealthChecker(mockCtrl)
+	var mockJaegerModule = mock.NewJaegerHealthChecker(mockCtrl)
+	var mockRedisModule = mock.NewRedisHealthChecker(mockCtrl)
+	var mockSentryModule = mock.NewSentryHealthChecker(mockCtrl)
+	var mockKeycoakModule = mock.NewKeycloakHealthChecker(mockCtrl)
+	var mockStorage = mock.NewStoreModule(mockCtrl)
+	var m = map[string]time.Duration{
+		"influx":   1 * time.Minute,
+		"jaeger":   1 * time.Minute,
+		"redis":    1 * time.Minute,
+		"sentry":   1 * time.Minute,
+		"keycloak": 1 * time.Minute,
+	}
 
-	mockInfluxModule.EXPECT().HealthChecks(context.Background()).Return([]InfluxReport{{Name: "influx", Duration: (1 * time.Second).String(), Status: OK}}).Times(2)
-	mockJaegerModule.EXPECT().HealthChecks(context.Background()).Return([]JaegerReport{{Name: "jaeger", Duration: (1 * time.Second).String(), Status: OK}}).Times(2)
-	mockRedisModule.EXPECT().HealthChecks(context.Background()).Return([]RedisReport{{Name: "redis", Duration: (1 * time.Second).String(), Status: OK}}).Times(2)
-	mockSentryModule.EXPECT().HealthChecks(context.Background()).Return([]SentryReport{{Name: "sentry", Duration: (1 * time.Second).String(), Status: OK}}).Times(2)
-	mockKeycoakModule.EXPECT().HealthChecks(context.Background()).Return([]KeycloakReport{{Name: "keycloak", Duration: (1 * time.Second).String(), Status: OK}}).Times(2)
+	var c = NewComponent(mockInfluxModule, mockJaegerModule, mockRedisModule, mockSentryModule, mockKeycoakModule, mockStorage, m)
 
-	var c = NewComponent(mockInfluxModule, mockJaegerModule, mockRedisModule, mockSentryModule, mockKeycoakModule)
+	var (
+		influxReports   = []common.InfluxReport{{Name: "influx", Duration: time.Duration(1 * time.Second), Status: common.OK}}
+		jaegerReports   = []common.JaegerReport{{Name: "jaeger", Duration: time.Duration(1 * time.Second), Status: common.OK}}
+		redisReports    = []common.RedisReport{{Name: "redis", Duration: time.Duration(1 * time.Second), Status: common.OK}}
+		sentryReports   = []common.SentryReport{{Name: "sentry", Duration: time.Duration(1 * time.Second), Status: common.OK}}
+		keycloakReports = []KeycloakReport{{Name: "keycloak", Duration: time.Duration(1 * time.Second), Status: common.OK}}
+
+		makeStoredReport = func(name string) StoredReport {
+			return StoredReport{
+				ComponentID:     "000-000-000-00",
+				ComponentName:   "flaki",
+				HealthcheckUnit: name,
+				Reports:         json.RawMessage(`[{"name":"XXX", "status":"OK", "duration":"1s"}]`),
+				LastUpdated:     time.Now(),
+				ValidUntil:      time.Now().Add(1 * time.Hour),
+			}
+		}
+	)
 
 	// Influx.
+	mockInfluxModule.EXPECT().HealthChecks(context.Background()).Return(influxReports).Times(1)
+	mockStorage.EXPECT().Update("influx", m["influx"], gomock.Any()).Times(1)
 	{
-		var report = c.InfluxHealthChecks(context.Background()).Reports[0]
-		assert.Equal(t, "influx", report.Name)
-		assert.NotZero(t, report.Duration)
-		assert.Equal(t, OK, report.Status)
-		assert.Zero(t, report.Error)
+		var report = c.ExecInfluxHealthChecks(context.Background())
+		//	var json, _ = json.Marshal(&report)
+		assert.Equal(t, `[{"name":"influx","duration":"1s","status":"OK","error":""}]`, string(report))
 	}
 
 	// Jaeger.
+	mockJaegerModule.EXPECT().HealthChecks(context.Background()).Return(jaegerReports).Times(1)
+	mockStorage.EXPECT().Update("jaeger", m["jaeger"], gomock.Any()).Times(1)
 	{
-		var report = c.JaegerHealthChecks(context.Background()).Reports[0]
-		assert.Equal(t, "jaeger", report.Name)
-		assert.NotZero(t, report.Duration)
-		assert.Equal(t, OK, report.Status)
-		assert.Zero(t, report.Error)
+		var report = c.ExecJaegerHealthChecks(context.Background())
+		var json, _ = json.Marshal(&report)
+		assert.Equal(t, `[{"name":"jaeger","duration":"1s","status":"OK","error":""}]`, string(json))
 	}
 
 	// Redis.
+	mockRedisModule.EXPECT().HealthChecks(context.Background()).Return(redisReports).Times(1)
+	mockStorage.EXPECT().Update("redis", m["redis"], gomock.Any()).Times(1)
 	{
-		var report = c.RedisHealthChecks(context.Background()).Reports[0]
-		assert.Equal(t, "redis", report.Name)
-		assert.NotZero(t, report.Duration)
-		assert.Equal(t, OK, report.Status)
-		assert.Zero(t, report.Error)
+		var report = c.ExecRedisHealthChecks(context.Background())
+		var json, _ = json.Marshal(&report)
+		assert.Equal(t, `[{"name":"redis","duration":"1s","status":"OK","error":""}]`, string(json))
 	}
 
 	// Sentry.
+	mockSentryModule.EXPECT().HealthChecks(context.Background()).Return(sentryReports).Times(1)
+	mockStorage.EXPECT().Update("sentry", m["sentry"], gomock.Any()).Times(1)
 	{
-		var report = c.SentryHealthChecks(context.Background()).Reports[0]
-		assert.Equal(t, "sentry", report.Name)
-		assert.NotZero(t, report.Duration)
-		assert.Equal(t, OK, report.Status)
-		assert.Zero(t, report.Error)
+		var report = c.ExecSentryHealthChecks(context.Background())
+		var json, _ = json.Marshal(&report)
+		assert.Equal(t, `[{"name":"sentry","duration":"1s","status":"OK","error":""}]`, string(json))
 	}
 
 	// Keycloak.
+	mockKeycoakModule.EXPECT().HealthChecks(context.Background()).Return(keycloakReports).Times(1)
+	mockStorage.EXPECT().Update("keycloak", m["keycloak"], gomock.Any()).Times(1)
 	{
-		var report = c.KeycloakHealthChecks(context.Background()).Reports[0]
-		assert.Equal(t, "keycloak", report.Name)
-		assert.NotZero(t, report.Duration)
-		assert.Equal(t, OK, report.Status)
-		assert.Zero(t, report.Error)
+		var report = c.ExecKeycloakHealthChecks(context.Background())
+		var json, _ = json.Marshal(&report)
+		assert.Equal(t, `[{"name":"keycloak","duration":"1s","status":"OK","error":""}]`, string(json))
 	}
 
 	// All.
+	mockStorage.EXPECT().Read("influx").Return(makeStoredReport("influx"), nil).Times(1)
+	mockStorage.EXPECT().Read("jaeger").Return(makeStoredReport("jaeger"), nil).Times(1)
+	mockStorage.EXPECT().Read("redis").Return(makeStoredReport("redis"), nil).Times(1)
+	mockStorage.EXPECT().Read("sentry").Return(makeStoredReport("sentry"), nil).Times(1)
+	mockStorage.EXPECT().Read("keycloak").Return(makeStoredReport("keycloak"), nil).Times(1)
 	{
-		var reply = c.AllHealthChecks(context.Background())
-		assert.Equal(t, "OK", reply["influx"])
-		assert.Equal(t, "OK", reply["jaeger"])
-		assert.Equal(t, "OK", reply["keycloak"])
-		assert.Equal(t, "OK", reply["redis"])
-		assert.Equal(t, "OK", reply["sentry"])
+		var report = c.AllHealthChecks(context.Background())
+		var json, _ = json.Marshal(&report)
+		assert.Equal(t, "{\"influx\":[{\"name\":\"XXX\",\"status\":\"OK\",\"duration\":\"1s\"}],\"jaeger\":[{\"name\":\"XXX\",\"status\":\"OK\",\"duration\":\"1s\"}],\"keycloak\":[{\"name\":\"XXX\",\"status\":\"OK\",\"duration\":\"1s\"}],\"redis\":[{\"name\":\"XXX\",\"status\":\"OK\",\"duration\":\"1s\"}],\"sentry\":[{\"name\":\"XXX\",\"status\":\"OK\",\"duration\":\"1s\"}]}", string(json))
 	}
 }
 
 func TestHealthChecksFail(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
-	var mockInfluxModule = mock.NewInfluxModule(mockCtrl)
-	var mockJaegerModule = mock.NewJaegerModule(mockCtrl)
-	var mockRedisModule = mock.NewRedisModule(mockCtrl)
-	var mockSentryModule = mock.NewSentryModule(mockCtrl)
-	var mockKeycoakModule = mock.NewKeycloakModule(mockCtrl)
+	var mockInfluxModule = mock.NewInfluxHealthChecker(mockCtrl)
+	var mockJaegerModule = mock.NewJaegerHealthChecker(mockCtrl)
+	var mockRedisModule = mock.NewRedisHealthChecker(mockCtrl)
+	var mockSentryModule = mock.NewSentryHealthChecker(mockCtrl)
+	var mockKeycoakModule = mock.NewKeycloakHealthChecker(mockCtrl)
+	var mockStorage = mock.NewStoreModule(mockCtrl)
+	var m = map[string]time.Duration{
+		"influx":   1 * time.Minute,
+		"jaeger":   1 * time.Minute,
+		"redis":    1 * time.Minute,
+		"sentry":   1 * time.Minute,
+		"keycloak": 1 * time.Minute,
+	}
 
-	mockInfluxModule.EXPECT().HealthChecks(context.Background()).Return([]InfluxReport{{Name: "influx", Duration: (1 * time.Second).String(), Status: KO, Error: "fail"}}).Times(2)
-	mockJaegerModule.EXPECT().HealthChecks(context.Background()).Return([]JaegerReport{{Name: "jaeger", Duration: (1 * time.Second).String(), Status: Deactivated, Error: "fail"}}).Times(2)
-	mockRedisModule.EXPECT().HealthChecks(context.Background()).Return([]RedisReport{{Name: "redis", Duration: (1 * time.Second).String(), Status: Degraded, Error: "fail"}}).Times(2)
-	mockSentryModule.EXPECT().HealthChecks(context.Background()).Return([]SentryReport{{Name: "sentry", Duration: (1 * time.Second).String(), Status: KO, Error: "fail"}}).Times(2)
-	mockKeycoakModule.EXPECT().HealthChecks(context.Background()).Return([]KeycloakReport{{Name: "keycloak", Duration: (1 * time.Second).String(), Status: KO, Error: "fail"}}).Times(2)
+	var c = NewComponent(mockInfluxModule, mockJaegerModule, mockRedisModule, mockSentryModule, mockKeycoakModule, mockStorage, m)
 
-	var c = NewComponent(mockInfluxModule, mockJaegerModule, mockRedisModule, mockSentryModule, mockKeycoakModule)
+	var (
+		influxReports   = []common.InfluxReport{{Name: "influx", Duration: time.Duration(1 * time.Second), Status: common.Deactivated}}
+		jaegerReports   = []common.JaegerReport{{Name: "jaeger", Duration: time.Duration(1 * time.Second), Status: common.KO, Error: fmt.Errorf("fail")}}
+		redisReports    = []common.RedisReport{{Name: "redis", Duration: time.Duration(1 * time.Second), Status: common.Degraded, Error: fmt.Errorf("fail")}}
+		sentryReports   = []common.SentryReport{{Name: "sentry", Duration: time.Duration(1 * time.Second), Status: common.KO, Error: fmt.Errorf("fail")}}
+		keycloakReports = []KeycloakReport{{Name: "keycloak", Duration: time.Duration(1 * time.Second), Status: common.KO, Error: fmt.Errorf("fail")}}
+
+		makeStoredReport = func(name string) StoredReport {
+			return StoredReport{
+				ComponentID:     "000-000-000-00",
+				ComponentName:   "flaki",
+				HealthcheckUnit: name,
+				Reports:         json.RawMessage(`[{"name":"XXX", "status":"OK", "duration":"1s"}]`),
+				LastUpdated:     time.Now(),
+				ValidUntil:      time.Now().Add(1 * time.Hour),
+			}
+		}
+	)
 
 	// Influx.
+	mockInfluxModule.EXPECT().HealthChecks(context.Background()).Return(influxReports).Times(1)
+	mockStorage.EXPECT().Update("influx", m["influx"], gomock.Any()).Times(1)
 	{
-		var report = c.InfluxHealthChecks(context.Background()).Reports[0]
-		assert.Equal(t, "influx", report.Name)
-		assert.NotZero(t, report.Duration)
-		assert.Equal(t, KO, report.Status)
-		assert.Equal(t, "fail", report.Error)
+		var report = c.ExecInfluxHealthChecks(context.Background())
+		var json, _ = json.Marshal(&report)
+		assert.Equal(t, `[{"name":"influx","duration":"1s","status":"Deactivated","error":""}]`, string(json))
 	}
 
 	// Jaeger.
+	mockJaegerModule.EXPECT().HealthChecks(context.Background()).Return(jaegerReports).Times(1)
+	mockStorage.EXPECT().Update("jaeger", m["jaeger"], gomock.Any()).Times(1)
 	{
-		var report = c.JaegerHealthChecks(context.Background()).Reports[0]
-		assert.Equal(t, "jaeger", report.Name)
-		assert.NotZero(t, report.Duration)
-		assert.Equal(t, Deactivated, report.Status)
-		assert.Equal(t, "fail", report.Error)
+		var report = c.ExecJaegerHealthChecks(context.Background())
+		var json, _ = json.Marshal(&report)
+		assert.Equal(t, `[{"name":"jaeger","duration":"1s","status":"KO","error":"fail"}]`, string(json))
 	}
 
 	// Redis.
+	mockRedisModule.EXPECT().HealthChecks(context.Background()).Return(redisReports).Times(1)
+	mockStorage.EXPECT().Update("redis", m["redis"], gomock.Any()).Times(1)
 	{
-		var report = c.RedisHealthChecks(context.Background()).Reports[0]
-		assert.Equal(t, "redis", report.Name)
-		assert.NotZero(t, report.Duration)
-		assert.Equal(t, Degraded, report.Status)
-		assert.Equal(t, "fail", report.Error)
+		var report = c.ExecRedisHealthChecks(context.Background())
+		var json, _ = json.Marshal(&report)
+		assert.Equal(t, `[{"name":"redis","duration":"1s","status":"Degraded","error":"fail"}]`, string(json))
 	}
 
 	// Sentry.
+	mockSentryModule.EXPECT().HealthChecks(context.Background()).Return(sentryReports).Times(1)
+	mockStorage.EXPECT().Update("sentry", m["sentry"], gomock.Any()).Times(1)
 	{
-		var report = c.SentryHealthChecks(context.Background()).Reports[0]
-		assert.Equal(t, "sentry", report.Name)
-		assert.NotZero(t, report.Duration)
-		assert.Equal(t, KO, report.Status)
-		assert.Equal(t, "fail", report.Error)
+		var report = c.ExecSentryHealthChecks(context.Background())
+		var json, _ = json.Marshal(&report)
+		assert.Equal(t, `[{"name":"sentry","duration":"1s","status":"KO","error":"fail"}]`, string(json))
 	}
 
 	// Keycloak.
+	mockKeycoakModule.EXPECT().HealthChecks(context.Background()).Return(keycloakReports).Times(1)
+	mockStorage.EXPECT().Update("keycloak", m["keycloak"], gomock.Any()).Times(1)
 	{
-		var report = c.KeycloakHealthChecks(context.Background()).Reports[0]
-		assert.Equal(t, "keycloak", report.Name)
-		assert.NotZero(t, report.Duration)
-		assert.Equal(t, KO, report.Status)
-		assert.Equal(t, "fail", report.Error)
+		var report = c.ExecKeycloakHealthChecks(context.Background())
+		var json, _ = json.Marshal(&report)
+		assert.Equal(t, `[{"name":"keycloak","duration":"1s","status":"KO","error":"fail"}]`, string(json))
 	}
 
 	// All.
+	mockStorage.EXPECT().Read("influx").Return(makeStoredReport("influx"), nil).Times(1)
+	mockStorage.EXPECT().Read("jaeger").Return(makeStoredReport("jaeger"), nil).Times(1)
+	mockStorage.EXPECT().Read("redis").Return(makeStoredReport("redis"), nil).Times(1)
+	mockStorage.EXPECT().Read("sentry").Return(makeStoredReport("sentry"), nil).Times(1)
+	mockStorage.EXPECT().Read("keycloak").Return(makeStoredReport("keycloak"), nil).Times(1)
 	{
 		var reply = c.AllHealthChecks(context.Background())
-		assert.Equal(t, "KO", reply["influx"])
-		assert.Equal(t, "Deactivated", reply["jaeger"])
-		assert.Equal(t, "KO", reply["keycloak"])
-		assert.Equal(t, "Degraded", reply["redis"])
-		assert.Equal(t, "KO", reply["sentry"])
+		var m map[string]json.RawMessage
+		json.Unmarshal(reply, &m)
+
+		assert.Equal(t, `[{"name":"XXX","status":"OK","duration":"1s"}]`, string(m["influx"]))
+		assert.Equal(t, `[{"name":"XXX","status":"OK","duration":"1s"}]`, string(m["jaeger"]))
+		assert.Equal(t, `[{"name":"XXX","status":"OK","duration":"1s"}]`, string(m["redis"]))
+		assert.Equal(t, `[{"name":"XXX","status":"OK","duration":"1s"}]`, string(m["sentry"]))
+		assert.Equal(t, `[{"name":"XXX","status":"OK","duration":"1s"}]`, string(m["keycloak"]))
 	}
 }

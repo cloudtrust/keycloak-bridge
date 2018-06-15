@@ -1,6 +1,6 @@
 package health_test
 
-//go:generate mockgen -destination=./mock/keycloak.go -package=mock -mock_names=Keycloak=Keycloak,KeycloakModule=KeycloakModule github.com/cloudtrust/keycloak-bridge/pkg/health Keycloak,KeycloakModule
+//go:generate mockgen -destination=./mock/keycloakclient.go -package=mock -mock_names=Keycloak=Keycloak github.com/cloudtrust/keycloak-bridge/pkg/health Keycloak
 
 import (
 	"context"
@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	common "github.com/cloudtrust/common-healthcheck"
 	. "github.com/cloudtrust/keycloak-bridge/pkg/health"
 	"github.com/cloudtrust/keycloak-bridge/pkg/health/mock"
 	keycloak_client "github.com/cloudtrust/keycloak-client"
@@ -90,7 +91,7 @@ func TestKeycloakHealthChecks(t *testing.T) {
 			var report = reports[0]
 			assert.Equal(t, "create user", report.Name)
 			assert.NotZero(t, report.Duration)
-			assert.Equal(t, OK, report.Status)
+			assert.Equal(t, common.OK, report.Status)
 			assert.Zero(t, report.Error)
 		}
 		// Delete user report
@@ -98,7 +99,7 @@ func TestKeycloakHealthChecks(t *testing.T) {
 			var report = reports[1]
 			assert.Equal(t, "delete user", report.Name)
 			assert.NotZero(t, report.Duration)
-			assert.Equal(t, OK, report.Status)
+			assert.Equal(t, common.OK, report.Status)
 			assert.Zero(t, report.Error)
 		}
 	}
@@ -119,7 +120,7 @@ func TestKeycloakHealthChecks(t *testing.T) {
 			var report = reports[0]
 			assert.Equal(t, "create user", report.Name)
 			assert.NotZero(t, report.Duration)
-			assert.Equal(t, KO, report.Status)
+			assert.Equal(t, common.KO, report.Status)
 			assert.NotZero(t, report.Error)
 		}
 		// Delete user report
@@ -127,7 +128,7 @@ func TestKeycloakHealthChecks(t *testing.T) {
 			var report = reports[1]
 			assert.Equal(t, "delete user", report.Name)
 			assert.NotZero(t, report.Duration)
-			assert.Equal(t, KO, report.Status)
+			assert.Equal(t, common.KO, report.Status)
 			assert.NotZero(t, report.Error)
 		}
 	}

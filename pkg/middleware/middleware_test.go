@@ -4,13 +4,14 @@ package middleware
 //go:generate mockgen -destination=./mock/instrumenting.go -package=mock -mock_names=Histogram=Histogram github.com/go-kit/kit/metrics Histogram
 //go:generate mockgen -destination=./mock/tracing.go -package=mock -mock_names=Tracer=Tracer,Span=Span,SpanContext=SpanContext github.com/opentracing/opentracing-go Tracer,Span,SpanContext
 //go:generate mockgen -destination=./mock/eventComponent.go -package=mock -mock_names=MuxComponent=MuxComponent,Component=EventComponent,AdminComponent=AdminEventComponent github.com/cloudtrust/keycloak-bridge/pkg/event MuxComponent,Component,AdminComponent
-//go:generate mockgen -destination=./mock/healthComponent.go -package=mock -mock_names=Component=HealthComponent github.com/cloudtrust/keycloak-bridge/pkg/health Component
+//go:generate mockgen -destination=./mock/healthchecker.go -package=mock -mock_names=HealthChecker=HealthChecker github.com/cloudtrust/keycloak-bridge/pkg/health HealthChecker
 //go:generate mockgen -destination=./mock/flakiClient.go -package=mock -mock_names=FlakiClient=FlakiClient github.com/cloudtrust/keycloak-bridge/api/flaki/fb FlakiClient
 //go:generate mockgen -destination=./mock/grpc.go -package=mock -mock_names=Handler=Handler github.com/go-kit/kit/transport/grpc Handler
 
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"net/http"
@@ -29,6 +30,10 @@ import (
 	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/stretchr/testify/assert"
 )
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
 
 func TestHTTPTracingMW(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
@@ -87,22 +92,24 @@ func TestGRPCTracingMW(t *testing.T) {
 func TestEndpointCorrelationIDMW(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
-	var mockHealthComponent = mock.NewHealthComponent(mockCtrl)
+	var mockHealthComponent = mock.NewHealthChecker(mockCtrl)
 	var mockFlakiClient = mock.NewFlakiClient(mockCtrl)
 	var mockTracer = mock.NewTracer(mockCtrl)
 	var mockSpan = mock.NewSpan(mockCtrl)
 	var mockSpanContext = mock.NewSpanContext(mockCtrl)
 
-	var m = MakeEndpointCorrelationIDMW(mockFlakiClient, mockTracer)(health.MakeInfluxHealthCheckEndpoint(mockHealthComponent))
+	var m = MakeEndpointCorrelationIDMW(mockFlakiClient, mockTracer)(health.MakeExecInfluxHealthCheckEndpoint(mockHealthComponent))
 
-	rand.Seed(time.Now().UnixNano())
-	var flakiID = strconv.FormatUint(rand.Uint64(), 10)
-	var corrID = strconv.FormatUint(rand.Uint64(), 10)
-	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
+	var (
+		flakiID       = strconv.FormatUint(rand.Uint64(), 10)
+		corrID        = strconv.FormatUint(rand.Uint64(), 10)
+		influxReports = json.RawMessage(`[{"name":"influx","duration":"1s","status":"OK","error":""}]`)
+		ctx           = context.WithValue(context.Background(), "correlation_id", corrID)
+	)
 	ctx = opentracing.ContextWithSpan(ctx, mockSpan)
 
 	// Context with correlation ID.
-	mockHealthComponent.EXPECT().InfluxHealthChecks(ctx).Return(health.Reports{}).Times(1)
+	mockHealthComponent.EXPECT().ExecInfluxHealthChecks(ctx).Return(influxReports).Times(1)
 	m(ctx, nil)
 
 	// Without correlation ID.
@@ -114,7 +121,7 @@ func TestEndpointCorrelationIDMW(t *testing.T) {
 	var reply = fb_flaki.GetRootAsFlakiReply(b.FinishedBytes(), 0)
 
 	mockFlakiClient.EXPECT().NextValidID(gomock.Any(), gomock.Any()).Return(reply, nil).Times(1)
-	mockHealthComponent.EXPECT().InfluxHealthChecks(gomock.Any()).Return(health.Reports{}).Times(1)
+	mockHealthComponent.EXPECT().ExecInfluxHealthChecks(gomock.Any()).Return(influxReports).Times(1)
 	mockTracer.EXPECT().StartSpan("get_correlation_id", gomock.Any()).Return(mockSpan).Times(1)
 	mockTracer.EXPECT().Inject(gomock.Any(), opentracing.TextMap, gomock.Any())
 	mockSpan.EXPECT().Context().Return(mockSpanContext).Times(2)
@@ -132,7 +139,6 @@ func TestEndpointLoggingMW(t *testing.T) {
 	var m = MakeEndpointLoggingMW(mockLogger)(event.MakeEventEndpoint(mockMuxComponent))
 
 	// Context with correlation ID.
-	rand.Seed(time.Now().UnixNano())
 	var uid = rand.Int63()
 	var corrID = strconv.FormatUint(rand.Uint64(), 10)
 	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
@@ -163,7 +169,6 @@ func TestEndpointInstrumentingMW(t *testing.T) {
 	var m = MakeEndpointInstrumentingMW(mockHistogram)(event.MakeEventEndpoint(mockMuxComponent))
 
 	// Context with correlation ID.
-	rand.Seed(time.Now().UnixNano())
 	var uid = rand.Int63()
 	var corrID = strconv.FormatUint(rand.Uint64(), 10)
 	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
@@ -197,7 +202,6 @@ func TestEndpointTracingMW(t *testing.T) {
 	var m = MakeEndpointTracingMW(mockTracer, "operationName")(event.MakeEventEndpoint(mockMuxComponent))
 
 	// Context with correlation ID.
-	rand.Seed(time.Now().UnixNano())
 	var uid = rand.Int63()
 	var corrID = strconv.FormatUint(rand.Uint64(), 10)
 	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)

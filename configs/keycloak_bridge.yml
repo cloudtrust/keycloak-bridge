@@ -16,7 +16,7 @@ keycloak-timeout: 5s
 
 # Elasticsearch configs
 es-host-port: elasticsearch:9200
-es-index-name: keycloak_business
+es-index-name: audit
 
 # Redis
 redis-host-port: 
@@ -28,7 +28,8 @@ redis-write-interval: 1s
 cockroach-host-port: localhost:26257
 cockroach-username: cockroach
 cockroach-password: cockroach
-cockroach-config-database: config
+cockroach-database: cockroach
+cockroach-clean-interval: 1m
 
 # Influx DB configs
 influx-host-port: 
@@ -53,3 +54,25 @@ jaeger-collector-healthcheck-host-port:
 
 # Debug routes
 pprof-route-enabled: true
+
+# Jobs
+job-influx-health-validity: 1m
+job-jaeger-health-validity: 1m
+job-redis-health-validity: 1m
+job-sentry-health-validity: 1m
+job-keycloak-health-validity: 1m
+
+# Rate limiting in requests/second
+rate-event: 1000
+rate-user: 1000
+rate-influx-health-exec: 1000
+rate-influx-health-read: 1000
+rate-jaeger-health-exec: 1000
+rate-jaeger-health-read: 1000
+rate-redis-health-exec: 1000
+rate-redis-health-read: 1000
+rate-sentry-health-exec: 1000
+rate-sentry-health-read: 1000
+rate-keycloak-health-exec: 1000
+rate-keycloak-health-read: 1000
+rate-all-health: 1000

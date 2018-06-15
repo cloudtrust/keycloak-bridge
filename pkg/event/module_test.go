@@ -21,11 +21,13 @@ func TestConsoleModule(t *testing.T) {
 		esType  = "type"
 		uid     = "uid"
 		m       = map[string]string{
-			"type": esType,
-			"uid":  uid,
+			"type":          esType,
+			"uid":           uid,
+			"componentName": "component_name",
+			"componentID":   "component_id",
 		}
 	)
-	var consoleModule = NewConsoleModule(mockLogger, mockES, "index")
+	var consoleModule = NewConsoleModule(mockLogger, mockES, "index", "component_name", "component_id")
 
 	for k, v := range m {
 		mockLogger.EXPECT().Log(k, v).Return(nil).Times(1)

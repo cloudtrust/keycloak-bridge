@@ -21,21 +21,29 @@ type ESClient interface {
 }
 
 type consoleModule struct {
-	esClient ESClient
-	esIndex  string
-	logger   log.Logger
+	esClient      ESClient
+	esIndex       string
+	componentName string
+	componentID   string
+	logger        log.Logger
 }
 
 // NewConsoleModule returns a Console module.
-func NewConsoleModule(logger log.Logger, esc ESClient, esIndex string) ConsoleModule {
+func NewConsoleModule(logger log.Logger, esc ESClient, esIndex, componentName, componentID string) ConsoleModule {
 	return &consoleModule{
-		esClient: esc,
-		esIndex:  esIndex,
-		logger:   logger,
+		esClient:      esc,
+		esIndex:       esIndex,
+		componentName: componentName,
+		componentID:   componentID,
+		logger:        logger,
 	}
 }
 
 func (cm *consoleModule) Print(_ context.Context, m map[string]string) error {
+	// Add component infos in the map
+	m["componentID"] = cm.componentID
+	m["componentName"] = cm.componentName
+
 	// Index data
 	cm.esClient.IndexData(cm.esIndex, m["type"], m["uid"], m)
 
