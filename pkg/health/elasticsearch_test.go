@@ -22,7 +22,7 @@ func TestESHealthChecks(t *testing.T) {
 	}))
 	defer s.Close()
 
-	var m = NewElasticsearchModule(s.Client(), "elasticsearch-data:9200", true)
+	var m = NewElasticsearchModule(s.Client(), s.URL[7:], true)
 
 	// HealthChecks
 	{
@@ -40,7 +40,7 @@ func TestNoopESHealthChecks(t *testing.T) {
 	}))
 	defer s.Close()
 
-	var m = NewElasticsearchModule(s.Client(), "elasticsearch-data:9200", false)
+	var m = NewElasticsearchModule(s.Client(), s.URL[7:], false)
 
 	var report = m.HealthChecks(context.Background())[0]
 	assert.Equal(t, "es", report.Name)
@@ -59,7 +59,7 @@ func TestESModuleLoggingMW(t *testing.T) {
 	}))
 	defer s.Close()
 
-	var module = NewElasticsearchModule(s.Client(), "elasticsearch-data:9200", false)
+	var module = NewElasticsearchModule(s.Client(), s.URL[7:], false)
 
 	var m = MakeElasticsearchModuleLoggingMW(mockLogger)(module)
 
