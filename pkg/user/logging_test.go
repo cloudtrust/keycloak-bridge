@@ -1,5 +1,7 @@
 package user
 
+//go:generate mockgen -destination=./mock/logging.go -package=mock -mock_names=Logger=Logger github.com/go-kit/kit/log Logger
+
 import (
 	"context"
 	"math/rand"

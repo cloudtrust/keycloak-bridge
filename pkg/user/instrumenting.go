@@ -1,7 +1,5 @@
 package user
 
-//go:generate mockgen -destination=./mock/instrumenting.go -package=mock -mock_names=Histogram=Histogram github.com/go-kit/kit/metrics Histogram
-
 import (
 	"context"
 	"time"

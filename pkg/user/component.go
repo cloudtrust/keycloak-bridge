@@ -1,7 +1,5 @@
 package user
 
-//go:generate mockgen -destination=./mock/component.go -package=mock -mock_names=Component=Component github.com/cloudtrust/keycloak-bridge/pkg/user Component
-
 import (
 	"context"
 
