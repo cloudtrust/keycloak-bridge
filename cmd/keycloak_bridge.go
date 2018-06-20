@@ -67,14 +67,6 @@ var (
 	GitCommit = "unknown"
 )
 
-const (
-	influxKey   = "influx"
-	jaegerKey   = "jaeger"
-	redisKey    = "redis"
-	sentryKey   = "sentry"
-	keycloakKey = "keycloak"
-)
-
 func init() {
 	rand.Seed(time.Now().UnixNano())
 }
@@ -115,6 +107,7 @@ func main() {
 		jaegerEnabled     = c.GetBool("jaeger")
 		redisEnabled      = c.GetBool("redis")
 		sentryEnabled     = c.GetBool("sentry")
+		esEnabled         = c.GetBool("es")
 		pprofRouteEnabled = c.GetBool("pprof-route-enabled")
 
 		// Influx
@@ -164,17 +157,21 @@ func main() {
 
 		// Jobs
 		healthChecksValidity = map[string]time.Duration{
-			influxKey:   c.GetDuration("job-influx-health-validity"),
-			jaegerKey:   c.GetDuration("job-jaeger-health-validity"),
-			redisKey:    c.GetDuration("job-redis-health-validity"),
-			sentryKey:   c.GetDuration("job-sentry-health-validity"),
-			keycloakKey: c.GetDuration("job-keycloak-health-validity"),
+			"es":       c.GetDuration("job-es-health-validity"),
+			"flaki":    c.GetDuration("job-flaki-health-validity"),
+			"influx":   c.GetDuration("job-influx-health-validity"),
+			"jaeger":   c.GetDuration("job-jaeger-health-validity"),
+			"redis":    c.GetDuration("job-redis-health-validity"),
+			"sentry":   c.GetDuration("job-sentry-health-validity"),
+			"keycloak": c.GetDuration("job-keycloak-health-validity"),
 		}
 
 		// Rate limiting
 		rateLimit = map[string]int{
 			"event":              c.GetInt("rate-event"),
 			"user":               c.GetInt("rate-user"),
+			"esHealthExec":       c.GetInt("rate-es-health-exec"),
+			"esHealthRead":       c.GetInt("rate-es-health-read"),
 			"influxHealthExec":   c.GetInt("rate-influx-health-exec"),
 			"influxHealthRead":   c.GetInt("rate-influx-health-read"),
 			"jaegerHealthExec":   c.GetInt("rate-jaeger-health-exec"),
@@ -183,6 +180,8 @@ func main() {
 			"redisHealthRead":    c.GetInt("rate-redis-health-read"),
 			"sentryHealthExec":   c.GetInt("rate-sentry-health-exec"),
 			"sentryHealthRead":   c.GetInt("rate-sentry-health-read"),
+			"flakiHealthExec":    c.GetInt("rate-flaki-health-exec"),
+			"flakiHealthRead":    c.GetInt("rate-flaki-health-read"),
 			"keycloakHealthExec": c.GetInt("rate-keycloak-health-exec"),
 			"keycloakHealthRead": c.GetInt("rate-keycloak-health-read"),
 			"allHealth":          c.GetInt("rate-all-health"),
@@ -347,11 +346,12 @@ func main() {
 	// Cockroach DB.
 	type Cockroach interface {
 		Exec(query string, args ...interface{}) (sql.Result, error)
+		Ping() error
 		Query(query string, args ...interface{}) (*sql.Rows, error)
 		QueryRow(query string, args ...interface{}) *sql.Row
 	}
 
-	var cockroachConn Cockroach
+	var cockroachConn Cockroach = keycloakb.NoopCockroach{}
 	if cockroachEnabled {
 		var err error
 		cockroachConn, err = sql.Open("postgres", fmt.Sprintf("postgresql://%s:%s@%s/%s?sslmode=disable", cockroachUsername, cockroachPassword, cockroachHostPort, cockroachDB))
@@ -497,6 +497,16 @@ func main() {
 		sentryHM = common.NewSentryModule(sentryClient, http.DefaultClient, sentryEnabled)
 		sentryHM = common.MakeSentryModuleLoggingMW(log.With(healthLogger, "mw", "module"))(sentryHM)
 	}
+	var flakiHM health.FlakiHealthChecker
+	{
+		flakiHM = common.NewFlakiModule(&flakiHealthClient{flakiClient})
+		flakiHM = common.MakeFlakiModuleLoggingMW(log.With(healthLogger, "mw", "module"))(flakiHM)
+	}
+	var esHM health.ESHealthChecker
+	{
+		esHM = health.NewElasticsearchModule(http.DefaultClient, esAddr, esEnabled)
+		esHM = health.MakeElasticsearchModuleLoggingMW(log.With(healthLogger, "mw", "module"))(esHM)
+	}
 	var keycloakHM health.KeycloakHealthChecker
 	{
 		var err error
@@ -509,7 +519,7 @@ func main() {
 
 	var healthComponent health.HealthChecker
 	{
-		healthComponent = health.NewComponent(influxHM, jaegerHM, redisHM, sentryHM, keycloakHM, cockroachModule, healthChecksValidity)
+		healthComponent = health.NewComponent(influxHM, jaegerHM, redisHM, sentryHM, flakiHM, esHM, keycloakHM, cockroachModule, healthChecksValidity)
 		healthComponent = health.MakeComponentLoggingMW(log.With(healthLogger, "mw", "component"))(healthComponent)
 	}
 
@@ -561,6 +571,18 @@ func main() {
 		sentryReadHealthEndpoint = middleware.MakeEndpointLoggingMW(log.With(healthLogger, "mw", "endpoint", "unit", "ReadSentryHealthCheck"))(sentryReadHealthEndpoint)
 		sentryReadHealthEndpoint = middleware.MakeEndpointCorrelationIDMW(flakiClient, tracer)(sentryReadHealthEndpoint)
 	}
+	var flakiExecHealthEndpoint endpoint.Endpoint
+	{
+		flakiExecHealthEndpoint = health.MakeExecFlakiHealthCheckEndpoint(healthComponent)
+		flakiExecHealthEndpoint = middleware.MakeEndpointLoggingMW(log.With(healthLogger, "mw", "endpoint", "unit", "ExecFlakiHealthCheck"))(flakiExecHealthEndpoint)
+		flakiExecHealthEndpoint = middleware.MakeEndpointCorrelationIDMW(flakiClient, tracer)(flakiExecHealthEndpoint)
+	}
+	var flakiReadHealthEndpoint endpoint.Endpoint
+	{
+		flakiReadHealthEndpoint = health.MakeReadFlakiHealthCheckEndpoint(healthComponent)
+		flakiReadHealthEndpoint = middleware.MakeEndpointLoggingMW(log.With(healthLogger, "mw", "endpoint", "unit", "ReadFlakiHealthCheck"))(flakiReadHealthEndpoint)
+		flakiReadHealthEndpoint = middleware.MakeEndpointCorrelationIDMW(flakiClient, tracer)(flakiReadHealthEndpoint)
+	}
 	var keycloakExecHealthEndpoint endpoint.Endpoint
 	{
 		keycloakExecHealthEndpoint = health.MakeExecKeycloakHealthCheckEndpoint(healthComponent)
@@ -573,6 +595,18 @@ func main() {
 		keycloakReadHealthEndpoint = middleware.MakeEndpointLoggingMW(log.With(healthLogger, "mw", "endpoint", "unit", "ReadKeycloakHealthCheck"))(keycloakReadHealthEndpoint)
 		keycloakReadHealthEndpoint = middleware.MakeEndpointCorrelationIDMW(flakiClient, tracer)(keycloakReadHealthEndpoint)
 	}
+	var esExecHealthEndpoint endpoint.Endpoint
+	{
+		esExecHealthEndpoint = health.MakeExecESHealthCheckEndpoint(healthComponent)
+		esExecHealthEndpoint = middleware.MakeEndpointLoggingMW(log.With(healthLogger, "mw", "endpoint", "unit", "ExecESHealthCheck"))(esExecHealthEndpoint)
+		esExecHealthEndpoint = middleware.MakeEndpointCorrelationIDMW(flakiClient, tracer)(esExecHealthEndpoint)
+	}
+	var esReadHealthEndpoint endpoint.Endpoint
+	{
+		esReadHealthEndpoint = health.MakeReadESHealthCheckEndpoint(healthComponent)
+		esReadHealthEndpoint = middleware.MakeEndpointLoggingMW(log.With(healthLogger, "mw", "endpoint", "unit", "ReadESHealthCheck"))(esReadHealthEndpoint)
+		esReadHealthEndpoint = middleware.MakeEndpointCorrelationIDMW(flakiClient, tracer)(esReadHealthEndpoint)
+	}
 	var allHealthEndpoint endpoint.Endpoint
 	{
 		allHealthEndpoint = health.MakeAllHealthChecksEndpoint(healthComponent)
@@ -581,6 +615,8 @@ func main() {
 	}
 
 	// Rate limiting
+	esExecHealthEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["esHealthExec"]))(esExecHealthEndpoint)
+	esReadHealthEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["esHealthRead"]))(esReadHealthEndpoint)
 	influxExecHealthEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["influxHealthExec"]))(influxExecHealthEndpoint)
 	influxReadHealthEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["influxHealthRead"]))(influxReadHealthEndpoint)
 	jaegerExecHealthEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["jaegerHealthExec"]))(jaegerExecHealthEndpoint)
@@ -589,11 +625,15 @@ func main() {
 	redisReadHealthEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["redisHealthRead"]))(redisReadHealthEndpoint)
 	sentryExecHealthEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["sentryHealthExec"]))(sentryExecHealthEndpoint)
 	sentryReadHealthEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["sentryHealthRead"]))(sentryReadHealthEndpoint)
+	flakiExecHealthEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["flakiHealthExec"]))(flakiExecHealthEndpoint)
+	flakiReadHealthEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["flakiHealthRead"]))(flakiReadHealthEndpoint)
 	keycloakExecHealthEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["keycloakHealthExec"]))(keycloakExecHealthEndpoint)
 	keycloakReadHealthEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["keycloakHealthRead"]))(keycloakReadHealthEndpoint)
 	allHealthEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["allHealth"]))(allHealthEndpoint)
 
 	var healthEndpoints = health.Endpoints{
+		ESExecHealthCheck:       esExecHealthEndpoint,
+		ESReadHealthCheck:       esReadHealthEndpoint,
 		InfluxExecHealthCheck:   influxExecHealthEndpoint,
 		InfluxReadHealthCheck:   influxReadHealthEndpoint,
 		JaegerExecHealthCheck:   jaegerExecHealthEndpoint,
@@ -602,6 +642,8 @@ func main() {
 		RedisReadHealthCheck:    redisReadHealthEndpoint,
 		SentryExecHealthCheck:   sentryExecHealthEndpoint,
 		SentryReadHealthCheck:   sentryReadHealthEndpoint,
+		FlakiExecHealthCheck:    flakiExecHealthEndpoint,
+		FlakiReadHealthCheck:    flakiReadHealthEndpoint,
 		KeycloakExecHealthCheck: keycloakExecHealthEndpoint,
 		KeycloakReadHealthCheck: keycloakReadHealthEndpoint,
 		AllHealthChecks:         allHealthEndpoint,
@@ -611,10 +653,34 @@ func main() {
 	{
 		var ctrl = controller.NewController(ComponentName, ComponentID, idgenerator.New(flakiClient, tracer), &job_lock.NoopLocker{}, controller.EnableStatusStorage(job_status.New(cockroachConn)))
 
+		var flakiJob *job.Job
+		{
+			var err error
+			flakiJob, err = health_job.MakeFlakiJob(flakiHM, healthChecksValidity["flaki"], cockroachModule)
+			if err != nil {
+				logger.Log("msg", "could not create flaki health job", "error", err)
+				return
+			}
+			ctrl.Register(flakiJob)
+			ctrl.Schedule("@minutely", flakiJob.Name())
+		}
+
+		var esJob *job.Job
+		{
+			var err error
+			esJob, err = health_job.MakeESJob(esHM, healthChecksValidity["es"], cockroachModule)
+			if err != nil {
+				logger.Log("msg", "could not create elasticsearch health job", "error", err)
+				return
+			}
+			ctrl.Register(esJob)
+			ctrl.Schedule("@minutely", esJob.Name())
+		}
+
 		var influxJob *job.Job
 		{
 			var err error
-			influxJob, err = health_job.MakeInfluxJob(influxHM, healthChecksValidity[influxKey], cockroachModule)
+			influxJob, err = health_job.MakeInfluxJob(influxHM, healthChecksValidity["influx"], cockroachModule)
 			if err != nil {
 				logger.Log("msg", "could not create influx health job", "error", err)
 				return
@@ -626,7 +692,7 @@ func main() {
 		var jaegerJob *job.Job
 		{
 			var err error
-			jaegerJob, err = health_job.MakeJaegerJob(jaegerHM, healthChecksValidity[jaegerKey], cockroachModule)
+			jaegerJob, err = health_job.MakeJaegerJob(jaegerHM, healthChecksValidity["jaeger"], cockroachModule)
 			if err != nil {
 				logger.Log("msg", "could not create jaeger health job", "error", err)
 				return
@@ -638,7 +704,7 @@ func main() {
 		var redisJob *job.Job
 		{
 			var err error
-			redisJob, err = health_job.MakeRedisJob(redisHM, healthChecksValidity[redisKey], cockroachModule)
+			redisJob, err = health_job.MakeRedisJob(redisHM, healthChecksValidity["redis"], cockroachModule)
 			if err != nil {
 				logger.Log("msg", "could not create redis health job", "error", err)
 				return
@@ -650,7 +716,7 @@ func main() {
 		var sentryJob *job.Job
 		{
 			var err error
-			sentryJob, err = health_job.MakeSentryJob(sentryHM, healthChecksValidity[sentryKey], cockroachModule)
+			sentryJob, err = health_job.MakeSentryJob(sentryHM, healthChecksValidity["sentry"], cockroachModule)
 			if err != nil {
 				logger.Log("msg", "could not create sentry health job", "error", err)
 				return
@@ -662,7 +728,7 @@ func main() {
 		var keycloakJob *job.Job
 		{
 			var err error
-			keycloakJob, err = health_job.MakeKeycloakJob(keycloakHM, healthChecksValidity[keycloakKey], cockroachModule)
+			keycloakJob, err = health_job.MakeKeycloakJob(keycloakHM, healthChecksValidity["keycloak"], cockroachModule)
 			if err != nil {
 				logger.Log("msg", "could not create keycloak health job", "error", err)
 				return
@@ -754,6 +820,9 @@ func main() {
 		var allHealthChecksHandler = health.MakeHealthCheckHandler(healthEndpoints.AllHealthChecks)
 		healthSubroute.Handle("", allHealthChecksHandler)
 
+		healthSubroute.Handle("/es", health.MakeHealthCheckHandler(healthEndpoints.ESReadHealthCheck)).Methods("GET")
+		healthSubroute.Handle("/es", health.MakeHealthCheckHandler(healthEndpoints.ESExecHealthCheck)).Methods("POST")
+
 		healthSubroute.Handle("/influx", health.MakeHealthCheckHandler(healthEndpoints.InfluxReadHealthCheck)).Methods("GET")
 		healthSubroute.Handle("/influx", health.MakeHealthCheckHandler(healthEndpoints.InfluxExecHealthCheck)).Methods("POST")
 
@@ -765,6 +834,9 @@ func main() {
 
 		healthSubroute.Handle("/sentry", health.MakeHealthCheckHandler(healthEndpoints.SentryReadHealthCheck)).Methods("GET")
 		healthSubroute.Handle("/sentry", health.MakeHealthCheckHandler(healthEndpoints.SentryExecHealthCheck)).Methods("POST")
+
+		healthSubroute.Handle("/flaki", health.MakeHealthCheckHandler(healthEndpoints.FlakiReadHealthCheck)).Methods("GET")
+		healthSubroute.Handle("/flaki", health.MakeHealthCheckHandler(healthEndpoints.FlakiExecHealthCheck)).Methods("POST")
 
 		healthSubroute.Handle("/keycloak", health.MakeHealthCheckHandler(healthEndpoints.KeycloakReadHealthCheck)).Methods("GET")
 		healthSubroute.Handle("/keycloak", health.MakeHealthCheckHandler(healthEndpoints.KeycloakExecHealthCheck)).Methods("POST")
@@ -801,6 +873,27 @@ func main() {
 	}
 
 	logger.Log("error", <-errc)
+}
+
+type flakiHealthClient struct {
+	client fb_flaki.FlakiClient
+}
+
+func (hc *flakiHealthClient) NextValidID() (string, error) {
+	var b = flatbuffers.NewBuilder(0)
+	fb_flaki.FlakiRequestStart(b)
+	b.Finish(fb_flaki.FlakiRequestEnd(b))
+
+	var reply *fb_flaki.FlakiReply
+	{
+		var err error
+		reply, err = hc.client.NextValidID(context.Background(), b)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	return string(reply.Id()), nil
 }
 
 // makeVersion makes a HTTP handler that returns information about the version of the bridge.
@@ -852,6 +945,7 @@ func config(logger log.Logger) *viper.Viper {
 	v.SetDefault("keycloak-timeout", "5s")
 
 	// Elasticsearch default.
+	v.SetDefault("es", false)
 	v.SetDefault("es-host-port", "elasticsearch:9200")
 	v.SetDefault("es-index-name", "keycloak_business")
 
@@ -898,6 +992,7 @@ func config(logger log.Logger) *viper.Viper {
 	v.SetDefault("cockroach-clean-interval", "24h")
 
 	// Jobs
+	v.SetDefault("job-flaki-health-validity", "1m")
 	v.SetDefault("job-influx-health-validity", "1m")
 	v.SetDefault("job-jaeger-health-validity", "1m")
 	v.SetDefault("job-redis-health-validity", "1m")
@@ -907,6 +1002,8 @@ func config(logger log.Logger) *viper.Viper {
 	// Rate limiting (in requests/second)
 	v.SetDefault("rate-event", 1000)
 	v.SetDefault("rate-user", 1000)
+	v.SetDefault("rate-es-health-exec", 1000)
+	v.SetDefault("rate-es-health-read", 1000)
 	v.SetDefault("rate-influx-health-exec", 1000)
 	v.SetDefault("rate-influx-health-read", 1000)
 	v.SetDefault("rate-jaeger-health-exec", 1000)
@@ -915,6 +1012,8 @@ func config(logger log.Logger) *viper.Viper {
 	v.SetDefault("rate-redis-health-read", 1000)
 	v.SetDefault("rate-sentry-health-exec", 1000)
 	v.SetDefault("rate-sentry-health-read", 1000)
+	v.SetDefault("rate-flaki-health-exec", 1000)
+	v.SetDefault("rate-flaki-health-read", 1000)
 	v.SetDefault("rate-keycloak-health-exec", 1000)
 	v.SetDefault("rate-keycloak-health-read", 1000)
 	v.SetDefault("rate-all-health", 1000)
@@ -932,6 +1031,7 @@ func config(logger log.Logger) *viper.Viper {
 	}
 
 	// If the host/port is not set, we consider the components deactivated.
+	v.Set("es", v.GetString("es-host-port") != "")
 	v.Set("influx", v.GetString("influx-host-port") != "")
 	v.Set("sentry", v.GetString("sentry-dsn") != "")
 	v.Set("jaeger", v.GetString("jaeger-sampler-host-port") != "")

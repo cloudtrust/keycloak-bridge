@@ -23,6 +23,11 @@ type Flaki interface {
 	NextValidIDString() string
 }
 
+// FlakiHealthChecker is the interface of the influx health check module.
+type FlakiHealthChecker interface {
+	HealthChecks(context.Context) []common.FlakiReport
+}
+
 // InfluxHealthChecker is the interface of the influx health check module.
 type InfluxHealthChecker interface {
 	HealthChecks(context.Context) []common.InfluxReport
@@ -43,9 +48,44 @@ type SentryHealthChecker interface {
 	HealthChecks(context.Context) []common.SentryReport
 }
 
+// ESHealthChecker is the interface of the elasticsearch health check module.
+type ESHealthChecker interface {
+	HealthChecks(context.Context) []health.ESReport
+}
+
 // KeycloakHealthChecker is the interface of the keycloak health check module.
 type KeycloakHealthChecker interface {
 	HealthChecks(context.Context) []health.KeycloakReport
+}
+
+// MakeFlakiJob creates the job that periodically exectutes the health checks and save the result in DB.
+func MakeFlakiJob(flaki FlakiHealthChecker, healthCheckValidity time.Duration, cockroach Cockroach) (*job.Job, error) {
+	var step1 = func(ctx context.Context, r interface{}) (interface{}, error) {
+		return flaki.HealthChecks(ctx), nil
+	}
+
+	var step2 = func(_ context.Context, r interface{}) (interface{}, error) {
+		var jsonReports, _ = json.Marshal(r)
+
+		var err = cockroach.Update("flaki", healthCheckValidity, jsonReports)
+		return nil, err
+	}
+	return job.NewJob("flaki", job.Steps(step1, step2))
+}
+
+// MakeESJob creates the job that periodically exectutes the health checks and save the result in DB.
+func MakeESJob(es ESHealthChecker, healthCheckValidity time.Duration, cockroach Cockroach) (*job.Job, error) {
+	var step1 = func(ctx context.Context, r interface{}) (interface{}, error) {
+		return es.HealthChecks(ctx), nil
+	}
+
+	var step2 = func(_ context.Context, r interface{}) (interface{}, error) {
+		var jsonReports, _ = json.Marshal(r)
+
+		var err = cockroach.Update("es", healthCheckValidity, jsonReports)
+		return nil, err
+	}
+	return job.NewJob("es", job.Steps(step1, step2))
 }
 
 // MakeInfluxJob creates the job that periodically exectutes the health checks and save the result in DB.

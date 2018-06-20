@@ -11,12 +11,19 @@ import (
 
 const (
 	// Names of the units in the health check http response and in the DB.
+	esUnitName       = "es"
+	flakiUnitName    = "flaki"
 	influxUnitName   = "influx"
 	jaegerUnitName   = "jaeger"
 	redisUnitName    = "redis"
 	sentryUnitName   = "sentry"
 	keycloakUnitName = "keycloak"
 )
+
+// ESHealthChecker is the interface of the elasticsearch health check module.
+type ESHealthChecker interface {
+	HealthChecks(context.Context) []ESReport
+}
 
 // InfluxHealthChecker is the interface of the influx health check module.
 type InfluxHealthChecker interface {
@@ -38,6 +45,11 @@ type SentryHealthChecker interface {
 	HealthChecks(context.Context) []common.SentryReport
 }
 
+// FlakiHealthChecker is the interface of the flaki health check module.
+type FlakiHealthChecker interface {
+	HealthChecks(context.Context) []common.FlakiReport
+}
+
 // KeycloakHealthChecker is the interface of the keycloak health check module.
 type KeycloakHealthChecker interface {
 	HealthChecks(context.Context) []KeycloakReport
@@ -52,26 +64,44 @@ type StoreModule interface {
 
 // Component is the Health component.
 type Component struct {
+	es                  ESHealthChecker
 	influx              InfluxHealthChecker
 	jaeger              JaegerHealthChecker
 	redis               RedisHealthChecker
 	sentry              SentryHealthChecker
+	flaki               FlakiHealthChecker
 	keycloak            KeycloakHealthChecker
 	storage             StoreModule
 	healthCheckValidity map[string]time.Duration
 }
 
 // NewComponent returns the health component.
-func NewComponent(influx InfluxHealthChecker, jaeger JaegerHealthChecker, redis RedisHealthChecker, sentry SentryHealthChecker, keycloak KeycloakHealthChecker, storage StoreModule, healthCheckValidity map[string]time.Duration) *Component {
+func NewComponent(influx InfluxHealthChecker, jaeger JaegerHealthChecker, redis RedisHealthChecker, sentry SentryHealthChecker, flaki FlakiHealthChecker, es ESHealthChecker, keycloak KeycloakHealthChecker, storage StoreModule, healthCheckValidity map[string]time.Duration) *Component {
 	return &Component{
+		es:                  es,
 		influx:              influx,
 		jaeger:              jaeger,
 		redis:               redis,
 		sentry:              sentry,
+		flaki:               flaki,
 		keycloak:            keycloak,
 		storage:             storage,
 		healthCheckValidity: healthCheckValidity,
 	}
+}
+
+// ExecESHealthChecks executes the health checks for Elasticsearch.
+func (c *Component) ExecESHealthChecks(ctx context.Context) json.RawMessage {
+	var reports = c.es.HealthChecks(ctx)
+	var jsonReports, _ = json.Marshal(reports)
+
+	c.storage.Update(esUnitName, c.healthCheckValidity[esUnitName], jsonReports)
+	return json.RawMessage(jsonReports)
+}
+
+// ReadESHealthChecks read the health checks status in DB.
+func (c *Component) ReadESHealthChecks(ctx context.Context) json.RawMessage {
+	return c.readFromDB(esUnitName)
 }
 
 // ExecInfluxHealthChecks executes the health checks for Influx.
@@ -131,6 +161,20 @@ func (c *Component) ReadSentryHealthChecks(ctx context.Context) json.RawMessage 
 	return c.readFromDB(sentryUnitName)
 }
 
+// ExecFlakiHealthChecks executes the health checks for Flaki.
+func (c *Component) ExecFlakiHealthChecks(ctx context.Context) json.RawMessage {
+	var reports = c.flaki.HealthChecks(ctx)
+	var jsonReports, _ = json.Marshal(reports)
+
+	c.storage.Update(flakiUnitName, c.healthCheckValidity[flakiUnitName], jsonReports)
+	return json.RawMessage(jsonReports)
+}
+
+// ReadFlakiHealthChecks read the health checks status in DB.
+func (c *Component) ReadFlakiHealthChecks(ctx context.Context) json.RawMessage {
+	return c.readFromDB(flakiUnitName)
+}
+
 // ExecKeycloakHealthChecks executes the health checks for Keycloak.
 func (c *Component) ExecKeycloakHealthChecks(ctx context.Context) json.RawMessage {
 	var reports = c.keycloak.HealthChecks(ctx)
@@ -149,6 +193,8 @@ func (c *Component) ReadKeycloakHealthChecks(ctx context.Context) json.RawMessag
 func (c *Component) AllHealthChecks(ctx context.Context) json.RawMessage {
 	var reports = map[string]json.RawMessage{}
 
+	reports[esUnitName] = c.ReadESHealthChecks(ctx)
+	reports[flakiUnitName] = c.ReadFlakiHealthChecks(ctx)
 	reports[influxUnitName] = c.ReadInfluxHealthChecks(ctx)
 	reports[jaegerUnitName] = c.ReadJaegerHealthChecks(ctx)
 	reports[redisUnitName] = c.ReadRedisHealthChecks(ctx)

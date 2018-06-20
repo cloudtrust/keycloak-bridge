@@ -25,6 +25,24 @@ func MakeComponentLoggingMW(logger log.Logger) func(HealthChecker) HealthChecker
 }
 
 // componentLoggingMW implements Component.
+func (m *componentLoggingMW) ExecESHealthChecks(ctx context.Context) json.RawMessage {
+	defer func(begin time.Time) {
+		m.logger.Log("unit", "ExecESHealthChecks", "correlation_id", ctx.Value("correlation_id").(string), "took", time.Since(begin))
+	}(time.Now())
+
+	return m.next.ExecESHealthChecks(ctx)
+}
+
+// componentLoggingMW implements Component.
+func (m *componentLoggingMW) ReadESHealthChecks(ctx context.Context) json.RawMessage {
+	defer func(begin time.Time) {
+		m.logger.Log("unit", "ReadESHealthChecks", "correlation_id", ctx.Value("correlation_id").(string), "took", time.Since(begin))
+	}(time.Now())
+
+	return m.next.ReadESHealthChecks(ctx)
+}
+
+// componentLoggingMW implements Component.
 func (m *componentLoggingMW) ExecInfluxHealthChecks(ctx context.Context) json.RawMessage {
 	defer func(begin time.Time) {
 		m.logger.Log("unit", "ExecInfluxHealthChecks", "correlation_id", ctx.Value("correlation_id").(string), "took", time.Since(begin))
@@ -94,6 +112,24 @@ func (m *componentLoggingMW) ReadSentryHealthChecks(ctx context.Context) json.Ra
 	}(time.Now())
 
 	return m.next.ReadSentryHealthChecks(ctx)
+}
+
+// componentLoggingMW implements Component.
+func (m *componentLoggingMW) ExecFlakiHealthChecks(ctx context.Context) json.RawMessage {
+	defer func(begin time.Time) {
+		m.logger.Log("unit", "ExecFlakiHealthChecks", "correlation_id", ctx.Value("correlation_id").(string), "took", time.Since(begin))
+	}(time.Now())
+
+	return m.next.ExecFlakiHealthChecks(ctx)
+}
+
+// componentLoggingMW implements Component.
+func (m *componentLoggingMW) ReadFlakiHealthChecks(ctx context.Context) json.RawMessage {
+	defer func(begin time.Time) {
+		m.logger.Log("unit", "ReadFlakiHealthChecks", "correlation_id", ctx.Value("correlation_id").(string), "took", time.Since(begin))
+	}(time.Now())
+
+	return m.next.ReadFlakiHealthChecks(ctx)
 }
 
 // componentLoggingMW implements Component.

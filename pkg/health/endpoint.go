@@ -9,6 +9,8 @@ import (
 
 // Endpoints wraps a service behind a set of endpoints.
 type Endpoints struct {
+	ESExecHealthCheck       endpoint.Endpoint
+	ESReadHealthCheck       endpoint.Endpoint
 	InfluxExecHealthCheck   endpoint.Endpoint
 	InfluxReadHealthCheck   endpoint.Endpoint
 	JaegerExecHealthCheck   endpoint.Endpoint
@@ -17,6 +19,8 @@ type Endpoints struct {
 	RedisReadHealthCheck    endpoint.Endpoint
 	SentryExecHealthCheck   endpoint.Endpoint
 	SentryReadHealthCheck   endpoint.Endpoint
+	FlakiExecHealthCheck    endpoint.Endpoint
+	FlakiReadHealthCheck    endpoint.Endpoint
 	KeycloakExecHealthCheck endpoint.Endpoint
 	KeycloakReadHealthCheck endpoint.Endpoint
 	AllHealthChecks         endpoint.Endpoint
@@ -24,6 +28,8 @@ type Endpoints struct {
 
 // HealthChecker is the health component interface.
 type HealthChecker interface {
+	ExecESHealthChecks(context.Context) json.RawMessage
+	ReadESHealthChecks(context.Context) json.RawMessage
 	ExecInfluxHealthChecks(context.Context) json.RawMessage
 	ReadInfluxHealthChecks(context.Context) json.RawMessage
 	ExecJaegerHealthChecks(context.Context) json.RawMessage
@@ -32,9 +38,27 @@ type HealthChecker interface {
 	ReadRedisHealthChecks(context.Context) json.RawMessage
 	ExecSentryHealthChecks(context.Context) json.RawMessage
 	ReadSentryHealthChecks(context.Context) json.RawMessage
+	ExecFlakiHealthChecks(context.Context) json.RawMessage
+	ReadFlakiHealthChecks(context.Context) json.RawMessage
 	ExecKeycloakHealthChecks(context.Context) json.RawMessage
 	ReadKeycloakHealthChecks(context.Context) json.RawMessage
 	AllHealthChecks(context.Context) json.RawMessage
+}
+
+// MakeExecESHealthCheckEndpoint makes the ESHealthCheck endpoint
+// that forces the execution of the health checks.
+func MakeExecESHealthCheckEndpoint(hc HealthChecker) endpoint.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		return hc.ExecESHealthChecks(ctx), nil
+	}
+}
+
+// MakeReadESHealthCheckEndpoint makes the ESHealthCheck endpoint
+// that read the last health check status in DB.
+func MakeReadESHealthCheckEndpoint(hc HealthChecker) endpoint.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		return hc.ReadESHealthChecks(ctx), nil
+	}
 }
 
 // MakeExecInfluxHealthCheckEndpoint makes the InfluxHealthCheck endpoint
@@ -98,6 +122,22 @@ func MakeExecSentryHealthCheckEndpoint(hc HealthChecker) endpoint.Endpoint {
 func MakeReadSentryHealthCheckEndpoint(hc HealthChecker) endpoint.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		return hc.ReadSentryHealthChecks(ctx), nil
+	}
+}
+
+// MakeExecFlakiHealthCheckEndpoint makes the FlakiHealthCheck endpoint
+// that forces the execution of the health checks.
+func MakeExecFlakiHealthCheckEndpoint(hc HealthChecker) endpoint.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		return hc.ExecFlakiHealthChecks(ctx), nil
+	}
+}
+
+// MakeReadFlakiHealthCheckEndpoint makes the FlakiHealthCheck endpoint
+// that read the last health check status in DB.
+func MakeReadFlakiHealthCheckEndpoint(hc HealthChecker) endpoint.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		return hc.ReadFlakiHealthChecks(ctx), nil
 	}
 }
 

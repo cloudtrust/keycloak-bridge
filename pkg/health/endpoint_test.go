@@ -13,6 +13,63 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestESHealthCheckEndpoint(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+	var mockComponent = mock.NewHealthChecker(mockCtrl)
+
+	var e = MakeExecESHealthCheckEndpoint(mockComponent)
+	var r = MakeReadESHealthCheckEndpoint(mockComponent)
+
+	//Exec
+	{
+		var j = json.RawMessage(`{"Name":"Test","Status":"OK"}`)
+		mockComponent.EXPECT().ExecESHealthChecks(context.Background()).Return(j).Times(1)
+		var reports, err = e(context.Background(), nil)
+		assert.Nil(t, err)
+		var json, _ = json.Marshal(&reports)
+		assert.Equal(t, `{"Name":"Test","Status":"OK"}`, string(json))
+	}
+
+	//Read
+	{
+		var j = json.RawMessage(`{"Name":"Test","Status":"OK"}`)
+		mockComponent.EXPECT().ReadESHealthChecks(context.Background()).Return(j).Times(1)
+		var reports, err = r(context.Background(), nil)
+		assert.Nil(t, err)
+		var json, _ = json.Marshal(&reports)
+		assert.Equal(t, `{"Name":"Test","Status":"OK"}`, string(json))
+	}
+}
+
+func TestFlakiHealthCheckEndpoint(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+	var mockComponent = mock.NewHealthChecker(mockCtrl)
+
+	var e = MakeExecFlakiHealthCheckEndpoint(mockComponent)
+	var r = MakeReadFlakiHealthCheckEndpoint(mockComponent)
+
+	//Exec
+	{
+		var j = json.RawMessage(`{"Name":"Test","Status":"OK"}`)
+		mockComponent.EXPECT().ExecFlakiHealthChecks(context.Background()).Return(j).Times(1)
+		var reports, err = e(context.Background(), nil)
+		assert.Nil(t, err)
+		var json, _ = json.Marshal(&reports)
+		assert.Equal(t, `{"Name":"Test","Status":"OK"}`, string(json))
+	}
+
+	//Read
+	{
+		var j = json.RawMessage(`{"Name":"Test","Status":"OK"}`)
+		mockComponent.EXPECT().ReadFlakiHealthChecks(context.Background()).Return(j).Times(1)
+		var reports, err = r(context.Background(), nil)
+		assert.Nil(t, err)
+		var json, _ = json.Marshal(&reports)
+		assert.Equal(t, `{"Name":"Test","Status":"OK"}`, string(json))
+	}
+}
 func TestInfluxHealthCheckEndpoint(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -41,7 +98,6 @@ func TestInfluxHealthCheckEndpoint(t *testing.T) {
 		assert.Equal(t, `{"Name":"Test","Status":"OK"}`, string(json))
 	}
 }
-
 func TestJaegerHealthCheckEndpoint(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()

@@ -46,6 +46,30 @@ func (mr *HealthCheckerMockRecorder) AllHealthChecks(arg0 interface{}) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AllHealthChecks", reflect.TypeOf((*HealthChecker)(nil).AllHealthChecks), arg0)
 }
 
+// ExecESHealthChecks mocks base method
+func (m *HealthChecker) ExecESHealthChecks(arg0 context.Context) json.RawMessage {
+	ret := m.ctrl.Call(m, "ExecESHealthChecks", arg0)
+	ret0, _ := ret[0].(json.RawMessage)
+	return ret0
+}
+
+// ExecESHealthChecks indicates an expected call of ExecESHealthChecks
+func (mr *HealthCheckerMockRecorder) ExecESHealthChecks(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExecESHealthChecks", reflect.TypeOf((*HealthChecker)(nil).ExecESHealthChecks), arg0)
+}
+
+// ExecFlakiHealthChecks mocks base method
+func (m *HealthChecker) ExecFlakiHealthChecks(arg0 context.Context) json.RawMessage {
+	ret := m.ctrl.Call(m, "ExecFlakiHealthChecks", arg0)
+	ret0, _ := ret[0].(json.RawMessage)
+	return ret0
+}
+
+// ExecFlakiHealthChecks indicates an expected call of ExecFlakiHealthChecks
+func (mr *HealthCheckerMockRecorder) ExecFlakiHealthChecks(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExecFlakiHealthChecks", reflect.TypeOf((*HealthChecker)(nil).ExecFlakiHealthChecks), arg0)
+}
+
 // ExecInfluxHealthChecks mocks base method
 func (m *HealthChecker) ExecInfluxHealthChecks(arg0 context.Context) json.RawMessage {
 	ret := m.ctrl.Call(m, "ExecInfluxHealthChecks", arg0)
@@ -104,6 +128,30 @@ func (m *HealthChecker) ExecSentryHealthChecks(arg0 context.Context) json.RawMes
 // ExecSentryHealthChecks indicates an expected call of ExecSentryHealthChecks
 func (mr *HealthCheckerMockRecorder) ExecSentryHealthChecks(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExecSentryHealthChecks", reflect.TypeOf((*HealthChecker)(nil).ExecSentryHealthChecks), arg0)
+}
+
+// ReadESHealthChecks mocks base method
+func (m *HealthChecker) ReadESHealthChecks(arg0 context.Context) json.RawMessage {
+	ret := m.ctrl.Call(m, "ReadESHealthChecks", arg0)
+	ret0, _ := ret[0].(json.RawMessage)
+	return ret0
+}
+
+// ReadESHealthChecks indicates an expected call of ReadESHealthChecks
+func (mr *HealthCheckerMockRecorder) ReadESHealthChecks(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReadESHealthChecks", reflect.TypeOf((*HealthChecker)(nil).ReadESHealthChecks), arg0)
+}
+
+// ReadFlakiHealthChecks mocks base method
+func (m *HealthChecker) ReadFlakiHealthChecks(arg0 context.Context) json.RawMessage {
+	ret := m.ctrl.Call(m, "ReadFlakiHealthChecks", arg0)
+	ret0, _ := ret[0].(json.RawMessage)
+	return ret0
+}
+
+// ReadFlakiHealthChecks indicates an expected call of ReadFlakiHealthChecks
+func (mr *HealthCheckerMockRecorder) ReadFlakiHealthChecks(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReadFlakiHealthChecks", reflect.TypeOf((*HealthChecker)(nil).ReadFlakiHealthChecks), arg0)
 }
 
 // ReadInfluxHealthChecks mocks base method
