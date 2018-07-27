@@ -16,7 +16,7 @@ func TestLogstashRedisWriter(t *testing.T) {
 
 	var w = NewLogstashRedisWriter(mockRedis, "redisKey")
 
-	var jsonLog = "{\"msg\":\"logstash log\",\"caller\":\"flakid.go:120\",\"component_name\":\"flaki-service\",\"component_version\":\"1.0.0\",\"environment\":\"DEV\",\"git_commit\":\"5fb7de0d7ae3f3d5f5d6a322b2344bdab645fd33\",\"ts\":\"2018-02-13T06:27:07.123915229Z\"}"
+	var jsonLog = "{\"msg\":\"logstash log\",\"caller\":\"flakid.go:120\",\"component_name\":\"keycloak-bridge\",\"component_version\":\"1.0.0\",\"environment\":\"DEV\",\"git_commit\":\"5fb7de0d7ae3f3d5f5d6a322b2344bdab645fd33\",\"ts\":\"2018-02-13T06:27:07.123915229Z\"}"
 	mockRedis.EXPECT().Send("RPUSH", "redisKey", gomock.Any()).Return(nil).Times(1)
 	w.Write([]byte(jsonLog))
 }
@@ -25,7 +25,7 @@ func TestLogstashEncode(t *testing.T) {
 	var logs = map[string]string{
 		"msg":               "logstash log",
 		"caller":            "flakid.go:120",
-		"component_name":    "flaki-service",
+		"component_name":    "keycloak-bridge",
 		"component_version": "1.0",
 		"environment":       "DEV",
 		"git_commit":        "5fb7de0d7ae3f3d5f5d6a322b2344bdab645fd33",
@@ -44,7 +44,7 @@ func TestLogstashEncode(t *testing.T) {
 
 	var fields = m["@fields"].(map[string]interface{})
 	assert.Equal(t, "flakid.go:120", fields["caller"])
-	assert.Equal(t, "flaki-service", fields["component_name"])
+	assert.Equal(t, "keycloak-bridge", fields["component_name"])
 	assert.Equal(t, "1.0", fields["component_version"])
 	assert.Equal(t, "DEV", fields["environment"])
 	assert.Equal(t, "5fb7de0d7ae3f3d5f5d6a322b2344bdab645fd33", fields["git_commit"])

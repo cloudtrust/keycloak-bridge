@@ -1,22 +1,33 @@
 package health_test
 
-//go:generate mockgen -destination=./mock/keycloakclient.go -package=mock -mock_names=Keycloak=Keycloak github.com/cloudtrust/keycloak-bridge/pkg/health Keycloak
+//go:generate mockgen -destination=./mock/keycloak.go -package=mock -mock_names=KeycloakClient=KeycloakClient github.com/cloudtrust/keycloak-bridge/pkg/health KeycloakClient
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"strconv"
 	"testing"
 	"time"
 
-	common "github.com/cloudtrust/common-healthcheck"
 	. "github.com/cloudtrust/keycloak-bridge/pkg/health"
 	"github.com/cloudtrust/keycloak-bridge/pkg/health/mock"
 	keycloak_client "github.com/cloudtrust/keycloak-client"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
+
+type keycloakReport struct {
+	Name     string `json:"name"`
+	Status   string `json:"status"`
+	Duration string `json:"duration,omitempty"`
+	Error    string `json:"error,omitempty"`
+}
 
 var hcUser = keycloak_client.UserRepresentation{
 	Username:  Str("health.check"),
@@ -33,105 +44,233 @@ var vUser = keycloak_client.UserRepresentation{
 func TestNewKeycloakModule(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
-	var mockKeycloak = mock.NewKeycloak(mockCtrl)
+	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 
-	rand.Seed(time.Now().UnixNano())
+	var enabled = true
 	var userID = strconv.FormatUint(rand.Uint64(), 10)
 	vUser.Id = Str(userID)
 	var users = []keycloak_client.UserRepresentation{hcUser, vUser}
 
 	// Wrong version number.
 	{
-		var _, err = NewKeycloakModule(mockKeycloak, "1.0.0")
+		var _, err = NewKeycloakModule(mockKeycloakClient, "1.0.0", enabled)
 		assert.NotNil(t, err)
 	}
 	// Test realm already up to date.
-	mockKeycloak.EXPECT().GetUsers("__internal", "username", "version").Return(users, nil).Times(1)
-	mockKeycloak.EXPECT().GetUser("__internal", userID).Return(vUser, nil).Times(1)
-	NewKeycloakModule(mockKeycloak, "1.0")
+	mockKeycloakClient.EXPECT().GetUsers("__internal", "username", "version").Return(users, nil).Times(1)
+	mockKeycloakClient.EXPECT().GetUser("__internal", userID).Return(vUser, nil).Times(1)
+	NewKeycloakModule(mockKeycloakClient, "1.0", enabled)
 
 	// Test realm does not exist.
-	mockKeycloak.EXPECT().GetUsers("__internal", "username", "version").Return(nil, fmt.Errorf("fail")).Times(1)
-	mockKeycloak.EXPECT().DeleteRealm("__internal").Return(nil).Times(1)
-	mockKeycloak.EXPECT().CreateRealm(gomock.Any()).Return(nil).Times(1)
-	mockKeycloak.EXPECT().CreateUser("__internal", gomock.Any()).Return(nil).Times(1)
-	NewKeycloakModule(mockKeycloak, "1.0")
+	mockKeycloakClient.EXPECT().GetUsers("__internal", "username", "version").Return(nil, fmt.Errorf("fail")).Times(1)
+	mockKeycloakClient.EXPECT().DeleteRealm("__internal").Return(nil).Times(1)
+	mockKeycloakClient.EXPECT().CreateRealm(gomock.Any()).Return(nil).Times(1)
+	mockKeycloakClient.EXPECT().CreateUser("__internal", gomock.Any()).Return(nil).Times(1)
+	NewKeycloakModule(mockKeycloakClient, "1.0", enabled)
 }
 
-func TestKeycloakHealthChecks(t *testing.T) {
+func TestKeycloakDisabled(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
-	var mockKeycloak = mock.NewKeycloak(mockCtrl)
+	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 
-	rand.Seed(time.Now().UnixNano())
-	var hcUserID = strconv.FormatUint(rand.Uint64(), 10)
+	var (
+		enabled  = false
+		version  = "1.0"
+		hcUserID = strconv.FormatUint(rand.Uint64(), 10)
+		vUserID  = strconv.FormatUint(rand.Uint64(), 10)
+	)
 	hcUser.Id = Str(hcUserID)
-	var vUserID = strconv.FormatUint(rand.Uint64(), 10)
 	vUser.Id = Str(vUserID)
 	var users = []keycloak_client.UserRepresentation{hcUser, vUser}
 
-	mockKeycloak.EXPECT().GetUsers("__internal", "username", "version").Return(users, nil).Times(1)
-	mockKeycloak.EXPECT().GetUser("__internal", vUserID).Return(vUser, nil).Times(1)
-	var m, err = NewKeycloakModule(mockKeycloak, "1.0")
+	var m HealthChecker
+	{
+		mockKeycloakClient.EXPECT().GetUsers("__internal", "username", "version").Return(users, nil).Times(1)
+		mockKeycloakClient.EXPECT().GetUser("__internal", vUserID).Return(vUser, nil).Times(1)
+
+		var err error
+		m, err = NewKeycloakModule(mockKeycloakClient, version, enabled)
+		assert.Nil(t, err)
+	}
+
+	var jsonReport, err = m.HealthCheck(context.Background(), "createuser")
 	assert.Nil(t, err)
 
-	// HealthChecks
+	// Check that the report is a valid json
+	var report = []keycloakReport{}
+	assert.Nil(t, json.Unmarshal(jsonReport, &report))
+
+	var r = report[0]
+	assert.Equal(t, "keycloak", r.Name)
+	assert.Equal(t, "Deactivated", r.Status)
+	assert.Zero(t, r.Duration)
+	assert.Zero(t, r.Error)
+}
+
+func TestKeycloakCreateUser(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
+
+	var (
+		enabled  = true
+		version  = "1.0"
+		hcUserID = strconv.FormatUint(rand.Uint64(), 10)
+		vUserID  = strconv.FormatUint(rand.Uint64(), 10)
+	)
+	hcUser.Id = Str(hcUserID)
+	vUser.Id = Str(vUserID)
+	var users = []keycloak_client.UserRepresentation{hcUser, vUser}
+
+	var m HealthChecker
 	{
-		// keycloakCreateUserCheck
-		mockKeycloak.EXPECT().GetUsers("__internal", "username", "health.check").Return(users, nil).Times(1)
-		mockKeycloak.EXPECT().DeleteUser("__internal", hcUserID).Return(nil).Times(1)
-		mockKeycloak.EXPECT().CreateUser("__internal", gomock.Any()).Return(nil).Times(1)
-		// keycloakDeleteUserCheck
-		mockKeycloak.EXPECT().GetUsers("__internal", "username", "health.check").Return(users, nil).Times(1)
-		mockKeycloak.EXPECT().DeleteUser("__internal", hcUserID).Return(nil).Times(1)
-		var reports = m.HealthChecks(context.Background())
-		assert.Equal(t, 2, len(reports))
-		// Create user report
-		{
-			var report = reports[0]
-			assert.Equal(t, "create user", report.Name)
-			assert.NotZero(t, report.Duration)
-			assert.Equal(t, common.OK, report.Status)
-			assert.Zero(t, report.Error)
-		}
-		// Delete user report
-		{
-			var report = reports[1]
-			assert.Equal(t, "delete user", report.Name)
-			assert.NotZero(t, report.Duration)
-			assert.Equal(t, common.OK, report.Status)
-			assert.Zero(t, report.Error)
-		}
+		mockKeycloakClient.EXPECT().GetUsers("__internal", "username", "version").Return(users, nil).Times(1)
+		mockKeycloakClient.EXPECT().GetUser("__internal", vUserID).Return(vUser, nil).Times(1)
+
+		var err error
+		m, err = NewKeycloakModule(mockKeycloakClient, version, enabled)
+		assert.Nil(t, err)
 	}
 
-	// Keycloak fail.
+	mockKeycloakClient.EXPECT().GetUsers("__internal", "username", "health.check").Return(users, nil).Times(1)
+	mockKeycloakClient.EXPECT().DeleteUser("__internal", hcUserID).Return(nil).Times(1)
+	mockKeycloakClient.EXPECT().CreateUser("__internal", gomock.Any()).Return(nil).Times(1)
+
+	var jsonReport, err = m.HealthCheck(context.Background(), "createuser")
+	assert.Nil(t, err)
+
+	// Check that the report is a valid json
+	var report = []keycloakReport{}
+	assert.Nil(t, json.Unmarshal(jsonReport, &report))
+
+	var r = report[0]
+	assert.Equal(t, "create user", r.Name)
+	assert.Equal(t, "OK", r.Status)
+	assert.NotZero(t, r.Duration)
+	assert.Zero(t, r.Error)
+}
+
+func TestKeycloakDeleteUser(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
+
+	var (
+		enabled  = true
+		version  = "1.0"
+		hcUserID = strconv.FormatUint(rand.Uint64(), 10)
+		vUserID  = strconv.FormatUint(rand.Uint64(), 10)
+	)
+	hcUser.Id = Str(hcUserID)
+	vUser.Id = Str(vUserID)
+	var users = []keycloak_client.UserRepresentation{hcUser, vUser}
+
+	var m HealthChecker
 	{
-		// keycloakCreateUserCheck
-		mockKeycloak.EXPECT().GetUsers("__internal", "username", "health.check").Return(users, nil).Times(1)
-		mockKeycloak.EXPECT().DeleteUser("__internal", hcUserID).Return(nil).Times(1)
-		mockKeycloak.EXPECT().CreateUser("__internal", gomock.Any()).Return(fmt.Errorf("fail")).Times(1)
-		// keycloakDeleteUserCheck
-		mockKeycloak.EXPECT().GetUsers("__internal", "username", "health.check").Return(users, nil).Times(1)
-		mockKeycloak.EXPECT().DeleteUser("__internal", hcUserID).Return(fmt.Errorf("fail")).Times(1)
-		var reports = m.HealthChecks(context.Background())
-		assert.Equal(t, 2, len(reports))
-		// Create user report
-		{
-			var report = reports[0]
-			assert.Equal(t, "create user", report.Name)
-			assert.NotZero(t, report.Duration)
-			assert.Equal(t, common.KO, report.Status)
-			assert.NotZero(t, report.Error)
-		}
-		// Delete user report
-		{
-			var report = reports[1]
-			assert.Equal(t, "delete user", report.Name)
-			assert.NotZero(t, report.Duration)
-			assert.Equal(t, common.KO, report.Status)
-			assert.NotZero(t, report.Error)
-		}
+		mockKeycloakClient.EXPECT().GetUsers("__internal", "username", "version").Return(users, nil).Times(1)
+		mockKeycloakClient.EXPECT().GetUser("__internal", vUserID).Return(vUser, nil).Times(1)
+
+		var err error
+		m, err = NewKeycloakModule(mockKeycloakClient, version, enabled)
+		assert.Nil(t, err)
 	}
+
+	mockKeycloakClient.EXPECT().GetUsers("__internal", "username", "health.check").Return(users, nil).Times(1)
+	mockKeycloakClient.EXPECT().DeleteUser("__internal", hcUserID).Return(nil).Times(1)
+
+	var jsonReport, err = m.HealthCheck(context.Background(), "deleteuser")
+	assert.Nil(t, err)
+
+	// Check that the report is a valid json
+	var report = []keycloakReport{}
+	assert.Nil(t, json.Unmarshal(jsonReport, &report))
+
+	var r = report[0]
+	assert.Equal(t, "delete user", r.Name)
+	assert.Equal(t, "OK", r.Status)
+	assert.NotZero(t, r.Duration)
+	assert.Zero(t, r.Error)
+}
+
+func TestKeycloakAllChecks(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
+
+	var (
+		enabled  = true
+		version  = "1.0"
+		hcUserID = strconv.FormatUint(rand.Uint64(), 10)
+		vUserID  = strconv.FormatUint(rand.Uint64(), 10)
+	)
+	hcUser.Id = Str(hcUserID)
+	vUser.Id = Str(vUserID)
+	var users = []keycloak_client.UserRepresentation{hcUser, vUser}
+
+	var m HealthChecker
+	{
+		mockKeycloakClient.EXPECT().GetUsers("__internal", "username", "version").Return(users, nil).Times(1)
+		mockKeycloakClient.EXPECT().GetUser("__internal", vUserID).Return(vUser, nil).Times(1)
+
+		var err error
+		m, err = NewKeycloakModule(mockKeycloakClient, version, enabled)
+		assert.Nil(t, err)
+	}
+
+	mockKeycloakClient.EXPECT().GetUsers("__internal", "username", "health.check").Return(users, nil).Times(2)
+	mockKeycloakClient.EXPECT().DeleteUser("__internal", hcUserID).Return(nil).Times(2)
+	mockKeycloakClient.EXPECT().CreateUser("__internal", gomock.Any()).Return(nil).Times(1)
+
+	var jsonReport, err = m.HealthCheck(context.Background(), "")
+	assert.Nil(t, err)
+
+	// Check that the report is a valid json
+	var report = []keycloakReport{}
+	assert.Nil(t, json.Unmarshal(jsonReport, &report))
+
+	var r = report[0]
+	assert.Equal(t, "create user", r.Name)
+	assert.Equal(t, "OK", r.Status)
+	assert.NotZero(t, r.Duration)
+	assert.Zero(t, r.Error)
+
+	r = report[1]
+	assert.Equal(t, "delete user", r.Name)
+	assert.Equal(t, "OK", r.Status)
+	assert.NotZero(t, r.Duration)
+	assert.Zero(t, r.Error)
+}
+func TestKeycloakUnkownHealthCheck(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
+
+	var (
+		enabled         = true
+		version         = "1.0"
+		hcUserID        = strconv.FormatUint(rand.Uint64(), 10)
+		vUserID         = strconv.FormatUint(rand.Uint64(), 10)
+		healthCheckName = "unknown"
+	)
+	hcUser.Id = Str(hcUserID)
+	vUser.Id = Str(vUserID)
+	var users = []keycloak_client.UserRepresentation{hcUser, vUser}
+
+	var m HealthChecker
+	{
+		mockKeycloakClient.EXPECT().GetUsers("__internal", "username", "version").Return(users, nil).Times(1)
+		mockKeycloakClient.EXPECT().GetUser("__internal", vUserID).Return(vUser, nil).Times(1)
+
+		var err error
+		m, err = NewKeycloakModule(mockKeycloakClient, version, enabled)
+		assert.Nil(t, err)
+	}
+
+	var f = func() {
+		m.HealthCheck(context.Background(), healthCheckName)
+	}
+	assert.Panics(t, f)
 }
 
 func TestVersion(t *testing.T) {

@@ -6,7 +6,9 @@ import (
 	"net/http"
 
 	"github.com/go-kit/kit/endpoint"
+	"github.com/go-kit/kit/ratelimit"
 	http_transport "github.com/go-kit/kit/transport/http"
+	"github.com/gorilla/mux"
 )
 
 // MakeHealthCheckHandler make an HTTP handler for an HealthCheck endpoint.
@@ -18,31 +20,31 @@ func MakeHealthCheckHandler(e endpoint.Endpoint) *http_transport.Server {
 	)
 }
 
-// decodeHealthCheckRequest decodes the health check request.
-func decodeHealthCheckRequest(_ context.Context, r *http.Request) (rep interface{}, err error) {
-	return nil, nil
-}
+// decodeHealthCheckRequest gets the HTTP parameters 'module', 'healthcheck', and 'nocache'.
+// They define which health check to execute, e.g. to ping influx, 'module' = influx and
+// 'healthcheck' = ping.
+func decodeHealthCheckRequest(_ context.Context, req *http.Request) (interface{}, error) {
+	var request = map[string]string{}
 
-// reply contains all health check reports.
-type reply struct {
-	Reports []healthCheck `json:"health checks"`
-}
+	// Fetch module and healthcheck name from URL path
+	var m = mux.Vars(req)
+	for _, key := range []string{"module", "healthcheck"} {
+		request[key] = m[key]
+	}
 
-// healthCheck is the result of a single healthcheck.
-type healthCheck struct {
-	Name     string `json:"name"`
-	Duration string `json:"duration"`
-	Status   string `json:"status"`
-	Error    string `json:"error,omitempty"`
+	// Fetch nocache URL param
+	request["nocache"] = req.URL.Query().Get("nocache")
+
+	return request, nil
 }
 
 // encodeHealthCheckReply encodes the health check reply.
 func encodeHealthCheckReply(_ context.Context, w http.ResponseWriter, rep interface{}) error {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 
-	var data, err = json.MarshalIndent(&rep, "", "  ")
+	var data, ok = rep.(json.RawMessage)
 
-	if err != nil {
+	if !ok {
 		w.WriteHeader(http.StatusInternalServerError)
 	} else {
 		w.WriteHeader(http.StatusOK)
@@ -56,8 +58,8 @@ func encodeHealthCheckReply(_ context.Context, w http.ResponseWriter, rep interf
 func healthCheckErrorHandler(ctx context.Context, err error, w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 
-	switch err.Error() {
-	case "rate limit exceeded":
+	switch err {
+	case ratelimit.ErrLimited:
 		w.WriteHeader(http.StatusTooManyRequests)
 	default:
 		w.WriteHeader(http.StatusInternalServerError)

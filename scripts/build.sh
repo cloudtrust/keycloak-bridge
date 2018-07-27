@@ -66,7 +66,7 @@ ls -hl "$FB_FLAKI_DIR"/fb
 echo
 echo "==> Build:"
 
-cd cmd
+cd cmd/keycloakb
 
 # Get the git commit.
 GIT_COMMIT="$(git rev-parse HEAD)"
@@ -75,8 +75,8 @@ GIT_DIRTY="$(test -n "`git status --porcelain`" && echo "+CHANGES" || true)"
 # Override the variables GitCommit and Environment in the main package.
 LD_FLAGS="-X main.GitCommit=${GIT_COMMIT}${GIT_DIRTY} -X main.Environment=${ENV} -X main.Version=${VERSION}"
 
-go build -ldflags "$LD_FLAGS" -o ../bin/keycloak_bridge 
+go build -ldflags "$LD_FLAGS" -o ../../bin/keycloak_bridge 
 echo "Build commit '${GIT_COMMIT}' for '${ENV}' environment."
-ls -hl ../bin/
+ls -hl ../../bin/
 
 exit 0
