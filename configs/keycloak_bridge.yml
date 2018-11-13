@@ -15,8 +15,8 @@ keycloak-password: admin
 keycloak-timeout: 5s
 
 # Elasticsearch configs
-es-host-port: elasticsearch-data:9200
-es-index-name: audit
+elasticsearch-host-port: elasticsearch-data:9200
+elasticsearch-index-name: audit
 
 # Redis
 redis-host-port: 
@@ -67,18 +67,3 @@ job-keycloak-health-validity: 1m
 # Rate limiting in requests/second.
 rate-event: 1000
 rate-user: 1000
-rate-es-health-exec: 1000
-rate-es-health-read: 1000
-rate-influx-health-exec: 1000
-rate-influx-health-read: 1000
-rate-jaeger-health-exec: 1000
-rate-jaeger-health-read: 1000
-rate-redis-health-exec: 1000
-rate-redis-health-read: 1000
-rate-sentry-health-exec: 1000
-rate-sentry-health-read: 1000
-rate-flaki-health-exec: 1000
-rate-flaki-health-read: 1000
-rate-keycloak-health-exec: 1000
-rate-keycloak-health-read: 1000
-rate-all-health: 1000

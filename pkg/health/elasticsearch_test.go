@@ -1,93 +1,118 @@
-package health
+package health_test
 
 import (
 	"context"
-	"fmt"
+	"encoding/json"
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
-	"strconv"
 	"testing"
 	"time"
 
-	common "github.com/cloudtrust/common-healthcheck"
-	mock "github.com/cloudtrust/common-healthcheck/mock"
-	"github.com/golang/mock/gomock"
+	. "github.com/cloudtrust/keycloak-bridge/pkg/health"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestESHealthChecks(t *testing.T) {
-	var s = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer s.Close()
-
-	var m = NewElasticsearchModule(s.Client(), s.URL[7:], true)
-
-	// HealthChecks
-	{
-		var report = m.HealthChecks(context.Background())[0]
-		assert.Equal(t, "ping", report.Name)
-		assert.NotZero(t, report.Duration)
-		assert.Equal(t, common.OK, report.Status)
-		assert.Zero(t, report.Error)
-	}
-}
-
-func TestNoopESHealthChecks(t *testing.T) {
-	var s = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer s.Close()
-
-	var m = NewElasticsearchModule(s.Client(), s.URL[7:], false)
-
-	var report = m.HealthChecks(context.Background())[0]
-	assert.Equal(t, "es", report.Name)
-	assert.Zero(t, report.Duration)
-	assert.Equal(t, common.Deactivated, report.Status)
-	assert.Zero(t, report.Error)
-}
-
-func TestESModuleLoggingMW(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
-	defer mockCtrl.Finish()
-	var mockLogger = mock.NewLogger(mockCtrl)
-
-	var s = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusNoContent)
-	}))
-	defer s.Close()
-
-	var module = NewElasticsearchModule(s.Client(), s.URL[7:], false)
-
-	var m = MakeElasticsearchModuleLoggingMW(mockLogger)(module)
-
-	// Context with correlation ID.
+func init() {
 	rand.Seed(time.Now().UnixNano())
-	var corrID = strconv.FormatUint(rand.Uint64(), 10)
-	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
+}
 
-	mockLogger.EXPECT().Log("unit", "HealthChecks", "correlation_id", corrID, "took", gomock.Any()).Return(nil).Times(1)
-	m.HealthChecks(ctx)
+type elasticsearchReport struct {
+	Name     string `json:"name"`
+	Status   string `json:"status"`
+	Duration string `json:"duration,omitempty"`
+	Error    string `json:"error,omitempty"`
+}
 
-	// Without correlation ID.
+func TestElasticsearchDisabled(t *testing.T) {
+	var s = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer s.Close()
+
+	var (
+		enabled = false
+		m       = NewElasticsearchModule(s.Client(), s.URL[7:], enabled)
+	)
+
+	var jsonReport, err = m.HealthCheck(context.Background(), "ping")
+	assert.Nil(t, err)
+
+	// Check that the report is a valid json
+	var report = []elasticsearchReport{}
+	assert.Nil(t, json.Unmarshal(jsonReport, &report))
+
+	var r = report[0]
+	assert.Equal(t, "elasticsearch", r.Name)
+	assert.Equal(t, "Deactivated", r.Status)
+	assert.Zero(t, r.Duration)
+	assert.Zero(t, r.Error)
+}
+
+func TestElasticsearchPing(t *testing.T) {
+	var s = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer s.Close()
+
+	var (
+		enabled = true
+		m       = NewElasticsearchModule(s.Client(), s.URL[7:], enabled)
+	)
+
+	var jsonReport, err = m.HealthCheck(context.Background(), "ping")
+	assert.Nil(t, err)
+
+	// Check that the report is a valid json
+	var report = []elasticsearchReport{}
+	assert.Nil(t, json.Unmarshal(jsonReport, &report))
+
+	var r = report[0]
+	assert.Equal(t, "ping", r.Name)
+	assert.Equal(t, "OK", r.Status)
+	assert.NotZero(t, r.Duration)
+	assert.Zero(t, r.Error)
+}
+
+func TestElasticsearchAllChecks(t *testing.T) {
+	var s = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer s.Close()
+
+	var (
+		enabled = true
+		m       = NewElasticsearchModule(s.Client(), s.URL[7:], enabled)
+	)
+
+	var jsonReport, err = m.HealthCheck(context.Background(), "")
+	assert.Nil(t, err)
+
+	// Check that the report is a valid json
+	var report = []elasticsearchReport{}
+	assert.Nil(t, json.Unmarshal(jsonReport, &report))
+
+	var r = report[0]
+	assert.Equal(t, "ping", r.Name)
+	assert.Equal(t, "OK", r.Status)
+	assert.NotZero(t, r.Duration)
+	assert.Zero(t, r.Error)
+}
+
+func TestElasticsearchUnkownHealthCheck(t *testing.T) {
+	var s = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer s.Close()
+
+	var (
+		enabled         = true
+		m               = NewElasticsearchModule(s.Client(), s.URL[7:], enabled)
+		healthCheckName = "unknown"
+	)
+
 	var f = func() {
-		m.HealthChecks(context.Background())
+		m.HealthCheck(context.Background(), healthCheckName)
 	}
 	assert.Panics(t, f)
-}
-
-func TestJaegerReportMarshalJSON(t *testing.T) {
-	var report = &ESReport{
-		Name:     "ES",
-		Duration: 1 * time.Second,
-		Status:   common.OK,
-		Error:    fmt.Errorf("Error"),
-	}
-
-	json, err := report.MarshalJSON()
-
-	assert.Nil(t, err)
-	assert.Equal(t, "{\"name\":\"ES\",\"duration\":\"1s\",\"status\":\"OK\",\"error\":\"Error\"}", string(json))
 }

@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	. "github.com/cloudtrust/flaki-service/pkg/health"
+	. "github.com/cloudtrust/keycloak-bridge/pkg/health"
 	_ "github.com/lib/pq"
 	"github.com/stretchr/testify/assert"
 )
@@ -28,7 +28,7 @@ func TestIntNewStorageModule(t *testing.T) {
 	rand.Seed(time.Now().UnixNano())
 
 	var (
-		componentName = "flaki-service"
+		componentName = "keycloak-bridge"
 		componentID   = strconv.FormatUint(rand.Uint64(), 10)
 	)
 
@@ -48,7 +48,7 @@ func TestIntRead(t *testing.T) {
 	rand.Seed(time.Now().UnixNano())
 
 	var (
-		componentName = "flaki-service"
+		componentName = "keycloak-bridge"
 		componentID   = strconv.FormatUint(rand.Uint64(), 10)
 		unit          = "influx"
 		reports       = json.RawMessage(`[{"name":"ping", "duration":"1s", "status":"OK", "error":"Error"}]`)
@@ -63,7 +63,7 @@ func TestIntRead(t *testing.T) {
 	assert.Zero(t, len(r.Reports))
 
 	// Save a health check report in DB.
-	err = m.Update(unit, 10 * time.Second, reports)
+	err = m.Update(unit, 10*time.Second, reports)
 	assert.Nil(t, err)
 
 	// Read health checks report for 'influx', now there is one result.

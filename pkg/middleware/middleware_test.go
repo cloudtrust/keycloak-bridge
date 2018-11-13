@@ -4,14 +4,13 @@ package middleware
 //go:generate mockgen -destination=./mock/instrumenting.go -package=mock -mock_names=Histogram=Histogram github.com/go-kit/kit/metrics Histogram
 //go:generate mockgen -destination=./mock/tracing.go -package=mock -mock_names=Tracer=Tracer,Span=Span,SpanContext=SpanContext github.com/opentracing/opentracing-go Tracer,Span,SpanContext
 //go:generate mockgen -destination=./mock/eventComponent.go -package=mock -mock_names=MuxComponent=MuxComponent,Component=EventComponent,AdminComponent=AdminEventComponent github.com/cloudtrust/keycloak-bridge/pkg/event MuxComponent,Component,AdminComponent
-//go:generate mockgen -destination=./mock/healthchecker.go -package=mock -mock_names=HealthChecker=HealthChecker github.com/cloudtrust/keycloak-bridge/pkg/health HealthChecker
+//go:generate mockgen -destination=./mock/healthchecker.go -package=mock -mock_names=HealthCheckers=HealthCheckers github.com/cloudtrust/keycloak-bridge/pkg/health HealthCheckers
 //go:generate mockgen -destination=./mock/flakiClient.go -package=mock -mock_names=FlakiClient=FlakiClient github.com/cloudtrust/keycloak-bridge/api/flaki/fb FlakiClient
 //go:generate mockgen -destination=./mock/grpc.go -package=mock -mock_names=Handler=Handler github.com/go-kit/kit/transport/grpc Handler
 
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"math/rand"
 	"net/http"
@@ -21,9 +20,7 @@ import (
 	"time"
 
 	"github.com/cloudtrust/keycloak-bridge/api/event/fb"
-	fb_flaki "github.com/cloudtrust/keycloak-bridge/api/flaki/fb"
 	"github.com/cloudtrust/keycloak-bridge/pkg/event"
-	"github.com/cloudtrust/keycloak-bridge/pkg/health"
 	"github.com/cloudtrust/keycloak-bridge/pkg/middleware/mock"
 	"github.com/golang/mock/gomock"
 	"github.com/google/flatbuffers/go"
@@ -88,46 +85,6 @@ func TestGRPCTracingMW(t *testing.T) {
 	mockSpan.EXPECT().Finish().Return().Times(1)
 	mockSpan.EXPECT().SetTag(gomock.Any(), gomock.Any()).Return(mockSpan).Times(3)
 	m.ServeGRPC(context.Background(), nil)
-}
-func TestEndpointCorrelationIDMW(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
-	defer mockCtrl.Finish()
-	var mockHealthComponent = mock.NewHealthChecker(mockCtrl)
-	var mockFlakiClient = mock.NewFlakiClient(mockCtrl)
-	var mockTracer = mock.NewTracer(mockCtrl)
-	var mockSpan = mock.NewSpan(mockCtrl)
-	var mockSpanContext = mock.NewSpanContext(mockCtrl)
-
-	var m = MakeEndpointCorrelationIDMW(mockFlakiClient, mockTracer)(health.MakeExecInfluxHealthCheckEndpoint(mockHealthComponent))
-
-	var (
-		flakiID       = strconv.FormatUint(rand.Uint64(), 10)
-		corrID        = strconv.FormatUint(rand.Uint64(), 10)
-		influxReports = json.RawMessage(`[{"name":"influx","duration":"1s","status":"OK","error":""}]`)
-		ctx           = context.WithValue(context.Background(), "correlation_id", corrID)
-	)
-	ctx = opentracing.ContextWithSpan(ctx, mockSpan)
-
-	// Context with correlation ID.
-	mockHealthComponent.EXPECT().ExecInfluxHealthChecks(ctx).Return(influxReports).Times(1)
-	m(ctx, nil)
-
-	// Without correlation ID.
-	var b = flatbuffers.NewBuilder(0)
-	var idStr = b.CreateString(flakiID)
-	fb_flaki.FlakiReplyStart(b)
-	fb_flaki.FlakiReplyAddId(b, idStr)
-	b.Finish(fb_flaki.FlakiReplyEnd(b))
-	var reply = fb_flaki.GetRootAsFlakiReply(b.FinishedBytes(), 0)
-
-	mockFlakiClient.EXPECT().NextValidID(gomock.Any(), gomock.Any()).Return(reply, nil).Times(1)
-	mockHealthComponent.EXPECT().ExecInfluxHealthChecks(gomock.Any()).Return(influxReports).Times(1)
-	mockTracer.EXPECT().StartSpan("get_correlation_id", gomock.Any()).Return(mockSpan).Times(1)
-	mockTracer.EXPECT().Inject(gomock.Any(), opentracing.TextMap, gomock.Any())
-	mockSpan.EXPECT().Context().Return(mockSpanContext).Times(2)
-	mockSpan.EXPECT().Finish().Return().Times(1)
-	mockSpan.EXPECT().SetTag(gomock.Any(), gomock.Any()).Return(mockSpan).Times(1)
-	m(opentracing.ContextWithSpan(context.Background(), mockSpan), nil)
 }
 
 func TestEndpointLoggingMW(t *testing.T) {

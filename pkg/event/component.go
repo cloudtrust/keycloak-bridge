@@ -62,7 +62,7 @@ func NewComponent(modulesToCallForStandardEvent []FuncEvent,
 }
 
 func (c *component) Event(ctx context.Context, event *fb.Event) error {
-	var eventType = int(event.Type())
+	var eventType = int8(event.Type())
 	var eventTypeName = fb.EnumNamesEventType[eventType]
 	var eventMap = eventToMap(event)
 
@@ -124,7 +124,7 @@ func adminEventToMap(adminEvent *fb.AdminEvent) map[string]string {
 	adminEventMap["realmId"] = string(adminEvent.RealmId())
 	adminEventMap["authDetails"] = fmt.Sprint(adminEvent.AuthDetails(nil))
 	adminEventMap["resourceType"] = string(adminEvent.ResourceType())
-	adminEventMap["operationType"] = fb.EnumNamesOperationType[int(adminEvent.OperationType())]
+	adminEventMap["operationType"] = fb.EnumNamesOperationType[int8(adminEvent.OperationType())]
 	adminEventMap["resourcePath"] = string(adminEvent.ResourcePath())
 	adminEventMap["representation"] = string(adminEvent.Representation())
 	adminEventMap["error"] = string(adminEvent.Error())
@@ -135,7 +135,7 @@ func eventToMap(event *fb.Event) map[string]string {
 	var eventMap = make(map[string]string)
 	eventMap["uid"] = fmt.Sprint(event.Uid())
 	eventMap["time"] = fmt.Sprint(event.Time())
-	eventMap["type"] = fb.EnumNamesEventType[int(event.Type())]
+	eventMap["type"] = fb.EnumNamesEventType[int8(event.Type())]
 	eventMap["realmId"] = string(event.RealmId())
 	eventMap["clientId"] = string(event.ClientId())
 	eventMap["userId"] = string(event.UserId())

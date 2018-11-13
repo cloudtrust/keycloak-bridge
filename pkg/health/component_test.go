@@ -1,273 +1,304 @@
 package health_test
 
-//go:generate mockgen -destination=./mock/es.go -package=mock -mock_names=ESHealthChecker=ESHealthChecker github.com/cloudtrust/keycloak-bridge/pkg/health ESHealthChecker
-//go:generate mockgen -destination=./mock/flaki.go -package=mock -mock_names=FlakiHealthChecker=FlakiHealthChecker github.com/cloudtrust/common-healthcheck FlakiHealthChecker
-//go:generate mockgen -destination=./mock/influx.go -package=mock -mock_names=InfluxHealthChecker=InfluxHealthChecker github.com/cloudtrust/common-healthcheck InfluxHealthChecker
-//go:generate mockgen -destination=./mock/jaeger.go -package=mock -mock_names=JaegerHealthChecker=JaegerHealthChecker github.com/cloudtrust/common-healthcheck JaegerHealthChecker
-//go:generate mockgen -destination=./mock/redis.go -package=mock -mock_names=RedisHealthChecker=RedisHealthChecker github.com/cloudtrust/common-healthcheck RedisHealthChecker
-//go:generate mockgen -destination=./mock/sentry.go -package=mock -mock_names=SentryHealthChecker=SentryHealthChecker github.com/cloudtrust/common-healthcheck SentryHealthChecker
-//go:generate mockgen -destination=./mock/keycloak.go -package=mock -mock_names=KeycloakHealthChecker=KeycloakHealthChecker github.com/cloudtrust/keycloak-bridge/pkg/health KeycloakHealthChecker
-//go:generate mockgen -destination=./mock/storage.go -package=mock -mock_names=StoreModule=StoreModule github.com/cloudtrust/keycloak-bridge/pkg/health StoreModule
+//go:generate mockgen -destination=./mock/module.go -package=mock -mock_names=HealthChecker=HealthChecker,HealthCheckStorage=HealthCheckStorage  github.com/cloudtrust/keycloak-bridge/pkg/health HealthChecker,HealthCheckStorage
 
 import (
 	"context"
 	"encoding/json"
-	"fmt"
+	"math/rand"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
+	"unicode"
 
-	common "github.com/cloudtrust/common-healthcheck"
 	. "github.com/cloudtrust/keycloak-bridge/pkg/health"
 	"github.com/cloudtrust/keycloak-bridge/pkg/health/mock"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestHealthChecks(t *testing.T) {
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
+
+func reportIndent(s json.RawMessage) json.RawMessage {
+	var report, err = json.MarshalIndent(s, "", "  ")
+	if err != nil {
+		panic("could not marshal report")
+	}
+	return report
+}
+
+func TestHealthChecksWithCache(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
-	var mockESModule = mock.NewESHealthChecker(mockCtrl)
-	var mockFlakiModule = mock.NewFlakiHealthChecker(mockCtrl)
-	var mockInfluxModule = mock.NewInfluxHealthChecker(mockCtrl)
-	var mockJaegerModule = mock.NewJaegerHealthChecker(mockCtrl)
-	var mockRedisModule = mock.NewRedisHealthChecker(mockCtrl)
-	var mockSentryModule = mock.NewSentryHealthChecker(mockCtrl)
-	var mockKeycoakModule = mock.NewKeycloakHealthChecker(mockCtrl)
-	var mockStorage = mock.NewStoreModule(mockCtrl)
-	var m = map[string]time.Duration{
-		"es":       1 * time.Minute,
-		"flaki":    1 * time.Minute,
-		"influx":   1 * time.Minute,
-		"jaeger":   1 * time.Minute,
-		"redis":    1 * time.Minute,
-		"sentry":   1 * time.Minute,
-		"keycloak": 1 * time.Minute,
-	}
-
-	var c = NewComponent(mockInfluxModule, mockJaegerModule, mockRedisModule, mockSentryModule, mockFlakiModule, mockESModule, mockKeycoakModule, mockStorage, m)
+	var mockCockroachHealthChecker = mock.NewHealthChecker(mockCtrl)
+	var mockInfluxHealthChecker = mock.NewHealthChecker(mockCtrl)
+	var mockJaegerHealthChecker = mock.NewHealthChecker(mockCtrl)
+	var mockStorage = mock.NewHealthCheckStorage(mockCtrl)
 
 	var (
-		esReports       = []ESReport{{Name: "es", Duration: time.Duration(1 * time.Second), Status: common.OK}}
-		flakiReports    = []common.FlakiReport{{Name: "flaki", Duration: time.Duration(1 * time.Second), Status: common.OK}}
-		influxReports   = []common.InfluxReport{{Name: "influx", Duration: time.Duration(1 * time.Second), Status: common.OK}}
-		jaegerReports   = []common.JaegerReport{{Name: "jaeger", Duration: time.Duration(1 * time.Second), Status: common.OK}}
-		redisReports    = []common.RedisReport{{Name: "redis", Duration: time.Duration(1 * time.Second), Status: common.OK}}
-		sentryReports   = []common.SentryReport{{Name: "sentry", Duration: time.Duration(1 * time.Second), Status: common.OK}}
-		keycloakReports = []KeycloakReport{{Name: "keycloak", Duration: time.Duration(1 * time.Second), Status: common.OK}}
-
-		makeStoredReport = func(name string) StoredReport {
-			return StoredReport{
-				ComponentID:     "000-000-000-00",
-				ComponentName:   "flaki",
-				HealthcheckUnit: name,
-				Reports:         json.RawMessage(`[{"name":"XXX", "status":"OK", "duration":"1s"}]`),
-				LastUpdated:     time.Now(),
-				ValidUntil:      time.Now().Add(1 * time.Hour),
-			}
+		validity = map[string]time.Duration{
+			"cockroach": 1 * time.Minute,
+			"influx":    2 * time.Minute,
+			"jaeger":    3 * time.Minute,
 		}
+		healthCheckModules = map[string]HealthChecker{
+			"cockroach": mockCockroachHealthChecker,
+			"influx":    mockInfluxHealthChecker,
+			"jaeger":    mockJaegerHealthChecker,
+		}
+		corrID          = strconv.FormatUint(rand.Uint64(), 10)
+		ctx             = context.WithValue(context.Background(), "correlation_id", corrID)
+		cockroachReport = reportIndent(json.RawMessage(`[{"name": "ping cockroach","status": "OK","duration": "1ms"}]`))
+		influxReport    = reportIndent(json.RawMessage(`[{"name": "ping influx","status": "OK","duration": "1ms"}]`))
+		jaegerReport    = reportIndent(json.RawMessage(`[{"name": "ping jaeger agent","status": "OK","duration": "1ms"},{"name": "ping jaeger collector","status": "OK","duration": "1ms"}]`))
 	)
 
-	// ES.
-	mockESModule.EXPECT().HealthChecks(context.Background()).Return(esReports).Times(1)
-	mockStorage.EXPECT().Update("es", m["es"], gomock.Any()).Times(1)
+	var c = NewComponent(healthCheckModules, validity, mockStorage)
+
+	mockStorage.EXPECT().Read(ctx, "cockroach", "ping").Return(cockroachReport, nil).Times(1)
 	{
-		var report = c.ExecESHealthChecks(context.Background())
-		assert.Equal(t, `[{"name":"es","duration":"1s","status":"OK","error":""}]`, string(report))
+		var req = map[string]string{
+			"module":      "cockroach",
+			"healthcheck": "ping",
+			// When there is no parameter 'nocache=1', the cache is used.
+		}
+
+		var report, err = c.HealthChecks(ctx, req)
+		assert.Nil(t, err)
+		assert.Equal(t, cockroachReport, report)
 	}
 
-	// Flaki.
-	mockFlakiModule.EXPECT().HealthChecks(context.Background()).Return(flakiReports).Times(1)
-	mockStorage.EXPECT().Update("flaki", m["flaki"], gomock.Any()).Times(1)
+	mockStorage.EXPECT().Read(ctx, "influx", "ping").Return(influxReport, nil).Times(1)
 	{
-		var report = c.ExecFlakiHealthChecks(context.Background())
-		//	var json, _ = json.Marshal(&report)
-		assert.Equal(t, `[{"name":"flaki","duration":"1s","status":"OK","error":""}]`, string(report))
+		var req = map[string]string{
+			"module":      "influx",
+			"healthcheck": "ping",
+			// When there is no parameter 'nocache=1', the cache is used.
+		}
+
+		var report, err = c.HealthChecks(ctx, req)
+		assert.Nil(t, err)
+		assert.Equal(t, influxReport, report)
 	}
 
-	// Influx.
-	mockInfluxModule.EXPECT().HealthChecks(context.Background()).Return(influxReports).Times(1)
-	mockStorage.EXPECT().Update("influx", m["influx"], gomock.Any()).Times(1)
+	mockStorage.EXPECT().Read(ctx, "jaeger", "ping").Return(jaegerReport, nil).Times(1)
 	{
-		var report = c.ExecInfluxHealthChecks(context.Background())
-		//	var json, _ = json.Marshal(&report)
-		assert.Equal(t, `[{"name":"influx","duration":"1s","status":"OK","error":""}]`, string(report))
+		var req = map[string]string{
+			"module":      "jaeger",
+			"healthcheck": "ping",
+			// When there is no parameter 'nocache=1', the cache is used.
+		}
+
+		var report, err = c.HealthChecks(ctx, req)
+		assert.Nil(t, err)
+		assert.Equal(t, jaegerReport, report)
 	}
 
-	// Jaeger.
-	mockJaegerModule.EXPECT().HealthChecks(context.Background()).Return(jaegerReports).Times(1)
-	mockStorage.EXPECT().Update("jaeger", m["jaeger"], gomock.Any()).Times(1)
+	// All health checks
+	mockStorage.EXPECT().Read(ctx, "cockroach", "").Return(cockroachReport, nil).Times(1)
+	mockStorage.EXPECT().Read(ctx, "influx", "").Return(influxReport, nil).Times(1)
+	mockStorage.EXPECT().Read(ctx, "jaeger", "").Return(jaegerReport, nil).Times(1)
 	{
-		var report = c.ExecJaegerHealthChecks(context.Background())
-		var json, _ = json.Marshal(&report)
-		assert.Equal(t, `[{"name":"jaeger","duration":"1s","status":"OK","error":""}]`, string(json))
-	}
+		var req = map[string]string{
+			"module":      "",
+			"healthcheck": "",
+			// When there is no parameter 'nocache=1', the cache is used.
+		}
+		var jsonReports, err = c.HealthChecks(ctx, req)
+		assert.Nil(t, err)
 
-	// Redis.
-	mockRedisModule.EXPECT().HealthChecks(context.Background()).Return(redisReports).Times(1)
-	mockStorage.EXPECT().Update("redis", m["redis"], gomock.Any()).Times(1)
-	{
-		var report = c.ExecRedisHealthChecks(context.Background())
-		var json, _ = json.Marshal(&report)
-		assert.Equal(t, `[{"name":"redis","duration":"1s","status":"OK","error":""}]`, string(json))
-	}
+		var reports = map[string]json.RawMessage{}
+		json.Unmarshal(jsonReports, &reports)
 
-	// Sentry.
-	mockSentryModule.EXPECT().HealthChecks(context.Background()).Return(sentryReports).Times(1)
-	mockStorage.EXPECT().Update("sentry", m["sentry"], gomock.Any()).Times(1)
-	{
-		var report = c.ExecSentryHealthChecks(context.Background())
-		var json, _ = json.Marshal(&report)
-		assert.Equal(t, `[{"name":"sentry","duration":"1s","status":"OK","error":""}]`, string(json))
-	}
+		// Check report ignoring whitespaces (there is an issue when unmarshaling to map[string]json.RawMessage{}.
+		// The indentation is not striclty equal, which break the equality check.
 
-	// Keycloak.
-	mockKeycoakModule.EXPECT().HealthChecks(context.Background()).Return(keycloakReports).Times(1)
-	mockStorage.EXPECT().Update("keycloak", m["keycloak"], gomock.Any()).Times(1)
-	{
-		var report = c.ExecKeycloakHealthChecks(context.Background())
-		var json, _ = json.Marshal(&report)
-		assert.Equal(t, `[{"name":"keycloak","duration":"1s","status":"OK","error":""}]`, string(json))
-	}
+		// Cockroach
+		{
+			var expected = removeWhitspaces(string(cockroachReport))
+			var actual = removeWhitspaces(string(reports["cockroach"]))
 
-	// All.
-	mockStorage.EXPECT().Read("es").Return(makeStoredReport("es"), nil).Times(1)
-	mockStorage.EXPECT().Read("flaki").Return(makeStoredReport("flaki"), nil).Times(1)
-	mockStorage.EXPECT().Read("influx").Return(makeStoredReport("influx"), nil).Times(1)
-	mockStorage.EXPECT().Read("jaeger").Return(makeStoredReport("jaeger"), nil).Times(1)
-	mockStorage.EXPECT().Read("redis").Return(makeStoredReport("redis"), nil).Times(1)
-	mockStorage.EXPECT().Read("sentry").Return(makeStoredReport("sentry"), nil).Times(1)
-	mockStorage.EXPECT().Read("keycloak").Return(makeStoredReport("keycloak"), nil).Times(1)
-	{
-		var report = c.AllHealthChecks(context.Background())
-		var json, _ = json.Marshal(&report)
-		assert.Equal(t, "{\"es\":[{\"name\":\"XXX\",\"status\":\"OK\",\"duration\":\"1s\"}],\"flaki\":[{\"name\":\"XXX\",\"status\":\"OK\",\"duration\":\"1s\"}],\"influx\":[{\"name\":\"XXX\",\"status\":\"OK\",\"duration\":\"1s\"}],\"jaeger\":[{\"name\":\"XXX\",\"status\":\"OK\",\"duration\":\"1s\"}],\"keycloak\":[{\"name\":\"XXX\",\"status\":\"OK\",\"duration\":\"1s\"}],\"redis\":[{\"name\":\"XXX\",\"status\":\"OK\",\"duration\":\"1s\"}],\"sentry\":[{\"name\":\"XXX\",\"status\":\"OK\",\"duration\":\"1s\"}]}", string(json))
+			assert.Equal(t, expected, actual)
+		}
+		// Influx
+		{
+			var expected = removeWhitspaces(string(influxReport))
+			var actual = removeWhitspaces(string(reports["influx"]))
+
+			assert.Equal(t, expected, actual)
+		}
+		// Jaeger
+		{
+			var expected = removeWhitspaces(string(jaegerReport))
+			var actual = removeWhitspaces(string(reports["jaeger"]))
+
+			assert.Equal(t, expected, actual)
+		}
 	}
 }
 
-func TestHealthChecksFail(t *testing.T) {
+func TestHealthChecksWithoutCache(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
-	var mockESModule = mock.NewESHealthChecker(mockCtrl)
-	var mockFlakiModule = mock.NewFlakiHealthChecker(mockCtrl)
-	var mockInfluxModule = mock.NewInfluxHealthChecker(mockCtrl)
-	var mockJaegerModule = mock.NewJaegerHealthChecker(mockCtrl)
-	var mockRedisModule = mock.NewRedisHealthChecker(mockCtrl)
-	var mockSentryModule = mock.NewSentryHealthChecker(mockCtrl)
-	var mockKeycoakModule = mock.NewKeycloakHealthChecker(mockCtrl)
-	var mockStorage = mock.NewStoreModule(mockCtrl)
-	var m = map[string]time.Duration{
-		"es":       1 * time.Minute,
-		"flaki":    1 * time.Minute,
-		"influx":   1 * time.Minute,
-		"jaeger":   1 * time.Minute,
-		"redis":    1 * time.Minute,
-		"sentry":   1 * time.Minute,
-		"keycloak": 1 * time.Minute,
-	}
-
-	var c = NewComponent(mockInfluxModule, mockJaegerModule, mockRedisModule, mockSentryModule, mockFlakiModule, mockESModule, mockKeycoakModule, mockStorage, m)
+	var mockCockroachHealthChecker = mock.NewHealthChecker(mockCtrl)
+	var mockInfluxHealthChecker = mock.NewHealthChecker(mockCtrl)
+	var mockJaegerHealthChecker = mock.NewHealthChecker(mockCtrl)
+	var mockStorage = mock.NewHealthCheckStorage(mockCtrl)
 
 	var (
-		esReports       = []ESReport{{Name: "es", Duration: time.Duration(1 * time.Second), Status: common.OK}}
-		flakiReports    = []common.FlakiReport{{Name: "flaki", Duration: time.Duration(1 * time.Second), Status: common.OK}}
-		influxReports   = []common.InfluxReport{{Name: "influx", Duration: time.Duration(1 * time.Second), Status: common.Deactivated}}
-		jaegerReports   = []common.JaegerReport{{Name: "jaeger", Duration: time.Duration(1 * time.Second), Status: common.KO, Error: fmt.Errorf("fail")}}
-		redisReports    = []common.RedisReport{{Name: "redis", Duration: time.Duration(1 * time.Second), Status: common.Degraded, Error: fmt.Errorf("fail")}}
-		sentryReports   = []common.SentryReport{{Name: "sentry", Duration: time.Duration(1 * time.Second), Status: common.KO, Error: fmt.Errorf("fail")}}
-		keycloakReports = []KeycloakReport{{Name: "keycloak", Duration: time.Duration(1 * time.Second), Status: common.KO, Error: fmt.Errorf("fail")}}
-
-		makeStoredReport = func(name string) StoredReport {
-			return StoredReport{
-				ComponentID:     "000-000-000-00",
-				ComponentName:   "flaki",
-				HealthcheckUnit: name,
-				Reports:         json.RawMessage(`[{"name":"XXX", "status":"OK", "duration":"1s"}]`),
-				LastUpdated:     time.Now(),
-				ValidUntil:      time.Now().Add(1 * time.Hour),
-			}
+		validity = map[string]time.Duration{
+			"cockroach": 1 * time.Minute,
+			"influx":    2 * time.Minute,
+			"jaeger":    3 * time.Minute,
 		}
+		healthCheckModules = map[string]HealthChecker{
+			"cockroach": mockCockroachHealthChecker,
+			"influx":    mockInfluxHealthChecker,
+			"jaeger":    mockJaegerHealthChecker,
+		}
+		corrID          = strconv.FormatUint(rand.Uint64(), 10)
+		ctx             = context.WithValue(context.Background(), "correlation_id", corrID)
+		cockroachReport = reportIndent(json.RawMessage(`[{"name": "ping cockroach","status": "OK","duration": "1ms"}]`))
+		influxReport    = reportIndent(json.RawMessage(`[{"name": "ping influx","status": "OK","duration": "1ms"}]`))
+		jaegerReport    = reportIndent(json.RawMessage(`[{"name": "ping jaeger agent","status": "OK","duration": "1ms"},{"name": "ping jaeger collector","status": "OK","duration": "1ms"}]`))
 	)
 
-	// ES.
-	mockESModule.EXPECT().HealthChecks(context.Background()).Return(esReports).Times(1)
-	mockStorage.EXPECT().Update("es", m["es"], gomock.Any()).Times(1)
+	var c = NewComponent(healthCheckModules, validity, mockStorage)
+
+	mockCockroachHealthChecker.EXPECT().HealthCheck(ctx, "ping").Return(cockroachReport, nil).Times(1)
+	mockStorage.EXPECT().Update(ctx, "cockroach", cockroachReport, validity["cockroach"]).Return(nil).Times(1)
 	{
-		var report = c.ExecESHealthChecks(context.Background())
-		assert.Equal(t, `[{"name":"es","duration":"1s","status":"OK","error":""}]`, string(report))
+		var req = map[string]string{
+			"module":      "cockroach",
+			"healthcheck": "ping",
+			"nocache":     "1",
+		}
+
+		var report, err = c.HealthChecks(ctx, req)
+		assert.Nil(t, err)
+		assert.Equal(t, cockroachReport, report)
 	}
 
-	// Flaki.
-	mockFlakiModule.EXPECT().HealthChecks(context.Background()).Return(flakiReports).Times(1)
-	mockStorage.EXPECT().Update("flaki", m["flaki"], gomock.Any()).Times(1)
+	mockInfluxHealthChecker.EXPECT().HealthCheck(ctx, "ping").Return(influxReport, nil).Times(1)
+	mockStorage.EXPECT().Update(ctx, "influx", influxReport, validity["influx"]).Return(nil).Times(1)
 	{
-		var report = c.ExecFlakiHealthChecks(context.Background())
-		assert.Equal(t, `[{"name":"flaki","duration":"1s","status":"OK","error":""}]`, string(report))
+		var req = map[string]string{
+			"module":      "influx",
+			"healthcheck": "ping",
+			"nocache":     "1",
+		}
+
+		var report, err = c.HealthChecks(ctx, req)
+		assert.Nil(t, err)
+		assert.Equal(t, influxReport, report)
 	}
 
-	// Influx.
-	mockInfluxModule.EXPECT().HealthChecks(context.Background()).Return(influxReports).Times(1)
-	mockStorage.EXPECT().Update("influx", m["influx"], gomock.Any()).Times(1)
+	mockJaegerHealthChecker.EXPECT().HealthCheck(ctx, "ping").Return(jaegerReport, nil).Times(1)
+	mockStorage.EXPECT().Update(ctx, "jaeger", jaegerReport, validity["jaeger"]).Return(nil).Times(1)
 	{
-		var report = c.ExecInfluxHealthChecks(context.Background())
-		var json, _ = json.Marshal(&report)
-		assert.Equal(t, `[{"name":"influx","duration":"1s","status":"Deactivated","error":""}]`, string(json))
+		var req = map[string]string{
+			"module":      "jaeger",
+			"healthcheck": "ping",
+			"nocache":     "1",
+		}
+
+		var report, err = c.HealthChecks(ctx, req)
+		assert.Nil(t, err)
+		assert.Equal(t, jaegerReport, report)
 	}
 
-	// Jaeger.
-	mockJaegerModule.EXPECT().HealthChecks(context.Background()).Return(jaegerReports).Times(1)
-	mockStorage.EXPECT().Update("jaeger", m["jaeger"], gomock.Any()).Times(1)
+	// All health checks
+	mockCockroachHealthChecker.EXPECT().HealthCheck(ctx, "").Return(cockroachReport, nil).Times(1)
+	mockInfluxHealthChecker.EXPECT().HealthCheck(ctx, "").Return(influxReport, nil).Times(1)
+	mockJaegerHealthChecker.EXPECT().HealthCheck(ctx, "").Return(jaegerReport, nil).Times(1)
+	mockStorage.EXPECT().Update(ctx, "cockroach", cockroachReport, validity["cockroach"]).Return(nil).Times(1)
+	mockStorage.EXPECT().Update(ctx, "influx", influxReport, validity["influx"]).Return(nil).Times(1)
+	mockStorage.EXPECT().Update(ctx, "jaeger", jaegerReport, validity["jaeger"]).Return(nil).Times(1)
 	{
-		var report = c.ExecJaegerHealthChecks(context.Background())
-		var json, _ = json.Marshal(&report)
-		assert.Equal(t, `[{"name":"jaeger","duration":"1s","status":"KO","error":"fail"}]`, string(json))
-	}
+		var req = map[string]string{
+			"module":      "",
+			"healthcheck": "",
+			"nocache":     "1",
+		}
+		var jsonReports, err = c.HealthChecks(ctx, req)
+		assert.Nil(t, err)
 
-	// Redis.
-	mockRedisModule.EXPECT().HealthChecks(context.Background()).Return(redisReports).Times(1)
-	mockStorage.EXPECT().Update("redis", m["redis"], gomock.Any()).Times(1)
+		var reports = map[string]json.RawMessage{}
+		json.Unmarshal(jsonReports, &reports)
+
+		// Check report ignoring whitespaces (there is an issue when unmarshaling to map[string]json.RawMessage{}.
+		// The indentation is not striclty equal, which break the equality check.
+
+		// Cockroach
+		{
+			var expected = removeWhitspaces(string(cockroachReport))
+			var actual = removeWhitspaces(string(reports["cockroach"]))
+
+			assert.Equal(t, expected, actual)
+		}
+		// Influx
+		{
+			var expected = removeWhitspaces(string(influxReport))
+			var actual = removeWhitspaces(string(reports["influx"]))
+
+			assert.Equal(t, expected, actual)
+		}
+		// Jaeger
+		{
+			var expected = removeWhitspaces(string(jaegerReport))
+			var actual = removeWhitspaces(string(reports["jaeger"]))
+
+			assert.Equal(t, expected, actual)
+		}
+	}
+}
+
+func TestHealthChecksReportInvalid(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+	var mockCockroachHealthChecker = mock.NewHealthChecker(mockCtrl)
+	var mockStorage = mock.NewHealthCheckStorage(mockCtrl)
+
+	var (
+		validity = map[string]time.Duration{
+			"cockroach": 1 * time.Minute,
+		}
+		healthCheckModules = map[string]HealthChecker{
+			"cockroach": mockCockroachHealthChecker,
+		}
+		corrID = strconv.FormatUint(rand.Uint64(), 10)
+		ctx    = context.WithValue(context.Background(), "correlation_id", corrID)
+	)
+
+	var c = NewComponent(healthCheckModules, validity, mockStorage)
+
+	var (
+		cockroachReport = reportIndent(json.RawMessage(`[{"name": "ping cockroach","status": "OK","duration": "1ms"}]`))
+	)
+
+	mockStorage.EXPECT().Read(ctx, "cockroach", "ping").Return(nil, ErrInvalid).Times(1)
+	mockCockroachHealthChecker.EXPECT().HealthCheck(ctx, "ping").Return(cockroachReport, nil).Times(1)
+	mockStorage.EXPECT().Update(ctx, "cockroach", cockroachReport, validity["cockroach"]).Return(nil).Times(1)
 	{
-		var report = c.ExecRedisHealthChecks(context.Background())
-		var json, _ = json.Marshal(&report)
-		assert.Equal(t, `[{"name":"redis","duration":"1s","status":"Degraded","error":"fail"}]`, string(json))
-	}
+		var req = map[string]string{
+			"module":      "cockroach",
+			"healthcheck": "ping",
+		}
 
-	// Sentry.
-	mockSentryModule.EXPECT().HealthChecks(context.Background()).Return(sentryReports).Times(1)
-	mockStorage.EXPECT().Update("sentry", m["sentry"], gomock.Any()).Times(1)
-	{
-		var report = c.ExecSentryHealthChecks(context.Background())
-		var json, _ = json.Marshal(&report)
-		assert.Equal(t, `[{"name":"sentry","duration":"1s","status":"KO","error":"fail"}]`, string(json))
+		var report, err = c.HealthChecks(ctx, req)
+		assert.Nil(t, err)
+		assert.Equal(t, cockroachReport, report)
 	}
+}
 
-	// Keycloak.
-	mockKeycoakModule.EXPECT().HealthChecks(context.Background()).Return(keycloakReports).Times(1)
-	mockStorage.EXPECT().Update("keycloak", m["keycloak"], gomock.Any()).Times(1)
-	{
-		var report = c.ExecKeycloakHealthChecks(context.Background())
-		var json, _ = json.Marshal(&report)
-		assert.Equal(t, `[{"name":"keycloak","duration":"1s","status":"KO","error":"fail"}]`, string(json))
-	}
-
-	// All.
-	mockStorage.EXPECT().Read("es").Return(makeStoredReport("es"), nil).Times(1)
-	mockStorage.EXPECT().Read("flaki").Return(makeStoredReport("flaki"), nil).Times(1)
-	mockStorage.EXPECT().Read("influx").Return(makeStoredReport("influx"), nil).Times(1)
-	mockStorage.EXPECT().Read("jaeger").Return(makeStoredReport("jaeger"), nil).Times(1)
-	mockStorage.EXPECT().Read("redis").Return(makeStoredReport("redis"), nil).Times(1)
-	mockStorage.EXPECT().Read("sentry").Return(makeStoredReport("sentry"), nil).Times(1)
-	mockStorage.EXPECT().Read("keycloak").Return(makeStoredReport("keycloak"), nil).Times(1)
-	{
-		var reply = c.AllHealthChecks(context.Background())
-		var m map[string]json.RawMessage
-		json.Unmarshal(reply, &m)
-
-		assert.Equal(t, `[{"name":"XXX","status":"OK","duration":"1s"}]`, string(m["es"]))
-		assert.Equal(t, `[{"name":"XXX","status":"OK","duration":"1s"}]`, string(m["flaki"]))
-		assert.Equal(t, `[{"name":"XXX","status":"OK","duration":"1s"}]`, string(m["influx"]))
-		assert.Equal(t, `[{"name":"XXX","status":"OK","duration":"1s"}]`, string(m["jaeger"]))
-		assert.Equal(t, `[{"name":"XXX","status":"OK","duration":"1s"}]`, string(m["redis"]))
-		assert.Equal(t, `[{"name":"XXX","status":"OK","duration":"1s"}]`, string(m["sentry"]))
-		assert.Equal(t, `[{"name":"XXX","status":"OK","duration":"1s"}]`, string(m["keycloak"]))
-	}
+func removeWhitspaces(s string) string {
+	return strings.Map(func(r rune) rune {
+		if unicode.IsSpace(r) {
+			return -1
+		}
+		return r
+	}, string(s))
 }
