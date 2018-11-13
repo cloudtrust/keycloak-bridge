@@ -231,8 +231,8 @@ func main() {
 	}
 
 	// Flaki.
-	var flakiClient fb_flaki.FlakiClient
-	{
+	var flakiClient fb_flaki.FlakiClient = &keycloakb.NoopFlakiClient{}
+	if flakiEnabled {
 		// Set up a connection to the flaki-service.
 		var conn *grpc.ClientConn
 		{
@@ -246,20 +246,20 @@ func main() {
 		}
 
 		flakiClient = fb_flaki.NewFlakiClient(conn)
-	}
 
-	// Get unique ID for this component
-	{
-		var b = flatbuffers.NewBuilder(0)
-		fb_flaki.FlakiRequestStart(b)
-		b.Finish(fb_flaki.FlakiRequestEnd(b))
+		// Get unique ID for this component
+		{
+			var b = flatbuffers.NewBuilder(0)
+			fb_flaki.FlakiRequestStart(b)
+			b.Finish(fb_flaki.FlakiRequestEnd(b))
 
-		var res, err = flakiClient.NextValidID(context.Background(), b)
-		if err != nil {
-			logger.Log("msg", "could not connect to flaki-service", "error", err)
-			return
+			var res, err = flakiClient.NextValidID(context.Background(), b)
+			if err != nil {
+				logger.Log("msg", "could not connect to flaki-service", "error", err)
+				return
+			}
+			ComponentID = string(res.Id())
 		}
-		ComponentID = string(res.Id())
 	}
 
 	// Add component name, component ID and version to the logger tags.
