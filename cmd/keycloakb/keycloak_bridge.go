@@ -34,7 +34,6 @@ import (
 	"github.com/cloudtrust/keycloak-bridge/pkg/middleware"
 	"github.com/cloudtrust/keycloak-bridge/pkg/user"
 	keycloak "github.com/cloudtrust/keycloak-client"
-	"github.com/coreos/go-systemd/dbus"
 	sentry "github.com/getsentry/raven-go"
 	"github.com/go-kit/kit/endpoint"
 	"github.com/go-kit/kit/log"
@@ -352,17 +351,6 @@ func main() {
 		defer closer.Close()
 	}
 
-	// Systemd D-Bus connection.
-	var systemDConn *dbus.Conn
-	{
-		var err error
-		systemDConn, err = dbus.New()
-		if err != nil {
-			logger.Log("msg", "could not create systemd D-Bus connection", "error", err)
-			return
-		}
-	}
-
 	// Cockroach DB.
 	type Cockroach interface {
 		Exec(query string, args ...interface{}) (sql.Result, error)
@@ -525,7 +513,7 @@ func main() {
 		}
 		var jaegerHM HealthChecker
 		{
-			jaegerHM = common.NewJaegerModule(systemDConn, http.DefaultClient, jaegerCollectorHealthcheckURL, jaegerEnabled)
+			jaegerHM = common.NewJaegerModule(http.DefaultClient, jaegerCollectorHealthcheckURL, jaegerEnabled)
 			jaegerHM = common.MakeHealthCheckerLoggingMW(log.With(healthLogger, "module", "jaeger"))(jaegerHM)
 			jaegerHM = common.MakeValidationMiddleware(authorizedHC["jaeger"])(jaegerHM)
 

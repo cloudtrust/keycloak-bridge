@@ -180,7 +180,7 @@ func TestEventToMap(t *testing.T) {
 	var m = eventToMap(event)
 	assert.Equal(t, strconv.FormatInt(uid, 10), m["uid"])
 	assert.Equal(t, strconv.FormatInt(time, 10), m["time"])
-	assert.Equal(t, fb.EnumNamesEventType[int(etype)], m["type"])
+	assert.Equal(t, fb.EnumNamesEventType[int8(etype)], m["type"])
 	assert.Equal(t, realmID, m["realmId"])
 	assert.Equal(t, clientID, m["clientId"])
 	assert.Equal(t, userID, m["userId"])
@@ -223,5 +223,5 @@ func createAdminEventBytes(operationType int8, uid int64) []byte {
 }
 
 func getOperationTypeName(key int8) string {
-	return fb.EnumNamesOperationType[int(key)]
+	return fb.EnumNamesOperationType[int8(key)]
 }
