@@ -56,6 +56,7 @@ jaeger-collector-healthcheck-host-port:
 pprof-route-enabled: true
 
 # Jobs
+job: false
 job-es-health-validity: 1m
 job-flaki-health-validity: 1m
 job-influx-health-validity: 1m

@@ -109,6 +109,7 @@ func main() {
 		keycloakEnabled   = c.GetBool("keycloak")
 		redisEnabled      = c.GetBool("redis")
 		sentryEnabled     = c.GetBool("sentry")
+		jobEnabled        = c.GetBool("job")
 		pprofRouteEnabled = c.GetBool("pprof-route-enabled")
 
 		// Influx
@@ -581,7 +582,7 @@ func main() {
 		}
 
 		// Jobs
-		{
+		if jobEnabled {
 			var ctrl = controller.NewController(ComponentName, ComponentID, idgenerator.New(flakiClient, tracer), &job_lock.NoopLocker{}, controller.EnableStatusStorage(job_status.New(cockroachConn)))
 
 			for _, job := range []string{"cockroach", "elasticsearch", "flaki", "influx", "jaeger", "keycloak", "redis", "sentry"} {
@@ -842,6 +843,7 @@ func config(logger log.Logger) *viper.Viper {
 	v.SetDefault("cockroach-clean-interval", "24h")
 
 	// Jobs
+	v.SetDefault("job", false)
 	v.SetDefault("job-flaki-health-validity", "1m")
 	v.SetDefault("job-influx-health-validity", "1m")
 	v.SetDefault("job-jaeger-health-validity", "1m")
