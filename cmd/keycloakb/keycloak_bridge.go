@@ -96,6 +96,9 @@ func main() {
 			Timeout:  c.GetDuration("keycloak-timeout"),
 		}
 
+		// Keycloak Timeout
+		keycloakClientCreationTimeout = c.GetDuration("keycloak-client-creation-timeout")
+
 		// Elasticsearch
 		esAddr  = c.GetString("elasticsearch-host-port")
 		esIndex = c.GetString("elasticsearch-index-name")
@@ -281,7 +284,7 @@ func main() {
 	var keycloakClient *keycloak.Client
 	{
 		var err error
-		keycloakClient, err = keycloak.New(keycloakConfig)
+		keycloakClient, err = keycloak.New(keycloakConfig, keycloakClientCreationTimeout)
 		if err != nil {
 			logger.Log("msg", "could not create Keycloak client", "error", err)
 			return
@@ -794,6 +797,7 @@ func config(logger log.Logger) *viper.Viper {
 	v.SetDefault("keycloak-username", "")
 	v.SetDefault("keycloak-password", "")
 	v.SetDefault("keycloak-timeout", "5s")
+	v.SetDefault("keycloak-client-creation-timeout", "50s")
 
 	// Elasticsearch default.
 	v.SetDefault("elasticsearch", false)

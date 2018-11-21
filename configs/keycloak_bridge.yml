@@ -6,25 +6,30 @@ component-http-host-port: 0.0.0.0:8888
 component-grpc-host-port: 0.0.0.0:5555
 
 # Flaki ID generator
+flaki: false
 flaki-host-port: flaki:5555
 
 # Keycloak configs
-keycloak-host-port: keycloak:80
+keycloak-host-port: 127.0.0.1:8080
 keycloak-username: admin
 keycloak-password: admin
 keycloak-timeout: 5s
+keycloak-client-creation-timeout: 40s
 
 # Elasticsearch configs
+elasticsearch: false
 elasticsearch-host-port: elasticsearch-data:9200
 elasticsearch-index-name: audit
 
 # Redis
+redis: false
 redis-host-port: 
 redis-password: 
 redis-database: 0
 redis-write-interval: 1s
 
 # Cockroach configs
+cockroach: false
 cockroach-host-port: 
 cockroach-username: 
 cockroach-password: 
@@ -32,6 +37,7 @@ cockroach-database:
 cockroach-clean-interval: 1m
 
 # Influx DB configs
+influx: false
 influx-host-port: 
 influx-username: 
 influx-password: 
@@ -42,9 +48,11 @@ influx-write-consistency: ""
 influx-write-interval: 1s
 
 # Sentry configs
+sentry: false
 sentry-dsn: 
 
 # Jaeger configs
+jaeger: false
 jaeger-sampler-type: const
 jaeger-sampler-param: 1
 jaeger-sampler-host-port: 
