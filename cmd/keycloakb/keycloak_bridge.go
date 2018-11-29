@@ -872,7 +872,7 @@ func config(logger log.Logger) *viper.Viper {
 	}
 
 	// If the host/port is not set, we consider the components deactivated.
-	v.Set("elasticsearch", v.GetString("es-host-port") != "")
+	v.Set("elasticsearch", v.GetString("elasticsearch-host-port") != "")
 	v.Set("influx", v.GetString("influx-host-port") != "")
 	v.Set("sentry", v.GetString("sentry-dsn") != "")
 	v.Set("jaeger", v.GetString("jaeger-sampler-host-port") != "")
