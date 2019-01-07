@@ -17,7 +17,7 @@ type ConsoleModule interface {
 
 // ESClient is the interface of the elasticsearch client.
 type ESClient interface {
-	IndexData(esIndex, esType, id string, data interface{}) error
+	IndexData(esIndex, esType, id, timestamp string, data interface{}) error
 }
 
 type consoleModule struct {
@@ -45,7 +45,10 @@ func (cm *consoleModule) Print(_ context.Context, m map[string]string) error {
 	m["componentName"] = cm.componentName
 
 	// Index data
-	cm.esClient.IndexData(cm.esIndex, m["type"], m["uid"], m)
+	err := cm.esClient.IndexData(cm.esIndex, "audit", m["uid"], m["time"], m)
+	if err != nil {
+		return err
+	}
 
 	// Log
 	for k, v := range m {

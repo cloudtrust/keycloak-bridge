@@ -18,11 +18,12 @@ func TestConsoleModule(t *testing.T) {
 
 	var (
 		esIndex = "index"
-		esType  = "type"
+		esType  = "audit"
 		uid     = "uid"
 		m       = map[string]string{
 			"type":          esType,
 			"uid":           uid,
+			"time":          "123314",
 			"componentName": "component_name",
 			"componentID":   "component_id",
 		}
@@ -33,7 +34,7 @@ func TestConsoleModule(t *testing.T) {
 		mockLogger.EXPECT().Log(k, v).Return(nil).Times(1)
 	}
 
-	mockES.EXPECT().IndexData(esIndex, esType, uid, m).Return(nil).Times(1)
+	mockES.EXPECT().IndexData(esIndex, esType, uid, m["time"], m).Return(nil).Times(1)
 	var err = consoleModule.Print(context.Background(), m)
 	assert.Nil(t, err)
 }
