@@ -34,7 +34,7 @@ func (c *Client) IndexData(esIndex, esType, id, timestamp string, data interface
 	var req *http.Request
 	{
 		var err error
-		req, err = http.NewRequest("PUT", fmt.Sprintf("http://%s/%s/%s/%s?timestamp=%s", c.addr, esIndex, esType, id, timestamp), bytes.NewReader(d))
+		req, err = http.NewRequest("PUT", fmt.Sprintf("http://%s/%s/%s/%s", c.addr, esIndex, esType, id), bytes.NewReader(d))
 		if err != nil {
 			return errors.Wrap(err, "could not create http request")
 		}

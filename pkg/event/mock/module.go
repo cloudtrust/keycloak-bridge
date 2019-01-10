@@ -140,13 +140,13 @@ func (m *ESClient) EXPECT() *ESClientMockRecorder {
 }
 
 // IndexData mocks base method
-func (m *ESClient) IndexData(arg0, arg1, arg2, arg3 string, arg4 interface{}) error {
-	ret := m.ctrl.Call(m, "IndexData", arg0, arg1, arg2, arg3, arg4)
+func (m *ESClient) IndexData(arg0, arg1, arg2, arg3 interface{}) error {
+	ret := m.ctrl.Call(m, "IndexData", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // IndexData indicates an expected call of IndexData
-func (mr *ESClientMockRecorder) IndexData(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IndexData", reflect.TypeOf((*ESClient)(nil).IndexData), arg0, arg1, arg2, arg3, arg4)
+func (mr *ESClientMockRecorder) IndexData(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IndexData", reflect.TypeOf((*ESClient)(nil).IndexData), arg0, arg1, arg2, arg3)
 }

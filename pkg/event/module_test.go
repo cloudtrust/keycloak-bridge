@@ -34,7 +34,7 @@ func TestConsoleModule(t *testing.T) {
 		mockLogger.EXPECT().Log(k, v).Return(nil).Times(1)
 	}
 
-	mockES.EXPECT().IndexData(esIndex, esType, uid, m["time"], m).Return(nil).Times(1)
+	mockES.EXPECT().IndexData(esIndex, esType, uid, m).Return(nil).Times(1)
 	var err = consoleModule.Print(context.Background(), m)
 	assert.Nil(t, err)
 }
