@@ -99,7 +99,7 @@ func MakeConsoleModuleInstrumentingMW(h metrics.Histogram) func(ConsoleModule) C
 }
 
 // consoleModuleInstrumentingMW implements Module.
-func (m *consoleModuleInstrumentingMW) Print(ctx context.Context, mp map[string]string) error {
+func (m *consoleModuleInstrumentingMW) Print(ctx context.Context, mp map[string]interface{}) error {
 	defer func(begin time.Time) {
 		m.h.With("correlation_id", ctx.Value("correlation_id").(string)).Observe(time.Since(begin).Seconds())
 	}(time.Now())
@@ -123,7 +123,7 @@ func MakeStatisticModuleInstrumentingMW(h metrics.Histogram) func(StatisticModul
 }
 
 // consoleModuleInstrumentingMW implements Module.
-func (m *statisticModuleInstrumentingMW) Stats(ctx context.Context, mp map[string]string) error {
+func (m *statisticModuleInstrumentingMW) Stats(ctx context.Context, mp map[string]interface{}) error {
 	defer func(begin time.Time) {
 		m.h.With("correlation_id", ctx.Value("correlation_id").(string)).Observe(time.Since(begin).Seconds())
 	}(time.Now())

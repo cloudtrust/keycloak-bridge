@@ -15,12 +15,12 @@ import (
 func TestMuxComponent(t *testing.T) {
 	var ch = make(chan string, 1)
 
-	var fnEvent = func(ctx context.Context, eventMap map[string]string) error {
+	var fnEvent = func(ctx context.Context, eventMap map[string]interface{}) error {
 		ch <- "Event"
 		return nil
 	}
 
-	var fnAdminEvent = func(ctx context.Context, eventMap map[string]string) error {
+	var fnAdminEvent = func(ctx context.Context, eventMap map[string]interface{}) error {
 		ch <- "AdminEvent"
 		return nil
 	}
@@ -46,11 +46,11 @@ func TestMuxComponent(t *testing.T) {
 func TestComponent(t *testing.T) {
 	var eventComponent Component
 	{
-		var fnStd = func(ctx context.Context, eventMap map[string]string) error {
+		var fnStd = func(ctx context.Context, eventMap map[string]interface{}) error {
 			return nil
 		}
 
-		var fnErr = func(ctx context.Context, eventMap map[string]string) error {
+		var fnErr = func(ctx context.Context, eventMap map[string]interface{}) error {
 			return errors.New("Failed")
 		}
 
@@ -75,22 +75,22 @@ func TestAdminComponent(t *testing.T) {
 	var adminEventComponent AdminComponent
 	var ch = make(chan string, 1)
 	{
-		var fnCreate = func(ctx context.Context, eventMap map[string]string) error {
+		var fnCreate = func(ctx context.Context, eventMap map[string]interface{}) error {
 			ch <- "CREATE"
 			return nil
 		}
 
-		var fnUpdate = func(ctx context.Context, eventMap map[string]string) error {
+		var fnUpdate = func(ctx context.Context, eventMap map[string]interface{}) error {
 			ch <- "UPDATE"
 			return nil
 		}
 
-		var fnDelete = func(ctx context.Context, eventMap map[string]string) error {
+		var fnDelete = func(ctx context.Context, eventMap map[string]interface{}) error {
 			ch <- "DELETE"
 			return nil
 		}
 
-		var fnAction = func(ctx context.Context, eventMap map[string]string) error {
+		var fnAction = func(ctx context.Context, eventMap map[string]interface{}) error {
 			ch <- "ACTION"
 			return nil
 		}
@@ -179,7 +179,7 @@ func TestEventToMap(t *testing.T) {
 
 	var m = eventToMap(event)
 	assert.Equal(t, strconv.FormatInt(uid, 10), m["uid"])
-	assert.Equal(t, strconv.FormatInt(time, 10), m["time"])
+	assert.Equal(t, time, m["time"])
 	assert.Equal(t, fb.EnumNamesEventType[int8(etype)], m["type"])
 	assert.Equal(t, realmID, m["realmId"])
 	assert.Equal(t, clientID, m["clientId"])

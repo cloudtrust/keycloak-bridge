@@ -12,12 +12,12 @@ import (
 
 // ConsoleModule is the interface of the console module.
 type ConsoleModule interface {
-	Print(context.Context, map[string]string) error
+	Print(context.Context, map[string]interface{}) error
 }
 
 // ESClient is the interface of the elasticsearch client.
 type ESClient interface {
-	IndexData(esIndex, esType, id, timestamp string, data interface{}) error
+	IndexData(esIndex, esType, id, data interface{}) error
 }
 
 type consoleModule struct {
@@ -39,13 +39,13 @@ func NewConsoleModule(logger log.Logger, esc ESClient, esIndex, componentName, c
 	}
 }
 
-func (cm *consoleModule) Print(_ context.Context, m map[string]string) error {
+func (cm *consoleModule) Print(_ context.Context, m map[string]interface{}) error {
 	// Add component infos in the map
 	m["componentID"] = cm.componentID
 	m["componentName"] = cm.componentName
 
 	// Index data
-	err := cm.esClient.IndexData(cm.esIndex, "audit", m["uid"], m["time"], m)
+	err := cm.esClient.IndexData(cm.esIndex, "audit", m["uid"].(string), m)
 	if err != nil {
 		return err
 	}
@@ -59,7 +59,7 @@ func (cm *consoleModule) Print(_ context.Context, m map[string]string) error {
 
 // StatisticModule is the interface of the keycloak statistic module.
 type StatisticModule interface {
-	Stats(context.Context, map[string]string) error
+	Stats(context.Context, map[string]interface{}) error
 }
 
 // Influx is the influx DB interface.
@@ -80,7 +80,7 @@ func NewStatisticModule(influx Influx, batchPointsConfig influx.BatchPointsConfi
 	}
 }
 
-func (sm *statisticModule) Stats(_ context.Context, m map[string]string) error {
+func (sm *statisticModule) Stats(_ context.Context, m map[string]interface{}) error {
 
 	// Create a new point batch
 	var batchPoints influx.BatchPoints
@@ -92,8 +92,24 @@ func (sm *statisticModule) Stats(_ context.Context, m map[string]string) error {
 		}
 	}
 
+	t, ok := m["type"].(string)
+	if !ok {
+		t = "nil"
+	}
+
+	realmID, ok := m["realmId"].(string)
+	if !ok {
+		realmID = "nil"
+	}
+
+	userID, ok := m["userId"].(string)
+	if !ok {
+		userID = "nil"
+	}
+
+
 	// Create a point and add to batch
-	var tags = map[string]string{"type": m["type"], "realm": m["realmId"], "userId": m["userId"]}
+	var tags = map[string]string{"type": t, "realm": realmID, "userId": userID}
 	var fields = map[string]interface{}{
 		"uid": m["uid"],
 	}

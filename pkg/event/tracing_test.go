@@ -169,7 +169,7 @@ func TestConsoleModuleTracingMW(t *testing.T) {
 	var corrID = strconv.FormatUint(rand.Uint64(), 10)
 	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
 	ctx = opentracing.ContextWithSpan(ctx, mockSpan)
-	var mp = map[string]string{"key": "val"}
+	var mp = map[string]interface{}{"key": "val"}
 
 	// Print.
 	mockConsoleModule.EXPECT().Print(gomock.Any(), mp).Return(nil).Times(1)
@@ -215,7 +215,7 @@ func TestStatisticModuleTracingMW(t *testing.T) {
 	var corrID = strconv.FormatUint(rand.Uint64(), 10)
 	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
 	ctx = opentracing.ContextWithSpan(ctx, mockSpan)
-	var mp = map[string]string{"key": "val"}
+	var mp = map[string]interface{}{"key": "val"}
 
 	// Stats.
 	mockStatisticModule.EXPECT().Stats(gomock.Any(), mp).Return(nil).Times(1)
