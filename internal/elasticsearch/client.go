@@ -24,7 +24,7 @@ func NewClient(addr string, httpClient *http.Client) *Client {
 }
 
 // IndexData index the document 'data' under a type  in
-func (c *Client) IndexData(esIndex, esType, id, timestamp string, data interface{}) error {
+func (c *Client) IndexData(esIndex, esType, id, data interface{}) error {
 
 	var d, err = json.Marshal(data)
 	if err != nil {
