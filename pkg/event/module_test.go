@@ -39,7 +39,7 @@ func TestConsoleModule(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func TestStatisticsModule(t *testing.T) {
+func TestStatisticsModuleWithMissingValues(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 	var mockInflux = mock.NewInflux(mockCtrl)
@@ -52,5 +52,21 @@ func TestStatisticsModule(t *testing.T) {
 	var statisticModule = NewStatisticModule(mockInflux, batchPointsConfig)
 	mockInflux.EXPECT().Write(gomock.Any()).Return(nil).Times(1)
 	var err = statisticModule.Stats(context.Background(), map[string]interface{}{"key": "val"})
+	assert.Nil(t, err)
+}
+
+func TestStatisticsModule(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+	var mockInflux = mock.NewInflux(mockCtrl)
+
+	var batchPointsConfig = influx.BatchPointsConfig{
+		Precision: "s",
+		Database:  "db",
+	}
+
+	var statisticModule = NewStatisticModule(mockInflux, batchPointsConfig)
+	mockInflux.EXPECT().Write(gomock.Any()).Return(nil).Times(1)
+	var err = statisticModule.Stats(context.Background(), map[string]interface{}{"type": "val", "realmId": "realm", "userId": "user"})
 	assert.Nil(t, err)
 }
