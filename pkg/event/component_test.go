@@ -106,12 +106,12 @@ func TestAdminComponent(t *testing.T) {
 		var adminEvt *fb.AdminEvent = createAdminEvent(fb.OperationTypeCREATE, 1234)
 		var err = adminEventComponent.AdminEvent(nil, adminEvt)
 
-		assert.Equal(t, getOpertimech)
+		assert.Equal(t, getOperationTypeName(fb.OperationTypeCREATE), <-ch)
 		assert.Nil(t, err)
 	}
 
-	var operationTypes = [4]inttime
-		fb.OperationTypeUPDATE,time
+	var operationTypes = [4]int8{fb.OperationTypeCREATE,
+		fb.OperationTypeUPDATE,
 		fb.OperationTypeDELETE,
 		fb.OperationTypeACTION}
 
