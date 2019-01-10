@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/cloudtrust/keycloak-bridge/api/event/fb"
 )
@@ -120,7 +121,10 @@ func (c *adminComponent) AdminEvent(ctx context.Context, adminEvent *fb.AdminEve
 func adminEventToMap(adminEvent *fb.AdminEvent) map[string]string {
 	var adminEventMap = make(map[string]string)
 	adminEventMap["uid"] = fmt.Sprint(adminEvent.Uid())
-	adminEventMap["time"] = fmt.Sprint(adminEvent.Time())
+
+	time := epochMilliToTime(adminEvent.Time())
+	adminEventMap["time"] = time.Format("2006-01-02T15:04:05.000Z")
+
 	adminEventMap["realmId"] = string(adminEvent.RealmId())
 	adminEventMap["authDetails"] = fmt.Sprint(adminEvent.AuthDetails(nil))
 	adminEventMap["resourceType"] = string(adminEvent.ResourceType())
@@ -134,7 +138,10 @@ func adminEventToMap(adminEvent *fb.AdminEvent) map[string]string {
 func eventToMap(event *fb.Event) map[string]string {
 	var eventMap = make(map[string]string)
 	eventMap["uid"] = fmt.Sprint(event.Uid())
-	eventMap["time"] = fmt.Sprint(event.Time())
+
+	time := epochMilliToTime(event.Time())
+	eventMap["time"] = time.Format("2006-01-02T15:04:05.000Z")
+
 	eventMap["type"] = fb.EnumNamesEventType[int8(event.Type())]
 	eventMap["realmId"] = string(event.RealmId())
 	eventMap["clientId"] = string(event.ClientId())
@@ -184,4 +191,9 @@ func apply(ctx context.Context, fs [](FuncEvent), param map[string]string) error
 		return nil
 	}
 	return nil
+}
+
+
+func epochMilliToTime(milli int64) time.Time{
+	return time.Unix(0, milli * 1000000)
 }

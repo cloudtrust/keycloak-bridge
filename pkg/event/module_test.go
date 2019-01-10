@@ -66,7 +66,7 @@ func TestStatisticsModule(t *testing.T) {
 	}
 
 	var statisticModule = NewStatisticModule(mockInflux, batchPointsConfig)
-	mockInflux.EXPECT().Write(gomock.Any()).Return(nil).Times(1)
-	var err = statisticModule.Stats(context.Background(), map[string]interface{}{"type": "val", "realmId": "realm", "userId": "user"})
+	mockInflux.EXPECT().Write(gomock.Any()).Return(nil).Times(1) 
+	var err = statisticModule.Stats(context.Background(), map[string]string{"type": "val"})
 	assert.Nil(t, err)
 }
