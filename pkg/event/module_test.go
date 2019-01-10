@@ -20,7 +20,7 @@ func TestConsoleModule(t *testing.T) {
 		esIndex = "index"
 		esType  = "audit"
 		uid     = "uid"
-		m       = map[string]interface{}{
+		m       = map[string]string{
 			"type":          esType,
 			"uid":           uid,
 			"time":          "123314",
@@ -34,7 +34,7 @@ func TestConsoleModule(t *testing.T) {
 		mockLogger.EXPECT().Log(k, v).Return(nil).Times(1)
 	}
 
-	mockES.EXPECT().IndexData(esIndex, esType, uid, m).Return(nil).Times(1)
+	mockES.EXPECT().IndexData(esIndex, esType, uid, m["time"], m).Return(nil).Times(1)
 	var err = consoleModule.Print(context.Background(), m)
 	assert.Nil(t, err)
 }
@@ -51,7 +51,7 @@ func TestStatisticsModuleWithMissingValues(t *testing.T) {
 
 	var statisticModule = NewStatisticModule(mockInflux, batchPointsConfig)
 	mockInflux.EXPECT().Write(gomock.Any()).Return(nil).Times(1)
-	var err = statisticModule.Stats(context.Background(), map[string]interface{}{"key": "val"})
+	var err = statisticModule.Stats(context.Background(), map[string]string{"key": "val"})
 	assert.Nil(t, err)
 }
 

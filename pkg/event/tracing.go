@@ -113,7 +113,7 @@ func MakeConsoleModuleTracingMW(tracer opentracing.Tracer) func(ConsoleModule) C
 }
 
 // consoleModuleTracingMW implements ConsoleModule.
-func (m *consoleModuleTracingMW) Print(ctx context.Context, mp map[string]interface{}) error {
+func (m *consoleModuleTracingMW) Print(ctx context.Context, mp map[string]string) error {
 	if span := opentracing.SpanFromContext(ctx); span != nil {
 		span = m.tracer.StartSpan("console_module", opentracing.ChildOf(span.Context()))
 		defer span.Finish()
@@ -142,7 +142,7 @@ func MakeStatisticModuleTracingMW(tracer opentracing.Tracer) func(StatisticModul
 }
 
 // statisticModuleTracingMW implements StatisticModule.
-func (m *statisticModuleTracingMW) Stats(ctx context.Context, mp map[string]interface{}) error {
+func (m *statisticModuleTracingMW) Stats(ctx context.Context, mp map[string]string) error {
 	if span := opentracing.SpanFromContext(ctx); span != nil {
 		span = m.tracer.StartSpan("statistic_module", opentracing.ChildOf(span.Context()))
 		defer span.Finish()

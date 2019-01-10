@@ -79,7 +79,7 @@ type AdminComponent interface {
 }
 
 // FuncEvent is the function to call for a given event.
-type FuncEvent = func(context.Context, map[string]interface{}) error
+type FuncEvent = func(context.Context, map[string]string) error
 
 type adminComponent struct {
 	modulesToCallForCreate []FuncEvent
@@ -117,10 +117,10 @@ func (c *adminComponent) AdminEvent(ctx context.Context, adminEvent *fb.AdminEve
 	}
 }
 
-func adminEventToMap(adminEvent *fb.AdminEvent) map[string]interface{} {
-	var adminEventMap = make(map[string]interface{})
+func adminEventToMap(adminEvent *fb.AdminEvent) map[string]string {
+	var adminEventMap = make(map[string]string)
 	adminEventMap["uid"] = fmt.Sprint(adminEvent.Uid())
-	adminEventMap["time"] = adminEvent.Time()
+	adminEventMap["time"] = fmt.Sprint(adminEvent.Time())
 	adminEventMap["realmId"] = string(adminEvent.RealmId())
 	adminEventMap["authDetails"] = fmt.Sprint(adminEvent.AuthDetails(nil))
 	adminEventMap["resourceType"] = string(adminEvent.ResourceType())
@@ -131,10 +131,10 @@ func adminEventToMap(adminEvent *fb.AdminEvent) map[string]interface{} {
 	return adminEventMap
 }
 
-func eventToMap(event *fb.Event) map[string]interface{} {
-	var eventMap = make(map[string]interface{})
+func eventToMap(event *fb.Event) map[string]string {
+	var eventMap = make(map[string]string)
 	eventMap["uid"] = fmt.Sprint(event.Uid())
-	eventMap["time"] = event.Time()
+	eventMap["time"] = fmt.Sprint(event.Time())
 	eventMap["type"] = fb.EnumNamesEventType[int8(event.Type())]
 	eventMap["realmId"] = string(event.RealmId())
 	eventMap["clientId"] = string(event.ClientId())
@@ -155,7 +155,7 @@ func eventToMap(event *fb.Event) map[string]interface{} {
 	return eventMap
 }
 
-func apply(ctx context.Context, fs [](FuncEvent), param map[string]interface{}) error {
+func apply(ctx context.Context, fs [](FuncEvent), param map[string]string) error {
 	var errors = make(chan error, len(fs))
 	var wg sync.WaitGroup
 

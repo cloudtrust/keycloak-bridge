@@ -108,7 +108,7 @@ func TestConsoleModuleInstrumentingMW(t *testing.T) {
 	rand.Seed(time.Now().UnixNano())
 	var corrID = strconv.FormatUint(rand.Uint64(), 10)
 	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
-	var mp = map[string]interface{}{"key": "val"}
+	var mp = map[string]string{"key": "val"}
 
 	// Print.
 	mockConsoleModule.EXPECT().Print(ctx, mp).Return(nil).Times(1)
@@ -128,7 +128,7 @@ func TestStatisticModuleInstrumentingMW(t *testing.T) {
 	rand.Seed(time.Now().UnixNano())
 	var corrID = strconv.FormatUint(rand.Uint64(), 10)
 	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
-	var mp = map[string]interface{}{"key": "val"}
+	var mp = map[string]string{"key": "val"}
 
 	// Stats.
 	mockStatisticModule.EXPECT().Stats(ctx, mp).Return(nil).Times(1)
