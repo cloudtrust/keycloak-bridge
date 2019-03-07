@@ -140,7 +140,7 @@ func (m *ESClient) EXPECT() *ESClientMockRecorder {
 }
 
 // IndexData mocks base method
-func (m *ESClient) IndexData(arg0, arg1, arg2 string, arg3 interface{}) error {
+func (m *ESClient) IndexData(arg0, arg1, arg2, arg3 interface{}) error {
 	ret := m.ctrl.Call(m, "IndexData", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(error)
 	return ret0

@@ -17,7 +17,7 @@ type ConsoleModule interface {
 
 // ESClient is the interface of the elasticsearch client.
 type ESClient interface {
-	IndexData(esIndex, esType, id string, data interface{}) error
+	IndexData(esIndex, esType, id, data interface{}) error
 }
 
 type consoleModule struct {
@@ -40,12 +40,21 @@ func NewConsoleModule(logger log.Logger, esc ESClient, esIndex, componentName, c
 }
 
 func (cm *consoleModule) Print(_ context.Context, m map[string]string) error {
+	// Need to do a copy of the map to avoid data race
+	var mapCopy = make(map[string]string)
+	for k, v := range m {
+		mapCopy[k]=v
+	}
+
 	// Add component infos in the map
-	m["componentID"] = cm.componentID
-	m["componentName"] = cm.componentName
+	mapCopy["componentID"] = cm.componentID
+	mapCopy["componentName"] = cm.componentName
 
 	// Index data
-	cm.esClient.IndexData(cm.esIndex, m["type"], m["uid"], m)
+	err := cm.esClient.IndexData(cm.esIndex, "audit", mapCopy["uid"], mapCopy)
+	if err != nil {
+		return err
+	}
 
 	// Log
 	for k, v := range m {

@@ -96,6 +96,9 @@ func main() {
 			Timeout:  c.GetDuration("keycloak-timeout"),
 		}
 
+		// Keycloak Timeout
+		keycloakClientCreationTimeout = c.GetDuration("keycloak-client-creation-timeout")
+
 		// Elasticsearch
 		esAddr  = c.GetString("elasticsearch-host-port")
 		esIndex = c.GetString("elasticsearch-index-name")
@@ -109,6 +112,7 @@ func main() {
 		keycloakEnabled   = c.GetBool("keycloak")
 		redisEnabled      = c.GetBool("redis")
 		sentryEnabled     = c.GetBool("sentry")
+		jobEnabled        = c.GetBool("job")
 		pprofRouteEnabled = c.GetBool("pprof-route-enabled")
 
 		// Influx
@@ -231,8 +235,8 @@ func main() {
 	}
 
 	// Flaki.
-	var flakiClient fb_flaki.FlakiClient
-	{
+	var flakiClient fb_flaki.FlakiClient = &keycloakb.NoopFlakiClient{}
+	if flakiEnabled {
 		// Set up a connection to the flaki-service.
 		var conn *grpc.ClientConn
 		{
@@ -246,20 +250,20 @@ func main() {
 		}
 
 		flakiClient = fb_flaki.NewFlakiClient(conn)
-	}
 
-	// Get unique ID for this component
-	{
-		var b = flatbuffers.NewBuilder(0)
-		fb_flaki.FlakiRequestStart(b)
-		b.Finish(fb_flaki.FlakiRequestEnd(b))
+		// Get unique ID for this component
+		{
+			var b = flatbuffers.NewBuilder(0)
+			fb_flaki.FlakiRequestStart(b)
+			b.Finish(fb_flaki.FlakiRequestEnd(b))
 
-		var res, err = flakiClient.NextValidID(context.Background(), b)
-		if err != nil {
-			logger.Log("msg", "could not connect to flaki-service", "error", err)
-			return
+			var res, err = flakiClient.NextValidID(context.Background(), b)
+			if err != nil {
+				logger.Log("msg", "could not connect to flaki-service", "error", err)
+				return
+			}
+			ComponentID = string(res.Id())
 		}
-		ComponentID = string(res.Id())
 	}
 
 	// Add component name, component ID and version to the logger tags.
@@ -280,7 +284,7 @@ func main() {
 	var keycloakClient *keycloak.Client
 	{
 		var err error
-		keycloakClient, err = keycloak.New(keycloakConfig)
+		keycloakClient, err = keycloak.New(keycloakConfig, keycloakClientCreationTimeout)
 		if err != nil {
 			logger.Log("msg", "could not create Keycloak client", "error", err)
 			return
@@ -581,7 +585,7 @@ func main() {
 		}
 
 		// Jobs
-		{
+		if jobEnabled {
 			var ctrl = controller.NewController(ComponentName, ComponentID, idgenerator.New(flakiClient, tracer), &job_lock.NoopLocker{}, controller.EnableStatusStorage(job_status.New(cockroachConn)))
 
 			for _, job := range []string{"cockroach", "elasticsearch", "flaki", "influx", "jaeger", "keycloak", "redis", "sentry"} {
@@ -793,6 +797,7 @@ func config(logger log.Logger) *viper.Viper {
 	v.SetDefault("keycloak-username", "")
 	v.SetDefault("keycloak-password", "")
 	v.SetDefault("keycloak-timeout", "5s")
+	v.SetDefault("keycloak-client-creation-timeout", "50s")
 
 	// Elasticsearch default.
 	v.SetDefault("elasticsearch", false)
@@ -842,6 +847,7 @@ func config(logger log.Logger) *viper.Viper {
 	v.SetDefault("cockroach-clean-interval", "24h")
 
 	// Jobs
+	v.SetDefault("job", false)
 	v.SetDefault("job-flaki-health-validity", "1m")
 	v.SetDefault("job-influx-health-validity", "1m")
 	v.SetDefault("job-jaeger-health-validity", "1m")
@@ -866,7 +872,7 @@ func config(logger log.Logger) *viper.Viper {
 	}
 
 	// If the host/port is not set, we consider the components deactivated.
-	v.Set("elasticsearch", v.GetString("es-host-port") != "")
+	v.Set("elasticsearch", v.GetString("elasticsearch-host-port") != "")
 	v.Set("influx", v.GetString("influx-host-port") != "")
 	v.Set("sentry", v.GetString("sentry-dsn") != "")
 	v.Set("jaeger", v.GetString("jaeger-sampler-host-port") != "")

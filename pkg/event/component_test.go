@@ -122,7 +122,7 @@ func TestAdminComponent(t *testing.T) {
 
 func TestEventToMap(t *testing.T) {
 	var uid int64 = 1234
-	var time = time.Now().Unix()
+	var epoch = int64(1547127600485)
 	var etype int8
 	var realmID = "realm"
 	var clientID = "client"
@@ -163,7 +163,7 @@ func TestEventToMap(t *testing.T) {
 
 		fb.EventStart(builder)
 		fb.EventAddUid(builder, uid)
-		fb.EventAddTime(builder, time)
+		fb.EventAddTime(builder, epoch)
 		fb.EventAddType(builder, etype)
 		fb.EventAddRealmId(builder, realm)
 		fb.EventAddClientId(builder, clientID)
@@ -179,7 +179,7 @@ func TestEventToMap(t *testing.T) {
 
 	var m = eventToMap(event)
 	assert.Equal(t, strconv.FormatInt(uid, 10), m["uid"])
-	assert.Equal(t, strconv.FormatInt(time, 10), m["time"])
+	assert.Equal(t, time.Unix(0, epoch*1000000).Format("2006-01-02T15:04:05.000Z"), m["time"])
 	assert.Equal(t, fb.EnumNamesEventType[int8(etype)], m["type"])
 	assert.Equal(t, realmID, m["realmId"])
 	assert.Equal(t, clientID, m["clientId"])
