@@ -14,7 +14,7 @@ type Module interface {
 
 // KeycloakClient is the interface of the keycloak client.
 type KeycloakClient interface {
-	GetUsers(realmName string, paramKV ...string) ([]keycloak.UserRepresentation, error)
+	GetUsers(tokenAssertion string, realmName string, paramKV ...string) ([]keycloak.UserRepresentation, error)
 }
 
 type module struct {
@@ -29,7 +29,8 @@ func NewModule(keycloak KeycloakClient) Module {
 }
 
 func (m *module) GetUsers(ctx context.Context, realm string) ([]string, error) {
-	var usersRepresentation, err = m.keycloak.GetUsers(realm)
+	token :="ABCDGEF"
+	var usersRepresentation, err = m.keycloak.GetUsers(token, realm)
 	if err != nil {
 		return nil, errors.Wrapf(err, "keycloak client could not get users for realm '%v'", realm)
 	}

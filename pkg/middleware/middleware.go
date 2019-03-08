@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"time"
 
@@ -126,4 +127,12 @@ func MakeEndpointTracingMW(tracer opentracing.Tracer, operationName string) endp
 			return next(ctx, request)
 		}
 	}
+}
+
+func httpErrorHandler(_ context.Context, statusCode int, err error, w http.ResponseWriter) {
+	w.WriteHeader(statusCode)
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+
+	var reply, _ = json.MarshalIndent(map[string]string{"error": err.Error()}, "", "  ")
+	w.Write(reply)
 }

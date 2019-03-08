@@ -23,3 +23,6 @@
 [[constraint]]
   name = "github.com/cloudtrust/common-healthcheck"
   version = ">=2.0"
+[[constraint]]
+  name = "github.com/gbrlsnchs/jwt"
+  version = "2.0.0"

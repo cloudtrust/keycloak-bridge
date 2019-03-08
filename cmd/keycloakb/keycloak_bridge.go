@@ -31,6 +31,7 @@ import (
 	"github.com/cloudtrust/keycloak-bridge/pkg/export"
 	"github.com/cloudtrust/keycloak-bridge/pkg/health"
 	health_job "github.com/cloudtrust/keycloak-bridge/pkg/job"
+	"github.com/cloudtrust/keycloak-bridge/pkg/management"
 	"github.com/cloudtrust/keycloak-bridge/pkg/middleware"
 	"github.com/cloudtrust/keycloak-bridge/pkg/user"
 	keycloak "github.com/cloudtrust/keycloak-client"
@@ -90,14 +91,12 @@ func main() {
 
 		// Keycloak
 		keycloakConfig = keycloak.Config{
-			Addr:     fmt.Sprintf("http://%s", c.GetString("keycloak-host-port")),
-			Username: c.GetString("keycloak-username"),
-			Password: c.GetString("keycloak-password"),
-			Timeout:  c.GetDuration("keycloak-timeout"),
+			Addr:    fmt.Sprintf("http://%s", c.GetString("keycloak-host-port")),
+			Timeout: c.GetDuration("keycloak-timeout"),
 		}
 
 		// Keycloak Timeout
-		keycloakClientCreationTimeout = c.GetDuration("keycloak-client-creation-timeout")
+		//keycloakClientCreationTimeout = c.GetDuration("keycloak-client-creation-timeout")
 
 		// Elasticsearch
 		esAddr  = c.GetString("elasticsearch-host-port")
@@ -284,7 +283,8 @@ func main() {
 	var keycloakClient *keycloak.Client
 	{
 		var err error
-		keycloakClient, err = keycloak.New(keycloakConfig, keycloakClientCreationTimeout)
+		keycloakClient, err = keycloak.New(keycloakConfig)
+
 		if err != nil {
 			logger.Log("msg", "could not create Keycloak client", "error", err)
 			return
@@ -476,6 +476,29 @@ func main() {
 			Endpoint: eventEndpoint,
 		}
 	}
+
+	// Management service.
+	var managementEndpoints = management.Endpoints{}
+	{
+		var managementLogger = log.With(logger, "svc", "management")
+
+		var managementEndpoint endpoint.Endpoint
+		{
+			managementEndpoint = management.MakeTestEndpoint()
+			managementEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("mgmt_endpoint"))(managementEndpoint)
+			managementEndpoint = middleware.MakeEndpointLoggingMW(log.With(managementLogger, "mw", "endpoint"))(managementEndpoint)
+			managementEndpoint = middleware.MakeEndpointTracingMW(tracer, "mgmt_endpoint")(managementEndpoint)
+			managementEndpoint = middleware.MakeEndpointTokenForRealmMW(log.With(managementLogger, "mw", "endpoint"))(managementEndpoint)
+		}
+
+		// Rate limiting
+		//managementEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["management"]))(managementEndpoint)
+
+		managementEndpoints = management.Endpoints{
+			TestEndpoint: managementEndpoint,
+		}
+	}
+
 	// Export configuration
 	var exportModule = export.NewModule(keycloakClient)
 	var cfgStorageModue = export.NewConfigStorageModule(cockroachConn)
@@ -665,6 +688,43 @@ func main() {
 			eventHandler = middleware.MakeHTTPTracingMW(tracer, ComponentName, "http_server_event")(eventHandler)
 		}
 		eventSubroute.Handle("/receiver", eventHandler)
+
+		// Management
+		var managementSubroute = route.PathPrefix("/management").Subrouter()
+
+		var managementHandler http.Handler
+		{
+			managementHandler = management.MakeManagementHandler(managementEndpoints.TestEndpoint)
+			managementHandler = middleware.MakeHTTPCorrelationIDMW(flakiClient, tracer, logger, ComponentName, ComponentID)(managementHandler)
+			managementHandler = middleware.MakeHTTPOIDCTokenValidationMW(keycloakClient)(managementHandler)
+		}
+
+		managementSubroute.Path("/test/{realm}").Methods("GET").Handler(managementHandler)
+
+		/*
+			//realms
+			managementSubroute.Path("/realms").Methods("GET").Handler(healthHandler)
+			managementSubroute.Path("/realms/{realm}").Methods("GET").Handler(healthHandler)
+			//clients
+			managementSubroute.Path("/realms/{realm}/clients/{id}/roles").Methods("GET").Handler(healthHandler)
+			managementSubroute.Path("/realms/{realm}/clients/{id}").Methods("GET").Handler(healthHandler)
+			//users
+			managementSubroute.Path("/realms/{realm}/users/{id}").Methods("DELETE").Handler(healthHandler)
+			managementSubroute.Path("/realms/{realm}/users/{id}").Methods("GET").Handler(healthHandler)
+			managementSubroute.Path("/realms/{realm}/users").Methods("GET").Handler(healthHandler)
+			managementSubroute.Path("/realms/{realm}/users").Methods("GET").Queries("todo", "{todo}").Handler(healthHandler)
+			managementSubroute.Path("/realms/{realm}/users").Methods("POST").Handler(healthHandler)
+			managementSubroute.Path("/realms/{realm}/users/{id}").Methods("PUT").Handler(healthHandler)
+			managementSubroute.Path("/realms/{realm}/users/{id}/role-mappings/clients/{client}").Methods("GET").Handler(healthHandler)
+			managementSubroute.Path("/realms/{realm}/users/{id}/role-mappings/realm").Methods("GET").Handler(healthHandler)
+			managementSubroute.Path("/realms/{realm}/users/{id}/role-mappings/clients/{client}").Methods("POST").Handler(healthHandler)
+			managementSubroute.Path("/realms/{realm}/users/{id}/reset-password").Methods("PUT").Handler(healthHandler)
+			managementSubroute.Path("/realms/{realm}/users/{id}/send-verify-email").Methods("PUT").Handler(healthHandler)
+			//roles
+			managementSubroute.Path("/realms/{realm}/roles").Methods("GET").Handler(healthHandler)
+			managementSubroute.Path("/realms/{realm}/clients/{id}/roles").Methods("GET").Handler(healthHandler)
+			managementSubroute.Path("/realms/{realm}/roles-by-id/{role-id}").Methods("GET").Handler(healthHandler)
+			managementSubroute.Path("/realms/{realm}/clients/{id}/roles").Methods("POST").Handler(healthHandler)*/
 
 		// Users.
 		var getUsersHandler http.Handler
