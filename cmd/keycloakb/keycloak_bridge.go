@@ -26,7 +26,6 @@ import (
 	"github.com/cloudtrust/keycloak-bridge/internal/elasticsearch"
 	"github.com/cloudtrust/keycloak-bridge/internal/idgenerator"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
-	"github.com/cloudtrust/keycloak-bridge/internal/redis"
 	"github.com/cloudtrust/keycloak-bridge/pkg/event"
 	"github.com/cloudtrust/keycloak-bridge/pkg/export"
 	"github.com/cloudtrust/keycloak-bridge/pkg/health"
@@ -109,7 +108,6 @@ func main() {
 		influxEnabled     = c.GetBool("influx")
 		jaegerEnabled     = c.GetBool("jaeger")
 		keycloakEnabled   = c.GetBool("keycloak")
-		redisEnabled      = c.GetBool("redis")
 		sentryEnabled     = c.GetBool("sentry")
 		jobEnabled        = c.GetBool("job")
 		pprofRouteEnabled = c.GetBool("pprof-route-enabled")
@@ -145,12 +143,6 @@ func main() {
 
 		// Sentry
 		sentryDSN = c.GetString("sentry-dsn")
-
-		// Redis
-		redisURL           = c.GetString("redis-host-port")
-		redisPassword      = c.GetString("redis-password")
-		redisDatabase      = c.GetInt("redis-database")
-		redisWriteInterval = c.GetDuration("redis-write-interval")
 
 		// Cockroach
 		cockroachHostPort      = c.GetString("cockroach-host-port")
@@ -216,21 +208,6 @@ func main() {
 		Do(commandName string, args ...interface{}) (reply interface{}, err error)
 		Send(commandName string, args ...interface{}) error
 		Flush() error
-	}
-
-	var redisClient Redis = &keycloakb.NoopRedis{}
-	if redisEnabled {
-		var err error
-		redisClient, err = redis.NewResilientConn(redisURL, redisPassword, redisDatabase)
-		if err != nil {
-			logger.Log("msg", "could not create redis client", "error", err)
-			return
-		}
-		defer redisClient.Close()
-
-		// Create logger that duplicates logs to stdout and redis.
-		logger = log.NewJSONLogger(io.MultiWriter(os.Stdout, keycloakb.NewLogstashRedisWriter(redisClient, ComponentName)))
-		logger = log.With(logger, "ts", log.DefaultTimestampUTC, "caller", log.DefaultCaller)
 	}
 
 	// Flaki.
@@ -650,12 +627,6 @@ func main() {
 			jaegerHM = common.MakeValidationMiddleware(authorizedHC["jaeger"])(jaegerHM)
 
 		}
-		var redisHM HealthChecker
-		{
-			redisHM = common.NewRedisModule(redisClient, redisEnabled)
-			redisHM = common.MakeHealthCheckerLoggingMW(log.With(healthLogger, "module", "redis"))(redisHM)
-			redisHM = common.MakeValidationMiddleware(authorizedHC["redis"])(redisHM)
-		}
 		var sentryHM HealthChecker
 		{
 			sentryHM = common.NewSentryModule(sentryClient, http.DefaultClient, sentryEnabled)
@@ -691,7 +662,6 @@ func main() {
 			"influx":        influxHM,
 			"jaeger":        jaegerHM,
 			"keycloak":      keycloakHM,
-			"redis":         redisHM,
 			"sentry":        sentryHM,
 		}
 
@@ -879,17 +849,6 @@ func main() {
 		influxMetrics.WriteLoop(tic.C)
 	}()
 
-	// Redis writing.
-	if redisEnabled {
-		go func() {
-			var tic = time.NewTicker(redisWriteInterval)
-			defer tic.Stop()
-			for range tic.C {
-				redisClient.Flush()
-			}
-		}()
-	}
-
 	logger.Log("error", <-errc)
 }
 
@@ -997,13 +956,6 @@ func config(logger log.Logger) *viper.Viper {
 	// Debug routes enabled.
 	v.SetDefault("pprof-route-enabled", true)
 
-	// Redis.
-	v.SetDefault("redis", false)
-	v.SetDefault("redis-host-port", "")
-	v.SetDefault("redis-password", "")
-	v.SetDefault("redis-database", 0)
-	v.SetDefault("redis-write-interval", "1s")
-
 	// Cockroach.
 	v.SetDefault("cockroach", false)
 	v.SetDefault("cockroach-host-port", "")
@@ -1042,7 +994,6 @@ func config(logger log.Logger) *viper.Viper {
 	v.Set("influx", v.GetString("influx-host-port") != "")
 	v.Set("sentry", v.GetString("sentry-dsn") != "")
 	v.Set("jaeger", v.GetString("jaeger-sampler-host-port") != "")
-	v.Set("redis", v.GetString("redis-host-port") != "")
 	v.Set("cockroach", v.GetString("cockroach-host-port") != "")
 
 	// Log config in alphabetical order.

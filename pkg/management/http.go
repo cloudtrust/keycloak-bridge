@@ -58,13 +58,14 @@ func encodeManagementReply(_ context.Context, w http.ResponseWriter, rep interfa
 		return nil
 	default:
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.WriteHeader(http.StatusOK)
+
 		var json, err = json.MarshalIndent(rep, "", "  ")
 
 		if err == nil {
 			w.Write(json)
 		}
-
-		w.WriteHeader(http.StatusOK)
+		
 		return nil
 	}
 }
