@@ -491,11 +491,116 @@ func main() {
 			managementEndpoint = middleware.MakeEndpointTokenForRealmMW(log.With(managementLogger, "mw", "endpoint"))(managementEndpoint)
 		}
 
+		var keycloakComponent management.Component
+		{
+			keycloakComponent = management.NewComponent(keycloakClient)
+		}
+
+		var getRealmEndpoint endpoint.Endpoint
+		{
+			getRealmEndpoint = management.MakeGetRealmEndpoint(keycloakComponent)
+			getRealmEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("realm_endpoint"))(getRealmEndpoint)
+			getRealmEndpoint = middleware.MakeEndpointLoggingMW(log.With(managementLogger, "mw", "endpoint"))(getRealmEndpoint)
+			getRealmEndpoint = middleware.MakeEndpointTracingMW(tracer, "realm_endpoint")(getRealmEndpoint)
+			getRealmEndpoint = middleware.MakeEndpointTokenForRealmMW(log.With(managementLogger, "mw", "endpoint"))(getRealmEndpoint)
+		}
+
+		var getClientEndpoint endpoint.Endpoint
+		{
+			getClientEndpoint = management.MakeGetClientEndpoint(keycloakComponent)
+			getClientEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("get_client_endpoint"))(getClientEndpoint)
+			getClientEndpoint = middleware.MakeEndpointLoggingMW(log.With(managementLogger, "mw", "endpoint"))(getClientEndpoint)
+			getClientEndpoint = middleware.MakeEndpointTracingMW(tracer, "get_client_endpoint")(getClientEndpoint)
+			getClientEndpoint = middleware.MakeEndpointTokenForRealmMW(log.With(managementLogger, "mw", "endpoint"))(getClientEndpoint)
+		}
+
+		var getClientsEndpoint endpoint.Endpoint
+		{
+			getClientsEndpoint = management.MakeGetClientsEndpoint(keycloakComponent)
+			getClientsEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("get_clients_endpoint"))(getClientsEndpoint)
+			getClientsEndpoint = middleware.MakeEndpointLoggingMW(log.With(managementLogger, "mw", "endpoint"))(getClientsEndpoint)
+			getClientsEndpoint = middleware.MakeEndpointTracingMW(tracer, "get_clients_endpoint")(getClientsEndpoint)
+			getClientsEndpoint = middleware.MakeEndpointTokenForRealmMW(log.With(managementLogger, "mw", "endpoint"))(getClientsEndpoint)
+		}
+
+		var getUserEndpoint endpoint.Endpoint
+		{
+			getUserEndpoint = management.MakeGetUserEndpoint(keycloakComponent)
+			getUserEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("get_user_endpoint"))(getUserEndpoint)
+			getUserEndpoint = middleware.MakeEndpointLoggingMW(log.With(managementLogger, "mw", "endpoint"))(getUserEndpoint)
+			getUserEndpoint = middleware.MakeEndpointTracingMW(tracer, "get_user_endpoint")(getUserEndpoint)
+			getUserEndpoint = middleware.MakeEndpointTokenForRealmMW(log.With(managementLogger, "mw", "endpoint"))(getUserEndpoint)
+		}
+
+		var createUserEndpoint endpoint.Endpoint
+		{
+			createUserEndpoint = management.MakeCreateUserEndpoint(keycloakComponent)
+			createUserEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("create_user_endpoint"))(createUserEndpoint)
+			createUserEndpoint = middleware.MakeEndpointLoggingMW(log.With(managementLogger, "mw", "endpoint"))(createUserEndpoint)
+			createUserEndpoint = middleware.MakeEndpointTracingMW(tracer, "create_user_endpoint")(createUserEndpoint)
+			createUserEndpoint = middleware.MakeEndpointTokenForRealmMW(log.With(managementLogger, "mw", "endpoint"))(createUserEndpoint)
+		}
+
+		var updateUserEndpoint endpoint.Endpoint
+		{
+			updateUserEndpoint = management.MakeUpdateUserEndpoint(keycloakComponent)
+			updateUserEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("update_user_endpoint"))(updateUserEndpoint)
+			updateUserEndpoint = middleware.MakeEndpointLoggingMW(log.With(managementLogger, "mw", "endpoint"))(updateUserEndpoint)
+			updateUserEndpoint = middleware.MakeEndpointTracingMW(tracer, "update_user_endpoint")(updateUserEndpoint)
+			updateUserEndpoint = middleware.MakeEndpointTokenForRealmMW(log.With(managementLogger, "mw", "endpoint"))(updateUserEndpoint)
+		}
+
+		var deleteUserEndpoint endpoint.Endpoint
+		{
+			deleteUserEndpoint = management.MakeDeleteUserEndpoint(keycloakComponent)
+			deleteUserEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("delete_user_endpoint"))(deleteUserEndpoint)
+			deleteUserEndpoint = middleware.MakeEndpointLoggingMW(log.With(managementLogger, "mw", "endpoint"))(deleteUserEndpoint)
+			deleteUserEndpoint = middleware.MakeEndpointTracingMW(tracer, "delete_user_endpoint")(deleteUserEndpoint)
+			deleteUserEndpoint = middleware.MakeEndpointTokenForRealmMW(log.With(managementLogger, "mw", "endpoint"))(deleteUserEndpoint)
+		}
+
+		var getUsersEndpoint endpoint.Endpoint
+		{
+			getUsersEndpoint = management.MakeGetUsersEndpoint(keycloakComponent)
+			getUsersEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("get_users_endpoint"))(getUsersEndpoint)
+			getUsersEndpoint = middleware.MakeEndpointLoggingMW(log.With(managementLogger, "mw", "endpoint"))(getUsersEndpoint)
+			getUsersEndpoint = middleware.MakeEndpointTracingMW(tracer, "get_users_endpoint")(getUsersEndpoint)
+			getUsersEndpoint = middleware.MakeEndpointTokenForRealmMW(log.With(managementLogger, "mw", "endpoint"))(getUsersEndpoint)
+		}
+
+		var createClientRoleEndpoint endpoint.Endpoint
+		{
+			createClientRoleEndpoint = management.MakeCreateClientRoleEndpoint(keycloakComponent)
+			createClientRoleEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("create_client_role_endpoint"))(createClientRoleEndpoint)
+			createClientRoleEndpoint = middleware.MakeEndpointLoggingMW(log.With(managementLogger, "mw", "endpoint"))(createClientRoleEndpoint)
+			createClientRoleEndpoint = middleware.MakeEndpointTracingMW(tracer, "create_client_role_endpoint")(createClientRoleEndpoint)
+			createClientRoleEndpoint = middleware.MakeEndpointTokenForRealmMW(log.With(managementLogger, "mw", "endpoint"))(createClientRoleEndpoint)
+		}
+
+		var getClientRolesEndpoint endpoint.Endpoint
+		{
+			getClientRolesEndpoint = management.MakeGetClientRolesEndpoint(keycloakComponent)
+			getClientRolesEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("get_client_roles_endpoint"))(getClientRolesEndpoint)
+			getClientRolesEndpoint = middleware.MakeEndpointLoggingMW(log.With(managementLogger, "mw", "endpoint"))(getClientRolesEndpoint)
+			getClientRolesEndpoint = middleware.MakeEndpointTracingMW(tracer, "get_client_roles_endpoint")(getClientRolesEndpoint)
+			getClientRolesEndpoint = middleware.MakeEndpointTokenForRealmMW(log.With(managementLogger, "mw", "endpoint"))(getClientRolesEndpoint)
+		}
+
 		// Rate limiting
 		//managementEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["management"]))(managementEndpoint)
 
 		managementEndpoints = management.Endpoints{
-			TestEndpoint: managementEndpoint,
+			TestEndpoint:     managementEndpoint,
+			GetRealm:         getRealmEndpoint,
+			GetClients:       getClientsEndpoint,
+			GetClient:        getClientEndpoint,
+			CreateUser:       createUserEndpoint,
+			GetUser:          getUserEndpoint,
+			UpdateUser:       updateUserEndpoint,
+			DeleteUser:       deleteUserEndpoint,
+			GetUsers:         getUsersEndpoint,
+			GetClientRoles:   getClientRolesEndpoint,
+			CreateClientRole: createClientRoleEndpoint,
 		}
 	}
 
@@ -692,48 +797,49 @@ func main() {
 		// Management
 		var managementSubroute = route.PathPrefix("/management").Subrouter()
 
-		var managementHandler http.Handler
-		{
-			managementHandler = management.MakeManagementHandler(managementEndpoints.TestEndpoint)
-			managementHandler = middleware.MakeHTTPCorrelationIDMW(flakiClient, tracer, logger, ComponentName, ComponentID)(managementHandler)
-			managementHandler = middleware.MakeHTTPOIDCTokenValidationMW(keycloakClient)(managementHandler)
-		}
+		var managementHandler = ConfigureManagementHandler(ComponentName, ComponentID, flakiClient, keycloakClient, tracer, logger)(managementEndpoints.TestEndpoint)
+
+		var getRealmHandler = ConfigureManagementHandler(ComponentName, ComponentID, flakiClient, keycloakClient, tracer, logger)(managementEndpoints.GetRealm)
+
+		var getClientsHandler = ConfigureManagementHandler(ComponentName, ComponentID, flakiClient, keycloakClient, tracer, logger)(managementEndpoints.GetClients)
+		var getClientHandler = ConfigureManagementHandler(ComponentName, ComponentID, flakiClient, keycloakClient, tracer, logger)(managementEndpoints.GetClient)
+
+		var createUserHandler = ConfigureManagementHandler(ComponentName, ComponentID, flakiClient, keycloakClient, tracer, logger)(managementEndpoints.CreateUser)
+		var getUserHandler = ConfigureManagementHandler(ComponentName, ComponentID, flakiClient, keycloakClient, tracer, logger)(managementEndpoints.GetUser)
+		var updateUserHandler = ConfigureManagementHandler(ComponentName, ComponentID, flakiClient, keycloakClient, tracer, logger)(managementEndpoints.UpdateUser)
+		var deleteUserHandler = ConfigureManagementHandler(ComponentName, ComponentID, flakiClient, keycloakClient, tracer, logger)(managementEndpoints.DeleteUser)
+		var getUsersHandler = ConfigureManagementHandler(ComponentName, ComponentID, flakiClient, keycloakClient, tracer, logger)(managementEndpoints.GetUsers)
+
+		var getClientRolesHandler = ConfigureManagementHandler(ComponentName, ComponentID, flakiClient, keycloakClient, tracer, logger)(managementEndpoints.GetClientRoles)
+		var createClientRolesHandler = ConfigureManagementHandler(ComponentName, ComponentID, flakiClient, keycloakClient, tracer, logger)(managementEndpoints.CreateClientRole)
 
 		managementSubroute.Path("/test/{realm}").Methods("GET").Handler(managementHandler)
 
-		/*
-			//realms
-			managementSubroute.Path("/realms").Methods("GET").Handler(healthHandler)
-			managementSubroute.Path("/realms/{realm}").Methods("GET").Handler(healthHandler)
-			//clients
-			managementSubroute.Path("/realms/{realm}/clients/{id}/roles").Methods("GET").Handler(healthHandler)
-			managementSubroute.Path("/realms/{realm}/clients/{id}").Methods("GET").Handler(healthHandler)
-			//users
-			managementSubroute.Path("/realms/{realm}/users/{id}").Methods("DELETE").Handler(healthHandler)
-			managementSubroute.Path("/realms/{realm}/users/{id}").Methods("GET").Handler(healthHandler)
-			managementSubroute.Path("/realms/{realm}/users").Methods("GET").Handler(healthHandler)
-			managementSubroute.Path("/realms/{realm}/users").Methods("GET").Queries("todo", "{todo}").Handler(healthHandler)
-			managementSubroute.Path("/realms/{realm}/users").Methods("POST").Handler(healthHandler)
-			managementSubroute.Path("/realms/{realm}/users/{id}").Methods("PUT").Handler(healthHandler)
-			managementSubroute.Path("/realms/{realm}/users/{id}/role-mappings/clients/{client}").Methods("GET").Handler(healthHandler)
-			managementSubroute.Path("/realms/{realm}/users/{id}/role-mappings/realm").Methods("GET").Handler(healthHandler)
-			managementSubroute.Path("/realms/{realm}/users/{id}/role-mappings/clients/{client}").Methods("POST").Handler(healthHandler)
-			managementSubroute.Path("/realms/{realm}/users/{id}/reset-password").Methods("PUT").Handler(healthHandler)
-			managementSubroute.Path("/realms/{realm}/users/{id}/send-verify-email").Methods("PUT").Handler(healthHandler)
-			//roles
-			managementSubroute.Path("/realms/{realm}/roles").Methods("GET").Handler(healthHandler)
-			managementSubroute.Path("/realms/{realm}/clients/{id}/roles").Methods("GET").Handler(healthHandler)
-			managementSubroute.Path("/realms/{realm}/roles-by-id/{role-id}").Methods("GET").Handler(healthHandler)
-			managementSubroute.Path("/realms/{realm}/clients/{id}/roles").Methods("POST").Handler(healthHandler)*/
+		//realms
+		managementSubroute.Path("/realms/{realm}").Methods("GET").Handler(getRealmHandler)
 
-		// Users.
-		var getUsersHandler http.Handler
-		{
-			getUsersHandler = user.MakeHTTPGetUsersHandler(userEndpoints.Endpoint)
-			getUsersHandler = middleware.MakeHTTPCorrelationIDMW(flakiClient, tracer, logger, ComponentName, ComponentID)(getUsersHandler)
-			getUsersHandler = middleware.MakeHTTPTracingMW(tracer, ComponentName, "http_server_getusers")(getUsersHandler)
-		}
-		route.Handle("/getusers", getUsersHandler)
+		//clients
+		managementSubroute.Path("/realms/{realm}/clients").Methods("GET").Handler(getClientsHandler)
+		managementSubroute.Path("/realms/{realm}/clients/{clientID}").Methods("GET").Handler(getClientHandler)
+
+		//users
+		managementSubroute.Path("/realms/{realm}/users").Methods("POST").Handler(createUserHandler)
+		managementSubroute.Path("/realms/{realm}/users/{userID}").Methods("GET").Handler(getUserHandler)
+		managementSubroute.Path("/realms/{realm}/users/{userID}").Methods("PUT").Handler(updateUserHandler)
+		managementSubroute.Path("/realms/{realm}/users/{userID}").Methods("DELETE").Handler(deleteUserHandler)
+		managementSubroute.Path("/realms/{realm}/users").Methods("GET").Handler(getUsersHandler)
+		// managementSubroute.Path("/realms/{realm}/users").Methods("GET").Queries("todo", "{todo}").Handler(getUsersHandler)
+
+		// managementSubroute.Path("/realms/{realm}/users/{id}/role-mappings/clients/{client}").Methods("GET").Handler(getRoleMappingClientHandler)
+		// managementSubroute.Path("/realms/{realm}/users/{id}/role-mappings/clients/{client}").Methods("POST").Handler(getRoleMappingClientHandler)
+		// managementSubroute.Path("/realms/{realm}/users/{id}/role-mappings/realm").Methods("GET").Handler(getRoleMappingRealmHandler)
+		// managementSubroute.Path("/realms/{realm}/users/{id}/reset-password").Methods("PUT").Handler(resetPasswordHandler)
+		// managementSubroute.Path("/realms/{realm}/users/{id}/send-verify-email").Methods("PUT").Handler(sendVerifyEmailHandler)
+		//roles
+		// managementSubroute.Path("/realms/{realm}/roles").Methods("GET").Handler(getRolesHandler)
+		// managementSubroute.Path("/realms/{realm}/roles-by-id/{role-id}").Methods("GET").Handler(getRoleHandler)
+		managementSubroute.Path("/realms/{realm}/clients/{clientID}/roles").Methods("GET").Handler(getClientRolesHandler)
+		managementSubroute.Path("/realms/{realm}/clients/{clientID}/roles").Methods("POST").Handler(createClientRolesHandler)
 
 		// Export.
 		route.Handle("/export", export.MakeHTTPExportHandler(exportEndpoint)).Methods("GET")
@@ -947,4 +1053,14 @@ func config(logger log.Logger) *viper.Viper {
 		logger.Log(k, v.Get(k))
 	}
 	return v
+}
+
+func ConfigureManagementHandler(ComponentName string, ComponentID string, flakiClient fb_flaki.FlakiClient, keycloakClient *keycloak.Client, tracer opentracing.Tracer, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {
+	return func(endpoint endpoint.Endpoint) http.Handler {
+		var handler http.Handler
+		handler = management.MakeManagementHandler(endpoint)
+		handler = middleware.MakeHTTPCorrelationIDMW(flakiClient, tracer, logger, ComponentName, ComponentID)(handler)
+		handler = middleware.MakeHTTPOIDCTokenValidationMW(keycloakClient)(handler)
+		return handler
+	}
 }

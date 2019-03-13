@@ -1,6 +1,7 @@
 package management
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"net/http"
@@ -26,27 +27,46 @@ func decodeManagementRequest(_ context.Context, req *http.Request) (interface{},
 
 	// Fetch path parameter such as realm, userID, ...
 	var m = mux.Vars(req)
-	for _, key := range []string{"realm", "TODO"} {
+	for _, key := range []string{"realm", "userID", "clientID", "roleID"} {
 		request[key] = m[key]
 	}
+
+	request["scheme"] = getScheme(req)
+	request["host"] = req.Host
+
+	buf := new(bytes.Buffer)
+    buf.ReadFrom(req.Body)
+    request["body"] = buf.String()
 
 	return request, nil
 }
 
-// encodeManagementReply encodes the reply.
-func encodeManagementReply(_ context.Context, w http.ResponseWriter, rep interface{}) error {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-
-
-	var data, ok = rep.(json.RawMessage)
-
-	w.WriteHeader(http.StatusOK)
-
-	if ok {
-		w.Write(data)
+func getScheme(req *http.Request) string{
+	if req.TLS == nil {
+		return "http"
 	}
 
-	return nil
+	return "https"
+}
+
+// encodeManagementReply encodes the reply.
+func encodeManagementReply(_ context.Context, w http.ResponseWriter, rep interface{}) error {
+	switch r := rep.(type) {
+	case LocationHeader:
+		w.Header().Set("Location", r.URL)
+		w.WriteHeader(http.StatusCreated)
+		return nil
+	default:
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		var json, err = json.MarshalIndent(rep, "", "  ")
+
+		if err == nil {
+			w.Write(json)
+		}
+
+		w.WriteHeader(http.StatusOK)
+		return nil
+	}
 }
 
 // managementErrorHandler encodes the reply when there is an error.

@@ -89,7 +89,7 @@ func MakeEndpointTokenForRealmMW(logger log.Logger) endpoint.Middleware {
 	return func(next endpoint.Endpoint) endpoint.Endpoint {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
 			// Retrieve the realm of the context
-			var realmAuthorized = ctx.Value("realm").(string)
+			var realmAuthorized = ctx.Value("realm")
 
 			// Extract the target realm of the request
 			var m = req.(map[string]string)
