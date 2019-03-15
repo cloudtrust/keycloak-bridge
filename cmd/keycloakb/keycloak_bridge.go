@@ -545,6 +545,24 @@ func main() {
 			getUsersEndpoint = middleware.MakeEndpointTokenForRealmMW(log.With(managementLogger, "mw", "endpoint"))(getUsersEndpoint)
 		}
 
+		var getRolesEndpoint endpoint.Endpoint
+		{
+			getRolesEndpoint = management.MakeGetRolesEndpoint(keycloakComponent)
+			getRolesEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("get_roles_endpoint"))(getRolesEndpoint)
+			getRolesEndpoint = middleware.MakeEndpointLoggingMW(log.With(managementLogger, "mw", "endpoint"))(getRolesEndpoint)
+			getRolesEndpoint = middleware.MakeEndpointTracingMW(tracer, "get_roles_endpoint")(getRolesEndpoint)
+			getRolesEndpoint = middleware.MakeEndpointTokenForRealmMW(log.With(managementLogger, "mw", "endpoint"))(getRolesEndpoint)
+		}
+
+		var getRoleEndpoint endpoint.Endpoint
+		{
+			getRoleEndpoint = management.MakeGetRoleEndpoint(keycloakComponent)
+			getRoleEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("get_role_endpoint"))(getRoleEndpoint)
+			getRoleEndpoint = middleware.MakeEndpointLoggingMW(log.With(managementLogger, "mw", "endpoint"))(getRoleEndpoint)
+			getRoleEndpoint = middleware.MakeEndpointTracingMW(tracer, "get_role_endpoint")(getRoleEndpoint)
+			getRoleEndpoint = middleware.MakeEndpointTokenForRealmMW(log.With(managementLogger, "mw", "endpoint"))(getRoleEndpoint)
+		}
+
 		var createClientRoleEndpoint endpoint.Endpoint
 		{
 			createClientRoleEndpoint = management.MakeCreateClientRoleEndpoint(keycloakComponent)
@@ -563,21 +581,73 @@ func main() {
 			getClientRolesEndpoint = middleware.MakeEndpointTokenForRealmMW(log.With(managementLogger, "mw", "endpoint"))(getClientRolesEndpoint)
 		}
 
+		var getClientRolesForUserEndpoint endpoint.Endpoint
+		{
+			getClientRolesForUserEndpoint = management.MakeGetClientRolesForUserEndpoint(keycloakComponent)
+			getClientRolesForUserEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("get_client_roles_for_user_endpoint"))(getClientRolesForUserEndpoint)
+			getClientRolesForUserEndpoint = middleware.MakeEndpointLoggingMW(log.With(managementLogger, "mw", "endpoint"))(getClientRolesForUserEndpoint)
+			getClientRolesForUserEndpoint = middleware.MakeEndpointTracingMW(tracer, "get_client_roles_for_user_endpoint")(getClientRolesForUserEndpoint)
+			getClientRolesForUserEndpoint = middleware.MakeEndpointTokenForRealmMW(log.With(managementLogger, "mw", "endpoint"))(getClientRolesForUserEndpoint)
+		}
+
+		var addClientRolesToUserEndpoint endpoint.Endpoint
+		{
+			addClientRolesToUserEndpoint = management.MakeAddClientRolesToUserEndpoint(keycloakComponent)
+			addClientRolesToUserEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("get_client_roles_for_user_endpoint"))(addClientRolesToUserEndpoint)
+			addClientRolesToUserEndpoint = middleware.MakeEndpointLoggingMW(log.With(managementLogger, "mw", "endpoint"))(addClientRolesToUserEndpoint)
+			addClientRolesToUserEndpoint = middleware.MakeEndpointTracingMW(tracer, "get_client_roles_for_user_endpoint")(addClientRolesToUserEndpoint)
+			addClientRolesToUserEndpoint = middleware.MakeEndpointTokenForRealmMW(log.With(managementLogger, "mw", "endpoint"))(addClientRolesToUserEndpoint)
+		}
+
+		var getRealmRolesForUserEndpoint endpoint.Endpoint
+		{
+			getRealmRolesForUserEndpoint = management.MakeGetRealmRolesForUserEndpoint(keycloakComponent)
+			getRealmRolesForUserEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("get_realm_roles_for_user_endpoint"))(getRealmRolesForUserEndpoint)
+			getRealmRolesForUserEndpoint = middleware.MakeEndpointLoggingMW(log.With(managementLogger, "mw", "endpoint"))(getRealmRolesForUserEndpoint)
+			getRealmRolesForUserEndpoint = middleware.MakeEndpointTracingMW(tracer, "get_realm_roles_for_user_endpoint")(getRealmRolesForUserEndpoint)
+			getRealmRolesForUserEndpoint = middleware.MakeEndpointTokenForRealmMW(log.With(managementLogger, "mw", "endpoint"))(getRealmRolesForUserEndpoint)
+		}
+
+		var resetPasswordEndpoint endpoint.Endpoint
+		{
+			resetPasswordEndpoint = management.MakeResetPasswordEndpoint(keycloakComponent)
+			resetPasswordEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("reset_password_endpoint"))(resetPasswordEndpoint)
+			resetPasswordEndpoint = middleware.MakeEndpointLoggingMW(log.With(managementLogger, "mw", "endpoint"))(resetPasswordEndpoint)
+			resetPasswordEndpoint = middleware.MakeEndpointTracingMW(tracer, "reset_password_endpoint")(resetPasswordEndpoint)
+			resetPasswordEndpoint = middleware.MakeEndpointTokenForRealmMW(log.With(managementLogger, "mw", "endpoint"))(resetPasswordEndpoint)
+		}
+
+		var sendVerifyEmailEndpoint endpoint.Endpoint
+		{
+			sendVerifyEmailEndpoint = management.MakeSendVerifyEmailEndpoint(keycloakComponent)
+			sendVerifyEmailEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("send_verify_email_endpoint"))(sendVerifyEmailEndpoint)
+			sendVerifyEmailEndpoint = middleware.MakeEndpointLoggingMW(log.With(managementLogger, "mw", "endpoint"))(sendVerifyEmailEndpoint)
+			sendVerifyEmailEndpoint = middleware.MakeEndpointTracingMW(tracer, "send_verify_email_endpoint")(sendVerifyEmailEndpoint)
+			sendVerifyEmailEndpoint = middleware.MakeEndpointTokenForRealmMW(log.With(managementLogger, "mw", "endpoint"))(sendVerifyEmailEndpoint)
+		}
+
 		// Rate limiting
 		//managementEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["management"]))(managementEndpoint)
 
 		managementEndpoints = management.Endpoints{
-			TestEndpoint:     managementEndpoint,
-			GetRealm:         getRealmEndpoint,
-			GetClients:       getClientsEndpoint,
-			GetClient:        getClientEndpoint,
-			CreateUser:       createUserEndpoint,
-			GetUser:          getUserEndpoint,
-			UpdateUser:       updateUserEndpoint,
-			DeleteUser:       deleteUserEndpoint,
-			GetUsers:         getUsersEndpoint,
-			GetClientRoles:   getClientRolesEndpoint,
-			CreateClientRole: createClientRoleEndpoint,
+			TestEndpoint:         managementEndpoint,
+			GetRealm:             getRealmEndpoint,
+			GetClients:           getClientsEndpoint,
+			GetClient:            getClientEndpoint,
+			CreateUser:           createUserEndpoint,
+			GetUser:              getUserEndpoint,
+			UpdateUser:           updateUserEndpoint,
+			DeleteUser:           deleteUserEndpoint,
+			GetUsers:             getUsersEndpoint,
+			GetRoles:             getRolesEndpoint,
+			GetRole:              getRoleEndpoint,
+			GetClientRoles:       getClientRolesEndpoint,
+			CreateClientRole:     createClientRoleEndpoint,
+			GetClientRoleForUser: getClientRolesForUserEndpoint,
+			AddClientRoleToUser:  addClientRolesToUserEndpoint,
+			GetRealmRoleForUser:  getRealmRolesForUserEndpoint,
+			ResetPassword:        resetPasswordEndpoint,
+			SendVerifyEmail:      sendVerifyEmailEndpoint,
 		}
 	}
 
@@ -780,8 +850,17 @@ func main() {
 		var deleteUserHandler = ConfigureManagementHandler(ComponentName, ComponentID, flakiClient, keycloakClient, tracer, logger)(managementEndpoints.DeleteUser)
 		var getUsersHandler = ConfigureManagementHandler(ComponentName, ComponentID, flakiClient, keycloakClient, tracer, logger)(managementEndpoints.GetUsers)
 
+		var getClientRoleForUserHandler = ConfigureManagementHandler(ComponentName, ComponentID, flakiClient, keycloakClient, tracer, logger)(managementEndpoints.GetClientRoleForUser)
+		var addClientRoleToUserHandler = ConfigureManagementHandler(ComponentName, ComponentID, flakiClient, keycloakClient, tracer, logger)(managementEndpoints.AddClientRoleToUser)
+		var getRealmRoleForUserHandler = ConfigureManagementHandler(ComponentName, ComponentID, flakiClient, keycloakClient, tracer, logger)(managementEndpoints.GetRealmRoleForUser)
+
+		var getRolesHandler = ConfigureManagementHandler(ComponentName, ComponentID, flakiClient, keycloakClient, tracer, logger)(managementEndpoints.GetRoles)
+		var getRoleHandler = ConfigureManagementHandler(ComponentName, ComponentID, flakiClient, keycloakClient, tracer, logger)(managementEndpoints.GetRole)
 		var getClientRolesHandler = ConfigureManagementHandler(ComponentName, ComponentID, flakiClient, keycloakClient, tracer, logger)(managementEndpoints.GetClientRoles)
 		var createClientRolesHandler = ConfigureManagementHandler(ComponentName, ComponentID, flakiClient, keycloakClient, tracer, logger)(managementEndpoints.CreateClientRole)
+
+		var resetPasswordHandler = ConfigureManagementHandler(ComponentName, ComponentID, flakiClient, keycloakClient, tracer, logger)(managementEndpoints.ResetPassword)
+		var sendVerifyEmailHandler = ConfigureManagementHandler(ComponentName, ComponentID, flakiClient, keycloakClient, tracer, logger)(managementEndpoints.SendVerifyEmail)
 
 		managementSubroute.Path("/test/{realm}").Methods("GET").Handler(managementHandler)
 
@@ -798,16 +877,15 @@ func main() {
 		managementSubroute.Path("/realms/{realm}/users/{userID}").Methods("PUT").Handler(updateUserHandler)
 		managementSubroute.Path("/realms/{realm}/users/{userID}").Methods("DELETE").Handler(deleteUserHandler)
 		managementSubroute.Path("/realms/{realm}/users").Methods("GET").Handler(getUsersHandler)
-		// managementSubroute.Path("/realms/{realm}/users").Methods("GET").Queries("todo", "{todo}").Handler(getUsersHandler)
 
-		// managementSubroute.Path("/realms/{realm}/users/{id}/role-mappings/clients/{client}").Methods("GET").Handler(getRoleMappingClientHandler)
-		// managementSubroute.Path("/realms/{realm}/users/{id}/role-mappings/clients/{client}").Methods("POST").Handler(getRoleMappingClientHandler)
-		// managementSubroute.Path("/realms/{realm}/users/{id}/role-mappings/realm").Methods("GET").Handler(getRoleMappingRealmHandler)
-		// managementSubroute.Path("/realms/{realm}/users/{id}/reset-password").Methods("PUT").Handler(resetPasswordHandler)
-		// managementSubroute.Path("/realms/{realm}/users/{id}/send-verify-email").Methods("PUT").Handler(sendVerifyEmailHandler)
+		managementSubroute.Path("/realms/{realm}/users/{userID}/role-mappings/clients/{clientID}").Methods("GET").Handler(getClientRoleForUserHandler)
+		managementSubroute.Path("/realms/{realm}/users/{userID}/role-mappings/clients/{clientID}").Methods("POST").Handler(addClientRoleToUserHandler)
+		managementSubroute.Path("/realms/{realm}/users/{userID}/role-mappings/realm").Methods("GET").Handler(getRealmRoleForUserHandler)
+		managementSubroute.Path("/realms/{realm}/users/{userID}/reset-password").Methods("PUT").Handler(resetPasswordHandler)
+		managementSubroute.Path("/realms/{realm}/users/{userID}/send-verify-email").Methods("PUT").Handler(sendVerifyEmailHandler)
 		//roles
-		// managementSubroute.Path("/realms/{realm}/roles").Methods("GET").Handler(getRolesHandler)
-		// managementSubroute.Path("/realms/{realm}/roles-by-id/{role-id}").Methods("GET").Handler(getRoleHandler)
+		managementSubroute.Path("/realms/{realm}/roles").Methods("GET").Handler(getRolesHandler)
+		managementSubroute.Path("/realms/{realm}/roles-by-id/{roleID}").Methods("GET").Handler(getRoleHandler)
 		managementSubroute.Path("/realms/{realm}/clients/{clientID}/roles").Methods("GET").Handler(getClientRolesHandler)
 		managementSubroute.Path("/realms/{realm}/clients/{clientID}/roles").Methods("POST").Handler(createClientRolesHandler)
 

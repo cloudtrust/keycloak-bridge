@@ -37,11 +37,11 @@ type Component interface {
 	UpdateUser(ctx context.Context, realmName, userID string, user api.UserRepresentation) error
 	GetUsers(ctx context.Context, realmName string, paramKV ...string) ([]api.UserRepresentation, error)
 	CreateUser(ctx context.Context, realmName string, user api.UserRepresentation) (string, error)
-	GetClientRoleMappings(ctx context.Context, realmName, userID, clientID string) ([]api.RoleRepresentation, error)
-	AddClientRolesToUserRoleMapping(ctx context.Context, realmName, userID, clientID string, roles []api.RoleRepresentation) error
-	GetRealmLevelRoleMappings(ctx context.Context, realmName, userID string) ([]api.RoleRepresentation, error)
-	ResetPassword(ctx context.Context, realmName string, userID string) error
-	SendVerifyEmail(ctx context.Context, realmName string, userID string) error
+	GetClientRolesForUser(ctx context.Context, realmName, userID, clientID string) ([]api.RoleRepresentation, error)
+	AddClientRolesToUser(ctx context.Context, realmName, userID, clientID string, roles []api.RoleRepresentation) error
+	GetRealmRolesForUser(ctx context.Context, realmName, userID string) ([]api.RoleRepresentation, error)
+	ResetPassword(ctx context.Context, realmName string, userID string, password api.PasswordRepresentation) error
+	SendVerifyEmail(ctx context.Context, realmName string, userID string, paramKV ...string) error
 	GetRoles(ctx context.Context, realmName string) ([]api.RoleRepresentation, error)
 	GetRole(ctx context.Context, realmName string, roleID string) (api.RoleRepresentation, error)
 	GetClientRoles(ctx context.Context, realmName, idClient string) ([]api.RoleRepresentation, error)
@@ -197,7 +197,7 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 func (c *component) GetUsers(ctx context.Context, realmName string, paramKV ...string) ([]api.UserRepresentation, error) {
 	var accessToken = ctx.Value("access_token").(string)
 
-	usersKc, err := c.keycloakClient.GetUsers(accessToken, realmName)
+	usersKc, err := c.keycloakClient.GetUsers(accessToken, realmName, paramKV...)
 
 	if err != nil {
 		return nil, err
@@ -213,7 +213,7 @@ func (c *component) GetUsers(ctx context.Context, realmName string, paramKV ...s
 		userRep.EmailVerified = userKc.EmailVerified
 		userRep.FirstName = userKc.FirstName
 		userRep.LastName = userKc.LastName
-	
+
 		if userKc.Attributes != nil {
 			var m = *userKc.Attributes
 			var mobilePhone = m["mobilephone"][0]
@@ -226,28 +226,111 @@ func (c *component) GetUsers(ctx context.Context, realmName string, paramKV ...s
 	return usersRep, nil
 }
 
-func (c *component) GetClientRoleMappings(ctx context.Context, realmName, userID, clientID string) ([]api.RoleRepresentation, error) {
-	return nil, nil
+func (c *component) GetClientRolesForUser(ctx context.Context, realmName, userID, clientID string) ([]api.RoleRepresentation, error) {
+	var accessToken = ctx.Value("access_token").(string)
+
+	rolesKc, err := c.keycloakClient.GetClientRoleMappings(accessToken, realmName, userID, clientID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var rolesRep []api.RoleRepresentation
+	for _, roleKc := range rolesKc {
+		var roleRep api.RoleRepresentation
+		roleRep.Id = roleKc.Id
+		roleRep.Name = roleKc.Name
+		roleRep.ClientRole = roleKc.ClientRole
+		roleRep.ContainerId = roleKc.ContainerId
+		roleRep.Description = roleKc.Description
+
+		rolesRep = append(rolesRep, roleRep)
+	}
+
+	return rolesRep, nil
 }
 
-func (c *component) AddClientRolesToUserRoleMapping(ctx context.Context, realmName, userID, clientID string, roles []api.RoleRepresentation) error {
-	return nil
+func (c *component) AddClientRolesToUser(ctx context.Context, realmName, userID, clientID string, roles []api.RoleRepresentation) error {
+	var accessToken = ctx.Value("access_token").(string)
+
+	var rolesRep []kc.RoleRepresentation
+	for _, role := range roles {
+		var roleRep kc.RoleRepresentation
+		roleRep.Id = role.Id
+		roleRep.Name = role.Name
+		roleRep.ClientRole = role.ClientRole
+		roleRep.ContainerId = role.ContainerId
+		roleRep.Description = role.Description
+
+		rolesRep = append(rolesRep, roleRep)
+	}
+
+	return c.keycloakClient.AddClientRolesToUserRoleMapping(accessToken, realmName, userID, clientID, rolesRep)
 }
 
-func (c *component) GetRealmLevelRoleMappings(ctx context.Context, realmName, userID string) ([]api.RoleRepresentation, error) {
-	return nil, nil
+func (c *component) GetRealmRolesForUser(ctx context.Context, realmName, userID string) ([]api.RoleRepresentation, error) {
+	var accessToken = ctx.Value("access_token").(string)
+
+	rolesKc, err := c.keycloakClient.GetRealmLevelRoleMappings(accessToken, realmName, userID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var rolesRep []api.RoleRepresentation
+	for _, roleKc := range rolesKc {
+		var roleRep api.RoleRepresentation
+		roleRep.Id = roleKc.Id
+		roleRep.Name = roleKc.Name
+		roleRep.ClientRole = roleKc.ClientRole
+		roleRep.ContainerId = roleKc.ContainerId
+		roleRep.Description = roleKc.Description
+
+		rolesRep = append(rolesRep, roleRep)
+	}
+
+	return rolesRep, nil
 }
 
-func (c *component) ResetPassword(ctx context.Context, realmName string, userID string) error {
-	return nil
+func (c *component) ResetPassword(ctx context.Context, realmName string, userID string, password api.PasswordRepresentation) error {
+	var accessToken = ctx.Value("access_token").(string)
+
+	var credKc kc.CredentialRepresentation
+	var passwordType = "password"
+	credKc.Type = &passwordType
+	credKc.Value = password.Value
+
+	return c.keycloakClient.ResetPassword(accessToken, realmName, userID, credKc)
 }
 
-func (c *component) SendVerifyEmail(ctx context.Context, realmName string, userID string) error {
-	return nil
+func (c *component) SendVerifyEmail(ctx context.Context, realmName string, userID string, paramKV ...string) error {
+	var accessToken = ctx.Value("access_token").(string)
+
+	return c.keycloakClient.SendVerifyEmail(accessToken, realmName, userID, paramKV...)
 }
 
 func (c *component) GetRoles(ctx context.Context, realmName string) ([]api.RoleRepresentation, error) {
-	return nil, nil
+	var accessToken = ctx.Value("access_token").(string)
+
+	rolesKc, err := c.keycloakClient.GetRoles(accessToken, realmName)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var rolesRep []api.RoleRepresentation
+	for _, roleKc := range rolesKc {
+		var roleRep api.RoleRepresentation
+		roleRep.Id = roleKc.Id
+		roleRep.Name = roleKc.Name
+		roleRep.ClientRole = roleKc.ClientRole
+		roleRep.ContainerId = roleKc.ContainerId
+		roleRep.Description = roleKc.Description
+
+		rolesRep = append(rolesRep, roleRep)
+	}
+
+	return rolesRep, nil
 }
 
 func (c *component) GetRole(ctx context.Context, realmName string, roleID string) (api.RoleRepresentation, error) {

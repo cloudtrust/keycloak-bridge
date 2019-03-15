@@ -36,7 +36,13 @@ func decodeManagementRequest(_ context.Context, req *http.Request) (interface{},
 
 	buf := new(bytes.Buffer)
     buf.ReadFrom(req.Body)
-    request["body"] = buf.String()
+	request["body"] = buf.String()
+	
+	for _, key := range []string{"email", "firstName", "lastName", "max", "username", "client_id", "redirect_uri"} {
+		if value := req.URL.Query().Get(key); value != "" {
+			request[key]=value
+		}
+	}
 
 	return request, nil
 }

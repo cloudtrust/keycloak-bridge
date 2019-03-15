@@ -36,3 +36,7 @@ type RoleRepresentation struct {
 	Id          *string `json:"id,omitempty"`
 	Name        *string `json:"name,omitempty"`
 }
+
+type PasswordRepresentation struct {
+	Value             *string             `json:"value,omitempty"`
+}
