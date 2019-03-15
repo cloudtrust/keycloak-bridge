@@ -126,9 +126,25 @@ func (c *component) CreateUser(ctx context.Context, realm string, user api.UserR
 	userRep.FirstName = user.FirstName
 	userRep.LastName = user.LastName
 
+	var attributes = make(map[string][]string)
+
 	if user.MobilePhone != nil {
-		var attributes = make(map[string][]string)
 		attributes["mobilephone"] = []string{*user.MobilePhone}
+	}
+
+	if user.Label != nil {
+		attributes["label"] = []string{*user.Label}
+	}
+
+	if user.Gender != nil {
+		attributes["gender"] = []string{*user.Gender}
+	}
+
+	if user.BirthDate != nil {
+		attributes["birthDate"] = []string{*user.BirthDate}
+	}
+
+	if len(attributes) > 0 {
 		userRep.Attributes = &attributes
 	}
 
@@ -167,8 +183,26 @@ func (c *component) GetUser(ctx context.Context, realmName, userID string) (api.
 
 	if userKc.Attributes != nil {
 		var m = *userKc.Attributes
-		var mobilePhone = m["mobilephone"][0]
-		userRep.MobilePhone = &mobilePhone
+
+		if m["mobilephone"] != nil {
+			var mobilePhone = m["mobilephone"][0]
+			userRep.MobilePhone = &mobilePhone
+		}
+
+		if m["label"] != nil {
+			var label = m["label"][0]
+			userRep.Label = &label
+		}
+
+		if m["gender"] != nil {
+			var gender = m["gender"][0]
+			userRep.Gender = &gender
+		}
+
+		if m["birthDate"] != nil {
+			var birthDate = m["birthDate"][0]
+			userRep.BirthDate = &birthDate
+		}
 	}
 
 	return userRep, nil
@@ -185,9 +219,25 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 	userRep.FirstName = user.FirstName
 	userRep.LastName = user.LastName
 
+	var attributes = make(map[string][]string)
+
 	if user.MobilePhone != nil {
-		var attributes = make(map[string][]string)
 		attributes["mobilephone"] = []string{*user.MobilePhone}
+	}
+
+	if user.Label != nil {
+		attributes["label"] = []string{*user.Label}
+	}
+
+	if user.Gender != nil {
+		attributes["gender"] = []string{*user.Gender}
+	}
+
+	if user.BirthDate != nil {
+		attributes["birthDate"] = []string{*user.BirthDate}
+	}
+
+	if len(attributes) > 0 {
 		userRep.Attributes = &attributes
 	}
 
@@ -216,8 +266,26 @@ func (c *component) GetUsers(ctx context.Context, realmName string, paramKV ...s
 
 		if userKc.Attributes != nil {
 			var m = *userKc.Attributes
-			var mobilePhone = m["mobilephone"][0]
-			userRep.MobilePhone = &mobilePhone
+	
+			if m["mobilephone"] != nil {
+				var mobilePhone = m["mobilephone"][0]
+				userRep.MobilePhone = &mobilePhone
+			}
+	
+			if m["label"] != nil {
+				var label = m["label"][0]
+				userRep.Label = &label
+			}
+	
+			if m["gender"] != nil {
+				var gender = m["gender"][0]
+				userRep.Gender = &gender
+			}
+	
+			if m["birthDate"] != nil {
+				var birthDate = m["birthDate"][0]
+				userRep.BirthDate = &birthDate
+			}
 		}
 
 		usersRep = append(usersRep, userRep)

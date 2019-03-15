@@ -9,6 +9,9 @@ type UserRepresentation struct {
 	FirstName     *string `json:"firstName,omitempty"`
 	LastName      *string `json:"lastName,omitempty"`
 	MobilePhone   *string `json:"mobilePhone,omitempty"`
+	Label         *string `json:"label,omitempty"`
+	Gender        *string `json:"gender,omitempty"`
+	BirthDate     *string `json:"birthDate,omitempty"`
 }
 
 type RealmRepresentation struct {
@@ -38,5 +41,5 @@ type RoleRepresentation struct {
 }
 
 type PasswordRepresentation struct {
-	Value             *string             `json:"value,omitempty"`
+	Value *string `json:"value,omitempty"`
 }
