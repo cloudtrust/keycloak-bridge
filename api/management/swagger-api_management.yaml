@@ -1,0 +1,568 @@
+openapi: 3.0.1
+info:
+  title: Swagger Cloudtrust Management
+  description: 'API Mangement for Cloudtrust.'
+  version: 1.0.0
+servers:
+- url: http://localhost:8888/management
+tags:
+- name: Realms
+  description: Realms management
+- name: Clients
+  description: Clients management
+- name: Users
+  description: Users management
+- name: Roles
+  description: Roles management
+paths:
+  /realms/{realm}:
+    get:
+      tags:
+      - Realms
+      summary: Get the top-level representation of the realm It will not include nested information like User and Client representations.
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Realm'
+  /realms/{realm}/clients:
+    get:
+      tags:
+      - Clients
+      summary: Get clients belonging to the realm. 
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: Returns a list of clients belonging to the realm.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Client'
+  /realms/{realm}/clients/{clientID}:
+    get:
+      tags:
+      - Clients
+      summary: Update an existing pet
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: clientID
+        in: path
+        description: id of client (not client-id)
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Client'
+  /realms/{realm}/users:
+    post:
+      tags:
+      - Users
+      summary: >
+        Create a new user.
+        Username must be unique.
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        201:
+          description: successful operation
+          headers:
+            Location:
+              schema:
+                type: string
+              description: URL of the new resource.
+    get:
+      tags:
+      - Users
+      summary: >
+        Get users.
+        Returns a list of users, filtered according to query parameters.
+      parameters:
+      - name: realm
+        in: path
+        description: Name of the realm
+        required: true
+        schema:
+          type: string
+      - name: email
+        in: query
+        schema:
+          type: string
+        allowEmptyValue: true
+      - name: firstName
+        in: query
+        schema:
+          type: string
+        allowEmptyValue: true 
+      - name: lastName
+        in: query
+        schema:
+          type: string
+        allowEmptyValue: true
+      - name: username
+        in: query
+        schema:
+          type: string
+        allowEmptyValue: true 
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+  /realms/{realm}/users/{userID}:
+    get:
+      tags:
+      - Users
+      summary: Get representation of the user
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+    put:
+      tags:
+      - Users
+      summary: Update an existing user
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        200:
+          description: successful operation
+    delete:
+      tags:
+      - Users
+      summary: Delete the user
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation
+  /realms/{realm}/users/{userID}/role-mappings/clients/{clientID}:
+    get:
+      tags:
+      - Users
+      summary: Get client-level roles for the user and the client
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
+      - name: clientID
+        in: path
+        description: Client id
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Role'
+    post:
+      tags:
+      - Users
+      summary: Add client-level roles to the user.
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
+      - name: clientID
+        in: path
+        description: Client id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/Role'
+      responses:
+        200:
+          description: successful operation
+  /realms/{realm}/users/{userID}/role-mappings/realm:
+    get:
+      tags:
+      - Users
+      summary: Get realm-level roles
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Role'
+  /realms/{realm}/users/{userID}/reset-password:
+    put:
+      tags:
+      - Users
+      summary: Set up a new password for the user.
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Password'
+      responses:
+        200:
+          description: successful operation
+  /realms/{realm}/users/{userID}/send-verify-email:
+    put:
+      tags:
+      - Users
+      summary: >
+        Send an email-verification email to the user.
+        It contains a link the user can click to verify its email address.
+        The redirectUri and clientId parameters are optional. The default for the redirect is the account client.
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
+      - name: client_id
+        in: query
+        schema:
+          type: string
+        allowEmptyValue: true
+      - name: redirect_uri
+        in: query
+        schema:
+          type: string
+        allowEmptyValue: true
+      responses:
+        200:
+          description: successful operation
+  /realms/{realm}/roles:
+    get:
+      tags:
+      - Roles
+      summary: Get all roles for the realm or client
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Role'
+  /realms/{realm}/roles-by-id/{roleID}:
+    get:
+      tags:
+      - Roles
+      summary: Get a specific role
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: roleID
+        in: path
+        description: id of role
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+  /realms/{realm}/clients/{clientID}/roles:
+    get:
+      tags:
+      - Roles
+      summary: Get all roles for the realm or client
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: clientID
+        in: path
+        description: id of client (not client-id)
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Role'
+    post:
+      tags:
+      - Roles
+      summary: Create a new role for the realm or client
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: clientID
+        in: path
+        description: id of client (not client-id)
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Role'
+      responses:
+        201:
+          description: successful operation
+          headers:
+            Location:
+              schema:
+                type: string
+              description: URL of the new resource.
+components:
+  schemas:
+    Realm:
+      type: object
+      properties:
+        id:
+          type: string
+        keycloakVersion:
+          type: string
+        realm:
+          type: string
+        displayName:
+          type: string
+        enabled:
+          type: boolean
+          default: true
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+        email:
+          type: string
+        enabled:
+          type: boolean
+          default: true
+        emailVerified:
+          type: boolean
+          default: true
+        firstName:
+          type: string
+        lastName:
+          type: string
+        mobilePhone:
+          type: string
+        label:
+          type: string
+        gender:
+          type: string
+        birthDate:
+          type: string
+    Client:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        baseUrl:
+          type: string
+        clientId:
+          type: string
+        description:
+          type: string
+        enabled:
+          type: boolean
+          default: true
+        lastName:
+          type: string
+        mobilePhone:
+          type: string
+    Role:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        clientRole:
+          type: string
+        composite:
+          type: string
+        containerId:
+          type: string
+    Password:
+      type: object
+      properties:
+        value:
+          type: string
+  securitySchemes:
+    openId:
+      type: openIdConnect
+      openIdConnectUrl: http://toto.com/.well-known/openid-configuration
+security:
+  - openId:
+    - todo
+  
