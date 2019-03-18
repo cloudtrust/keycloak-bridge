@@ -90,8 +90,9 @@ func main() {
 
 		// Keycloak
 		keycloakConfig = keycloak.Config{
-			Addr:    fmt.Sprintf("http://%s", c.GetString("keycloak-host-port")),
-			Timeout: c.GetDuration("keycloak-timeout"),
+			AddrTokenProvider: fmt.Sprintf("http://%s", c.GetString("keycloak-oidc-host-port")),
+			AddrAPI:           fmt.Sprintf("http://%s", c.GetString("keycloak-api-host-port")),
+			Timeout:           c.GetDuration("keycloak-timeout"),
 		}
 
 		// Keycloak Timeout
@@ -877,7 +878,7 @@ func main() {
 		managementSubroute.Path("/realms/{realm}/users/{userID}").Methods("GET").Handler(getUserHandler)
 		managementSubroute.Path("/realms/{realm}/users/{userID}").Methods("PUT").Handler(updateUserHandler)
 		managementSubroute.Path("/realms/{realm}/users/{userID}").Methods("DELETE").Handler(deleteUserHandler)
-		
+
 		managementSubroute.Path("/realms/{realm}/users/{userID}/role-mappings/clients/{clientID}").Methods("GET").Handler(getClientRoleForUserHandler)
 		managementSubroute.Path("/realms/{realm}/users/{userID}/role-mappings/clients/{clientID}").Methods("POST").Handler(addClientRoleToUserHandler)
 		managementSubroute.Path("/realms/{realm}/users/{userID}/role-mappings/realm").Methods("GET").Handler(getRealmRoleForUserHandler)
@@ -996,7 +997,8 @@ func config(logger log.Logger) *viper.Viper {
 
 	// Keycloak default.
 	v.SetDefault("keycloak", true)
-	v.SetDefault("keycloak-host-port", "127.0.0.1:8080")
+	v.SetDefault("keycloak-api-host-port", "127.0.0.1:8080")
+	v.SetDefault("keycloak-oidc-host-port", "127.0.0.1:8080")
 	v.SetDefault("keycloak-username", "")
 	v.SetDefault("keycloak-password", "")
 	v.SetDefault("keycloak-timeout", "5s")

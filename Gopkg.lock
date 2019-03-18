@@ -64,11 +64,11 @@
 
 [[projects]]
   branch = "location_header"
-  digest = "1:0b9ba10956811f1d6c587afdb0202b31d621ef27e64cd3e07ae74a43c0653d45"
+  digest = "1:87091bdcacc1158a1ea4182d71d16e4792207a577205cd45858a074978e02493"
   name = "github.com/cloudtrust/keycloak-client"
   packages = ["."]
   pruneopts = ""
-  revision = "0a1ab5dcb7698c11d0445bf52f652129940f2da8"
+  revision = "fe4be8ecca464f2bea62ae0b88a5544e8a9d9501"
   source = "github.com/cloudtrust/keycloak-client"
 
 [[projects]]
