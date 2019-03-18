@@ -24,12 +24,13 @@ type KeycloakClient interface {
 //   - access_token: the recieved access token in raw format
 //   - realm: realm name extracted from the Issuer information of the token
 //   - username: username extracted from the token
-func MakeHTTPOIDCTokenValidationMW(keycloakClient KeycloakClient) func(http.Handler) http.Handler {
+func MakeHTTPOIDCTokenValidationMW(keycloakClient KeycloakClient, logger log.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			var authorizationHeader = req.Header.Get("Authorization")
 
 			if authorizationHeader == "" {
+				logger.Log("Authorisation Error", "Missing Authorization header")
 				httpErrorHandler(context.TODO(), http.StatusForbidden, fmt.Errorf("Missing Authorization header"), w)
 				return
 			}
@@ -37,6 +38,7 @@ func MakeHTTPOIDCTokenValidationMW(keycloakClient KeycloakClient) func(http.Hand
 			var matched, _ = regexp.MatchString(`^Bearer *`, authorizationHeader)
 
 			if !matched {
+				logger.Log("Authorisation Error", "Missing bearer token")
 				httpErrorHandler(context.TODO(), http.StatusForbidden, fmt.Errorf("Missing bearer token"), w)
 				return
 			}
@@ -46,12 +48,14 @@ func MakeHTTPOIDCTokenValidationMW(keycloakClient KeycloakClient) func(http.Hand
 
 			payload, _, err := jwt.Parse(accessToken)
 			if err != nil {
+				logger.Log("Authorisation Error", err)
 				httpErrorHandler(context.TODO(), http.StatusForbidden, fmt.Errorf("Invalid token"), w)
 				return
 			}
 
 			var jot Token
 			if err = jwt.Unmarshal(payload, &jot); err != nil {
+				logger.Log("Authorisation Error", err)
 				httpErrorHandler(context.TODO(), http.StatusForbidden, fmt.Errorf("Invalid token"), w)
 				return
 			}
@@ -62,6 +66,7 @@ func MakeHTTPOIDCTokenValidationMW(keycloakClient KeycloakClient) func(http.Hand
 			var realm = splitIssuer[1]
 
 			if err = keycloakClient.VerifyToken(realm, accessToken); err != nil {
+				logger.Log("Authorisation Error", err)
 				httpErrorHandler(context.TODO(), http.StatusForbidden, fmt.Errorf("Invalid token"), w)
 				return
 			}

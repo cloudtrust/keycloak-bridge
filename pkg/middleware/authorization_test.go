@@ -22,8 +22,9 @@ func TestHTTPOIDCTokenValidationMW(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
+	var mockLogger = mock.NewLogger(mockCtrl)
 
-	var m = MakeHTTPOIDCTokenValidationMW(mockKeycloakClient)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	var m = MakeHTTPOIDCTokenValidationMW(mockKeycloakClient, mockLogger)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
 
 	// HTTP request.
 	var req = httptest.NewRequest("POST", "http://cloudtrust.io/management/test", bytes.NewReader([]byte{}))

@@ -1089,7 +1089,7 @@ func ConfigureManagementHandler(ComponentName string, ComponentID string, flakiC
 		var handler http.Handler
 		handler = management.MakeManagementHandler(endpoint)
 		handler = middleware.MakeHTTPCorrelationIDMW(flakiClient, tracer, logger, ComponentName, ComponentID)(handler)
-		handler = middleware.MakeHTTPOIDCTokenValidationMW(keycloakClient)(handler)
+		handler = middleware.MakeHTTPOIDCTokenValidationMW(keycloakClient, logger)(handler)
 		return handler
 	}
 }
