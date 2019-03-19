@@ -90,8 +90,8 @@ func main() {
 
 		// Keycloak
 		keycloakConfig = keycloak.Config{
-			AddrTokenProvider: fmt.Sprintf("http://%s", c.GetString("keycloak-oidc-host-port")),
-			AddrAPI:           fmt.Sprintf("http://%s", c.GetString("keycloak-api-host-port")),
+			AddrTokenProvider: c.GetString("keycloak-oidc-uri"),
+			AddrAPI:           c.GetString("keycloak-api-uri"),
 			Timeout:           c.GetDuration("keycloak-timeout"),
 		}
 
@@ -997,8 +997,8 @@ func config(logger log.Logger) *viper.Viper {
 
 	// Keycloak default.
 	v.SetDefault("keycloak", true)
-	v.SetDefault("keycloak-api-host-port", "127.0.0.1:8080")
-	v.SetDefault("keycloak-oidc-host-port", "127.0.0.1:8080")
+	v.SetDefault("keycloak-api-uri", "http://127.0.0.1:8080")
+	v.SetDefault("keycloak-oidc-uri", "http://127.0.0.1:8080")
 	v.SetDefault("keycloak-username", "")
 	v.SetDefault("keycloak-password", "")
 	v.SetDefault("keycloak-timeout", "5s")
