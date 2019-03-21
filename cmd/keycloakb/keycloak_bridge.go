@@ -412,6 +412,8 @@ func main() {
 			statisticModule = event.MakeStatisticModuleTracingMW(tracer)(statisticModule)
 		}
 
+		// new module for sending the events to the DB
+
 		var eventAdminComponent event.AdminComponent
 		{
 			var fns = []event.FuncEvent{consoleModule.Print, statisticModule.Stats}
@@ -430,6 +432,8 @@ func main() {
 			eventComponent = event.MakeComponentTracingMW(tracer)(eventComponent)
 		}
 
+		// add ct_type 
+			
 		var muxComponent event.MuxComponent
 		{
 			muxComponent = event.NewMuxComponent(eventComponent, eventAdminComponent)
