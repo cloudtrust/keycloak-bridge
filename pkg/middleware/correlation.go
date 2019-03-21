@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"math/rand"
 	"net/http"
@@ -18,6 +17,7 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/metadata"
 )
+
 
 // MakeHTTPCorrelationIDMW retrieve the correlation ID from the HTTP header 'X-Correlation-ID'.
 // It there is no such header, it gets a correlation ID from Flaki.
@@ -39,7 +39,7 @@ func MakeHTTPCorrelationIDMW(flaki fb.FlakiClient, tracer opentracing.Tracer, lo
 					var carrier = make(opentracing.TextMapCarrier)
 					var err = tracer.Inject(span.Context(), opentracing.TextMap, carrier)
 					if err != nil {
-						httpErrorHandler(context.TODO(), errors.Wrap(err, "could not inject tracer"), w)
+						httpErrorHandler(context.TODO(), http.StatusInternalServerError, errors.Wrap(err, "could not inject tracer"), w)
 						return
 					}
 
@@ -64,14 +64,6 @@ func MakeHTTPCorrelationIDMW(flaki fb.FlakiClient, tracer opentracing.Tracer, lo
 			next.ServeHTTP(w, req.WithContext(ctx))
 		})
 	}
-}
-
-func httpErrorHandler(_ context.Context, err error, w http.ResponseWriter) {
-	w.WriteHeader(http.StatusInternalServerError)
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-
-	var reply, _ = json.MarshalIndent(map[string]string{"error": err.Error()}, "", "  ")
-	w.Write(reply)
 }
 
 // MakeGRPCCorrelationIDMW retrieve the correlation ID from the GRPC context.

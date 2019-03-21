@@ -9,8 +9,8 @@ import (
 
 // KeycloakClient is the interface of the keycloak client.
 type KeycloakClient interface {
-	GetRealms() ([]keycloak.RealmRepresentation, error)
-	ExportRealm(realmName string) (keycloak.RealmRepresentation, error)
+	GetRealms(accessToken string) ([]keycloak.RealmRepresentation, error)
+	ExportRealm(accessToken string, realmName string) (keycloak.RealmRepresentation, error)
 }
 
 type Module struct {
@@ -27,7 +27,8 @@ func NewModule(kc KeycloakClient) *Module {
 // GetRealms returns the list of all realms.
 func (m *Module) GetRealms(ctx context.Context) ([]string, error) {
 	var res = []string{}
-	var realms, err = m.kc.GetRealms()
+	var accessToken = "TOKEN=="
+	var realms, err = m.kc.GetRealms(accessToken)
 	if err != nil {
 		return res, errors.Wrap(err, "could not get list of realms")
 	}
@@ -42,5 +43,6 @@ func (m *Module) GetRealms(ctx context.Context) ([]string, error) {
 
 // ExportRealm exports the desired realm.
 func (m *Module) ExportRealm(ctx context.Context, realmName string) (keycloak.RealmRepresentation, error) {
-	return m.kc.ExportRealm(realmName)
+	var accessToken = "TOKEN=="
+	return m.kc.ExportRealm(accessToken, realmName)
 }

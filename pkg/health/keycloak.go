@@ -27,6 +27,11 @@ func NewKeycloakModule(keycloak KeycloakClient, version string, enabled bool) (*
 	if err != nil {
 		return nil, errors.Wrapf(err, "invalid version number: %s", version)
 	}
+
+	if !enabled {
+		return m, nil
+	}
+	
 	return m, m.updateTestRealm(v)
 }
 
@@ -38,17 +43,17 @@ type KeycloakModule struct {
 
 // KeycloakClient is the interface of the keycloak client.
 type KeycloakClient interface {
-	GetRealms() ([]keycloak_client.RealmRepresentation, error)
-	CreateRealm(realmName keycloak_client.RealmRepresentation) error
-	GetRealm(realmName string) (keycloak_client.RealmRepresentation, error)
-	UpdateRealm(realmName string, realm keycloak_client.RealmRepresentation) error
-	DeleteRealm(realmName string) error
-	GetUsers(realmName string, paramKV ...string) ([]keycloak_client.UserRepresentation, error)
-	CreateUser(realmName string, user keycloak_client.UserRepresentation) error
-	CountUsers(realmName string) (int, error)
-	GetUser(realmName, userID string) (keycloak_client.UserRepresentation, error)
-	UpdateUser(realmName, userID string, user keycloak_client.UserRepresentation) error
-	DeleteUser(realmName, userID string) error
+	GetRealms(accessToken string) ([]keycloak_client.RealmRepresentation, error)
+	CreateRealm(accessToken string, realmName keycloak_client.RealmRepresentation) (string, error)
+	GetRealm(accessToken string, realmName string) (keycloak_client.RealmRepresentation, error)
+	UpdateRealm(accessToken string, realmName string, realm keycloak_client.RealmRepresentation) error
+	DeleteRealm(accessToken string, realmName string) error
+	GetUsers(accessToken string, realmName string, paramKV ...string) ([]keycloak_client.UserRepresentation, error)
+	CreateUser(accessToken string, realmName string, user keycloak_client.UserRepresentation) (string, error)
+	CountUsers(accessToken string, realmName string) (int, error)
+	GetUser(accessToken string, realmName, userID string) (keycloak_client.UserRepresentation, error)
+	UpdateUser(accessToken string, realmName, userID string, user keycloak_client.UserRepresentation) error
+	DeleteUser(accessToken string, realmName, userID string) error
 }
 
 type keycloakReport struct {
@@ -97,7 +102,9 @@ func (m *KeycloakModule) keycloakCreateUserCheck() keycloakReport {
 	m.keycloakDeleteUserCheck()
 
 	var now = time.Now()
-	var err = m.keycloak.CreateUser(testRealm, healthCheckUser)
+	var accessToken = "TOKEN=="
+	var err error
+	_, err = m.keycloak.CreateUser(accessToken, testRealm, healthCheckUser)
 	var duration = time.Since(now)
 
 	switch {
@@ -135,7 +142,8 @@ func (m *KeycloakModule) keycloakDeleteUserCheck() keycloakReport {
 	}
 
 	var now = time.Now()
-	var err = m.keycloak.DeleteUser(testRealm, userID)
+	var accessToken = "TOKEN=="
+	var err = m.keycloak.DeleteUser(accessToken, testRealm, userID)
 	var duration = time.Since(now)
 
 	switch {
@@ -180,7 +188,8 @@ func (m *KeycloakModule) updateTestRealm(v *Version) error {
 		}
 	}
 
-	var vuser, err = m.keycloak.GetUser(testRealm, vuserID)
+	var accessToken = "TOKEN=="
+	var vuser, err = m.keycloak.GetUser(accessToken, testRealm, vuserID)
 	if err != nil {
 		return err
 	}
@@ -202,12 +211,14 @@ func (m *KeycloakModule) updateTestRealm(v *Version) error {
 
 func (m *KeycloakModule) createTestRealm(v *Version) error {
 	// Delete old realm.
-	m.keycloak.DeleteRealm(testRealm)
+	var accessToken = "TOKEN=="
+	m.keycloak.DeleteRealm(accessToken, testRealm)
 
 	// Create new realm.
 	{
 		var realm = testRealm
-		var err = m.keycloak.CreateRealm(keycloak_client.RealmRepresentation{Realm: &realm})
+		var err error
+		_, err = m.keycloak.CreateRealm(accessToken, keycloak_client.RealmRepresentation{Realm: &realm})
 		if err != nil {
 			return errors.Wrap(err, "could not create test realm")
 		}
@@ -215,7 +226,8 @@ func (m *KeycloakModule) createTestRealm(v *Version) error {
 	// Create version user (the test realm is versionned, and the current version is stored as the Firstname of vuser).
 	{
 		var username = vuserName
-		var err = m.keycloak.CreateUser(testRealm, keycloak_client.UserRepresentation{
+		var err error
+		_, err = m.keycloak.CreateUser(accessToken, testRealm, keycloak_client.UserRepresentation{
 			Username:  &username,
 			FirstName: Str(v.String()),
 		})

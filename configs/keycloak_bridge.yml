@@ -10,7 +10,9 @@ flaki: false
 flaki-host-port: flaki:5555
 
 # Keycloak configs
-keycloak-host-port: 127.0.0.1:8080
+keycloak: false
+keycloak-api-uri: http://localhost:8080
+keycloak-oidc-uri: http://127.0.0.1:8080
 keycloak-username: admin
 keycloak-password: admin
 keycloak-timeout: 5s
@@ -18,9 +20,9 @@ keycloak-client-creation-timeout: 40s
 
 # Elasticsearch configs
 elasticsearch: false
-elasticsearch-host-port: elasticsearch-data:9200
+elasticsearch-host-port: elasticsearch-data:9200cd 
 elasticsearch-index-name: audit
-
+ 
 # Redis
 redis: false
 redis-host-port: 

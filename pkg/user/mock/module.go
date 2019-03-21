@@ -71,9 +71,9 @@ func (m *KeycloakClient) EXPECT() *KeycloakClientMockRecorder {
 }
 
 // GetUsers mocks base method
-func (m *KeycloakClient) GetUsers(arg0 string, arg1 ...string) ([]keycloak_client.UserRepresentation, error) {
-	varargs := []interface{}{arg0}
-	for _, a := range arg1 {
+func (m *KeycloakClient) GetUsers(arg0, arg1 string, arg2 ...string) ([]keycloak_client.UserRepresentation, error) {
+	varargs := []interface{}{arg0, arg1}
+	for _, a := range arg2 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "GetUsers", varargs...)
@@ -83,7 +83,7 @@ func (m *KeycloakClient) GetUsers(arg0 string, arg1 ...string) ([]keycloak_clien
 }
 
 // GetUsers indicates an expected call of GetUsers
-func (mr *KeycloakClientMockRecorder) GetUsers(arg0 interface{}, arg1 ...interface{}) *gomock.Call {
-	varargs := append([]interface{}{arg0}, arg1...)
+func (mr *KeycloakClientMockRecorder) GetUsers(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{arg0, arg1}, arg2...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUsers", reflect.TypeOf((*KeycloakClient)(nil).GetUsers), varargs...)
 }
