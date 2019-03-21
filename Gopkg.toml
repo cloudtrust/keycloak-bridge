@@ -28,7 +28,12 @@
   name = "github.com/gbrlsnchs/jwt"
   version = "2.0.0"
 
+# [[constraint]]
+#   name = "github.com/cloudtrust/keycloak-client"
+#   branch = "location_header"
+#   source = "github.com/cloudtrust/keycloak-client"
+
 [[constraint]]
   name = "github.com/cloudtrust/keycloak-client"
-  branch = "location_header"
   source = "github.com/cloudtrust/keycloak-client"
+  version = "v1.0-rc1"

@@ -35,19 +35,19 @@ func decodeManagementRequest(_ context.Context, req *http.Request) (interface{},
 	request["host"] = req.Host
 
 	buf := new(bytes.Buffer)
-    buf.ReadFrom(req.Body)
+	buf.ReadFrom(req.Body)
 	request["body"] = buf.String()
-	
+
 	for _, key := range []string{"email", "firstName", "lastName", "max", "username", "client_id", "redirect_uri"} {
 		if value := req.URL.Query().Get(key); value != "" {
-			request[key]=value
+			request[key] = value
 		}
 	}
 
 	return request, nil
 }
 
-func getScheme(req *http.Request) string{
+func getScheme(req *http.Request) string {
 	if req.TLS == nil {
 		return "http"
 	}
@@ -71,7 +71,7 @@ func encodeManagementReply(_ context.Context, w http.ResponseWriter, rep interfa
 		if err == nil {
 			w.Write(json)
 		}
-		
+
 		return nil
 	}
 }
@@ -91,3 +91,5 @@ func managementErrorHandler(ctx context.Context, err error, w http.ResponseWrite
 	var reply, _ = json.MarshalIndent(map[string]string{"error": err.Error()}, "", "  ")
 	w.Write(reply)
 }
+
+
