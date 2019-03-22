@@ -14,6 +14,8 @@ tags:
   description: Users management
 - name: Roles
   description: Roles management
+- name: Events
+  description: Events management
 paths:
   /realms/{realm}:
     get:
@@ -557,6 +559,93 @@ paths:
               schema:
                 type: string
               description: URL of the new resource.
+  /events:
+    get:
+      tags:
+      - Events
+      parameters:
+      - name: first
+        in: query
+        description: start offset. Used by pagination.
+        required: false
+        schema:
+          type: number
+      - name: max
+        in: query
+        description: page size. Used by pagination.
+        required: false
+        schema:
+          type: number
+      - name: dateFrom
+        in: query
+        description: start date
+        required: false
+        schema:
+          type: number
+      - name: dateTo
+        in: query
+        description: end date
+        required: false
+        schema:
+          type: number
+      - name: realm
+        in: query
+        description: realm. When missing, all realms
+        required: false
+        schema:
+          type: string
+      - name: origin
+        in: query
+        description: origin (a.k.a. "source"). When missing, all origins.
+        required: false
+        schema:
+          type: string
+      - name: ctEventType
+        in: query
+        description: CT event type. When missing, all CT event types.
+        required: false
+        schema:
+          type: string
+      summary: Get all events
+      responses:
+        200:
+          description: Returns a list of all events
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  events:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Event'
+                  count:
+                    type: number
+  /events/summary:
+    get:
+      tags:
+      - Events
+      summary: Events summary. Used by the backoffice dropdowns.
+      responses:
+        200:
+          description: Returns a summary of all events
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  realms:
+                    type: array
+                    items:
+                      type: string
+                  origins:
+                    type: array
+                    items:
+                      type: string
+                  ctEventTypes:
+                    type: array
+                    items:
+                      type: string
 components:
   schemas:
     Realm:
@@ -657,6 +746,35 @@ components:
             type: array
             items:
               type: string
+    Event:
+      type: object
+      properties:
+        auditId:
+          type: string
+        auditTime:
+          type: number
+        origin:
+          type: string
+        realmName:
+          type: string
+        agentUserId:
+          type: string
+        agentUsername:
+          type: string
+        userId:
+          type: string
+        username:
+          type: string
+        ctEventType:
+          type: string
+        kcEventType:
+          type: string
+        kcOperationType:
+          type: string
+        clientId:
+          type: string
+        additionalInfo:
+          type: string
   securitySchemes:
     openId:
       type: openIdConnect
