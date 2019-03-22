@@ -75,6 +75,15 @@ job-redis-health-validity: 1m
 job-sentry-health-validity: 1m
 job-keycloak-health-validity: 1m
 
+#Audit events
+events-DB: true
+db-host-port: 127.0.0.1:3306
+db-username: root
+db-password: admin 
+db-database: auditevents
+db-table: audit
+protocol: tcp
+
 # Rate limiting in requests/second.
 rate-event: 1000
 rate-user: 1000

@@ -129,3 +129,27 @@ func (m *statisticModuleInstrumentingMW) Stats(ctx context.Context, mp map[strin
 	}(time.Now())
 	return m.next.Stats(ctx, mp)
 }
+
+// Instrumenting middleware at module level.
+type eventsDBModuleInstrumentingMW struct {
+	h    metrics.Histogram
+	next EventsDBModule
+}
+
+// MakeStatisticModuleInstrumentingMW makes an instrumenting middleware at module level.
+func MakeEventsDBModuleInstrumentingMW(h metrics.Histogram) func(EventsDBModule) EventsDBModule {
+	return func(next EventsDBModule) EventsDBModule {
+		return &eventsDBModuleInstrumentingMW{
+			h:    h,
+			next: next,
+		}
+	}
+}
+
+// consoleModuleInstrumentingMW implements Module.
+func (m *eventsDBModuleInstrumentingMW) Store(ctx context.Context, mp map[string]string) error {
+	defer func(begin time.Time) {
+		m.h.With("correlation_id", ctx.Value("correlation_id").(string)).Observe(time.Since(begin).Seconds())
+	}(time.Now())
+	return m.next.Store(ctx, mp)
+}

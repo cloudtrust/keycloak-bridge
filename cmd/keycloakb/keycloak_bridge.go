@@ -17,7 +17,7 @@ import (
 	"time"
 
 	common "github.com/cloudtrust/common-healthcheck"
-	"github.com/cloudtrust/go-jobs"
+	controller "github.com/cloudtrust/go-jobs"
 	"github.com/cloudtrust/go-jobs/job"
 	job_lock "github.com/cloudtrust/go-jobs/lock"
 	job_status "github.com/cloudtrust/go-jobs/status"
@@ -41,7 +41,8 @@ import (
 	gokit_influx "github.com/go-kit/kit/metrics/influx"
 	"github.com/go-kit/kit/ratelimit"
 	grpc_transport "github.com/go-kit/kit/transport/grpc"
-	"github.com/google/flatbuffers/go"
+	_ "github.com/go-sql-driver/mysql"
+	flatbuffers "github.com/google/flatbuffers/go"
 	"github.com/gorilla/mux"
 	influx "github.com/influxdata/influxdb/client/v2"
 	_ "github.com/lib/pq"
@@ -102,7 +103,7 @@ func main() {
 		esAddr  = c.GetString("elasticsearch-host-port")
 		esIndex = c.GetString("elasticsearch-index-name")
 
-		// Enabled units
+		// Enabled units - health checks (keycloak) or enabled (all the rest)
 		cockroachEnabled  = c.GetBool("cockroach")
 		esEnabled         = c.GetBool("elasticsearch")
 		flakiEnabled      = c.GetBool("flaki")
@@ -112,6 +113,9 @@ func main() {
 		sentryEnabled     = c.GetBool("sentry")
 		jobEnabled        = c.GetBool("job")
 		pprofRouteEnabled = c.GetBool("pprof-route-enabled")
+		eventsDBEnabled   = c.GetBool("events-DB")
+
+		//store_events_db flag : enable / disable
 
 		// Influx
 		influxHTTPConfig = influx.HTTPConfig{
@@ -151,6 +155,14 @@ func main() {
 		cockroachPassword      = c.GetString("cockroach-password")
 		cockroachDB            = c.GetString("cockroach-database")
 		cockroachCleanInterval = c.GetDuration("cockroach-clean-interval")
+
+		// EventsDB
+		eventsDBHostPort = c.GetString("db-host-port")
+		eventsDBUsername = c.GetString("db-username")
+		eventsDBPassword = c.GetString("db-password")
+		eventsDBDatabase = c.GetString("db-database")
+		//eventsDBTable    = c.GetString("db-table")
+		eventsDBProtocol = c.GetString("protocol")
 
 		// Jobs
 		healthChecksValidity = map[string]time.Duration{
@@ -351,6 +363,28 @@ func main() {
 		}
 	}
 
+	// Audit events DB.
+	type EventsDB interface {
+		Exec(query string, args ...interface{}) (sql.Result, error)
+		//Ping() error
+		Query(query string, args ...interface{}) (*sql.Rows, error)
+		QueryRow(query string, args ...interface{}) *sql.Row
+	}
+
+	var eventsDBConn EventsDB = keycloakb.NoopEventsDB{}
+	if eventsDBEnabled {
+		var err error
+		eventsDBConn, err = sql.Open("mysql", fmt.Sprintf("%s:%s@%s(%s)/%s", eventsDBUsername, eventsDBPassword, eventsDBProtocol, eventsDBHostPort, eventsDBDatabase))
+		//eventsDBConn, err = sql.Open("mysql", "root:admin@tcp(127.0.0.1:3306)/auditevents")
+
+		//logger.Log("msg", fmt.Sprintf("%s:%s@%s(%s)/%s", eventsDBUsername, eventsDBPassword, eventsDBProtocol, eventsDBHostPort, eventsDBDatabase))
+
+		if err != nil {
+			logger.Log("msg", "could not create DB connection for audit events", "error", err)
+			return
+		}
+	}
+
 	// Elasticsearch client.
 	var esClient = elasticsearch.NewClient(esAddr, http.DefaultClient)
 
@@ -413,10 +447,17 @@ func main() {
 		}
 
 		// new module for sending the events to the DB
+		var eventsDBModule event.EventsDBModule
+		{
+			eventsDBModule = event.NewEventsDBModule(eventsDBConn)
+			eventsDBModule = event.MakeEventsDBModuleInstrumentingMW(influxMetrics.NewHistogram("eventsDB_module"))(eventsDBModule)
+			eventsDBModule = event.MakeEventsDBModuleLoggingMW(log.With(eventLogger, "mw", "module", "unit", "eventsDB"))(eventsDBModule)
+
+		}
 
 		var eventAdminComponent event.AdminComponent
 		{
-			var fns = []event.FuncEvent{consoleModule.Print, statisticModule.Stats}
+			var fns = []event.FuncEvent{consoleModule.Print, statisticModule.Stats, eventsDBModule.Store}
 			eventAdminComponent = event.NewAdminComponent(fns, fns, fns, fns)
 			eventAdminComponent = event.MakeAdminComponentInstrumentingMW(influxMetrics.NewHistogram("admin_component"))(eventAdminComponent)
 			eventAdminComponent = event.MakeAdminComponentLoggingMW(log.With(eventLogger, "mw", "component", "unit", "admin_event"))(eventAdminComponent)
@@ -425,15 +466,15 @@ func main() {
 
 		var eventComponent event.Component
 		{
-			var fns = []event.FuncEvent{consoleModule.Print, statisticModule.Stats}
+			var fns = []event.FuncEvent{consoleModule.Print, statisticModule.Stats, eventsDBModule.Store}
 			eventComponent = event.NewComponent(fns, fns)
 			eventComponent = event.MakeComponentInstrumentingMW(influxMetrics.NewHistogram("component"))(eventComponent)
 			eventComponent = event.MakeComponentLoggingMW(log.With(eventLogger, "mw", "component", "unit", "event"))(eventComponent)
 			eventComponent = event.MakeComponentTracingMW(tracer)(eventComponent)
 		}
 
-		// add ct_type 
-			
+		// add ct_type
+
 		var muxComponent event.MuxComponent
 		{
 			muxComponent = event.NewMuxComponent(eventComponent, eventAdminComponent)
@@ -1056,6 +1097,15 @@ func config(logger log.Logger) *viper.Viper {
 	v.SetDefault("job-redis-health-validity", "1m")
 	v.SetDefault("job-sentry-health-validity", "1m")
 	v.SetDefault("job-keycloak-health-validity", "1m")
+
+	//Storage events in DB
+	v.SetDefault("events-DB", false)
+	v.SetDefault("db-host-port", "")
+	v.SetDefault("db-username", "")
+	v.SetDefault("db-password", "")
+	v.SetDefault("db-database", "")
+	v.SetDefault("db-table", "")
+	v.SetDefault("protocol", "")
 
 	// Rate limiting (in requests/second)
 	v.SetDefault("rate-event", 1000)
