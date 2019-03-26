@@ -4,7 +4,6 @@ package event
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"database/sql"
@@ -18,47 +17,18 @@ type ConsoleModule interface {
 	Print(context.Context, map[string]string) error
 }
 
-// ESClient is the interface of the elasticsearch client.
-type ESClient interface {
-	IndexData(esIndex, esType, id, data interface{}) error
-}
-
 type consoleModule struct {
-	esClient      ESClient
-	esIndex       string
-	componentName string
-	componentID   string
-	logger        log.Logger
+	logger log.Logger
 }
 
 // NewConsoleModule returns a Console module.
-func NewConsoleModule(logger log.Logger, esc ESClient, esIndex, componentName, componentID string) ConsoleModule {
+func NewConsoleModule(logger log.Logger) ConsoleModule {
 	return &consoleModule{
-		esClient:      esc,
-		esIndex:       esIndex,
-		componentName: componentName,
-		componentID:   componentID,
-		logger:        logger,
+		logger: logger,
 	}
 }
 
 func (cm *consoleModule) Print(_ context.Context, m map[string]string) error {
-	// Need to do a copy of the map to avoid data race
-	var mapCopy = make(map[string]string)
-	for k, v := range m {
-		mapCopy[k] = v
-	}
-
-	// Add component infos in the map
-	mapCopy["componentID"] = cm.componentID
-	mapCopy["componentName"] = cm.componentName
-
-	// Index data
-	err := cm.esClient.IndexData(cm.esIndex, "audit", mapCopy["uid"], mapCopy)
-	if err != nil {
-		return err
-	}
-
 	// Log
 	for k, v := range m {
 		cm.logger.Log(k, v)
@@ -144,6 +114,7 @@ const (
 		additional_info TEXT,
 		CONSTRAINT audit_pk PRIMARY KEY (audit_id)
 	  );`
+
 	insertEvent = `INSERT INTO audit (
 		origin,
 		realm_name,
@@ -156,7 +127,8 @@ const (
 		kc_operation_type,
 		client_id,
 		additional_info) 
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11);`
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		`
 )
 
 type DBEvents interface {
@@ -182,19 +154,27 @@ func NewEventsDBModule(db DBEvents) EventsDBModule {
 
 func (cm *eventsDBModule) Store(_ context.Context, m map[string]string) error {
 
-	//can the result be useful?
-	fmt.Println("In the events module")
-	fmt.Println(m)
-	fmt.Println("This was the event")
+	// prepare the query to insert the event in the DB
+	origin := "keycloak" // for the moment only events of Keycloak
+	realmName := m["realmId"]
+	agentUserID := ""   // no agents, only events from Keycloak
+	agentUsername := "" // no agents, only events from Keycloak
+	userID := m["userId"]
+	username := m["username"]
+	ctEventType := ""
+	kcEventType := m["type"]
+	kcOperationType := m["operationType"]
+	clientID := m["clienId"]
+	additionalInfo := "" // all the rest in a JSON?
+	/*if m["type"] == "LOGIN_ERROR" {
+		fmt.Println("The rest of event:")
+		fmt.Println(m)
+	}*/
 
-	//res, errDB := cm.db.Exec("CREATE TABLE example ( id integer, data varchar(32) )")
-	//fmt.Println(res)
-	//fmt.Println(errDB)
+	_, err := cm.db.Exec(insertEvent, origin, realmName, agentUserID, agentUsername, userID, username, ctEventType, kcEventType, kcOperationType, clientID, additionalInfo)
 
-	_, err := cm.db.Exec(insertEvent, "origin", "realm", "agent_user_id", "agent_username",
-		"user_id", "username", "ct_event_type", "kc_event_type", "kc_op_type", "client_id", "")
-	//fmt.Println(res.RowsAffected())
 	if err != nil {
+		//TODO: how is this error treated further?
 		return err
 	}
 	return nil

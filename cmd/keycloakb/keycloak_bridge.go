@@ -23,7 +23,6 @@ import (
 	job_status "github.com/cloudtrust/go-jobs/status"
 	fb_flaki "github.com/cloudtrust/keycloak-bridge/api/flaki/fb"
 	"github.com/cloudtrust/keycloak-bridge/api/user/fb"
-	"github.com/cloudtrust/keycloak-bridge/internal/elasticsearch"
 	"github.com/cloudtrust/keycloak-bridge/internal/idgenerator"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/cloudtrust/keycloak-bridge/pkg/event"
@@ -99,13 +98,8 @@ func main() {
 		// Keycloak Timeout
 		//keycloakClientCreationTimeout = c.GetDuration("keycloak-client-creation-timeout")
 
-		// Elasticsearch
-		esAddr  = c.GetString("elasticsearch-host-port")
-		esIndex = c.GetString("elasticsearch-index-name")
-
 		// Enabled units - health checks (keycloak) or enabled (all the rest)
 		cockroachEnabled  = c.GetBool("cockroach")
-		esEnabled         = c.GetBool("elasticsearch")
 		flakiEnabled      = c.GetBool("flaki")
 		influxEnabled     = c.GetBool("influx")
 		jaegerEnabled     = c.GetBool("jaeger")
@@ -114,8 +108,6 @@ func main() {
 		jobEnabled        = c.GetBool("job")
 		pprofRouteEnabled = c.GetBool("pprof-route-enabled")
 		eventsDBEnabled   = c.GetBool("events-DB")
-
-		//store_events_db flag : enable / disable
 
 		// Influx
 		influxHTTPConfig = influx.HTTPConfig{
@@ -166,14 +158,13 @@ func main() {
 
 		// Jobs
 		healthChecksValidity = map[string]time.Duration{
-			"cockroach":     c.GetDuration("job-cockroach-health-validity"),
-			"elasticsearch": c.GetDuration("job-es-health-validity"),
-			"flaki":         c.GetDuration("job-flaki-health-validity"),
-			"influx":        c.GetDuration("job-influx-health-validity"),
-			"jaeger":        c.GetDuration("job-jaeger-health-validity"),
-			"keycloak":      c.GetDuration("job-keycloak-health-validity"),
-			"redis":         c.GetDuration("job-redis-health-validity"),
-			"sentry":        c.GetDuration("job-sentry-health-validity"),
+			"cockroach": c.GetDuration("job-cockroach-health-validity"),
+			"flaki":     c.GetDuration("job-flaki-health-validity"),
+			"influx":    c.GetDuration("job-influx-health-validity"),
+			"jaeger":    c.GetDuration("job-jaeger-health-validity"),
+			"keycloak":  c.GetDuration("job-keycloak-health-validity"),
+			"redis":     c.GetDuration("job-redis-health-validity"),
+			"sentry":    c.GetDuration("job-sentry-health-validity"),
 		}
 
 		// Rate limiting
@@ -204,14 +195,13 @@ func main() {
 		}
 		// Authorized health checks for each module.
 		authorizedHC = map[string]map[string]struct{}{
-			"cockroach":     healthcheckNames("", "ping"),
-			"elasticsearch": healthcheckNames("", "ping"),
-			"flaki":         healthcheckNames("", "nextid"),
-			"influx":        healthcheckNames("", "ping"),
-			"jaeger":        healthcheckNames("", "agent", "collector"),
-			"keycloak":      healthcheckNames("", "createuser", "deleteuser"),
-			"redis":         healthcheckNames("", "ping"),
-			"sentry":        healthcheckNames("", "ping"),
+			"cockroach": healthcheckNames("", "ping"),
+			"flaki":     healthcheckNames("", "nextid"),
+			"influx":    healthcheckNames("", "ping"),
+			"jaeger":    healthcheckNames("", "agent", "collector"),
+			"keycloak":  healthcheckNames("", "createuser", "deleteuser"),
+			"redis":     healthcheckNames("", "ping"),
+			"sentry":    healthcheckNames("", "ping"),
 		}
 	)
 
@@ -385,9 +375,6 @@ func main() {
 		}
 	}
 
-	// Elasticsearch client.
-	var esClient = elasticsearch.NewClient(esAddr, http.DefaultClient)
-
 	// User service.
 	var userEndpoints = user.Endpoints{}
 	{
@@ -432,7 +419,7 @@ func main() {
 
 		var consoleModule event.ConsoleModule
 		{
-			consoleModule = event.NewConsoleModule(log.With(eventLogger, "module", "console"), esClient, esIndex, ComponentName, ComponentID)
+			consoleModule = event.NewConsoleModule(log.With(eventLogger, "module", "console"))
 			consoleModule = event.MakeConsoleModuleInstrumentingMW(influxMetrics.NewHistogram("console_module"))(consoleModule)
 			consoleModule = event.MakeConsoleModuleLoggingMW(log.With(eventLogger, "mw", "module", "unit", "console"))(consoleModule)
 			consoleModule = event.MakeConsoleModuleTracingMW(tracer)(consoleModule)
@@ -452,6 +439,7 @@ func main() {
 			eventsDBModule = event.NewEventsDBModule(eventsDBConn)
 			eventsDBModule = event.MakeEventsDBModuleInstrumentingMW(influxMetrics.NewHistogram("eventsDB_module"))(eventsDBModule)
 			eventsDBModule = event.MakeEventsDBModuleLoggingMW(log.With(eventLogger, "mw", "module", "unit", "eventsDB"))(eventsDBModule)
+			eventsDBModule = event.MakeEventsDBModuleTracingMW(tracer)(eventsDBModule)
 
 		}
 
@@ -755,12 +743,6 @@ func main() {
 			flakiHM = common.MakeHealthCheckerLoggingMW(log.With(healthLogger, "module", "flaki"))(flakiHM)
 			flakiHM = common.MakeValidationMiddleware(authorizedHC["flaki"])(flakiHM)
 		}
-		var elasticsearchHM HealthChecker
-		{
-			elasticsearchHM = health.NewElasticsearchModule(http.DefaultClient, esAddr, esEnabled)
-			elasticsearchHM = common.MakeHealthCheckerLoggingMW(log.With(healthLogger, "module", "elasticsearch"))(elasticsearchHM)
-			elasticsearchHM = common.MakeValidationMiddleware(authorizedHC["elasticsearch"])(elasticsearchHM)
-		}
 		var keycloakHM HealthChecker
 		{
 			var err error
@@ -772,13 +754,12 @@ func main() {
 		}
 
 		var healthCheckers = map[string]health.HealthChecker{
-			"cockroach":     cockroachHM,
-			"elasticsearch": elasticsearchHM,
-			"flaki":         flakiHM,
-			"influx":        influxHM,
-			"jaeger":        jaegerHM,
-			"keycloak":      keycloakHM,
-			"sentry":        sentryHM,
+			"cockroach": cockroachHM,
+			"flaki":     flakiHM,
+			"influx":    influxHM,
+			"jaeger":    jaegerHM,
+			"keycloak":  keycloakHM,
+			"sentry":    sentryHM,
 		}
 
 		var healthComponent health.HealthCheckers
@@ -802,7 +783,7 @@ func main() {
 		if jobEnabled {
 			var ctrl = controller.NewController(ComponentName, ComponentID, idgenerator.New(flakiClient, tracer), &job_lock.NoopLocker{}, controller.EnableStatusStorage(job_status.New(cockroachConn)))
 
-			for _, job := range []string{"cockroach", "elasticsearch", "flaki", "influx", "jaeger", "keycloak", "redis", "sentry"} {
+			for _, job := range []string{"cockroach", "flaki", "influx", "jaeger", "keycloak", "redis", "sentry"} {
 				var job, err = health_job.MakeHealthJob(healthCheckers[job], job, healthChecksValidity[job], healthStorage, logger)
 				if err != nil {
 					logger.Log("msg", fmt.Sprintf("could not create %s health job", job), "error", err)
@@ -1049,11 +1030,6 @@ func config(logger log.Logger) *viper.Viper {
 	v.SetDefault("keycloak-timeout", "5s")
 	v.SetDefault("keycloak-client-creation-timeout", "50s")
 
-	// Elasticsearch default.
-	v.SetDefault("elasticsearch", false)
-	v.SetDefault("elasticsearch-host-port", "elasticsearch:9200")
-	v.SetDefault("elasticsearch-index-name", "keycloak_business")
-
 	// Influx DB client default.
 	v.SetDefault("influx", false)
 	v.SetDefault("influx-host-port", "")
@@ -1124,7 +1100,6 @@ func config(logger log.Logger) *viper.Viper {
 	}
 
 	// If the host/port is not set, we consider the components deactivated.
-	v.Set("elasticsearch", v.GetString("elasticsearch-host-port") != "")
 	v.Set("influx", v.GetString("influx-host-port") != "")
 	v.Set("sentry", v.GetString("sentry-dsn") != "")
 	v.Set("jaeger", v.GetString("jaeger-sampler-host-port") != "")
