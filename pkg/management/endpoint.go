@@ -53,14 +53,6 @@ type ManagementComponent interface {
 	CreateClientRole(ctx context.Context, realmName, clientID string, role api.RoleRepresentation) (string, error)
 }
 
-// MakeHealthChecksEndpoint makes the HealthCheck endpoint.
-func MakeTestEndpoint() endpoint.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
-		//TODO
-		return nil, nil
-	}
-}
-
 // MakeRealmEndpoint makes the Realm endpoint to retrieve a realm.
 func MakeGetRealmEndpoint(managementComponent ManagementComponent) endpoint.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
@@ -206,7 +198,6 @@ func MakeResetPasswordEndpoint(managementComponent ManagementComponent) endpoint
 		if err != nil {
 			return nil, err
 		}
-
 
 		return nil, managementComponent.ResetPassword(ctx, m["realm"], m["userID"], password)
 	}

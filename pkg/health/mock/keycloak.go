@@ -47,10 +47,11 @@ func (mr *KeycloakClientMockRecorder) CountUsers(arg0, arg1 interface{}) *gomock
 }
 
 // CreateRealm mocks base method
-func (m *KeycloakClient) CreateRealm(arg0 string, arg1 keycloak_client.RealmRepresentation) error {
+func (m *KeycloakClient) CreateRealm(arg0 string, arg1 keycloak_client.RealmRepresentation) (string, error) {
 	ret := m.ctrl.Call(m, "CreateRealm", arg0, arg1)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // CreateRealm indicates an expected call of CreateRealm
@@ -59,10 +60,11 @@ func (mr *KeycloakClientMockRecorder) CreateRealm(arg0, arg1 interface{}) *gomoc
 }
 
 // CreateUser mocks base method
-func (m *KeycloakClient) CreateUser(arg0, arg1 string, arg2 keycloak_client.UserRepresentation) error {
+func (m *KeycloakClient) CreateUser(arg0, arg1 string, arg2 keycloak_client.UserRepresentation) (string, error) {
 	ret := m.ctrl.Call(m, "CreateUser", arg0, arg1, arg2)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // CreateUser indicates an expected call of CreateUser

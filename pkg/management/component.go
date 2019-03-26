@@ -1,5 +1,6 @@
 package management
 
+
 import (
 	"context"
 
@@ -308,6 +309,7 @@ func (c *component) GetClientRolesForUser(ctx context.Context, realmName, userID
 		var roleRep api.RoleRepresentation
 		roleRep.Id = roleKc.Id
 		roleRep.Name = roleKc.Name
+		roleRep.Composite = roleKc.Composite
 		roleRep.ClientRole = roleKc.ClientRole
 		roleRep.ContainerId = roleKc.ContainerId
 		roleRep.Description = roleKc.Description
@@ -326,6 +328,7 @@ func (c *component) AddClientRolesToUser(ctx context.Context, realmName, userID,
 		var roleRep kc.RoleRepresentation
 		roleRep.Id = role.Id
 		roleRep.Name = role.Name
+		roleRep.Composite = role.Composite
 		roleRep.ClientRole = role.ClientRole
 		roleRep.ContainerId = role.ContainerId
 		roleRep.Description = role.Description
@@ -350,6 +353,7 @@ func (c *component) GetRealmRolesForUser(ctx context.Context, realmName, userID 
 		var roleRep api.RoleRepresentation
 		roleRep.Id = roleKc.Id
 		roleRep.Name = roleKc.Name
+		roleRep.Composite = roleKc.Composite
 		roleRep.ClientRole = roleKc.ClientRole
 		roleRep.ContainerId = roleKc.ContainerId
 		roleRep.Description = roleKc.Description
@@ -391,6 +395,7 @@ func (c *component) GetRoles(ctx context.Context, realmName string) ([]api.RoleR
 		var roleRep api.RoleRepresentation
 		roleRep.Id = roleKc.Id
 		roleRep.Name = roleKc.Name
+		roleRep.Composite = roleKc.Composite
 		roleRep.ClientRole = roleKc.ClientRole
 		roleRep.ContainerId = roleKc.ContainerId
 		roleRep.Description = roleKc.Description
@@ -408,10 +413,11 @@ func (c *component) GetRole(ctx context.Context, realmName string, roleID string
 	roleKc, err := c.keycloakClient.GetRole(accessToken, realmName, roleID)
 
 	roleRep.Id = roleKc.Id
-	roleRep.ClientRole = roleKc.ClientRole
-	roleRep.Composite = roleKc.Composite
-	roleRep.Description = roleKc.Description
 	roleRep.Name = roleKc.Name
+	roleRep.Composite = roleKc.Composite
+	roleRep.ClientRole = roleKc.ClientRole
+	roleRep.ContainerId = roleKc.ContainerId
+	roleRep.Description = roleKc.Description
 
 	return roleRep, err
 }
@@ -430,6 +436,7 @@ func (c *component) GetClientRoles(ctx context.Context, realmName, idClient stri
 		var roleRep api.RoleRepresentation
 		roleRep.Id = roleKc.Id
 		roleRep.Name = roleKc.Name
+		roleRep.Composite = roleKc.Composite
 		roleRep.ClientRole = roleKc.ClientRole
 		roleRep.ContainerId = roleKc.ContainerId
 		roleRep.Description = roleKc.Description
@@ -446,6 +453,7 @@ func (c *component) CreateClientRole(ctx context.Context, realmName, clientID st
 	var roleRep kc.RoleRepresentation
 	roleRep.Id = role.Id
 	roleRep.Name = role.Name
+	roleRep.Composite = role.Composite
 	roleRep.ClientRole = role.ClientRole
 	roleRep.ContainerId = role.ContainerId
 	roleRep.Description = role.Description

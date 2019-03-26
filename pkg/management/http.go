@@ -6,10 +6,13 @@ import (
 	"encoding/json"
 	"net/http"
 
+	kc_client "github.com/cloudtrust/keycloak-client"
 	"github.com/go-kit/kit/endpoint"
 	"github.com/go-kit/kit/ratelimit"
 	http_transport "github.com/go-kit/kit/transport/http"
 	"github.com/gorilla/mux"
+
+	"github.com/pkg/errors"
 )
 
 // MakeManagementHandler make an HTTP handler for a Management endpoint.
@@ -48,6 +51,12 @@ func decodeManagementRequest(_ context.Context, req *http.Request) (interface{},
 }
 
 func getScheme(req *http.Request) string {
+	var xForwardedProtoHeader = req.Header.Get("X-Forwarded-Proto")
+
+	if xForwardedProtoHeader != "" {
+		return xForwardedProtoHeader
+	}
+
 	if req.TLS == nil {
 		return "http"
 	}
@@ -78,18 +87,14 @@ func encodeManagementReply(_ context.Context, w http.ResponseWriter, rep interfa
 
 // managementErrorHandler encodes the reply when there is an error.
 func managementErrorHandler(ctx context.Context, err error, w http.ResponseWriter) {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-
-	switch err {
-	case ratelimit.ErrLimited:
-		w.WriteHeader(http.StatusTooManyRequests)
+	switch e := errors.Cause(err).(type) {
+	case kc_client.HTTPError:
+		w.WriteHeader(e.HTTPStatus)
 	default:
-		w.WriteHeader(http.StatusInternalServerError)
+		if err == ratelimit.ErrLimited {
+			w.WriteHeader(http.StatusTooManyRequests)
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
 	}
-
-	// Write error.
-	var reply, _ = json.MarshalIndent(map[string]string{"error": err.Error()}, "", "  ")
-	w.Write(reply)
 }
-
-

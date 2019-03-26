@@ -12,7 +12,7 @@ flaki-host-port: flaki:5555
 # Keycloak configs
 keycloak: false
 keycloak-api-uri: http://localhost:8080
-keycloak-oidc-uri: http://127.0.0.1:8080
+keycloak-oidc-uri: http://localhost:8080
 keycloak-username: admin
 keycloak-password: admin
 keycloak-timeout: 5s

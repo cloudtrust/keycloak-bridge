@@ -23,34 +23,66 @@ func TestHTTPOIDCTokenValidationMW(t *testing.T) {
 	defer mockCtrl.Finish()
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 	var mockLogger = mock.NewLogger(mockCtrl)
+	
 
 	var m = MakeHTTPOIDCTokenValidationMW(mockKeycloakClient, mockLogger)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
 
 	// HTTP request.
 	var req = httptest.NewRequest("POST", "http://cloudtrust.io/management/test", bytes.NewReader([]byte{}))
+
+	// Missing authorization token.
+	{
+		var w = httptest.NewRecorder()
+		mockLogger.EXPECT().Log("Authorisation Error", "Missing Authorization header").Return(nil).Times(1)
+		m.ServeHTTP(w, req)
+		var result = w.Result()
+		assert.Equal(t, 403, result.StatusCode)
+	}
+
+	req.Header.Set("Authorization", "Non bearer format")
+
+	// Missing bearer token.
+	{
+		var w = httptest.NewRecorder()
+		mockLogger.EXPECT().Log("Authorisation Error", "Missing bearer token").Return(nil).Times(1)
+		m.ServeHTTP(w, req)
+		var result = w.Result()
+		assert.Equal(t, 403, result.StatusCode)
+	}
+
 	req.Header.Set("Authorization", "Bearer "+token)
-
-	var w = httptest.NewRecorder()
-
-
+	
 	// Valid authorization token.
-	mockKeycloakClient.EXPECT().VerifyToken("master", token).Return(nil).Times(1)
-	m.ServeHTTP(w, req)
-	var result = w.Result()
-	assert.Equal(t, 200, result.StatusCode)
+	{
+		var w = httptest.NewRecorder()
+		mockKeycloakClient.EXPECT().VerifyToken("master", token).Return(nil).Times(1)
+		m.ServeHTTP(w, req)
+		var result = w.Result()
+		assert.Equal(t, 200, result.StatusCode)
+	}
+	
 
-	// Valid authorization token.
-	mockKeycloakClient.EXPECT().VerifyToken("master", token).Return(fmt.Errorf("Invalid token")).Times(1)
-	m.ServeHTTP(w, req)
-	result = w.Result()
-	assert.Equal(t, 403, result.StatusCode)
+	// Invalid authorization token.
+	{
+		var w = httptest.NewRecorder()
+		mockLogger.EXPECT().Log("Authorisation Error", gomock.Any()).Return(nil).Times(1)
+		mockKeycloakClient.EXPECT().VerifyToken("master", token).Return(fmt.Errorf("Invalid token")).Times(1)
+		m.ServeHTTP(w, req)
+		var result = w.Result()
+		assert.Equal(t, 403, result.StatusCode)
+	}
+	
 
 	// Invalid token format
-	req = httptest.NewRequest("POST", "http://cloudtrust.io/management/test", bytes.NewReader([]byte{}))
-	req.Header.Set("Authorization", "Bearer 123456ABCDEF")
-	m.ServeHTTP(w, req)
-	result = w.Result()
-	assert.Equal(t, 403, result.StatusCode)
+	{
+		var w = httptest.NewRecorder()
+		mockLogger.EXPECT().Log("Authorisation Error", gomock.Any()).Return(nil).Times(1)
+		req = httptest.NewRequest("POST", "http://cloudtrust.io/management/test", bytes.NewReader([]byte{}))
+		req.Header.Set("Authorization", "Bearer 123456ABCDEF")
+		m.ServeHTTP(w, req)
+		var result = w.Result()
+		assert.Equal(t, 403, result.StatusCode)
+	}
 
 }
 
