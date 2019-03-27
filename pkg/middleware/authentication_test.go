@@ -1,19 +1,21 @@
 package middleware
 
 //go:generate mockgen -destination=./mock/keycloak_client.go -package=mock -mock_names=KeycloakClient=KeycloakClient github.com/cloudtrust/keycloak-bridge/pkg/middleware KeycloakClient
+//go:generate mockgen -destination=./mock/management_component.go -package=mock -mock_names=ManagementComponent=ManagementComponent github.com/cloudtrust/keycloak-bridge/pkg/management ManagementComponent
 
 import (
 	"bytes"
-	"testing"
+	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"fmt"
-	"context"
+	"testing"
 
+	api "github.com/cloudtrust/keycloak-bridge/api/management"
+	"github.com/cloudtrust/keycloak-bridge/pkg/management"
 	"github.com/cloudtrust/keycloak-bridge/pkg/middleware/mock"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-	"github.com/cloudtrust/keycloak-bridge/pkg/management"
 )
 
 func TestHTTPOIDCTokenValidationMW(t *testing.T) {
@@ -28,47 +30,76 @@ func TestHTTPOIDCTokenValidationMW(t *testing.T) {
 
 	// HTTP request.
 	var req = httptest.NewRequest("POST", "http://cloudtrust.io/management/test", bytes.NewReader([]byte{}))
+
+	// Missing authorization token.
+	{
+		var w = httptest.NewRecorder()
+		mockLogger.EXPECT().Log("Authorisation Error", "Missing Authorization header").Return(nil).Times(1)
+		m.ServeHTTP(w, req)
+		var result = w.Result()
+		assert.Equal(t, 403, result.StatusCode)
+	}
+
+	req.Header.Set("Authorization", "Non bearer format")
+
+	// Missing bearer token.
+	{
+		var w = httptest.NewRecorder()
+		mockLogger.EXPECT().Log("Authorisation Error", "Missing bearer token").Return(nil).Times(1)
+		m.ServeHTTP(w, req)
+		var result = w.Result()
+		assert.Equal(t, 403, result.StatusCode)
+	}
+
 	req.Header.Set("Authorization", "Bearer "+token)
 
-	var w = httptest.NewRecorder()
-
-
 	// Valid authorization token.
-	mockKeycloakClient.EXPECT().VerifyToken("master", token).Return(nil).Times(1)
-	m.ServeHTTP(w, req)
-	var result = w.Result()
-	assert.Equal(t, 200, result.StatusCode)
+	{
+		var w = httptest.NewRecorder()
+		mockKeycloakClient.EXPECT().VerifyToken("master", token).Return(nil).Times(1)
+		m.ServeHTTP(w, req)
+		var result = w.Result()
+		assert.Equal(t, 200, result.StatusCode)
+	}
 
-	// Valid authorization token.
-	mockKeycloakClient.EXPECT().VerifyToken("master", token).Return(fmt.Errorf("Invalid token")).Times(1)
-	m.ServeHTTP(w, req)
-	result = w.Result()
-	assert.Equal(t, 403, result.StatusCode)
+	// Invalid authorization token.
+	{
+		var w = httptest.NewRecorder()
+		mockLogger.EXPECT().Log("Authorisation Error", gomock.Any()).Return(nil).Times(1)
+		mockKeycloakClient.EXPECT().VerifyToken("master", token).Return(fmt.Errorf("Invalid token")).Times(1)
+		m.ServeHTTP(w, req)
+		var result = w.Result()
+		assert.Equal(t, 403, result.StatusCode)
+	}
 
 	// Invalid token format
-	req = httptest.NewRequest("POST", "http://cloudtrust.io/management/test", bytes.NewReader([]byte{}))
-	req.Header.Set("Authorization", "Bearer 123456ABCDEF")
-	m.ServeHTTP(w, req)
-	result = w.Result()
-	assert.Equal(t, 403, result.StatusCode)
+	{
+		var w = httptest.NewRecorder()
+		mockLogger.EXPECT().Log("Authorisation Error", gomock.Any()).Return(nil).Times(1)
+		req = httptest.NewRequest("POST", "http://cloudtrust.io/management/test", bytes.NewReader([]byte{}))
+		req.Header.Set("Authorization", "Bearer 123456ABCDEF")
+		m.ServeHTTP(w, req)
+		var result = w.Result()
+		assert.Equal(t, 403, result.StatusCode)
+	}
 
 }
-
-
 
 func TestEndpointTokenForRealmMW(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 	var mockLogger = mock.NewLogger(mockCtrl)
+	var mockComponent = mock.NewManagementComponent(mockCtrl)
+	mockComponent.EXPECT().GetRealm(gomock.Any(), gomock.Any()).Return(api.RealmRepresentation{}, nil)
 
-	var m = MakeEndpointTokenForRealmMW(mockLogger)(management.MakeTestEndpoint())
 
+	var m = MakeEndpointTokenForRealmMW(mockLogger)(management.MakeGetRealmEndpoint(mockComponent))
 
 	// Mismatch between authorised realm and requested one
 	// Context with realm coming from HTTP OIDC MW.
 	var ctx = context.WithValue(context.Background(), "realm", "client")
-	
-	var req = map[string]string {"realm": "master"}
+
+	var req = map[string]string{"realm": "master"}
 	_, err := m(ctx, req)
 
 	assert.NotNil(t, err)
@@ -76,8 +107,8 @@ func TestEndpointTokenForRealmMW(t *testing.T) {
 	// Match between authorised realm and requested one
 	// Context with realm coming from HTTP OIDC MW.
 	ctx = context.WithValue(context.Background(), "realm", "master")
-	
-	req = map[string]string {"realm": "master"}
+
+	req = map[string]string{"realm": "master"}
 	_, err = m(ctx, req)
 
 	assert.Nil(t, err)
@@ -85,8 +116,8 @@ func TestEndpointTokenForRealmMW(t *testing.T) {
 	// Missing requested realm information
 	// Context with realm coming from HTTP OIDC MW.
 	ctx = context.WithValue(context.Background(), "realm", "master")
-	
-	req = map[string]string {}
+
+	req = map[string]string{}
 	_, err = m(ctx, req)
 
 	assert.NotNil(t, err)
@@ -94,8 +125,8 @@ func TestEndpointTokenForRealmMW(t *testing.T) {
 	// Missing authorized realm information
 	// Context with realm coming from HTTP OIDC MW.
 	ctx = context.Background()
-	
-	req = map[string]string {"realm": "master"}
+
+	req = map[string]string{"realm": "master"}
 	_, err = m(ctx, req)
 
 	assert.NotNil(t, err)

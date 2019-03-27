@@ -493,15 +493,6 @@ func main() {
 	{
 		var managementLogger = log.With(logger, "svc", "management")
 
-		var managementEndpoint endpoint.Endpoint
-		{
-			managementEndpoint = management.MakeTestEndpoint()
-			managementEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("mgmt_endpoint"))(managementEndpoint)
-			managementEndpoint = middleware.MakeEndpointLoggingMW(log.With(managementLogger, "mw", "endpoint"))(managementEndpoint)
-			managementEndpoint = middleware.MakeEndpointTracingMW(tracer, "mgmt_endpoint")(managementEndpoint)
-			managementEndpoint = middleware.MakeEndpointTokenForRealmMW(log.With(managementLogger, "mw", "endpoint"))(managementEndpoint)
-		}
-
 		var keycloakComponent management.Component
 		{
 			keycloakComponent = management.NewComponent(keycloakClient)
@@ -664,7 +655,6 @@ func main() {
 		//managementEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["management"]))(managementEndpoint)
 
 		managementEndpoints = management.Endpoints{
-			TestEndpoint:         managementEndpoint,
 			GetRealm:             getRealmEndpoint,
 			GetClients:           getClientsEndpoint,
 			GetClient:            getClientEndpoint,

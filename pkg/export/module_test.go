@@ -24,6 +24,8 @@ func TestGetRealms(t *testing.T) {
 	defer mockCtrl.Finish()
 	var mockKeycloak = mock.NewKeycloakClient(mockCtrl)
 
+	var accessToken = "TOKEN=="
+
 	var m = NewModule(mockKeycloak)
 
 	var (
@@ -33,7 +35,7 @@ func TestGetRealms(t *testing.T) {
 	)
 
 	{
-		mockKeycloak.EXPECT().GetRealms().Return(rr, nil).Times(1)
+		mockKeycloak.EXPECT().GetRealms(accessToken).Return(rr, nil).Times(1)
 		var realms, err = m.GetRealms(context.Background())
 		assert.Nil(t, err)
 		assert.Equal(t, realm, realms[0])
@@ -41,7 +43,7 @@ func TestGetRealms(t *testing.T) {
 	}
 
 	{
-		mockKeycloak.EXPECT().GetRealms().Return(nil, fmt.Errorf("fail")).Times(1)
+		mockKeycloak.EXPECT().GetRealms(accessToken).Return(nil, fmt.Errorf("fail")).Times(1)
 		var realms, err = m.GetRealms(context.Background())
 		assert.NotNil(t, err)
 		assert.Equal(t, []string{}, realms)
@@ -53,6 +55,8 @@ func TestExportRealm(t *testing.T) {
 	defer mockCtrl.Finish()
 	var mockKeycloak = mock.NewKeycloakClient(mockCtrl)
 
+	var accessToken = "TOKEN=="
+
 	var m = NewModule(mockKeycloak)
 
 	var (
@@ -61,14 +65,14 @@ func TestExportRealm(t *testing.T) {
 	)
 
 	{
-		mockKeycloak.EXPECT().ExportRealm(realmName).Return(rr, nil).Times(1)
+		mockKeycloak.EXPECT().ExportRealm(accessToken, realmName).Return(rr, nil).Times(1)
 		var realm, err = m.ExportRealm(context.Background(), realmName)
 		assert.Nil(t, err)
 		assert.Equal(t, realmName, *realm.Realm)
 	}
 
 	{
-		mockKeycloak.EXPECT().ExportRealm(realmName).Return(keycloak.RealmRepresentation{}, fmt.Errorf("fail")).Times(1)
+		mockKeycloak.EXPECT().ExportRealm(accessToken, realmName).Return(keycloak.RealmRepresentation{}, fmt.Errorf("fail")).Times(1)
 		var realm, err = m.ExportRealm(context.Background(), realmName)
 		assert.NotNil(t, err)
 		assert.Equal(t, keycloak.RealmRepresentation{}, realm)
