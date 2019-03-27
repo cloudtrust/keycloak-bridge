@@ -40,7 +40,6 @@ Key | Description | Default value
 --- | ----------- | -------------
 component-name | name of the component | keycloak-bridge
 component-http-host-port | HTTP server listening address | 0.0.0.0:8888
-component-grpc-host-port | gRPC server listening address  | 0.0.0.0:5555
 
 ### Flaki
 
@@ -76,7 +75,7 @@ The keycloak event-emitter module sends all events to the bridge's event endpoin
 
 ## About monitoring
 
-Each gRPC or HTTP request will trigger a set of operations that are going to be logged, measured, tracked and traced. For those information to be usable, we must be able to link the logs, metrics, traces and error report together. We achieve that with a unique correlation ID. For a given request, the same correlation ID will appear on the logs, metrics, traces and error report.
+Each HTTP request will trigger a set of operations that are going to be logged, measured, tracked and traced. For those information to be usable, we must be able to link the logs, metrics, traces and error report together. We achieve that with a unique correlation ID. For a given request, the same correlation ID will appear on the logs, metrics, traces and error report.
 
 Note: InfluxDB indexes tags, so we put the correlation ID as tags to speed up queries. To query a tag, do not forget to simple quote it, otherwise it always returns empty results.
 

@@ -3,7 +3,6 @@
 
 # Component configs
 component-http-host-port: 0.0.0.0:8888
-component-grpc-host-port: 0.0.0.0:5555
 
 # Flaki ID generator
 flaki: false
