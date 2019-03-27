@@ -40,7 +40,6 @@ jaeger-sampler-param: 1
 jaeger-sampler-host-port: 
 jaeger-reporter-logspan: false
 jaeger-write-interval: 1s
-jaeger-collector-healthcheck-host-port: 
 
 # Debug routes
 pprof-route-enabled: true

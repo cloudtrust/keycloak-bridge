@@ -74,11 +74,6 @@ If no configuration file is passed, the service will try to load the default con
 
 The keycloak event-emitter module sends all events to the bridge's event endpoint. The event emitter use HTTP with flatbuffers.
 
-### Health
-
-The service exposes HTTP routes to monitor the application health.
-See the cloudtrust [gitbook](https://cloudtrust.github.io/doc/chapter-godevel/health_route.html) for more details.
-
 ## About monitoring
 
 Each gRPC or HTTP request will trigger a set of operations that are going to be logged, measured, tracked and traced. For those information to be usable, we must be able to link the logs, metrics, traces and error report together. We achieve that with a unique correlation ID. For a given request, the same correlation ID will appear on the logs, metrics, traces and error report.

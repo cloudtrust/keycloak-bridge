@@ -654,27 +654,6 @@ func main() {
 	logger.Log("error", <-errc)
 }
 
-type flakiHealthClient struct {
-	client fb_flaki.FlakiClient
-}
-
-func (hc *flakiHealthClient) NextID(ctx context.Context) (string, error) {
-	var b = flatbuffers.NewBuilder(0)
-	fb_flaki.FlakiRequestStart(b)
-	b.Finish(fb_flaki.FlakiRequestEnd(b))
-
-	var reply *fb_flaki.FlakiReply
-	{
-		var err error
-		reply, err = hc.client.NextValidID(ctx, b)
-		if err != nil {
-			return "", err
-		}
-	}
-
-	return string(reply.Id()), nil
-}
-
 // makeVersion makes a HTTP handler that returns information about the version of the bridge.
 func makeVersion(componentName, ComponentID, version, environment, gitCommit string) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -749,7 +728,6 @@ func config(logger log.Logger) *viper.Viper {
 	v.SetDefault("jaeger-sampler-host-port", "")
 	v.SetDefault("jaeger-reporter-logspan", false)
 	v.SetDefault("jaeger-write-interval", "1s")
-	v.SetDefault("jaeger-collector-healthcheck-host-port", "")
 
 	// Debug routes enabled.
 	v.SetDefault("pprof-route-enabled", true)
