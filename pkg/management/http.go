@@ -72,10 +72,15 @@ func encodeManagementReply(_ context.Context, w http.ResponseWriter, rep interfa
 		w.WriteHeader(http.StatusCreated)
 		return nil
 	default:
+		if rep == nil {
+			w.WriteHeader(http.StatusOK)
+			return nil
+		}
+
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.WriteHeader(http.StatusOK)
 
-		var json, err = json.MarshalIndent(rep, "", "  ")
+		var json, err = json.MarshalIndent(rep, "", " ")
 
 		if err == nil {
 			w.Write(json)

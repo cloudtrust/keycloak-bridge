@@ -1,124 +1,207 @@
 package management
 
-/*
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"regexp"
+	"strings"
+	"testing"
+
+	api "github.com/cloudtrust/keycloak-bridge/api/management"
+	"github.com/cloudtrust/keycloak-bridge/pkg/management/mock"
+	kc_client "github.com/cloudtrust/keycloak-client"
+	"github.com/golang/mock/gomock"
+	"github.com/gorilla/mux"
+	"github.com/stretchr/testify/assert"
+)
+
 func TestHTTPManagementHandler(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 	var mockComponent = mock.NewManagementComponent(mockCtrl)
 
 	var managementHandler = MakeManagementHandler(MakeGetRealmEndpoint(mockComponent))
+	var managementHandler2 = MakeManagementHandler(MakeCreateUserEndpoint(mockComponent))
+	var managementHandler3 = MakeManagementHandler(MakeResetPasswordEndpoint(mockComponent))
 
-	// HTTP request.
-	var httpReq = httptest.NewRequest("GET", "http://localhost:8888/management/realms/master", nil)
-	var w = httptest.NewRecorder()
+	r := mux.NewRouter()
+	r.Handle("/realms/{realm}", managementHandler)
+	r.Handle("/realms/{realm}/users", managementHandler2)
+	r.Handle("/realms/{realm}/users/{userID}/reset-password", managementHandler3)
 
-	// Management request (i.e. Get a realm)
+	ts := httptest.NewServer(r)
+	defer ts.Close()
+
+	// Get - 200 with JSON body returned
 	{
-		mockComponent.EXPECT().GetRealm(context.Background(), "master").Return(api.RealmRepresentation{}, nil).Times(1)
-		managementHandler.ServeHTTP(w, httpReq)
-		var res = w.Result()
-		var _, err = ioutil.ReadAll(res.Body)
+		var id = "1234-456"
+		var realm = "master"
+
+		var realmRep = api.RealmRepresentation{
+			Id:    &id,
+			Realm: &realm,
+		}
+		realmJSON, _ := json.MarshalIndent(realmRep, "", " ")
+
+		mockComponent.EXPECT().GetRealm(gomock.Any(), "master").Return(realmRep, nil).Times(1)
+
+		res, err := http.Get(ts.URL + "/realms/master")
+
 		assert.Nil(t, err)
 		assert.Equal(t, http.StatusOK, res.StatusCode)
-	}
-}*/
 
-/*
+		buf := new(bytes.Buffer)
+		buf.ReadFrom(res.Body)
+		assert.Equal(t, string(realmJSON), buf.String())
+	}
+
+	// Post - 201 with Location header
+	{
+		var username = "toto"
+		var email = "toto@elca.ch"
+
+		var user = api.UserRepresentation{
+			Username: &username,
+			Email:    &email,
+		}
+		userJSON, _ := json.Marshal(user)
+
+		mockComponent.EXPECT().CreateUser(gomock.Any(), "master", user).Return("https://elca.com/auth/admin/realms/master/users/12456", nil).Times(1)
+
+		var body = strings.NewReader(string(userJSON))
+		res, err := http.Post(ts.URL+"/realms/master/users", "application/json", body)
+
+		assert.Nil(t, err)
+		assert.Equal(t, http.StatusCreated, res.StatusCode)
+		assert.Equal(t, http.NoBody, res.Body)
+		valid, _ := regexp.MatchString("http://127.0.0.1:[0-9]{0,5}/management/realms/master/users/12456", res.Header.Get("Location"))
+		assert.True(t, valid)
+	}
+
+	// Get - 200 without body content
+	{
+		var password = "P@ssw0rd"
+
+		var passwordRep = api.PasswordRepresentation{
+			Value: &password,
+		}
+		passwordJSON, _ := json.Marshal(passwordRep)
+
+		mockComponent.EXPECT().ResetPassword(gomock.Any(), "master", "123456", gomock.Any()).Return(nil).Times(1)
+
+		var body = strings.NewReader(string(passwordJSON))
+		res, err := http.Post(ts.URL+"/realms/master/users/123456/reset-password", "application/json", body)
+
+		assert.Nil(t, err)
+		assert.Equal(t, http.StatusOK, res.StatusCode)
+		assert.Equal(t, http.NoBody, res.Body)
+	}
+
+}
+
 func TestHTTPErrorHandler(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
-	var mockComponent = mock.NewMuxComponent(mockCtrl)
+	var mockComponent = mock.NewManagementComponent(mockCtrl)
 
-	var eventHandler = MakeHTTPEventHandler(MakeEventEndpoint(mockComponent))
+	var managementHandler = MakeManagementHandler(MakeCreateUserEndpoint(mockComponent))
 
-	rand.Seed(time.Now().UnixNano())
-	var uid = rand.Int63()
-	var eventByte = createEventBytes(fb.OperationTypeCREATE, uid, "realm")
-	var eventString = base64.StdEncoding.EncodeToString(eventByte)
+	r := mux.NewRouter()
+	r.Handle("/realms/{realm}/users", managementHandler)
+
+	ts := httptest.NewServer(r)
+	defer ts.Close()
+
+	var username = "toto"
+	var email = "toto@elca.ch"
+
+	var user = api.UserRepresentation{
+		Username: &username,
+		Email:    &email,
+	}
+	userJSON, _ := json.Marshal(user)
 
 	// Internal server error.
 	{
-		// HTTP request.
-		var body = strings.NewReader(fmt.Sprintf(`{"type": "Event", "Obj": "%s"}`, eventString))
-		var httpReq = httptest.NewRequest("POST", "http://localhost:8888/event/id", body)
-		var w = httptest.NewRecorder()
+		mockComponent.EXPECT().CreateUser(gomock.Any(), "master", user).Return("", fmt.Errorf("Unexpected Error")).Times(1)
 
-		mockComponent.EXPECT().Event(context.Background(), "Event", eventByte).Return(fmt.Errorf("fail")).Times(1)
-		eventHandler.ServeHTTP(w, httpReq)
-		var res = w.Result()
-		var data, err = ioutil.ReadAll(res.Body)
+		var body = strings.NewReader(string(userJSON))
+		res, err := http.Post(ts.URL+"/realms/master/users", "application/json", body)
+
 		assert.Nil(t, err)
 		assert.Equal(t, http.StatusInternalServerError, res.StatusCode)
-		assert.Equal(t, "application/json; charset=utf-8", res.Header.Get("Content-Type"))
-		assert.NotZero(t, string(data))
+		assert.Equal(t, http.NoBody, res.Body)
 	}
 
 	// Bad request.
 	{
-		// Bad HTTP request.
-		var body = strings.NewReader(fmt.Sprintf(`{"type": "Unknown", "Obj": "%s"}`, eventString))
-		var httpReq = httptest.NewRequest("POST", "http://localhost:8888/event/id", body)
-		var w = httptest.NewRecorder()
+		var body = strings.NewReader("?/%&asd==")
+		res, err := http.Post(ts.URL+"/realms/master/users", "application/json", body)
 
-		eventHandler.ServeHTTP(w, httpReq)
-		var res = w.Result()
-		var data, err = ioutil.ReadAll(res.Body)
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusBadRequest, res.StatusCode)
-		assert.Equal(t, "application/json; charset=utf-8", res.Header.Get("Content-Type"))
-		assert.NotZero(t, string(data))
+		assert.Equal(t, http.StatusInternalServerError, res.StatusCode)
+		assert.Equal(t, http.NoBody, res.Body)
+	}
+
+	// Keycloak Error
+	{
+		var kcError = kc_client.HTTPError{
+			HTTPStatus: 404,
+			Message:    "Not found",
+		}
+		mockComponent.EXPECT().CreateUser(gomock.Any(), "master", user).Return("", kcError).Times(1)
+
+		var body = strings.NewReader(string(userJSON))
+		res, err := http.Post(ts.URL+"/realms/master/users", "application/json", body)
+
+		assert.Nil(t, err)
+		assert.Equal(t, http.StatusNotFound, res.StatusCode)
+		assert.Equal(t, http.NoBody, res.Body)
 	}
 }
 
-func TestDecodeValidRequest(t *testing.T) {
-	rand.Seed(time.Now().UnixNano())
-	var uid = rand.Int63()
-	var eventByte = createAdminEventBytes(fb.OperationTypeACTION, uid)
-	var eventString = base64.StdEncoding.EncodeToString(eventByte)
-	var body = strings.NewReader(fmt.Sprintf(`{"type": "AdminEvent", "Obj": "%s"}`, eventString))
-	var req = httptest.NewRequest("POST", "http://localhost:8888/event/id", body)
-
-	var res, err = decodeHTTPRequest(context.Background(), req)
-	assert.Nil(t, err)
-
-	var r, ok = res.(Request)
-	assert.True(t, ok)
-	assert.Equal(t, "AdminEvent", r.Type)
-	assert.Equal(t, eventByte, r.Object)
-}
-
-
-func TestDecodeInvalidRequest(t *testing.T) {
-	var body = strings.NewReader(`{"type": "Event", "Obj": "test"}`)
-	var req = httptest.NewRequest("POST", "http://localhost:8888/event/id", body)
-
-	var res, err = decodeHTTPRequest(context.Background(), req)
-	assert.NotNil(t, err)
-	assert.IsType(t, ErrInvalidArgument{}, errors.Cause(err))
-	assert.Nil(t, res)
-}
-
-func TestFetchHTTPCorrelationID(t *testing.T) {
+func TestHTTPXForwardHeaderHandler(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
-	var mockComponent = mock.NewMuxComponent(mockCtrl)
+	var mockComponent = mock.NewManagementComponent(mockCtrl)
 
-	var eventHandler = MakeHTTPEventHandler(MakeEventEndpoint(mockComponent))
+	var managementHandler = MakeManagementHandler(MakeCreateUserEndpoint(mockComponent))
 
-	rand.Seed(time.Now().UnixNano())
-	var corrID = strconv.FormatUint(rand.Uint64(), 10)
-	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
-	var uid = rand.Int63()
-	var eventByte = createEventBytes(fb.OperationTypeCREATE, uid, "realm")
-	var eventString = base64.StdEncoding.EncodeToString(eventByte)
+	r := mux.NewRouter()
+	r.Handle("/realms/{realm}/users", managementHandler)
 
-	// HTTP request.
-	var body = strings.NewReader(fmt.Sprintf(`{"type": "Event", "Obj": "%s"}`, eventString))
-	var httpReq = httptest.NewRequest("POST", "http://localhost:8888/event/id", body)
-	httpReq.Header.Add("X-Correlation-ID", corrID)
-	var w = httptest.NewRecorder()
+	ts := httptest.NewServer(r)
+	defer ts.Close()
 
-	mockComponent.EXPECT().Event(ctx, "Event", eventByte).Return(nil).Times(1)
-	eventHandler.ServeHTTP(w, httpReq)
+	client := &http.Client{}
+
+	// Check Host and X-Forward-Proto have impact on location returned
+	{
+		var username = "toto"
+		var email = "toto@elca.ch"
+
+		var user = api.UserRepresentation{
+			Username: &username,
+			Email:    &email,
+		}
+		userJSON, _ := json.Marshal(user)
+
+		mockComponent.EXPECT().CreateUser(gomock.Any(), "master", user).Return("https://elca.com/auth/admin/realms/master/users/12456", nil).Times(1)
+
+		var body = strings.NewReader(string(userJSON))
+
+		req, err := http.NewRequest("POST", ts.URL+"/realms/master/users", body)
+		req.Header.Set("X-Forwarded-Proto", "https")
+		req.Host = "toto.com"
+		res, err := client.Do(req)
+
+		assert.Nil(t, err)
+		assert.Equal(t, http.StatusCreated, res.StatusCode)
+		assert.Equal(t, http.NoBody, res.Body)
+		valid, _ := regexp.MatchString("https://toto.com/management/realms/master/users/12456", res.Header.Get("Location"))
+		assert.True(t, valid)
+	}
 }
-*/

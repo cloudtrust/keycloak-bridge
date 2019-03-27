@@ -1,19 +1,21 @@
 package middleware
 
 //go:generate mockgen -destination=./mock/keycloak_client.go -package=mock -mock_names=KeycloakClient=KeycloakClient github.com/cloudtrust/keycloak-bridge/pkg/middleware KeycloakClient
+//go:generate mockgen -destination=./mock/management_component.go -package=mock -mock_names=ManagementComponent=ManagementComponent github.com/cloudtrust/keycloak-bridge/pkg/management ManagementComponent
 
 import (
 	"bytes"
-	"testing"
+	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"fmt"
-	"context"
+	"testing"
 
+	api "github.com/cloudtrust/keycloak-bridge/api/management"
+	"github.com/cloudtrust/keycloak-bridge/pkg/management"
 	"github.com/cloudtrust/keycloak-bridge/pkg/middleware/mock"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
-	"github.com/cloudtrust/keycloak-bridge/pkg/management"
 )
 
 func TestHTTPOIDCTokenValidationMW(t *testing.T) {
@@ -23,7 +25,6 @@ func TestHTTPOIDCTokenValidationMW(t *testing.T) {
 	defer mockCtrl.Finish()
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 	var mockLogger = mock.NewLogger(mockCtrl)
-	
 
 	var m = MakeHTTPOIDCTokenValidationMW(mockKeycloakClient, mockLogger)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
 
@@ -51,7 +52,7 @@ func TestHTTPOIDCTokenValidationMW(t *testing.T) {
 	}
 
 	req.Header.Set("Authorization", "Bearer "+token)
-	
+
 	// Valid authorization token.
 	{
 		var w = httptest.NewRecorder()
@@ -60,7 +61,6 @@ func TestHTTPOIDCTokenValidationMW(t *testing.T) {
 		var result = w.Result()
 		assert.Equal(t, 200, result.StatusCode)
 	}
-	
 
 	// Invalid authorization token.
 	{
@@ -71,7 +71,6 @@ func TestHTTPOIDCTokenValidationMW(t *testing.T) {
 		var result = w.Result()
 		assert.Equal(t, 403, result.StatusCode)
 	}
-	
 
 	// Invalid token format
 	{
@@ -86,21 +85,21 @@ func TestHTTPOIDCTokenValidationMW(t *testing.T) {
 
 }
 
-
-
 func TestEndpointTokenForRealmMW(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 	var mockLogger = mock.NewLogger(mockCtrl)
+	var mockComponent = mock.NewManagementComponent(mockCtrl)
+	mockComponent.EXPECT().GetRealm(gomock.Any(), gomock.Any()).Return(api.RealmRepresentation{}, nil)
 
-	var m = MakeEndpointTokenForRealmMW(mockLogger)(management.MakeTestEndpoint())
 
+	var m = MakeEndpointTokenForRealmMW(mockLogger)(management.MakeGetRealmEndpoint(mockComponent))
 
 	// Mismatch between authorised realm and requested one
 	// Context with realm coming from HTTP OIDC MW.
 	var ctx = context.WithValue(context.Background(), "realm", "client")
-	
-	var req = map[string]string {"realm": "master"}
+
+	var req = map[string]string{"realm": "master"}
 	_, err := m(ctx, req)
 
 	assert.NotNil(t, err)
@@ -108,8 +107,8 @@ func TestEndpointTokenForRealmMW(t *testing.T) {
 	// Match between authorised realm and requested one
 	// Context with realm coming from HTTP OIDC MW.
 	ctx = context.WithValue(context.Background(), "realm", "master")
-	
-	req = map[string]string {"realm": "master"}
+
+	req = map[string]string{"realm": "master"}
 	_, err = m(ctx, req)
 
 	assert.Nil(t, err)
@@ -117,8 +116,8 @@ func TestEndpointTokenForRealmMW(t *testing.T) {
 	// Missing requested realm information
 	// Context with realm coming from HTTP OIDC MW.
 	ctx = context.WithValue(context.Background(), "realm", "master")
-	
-	req = map[string]string {}
+
+	req = map[string]string{}
 	_, err = m(ctx, req)
 
 	assert.NotNil(t, err)
@@ -126,8 +125,8 @@ func TestEndpointTokenForRealmMW(t *testing.T) {
 	// Missing authorized realm information
 	// Context with realm coming from HTTP OIDC MW.
 	ctx = context.Background()
-	
-	req = map[string]string {"realm": "master"}
+
+	req = map[string]string{"realm": "master"}
 	_, err = m(ctx, req)
 
 	assert.NotNil(t, err)
