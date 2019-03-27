@@ -1,8 +1,8 @@
 # Keycloak bridge [![Build Status][ci-img]][ci] [![Coverage Status][cov-img]][cov] [![GoDoc][godoc-img]][godoc] [![Go Report Card][report-img]][report] [![OpenTracing Badge][opentracing-img]][opentracing]
 
-The keycloak bridge has two purposes. All our interactions with keycloak pass through it, and keycloak sends all events (i.e. login, user creation,...) to the bridge, so that they can be processed, stored,...
+The keycloak bridge has two purposes. All our interactions (administration) with keycloak pass through it, and keycloak sends all events (i.e. login, user creation,...) to the bridge, so that they can be processed, stored,...
 
-The service includes logging, metrics, tracing, and error tracking. The logs are written to stdout and Redis in Logstash format for processing with the Elastic Stack.
+The service includes logging, metrics, tracing, and error tracking. The logs are written to stdout.
 Metrics such as time tracking,... are collected and saved to an InfluxDB Time Series Database.
 Jaeger is used for distributed tracing and error tracking is managed with Sentry.
 
@@ -28,7 +28,7 @@ See the repository [keycloak-service](https://github.com/cloudtrust/keycloak-ser
 Configuration is done with a YAML file, e.g. ```./configs/keycloak_bridge.yml```.
 Default configurations are provided, that is if an entry is not present in the configuration file, it will be set to its default value.
 
-The documentation for the [Redis](https://cloudtrust.github.io/doc/chapter-godevel/logging.html), [Influx](https://cloudtrust.github.io/doc/chapter-godevel/instrumenting.html), [Sentry](https://cloudtrust.github.io/doc/chapter-godevel/tracking.html), [Jaeger](https://cloudtrust.github.io/doc/chapter-godevel/tracing.html) and [Debug](https://cloudtrust.github.io/doc/chapter-godevel/debugging.html) configuration are common to all microservices and is provided in the Cloudtrust Gitbook.
+The documentation for the [Influx](https://cloudtrust.github.io/doc/chapter-godevel/instrumenting.html), [Sentry](https://cloudtrust.github.io/doc/chapter-godevel/tracking.html), [Jaeger](https://cloudtrust.github.io/doc/chapter-godevel/tracing.html) and [Debug](https://cloudtrust.github.io/doc/chapter-godevel/debugging.html) configuration are common to all microservices and is provided in the Cloudtrust Gitbook.
 
 The configurations specific to the keycloak-bridge are described in the next sections.
 
@@ -106,10 +106,6 @@ The unit tests don't cover:
 The first two are provided as example.
 
 The ```keycloak_bridge.go``` is mostly just the main function doing all the wiring, it is difficult to test it with unit tests. It is covered by our integration tests.
-
-## Limitations
-
-The Redis connection does not handle errors well: if there is a problem, it is closed forever. We will implement our own redis client later, because we need load-balancing and circuit-breaking.
 
 [ci-img]: https://travis-ci.org/cloudtrust/keycloak-bridge.svg?branch=master
 [ci]: https://travis-ci.org/cloudtrust/keycloak-bridge

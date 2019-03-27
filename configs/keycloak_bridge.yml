@@ -17,21 +17,6 @@ keycloak-username: admin
 keycloak-password: admin
 keycloak-timeout: 5s
 keycloak-client-creation-timeout: 40s
- 
-# Redis
-redis: false
-redis-host-port: 
-redis-password: 
-redis-database: 0
-redis-write-interval: 1s
-
-# Cockroach configs
-cockroach: false
-cockroach-host-port: 
-cockroach-username: 
-cockroach-password: 
-cockroach-database: 
-cockroach-clean-interval: 1m
 
 # Influx DB configs
 influx: false
@@ -60,16 +45,6 @@ jaeger-collector-healthcheck-host-port:
 # Debug routes
 pprof-route-enabled: true
 
-# Jobs
-job: false
-job-es-health-validity: 1m
-job-flaki-health-validity: 1m
-job-influx-health-validity: 1m
-job-jaeger-health-validity: 1m
-job-redis-health-validity: 1m
-job-sentry-health-validity: 1m
-job-keycloak-health-validity: 1m
-
 #Audit events
 events-DB: true
 db-host-port: 127.0.0.1:3306
@@ -81,4 +56,3 @@ protocol: tcp
 
 # Rate limiting in requests/second.
 rate-event: 1000
-rate-user: 1000

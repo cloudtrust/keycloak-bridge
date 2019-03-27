@@ -139,13 +139,6 @@ func main() {
 		}
 	)
 
-	// Redis.
-	type Redis interface {
-		Close() error
-		Do(commandName string, args ...interface{}) (reply interface{}, err error)
-		Send(commandName string, args ...interface{}) error
-		Flush() error
-	}
 
 	// Flaki.
 	var flakiClient fb_flaki.FlakiClient = &keycloakb.NoopFlakiClient{}
@@ -761,23 +754,6 @@ func config(logger log.Logger) *viper.Viper {
 	// Debug routes enabled.
 	v.SetDefault("pprof-route-enabled", true)
 
-	// Cockroach.
-	v.SetDefault("cockroach", false)
-	v.SetDefault("cockroach-host-port", "")
-	v.SetDefault("cockroach-username", "")
-	v.SetDefault("cockroach-password", "")
-	v.SetDefault("cockroach-database", "")
-	v.SetDefault("cockroach-clean-interval", "24h")
-
-	// Jobs
-	v.SetDefault("job", false)
-	v.SetDefault("job-flaki-health-validity", "1m")
-	v.SetDefault("job-influx-health-validity", "1m")
-	v.SetDefault("job-jaeger-health-validity", "1m")
-	v.SetDefault("job-redis-health-validity", "1m")
-	v.SetDefault("job-sentry-health-validity", "1m")
-	v.SetDefault("job-keycloak-health-validity", "1m")
-
 	//Storage events in DB
 	v.SetDefault("events-DB", false)
 	v.SetDefault("db-host-port", "")
@@ -789,7 +765,6 @@ func config(logger log.Logger) *viper.Viper {
 
 	// Rate limiting (in requests/second)
 	v.SetDefault("rate-event", 1000)
-	v.SetDefault("rate-user", 1000)
 
 	// First level of override.
 	pflag.String("config-file", v.GetString("config-file"), "The configuration file path can be relative or absolute.")
@@ -807,7 +782,6 @@ func config(logger log.Logger) *viper.Viper {
 	v.Set("influx", v.GetString("influx-host-port") != "")
 	v.Set("sentry", v.GetString("sentry-dsn") != "")
 	v.Set("jaeger", v.GetString("jaeger-sampler-host-port") != "")
-	v.Set("cockroach", v.GetString("cockroach-host-port") != "")
 
 	// Log config in alphabetical order.
 	var keys = v.AllKeys()
