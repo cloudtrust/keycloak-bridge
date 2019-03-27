@@ -74,11 +74,6 @@ If no configuration file is passed, the service will try to load the default con
 
 The keycloak event-emitter module sends all events to the bridge's event endpoint. The event emitter use HTTP with flatbuffers.
 
-### gRPC and HTTP clients
-
-All applications can interact with the bridge using either HTTP or gRPC.
-The applications need to implement its own client. The Flatbuffer schema is available in `api/user/user.fbs`, see the directory `/examples`.
-
 ### Health
 
 The service exposes HTTP routes to monitor the application health.
@@ -106,8 +101,6 @@ Gomock is used to automatically genarate mocks. See the Cloudtrust [Gitbook](htt
 
 The unit tests don't cover:
 
-- http client example (```./examples/http/http.go```)
-- grpc client example (```./examples/grpc/grpc.go```)
 - keycloak_bridge (```./cmd/keycloak_bridge.go```)
 
 The first two are provided as example.

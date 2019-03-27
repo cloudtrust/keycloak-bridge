@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"math/rand"
-	"net"
 	"net/http"
 	"net/http/pprof"
 	"os"
@@ -22,7 +21,6 @@ import (
 	job_lock "github.com/cloudtrust/go-jobs/lock"
 	job_status "github.com/cloudtrust/go-jobs/status"
 	fb_flaki "github.com/cloudtrust/keycloak-bridge/api/flaki/fb"
-	"github.com/cloudtrust/keycloak-bridge/api/user/fb"
 	"github.com/cloudtrust/keycloak-bridge/internal/idgenerator"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/cloudtrust/keycloak-bridge/pkg/event"
@@ -31,7 +29,6 @@ import (
 	health_job "github.com/cloudtrust/keycloak-bridge/pkg/job"
 	"github.com/cloudtrust/keycloak-bridge/pkg/management"
 	"github.com/cloudtrust/keycloak-bridge/pkg/middleware"
-	"github.com/cloudtrust/keycloak-bridge/pkg/user"
 	keycloak "github.com/cloudtrust/keycloak-client"
 	sentry "github.com/getsentry/raven-go"
 	"github.com/go-kit/kit/endpoint"
@@ -39,7 +36,6 @@ import (
 	"github.com/go-kit/kit/metrics"
 	gokit_influx "github.com/go-kit/kit/metrics/influx"
 	"github.com/go-kit/kit/ratelimit"
-	grpc_transport "github.com/go-kit/kit/transport/grpc"
 	_ "github.com/go-sql-driver/mysql"
 	flatbuffers "github.com/google/flatbuffers/go"
 	"github.com/gorilla/mux"
@@ -82,7 +78,6 @@ func main() {
 	var c = config(log.With(logger, "unit", "config"))
 	var (
 		// Component
-		grpcAddr = c.GetString("component-grpc-host-port")
 		httpAddr = c.GetString("component-http-host-port")
 
 		// Flaki
@@ -372,43 +367,6 @@ func main() {
 		if err != nil {
 			logger.Log("msg", "could not create DB connection for audit events", "error", err)
 			return
-		}
-	}
-
-	// User service.
-	var userEndpoints = user.Endpoints{}
-	{
-		var userLogger = log.With(logger, "svc", "user")
-
-		var userModule user.Module
-		{
-			userModule = user.NewModule(keycloakClient)
-			userModule = user.MakeModuleInstrumentingMW(influxMetrics.NewHistogram("user_module"))(userModule)
-			userModule = user.MakeModuleLoggingMW(log.With(userLogger, "mw", "module"))(userModule)
-			userModule = user.MakeModuleTracingMW(tracer)(userModule)
-		}
-
-		var userComponent user.Component
-		{
-			userComponent = user.NewComponent(userModule)
-			userComponent = user.MakeComponentInstrumentingMW(influxMetrics.NewHistogram("user_component"))(userComponent)
-			userComponent = user.MakeComponentLoggingMW(log.With(userLogger, "mw", "component"))(userComponent)
-			userComponent = user.MakeComponentTracingMW(tracer)(userComponent)
-			userComponent = user.MakeComponentTrackingMW(sentryClient, log.With(userLogger, "mw", "component"))(userComponent)
-		}
-
-		var userEndpoint endpoint.Endpoint
-		{
-			userEndpoint = user.MakeGetUsersEndpoint(userComponent)
-			userEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("user_endpoint"))(userEndpoint)
-			userEndpoint = middleware.MakeEndpointLoggingMW(log.With(userLogger, "mw", "endpoint", "unit", "getusers"))(userEndpoint)
-			userEndpoint = middleware.MakeEndpointTracingMW(tracer, "user_endpoint")(userEndpoint)
-		}
-		// Rate limiting
-		userEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["user"]))(userEndpoint)
-
-		userEndpoints = user.Endpoints{
-			Endpoint: userEndpoint,
 		}
 	}
 
@@ -798,37 +756,6 @@ func main() {
 			ctrl.Start()
 		}
 	}
-
-	// GRPC server.
-	go func() {
-		var logger = log.With(logger, "transport", "grpc")
-		logger.Log("addr", grpcAddr)
-
-		var lis net.Listener
-		{
-			var err error
-			lis, err = net.Listen("tcp", grpcAddr)
-			if err != nil {
-				logger.Log("msg", "could not initialise listener", "error", err)
-				errc <- err
-				return
-			}
-		}
-
-		// User Handler.
-		var getUsersHandler grpc_transport.Handler
-		{
-			getUsersHandler = user.MakeGRPCGetUsersHandler(userEndpoints.Endpoint)
-			getUsersHandler = middleware.MakeGRPCCorrelationIDMW(flakiClient, tracer, logger, ComponentName, ComponentID)(getUsersHandler)
-			getUsersHandler = middleware.MakeGRPCTracingMW(tracer, ComponentName, "grpc_server_getusers")(getUsersHandler)
-		}
-
-		var grpcServer = user.NewGRPCServer(getUsersHandler)
-		var userServer = grpc.NewServer(grpc.CustomCodec(flatbuffers.FlatbuffersCodec{}))
-		fb.RegisterUserServiceServer(userServer, grpcServer)
-
-		errc <- userServer.Serve(lis)
-	}()
 
 	// HTTP Server.
 	go func() {
