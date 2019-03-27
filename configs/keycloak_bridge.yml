@@ -17,11 +17,6 @@ keycloak-username: admin
 keycloak-password: admin
 keycloak-timeout: 5s
 keycloak-client-creation-timeout: 40s
-
-# Elasticsearch configs
-elasticsearch: false
-elasticsearch-host-port: elasticsearch-data:9200cd 
-elasticsearch-index-name: audit
  
 # Redis
 redis: false
@@ -74,6 +69,15 @@ job-jaeger-health-validity: 1m
 job-redis-health-validity: 1m
 job-sentry-health-validity: 1m
 job-keycloak-health-validity: 1m
+
+#Audit events
+events-DB: true
+db-host-port: 127.0.0.1:3306
+db-username: root
+db-password: admin 
+db-database: auditevents
+db-table: audit
+protocol: tcp
 
 # Rate limiting in requests/second.
 rate-event: 1000

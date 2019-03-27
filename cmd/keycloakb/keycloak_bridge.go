@@ -17,13 +17,12 @@ import (
 	"time"
 
 	common "github.com/cloudtrust/common-healthcheck"
-	"github.com/cloudtrust/go-jobs"
+	controller "github.com/cloudtrust/go-jobs"
 	"github.com/cloudtrust/go-jobs/job"
 	job_lock "github.com/cloudtrust/go-jobs/lock"
 	job_status "github.com/cloudtrust/go-jobs/status"
 	fb_flaki "github.com/cloudtrust/keycloak-bridge/api/flaki/fb"
 	"github.com/cloudtrust/keycloak-bridge/api/user/fb"
-	"github.com/cloudtrust/keycloak-bridge/internal/elasticsearch"
 	"github.com/cloudtrust/keycloak-bridge/internal/idgenerator"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/cloudtrust/keycloak-bridge/pkg/event"
@@ -41,7 +40,8 @@ import (
 	gokit_influx "github.com/go-kit/kit/metrics/influx"
 	"github.com/go-kit/kit/ratelimit"
 	grpc_transport "github.com/go-kit/kit/transport/grpc"
-	"github.com/google/flatbuffers/go"
+	_ "github.com/go-sql-driver/mysql"
+	flatbuffers "github.com/google/flatbuffers/go"
 	"github.com/gorilla/mux"
 	influx "github.com/influxdata/influxdb/client/v2"
 	_ "github.com/lib/pq"
@@ -98,13 +98,8 @@ func main() {
 		// Keycloak Timeout
 		//keycloakClientCreationTimeout = c.GetDuration("keycloak-client-creation-timeout")
 
-		// Elasticsearch
-		esAddr  = c.GetString("elasticsearch-host-port")
-		esIndex = c.GetString("elasticsearch-index-name")
-
-		// Enabled units
+		// Enabled units - health checks (keycloak) or enabled (all the rest)
 		cockroachEnabled  = c.GetBool("cockroach")
-		esEnabled         = c.GetBool("elasticsearch")
 		flakiEnabled      = c.GetBool("flaki")
 		influxEnabled     = c.GetBool("influx")
 		jaegerEnabled     = c.GetBool("jaeger")
@@ -112,6 +107,7 @@ func main() {
 		sentryEnabled     = c.GetBool("sentry")
 		jobEnabled        = c.GetBool("job")
 		pprofRouteEnabled = c.GetBool("pprof-route-enabled")
+		eventsDBEnabled   = c.GetBool("events-DB")
 
 		// Influx
 		influxHTTPConfig = influx.HTTPConfig{
@@ -152,16 +148,23 @@ func main() {
 		cockroachDB            = c.GetString("cockroach-database")
 		cockroachCleanInterval = c.GetDuration("cockroach-clean-interval")
 
+		// EventsDB
+		eventsDBHostPort = c.GetString("db-host-port")
+		eventsDBUsername = c.GetString("db-username")
+		eventsDBPassword = c.GetString("db-password")
+		eventsDBDatabase = c.GetString("db-database")
+		//eventsDBTable    = c.GetString("db-table")
+		eventsDBProtocol = c.GetString("protocol")
+
 		// Jobs
 		healthChecksValidity = map[string]time.Duration{
-			"cockroach":     c.GetDuration("job-cockroach-health-validity"),
-			"elasticsearch": c.GetDuration("job-es-health-validity"),
-			"flaki":         c.GetDuration("job-flaki-health-validity"),
-			"influx":        c.GetDuration("job-influx-health-validity"),
-			"jaeger":        c.GetDuration("job-jaeger-health-validity"),
-			"keycloak":      c.GetDuration("job-keycloak-health-validity"),
-			"redis":         c.GetDuration("job-redis-health-validity"),
-			"sentry":        c.GetDuration("job-sentry-health-validity"),
+			"cockroach": c.GetDuration("job-cockroach-health-validity"),
+			"flaki":     c.GetDuration("job-flaki-health-validity"),
+			"influx":    c.GetDuration("job-influx-health-validity"),
+			"jaeger":    c.GetDuration("job-jaeger-health-validity"),
+			"keycloak":  c.GetDuration("job-keycloak-health-validity"),
+			"redis":     c.GetDuration("job-redis-health-validity"),
+			"sentry":    c.GetDuration("job-sentry-health-validity"),
 		}
 
 		// Rate limiting
@@ -192,14 +195,13 @@ func main() {
 		}
 		// Authorized health checks for each module.
 		authorizedHC = map[string]map[string]struct{}{
-			"cockroach":     healthcheckNames("", "ping"),
-			"elasticsearch": healthcheckNames("", "ping"),
-			"flaki":         healthcheckNames("", "nextid"),
-			"influx":        healthcheckNames("", "ping"),
-			"jaeger":        healthcheckNames("", "agent", "collector"),
-			"keycloak":      healthcheckNames("", "createuser", "deleteuser"),
-			"redis":         healthcheckNames("", "ping"),
-			"sentry":        healthcheckNames("", "ping"),
+			"cockroach": healthcheckNames("", "ping"),
+			"flaki":     healthcheckNames("", "nextid"),
+			"influx":    healthcheckNames("", "ping"),
+			"jaeger":    healthcheckNames("", "agent", "collector"),
+			"keycloak":  healthcheckNames("", "createuser", "deleteuser"),
+			"redis":     healthcheckNames("", "ping"),
+			"sentry":    healthcheckNames("", "ping"),
 		}
 	)
 
@@ -351,8 +353,27 @@ func main() {
 		}
 	}
 
-	// Elasticsearch client.
-	var esClient = elasticsearch.NewClient(esAddr, http.DefaultClient)
+	// Audit events DB.
+	type EventsDB interface {
+		Exec(query string, args ...interface{}) (sql.Result, error)
+		//Ping() error
+		Query(query string, args ...interface{}) (*sql.Rows, error)
+		QueryRow(query string, args ...interface{}) *sql.Row
+	}
+
+	var eventsDBConn EventsDB = keycloakb.NoopEventsDB{}
+	if eventsDBEnabled {
+		var err error
+		eventsDBConn, err = sql.Open("mysql", fmt.Sprintf("%s:%s@%s(%s)/%s", eventsDBUsername, eventsDBPassword, eventsDBProtocol, eventsDBHostPort, eventsDBDatabase))
+		//eventsDBConn, err = sql.Open("mysql", "root:admin@tcp(127.0.0.1:3306)/auditevents")
+
+		//logger.Log("msg", fmt.Sprintf("%s:%s@%s(%s)/%s", eventsDBUsername, eventsDBPassword, eventsDBProtocol, eventsDBHostPort, eventsDBDatabase))
+
+		if err != nil {
+			logger.Log("msg", "could not create DB connection for audit events", "error", err)
+			return
+		}
+	}
 
 	// User service.
 	var userEndpoints = user.Endpoints{}
@@ -398,7 +419,7 @@ func main() {
 
 		var consoleModule event.ConsoleModule
 		{
-			consoleModule = event.NewConsoleModule(log.With(eventLogger, "module", "console"), esClient, esIndex, ComponentName, ComponentID)
+			consoleModule = event.NewConsoleModule(log.With(eventLogger, "module", "console"))
 			consoleModule = event.MakeConsoleModuleInstrumentingMW(influxMetrics.NewHistogram("console_module"))(consoleModule)
 			consoleModule = event.MakeConsoleModuleLoggingMW(log.With(eventLogger, "mw", "module", "unit", "console"))(consoleModule)
 			consoleModule = event.MakeConsoleModuleTracingMW(tracer)(consoleModule)
@@ -412,9 +433,19 @@ func main() {
 			statisticModule = event.MakeStatisticModuleTracingMW(tracer)(statisticModule)
 		}
 
+		// new module for sending the events to the DB
+		var eventsDBModule event.EventsDBModule
+		{
+			eventsDBModule = event.NewEventsDBModule(eventsDBConn)
+			eventsDBModule = event.MakeEventsDBModuleInstrumentingMW(influxMetrics.NewHistogram("eventsDB_module"))(eventsDBModule)
+			eventsDBModule = event.MakeEventsDBModuleLoggingMW(log.With(eventLogger, "mw", "module", "unit", "eventsDB"))(eventsDBModule)
+			eventsDBModule = event.MakeEventsDBModuleTracingMW(tracer)(eventsDBModule)
+
+		}
+
 		var eventAdminComponent event.AdminComponent
 		{
-			var fns = []event.FuncEvent{consoleModule.Print, statisticModule.Stats}
+			var fns = []event.FuncEvent{consoleModule.Print, statisticModule.Stats, eventsDBModule.Store}
 			eventAdminComponent = event.NewAdminComponent(fns, fns, fns, fns)
 			eventAdminComponent = event.MakeAdminComponentInstrumentingMW(influxMetrics.NewHistogram("admin_component"))(eventAdminComponent)
 			eventAdminComponent = event.MakeAdminComponentLoggingMW(log.With(eventLogger, "mw", "component", "unit", "admin_event"))(eventAdminComponent)
@@ -423,12 +454,14 @@ func main() {
 
 		var eventComponent event.Component
 		{
-			var fns = []event.FuncEvent{consoleModule.Print, statisticModule.Stats}
+			var fns = []event.FuncEvent{consoleModule.Print, statisticModule.Stats, eventsDBModule.Store}
 			eventComponent = event.NewComponent(fns, fns)
 			eventComponent = event.MakeComponentInstrumentingMW(influxMetrics.NewHistogram("component"))(eventComponent)
 			eventComponent = event.MakeComponentLoggingMW(log.With(eventLogger, "mw", "component", "unit", "event"))(eventComponent)
 			eventComponent = event.MakeComponentTracingMW(tracer)(eventComponent)
 		}
+
+		// add ct_type
 
 		var muxComponent event.MuxComponent
 		{
@@ -710,12 +743,6 @@ func main() {
 			flakiHM = common.MakeHealthCheckerLoggingMW(log.With(healthLogger, "module", "flaki"))(flakiHM)
 			flakiHM = common.MakeValidationMiddleware(authorizedHC["flaki"])(flakiHM)
 		}
-		var elasticsearchHM HealthChecker
-		{
-			elasticsearchHM = health.NewElasticsearchModule(http.DefaultClient, esAddr, esEnabled)
-			elasticsearchHM = common.MakeHealthCheckerLoggingMW(log.With(healthLogger, "module", "elasticsearch"))(elasticsearchHM)
-			elasticsearchHM = common.MakeValidationMiddleware(authorizedHC["elasticsearch"])(elasticsearchHM)
-		}
 		var keycloakHM HealthChecker
 		{
 			var err error
@@ -727,13 +754,12 @@ func main() {
 		}
 
 		var healthCheckers = map[string]health.HealthChecker{
-			"cockroach":     cockroachHM,
-			"elasticsearch": elasticsearchHM,
-			"flaki":         flakiHM,
-			"influx":        influxHM,
-			"jaeger":        jaegerHM,
-			"keycloak":      keycloakHM,
-			"sentry":        sentryHM,
+			"cockroach": cockroachHM,
+			"flaki":     flakiHM,
+			"influx":    influxHM,
+			"jaeger":    jaegerHM,
+			"keycloak":  keycloakHM,
+			"sentry":    sentryHM,
 		}
 
 		var healthComponent health.HealthCheckers
@@ -757,7 +783,7 @@ func main() {
 		if jobEnabled {
 			var ctrl = controller.NewController(ComponentName, ComponentID, idgenerator.New(flakiClient, tracer), &job_lock.NoopLocker{}, controller.EnableStatusStorage(job_status.New(cockroachConn)))
 
-			for _, job := range []string{"cockroach", "elasticsearch", "flaki", "influx", "jaeger", "keycloak", "redis", "sentry"} {
+			for _, job := range []string{"cockroach", "flaki", "influx", "jaeger", "keycloak", "redis", "sentry"} {
 				var job, err = health_job.MakeHealthJob(healthCheckers[job], job, healthChecksValidity[job], healthStorage, logger)
 				if err != nil {
 					logger.Log("msg", fmt.Sprintf("could not create %s health job", job), "error", err)
@@ -1004,11 +1030,6 @@ func config(logger log.Logger) *viper.Viper {
 	v.SetDefault("keycloak-timeout", "5s")
 	v.SetDefault("keycloak-client-creation-timeout", "50s")
 
-	// Elasticsearch default.
-	v.SetDefault("elasticsearch", false)
-	v.SetDefault("elasticsearch-host-port", "elasticsearch:9200")
-	v.SetDefault("elasticsearch-index-name", "keycloak_business")
-
 	// Influx DB client default.
 	v.SetDefault("influx", false)
 	v.SetDefault("influx-host-port", "")
@@ -1053,6 +1074,15 @@ func config(logger log.Logger) *viper.Viper {
 	v.SetDefault("job-sentry-health-validity", "1m")
 	v.SetDefault("job-keycloak-health-validity", "1m")
 
+	//Storage events in DB
+	v.SetDefault("events-DB", false)
+	v.SetDefault("db-host-port", "")
+	v.SetDefault("db-username", "")
+	v.SetDefault("db-password", "")
+	v.SetDefault("db-database", "")
+	v.SetDefault("db-table", "")
+	v.SetDefault("protocol", "")
+
 	// Rate limiting (in requests/second)
 	v.SetDefault("rate-event", 1000)
 	v.SetDefault("rate-user", 1000)
@@ -1070,7 +1100,6 @@ func config(logger log.Logger) *viper.Viper {
 	}
 
 	// If the host/port is not set, we consider the components deactivated.
-	v.Set("elasticsearch", v.GetString("elasticsearch-host-port") != "")
 	v.Set("influx", v.GetString("influx-host-port") != "")
 	v.Set("sentry", v.GetString("sentry-dsn") != "")
 	v.Set("jaeger", v.GetString("jaeger-sampler-host-port") != "")

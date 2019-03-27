@@ -129,3 +129,27 @@ func (m *statisticModuleLoggingMW) Stats(ctx context.Context, mp map[string]stri
 	}(time.Now())
 	return m.next.Stats(ctx, mp)
 }
+
+// Logging middleware for the statistic module.
+type eventsDBModuleLoggingMW struct {
+	logger log.Logger
+	next   EventsDBModule
+}
+
+// MakeStatisticModuleLoggingMW makes a logging middleware for the statistic module.
+func MakeEventsDBModuleLoggingMW(log log.Logger) func(EventsDBModule) EventsDBModule {
+	return func(next EventsDBModule) EventsDBModule {
+		return &eventsDBModuleLoggingMW{
+			logger: log,
+			next:   next,
+		}
+	}
+}
+
+// statisticModuleLoggingMW implements StatisticModule.
+func (m *eventsDBModuleLoggingMW) Store(ctx context.Context, mp map[string]string) error {
+	defer func(begin time.Time) {
+		m.logger.Log("method", "Store", "args", mp, "took", time.Since(begin))
+	}(time.Now())
+	return m.next.Store(ctx, mp)
+}

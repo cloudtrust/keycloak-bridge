@@ -153,3 +153,32 @@ func (m *statisticModuleTracingMW) Stats(ctx context.Context, mp map[string]stri
 
 	return m.next.Stats(ctx, mp)
 }
+
+// Tracing middleware at module level.
+type eventsDBModuleTracingMW struct {
+	tracer opentracing.Tracer
+	next   EventsDBModule
+}
+
+// MakeStatisticModuleTracingMW makes a tracing middleware at component level.
+func MakeEventsDBModuleTracingMW(tracer opentracing.Tracer) func(EventsDBModule) EventsDBModule {
+	return func(next EventsDBModule) EventsDBModule {
+		return &eventsDBModuleTracingMW{
+			tracer: tracer,
+			next:   next,
+		}
+	}
+}
+
+// statisticModuleTracingMW implements StatisticModule.
+func (m *eventsDBModuleTracingMW) Store(ctx context.Context, mp map[string]string) error {
+	if span := opentracing.SpanFromContext(ctx); span != nil {
+		span = m.tracer.StartSpan("eventsDB_module", opentracing.ChildOf(span.Context()))
+		defer span.Finish()
+		span.SetTag("correlation_id", ctx.Value("correlation_id").(string))
+
+		ctx = opentracing.ContextWithSpan(ctx, span)
+	}
+
+	return m.next.Store(ctx, mp)
+}
