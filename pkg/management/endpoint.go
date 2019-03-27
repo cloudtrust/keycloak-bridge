@@ -11,8 +11,6 @@ import (
 
 // Endpoints wraps a service behind a set of endpoints.
 type Endpoints struct {
-	TestEndpoint endpoint.Endpoint
-
 	GetRealm             endpoint.Endpoint
 	GetClient            endpoint.Endpoint
 	GetClients           endpoint.Endpoint

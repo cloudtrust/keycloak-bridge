@@ -15,18 +15,10 @@ import (
 	"syscall"
 	"time"
 
-	common "github.com/cloudtrust/common-healthcheck"
-	controller "github.com/cloudtrust/go-jobs"
-	"github.com/cloudtrust/go-jobs/job"
-	job_lock "github.com/cloudtrust/go-jobs/lock"
-	job_status "github.com/cloudtrust/go-jobs/status"
 	fb_flaki "github.com/cloudtrust/keycloak-bridge/api/flaki/fb"
-	"github.com/cloudtrust/keycloak-bridge/internal/idgenerator"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/cloudtrust/keycloak-bridge/pkg/event"
 	"github.com/cloudtrust/keycloak-bridge/pkg/export"
-	"github.com/cloudtrust/keycloak-bridge/pkg/health"
-	health_job "github.com/cloudtrust/keycloak-bridge/pkg/job"
 	"github.com/cloudtrust/keycloak-bridge/pkg/management"
 	"github.com/cloudtrust/keycloak-bridge/pkg/middleware"
 	keycloak "github.com/cloudtrust/keycloak-client"
@@ -94,13 +86,10 @@ func main() {
 		//keycloakClientCreationTimeout = c.GetDuration("keycloak-client-creation-timeout")
 
 		// Enabled units - health checks (keycloak) or enabled (all the rest)
-		cockroachEnabled  = c.GetBool("cockroach")
 		flakiEnabled      = c.GetBool("flaki")
 		influxEnabled     = c.GetBool("influx")
 		jaegerEnabled     = c.GetBool("jaeger")
-		keycloakEnabled   = c.GetBool("keycloak")
 		sentryEnabled     = c.GetBool("sentry")
-		jobEnabled        = c.GetBool("job")
 		pprofRouteEnabled = c.GetBool("pprof-route-enabled")
 		eventsDBEnabled   = c.GetBool("events-DB")
 
@@ -131,17 +120,9 @@ func main() {
 				BufferFlushInterval: c.GetDuration("jaeger-write-interval"),
 			},
 		}
-		jaegerCollectorHealthcheckURL = c.GetString("jaeger-collector-healthcheck-host-port")
 
 		// Sentry
 		sentryDSN = c.GetString("sentry-dsn")
-
-		// Cockroach
-		cockroachHostPort      = c.GetString("cockroach-host-port")
-		cockroachUsername      = c.GetString("cockroach-username")
-		cockroachPassword      = c.GetString("cockroach-password")
-		cockroachDB            = c.GetString("cockroach-database")
-		cockroachCleanInterval = c.GetDuration("cockroach-clean-interval")
 
 		// EventsDB
 		eventsDBHostPort = c.GetString("db-host-port")
@@ -151,52 +132,10 @@ func main() {
 		//eventsDBTable    = c.GetString("db-table")
 		eventsDBProtocol = c.GetString("protocol")
 
-		// Jobs
-		healthChecksValidity = map[string]time.Duration{
-			"cockroach": c.GetDuration("job-cockroach-health-validity"),
-			"flaki":     c.GetDuration("job-flaki-health-validity"),
-			"influx":    c.GetDuration("job-influx-health-validity"),
-			"jaeger":    c.GetDuration("job-jaeger-health-validity"),
-			"keycloak":  c.GetDuration("job-keycloak-health-validity"),
-			"redis":     c.GetDuration("job-redis-health-validity"),
-			"sentry":    c.GetDuration("job-sentry-health-validity"),
-		}
-
 		// Rate limiting
 		rateLimit = map[string]int{
 			"event": c.GetInt("rate-event"),
 			"user":  c.GetInt("rate-user"),
-		}
-
-		// Validation for healthchecks
-		validModules = map[string]struct{}{
-			"":              struct{}{},
-			"cockroach":     struct{}{},
-			"elasticsearch": struct{}{},
-			"flaki":         struct{}{},
-			"influx":        struct{}{},
-			"jaeger":        struct{}{},
-			"keycloak":      struct{}{},
-			"redis":         struct{}{},
-			"sentry":        struct{}{},
-		}
-
-		healthcheckNames = func(names ...string) map[string]struct{} {
-			var m = map[string]struct{}{}
-			for _, n := range names {
-				m[n] = struct{}{}
-			}
-			return m
-		}
-		// Authorized health checks for each module.
-		authorizedHC = map[string]map[string]struct{}{
-			"cockroach": healthcheckNames("", "ping"),
-			"flaki":     healthcheckNames("", "nextid"),
-			"influx":    healthcheckNames("", "ping"),
-			"jaeger":    healthcheckNames("", "agent", "collector"),
-			"keycloak":  healthcheckNames("", "createuser", "deleteuser"),
-			"redis":     healthcheckNames("", "ping"),
-			"sentry":    healthcheckNames("", "ping"),
 		}
 	)
 
@@ -328,24 +267,6 @@ func main() {
 			return
 		}
 		defer closer.Close()
-	}
-
-	// Cockroach DB.
-	type Cockroach interface {
-		Exec(query string, args ...interface{}) (sql.Result, error)
-		Ping() error
-		Query(query string, args ...interface{}) (*sql.Rows, error)
-		QueryRow(query string, args ...interface{}) *sql.Row
-	}
-
-	var cockroachConn Cockroach = keycloakb.NoopCockroach{}
-	if cockroachEnabled {
-		var err error
-		cockroachConn, err = sql.Open("postgres", fmt.Sprintf("postgresql://%s:%s@%s/%s?sslmode=disable", cockroachUsername, cockroachPassword, cockroachHostPort, cockroachDB))
-		if err != nil {
-			logger.Log("msg", "could not create cockroach DB connection for config DB", "error", err)
-			return
-		}
 	}
 
 	// Audit events DB.
@@ -635,127 +556,11 @@ func main() {
 
 	// Export configuration
 	var exportModule = export.NewModule(keycloakClient)
-	var cfgStorageModue = export.NewConfigStorageModule(cockroachConn)
+	var cfgStorageModue = export.NewConfigStorageModule(eventsDBConn)
 
 	var exportComponent = export.NewComponent(ComponentName, Version, exportModule, cfgStorageModue)
 	var exportEndpoint = export.MakeExportEndpoint(exportComponent)
 	var exportSaveAndExportEndpoint = export.MakeStoreAndExportEndpoint(exportComponent)
-
-	// Health service.
-	var healthEndpoints = health.Endpoints{}
-	{
-		var healthLogger = log.With(logger, "svc", "health")
-
-		type HealthCheckStorage interface {
-			Read(ctx context.Context, module, healthcheck string) (json.RawMessage, error)
-			Update(ctx context.Context, module string, jsonReports json.RawMessage, validity time.Duration) error
-			Clean() error
-		}
-
-		var healthStorage HealthCheckStorage
-		{
-			healthStorage = health.NewStorageModule(ComponentName, ComponentID, cockroachConn)
-		}
-
-		type HealthChecker interface {
-			HealthCheck(context.Context, string) (json.RawMessage, error)
-		}
-		var cockroachHM HealthChecker
-		{
-			cockroachHM = common.NewCockroachModule(cockroachConn, cockroachEnabled)
-			cockroachHM = common.MakeHealthCheckerLoggingMW(log.With(healthLogger, "module", "cockroach"))(cockroachHM)
-			cockroachHM = common.MakeValidationMiddleware(authorizedHC["cockroach"])(cockroachHM)
-		}
-		var influxHM HealthChecker
-		{
-			influxHM = common.NewInfluxModule(influxMetrics, influxEnabled)
-			influxHM = common.MakeHealthCheckerLoggingMW(log.With(healthLogger, "module", "influx"))(influxHM)
-			influxHM = common.MakeValidationMiddleware(authorizedHC["influx"])(influxHM)
-		}
-		var jaegerHM HealthChecker
-		{
-			jaegerHM = common.NewJaegerModule(http.DefaultClient, jaegerCollectorHealthcheckURL, jaegerEnabled)
-			jaegerHM = common.MakeHealthCheckerLoggingMW(log.With(healthLogger, "module", "jaeger"))(jaegerHM)
-			jaegerHM = common.MakeValidationMiddleware(authorizedHC["jaeger"])(jaegerHM)
-
-		}
-		var sentryHM HealthChecker
-		{
-			sentryHM = common.NewSentryModule(sentryClient, http.DefaultClient, sentryEnabled)
-			sentryHM = common.MakeHealthCheckerLoggingMW(log.With(healthLogger, "module", "sentry"))(sentryHM)
-			sentryHM = common.MakeValidationMiddleware(authorizedHC["sentry"])(sentryHM)
-		}
-		var flakiHM HealthChecker
-		{
-			flakiHM = common.NewFlakiModule(&flakiHealthClient{flakiClient}, flakiEnabled)
-			flakiHM = common.MakeHealthCheckerLoggingMW(log.With(healthLogger, "module", "flaki"))(flakiHM)
-			flakiHM = common.MakeValidationMiddleware(authorizedHC["flaki"])(flakiHM)
-		}
-		var keycloakHM HealthChecker
-		{
-			var err error
-			keycloakHM, err = health.NewKeycloakModule(keycloakClient, Version, keycloakEnabled)
-			if err != nil {
-				logger.Log("msg", "could not create keycloak health check module", "error", err)
-				return
-			}
-		}
-
-		var healthCheckers = map[string]health.HealthChecker{
-			"cockroach": cockroachHM,
-			"flaki":     flakiHM,
-			"influx":    influxHM,
-			"jaeger":    jaegerHM,
-			"keycloak":  keycloakHM,
-			"sentry":    sentryHM,
-		}
-
-		var healthComponent health.HealthCheckers
-		{
-			healthComponent = health.NewComponent(healthCheckers, healthChecksValidity, healthStorage)
-			healthComponent = health.MakeComponentLoggingMW(log.With(healthLogger, "mw", "component"))(healthComponent)
-			healthComponent = health.MakeValidationMiddleware(validModules)(healthComponent)
-		}
-
-		var healthChecksEndpoint endpoint.Endpoint
-		{
-			healthChecksEndpoint = health.MakeHealthChecksEndpoint(healthComponent)
-			healthChecksEndpoint = health.MakeEndpointLoggingMW(log.With(healthLogger, "mw", "endpoint", "unit", "HealthChecks"))(healthChecksEndpoint)
-		}
-
-		healthEndpoints = health.Endpoints{
-			HealthCheckEndpoint: healthChecksEndpoint,
-		}
-
-		// Jobs
-		if jobEnabled {
-			var ctrl = controller.NewController(ComponentName, ComponentID, idgenerator.New(flakiClient, tracer), &job_lock.NoopLocker{}, controller.EnableStatusStorage(job_status.New(cockroachConn)))
-
-			for _, job := range []string{"cockroach", "flaki", "influx", "jaeger", "keycloak", "redis", "sentry"} {
-				var job, err = health_job.MakeHealthJob(healthCheckers[job], job, healthChecksValidity[job], healthStorage, logger)
-				if err != nil {
-					logger.Log("msg", fmt.Sprintf("could not create %s health job", job), "error", err)
-					return
-				}
-				ctrl.Register(job)
-				ctrl.Schedule("@minutely", job.Name())
-			}
-
-			var cleanJob *job.Job
-			{
-				var err error
-				cleanJob, err = health_job.MakeStorageCleaningJob(healthStorage, log.With(logger, "job", "clean health checks"))
-				if err != nil {
-					logger.Log("msg", "could not create clean job", "error", err)
-					return
-				}
-				ctrl.Register(cleanJob)
-				ctrl.Schedule(fmt.Sprintf("@every %s", cockroachCleanInterval), cleanJob.Name())
-
-			}
-			ctrl.Start()
-		}
-	}
 
 	// HTTP Server.
 	go func() {
@@ -781,8 +586,6 @@ func main() {
 		// Management
 		var managementSubroute = route.PathPrefix("/management").Subrouter()
 
-		var managementHandler = ConfigureManagementHandler(ComponentName, ComponentID, flakiClient, keycloakClient, tracer, logger)(managementEndpoints.TestEndpoint)
-
 		var getRealmHandler = ConfigureManagementHandler(ComponentName, ComponentID, flakiClient, keycloakClient, tracer, logger)(managementEndpoints.GetRealm)
 
 		var getClientsHandler = ConfigureManagementHandler(ComponentName, ComponentID, flakiClient, keycloakClient, tracer, logger)(managementEndpoints.GetClients)
@@ -805,8 +608,6 @@ func main() {
 
 		var resetPasswordHandler = ConfigureManagementHandler(ComponentName, ComponentID, flakiClient, keycloakClient, tracer, logger)(managementEndpoints.ResetPassword)
 		var sendVerifyEmailHandler = ConfigureManagementHandler(ComponentName, ComponentID, flakiClient, keycloakClient, tracer, logger)(managementEndpoints.SendVerifyEmail)
-
-		managementSubroute.Path("/test/{realm}").Methods("GET").Handler(managementHandler)
 
 		//realms
 		managementSubroute.Path("/realms/{realm}").Methods("GET").Handler(getRealmHandler)
@@ -836,20 +637,6 @@ func main() {
 		// Export.
 		route.Handle("/export", export.MakeHTTPExportHandler(exportEndpoint)).Methods("GET")
 		route.Handle("/export", export.MakeHTTPExportHandler(exportSaveAndExportEndpoint)).Methods("POST")
-
-		// Health checks.
-		var healthHandler http.Handler
-		{
-			healthHandler = health.MakeHealthCheckHandler(healthEndpoints.HealthCheckEndpoint)
-			healthHandler = middleware.MakeHTTPCorrelationIDMW(flakiClient, tracer, logger, ComponentName, ComponentID)(healthHandler)
-		}
-
-		route.Path("/health").Handler(healthHandler)
-		route.Path("/health/{module}").Handler(healthHandler)
-		route.Path("/health/{module}/{healthcheck}").Handler(healthHandler)
-		route.Path("/health").Queries("nocache", "{nocache}").Handler(healthHandler)
-		route.Path("/health/{module}").Queries("nocache", "{nocache}").Handler(healthHandler)
-		route.Path("/health/{module}/{healthcheck}").Queries("nocache", "{nocache}").Handler(healthHandler)
 
 		// Debug.
 		if pprofRouteEnabled {
