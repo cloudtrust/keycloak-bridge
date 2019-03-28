@@ -41,7 +41,7 @@ func TestComponentTrackingMW(t *testing.T) {
 		"obj":            base64.StdEncoding.EncodeToString(event),
 	}
 	mockMuxComponent.EXPECT().Event(ctx, "Event", event).Return(fmt.Errorf("fail")).Times(1)
-	mockSentry.EXPECT().CaptureError(fmt.Errorf("fail"), expected).Return("").Times(1)
+	mockSentry.EXPECT().CaptureError(gomock.Any(), expected).Return("").Times(1)
 	mockLogger.EXPECT().Log("unit", "Event", "correlation_id", corrID, "event_type", "Event", "obj", gomock.Any(), "error", "fail").Return(nil).Times(1)
 
 	m.Event(ctx, "Event", event)
