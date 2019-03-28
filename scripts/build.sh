@@ -40,23 +40,18 @@ fi
 
 # Directories flatbuffer.
 FB_EVENT_DIR="./api/event"
-FB_FLAKI_DIR="./api/flaki"
 
 # Delete the old dirs.
 echo "==> Removing old directories..."
 rm -f bin/*
 mkdir -p bin/
 rm -f "$FB_EVENT_DIR"/fb/*
-rm -f "$FB_FLAKI_DIR"/fb/*
-
 
 # Flatbuffers.
 echo
 echo "==> Flatbuffers:"
 flatc --grpc --go -o "$FB_EVENT_DIR" "$FB_EVENT_DIR"/event.fbs 
 ls -hl "$FB_EVENT_DIR"/fb
-flatc --grpc --go -o "$FB_FLAKI_DIR" "$FB_FLAKI_DIR"/flaki.fbs 
-ls -hl "$FB_FLAKI_DIR"/fb
 
 # Build.
 echo

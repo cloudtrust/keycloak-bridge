@@ -4,10 +4,6 @@
 # Component configs
 component-http-host-port: 0.0.0.0:8888
 
-# Flaki ID generator
-flaki: false
-flaki-host-port: flaki:5555
-
 # Keycloak configs
 keycloak: false
 keycloak-api-uri: http://localhost:8080
@@ -15,7 +11,19 @@ keycloak-oidc-uri: http://localhost:8080
 keycloak-username: admin
 keycloak-password: admin
 keycloak-timeout: 5s
-keycloak-client-creation-timeout: 40s
+
+# Audit events
+events-DB: true
+db-host-port: 127.0.0.1:3306
+db-username: root
+db-password: admin 
+db-database: auditevents
+db-table: audit
+protocol: tcp
+
+# Rate limiting in requests/second.
+rate-event: 1000
+rate-management: 1000
 
 # Influx DB configs
 influx: false
@@ -42,15 +50,3 @@ jaeger-write-interval: 1s
 
 # Debug routes
 pprof-route-enabled: true
-
-#Audit events
-events-DB: true
-db-host-port: 127.0.0.1:3306
-db-username: root
-db-password: admin 
-db-database: auditevents
-db-table: audit
-protocol: tcp
-
-# Rate limiting in requests/second.
-rate-event: 1000

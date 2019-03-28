@@ -41,13 +41,6 @@ Key | Description | Default value
 component-name | name of the component | keycloak-bridge
 component-http-host-port | HTTP server listening address | 0.0.0.0:8888
 
-### Flaki
-
-Key | Description | Default value
---- | ----------- | -------------
-flaki-host-port | Flaki service host:port | ""
-
-The [flaki-service](https://github.com/cloudtrust/flaki-service) is used to obtain unique IDs in a distributed system.
 
 ### Keycloak
 
