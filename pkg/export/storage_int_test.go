@@ -25,13 +25,11 @@ func TestIntNewStorageModule(t *testing.T) {
 	var db = setupCleanDB(t)
 	rand.Seed(time.Now().UnixNano())
 
-	// The table health does not exists.
 	_, err := db.Exec("SELECT * from config")
 	assert.NotNil(t, err)
 
 	var _ = NewConfigStorageModule(db)
 
-	// NewStorageModule create table health.
 	_, err = db.Exec("SELECT * from config")
 	assert.Nil(t, err)
 }

@@ -2,21 +2,6 @@
 
 
 [[projects]]
-  branch = "dev"
-  digest = "1:17f5f3b7f0825a8f1ed32e649ea3a47822ddd4d50d520f908236e566754aea4e"
-  name = "github.com/AsynkronIT/protoactor-go"
-  packages = [
-    "actor",
-    "eventstream",
-    "internal/queue/goring",
-    "internal/queue/mpsc",
-    "log",
-    "mailbox",
-  ]
-  pruneopts = ""
-  revision = "83fdabfa6475f4eed5fda1184426ab8437734b06"
-
-[[projects]]
   digest = "1:67c191c2a2661cb4cab99f0d81e8954427e27038e7e9ae3384bd4482280af8fa"
   name = "github.com/VividCortex/gohistogram"
   packages = ["."]
@@ -25,42 +10,12 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:0421cde08d4bfe466d087acca2d65a0fe0809b1192a7708c4ccd0bb126b55216"
-  name = "github.com/Workiva/go-datastructures"
-  packages = ["queue"]
-  pruneopts = ""
-  revision = "f338bf48899950e415caffa02222a7273fbdeaf6"
-  version = "v1.0.48"
-
-[[projects]]
   digest = "1:8722889ad027febfced94665914d1e7be8f1b703d31f2ef9461c59e4d40fe974"
   name = "github.com/certifi/gocertifi"
   packages = ["."]
   pruneopts = ""
   revision = "deb3ae2ef2610fde3330947281941c562861188b"
   version = "2018.01.18"
-
-[[projects]]
-  digest = "1:8d1783c66da3675e2a0f1ca2793485207e3007faf39b5373bbf2e4dcde1feaa8"
-  name = "github.com/cloudtrust/common-healthcheck"
-  packages = ["."]
-  pruneopts = ""
-  revision = "877263827c0447ac0dea920764dfb4c289d481f4"
-  version = "2.1"
-
-[[projects]]
-  digest = "1:85c6663b2b17a9e22dc674b024dc9d581245489a9cd3cbd2788bc05eeaec761d"
-  name = "github.com/cloudtrust/go-jobs"
-  packages = [
-    ".",
-    "actor",
-    "job",
-    "lock",
-    "status",
-  ]
-  pruneopts = ""
-  revision = "97dcd5290ef1cd6f10d64f9b736042a862a65cc4"
-  version = "1.0"
 
 [[projects]]
   digest = "1:388cd45f208159d4a8dedffcebd901da08f35a4e265d92663aed7a5c4ccc2771"
@@ -94,21 +49,6 @@
   pruneopts = ""
   revision = "346938d642f2ec3594ed81d874461961cd0faa76"
   version = "v1.1.0"
-
-[[projects]]
-  digest = "1:ba7c75e38d81b9cf3e8601c081567be3b71bccca8c11aee5de98871360aa4d7b"
-  name = "github.com/emirpasic/gods"
-  packages = [
-    "containers",
-    "lists",
-    "lists/singlylinkedlist",
-    "stacks",
-    "stacks/linkedliststack",
-    "utils",
-  ]
-  pruneopts = ""
-  revision = "f6c17b524822278a87e3b3bd809fec33b51f5b46"
-  version = "v1.9.0"
 
 [[projects]]
   digest = "1:eb53021a8aa3f599d29c7102e65026242bdedce998a54837dc67f14b6a97c5fd"
@@ -161,24 +101,20 @@
   version = "v0.3.0"
 
 [[projects]]
+  digest = "1:e692d16fdfbddb94e9e4886aaf6c08bdbae5cb4ac80651445de9181b371c6e46"
+  name = "github.com/go-sql-driver/mysql"
+  packages = ["."]
+  pruneopts = ""
+  revision = "72cd26f257d44c1114970e19afddcd812016007e"
+  version = "v1.4.1"
+
+[[projects]]
   digest = "1:9ca737b471693542351e112c9e86be9bf7385e42256893a09ecb2a98e2036f74"
   name = "github.com/go-stack/stack"
   packages = ["."]
   pruneopts = ""
   revision = "259ab82a6cad3992b4e21ff5cac294ccb06474bc"
   version = "v1.7.0"
-
-[[projects]]
-  digest = "1:6e73003ecd35f4487a5e88270d3ca0a81bc80dc88053ac7e4dcfec5fba30d918"
-  name = "github.com/gogo/protobuf"
-  packages = [
-    "gogoproto",
-    "proto",
-    "protoc-gen-gogo/descriptor",
-  ]
-  pruneopts = ""
-  revision = "636bf0302bc95575d69441b25a2603156ffdddf1"
-  version = "v1.1.1"
 
 [[projects]]
   digest = "1:73a7106c799f98af4f3da7552906efc6a2570329f4cd2d2f5fb8f9d6c053ff2f"
@@ -201,17 +137,6 @@
   pruneopts = ""
   revision = "b4deda0973fb4c70b50d226b1af49f3da59f5265"
   version = "v1.1.0"
-
-[[projects]]
-  digest = "1:dcf8316121302735c0ac84e05f4686e3b34e284444435e9a206da48d8be18cb1"
-  name = "github.com/gomodule/redigo"
-  packages = [
-    "internal",
-    "redis",
-  ]
-  pruneopts = ""
-  revision = "9c11da706d9b7902c6da69c592f75637793fe121"
-  version = "v2.0.0"
 
 [[projects]]
   digest = "1:415c43f5b1bde8c4edcbbb8a5c1abb054c160a4a48551534f92548dd76affc11"
@@ -314,14 +239,6 @@
   pruneopts = ""
   revision = "1949ddbfd147afd4d964a9f00b24eb291e0e7c38"
   version = "v1.0.2"
-
-[[projects]]
-  branch = "master"
-  digest = "1:8bceb928c2951fc833b89c2756bfcfd4886ba785654c67b6187f0b2ace3c893f"
-  name = "github.com/orcaman/concurrent-map"
-  packages = ["."]
-  pruneopts = ""
-  revision = "b28018939af9022337862b94a463abb18abb3e0e"
 
 [[projects]]
   digest = "1:894aef961c056b6d85d12bac890bf60c44e99b46292888bfa66caf529f804457"
@@ -443,14 +360,6 @@
   version = "v1.5.0"
 
 [[projects]]
-  digest = "1:7641e6d9f2fb75e3d39bcde8c2a8ebc15894f6afcbafe2a63ad4e1377518535d"
-  name = "github.com/victorcoder/dkron"
-  packages = ["cron"]
-  pruneopts = ""
-  revision = "dadf7d56e8d1df13cb460e17d0d55eb457e8ca04"
-  version = "v0.10.3"
-
-[[projects]]
   branch = "master"
   digest = "1:cae234a803b78380e4d769db6036b9fcc8c08ed4ff862571ffc1a958edc1f629"
   name = "golang.org/x/crypto"
@@ -533,6 +442,7 @@
   digest = "1:c1771ca6060335f9768dff6558108bc5ef6c58506821ad43377ee23ff059e472"
   name = "google.golang.org/appengine"
   packages = [
+    "cloudsql",
     "internal",
     "internal/base",
     "internal/datastore",
@@ -634,11 +544,6 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
-    "github.com/cloudtrust/common-healthcheck",
-    "github.com/cloudtrust/go-jobs",
-    "github.com/cloudtrust/go-jobs/job",
-    "github.com/cloudtrust/go-jobs/lock",
-    "github.com/cloudtrust/go-jobs/status",
     "github.com/cloudtrust/keycloak-client",
     "github.com/gbrlsnchs/jwt",
     "github.com/getsentry/raven-go",
@@ -649,8 +554,8 @@
     "github.com/go-kit/kit/ratelimit",
     "github.com/go-kit/kit/transport/grpc",
     "github.com/go-kit/kit/transport/http",
+    "github.com/go-sql-driver/mysql",
     "github.com/golang/mock/gomock",
-    "github.com/gomodule/redigo/redis",
     "github.com/google/flatbuffers/go",
     "github.com/gorilla/mux",
     "github.com/influxdata/influxdb/client/v2",
@@ -663,9 +568,7 @@
     "github.com/spf13/viper",
     "github.com/stretchr/testify/assert",
     "github.com/uber/jaeger-client-go/config",
-    "golang.org/x/net/context",
     "golang.org/x/time/rate",
-    "google.golang.org/grpc",
     "google.golang.org/grpc/metadata",
   ]
   solver-name = "gps-cdcl"

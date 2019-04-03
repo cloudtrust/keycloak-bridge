@@ -1,68 +1,32 @@
 package idgenerator
 
 import (
-	"context"
+	"fmt"
 	"math/rand"
 	"strconv"
-
-	"github.com/cloudtrust/keycloak-bridge/api/flaki/fb"
-	flaki "github.com/cloudtrust/keycloak-bridge/api/flaki/fb"
-	flatbuffers "github.com/google/flatbuffers/go"
-	opentracing "github.com/opentracing/opentracing-go"
-	"google.golang.org/grpc/metadata"
+	"time"
 )
 
-// New returns an ID generator that query the distributed unique IDs generator.
-func New(client flaki.FlakiClient, tracer opentracing.Tracer) *IDGenerator {
-	return &IDGenerator{
-		client: client,
-		tracer: tracer,
+// New returns an ID generator which generate a unique id.
+func New(componentName, componentID string) IDGenerator {
+	return &generator{
+		componentID: componentID,
+		componentName: componentName,
 	}
 }
 
-type IDGenerator struct {
-	client flaki.FlakiClient
-	tracer opentracing.Tracer
+type IDGenerator interface{
+	NextID() string
 }
 
-func (g *IDGenerator) NextID() string {
-	var span = g.tracer.StartSpan("get_correlation_id")
-	defer span.Finish()
-
-	var ctx = g.contextWithTracer(span)
-
-	// Flaki request.
-	var b = flatbuffers.NewBuilder(0)
-	fb.FlakiRequestStart(b)
-	b.Finish(fb.FlakiRequestEnd(b))
-
-	var reply *fb.FlakiReply
-	{
-		var err error
-		reply, err = g.client.NextValidID(ctx, b)
-		if err != nil {
-			return g.degradedID()
-		}
-	}
-
-	return string(reply.Id())
+type generator struct {
+	componentID string
+	componentName string
 }
 
-func (g *IDGenerator) contextWithTracer(span opentracing.Span) context.Context {
-	var ctx = opentracing.ContextWithSpan(context.Background(), span)
-
-	// Propagate the opentracing span.
-	var carrier = make(opentracing.TextMapCarrier)
-	var err = g.tracer.Inject(span.Context(), opentracing.TextMap, carrier)
-	if err != nil {
-		return context.Background()
-	}
-
-	var md = metadata.New(carrier)
-	return metadata.NewOutgoingContext(ctx, md)
-}
-
-// If we cannot get ID from the distributed unique IDs generator, we generate a degraded, random one.
-func (g *IDGenerator) degradedID() string {
-	return "degraded-" + strconv.FormatUint(rand.Uint64(), 10)
+// Generate a unique id with following format: <componentName>-<componentID>-<time>-<random number>
+func (g *generator) NextID() string {
+	var id = strconv.FormatUint(rand.Uint64(), 10)
+	var time = strconv.FormatInt(time.Now().Unix(), 10)
+	return fmt.Sprintf("%s-%s-%s-%s", g.componentName, g.componentID, time, id)
 }

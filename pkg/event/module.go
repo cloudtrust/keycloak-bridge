@@ -1,6 +1,6 @@
 package event
 
-//go:generate mockgen -destination=./mock/module.go -package=mock -mock_names=ConsoleModule=ConsoleModule,StatisticModule=StatisticModule,Influx=Influx,ESClient=ESClient github.com/cloudtrust/keycloak-bridge/pkg/event ConsoleModule,StatisticModule,Influx,ESClient
+//go:generate mockgen -destination=./mock/module.go -package=mock -mock_names=ConsoleModule=ConsoleModule,StatisticModule=StatisticModule,Influx=Influx github.com/cloudtrust/keycloak-bridge/pkg/event ConsoleModule,StatisticModule,Influx
 
 import (
 	"context"

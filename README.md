@@ -1,8 +1,8 @@
 # Keycloak bridge [![Build Status][ci-img]][ci] [![Coverage Status][cov-img]][cov] [![GoDoc][godoc-img]][godoc] [![Go Report Card][report-img]][report] [![OpenTracing Badge][opentracing-img]][opentracing]
 
-The keycloak bridge has two purposes. All our interactions with keycloak pass through it, and keycloak sends all events (i.e. login, user creation,...) to the bridge, so that they can be processed, stored,...
+The keycloak bridge has two purposes. All our interactions (administration) with keycloak pass through it, and keycloak sends all events (i.e. login, user creation,...) to the bridge, so that they can be processed, stored,...
 
-The service includes logging, metrics, tracing, and error tracking. The logs are written to stdout and Redis in Logstash format for processing with the Elastic Stack.
+The service includes logging, metrics, tracing, and error tracking. The logs are written to stdout.
 Metrics such as time tracking,... are collected and saved to an InfluxDB Time Series Database.
 Jaeger is used for distributed tracing and error tracking is managed with Sentry.
 
@@ -28,7 +28,7 @@ See the repository [keycloak-service](https://github.com/cloudtrust/keycloak-ser
 Configuration is done with a YAML file, e.g. ```./configs/keycloak_bridge.yml```.
 Default configurations are provided, that is if an entry is not present in the configuration file, it will be set to its default value.
 
-The documentation for the [Redis](https://cloudtrust.github.io/doc/chapter-godevel/logging.html), [Influx](https://cloudtrust.github.io/doc/chapter-godevel/instrumenting.html), [Sentry](https://cloudtrust.github.io/doc/chapter-godevel/tracking.html), [Jaeger](https://cloudtrust.github.io/doc/chapter-godevel/tracing.html) and [Debug](https://cloudtrust.github.io/doc/chapter-godevel/debugging.html) configuration are common to all microservices and is provided in the Cloudtrust Gitbook.
+The documentation for the [Influx](https://cloudtrust.github.io/doc/chapter-godevel/instrumenting.html), [Sentry](https://cloudtrust.github.io/doc/chapter-godevel/tracking.html), [Jaeger](https://cloudtrust.github.io/doc/chapter-godevel/tracing.html) and [Debug](https://cloudtrust.github.io/doc/chapter-godevel/debugging.html) configuration are common to all microservices and is provided in the Cloudtrust Gitbook.
 
 The configurations specific to the keycloak-bridge are described in the next sections.
 
@@ -40,15 +40,7 @@ Key | Description | Default value
 --- | ----------- | -------------
 component-name | name of the component | keycloak-bridge
 component-http-host-port | HTTP server listening address | 0.0.0.0:8888
-component-grpc-host-port | gRPC server listening address  | 0.0.0.0:5555
 
-### Flaki
-
-Key | Description | Default value
---- | ----------- | -------------
-flaki-host-port | Flaki service host:port | ""
-
-The [flaki-service](https://github.com/cloudtrust/flaki-service) is used to obtain unique IDs in a distributed system.
 
 ### Keycloak
 
@@ -74,19 +66,9 @@ If no configuration file is passed, the service will try to load the default con
 
 The keycloak event-emitter module sends all events to the bridge's event endpoint. The event emitter use HTTP with flatbuffers.
 
-### gRPC and HTTP clients
-
-All applications can interact with the bridge using either HTTP or gRPC.
-The applications need to implement its own client. The Flatbuffer schema is available in `api/user/user.fbs`, see the directory `/examples`.
-
-### Health
-
-The service exposes HTTP routes to monitor the application health.
-See the cloudtrust [gitbook](https://cloudtrust.github.io/doc/chapter-godevel/health_route.html) for more details.
-
 ## About monitoring
 
-Each gRPC or HTTP request will trigger a set of operations that are going to be logged, measured, tracked and traced. For those information to be usable, we must be able to link the logs, metrics, traces and error report together. We achieve that with a unique correlation ID. For a given request, the same correlation ID will appear on the logs, metrics, traces and error report.
+Each HTTP request will trigger a set of operations that are going to be logged, measured, tracked and traced. For those information to be usable, we must be able to link the logs, metrics, traces and error report together. We achieve that with a unique correlation ID. For a given request, the same correlation ID will appear on the logs, metrics, traces and error report.
 
 Note: InfluxDB indexes tags, so we put the correlation ID as tags to speed up queries. To query a tag, do not forget to simple quote it, otherwise it always returns empty results.
 
@@ -106,17 +88,11 @@ Gomock is used to automatically genarate mocks. See the Cloudtrust [Gitbook](htt
 
 The unit tests don't cover:
 
-- http client example (```./examples/http/http.go```)
-- grpc client example (```./examples/grpc/grpc.go```)
 - keycloak_bridge (```./cmd/keycloak_bridge.go```)
 
 The first two are provided as example.
 
 The ```keycloak_bridge.go``` is mostly just the main function doing all the wiring, it is difficult to test it with unit tests. It is covered by our integration tests.
-
-## Limitations
-
-The Redis connection does not handle errors well: if there is a problem, it is closed forever. We will implement our own redis client later, because we need load-balancing and circuit-breaking.
 
 [ci-img]: https://travis-ci.org/cloudtrust/keycloak-bridge.svg?branch=master
 [ci]: https://travis-ci.org/cloudtrust/keycloak-bridge

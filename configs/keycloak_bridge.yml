@@ -3,35 +3,27 @@
 
 # Component configs
 component-http-host-port: 0.0.0.0:8888
-component-grpc-host-port: 0.0.0.0:5555
-
-# Flaki ID generator
-flaki: false
-flaki-host-port: flaki:5555
 
 # Keycloak configs
 keycloak: false
 keycloak-api-uri: http://localhost:8080
-keycloak-oidc-uri: http://127.0.0.1:8080
+keycloak-oidc-uri: http://localhost:8080
 keycloak-username: admin
 keycloak-password: admin
 keycloak-timeout: 5s
-keycloak-client-creation-timeout: 40s
- 
-# Redis
-redis: false
-redis-host-port: 
-redis-password: 
-redis-database: 0
-redis-write-interval: 1s
 
-# Cockroach configs
-cockroach: false
-cockroach-host-port: 
-cockroach-username: 
-cockroach-password: 
-cockroach-database: 
-cockroach-clean-interval: 1m
+# Audit events
+events-DB: true
+db-host-port: 127.0.0.1:3306
+db-username: root
+db-password: admin 
+db-database: auditevents
+db-table: audit
+protocol: tcp
+
+# Rate limiting in requests/second.
+rate-event: 1000
+rate-management: 1000
 
 # Influx DB configs
 influx: false
@@ -55,30 +47,6 @@ jaeger-sampler-param: 1
 jaeger-sampler-host-port: 
 jaeger-reporter-logspan: false
 jaeger-write-interval: 1s
-jaeger-collector-healthcheck-host-port: 
 
 # Debug routes
 pprof-route-enabled: true
-
-# Jobs
-job: false
-job-es-health-validity: 1m
-job-flaki-health-validity: 1m
-job-influx-health-validity: 1m
-job-jaeger-health-validity: 1m
-job-redis-health-validity: 1m
-job-sentry-health-validity: 1m
-job-keycloak-health-validity: 1m
-
-#Audit events
-events-DB: true
-db-host-port: 127.0.0.1:3306
-db-username: root
-db-password: admin 
-db-database: auditevents
-db-table: audit
-protocol: tcp
-
-# Rate limiting in requests/second.
-rate-event: 1000
-rate-user: 1000

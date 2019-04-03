@@ -11,8 +11,6 @@ import (
 
 // Endpoints wraps a service behind a set of endpoints.
 type Endpoints struct {
-	TestEndpoint endpoint.Endpoint
-
 	GetRealm             endpoint.Endpoint
 	GetClient            endpoint.Endpoint
 	GetClients           endpoint.Endpoint
@@ -51,14 +49,6 @@ type ManagementComponent interface {
 	GetRole(ctx context.Context, realmName string, roleID string) (api.RoleRepresentation, error)
 	GetClientRoles(ctx context.Context, realmName, idClient string) ([]api.RoleRepresentation, error)
 	CreateClientRole(ctx context.Context, realmName, clientID string, role api.RoleRepresentation) (string, error)
-}
-
-// MakeHealthChecksEndpoint makes the HealthCheck endpoint.
-func MakeTestEndpoint() endpoint.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
-		//TODO
-		return nil, nil
-	}
 }
 
 // MakeRealmEndpoint makes the Realm endpoint to retrieve a realm.
@@ -206,7 +196,6 @@ func MakeResetPasswordEndpoint(managementComponent ManagementComponent) endpoint
 		if err != nil {
 			return nil, err
 		}
-
 
 		return nil, managementComponent.ResetPassword(ctx, m["realm"], m["userID"], password)
 	}
