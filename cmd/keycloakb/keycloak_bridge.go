@@ -71,7 +71,8 @@ func main() {
 	var c = config(log.With(logger, "unit", "config"))
 	var (
 		// Component
-		httpAddr = c.GetString("component-http-host-port")
+		httpAddr                = c.GetString("component-http-host-port")
+		authorizationConfigFile = c.GetString("authorization-file")
 
 		// Keycloak
 		keycloakConfig = keycloak.Config{
@@ -86,7 +87,6 @@ func main() {
 		jaegerEnabled     = c.GetBool("jaeger")
 		sentryEnabled     = c.GetBool("sentry")
 		pprofRouteEnabled = c.GetBool("pprof-route-enabled")
-		
 
 		// Influx
 		influxHTTPConfig = influx.HTTPConfig{
@@ -129,8 +129,8 @@ func main() {
 
 		// Rate limiting
 		rateLimit = map[string]int{
-			"event": c.GetInt("rate-event"),
-			"management":  c.GetInt("rate-management"),
+			"event":      c.GetInt("rate-event"),
+			"management": c.GetInt("rate-management"),
 		}
 	)
 
@@ -150,6 +150,18 @@ func main() {
 		signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
 		errc <- fmt.Errorf("%s", <-c)
 	}()
+
+	// Authorizations
+	var authorizations management.Authorizations
+	{
+		var err error
+		authorizations, err = management.LoadAuthorizations(authorizationConfigFile)
+
+		if err != nil {
+			logger.Log("msg", "could not load authorisations", "error", err)
+			return
+		}
+	}
 
 	// Keycloak client.
 	var keycloakClient *keycloak.Client
@@ -333,6 +345,7 @@ func main() {
 		var keycloakComponent management.Component
 		{
 			keycloakComponent = management.NewComponent(keycloakClient)
+			keycloakComponent = management.MakeAuthorisationManagementComponentMW(log.With(managementLogger, "mw", "endpoint"), keycloakClient, authorizations)(keycloakComponent)
 		}
 
 		var getRealmEndpoint endpoint.Endpoint
@@ -505,7 +518,6 @@ func main() {
 			sendVerifyEmailEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["management"]))(sendVerifyEmailEndpoint)
 		}
 
-		
 		managementEndpoints = management.Endpoints{
 			GetRealm:             getRealmEndpoint,
 			GetClients:           getClientsEndpoint,
@@ -670,6 +682,7 @@ func config(logger log.Logger) *viper.Viper {
 
 	// Component default.
 	v.SetDefault("config-file", "./configs/keycloak_bridge.yml")
+	v.SetDefault("authorization-file", "./configs/authorization.yml")
 	v.SetDefault("component-http-host-port", "0.0.0.0:8888")
 
 	// Keycloak default.
@@ -692,7 +705,6 @@ func config(logger log.Logger) *viper.Viper {
 	// Rate limiting (in requests/second)
 	v.SetDefault("rate-event", 1000)
 	v.SetDefault("rate-management", 1000)
-
 
 	// Influx DB client default.
 	v.SetDefault("influx", false)
@@ -720,10 +732,11 @@ func config(logger log.Logger) *viper.Viper {
 	// Debug routes enabled.
 	v.SetDefault("pprof-route-enabled", true)
 
-
 	// First level of override.
 	pflag.String("config-file", v.GetString("config-file"), "The configuration file path can be relative or absolute.")
+	pflag.String("authorization-file", v.GetString("authorization-file"), "The authorization file path can be relative or absolute.")
 	v.BindPFlag("config-file", pflag.Lookup("config-file"))
+	v.BindPFlag("authorization-file", pflag.Lookup("authorization-file"))
 	pflag.Parse()
 
 	// Load and log config.

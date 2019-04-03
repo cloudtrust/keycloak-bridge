@@ -95,6 +95,8 @@ func managementErrorHandler(ctx context.Context, err error, w http.ResponseWrite
 	switch e := errors.Cause(err).(type) {
 	case kc_client.HTTPError:
 		w.WriteHeader(e.HTTPStatus)
+	case ForbiddenError:
+		w.WriteHeader(http.StatusForbidden)
 	default:
 		if err == ratelimit.ErrLimited {
 			w.WriteHeader(http.StatusTooManyRequests)

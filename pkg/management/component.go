@@ -1,6 +1,5 @@
 package management
 
-
 import (
 	"context"
 
@@ -267,22 +266,22 @@ func (c *component) GetUsers(ctx context.Context, realmName string, paramKV ...s
 
 		if userKc.Attributes != nil {
 			var m = *userKc.Attributes
-	
+
 			if m["mobilephone"] != nil {
 				var mobilePhone = m["mobilephone"][0]
 				userRep.MobilePhone = &mobilePhone
 			}
-	
+
 			if m["label"] != nil {
 				var label = m["label"][0]
 				userRep.Label = &label
 			}
-	
+
 			if m["gender"] != nil {
 				var gender = m["gender"][0]
 				userRep.Gender = &gender
 			}
-	
+
 			if m["birthDate"] != nil {
 				var birthDate = m["birthDate"][0]
 				userRep.BirthDate = &birthDate
