@@ -154,6 +154,7 @@ func NewEventsDBModule(db DBEvents) EventsDBModule {
 
 func (cm *eventsDBModule) Store(_ context.Context, m map[string]string) error {
 
+	// the ct event type needs to be established before
 	// prepare the query to insert the event in the DB
 	origin := "keycloak" // for the moment only events of Keycloak
 	realmName := m["realmId"]
