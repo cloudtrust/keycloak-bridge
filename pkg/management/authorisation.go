@@ -2,9 +2,8 @@ package management
 
 import (
 	"context"
-	"fmt"
-	"io/ioutil"
 	"encoding/json"
+	"fmt"
 
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
 	kc "github.com/cloudtrust/keycloak-client"
@@ -18,8 +17,6 @@ type authorisationComponentMW struct {
 	logger         log.Logger
 	next           Component
 }
-
-
 
 // MakeAuthorisationManagementComponentMW checks authorisation and return an error if the action is not allowed.
 func MakeAuthorisationManagementComponentMW(logger log.Logger, keycloakClient KeycloakClient, authorisations Authorizations) func(Component) Component {
@@ -103,7 +100,7 @@ func (c *authorisationComponentMW) UpdateUser(ctx context.Context, realmName, us
 func (c *authorisationComponentMW) GetUsers(ctx context.Context, realmName string, paramKV ...string) ([]api.UserRepresentation, error) {
 	var action = "GetUsers"
 	var targetRealm = realmName
- 
+
 	// TODO Adapt after Get users is changed
 	if err := c.checkAuthorisationOnTargetGroup(ctx, action, targetRealm, "*"); err != nil {
 		return []api.UserRepresentation{}, err
@@ -116,8 +113,10 @@ func (c *authorisationComponentMW) CreateUser(ctx context.Context, realmName str
 	var action = "CreateUser"
 	var targetRealm = realmName
 
-	if err := c.checkAuthorisationOnTargetGroup(ctx, action, targetRealm, *user.Group); err != nil {
-		return "", err
+	for _, targetGroup := range *user.Groups {
+		if err := c.checkAuthorisationOnTargetGroup(ctx, action, targetRealm, targetGroup); err != nil {
+			return "", err
+		}
 	}
 
 	return c.next.CreateUser(ctx, realmName, user)
@@ -223,105 +222,120 @@ func (c *authorisationComponentMW) CreateClientRole(ctx context.Context, realmNa
 }
 
 func (c *authorisationComponentMW) checkAuthorisationOnTargetUser(ctx context.Context, action, targetRealm, userID string) error {
-	var currentRealm = ctx.Value("realm").(string)
-	var currentGroup = ctx.Value("group").(string)
 	var accessToken = ctx.Value("access_token").(string)
 
-	_, okWildcard := c.authorisations[currentRealm][currentGroup][action][targetRealm]["*"]
-
-	if okWildcard {
-		// Allowed to perform action on everyone
-		return nil
-	}
-
-	// Check if allowed to perform this action on this specific group of user
+	// Retrieve the group of the target user
 
 	var userRep kc.UserRepresentation
 	var err error
 	if userRep, err = c.keycloakClient.GetUser(accessToken, targetRealm, userID); err != nil {
-		// TODO be more precise could be due to a technical error maybe something else that forbidden
 		return ForbiddenError{}
 	}
 
-	var targetGroups = *userRep.Groups
-
-	if len(targetGroups) <= 0 {
-		c.logger.Log("Operation not allowed", fmt.Sprintf("no group assigned to user %s", userID))
+	if userRep.Groups == nil {
+		// No groups assigned, nothing allowed
 		return ForbiddenError{}
 	}
 
-	if len(targetGroups) > 1 {
-		c.logger.Log("Warning", "Only first group is took into account for authorisation evaluation")
+	for _, targetGroup := range *userRep.Groups {
+		if c.checkAuthorisationOnTargetGroup(ctx, action, targetRealm, targetGroup) == nil {
+			return nil
+		}
 	}
 
-	var targetGroup = targetGroups[0]
-
-	_, ok := c.authorisations[currentRealm][currentGroup][action][targetRealm][targetGroup]
-
-	if !ok {
-		return ForbiddenError{}
-	}
-
-	return nil
+	return ForbiddenError{}
 }
 
 func (c *authorisationComponentMW) checkAuthorisationOnTargetGroup(ctx context.Context, action, targetRealm, targetGroup string) error {
 	var currentRealm = ctx.Value("realm").(string)
-	var currentGroup = ctx.Value("group").(string)
+	var currentGroups = ctx.Value("groups").([]string)
 
-	_, okWildcard := c.authorisations[currentRealm][currentGroup][action][targetRealm]["*"]
+	for _, group := range currentGroups {
+		targetGroupAllowed, wildcard := c.authorisations[currentRealm][group][action]["*"]
 
-	if okWildcard {
-		// Allowed to perform action on everyone
-		return nil
+		if wildcard {
+			_, allGroupsAllowed := targetGroupAllowed["*"]
+			_, groupAllowed := targetGroupAllowed[targetGroup]
+
+			if allGroupsAllowed || groupAllowed {
+				return nil
+			}
+		}
+
+		targetGroupAllowed, nonMasterRealmAllowed := c.authorisations[currentRealm][group][action]["/"]
+
+		if targetRealm != "master" && nonMasterRealmAllowed {
+			_, allGroupsAllowed := targetGroupAllowed["*"]
+			_, groupAllowed := targetGroupAllowed[targetGroup]
+
+			if allGroupsAllowed || groupAllowed {
+				return nil
+			}
+		}
+
+		targetGroupAllowed, realmAllowed := c.authorisations[currentRealm][group][action][targetRealm]
+
+		if realmAllowed {
+			_, allGroupsAllowed := targetGroupAllowed["*"]
+			_, groupAllowed := targetGroupAllowed[targetGroup]
+
+			if allGroupsAllowed || groupAllowed {
+				return nil
+			}
+		}
 	}
 
-	// Check if allowed to perform this action on this specific group of user
-	_, ok := c.authorisations[currentRealm][currentGroup][action][targetRealm][targetGroup]
-
-	if !ok {
-		return ForbiddenError{}
-	}
-
-	return nil
+	return ForbiddenError{}
 }
 
 func (c *authorisationComponentMW) checkAuthorisationOnTargetRealm(ctx context.Context, action, targetRealm string) error {
 	var currentRealm = ctx.Value("realm").(string)
-	var currentGroup = ctx.Value("groups").(string)
+	var currentGroups = ctx.Value("groups").([]string)
 
-	_, ok := c.authorisations[currentRealm][currentGroup][action][targetRealm]
+	for _, group := range currentGroups {
+		_, wildcard := c.authorisations[currentRealm][group][action]["*"]
+		_, nonMasterRealmAllowed := c.authorisations[currentRealm][group][action]["/"]
+		_, realmAllowed := c.authorisations[currentRealm][group][action][targetRealm]
 
-	if !ok {
-		return ForbiddenError{}
+		if wildcard || realmAllowed || (targetRealm != "master" && nonMasterRealmAllowed) {
+			return nil
+		}
 	}
 
-	return nil
+	return ForbiddenError{}
 }
 
 // ForbiddenError when an operation is not permitted.
-type ForbiddenError struct {}
+type ForbiddenError struct{}
 
 func (e ForbiddenError) Error() string {
 	return "ForbiddenError: Operation not permitted."
 }
 
-// Authorizations data structure 
+// Authorizations data structure
 // 4 dimensions table to express authorisations (realm_of_user, role_of_user, action, target_realm) -> target_group for which the action is allowed
 type Authorizations map[string]map[string]map[string]map[string]map[string]struct{}
 
 // LoadAuthorizations loads the authorization YAML into the data structure
-func LoadAuthorizations(authorizationConfigPath string) (Authorizations, error) {
-	jsonAuthz, err := ioutil.ReadFile(authorizationConfigPath)
-
-	if err != nil {
-		return nil, err
+// Authorisation matrix is a 4 dimensions table :
+//   - realm_of_user
+//   - role_of_user
+//   - action
+//   - target_realm
+// -> target_groups for which the action is allowed
+//
+// Note:
+//   '*' can be used to express all target realms
+//   '-' can be used to express all non master realms
+//   '*' can be used to express all target groups are allowed
+func LoadAuthorizations(jsonAuthz string) (Authorizations, error) {
+	if jsonAuthz == "" {
+		return nil, fmt.Errorf("JSON structure expected.")
 	}
-
 	var authz = make(Authorizations)
 
-	if err = json.Unmarshal(jsonAuthz, &authz); err != nil {
-		return nil ,err
+	if err := json.Unmarshal([]byte(jsonAuthz), &authz); err != nil {
+		return nil, err
 	}
 
 	return authz, nil

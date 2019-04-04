@@ -12,7 +12,7 @@ type UserRepresentation struct {
 	Label         *string `json:"label,omitempty"`
 	Gender        *string `json:"gender,omitempty"`
 	BirthDate     *string `json:"birthDate,omitempty"`
-	Group         *string `json:"group,omitempty"`
+	Groups         *[]string `json:"group,omitempty"`
 }
 
 type RealmRepresentation struct {

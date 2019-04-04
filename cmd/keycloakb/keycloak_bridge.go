@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"net/http/pprof"
@@ -154,8 +155,14 @@ func main() {
 	// Authorizations
 	var authorizations management.Authorizations
 	{
-		var err error
-		authorizations, err = management.LoadAuthorizations(authorizationConfigFile)
+		json, err := ioutil.ReadFile(authorizationConfigFile)
+
+		if err != nil {
+			logger.Log("msg", "could not read YAML authorisation file", "error", err)
+			return
+		}
+
+		authorizations, err = management.LoadAuthorizations(string(json))
 
 		if err != nil {
 			logger.Log("msg", "could not load authorisations", "error", err)
@@ -682,7 +689,7 @@ func config(logger log.Logger) *viper.Viper {
 
 	// Component default.
 	v.SetDefault("config-file", "./configs/keycloak_bridge.yml")
-	v.SetDefault("authorization-file", "./configs/authorization.yml")
+	v.SetDefault("authorization-file", "./configs/authorization.json")
 	v.SetDefault("component-http-host-port", "0.0.0.0:8888")
 
 	// Keycloak default.

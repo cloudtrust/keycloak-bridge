@@ -64,6 +64,8 @@ func MakeHTTPOIDCTokenValidationMW(keycloakClient KeycloakClient, logger log.Log
 			var issuer = jot.JWT.Issuer
 			var splitIssuer = strings.Split(issuer, "/auth/realms/")
 			var realm = splitIssuer[1]
+			var groups = extractGroups(jot.Groups)
+
 
 			if err = keycloakClient.VerifyToken(realm, accessToken); err != nil {
 				logger.Log("Authorisation Error", err)
@@ -74,6 +76,8 @@ func MakeHTTPOIDCTokenValidationMW(keycloakClient KeycloakClient, logger log.Log
 			var ctx = context.WithValue(req.Context(), "access_token", accessToken)
 			ctx = context.WithValue(ctx, "realm", realm)
 			ctx = context.WithValue(ctx, "username", username)
+			ctx = context.WithValue(ctx, "groups", groups)
+
 			next.ServeHTTP(w, req.WithContext(ctx))
 
 		})
@@ -84,6 +88,7 @@ func MakeHTTPOIDCTokenValidationMW(keycloakClient KeycloakClient, logger log.Log
 type Token struct {
 	*jwt.JWT
 	Username string `json:"preferred_username,omitempty"`
+	Groups []string `json:"groups,omitempty"`
 }
 
 // MakeEndpointTokenForRealmMW makes a Endpoint middleware responsible to ensure
@@ -109,4 +114,14 @@ func MakeEndpointTokenForRealmMW(logger log.Logger) endpoint.Middleware {
 			return next(ctx, req)
 		}
 	}
+}
+
+func extractGroups(kcGroups []string) []string {
+	var groups = []string{}
+
+	for _, kcGroup := range kcGroups {
+		groups = append(groups, strings.TrimPrefix(kcGroup, "/"))
+	}
+
+	return groups
 }

@@ -85,13 +85,17 @@ func TestHTTPOIDCTokenValidationMW(t *testing.T) {
 
 }
 
+func TestContextHTTPOIDCTokenValidationMW(t *testing.T) {
+	// TODO faire un test pour tester le context qui est créé grace au token JWT
+	assert.True(t, false)
+}
+
 func TestEndpointTokenForRealmMW(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 	var mockLogger = mock.NewLogger(mockCtrl)
 	var mockComponent = mock.NewManagementComponent(mockCtrl)
 	mockComponent.EXPECT().GetRealm(gomock.Any(), gomock.Any()).Return(api.RealmRepresentation{}, nil)
-
 
 	var m = MakeEndpointTokenForRealmMW(mockLogger)(management.MakeGetRealmEndpoint(mockComponent))
 

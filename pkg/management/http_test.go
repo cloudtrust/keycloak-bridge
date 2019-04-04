@@ -136,6 +136,18 @@ func TestHTTPErrorHandler(t *testing.T) {
 		assert.Equal(t, http.NoBody, res.Body)
 	}
 
+	// Forbidden error.
+	{
+		mockComponent.EXPECT().CreateUser(gomock.Any(), "master", user).Return("", ForbiddenError{}).Times(1)
+
+		var body = strings.NewReader(string(userJSON))
+		res, err := http.Post(ts.URL+"/realms/master/users", "application/json", body)
+
+		assert.Nil(t, err)
+		assert.Equal(t, http.StatusForbidden, res.StatusCode)
+		assert.Equal(t, http.NoBody, res.Body)
+	}
+
 	// Bad request.
 	{
 		var body = strings.NewReader("?/%&asd==")
