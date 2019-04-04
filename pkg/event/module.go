@@ -4,6 +4,8 @@ package event
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"time"
 
 	"database/sql"
@@ -154,25 +156,51 @@ func NewEventsDBModule(db DBEvents) EventsDBModule {
 
 func (cm *eventsDBModule) Store(_ context.Context, m map[string]string) error {
 
-	// the ct event type needs to be established before
-	// prepare the query to insert the event in the DB
+	// m["details"] is a map[string]string
+	eventDetails := []byte(m["details"])
+	var f map[string]string
+	err := json.Unmarshal(eventDetails, &f)
+
+	if err != nil {
+		return err
+	}
+
+	// if ctEventType is not "", then record the events in MariaDB
+
+	fmt.Println("The whole event is")
+	fmt.Println(m)
 	origin := "keycloak" // for the moment only events of Keycloak
 	realmName := m["realmId"]
 	agentUserID := ""   // no agents, only events from Keycloak
 	agentUsername := "" // no agents, only events from Keycloak
 	userID := m["userId"]
-	username := m["username"]
-	ctEventType := ""
+	username := f["username"] // username is in the details
+	ctEventType := ""         // the ct event type needs to be established before
 	kcEventType := m["type"]
 	kcOperationType := m["operationType"]
-	clientID := m["clienId"]
-	additionalInfo := "" // all the rest in a JSON?
-	/*if m["type"] == "LOGIN_ERROR" {
-		fmt.Println("The rest of event:")
-		fmt.Println(m)
-	}*/
+	clientID := m["clientId"]
 
-	_, err := cm.db.Exec(insertEvent, origin, realmName, agentUserID, agentUsername, userID, username, ctEventType, kcEventType, kcOperationType, clientID, additionalInfo)
+	// put all the other details of the events in additionInfo column of the DB
+	var infoMap map[string]string
+	infoMap = make(map[string]string)
+	for k, v := range m {
+		// exclude all the event details that are already inserted in the DB
+		if k != "realmId" && k != "userId" && k != "type" && k != "operationType" && k != "clientId" && k != "details" {
+			infoMap[k] = v
+		}
+	}
+	for k, v := range f {
+		if k != "username" {
+			infoMap[k] = v
+		}
+	}
+	infos, err := json.Marshal(infoMap)
+	if err != nil {
+		return err
+	}
+	additionalInfo := string(infos)
+
+	_, err = cm.db.Exec(insertEvent, origin, realmName, agentUserID, agentUsername, userID, username, ctEventType, kcEventType, kcOperationType, clientID, additionalInfo)
 
 	if err != nil {
 		//TODO: how is this error treated further?

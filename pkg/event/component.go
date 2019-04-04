@@ -4,6 +4,7 @@ package event
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"sync"
@@ -150,15 +151,18 @@ func eventToMap(event *fb.Event) map[string]string {
 	eventMap["ipAddress"] = string(event.IpAddress())
 	eventMap["error"] = string(event.Error())
 
-	var detailsString string
+	var detailsMap map[string]string
+	detailsMap = make(map[string]string)
 	var detailsLength = event.DetailsLength()
 	for i := 0; i < detailsLength; i++ {
 		var tuple = new(fb.Tuple)
 		event.Details(tuple, i)
-		detailsString += (string(tuple.Key()) + ":" + string(tuple.Value()) + ",")
+		detailsMap[string(tuple.Key())] = string(tuple.Value())
 	}
 
-	eventMap["details"] = "{" + fmt.Sprint(detailsString) + "}"
+	// BE AWARE: error is not treated
+	detailsJson, _ := json.Marshal(detailsMap)
+	eventMap["details"] = string(detailsJson)
 	return eventMap
 }
 
@@ -193,7 +197,6 @@ func apply(ctx context.Context, fs [](FuncEvent), param map[string]string) error
 	return nil
 }
 
-
-func epochMilliToTime(milli int64) time.Time{
-	return time.Unix(0, milli * 1000000)
+func epochMilliToTime(milli int64) time.Time {
+	return time.Unix(0, milli*1000000)
 }
