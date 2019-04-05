@@ -86,52 +86,41 @@ func TestHTTPOIDCTokenValidationMW(t *testing.T) {
 }
 
 func TestContextHTTPOIDCTokenValidationMW(t *testing.T) {
-	// TODO faire un test pour tester le context qui est créé grace au token JWT
-	assert.True(t, false)
-}
+	var token = "eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJJZTVzcXBLdTNwb1g5d1U3YTBhamxnUFlGRHFTTUF5M2l6NEZpelp4d2dnIn0.eyJqdGkiOiI3NTA4ZWE2ZC0wMGQzLTRjM2YtOTk2Yi01ZDNhODZkZWRiOTciLCJleHAiOjE1NTQ0OTI0NTcsIm5iZiI6MCwiaWF0IjoxNTU0NDU2NDU3LCJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwODAvYXV0aC9yZWFsbXMvbWFzdGVyIiwic3ViIjoiNzM5M2FiMWEtNWIwNC00M2Y1LTgwNDktOGE5NDkyMzJlZDBhIiwidHlwIjoiQmVhcmVyIiwiYXpwIjoiYWRtaW4tY2xpIiwiYXV0aF90aW1lIjowLCJzZXNzaW9uX3N0YXRlIjoiMDJiOGZmMWYtMmRmYS00NmNhLThiN2MtNzA2YTQwNDA1NzlkIiwiYWNyIjoiMSIsInNjb3BlIjoib3BlbmlkIHByb2ZpbGUgZ3JvdXBzIGVtYWlsIiwiZW1haWxfdmVyaWZpZWQiOmZhbHNlLCJncm91cHMiOlsiL3RvZSJdLCJwcmVmZXJyZWRfdXNlcm5hbWUiOiJhZG1pbiIsImVtYWlsIjoidmluY2VudC5sb3VwQGVsY2EuY2gifQ.gbAsszn0pr5yGdF9naURY1TlfKcsvPghoHrdJybN-9k0EE9mLfksDSsCrJnLj5o-1OinQ0GSRi1Y-DwHZgpP4RvPtWHr7_3zdidr8aJQuooJ3Vgdx7LcBSlBUl_YSzHL_fO5k0rxIR2tVZeMaFJXOpm_PNuyKeFeu8EbqOQdAMRDkBlLPNXeyBGpBAAXDAbGNL71ROlMcZotqLGipiweQjEMOqyp304qIn9Z-t1FvIvh8XkYIoU2eHgwWl4cjf_uFGzqdzGLSvV_z79dEILaG9P-dgvO4xRy8ciju2ii5kB0pZNWf2VDorFeYRwELHSbWt9ZEwZzaV5b5bv9gHKn4A"
 
-func TestEndpointTokenForRealmMW(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
+	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 	var mockLogger = mock.NewLogger(mockCtrl)
 	var mockComponent = mock.NewManagementComponent(mockCtrl)
-	mockComponent.EXPECT().GetRealm(gomock.Any(), gomock.Any()).Return(api.RealmRepresentation{}, nil)
 
-	var m = MakeEndpointTokenForRealmMW(mockLogger)(management.MakeGetRealmEndpoint(mockComponent))
+	var endpoint = management.MakeGetRealmEndpoint(mockComponent)
+	var handler = management.MakeManagementHandler(endpoint)
+	var m = MakeHTTPOIDCTokenValidationMW(mockKeycloakClient, mockLogger)(handler)
 
-	// Mismatch between authorised realm and requested one
-	// Context with realm coming from HTTP OIDC MW.
-	var ctx = context.WithValue(context.Background(), "realm", "client")
+	// HTTP request.
+	var req = httptest.NewRequest("POST", "http://cloudtrust.io/management/realms/master", bytes.NewReader([]byte{}))
 
-	var req = map[string]string{"realm": "master"}
-	_, err := m(ctx, req)
+	req.Header.Set("Authorization", "Bearer "+token)
 
-	assert.NotNil(t, err)
+	var w = httptest.NewRecorder()
+	mockKeycloakClient.EXPECT().VerifyToken("master", token).Return(nil).Times(1)
+	mockComponent.EXPECT().GetRealm(gomock.Any(), gomock.Any()).DoAndReturn(func (ctx context.Context, realm string) (api.RealmRepresentation, error){
+		var accessToken = ctx.Value("access_token").(string)
+		var realmCtx = ctx.Value("realm").(string)
+		var username = ctx.Value("username").(string)
+		var groups = ctx.Value("groups").([]string)
 
-	// Match between authorised realm and requested one
-	// Context with realm coming from HTTP OIDC MW.
-	ctx = context.WithValue(context.Background(), "realm", "master")
+		assert.Equal(t, accessToken, token)
+		assert.Equal(t, "master", realmCtx)
+		assert.Equal(t, "admin", username)
+		assert.Equal(t, []string{"toe"}, groups)
 
-	req = map[string]string{"realm": "master"}
-	_, err = m(ctx, req)
+		return api.RealmRepresentation{}, nil
+	}).Times(1)
 
-	assert.Nil(t, err)
+	m.ServeHTTP(w, req)
+	var result = w.Result()
+	assert.Equal(t, 200, result.StatusCode)
 
-	// Missing requested realm information
-	// Context with realm coming from HTTP OIDC MW.
-	ctx = context.WithValue(context.Background(), "realm", "master")
-
-	req = map[string]string{}
-	_, err = m(ctx, req)
-
-	assert.NotNil(t, err)
-
-	// Missing authorized realm information
-	// Context with realm coming from HTTP OIDC MW.
-	ctx = context.Background()
-
-	req = map[string]string{"realm": "master"}
-	_, err = m(ctx, req)
-
-	assert.NotNil(t, err)
 }

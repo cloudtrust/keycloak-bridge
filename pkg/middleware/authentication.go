@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/gbrlsnchs/jwt"
-	"github.com/go-kit/kit/endpoint"
 	"github.com/go-kit/kit/log"
 )
 
@@ -66,7 +65,6 @@ func MakeHTTPOIDCTokenValidationMW(keycloakClient KeycloakClient, logger log.Log
 			var realm = splitIssuer[1]
 			var groups = extractGroups(jot.Groups)
 
-
 			if err = keycloakClient.VerifyToken(realm, accessToken); err != nil {
 				logger.Log("Authorisation Error", err)
 				httpErrorHandler(context.TODO(), http.StatusForbidden, fmt.Errorf("Invalid token"), w)
@@ -87,33 +85,8 @@ func MakeHTTPOIDCTokenValidationMW(keycloakClient KeycloakClient, logger log.Log
 // Token is JWT token and the custom fields present in OIDC Token provided by Keycloak.
 type Token struct {
 	*jwt.JWT
-	Username string `json:"preferred_username,omitempty"`
-	Groups []string `json:"groups,omitempty"`
-}
-
-// MakeEndpointTokenForRealmMW makes a Endpoint middleware responsible to ensure
-// the request is allowed to perform the operation for the current realm.
-// During validation of JWT token, the realm of the token has been added into context.
-// This MW ensure the realm of the Token match the target realm of the request.
-func MakeEndpointTokenForRealmMW(logger log.Logger) endpoint.Middleware {
-	return func(next endpoint.Endpoint) endpoint.Endpoint {
-		return func(ctx context.Context, req interface{}) (interface{}, error) {
-			// Retrieve the realm of the context
-			var realmAuthorized = ctx.Value("realm")
-
-			// Extract the target realm of the request
-			var m = req.(map[string]string)
-			var realmRequested = m["realm"]
-			
-			// Assert both realms match
-			if realmAuthorized != realmRequested {
-				//TODO create a specific error to map it on 403
-				return ctx, fmt.Errorf("Invalid realm")
-			}
-
-			return next(ctx, req)
-		}
-	}
+	Username string   `json:"preferred_username,omitempty"`
+	Groups   []string `json:"groups,omitempty"`
 }
 
 func extractGroups(kcGroups []string) []string {

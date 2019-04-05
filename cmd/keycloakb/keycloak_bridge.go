@@ -361,7 +361,6 @@ func main() {
 			getRealmEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("realm_endpoint"))(getRealmEndpoint)
 			getRealmEndpoint = middleware.MakeEndpointLoggingMW(log.With(managementLogger, "mw", "endpoint"))(getRealmEndpoint)
 			getRealmEndpoint = middleware.MakeEndpointTracingMW(tracer, "realm_endpoint")(getRealmEndpoint)
-			getRealmEndpoint = middleware.MakeEndpointTokenForRealmMW(log.With(managementLogger, "mw", "endpoint"))(getRealmEndpoint)
 			getRealmEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["management"]))(getRealmEndpoint)
 		}
 
@@ -371,7 +370,6 @@ func main() {
 			getClientEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("get_client_endpoint"))(getClientEndpoint)
 			getClientEndpoint = middleware.MakeEndpointLoggingMW(log.With(managementLogger, "mw", "endpoint"))(getClientEndpoint)
 			getClientEndpoint = middleware.MakeEndpointTracingMW(tracer, "get_client_endpoint")(getClientEndpoint)
-			getClientEndpoint = middleware.MakeEndpointTokenForRealmMW(log.With(managementLogger, "mw", "endpoint"))(getClientEndpoint)
 			getClientEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["management"]))(getClientEndpoint)
 		}
 
@@ -381,7 +379,6 @@ func main() {
 			getClientsEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("get_clients_endpoint"))(getClientsEndpoint)
 			getClientsEndpoint = middleware.MakeEndpointLoggingMW(log.With(managementLogger, "mw", "endpoint"))(getClientsEndpoint)
 			getClientsEndpoint = middleware.MakeEndpointTracingMW(tracer, "get_clients_endpoint")(getClientsEndpoint)
-			getClientsEndpoint = middleware.MakeEndpointTokenForRealmMW(log.With(managementLogger, "mw", "endpoint"))(getClientsEndpoint)
 			getClientsEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["management"]))(getClientsEndpoint)
 		}
 
@@ -391,7 +388,6 @@ func main() {
 			getUserEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("get_user_endpoint"))(getUserEndpoint)
 			getUserEndpoint = middleware.MakeEndpointLoggingMW(log.With(managementLogger, "mw", "endpoint"))(getUserEndpoint)
 			getUserEndpoint = middleware.MakeEndpointTracingMW(tracer, "get_user_endpoint")(getUserEndpoint)
-			getUserEndpoint = middleware.MakeEndpointTokenForRealmMW(log.With(managementLogger, "mw", "endpoint"))(getUserEndpoint)
 			getUserEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["management"]))(getUserEndpoint)
 		}
 
@@ -401,7 +397,6 @@ func main() {
 			createUserEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("create_user_endpoint"))(createUserEndpoint)
 			createUserEndpoint = middleware.MakeEndpointLoggingMW(log.With(managementLogger, "mw", "endpoint"))(createUserEndpoint)
 			createUserEndpoint = middleware.MakeEndpointTracingMW(tracer, "create_user_endpoint")(createUserEndpoint)
-			createUserEndpoint = middleware.MakeEndpointTokenForRealmMW(log.With(managementLogger, "mw", "endpoint"))(createUserEndpoint)
 			createUserEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["management"]))(createUserEndpoint)
 		}
 
@@ -411,7 +406,6 @@ func main() {
 			updateUserEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("update_user_endpoint"))(updateUserEndpoint)
 			updateUserEndpoint = middleware.MakeEndpointLoggingMW(log.With(managementLogger, "mw", "endpoint"))(updateUserEndpoint)
 			updateUserEndpoint = middleware.MakeEndpointTracingMW(tracer, "update_user_endpoint")(updateUserEndpoint)
-			updateUserEndpoint = middleware.MakeEndpointTokenForRealmMW(log.With(managementLogger, "mw", "endpoint"))(updateUserEndpoint)
 			updateUserEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["management"]))(updateUserEndpoint)
 		}
 
@@ -421,7 +415,6 @@ func main() {
 			deleteUserEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("delete_user_endpoint"))(deleteUserEndpoint)
 			deleteUserEndpoint = middleware.MakeEndpointLoggingMW(log.With(managementLogger, "mw", "endpoint"))(deleteUserEndpoint)
 			deleteUserEndpoint = middleware.MakeEndpointTracingMW(tracer, "delete_user_endpoint")(deleteUserEndpoint)
-			deleteUserEndpoint = middleware.MakeEndpointTokenForRealmMW(log.With(managementLogger, "mw", "endpoint"))(deleteUserEndpoint)
 			deleteUserEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["management"]))(deleteUserEndpoint)
 		}
 
@@ -431,7 +424,6 @@ func main() {
 			getUsersEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("get_users_endpoint"))(getUsersEndpoint)
 			getUsersEndpoint = middleware.MakeEndpointLoggingMW(log.With(managementLogger, "mw", "endpoint"))(getUsersEndpoint)
 			getUsersEndpoint = middleware.MakeEndpointTracingMW(tracer, "get_users_endpoint")(getUsersEndpoint)
-			getUsersEndpoint = middleware.MakeEndpointTokenForRealmMW(log.With(managementLogger, "mw", "endpoint"))(getUsersEndpoint)
 			getUsersEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["management"]))(getUsersEndpoint)
 		}
 
@@ -441,7 +433,6 @@ func main() {
 			getRolesEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("get_roles_endpoint"))(getRolesEndpoint)
 			getRolesEndpoint = middleware.MakeEndpointLoggingMW(log.With(managementLogger, "mw", "endpoint"))(getRolesEndpoint)
 			getRolesEndpoint = middleware.MakeEndpointTracingMW(tracer, "get_roles_endpoint")(getRolesEndpoint)
-			getRolesEndpoint = middleware.MakeEndpointTokenForRealmMW(log.With(managementLogger, "mw", "endpoint"))(getRolesEndpoint)
 			getRolesEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["management"]))(getRolesEndpoint)
 		}
 
@@ -451,7 +442,6 @@ func main() {
 			getRoleEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("get_role_endpoint"))(getRoleEndpoint)
 			getRoleEndpoint = middleware.MakeEndpointLoggingMW(log.With(managementLogger, "mw", "endpoint"))(getRoleEndpoint)
 			getRoleEndpoint = middleware.MakeEndpointTracingMW(tracer, "get_role_endpoint")(getRoleEndpoint)
-			getRoleEndpoint = middleware.MakeEndpointTokenForRealmMW(log.With(managementLogger, "mw", "endpoint"))(getRoleEndpoint)
 			getRoleEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["management"]))(getRoleEndpoint)
 		}
 
@@ -461,7 +451,6 @@ func main() {
 			createClientRoleEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("create_client_role_endpoint"))(createClientRoleEndpoint)
 			createClientRoleEndpoint = middleware.MakeEndpointLoggingMW(log.With(managementLogger, "mw", "endpoint"))(createClientRoleEndpoint)
 			createClientRoleEndpoint = middleware.MakeEndpointTracingMW(tracer, "create_client_role_endpoint")(createClientRoleEndpoint)
-			createClientRoleEndpoint = middleware.MakeEndpointTokenForRealmMW(log.With(managementLogger, "mw", "endpoint"))(createClientRoleEndpoint)
 			createClientRoleEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["management"]))(createClientRoleEndpoint)
 		}
 
@@ -471,7 +460,6 @@ func main() {
 			getClientRolesEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("get_client_roles_endpoint"))(getClientRolesEndpoint)
 			getClientRolesEndpoint = middleware.MakeEndpointLoggingMW(log.With(managementLogger, "mw", "endpoint"))(getClientRolesEndpoint)
 			getClientRolesEndpoint = middleware.MakeEndpointTracingMW(tracer, "get_client_roles_endpoint")(getClientRolesEndpoint)
-			getClientRolesEndpoint = middleware.MakeEndpointTokenForRealmMW(log.With(managementLogger, "mw", "endpoint"))(getClientRolesEndpoint)
 			getClientRolesEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["management"]))(getClientRolesEndpoint)
 		}
 
@@ -481,7 +469,6 @@ func main() {
 			getClientRolesForUserEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("get_client_roles_for_user_endpoint"))(getClientRolesForUserEndpoint)
 			getClientRolesForUserEndpoint = middleware.MakeEndpointLoggingMW(log.With(managementLogger, "mw", "endpoint"))(getClientRolesForUserEndpoint)
 			getClientRolesForUserEndpoint = middleware.MakeEndpointTracingMW(tracer, "get_client_roles_for_user_endpoint")(getClientRolesForUserEndpoint)
-			getClientRolesForUserEndpoint = middleware.MakeEndpointTokenForRealmMW(log.With(managementLogger, "mw", "endpoint"))(getClientRolesForUserEndpoint)
 			getClientRolesForUserEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["management"]))(getClientRolesForUserEndpoint)
 		}
 
@@ -491,7 +478,6 @@ func main() {
 			addClientRolesToUserEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("get_client_roles_for_user_endpoint"))(addClientRolesToUserEndpoint)
 			addClientRolesToUserEndpoint = middleware.MakeEndpointLoggingMW(log.With(managementLogger, "mw", "endpoint"))(addClientRolesToUserEndpoint)
 			addClientRolesToUserEndpoint = middleware.MakeEndpointTracingMW(tracer, "get_client_roles_for_user_endpoint")(addClientRolesToUserEndpoint)
-			addClientRolesToUserEndpoint = middleware.MakeEndpointTokenForRealmMW(log.With(managementLogger, "mw", "endpoint"))(addClientRolesToUserEndpoint)
 			addClientRolesToUserEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["management"]))(addClientRolesToUserEndpoint)
 		}
 
@@ -501,7 +487,6 @@ func main() {
 			getRealmRolesForUserEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("get_realm_roles_for_user_endpoint"))(getRealmRolesForUserEndpoint)
 			getRealmRolesForUserEndpoint = middleware.MakeEndpointLoggingMW(log.With(managementLogger, "mw", "endpoint"))(getRealmRolesForUserEndpoint)
 			getRealmRolesForUserEndpoint = middleware.MakeEndpointTracingMW(tracer, "get_realm_roles_for_user_endpoint")(getRealmRolesForUserEndpoint)
-			getRealmRolesForUserEndpoint = middleware.MakeEndpointTokenForRealmMW(log.With(managementLogger, "mw", "endpoint"))(getRealmRolesForUserEndpoint)
 			getRealmRolesForUserEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["management"]))(getRealmRolesForUserEndpoint)
 		}
 
@@ -511,7 +496,6 @@ func main() {
 			resetPasswordEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("reset_password_endpoint"))(resetPasswordEndpoint)
 			resetPasswordEndpoint = middleware.MakeEndpointLoggingMW(log.With(managementLogger, "mw", "endpoint"))(resetPasswordEndpoint)
 			resetPasswordEndpoint = middleware.MakeEndpointTracingMW(tracer, "reset_password_endpoint")(resetPasswordEndpoint)
-			resetPasswordEndpoint = middleware.MakeEndpointTokenForRealmMW(log.With(managementLogger, "mw", "endpoint"))(resetPasswordEndpoint)
 			resetPasswordEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["management"]))(resetPasswordEndpoint)
 		}
 
@@ -521,7 +505,6 @@ func main() {
 			sendVerifyEmailEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("send_verify_email_endpoint"))(sendVerifyEmailEndpoint)
 			sendVerifyEmailEndpoint = middleware.MakeEndpointLoggingMW(log.With(managementLogger, "mw", "endpoint"))(sendVerifyEmailEndpoint)
 			sendVerifyEmailEndpoint = middleware.MakeEndpointTracingMW(tracer, "send_verify_email_endpoint")(sendVerifyEmailEndpoint)
-			sendVerifyEmailEndpoint = middleware.MakeEndpointTokenForRealmMW(log.With(managementLogger, "mw", "endpoint"))(sendVerifyEmailEndpoint)
 			sendVerifyEmailEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["management"]))(sendVerifyEmailEndpoint)
 		}
 
