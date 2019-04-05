@@ -219,11 +219,13 @@ func TestGetUsersEndpoint(t *testing.T) {
 	// No error - Without param
 	{
 		var realm = "master"
+		var group = "Support"
 		var ctx = context.Background()
 		var req = make(map[string]string)
 		req["realm"] = realm
+		req["group"] = "Support"
 
-		mockManagementComponent.EXPECT().GetUsers(ctx, realm).Return([]api.UserRepresentation{}, nil).Times(1)
+		mockManagementComponent.EXPECT().GetUsers(ctx, realm, group, "group", req["group"]).Return([]api.UserRepresentation{}, nil).Times(1)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.NotNil(t, res)
@@ -241,13 +243,25 @@ func TestGetUsersEndpoint(t *testing.T) {
 		req["max"] = "10"
 		req["username"] = "username"
 		req["toto"] = "tutu" // Check this param is not transmitted
+		req["group"] = "Support"
 
-		mockManagementComponent.EXPECT().GetUsers(ctx, realm, "email", req["email"], "firstName", req["firstName"], "lastName", req["lastName"], "max", req["max"], "username", req["username"]).Return([]api.UserRepresentation{}, nil).Times(1)
+		mockManagementComponent.EXPECT().GetUsers(ctx, realm, req["group"], "email", req["email"], "firstName", req["firstName"], "lastName", req["lastName"], "max", req["max"], "username", req["username"], "group", req["group"]).Return([]api.UserRepresentation{}, nil).Times(1)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.NotNil(t, res)
 	}
 
+	// Missing mandatory parameter group
+	{
+		var realm = "master"
+		var ctx = context.Background()
+		var req = make(map[string]string)
+		req["realm"] = realm
+
+		var res, err = e(ctx, req)
+		assert.NotNil(t, err)
+		assert.Nil(t, res)
+	}
 }
 
 func TestGetClientRolesForUserEndpoint(t *testing.T) {

@@ -97,16 +97,16 @@ func (c *authorisationComponentMW) UpdateUser(ctx context.Context, realmName, us
 	return c.next.UpdateUser(ctx, realmName, userID, user)
 }
 
-func (c *authorisationComponentMW) GetUsers(ctx context.Context, realmName string, paramKV ...string) ([]api.UserRepresentation, error) {
+func (c *authorisationComponentMW) GetUsers(ctx context.Context, realmName, group string, paramKV ...string) ([]api.UserRepresentation, error) {
 	var action = "GetUsers"
 	var targetRealm = realmName
 
 	// TODO Adapt after Get users is changed
-	if err := c.checkAuthorisationOnTargetGroup(ctx, action, targetRealm, "*"); err != nil {
+	if err := c.checkAuthorisationOnTargetGroup(ctx, action, targetRealm, group); err != nil {
 		return []api.UserRepresentation{}, err
 	}
 
-	return c.next.GetUsers(ctx, realmName, paramKV...)
+	return c.next.GetUsers(ctx, realmName, group, paramKV...)
 }
 
 func (c *authorisationComponentMW) CreateUser(ctx context.Context, realmName string, user api.UserRepresentation) (string, error) {

@@ -18,6 +18,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestHTTPResponse(t *testing.T) {
+	// Coverage
+	var kcError = CreateMissingParameterError("parameter")
+	assert.Contains(t, kcError.Error(), kcError.Message)
+}
+
 func TestHTTPManagementHandler(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -171,6 +177,22 @@ func TestHTTPErrorHandler(t *testing.T) {
 
 		assert.Nil(t, err)
 		assert.Equal(t, http.StatusNotFound, res.StatusCode)
+		assert.Equal(t, http.NoBody, res.Body)
+	}
+
+	// HTTPResponse Error
+	{
+		var kcError = HTTPError{
+			Status:  401,
+			Message: "Unauthorized",
+		}
+		mockComponent.EXPECT().CreateUser(gomock.Any(), "master", user).Return("", kcError).Times(1)
+
+		var body = strings.NewReader(string(userJSON))
+		res, err := http.Post(ts.URL+"/realms/master/users", "application/json", body)
+
+		assert.Nil(t, err)
+		assert.Equal(t, http.StatusUnauthorized, res.StatusCode)
 		assert.Equal(t, http.NoBody, res.Body)
 	}
 }

@@ -425,6 +425,7 @@ func TestDeny(t *testing.T) {
 	var roleID = "456-852-785"
 	var userUsername = "toto"
 	var userGroups = []string{"customer"}
+	var groupName = "titi"
 
 	var roleName = "role"
 
@@ -482,7 +483,7 @@ func TestDeny(t *testing.T) {
 		err = authorisationMW.UpdateUser(ctx, realmName, userID, user)
 		assert.Equal(t, ForbiddenError{}, err)
 
-		_, err = authorisationMW.GetUsers(ctx, realmName)
+		_, err = authorisationMW.GetUsers(ctx, realmName, groupName)
 		assert.Equal(t, ForbiddenError{}, err)
 
 		_, err = authorisationMW.CreateUser(ctx, realmName, user)
@@ -535,6 +536,8 @@ func TestAllowed(t *testing.T) {
 	var userGroups = []string{"customer"}
 
 	var roleName = "role"
+
+	var groupName = "titi"
 
 	var pass = "P@ssw0rd"
 
@@ -618,8 +621,8 @@ func TestAllowed(t *testing.T) {
 		err = authorisationMW.UpdateUser(ctx, realmName, userID, user)
 		assert.Nil(t, err)
 
-		mockManagementComponent.EXPECT().GetUsers(ctx, realmName).Return([]api.UserRepresentation{}, nil).Times(1)
-		_, err = authorisationMW.GetUsers(ctx, realmName)
+		mockManagementComponent.EXPECT().GetUsers(ctx, realmName, groupName).Return([]api.UserRepresentation{}, nil).Times(1)
+		_, err = authorisationMW.GetUsers(ctx, realmName, groupName)
 		assert.Nil(t, err)
 
 		mockManagementComponent.EXPECT().CreateUser(ctx, realmName, user).Return("", nil).Times(1)

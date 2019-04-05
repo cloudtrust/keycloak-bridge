@@ -527,7 +527,7 @@ func TestGetUsers(t *testing.T) {
 
 		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
 
-		apiUsersRep, err := managementComponent.GetUsers(ctx, "master")
+		apiUsersRep, err := managementComponent.GetUsers(ctx, "master", "Support")
 
 		var apiUserRep = apiUsersRep[0]
 		assert.Nil(t, err)
@@ -549,7 +549,7 @@ func TestGetUsers(t *testing.T) {
 
 		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
 
-		_, err := managementComponent.GetUsers(ctx, "master")
+		_, err := managementComponent.GetUsers(ctx, "master", "Support")
 
 		assert.NotNil(t, err)
 	}
