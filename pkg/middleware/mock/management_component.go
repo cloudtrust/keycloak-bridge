@@ -36,7 +36,6 @@ func (m *ManagementComponent) EXPECT() *ManagementComponentMockRecorder {
 
 // AddClientRolesToUser mocks base method
 func (m *ManagementComponent) AddClientRolesToUser(arg0 context.Context, arg1, arg2, arg3 string, arg4 []management.RoleRepresentation) error {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddClientRolesToUser", arg0, arg1, arg2, arg3, arg4)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -44,13 +43,11 @@ func (m *ManagementComponent) AddClientRolesToUser(arg0 context.Context, arg1, a
 
 // AddClientRolesToUser indicates an expected call of AddClientRolesToUser
 func (mr *ManagementComponentMockRecorder) AddClientRolesToUser(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddClientRolesToUser", reflect.TypeOf((*ManagementComponent)(nil).AddClientRolesToUser), arg0, arg1, arg2, arg3, arg4)
 }
 
 // CreateClientRole mocks base method
 func (m *ManagementComponent) CreateClientRole(arg0 context.Context, arg1, arg2 string, arg3 management.RoleRepresentation) (string, error) {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateClientRole", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
@@ -59,13 +56,11 @@ func (m *ManagementComponent) CreateClientRole(arg0 context.Context, arg1, arg2 
 
 // CreateClientRole indicates an expected call of CreateClientRole
 func (mr *ManagementComponentMockRecorder) CreateClientRole(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateClientRole", reflect.TypeOf((*ManagementComponent)(nil).CreateClientRole), arg0, arg1, arg2, arg3)
 }
 
 // CreateUser mocks base method
 func (m *ManagementComponent) CreateUser(arg0 context.Context, arg1 string, arg2 management.UserRepresentation) (string, error) {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateUser", arg0, arg1, arg2)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
@@ -74,13 +69,11 @@ func (m *ManagementComponent) CreateUser(arg0 context.Context, arg1 string, arg2
 
 // CreateUser indicates an expected call of CreateUser
 func (mr *ManagementComponentMockRecorder) CreateUser(arg0, arg1, arg2 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUser", reflect.TypeOf((*ManagementComponent)(nil).CreateUser), arg0, arg1, arg2)
 }
 
 // DeleteUser mocks base method
 func (m *ManagementComponent) DeleteUser(arg0 context.Context, arg1, arg2 string) error {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteUser", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -88,13 +81,11 @@ func (m *ManagementComponent) DeleteUser(arg0 context.Context, arg1, arg2 string
 
 // DeleteUser indicates an expected call of DeleteUser
 func (mr *ManagementComponentMockRecorder) DeleteUser(arg0, arg1, arg2 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteUser", reflect.TypeOf((*ManagementComponent)(nil).DeleteUser), arg0, arg1, arg2)
 }
 
 // GetClient mocks base method
 func (m *ManagementComponent) GetClient(arg0 context.Context, arg1, arg2 string) (management.ClientRepresentation, error) {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetClient", arg0, arg1, arg2)
 	ret0, _ := ret[0].(management.ClientRepresentation)
 	ret1, _ := ret[1].(error)
@@ -103,13 +94,11 @@ func (m *ManagementComponent) GetClient(arg0 context.Context, arg1, arg2 string)
 
 // GetClient indicates an expected call of GetClient
 func (mr *ManagementComponentMockRecorder) GetClient(arg0, arg1, arg2 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClient", reflect.TypeOf((*ManagementComponent)(nil).GetClient), arg0, arg1, arg2)
 }
 
 // GetClientRoles mocks base method
 func (m *ManagementComponent) GetClientRoles(arg0 context.Context, arg1, arg2 string) ([]management.RoleRepresentation, error) {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetClientRoles", arg0, arg1, arg2)
 	ret0, _ := ret[0].([]management.RoleRepresentation)
 	ret1, _ := ret[1].(error)
@@ -118,13 +107,11 @@ func (m *ManagementComponent) GetClientRoles(arg0 context.Context, arg1, arg2 st
 
 // GetClientRoles indicates an expected call of GetClientRoles
 func (mr *ManagementComponentMockRecorder) GetClientRoles(arg0, arg1, arg2 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClientRoles", reflect.TypeOf((*ManagementComponent)(nil).GetClientRoles), arg0, arg1, arg2)
 }
 
 // GetClientRolesForUser mocks base method
 func (m *ManagementComponent) GetClientRolesForUser(arg0 context.Context, arg1, arg2, arg3 string) ([]management.RoleRepresentation, error) {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetClientRolesForUser", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].([]management.RoleRepresentation)
 	ret1, _ := ret[1].(error)
@@ -133,13 +120,11 @@ func (m *ManagementComponent) GetClientRolesForUser(arg0 context.Context, arg1, 
 
 // GetClientRolesForUser indicates an expected call of GetClientRolesForUser
 func (mr *ManagementComponentMockRecorder) GetClientRolesForUser(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClientRolesForUser", reflect.TypeOf((*ManagementComponent)(nil).GetClientRolesForUser), arg0, arg1, arg2, arg3)
 }
 
 // GetClients mocks base method
 func (m *ManagementComponent) GetClients(arg0 context.Context, arg1 string) ([]management.ClientRepresentation, error) {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetClients", arg0, arg1)
 	ret0, _ := ret[0].([]management.ClientRepresentation)
 	ret1, _ := ret[1].(error)
@@ -148,13 +133,11 @@ func (m *ManagementComponent) GetClients(arg0 context.Context, arg1 string) ([]m
 
 // GetClients indicates an expected call of GetClients
 func (mr *ManagementComponentMockRecorder) GetClients(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClients", reflect.TypeOf((*ManagementComponent)(nil).GetClients), arg0, arg1)
 }
 
 // GetRealm mocks base method
 func (m *ManagementComponent) GetRealm(arg0 context.Context, arg1 string) (management.RealmRepresentation, error) {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetRealm", arg0, arg1)
 	ret0, _ := ret[0].(management.RealmRepresentation)
 	ret1, _ := ret[1].(error)
@@ -163,13 +146,11 @@ func (m *ManagementComponent) GetRealm(arg0 context.Context, arg1 string) (manag
 
 // GetRealm indicates an expected call of GetRealm
 func (mr *ManagementComponentMockRecorder) GetRealm(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRealm", reflect.TypeOf((*ManagementComponent)(nil).GetRealm), arg0, arg1)
 }
 
 // GetRealmRolesForUser mocks base method
 func (m *ManagementComponent) GetRealmRolesForUser(arg0 context.Context, arg1, arg2 string) ([]management.RoleRepresentation, error) {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetRealmRolesForUser", arg0, arg1, arg2)
 	ret0, _ := ret[0].([]management.RoleRepresentation)
 	ret1, _ := ret[1].(error)
@@ -178,13 +159,11 @@ func (m *ManagementComponent) GetRealmRolesForUser(arg0 context.Context, arg1, a
 
 // GetRealmRolesForUser indicates an expected call of GetRealmRolesForUser
 func (mr *ManagementComponentMockRecorder) GetRealmRolesForUser(arg0, arg1, arg2 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRealmRolesForUser", reflect.TypeOf((*ManagementComponent)(nil).GetRealmRolesForUser), arg0, arg1, arg2)
 }
 
 // GetRole mocks base method
 func (m *ManagementComponent) GetRole(arg0 context.Context, arg1, arg2 string) (management.RoleRepresentation, error) {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetRole", arg0, arg1, arg2)
 	ret0, _ := ret[0].(management.RoleRepresentation)
 	ret1, _ := ret[1].(error)
@@ -193,13 +172,11 @@ func (m *ManagementComponent) GetRole(arg0 context.Context, arg1, arg2 string) (
 
 // GetRole indicates an expected call of GetRole
 func (mr *ManagementComponentMockRecorder) GetRole(arg0, arg1, arg2 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRole", reflect.TypeOf((*ManagementComponent)(nil).GetRole), arg0, arg1, arg2)
 }
 
 // GetRoles mocks base method
 func (m *ManagementComponent) GetRoles(arg0 context.Context, arg1 string) ([]management.RoleRepresentation, error) {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetRoles", arg0, arg1)
 	ret0, _ := ret[0].([]management.RoleRepresentation)
 	ret1, _ := ret[1].(error)
@@ -208,13 +185,11 @@ func (m *ManagementComponent) GetRoles(arg0 context.Context, arg1 string) ([]man
 
 // GetRoles indicates an expected call of GetRoles
 func (mr *ManagementComponentMockRecorder) GetRoles(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRoles", reflect.TypeOf((*ManagementComponent)(nil).GetRoles), arg0, arg1)
 }
 
 // GetUser mocks base method
 func (m *ManagementComponent) GetUser(arg0 context.Context, arg1, arg2 string) (management.UserRepresentation, error) {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetUser", arg0, arg1, arg2)
 	ret0, _ := ret[0].(management.UserRepresentation)
 	ret1, _ := ret[1].(error)
@@ -223,13 +198,11 @@ func (m *ManagementComponent) GetUser(arg0 context.Context, arg1, arg2 string) (
 
 // GetUser indicates an expected call of GetUser
 func (mr *ManagementComponentMockRecorder) GetUser(arg0, arg1, arg2 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUser", reflect.TypeOf((*ManagementComponent)(nil).GetUser), arg0, arg1, arg2)
 }
 
 // GetUsers mocks base method
 func (m *ManagementComponent) GetUsers(arg0 context.Context, arg1, arg2 string, arg3 ...string) ([]management.UserRepresentation, error) {
-	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1, arg2}
 	for _, a := range arg3 {
 		varargs = append(varargs, a)
@@ -242,14 +215,12 @@ func (m *ManagementComponent) GetUsers(arg0 context.Context, arg1, arg2 string, 
 
 // GetUsers indicates an expected call of GetUsers
 func (mr *ManagementComponentMockRecorder) GetUsers(arg0, arg1, arg2 interface{}, arg3 ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1, arg2}, arg3...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUsers", reflect.TypeOf((*ManagementComponent)(nil).GetUsers), varargs...)
 }
 
 // ResetPassword mocks base method
 func (m *ManagementComponent) ResetPassword(arg0 context.Context, arg1, arg2 string, arg3 management.PasswordRepresentation) error {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ResetPassword", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -257,13 +228,11 @@ func (m *ManagementComponent) ResetPassword(arg0 context.Context, arg1, arg2 str
 
 // ResetPassword indicates an expected call of ResetPassword
 func (mr *ManagementComponentMockRecorder) ResetPassword(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResetPassword", reflect.TypeOf((*ManagementComponent)(nil).ResetPassword), arg0, arg1, arg2, arg3)
 }
 
 // SendVerifyEmail mocks base method
 func (m *ManagementComponent) SendVerifyEmail(arg0 context.Context, arg1, arg2 string, arg3 ...string) error {
-	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1, arg2}
 	for _, a := range arg3 {
 		varargs = append(varargs, a)
@@ -275,14 +244,12 @@ func (m *ManagementComponent) SendVerifyEmail(arg0 context.Context, arg1, arg2 s
 
 // SendVerifyEmail indicates an expected call of SendVerifyEmail
 func (mr *ManagementComponentMockRecorder) SendVerifyEmail(arg0, arg1, arg2 interface{}, arg3 ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1, arg2}, arg3...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendVerifyEmail", reflect.TypeOf((*ManagementComponent)(nil).SendVerifyEmail), varargs...)
 }
 
 // UpdateUser mocks base method
 func (m *ManagementComponent) UpdateUser(arg0 context.Context, arg1, arg2 string, arg3 management.UserRepresentation) error {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateUser", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -290,6 +257,5 @@ func (m *ManagementComponent) UpdateUser(arg0 context.Context, arg1, arg2 string
 
 // UpdateUser indicates an expected call of UpdateUser
 func (mr *ManagementComponentMockRecorder) UpdateUser(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateUser", reflect.TypeOf((*ManagementComponent)(nil).UpdateUser), arg0, arg1, arg2, arg3)
 }
