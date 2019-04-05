@@ -175,7 +175,7 @@ func (cm *eventsDBModule) Store(_ context.Context, m map[string]string) error {
 		//userID - ID of the user that is impacted by the action
 		userID := "" // found in authdetails, in resourcePath
 		//username - username of the user that is impacted by the action
-		username := ""                    // found in authdetails key of the map
+		username := ""                    //
 		ctEventType := m["ct_event_type"] // the ct event type is established before at the component level
 		kcEventType := m["type"]
 		kcOperationType := m["operationType"]
@@ -194,7 +194,7 @@ func (cm *eventsDBModule) Store(_ context.Context, m map[string]string) error {
 		infoMap = make(map[string]string)
 		for k, v := range m {
 			// exclude all the event details that are already inserted in the DB
-			if k != "realmId" && k != "userId" && k != "type" && k != "operationType" && k != "clientId" && k != "details" && k != "ct_event_type" && k != "username" && k != "authdetails" {
+			if k != "realmId" && k != "userId" && k != "type" && k != "operationType" && k != "clientId" && k != "details" && k != "ct_event_type" && k != "username" && k != "authDetails" {
 				infoMap[k] = v
 			}
 		}
