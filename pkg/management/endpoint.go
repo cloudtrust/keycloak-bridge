@@ -3,11 +3,9 @@ package management
 import (
 	"context"
 	"encoding/json"
-	"net/http"
 	"strings"
 
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
-	kc_client "github.com/cloudtrust/keycloak-client"
 	"github.com/go-kit/kit/endpoint"
 )
 
@@ -151,10 +149,7 @@ func MakeGetUsersEndpoint(managementComponent ManagementComponent) endpoint.Endp
 
 		group, ok := m["group"]
 		if !ok {
-			return nil, kc_client.HTTPError{
-				HTTPStatus: http.StatusBadRequest,
-				Message:    "Missing mandatory parameter group",
-			}
+			return nil, CreateMissingParameterError("group")
 		}
 
 		return managementComponent.GetUsers(ctx, m["realm"], group, paramKV...)

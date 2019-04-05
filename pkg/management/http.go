@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	kc_client "github.com/cloudtrust/keycloak-client"
@@ -14,6 +15,24 @@ import (
 
 	"github.com/pkg/errors"
 )
+
+// HTTPResponse can be returned by the API endpoints
+type HTTPResponse struct {
+	Status  int
+	Message string
+}
+
+func (e HTTPResponse) Error() string {
+	return fmt.Sprintf("%d %s", e.Status, e.Message)
+}
+
+// CreateMissingParameterError creates a HTTPResponse for an error relative to a missing mandatory parameter
+func CreateMissingParameterError(name string) HTTPResponse {
+	return HTTPResponse{
+		Status:  http.StatusBadRequest,
+		Message: fmt.Sprintf("Missing mandatory parameter %s", name),
+	}
+}
 
 // MakeManagementHandler make an HTTP handler for a Management endpoint.
 func MakeManagementHandler(e endpoint.Endpoint) *http_transport.Server {
@@ -95,6 +114,8 @@ func managementErrorHandler(ctx context.Context, err error, w http.ResponseWrite
 	switch e := errors.Cause(err).(type) {
 	case kc_client.HTTPError:
 		w.WriteHeader(e.HTTPStatus)
+	case HTTPResponse:
+		w.WriteHeader(e.Status)
 	default:
 		if err == ratelimit.ErrLimited {
 			w.WriteHeader(http.StatusTooManyRequests)
