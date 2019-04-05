@@ -170,7 +170,7 @@ func TestHTTPErrorHandler(t *testing.T) {
 
 	// HTTPResponse Error
 	{
-		var kcError = HTTPResponse{
+		var kcError = HTTPError{
 			Status:  401,
 			Message: "Unauthorized",
 		}
