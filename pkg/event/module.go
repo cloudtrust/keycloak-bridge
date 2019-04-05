@@ -6,6 +6,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"regexp"
+	"strings"
 	"time"
 
 	"database/sql"
@@ -99,7 +101,6 @@ func (sm *statisticModule) Stats(_ context.Context, m map[string]string) error {
 }
 
 const (
-	createDB    = `CREATE DATABASE IF NOT EXISTS audit-events; `
 	createTable = `CREATE TABLE IF NOT EXISTS audit (
 		audit_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
 		audit_time TIMESTAMP,
@@ -165,27 +166,40 @@ func (cm *eventsDBModule) Store(_ context.Context, m map[string]string) error {
 	if m["ct_event_type"] != "" {
 		origin := "keycloak" // for the moment only eventss of Keycloak
 		realmName := m["realmId"]
-		agentUserID := ""    // no agents, only events from Keycloak
-		agentUsername := ""  // no agents, only events from Keycloak
-		agentRealmName := "" // realm of the agent
-		userID := m["userId"]
-		username := m["username"]         // normally, username is in the details
-		ctEventType := m["ct_event_type"] // the ct event type is established before
+		//agentUserID - userId of who is performing an action
+		agentUserID := m["userId"]
+		//agentUsername - username of who is performing an action
+		agentUsername := m["username"] // normally, username can be found in the details key of the map
+		//agentRealmName - realm of who is performing an action
+		agentRealmName := "" // found in authdetails
+		//userID - ID of the user that is impacted by the action
+		userID := "" // found in authdetails, in resourcePath
+		//username - username of the user that is impacted by the action
+		username := ""                    // found in authdetails key of the map
+		ctEventType := m["ct_event_type"] // the ct event type is established before at the component level
 		kcEventType := m["type"]
 		kcOperationType := m["operationType"]
 		clientID := m["clientId"]
+
+		//userId is in the resourcePath
+		if resourcePath, ok := m["resourcePath"]; ok {
+			reg := regexp.MustCompile(`[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}`)
+			if strings.HasPrefix(resourcePath, "users") {
+				userID = string(reg.Find([]byte(resourcePath)))
+			}
+		}
 
 		// put all the other details of the events in additionInfo column of the DB
 		var infoMap map[string]string
 		infoMap = make(map[string]string)
 		for k, v := range m {
 			// exclude all the event details that are already inserted in the DB
-			if k != "realmId" && k != "userId" && k != "type" && k != "operationType" && k != "clientId" && k != "details" && k != "ct_event_type" && k != "username" {
+			if k != "realmId" && k != "userId" && k != "type" && k != "operationType" && k != "clientId" && k != "details" && k != "ct_event_type" && k != "username" && k != "authdetails" {
 				infoMap[k] = v
 			}
 		}
 
-		//check if there is the key details
+		//check if  the key details is present
 		if details, ok := m["details"]; ok {
 			eventDetails := []byte(details)
 			var f map[string]string
@@ -197,7 +211,7 @@ func (cm *eventsDBModule) Store(_ context.Context, m map[string]string) error {
 			}
 
 			// in details part we can retrieve the username
-			username = f["username"]
+			agentUsername = f["username"]
 
 			for k, v := range f {
 				if k != "username" {
@@ -207,7 +221,7 @@ func (cm *eventsDBModule) Store(_ context.Context, m map[string]string) error {
 
 		}
 
-		//check if there is the key authdetails
+		//check if the key authdetails is present
 		if authDetails, ok := m["authDetails"]; ok {
 			eventAuthDetails := []byte(authDetails)
 			var h map[string]string
@@ -218,12 +232,12 @@ func (cm *eventsDBModule) Store(_ context.Context, m map[string]string) error {
 				return err
 			}
 
-			// in authdetails part we can retrieve the client id, agent realm id, user id
+			// in authdetails part we can retrieve the client id, agent realm id, agent user id
 			if clientID == "" {
 				clientID = h["clientId"]
 			}
-			if userID == "" {
-				userID = h["userId"]
+			if agentUserID == "" {
+				agentUserID = h["userId"]
 			}
 			if agentRealmName == "" {
 				agentRealmName = h["realmId"]

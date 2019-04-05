@@ -2,6 +2,7 @@ package keycloakb
 
 import (
 	"database/sql"
+	"time"
 )
 
 // NoopEventsDB is a eventsDB client that does nothing.
@@ -20,6 +21,17 @@ func (NoopEventsDB) Query(query string, args ...interface{}) (*sql.Rows, error) 
 // QueryRow does nothing.
 func (NoopEventsDB) QueryRow(query string, args ...interface{}) *sql.Row {
 	return nil
+}
+
+func (NoopEventsDB) SetMaxOpenConns(n int) {
+
+}
+func (NoopEventsDB) SetMaxIdleConns(n int) {
+
+}
+
+func (NoopEventsDB) SetConnMaxLifetime(d time.Duration) {
+
 }
 
 // NoopResult is a sql.Result that does nothing.
