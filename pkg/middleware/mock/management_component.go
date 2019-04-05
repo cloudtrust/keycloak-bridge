@@ -202,9 +202,9 @@ func (mr *ManagementComponentMockRecorder) GetUser(arg0, arg1, arg2 interface{})
 }
 
 // GetUsers mocks base method
-func (m *ManagementComponent) GetUsers(arg0 context.Context, arg1 string, arg2 ...string) ([]management.UserRepresentation, error) {
-	varargs := []interface{}{arg0, arg1}
-	for _, a := range arg2 {
+func (m *ManagementComponent) GetUsers(arg0 context.Context, arg1, arg2 string, arg3 ...string) ([]management.UserRepresentation, error) {
+	varargs := []interface{}{arg0, arg1, arg2}
+	for _, a := range arg3 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "GetUsers", varargs...)
@@ -214,8 +214,8 @@ func (m *ManagementComponent) GetUsers(arg0 context.Context, arg1 string, arg2 .
 }
 
 // GetUsers indicates an expected call of GetUsers
-func (mr *ManagementComponentMockRecorder) GetUsers(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
-	varargs := append([]interface{}{arg0, arg1}, arg2...)
+func (mr *ManagementComponentMockRecorder) GetUsers(arg0, arg1, arg2 interface{}, arg3 ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{arg0, arg1, arg2}, arg3...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUsers", reflect.TypeOf((*ManagementComponent)(nil).GetUsers), varargs...)
 }
 
