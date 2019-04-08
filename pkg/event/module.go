@@ -1,6 +1,6 @@
 package event
 
-//go:generate mockgen -destination=./mock/module.go -package=mock -mock_names=ConsoleModule=ConsoleModule,StatisticModule=StatisticModule,Influx=Influx github.com/cloudtrust/keycloak-bridge/pkg/event ConsoleModule,StatisticModule,Influx
+//go:generate mockgen -destination=./mock/module.go -package=mock -mock_names=ConsoleModule=ConsoleModule,StatisticModule=StatisticModule,EventsDBModule=EventsDBModule,Influx=Influx,DBEvents=DBEvents github.com/cloudtrust/keycloak-bridge/pkg/event ConsoleModule,StatisticModule,EventsDBModule,Influx,DBEvents
 
 import (
 	"context"
@@ -159,9 +159,6 @@ func NewEventsDBModule(db DBEvents) EventsDBModule {
 
 func (cm *eventsDBModule) Store(_ context.Context, m map[string]string) error {
 
-	fmt.Println("The whole event is")
-	fmt.Println(m)
-
 	// if ctEventType is not "", then record the events in MariaDB
 	if m["ct_event_type"] != "" {
 		origin := "keycloak" // for the moment only eventss of Keycloak
@@ -262,8 +259,6 @@ func (cm *eventsDBModule) Store(_ context.Context, m map[string]string) error {
 		_, err = cm.db.Exec(insertEvent, origin, realmName, agentUserID, agentUsername, agentRealmName, userID, username, ctEventType, kcEventType, kcOperationType, clientID, additionalInfo)
 
 		if err != nil {
-			//TODO: how is this error treated further?
-			fmt.Println(err)
 			return err
 		}
 	}

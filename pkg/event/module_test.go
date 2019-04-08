@@ -16,8 +16,8 @@ func TestConsoleModule(t *testing.T) {
 	var mockLogger = mock.NewLogger(mockCtrl)
 
 	var (
-		uid     = "uid"
-		m       = map[string]string{
+		uid = "uid"
+		m   = map[string]string{
 			"uid":           uid,
 			"time":          "123314",
 			"componentName": "component_name",
@@ -63,5 +63,16 @@ func TestStatisticsModule(t *testing.T) {
 	var statisticModule = NewStatisticModule(mockInflux, batchPointsConfig)
 	mockInflux.EXPECT().Write(gomock.Any()).Return(nil).Times(1)
 	var err = statisticModule.Stats(context.Background(), map[string]string{"type": "val"})
+	assert.Nil(t, err)
+}
+
+func TestEventsDBModule(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+	var mockDB = mock.NewDBEvents(mockCtrl)
+
+	mockDB.EXPECT().Exec(gomock.Any()).Return(nil, nil).AnyTimes()
+	var eventsDBModule = NewEventsDBModule(mockDB)
+	var err = eventsDBModule.Store(context.Background(), map[string]string{"type": "val"})
 	assert.Nil(t, err)
 }
