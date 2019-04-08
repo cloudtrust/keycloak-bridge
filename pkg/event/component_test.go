@@ -368,18 +368,6 @@ func TestEventToMapPasswordReset(t *testing.T) {
 
 }
 
-/*
-
-	//ACTIVATION_EMAIL_SENT
-	if event["operationType"] == "ACTION" {
-		// check if the resourcePath ends with sufix send-verify-email
-		if strings.HasSuffix(event["resourcePath"], "send-verify-email") {
-			event["ct_event_type"] = "ACTIVATION_EMAIL_SENT"
-			return event
-		}
-	}
-*/
-
 func TestAdminEventToMap(t *testing.T) {
 	var uid int64 = 1234
 	var epoch = int64(1547127600485)
@@ -436,7 +424,6 @@ func TestAdminEventToMap(t *testing.T) {
 	var m = adminEventToMap(adminEvent)
 	assert.Equal(t, strconv.FormatInt(uid, 10), m["uid"])
 	assert.Equal(t, time.Unix(0, epoch*1000000).Format("2006-01-02T15:04:05.000Z"), m["time"])
-	//assert.Equal(t, fb.EnumNamesResourceType[int8(resourcetype)], m["resourceType"])
 	assert.Equal(t, fb.EnumNamesOperationType[int8(optype)], m["operationType"])
 	assert.Equal(t, realmID, m["realmId"])
 	assert.Equal(t, resourcePath, m["resourcePath"])
@@ -489,7 +476,7 @@ func TestAdminEventToMapAccountCreated(t *testing.T) {
 }
 
 func TestAdminEventToMapActivationEmailSent(t *testing.T) {
-	var resourcePath = "users/8caefab3-90d1-492e-87e0-1bf6cecc76ea/send-verify-email "
+	var resourcePath = "users/8caefab3-90d1-492e-87e0-1bf6cecc76ea/send-verify-email"
 	var optype int8 = 3
 
 	var adminEvent *fb.AdminEvent
@@ -511,10 +498,26 @@ func TestAdminEventToMapActivationEmailSent(t *testing.T) {
 		fb.TupleAddValue(builder, value2)
 		var detail2 = fb.TupleEnd(builder)
 
-		fb.EventStartDetailsVector(builder, 2)
+		var key3 = builder.CreateString("realmId")
+		var value3 = builder.CreateString("master")
+		fb.TupleStart(builder)
+		fb.TupleAddKey(builder, key3)
+		fb.TupleAddValue(builder, value3)
+		var detail3 = fb.TupleEnd(builder)
+
+		var key4 = builder.CreateString("userId")
+		var value4 = builder.CreateString("dummy_user")
+		fb.TupleStart(builder)
+		fb.TupleAddKey(builder, key4)
+		fb.TupleAddValue(builder, value4)
+		var detail4 = fb.TupleEnd(builder)
+
+		fb.EventStartDetailsVector(builder, 4)
 		builder.PrependUOffsetT(detail1)
 		builder.PrependUOffsetT(detail2)
-		var details = builder.EndVector(2)
+		builder.PrependUOffsetT(detail3)
+		builder.PrependUOffsetT(detail4)
+		var details = builder.EndVector(4)
 
 		fb.AdminEventStart(builder)
 		fb.AdminEventAddOperationType(builder, optype)
