@@ -120,6 +120,12 @@ paths:
         required: true
         schema:
           type: string
+      - name: group
+        in: query
+        description: group the users belong to
+        required: true
+        schema:
+          type: string
       - name: email
         in: query
         schema:
