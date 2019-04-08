@@ -378,6 +378,65 @@ paths:
       responses:
         200:
           description: successful operation
+  /realms/{realm}/users/{userID}/credentials:
+    get:
+      tags:
+      - Credentials
+      summary: Get all credentials for the user
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Credential'
+    delete:
+      tags:
+      - Credentials
+      summary: Delete the credentials for the user
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
+      - name: credentialID
+        in: path
+        description: Credential id
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Credential'
   /realms/{realm}/roles:
     get:
       tags:
@@ -563,6 +622,27 @@ components:
       type: object
       properties:
         value:
+          type: string
+    Credential:
+      type: object
+      properties:
+        type:
+          type: string
+        hashIterations:
+          type: int (???)
+        counter:
+          type: int (???)
+        algorithm:
+          type: string
+        digits:
+          type: int (???)
+        period:
+          type: int (???)
+        createdDate:
+          type: int (???)
+        config:
+          type: object
+        id:
           type: string
   securitySchemes:
     openId:

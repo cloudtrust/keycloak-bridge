@@ -86,7 +86,6 @@ func main() {
 		jaegerEnabled     = c.GetBool("jaeger")
 		sentryEnabled     = c.GetBool("sentry")
 		pprofRouteEnabled = c.GetBool("pprof-route-enabled")
-		
 
 		// Influx
 		influxHTTPConfig = influx.HTTPConfig{
@@ -129,8 +128,8 @@ func main() {
 
 		// Rate limiting
 		rateLimit = map[string]int{
-			"event": c.GetInt("rate-event"),
-			"management":  c.GetInt("rate-management"),
+			"event":      c.GetInt("rate-event"),
+			"management": c.GetInt("rate-management"),
 		}
 	)
 
@@ -505,7 +504,6 @@ func main() {
 			sendVerifyEmailEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["management"]))(sendVerifyEmailEndpoint)
 		}
 
-		
 		managementEndpoints = management.Endpoints{
 			GetRealm:             getRealmEndpoint,
 			GetClients:           getClientsEndpoint,
@@ -582,6 +580,9 @@ func main() {
 		var resetPasswordHandler = ConfigureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.ResetPassword)
 		var sendVerifyEmailHandler = ConfigureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.SendVerifyEmail)
 
+		var getCredentialsForUserHandler = ConfigureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.GetCredentialsForUserHandler)
+		var deleteCredentialsForUserHandler = ConfigureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.DeleteCredentialsForUserHandler)
+
 		//realms
 		managementSubroute.Path("/realms/{realm}").Methods("GET").Handler(getRealmHandler)
 
@@ -601,6 +602,8 @@ func main() {
 		managementSubroute.Path("/realms/{realm}/users/{userID}/role-mappings/realm").Methods("GET").Handler(getRealmRoleForUserHandler)
 		managementSubroute.Path("/realms/{realm}/users/{userID}/reset-password").Methods("PUT").Handler(resetPasswordHandler)
 		managementSubroute.Path("/realms/{realm}/users/{userID}/send-verify-email").Methods("PUT").Handler(sendVerifyEmailHandler)
+		managementSubroute.Path("/realms/{realm}/users/{userID}/credentials").Methods("GET").Handler(getCredentialsForUserHandler)
+		managementSubroute.Path("/realms/{realm}/users/{userID}/credentials/{credentialid}").Methods("DELETE").Handler(deleteCredentialsForUserHandler)
 		//roles
 		managementSubroute.Path("/realms/{realm}/roles").Methods("GET").Handler(getRolesHandler)
 		managementSubroute.Path("/realms/{realm}/roles-by-id/{roleID}").Methods("GET").Handler(getRoleHandler)
@@ -693,7 +696,6 @@ func config(logger log.Logger) *viper.Viper {
 	v.SetDefault("rate-event", 1000)
 	v.SetDefault("rate-management", 1000)
 
-
 	// Influx DB client default.
 	v.SetDefault("influx", false)
 	v.SetDefault("influx-host-port", "")
@@ -719,7 +721,6 @@ func config(logger log.Logger) *viper.Viper {
 
 	// Debug routes enabled.
 	v.SetDefault("pprof-route-enabled", true)
-
 
 	// First level of override.
 	pflag.String("config-file", v.GetString("config-file"), "The configuration file path can be relative or absolute.")

@@ -21,6 +21,8 @@ type KeycloakClient interface {
 	GetRealmLevelRoleMappings(accessToken string, realmName, userID string) ([]kc.RoleRepresentation, error)
 	ResetPassword(accessToken string, realmName string, userID string, cred kc.CredentialRepresentation) error
 	SendVerifyEmail(accessToken string, realmName string, userID string, paramKV ...string) error
+	GetCredentialsForUser(accessToken string, realmName string, userID string) ([]api.CredentialRepresentation, error)
+	DeleteCredentialsForUser(accessToken string, realmName string, userID string, credentialID string) error
 	GetRoles(accessToken string, realmName string) ([]kc.RoleRepresentation, error)
 	GetRole(accessToken string, realmName string, roleID string) (kc.RoleRepresentation, error)
 	GetClientRoles(accessToken string, realmName, idClient string) ([]kc.RoleRepresentation, error)
@@ -42,6 +44,8 @@ type Component interface {
 	GetRealmRolesForUser(ctx context.Context, realmName, userID string) ([]api.RoleRepresentation, error)
 	ResetPassword(ctx context.Context, realmName string, userID string, password api.PasswordRepresentation) error
 	SendVerifyEmail(ctx context.Context, realmName string, userID string, paramKV ...string) error
+	GetCredentialsForUser(ctx context.Context, realmName string, userID string) ([]api.CredentialRepresentation, error)
+	DeleteCredentialsForUser(ctx context.Context, realmName string, userID string, credentialID string) error
 	GetRoles(ctx context.Context, realmName string) ([]api.RoleRepresentation, error)
 	GetRole(ctx context.Context, realmName string, roleID string) (api.RoleRepresentation, error)
 	GetClientRoles(ctx context.Context, realmName, idClient string) ([]api.RoleRepresentation, error)
@@ -378,6 +382,18 @@ func (c *component) SendVerifyEmail(ctx context.Context, realmName string, userI
 	var accessToken = ctx.Value("access_token").(string)
 
 	return c.keycloakClient.SendVerifyEmail(accessToken, realmName, userID, paramKV...)
+}
+
+func (c *component) GetCredentialsForUser(ctx context.Context, realmName string, userID string) ([]api.CredentialRepresentation, error) {
+	var accessToken = ctx.Value("access_token").(string)
+
+	return c.keycloakClient.GetCredentialsForUser(accessToken, realmName, userID)
+}
+
+func (c *component) DeleteCredentialsForUser(ctx context.Context, realmName string, userID string, credentialID string) error {
+	var accessToken = ctx.Value("access_token").(string)
+
+	return c.keycloakClient.DeleteCredentialsForUser(accessToken, realmName, userID, credentialID)
 }
 
 func (c *component) GetRoles(ctx context.Context, realmName string) ([]api.RoleRepresentation, error) {

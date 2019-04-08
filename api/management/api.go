@@ -31,6 +31,18 @@ type ClientRepresentation struct {
 	Enabled     *bool   `json:"enabled,omitempty"`
 }
 
+type CredentialRepresentation struct {
+	Type           *string            `json:"type,omitempty"`
+	HashIterations *int               `json:"hashIterations,omitempty"`
+	Counter        *int               `json:"counter,omitempty"`
+	Algorithm      *string            `json:"algorithm,omitempty"`
+	Digits         *int               `json:"digits,omitempty"`
+	Period         *int               `json:"period,omitempty"`
+	CreatedDate    *int               `json:"createdDate,omitempty"`
+	Config         *map[string]string `json:"config,omitempty"`
+	Id             *string            `json:"id,omitempty"`
+}
+
 type RoleRepresentation struct {
 	ClientRole  *bool   `json:"clientRole,omitempty"`
 	Composite   *bool   `json:"composite,omitempty"`

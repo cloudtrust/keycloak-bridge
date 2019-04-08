@@ -11,23 +11,25 @@ import (
 
 // Endpoints wraps a service behind a set of endpoints.
 type Endpoints struct {
-	GetRealm             endpoint.Endpoint
-	GetClient            endpoint.Endpoint
-	GetClients           endpoint.Endpoint
-	DeleteUser           endpoint.Endpoint
-	GetUser              endpoint.Endpoint
-	UpdateUser           endpoint.Endpoint
-	GetUsers             endpoint.Endpoint
-	CreateUser           endpoint.Endpoint
-	GetClientRoleForUser endpoint.Endpoint
-	AddClientRoleToUser  endpoint.Endpoint
-	GetRealmRoleForUser  endpoint.Endpoint
-	ResetPassword        endpoint.Endpoint
-	SendVerifyEmail      endpoint.Endpoint
-	GetRoles             endpoint.Endpoint
-	GetRole              endpoint.Endpoint
-	GetClientRoles       endpoint.Endpoint
-	CreateClientRole     endpoint.Endpoint
+	GetRealm                 endpoint.Endpoint
+	GetClient                endpoint.Endpoint
+	GetClients               endpoint.Endpoint
+	DeleteUser               endpoint.Endpoint
+	GetUser                  endpoint.Endpoint
+	UpdateUser               endpoint.Endpoint
+	GetUsers                 endpoint.Endpoint
+	CreateUser               endpoint.Endpoint
+	GetClientRoleForUser     endpoint.Endpoint
+	AddClientRoleToUser      endpoint.Endpoint
+	GetRealmRoleForUser      endpoint.Endpoint
+	ResetPassword            endpoint.Endpoint
+	SendVerifyEmail          endpoint.Endpoint
+	GetCredentialsForUser    endpoint.Endpoint
+	DeleteCredentialsForUser endpoint.Endpoint
+	GetRoles                 endpoint.Endpoint
+	GetRole                  endpoint.Endpoint
+	GetClientRoles           endpoint.Endpoint
+	CreateClientRole         endpoint.Endpoint
 }
 
 // ManagementComponent is the interface of the component to send a query to Keycloak.
@@ -45,6 +47,8 @@ type ManagementComponent interface {
 	GetRealmRolesForUser(ctx context.Context, realmName, userID string) ([]api.RoleRepresentation, error)
 	ResetPassword(ctx context.Context, realmName string, userID string, password api.PasswordRepresentation) error
 	SendVerifyEmail(ctx context.Context, realmName string, userID string, paramKV ...string) error
+	GetCredentialsForUser(ctx context.Context, realmName string, userID string) ([]api.CredentialRepresentation, error)
+	DeleteCredentialsForUser(ctx context.Context, realmName string, userID string, credentialID string) error
 	GetRoles(ctx context.Context, realmName string) ([]api.RoleRepresentation, error)
 	GetRole(ctx context.Context, realmName string, roleID string) (api.RoleRepresentation, error)
 	GetClientRoles(ctx context.Context, realmName, idClient string) ([]api.RoleRepresentation, error)
@@ -218,6 +222,22 @@ func MakeSendVerifyEmailEndpoint(managementComponent ManagementComponent) endpoi
 		}
 
 		return nil, managementComponent.SendVerifyEmail(ctx, m["realm"], m["userID"], paramKV...)
+	}
+}
+
+func MakeGetCredentialsForUserEndpoint(managementComponent ManagementComponent) endpoint.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+
+		return managementComponent.GetCredentialsForUser(ctx, m["realm"], m["userID"])
+	}
+}
+
+func MakeDeleteCredentialsForUserEndpoint(managementComponent ManagementComponent) endpoint.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+
+		return nil, managementComponent.DeleteCredentialsForUser(ctx, m["realm"], m["userID"], m["credentialID"])
 	}
 }
 
