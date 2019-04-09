@@ -60,7 +60,7 @@ func decodeManagementRequest(_ context.Context, req *http.Request) (interface{},
 	buf.ReadFrom(req.Body)
 	request["body"] = buf.String()
 
-	for _, key := range []string{"email", "firstName", "lastName", "max", "username", "client_id", "redirect_uri"} {
+	for _, key := range []string{"email", "firstName", "lastName", "max", "username", "client_id", "redirect_uri", "group"} {
 		if value := req.URL.Query().Get(key); value != "" {
 			request[key] = value
 		}
@@ -116,6 +116,7 @@ func managementErrorHandler(ctx context.Context, err error, w http.ResponseWrite
 		w.WriteHeader(e.HTTPStatus)
 	case HTTPError:
 		w.WriteHeader(e.Status)
+		w.Write([]byte(e.Message))
 	default:
 		if err == ratelimit.ErrLimited {
 			w.WriteHeader(http.StatusTooManyRequests)
