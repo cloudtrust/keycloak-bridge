@@ -556,10 +556,47 @@ func createAdminEvent(operationType int8, uid int64) *fb.AdminEvent {
 
 func createAdminEventBytes(operationType int8, uid int64) []byte {
 	var builder = flatbuffers.NewBuilder(0)
+
+	var key1 = builder.CreateString("clientId")
+	var value1 = builder.CreateString("test_username")
+	fb.TupleStart(builder)
+	fb.TupleAddKey(builder, key1)
+	fb.TupleAddValue(builder, value1)
+	var detail1 = fb.TupleEnd(builder)
+
+	var key2 = builder.CreateString("ipAddress")
+	var value2 = builder.CreateString("127.0.0.1")
+	fb.TupleStart(builder)
+	fb.TupleAddKey(builder, key2)
+	fb.TupleAddValue(builder, value2)
+	var detail2 = fb.TupleEnd(builder)
+
+	var key3 = builder.CreateString("realmId")
+	var value3 = builder.CreateString("master")
+	fb.TupleStart(builder)
+	fb.TupleAddKey(builder, key3)
+	fb.TupleAddValue(builder, value3)
+	var detail3 = fb.TupleEnd(builder)
+
+	var key4 = builder.CreateString("userId")
+	var value4 = builder.CreateString("dummy_user")
+	fb.TupleStart(builder)
+	fb.TupleAddKey(builder, key4)
+	fb.TupleAddValue(builder, value4)
+	var detail4 = fb.TupleEnd(builder)
+
+	fb.EventStartDetailsVector(builder, 4)
+	builder.PrependUOffsetT(detail1)
+	builder.PrependUOffsetT(detail2)
+	builder.PrependUOffsetT(detail3)
+	builder.PrependUOffsetT(detail4)
+	var details = builder.EndVector(4)
+
 	fb.AdminEventStart(builder)
 	fb.AdminEventAddTime(builder, time.Now().Unix())
 	fb.AdminEventAddUid(builder, uid)
 	fb.AdminEventAddOperationType(builder, operationType)
+	fb.AdminEventAddAuthDetails(builder, details)
 	var adminEventOffset = fb.AdminEventEnd(builder)
 	builder.Finish(adminEventOffset)
 	return builder.FinishedBytes()
