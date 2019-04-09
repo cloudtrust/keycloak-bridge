@@ -120,26 +120,30 @@ func (c *adminComponent) AdminEvent(ctx context.Context, adminEvent *fb.AdminEve
 }
 
 func addCTtypeToEvent(event map[string]string) map[string]string {
-	// add the CTEventType
+	// add the ct_event_type
 
-	//ACCOUNT_CREATED
-	if event["operationType"] == "CREATE" {
+	switch opType := event["operationType"]; opType {
+	case "CREATE":
+		//ACCOUNT_CREATED
 		// check if the resourcePath starts with prefix users
 		if strings.HasPrefix(event["resourcePath"], "users") {
 			event["ct_event_type"] = "ACCOUNT_CREATED"
 			return event
 		}
-	}
-	//ACTIVATION_EMAIL_SENT
-	if event["operationType"] == "ACTION" {
+	case "ACTION":
+		//ACTIVATION_EMAIL_SENT
 		// check if the resourcePath ends with sufix send-verify-email
 		if strings.HasSuffix(event["resourcePath"], "send-verify-email") {
 			event["ct_event_type"] = "ACTIVATION_EMAIL_SENT"
 			return event
 		}
+	default:
+
 	}
-	//EMAIL_CONFIRMED
-	if event["type"] == "CUSTOM_REQUIRED_ACTION" {
+
+	switch t := event["type"]; t {
+	case "CUSTOM_REQUIRED_ACTION":
+		//EMAIL_CONFIRMED
 		eventDetails := []byte(event["details"])
 		var f map[string]string
 		_ = json.Unmarshal(eventDetails, &f)
@@ -148,14 +152,14 @@ func addCTtypeToEvent(event map[string]string) map[string]string {
 			event["ct_event_type"] = "EMAIL_CONFIRMED"
 			return event
 		}
-	}
-	//CONFIRM_EMAIL_EXPIRED
-	if event["type"] == "EXECUTE_ACTION_TOKEN_ERROR" && event["error"] == "expired_code" {
-		event["ct_event_type"] = "CONFIRM_EMAIL_EXPIRED"
-		return event
-	}
-	//PASSWORD_RESET
-	if event["type"] == "UPDATE_PASSWORD" {
+	case "EXECUTE_ACTION_TOKEN_ERROR":
+		//CONFIRM_EMAIL_EXPIRED
+		if event["error"] == "expired_code" {
+			event["ct_event_type"] = "CONFIRM_EMAIL_EXPIRED"
+			return event
+		}
+	case "UPDATE_PASSWORD":
+		//PASSWORD_RESET
 		eventDetails := []byte(event["details"])
 		var f map[string]string
 		_ = json.Unmarshal(eventDetails, &f)
@@ -164,21 +168,21 @@ func addCTtypeToEvent(event map[string]string) map[string]string {
 			event["ct_event_type"] = "PASSWORD_RESET"
 			return event
 		}
-	}
-	//LOGON_OK
-	if event["type"] == "LOGIN" {
+	case "LOGIN":
+		//LOGON_OK
 		event["ct_event_type"] = "LOGON_OK"
 		return event
-	}
-	//LOGON_ERROR
-	if event["type"] == "LOGIN_ERROR" {
+
+	case "LOGIN_ERROR":
+		//LOGON_ERROR
 		event["ct_event_type"] = "LOGON_ERROR"
 		return event
-	}
-	//LOGOUT
-	if event["type"] == "LOGOUT" {
+	case "LOGOUT":
+		//LOGOUT
 		event["ct_event_type"] = "LOGOUT"
 		return event
+	default:
+
 	}
 
 	// for all those events that don't have set the ct_event_type, we assign an empty ct_event_type
@@ -239,8 +243,7 @@ func eventToMap(event *fb.Event) map[string]string {
 	eventMap["ipAddress"] = string(event.IpAddress())
 	eventMap["error"] = string(event.Error())
 
-	var detailsMap map[string]string
-	detailsMap = make(map[string]string)
+	var detailsMap = make(map[string]string)
 	var detailsLength = event.DetailsLength()
 	for i := 0; i < detailsLength; i++ {
 		var tuple = new(fb.Tuple)

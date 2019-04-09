@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"encoding/json"
+
 	"github.com/cloudtrust/keycloak-bridge/pkg/event/mock"
 	"github.com/golang/mock/gomock"
 	influx "github.com/influxdata/influxdb/client/v2"
@@ -74,5 +76,95 @@ func TestEventsDBModule(t *testing.T) {
 	mockDB.EXPECT().Exec(gomock.Any()).Return(nil, nil).AnyTimes()
 	var eventsDBModule = NewEventsDBModule(mockDB)
 	var err = eventsDBModule.Store(context.Background(), map[string]string{"type": "val"})
+	assert.Nil(t, err)
+}
+
+func TestEventsDBModuleCTEvent(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+	var mockDB = mock.NewDBEvents(mockCtrl)
+
+	mockDB.EXPECT().Exec(gomock.Any()).Return(nil, nil).AnyTimes()
+	var eventsDBModule = NewEventsDBModule(mockDB)
+
+	var ctEvent = make(map[string]string)
+	ctEvent["ct_event_type"] = "LOGIN"
+	ctEvent["realmId"] = "dummyRealm"
+	ctEvent["type"] = "dummyType"
+	ctEvent["operationtype"] = "dummyOpType"
+	ctEvent["clientId"] = "dummyClient"
+	ctEvent["resourcePath"] = "users/dummyPath"
+
+	var details = make(map[string]string)
+	details["username"] = "dummyUsername"
+	details["error"] = ""
+	detailsJson, _ := json.Marshal(details)
+	ctEvent["details"] = string(detailsJson)
+
+	var authDetails = make(map[string]string)
+	authDetails["clientId"] = "cliendId"
+	authDetails["realmId"] = "realmId"
+	authDetails["userId"] = "userId"
+	authJson, _ := json.Marshal(authDetails)
+	ctEvent["authDetails"] = string(authJson)
+
+	mockDB.EXPECT().Exec(gomock.Any(), gomock.Any()).Return(nil, nil).AnyTimes()
+	var err = eventsDBModule.Store(context.Background(), ctEvent)
+	assert.Nil(t, err)
+}
+
+func TestEventsDBModuleCTEventInvalidDetailsJson(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+	var mockDB = mock.NewDBEvents(mockCtrl)
+
+	mockDB.EXPECT().Exec(gomock.Any()).Return(nil, nil).AnyTimes()
+	var eventsDBModule = NewEventsDBModule(mockDB)
+
+	var ctEvent = make(map[string]string)
+	ctEvent["ct_event_type"] = "LOGIN"
+
+	ctEvent["details"] = string("{key : value}")
+
+	mockDB.EXPECT().Exec(gomock.Any(), gomock.Any()).Return(nil, nil).AnyTimes()
+	var err = eventsDBModule.Store(context.Background(), ctEvent)
+	assert.NotNil(t, err)
+}
+
+func TestEventsDBModuleCTEventInvalidAuthDetailsJson(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+	var mockDB = mock.NewDBEvents(mockCtrl)
+
+	mockDB.EXPECT().Exec(gomock.Any()).Return(nil, nil).AnyTimes()
+	var eventsDBModule = NewEventsDBModule(mockDB)
+
+	var ctEvent = make(map[string]string)
+	ctEvent["ct_event_type"] = "LOGIN"
+	ctEvent["authDetails"] = string("{key : value}")
+
+	mockDB.EXPECT().Exec(gomock.Any(), gomock.Any()).Return(nil, nil).AnyTimes()
+	var err = eventsDBModule.Store(context.Background(), ctEvent)
+	assert.NotNil(t, err)
+}
+
+func TestEventsDBModuleNoCTEvent(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+	var mockDB = mock.NewDBEvents(mockCtrl)
+
+	mockDB.EXPECT().Exec(gomock.Any()).Return(nil, nil).AnyTimes()
+	var eventsDBModule = NewEventsDBModule(mockDB)
+
+	var ctEvent = make(map[string]string)
+	ctEvent["ct_event_type"] = ""
+	ctEvent["realmId"] = "dummyRealm"
+	ctEvent["type"] = "dummyType"
+	ctEvent["operationtype"] = "dummyOpType"
+	ctEvent["clientId"] = "dummyClient"
+	ctEvent["resourcePath"] = "users/dummyPath"
+
+	mockDB.EXPECT().Exec(gomock.Any(), gomock.Any()).Return(nil, nil).AnyTimes()
+	var err = eventsDBModule.Store(context.Background(), ctEvent)
 	assert.Nil(t, err)
 }

@@ -5,7 +5,6 @@ package event
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"regexp"
 	"strings"
 	"time"
@@ -160,107 +159,108 @@ func NewEventsDBModule(db DBEvents) EventsDBModule {
 func (cm *eventsDBModule) Store(_ context.Context, m map[string]string) error {
 
 	// if ctEventType is not "", then record the events in MariaDB
-	if m["ct_event_type"] != "" {
-		origin := "keycloak" // for the moment only eventss of Keycloak
-		realmName := m["realmId"]
-		//agentUserID - userId of who is performing an action
-		agentUserID := m["userId"]
-		//agentUsername - username of who is performing an action
-		agentUsername := m["username"] // normally, username can be found in the details key of the map
-		//agentRealmName - realm of who is performing an action
-		agentRealmName := "" // found in authdetails
-		//userID - ID of the user that is impacted by the action
-		userID := "" // found in authdetails, in resourcePath
-		//username - username of the user that is impacted by the action
-		username := ""                    //
-		ctEventType := m["ct_event_type"] // the ct event type is established before at the component level
-		kcEventType := m["type"]
-		kcOperationType := m["operationType"]
-		clientID := m["clientId"]
+	// otherwise, do nothing
+	if m["ct_event_type"] == "" {
+		return nil
+	}
 
-		//userId is in the resourcePath
-		if resourcePath, ok := m["resourcePath"]; ok {
-			reg := regexp.MustCompile(`[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}`)
-			if strings.HasPrefix(resourcePath, "users") {
-				userID = string(reg.Find([]byte(resourcePath)))
-			}
+	origin := "keycloak" // for the moment only events of Keycloak
+	realmName := m["realmId"]
+	//agentUserID - userId of who is performing an action
+	agentUserID := m["userId"]
+	//agentUsername - username of who is performing an action
+	agentUsername := m["username"] // normally, username can be found in the details key of the map
+	//agentRealmName - realm of who is performing an action
+	agentRealmName := "" // found in authdetails
+	//userID - ID of the user that is impacted by the action
+	userID := "" // found in authdetails, in resourcePath
+	//username - username of the user that is impacted by the action
+	username := "" //
+	// ctEventType that  is established before at the component level
+	ctEventType := m["ct_event_type"]
+	// kcEventType corresponds to keycloak event type
+	kcEventType := m["type"]
+	// kcOperationType - operation type of the event that comes from Keycloak
+	kcOperationType := m["operationType"]
+	// Id of the client
+	clientID := m["clientId"]
+
+	//userId is in the resourcePath
+	if resourcePath, ok := m["resourcePath"]; ok {
+		reg := regexp.MustCompile(`[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}`)
+		if strings.HasPrefix(resourcePath, "users") {
+			userID = string(reg.Find([]byte(resourcePath)))
+		}
+	}
+
+	// put all the other details of the events in additionInfo column of the DB
+	var infoMap map[string]string
+	infoMap = make(map[string]string)
+	for k, v := range m {
+		// exclude all the event details that are already inserted in the DB
+		if k != "realmId" && k != "userId" && k != "type" && k != "operationType" && k != "clientId" && k != "details" && k != "ct_event_type" && k != "username" && k != "authDetails" {
+			infoMap[k] = v
+		}
+	}
+
+	//check if  the key details is present
+	if details, ok := m["details"]; ok {
+		eventDetails := []byte(details)
+		var f map[string]string
+		err := json.Unmarshal(eventDetails, &f)
+
+		if err != nil {
+			return err
 		}
 
-		// put all the other details of the events in additionInfo column of the DB
-		var infoMap map[string]string
-		infoMap = make(map[string]string)
-		for k, v := range m {
-			// exclude all the event details that are already inserted in the DB
-			if k != "realmId" && k != "userId" && k != "type" && k != "operationType" && k != "clientId" && k != "details" && k != "ct_event_type" && k != "username" && k != "authDetails" {
+		// in details part we can retrieve the username
+		agentUsername = f["username"]
+
+		for k, v := range f {
+			if k != "username" {
 				infoMap[k] = v
 			}
 		}
 
-		//check if  the key details is present
-		if details, ok := m["details"]; ok {
-			eventDetails := []byte(details)
-			var f map[string]string
-			err := json.Unmarshal(eventDetails, &f)
+	}
 
-			if err != nil {
-				fmt.Println(err)
-				return err
-			}
+	//check if the key authdetails is present
+	if authDetails, ok := m["authDetails"]; ok {
+		eventAuthDetails := []byte(authDetails)
+		var h map[string]string
+		err := json.Unmarshal(eventAuthDetails, &h)
 
-			// in details part we can retrieve the username
-			agentUsername = f["username"]
-
-			for k, v := range f {
-				if k != "username" {
-					infoMap[k] = v
-				}
-			}
-
+		if err != nil {
+			return err
 		}
 
-		//check if the key authdetails is present
-		if authDetails, ok := m["authDetails"]; ok {
-			eventAuthDetails := []byte(authDetails)
-			var h map[string]string
-			err := json.Unmarshal(eventAuthDetails, &h)
-
-			if err != nil {
-				fmt.Println(err)
-				return err
-			}
-
-			// in authdetails part we can retrieve the client id, agent realm id, agent user id
-			if clientID == "" {
+		// in authdetails part we can retrieve the client id, agent realm id, agent user id
+		for k, v := range h {
+			switch {
+			case k == "clientId" && clientID == "":
 				clientID = h["clientId"]
-			}
-			if agentUserID == "" {
+			case k == "userId" && agentUserID == "":
 				agentUserID = h["userId"]
-			}
-			if agentRealmName == "" {
+			case k == "realmId" && agentRealmName == "":
 				agentRealmName = h["realmId"]
+			default:
+				infoMap[k] = v
 			}
-
-			for k, v := range h {
-				if k != "clientId" && k != "userId" && k != "realmId" {
-					infoMap[k] = v
-				}
-			}
-
-		}
-
-		infos, err := json.Marshal(infoMap)
-		if err != nil {
-			fmt.Println("Error in Marshalling the additional info")
-			fmt.Println(err)
-			return err
-		}
-		additionalInfo := string(infos)
-
-		_, err = cm.db.Exec(insertEvent, origin, realmName, agentUserID, agentUsername, agentRealmName, userID, username, ctEventType, kcEventType, kcOperationType, clientID, additionalInfo)
-
-		if err != nil {
-			return err
 		}
 	}
+
+	infos, err := json.Marshal(infoMap)
+	if err != nil {
+		return err
+	}
+	additionalInfo := string(infos)
+
+	//store the event in the DB
+	_, err = cm.db.Exec(insertEvent, origin, realmName, agentUserID, agentUsername, agentRealmName, userID, username, ctEventType, kcEventType, kcOperationType, clientID, additionalInfo)
+
+	if err != nil {
+		return err
+	}
 	return nil
+
 }

@@ -231,8 +231,6 @@ func main() {
 	// Audit events DB.
 	type EventsDB interface {
 		Exec(query string, args ...interface{}) (sql.Result, error)
-		//Ping() error
-		Query(query string, args ...interface{}) (*sql.Rows, error)
 		QueryRow(query string, args ...interface{}) *sql.Row
 		SetMaxOpenConns(n int)
 		SetMaxIdleConns(n int)
