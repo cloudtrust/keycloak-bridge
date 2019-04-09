@@ -181,7 +181,7 @@ func TestHTTPErrorHandler(t *testing.T) {
 
 		assert.Nil(t, err)
 		assert.Equal(t, http.StatusUnauthorized, res.StatusCode)
-		assert.Equal(t, http.NoBody, res.Body)
+		assert.NotEqual(t, http.NoBody, res.Body)
 	}
 }
 
