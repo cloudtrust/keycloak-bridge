@@ -81,12 +81,11 @@ func main() {
 		}
 
 		// Enabled units
-		eventsDBEnabled   = c.GetBool("events-DB")
+		eventsDBEnabled   = c.GetBool("events-db")
 		influxEnabled     = c.GetBool("influx")
 		jaegerEnabled     = c.GetBool("jaeger")
 		sentryEnabled     = c.GetBool("sentry")
 		pprofRouteEnabled = c.GetBool("pprof-route-enabled")
-		
 
 		// Influx
 		influxHTTPConfig = influx.HTTPConfig{
@@ -119,18 +118,20 @@ func main() {
 		// Sentry
 		sentryDSN = c.GetString("sentry-dsn")
 
-		// EventsDB
-		eventsDBHostPort = c.GetString("db-host-port")
-		eventsDBUsername = c.GetString("db-username")
-		eventsDBPassword = c.GetString("db-password")
-		eventsDBDatabase = c.GetString("db-database")
-		//eventsDBTable    = c.GetString("db-table")
-		eventsDBProtocol = c.GetString("protocol")
+		// DB - for the moment used just for audit events
+		dbHostPort        = c.GetString("db-host-port")
+		dbUsername        = c.GetString("db-username")
+		dbPassword        = c.GetString("db-password")
+		dbDatabase        = c.GetString("db-database")
+		dbProtocol        = c.GetString("db-protocol")
+		dbMaxOpenConns    = c.GetInt("db-max-open-conns")
+		dbMaxIdleConns    = c.GetInt("db-max-idle-conns")
+		dbConnMaxLifetime = c.GetInt("db-conn-max-lifetime")
 
 		// Rate limiting
 		rateLimit = map[string]int{
-			"event": c.GetInt("rate-event"),
-			"management":  c.GetInt("rate-management"),
+			"event":      c.GetInt("rate-event"),
+			"management": c.GetInt("rate-management"),
 		}
 	)
 
@@ -230,23 +231,26 @@ func main() {
 	// Audit events DB.
 	type EventsDB interface {
 		Exec(query string, args ...interface{}) (sql.Result, error)
-		//Ping() error
-		Query(query string, args ...interface{}) (*sql.Rows, error)
 		QueryRow(query string, args ...interface{}) *sql.Row
+		SetMaxOpenConns(n int)
+		SetMaxIdleConns(n int)
+		SetConnMaxLifetime(d time.Duration)
 	}
 
 	var eventsDBConn EventsDB = keycloakb.NoopEventsDB{}
 	if eventsDBEnabled {
 		var err error
-		eventsDBConn, err = sql.Open("mysql", fmt.Sprintf("%s:%s@%s(%s)/%s", eventsDBUsername, eventsDBPassword, eventsDBProtocol, eventsDBHostPort, eventsDBDatabase))
-		//eventsDBConn, err = sql.Open("mysql", "root:admin@tcp(127.0.0.1:3306)/auditevents")
-
-		//logger.Log("msg", fmt.Sprintf("%s:%s@%s(%s)/%s", eventsDBUsername, eventsDBPassword, eventsDBProtocol, eventsDBHostPort, eventsDBDatabase))
+		eventsDBConn, err = sql.Open("mysql", fmt.Sprintf("%s:%s@%s(%s)/%s", dbUsername, dbPassword, dbProtocol, dbHostPort, dbDatabase))
 
 		if err != nil {
 			logger.Log("msg", "could not create DB connection for audit events", "error", err)
 			return
 		}
+		// the config of the DB should have a max_connections > SetMaxOpenConns
+		eventsDBConn.SetMaxOpenConns(dbMaxOpenConns)
+		eventsDBConn.SetMaxIdleConns(dbMaxIdleConns)
+		eventsDBConn.SetConnMaxLifetime(time.Duration(dbConnMaxLifetime) * time.Second)
+
 	}
 
 	// Event service.
@@ -505,7 +509,6 @@ func main() {
 			sendVerifyEmailEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["management"]))(sendVerifyEmailEndpoint)
 		}
 
-		
 		managementEndpoints = management.Endpoints{
 			GetRealm:             getRealmEndpoint,
 			GetClients:           getClientsEndpoint,
@@ -693,7 +696,6 @@ func config(logger log.Logger) *viper.Viper {
 	v.SetDefault("rate-event", 1000)
 	v.SetDefault("rate-management", 1000)
 
-
 	// Influx DB client default.
 	v.SetDefault("influx", false)
 	v.SetDefault("influx-host-port", "")
@@ -719,7 +721,6 @@ func config(logger log.Logger) *viper.Viper {
 
 	// Debug routes enabled.
 	v.SetDefault("pprof-route-enabled", true)
-
 
 	// First level of override.
 	pflag.String("config-file", v.GetString("config-file"), "The configuration file path can be relative or absolute.")

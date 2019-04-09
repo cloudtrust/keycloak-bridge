@@ -4,6 +4,7 @@ package event
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"sync"
@@ -118,6 +119,80 @@ func (c *adminComponent) AdminEvent(ctx context.Context, adminEvent *fb.AdminEve
 	}
 }
 
+func addCTtypeToEvent(event map[string]string) map[string]string {
+	// add the ct_event_type
+
+	switch opType := event["operationType"]; opType {
+	case "CREATE":
+		//ACCOUNT_CREATED
+		// check if the resourcePath starts with prefix users
+		if strings.HasPrefix(event["resourcePath"], "users") {
+			event["ct_event_type"] = "ACCOUNT_CREATED"
+			return event
+		}
+	case "ACTION":
+		//ACTIVATION_EMAIL_SENT
+		// check if the resourcePath ends with sufix send-verify-email
+		if strings.HasSuffix(event["resourcePath"], "send-verify-email") {
+			event["ct_event_type"] = "ACTIVATION_EMAIL_SENT"
+			return event
+		}
+	default:
+
+	}
+
+	switch t := event["type"]; t {
+	case "CUSTOM_REQUIRED_ACTION":
+		//EMAIL_CONFIRMED
+		eventDetails := []byte(event["details"])
+		var f map[string]string
+		_ = json.Unmarshal(eventDetails, &f)
+
+		if f["custom_required_action"] == "VERIFY_EMAIL" {
+			event["ct_event_type"] = "EMAIL_CONFIRMED"
+			return event
+		}
+	case "EXECUTE_ACTION_TOKEN_ERROR":
+		//CONFIRM_EMAIL_EXPIRED
+		if event["error"] == "expired_code" {
+			event["ct_event_type"] = "CONFIRM_EMAIL_EXPIRED"
+			return event
+		}
+	case "UPDATE_PASSWORD":
+		//PASSWORD_RESET
+		eventDetails := []byte(event["details"])
+		var f map[string]string
+		_ = json.Unmarshal(eventDetails, &f)
+
+		if f["custom_required_action"] == "sms-password-set" {
+			event["ct_event_type"] = "PASSWORD_RESET"
+			return event
+		}
+	case "LOGIN":
+		//LOGON_OK
+		event["ct_event_type"] = "LOGON_OK"
+		return event
+
+	case "LOGIN_ERROR":
+		//LOGON_ERROR
+		event["ct_event_type"] = "LOGON_ERROR"
+		return event
+	case "LOGOUT":
+		//LOGOUT
+		event["ct_event_type"] = "LOGOUT"
+		return event
+	default:
+
+	}
+
+	// for all those events that don't have set the ct_event_type, we assign an empty ct_event_type
+	if _, ok := event["ct_event_type"]; !ok {
+		event["ct_event_type"] = ""
+	}
+
+	return event
+}
+
 func adminEventToMap(adminEvent *fb.AdminEvent) map[string]string {
 	var adminEventMap = make(map[string]string)
 	adminEventMap["uid"] = fmt.Sprint(adminEvent.Uid())
@@ -126,12 +201,30 @@ func adminEventToMap(adminEvent *fb.AdminEvent) map[string]string {
 	adminEventMap["time"] = time.Format("2006-01-02T15:04:05.000Z")
 
 	adminEventMap["realmId"] = string(adminEvent.RealmId())
-	adminEventMap["authDetails"] = fmt.Sprint(adminEvent.AuthDetails(nil))
+
+	authDetails := adminEvent.AuthDetails(nil)
+	var authDetailsMap map[string]string
+	authDetailsMap = make(map[string]string)
+	authDetailsMap["clientId"] = string(authDetails.ClientId())
+	authDetailsMap["ipAddress"] = string(authDetails.IpAddress())
+	authDetailsMap["realmId"] = string(authDetails.RealmId())
+	authDetailsMap["userId"] = string(authDetails.UserId())
+
+	// BE AWARE: error is not treated
+	authDetailsJson, _ := json.Marshal(authDetailsMap)
+	adminEventMap["authDetails"] = string(authDetailsJson)
+
 	adminEventMap["resourceType"] = string(adminEvent.ResourceType())
 	adminEventMap["operationType"] = fb.EnumNamesOperationType[int8(adminEvent.OperationType())]
 	adminEventMap["resourcePath"] = string(adminEvent.ResourcePath())
 	adminEventMap["representation"] = string(adminEvent.Representation())
 	adminEventMap["error"] = string(adminEvent.Error())
+	//all the admin events have, by default, the ct_event_type set to admin
+	adminEventMap["ct_event_type"] = "ADMIN"
+
+	//set the correct ct_event_type for actions like create_account, etc.
+	adminEventMap = addCTtypeToEvent(adminEventMap)
+
 	return adminEventMap
 }
 
@@ -150,15 +243,24 @@ func eventToMap(event *fb.Event) map[string]string {
 	eventMap["ipAddress"] = string(event.IpAddress())
 	eventMap["error"] = string(event.Error())
 
-	var detailsString string
+	var detailsMap = make(map[string]string)
 	var detailsLength = event.DetailsLength()
 	for i := 0; i < detailsLength; i++ {
 		var tuple = new(fb.Tuple)
 		event.Details(tuple, i)
-		detailsString += (string(tuple.Key()) + ":" + string(tuple.Value()) + ",")
+		if string(tuple.Key()) == "ct_event_type" {
+			eventMap[string(tuple.Key())] = string(tuple.Value())
+		} else {
+			detailsMap[string(tuple.Key())] = string(tuple.Value())
+		}
 	}
 
-	eventMap["details"] = "{" + fmt.Sprint(detailsString) + "}"
+	// BE AWARE: error is not treated
+	detailsJson, _ := json.Marshal(detailsMap)
+	eventMap["details"] = string(detailsJson)
+
+	eventMap = addCTtypeToEvent(eventMap)
+
 	return eventMap
 }
 
@@ -193,7 +295,6 @@ func apply(ctx context.Context, fs [](FuncEvent), param map[string]string) error
 	return nil
 }
 
-
-func epochMilliToTime(milli int64) time.Time{
-	return time.Unix(0, milli * 1000000)
+func epochMilliToTime(milli int64) time.Time {
+	return time.Unix(0, milli*1000000)
 }

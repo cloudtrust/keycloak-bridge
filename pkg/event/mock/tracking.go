@@ -5,9 +5,10 @@
 package mock
 
 import (
+	reflect "reflect"
+
 	raven_go "github.com/getsentry/raven-go"
 	gomock "github.com/golang/mock/gomock"
-	reflect "reflect"
 )
 
 // Sentry is a mock of Sentry interface
