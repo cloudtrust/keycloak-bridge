@@ -2,6 +2,7 @@ package management
 
 import (
 	"context"
+	"fmt"
 
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
 	"github.com/cloudtrust/keycloak-bridge/pkg/event"
@@ -294,7 +295,40 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 		userRep.Attributes = &attributes
 	}
 
-	return c.keycloakClient.UpdateUser(accessToken, realmName, userID, userRep)
+	err := c.keycloakClient.UpdateUser(accessToken, realmName, userID, userRep)
+
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("Updating the user")
+	//store the API call into the DB in case the user.Enable is present
+	if user.Enabled != nil {
+		var event = make(map[string]string)
+
+		event["realm_name"] = realmName
+		event["user_id"] = userID
+		if user.Username != nil {
+			event["username"] = *user.Username
+		}
+		event["origin"] = "back-office"
+		//retrieve details of the agent
+		event = getAgentDetails(ctx, event)
+
+		//add ct_event_type
+		if *user.Enabled {
+			// UNLOCK_ACCOUNT ct_event_type
+			fmt.Println("UNLOCK_ACCOUNT")
+			event["ct_event_type"] = "UNLOCK_ACCOUNT"
+		} else {
+			// LOCK_ACCOUNT ct_event_type
+			fmt.Println("LOCK_ACCOUNT")
+			event["ct_event_type"] = "LOCK_ACCOUNT"
+		}
+		err = c.eventDBModule.Store(ctx, event)
+	}
+
+	return err
 }
 
 func (c *component) GetUsers(ctx context.Context, realmName string, group string, paramKV ...string) ([]api.UserRepresentation, error) {
