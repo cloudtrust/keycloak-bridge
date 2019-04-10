@@ -2,7 +2,6 @@ package management
 
 import (
 	"context"
-	"fmt"
 
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
 	"github.com/cloudtrust/keycloak-bridge/pkg/event"
@@ -301,7 +300,6 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 		return err
 	}
 
-	fmt.Println("Updating the user")
 	//store the API call into the DB in case the user.Enable is present
 	if user.Enabled != nil {
 		var event = make(map[string]string)
@@ -318,11 +316,9 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 		//add ct_event_type
 		if *user.Enabled {
 			// UNLOCK_ACCOUNT ct_event_type
-			fmt.Println("UNLOCK_ACCOUNT")
 			event["ct_event_type"] = "UNLOCK_ACCOUNT"
 		} else {
 			// LOCK_ACCOUNT ct_event_type
-			fmt.Println("LOCK_ACCOUNT")
 			event["ct_event_type"] = "LOCK_ACCOUNT"
 		}
 		err = c.eventDBModule.Store(ctx, event)
@@ -458,7 +454,24 @@ func (c *component) ResetPassword(ctx context.Context, realmName string, userID 
 	credKc.Type = &passwordType
 	credKc.Value = password.Value
 
-	return c.keycloakClient.ResetPassword(accessToken, realmName, userID, credKc)
+	err := c.keycloakClient.ResetPassword(accessToken, realmName, userID, credKc)
+
+	if err != nil {
+		return err
+	}
+
+	//store the API call into the DB
+	var event = make(map[string]string)
+	event["ct_event_type"] = "INIT_PASSWORD"
+	event["realm_name"] = realmName
+	event["user_id"] = userID
+	event["origin"] = "back-office"
+	//retrieve details of the agent
+	event = getAgentDetails(ctx, event)
+
+	err = c.eventDBModule.Store(ctx, event)
+
+	return err
 }
 
 func (c *component) SendVerifyEmail(ctx context.Context, realmName string, userID string, paramKV ...string) error {
