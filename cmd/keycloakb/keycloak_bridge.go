@@ -334,9 +334,19 @@ func main() {
 	{
 		var managementLogger = log.With(logger, "svc", "management")
 
+		// module to store API calls of the back office to the DB
+		var eventsDBModule event.EventsDBModule
+		{
+			eventsDBModule = event.NewEventsDBModule(eventsDBConn)
+			eventsDBModule = event.MakeEventsDBModuleInstrumentingMW(influxMetrics.NewHistogram("eventsDB_module"))(eventsDBModule)
+			eventsDBModule = event.MakeEventsDBModuleLoggingMW(log.With(managementLogger, "mw", "module", "unit", "eventsDB"))(eventsDBModule)
+			eventsDBModule = event.MakeEventsDBModuleTracingMW(tracer)(eventsDBModule)
+
+		}
+
 		var keycloakComponent management.Component
 		{
-			keycloakComponent = management.NewComponent(keycloakClient)
+			keycloakComponent = management.NewComponent(keycloakClient, eventsDBModule)
 		}
 
 		var getRealmEndpoint endpoint.Endpoint

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
+	"github.com/cloudtrust/keycloak-bridge/pkg/event"
 	kc "github.com/cloudtrust/keycloak-client"
 )
 
@@ -46,18 +47,57 @@ type Component interface {
 	GetRole(ctx context.Context, realmName string, roleID string) (api.RoleRepresentation, error)
 	GetClientRoles(ctx context.Context, realmName, idClient string) ([]api.RoleRepresentation, error)
 	CreateClientRole(ctx context.Context, realmName, clientID string, role api.RoleRepresentation) (string, error)
+
+	/*
+		GetRealm(ctx context.Context, realmName string) (api.RealmRepresentation, error)
+		GetClient(ctx context.Context, realmName, idClient string) (api.ClientRepresentation, error)
+		GetClients(ctx context.Context, realmName string) ([]api.ClientRepresentation, error)
+		//API_ACCOUNT_DELETION
+		DeleteUser(ctx context.Context, realmName, userID string) error
+		//Get_details
+		GetUser(ctx context.Context, realmName, userID string) (api.UserRepresentation, error)
+		//lock_account - check for the enabled/disabled flag change with enabled = false
+		//unlock_account - enabled = true
+		UpdateUser(ctx context.Context, realmName, userID string, user api.UserRepresentation) error
+		GetUsers(ctx context.Context, realmName string, paramKV ...string) ([]api.UserRepresentation, error)
+		//api_create_account
+		CreateUser(ctx context.Context, realmName string, user api.UserRepresentation) (string, error)
+		GetClientRolesForUser(ctx context.Context, realmName, userID, clientID string) ([]api.RoleRepresentation, error)
+		AddClientRolesToUser(ctx context.Context, realmName, userID, clientID string, roles []api.RoleRepresentation) error
+		GetRealmRolesForUser(ctx context.Context, realmName, userID string) ([]api.RoleRepresentation, error)
+		//init_password
+		ResetPassword(ctx context.Context, realmName string, userID string, password api.PasswordRepresentation) error
+		SendVerifyEmail(ctx context.Context, realmName string, userID string, paramKV ...string) error
+		GetRoles(ctx context.Context, realmName string) ([]api.RoleRepresentation, error)
+		GetRole(ctx context.Context, realmName string, roleID string) (api.RoleRepresentation, error)
+		GetClientRoles(ctx context.Context, realmName, idClient string) ([]api.RoleRepresentation, error)
+		CreateClientRole(ctx context.Context, realmName, clientID string, role api.RoleRepresentation) (string, error)
+	*/
 }
 
 // Component is the management component.
 type component struct {
 	keycloakClient KeycloakClient
+	eventDBModule  event.EventsDBModule
 }
 
 // NewComponent returns the management component.
-func NewComponent(keycloakClient KeycloakClient) Component {
+func NewComponent(keycloakClient KeycloakClient, eventDBModule event.EventsDBModule) Component {
 	return &component{
 		keycloakClient: keycloakClient,
+		eventDBModule:  eventDBModule,
 	}
+}
+
+func getAgentDetails(ctx context.Context, event map[string]string) map[string]string {
+
+	//retrieve agent username
+	event["agent_username"] = ctx.Value("username").(string)
+	//retrieve agent user id - not yet implemented
+	//event["userId"] = ctx.Value("userId").(string)
+	//retrieve agent realm
+	event["agent_realm_name"] = ctx.Value("realm").(string)
+	return event
 }
 
 func (c *component) GetRealm(ctx context.Context, realm string) (api.RealmRepresentation, error) {
@@ -205,7 +245,20 @@ func (c *component) GetUser(ctx context.Context, realmName, userID string) (api.
 		}
 	}
 
-	return userRep, nil
+	//store the API call into the DB
+	var event = make(map[string]string)
+	event["ct_event_type"] = "GET_DETAILS"
+	event["realm_name"] = realmName
+	event["user_id"] = userID
+	event["username"] = *userKc.Username
+	event["origin"] = "back-office"
+	//retrieve details of the agent
+
+	event = getAgentDetails(ctx, event)
+
+	err = c.eventDBModule.Store(ctx, event)
+
+	return userRep, err
 }
 
 func (c *component) UpdateUser(ctx context.Context, realmName, userID string, user api.UserRepresentation) error {
