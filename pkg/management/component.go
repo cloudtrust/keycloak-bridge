@@ -47,32 +47,6 @@ type Component interface {
 	GetRole(ctx context.Context, realmName string, roleID string) (api.RoleRepresentation, error)
 	GetClientRoles(ctx context.Context, realmName, idClient string) ([]api.RoleRepresentation, error)
 	CreateClientRole(ctx context.Context, realmName, clientID string, role api.RoleRepresentation) (string, error)
-
-	/*
-		GetRealm(ctx context.Context, realmName string) (api.RealmRepresentation, error)
-		GetClient(ctx context.Context, realmName, idClient string) (api.ClientRepresentation, error)
-		GetClients(ctx context.Context, realmName string) ([]api.ClientRepresentation, error)
-		//API_ACCOUNT_DELETION
-		DeleteUser(ctx context.Context, realmName, userID string) error
-		//Get_details
-		GetUser(ctx context.Context, realmName, userID string) (api.UserRepresentation, error)
-		//lock_account - check for the enabled/disabled flag change with enabled = false
-		//unlock_account - enabled = true
-		UpdateUser(ctx context.Context, realmName, userID string, user api.UserRepresentation) error
-		GetUsers(ctx context.Context, realmName string, paramKV ...string) ([]api.UserRepresentation, error)
-		//api_create_account
-		CreateUser(ctx context.Context, realmName string, user api.UserRepresentation) (string, error)
-		GetClientRolesForUser(ctx context.Context, realmName, userID, clientID string) ([]api.RoleRepresentation, error)
-		AddClientRolesToUser(ctx context.Context, realmName, userID, clientID string, roles []api.RoleRepresentation) error
-		GetRealmRolesForUser(ctx context.Context, realmName, userID string) ([]api.RoleRepresentation, error)
-		//init_password
-		ResetPassword(ctx context.Context, realmName string, userID string, password api.PasswordRepresentation) error
-		SendVerifyEmail(ctx context.Context, realmName string, userID string, paramKV ...string) error
-		GetRoles(ctx context.Context, realmName string) ([]api.RoleRepresentation, error)
-		GetRole(ctx context.Context, realmName string, roleID string) (api.RoleRepresentation, error)
-		GetClientRoles(ctx context.Context, realmName, idClient string) ([]api.RoleRepresentation, error)
-		CreateClientRole(ctx context.Context, realmName, clientID string, role api.RoleRepresentation) (string, error)
-	*/
 }
 
 // Component is the management component.
@@ -155,7 +129,7 @@ func (c *component) GetClients(ctx context.Context, realmName string) ([]api.Cli
 	return clientsRep, nil
 }
 
-func (c *component) CreateUser(ctx context.Context, realm string, user api.UserRepresentation) (string, error) {
+func (c *component) CreateUser(ctx context.Context, realmName string, user api.UserRepresentation) (string, error) {
 	var accessToken = ctx.Value("access_token").(string)
 
 	var userRep kc.UserRepresentation
@@ -188,19 +162,53 @@ func (c *component) CreateUser(ctx context.Context, realm string, user api.UserR
 		userRep.Attributes = &attributes
 	}
 
-	locationURL, err := c.keycloakClient.CreateUser(accessToken, realm, userRep)
+	locationURL, err := c.keycloakClient.CreateUser(accessToken, realmName, userRep)
 
 	if err != nil {
 		return "", err
 	}
 
-	return locationURL, nil
+	//store the API call into the DB
+	var event = make(map[string]string)
+	event["ct_event_type"] = "API_ACCOUNT_CREATION"
+	event["realm_name"] = realmName
+	if user.Id != nil {
+		event["user_id"] = *user.Id
+	}
+	if user.Username != nil {
+		event["username"] = *user.Username
+	}
+
+	event["origin"] = "back-office"
+	//retrieve details of the agent
+	event = getAgentDetails(ctx, event)
+
+	err = c.eventDBModule.Store(ctx, event)
+
+	return locationURL, err
 }
 
 func (c *component) DeleteUser(ctx context.Context, realmName, userID string) error {
 	var accessToken = ctx.Value("access_token").(string)
 
-	return c.keycloakClient.DeleteUser(accessToken, realmName, userID)
+	err := c.keycloakClient.DeleteUser(accessToken, realmName, userID)
+
+	if err != nil {
+		return err
+	}
+
+	//store the API call into the DB
+	var event = make(map[string]string)
+	event["ct_event_type"] = "API_ACCOUNT_DELETION"
+	event["realm_name"] = realmName
+	event["user_id"] = userID
+	event["origin"] = "back-office"
+	//retrieve details of the agent
+	event = getAgentDetails(ctx, event)
+
+	err = c.eventDBModule.Store(ctx, event)
+
+	return err
 }
 
 func (c *component) GetUser(ctx context.Context, realmName, userID string) (api.UserRepresentation, error) {
@@ -250,7 +258,9 @@ func (c *component) GetUser(ctx context.Context, realmName, userID string) (api.
 	event["ct_event_type"] = "GET_DETAILS"
 	event["realm_name"] = realmName
 	event["user_id"] = userID
-	event["username"] = *userKc.Username
+	if userKc.Username != nil {
+		event["username"] = *userKc.Username
+	}
 	event["origin"] = "back-office"
 	//retrieve details of the agent
 
