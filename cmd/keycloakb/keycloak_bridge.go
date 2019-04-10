@@ -509,24 +509,46 @@ func main() {
 			sendVerifyEmailEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["management"]))(sendVerifyEmailEndpoint)
 		}
 
+		var getCredentialsForUserEndpoint endpoint.Endpoint
+		{
+			getCredentialsForUserEndpoint = management.MakeGetCredentialsForUserEndpoint(keycloakComponent)
+			getCredentialsForUserEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("get_credentials_for_user_endpoint"))(getCredentialsForUserEndpoint)
+			getCredentialsForUserEndpoint = middleware.MakeEndpointLoggingMW(log.With(managementLogger, "mw", "endpoint"))(getCredentialsForUserEndpoint)
+			getCredentialsForUserEndpoint = middleware.MakeEndpointTracingMW(tracer, "get_credentials_for_user_endpoint")(getCredentialsForUserEndpoint)
+			getCredentialsForUserEndpoint = middleware.MakeEndpointTokenForRealmMW(log.With(managementLogger, "mw", "endpoint"))(getCredentialsForUserEndpoint)
+			getCredentialsForUserEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["management"]))(getCredentialsForUserEndpoint)
+		}
+
+		var deleteCredentialsForUserEndpoint endpoint.Endpoint
+		{
+			deleteCredentialsForUserEndpoint = management.MakeDeleteCredentialsForUserEndpoint(keycloakComponent)
+			deleteCredentialsForUserEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("delete_credentials_for_user_endpoint"))(deleteCredentialsForUserEndpoint)
+			deleteCredentialsForUserEndpoint = middleware.MakeEndpointLoggingMW(log.With(managementLogger, "mw", "endpoint"))(deleteCredentialsForUserEndpoint)
+			deleteCredentialsForUserEndpoint = middleware.MakeEndpointTracingMW(tracer, "delete_credentials_for_user_endpoint")(deleteCredentialsForUserEndpoint)
+			deleteCredentialsForUserEndpoint = middleware.MakeEndpointTokenForRealmMW(log.With(managementLogger, "mw", "endpoint"))(deleteCredentialsForUserEndpoint)
+			deleteCredentialsForUserEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["management"]))(deleteCredentialsForUserEndpoint)
+		}
+
 		managementEndpoints = management.Endpoints{
-			GetRealm:             getRealmEndpoint,
-			GetClients:           getClientsEndpoint,
-			GetClient:            getClientEndpoint,
-			CreateUser:           createUserEndpoint,
-			GetUser:              getUserEndpoint,
-			UpdateUser:           updateUserEndpoint,
-			DeleteUser:           deleteUserEndpoint,
-			GetUsers:             getUsersEndpoint,
-			GetRoles:             getRolesEndpoint,
-			GetRole:              getRoleEndpoint,
-			GetClientRoles:       getClientRolesEndpoint,
-			CreateClientRole:     createClientRoleEndpoint,
-			GetClientRoleForUser: getClientRolesForUserEndpoint,
-			AddClientRoleToUser:  addClientRolesToUserEndpoint,
-			GetRealmRoleForUser:  getRealmRolesForUserEndpoint,
-			ResetPassword:        resetPasswordEndpoint,
-			SendVerifyEmail:      sendVerifyEmailEndpoint,
+			GetRealm:                 getRealmEndpoint,
+			GetClients:               getClientsEndpoint,
+			GetClient:                getClientEndpoint,
+			CreateUser:               createUserEndpoint,
+			GetUser:                  getUserEndpoint,
+			UpdateUser:               updateUserEndpoint,
+			DeleteUser:               deleteUserEndpoint,
+			GetUsers:                 getUsersEndpoint,
+			GetRoles:                 getRolesEndpoint,
+			GetRole:                  getRoleEndpoint,
+			GetClientRoles:           getClientRolesEndpoint,
+			CreateClientRole:         createClientRoleEndpoint,
+			GetClientRoleForUser:     getClientRolesForUserEndpoint,
+			AddClientRoleToUser:      addClientRolesToUserEndpoint,
+			GetRealmRoleForUser:      getRealmRolesForUserEndpoint,
+			ResetPassword:            resetPasswordEndpoint,
+			SendVerifyEmail:          sendVerifyEmailEndpoint,
+			GetCredentialsForUser:    getCredentialsForUserEndpoint,
+			DeleteCredentialsForUser: deleteCredentialsForUserEndpoint,
 		}
 	}
 
@@ -585,6 +607,9 @@ func main() {
 		var resetPasswordHandler = ConfigureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.ResetPassword)
 		var sendVerifyEmailHandler = ConfigureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.SendVerifyEmail)
 
+		var getCredentialsForUserHandler = ConfigureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.GetCredentialsForUser)
+		var deleteCredentialsForUserHandler = ConfigureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.DeleteCredentialsForUser)
+
 		//realms
 		managementSubroute.Path("/realms/{realm}").Methods("GET").Handler(getRealmHandler)
 
@@ -604,6 +629,8 @@ func main() {
 		managementSubroute.Path("/realms/{realm}/users/{userID}/role-mappings/realm").Methods("GET").Handler(getRealmRoleForUserHandler)
 		managementSubroute.Path("/realms/{realm}/users/{userID}/reset-password").Methods("PUT").Handler(resetPasswordHandler)
 		managementSubroute.Path("/realms/{realm}/users/{userID}/send-verify-email").Methods("PUT").Handler(sendVerifyEmailHandler)
+		managementSubroute.Path("/realms/{realm}/users/{userID}/credentials").Methods("GET").Handler(getCredentialsForUserHandler)
+		managementSubroute.Path("/realms/{realm}/users/{userID}/credentials/{credentialID}").Methods("DELETE").Handler(deleteCredentialsForUserHandler)
 		//roles
 		managementSubroute.Path("/realms/{realm}/roles").Methods("GET").Handler(getRolesHandler)
 		managementSubroute.Path("/realms/{realm}/roles-by-id/{roleID}").Methods("GET").Handler(getRoleHandler)

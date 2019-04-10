@@ -840,6 +840,55 @@ func TestSendVerifyEmail(t *testing.T) {
 	}
 }
 
+func TestGetCredentialsForUser(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
+
+	var managementComponent = NewComponent(mockKeycloakClient)
+	var accessToken = "TOKEN=="
+	var realmReq = "master"
+	var realmName = "otherRealm"
+	var userID = "1245-7854-8963"
+
+	// Get credentials for user
+	{
+		mockKeycloakClient.EXPECT().GetCredentialsForUser(accessToken, realmReq, realmName, userID).Return([]kc.CredentialRepresentation{}, nil).Times(1)
+
+		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+		ctx = context.WithValue(ctx, "realm", realmReq)
+
+		_, err := managementComponent.GetCredentialsForUser(ctx, realmName, userID)
+
+		assert.Nil(t, err)
+	}
+}
+
+func TestDeleteCredentialsForUser(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
+
+	var managementComponent = NewComponent(mockKeycloakClient)
+	var accessToken = "TOKEN=="
+	var realmReq = "master"
+	var realmName = "master"
+	var userID = "1245-7854-8963"
+	var credential = "987-654-321"
+
+	// Get credentials for user
+	{
+		mockKeycloakClient.EXPECT().DeleteCredentialsForUser(accessToken, realmReq, realmName, userID, credential).Return(nil).Times(1)
+
+		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+		ctx = context.WithValue(ctx, "realm", realmReq)
+
+		err := managementComponent.DeleteCredentialsForUser(ctx, realmName, userID, credential)
+
+		assert.Nil(t, err)
+	}
+}
+
 func TestGetRoles(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()

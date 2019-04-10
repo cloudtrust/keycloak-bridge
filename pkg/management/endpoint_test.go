@@ -442,6 +442,54 @@ func TestSendVerifyEmailEndpoint(t *testing.T) {
 	}
 }
 
+func TestGetCredentialsForUserEndpoint(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
+
+	var e = MakeGetCredentialsForUserEndpoint(mockManagementComponent)
+
+	// No error - Without param
+	{
+		var realm = "master"
+		var userID = "123-456-789"
+		var ctx = context.Background()
+		var req = make(map[string]string)
+		req["realm"] = realm
+		req["userID"] = userID
+
+		mockManagementComponent.EXPECT().GetCredentialsForUser(ctx, realm, userID).Return([]api.CredentialRepresentation{}, nil).Times(1)
+		var _, err = e(ctx, req)
+		assert.Nil(t, err)
+	}
+}
+
+func TestDeleteCredentialsForUserEndpoint(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
+
+	var e = MakeDeleteCredentialsForUserEndpoint(mockManagementComponent)
+
+	// No error - Without param
+	{
+		var realm = "master"
+		var userID = "123-456-789"
+		var credID = "987-654-321"
+		var ctx = context.Background()
+		var req = make(map[string]string)
+		req["realm"] = realm
+		req["userID"] = userID
+		req["credentialID"] = credID
+
+		mockManagementComponent.EXPECT().DeleteCredentialsForUser(ctx, realm, userID, credID).Return(nil).Times(1)
+		var _, err = e(ctx, req)
+		assert.Nil(t, err)
+	}
+}
+
 func TestGetRolesEndpoint(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
