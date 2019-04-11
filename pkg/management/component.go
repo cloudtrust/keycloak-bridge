@@ -187,9 +187,10 @@ func (c *component) CreateUser(ctx context.Context, realmName string, user api.U
 	//retrieve details of the agent
 	event = getAgentDetails(ctx, event)
 
-	err = c.eventDBModule.Store(ctx, event)
+	// the error should be treated
+	_ = c.eventDBModule.Store(ctx, event)
 
-	return locationURL, err
+	return locationURL, nil
 }
 
 func (c *component) DeleteUser(ctx context.Context, realmName, userID string) error {
@@ -213,9 +214,10 @@ func (c *component) DeleteUser(ctx context.Context, realmName, userID string) er
 	//retrieve details of the agent
 	event = getAgentDetails(ctx, event)
 
-	err = c.eventDBModule.Store(ctx, event)
+	// the error should be treated
+	_ = c.eventDBModule.Store(ctx, event)
 
-	return err
+	return nil
 }
 
 func (c *component) GetUser(ctx context.Context, realmName, userID string) (api.UserRepresentation, error) {
@@ -277,9 +279,10 @@ func (c *component) GetUser(ctx context.Context, realmName, userID string) (api.
 
 	event = getAgentDetails(ctx, event)
 
-	err = c.eventDBModule.Store(ctx, event)
+	// the error should be treated
+	_ = c.eventDBModule.Store(ctx, event)
 
-	return userRep, err
+	return userRep, nil
 }
 
 func (c *component) UpdateUser(ctx context.Context, realmName, userID string, user api.UserRepresentation) error {
@@ -344,10 +347,12 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 			// LOCK_ACCOUNT ct_event_type
 			event["ct_event_type"] = "LOCK_ACCOUNT"
 		}
-		err = c.eventDBModule.Store(ctx, event)
+		// the error should be treated
+		_ = c.eventDBModule.Store(ctx, event)
+
 	}
 
-	return err
+	return nil
 }
 
 func (c *component) GetUsers(ctx context.Context, realmName string, group string, paramKV ...string) ([]api.UserRepresentation, error) {
@@ -494,9 +499,10 @@ func (c *component) ResetPassword(ctx context.Context, realmName string, userID 
 	//retrieve details of the agent
 	event = getAgentDetails(ctx, event)
 
-	err = c.eventDBModule.Store(ctx, event)
+	// the error should be treated
+	_ = c.eventDBModule.Store(ctx, event)
 
-	return err
+	return nil
 }
 
 func (c *component) SendVerifyEmail(ctx context.Context, realmName string, userID string, paramKV ...string) error {
