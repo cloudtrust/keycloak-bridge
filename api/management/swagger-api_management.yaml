@@ -378,6 +378,59 @@ paths:
       responses:
         200:
           description: successful operation
+  /realms/{realm}/users/{userID}/credentials:
+    get:
+      tags:
+      - Credentials
+      summary: Get all credentials for the user
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Credential'
+    delete:
+      tags:
+      - Credentials
+      summary: Delete the credentials for the user
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
+      - name: credentialID
+        in: path
+        description: Credential id
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation
   /realms/{realm}/roles:
     get:
       tags:
@@ -564,6 +617,23 @@ components:
       properties:
         value:
           type: string
+    Credential:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+        algorithm:
+          type: string
+        createdDate:
+          type: integer
+        config:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
   securitySchemes:
     openId:
       type: openIdConnect
