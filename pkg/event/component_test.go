@@ -2,6 +2,7 @@ package event
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"strconv"
 	"testing"
@@ -123,13 +124,14 @@ func TestAdminComponent(t *testing.T) {
 func TestEventToMap(t *testing.T) {
 	var uid int64 = 1234
 	var epoch = int64(1547127600485)
-	var etype int8
+	var etype int8 = 6
 	var realmID = "realm"
 	var clientID = "client"
 	var userID = "user"
 	var sessionID = "session"
 	var ipAddr = "ipAddress"
 	var error = "error"
+	var username = "test_username"
 
 	var event *fb.Event
 	{
@@ -143,7 +145,7 @@ func TestEventToMap(t *testing.T) {
 		var error = builder.CreateString(error)
 
 		var key1 = builder.CreateString("username")
-		var value1 = builder.CreateString("test_username")
+		var value1 = builder.CreateString(username)
 		fb.TupleStart(builder)
 		fb.TupleAddKey(builder, key1)
 		fb.TupleAddValue(builder, value1)
@@ -178,15 +180,51 @@ func TestEventToMap(t *testing.T) {
 	}
 
 	var m = eventToMap(event)
-	assert.Equal(t, strconv.FormatInt(uid, 10), m["uid"])
-	assert.Equal(t, time.Unix(0, epoch*1000000).Format("2006-01-02T15:04:05.000Z"), m["time"])
-	assert.Equal(t, fb.EnumNamesEventType[int8(etype)], m["type"])
-	assert.Equal(t, realmID, m["realmId"])
-	assert.Equal(t, clientID, m["clientId"])
-	assert.Equal(t, userID, m["userId"])
-	assert.Equal(t, sessionID, m["sessionId"])
-	assert.Equal(t, ipAddr, m["ipAddress"])
-	assert.Equal(t, error, m["error"])
+	assert.Equal(t, time.Unix(0, epoch*1000000).UTC().Format("2006-01-02 15:04:05.000"), m["audit_time"])
+	assert.Equal(t, fb.EnumNamesEventType[int8(etype)], m["kc_event_type"])
+	assert.Equal(t, realmID, m["realm_name"])
+	assert.Equal(t, clientID, m["client_id"])
+	assert.Equal(t, userID, m["user_id"])
+	assert.Equal(t, username, m["username"])
+	var f = make(map[string]string)
+	err := json.Unmarshal([]byte(m["additional_info"]), &f)
+	assert.Nil(t, err)
+	assert.Equal(t, strconv.FormatInt(uid, 10), f["uid"])
+	assert.Equal(t, sessionID, f["session_id"])
+	assert.Equal(t, ipAddr, f["ip_address"])
+	assert.Equal(t, error, f["error"])
+	assert.Equal(t, "", m["ct_event_type"])
+
+}
+
+func TestEventToMapNewCTEvent(t *testing.T) {
+	var customEvent = "CUSTOM_EVENT"
+	var etype int8 = 6
+
+	var event *fb.Event
+	{
+		var builder = flatbuffers.NewBuilder(0)
+		var key1 = builder.CreateString("ct_event_type")
+		var value1 = builder.CreateString(customEvent)
+		fb.TupleStart(builder)
+		fb.TupleAddKey(builder, key1)
+		fb.TupleAddValue(builder, value1)
+		var detail1 = fb.TupleEnd(builder)
+
+		fb.EventStartDetailsVector(builder, 1)
+		builder.PrependUOffsetT(detail1)
+		var details = builder.EndVector(1)
+
+		fb.EventStart(builder)
+		fb.EventAddDetails(builder, details)
+		fb.EventAddType(builder, etype)
+		var eventOffset = fb.EventEnd(builder)
+		builder.Finish(eventOffset)
+		event = fb.GetRootAsEvent(builder.FinishedBytes(), 0)
+	}
+
+	var m = eventToMap(event)
+	assert.Equal(t, customEvent, m["ct_event_type"])
 
 }
 
@@ -422,13 +460,17 @@ func TestAdminEventToMap(t *testing.T) {
 	}
 
 	var m = adminEventToMap(adminEvent)
-	assert.Equal(t, strconv.FormatInt(uid, 10), m["uid"])
-	assert.Equal(t, time.Unix(0, epoch*1000000).Format("2006-01-02T15:04:05.000Z"), m["time"])
-	assert.Equal(t, fb.EnumNamesOperationType[int8(optype)], m["operationType"])
-	assert.Equal(t, realmID, m["realmId"])
-	assert.Equal(t, resourcePath, m["resourcePath"])
-	assert.Equal(t, representation, m["representation"])
-	assert.Equal(t, error, m["error"])
+
+	assert.Equal(t, time.Unix(0, epoch*1000000).UTC().Format("2006-01-02 15:04:05.000"), m["audit_time"])
+	assert.Equal(t, fb.EnumNamesOperationType[int8(optype)], m["kc_operation_type"])
+	assert.Equal(t, realmID, m["realm_name"])
+	var f = make(map[string]string)
+	err := json.Unmarshal([]byte(m["additional_info"]), &f)
+	assert.Nil(t, err)
+	assert.Equal(t, strconv.FormatInt(uid, 10), f["uid"])
+	assert.Equal(t, resourcePath, f["resource_path"])
+	assert.Equal(t, representation, f["representation"])
+	assert.Equal(t, error, f["error"])
 	assert.Equal(t, "ADMIN", m["ct_event_type"])
 
 }

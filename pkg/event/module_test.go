@@ -89,80 +89,16 @@ func TestEventsDBModuleCTEvent(t *testing.T) {
 
 	var ctEvent = make(map[string]string)
 	ctEvent["ct_event_type"] = "LOGIN"
-	ctEvent["realmId"] = "dummyRealm"
-	ctEvent["type"] = "dummyType"
-	ctEvent["operationtype"] = "dummyOpType"
-	ctEvent["clientId"] = "dummyClient"
-	ctEvent["resourcePath"] = "users/dummyPath"
+	ctEvent["realm_id"] = "dummyRealm"
+	ctEvent["kc_event_type"] = "dummyType"
+	ctEvent["kc_operation_type"] = "dummyOpType"
+	ctEvent["client_id"] = "dummyClient"
 
 	var details = make(map[string]string)
-	details["username"] = "dummyUsername"
+	details["resource_path"] = "users/dummyPath"
 	details["error"] = ""
 	detailsJson, _ := json.Marshal(details)
-	ctEvent["details"] = string(detailsJson)
-
-	var authDetails = make(map[string]string)
-	authDetails["clientId"] = "cliendId"
-	authDetails["realmId"] = "realmId"
-	authDetails["userId"] = "userId"
-	authJson, _ := json.Marshal(authDetails)
-	ctEvent["authDetails"] = string(authJson)
-
-	mockDB.EXPECT().Exec(gomock.Any(), gomock.Any()).Return(nil, nil).AnyTimes()
-	var err = eventsDBModule.Store(context.Background(), ctEvent)
-	assert.Nil(t, err)
-}
-
-func TestEventsDBModuleCTEventInvalidDetailsJson(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
-	defer mockCtrl.Finish()
-	var mockDB = mock.NewDBEvents(mockCtrl)
-
-	mockDB.EXPECT().Exec(gomock.Any()).Return(nil, nil).AnyTimes()
-	var eventsDBModule = NewEventsDBModule(mockDB)
-
-	var ctEvent = make(map[string]string)
-	ctEvent["ct_event_type"] = "LOGIN"
-
-	ctEvent["details"] = string("{key : value}")
-
-	mockDB.EXPECT().Exec(gomock.Any(), gomock.Any()).Return(nil, nil).AnyTimes()
-	var err = eventsDBModule.Store(context.Background(), ctEvent)
-	assert.NotNil(t, err)
-}
-
-func TestEventsDBModuleCTEventInvalidAuthDetailsJson(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
-	defer mockCtrl.Finish()
-	var mockDB = mock.NewDBEvents(mockCtrl)
-
-	mockDB.EXPECT().Exec(gomock.Any()).Return(nil, nil).AnyTimes()
-	var eventsDBModule = NewEventsDBModule(mockDB)
-
-	var ctEvent = make(map[string]string)
-	ctEvent["ct_event_type"] = "LOGIN"
-	ctEvent["authDetails"] = string("{key : value}")
-
-	mockDB.EXPECT().Exec(gomock.Any(), gomock.Any()).Return(nil, nil).AnyTimes()
-	var err = eventsDBModule.Store(context.Background(), ctEvent)
-	assert.NotNil(t, err)
-}
-
-func TestEventsDBModuleNoCTEvent(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
-	defer mockCtrl.Finish()
-	var mockDB = mock.NewDBEvents(mockCtrl)
-
-	mockDB.EXPECT().Exec(gomock.Any()).Return(nil, nil).AnyTimes()
-	var eventsDBModule = NewEventsDBModule(mockDB)
-
-	var ctEvent = make(map[string]string)
-	ctEvent["ct_event_type"] = ""
-	ctEvent["realmId"] = "dummyRealm"
-	ctEvent["type"] = "dummyType"
-	ctEvent["operationtype"] = "dummyOpType"
-	ctEvent["clientId"] = "dummyClient"
-	ctEvent["resourcePath"] = "users/dummyPath"
+	ctEvent["additional_info"] = string(detailsJson)
 
 	mockDB.EXPECT().Exec(gomock.Any(), gomock.Any()).Return(nil, nil).AnyTimes()
 	var err = eventsDBModule.Store(context.Background(), ctEvent)

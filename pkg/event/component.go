@@ -131,14 +131,14 @@ func addCTtypeToEvent(event map[string]string) map[string]string {
 	case "CREATE":
 		//ACCOUNT_CREATED
 		// check if the resourcePath starts with prefix users
-		if strings.HasPrefix(f["resourcePath"], "users") {
+		if strings.HasPrefix(f["resource_path"], "users") {
 			event["ct_event_type"] = "ACCOUNT_CREATED"
 			return event
 		}
 	case "ACTION":
 		//ACTIVATION_EMAIL_SENT
 		// check if the resourcePath ends with sufix send-verify-email
-		if strings.HasSuffix(f["resourcePath"], "send-verify-email") {
+		if strings.HasSuffix(f["resource_path"], "send-verify-email") {
 			event["ct_event_type"] = "ACTIVATION_EMAIL_SENT"
 			return event
 		}
@@ -196,8 +196,8 @@ func adminEventToMap(adminEvent *fb.AdminEvent) map[string]string {
 
 	addInfo["uid"] = fmt.Sprint(adminEvent.Uid())
 
-	time := epochMilliToTime(adminEvent.Time())
-	addInfo["time"] = time.Format("2006-01-02T15:04:05.000Z")
+	time := epochMilliToTime(adminEvent.Time()).UTC()
+	adminEventMap["audit_time"] = time.Format("2006-01-02 15:04:05.000") //audit_time
 
 	adminEventMap["realm_name"] = string(adminEvent.RealmId()) //realm_name
 	adminEventMap["origin"] = "keycloak"                       //origin
@@ -211,7 +211,7 @@ func adminEventToMap(adminEvent *fb.AdminEvent) map[string]string {
 
 	addInfo["resource_type"] = string(adminEvent.ResourceType())
 	adminEventMap["kc_operation_type"] = fb.EnumNamesOperationType[int8(adminEvent.OperationType())] //kc_operation_type
-	addInfo["resourcePath"] = string(adminEvent.ResourcePath())
+	addInfo["resource_path"] = string(adminEvent.ResourcePath())
 	reg := regexp.MustCompile(`[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}`)
 	if strings.HasPrefix(addInfo["resourcePath"], "users") {
 		adminEventMap["user_id"] = string(reg.Find([]byte(addInfo["resourcePath"]))) //user_id
@@ -235,11 +235,13 @@ func adminEventToMap(adminEvent *fb.AdminEvent) map[string]string {
 func eventToMap(event *fb.Event) map[string]string {
 	var eventMap = make(map[string]string)
 	var addInfo = make(map[string]string)
+	// if an event has the ct_event_type set already, the flag avoids rewriting it
+	var doNotSetCTEventType bool = false
 
-	addInfo["uid"] = fmt.Sprint(event.Uid()) //to be moved in additional info
+	addInfo["uid"] = fmt.Sprint(event.Uid())
 
-	time := epochMilliToTime(event.Time())
-	addInfo["time"] = time.Format("2006-01-02T15:04:05.000Z") //to be moved in additional info
+	time := epochMilliToTime(event.Time()).UTC()
+	eventMap["audit_time"] = time.Format("2006-01-02 15:04:05.000") //audit_time
 
 	eventMap["kc_event_type"] = fb.EnumNamesEventType[int8(event.Type())] // kc_event_type
 	eventMap["realm_name"] = string(event.RealmId())                      //realm_name
@@ -248,10 +250,10 @@ func eventToMap(event *fb.Event) map[string]string {
 	eventMap["user_id"] = string(event.UserId())                          //user_id
 	//Note: we make the assumption that the agent and the user are the same in the case of the events that are not admin events
 
-	addInfo["session_id"] = string(event.SessionId()) //to be moved in additional info
-	addInfo["ip_address"] = string(event.IpAddress()) // to be moved in additional info
-	addInfo["error"] = string(event.Error())          // to be moved in additional info
-	eventMap["origin"] = "keycloak"                   //origin
+	addInfo["session_id"] = string(event.SessionId())
+	addInfo["ip_address"] = string(event.IpAddress())
+	addInfo["error"] = string(event.Error())
+	eventMap["origin"] = "keycloak" //origin
 
 	var detailsLength = event.DetailsLength()
 	for i := 0; i < detailsLength; i++ {
@@ -259,12 +261,13 @@ func eventToMap(event *fb.Event) map[string]string {
 		event.Details(tuple, i)
 		if string(tuple.Key()) == "ct_event_type" {
 			eventMap[string(tuple.Key())] = string(tuple.Value())
+			doNotSetCTEventType = true
 		} else {
 			if string(tuple.Key()) == "username" {
 				eventMap["agent_username"] = string(tuple.Value())    //agent_username
 				eventMap[string(tuple.Key())] = string(tuple.Value()) //username
 			} else {
-				addInfo[string(tuple.Key())] = string(tuple.Value()) //to be moved in additional info
+				addInfo[string(tuple.Key())] = string(tuple.Value())
 			}
 
 		}
@@ -274,7 +277,9 @@ func eventToMap(event *fb.Event) map[string]string {
 	infoJson, _ := json.Marshal(addInfo)
 	eventMap["additional_info"] = string(infoJson)
 
-	eventMap = addCTtypeToEvent(eventMap)
+	if !doNotSetCTEventType {
+		eventMap = addCTtypeToEvent(eventMap)
+	}
 
 	return eventMap
 }

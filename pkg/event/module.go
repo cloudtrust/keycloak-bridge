@@ -99,7 +99,7 @@ func (sm *statisticModule) Stats(_ context.Context, m map[string]string) error {
 const (
 	createTable = `CREATE TABLE IF NOT EXISTS audit (
 		audit_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-		audit_time TIMESTAMP,
+		audit_time TIMESTAMP NULL,
 		origin VARCHAR(255),
 		realm_name VARCHAR(255),
 		agent_user_id VARCHAR(36),
@@ -116,6 +116,7 @@ const (
 	  );`
 
 	insertEvent = `INSERT INTO audit (
+		audit_time,
 		origin,
 		realm_name,
 		agent_user_id,
@@ -128,7 +129,7 @@ const (
 		kc_operation_type,
 		client_id,
 		additional_info) 
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		`
 )
 
@@ -163,6 +164,8 @@ func (cm *eventsDBModule) Store(_ context.Context, m map[string]string) error {
 
 	// the event was already formatted according to the DB structure already at the component level
 
+	//auditTime - time of the event
+	auditTime := m["audit_time"]
 	// origin - the component that initiated the event
 	origin := m["origin"]
 	// realmName - realm name of the user that is impacted by the action
@@ -189,7 +192,7 @@ func (cm *eventsDBModule) Store(_ context.Context, m map[string]string) error {
 	additionalInfo := m["additional_info"]
 
 	//store the event in the DB
-	_, err := cm.db.Exec(insertEvent, origin, realmName, agentUserID, agentUsername, agentRealmName, userID, username, ctEventType, kcEventType, kcOperationType, clientID, additionalInfo)
+	_, err := cm.db.Exec(insertEvent, auditTime, origin, realmName, agentUserID, agentUsername, agentRealmName, userID, username, ctEventType, kcEventType, kcOperationType, clientID, additionalInfo)
 
 	if err != nil {
 		return err

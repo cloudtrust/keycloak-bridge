@@ -2,6 +2,8 @@ package management
 
 import (
 	"context"
+	"fmt"
+	"time"
 
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
 	"github.com/cloudtrust/keycloak-bridge/pkg/event"
@@ -180,6 +182,8 @@ func (c *component) CreateUser(ctx context.Context, realmName string, user api.U
 	}
 
 	event["origin"] = "back-office"
+	time := time.Now().UTC()
+	event["audit_time"] = time.Format("2006-01-02 15:04:05.000")
 	//retrieve details of the agent
 	event = getAgentDetails(ctx, event)
 
@@ -203,6 +207,9 @@ func (c *component) DeleteUser(ctx context.Context, realmName, userID string) er
 	event["realm_name"] = realmName
 	event["user_id"] = userID
 	event["origin"] = "back-office"
+	time := time.Now().UTC()
+	event["audit_time"] = time.Format("2006-01-02 15:04:05.000")
+
 	//retrieve details of the agent
 	event = getAgentDetails(ctx, event)
 
@@ -253,6 +260,8 @@ func (c *component) GetUser(ctx context.Context, realmName, userID string) (api.
 		}
 	}
 
+	fmt.Println("GET_DETAILS events")
+
 	//store the API call into the DB
 	var event = make(map[string]string)
 	event["ct_event_type"] = "GET_DETAILS"
@@ -262,6 +271,8 @@ func (c *component) GetUser(ctx context.Context, realmName, userID string) (api.
 		event["username"] = *userKc.Username
 	}
 	event["origin"] = "back-office"
+	time := time.Now().UTC()
+	event["audit_time"] = time.Format("2006-01-02 15:04:05.000")
 	//retrieve details of the agent
 
 	event = getAgentDetails(ctx, event)
@@ -320,6 +331,8 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 			event["username"] = *user.Username
 		}
 		event["origin"] = "back-office"
+		time := time.Now().UTC()
+		event["audit_time"] = time.Format("2006-01-02 15:04:05.000")
 		//retrieve details of the agent
 		event = getAgentDetails(ctx, event)
 
@@ -476,6 +489,8 @@ func (c *component) ResetPassword(ctx context.Context, realmName string, userID 
 	event["realm_name"] = realmName
 	event["user_id"] = userID
 	event["origin"] = "back-office"
+	time := time.Now().UTC()
+	event["audit_time"] = time.Format("2006-01-02 15:04:05.000")
 	//retrieve details of the agent
 	event = getAgentDetails(ctx, event)
 
