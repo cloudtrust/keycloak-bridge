@@ -71,6 +71,18 @@ func (mr *KeycloakClientMockRecorder) CreateUser(arg0, arg1, arg2 interface{}) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUser", reflect.TypeOf((*KeycloakClient)(nil).CreateUser), arg0, arg1, arg2)
 }
 
+// DeleteCredentialsForUser mocks base method
+func (m *KeycloakClient) DeleteCredentialsForUser(arg0, arg1, arg2, arg3, arg4 string) error {
+	ret := m.ctrl.Call(m, "DeleteCredentialsForUser", arg0, arg1, arg2, arg3, arg4)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteCredentialsForUser indicates an expected call of DeleteCredentialsForUser
+func (mr *KeycloakClientMockRecorder) DeleteCredentialsForUser(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteCredentialsForUser", reflect.TypeOf((*KeycloakClient)(nil).DeleteCredentialsForUser), arg0, arg1, arg2, arg3, arg4)
+}
+
 // DeleteUser mocks base method
 func (m *KeycloakClient) DeleteUser(arg0, arg1, arg2 string) error {
 	ret := m.ctrl.Call(m, "DeleteUser", arg0, arg1, arg2)
@@ -138,6 +150,19 @@ func (m *KeycloakClient) GetClients(arg0, arg1 string, arg2 ...string) ([]keyclo
 func (mr *KeycloakClientMockRecorder) GetClients(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	varargs := append([]interface{}{arg0, arg1}, arg2...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClients", reflect.TypeOf((*KeycloakClient)(nil).GetClients), varargs...)
+}
+
+// GetCredentialsForUser mocks base method
+func (m *KeycloakClient) GetCredentialsForUser(arg0, arg1, arg2, arg3 string) ([]keycloak_client.CredentialRepresentation, error) {
+	ret := m.ctrl.Call(m, "GetCredentialsForUser", arg0, arg1, arg2, arg3)
+	ret0, _ := ret[0].([]keycloak_client.CredentialRepresentation)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetCredentialsForUser indicates an expected call of GetCredentialsForUser
+func (mr *KeycloakClientMockRecorder) GetCredentialsForUser(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCredentialsForUser", reflect.TypeOf((*KeycloakClient)(nil).GetCredentialsForUser), arg0, arg1, arg2, arg3)
 }
 
 // GetRealm mocks base method

@@ -49,7 +49,7 @@ func decodeManagementRequest(_ context.Context, req *http.Request) (interface{},
 
 	// Fetch path parameter such as realm, userID, ...
 	var m = mux.Vars(req)
-	for _, key := range []string{"realm", "userID", "clientID", "roleID"} {
+	for _, key := range []string{"realm", "userID", "clientID", "roleID", "credentialID"} {
 		request[key] = m[key]
 	}
 

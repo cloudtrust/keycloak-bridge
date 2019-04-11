@@ -72,6 +72,18 @@ func (mr *ManagementComponentMockRecorder) CreateUser(arg0, arg1, arg2 interface
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUser", reflect.TypeOf((*ManagementComponent)(nil).CreateUser), arg0, arg1, arg2)
 }
 
+// DeleteCredentialsForUser mocks base method
+func (m *ManagementComponent) DeleteCredentialsForUser(arg0 context.Context, arg1, arg2, arg3 string) error {
+	ret := m.ctrl.Call(m, "DeleteCredentialsForUser", arg0, arg1, arg2, arg3)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteCredentialsForUser indicates an expected call of DeleteCredentialsForUser
+func (mr *ManagementComponentMockRecorder) DeleteCredentialsForUser(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteCredentialsForUser", reflect.TypeOf((*ManagementComponent)(nil).DeleteCredentialsForUser), arg0, arg1, arg2, arg3)
+}
+
 // DeleteUser mocks base method
 func (m *ManagementComponent) DeleteUser(arg0 context.Context, arg1, arg2 string) error {
 	ret := m.ctrl.Call(m, "DeleteUser", arg0, arg1, arg2)
@@ -134,6 +146,19 @@ func (m *ManagementComponent) GetClients(arg0 context.Context, arg1 string) ([]m
 // GetClients indicates an expected call of GetClients
 func (mr *ManagementComponentMockRecorder) GetClients(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClients", reflect.TypeOf((*ManagementComponent)(nil).GetClients), arg0, arg1)
+}
+
+// GetCredentialsForUser mocks base method
+func (m *ManagementComponent) GetCredentialsForUser(arg0 context.Context, arg1, arg2 string) ([]management.CredentialRepresentation, error) {
+	ret := m.ctrl.Call(m, "GetCredentialsForUser", arg0, arg1, arg2)
+	ret0, _ := ret[0].([]management.CredentialRepresentation)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetCredentialsForUser indicates an expected call of GetCredentialsForUser
+func (mr *ManagementComponentMockRecorder) GetCredentialsForUser(arg0, arg1, arg2 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCredentialsForUser", reflect.TypeOf((*ManagementComponent)(nil).GetCredentialsForUser), arg0, arg1, arg2)
 }
 
 // GetRealm mocks base method
