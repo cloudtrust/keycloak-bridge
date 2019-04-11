@@ -19,6 +19,7 @@ type Endpoints struct {
 	UpdateUser               endpoint.Endpoint
 	GetUsers                 endpoint.Endpoint
 	CreateUser               endpoint.Endpoint
+	GetUserAccountStatus     endpoint.Endpoint
 	GetClientRoleForUser     endpoint.Endpoint
 	AddClientRoleToUser      endpoint.Endpoint
 	GetRealmRoleForUser      endpoint.Endpoint
@@ -42,6 +43,7 @@ type ManagementComponent interface {
 	UpdateUser(ctx context.Context, realmName, userID string, user api.UserRepresentation) error
 	GetUsers(ctx context.Context, realmName, group string, paramKV ...string) ([]api.UserRepresentation, error)
 	CreateUser(ctx context.Context, realmName string, user api.UserRepresentation) (string, error)
+	GetUserAccountStatus(ctx context.Context, realmName, userID string) (bool, error)
 	GetClientRolesForUser(ctx context.Context, realmName, userID, clientID string) ([]api.RoleRepresentation, error)
 	AddClientRolesToUser(ctx context.Context, realmName, userID, clientID string, roles []api.RoleRepresentation) error
 	GetRealmRolesForUser(ctx context.Context, realmName, userID string) ([]api.RoleRepresentation, error)
@@ -157,6 +159,14 @@ func MakeGetUsersEndpoint(managementComponent ManagementComponent) endpoint.Endp
 		}
 
 		return managementComponent.GetUsers(ctx, m["realm"], group, paramKV...)
+	}
+}
+
+func MakeGetUserAccountStatusEndpoint(managementComponent ManagementComponent) endpoint.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+
+		return managementComponent.GetUserAccountStatus(ctx, m["realm"], m["userID"])
 	}
 }
 

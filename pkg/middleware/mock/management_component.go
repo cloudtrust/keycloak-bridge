@@ -226,6 +226,19 @@ func (mr *ManagementComponentMockRecorder) GetUser(arg0, arg1, arg2 interface{})
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUser", reflect.TypeOf((*ManagementComponent)(nil).GetUser), arg0, arg1, arg2)
 }
 
+// GetUserAccountStatus mocks base method
+func (m *ManagementComponent) GetUserAccountStatus(arg0 context.Context, arg1, arg2 string) (bool, error) {
+	ret := m.ctrl.Call(m, "GetUserAccountStatus", arg0, arg1, arg2)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUserAccountStatus indicates an expected call of GetUserAccountStatus
+func (mr *ManagementComponentMockRecorder) GetUserAccountStatus(arg0, arg1, arg2 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserAccountStatus", reflect.TypeOf((*ManagementComponent)(nil).GetUserAccountStatus), arg0, arg1, arg2)
+}
+
 // GetUsers mocks base method
 func (m *ManagementComponent) GetUsers(arg0 context.Context, arg1, arg2 string, arg3 ...string) ([]management.UserRepresentation, error) {
 	varargs := []interface{}{arg0, arg1, arg2}
