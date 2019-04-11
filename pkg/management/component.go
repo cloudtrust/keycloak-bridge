@@ -2,7 +2,6 @@ package management
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
@@ -265,8 +264,6 @@ func (c *component) GetUser(ctx context.Context, realmName, userID string) (api.
 			userRep.BirthDate = &birthDate
 		}
 	}
-
-	fmt.Println("GET_DETAILS events")
 
 	//store the API call into the DB
 	var event = make(map[string]string)

@@ -932,8 +932,9 @@ func TestGetCredentialsForUser(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
+	var mockEventDBModule = mock.NewEventsDBModule(mockCtrl)
 
-	var managementComponent = NewComponent(mockKeycloakClient)
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule)
 	var accessToken = "TOKEN=="
 	var realmReq = "master"
 	var realmName = "otherRealm"
@@ -956,8 +957,10 @@ func TestDeleteCredentialsForUser(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
+	var mockEventDBModule = mock.NewEventsDBModule(mockCtrl)
 
-	var managementComponent = NewComponent(mockKeycloakClient)
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule)
+
 	var accessToken = "TOKEN=="
 	var realmReq = "master"
 	var realmName = "master"
