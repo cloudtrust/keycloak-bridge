@@ -229,7 +229,7 @@ paths:
     get:
       tags:
       - Users
-      summary: Get the account status for the user
+      summary: Get the account status for the user (User enabled and has a second factor)
       parameters:
       - name: realm
         in: path
