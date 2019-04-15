@@ -30,6 +30,7 @@ import (
 	gokit_influx "github.com/go-kit/kit/metrics/influx"
 	"github.com/go-kit/kit/ratelimit"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	influx "github.com/influxdata/influxdb/client/v2"
 	_ "github.com/lib/pq"
@@ -133,6 +134,8 @@ func main() {
 			"event":      c.GetInt("rate-event"),
 			"management": c.GetInt("rate-management"),
 		}
+
+		corsAllowedOrigin = c.GetStringSlice("cors-allowed-origin")
 	)
 
 	// Unique ID generator
@@ -667,7 +670,7 @@ func main() {
 			debugSubroute.HandleFunc("/pprof/trace", http.HandlerFunc(pprof.Trace))
 		}
 
-		errc <- http.ListenAndServe(httpAddr, route)
+		errc <- http.ListenAndServe(httpAddr, handlers.CORS(handlers.AllowedOrigins(corsAllowedOrigin))(route))
 	}()
 
 	// Influx writing.
@@ -717,6 +720,9 @@ func config(logger log.Logger) *viper.Viper {
 	// Component default.
 	v.SetDefault("config-file", "./configs/keycloak_bridge.yml")
 	v.SetDefault("component-http-host-port", "0.0.0.0:8888")
+
+	// CORS configuration
+	v.SetDefault("cors-allowed-origin", []string{})
 
 	// Keycloak default.
 	v.SetDefault("keycloak", true)

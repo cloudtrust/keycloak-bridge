@@ -35,7 +35,7 @@ func MakeHTTPOIDCTokenValidationMW(keycloakClient KeycloakClient, logger log.Log
 				return
 			}
 
-			var matched, _ = regexp.MatchString(`^Bearer *`, authorizationHeader)
+			var matched, _ = regexp.MatchString(`^[Bb]earer *`, authorizationHeader)
 
 			if !matched {
 				logger.Log("Authorisation Error", "Missing bearer token")
