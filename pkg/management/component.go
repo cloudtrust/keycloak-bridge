@@ -8,6 +8,7 @@ import (
 )
 
 type KeycloakClient interface {
+	GetRealms(accessToken string) ([]kc.RealmRepresentation, error)
 	GetRealm(accessToken string, realmName string) (kc.RealmRepresentation, error)
 	GetClient(accessToken string, realmName, idClient string) (kc.ClientRepresentation, error)
 	GetClients(accessToken string, realmName string, paramKV ...string) ([]kc.ClientRepresentation, error)
@@ -31,6 +32,7 @@ type KeycloakClient interface {
 
 // Component is the event component interface.
 type Component interface {
+	//GetRealms(ctx context.Context) ([]api.RealmRepresentation, error)
 	GetRealm(ctx context.Context, realmName string) (api.RealmRepresentation, error)
 	GetClient(ctx context.Context, realmName, idClient string) (api.ClientRepresentation, error)
 	GetClients(ctx context.Context, realmName string) ([]api.ClientRepresentation, error)

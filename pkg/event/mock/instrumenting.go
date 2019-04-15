@@ -5,10 +5,9 @@
 package mock
 
 import (
-	reflect "reflect"
-
 	metrics "github.com/go-kit/kit/metrics"
 	gomock "github.com/golang/mock/gomock"
+	reflect "reflect"
 )
 
 // Histogram is a mock of Histogram interface

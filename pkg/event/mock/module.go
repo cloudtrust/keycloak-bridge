@@ -7,10 +7,9 @@ package mock
 import (
 	context "context"
 	sql "database/sql"
-	reflect "reflect"
-
 	gomock "github.com/golang/mock/gomock"
 	v2 "github.com/influxdata/influxdb/client/v2"
+	reflect "reflect"
 )
 
 // ConsoleModule is a mock of ConsoleModule interface

@@ -44,6 +44,11 @@ func MakeHTTPOIDCTokenValidationMW(keycloakClient KeycloakClient, logger log.Log
 			}
 
 			var splitToken = strings.Split(authorizationHeader, "Bearer ")
+			
+			if len(splitToken) < 2 {
+				splitToken = strings.Split(authorizationHeader, "bearer ")
+			}
+			
 			var accessToken = splitToken[1]
 
 			payload, _, err := jwt.Parse(accessToken)
@@ -61,7 +66,7 @@ func MakeHTTPOIDCTokenValidationMW(keycloakClient KeycloakClient, logger log.Log
 			}
 
 			var username = jot.Username
-			var issuer = jot.JWT.Issuer
+			var issuer = jot.Issuer
 			var splitIssuer = strings.Split(issuer, "/auth/realms/")
 			var realm = splitIssuer[1]
 
@@ -82,8 +87,22 @@ func MakeHTTPOIDCTokenValidationMW(keycloakClient KeycloakClient, logger log.Log
 
 // Token is JWT token and the custom fields present in OIDC Token provided by Keycloak.
 type Token struct {
-	*jwt.JWT
-	Username string `json:"preferred_username,omitempty"`
+	hdr            *header
+	Issuer         string   `json:"iss,omitempty"`
+	Subject        string   `json:"sub,omitempty"`
+	Audience       []string `json:"aud,omitempty"`
+	ExpirationTime int64    `json:"exp,omitempty"`
+	NotBefore      int64    `json:"nbf,omitempty"`
+	IssuedAt       int64    `json:"iat,omitempty"`
+	ID             string   `json:"jti,omitempty"`
+	Username       string   `json:"preferred_username,omitempty"`
+}
+
+type header struct {
+	Algorithm   string `json:"alg,omitempty"`
+	KeyID       string `json:"kid,omitempty"`
+	Type        string `json:"typ,omitempty"`
+	ContentType string `json:"cty,omitempty"`
 }
 
 // MakeEndpointTokenForRealmMW makes a Endpoint middleware responsible to ensure
@@ -99,7 +118,7 @@ func MakeEndpointTokenForRealmMW(logger log.Logger) endpoint.Middleware {
 			// Extract the target realm of the request
 			var m = req.(map[string]string)
 			var realmRequested = m["realm"]
-			
+
 			// Assert both realms match
 			if realmAuthorized != realmRequested {
 				//TODO create a specific error to map it on 403

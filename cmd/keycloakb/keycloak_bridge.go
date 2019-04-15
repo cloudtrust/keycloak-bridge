@@ -598,6 +598,7 @@ func main() {
 		// Management
 		var managementSubroute = route.PathPrefix("/management").Subrouter()
 
+		var getRealmsHandler = ConfigureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.GetRealms)
 		var getRealmHandler = ConfigureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.GetRealm)
 
 		var getClientsHandler = ConfigureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.GetClients)
@@ -627,6 +628,7 @@ func main() {
 		var deleteCredentialsForUserHandler = ConfigureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.DeleteCredentialsForUser)
 
 		//realms
+		managementSubroute.Path("/realms").Methods("GET").Handler(getRealmsHandler)
 		managementSubroute.Path("/realms/{realm}").Methods("GET").Handler(getRealmHandler)
 
 		//clients
