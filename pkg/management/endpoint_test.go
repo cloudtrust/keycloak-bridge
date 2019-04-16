@@ -280,8 +280,11 @@ func TestGetUserAccountStatusEndpoint(t *testing.T) {
 		var req = make(map[string]string)
 		req["realm"] = realm
 		req["userID"] = userID
+		var m map[string]bool
+		m = make(map[string]bool)
+		m["enabled"] = false
 
-		mockManagementComponent.EXPECT().GetUserAccountStatus(ctx, realm, userID).Return(false, nil).Times(1)
+		mockManagementComponent.EXPECT().GetUserAccountStatus(ctx, realm, userID).Return(m, nil).Times(1)
 		var _, err = e(ctx, req)
 		assert.Nil(t, err)
 	}
