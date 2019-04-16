@@ -14,6 +14,67 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestGetRealms(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
+
+	var managementComponent = NewComponent(mockKeycloakClient)
+
+	var accessToken = "TOKEN=="
+
+	// Get realms with succces
+	{
+		var id = "1245"
+		var keycloakVersion = "4.8.3"
+		var realm = "master"
+		var displayName = "Master"
+		var enabled = true
+
+		var kcRealmRep = kc.RealmRepresentation{
+			Id:              &id,
+			KeycloakVersion: &keycloakVersion,
+			Realm:           &realm,
+			DisplayName:     &displayName,
+			Enabled:         &enabled,
+		}
+
+		var kcRealmsRep []kc.RealmRepresentation
+		kcRealmsRep = append(kcRealmsRep, kcRealmRep)
+
+		mockKeycloakClient.EXPECT().GetRealms(accessToken).Return(kcRealmsRep, nil).Times(1)
+
+		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+
+		apiRealmsRep, err := managementComponent.GetRealms(ctx)
+
+		var expectedAPIRealmRep = api.RealmRepresentation{
+			Id:              &id,
+			KeycloakVersion: &keycloakVersion,
+			Realm:           &realm,
+			DisplayName:     &displayName,
+			Enabled:         &enabled,
+		}
+
+		var expectedAPIRealmsRep []api.RealmRepresentation
+		expectedAPIRealmsRep = append(expectedAPIRealmsRep, expectedAPIRealmRep)
+
+		assert.Nil(t, err)
+		assert.Equal(t, expectedAPIRealmsRep, apiRealmsRep)
+	}
+
+	//Error
+	{
+		mockKeycloakClient.EXPECT().GetRealms(accessToken).Return([]kc.RealmRepresentation{}, fmt.Errorf("Unexpected error")).Times(1)
+
+		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+
+		_, err := managementComponent.GetRealms(ctx)
+
+		assert.NotNil(t, err)
+	}
+}
+
 func TestGetRealm(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()

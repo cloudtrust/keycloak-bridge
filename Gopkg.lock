@@ -19,11 +19,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:ca4c1bb2f941e930466114adfd205a1e191f700b4531ffd9890b9b0e168796a1"
+  digest = "1:2276e1aa87fc57d4af1091b22aad776635973a1e0764c91c88e1a28edad426ef"
   name = "github.com/cloudtrust/keycloak-client"
   packages = ["."]
   pruneopts = ""
-  revision = "6392a53924ab41b4072a95f2a54f42194abec704"
+  revision = "0d5f98aceb4c163562b8474fb3665e0e2c400ce5"
   source = "github.com/cloudtrust/keycloak-client"
 
 [[projects]]
@@ -196,15 +196,16 @@
   revision = "b84e30acd515aadc4b783ad4ff83aff3299bdfe0"
 
 [[projects]]
-  digest = "1:29145d7af4adafd72a79df5e41456ac9e232d5a28c1cd4dacf3ff008a217fc10"
+  digest = "1:364ac8e42128f8c9b7642e54b15ca43d1d808eaf99e2caf15ed7eb7351df25aa"
   name = "github.com/lib/pq"
   packages = [
     ".",
     "oid",
+    "scram",
   ]
   pruneopts = ""
-  revision = "4ded0e9383f75c197b3a2aaa6d590ac52df6fd79"
-  version = "v1.0.0"
+  revision = "51e2106eed1cea199c802d2a49e91e2491b02056"
+  version = "v1.1.0"
 
 [[projects]]
   digest = "1:961dc3b1d11f969370533390fdf203813162980c858e1dabe827b60940c909a5"
@@ -368,7 +369,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:09972eaa1645553c1cf5b0d2b471aa3aef8d9ab88ca45528e131cd32e8572fb9"
+  digest = "1:ff4ca88748be8051a3fd7143898dc5567389a4097a96fbad6dd4dcb7056dfb26"
   name = "golang.org/x/net"
   packages = [
     "context",
@@ -382,7 +383,7 @@
     "trace",
   ]
   pruneopts = ""
-  revision = "eb5bcb51f2a31c7d5141d810b70815c05d9c9146"
+  revision = "1da14a5a36f220ea3f03470682b737b1dfd5de22"
 
 [[projects]]
   branch = "master"
@@ -397,11 +398,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:227fd48f127e252f68fecb328ee448020d26c93f9429356da9235b2845a04be8"
+  digest = "1:8057045675a7eb88a1767bbafc4594663e1e46d854a850e562d06153fdca3d4e"
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = ""
-  revision = "b44545bcd369ef9ff9bebcfebf5f3370ef9b1932"
+  revision = "3fd5a3612ccd7907f26270fa92579a0f2f76f734"
 
 [[projects]]
   digest = "1:5acd3512b047305d49e8763eef7ba423901e85d5dd2fd1e71778a0ea8de10bd4"
@@ -453,11 +454,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:6cbc03e8d4c5724d6228c88f1402d8cbd0a515561f73f0cecbb72f3d6576ff28"
+  digest = "1:5eba71baa7efc80aa2c73b94290c85b06b5c35297f7172a83d57011b7e21e347"
   name = "google.golang.org/genproto"
   packages = ["googleapis/rpc/status"]
   pruneopts = ""
-  revision = "64821d5d210748c883cd2b809589555ae4654203"
+  revision = "d1146b9035b912113a38af3b138eb2af567b2c67"
 
 [[projects]]
   digest = "1:c4e8733914b7b1b535988fb5d5bd3de60845fb4553227b7a1ce1b7180204e462"
