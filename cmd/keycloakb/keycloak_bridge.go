@@ -721,13 +721,18 @@ func config(logger log.Logger) *viper.Viper {
 	v.SetDefault("keycloak-timeout", "5s")
 
 	//Storage events in DB
-	v.SetDefault("events-DB", false)
+	v.SetDefault("events-db", false)
+
+	// DB
 	v.SetDefault("db-host-port", "")
 	v.SetDefault("db-username", "")
 	v.SetDefault("db-password", "")
 	v.SetDefault("db-database", "")
 	v.SetDefault("db-table", "")
-	v.SetDefault("protocol", "")
+	v.SetDefault("db-protocol", "")
+	v.SetDefault("db-max-open-conns", 10)
+	v.SetDefault("db-max-idle-conns", 2)
+	v.SetDefault("db-conn-max-lifetime", 3600)
 
 	// Rate limiting (in requests/second)
 	v.SetDefault("rate-event", 1000)
