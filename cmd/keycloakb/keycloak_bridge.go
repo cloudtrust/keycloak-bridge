@@ -30,11 +30,11 @@ import (
 	gokit_influx "github.com/go-kit/kit/metrics/influx"
 	"github.com/go-kit/kit/ratelimit"
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	influx "github.com/influxdata/influxdb/client/v2"
 	_ "github.com/lib/pq"
 	opentracing "github.com/opentracing/opentracing-go"
+	"github.com/rs/cors"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	jaeger "github.com/uber/jaeger-client-go/config"
@@ -135,7 +135,13 @@ func main() {
 			"management": c.GetInt("rate-management"),
 		}
 
-		corsAllowedOrigin = c.GetStringSlice("cors-allowed-origin")
+		corsOptions = cors.Options{
+			AllowedOrigins:   c.GetStringSlice("cors-allowed-origins"),
+			AllowedMethods:   c.GetStringSlice("cors-allowed-methods"),
+			AllowCredentials: c.GetBool("cors-allow-credential"),
+			AllowedHeaders:   c.GetStringSlice("cors-allowed-headers"),
+			Debug:            c.GetBool("cors-debug"),
+		}
 	)
 
 	// Unique ID generator
@@ -662,7 +668,9 @@ func main() {
 			debugSubroute.HandleFunc("/pprof/trace", http.HandlerFunc(pprof.Trace))
 		}
 
-		errc <- http.ListenAndServe(httpAddr, handlers.CORS(handlers.AllowedOrigins(corsAllowedOrigin))(route))
+		c := cors.New(corsOptions)
+		errc <- http.ListenAndServe(httpAddr, c.Handler(route))
+		
 	}()
 
 	// Influx writing.
@@ -714,7 +722,11 @@ func config(logger log.Logger) *viper.Viper {
 	v.SetDefault("component-http-host-port", "0.0.0.0:8888")
 
 	// CORS configuration
-	v.SetDefault("cors-allowed-origin", []string{})
+	v.SetDefault("cors-allowed-origins", []string{})
+	v.SetDefault("cors-allowed-methods", []string{})
+	v.SetDefault("cors-allow-credentials", true)
+	v.SetDefault("cors-allowed-headers", []string{})
+	v.SetDefault("cors-debug", false)
 
 	// Keycloak default.
 	v.SetDefault("keycloak", true)

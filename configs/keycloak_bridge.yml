@@ -5,8 +5,17 @@
 component-http-host-port: 0.0.0.0:8888
 
 # CORS
-cors-allowed-origin:
-  - "toto"
+cors-allowed-origins:
+  - "http://localhost"
+cors-allowed-methods:
+  - "GET"
+  - "POST"
+  - "PUT"
+  - "DELETE"
+cors-allow-credentials: true
+cors-allowed-headers:
+  - "Authorization"
+cors-debug: true
 
 # Keycloak configs
 keycloak: false
