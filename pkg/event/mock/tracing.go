@@ -5,11 +5,10 @@
 package mock
 
 import (
-	reflect "reflect"
-
 	gomock "github.com/golang/mock/gomock"
 	opentracing_go "github.com/opentracing/opentracing-go"
 	log "github.com/opentracing/opentracing-go/log"
+	reflect "reflect"
 )
 
 // Tracer is a mock of Tracer interface

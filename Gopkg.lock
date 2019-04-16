@@ -139,7 +139,7 @@
   version = "v1.1.0"
 
 [[projects]]
-  digest = "1:0e7a5d53b669d69dc54489c6d10ca32e97ab29fe413ec22201891d30ae315dc7"
+  digest = "1:415c43f5b1bde8c4edcbbb8a5c1abb054c160a4a48551534f92548dd76affc11"
   name = "github.com/google/flatbuffers"
   packages = ["go"]
   pruneopts = ""
