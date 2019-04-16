@@ -147,7 +147,7 @@ func addCTtypeToEvent(event map[string]string) map[string]string {
 			return event
 		}
 	default:
-
+		// Nothing to do here
 	}
 
 	switch t := event["kc_event_type"]; t {
@@ -183,7 +183,7 @@ func addCTtypeToEvent(event map[string]string) map[string]string {
 		event["ct_event_type"] = "LOGOUT"
 		return event
 	default:
-
+		// Nothing to do here
 	}
 
 	// for all those events that don't have set the ct_event_type, we assign an empty ct_event_type
@@ -227,8 +227,8 @@ func adminEventToMap(adminEvent *fb.AdminEvent) map[string]string {
 	adminEventMap["ct_event_type"] = "ADMIN"
 
 	// BE AWARE: error is not treated
-	infoJson, _ := json.Marshal(addInfo)
-	adminEventMap["additional_info"] = string(infoJson)
+	infoJSON, _ := json.Marshal(addInfo)
+	adminEventMap["additional_info"] = string(infoJSON)
 
 	//set the correct ct_event_type for actions like create_account, etc.
 	adminEventMap = addCTtypeToEvent(adminEventMap)
@@ -278,8 +278,8 @@ func eventToMap(event *fb.Event) map[string]string {
 	}
 
 	// BE AWARE: error is not treated
-	infoJson, _ := json.Marshal(addInfo)
-	eventMap["additional_info"] = string(infoJson)
+	infoJSON, _ := json.Marshal(addInfo)
+	eventMap["additional_info"] = string(infoJSON)
 
 	if !doNotSetCTEventType {
 		eventMap = addCTtypeToEvent(eventMap)

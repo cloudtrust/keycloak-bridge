@@ -229,7 +229,7 @@ func TestEventToMapNewCTEvent(t *testing.T) {
 }
 
 func TestEventToMapLogon(t *testing.T) {
-	var etype int8 = 0
+	var etype int8
 
 	var event *fb.Event
 	{
@@ -477,7 +477,7 @@ func TestAdminEventToMap(t *testing.T) {
 
 func TestAdminEventToMapAccountCreated(t *testing.T) {
 	var resourcePath = "users/8caefab3-90d1-492e-87e0-1bf6cecc76ea/role-mappings/realm "
-	var optype int8 = 0
+	var optype int8
 
 	var adminEvent *fb.AdminEvent
 	{
