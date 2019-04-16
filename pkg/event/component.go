@@ -14,6 +14,10 @@ import (
 	"github.com/cloudtrust/keycloak-bridge/api/event/fb"
 )
 
+const (
+	timeFormat = "2006-01-02 15:04:05.000"
+)
+
 // MuxComponent is the Mux component interface.
 type MuxComponent interface {
 	Event(ctx context.Context, eventType string, obj []byte) error
@@ -137,7 +141,7 @@ func addCTtypeToEvent(event map[string]string) map[string]string {
 		}
 	case "ACTION":
 		//ACTIVATION_EMAIL_SENT
-		// check if the resourcePath ends with sufix send-verify-email
+		// check if the resourcePath ends with suffix send-verify-email
 		if strings.HasSuffix(f["resource_path"], "send-verify-email") {
 			event["ct_event_type"] = "ACTIVATION_EMAIL_SENT"
 			return event
@@ -197,7 +201,7 @@ func adminEventToMap(adminEvent *fb.AdminEvent) map[string]string {
 	addInfo["uid"] = fmt.Sprint(adminEvent.Uid())
 
 	time := epochMilliToTime(adminEvent.Time()).UTC()
-	adminEventMap["audit_time"] = time.Format("2006-01-02 15:04:05.000") //audit_time
+	adminEventMap["audit_time"] = time.Format(timeFormat) //audit_time
 
 	adminEventMap["realm_name"] = string(adminEvent.RealmId()) //realm_name
 	adminEventMap["origin"] = "keycloak"                       //origin
@@ -213,8 +217,8 @@ func adminEventToMap(adminEvent *fb.AdminEvent) map[string]string {
 	adminEventMap["kc_operation_type"] = fb.EnumNamesOperationType[int8(adminEvent.OperationType())] //kc_operation_type
 	addInfo["resource_path"] = string(adminEvent.ResourcePath())
 	reg := regexp.MustCompile(`[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}`)
-	if strings.HasPrefix(addInfo["resourcePath"], "users") {
-		adminEventMap["user_id"] = string(reg.Find([]byte(addInfo["resourcePath"]))) //user_id
+	if strings.HasPrefix(addInfo["resource_path"], "users") {
+		adminEventMap["user_id"] = string(reg.Find([]byte(addInfo["resource_path"]))) //user_id
 	}
 
 	addInfo["representation"] = string(adminEvent.Representation())
@@ -241,7 +245,7 @@ func eventToMap(event *fb.Event) map[string]string {
 	addInfo["uid"] = fmt.Sprint(event.Uid())
 
 	time := epochMilliToTime(event.Time()).UTC()
-	eventMap["audit_time"] = time.Format("2006-01-02 15:04:05.000") //audit_time
+	eventMap["audit_time"] = time.Format(timeFormat) //audit_time
 
 	eventMap["kc_event_type"] = fb.EnumNamesEventType[int8(event.Type())] // kc_event_type
 	eventMap["realm_name"] = string(event.RealmId())                      //realm_name
