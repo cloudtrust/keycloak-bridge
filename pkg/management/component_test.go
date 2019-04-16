@@ -633,6 +633,82 @@ func TestGetUsers(t *testing.T) {
 	}
 }
 
+func TestGetUserAccountStatus(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
+
+	var managementComponent = NewComponent(mockKeycloakClient)
+
+	var accessToken = "TOKEN=="
+	var realmReq = "master"
+	var realmName = "aRealm"
+	var userID = "789-789-456"
+
+	// GetUser returns an error
+	{
+		var userRep kc.UserRepresentation
+		mockKeycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(userRep, fmt.Errorf("Unexpected error")).Times(1)
+		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+		_, err := managementComponent.GetUserAccountStatus(ctx, realmName, userID)
+		assert.NotNil(t, err)
+	}
+
+	// GetUser returns a non-enabled user
+	{
+		var userRep kc.UserRepresentation
+		enabled := false
+		userRep.Enabled = &enabled
+		mockKeycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(userRep, nil).Times(1)
+		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+		status, err := managementComponent.GetUserAccountStatus(ctx, realmName, userID)
+		assert.Nil(t, err)
+		assert.False(t, status)
+	}
+
+	// GetUser returns an enabled user but GetCredentialsForUser fails
+	{
+		var userRep kc.UserRepresentation
+		enabled := true
+		userRep.Enabled = &enabled
+		mockKeycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(userRep, nil).Times(1)
+		mockKeycloakClient.EXPECT().GetCredentialsForUser(accessToken, realmReq, realmName, userID).Return(nil, fmt.Errorf("Unexpected error")).Times(1)
+		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+		ctx = context.WithValue(ctx, "realm", realmReq)
+		_, err := managementComponent.GetUserAccountStatus(ctx, realmName, userID)
+		assert.NotNil(t, err)
+	}
+
+	// GetUser returns an enabled user but GetCredentialsForUser have no credential
+	{
+		var userRep kc.UserRepresentation
+		enabled := true
+		userRep.Enabled = &enabled
+		mockKeycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(userRep, nil).Times(1)
+		mockKeycloakClient.EXPECT().GetCredentialsForUser(accessToken, realmReq, realmName, userID).Return([]kc.CredentialRepresentation{}, nil).Times(1)
+		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+		ctx = context.WithValue(ctx, "realm", realmReq)
+		status, err := managementComponent.GetUserAccountStatus(ctx, realmName, userID)
+		assert.Nil(t, err)
+		assert.False(t, status)
+	}
+
+	// GetUser returns an enabled user and GetCredentialsForUser have credentials
+	{
+		var userRep kc.UserRepresentation
+		var creds kc.CredentialRepresentation
+		enabled := true
+		userRep.Enabled = &enabled
+		mockKeycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(userRep, nil).Times(1)
+		mockKeycloakClient.EXPECT().GetCredentialsForUser(accessToken, realmReq, realmName, userID).Return([]kc.CredentialRepresentation{creds}, nil).Times(1)
+		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+		ctx = context.WithValue(ctx, "realm", realmReq)
+		status, err := managementComponent.GetUserAccountStatus(ctx, realmName, userID)
+		assert.Nil(t, err)
+		assert.True(t, status)
+	}
+}
+
 func TestGetClientRolesForUser(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()

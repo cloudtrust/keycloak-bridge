@@ -429,6 +429,16 @@ func main() {
 			getUsersEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["management"]))(getUsersEndpoint)
 		}
 
+		var getUserAccountStatusEndpoint endpoint.Endpoint
+		{
+			getUserAccountStatusEndpoint = management.MakeGetUserAccountStatusEndpoint(keycloakComponent)
+			getUserAccountStatusEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("get_user_accountstatus"))(getUserAccountStatusEndpoint)
+			getUserAccountStatusEndpoint = middleware.MakeEndpointLoggingMW(log.With(managementLogger, "mw", "endpoint"))(getUserAccountStatusEndpoint)
+			getUserAccountStatusEndpoint = middleware.MakeEndpointTracingMW(tracer, "get_users_endpoint")(getUserAccountStatusEndpoint)
+			getUserAccountStatusEndpoint = middleware.MakeEndpointTokenForRealmMW(log.With(managementLogger, "mw", "endpoint"))(getUserAccountStatusEndpoint)
+			getUserAccountStatusEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["management"]))(getUserAccountStatusEndpoint)
+		}
+
 		var getRolesEndpoint endpoint.Endpoint
 		{
 			getRolesEndpoint = management.MakeGetRolesEndpoint(keycloakComponent)
@@ -548,6 +558,7 @@ func main() {
 			UpdateUser:               updateUserEndpoint,
 			DeleteUser:               deleteUserEndpoint,
 			GetUsers:                 getUsersEndpoint,
+			GetUserAccountStatus:     getUserAccountStatusEndpoint,
 			GetRoles:                 getRolesEndpoint,
 			GetRole:                  getRoleEndpoint,
 			GetClientRoles:           getClientRolesEndpoint,
@@ -605,6 +616,8 @@ func main() {
 		var deleteUserHandler = ConfigureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.DeleteUser)
 		var getUsersHandler = ConfigureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.GetUsers)
 
+		var getUserAccountStatusHandler = ConfigureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.GetUserAccountStatus)
+
 		var getClientRoleForUserHandler = ConfigureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.GetClientRoleForUser)
 		var addClientRoleToUserHandler = ConfigureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.AddClientRoleToUser)
 		var getRealmRoleForUserHandler = ConfigureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.GetRealmRoleForUser)
@@ -633,6 +646,9 @@ func main() {
 		managementSubroute.Path("/realms/{realm}/users/{userID}").Methods("GET").Handler(getUserHandler)
 		managementSubroute.Path("/realms/{realm}/users/{userID}").Methods("PUT").Handler(updateUserHandler)
 		managementSubroute.Path("/realms/{realm}/users/{userID}").Methods("DELETE").Handler(deleteUserHandler)
+
+		// account status
+		managementSubroute.Path("/realms/{realm}/users/{userID}/status").Methods("GET").Handler(getUserAccountStatusHandler)
 
 		managementSubroute.Path("/realms/{realm}/users/{userID}/role-mappings/clients/{clientID}").Methods("GET").Handler(getClientRoleForUserHandler)
 		managementSubroute.Path("/realms/{realm}/users/{userID}/role-mappings/clients/{clientID}").Methods("POST").Handler(addClientRoleToUserHandler)

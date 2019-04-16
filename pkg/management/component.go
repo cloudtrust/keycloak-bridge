@@ -42,6 +42,7 @@ type Component interface {
 	UpdateUser(ctx context.Context, realmName, userID string, user api.UserRepresentation) error
 	GetUsers(ctx context.Context, realmName, group string, paramKV ...string) ([]api.UserRepresentation, error)
 	CreateUser(ctx context.Context, realmName string, user api.UserRepresentation) (string, error)
+	GetUserAccountStatus(ctx context.Context, realmName, userID string) (bool, error)
 	GetClientRolesForUser(ctx context.Context, realmName, userID, clientID string) ([]api.RoleRepresentation, error)
 	AddClientRolesToUser(ctx context.Context, realmName, userID, clientID string, roles []api.RoleRepresentation) error
 	GetRealmRolesForUser(ctx context.Context, realmName, userID string) ([]api.RoleRepresentation, error)
@@ -414,6 +415,24 @@ func (c *component) GetUsers(ctx context.Context, realmName string, group string
 	}
 
 	return usersRep, nil
+}
+
+// GetUserAccountStatus gets the user status : user should be enabled in Keycloak and have multifactor activated
+func (c *component) GetUserAccountStatus(ctx context.Context, realmName, userID string) (bool, error) {
+	var accessToken = ctx.Value("access_token").(string)
+
+	userKc, err := c.keycloakClient.GetUser(accessToken, realmName, userID)
+
+	if err != nil {
+		return false, err
+	}
+
+	if !*userKc.Enabled {
+		return false, nil
+	}
+
+	creds, err := c.GetCredentialsForUser(ctx, realmName, userID)
+	return len(creds) > 0, err
 }
 
 func (c *component) GetClientRolesForUser(ctx context.Context, realmName, userID, clientID string) ([]api.RoleRepresentation, error) {

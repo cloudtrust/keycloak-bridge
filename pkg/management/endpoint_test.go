@@ -264,6 +264,29 @@ func TestGetUsersEndpoint(t *testing.T) {
 	}
 }
 
+func TestGetUserAccountStatusEndpoint(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
+
+	var e = MakeGetUserAccountStatusEndpoint(mockManagementComponent)
+
+	// No error - Without param
+	{
+		var realm = "master"
+		var userID = "123-456-789"
+		var ctx = context.Background()
+		var req = make(map[string]string)
+		req["realm"] = realm
+		req["userID"] = userID
+
+		mockManagementComponent.EXPECT().GetUserAccountStatus(ctx, realm, userID).Return(false, nil).Times(1)
+		var _, err = e(ctx, req)
+		assert.Nil(t, err)
+	}
+}
+
 func TestGetClientRolesForUserEndpoint(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()

@@ -225,6 +225,29 @@ paths:
       responses:
         200:
           description: successful operation
+  /realms/{realm}/users/{userID}/status:
+    get:
+      tags:
+      - Users
+      summary: Get the account status for the user (User enabled and has a second factor)
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
   /realms/{realm}/users/{userID}/role-mappings/clients/{clientID}:
     get:
       tags:
