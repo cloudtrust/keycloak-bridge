@@ -60,6 +60,10 @@ type component struct {
 	eventDBModule  event.EventsDBModule
 }
 
+const (
+	timeFormat = "2006-01-02 15:04:05.000"
+)
+
 // NewComponent returns the management component.
 func NewComponent(keycloakClient KeycloakClient, eventDBModule event.EventsDBModule) Component {
 	return &component{
@@ -68,15 +72,15 @@ func NewComponent(keycloakClient KeycloakClient, eventDBModule event.EventsDBMod
 	}
 }
 
-func getAgentDetails(ctx context.Context, event map[string]string) map[string]string {
+func addAgentDetails(ctx context.Context, event map[string]string) {
 
 	//retrieve agent username
 	event["agent_username"] = ctx.Value("username").(string)
 	//retrieve agent user id - not yet implemented
+	//to be uncommented once the ctx contains the userId value
 	//event["userId"] = ctx.Value("userId").(string)
 	//retrieve agent realm
 	event["agent_realm_name"] = ctx.Value("realm").(string)
-	return event
 }
 
 func (c *component) GetRealm(ctx context.Context, realm string) (api.RealmRepresentation, error) {
@@ -185,10 +189,9 @@ func (c *component) CreateUser(ctx context.Context, realmName string, user api.U
 	}
 
 	event["origin"] = "back-office"
-	time := time.Now().UTC()
-	event["audit_time"] = time.Format("2006-01-02 15:04:05.000")
+	event["audit_time"] = time.Now().UTC().Format(timeFormat)
 	//retrieve details of the agent
-	event = getAgentDetails(ctx, event)
+	addAgentDetails(ctx, event)
 
 	// the error should be treated
 	_ = c.eventDBModule.Store(ctx, event)
@@ -211,11 +214,10 @@ func (c *component) DeleteUser(ctx context.Context, realmName, userID string) er
 	event["realm_name"] = realmName
 	event["user_id"] = userID
 	event["origin"] = "back-office"
-	time := time.Now().UTC()
-	event["audit_time"] = time.Format("2006-01-02 15:04:05.000")
+	event["audit_time"] = time.Now().UTC().Format(timeFormat)
 
 	//retrieve details of the agent
-	event = getAgentDetails(ctx, event)
+	addAgentDetails(ctx, event)
 
 	// the error should be treated
 	_ = c.eventDBModule.Store(ctx, event)
@@ -274,11 +276,10 @@ func (c *component) GetUser(ctx context.Context, realmName, userID string) (api.
 		event["username"] = *userKc.Username
 	}
 	event["origin"] = "back-office"
-	time := time.Now().UTC()
-	event["audit_time"] = time.Format("2006-01-02 15:04:05.000")
+	event["audit_time"] = time.Now().UTC().Format(timeFormat)
 	//retrieve details of the agent
 
-	event = getAgentDetails(ctx, event)
+	addAgentDetails(ctx, event)
 
 	// the error should be treated
 	_ = c.eventDBModule.Store(ctx, event)
@@ -335,10 +336,9 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 			event["username"] = *user.Username
 		}
 		event["origin"] = "back-office"
-		time := time.Now().UTC()
-		event["audit_time"] = time.Format("2006-01-02 15:04:05.000")
+		event["audit_time"] = time.Now().UTC().Format(timeFormat)
 		//retrieve details of the agent
-		event = getAgentDetails(ctx, event)
+		addAgentDetails(ctx, event)
 
 		//add ct_event_type
 		if *user.Enabled {
@@ -495,10 +495,9 @@ func (c *component) ResetPassword(ctx context.Context, realmName string, userID 
 	event["realm_name"] = realmName
 	event["user_id"] = userID
 	event["origin"] = "back-office"
-	time := time.Now().UTC()
-	event["audit_time"] = time.Format("2006-01-02 15:04:05.000")
+	event["audit_time"] = time.Now().UTC().Format(timeFormat)
 	//retrieve details of the agent
-	event = getAgentDetails(ctx, event)
+	addAgentDetails(ctx, event)
 
 	// the error should be treated
 	_ = c.eventDBModule.Store(ctx, event)
