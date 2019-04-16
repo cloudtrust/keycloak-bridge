@@ -148,7 +148,7 @@ type eventsDBModule struct {
 
 // NewConsoleModule returns a Console module.
 func NewEventsDBModule(db DBEvents) EventsDBModule {
-	db.Exec(createTable)
+	//db.Exec(createTable)
 	return &eventsDBModule{
 		db: db,
 	}

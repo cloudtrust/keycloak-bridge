@@ -2,6 +2,7 @@ package management
 
 import (
 	"context"
+	"regexp"
 	"time"
 
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
@@ -81,6 +82,29 @@ func addAgentDetails(ctx context.Context, event map[string]string) {
 	//event["userId"] = ctx.Value("userId").(string)
 	//retrieve agent realm
 	event["agent_realm_name"] = ctx.Value("realm").(string)
+}
+
+// create the generic event that contains the ct_event_type, origin and audit_time
+func createEventMap(apiCall string) map[string]string {
+	event := make(map[string]string)
+	event["ct_event_type"] = apiCall
+	event["origin"] = "back-office"
+	event["audit_time"] = time.Now().UTC().Format(timeFormat)
+
+	return event
+}
+
+// enhance the event with more information
+func addEventValues(ctx context.Context, event map[string]string, values ...string) {
+
+	//add information to the event
+	noTuples := len(values)
+	for i := 0; i < noTuples; i = i + 2 {
+		event[values[i]] = values[i+1]
+	}
+
+	//retrieve details of the agent
+	addAgentDetails(ctx, event)
 }
 
 func (c *component) GetRealm(ctx context.Context, realm string) (api.RealmRepresentation, error) {
@@ -178,20 +202,18 @@ func (c *component) CreateUser(ctx context.Context, realmName string, user api.U
 	}
 
 	//store the API call into the DB
-	var event = make(map[string]string)
-	event["ct_event_type"] = "API_ACCOUNT_CREATION"
-	event["realm_name"] = realmName
-	if user.Id != nil {
-		event["user_id"] = *user.Id
-	}
+	event := createEventMap("API_ACCOUNT_CREATION")
+
+	var username = ""
 	if user.Username != nil {
-		event["username"] = *user.Username
+		username = *user.Username
 	}
 
-	event["origin"] = "back-office"
-	event["audit_time"] = time.Now().UTC().Format(timeFormat)
-	//retrieve details of the agent
-	addAgentDetails(ctx, event)
+	//retrieve the user ID
+	reg := regexp.MustCompile(`[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}`)
+	userID := string(reg.Find([]byte(locationURL)))
+
+	addEventValues(ctx, event, "realm_name", realmName, "user_id", userID, "username", username)
 
 	// the error should be treated
 	_ = c.eventDBModule.Store(ctx, event)
@@ -209,15 +231,9 @@ func (c *component) DeleteUser(ctx context.Context, realmName, userID string) er
 	}
 
 	//store the API call into the DB
-	var event = make(map[string]string)
-	event["ct_event_type"] = "API_ACCOUNT_DELETION"
-	event["realm_name"] = realmName
-	event["user_id"] = userID
-	event["origin"] = "back-office"
-	event["audit_time"] = time.Now().UTC().Format(timeFormat)
+	event := createEventMap("API_ACCOUNT_DELETION")
 
-	//retrieve details of the agent
-	addAgentDetails(ctx, event)
+	addEventValues(ctx, event, "realm_name", realmName, "user_id", userID)
 
 	// the error should be treated
 	_ = c.eventDBModule.Store(ctx, event)
@@ -268,23 +284,20 @@ func (c *component) GetUser(ctx context.Context, realmName, userID string) (api.
 	}
 
 	//store the API call into the DB
-	var event = make(map[string]string)
-	event["ct_event_type"] = "GET_DETAILS"
-	event["realm_name"] = realmName
-	event["user_id"] = userID
-	if userKc.Username != nil {
-		event["username"] = *userKc.Username
-	}
-	event["origin"] = "back-office"
-	event["audit_time"] = time.Now().UTC().Format(timeFormat)
-	//retrieve details of the agent
+	event := createEventMap("GET_DETAILS")
 
-	addAgentDetails(ctx, event)
+	var username = ""
+	if userKc.Username != nil {
+		username = *userKc.Username
+	}
+
+	addEventValues(ctx, event, "realm_name", realmName, "user_id", userID, "username", username)
 
 	// the error should be treated
 	_ = c.eventDBModule.Store(ctx, event)
 
 	return userRep, nil
+
 }
 
 func (c *component) UpdateUser(ctx context.Context, realmName, userID string, user api.UserRepresentation) error {
@@ -326,28 +339,25 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 		return err
 	}
 
-	//store the API call into the DB in case the user.Enable is present
+	//store the API call into the DB in case where user.Enable is present
 	if user.Enabled != nil {
-		var event = make(map[string]string)
-
-		event["realm_name"] = realmName
-		event["user_id"] = userID
-		if user.Username != nil {
-			event["username"] = *user.Username
-		}
-		event["origin"] = "back-office"
-		event["audit_time"] = time.Now().UTC().Format(timeFormat)
-		//retrieve details of the agent
-		addAgentDetails(ctx, event)
-
 		//add ct_event_type
+		var event map[string]string
 		if *user.Enabled {
 			// UNLOCK_ACCOUNT ct_event_type
-			event["ct_event_type"] = "UNLOCK_ACCOUNT"
+			event = createEventMap("UNLOCK_ACCOUNT")
 		} else {
 			// LOCK_ACCOUNT ct_event_type
-			event["ct_event_type"] = "LOCK_ACCOUNT"
+			event = createEventMap("LOCK_ACCOUNT")
 		}
+
+		var username = ""
+		if user.Username != nil {
+			username = *user.Username
+		}
+
+		addEventValues(ctx, event, "realm_name", realmName, "user_id", userID, "username", username)
+
 		// the error should be treated
 		_ = c.eventDBModule.Store(ctx, event)
 
@@ -490,14 +500,9 @@ func (c *component) ResetPassword(ctx context.Context, realmName string, userID 
 	}
 
 	//store the API call into the DB
-	var event = make(map[string]string)
-	event["ct_event_type"] = "INIT_PASSWORD"
-	event["realm_name"] = realmName
-	event["user_id"] = userID
-	event["origin"] = "back-office"
-	event["audit_time"] = time.Now().UTC().Format(timeFormat)
-	//retrieve details of the agent
-	addAgentDetails(ctx, event)
+	event := createEventMap("INIT_PASSWORD")
+
+	addEventValues(ctx, event, "realm_name", realmName, "user_id", userID)
 
 	// the error should be treated
 	_ = c.eventDBModule.Store(ctx, event)
