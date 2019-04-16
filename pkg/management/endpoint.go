@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
+	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/go-kit/kit/endpoint"
 )
 
@@ -170,7 +171,7 @@ func MakeGetUsersEndpoint(managementComponent ManagementComponent) endpoint.Endp
 
 		group, ok := m["group"]
 		if !ok {
-			return nil, CreateMissingParameterError("group")
+			return nil, keycloakb.CreateMissingParameterError("group")
 		}
 
 		return managementComponent.GetUsers(ctx, m["realm"], group, paramKV...)
@@ -366,7 +367,7 @@ type LocationHeader struct {
 	URL string
 }
 
-// We are currently using a mapping 1:1 for REST API of Brdige and Keycloak, thus we take a shortcut to convert the location of the resource
+// We are currently using a mapping 1:1 for REST API of Bridge and Keycloak, thus we take a shortcut to convert the location of the resource
 func convertLocationUrl(originalURL string, scheme string, host string) string {
 	var splitURL = strings.Split(originalURL, "/auth/admin")
 	return scheme + "://" + host + "/management" + splitURL[1]

@@ -28,14 +28,15 @@ keycloak-timeout: 5s
 
 # DB  
 db-host-port: 127.0.0.1:3306
-db-username: root
-db-password: admin 
-db-database: auditevents
-db-table: audit
+db-username:
+db-password: 
+db-database:
 db-protocol: tcp
 db-max-open-conns: 10
 db-max-idle-conns: 2
 db-conn-max-lifetime: 3600
+db-ro-username: bridge
+db-ro-password: bridge-password
 
 # Configuration DB
 db-config-username: bridge

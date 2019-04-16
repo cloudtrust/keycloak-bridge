@@ -8,6 +8,7 @@ import (
 	"time"
 
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
+	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/cloudtrust/keycloak-bridge/pkg/event"
 	kc "github.com/cloudtrust/keycloak-client"
 )
@@ -758,7 +759,7 @@ func (c *component) UpdateRealmCustomConfiguration(ctx context.Context, realmNam
 		}
 	}
 	if !match {
-		return HTTPError{
+		return keycloakb.HTTPError{
 			Status:  400,
 			Message: "Invalid client ID or redirect URI",
 		}

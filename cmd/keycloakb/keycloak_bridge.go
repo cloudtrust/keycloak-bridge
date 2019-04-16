@@ -22,6 +22,7 @@ import (
 	gen "github.com/cloudtrust/keycloak-bridge/internal/idgenerator"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/cloudtrust/keycloak-bridge/pkg/event"
+	"github.com/cloudtrust/keycloak-bridge/pkg/events"
 	"github.com/cloudtrust/keycloak-bridge/pkg/export"
 	"github.com/cloudtrust/keycloak-bridge/pkg/management"
 	"github.com/cloudtrust/keycloak-bridge/pkg/middleware"
@@ -160,6 +161,10 @@ func main() {
 		dbConfigPassword = c.GetString("db-config-password")
 		dbConfigDatabase = c.GetString("db-config-database")
 
+		// DB - Read only user
+		dbRoUsername = c.GetString("db-ro-username")
+		dbRoPassword = c.GetString("db-ro-password")
+
 		// Rate limiting
 		rateLimit = map[string]int{
 			"event":      c.GetInt("rate-event"),
@@ -273,6 +278,7 @@ func main() {
 	// Audit events DB.
 	type CloudtrustDB interface {
 		Exec(query string, args ...interface{}) (sql.Result, error)
+		Query(query string, args ...interface{}) (*sql.Rows, error)
 		QueryRow(query string, args ...interface{}) *sql.Row
 		SetMaxOpenConns(n int)
 		SetMaxIdleConns(n int)
@@ -282,32 +288,31 @@ func main() {
 	var eventsDBConn CloudtrustDB = keycloakb.NoopDB{}
 	if eventsDBEnabled {
 		var err error
-		eventsDBConn, err = sql.Open("mysql", fmt.Sprintf("%s:%s@%s(%s)/%s", dbUsername, dbPassword, dbProtocol, dbHostPort, dbDatabase))
-
+		eventsDBConn, err = openDatabase(dbUsername, dbPassword, dbProtocol, dbHostPort, dbDatabase, dbMaxOpenConns, dbMaxIdleConns, dbConnMaxLifetime)
 		if err != nil {
-			logger.Log("msg", "could not create DB connection for audit events", "error", err)
+			logger.Log("msg", "could not create R/W DB connection for audit events", "error", err)
 			return
 		}
-		// the config of the DB should have a max_connections > SetMaxOpenConns
-		eventsDBConn.SetMaxOpenConns(dbMaxOpenConns)
-		eventsDBConn.SetMaxIdleConns(dbMaxIdleConns)
-		eventsDBConn.SetConnMaxLifetime(time.Duration(dbConnMaxLifetime) * time.Second)
+	}
 
+	var eventsRODBConn events.DBEvents
+	{
+		var err error
+		eventsRODBConn, err = openDatabase(dbRoUsername, dbRoPassword, dbProtocol, dbHostPort, dbDatabase, dbMaxOpenConns, dbMaxIdleConns, dbConnMaxLifetime)
+		if err != nil {
+			logger.Log("msg", "could not create RO DB connection for audit events", "error", err)
+			return
+		}
 	}
 
 	var configurationDBConn CloudtrustDB = keycloakb.NoopDB{}
 	if configDBEnabled {
 		var err error
-		configurationDBConn, err = sql.Open("mysql", fmt.Sprintf("%s:%s@%s(%s)/%s", dbConfigUsername, dbConfigPassword, dbProtocol, dbHostPort, dbConfigDatabase))
-
+		configurationDBConn, err = openDatabase(dbConfigUsername, dbConfigPassword, dbProtocol, dbHostPort, dbConfigDatabase, dbMaxOpenConns, dbMaxIdleConns, dbConnMaxLifetime)
 		if err != nil {
 			logger.Log("msg", "could not create DB connection for configuration storage", "error", err)
 			return
 		}
-		// the config of the DB should have a max_connections > SetMaxOpenConns
-		configurationDBConn.SetMaxOpenConns(dbMaxOpenConns)
-		configurationDBConn.SetMaxIdleConns(dbMaxIdleConns)
-		configurationDBConn.SetConnMaxLifetime(time.Duration(dbConnMaxLifetime) * time.Second)
 	}
 
 	// Event service.
@@ -382,6 +387,22 @@ func main() {
 
 		eventEndpoints = event.Endpoints{
 			Endpoint: eventEndpoint,
+		}
+	}
+
+	// Events service.
+	var eventsEndpoints events.Endpoints
+	{
+		var eventLogger = log.With(logger, "svc", "events")
+
+		// new module for sending the events to the DB
+		eventsRODBModule := events.NewEventsDBModule(eventsRODBConn)
+		eventsComponent := events.NewEventsComponent(eventsRODBModule)
+
+		eventsEndpoints = events.Endpoints{
+			GetEvents:        prepareEndpoint(events.MakeGetEventsEndpoint(eventsComponent), "get_events", influxMetrics, eventLogger, tracer, rateLimit),
+			GetEventsSummary: prepareEndpoint(events.MakeGetEventsSummaryEndpoint(eventsComponent), "get_events_summary", influxMetrics, eventLogger, tracer, rateLimit),
+			GetUserEvents:    prepareEndpoint(events.MakeGetEventsEndpoint(eventsComponent), "get_user_events", influxMetrics, eventLogger, tracer, rateLimit),
 		}
 	}
 
@@ -470,6 +491,15 @@ func main() {
 			eventHandler = middleware.MakeHTTPTracingMW(tracer, ComponentName, "http_server_event")(eventHandler)
 		}
 		eventSubroute.Handle("/receiver", eventHandler)
+
+		// Events
+		var getEventsHandler = configureEventsHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(eventsEndpoints.GetEvents)
+		var getEventsSummaryHandler = configureEventsHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(eventsEndpoints.GetEventsSummary)
+		var getUserEventsHandler = configureEventsHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(eventsEndpoints.GetUserEvents)
+
+		route.Path("/events").Methods("GET").Handler(getEventsHandler)
+		route.Path("/events/summary").Methods("GET").Handler(getEventsSummaryHandler)
+		route.Path("/events/realms/{realm}/users/{userID}/events").Methods("GET").Handler(getUserEventsHandler)
 
 		// Management
 		var managementSubroute = route.PathPrefix("/management").Subrouter()
@@ -639,7 +669,6 @@ func config(logger log.Logger) *viper.Viper {
 	v.SetDefault("db-username", "")
 	v.SetDefault("db-password", "")
 	v.SetDefault("db-database", "")
-	v.SetDefault("db-table", "")
 	v.SetDefault("db-protocol", "")
 	v.SetDefault("db-max-open-conns", 10)
 	v.SetDefault("db-max-idle-conns", 2)
@@ -650,6 +679,9 @@ func config(logger log.Logger) *viper.Viper {
 	v.SetDefault("db-config-username", "")
 	v.SetDefault("db-config-password", "")
 	v.SetDefault("db-config-database", "")
+
+	v.SetDefault("db-ro-username", "")
+	v.SetDefault("db-ro-password", "")
 
 	// Rate limiting (in requests/second)
 	v.SetDefault("rate-event", 1000)
@@ -708,6 +740,31 @@ func config(logger log.Logger) *viper.Viper {
 		logger.Log(k, v.Get(k))
 	}
 	return v
+}
+
+func openDatabase(dbUsername, dbPassword, dbProtocol, dbHostPort, dbDatabase string, dbMaxOpenConns, dbMaxIdleConns, dbConnMaxLifetime int) (*sql.DB, error) {
+	var err error
+	var dbConn *sql.DB
+	dbConn, err = sql.Open("mysql", fmt.Sprintf("%s:%s@%s(%s)/%s", dbUsername, dbPassword, dbProtocol, dbHostPort, dbDatabase))
+
+	// the config of the DB should have a max_connections > SetMaxOpenConns
+	if err == nil {
+		dbConn.SetMaxOpenConns(dbMaxOpenConns)
+		dbConn.SetMaxIdleConns(dbMaxIdleConns)
+		dbConn.SetConnMaxLifetime(time.Duration(dbConnMaxLifetime) * time.Second)
+	}
+
+	return dbConn, err
+}
+
+func configureEventsHandler(ComponentName string, ComponentID string, idGenerator gen.IDGenerator, keycloakClient *keycloak.Client, tracer opentracing.Tracer, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {
+	return func(endpoint endpoint.Endpoint) http.Handler {
+		var handler http.Handler
+		handler = events.MakeEventsHandler(endpoint)
+		handler = middleware.MakeHTTPCorrelationIDMW(idGenerator, tracer, logger, ComponentName, ComponentID)(handler)
+		handler = middleware.MakeHTTPOIDCTokenValidationMW(keycloakClient, logger)(handler)
+		return handler
+	}
 }
 
 func ConfigureManagementHandler(ComponentName string, ComponentID string, idGenerator gen.IDGenerator, keycloakClient *keycloak.Client, tracer opentracing.Tracer, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
+	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/cloudtrust/keycloak-bridge/pkg/management/mock"
 	kc "github.com/cloudtrust/keycloak-client"
 	"github.com/golang/mock/gomock"
@@ -1666,8 +1667,8 @@ func TestUpdateRealmCustomConfiguration(t *testing.T) {
 		err := managementComponent.UpdateRealmCustomConfiguration(ctx, realmID, configInit)
 
 		assert.NotNil(t, err)
-		assert.IsType(t, HTTPError{}, err)
-		e := err.(HTTPError)
+		assert.IsType(t, keycloakb.HTTPError{}, err)
+		e := err.(keycloakb.HTTPError)
 		assert.Equal(t, 400, e.Status)
 	}
 
@@ -1685,8 +1686,8 @@ func TestUpdateRealmCustomConfiguration(t *testing.T) {
 		err := managementComponent.UpdateRealmCustomConfiguration(ctx, realmID, configInit)
 
 		assert.NotNil(t, err)
-		assert.IsType(t, HTTPError{}, err)
-		e := err.(HTTPError)
+		assert.IsType(t, keycloakb.HTTPError{}, err)
+		e := err.(keycloakb.HTTPError)
 		assert.Equal(t, 400, e.Status)
 	}
 
@@ -1704,8 +1705,8 @@ func TestUpdateRealmCustomConfiguration(t *testing.T) {
 		err := managementComponent.UpdateRealmCustomConfiguration(ctx, realmID, configInit)
 
 		assert.NotNil(t, err)
-		assert.IsType(t, HTTPError{}, err)
-		e := err.(HTTPError)
+		assert.IsType(t, keycloakb.HTTPError{}, err)
+		e := err.(keycloakb.HTTPError)
 		assert.Equal(t, 400, e.Status)
 	}
 

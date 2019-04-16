@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
+	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/cloudtrust/keycloak-bridge/internal/security"
 	"github.com/cloudtrust/keycloak-bridge/pkg/management/mock"
 	kc_client "github.com/cloudtrust/keycloak-client"
@@ -18,12 +19,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
 )
-
-func TestHTTPResponse(t *testing.T) {
-	// Coverage
-	var kcError = CreateMissingParameterError("parameter")
-	assert.Contains(t, kcError.Error(), kcError.Message)
-}
 
 func TestHTTPManagementHandler(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
@@ -183,7 +178,7 @@ func TestHTTPErrorHandler(t *testing.T) {
 
 	// HTTPResponse Error
 	{
-		var kcError = HTTPError{
+		var kcError = keycloakb.HTTPError{
 			Status:  401,
 			Message: "Unauthorized",
 		}
