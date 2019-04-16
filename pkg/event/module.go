@@ -4,9 +4,6 @@ package event
 
 import (
 	"context"
-	"encoding/json"
-	"regexp"
-	"strings"
 	"time"
 
 	"database/sql"
@@ -102,7 +99,7 @@ func (sm *statisticModule) Stats(_ context.Context, m map[string]string) error {
 const (
 	createTable = `CREATE TABLE IF NOT EXISTS audit (
 		audit_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-		audit_time TIMESTAMP,
+		audit_time TIMESTAMP NULL,
 		origin VARCHAR(255),
 		realm_name VARCHAR(255),
 		agent_user_id VARCHAR(36),
@@ -119,6 +116,7 @@ const (
 	  );`
 
 	insertEvent = `INSERT INTO audit (
+		audit_time,
 		origin,
 		realm_name,
 		agent_user_id,
@@ -131,7 +129,7 @@ const (
 		kc_operation_type,
 		client_id,
 		additional_info) 
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		`
 )
 
@@ -150,7 +148,7 @@ type eventsDBModule struct {
 
 // NewConsoleModule returns a Console module.
 func NewEventsDBModule(db DBEvents) EventsDBModule {
-	db.Exec(createTable)
+	//db.Exec(createTable)
 	return &eventsDBModule{
 		db: db,
 	}
@@ -164,99 +162,37 @@ func (cm *eventsDBModule) Store(_ context.Context, m map[string]string) error {
 		return nil
 	}
 
-	origin := "keycloak" // for the moment only events of Keycloak
-	realmName := m["realmId"]
+	// the event was already formatted according to the DB structure already at the component level
+
+	//auditTime - time of the event
+	auditTime := m["audit_time"]
+	// origin - the component that initiated the event
+	origin := m["origin"]
+	// realmName - realm name of the user that is impacted by the action
+	realmName := m["realm_name"]
 	//agentUserID - userId of who is performing an action
-	agentUserID := m["userId"]
+	agentUserID := m["agent_user_id"]
 	//agentUsername - username of who is performing an action
-	agentUsername := m["username"] // normally, username can be found in the details key of the map
+	agentUsername := m["agent_username"]
 	//agentRealmName - realm of who is performing an action
-	agentRealmName := "" // found in authdetails
+	agentRealmName := m["agent_realm_name"]
 	//userID - ID of the user that is impacted by the action
-	userID := "" // found in authdetails, in resourcePath
+	userID := m["user_id"]
 	//username - username of the user that is impacted by the action
-	username := "" //
+	username := m["username"]
 	// ctEventType that  is established before at the component level
 	ctEventType := m["ct_event_type"]
 	// kcEventType corresponds to keycloak event type
-	kcEventType := m["type"]
+	kcEventType := m["kc_event_type"]
 	// kcOperationType - operation type of the event that comes from Keycloak
-	kcOperationType := m["operationType"]
+	kcOperationType := m["kc_operation_type"]
 	// Id of the client
-	clientID := m["clientId"]
-
-	//userId is in the resourcePath
-	if resourcePath, ok := m["resourcePath"]; ok {
-		reg := regexp.MustCompile(`[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}`)
-		if strings.HasPrefix(resourcePath, "users") {
-			userID = string(reg.Find([]byte(resourcePath)))
-		}
-	}
-
-	// put all the other details of the events in additionInfo column of the DB
-	var infoMap map[string]string
-	infoMap = make(map[string]string)
-	for k, v := range m {
-		// exclude all the event details that are already inserted in the DB
-		if k != "realmId" && k != "userId" && k != "type" && k != "operationType" && k != "clientId" && k != "details" && k != "ct_event_type" && k != "username" && k != "authDetails" {
-			infoMap[k] = v
-		}
-	}
-
-	//check if  the key details is present
-	if details, ok := m["details"]; ok {
-		eventDetails := []byte(details)
-		var f map[string]string
-		err := json.Unmarshal(eventDetails, &f)
-
-		if err != nil {
-			return err
-		}
-
-		// in details part we can retrieve the username
-		agentUsername = f["username"]
-
-		for k, v := range f {
-			if k != "username" {
-				infoMap[k] = v
-			}
-		}
-
-	}
-
-	//check if the key authdetails is present
-	if authDetails, ok := m["authDetails"]; ok {
-		eventAuthDetails := []byte(authDetails)
-		var h map[string]string
-		err := json.Unmarshal(eventAuthDetails, &h)
-
-		if err != nil {
-			return err
-		}
-
-		// in authdetails part we can retrieve the client id, agent realm id, agent user id
-		for k, v := range h {
-			switch {
-			case k == "clientId" && clientID == "":
-				clientID = h["clientId"]
-			case k == "userId" && agentUserID == "":
-				agentUserID = h["userId"]
-			case k == "realmId" && agentRealmName == "":
-				agentRealmName = h["realmId"]
-			default:
-				infoMap[k] = v
-			}
-		}
-	}
-
-	infos, err := json.Marshal(infoMap)
-	if err != nil {
-		return err
-	}
-	additionalInfo := string(infos)
+	clientID := m["client_id"]
+	//additional_info - all the rest of the information from the event
+	additionalInfo := m["additional_info"]
 
 	//store the event in the DB
-	_, err = cm.db.Exec(insertEvent, origin, realmName, agentUserID, agentUsername, agentRealmName, userID, username, ctEventType, kcEventType, kcOperationType, clientID, additionalInfo)
+	_, err := cm.db.Exec(insertEvent, auditTime, origin, realmName, agentUserID, agentUsername, agentRealmName, userID, username, ctEventType, kcEventType, kcOperationType, clientID, additionalInfo)
 
 	if err != nil {
 		return err

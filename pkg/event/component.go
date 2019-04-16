@@ -6,11 +6,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/cloudtrust/keycloak-bridge/api/event/fb"
+)
+
+const (
+	timeFormat = "2006-01-02 15:04:05.000"
 )
 
 // MuxComponent is the Mux component interface.
@@ -122,48 +127,44 @@ func (c *adminComponent) AdminEvent(ctx context.Context, adminEvent *fb.AdminEve
 func addCTtypeToEvent(event map[string]string) map[string]string {
 	// add the ct_event_type
 
-	switch opType := event["operationType"]; opType {
+	addInfo := []byte(event["additional_info"])
+	var f map[string]string
+	_ = json.Unmarshal(addInfo, &f)
+
+	switch opType := event["kc_operation_type"]; opType {
 	case "CREATE":
 		//ACCOUNT_CREATED
 		// check if the resourcePath starts with prefix users
-		if strings.HasPrefix(event["resourcePath"], "users") {
+		if strings.HasPrefix(f["resource_path"], "users") {
 			event["ct_event_type"] = "ACCOUNT_CREATED"
 			return event
 		}
 	case "ACTION":
 		//ACTIVATION_EMAIL_SENT
-		// check if the resourcePath ends with sufix send-verify-email
-		if strings.HasSuffix(event["resourcePath"], "send-verify-email") {
+		// check if the resourcePath ends with suffix send-verify-email
+		if strings.HasSuffix(f["resource_path"], "send-verify-email") {
 			event["ct_event_type"] = "ACTIVATION_EMAIL_SENT"
 			return event
 		}
 	default:
-
+		// Nothing to do here
 	}
 
-	switch t := event["type"]; t {
+	switch t := event["kc_event_type"]; t {
 	case "CUSTOM_REQUIRED_ACTION":
 		//EMAIL_CONFIRMED
-		eventDetails := []byte(event["details"])
-		var f map[string]string
-		_ = json.Unmarshal(eventDetails, &f)
-
 		if f["custom_required_action"] == "VERIFY_EMAIL" {
 			event["ct_event_type"] = "EMAIL_CONFIRMED"
 			return event
 		}
 	case "EXECUTE_ACTION_TOKEN_ERROR":
 		//CONFIRM_EMAIL_EXPIRED
-		if event["error"] == "expired_code" {
+		if f["error"] == "expired_code" {
 			event["ct_event_type"] = "CONFIRM_EMAIL_EXPIRED"
 			return event
 		}
 	case "UPDATE_PASSWORD":
 		//PASSWORD_RESET
-		eventDetails := []byte(event["details"])
-		var f map[string]string
-		_ = json.Unmarshal(eventDetails, &f)
-
 		if f["custom_required_action"] == "sms-password-set" {
 			event["ct_event_type"] = "PASSWORD_RESET"
 			return event
@@ -182,7 +183,7 @@ func addCTtypeToEvent(event map[string]string) map[string]string {
 		event["ct_event_type"] = "LOGOUT"
 		return event
 	default:
-
+		// Nothing to do here
 	}
 
 	// for all those events that don't have set the ct_event_type, we assign an empty ct_event_type
@@ -195,32 +196,39 @@ func addCTtypeToEvent(event map[string]string) map[string]string {
 
 func adminEventToMap(adminEvent *fb.AdminEvent) map[string]string {
 	var adminEventMap = make(map[string]string)
-	adminEventMap["uid"] = fmt.Sprint(adminEvent.Uid())
+	var addInfo = make(map[string]string)
 
-	time := epochMilliToTime(adminEvent.Time())
-	adminEventMap["time"] = time.Format("2006-01-02T15:04:05.000Z")
+	addInfo["uid"] = fmt.Sprint(adminEvent.Uid())
 
-	adminEventMap["realmId"] = string(adminEvent.RealmId())
+	time := epochMilliToTime(adminEvent.Time()).UTC()
+	adminEventMap["audit_time"] = time.Format(timeFormat) //audit_time
+
+	adminEventMap["realm_name"] = string(adminEvent.RealmId()) //realm_name
+	adminEventMap["origin"] = "keycloak"                       //origin
 
 	authDetails := adminEvent.AuthDetails(nil)
-	var authDetailsMap map[string]string
-	authDetailsMap = make(map[string]string)
-	authDetailsMap["clientId"] = string(authDetails.ClientId())
-	authDetailsMap["ipAddress"] = string(authDetails.IpAddress())
-	authDetailsMap["realmId"] = string(authDetails.RealmId())
-	authDetailsMap["userId"] = string(authDetails.UserId())
 
-	// BE AWARE: error is not treated
-	authDetailsJson, _ := json.Marshal(authDetailsMap)
-	adminEventMap["authDetails"] = string(authDetailsJson)
+	adminEventMap["client_id"] = string(authDetails.ClientId()) //client_id
+	addInfo["ip_address"] = string(authDetails.IpAddress())
+	adminEventMap["agent_realm_name"] = string(authDetails.RealmId()) // agent_realm_name
+	adminEventMap["agent_user_id"] = string(authDetails.UserId())     //agent_user_id
 
-	adminEventMap["resourceType"] = string(adminEvent.ResourceType())
-	adminEventMap["operationType"] = fb.EnumNamesOperationType[int8(adminEvent.OperationType())]
-	adminEventMap["resourcePath"] = string(adminEvent.ResourcePath())
-	adminEventMap["representation"] = string(adminEvent.Representation())
-	adminEventMap["error"] = string(adminEvent.Error())
+	addInfo["resource_type"] = string(adminEvent.ResourceType())
+	adminEventMap["kc_operation_type"] = fb.EnumNamesOperationType[int8(adminEvent.OperationType())] //kc_operation_type
+	addInfo["resource_path"] = string(adminEvent.ResourcePath())
+	reg := regexp.MustCompile(`[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}`)
+	if strings.HasPrefix(addInfo["resource_path"], "users") {
+		adminEventMap["user_id"] = string(reg.Find([]byte(addInfo["resource_path"]))) //user_id
+	}
+
+	addInfo["representation"] = string(adminEvent.Representation())
+	addInfo["error"] = string(adminEvent.Error())
 	//all the admin events have, by default, the ct_event_type set to admin
 	adminEventMap["ct_event_type"] = "ADMIN"
+
+	// BE AWARE: error is not treated
+	infoJSON, _ := json.Marshal(addInfo)
+	adminEventMap["additional_info"] = string(infoJSON)
 
 	//set the correct ct_event_type for actions like create_account, etc.
 	adminEventMap = addCTtypeToEvent(adminEventMap)
@@ -230,36 +238,52 @@ func adminEventToMap(adminEvent *fb.AdminEvent) map[string]string {
 
 func eventToMap(event *fb.Event) map[string]string {
 	var eventMap = make(map[string]string)
-	eventMap["uid"] = fmt.Sprint(event.Uid())
+	var addInfo = make(map[string]string)
+	// if an event has the ct_event_type set already, the flag avoids rewriting it
+	var doNotSetCTEventType bool = false
 
-	time := epochMilliToTime(event.Time())
-	eventMap["time"] = time.Format("2006-01-02T15:04:05.000Z")
+	addInfo["uid"] = fmt.Sprint(event.Uid())
 
-	eventMap["type"] = fb.EnumNamesEventType[int8(event.Type())]
-	eventMap["realmId"] = string(event.RealmId())
-	eventMap["clientId"] = string(event.ClientId())
-	eventMap["userId"] = string(event.UserId())
-	eventMap["sessionId"] = string(event.SessionId())
-	eventMap["ipAddress"] = string(event.IpAddress())
-	eventMap["error"] = string(event.Error())
+	time := epochMilliToTime(event.Time()).UTC()
+	eventMap["audit_time"] = time.Format(timeFormat) //audit_time
 
-	var detailsMap = make(map[string]string)
+	eventMap["kc_event_type"] = fb.EnumNamesEventType[int8(event.Type())] // kc_event_type
+	eventMap["realm_name"] = string(event.RealmId())                      //realm_name
+	eventMap["client_id"] = string(event.ClientId())                      //client_id
+	eventMap["agent_user_id"] = string(event.UserId())                    //agent_user_id
+	eventMap["user_id"] = string(event.UserId())                          //user_id
+	//Note: we make the assumption that the agent and the user are the same in the case of the events that are not admin events
+
+	addInfo["session_id"] = string(event.SessionId())
+	addInfo["ip_address"] = string(event.IpAddress())
+	addInfo["error"] = string(event.Error())
+	eventMap["origin"] = "keycloak" //origin
+
 	var detailsLength = event.DetailsLength()
 	for i := 0; i < detailsLength; i++ {
 		var tuple = new(fb.Tuple)
 		event.Details(tuple, i)
 		if string(tuple.Key()) == "ct_event_type" {
 			eventMap[string(tuple.Key())] = string(tuple.Value())
+			doNotSetCTEventType = true
 		} else {
-			detailsMap[string(tuple.Key())] = string(tuple.Value())
+			if string(tuple.Key()) == "username" {
+				eventMap["agent_username"] = string(tuple.Value())    //agent_username
+				eventMap[string(tuple.Key())] = string(tuple.Value()) //username
+			} else {
+				addInfo[string(tuple.Key())] = string(tuple.Value())
+			}
+
 		}
 	}
 
 	// BE AWARE: error is not treated
-	detailsJson, _ := json.Marshal(detailsMap)
-	eventMap["details"] = string(detailsJson)
+	infoJSON, _ := json.Marshal(addInfo)
+	eventMap["additional_info"] = string(infoJSON)
 
-	eventMap = addCTtypeToEvent(eventMap)
+	if !doNotSetCTEventType {
+		eventMap = addCTtypeToEvent(eventMap)
+	}
 
 	return eventMap
 }

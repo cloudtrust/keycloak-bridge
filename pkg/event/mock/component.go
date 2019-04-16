@@ -6,10 +6,9 @@ package mock
 
 import (
 	context "context"
-	reflect "reflect"
-
 	fb "github.com/cloudtrust/keycloak-bridge/api/event/fb"
 	gomock "github.com/golang/mock/gomock"
+	reflect "reflect"
 )
 
 // MuxComponent is a mock of MuxComponent interface
@@ -37,7 +36,6 @@ func (m *MuxComponent) EXPECT() *MuxComponentMockRecorder {
 
 // Event mocks base method
 func (m *MuxComponent) Event(arg0 context.Context, arg1 string, arg2 []byte) error {
-
 	ret := m.ctrl.Call(m, "Event", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -45,7 +43,6 @@ func (m *MuxComponent) Event(arg0 context.Context, arg1 string, arg2 []byte) err
 
 // Event indicates an expected call of Event
 func (mr *MuxComponentMockRecorder) Event(arg0, arg1, arg2 interface{}) *gomock.Call {
-
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Event", reflect.TypeOf((*MuxComponent)(nil).Event), arg0, arg1, arg2)
 }
 
@@ -74,7 +71,6 @@ func (m *Component) EXPECT() *ComponentMockRecorder {
 
 // Event mocks base method
 func (m *Component) Event(arg0 context.Context, arg1 *fb.Event) error {
-
 	ret := m.ctrl.Call(m, "Event", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -82,7 +78,6 @@ func (m *Component) Event(arg0 context.Context, arg1 *fb.Event) error {
 
 // Event indicates an expected call of Event
 func (mr *ComponentMockRecorder) Event(arg0, arg1 interface{}) *gomock.Call {
-
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Event", reflect.TypeOf((*Component)(nil).Event), arg0, arg1)
 }
 
@@ -111,7 +106,6 @@ func (m *AdminComponent) EXPECT() *AdminComponentMockRecorder {
 
 // AdminEvent mocks base method
 func (m *AdminComponent) AdminEvent(arg0 context.Context, arg1 *fb.AdminEvent) error {
-
 	ret := m.ctrl.Call(m, "AdminEvent", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -119,6 +113,5 @@ func (m *AdminComponent) AdminEvent(arg0 context.Context, arg1 *fb.AdminEvent) e
 
 // AdminEvent indicates an expected call of AdminEvent
 func (mr *AdminComponentMockRecorder) AdminEvent(arg0, arg1 interface{}) *gomock.Call {
-
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AdminEvent", reflect.TypeOf((*AdminComponent)(nil).AdminEvent), arg0, arg1)
 }
