@@ -733,7 +733,7 @@ func TestGetUserAccountStatus(t *testing.T) {
 		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
 		status, err := managementComponent.GetUserAccountStatus(ctx, realmName, userID)
 		assert.Nil(t, err)
-		assert.False(t, status)
+		assert.False(t, status["enabled"])
 	}
 
 	// GetUser returns an enabled user but GetCredentialsForUser fails
@@ -760,22 +760,22 @@ func TestGetUserAccountStatus(t *testing.T) {
 		ctx = context.WithValue(ctx, "realm", realmReq)
 		status, err := managementComponent.GetUserAccountStatus(ctx, realmName, userID)
 		assert.Nil(t, err)
-		assert.False(t, status)
+		assert.False(t, status["enabled"])
 	}
 
 	// GetUser returns an enabled user and GetCredentialsForUser have credentials
 	{
 		var userRep kc.UserRepresentation
-		var creds kc.CredentialRepresentation
+		var creds1, creds2 kc.CredentialRepresentation
 		enabled := true
 		userRep.Enabled = &enabled
 		mockKeycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(userRep, nil).Times(1)
-		mockKeycloakClient.EXPECT().GetCredentialsForUser(accessToken, realmReq, realmName, userID).Return([]kc.CredentialRepresentation{creds}, nil).Times(1)
+		mockKeycloakClient.EXPECT().GetCredentialsForUser(accessToken, realmReq, realmName, userID).Return([]kc.CredentialRepresentation{creds1, creds2}, nil).Times(1)
 		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
 		ctx = context.WithValue(ctx, "realm", realmReq)
 		status, err := managementComponent.GetUserAccountStatus(ctx, realmName, userID)
 		assert.Nil(t, err)
-		assert.True(t, status)
+		assert.True(t, status["enabled"])
 	}
 }
 

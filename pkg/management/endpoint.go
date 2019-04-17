@@ -45,7 +45,7 @@ type ManagementComponent interface {
 	UpdateUser(ctx context.Context, realmName, userID string, user api.UserRepresentation) error
 	GetUsers(ctx context.Context, realmName, group string, paramKV ...string) ([]api.UserRepresentation, error)
 	CreateUser(ctx context.Context, realmName string, user api.UserRepresentation) (string, error)
-	GetUserAccountStatus(ctx context.Context, realmName, userID string) (bool, error)
+	GetUserAccountStatus(ctx context.Context, realmName, userID string) (map[string]bool, error)
 	GetClientRolesForUser(ctx context.Context, realmName, userID, clientID string) ([]api.RoleRepresentation, error)
 	AddClientRolesToUser(ctx context.Context, realmName, userID, clientID string, roles []api.RoleRepresentation) error
 	GetRealmRolesForUser(ctx context.Context, realmName, userID string) ([]api.RoleRepresentation, error)

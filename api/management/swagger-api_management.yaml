@@ -248,6 +248,8 @@ paths:
           description: successful operation
           content:
             application/json:
+              schema:
+                $ref: '#/components/schemas/UserStatus'
   /realms/{realm}/users/{userID}/role-mappings/clients/{clientID}:
     get:
       tags:
@@ -601,6 +603,11 @@ components:
           type: string
         birthDate:
           type: string
+    UserStatus:
+      type: object
+      properties:
+        enabled:
+          type: boolean
     Client:
       type: object
       properties:

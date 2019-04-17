@@ -240,9 +240,9 @@ func (mr *ManagementComponentMockRecorder) GetUser(arg0, arg1, arg2 interface{})
 }
 
 // GetUserAccountStatus mocks base method
-func (m *ManagementComponent) GetUserAccountStatus(arg0 context.Context, arg1, arg2 string) (bool, error) {
+func (m *ManagementComponent) GetUserAccountStatus(arg0 context.Context, arg1, arg2 string) (map[string]bool, error) {
 	ret := m.ctrl.Call(m, "GetUserAccountStatus", arg0, arg1, arg2)
-	ret0, _ := ret[0].(bool)
+	ret0, _ := ret[0].(map[string]bool)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
