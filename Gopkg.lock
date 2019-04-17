@@ -19,19 +19,11 @@
 
 [[projects]]
   branch = "master"
-<<<<<<< HEAD
   digest = "1:2276e1aa87fc57d4af1091b22aad776635973a1e0764c91c88e1a28edad426ef"
   name = "github.com/cloudtrust/keycloak-client"
   packages = ["."]
   pruneopts = ""
   revision = "0d5f98aceb4c163562b8474fb3665e0e2c400ce5"
-=======
-  digest = "1:add9addd1e9f693f228f2818f3a08df0df2d3ec7c453614c8a4d113e2cc2fbd0"
-  name = "github.com/cloudtrust/keycloak-client"
-  packages = ["."]
-  pruneopts = ""
-  revision = "cf331b0198778ec8dea897dddf99a00720f5f273"
->>>>>>> origin/master
   source = "github.com/cloudtrust/keycloak-client"
 
 [[projects]]
@@ -137,17 +129,6 @@
   pruneopts = ""
   revision = "c0698cc33f1e534bb59c455909b88cc2726089af"
   version = "v1.10.0"
-<<<<<<< HEAD
-
-[[projects]]
-  digest = "1:66d63ec7b6035984dced87ad37066e5f4ad277c60234a9d9925537248e983200"
-  name = "github.com/gorilla/handlers"
-  packages = ["."]
-  pruneopts = ""
-  revision = "7e0847f9db758cdebd26c149d0ae9d5d0b9c98ce"
-  version = "v1.4.0"
-=======
->>>>>>> origin/master
 
 [[projects]]
   digest = "1:65c7ed49d9f36dd4752e43013323fa9229db60b29aa4f5a75aaecda3130c74e2"
@@ -282,7 +263,6 @@
   revision = "1555304b9b35fdd2b425bccf1a5613677705e7d0"
 
 [[projects]]
-<<<<<<< HEAD
   digest = "1:5f47c69f85311c4dc292be6cc995a0a3fe8337a6ce38ef4f71e5b7efd5ad42e0"
   name = "github.com/rs/cors"
   packages = ["."]
@@ -291,8 +271,6 @@
   version = "v1.6.0"
 
 [[projects]]
-=======
->>>>>>> origin/master
   digest = "1:956f655c87b7255c6b1ae6c203ebb0af98cf2a13ef2507e34c9bf1c0332ac0f5"
   name = "github.com/spf13/afero"
   packages = [
@@ -420,19 +398,11 @@
 
 [[projects]]
   branch = "master"
-<<<<<<< HEAD
-  digest = "1:8057045675a7eb88a1767bbafc4594663e1e46d854a850e562d06153fdca3d4e"
-  name = "golang.org/x/sys"
-  packages = ["unix"]
-  pruneopts = ""
-  revision = "3fd5a3612ccd7907f26270fa92579a0f2f76f734"
-=======
   digest = "1:f7a97e61c26ae90937f3cab6ff72a80f283008c9b23f3e7245036478ca05793a"
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = ""
   revision = "ebb4019f01c946537c3ea6b99f0eca5283552a8f"
->>>>>>> origin/master
 
 [[projects]]
   digest = "1:5acd3512b047305d49e8763eef7ba423901e85d5dd2fd1e71778a0ea8de10bd4"
@@ -591,7 +561,6 @@
     "github.com/go-sql-driver/mysql",
     "github.com/golang/mock/gomock",
     "github.com/google/flatbuffers/go",
-    "github.com/gorilla/handlers",
     "github.com/gorilla/mux",
     "github.com/influxdata/influxdb/client/v2",
     "github.com/lib/pq",
