@@ -456,6 +456,33 @@ paths:
       responses:
         200:
           description: successful operation
+  /realms/{realm}/users/{userID}/events:
+    get:
+      tags:
+      - Events
+      summary: Get all events for the user
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Event'
   /realms/{realm}/roles:
     get:
       tags:
