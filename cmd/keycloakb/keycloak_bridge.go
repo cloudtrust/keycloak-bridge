@@ -34,7 +34,6 @@ import (
 	influx "github.com/influxdata/influxdb/client/v2"
 	_ "github.com/lib/pq"
 	opentracing "github.com/opentracing/opentracing-go"
-	"github.com/rs/cors"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	jaeger "github.com/uber/jaeger-client-go/config"
@@ -53,16 +52,6 @@ var (
 	// GitCommit is filled by the compiler.
 	GitCommit = "unknown"
 )
-
-// Influx client.
-type Metrics interface {
-	NewCounter(name string) metrics.Counter
-	NewGauge(name string) metrics.Gauge
-	NewHistogram(name string) metrics.Histogram
-	WriteLoop(c <-chan time.Time)
-	Write(bp influx.BatchPoints) error
-	Ping(timeout time.Duration) (time.Duration, string, error)
-}
 
 func init() {
 	rand.Seed(time.Now().UTC().UnixNano())
@@ -92,7 +81,7 @@ func main() {
 		}
 
 		// Enabled units
-		eventsDBEnabled   = c.GetBool("events-db")
+		eventsDBEnabled   = c.GetBool("events-DB")
 		influxEnabled     = c.GetBool("influx")
 		jaegerEnabled     = c.GetBool("jaeger")
 		sentryEnabled     = c.GetBool("sentry")
@@ -129,28 +118,18 @@ func main() {
 		// Sentry
 		sentryDSN = c.GetString("sentry-dsn")
 
-		// DB - for the moment used just for audit events
-		dbHostPort        = c.GetString("db-host-port")
-		dbUsername        = c.GetString("db-username")
-		dbPassword        = c.GetString("db-password")
-		dbDatabase        = c.GetString("db-database")
-		dbProtocol        = c.GetString("db-protocol")
-		dbMaxOpenConns    = c.GetInt("db-max-open-conns")
-		dbMaxIdleConns    = c.GetInt("db-max-idle-conns")
-		dbConnMaxLifetime = c.GetInt("db-conn-max-lifetime")
+		// EventsDB
+		eventsDBHostPort = c.GetString("db-host-port")
+		eventsDBUsername = c.GetString("db-username")
+		eventsDBPassword = c.GetString("db-password")
+		eventsDBDatabase = c.GetString("db-database")
+		//eventsDBTable    = c.GetString("db-table")
+		eventsDBProtocol = c.GetString("protocol")
 
 		// Rate limiting
 		rateLimit = map[string]int{
 			"event":      c.GetInt("rate-event"),
 			"management": c.GetInt("rate-management"),
-		}
-
-		corsOptions = cors.Options{
-			AllowedOrigins:   c.GetStringSlice("cors-allowed-origins"),
-			AllowedMethods:   c.GetStringSlice("cors-allowed-methods"),
-			AllowCredentials: c.GetBool("cors-allow-credential"),
-			AllowedHeaders:   c.GetStringSlice("cors-allowed-headers"),
-			Debug:            c.GetBool("cors-debug"),
 		}
 	)
 
@@ -202,6 +181,16 @@ func main() {
 		defer sentryClient.Close()
 	}
 
+	// Influx client.
+	type Metrics interface {
+		NewCounter(name string) metrics.Counter
+		NewGauge(name string) metrics.Gauge
+		NewHistogram(name string) metrics.Histogram
+		WriteLoop(c <-chan time.Time)
+		Write(bp influx.BatchPoints) error
+		Ping(timeout time.Duration) (time.Duration, string, error)
+	}
+
 	var influxMetrics Metrics = &keycloakb.NoopMetrics{}
 	if influxEnabled {
 		var logger = log.With(logger, "unit", "influx")
@@ -240,26 +229,23 @@ func main() {
 	// Audit events DB.
 	type EventsDB interface {
 		Exec(query string, args ...interface{}) (sql.Result, error)
+		//Ping() error
+		Query(query string, args ...interface{}) (*sql.Rows, error)
 		QueryRow(query string, args ...interface{}) *sql.Row
-		SetMaxOpenConns(n int)
-		SetMaxIdleConns(n int)
-		SetConnMaxLifetime(d time.Duration)
 	}
 
 	var eventsDBConn EventsDB = keycloakb.NoopEventsDB{}
 	if eventsDBEnabled {
 		var err error
-		eventsDBConn, err = sql.Open("mysql", fmt.Sprintf("%s:%s@%s(%s)/%s", dbUsername, dbPassword, dbProtocol, dbHostPort, dbDatabase))
+		eventsDBConn, err = sql.Open("mysql", fmt.Sprintf("%s:%s@%s(%s)/%s", eventsDBUsername, eventsDBPassword, eventsDBProtocol, eventsDBHostPort, eventsDBDatabase))
+		//eventsDBConn, err = sql.Open("mysql", "root:admin@tcp(127.0.0.1:3306)/auditevents")
+
+		//logger.Log("msg", fmt.Sprintf("%s:%s@%s(%s)/%s", eventsDBUsername, eventsDBPassword, eventsDBProtocol, eventsDBHostPort, eventsDBDatabase))
 
 		if err != nil {
 			logger.Log("msg", "could not create DB connection for audit events", "error", err)
 			return
 		}
-		// the config of the DB should have a max_connections > SetMaxOpenConns
-		eventsDBConn.SetMaxOpenConns(dbMaxOpenConns)
-		eventsDBConn.SetMaxIdleConns(dbMaxIdleConns)
-		eventsDBConn.SetConnMaxLifetime(time.Duration(dbConnMaxLifetime) * time.Second)
-
 	}
 
 	// Event service.
@@ -343,43 +329,210 @@ func main() {
 	{
 		var managementLogger = log.With(logger, "svc", "management")
 
-		// module to store API calls of the back office to the DB
-		var eventsDBModule event.EventsDBModule
-		{
-			eventsDBModule = event.NewEventsDBModule(eventsDBConn)
-			eventsDBModule = event.MakeEventsDBModuleInstrumentingMW(influxMetrics.NewHistogram("eventsDB_module"))(eventsDBModule)
-			eventsDBModule = event.MakeEventsDBModuleLoggingMW(log.With(managementLogger, "mw", "module", "unit", "eventsDB"))(eventsDBModule)
-			eventsDBModule = event.MakeEventsDBModuleTracingMW(tracer)(eventsDBModule)
-
-		}
-
 		var keycloakComponent management.Component
 		{
-			keycloakComponent = management.NewComponent(keycloakClient, eventsDBModule)
+			keycloakComponent = management.NewComponent(keycloakClient)
+		}
+
+		var getRealmEndpoint endpoint.Endpoint
+		{
+			getRealmEndpoint = management.MakeGetRealmEndpoint(keycloakComponent)
+			getRealmEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("realm_endpoint"))(getRealmEndpoint)
+			getRealmEndpoint = middleware.MakeEndpointLoggingMW(log.With(managementLogger, "mw", "endpoint"))(getRealmEndpoint)
+			getRealmEndpoint = middleware.MakeEndpointTracingMW(tracer, "realm_endpoint")(getRealmEndpoint)
+			getRealmEndpoint = middleware.MakeEndpointTokenForRealmMW(log.With(managementLogger, "mw", "endpoint"))(getRealmEndpoint)
+			getRealmEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["management"]))(getRealmEndpoint)
+		}
+
+		var getClientEndpoint endpoint.Endpoint
+		{
+			getClientEndpoint = management.MakeGetClientEndpoint(keycloakComponent)
+			getClientEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("get_client_endpoint"))(getClientEndpoint)
+			getClientEndpoint = middleware.MakeEndpointLoggingMW(log.With(managementLogger, "mw", "endpoint"))(getClientEndpoint)
+			getClientEndpoint = middleware.MakeEndpointTracingMW(tracer, "get_client_endpoint")(getClientEndpoint)
+			getClientEndpoint = middleware.MakeEndpointTokenForRealmMW(log.With(managementLogger, "mw", "endpoint"))(getClientEndpoint)
+			getClientEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["management"]))(getClientEndpoint)
+		}
+
+		var getClientsEndpoint endpoint.Endpoint
+		{
+			getClientsEndpoint = management.MakeGetClientsEndpoint(keycloakComponent)
+			getClientsEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("get_clients_endpoint"))(getClientsEndpoint)
+			getClientsEndpoint = middleware.MakeEndpointLoggingMW(log.With(managementLogger, "mw", "endpoint"))(getClientsEndpoint)
+			getClientsEndpoint = middleware.MakeEndpointTracingMW(tracer, "get_clients_endpoint")(getClientsEndpoint)
+			getClientsEndpoint = middleware.MakeEndpointTokenForRealmMW(log.With(managementLogger, "mw", "endpoint"))(getClientsEndpoint)
+			getClientsEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["management"]))(getClientsEndpoint)
+		}
+
+		var getUserEndpoint endpoint.Endpoint
+		{
+			getUserEndpoint = management.MakeGetUserEndpoint(keycloakComponent)
+			getUserEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("get_user_endpoint"))(getUserEndpoint)
+			getUserEndpoint = middleware.MakeEndpointLoggingMW(log.With(managementLogger, "mw", "endpoint"))(getUserEndpoint)
+			getUserEndpoint = middleware.MakeEndpointTracingMW(tracer, "get_user_endpoint")(getUserEndpoint)
+			getUserEndpoint = middleware.MakeEndpointTokenForRealmMW(log.With(managementLogger, "mw", "endpoint"))(getUserEndpoint)
+			getUserEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["management"]))(getUserEndpoint)
+		}
+
+		var createUserEndpoint endpoint.Endpoint
+		{
+			createUserEndpoint = management.MakeCreateUserEndpoint(keycloakComponent)
+			createUserEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("create_user_endpoint"))(createUserEndpoint)
+			createUserEndpoint = middleware.MakeEndpointLoggingMW(log.With(managementLogger, "mw", "endpoint"))(createUserEndpoint)
+			createUserEndpoint = middleware.MakeEndpointTracingMW(tracer, "create_user_endpoint")(createUserEndpoint)
+			createUserEndpoint = middleware.MakeEndpointTokenForRealmMW(log.With(managementLogger, "mw", "endpoint"))(createUserEndpoint)
+			createUserEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["management"]))(createUserEndpoint)
+		}
+
+		var updateUserEndpoint endpoint.Endpoint
+		{
+			updateUserEndpoint = management.MakeUpdateUserEndpoint(keycloakComponent)
+			updateUserEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("update_user_endpoint"))(updateUserEndpoint)
+			updateUserEndpoint = middleware.MakeEndpointLoggingMW(log.With(managementLogger, "mw", "endpoint"))(updateUserEndpoint)
+			updateUserEndpoint = middleware.MakeEndpointTracingMW(tracer, "update_user_endpoint")(updateUserEndpoint)
+			updateUserEndpoint = middleware.MakeEndpointTokenForRealmMW(log.With(managementLogger, "mw", "endpoint"))(updateUserEndpoint)
+			updateUserEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["management"]))(updateUserEndpoint)
+		}
+
+		var deleteUserEndpoint endpoint.Endpoint
+		{
+			deleteUserEndpoint = management.MakeDeleteUserEndpoint(keycloakComponent)
+			deleteUserEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("delete_user_endpoint"))(deleteUserEndpoint)
+			deleteUserEndpoint = middleware.MakeEndpointLoggingMW(log.With(managementLogger, "mw", "endpoint"))(deleteUserEndpoint)
+			deleteUserEndpoint = middleware.MakeEndpointTracingMW(tracer, "delete_user_endpoint")(deleteUserEndpoint)
+			deleteUserEndpoint = middleware.MakeEndpointTokenForRealmMW(log.With(managementLogger, "mw", "endpoint"))(deleteUserEndpoint)
+			deleteUserEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["management"]))(deleteUserEndpoint)
+		}
+
+		var getUsersEndpoint endpoint.Endpoint
+		{
+			getUsersEndpoint = management.MakeGetUsersEndpoint(keycloakComponent)
+			getUsersEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("get_users_endpoint"))(getUsersEndpoint)
+			getUsersEndpoint = middleware.MakeEndpointLoggingMW(log.With(managementLogger, "mw", "endpoint"))(getUsersEndpoint)
+			getUsersEndpoint = middleware.MakeEndpointTracingMW(tracer, "get_users_endpoint")(getUsersEndpoint)
+			getUsersEndpoint = middleware.MakeEndpointTokenForRealmMW(log.With(managementLogger, "mw", "endpoint"))(getUsersEndpoint)
+			getUsersEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["management"]))(getUsersEndpoint)
+		}
+
+		var getRolesEndpoint endpoint.Endpoint
+		{
+			getRolesEndpoint = management.MakeGetRolesEndpoint(keycloakComponent)
+			getRolesEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("get_roles_endpoint"))(getRolesEndpoint)
+			getRolesEndpoint = middleware.MakeEndpointLoggingMW(log.With(managementLogger, "mw", "endpoint"))(getRolesEndpoint)
+			getRolesEndpoint = middleware.MakeEndpointTracingMW(tracer, "get_roles_endpoint")(getRolesEndpoint)
+			getRolesEndpoint = middleware.MakeEndpointTokenForRealmMW(log.With(managementLogger, "mw", "endpoint"))(getRolesEndpoint)
+			getRolesEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["management"]))(getRolesEndpoint)
+		}
+
+		var getRoleEndpoint endpoint.Endpoint
+		{
+			getRoleEndpoint = management.MakeGetRoleEndpoint(keycloakComponent)
+			getRoleEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("get_role_endpoint"))(getRoleEndpoint)
+			getRoleEndpoint = middleware.MakeEndpointLoggingMW(log.With(managementLogger, "mw", "endpoint"))(getRoleEndpoint)
+			getRoleEndpoint = middleware.MakeEndpointTracingMW(tracer, "get_role_endpoint")(getRoleEndpoint)
+			getRoleEndpoint = middleware.MakeEndpointTokenForRealmMW(log.With(managementLogger, "mw", "endpoint"))(getRoleEndpoint)
+			getRoleEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["management"]))(getRoleEndpoint)
+		}
+
+		var createClientRoleEndpoint endpoint.Endpoint
+		{
+			createClientRoleEndpoint = management.MakeCreateClientRoleEndpoint(keycloakComponent)
+			createClientRoleEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("create_client_role_endpoint"))(createClientRoleEndpoint)
+			createClientRoleEndpoint = middleware.MakeEndpointLoggingMW(log.With(managementLogger, "mw", "endpoint"))(createClientRoleEndpoint)
+			createClientRoleEndpoint = middleware.MakeEndpointTracingMW(tracer, "create_client_role_endpoint")(createClientRoleEndpoint)
+			createClientRoleEndpoint = middleware.MakeEndpointTokenForRealmMW(log.With(managementLogger, "mw", "endpoint"))(createClientRoleEndpoint)
+			createClientRoleEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["management"]))(createClientRoleEndpoint)
+		}
+
+		var getClientRolesEndpoint endpoint.Endpoint
+		{
+			getClientRolesEndpoint = management.MakeGetClientRolesEndpoint(keycloakComponent)
+			getClientRolesEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("get_client_roles_endpoint"))(getClientRolesEndpoint)
+			getClientRolesEndpoint = middleware.MakeEndpointLoggingMW(log.With(managementLogger, "mw", "endpoint"))(getClientRolesEndpoint)
+			getClientRolesEndpoint = middleware.MakeEndpointTracingMW(tracer, "get_client_roles_endpoint")(getClientRolesEndpoint)
+			getClientRolesEndpoint = middleware.MakeEndpointTokenForRealmMW(log.With(managementLogger, "mw", "endpoint"))(getClientRolesEndpoint)
+			getClientRolesEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["management"]))(getClientRolesEndpoint)
+		}
+
+		var getClientRolesForUserEndpoint endpoint.Endpoint
+		{
+			getClientRolesForUserEndpoint = management.MakeGetClientRolesForUserEndpoint(keycloakComponent)
+			getClientRolesForUserEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("get_client_roles_for_user_endpoint"))(getClientRolesForUserEndpoint)
+			getClientRolesForUserEndpoint = middleware.MakeEndpointLoggingMW(log.With(managementLogger, "mw", "endpoint"))(getClientRolesForUserEndpoint)
+			getClientRolesForUserEndpoint = middleware.MakeEndpointTracingMW(tracer, "get_client_roles_for_user_endpoint")(getClientRolesForUserEndpoint)
+			getClientRolesForUserEndpoint = middleware.MakeEndpointTokenForRealmMW(log.With(managementLogger, "mw", "endpoint"))(getClientRolesForUserEndpoint)
+			getClientRolesForUserEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["management"]))(getClientRolesForUserEndpoint)
+		}
+
+		var addClientRolesToUserEndpoint endpoint.Endpoint
+		{
+			addClientRolesToUserEndpoint = management.MakeAddClientRolesToUserEndpoint(keycloakComponent)
+			addClientRolesToUserEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("get_client_roles_for_user_endpoint"))(addClientRolesToUserEndpoint)
+			addClientRolesToUserEndpoint = middleware.MakeEndpointLoggingMW(log.With(managementLogger, "mw", "endpoint"))(addClientRolesToUserEndpoint)
+			addClientRolesToUserEndpoint = middleware.MakeEndpointTracingMW(tracer, "get_client_roles_for_user_endpoint")(addClientRolesToUserEndpoint)
+			addClientRolesToUserEndpoint = middleware.MakeEndpointTokenForRealmMW(log.With(managementLogger, "mw", "endpoint"))(addClientRolesToUserEndpoint)
+			addClientRolesToUserEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["management"]))(addClientRolesToUserEndpoint)
+		}
+
+		var getRealmRolesForUserEndpoint endpoint.Endpoint
+		{
+			getRealmRolesForUserEndpoint = management.MakeGetRealmRolesForUserEndpoint(keycloakComponent)
+			getRealmRolesForUserEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("get_realm_roles_for_user_endpoint"))(getRealmRolesForUserEndpoint)
+			getRealmRolesForUserEndpoint = middleware.MakeEndpointLoggingMW(log.With(managementLogger, "mw", "endpoint"))(getRealmRolesForUserEndpoint)
+			getRealmRolesForUserEndpoint = middleware.MakeEndpointTracingMW(tracer, "get_realm_roles_for_user_endpoint")(getRealmRolesForUserEndpoint)
+			getRealmRolesForUserEndpoint = middleware.MakeEndpointTokenForRealmMW(log.With(managementLogger, "mw", "endpoint"))(getRealmRolesForUserEndpoint)
+			getRealmRolesForUserEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["management"]))(getRealmRolesForUserEndpoint)
+		}
+
+		var resetPasswordEndpoint endpoint.Endpoint
+		{
+			resetPasswordEndpoint = management.MakeResetPasswordEndpoint(keycloakComponent)
+			resetPasswordEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("reset_password_endpoint"))(resetPasswordEndpoint)
+			resetPasswordEndpoint = middleware.MakeEndpointLoggingMW(log.With(managementLogger, "mw", "endpoint"))(resetPasswordEndpoint)
+			resetPasswordEndpoint = middleware.MakeEndpointTracingMW(tracer, "reset_password_endpoint")(resetPasswordEndpoint)
+			resetPasswordEndpoint = middleware.MakeEndpointTokenForRealmMW(log.With(managementLogger, "mw", "endpoint"))(resetPasswordEndpoint)
+			resetPasswordEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["management"]))(resetPasswordEndpoint)
+		}
+
+		var sendVerifyEmailEndpoint endpoint.Endpoint
+		{
+			sendVerifyEmailEndpoint = management.MakeSendVerifyEmailEndpoint(keycloakComponent)
+			sendVerifyEmailEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("send_verify_email_endpoint"))(sendVerifyEmailEndpoint)
+			sendVerifyEmailEndpoint = middleware.MakeEndpointLoggingMW(log.With(managementLogger, "mw", "endpoint"))(sendVerifyEmailEndpoint)
+			sendVerifyEmailEndpoint = middleware.MakeEndpointTracingMW(tracer, "send_verify_email_endpoint")(sendVerifyEmailEndpoint)
+			sendVerifyEmailEndpoint = middleware.MakeEndpointTokenForRealmMW(log.With(managementLogger, "mw", "endpoint"))(sendVerifyEmailEndpoint)
+			sendVerifyEmailEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["management"]))(sendVerifyEmailEndpoint)
+		}
+
+		var executeActionsEmailEndpoint endpoint.Endpoint
+		{
+			executeActionsEmailEndpoint = management.MakeSendVerifyEmailEndpoint(keycloakComponent)
+			executeActionsEmailEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram("execute_actions_email_endpoint"))(executeActionsEmailEndpoint)
+			executeActionsEmailEndpoint = middleware.MakeEndpointLoggingMW(log.With(managementLogger, "mw", "endpoint"))(executeActionsEmailEndpoint)
+			executeActionsEmailEndpoint = middleware.MakeEndpointTracingMW(tracer, "execute_actions_email_endpoint")(executeActionsEmailEndpoint)
+			executeActionsEmailEndpoint = middleware.MakeEndpointTokenForRealmMW(log.With(managementLogger, "mw", "endpoint"))(executeActionsEmailEndpoint)
+			executeActionsEmailEndpoint = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["management"]))(executeActionsEmailEndpoint)
 		}
 
 		managementEndpoints = management.Endpoints{
-			GetRealms:                prepareEndpoint(management.MakeGetRealmsEndpoint(keycloakComponent), "realms_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
-			GetRealm:                 prepareEndpoint(management.MakeGetRealmEndpoint(keycloakComponent), "realm_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
-			GetClients:               prepareEndpoint(management.MakeGetClientsEndpoint(keycloakComponent), "get_clients_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
-			GetClient:                prepareEndpoint(management.MakeGetClientEndpoint(keycloakComponent), "get_client_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
-			CreateUser:               prepareEndpoint(management.MakeCreateUserEndpoint(keycloakComponent), "create_user_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
-			GetUser:                  prepareEndpoint(management.MakeGetUserEndpoint(keycloakComponent), "get_user_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
-			UpdateUser:               prepareEndpoint(management.MakeUpdateUserEndpoint(keycloakComponent), "update_user_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
-			DeleteUser:               prepareEndpoint(management.MakeDeleteUserEndpoint(keycloakComponent), "delete_user_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
-			GetUsers:                 prepareEndpoint(management.MakeGetUsersEndpoint(keycloakComponent), "get_users_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
-			GetUserAccountStatus:     prepareEndpoint(management.MakeGetUserAccountStatusEndpoint(keycloakComponent), "get_user_accountstatus", influxMetrics, managementLogger, tracer, rateLimit),
-			GetRoles:                 prepareEndpoint(management.MakeGetRolesEndpoint(keycloakComponent), "get_roles_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
-			GetRole:                  prepareEndpoint(management.MakeGetRoleEndpoint(keycloakComponent), "get_role_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
-			GetClientRoles:           prepareEndpoint(management.MakeGetClientRolesEndpoint(keycloakComponent), "get_client_roles_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
-			CreateClientRole:         prepareEndpoint(management.MakeCreateClientRoleEndpoint(keycloakComponent), "create_client_role_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
-			GetClientRoleForUser:     prepareEndpoint(management.MakeGetClientRolesForUserEndpoint(keycloakComponent), "get_client_roles_for_user_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
-			AddClientRoleToUser:      prepareEndpoint(management.MakeAddClientRolesToUserEndpoint(keycloakComponent), "get_client_roles_for_user_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
-			GetRealmRoleForUser:      prepareEndpoint(management.MakeGetRealmRolesForUserEndpoint(keycloakComponent), "get_realm_roles_for_user_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
-			ResetPassword:            prepareEndpoint(management.MakeResetPasswordEndpoint(keycloakComponent), "reset_password_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
-			SendVerifyEmail:          prepareEndpoint(management.MakeSendVerifyEmailEndpoint(keycloakComponent), "send_verify_email_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
-			GetCredentialsForUser:    prepareEndpoint(management.MakeGetCredentialsForUserEndpoint(keycloakComponent), "get_credentials_for_user_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
-			DeleteCredentialsForUser: prepareEndpoint(management.MakeDeleteCredentialsForUserEndpoint(keycloakComponent), "delete_credentials_for_user_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
+			GetRealm:             getRealmEndpoint,
+			GetClients:           getClientsEndpoint,
+			GetClient:            getClientEndpoint,
+			CreateUser:           createUserEndpoint,
+			GetUser:              getUserEndpoint,
+			UpdateUser:           updateUserEndpoint,
+			DeleteUser:           deleteUserEndpoint,
+			GetUsers:             getUsersEndpoint,
+			GetRoles:             getRolesEndpoint,
+			GetRole:              getRoleEndpoint,
+			GetClientRoles:       getClientRolesEndpoint,
+			CreateClientRole:     createClientRoleEndpoint,
+			GetClientRoleForUser: getClientRolesForUserEndpoint,
+			AddClientRoleToUser:  addClientRolesToUserEndpoint,
+			GetRealmRoleForUser:  getRealmRolesForUserEndpoint,
+			ResetPassword:        resetPasswordEndpoint,
+			SendVerifyEmail:      sendVerifyEmailEndpoint,
+			ExecuteActionsEmail:  executeActionsEmailEndpoint,
 		}
 	}
 
@@ -415,7 +568,6 @@ func main() {
 		// Management
 		var managementSubroute = route.PathPrefix("/management").Subrouter()
 
-		var getRealmsHandler = ConfigureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.GetRealms)
 		var getRealmHandler = ConfigureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.GetRealm)
 
 		var getClientsHandler = ConfigureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.GetClients)
@@ -426,8 +578,6 @@ func main() {
 		var updateUserHandler = ConfigureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.UpdateUser)
 		var deleteUserHandler = ConfigureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.DeleteUser)
 		var getUsersHandler = ConfigureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.GetUsers)
-
-		var getUserAccountStatusHandler = ConfigureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.GetUserAccountStatus)
 
 		var getClientRoleForUserHandler = ConfigureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.GetClientRoleForUser)
 		var addClientRoleToUserHandler = ConfigureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.AddClientRoleToUser)
@@ -440,12 +590,9 @@ func main() {
 
 		var resetPasswordHandler = ConfigureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.ResetPassword)
 		var sendVerifyEmailHandler = ConfigureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.SendVerifyEmail)
-
-		var getCredentialsForUserHandler = ConfigureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.GetCredentialsForUser)
-		var deleteCredentialsForUserHandler = ConfigureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.DeleteCredentialsForUser)
+		var executeActionsEmailHandler = ConfigureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.ExecuteActionsEmail)
 
 		//realms
-		managementSubroute.Path("/realms").Methods("GET").Handler(getRealmsHandler)
 		managementSubroute.Path("/realms/{realm}").Methods("GET").Handler(getRealmHandler)
 
 		//clients
@@ -459,16 +606,12 @@ func main() {
 		managementSubroute.Path("/realms/{realm}/users/{userID}").Methods("PUT").Handler(updateUserHandler)
 		managementSubroute.Path("/realms/{realm}/users/{userID}").Methods("DELETE").Handler(deleteUserHandler)
 
-		// account status
-		managementSubroute.Path("/realms/{realm}/users/{userID}/status").Methods("GET").Handler(getUserAccountStatusHandler)
-
 		managementSubroute.Path("/realms/{realm}/users/{userID}/role-mappings/clients/{clientID}").Methods("GET").Handler(getClientRoleForUserHandler)
 		managementSubroute.Path("/realms/{realm}/users/{userID}/role-mappings/clients/{clientID}").Methods("POST").Handler(addClientRoleToUserHandler)
 		managementSubroute.Path("/realms/{realm}/users/{userID}/role-mappings/realm").Methods("GET").Handler(getRealmRoleForUserHandler)
 		managementSubroute.Path("/realms/{realm}/users/{userID}/reset-password").Methods("PUT").Handler(resetPasswordHandler)
 		managementSubroute.Path("/realms/{realm}/users/{userID}/send-verify-email").Methods("PUT").Handler(sendVerifyEmailHandler)
-		managementSubroute.Path("/realms/{realm}/users/{userID}/credentials").Methods("GET").Handler(getCredentialsForUserHandler)
-		managementSubroute.Path("/realms/{realm}/users/{userID}/credentials/{credentialID}").Methods("DELETE").Handler(deleteCredentialsForUserHandler)
+		managementSubroute.Path("/realms/{realm}/users/{userID}/execute-actions-email").Methods("PUT").Handler(executeActionsEmailHandler)
 		//roles
 		managementSubroute.Path("/realms/{realm}/roles").Methods("GET").Handler(getRolesHandler)
 		managementSubroute.Path("/realms/{realm}/roles-by-id/{roleID}").Methods("GET").Handler(getRoleHandler)
@@ -489,9 +632,7 @@ func main() {
 			debugSubroute.HandleFunc("/pprof/trace", http.HandlerFunc(pprof.Trace))
 		}
 
-		c := cors.New(corsOptions)
-		errc <- http.ListenAndServe(httpAddr, c.Handler(route))
-
+		errc <- http.ListenAndServe(httpAddr, route)
 	}()
 
 	// Influx writing.
@@ -542,13 +683,6 @@ func config(logger log.Logger) *viper.Viper {
 	v.SetDefault("config-file", "./configs/keycloak_bridge.yml")
 	v.SetDefault("component-http-host-port", "0.0.0.0:8888")
 
-	// CORS configuration
-	v.SetDefault("cors-allowed-origins", []string{})
-	v.SetDefault("cors-allowed-methods", []string{})
-	v.SetDefault("cors-allow-credentials", true)
-	v.SetDefault("cors-allowed-headers", []string{})
-	v.SetDefault("cors-debug", false)
-
 	// Keycloak default.
 	v.SetDefault("keycloak", true)
 	v.SetDefault("keycloak-api-uri", "http://127.0.0.1:8080")
@@ -558,18 +692,13 @@ func config(logger log.Logger) *viper.Viper {
 	v.SetDefault("keycloak-timeout", "5s")
 
 	//Storage events in DB
-	v.SetDefault("events-db", false)
-
-	// DB
+	v.SetDefault("events-DB", false)
 	v.SetDefault("db-host-port", "")
 	v.SetDefault("db-username", "")
 	v.SetDefault("db-password", "")
 	v.SetDefault("db-database", "")
 	v.SetDefault("db-table", "")
-	v.SetDefault("db-protocol", "")
-	v.SetDefault("db-max-open-conns", 10)
-	v.SetDefault("db-max-idle-conns", 2)
-	v.SetDefault("db-conn-max-lifetime", 3600)
+	v.SetDefault("protocol", "")
 
 	// Rate limiting (in requests/second)
 	v.SetDefault("rate-event", 1000)
@@ -636,13 +765,4 @@ func ConfigureManagementHandler(ComponentName string, ComponentID string, idGene
 		handler = middleware.MakeHTTPOIDCTokenValidationMW(keycloakClient, logger)(handler)
 		return handler
 	}
-}
-
-func prepareEndpoint(e endpoint.Endpoint, endpointName string, influxMetrics Metrics, managementLogger log.Logger, tracer opentracing.Tracer, rateLimit map[string]int) endpoint.Endpoint {
-	e = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram(endpointName))(e)
-	e = middleware.MakeEndpointLoggingMW(log.With(managementLogger, "mw", "endpoint"))(e)
-	e = middleware.MakeEndpointTracingMW(tracer, endpointName)(e)
-	e = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["management"]))(e)
-
-	return e
 }
