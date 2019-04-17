@@ -32,6 +32,7 @@ type Endpoints struct {
 	GetRole                  endpoint.Endpoint
 	GetClientRoles           endpoint.Endpoint
 	CreateClientRole         endpoint.Endpoint
+	ExecuteActionsEmail      endpoint.Endpoint
 }
 
 // ManagementComponent is the interface of the component to send a query to Keycloak.
@@ -57,6 +58,7 @@ type ManagementComponent interface {
 	GetRole(ctx context.Context, realmName string, roleID string) (api.RoleRepresentation, error)
 	GetClientRoles(ctx context.Context, realmName, idClient string) ([]api.RoleRepresentation, error)
 	CreateClientRole(ctx context.Context, realmName, clientID string, role api.RoleRepresentation) (string, error)
+	ExecuteActionsEmail(ctx context.Context, realmName string, userID string, actions []string, paramKV ...string) error
 }
 
 // MakeRealmsEndpoint makes the Realms endpoint to retrieve all available realms.
@@ -307,6 +309,29 @@ func MakeCreateClientRoleEndpoint(managementComponent ManagementComponent) endpo
 		return LocationHeader{
 			URL: convertLocationUrl(keycloakLocation, m["scheme"], m["host"]),
 		}, nil
+	}
+}
+
+func MakeExecuteActionsEmailEndpoint(managementComponent ManagementComponent) endpoint.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+
+		var paramKV []string
+		for _, key := range []string{"client_id", "redirect_uri", "lifespan"} {
+			if m[key] != "" {
+				paramKV = append(paramKV, key, m[key])
+			}
+		}
+
+		//extract the actions
+		var actions []string
+		err := json.Unmarshal([]byte(m["actions"]), &actions)
+
+		if err != nil {
+			return nil, err
+		}
+
+		return nil, managementComponent.ExecuteActionsEmail(ctx, m["realm"], m["userID"], actions, paramKV...)
 	}
 }
 
