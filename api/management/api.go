@@ -5,17 +5,18 @@ import (
 )
 
 type UserRepresentation struct {
-	Id            *string `json:"id,omitempty"`
-	Username      *string `json:"username,omitempty"`
-	Email         *string `json:"email,omitempty"`
-	Enabled       *bool   `json:"enabled,omitempty"`
-	EmailVerified *bool   `json:"emailVerified,omitempty"`
-	FirstName     *string `json:"firstName,omitempty"`
-	LastName      *string `json:"lastName,omitempty"`
-	MobilePhone   *string `json:"mobilePhone,omitempty"`
-	Label         *string `json:"label,omitempty"`
-	Gender        *string `json:"gender,omitempty"`
-	BirthDate     *string `json:"birthDate,omitempty"`
+	Id               *string `json:"id,omitempty"`
+	Username         *string `json:"username,omitempty"`
+	Email            *string `json:"email,omitempty"`
+	Enabled          *bool   `json:"enabled,omitempty"`
+	EmailVerified    *bool   `json:"emailVerified,omitempty"`
+	FirstName        *string `json:"firstName,omitempty"`
+	LastName         *string `json:"lastName,omitempty"`
+	MobilePhone      *string `json:"mobilePhone,omitempty"`
+	Label            *string `json:"label,omitempty"`
+	Gender           *string `json:"gender,omitempty"`
+	BirthDate        *string `json:"birthDate,omitempty"`
+	CreatedTimestamp *int64  `json:"createdTimestamp,omitempty"`
 }
 
 type RealmRepresentation struct {

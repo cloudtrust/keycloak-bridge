@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
 	"github.com/cloudtrust/keycloak-bridge/pkg/management/mock"
@@ -411,6 +412,7 @@ func TestGetUser(t *testing.T) {
 		var label = "Label"
 		var gender = "M"
 		var birthDate = "01/01/1988"
+		var createdTimestamp = time.Now().UTC().Unix()
 
 		var attributes = make(map[string][]string)
 		attributes["mobilephone"] = []string{mobilePhone}
@@ -419,14 +421,15 @@ func TestGetUser(t *testing.T) {
 		attributes["birthDate"] = []string{birthDate}
 
 		var kcUserRep = kc.UserRepresentation{
-			Id:            &id,
-			Username:      &username,
-			Email:         &email,
-			Enabled:       &enabled,
-			EmailVerified: &emailVerified,
-			FirstName:     &firstName,
-			LastName:      &lastName,
-			Attributes:    &attributes,
+			Id:               &id,
+			Username:         &username,
+			Email:            &email,
+			Enabled:          &enabled,
+			EmailVerified:    &emailVerified,
+			FirstName:        &firstName,
+			LastName:         &lastName,
+			Attributes:       &attributes,
+			CreatedTimestamp: &createdTimestamp,
 		}
 
 		mockKeycloakClient.EXPECT().GetUser(accessToken, realmName, id).Return(kcUserRep, nil).Times(1)
@@ -446,6 +449,7 @@ func TestGetUser(t *testing.T) {
 		assert.Equal(t, label, *apiUserRep.Label)
 		assert.Equal(t, gender, *apiUserRep.Gender)
 		assert.Equal(t, birthDate, *apiUserRep.BirthDate)
+		assert.Equal(t, createdTimestamp, *apiUserRep.CreatedTimestamp)
 	}
 
 	//Error
@@ -563,6 +567,7 @@ func TestGetUsers(t *testing.T) {
 		var label = "Label"
 		var gender = "M"
 		var birthDate = "01/01/1988"
+		var createdTimestamp = time.Now().UTC().Unix()
 
 		var attributes = make(map[string][]string)
 		attributes["mobilephone"] = []string{mobilePhone}
@@ -571,14 +576,15 @@ func TestGetUsers(t *testing.T) {
 		attributes["birthDate"] = []string{birthDate}
 
 		var kcUserRep = kc.UserRepresentation{
-			Id:            &id,
-			Username:      &username,
-			Email:         &email,
-			Enabled:       &enabled,
-			EmailVerified: &emailVerified,
-			FirstName:     &firstName,
-			LastName:      &lastName,
-			Attributes:    &attributes,
+			Id:               &id,
+			Username:         &username,
+			Email:            &email,
+			Enabled:          &enabled,
+			EmailVerified:    &emailVerified,
+			FirstName:        &firstName,
+			LastName:         &lastName,
+			Attributes:       &attributes,
+			CreatedTimestamp: &createdTimestamp,
 		}
 
 		var kcUsersRep []kc.UserRepresentation
@@ -602,6 +608,7 @@ func TestGetUsers(t *testing.T) {
 		assert.Equal(t, label, *apiUserRep.Label)
 		assert.Equal(t, gender, *apiUserRep.Gender)
 		assert.Equal(t, birthDate, *apiUserRep.BirthDate)
+		assert.Equal(t, createdTimestamp, *apiUserRep.CreatedTimestamp)
 	}
 
 	//Error

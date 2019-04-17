@@ -210,6 +210,7 @@ func (c *component) GetUser(ctx context.Context, realmName, userID string) (api.
 	userRep.EmailVerified = userKc.EmailVerified
 	userRep.FirstName = userKc.FirstName
 	userRep.LastName = userKc.LastName
+	userRep.CreatedTimestamp = userKc.CreatedTimestamp
 
 	if userKc.Attributes != nil {
 		var m = *userKc.Attributes
@@ -293,6 +294,7 @@ func (c *component) GetUsers(ctx context.Context, realmName string, group string
 		userRep.EmailVerified = userKc.EmailVerified
 		userRep.FirstName = userKc.FirstName
 		userRep.LastName = userKc.LastName
+		userRep.CreatedTimestamp = userKc.CreatedTimestamp
 
 		if userKc.Attributes != nil {
 			var m = *userKc.Attributes
