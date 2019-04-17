@@ -95,6 +95,23 @@ func (mr *KeycloakClientMockRecorder) DeleteUser(arg0, arg1, arg2 interface{}) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteUser", reflect.TypeOf((*KeycloakClient)(nil).DeleteUser), arg0, arg1, arg2)
 }
 
+// ExecuteActionsEmail mocks base method
+func (m *KeycloakClient) ExecuteActionsEmail(arg0, arg1, arg2 string, arg3 []string, arg4 ...string) error {
+	varargs := []interface{}{arg0, arg1, arg2, arg3}
+	for _, a := range arg4 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "ExecuteActionsEmail", varargs...)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ExecuteActionsEmail indicates an expected call of ExecuteActionsEmail
+func (mr *KeycloakClientMockRecorder) ExecuteActionsEmail(arg0, arg1, arg2, arg3 interface{}, arg4 ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{arg0, arg1, arg2, arg3}, arg4...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExecuteActionsEmail", reflect.TypeOf((*KeycloakClient)(nil).ExecuteActionsEmail), varargs...)
+}
+
 // GetClient mocks base method
 func (m *KeycloakClient) GetClient(arg0, arg1, arg2 string) (keycloak_client.ClientRepresentation, error) {
 	ret := m.ctrl.Call(m, "GetClient", arg0, arg1, arg2)
