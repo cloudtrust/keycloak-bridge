@@ -191,6 +191,19 @@ func (mr *KeycloakClientMockRecorder) GetRealmLevelRoleMappings(arg0, arg1, arg2
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRealmLevelRoleMappings", reflect.TypeOf((*KeycloakClient)(nil).GetRealmLevelRoleMappings), arg0, arg1, arg2)
 }
 
+// GetRealms mocks base method
+func (m *KeycloakClient) GetRealms(arg0 string) ([]keycloak_client.RealmRepresentation, error) {
+	ret := m.ctrl.Call(m, "GetRealms", arg0)
+	ret0, _ := ret[0].([]keycloak_client.RealmRepresentation)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRealms indicates an expected call of GetRealms
+func (mr *KeycloakClientMockRecorder) GetRealms(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRealms", reflect.TypeOf((*KeycloakClient)(nil).GetRealms), arg0)
+}
+
 // GetRole mocks base method
 func (m *KeycloakClient) GetRole(arg0, arg1, arg2 string) (keycloak_client.RoleRepresentation, error) {
 	ret := m.ctrl.Call(m, "GetRole", arg0, arg1, arg2)

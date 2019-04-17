@@ -34,6 +34,7 @@ import (
 	influx "github.com/influxdata/influxdb/client/v2"
 	_ "github.com/lib/pq"
 	opentracing "github.com/opentracing/opentracing-go"
+	"github.com/rs/cors"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	jaeger "github.com/uber/jaeger-client-go/config"
@@ -142,6 +143,14 @@ func main() {
 		rateLimit = map[string]int{
 			"event":      c.GetInt("rate-event"),
 			"management": c.GetInt("rate-management"),
+		}
+
+		corsOptions = cors.Options{
+			AllowedOrigins:   c.GetStringSlice("cors-allowed-origins"),
+			AllowedMethods:   c.GetStringSlice("cors-allowed-methods"),
+			AllowCredentials: c.GetBool("cors-allow-credential"),
+			AllowedHeaders:   c.GetStringSlice("cors-allowed-headers"),
+			Debug:            c.GetBool("cors-debug"),
 		}
 	)
 
@@ -350,6 +359,7 @@ func main() {
 		}
 
 		managementEndpoints = management.Endpoints{
+			GetRealms:                prepareEndpoint(management.MakeGetRealmsEndpoint(keycloakComponent), "realms_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
 			GetRealm:                 prepareEndpoint(management.MakeGetRealmEndpoint(keycloakComponent), "realm_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
 			GetClients:               prepareEndpoint(management.MakeGetClientsEndpoint(keycloakComponent), "get_clients_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
 			GetClient:                prepareEndpoint(management.MakeGetClientEndpoint(keycloakComponent), "get_client_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
@@ -405,6 +415,7 @@ func main() {
 		// Management
 		var managementSubroute = route.PathPrefix("/management").Subrouter()
 
+		var getRealmsHandler = ConfigureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.GetRealms)
 		var getRealmHandler = ConfigureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.GetRealm)
 
 		var getClientsHandler = ConfigureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.GetClients)
@@ -434,6 +445,7 @@ func main() {
 		var deleteCredentialsForUserHandler = ConfigureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.DeleteCredentialsForUser)
 
 		//realms
+		managementSubroute.Path("/realms").Methods("GET").Handler(getRealmsHandler)
 		managementSubroute.Path("/realms/{realm}").Methods("GET").Handler(getRealmHandler)
 
 		//clients
@@ -477,7 +489,9 @@ func main() {
 			debugSubroute.HandleFunc("/pprof/trace", http.HandlerFunc(pprof.Trace))
 		}
 
-		errc <- http.ListenAndServe(httpAddr, route)
+		c := cors.New(corsOptions)
+		errc <- http.ListenAndServe(httpAddr, c.Handler(route))
+
 	}()
 
 	// Influx writing.
@@ -527,6 +541,13 @@ func config(logger log.Logger) *viper.Viper {
 	// Component default.
 	v.SetDefault("config-file", "./configs/keycloak_bridge.yml")
 	v.SetDefault("component-http-host-port", "0.0.0.0:8888")
+
+	// CORS configuration
+	v.SetDefault("cors-allowed-origins", []string{})
+	v.SetDefault("cors-allowed-methods", []string{})
+	v.SetDefault("cors-allow-credentials", true)
+	v.SetDefault("cors-allowed-headers", []string{})
+	v.SetDefault("cors-debug", false)
 
 	// Keycloak default.
 	v.SetDefault("keycloak", true)
@@ -621,7 +642,6 @@ func prepareEndpoint(e endpoint.Endpoint, endpointName string, influxMetrics Met
 	e = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram(endpointName))(e)
 	e = middleware.MakeEndpointLoggingMW(log.With(managementLogger, "mw", "endpoint"))(e)
 	e = middleware.MakeEndpointTracingMW(tracer, endpointName)(e)
-	e = middleware.MakeEndpointTokenForRealmMW(log.With(managementLogger, "mw", "endpoint"))(e)
 	e = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["management"]))(e)
 
 	return e

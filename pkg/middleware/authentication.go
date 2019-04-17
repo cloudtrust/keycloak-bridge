@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/gbrlsnchs/jwt"
-	"github.com/go-kit/kit/endpoint"
 	"github.com/go-kit/kit/log"
 )
 
@@ -35,7 +34,7 @@ func MakeHTTPOIDCTokenValidationMW(keycloakClient KeycloakClient, logger log.Log
 				return
 			}
 
-			var matched, _ = regexp.MatchString(`^Bearer *`, authorizationHeader)
+			var matched, _ = regexp.MatchString(`^[Bb]earer *`, authorizationHeader)
 
 			if !matched {
 				logger.Log("Authorisation Error", "Missing bearer token")
@@ -44,6 +43,11 @@ func MakeHTTPOIDCTokenValidationMW(keycloakClient KeycloakClient, logger log.Log
 			}
 
 			var splitToken = strings.Split(authorizationHeader, "Bearer ")
+
+			if len(splitToken) < 2 {
+				splitToken = strings.Split(authorizationHeader, "bearer ")
+			}
+
 			var accessToken = splitToken[1]
 
 			payload, _, err := jwt.Parse(accessToken)
@@ -61,7 +65,7 @@ func MakeHTTPOIDCTokenValidationMW(keycloakClient KeycloakClient, logger log.Log
 			}
 
 			var username = jot.Username
-			var issuer = jot.JWT.Issuer
+			var issuer = jot.Issuer
 			var splitIssuer = strings.Split(issuer, "/auth/realms/")
 			var realm = splitIssuer[1]
 
@@ -81,32 +85,22 @@ func MakeHTTPOIDCTokenValidationMW(keycloakClient KeycloakClient, logger log.Log
 }
 
 // Token is JWT token and the custom fields present in OIDC Token provided by Keycloak.
+// We need to define our own structure as the library define aud as a string instead of a string array.
 type Token struct {
-	*jwt.JWT
-	Username string `json:"preferred_username,omitempty"`
+	hdr            *header
+	Issuer         string   `json:"iss,omitempty"`
+	Subject        string   `json:"sub,omitempty"`
+	Audience       []string `json:"aud,omitempty"`
+	ExpirationTime int64    `json:"exp,omitempty"`
+	NotBefore      int64    `json:"nbf,omitempty"`
+	IssuedAt       int64    `json:"iat,omitempty"`
+	ID             string   `json:"jti,omitempty"`
+	Username       string   `json:"preferred_username,omitempty"`
 }
 
-// MakeEndpointTokenForRealmMW makes a Endpoint middleware responsible to ensure
-// the request is allowed to perform the operation for the current realm.
-// During validation of JWT token, the realm of the token has been added into context.
-// This MW ensure the realm of the Token match the target realm of the request.
-func MakeEndpointTokenForRealmMW(logger log.Logger) endpoint.Middleware {
-	return func(next endpoint.Endpoint) endpoint.Endpoint {
-		return func(ctx context.Context, req interface{}) (interface{}, error) {
-			// Retrieve the realm of the context
-			var realmAuthorized = ctx.Value("realm")
-
-			// Extract the target realm of the request
-			var m = req.(map[string]string)
-			var realmRequested = m["realm"]
-			
-			// Assert both realms match
-			if realmAuthorized != realmRequested {
-				//TODO create a specific error to map it on 403
-				return ctx, fmt.Errorf("Invalid realm")
-			}
-
-			return next(ctx, req)
-		}
-	}
+type header struct {
+	Algorithm   string `json:"alg,omitempty"`
+	KeyID       string `json:"kid,omitempty"`
+	Type        string `json:"typ,omitempty"`
+	ContentType string `json:"cty,omitempty"`
 }

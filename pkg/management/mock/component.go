@@ -187,6 +187,19 @@ func (mr *ManagementComponentMockRecorder) GetRealmRolesForUser(arg0, arg1, arg2
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRealmRolesForUser", reflect.TypeOf((*ManagementComponent)(nil).GetRealmRolesForUser), arg0, arg1, arg2)
 }
 
+// GetRealms mocks base method
+func (m *ManagementComponent) GetRealms(arg0 context.Context) ([]management.RealmRepresentation, error) {
+	ret := m.ctrl.Call(m, "GetRealms", arg0)
+	ret0, _ := ret[0].([]management.RealmRepresentation)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRealms indicates an expected call of GetRealms
+func (mr *ManagementComponentMockRecorder) GetRealms(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRealms", reflect.TypeOf((*ManagementComponent)(nil).GetRealms), arg0)
+}
+
 // GetRole mocks base method
 func (m *ManagementComponent) GetRole(arg0 context.Context, arg1, arg2 string) (management.RoleRepresentation, error) {
 	ret := m.ctrl.Call(m, "GetRole", arg0, arg1, arg2)

@@ -5,14 +5,11 @@ package middleware
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	api "github.com/cloudtrust/keycloak-bridge/api/management"
-	"github.com/cloudtrust/keycloak-bridge/pkg/management"
 	"github.com/cloudtrust/keycloak-bridge/pkg/middleware/mock"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -62,6 +59,8 @@ func TestHTTPOIDCTokenValidationMW(t *testing.T) {
 		assert.Equal(t, 200, result.StatusCode)
 	}
 
+	req.Header.Set("Authorization", "bearer "+token)
+
 	// Invalid authorization token.
 	{
 		var w = httptest.NewRecorder()
@@ -83,51 +82,4 @@ func TestHTTPOIDCTokenValidationMW(t *testing.T) {
 		assert.Equal(t, 403, result.StatusCode)
 	}
 
-}
-
-func TestEndpointTokenForRealmMW(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
-	defer mockCtrl.Finish()
-	var mockLogger = mock.NewLogger(mockCtrl)
-	var mockComponent = mock.NewManagementComponent(mockCtrl)
-	mockComponent.EXPECT().GetRealm(gomock.Any(), gomock.Any()).Return(api.RealmRepresentation{}, nil)
-
-
-	var m = MakeEndpointTokenForRealmMW(mockLogger)(management.MakeGetRealmEndpoint(mockComponent))
-
-	// Mismatch between authorised realm and requested one
-	// Context with realm coming from HTTP OIDC MW.
-	var ctx = context.WithValue(context.Background(), "realm", "client")
-
-	var req = map[string]string{"realm": "master"}
-	_, err := m(ctx, req)
-
-	assert.NotNil(t, err)
-
-	// Match between authorised realm and requested one
-	// Context with realm coming from HTTP OIDC MW.
-	ctx = context.WithValue(context.Background(), "realm", "master")
-
-	req = map[string]string{"realm": "master"}
-	_, err = m(ctx, req)
-
-	assert.Nil(t, err)
-
-	// Missing requested realm information
-	// Context with realm coming from HTTP OIDC MW.
-	ctx = context.WithValue(context.Background(), "realm", "master")
-
-	req = map[string]string{}
-	_, err = m(ctx, req)
-
-	assert.NotNil(t, err)
-
-	// Missing authorized realm information
-	// Context with realm coming from HTTP OIDC MW.
-	ctx = context.Background()
-
-	req = map[string]string{"realm": "master"}
-	_, err = m(ctx, req)
-
-	assert.NotNil(t, err)
 }

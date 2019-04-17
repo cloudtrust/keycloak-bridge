@@ -19,11 +19,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:add9addd1e9f693f228f2818f3a08df0df2d3ec7c453614c8a4d113e2cc2fbd0"
+  digest = "1:2276e1aa87fc57d4af1091b22aad776635973a1e0764c91c88e1a28edad426ef"
   name = "github.com/cloudtrust/keycloak-client"
   packages = ["."]
   pruneopts = ""
-  revision = "cf331b0198778ec8dea897dddf99a00720f5f273"
+  revision = "0d5f98aceb4c163562b8474fb3665e0e2c400ce5"
   source = "github.com/cloudtrust/keycloak-client"
 
 [[projects]]
@@ -261,6 +261,14 @@
   ]
   pruneopts = ""
   revision = "1555304b9b35fdd2b425bccf1a5613677705e7d0"
+
+[[projects]]
+  digest = "1:5f47c69f85311c4dc292be6cc995a0a3fe8337a6ce38ef4f71e5b7efd5ad42e0"
+  name = "github.com/rs/cors"
+  packages = ["."]
+  pruneopts = ""
+  revision = "9a47f48565a795472d43519dd49aac781f3034fb"
+  version = "v1.6.0"
 
 [[projects]]
   digest = "1:956f655c87b7255c6b1ae6c203ebb0af98cf2a13ef2507e34c9bf1c0332ac0f5"
@@ -560,6 +568,7 @@
     "github.com/opentracing/opentracing-go/ext",
     "github.com/opentracing/opentracing-go/log",
     "github.com/pkg/errors",
+    "github.com/rs/cors",
     "github.com/spf13/pflag",
     "github.com/spf13/viper",
     "github.com/stretchr/testify/assert",

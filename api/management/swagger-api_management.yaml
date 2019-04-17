@@ -430,6 +430,7 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Credential'
+  /realms/{realm}/users/{userID}/credentials/{credentialID}:
     delete:
       tags:
       - Credentials

@@ -11,6 +11,7 @@ import (
 
 // Endpoints wraps a service behind a set of endpoints.
 type Endpoints struct {
+	GetRealms                endpoint.Endpoint
 	GetRealm                 endpoint.Endpoint
 	GetClient                endpoint.Endpoint
 	GetClients               endpoint.Endpoint
@@ -35,6 +36,7 @@ type Endpoints struct {
 
 // ManagementComponent is the interface of the component to send a query to Keycloak.
 type ManagementComponent interface {
+	GetRealms(ctx context.Context) ([]api.RealmRepresentation, error)
 	GetRealm(ctx context.Context, realmName string) (api.RealmRepresentation, error)
 	GetClient(ctx context.Context, realmName, idClient string) (api.ClientRepresentation, error)
 	GetClients(ctx context.Context, realmName string) ([]api.ClientRepresentation, error)
@@ -55,6 +57,13 @@ type ManagementComponent interface {
 	GetRole(ctx context.Context, realmName string, roleID string) (api.RoleRepresentation, error)
 	GetClientRoles(ctx context.Context, realmName, idClient string) ([]api.RoleRepresentation, error)
 	CreateClientRole(ctx context.Context, realmName, clientID string, role api.RoleRepresentation) (string, error)
+}
+
+// MakeRealmsEndpoint makes the Realms endpoint to retrieve all available realms.
+func MakeGetRealmsEndpoint(managementComponent ManagementComponent) endpoint.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		return managementComponent.GetRealms(ctx)
+	}
 }
 
 // MakeRealmEndpoint makes the Realm endpoint to retrieve a realm.
