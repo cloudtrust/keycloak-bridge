@@ -12,11 +12,8 @@
       "CreateUser": {
         "master": {
           "integrator_manager": {},
-          "integrator_agent": {},
           "l2_support_manager": {},
-          "l2_support_agent": {},
-          "l3_support_manager": {},
-          "l3_support_agent": {}
+          "l3_support_manager": {}
         }
       },
       "GetUser": {
@@ -354,11 +351,7 @@
           "end_user": {}
         }
       },
-      "DeleteUser": {
-        "DEP": {
-          "end_user": {}
-        }
-      },
+      "DeleteUser": {},
       "ResetPassword": {
         "DEP": {
           "end_user": {}

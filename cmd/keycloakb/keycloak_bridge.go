@@ -193,14 +193,14 @@ func main() {
 		json, err := ioutil.ReadFile(authorizationConfigFile)
 
 		if err != nil {
-			logger.Log("msg", "could not read YAML authorisation file", "error", err)
+			logger.Log("msg", "could not read JSON authorization file", "error", err)
 			return
 		}
 
 		authorizationManager, err = security.NewAuthorizationManager(keycloakClient, string(json))
 
 		if err != nil {
-			logger.Log("msg", "could not load authorisations", "error", err)
+			logger.Log("msg", "could not load authorizations", "error", err)
 			return
 		}
 	}

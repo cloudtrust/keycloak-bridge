@@ -108,7 +108,6 @@ func (c *authorisationComponentMW) GetUsers(ctx context.Context, realmName, grou
 	var action = "GetUsers"
 	var targetRealm = realmName
 
-	// TODO Adapt after Get users is changed
 	if err := c.authManager.CheckAuthorisationOnTargetGroup(ctx, action, targetRealm, group); err != nil {
 		return []api.UserRepresentation{}, err
 	}
