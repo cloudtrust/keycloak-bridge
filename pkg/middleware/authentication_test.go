@@ -59,6 +59,8 @@ func TestHTTPOIDCTokenValidationMW(t *testing.T) {
 		assert.Equal(t, 200, result.StatusCode)
 	}
 
+	req.Header.Set("Authorization", "bearer "+token)
+
 	// Invalid authorization token.
 	{
 		var w = httptest.NewRecorder()
