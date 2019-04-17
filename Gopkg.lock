@@ -158,7 +158,7 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:426b37e6194502841b2ac3703a847dc26fe912d14777efc65f3e6bb261f6995c"
+  digest = "1:0e6a4d206be26596e3ad0127ec2da0f2952169768f33d7010517ba6f0fafd47c"
   name = "github.com/influxdata/influxdb"
   packages = [
     "client/v2",
@@ -166,18 +166,8 @@
     "pkg/escape",
   ]
   pruneopts = ""
-  revision = "2f49e00f7f3801a506304c3b6d8165b2f4039f3d"
-  version = "v1.7.5"
-
-[[projects]]
-  digest = "1:ed432f42ea25cda1a97323039aa1ec3f35c66fa49cf8487db61e515f5b0a89ad"
-  name = "github.com/influxdata/platform"
-  packages = [
-    "models",
-    "pkg/escape",
-  ]
-  pruneopts = ""
-  revision = "0f79e4ea3248354c789cba274542e0a8e55971db"
+  revision = "01c8dd416270f424ab0c40f9291e269ac6921964"
+  version = "v1.7.6"
 
 [[projects]]
   branch = "master"
@@ -390,11 +380,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:f7a97e61c26ae90937f3cab6ff72a80f283008c9b23f3e7245036478ca05793a"
+  digest = "1:de13f0afd479cb8b33fd54e449a5d455d186c25a8488a94dbc49f854b7348659"
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = ""
-  revision = "ebb4019f01c946537c3ea6b99f0eca5283552a8f"
+  revision = "12500544f89f9420afe9529ba8940bf72d294972"
 
 [[projects]]
   digest = "1:5acd3512b047305d49e8763eef7ba423901e85d5dd2fd1e71778a0ea8de10bd4"
