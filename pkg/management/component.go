@@ -31,6 +31,7 @@ type KeycloakClient interface {
 	GetRole(accessToken string, realmName string, roleID string) (kc.RoleRepresentation, error)
 	GetClientRoles(accessToken string, realmName, idClient string) ([]kc.RoleRepresentation, error)
 	CreateClientRole(accessToken string, realmName, clientID string, role kc.RoleRepresentation) (string, error)
+	ExecuteActionsEmail(ctx context.Context, realmName string, userID string, actions []string, paramKV ...string) error
 }
 
 // Component is the event component interface.
@@ -56,6 +57,7 @@ type Component interface {
 	GetRole(ctx context.Context, realmName string, roleID string) (api.RoleRepresentation, error)
 	GetClientRoles(ctx context.Context, realmName, idClient string) ([]api.RoleRepresentation, error)
 	CreateClientRole(ctx context.Context, realmName, clientID string, role api.RoleRepresentation) (string, error)
+	ExecuteActionsEmail(ctx context.Context, realmName string, userID string, actions []string, paramKV ...string) error
 }
 
 // Component is the management component.
@@ -676,4 +678,10 @@ func (c *component) CreateClientRole(ctx context.Context, realmName, clientID st
 	}
 
 	return locationURL, nil
+}
+
+func (c *component) ExecuteActionsEmail(ctx context.Context, realmName string, userID string, actions []string, paramKV ...string) error {
+	var accessToken = ctx.Value("access_token").(string)
+
+	return c.keycloakClient.ExecuteActionsEmail(accessToken, realmName, userID, actions, paramKV...)
 }
