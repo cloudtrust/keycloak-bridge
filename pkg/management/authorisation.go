@@ -2,28 +2,24 @@ package management
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
-	kc "github.com/cloudtrust/keycloak-client"
+	"github.com/cloudtrust/keycloak-bridge/internal/security"
 	"github.com/go-kit/kit/log"
 )
 
 // Tracking middleware at component level.
 type authorisationComponentMW struct {
-	authorisations Authorizations
-	keycloakClient KeycloakClient
+	authManager    security.AuthorizationManager
 	logger         log.Logger
 	next           Component
 }
 
 // MakeAuthorisationManagementComponentMW checks authorisation and return an error if the action is not allowed.
-func MakeAuthorisationManagementComponentMW(logger log.Logger, keycloakClient KeycloakClient, authorisations Authorizations) func(Component) Component {
+func MakeAuthorisationManagementComponentMW(logger log.Logger, keycloakClient KeycloakClient, authorisationManager security.AuthorizationManager) func(Component) Component {
 	return func(next Component) Component {
 		return &authorisationComponentMW{
-			authorisations: authorisations,
-			keycloakClient: keycloakClient,
+			authManager:    authorisationManager,
 			logger:         logger,
 			next:           next,
 		}
@@ -35,7 +31,7 @@ func (c *authorisationComponentMW) GetRealm(ctx context.Context, realm string) (
 	var action = "GetRealm"
 	var targetRealm = realm
 
-	if err := c.checkAuthorisationOnTargetRealm(ctx, action, targetRealm); err != nil {
+	if err := c.authManager.CheckAuthorisationOnTargetRealm(ctx, action, targetRealm); err != nil {
 		return api.RealmRepresentation{}, err
 	}
 
@@ -46,7 +42,7 @@ func (c *authorisationComponentMW) GetClient(ctx context.Context, realmName, idC
 	var action = "GetClient"
 	var targetRealm = realmName
 
-	if err := c.checkAuthorisationOnTargetRealm(ctx, action, targetRealm); err != nil {
+	if err := c.authManager.CheckAuthorisationOnTargetRealm(ctx, action, targetRealm); err != nil {
 		return api.ClientRepresentation{}, err
 	}
 
@@ -57,7 +53,7 @@ func (c *authorisationComponentMW) GetClients(ctx context.Context, realmName str
 	var action = "GetClients"
 	var targetRealm = realmName
 
-	if err := c.checkAuthorisationOnTargetRealm(ctx, action, targetRealm); err != nil {
+	if err := c.authManager.CheckAuthorisationOnTargetRealm(ctx, action, targetRealm); err != nil {
 		return []api.ClientRepresentation{}, err
 	}
 
@@ -68,7 +64,7 @@ func (c *authorisationComponentMW) DeleteUser(ctx context.Context, realmName, us
 	var action = "DeleteUser"
 	var targetRealm = realmName
 
-	if err := c.checkAuthorisationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
+	if err := c.authManager.CheckAuthorisationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
 		return err
 	}
 
@@ -79,7 +75,7 @@ func (c *authorisationComponentMW) GetUser(ctx context.Context, realmName, userI
 	var action = "GetUser"
 	var targetRealm = realmName
 
-	if err := c.checkAuthorisationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
+	if err := c.authManager.CheckAuthorisationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
 		return api.UserRepresentation{}, err
 	}
 
@@ -90,7 +86,7 @@ func (c *authorisationComponentMW) UpdateUser(ctx context.Context, realmName, us
 	var action = "UpdateUser"
 	var targetRealm = realmName
 
-	if err := c.checkAuthorisationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
+	if err := c.authManager.CheckAuthorisationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
 		return err
 	}
 
@@ -102,7 +98,7 @@ func (c *authorisationComponentMW) GetUsers(ctx context.Context, realmName, grou
 	var targetRealm = realmName
 
 	// TODO Adapt after Get users is changed
-	if err := c.checkAuthorisationOnTargetGroup(ctx, action, targetRealm, group); err != nil {
+	if err := c.authManager.CheckAuthorisationOnTargetGroup(ctx, action, targetRealm, group); err != nil {
 		return []api.UserRepresentation{}, err
 	}
 
@@ -114,7 +110,7 @@ func (c *authorisationComponentMW) CreateUser(ctx context.Context, realmName str
 	var targetRealm = realmName
 
 	for _, targetGroup := range *user.Groups {
-		if err := c.checkAuthorisationOnTargetGroup(ctx, action, targetRealm, targetGroup); err != nil {
+		if err := c.authManager.CheckAuthorisationOnTargetGroup(ctx, action, targetRealm, targetGroup); err != nil {
 			return "", err
 		}
 	}
@@ -122,11 +118,22 @@ func (c *authorisationComponentMW) CreateUser(ctx context.Context, realmName str
 	return c.next.CreateUser(ctx, realmName, user)
 }
 
+func (c *authorisationComponentMW) GetUserAccountStatus(ctx context.Context, realmName, userID string) (map[string]bool, error) {
+	var action = "GetUserAccountStatus"
+	var targetRealm = realmName
+
+	if err := c.authManager.CheckAuthorisationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
+		return nil, err
+	}
+
+	return c.next.GetUserAccountStatus(ctx, realmName, userID)
+}
+
 func (c *authorisationComponentMW) GetClientRolesForUser(ctx context.Context, realmName, userID, clientID string) ([]api.RoleRepresentation, error) {
 	var action = "GetClientRolesForUser"
 	var targetRealm = realmName
 
-	if err := c.checkAuthorisationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
+	if err := c.authManager.CheckAuthorisationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
 		return []api.RoleRepresentation{}, err
 	}
 
@@ -137,7 +144,7 @@ func (c *authorisationComponentMW) AddClientRolesToUser(ctx context.Context, rea
 	var action = "AddClientRolesToUser"
 	var targetRealm = realmName
 
-	if err := c.checkAuthorisationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
+	if err := c.authManager.CheckAuthorisationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
 		return err
 	}
 
@@ -148,7 +155,7 @@ func (c *authorisationComponentMW) GetRealmRolesForUser(ctx context.Context, rea
 	var action = "GetRealmRolesForUser"
 	var targetRealm = realmName
 
-	if err := c.checkAuthorisationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
+	if err := c.authManager.CheckAuthorisationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
 		return []api.RoleRepresentation{}, err
 	}
 
@@ -159,7 +166,7 @@ func (c *authorisationComponentMW) ResetPassword(ctx context.Context, realmName 
 	var action = "ResetPassword"
 	var targetRealm = realmName
 
-	if err := c.checkAuthorisationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
+	if err := c.authManager.CheckAuthorisationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
 		return err
 	}
 
@@ -170,18 +177,40 @@ func (c *authorisationComponentMW) SendVerifyEmail(ctx context.Context, realmNam
 	var action = "SendVerifyEmail"
 	var targetRealm = realmName
 
-	if err := c.checkAuthorisationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
+	if err := c.authManager.CheckAuthorisationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
 		return err
 	}
 
 	return c.next.SendVerifyEmail(ctx, realmName, userID, paramKV...)
 }
 
+func (c *authorisationComponentMW) GetCredentialsForUser(ctx context.Context, realmName string, userID string) ([]api.CredentialRepresentation, error) {
+	var action = "GetCredentialsForUser"
+	var targetRealm = realmName
+
+	if err := c.authManager.CheckAuthorisationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
+		return []api.CredentialRepresentation{}, err
+	}
+
+	return c.next.GetCredentialsForUser(ctx, realmName, userID)
+}
+
+func (c *authorisationComponentMW) DeleteCredentialsForUser(ctx context.Context, realmName string, userID string, credentialID string) error {
+	var action = "DeleteCredentialsForUser"
+	var targetRealm = realmName
+
+	if err := c.authManager.CheckAuthorisationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
+		return err
+	}
+
+	return c.next.DeleteCredentialsForUser(ctx, realmName, userID, credentialID)
+}
+
 func (c *authorisationComponentMW) GetRoles(ctx context.Context, realmName string) ([]api.RoleRepresentation, error) {
 	var action = "GetRoles"
 	var targetRealm = realmName
 
-	if err := c.checkAuthorisationOnTargetRealm(ctx, action, targetRealm); err != nil {
+	if err := c.authManager.CheckAuthorisationOnTargetRealm(ctx, action, targetRealm); err != nil {
 		return nil, err
 	}
 
@@ -192,7 +221,7 @@ func (c *authorisationComponentMW) GetRole(ctx context.Context, realmName string
 	var action = "GetRole"
 	var targetRealm = realmName
 
-	if err := c.checkAuthorisationOnTargetRealm(ctx, action, targetRealm); err != nil {
+	if err := c.authManager.CheckAuthorisationOnTargetRealm(ctx, action, targetRealm); err != nil {
 		return api.RoleRepresentation{}, err
 	}
 
@@ -203,7 +232,7 @@ func (c *authorisationComponentMW) GetClientRoles(ctx context.Context, realmName
 	var action = "GetClientRoles"
 	var targetRealm = realmName
 
-	if err := c.checkAuthorisationOnTargetRealm(ctx, action, targetRealm); err != nil {
+	if err := c.authManager.CheckAuthorisationOnTargetRealm(ctx, action, targetRealm); err != nil {
 		return []api.RoleRepresentation{}, err
 	}
 
@@ -214,129 +243,9 @@ func (c *authorisationComponentMW) CreateClientRole(ctx context.Context, realmNa
 	var action = "CreateClientRole"
 	var targetRealm = realmName
 
-	if err := c.checkAuthorisationOnTargetRealm(ctx, action, targetRealm); err != nil {
+	if err := c.authManager.CheckAuthorisationOnTargetRealm(ctx, action, targetRealm); err != nil {
 		return "", err
 	}
 
 	return c.next.CreateClientRole(ctx, realmName, clientID, role)
-}
-
-func (c *authorisationComponentMW) checkAuthorisationOnTargetUser(ctx context.Context, action, targetRealm, userID string) error {
-	var accessToken = ctx.Value("access_token").(string)
-
-	// Retrieve the group of the target user
-
-	var userRep kc.UserRepresentation
-	var err error
-	if userRep, err = c.keycloakClient.GetUser(accessToken, targetRealm, userID); err != nil {
-		return ForbiddenError{}
-	}
-
-	if userRep.Groups == nil {
-		// No groups assigned, nothing allowed
-		return ForbiddenError{}
-	}
-
-	for _, targetGroup := range *userRep.Groups {
-		if c.checkAuthorisationOnTargetGroup(ctx, action, targetRealm, targetGroup) == nil {
-			return nil
-		}
-	}
-
-	return ForbiddenError{}
-}
-
-func (c *authorisationComponentMW) checkAuthorisationOnTargetGroup(ctx context.Context, action, targetRealm, targetGroup string) error {
-	var currentRealm = ctx.Value("realm").(string)
-	var currentGroups = ctx.Value("groups").([]string)
-
-	for _, group := range currentGroups {
-		targetGroupAllowed, wildcard := c.authorisations[currentRealm][group][action]["*"]
-
-		if wildcard {
-			_, allGroupsAllowed := targetGroupAllowed["*"]
-			_, groupAllowed := targetGroupAllowed[targetGroup]
-
-			if allGroupsAllowed || groupAllowed {
-				return nil
-			}
-		}
-
-		targetGroupAllowed, nonMasterRealmAllowed := c.authorisations[currentRealm][group][action]["/"]
-
-		if targetRealm != "master" && nonMasterRealmAllowed {
-			_, allGroupsAllowed := targetGroupAllowed["*"]
-			_, groupAllowed := targetGroupAllowed[targetGroup]
-
-			if allGroupsAllowed || groupAllowed {
-				return nil
-			}
-		}
-
-		targetGroupAllowed, realmAllowed := c.authorisations[currentRealm][group][action][targetRealm]
-
-		if realmAllowed {
-			_, allGroupsAllowed := targetGroupAllowed["*"]
-			_, groupAllowed := targetGroupAllowed[targetGroup]
-
-			if allGroupsAllowed || groupAllowed {
-				return nil
-			}
-		}
-	}
-
-	return ForbiddenError{}
-}
-
-func (c *authorisationComponentMW) checkAuthorisationOnTargetRealm(ctx context.Context, action, targetRealm string) error {
-	var currentRealm = ctx.Value("realm").(string)
-	var currentGroups = ctx.Value("groups").([]string)
-
-	for _, group := range currentGroups {
-		_, wildcard := c.authorisations[currentRealm][group][action]["*"]
-		_, nonMasterRealmAllowed := c.authorisations[currentRealm][group][action]["/"]
-		_, realmAllowed := c.authorisations[currentRealm][group][action][targetRealm]
-
-		if wildcard || realmAllowed || (targetRealm != "master" && nonMasterRealmAllowed) {
-			return nil
-		}
-	}
-
-	return ForbiddenError{}
-}
-
-// ForbiddenError when an operation is not permitted.
-type ForbiddenError struct{}
-
-func (e ForbiddenError) Error() string {
-	return "ForbiddenError: Operation not permitted."
-}
-
-// Authorizations data structure
-// 4 dimensions table to express authorisations (realm_of_user, role_of_user, action, target_realm) -> target_group for which the action is allowed
-type Authorizations map[string]map[string]map[string]map[string]map[string]struct{}
-
-// LoadAuthorizations loads the authorization YAML into the data structure
-// Authorisation matrix is a 4 dimensions table :
-//   - realm_of_user
-//   - role_of_user
-//   - action
-//   - target_realm
-// -> target_groups for which the action is allowed
-//
-// Note:
-//   '*' can be used to express all target realms
-//   '-' can be used to express all non master realms
-//   '*' can be used to express all target groups are allowed
-func LoadAuthorizations(jsonAuthz string) (Authorizations, error) {
-	if jsonAuthz == "" {
-		return nil, fmt.Errorf("JSON structure expected.")
-	}
-	var authz = make(Authorizations)
-
-	if err := json.Unmarshal([]byte(jsonAuthz), &authz); err != nil {
-		return nil, err
-	}
-
-	return authz, nil
 }

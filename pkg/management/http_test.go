@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
+	"github.com/cloudtrust/keycloak-bridge/internal/security"
 	"github.com/cloudtrust/keycloak-bridge/pkg/management/mock"
 	kc_client "github.com/cloudtrust/keycloak-client"
 	"github.com/golang/mock/gomock"
@@ -144,7 +145,7 @@ func TestHTTPErrorHandler(t *testing.T) {
 
 	// Forbidden error.
 	{
-		mockComponent.EXPECT().CreateUser(gomock.Any(), "master", user).Return("", ForbiddenError{}).Times(1)
+		mockComponent.EXPECT().CreateUser(gomock.Any(), "master", user).Return("", security.ForbiddenError{}).Times(1)
 
 		var body = strings.NewReader(string(userJSON))
 		res, err := http.Post(ts.URL+"/realms/master/users", "application/json", body)
@@ -193,7 +194,7 @@ func TestHTTPErrorHandler(t *testing.T) {
 
 		assert.Nil(t, err)
 		assert.Equal(t, http.StatusUnauthorized, res.StatusCode)
-		assert.Equal(t, http.NoBody, res.Body)
+		assert.NotEqual(t, http.NoBody, res.Body)
 	}
 }
 

@@ -2,13 +2,14 @@ package event
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"strconv"
 	"testing"
 	"time"
 
 	"github.com/cloudtrust/keycloak-bridge/api/event/fb"
-	"github.com/google/flatbuffers/go"
+	flatbuffers "github.com/google/flatbuffers/go"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -123,13 +124,14 @@ func TestAdminComponent(t *testing.T) {
 func TestEventToMap(t *testing.T) {
 	var uid int64 = 1234
 	var epoch = int64(1547127600485)
-	var etype int8
+	var etype int8 = 6
 	var realmID = "realm"
 	var clientID = "client"
 	var userID = "user"
 	var sessionID = "session"
 	var ipAddr = "ipAddress"
 	var error = "error"
+	var username = "test_username"
 
 	var event *fb.Event
 	{
@@ -142,8 +144,8 @@ func TestEventToMap(t *testing.T) {
 		var ipAddress = builder.CreateString(ipAddr)
 		var error = builder.CreateString(error)
 
-		var key1 = builder.CreateString("key1")
-		var value1 = builder.CreateString("value1")
+		var key1 = builder.CreateString("username")
+		var value1 = builder.CreateString(username)
 		fb.TupleStart(builder)
 		fb.TupleAddKey(builder, key1)
 		fb.TupleAddValue(builder, value1)
@@ -178,15 +180,398 @@ func TestEventToMap(t *testing.T) {
 	}
 
 	var m = eventToMap(event)
-	assert.Equal(t, strconv.FormatInt(uid, 10), m["uid"])
-	assert.Equal(t, time.Unix(0, epoch*1000000).Format("2006-01-02T15:04:05.000Z"), m["time"])
-	assert.Equal(t, fb.EnumNamesEventType[int8(etype)], m["type"])
-	assert.Equal(t, realmID, m["realmId"])
-	assert.Equal(t, clientID, m["clientId"])
-	assert.Equal(t, userID, m["userId"])
-	assert.Equal(t, sessionID, m["sessionId"])
-	assert.Equal(t, ipAddr, m["ipAddress"])
-	assert.Equal(t, error, m["error"])
+	assert.Equal(t, time.Unix(0, epoch*1000000).UTC().Format("2006-01-02 15:04:05.000"), m["audit_time"])
+	assert.Equal(t, fb.EnumNamesEventType[int8(etype)], m["kc_event_type"])
+	assert.Equal(t, realmID, m["realm_name"])
+	assert.Equal(t, clientID, m["client_id"])
+	assert.Equal(t, userID, m["user_id"])
+	assert.Equal(t, username, m["username"])
+	var f = make(map[string]string)
+	err := json.Unmarshal([]byte(m["additional_info"]), &f)
+	assert.Nil(t, err)
+	assert.Equal(t, strconv.FormatInt(uid, 10), f["uid"])
+	assert.Equal(t, sessionID, f["session_id"])
+	assert.Equal(t, ipAddr, f["ip_address"])
+	assert.Equal(t, error, f["error"])
+	assert.Equal(t, "", m["ct_event_type"])
+
+}
+
+func TestEventToMapNewCTEvent(t *testing.T) {
+	var customEvent = "CUSTOM_EVENT"
+	var etype int8 = 6
+
+	var event *fb.Event
+	{
+		var builder = flatbuffers.NewBuilder(0)
+		var key1 = builder.CreateString("ct_event_type")
+		var value1 = builder.CreateString(customEvent)
+		fb.TupleStart(builder)
+		fb.TupleAddKey(builder, key1)
+		fb.TupleAddValue(builder, value1)
+		var detail1 = fb.TupleEnd(builder)
+
+		fb.EventStartDetailsVector(builder, 1)
+		builder.PrependUOffsetT(detail1)
+		var details = builder.EndVector(1)
+
+		fb.EventStart(builder)
+		fb.EventAddDetails(builder, details)
+		fb.EventAddType(builder, etype)
+		var eventOffset = fb.EventEnd(builder)
+		builder.Finish(eventOffset)
+		event = fb.GetRootAsEvent(builder.FinishedBytes(), 0)
+	}
+
+	var m = eventToMap(event)
+	assert.Equal(t, customEvent, m["ct_event_type"])
+
+}
+
+func TestEventToMapLogon(t *testing.T) {
+	var etype int8
+
+	var event *fb.Event
+	{
+		var builder = flatbuffers.NewBuilder(0)
+
+		fb.EventStart(builder)
+		fb.EventAddType(builder, etype)
+		var eventOffset = fb.EventEnd(builder)
+		builder.Finish(eventOffset)
+		event = fb.GetRootAsEvent(builder.FinishedBytes(), 0)
+	}
+
+	var m = eventToMap(event)
+	assert.Equal(t, "LOGON_OK", m["ct_event_type"])
+
+}
+
+func TestEventToMapLogonError(t *testing.T) {
+	var etype int8 = 1
+
+	var event *fb.Event
+	{
+		var builder = flatbuffers.NewBuilder(0)
+
+		fb.EventStart(builder)
+		fb.EventAddType(builder, etype)
+		var eventOffset = fb.EventEnd(builder)
+		builder.Finish(eventOffset)
+		event = fb.GetRootAsEvent(builder.FinishedBytes(), 0)
+	}
+
+	var m = eventToMap(event)
+	assert.Equal(t, "LOGON_ERROR", m["ct_event_type"])
+
+}
+
+func TestEventToMapLogout(t *testing.T) {
+	var etype int8 = 4
+
+	var event *fb.Event
+	{
+		var builder = flatbuffers.NewBuilder(0)
+
+		fb.EventStart(builder)
+		fb.EventAddType(builder, etype)
+		var eventOffset = fb.EventEnd(builder)
+		builder.Finish(eventOffset)
+		event = fb.GetRootAsEvent(builder.FinishedBytes(), 0)
+	}
+
+	var m = eventToMap(event)
+	assert.Equal(t, "LOGOUT", m["ct_event_type"])
+
+}
+
+func TestEventToMapEmailConfirmed(t *testing.T) {
+	var etype int8 = 66
+
+	var event *fb.Event
+	{
+		var builder = flatbuffers.NewBuilder(0)
+		var key1 = builder.CreateString("username")
+		var value1 = builder.CreateString("test_username")
+		fb.TupleStart(builder)
+		fb.TupleAddKey(builder, key1)
+		fb.TupleAddValue(builder, value1)
+		var detail1 = fb.TupleEnd(builder)
+
+		var key2 = builder.CreateString("custom_required_action")
+		var value2 = builder.CreateString("VERIFY_EMAIL")
+		fb.TupleStart(builder)
+		fb.TupleAddKey(builder, key2)
+		fb.TupleAddValue(builder, value2)
+		var detail2 = fb.TupleEnd(builder)
+
+		fb.EventStartDetailsVector(builder, 2)
+		builder.PrependUOffsetT(detail1)
+		builder.PrependUOffsetT(detail2)
+		var details = builder.EndVector(2)
+
+		fb.EventStart(builder)
+		fb.EventAddType(builder, etype)
+		fb.EventAddDetails(builder, details)
+
+		var eventOffset = fb.EventEnd(builder)
+		builder.Finish(eventOffset)
+		event = fb.GetRootAsEvent(builder.FinishedBytes(), 0)
+	}
+
+	var m = eventToMap(event)
+	assert.Equal(t, "EMAIL_CONFIRMED", m["ct_event_type"])
+
+}
+
+func TestEventToMapConfirmEmailExpired(t *testing.T) {
+	var etype int8 = 71
+	var error1 = "expired_code"
+
+	var event *fb.Event
+	{
+		var builder = flatbuffers.NewBuilder(0)
+		var error = builder.CreateString(error1)
+		var key1 = builder.CreateString("username")
+		var value1 = builder.CreateString("test_username")
+		fb.TupleStart(builder)
+		fb.TupleAddKey(builder, key1)
+		fb.TupleAddValue(builder, value1)
+		var detail1 = fb.TupleEnd(builder)
+
+		var key2 = builder.CreateString("key")
+		var value2 = builder.CreateString("value")
+		fb.TupleStart(builder)
+		fb.TupleAddKey(builder, key2)
+		fb.TupleAddValue(builder, value2)
+		var detail2 = fb.TupleEnd(builder)
+
+		fb.EventStartDetailsVector(builder, 2)
+		builder.PrependUOffsetT(detail1)
+		builder.PrependUOffsetT(detail2)
+		var details = builder.EndVector(2)
+
+		fb.EventStart(builder)
+		fb.EventAddType(builder, etype)
+		fb.EventAddDetails(builder, details)
+		fb.EventAddError(builder, error)
+		var eventOffset = fb.EventEnd(builder)
+		builder.Finish(eventOffset)
+		event = fb.GetRootAsEvent(builder.FinishedBytes(), 0)
+	}
+
+	var m = eventToMap(event)
+	assert.Equal(t, "CONFIRM_EMAIL_EXPIRED", m["ct_event_type"])
+
+}
+
+func TestEventToMapPasswordReset(t *testing.T) {
+	var etype int8 = 24
+	var error1 = "expired_code"
+
+	var event *fb.Event
+	{
+		var builder = flatbuffers.NewBuilder(0)
+		var error = builder.CreateString(error1)
+		var key1 = builder.CreateString("username")
+		var value1 = builder.CreateString("test_username")
+		fb.TupleStart(builder)
+		fb.TupleAddKey(builder, key1)
+		fb.TupleAddValue(builder, value1)
+		var detail1 = fb.TupleEnd(builder)
+
+		var key2 = builder.CreateString("custom_required_action")
+		var value2 = builder.CreateString("sms-password-set")
+		fb.TupleStart(builder)
+		fb.TupleAddKey(builder, key2)
+		fb.TupleAddValue(builder, value2)
+		var detail2 = fb.TupleEnd(builder)
+
+		fb.EventStartDetailsVector(builder, 2)
+		builder.PrependUOffsetT(detail1)
+		builder.PrependUOffsetT(detail2)
+		var details = builder.EndVector(2)
+
+		fb.EventStart(builder)
+		fb.EventAddType(builder, etype)
+		fb.EventAddDetails(builder, details)
+		fb.EventAddError(builder, error)
+		var eventOffset = fb.EventEnd(builder)
+		builder.Finish(eventOffset)
+		event = fb.GetRootAsEvent(builder.FinishedBytes(), 0)
+	}
+
+	var m = eventToMap(event)
+	assert.Equal(t, "PASSWORD_RESET", m["ct_event_type"])
+
+}
+
+func TestAdminEventToMap(t *testing.T) {
+	var uid int64 = 1234
+	var epoch = int64(1547127600485)
+	var resourcetype int8
+	var resourcePath = ""
+	var optype int8
+	var realmID = "realm"
+	var representation = "representation"
+	var error = "error"
+
+	var adminEvent *fb.AdminEvent
+	{
+		var builder = flatbuffers.NewBuilder(0)
+
+		var realm = builder.CreateString(realmID)
+		var representation = builder.CreateString(representation)
+		var resourceP = builder.CreateString(resourcePath)
+		var error = builder.CreateString(error)
+
+		var key1 = builder.CreateString("username")
+		var value1 = builder.CreateString("test_username")
+		fb.TupleStart(builder)
+		fb.TupleAddKey(builder, key1)
+		fb.TupleAddValue(builder, value1)
+		var detail1 = fb.TupleEnd(builder)
+
+		var key2 = builder.CreateString("key2")
+		var value2 = builder.CreateString("value2")
+		fb.TupleStart(builder)
+		fb.TupleAddKey(builder, key2)
+		fb.TupleAddValue(builder, value2)
+		var detail2 = fb.TupleEnd(builder)
+
+		fb.EventStartDetailsVector(builder, 2)
+		builder.PrependUOffsetT(detail1)
+		builder.PrependUOffsetT(detail2)
+		var details = builder.EndVector(2)
+
+		fb.AdminEventStart(builder)
+		fb.AdminEventAddUid(builder, uid)
+		fb.AdminEventAddTime(builder, epoch)
+		fb.AdminEventAddResourceType(builder, resourcetype)
+		fb.AdminEventAddRealmId(builder, realm)
+		fb.AdminEventAddRepresentation(builder, representation)
+		fb.AdminEventAddOperationType(builder, optype)
+		fb.AdminEventAddResourcePath(builder, resourceP)
+		fb.AdminEventAddError(builder, error)
+		fb.AdminEventAddAuthDetails(builder, details)
+		var eventOffset = fb.EventEnd(builder)
+		builder.Finish(eventOffset)
+		adminEvent = fb.GetRootAsAdminEvent(builder.FinishedBytes(), 0)
+	}
+
+	var m = adminEventToMap(adminEvent)
+
+	assert.Equal(t, time.Unix(0, epoch*1000000).UTC().Format("2006-01-02 15:04:05.000"), m["audit_time"])
+	assert.Equal(t, fb.EnumNamesOperationType[int8(optype)], m["kc_operation_type"])
+	assert.Equal(t, realmID, m["realm_name"])
+	var f = make(map[string]string)
+	err := json.Unmarshal([]byte(m["additional_info"]), &f)
+	assert.Nil(t, err)
+	assert.Equal(t, strconv.FormatInt(uid, 10), f["uid"])
+	assert.Equal(t, resourcePath, f["resource_path"])
+	assert.Equal(t, representation, f["representation"])
+	assert.Equal(t, error, f["error"])
+	assert.Equal(t, "ADMIN", m["ct_event_type"])
+
+}
+
+func TestAdminEventToMapAccountCreated(t *testing.T) {
+	var resourcePath = "users/8caefab3-90d1-492e-87e0-1bf6cecc76ea/role-mappings/realm "
+	var optype int8
+
+	var adminEvent *fb.AdminEvent
+	{
+		var builder = flatbuffers.NewBuilder(0)
+		var resourceP = builder.CreateString(resourcePath)
+
+		var key1 = builder.CreateString("username")
+		var value1 = builder.CreateString("test_username")
+		fb.TupleStart(builder)
+		fb.TupleAddKey(builder, key1)
+		fb.TupleAddValue(builder, value1)
+		var detail1 = fb.TupleEnd(builder)
+
+		var key2 = builder.CreateString("key2")
+		var value2 = builder.CreateString("value2")
+		fb.TupleStart(builder)
+		fb.TupleAddKey(builder, key2)
+		fb.TupleAddValue(builder, value2)
+		var detail2 = fb.TupleEnd(builder)
+
+		fb.EventStartDetailsVector(builder, 2)
+		builder.PrependUOffsetT(detail1)
+		builder.PrependUOffsetT(detail2)
+		var details = builder.EndVector(2)
+
+		fb.AdminEventStart(builder)
+		fb.AdminEventAddOperationType(builder, optype)
+		fb.AdminEventAddResourcePath(builder, resourceP)
+		fb.AdminEventAddAuthDetails(builder, details)
+		var eventOffset = fb.EventEnd(builder)
+		builder.Finish(eventOffset)
+		adminEvent = fb.GetRootAsAdminEvent(builder.FinishedBytes(), 0)
+	}
+
+	var m = adminEventToMap(adminEvent)
+	assert.Equal(t, "ACCOUNT_CREATED", m["ct_event_type"])
+
+}
+
+func TestAdminEventToMapActivationEmailSent(t *testing.T) {
+	var resourcePath = "users/8caefab3-90d1-492e-87e0-1bf6cecc76ea/send-verify-email"
+	var optype int8 = 3
+
+	var adminEvent *fb.AdminEvent
+	{
+		var builder = flatbuffers.NewBuilder(0)
+		var resourceP = builder.CreateString(resourcePath)
+
+		var key1 = builder.CreateString("clientId")
+		var value1 = builder.CreateString("test_username")
+		fb.TupleStart(builder)
+		fb.TupleAddKey(builder, key1)
+		fb.TupleAddValue(builder, value1)
+		var detail1 = fb.TupleEnd(builder)
+
+		var key2 = builder.CreateString("ipAddress")
+		var value2 = builder.CreateString("127.0.0.1")
+		fb.TupleStart(builder)
+		fb.TupleAddKey(builder, key2)
+		fb.TupleAddValue(builder, value2)
+		var detail2 = fb.TupleEnd(builder)
+
+		var key3 = builder.CreateString("realmId")
+		var value3 = builder.CreateString("master")
+		fb.TupleStart(builder)
+		fb.TupleAddKey(builder, key3)
+		fb.TupleAddValue(builder, value3)
+		var detail3 = fb.TupleEnd(builder)
+
+		var key4 = builder.CreateString("userId")
+		var value4 = builder.CreateString("dummy_user")
+		fb.TupleStart(builder)
+		fb.TupleAddKey(builder, key4)
+		fb.TupleAddValue(builder, value4)
+		var detail4 = fb.TupleEnd(builder)
+
+		fb.EventStartDetailsVector(builder, 4)
+		builder.PrependUOffsetT(detail1)
+		builder.PrependUOffsetT(detail2)
+		builder.PrependUOffsetT(detail3)
+		builder.PrependUOffsetT(detail4)
+		var details = builder.EndVector(4)
+
+		fb.AdminEventStart(builder)
+		fb.AdminEventAddOperationType(builder, optype)
+		fb.AdminEventAddResourcePath(builder, resourceP)
+		fb.AdminEventAddAuthDetails(builder, details)
+		var eventOffset = fb.EventEnd(builder)
+		builder.Finish(eventOffset)
+		adminEvent = fb.GetRootAsAdminEvent(builder.FinishedBytes(), 0)
+	}
+
+	var m = adminEventToMap(adminEvent)
+	assert.Equal(t, "ACTIVATION_EMAIL_SENT", m["ct_event_type"])
 
 }
 
@@ -213,10 +598,47 @@ func createAdminEvent(operationType int8, uid int64) *fb.AdminEvent {
 
 func createAdminEventBytes(operationType int8, uid int64) []byte {
 	var builder = flatbuffers.NewBuilder(0)
+
+	var key1 = builder.CreateString("clientId")
+	var value1 = builder.CreateString("test_username")
+	fb.TupleStart(builder)
+	fb.TupleAddKey(builder, key1)
+	fb.TupleAddValue(builder, value1)
+	var detail1 = fb.TupleEnd(builder)
+
+	var key2 = builder.CreateString("ipAddress")
+	var value2 = builder.CreateString("127.0.0.1")
+	fb.TupleStart(builder)
+	fb.TupleAddKey(builder, key2)
+	fb.TupleAddValue(builder, value2)
+	var detail2 = fb.TupleEnd(builder)
+
+	var key3 = builder.CreateString("realmId")
+	var value3 = builder.CreateString("master")
+	fb.TupleStart(builder)
+	fb.TupleAddKey(builder, key3)
+	fb.TupleAddValue(builder, value3)
+	var detail3 = fb.TupleEnd(builder)
+
+	var key4 = builder.CreateString("userId")
+	var value4 = builder.CreateString("dummy_user")
+	fb.TupleStart(builder)
+	fb.TupleAddKey(builder, key4)
+	fb.TupleAddValue(builder, value4)
+	var detail4 = fb.TupleEnd(builder)
+
+	fb.EventStartDetailsVector(builder, 4)
+	builder.PrependUOffsetT(detail1)
+	builder.PrependUOffsetT(detail2)
+	builder.PrependUOffsetT(detail3)
+	builder.PrependUOffsetT(detail4)
+	var details = builder.EndVector(4)
+
 	fb.AdminEventStart(builder)
 	fb.AdminEventAddTime(builder, time.Now().Unix())
 	fb.AdminEventAddUid(builder, uid)
 	fb.AdminEventAddOperationType(builder, operationType)
+	fb.AdminEventAddAuthDetails(builder, details)
 	var adminEventOffset = fb.AdminEventEnd(builder)
 	builder.Finish(adminEventOffset)
 	return builder.FinishedBytes()

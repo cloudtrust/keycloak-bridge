@@ -12,14 +12,20 @@ keycloak-username: admin
 keycloak-password: admin
 keycloak-timeout: 5s
 
-# Audit events
-events-DB: true
+# DB  
 db-host-port: 127.0.0.1:3306
 db-username: root
 db-password: admin 
 db-database: auditevents
 db-table: audit
-protocol: tcp
+db-protocol: tcp
+db-max-open-conns: 10
+db-max-idle-conns: 2
+db-conn-max-lifetime: 3600
+
+# audit events
+events-db: true
+
 
 # Rate limiting in requests/second.
 rate-event: 1000

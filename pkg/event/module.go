@@ -1,6 +1,6 @@
 package event
 
-//go:generate mockgen -destination=./mock/module.go -package=mock -mock_names=ConsoleModule=ConsoleModule,StatisticModule=StatisticModule,Influx=Influx github.com/cloudtrust/keycloak-bridge/pkg/event ConsoleModule,StatisticModule,Influx
+//go:generate mockgen -destination=./mock/module.go -package=mock -mock_names=ConsoleModule=ConsoleModule,StatisticModule=StatisticModule,EventsDBModule=EventsDBModule,Influx=Influx,DBEvents=DBEvents github.com/cloudtrust/keycloak-bridge/pkg/event ConsoleModule,StatisticModule,EventsDBModule,Influx,DBEvents
 
 import (
 	"context"
@@ -97,14 +97,14 @@ func (sm *statisticModule) Stats(_ context.Context, m map[string]string) error {
 }
 
 const (
-	createDB    = `CREATE DATABASE IF NOT EXISTS audit-events; `
 	createTable = `CREATE TABLE IF NOT EXISTS audit (
 		audit_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-		audit_time TIMESTAMP,
+		audit_time TIMESTAMP NULL,
 		origin VARCHAR(255),
 		realm_name VARCHAR(255),
 		agent_user_id VARCHAR(36),
 		agent_username VARCHAR(255),
+		agent_realm_name VARCHAR(255),
 		user_id VARCHAR(36),
 		username VARCHAR(255),
 		ct_event_type VARCHAR(50),
@@ -116,10 +116,12 @@ const (
 	  );`
 
 	insertEvent = `INSERT INTO audit (
+		audit_time,
 		origin,
 		realm_name,
 		agent_user_id,
 		agent_username,
+		agent_realm_name,
 		user_id,
 		username,
 		ct_event_type,
@@ -127,7 +129,7 @@ const (
 		kc_operation_type,
 		client_id,
 		additional_info) 
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		`
 )
 
@@ -146,7 +148,7 @@ type eventsDBModule struct {
 
 // NewConsoleModule returns a Console module.
 func NewEventsDBModule(db DBEvents) EventsDBModule {
-	db.Exec(createTable)
+	//db.Exec(createTable)
 	return &eventsDBModule{
 		db: db,
 	}
@@ -154,28 +156,47 @@ func NewEventsDBModule(db DBEvents) EventsDBModule {
 
 func (cm *eventsDBModule) Store(_ context.Context, m map[string]string) error {
 
-	// prepare the query to insert the event in the DB
-	origin := "keycloak" // for the moment only events of Keycloak
-	realmName := m["realmId"]
-	agentUserID := ""   // no agents, only events from Keycloak
-	agentUsername := "" // no agents, only events from Keycloak
-	userID := m["userId"]
-	username := m["username"]
-	ctEventType := ""
-	kcEventType := m["type"]
-	kcOperationType := m["operationType"]
-	clientID := m["clienId"]
-	additionalInfo := "" // all the rest in a JSON?
-	/*if m["type"] == "LOGIN_ERROR" {
-		fmt.Println("The rest of event:")
-		fmt.Println(m)
-	}*/
+	// if ctEventType is not "", then record the events in MariaDB
+	// otherwise, do nothing
+	if m["ct_event_type"] == "" {
+		return nil
+	}
 
-	_, err := cm.db.Exec(insertEvent, origin, realmName, agentUserID, agentUsername, userID, username, ctEventType, kcEventType, kcOperationType, clientID, additionalInfo)
+	// the event was already formatted according to the DB structure already at the component level
+
+	//auditTime - time of the event
+	auditTime := m["audit_time"]
+	// origin - the component that initiated the event
+	origin := m["origin"]
+	// realmName - realm name of the user that is impacted by the action
+	realmName := m["realm_name"]
+	//agentUserID - userId of who is performing an action
+	agentUserID := m["agent_user_id"]
+	//agentUsername - username of who is performing an action
+	agentUsername := m["agent_username"]
+	//agentRealmName - realm of who is performing an action
+	agentRealmName := m["agent_realm_name"]
+	//userID - ID of the user that is impacted by the action
+	userID := m["user_id"]
+	//username - username of the user that is impacted by the action
+	username := m["username"]
+	// ctEventType that  is established before at the component level
+	ctEventType := m["ct_event_type"]
+	// kcEventType corresponds to keycloak event type
+	kcEventType := m["kc_event_type"]
+	// kcOperationType - operation type of the event that comes from Keycloak
+	kcOperationType := m["kc_operation_type"]
+	// Id of the client
+	clientID := m["client_id"]
+	//additional_info - all the rest of the information from the event
+	additionalInfo := m["additional_info"]
+
+	//store the event in the DB
+	_, err := cm.db.Exec(insertEvent, auditTime, origin, realmName, agentUserID, agentUsername, agentRealmName, userID, username, ctEventType, kcEventType, kcOperationType, clientID, additionalInfo)
 
 	if err != nil {
-		//TODO: how is this error treated further?
 		return err
 	}
 	return nil
+
 }

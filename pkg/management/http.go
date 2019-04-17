@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/cloudtrust/keycloak-bridge/internal/security"
 	kc_client "github.com/cloudtrust/keycloak-client"
 	"github.com/go-kit/kit/endpoint"
 	"github.com/go-kit/kit/ratelimit"
@@ -49,7 +50,7 @@ func decodeManagementRequest(_ context.Context, req *http.Request) (interface{},
 
 	// Fetch path parameter such as realm, userID, ...
 	var m = mux.Vars(req)
-	for _, key := range []string{"realm", "userID", "clientID", "roleID"} {
+	for _, key := range []string{"realm", "userID", "clientID", "roleID", "credentialID"} {
 		request[key] = m[key]
 	}
 
@@ -60,7 +61,7 @@ func decodeManagementRequest(_ context.Context, req *http.Request) (interface{},
 	buf.ReadFrom(req.Body)
 	request["body"] = buf.String()
 
-	for _, key := range []string{"email", "firstName", "lastName", "max", "username", "client_id", "redirect_uri"} {
+	for _, key := range []string{"email", "firstName", "lastName", "max", "username", "client_id", "redirect_uri", "group"} {
 		if value := req.URL.Query().Get(key); value != "" {
 			request[key] = value
 		}
@@ -114,10 +115,11 @@ func managementErrorHandler(ctx context.Context, err error, w http.ResponseWrite
 	switch e := errors.Cause(err).(type) {
 	case kc_client.HTTPError:
 		w.WriteHeader(e.HTTPStatus)
-	case ForbiddenError:
+	case security.ForbiddenError:
 		w.WriteHeader(http.StatusForbidden)
 	case HTTPError:
 		w.WriteHeader(e.Status)
+		w.Write([]byte(e.Message))
 	default:
 		if err == ratelimit.ErrLimited {
 			w.WriteHeader(http.StatusTooManyRequests)
