@@ -26,13 +26,13 @@ type Endpoints struct {
 	GetRealmRoleForUser      endpoint.Endpoint
 	ResetPassword            endpoint.Endpoint
 	SendVerifyEmail          endpoint.Endpoint
+	ExecuteActionsEmail      endpoint.Endpoint
 	GetCredentialsForUser    endpoint.Endpoint
 	DeleteCredentialsForUser endpoint.Endpoint
 	GetRoles                 endpoint.Endpoint
 	GetRole                  endpoint.Endpoint
 	GetClientRoles           endpoint.Endpoint
 	CreateClientRole         endpoint.Endpoint
-	ExecuteActionsEmail      endpoint.Endpoint
 }
 
 // ManagementComponent is the interface of the component to send a query to Keycloak.
@@ -52,13 +52,13 @@ type ManagementComponent interface {
 	GetRealmRolesForUser(ctx context.Context, realmName, userID string) ([]api.RoleRepresentation, error)
 	ResetPassword(ctx context.Context, realmName string, userID string, password api.PasswordRepresentation) error
 	SendVerifyEmail(ctx context.Context, realmName string, userID string, paramKV ...string) error
+	ExecuteActionsEmail(ctx context.Context, realmName string, userID string, actions []string, paramKV ...string) error
 	GetCredentialsForUser(ctx context.Context, realmName string, userID string) ([]api.CredentialRepresentation, error)
 	DeleteCredentialsForUser(ctx context.Context, realmName string, userID string, credentialID string) error
 	GetRoles(ctx context.Context, realmName string) ([]api.RoleRepresentation, error)
 	GetRole(ctx context.Context, realmName string, roleID string) (api.RoleRepresentation, error)
 	GetClientRoles(ctx context.Context, realmName, idClient string) ([]api.RoleRepresentation, error)
 	CreateClientRole(ctx context.Context, realmName, clientID string, role api.RoleRepresentation) (string, error)
-	ExecuteActionsEmail(ctx context.Context, realmName string, userID string, actions []string, paramKV ...string) error
 }
 
 // MakeRealmsEndpoint makes the Realms endpoint to retrieve all available realms.
@@ -246,6 +246,29 @@ func MakeSendVerifyEmailEndpoint(managementComponent ManagementComponent) endpoi
 	}
 }
 
+func MakeExecuteActionsEmailEndpoint(managementComponent ManagementComponent) endpoint.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+
+		var paramKV []string
+		for _, key := range []string{"client_id", "redirect_uri", "lifespan"} {
+			if m[key] != "" {
+				paramKV = append(paramKV, key, m[key])
+			}
+		}
+
+		//extract the actions
+		var actions []string
+		err := json.Unmarshal([]byte(m["actions"]), &actions)
+
+		if err != nil {
+			return nil, err
+		}
+
+		return nil, managementComponent.ExecuteActionsEmail(ctx, m["realm"], m["userID"], actions, paramKV...)
+	}
+}
+
 func MakeGetCredentialsForUserEndpoint(managementComponent ManagementComponent) endpoint.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
@@ -309,29 +332,6 @@ func MakeCreateClientRoleEndpoint(managementComponent ManagementComponent) endpo
 		return LocationHeader{
 			URL: convertLocationUrl(keycloakLocation, m["scheme"], m["host"]),
 		}, nil
-	}
-}
-
-func MakeExecuteActionsEmailEndpoint(managementComponent ManagementComponent) endpoint.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
-		var m = req.(map[string]string)
-
-		var paramKV []string
-		for _, key := range []string{"client_id", "redirect_uri", "lifespan"} {
-			if m[key] != "" {
-				paramKV = append(paramKV, key, m[key])
-			}
-		}
-
-		//extract the actions
-		var actions []string
-		err := json.Unmarshal([]byte(m["actions"]), &actions)
-
-		if err != nil {
-			return nil, err
-		}
-
-		return nil, managementComponent.ExecuteActionsEmail(ctx, m["realm"], m["userID"], actions, paramKV...)
 	}
 }
 

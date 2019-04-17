@@ -25,13 +25,13 @@ type KeycloakClient interface {
 	GetRealmLevelRoleMappings(accessToken string, realmName, userID string) ([]kc.RoleRepresentation, error)
 	ResetPassword(accessToken string, realmName string, userID string, cred kc.CredentialRepresentation) error
 	SendVerifyEmail(accessToken string, realmName string, userID string, paramKV ...string) error
+	ExecuteActionsEmail(ctx context.Context, realmName string, userID string, actions []string, paramKV ...string) error
 	GetCredentialsForUser(accessToken string, realmReq, realmName string, userID string) ([]kc.CredentialRepresentation, error)
 	DeleteCredentialsForUser(accessToken string, realmReq, realmName string, userID string, credentialID string) error
 	GetRoles(accessToken string, realmName string) ([]kc.RoleRepresentation, error)
 	GetRole(accessToken string, realmName string, roleID string) (kc.RoleRepresentation, error)
 	GetClientRoles(accessToken string, realmName, idClient string) ([]kc.RoleRepresentation, error)
 	CreateClientRole(accessToken string, realmName, clientID string, role kc.RoleRepresentation) (string, error)
-	ExecuteActionsEmail(ctx context.Context, realmName string, userID string, actions []string, paramKV ...string) error
 }
 
 // Component is the event component interface.
@@ -51,13 +51,13 @@ type Component interface {
 	GetRealmRolesForUser(ctx context.Context, realmName, userID string) ([]api.RoleRepresentation, error)
 	ResetPassword(ctx context.Context, realmName string, userID string, password api.PasswordRepresentation) error
 	SendVerifyEmail(ctx context.Context, realmName string, userID string, paramKV ...string) error
+	ExecuteActionsEmail(ctx context.Context, realmName string, userID string, actions []string, paramKV ...string) error
 	GetCredentialsForUser(ctx context.Context, realmName string, userID string) ([]api.CredentialRepresentation, error)
 	DeleteCredentialsForUser(ctx context.Context, realmName string, userID string, credentialID string) error
 	GetRoles(ctx context.Context, realmName string) ([]api.RoleRepresentation, error)
 	GetRole(ctx context.Context, realmName string, roleID string) (api.RoleRepresentation, error)
 	GetClientRoles(ctx context.Context, realmName, idClient string) ([]api.RoleRepresentation, error)
 	CreateClientRole(ctx context.Context, realmName, clientID string, role api.RoleRepresentation) (string, error)
-	ExecuteActionsEmail(ctx context.Context, realmName string, userID string, actions []string, paramKV ...string) error
 }
 
 // Component is the management component.
@@ -570,6 +570,12 @@ func (c *component) SendVerifyEmail(ctx context.Context, realmName string, userI
 	return c.keycloakClient.SendVerifyEmail(accessToken, realmName, userID, paramKV...)
 }
 
+func (c *component) ExecuteActionsEmail(ctx context.Context, realmName string, userID string, actions []string, paramKV ...string) error {
+	var accessToken = ctx.Value("access_token").(string)
+
+	return c.keycloakClient.ExecuteActionsEmail(accessToken, realmName, userID, actions, paramKV...)
+}
+
 func (c *component) GetCredentialsForUser(ctx context.Context, realmName string, userID string) ([]api.CredentialRepresentation, error) {
 	var accessToken = ctx.Value("access_token").(string)
 	var ctxRealm = ctx.Value("realm").(string)
@@ -678,10 +684,4 @@ func (c *component) CreateClientRole(ctx context.Context, realmName, clientID st
 	}
 
 	return locationURL, nil
-}
-
-func (c *component) ExecuteActionsEmail(ctx context.Context, realmName string, userID string, actions []string, paramKV ...string) error {
-	var accessToken = ctx.Value("access_token").(string)
-
-	return c.keycloakClient.ExecuteActionsEmail(accessToken, realmName, userID, actions, paramKV...)
 }
