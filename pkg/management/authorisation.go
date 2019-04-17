@@ -10,23 +10,34 @@ import (
 
 // Tracking middleware at component level.
 type authorisationComponentMW struct {
-	authManager    security.AuthorizationManager
-	logger         log.Logger
-	next           Component
+	authManager security.AuthorizationManager
+	logger      log.Logger
+	next        Component
 }
 
 // MakeAuthorisationManagementComponentMW checks authorisation and return an error if the action is not allowed.
 func MakeAuthorisationManagementComponentMW(logger log.Logger, keycloakClient KeycloakClient, authorisationManager security.AuthorizationManager) func(Component) Component {
 	return func(next Component) Component {
 		return &authorisationComponentMW{
-			authManager:    authorisationManager,
-			logger:         logger,
-			next:           next,
+			authManager: authorisationManager,
+			logger:      logger,
+			next:        next,
 		}
 	}
 }
 
 // authorisationComponentMW implements Component.
+func (c *authorisationComponentMW) GetRealms(ctx context.Context) ([]api.RealmRepresentation, error) {
+	var action = "GetRealms"
+	var targetRealm = "*" // For this method, there is no target realm, so we use the wildcard to express there is no constraints.
+
+	if err := c.authManager.CheckAuthorisationOnTargetRealm(ctx, action, targetRealm); err != nil {
+		return []api.RealmRepresentation{}, err
+	}
+
+	return c.next.GetRealms(ctx)
+}
+
 func (c *authorisationComponentMW) GetRealm(ctx context.Context, realm string) (api.RealmRepresentation, error) {
 	var action = "GetRealm"
 	var targetRealm = realm

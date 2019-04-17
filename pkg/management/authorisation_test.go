@@ -71,6 +71,9 @@ func TestDeny(t *testing.T) {
 		ctx = context.WithValue(ctx, "groups", groups)
 		ctx = context.WithValue(ctx, "realm", "master")
 
+		_, err = authorisationMW.GetRealms(ctx)
+		assert.Equal(t, security.ForbiddenError{}, err)
+
 		_, err = authorisationMW.GetRealm(ctx, realmName)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
@@ -185,6 +188,7 @@ func TestAllowed(t *testing.T) {
 		var authorisations, err = security.NewAuthorizationManager(mockKeycloakClient, `{"master":
 			{
 				"toe": {
+					"GetRealms": {"*": {}},
 					"GetRealm": {"*": {"*": {} }},
 					"GetClient": {"*": {"*": {} }},
 					"GetClients": {"*": {"*": {} }},
@@ -215,6 +219,10 @@ func TestAllowed(t *testing.T) {
 		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
 		ctx = context.WithValue(ctx, "groups", groups)
 		ctx = context.WithValue(ctx, "realm", "master")
+
+		mockManagementComponent.EXPECT().GetRealms(ctx).Return([]api.RealmRepresentation{}, nil).Times(1)
+		_, err = authorisationMW.GetRealms(ctx)
+		assert.Nil(t, err)
 
 		mockManagementComponent.EXPECT().GetRealm(ctx, realmName).Return(api.RealmRepresentation{}, nil).Times(1)
 		_, err = authorisationMW.GetRealm(ctx, realmName)

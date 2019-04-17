@@ -62,6 +62,8 @@ func TestHTTPOIDCTokenValidationMW(t *testing.T) {
 		assert.Equal(t, 200, result.StatusCode)
 	}
 
+	req.Header.Set("Authorization", "bearer "+token)
+
 	// Invalid authorization token.
 	{
 		var w = httptest.NewRecorder()
@@ -105,7 +107,7 @@ func TestContextHTTPOIDCTokenValidationMW(t *testing.T) {
 
 	var w = httptest.NewRecorder()
 	mockKeycloakClient.EXPECT().VerifyToken("master", token).Return(nil).Times(1)
-	mockComponent.EXPECT().GetRealm(gomock.Any(), gomock.Any()).DoAndReturn(func (ctx context.Context, realm string) (api.RealmRepresentation, error){
+	mockComponent.EXPECT().GetRealm(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, realm string) (api.RealmRepresentation, error) {
 		var accessToken = ctx.Value("access_token").(string)
 		var realmCtx = ctx.Value("realm").(string)
 		var username = ctx.Value("username").(string)

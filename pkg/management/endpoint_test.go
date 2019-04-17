@@ -14,6 +14,23 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestGetRealmsEndpoint(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
+
+	var e = MakeGetRealmsEndpoint(mockManagementComponent)
+
+	var ctx = context.Background()
+	var req = make(map[string]string)
+
+	mockManagementComponent.EXPECT().GetRealms(ctx).Return([]api.RealmRepresentation{}, nil).Times(1)
+	var res, err = e(ctx, req)
+	assert.Nil(t, err)
+	assert.NotNil(t, res)
+}
+
 func TestGetRealmEndpoint(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()

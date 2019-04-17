@@ -11,6 +11,7 @@ import (
 )
 
 type KeycloakClient interface {
+	GetRealms(accessToken string) ([]kc.RealmRepresentation, error)
 	GetRealm(accessToken string, realmName string) (kc.RealmRepresentation, error)
 	GetClient(accessToken string, realmName, idClient string) (kc.ClientRepresentation, error)
 	GetClients(accessToken string, realmName string, paramKV ...string) ([]kc.ClientRepresentation, error)
@@ -34,6 +35,7 @@ type KeycloakClient interface {
 
 // Component is the event component interface.
 type Component interface {
+	GetRealms(ctx context.Context) ([]api.RealmRepresentation, error)
 	GetRealm(ctx context.Context, realmName string) (api.RealmRepresentation, error)
 	GetClient(ctx context.Context, realmName, idClient string) (api.ClientRepresentation, error)
 	GetClients(ctx context.Context, realmName string) ([]api.ClientRepresentation, error)
@@ -72,6 +74,30 @@ func NewComponent(keycloakClient KeycloakClient, eventDBModule event.EventsDBMod
 		keycloakClient: keycloakClient,
 		eventDBModule:  eventDBModule,
 	}
+}
+
+func (c *component) GetRealms(ctx context.Context) ([]api.RealmRepresentation, error) {
+	var accessToken = ctx.Value("access_token").(string)
+
+	realmsKc, err := c.keycloakClient.GetRealms(accessToken)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var realmsRep []api.RealmRepresentation
+	for _, realmKc := range realmsKc {
+		var realmRep api.RealmRepresentation
+		realmRep.Id = realmKc.Id
+		realmRep.KeycloakVersion = realmKc.KeycloakVersion
+		realmRep.Realm = realmKc.Realm
+		realmRep.DisplayName = realmKc.DisplayName
+		realmRep.Enabled = realmKc.Enabled
+		realmsRep = append(realmsRep, realmRep)
+	}
+
+	return realmsRep, err
+
 }
 
 func addAgentDetails(ctx context.Context, event map[string]string) {
@@ -259,6 +285,7 @@ func (c *component) GetUser(ctx context.Context, realmName, userID string) (api.
 	userRep.EmailVerified = userKc.EmailVerified
 	userRep.FirstName = userKc.FirstName
 	userRep.LastName = userKc.LastName
+	userRep.CreatedTimestamp = userKc.CreatedTimestamp
 
 	if userKc.Attributes != nil {
 		var m = *userKc.Attributes
@@ -386,6 +413,7 @@ func (c *component) GetUsers(ctx context.Context, realmName string, group string
 		userRep.EmailVerified = userKc.EmailVerified
 		userRep.FirstName = userKc.FirstName
 		userRep.LastName = userKc.LastName
+		userRep.CreatedTimestamp = userKc.CreatedTimestamp
 
 		if userKc.Attributes != nil {
 			var m = *userKc.Attributes
