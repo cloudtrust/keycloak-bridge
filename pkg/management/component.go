@@ -2,8 +2,11 @@ package management
 
 import (
 	"context"
+	"regexp"
+	"time"
 
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
+	"github.com/cloudtrust/keycloak-bridge/pkg/event"
 	kc "github.com/cloudtrust/keycloak-client"
 )
 
@@ -58,12 +61,18 @@ type Component interface {
 // Component is the management component.
 type component struct {
 	keycloakClient KeycloakClient
+	eventDBModule  event.EventsDBModule
 }
 
+const (
+	timeFormat = "2006-01-02 15:04:05.000"
+)
+
 // NewComponent returns the management component.
-func NewComponent(keycloakClient KeycloakClient) Component {
+func NewComponent(keycloakClient KeycloakClient, eventDBModule event.EventsDBModule) Component {
 	return &component{
 		keycloakClient: keycloakClient,
+		eventDBModule:  eventDBModule,
 	}
 }
 
@@ -88,6 +97,41 @@ func (c *component) GetRealms(ctx context.Context) ([]api.RealmRepresentation, e
 	}
 
 	return realmsRep, err
+
+}
+
+func addAgentDetails(ctx context.Context, event map[string]string) {
+
+	//retrieve agent username
+	event["agent_username"] = ctx.Value("username").(string)
+	//retrieve agent user id - not yet implemented
+	//to be uncommented once the ctx contains the userId value
+	//event["userId"] = ctx.Value("userId").(string)
+	//retrieve agent realm
+	event["agent_realm_name"] = ctx.Value("realm").(string)
+}
+
+// create the generic event that contains the ct_event_type, origin and audit_time
+func createEventMap(apiCall string) map[string]string {
+	event := make(map[string]string)
+	event["ct_event_type"] = apiCall
+	event["origin"] = "back-office"
+	event["audit_time"] = time.Now().UTC().Format(timeFormat)
+
+	return event
+}
+
+// enhance the event with more information
+func addEventValues(ctx context.Context, event map[string]string, values ...string) {
+
+	//add information to the event
+	noTuples := len(values)
+	for i := 0; i < noTuples; i = i + 2 {
+		event[values[i]] = values[i+1]
+	}
+
+	//retrieve details of the agent
+	addAgentDetails(ctx, event)
 }
 
 func (c *component) GetRealm(ctx context.Context, realm string) (api.RealmRepresentation, error) {
@@ -145,7 +189,7 @@ func (c *component) GetClients(ctx context.Context, realmName string) ([]api.Cli
 	return clientsRep, nil
 }
 
-func (c *component) CreateUser(ctx context.Context, realm string, user api.UserRepresentation) (string, error) {
+func (c *component) CreateUser(ctx context.Context, realmName string, user api.UserRepresentation) (string, error) {
 	var accessToken = ctx.Value("access_token").(string)
 
 	var userRep kc.UserRepresentation
@@ -178,11 +222,28 @@ func (c *component) CreateUser(ctx context.Context, realm string, user api.UserR
 		userRep.Attributes = &attributes
 	}
 
-	locationURL, err := c.keycloakClient.CreateUser(accessToken, realm, userRep)
+	locationURL, err := c.keycloakClient.CreateUser(accessToken, realmName, userRep)
 
 	if err != nil {
 		return "", err
 	}
+
+	//store the API call into the DB
+	event := createEventMap("API_ACCOUNT_CREATION")
+
+	var username = ""
+	if user.Username != nil {
+		username = *user.Username
+	}
+
+	//retrieve the user ID
+	reg := regexp.MustCompile(`[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}`)
+	userID := string(reg.Find([]byte(locationURL)))
+
+	addEventValues(ctx, event, "realm_name", realmName, "user_id", userID, "username", username)
+
+	// the error should be treated
+	_ = c.eventDBModule.Store(ctx, event)
 
 	return locationURL, nil
 }
@@ -190,7 +251,21 @@ func (c *component) CreateUser(ctx context.Context, realm string, user api.UserR
 func (c *component) DeleteUser(ctx context.Context, realmName, userID string) error {
 	var accessToken = ctx.Value("access_token").(string)
 
-	return c.keycloakClient.DeleteUser(accessToken, realmName, userID)
+	err := c.keycloakClient.DeleteUser(accessToken, realmName, userID)
+
+	if err != nil {
+		return err
+	}
+
+	//store the API call into the DB
+	event := createEventMap("API_ACCOUNT_DELETION")
+
+	addEventValues(ctx, event, "realm_name", realmName, "user_id", userID)
+
+	// the error should be treated
+	_ = c.eventDBModule.Store(ctx, event)
+
+	return nil
 }
 
 func (c *component) GetUser(ctx context.Context, realmName, userID string) (api.UserRepresentation, error) {
@@ -236,7 +311,21 @@ func (c *component) GetUser(ctx context.Context, realmName, userID string) (api.
 		}
 	}
 
+	//store the API call into the DB
+	event := createEventMap("GET_DETAILS")
+
+	var username = ""
+	if userKc.Username != nil {
+		username = *userKc.Username
+	}
+
+	addEventValues(ctx, event, "realm_name", realmName, "user_id", userID, "username", username)
+
+	// the error should be treated
+	_ = c.eventDBModule.Store(ctx, event)
+
 	return userRep, nil
+
 }
 
 func (c *component) UpdateUser(ctx context.Context, realmName, userID string, user api.UserRepresentation) error {
@@ -272,7 +361,37 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 		userRep.Attributes = &attributes
 	}
 
-	return c.keycloakClient.UpdateUser(accessToken, realmName, userID, userRep)
+	err := c.keycloakClient.UpdateUser(accessToken, realmName, userID, userRep)
+
+	if err != nil {
+		return err
+	}
+
+	//store the API call into the DB in case where user.Enable is present
+	if user.Enabled != nil {
+		//add ct_event_type
+		var event map[string]string
+		if *user.Enabled {
+			// UNLOCK_ACCOUNT ct_event_type
+			event = createEventMap("UNLOCK_ACCOUNT")
+		} else {
+			// LOCK_ACCOUNT ct_event_type
+			event = createEventMap("LOCK_ACCOUNT")
+		}
+
+		var username = ""
+		if user.Username != nil {
+			username = *user.Username
+		}
+
+		addEventValues(ctx, event, "realm_name", realmName, "user_id", userID, "username", username)
+
+		// the error should be treated
+		_ = c.eventDBModule.Store(ctx, event)
+
+	}
+
+	return nil
 }
 
 func (c *component) GetUsers(ctx context.Context, realmName string, group string, paramKV ...string) ([]api.UserRepresentation, error) {
@@ -421,7 +540,21 @@ func (c *component) ResetPassword(ctx context.Context, realmName string, userID 
 	credKc.Type = &passwordType
 	credKc.Value = password.Value
 
-	return c.keycloakClient.ResetPassword(accessToken, realmName, userID, credKc)
+	err := c.keycloakClient.ResetPassword(accessToken, realmName, userID, credKc)
+
+	if err != nil {
+		return err
+	}
+
+	//store the API call into the DB
+	event := createEventMap("INIT_PASSWORD")
+
+	addEventValues(ctx, event, "realm_name", realmName, "user_id", userID)
+
+	// the error should be treated
+	_ = c.eventDBModule.Store(ctx, event)
+
+	return nil
 }
 
 func (c *component) SendVerifyEmail(ctx context.Context, realmName string, userID string, paramKV ...string) error {
