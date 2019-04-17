@@ -485,6 +485,72 @@ func TestSendVerifyEmailEndpoint(t *testing.T) {
 	}
 }
 
+func TestExecuteActionsEmailEndpoint(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
+
+	var e = MakeExecuteActionsEmailEndpoint(mockManagementComponent)
+
+	// No error - Without param
+	{
+		var realm = "master"
+		var userID = "123-456-789"
+		var actions = []string{"action1", "action2"}
+		var ctx = context.Background()
+		var req = make(map[string]string)
+		req["realm"] = realm
+		req["userID"] = userID
+		actionsJSON, _ := json.Marshal(actions)
+		req["actions"] = string(actionsJSON)
+
+		mockManagementComponent.EXPECT().ExecuteActionsEmail(ctx, realm, userID, actions).Return(nil).Times(1)
+		var res, err = e(ctx, req)
+		assert.Nil(t, err)
+		assert.Nil(t, res)
+	}
+
+	// No error - With params
+	{
+		var realm = "master"
+		var userID = "123-456-789"
+		var actions = []string{"action1", "action2"}
+		var ctx = context.Background()
+		var req = make(map[string]string)
+		req["realm"] = realm
+		req["userID"] = userID
+		req["client_id"] = "123789"
+		req["redirect_uri"] = "http://redirect.com"
+		req["toto"] = "tutu" // Check this param is not transmitted
+		actionsJSON, _ := json.Marshal(actions)
+		req["actions"] = string(actionsJSON)
+
+		mockManagementComponent.EXPECT().ExecuteActionsEmail(ctx, realm, userID, actions, "client_id", req["client_id"], "redirect_uri", req["redirect_uri"]).Return(nil).Times(1)
+		var res, err = e(ctx, req)
+		assert.Nil(t, err)
+		assert.Nil(t, res)
+	}
+
+	// Error - Unmarshalling error
+	{
+
+		var realm = "master"
+		var userID = "123-456-789"
+		var ctx = context.Background()
+		var req = make(map[string]string)
+		req["realm"] = realm
+		req["userID"] = userID
+		req["client_id"] = "123789"
+		req["redirect_uri"] = "http://redirect.com"
+		req["actions"] = string("actions")
+
+		var res, err = e(ctx, req)
+		assert.NotNil(t, err)
+		assert.Nil(t, res)
+	}
+}
+
 func TestGetCredentialsForUserEndpoint(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
