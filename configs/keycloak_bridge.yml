@@ -15,6 +15,7 @@ cors-allowed-methods:
 cors-allow-credentials: true
 cors-allowed-headers:
   - "Authorization"
+  - "Content-Type"
 cors-debug: true
 
 # Keycloak configs
