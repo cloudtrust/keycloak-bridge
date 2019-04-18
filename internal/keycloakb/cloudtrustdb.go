@@ -5,32 +5,32 @@ import (
 	"time"
 )
 
-// NoopEventsDB is a eventsDB client that does nothing.
-type NoopEventsDB struct{}
+// NoopDB is a database client that does nothing.
+type NoopDB struct{}
 
 // Exec does nothing.
-func (NoopEventsDB) Exec(query string, args ...interface{}) (sql.Result, error) {
+func (NoopDB) Exec(query string, args ...interface{}) (sql.Result, error) {
 	return NoopResult{}, nil
 }
 
 // Query does nothing.
-func (NoopEventsDB) Query(query string, args ...interface{}) (*sql.Rows, error) {
+func (NoopDB) Query(query string, args ...interface{}) (*sql.Rows, error) {
 	return nil, nil
 }
 
 // QueryRow does nothing.
-func (NoopEventsDB) QueryRow(query string, args ...interface{}) *sql.Row {
+func (NoopDB) QueryRow(query string, args ...interface{}) *sql.Row {
 	return nil
 }
 
-func (NoopEventsDB) SetMaxOpenConns(n int) {
+func (NoopDB) SetMaxOpenConns(n int) {
 
 }
-func (NoopEventsDB) SetMaxIdleConns(n int) {
+func (NoopDB) SetMaxIdleConns(n int) {
 
 }
 
-func (NoopEventsDB) SetConnMaxLifetime(d time.Duration) {
+func (NoopDB) SetConnMaxLifetime(d time.Duration) {
 
 }
 

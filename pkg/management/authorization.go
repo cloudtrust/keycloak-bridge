@@ -259,3 +259,25 @@ func (c *authorizationComponentMW) CreateClientRole(ctx context.Context, realmNa
 
 	return c.next.CreateClientRole(ctx, realmName, clientID, role)
 }
+
+func (c *authorizationComponentMW) GetRealmCustomConfiguration(ctx context.Context, realmName string) (api.RealmCustomConfiguration, error) {
+	var action = "GetRealmCustomConfiguration"
+	var targetRealm = realmName
+
+	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
+		return api.RealmCustomConfiguration{}, err
+	}
+
+	return c.next.GetRealmCustomConfiguration(ctx, realmName)
+}
+
+func (c *authorizationComponentMW) UpdateRealmCustomConfiguration(ctx context.Context, realmName string, customConfig api.RealmCustomConfiguration) error {
+	var action = "UpdateRealmCustomConfiguration"
+	var targetRealm = realmName
+
+	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
+		return err
+	}
+
+	return c.next.UpdateRealmCustomConfiguration(ctx, realmName, customConfig)
+}

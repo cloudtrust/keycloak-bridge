@@ -37,6 +37,8 @@ func TestDeny(t *testing.T) {
 
 	var pass = "P@ssw0rd"
 
+	var clientURI = "https://wwww.cloudtrust.io"
+
 	mockKeycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(kc.UserRepresentation{
 		Id:       &userID,
 		Username: &userUsername,
@@ -58,6 +60,11 @@ func TestDeny(t *testing.T) {
 
 	var password = api.PasswordRepresentation{
 		Value: &pass,
+	}
+
+	var customConfig = api.RealmCustomConfiguration{
+		DefaultClientId:    &clientID,
+		DefaultRedirectUri: &clientURI,
 	}
 
 	// Nothing allowed
@@ -133,6 +140,12 @@ func TestDeny(t *testing.T) {
 
 		_, err = authorizationMW.CreateClientRole(ctx, realmName, clientID, role)
 		assert.Equal(t, security.ForbiddenError{}, err)
+
+		_, err = authorizationMW.GetRealmCustomConfiguration(ctx, realmName)
+		assert.Equal(t, security.ForbiddenError{}, err)
+
+		err = authorizationMW.UpdateRealmCustomConfiguration(ctx, realmName, customConfig)
+		assert.Equal(t, security.ForbiddenError{}, err)
 	}
 }
 
@@ -160,6 +173,8 @@ func TestAllowed(t *testing.T) {
 
 	var pass = "P@ssw0rd"
 
+	var clientURI = "https://wwww.cloudtrust.io"
+
 	mockKeycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(kc.UserRepresentation{
 		Id:       &userID,
 		Username: &userUsername,
@@ -183,7 +198,12 @@ func TestAllowed(t *testing.T) {
 		Value: &pass,
 	}
 
-	// Nothing allowed
+	var customConfig = api.RealmCustomConfiguration{
+		DefaultClientId:    &clientID,
+		DefaultRedirectUri: &clientURI,
+	}
+
+	// Anything allowed
 	{
 		var authorizations, err = security.NewAuthorizationManager(mockKeycloakClient, `{"master":
 			{
@@ -208,7 +228,9 @@ func TestAllowed(t *testing.T) {
 					"GetRoles": {"*": {"*": {} }},
 					"GetRole": {"*": {"*": {} }},
 					"GetClientRoles": {"*": {"*": {} }},
-					"CreateClientRole": {"*": {"*": {} }}
+					"CreateClientRole": {"*": {"*": {} }},
+					"GetRealmCustomConfiguration": {"*": {"*": {} }},
+					"UpdateRealmCustomConfiguration": {"*": {"*": {} }}
 				}
 			}
 		}`)
@@ -302,6 +324,14 @@ func TestAllowed(t *testing.T) {
 
 		mockManagementComponent.EXPECT().CreateClientRole(ctx, realmName, clientID, role).Return("", nil).Times(1)
 		_, err = authorizationMW.CreateClientRole(ctx, realmName, clientID, role)
+		assert.Nil(t, err)
+
+		mockManagementComponent.EXPECT().GetRealmCustomConfiguration(ctx, realmName).Return(customConfig, nil).Times(1)
+		_, err = authorizationMW.GetRealmCustomConfiguration(ctx, realmName)
+		assert.Nil(t, err)
+
+		mockManagementComponent.EXPECT().UpdateRealmCustomConfiguration(ctx, realmName, customConfig).Return(nil).Times(1)
+		err = authorizationMW.UpdateRealmCustomConfiguration(ctx, realmName, customConfig)
 		assert.Nil(t, err)
 	}
 }

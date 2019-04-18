@@ -19,11 +19,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:2276e1aa87fc57d4af1091b22aad776635973a1e0764c91c88e1a28edad426ef"
+  digest = "1:add9addd1e9f693f228f2818f3a08df0df2d3ec7c453614c8a4d113e2cc2fbd0"
   name = "github.com/cloudtrust/keycloak-client"
   packages = ["."]
   pruneopts = ""
-  revision = "0d5f98aceb4c163562b8474fb3665e0e2c400ce5"
+  revision = "cf331b0198778ec8dea897dddf99a00720f5f273"
   source = "github.com/cloudtrust/keycloak-client"
 
 [[projects]]
@@ -123,7 +123,7 @@
   version = "v1.3.1"
 
 [[projects]]
-  digest = "1:da2d72f6fdcdcebe27602c9c516636f654eaae67ae09e8a9be10820a4ba42911"
+  digest = "1:73b360c5b463f59fdc570e9188efc398b63bc7c20a4498a4f076eaa8574adef6"
   name = "github.com/google/flatbuffers"
   packages = ["go"]
   pruneopts = ""
@@ -158,7 +158,7 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:0e6a4d206be26596e3ad0127ec2da0f2952169768f33d7010517ba6f0fafd47c"
+  digest = "1:17f258c3c2cd12980479112a20afb3024019d5b62a670878ff84742fec621115"
   name = "github.com/influxdata/influxdb"
   packages = [
     "client/v2",
@@ -347,7 +347,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:958ad9932fc5ac9fb5c794f97580ed123ddfed1d965e1de0f98e2a590d6e9e3e"
+  digest = "1:ed1a3a3847549ea4be3720fd005148e57702e953f83aa337bf1776eb54d2b910"
   name = "golang.org/x/crypto"
   packages = [
     "ed25519",
@@ -355,7 +355,7 @@
     "pbkdf2",
   ]
   pruneopts = ""
-  revision = "88737f569e3a9c7ab309cdc09a07fe7fc87233c3"
+  revision = "f416ebab96af27ca70b6e5c23d6a0747530da626"
 
 [[projects]]
   branch = "master"
