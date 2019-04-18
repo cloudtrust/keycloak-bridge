@@ -37,6 +37,11 @@ db-max-open-conns: 10
 db-max-idle-conns: 2
 db-conn-max-lifetime: 3600
 
+# Configuration DB
+db-config-username: bridge
+db-config-password: bridge-password 
+db-config-database: cloudtrust_configuration
+
 # audit events
 events-db: true
 

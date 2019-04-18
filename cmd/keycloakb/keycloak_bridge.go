@@ -97,6 +97,7 @@ func main() {
 
 		// Enabled units
 		eventsDBEnabled   = c.GetBool("events-db")
+		configDBEnabled   = c.GetBool("config-db")
 		influxEnabled     = c.GetBool("influx")
 		jaegerEnabled     = c.GetBool("jaeger")
 		sentryEnabled     = c.GetBool("sentry")
@@ -142,6 +143,11 @@ func main() {
 		dbMaxOpenConns    = c.GetInt("db-max-open-conns")
 		dbMaxIdleConns    = c.GetInt("db-max-idle-conns")
 		dbConnMaxLifetime = c.GetInt("db-conn-max-lifetime")
+
+		// DB for custom configuration
+		dbConfigUsername = c.GetString("db-config-username")
+		dbConfigPassword = c.GetString("db-config-password")
+		dbConfigDatabase = c.GetString("db-config-database")
 
 		// Rate limiting
 		rateLimit = map[string]int{
@@ -260,7 +266,7 @@ func main() {
 	}
 
 	// Audit events DB.
-	type EventsDB interface {
+	type CloudtrustDB interface {
 		Exec(query string, args ...interface{}) (sql.Result, error)
 		QueryRow(query string, args ...interface{}) *sql.Row
 		SetMaxOpenConns(n int)
@@ -268,7 +274,7 @@ func main() {
 		SetConnMaxLifetime(d time.Duration)
 	}
 
-	var eventsDBConn EventsDB = keycloakb.NoopEventsDB{}
+	var eventsDBConn CloudtrustDB = keycloakb.NoopDB{}
 	if eventsDBEnabled {
 		var err error
 		eventsDBConn, err = sql.Open("mysql", fmt.Sprintf("%s:%s@%s(%s)/%s", dbUsername, dbPassword, dbProtocol, dbHostPort, dbDatabase))
@@ -282,6 +288,21 @@ func main() {
 		eventsDBConn.SetMaxIdleConns(dbMaxIdleConns)
 		eventsDBConn.SetConnMaxLifetime(time.Duration(dbConnMaxLifetime) * time.Second)
 
+	}
+
+	var configurationDBConn CloudtrustDB = keycloakb.NoopDB{}
+	if configDBEnabled {
+		var err error
+		configurationDBConn, err = sql.Open("mysql", fmt.Sprintf("%s:%s@%s(%s)/%s", dbConfigUsername, dbConfigPassword, dbProtocol, dbHostPort, dbConfigDatabase))
+
+		if err != nil {
+			logger.Log("msg", "could not create DB connection for configuration storage", "error", err)
+			return
+		}
+		// the config of the DB should have a max_connections > SetMaxOpenConns
+		configurationDBConn.SetMaxOpenConns(dbMaxOpenConns)
+		configurationDBConn.SetMaxIdleConns(dbMaxIdleConns)
+		configurationDBConn.SetConnMaxLifetime(time.Duration(dbConnMaxLifetime) * time.Second)
 	}
 
 	// Event service.
@@ -312,7 +333,6 @@ func main() {
 			eventsDBModule = event.MakeEventsDBModuleInstrumentingMW(influxMetrics.NewHistogram("eventsDB_module"))(eventsDBModule)
 			eventsDBModule = event.MakeEventsDBModuleLoggingMW(log.With(eventLogger, "mw", "module", "unit", "eventsDB"))(eventsDBModule)
 			eventsDBModule = event.MakeEventsDBModuleTracingMW(tracer)(eventsDBModule)
-
 		}
 
 		var eventAdminComponent event.AdminComponent
@@ -372,38 +392,48 @@ func main() {
 			eventsDBModule = event.MakeEventsDBModuleInstrumentingMW(influxMetrics.NewHistogram("eventsDB_module"))(eventsDBModule)
 			eventsDBModule = event.MakeEventsDBModuleLoggingMW(log.With(managementLogger, "mw", "module", "unit", "eventsDB"))(eventsDBModule)
 			eventsDBModule = event.MakeEventsDBModuleTracingMW(tracer)(eventsDBModule)
+		}
 
+		// module for storing and retrieving the custom configuration
+		var configDBModule management.ConfigurationDBModule
+		{
+			configDBModule = management.NewConfigurationDBModule(configurationDBConn)
+			configDBModule = management.MakeConfigurationDBModuleInstrumentingMW(influxMetrics.NewHistogram("configDB_module"))(configDBModule)
+			configDBModule = management.MakeConfigurationDBModuleLoggingMW(log.With(managementLogger, "mw", "module", "unit", "configDB"))(configDBModule)
+			configDBModule = management.MakeConfigurationDBModuleTracingMW(tracer)(configDBModule)
 		}
 
 		var keycloakComponent management.Component
 		{
-			keycloakComponent = management.NewComponent(keycloakClient, eventsDBModule)
+			keycloakComponent = management.NewComponent(keycloakClient, eventsDBModule, configDBModule)
 			keycloakComponent = management.MakeAuthorizationManagementComponentMW(log.With(managementLogger, "mw", "endpoint"), keycloakClient, authorizationManager)(keycloakComponent)
 		}
 
 		managementEndpoints = management.Endpoints{
-			GetRealms:                prepareEndpoint(management.MakeGetRealmsEndpoint(keycloakComponent), "realms_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
-			GetRealm:                 prepareEndpoint(management.MakeGetRealmEndpoint(keycloakComponent), "realm_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
-			GetClients:               prepareEndpoint(management.MakeGetClientsEndpoint(keycloakComponent), "get_clients_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
-			GetClient:                prepareEndpoint(management.MakeGetClientEndpoint(keycloakComponent), "get_client_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
-			CreateUser:               prepareEndpoint(management.MakeCreateUserEndpoint(keycloakComponent), "create_user_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
-			GetUser:                  prepareEndpoint(management.MakeGetUserEndpoint(keycloakComponent), "get_user_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
-			UpdateUser:               prepareEndpoint(management.MakeUpdateUserEndpoint(keycloakComponent), "update_user_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
-			DeleteUser:               prepareEndpoint(management.MakeDeleteUserEndpoint(keycloakComponent), "delete_user_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
-			GetUsers:                 prepareEndpoint(management.MakeGetUsersEndpoint(keycloakComponent), "get_users_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
-			GetUserAccountStatus:     prepareEndpoint(management.MakeGetUserAccountStatusEndpoint(keycloakComponent), "get_user_accountstatus", influxMetrics, managementLogger, tracer, rateLimit),
-			GetRoles:                 prepareEndpoint(management.MakeGetRolesEndpoint(keycloakComponent), "get_roles_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
-			GetRole:                  prepareEndpoint(management.MakeGetRoleEndpoint(keycloakComponent), "get_role_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
-			GetClientRoles:           prepareEndpoint(management.MakeGetClientRolesEndpoint(keycloakComponent), "get_client_roles_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
-			CreateClientRole:         prepareEndpoint(management.MakeCreateClientRoleEndpoint(keycloakComponent), "create_client_role_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
-			GetClientRoleForUser:     prepareEndpoint(management.MakeGetClientRolesForUserEndpoint(keycloakComponent), "get_client_roles_for_user_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
-			AddClientRoleToUser:      prepareEndpoint(management.MakeAddClientRolesToUserEndpoint(keycloakComponent), "get_client_roles_for_user_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
-			GetRealmRoleForUser:      prepareEndpoint(management.MakeGetRealmRolesForUserEndpoint(keycloakComponent), "get_realm_roles_for_user_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
-			ResetPassword:            prepareEndpoint(management.MakeResetPasswordEndpoint(keycloakComponent), "reset_password_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
-			SendVerifyEmail:          prepareEndpoint(management.MakeSendVerifyEmailEndpoint(keycloakComponent), "send_verify_email_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
-			ExecuteActionsEmail:      prepareEndpoint(management.MakeExecuteActionsEmailEndpoint(keycloakComponent), "execute_actions_email_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
-			GetCredentialsForUser:    prepareEndpoint(management.MakeGetCredentialsForUserEndpoint(keycloakComponent), "get_credentials_for_user_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
-			DeleteCredentialsForUser: prepareEndpoint(management.MakeDeleteCredentialsForUserEndpoint(keycloakComponent), "delete_credentials_for_user_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
+			GetRealms:                      prepareEndpoint(management.MakeGetRealmEndpoint(keycloakComponent), "realms_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
+			GetRealm:                       prepareEndpoint(management.MakeGetRealmEndpoint(keycloakComponent), "realm_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
+			GetClients:                     prepareEndpoint(management.MakeGetClientsEndpoint(keycloakComponent), "get_clients_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
+			GetClient:                      prepareEndpoint(management.MakeGetClientEndpoint(keycloakComponent), "get_client_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
+			CreateUser:                     prepareEndpoint(management.MakeCreateUserEndpoint(keycloakComponent), "create_user_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
+			GetUser:                        prepareEndpoint(management.MakeGetUserEndpoint(keycloakComponent), "get_user_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
+			UpdateUser:                     prepareEndpoint(management.MakeUpdateUserEndpoint(keycloakComponent), "update_user_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
+			DeleteUser:                     prepareEndpoint(management.MakeDeleteUserEndpoint(keycloakComponent), "delete_user_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
+			GetUsers:                       prepareEndpoint(management.MakeGetUsersEndpoint(keycloakComponent), "get_users_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
+			GetUserAccountStatus:           prepareEndpoint(management.MakeGetUserAccountStatusEndpoint(keycloakComponent), "get_user_accountstatus", influxMetrics, managementLogger, tracer, rateLimit),
+			GetRoles:                       prepareEndpoint(management.MakeGetRolesEndpoint(keycloakComponent), "get_roles_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
+			GetRole:                        prepareEndpoint(management.MakeGetRoleEndpoint(keycloakComponent), "get_role_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
+			GetClientRoles:                 prepareEndpoint(management.MakeGetClientRolesEndpoint(keycloakComponent), "get_client_roles_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
+			CreateClientRole:               prepareEndpoint(management.MakeCreateClientRoleEndpoint(keycloakComponent), "create_client_role_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
+			GetClientRoleForUser:           prepareEndpoint(management.MakeGetClientRolesForUserEndpoint(keycloakComponent), "get_client_roles_for_user_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
+			AddClientRoleToUser:            prepareEndpoint(management.MakeAddClientRolesToUserEndpoint(keycloakComponent), "get_client_roles_for_user_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
+			GetRealmRoleForUser:            prepareEndpoint(management.MakeGetRealmRolesForUserEndpoint(keycloakComponent), "get_realm_roles_for_user_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
+			ResetPassword:                  prepareEndpoint(management.MakeResetPasswordEndpoint(keycloakComponent), "reset_password_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
+			SendVerifyEmail:                prepareEndpoint(management.MakeSendVerifyEmailEndpoint(keycloakComponent), "send_verify_email_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
+			ExecuteActionsEmail:            prepareEndpoint(management.MakeExecuteActionsEmailEndpoint(keycloakComponent), "execute_actions_email_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
+			GetCredentialsForUser:          prepareEndpoint(management.MakeGetCredentialsForUserEndpoint(keycloakComponent), "get_credentials_for_user_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
+			DeleteCredentialsForUser:       prepareEndpoint(management.MakeDeleteCredentialsForUserEndpoint(keycloakComponent), "delete_credentials_for_user_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
+			GetRealmCustomConfiguration:    prepareEndpoint(management.MakeGetRealmCustomConfigurationEndpoint(keycloakComponent), "get_realm_custom_config_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
+			UpdateRealmCustomConfiguration: prepareEndpoint(management.MakeUpdateRealmCustomConfigurationEndpoint(keycloakComponent), "update_realm_custom_config_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
 		}
 	}
 
@@ -469,6 +499,9 @@ func main() {
 		var getCredentialsForUserHandler = ConfigureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.GetCredentialsForUser)
 		var deleteCredentialsForUserHandler = ConfigureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.DeleteCredentialsForUser)
 
+		var getRealmCustomConfigurationHandler = ConfigureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.GetRealmCustomConfiguration)
+		var updateRealmCustomConfigurationHandler = ConfigureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.UpdateRealmCustomConfiguration)
+
 		//realms
 		managementSubroute.Path("/realms").Methods("GET").Handler(getRealmsHandler)
 		managementSubroute.Path("/realms/{realm}").Methods("GET").Handler(getRealmHandler)
@@ -504,6 +537,10 @@ func main() {
 		managementSubroute.Path("/realms/{realm}/roles-by-id/{roleID}").Methods("GET").Handler(getRoleHandler)
 		managementSubroute.Path("/realms/{realm}/clients/{clientID}/roles").Methods("GET").Handler(getClientRolesHandler)
 		managementSubroute.Path("/realms/{realm}/clients/{clientID}/roles").Methods("POST").Handler(createClientRolesHandler)
+
+		// custom configuration par realm
+		managementSubroute.Path("/realms/{realm}/configuration").Methods("GET").Handler(getRealmCustomConfigurationHandler)
+		managementSubroute.Path("/realms/{realm}/configuration").Methods("PUT").Handler(updateRealmCustomConfigurationHandler)
 
 		// Export.
 		route.Handle("/export", export.MakeHTTPExportHandler(exportEndpoint)).Methods("GET")
@@ -601,6 +638,12 @@ func config(logger log.Logger) *viper.Viper {
 	v.SetDefault("db-max-open-conns", 10)
 	v.SetDefault("db-max-idle-conns", 2)
 	v.SetDefault("db-conn-max-lifetime", 3600)
+
+	//Storage custom configuration in DB
+	v.SetDefault("config-db", true)
+	v.SetDefault("db-config-username", "")
+	v.SetDefault("db-config-password", "")
+	v.SetDefault("db-config-database", "")
 
 	// Rate limiting (in requests/second)
 	v.SetDefault("rate-event", 1000)

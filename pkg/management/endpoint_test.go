@@ -721,3 +721,70 @@ func TestCreateClientRoleEndpoint(t *testing.T) {
 		assert.NotNil(t, err)
 	}
 }
+
+func TestGetRealmCustomConfigurationEndpoint(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
+
+	var e = MakeGetRealmCustomConfigurationEndpoint(mockManagementComponent)
+
+	// No error
+	{
+		var realmName = "master"
+		var clientID = "123456"
+		var ctx = context.Background()
+		var req = make(map[string]string)
+		req["realm"] = realmName
+		req["clientID"] = clientID
+
+		mockManagementComponent.EXPECT().GetRealmCustomConfiguration(ctx, realmName).Return(api.RealmCustomConfiguration{}, nil).Times(1)
+		var res, err = e(ctx, req)
+		assert.Nil(t, err)
+		assert.NotNil(t, res)
+	}
+}
+
+func TestUpdateRealmCustomConfigurationEndpoint(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
+
+	var e = MakeUpdateRealmCustomConfigurationEndpoint(mockManagementComponent)
+
+	// No error
+	{
+		var realmName = "master"
+		var clientID = "123456"
+		var configJSON = "{\"DefaultClientId\":\"clientId\", \"DefaultRedirectUri\":\"http://cloudtrust.io\"}"
+		var ctx = context.Background()
+		var req = make(map[string]string)
+		req["realm"] = realmName
+		req["clientID"] = clientID
+		req["body"] = configJSON
+
+		mockManagementComponent.EXPECT().UpdateRealmCustomConfiguration(ctx, realmName, gomock.Any()).Return(nil).Times(1)
+		var res, err = e(ctx, req)
+		assert.Nil(t, err)
+		assert.Nil(t, res)
+	}
+
+	// JSON error
+	{
+		var realmName = "master"
+		var clientID = "123456"
+		var configJSON = "{\"DefaultClientId\":\"clientId\", \"DefaultRedirectUri\":\"http://cloudtrust.io\""
+		var ctx = context.Background()
+		var req = make(map[string]string)
+		req["realm"] = realmName
+		req["clientID"] = clientID
+		req["body"] = configJSON
+
+		mockManagementComponent.EXPECT().UpdateRealmCustomConfiguration(ctx, realmName, gomock.Any()).Return(nil).Times(0)
+		var res, err = e(ctx, req)
+		assert.NotNil(t, err)
+		assert.Nil(t, res)
+	}
+}

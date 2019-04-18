@@ -2,7 +2,9 @@ package management
 
 import (
 	"context"
+	"encoding/json"
 	"regexp"
+	"strings"
 	"time"
 
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
@@ -35,7 +37,7 @@ type KeycloakClient interface {
 	CreateClientRole(accessToken string, realmName, clientID string, role kc.RoleRepresentation) (string, error)
 }
 
-// Component is the event component interface.
+// Component is the management component interface.
 type Component interface {
 	GetRealms(ctx context.Context) ([]api.RealmRepresentation, error)
 	GetRealm(ctx context.Context, realmName string) (api.RealmRepresentation, error)
@@ -59,12 +61,15 @@ type Component interface {
 	GetRole(ctx context.Context, realmName string, roleID string) (api.RoleRepresentation, error)
 	GetClientRoles(ctx context.Context, realmName, idClient string) ([]api.RoleRepresentation, error)
 	CreateClientRole(ctx context.Context, realmName, clientID string, role api.RoleRepresentation) (string, error)
+	GetRealmCustomConfiguration(ctx context.Context, realmName string) (api.RealmCustomConfiguration, error)
+	UpdateRealmCustomConfiguration(ctx context.Context, realmID string, customConfig api.RealmCustomConfiguration) error
 }
 
 // Component is the management component.
 type component struct {
 	keycloakClient KeycloakClient
 	eventDBModule  event.EventsDBModule
+	configDBModule ConfigurationDBModule
 }
 
 const (
@@ -72,10 +77,12 @@ const (
 )
 
 // NewComponent returns the management component.
-func NewComponent(keycloakClient KeycloakClient, eventDBModule event.EventsDBModule) Component {
+
+func NewComponent(keycloakClient KeycloakClient, eventDBModule event.EventsDBModule, configDBModule ConfigurationDBModule) Component {
 	return &component{
 		keycloakClient: keycloakClient,
 		eventDBModule:  eventDBModule,
+		configDBModule: configDBModule,
 	}
 }
 
@@ -685,4 +692,79 @@ func (c *component) CreateClientRole(ctx context.Context, realmName, clientID st
 	}
 
 	return locationURL, nil
+}
+
+// Retrieve the configuration from the database
+func (c *component) GetRealmCustomConfiguration(ctx context.Context, realmName string) (api.RealmCustomConfiguration, error) {
+	var accessToken = ctx.Value("access_token").(string)
+
+	var customConfig = api.RealmCustomConfiguration{
+		DefaultClientId:    new(string),
+		DefaultRedirectUri: new(string),
+	}
+	// get the realm config from Keycloak
+	realmConfig, err := c.keycloakClient.GetRealm(accessToken, realmName)
+	if err != nil {
+		return customConfig, err
+	}
+	// from the realm ID, fetch the custom configuration
+	realmID := realmConfig.Id
+	customConfigJSON, err := c.configDBModule.GetConfiguration(ctx, *realmID)
+	if customConfigJSON == "" {
+		// database is empty
+		return customConfig, nil
+	}
+	// transform json string into
+	err = json.Unmarshal([]byte(customConfigJSON), &customConfig)
+	if err != nil {
+		return customConfig, err
+	}
+	return customConfig, nil
+}
+
+// Update the configuration in the database; verify that the content of the configuration is coherent with Keycloak configuration
+func (c *component) UpdateRealmCustomConfiguration(ctx context.Context, realmName string, customConfig api.RealmCustomConfiguration) error {
+	var accessToken = ctx.Value("access_token").(string)
+
+	// get the realm config from Keycloak
+	realmConfig, err := c.keycloakClient.GetRealm(accessToken, realmName)
+	if err != nil {
+		return err
+	}
+	// get the desired client (from its ID)
+	clients, err := c.keycloakClient.GetClients(accessToken, realmName)
+	if err != nil {
+		return err
+	}
+	var match = false
+	for _, client := range clients {
+		if *client.ClientId != *customConfig.DefaultClientId {
+			continue
+		}
+		for _, redirectURI := range *client.RedirectUris {
+			// escape the regex-specific characters (dots for intance)...
+			matcher := regexp.QuoteMeta(redirectURI)
+			// ... but keep the stars
+			matcher = strings.Replace(matcher, "\\*", "*", -1)
+			match, _ = regexp.MatchString(matcher, *customConfig.DefaultRedirectUri)
+			if match {
+				break
+			}
+		}
+	}
+	if !match {
+		return HTTPError{
+			Status:  400,
+			Message: "Invalid client ID or redirect URI",
+		}
+	}
+	// transform customConfig object into JSON string
+	configJSON, err := json.Marshal(customConfig)
+	if err != nil {
+		return err
+	}
+	// from the realm ID, update the custom configuration in the DB
+	realmID := realmConfig.Id
+	err = c.configDBModule.StoreOrUpdate(ctx, *realmID, string(configJSON))
+	return err
 }
