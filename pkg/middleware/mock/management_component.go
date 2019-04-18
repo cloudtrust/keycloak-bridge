@@ -96,6 +96,23 @@ func (mr *ManagementComponentMockRecorder) DeleteUser(arg0, arg1, arg2 interface
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteUser", reflect.TypeOf((*ManagementComponent)(nil).DeleteUser), arg0, arg1, arg2)
 }
 
+// ExecuteActionsEmail mocks base method
+func (m *ManagementComponent) ExecuteActionsEmail(arg0 context.Context, arg1, arg2 string, arg3 []string, arg4 ...string) error {
+	varargs := []interface{}{arg0, arg1, arg2, arg3}
+	for _, a := range arg4 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "ExecuteActionsEmail", varargs...)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ExecuteActionsEmail indicates an expected call of ExecuteActionsEmail
+func (mr *ManagementComponentMockRecorder) ExecuteActionsEmail(arg0, arg1, arg2, arg3 interface{}, arg4 ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{arg0, arg1, arg2, arg3}, arg4...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExecuteActionsEmail", reflect.TypeOf((*ManagementComponent)(nil).ExecuteActionsEmail), varargs...)
+}
+
 // GetClient mocks base method
 func (m *ManagementComponent) GetClient(arg0 context.Context, arg1, arg2 string) (management.ClientRepresentation, error) {
 	ret := m.ctrl.Call(m, "GetClient", arg0, arg1, arg2)

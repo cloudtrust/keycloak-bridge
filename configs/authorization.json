@@ -50,6 +50,16 @@
           "l3_support_manager": {},
           "l3_support_agent": {}
         }
+      },
+      "ExecuteActionsEmail": {
+        "master": {
+          "integrator_manager": {},
+          "integrator_agent": {},
+          "l2_support_manager": {},
+          "l2_support_agent": {},
+          "l3_support_manager": {},
+          "l3_support_agent": {}
+        }
       }
     },
     "integrator_manager":{
@@ -111,6 +121,14 @@
         "DEP": {
           "*": {}
         }
+      }, 
+      "ExecuteActionsEmail": {
+        "master": {
+          "integrator_agent": {}
+        },
+        "DEP": {
+          "*": {}
+        } 
       },
       "GetRealmCustomConfiguration": {
         "DEP": {
@@ -162,6 +180,11 @@
           "*": {}
         }
       },
+      "ExecuteActionsEmail": {
+        "DEP": {
+          "*": {}
+        }
+      },    
       "GetRealmCustomConfiguration": {
         "DEP": {
           "*": {}
@@ -211,7 +234,12 @@
         "master": {
           "l2_support_agent": {}
         }
-      }      
+      },
+      "ExecuteActionsEmail": {
+        "master": {
+          "l2_support_agent": {}
+        }
+      }
     },
     "l2_support_agent": {
       "GetRealms": {
@@ -256,7 +284,12 @@
         "master": {
           "l3_support_agent": {}
         }
-      } 
+      },
+      "ExecuteActionsEmail": {
+        "master": {
+          "l3_support_agent": {}
+        }
+      }
     },
     "l3_support_agent": {
       "GetRealms": {
@@ -303,7 +336,12 @@
         "DEP": {
           "*": {}
         }
-      }      
+      },
+      "ExecuteActionsEmail": {
+        "DEP": {
+          "*": {}
+        }
+      }   
     },
     "l1_support_manager": {
       "GetRealms": {
@@ -349,7 +387,13 @@
           "l1_support_agent": {},
           "end_user": {}
         }
-      }       
+      },
+      "ExecuteActionsEmail": {
+        "DEP": {
+          "l1_support_agent": {},
+          "end_user": {}
+        }
+      }      
     },
     "l1_support_agent": {
       "GetRealms": {
@@ -378,6 +422,11 @@
         }
       },
       "SendVerifyEmail": {
+        "DEP": {
+          "end_user": {}
+        }
+      },
+      "ExecuteActionsEmail": {
         "DEP": {
           "end_user": {}
         }

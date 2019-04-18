@@ -26,6 +26,7 @@ type Endpoints struct {
 	GetRealmRoleForUser            endpoint.Endpoint
 	ResetPassword                  endpoint.Endpoint
 	SendVerifyEmail                endpoint.Endpoint
+	ExecuteActionsEmail            endpoint.Endpoint
 	GetCredentialsForUser          endpoint.Endpoint
 	DeleteCredentialsForUser       endpoint.Endpoint
 	GetRoles                       endpoint.Endpoint
@@ -53,6 +54,7 @@ type ManagementComponent interface {
 	GetRealmRolesForUser(ctx context.Context, realmName, userID string) ([]api.RoleRepresentation, error)
 	ResetPassword(ctx context.Context, realmName string, userID string, password api.PasswordRepresentation) error
 	SendVerifyEmail(ctx context.Context, realmName string, userID string, paramKV ...string) error
+	ExecuteActionsEmail(ctx context.Context, realmName string, userID string, actions []string, paramKV ...string) error
 	GetCredentialsForUser(ctx context.Context, realmName string, userID string) ([]api.CredentialRepresentation, error)
 	DeleteCredentialsForUser(ctx context.Context, realmName string, userID string, credentialID string) error
 	GetRoles(ctx context.Context, realmName string) ([]api.RoleRepresentation, error)
@@ -245,6 +247,29 @@ func MakeSendVerifyEmailEndpoint(managementComponent ManagementComponent) endpoi
 		}
 
 		return nil, managementComponent.SendVerifyEmail(ctx, m["realm"], m["userID"], paramKV...)
+	}
+}
+
+func MakeExecuteActionsEmailEndpoint(managementComponent ManagementComponent) endpoint.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+
+		var paramKV []string
+		for _, key := range []string{"client_id", "redirect_uri", "lifespan"} {
+			if m[key] != "" {
+				paramKV = append(paramKV, key, m[key])
+			}
+		}
+
+		//extract the actions
+		var actions []string
+		err := json.Unmarshal([]byte(m["body"]), &actions)
+
+		if err != nil {
+			return nil, err
+		}
+
+		return nil, managementComponent.ExecuteActionsEmail(ctx, m["realm"], m["userID"], actions, paramKV...)
 	}
 }
 

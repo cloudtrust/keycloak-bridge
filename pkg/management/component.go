@@ -19,6 +19,7 @@ type KeycloakClient interface {
 	GetClients(accessToken string, realmName string, paramKV ...string) ([]kc.ClientRepresentation, error)
 	DeleteUser(accessToken string, realmName, userID string) error
 	GetUser(accessToken string, realmName, userID string) (kc.UserRepresentation, error)
+	GetGroupsOfUser(accessToken string, realmName, userID string) ([]kc.GroupRepresentation, error)
 	UpdateUser(accessToken string, realmName, userID string, user kc.UserRepresentation) error
 	GetUsers(accessToken string, realmName string, paramKV ...string) ([]kc.UserRepresentation, error)
 	CreateUser(accessToken string, realmName string, user kc.UserRepresentation) (string, error)
@@ -27,6 +28,7 @@ type KeycloakClient interface {
 	GetRealmLevelRoleMappings(accessToken string, realmName, userID string) ([]kc.RoleRepresentation, error)
 	ResetPassword(accessToken string, realmName string, userID string, cred kc.CredentialRepresentation) error
 	SendVerifyEmail(accessToken string, realmName string, userID string, paramKV ...string) error
+	ExecuteActionsEmail(accessToken string, realmName string, userID string, actions []string, paramKV ...string) error
 	GetCredentialsForUser(accessToken string, realmReq, realmName string, userID string) ([]kc.CredentialRepresentation, error)
 	DeleteCredentialsForUser(accessToken string, realmReq, realmName string, userID string, credentialID string) error
 	GetRoles(accessToken string, realmName string) ([]kc.RoleRepresentation, error)
@@ -52,6 +54,7 @@ type Component interface {
 	GetRealmRolesForUser(ctx context.Context, realmName, userID string) ([]api.RoleRepresentation, error)
 	ResetPassword(ctx context.Context, realmName string, userID string, password api.PasswordRepresentation) error
 	SendVerifyEmail(ctx context.Context, realmName string, userID string, paramKV ...string) error
+	ExecuteActionsEmail(ctx context.Context, realmName string, userID string, actions []string, paramKV ...string) error
 	GetCredentialsForUser(ctx context.Context, realmName string, userID string) ([]api.CredentialRepresentation, error)
 	DeleteCredentialsForUser(ctx context.Context, realmName string, userID string, credentialID string) error
 	GetRoles(ctx context.Context, realmName string) ([]api.RoleRepresentation, error)
@@ -573,6 +576,12 @@ func (c *component) SendVerifyEmail(ctx context.Context, realmName string, userI
 	var accessToken = ctx.Value("access_token").(string)
 
 	return c.keycloakClient.SendVerifyEmail(accessToken, realmName, userID, paramKV...)
+}
+
+func (c *component) ExecuteActionsEmail(ctx context.Context, realmName string, userID string, actions []string, paramKV ...string) error {
+	var accessToken = ctx.Value("access_token").(string)
+
+	return c.keycloakClient.ExecuteActionsEmail(accessToken, realmName, userID, actions, paramKV...)
 }
 
 func (c *component) GetCredentialsForUser(ctx context.Context, realmName string, userID string) ([]api.CredentialRepresentation, error) {

@@ -13,19 +13,19 @@ func (am *authorizationManager) CheckAuthorizationOnTargetUser(ctx context.Conte
 
 	// Retrieve the group of the target user
 
-	var userRep kc.UserRepresentation
+	var groupsRep []kc.GroupRepresentation
 	var err error
-	if userRep, err = am.keycloakClient.GetUser(accessToken, targetRealm, userID); err != nil {
+	if groupsRep, err = am.keycloakClient.GetGroupsOfUser(accessToken, targetRealm, userID); err != nil {
 		return ForbiddenError{}
 	}
 
-	if userRep.Groups == nil {
+	if groupsRep == nil || len(groupsRep) == 0 {
 		// No groups assigned, nothing allowed
 		return ForbiddenError{}
 	}
 
-	for _, targetGroup := range *userRep.Groups {
-		if am.CheckAuthorizationOnTargetGroup(ctx, action, targetRealm, targetGroup) == nil {
+	for _, targetGroup := range groupsRep {
+		if am.CheckAuthorizationOnTargetGroup(ctx, action, targetRealm, *targetGroup.Name) == nil {
 			return nil
 		}
 	}
@@ -134,7 +134,7 @@ type authorizationManager struct {
 }
 
 type KeycloakClient interface {
-	GetUser(accessToken string, realmName, userID string) (kc.UserRepresentation, error)
+	GetGroupsOfUser(accessToken string, realmName, userID string) ([]kc.GroupRepresentation, error)
 }
 
 type AuthorizationManager interface {
