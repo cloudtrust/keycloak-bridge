@@ -1,9 +1,11 @@
 package management
 
 //go:generate mockgen -destination=./mock/keycloak_client.go -package=mock -mock_names=KeycloakClient=KeycloakClient github.com/cloudtrust/keycloak-bridge/pkg/management KeycloakClient
+//go:generate mockgen -destination=./mock/module.go -package=mock -mock_names=ConfigurationDBModule=ConfigurationDBModule github.com/cloudtrust/keycloak-bridge/pkg/management ConfigurationDBModule
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 	"time"
@@ -20,8 +22,9 @@ func TestGetRealms(t *testing.T) {
 	defer mockCtrl.Finish()
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 	var mockEventDBModule = mock.NewEventsDBModule(mockCtrl)
+	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule)
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule)
 
 	var accessToken = "TOKEN=="
 
@@ -82,8 +85,9 @@ func TestGetRealm(t *testing.T) {
 	defer mockCtrl.Finish()
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 	var mockEventDBModule = mock.NewEventsDBModule(mockCtrl)
+	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule)
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -145,8 +149,9 @@ func TestGetClient(t *testing.T) {
 	defer mockCtrl.Finish()
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 	var mockEventDBModule = mock.NewEventsDBModule(mockCtrl)
+	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule)
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -211,8 +216,9 @@ func TestGetClients(t *testing.T) {
 	defer mockCtrl.Finish()
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 	var mockEventDBModule = mock.NewEventsDBModule(mockCtrl)
+	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule)
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -277,8 +283,9 @@ func TestCreateUser(t *testing.T) {
 	defer mockCtrl.Finish()
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 	var mockEventDBModule = mock.NewEventsDBModule(mockCtrl)
+	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule)
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule)
 
 	var accessToken = "TOKEN=="
 	var username = "test"
@@ -386,8 +393,9 @@ func TestDeleteUser(t *testing.T) {
 	defer mockCtrl.Finish()
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 	var mockEventDBModule = mock.NewEventsDBModule(mockCtrl)
+	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule)
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule)
 
 	var accessToken = "TOKEN=="
 	var userID = "1234-7558-7645"
@@ -426,8 +434,9 @@ func TestGetUser(t *testing.T) {
 	defer mockCtrl.Finish()
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 	var mockEventDBModule = mock.NewEventsDBModule(mockCtrl)
+	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule)
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -507,8 +516,9 @@ func TestUpdateUser(t *testing.T) {
 	defer mockCtrl.Finish()
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 	var mockEventDBModule = mock.NewEventsDBModule(mockCtrl)
+	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule)
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -627,8 +637,9 @@ func TestGetUsers(t *testing.T) {
 	defer mockCtrl.Finish()
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 	var mockEventDBModule = mock.NewEventsDBModule(mockCtrl)
+	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule)
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -707,8 +718,9 @@ func TestGetUserAccountStatus(t *testing.T) {
 	defer mockCtrl.Finish()
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 	var mockEventDBModule = mock.NewEventsDBModule(mockCtrl)
+	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule)
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule)
 
 	var accessToken = "TOKEN=="
 	var realmReq = "master"
@@ -784,8 +796,9 @@ func TestGetClientRolesForUser(t *testing.T) {
 	defer mockCtrl.Finish()
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 	var mockEventDBModule = mock.NewEventsDBModule(mockCtrl)
+	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule)
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -846,8 +859,9 @@ func TestAddClientRolesToUser(t *testing.T) {
 	defer mockCtrl.Finish()
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 	var mockEventDBModule = mock.NewEventsDBModule(mockCtrl)
+	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule)
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -922,8 +936,9 @@ func TestGetRealmRolesForUser(t *testing.T) {
 	defer mockCtrl.Finish()
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 	var mockEventDBModule = mock.NewEventsDBModule(mockCtrl)
+	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule)
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -983,8 +998,9 @@ func TestResetPassword(t *testing.T) {
 	defer mockCtrl.Finish()
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 	var mockEventDBModule = mock.NewEventsDBModule(mockCtrl)
+	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule)
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -1038,8 +1054,9 @@ func TestSendVerifyEmail(t *testing.T) {
 	defer mockCtrl.Finish()
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 	var mockEventDBModule = mock.NewEventsDBModule(mockCtrl)
+	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule)
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -1079,8 +1096,9 @@ func TestGetCredentialsForUser(t *testing.T) {
 	defer mockCtrl.Finish()
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 	var mockEventDBModule = mock.NewEventsDBModule(mockCtrl)
+	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule)
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule)
 	var accessToken = "TOKEN=="
 	var realmReq = "master"
 	var realmName = "otherRealm"
@@ -1104,9 +1122,9 @@ func TestDeleteCredentialsForUser(t *testing.T) {
 	defer mockCtrl.Finish()
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 	var mockEventDBModule = mock.NewEventsDBModule(mockCtrl)
+	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule)
-
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule)
 	var accessToken = "TOKEN=="
 	var realmReq = "master"
 	var realmName = "master"
@@ -1131,8 +1149,9 @@ func TestGetRoles(t *testing.T) {
 	defer mockCtrl.Finish()
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 	var mockEventDBModule = mock.NewEventsDBModule(mockCtrl)
+	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule)
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -1191,8 +1210,9 @@ func TestGetRole(t *testing.T) {
 	defer mockCtrl.Finish()
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 	var mockEventDBModule = mock.NewEventsDBModule(mockCtrl)
+	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule)
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -1248,8 +1268,9 @@ func TestGetClientRoles(t *testing.T) {
 	defer mockCtrl.Finish()
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 	var mockEventDBModule = mock.NewEventsDBModule(mockCtrl)
+	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule)
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -1309,8 +1330,9 @@ func TestCreateClientRole(t *testing.T) {
 	defer mockCtrl.Finish()
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 	var mockEventDBModule = mock.NewEventsDBModule(mockCtrl)
+	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule)
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -1362,6 +1384,275 @@ func TestCreateClientRole(t *testing.T) {
 		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
 
 		_, err := managementComponent.CreateClientRole(ctx, "master", clientID, api.RoleRepresentation{})
+
+		assert.NotNil(t, err)
+	}
+}
+
+func TestGetRealmCustomConfiguration(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
+	var mockEventDBModule = mock.NewEventsDBModule(mockCtrl)
+	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
+
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule)
+
+	var accessToken = "TOKEN=="
+	var realmID = "master_id"
+
+	// Get existing config
+	{
+		var id = realmID
+		var keycloakVersion = "4.8.3"
+		var realm = "master"
+		var displayName = "Master"
+		var enabled = true
+
+		var kcRealmRep = kc.RealmRepresentation{
+			Id:              &id,
+			KeycloakVersion: &keycloakVersion,
+			Realm:           &realm,
+			DisplayName:     &displayName,
+			Enabled:         &enabled,
+		}
+
+		mockKeycloakClient.EXPECT().GetRealm(accessToken, realmID).Return(kcRealmRep, nil).Times(1)
+
+		var clientID = "ClientID"
+		var redirectURI = "http://redirect.url.com/test"
+
+		var customRealmConfigStr = `{
+				"default_client_id": "` + clientID + `",
+				"default_redirect_uri": "` + redirectURI + `"
+			}`
+		var configInit = api.RealmCustomConfiguration{
+			DefaultClientId:    &clientID,
+			DefaultRedirectUri: &redirectURI,
+		}
+
+		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+		mockConfigurationDBModule.EXPECT().GetConfiguration(ctx, realmID).Return(customRealmConfigStr, nil).Times(1)
+
+		configJSON, err := managementComponent.GetRealmCustomConfiguration(ctx, realmID)
+
+		assert.Nil(t, err)
+		assert.Equal(t, *configJSON.DefaultClientId, *configInit.DefaultClientId)
+		assert.Equal(t, *configJSON.DefaultRedirectUri, *configInit.DefaultRedirectUri)
+	}
+
+	// Get empty config
+	{
+		var id = realmID
+		var keycloakVersion = "4.8.3"
+		var realm = "master"
+		var displayName = "Master"
+		var enabled = true
+
+		var kcRealmRep = kc.RealmRepresentation{
+			Id:              &id,
+			KeycloakVersion: &keycloakVersion,
+			Realm:           &realm,
+			DisplayName:     &displayName,
+			Enabled:         &enabled,
+		}
+
+		mockKeycloakClient.EXPECT().GetRealm(accessToken, realmID).Return(kcRealmRep, nil).Times(1)
+
+		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+		mockConfigurationDBModule.EXPECT().GetConfiguration(ctx, realmID).Return("", nil).Times(1)
+
+		configJSON, err := managementComponent.GetRealmCustomConfiguration(ctx, realmID)
+
+		assert.Nil(t, err)
+		assert.Equal(t, *configJSON.DefaultClientId, *new(string))
+		assert.Equal(t, *configJSON.DefaultRedirectUri, *new(string))
+	}
+
+	// Invalid structure in DB
+	{
+		var id = realmID
+		var keycloakVersion = "4.8.3"
+		var realm = "master"
+		var displayName = "Master"
+		var enabled = true
+
+		var kcRealmRep = kc.RealmRepresentation{
+			Id:              &id,
+			KeycloakVersion: &keycloakVersion,
+			Realm:           &realm,
+			DisplayName:     &displayName,
+			Enabled:         &enabled,
+		}
+
+		mockKeycloakClient.EXPECT().GetRealm(accessToken, realmID).Return(kcRealmRep, nil).Times(1)
+
+		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+		mockConfigurationDBModule.EXPECT().GetConfiguration(ctx, realmID).Return("928743", nil).Times(1)
+
+		_, err := managementComponent.GetRealmCustomConfiguration(ctx, realmID)
+
+		assert.NotNil(t, err)
+	}
+
+	// Unknown realm
+	{
+		var id = realmID
+		var keycloakVersion = "4.8.3"
+		var realm = "master"
+		var displayName = "Master"
+		var enabled = true
+
+		var kcRealmRep = kc.RealmRepresentation{
+			Id:              &id,
+			KeycloakVersion: &keycloakVersion,
+			Realm:           &realm,
+			DisplayName:     &displayName,
+			Enabled:         &enabled,
+		}
+
+		mockKeycloakClient.EXPECT().GetRealm(accessToken, realmID).Return(kcRealmRep, errors.New("error")).Times(1)
+
+		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+
+		_, err := managementComponent.GetRealmCustomConfiguration(ctx, realmID)
+
+		assert.NotNil(t, err)
+	}
+}
+
+func TestUpdateRealmCustomConfiguration(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
+	var mockEventDBModule = mock.NewEventsDBModule(mockCtrl)
+	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
+
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule)
+
+	var accessToken = "TOKEN=="
+	var realmID = "master_id"
+
+	var id = realmID
+	var keycloakVersion = "4.8.3"
+	var realm = "master"
+	var displayName = "Master"
+	var enabled = true
+
+	var kcRealmRep = kc.RealmRepresentation{
+		Id:              &id,
+		KeycloakVersion: &keycloakVersion,
+		Realm:           &realm,
+		DisplayName:     &displayName,
+		Enabled:         &enabled,
+	}
+
+	var clients = make([]kc.ClientRepresentation, 2)
+	var clientID1 = "clientID1"
+	var clientName1 = "clientName1"
+	var redirectURIs1 = []string{"https://www.cloudtrust.io/*", "https://www.cloudtrust-old.com/*"}
+	var clientID2 = "clientID2"
+	var clientName2 = "clientName2"
+	var redirectURIs2 = []string{"https://www.cloudtrust2.io/*", "https://www.cloudtrust2-old.com/*"}
+	clients[0] = kc.ClientRepresentation{
+		ClientId:     &clientID1,
+		Name:         &clientName1,
+		RedirectUris: &redirectURIs1,
+	}
+	clients[1] = kc.ClientRepresentation{
+		ClientId:     &clientID2,
+		Name:         &clientName2,
+		RedirectUris: &redirectURIs2,
+	}
+
+	var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+	var clientID = "clientID1"
+	var redirectURI = "https://www.cloudtrust.io/test"
+	var configInit = api.RealmCustomConfiguration{
+		DefaultClientId:    &clientID,
+		DefaultRedirectUri: &redirectURI,
+	}
+
+	// Update config with appropriate values
+	{
+		mockKeycloakClient.EXPECT().GetRealm(accessToken, realmID).Return(kcRealmRep, nil).Times(1)
+		mockKeycloakClient.EXPECT().GetClients(accessToken, realmID).Return(clients, nil).Times(1)
+		mockConfigurationDBModule.EXPECT().StoreOrUpdate(ctx, realmID, gomock.Any()).Return(nil).Times(1)
+		err := managementComponent.UpdateRealmCustomConfiguration(ctx, realmID, configInit)
+
+		assert.Nil(t, err)
+	}
+
+	// Update config with unknown client ID
+	{
+		mockKeycloakClient.EXPECT().GetRealm(accessToken, realmID).Return(kcRealmRep, nil).Times(1)
+		mockKeycloakClient.EXPECT().GetClients(accessToken, realmID).Return(clients, nil).Times(1)
+
+		var clientID = "clientID1Nok"
+		var redirectURI = "https://www.cloudtrust.io/test"
+		var configInit = api.RealmCustomConfiguration{
+			DefaultClientId:    &clientID,
+			DefaultRedirectUri: &redirectURI,
+		}
+		err := managementComponent.UpdateRealmCustomConfiguration(ctx, realmID, configInit)
+
+		assert.NotNil(t, err)
+		assert.IsType(t, HTTPError{}, err)
+		e := err.(HTTPError)
+		assert.Equal(t, 400, e.Status)
+	}
+
+	// Update config with invalid redirect URI
+	{
+		mockKeycloakClient.EXPECT().GetRealm(accessToken, realmID).Return(kcRealmRep, nil).Times(1)
+		mockKeycloakClient.EXPECT().GetClients(accessToken, realmID).Return(clients, nil).Times(1)
+
+		var clientID = "clientID1"
+		var redirectURI = "https://www.cloudtrustnok.io/test"
+		var configInit = api.RealmCustomConfiguration{
+			DefaultClientId:    &clientID,
+			DefaultRedirectUri: &redirectURI,
+		}
+		err := managementComponent.UpdateRealmCustomConfiguration(ctx, realmID, configInit)
+
+		assert.NotNil(t, err)
+		assert.IsType(t, HTTPError{}, err)
+		e := err.(HTTPError)
+		assert.Equal(t, 400, e.Status)
+	}
+
+	// Update config with invalid redirect URI (trying to take advantage of the dots in the url)
+	{
+		mockKeycloakClient.EXPECT().GetRealm(accessToken, realmID).Return(kcRealmRep, nil).Times(1)
+		mockKeycloakClient.EXPECT().GetClients(accessToken, realmID).Return(clients, nil).Times(1)
+
+		var clientID = "clientID1"
+		var redirectURI = "https://wwwacloudtrust.io/test"
+		var configInit = api.RealmCustomConfiguration{
+			DefaultClientId:    &clientID,
+			DefaultRedirectUri: &redirectURI,
+		}
+		err := managementComponent.UpdateRealmCustomConfiguration(ctx, realmID, configInit)
+
+		assert.NotNil(t, err)
+		assert.IsType(t, HTTPError{}, err)
+		e := err.(HTTPError)
+		assert.Equal(t, 400, e.Status)
+	}
+
+	// error while calling GetClients
+	{
+		mockKeycloakClient.EXPECT().GetRealm(accessToken, realmID).Return(kcRealmRep, nil).Times(1)
+		mockKeycloakClient.EXPECT().GetClients(accessToken, realmID).Return([]kc.ClientRepresentation{}, errors.New("error")).Times(1)
+		err := managementComponent.UpdateRealmCustomConfiguration(ctx, realmID, configInit)
+
+		assert.NotNil(t, err)
+	}
+
+	// error while calling GetRealm
+	{
+		mockKeycloakClient.EXPECT().GetRealm(accessToken, realmID).Return(kc.RealmRepresentation{}, errors.New("error")).Times(1)
+		err := managementComponent.UpdateRealmCustomConfiguration(ctx, realmID, configInit)
 
 		assert.NotNil(t, err)
 	}

@@ -111,7 +111,17 @@
         "DEP": {
           "*": {}
         }
-      }      
+      },
+      "GetRealmCustomConfiguration": {
+        "DEP": {
+          "*": {}
+        }
+      },
+      "UpdateRealmCustomConfiguration": {
+        "DEP": {
+          "*": {}
+        }
+      }
     },
     "integrator_agent":{
       "GetRealms": {
@@ -151,7 +161,17 @@
         "DEP": {
           "*": {}
         }
-      }           
+      },
+      "GetRealmCustomConfiguration": {
+        "DEP": {
+          "*": {}
+        }
+      },
+      "UpdateRealmCustomConfiguration": {
+        "DEP": {
+          "*": {}
+        }
+      }          
     },
     "l2_support_manager":{
       "GetRealms": {

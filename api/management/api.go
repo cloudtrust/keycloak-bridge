@@ -58,6 +58,11 @@ type PasswordRepresentation struct {
 	Value *string `json:"value,omitempty"`
 }
 
+type RealmCustomConfiguration struct {
+	DefaultClientId    *string `json:"default_client_id,omitempty"`
+	DefaultRedirectUri *string `json:"default_redirect_uri,omitempty"`
+}
+
 // ConvertCredential creates an API credential from a KC credential
 func ConvertCredential(credKc *kc.CredentialRepresentation) CredentialRepresentation {
 	var cred CredentialRepresentation

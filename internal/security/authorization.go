@@ -155,7 +155,7 @@ type AuthorizationManager interface {
 //
 // Note:
 //   '*' can be used to express all target realms
-//   '-' can be used to express all non master realms
+//   '/' can be used to express all non master realms
 //   '*' can be used to express all target groups are allowed
 func NewAuthorizationManager(keycloakClient KeycloakClient, jsonAuthz string) (AuthorizationManager, error) {
 	matrix, err := loadAuthorizations(jsonAuthz)

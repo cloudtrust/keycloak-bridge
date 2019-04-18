@@ -11,27 +11,29 @@ import (
 
 // Endpoints wraps a service behind a set of endpoints.
 type Endpoints struct {
-	GetRealms                endpoint.Endpoint
-	GetRealm                 endpoint.Endpoint
-	GetClient                endpoint.Endpoint
-	GetClients               endpoint.Endpoint
-	DeleteUser               endpoint.Endpoint
-	GetUser                  endpoint.Endpoint
-	UpdateUser               endpoint.Endpoint
-	GetUsers                 endpoint.Endpoint
-	CreateUser               endpoint.Endpoint
-	GetUserAccountStatus     endpoint.Endpoint
-	GetClientRoleForUser     endpoint.Endpoint
-	AddClientRoleToUser      endpoint.Endpoint
-	GetRealmRoleForUser      endpoint.Endpoint
-	ResetPassword            endpoint.Endpoint
-	SendVerifyEmail          endpoint.Endpoint
-	GetCredentialsForUser    endpoint.Endpoint
-	DeleteCredentialsForUser endpoint.Endpoint
-	GetRoles                 endpoint.Endpoint
-	GetRole                  endpoint.Endpoint
-	GetClientRoles           endpoint.Endpoint
-	CreateClientRole         endpoint.Endpoint
+	GetRealms                      endpoint.Endpoint
+	GetRealm                       endpoint.Endpoint
+	GetClient                      endpoint.Endpoint
+	GetClients                     endpoint.Endpoint
+	DeleteUser                     endpoint.Endpoint
+	GetUser                        endpoint.Endpoint
+	UpdateUser                     endpoint.Endpoint
+	GetUsers                       endpoint.Endpoint
+	CreateUser                     endpoint.Endpoint
+	GetUserAccountStatus           endpoint.Endpoint
+	GetClientRoleForUser           endpoint.Endpoint
+	AddClientRoleToUser            endpoint.Endpoint
+	GetRealmRoleForUser            endpoint.Endpoint
+	ResetPassword                  endpoint.Endpoint
+	SendVerifyEmail                endpoint.Endpoint
+	GetCredentialsForUser          endpoint.Endpoint
+	DeleteCredentialsForUser       endpoint.Endpoint
+	GetRoles                       endpoint.Endpoint
+	GetRole                        endpoint.Endpoint
+	GetClientRoles                 endpoint.Endpoint
+	CreateClientRole               endpoint.Endpoint
+	GetRealmCustomConfiguration    endpoint.Endpoint
+	UpdateRealmCustomConfiguration endpoint.Endpoint
 }
 
 // ManagementComponent is the interface of the component to send a query to Keycloak.
@@ -57,6 +59,8 @@ type ManagementComponent interface {
 	GetRole(ctx context.Context, realmName string, roleID string) (api.RoleRepresentation, error)
 	GetClientRoles(ctx context.Context, realmName, idClient string) ([]api.RoleRepresentation, error)
 	CreateClientRole(ctx context.Context, realmName, clientID string, role api.RoleRepresentation) (string, error)
+	GetRealmCustomConfiguration(ctx context.Context, realmID string) (api.RealmCustomConfiguration, error)
+	UpdateRealmCustomConfiguration(ctx context.Context, realmID string, customConfig api.RealmCustomConfiguration) error
 }
 
 // MakeRealmsEndpoint makes the Realms endpoint to retrieve all available realms.
@@ -307,6 +311,29 @@ func MakeCreateClientRoleEndpoint(managementComponent ManagementComponent) endpo
 		return LocationHeader{
 			URL: convertLocationUrl(keycloakLocation, m["scheme"], m["host"]),
 		}, nil
+	}
+}
+
+func MakeGetRealmCustomConfigurationEndpoint(managementComponent ManagementComponent) endpoint.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+
+		return managementComponent.GetRealmCustomConfiguration(ctx, m["realm"])
+	}
+}
+
+func MakeUpdateRealmCustomConfigurationEndpoint(managementComponent ManagementComponent) endpoint.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+
+		roleJson := []byte(m["body"])
+
+		var customConfig api.RealmCustomConfiguration
+		err := json.Unmarshal(roleJson, &customConfig)
+		if err != nil {
+			return nil, err
+		}
+		return nil, managementComponent.UpdateRealmCustomConfiguration(ctx, m["realm"], customConfig)
 	}
 }
 
