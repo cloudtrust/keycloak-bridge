@@ -673,15 +673,14 @@ func config(logger log.Logger) *viper.Viper {
 	v.SetDefault("db-max-open-conns", 10)
 	v.SetDefault("db-max-idle-conns", 2)
 	v.SetDefault("db-conn-max-lifetime", 3600)
+	v.SetDefault("db-ro-username", "")
+	v.SetDefault("db-ro-password", "")
 
 	//Storage custom configuration in DB
 	v.SetDefault("config-db", true)
 	v.SetDefault("db-config-username", "")
 	v.SetDefault("db-config-password", "")
 	v.SetDefault("db-config-database", "")
-
-	v.SetDefault("db-ro-username", "")
-	v.SetDefault("db-ro-password", "")
 
 	// Rate limiting (in requests/second)
 	v.SetDefault("rate-event", 1000)
