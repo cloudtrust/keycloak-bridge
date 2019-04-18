@@ -8,7 +8,7 @@ import (
 	kc "github.com/cloudtrust/keycloak-client"
 )
 
-func (am *authorizationManager) CheckAuthorisationOnTargetUser(ctx context.Context, action, targetRealm, userID string) error {
+func (am *authorizationManager) CheckAuthorizationOnTargetUser(ctx context.Context, action, targetRealm, userID string) error {
 	var accessToken = ctx.Value("access_token").(string)
 
 	// Retrieve the group of the target user
@@ -25,7 +25,7 @@ func (am *authorizationManager) CheckAuthorisationOnTargetUser(ctx context.Conte
 	}
 
 	for _, targetGroup := range *userRep.Groups {
-		if am.CheckAuthorisationOnTargetGroup(ctx, action, targetRealm, targetGroup) == nil {
+		if am.CheckAuthorizationOnTargetGroup(ctx, action, targetRealm, targetGroup) == nil {
 			return nil
 		}
 	}
@@ -33,12 +33,12 @@ func (am *authorizationManager) CheckAuthorisationOnTargetUser(ctx context.Conte
 	return ForbiddenError{}
 }
 
-func (am *authorizationManager) CheckAuthorisationOnTargetGroup(ctx context.Context, action, targetRealm, targetGroup string) error {
+func (am *authorizationManager) CheckAuthorizationOnTargetGroup(ctx context.Context, action, targetRealm, targetGroup string) error {
 	var currentRealm = ctx.Value("realm").(string)
 	var currentGroups = ctx.Value("groups").([]string)
 
 	for _, group := range currentGroups {
-		targetGroupAllowed, wildcard := am.authorisations[currentRealm][group][action]["*"]
+		targetGroupAllowed, wildcard := am.authorizations[currentRealm][group][action]["*"]
 
 		if wildcard {
 			_, allGroupsAllowed := targetGroupAllowed["*"]
@@ -49,7 +49,7 @@ func (am *authorizationManager) CheckAuthorisationOnTargetGroup(ctx context.Cont
 			}
 		}
 
-		targetGroupAllowed, nonMasterRealmAllowed := am.authorisations[currentRealm][group][action]["/"]
+		targetGroupAllowed, nonMasterRealmAllowed := am.authorizations[currentRealm][group][action]["/"]
 
 		if targetRealm != "master" && nonMasterRealmAllowed {
 			_, allGroupsAllowed := targetGroupAllowed["*"]
@@ -60,7 +60,7 @@ func (am *authorizationManager) CheckAuthorisationOnTargetGroup(ctx context.Cont
 			}
 		}
 
-		targetGroupAllowed, realmAllowed := am.authorisations[currentRealm][group][action][targetRealm]
+		targetGroupAllowed, realmAllowed := am.authorizations[currentRealm][group][action][targetRealm]
 
 		if realmAllowed {
 			_, allGroupsAllowed := targetGroupAllowed["*"]
@@ -75,14 +75,14 @@ func (am *authorizationManager) CheckAuthorisationOnTargetGroup(ctx context.Cont
 	return ForbiddenError{}
 }
 
-func (am *authorizationManager) CheckAuthorisationOnTargetRealm(ctx context.Context, action, targetRealm string) error {
+func (am *authorizationManager) CheckAuthorizationOnTargetRealm(ctx context.Context, action, targetRealm string) error {
 	var currentRealm = ctx.Value("realm").(string)
 	var currentGroups = ctx.Value("groups").([]string)
 
 	for _, group := range currentGroups {
-		_, wildcard := am.authorisations[currentRealm][group][action]["*"]
-		_, nonMasterRealmAllowed := am.authorisations[currentRealm][group][action]["/"]
-		_, realmAllowed := am.authorisations[currentRealm][group][action][targetRealm]
+		_, wildcard := am.authorizations[currentRealm][group][action]["*"]
+		_, nonMasterRealmAllowed := am.authorizations[currentRealm][group][action]["/"]
+		_, realmAllowed := am.authorizations[currentRealm][group][action][targetRealm]
 
 		if wildcard || realmAllowed || (targetRealm != "master" && nonMasterRealmAllowed) {
 			return nil
@@ -100,11 +100,11 @@ func (e ForbiddenError) Error() string {
 }
 
 // Authorizations data structure
-// 4 dimensions table to express authorisations (realm_of_user, role_of_user, action, target_realm) -> target_group for which the action is allowed
+// 4 dimensions table to express authorizations (realm_of_user, role_of_user, action, target_realm) -> target_group for which the action is allowed
 type authorizations map[string]map[string]map[string]map[string]map[string]struct{}
 
 // LoadAuthorizations loads the authorization JSON into the data structure
-// Authorisation matrix is a 4 dimensions table :
+// Authorization matrix is a 4 dimensions table :
 //   - realm_of_user
 //   - role_of_user
 //   - action
@@ -129,7 +129,7 @@ func loadAuthorizations(jsonAuthz string) (authorizations, error) {
 }
 
 type authorizationManager struct {
-	authorisations authorizations
+	authorizations authorizations
 	keycloakClient KeycloakClient
 }
 
@@ -138,15 +138,15 @@ type KeycloakClient interface {
 }
 
 type AuthorizationManager interface {
-	CheckAuthorisationOnTargetRealm(ctx context.Context, action, targetRealm string) error
-	CheckAuthorisationOnTargetGroup(ctx context.Context, action, targetRealm, targetGroup string) error
-	CheckAuthorisationOnTargetUser(ctx context.Context, action, targetRealm, userID string) error
+	CheckAuthorizationOnTargetRealm(ctx context.Context, action, targetRealm string) error
+	CheckAuthorizationOnTargetGroup(ctx context.Context, action, targetRealm, targetGroup string) error
+	CheckAuthorizationOnTargetUser(ctx context.Context, action, targetRealm, userID string) error
 }
 
 // Authorizations data structure
 
-// NewAuthorizationManager loads the authorization JSON into the data structure and create an AuthorisationManager instance.
-// Authorisation matrix is a 4 dimensions table :
+// NewAuthorizationManager loads the authorization JSON into the data structure and create an AuthorizationManager instance.
+// Authorization matrix is a 4 dimensions table :
 //   - realm_of_user
 //   - role_of_user
 //   - action
@@ -165,7 +165,7 @@ func NewAuthorizationManager(keycloakClient KeycloakClient, jsonAuthz string) (A
 	}
 
 	return &authorizationManager{
-		authorisations: matrix,
+		authorizations: matrix,
 		keycloakClient: keycloakClient,
 	}, nil
 }

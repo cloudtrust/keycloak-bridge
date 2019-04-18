@@ -29,7 +29,7 @@ func MakeHTTPOIDCTokenValidationMW(keycloakClient KeycloakClient, logger log.Log
 			var authorizationHeader = req.Header.Get("Authorization")
 
 			if authorizationHeader == "" {
-				logger.Log("Authorisation Error", "Missing Authorization header")
+				logger.Log("Authorization Error", "Missing Authorization header")
 				httpErrorHandler(context.TODO(), http.StatusForbidden, fmt.Errorf("Missing Authorization header"), w)
 				return
 			}
@@ -37,7 +37,7 @@ func MakeHTTPOIDCTokenValidationMW(keycloakClient KeycloakClient, logger log.Log
 			var matched, _ = regexp.MatchString(`^[Bb]earer *`, authorizationHeader)
 
 			if !matched {
-				logger.Log("Authorisation Error", "Missing bearer token")
+				logger.Log("Authorization Error", "Missing bearer token")
 				httpErrorHandler(context.TODO(), http.StatusForbidden, fmt.Errorf("Missing bearer token"), w)
 				return
 			}
@@ -52,14 +52,14 @@ func MakeHTTPOIDCTokenValidationMW(keycloakClient KeycloakClient, logger log.Log
 
 			payload, _, err := jwt.Parse(accessToken)
 			if err != nil {
-				logger.Log("Authorisation Error", err)
+				logger.Log("Authorization Error", err)
 				httpErrorHandler(context.TODO(), http.StatusForbidden, fmt.Errorf("Invalid token"), w)
 				return
 			}
 
 			var jot Token
 			if err = jwt.Unmarshal(payload, &jot); err != nil {
-				logger.Log("Authorisation Error", err)
+				logger.Log("Authorization Error", err)
 				httpErrorHandler(context.TODO(), http.StatusForbidden, fmt.Errorf("Invalid token"), w)
 				return
 			}
@@ -71,7 +71,7 @@ func MakeHTTPOIDCTokenValidationMW(keycloakClient KeycloakClient, logger log.Log
 			var groups = extractGroups(jot.Groups)
 
 			if err = keycloakClient.VerifyToken(realm, accessToken); err != nil {
-				logger.Log("Authorisation Error", err)
+				logger.Log("Authorization Error", err)
 				httpErrorHandler(context.TODO(), http.StatusForbidden, fmt.Errorf("Invalid token"), w)
 				return
 			}

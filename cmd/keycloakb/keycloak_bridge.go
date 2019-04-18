@@ -378,7 +378,7 @@ func main() {
 		var keycloakComponent management.Component
 		{
 			keycloakComponent = management.NewComponent(keycloakClient, eventsDBModule)
-			keycloakComponent = management.MakeAuthorisationManagementComponentMW(log.With(managementLogger, "mw", "endpoint"), keycloakClient, authorizationManager)(keycloakComponent)
+			keycloakComponent = management.MakeAuthorizationManagementComponentMW(log.With(managementLogger, "mw", "endpoint"), keycloakClient, authorizationManager)(keycloakComponent)
 		}
 
 		managementEndpoints = management.Endpoints{

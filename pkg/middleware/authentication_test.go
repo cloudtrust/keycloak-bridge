@@ -34,7 +34,7 @@ func TestHTTPOIDCTokenValidationMW(t *testing.T) {
 	// Missing authorization token.
 	{
 		var w = httptest.NewRecorder()
-		mockLogger.EXPECT().Log("Authorisation Error", "Missing Authorization header").Return(nil).Times(1)
+		mockLogger.EXPECT().Log("Authorization Error", "Missing Authorization header").Return(nil).Times(1)
 		m.ServeHTTP(w, req)
 		var result = w.Result()
 		assert.Equal(t, 403, result.StatusCode)
@@ -45,7 +45,7 @@ func TestHTTPOIDCTokenValidationMW(t *testing.T) {
 	// Missing bearer token.
 	{
 		var w = httptest.NewRecorder()
-		mockLogger.EXPECT().Log("Authorisation Error", "Missing bearer token").Return(nil).Times(1)
+		mockLogger.EXPECT().Log("Authorization Error", "Missing bearer token").Return(nil).Times(1)
 		m.ServeHTTP(w, req)
 		var result = w.Result()
 		assert.Equal(t, 403, result.StatusCode)
@@ -67,7 +67,7 @@ func TestHTTPOIDCTokenValidationMW(t *testing.T) {
 	// Invalid authorization token.
 	{
 		var w = httptest.NewRecorder()
-		mockLogger.EXPECT().Log("Authorisation Error", gomock.Any()).Return(nil).Times(1)
+		mockLogger.EXPECT().Log("Authorization Error", gomock.Any()).Return(nil).Times(1)
 		mockKeycloakClient.EXPECT().VerifyToken("master", token).Return(fmt.Errorf("Invalid token")).Times(1)
 		m.ServeHTTP(w, req)
 		var result = w.Result()
@@ -77,7 +77,7 @@ func TestHTTPOIDCTokenValidationMW(t *testing.T) {
 	// Invalid token format
 	{
 		var w = httptest.NewRecorder()
-		mockLogger.EXPECT().Log("Authorisation Error", gomock.Any()).Return(nil).Times(1)
+		mockLogger.EXPECT().Log("Authorization Error", gomock.Any()).Return(nil).Times(1)
 		req = httptest.NewRequest("POST", "http://cloudtrust.io/management/test", bytes.NewReader([]byte{}))
 		req.Header.Set("Authorization", "Bearer 123456ABCDEF")
 		m.ServeHTTP(w, req)

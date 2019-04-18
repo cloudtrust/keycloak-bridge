@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCheckAuthorisationOnRealm(t *testing.T) {
+func TestCheckAuthorizationOnRealm(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
@@ -21,31 +21,31 @@ func TestCheckAuthorisationOnRealm(t *testing.T) {
 
 	// Authorized for all realm (test wildcard)
 	{
-		var authorisationManager, err = NewAuthorizationManager(mockKeycloakClient, `{"master": {"toe": {"GetRealm": {"*": {} }} }}`)
+		var authorizationManager, err = NewAuthorizationManager(mockKeycloakClient, `{"master": {"toe": {"GetRealm": {"*": {} }} }}`)
 		assert.Nil(t, err)
 
 		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
 		ctx = context.WithValue(ctx, "groups", groups)
 		ctx = context.WithValue(ctx, "realm", "master")
 
-		err = authorisationManager.CheckAuthorisationOnTargetRealm(ctx, "GetRealm", "master")
+		err = authorizationManager.CheckAuthorizationOnTargetRealm(ctx, "GetRealm", "master")
 
 		assert.Nil(t, err)
 	}
 
 	// Authorized for non admin realm
 	{
-		var authorisationManager, err = NewAuthorizationManager(mockKeycloakClient, `{"master": {"toe": {"GetRealm": {"/": {} }} }}`)
+		var authorizationManager, err = NewAuthorizationManager(mockKeycloakClient, `{"master": {"toe": {"GetRealm": {"/": {} }} }}`)
 		assert.Nil(t, err)
 
 		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
 		ctx = context.WithValue(ctx, "groups", groups)
 		ctx = context.WithValue(ctx, "realm", "master")
 
-		err = authorisationManager.CheckAuthorisationOnTargetRealm(ctx, "GetRealm", "toto")
+		err = authorizationManager.CheckAuthorizationOnTargetRealm(ctx, "GetRealm", "toto")
 		assert.Nil(t, err)
 
-		err = authorisationManager.CheckAuthorisationOnTargetRealm(ctx, "GetRealm", "master")
+		err = authorizationManager.CheckAuthorizationOnTargetRealm(ctx, "GetRealm", "master")
 		assert.NotNil(t, err)
 		assert.Equal(t, "ForbiddenError: Operation not permitted.", err.Error())
 
@@ -53,35 +53,35 @@ func TestCheckAuthorisationOnRealm(t *testing.T) {
 
 	// Authorized for specific realm
 	{
-		var authorisationManager, err = NewAuthorizationManager(mockKeycloakClient, `{"master": {"toe": {"GetRealm": {"master": {} }} }}`)
+		var authorizationManager, err = NewAuthorizationManager(mockKeycloakClient, `{"master": {"toe": {"GetRealm": {"master": {} }} }}`)
 		assert.Nil(t, err)
 
 		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
 		ctx = context.WithValue(ctx, "groups", groups)
 		ctx = context.WithValue(ctx, "realm", "master")
 
-		err = authorisationManager.CheckAuthorisationOnTargetRealm(ctx, "GetRealm", "master")
+		err = authorizationManager.CheckAuthorizationOnTargetRealm(ctx, "GetRealm", "master")
 		assert.Nil(t, err)
 
-		err = authorisationManager.CheckAuthorisationOnTargetRealm(ctx, "GetRealm", "other")
+		err = authorizationManager.CheckAuthorizationOnTargetRealm(ctx, "GetRealm", "other")
 		assert.Equal(t, "ForbiddenError: Operation not permitted.", err.Error())
 	}
 
 	// Deny by default
 	{
-		var authorisationManager, err = NewAuthorizationManager(mockKeycloakClient, `{"master": {"toe": {"CreateUser": {"master": {} }} }}`)
+		var authorizationManager, err = NewAuthorizationManager(mockKeycloakClient, `{"master": {"toe": {"CreateUser": {"master": {} }} }}`)
 		assert.Nil(t, err)
 
 		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
 		ctx = context.WithValue(ctx, "groups", groups)
 		ctx = context.WithValue(ctx, "realm", "master")
 
-		err = authorisationManager.CheckAuthorisationOnTargetRealm(ctx, "GetRealm", "master")
+		err = authorizationManager.CheckAuthorizationOnTargetRealm(ctx, "GetRealm", "master")
 		assert.Equal(t, ForbiddenError{}, err)
 	}
 }
 
-func TestCheckAuthorisationOnTargetUser(t *testing.T) {
+func TestCheckAuthorizationOnTargetUser(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
@@ -95,7 +95,7 @@ func TestCheckAuthorisationOnTargetUser(t *testing.T) {
 		var targetRealm = "master"
 		var targetUserID = "123-456-789"
 
-		var authorisationManager, err = NewAuthorizationManager(mockKeycloakClient, `{"master": {"toe": {"DeleteUser": {"master": { "*": {} } }} }}`)
+		var authorizationManager, err = NewAuthorizationManager(mockKeycloakClient, `{"master": {"toe": {"DeleteUser": {"master": { "*": {} } }} }}`)
 		assert.Nil(t, err)
 
 		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
@@ -112,7 +112,7 @@ func TestCheckAuthorisationOnTargetUser(t *testing.T) {
 			Groups:   &userGroups,
 		}, nil).Times(1)
 
-		err = authorisationManager.CheckAuthorisationOnTargetUser(ctx, "DeleteUser", "master", userID)
+		err = authorizationManager.CheckAuthorizationOnTargetUser(ctx, "DeleteUser", "master", userID)
 		assert.Nil(t, err)
 	}
 
@@ -121,7 +121,7 @@ func TestCheckAuthorisationOnTargetUser(t *testing.T) {
 		var targetRealm = "master"
 		var targetUserID = "123-456-789"
 
-		var authorisationManager, err = NewAuthorizationManager(mockKeycloakClient, `{"master": {"toe": {"DeleteUser": {"master": { "*": {} } }} }}`)
+		var authorizationManager, err = NewAuthorizationManager(mockKeycloakClient, `{"master": {"toe": {"DeleteUser": {"master": { "*": {} } }} }}`)
 		assert.Nil(t, err)
 
 		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
@@ -136,7 +136,7 @@ func TestCheckAuthorisationOnTargetUser(t *testing.T) {
 			Username: &userUsername,
 		}, nil).Times(1)
 
-		err = authorisationManager.CheckAuthorisationOnTargetUser(ctx, "DeleteUser", "master", userID)
+		err = authorizationManager.CheckAuthorizationOnTargetUser(ctx, "DeleteUser", "master", userID)
 		assert.Equal(t, ForbiddenError{}, err)
 	}
 
@@ -145,7 +145,7 @@ func TestCheckAuthorisationOnTargetUser(t *testing.T) {
 		var targetRealm = "toto"
 		var targetUserID = "123-456-789"
 
-		var authorisationManager, err = NewAuthorizationManager(mockKeycloakClient, `{"master": {"toe": {"DeleteUser": {"/": { "*": {} } }} }}`)
+		var authorizationManager, err = NewAuthorizationManager(mockKeycloakClient, `{"master": {"toe": {"DeleteUser": {"/": { "*": {} } }} }}`)
 		assert.Nil(t, err)
 
 		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
@@ -162,7 +162,7 @@ func TestCheckAuthorisationOnTargetUser(t *testing.T) {
 			Groups:   &userGroups,
 		}, nil).Times(1)
 
-		err = authorisationManager.CheckAuthorisationOnTargetUser(ctx, "DeleteUser", targetRealm, userID)
+		err = authorizationManager.CheckAuthorizationOnTargetUser(ctx, "DeleteUser", targetRealm, userID)
 		assert.Nil(t, err)
 
 		mockKeycloakClient.EXPECT().GetUser(accessToken, "master", targetUserID).Return(kc.UserRepresentation{
@@ -171,7 +171,7 @@ func TestCheckAuthorisationOnTargetUser(t *testing.T) {
 			Groups:   &userGroups,
 		}, nil).Times(1)
 
-		err = authorisationManager.CheckAuthorisationOnTargetUser(ctx, "DeleteUser", "master", targetUserID)
+		err = authorizationManager.CheckAuthorizationOnTargetUser(ctx, "DeleteUser", "master", targetUserID)
 		assert.Equal(t, ForbiddenError{}, err)
 	}
 
@@ -180,7 +180,7 @@ func TestCheckAuthorisationOnTargetUser(t *testing.T) {
 		var targetRealm = "master"
 		var targetUserID = "123-456-789"
 
-		var authorisationManager, err = NewAuthorizationManager(mockKeycloakClient, `{"master": {"toe": {"DeleteUser": {"*": { "*": {} } }} }}`)
+		var authorizationManager, err = NewAuthorizationManager(mockKeycloakClient, `{"master": {"toe": {"DeleteUser": {"*": { "*": {} } }} }}`)
 		assert.Nil(t, err)
 
 		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
@@ -197,7 +197,7 @@ func TestCheckAuthorisationOnTargetUser(t *testing.T) {
 			Groups:   &userGroups,
 		}, nil).Times(1)
 
-		err = authorisationManager.CheckAuthorisationOnTargetUser(ctx, "DeleteUser", "master", targetUserID)
+		err = authorizationManager.CheckAuthorizationOnTargetUser(ctx, "DeleteUser", "master", targetUserID)
 		assert.Nil(t, err)
 	}
 
@@ -206,7 +206,7 @@ func TestCheckAuthorisationOnTargetUser(t *testing.T) {
 		var targetRealm = "master"
 		var targetUserID = "123-456-789"
 
-		var authorisationManager, err = NewAuthorizationManager(mockKeycloakClient, `{"master": {"toe": {"DeleteUser": {"*": { "*": {} } }} }}`)
+		var authorizationManager, err = NewAuthorizationManager(mockKeycloakClient, `{"master": {"toe": {"DeleteUser": {"*": { "*": {} } }} }}`)
 		assert.Nil(t, err)
 
 		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
@@ -215,7 +215,7 @@ func TestCheckAuthorisationOnTargetUser(t *testing.T) {
 
 		mockKeycloakClient.EXPECT().GetUser(accessToken, targetRealm, targetUserID).Return(kc.UserRepresentation{}, fmt.Errorf("Error")).Times(1)
 
-		err = authorisationManager.CheckAuthorisationOnTargetUser(ctx, "DeleteUser", "master", targetUserID)
+		err = authorizationManager.CheckAuthorizationOnTargetUser(ctx, "DeleteUser", "master", targetUserID)
 		assert.Equal(t, ForbiddenError{}, err)
 	}
 
@@ -224,7 +224,7 @@ func TestCheckAuthorisationOnTargetUser(t *testing.T) {
 		var targetRealm = "toto"
 		var targetUserID = "123-456-789"
 
-		var authorisationManager, err = NewAuthorizationManager(mockKeycloakClient, `{"master": {"toe": {"DeleteUser": {"toto": { "customer": {} } }} }}`)
+		var authorizationManager, err = NewAuthorizationManager(mockKeycloakClient, `{"master": {"toe": {"DeleteUser": {"toto": { "customer": {} } }} }}`)
 		assert.Nil(t, err)
 
 		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
@@ -241,7 +241,7 @@ func TestCheckAuthorisationOnTargetUser(t *testing.T) {
 			Groups:   &userGroups,
 		}, nil).Times(1)
 
-		err = authorisationManager.CheckAuthorisationOnTargetUser(ctx, "DeleteUser", targetRealm, targetUserID)
+		err = authorizationManager.CheckAuthorizationOnTargetUser(ctx, "DeleteUser", targetRealm, targetUserID)
 		assert.Nil(t, err)
 	}
 
@@ -250,7 +250,7 @@ func TestCheckAuthorisationOnTargetUser(t *testing.T) {
 		var targetRealm = "toto"
 		var targetUserID = "123-456-789"
 
-		var authorisationManager, err = NewAuthorizationManager(mockKeycloakClient, `{"master": {"toe": {"DeleteUser": {}} }}`)
+		var authorizationManager, err = NewAuthorizationManager(mockKeycloakClient, `{"master": {"toe": {"DeleteUser": {}} }}`)
 		assert.Nil(t, err)
 
 		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
@@ -267,12 +267,12 @@ func TestCheckAuthorisationOnTargetUser(t *testing.T) {
 			Groups:   &userGroups,
 		}, nil).Times(1)
 
-		err = authorisationManager.CheckAuthorisationOnTargetUser(ctx, "DeleteUser", targetRealm, targetUserID)
+		err = authorizationManager.CheckAuthorizationOnTargetUser(ctx, "DeleteUser", targetRealm, targetUserID)
 		assert.Equal(t, ForbiddenError{}, err)
 	}
 }
 
-func TestLoadAuthorisations(t *testing.T) {
+func TestLoadAuthorizations(t *testing.T) {
 
 	// Empty file
 	{
