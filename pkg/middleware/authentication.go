@@ -29,7 +29,7 @@ func MakeHTTPOIDCTokenValidationMW(keycloakClient KeycloakClient, logger log.Log
 			var authorizationHeader = req.Header.Get("Authorization")
 
 			if authorizationHeader == "" {
-				logger.Log("Authorisation Error", "Missing Authorization header")
+				logger.Log("Authorization Error", "Missing Authorization header")
 				httpErrorHandler(context.TODO(), http.StatusForbidden, fmt.Errorf("Missing Authorization header"), w)
 				return
 			}
@@ -37,7 +37,7 @@ func MakeHTTPOIDCTokenValidationMW(keycloakClient KeycloakClient, logger log.Log
 			var matched, _ = regexp.MatchString(`^[Bb]earer *`, authorizationHeader)
 
 			if !matched {
-				logger.Log("Authorisation Error", "Missing bearer token")
+				logger.Log("Authorization Error", "Missing bearer token")
 				httpErrorHandler(context.TODO(), http.StatusForbidden, fmt.Errorf("Missing bearer token"), w)
 				return
 			}
@@ -52,14 +52,14 @@ func MakeHTTPOIDCTokenValidationMW(keycloakClient KeycloakClient, logger log.Log
 
 			payload, _, err := jwt.Parse(accessToken)
 			if err != nil {
-				logger.Log("Authorisation Error", err)
+				logger.Log("Authorization Error", err)
 				httpErrorHandler(context.TODO(), http.StatusForbidden, fmt.Errorf("Invalid token"), w)
 				return
 			}
 
 			var jot Token
 			if err = jwt.Unmarshal(payload, &jot); err != nil {
-				logger.Log("Authorisation Error", err)
+				logger.Log("Authorization Error", err)
 				httpErrorHandler(context.TODO(), http.StatusForbidden, fmt.Errorf("Invalid token"), w)
 				return
 			}
@@ -68,9 +68,10 @@ func MakeHTTPOIDCTokenValidationMW(keycloakClient KeycloakClient, logger log.Log
 			var issuer = jot.Issuer
 			var splitIssuer = strings.Split(issuer, "/auth/realms/")
 			var realm = splitIssuer[1]
+			var groups = extractGroups(jot.Groups)
 
 			if err = keycloakClient.VerifyToken(realm, accessToken); err != nil {
-				logger.Log("Authorisation Error", err)
+				logger.Log("Authorization Error", err)
 				httpErrorHandler(context.TODO(), http.StatusForbidden, fmt.Errorf("Invalid token"), w)
 				return
 			}
@@ -78,6 +79,8 @@ func MakeHTTPOIDCTokenValidationMW(keycloakClient KeycloakClient, logger log.Log
 			var ctx = context.WithValue(req.Context(), "access_token", accessToken)
 			ctx = context.WithValue(ctx, "realm", realm)
 			ctx = context.WithValue(ctx, "username", username)
+			ctx = context.WithValue(ctx, "groups", groups)
+
 			next.ServeHTTP(w, req.WithContext(ctx))
 
 		})
@@ -96,6 +99,7 @@ type Token struct {
 	IssuedAt       int64    `json:"iat,omitempty"`
 	ID             string   `json:"jti,omitempty"`
 	Username       string   `json:"preferred_username,omitempty"`
+	Groups         []string `json:"groups,omitempty"`
 }
 
 type header struct {
@@ -104,3 +108,15 @@ type header struct {
 	Type        string `json:"typ,omitempty"`
 	ContentType string `json:"cty,omitempty"`
 }
+
+func extractGroups(kcGroups []string) []string {
+	var groups = []string{}
+
+	for _, kcGroup := range kcGroups {
+		groups = append(groups, strings.TrimPrefix(kcGroup, "/"))
+	}
+
+	return groups
+}
+
+

@@ -1,0 +1,367 @@
+{
+  "master":{
+    "toe_administrator":{
+      "GetRealms": {
+        "*": {}
+      },
+      "GetUsers": {
+        "master": {
+          "*": {}
+        }
+      },
+      "CreateUser": {
+        "master": {
+          "integrator_manager": {},
+          "l2_support_manager": {},
+          "l3_support_manager": {}
+        }
+      },
+      "GetUser": {
+        "master": {
+          "*": {}
+        }
+      },
+      "UpdateUser": {
+        "master": {
+          "*": {}
+        }
+      },
+      "DeleteUser": {
+        "master": {
+          "*": {}
+        }
+      },
+      "ResetPassword": {
+        "master": {
+          "integrator_manager": {},
+          "integrator_agent": {},
+          "l2_support_manager": {},
+          "l2_support_agent": {},
+          "l3_support_manager": {},
+          "l3_support_agent": {}
+        }
+      },
+      "SendVerifyEmail": {
+        "master": {
+          "integrator_manager": {},
+          "integrator_agent": {},
+          "l2_support_manager": {},
+          "l2_support_agent": {},
+          "l3_support_manager": {},
+          "l3_support_agent": {}
+        }
+      }
+    },
+    "integrator_manager":{
+      "GetRealms": {
+        "*": {}
+      },
+      "GetUsers": {
+        "master": {
+          "integrator_agent": {}
+        },
+        "DEP": {
+          "*": {}
+        }
+      },
+      "CreateUser": {
+        "master": {
+          "integrator_agent": {}
+        },
+        "DEP": {
+          "product_administrator": {}
+        }
+      },
+      "GetUser": {
+        "master": {
+          "integrator_agent": {}
+        },
+        "DEP": {
+          "*": {}
+        }
+      },
+      "UpdateUser": {
+        "master": {
+          "integrator_agent": {}
+        },
+        "DEP": {
+          "*": {}
+        }
+      },
+      "DeleteUser": {
+        "master": {
+          "integrator_agent": {}
+        },
+        "DEP": {
+          "*": {}
+        }
+      },
+      "ResetPassword": {
+        "master": {
+          "integrator_agent": {}
+        },
+        "DEP": {
+          "*": {}
+        }
+      },
+      "SendVerifyEmail": {
+        "master": {
+          "integrator_agent": {}
+        },
+        "DEP": {
+          "*": {}
+        }
+      }      
+    },
+    "integrator_agent":{
+      "GetRealms": {
+        "*": {}
+      },
+      "GetUsers": {
+        "DEP": {
+          "*": {}
+        }
+      },
+      "CreateUser": {
+        "DEP": {
+          "product_administrator": {}
+        }
+      },
+      "GetUser": {
+        "DEP": {
+          "*": {}
+        }
+      },
+      "UpdateUser": {
+        "DEP": {
+          "*": {}
+        }
+      },
+      "DeleteUser": {
+        "DEP": {
+          "*": {}
+        }
+      },
+      "ResetPassword": {
+        "DEP": {
+          "*": {}
+        }
+      },
+      "SendVerifyEmail": {
+        "DEP": {
+          "*": {}
+        }
+      }           
+    },
+    "l2_support_manager":{
+      "GetRealms": {
+        "*": {}
+      },
+      "GetUsers": {
+        "master": {
+          "l2_support_agent": {}
+        }
+      },
+      "CreateUser": {
+        "master": {
+          "l2_support_agent": {}
+        }
+      },
+      "GetUser": {
+        "master": {
+          "l2_support_agent": {}
+        }
+      },
+      "UpdateUser": {
+        "master": {
+          "l2_support_agent": {}
+        }
+      },
+      "DeleteUser": {
+        "master": {
+          "l2_support_agent": {}
+        }
+      },
+      "ResetPassword": {
+        "master": {
+          "l2_support_agent": {}
+        }
+      },
+      "SendVerifyEmail": {
+        "master": {
+          "l2_support_agent": {}
+        }
+      }      
+    },
+    "l2_support_agent": {
+      "GetRealms": {
+        "*": {}
+      }
+    },
+    "l3_support_manager":{
+      "GetRealms": {
+        "*": {}
+      },
+      "GetUsers": {
+        "master": {
+          "l3_support_agent": {}
+        }
+      },
+      "CreateUser": {
+        "master": {
+          "l3_support_agent": {}
+        }
+      },
+      "GetUser": {
+        "master": {
+          "l3_support_agent": {}
+        }
+      },
+      "UpdateUser": {
+        "master": {
+          "l3_support_agent": {}
+        }
+      },
+      "DeleteUser": {
+        "master": {
+          "l3_support_agent": {}
+        }
+      },
+      "ResetPassword": {
+        "master": {
+          "l3_support_agent": {}
+        }
+      },
+      "SendVerifyEmail": {
+        "master": {
+          "l3_support_agent": {}
+        }
+      } 
+    },
+    "l3_support_agent": {
+      "GetRealms": {
+        "*": {}
+      }
+    }
+  },
+  "DEP":{
+    "product_administrator":{
+      "GetRealms": {
+        "*": {}
+      },
+      "GetUsers": {
+        "DEP": {
+          "*": {}
+        }
+      },
+      "CreateUser": {
+        "DEP": {
+          "l1_support_manager": {}
+        }
+      },
+      "GetUser": {
+        "DEP": {
+          "*": {}
+        }
+      },
+      "UpdateUser": {
+        "DEP": {
+          "*": {}
+        }
+      },
+      "DeleteUser": {
+        "DEP": {
+          "*": {}
+        }
+      },
+      "ResetPassword": {
+        "DEP": {
+          "*": {}
+        }
+      },
+      "SendVerifyEmail": {
+        "DEP": {
+          "*": {}
+        }
+      }      
+    },
+    "l1_support_manager": {
+      "GetRealms": {
+        "*": {}
+      },
+      "GetUsers": {
+        "DEP": {
+          "l1_support_agent": {},
+          "end_user": {}
+        }
+      },
+      "CreateUser": {
+        "DEP": {
+          "l1_support_agent": {}
+        }
+      },
+      "GetUser": {
+        "DEP": {
+          "l1_support_agent": {},
+          "end_user": {}
+        }
+      },
+      "UpdateUser": {
+        "DEP": {
+          "l1_support_agent": {},
+          "end_user": {}
+        }
+      },
+      "DeleteUser": {
+        "DEP": {
+          "l1_support_agent": {},
+          "end_user": {}
+        }
+      },
+      "ResetPassword": {
+        "DEP": {
+          "l1_support_agent": {},
+          "end_user": {}
+        }
+      },
+      "SendVerifyEmail": {
+        "DEP": {
+          "l1_support_agent": {},
+          "end_user": {}
+        }
+      }       
+    },
+    "l1_support_agent": {
+      "GetRealms": {
+        "*": {}
+      },
+      "GetUsers": {
+        "DEP": {
+          "end_user": {}
+        }
+      },
+      "CreateUser": {},
+      "GetUser": {
+        "DEP": {
+          "end_user": {}
+        }
+      },
+      "UpdateUser": {
+        "DEP": {
+          "end_user": {}
+        }
+      },
+      "DeleteUser": {},
+      "ResetPassword": {
+        "DEP": {
+          "end_user": {}
+        }
+      },
+      "SendVerifyEmail": {
+        "DEP": {
+          "end_user": {}
+        }
+      }  
+    }
+  }
+}

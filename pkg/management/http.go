@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/cloudtrust/keycloak-bridge/internal/security"
 	kc_client "github.com/cloudtrust/keycloak-client"
 	"github.com/go-kit/kit/endpoint"
 	"github.com/go-kit/kit/ratelimit"
@@ -114,6 +115,8 @@ func managementErrorHandler(ctx context.Context, err error, w http.ResponseWrite
 	switch e := errors.Cause(err).(type) {
 	case kc_client.HTTPError:
 		w.WriteHeader(e.HTTPStatus)
+	case security.ForbiddenError:
+		w.WriteHeader(http.StatusForbidden)
 	case HTTPError:
 		w.WriteHeader(e.Status)
 		w.Write([]byte(e.Message))

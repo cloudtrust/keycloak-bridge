@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"net/http/pprof"
@@ -14,6 +15,8 @@ import (
 	"strconv"
 	"syscall"
 	"time"
+
+	"github.com/cloudtrust/keycloak-bridge/internal/security"
 
 	"github.com/cloudtrust/keycloak-bridge/internal/idgenerator"
 	gen "github.com/cloudtrust/keycloak-bridge/internal/idgenerator"
@@ -82,7 +85,8 @@ func main() {
 	var c = config(log.With(logger, "unit", "config"))
 	var (
 		// Component
-		httpAddr = c.GetString("component-http-host-port")
+		httpAddr                = c.GetString("component-http-host-port")
+		authorizationConfigFile = c.GetString("authorization-file")
 
 		// Keycloak
 		keycloakConfig = keycloak.Config{
@@ -179,6 +183,24 @@ func main() {
 
 		if err != nil {
 			logger.Log("msg", "could not create Keycloak client", "error", err)
+			return
+		}
+	}
+
+	// Authorization Manager
+	var authorizationManager security.AuthorizationManager
+	{
+		json, err := ioutil.ReadFile(authorizationConfigFile)
+
+		if err != nil {
+			logger.Log("msg", "could not read JSON authorization file", "error", err)
+			return
+		}
+
+		authorizationManager, err = security.NewAuthorizationManager(keycloakClient, string(json))
+
+		if err != nil {
+			logger.Log("msg", "could not load authorizations", "error", err)
 			return
 		}
 	}
@@ -356,6 +378,7 @@ func main() {
 		var keycloakComponent management.Component
 		{
 			keycloakComponent = management.NewComponent(keycloakClient, eventsDBModule)
+			keycloakComponent = management.MakeAuthorizationManagementComponentMW(log.With(managementLogger, "mw", "endpoint"), keycloakClient, authorizationManager)(keycloakComponent)
 		}
 
 		managementEndpoints = management.Endpoints{
@@ -540,6 +563,7 @@ func config(logger log.Logger) *viper.Viper {
 
 	// Component default.
 	v.SetDefault("config-file", "./configs/keycloak_bridge.yml")
+	v.SetDefault("authorization-file", "./configs/authorization.json")
 	v.SetDefault("component-http-host-port", "0.0.0.0:8888")
 
 	// CORS configuration
@@ -603,7 +627,9 @@ func config(logger log.Logger) *viper.Viper {
 
 	// First level of override.
 	pflag.String("config-file", v.GetString("config-file"), "The configuration file path can be relative or absolute.")
+	pflag.String("authorization-file", v.GetString("authorization-file"), "The authorization file path can be relative or absolute.")
 	v.BindPFlag("config-file", pflag.Lookup("config-file"))
+	v.BindPFlag("authorization-file", pflag.Lookup("authorization-file"))
 	pflag.Parse()
 
 	// Load and log config.

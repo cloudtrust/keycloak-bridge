@@ -59,7 +59,7 @@ paths:
     get:
       tags:
       - Clients
-      summary: Update an existing pet
+      summary: Get representation of the client
       parameters:
       - name: realm
         in: path
@@ -461,7 +461,7 @@ paths:
     get:
       tags:
       - Roles
-      summary: Get all roles for the realm or client
+      summary: Get all roles for the realm
       parameters:
       - name: realm
         in: path
@@ -507,7 +507,7 @@ paths:
     get:
       tags:
       - Roles
-      summary: Get all roles for the realm or client
+      summary: Get all clients roles
       parameters:
       - name: realm
         in: path
