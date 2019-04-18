@@ -326,10 +326,10 @@ func MakeUpdateRealmCustomConfigurationEndpoint(managementComponent ManagementCo
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		roleJson := []byte(m["body"])
+		configJson := []byte(m["body"])
 
 		var customConfig api.RealmCustomConfiguration
-		err := json.Unmarshal(roleJson, &customConfig)
+		err := json.Unmarshal(configJson, &customConfig)
 		if err != nil {
 			return nil, err
 		}
