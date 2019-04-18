@@ -403,6 +403,54 @@ paths:
       responses:
         200:
           description: successful operation
+  /realms/{realm}/users/{userID}/execute-actions-email:
+    put:
+      tags:
+      - Users
+      summary: >
+        Send a update account email to the user An email contains a link the user can click to perform a set of required actions.
+        The redirectUri and clientId parameters are optional.
+        If no redirect is given, then there will be no link back to click after actions have completed.
+        Redirect uri must be a valid uri for the particular clientId.
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
+      - name: client_id
+        in: query
+        schema:
+          type: string
+        allowEmptyValue: true
+      - name: lifespan
+        in: query
+        description: Number of seconds after which the generated token expires
+        schema:
+          type: string
+        allowEmptyValue: true
+      - name: redirect_uri
+        in: query
+        schema:
+          type: string
+        allowEmptyValue: true
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: string
+      responses:
+        200:
+          description: successful operation
   /realms/{realm}/users/{userID}/credentials:
     get:
       tags:

@@ -503,7 +503,7 @@ func TestExecuteActionsEmailEndpoint(t *testing.T) {
 		req["realm"] = realm
 		req["userID"] = userID
 		actionsJSON, _ := json.Marshal(actions)
-		req["actions"] = string(actionsJSON)
+		req["body"] = string(actionsJSON)
 
 		mockManagementComponent.EXPECT().ExecuteActionsEmail(ctx, realm, userID, actions).Return(nil).Times(1)
 		var res, err = e(ctx, req)
@@ -524,7 +524,7 @@ func TestExecuteActionsEmailEndpoint(t *testing.T) {
 		req["redirect_uri"] = "http://redirect.com"
 		req["toto"] = "tutu" // Check this param is not transmitted
 		actionsJSON, _ := json.Marshal(actions)
-		req["actions"] = string(actionsJSON)
+		req["body"] = string(actionsJSON)
 
 		mockManagementComponent.EXPECT().ExecuteActionsEmail(ctx, realm, userID, actions, "client_id", req["client_id"], "redirect_uri", req["redirect_uri"]).Return(nil).Times(1)
 		var res, err = e(ctx, req)
@@ -543,7 +543,7 @@ func TestExecuteActionsEmailEndpoint(t *testing.T) {
 		req["userID"] = userID
 		req["client_id"] = "123789"
 		req["redirect_uri"] = "http://redirect.com"
-		req["actions"] = string("actions")
+		req["body"] = string("actions")
 
 		var res, err = e(ctx, req)
 		assert.NotNil(t, err)

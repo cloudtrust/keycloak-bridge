@@ -17,6 +17,7 @@ type KeycloakClient interface {
 	GetClients(accessToken string, realmName string, paramKV ...string) ([]kc.ClientRepresentation, error)
 	DeleteUser(accessToken string, realmName, userID string) error
 	GetUser(accessToken string, realmName, userID string) (kc.UserRepresentation, error)
+	GetGroupsOfUser(accessToken string, realmName, userID string) ([]kc.GroupRepresentation, error)
 	UpdateUser(accessToken string, realmName, userID string, user kc.UserRepresentation) error
 	GetUsers(accessToken string, realmName string, paramKV ...string) ([]kc.UserRepresentation, error)
 	CreateUser(accessToken string, realmName string, user kc.UserRepresentation) (string, error)

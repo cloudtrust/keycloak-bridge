@@ -31,16 +31,21 @@ func TestDeny(t *testing.T) {
 	var credentialID = "741-865-741"
 	var userUsername = "toto"
 	var userGroups = []string{"customer"}
-	var groupName = "titi"
 
 	var roleName = "role"
 
+	var groupID = "123-789-454"
+	var groupName = "titi"
+
 	var pass = "P@ssw0rd"
 
-	mockKeycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(kc.UserRepresentation{
-		Id:       &userID,
-		Username: &userUsername,
-		Groups:   &userGroups,
+	var group = kc.GroupRepresentation{
+		Id:   &groupID,
+		Name: &groupName,
+	}
+
+	mockKeycloakClient.EXPECT().GetGroupsOfUser(accessToken, realmName, userID).Return([]kc.GroupRepresentation{
+		group,
 	}, nil).AnyTimes()
 
 	var user = api.UserRepresentation{
@@ -116,6 +121,9 @@ func TestDeny(t *testing.T) {
 		err = authorizationMW.SendVerifyEmail(ctx, realmName, userID)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
+		err = authorizationMW.ExecuteActionsEmail(ctx, realmName, userID, []string{})
+		assert.Equal(t, security.ForbiddenError{}, err)
+
 		_, err = authorizationMW.GetCredentialsForUser(ctx, realmName, userID)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
@@ -156,15 +164,17 @@ func TestAllowed(t *testing.T) {
 
 	var roleName = "role"
 
+	var groupID = "123-789-454"
 	var groupName = "titi"
 
 	var pass = "P@ssw0rd"
 
-	mockKeycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(kc.UserRepresentation{
-		Id:       &userID,
-		Username: &userUsername,
-		Groups:   &userGroups,
-	}, nil).AnyTimes()
+	var group = kc.GroupRepresentation{
+		Id:   &groupID,
+		Name: &groupName,
+	}
+
+	mockKeycloakClient.EXPECT().GetGroupsOfUser(accessToken, realmName, userID).Return([]kc.GroupRepresentation{group}, nil).AnyTimes()
 
 	var user = api.UserRepresentation{
 		Id:       &userID,
@@ -203,6 +213,7 @@ func TestAllowed(t *testing.T) {
 					"GetRealmRolesForUser": {"*": {"*": {} }},
 					"ResetPassword": {"*": {"*": {} }},
 					"SendVerifyEmail": {"*": {"*": {} }},
+					"ExecuteActionsEmail": {"*": {"*": {} }},
 					"GetCredentialsForUser": {"*": {"*": {} }},
 					"DeleteCredentialsForUser": {"*": {"*": {} }},
 					"GetRoles": {"*": {"*": {} }},
@@ -278,6 +289,10 @@ func TestAllowed(t *testing.T) {
 
 		mockManagementComponent.EXPECT().SendVerifyEmail(ctx, realmName, userID).Return(nil).Times(1)
 		err = authorizationMW.SendVerifyEmail(ctx, realmName, userID)
+		assert.Nil(t, err)
+
+		mockManagementComponent.EXPECT().ExecuteActionsEmail(ctx, realmName, userID, []string{}).Return(nil).Times(1)
+		err = authorizationMW.ExecuteActionsEmail(ctx, realmName, userID, []string{})
 		assert.Nil(t, err)
 
 		mockManagementComponent.EXPECT().GetCredentialsForUser(ctx, realmName, userID).Return([]api.CredentialRepresentation{}, nil).Times(1)

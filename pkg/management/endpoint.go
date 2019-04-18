@@ -259,7 +259,7 @@ func MakeExecuteActionsEmailEndpoint(managementComponent ManagementComponent) en
 
 		//extract the actions
 		var actions []string
-		err := json.Unmarshal([]byte(m["actions"]), &actions)
+		err := json.Unmarshal([]byte(m["body"]), &actions)
 
 		if err != nil {
 			return nil, err
