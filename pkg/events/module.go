@@ -88,7 +88,8 @@ func (cm *eventsDBModule) GetEvents(_ context.Context, m map[string]string) ([]a
 		res = append(res, audit)
 	}
 
-	return res, err
+	// Return an error from rows if any error was encountered by Rows.Scan
+	return res, rows.Err()
 }
 
 // GetEventsSummary gets all available values for Origins, Realms and CtEventTypes

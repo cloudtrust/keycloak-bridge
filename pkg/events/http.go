@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
+	"github.com/cloudtrust/keycloak-bridge/internal/security"
 	"github.com/go-kit/kit/endpoint"
 	"github.com/go-kit/kit/ratelimit"
 	http_transport "github.com/go-kit/kit/transport/http"
@@ -97,6 +98,8 @@ func eventsErrorHandler(ctx context.Context, err error, w http.ResponseWriter) {
 	case keycloakb.HTTPError:
 		w.WriteHeader(e.Status)
 		w.Write([]byte(e.Message))
+	case security.ForbiddenError:
+		w.WriteHeader(http.StatusForbidden)
 	default:
 		if err == ratelimit.ErrLimited {
 			w.WriteHeader(http.StatusTooManyRequests)

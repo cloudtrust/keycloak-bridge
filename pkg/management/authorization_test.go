@@ -76,7 +76,7 @@ func TestDeny(t *testing.T) {
 		var authorizations, err = security.NewAuthorizationManager(mockKeycloakClient, `{}`)
 		assert.Nil(t, err)
 
-		var authorizationMW = MakeAuthorizationManagementComponentMW(mockLogger, mockKeycloakClient, authorizations)(mockManagementComponent)
+		var authorizationMW = MakeAuthorizationManagementComponentMW(mockLogger, authorizations)(mockManagementComponent)
 
 		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
 		ctx = context.WithValue(ctx, "groups", groups)
@@ -245,7 +245,7 @@ func TestAllowed(t *testing.T) {
 		}`)
 		assert.Nil(t, err)
 
-		var authorizationMW = MakeAuthorizationManagementComponentMW(mockLogger, mockKeycloakClient, authorizations)(mockManagementComponent)
+		var authorizationMW = MakeAuthorizationManagementComponentMW(mockLogger, authorizations)(mockManagementComponent)
 
 		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
 		ctx = context.WithValue(ctx, "groups", groups)

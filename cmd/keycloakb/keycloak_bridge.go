@@ -393,16 +393,17 @@ func main() {
 	// Events service.
 	var eventsEndpoints events.Endpoints
 	{
-		var eventLogger = log.With(logger, "svc", "events")
+		var eventsLogger = log.With(logger, "svc", "events")
 
 		// new module for sending the events to the DB
 		eventsRODBModule := events.NewEventsDBModule(eventsRODBConn)
 		eventsComponent := events.NewEventsComponent(eventsRODBModule)
+		eventsComponent = events.MakeAuthorizationManagementComponentMW(log.With(eventsLogger, "mw", "endpoint"), authorizationManager)(eventsComponent)
 
 		eventsEndpoints = events.Endpoints{
-			GetEvents:        prepareEndpoint(events.MakeGetEventsEndpoint(eventsComponent), "get_events", influxMetrics, eventLogger, tracer, rateLimit),
-			GetEventsSummary: prepareEndpoint(events.MakeGetEventsSummaryEndpoint(eventsComponent), "get_events_summary", influxMetrics, eventLogger, tracer, rateLimit),
-			GetUserEvents:    prepareEndpoint(events.MakeGetEventsEndpoint(eventsComponent), "get_user_events", influxMetrics, eventLogger, tracer, rateLimit),
+			GetEvents:        prepareEndpoint(events.MakeGetEventsEndpoint(eventsComponent), "get_events", influxMetrics, eventsLogger, tracer, rateLimit),
+			GetEventsSummary: prepareEndpoint(events.MakeGetEventsSummaryEndpoint(eventsComponent), "get_events_summary", influxMetrics, eventsLogger, tracer, rateLimit),
+			GetUserEvents:    prepareEndpoint(events.MakeGetEventsEndpoint(eventsComponent), "get_user_events", influxMetrics, eventsLogger, tracer, rateLimit),
 		}
 	}
 
@@ -432,7 +433,7 @@ func main() {
 		var keycloakComponent management.Component
 		{
 			keycloakComponent = management.NewComponent(keycloakClient, eventsDBModule, configDBModule)
-			keycloakComponent = management.MakeAuthorizationManagementComponentMW(log.With(managementLogger, "mw", "endpoint"), keycloakClient, authorizationManager)(keycloakComponent)
+			keycloakComponent = management.MakeAuthorizationManagementComponentMW(log.With(managementLogger, "mw", "endpoint"), authorizationManager)(keycloakComponent)
 		}
 
 		managementEndpoints = management.Endpoints{

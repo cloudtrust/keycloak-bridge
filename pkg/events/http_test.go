@@ -11,6 +11,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/cloudtrust/keycloak-bridge/internal/security"
+
 	api "github.com/cloudtrust/keycloak-bridge/api/events"
 	"github.com/cloudtrust/keycloak-bridge/pkg/events/mock"
 	"github.com/go-kit/kit/ratelimit"
@@ -114,6 +116,19 @@ func TestHTTPManagementHandler(t *testing.T) {
 		res, err := http.Get(ts.URL + "/events/summary")
 		assert.Nil(t, err)
 		assert.Equal(t, http.StatusInternalServerError, res.StatusCode)
+
+		buf := new(bytes.Buffer)
+		buf.ReadFrom(res.Body)
+		assert.Equal(t, "", buf.String())
+	}
+
+	// Not allowed: security forbidden
+	{
+		var summary api.EventSummaryRepresentation
+		mockComponent.EXPECT().GetEventsSummary(gomock.Any()).Return(summary, security.ForbiddenError{}).Times(1)
+		res, err := http.Get(ts.URL + "/events/summary")
+		assert.Nil(t, err)
+		assert.Equal(t, http.StatusForbidden, res.StatusCode)
 
 		buf := new(bytes.Buffer)
 		buf.ReadFrom(res.Body)
