@@ -430,6 +430,7 @@ func main() {
 			ResetPassword:                  prepareEndpoint(management.MakeResetPasswordEndpoint(keycloakComponent), "reset_password_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
 			SendVerifyEmail:                prepareEndpoint(management.MakeSendVerifyEmailEndpoint(keycloakComponent), "send_verify_email_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
 			ExecuteActionsEmail:            prepareEndpoint(management.MakeExecuteActionsEmailEndpoint(keycloakComponent), "execute_actions_email_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
+			SendNewEnrolmentCode:           prepareEndpoint(management.MakeSendNewEnrolmentCodeEndpoint(keycloakComponent), "send_new_enrolment_code_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
 			GetCredentialsForUser:          prepareEndpoint(management.MakeGetCredentialsForUserEndpoint(keycloakComponent), "get_credentials_for_user_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
 			DeleteCredentialsForUser:       prepareEndpoint(management.MakeDeleteCredentialsForUserEndpoint(keycloakComponent), "delete_credentials_for_user_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
 			GetRealmCustomConfiguration:    prepareEndpoint(management.MakeGetRealmCustomConfigurationEndpoint(keycloakComponent), "get_realm_custom_config_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
@@ -495,6 +496,7 @@ func main() {
 		var resetPasswordHandler = ConfigureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.ResetPassword)
 		var sendVerifyEmailHandler = ConfigureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.SendVerifyEmail)
 		var executeActionsEmailHandler = ConfigureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.ExecuteActionsEmail)
+		var sendNewEnrolmentCodeHandler = ConfigureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.SendNewEnrolmentCode)
 
 		var getCredentialsForUserHandler = ConfigureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.GetCredentialsForUser)
 		var deleteCredentialsForUserHandler = ConfigureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.DeleteCredentialsForUser)
@@ -527,6 +529,7 @@ func main() {
 		managementSubroute.Path("/realms/{realm}/users/{userID}/reset-password").Methods("PUT").Handler(resetPasswordHandler)
 		managementSubroute.Path("/realms/{realm}/users/{userID}/send-verify-email").Methods("PUT").Handler(sendVerifyEmailHandler)
 		managementSubroute.Path("/realms/{realm}/users/{userID}/execute-actions-email").Methods("PUT").Handler(executeActionsEmailHandler)
+		managementSubroute.Path("/realms/{realm}/users/{userID}/sned-new-enrolment-code").Methods("PUT").Handler(sendNewEnrolmentCodeHandler)
 
 		// Credentials
 		managementSubroute.Path("/realms/{realm}/users/{userID}/credentials").Methods("GET").Handler(getCredentialsForUserHandler)

@@ -194,7 +194,7 @@ func (c *authorizationComponentMW) SendVerifyEmail(ctx context.Context, realmNam
 	return c.next.SendVerifyEmail(ctx, realmName, userID, paramKV...)
 }
 
-func (c *authorizationComponentMW) ExecuteActionsEmail(ctx context.Context, realmName string, userID string, actions []string, paramKV ...string) error{
+func (c *authorizationComponentMW) ExecuteActionsEmail(ctx context.Context, realmName string, userID string, actions []string, paramKV ...string) error {
 	var action = "ExecuteActionsEmail"
 	var targetRealm = realmName
 
@@ -203,6 +203,17 @@ func (c *authorizationComponentMW) ExecuteActionsEmail(ctx context.Context, real
 	}
 
 	return c.next.ExecuteActionsEmail(ctx, realmName, userID, actions, paramKV...)
+}
+
+func (c *authorizationComponentMW) SendNewEnrolmentCode(ctx context.Context, realmName string, userID string) error {
+	var action = "SendNewEnrolmentCode"
+	var targetRealm = realmName
+
+	if err := c.authManager.CheckAuthorizationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
+		return err
+	}
+
+	return c.next.SendNewEnrolmentCode(ctx, realmName, userID)
 }
 
 func (c *authorizationComponentMW) GetCredentialsForUser(ctx context.Context, realmName string, userID string) ([]api.CredentialRepresentation, error) {
