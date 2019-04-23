@@ -1,7 +1,7 @@
 openapi: 3.0.1
 info:
   title: Swagger Cloudtrust Management
-  description: 'API Mangement for Cloudtrust.'
+  description: 'Mangement API for Cloudtrust.'
   version: 1.0.0
 servers:
 - url: http://localhost:8888/management
@@ -608,6 +608,46 @@ paths:
               schema:
                 type: string
               description: URL of the new resource.
+  /realms/{realm}/configuration:
+    get:
+      tags:
+      - Configuration
+      summary: Get the current configuration
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Configuration'
+    put:
+      tags:
+      - Configuration
+      summary: Update the configuration for the given realm
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Configuration'
+      responses:
+        200:
+          description: successful operation
+        400:
+          description: invalid information provided  (invalid client identifier or redirect URI not allowed for this client)
 components:
   schemas:
     Realm:
@@ -713,6 +753,13 @@ components:
             type: array
             items:
               type: string
+    Configuration:
+      type: object
+      properties:
+        default_client_id:
+          type: string
+        default_redirect_uri:
+          type: string
   securitySchemes:
     openId:
       type: openIdConnect
