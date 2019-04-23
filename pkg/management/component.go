@@ -710,6 +710,11 @@ func (c *component) GetRealmCustomConfiguration(ctx context.Context, realmName s
 	// from the realm ID, fetch the custom configuration
 	realmID := realmConfig.Id
 	customConfigJSON, err := c.configDBModule.GetConfiguration(ctx, *realmID)
+	// DB error
+	if err != nil {
+		return customConfig, err
+	}
+	// empty config
 	if customConfigJSON == "" {
 		// database is empty
 		return customConfig, nil
