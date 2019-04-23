@@ -1562,6 +1562,32 @@ func TestGetRealmCustomConfiguration(t *testing.T) {
 
 		assert.NotNil(t, err)
 	}
+
+	// DB error
+	{
+		var id = realmID
+		var keycloakVersion = "4.8.3"
+		var realm = "master"
+		var displayName = "Master"
+		var enabled = true
+
+		var kcRealmRep = kc.RealmRepresentation{
+			Id:              &id,
+			KeycloakVersion: &keycloakVersion,
+			Realm:           &realm,
+			DisplayName:     &displayName,
+			Enabled:         &enabled,
+		}
+
+		mockKeycloakClient.EXPECT().GetRealm(accessToken, realmID).Return(kcRealmRep, nil).Times(1)
+
+		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+		mockConfigurationDBModule.EXPECT().GetConfiguration(ctx, realmID).Return("", errors.New("error")).Times(1)
+
+		_, err := managementComponent.GetRealmCustomConfiguration(ctx, realmID)
+
+		assert.NotNil(t, err)
+	}
 }
 
 func TestUpdateRealmCustomConfiguration(t *testing.T) {
