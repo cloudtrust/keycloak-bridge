@@ -86,7 +86,7 @@ func main() {
 		// Add component name, component ID and version to the logger tags.
 		logger = log.With(logger, "component_name", ComponentName, "component_id", ComponentID, "component_version", Version)
 	}
-	defer logger.Log("msg", "shutdown")
+	defer logger.Log("msg", "Shutdown")
 
 	// Log component version infos.
 	logger.Log("msg", "Starting")
