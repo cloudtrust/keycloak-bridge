@@ -72,14 +72,25 @@ func init() {
 }
 
 func main() {
+	ComponentID = strconv.FormatUint(rand.Uint64(), 10)
+
 	// Logger.
 	var logger = log.NewJSONLogger(os.Stdout)
 	{
-		logger = log.With(logger, "ts", log.DefaultTimestampUTC, "caller", log.DefaultCaller)
-	}
-	defer logger.Log("msg", "goodbye")
+		// Timestamp
+		logger = log.With(logger, "ts", log.DefaultTimestampUTC)
 
-	ComponentID = strconv.FormatUint(rand.Uint64(), 10)
+		// Caller
+		logger = log.With(logger, "caller", log.DefaultCaller)
+
+		// Add component name, component ID and version to the logger tags.
+		logger = log.With(logger, "component_name", ComponentName, "component_id", ComponentID, "component_version", Version)
+	}
+	defer logger.Log("msg", "Shutdown")
+
+	// Log component version infos.
+	logger.Log("msg", "Starting")
+	logger.Log("environment", Environment, "git_commit", GitCommit)
 
 	// Configurations.
 	var c = config(log.With(logger, "unit", "config"))
@@ -166,12 +177,6 @@ func main() {
 
 	// Unique ID generator
 	var idGenerator = idgenerator.New(ComponentName, ComponentID)
-
-	// Add component name, component ID and version to the logger tags.
-	logger = log.With(logger, "component_name", ComponentName, "component_id", ComponentID, "component_version", Version)
-
-	// Log component version infos.
-	logger.Log("environment", Environment, "git_commit", GitCommit)
 
 	// Critical errors channel.
 	var errc = make(chan error)
@@ -571,6 +576,7 @@ func main() {
 		influxMetrics.WriteLoop(tic.C)
 	}()
 
+	logger.Log("msg", "Started")
 	logger.Log("error", <-errc)
 }
 
