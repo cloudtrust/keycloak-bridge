@@ -303,6 +303,18 @@ func (mr *KeycloakClientMockRecorder) ResetPassword(arg0, arg1, arg2, arg3 inter
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResetPassword", reflect.TypeOf((*KeycloakClient)(nil).ResetPassword), arg0, arg1, arg2, arg3)
 }
 
+// SendNewEnrolmentCode mocks base method
+func (m *KeycloakClient) SendNewEnrolmentCode(arg0, arg1, arg2 string) error {
+	ret := m.ctrl.Call(m, "SendNewEnrolmentCode", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SendNewEnrolmentCode indicates an expected call of SendNewEnrolmentCode
+func (mr *KeycloakClientMockRecorder) SendNewEnrolmentCode(arg0, arg1, arg2 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendNewEnrolmentCode", reflect.TypeOf((*KeycloakClient)(nil).SendNewEnrolmentCode), arg0, arg1, arg2)
+}
+
 // SendVerifyEmail mocks base method
 func (m *KeycloakClient) SendVerifyEmail(arg0, arg1, arg2 string, arg3 ...string) error {
 	varargs := []interface{}{arg0, arg1, arg2}
