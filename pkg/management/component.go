@@ -21,7 +21,7 @@ type KeycloakClient interface {
 	GetUser(accessToken string, realmName, userID string) (kc.UserRepresentation, error)
 	GetGroupsOfUser(accessToken string, realmName, userID string) ([]kc.GroupRepresentation, error)
 	UpdateUser(accessToken string, realmName, userID string, user kc.UserRepresentation) error
-	GetUsers(accessToken string, realmName string, paramKV ...string) ([]kc.UserRepresentation, error)
+	GetUsers(accessToken string, reqRealmName, targetRealmName string, paramKV ...string) ([]kc.UserRepresentation, error)
 	CreateUser(accessToken string, realmName string, user kc.UserRepresentation) (string, error)
 	GetClientRoleMappings(accessToken string, realmName, userID, clientID string) ([]kc.RoleRepresentation, error)
 	AddClientRolesToUserRoleMapping(accessToken string, realmName, userID, clientID string, roles []kc.RoleRepresentation) error
@@ -46,7 +46,7 @@ type Component interface {
 	DeleteUser(ctx context.Context, realmName, userID string) error
 	GetUser(ctx context.Context, realmName, userID string) (api.UserRepresentation, error)
 	UpdateUser(ctx context.Context, realmName, userID string, user api.UserRepresentation) error
-	GetUsers(ctx context.Context, realmName, group string, paramKV ...string) ([]api.UserRepresentation, error)
+	GetUsers(ctx context.Context, realmName, groupID string, paramKV ...string) ([]api.UserRepresentation, error)
 	CreateUser(ctx context.Context, realmName string, user api.UserRepresentation) (string, error)
 	GetUserAccountStatus(ctx context.Context, realmName, userID string) (map[string]bool, error)
 	GetClientRolesForUser(ctx context.Context, realmName, userID, clientID string) ([]api.RoleRepresentation, error)
@@ -404,10 +404,11 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 	return nil
 }
 
-func (c *component) GetUsers(ctx context.Context, realmName string, group string, paramKV ...string) ([]api.UserRepresentation, error) {
+func (c *component) GetUsers(ctx context.Context, realmName string, groupID string, paramKV ...string) ([]api.UserRepresentation, error) {
 	var accessToken = ctx.Value("access_token").(string)
+	var ctxRealm = ctx.Value("realm").(string)
 
-	usersKc, err := c.keycloakClient.GetUsers(accessToken, realmName, paramKV...)
+	usersKc, err := c.keycloakClient.GetUsers(accessToken, ctxRealm, realmName, paramKV...)
 
 	if err != nil {
 		return nil, err

@@ -1,11 +1,13 @@
 package security
 
+//go:generate mockgen -destination=./mock/keycloak_client.go -package=mock -mock_names=KeycloakClient=KeycloakClient github.com/cloudtrust/keycloak-bridge/internal/security KeycloakClient
+
 import (
 	"context"
 	"fmt"
 	"testing"
 
-	"github.com/cloudtrust/keycloak-bridge/pkg/management/mock"
+	"github.com/cloudtrust/keycloak-bridge/internal/security/mock"
 	kc "github.com/cloudtrust/keycloak-client"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -79,6 +81,78 @@ func TestCheckAuthorizationOnRealm(t *testing.T) {
 		err = authorizationManager.CheckAuthorizationOnTargetRealm(ctx, "GetRealm", "master")
 		assert.Equal(t, ForbiddenError{}, err)
 	}
+}
+
+
+func TestCheckAuthorizationOnTargetGroupID(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
+
+	var accessToken = "TOKEN=="
+	var groups = []string{"toe", "svc"}
+	var realm = "master"
+
+	// Authorized for all groups (test wildcard)
+	{
+		var targetRealm = "master"
+		var targetGroupID = "123-456-789"
+
+		var authorizationManager, err = NewAuthorizationManager(mockKeycloakClient, `{"master": {"toe": {"DeleteUser": {"master": { "*": {} } }} }}`)
+		assert.Nil(t, err)
+
+		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+		ctx = context.WithValue(ctx, "groups", groups)
+		ctx = context.WithValue(ctx, "realm", realm)
+
+		var groupName = "customer"
+		var group = kc.GroupRepresentation{
+			Id:   &targetGroupID,
+			Name: &groupName,
+		}
+
+		mockKeycloakClient.EXPECT().GetGroup(accessToken, targetRealm, targetGroupID).Return(group, nil).Times(1)
+
+		err = authorizationManager.CheckAuthorizationOnTargetGroupID(ctx, "DeleteUser", "master", targetGroupID)
+		assert.Nil(t, err)
+	}
+
+	// Error management
+	{
+		var targetRealm = "master"
+		var targetGroupID = "123-456-789"
+
+		var authorizationManager, err = NewAuthorizationManager(mockKeycloakClient, `{"master": {"toe": {"DeleteUser": {"master": { "*": {} } }} }}`)
+		assert.Nil(t, err)
+
+		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+		ctx = context.WithValue(ctx, "groups", groups)
+		ctx = context.WithValue(ctx, "realm", realm)
+
+		mockKeycloakClient.EXPECT().GetGroup(accessToken, targetRealm, targetGroupID).Return(kc.GroupRepresentation{}, fmt.Errorf("ERROR")).Times(1)
+
+		err = authorizationManager.CheckAuthorizationOnTargetGroupID(ctx, "DeleteUser", "master", targetGroupID)
+		assert.Equal(t, ForbiddenError{}, err)
+	}
+
+	// No group found with this ID
+	{
+		var targetRealm = "master"
+		var targetGroupID = "123-456-789"
+
+		var authorizationManager, err = NewAuthorizationManager(mockKeycloakClient, `{"master": {"toe": {"DeleteUser": {"master": { "*": {} } }} }}`)
+		assert.Nil(t, err)
+
+		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+		ctx = context.WithValue(ctx, "groups", groups)
+		ctx = context.WithValue(ctx, "realm", realm)
+
+		mockKeycloakClient.EXPECT().GetGroup(accessToken, targetRealm, targetGroupID).Return(kc.GroupRepresentation{}, nil).Times(1)
+
+		err = authorizationManager.CheckAuthorizationOnTargetGroupID(ctx, "DeleteUser", "master", targetGroupID)
+		assert.Equal(t, ForbiddenError{}, err)
+	}
+
 }
 
 func TestCheckAuthorizationOnTargetUser(t *testing.T) {
