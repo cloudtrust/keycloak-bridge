@@ -19,11 +19,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:20c446ac12afc2ed48debc59b21b2a616c1a6eaabafd3d7f46fe1b4dda254ffe"
+  digest = "1:f2ad7efa72342463d660e442bca9f72b55f8f93a82293f12a8497453301f9f36"
   name = "github.com/cloudtrust/keycloak-client"
   packages = ["."]
   pruneopts = ""
-  revision = "ef9b693092edce9fd85f4f0afd56edd332afaddf"
+  revision = "6458bc7fc8d9a42fc08685c0a978dada24572859"
   source = "github.com/cloudtrust/keycloak-client"
 
 [[projects]]
@@ -123,7 +123,7 @@
   version = "v1.3.1"
 
 [[projects]]
-  digest = "1:73b360c5b463f59fdc570e9188efc398b63bc7c20a4498a4f076eaa8574adef6"
+  digest = "1:da2d72f6fdcdcebe27602c9c516636f654eaae67ae09e8a9be10820a4ba42911"
   name = "github.com/google/flatbuffers"
   packages = ["go"]
   pruneopts = ""
@@ -158,7 +158,7 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:17f258c3c2cd12980479112a20afb3024019d5b62a670878ff84742fec621115"
+  digest = "1:0e6a4d206be26596e3ad0127ec2da0f2952169768f33d7010517ba6f0fafd47c"
   name = "github.com/influxdata/influxdb"
   packages = [
     "client/v2",
@@ -347,7 +347,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:ed1a3a3847549ea4be3720fd005148e57702e953f83aa337bf1776eb54d2b910"
+  digest = "1:f0198dccb59ca773497b74f66f6ed18697dd2d1d76eeea7da8cc71e4f7811b3b"
   name = "golang.org/x/crypto"
   packages = [
     "ed25519",
@@ -355,11 +355,11 @@
     "pbkdf2",
   ]
   pruneopts = ""
-  revision = "f416ebab96af27ca70b6e5c23d6a0747530da626"
+  revision = "d864b10871cd4370fe574816b489c819c675ccc7"
 
 [[projects]]
   branch = "master"
-  digest = "1:ff4ca88748be8051a3fd7143898dc5567389a4097a96fbad6dd4dcb7056dfb26"
+  digest = "1:a2a9a2c106855d5fd3b11383f7c591064a81f25ee0d9749524801f636e7f473a"
   name = "golang.org/x/net"
   packages = [
     "context",
@@ -373,7 +373,7 @@
     "trace",
   ]
   pruneopts = ""
-  revision = "1da14a5a36f220ea3f03470682b737b1dfd5de22"
+  revision = "afa5a82059c6356159f699d81beff22a81842231"
 
 [[projects]]
   branch = "master"
@@ -388,11 +388,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:de13f0afd479cb8b33fd54e449a5d455d186c25a8488a94dbc49f854b7348659"
+  digest = "1:65b26625b8071c34051fdc3933aa41aabba2172296f325428e3a6492b0e7691f"
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = ""
-  revision = "12500544f89f9420afe9529ba8940bf72d294972"
+  revision = "953cdadca894cdc07be76fc99f95b40c28f06623"
 
 [[projects]]
   digest = "1:5acd3512b047305d49e8763eef7ba423901e85d5dd2fd1e71778a0ea8de10bd4"
@@ -444,14 +444,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:5eba71baa7efc80aa2c73b94290c85b06b5c35297f7172a83d57011b7e21e347"
+  digest = "1:e2b33f74fe0b06fd0d0b41562eeb4b7142ca2a8ff10d7b8cb3eb3ade1ed23ac0"
   name = "google.golang.org/genproto"
   packages = ["googleapis/rpc/status"]
   pruneopts = ""
-  revision = "d1146b9035b912113a38af3b138eb2af567b2c67"
+  revision = "e7d98fc518a78c9f8b5ee77be7b0b317475d89e1"
 
 [[projects]]
-  digest = "1:c4e8733914b7b1b535988fb5d5bd3de60845fb4553227b7a1ce1b7180204e462"
+  digest = "1:afc1b03a6d5ba3cbb2e0a12133e734d472e4df3b65f06e600a3d57a4b82f26cc"
   name = "google.golang.org/grpc"
   packages = [
     ".",
@@ -488,8 +488,8 @@
     "tap",
   ]
   pruneopts = ""
-  revision = "236199dd5f8031d698fb64091194aecd1c3895b2"
-  version = "v1.20.0"
+  revision = "25c4f928eaa6d96443009bd842389fb4fa48664e"
+  version = "v1.20.1"
 
 [[projects]]
   digest = "1:e3250d192192f02fbb143d50de437cbe967d6be7bd9fad671600942a33269d08"
