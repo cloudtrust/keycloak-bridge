@@ -57,18 +57,37 @@ func MakeHTTPOIDCTokenValidationMW(keycloakClient KeycloakClient, logger log.Log
 				return
 			}
 
-			var jot Token
-			if err = jwt.Unmarshal(payload, &jot); err != nil {
-				logger.Log("Authorization Error", err)
-				httpErrorHandler(context.TODO(), http.StatusForbidden, fmt.Errorf("Invalid token"), w)
-				return
-			}
+			var username, issuer, realm string
+			var groups []string
 
-			var username = jot.Username
-			var issuer = jot.Issuer
-			var splitIssuer = strings.Split(issuer, "/auth/realms/")
-			var realm = splitIssuer[1]
-			var groups = extractGroups(jot.Groups)
+			// The audience in JWT may be a string array or a string.
+			// First we try with a string array, if a failure occurs we try with a string
+			{
+				var jot TokenAudienceStringArray
+				if err = jwt.Unmarshal(payload, &jot); err == nil {
+					username = jot.Username
+					issuer = jot.Issuer
+					var splitIssuer = strings.Split(issuer, "/auth/realms/")
+					realm = splitIssuer[1]
+					groups = extractGroups(jot.Groups)
+				}
+			}
+			
+			if err != nil {
+				var jot TokenAudienceString
+				if err = jwt.Unmarshal(payload, &jot); err == nil {
+					username = jot.Username
+					issuer = jot.Issuer
+					var splitIssuer = strings.Split(issuer, "/auth/realms/")
+					realm = splitIssuer[1]
+					groups = extractGroups(jot.Groups)
+				}else{
+					logger.Log("Authorization Error", err)
+					httpErrorHandler(context.TODO(), http.StatusForbidden, fmt.Errorf("Invalid token"), w)
+					return
+				}
+			}
+			
 
 			if err = keycloakClient.VerifyToken(realm, accessToken); err != nil {
 				logger.Log("Authorization Error", err)
@@ -87,13 +106,37 @@ func MakeHTTPOIDCTokenValidationMW(keycloakClient KeycloakClient, logger log.Log
 	}
 }
 
+func extractGroups(kcGroups []string) []string {
+	var groups = []string{}
+
+	for _, kcGroup := range kcGroups {
+		groups = append(groups, strings.TrimPrefix(kcGroup, "/"))
+	}
+
+	return groups
+}
+
 // Token is JWT token and the custom fields present in OIDC Token provided by Keycloak.
-// We need to define our own structure as the library define aud as a string instead of a string array.
-type Token struct {
+// Audience can be a string or a string array according the specification.
+// The libraries are not supporting tit at this time (Fix in progress), meanwhile we circumvent it with a quick fix.
+type TokenAudienceStringArray struct {
 	hdr            *header
 	Issuer         string   `json:"iss,omitempty"`
 	Subject        string   `json:"sub,omitempty"`
 	Audience       []string `json:"aud,omitempty"`
+	ExpirationTime int64    `json:"exp,omitempty"`
+	NotBefore      int64    `json:"nbf,omitempty"`
+	IssuedAt       int64    `json:"iat,omitempty"`
+	ID             string   `json:"jti,omitempty"`
+	Username       string   `json:"preferred_username,omitempty"`
+	Groups         []string `json:"groups,omitempty"`
+}
+
+type TokenAudienceString struct {
+	hdr            *header
+	Issuer         string   `json:"iss,omitempty"`
+	Subject        string   `json:"sub,omitempty"`
+	Audience       string   `json:"aud,omitempty"`
 	ExpirationTime int64    `json:"exp,omitempty"`
 	NotBefore      int64    `json:"nbf,omitempty"`
 	IssuedAt       int64    `json:"iat,omitempty"`
@@ -108,15 +151,3 @@ type header struct {
 	Type        string `json:"typ,omitempty"`
 	ContentType string `json:"cty,omitempty"`
 }
-
-func extractGroups(kcGroups []string) []string {
-	var groups = []string{}
-
-	for _, kcGroup := range kcGroups {
-		groups = append(groups, strings.TrimPrefix(kcGroup, "/"))
-	}
-
-	return groups
-}
-
-
