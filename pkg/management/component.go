@@ -8,6 +8,7 @@ import (
 	"time"
 
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
+	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/cloudtrust/keycloak-bridge/pkg/event"
 	kc "github.com/cloudtrust/keycloak-client"
 )
@@ -29,6 +30,7 @@ type KeycloakClient interface {
 	ResetPassword(accessToken string, realmName string, userID string, cred kc.CredentialRepresentation) error
 	SendVerifyEmail(accessToken string, realmName string, userID string, paramKV ...string) error
 	ExecuteActionsEmail(accessToken string, realmName string, userID string, actions []string, paramKV ...string) error
+	SendNewEnrolmentCode(accessToken string, realmName string, userID string) error
 	GetCredentialsForUser(accessToken string, realmReq, realmName string, userID string) ([]kc.CredentialRepresentation, error)
 	DeleteCredentialsForUser(accessToken string, realmReq, realmName string, userID string, credentialID string) error
 	GetRoles(accessToken string, realmName string) ([]kc.RoleRepresentation, error)
@@ -56,6 +58,7 @@ type Component interface {
 	ResetPassword(ctx context.Context, realmName string, userID string, password api.PasswordRepresentation) error
 	SendVerifyEmail(ctx context.Context, realmName string, userID string, paramKV ...string) error
 	ExecuteActionsEmail(ctx context.Context, realmName string, userID string, actions []string, paramKV ...string) error
+	SendNewEnrolmentCode(ctx context.Context, realmName string, userID string) error
 	GetCredentialsForUser(ctx context.Context, realmName string, userID string) ([]api.CredentialRepresentation, error)
 	DeleteCredentialsForUser(ctx context.Context, realmName string, userID string, credentialID string) error
 	GetRoles(ctx context.Context, realmName string) ([]api.RoleRepresentation, error)
@@ -586,6 +589,12 @@ func (c *component) ExecuteActionsEmail(ctx context.Context, realmName string, u
 	return c.keycloakClient.ExecuteActionsEmail(accessToken, realmName, userID, actions, paramKV...)
 }
 
+func (c *component) SendNewEnrolmentCode(ctx context.Context, realmName string, userID string) error {
+	var accessToken = ctx.Value("access_token").(string)
+
+	return c.keycloakClient.SendNewEnrolmentCode(accessToken, realmName, userID)
+}
+
 func (c *component) GetCredentialsForUser(ctx context.Context, realmName string, userID string) ([]api.CredentialRepresentation, error) {
 	var accessToken = ctx.Value("access_token").(string)
 	var ctxRealm = ctx.Value("realm").(string)
@@ -760,7 +769,7 @@ func (c *component) UpdateRealmCustomConfiguration(ctx context.Context, realmNam
 		}
 	}
 	if !match {
-		return HTTPError{
+		return keycloakb.HTTPError{
 			Status:  400,
 			Message: "Invalid client ID or redirect URI",
 		}

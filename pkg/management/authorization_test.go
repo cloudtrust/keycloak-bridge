@@ -76,7 +76,7 @@ func TestDeny(t *testing.T) {
 		var authorizations, err = security.NewAuthorizationManager(mockKeycloakClient, `{}`)
 		assert.Nil(t, err)
 
-		var authorizationMW = MakeAuthorizationManagementComponentMW(mockLogger, mockKeycloakClient, authorizations)(mockManagementComponent)
+		var authorizationMW = MakeAuthorizationManagementComponentMW(mockLogger, authorizations)(mockManagementComponent)
 
 		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
 		ctx = context.WithValue(ctx, "groups", groups)
@@ -129,6 +129,9 @@ func TestDeny(t *testing.T) {
 		assert.Equal(t, security.ForbiddenError{}, err)
 
 		err = authorizationMW.ExecuteActionsEmail(ctx, realmName, userID, []string{})
+		assert.Equal(t, security.ForbiddenError{}, err)
+
+		err = authorizationMW.SendNewEnrolmentCode(ctx, realmName, userID)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
 		_, err = authorizationMW.GetCredentialsForUser(ctx, realmName, userID)
@@ -233,6 +236,7 @@ func TestAllowed(t *testing.T) {
 					"ResetPassword": {"*": {"*": {} }},
 					"SendVerifyEmail": {"*": {"*": {} }},
 					"ExecuteActionsEmail": {"*": {"*": {} }},
+					"SendNewEnrolmentCode": {"*": {"*": {} }},
 					"GetCredentialsForUser": {"*": {"*": {} }},
 					"DeleteCredentialsForUser": {"*": {"*": {} }},
 					"GetRoles": {"*": {"*": {} }},
@@ -246,7 +250,7 @@ func TestAllowed(t *testing.T) {
 		}`)
 		assert.Nil(t, err)
 
-		var authorizationMW = MakeAuthorizationManagementComponentMW(mockLogger, mockKeycloakClient, authorizations)(mockManagementComponent)
+		var authorizationMW = MakeAuthorizationManagementComponentMW(mockLogger, authorizations)(mockManagementComponent)
 
 		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
 		ctx = context.WithValue(ctx, "groups", groups)
@@ -315,6 +319,10 @@ func TestAllowed(t *testing.T) {
 
 		mockManagementComponent.EXPECT().ExecuteActionsEmail(ctx, realmName, userID, []string{}).Return(nil).Times(1)
 		err = authorizationMW.ExecuteActionsEmail(ctx, realmName, userID, []string{})
+		assert.Nil(t, err)
+
+		mockManagementComponent.EXPECT().SendNewEnrolmentCode(ctx, realmName, userID).Return(nil).Times(1)
+		err = authorizationMW.SendNewEnrolmentCode(ctx, realmName, userID)
 		assert.Nil(t, err)
 
 		mockManagementComponent.EXPECT().GetCredentialsForUser(ctx, realmName, userID).Return([]api.CredentialRepresentation{}, nil).Times(1)

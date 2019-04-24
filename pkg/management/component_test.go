@@ -11,6 +11,7 @@ import (
 	"time"
 
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
+	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/cloudtrust/keycloak-bridge/pkg/management/mock"
 	kc "github.com/cloudtrust/keycloak-client"
 	"github.com/golang/mock/gomock"
@@ -1138,6 +1139,43 @@ func TestExecuteActionsEmail(t *testing.T) {
 	}
 }
 
+func TestSendNewEnrolmentCode(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
+	var mockEventDBModule = mock.NewEventsDBModule(mockCtrl)
+	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
+
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule)
+
+	var accessToken = "TOKEN=="
+	var realmName = "master"
+	var userID = "1245-7854-8963"
+
+	// Send new enrolment code
+	{
+
+		mockKeycloakClient.EXPECT().SendNewEnrolmentCode(accessToken, realmName, userID).Return(nil).Times(1)
+
+		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+
+		err := managementComponent.SendNewEnrolmentCode(ctx, "master", userID)
+
+		assert.Nil(t, err)
+	}
+
+	// Error
+	{
+		mockKeycloakClient.EXPECT().SendNewEnrolmentCode(accessToken, realmName, userID).Return(fmt.Errorf("Invalid input")).Times(1)
+
+		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+
+		err := managementComponent.SendNewEnrolmentCode(ctx, "master", userID)
+
+		assert.NotNil(t, err)
+	}
+}
+
 func TestGetCredentialsForUser(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -1670,8 +1708,8 @@ func TestUpdateRealmCustomConfiguration(t *testing.T) {
 		err := managementComponent.UpdateRealmCustomConfiguration(ctx, realmID, configInit)
 
 		assert.NotNil(t, err)
-		assert.IsType(t, HTTPError{}, err)
-		e := err.(HTTPError)
+		assert.IsType(t, keycloakb.HTTPError{}, err)
+		e := err.(keycloakb.HTTPError)
 		assert.Equal(t, 400, e.Status)
 	}
 
@@ -1689,8 +1727,8 @@ func TestUpdateRealmCustomConfiguration(t *testing.T) {
 		err := managementComponent.UpdateRealmCustomConfiguration(ctx, realmID, configInit)
 
 		assert.NotNil(t, err)
-		assert.IsType(t, HTTPError{}, err)
-		e := err.(HTTPError)
+		assert.IsType(t, keycloakb.HTTPError{}, err)
+		e := err.(keycloakb.HTTPError)
 		assert.Equal(t, 400, e.Status)
 	}
 
@@ -1708,8 +1746,8 @@ func TestUpdateRealmCustomConfiguration(t *testing.T) {
 		err := managementComponent.UpdateRealmCustomConfiguration(ctx, realmID, configInit)
 
 		assert.NotNil(t, err)
-		assert.IsType(t, HTTPError{}, err)
-		e := err.(HTTPError)
+		assert.IsType(t, keycloakb.HTTPError{}, err)
+		e := err.(keycloakb.HTTPError)
 		assert.Equal(t, 400, e.Status)
 	}
 
