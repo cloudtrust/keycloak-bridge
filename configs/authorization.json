@@ -60,6 +60,21 @@
           "l3_support_manager": {},
           "l3_support_agent": {}
         }
+      },
+      "EV_GetEvents": {
+        "*": {
+          "*": {}
+        }
+      },
+      "EV_GetEventsSummary": {
+        "*": {
+          "*": {}
+        }
+      },
+      "EV_GetUserEvents": {
+        "*": {
+          "*": {}
+        }
       }
     },
     "integrator_manager":{

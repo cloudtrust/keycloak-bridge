@@ -16,7 +16,7 @@ type authorizationComponentMW struct {
 }
 
 // MakeAuthorizationManagementComponentMW checks authorization and return an error if the action is not allowed.
-func MakeAuthorizationManagementComponentMW(logger log.Logger, keycloakClient KeycloakClient, authorizationManager security.AuthorizationManager) func(Component) Component {
+func MakeAuthorizationManagementComponentMW(logger log.Logger, authorizationManager security.AuthorizationManager) func(Component) Component {
 	return func(next Component) Component {
 		return &authorizationComponentMW{
 			authManager: authorizationManager,
@@ -194,7 +194,7 @@ func (c *authorizationComponentMW) SendVerifyEmail(ctx context.Context, realmNam
 	return c.next.SendVerifyEmail(ctx, realmName, userID, paramKV...)
 }
 
-func (c *authorizationComponentMW) ExecuteActionsEmail(ctx context.Context, realmName string, userID string, actions []string, paramKV ...string) error{
+func (c *authorizationComponentMW) ExecuteActionsEmail(ctx context.Context, realmName string, userID string, actions []string, paramKV ...string) error {
 	var action = "ExecuteActionsEmail"
 	var targetRealm = realmName
 
