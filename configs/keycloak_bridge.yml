@@ -3,6 +3,7 @@
 
 # Component configs
 component-http-host-port: 0.0.0.0:8888
+authorization-file: C:/Users/fpe/go/src/github.com/cloudtrust/keycloak-bridge/configs/authorization.json
 
 # CORS
 cors-allowed-origins:
@@ -26,26 +27,38 @@ keycloak-username: admin
 keycloak-password: admin
 keycloak-timeout: 5s
 
-# DB
-db-host-port: 127.0.0.1:3306
-db-username: root
-db-password: admin
-db-database: auditevents
-db-protocol: tcp
-db-max-open-conns: 10
-db-max-idle-conns: 2
-db-conn-max-lifetime: 3600
-db-ro-username: root
-db-ro-password: admin
+# DB Audit RW
+db-audit-rw-host-port: 127.0.0.1:3306
+db-audit-rw-username: root
+db-audit-rw-password: admin
+db-audit-rw-database: auditevents
+db-audit-rw-protocol: tcp
+db-audit-rw-max-open-conns: 10
+db-audit-rw-max-idle-conns: 2
+db-audit-rw-conn-max-lifetime: 3600
 
-# Configuration DB
+# DB Audit RO
+db-audit-ro-host-port: 127.0.0.1:3306
+db-audit-ro-username: root
+db-audit-ro-password: admin
+db-audit-rw-database: auditevents
+db-audit-rw-protocol: tcp
+db-audit-rw-max-open-conns: 10
+db-audit-rw-max-idle-conns: 2
+db-audit-rw-conn-max-lifetime: 3600
+
+# DB Configuration
+db-config-host-port: 127.0.0.1:3306
 db-config-username: bridge
 db-config-password: bridge-password 
 db-config-database: cloudtrust_configuration
+db-config-protocol: tcp
+db-config-max-open-conns: 10
+db-config-max-idle-conns: 2
+db-config-conn-max-lifetime: 3600
 
 # audit events
-events-db: true
-
+events-db: false
 
 # Rate limiting in requests/second.
 rate-event: 1000

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
@@ -44,14 +43,8 @@ func decodeEventsRequest(_ context.Context, req *http.Request) (interface{}, err
 	buf.ReadFrom(req.Body)
 	request["body"] = buf.String()
 
-	for _, key := range []string{"origin", "realm", "ctEventType", "dateFrom", "dateTo", "first", "max"} {
+	for _, key := range []string{"origin", "realmTarget", "ctEventType", "dateFrom", "dateTo", "first", "max"} {
 		if value := req.URL.Query().Get(key); value != "" {
-			if _, err := request[key]; err {
-				return nil, keycloakb.HTTPError{
-					Status:  http.StatusBadRequest,
-					Message: fmt.Sprintf("Duplicated parameter %s", key),
-				}
-			}
 			request[key] = value
 		}
 	}

@@ -50,11 +50,12 @@ func (c *authorizationComponentMW) GetEventsSummary(ctx context.Context) (api.Ev
 
 func (c *authorizationComponentMW) GetUserEvents(ctx context.Context, m map[string]string) ([]api.AuditRepresentation, error) {
 	var action = "EV_GetUserEvents"
-	var targetRealm = "*" // For this method, there is no target realm, so we use the wildcard to express there is no constraints.
+	var targetRealm = m["realm"] // Get the realm provided as parameter in path
+	var targetUser = m["userID"] // Get the user provided as parameter in path
 
-	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
+	if err := c.authManager.CheckAuthorizationOnTargetUser(ctx, action, targetRealm, targetUser); err != nil {
 		return []api.AuditRepresentation{}, err
 	}
 
-	return c.next.GetEvents(ctx, m)
+	return c.next.GetUserEvents(ctx, m)
 }

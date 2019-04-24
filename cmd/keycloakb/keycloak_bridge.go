@@ -68,6 +68,17 @@ type Metrics interface {
 	Ping(timeout time.Duration) (time.Duration, string, error)
 }
 
+type dbConfig struct {
+	HostPort        string
+	Username        string
+	Password        string
+	Database        string
+	Protocol        string
+	MaxOpenConns    int
+	MaxIdleConns    int
+	ConnMaxLifetime int
+}
+
 func init() {
 	rand.Seed(time.Now().UTC().UnixNano())
 }
@@ -147,23 +158,13 @@ func main() {
 		sentryDSN = c.GetString("sentry-dsn")
 
 		// DB - for the moment used just for audit events
-		dbHostPort        = c.GetString("db-host-port")
-		dbUsername        = c.GetString("db-username")
-		dbPassword        = c.GetString("db-password")
-		dbDatabase        = c.GetString("db-database")
-		dbProtocol        = c.GetString("db-protocol")
-		dbMaxOpenConns    = c.GetInt("db-max-open-conns")
-		dbMaxIdleConns    = c.GetInt("db-max-idle-conns")
-		dbConnMaxLifetime = c.GetInt("db-conn-max-lifetime")
+		auditRwDbParams = getDbConfig(c, "db-audit-rw")
+
+		// DB - Read only user for audit events
+		auditRoDbParams = getDbConfig(c, "db-audit-ro")
 
 		// DB for custom configuration
-		dbConfigUsername = c.GetString("db-config-username")
-		dbConfigPassword = c.GetString("db-config-password")
-		dbConfigDatabase = c.GetString("db-config-database")
-
-		// DB - Read only user
-		dbRoUsername = c.GetString("db-ro-username")
-		dbRoPassword = c.GetString("db-ro-password")
+		configDbParams = getDbConfig(c, "db-config")
 
 		// Rate limiting
 		rateLimit = map[string]int{
@@ -288,7 +289,7 @@ func main() {
 	var eventsDBConn CloudtrustDB = keycloakb.NoopDB{}
 	if eventsDBEnabled {
 		var err error
-		eventsDBConn, err = openDatabase(dbUsername, dbPassword, dbProtocol, dbHostPort, dbDatabase, dbMaxOpenConns, dbMaxIdleConns, dbConnMaxLifetime)
+		eventsDBConn, err = auditRwDbParams.openDatabase()
 		if err != nil {
 			logger.Log("msg", "could not create R/W DB connection for audit events", "error", err)
 			return
@@ -298,7 +299,7 @@ func main() {
 	var eventsRODBConn events.DBEvents
 	{
 		var err error
-		eventsRODBConn, err = openDatabase(dbRoUsername, dbRoPassword, dbProtocol, dbHostPort, dbDatabase, dbMaxOpenConns, dbMaxIdleConns, dbConnMaxLifetime)
+		eventsRODBConn, err = auditRoDbParams.openDatabase()
 		if err != nil {
 			logger.Log("msg", "could not create RO DB connection for audit events", "error", err)
 			return
@@ -308,7 +309,7 @@ func main() {
 	var configurationDBConn CloudtrustDB = keycloakb.NoopDB{}
 	if configDBEnabled {
 		var err error
-		configurationDBConn, err = openDatabase(dbConfigUsername, dbConfigPassword, dbProtocol, dbHostPort, dbConfigDatabase, dbMaxOpenConns, dbMaxIdleConns, dbConnMaxLifetime)
+		configurationDBConn, err = configDbParams.openDatabase()
 		if err != nil {
 			logger.Log("msg", "could not create DB connection for configuration storage", "error", err)
 			return
@@ -662,26 +663,16 @@ func config(logger log.Logger) *viper.Viper {
 	v.SetDefault("keycloak-password", "")
 	v.SetDefault("keycloak-timeout", "5s")
 
-	//Storage events in DB
+	// Storage events in DB (read/write)
 	v.SetDefault("events-db", false)
+	configureDbDefault(v, "db-audit-rw")
 
-	// DB
-	v.SetDefault("db-host-port", "")
-	v.SetDefault("db-username", "")
-	v.SetDefault("db-password", "")
-	v.SetDefault("db-database", "")
-	v.SetDefault("db-protocol", "")
-	v.SetDefault("db-max-open-conns", 10)
-	v.SetDefault("db-max-idle-conns", 2)
-	v.SetDefault("db-conn-max-lifetime", 3600)
-	v.SetDefault("db-ro-username", "")
-	v.SetDefault("db-ro-password", "")
+	// Storage events in DB (read only)
+	configureDbDefault(v, "db-audit-ro")
 
 	//Storage custom configuration in DB
 	v.SetDefault("config-db", true)
-	v.SetDefault("db-config-username", "")
-	v.SetDefault("db-config-password", "")
-	v.SetDefault("db-config-database", "")
+	configureDbDefault(v, "db-config")
 
 	// Rate limiting (in requests/second)
 	v.SetDefault("rate-event", 1000)
@@ -742,16 +733,41 @@ func config(logger log.Logger) *viper.Viper {
 	return v
 }
 
-func openDatabase(dbUsername, dbPassword, dbProtocol, dbHostPort, dbDatabase string, dbMaxOpenConns, dbMaxIdleConns, dbConnMaxLifetime int) (*sql.DB, error) {
+func configureDbDefault(v *viper.Viper, prefix string) {
+	v.SetDefault(prefix+"-host-port", "")
+	v.SetDefault(prefix+"-username", "")
+	v.SetDefault(prefix+"-password", "")
+	v.SetDefault(prefix+"-database", "")
+	v.SetDefault(prefix+"-protocol", "")
+	v.SetDefault(prefix+"-max-open-conns", 10)
+	v.SetDefault(prefix+"-max-idle-conns", 2)
+	v.SetDefault(prefix+"-conn-max-lifetime", 3600)
+}
+
+func getDbConfig(v *viper.Viper, prefix string) *dbConfig {
+	var cfg dbConfig
+	cfg.HostPort = v.GetString(prefix + "-host-port")
+	cfg.Username = v.GetString(prefix + "-username")
+	cfg.Password = v.GetString(prefix + "-password")
+	cfg.Database = v.GetString(prefix + "-database")
+	cfg.Protocol = v.GetString(prefix + "-protocol")
+	cfg.MaxOpenConns = v.GetInt(prefix + "-max-open-conns")
+	cfg.MaxIdleConns = v.GetInt(prefix + "-max-idle-conns")
+	cfg.ConnMaxLifetime = v.GetInt(prefix + "-conn-max-lifetime")
+
+	return &cfg
+}
+
+func (cfg *dbConfig) openDatabase() (*sql.DB, error) {
 	var err error
 	var dbConn *sql.DB
-	dbConn, err = sql.Open("mysql", fmt.Sprintf("%s:%s@%s(%s)/%s", dbUsername, dbPassword, dbProtocol, dbHostPort, dbDatabase))
+	dbConn, err = sql.Open("mysql", fmt.Sprintf("%s:%s@%s(%s)/%s", cfg.Username, cfg.Password, cfg.Protocol, cfg.HostPort, cfg.Database))
 
 	// the config of the DB should have a max_connections > SetMaxOpenConns
 	if err == nil {
-		dbConn.SetMaxOpenConns(dbMaxOpenConns)
-		dbConn.SetMaxIdleConns(dbMaxIdleConns)
-		dbConn.SetConnMaxLifetime(time.Duration(dbConnMaxLifetime) * time.Second)
+		dbConn.SetMaxOpenConns(cfg.MaxOpenConns)
+		dbConn.SetMaxIdleConns(cfg.MaxIdleConns)
+		dbConn.SetConnMaxLifetime(time.Duration(cfg.ConnMaxLifetime) * time.Second)
 	}
 
 	return dbConn, err
