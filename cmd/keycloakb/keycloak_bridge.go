@@ -509,43 +509,43 @@ func main() {
 
 		//realms
 		managementSubroute.Path("/realms").Methods("GET").Handler(getRealmsHandler)
-		managementSubroute.Path("/realms/{realm}").Methods("GET").Handler(getRealmHandler)
+		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}").Methods("GET").Handler(getRealmHandler)
 
 		//clients
-		managementSubroute.Path("/realms/{realm}/clients").Methods("GET").Handler(getClientsHandler)
-		managementSubroute.Path("/realms/{realm}/clients/{clientID}").Methods("GET").Handler(getClientHandler)
+		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/clients").Methods("GET").Handler(getClientsHandler)
+		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/clients/{clientID:[a-zA-Z0-9-]+}").Methods("GET").Handler(getClientHandler)
 
 		//users
-		managementSubroute.Path("/realms/{realm}/users").Methods("GET").Handler(getUsersHandler)
-		managementSubroute.Path("/realms/{realm}/users").Methods("POST").Handler(createUserHandler)
-		managementSubroute.Path("/realms/{realm}/users/{userID}").Methods("GET").Handler(getUserHandler)
-		managementSubroute.Path("/realms/{realm}/users/{userID}").Methods("PUT").Handler(updateUserHandler)
-		managementSubroute.Path("/realms/{realm}/users/{userID}").Methods("DELETE").Handler(deleteUserHandler)
+		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/users").Methods("GET").Handler(getUsersHandler)
+		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/users").Methods("POST").Handler(createUserHandler)
+		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/users/{userID:[a-zA-Z0-9-]+}").Methods("GET").Handler(getUserHandler)
+		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/users/{userID:[a-zA-Z0-9-]+}").Methods("PUT").Handler(updateUserHandler)
+		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/users/{userID:[a-zA-Z0-9-]+}").Methods("DELETE").Handler(deleteUserHandler)
 
 		// account status
-		managementSubroute.Path("/realms/{realm}/users/{userID}/status").Methods("GET").Handler(getUserAccountStatusHandler)
+		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/users/{userID:[a-zA-Z0-9-]+}/status").Methods("GET").Handler(getUserAccountStatusHandler)
 
-		managementSubroute.Path("/realms/{realm}/users/{userID}/role-mappings/clients/{clientID}").Methods("GET").Handler(getClientRoleForUserHandler)
-		managementSubroute.Path("/realms/{realm}/users/{userID}/role-mappings/clients/{clientID}").Methods("POST").Handler(addClientRoleToUserHandler)
-		managementSubroute.Path("/realms/{realm}/users/{userID}/role-mappings/realm").Methods("GET").Handler(getRealmRoleForUserHandler)
+		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/users/{userID:[a-zA-Z0-9-]+}/role-mappings/clients/{clientID:[a-zA-Z0-9-]+}").Methods("GET").Handler(getClientRoleForUserHandler)
+		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/users/{userID:[a-zA-Z0-9-]+}/role-mappings/clients/{clientID:[a-zA-Z0-9-]+}").Methods("POST").Handler(addClientRoleToUserHandler)
+		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/users/{userID:[a-zA-Z0-9-]+}/role-mappings/realm").Methods("GET").Handler(getRealmRoleForUserHandler)
 
-		managementSubroute.Path("/realms/{realm}/users/{userID}/reset-password").Methods("PUT").Handler(resetPasswordHandler)
-		managementSubroute.Path("/realms/{realm}/users/{userID}/send-verify-email").Methods("PUT").Handler(sendVerifyEmailHandler)
-		managementSubroute.Path("/realms/{realm}/users/{userID}/execute-actions-email").Methods("PUT").Handler(executeActionsEmailHandler)
+		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/users/{userID:[a-zA-Z0-9-]+}/reset-password").Methods("PUT").Handler(resetPasswordHandler)
+		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/users/{userID:[a-zA-Z0-9-]+}/send-verify-email").Methods("PUT").Handler(sendVerifyEmailHandler)
+		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/users/{userID:[a-zA-Z0-9-]+}/execute-actions-email").Methods("PUT").Handler(executeActionsEmailHandler)
 
 		// Credentials
-		managementSubroute.Path("/realms/{realm}/users/{userID}/credentials").Methods("GET").Handler(getCredentialsForUserHandler)
-		managementSubroute.Path("/realms/{realm}/users/{userID}/credentials/{credentialID}").Methods("DELETE").Handler(deleteCredentialsForUserHandler)
+		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/users/{userID:[a-zA-Z0-9-]+}/credentials").Methods("GET").Handler(getCredentialsForUserHandler)
+		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/users/{userID:[a-zA-Z0-9-]+}/credentials/{credentialID:[a-zA-Z0-9-]+}").Methods("DELETE").Handler(deleteCredentialsForUserHandler)
 
 		//roles
-		managementSubroute.Path("/realms/{realm}/roles").Methods("GET").Handler(getRolesHandler)
-		managementSubroute.Path("/realms/{realm}/roles-by-id/{roleID}").Methods("GET").Handler(getRoleHandler)
-		managementSubroute.Path("/realms/{realm}/clients/{clientID}/roles").Methods("GET").Handler(getClientRolesHandler)
-		managementSubroute.Path("/realms/{realm}/clients/{clientID}/roles").Methods("POST").Handler(createClientRolesHandler)
+		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/roles").Methods("GET").Handler(getRolesHandler)
+		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/roles-by-id/{roleID:[a-zA-Z0-9-]+}").Methods("GET").Handler(getRoleHandler)
+		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/clients/{clientID:[a-zA-Z0-9-]+}/roles").Methods("GET").Handler(getClientRolesHandler)
+		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/clients/{clientID:[a-zA-Z0-9-]+}/roles").Methods("POST").Handler(createClientRolesHandler)
 
 		// custom configuration par realm
-		managementSubroute.Path("/realms/{realm}/configuration").Methods("GET").Handler(getRealmCustomConfigurationHandler)
-		managementSubroute.Path("/realms/{realm}/configuration").Methods("PUT").Handler(updateRealmCustomConfigurationHandler)
+		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/configuration").Methods("GET").Handler(getRealmCustomConfigurationHandler)
+		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/configuration").Methods("PUT").Handler(updateRealmCustomConfigurationHandler)
 
 		// Export.
 		route.Handle("/export", export.MakeHTTPExportHandler(exportEndpoint)).Methods("GET")
