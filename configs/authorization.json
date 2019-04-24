@@ -75,6 +75,11 @@
         "*": {
           "*": {}
         }
+      },
+      "AC_UpdatePassword": {
+        "*": {
+          "*": {}
+        }
       }
     },
     "integrator_manager":{
