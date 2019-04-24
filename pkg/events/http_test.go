@@ -41,19 +41,12 @@ func TestHTTPManagementHandler(t *testing.T) {
 
 	ts := httptest.NewServer(r)
 	defer ts.Close()
-	// Get - Bad request: duplicated parameter realm
-	{
-		res, err := http.Get(ts.URL + "/events/realms/master/users/123-456/events?first=1&realm=master")
-
-		assert.Nil(t, err)
-		assert.Equal(t, http.StatusBadRequest, res.StatusCode)
-	}
 
 	// Get - 200 with JSON body returned
 	{
 		var params map[string]string
 		params = make(map[string]string)
-		params["realm"] = "master"
+		params["realmTarget"] = "master"
 
 		var eventsResp = []api.AuditRepresentation{}
 		var event = api.AuditRepresentation{
@@ -66,7 +59,7 @@ func TestHTTPManagementHandler(t *testing.T) {
 
 		mockComponent.EXPECT().GetEvents(gomock.Any(), params).Return(eventsResp, nil).Times(1)
 
-		res, err := http.Get(ts.URL + "/events?realm=master&unused=value")
+		res, err := http.Get(ts.URL + "/events?realmTarget=master&unused=value")
 
 		assert.Nil(t, err)
 		assert.Equal(t, http.StatusOK, res.StatusCode)

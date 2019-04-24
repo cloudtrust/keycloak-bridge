@@ -55,6 +55,8 @@ func testAuthorization(t *testing.T, jsonAuthz string, tester func(ec EventsComp
 	}
 
 	mp := make(map[string]string)
+	mp["realm"] = realmName
+	mp["userID"] = userID
 
 	mockKeycloakClient.EXPECT().GetGroupsOfUser(accessToken, realmName, userID).Return([]kc.GroupRepresentation{group}, nil).AnyTimes()
 
