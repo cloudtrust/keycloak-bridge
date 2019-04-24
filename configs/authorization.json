@@ -356,7 +356,12 @@
         "DEP": {
           "*": {}
         }
-      }   
+      },
+      "SendNewEnrolmentCode":{
+        "DEP": {
+          "end_user": {}
+        }
+      }
     },
     "l1_support_manager": {
       "GetRealms": {
@@ -408,7 +413,12 @@
           "l1_support_agent": {},
           "end_user": {}
         }
-      }      
+      },
+      "SendNewEnrolmentCode":{
+        "DEP": {
+          "end_user": {}
+        }
+      }
     },
     "l1_support_agent": {
       "GetRealms": {
@@ -442,6 +452,11 @@
         }
       },
       "ExecuteActionsEmail": {
+        "DEP": {
+          "end_user": {}
+        }
+      },
+      "SendNewEnrolmentCode":{
         "DEP": {
           "end_user": {}
         }
