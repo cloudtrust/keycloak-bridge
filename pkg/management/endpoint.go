@@ -48,7 +48,7 @@ type ManagementComponent interface {
 	DeleteUser(ctx context.Context, realmName, userID string) error
 	GetUser(ctx context.Context, realmName, userID string) (api.UserRepresentation, error)
 	UpdateUser(ctx context.Context, realmName, userID string, user api.UserRepresentation) error
-	GetUsers(ctx context.Context, realmName, group string, paramKV ...string) ([]api.UserRepresentation, error)
+	GetUsers(ctx context.Context, realmName, groupID string, paramKV ...string) ([]api.UserRepresentation, error)
 	CreateUser(ctx context.Context, realmName string, user api.UserRepresentation) (string, error)
 	GetUserAccountStatus(ctx context.Context, realmName, userID string) (map[string]bool, error)
 	GetClientRolesForUser(ctx context.Context, realmName, userID, clientID string) ([]api.RoleRepresentation, error)
@@ -165,18 +165,18 @@ func MakeGetUsersEndpoint(managementComponent ManagementComponent) endpoint.Endp
 		var m = req.(map[string]string)
 
 		var paramKV []string
-		for _, key := range []string{"email", "firstName", "lastName", "max", "username", "group"} {
+		for _, key := range []string{"email", "firstName", "lastName", "max", "username", "groupId"} {
 			if m[key] != "" {
 				paramKV = append(paramKV, key, m[key])
 			}
 		}
 
-		group, ok := m["group"]
+		groupID, ok := m["groupId"]
 		if !ok {
-			return nil, keycloakb.CreateMissingParameterError("group")
+			return nil, keycloakb.CreateMissingParameterError("groupId")
 		}
 
-		return managementComponent.GetUsers(ctx, m["realm"], group, paramKV...)
+		return managementComponent.GetUsers(ctx, m["realm"], groupID, paramKV...)
 	}
 }
 

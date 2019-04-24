@@ -33,6 +33,23 @@ func (am *authorizationManager) CheckAuthorizationOnTargetUser(ctx context.Conte
 	return ForbiddenError{}
 }
 
+func (am *authorizationManager) CheckAuthorizationOnTargetGroupID(ctx context.Context, action, targetRealm, targetGroupID string) error {
+	var accessToken = ctx.Value("access_token").(string)
+
+	// Retrieve the name of the target group
+	var err error
+	var targetGroup kc.GroupRepresentation
+	if targetGroup, err = am.keycloakClient.GetGroup(accessToken, targetRealm, targetGroupID); err != nil {
+		return ForbiddenError{}
+	}
+
+	if targetGroup.Name == nil || *(targetGroup.Name) == "" {
+		return ForbiddenError{}
+	}
+
+	return am.CheckAuthorizationOnTargetGroup(ctx, action, targetRealm, *(targetGroup.Name))
+}
+
 func (am *authorizationManager) CheckAuthorizationOnTargetGroup(ctx context.Context, action, targetRealm, targetGroup string) error {
 	var currentRealm = ctx.Value("realm").(string)
 	var currentGroups = ctx.Value("groups").([]string)
@@ -135,11 +152,13 @@ type authorizationManager struct {
 
 type KeycloakClient interface {
 	GetGroupsOfUser(accessToken string, realmName, userID string) ([]kc.GroupRepresentation, error)
+	GetGroup(accessToken string, realmName, groupID string) (kc.GroupRepresentation, error)
 }
 
 type AuthorizationManager interface {
 	CheckAuthorizationOnTargetRealm(ctx context.Context, action, targetRealm string) error
 	CheckAuthorizationOnTargetGroup(ctx context.Context, action, targetRealm, targetGroup string) error
+	CheckAuthorizationOnTargetGroupID(ctx context.Context, action, targetRealm, targetGroupID string) error
 	CheckAuthorizationOnTargetUser(ctx context.Context, action, targetRealm, userID string) error
 }
 

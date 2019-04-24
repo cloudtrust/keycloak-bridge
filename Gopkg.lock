@@ -19,11 +19,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:f2ad7efa72342463d660e442bca9f72b55f8f93a82293f12a8497453301f9f36"
+  digest = "1:c20fdfc2e47b527670c16766ef89bd1953a30584a25b52e0f0ffc256804731f0"
   name = "github.com/cloudtrust/keycloak-client"
   packages = ["."]
   pruneopts = ""
-  revision = "6458bc7fc8d9a42fc08685c0a978dada24572859"
+  revision = "c9126f86c29f702fe4ca695dfd7af2bf2a90a49d"
   source = "github.com/cloudtrust/keycloak-client"
 
 [[projects]]
