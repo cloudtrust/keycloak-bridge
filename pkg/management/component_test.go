@@ -643,6 +643,7 @@ func TestGetUsers(t *testing.T) {
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
+	var targetRealmName = "master"
 
 	// Get user with succces
 	{
@@ -680,10 +681,12 @@ func TestGetUsers(t *testing.T) {
 		var kcUsersRep []kc.UserRepresentation
 		kcUsersRep = append(kcUsersRep, kcUserRep)
 
-		mockKeycloakClient.EXPECT().GetUsers(accessToken, realmName).Return(kcUsersRep, nil).Times(1)
+		mockKeycloakClient.EXPECT().GetUsers(accessToken, targetRealmName, realmName).Return(kcUsersRep, nil).Times(1)
 
 		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+		ctx = context.WithValue(ctx, "realm", "master")
 
+		//mockKeycloakClient.EXPECT().GetGroup(gomock.Any(), "master", groupID).Return(group, nil).Times(1)
 		apiUsersRep, err := managementComponent.GetUsers(ctx, "master", "Support")
 
 		var apiUserRep = apiUsersRep[0]
@@ -703,9 +706,10 @@ func TestGetUsers(t *testing.T) {
 
 	//Error
 	{
-		mockKeycloakClient.EXPECT().GetUsers(accessToken, realmName).Return([]kc.UserRepresentation{}, fmt.Errorf("Unexpected error")).Times(1)
+		mockKeycloakClient.EXPECT().GetUsers(accessToken, targetRealmName, realmName).Return([]kc.UserRepresentation{}, fmt.Errorf("Unexpected error")).Times(1)
 
 		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+		ctx = context.WithValue(ctx, "realm", "master")
 
 		_, err := managementComponent.GetUsers(ctx, "master", "Support")
 

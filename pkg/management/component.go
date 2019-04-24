@@ -35,6 +35,7 @@ type KeycloakClient interface {
 	GetRole(accessToken string, realmName string, roleID string) (kc.RoleRepresentation, error)
 	GetClientRoles(accessToken string, realmName, idClient string) ([]kc.RoleRepresentation, error)
 	CreateClientRole(accessToken string, realmName, clientID string, role kc.RoleRepresentation) (string, error)
+	GetGroup(accessToken string, realmName, groupID string) (kc.GroupRepresentation, error)
 }
 
 // Component is the management component interface.
