@@ -475,8 +475,6 @@ paths:
           description: "Code correctly sent by SMS"
         400:
           description: "Invalid input"
-        401:
-          description: "Not authenticated"
         403:
           description: "No permission to call this operation"        
   /realms/{realm}/users/{userID}/credentials:
