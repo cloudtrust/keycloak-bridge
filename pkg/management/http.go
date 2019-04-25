@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 
+	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/cloudtrust/keycloak-bridge/internal/security"
 	kc_client "github.com/cloudtrust/keycloak-client"
 	"github.com/go-kit/kit/endpoint"
@@ -16,24 +16,6 @@ import (
 
 	"github.com/pkg/errors"
 )
-
-// HTTPError can be returned by the API endpoints
-type HTTPError struct {
-	Status  int
-	Message string
-}
-
-func (e HTTPError) Error() string {
-	return fmt.Sprintf("%d %s", e.Status, e.Message)
-}
-
-// CreateMissingParameterError creates a HTTPResponse for an error relative to a missing mandatory parameter
-func CreateMissingParameterError(name string) HTTPError {
-	return HTTPError{
-		Status:  http.StatusBadRequest,
-		Message: fmt.Sprintf("Missing mandatory parameter %s", name),
-	}
-}
 
 // MakeManagementHandler make an HTTP handler for a Management endpoint.
 func MakeManagementHandler(e endpoint.Endpoint) *http_transport.Server {
@@ -61,7 +43,7 @@ func decodeManagementRequest(_ context.Context, req *http.Request) (interface{},
 	buf.ReadFrom(req.Body)
 	request["body"] = buf.String()
 
-	for _, key := range []string{"email", "firstName", "lastName", "max", "username", "client_id", "redirect_uri", "lifespan", "group"} {
+	for _, key := range []string{"email", "firstName", "lastName", "max", "username", "client_id", "redirect_uri", "lifespan", "groupId"} {
 		if value := req.URL.Query().Get(key); value != "" {
 			request[key] = value
 		}
@@ -117,7 +99,7 @@ func managementErrorHandler(ctx context.Context, err error, w http.ResponseWrite
 		w.WriteHeader(e.HTTPStatus)
 	case security.ForbiddenError:
 		w.WriteHeader(http.StatusForbidden)
-	case HTTPError:
+	case keycloakb.HTTPError:
 		w.WriteHeader(e.Status)
 		w.Write([]byte(e.Message))
 	default:

@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
+	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/go-kit/kit/endpoint"
 )
 
@@ -27,6 +28,7 @@ type Endpoints struct {
 	ResetPassword                  endpoint.Endpoint
 	SendVerifyEmail                endpoint.Endpoint
 	ExecuteActionsEmail            endpoint.Endpoint
+	SendNewEnrolmentCode           endpoint.Endpoint
 	GetCredentialsForUser          endpoint.Endpoint
 	DeleteCredentialsForUser       endpoint.Endpoint
 	GetRoles                       endpoint.Endpoint
@@ -46,7 +48,7 @@ type ManagementComponent interface {
 	DeleteUser(ctx context.Context, realmName, userID string) error
 	GetUser(ctx context.Context, realmName, userID string) (api.UserRepresentation, error)
 	UpdateUser(ctx context.Context, realmName, userID string, user api.UserRepresentation) error
-	GetUsers(ctx context.Context, realmName, group string, paramKV ...string) ([]api.UserRepresentation, error)
+	GetUsers(ctx context.Context, realmName, groupID string, paramKV ...string) ([]api.UserRepresentation, error)
 	CreateUser(ctx context.Context, realmName string, user api.UserRepresentation) (string, error)
 	GetUserAccountStatus(ctx context.Context, realmName, userID string) (map[string]bool, error)
 	GetClientRolesForUser(ctx context.Context, realmName, userID, clientID string) ([]api.RoleRepresentation, error)
@@ -55,6 +57,7 @@ type ManagementComponent interface {
 	ResetPassword(ctx context.Context, realmName string, userID string, password api.PasswordRepresentation) error
 	SendVerifyEmail(ctx context.Context, realmName string, userID string, paramKV ...string) error
 	ExecuteActionsEmail(ctx context.Context, realmName string, userID string, actions []string, paramKV ...string) error
+	SendNewEnrolmentCode(ctx context.Context, realmName string, userID string) error
 	GetCredentialsForUser(ctx context.Context, realmName string, userID string) ([]api.CredentialRepresentation, error)
 	DeleteCredentialsForUser(ctx context.Context, realmName string, userID string, credentialID string) error
 	GetRoles(ctx context.Context, realmName string) ([]api.RoleRepresentation, error)
@@ -162,18 +165,18 @@ func MakeGetUsersEndpoint(managementComponent ManagementComponent) endpoint.Endp
 		var m = req.(map[string]string)
 
 		var paramKV []string
-		for _, key := range []string{"email", "firstName", "lastName", "max", "username", "group"} {
+		for _, key := range []string{"email", "firstName", "lastName", "max", "username", "groupId"} {
 			if m[key] != "" {
 				paramKV = append(paramKV, key, m[key])
 			}
 		}
 
-		group, ok := m["group"]
+		groupID, ok := m["groupId"]
 		if !ok {
-			return nil, CreateMissingParameterError("group")
+			return nil, keycloakb.CreateMissingParameterError("groupId")
 		}
 
-		return managementComponent.GetUsers(ctx, m["realm"], group, paramKV...)
+		return managementComponent.GetUsers(ctx, m["realm"], groupID, paramKV...)
 	}
 }
 
@@ -273,6 +276,14 @@ func MakeExecuteActionsEmailEndpoint(managementComponent ManagementComponent) en
 	}
 }
 
+func MakeSendNewEnrolmentCodeEndpoint(managementComponent ManagementComponent) endpoint.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+
+		return nil, managementComponent.SendNewEnrolmentCode(ctx, m["realm"], m["userID"])
+	}
+}
+
 func MakeGetCredentialsForUserEndpoint(managementComponent ManagementComponent) endpoint.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
@@ -366,7 +377,7 @@ type LocationHeader struct {
 	URL string
 }
 
-// We are currently using a mapping 1:1 for REST API of Brdige and Keycloak, thus we take a shortcut to convert the location of the resource
+// We are currently using a mapping 1:1 for REST API of Bridge and Keycloak, thus we take a shortcut to convert the location of the resource
 func convertLocationUrl(originalURL string, scheme string, host string) string {
 	var splitURL = strings.Split(originalURL, "/auth/admin")
 	return scheme + "://" + host + "/management" + splitURL[1]

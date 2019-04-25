@@ -182,6 +182,19 @@ func (mr *KeycloakClientMockRecorder) GetCredentialsForUser(arg0, arg1, arg2, ar
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCredentialsForUser", reflect.TypeOf((*KeycloakClient)(nil).GetCredentialsForUser), arg0, arg1, arg2, arg3)
 }
 
+// GetGroup mocks base method
+func (m *KeycloakClient) GetGroup(arg0, arg1, arg2 string) (keycloak_client.GroupRepresentation, error) {
+	ret := m.ctrl.Call(m, "GetGroup", arg0, arg1, arg2)
+	ret0, _ := ret[0].(keycloak_client.GroupRepresentation)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetGroup indicates an expected call of GetGroup
+func (mr *KeycloakClientMockRecorder) GetGroup(arg0, arg1, arg2 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGroup", reflect.TypeOf((*KeycloakClient)(nil).GetGroup), arg0, arg1, arg2)
+}
+
 // GetGroupsOfUser mocks base method
 func (m *KeycloakClient) GetGroupsOfUser(arg0, arg1, arg2 string) ([]keycloak_client.GroupRepresentation, error) {
 	ret := m.ctrl.Call(m, "GetGroupsOfUser", arg0, arg1, arg2)
@@ -274,9 +287,9 @@ func (mr *KeycloakClientMockRecorder) GetUser(arg0, arg1, arg2 interface{}) *gom
 }
 
 // GetUsers mocks base method
-func (m *KeycloakClient) GetUsers(arg0, arg1 string, arg2 ...string) ([]keycloak_client.UserRepresentation, error) {
-	varargs := []interface{}{arg0, arg1}
-	for _, a := range arg2 {
+func (m *KeycloakClient) GetUsers(arg0, arg1, arg2 string, arg3 ...string) ([]keycloak_client.UserRepresentation, error) {
+	varargs := []interface{}{arg0, arg1, arg2}
+	for _, a := range arg3 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "GetUsers", varargs...)
@@ -286,8 +299,8 @@ func (m *KeycloakClient) GetUsers(arg0, arg1 string, arg2 ...string) ([]keycloak
 }
 
 // GetUsers indicates an expected call of GetUsers
-func (mr *KeycloakClientMockRecorder) GetUsers(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
-	varargs := append([]interface{}{arg0, arg1}, arg2...)
+func (mr *KeycloakClientMockRecorder) GetUsers(arg0, arg1, arg2 interface{}, arg3 ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{arg0, arg1, arg2}, arg3...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUsers", reflect.TypeOf((*KeycloakClient)(nil).GetUsers), varargs...)
 }
 
@@ -301,6 +314,18 @@ func (m *KeycloakClient) ResetPassword(arg0, arg1, arg2 string, arg3 keycloak_cl
 // ResetPassword indicates an expected call of ResetPassword
 func (mr *KeycloakClientMockRecorder) ResetPassword(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResetPassword", reflect.TypeOf((*KeycloakClient)(nil).ResetPassword), arg0, arg1, arg2, arg3)
+}
+
+// SendNewEnrolmentCode mocks base method
+func (m *KeycloakClient) SendNewEnrolmentCode(arg0, arg1, arg2 string) error {
+	ret := m.ctrl.Call(m, "SendNewEnrolmentCode", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SendNewEnrolmentCode indicates an expected call of SendNewEnrolmentCode
+func (mr *KeycloakClientMockRecorder) SendNewEnrolmentCode(arg0, arg1, arg2 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendNewEnrolmentCode", reflect.TypeOf((*KeycloakClient)(nil).SendNewEnrolmentCode), arg0, arg1, arg2)
 }
 
 // SendVerifyEmail mocks base method

@@ -312,6 +312,18 @@ func (mr *ManagementComponentMockRecorder) ResetPassword(arg0, arg1, arg2, arg3 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResetPassword", reflect.TypeOf((*ManagementComponent)(nil).ResetPassword), arg0, arg1, arg2, arg3)
 }
 
+// SendNewEnrolmentCode mocks base method
+func (m *ManagementComponent) SendNewEnrolmentCode(arg0 context.Context, arg1, arg2 string) error {
+	ret := m.ctrl.Call(m, "SendNewEnrolmentCode", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SendNewEnrolmentCode indicates an expected call of SendNewEnrolmentCode
+func (mr *ManagementComponentMockRecorder) SendNewEnrolmentCode(arg0, arg1, arg2 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendNewEnrolmentCode", reflect.TypeOf((*ManagementComponent)(nil).SendNewEnrolmentCode), arg0, arg1, arg2)
+}
+
 // SendVerifyEmail mocks base method
 func (m *ManagementComponent) SendVerifyEmail(arg0 context.Context, arg1, arg2 string, arg3 ...string) error {
 	varargs := []interface{}{arg0, arg1, arg2}

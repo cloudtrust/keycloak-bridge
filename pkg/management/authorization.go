@@ -16,7 +16,7 @@ type authorizationComponentMW struct {
 }
 
 // MakeAuthorizationManagementComponentMW checks authorization and return an error if the action is not allowed.
-func MakeAuthorizationManagementComponentMW(logger log.Logger, keycloakClient KeycloakClient, authorizationManager security.AuthorizationManager) func(Component) Component {
+func MakeAuthorizationManagementComponentMW(logger log.Logger, authorizationManager security.AuthorizationManager) func(Component) Component {
 	return func(next Component) Component {
 		return &authorizationComponentMW{
 			authManager: authorizationManager,
@@ -104,15 +104,15 @@ func (c *authorizationComponentMW) UpdateUser(ctx context.Context, realmName, us
 	return c.next.UpdateUser(ctx, realmName, userID, user)
 }
 
-func (c *authorizationComponentMW) GetUsers(ctx context.Context, realmName, group string, paramKV ...string) ([]api.UserRepresentation, error) {
+func (c *authorizationComponentMW) GetUsers(ctx context.Context, realmName, groupID string, paramKV ...string) ([]api.UserRepresentation, error) {
 	var action = "GetUsers"
 	var targetRealm = realmName
 
-	if err := c.authManager.CheckAuthorizationOnTargetGroup(ctx, action, targetRealm, group); err != nil {
+	if err := c.authManager.CheckAuthorizationOnTargetGroupID(ctx, action, targetRealm, groupID); err != nil {
 		return []api.UserRepresentation{}, err
 	}
 
-	return c.next.GetUsers(ctx, realmName, group, paramKV...)
+	return c.next.GetUsers(ctx, realmName, groupID, paramKV...)
 }
 
 func (c *authorizationComponentMW) CreateUser(ctx context.Context, realmName string, user api.UserRepresentation) (string, error) {
@@ -194,7 +194,7 @@ func (c *authorizationComponentMW) SendVerifyEmail(ctx context.Context, realmNam
 	return c.next.SendVerifyEmail(ctx, realmName, userID, paramKV...)
 }
 
-func (c *authorizationComponentMW) ExecuteActionsEmail(ctx context.Context, realmName string, userID string, actions []string, paramKV ...string) error{
+func (c *authorizationComponentMW) ExecuteActionsEmail(ctx context.Context, realmName string, userID string, actions []string, paramKV ...string) error {
 	var action = "ExecuteActionsEmail"
 	var targetRealm = realmName
 
@@ -203,6 +203,17 @@ func (c *authorizationComponentMW) ExecuteActionsEmail(ctx context.Context, real
 	}
 
 	return c.next.ExecuteActionsEmail(ctx, realmName, userID, actions, paramKV...)
+}
+
+func (c *authorizationComponentMW) SendNewEnrolmentCode(ctx context.Context, realmName string, userID string) error {
+	var action = "SendNewEnrolmentCode"
+	var targetRealm = realmName
+
+	if err := c.authManager.CheckAuthorizationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
+		return err
+	}
+
+	return c.next.SendNewEnrolmentCode(ctx, realmName, userID)
 }
 
 func (c *authorizationComponentMW) GetCredentialsForUser(ctx context.Context, realmName string, userID string) ([]api.CredentialRepresentation, error) {

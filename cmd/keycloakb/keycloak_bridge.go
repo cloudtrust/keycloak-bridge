@@ -22,6 +22,7 @@ import (
 	gen "github.com/cloudtrust/keycloak-bridge/internal/idgenerator"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/cloudtrust/keycloak-bridge/pkg/event"
+	"github.com/cloudtrust/keycloak-bridge/pkg/events"
 	"github.com/cloudtrust/keycloak-bridge/pkg/export"
 	"github.com/cloudtrust/keycloak-bridge/pkg/management"
 	"github.com/cloudtrust/keycloak-bridge/pkg/middleware"
@@ -65,6 +66,17 @@ type Metrics interface {
 	WriteLoop(c <-chan time.Time)
 	Write(bp influx.BatchPoints) error
 	Ping(timeout time.Duration) (time.Duration, string, error)
+}
+
+type dbConfig struct {
+	HostPort        string
+	Username        string
+	Password        string
+	Database        string
+	Protocol        string
+	MaxOpenConns    int
+	MaxIdleConns    int
+	ConnMaxLifetime int
 }
 
 func init() {
@@ -146,19 +158,13 @@ func main() {
 		sentryDSN = c.GetString("sentry-dsn")
 
 		// DB - for the moment used just for audit events
-		dbHostPort        = c.GetString("db-host-port")
-		dbUsername        = c.GetString("db-username")
-		dbPassword        = c.GetString("db-password")
-		dbDatabase        = c.GetString("db-database")
-		dbProtocol        = c.GetString("db-protocol")
-		dbMaxOpenConns    = c.GetInt("db-max-open-conns")
-		dbMaxIdleConns    = c.GetInt("db-max-idle-conns")
-		dbConnMaxLifetime = c.GetInt("db-conn-max-lifetime")
+		auditRwDbParams = getDbConfig(c, "db-audit-rw")
+
+		// DB - Read only user for audit events
+		auditRoDbParams = getDbConfig(c, "db-audit-ro")
 
 		// DB for custom configuration
-		dbConfigUsername = c.GetString("db-config-username")
-		dbConfigPassword = c.GetString("db-config-password")
-		dbConfigDatabase = c.GetString("db-config-database")
+		configDbParams = getDbConfig(c, "db-config")
 
 		// Rate limiting
 		rateLimit = map[string]int{
@@ -273,6 +279,7 @@ func main() {
 	// Audit events DB.
 	type CloudtrustDB interface {
 		Exec(query string, args ...interface{}) (sql.Result, error)
+		Query(query string, args ...interface{}) (*sql.Rows, error)
 		QueryRow(query string, args ...interface{}) *sql.Row
 		SetMaxOpenConns(n int)
 		SetMaxIdleConns(n int)
@@ -282,32 +289,31 @@ func main() {
 	var eventsDBConn CloudtrustDB = keycloakb.NoopDB{}
 	if eventsDBEnabled {
 		var err error
-		eventsDBConn, err = sql.Open("mysql", fmt.Sprintf("%s:%s@%s(%s)/%s", dbUsername, dbPassword, dbProtocol, dbHostPort, dbDatabase))
-
+		eventsDBConn, err = auditRwDbParams.openDatabase()
 		if err != nil {
-			logger.Log("msg", "could not create DB connection for audit events", "error", err)
+			logger.Log("msg", "could not create R/W DB connection for audit events", "error", err)
 			return
 		}
-		// the config of the DB should have a max_connections > SetMaxOpenConns
-		eventsDBConn.SetMaxOpenConns(dbMaxOpenConns)
-		eventsDBConn.SetMaxIdleConns(dbMaxIdleConns)
-		eventsDBConn.SetConnMaxLifetime(time.Duration(dbConnMaxLifetime) * time.Second)
+	}
 
+	var eventsRODBConn events.DBEvents
+	{
+		var err error
+		eventsRODBConn, err = auditRoDbParams.openDatabase()
+		if err != nil {
+			logger.Log("msg", "could not create RO DB connection for audit events", "error", err)
+			return
+		}
 	}
 
 	var configurationDBConn CloudtrustDB = keycloakb.NoopDB{}
 	if configDBEnabled {
 		var err error
-		configurationDBConn, err = sql.Open("mysql", fmt.Sprintf("%s:%s@%s(%s)/%s", dbConfigUsername, dbConfigPassword, dbProtocol, dbHostPort, dbConfigDatabase))
-
+		configurationDBConn, err = configDbParams.openDatabase()
 		if err != nil {
 			logger.Log("msg", "could not create DB connection for configuration storage", "error", err)
 			return
 		}
-		// the config of the DB should have a max_connections > SetMaxOpenConns
-		configurationDBConn.SetMaxOpenConns(dbMaxOpenConns)
-		configurationDBConn.SetMaxIdleConns(dbMaxIdleConns)
-		configurationDBConn.SetConnMaxLifetime(time.Duration(dbConnMaxLifetime) * time.Second)
 	}
 
 	// Event service.
@@ -385,6 +391,23 @@ func main() {
 		}
 	}
 
+	// Events service.
+	var eventsEndpoints events.Endpoints
+	{
+		var eventsLogger = log.With(logger, "svc", "events")
+
+		// new module for sending the events to the DB
+		eventsRODBModule := events.NewEventsDBModule(eventsRODBConn)
+		eventsComponent := events.NewEventsComponent(eventsRODBModule)
+		eventsComponent = events.MakeAuthorizationManagementComponentMW(log.With(eventsLogger, "mw", "endpoint"), authorizationManager)(eventsComponent)
+
+		eventsEndpoints = events.Endpoints{
+			GetEvents:        prepareEndpoint(events.MakeGetEventsEndpoint(eventsComponent), "get_events", influxMetrics, eventsLogger, tracer, rateLimit),
+			GetEventsSummary: prepareEndpoint(events.MakeGetEventsSummaryEndpoint(eventsComponent), "get_events_summary", influxMetrics, eventsLogger, tracer, rateLimit),
+			GetUserEvents:    prepareEndpoint(events.MakeGetEventsEndpoint(eventsComponent), "get_user_events", influxMetrics, eventsLogger, tracer, rateLimit),
+		}
+	}
+
 	// Management service.
 	var managementEndpoints = management.Endpoints{}
 	{
@@ -411,11 +434,11 @@ func main() {
 		var keycloakComponent management.Component
 		{
 			keycloakComponent = management.NewComponent(keycloakClient, eventsDBModule, configDBModule)
-			keycloakComponent = management.MakeAuthorizationManagementComponentMW(log.With(managementLogger, "mw", "endpoint"), keycloakClient, authorizationManager)(keycloakComponent)
+			keycloakComponent = management.MakeAuthorizationManagementComponentMW(log.With(managementLogger, "mw", "endpoint"), authorizationManager)(keycloakComponent)
 		}
 
 		managementEndpoints = management.Endpoints{
-			GetRealms:                      prepareEndpoint(management.MakeGetRealmEndpoint(keycloakComponent), "realms_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
+			GetRealms:                      prepareEndpoint(management.MakeGetRealmsEndpoint(keycloakComponent), "realms_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
 			GetRealm:                       prepareEndpoint(management.MakeGetRealmEndpoint(keycloakComponent), "realm_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
 			GetClients:                     prepareEndpoint(management.MakeGetClientsEndpoint(keycloakComponent), "get_clients_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
 			GetClient:                      prepareEndpoint(management.MakeGetClientEndpoint(keycloakComponent), "get_client_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
@@ -435,6 +458,7 @@ func main() {
 			ResetPassword:                  prepareEndpoint(management.MakeResetPasswordEndpoint(keycloakComponent), "reset_password_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
 			SendVerifyEmail:                prepareEndpoint(management.MakeSendVerifyEmailEndpoint(keycloakComponent), "send_verify_email_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
 			ExecuteActionsEmail:            prepareEndpoint(management.MakeExecuteActionsEmailEndpoint(keycloakComponent), "execute_actions_email_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
+			SendNewEnrolmentCode:           prepareEndpoint(management.MakeSendNewEnrolmentCodeEndpoint(keycloakComponent), "send_new_enrolment_code_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
 			GetCredentialsForUser:          prepareEndpoint(management.MakeGetCredentialsForUserEndpoint(keycloakComponent), "get_credentials_for_user_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
 			DeleteCredentialsForUser:       prepareEndpoint(management.MakeDeleteCredentialsForUserEndpoint(keycloakComponent), "delete_credentials_for_user_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
 			GetRealmCustomConfiguration:    prepareEndpoint(management.MakeGetRealmCustomConfigurationEndpoint(keycloakComponent), "get_realm_custom_config_endpoint", influxMetrics, managementLogger, tracer, rateLimit),
@@ -471,6 +495,15 @@ func main() {
 		}
 		eventSubroute.Handle("/receiver", eventHandler)
 
+		// Events
+		var getEventsHandler = configureEventsHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(eventsEndpoints.GetEvents)
+		var getEventsSummaryHandler = configureEventsHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(eventsEndpoints.GetEventsSummary)
+		var getUserEventsHandler = configureEventsHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(eventsEndpoints.GetUserEvents)
+
+		route.Path("/events").Methods("GET").Handler(getEventsHandler)
+		route.Path("/events/summary").Methods("GET").Handler(getEventsSummaryHandler)
+		route.Path("/events/realms/{realm}/users/{userID}/events").Methods("GET").Handler(getUserEventsHandler)
+
 		// Management
 		var managementSubroute = route.PathPrefix("/management").Subrouter()
 
@@ -500,6 +533,7 @@ func main() {
 		var resetPasswordHandler = ConfigureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.ResetPassword)
 		var sendVerifyEmailHandler = ConfigureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.SendVerifyEmail)
 		var executeActionsEmailHandler = ConfigureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.ExecuteActionsEmail)
+		var sendNewEnrolmentCodeHandler = ConfigureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.SendNewEnrolmentCode)
 
 		var getCredentialsForUserHandler = ConfigureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.GetCredentialsForUser)
 		var deleteCredentialsForUserHandler = ConfigureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.DeleteCredentialsForUser)
@@ -532,6 +566,7 @@ func main() {
 		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/users/{userID:[a-zA-Z0-9-]+}/reset-password").Methods("PUT").Handler(resetPasswordHandler)
 		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/users/{userID:[a-zA-Z0-9-]+}/send-verify-email").Methods("PUT").Handler(sendVerifyEmailHandler)
 		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/users/{userID:[a-zA-Z0-9-]+}/execute-actions-email").Methods("PUT").Handler(executeActionsEmailHandler)
+		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/users/{userID:[a-zA-Z0-9-]+}/send-new-enrolment-code").Methods("POST").Handler(sendNewEnrolmentCodeHandler)
 
 		// Credentials
 		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/users/{userID:[a-zA-Z0-9-]+}/credentials").Methods("GET").Handler(getCredentialsForUserHandler)
@@ -631,25 +666,16 @@ func config(logger log.Logger) *viper.Viper {
 	v.SetDefault("keycloak-password", "")
 	v.SetDefault("keycloak-timeout", "5s")
 
-	//Storage events in DB
+	// Storage events in DB (read/write)
 	v.SetDefault("events-db", false)
+	configureDbDefault(v, "db-audit-rw")
 
-	// DB
-	v.SetDefault("db-host-port", "")
-	v.SetDefault("db-username", "")
-	v.SetDefault("db-password", "")
-	v.SetDefault("db-database", "")
-	v.SetDefault("db-table", "")
-	v.SetDefault("db-protocol", "")
-	v.SetDefault("db-max-open-conns", 10)
-	v.SetDefault("db-max-idle-conns", 2)
-	v.SetDefault("db-conn-max-lifetime", 3600)
+	// Storage events in DB (read only)
+	configureDbDefault(v, "db-audit-ro")
 
 	//Storage custom configuration in DB
 	v.SetDefault("config-db", true)
-	v.SetDefault("db-config-username", "")
-	v.SetDefault("db-config-password", "")
-	v.SetDefault("db-config-database", "")
+	configureDbDefault(v, "db-config")
 
 	// Rate limiting (in requests/second)
 	v.SetDefault("rate-event", 1000)
@@ -708,6 +734,56 @@ func config(logger log.Logger) *viper.Viper {
 		logger.Log(k, v.Get(k))
 	}
 	return v
+}
+
+func configureDbDefault(v *viper.Viper, prefix string) {
+	v.SetDefault(prefix+"-host-port", "")
+	v.SetDefault(prefix+"-username", "")
+	v.SetDefault(prefix+"-password", "")
+	v.SetDefault(prefix+"-database", "")
+	v.SetDefault(prefix+"-protocol", "")
+	v.SetDefault(prefix+"-max-open-conns", 10)
+	v.SetDefault(prefix+"-max-idle-conns", 2)
+	v.SetDefault(prefix+"-conn-max-lifetime", 3600)
+}
+
+func getDbConfig(v *viper.Viper, prefix string) *dbConfig {
+	var cfg dbConfig
+	cfg.HostPort = v.GetString(prefix + "-host-port")
+	cfg.Username = v.GetString(prefix + "-username")
+	cfg.Password = v.GetString(prefix + "-password")
+	cfg.Database = v.GetString(prefix + "-database")
+	cfg.Protocol = v.GetString(prefix + "-protocol")
+	cfg.MaxOpenConns = v.GetInt(prefix + "-max-open-conns")
+	cfg.MaxIdleConns = v.GetInt(prefix + "-max-idle-conns")
+	cfg.ConnMaxLifetime = v.GetInt(prefix + "-conn-max-lifetime")
+
+	return &cfg
+}
+
+func (cfg *dbConfig) openDatabase() (*sql.DB, error) {
+	var err error
+	var dbConn *sql.DB
+	dbConn, err = sql.Open("mysql", fmt.Sprintf("%s:%s@%s(%s)/%s", cfg.Username, cfg.Password, cfg.Protocol, cfg.HostPort, cfg.Database))
+
+	// the config of the DB should have a max_connections > SetMaxOpenConns
+	if err == nil {
+		dbConn.SetMaxOpenConns(cfg.MaxOpenConns)
+		dbConn.SetMaxIdleConns(cfg.MaxIdleConns)
+		dbConn.SetConnMaxLifetime(time.Duration(cfg.ConnMaxLifetime) * time.Second)
+	}
+
+	return dbConn, err
+}
+
+func configureEventsHandler(ComponentName string, ComponentID string, idGenerator gen.IDGenerator, keycloakClient *keycloak.Client, tracer opentracing.Tracer, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {
+	return func(endpoint endpoint.Endpoint) http.Handler {
+		var handler http.Handler
+		handler = events.MakeEventsHandler(endpoint)
+		handler = middleware.MakeHTTPCorrelationIDMW(idGenerator, tracer, logger, ComponentName, ComponentID)(handler)
+		handler = middleware.MakeHTTPOIDCTokenValidationMW(keycloakClient, logger)(handler)
+		return handler
+	}
 }
 
 func ConfigureManagementHandler(ComponentName string, ComponentID string, idGenerator gen.IDGenerator, keycloakClient *keycloak.Client, tracer opentracing.Tracer, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {

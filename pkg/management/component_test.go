@@ -11,6 +11,7 @@ import (
 	"time"
 
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
+	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/cloudtrust/keycloak-bridge/pkg/management/mock"
 	kc "github.com/cloudtrust/keycloak-client"
 	"github.com/golang/mock/gomock"
@@ -643,6 +644,7 @@ func TestGetUsers(t *testing.T) {
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
+	var targetRealmName = "DEP"
 
 	// Get user with succces
 	{
@@ -680,11 +682,12 @@ func TestGetUsers(t *testing.T) {
 		var kcUsersRep []kc.UserRepresentation
 		kcUsersRep = append(kcUsersRep, kcUserRep)
 
-		mockKeycloakClient.EXPECT().GetUsers(accessToken, realmName).Return(kcUsersRep, nil).Times(1)
+		mockKeycloakClient.EXPECT().GetUsers(accessToken, realmName, targetRealmName).Return(kcUsersRep, nil).Times(1)
 
 		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+		ctx = context.WithValue(ctx, "realm", "master")
 
-		apiUsersRep, err := managementComponent.GetUsers(ctx, "master", "Support")
+		apiUsersRep, err := managementComponent.GetUsers(ctx, "DEP", "Support")
 
 		var apiUserRep = apiUsersRep[0]
 		assert.Nil(t, err)
@@ -703,11 +706,12 @@ func TestGetUsers(t *testing.T) {
 
 	//Error
 	{
-		mockKeycloakClient.EXPECT().GetUsers(accessToken, realmName).Return([]kc.UserRepresentation{}, fmt.Errorf("Unexpected error")).Times(1)
+		mockKeycloakClient.EXPECT().GetUsers(accessToken, realmName, targetRealmName).Return([]kc.UserRepresentation{}, fmt.Errorf("Unexpected error")).Times(1)
 
 		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+		ctx = context.WithValue(ctx, "realm", "master")
 
-		_, err := managementComponent.GetUsers(ctx, "master", "Support")
+		_, err := managementComponent.GetUsers(ctx, "DEP", "Support")
 
 		assert.NotNil(t, err)
 	}
@@ -1129,6 +1133,43 @@ func TestExecuteActionsEmail(t *testing.T) {
 		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
 
 		err := managementComponent.ExecuteActionsEmail(ctx, "master", userID, actions)
+
+		assert.NotNil(t, err)
+	}
+}
+
+func TestSendNewEnrolmentCode(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
+	var mockEventDBModule = mock.NewEventsDBModule(mockCtrl)
+	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
+
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule)
+
+	var accessToken = "TOKEN=="
+	var realmName = "master"
+	var userID = "1245-7854-8963"
+
+	// Send new enrolment code
+	{
+
+		mockKeycloakClient.EXPECT().SendNewEnrolmentCode(accessToken, realmName, userID).Return(nil).Times(1)
+
+		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+
+		err := managementComponent.SendNewEnrolmentCode(ctx, "master", userID)
+
+		assert.Nil(t, err)
+	}
+
+	// Error
+	{
+		mockKeycloakClient.EXPECT().SendNewEnrolmentCode(accessToken, realmName, userID).Return(fmt.Errorf("Invalid input")).Times(1)
+
+		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+
+		err := managementComponent.SendNewEnrolmentCode(ctx, "master", userID)
 
 		assert.NotNil(t, err)
 	}
@@ -1666,8 +1707,8 @@ func TestUpdateRealmCustomConfiguration(t *testing.T) {
 		err := managementComponent.UpdateRealmCustomConfiguration(ctx, realmID, configInit)
 
 		assert.NotNil(t, err)
-		assert.IsType(t, HTTPError{}, err)
-		e := err.(HTTPError)
+		assert.IsType(t, keycloakb.HTTPError{}, err)
+		e := err.(keycloakb.HTTPError)
 		assert.Equal(t, 400, e.Status)
 	}
 
@@ -1685,8 +1726,8 @@ func TestUpdateRealmCustomConfiguration(t *testing.T) {
 		err := managementComponent.UpdateRealmCustomConfiguration(ctx, realmID, configInit)
 
 		assert.NotNil(t, err)
-		assert.IsType(t, HTTPError{}, err)
-		e := err.(HTTPError)
+		assert.IsType(t, keycloakb.HTTPError{}, err)
+		e := err.(keycloakb.HTTPError)
 		assert.Equal(t, 400, e.Status)
 	}
 
@@ -1704,8 +1745,8 @@ func TestUpdateRealmCustomConfiguration(t *testing.T) {
 		err := managementComponent.UpdateRealmCustomConfiguration(ctx, realmID, configInit)
 
 		assert.NotNil(t, err)
-		assert.IsType(t, HTTPError{}, err)
-		e := err.(HTTPError)
+		assert.IsType(t, keycloakb.HTTPError{}, err)
+		e := err.(keycloakb.HTTPError)
 		assert.Equal(t, 400, e.Status)
 	}
 

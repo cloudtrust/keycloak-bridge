@@ -120,9 +120,9 @@ paths:
         required: true
         schema:
           type: string
-      - name: group
+      - name: groupId
         in: query
-        description: group the users belong to
+        description: groupId the users belong to
         required: true
         schema:
           type: string
@@ -451,6 +451,32 @@ paths:
       responses:
         200:
           description: successful operation
+  /realms/{realm}/users/{userID}/send-new-enrolment-code:
+    post:
+      tags:
+      - Users
+      summary: >
+        Send a new enrolment code for a particular userID.
+      parameters:
+      - name: realm
+        in: path
+        description: Realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: "Code correctly sent by SMS"
+        400:
+          description: "Invalid input"
+        403:
+          description: "No permission to call this operation"        
   /realms/{realm}/users/{userID}/credentials:
     get:
       tags:
