@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -216,8 +217,8 @@ func (c *component) CreateUser(ctx context.Context, realmName string, user api.U
 
 	var attributes = make(map[string][]string)
 
-	if user.MobilePhone != nil {
-		attributes["mobilephone"] = []string{*user.MobilePhone}
+	if user.PhoneNumber != nil {
+		attributes["phoneNumber"] = []string{*user.PhoneNumber}
 	}
 
 	if user.Label != nil {
@@ -230,6 +231,10 @@ func (c *component) CreateUser(ctx context.Context, realmName string, user api.U
 
 	if user.BirthDate != nil {
 		attributes["birthDate"] = []string{*user.BirthDate}
+	}
+
+	if user.PhoneNumberVerified != nil {
+		attributes["phoneNumberVerified"] = []string{strconv.FormatBool(*user.PhoneNumberVerified)}
 	}
 
 	if len(attributes) > 0 {
@@ -304,9 +309,9 @@ func (c *component) GetUser(ctx context.Context, realmName, userID string) (api.
 	if userKc.Attributes != nil {
 		var m = *userKc.Attributes
 
-		if m["mobilephone"] != nil {
-			var mobilePhone = m["mobilephone"][0]
-			userRep.MobilePhone = &mobilePhone
+		if m["phoneNumber"] != nil {
+			var phoneNumber = m["phoneNumber"][0]
+			userRep.PhoneNumber = &phoneNumber
 		}
 
 		if m["label"] != nil {
@@ -322,6 +327,11 @@ func (c *component) GetUser(ctx context.Context, realmName, userID string) (api.
 		if m["birthDate"] != nil {
 			var birthDate = m["birthDate"][0]
 			userRep.BirthDate = &birthDate
+		}
+
+		if m["phoneNumberVerified"] != nil {
+			var phoneNumberVerified, _ = strconv.ParseBool(m["phoneNumberVerified"][0])
+			userRep.PhoneNumberVerified = &phoneNumberVerified
 		}
 	}
 
@@ -355,8 +365,8 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 
 	var attributes = make(map[string][]string)
 
-	if user.MobilePhone != nil {
-		attributes["mobilephone"] = []string{*user.MobilePhone}
+	if user.PhoneNumber != nil {
+		attributes["phoneNumber"] = []string{*user.PhoneNumber}
 	}
 
 	if user.Label != nil {
@@ -369,6 +379,10 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 
 	if user.BirthDate != nil {
 		attributes["birthDate"] = []string{*user.BirthDate}
+	}
+
+	if user.PhoneNumberVerified != nil {
+		attributes["phoneNumberVerified"] = []string{strconv.FormatBool(*user.PhoneNumberVerified)}
 	}
 
 	if len(attributes) > 0 {
@@ -433,9 +447,9 @@ func (c *component) GetUsers(ctx context.Context, realmName string, groupID stri
 		if userKc.Attributes != nil {
 			var m = *userKc.Attributes
 
-			if m["mobilephone"] != nil {
-				var mobilePhone = m["mobilephone"][0]
-				userRep.MobilePhone = &mobilePhone
+			if m["phoneNumber"] != nil {
+				var phoneNumber = m["phoneNumber"][0]
+				userRep.PhoneNumber = &phoneNumber
 			}
 
 			if m["label"] != nil {
@@ -451,6 +465,11 @@ func (c *component) GetUsers(ctx context.Context, realmName string, groupID stri
 			if m["birthDate"] != nil {
 				var birthDate = m["birthDate"][0]
 				userRep.BirthDate = &birthDate
+			}
+
+			if m["phoneNumberVerified"] != nil {
+				var phoneNumberVerified, _ = strconv.ParseBool(m["phoneNumberVerified"][0])
+				userRep.PhoneNumberVerified = &phoneNumberVerified
 			}
 		}
 
