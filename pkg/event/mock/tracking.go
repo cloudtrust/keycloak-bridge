@@ -35,6 +35,7 @@ func (m *Sentry) EXPECT() *SentryMockRecorder {
 
 // CaptureError mocks base method
 func (m *Sentry) CaptureError(arg0 error, arg1 map[string]string, arg2 ...raven_go.Interface) string {
+	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {
 		varargs = append(varargs, a)
@@ -46,6 +47,7 @@ func (m *Sentry) CaptureError(arg0 error, arg1 map[string]string, arg2 ...raven_
 
 // CaptureError indicates an expected call of CaptureError
 func (mr *SentryMockRecorder) CaptureError(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1}, arg2...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CaptureError", reflect.TypeOf((*Sentry)(nil).CaptureError), varargs...)
 }

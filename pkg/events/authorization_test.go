@@ -65,7 +65,7 @@ func testAuthorization(t *testing.T, jsonAuthz string, tester func(ec EventsComp
 
 func TestGetEventsAllow(t *testing.T) {
 	testAuthorization(t, WithAuthorization, func(auth EventsComponent, mockComponent *mock.EventsComponent, ctx context.Context, mp map[string]string) {
-		mockComponent.EXPECT().GetEvents(ctx, mp).Return([]api.AuditRepresentation{}, nil).Times(1)
+		mockComponent.EXPECT().GetEvents(ctx, mp).Return(api.AuditEventsRepresentation{}, nil).Times(1)
 		_, err := auth.GetEvents(ctx, mp)
 		assert.Nil(t, err)
 	})
@@ -95,7 +95,7 @@ func TestGetEventsSummaryDeny(t *testing.T) {
 
 func TestGetUserEventsAllow(t *testing.T) {
 	testAuthorization(t, WithAuthorization, func(auth EventsComponent, mockComponent *mock.EventsComponent, ctx context.Context, mp map[string]string) {
-		mockComponent.EXPECT().GetUserEvents(ctx, mp).Return([]api.AuditRepresentation{}, nil).Times(1)
+		mockComponent.EXPECT().GetUserEvents(ctx, mp).Return(api.AuditEventsRepresentation{}, nil).Times(1)
 		_, err := auth.GetUserEvents(ctx, mp)
 		assert.Nil(t, err)
 	})

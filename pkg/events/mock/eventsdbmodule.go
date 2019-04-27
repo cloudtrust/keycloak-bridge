@@ -36,6 +36,7 @@ func (m *EventsDBModule) EXPECT() *EventsDBModuleMockRecorder {
 
 // GetEvents mocks base method
 func (m *EventsDBModule) GetEvents(arg0 context.Context, arg1 map[string]string) ([]events.AuditRepresentation, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetEvents", arg0, arg1)
 	ret0, _ := ret[0].([]events.AuditRepresentation)
 	ret1, _ := ret[1].(error)
@@ -44,11 +45,28 @@ func (m *EventsDBModule) GetEvents(arg0 context.Context, arg1 map[string]string)
 
 // GetEvents indicates an expected call of GetEvents
 func (mr *EventsDBModuleMockRecorder) GetEvents(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEvents", reflect.TypeOf((*EventsDBModule)(nil).GetEvents), arg0, arg1)
+}
+
+// GetEventsCount mocks base method
+func (m *EventsDBModule) GetEventsCount(arg0 context.Context, arg1 map[string]string) (int, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetEventsCount", arg0, arg1)
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetEventsCount indicates an expected call of GetEventsCount
+func (mr *EventsDBModuleMockRecorder) GetEventsCount(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEventsCount", reflect.TypeOf((*EventsDBModule)(nil).GetEventsCount), arg0, arg1)
 }
 
 // GetEventsSummary mocks base method
 func (m *EventsDBModule) GetEventsSummary(arg0 context.Context) (events.EventSummaryRepresentation, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetEventsSummary", arg0)
 	ret0, _ := ret[0].(events.EventSummaryRepresentation)
 	ret1, _ := ret[1].(error)
@@ -57,5 +75,6 @@ func (m *EventsDBModule) GetEventsSummary(arg0 context.Context) (events.EventSum
 
 // GetEventsSummary indicates an expected call of GetEventsSummary
 func (mr *EventsDBModuleMockRecorder) GetEventsSummary(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEventsSummary", reflect.TypeOf((*EventsDBModule)(nil).GetEventsSummary), arg0)
 }

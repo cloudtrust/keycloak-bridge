@@ -23,7 +23,7 @@ func TestMakeGetEventsEndpoint(t *testing.T) {
 	var ctx = context.Background()
 	var req = make(map[string]string)
 
-	mockEventsComponent.EXPECT().GetEvents(ctx, req).Return([]api.AuditRepresentation{}, nil).Times(1)
+	mockEventsComponent.EXPECT().GetEvents(ctx, req).Return(api.AuditEventsRepresentation{}, nil).Times(1)
 	var res, err = e(ctx, req)
 	assert.Nil(t, err)
 	assert.NotNil(t, res)
@@ -57,7 +57,7 @@ func TestMakeGetUserEventsEndpoint(t *testing.T) {
 	var ctx = context.Background()
 	var req = make(map[string]string)
 
-	mockEventsComponent.EXPECT().GetUserEvents(ctx, req).Return([]api.AuditRepresentation{}, nil).Times(1)
+	mockEventsComponent.EXPECT().GetUserEvents(ctx, req).Return(api.AuditEventsRepresentation{}, nil).Times(1)
 	var res, err = e(ctx, req)
 	assert.Nil(t, err)
 	assert.NotNil(t, res)

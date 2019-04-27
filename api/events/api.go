@@ -1,5 +1,11 @@
 package events_api
 
+// AuditEventsRepresentation is the type of the GetEvents response
+type AuditEventsRepresentation struct {
+	Events []AuditRepresentation `json:"events"`
+	Count  int                   `json:"count"`
+}
+
 // AuditRepresentation elements returned by GetEvents
 type AuditRepresentation struct {
 	AuditID         int64  `json:"auditId,omitempty"`

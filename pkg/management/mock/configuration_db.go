@@ -35,6 +35,7 @@ func (m *DBConfiguration) EXPECT() *DBConfigurationMockRecorder {
 
 // Exec mocks base method
 func (m *DBConfiguration) Exec(arg0 string, arg1 ...interface{}) (sql.Result, error) {
+	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0}
 	for _, a := range arg1 {
 		varargs = append(varargs, a)
@@ -47,12 +48,14 @@ func (m *DBConfiguration) Exec(arg0 string, arg1 ...interface{}) (sql.Result, er
 
 // Exec indicates an expected call of Exec
 func (mr *DBConfigurationMockRecorder) Exec(arg0 interface{}, arg1 ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0}, arg1...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Exec", reflect.TypeOf((*DBConfiguration)(nil).Exec), varargs...)
 }
 
 // QueryRow mocks base method
 func (m *DBConfiguration) QueryRow(arg0 string, arg1 ...interface{}) *sql.Row {
+	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0}
 	for _, a := range arg1 {
 		varargs = append(varargs, a)
@@ -64,6 +67,7 @@ func (m *DBConfiguration) QueryRow(arg0 string, arg1 ...interface{}) *sql.Row {
 
 // QueryRow indicates an expected call of QueryRow
 func (mr *DBConfigurationMockRecorder) QueryRow(arg0 interface{}, arg1 ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0}, arg1...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "QueryRow", reflect.TypeOf((*DBConfiguration)(nil).QueryRow), varargs...)
 }

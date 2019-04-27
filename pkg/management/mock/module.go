@@ -35,6 +35,7 @@ func (m *ConfigurationDBModule) EXPECT() *ConfigurationDBModuleMockRecorder {
 
 // GetConfiguration mocks base method
 func (m *ConfigurationDBModule) GetConfiguration(arg0 context.Context, arg1 string) (string, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetConfiguration", arg0, arg1)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
@@ -43,11 +44,13 @@ func (m *ConfigurationDBModule) GetConfiguration(arg0 context.Context, arg1 stri
 
 // GetConfiguration indicates an expected call of GetConfiguration
 func (mr *ConfigurationDBModuleMockRecorder) GetConfiguration(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConfiguration", reflect.TypeOf((*ConfigurationDBModule)(nil).GetConfiguration), arg0, arg1)
 }
 
 // StoreOrUpdate mocks base method
 func (m *ConfigurationDBModule) StoreOrUpdate(arg0 context.Context, arg1, arg2 string) error {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "StoreOrUpdate", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -55,5 +58,6 @@ func (m *ConfigurationDBModule) StoreOrUpdate(arg0 context.Context, arg1, arg2 s
 
 // StoreOrUpdate indicates an expected call of StoreOrUpdate
 func (mr *ConfigurationDBModuleMockRecorder) StoreOrUpdate(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StoreOrUpdate", reflect.TypeOf((*ConfigurationDBModule)(nil).StoreOrUpdate), arg0, arg1, arg2)
 }

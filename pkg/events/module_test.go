@@ -22,7 +22,8 @@ func TestModuleGetEvents(t *testing.T) {
 	module := NewEventsDBModule(dbEvents)
 
 	params := initMap("origin", "origin-1", "max", "5")
-	var expectedResult []api.AuditRepresentation
+	var empty [0]api.AuditRepresentation
+	var expectedResult = empty[:]
 	var expectedError error = keycloakb.CreateMissingParameterError("")
 	var rows sql.Rows
 	dbEvents.EXPECT().Query(gomock.Any(), params["origin"], nil, nil, nil, nil, nil, 0, params["max"]).Return(&rows, expectedError).Times(1)

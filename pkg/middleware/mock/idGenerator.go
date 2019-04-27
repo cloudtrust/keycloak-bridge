@@ -34,6 +34,7 @@ func (m *IDGenerator) EXPECT() *IDGeneratorMockRecorder {
 
 // NextID mocks base method
 func (m *IDGenerator) NextID() string {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "NextID")
 	ret0, _ := ret[0].(string)
 	return ret0
@@ -41,5 +42,6 @@ func (m *IDGenerator) NextID() string {
 
 // NextID indicates an expected call of NextID
 func (mr *IDGeneratorMockRecorder) NextID() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NextID", reflect.TypeOf((*IDGenerator)(nil).NextID))
 }
