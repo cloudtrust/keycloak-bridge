@@ -18,6 +18,9 @@ cors-allowed-headers:
   - "Content-Type"
 cors-debug: true
 
+# Security
+#audience-required: "backofficeid"
+
 # Keycloak configs
 keycloak: false
 keycloak-api-uri: http://localhost:8080

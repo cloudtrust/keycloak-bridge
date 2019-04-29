@@ -23,7 +23,7 @@ type KeycloakClient interface {
 //   - access_token: the recieved access token in raw format
 //   - realm: realm name extracted from the Issuer information of the token
 //   - username: username extracted from the token
-func MakeHTTPOIDCTokenValidationMW(keycloakClient KeycloakClient, logger log.Logger) func(http.Handler) http.Handler {
+func MakeHTTPOIDCTokenValidationMW(keycloakClient KeycloakClient, audienceRequired string, logger log.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			var authorizationHeader = req.Header.Get("Authorization")
@@ -71,6 +71,12 @@ func MakeHTTPOIDCTokenValidationMW(keycloakClient KeycloakClient, logger log.Log
 					var splitIssuer = strings.Split(issuer, "/auth/realms/")
 					realm = splitIssuer[1]
 					groups = extractGroups(jot.Groups)
+
+					if !assertMatchingAudience(jot.Audience, audienceRequired) {
+						logger.Log("Authorization Error", "Incorrect audience")
+						httpErrorHandler(context.TODO(), http.StatusForbidden, fmt.Errorf("Invalid token"), w)
+						return
+					}
 				}
 			}
 
@@ -83,6 +89,13 @@ func MakeHTTPOIDCTokenValidationMW(keycloakClient KeycloakClient, logger log.Log
 					var splitIssuer = strings.Split(issuer, "/auth/realms/")
 					realm = splitIssuer[1]
 					groups = extractGroups(jot.Groups)
+
+					if jot.Audience != audienceRequired {
+						logger.Log("Authorization Error", "Incorrect audience")
+						httpErrorHandler(context.TODO(), http.StatusForbidden, fmt.Errorf("Invalid token"), w)
+						return
+					}
+
 				} else {
 					logger.Log("Authorization Error", err)
 					httpErrorHandler(context.TODO(), http.StatusForbidden, fmt.Errorf("Invalid token"), w)
@@ -106,6 +119,16 @@ func MakeHTTPOIDCTokenValidationMW(keycloakClient KeycloakClient, logger log.Log
 
 		})
 	}
+}
+
+func assertMatchingAudience(jwtAudiences []string, requiredAudience string) bool {
+	for _, jwtAudience := range jwtAudiences {
+		if requiredAudience == jwtAudience {
+			return true
+		}
+	}
+
+	return false
 }
 
 func extractGroups(kcGroups []string) []string {
