@@ -109,8 +109,12 @@ func main() {
 	var c = config(log.With(logger, "unit", "config"))
 	var (
 		// Component
-		httpAddr                = c.GetString("component-http-host-port")
 		authorizationConfigFile = c.GetString("authorization-file")
+
+		// Publishing
+		httpAddrInternal = c.GetString("http-host-port-internal")
+		httpAddrManagement = c.GetString("http-host-port-management")
+		httpAddrAccount = c.GetString("http-host-port-account")
 
 		// Keycloak
 		keycloakConfig = keycloak.Config{
@@ -194,11 +198,11 @@ func main() {
 	}()
 
 	// Security - Audience required
-	var audienceRequired string 
+	var audienceRequired string
 	{
 		audienceRequired = c.GetString("audience-required")
 
-		if audienceRequired == ""{
+		if audienceRequired == "" {
 			logger.Log("msg", "audience parameter(audience-required) cannot be empty")
 			return
 		}
@@ -498,10 +502,10 @@ func main() {
 	var exportEndpoint = export.MakeExportEndpoint(exportComponent)
 	var exportSaveAndExportEndpoint = export.MakeStoreAndExportEndpoint(exportComponent)
 
-	// HTTP Server.
+	// HTTP Internal Call Server (Event reception from Keycloak & Export API).
 	go func() {
 		var logger = log.With(logger, "transport", "http")
-		logger.Log("addr", httpAddr)
+		logger.Log("addr", httpAddrInternal)
 
 		var route = mux.NewRouter()
 
@@ -518,6 +522,33 @@ func main() {
 			eventHandler = middleware.MakeHTTPTracingMW(tracer, ComponentName, "http_server_event")(eventHandler)
 		}
 		eventSubroute.Handle("/receiver", eventHandler)
+
+		// Export.
+		route.Handle("/export", export.MakeHTTPExportHandler(exportEndpoint)).Methods("GET")
+		route.Handle("/export", export.MakeHTTPExportHandler(exportSaveAndExportEndpoint)).Methods("POST")
+
+		// Debug.
+		if pprofRouteEnabled {
+			var debugSubroute = route.PathPrefix("/debug").Subrouter()
+			debugSubroute.HandleFunc("/pprof/", http.HandlerFunc(pprof.Index))
+			debugSubroute.HandleFunc("/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))
+			debugSubroute.HandleFunc("/pprof/profile", http.HandlerFunc(pprof.Profile))
+			debugSubroute.HandleFunc("/pprof/symbol", http.HandlerFunc(pprof.Symbol))
+			debugSubroute.HandleFunc("/pprof/trace", http.HandlerFunc(pprof.Trace))
+		}
+
+		errc <- http.ListenAndServe(httpAddrInternal, route)
+	}()
+
+	// HTTP Management Server (Backoffice API).
+	go func() {
+		var logger = log.With(logger, "transport", "http")
+		logger.Log("addr", httpAddrManagement)
+
+		var route = mux.NewRouter()
+
+		// Version.
+		route.Handle("/", http.HandlerFunc(makeVersion(ComponentName, ComponentID, Version, Environment, GitCommit)))
 
 		// Events
 		var getEventsHandler = configureEventsHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(eventsEndpoints.GetEvents)
@@ -606,28 +637,27 @@ func main() {
 		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/configuration").Methods("GET").Handler(getRealmCustomConfigurationHandler)
 		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/configuration").Methods("PUT").Handler(updateRealmCustomConfigurationHandler)
 
-		// Export.
-		route.Handle("/export", export.MakeHTTPExportHandler(exportEndpoint)).Methods("GET")
-		route.Handle("/export", export.MakeHTTPExportHandler(exportSaveAndExportEndpoint)).Methods("POST")
+		c := cors.New(corsOptions)
+		errc <- http.ListenAndServe(httpAddrManagement, c.Handler(route))
+
+	}()
+
+	// HTTP Self-service Server (Account API). 
+	go func() {
+		var logger = log.With(logger, "transport", "http")
+		logger.Log("addr", httpAddrAccount)
+
+		var route = mux.NewRouter()
+
+		// Version.
+		route.Handle("/", http.HandlerFunc(makeVersion(ComponentName, ComponentID, Version, Environment, GitCommit)))
 
 		// Account
 		var updatePasswordHandler = configureAccountHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(accountEndpoints.UpdatePassword)
-
 		route.Path("/account/credentials/password").Methods("POST").Handler(updatePasswordHandler)
 
-		// Debug.
-		if pprofRouteEnabled {
-			var debugSubroute = route.PathPrefix("/debug").Subrouter()
-			debugSubroute.HandleFunc("/pprof/", http.HandlerFunc(pprof.Index))
-			debugSubroute.HandleFunc("/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))
-			debugSubroute.HandleFunc("/pprof/profile", http.HandlerFunc(pprof.Profile))
-			debugSubroute.HandleFunc("/pprof/symbol", http.HandlerFunc(pprof.Symbol))
-			debugSubroute.HandleFunc("/pprof/trace", http.HandlerFunc(pprof.Trace))
-		}
-
 		c := cors.New(corsOptions)
-		errc <- http.ListenAndServe(httpAddr, c.Handler(route))
-
+		errc <- http.ListenAndServe(httpAddrAccount, c.Handler(route))
 	}()
 
 	// Influx writing.
@@ -678,7 +708,11 @@ func config(logger log.Logger) *viper.Viper {
 	// Component default.
 	v.SetDefault("config-file", "./configs/keycloak_bridge.yml")
 	v.SetDefault("authorization-file", "./configs/authorization.json")
-	v.SetDefault("component-http-host-port", "0.0.0.0:8888")
+
+	// Publishing
+	v.SetDefault("http-host-port-internal", "0.0.0.0:8888")
+	v.SetDefault("http-host-port-management", "0.0.0.0:8877")
+	v.SetDefault("http-host-port-account", "0.0.0.0:8866")
 
 	// Security - Audience check
 	v.SetDefault("audience", "")
