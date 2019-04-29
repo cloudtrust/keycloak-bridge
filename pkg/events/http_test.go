@@ -48,13 +48,13 @@ func TestHTTPManagementHandler(t *testing.T) {
 		params = make(map[string]string)
 		params["realmTarget"] = "master"
 
-		var eventsResp = []api.AuditRepresentation{}
+		var eventsResp = api.AuditEventsRepresentation{}
 		var event = api.AuditRepresentation{
 			AuditID:   456,
 			RealmName: params["realm"],
 			Origin:    "back-office",
 		}
-		eventsResp = append(eventsResp, event)
+		eventsResp.Events = append(eventsResp.Events, event)
 		eventsJSON, _ := json.MarshalIndent(eventsResp, "", " ")
 
 		mockComponent.EXPECT().GetEvents(gomock.Any(), params).Return(eventsResp, nil).Times(1)

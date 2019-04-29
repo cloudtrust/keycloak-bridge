@@ -47,6 +47,19 @@ func (mr *EventsDBModuleMockRecorder) GetEvents(arg0, arg1 interface{}) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEvents", reflect.TypeOf((*EventsDBModule)(nil).GetEvents), arg0, arg1)
 }
 
+// GetEventsCount mocks base method
+func (m *EventsDBModule) GetEventsCount(arg0 context.Context, arg1 map[string]string) (int, error) {
+	ret := m.ctrl.Call(m, "GetEventsCount", arg0, arg1)
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetEventsCount indicates an expected call of GetEventsCount
+func (mr *EventsDBModuleMockRecorder) GetEventsCount(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEventsCount", reflect.TypeOf((*EventsDBModule)(nil).GetEventsCount), arg0, arg1)
+}
+
 // GetEventsSummary mocks base method
 func (m *EventsDBModule) GetEventsSummary(arg0 context.Context) (events.EventSummaryRepresentation, error) {
 	ret := m.ctrl.Call(m, "GetEventsSummary", arg0)

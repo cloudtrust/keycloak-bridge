@@ -10,10 +10,12 @@ import (
 // DBEvents is the interface to access the database
 type DBEvents interface {
 	Query(query string, args ...interface{}) (*sql.Rows, error)
+	QueryRow(query string, args ...interface{}) *sql.Row
 }
 
 // EventsDBModule is the interface of the audit events module.
 type EventsDBModule interface {
+	GetEventsCount(context.Context, map[string]string) (int, error)
 	GetEvents(context.Context, map[string]string) ([]api.AuditRepresentation, error)
 	GetEventsSummary(context.Context) (api.EventSummaryRepresentation, error)
 }
@@ -41,27 +43,28 @@ type selectAuditEventsParameters struct {
 }
 
 const (
+	whereAuditEvents = `
+	WHERE origin = IFNULL(?, origin)
+	AND realm_name = IFNULL(?, realm_name)
+	AND user_id = IFNULL(?, user_id)
+	AND ct_event_type = IFNULL(?, ct_event_type)
+	AND unix_timestamp(audit_time) between IFNULL(?, unix_timestamp(audit_time)) and IFNULL(?, unix_timestamp(audit_time))
+	`
+
 	selectAuditEventsStmt = `SELECT audit_id, unix_timestamp(audit_time), origin, realm_name, agent_user_id, agent_username, agent_realm_name,
 	                            user_id, username, ct_event_type, kc_event_type, kc_operation_type, client_id, additional_info
-		FROM audit
-		WHERE origin = IFNULL(?, origin)
-		  AND realm_name = IFNULL(?, realm_name)
-		  AND user_id = IFNULL(?, user_id)
-		  AND ct_event_type = IFNULL(?, ct_event_type)
-		  AND unix_timestamp(audit_time) between IFNULL(?, unix_timestamp(audit_time)) and IFNULL(?, unix_timestamp(audit_time))
+		FROM audit ` + whereAuditEvents + `		
 		ORDER BY audit_time DESC
 		LIMIT ?, ?;
 		`
-
+	selectCountAuditEventsStmt        = `SELECT count(1) FROM audit ` + whereAuditEvents
 	selectAuditSummaryRealmStmt       = `SELECT distinct realm_name FROM audit;`
 	selectAuditSummaryOriginStmt      = `SELECT distinct origin FROM audit;`
 	selectAuditSummaryCtEventTypeStmt = `SELECT distinct ct_event_type FROM audit;`
 )
 
-// GetEvents gets the events matching some criterias (dateFrom, dateTo, realm, ...)
-func (cm *eventsDBModule) GetEvents(_ context.Context, m map[string]string) ([]api.AuditRepresentation, error) {
-	var res []api.AuditRepresentation
-	params := selectAuditEventsParameters{
+func createAuditEventsParametersFromMap(m map[string]string) selectAuditEventsParameters {
+	return selectAuditEventsParameters{
 		origin:      getSQLParam(m, "origin", nil),
 		realm:       getSQLParam(m, "realm", nil),
 		userID:      getSQLParam(m, "userID", nil),
@@ -71,6 +74,26 @@ func (cm *eventsDBModule) GetEvents(_ context.Context, m map[string]string) ([]a
 		first:       getSQLParam(m, "first", 0),
 		max:         getSQLParam(m, "max", 500),
 	}
+}
+
+// GetEvents gets the count of events matching some criterias (dateFrom, dateTo, realm, ...)
+func (cm *eventsDBModule) GetEventsCount(_ context.Context, m map[string]string) (int, error) {
+	params := createAuditEventsParametersFromMap(m)
+
+	var count int
+	row := cm.db.QueryRow(selectCountAuditEventsStmt, params.origin, params.realm, params.userID, params.ctEventType, params.dateFrom, params.dateTo)
+	err := row.Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
+// GetEvents gets the events matching some criterias (dateFrom, dateTo, realm, ...)
+func (cm *eventsDBModule) GetEvents(_ context.Context, m map[string]string) ([]api.AuditRepresentation, error) {
+	var empty [0]api.AuditRepresentation
+	var res = empty[:]
+	params := createAuditEventsParametersFromMap(m)
 
 	rows, err := cm.db.Query(selectAuditEventsStmt, params.origin, params.realm, params.userID, params.ctEventType, params.dateFrom, params.dateTo, params.first, params.max)
 	if err != nil {

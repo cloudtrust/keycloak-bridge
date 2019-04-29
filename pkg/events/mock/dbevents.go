@@ -50,3 +50,20 @@ func (mr *DBEventsMockRecorder) Query(arg0 interface{}, arg1 ...interface{}) *go
 	varargs := append([]interface{}{arg0}, arg1...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Query", reflect.TypeOf((*DBEvents)(nil).Query), varargs...)
 }
+
+// QueryRow mocks base method
+func (m *DBEvents) QueryRow(arg0 string, arg1 ...interface{}) *sql.Row {
+	varargs := []interface{}{arg0}
+	for _, a := range arg1 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "QueryRow", varargs...)
+	ret0, _ := ret[0].(*sql.Row)
+	return ret0
+}
+
+// QueryRow indicates an expected call of QueryRow
+func (mr *DBEventsMockRecorder) QueryRow(arg0 interface{}, arg1 ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{arg0}, arg1...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "QueryRow", reflect.TypeOf((*DBEvents)(nil).QueryRow), varargs...)
+}
