@@ -720,7 +720,7 @@ components:
           type: string
         birthDate:
           type: string
-        group: 
+        groups: 
           type: array
             items:
               type: string
@@ -747,10 +747,6 @@ components:
         enabled:
           type: boolean
           default: true
-        lastName:
-          type: string
-        phoneNumber:
-          type: string
     Role:
       type: object
       properties:
