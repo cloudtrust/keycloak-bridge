@@ -28,8 +28,10 @@ const (
 	}`
 )
 
-func testAuthorization(t *testing.T, jsonAuthz string, tester func(ec EventsComponent, mockComponent *mock.EventsComponent, ctx context.Context, mp map[string]string)) {
+func testAuthorization(t *testing.T, jsonAuthz string, tester func(EventsComponent, *mock.EventsComponent, context.Context, map[string]string)) {
 	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
 	mockKeycloakClient := mock.NewKeycloakClient(mockCtrl)
 	var authorizations, err = security.NewAuthorizationManager(mockKeycloakClient, jsonAuthz)
 	assert.Nil(t, err)

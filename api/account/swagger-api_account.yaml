@@ -1,0 +1,53 @@
+openapi: 3.0.1
+info:
+  title: Swagger Cloudtrust Management
+  description: 'API Self service for Cloudtrust.'
+  version: 1.0.0
+servers:
+- url: http://localhost:8888
+tags:
+- name: Account
+  description: Account management
+paths:
+  /account/realms/{realm}/credentials/password:
+    post:
+      tags:
+      - Password
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePassword'
+      summary: Update a password
+      responses:
+        200:
+          description: The password has been updated
+        400:
+          description: Bad parameters (same old and new passwords, different new and confirm passwords, ...)
+        403:
+          description: Caller is not allowed to change the password
+components:
+  schemas:
+    UpdatePassword:
+      type: object
+      properties:
+        currentPassword:
+          type: string
+        newPassword:
+          type: string
+        confirmPassword:
+          type: string
+  securitySchemes:
+    openId:
+      type: openIdConnect
+      openIdConnectUrl: http://toto.com/.well-known/openid-configuration
+security:
+  - openId:
+    - todo

@@ -57,7 +57,7 @@ func MakeHTTPOIDCTokenValidationMW(keycloakClient KeycloakClient, logger log.Log
 				return
 			}
 
-			var username, issuer, realm string
+			var userID, username, issuer, realm string
 			var groups []string
 
 			// The audience in JWT may be a string array or a string.
@@ -65,6 +65,7 @@ func MakeHTTPOIDCTokenValidationMW(keycloakClient KeycloakClient, logger log.Log
 			{
 				var jot TokenAudienceStringArray
 				if err = jwt.Unmarshal(payload, &jot); err == nil {
+					userID = jot.Subject
 					username = jot.Username
 					issuer = jot.Issuer
 					var splitIssuer = strings.Split(issuer, "/auth/realms/")
@@ -72,22 +73,22 @@ func MakeHTTPOIDCTokenValidationMW(keycloakClient KeycloakClient, logger log.Log
 					groups = extractGroups(jot.Groups)
 				}
 			}
-			
+
 			if err != nil {
 				var jot TokenAudienceString
 				if err = jwt.Unmarshal(payload, &jot); err == nil {
+					userID = jot.Subject
 					username = jot.Username
 					issuer = jot.Issuer
 					var splitIssuer = strings.Split(issuer, "/auth/realms/")
 					realm = splitIssuer[1]
 					groups = extractGroups(jot.Groups)
-				}else{
+				} else {
 					logger.Log("Authorization Error", err)
 					httpErrorHandler(context.TODO(), http.StatusForbidden, fmt.Errorf("Invalid token"), w)
 					return
 				}
 			}
-			
 
 			if err = keycloakClient.VerifyToken(realm, accessToken); err != nil {
 				logger.Log("Authorization Error", err)
@@ -97,6 +98,7 @@ func MakeHTTPOIDCTokenValidationMW(keycloakClient KeycloakClient, logger log.Log
 
 			var ctx = context.WithValue(req.Context(), "access_token", accessToken)
 			ctx = context.WithValue(ctx, "realm", realm)
+			ctx = context.WithValue(ctx, "userId", userID)
 			ctx = context.WithValue(ctx, "username", username)
 			ctx = context.WithValue(ctx, "groups", groups)
 
