@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"testing"
 	"time"
 
@@ -324,7 +325,8 @@ func TestCreateUser(t *testing.T) {
 		var emailVerified = true
 		var firstName = "Titi"
 		var lastName = "Tutu"
-		var mobilePhone = "+41789456"
+		var phoneNumber = "+41789456"
+		var phoneNumberVerified = true
 		var label = "Label"
 		var gender = "M"
 		var birthDate = "01/01/1988"
@@ -338,7 +340,9 @@ func TestCreateUser(t *testing.T) {
 				assert.Equal(t, emailVerified, *kcUserRep.EmailVerified)
 				assert.Equal(t, firstName, *kcUserRep.FirstName)
 				assert.Equal(t, lastName, *kcUserRep.LastName)
-				assert.Equal(t, mobilePhone, (*kcUserRep.Attributes)["mobilephone"][0])
+				assert.Equal(t, phoneNumber, (*kcUserRep.Attributes)["phoneNumber"][0])
+				verified, _ := strconv.ParseBool(((*kcUserRep.Attributes)["phoneNumberVerified"][0]))
+				assert.Equal(t, phoneNumberVerified, verified)
 				assert.Equal(t, label, (*kcUserRep.Attributes)["label"][0])
 				assert.Equal(t, gender, (*kcUserRep.Attributes)["gender"][0])
 				assert.Equal(t, birthDate, (*kcUserRep.Attributes)["birthDate"][0])
@@ -353,17 +357,18 @@ func TestCreateUser(t *testing.T) {
 		mockEventDBModule.EXPECT().Store(ctx, gomock.Any()).Return(nil).AnyTimes()
 
 		var userRep = api.UserRepresentation{
-			Id:            &userID,
-			Username:      &username,
-			Email:         &email,
-			Enabled:       &enabled,
-			EmailVerified: &emailVerified,
-			FirstName:     &firstName,
-			LastName:      &lastName,
-			MobilePhone:   &mobilePhone,
-			Label:         &label,
-			Gender:        &gender,
-			BirthDate:     &birthDate,
+			Id:                  &userID,
+			Username:            &username,
+			Email:               &email,
+			Enabled:             &enabled,
+			EmailVerified:       &emailVerified,
+			FirstName:           &firstName,
+			LastName:            &lastName,
+			PhoneNumber:         &phoneNumber,
+			PhoneNumberVerified: &phoneNumberVerified,
+			Label:               &label,
+			Gender:              &gender,
+			BirthDate:           &birthDate,
 		}
 
 		location, err := managementComponent.CreateUser(ctx, "master", userRep)
@@ -451,17 +456,19 @@ func TestGetUser(t *testing.T) {
 		var emailVerified = true
 		var firstName = "Titi"
 		var lastName = "Tutu"
-		var mobilePhone = "+41789456"
+		var phoneNumber = "+41789456"
+		var phoneNumberVerified = true
 		var label = "Label"
 		var gender = "M"
 		var birthDate = "01/01/1988"
 		var createdTimestamp = time.Now().UTC().Unix()
 
 		var attributes = make(map[string][]string)
-		attributes["mobilephone"] = []string{mobilePhone}
+		attributes["phoneNumber"] = []string{phoneNumber}
 		attributes["label"] = []string{label}
 		attributes["gender"] = []string{gender}
 		attributes["birthDate"] = []string{birthDate}
+		attributes["phoneNumberVerified"] = []string{strconv.FormatBool(phoneNumberVerified)}
 
 		var kcUserRep = kc.UserRepresentation{
 			Id:               &id,
@@ -492,7 +499,8 @@ func TestGetUser(t *testing.T) {
 		assert.Equal(t, emailVerified, *apiUserRep.EmailVerified)
 		assert.Equal(t, firstName, *apiUserRep.FirstName)
 		assert.Equal(t, lastName, *apiUserRep.LastName)
-		assert.Equal(t, mobilePhone, *apiUserRep.MobilePhone)
+		assert.Equal(t, phoneNumber, *apiUserRep.PhoneNumber)
+		assert.Equal(t, phoneNumberVerified, *apiUserRep.PhoneNumberVerified)
 		assert.Equal(t, label, *apiUserRep.Label)
 		assert.Equal(t, gender, *apiUserRep.Gender)
 		assert.Equal(t, birthDate, *apiUserRep.BirthDate)
@@ -533,16 +541,18 @@ func TestUpdateUser(t *testing.T) {
 		var emailVerified = true
 		var firstName = "Titi"
 		var lastName = "Tutu"
-		var mobilePhone = "+41789456"
+		var phoneNumber = "+41789456"
+		var phoneNumberVerified = true
 		var label = "Label"
 		var gender = "M"
 		var birthDate = "01/01/1988"
 
 		var attributes = make(map[string][]string)
-		attributes["mobilephone"] = []string{mobilePhone}
+		attributes["phoneNumber"] = []string{phoneNumber}
 		attributes["label"] = []string{label}
 		attributes["gender"] = []string{gender}
 		attributes["birthDate"] = []string{birthDate}
+		attributes["phoneNumberVerified"] = []string{strconv.FormatBool(phoneNumberVerified)}
 
 		mockKeycloakClient.EXPECT().UpdateUser(accessToken, realmName, id, gomock.Any()).DoAndReturn(
 			func(accessToken, realmName, id string, kcUserRep kc.UserRepresentation) error {
@@ -552,7 +562,9 @@ func TestUpdateUser(t *testing.T) {
 				assert.Equal(t, emailVerified, *kcUserRep.EmailVerified)
 				assert.Equal(t, firstName, *kcUserRep.FirstName)
 				assert.Equal(t, lastName, *kcUserRep.LastName)
-				assert.Equal(t, mobilePhone, (*kcUserRep.Attributes)["mobilephone"][0])
+				assert.Equal(t, phoneNumber, (*kcUserRep.Attributes)["phoneNumber"][0])
+				verified, _ := strconv.ParseBool(((*kcUserRep.Attributes)["phoneNumberVerified"][0]))
+				assert.Equal(t, phoneNumberVerified, verified)
 				assert.Equal(t, label, (*kcUserRep.Attributes)["label"][0])
 				assert.Equal(t, gender, (*kcUserRep.Attributes)["gender"][0])
 				assert.Equal(t, birthDate, (*kcUserRep.Attributes)["birthDate"][0])
@@ -567,16 +579,17 @@ func TestUpdateUser(t *testing.T) {
 		mockEventDBModule.EXPECT().Store(ctx, gomock.Any()).Return(nil).AnyTimes()
 
 		var userRep = api.UserRepresentation{
-			Username:      &username,
-			Email:         &email,
-			Enabled:       &enabled,
-			EmailVerified: &emailVerified,
-			FirstName:     &firstName,
-			LastName:      &lastName,
-			MobilePhone:   &mobilePhone,
-			Label:         &label,
-			Gender:        &gender,
-			BirthDate:     &birthDate,
+			Username:            &username,
+			Email:               &email,
+			Enabled:             &enabled,
+			EmailVerified:       &emailVerified,
+			FirstName:           &firstName,
+			LastName:            &lastName,
+			PhoneNumber:         &phoneNumber,
+			PhoneNumberVerified: &phoneNumberVerified,
+			Label:               &label,
+			Gender:              &gender,
+			BirthDate:           &birthDate,
 		}
 
 		err := managementComponent.UpdateUser(ctx, "master", id, userRep)
@@ -593,7 +606,9 @@ func TestUpdateUser(t *testing.T) {
 				assert.Equal(t, emailVerified, *kcUserRep.EmailVerified)
 				assert.Equal(t, firstName, *kcUserRep.FirstName)
 				assert.Equal(t, lastName, *kcUserRep.LastName)
-				assert.Equal(t, mobilePhone, (*kcUserRep.Attributes)["mobilephone"][0])
+				assert.Equal(t, phoneNumber, (*kcUserRep.Attributes)["phoneNumber"][0])
+				verified, _ := strconv.ParseBool(((*kcUserRep.Attributes)["phoneNumberVerified"][0]))
+				assert.Equal(t, phoneNumberVerified, verified)
 				assert.Equal(t, label, (*kcUserRep.Attributes)["label"][0])
 				assert.Equal(t, gender, (*kcUserRep.Attributes)["gender"][0])
 				assert.Equal(t, birthDate, (*kcUserRep.Attributes)["birthDate"][0])
@@ -602,16 +617,17 @@ func TestUpdateUser(t *testing.T) {
 			}).Times(1)
 
 		var userRepLocked = api.UserRepresentation{
-			Username:      &username,
-			Email:         &email,
-			Enabled:       &enabled,
-			EmailVerified: &emailVerified,
-			FirstName:     &firstName,
-			LastName:      &lastName,
-			MobilePhone:   &mobilePhone,
-			Label:         &label,
-			Gender:        &gender,
-			BirthDate:     &birthDate,
+			Username:            &username,
+			Email:               &email,
+			Enabled:             &enabled,
+			EmailVerified:       &emailVerified,
+			FirstName:           &firstName,
+			LastName:            &lastName,
+			PhoneNumber:         &phoneNumber,
+			PhoneNumberVerified: &phoneNumberVerified,
+			Label:               &label,
+			Gender:              &gender,
+			BirthDate:           &birthDate,
 		}
 
 		err = managementComponent.UpdateUser(ctx, "master", id, userRepLocked)
@@ -655,17 +671,19 @@ func TestGetUsers(t *testing.T) {
 		var emailVerified = true
 		var firstName = "Titi"
 		var lastName = "Tutu"
-		var mobilePhone = "+41789456"
+		var phoneNumber = "+41789456"
+		var phoneNumberVerified = true
 		var label = "Label"
 		var gender = "M"
 		var birthDate = "01/01/1988"
 		var createdTimestamp = time.Now().UTC().Unix()
 
 		var attributes = make(map[string][]string)
-		attributes["mobilephone"] = []string{mobilePhone}
+		attributes["phoneNumber"] = []string{phoneNumber}
 		attributes["label"] = []string{label}
 		attributes["gender"] = []string{gender}
 		attributes["birthDate"] = []string{birthDate}
+		attributes["phoneNumberVerified"] = []string{strconv.FormatBool(phoneNumberVerified)}
 
 		var kcUserRep = kc.UserRepresentation{
 			Id:               &id,
@@ -697,7 +715,9 @@ func TestGetUsers(t *testing.T) {
 		assert.Equal(t, emailVerified, *apiUserRep.EmailVerified)
 		assert.Equal(t, firstName, *apiUserRep.FirstName)
 		assert.Equal(t, lastName, *apiUserRep.LastName)
-		assert.Equal(t, mobilePhone, *apiUserRep.MobilePhone)
+		assert.Equal(t, phoneNumber, *apiUserRep.PhoneNumber)
+		verified, _ := strconv.ParseBool(((*kcUserRep.Attributes)["phoneNumberVerified"][0]))
+		assert.Equal(t, phoneNumberVerified, verified)
 		assert.Equal(t, label, *apiUserRep.Label)
 		assert.Equal(t, gender, *apiUserRep.Gender)
 		assert.Equal(t, birthDate, *apiUserRep.BirthDate)

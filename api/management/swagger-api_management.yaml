@@ -704,19 +704,28 @@ components:
           default: true
         emailVerified:
           type: boolean
-          default: true
+          default: false
         firstName:
           type: string
         lastName:
           type: string
-        mobilePhone:
+        phoneNumber:
           type: string
+        phoneNumberVerified:
+          type: boolean 
+          default: false 
         label:
           type: string
         gender:
           type: string
         birthDate:
           type: string
+        groups: 
+          type: array
+            items:
+              type: string
+        createdTimestamp:
+          type: integer 
     UserStatus:
       type: object
       properties:
@@ -738,10 +747,6 @@ components:
         enabled:
           type: boolean
           default: true
-        lastName:
-          type: string
-        mobilePhone:
-          type: string
     Role:
       type: object
       properties:
