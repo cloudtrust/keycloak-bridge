@@ -35,9 +35,9 @@ func (m *EventsComponent) EXPECT() *EventsComponentMockRecorder {
 }
 
 // GetEvents mocks base method
-func (m *EventsComponent) GetEvents(arg0 context.Context, arg1 map[string]string) ([]events.AuditRepresentation, error) {
+func (m *EventsComponent) GetEvents(arg0 context.Context, arg1 map[string]string) (events.AuditEventsRepresentation, error) {
 	ret := m.ctrl.Call(m, "GetEvents", arg0, arg1)
-	ret0, _ := ret[0].([]events.AuditRepresentation)
+	ret0, _ := ret[0].(events.AuditEventsRepresentation)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -61,9 +61,9 @@ func (mr *EventsComponentMockRecorder) GetEventsSummary(arg0 interface{}) *gomoc
 }
 
 // GetUserEvents mocks base method
-func (m *EventsComponent) GetUserEvents(arg0 context.Context, arg1 map[string]string) ([]events.AuditRepresentation, error) {
+func (m *EventsComponent) GetUserEvents(arg0 context.Context, arg1 map[string]string) (events.AuditEventsRepresentation, error) {
 	ret := m.ctrl.Call(m, "GetUserEvents", arg0, arg1)
-	ret0, _ := ret[0].([]events.AuditRepresentation)
+	ret0, _ := ret[0].(events.AuditEventsRepresentation)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
