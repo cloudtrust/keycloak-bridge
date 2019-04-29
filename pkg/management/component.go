@@ -352,12 +352,13 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 		return err
 	}
 
-	// when the email changes, set the emailVerified to false
+	// when the email changes, set the EmailVerified to false
 	if user.Email != nil && oldUserRep.Email != user.Email {
 		var verified bool = false
 		userRep.EmailVerified = &verified
 	}
 
+	// when the phone number changes, set the PhoneNumberVerified to false
 	if userRep.PhoneNumberVerified != nil && oldUserRep.PhoneNumber != user.PhoneNumber {
 		var verified bool = false
 		userRep.PhoneNumberVerified = &verified
