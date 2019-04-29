@@ -29,12 +29,11 @@ func MakeUpdatePasswordEndpoint(component AccountComponent) endpoint.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 		var body UpdatePasswordBody
+		
 		err := json.Unmarshal([]byte(m["body"]), &body)
 		if err != nil {
 			return nil, err
 		}
-		ctx = context.WithValue(ctx, "realm", m["realm"])
-		ctx = context.WithValue(ctx, "userID", "6457e4df-5aa4-4ac0-bca5-1f46a457ce6b")
 
 		return nil, component.UpdatePassword(ctx, body.CurrentPassword, body.NewPassword, body.ConfirmPassword)
 	}

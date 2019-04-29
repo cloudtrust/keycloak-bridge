@@ -515,7 +515,7 @@ func main() {
 
 		route.Path("/events").Methods("GET").Handler(getEventsHandler)
 		route.Path("/events/summary").Methods("GET").Handler(getEventsSummaryHandler)
-		route.Path("/events/realms/{realm}/users/{userID}/events").Methods("GET").Handler(getUserEventsHandler)
+		route.Path("/events/realms/{realm:[a-zA-Z0-9_-]+}/users/{userID:[a-zA-Z0-9-]+}/events").Methods("GET").Handler(getUserEventsHandler)
 
 		// Management
 		var managementSubroute = route.PathPrefix("/management").Subrouter()
@@ -602,7 +602,7 @@ func main() {
 		// Account
 		var updatePasswordHandler = configureAccountHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(accountEndpoints.UpdatePassword)
 
-		route.Path("/account/realms/{realm}/credentials/password").Methods("POST").Handler(updatePasswordHandler)
+		route.Path("/account/credentials/password").Methods("POST").Handler(updatePasswordHandler)
 
 		// Debug.
 		if pprofRouteEnabled {
