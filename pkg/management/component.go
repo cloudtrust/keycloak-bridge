@@ -344,12 +344,23 @@ func (c *component) GetUser(ctx context.Context, realmName, userID string) (api.
 
 func (c *component) UpdateUser(ctx context.Context, realmName, userID string, user api.UserRepresentation) error {
 	var accessToken = ctx.Value("access_token").(string)
-
 	var userRep kc.UserRepresentation
+
+	// get the "old" user representation
+	oldUserRep, err := c.GetUser(ctx, realmName, userID)
+	if err != nil {
+		return err
+	}
+
+	// when the email changes, set the emailVerified to false and send an email with a link
+	if user.Email != nil && oldUserRep.Email != user.Email {
+		userRep.EmailVerified = false
+	}
+
 	userRep.Username = user.Username
 	userRep.Email = user.Email
 	userRep.Enabled = user.Enabled
-	userRep.EmailVerified = user.EmailVerified
+	//userRep.EmailVerified = user.EmailVerified
 	userRep.FirstName = user.FirstName
 	userRep.LastName = user.LastName
 
