@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -288,6 +289,7 @@ func (c *component) GetUser(ctx context.Context, realmName, userID string) (api.
 func (c *component) UpdateUser(ctx context.Context, realmName, userID string, user api.UserRepresentation) error {
 	var accessToken = ctx.Value("access_token").(string)
 	var userRep kc.UserRepresentation
+	userRep = api.ConvertToKCUser(user)
 
 	// get the "old" user representation
 	oldUserRep, err := c.GetUser(ctx, realmName, userID)
@@ -298,16 +300,19 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 	// when the email changes, set the EmailVerified to false
 	if user.Email != nil && oldUserRep.Email != user.Email {
 		var verified bool = false
-		user.EmailVerified = &verified
+		userRep.EmailVerified = &verified
 	}
 
 	// when the phone number changes, set the PhoneNumberVerified to false
 	if user.PhoneNumberVerified != nil && oldUserRep.PhoneNumber != user.PhoneNumber {
 		var verified bool = false
-		user.PhoneNumberVerified = &verified
+
+		if userRep.Attributes != nil {
+			var m = *userRep.Attributes
+			m["phoneNumberVerified"] = []string{strconv.FormatBool(verified)}
+		}
 	}
 
-	userRep = api.ConvertToKCUser(user)
 	err = c.keycloakClient.UpdateUser(accessToken, realmName, userID, userRep)
 
 	if err != nil {
