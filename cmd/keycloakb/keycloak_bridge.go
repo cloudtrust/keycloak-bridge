@@ -473,7 +473,6 @@ func main() {
 
 		// new module for account service
 		accountComponent := account.NewComponent(keycloakClient, eventsDBModule)
-		accountComponent = account.MakeAuthorizationManagementComponentMW(log.With(accountLogger, "mw", "endpoint"), authorizationManager)(accountComponent)
 
 		accountEndpoints = account.Endpoints{
 			UpdatePassword: prepareEndpoint(account.MakeUpdatePasswordEndpoint(accountComponent), "update_password", influxMetrics, accountLogger, tracer, rateLimit),
