@@ -207,34 +207,8 @@ func (c *component) CreateUser(ctx context.Context, realmName string, user api.U
 	var accessToken = ctx.Value("access_token").(string)
 
 	var userRep kc.UserRepresentation
-	userRep.Username = user.Username
-	userRep.Email = user.Email
-	userRep.Enabled = user.Enabled
-	userRep.EmailVerified = user.EmailVerified
-	userRep.FirstName = user.FirstName
-	userRep.LastName = user.LastName
 
-	var attributes = make(map[string][]string)
-
-	if user.MobilePhone != nil {
-		attributes["mobilephone"] = []string{*user.MobilePhone}
-	}
-
-	if user.Label != nil {
-		attributes["label"] = []string{*user.Label}
-	}
-
-	if user.Gender != nil {
-		attributes["gender"] = []string{*user.Gender}
-	}
-
-	if user.BirthDate != nil {
-		attributes["birthDate"] = []string{*user.BirthDate}
-	}
-
-	if len(attributes) > 0 {
-		userRep.Attributes = &attributes
-	}
+	userRep = api.ConvertToKCUser(user)
 
 	locationURL, err := c.keycloakClient.CreateUser(accessToken, realmName, userRep)
 
@@ -292,38 +266,7 @@ func (c *component) GetUser(ctx context.Context, realmName, userID string) (api.
 		return userRep, err
 	}
 
-	userRep.Id = userKc.Id
-	userRep.Username = userKc.Username
-	userRep.Email = userKc.Email
-	userRep.Enabled = userKc.Enabled
-	userRep.EmailVerified = userKc.EmailVerified
-	userRep.FirstName = userKc.FirstName
-	userRep.LastName = userKc.LastName
-	userRep.CreatedTimestamp = userKc.CreatedTimestamp
-
-	if userKc.Attributes != nil {
-		var m = *userKc.Attributes
-
-		if m["mobilephone"] != nil {
-			var mobilePhone = m["mobilephone"][0]
-			userRep.MobilePhone = &mobilePhone
-		}
-
-		if m["label"] != nil {
-			var label = m["label"][0]
-			userRep.Label = &label
-		}
-
-		if m["gender"] != nil {
-			var gender = m["gender"][0]
-			userRep.Gender = &gender
-		}
-
-		if m["birthDate"] != nil {
-			var birthDate = m["birthDate"][0]
-			userRep.BirthDate = &birthDate
-		}
-	}
+	userRep = api.ConvertToAPIUser(userKc)
 
 	//store the API call into the DB
 	event := createEventMap("GET_DETAILS")
@@ -346,34 +289,7 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 	var accessToken = ctx.Value("access_token").(string)
 
 	var userRep kc.UserRepresentation
-	userRep.Username = user.Username
-	userRep.Email = user.Email
-	userRep.Enabled = user.Enabled
-	userRep.EmailVerified = user.EmailVerified
-	userRep.FirstName = user.FirstName
-	userRep.LastName = user.LastName
-
-	var attributes = make(map[string][]string)
-
-	if user.MobilePhone != nil {
-		attributes["mobilephone"] = []string{*user.MobilePhone}
-	}
-
-	if user.Label != nil {
-		attributes["label"] = []string{*user.Label}
-	}
-
-	if user.Gender != nil {
-		attributes["gender"] = []string{*user.Gender}
-	}
-
-	if user.BirthDate != nil {
-		attributes["birthDate"] = []string{*user.BirthDate}
-	}
-
-	if len(attributes) > 0 {
-		userRep.Attributes = &attributes
-	}
+	userRep = api.ConvertToKCUser(user)
 
 	err := c.keycloakClient.UpdateUser(accessToken, realmName, userID, userRep)
 
@@ -421,38 +337,7 @@ func (c *component) GetUsers(ctx context.Context, realmName string, groupID stri
 	var usersRep []api.UserRepresentation
 	for _, userKc := range usersKc {
 		var userRep api.UserRepresentation
-		userRep.Id = userKc.Id
-		userRep.Username = userKc.Username
-		userRep.Email = userKc.Email
-		userRep.Enabled = userKc.Enabled
-		userRep.EmailVerified = userKc.EmailVerified
-		userRep.FirstName = userKc.FirstName
-		userRep.LastName = userKc.LastName
-		userRep.CreatedTimestamp = userKc.CreatedTimestamp
-
-		if userKc.Attributes != nil {
-			var m = *userKc.Attributes
-
-			if m["mobilephone"] != nil {
-				var mobilePhone = m["mobilephone"][0]
-				userRep.MobilePhone = &mobilePhone
-			}
-
-			if m["label"] != nil {
-				var label = m["label"][0]
-				userRep.Label = &label
-			}
-
-			if m["gender"] != nil {
-				var gender = m["gender"][0]
-				userRep.Gender = &gender
-			}
-
-			if m["birthDate"] != nil {
-				var birthDate = m["birthDate"][0]
-				userRep.BirthDate = &birthDate
-			}
-		}
+		userRep = api.ConvertToAPIUser(userKc)
 
 		usersRep = append(usersRep, userRep)
 	}

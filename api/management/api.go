@@ -1,23 +1,26 @@
 package management_api
 
 import (
+	"strconv"
+
 	kc "github.com/cloudtrust/keycloak-client"
 )
 
 type UserRepresentation struct {
-	Id               *string   `json:"id,omitempty"`
-	Username         *string   `json:"username,omitempty"`
-	Email            *string   `json:"email,omitempty"`
-	Enabled          *bool     `json:"enabled,omitempty"`
-	EmailVerified    *bool     `json:"emailVerified,omitempty"`
-	FirstName        *string   `json:"firstName,omitempty"`
-	LastName         *string   `json:"lastName,omitempty"`
-	MobilePhone      *string   `json:"mobilePhone,omitempty"`
-	Label            *string   `json:"label,omitempty"`
-	Gender           *string   `json:"gender,omitempty"`
-	BirthDate        *string   `json:"birthDate,omitempty"`
-	Groups           *[]string `json:"group,omitempty"`
-	CreatedTimestamp *int64    `json:"createdTimestamp,omitempty"`
+	Id                  *string   `json:"id,omitempty"`
+	Username            *string   `json:"username,omitempty"`
+	Email               *string   `json:"email,omitempty"`
+	Enabled             *bool     `json:"enabled,omitempty"`
+	EmailVerified       *bool     `json:"emailVerified,omitempty"`
+	PhoneNumberVerified *bool     `json:"phoneNumberVerified,omitempty"`
+	FirstName           *string   `json:"firstName,omitempty"`
+	LastName            *string   `json:"lastName,omitempty"`
+	PhoneNumber         *string   `json:"phoneNumber,omitempty"`
+	Label               *string   `json:"label,omitempty"`
+	Gender              *string   `json:"gender,omitempty"`
+	BirthDate           *string   `json:"birthDate,omitempty"`
+	Groups              *[]string `json:"group,omitempty"`
+	CreatedTimestamp    *int64    `json:"createdTimestamp,omitempty"`
 }
 
 type RealmRepresentation struct {
@@ -82,4 +85,88 @@ func ConvertCredential(credKc *kc.CredentialRepresentation) CredentialRepresenta
 		cred.Config = &m
 	}
 	return cred
+}
+
+// ConvertToAPIUser creates an API user representation from  a KC user representation
+func ConvertToAPIUser(userKc kc.UserRepresentation) UserRepresentation {
+	var userRep UserRepresentation
+
+	userRep.Id = userKc.Id
+	userRep.Username = userKc.Username
+	userRep.Email = userKc.Email
+	userRep.Enabled = userKc.Enabled
+	userRep.EmailVerified = userKc.EmailVerified
+	userRep.FirstName = userKc.FirstName
+	userRep.LastName = userKc.LastName
+	userRep.CreatedTimestamp = userKc.CreatedTimestamp
+
+	if userKc.Attributes != nil {
+		var m = *userKc.Attributes
+
+		if m["phoneNumber"] != nil {
+			var phoneNumber = m["phoneNumber"][0]
+			userRep.PhoneNumber = &phoneNumber
+		}
+
+		if m["label"] != nil {
+			var label = m["label"][0]
+			userRep.Label = &label
+		}
+
+		if m["gender"] != nil {
+			var gender = m["gender"][0]
+			userRep.Gender = &gender
+		}
+
+		if m["birthDate"] != nil {
+			var birthDate = m["birthDate"][0]
+			userRep.BirthDate = &birthDate
+		}
+
+		if m["phoneNumberVerified"] != nil {
+			var phoneNumberVerified, _ = strconv.ParseBool(m["phoneNumberVerified"][0])
+			userRep.PhoneNumberVerified = &phoneNumberVerified
+		}
+	}
+	return userRep
+}
+
+// ConvertToKCUser creates a KC user representation from an API user
+func ConvertToKCUser(user UserRepresentation) kc.UserRepresentation {
+	var userRep kc.UserRepresentation
+
+	userRep.Username = user.Username
+	userRep.Email = user.Email
+	userRep.Enabled = user.Enabled
+	userRep.EmailVerified = user.EmailVerified
+	userRep.FirstName = user.FirstName
+	userRep.LastName = user.LastName
+
+	var attributes = make(map[string][]string)
+
+	if user.PhoneNumber != nil {
+		attributes["phoneNumber"] = []string{*user.PhoneNumber}
+	}
+
+	if user.Label != nil {
+		attributes["label"] = []string{*user.Label}
+	}
+
+	if user.Gender != nil {
+		attributes["gender"] = []string{*user.Gender}
+	}
+
+	if user.BirthDate != nil {
+		attributes["birthDate"] = []string{*user.BirthDate}
+	}
+
+	if user.PhoneNumberVerified != nil {
+		attributes["phoneNumberVerified"] = []string{strconv.FormatBool(*user.PhoneNumberVerified)}
+	}
+
+	if len(attributes) > 0 {
+		userRep.Attributes = &attributes
+	}
+
+	return userRep
 }
