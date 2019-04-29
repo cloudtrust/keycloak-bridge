@@ -36,7 +36,6 @@ func (m *Tracer) EXPECT() *TracerMockRecorder {
 
 // Extract mocks base method
 func (m *Tracer) Extract(arg0, arg1 interface{}) (opentracing_go.SpanContext, error) {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Extract", arg0, arg1)
 	ret0, _ := ret[0].(opentracing_go.SpanContext)
 	ret1, _ := ret[1].(error)
@@ -45,13 +44,11 @@ func (m *Tracer) Extract(arg0, arg1 interface{}) (opentracing_go.SpanContext, er
 
 // Extract indicates an expected call of Extract
 func (mr *TracerMockRecorder) Extract(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Extract", reflect.TypeOf((*Tracer)(nil).Extract), arg0, arg1)
 }
 
 // Inject mocks base method
 func (m *Tracer) Inject(arg0 opentracing_go.SpanContext, arg1, arg2 interface{}) error {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Inject", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -59,13 +56,11 @@ func (m *Tracer) Inject(arg0 opentracing_go.SpanContext, arg1, arg2 interface{})
 
 // Inject indicates an expected call of Inject
 func (mr *TracerMockRecorder) Inject(arg0, arg1, arg2 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Inject", reflect.TypeOf((*Tracer)(nil).Inject), arg0, arg1, arg2)
 }
 
 // StartSpan mocks base method
 func (m *Tracer) StartSpan(arg0 string, arg1 ...opentracing_go.StartSpanOption) opentracing_go.Span {
-	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0}
 	for _, a := range arg1 {
 		varargs = append(varargs, a)
@@ -77,7 +72,6 @@ func (m *Tracer) StartSpan(arg0 string, arg1 ...opentracing_go.StartSpanOption) 
 
 // StartSpan indicates an expected call of StartSpan
 func (mr *TracerMockRecorder) StartSpan(arg0 interface{}, arg1 ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0}, arg1...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StartSpan", reflect.TypeOf((*Tracer)(nil).StartSpan), varargs...)
 }
@@ -107,7 +101,6 @@ func (m *Span) EXPECT() *SpanMockRecorder {
 
 // BaggageItem mocks base method
 func (m *Span) BaggageItem(arg0 string) string {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "BaggageItem", arg0)
 	ret0, _ := ret[0].(string)
 	return ret0
@@ -115,13 +108,11 @@ func (m *Span) BaggageItem(arg0 string) string {
 
 // BaggageItem indicates an expected call of BaggageItem
 func (mr *SpanMockRecorder) BaggageItem(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BaggageItem", reflect.TypeOf((*Span)(nil).BaggageItem), arg0)
 }
 
 // Context mocks base method
 func (m *Span) Context() opentracing_go.SpanContext {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Context")
 	ret0, _ := ret[0].(opentracing_go.SpanContext)
 	return ret0
@@ -129,73 +120,61 @@ func (m *Span) Context() opentracing_go.SpanContext {
 
 // Context indicates an expected call of Context
 func (mr *SpanMockRecorder) Context() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Context", reflect.TypeOf((*Span)(nil).Context))
 }
 
 // Finish mocks base method
 func (m *Span) Finish() {
-	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Finish")
 }
 
 // Finish indicates an expected call of Finish
 func (mr *SpanMockRecorder) Finish() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Finish", reflect.TypeOf((*Span)(nil).Finish))
 }
 
 // FinishWithOptions mocks base method
 func (m *Span) FinishWithOptions(arg0 opentracing_go.FinishOptions) {
-	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "FinishWithOptions", arg0)
 }
 
 // FinishWithOptions indicates an expected call of FinishWithOptions
 func (mr *SpanMockRecorder) FinishWithOptions(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FinishWithOptions", reflect.TypeOf((*Span)(nil).FinishWithOptions), arg0)
 }
 
 // Log mocks base method
 func (m *Span) Log(arg0 opentracing_go.LogData) {
-	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Log", arg0)
 }
 
 // Log indicates an expected call of Log
 func (mr *SpanMockRecorder) Log(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Log", reflect.TypeOf((*Span)(nil).Log), arg0)
 }
 
 // LogEvent mocks base method
 func (m *Span) LogEvent(arg0 string) {
-	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "LogEvent", arg0)
 }
 
 // LogEvent indicates an expected call of LogEvent
 func (mr *SpanMockRecorder) LogEvent(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LogEvent", reflect.TypeOf((*Span)(nil).LogEvent), arg0)
 }
 
 // LogEventWithPayload mocks base method
 func (m *Span) LogEventWithPayload(arg0 string, arg1 interface{}) {
-	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "LogEventWithPayload", arg0, arg1)
 }
 
 // LogEventWithPayload indicates an expected call of LogEventWithPayload
 func (mr *SpanMockRecorder) LogEventWithPayload(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LogEventWithPayload", reflect.TypeOf((*Span)(nil).LogEventWithPayload), arg0, arg1)
 }
 
 // LogFields mocks base method
 func (m *Span) LogFields(arg0 ...log.Field) {
-	m.ctrl.T.Helper()
 	varargs := []interface{}{}
 	for _, a := range arg0 {
 		varargs = append(varargs, a)
@@ -205,13 +184,11 @@ func (m *Span) LogFields(arg0 ...log.Field) {
 
 // LogFields indicates an expected call of LogFields
 func (mr *SpanMockRecorder) LogFields(arg0 ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LogFields", reflect.TypeOf((*Span)(nil).LogFields), arg0...)
 }
 
 // LogKV mocks base method
 func (m *Span) LogKV(arg0 ...interface{}) {
-	m.ctrl.T.Helper()
 	varargs := []interface{}{}
 	for _, a := range arg0 {
 		varargs = append(varargs, a)
@@ -221,13 +198,11 @@ func (m *Span) LogKV(arg0 ...interface{}) {
 
 // LogKV indicates an expected call of LogKV
 func (mr *SpanMockRecorder) LogKV(arg0 ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LogKV", reflect.TypeOf((*Span)(nil).LogKV), arg0...)
 }
 
 // SetBaggageItem mocks base method
 func (m *Span) SetBaggageItem(arg0, arg1 string) opentracing_go.Span {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SetBaggageItem", arg0, arg1)
 	ret0, _ := ret[0].(opentracing_go.Span)
 	return ret0
@@ -235,13 +210,11 @@ func (m *Span) SetBaggageItem(arg0, arg1 string) opentracing_go.Span {
 
 // SetBaggageItem indicates an expected call of SetBaggageItem
 func (mr *SpanMockRecorder) SetBaggageItem(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetBaggageItem", reflect.TypeOf((*Span)(nil).SetBaggageItem), arg0, arg1)
 }
 
 // SetOperationName mocks base method
 func (m *Span) SetOperationName(arg0 string) opentracing_go.Span {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SetOperationName", arg0)
 	ret0, _ := ret[0].(opentracing_go.Span)
 	return ret0
@@ -249,13 +222,11 @@ func (m *Span) SetOperationName(arg0 string) opentracing_go.Span {
 
 // SetOperationName indicates an expected call of SetOperationName
 func (mr *SpanMockRecorder) SetOperationName(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetOperationName", reflect.TypeOf((*Span)(nil).SetOperationName), arg0)
 }
 
 // SetTag mocks base method
 func (m *Span) SetTag(arg0 string, arg1 interface{}) opentracing_go.Span {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SetTag", arg0, arg1)
 	ret0, _ := ret[0].(opentracing_go.Span)
 	return ret0
@@ -263,13 +234,11 @@ func (m *Span) SetTag(arg0 string, arg1 interface{}) opentracing_go.Span {
 
 // SetTag indicates an expected call of SetTag
 func (mr *SpanMockRecorder) SetTag(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetTag", reflect.TypeOf((*Span)(nil).SetTag), arg0, arg1)
 }
 
 // Tracer mocks base method
 func (m *Span) Tracer() opentracing_go.Tracer {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Tracer")
 	ret0, _ := ret[0].(opentracing_go.Tracer)
 	return ret0
@@ -277,7 +246,6 @@ func (m *Span) Tracer() opentracing_go.Tracer {
 
 // Tracer indicates an expected call of Tracer
 func (mr *SpanMockRecorder) Tracer() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Tracer", reflect.TypeOf((*Span)(nil).Tracer))
 }
 
@@ -306,12 +274,10 @@ func (m *SpanContext) EXPECT() *SpanContextMockRecorder {
 
 // ForeachBaggageItem mocks base method
 func (m *SpanContext) ForeachBaggageItem(arg0 func(string, string) bool) {
-	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "ForeachBaggageItem", arg0)
 }
 
 // ForeachBaggageItem indicates an expected call of ForeachBaggageItem
 func (mr *SpanContextMockRecorder) ForeachBaggageItem(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ForeachBaggageItem", reflect.TypeOf((*SpanContext)(nil).ForeachBaggageItem), arg0)
 }

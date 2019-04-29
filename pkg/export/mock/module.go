@@ -36,7 +36,6 @@ func (m *RealmExporter) EXPECT() *RealmExporterMockRecorder {
 
 // ExportRealm mocks base method
 func (m *RealmExporter) ExportRealm(arg0 context.Context, arg1 string) (keycloak_client.RealmRepresentation, error) {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ExportRealm", arg0, arg1)
 	ret0, _ := ret[0].(keycloak_client.RealmRepresentation)
 	ret1, _ := ret[1].(error)
@@ -45,13 +44,11 @@ func (m *RealmExporter) ExportRealm(arg0 context.Context, arg1 string) (keycloak
 
 // ExportRealm indicates an expected call of ExportRealm
 func (mr *RealmExporterMockRecorder) ExportRealm(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExportRealm", reflect.TypeOf((*RealmExporter)(nil).ExportRealm), arg0, arg1)
 }
 
 // GetRealms mocks base method
 func (m *RealmExporter) GetRealms(arg0 context.Context) ([]string, error) {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetRealms", arg0)
 	ret0, _ := ret[0].([]string)
 	ret1, _ := ret[1].(error)
@@ -60,7 +57,6 @@ func (m *RealmExporter) GetRealms(arg0 context.Context) ([]string, error) {
 
 // GetRealms indicates an expected call of GetRealms
 func (mr *RealmExporterMockRecorder) GetRealms(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRealms", reflect.TypeOf((*RealmExporter)(nil).GetRealms), arg0)
 }
 
@@ -89,7 +85,6 @@ func (m *Storage) EXPECT() *StorageMockRecorder {
 
 // Read mocks base method
 func (m *Storage) Read(arg0, arg1 string) ([]byte, error) {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Read", arg0, arg1)
 	ret0, _ := ret[0].([]byte)
 	ret1, _ := ret[1].(error)
@@ -98,13 +93,11 @@ func (m *Storage) Read(arg0, arg1 string) ([]byte, error) {
 
 // Read indicates an expected call of Read
 func (mr *StorageMockRecorder) Read(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Read", reflect.TypeOf((*Storage)(nil).Read), arg0, arg1)
 }
 
 // Save mocks base method
 func (m *Storage) Save(arg0, arg1 string, arg2 []byte) error {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Save", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -112,6 +105,5 @@ func (m *Storage) Save(arg0, arg1 string, arg2 []byte) error {
 
 // Save indicates an expected call of Save
 func (mr *StorageMockRecorder) Save(arg0, arg1, arg2 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Save", reflect.TypeOf((*Storage)(nil).Save), arg0, arg1, arg2)
 }

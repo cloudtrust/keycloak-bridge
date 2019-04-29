@@ -35,19 +35,16 @@ func (m *Histogram) EXPECT() *HistogramMockRecorder {
 
 // Observe mocks base method
 func (m *Histogram) Observe(arg0 float64) {
-	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Observe", arg0)
 }
 
 // Observe indicates an expected call of Observe
 func (mr *HistogramMockRecorder) Observe(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Observe", reflect.TypeOf((*Histogram)(nil).Observe), arg0)
 }
 
 // With mocks base method
 func (m *Histogram) With(arg0 ...string) metrics.Histogram {
-	m.ctrl.T.Helper()
 	varargs := []interface{}{}
 	for _, a := range arg0 {
 		varargs = append(varargs, a)
@@ -59,6 +56,5 @@ func (m *Histogram) With(arg0 ...string) metrics.Histogram {
 
 // With indicates an expected call of With
 func (mr *HistogramMockRecorder) With(arg0 ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "With", reflect.TypeOf((*Histogram)(nil).With), arg0...)
 }

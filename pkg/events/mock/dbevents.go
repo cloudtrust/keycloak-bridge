@@ -35,7 +35,6 @@ func (m *DBEvents) EXPECT() *DBEventsMockRecorder {
 
 // Query mocks base method
 func (m *DBEvents) Query(arg0 string, arg1 ...interface{}) (*sql.Rows, error) {
-	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0}
 	for _, a := range arg1 {
 		varargs = append(varargs, a)
@@ -48,14 +47,12 @@ func (m *DBEvents) Query(arg0 string, arg1 ...interface{}) (*sql.Rows, error) {
 
 // Query indicates an expected call of Query
 func (mr *DBEventsMockRecorder) Query(arg0 interface{}, arg1 ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0}, arg1...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Query", reflect.TypeOf((*DBEvents)(nil).Query), varargs...)
 }
 
 // QueryRow mocks base method
 func (m *DBEvents) QueryRow(arg0 string, arg1 ...interface{}) *sql.Row {
-	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0}
 	for _, a := range arg1 {
 		varargs = append(varargs, a)
@@ -67,7 +64,6 @@ func (m *DBEvents) QueryRow(arg0 string, arg1 ...interface{}) *sql.Row {
 
 // QueryRow indicates an expected call of QueryRow
 func (mr *DBEventsMockRecorder) QueryRow(arg0 interface{}, arg1 ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0}, arg1...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "QueryRow", reflect.TypeOf((*DBEvents)(nil).QueryRow), varargs...)
 }

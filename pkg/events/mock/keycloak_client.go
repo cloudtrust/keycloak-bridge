@@ -35,7 +35,6 @@ func (m *KeycloakClient) EXPECT() *KeycloakClientMockRecorder {
 
 // GetGroup mocks base method
 func (m *KeycloakClient) GetGroup(arg0, arg1, arg2 string) (keycloak_client.GroupRepresentation, error) {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetGroup", arg0, arg1, arg2)
 	ret0, _ := ret[0].(keycloak_client.GroupRepresentation)
 	ret1, _ := ret[1].(error)
@@ -44,13 +43,11 @@ func (m *KeycloakClient) GetGroup(arg0, arg1, arg2 string) (keycloak_client.Grou
 
 // GetGroup indicates an expected call of GetGroup
 func (mr *KeycloakClientMockRecorder) GetGroup(arg0, arg1, arg2 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGroup", reflect.TypeOf((*KeycloakClient)(nil).GetGroup), arg0, arg1, arg2)
 }
 
 // GetGroupsOfUser mocks base method
 func (m *KeycloakClient) GetGroupsOfUser(arg0, arg1, arg2 string) ([]keycloak_client.GroupRepresentation, error) {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetGroupsOfUser", arg0, arg1, arg2)
 	ret0, _ := ret[0].([]keycloak_client.GroupRepresentation)
 	ret1, _ := ret[1].(error)
@@ -59,6 +56,5 @@ func (m *KeycloakClient) GetGroupsOfUser(arg0, arg1, arg2 string) ([]keycloak_cl
 
 // GetGroupsOfUser indicates an expected call of GetGroupsOfUser
 func (mr *KeycloakClientMockRecorder) GetGroupsOfUser(arg0, arg1, arg2 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGroupsOfUser", reflect.TypeOf((*KeycloakClient)(nil).GetGroupsOfUser), arg0, arg1, arg2)
 }

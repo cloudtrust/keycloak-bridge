@@ -37,7 +37,6 @@ func (m *ConsoleModule) EXPECT() *ConsoleModuleMockRecorder {
 
 // Print mocks base method
 func (m *ConsoleModule) Print(arg0 context.Context, arg1 map[string]string) error {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Print", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -45,7 +44,6 @@ func (m *ConsoleModule) Print(arg0 context.Context, arg1 map[string]string) erro
 
 // Print indicates an expected call of Print
 func (mr *ConsoleModuleMockRecorder) Print(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Print", reflect.TypeOf((*ConsoleModule)(nil).Print), arg0, arg1)
 }
 
@@ -74,7 +72,6 @@ func (m *StatisticModule) EXPECT() *StatisticModuleMockRecorder {
 
 // Stats mocks base method
 func (m *StatisticModule) Stats(arg0 context.Context, arg1 map[string]string) error {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Stats", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -82,7 +79,6 @@ func (m *StatisticModule) Stats(arg0 context.Context, arg1 map[string]string) er
 
 // Stats indicates an expected call of Stats
 func (mr *StatisticModuleMockRecorder) Stats(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Stats", reflect.TypeOf((*StatisticModule)(nil).Stats), arg0, arg1)
 }
 
@@ -111,7 +107,6 @@ func (m *EventsDBModule) EXPECT() *EventsDBModuleMockRecorder {
 
 // Store mocks base method
 func (m *EventsDBModule) Store(arg0 context.Context, arg1 map[string]string) error {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Store", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -119,7 +114,6 @@ func (m *EventsDBModule) Store(arg0 context.Context, arg1 map[string]string) err
 
 // Store indicates an expected call of Store
 func (mr *EventsDBModuleMockRecorder) Store(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Store", reflect.TypeOf((*EventsDBModule)(nil).Store), arg0, arg1)
 }
 
@@ -148,7 +142,6 @@ func (m *Influx) EXPECT() *InfluxMockRecorder {
 
 // Write mocks base method
 func (m *Influx) Write(arg0 v2.BatchPoints) error {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Write", arg0)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -156,7 +149,6 @@ func (m *Influx) Write(arg0 v2.BatchPoints) error {
 
 // Write indicates an expected call of Write
 func (mr *InfluxMockRecorder) Write(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Write", reflect.TypeOf((*Influx)(nil).Write), arg0)
 }
 
@@ -185,7 +177,6 @@ func (m *DBEvents) EXPECT() *DBEventsMockRecorder {
 
 // Exec mocks base method
 func (m *DBEvents) Exec(arg0 string, arg1 ...interface{}) (sql.Result, error) {
-	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0}
 	for _, a := range arg1 {
 		varargs = append(varargs, a)
@@ -198,7 +189,6 @@ func (m *DBEvents) Exec(arg0 string, arg1 ...interface{}) (sql.Result, error) {
 
 // Exec indicates an expected call of Exec
 func (mr *DBEventsMockRecorder) Exec(arg0 interface{}, arg1 ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0}, arg1...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Exec", reflect.TypeOf((*DBEvents)(nil).Exec), varargs...)
 }

@@ -34,7 +34,6 @@ func (m *KeycloakClient) EXPECT() *KeycloakClientMockRecorder {
 
 // VerifyToken mocks base method
 func (m *KeycloakClient) VerifyToken(arg0, arg1 string) error {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "VerifyToken", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -42,6 +41,5 @@ func (m *KeycloakClient) VerifyToken(arg0, arg1 string) error {
 
 // VerifyToken indicates an expected call of VerifyToken
 func (mr *KeycloakClientMockRecorder) VerifyToken(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VerifyToken", reflect.TypeOf((*KeycloakClient)(nil).VerifyToken), arg0, arg1)
 }

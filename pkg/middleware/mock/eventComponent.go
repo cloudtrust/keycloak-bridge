@@ -36,7 +36,6 @@ func (m *MuxComponent) EXPECT() *MuxComponentMockRecorder {
 
 // Event mocks base method
 func (m *MuxComponent) Event(arg0 context.Context, arg1 string, arg2 []byte) error {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Event", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -44,7 +43,6 @@ func (m *MuxComponent) Event(arg0 context.Context, arg1 string, arg2 []byte) err
 
 // Event indicates an expected call of Event
 func (mr *MuxComponentMockRecorder) Event(arg0, arg1, arg2 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Event", reflect.TypeOf((*MuxComponent)(nil).Event), arg0, arg1, arg2)
 }
 
@@ -73,7 +71,6 @@ func (m *EventComponent) EXPECT() *EventComponentMockRecorder {
 
 // Event mocks base method
 func (m *EventComponent) Event(arg0 context.Context, arg1 *fb.Event) error {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Event", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -81,7 +78,6 @@ func (m *EventComponent) Event(arg0 context.Context, arg1 *fb.Event) error {
 
 // Event indicates an expected call of Event
 func (mr *EventComponentMockRecorder) Event(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Event", reflect.TypeOf((*EventComponent)(nil).Event), arg0, arg1)
 }
 
@@ -110,7 +106,6 @@ func (m *AdminEventComponent) EXPECT() *AdminEventComponentMockRecorder {
 
 // AdminEvent mocks base method
 func (m *AdminEventComponent) AdminEvent(arg0 context.Context, arg1 *fb.AdminEvent) error {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AdminEvent", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -118,6 +113,5 @@ func (m *AdminEventComponent) AdminEvent(arg0 context.Context, arg1 *fb.AdminEve
 
 // AdminEvent indicates an expected call of AdminEvent
 func (mr *AdminEventComponentMockRecorder) AdminEvent(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AdminEvent", reflect.TypeOf((*AdminEventComponent)(nil).AdminEvent), arg0, arg1)
 }

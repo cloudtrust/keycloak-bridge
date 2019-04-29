@@ -34,7 +34,6 @@ func (m *Logger) EXPECT() *LoggerMockRecorder {
 
 // Log mocks base method
 func (m *Logger) Log(arg0 ...interface{}) error {
-	m.ctrl.T.Helper()
 	varargs := []interface{}{}
 	for _, a := range arg0 {
 		varargs = append(varargs, a)
@@ -46,6 +45,5 @@ func (m *Logger) Log(arg0 ...interface{}) error {
 
 // Log indicates an expected call of Log
 func (mr *LoggerMockRecorder) Log(arg0 ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Log", reflect.TypeOf((*Logger)(nil).Log), arg0...)
 }

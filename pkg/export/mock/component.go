@@ -35,7 +35,6 @@ func (m *Component) EXPECT() *ComponentMockRecorder {
 
 // Export mocks base method
 func (m *Component) Export(arg0 context.Context) (map[string]interface{}, error) {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Export", arg0)
 	ret0, _ := ret[0].(map[string]interface{})
 	ret1, _ := ret[1].(error)
@@ -44,13 +43,11 @@ func (m *Component) Export(arg0 context.Context) (map[string]interface{}, error)
 
 // Export indicates an expected call of Export
 func (mr *ComponentMockRecorder) Export(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Export", reflect.TypeOf((*Component)(nil).Export), arg0)
 }
 
 // StoreAndExport mocks base method
 func (m *Component) StoreAndExport(arg0 context.Context) (map[string]interface{}, error) {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "StoreAndExport", arg0)
 	ret0, _ := ret[0].(map[string]interface{})
 	ret1, _ := ret[1].(error)
@@ -59,6 +56,5 @@ func (m *Component) StoreAndExport(arg0 context.Context) (map[string]interface{}
 
 // StoreAndExport indicates an expected call of StoreAndExport
 func (mr *ComponentMockRecorder) StoreAndExport(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StoreAndExport", reflect.TypeOf((*Component)(nil).StoreAndExport), arg0)
 }

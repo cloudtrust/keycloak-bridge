@@ -36,7 +36,6 @@ func (m *EventsComponent) EXPECT() *EventsComponentMockRecorder {
 
 // GetEvents mocks base method
 func (m *EventsComponent) GetEvents(arg0 context.Context, arg1 map[string]string) (events.AuditEventsRepresentation, error) {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetEvents", arg0, arg1)
 	ret0, _ := ret[0].(events.AuditEventsRepresentation)
 	ret1, _ := ret[1].(error)
@@ -45,13 +44,11 @@ func (m *EventsComponent) GetEvents(arg0 context.Context, arg1 map[string]string
 
 // GetEvents indicates an expected call of GetEvents
 func (mr *EventsComponentMockRecorder) GetEvents(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEvents", reflect.TypeOf((*EventsComponent)(nil).GetEvents), arg0, arg1)
 }
 
 // GetEventsSummary mocks base method
 func (m *EventsComponent) GetEventsSummary(arg0 context.Context) (events.EventSummaryRepresentation, error) {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetEventsSummary", arg0)
 	ret0, _ := ret[0].(events.EventSummaryRepresentation)
 	ret1, _ := ret[1].(error)
@@ -60,13 +57,11 @@ func (m *EventsComponent) GetEventsSummary(arg0 context.Context) (events.EventSu
 
 // GetEventsSummary indicates an expected call of GetEventsSummary
 func (mr *EventsComponentMockRecorder) GetEventsSummary(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEventsSummary", reflect.TypeOf((*EventsComponent)(nil).GetEventsSummary), arg0)
 }
 
 // GetUserEvents mocks base method
 func (m *EventsComponent) GetUserEvents(arg0 context.Context, arg1 map[string]string) (events.AuditEventsRepresentation, error) {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetUserEvents", arg0, arg1)
 	ret0, _ := ret[0].(events.AuditEventsRepresentation)
 	ret1, _ := ret[1].(error)
@@ -75,6 +70,5 @@ func (m *EventsComponent) GetUserEvents(arg0 context.Context, arg1 map[string]st
 
 // GetUserEvents indicates an expected call of GetUserEvents
 func (mr *EventsComponentMockRecorder) GetUserEvents(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserEvents", reflect.TypeOf((*EventsComponent)(nil).GetUserEvents), arg0, arg1)
 }
