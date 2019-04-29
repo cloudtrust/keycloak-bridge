@@ -352,15 +352,20 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 		return err
 	}
 
-	// when the email changes, set the emailVerified to false and send an email with a link
+	// when the email changes, set the emailVerified to false
 	if user.Email != nil && oldUserRep.Email != user.Email {
-		userRep.EmailVerified = false
+		var verified bool = false
+		userRep.EmailVerified = &verified
+	}
+
+	if userRep.PhoneNumberVerified != nil && oldUserRep.PhoneNumber != user.PhoneNumber {
+		var verified bool = false
+		userRep.PhoneNumberVerified = &verified
 	}
 
 	userRep.Username = user.Username
 	userRep.Email = user.Email
 	userRep.Enabled = user.Enabled
-	//userRep.EmailVerified = user.EmailVerified
 	userRep.FirstName = user.FirstName
 	userRep.LastName = user.LastName
 
@@ -386,7 +391,7 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 		userRep.Attributes = &attributes
 	}
 
-	err := c.keycloakClient.UpdateUser(accessToken, realmName, userID, userRep)
+	err = c.keycloakClient.UpdateUser(accessToken, realmName, userID, userRep)
 
 	if err != nil {
 		return err
