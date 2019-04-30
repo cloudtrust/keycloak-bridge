@@ -35,6 +35,7 @@ func TestDeny(t *testing.T) {
 	var roleName = "role"
 
 	var groupID = "123-789-454"
+	var groupIDs = []string{groupID}
 	var groupName = "titi"
 
 	var pass = "P@ssw0rd"
@@ -104,7 +105,7 @@ func TestDeny(t *testing.T) {
 		assert.Equal(t, security.ForbiddenError{}, err)
 
 		mockKeycloakClient.EXPECT().GetGroup(gomock.Any(), realmName, groupID).Return(group, nil).Times(1)
-		_, err = authorizationMW.GetUsers(ctx, realmName, groupID)
+		_, err = authorizationMW.GetUsers(ctx, realmName, groupIDs)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
 		_, err = authorizationMW.CreateUser(ctx, realmName, user)
@@ -181,6 +182,7 @@ func TestAllowed(t *testing.T) {
 	var roleName = "role"
 
 	var groupID = "123-789-454"
+	var groupIDs = []string{groupID}
 	var groupName = "titi"
 
 	var pass = "P@ssw0rd"
@@ -285,8 +287,8 @@ func TestAllowed(t *testing.T) {
 		assert.Nil(t, err)
 
 		mockKeycloakClient.EXPECT().GetGroup(gomock.Any(), realmName, groupID).Return(group, nil).Times(1)
-		mockManagementComponent.EXPECT().GetUsers(ctx, realmName, groupID).Return([]api.UserRepresentation{}, nil).Times(1)
-		_, err = authorizationMW.GetUsers(ctx, realmName, groupID)
+		mockManagementComponent.EXPECT().GetUsers(ctx, realmName, groupIDs).Return([]api.UserRepresentation{}, nil).Times(1)
+		_, err = authorizationMW.GetUsers(ctx, realmName, groupIDs)
 		assert.Nil(t, err)
 
 		mockManagementComponent.EXPECT().CreateUser(ctx, realmName, user).Return("", nil).Times(1)
