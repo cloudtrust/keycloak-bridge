@@ -278,8 +278,7 @@ func (c *component) GetUsers(ctx context.Context, realmName string, groupIDs []s
 	var ctxRealm = ctx.Value("realm").(string)
 
 	for _, groupId := range groupIDs {
-		paramKV = append(paramKV, "groupId")
-		paramKV = append(paramKV, groupId)
+		paramKV = append(paramKV, "groupId", groupId)
 	}
 
 	usersKc, err := c.keycloakClient.GetUsers(accessToken, ctxRealm, realmName, paramKV...)
