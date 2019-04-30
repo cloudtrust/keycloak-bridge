@@ -49,7 +49,7 @@ type Component interface {
 	DeleteUser(ctx context.Context, realmName, userID string) error
 	GetUser(ctx context.Context, realmName, userID string) (api.UserRepresentation, error)
 	UpdateUser(ctx context.Context, realmName, userID string, user api.UserRepresentation) error
-	GetUsers(ctx context.Context, realmName, groupID string, paramKV ...string) ([]api.UserRepresentation, error)
+	GetUsers(ctx context.Context, realmName string, groupIDs []string, paramKV ...string) ([]api.UserRepresentation, error)
 	CreateUser(ctx context.Context, realmName string, user api.UserRepresentation) (string, error)
 	GetUserAccountStatus(ctx context.Context, realmName, userID string) (map[string]bool, error)
 	GetClientRolesForUser(ctx context.Context, realmName, userID, clientID string) ([]api.RoleRepresentation, error)
@@ -273,9 +273,13 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 	return nil
 }
 
-func (c *component) GetUsers(ctx context.Context, realmName string, groupID string, paramKV ...string) ([]api.UserRepresentation, error) {
+func (c *component) GetUsers(ctx context.Context, realmName string, groupIDs []string, paramKV ...string) ([]api.UserRepresentation, error) {
 	var accessToken = ctx.Value("access_token").(string)
 	var ctxRealm = ctx.Value("realm").(string)
+
+	for _, groupId := range groupIDs {
+		paramKV = append(paramKV, "groupId", groupId)
+	}
 
 	usersKc, err := c.keycloakClient.GetUsers(accessToken, ctxRealm, realmName, paramKV...)
 
