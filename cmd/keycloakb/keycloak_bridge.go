@@ -710,9 +710,9 @@ func config(logger log.Logger) *viper.Viper {
 	v.SetDefault("authorization-file", "./configs/authorization.json")
 
 	// Publishing
-	v.SetDefault("http-host-port-internal", "0.0.0.0:8888")
-	v.SetDefault("http-host-port-management", "0.0.0.0:8877")
-	v.SetDefault("http-host-port-account", "0.0.0.0:8866")
+	v.SetDefault("internal-http-host-port", "0.0.0.0:8888")
+	v.SetDefault("management-http-host-port", "0.0.0.0:8877")
+	v.SetDefault("account-http-host-port", "0.0.0.0:8866")
 
 	// Security - Audience check
 	v.SetDefault("audience", "")
