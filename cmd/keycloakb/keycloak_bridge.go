@@ -780,6 +780,26 @@ func config(logger log.Logger) *viper.Viper {
 	v.BindPFlag("authorization-file", pflag.Lookup("authorization-file"))
 	pflag.Parse()
 
+	// Bind ENV variables
+	// We use env variables to bind Openshift secrets
+	v.BindEnv("keycloak-username", "CT_BRIDGE_KEYCLOAK_USERNAME")
+	v.BindEnv("keycloak-password", "CT_BRIDGE_KEYCLOAK_PASSWORD")
+
+	v.BindEnv("db-audit-rw-username", "CT_BRIDGE_DB_AUDIT_RW_USERNAME")
+	v.BindEnv("db-audit-rw-password", "CT_BRIDGE_DB_AUDIT_RW_PASSWORD")
+
+	v.BindEnv("db-audit-ro-username", "CT_BRIDGE_DB_AUDIT_RO_USERNAME")
+	v.BindEnv("db-audit-ro-password", "CT_BRIDGE_DB_AUDIT_RO_PASSWORD")
+
+	v.BindEnv("db-config-username", "CT_BRIDGE_DB_CONFIG_USERNAME")
+	v.BindEnv("db-config-password", "CT_BRIDGE_DB_CONFIG_PASSWORD")
+
+	v.BindEnv("influx-username", "CT_BRIDGE_INFLUX_USERNAME")
+	v.BindEnv("influx-password", "CT_BRIDGE_INFLUX_PASSWORD")
+
+	v.BindEnv("sentry-dsn", "CT_BRIDGE_SENTRY_DSN")
+
+
 	// Load and log config.
 	v.SetConfigFile(v.GetString("config-file"))
 	var err = v.ReadInConfig()
