@@ -9,17 +9,10 @@ tags:
 - name: Account
   description: Account management
 paths:
-  /account/realms/{realm}/credentials/password:
+  /account/credentials/password:
     post:
       tags:
       - Password
-      parameters:
-      - name: realm
-        in: path
-        description: realm name (not id!)
-        required: true
-        schema:
-          type: string
       requestBody:
         content:
           application/json:

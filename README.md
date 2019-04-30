@@ -38,8 +38,9 @@ For the component, the following parameters are available:
 
 Key | Description | Default value
 --- | ----------- | -------------
-component-name | name of the component | keycloak-bridge
-component-http-host-port | HTTP server listening address | 0.0.0.0:8888
+internal-http-host-port | HTTP server listening address | 0.0.0.0:8888
+management-http-host-port | HTTP server listening address | 0.0.0.0:8877
+account-http-host-port | HTTP server listening address | 0.0.0.0:8866
 
 
 ### Keycloak

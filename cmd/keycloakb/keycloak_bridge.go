@@ -109,8 +109,12 @@ func main() {
 	var c = config(log.With(logger, "unit", "config"))
 	var (
 		// Component
-		httpAddr                = c.GetString("component-http-host-port")
 		authorizationConfigFile = c.GetString("authorization-file")
+
+		// Publishing
+		httpAddrInternal = c.GetString("http-host-port-internal")
+		httpAddrManagement = c.GetString("http-host-port-management")
+		httpAddrAccount = c.GetString("http-host-port-account")
 
 		// Keycloak
 		keycloakConfig = keycloak.Config{
@@ -192,6 +196,17 @@ func main() {
 		signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
 		errc <- fmt.Errorf("%s", <-c)
 	}()
+
+	// Security - Audience required
+	var audienceRequired string
+	{
+		audienceRequired = c.GetString("audience-required")
+
+		if audienceRequired == "" {
+			logger.Log("msg", "audience parameter(audience-required) cannot be empty")
+			return
+		}
+	}
 
 	// Keycloak client.
 	var keycloakClient *keycloak.Client
@@ -487,10 +502,10 @@ func main() {
 	var exportEndpoint = export.MakeExportEndpoint(exportComponent)
 	var exportSaveAndExportEndpoint = export.MakeStoreAndExportEndpoint(exportComponent)
 
-	// HTTP Server.
+	// HTTP Internal Call Server (Event reception from Keycloak & Export API).
 	go func() {
 		var logger = log.With(logger, "transport", "http")
-		logger.Log("addr", httpAddr)
+		logger.Log("addr", httpAddrInternal)
 
 		var route = mux.NewRouter()
 
@@ -508,101 +523,9 @@ func main() {
 		}
 		eventSubroute.Handle("/receiver", eventHandler)
 
-		// Events
-		var getEventsHandler = configureEventsHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(eventsEndpoints.GetEvents)
-		var getEventsSummaryHandler = configureEventsHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(eventsEndpoints.GetEventsSummary)
-		var getUserEventsHandler = configureEventsHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(eventsEndpoints.GetUserEvents)
-
-		route.Path("/events").Methods("GET").Handler(getEventsHandler)
-		route.Path("/events/summary").Methods("GET").Handler(getEventsSummaryHandler)
-		route.Path("/events/realms/{realm}/users/{userID}/events").Methods("GET").Handler(getUserEventsHandler)
-
-		// Management
-		var managementSubroute = route.PathPrefix("/management").Subrouter()
-
-		var getRealmsHandler = configureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.GetRealms)
-		var getRealmHandler = configureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.GetRealm)
-
-		var getClientsHandler = configureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.GetClients)
-		var getClientHandler = configureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.GetClient)
-
-		var createUserHandler = configureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.CreateUser)
-		var getUserHandler = configureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.GetUser)
-		var updateUserHandler = configureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.UpdateUser)
-		var deleteUserHandler = configureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.DeleteUser)
-		var getUsersHandler = configureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.GetUsers)
-
-		var getUserAccountStatusHandler = configureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.GetUserAccountStatus)
-
-		var getClientRoleForUserHandler = configureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.GetClientRoleForUser)
-		var addClientRoleToUserHandler = configureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.AddClientRoleToUser)
-		var getRealmRoleForUserHandler = configureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.GetRealmRoleForUser)
-
-		var getRolesHandler = configureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.GetRoles)
-		var getRoleHandler = configureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.GetRole)
-		var getClientRolesHandler = configureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.GetClientRoles)
-		var createClientRolesHandler = configureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.CreateClientRole)
-
-		var resetPasswordHandler = configureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.ResetPassword)
-		var sendVerifyEmailHandler = configureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.SendVerifyEmail)
-		var executeActionsEmailHandler = configureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.ExecuteActionsEmail)
-		var sendNewEnrolmentCodeHandler = configureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.SendNewEnrolmentCode)
-
-		var getCredentialsForUserHandler = configureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.GetCredentialsForUser)
-		var deleteCredentialsForUserHandler = configureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.DeleteCredentialsForUser)
-
-		var getRealmCustomConfigurationHandler = configureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.GetRealmCustomConfiguration)
-		var updateRealmCustomConfigurationHandler = configureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(managementEndpoints.UpdateRealmCustomConfiguration)
-
-		//realms
-		managementSubroute.Path("/realms").Methods("GET").Handler(getRealmsHandler)
-		managementSubroute.Path("/realms/{realm}").Methods("GET").Handler(getRealmHandler)
-
-		//clients
-		managementSubroute.Path("/realms/{realm}/clients").Methods("GET").Handler(getClientsHandler)
-		managementSubroute.Path("/realms/{realm}/clients/{clientID}").Methods("GET").Handler(getClientHandler)
-
-		//users
-		managementSubroute.Path("/realms/{realm}/users").Methods("GET").Handler(getUsersHandler)
-		managementSubroute.Path("/realms/{realm}/users").Methods("POST").Handler(createUserHandler)
-		managementSubroute.Path("/realms/{realm}/users/{userID}").Methods("GET").Handler(getUserHandler)
-		managementSubroute.Path("/realms/{realm}/users/{userID}").Methods("PUT").Handler(updateUserHandler)
-		managementSubroute.Path("/realms/{realm}/users/{userID}").Methods("DELETE").Handler(deleteUserHandler)
-
-		// account status
-		managementSubroute.Path("/realms/{realm}/users/{userID}/status").Methods("GET").Handler(getUserAccountStatusHandler)
-
-		managementSubroute.Path("/realms/{realm}/users/{userID}/role-mappings/clients/{clientID}").Methods("GET").Handler(getClientRoleForUserHandler)
-		managementSubroute.Path("/realms/{realm}/users/{userID}/role-mappings/clients/{clientID}").Methods("POST").Handler(addClientRoleToUserHandler)
-		managementSubroute.Path("/realms/{realm}/users/{userID}/role-mappings/realm").Methods("GET").Handler(getRealmRoleForUserHandler)
-
-		managementSubroute.Path("/realms/{realm}/users/{userID}/reset-password").Methods("PUT").Handler(resetPasswordHandler)
-		managementSubroute.Path("/realms/{realm}/users/{userID}/send-verify-email").Methods("PUT").Handler(sendVerifyEmailHandler)
-		managementSubroute.Path("/realms/{realm}/users/{userID}/execute-actions-email").Methods("PUT").Handler(executeActionsEmailHandler)
-		managementSubroute.Path("/realms/{realm}/users/{userID}/send-new-enrolment-code").Methods("POST").Handler(sendNewEnrolmentCodeHandler)
-
-		// Credentials
-		managementSubroute.Path("/realms/{realm}/users/{userID}/credentials").Methods("GET").Handler(getCredentialsForUserHandler)
-		managementSubroute.Path("/realms/{realm}/users/{userID}/credentials/{credentialID}").Methods("DELETE").Handler(deleteCredentialsForUserHandler)
-
-		//roles
-		managementSubroute.Path("/realms/{realm}/roles").Methods("GET").Handler(getRolesHandler)
-		managementSubroute.Path("/realms/{realm}/roles-by-id/{roleID}").Methods("GET").Handler(getRoleHandler)
-		managementSubroute.Path("/realms/{realm}/clients/{clientID}/roles").Methods("GET").Handler(getClientRolesHandler)
-		managementSubroute.Path("/realms/{realm}/clients/{clientID}/roles").Methods("POST").Handler(createClientRolesHandler)
-
-		// custom configuration par realm
-		managementSubroute.Path("/realms/{realm}/configuration").Methods("GET").Handler(getRealmCustomConfigurationHandler)
-		managementSubroute.Path("/realms/{realm}/configuration").Methods("PUT").Handler(updateRealmCustomConfigurationHandler)
-
 		// Export.
 		route.Handle("/export", export.MakeHTTPExportHandler(exportEndpoint)).Methods("GET")
 		route.Handle("/export", export.MakeHTTPExportHandler(exportSaveAndExportEndpoint)).Methods("POST")
-
-		// Account
-		var updatePasswordHandler = configureAccountHandler(ComponentName, ComponentID, idGenerator, keycloakClient, tracer, logger)(accountEndpoints.UpdatePassword)
-
-		route.Path("/account/realms/{realm}/credentials/password").Methods("POST").Handler(updatePasswordHandler)
 
 		// Debug.
 		if pprofRouteEnabled {
@@ -614,9 +537,127 @@ func main() {
 			debugSubroute.HandleFunc("/pprof/trace", http.HandlerFunc(pprof.Trace))
 		}
 
-		c := cors.New(corsOptions)
-		errc <- http.ListenAndServe(httpAddr, c.Handler(route))
+		errc <- http.ListenAndServe(httpAddrInternal, route)
+	}()
 
+	// HTTP Management Server (Backoffice API).
+	go func() {
+		var logger = log.With(logger, "transport", "http")
+		logger.Log("addr", httpAddrManagement)
+
+		var route = mux.NewRouter()
+
+		// Version.
+		route.Handle("/", http.HandlerFunc(makeVersion(ComponentName, ComponentID, Version, Environment, GitCommit)))
+
+		// Events
+		var getEventsHandler = configureEventsHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(eventsEndpoints.GetEvents)
+		var getEventsSummaryHandler = configureEventsHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(eventsEndpoints.GetEventsSummary)
+		var getUserEventsHandler = configureEventsHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(eventsEndpoints.GetUserEvents)
+
+		route.Path("/events").Methods("GET").Handler(getEventsHandler)
+		route.Path("/events/summary").Methods("GET").Handler(getEventsSummaryHandler)
+		route.Path("/events/realms/{realm:[a-zA-Z0-9_-]+}/users/{userID:[a-zA-Z0-9-]+}/events").Methods("GET").Handler(getUserEventsHandler)
+
+		// Management
+		var managementSubroute = route.PathPrefix("/management").Subrouter()
+
+		var getRealmsHandler = configureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetRealms)
+		var getRealmHandler = configureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetRealm)
+
+		var getClientsHandler = configureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetClients)
+		var getClientHandler = configureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetClient)
+
+		var createUserHandler = configureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.CreateUser)
+		var getUserHandler = configureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetUser)
+		var updateUserHandler = configureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.UpdateUser)
+		var deleteUserHandler = configureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.DeleteUser)
+		var getUsersHandler = configureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetUsers)
+
+		var getUserAccountStatusHandler = configureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetUserAccountStatus)
+
+		var getClientRoleForUserHandler = configureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetClientRoleForUser)
+		var addClientRoleToUserHandler = configureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.AddClientRoleToUser)
+		var getRealmRoleForUserHandler = configureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetRealmRoleForUser)
+
+		var getRolesHandler = configureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetRoles)
+		var getRoleHandler = configureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetRole)
+		var getClientRolesHandler = configureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetClientRoles)
+		var createClientRolesHandler = configureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.CreateClientRole)
+
+		var resetPasswordHandler = configureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.ResetPassword)
+		var sendVerifyEmailHandler = configureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.SendVerifyEmail)
+		var executeActionsEmailHandler = configureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.ExecuteActionsEmail)
+		var sendNewEnrolmentCodeHandler = configureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.SendNewEnrolmentCode)
+
+		var getCredentialsForUserHandler = configureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetCredentialsForUser)
+		var deleteCredentialsForUserHandler = configureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.DeleteCredentialsForUser)
+
+		var getRealmCustomConfigurationHandler = configureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetRealmCustomConfiguration)
+		var updateRealmCustomConfigurationHandler = configureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.UpdateRealmCustomConfiguration)
+
+		//realms
+		managementSubroute.Path("/realms").Methods("GET").Handler(getRealmsHandler)
+		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}").Methods("GET").Handler(getRealmHandler)
+
+		//clients
+		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/clients").Methods("GET").Handler(getClientsHandler)
+		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/clients/{clientID:[a-zA-Z0-9-]+}").Methods("GET").Handler(getClientHandler)
+
+		//users
+		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/users").Methods("GET").Handler(getUsersHandler)
+		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/users").Methods("POST").Handler(createUserHandler)
+		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/users/{userID:[a-zA-Z0-9-]+}").Methods("GET").Handler(getUserHandler)
+		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/users/{userID:[a-zA-Z0-9-]+}").Methods("PUT").Handler(updateUserHandler)
+		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/users/{userID:[a-zA-Z0-9-]+}").Methods("DELETE").Handler(deleteUserHandler)
+
+		// account status
+		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/users/{userID:[a-zA-Z0-9-]+}/status").Methods("GET").Handler(getUserAccountStatusHandler)
+
+		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/users/{userID:[a-zA-Z0-9-]+}/role-mappings/clients/{clientID:[a-zA-Z0-9-]+}").Methods("GET").Handler(getClientRoleForUserHandler)
+		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/users/{userID:[a-zA-Z0-9-]+}/role-mappings/clients/{clientID:[a-zA-Z0-9-]+}").Methods("POST").Handler(addClientRoleToUserHandler)
+		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/users/{userID:[a-zA-Z0-9-]+}/role-mappings/realm").Methods("GET").Handler(getRealmRoleForUserHandler)
+
+		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/users/{userID:[a-zA-Z0-9-]+}/reset-password").Methods("PUT").Handler(resetPasswordHandler)
+		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/users/{userID:[a-zA-Z0-9-]+}/send-verify-email").Methods("PUT").Handler(sendVerifyEmailHandler)
+		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/users/{userID:[a-zA-Z0-9-]+}/execute-actions-email").Methods("PUT").Handler(executeActionsEmailHandler)
+		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/users/{userID:[a-zA-Z0-9-]+}/send-new-enrolment-code").Methods("POST").Handler(sendNewEnrolmentCodeHandler)
+
+		// Credentials
+		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/users/{userID:[a-zA-Z0-9-]+}/credentials").Methods("GET").Handler(getCredentialsForUserHandler)
+		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/users/{userID:[a-zA-Z0-9-]+}/credentials/{credentialID:[a-zA-Z0-9-]+}").Methods("DELETE").Handler(deleteCredentialsForUserHandler)
+
+		//roles
+		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/roles").Methods("GET").Handler(getRolesHandler)
+		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/roles-by-id/{roleID:[a-zA-Z0-9-]+}").Methods("GET").Handler(getRoleHandler)
+		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/clients/{clientID:[a-zA-Z0-9-]+}/roles").Methods("GET").Handler(getClientRolesHandler)
+		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/clients/{clientID:[a-zA-Z0-9-]+}/roles").Methods("POST").Handler(createClientRolesHandler)
+
+		// custom configuration par realm
+		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/configuration").Methods("GET").Handler(getRealmCustomConfigurationHandler)
+		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/configuration").Methods("PUT").Handler(updateRealmCustomConfigurationHandler)
+
+		c := cors.New(corsOptions)
+		errc <- http.ListenAndServe(httpAddrManagement, c.Handler(route))
+
+	}()
+
+	// HTTP Self-service Server (Account API). 
+	go func() {
+		var logger = log.With(logger, "transport", "http")
+		logger.Log("addr", httpAddrAccount)
+
+		var route = mux.NewRouter()
+
+		// Version.
+		route.Handle("/", http.HandlerFunc(makeVersion(ComponentName, ComponentID, Version, Environment, GitCommit)))
+
+		// Account
+		var updatePasswordHandler = configureAccountHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(accountEndpoints.UpdatePassword)
+		route.Path("/account/credentials/password").Methods("POST").Handler(updatePasswordHandler)
+
+		c := cors.New(corsOptions)
+		errc <- http.ListenAndServe(httpAddrAccount, c.Handler(route))
 	}()
 
 	// Influx writing.
@@ -667,7 +708,14 @@ func config(logger log.Logger) *viper.Viper {
 	// Component default.
 	v.SetDefault("config-file", "./configs/keycloak_bridge.yml")
 	v.SetDefault("authorization-file", "./configs/authorization.json")
-	v.SetDefault("component-http-host-port", "0.0.0.0:8888")
+
+	// Publishing
+	v.SetDefault("internal-http-host-port", "0.0.0.0:8888")
+	v.SetDefault("management-http-host-port", "0.0.0.0:8877")
+	v.SetDefault("account-http-host-port", "0.0.0.0:8866")
+
+	// Security - Audience check
+	v.SetDefault("audience", "")
 
 	// CORS configuration
 	v.SetDefault("cors-allowed-origins", []string{})
@@ -794,32 +842,32 @@ func (cfg *dbConfig) openDatabase() (*sql.DB, error) {
 	return dbConn, err
 }
 
-func configureEventsHandler(ComponentName string, ComponentID string, idGenerator gen.IDGenerator, keycloakClient *keycloak.Client, tracer opentracing.Tracer, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {
+func configureEventsHandler(ComponentName string, ComponentID string, idGenerator gen.IDGenerator, keycloakClient *keycloak.Client, audienceRequired string, tracer opentracing.Tracer, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {
 	return func(endpoint endpoint.Endpoint) http.Handler {
 		var handler http.Handler
 		handler = events.MakeEventsHandler(endpoint)
 		handler = middleware.MakeHTTPCorrelationIDMW(idGenerator, tracer, logger, ComponentName, ComponentID)(handler)
-		handler = middleware.MakeHTTPOIDCTokenValidationMW(keycloakClient, logger)(handler)
+		handler = middleware.MakeHTTPOIDCTokenValidationMW(keycloakClient, audienceRequired, logger)(handler)
 		return handler
 	}
 }
 
-func configureManagementHandler(ComponentName string, ComponentID string, idGenerator gen.IDGenerator, keycloakClient *keycloak.Client, tracer opentracing.Tracer, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {
+func configureManagementHandler(ComponentName string, ComponentID string, idGenerator gen.IDGenerator, keycloakClient *keycloak.Client, audienceRequired string, tracer opentracing.Tracer, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {
 	return func(endpoint endpoint.Endpoint) http.Handler {
 		var handler http.Handler
 		handler = management.MakeManagementHandler(endpoint)
 		handler = middleware.MakeHTTPCorrelationIDMW(idGenerator, tracer, logger, ComponentName, ComponentID)(handler)
-		handler = middleware.MakeHTTPOIDCTokenValidationMW(keycloakClient, logger)(handler)
+		handler = middleware.MakeHTTPOIDCTokenValidationMW(keycloakClient, audienceRequired, logger)(handler)
 		return handler
 	}
 }
 
-func configureAccountHandler(ComponentName string, ComponentID string, idGenerator gen.IDGenerator, keycloakClient *keycloak.Client, tracer opentracing.Tracer, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {
+func configureAccountHandler(ComponentName string, ComponentID string, idGenerator gen.IDGenerator, keycloakClient *keycloak.Client, audienceRequired string, tracer opentracing.Tracer, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {
 	return func(endpoint endpoint.Endpoint) http.Handler {
 		var handler http.Handler
 		handler = account.MakeAccountHandler(endpoint)
 		handler = middleware.MakeHTTPCorrelationIDMW(idGenerator, tracer, logger, ComponentName, ComponentID)(handler)
-		handler = middleware.MakeHTTPOIDCTokenValidationMW(keycloakClient, logger)(handler)
+		handler = middleware.MakeHTTPOIDCTokenValidationMW(keycloakClient, audienceRequired, logger)(handler)
 		return handler
 	}
 }
