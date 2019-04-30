@@ -171,11 +171,9 @@ func MakeGetUsersEndpoint(managementComponent ManagementComponent) endpoint.Endp
 			}
 		}
 
-
-
 		_, ok := m["groupIds"]
 		if !ok {
-			return nil, keycloakb.CreateMissingParameterError("groupId")
+			return nil, keycloakb.CreateMissingParameterError("groupIds")
 		}
 
 		groupIDs := strings.Split(m["groupIds"], ",")
