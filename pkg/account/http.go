@@ -1,4 +1,4 @@
-package events
+package account
 
 import (
 	"context"
@@ -9,8 +9,8 @@ import (
 	http_transport "github.com/go-kit/kit/transport/http"
 )
 
-// MakeEventsHandler make an HTTP handler for an Events endpoint.
-func MakeEventsHandler(e endpoint.Endpoint) *http_transport.Server {
+// MakeAccountHandler make an HTTP handler for an Account endpoint.
+func MakeAccountHandler(e endpoint.Endpoint) *http_transport.Server {
 	return http_transport.NewServer(e,
 		decodeEventsRequest,
 		keycloakb.EncodeEventsReply,
@@ -20,7 +20,7 @@ func MakeEventsHandler(e endpoint.Endpoint) *http_transport.Server {
 
 // decodeEventsRequest gets the HTTP parameters and body content
 func decodeEventsRequest(ctx context.Context, req *http.Request) (interface{}, error) {
-	pathParams := []string{"realm", "userID"}
-	queryParams := []string{"origin", "realmTarget", "ctEventType", "dateFrom", "dateTo", "first", "max"}
+	pathParams := []string{"realm"}
+	queryParams := []string{}
 	return keycloakb.DecodeEventsRequest(ctx, req, pathParams, queryParams)
 }

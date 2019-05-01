@@ -120,9 +120,9 @@ paths:
         required: true
         schema:
           type: string
-      - name: groupId
+      - name: groupIds
         in: query
-        description: groupId the users belong to
+        description: list of groupId the users may belong to (list comma seperated)
         required: true
         schema:
           type: string

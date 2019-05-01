@@ -236,13 +236,15 @@ func TestGetUsersEndpoint(t *testing.T) {
 	// No error - Without param
 	{
 		var realm = "master"
-		var groupID = "123-784dsf-sdf567"
+		var groupID1 = "123-784dsf-sdf567"
+		var groupID2 = "789-741-753"
+		var groupIDs = groupID1+","+groupID2
 		var ctx = context.Background()
 		var req = make(map[string]string)
 		req["realm"] = realm
-		req["groupId"] = groupID
+		req["groupIds"] = groupIDs
 
-		mockManagementComponent.EXPECT().GetUsers(ctx, realm, groupID, "groupId", req["groupId"]).Return([]api.UserRepresentation{}, nil).Times(1)
+		mockManagementComponent.EXPECT().GetUsers(ctx, realm, []string{groupID1, groupID2}).Return([]api.UserRepresentation{}, nil).Times(1)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.NotNil(t, res)
@@ -260,9 +262,9 @@ func TestGetUsersEndpoint(t *testing.T) {
 		req["max"] = "10"
 		req["username"] = "username"
 		req["toto"] = "tutu" // Check this param is not transmitted
-		req["groupId"] = "123-784dsf-sdf567"
+		req["groupIds"] = "123-784dsf-sdf567"
 
-		mockManagementComponent.EXPECT().GetUsers(ctx, realm, req["groupId"], "email", req["email"], "firstName", req["firstName"], "lastName", req["lastName"], "max", req["max"], "username", req["username"], "groupId", req["groupId"]).Return([]api.UserRepresentation{}, nil).Times(1)
+		mockManagementComponent.EXPECT().GetUsers(ctx, realm, []string{req["groupIds"]}, "email", req["email"], "firstName", req["firstName"], "lastName", req["lastName"], "max", req["max"], "username", req["username"]).Return([]api.UserRepresentation{}, nil).Times(1)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.NotNil(t, res)

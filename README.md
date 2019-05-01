@@ -38,8 +38,9 @@ For the component, the following parameters are available:
 
 Key | Description | Default value
 --- | ----------- | -------------
-component-name | name of the component | keycloak-bridge
-component-http-host-port | HTTP server listening address | 0.0.0.0:8888
+internal-http-host-port | HTTP server listening address | 0.0.0.0:8888
+management-http-host-port | HTTP server listening address | 0.0.0.0:8877
+account-http-host-port | HTTP server listening address | 0.0.0.0:8866
 
 
 ### Keycloak
@@ -50,6 +51,26 @@ keycloak-host-port | Keycloak host:port | "127.0.0.1:8080"
 keycloak-username | Keycloak username | ""
 keycloak-password | Keycloak password | ""
 keycloak-timeout-ms | Keycloak requests timeout in milliseconds | 5000
+
+
+### ENV variables
+
+Some parameters can be overridden with following ENV variables:
+
+ENV Variable | Parameter
+--- | -----------
+CT_BRIDGE_KEYCLOAK_USERNAME | keycloak-username
+CT_BRIDGE_KEYCLOAK_PASSWORD | keycloak-password
+CT_BRIDGE_DB_AUDIT_RW_USERNAME | db-audit-rw-username
+CT_BRIDGE_DB_AUDIT_RW_PASSWORD | db-audit-rw-password
+CT_BRIDGE_DB_AUDIT_RO_USERNAME | db-audit-ro-username
+CT_BRIDGE_DB_AUDIT_RO_PASSWORD | db-audit-ro-password
+CT_BRIDGE_DB_CONFIG_USERNAME | db-config-username
+CT_BRIDGE_DB_CONFIG_PASSWORD | db-config-password
+CT_BRIDGE_INFLUX_USERNAME | influx-username
+CT_BRIDGE_INFLUX_PASSWORD | influx-password
+CT_BRIDGE_SENTRY_DSN | sentry-dsn
+
 
 ## Usage
 

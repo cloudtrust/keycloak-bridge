@@ -283,7 +283,7 @@ func (mr *ManagementComponentMockRecorder) GetUserAccountStatus(arg0, arg1, arg2
 }
 
 // GetUsers mocks base method
-func (m *ManagementComponent) GetUsers(arg0 context.Context, arg1, arg2 string, arg3 ...string) ([]management.UserRepresentation, error) {
+func (m *ManagementComponent) GetUsers(arg0 context.Context, arg1 string, arg2 []string, arg3 ...string) ([]management.UserRepresentation, error) {
 	varargs := []interface{}{arg0, arg1, arg2}
 	for _, a := range arg3 {
 		varargs = append(varargs, a)

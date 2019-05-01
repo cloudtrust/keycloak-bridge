@@ -1,8 +1,10 @@
 # For the keys representing duration (i.e. the key ending with "-interval" or "-validity"), 
 # the Go syntax is used. Valid units are "h", "m", "s", "ms", "us", "ns", e.g. "2h30m10s".
 
-# Component configs
-component-http-host-port: 0.0.0.0:8888
+# Publishing
+internal-http-host-port: 0.0.0.0:8888
+management-http-host-port: 0.0.0.0:8877
+account-http-host-port: 0.0.0.0:8866
 
 # CORS
 cors-allowed-origins:
@@ -17,6 +19,9 @@ cors-allowed-headers:
   - "Authorization"
   - "Content-Type"
 cors-debug: true
+
+# Security
+audience-required: "backofficeid"
 
 # Keycloak configs
 keycloak: false
