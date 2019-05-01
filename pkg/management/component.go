@@ -23,7 +23,7 @@ type KeycloakClient interface {
 	GetGroupsOfUser(accessToken string, realmName, userID string) ([]kc.GroupRepresentation, error)
 	UpdateUser(accessToken string, realmName, userID string, user kc.UserRepresentation) error
 	GetUsers(accessToken string, reqRealmName, targetRealmName string, paramKV ...string) ([]kc.UserRepresentation, error)
-	CreateUser(accessToken string, realmName string, user kc.UserRepresentation) (string, error)
+	CreateUser(accessToken string, reqRealmName, targetRealmName string, user kc.UserRepresentation) (string, error)
 	GetClientRoleMappings(accessToken string, realmName, userID, clientID string) ([]kc.RoleRepresentation, error)
 	AddClientRolesToUserRoleMapping(accessToken string, realmName, userID, clientID string, roles []kc.RoleRepresentation) error
 	GetRealmLevelRoleMappings(accessToken string, realmName, userID string) ([]kc.RoleRepresentation, error)
@@ -171,12 +171,13 @@ func (c *component) GetClients(ctx context.Context, realmName string) ([]api.Cli
 
 func (c *component) CreateUser(ctx context.Context, realmName string, user api.UserRepresentation) (string, error) {
 	var accessToken = ctx.Value("access_token").(string)
+	var ctxRealm = ctx.Value("realm").(string)
 
 	var userRep kc.UserRepresentation
 
 	userRep = api.ConvertToKCUser(user)
 
-	locationURL, err := c.keycloakClient.CreateUser(accessToken, realmName, userRep)
+	locationURL, err := c.keycloakClient.CreateUser(accessToken, ctxRealm, realmName, userRep)
 
 	if err != nil {
 		return "", err
