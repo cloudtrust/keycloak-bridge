@@ -310,16 +310,6 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 		}
 	}
 
-	/*// when the phone number changes, set the PhoneNumberVerified to false
-	if oldUserKc.Attributes != nil {
-		var m = *oldUserKc.Attributes
-		if user.PhoneNumber != nil && m["phoneNumber"][0] != *user.PhoneNumber {
-			var verified bool = false
-			var mNew = *userRep.Attributes
-			mNew["phoneNumberVerified"] = []string{strconv.FormatBool(verified)}
-		}
-	}*/
-
 	userRep = api.ConvertToKCUser(user)
 
 	err = c.keycloakClient.UpdateUser(accessToken, realmName, userID, userRep)
