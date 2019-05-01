@@ -238,7 +238,7 @@ func TestGetUsersEndpoint(t *testing.T) {
 		var realm = "master"
 		var groupID1 = "123-784dsf-sdf567"
 		var groupID2 = "789-741-753"
-		var groupIDs = groupID1+","+groupID2
+		var groupIDs = groupID1 + "," + groupID2
 		var ctx = context.Background()
 		var req = make(map[string]string)
 		req["realm"] = realm
@@ -306,6 +306,54 @@ func TestGetUserAccountStatusEndpoint(t *testing.T) {
 		mockManagementComponent.EXPECT().GetUserAccountStatus(ctx, realm, userID).Return(m, nil).Times(1)
 		var _, err = e(ctx, req)
 		assert.Nil(t, err)
+	}
+}
+
+func TestGetRolesOfUserEndpoint(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
+
+	var e = MakeGetRolesOfUserEndpoint(mockManagementComponent)
+
+	// No error
+	{
+		var realm = "master"
+		var userID = "123-123-456"
+		var ctx = context.Background()
+		var req = make(map[string]string)
+		req["realm"] = realm
+		req["userID"] = userID
+
+		mockManagementComponent.EXPECT().GetRolesOfUser(ctx, realm, userID).Return([]api.RoleRepresentation{}, nil).Times(1)
+		var res, err = e(ctx, req)
+		assert.Nil(t, err)
+		assert.NotNil(t, res)
+	}
+}
+
+func TestGetGroupsOfUserEndpoint(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
+
+	var e = MakeGetGroupsOfUserEndpoint(mockManagementComponent)
+
+	// No error
+	{
+		var realm = "master"
+		var userID = "123-123-456"
+		var ctx = context.Background()
+		var req = make(map[string]string)
+		req["realm"] = realm
+		req["userID"] = userID
+
+		mockManagementComponent.EXPECT().GetGroupsOfUser(ctx, realm, userID).Return([]api.GroupRepresentation{}, nil).Times(1)
+		var res, err = e(ctx, req)
+		assert.Nil(t, err)
+		assert.NotNil(t, res)
 	}
 }
 
@@ -377,30 +425,6 @@ func TestAddClientRolesToUserEndpoint(t *testing.T) {
 		var res, err = e(ctx, req)
 		assert.NotNil(t, err)
 		assert.Nil(t, res)
-	}
-}
-
-func TestGetRealmRolesForUserEndpoint(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
-	defer mockCtrl.Finish()
-
-	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
-
-	var e = MakeGetRealmRolesForUserEndpoint(mockManagementComponent)
-
-	// No error
-	{
-		var realm = "master"
-		var userID = "123-123-456"
-		var ctx = context.Background()
-		var req = make(map[string]string)
-		req["realm"] = realm
-		req["userID"] = userID
-
-		mockManagementComponent.EXPECT().GetRealmRolesForUser(ctx, realm, userID).Return([]api.RoleRepresentation{}, nil).Times(1)
-		var res, err = e(ctx, req)
-		assert.Nil(t, err)
-		assert.NotNil(t, res)
 	}
 }
 

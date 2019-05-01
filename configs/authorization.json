@@ -21,6 +21,16 @@
           "*": {}
         }
       },
+      "GetRolesOfUser": {
+        "master": {
+          "*": {}
+        }
+      },
+      "GetGroupsOfUser": {
+        "master": {
+          "*": {}
+        }
+      },
       "UpdateUser": {
         "master": {
           "*": {}
@@ -105,6 +115,22 @@
           "*": {}
         }
       },
+      "GetRolesOfUser": {
+        "master": {
+          "integrator_agent": {}
+        },
+        "DEP": {
+          "*": {}
+        }
+      },
+      "GetGroupsOfUser": {
+        "master": {
+          "integrator_agent": {}
+        },
+        "DEP": {
+          "*": {}
+        }
+      },
       "UpdateUser": {
         "master": {
           "integrator_agent": {}
@@ -175,6 +201,16 @@
           "*": {}
         }
       },
+      "GetRolesOfUser": {
+        "DEP": {
+          "*": {}
+        }
+      },
+      "GetGroupsOfUser": {
+        "DEP": {
+          "*": {}
+        }
+      },
       "UpdateUser": {
         "DEP": {
           "*": {}
@@ -230,6 +266,16 @@
           "l2_support_agent": {}
         }
       },
+      "GetRolesOfUser": {
+        "master": {
+          "l2_support_agent": {}
+        }
+      },
+      "GetGroupsOfUser": {
+        "master": {
+          "l2_support_agent": {}
+        }
+      },
       "UpdateUser": {
         "master": {
           "l2_support_agent": {}
@@ -276,6 +322,16 @@
         }
       },
       "GetUser": {
+        "master": {
+          "l3_support_agent": {}
+        }
+      },
+      "GetRolesOfUser": {
+        "master": {
+          "l3_support_agent": {}
+        }
+      },
+      "GetGroupsOfUser": {
         "master": {
           "l3_support_agent": {}
         }
@@ -332,6 +388,16 @@
           "*": {}
         }
       },
+      "GetRolesOfUser": {
+        "DEP": {
+          "*": {}
+        }
+      },
+      "GetGroupsOfUser": {
+        "DEP": {
+          "*": {}
+        }
+      },
       "UpdateUser": {
         "DEP": {
           "*": {}
@@ -384,6 +450,18 @@
           "end_user": {}
         }
       },
+      "GetRolesOfUser": {
+        "DEP": {
+          "l1_support_agent": {},
+          "end_user": {}
+        }
+      },
+      "GetGroupsOfUser": {
+        "DEP": {
+          "l1_support_agent": {},
+          "end_user": {}
+        }
+      },
       "UpdateUser": {
         "DEP": {
           "l1_support_agent": {},
@@ -431,6 +509,16 @@
       },
       "CreateUser": {},
       "GetUser": {
+        "DEP": {
+          "end_user": {}
+        }
+      },
+      "GetRolesOfUser": {
+        "DEP": {
+          "end_user": {}
+        }
+      },
+      "GetGroupsOfUser": {
         "DEP": {
           "end_user": {}
         }

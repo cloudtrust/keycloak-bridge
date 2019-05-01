@@ -141,6 +141,28 @@ func (c *authorizationComponentMW) GetUserAccountStatus(ctx context.Context, rea
 	return c.next.GetUserAccountStatus(ctx, realmName, userID)
 }
 
+func (c *authorizationComponentMW) GetRolesOfUser(ctx context.Context, realmName, userID string) ([]api.RoleRepresentation, error) {
+	var action = "GetRolesOfUser"
+	var targetRealm = realmName
+
+	if err := c.authManager.CheckAuthorizationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
+		return []api.RoleRepresentation{}, err
+	}
+
+	return c.next.GetRolesOfUser(ctx, realmName, userID)
+}
+
+func (c *authorizationComponentMW) GetGroupsOfUser(ctx context.Context, realmName, userID string) ([]api.GroupRepresentation, error) {
+	var action = "GetGroupsOfUser"
+	var targetRealm = realmName
+
+	if err := c.authManager.CheckAuthorizationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
+		return []api.GroupRepresentation{}, err
+	}
+
+	return c.next.GetGroupsOfUser(ctx, realmName, userID)
+}
+
 func (c *authorizationComponentMW) GetClientRolesForUser(ctx context.Context, realmName, userID, clientID string) ([]api.RoleRepresentation, error) {
 	var action = "GetClientRolesForUser"
 	var targetRealm = realmName
@@ -161,17 +183,6 @@ func (c *authorizationComponentMW) AddClientRolesToUser(ctx context.Context, rea
 	}
 
 	return c.next.AddClientRolesToUser(ctx, realmName, userID, clientID, roles)
-}
-
-func (c *authorizationComponentMW) GetRealmRolesForUser(ctx context.Context, realmName, userID string) ([]api.RoleRepresentation, error) {
-	var action = "GetRealmRolesForUser"
-	var targetRealm = realmName
-
-	if err := c.authManager.CheckAuthorizationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
-		return []api.RoleRepresentation{}, err
-	}
-
-	return c.next.GetRealmRolesForUser(ctx, realmName, userID)
 }
 
 func (c *authorizationComponentMW) ResetPassword(ctx context.Context, realmName string, userID string, password api.PasswordRepresentation) error {

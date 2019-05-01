@@ -955,7 +955,7 @@ func TestAddClientRolesToUser(t *testing.T) {
 	}
 }
 
-func TestGetRealmRolesForUser(t *testing.T) {
+func TestGetRolesOfUser(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
@@ -993,7 +993,7 @@ func TestGetRealmRolesForUser(t *testing.T) {
 
 		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
 
-		apiRolesRep, err := managementComponent.GetRealmRolesForUser(ctx, "master", userID)
+		apiRolesRep, err := managementComponent.GetRolesOfUser(ctx, "master", userID)
 
 		var apiRoleRep = apiRolesRep[0]
 		assert.Nil(t, err)
@@ -1011,7 +1011,57 @@ func TestGetRealmRolesForUser(t *testing.T) {
 
 		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
 
-		_, err := managementComponent.GetRealmRolesForUser(ctx, "master", userID)
+		_, err := managementComponent.GetRolesOfUser(ctx, "master", userID)
+
+		assert.NotNil(t, err)
+	}
+}
+
+func TestGetGroupsOfUser(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
+	var mockEventDBModule = mock.NewEventsDBModule(mockCtrl)
+	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
+
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule)
+
+	var accessToken = "TOKEN=="
+	var realmName = "master"
+	var userID = "789-789-456"
+
+	// Get groups with succces
+	{
+		var id = "1234-7454-4516"
+		var name = "client name"
+
+		var kcGroupRep = kc.GroupRepresentation{
+			Id:   &id,
+			Name: &name,
+		}
+
+		var kcGroupsRep []kc.GroupRepresentation
+		kcGroupsRep = append(kcGroupsRep, kcGroupRep)
+
+		mockKeycloakClient.EXPECT().GetGroupsOfUser(accessToken, realmName, userID).Return(kcGroupsRep, nil).Times(1)
+
+		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+
+		apiGroupsRep, err := managementComponent.GetGroupsOfUser(ctx, "master", userID)
+
+		var apiGroupRep = apiGroupsRep[0]
+		assert.Nil(t, err)
+		assert.Equal(t, id, *apiGroupRep.Id)
+		assert.Equal(t, name, *apiGroupRep.Name)
+	}
+
+	//Error
+	{
+		mockKeycloakClient.EXPECT().GetGroupsOfUser(accessToken, realmName, userID).Return([]kc.GroupRepresentation{}, fmt.Errorf("Unexpected error")).Times(1)
+
+		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+
+		_, err := managementComponent.GetGroupsOfUser(ctx, "master", userID)
 
 		assert.NotNil(t, err)
 	}

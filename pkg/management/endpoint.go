@@ -21,6 +21,8 @@ type Endpoints struct {
 	UpdateUser                     endpoint.Endpoint
 	GetUsers                       endpoint.Endpoint
 	CreateUser                     endpoint.Endpoint
+	GetRolesOfUser                 endpoint.Endpoint
+	GetGroupsOfUser                endpoint.Endpoint
 	GetUserAccountStatus           endpoint.Endpoint
 	GetClientRoleForUser           endpoint.Endpoint
 	AddClientRoleToUser            endpoint.Endpoint
@@ -51,9 +53,10 @@ type ManagementComponent interface {
 	GetUsers(ctx context.Context, realmName string, groupIDs []string, paramKV ...string) ([]api.UserRepresentation, error)
 	CreateUser(ctx context.Context, realmName string, user api.UserRepresentation) (string, error)
 	GetUserAccountStatus(ctx context.Context, realmName, userID string) (map[string]bool, error)
+	GetRolesOfUser(ctx context.Context, realmName, userID string) ([]api.RoleRepresentation, error)
+	GetGroupsOfUser(ctx context.Context, realmName, userID string) ([]api.GroupRepresentation, error)
 	GetClientRolesForUser(ctx context.Context, realmName, userID, clientID string) ([]api.RoleRepresentation, error)
 	AddClientRolesToUser(ctx context.Context, realmName, userID, clientID string, roles []api.RoleRepresentation) error
-	GetRealmRolesForUser(ctx context.Context, realmName, userID string) ([]api.RoleRepresentation, error)
 	ResetPassword(ctx context.Context, realmName string, userID string, password api.PasswordRepresentation) error
 	SendVerifyEmail(ctx context.Context, realmName string, userID string, paramKV ...string) error
 	ExecuteActionsEmail(ctx context.Context, realmName string, userID string, actions []string, paramKV ...string) error
@@ -177,9 +180,24 @@ func MakeGetUsersEndpoint(managementComponent ManagementComponent) endpoint.Endp
 		}
 
 		groupIDs := strings.Split(m["groupIds"], ",")
-		
 
 		return managementComponent.GetUsers(ctx, m["realm"], groupIDs, paramKV...)
+	}
+}
+
+func MakeGetRolesOfUserEndpoint(managementComponent ManagementComponent) endpoint.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+
+		return managementComponent.GetRolesOfUser(ctx, m["realm"], m["userID"])
+	}
+}
+
+func MakeGetGroupsOfUserEndpoint(managementComponent ManagementComponent) endpoint.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+
+		return managementComponent.GetGroupsOfUser(ctx, m["realm"], m["userID"])
 	}
 }
 
@@ -213,14 +231,6 @@ func MakeAddClientRolesToUserEndpoint(managementComponent ManagementComponent) e
 		}
 
 		return nil, managementComponent.AddClientRolesToUser(ctx, m["realm"], m["userID"], m["clientID"], roles)
-	}
-}
-
-func MakeGetRealmRolesForUserEndpoint(managementComponent ManagementComponent) endpoint.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
-		var m = req.(map[string]string)
-
-		return managementComponent.GetRealmRolesForUser(ctx, m["realm"], m["userID"])
 	}
 }
 

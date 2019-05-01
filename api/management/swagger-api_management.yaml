@@ -87,6 +87,7 @@ paths:
       summary: >
         Create a new user.
         Username must be unique.
+        Role and Groups can be assigned thanks to their ID.
       parameters:
       - name: realm
         in: path
@@ -183,7 +184,7 @@ paths:
     put:
       tags:
       - Users
-      summary: Update an existing user
+      summary: Update an existing user.
       parameters:
       - name: realm
         in: path
@@ -250,6 +251,60 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserStatus'
+  /realms/{realm}/users/{userID}/roles:
+    get:
+      tags:
+      - Users
+      summary: Get roles of user
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Role'
+  /realms/{realm}/users/{userID}/groups:
+    get:
+      tags:
+      - Users
+      summary: Get groups of user
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Group'
   /realms/{realm}/users/{userID}/role-mappings/clients/{clientID}:
     get:
       tags:
@@ -316,33 +371,6 @@ paths:
       responses:
         200:
           description: successful operation
-  /realms/{realm}/users/{userID}/role-mappings/realm:
-    get:
-      tags:
-      - Users
-      summary: Get realm-level roles
-      parameters:
-      - name: realm
-        in: path
-        description: realm name (not id!)
-        required: true
-        schema:
-          type: string
-      - name: userID
-        in: path
-        description: User id
-        required: true
-        schema:
-          type: string
-      responses:
-        200:
-          description: successful operation
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Role'
   /realms/{realm}/users/{userID}/reset-password:
     put:
       tags:
@@ -720,12 +748,16 @@ components:
           type: string
         birthDate:
           type: string
+        createdTimestamp:
+          type: integer
         groups: 
           type: array
-            items:
-              type: string
-        createdTimestamp:
-          type: integer 
+          items:
+            type: string
+        roles:
+          type: array
+          items:
+            type: string
     UserStatus:
       type: object
       properties:
@@ -761,6 +793,13 @@ components:
         composite:
           type: string
         containerId:
+          type: string
+    Group:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
           type: string
     Password:
       type: object
@@ -798,4 +837,3 @@ components:
 security:
   - openId:
     - todo
-  

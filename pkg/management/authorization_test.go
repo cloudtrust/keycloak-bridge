@@ -114,13 +114,16 @@ func TestDeny(t *testing.T) {
 		_, err = authorizationMW.GetUserAccountStatus(ctx, realmName, userID)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
+		_, err = authorizationMW.GetRolesOfUser(ctx, realmName, userID)
+		assert.Equal(t, security.ForbiddenError{}, err)
+
+		_, err = authorizationMW.GetGroupsOfUser(ctx, realmName, userID)
+		assert.Equal(t, security.ForbiddenError{}, err)
+
 		_, err = authorizationMW.GetClientRolesForUser(ctx, realmName, userID, clientID)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
 		err = authorizationMW.AddClientRolesToUser(ctx, realmName, userID, clientID, roles)
-		assert.Equal(t, security.ForbiddenError{}, err)
-
-		_, err = authorizationMW.GetRealmRolesForUser(ctx, realmName, userID)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
 		err = authorizationMW.ResetPassword(ctx, realmName, userID, password)
@@ -232,9 +235,10 @@ func TestAllowed(t *testing.T) {
 					"GetUsers": {"*": {"*": {} }},
 					"CreateUser": {"*": {"*": {} }},
 					"GetUserAccountStatus": {"*": {"*": {} }},
+					"GetRolesOfUser": {"*": {"*": {} }},
+					"GetGroupsOfUser": {"*": {"*": {} }},
 					"GetClientRolesForUser": {"*": {"*": {} }},
 					"AddClientRolesToUser": {"*": {"*": {} }},
-					"GetRealmRolesForUser": {"*": {"*": {} }},
 					"ResetPassword": {"*": {"*": {} }},
 					"SendVerifyEmail": {"*": {"*": {} }},
 					"ExecuteActionsEmail": {"*": {"*": {} }},
@@ -299,16 +303,20 @@ func TestAllowed(t *testing.T) {
 		_, err = authorizationMW.GetUserAccountStatus(ctx, realmName, userID)
 		assert.Nil(t, err)
 
+		mockManagementComponent.EXPECT().GetRolesOfUser(ctx, realmName, userID).Return([]api.RoleRepresentation{}, nil).Times(1)
+		_, err = authorizationMW.GetRolesOfUser(ctx, realmName, userID)
+		assert.Nil(t, err)
+
+		mockManagementComponent.EXPECT().GetGroupsOfUser(ctx, realmName, userID).Return([]api.GroupRepresentation{}, nil).Times(1)
+		_, err = authorizationMW.GetGroupsOfUser(ctx, realmName, userID)
+		assert.Nil(t, err)
+
 		mockManagementComponent.EXPECT().GetClientRolesForUser(ctx, realmName, userID, clientID).Return([]api.RoleRepresentation{}, nil).Times(1)
 		_, err = authorizationMW.GetClientRolesForUser(ctx, realmName, userID, clientID)
 		assert.Nil(t, err)
 
 		mockManagementComponent.EXPECT().AddClientRolesToUser(ctx, realmName, userID, clientID, roles).Return(nil).Times(1)
 		err = authorizationMW.AddClientRolesToUser(ctx, realmName, userID, clientID, roles)
-		assert.Nil(t, err)
-
-		mockManagementComponent.EXPECT().GetRealmRolesForUser(ctx, realmName, userID).Return([]api.RoleRepresentation{}, nil).Times(1)
-		_, err = authorizationMW.GetRealmRolesForUser(ctx, realmName, userID)
 		assert.Nil(t, err)
 
 		mockManagementComponent.EXPECT().ResetPassword(ctx, realmName, userID, password).Return(nil).Times(1)
