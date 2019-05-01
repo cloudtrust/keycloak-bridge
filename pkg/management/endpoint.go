@@ -26,7 +26,6 @@ type Endpoints struct {
 	GetUserAccountStatus           endpoint.Endpoint
 	GetClientRoleForUser           endpoint.Endpoint
 	AddClientRoleToUser            endpoint.Endpoint
-	GetRealmRoleForUser            endpoint.Endpoint
 	ResetPassword                  endpoint.Endpoint
 	SendVerifyEmail                endpoint.Endpoint
 	ExecuteActionsEmail            endpoint.Endpoint
