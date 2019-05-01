@@ -3,9 +3,7 @@ package management
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
@@ -291,13 +289,6 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 	var accessToken = ctx.Value("access_token").(string)
 	var userRep kc.UserRepresentation
 
-	var verified bool = false
-	user.EmailVerified = &verified
-
-	userRep = api.ConvertToKCUser(user)
-
-	fmt.Println(*userRep.EmailVerified)
-
 	// get the "old" user representation
 	oldUserKc, err := c.keycloakClient.GetUser(accessToken, realmName, userID)
 	if err != nil {
@@ -305,9 +296,9 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 	}
 
 	// when the email changes, set the EmailVerified to false
-	if user.Email != nil && oldUserKc.Email != user.Email {
+	if user.Email != nil && oldUserKc.Email != nil && *oldUserKc.Email != *user.Email {
 		var verified bool = false
-		userRep.EmailVerified = &verified
+		user.EmailVerified = &verified
 	}
 
 	// when the phone number changes, set the PhoneNumberVerified to false
@@ -315,10 +306,21 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 		var m = *oldUserKc.Attributes
 		if user.PhoneNumber != nil && m["phoneNumber"][0] != *user.PhoneNumber {
 			var verified bool = false
+			user.PhoneNumberVerified = &verified
+		}
+	}
+
+	/*// when the phone number changes, set the PhoneNumberVerified to false
+	if oldUserKc.Attributes != nil {
+		var m = *oldUserKc.Attributes
+		if user.PhoneNumber != nil && m["phoneNumber"][0] != *user.PhoneNumber {
+			var verified bool = false
 			var mNew = *userRep.Attributes
 			mNew["phoneNumberVerified"] = []string{strconv.FormatBool(verified)}
 		}
-	}
+	}*/
+
+	userRep = api.ConvertToKCUser(user)
 
 	err = c.keycloakClient.UpdateUser(accessToken, realmName, userID, userRep)
 

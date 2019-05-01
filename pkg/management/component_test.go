@@ -683,7 +683,7 @@ func TestUpdateUser(t *testing.T) {
 			func(accessToken, realmName, id string, kcUserRep kc.UserRepresentation) error {
 				verified, _ := strconv.ParseBool(((*kcUserRep.Attributes)["phoneNumberVerified"][0]))
 				assert.Equal(t, phoneNumber, (*kcUserRep.Attributes)["phoneNumber"][0])
-				assert.Equal(t, verified, false)
+				assert.Equal(t, false, verified)
 				return nil
 			}).Times(1)
 
