@@ -292,6 +292,7 @@ func TestCreateUser(t *testing.T) {
 	var accessToken = "TOKEN=="
 	var username = "test"
 	var realmName = "master"
+	var targetRealmName = "DEP"
 	var locationURL = "http://toto.com/realms/UUID"
 
 	// Create with minimum properties
@@ -300,7 +301,7 @@ func TestCreateUser(t *testing.T) {
 			Username: &username,
 		}
 
-		mockKeycloakClient.EXPECT().CreateUser(accessToken, realmName, kcUserRep).Return(locationURL, nil).Times(1)
+		mockKeycloakClient.EXPECT().CreateUser(accessToken, realmName, targetRealmName, kcUserRep).Return(locationURL, nil).Times(1)
 
 		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
 		ctx = context.WithValue(ctx, "realm", realmName)
@@ -312,7 +313,7 @@ func TestCreateUser(t *testing.T) {
 			Username: &username,
 		}
 
-		location, err := managementComponent.CreateUser(ctx, "master", userRep)
+		location, err := managementComponent.CreateUser(ctx, targetRealmName, userRep)
 
 		assert.Nil(t, err)
 		assert.Equal(t, locationURL, location)
@@ -332,8 +333,8 @@ func TestCreateUser(t *testing.T) {
 		var birthDate = "01/01/1988"
 		var userID = "1234-7558-7645"
 
-		mockKeycloakClient.EXPECT().CreateUser(accessToken, realmName, gomock.Any()).DoAndReturn(
-			func(accessToken, realmName string, kcUserRep kc.UserRepresentation) (string, error) {
+		mockKeycloakClient.EXPECT().CreateUser(accessToken, realmName, targetRealmName, gomock.Any()).DoAndReturn(
+			func(accessToken, realmName, targetRealmName string, kcUserRep kc.UserRepresentation) (string, error) {
 				assert.Equal(t, username, *kcUserRep.Username)
 				assert.Equal(t, email, *kcUserRep.Email)
 				assert.Equal(t, enabled, *kcUserRep.Enabled)
@@ -371,7 +372,7 @@ func TestCreateUser(t *testing.T) {
 			BirthDate:           &birthDate,
 		}
 
-		location, err := managementComponent.CreateUser(ctx, "master", userRep)
+		location, err := managementComponent.CreateUser(ctx, targetRealmName, userRep)
 
 		assert.Nil(t, err)
 		assert.Equal(t, locationURL, location)
@@ -381,13 +382,14 @@ func TestCreateUser(t *testing.T) {
 	{
 		var kcUserRep = kc.UserRepresentation{}
 
-		mockKeycloakClient.EXPECT().CreateUser(accessToken, realmName, kcUserRep).Return("", fmt.Errorf("Invalid input")).Times(1)
+		mockKeycloakClient.EXPECT().CreateUser(accessToken, realmName, targetRealmName, kcUserRep).Return("", fmt.Errorf("Invalid input")).Times(1)
 
 		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+		ctx = context.WithValue(ctx, "realm", realmName)
 
 		var userRep = api.UserRepresentation{}
 
-		location, err := managementComponent.CreateUser(ctx, "master", userRep)
+		location, err := managementComponent.CreateUser(ctx, targetRealmName, userRep)
 
 		assert.NotNil(t, err)
 		assert.Equal(t, "", location)

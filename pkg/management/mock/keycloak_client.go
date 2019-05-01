@@ -59,16 +59,16 @@ func (mr *KeycloakClientMockRecorder) CreateClientRole(arg0, arg1, arg2, arg3 in
 }
 
 // CreateUser mocks base method
-func (m *KeycloakClient) CreateUser(arg0, arg1 string, arg2 keycloak_client.UserRepresentation) (string, error) {
-	ret := m.ctrl.Call(m, "CreateUser", arg0, arg1, arg2)
+func (m *KeycloakClient) CreateUser(arg0, arg1, arg2 string, arg3 keycloak_client.UserRepresentation) (string, error) {
+	ret := m.ctrl.Call(m, "CreateUser", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CreateUser indicates an expected call of CreateUser
-func (mr *KeycloakClientMockRecorder) CreateUser(arg0, arg1, arg2 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUser", reflect.TypeOf((*KeycloakClient)(nil).CreateUser), arg0, arg1, arg2)
+func (mr *KeycloakClientMockRecorder) CreateUser(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUser", reflect.TypeOf((*KeycloakClient)(nil).CreateUser), arg0, arg1, arg2, arg3)
 }
 
 // DeleteCredentialsForUser mocks base method
