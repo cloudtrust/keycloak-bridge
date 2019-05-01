@@ -19,8 +19,9 @@ type UserRepresentation struct {
 	Label               *string   `json:"label,omitempty"`
 	Gender              *string   `json:"gender,omitempty"`
 	BirthDate           *string   `json:"birthDate,omitempty"`
-	Groups              *[]string `json:"group,omitempty"`
 	CreatedTimestamp    *int64    `json:"createdTimestamp,omitempty"`
+	Groups              *[]string `json:"groups,omitempty"`
+	Roles               *[]string `json:"roles,omitempty"`
 }
 
 type RealmRepresentation struct {
@@ -53,6 +54,11 @@ type RoleRepresentation struct {
 	Composite   *bool   `json:"composite,omitempty"`
 	ContainerId *string `json:"containerId,omitempty"`
 	Description *string `json:"description,omitempty"`
+	Id          *string `json:"id,omitempty"`
+	Name        *string `json:"name,omitempty"`
+}
+
+type GroupRepresentation struct {
 	Id          *string `json:"id,omitempty"`
 	Name        *string `json:"name,omitempty"`
 }

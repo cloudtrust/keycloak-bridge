@@ -23,7 +23,7 @@ type KeycloakClient interface {
 	GetGroupsOfUser(accessToken string, realmName, userID string) ([]kc.GroupRepresentation, error)
 	UpdateUser(accessToken string, realmName, userID string, user kc.UserRepresentation) error
 	GetUsers(accessToken string, reqRealmName, targetRealmName string, paramKV ...string) ([]kc.UserRepresentation, error)
-	CreateUser(accessToken string, realmName string, user kc.UserRepresentation) (string, error)
+	CreateUser(accessToken string, reqRealmName, targetRealmName string, user kc.UserRepresentation) (string, error)
 	GetClientRoleMappings(accessToken string, realmName, userID, clientID string) ([]kc.RoleRepresentation, error)
 	AddClientRolesToUserRoleMapping(accessToken string, realmName, userID, clientID string, roles []kc.RoleRepresentation) error
 	GetRealmLevelRoleMappings(accessToken string, realmName, userID string) ([]kc.RoleRepresentation, error)
@@ -52,9 +52,10 @@ type Component interface {
 	GetUsers(ctx context.Context, realmName string, groupIDs []string, paramKV ...string) ([]api.UserRepresentation, error)
 	CreateUser(ctx context.Context, realmName string, user api.UserRepresentation) (string, error)
 	GetUserAccountStatus(ctx context.Context, realmName, userID string) (map[string]bool, error)
+	GetRolesOfUser(ctx context.Context, realmName, userID string) ([]api.RoleRepresentation, error)
+	GetGroupsOfUser(ctx context.Context, realmName, userID string) ([]api.GroupRepresentation, error)
 	GetClientRolesForUser(ctx context.Context, realmName, userID, clientID string) ([]api.RoleRepresentation, error)
 	AddClientRolesToUser(ctx context.Context, realmName, userID, clientID string, roles []api.RoleRepresentation) error
-	GetRealmRolesForUser(ctx context.Context, realmName, userID string) ([]api.RoleRepresentation, error)
 	ResetPassword(ctx context.Context, realmName string, userID string, password api.PasswordRepresentation) error
 	SendVerifyEmail(ctx context.Context, realmName string, userID string, paramKV ...string) error
 	ExecuteActionsEmail(ctx context.Context, realmName string, userID string, actions []string, paramKV ...string) error
@@ -170,12 +171,13 @@ func (c *component) GetClients(ctx context.Context, realmName string) ([]api.Cli
 
 func (c *component) CreateUser(ctx context.Context, realmName string, user api.UserRepresentation) (string, error) {
 	var accessToken = ctx.Value("access_token").(string)
+	var ctxRealm = ctx.Value("realm").(string)
 
 	var userRep kc.UserRepresentation
 
 	userRep = api.ConvertToKCUser(user)
 
-	locationURL, err := c.keycloakClient.CreateUser(accessToken, realmName, userRep)
+	locationURL, err := c.keycloakClient.CreateUser(accessToken, ctxRealm, realmName, userRep)
 
 	if err != nil {
 		return "", err
@@ -321,6 +323,54 @@ func (c *component) GetUserAccountStatus(ctx context.Context, realmName, userID 
 	return res, err
 }
 
+
+func (c *component) GetRolesOfUser(ctx context.Context, realmName, userID string) ([]api.RoleRepresentation, error) {
+	var accessToken = ctx.Value("access_token").(string)
+
+	rolesKc, err := c.keycloakClient.GetRealmLevelRoleMappings(accessToken, realmName, userID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var rolesRep []api.RoleRepresentation
+	for _, roleKc := range rolesKc {
+		var roleRep api.RoleRepresentation
+		roleRep.Id = roleKc.Id
+		roleRep.Name = roleKc.Name
+		roleRep.Composite = roleKc.Composite
+		roleRep.ClientRole = roleKc.ClientRole
+		roleRep.ContainerId = roleKc.ContainerId
+		roleRep.Description = roleKc.Description
+
+		rolesRep = append(rolesRep, roleRep)
+	}
+
+	return rolesRep, nil
+}
+
+
+func (c *component) GetGroupsOfUser(ctx context.Context, realmName, userID string) ([]api.GroupRepresentation, error) {
+	var accessToken = ctx.Value("access_token").(string)
+
+	groupsKc, err := c.keycloakClient.GetGroupsOfUser(accessToken, realmName, userID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var groupsRep []api.GroupRepresentation
+	for _, groupKc := range groupsKc {
+		var groupRep api.GroupRepresentation
+		groupRep.Id = groupKc.Id
+		groupRep.Name = groupKc.Name
+
+		groupsRep = append(groupsRep, groupRep)
+	}
+
+	return groupsRep, nil
+}
+
 func (c *component) GetClientRolesForUser(ctx context.Context, realmName, userID, clientID string) ([]api.RoleRepresentation, error) {
 	var accessToken = ctx.Value("access_token").(string)
 
@@ -363,31 +413,6 @@ func (c *component) AddClientRolesToUser(ctx context.Context, realmName, userID,
 	}
 
 	return c.keycloakClient.AddClientRolesToUserRoleMapping(accessToken, realmName, userID, clientID, rolesRep)
-}
-
-func (c *component) GetRealmRolesForUser(ctx context.Context, realmName, userID string) ([]api.RoleRepresentation, error) {
-	var accessToken = ctx.Value("access_token").(string)
-
-	rolesKc, err := c.keycloakClient.GetRealmLevelRoleMappings(accessToken, realmName, userID)
-
-	if err != nil {
-		return nil, err
-	}
-
-	var rolesRep []api.RoleRepresentation
-	for _, roleKc := range rolesKc {
-		var roleRep api.RoleRepresentation
-		roleRep.Id = roleKc.Id
-		roleRep.Name = roleKc.Name
-		roleRep.Composite = roleKc.Composite
-		roleRep.ClientRole = roleKc.ClientRole
-		roleRep.ContainerId = roleKc.ContainerId
-		roleRep.Description = roleKc.Description
-
-		rolesRep = append(rolesRep, roleRep)
-	}
-
-	return rolesRep, nil
 }
 
 func (c *component) ResetPassword(ctx context.Context, realmName string, userID string, password api.PasswordRepresentation) error {

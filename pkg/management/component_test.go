@@ -292,6 +292,7 @@ func TestCreateUser(t *testing.T) {
 	var accessToken = "TOKEN=="
 	var username = "test"
 	var realmName = "master"
+	var targetRealmName = "DEP"
 	var locationURL = "http://toto.com/realms/UUID"
 
 	// Create with minimum properties
@@ -300,7 +301,7 @@ func TestCreateUser(t *testing.T) {
 			Username: &username,
 		}
 
-		mockKeycloakClient.EXPECT().CreateUser(accessToken, realmName, kcUserRep).Return(locationURL, nil).Times(1)
+		mockKeycloakClient.EXPECT().CreateUser(accessToken, realmName, targetRealmName, kcUserRep).Return(locationURL, nil).Times(1)
 
 		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
 		ctx = context.WithValue(ctx, "realm", realmName)
@@ -312,7 +313,7 @@ func TestCreateUser(t *testing.T) {
 			Username: &username,
 		}
 
-		location, err := managementComponent.CreateUser(ctx, "master", userRep)
+		location, err := managementComponent.CreateUser(ctx, targetRealmName, userRep)
 
 		assert.Nil(t, err)
 		assert.Equal(t, locationURL, location)
@@ -332,8 +333,8 @@ func TestCreateUser(t *testing.T) {
 		var birthDate = "01/01/1988"
 		var userID = "1234-7558-7645"
 
-		mockKeycloakClient.EXPECT().CreateUser(accessToken, realmName, gomock.Any()).DoAndReturn(
-			func(accessToken, realmName string, kcUserRep kc.UserRepresentation) (string, error) {
+		mockKeycloakClient.EXPECT().CreateUser(accessToken, realmName, targetRealmName, gomock.Any()).DoAndReturn(
+			func(accessToken, realmName, targetRealmName string, kcUserRep kc.UserRepresentation) (string, error) {
 				assert.Equal(t, username, *kcUserRep.Username)
 				assert.Equal(t, email, *kcUserRep.Email)
 				assert.Equal(t, enabled, *kcUserRep.Enabled)
@@ -371,7 +372,7 @@ func TestCreateUser(t *testing.T) {
 			BirthDate:           &birthDate,
 		}
 
-		location, err := managementComponent.CreateUser(ctx, "master", userRep)
+		location, err := managementComponent.CreateUser(ctx, targetRealmName, userRep)
 
 		assert.Nil(t, err)
 		assert.Equal(t, locationURL, location)
@@ -381,13 +382,14 @@ func TestCreateUser(t *testing.T) {
 	{
 		var kcUserRep = kc.UserRepresentation{}
 
-		mockKeycloakClient.EXPECT().CreateUser(accessToken, realmName, kcUserRep).Return("", fmt.Errorf("Invalid input")).Times(1)
+		mockKeycloakClient.EXPECT().CreateUser(accessToken, realmName, targetRealmName, kcUserRep).Return("", fmt.Errorf("Invalid input")).Times(1)
 
 		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+		ctx = context.WithValue(ctx, "realm", realmName)
 
 		var userRep = api.UserRepresentation{}
 
-		location, err := managementComponent.CreateUser(ctx, "master", userRep)
+		location, err := managementComponent.CreateUser(ctx, targetRealmName, userRep)
 
 		assert.NotNil(t, err)
 		assert.Equal(t, "", location)
@@ -955,7 +957,7 @@ func TestAddClientRolesToUser(t *testing.T) {
 	}
 }
 
-func TestGetRealmRolesForUser(t *testing.T) {
+func TestGetRolesOfUser(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
@@ -993,7 +995,7 @@ func TestGetRealmRolesForUser(t *testing.T) {
 
 		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
 
-		apiRolesRep, err := managementComponent.GetRealmRolesForUser(ctx, "master", userID)
+		apiRolesRep, err := managementComponent.GetRolesOfUser(ctx, "master", userID)
 
 		var apiRoleRep = apiRolesRep[0]
 		assert.Nil(t, err)
@@ -1011,7 +1013,57 @@ func TestGetRealmRolesForUser(t *testing.T) {
 
 		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
 
-		_, err := managementComponent.GetRealmRolesForUser(ctx, "master", userID)
+		_, err := managementComponent.GetRolesOfUser(ctx, "master", userID)
+
+		assert.NotNil(t, err)
+	}
+}
+
+func TestGetGroupsOfUser(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
+	var mockEventDBModule = mock.NewEventsDBModule(mockCtrl)
+	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
+
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule)
+
+	var accessToken = "TOKEN=="
+	var realmName = "master"
+	var userID = "789-789-456"
+
+	// Get groups with succces
+	{
+		var id = "1234-7454-4516"
+		var name = "client name"
+
+		var kcGroupRep = kc.GroupRepresentation{
+			Id:   &id,
+			Name: &name,
+		}
+
+		var kcGroupsRep []kc.GroupRepresentation
+		kcGroupsRep = append(kcGroupsRep, kcGroupRep)
+
+		mockKeycloakClient.EXPECT().GetGroupsOfUser(accessToken, realmName, userID).Return(kcGroupsRep, nil).Times(1)
+
+		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+
+		apiGroupsRep, err := managementComponent.GetGroupsOfUser(ctx, "master", userID)
+
+		var apiGroupRep = apiGroupsRep[0]
+		assert.Nil(t, err)
+		assert.Equal(t, id, *apiGroupRep.Id)
+		assert.Equal(t, name, *apiGroupRep.Name)
+	}
+
+	//Error
+	{
+		mockKeycloakClient.EXPECT().GetGroupsOfUser(accessToken, realmName, userID).Return([]kc.GroupRepresentation{}, fmt.Errorf("Unexpected error")).Times(1)
+
+		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+
+		_, err := managementComponent.GetGroupsOfUser(ctx, "master", userID)
 
 		assert.NotNil(t, err)
 	}
