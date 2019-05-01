@@ -302,9 +302,14 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 	}
 
 	// when the phone number changes, set the PhoneNumberVerified to false
-	if oldUserKc.Attributes != nil {
-		var m = *oldUserKc.Attributes
-		if user.PhoneNumber != nil && m["phoneNumber"][0] != *user.PhoneNumber {
+	if user.PhoneNumber != nil {
+		if oldUserKc.Attributes != nil {
+			var m = *oldUserKc.Attributes
+			if m["phoneNumber"][0] != *user.PhoneNumber {
+				var verified bool = false
+				user.PhoneNumberVerified = &verified
+			}
+		} else { // the user has no attributes until now, i.e. he has not set yet his phone number
 			var verified bool = false
 			user.PhoneNumberVerified = &verified
 		}
