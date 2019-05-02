@@ -323,7 +323,6 @@ func (c *component) GetUserAccountStatus(ctx context.Context, realmName, userID 
 	return res, err
 }
 
-
 func (c *component) GetRolesOfUser(ctx context.Context, realmName, userID string) ([]api.RoleRepresentation, error) {
 	var accessToken = ctx.Value("access_token").(string)
 
@@ -348,7 +347,6 @@ func (c *component) GetRolesOfUser(ctx context.Context, realmName, userID string
 
 	return rolesRep, nil
 }
-
 
 func (c *component) GetGroupsOfUser(ctx context.Context, realmName, userID string) ([]api.GroupRepresentation, error) {
 	var accessToken = ctx.Value("access_token").(string)

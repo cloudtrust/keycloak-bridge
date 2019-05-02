@@ -22,6 +22,7 @@ type UserRepresentation struct {
 	CreatedTimestamp    *int64    `json:"createdTimestamp,omitempty"`
 	Groups              *[]string `json:"groups,omitempty"`
 	Roles               *[]string `json:"roles,omitempty"`
+	Locale              *string   `json:"locale,omitempty"`
 }
 
 type RealmRepresentation struct {
@@ -59,8 +60,8 @@ type RoleRepresentation struct {
 }
 
 type GroupRepresentation struct {
-	Id          *string `json:"id,omitempty"`
-	Name        *string `json:"name,omitempty"`
+	Id   *string `json:"id,omitempty"`
+	Name *string `json:"name,omitempty"`
 }
 
 type PasswordRepresentation struct {
@@ -133,6 +134,11 @@ func ConvertToAPIUser(userKc kc.UserRepresentation) UserRepresentation {
 			var phoneNumberVerified, _ = strconv.ParseBool(m["phoneNumberVerified"][0])
 			userRep.PhoneNumberVerified = &phoneNumberVerified
 		}
+
+		if m["locale"] != nil {
+			var locale = m["locale"][0]
+			userRep.Locale = &locale
+		}
 	}
 	return userRep
 }
@@ -168,6 +174,13 @@ func ConvertToKCUser(user UserRepresentation) kc.UserRepresentation {
 
 	if user.PhoneNumberVerified != nil {
 		attributes["phoneNumberVerified"] = []string{strconv.FormatBool(*user.PhoneNumberVerified)}
+	}
+
+	if user.Locale != nil {
+		attributes["locale"] = []string{*user.Locale}
+	} else { // by default the language is "en" (English)
+		var localeUser string = "en"
+		attributes["locale"] = []string{localeUser}
 	}
 
 	if len(attributes) > 0 {
