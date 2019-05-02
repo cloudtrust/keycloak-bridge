@@ -319,7 +319,7 @@ func TestCreateUser(t *testing.T) {
 		assert.Equal(t, locationURL, location)
 	}
 
-	// Create with all properties allowed by Brdige API
+	// Create with all properties allowed by Bridge API
 	{
 		var email = "toto@elca.ch"
 		var enabled = true
@@ -332,6 +332,7 @@ func TestCreateUser(t *testing.T) {
 		var gender = "M"
 		var birthDate = "01/01/1988"
 		var userID = "1234-7558-7645"
+		var locale = "de"
 
 		mockKeycloakClient.EXPECT().CreateUser(accessToken, realmName, targetRealmName, gomock.Any()).DoAndReturn(
 			func(accessToken, realmName, targetRealmName string, kcUserRep kc.UserRepresentation) (string, error) {
@@ -347,6 +348,7 @@ func TestCreateUser(t *testing.T) {
 				assert.Equal(t, label, (*kcUserRep.Attributes)["label"][0])
 				assert.Equal(t, gender, (*kcUserRep.Attributes)["gender"][0])
 				assert.Equal(t, birthDate, (*kcUserRep.Attributes)["birthDate"][0])
+				assert.Equal(t, locale, (*kcUserRep.Attributes)["locale"][0])
 
 				return locationURL, nil
 			}).Times(1)
@@ -370,6 +372,7 @@ func TestCreateUser(t *testing.T) {
 			Label:               &label,
 			Gender:              &gender,
 			BirthDate:           &birthDate,
+			Locale:              &locale,
 		}
 
 		location, err := managementComponent.CreateUser(ctx, targetRealmName, userRep)
@@ -464,6 +467,7 @@ func TestGetUser(t *testing.T) {
 		var gender = "M"
 		var birthDate = "01/01/1988"
 		var createdTimestamp = time.Now().UTC().Unix()
+		var locale = "it"
 
 		var attributes = make(map[string][]string)
 		attributes["phoneNumber"] = []string{phoneNumber}
@@ -471,6 +475,7 @@ func TestGetUser(t *testing.T) {
 		attributes["gender"] = []string{gender}
 		attributes["birthDate"] = []string{birthDate}
 		attributes["phoneNumberVerified"] = []string{strconv.FormatBool(phoneNumberVerified)}
+		attributes["locale"] = []string{locale}
 
 		var kcUserRep = kc.UserRepresentation{
 			Id:               &id,
@@ -507,6 +512,7 @@ func TestGetUser(t *testing.T) {
 		assert.Equal(t, gender, *apiUserRep.Gender)
 		assert.Equal(t, birthDate, *apiUserRep.BirthDate)
 		assert.Equal(t, createdTimestamp, *apiUserRep.CreatedTimestamp)
+		assert.Equal(t, locale, *apiUserRep.Locale)
 	}
 
 	//Error
@@ -548,6 +554,7 @@ func TestUpdateUser(t *testing.T) {
 		var label = "Label"
 		var gender = "M"
 		var birthDate = "01/01/1988"
+		var locale = "de"
 
 		var attributes = make(map[string][]string)
 		attributes["phoneNumber"] = []string{phoneNumber}
@@ -555,6 +562,7 @@ func TestUpdateUser(t *testing.T) {
 		attributes["gender"] = []string{gender}
 		attributes["birthDate"] = []string{birthDate}
 		attributes["phoneNumberVerified"] = []string{strconv.FormatBool(phoneNumberVerified)}
+		attributes["locale"] = []string{locale}
 
 		mockKeycloakClient.EXPECT().UpdateUser(accessToken, realmName, id, gomock.Any()).DoAndReturn(
 			func(accessToken, realmName, id string, kcUserRep kc.UserRepresentation) error {
@@ -570,7 +578,7 @@ func TestUpdateUser(t *testing.T) {
 				assert.Equal(t, label, (*kcUserRep.Attributes)["label"][0])
 				assert.Equal(t, gender, (*kcUserRep.Attributes)["gender"][0])
 				assert.Equal(t, birthDate, (*kcUserRep.Attributes)["birthDate"][0])
-
+				assert.Equal(t, locale, (*kcUserRep.Attributes)["locale"][0])
 				return nil
 			}).Times(1)
 
@@ -592,6 +600,7 @@ func TestUpdateUser(t *testing.T) {
 			Label:               &label,
 			Gender:              &gender,
 			BirthDate:           &birthDate,
+			Locale:              &locale,
 		}
 
 		err := managementComponent.UpdateUser(ctx, "master", id, userRep)
@@ -614,7 +623,7 @@ func TestUpdateUser(t *testing.T) {
 				assert.Equal(t, label, (*kcUserRep.Attributes)["label"][0])
 				assert.Equal(t, gender, (*kcUserRep.Attributes)["gender"][0])
 				assert.Equal(t, birthDate, (*kcUserRep.Attributes)["birthDate"][0])
-
+				assert.Equal(t, locale, (*kcUserRep.Attributes)["locale"][0])
 				return nil
 			}).Times(1)
 
@@ -630,6 +639,7 @@ func TestUpdateUser(t *testing.T) {
 			Label:               &label,
 			Gender:              &gender,
 			BirthDate:           &birthDate,
+			Locale:              &locale,
 		}
 
 		err = managementComponent.UpdateUser(ctx, "master", id, userRepLocked)

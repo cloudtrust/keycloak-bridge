@@ -178,9 +178,6 @@ func ConvertToKCUser(user UserRepresentation) kc.UserRepresentation {
 
 	if user.Locale != nil {
 		attributes["locale"] = []string{*user.Locale}
-	} else { // by default the language is "en" (English)
-		var localeUser string = "en"
-		attributes["locale"] = []string{localeUser}
 	}
 
 	if len(attributes) > 0 {
