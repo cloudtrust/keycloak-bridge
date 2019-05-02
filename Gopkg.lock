@@ -19,11 +19,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:b860d60d449b3046804a8ef022099e2e32ea13e91cac49c5e1874f9f55cf0944"
+  digest = "1:9a5b15561fdb5aa1102c0bda1ad99b49b68be15545072e52400ddc42b0d066dc"
   name = "github.com/cloudtrust/keycloak-client"
   packages = ["."]
   pruneopts = ""
-  revision = "01ea27a743d52a597700abef8a6ed0b3020f760e"
+  revision = "c13b2745ece1d75013455a7e7c8e9514d1418282"
   source = "github.com/cloudtrust/keycloak-client"
 
 [[projects]]
@@ -218,12 +218,12 @@
   version = "v1.1.0"
 
 [[projects]]
-  digest = "1:1abf7411185ed8dde4e62c3d3fe9f2de5ffb3a86d1fbd405177afc8a40916adf"
+  digest = "1:3d2c33720d4255686b9f4a7e4d3b94938ee36063f14705c5eb0f73347ed4c496"
   name = "github.com/pelletier/go-toml"
   packages = ["."]
   pruneopts = ""
-  revision = "63909f0a90ab0f36909e8e044e46ace10cf13ba2"
-  version = "v1.3.0"
+  revision = "728039f679cbcd4f6a54e080d2219a4c4928c546"
+  version = "v1.4.0"
 
 [[projects]]
   digest = "1:1d7e1867c49a6dd9856598ef7c3123604ea3daabf5b83f303ff457bcbc410b1d"
@@ -388,11 +388,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:2f5c5fbafbc17ead793c4584c8d6ebbc16cf666d969488a0009a8a6a5008a86f"
+  digest = "1:6d74ed7c32da6415403f128f276b11fd98056ddca5a86b156b1e54ed300d03c1"
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = ""
-  revision = "d89cdac9e8725f2aefce25fcbfef41134c9ad412"
+  revision = "3ef323f4f1fd101bc77a8d8ebdd224dfdb707e93"
 
 [[projects]]
   digest = "1:740b51a55815493a8d0f2b1e0d0ae48fe48953bf7eaf3fcc4198823bf67768c0"
@@ -566,7 +566,6 @@
     "github.com/stretchr/testify/assert",
     "github.com/uber/jaeger-client-go/config",
     "golang.org/x/time/rate",
-    "google.golang.org/grpc/metadata",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1
