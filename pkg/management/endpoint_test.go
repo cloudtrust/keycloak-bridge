@@ -101,6 +101,7 @@ func TestCreateUserEndpoint(t *testing.T) {
 	var realm = "master"
 	var location = "https://location.url/auth/admin/master/users/123456"
 	var ctx = context.Background()
+	var groups = []string{"12387-78-525"}
 
 	// No error
 	{
@@ -108,10 +109,11 @@ func TestCreateUserEndpoint(t *testing.T) {
 		req["scheme"] = "https"
 		req["host"] = "elca.ch"
 		req["realm"] = realm
-		userJSON, _ := json.Marshal(api.UserRepresentation{})
+		
+		userJSON, _ := json.Marshal(api.UserRepresentation{Groups: &groups})
 		req["body"] = string(userJSON)
 
-		mockManagementComponent.EXPECT().CreateUser(ctx, realm, api.UserRepresentation{}).Return(location, nil).Times(1)
+		mockManagementComponent.EXPECT().CreateUser(ctx, realm, api.UserRepresentation{Groups: &groups}).Return(location, nil).Times(1)
 		res, err := e(ctx, req)
 		assert.Nil(t, err)
 
@@ -133,7 +135,7 @@ func TestCreateUserEndpoint(t *testing.T) {
 		req["scheme"] = "https"
 		req["host"] = "elca.ch"
 		req["realm"] = realm
-		userJSON, _ := json.Marshal(api.UserRepresentation{})
+		userJSON, _ := json.Marshal(api.UserRepresentation{Groups: &groups})
 		req["body"] = string(userJSON)
 
 		mockManagementComponent.EXPECT().CreateUser(ctx, realm, gomock.Any()).Return("", fmt.Errorf("Error")).Times(1)
@@ -592,10 +594,10 @@ func TestSendNewEnrolmentCodeEndpoint(t *testing.T) {
 	req["realm"] = realm
 	req["userID"] = userID
 
-	mockManagementComponent.EXPECT().SendNewEnrolmentCode(ctx, realm, userID).Return(nil).Times(1)
+	mockManagementComponent.EXPECT().SendNewEnrolmentCode(ctx, realm, userID).Return("1234", nil).Times(1)
 	var res, err = e(ctx, req)
 	assert.Nil(t, err)
-	assert.Nil(t, res)
+	assert.Equal(t, map[string]string{"code":"1234"}, res)
 
 }
 

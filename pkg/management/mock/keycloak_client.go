@@ -317,10 +317,11 @@ func (mr *KeycloakClientMockRecorder) ResetPassword(arg0, arg1, arg2, arg3 inter
 }
 
 // SendNewEnrolmentCode mocks base method
-func (m *KeycloakClient) SendNewEnrolmentCode(arg0, arg1, arg2 string) error {
+func (m *KeycloakClient) SendNewEnrolmentCode(arg0, arg1, arg2 string) (string, error) {
 	ret := m.ctrl.Call(m, "SendNewEnrolmentCode", arg0, arg1, arg2)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // SendNewEnrolmentCode indicates an expected call of SendNewEnrolmentCode

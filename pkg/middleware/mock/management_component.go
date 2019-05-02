@@ -326,10 +326,11 @@ func (mr *ManagementComponentMockRecorder) ResetPassword(arg0, arg1, arg2, arg3 
 }
 
 // SendNewEnrolmentCode mocks base method
-func (m *ManagementComponent) SendNewEnrolmentCode(arg0 context.Context, arg1, arg2 string) error {
+func (m *ManagementComponent) SendNewEnrolmentCode(arg0 context.Context, arg1, arg2 string) (string, error) {
 	ret := m.ctrl.Call(m, "SendNewEnrolmentCode", arg0, arg1, arg2)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // SendNewEnrolmentCode indicates an expected call of SendNewEnrolmentCode

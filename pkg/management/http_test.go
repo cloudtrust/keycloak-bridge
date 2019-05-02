@@ -65,10 +65,12 @@ func TestHTTPManagementHandler(t *testing.T) {
 	{
 		var username = "toto"
 		var email = "toto@elca.ch"
+		var groups = []string{"123-785-7777"}
 
 		var user = api.UserRepresentation{
 			Username: &username,
 			Email:    &email,
+			Groups:   &groups,
 		}
 		userJSON, _ := json.Marshal(user)
 
@@ -122,10 +124,12 @@ func TestHTTPErrorHandler(t *testing.T) {
 
 	var username = "toto"
 	var email = "toto@elca.ch"
+	var groups = []string{"145-782-2214"}
 
 	var user = api.UserRepresentation{
 		Username: &username,
 		Email:    &email,
+		Groups:   &groups,
 	}
 	userJSON, _ := json.Marshal(user)
 
@@ -216,10 +220,12 @@ func TestHTTPXForwardHeaderHandler(t *testing.T) {
 	{
 		var username = "toto"
 		var email = "toto@elca.ch"
+		var groups = []string{"145-782-2214"}
 
 		var user = api.UserRepresentation{
 			Username: &username,
 			Email:    &email,
+			Groups:   &groups,
 		}
 		userJSON, _ := json.Marshal(user)
 

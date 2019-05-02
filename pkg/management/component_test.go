@@ -1226,22 +1226,23 @@ func TestSendNewEnrolmentCode(t *testing.T) {
 	// Send new enrolment code
 	{
 
-		mockKeycloakClient.EXPECT().SendNewEnrolmentCode(accessToken, realmName, userID).Return(nil).Times(1)
+		mockKeycloakClient.EXPECT().SendNewEnrolmentCode(accessToken, realmName, userID).Return("1234", nil).Times(1)
 
 		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
 
-		err := managementComponent.SendNewEnrolmentCode(ctx, "master", userID)
+		code, err := managementComponent.SendNewEnrolmentCode(ctx, "master", userID)
 
 		assert.Nil(t, err)
+		assert.Equal(t, "1234", code)
 	}
 
 	// Error
 	{
-		mockKeycloakClient.EXPECT().SendNewEnrolmentCode(accessToken, realmName, userID).Return(fmt.Errorf("Invalid input")).Times(1)
+		mockKeycloakClient.EXPECT().SendNewEnrolmentCode(accessToken, realmName, userID).Return("", fmt.Errorf("Invalid input")).Times(1)
 
 		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
 
-		err := managementComponent.SendNewEnrolmentCode(ctx, "master", userID)
+		_, err := managementComponent.SendNewEnrolmentCode(ctx, "master", userID)
 
 		assert.NotNil(t, err)
 	}
