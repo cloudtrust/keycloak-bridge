@@ -692,7 +692,18 @@ func TestUpdateUser(t *testing.T) {
 		assert.Nil(t, err)
 	}
 
-	//Error
+	//Error - get user
+	{
+		var id = "1234-79894-7594"
+		mockKeycloakClient.EXPECT().GetUser(accessToken, realmName, id).Return(kc.UserRepresentation{}, fmt.Errorf("Unexpected error")).Times(1)
+
+		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+
+		err := managementComponent.UpdateUser(ctx, "master", id, api.UserRepresentation{})
+
+		assert.NotNil(t, err)
+	}
+	//Error - update user
 	{
 		var id = "1234-79894-7594"
 		var kcUserRep = kc.UserRepresentation{
