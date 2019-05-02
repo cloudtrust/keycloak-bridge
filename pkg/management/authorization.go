@@ -122,7 +122,7 @@ func (c *authorizationComponentMW) CreateUser(ctx context.Context, realmName str
 	var targetRealm = realmName
 
 	for _, targetGroup := range *user.Groups {
-		if err := c.authManager.CheckAuthorizationOnTargetGroup(ctx, action, targetRealm, targetGroup); err != nil {
+		if err := c.authManager.CheckAuthorizationOnTargetGroupID(ctx, action, targetRealm, targetGroup); err != nil {
 			return "", err
 		}
 	}
