@@ -24,10 +24,11 @@ func TestHTTPManagementHandler(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 	var mockComponent = mock.NewManagementComponent(mockCtrl)
+	var mockLogger = mock.NewLogger(mockCtrl)
 
-	var managementHandler = MakeManagementHandler(MakeGetRealmEndpoint(mockComponent))
-	var managementHandler2 = MakeManagementHandler(MakeCreateUserEndpoint(mockComponent))
-	var managementHandler3 = MakeManagementHandler(MakeResetPasswordEndpoint(mockComponent))
+	var managementHandler = MakeManagementHandler(MakeGetRealmEndpoint(mockComponent), mockLogger)
+	var managementHandler2 = MakeManagementHandler(MakeCreateUserEndpoint(mockComponent), mockLogger)
+	var managementHandler3 = MakeManagementHandler(MakeResetPasswordEndpoint(mockComponent), mockLogger)
 
 	r := mux.NewRouter()
 	r.Handle("/realms/{realm}", managementHandler)
@@ -108,8 +109,10 @@ func TestHTTPErrorHandler(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 	var mockComponent = mock.NewManagementComponent(mockCtrl)
+	var mockLogger = mock.NewLogger(mockCtrl)
+	mockLogger.EXPECT().Log(gomock.Any()).AnyTimes()
 
-	var managementHandler = MakeManagementHandler(MakeCreateUserEndpoint(mockComponent))
+	var managementHandler = MakeManagementHandler(MakeCreateUserEndpoint(mockComponent), mockLogger)
 
 	r := mux.NewRouter()
 	r.Handle("/realms/{realm}/users", managementHandler)
@@ -197,8 +200,9 @@ func TestHTTPXForwardHeaderHandler(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 	var mockComponent = mock.NewManagementComponent(mockCtrl)
+	var mockLogger = mock.NewLogger(mockCtrl)
 
-	var managementHandler = MakeManagementHandler(MakeCreateUserEndpoint(mockComponent))
+	var managementHandler = MakeManagementHandler(MakeCreateUserEndpoint(mockComponent), mockLogger)
 
 	r := mux.NewRouter()
 	r.Handle("/realms/{realm}/users", managementHandler)

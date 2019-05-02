@@ -875,7 +875,7 @@ func configureEventsHandler(ComponentName string, ComponentID string, idGenerato
 func configureManagementHandler(ComponentName string, ComponentID string, idGenerator gen.IDGenerator, keycloakClient *keycloak.Client, audienceRequired string, tracer opentracing.Tracer, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {
 	return func(endpoint endpoint.Endpoint) http.Handler {
 		var handler http.Handler
-		handler = management.MakeManagementHandler(endpoint)
+		handler = management.MakeManagementHandler(endpoint, logger)
 		handler = middleware.MakeHTTPCorrelationIDMW(idGenerator, tracer, logger, ComponentName, ComponentID)(handler)
 		handler = middleware.MakeHTTPOIDCTokenValidationMW(keycloakClient, audienceRequired, logger)(handler)
 		return handler
@@ -901,7 +901,7 @@ func configureEventsDbModule(baseEventsDBModule event.EventsDBModule, influxMetr
 
 func prepareEndpoint(e endpoint.Endpoint, endpointName string, influxMetrics Metrics, managementLogger log.Logger, tracer opentracing.Tracer, rateLimit map[string]int) endpoint.Endpoint {
 	e = middleware.MakeEndpointInstrumentingMW(influxMetrics.NewHistogram(endpointName))(e)
-	e = middleware.MakeEndpointLoggingMW(log.With(managementLogger, "mw", "endpoint"))(e)
+	e = middleware.MakeEndpointLoggingMW(log.With(managementLogger, "mw", endpointName))(e)
 	e = middleware.MakeEndpointTracingMW(tracer, endpointName)(e)
 	e = ratelimit.NewErroringLimiter(rate.NewLimiter(rate.Every(time.Second), rateLimit["management"]))(e)
 

@@ -549,6 +549,13 @@
           "end_user": {}
         }
       }  
+    },
+    "registration_officer": {
+      "CreateUser": {
+        "DEP": {
+          "end_user": {}
+        }
+      }
     }
   }
 }

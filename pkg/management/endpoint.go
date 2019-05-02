@@ -116,6 +116,10 @@ func MakeCreateUserEndpoint(managementComponent ManagementComponent) endpoint.En
 			return nil, err
 		}
 
+		/*if user.Groups == nil || len(*user.Groups) == 0 {
+			return nil, keycloakb.CreateMissingParameterError("groups")
+		}*/
+
 		var keycloakLocation string
 		keycloakLocation, err = managementComponent.CreateUser(ctx, m["realm"], user)
 
