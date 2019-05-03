@@ -554,12 +554,8 @@ func TestUpdateUser(t *testing.T) {
 		var label = "Label"
 		var gender = "M"
 		var birthDate = "01/01/1988"
-<<<<<<< HEAD
 		var locale = "de"
-||||||| merged common ancestors
-=======
 		var createdTimestamp = time.Now().UTC().Unix()
->>>>>>> origin/master
 
 		var attributes = make(map[string][]string)
 		attributes["phoneNumber"] = []string{phoneNumber}
@@ -593,6 +589,7 @@ func TestUpdateUser(t *testing.T) {
 			Label:               &label,
 			Gender:              &gender,
 			BirthDate:           &birthDate,
+			Locale:              &locale,
 		}
 
 		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
@@ -621,7 +618,6 @@ func TestUpdateUser(t *testing.T) {
 				return nil
 			}).Times(1)
 
-<<<<<<< HEAD
 		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
 		ctx = context.WithValue(ctx, "realm", realmName)
 		ctx = context.WithValue(ctx, "username", username)
@@ -643,29 +639,6 @@ func TestUpdateUser(t *testing.T) {
 			Locale:              &locale,
 		}
 
-||||||| merged common ancestors
-		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
-		ctx = context.WithValue(ctx, "realm", realmName)
-		ctx = context.WithValue(ctx, "username", username)
-
-		mockEventDBModule.EXPECT().Store(ctx, gomock.Any()).Return(nil).AnyTimes()
-
-		var userRep = api.UserRepresentation{
-			Username:            &username,
-			Email:               &email,
-			Enabled:             &enabled,
-			EmailVerified:       &emailVerified,
-			FirstName:           &firstName,
-			LastName:            &lastName,
-			PhoneNumber:         &phoneNumber,
-			PhoneNumberVerified: &phoneNumberVerified,
-			Label:               &label,
-			Gender:              &gender,
-			BirthDate:           &birthDate,
-		}
-
-=======
->>>>>>> origin/master
 		err := managementComponent.UpdateUser(ctx, "master", id, userRep)
 
 		assert.Nil(t, err)
