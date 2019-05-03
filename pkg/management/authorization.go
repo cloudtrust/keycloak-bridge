@@ -122,7 +122,7 @@ func (c *authorizationComponentMW) CreateUser(ctx context.Context, realmName str
 	var targetRealm = realmName
 
 	for _, targetGroup := range *user.Groups {
-		if err := c.authManager.CheckAuthorizationOnTargetGroup(ctx, action, targetRealm, targetGroup); err != nil {
+		if err := c.authManager.CheckAuthorizationOnTargetGroupID(ctx, action, targetRealm, targetGroup); err != nil {
 			return "", err
 		}
 	}
@@ -218,12 +218,12 @@ func (c *authorizationComponentMW) ExecuteActionsEmail(ctx context.Context, real
 	return c.next.ExecuteActionsEmail(ctx, realmName, userID, actions, paramKV...)
 }
 
-func (c *authorizationComponentMW) SendNewEnrolmentCode(ctx context.Context, realmName string, userID string) error {
+func (c *authorizationComponentMW) SendNewEnrolmentCode(ctx context.Context, realmName string, userID string) (string, error) {
 	var action = "SendNewEnrolmentCode"
 	var targetRealm = realmName
 
 	if err := c.authManager.CheckAuthorizationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
-		return err
+		return "", err
 	}
 
 	return c.next.SendNewEnrolmentCode(ctx, realmName, userID)

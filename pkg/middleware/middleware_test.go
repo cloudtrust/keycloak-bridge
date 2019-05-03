@@ -59,33 +59,6 @@ func TestHTTPTracingMW(t *testing.T) {
 	m.ServeHTTP(w, req)
 }
 
-func TestGRPCTracingMW(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
-	defer mockCtrl.Finish()
-	var mockGRPCHandler = mock.NewHandler(mockCtrl)
-	var mockTracer = mock.NewTracer(mockCtrl)
-	var mockSpan = mock.NewSpan(mockCtrl)
-	var mockSpanContext = mock.NewSpanContext(mockCtrl)
-
-	var m = MakeGRPCTracingMW(mockTracer, "componentName", "operationName")(mockGRPCHandler)
-
-	// With existing tracer.
-	mockGRPCHandler.EXPECT().ServeGRPC(gomock.Any(), nil).Return(context.Background(), nil, nil).Times(1)
-	mockTracer.EXPECT().Extract(opentracing.TextMap, gomock.Any()).Return(mockSpanContext, nil).Times(1)
-	mockTracer.EXPECT().StartSpan("operationName", gomock.Any()).Return(mockSpan).Times(1)
-	mockSpan.EXPECT().Finish().Return().Times(1)
-	mockSpan.EXPECT().SetTag(gomock.Any(), gomock.Any()).Return(mockSpan).Times(3)
-	m.ServeGRPC(context.Background(), nil)
-
-	// Without existing tracer.
-	mockGRPCHandler.EXPECT().ServeGRPC(gomock.Any(), nil).Return(context.Background(), nil, nil).Times(1)
-	mockTracer.EXPECT().Extract(opentracing.TextMap, gomock.Any()).Return(nil, fmt.Errorf("fail")).Times(1)
-	mockTracer.EXPECT().StartSpan("operationName").Return(mockSpan).Times(1)
-	mockSpan.EXPECT().Finish().Return().Times(1)
-	mockSpan.EXPECT().SetTag(gomock.Any(), gomock.Any()).Return(mockSpan).Times(3)
-	m.ServeGRPC(context.Background(), nil)
-}
-
 func TestEndpointLoggingMW(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -104,12 +77,11 @@ func TestEndpointLoggingMW(t *testing.T) {
 		Type:   "Event",
 		Object: createEventBytes(fb.EventTypeCLIENT_DELETE, uid, "realm"),
 	}
-	mockLogger.EXPECT().Log("correlation_id", corrID, "took", gomock.Any()).Return(nil).Times(1)
+	mockLogger.EXPECT().Log("correlation_id", corrID).Return(nil).Times(1)
 	mockMuxComponent.EXPECT().Event(ctx, req.Type, req.Object).Return(nil).Times(1)
 	m(ctx, req)
 
 	// Without correlation ID.
-	mockMuxComponent.EXPECT().Event(context.Background(), req.Type, req.Object).Return(nil).Times(1)
 	var f = func() {
 		m(context.Background(), req)
 	}

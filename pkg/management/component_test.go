@@ -554,7 +554,12 @@ func TestUpdateUser(t *testing.T) {
 		var label = "Label"
 		var gender = "M"
 		var birthDate = "01/01/1988"
+<<<<<<< HEAD
 		var locale = "de"
+||||||| merged common ancestors
+=======
+		var createdTimestamp = time.Now().UTC().Unix()
+>>>>>>> origin/master
 
 		var attributes = make(map[string][]string)
 		attributes["phoneNumber"] = []string{phoneNumber}
@@ -563,6 +568,40 @@ func TestUpdateUser(t *testing.T) {
 		attributes["birthDate"] = []string{birthDate}
 		attributes["phoneNumberVerified"] = []string{strconv.FormatBool(phoneNumberVerified)}
 		attributes["locale"] = []string{locale}
+
+		var kcUserRep = kc.UserRepresentation{
+			Id:               &id,
+			Username:         &username,
+			Email:            &email,
+			Enabled:          &enabled,
+			EmailVerified:    &emailVerified,
+			FirstName:        &firstName,
+			LastName:         &lastName,
+			Attributes:       &attributes,
+			CreatedTimestamp: &createdTimestamp,
+		}
+
+		var userRep = api.UserRepresentation{
+			Username:            &username,
+			Email:               &email,
+			Enabled:             &enabled,
+			EmailVerified:       &emailVerified,
+			FirstName:           &firstName,
+			LastName:            &lastName,
+			PhoneNumber:         &phoneNumber,
+			PhoneNumberVerified: &phoneNumberVerified,
+			Label:               &label,
+			Gender:              &gender,
+			BirthDate:           &birthDate,
+		}
+
+		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+		ctx = context.WithValue(ctx, "realm", realmName)
+		ctx = context.WithValue(ctx, "username", username)
+
+		mockEventDBModule.EXPECT().Store(ctx, gomock.Any()).Return(nil).AnyTimes()
+
+		mockKeycloakClient.EXPECT().GetUser(accessToken, realmName, id).Return(kcUserRep, nil).Times(2)
 
 		mockKeycloakClient.EXPECT().UpdateUser(accessToken, realmName, id, gomock.Any()).DoAndReturn(
 			func(accessToken, realmName, id string, kcUserRep kc.UserRepresentation) error {
@@ -582,6 +621,7 @@ func TestUpdateUser(t *testing.T) {
 				return nil
 			}).Times(1)
 
+<<<<<<< HEAD
 		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
 		ctx = context.WithValue(ctx, "realm", realmName)
 		ctx = context.WithValue(ctx, "username", username)
@@ -603,6 +643,29 @@ func TestUpdateUser(t *testing.T) {
 			Locale:              &locale,
 		}
 
+||||||| merged common ancestors
+		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+		ctx = context.WithValue(ctx, "realm", realmName)
+		ctx = context.WithValue(ctx, "username", username)
+
+		mockEventDBModule.EXPECT().Store(ctx, gomock.Any()).Return(nil).AnyTimes()
+
+		var userRep = api.UserRepresentation{
+			Username:            &username,
+			Email:               &email,
+			Enabled:             &enabled,
+			EmailVerified:       &emailVerified,
+			FirstName:           &firstName,
+			LastName:            &lastName,
+			PhoneNumber:         &phoneNumber,
+			PhoneNumberVerified: &phoneNumberVerified,
+			Label:               &label,
+			Gender:              &gender,
+			BirthDate:           &birthDate,
+		}
+
+=======
+>>>>>>> origin/master
 		err := managementComponent.UpdateUser(ctx, "master", id, userRep)
 
 		assert.Nil(t, err)
@@ -646,11 +709,67 @@ func TestUpdateUser(t *testing.T) {
 
 		assert.Nil(t, err)
 
+		// update by changing the email address
+		var oldEmail = "toti@elca.ch"
+		var oldkcUserRep = kc.UserRepresentation{
+			Id:            &id,
+			Email:         &oldEmail,
+			EmailVerified: &emailVerified,
+		}
+		mockKeycloakClient.EXPECT().GetUser(accessToken, realmName, id).Return(oldkcUserRep, nil).Times(1)
+		mockKeycloakClient.EXPECT().UpdateUser(accessToken, realmName, id, gomock.Any()).DoAndReturn(
+			func(accessToken, realmName, id string, kcUserRep kc.UserRepresentation) error {
+				assert.Equal(t, email, *kcUserRep.Email)
+				assert.Equal(t, false, *kcUserRep.EmailVerified)
+				return nil
+			}).Times(1)
+
+		err = managementComponent.UpdateUser(ctx, "master", id, userRep)
+
+		assert.Nil(t, err)
+
+		// update by changing the phone number
+
+		var oldNumber = "+41789467"
+		var oldAttributes = make(map[string][]string)
+		oldAttributes["phoneNumber"] = []string{oldNumber}
+		oldAttributes["phoneNumberVerified"] = []string{strconv.FormatBool(phoneNumberVerified)}
+		var oldkcUserRep2 = kc.UserRepresentation{
+			Id:         &id,
+			Attributes: &oldAttributes,
+		}
+		mockKeycloakClient.EXPECT().GetUser(accessToken, realmName, id).Return(oldkcUserRep2, nil).Times(1)
+		mockKeycloakClient.EXPECT().UpdateUser(accessToken, realmName, id, gomock.Any()).DoAndReturn(
+			func(accessToken, realmName, id string, kcUserRep kc.UserRepresentation) error {
+				verified, _ := strconv.ParseBool(((*kcUserRep.Attributes)["phoneNumberVerified"][0]))
+				assert.Equal(t, phoneNumber, (*kcUserRep.Attributes)["phoneNumber"][0])
+				assert.Equal(t, false, verified)
+				return nil
+			}).Times(1)
+
+		err = managementComponent.UpdateUser(ctx, "master", id, userRep)
+
+		assert.Nil(t, err)
 	}
 
-	//Error
+	//Error - get user
 	{
 		var id = "1234-79894-7594"
+		mockKeycloakClient.EXPECT().GetUser(accessToken, realmName, id).Return(kc.UserRepresentation{}, fmt.Errorf("Unexpected error")).Times(1)
+
+		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+
+		err := managementComponent.UpdateUser(ctx, "master", id, api.UserRepresentation{})
+
+		assert.NotNil(t, err)
+	}
+	//Error - update user
+	{
+		var id = "1234-79894-7594"
+		var kcUserRep = kc.UserRepresentation{
+			Id: &id,
+		}
+		mockKeycloakClient.EXPECT().GetUser(accessToken, realmName, id).Return(kcUserRep, nil).AnyTimes()
 		mockKeycloakClient.EXPECT().UpdateUser(accessToken, realmName, id, gomock.Any()).Return(fmt.Errorf("Unexpected error")).Times(1)
 
 		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
@@ -1235,23 +1354,24 @@ func TestSendNewEnrolmentCode(t *testing.T) {
 
 	// Send new enrolment code
 	{
-
-		mockKeycloakClient.EXPECT().SendNewEnrolmentCode(accessToken, realmName, userID).Return(nil).Times(1)
+		var code = "1234"
+		mockKeycloakClient.EXPECT().SendNewEnrolmentCode(accessToken, realmName, userID).Return(kc.SmsCodeRepresentation{Code: &code}, nil).Times(1)
 
 		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
 
-		err := managementComponent.SendNewEnrolmentCode(ctx, "master", userID)
+		codeRes, err := managementComponent.SendNewEnrolmentCode(ctx, "master", userID)
 
 		assert.Nil(t, err)
+		assert.Equal(t, "1234", codeRes)
 	}
 
 	// Error
 	{
-		mockKeycloakClient.EXPECT().SendNewEnrolmentCode(accessToken, realmName, userID).Return(fmt.Errorf("Invalid input")).Times(1)
+		mockKeycloakClient.EXPECT().SendNewEnrolmentCode(accessToken, realmName, userID).Return(kc.SmsCodeRepresentation{}, fmt.Errorf("Invalid input")).Times(1)
 
 		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
 
-		err := managementComponent.SendNewEnrolmentCode(ctx, "master", userID)
+		_, err := managementComponent.SendNewEnrolmentCode(ctx, "master", userID)
 
 		assert.NotNil(t, err)
 	}

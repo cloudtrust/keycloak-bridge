@@ -31,12 +31,13 @@ const (
 func testAuthorization(t *testing.T, jsonAuthz string, tester func(EventsComponent, *mock.EventsComponent, context.Context, map[string]string)) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
+	var mockLogger = mock.NewLogger(mockCtrl)
+	mockLogger.EXPECT().Log(gomock.Any()).AnyTimes()
 
 	mockKeycloakClient := mock.NewKeycloakClient(mockCtrl)
-	var authorizations, err = security.NewAuthorizationManager(mockKeycloakClient, jsonAuthz)
+	var authorizations, err = security.NewAuthorizationManager(mockKeycloakClient, mockLogger, jsonAuthz)
 	assert.Nil(t, err)
 
-	mockLogger := mock.NewLogger(mockCtrl)
 	mockEventsComponent := mock.NewEventsComponent(mockCtrl)
 
 	var authorizationMW = MakeAuthorizationManagementComponentMW(mockLogger, authorizations)(mockEventsComponent)

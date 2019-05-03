@@ -44,31 +44,36 @@
       "ResetPassword": {
         "master": {
           "integrator_manager": {},
-          "integrator_agent": {},
           "l2_support_manager": {},
-          "l2_support_agent": {},
-          "l3_support_manager": {},
-          "l3_support_agent": {}
+          "l3_support_manager": {}
         }
       },
       "SendVerifyEmail": {
         "master": {
           "integrator_manager": {},
-          "integrator_agent": {},
           "l2_support_manager": {},
-          "l2_support_agent": {},
-          "l3_support_manager": {},
-          "l3_support_agent": {}
+          "l3_support_manager": {}
         }
       },
       "ExecuteActionsEmail": {
         "master": {
           "integrator_manager": {},
-          "integrator_agent": {},
           "l2_support_manager": {},
-          "l2_support_agent": {},
-          "l3_support_manager": {},
-          "l3_support_agent": {}
+          "l3_support_manager": {}
+        }
+      },
+      "GetCredentialsForUser": {
+        "master": {
+          "integrator_manager": {},
+          "l2_support_manager": {},
+          "l3_support_manager": {}
+        }
+      },
+      "DeleteCredentialsForUser": {
+        "master": {
+          "integrator_manager": {},
+          "l2_support_manager": {},
+          "l3_support_manager": {}
         }
       },
       "EV_GetEvents": {
@@ -171,6 +176,22 @@
           "*": {}
         } 
       },
+      "GetCredentialsForUser": {
+        "master": {
+          "integrator_manager": {}
+        },
+        "DEP": {
+          "*": {}
+        } 
+      },
+      "DeleteCredentialsForUser": {
+        "master": {
+          "integrator_manager": {}
+        },
+        "DEP": {
+          "*": {}
+        } 
+      },
       "GetRealmCustomConfiguration": {
         "DEP": {
           "*": {}
@@ -235,7 +256,17 @@
         "DEP": {
           "*": {}
         }
-      },    
+      },
+      "GetCredentialsForUser": {
+        "DEP": {
+          "*": {}
+        }
+      },
+      "DeleteCredentialsForUser": {
+        "DEP": {
+          "*": {}
+        }
+      },  
       "GetRealmCustomConfiguration": {
         "DEP": {
           "*": {}
@@ -300,6 +331,16 @@
         "master": {
           "l2_support_agent": {}
         }
+      },
+      "GetCredentialsForUser": {
+        "master": {
+          "l2_support_agent": {}
+        } 
+      },
+      "DeleteCredentialsForUser": {
+        "master": {
+          "l2_support_agent": {}
+        }
       }
     },
     "l2_support_agent": {
@@ -357,6 +398,16 @@
         }
       },
       "ExecuteActionsEmail": {
+        "master": {
+          "l3_support_agent": {}
+        }
+      },
+      "GetCredentialsForUser": {
+        "master": {
+          "l3_support_agent": {}
+        } 
+      },
+      "DeleteCredentialsForUser": {
         "master": {
           "l3_support_agent": {}
         }
@@ -427,6 +478,16 @@
         "DEP": {
           "end_user": {}
         }
+      },
+      "GetCredentialsForUser": {
+        "DEP": {
+          "*": {}
+        }
+      },
+      "DeleteCredentialsForUser": {
+        "DEP": {
+          "*": {}
+        }
       }
     },
     "l1_support_manager": {
@@ -492,6 +553,18 @@
           "end_user": {}
         }
       },
+      "GetCredentialsForUser": {
+        "DEP": {
+          "l1_support_agent": {},
+          "end_user": {}
+        } 
+      },
+      "DeleteCredentialsForUser": {
+        "DEP": {
+          "l1_support_agent": {},
+          "end_user": {}
+        }
+      },
       "SendNewEnrolmentCode":{
         "DEP": {
           "end_user": {}
@@ -544,11 +617,28 @@
           "end_user": {}
         }
       },
+      "GetCredentialsForUser": {
+        "DEP": {
+          "end_user": {}
+        } 
+      },
+      "DeleteCredentialsForUser": {
+        "DEP": {
+          "end_user": {}
+        }
+      },
       "SendNewEnrolmentCode":{
         "DEP": {
           "end_user": {}
         }
       }  
+    },
+    "registration_officer": {
+      "CreateUser": {
+        "DEP": {
+          "end_user": {}
+        }
+      }
     }
   }
 }

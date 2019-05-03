@@ -10,6 +10,7 @@ import (
 	"github.com/cloudtrust/keycloak-bridge/internal/security"
 	kc_client "github.com/cloudtrust/keycloak-client"
 	"github.com/go-kit/kit/endpoint"
+	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/ratelimit"
 	http_transport "github.com/go-kit/kit/transport/http"
 	"github.com/gorilla/mux"
@@ -18,11 +19,11 @@ import (
 )
 
 // MakeManagementHandler make an HTTP handler for a Management endpoint.
-func MakeManagementHandler(e endpoint.Endpoint) *http_transport.Server {
+func MakeManagementHandler(e endpoint.Endpoint, logger log.Logger) *http_transport.Server {
 	return http_transport.NewServer(e,
 		decodeManagementRequest,
 		encodeManagementReply,
-		http_transport.ServerErrorEncoder(managementErrorHandler),
+		http_transport.ServerErrorEncoder(managementErrorHandler(logger)),
 	)
 }
 
@@ -93,20 +94,27 @@ func encodeManagementReply(_ context.Context, w http.ResponseWriter, rep interfa
 }
 
 // managementErrorHandler encodes the reply when there is an error.
-func managementErrorHandler(ctx context.Context, err error, w http.ResponseWriter) {
-	switch e := errors.Cause(err).(type) {
-	case kc_client.HTTPError:
-		w.WriteHeader(e.HTTPStatus)
-	case security.ForbiddenError:
-		w.WriteHeader(http.StatusForbidden)
-	case keycloakb.HTTPError:
-		w.WriteHeader(e.Status)
-		w.Write([]byte(e.Message))
-	default:
-		if err == ratelimit.ErrLimited {
-			w.WriteHeader(http.StatusTooManyRequests)
-		} else {
-			w.WriteHeader(http.StatusInternalServerError)
+func managementErrorHandler(logger log.Logger) func(context.Context, error, http.ResponseWriter){
+	return func(ctx context.Context, err error, w http.ResponseWriter) {
+		switch e := errors.Cause(err).(type) {
+		case kc_client.HTTPError:
+			logger.Log("HTTPErrorHandler", e.HTTPStatus, "msg", e.Error())
+			w.WriteHeader(e.HTTPStatus)
+		case security.ForbiddenError:
+			logger.Log("HTTPErrorHandler", http.StatusForbidden, "msg", e.Error())
+			w.WriteHeader(http.StatusForbidden)
+		case keycloakb.HTTPError:
+			logger.Log("HTTPErrorHandler", e.Status, "msg", e.Error())
+			w.WriteHeader(e.Status)
+			w.Write([]byte(e.Message))
+		default:
+			if err == ratelimit.ErrLimited {
+				logger.Log("HTTPErrorHandler", http.StatusTooManyRequests, "msg", e.Error())
+				w.WriteHeader(http.StatusTooManyRequests)
+			} else {
+				logger.Log("HTTPErrorHandler", http.StatusInternalServerError, "msg", e.Error())
+				w.WriteHeader(http.StatusInternalServerError)
+			}
 		}
 	}
 }

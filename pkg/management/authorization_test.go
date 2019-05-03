@@ -18,6 +18,8 @@ func TestDeny(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 	var mockLogger = mock.NewLogger(mockCtrl)
+	mockLogger.EXPECT().Log(gomock.Any()).AnyTimes()
+	
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
 
@@ -30,7 +32,6 @@ func TestDeny(t *testing.T) {
 	var roleID = "456-852-785"
 	var credentialID = "741-865-741"
 	var userUsername = "toto"
-	var userGroups = []string{"customer"}
 
 	var roleName = "role"
 
@@ -53,7 +54,7 @@ func TestDeny(t *testing.T) {
 	var user = api.UserRepresentation{
 		Id:       &userID,
 		Username: &userUsername,
-		Groups:   &userGroups,
+		Groups:   &groupIDs,
 	}
 
 	var role = api.RoleRepresentation{
@@ -74,7 +75,7 @@ func TestDeny(t *testing.T) {
 
 	// Nothing allowed
 	{
-		var authorizations, err = security.NewAuthorizationManager(mockKeycloakClient, `{}`)
+		var authorizations, err = security.NewAuthorizationManager(mockKeycloakClient, mockLogger, `{}`)
 		assert.Nil(t, err)
 
 		var authorizationMW = MakeAuthorizationManagementComponentMW(mockLogger, authorizations)(mockManagementComponent)
@@ -108,6 +109,7 @@ func TestDeny(t *testing.T) {
 		_, err = authorizationMW.GetUsers(ctx, realmName, groupIDs)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
+		mockKeycloakClient.EXPECT().GetGroup(gomock.Any(), realmName, groupID).Return(group, nil).Times(1)
 		_, err = authorizationMW.CreateUser(ctx, realmName, user)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
@@ -135,7 +137,7 @@ func TestDeny(t *testing.T) {
 		err = authorizationMW.ExecuteActionsEmail(ctx, realmName, userID, []string{})
 		assert.Equal(t, security.ForbiddenError{}, err)
 
-		err = authorizationMW.SendNewEnrolmentCode(ctx, realmName, userID)
+		_, err = authorizationMW.SendNewEnrolmentCode(ctx, realmName, userID)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
 		_, err = authorizationMW.GetCredentialsForUser(ctx, realmName, userID)
@@ -180,7 +182,6 @@ func TestAllowed(t *testing.T) {
 	var roleID = "456-852-785"
 	var credentialID = "7845-785-1545"
 	var userUsername = "toto"
-	var userGroups = []string{"customer"}
 
 	var roleName = "role"
 
@@ -201,7 +202,7 @@ func TestAllowed(t *testing.T) {
 	var user = api.UserRepresentation{
 		Id:       &userID,
 		Username: &userUsername,
-		Groups:   &userGroups,
+		Groups:   &groupIDs,
 	}
 
 	var role = api.RoleRepresentation{
@@ -222,7 +223,7 @@ func TestAllowed(t *testing.T) {
 
 	// Anything allowed
 	{
-		var authorizations, err = security.NewAuthorizationManager(mockKeycloakClient, `{"master":
+		var authorizations, err = security.NewAuthorizationManager(mockKeycloakClient, mockLogger, `{"master":
 			{
 				"toe": {
 					"GetRealms": {"*": {}},
@@ -295,6 +296,7 @@ func TestAllowed(t *testing.T) {
 		_, err = authorizationMW.GetUsers(ctx, realmName, groupIDs)
 		assert.Nil(t, err)
 
+		mockKeycloakClient.EXPECT().GetGroup(gomock.Any(), realmName, groupID).Return(group, nil).Times(1)
 		mockManagementComponent.EXPECT().CreateUser(ctx, realmName, user).Return("", nil).Times(1)
 		_, err = authorizationMW.CreateUser(ctx, realmName, user)
 		assert.Nil(t, err)
@@ -331,8 +333,8 @@ func TestAllowed(t *testing.T) {
 		err = authorizationMW.ExecuteActionsEmail(ctx, realmName, userID, []string{})
 		assert.Nil(t, err)
 
-		mockManagementComponent.EXPECT().SendNewEnrolmentCode(ctx, realmName, userID).Return(nil).Times(1)
-		err = authorizationMW.SendNewEnrolmentCode(ctx, realmName, userID)
+		mockManagementComponent.EXPECT().SendNewEnrolmentCode(ctx, realmName, userID).Return("1234", nil).Times(1)
+		_, err = authorizationMW.SendNewEnrolmentCode(ctx, realmName, userID)
 		assert.Nil(t, err)
 
 		mockManagementComponent.EXPECT().GetCredentialsForUser(ctx, realmName, userID).Return([]api.CredentialRepresentation{}, nil).Times(1)
