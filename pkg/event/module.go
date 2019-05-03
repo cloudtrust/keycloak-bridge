@@ -2,10 +2,8 @@ package event
 
 import (
 	"context"
-	"time"
 
-	"database/sql"
-
+	"github.com/cloudtrust/common-service/metrics"
 	"github.com/go-kit/kit/log"
 	influx "github.com/influxdata/influxdb/client/v2"
 )
@@ -42,56 +40,27 @@ type StatisticModule interface {
 // Influx is the influx DB interface.
 type Influx interface {
 	Write(bp influx.BatchPoints) error
+	Close()
 }
 
 type statisticModule struct {
-	influx           Influx
-	batchPointConfig influx.BatchPointsConfig
+	influx metrics.Metrics
 }
 
 //NewStatisticModule returns a Statistic module.
-func NewStatisticModule(influx Influx, batchPointsConfig influx.BatchPointsConfig) StatisticModule {
+func NewStatisticModule(influx metrics.Metrics) StatisticModule {
 	return &statisticModule{
-		influx:           influx,
-		batchPointConfig: batchPointsConfig,
+		influx: influx,
 	}
 }
 
-func (sm *statisticModule) Stats(_ context.Context, m map[string]string) error {
-
-	// Create a new point batch
-	var batchPoints influx.BatchPoints
-	{
-		var err error
-		batchPoints, err = influx.NewBatchPoints(sm.batchPointConfig)
-		if err != nil {
-			return err
-		}
-	}
-
+func (sm *statisticModule) Stats(ctx context.Context, m map[string]string) error {
 	// Create a point and add to batch
 	var tags = map[string]string{"type": m["type"], "realm": m["realmId"], "userId": m["userId"]}
 	var fields = map[string]interface{}{
 		"uid": m["uid"],
 	}
-
-	var point *influx.Point
-	{
-		var err error
-		point, err = influx.NewPoint("event_statistics", tags, fields, time.Now())
-		if err != nil {
-			return err
-		}
-		batchPoints.AddPoint(point)
-	}
-
-	// Write the batch
-	var err = sm.influx.Write(batchPoints)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return sm.influx.Stats(ctx, "event_statistics", tags, fields)
 }
 
 const (
@@ -130,71 +99,3 @@ const (
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		`
 )
-
-type DBEvents interface {
-	Exec(query string, args ...interface{}) (sql.Result, error)
-}
-
-// EventsDBModule is the interface of the audit events module.
-type EventsDBModule interface {
-	Store(context.Context, map[string]string) error
-}
-
-type eventsDBModule struct {
-	db DBEvents
-}
-
-// NewConsoleModule returns a Console module.
-func NewEventsDBModule(db DBEvents) EventsDBModule {
-	//db.Exec(createTable)
-	return &eventsDBModule{
-		db: db,
-	}
-}
-
-func (cm *eventsDBModule) Store(_ context.Context, m map[string]string) error {
-
-	// if ctEventType is not "", then record the events in MariaDB
-	// otherwise, do nothing
-	if m["ct_event_type"] == "" {
-		return nil
-	}
-
-	// the event was already formatted according to the DB structure already at the component level
-
-	//auditTime - time of the event
-	auditTime := m["audit_time"]
-	// origin - the component that initiated the event
-	origin := m["origin"]
-	// realmName - realm name of the user that is impacted by the action
-	realmName := m["realm_name"]
-	//agentUserID - userId of who is performing an action
-	agentUserID := m["agent_user_id"]
-	//agentUsername - username of who is performing an action
-	agentUsername := m["agent_username"]
-	//agentRealmName - realm of who is performing an action
-	agentRealmName := m["agent_realm_name"]
-	//userID - ID of the user that is impacted by the action
-	userID := m["user_id"]
-	//username - username of the user that is impacted by the action
-	username := m["username"]
-	// ctEventType that  is established before at the component level
-	ctEventType := m["ct_event_type"]
-	// kcEventType corresponds to keycloak event type
-	kcEventType := m["kc_event_type"]
-	// kcOperationType - operation type of the event that comes from Keycloak
-	kcOperationType := m["kc_operation_type"]
-	// Id of the client
-	clientID := m["client_id"]
-	//additional_info - all the rest of the information from the event
-	additionalInfo := m["additional_info"]
-
-	//store the event in the DB
-	_, err := cm.db.Exec(insertEvent, auditTime, origin, realmName, agentUserID, agentUsername, agentRealmName, userID, username, ctEventType, kcEventType, kcOperationType, clientID, additionalInfo)
-
-	if err != nil {
-		return err
-	}
-	return nil
-
-}

@@ -3,8 +3,8 @@ package events
 import (
 	"context"
 
+	"github.com/cloudtrust/common-service/http"
 	api "github.com/cloudtrust/keycloak-bridge/api/events"
-	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 )
 
 // EventsComponent is the interface of the events component.
@@ -48,10 +48,10 @@ func (ec *component) GetEventsSummary(ctx context.Context) (api.EventSummaryRepr
 // Get all events related to a given realm and a given user
 func (ec *component) GetUserEvents(ctx context.Context, params map[string]string) (api.AuditEventsRepresentation, error) {
 	if val, ok := params["realm"]; !ok || len(val) == 0 {
-		return api.AuditEventsRepresentation{}, keycloakb.CreateMissingParameterError("realm")
+		return api.AuditEventsRepresentation{}, http.CreateMissingParameterError("realm")
 	}
 	if val, ok := params["userID"]; !ok || len(val) == 0 {
-		return api.AuditEventsRepresentation{}, keycloakb.CreateMissingParameterError("userID")
+		return api.AuditEventsRepresentation{}, http.CreateMissingParameterError("userID")
 	}
 	return ec.GetEvents(ctx, params)
 }

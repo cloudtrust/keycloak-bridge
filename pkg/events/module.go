@@ -2,16 +2,11 @@ package events
 
 import (
 	"context"
-	"database/sql"
+
+	"github.com/cloudtrust/common-service/database"
 
 	api "github.com/cloudtrust/keycloak-bridge/api/events"
 )
-
-// DBEvents is the interface to access the database
-type DBEvents interface {
-	Query(query string, args ...interface{}) (*sql.Rows, error)
-	QueryRow(query string, args ...interface{}) *sql.Row
-}
 
 // EventsDBModule is the interface of the audit events module.
 type EventsDBModule interface {
@@ -21,11 +16,11 @@ type EventsDBModule interface {
 }
 
 type eventsDBModule struct {
-	db DBEvents
+	db database.CloudtrustDB
 }
 
 // NewEventsDBModule returns an events database module.
-func NewEventsDBModule(db DBEvents) EventsDBModule {
+func NewEventsDBModule(db database.CloudtrustDB) EventsDBModule {
 	return &eventsDBModule{
 		db: db,
 	}

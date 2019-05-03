@@ -5,8 +5,9 @@ import (
 	"time"
 
 	cs "github.com/cloudtrust/common-service"
+	"github.com/cloudtrust/common-service/database"
+	"github.com/cloudtrust/common-service/metrics"
 	"github.com/cloudtrust/keycloak-bridge/api/event/fb"
-	"github.com/go-kit/kit/metrics"
 )
 
 // Instrumenting middleware for the mux component.
@@ -132,12 +133,12 @@ func (m *statisticModuleInstrumentingMW) Stats(ctx context.Context, mp map[strin
 // Instrumenting middleware at module level.
 type eventsDBModuleInstrumentingMW struct {
 	h    metrics.Histogram
-	next EventsDBModule
+	next database.EventsDBModule
 }
 
-// MakeStatisticModuleInstrumentingMW makes an instrumenting middleware at module level.
-func MakeEventsDBModuleInstrumentingMW(h metrics.Histogram) func(EventsDBModule) EventsDBModule {
-	return func(next EventsDBModule) EventsDBModule {
+// MakeEventsDBModuleInstrumentingMW makes an instrumenting middleware at module level.
+func MakeEventsDBModuleInstrumentingMW(h metrics.Histogram) func(database.EventsDBModule) database.EventsDBModule {
+	return func(next database.EventsDBModule) database.EventsDBModule {
 		return &eventsDBModuleInstrumentingMW{
 			h:    h,
 			next: next,
@@ -151,4 +152,11 @@ func (m *eventsDBModuleInstrumentingMW) Store(ctx context.Context, mp map[string
 		m.h.With("correlation_id", ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
 	}(time.Now())
 	return m.next.Store(ctx, mp)
+}
+
+func (m *eventsDBModuleInstrumentingMW) ReportEvent(ctx context.Context, apiCall string, origin string, values ...string) error {
+	defer func(begin time.Time) {
+		m.h.With("correlation_id", ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
+	}(time.Now())
+	return m.next.ReportEvent(ctx, apiCall, origin, values...)
 }

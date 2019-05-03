@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
+	cs "github.com/cloudtrust/common-service"
 	"github.com/go-kit/kit/endpoint"
 )
 
@@ -25,11 +26,11 @@ type AccountComponent interface {
 }
 
 // MakeUpdatePasswordEndpoint makes the UpdatePassword endpoint to update connected user's own password.
-func MakeUpdatePasswordEndpoint(component AccountComponent) endpoint.Endpoint {
+func MakeUpdatePasswordEndpoint(component AccountComponent) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 		var body UpdatePasswordBody
-		
+
 		err := json.Unmarshal([]byte(m["body"]), &body)
 		if err != nil {
 			return nil, err

@@ -7,8 +7,9 @@ import (
 	"regexp"
 	"strings"
 
+	cs "github.com/cloudtrust/common-service"
+	"github.com/cloudtrust/common-service/http"
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
-	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/go-kit/kit/endpoint"
 )
 
@@ -72,15 +73,15 @@ type ManagementComponent interface {
 	UpdateRealmCustomConfiguration(ctx context.Context, realmID string, customConfig api.RealmCustomConfiguration) error
 }
 
-// MakeRealmsEndpoint makes the Realms endpoint to retrieve all available realms.
-func MakeGetRealmsEndpoint(managementComponent ManagementComponent) endpoint.Endpoint {
+// MakeGetRealmsEndpoint makes the Realms endpoint to retrieve all available realms.
+func MakeGetRealmsEndpoint(managementComponent ManagementComponent) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		return managementComponent.GetRealms(ctx)
 	}
 }
 
-// MakeRealmEndpoint makes the Realm endpoint to retrieve a realm.
-func MakeGetRealmEndpoint(managementComponent ManagementComponent) endpoint.Endpoint {
+// MakeGetRealmEndpoint makes the Realm endpoint to retrieve a realm.
+func MakeGetRealmEndpoint(managementComponent ManagementComponent) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
@@ -88,7 +89,8 @@ func MakeGetRealmEndpoint(managementComponent ManagementComponent) endpoint.Endp
 	}
 }
 
-func MakeGetClientEndpoint(managementComponent ManagementComponent) endpoint.Endpoint {
+// MakeGetClientEndpoint creates an endpoint for GetClient
+func MakeGetClientEndpoint(managementComponent ManagementComponent) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
@@ -96,7 +98,8 @@ func MakeGetClientEndpoint(managementComponent ManagementComponent) endpoint.End
 	}
 }
 
-func MakeGetClientsEndpoint(managementComponent ManagementComponent) endpoint.Endpoint {
+// MakeGetClientsEndpoint creates an endpoint for GetClients
+func MakeGetClientsEndpoint(managementComponent ManagementComponent) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
@@ -105,21 +108,21 @@ func MakeGetClientsEndpoint(managementComponent ManagementComponent) endpoint.En
 }
 
 // MakeCreateUserEndpoint makes the endpoint to create a user.
-func MakeCreateUserEndpoint(managementComponent ManagementComponent) endpoint.Endpoint {
+func MakeCreateUserEndpoint(managementComponent ManagementComponent) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		userJson := []byte(m["body"])
+		userJSON := []byte(m["body"])
 
 		var user api.UserRepresentation
-		err := json.Unmarshal(userJson, &user)
+		err := json.Unmarshal(userJSON, &user)
 
 		if err != nil {
 			return nil, err
 		}
 
 		if user.Groups == nil || len(*user.Groups) == 0 {
-			return nil, keycloakb.CreateMissingParameterError("groups")
+			return nil, http.CreateMissingParameterError("groups")
 		}
 
 		var keycloakLocation string
@@ -129,7 +132,7 @@ func MakeCreateUserEndpoint(managementComponent ManagementComponent) endpoint.En
 			return nil, err
 		}
 
-		url, err := convertLocationUrl(keycloakLocation, m["scheme"], m["host"])
+		url, err := convertLocationURL(keycloakLocation, m["scheme"], m["host"])
 
 		return LocationHeader{
 			URL: url,
@@ -137,7 +140,8 @@ func MakeCreateUserEndpoint(managementComponent ManagementComponent) endpoint.En
 	}
 }
 
-func MakeDeleteUserEndpoint(managementComponent ManagementComponent) endpoint.Endpoint {
+// MakeDeleteUserEndpoint creates an endpoint for DeleteUser
+func MakeDeleteUserEndpoint(managementComponent ManagementComponent) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
@@ -145,7 +149,8 @@ func MakeDeleteUserEndpoint(managementComponent ManagementComponent) endpoint.En
 	}
 }
 
-func MakeGetUserEndpoint(managementComponent ManagementComponent) endpoint.Endpoint {
+// MakeGetUserEndpoint creates an endpoint for GetUser
+func MakeGetUserEndpoint(managementComponent ManagementComponent) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
@@ -153,14 +158,15 @@ func MakeGetUserEndpoint(managementComponent ManagementComponent) endpoint.Endpo
 	}
 }
 
-func MakeUpdateUserEndpoint(managementComponent ManagementComponent) endpoint.Endpoint {
+// MakeUpdateUserEndpoint creates an endpoint for UpdateUser
+func MakeUpdateUserEndpoint(managementComponent ManagementComponent) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		userJson := []byte(m["body"])
+		userJSON := []byte(m["body"])
 
 		var user api.UserRepresentation
-		err := json.Unmarshal(userJson, &user)
+		err := json.Unmarshal(userJSON, &user)
 
 		if err != nil {
 			return nil, err
@@ -170,7 +176,8 @@ func MakeUpdateUserEndpoint(managementComponent ManagementComponent) endpoint.En
 	}
 }
 
-func MakeGetUsersEndpoint(managementComponent ManagementComponent) endpoint.Endpoint {
+// MakeGetUsersEndpoint creates an endpoint for GetUsers
+func MakeGetUsersEndpoint(managementComponent ManagementComponent) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
@@ -183,7 +190,7 @@ func MakeGetUsersEndpoint(managementComponent ManagementComponent) endpoint.Endp
 
 		_, ok := m["groupIds"]
 		if !ok {
-			return nil, keycloakb.CreateMissingParameterError("groupIds")
+			return nil, http.CreateMissingParameterError("groupIds")
 		}
 
 		groupIDs := strings.Split(m["groupIds"], ",")
@@ -192,7 +199,8 @@ func MakeGetUsersEndpoint(managementComponent ManagementComponent) endpoint.Endp
 	}
 }
 
-func MakeGetRolesOfUserEndpoint(managementComponent ManagementComponent) endpoint.Endpoint {
+// MakeGetRolesOfUserEndpoint creates an endpoint for GetRolesOfUser
+func MakeGetRolesOfUserEndpoint(managementComponent ManagementComponent) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
@@ -200,7 +208,8 @@ func MakeGetRolesOfUserEndpoint(managementComponent ManagementComponent) endpoin
 	}
 }
 
-func MakeGetGroupsOfUserEndpoint(managementComponent ManagementComponent) endpoint.Endpoint {
+// MakeGetGroupsOfUserEndpoint creates an endpoint for GetGroupsOfUser
+func MakeGetGroupsOfUserEndpoint(managementComponent ManagementComponent) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
@@ -208,7 +217,8 @@ func MakeGetGroupsOfUserEndpoint(managementComponent ManagementComponent) endpoi
 	}
 }
 
-func MakeGetUserAccountStatusEndpoint(managementComponent ManagementComponent) endpoint.Endpoint {
+// MakeGetUserAccountStatusEndpoint creates an endpoint for GetUserAccountStatus
+func MakeGetUserAccountStatusEndpoint(managementComponent ManagementComponent) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
@@ -216,7 +226,8 @@ func MakeGetUserAccountStatusEndpoint(managementComponent ManagementComponent) e
 	}
 }
 
-func MakeGetClientRolesForUserEndpoint(managementComponent ManagementComponent) endpoint.Endpoint {
+// MakeGetClientRolesForUserEndpoint creates an endpoint for GetClientRolesForUser
+func MakeGetClientRolesForUserEndpoint(managementComponent ManagementComponent) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
@@ -224,14 +235,15 @@ func MakeGetClientRolesForUserEndpoint(managementComponent ManagementComponent) 
 	}
 }
 
-func MakeAddClientRolesToUserEndpoint(managementComponent ManagementComponent) endpoint.Endpoint {
+// MakeAddClientRolesToUserEndpoint creates an endpoint for AddClientRolesToUser
+func MakeAddClientRolesToUserEndpoint(managementComponent ManagementComponent) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		rolesJson := []byte(m["body"])
+		rolesJSON := []byte(m["body"])
 
 		var roles []api.RoleRepresentation
-		err := json.Unmarshal(rolesJson, &roles)
+		err := json.Unmarshal(rolesJSON, &roles)
 
 		if err != nil {
 			return nil, err
@@ -241,14 +253,15 @@ func MakeAddClientRolesToUserEndpoint(managementComponent ManagementComponent) e
 	}
 }
 
-func MakeResetPasswordEndpoint(managementComponent ManagementComponent) endpoint.Endpoint {
+// MakeResetPasswordEndpoint creates an endpoint for ResetPassword
+func MakeResetPasswordEndpoint(managementComponent ManagementComponent) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		passwordJson := []byte(m["body"])
+		passwordJSON := []byte(m["body"])
 
 		var password api.PasswordRepresentation
-		err := json.Unmarshal(passwordJson, &password)
+		err := json.Unmarshal(passwordJSON, &password)
 
 		if err != nil {
 			return nil, err
@@ -258,7 +271,8 @@ func MakeResetPasswordEndpoint(managementComponent ManagementComponent) endpoint
 	}
 }
 
-func MakeSendVerifyEmailEndpoint(managementComponent ManagementComponent) endpoint.Endpoint {
+// MakeSendVerifyEmailEndpoint creates an endpoint for SendVerifyEmail
+func MakeSendVerifyEmailEndpoint(managementComponent ManagementComponent) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
@@ -273,7 +287,8 @@ func MakeSendVerifyEmailEndpoint(managementComponent ManagementComponent) endpoi
 	}
 }
 
-func MakeExecuteActionsEmailEndpoint(managementComponent ManagementComponent) endpoint.Endpoint {
+// MakeExecuteActionsEmailEndpoint creates an endpoint for ExecuteActionsEmail
+func MakeExecuteActionsEmailEndpoint(managementComponent ManagementComponent) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
@@ -296,7 +311,8 @@ func MakeExecuteActionsEmailEndpoint(managementComponent ManagementComponent) en
 	}
 }
 
-func MakeSendNewEnrolmentCodeEndpoint(managementComponent ManagementComponent) endpoint.Endpoint {
+// MakeSendNewEnrolmentCodeEndpoint creates an endpoint for SendNewEnrolmentCode
+func MakeSendNewEnrolmentCodeEndpoint(managementComponent ManagementComponent) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
@@ -305,7 +321,8 @@ func MakeSendNewEnrolmentCodeEndpoint(managementComponent ManagementComponent) e
 	}
 }
 
-func MakeGetCredentialsForUserEndpoint(managementComponent ManagementComponent) endpoint.Endpoint {
+// MakeGetCredentialsForUserEndpoint creates an endpoint for GetCredentialsForUser
+func MakeGetCredentialsForUserEndpoint(managementComponent ManagementComponent) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
@@ -313,7 +330,8 @@ func MakeGetCredentialsForUserEndpoint(managementComponent ManagementComponent) 
 	}
 }
 
-func MakeDeleteCredentialsForUserEndpoint(managementComponent ManagementComponent) endpoint.Endpoint {
+// MakeDeleteCredentialsForUserEndpoint creates an endpoint for DeleteCredentialsForUser
+func MakeDeleteCredentialsForUserEndpoint(managementComponent ManagementComponent) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
@@ -321,7 +339,8 @@ func MakeDeleteCredentialsForUserEndpoint(managementComponent ManagementComponen
 	}
 }
 
-func MakeGetRolesEndpoint(managementComponent ManagementComponent) endpoint.Endpoint {
+// MakeGetRolesEndpoint creates an endpoint for GetRoles
+func MakeGetRolesEndpoint(managementComponent ManagementComponent) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
@@ -329,7 +348,8 @@ func MakeGetRolesEndpoint(managementComponent ManagementComponent) endpoint.Endp
 	}
 }
 
-func MakeGetRoleEndpoint(managementComponent ManagementComponent) endpoint.Endpoint {
+// MakeGetRoleEndpoint creates an endpoint for GetRole
+func MakeGetRoleEndpoint(managementComponent ManagementComponent) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
@@ -337,7 +357,8 @@ func MakeGetRoleEndpoint(managementComponent ManagementComponent) endpoint.Endpo
 	}
 }
 
-func MakeGetClientRolesEndpoint(managementComponent ManagementComponent) endpoint.Endpoint {
+// MakeGetClientRolesEndpoint creates an endpoint for GetClientRoles
+func MakeGetClientRolesEndpoint(managementComponent ManagementComponent) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
@@ -345,14 +366,15 @@ func MakeGetClientRolesEndpoint(managementComponent ManagementComponent) endpoin
 	}
 }
 
-func MakeCreateClientRoleEndpoint(managementComponent ManagementComponent) endpoint.Endpoint {
+// MakeCreateClientRoleEndpoint creates an endpoint for CreateClientRole
+func MakeCreateClientRoleEndpoint(managementComponent ManagementComponent) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		roleJson := []byte(m["body"])
+		roleJSON := []byte(m["body"])
 
 		var role api.RoleRepresentation
-		err := json.Unmarshal(roleJson, &role)
+		err := json.Unmarshal(roleJSON, &role)
 
 		if err != nil {
 			return nil, err
@@ -365,7 +387,7 @@ func MakeCreateClientRoleEndpoint(managementComponent ManagementComponent) endpo
 			return nil, err
 		}
 
-		url, err := convertLocationUrl(keycloakLocation, m["scheme"], m["host"]); 
+		url, err := convertLocationURL(keycloakLocation, m["scheme"], m["host"])
 
 		return LocationHeader{
 			URL: url,
@@ -373,7 +395,8 @@ func MakeCreateClientRoleEndpoint(managementComponent ManagementComponent) endpo
 	}
 }
 
-func MakeGetRealmCustomConfigurationEndpoint(managementComponent ManagementComponent) endpoint.Endpoint {
+// MakeGetRealmCustomConfigurationEndpoint creates an endpoint for GetRealmCustomConfiguration
+func MakeGetRealmCustomConfigurationEndpoint(managementComponent ManagementComponent) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
@@ -381,14 +404,15 @@ func MakeGetRealmCustomConfigurationEndpoint(managementComponent ManagementCompo
 	}
 }
 
-func MakeUpdateRealmCustomConfigurationEndpoint(managementComponent ManagementComponent) endpoint.Endpoint {
+// MakeUpdateRealmCustomConfigurationEndpoint creates an endpoint for UpdateRealmCustomConfiguration
+func MakeUpdateRealmCustomConfigurationEndpoint(managementComponent ManagementComponent) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		configJson := []byte(m["body"])
+		configJSON := []byte(m["body"])
 
 		var customConfig api.RealmCustomConfiguration
-		err := json.Unmarshal(configJson, &customConfig)
+		err := json.Unmarshal(configJSON, &customConfig)
 		if err != nil {
 			return nil, err
 		}
@@ -396,10 +420,12 @@ func MakeUpdateRealmCustomConfigurationEndpoint(managementComponent ManagementCo
 	}
 }
 
+// LocationHeader type
 type LocationHeader struct {
 	URL string
 }
 
+// ConvertLocationError type
 type ConvertLocationError struct {
 	Location string
 }
@@ -409,7 +435,7 @@ func (e ConvertLocationError) Error() string {
 }
 
 // We are currently using a mapping 1:1 for REST API of Bridge and Keycloak, thus we take a shortcut to convert the location of the resource
-func convertLocationUrl(originalURL string, scheme string, host string) (string, error) {
+func convertLocationURL(originalURL string, scheme string, host string) (string, error) {
 	delimiter := regexp.MustCompile(`(\/auth\/admin)|(auth\/realms\/[a-zA-Z0-9_-]+\/api\/admin)`)
 	var splitURL = delimiter.Split(originalURL, 2)
 

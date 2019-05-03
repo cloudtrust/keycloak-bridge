@@ -3,11 +3,12 @@ package management
 import (
 	"context"
 
+	"github.com/cloudtrust/common-service/security"
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
-	"github.com/cloudtrust/keycloak-bridge/internal/security"
 	"github.com/go-kit/kit/log"
 )
 
+// Creates constants for API method names
 const (
 	GetRealms                      = "GetRealms"
 	GetRealm                       = "GetRealm"

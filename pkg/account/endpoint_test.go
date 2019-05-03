@@ -9,8 +9,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-//go:generate mockgen -destination=./mock/accountcomponent.go -package=mock -mock_names=AccountComponent=AccountComponent github.com/cloudtrust/keycloak-bridge/pkg/account AccountComponent
-
 func TestMakeUpdatePasswordEndpoint(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()

@@ -238,7 +238,7 @@ func eventToMap(event *fb.Event) map[string]string {
 	var eventMap = make(map[string]string)
 	var addInfo = make(map[string]string)
 	// if an event has the ct_event_type set already, the flag avoids rewriting it
-	var doNotSetCTEventType bool = false
+	var doNotSetCTEventType = false
 
 	addInfo["uid"] = fmt.Sprint(event.Uid())
 

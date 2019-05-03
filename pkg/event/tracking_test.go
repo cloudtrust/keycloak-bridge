@@ -20,7 +20,7 @@ func TestComponentTrackingMW(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 	var mockMuxComponent = mock.NewMuxComponent(mockCtrl)
-	var mockSentry = mock.NewSentry(mockCtrl)
+	var mockSentry = mock.NewSentryTracking(mockCtrl)
 	var mockLogger = mock.NewLogger(mockCtrl)
 
 	var m = MakeMuxComponentTrackingMW(mockSentry, mockLogger)(mockMuxComponent)

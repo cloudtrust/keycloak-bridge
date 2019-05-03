@@ -1,7 +1,5 @@
 package events
 
-//go:generate mockgen -destination=./mock/component.go -package=mock -mock_names=EventsComponent=EventsComponent github.com/cloudtrust/keycloak-bridge/pkg/events EventsComponent
-
 import (
 	"bytes"
 	"encoding/json"
@@ -10,7 +8,9 @@ import (
 	"testing"
 
 	api "github.com/cloudtrust/keycloak-bridge/api/events"
+	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/cloudtrust/keycloak-bridge/pkg/events/mock"
+	"github.com/go-kit/kit/log"
 	"github.com/golang/mock/gomock"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
@@ -21,7 +21,7 @@ func TestHTTPManagementHandler(t *testing.T) {
 	defer mockCtrl.Finish()
 	var mockComponent = mock.NewEventsComponent(mockCtrl)
 
-	var managementHandler1 = MakeEventsHandler(MakeGetEventsEndpoint(mockComponent))
+	var managementHandler1 = MakeEventsHandler(keycloakb.ToGoKitEndpoint(MakeGetEventsEndpoint(mockComponent)), log.NewNopLogger())
 
 	r := mux.NewRouter()
 	r.Handle("/events", managementHandler1)
