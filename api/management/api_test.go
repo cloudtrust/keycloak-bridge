@@ -62,6 +62,12 @@ func TestConvertToAPIUser(t *testing.T) {
 	kcUser.Attributes = &m
 	m["phoneNumberVerified"] = []string{"true"}
 	assert.True(t, *ConvertToAPIUser(kcUser).PhoneNumberVerified)
+
+	// Locale
+	assert.Nil(t, ConvertToAPIUser(kcUser).Locale)
+	kcUser.Attributes = &m
+	m["locale"] = []string{"en"}
+	assert.NotNil(t, *ConvertToAPIUser(kcUser).Locale)
 }
 
 func TestConvertToKCUser(t *testing.T) {
@@ -92,4 +98,9 @@ func TestConvertToKCUser(t *testing.T) {
 	var verified = true
 	user.PhoneNumberVerified = &verified
 	assert.Equal(t, "true", (*ConvertToKCUser(user).Attributes)["phoneNumberVerified"][0])
+
+	// Locale
+	var locale = "it"
+	user.Locale = &locale
+	assert.Equal(t, locale, (*ConvertToKCUser(user).Attributes)["locale"][0])
 }
