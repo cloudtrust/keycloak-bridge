@@ -77,11 +77,13 @@ CT_BRIDGE_SENTRY_DSN | sentry-dsn
 Launch the keycloak bridge:
 
 ```bash
-./bin/keycloak_bridge --config-file <path/to/config/file.yml>
+./bin/keycloak_bridge --config-file <path/to/config/file.yml> --authorization-file <path/to/config/file.json>
 ```
 
 It is recommended to always provides an absolute path to the configuration file when the service is started, even though absolute and relative paths are supported.
 If no configuration file is passed, the service will try to load the default config file at ```./configs/keycloak_bridge.yml```, and if it fails it launches the service with the default parameters.
+
+It is manadatory to load an authorization JSON file, if no authorization file is passed, the service will try to load the default file at ```./configs/authorization.json```, and if it fails the bridge refuse to start.
 
 ### Keycloak events
 

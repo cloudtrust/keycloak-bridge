@@ -59,7 +59,7 @@ type ManagementComponent interface {
 	ResetPassword(ctx context.Context, realmName string, userID string, password api.PasswordRepresentation) error
 	SendVerifyEmail(ctx context.Context, realmName string, userID string, paramKV ...string) error
 	ExecuteActionsEmail(ctx context.Context, realmName string, userID string, actions []string, paramKV ...string) error
-	SendNewEnrolmentCode(ctx context.Context, realmName string, userID string) error
+	SendNewEnrolmentCode(ctx context.Context, realmName string, userID string) (string, error)
 	GetCredentialsForUser(ctx context.Context, realmName string, userID string) ([]api.CredentialRepresentation, error)
 	DeleteCredentialsForUser(ctx context.Context, realmName string, userID string, credentialID string) error
 	GetRoles(ctx context.Context, realmName string) ([]api.RoleRepresentation, error)
@@ -114,6 +114,10 @@ func MakeCreateUserEndpoint(managementComponent ManagementComponent) endpoint.En
 
 		if err != nil {
 			return nil, err
+		}
+
+		if user.Groups == nil || len(*user.Groups) == 0 {
+			return nil, keycloakb.CreateMissingParameterError("groups")
 		}
 
 		var keycloakLocation string
@@ -292,7 +296,8 @@ func MakeSendNewEnrolmentCodeEndpoint(managementComponent ManagementComponent) e
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return nil, managementComponent.SendNewEnrolmentCode(ctx, m["realm"], m["userID"])
+		code, err := managementComponent.SendNewEnrolmentCode(ctx, m["realm"], m["userID"])
+		return map[string]string{"code": code}, err
 	}
 }
 

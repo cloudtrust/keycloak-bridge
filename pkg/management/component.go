@@ -30,7 +30,7 @@ type KeycloakClient interface {
 	ResetPassword(accessToken string, realmName string, userID string, cred kc.CredentialRepresentation) error
 	SendVerifyEmail(accessToken string, realmName string, userID string, paramKV ...string) error
 	ExecuteActionsEmail(accessToken string, realmName string, userID string, actions []string, paramKV ...string) error
-	SendNewEnrolmentCode(accessToken string, realmName string, userID string) error
+	SendNewEnrolmentCode(accessToken string, realmName string, userID string) (kc.SmsCodeRepresentation, error)
 	GetCredentialsForUser(accessToken string, realmReq, realmName string, userID string) ([]kc.CredentialRepresentation, error)
 	DeleteCredentialsForUser(accessToken string, realmReq, realmName string, userID string, credentialID string) error
 	GetRoles(accessToken string, realmName string) ([]kc.RoleRepresentation, error)
@@ -59,7 +59,7 @@ type Component interface {
 	ResetPassword(ctx context.Context, realmName string, userID string, password api.PasswordRepresentation) error
 	SendVerifyEmail(ctx context.Context, realmName string, userID string, paramKV ...string) error
 	ExecuteActionsEmail(ctx context.Context, realmName string, userID string, actions []string, paramKV ...string) error
-	SendNewEnrolmentCode(ctx context.Context, realmName string, userID string) error
+	SendNewEnrolmentCode(ctx context.Context, realmName string, userID string) (string, error)
 	GetCredentialsForUser(ctx context.Context, realmName string, userID string) ([]api.CredentialRepresentation, error)
 	DeleteCredentialsForUser(ctx context.Context, realmName string, userID string, credentialID string) error
 	GetRoles(ctx context.Context, realmName string) ([]api.RoleRepresentation, error)
@@ -474,10 +474,16 @@ func (c *component) ExecuteActionsEmail(ctx context.Context, realmName string, u
 	return c.keycloakClient.ExecuteActionsEmail(accessToken, realmName, userID, actions, paramKV...)
 }
 
-func (c *component) SendNewEnrolmentCode(ctx context.Context, realmName string, userID string) error {
+func (c *component) SendNewEnrolmentCode(ctx context.Context, realmName string, userID string) (string, error) {
 	var accessToken = ctx.Value("access_token").(string)
 
-	return c.keycloakClient.SendNewEnrolmentCode(accessToken, realmName, userID)
+	smsCodeKc, err := c.keycloakClient.SendNewEnrolmentCode(accessToken, realmName, userID)
+
+	if err != nil {
+		return "", err
+	}
+
+	return *smsCodeKc.Code, err
 }
 
 func (c *component) GetCredentialsForUser(ctx context.Context, realmName string, userID string) ([]api.CredentialRepresentation, error) {
