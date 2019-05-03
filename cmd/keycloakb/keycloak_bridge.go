@@ -230,7 +230,7 @@ func main() {
 			return
 		}
 
-		authorizationManager, err = security.NewAuthorizationManager(keycloakClient, string(json))
+		authorizationManager, err = security.NewAuthorizationManager(keycloakClient, logger, string(json))
 
 		if err != nil {
 			logger.Log("msg", "could not load authorizations", "error", err)

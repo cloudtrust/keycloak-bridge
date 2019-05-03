@@ -18,6 +18,8 @@ func TestDeny(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 	var mockLogger = mock.NewLogger(mockCtrl)
+	mockLogger.EXPECT().Log(gomock.Any()).AnyTimes()
+	
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
 
@@ -73,7 +75,7 @@ func TestDeny(t *testing.T) {
 
 	// Nothing allowed
 	{
-		var authorizations, err = security.NewAuthorizationManager(mockKeycloakClient, `{}`)
+		var authorizations, err = security.NewAuthorizationManager(mockKeycloakClient, mockLogger, `{}`)
 		assert.Nil(t, err)
 
 		var authorizationMW = MakeAuthorizationManagementComponentMW(mockLogger, authorizations)(mockManagementComponent)
@@ -221,7 +223,7 @@ func TestAllowed(t *testing.T) {
 
 	// Anything allowed
 	{
-		var authorizations, err = security.NewAuthorizationManager(mockKeycloakClient, `{"master":
+		var authorizations, err = security.NewAuthorizationManager(mockKeycloakClient, mockLogger, `{"master":
 			{
 				"toe": {
 					"GetRealms": {"*": {}},
