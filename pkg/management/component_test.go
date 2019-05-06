@@ -618,27 +618,6 @@ func TestUpdateUser(t *testing.T) {
 				return nil
 			}).Times(1)
 
-		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
-		ctx = context.WithValue(ctx, "realm", realmName)
-		ctx = context.WithValue(ctx, "username", username)
-
-		mockEventDBModule.EXPECT().Store(ctx, gomock.Any()).Return(nil).AnyTimes()
-
-		var userRep = api.UserRepresentation{
-			Username:            &username,
-			Email:               &email,
-			Enabled:             &enabled,
-			EmailVerified:       &emailVerified,
-			FirstName:           &firstName,
-			LastName:            &lastName,
-			PhoneNumber:         &phoneNumber,
-			PhoneNumberVerified: &phoneNumberVerified,
-			Label:               &label,
-			Gender:              &gender,
-			BirthDate:           &birthDate,
-			Locale:              &locale,
-		}
-
 		err := managementComponent.UpdateUser(ctx, "master", id, userRep)
 
 		assert.Nil(t, err)
