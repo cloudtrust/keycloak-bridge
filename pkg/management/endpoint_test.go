@@ -109,7 +109,7 @@ func TestCreateUserEndpoint(t *testing.T) {
 		req["scheme"] = "https"
 		req["host"] = "elca.ch"
 		req["realm"] = realm
-		
+
 		userJSON, _ := json.Marshal(api.UserRepresentation{Groups: &groups})
 		req["body"] = string(userJSON)
 
@@ -597,7 +597,7 @@ func TestSendNewEnrolmentCodeEndpoint(t *testing.T) {
 	mockManagementComponent.EXPECT().SendNewEnrolmentCode(ctx, realm, userID).Return("1234", nil).Times(1)
 	var res, err = e(ctx, req)
 	assert.Nil(t, err)
-	assert.Equal(t, map[string]string{"code":"1234"}, res)
+	assert.Equal(t, map[string]string{"code": "1234"}, res)
 
 }
 
@@ -837,4 +837,13 @@ func TestUpdateRealmCustomConfigurationEndpoint(t *testing.T) {
 		assert.NotNil(t, err)
 		assert.Nil(t, res)
 	}
+}
+
+func TestConvertLocationUrl(t *testing.T) {
+
+	res := convertLocationUrl("http://localhost:8080/auth/realms/master/api/admin/realms/dep/users/1522-4245245-4542545/credentials", "https", "ct-bridge.services.com")
+	assert.Equal(t, "https://ct-bridge.services.com/management/realms/dep/users/1522-4245245-4542545/credentials", res)
+
+	res = convertLocationUrl("http://localhost:8080/auth/admin/realms/dep/users/1522-4245245-4542545", "https", "ct-bridge.services.com")
+	assert.Equal(t, "https://ct-bridge.services.com/management/realms/dep/users/1522-4245245-4542545", res)
 }

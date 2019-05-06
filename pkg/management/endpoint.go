@@ -3,6 +3,7 @@ package management
 import (
 	"context"
 	"encoding/json"
+	"regexp"
 	"strings"
 
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
@@ -396,6 +397,7 @@ type LocationHeader struct {
 
 // We are currently using a mapping 1:1 for REST API of Bridge and Keycloak, thus we take a shortcut to convert the location of the resource
 func convertLocationUrl(originalURL string, scheme string, host string) string {
-	var splitURL = strings.Split(originalURL, "/auth/admin")
+	delimiter := regexp.MustCompile(`(\/auth\/admin)|(auth\/realms\/[a-z0-9-]+\/api\/admin)`)
+	var splitURL = delimiter.Split(originalURL, 2)
 	return scheme + "://" + host + "/management" + splitURL[1]
 }
