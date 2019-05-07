@@ -146,7 +146,12 @@ paths:
         in: query
         schema:
           type: string
-        allowEmptyValue: true 
+        allowEmptyValue: true
+      - name: search
+        in: query
+        schema:
+          type: string
+        allowEmptyValue: true
       responses:
         200:
           description: successful operation
