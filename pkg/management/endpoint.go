@@ -172,7 +172,7 @@ func MakeGetUsersEndpoint(managementComponent ManagementComponent) endpoint.Endp
 		var m = req.(map[string]string)
 
 		var paramKV []string
-		for _, key := range []string{"email", "firstName", "lastName", "max", "username"} {
+		for _, key := range []string{"email", "firstName", "lastName", "max", "username", "search"} {
 			if m[key] != "" {
 				paramKV = append(paramKV, key, m[key])
 			}
