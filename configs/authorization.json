@@ -101,15 +101,12 @@
           "integrator_agent": {}
         },
         "DEP": {
-          "*": {}
+          "end_user": {}
         }
       },
       "CreateUser": {
         "master": {
           "integrator_agent": {}
-        },
-        "DEP": {
-          "product_administrator": {}
         }
       },
       "GetUser": {
@@ -117,7 +114,7 @@
           "integrator_agent": {}
         },
         "DEP": {
-          "*": {}
+          "end_user": {}
         }
       },
       "GetRolesOfUser": {
@@ -125,7 +122,7 @@
           "integrator_agent": {}
         },
         "DEP": {
-          "*": {}
+          "end_user": {}
         }
       },
       "GetGroupsOfUser": {
@@ -133,7 +130,7 @@
           "integrator_agent": {}
         },
         "DEP": {
-          "*": {}
+          "end_user": {}
         }
       },
       "UpdateUser": {
@@ -141,7 +138,7 @@
           "integrator_agent": {}
         },
         "DEP": {
-          "*": {}
+          "end_user": {}
         }
       },
       "DeleteUser": {
@@ -149,7 +146,7 @@
           "integrator_agent": {}
         },
         "DEP": {
-          "*": {}
+          "end_user": {}
         }
       },
       "ResetPassword": {
@@ -157,7 +154,7 @@
           "integrator_agent": {}
         },
         "DEP": {
-          "*": {}
+          "end_user": {}
         }
       },
       "SendVerifyEmail": {
@@ -165,32 +162,32 @@
           "integrator_agent": {}
         },
         "DEP": {
-          "*": {}
+          "end_user": {}
         }
-      }, 
+      },
       "ExecuteActionsEmail": {
         "master": {
           "integrator_agent": {}
         },
         "DEP": {
-          "*": {}
-        } 
+          "end_user": {}
+        }
       },
       "GetCredentialsForUser": {
         "master": {
           "integrator_manager": {}
         },
         "DEP": {
-          "*": {}
-        } 
+          "end_user": {}
+        }
       },
       "DeleteCredentialsForUser": {
         "master": {
           "integrator_manager": {}
         },
         "DEP": {
-          "*": {}
-        } 
+          "end_user": {}
+        }
       },
       "GetRealmCustomConfiguration": {
         "DEP": {
@@ -266,7 +263,7 @@
         "DEP": {
           "*": {}
         }
-      },  
+      },
       "GetRealmCustomConfiguration": {
         "DEP": {
           "*": {}
@@ -276,7 +273,7 @@
         "DEP": {
           "*": {}
         }
-      }          
+      }
     },
     "l2_support_manager":{
       "GetRealms": {
@@ -335,7 +332,7 @@
       "GetCredentialsForUser": {
         "master": {
           "l2_support_agent": {}
-        } 
+        }
       },
       "DeleteCredentialsForUser": {
         "master": {
@@ -405,7 +402,7 @@
       "GetCredentialsForUser": {
         "master": {
           "l3_support_agent": {}
-        } 
+        }
       },
       "DeleteCredentialsForUser": {
         "master": {
@@ -557,7 +554,7 @@
         "DEP": {
           "l1_support_agent": {},
           "end_user": {}
-        } 
+        }
       },
       "DeleteCredentialsForUser": {
         "DEP": {
@@ -620,7 +617,7 @@
       "GetCredentialsForUser": {
         "DEP": {
           "end_user": {}
-        } 
+        }
       },
       "DeleteCredentialsForUser": {
         "DEP": {
@@ -631,7 +628,7 @@
         "DEP": {
           "end_user": {}
         }
-      }  
+      }
     },
     "registration_officer": {
       "CreateUser": {
@@ -642,3 +639,4 @@
     }
   }
 }
+
