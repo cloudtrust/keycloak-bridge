@@ -2,6 +2,7 @@ package management
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -10,16 +11,47 @@ import (
 	"strings"
 	"testing"
 
+	commonhttp "github.com/cloudtrust/common-service/http"
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/cloudtrust/keycloak-bridge/internal/security"
 	"github.com/cloudtrust/keycloak-bridge/pkg/management/mock"
 	kc_client "github.com/cloudtrust/keycloak-client"
+	http_transport "github.com/go-kit/kit/transport/http"
 	"github.com/golang/mock/gomock"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
 )
 
+func TestX(t *testing.T) {
+	handler := http_transport.NewServer(
+		// Endpoint
+		func(ctx context.Context, request interface{}) (response interface{}, err error) {
+			m := request.(map[string]string)
+			return m["realm"] + " " + m["var"], nil
+		},
+		func(ctx context.Context, req *http.Request) (interface{}, error) {
+			return commonhttp.DecodeRequest(ctx, req, []string{"realm", "var", "param"}, []string{})
+		},
+		commonhttp.EncodeReply,
+		http_transport.ServerErrorEncoder(commonhttp.ErrorHandlerNoLog()),
+	)
+
+	r := mux.NewRouter()
+	r.Handle("/realms/{realm}/var/{var}", handler)
+
+	ts := httptest.NewServer(r)
+	defer ts.Close()
+
+	res, err := http.Get(ts.URL + "/realms/master/var/123-456")
+
+	assert.Nil(t, err)
+	assert.Equal(t, http.StatusOK, res.StatusCode)
+
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(res.Body)
+	assert.Equal(t, "\"master 123-456\"", buf.String())
+}
 func TestHTTPManagementHandler(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
