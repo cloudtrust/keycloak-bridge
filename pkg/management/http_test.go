@@ -34,7 +34,7 @@ func TestX(t *testing.T) {
 			return commonhttp.DecodeRequest(ctx, req, []string{"realm", "var", "param"}, []string{})
 		},
 		commonhttp.EncodeReply,
-		http_transport.ServerErrorEncoder(commonhttp.ErrorHandlerNoLog()),
+		http_transport.ServerErrorEncoder(commonhttp.ErrorHandlerNoLog)
 	)
 
 	r := mux.NewRouter()
