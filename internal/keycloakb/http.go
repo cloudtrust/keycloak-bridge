@@ -109,7 +109,6 @@ func EventsErrorHandler(_ context.Context, err error, w http.ResponseWriter) {
 			w.WriteHeader(http.StatusTooManyRequests)
 		} else {
 			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(err.Error()))
 		}
 	}
 }

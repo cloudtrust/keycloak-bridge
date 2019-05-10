@@ -256,7 +256,6 @@ func TestEventsErrorHandler(t *testing.T) {
 	{
 		message := "500"
 		mockRespWriter.EXPECT().WriteHeader(http.StatusInternalServerError).Times(1)
-		mockRespWriter.EXPECT().Write([]byte(message)).Times(1)
 		EventsErrorHandler(context.Background(), errors.New(message), mockRespWriter)
 	}
 }
