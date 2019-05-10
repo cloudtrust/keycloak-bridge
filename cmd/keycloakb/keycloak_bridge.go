@@ -812,6 +812,8 @@ func config(logger log.Logger) *viper.Viper {
 
 	v.BindEnv("sentry-dsn", "CT_BRIDGE_SENTRY_DSN")
 
+	v.BindEnv("event-basic-auth-token", "CT_BRIDGE_EVENT_BASIC_AUTH")
+
 	// Load and log config.
 	v.SetConfigFile(v.GetString("config-file"))
 	var err = v.ReadInConfig()

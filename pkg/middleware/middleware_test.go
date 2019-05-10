@@ -58,10 +58,6 @@ func TestHTTPTracingMW(t *testing.T) {
 	m.ServeHTTP(w, req)
 }
 
-<<<<<<< HEAD
-=======
-
->>>>>>> c7255f2... Add HTTP basic MW
 func TestEndpointLoggingMW(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
