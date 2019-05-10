@@ -261,12 +261,12 @@ func TestGetUsersEndpoint(t *testing.T) {
 		req["email"] = "email@elca.ch"
 		req["firstName"] = "firstname"
 		req["lastName"] = "lastname"
-		req["max"] = "10"
+		req["search"] = "search"
 		req["username"] = "username"
 		req["toto"] = "tutu" // Check this param is not transmitted
 		req["groupIds"] = "123-784dsf-sdf567"
 
-		mockManagementComponent.EXPECT().GetUsers(ctx, realm, []string{req["groupIds"]}, "email", req["email"], "firstName", req["firstName"], "lastName", req["lastName"], "max", req["max"], "username", req["username"]).Return([]api.UserRepresentation{}, nil).Times(1)
+		mockManagementComponent.EXPECT().GetUsers(ctx, realm, []string{req["groupIds"]}, "email", req["email"], "firstName", req["firstName"], "lastName", req["lastName"], "username", req["username"], "search", req["search"],).Return([]api.UserRepresentation{}, nil).Times(1)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.NotNil(t, res)
