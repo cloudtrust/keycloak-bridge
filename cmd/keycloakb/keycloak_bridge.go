@@ -208,6 +208,17 @@ func main() {
 		}
 	}
 
+	// Security - Basic AuthN token to protect internal/event endpoint
+	var eventExpectedAuthToken string
+	{
+		eventExpectedAuthToken = c.GetString("event-basic-auth-token")
+
+		if eventExpectedAuthToken == "" {
+			logger.Log("msg", "password for event endpoint (event-basic-auth-token) cannot be empty")
+			return
+		}
+	}
+
 	// Keycloak client.
 	var keycloakClient *keycloak.Client
 	{
@@ -716,7 +727,8 @@ func config(logger log.Logger) *viper.Viper {
 	v.SetDefault("account-http-host-port", "0.0.0.0:8866")
 
 	// Security - Audience check
-	v.SetDefault("audience", "")
+	v.SetDefault("audience-required", "")
+	v.SetDefault("event-basic-auth-token", "")
 
 	// CORS configuration
 	v.SetDefault("cors-allowed-origins", []string{})
@@ -726,7 +738,6 @@ func config(logger log.Logger) *viper.Viper {
 	v.SetDefault("cors-debug", false)
 
 	// Keycloak default.
-	v.SetDefault("keycloak", true)
 	v.SetDefault("keycloak-api-uri", "http://127.0.0.1:8080")
 	v.SetDefault("keycloak-oidc-uri", "http://127.0.0.1:8080")
 	v.SetDefault("keycloak-username", "")
