@@ -532,6 +532,7 @@ func main() {
 			eventHandler = event.MakeHTTPEventHandler(eventEndpoints.Endpoint)
 			eventHandler = middleware.MakeHTTPCorrelationIDMW(idGenerator, tracer, logger, ComponentName, ComponentID)(eventHandler)
 			eventHandler = middleware.MakeHTTPTracingMW(tracer, ComponentName, "http_server_event")(eventHandler)
+			eventHandler = middleware.MakeHTTPBasicAuthenticationMW(eventExpectedAuthToken, logger)(eventHandler)
 		}
 		eventSubroute.Handle("/receiver", eventHandler)
 
