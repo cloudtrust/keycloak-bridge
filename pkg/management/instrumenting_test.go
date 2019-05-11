@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	cs "github.com/cloudtrust/common-service"
 	"github.com/cloudtrust/keycloak-bridge/pkg/management/mock"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -22,7 +23,7 @@ func TestComponentInstrumentingMW(t *testing.T) {
 
 	rand.Seed(time.Now().UnixNano())
 	var corrID = strconv.FormatUint(rand.Uint64(), 10)
-	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
+	var ctx = context.WithValue(context.Background(), cs.CtContextCorrelationID, corrID)
 
 	// Get configuration.
 	mockComponent.EXPECT().GetConfiguration(ctx, "realmID").Return("", nil).Times(1)

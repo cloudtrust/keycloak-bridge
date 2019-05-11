@@ -25,7 +25,7 @@ func MakeHTTPExportHandler(e endpoint.Endpoint) *http_transport.Server {
 func fetchHTTPCorrelationID(ctx context.Context, req *http.Request) context.Context {
 	var correlationID = req.Header.Get("X-Correlation-ID")
 	if correlationID != "" {
-		ctx = context.WithValue(ctx, "correlation_id", correlationID)
+		ctx = context.WithValue(ctx, cs.CtContextCorrelationID, correlationID)
 	}
 	return ctx
 }

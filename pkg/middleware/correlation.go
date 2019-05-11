@@ -20,7 +20,7 @@ func MakeHTTPCorrelationIDMW(idGenerator gen.IDGenerator, tracer opentracing.Tra
 				correlationID = idGenerator.NextID()
 			}
 
-			var ctx = context.WithValue(req.Context(), "correlation_id", correlationID)
+			var ctx = context.WithValue(req.Context(), cs.CtContextCorrelationID, correlationID)
 			next.ServeHTTP(w, req.WithContext(ctx))
 		})
 	}

@@ -6,6 +6,7 @@ import (
 	"context"
 	"testing"
 
+	cs "github.com/cloudtrust/common-service"
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
 	"github.com/cloudtrust/keycloak-bridge/internal/security"
 	"github.com/cloudtrust/keycloak-bridge/pkg/management/mock"
@@ -19,7 +20,7 @@ func TestDeny(t *testing.T) {
 	defer mockCtrl.Finish()
 	var mockLogger = mock.NewLogger(mockCtrl)
 	mockLogger.EXPECT().Log(gomock.Any()).AnyTimes()
-	
+
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
 
@@ -80,9 +81,9 @@ func TestDeny(t *testing.T) {
 
 		var authorizationMW = MakeAuthorizationManagementComponentMW(mockLogger, authorizations)(mockManagementComponent)
 
-		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
-		ctx = context.WithValue(ctx, "groups", groups)
-		ctx = context.WithValue(ctx, "realm", "master")
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx = context.WithValue(ctx, cs.CtContextGroups, groups)
+		ctx = context.WithValue(ctx, cs.CtContextRealm, "master")
 
 		_, err = authorizationMW.GetRealms(ctx)
 		assert.Equal(t, security.ForbiddenError{}, err)
@@ -259,9 +260,9 @@ func TestAllowed(t *testing.T) {
 
 		var authorizationMW = MakeAuthorizationManagementComponentMW(mockLogger, authorizations)(mockManagementComponent)
 
-		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
-		ctx = context.WithValue(ctx, "groups", groups)
-		ctx = context.WithValue(ctx, "realm", "master")
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx = context.WithValue(ctx, cs.CtContextGroups, groups)
+		ctx = context.WithValue(ctx, cs.CtContextRealm, "master")
 
 		mockManagementComponent.EXPECT().GetRealms(ctx).Return([]api.RealmRepresentation{}, nil).Times(1)
 		_, err = authorizationMW.GetRealms(ctx)

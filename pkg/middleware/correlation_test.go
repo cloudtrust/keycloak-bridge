@@ -34,7 +34,7 @@ func TestHTTPCorrelationIDMW(t *testing.T) {
 	// With header 'X-Correlation-ID'
 	{
 		var mockHandler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			var id = req.Context().Value("correlation_id").(string)
+			var id = req.Context().Value(cs.CtContextCorrelationID).(string)
 			assert.Equal(t, corrID, id)
 		})
 
@@ -51,7 +51,7 @@ func TestHTTPCorrelationIDMW(t *testing.T) {
 	// Without header 'X-Correlation-ID', so there is a call to IDGenerator.
 	{
 		var mockHandler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			var id = req.Context().Value("correlation_id").(string)
+			var id = req.Context().Value(cs.CtContextCorrelationID).(string)
 			assert.Equal(t, "keycloak_brdige-123456789-12645316163-45641615174715", id)
 		})
 		var m = MakeHTTPCorrelationIDMW(mockIDGenerator, mockTracer, mockLogger, componentName, componentID)(mockHandler)

@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	cs "github.com/cloudtrust/common-service"
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/cloudtrust/keycloak-bridge/pkg/management/mock"
@@ -51,7 +52,7 @@ func TestGetRealms(t *testing.T) {
 
 		mockKeycloakClient.EXPECT().GetRealms(accessToken).Return(kcRealmsRep, nil).Times(1)
 
-		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		apiRealmsRep, err := managementComponent.GetRealms(ctx)
 
@@ -74,7 +75,7 @@ func TestGetRealms(t *testing.T) {
 	{
 		mockKeycloakClient.EXPECT().GetRealms(accessToken).Return([]kc.RealmRepresentation{}, fmt.Errorf("Unexpected error")).Times(1)
 
-		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		_, err := managementComponent.GetRealms(ctx)
 
@@ -113,9 +114,9 @@ func TestGetRealm(t *testing.T) {
 
 		mockKeycloakClient.EXPECT().GetRealm(accessToken, realmName).Return(kcRealmRep, nil).Times(1)
 
-		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
-		ctx = context.WithValue(ctx, "realm", realmName)
-		ctx = context.WithValue(ctx, "username", username)
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
+		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 
 		mockEventDBModule.EXPECT().Store(ctx, gomock.Any()).Return(nil).AnyTimes()
 
@@ -137,7 +138,7 @@ func TestGetRealm(t *testing.T) {
 	{
 		mockKeycloakClient.EXPECT().GetRealm(accessToken, realmName).Return(kc.RealmRepresentation{}, fmt.Errorf("Unexpected error")).Times(1)
 
-		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		//mockEventDBModule.EXPECT().Store(ctx, gomock.Any()).Return(nil).Times(1)
 
 		_, err := managementComponent.GetRealm(ctx, "master")
@@ -179,9 +180,9 @@ func TestGetClient(t *testing.T) {
 
 		mockKeycloakClient.EXPECT().GetClient(accessToken, realmName, id).Return(kcClientRep, nil).Times(1)
 
-		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
-		ctx = context.WithValue(ctx, "realm", realmName)
-		ctx = context.WithValue(ctx, "username", username)
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
+		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 
 		mockEventDBModule.EXPECT().Store(ctx, gomock.Any()).Return(nil).AnyTimes()
 
@@ -205,7 +206,7 @@ func TestGetClient(t *testing.T) {
 		var id = "1234-79894-7594"
 		mockKeycloakClient.EXPECT().GetClient(accessToken, realmName, id).Return(kc.ClientRepresentation{}, fmt.Errorf("Unexpected error")).Times(1)
 
-		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		_, err := managementComponent.GetClient(ctx, "master", id)
 
@@ -248,7 +249,7 @@ func TestGetClients(t *testing.T) {
 
 		mockKeycloakClient.EXPECT().GetClients(accessToken, realmName).Return(kcClientsRep, nil).Times(1)
 
-		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		apiClientsRep, err := managementComponent.GetClients(ctx, "master")
 
@@ -272,7 +273,7 @@ func TestGetClients(t *testing.T) {
 	{
 		mockKeycloakClient.EXPECT().GetClients(accessToken, realmName).Return([]kc.ClientRepresentation{}, fmt.Errorf("Unexpected error")).Times(1)
 
-		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		_, err := managementComponent.GetClients(ctx, "master")
 
@@ -303,9 +304,9 @@ func TestCreateUser(t *testing.T) {
 
 		mockKeycloakClient.EXPECT().CreateUser(accessToken, realmName, targetRealmName, kcUserRep).Return(locationURL, nil).Times(1)
 
-		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
-		ctx = context.WithValue(ctx, "realm", realmName)
-		ctx = context.WithValue(ctx, "username", username)
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
+		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 
 		mockEventDBModule.EXPECT().Store(ctx, gomock.Any()).Return(nil).AnyTimes()
 
@@ -353,9 +354,9 @@ func TestCreateUser(t *testing.T) {
 				return locationURL, nil
 			}).Times(1)
 
-		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
-		ctx = context.WithValue(ctx, "realm", realmName)
-		ctx = context.WithValue(ctx, "username", username)
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
+		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 
 		mockEventDBModule.EXPECT().Store(ctx, gomock.Any()).Return(nil).AnyTimes()
 
@@ -387,8 +388,8 @@ func TestCreateUser(t *testing.T) {
 
 		mockKeycloakClient.EXPECT().CreateUser(accessToken, realmName, targetRealmName, kcUserRep).Return("", fmt.Errorf("Invalid input")).Times(1)
 
-		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
-		ctx = context.WithValue(ctx, "realm", realmName)
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 
 		var userRep = api.UserRepresentation{}
 
@@ -417,9 +418,9 @@ func TestDeleteUser(t *testing.T) {
 	{
 		mockKeycloakClient.EXPECT().DeleteUser(accessToken, realmName, userID).Return(nil).Times(1)
 
-		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
-		ctx = context.WithValue(ctx, "realm", realmName)
-		ctx = context.WithValue(ctx, "username", username)
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
+		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 
 		mockEventDBModule.EXPECT().Store(ctx, gomock.Any()).Return(nil).AnyTimes()
 
@@ -432,7 +433,7 @@ func TestDeleteUser(t *testing.T) {
 	{
 		mockKeycloakClient.EXPECT().DeleteUser(accessToken, realmName, userID).Return(fmt.Errorf("Invalid input")).Times(1)
 
-		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		err := managementComponent.DeleteUser(ctx, "master", userID)
 
@@ -491,9 +492,9 @@ func TestGetUser(t *testing.T) {
 
 		mockKeycloakClient.EXPECT().GetUser(accessToken, realmName, id).Return(kcUserRep, nil).Times(1)
 
-		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
-		ctx = context.WithValue(ctx, "realm", realmName)
-		ctx = context.WithValue(ctx, "username", username)
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
+		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 
 		mockEventDBModule.EXPECT().Store(ctx, gomock.Any()).Return(nil).AnyTimes()
 
@@ -520,7 +521,7 @@ func TestGetUser(t *testing.T) {
 		var id = "1234-79894-7594"
 		mockKeycloakClient.EXPECT().GetUser(accessToken, realmName, id).Return(kc.UserRepresentation{}, fmt.Errorf("Unexpected error")).Times(1)
 
-		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		_, err := managementComponent.GetUser(ctx, "master", id)
 
@@ -592,9 +593,9 @@ func TestUpdateUser(t *testing.T) {
 			Locale:              &locale,
 		}
 
-		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
-		ctx = context.WithValue(ctx, "realm", realmName)
-		ctx = context.WithValue(ctx, "username", username)
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
+		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 
 		mockEventDBModule.EXPECT().Store(ctx, gomock.Any()).Return(nil).AnyTimes()
 
@@ -731,7 +732,7 @@ func TestUpdateUser(t *testing.T) {
 		var id = "1234-79894-7594"
 		mockKeycloakClient.EXPECT().GetUser(accessToken, realmName, id).Return(kc.UserRepresentation{}, fmt.Errorf("Unexpected error")).Times(1)
 
-		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		err := managementComponent.UpdateUser(ctx, "master", id, api.UserRepresentation{})
 
@@ -746,7 +747,7 @@ func TestUpdateUser(t *testing.T) {
 		mockKeycloakClient.EXPECT().GetUser(accessToken, realmName, id).Return(kcUserRep, nil).AnyTimes()
 		mockKeycloakClient.EXPECT().UpdateUser(accessToken, realmName, id, gomock.Any()).Return(fmt.Errorf("Unexpected error")).Times(1)
 
-		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		err := managementComponent.UpdateUser(ctx, "master", id, api.UserRepresentation{})
 
@@ -807,8 +808,8 @@ func TestGetUsers(t *testing.T) {
 
 		mockKeycloakClient.EXPECT().GetUsers(accessToken, realmName, targetRealmName, "groupId", "123-456-789").Return(kcUsersRep, nil).Times(1)
 
-		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
-		ctx = context.WithValue(ctx, "realm", "master")
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx = context.WithValue(ctx, cs.CtContextRealm, "master")
 
 		apiUsersRep, err := managementComponent.GetUsers(ctx, "DEP", []string{"123-456-789"})
 
@@ -833,8 +834,8 @@ func TestGetUsers(t *testing.T) {
 	{
 		mockKeycloakClient.EXPECT().GetUsers(accessToken, realmName, targetRealmName, "groupId", "123-456-789").Return([]kc.UserRepresentation{}, fmt.Errorf("Unexpected error")).Times(1)
 
-		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
-		ctx = context.WithValue(ctx, "realm", "master")
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx = context.WithValue(ctx, cs.CtContextRealm, "master")
 
 		_, err := managementComponent.GetUsers(ctx, "DEP", []string{"123-456-789"})
 
@@ -860,7 +861,7 @@ func TestGetUserAccountStatus(t *testing.T) {
 	{
 		var userRep kc.UserRepresentation
 		mockKeycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(userRep, fmt.Errorf("Unexpected error")).Times(1)
-		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		_, err := managementComponent.GetUserAccountStatus(ctx, realmName, userID)
 		assert.NotNil(t, err)
 	}
@@ -871,7 +872,7 @@ func TestGetUserAccountStatus(t *testing.T) {
 		enabled := false
 		userRep.Enabled = &enabled
 		mockKeycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(userRep, nil).Times(1)
-		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		status, err := managementComponent.GetUserAccountStatus(ctx, realmName, userID)
 		assert.Nil(t, err)
 		assert.False(t, status["enabled"])
@@ -884,8 +885,8 @@ func TestGetUserAccountStatus(t *testing.T) {
 		userRep.Enabled = &enabled
 		mockKeycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(userRep, nil).Times(1)
 		mockKeycloakClient.EXPECT().GetCredentialsForUser(accessToken, realmReq, realmName, userID).Return(nil, fmt.Errorf("Unexpected error")).Times(1)
-		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
-		ctx = context.WithValue(ctx, "realm", realmReq)
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx = context.WithValue(ctx, cs.CtContextRealm, realmReq)
 		_, err := managementComponent.GetUserAccountStatus(ctx, realmName, userID)
 		assert.NotNil(t, err)
 	}
@@ -897,8 +898,8 @@ func TestGetUserAccountStatus(t *testing.T) {
 		userRep.Enabled = &enabled
 		mockKeycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(userRep, nil).Times(1)
 		mockKeycloakClient.EXPECT().GetCredentialsForUser(accessToken, realmReq, realmName, userID).Return([]kc.CredentialRepresentation{}, nil).Times(1)
-		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
-		ctx = context.WithValue(ctx, "realm", realmReq)
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx = context.WithValue(ctx, cs.CtContextRealm, realmReq)
 		status, err := managementComponent.GetUserAccountStatus(ctx, realmName, userID)
 		assert.Nil(t, err)
 		assert.False(t, status["enabled"])
@@ -912,8 +913,8 @@ func TestGetUserAccountStatus(t *testing.T) {
 		userRep.Enabled = &enabled
 		mockKeycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(userRep, nil).Times(1)
 		mockKeycloakClient.EXPECT().GetCredentialsForUser(accessToken, realmReq, realmName, userID).Return([]kc.CredentialRepresentation{creds1, creds2}, nil).Times(1)
-		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
-		ctx = context.WithValue(ctx, "realm", realmReq)
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx = context.WithValue(ctx, cs.CtContextRealm, realmReq)
 		status, err := managementComponent.GetUserAccountStatus(ctx, realmName, userID)
 		assert.Nil(t, err)
 		assert.True(t, status["enabled"])
@@ -957,7 +958,7 @@ func TestGetClientRolesForUser(t *testing.T) {
 
 		mockKeycloakClient.EXPECT().GetClientRoleMappings(accessToken, realmName, userID, clientID).Return(kcRolesRep, nil).Times(1)
 
-		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		apiRolesRep, err := managementComponent.GetClientRolesForUser(ctx, "master", userID, clientID)
 
@@ -975,7 +976,7 @@ func TestGetClientRolesForUser(t *testing.T) {
 	{
 		mockKeycloakClient.EXPECT().GetClientRoleMappings(accessToken, realmName, userID, clientID).Return([]kc.RoleRepresentation{}, fmt.Errorf("Unexpected error")).Times(1)
 
-		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		_, err := managementComponent.GetClientRolesForUser(ctx, "master", userID, clientID)
 
@@ -1030,7 +1031,7 @@ func TestAddClientRolesToUser(t *testing.T) {
 				return nil
 			}).Times(1)
 
-		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		var roleRep = api.RoleRepresentation{
 			Id:          &id,
@@ -1052,7 +1053,7 @@ func TestAddClientRolesToUser(t *testing.T) {
 	{
 		mockKeycloakClient.EXPECT().AddClientRolesToUserRoleMapping(accessToken, realmName, userID, clientID, gomock.Any()).Return(fmt.Errorf("Unexpected error")).Times(1)
 
-		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		err := managementComponent.AddClientRolesToUser(ctx, "master", userID, clientID, []api.RoleRepresentation{})
 
@@ -1096,7 +1097,7 @@ func TestGetRolesOfUser(t *testing.T) {
 
 		mockKeycloakClient.EXPECT().GetRealmLevelRoleMappings(accessToken, realmName, userID).Return(kcRolesRep, nil).Times(1)
 
-		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		apiRolesRep, err := managementComponent.GetRolesOfUser(ctx, "master", userID)
 
@@ -1114,7 +1115,7 @@ func TestGetRolesOfUser(t *testing.T) {
 	{
 		mockKeycloakClient.EXPECT().GetRealmLevelRoleMappings(accessToken, realmName, userID).Return([]kc.RoleRepresentation{}, fmt.Errorf("Unexpected error")).Times(1)
 
-		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		_, err := managementComponent.GetRolesOfUser(ctx, "master", userID)
 
@@ -1150,7 +1151,7 @@ func TestGetGroupsOfUser(t *testing.T) {
 
 		mockKeycloakClient.EXPECT().GetGroupsOfUser(accessToken, realmName, userID).Return(kcGroupsRep, nil).Times(1)
 
-		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		apiGroupsRep, err := managementComponent.GetGroupsOfUser(ctx, "master", userID)
 
@@ -1164,7 +1165,7 @@ func TestGetGroupsOfUser(t *testing.T) {
 	{
 		mockKeycloakClient.EXPECT().GetGroupsOfUser(accessToken, realmName, userID).Return([]kc.GroupRepresentation{}, fmt.Errorf("Unexpected error")).Times(1)
 
-		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		_, err := managementComponent.GetGroupsOfUser(ctx, "master", userID)
 
@@ -1197,9 +1198,9 @@ func TestResetPassword(t *testing.T) {
 
 		mockKeycloakClient.EXPECT().ResetPassword(accessToken, realmName, userID, kcCredRep).Return(nil).Times(1)
 
-		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
-		ctx = context.WithValue(ctx, "realm", realmName)
-		ctx = context.WithValue(ctx, "username", username)
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
+		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 
 		mockEventDBModule.EXPECT().Store(ctx, gomock.Any()).Return(nil).AnyTimes()
 
@@ -1216,7 +1217,7 @@ func TestResetPassword(t *testing.T) {
 	{
 		mockKeycloakClient.EXPECT().ResetPassword(accessToken, realmName, userID, gomock.Any()).Return(fmt.Errorf("Invalid input")).Times(1)
 
-		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		var passwordRep = api.PasswordRepresentation{
 			Value: &password,
@@ -1251,7 +1252,7 @@ func TestSendVerifyEmail(t *testing.T) {
 
 		mockKeycloakClient.EXPECT().SendVerifyEmail(accessToken, realmName, userID, key1, value1, key2, value2).Return(nil).Times(1)
 
-		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		err := managementComponent.SendVerifyEmail(ctx, "master", userID, key1, value1, key2, value2)
 
@@ -1262,7 +1263,7 @@ func TestSendVerifyEmail(t *testing.T) {
 	{
 		mockKeycloakClient.EXPECT().SendVerifyEmail(accessToken, realmName, userID).Return(fmt.Errorf("Invalid input")).Times(1)
 
-		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		err := managementComponent.SendVerifyEmail(ctx, "master", userID)
 
@@ -1294,7 +1295,7 @@ func TestExecuteActionsEmail(t *testing.T) {
 
 		mockKeycloakClient.EXPECT().ExecuteActionsEmail(accessToken, realmName, userID, actions, key1, value1, key2, value2).Return(nil).Times(1)
 
-		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		err := managementComponent.ExecuteActionsEmail(ctx, "master", userID, actions, key1, value1, key2, value2)
 
@@ -1305,7 +1306,7 @@ func TestExecuteActionsEmail(t *testing.T) {
 	{
 		mockKeycloakClient.EXPECT().ExecuteActionsEmail(accessToken, realmName, userID, actions).Return(fmt.Errorf("Invalid input")).Times(1)
 
-		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		err := managementComponent.ExecuteActionsEmail(ctx, "master", userID, actions)
 
@@ -1331,7 +1332,7 @@ func TestSendNewEnrolmentCode(t *testing.T) {
 		var code = "1234"
 		mockKeycloakClient.EXPECT().SendNewEnrolmentCode(accessToken, realmName, userID).Return(kc.SmsCodeRepresentation{Code: &code}, nil).Times(1)
 
-		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		codeRes, err := managementComponent.SendNewEnrolmentCode(ctx, "master", userID)
 
@@ -1343,7 +1344,7 @@ func TestSendNewEnrolmentCode(t *testing.T) {
 	{
 		mockKeycloakClient.EXPECT().SendNewEnrolmentCode(accessToken, realmName, userID).Return(kc.SmsCodeRepresentation{}, fmt.Errorf("Invalid input")).Times(1)
 
-		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		_, err := managementComponent.SendNewEnrolmentCode(ctx, "master", userID)
 
@@ -1368,8 +1369,8 @@ func TestGetCredentialsForUser(t *testing.T) {
 	{
 		mockKeycloakClient.EXPECT().GetCredentialsForUser(accessToken, realmReq, realmName, userID).Return([]kc.CredentialRepresentation{}, nil).Times(1)
 
-		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
-		ctx = context.WithValue(ctx, "realm", realmReq)
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx = context.WithValue(ctx, cs.CtContextRealm, realmReq)
 
 		_, err := managementComponent.GetCredentialsForUser(ctx, realmName, userID)
 
@@ -1395,8 +1396,8 @@ func TestDeleteCredentialsForUser(t *testing.T) {
 	{
 		mockKeycloakClient.EXPECT().DeleteCredentialsForUser(accessToken, realmReq, realmName, userID, credential).Return(nil).Times(1)
 
-		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
-		ctx = context.WithValue(ctx, "realm", realmReq)
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx = context.WithValue(ctx, cs.CtContextRealm, realmReq)
 
 		err := managementComponent.DeleteCredentialsForUser(ctx, realmName, userID, credential)
 
@@ -1439,7 +1440,7 @@ func TestGetRoles(t *testing.T) {
 
 		mockKeycloakClient.EXPECT().GetRoles(accessToken, realmName).Return(kcRolesRep, nil).Times(1)
 
-		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		apiRolesRep, err := managementComponent.GetRoles(ctx, "master")
 
@@ -1457,7 +1458,7 @@ func TestGetRoles(t *testing.T) {
 	{
 		mockKeycloakClient.EXPECT().GetRoles(accessToken, realmName).Return([]kc.RoleRepresentation{}, fmt.Errorf("Unexpected error")).Times(1)
 
-		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		_, err := managementComponent.GetRoles(ctx, "master")
 
@@ -1497,7 +1498,7 @@ func TestGetRole(t *testing.T) {
 
 		mockKeycloakClient.EXPECT().GetRole(accessToken, realmName, id).Return(kcRoleRep, nil).Times(1)
 
-		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		apiRoleRep, err := managementComponent.GetRole(ctx, "master", id)
 
@@ -1515,7 +1516,7 @@ func TestGetRole(t *testing.T) {
 		var id = "1234-7454-4516"
 		mockKeycloakClient.EXPECT().GetRole(accessToken, realmName, id).Return(kc.RoleRepresentation{}, fmt.Errorf("Unexpected error")).Times(1)
 
-		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		_, err := managementComponent.GetRole(ctx, "master", id)
 
@@ -1559,7 +1560,7 @@ func TestGetClientRoles(t *testing.T) {
 
 		mockKeycloakClient.EXPECT().GetClientRoles(accessToken, realmName, clientID).Return(kcRolesRep, nil).Times(1)
 
-		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		apiRolesRep, err := managementComponent.GetClientRoles(ctx, "master", clientID)
 
@@ -1577,7 +1578,7 @@ func TestGetClientRoles(t *testing.T) {
 	{
 		mockKeycloakClient.EXPECT().GetClientRoles(accessToken, realmName, clientID).Return([]kc.RoleRepresentation{}, fmt.Errorf("Unexpected error")).Times(1)
 
-		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		_, err := managementComponent.GetClientRoles(ctx, "master", clientID)
 
@@ -1620,7 +1621,7 @@ func TestCreateClientRole(t *testing.T) {
 				return locationURL, nil
 			}).Times(1)
 
-		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		var roleRep = api.RoleRepresentation{
 			Id:          &id,
@@ -1641,7 +1642,7 @@ func TestCreateClientRole(t *testing.T) {
 	{
 		mockKeycloakClient.EXPECT().CreateClientRole(accessToken, realmName, clientID, gomock.Any()).Return("", fmt.Errorf("Unexpected error")).Times(1)
 
-		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		_, err := managementComponent.CreateClientRole(ctx, "master", clientID, api.RoleRepresentation{})
 
@@ -1691,7 +1692,7 @@ func TestGetRealmCustomConfiguration(t *testing.T) {
 			DefaultRedirectUri: &redirectURI,
 		}
 
-		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		mockConfigurationDBModule.EXPECT().GetConfiguration(ctx, realmID).Return(customRealmConfigStr, nil).Times(1)
 
 		configJSON, err := managementComponent.GetRealmCustomConfiguration(ctx, realmID)
@@ -1719,7 +1720,7 @@ func TestGetRealmCustomConfiguration(t *testing.T) {
 
 		mockKeycloakClient.EXPECT().GetRealm(accessToken, realmID).Return(kcRealmRep, nil).Times(1)
 
-		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		mockConfigurationDBModule.EXPECT().GetConfiguration(ctx, realmID).Return("", nil).Times(1)
 
 		configJSON, err := managementComponent.GetRealmCustomConfiguration(ctx, realmID)
@@ -1747,7 +1748,7 @@ func TestGetRealmCustomConfiguration(t *testing.T) {
 
 		mockKeycloakClient.EXPECT().GetRealm(accessToken, realmID).Return(kcRealmRep, nil).Times(1)
 
-		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		mockConfigurationDBModule.EXPECT().GetConfiguration(ctx, realmID).Return("928743", nil).Times(1)
 
 		_, err := managementComponent.GetRealmCustomConfiguration(ctx, realmID)
@@ -1773,7 +1774,7 @@ func TestGetRealmCustomConfiguration(t *testing.T) {
 
 		mockKeycloakClient.EXPECT().GetRealm(accessToken, realmID).Return(kcRealmRep, errors.New("error")).Times(1)
 
-		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		_, err := managementComponent.GetRealmCustomConfiguration(ctx, realmID)
 
@@ -1798,7 +1799,7 @@ func TestGetRealmCustomConfiguration(t *testing.T) {
 
 		mockKeycloakClient.EXPECT().GetRealm(accessToken, realmID).Return(kcRealmRep, nil).Times(1)
 
-		var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		mockConfigurationDBModule.EXPECT().GetConfiguration(ctx, realmID).Return("", errors.New("error")).Times(1)
 
 		_, err := managementComponent.GetRealmCustomConfiguration(ctx, realmID)
@@ -1851,7 +1852,7 @@ func TestUpdateRealmCustomConfiguration(t *testing.T) {
 		RedirectUris: &redirectURIs2,
 	}
 
-	var ctx = context.WithValue(context.Background(), "access_token", accessToken)
+	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 	var clientID = "clientID1"
 	var redirectURI = "https://www.cloudtrust.io/test"
 	var configInit = api.RealmCustomConfiguration{

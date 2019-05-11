@@ -6,6 +6,7 @@ import (
 	"context"
 	"time"
 
+	cs "github.com/cloudtrust/common-service"
 	"github.com/go-kit/kit/metrics"
 )
 
@@ -28,7 +29,7 @@ func MakeConfigurationDBModuleInstrumentingMW(h metrics.Histogram) func(Configur
 // configDBModuleInstrumentingMW implements Module.
 func (m *configDBModuleInstrumentingMW) StoreOrUpdate(ctx context.Context, realmName string, configJSON string) error {
 	defer func(begin time.Time) {
-		m.h.With("correlation_id", ctx.Value("correlation_id").(string)).Observe(time.Since(begin).Seconds())
+		m.h.With("correlation_id", ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
 	}(time.Now())
 	return m.next.StoreOrUpdate(ctx, realmName, configJSON)
 }
@@ -36,7 +37,7 @@ func (m *configDBModuleInstrumentingMW) StoreOrUpdate(ctx context.Context, realm
 // configDBModuleInstrumentingMW implements Module.
 func (m *configDBModuleInstrumentingMW) GetConfiguration(ctx context.Context, realmName string) (string, error) {
 	defer func(begin time.Time) {
-		m.h.With("correlation_id", ctx.Value("correlation_id").(string)).Observe(time.Since(begin).Seconds())
+		m.h.With("correlation_id", ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
 	}(time.Now())
 	return m.next.GetConfiguration(ctx, realmName)
 }

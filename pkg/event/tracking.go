@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/base64"
 
+	cs "github.com/cloudtrust/common-service"
 	sentry "github.com/getsentry/raven-go"
 	"github.com/go-kit/kit/log"
 )
@@ -37,7 +38,7 @@ func MakeMuxComponentTrackingMW(sentry Sentry, logger log.Logger) func(MuxCompon
 func (m *trackingMuxComponentMW) Event(ctx context.Context, eventType string, obj []byte) error {
 	var err = m.next.Event(ctx, eventType, obj)
 	if err != nil {
-		var corrID = ctx.Value("correlation_id").(string)
+		var corrID = ctx.Value(cs.CtContextCorrelationID).(string)
 		var b64Obj = base64.StdEncoding.EncodeToString(obj)
 
 		var tags = map[string]string{

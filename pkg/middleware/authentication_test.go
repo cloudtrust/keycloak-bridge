@@ -224,10 +224,10 @@ func TestContextHTTPOIDCTokenAudienceStringArrayValidationMW(t *testing.T) {
 	var w = httptest.NewRecorder()
 	mockKeycloakClient.EXPECT().VerifyToken("master", token).Return(nil).Times(1)
 	mockComponent.EXPECT().GetRealm(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, realm string) (api.RealmRepresentation, error) {
-		var accessToken = ctx.Value("access_token").(string)
-		var realmCtx = ctx.Value("realm").(string)
-		var username = ctx.Value("username").(string)
-		var groups = ctx.Value("groups").([]string)
+		var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+		var realmCtx = ctx.Value(cs.CtContextRealm).(string)
+		var username = ctx.Value(cs.CtContextUsername).(string)
+		var groups = ctx.Value(cs.CtContextGroups).([]string)
 
 		assert.Equal(t, accessToken, token)
 		assert.Equal(t, "master", realmCtx)
@@ -289,10 +289,10 @@ func TestContextHTTPOIDCTokenAudienceStringValidationMW(t *testing.T) {
 	var w = httptest.NewRecorder()
 	mockKeycloakClient.EXPECT().VerifyToken("master", token).Return(nil).Times(1)
 	mockComponent.EXPECT().GetRealm(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, realm string) (api.RealmRepresentation, error) {
-		var accessToken = ctx.Value("access_token").(string)
-		var realmCtx = ctx.Value("realm").(string)
-		var username = ctx.Value("username").(string)
-		var groups = ctx.Value("groups").([]string)
+		var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+		var realmCtx = ctx.Value(cs.CtContextRealm).(string)
+		var username = ctx.Value(cs.CtContextUsername).(string)
+		var groups = ctx.Value(cs.CtContextGroups).([]string)
 
 		assert.Equal(t, accessToken, token)
 		assert.Equal(t, "master", realmCtx)

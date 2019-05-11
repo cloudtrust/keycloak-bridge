@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 
+	cs "github.com/cloudtrust/common-service"
 	"github.com/go-kit/kit/endpoint"
 	http_transport "github.com/go-kit/kit/transport/http"
 	"github.com/pkg/errors"
@@ -27,7 +28,7 @@ func MakeHTTPEventHandler(e endpoint.Endpoint) *http_transport.Server {
 func fetchHTTPCorrelationID(ctx context.Context, req *http.Request) context.Context {
 	var correlationID = req.Header.Get("X-Correlation-ID")
 	if correlationID != "" {
-		ctx = context.WithValue(ctx, "correlation_id", correlationID)
+		ctx = context.WithValue(ctx, cs.CtContextCorrelationID, correlationID)
 	}
 	return ctx
 }

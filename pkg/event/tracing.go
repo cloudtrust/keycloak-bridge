@@ -5,6 +5,7 @@ package event
 import (
 	"context"
 
+	cs "github.com/cloudtrust/common-service"
 	"github.com/cloudtrust/keycloak-bridge/api/event/fb"
 	opentracing "github.com/opentracing/opentracing-go"
 )
@@ -30,7 +31,7 @@ func (m *muxComponentTracingMW) Event(ctx context.Context, eventType string, obj
 	if span := opentracing.SpanFromContext(ctx); span != nil {
 		span = m.tracer.StartSpan("mux_component", opentracing.ChildOf(span.Context()))
 		defer span.Finish()
-		span.SetTag("correlation_id", ctx.Value("correlation_id").(string))
+		span.SetTag("correlation_id", ctx.Value(cs.CtContextCorrelationID).(string))
 
 		ctx = opentracing.ContextWithSpan(ctx, span)
 	}
@@ -59,7 +60,7 @@ func (m *componentTracingMW) Event(ctx context.Context, event *fb.Event) error {
 	if span := opentracing.SpanFromContext(ctx); span != nil {
 		span = m.tracer.StartSpan("event_component", opentracing.ChildOf(span.Context()))
 		defer span.Finish()
-		span.SetTag("correlation_id", ctx.Value("correlation_id").(string))
+		span.SetTag("correlation_id", ctx.Value(cs.CtContextCorrelationID).(string))
 
 		ctx = opentracing.ContextWithSpan(ctx, span)
 	}
@@ -88,7 +89,7 @@ func (m *adminComponentTracingMW) AdminEvent(ctx context.Context, adminEvent *fb
 	if span := opentracing.SpanFromContext(ctx); span != nil {
 		span = m.tracer.StartSpan("admin_event_component", opentracing.ChildOf(span.Context()))
 		defer span.Finish()
-		span.SetTag("correlation_id", ctx.Value("correlation_id").(string))
+		span.SetTag("correlation_id", ctx.Value(cs.CtContextCorrelationID).(string))
 
 		ctx = opentracing.ContextWithSpan(ctx, span)
 	}
@@ -117,7 +118,7 @@ func (m *consoleModuleTracingMW) Print(ctx context.Context, mp map[string]string
 	if span := opentracing.SpanFromContext(ctx); span != nil {
 		span = m.tracer.StartSpan("console_module", opentracing.ChildOf(span.Context()))
 		defer span.Finish()
-		span.SetTag("correlation_id", ctx.Value("correlation_id").(string))
+		span.SetTag("correlation_id", ctx.Value(cs.CtContextCorrelationID).(string))
 
 		ctx = opentracing.ContextWithSpan(ctx, span)
 	}
@@ -146,7 +147,7 @@ func (m *statisticModuleTracingMW) Stats(ctx context.Context, mp map[string]stri
 	if span := opentracing.SpanFromContext(ctx); span != nil {
 		span = m.tracer.StartSpan("statistic_module", opentracing.ChildOf(span.Context()))
 		defer span.Finish()
-		span.SetTag("correlation_id", ctx.Value("correlation_id").(string))
+		span.SetTag("correlation_id", ctx.Value(cs.CtContextCorrelationID).(string))
 
 		ctx = opentracing.ContextWithSpan(ctx, span)
 	}
@@ -175,7 +176,7 @@ func (m *eventsDBModuleTracingMW) Store(ctx context.Context, mp map[string]strin
 	if span := opentracing.SpanFromContext(ctx); span != nil {
 		span = m.tracer.StartSpan("eventsDB_module", opentracing.ChildOf(span.Context()))
 		defer span.Finish()
-		span.SetTag("correlation_id", ctx.Value("correlation_id").(string))
+		span.SetTag("correlation_id", ctx.Value(cs.CtContextCorrelationID).(string))
 
 		ctx = opentracing.ContextWithSpan(ctx, span)
 	}

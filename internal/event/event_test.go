@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	cs "github.com/cloudtrust/common-service"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -49,8 +50,8 @@ func TestReportEvent(t *testing.T) {
 
 	s := newStorer(t)
 	ctx := context.Background()
-	ctx = context.WithValue(ctx, "username", agentUsername)
-	ctx = context.WithValue(ctx, "realm", agentRealmName)
+	ctx = context.WithValue(ctx, cs.CtContextUsername, agentUsername)
+	ctx = context.WithValue(ctx, cs.CtContextRealm, agentRealmName)
 
 	ReportEvent(ctx, s, apiCall, origin, key1, value1, key2, value2)
 	s.assertLength(7)

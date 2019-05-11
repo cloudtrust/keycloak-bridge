@@ -177,14 +177,13 @@ func MakeHTTPOIDCTokenValidationMW(keycloakClient KeycloakClient, audienceRequir
 				return
 			}
 
-			var ctx = context.WithValue(req.Context(), "access_token", accessToken)
-			ctx = context.WithValue(ctx, "realm", realm)
-			ctx = context.WithValue(ctx, "userId", userID)
-			ctx = context.WithValue(ctx, "username", username)
-			ctx = context.WithValue(ctx, "groups", groups)
+			var ctx = context.WithValue(req.Context(), cs.CtContextAccessToken, accessToken)
+			ctx = context.WithValue(ctx, cs.CtContextRealm, realm)
+			ctx = context.WithValue(ctx, cs.CtContextUserID, userID)
+			ctx = context.WithValue(ctx, cs.CtContextUsername, username)
+			ctx = context.WithValue(ctx, cs.CtContextGroups, groups)
 
 			next.ServeHTTP(w, req.WithContext(ctx))
-
 		})
 	}
 }
