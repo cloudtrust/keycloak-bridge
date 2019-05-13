@@ -272,7 +272,7 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 
 	userRep = api.ConvertToKCUser(user)
 
-	// Merge attributes coming from old user and updated one to not loose anything
+	// Merge the attributes coming from the old user representation and the updated user representation in order not to lose anything
 	var mergedAttributes = make(map[string][]string)
 
 	//Populate with the old attributes
