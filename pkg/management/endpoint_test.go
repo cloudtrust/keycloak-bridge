@@ -841,9 +841,16 @@ func TestUpdateRealmCustomConfigurationEndpoint(t *testing.T) {
 
 func TestConvertLocationUrl(t *testing.T) {
 
-	res := convertLocationUrl("http://localhost:8080/auth/realms/master/api/admin/realms/dep/users/1522-4245245-4542545/credentials", "https", "ct-bridge.services.com")
+	res, err := convertLocationUrl("http://localhost:8080/auth/realms/master/api/admin/realms/dep/users/1522-4245245-4542545/credentials", "https", "ct-bridge.services.com")
 	assert.Equal(t, "https://ct-bridge.services.com/management/realms/dep/users/1522-4245245-4542545/credentials", res)
+	assert.Nil(t, err)
 
-	res = convertLocationUrl("http://localhost:8080/auth/admin/realms/dep/users/1522-4245245-4542545", "https", "ct-bridge.services.com")
+	res, err = convertLocationUrl("http://localhost:8080/auth/admin/realms/dep/users/1522-4245245-4542545", "https", "ct-bridge.services.com")
 	assert.Equal(t, "https://ct-bridge.services.com/management/realms/dep/users/1522-4245245-4542545", res)
+	assert.Nil(t, err)
+
+	res, err = convertLocationUrl("http://localhost:8080/toto", "https", "ct-bridge.services.com")
+	assert.Equal(t, "InvalidLocation", res)
+	assert.Equal(t, ConvertLocationError{Location:"http://localhost:8080/toto"},err)
+
 }
