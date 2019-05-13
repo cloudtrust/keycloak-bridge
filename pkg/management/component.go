@@ -272,6 +272,23 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 
 	userRep = api.ConvertToKCUser(user)
 
+	// Merge the attributes coming from the old user representation and the updated user representation in order not to lose anything
+	var mergedAttributes = make(map[string][]string)
+
+	//Populate with the old attributes
+	if oldUserKc.Attributes != nil {
+		for key, attribute := range *oldUserKc.Attributes {
+			mergedAttributes[key] = attribute
+		}
+	}
+	// Update with the new ones
+	if userRep.Attributes != nil {
+		for key, attribute := range *userRep.Attributes {
+			mergedAttributes[key] = attribute
+		}
+	}
+	userRep.Attributes = &mergedAttributes
+
 	err = c.keycloakClient.UpdateUser(accessToken, realmName, userID, userRep)
 
 	if err != nil {
@@ -349,7 +366,6 @@ func (c *component) GetUserAccountStatus(ctx context.Context, realmName, userID 
 	return res, err
 }
 
-
 func (c *component) GetRolesOfUser(ctx context.Context, realmName, userID string) ([]api.RoleRepresentation, error) {
 	var accessToken = ctx.Value("access_token").(string)
 
@@ -374,7 +390,6 @@ func (c *component) GetRolesOfUser(ctx context.Context, realmName, userID string
 
 	return rolesRep, nil
 }
-
 
 func (c *component) GetGroupsOfUser(ctx context.Context, realmName, userID string) ([]api.GroupRepresentation, error) {
 	var accessToken = ctx.Value("access_token").(string)
