@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"net/http"
 	"regexp"
@@ -10,6 +11,73 @@ import (
 	"github.com/gbrlsnchs/jwt"
 	"github.com/go-kit/kit/log"
 )
+
+// MakeHTTPBasicAuthenticationMW retrieve the token from the HTTP header 'Basic' and
+// check if the password value match the allowed one.
+// If there is no such header, the request is not allowed.
+// If the password is correct, the username is added into the context:
+//   - username: username extracted from the token
+func MakeHTTPBasicAuthenticationMW(passwordToMatch string, logger log.Logger) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			var authorizationHeader = req.Header.Get("Authorization")
+
+			if authorizationHeader == "" {
+				logger.Log("Authorization Error", "Missing Authorization header")
+				httpErrorHandler(context.TODO(), http.StatusForbidden, fmt.Errorf("Missing Authorization header"), w)
+				return
+			}
+
+			var matched, _ = regexp.MatchString(`^[Bb]asic *`, authorizationHeader)
+
+			if !matched {
+				logger.Log("Authorization Error", "Missing basic token")
+				httpErrorHandler(context.TODO(), http.StatusForbidden, fmt.Errorf("Missing basic token"), w)
+				return
+			}
+
+			var splitToken = strings.Split(authorizationHeader, "Basic ")
+
+			if len(splitToken) < 2 {
+				splitToken = strings.Split(authorizationHeader, "basic ")
+			}
+
+			var accessToken = splitToken[1]
+
+			// Decode base 64
+			decodedToken, err := base64.StdEncoding.DecodeString(accessToken)
+
+			if err != nil {
+				logger.Log("Authorization Error", "Invalid base64 token")
+				httpErrorHandler(context.TODO(), http.StatusForbidden, fmt.Errorf("Invalid token"), w)
+				return
+			}
+
+			// Extract username & password values
+			var tokenSubparts = strings.Split(string(decodedToken), ":")
+
+			if len(tokenSubparts) != 2 {
+				logger.Log("Authorization Error", "Invalid token format (username:password)")
+				httpErrorHandler(context.TODO(), http.StatusForbidden, fmt.Errorf("Invalid token"), w)
+				return
+			}
+
+			var username = tokenSubparts[0]
+			var password = tokenSubparts[1]
+
+			// Check password match
+			if password != passwordToMatch {
+				logger.Log("Authorization Error", "Invalid password value")
+				httpErrorHandler(context.TODO(), http.StatusForbidden, fmt.Errorf("Invalid token"), w)
+				return
+			}
+
+			var ctx = context.WithValue(req.Context(), "username", username)
+
+			next.ServeHTTP(w, req.WithContext(ctx))
+		})
+	}
+}
 
 // KeycloakClient is the interface of the keycloak client.
 type KeycloakClient interface {
