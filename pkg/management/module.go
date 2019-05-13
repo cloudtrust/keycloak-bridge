@@ -6,13 +6,6 @@ import (
 )
 
 const (
-	createConfigTableStmt = `CREATE TABLE IF NOT EXISTS realm_configuration(
-		id INTEGER NOT NULL PRIMARY KEY AUTO_INCREMENT,
-		realm_id VARCHAR(255) NOT NULL,
-		configuration JSON,
-		CHECK (configuration IS NULL OR JSON_VALID(configuration))
-	  );
-	  CREATE UNIQUE INDEX IF NOT EXISTS realm_id_idx ON realm_configuration(realm_id);`
 	updateConfigStmt = `INSERT INTO realm_configuration (realm_id, configuration) 
 	  VALUES (?, ?) 
 	  ON DUPLICATE KEY UPDATE configuration = ?;`
@@ -37,7 +30,6 @@ type configurationDBModule struct {
 
 // NewConfigurationDBModule returns a ConfigurationDB module.
 func NewConfigurationDBModule(db DBConfiguration) ConfigurationDBModule {
-	db.Exec(createConfigTableStmt)
 	return &configurationDBModule{
 		db: db,
 	}
