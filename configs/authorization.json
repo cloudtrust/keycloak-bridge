@@ -87,7 +87,7 @@
         }
       },
       "EV_GetUserEvents": {
-        "*": {
+        "master": {
           "*": {}
         }
       }
@@ -175,7 +175,7 @@
       },
       "GetCredentialsForUser": {
         "master": {
-          "integrator_manager": {}
+          "integrator_agent": {}
         },
         "DEP": {
           "end_user": {}
@@ -183,7 +183,7 @@
       },
       "DeleteCredentialsForUser": {
         "master": {
-          "integrator_manager": {}
+          "integrator_agent": {}
         },
         "DEP": {
           "end_user": {}
@@ -197,6 +197,24 @@
       "UpdateRealmCustomConfiguration": {
         "DEP": {
           "*": {}
+        }
+      },
+      "EV_GetEvents": {
+        "*": {
+          "*": {}
+        }
+      },
+      "EV_GetEventsSummary": {
+        "*": {
+          "*": {}
+        }
+      },
+      "EV_GetUserEvents": {
+        "master": {
+          "integrator_agent": {}
+        },
+        "DEP": {
+          "end_user": {}
         }
       }
     },
@@ -273,6 +291,21 @@
         "DEP": {
           "*": {}
         }
+      },
+      "EV_GetEvents": {
+        "*": {
+          "*": {}
+        }
+      },
+      "EV_GetEventsSummary": {
+        "*": {
+          "*": {}
+        }
+      },
+      "EV_GetUserEvents": {
+        "DEP": {
+          "*": {}
+        }
       }
     },
     "l2_support_manager":{
@@ -338,11 +371,36 @@
         "master": {
           "l2_support_agent": {}
         }
+      },
+      "EV_GetEvents": {
+        "*": {
+          "*": {}
+        }
+      },
+      "EV_GetEventsSummary": {
+        "*": {
+          "*": {}
+        }
+      },
+      "EV_GetUserEvents": {
+        "master": {
+          "l2_support_agent": {}
+        }
       }
     },
     "l2_support_agent": {
       "GetRealms": {
         "*": {}
+      },
+      "EV_GetEvents": {
+        "*": {
+          "*": {}
+        }
+      },
+      "EV_GetEventsSummary": {
+        "*": {
+          "*": {}
+        }
       }
     },
     "l3_support_manager":{
@@ -408,11 +466,36 @@
         "master": {
           "l3_support_agent": {}
         }
+      },
+      "EV_GetEvents": {
+        "*": {
+          "*": {}
+        }
+      },
+      "EV_GetEventsSummary": {
+        "*": {
+          "*": {}
+        }
+      },
+      "EV_GetUserEvents": {
+        "master": {
+          "l3_support_agent": {}
+        }
       }
     },
     "l3_support_agent": {
       "GetRealms": {
         "*": {}
+      },
+      "EV_GetEvents": {
+        "*": {
+          "*": {}
+        }
+      },
+      "EV_GetEventsSummary": {
+        "*": {
+          "*": {}
+        }
       }
     }
   },
@@ -482,6 +565,11 @@
         }
       },
       "DeleteCredentialsForUser": {
+        "DEP": {
+          "*": {}
+        }
+      },
+      "EV_GetUserEvents": {
         "DEP": {
           "*": {}
         }
@@ -566,6 +654,12 @@
         "DEP": {
           "end_user": {}
         }
+      },
+      "EV_GetUserEvents": {
+        "DEP": {
+          "l1_support_agent": {},
+          "end_user": {}
+        }
       }
     },
     "l1_support_agent": {
@@ -628,10 +722,20 @@
         "DEP": {
           "end_user": {}
         }
+      },
+      "EV_GetUserEvents": {
+        "DEP": {
+          "end_user": {}
+        }
       }
     },
     "registration_officer": {
       "CreateUser": {
+        "DEP": {
+          "end_user": {}
+        }
+      },
+      "SendVerifyEmail": {
         "DEP": {
           "end_user": {}
         }
