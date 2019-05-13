@@ -6,7 +6,6 @@ import (
 
 	gen "github.com/cloudtrust/keycloak-bridge/internal/idgenerator"
 	"github.com/go-kit/kit/log"
-	grpc_transport "github.com/go-kit/kit/transport/grpc"
 	opentracing "github.com/opentracing/opentracing-go"
 )
 
@@ -25,13 +24,4 @@ func MakeHTTPCorrelationIDMW(idGenerator gen.IDGenerator, tracer opentracing.Tra
 			next.ServeHTTP(w, req.WithContext(ctx))
 		})
 	}
-}
-
-type correlationIDMW struct {
-	idGenerator   gen.IDGenerator
-	tracer        opentracing.Tracer
-	logger        log.Logger
-	componentName string
-	componentID   string
-	next          grpc_transport.Handler
 }
