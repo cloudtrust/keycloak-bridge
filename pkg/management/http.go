@@ -107,6 +107,10 @@ func managementErrorHandler(logger log.Logger) func(context.Context, error, http
 			logger.Log("HTTPErrorHandler", e.Status, "msg", e.Error())
 			w.WriteHeader(e.Status)
 			w.Write([]byte(e.Message))
+		case ConvertLocationError:
+			// 201-Created, even if ConvertLocationError occurs, the creation was a success
+			logger.Log("HTTPErrorHandler", http.StatusCreated, "msg", e.Error())
+			w.WriteHeader(http.StatusCreated)
 		default:
 			if err == ratelimit.ErrLimited {
 				logger.Log("HTTPErrorHandler", http.StatusTooManyRequests, "msg", e.Error())
