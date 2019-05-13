@@ -21,10 +21,14 @@ cors-allowed-headers:
 cors-debug: true
 
 # Security
+## Audience for JWT token
 audience-required: "backofficeid"
 
+## Password used to protect /internal/event endpoint
+event-basic-auth-token: "superpasswordverylongandstrong"
+
+
 # Keycloak configs
-keycloak: false
 keycloak-api-uri: http://localhost:8080
 keycloak-oidc-uri: http://localhost:8080
 keycloak-username: admin

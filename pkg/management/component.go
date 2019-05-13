@@ -23,7 +23,7 @@ type KeycloakClient interface {
 	GetGroupsOfUser(accessToken string, realmName, userID string) ([]kc.GroupRepresentation, error)
 	UpdateUser(accessToken string, realmName, userID string, user kc.UserRepresentation) error
 	GetUsers(accessToken string, reqRealmName, targetRealmName string, paramKV ...string) ([]kc.UserRepresentation, error)
-	CreateUser(accessToken string, reqRealmName, targetRealmName string, user kc.UserRepresentation) (string, error)
+	CreateUser(accessToken string, realmName string, targetRealmName string, user kc.UserRepresentation) (string, error)
 	GetClientRoleMappings(accessToken string, realmName, userID, clientID string) ([]kc.RoleRepresentation, error)
 	AddClientRolesToUserRoleMapping(accessToken string, realmName, userID, clientID string, roles []kc.RoleRepresentation) error
 	GetRealmLevelRoleMappings(accessToken string, realmName, userID string) ([]kc.RoleRepresentation, error)
