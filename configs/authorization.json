@@ -64,9 +64,7 @@
       },
       "GetCredentialsForUser": {
         "master": {
-          "integrator_manager": {},
-          "l2_support_manager": {},
-          "l3_support_manager": {}
+          "*": {}
         }
       },
       "DeleteCredentialsForUser": {
