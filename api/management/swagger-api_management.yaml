@@ -763,6 +763,9 @@ components:
           type: array
           items:
             type: string
+        locale: 
+          type: string
+          default: "en"    
     UserStatus:
       type: object
       properties:
