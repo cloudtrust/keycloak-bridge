@@ -208,6 +208,17 @@ func main() {
 		}
 	}
 
+	// Security - Basic AuthN token to protect internal/event endpoint
+	var eventExpectedAuthToken string
+	{
+		eventExpectedAuthToken = c.GetString("event-basic-auth-token")
+
+		if eventExpectedAuthToken == "" {
+			logger.Log("msg", "password for event endpoint (event-basic-auth-token) cannot be empty")
+			return
+		}
+	}
+
 	// Keycloak client.
 	var keycloakClient *keycloak.Client
 	{
@@ -521,6 +532,7 @@ func main() {
 			eventHandler = event.MakeHTTPEventHandler(eventEndpoints.Endpoint)
 			eventHandler = middleware.MakeHTTPCorrelationIDMW(idGenerator, tracer, logger, ComponentName, ComponentID)(eventHandler)
 			eventHandler = middleware.MakeHTTPTracingMW(tracer, ComponentName, "http_server_event")(eventHandler)
+			eventHandler = middleware.MakeHTTPBasicAuthenticationMW(eventExpectedAuthToken, logger)(eventHandler)
 		}
 		eventSubroute.Handle("/receiver", eventHandler)
 
@@ -716,7 +728,8 @@ func config(logger log.Logger) *viper.Viper {
 	v.SetDefault("account-http-host-port", "0.0.0.0:8866")
 
 	// Security - Audience check
-	v.SetDefault("audience", "")
+	v.SetDefault("audience-required", "")
+	v.SetDefault("event-basic-auth-token", "")
 
 	// CORS configuration
 	v.SetDefault("cors-allowed-origins", []string{})
@@ -726,7 +739,6 @@ func config(logger log.Logger) *viper.Viper {
 	v.SetDefault("cors-debug", false)
 
 	// Keycloak default.
-	v.SetDefault("keycloak", true)
 	v.SetDefault("keycloak-api-uri", "http://127.0.0.1:8080")
 	v.SetDefault("keycloak-oidc-uri", "http://127.0.0.1:8080")
 	v.SetDefault("keycloak-username", "")
@@ -800,6 +812,8 @@ func config(logger log.Logger) *viper.Viper {
 
 	v.BindEnv("sentry-dsn", "CT_BRIDGE_SENTRY_DSN")
 
+	v.BindEnv("event-basic-auth-token", "CT_BRIDGE_EVENT_BASIC_AUTH")
+
 	// Load and log config.
 	v.SetConfigFile(v.GetString("config-file"))
 	var err = v.ReadInConfig()
@@ -850,7 +864,7 @@ func getDbConfig(v *viper.Viper, prefix string) *dbConfig {
 func (cfg *dbConfig) openDatabase() (*sql.DB, error) {
 	var err error
 	var dbConn *sql.DB
-	dbConn, err = sql.Open("mysql", fmt.Sprintf("%s:%s@%s(%s)/%s", cfg.Username, cfg.Password, cfg.Protocol, cfg.HostPort, cfg.Database))
+	dbConn, err = sql.Open("mysql", fmt.Sprintf("%s:%s@%s(%s)/%s?time_zone='UTC'", cfg.Username, cfg.Password, cfg.Protocol, cfg.HostPort, cfg.Database))
 
 	// the config of the DB should have a max_connections > SetMaxOpenConns
 	if err == nil {

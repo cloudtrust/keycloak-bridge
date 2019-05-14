@@ -153,6 +153,8 @@ func ConvertToKCUser(user UserRepresentation) kc.UserRepresentation {
 	userRep.EmailVerified = user.EmailVerified
 	userRep.FirstName = user.FirstName
 	userRep.LastName = user.LastName
+	userRep.Groups = user.Groups
+	userRep.RealmRoles = user.Roles
 
 	var attributes = make(map[string][]string)
 

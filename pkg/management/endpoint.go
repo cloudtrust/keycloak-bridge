@@ -3,6 +3,8 @@ package management
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"regexp"
 	"strings"
 
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
@@ -127,9 +129,11 @@ func MakeCreateUserEndpoint(managementComponent ManagementComponent) endpoint.En
 			return nil, err
 		}
 
+		url, err := convertLocationUrl(keycloakLocation, m["scheme"], m["host"])
+
 		return LocationHeader{
-			URL: convertLocationUrl(keycloakLocation, m["scheme"], m["host"]),
-		}, nil
+			URL: url,
+		}, err
 	}
 }
 
@@ -171,7 +175,7 @@ func MakeGetUsersEndpoint(managementComponent ManagementComponent) endpoint.Endp
 		var m = req.(map[string]string)
 
 		var paramKV []string
-		for _, key := range []string{"email", "firstName", "lastName", "max", "username"} {
+		for _, key := range []string{"email", "firstName", "lastName", "username", "search"} {
 			if m[key] != "" {
 				paramKV = append(paramKV, key, m[key])
 			}
@@ -361,9 +365,11 @@ func MakeCreateClientRoleEndpoint(managementComponent ManagementComponent) endpo
 			return nil, err
 		}
 
+		url, err := convertLocationUrl(keycloakLocation, m["scheme"], m["host"]); 
+
 		return LocationHeader{
-			URL: convertLocationUrl(keycloakLocation, m["scheme"], m["host"]),
-		}, nil
+			URL: url,
+		}, err
 	}
 }
 
@@ -394,8 +400,24 @@ type LocationHeader struct {
 	URL string
 }
 
+type ConvertLocationError struct {
+	Location string
+}
+
+func (e ConvertLocationError) Error() string {
+	return fmt.Sprintf("Location received from Keycloak do not match regexp: %s", e.Location)
+}
+
 // We are currently using a mapping 1:1 for REST API of Bridge and Keycloak, thus we take a shortcut to convert the location of the resource
-func convertLocationUrl(originalURL string, scheme string, host string) string {
-	var splitURL = strings.Split(originalURL, "/auth/admin")
-	return scheme + "://" + host + "/management" + splitURL[1]
+func convertLocationUrl(originalURL string, scheme string, host string) (string, error) {
+	delimiter := regexp.MustCompile(`(\/auth\/admin)|(auth\/realms\/[a-zA-Z0-9_-]+\/api\/admin)`)
+	var splitURL = delimiter.Split(originalURL, 2)
+
+	if len(splitURL) != 2 {
+		return "InvalidLocation", ConvertLocationError{
+			Location: originalURL,
+		}
+	}
+
+	return scheme + "://" + host + "/management" + splitURL[1], nil
 }

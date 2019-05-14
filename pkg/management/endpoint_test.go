@@ -109,7 +109,7 @@ func TestCreateUserEndpoint(t *testing.T) {
 		req["scheme"] = "https"
 		req["host"] = "elca.ch"
 		req["realm"] = realm
-		
+
 		userJSON, _ := json.Marshal(api.UserRepresentation{Groups: &groups})
 		req["body"] = string(userJSON)
 
@@ -261,12 +261,12 @@ func TestGetUsersEndpoint(t *testing.T) {
 		req["email"] = "email@elca.ch"
 		req["firstName"] = "firstname"
 		req["lastName"] = "lastname"
-		req["max"] = "10"
+		req["search"] = "search"
 		req["username"] = "username"
 		req["toto"] = "tutu" // Check this param is not transmitted
 		req["groupIds"] = "123-784dsf-sdf567"
 
-		mockManagementComponent.EXPECT().GetUsers(ctx, realm, []string{req["groupIds"]}, "email", req["email"], "firstName", req["firstName"], "lastName", req["lastName"], "max", req["max"], "username", req["username"]).Return([]api.UserRepresentation{}, nil).Times(1)
+		mockManagementComponent.EXPECT().GetUsers(ctx, realm, []string{req["groupIds"]}, "email", req["email"], "firstName", req["firstName"], "lastName", req["lastName"], "username", req["username"], "search", req["search"],).Return([]api.UserRepresentation{}, nil).Times(1)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.NotNil(t, res)
@@ -597,7 +597,7 @@ func TestSendNewEnrolmentCodeEndpoint(t *testing.T) {
 	mockManagementComponent.EXPECT().SendNewEnrolmentCode(ctx, realm, userID).Return("1234", nil).Times(1)
 	var res, err = e(ctx, req)
 	assert.Nil(t, err)
-	assert.Equal(t, map[string]string{"code":"1234"}, res)
+	assert.Equal(t, map[string]string{"code": "1234"}, res)
 
 }
 
@@ -837,4 +837,20 @@ func TestUpdateRealmCustomConfigurationEndpoint(t *testing.T) {
 		assert.NotNil(t, err)
 		assert.Nil(t, res)
 	}
+}
+
+func TestConvertLocationUrl(t *testing.T) {
+
+	res, err := convertLocationUrl("http://localhost:8080/auth/realms/master/api/admin/realms/dep/users/1522-4245245-4542545/credentials", "https", "ct-bridge.services.com")
+	assert.Equal(t, "https://ct-bridge.services.com/management/realms/dep/users/1522-4245245-4542545/credentials", res)
+	assert.Nil(t, err)
+
+	res, err = convertLocationUrl("http://localhost:8080/auth/admin/realms/dep/users/1522-4245245-4542545", "https", "ct-bridge.services.com")
+	assert.Equal(t, "https://ct-bridge.services.com/management/realms/dep/users/1522-4245245-4542545", res)
+	assert.Nil(t, err)
+
+	res, err = convertLocationUrl("http://localhost:8080/toto", "https", "ct-bridge.services.com")
+	assert.Equal(t, "InvalidLocation", res)
+	assert.Equal(t, ConvertLocationError{Location:"http://localhost:8080/toto"},err)
+
 }

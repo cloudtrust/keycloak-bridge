@@ -8,6 +8,12 @@ import (
 	"github.com/go-kit/kit/log"
 )
 
+const (
+	EV_GetEvents        = "EV_GetEvents"
+	EV_GetEventsSummary = "EV_GetEventsSummary"
+	EV_GetUserEvents    = "EV_GetUserEvents"
+)
+
 // Tracking middleware at component level.
 type authorizationComponentMW struct {
 	authManager security.AuthorizationManager
@@ -27,7 +33,7 @@ func MakeAuthorizationManagementComponentMW(logger log.Logger, authorizationMana
 }
 
 func (c *authorizationComponentMW) GetEvents(ctx context.Context, m map[string]string) (api.AuditEventsRepresentation, error) {
-	var action = "EV_GetEvents"
+	var action = EV_GetEvents
 	var targetRealm = "*" // For this method, there is no target realm, so we use the wildcard to express there is no constraints.
 
 	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
@@ -38,7 +44,7 @@ func (c *authorizationComponentMW) GetEvents(ctx context.Context, m map[string]s
 }
 
 func (c *authorizationComponentMW) GetEventsSummary(ctx context.Context) (api.EventSummaryRepresentation, error) {
-	var action = "EV_GetEventsSummary"
+	var action = EV_GetEventsSummary
 	var targetRealm = "*" // For this method, there is no target realm, so we use the wildcard to express there is no constraints.
 
 	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
@@ -49,7 +55,7 @@ func (c *authorizationComponentMW) GetEventsSummary(ctx context.Context) (api.Ev
 }
 
 func (c *authorizationComponentMW) GetUserEvents(ctx context.Context, m map[string]string) (api.AuditEventsRepresentation, error) {
-	var action = "EV_GetUserEvents"
+	var action = EV_GetUserEvents
 	var targetRealm = m["realm"] // Get the realm provided as parameter in path
 	var targetUser = m["userID"] // Get the user provided as parameter in path
 

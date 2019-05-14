@@ -702,6 +702,28 @@ func TestUpdateUser(t *testing.T) {
 		err = managementComponent.UpdateUser(ctx, "master", id, userRep)
 
 		assert.Nil(t, err)
+
+		// update without attributes
+		var userRepWithoutAttr = api.UserRepresentation{
+			Username:            &username,
+			Email:               &email,
+			Enabled:             &enabled,
+			FirstName:           &firstName,
+			LastName:            &lastName,
+		}
+
+		mockKeycloakClient.EXPECT().GetUser(accessToken, realmName, id).Return(oldkcUserRep2, nil).Times(1)
+		mockKeycloakClient.EXPECT().UpdateUser(accessToken, realmName, id, gomock.Any()).DoAndReturn(
+			func(accessToken, realmName, id string, kcUserRep kc.UserRepresentation) error {
+				verified, _ := strconv.ParseBool(((*kcUserRep.Attributes)["phoneNumberVerified"][0]))
+				assert.Equal(t, oldNumber, (*kcUserRep.Attributes)["phoneNumber"][0])
+				assert.Equal(t, true, verified)
+				return nil
+			}).Times(1)
+
+		err = managementComponent.UpdateUser(ctx, "master", id, userRepWithoutAttr)
+
+		assert.Nil(t, err)
 	}
 
 	//Error - get user
