@@ -25,7 +25,10 @@
   version = "2.0.0"
 
 [[constraint]]
+  name = "github.com/cloudtrust/common-service"
+  branch = "master"
+
+[[constraint]]
   name = "github.com/cloudtrust/keycloak-client"
-  source = "github.com/cloudtrust/keycloak-client"
   branch = "master"
 #  version = "v1.0-rc1"
