@@ -17,6 +17,7 @@ import (
 	"testing"
 	"time"
 
+	cs "github.com/cloudtrust/common-service"
 	"github.com/cloudtrust/keycloak-bridge/api/event/fb"
 	"github.com/cloudtrust/keycloak-bridge/pkg/event"
 	"github.com/cloudtrust/keycloak-bridge/pkg/middleware/mock"

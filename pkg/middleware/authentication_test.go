@@ -11,6 +11,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	cs "github.com/cloudtrust/common-service"
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
 	"github.com/cloudtrust/keycloak-bridge/pkg/management"
 	"github.com/cloudtrust/keycloak-bridge/pkg/middleware/mock"

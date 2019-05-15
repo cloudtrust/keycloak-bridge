@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	cs "github.com/cloudtrust/common-service"
 	gen "github.com/cloudtrust/keycloak-bridge/internal/idgenerator"
 	"github.com/go-kit/kit/log"
 	opentracing "github.com/opentracing/opentracing-go"
