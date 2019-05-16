@@ -1,14 +1,41 @@
 package keycloakb
 
+//go:generate mockgen -destination=./mock/instrumenting.go -package=mock -mock_names=Influx=Influx,GoKitMetrics=GoKitMetrics github.com/cloudtrust/keycloak-bridge/internal/keycloakb Influx,GoKitMetrics
+
 import (
 	"testing"
 	"time"
 
+	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/mock"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestMetrics(t *testing.T) {
-	// Will be removed using common-service
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+	var mockInflux = mock.NewInflux(mockCtrl)
+	var mockMetrics = mock.NewGoKitMetrics(mockCtrl)
+
+	var influxMetrics = NewMetrics(mockInflux, mockMetrics)
+
+	mockMetrics.EXPECT().NewCounter("counter name").Return(nil).Times(1)
+	influxMetrics.NewCounter("counter name")
+
+	mockMetrics.EXPECT().NewGauge("gauge name").Return(nil).Times(1)
+	influxMetrics.NewGauge("gauge name")
+
+	mockMetrics.EXPECT().NewHistogram("histogram name").Return(nil).Times(1)
+	influxMetrics.NewHistogram("histogram name")
+
+	mockMetrics.EXPECT().WriteLoop(gomock.Any(), mockInflux).Return().Times(1)
+	influxMetrics.WriteLoop(make(chan time.Time))
+
+	mockInflux.EXPECT().Ping(1*time.Second).Return(time.Duration(0), "", nil).Times(1)
+	influxMetrics.Ping(1 * time.Second)
+
+	mockInflux.EXPECT().Write(nil).Return(nil).Times(1)
+	influxMetrics.Write(nil)
 }
 
 func TestNoopMetrics(t *testing.T) {
