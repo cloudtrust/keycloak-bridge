@@ -7,8 +7,11 @@ before_install:
   - go get github.com/mattn/goveralls 
   - go get golang.org/x/tools/cmd/cover
   - go get github.com/golang/dep/cmd/dep
+  - go get github.com/golang/mock/gomock
+  - go install github.com/golang/mock/mockgen
 install:
   - $GOPATH/bin/dep ensure -v
+  - go generate ./...
 script:
   - go list -f '{{if or (.XTestGoFiles | len) (.TestGoFiles | len) }}"go test -coverprofile={{.Dir}}/.coverprofile {{.ImportPath}}"{{end}}' ./... | xargs -L 1 sh -c
   - gover

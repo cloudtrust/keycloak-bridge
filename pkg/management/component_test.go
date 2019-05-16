@@ -1,8 +1,5 @@
 package management
 
-//go:generate mockgen -destination=./mock/keycloak_client.go -package=mock -mock_names=KeycloakClient=KeycloakClient github.com/cloudtrust/keycloak-bridge/pkg/management KeycloakClient
-//go:generate mockgen -destination=./mock/module.go -package=mock -mock_names=ConfigurationDBModule=ConfigurationDBModule github.com/cloudtrust/keycloak-bridge/pkg/management ConfigurationDBModule
-
 import (
 	"context"
 	"errors"
@@ -706,11 +703,11 @@ func TestUpdateUser(t *testing.T) {
 
 		// update without attributes
 		var userRepWithoutAttr = api.UserRepresentation{
-			Username:            &username,
-			Email:               &email,
-			Enabled:             &enabled,
-			FirstName:           &firstName,
-			LastName:            &lastName,
+			Username:  &username,
+			Email:     &email,
+			Enabled:   &enabled,
+			FirstName: &firstName,
+			LastName:  &lastName,
 		}
 
 		mockKeycloakClient.EXPECT().GetUser(accessToken, realmName, id).Return(oldkcUserRep2, nil).Times(1)
