@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	cs "github.com/cloudtrust/common-service"
 	kcevent "github.com/cloudtrust/keycloak-bridge/internal/event"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/cloudtrust/keycloak-bridge/pkg/event"
@@ -38,10 +39,10 @@ func NewComponent(keycloakClient KeycloakClient, eventDBModule event.EventsDBMod
 }
 
 func (c *component) UpdatePassword(ctx context.Context, currentPassword, newPassword, confirmPassword string) error {
-	var accessToken = ctx.Value("access_token").(string)
-	var realm = ctx.Value("realm").(string)
-	var userID = ctx.Value("userId").(string)
-	var username = ctx.Value("username").(string)
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+	var realm = ctx.Value(cs.CtContextRealm).(string)
+	var userID = ctx.Value(cs.CtContextUserID).(string)
+	var username = ctx.Value(cs.CtContextUsername).(string)
 
 	if currentPassword == newPassword || newPassword != confirmPassword {
 		return keycloakb.HTTPError{

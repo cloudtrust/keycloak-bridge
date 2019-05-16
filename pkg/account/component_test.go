@@ -7,6 +7,7 @@ import (
 	"context"
 	"testing"
 
+	cs "github.com/cloudtrust/common-service"
 	"github.com/cloudtrust/keycloak-bridge/pkg/account/mock"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -24,10 +25,10 @@ func genericUpdatePasswordTest(t *testing.T, oldPasswd, newPasswd, confirmPasswo
 	realm := "sample realm"
 	userID := "123-456-789"
 	username := "username"
-	ctx := context.WithValue(context.Background(), "access_token", accessToken)
-	ctx = context.WithValue(ctx, "realm", realm)
-	ctx = context.WithValue(ctx, "userId", userID)
-	ctx = context.WithValue(ctx, "username", username)
+	ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+	ctx = context.WithValue(ctx, cs.CtContextRealm, realm)
+	ctx = context.WithValue(ctx, cs.CtContextUserID, userID)
+	ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 
 	mockKeycloakClient.EXPECT().UpdatePassword(accessToken, realm, oldPasswd, newPasswd, confirmPassword).Return("", nil).Times(kcCalls)
 	mockEventDBModule.EXPECT().Store(gomock.Any(), gomock.Any()).Times(kcCalls)

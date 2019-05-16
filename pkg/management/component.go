@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strings"
 
+	cs "github.com/cloudtrust/common-service"
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
 	kcevent "github.com/cloudtrust/keycloak-bridge/internal/event"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
@@ -13,6 +14,7 @@ import (
 	kc "github.com/cloudtrust/keycloak-client"
 )
 
+// KeycloakClient interface
 type KeycloakClient interface {
 	GetRealms(accessToken string) ([]kc.RealmRepresentation, error)
 	GetRealm(accessToken string, realmName string) (kc.RealmRepresentation, error)
@@ -91,7 +93,7 @@ func NewComponent(keycloakClient KeycloakClient, eventDBModule event.EventsDBMod
 }
 
 func (c *component) GetRealms(ctx context.Context) ([]api.RealmRepresentation, error) {
-	var accessToken = ctx.Value("access_token").(string)
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 
 	realmsKc, err := c.keycloakClient.GetRealms(accessToken)
 
@@ -115,7 +117,7 @@ func (c *component) GetRealms(ctx context.Context) ([]api.RealmRepresentation, e
 }
 
 func (c *component) GetRealm(ctx context.Context, realm string) (api.RealmRepresentation, error) {
-	var accessToken = ctx.Value("access_token").(string)
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 
 	var realmRep api.RealmRepresentation
 	realmKc, err := c.keycloakClient.GetRealm(accessToken, realm)
@@ -130,7 +132,7 @@ func (c *component) GetRealm(ctx context.Context, realm string) (api.RealmRepres
 }
 
 func (c *component) GetClient(ctx context.Context, realmName, idClient string) (api.ClientRepresentation, error) {
-	var accessToken = ctx.Value("access_token").(string)
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 
 	var clientRep api.ClientRepresentation
 	clientKc, err := c.keycloakClient.GetClient(accessToken, realmName, idClient)
@@ -146,7 +148,7 @@ func (c *component) GetClient(ctx context.Context, realmName, idClient string) (
 }
 
 func (c *component) GetClients(ctx context.Context, realmName string) ([]api.ClientRepresentation, error) {
-	var accessToken = ctx.Value("access_token").(string)
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 
 	clientsKc, err := c.keycloakClient.GetClients(accessToken, realmName)
 
@@ -170,8 +172,8 @@ func (c *component) GetClients(ctx context.Context, realmName string) ([]api.Cli
 }
 
 func (c *component) CreateUser(ctx context.Context, realmName string, user api.UserRepresentation) (string, error) {
-	var accessToken = ctx.Value("access_token").(string)
-	var ctxRealm = ctx.Value("realm").(string)
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+	var ctxRealm = ctx.Value(cs.CtContextRealm).(string)
 
 	var userRep kc.UserRepresentation
 
@@ -200,7 +202,7 @@ func (c *component) CreateUser(ctx context.Context, realmName string, user api.U
 }
 
 func (c *component) DeleteUser(ctx context.Context, realmName, userID string) error {
-	var accessToken = ctx.Value("access_token").(string)
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 
 	err := c.keycloakClient.DeleteUser(accessToken, realmName, userID)
 
@@ -216,7 +218,7 @@ func (c *component) DeleteUser(ctx context.Context, realmName, userID string) er
 }
 
 func (c *component) GetUser(ctx context.Context, realmName, userID string) (api.UserRepresentation, error) {
-	var accessToken = ctx.Value("access_token").(string)
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 
 	var userRep api.UserRepresentation
 	userKc, err := c.keycloakClient.GetUser(accessToken, realmName, userID)
@@ -241,7 +243,7 @@ func (c *component) GetUser(ctx context.Context, realmName, userID string) (api.
 }
 
 func (c *component) UpdateUser(ctx context.Context, realmName, userID string, user api.UserRepresentation) error {
-	var accessToken = ctx.Value("access_token").(string)
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 	var userRep kc.UserRepresentation
 
 	// get the "old" user representation
@@ -319,11 +321,11 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 }
 
 func (c *component) GetUsers(ctx context.Context, realmName string, groupIDs []string, paramKV ...string) ([]api.UserRepresentation, error) {
-	var accessToken = ctx.Value("access_token").(string)
-	var ctxRealm = ctx.Value("realm").(string)
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+	var ctxRealm = ctx.Value(cs.CtContextRealm).(string)
 
-	for _, groupId := range groupIDs {
-		paramKV = append(paramKV, "groupId", groupId)
+	for _, groupID := range groupIDs {
+		paramKV = append(paramKV, "groupId", groupID)
 	}
 
 	usersKc, err := c.keycloakClient.GetUsers(accessToken, ctxRealm, realmName, paramKV...)
@@ -345,7 +347,7 @@ func (c *component) GetUsers(ctx context.Context, realmName string, groupIDs []s
 
 // GetUserAccountStatus gets the user status : user should be enabled in Keycloak and have multifactor activated
 func (c *component) GetUserAccountStatus(ctx context.Context, realmName, userID string) (map[string]bool, error) {
-	var accessToken = ctx.Value("access_token").(string)
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 	var res map[string]bool
 
 	res = make(map[string]bool)
@@ -367,7 +369,7 @@ func (c *component) GetUserAccountStatus(ctx context.Context, realmName, userID 
 }
 
 func (c *component) GetRolesOfUser(ctx context.Context, realmName, userID string) ([]api.RoleRepresentation, error) {
-	var accessToken = ctx.Value("access_token").(string)
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 
 	rolesKc, err := c.keycloakClient.GetRealmLevelRoleMappings(accessToken, realmName, userID)
 
@@ -392,7 +394,7 @@ func (c *component) GetRolesOfUser(ctx context.Context, realmName, userID string
 }
 
 func (c *component) GetGroupsOfUser(ctx context.Context, realmName, userID string) ([]api.GroupRepresentation, error) {
-	var accessToken = ctx.Value("access_token").(string)
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 
 	groupsKc, err := c.keycloakClient.GetGroupsOfUser(accessToken, realmName, userID)
 
@@ -413,7 +415,7 @@ func (c *component) GetGroupsOfUser(ctx context.Context, realmName, userID strin
 }
 
 func (c *component) GetClientRolesForUser(ctx context.Context, realmName, userID, clientID string) ([]api.RoleRepresentation, error) {
-	var accessToken = ctx.Value("access_token").(string)
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 
 	rolesKc, err := c.keycloakClient.GetClientRoleMappings(accessToken, realmName, userID, clientID)
 
@@ -438,7 +440,7 @@ func (c *component) GetClientRolesForUser(ctx context.Context, realmName, userID
 }
 
 func (c *component) AddClientRolesToUser(ctx context.Context, realmName, userID, clientID string, roles []api.RoleRepresentation) error {
-	var accessToken = ctx.Value("access_token").(string)
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 
 	var rolesRep []kc.RoleRepresentation
 	for _, role := range roles {
@@ -457,7 +459,7 @@ func (c *component) AddClientRolesToUser(ctx context.Context, realmName, userID,
 }
 
 func (c *component) ResetPassword(ctx context.Context, realmName string, userID string, password api.PasswordRepresentation) error {
-	var accessToken = ctx.Value("access_token").(string)
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 
 	var credKc kc.CredentialRepresentation
 	var passwordType = "password"
@@ -478,19 +480,19 @@ func (c *component) ResetPassword(ctx context.Context, realmName string, userID 
 }
 
 func (c *component) SendVerifyEmail(ctx context.Context, realmName string, userID string, paramKV ...string) error {
-	var accessToken = ctx.Value("access_token").(string)
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 
 	return c.keycloakClient.SendVerifyEmail(accessToken, realmName, userID, paramKV...)
 }
 
 func (c *component) ExecuteActionsEmail(ctx context.Context, realmName string, userID string, actions []string, paramKV ...string) error {
-	var accessToken = ctx.Value("access_token").(string)
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 
 	return c.keycloakClient.ExecuteActionsEmail(accessToken, realmName, userID, actions, paramKV...)
 }
 
 func (c *component) SendNewEnrolmentCode(ctx context.Context, realmName string, userID string) (string, error) {
-	var accessToken = ctx.Value("access_token").(string)
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 
 	smsCodeKc, err := c.keycloakClient.SendNewEnrolmentCode(accessToken, realmName, userID)
 
@@ -502,8 +504,8 @@ func (c *component) SendNewEnrolmentCode(ctx context.Context, realmName string, 
 }
 
 func (c *component) GetCredentialsForUser(ctx context.Context, realmName string, userID string) ([]api.CredentialRepresentation, error) {
-	var accessToken = ctx.Value("access_token").(string)
-	var ctxRealm = ctx.Value("realm").(string)
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+	var ctxRealm = ctx.Value(cs.CtContextRealm).(string)
 
 	credsKc, err := c.keycloakClient.GetCredentialsForUser(accessToken, ctxRealm, realmName, userID)
 	if err != nil {
@@ -519,14 +521,14 @@ func (c *component) GetCredentialsForUser(ctx context.Context, realmName string,
 }
 
 func (c *component) DeleteCredentialsForUser(ctx context.Context, realmName string, userID string, credentialID string) error {
-	var accessToken = ctx.Value("access_token").(string)
-	var ctxRealm = ctx.Value("realm").(string)
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+	var ctxRealm = ctx.Value(cs.CtContextRealm).(string)
 
 	return c.keycloakClient.DeleteCredentialsForUser(accessToken, ctxRealm, realmName, userID, credentialID)
 }
 
 func (c *component) GetRoles(ctx context.Context, realmName string) ([]api.RoleRepresentation, error) {
-	var accessToken = ctx.Value("access_token").(string)
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 
 	rolesKc, err := c.keycloakClient.GetRoles(accessToken, realmName)
 
@@ -551,7 +553,7 @@ func (c *component) GetRoles(ctx context.Context, realmName string) ([]api.RoleR
 }
 
 func (c *component) GetRole(ctx context.Context, realmName string, roleID string) (api.RoleRepresentation, error) {
-	var accessToken = ctx.Value("access_token").(string)
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 
 	var roleRep api.RoleRepresentation
 	roleKc, err := c.keycloakClient.GetRole(accessToken, realmName, roleID)
@@ -567,7 +569,7 @@ func (c *component) GetRole(ctx context.Context, realmName string, roleID string
 }
 
 func (c *component) GetClientRoles(ctx context.Context, realmName, idClient string) ([]api.RoleRepresentation, error) {
-	var accessToken = ctx.Value("access_token").(string)
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 
 	rolesKc, err := c.keycloakClient.GetClientRoles(accessToken, realmName, idClient)
 
@@ -592,7 +594,7 @@ func (c *component) GetClientRoles(ctx context.Context, realmName, idClient stri
 }
 
 func (c *component) CreateClientRole(ctx context.Context, realmName, clientID string, role api.RoleRepresentation) (string, error) {
-	var accessToken = ctx.Value("access_token").(string)
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 
 	var roleRep kc.RoleRepresentation
 	roleRep.Id = role.Id
@@ -613,7 +615,7 @@ func (c *component) CreateClientRole(ctx context.Context, realmName, clientID st
 
 // Retrieve the configuration from the database
 func (c *component) GetRealmCustomConfiguration(ctx context.Context, realmName string) (api.RealmCustomConfiguration, error) {
-	var accessToken = ctx.Value("access_token").(string)
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 
 	var customConfig = api.RealmCustomConfiguration{
 		DefaultClientId:    new(string),
@@ -646,7 +648,7 @@ func (c *component) GetRealmCustomConfiguration(ctx context.Context, realmName s
 
 // Update the configuration in the database; verify that the content of the configuration is coherent with Keycloak configuration
 func (c *component) UpdateRealmCustomConfiguration(ctx context.Context, realmName string, customConfig api.RealmCustomConfiguration) error {
-	var accessToken = ctx.Value("access_token").(string)
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 
 	// get the realm config from Keycloak
 	realmConfig, err := c.keycloakClient.GetRealm(accessToken, realmName)

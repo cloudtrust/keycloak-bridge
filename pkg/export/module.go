@@ -13,6 +13,7 @@ type KeycloakClient interface {
 	ExportRealm(accessToken string, realmName string) (keycloak.RealmRepresentation, error)
 }
 
+// Module wraps a KeycloakClient to Get/Export realms
 type Module struct {
 	kc KeycloakClient
 }

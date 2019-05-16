@@ -5,6 +5,7 @@ package management
 import (
 	"context"
 
+	cs "github.com/cloudtrust/common-service"
 	opentracing "github.com/opentracing/opentracing-go"
 )
 
@@ -29,7 +30,7 @@ func (m *configDBModuleTracingMW) StoreOrUpdate(ctx context.Context, realmName s
 	if span := opentracing.SpanFromContext(ctx); span != nil {
 		span = m.tracer.StartSpan("configurationDB_module", opentracing.ChildOf(span.Context()))
 		defer span.Finish()
-		span.SetTag("correlation_id", ctx.Value("correlation_id").(string))
+		span.SetTag("correlation_id", ctx.Value(cs.CtContextCorrelationID).(string))
 
 		ctx = opentracing.ContextWithSpan(ctx, span)
 	}
@@ -42,7 +43,7 @@ func (m *configDBModuleTracingMW) GetConfiguration(ctx context.Context, realmNam
 	if span := opentracing.SpanFromContext(ctx); span != nil {
 		span = m.tracer.StartSpan("configurationDB_module", opentracing.ChildOf(span.Context()))
 		defer span.Finish()
-		span.SetTag("correlation_id", ctx.Value("correlation_id").(string))
+		span.SetTag("correlation_id", ctx.Value(cs.CtContextCorrelationID).(string))
 
 		ctx = opentracing.ContextWithSpan(ctx, span)
 	}

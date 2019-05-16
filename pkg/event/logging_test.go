@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	cs "github.com/cloudtrust/common-service"
 	"github.com/cloudtrust/keycloak-bridge/api/event/fb"
 	"github.com/cloudtrust/keycloak-bridge/pkg/event/mock"
 	"github.com/golang/mock/gomock"
@@ -23,7 +24,7 @@ func TestMuxComponentLoggingMW(t *testing.T) {
 
 	rand.Seed(time.Now().UnixNano())
 	var corrID = strconv.FormatUint(rand.Uint64(), 10)
-	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
+	var ctx = context.WithValue(context.Background(), cs.CtContextCorrelationID, corrID)
 	var uid = rand.Int63()
 	var event = createEventBytes(fb.EventTypeCLIENT_DELETE, uid, "realm")
 
@@ -50,7 +51,7 @@ func TestComponentLoggingMW(t *testing.T) {
 
 	rand.Seed(time.Now().UnixNano())
 	var corrID = strconv.FormatUint(rand.Uint64(), 10)
-	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
+	var ctx = context.WithValue(context.Background(), cs.CtContextCorrelationID, corrID)
 	var uid = rand.Int63()
 	var event = createEvent(fb.EventTypeCLIENT_INFO, uid, "realm")
 
@@ -77,7 +78,7 @@ func TestAdminComponentLoggingMW(t *testing.T) {
 
 	rand.Seed(time.Now().UnixNano())
 	var corrID = strconv.FormatUint(rand.Uint64(), 10)
-	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
+	var ctx = context.WithValue(context.Background(), cs.CtContextCorrelationID, corrID)
 	var uid = rand.Int63()
 	var event = createAdminEvent(fb.OperationTypeCREATE, uid)
 
@@ -104,7 +105,7 @@ func TestConsoleModuleLoggingMW(t *testing.T) {
 
 	rand.Seed(time.Now().UnixNano())
 	var corrID = strconv.FormatUint(rand.Uint64(), 10)
-	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
+	var ctx = context.WithValue(context.Background(), cs.CtContextCorrelationID, corrID)
 	var mp = map[string]string{"key": "val"}
 
 	// Print.
@@ -123,7 +124,7 @@ func TestStatisticModuleLoggingMW(t *testing.T) {
 
 	rand.Seed(time.Now().UnixNano())
 	var corrID = strconv.FormatUint(rand.Uint64(), 10)
-	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
+	var ctx = context.WithValue(context.Background(), cs.CtContextCorrelationID, corrID)
 	var mp = map[string]string{"key": "val"}
 
 	// Stats.

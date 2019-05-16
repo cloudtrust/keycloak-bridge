@@ -25,6 +25,7 @@ type StorageModule struct {
 	db DB
 }
 
+// DB interface
 type DB interface {
 	Exec(query string, args ...interface{}) (sql.Result, error)
 	QueryRow(query string, args ...interface{}) *sql.Row
@@ -40,6 +41,7 @@ func NewConfigStorageModule(db DB) *StorageModule {
 	}
 }
 
+// Save is used to save config in database
 func (c *StorageModule) Save(componentName, version string, config []byte) error {
 	var _, err = c.db.Exec(upsertConfigStmt, componentName, version, config)
 

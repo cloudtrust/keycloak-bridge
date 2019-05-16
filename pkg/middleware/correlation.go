@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	cs "github.com/cloudtrust/common-service"
 	gen "github.com/cloudtrust/keycloak-bridge/internal/idgenerator"
 	"github.com/go-kit/kit/log"
 	opentracing "github.com/opentracing/opentracing-go"
@@ -20,7 +21,7 @@ func MakeHTTPCorrelationIDMW(idGenerator gen.IDGenerator, tracer opentracing.Tra
 				correlationID = idGenerator.NextID()
 			}
 
-			var ctx = context.WithValue(req.Context(), "correlation_id", correlationID)
+			var ctx = context.WithValue(req.Context(), cs.CtContextCorrelationID, correlationID)
 			next.ServeHTTP(w, req.WithContext(ctx))
 		})
 	}

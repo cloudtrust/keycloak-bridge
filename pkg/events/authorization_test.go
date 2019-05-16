@@ -7,6 +7,7 @@ import (
 	"context"
 	"testing"
 
+	cs "github.com/cloudtrust/common-service"
 	api "github.com/cloudtrust/keycloak-bridge/api/events"
 	"github.com/cloudtrust/keycloak-bridge/internal/security"
 	"github.com/cloudtrust/keycloak-bridge/pkg/events/mock"
@@ -49,9 +50,9 @@ func testAuthorization(t *testing.T, jsonAuthz string, tester func(EventsCompone
 	var groupID = "123-789-454"
 	var groupName = "titi"
 
-	var ctx = context.WithValue(context.Background(), "access_token", accessToken)
-	ctx = context.WithValue(ctx, "groups", groups)
-	ctx = context.WithValue(ctx, "realm", realmName)
+	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+	ctx = context.WithValue(ctx, cs.CtContextGroups, groups)
+	ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 	var group = kc.GroupRepresentation{
 		Id:   &groupID,
 		Name: &groupName,

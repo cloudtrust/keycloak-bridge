@@ -15,11 +15,13 @@ type component struct {
 	s                Storage
 }
 
+// RealmExporter interface
 type RealmExporter interface {
 	GetRealms(ctx context.Context) ([]string, error)
 	ExportRealm(ctx context.Context, realmName string) (keycloak.RealmRepresentation, error)
 }
 
+// Storage interface
 type Storage interface {
 	Save(componentName, version string, config []byte) error
 	Read(componentName, version string) ([]byte, error)

@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strings"
 
+	cs "github.com/cloudtrust/common-service"
 	"github.com/gbrlsnchs/jwt"
 	"github.com/go-kit/kit/log"
 )
@@ -72,7 +73,7 @@ func MakeHTTPBasicAuthenticationMW(passwordToMatch string, logger log.Logger) fu
 				return
 			}
 
-			var ctx = context.WithValue(req.Context(), "username", username)
+			var ctx = context.WithValue(req.Context(), cs.CtContextUsername, username)
 
 			next.ServeHTTP(w, req.WithContext(ctx))
 		})
@@ -177,14 +178,13 @@ func MakeHTTPOIDCTokenValidationMW(keycloakClient KeycloakClient, audienceRequir
 				return
 			}
 
-			var ctx = context.WithValue(req.Context(), "access_token", accessToken)
-			ctx = context.WithValue(ctx, "realm", realm)
-			ctx = context.WithValue(ctx, "userId", userID)
-			ctx = context.WithValue(ctx, "username", username)
-			ctx = context.WithValue(ctx, "groups", groups)
+			var ctx = context.WithValue(req.Context(), cs.CtContextAccessToken, accessToken)
+			ctx = context.WithValue(ctx, cs.CtContextRealm, realm)
+			ctx = context.WithValue(ctx, cs.CtContextUserID, userID)
+			ctx = context.WithValue(ctx, cs.CtContextUsername, username)
+			ctx = context.WithValue(ctx, cs.CtContextGroups, groups)
 
 			next.ServeHTTP(w, req.WithContext(ctx))
-
 		})
 	}
 }
@@ -209,7 +209,7 @@ func extractGroups(kcGroups []string) []string {
 	return groups
 }
 
-// Token is JWT token and the custom fields present in OIDC Token provided by Keycloak.
+// TokenAudienceStringArray is JWT token and the custom fields present in OIDC Token provided by Keycloak.
 // Audience can be a string or a string array according the specification.
 // The libraries are not supporting tit at this time (Fix in progress), meanwhile we circumvent it with a quick fix.
 type TokenAudienceStringArray struct {
@@ -225,6 +225,7 @@ type TokenAudienceStringArray struct {
 	Groups         []string `json:"groups,omitempty"`
 }
 
+// TokenAudienceString is JWT token. Same as TokenAudienceString where Audience is a string rather than slice of strings
 type TokenAudienceString struct {
 	hdr            *header
 	Issuer         string   `json:"iss,omitempty"`

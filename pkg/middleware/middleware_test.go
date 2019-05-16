@@ -17,6 +17,7 @@ import (
 	"testing"
 	"time"
 
+	cs "github.com/cloudtrust/common-service"
 	"github.com/cloudtrust/keycloak-bridge/api/event/fb"
 	"github.com/cloudtrust/keycloak-bridge/pkg/event"
 	"github.com/cloudtrust/keycloak-bridge/pkg/middleware/mock"
@@ -69,7 +70,7 @@ func TestEndpointLoggingMW(t *testing.T) {
 	// Context with correlation ID.
 	var uid = rand.Int63()
 	var corrID = strconv.FormatUint(rand.Uint64(), 10)
-	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
+	var ctx = context.WithValue(context.Background(), cs.CtContextCorrelationID, corrID)
 
 	// With correlation ID.
 	var req = event.Request{
@@ -98,7 +99,7 @@ func TestEndpointInstrumentingMW(t *testing.T) {
 	// Context with correlation ID.
 	var uid = rand.Int63()
 	var corrID = strconv.FormatUint(rand.Uint64(), 10)
-	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
+	var ctx = context.WithValue(context.Background(), cs.CtContextCorrelationID, corrID)
 
 	// With correlation ID.
 	var req = event.Request{
@@ -131,7 +132,7 @@ func TestEndpointTracingMW(t *testing.T) {
 	// Context with correlation ID.
 	var uid = rand.Int63()
 	var corrID = strconv.FormatUint(rand.Uint64(), 10)
-	var ctx = context.WithValue(context.Background(), "correlation_id", corrID)
+	var ctx = context.WithValue(context.Background(), cs.CtContextCorrelationID, corrID)
 	ctx = opentracing.ContextWithSpan(ctx, mockSpan)
 
 	// With correlation ID.
