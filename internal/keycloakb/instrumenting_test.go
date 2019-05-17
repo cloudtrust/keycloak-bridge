@@ -1,5 +1,7 @@
 package keycloakb
 
+//go:generate mockgen -destination=./mock/instrumenting.go -package=mock -mock_names=Influx=Influx,GoKitMetrics=GoKitMetrics github.com/cloudtrust/keycloak-bridge/internal/keycloakb Influx,GoKitMetrics
+
 import (
 	"testing"
 	"time"

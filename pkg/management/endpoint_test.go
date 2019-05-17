@@ -1,7 +1,5 @@
 package management
 
-//go:generate mockgen -destination=./mock/component.go -package=mock -mock_names=ManagementComponent=ManagementComponent github.com/cloudtrust/keycloak-bridge/pkg/management ManagementComponent
-
 import (
 	"context"
 	"encoding/json"
@@ -266,7 +264,7 @@ func TestGetUsersEndpoint(t *testing.T) {
 		req["toto"] = "tutu" // Check this param is not transmitted
 		req["groupIds"] = "123-784dsf-sdf567"
 
-		mockManagementComponent.EXPECT().GetUsers(ctx, realm, []string{req["groupIds"]}, "email", req["email"], "firstName", req["firstName"], "lastName", req["lastName"], "username", req["username"], "search", req["search"],).Return([]api.UserRepresentation{}, nil).Times(1)
+		mockManagementComponent.EXPECT().GetUsers(ctx, realm, []string{req["groupIds"]}, "email", req["email"], "firstName", req["firstName"], "lastName", req["lastName"], "username", req["username"], "search", req["search"]).Return([]api.UserRepresentation{}, nil).Times(1)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.NotNil(t, res)
@@ -851,6 +849,6 @@ func TestConvertLocationUrl(t *testing.T) {
 
 	res, err = convertLocationUrl("http://localhost:8080/toto", "https", "ct-bridge.services.com")
 	assert.Equal(t, "InvalidLocation", res)
-	assert.Equal(t, ConvertLocationError{Location:"http://localhost:8080/toto"},err)
+	assert.Equal(t, ConvertLocationError{Location: "http://localhost:8080/toto"}, err)
 
 }

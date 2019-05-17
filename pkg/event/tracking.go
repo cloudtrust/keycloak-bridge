@@ -1,7 +1,5 @@
 package event
 
-//go:generate mockgen -destination=./mock/tracking.go -package=mock -mock_names=Sentry=Sentry github.com/cloudtrust/keycloak-bridge/pkg/event Sentry
-
 import (
 	"context"
 	"encoding/base64"

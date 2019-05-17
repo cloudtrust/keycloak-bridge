@@ -1,7 +1,5 @@
 package management
 
-//go:generate mockgen -destination=./mock/configuration_db.go -package=mock -mock_names=DBConfiguration=DBConfiguration github.com/cloudtrust/keycloak-bridge/pkg/management DBConfiguration
-
 import (
 	"context"
 	"testing"

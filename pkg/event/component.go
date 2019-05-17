@@ -1,7 +1,5 @@
 package event
 
-//go:generate mockgen -destination=./mock/component.go -package=mock -mock_names=MuxComponent=MuxComponent,Component=Component,AdminComponent=AdminComponent github.com/cloudtrust/keycloak-bridge/pkg/event MuxComponent,Component,AdminComponent
-
 import (
 	"context"
 	"encoding/json"
