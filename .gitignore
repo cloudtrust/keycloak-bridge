@@ -20,4 +20,4 @@ bin/*
 **/debug
 **/*.coverprofile
 configs/DEV/*
-mock/
+**/mock
