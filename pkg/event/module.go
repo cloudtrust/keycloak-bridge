@@ -64,24 +64,6 @@ func (sm *statisticModule) Stats(ctx context.Context, m map[string]string) error
 }
 
 const (
-	createTable = `CREATE TABLE IF NOT EXISTS audit (
-		audit_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-		audit_time TIMESTAMP NULL,
-		origin VARCHAR(255),
-		realm_name VARCHAR(255),
-		agent_user_id VARCHAR(36),
-		agent_username VARCHAR(255),
-		agent_realm_name VARCHAR(255),
-		user_id VARCHAR(36),
-		username VARCHAR(255),
-		ct_event_type VARCHAR(50),
-		kc_event_type VARCHAR(50),
-		kc_operation_type VARCHAR(50),
-		client_id VARCHAR(255),
-		additional_info TEXT,
-		CONSTRAINT audit_pk PRIMARY KEY (audit_id)
-	  );`
-
 	insertEvent = `INSERT INTO audit (
 		audit_time,
 		origin,

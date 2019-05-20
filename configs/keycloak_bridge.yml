@@ -44,6 +44,9 @@ db-audit-rw-protocol: tcp
 db-audit-rw-max-open-conns: 10
 db-audit-rw-max-idle-conns: 2
 db-audit-rw-conn-max-lifetime: 3600
+db-audit-migration: false
+db-audit-migration-version: 
+
 
 # DB Audit RO
 db-audit-ro-host-port: 127.0.0.1:3306
@@ -64,6 +67,8 @@ db-config-protocol: tcp
 db-config-max-open-conns: 10
 db-config-max-idle-conns: 2
 db-config-conn-max-lifetime: 3600
+db-config-migration: false
+db-config-migration-version: 4.1
 
 # audit events
 events-db: false
