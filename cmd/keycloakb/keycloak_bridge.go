@@ -9,6 +9,7 @@ import (
 	"os/signal"
 	"sort"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -673,15 +674,21 @@ func config(logger log.Logger) *viper.Viper {
 
 	// Bind ENV variables
 	// We use env variables to bind Openshift secrets
+	var censoredParameters = map[string]bool{}
+
 	v.BindEnv("keycloak-username", "CT_BRIDGE_KEYCLOAK_USERNAME")
 	v.BindEnv("keycloak-password", "CT_BRIDGE_KEYCLOAK_PASSWORD")
+	censoredParameters["keycloak-password"] = true
 
 	v.BindEnv("influx-username", "CT_BRIDGE_INFLUX_USERNAME")
 	v.BindEnv("influx-password", "CT_BRIDGE_INFLUX_PASSWORD")
+	censoredParameters["influx-password"] = true
 
 	v.BindEnv("sentry-dsn", "CT_BRIDGE_SENTRY_DSN")
+	censoredParameters["sentry-dsn"] = true
 
 	v.BindEnv("event-basic-auth-token", "CT_BRIDGE_EVENT_BASIC_AUTH")
+	censoredParameters["event-basic-auth-token"] = true
 
 	// Load and log config.
 	v.SetConfigFile(v.GetString("config-file"))
@@ -700,7 +707,13 @@ func config(logger log.Logger) *viper.Viper {
 	sort.Strings(keys)
 
 	for _, k := range keys {
-		logger.Log(k, v.Get(k))
+		if _, censored := censoredParameters[k]; censored {
+			logger.Log(k, "*************")
+		} else if strings.Contains(k, "password") {
+			logger.Log(k, "*************")
+		} else {
+			logger.Log(k, v.Get(k))
+		}
 	}
 	return v
 }
