@@ -21,7 +21,20 @@ func MakeEventsHandler(e endpoint.Endpoint, logger log.Logger) *http_transport.S
 
 // decodeEventsRequest gets the HTTP parameters and body content
 func decodeEventsRequest(ctx context.Context, req *http.Request) (interface{}, error) {
-	pathParams := []string{"realm", "userID"}
-	queryParams := []string{"origin", "realmTarget", "ctEventType", "dateFrom", "dateTo", "first", "max"}
-	return commonhttp.DecodeRequest(ctx, req, pathParams, queryParams)
+	var pathParams = map[string]string{
+		"realm":  "^[a-zA-Z0-9_-]{1,36}$",
+		"userID": "^[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}$",
+	}
+
+	var queryParams = map[string]string{
+		"origin":      `^[a-zA-Z0-9-_@.]{1,128}$`,
+		"realmTarget": `^[a-zA-Z0-9_-]{1,36}$`,
+		"ctEventType": `^[a-zA-Z-_]{1,128}$`,
+		"dateFrom":    `^[0-9]{1,10}$`,
+		"dateTo":      `^[0-9]{1,10}$`,
+		"first":       `^[0-9]{1,10}$`,
+		"max":         `^[0-9]{1,10}$`,
+	}
+	
+	return keycloakb.DecodeEventsRequest(ctx, req, pathParams, queryParams)
 }

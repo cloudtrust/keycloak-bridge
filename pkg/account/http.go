@@ -21,7 +21,7 @@ func MakeAccountHandler(e endpoint.Endpoint, logger log.Logger) *http_transport.
 
 // decodeEventsRequest gets the HTTP parameters and body content
 func decodeEventsRequest(ctx context.Context, req *http.Request) (interface{}, error) {
-	pathParams := []string{"realm"}
-	queryParams := []string{}
-	return commonhttp.DecodeRequest(ctx, req, pathParams, queryParams)
+	pathParams := map[string]string{"realm": "^[a-zA-Z0-9_-]{1,36}$"}
+	queryParams := map[string]string{}
+	return keycloakb.DecodeEventsRequest(ctx, req, pathParams, queryParams)
 }

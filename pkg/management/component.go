@@ -59,7 +59,7 @@ type Component interface {
 	AddClientRolesToUser(ctx context.Context, realmName, userID, clientID string, roles []api.RoleRepresentation) error
 	ResetPassword(ctx context.Context, realmName string, userID string, password api.PasswordRepresentation) error
 	SendVerifyEmail(ctx context.Context, realmName string, userID string, paramKV ...string) error
-	ExecuteActionsEmail(ctx context.Context, realmName string, userID string, actions []string, paramKV ...string) error
+	ExecuteActionsEmail(ctx context.Context, realmName string, userID string, actions []api.RequiredAction, paramKV ...string) error
 	SendNewEnrolmentCode(ctx context.Context, realmName string, userID string) (string, error)
 	GetCredentialsForUser(ctx context.Context, realmName string, userID string) ([]api.CredentialRepresentation, error)
 	DeleteCredentialsForUser(ctx context.Context, realmName string, userID string, credentialID string) error
@@ -484,8 +484,14 @@ func (c *component) SendVerifyEmail(ctx context.Context, realmName string, userI
 	return c.keycloakClient.SendVerifyEmail(accessToken, realmName, userID, paramKV...)
 }
 
-func (c *component) ExecuteActionsEmail(ctx context.Context, realmName string, userID string, actions []string, paramKV ...string) error {
+func (c *component) ExecuteActionsEmail(ctx context.Context, realmName string, userID string, requiredActions []api.RequiredAction, paramKV ...string) error {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+
+	var actions = []string{}
+
+	for _, requiredAction := range requiredActions {
+		actions = append(actions, string(requiredAction))
+	}
 
 	return c.keycloakClient.ExecuteActionsEmail(accessToken, realmName, userID, actions, paramKV...)
 }

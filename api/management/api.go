@@ -1,6 +1,8 @@
 package management_api
 
 import (
+	"errors"
+	"regexp"
 	"strconv"
 
 	kc "github.com/cloudtrust/keycloak-client"
@@ -72,6 +74,8 @@ type RealmCustomConfiguration struct {
 	DefaultClientId    *string `json:"default_client_id,omitempty"`
 	DefaultRedirectUri *string `json:"default_redirect_uri,omitempty"`
 }
+
+type RequiredAction string
 
 // ConvertCredential creates an API credential from a KC credential
 func ConvertCredential(credKc *kc.CredentialRepresentation) CredentialRepresentation {
@@ -188,3 +192,153 @@ func ConvertToKCUser(user UserRepresentation) kc.UserRepresentation {
 
 	return userRep
 }
+
+// Validators
+
+func (user UserRepresentation) Validate() error {
+	if user.Id != nil && !matchesRegExp(*user.Id, RegExpID) {
+		return errors.New("Invalid user ID")
+	}
+
+	if user.Username != nil && !matchesRegExp(*user.Username, RegExpUsername) {
+		return errors.New("Invalid username")
+	}
+
+	if user.Email != nil && !matchesRegExp(*user.Email, RegExpEmail) {
+		return errors.New("Invalid email")
+	}
+
+	if user.FirstName != nil && !matchesRegExp(*user.FirstName, RegExpFirstName) {
+		return errors.New("Invalid firstname")
+	}
+
+	if user.LastName != nil && !matchesRegExp(*user.LastName, RegExpLastName) {
+		return errors.New("Invalid lastname")
+	}
+
+	if user.PhoneNumber != nil && !matchesRegExp(*user.PhoneNumber, RegExpPhoneNumber) {
+		return errors.New("Invalid phone number")
+	}
+
+	if user.Label != nil && !matchesRegExp(*user.Label, RegExpLabel) {
+		return errors.New("Invalid label")
+	}
+
+	if user.Gender != nil && !matchesRegExp(*user.Gender, RegExpGender) {
+		return errors.New("Invalid gender")
+	}
+
+	if user.BirthDate != nil && !matchesRegExp(*user.BirthDate, RegExpBirthDate) {
+		return errors.New("Invalid birthdate")
+	}
+
+	if user.Groups != nil {
+		for _, groupID := range *(user.Groups) {
+			if !matchesRegExp(groupID, RegExpID) {
+				return errors.New("Invalid group ID")
+			}
+		}
+	}
+
+	if user.Roles != nil {
+		for _, roleID := range *(user.Roles) {
+			if !matchesRegExp(roleID, RegExpID) {
+				return errors.New("Invalid role ID")
+			}
+		}
+	}
+
+	if user.Locale != nil && !matchesRegExp(*user.Locale, RegExpLocale) {
+		return errors.New("Invalid locale")
+	}
+
+	return nil
+}
+
+func (role RoleRepresentation) Validate() error {
+	if role.Id != nil && !matchesRegExp(*role.Id, RegExpID) {
+		return errors.New("Invalid role ID")
+	}
+
+	if role.Name != nil && !matchesRegExp(*role.Name, RegExpName) {
+		return errors.New("Invalid username")
+	}
+
+	if role.Description != nil && !matchesRegExp(*role.Description, RegExpDescription) {
+		return errors.New("Invalid description")
+	}
+
+	if role.ContainerId != nil && !matchesRegExp(*role.ContainerId, RegExpID) {
+		return errors.New("Invalid container ID")
+	}
+
+	return nil
+}
+
+func (password PasswordRepresentation) Validate() error {
+	if password.Value != nil && !matchesRegExp(*password.Value, RegExpPassword) {
+		return errors.New("Invalid password")
+	}
+
+	return nil
+}
+
+func (config RealmCustomConfiguration) Validate() error {
+	if config.DefaultClientId != nil && !matchesRegExp(*config.DefaultClientId, RegExpID) {
+		return errors.New("Invalid default client ID")
+	}
+
+	if config.DefaultRedirectUri != nil && !matchesRegExp(*config.DefaultRedirectUri, RegExpRedirectURI) {
+		return errors.New("Invalid default redirect uri")
+	}
+
+	return nil
+}
+
+func (requiredAction RequiredAction) Validate() error {
+	if requiredAction != "" && !matchesRegExp(string(requiredAction), RegExpRequiredAction) {
+		return errors.New("Invalid required action")
+	}
+
+	return nil
+}
+
+func matchesRegExp(value, re string) bool {
+	res, _ := regexp.MatchString(re, value)
+	return res
+}
+
+const (
+	RegExpID = `^[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}$`
+
+	// User
+	RegExpUsername    = `^[a-zA-Z0-9-_@.]{1,128}$`
+	RegExpEmail       = `^.+\@.+\..+`
+	RegExpFirstName   = `^[a-zA-Z ,.'-]{1,128}$`
+	RegExpLastName    = `^[a-zA-Z ,.'-]{1,128}$`
+	RegExpPhoneNumber = `^\+[1-9]\d{1,14}$`
+	RegExpLabel       = `^.{1,255}$`
+	RegExpGender      = `^[MF]$`
+	RegExpBirthDate   = `^(\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01]))$`
+	RegExpLocale      = `^[a-z]{2}$`
+
+	// Role
+	RegExpName        = `^[a-zA-Z0-9-_]{1,128}$`
+	RegExpDescription = `^.{1,255}$`
+
+	//Password
+	RegExpPassword = `^.{1,255}$`
+
+	//RealmCustomConfiguration
+	RegExpRedirectURI = `^\w+:(\/?\/?)[^\s]+$`
+
+	//RequiredAction
+	RegExpRequiredAction = `^[a-zA-Z0-9-_]{1,255}$`
+
+	// Others
+	RegExpRealmName = `^[a-zA-Z0-9_-]{1,36}$`
+	RegExpSearch = `^.{1,128}$`
+	RegExpLifespan = `^[0-9]{1,10}$`
+	RegExpGroupIds = `^([a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12})(,[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}){0,20}$`
+
+)
