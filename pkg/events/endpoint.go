@@ -17,7 +17,14 @@ type Endpoints struct {
 // MakeGetEventsEndpoint makes the events endpoint.
 func MakeGetEventsEndpoint(ec EventsComponent) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
-		params := filterParameters(req.(map[string]string), "first", "max", "dateFrom", "dateTo", "realmTarget", "userID", "origin", "ctEventType")
+		params := filterParameters(req.(map[string]string), "first", "max", "dateFrom", "dateTo", "realmTarget", "origin", "ctEventType")
+
+		//Rewrite realmTarget into realm
+		if value, ok := params["realmTarget"]; ok {
+			params["realm"] = value
+			delete(params, "realmTarget")
+		}
+
 		return ec.GetEvents(ctx, params)
 	}
 }
@@ -32,7 +39,7 @@ func MakeGetEventsSummaryEndpoint(ec EventsComponent) cs.Endpoint {
 // MakeGetUserEventsEndpoint makes the events summary endpoint.
 func MakeGetUserEventsEndpoint(ec EventsComponent) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
-		params := filterParameters(req.(map[string]string), "first", "max", "dateFrom", "dateTo", "realm", "realmTarget", "userID", "origin", "ctEventType")
+		params := filterParameters(req.(map[string]string), "first", "max", "dateFrom", "dateTo", "realm", "userID", "origin", "ctEventType")
 		return ec.GetUserEvents(ctx, params)
 	}
 }
