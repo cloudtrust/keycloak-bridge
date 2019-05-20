@@ -4,17 +4,17 @@ import (
 	"context"
 
 	cs "github.com/cloudtrust/common-service"
-	opentracing "github.com/opentracing/opentracing-go"
+	"github.com/cloudtrust/common-service/tracing"
 )
 
 // Tracing middleware at module level.
 type configDBModuleTracingMW struct {
-	tracer opentracing.Tracer
+	tracer tracing.OpentracingClient
 	next   ConfigurationDBModule
 }
 
 // MakeConfigurationDBModuleTracingMW makes a tracing middleware at component level.
-func MakeConfigurationDBModuleTracingMW(tracer opentracing.Tracer) func(ConfigurationDBModule) ConfigurationDBModule {
+func MakeConfigurationDBModuleTracingMW(tracer tracing.OpentracingClient) func(ConfigurationDBModule) ConfigurationDBModule {
 	return func(next ConfigurationDBModule) ConfigurationDBModule {
 		return &configDBModuleTracingMW{
 			tracer: tracer,
@@ -25,12 +25,10 @@ func MakeConfigurationDBModuleTracingMW(tracer opentracing.Tracer) func(Configur
 
 // configDBModuleTracingMW implements StatisticModule.
 func (m *configDBModuleTracingMW) StoreOrUpdate(ctx context.Context, realmName string, configJSON string) error {
-	if span := opentracing.SpanFromContext(ctx); span != nil {
-		span = m.tracer.StartSpan("configurationDB_module", opentracing.ChildOf(span.Context()))
-		defer span.Finish()
-		span.SetTag("correlation_id", ctx.Value(cs.CtContextCorrelationID).(string))
-
-		ctx = opentracing.ContextWithSpan(ctx, span)
+	var f tracing.Finisher
+	ctx, f = m.tracer.TryStartSpanWithTag(ctx, "configurationDB_module", "correlation_id", ctx.Value(cs.CtContextCorrelationID).(string))
+	if f != nil {
+		defer f.Finish()
 	}
 
 	return m.next.StoreOrUpdate(ctx, realmName, configJSON)
@@ -38,12 +36,10 @@ func (m *configDBModuleTracingMW) StoreOrUpdate(ctx context.Context, realmName s
 
 // configDBModuleTracingMW implements StatisticModule.
 func (m *configDBModuleTracingMW) GetConfiguration(ctx context.Context, realmName string) (string, error) {
-	if span := opentracing.SpanFromContext(ctx); span != nil {
-		span = m.tracer.StartSpan("configurationDB_module", opentracing.ChildOf(span.Context()))
-		defer span.Finish()
-		span.SetTag("correlation_id", ctx.Value(cs.CtContextCorrelationID).(string))
-
-		ctx = opentracing.ContextWithSpan(ctx, span)
+	var f tracing.Finisher
+	ctx, f = m.tracer.TryStartSpanWithTag(ctx, "configurationDB_module", "correlation_id", ctx.Value(cs.CtContextCorrelationID).(string))
+	if f != nil {
+		defer f.Finish()
 	}
 
 	return m.next.GetConfiguration(ctx, realmName)

@@ -1,8 +1,5 @@
 package account
 
-//go:generate mockgen -destination=./mock/acc_keycloak_client.go -package=mock -mock_names=KeycloakClient=AccKeycloakClient github.com/cloudtrust/keycloak-bridge/pkg/account KeycloakClient
-//go:generate mockgen -destination=./mock/eventsdbmodule.go -package=mock -mock_names=EventsDBModule=EventsDBModule github.com/cloudtrust/keycloak-bridge/pkg/event EventsDBModule
-
 import (
 	"context"
 	"testing"
@@ -31,7 +28,7 @@ func genericUpdatePasswordTest(t *testing.T, oldPasswd, newPasswd, confirmPasswo
 	ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 
 	mockKeycloakClient.EXPECT().UpdatePassword(accessToken, realm, oldPasswd, newPasswd, confirmPassword).Return("", nil).Times(kcCalls)
-	mockEventDBModule.EXPECT().Store(gomock.Any(), gomock.Any()).Times(kcCalls)
+	mockEventDBModule.EXPECT().ReportEvent(gomock.Any(), "PASSWORD_RESET", "self-service", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(kcCalls)
 
 	err := component.UpdatePassword(ctx, oldPasswd, newPasswd, confirmPassword)
 

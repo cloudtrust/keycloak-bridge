@@ -36,4 +36,8 @@ func TestEventEndpoint(t *testing.T) {
 	var rep, err = e(ctx, req)
 	assert.Nil(t, err)
 	assert.Nil(t, rep)
+
+	// Bad parameters
+	_, err = e(ctx, "string")
+	assert.NotNil(t, err)
 }

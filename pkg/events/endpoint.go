@@ -3,6 +3,7 @@ package events
 import (
 	"context"
 
+	cs "github.com/cloudtrust/common-service"
 	"github.com/go-kit/kit/endpoint"
 )
 
@@ -14,7 +15,7 @@ type Endpoints struct {
 }
 
 // MakeGetEventsEndpoint makes the events endpoint.
-func MakeGetEventsEndpoint(ec EventsComponent) endpoint.Endpoint {
+func MakeGetEventsEndpoint(ec EventsComponent) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		params := filterParameters(req.(map[string]string), "first", "max", "dateFrom", "dateTo", "realmTarget", "userID", "origin", "ctEventType")
 		return ec.GetEvents(ctx, params)
@@ -22,14 +23,14 @@ func MakeGetEventsEndpoint(ec EventsComponent) endpoint.Endpoint {
 }
 
 // MakeGetEventsSummaryEndpoint makes the events summary endpoint.
-func MakeGetEventsSummaryEndpoint(ec EventsComponent) endpoint.Endpoint {
+func MakeGetEventsSummaryEndpoint(ec EventsComponent) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		return ec.GetEventsSummary(ctx)
 	}
 }
 
 // MakeGetUserEventsEndpoint makes the events summary endpoint.
-func MakeGetUserEventsEndpoint(ec EventsComponent) endpoint.Endpoint {
+func MakeGetUserEventsEndpoint(ec EventsComponent) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		params := filterParameters(req.(map[string]string), "first", "max", "dateFrom", "dateTo", "realm", "realmTarget", "userID", "origin", "ctEventType")
 		return ec.GetUserEvents(ctx, params)

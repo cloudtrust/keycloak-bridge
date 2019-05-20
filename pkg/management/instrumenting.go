@@ -5,17 +5,17 @@ import (
 	"time"
 
 	cs "github.com/cloudtrust/common-service"
-	"github.com/go-kit/kit/metrics"
+	cm "github.com/cloudtrust/common-service/metrics"
 )
 
 // Instrumenting middleware at module level.
 type configDBModuleInstrumentingMW struct {
-	h    metrics.Histogram
+	h    cm.Histogram
 	next ConfigurationDBModule
 }
 
 // MakeConfigurationDBModuleInstrumentingMW makes an instrumenting middleware at module level.
-func MakeConfigurationDBModuleInstrumentingMW(h metrics.Histogram) func(ConfigurationDBModule) ConfigurationDBModule {
+func MakeConfigurationDBModuleInstrumentingMW(h cm.Histogram) func(ConfigurationDBModule) ConfigurationDBModule {
 	return func(next ConfigurationDBModule) ConfigurationDBModule {
 		return &configDBModuleInstrumentingMW{
 			h:    h,

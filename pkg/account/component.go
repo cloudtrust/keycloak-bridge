@@ -5,9 +5,8 @@ import (
 	"net/http"
 
 	cs "github.com/cloudtrust/common-service"
-	kcevent "github.com/cloudtrust/keycloak-bridge/internal/event"
-	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
-	"github.com/cloudtrust/keycloak-bridge/pkg/event"
+	"github.com/cloudtrust/common-service/database"
+	commonhttp "github.com/cloudtrust/common-service/http"
 )
 
 // KeycloakClient interface exposes methods we need to call to send requests to Keycloak API
@@ -23,19 +22,19 @@ type Component interface {
 // Component is the management component.
 type component struct {
 	keycloakClient KeycloakClient
-	eventDBModule  event.EventsDBModule
-}
-
-func reportEvent(ctx context.Context, eventDb event.EventsDBModule, apiCall string, values ...string) error {
-	return kcevent.ReportEvent(ctx, eventDb, apiCall, "self-service", values...)
+	eventDBModule  database.EventsDBModule
 }
 
 // NewComponent returns the self-service component.
-func NewComponent(keycloakClient KeycloakClient, eventDBModule event.EventsDBModule) Component {
+func NewComponent(keycloakClient KeycloakClient, eventDBModule database.EventsDBModule) Component {
 	return &component{
 		keycloakClient: keycloakClient,
 		eventDBModule:  eventDBModule,
 	}
+}
+
+func (c *component) reportEvent(ctx context.Context, apiCall string, values ...string) error {
+	return c.eventDBModule.ReportEvent(ctx, apiCall, "self-service", values...)
 }
 
 func (c *component) UpdatePassword(ctx context.Context, currentPassword, newPassword, confirmPassword string) error {
@@ -45,7 +44,7 @@ func (c *component) UpdatePassword(ctx context.Context, currentPassword, newPass
 	var username = ctx.Value(cs.CtContextUsername).(string)
 
 	if currentPassword == newPassword || newPassword != confirmPassword {
-		return keycloakb.HTTPError{
+		return commonhttp.Error{
 			Status: http.StatusBadRequest,
 		}
 	}
@@ -53,7 +52,7 @@ func (c *component) UpdatePassword(ctx context.Context, currentPassword, newPass
 	_, err := c.keycloakClient.UpdatePassword(accessToken, realm, currentPassword, newPassword, confirmPassword)
 
 	//store the API call into the DB
-	_ = reportEvent(ctx, c.eventDBModule, "PASSWORD_RESET", "realm_name", realm, "user_id", userID, "username", username)
+	_ = c.reportEvent(ctx, "PASSWORD_RESET", "realm_name", realm, "user_id", userID, "username", username)
 
 	return err
 }

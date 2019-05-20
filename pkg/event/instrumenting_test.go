@@ -137,3 +137,23 @@ func TestStatisticModuleInstrumentingMW(t *testing.T) {
 	mockHistogram.EXPECT().Observe(gomock.Any()).Return().Times(1)
 	m.Stats(ctx, mp)
 }
+
+func TestEventsDBModuleInstrumentingMW(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+	var mockEventsDBModule = mock.NewEventsDBModule(mockCtrl)
+	var mockHistogram = mock.NewHistogram(mockCtrl)
+
+	var m = MakeEventsDBModuleInstrumentingMW(mockHistogram)(mockEventsDBModule)
+
+	rand.Seed(time.Now().UnixNano())
+	var corrID = strconv.FormatUint(rand.Uint64(), 10)
+	var ctx = context.WithValue(context.Background(), cs.CtContextCorrelationID, corrID)
+	var mp = map[string]string{"key": "val"}
+
+	// Stats.
+	mockEventsDBModule.EXPECT().Store(ctx, mp).Return(nil).Times(1)
+	mockHistogram.EXPECT().With("correlation_id", corrID).Return(mockHistogram).Times(1)
+	mockHistogram.EXPECT().Observe(gomock.Any()).Return().Times(1)
+	m.Store(ctx, mp)
+}

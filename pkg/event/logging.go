@@ -5,6 +5,7 @@ import (
 	"time"
 
 	cs "github.com/cloudtrust/common-service"
+	"github.com/cloudtrust/common-service/database"
 	"github.com/cloudtrust/keycloak-bridge/api/event/fb"
 	"github.com/go-kit/kit/log"
 )
@@ -132,12 +133,12 @@ func (m *statisticModuleLoggingMW) Stats(ctx context.Context, mp map[string]stri
 // Logging middleware for the statistic module.
 type eventsDBModuleLoggingMW struct {
 	logger log.Logger
-	next   EventsDBModule
+	next   database.EventsDBModule
 }
 
-// MakeStatisticModuleLoggingMW makes a logging middleware for the statistic module.
-func MakeEventsDBModuleLoggingMW(log log.Logger) func(EventsDBModule) EventsDBModule {
-	return func(next EventsDBModule) EventsDBModule {
+// MakeEventsDBModuleLoggingMW makes a logging middleware for the statistic module.
+func MakeEventsDBModuleLoggingMW(log log.Logger) func(database.EventsDBModule) database.EventsDBModule {
+	return func(next database.EventsDBModule) database.EventsDBModule {
 		return &eventsDBModuleLoggingMW{
 			logger: log,
 			next:   next,
@@ -151,4 +152,11 @@ func (m *eventsDBModuleLoggingMW) Store(ctx context.Context, mp map[string]strin
 		m.logger.Log("method", "Store", "args", mp, "took", time.Since(begin))
 	}(time.Now())
 	return m.next.Store(ctx, mp)
+}
+
+func (m *eventsDBModuleLoggingMW) ReportEvent(ctx context.Context, apiCall string, origin string, values ...string) error {
+	defer func(begin time.Time) {
+		m.logger.Log("method", "ReportEvent", "args", apiCall, origin, values, "took", time.Since(begin))
+	}(time.Now())
+	return m.next.ReportEvent(ctx, apiCall, origin, values...)
 }

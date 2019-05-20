@@ -1,7 +1,5 @@
 package account
 
-//go:generate mockgen -destination=./mock/component.go -package=mock -mock_names=Component=Component github.com/cloudtrust/keycloak-bridge/pkg/account Component
-
 import (
 	"bytes"
 	"encoding/json"
@@ -10,7 +8,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/cloudtrust/keycloak-bridge/pkg/account/mock"
+	"github.com/go-kit/kit/log"
 	"github.com/golang/mock/gomock"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
@@ -22,7 +22,7 @@ func TestHTTPAccountHandler(t *testing.T) {
 	var mockComponent = mock.NewComponent(mockCtrl)
 
 	r := mux.NewRouter()
-	r.Handle("/path/to/{realm}/password", MakeAccountHandler(MakeUpdatePasswordEndpoint(mockComponent)))
+	r.Handle("/path/to/{realm}/password", MakeAccountHandler(keycloakb.ToGoKitEndpoint(MakeUpdatePasswordEndpoint(mockComponent)), log.NewNopLogger()))
 
 	ts := httptest.NewServer(r)
 	defer ts.Close()

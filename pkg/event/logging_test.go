@@ -132,3 +132,21 @@ func TestStatisticModuleLoggingMW(t *testing.T) {
 	mockLogger.EXPECT().Log("method", "Stats", "args", mp, "took", gomock.Any()).Return(nil).Times(1)
 	m.Stats(ctx, mp)
 }
+
+func TestEventsDBModuleLoggingMW(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+	var mockEventsDBModule = mock.NewEventsDBModule(mockCtrl)
+	var mockLogger = mock.NewLogger(mockCtrl)
+
+	var m = MakeEventsDBModuleLoggingMW(mockLogger)(mockEventsDBModule)
+
+	var corrID = "store-corrid-123456789"
+	var ctx = context.WithValue(context.Background(), cs.CtContextCorrelationID, corrID)
+	var mp = map[string]string{"key": "val"}
+
+	// Store events.
+	mockEventsDBModule.EXPECT().Store(ctx, mp).Return(nil).Times(1)
+	mockLogger.EXPECT().Log("method", "Store", "args", mp, "took", gomock.Any()).Return(nil).Times(1)
+	m.Store(ctx, mp)
+}

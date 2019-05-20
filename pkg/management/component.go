@@ -7,14 +7,13 @@ import (
 	"strings"
 
 	cs "github.com/cloudtrust/common-service"
+	"github.com/cloudtrust/common-service/database"
+	"github.com/cloudtrust/common-service/http"
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
-	kcevent "github.com/cloudtrust/keycloak-bridge/internal/event"
-	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
-	"github.com/cloudtrust/keycloak-bridge/pkg/event"
 	kc "github.com/cloudtrust/keycloak-client"
 )
 
-// KeycloakClient interface
+// KeycloakClient are methods from keycloak-client used by this component
 type KeycloakClient interface {
 	GetRealms(accessToken string) ([]kc.RealmRepresentation, error)
 	GetRealm(accessToken string, realmName string) (kc.RealmRepresentation, error)
@@ -75,21 +74,21 @@ type Component interface {
 // Component is the management component.
 type component struct {
 	keycloakClient KeycloakClient
-	eventDBModule  event.EventsDBModule
+	eventDBModule  database.EventsDBModule
 	configDBModule ConfigurationDBModule
 }
 
-func reportEvent(ctx context.Context, reporter kcevent.EventStorer, apiCall string, values ...string) error {
-	return kcevent.ReportEvent(ctx, reporter, apiCall, "back-office", values...)
-}
-
 // NewComponent returns the management component.
-func NewComponent(keycloakClient KeycloakClient, eventDBModule event.EventsDBModule, configDBModule ConfigurationDBModule) Component {
+func NewComponent(keycloakClient KeycloakClient, eventDBModule database.EventsDBModule, configDBModule ConfigurationDBModule) Component {
 	return &component{
 		keycloakClient: keycloakClient,
 		eventDBModule:  eventDBModule,
 		configDBModule: configDBModule,
 	}
+}
+
+func (c *component) reportEvent(ctx context.Context, apiCall string, values ...string) error {
+	return c.eventDBModule.ReportEvent(ctx, apiCall, "back-office", values...)
 }
 
 func (c *component) GetRealms(ctx context.Context) ([]api.RealmRepresentation, error) {
@@ -196,7 +195,7 @@ func (c *component) CreateUser(ctx context.Context, realmName string, user api.U
 
 	//store the API call into the DB
 	// the error should be treated
-	_ = reportEvent(ctx, c.eventDBModule, "API_ACCOUNT_CREATION", "realm_name", realmName, "user_id", userID, "username", username)
+	_ = c.reportEvent(ctx, "API_ACCOUNT_CREATION", "realm_name", realmName, "user_id", userID, "username", username)
 
 	return locationURL, nil
 }
@@ -212,7 +211,7 @@ func (c *component) DeleteUser(ctx context.Context, realmName, userID string) er
 
 	//store the API call into the DB
 	// the error should be treated
-	_ = reportEvent(ctx, c.eventDBModule, "API_ACCOUNT_DELETION", "realm_name", realmName, "user_id", userID)
+	_ = c.reportEvent(ctx, "API_ACCOUNT_DELETION", "realm_name", realmName, "user_id", userID)
 
 	return nil
 }
@@ -236,7 +235,7 @@ func (c *component) GetUser(ctx context.Context, realmName, userID string) (api.
 
 	//store the API call into the DB
 	// the error should be treated
-	_ = reportEvent(ctx, c.eventDBModule, "GET_DETAILS", "realm_name", realmName, "user_id", userID, "username", username)
+	_ = c.reportEvent(ctx, "GET_DETAILS", "realm_name", realmName, "user_id", userID, "username", username)
 
 	return userRep, nil
 
@@ -254,7 +253,7 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 
 	// when the email changes, set the EmailVerified to false
 	if user.Email != nil && oldUserKc.Email != nil && *oldUserKc.Email != *user.Email {
-		var verified bool = false
+		var verified = false
 		user.EmailVerified = &verified
 	}
 
@@ -263,11 +262,11 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 		if oldUserKc.Attributes != nil {
 			var m = *oldUserKc.Attributes
 			if m["phoneNumber"][0] != *user.PhoneNumber {
-				var verified bool = false
+				var verified = false
 				user.PhoneNumberVerified = &verified
 			}
 		} else { // the user has no attributes until now, i.e. he has not set yet his phone number
-			var verified bool = false
+			var verified = false
 			user.PhoneNumberVerified = &verified
 		}
 	}
@@ -314,7 +313,7 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 			ctEventType = "LOCK_ACCOUNT"
 		}
 		// the error should be treated
-		_ = reportEvent(ctx, c.eventDBModule, ctEventType, "realm_name", realmName, "user_id", userID, "username", username)
+		_ = c.reportEvent(ctx, ctEventType, "realm_name", realmName, "user_id", userID, "username", username)
 	}
 
 	return nil
@@ -474,7 +473,7 @@ func (c *component) ResetPassword(ctx context.Context, realmName string, userID 
 
 	//store the API call into the DB
 	// the error should be treated
-	_ = reportEvent(ctx, c.eventDBModule, "INIT_PASSWORD", "realm_name", realmName, "user_id", userID)
+	_ = c.reportEvent(ctx, "INIT_PASSWORD", "realm_name", realmName, "user_id", userID)
 
 	return nil
 }
@@ -677,7 +676,7 @@ func (c *component) UpdateRealmCustomConfiguration(ctx context.Context, realmNam
 		}
 	}
 	if !match {
-		return keycloakb.HTTPError{
+		return http.Error{
 			Status:  400,
 			Message: "Invalid client ID or redirect URI",
 		}

@@ -4,18 +4,19 @@ import (
 	"context"
 
 	cs "github.com/cloudtrust/common-service"
+	"github.com/cloudtrust/common-service/database"
+	"github.com/cloudtrust/common-service/tracing"
 	"github.com/cloudtrust/keycloak-bridge/api/event/fb"
-	opentracing "github.com/opentracing/opentracing-go"
 )
 
 // Tracing middleware at component level.
 type muxComponentTracingMW struct {
-	tracer opentracing.Tracer
+	tracer tracing.OpentracingClient
 	next   MuxComponent
 }
 
 // MakeMuxComponentTracingMW makes a tracing middleware at component level.
-func MakeMuxComponentTracingMW(tracer opentracing.Tracer) func(MuxComponent) MuxComponent {
+func MakeMuxComponentTracingMW(tracer tracing.OpentracingClient) func(MuxComponent) MuxComponent {
 	return func(next MuxComponent) MuxComponent {
 		return &muxComponentTracingMW{
 			tracer: tracer,
@@ -26,12 +27,10 @@ func MakeMuxComponentTracingMW(tracer opentracing.Tracer) func(MuxComponent) Mux
 
 // muxComponentTracingMW implements MuxComponent.
 func (m *muxComponentTracingMW) Event(ctx context.Context, eventType string, obj []byte) error {
-	if span := opentracing.SpanFromContext(ctx); span != nil {
-		span = m.tracer.StartSpan("mux_component", opentracing.ChildOf(span.Context()))
-		defer span.Finish()
-		span.SetTag("correlation_id", ctx.Value(cs.CtContextCorrelationID).(string))
-
-		ctx = opentracing.ContextWithSpan(ctx, span)
+	var f tracing.Finisher
+	ctx, f = m.tracer.TryStartSpanWithTag(ctx, "mux_component", "correlation_id", ctx.Value(cs.CtContextCorrelationID).(string))
+	if f != nil {
+		defer f.Finish()
 	}
 
 	return m.next.Event(ctx, eventType, obj)
@@ -39,12 +38,12 @@ func (m *muxComponentTracingMW) Event(ctx context.Context, eventType string, obj
 
 // Tracing middleware at component level.
 type componentTracingMW struct {
-	tracer opentracing.Tracer
+	tracer tracing.OpentracingClient
 	next   Component
 }
 
 // MakeComponentTracingMW makes a tracing middleware at component level.
-func MakeComponentTracingMW(tracer opentracing.Tracer) func(Component) Component {
+func MakeComponentTracingMW(tracer tracing.OpentracingClient) func(Component) Component {
 	return func(next Component) Component {
 		return &componentTracingMW{
 			tracer: tracer,
@@ -55,12 +54,10 @@ func MakeComponentTracingMW(tracer opentracing.Tracer) func(Component) Component
 
 // componentTracingMW implements Component.
 func (m *componentTracingMW) Event(ctx context.Context, event *fb.Event) error {
-	if span := opentracing.SpanFromContext(ctx); span != nil {
-		span = m.tracer.StartSpan("event_component", opentracing.ChildOf(span.Context()))
-		defer span.Finish()
-		span.SetTag("correlation_id", ctx.Value(cs.CtContextCorrelationID).(string))
-
-		ctx = opentracing.ContextWithSpan(ctx, span)
+	var f tracing.Finisher
+	ctx, f = m.tracer.TryStartSpanWithTag(ctx, "event_component", "correlation_id", ctx.Value(cs.CtContextCorrelationID).(string))
+	if f != nil {
+		defer f.Finish()
 	}
 
 	return m.next.Event(ctx, event)
@@ -68,12 +65,12 @@ func (m *componentTracingMW) Event(ctx context.Context, event *fb.Event) error {
 
 // Tracing middleware at component level.
 type adminComponentTracingMW struct {
-	tracer opentracing.Tracer
+	tracer tracing.OpentracingClient
 	next   AdminComponent
 }
 
 // MakeAdminComponentTracingMW makes a tracing middleware at component level.
-func MakeAdminComponentTracingMW(tracer opentracing.Tracer) func(AdminComponent) AdminComponent {
+func MakeAdminComponentTracingMW(tracer tracing.OpentracingClient) func(AdminComponent) AdminComponent {
 	return func(next AdminComponent) AdminComponent {
 		return &adminComponentTracingMW{
 			tracer: tracer,
@@ -84,12 +81,10 @@ func MakeAdminComponentTracingMW(tracer opentracing.Tracer) func(AdminComponent)
 
 // adminComponentTracingMW implements Component.
 func (m *adminComponentTracingMW) AdminEvent(ctx context.Context, adminEvent *fb.AdminEvent) error {
-	if span := opentracing.SpanFromContext(ctx); span != nil {
-		span = m.tracer.StartSpan("admin_event_component", opentracing.ChildOf(span.Context()))
-		defer span.Finish()
-		span.SetTag("correlation_id", ctx.Value(cs.CtContextCorrelationID).(string))
-
-		ctx = opentracing.ContextWithSpan(ctx, span)
+	var f tracing.Finisher
+	ctx, f = m.tracer.TryStartSpanWithTag(ctx, "admin_event_component", "correlation_id", ctx.Value(cs.CtContextCorrelationID).(string))
+	if f != nil {
+		defer f.Finish()
 	}
 
 	return m.next.AdminEvent(ctx, adminEvent)
@@ -97,12 +92,12 @@ func (m *adminComponentTracingMW) AdminEvent(ctx context.Context, adminEvent *fb
 
 // Tracing middleware at module level.
 type consoleModuleTracingMW struct {
-	tracer opentracing.Tracer
+	tracer tracing.OpentracingClient
 	next   ConsoleModule
 }
 
 // MakeConsoleModuleTracingMW makes a tracing middleware at component level.
-func MakeConsoleModuleTracingMW(tracer opentracing.Tracer) func(ConsoleModule) ConsoleModule {
+func MakeConsoleModuleTracingMW(tracer tracing.OpentracingClient) func(ConsoleModule) ConsoleModule {
 	return func(next ConsoleModule) ConsoleModule {
 		return &consoleModuleTracingMW{
 			tracer: tracer,
@@ -113,12 +108,10 @@ func MakeConsoleModuleTracingMW(tracer opentracing.Tracer) func(ConsoleModule) C
 
 // consoleModuleTracingMW implements ConsoleModule.
 func (m *consoleModuleTracingMW) Print(ctx context.Context, mp map[string]string) error {
-	if span := opentracing.SpanFromContext(ctx); span != nil {
-		span = m.tracer.StartSpan("console_module", opentracing.ChildOf(span.Context()))
-		defer span.Finish()
-		span.SetTag("correlation_id", ctx.Value(cs.CtContextCorrelationID).(string))
-
-		ctx = opentracing.ContextWithSpan(ctx, span)
+	var f tracing.Finisher
+	ctx, f = m.tracer.TryStartSpanWithTag(ctx, "console_module", "correlation_id", ctx.Value(cs.CtContextCorrelationID).(string))
+	if f != nil {
+		defer f.Finish()
 	}
 
 	return m.next.Print(ctx, mp)
@@ -126,12 +119,12 @@ func (m *consoleModuleTracingMW) Print(ctx context.Context, mp map[string]string
 
 // Tracing middleware at module level.
 type statisticModuleTracingMW struct {
-	tracer opentracing.Tracer
+	tracer tracing.OpentracingClient
 	next   StatisticModule
 }
 
 // MakeStatisticModuleTracingMW makes a tracing middleware at component level.
-func MakeStatisticModuleTracingMW(tracer opentracing.Tracer) func(StatisticModule) StatisticModule {
+func MakeStatisticModuleTracingMW(tracer tracing.OpentracingClient) func(StatisticModule) StatisticModule {
 	return func(next StatisticModule) StatisticModule {
 		return &statisticModuleTracingMW{
 			tracer: tracer,
@@ -142,12 +135,10 @@ func MakeStatisticModuleTracingMW(tracer opentracing.Tracer) func(StatisticModul
 
 // statisticModuleTracingMW implements StatisticModule.
 func (m *statisticModuleTracingMW) Stats(ctx context.Context, mp map[string]string) error {
-	if span := opentracing.SpanFromContext(ctx); span != nil {
-		span = m.tracer.StartSpan("statistic_module", opentracing.ChildOf(span.Context()))
-		defer span.Finish()
-		span.SetTag("correlation_id", ctx.Value(cs.CtContextCorrelationID).(string))
-
-		ctx = opentracing.ContextWithSpan(ctx, span)
+	var f tracing.Finisher
+	ctx, f = m.tracer.TryStartSpanWithTag(ctx, "statistic_module", "correlation_id", ctx.Value(cs.CtContextCorrelationID).(string))
+	if f != nil {
+		defer f.Finish()
 	}
 
 	return m.next.Stats(ctx, mp)
@@ -155,13 +146,13 @@ func (m *statisticModuleTracingMW) Stats(ctx context.Context, mp map[string]stri
 
 // Tracing middleware at module level.
 type eventsDBModuleTracingMW struct {
-	tracer opentracing.Tracer
-	next   EventsDBModule
+	tracer tracing.OpentracingClient
+	next   database.EventsDBModule
 }
 
-// MakeStatisticModuleTracingMW makes a tracing middleware at component level.
-func MakeEventsDBModuleTracingMW(tracer opentracing.Tracer) func(EventsDBModule) EventsDBModule {
-	return func(next EventsDBModule) EventsDBModule {
+// MakeEventsDBModuleTracingMW makes a tracing middleware at component level.
+func MakeEventsDBModuleTracingMW(tracer tracing.OpentracingClient) func(database.EventsDBModule) database.EventsDBModule {
+	return func(next database.EventsDBModule) database.EventsDBModule {
 		return &eventsDBModuleTracingMW{
 			tracer: tracer,
 			next:   next,
@@ -171,13 +162,22 @@ func MakeEventsDBModuleTracingMW(tracer opentracing.Tracer) func(EventsDBModule)
 
 // statisticModuleTracingMW implements StatisticModule.
 func (m *eventsDBModuleTracingMW) Store(ctx context.Context, mp map[string]string) error {
-	if span := opentracing.SpanFromContext(ctx); span != nil {
-		span = m.tracer.StartSpan("eventsDB_module", opentracing.ChildOf(span.Context()))
-		defer span.Finish()
-		span.SetTag("correlation_id", ctx.Value(cs.CtContextCorrelationID).(string))
-
-		ctx = opentracing.ContextWithSpan(ctx, span)
+	var f tracing.Finisher
+	ctx, f = m.tracer.TryStartSpanWithTag(ctx, "eventsDB_module", "correlation_id", ctx.Value(cs.CtContextCorrelationID).(string))
+	if f != nil {
+		defer f.Finish()
 	}
 
 	return m.next.Store(ctx, mp)
+}
+
+// statisticModuleTracingMW implements StatisticModule.
+func (m *eventsDBModuleTracingMW) ReportEvent(ctx context.Context, apiCall string, origin string, values ...string) error {
+	var f tracing.Finisher
+	ctx, f = m.tracer.TryStartSpanWithTag(ctx, "eventsDB_module", "correlation_id", ctx.Value(cs.CtContextCorrelationID).(string))
+	if f != nil {
+		defer f.Finish()
+	}
+
+	return m.next.ReportEvent(ctx, apiCall, origin, values...)
 }

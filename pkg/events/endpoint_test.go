@@ -1,7 +1,5 @@
 package events
 
-//go:generate mockgen -destination=./mock/component.go -package=mock -mock_names=EventsComponent=EventsComponent github.com/cloudtrust/keycloak-bridge/pkg/events EventsComponent
-
 import (
 	"context"
 	"testing"

@@ -5,24 +5,19 @@ import (
 	"encoding/base64"
 
 	cs "github.com/cloudtrust/common-service"
-	sentry "github.com/getsentry/raven-go"
+	"github.com/cloudtrust/common-service/tracking"
 	"github.com/go-kit/kit/log"
 )
 
-// Sentry interface.
-type Sentry interface {
-	CaptureError(err error, tags map[string]string, interfaces ...sentry.Interface) string
-}
-
 // Tracking middleware at component level.
 type trackingMuxComponentMW struct {
-	sentry Sentry
+	sentry tracking.SentryTracking
 	logger log.Logger
 	next   MuxComponent
 }
 
 // MakeMuxComponentTrackingMW makes an error tracking middleware, where the errors are sent to Sentry.
-func MakeMuxComponentTrackingMW(sentry Sentry, logger log.Logger) func(MuxComponent) MuxComponent {
+func MakeMuxComponentTrackingMW(sentry tracking.SentryTracking, logger log.Logger) func(MuxComponent) MuxComponent {
 	return func(next MuxComponent) MuxComponent {
 		return &trackingMuxComponentMW{
 			sentry: sentry,

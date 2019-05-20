@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	cs "github.com/cloudtrust/common-service"
 	"github.com/go-kit/kit/endpoint"
 )
 
@@ -13,7 +14,7 @@ type Endpoints struct {
 }
 
 // MakeEventEndpoint makes the event endpoint.
-func MakeEventEndpoint(c MuxComponent) endpoint.Endpoint {
+func MakeEventEndpoint(c MuxComponent) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		switch r := req.(type) {
 		case Request:

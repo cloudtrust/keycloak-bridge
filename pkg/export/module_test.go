@@ -1,7 +1,5 @@
 package export
 
-//go:generate mockgen -destination=./mock/keycloak.go -package=mock -mock_names=KeycloakClient=KeycloakClient github.com/cloudtrust/keycloak-bridge/pkg/export KeycloakClient
-
 import (
 	"context"
 	"fmt"

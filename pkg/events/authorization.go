@@ -3,15 +3,16 @@ package events
 import (
 	"context"
 
+	"github.com/cloudtrust/common-service/security"
 	api "github.com/cloudtrust/keycloak-bridge/api/events"
-	"github.com/cloudtrust/keycloak-bridge/internal/security"
 	"github.com/go-kit/kit/log"
 )
 
+// Actions used for authorization module
 const (
-	EV_GetEvents        = "EV_GetEvents"
-	EV_GetEventsSummary = "EV_GetEventsSummary"
-	EV_GetUserEvents    = "EV_GetUserEvents"
+	EVGetEvents        = "EV_GetEvents"
+	EVGetEventsSummary = "EV_GetEventsSummary"
+	EVGetUserEvents    = "EV_GetUserEvents"
 )
 
 // Tracking middleware at component level.
@@ -33,7 +34,7 @@ func MakeAuthorizationManagementComponentMW(logger log.Logger, authorizationMana
 }
 
 func (c *authorizationComponentMW) GetEvents(ctx context.Context, m map[string]string) (api.AuditEventsRepresentation, error) {
-	var action = EV_GetEvents
+	var action = EVGetEvents
 	var targetRealm = "*" // For this method, there is no target realm, so we use the wildcard to express there is no constraints.
 
 	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
@@ -44,7 +45,7 @@ func (c *authorizationComponentMW) GetEvents(ctx context.Context, m map[string]s
 }
 
 func (c *authorizationComponentMW) GetEventsSummary(ctx context.Context) (api.EventSummaryRepresentation, error) {
-	var action = EV_GetEventsSummary
+	var action = EVGetEventsSummary
 	var targetRealm = "*" // For this method, there is no target realm, so we use the wildcard to express there is no constraints.
 
 	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
@@ -55,7 +56,7 @@ func (c *authorizationComponentMW) GetEventsSummary(ctx context.Context) (api.Ev
 }
 
 func (c *authorizationComponentMW) GetUserEvents(ctx context.Context, m map[string]string) (api.AuditEventsRepresentation, error) {
-	var action = EV_GetUserEvents
+	var action = EVGetUserEvents
 	var targetRealm = m["realm"] // Get the realm provided as parameter in path
 	var targetUser = m["userID"] // Get the user provided as parameter in path
 

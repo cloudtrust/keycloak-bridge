@@ -10,11 +10,13 @@ import (
 	"strings"
 	"testing"
 
+	commonhttp "github.com/cloudtrust/common-service/http"
+	"github.com/cloudtrust/common-service/security"
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
-	"github.com/cloudtrust/keycloak-bridge/internal/security"
 	"github.com/cloudtrust/keycloak-bridge/pkg/management/mock"
 	kc_client "github.com/cloudtrust/keycloak-client"
+	"github.com/go-kit/kit/log"
 	"github.com/golang/mock/gomock"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
@@ -24,11 +26,11 @@ func TestHTTPManagementHandler(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 	var mockComponent = mock.NewManagementComponent(mockCtrl)
-	var mockLogger = mock.NewLogger(mockCtrl)
+	var mockLogger = log.NewNopLogger()
 
-	var managementHandler = MakeManagementHandler(MakeGetRealmEndpoint(mockComponent), mockLogger)
-	var managementHandler2 = MakeManagementHandler(MakeCreateUserEndpoint(mockComponent), mockLogger)
-	var managementHandler3 = MakeManagementHandler(MakeResetPasswordEndpoint(mockComponent), mockLogger)
+	var managementHandler = MakeManagementHandler(keycloakb.ToGoKitEndpoint(MakeGetRealmEndpoint(mockComponent)), mockLogger)
+	var managementHandler2 = MakeManagementHandler(keycloakb.ToGoKitEndpoint(MakeCreateUserEndpoint(mockComponent)), mockLogger)
+	var managementHandler3 = MakeManagementHandler(keycloakb.ToGoKitEndpoint(MakeResetPasswordEndpoint(mockComponent)), mockLogger)
 
 	r := mux.NewRouter()
 	r.Handle("/realms/{realm}", managementHandler)
@@ -111,10 +113,9 @@ func TestHTTPErrorHandler(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 	var mockComponent = mock.NewManagementComponent(mockCtrl)
-	var mockLogger = mock.NewLogger(mockCtrl)
-	mockLogger.EXPECT().Log(gomock.Any()).AnyTimes()
+	var mockLogger = log.NewNopLogger()
 
-	var managementHandler = MakeManagementHandler(MakeCreateUserEndpoint(mockComponent), mockLogger)
+	var managementHandler = MakeManagementHandler(keycloakb.ToGoKitEndpoint(MakeCreateUserEndpoint(mockComponent)), mockLogger)
 
 	r := mux.NewRouter()
 	r.Handle("/realms/{realm}/users", managementHandler)
@@ -185,7 +186,7 @@ func TestHTTPErrorHandler(t *testing.T) {
 
 	// HTTPResponse Error
 	{
-		var kcError = keycloakb.HTTPError{
+		var kcError = commonhttp.Error{
 			Status:  401,
 			Message: "Unauthorized",
 		}
@@ -204,9 +205,9 @@ func TestHTTPXForwardHeaderHandler(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 	var mockComponent = mock.NewManagementComponent(mockCtrl)
-	var mockLogger = mock.NewLogger(mockCtrl)
+	var mockLogger = log.NewNopLogger()
 
-	var managementHandler = MakeManagementHandler(MakeCreateUserEndpoint(mockComponent), mockLogger)
+	var managementHandler = MakeManagementHandler(keycloakb.ToGoKitEndpoint(MakeCreateUserEndpoint(mockComponent)), mockLogger)
 
 	r := mux.NewRouter()
 	r.Handle("/realms/{realm}/users", managementHandler)

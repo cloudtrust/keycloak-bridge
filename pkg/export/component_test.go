@@ -1,7 +1,5 @@
 package export
 
-//go:generate mockgen -destination=./mock/module.go -package=mock -mock_names=RealmExporter=RealmExporter,Storage=Storage github.com/cloudtrust/keycloak-bridge/pkg/export RealmExporter,Storage
-
 import (
 	"context"
 	"encoding/json"

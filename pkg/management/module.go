@@ -19,6 +19,7 @@ const (
 	selectConfigStmt = `SELECT configuration FROM realm_configuration WHERE (realm_id = ?)`
 )
 
+// DBConfiguration interface
 type DBConfiguration interface {
 	Exec(query string, args ...interface{}) (sql.Result, error)
 	QueryRow(query string, args ...interface{}) *sql.Row
