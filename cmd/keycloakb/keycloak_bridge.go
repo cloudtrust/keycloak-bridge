@@ -98,8 +98,12 @@ func main() {
 
 		// Enabled units
 		pprofRouteEnabled = c.GetBool("pprof-route-enabled")
+
+		// Database version checks
 		auditMigrationEnabled  = c.GetBool("db-audit-migration")
+		auditMigrationVersion  = c.GetString("db-audit-migration-version")
 		configMigrationEnabled = c.GetBool("db-config-migration")
+		configMigrationVersion = c.GetString("db-config-migration-version")
 
 		// Influx
 		influxWriteInterval = c.GetDuration("influx-write-interval")
@@ -248,7 +252,6 @@ func main() {
 		// DB migration version
 		// checking that the flyway_schema_history has the minimum imposed migration version
 		// auditevents DB
-		auditMigrationVersion := c.GetString("db-audit-migration-version")
 		if auditMigrationEnabled {
 			// DB schema versioning is enabled
 			if auditMigrationVersion != "" {
@@ -276,7 +279,6 @@ func main() {
 		}
 		// DB migration version
 		// cloudtrust_configurations DB
-		configMigrationVersion := c.GetString("db-config-migration-version")
 		if configMigrationEnabled {
 			if configMigrationVersion != "" {
 				var err error
@@ -672,7 +674,7 @@ func config(logger log.Logger) *viper.Viper {
 	//Storage custom configuration in DB
 	v.SetDefault("config-db", true)
 	database.ConfigureDbDefault(v, "db-config", "CT_BRIDGE_DB_CONFIG_USERNAME", "CT_BRIDGE_DB_CONFIG_PASSWORD")
-	
+
 	v.SetDefault("db-config-migration", false)
 	v.SetDefault("db-config-migration-version", "")
 
@@ -760,7 +762,7 @@ func config(logger log.Logger) *viper.Viper {
 	return v
 }
 
-func checkMigrationVersion(logger log.Logger, dbParams dbConfig, conn events.DBEvents, minMigrationVersion string) error {
+func checkMigrationVersion(logger log.Logger, dbParams database.DbConfig, conn database.CloudtrustDB, minMigrationVersion string) error {
 
 	var flywayVersion string
 	row := conn.QueryRow(`SELECT version FROM flyway_schema_history ORDER BY installed_rank DESC LIMIT 1;`)
