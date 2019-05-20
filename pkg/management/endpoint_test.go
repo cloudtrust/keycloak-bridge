@@ -99,7 +99,7 @@ func TestCreateUserEndpoint(t *testing.T) {
 	var realm = "master"
 	var location = "https://location.url/auth/admin/master/users/123456"
 	var ctx = context.Background()
-	var groups = []string{"12387-78-525"}
+	var groups = []string{"f467ed7c-0a1d-4eee-9bb8-669c6f89c0ee"}
 
 	// No error
 	{
@@ -523,7 +523,7 @@ func TestExecuteActionsEmailEndpoint(t *testing.T) {
 	{
 		var realm = "master"
 		var userID = "123-456-789"
-		var actions = []string{"action1", "action2"}
+		var actions = []api.RequiredAction{"action1", "action2"}
 		var ctx = context.Background()
 		var req = make(map[string]string)
 		req["realm"] = realm
@@ -541,7 +541,7 @@ func TestExecuteActionsEmailEndpoint(t *testing.T) {
 	{
 		var realm = "master"
 		var userID = "123-456-789"
-		var actions = []string{"action1", "action2"}
+		var actions = []api.RequiredAction{"action1", "action2"}
 		var ctx = context.Background()
 		var req = make(map[string]string)
 		req["realm"] = realm

@@ -127,7 +127,7 @@ func TestDeny(t *testing.T) {
 		err = authorizationMW.SendVerifyEmail(ctx, realmName, userID)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
-		err = authorizationMW.ExecuteActionsEmail(ctx, realmName, userID, []string{})
+		err = authorizationMW.ExecuteActionsEmail(ctx, realmName, userID, []api.RequiredAction{})
 		assert.Equal(t, security.ForbiddenError{}, err)
 
 		_, err = authorizationMW.SendNewEnrolmentCode(ctx, realmName, userID)
@@ -317,8 +317,8 @@ func TestAllowed(t *testing.T) {
 		err = authorizationMW.SendVerifyEmail(ctx, realmName, userID)
 		assert.Nil(t, err)
 
-		mockManagementComponent.EXPECT().ExecuteActionsEmail(ctx, realmName, userID, []string{}).Return(nil).Times(1)
-		err = authorizationMW.ExecuteActionsEmail(ctx, realmName, userID, []string{})
+		mockManagementComponent.EXPECT().ExecuteActionsEmail(ctx, realmName, userID, []api.RequiredAction{}).Return(nil).Times(1)
+		err = authorizationMW.ExecuteActionsEmail(ctx, realmName, userID, []api.RequiredAction{})
 		assert.Nil(t, err)
 
 		mockManagementComponent.EXPECT().SendNewEnrolmentCode(ctx, realmName, userID).Return("1234", nil).Times(1)

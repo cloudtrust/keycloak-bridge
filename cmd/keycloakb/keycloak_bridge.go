@@ -379,7 +379,7 @@ func main() {
 		eventsEndpoints = events.Endpoints{
 			GetEvents:        prepareEndpoint(events.MakeGetEventsEndpoint(eventsComponent), "get_events", influxMetrics, eventsLogger, tracer, rateLimit["event"]),
 			GetEventsSummary: prepareEndpoint(events.MakeGetEventsSummaryEndpoint(eventsComponent), "get_events_summary", influxMetrics, eventsLogger, tracer, rateLimit["event"]),
-			GetUserEvents:    prepareEndpoint(events.MakeGetEventsEndpoint(eventsComponent), "get_user_events", influxMetrics, eventsLogger, tracer, rateLimit["event"]),
+			GetUserEvents:    prepareEndpoint(events.MakeGetUserEventsEndpoint(eventsComponent), "get_user_events", influxMetrics, eventsLogger, tracer, rateLimit["event"]),
 		}
 	}
 
@@ -518,7 +518,7 @@ func main() {
 
 		route.Path("/events").Methods("GET").Handler(getEventsHandler)
 		route.Path("/events/summary").Methods("GET").Handler(getEventsSummaryHandler)
-		route.Path("/events/realms/{realm:[a-zA-Z0-9_-]+}/users/{userID:[a-zA-Z0-9-]+}/events").Methods("GET").Handler(getUserEventsHandler)
+		route.Path("/events/realms/{realm}/users/{userID}/events").Methods("GET").Handler(getUserEventsHandler)
 
 		// Management
 		var managementSubroute = route.PathPrefix("/management").Subrouter()
@@ -559,44 +559,44 @@ func main() {
 
 		//realms
 		managementSubroute.Path("/realms").Methods("GET").Handler(getRealmsHandler)
-		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}").Methods("GET").Handler(getRealmHandler)
+		managementSubroute.Path("/realms/{realm}").Methods("GET").Handler(getRealmHandler)
 
 		//clients
-		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/clients").Methods("GET").Handler(getClientsHandler)
-		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/clients/{clientID:[a-zA-Z0-9-]+}").Methods("GET").Handler(getClientHandler)
+		managementSubroute.Path("/realms/{realm}/clients").Methods("GET").Handler(getClientsHandler)
+		managementSubroute.Path("/realms/{realm}/clients/{clientID}").Methods("GET").Handler(getClientHandler)
 
 		//users
-		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/users").Methods("GET").Handler(getUsersHandler)
-		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/users").Methods("POST").Handler(createUserHandler)
-		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/users/{userID:[a-zA-Z0-9-]+}").Methods("GET").Handler(getUserHandler)
-		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/users/{userID:[a-zA-Z0-9-]+}").Methods("PUT").Handler(updateUserHandler)
-		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/users/{userID:[a-zA-Z0-9-]+}").Methods("DELETE").Handler(deleteUserHandler)
-		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/users/{userID:[a-zA-Z0-9-]+}/groups").Methods("GET").Handler(getGroupsForUserHandler)
-		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/users/{userID:[a-zA-Z0-9-]+}/roles").Methods("GET").Handler(getRolesForUserHandler)
-		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/users/{userID:[a-zA-Z0-9-]+}/status").Methods("GET").Handler(getUserAccountStatusHandler)
+		managementSubroute.Path("/realms/{realm}/users").Methods("GET").Handler(getUsersHandler)
+		managementSubroute.Path("/realms/{realm}/users").Methods("POST").Handler(createUserHandler)
+		managementSubroute.Path("/realms/{realm}/users/{userID}").Methods("GET").Handler(getUserHandler)
+		managementSubroute.Path("/realms/{realm}/users/{userID}").Methods("PUT").Handler(updateUserHandler)
+		managementSubroute.Path("/realms/{realm}/users/{userID}").Methods("DELETE").Handler(deleteUserHandler)
+		managementSubroute.Path("/realms/{realm}/users/{userID}/groups").Methods("GET").Handler(getGroupsForUserHandler)
+		managementSubroute.Path("/realms/{realm}/users/{userID}/roles").Methods("GET").Handler(getRolesForUserHandler)
+		managementSubroute.Path("/realms/{realm}/users/{userID}/status").Methods("GET").Handler(getUserAccountStatusHandler)
 
 		//role mappings
-		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/users/{userID:[a-zA-Z0-9-]+}/role-mappings/clients/{clientID:[a-zA-Z0-9-]+}").Methods("GET").Handler(getClientRoleForUserHandler)
-		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/users/{userID:[a-zA-Z0-9-]+}/role-mappings/clients/{clientID:[a-zA-Z0-9-]+}").Methods("POST").Handler(addClientRoleToUserHandler)
+		managementSubroute.Path("/realms/{realm}/users/{userID}/role-mappings/clients/{clientID}").Methods("GET").Handler(getClientRoleForUserHandler)
+		managementSubroute.Path("/realms/{realm}/users/{userID}/role-mappings/clients/{clientID}").Methods("POST").Handler(addClientRoleToUserHandler)
 
-		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/users/{userID:[a-zA-Z0-9-]+}/reset-password").Methods("PUT").Handler(resetPasswordHandler)
-		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/users/{userID:[a-zA-Z0-9-]+}/send-verify-email").Methods("PUT").Handler(sendVerifyEmailHandler)
-		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/users/{userID:[a-zA-Z0-9-]+}/execute-actions-email").Methods("PUT").Handler(executeActionsEmailHandler)
-		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/users/{userID:[a-zA-Z0-9-]+}/send-new-enrolment-code").Methods("POST").Handler(sendNewEnrolmentCodeHandler)
+		managementSubroute.Path("/realms/{realm}/users/{userID}/reset-password").Methods("PUT").Handler(resetPasswordHandler)
+		managementSubroute.Path("/realms/{realm}/users/{userID}/send-verify-email").Methods("PUT").Handler(sendVerifyEmailHandler)
+		managementSubroute.Path("/realms/{realm}/users/{userID}/execute-actions-email").Methods("PUT").Handler(executeActionsEmailHandler)
+		managementSubroute.Path("/realms/{realm}/users/{userID}/send-new-enrolment-code").Methods("POST").Handler(sendNewEnrolmentCodeHandler)
 
 		// Credentials
-		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/users/{userID:[a-zA-Z0-9-]+}/credentials").Methods("GET").Handler(getCredentialsForUserHandler)
-		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/users/{userID:[a-zA-Z0-9-]+}/credentials/{credentialID:[a-zA-Z0-9-]+}").Methods("DELETE").Handler(deleteCredentialsForUserHandler)
+		managementSubroute.Path("/realms/{realm}/users/{userID}/credentials").Methods("GET").Handler(getCredentialsForUserHandler)
+		managementSubroute.Path("/realms/{realm}/users/{userID}/credentials/{credentialID}").Methods("DELETE").Handler(deleteCredentialsForUserHandler)
 
 		//roles
-		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/roles").Methods("GET").Handler(getRolesHandler)
-		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/roles-by-id/{roleID:[a-zA-Z0-9-]+}").Methods("GET").Handler(getRoleHandler)
-		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/clients/{clientID:[a-zA-Z0-9-]+}/roles").Methods("GET").Handler(getClientRolesHandler)
-		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/clients/{clientID:[a-zA-Z0-9-]+}/roles").Methods("POST").Handler(createClientRolesHandler)
+		managementSubroute.Path("/realms/{realm}/roles").Methods("GET").Handler(getRolesHandler)
+		managementSubroute.Path("/realms/{realm}/roles-by-id/{roleID}").Methods("GET").Handler(getRoleHandler)
+		managementSubroute.Path("/realms/{realm}/clients/{clientID}/roles").Methods("GET").Handler(getClientRolesHandler)
+		managementSubroute.Path("/realms/{realm}/clients/{clientID}/roles").Methods("POST").Handler(createClientRolesHandler)
 
 		// custom configuration par realm
-		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/configuration").Methods("GET").Handler(getRealmCustomConfigurationHandler)
-		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/configuration").Methods("PUT").Handler(updateRealmCustomConfigurationHandler)
+		managementSubroute.Path("/realms/{realm}/configuration").Methods("GET").Handler(getRealmCustomConfigurationHandler)
+		managementSubroute.Path("/realms/{realm}/configuration").Methods("PUT").Handler(updateRealmCustomConfigurationHandler)
 
 		c := cors.New(corsOptions)
 		errc <- http.ListenAndServe(httpAddrManagement, c.Handler(route))
@@ -660,8 +660,6 @@ func config(logger log.Logger) *viper.Viper {
 	// Keycloak default.
 	v.SetDefault("keycloak-api-uri", "http://127.0.0.1:8080")
 	v.SetDefault("keycloak-oidc-uri", "http://127.0.0.1:8080")
-	v.SetDefault("keycloak-username", "")
-	v.SetDefault("keycloak-password", "")
 	v.SetDefault("keycloak-timeout", "5s")
 
 	// Storage events in DB (read/write)
@@ -719,10 +717,6 @@ func config(logger log.Logger) *viper.Viper {
 	// Bind ENV variables
 	// We use env variables to bind Openshift secrets
 	var censoredParameters = map[string]bool{}
-
-	v.BindEnv("keycloak-username", "CT_BRIDGE_KEYCLOAK_USERNAME")
-	v.BindEnv("keycloak-password", "CT_BRIDGE_KEYCLOAK_PASSWORD")
-	censoredParameters["keycloak-password"] = true
 
 	v.BindEnv("influx-username", "CT_BRIDGE_INFLUX_USERNAME")
 	v.BindEnv("influx-password", "CT_BRIDGE_INFLUX_PASSWORD")

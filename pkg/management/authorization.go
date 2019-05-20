@@ -237,7 +237,7 @@ func (c *authorizationComponentMW) SendVerifyEmail(ctx context.Context, realmNam
 	return c.next.SendVerifyEmail(ctx, realmName, userID, paramKV...)
 }
 
-func (c *authorizationComponentMW) ExecuteActionsEmail(ctx context.Context, realmName string, userID string, actions []string, paramKV ...string) error {
+func (c *authorizationComponentMW) ExecuteActionsEmail(ctx context.Context, realmName string, userID string, actions []api.RequiredAction, paramKV ...string) error {
 	var action = ExecuteActionsEmail
 	var targetRealm = realmName
 

@@ -22,7 +22,7 @@ cors-debug: true
 
 # Security
 ## Audience for JWT token
-audience-required: "backofficeid"
+audience-required: "account"
 
 ## Password used to protect /internal/event endpoint
 event-basic-auth-token: "superpasswordverylongandstrong"
@@ -31,8 +31,6 @@ event-basic-auth-token: "superpasswordverylongandstrong"
 # Keycloak configs
 keycloak-api-uri: http://localhost:8080
 keycloak-oidc-uri: http://localhost:8080
-keycloak-username: admin
-keycloak-password: admin
 keycloak-timeout: 5s
 
 # DB Audit RW

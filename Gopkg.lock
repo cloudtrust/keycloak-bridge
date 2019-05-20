@@ -19,7 +19,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:28acdfc1d3af81f8d8858cf504be54beeda86c1cbe6d75a95424717516a71ee8"
+  digest = "1:a90c231efaf7776e08a8843342a637af4c80c0b7b9c61609a7af142b11811be7"
   name = "github.com/cloudtrust/common-service"
   packages = [
     ".",
@@ -33,7 +33,7 @@
     "tracking",
   ]
   pruneopts = "UT"
-  revision = "cc11d0ea9ab18c96be92e2ab064046d0a0d74145"
+  revision = "0bb472c38d44e3fd818548bfb2bd4bae092976b8"
 
 [[projects]]
   branch = "master"
@@ -133,7 +133,7 @@
   version = "v1.3.1"
 
 [[projects]]
-  digest = "1:debcbc62c53851dab1fc881438a65449dd5ffa12f64f059fd6e32b938799513d"
+  digest = "1:e02b687ade0c19c038ecce3ea326d756519adc4bba1203a9e76d620b12354892"
   name = "github.com/google/flatbuffers"
   packages = ["go"]
   pruneopts = "UT"
@@ -141,12 +141,12 @@
   version = "1.11.0"
 
 [[projects]]
-  digest = "1:d5f97fc268267ec1b61c3453058c738246fc3e746f14b1ae25161513b7367b0c"
+  digest = "1:3af6be4fee7c08f81f13d36f04ffb63ad4b6b5aaba12cce96095c7c2863d4912"
   name = "github.com/gorilla/mux"
   packages = ["."]
   pruneopts = "UT"
-  revision = "c5c6c98bc25355028a63748a498942a6398ccd22"
-  version = "v1.7.1"
+  revision = "ed099d42384823742bba0bf9a72b53b55c9e2e38"
+  version = "v1.7.2"
 
 [[projects]]
   digest = "1:c0d19ab64b32ce9fe5cf4ddceba78d5bc9807f0016db6b1183599da3dcc24d10"
@@ -168,7 +168,7 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:2629521d27f3b04ce4d524cb52a25fdc77745071239c91d6fe9a7ce10131365a"
+  digest = "1:3c6faaeb500b7e6fadbe52c0b3fd62b6eed7801ed0d74bb3bd9577017df8d2f4"
   name = "github.com/influxdata/influxdb"
   packages = [
     "client/v2",
@@ -389,7 +389,7 @@
     "internal",
   ]
   pruneopts = "UT"
-  revision = "9f3314589c9a9136388751d9adae6b0ed400978a"
+  revision = "950ef44c6e079baf075030377d90bf0c7e4b7b7a"
 
 [[projects]]
   branch = "master"
@@ -508,7 +508,6 @@
     "github.com/cloudtrust/keycloak-client",
     "github.com/go-kit/kit/endpoint",
     "github.com/go-kit/kit/log",
-    "github.com/go-kit/kit/metrics",
     "github.com/go-kit/kit/ratelimit",
     "github.com/go-kit/kit/transport/http",
     "github.com/go-sql-driver/mysql",
@@ -517,8 +516,6 @@
     "github.com/gorilla/mux",
     "github.com/influxdata/influxdb/client/v2",
     "github.com/lib/pq",
-    "github.com/opentracing/opentracing-go",
-    "github.com/opentracing/opentracing-go/log",
     "github.com/pkg/errors",
     "github.com/rs/cors",
     "github.com/spf13/pflag",
