@@ -35,6 +35,6 @@ func decodeEventsRequest(ctx context.Context, req *http.Request) (interface{}, e
 		"first":       `^[0-9]{1,10}$`,
 		"max":         `^[0-9]{1,10}$`,
 	}
-	
-	return keycloakb.DecodeEventsRequest(ctx, req, pathParams, queryParams)
+
+	return commonhttp.DecodeRequest(ctx, req, pathParams, queryParams)
 }
