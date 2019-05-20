@@ -7,11 +7,6 @@ import (
 )
 
 const (
-	createConfigTblStmt = `CREATE TABLE IF NOT EXISTS config (
-		component_name STRING,
-		version STRING,
-		config BYTES,
-		PRIMARY KEY (component_name, version))`
 	upsertConfigStmt = `UPSERT INTO config (
 		component_name,
 		version,
@@ -33,9 +28,6 @@ type DB interface {
 
 // NewConfigStorageModule returns the storage module.
 func NewConfigStorageModule(db DB) *StorageModule {
-	// Init DB: create config table.
-	db.Exec(createConfigTblStmt)
-
 	return &StorageModule{
 		db: db,
 	}
