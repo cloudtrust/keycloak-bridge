@@ -41,7 +41,7 @@ db-audit-rw-database: auditevents
 db-audit-rw-protocol: tcp
 db-audit-rw-max-open-conns: 10
 db-audit-rw-max-idle-conns: 2
-db-audit-rw-conn-max-lifetime: 3600
+db-audit-rw-conn-max-lifetime: 10
 db-audit-migration: false
 db-audit-migration-version: 
 
@@ -64,7 +64,7 @@ db-config-database: cloudtrust_configuration
 db-config-protocol: tcp
 db-config-max-open-conns: 10
 db-config-max-idle-conns: 2
-db-config-conn-max-lifetime: 3600
+db-config-conn-max-lifetime: 10
 db-config-migration: false
 db-config-migration-version: 4.1
 
