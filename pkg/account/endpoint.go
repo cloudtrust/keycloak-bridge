@@ -33,7 +33,7 @@ func MakeUpdatePasswordEndpoint(component AccountComponent) cs.Endpoint {
 
 		err := json.Unmarshal([]byte(m["body"]), &body)
 		if err != nil {
-			return nil, err
+			return nil, http.CreateBadRequestError("Invalid body")
 		}
 
 		return nil, component.UpdatePassword(ctx, body.CurrentPassword, body.NewPassword, body.ConfirmPassword)
