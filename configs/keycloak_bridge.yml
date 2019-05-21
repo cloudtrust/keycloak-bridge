@@ -54,7 +54,7 @@ db-audit-ro-database: auditevents
 db-audit-ro-protocol: tcp
 db-audit-ro-max-open-conns: 10
 db-audit-ro-max-idle-conns: 2
-db-audit-ro-conn-max-lifetime: 3600
+db-audit-ro-conn-max-lifetime: 10
 
 # DB Configuration
 db-config-host-port: 127.0.0.1:3306
