@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 
 	cs "github.com/cloudtrust/common-service"
+	"github.com/cloudtrust/common-service/http"
 	"github.com/go-kit/kit/endpoint"
 )
 
