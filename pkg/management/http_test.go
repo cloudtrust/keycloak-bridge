@@ -166,8 +166,8 @@ func TestHTTPErrorHandler(t *testing.T) {
 		res, err := http.Post(ts.URL+"/realms/master/users", "application/json", body)
 
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusInternalServerError, res.StatusCode)
-		assert.Equal(t, http.NoBody, res.Body)
+		assert.Equal(t, http.StatusBadRequest, res.StatusCode)
+
 	}
 
 	// Bad request, invalid path param
@@ -176,7 +176,7 @@ func TestHTTPErrorHandler(t *testing.T) {
 		res, err := http.Post(ts.URL+"/realms/master!!/users", "application/json", body)
 
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusInternalServerError, res.StatusCode)
+		assert.Equal(t, http.StatusBadRequest, res.StatusCode)
 	}
 
 	// Bad request, invalid query param
@@ -185,7 +185,7 @@ func TestHTTPErrorHandler(t *testing.T) {
 		res, err := http.Post(ts.URL+"/realms/master/users?email=tito!", "application/json", body)
 
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusInternalServerError, res.StatusCode)
+		assert.Equal(t, http.StatusBadRequest, res.StatusCode)
 	}
 
 	// Keycloak Error
