@@ -70,7 +70,6 @@ CT_BRIDGE_INFLUX_PASSWORD | influx-password
 CT_BRIDGE_SENTRY_DSN | sentry-dsn
 CT_BRIDGE_EVENT_BASIC_AUTH | event-basic-auth-token
 
-
 ## Usage
 
 Launch the keycloak bridge:

@@ -19,7 +19,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:a90c231efaf7776e08a8843342a637af4c80c0b7b9c61609a7af142b11811be7"
+  digest = "1:e120e75eacbd54554f0e18728bb5b3493a13f1aeea66b8fc20801d06a9ebcfb6"
   name = "github.com/cloudtrust/common-service"
   packages = [
     ".",
@@ -33,7 +33,7 @@
     "tracking",
   ]
   pruneopts = "UT"
-  revision = "0bb472c38d44e3fd818548bfb2bd4bae092976b8"
+  revision = "6e3a9266c1aa4f730022885719d66ce6f6de7f9b"
 
 [[projects]]
   branch = "master"
@@ -378,7 +378,7 @@
     "publicsuffix",
   ]
   pruneopts = "UT"
-  revision = "3ec19112720433827bbce8be9342797f5a6aaaf9"
+  revision = "018c4d40a106a7ae83689758294fcd8d23850745"
 
 [[projects]]
   branch = "master"
@@ -393,11 +393,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:3851a6d548ec5a808e396408f03a30b8d05ef4426db7ad8688f639b2d88b47bd"
+  digest = "1:6ed9319f79a63e30779042ef237f81770df4091866e43f84a643257384b0aefc"
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = "UT"
-  revision = "61b9204099cb1bebc803c9ffb9b2d3acd9d457d9"
+  revision = "8097e1b27ff5e40620836729a9584e91b094b062"
 
 [[projects]]
   digest = "1:8d8faad6b12a3a4c819a3f9618cb6ee1fa1cfc33253abeeea8b55336721e3405"
