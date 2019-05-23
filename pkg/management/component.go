@@ -100,7 +100,7 @@ func (c *component) GetRealms(ctx context.Context) ([]api.RealmRepresentation, e
 		return nil, err
 	}
 
-	var realmsRep []api.RealmRepresentation
+	var realmsRep = []api.RealmRepresentation{}
 	for _, realmKc := range realmsKc {
 		var realmRep api.RealmRepresentation
 		realmRep.Id = realmKc.Id
@@ -155,7 +155,7 @@ func (c *component) GetClients(ctx context.Context, realmName string) ([]api.Cli
 		return nil, err
 	}
 
-	var clientsRep []api.ClientRepresentation
+	var clientsRep = []api.ClientRepresentation{}
 	for _, clientKc := range clientsKc {
 		var clientRep api.ClientRepresentation
 		clientRep.Id = clientKc.Id
@@ -333,7 +333,7 @@ func (c *component) GetUsers(ctx context.Context, realmName string, groupIDs []s
 		return nil, err
 	}
 
-	var usersRep []api.UserRepresentation
+	var usersRep = []api.UserRepresentation{}
 	for _, userKc := range usersKc {
 		var userRep api.UserRepresentation
 		userRep = api.ConvertToAPIUser(userKc)
@@ -376,7 +376,7 @@ func (c *component) GetRolesOfUser(ctx context.Context, realmName, userID string
 		return nil, err
 	}
 
-	var rolesRep []api.RoleRepresentation
+	var rolesRep = []api.RoleRepresentation{}
 	for _, roleKc := range rolesKc {
 		var roleRep api.RoleRepresentation
 		roleRep.Id = roleKc.Id
@@ -401,7 +401,7 @@ func (c *component) GetGroupsOfUser(ctx context.Context, realmName, userID strin
 		return nil, err
 	}
 
-	var groupsRep []api.GroupRepresentation
+	var groupsRep = []api.GroupRepresentation{}
 	for _, groupKc := range groupsKc {
 		var groupRep api.GroupRepresentation
 		groupRep.Id = groupKc.Id
@@ -422,7 +422,7 @@ func (c *component) GetClientRolesForUser(ctx context.Context, realmName, userID
 		return nil, err
 	}
 
-	var rolesRep []api.RoleRepresentation
+	var rolesRep = []api.RoleRepresentation{}
 	for _, roleKc := range rolesKc {
 		var roleRep api.RoleRepresentation
 		roleRep.Id = roleKc.Id
@@ -441,7 +441,7 @@ func (c *component) GetClientRolesForUser(ctx context.Context, realmName, userID
 func (c *component) AddClientRolesToUser(ctx context.Context, realmName, userID, clientID string, roles []api.RoleRepresentation) error {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 
-	var rolesRep []kc.RoleRepresentation
+	var rolesRep = []kc.RoleRepresentation{}
 	for _, role := range roles {
 		var roleRep kc.RoleRepresentation
 		roleRep.Id = role.Id
@@ -517,7 +517,7 @@ func (c *component) GetCredentialsForUser(ctx context.Context, realmName string,
 		return nil, err
 	}
 
-	var credsRep []api.CredentialRepresentation
+	var credsRep = []api.CredentialRepresentation{}
 	for _, credKc := range credsKc {
 		credsRep = append(credsRep, api.ConvertCredential(&credKc))
 	}
@@ -541,7 +541,7 @@ func (c *component) GetRoles(ctx context.Context, realmName string) ([]api.RoleR
 		return nil, err
 	}
 
-	var rolesRep []api.RoleRepresentation
+	var rolesRep = []api.RoleRepresentation{}
 	for _, roleKc := range rolesKc {
 		var roleRep api.RoleRepresentation
 		roleRep.Id = roleKc.Id
@@ -582,7 +582,7 @@ func (c *component) GetClientRoles(ctx context.Context, realmName, idClient stri
 		return nil, err
 	}
 
-	var rolesRep []api.RoleRepresentation
+	var rolesRep = []api.RoleRepresentation{}
 	for _, roleKc := range rolesKc {
 		var roleRep api.RoleRepresentation
 		roleRep.Id = roleKc.Id

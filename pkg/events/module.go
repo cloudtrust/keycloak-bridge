@@ -86,8 +86,7 @@ func (cm *eventsDBModule) GetEventsCount(_ context.Context, m map[string]string)
 
 // GetEvents gets the events matching some criterias (dateFrom, dateTo, realm, ...)
 func (cm *eventsDBModule) GetEvents(_ context.Context, m map[string]string) ([]api.AuditRepresentation, error) {
-	var empty [0]api.AuditRepresentation
-	var res = empty[:]
+	var res = []api.AuditRepresentation{}
 	params := createAuditEventsParametersFromMap(m)
 
 	rows, err := cm.db.Query(selectAuditEventsStmt, params.origin, params.realm, params.userID, params.ctEventType, params.dateFrom, params.dateTo, params.first, params.max)
