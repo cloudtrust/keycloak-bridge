@@ -18,8 +18,7 @@
   version = "2018.01.18"
 
 [[projects]]
-  branch = "master"
-  digest = "1:e120e75eacbd54554f0e18728bb5b3493a13f1aeea66b8fc20801d06a9ebcfb6"
+  digest = "1:82192300f0ae4e31b6cdfaec1fa4029a07cfea21b4de4ed08d4af3fe49513279"
   name = "github.com/cloudtrust/common-service"
   packages = [
     ".",
@@ -33,15 +32,16 @@
     "tracking",
   ]
   pruneopts = "UT"
-  revision = "6e3a9266c1aa4f730022885719d66ce6f6de7f9b"
+  revision = "8f16e3b1f45728ae1147013b934f50bf20a316ef"
+  version = "v1.0-rc1"
 
 [[projects]]
-  branch = "master"
-  digest = "1:79f0998a7be5a4840f2e16d58a34b75ea28dfef7428945db0fd6c4287bfac75b"
+  digest = "1:a9ab922e4ed3a94a4e98509ef5f0847aae98562afb757d243da844379179a258"
   name = "github.com/cloudtrust/keycloak-client"
   packages = ["."]
   pruneopts = "UT"
-  revision = "41a44c1a6bd0d9c72d06585530ba9749524e36d1"
+  revision = "b42cfdd4631a1a7a991348c2834d476c2a2cc38d"
+  version = "v1.0-rc2"
 
 [[projects]]
   digest = "1:f6e5e1bc64c2908167e6aa9a1fe0c084d515132a1c63ad5b6c84036aa06dc0c1"
@@ -378,7 +378,7 @@
     "publicsuffix",
   ]
   pruneopts = "UT"
-  revision = "018c4d40a106a7ae83689758294fcd8d23850745"
+  revision = "f3200d17e092c607f615320ecaad13d87ad9a2b3"
 
 [[projects]]
   branch = "master"
