@@ -64,13 +64,6 @@ db-config-database: cloudtrust_configuration
 db-config-protocol: tcp
 db-config-max-open-conns: 10
 db-config-max-idle-conns: 2
-<<<<<<< HEAD
-db-config-conn-max-lifetime: 3600
-db-config-migration: false
-db-config-migration-version: 4.1
-||||||| merged common ancestors
-db-config-conn-max-lifetime: 3600
-=======
 db-config-conn-max-lifetime: 10
 db-config-migration: false
 db-config-migration-version: 4.1
