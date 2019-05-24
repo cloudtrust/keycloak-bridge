@@ -59,8 +59,6 @@ Some parameters can be overridden with following ENV variables:
 
 ENV Variable | Parameter
 --- | -----------
-CT_BRIDGE_KEYCLOAK_USERNAME | keycloak-username
-CT_BRIDGE_KEYCLOAK_PASSWORD | keycloak-password
 CT_BRIDGE_DB_AUDIT_RW_USERNAME | db-audit-rw-username
 CT_BRIDGE_DB_AUDIT_RW_PASSWORD | db-audit-rw-password
 CT_BRIDGE_DB_AUDIT_RO_USERNAME | db-audit-ro-username
@@ -71,7 +69,6 @@ CT_BRIDGE_INFLUX_USERNAME | influx-username
 CT_BRIDGE_INFLUX_PASSWORD | influx-password
 CT_BRIDGE_SENTRY_DSN | sentry-dsn
 CT_BRIDGE_EVENT_BASIC_AUTH | event-basic-auth-token
-
 
 ## Usage
 

@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	commonhttp "github.com/cloudtrust/common-service/http"
+	"github.com/cloudtrust/keycloak-bridge/api/management"
 	kc_client "github.com/cloudtrust/keycloak-client"
 	"github.com/go-kit/kit/endpoint"
 	"github.com/go-kit/kit/log"
@@ -15,16 +16,36 @@ import (
 
 // MakeManagementHandler make an HTTP handler for a Management endpoint.
 func MakeManagementHandler(e endpoint.Endpoint, logger log.Logger) *http_transport.Server {
-	var pathParams = []string{"realm", "userID", "clientID", "roleID", "credentialID"}
-	var queryParams = []string{"email", "firstName", "lastName", "username", "search", "client_id", "redirect_uri", "lifespan", "groupIds"}
-
 	return http_transport.NewServer(e,
-		func(ctx context.Context, req *http.Request) (interface{}, error) {
-			return commonhttp.DecodeRequest(ctx, req, pathParams, queryParams)
-		},
+		decodeManagementRequest,
 		encodeManagementReply,
 		http_transport.ServerErrorEncoder(managementErrorHandler(logger)),
 	)
+}
+
+// decodeEventsRequest gets the HTTP parameters and body content
+func decodeManagementRequest(ctx context.Context, req *http.Request) (interface{}, error) {
+	var pathParams = map[string]string{
+		"realm":        management_api.RegExpRealmName,
+		"userID":       management_api.RegExpID,
+		"clientID":     management_api.RegExpID,
+		"roleID":       management_api.RegExpID,
+		"credentialID": management_api.RegExpID,
+	}
+
+	var queryParams = map[string]string{
+		"email":        management_api.RegExpEmail,
+		"firstName":    management_api.RegExpFirstName,
+		"lastName":     management_api.RegExpLastName,
+		"username":     management_api.RegExpUsername,
+		"search":       management_api.RegExpSearch,
+		"client_id":    management_api.RegExpID,
+		"redirect_uri": management_api.RegExpRedirectURI,
+		"lifespan":     management_api.RegExpLifespan,
+		"groupIds":     management_api.RegExpGroupIds,
+	}
+
+	return commonhttp.DecodeRequest(ctx, req, pathParams, queryParams)
 }
 
 // encodeManagementReply encodes the reply.

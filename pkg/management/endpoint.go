@@ -62,7 +62,7 @@ type ManagementComponent interface {
 	AddClientRolesToUser(ctx context.Context, realmName, userID, clientID string, roles []api.RoleRepresentation) error
 	ResetPassword(ctx context.Context, realmName string, userID string, password api.PasswordRepresentation) error
 	SendVerifyEmail(ctx context.Context, realmName string, userID string, paramKV ...string) error
-	ExecuteActionsEmail(ctx context.Context, realmName string, userID string, actions []string, paramKV ...string) error
+	ExecuteActionsEmail(ctx context.Context, realmName string, userID string, actions []api.RequiredAction, paramKV ...string) error
 	SendNewEnrolmentCode(ctx context.Context, realmName string, userID string) (string, error)
 	GetCredentialsForUser(ctx context.Context, realmName string, userID string) ([]api.CredentialRepresentation, error)
 	DeleteCredentialsForUser(ctx context.Context, realmName string, userID string, credentialID string) error
@@ -113,14 +113,16 @@ func MakeGetClientsEndpoint(managementComponent ManagementComponent) cs.Endpoint
 func MakeCreateUserEndpoint(managementComponent ManagementComponent) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
-
-		userJSON := []byte(m["body"])
+		var err error
 
 		var user api.UserRepresentation
-		err := json.Unmarshal(userJSON, &user)
 
-		if err != nil {
-			return nil, err
+		if err = json.Unmarshal([]byte(m["body"]), &user); err != nil {
+			return nil, http.CreateBadRequestError("Invalid body")
+		}
+
+		if err = user.Validate(); err != nil {
+			return nil, http.CreateBadRequestError(err.Error())
 		}
 
 		if user.Groups == nil || len(*user.Groups) == 0 {
@@ -164,14 +166,16 @@ func MakeGetUserEndpoint(managementComponent ManagementComponent) cs.Endpoint {
 func MakeUpdateUserEndpoint(managementComponent ManagementComponent) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
-
-		userJSON := []byte(m["body"])
+		var err error
 
 		var user api.UserRepresentation
-		err := json.Unmarshal(userJSON, &user)
 
-		if err != nil {
-			return nil, err
+		if err = json.Unmarshal([]byte(m["body"]), &user); err != nil {
+			return nil, http.CreateBadRequestError("Invalid body")
+		}
+
+		if err = user.Validate(); err != nil {
+			return nil, http.CreateBadRequestError(err.Error())
 		}
 
 		return nil, managementComponent.UpdateUser(ctx, m["realm"], m["userID"], user)
@@ -241,14 +245,18 @@ func MakeGetClientRolesForUserEndpoint(managementComponent ManagementComponent) 
 func MakeAddClientRolesToUserEndpoint(managementComponent ManagementComponent) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
-
-		rolesJSON := []byte(m["body"])
+		var err error
 
 		var roles []api.RoleRepresentation
-		err := json.Unmarshal(rolesJSON, &roles)
 
-		if err != nil {
-			return nil, err
+		if err = json.Unmarshal([]byte(m["body"]), &roles); err != nil {
+			return nil, http.CreateBadRequestError("Invalid body")
+		}
+
+		for _, role := range roles {
+			if err = role.Validate(); err != nil {
+				return nil, http.CreateBadRequestError(err.Error())
+			}
 		}
 
 		return nil, managementComponent.AddClientRolesToUser(ctx, m["realm"], m["userID"], m["clientID"], roles)
@@ -259,14 +267,16 @@ func MakeAddClientRolesToUserEndpoint(managementComponent ManagementComponent) c
 func MakeResetPasswordEndpoint(managementComponent ManagementComponent) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
-
-		passwordJSON := []byte(m["body"])
+		var err error
 
 		var password api.PasswordRepresentation
-		err := json.Unmarshal(passwordJSON, &password)
 
-		if err != nil {
-			return nil, err
+		if err = json.Unmarshal([]byte(m["body"]), &password); err != nil {
+			return nil, http.CreateBadRequestError("Invalid body")
+		}
+
+		if err = password.Validate(); err != nil {
+			return nil, http.CreateBadRequestError(err.Error())
 		}
 
 		return nil, managementComponent.ResetPassword(ctx, m["realm"], m["userID"], password)
@@ -293,6 +303,7 @@ func MakeSendVerifyEmailEndpoint(managementComponent ManagementComponent) cs.End
 func MakeExecuteActionsEmailEndpoint(managementComponent ManagementComponent) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
+		var err error
 
 		var paramKV []string
 		for _, key := range []string{"client_id", "redirect_uri", "lifespan"} {
@@ -302,11 +313,16 @@ func MakeExecuteActionsEmailEndpoint(managementComponent ManagementComponent) cs
 		}
 
 		//extract the actions
-		var actions []string
-		err := json.Unmarshal([]byte(m["body"]), &actions)
+		var actions []api.RequiredAction
 
-		if err != nil {
-			return nil, err
+		if err = json.Unmarshal([]byte(m["body"]), &actions); err != nil {
+			return nil, http.CreateBadRequestError("Invalid body")
+		}
+
+		for _, action := range actions {
+			if err = action.Validate(); err != nil {
+				return nil, http.CreateBadRequestError(err.Error())
+			}
 		}
 
 		return nil, managementComponent.ExecuteActionsEmail(ctx, m["realm"], m["userID"], actions, paramKV...)
@@ -381,14 +397,16 @@ func MakeGetClientRolesEndpoint(managementComponent ManagementComponent) cs.Endp
 func MakeCreateClientRoleEndpoint(managementComponent ManagementComponent) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
-
-		roleJSON := []byte(m["body"])
+		var err error
 
 		var role api.RoleRepresentation
-		err := json.Unmarshal(roleJSON, &role)
 
-		if err != nil {
-			return nil, err
+		if err = json.Unmarshal([]byte(m["body"]), &role); err != nil {
+			return nil, http.CreateBadRequestError("Invalid body")
+		}
+
+		if err = role.Validate(); err != nil {
+			return nil, http.CreateBadRequestError(err.Error())
 		}
 
 		var keycloakLocation string
@@ -419,14 +437,20 @@ func MakeGetRealmCustomConfigurationEndpoint(managementComponent ManagementCompo
 func MakeUpdateRealmCustomConfigurationEndpoint(managementComponent ManagementComponent) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
+		var err error
 
 		configJSON := []byte(m["body"])
 
 		var customConfig api.RealmCustomConfiguration
-		err := json.Unmarshal(configJSON, &customConfig)
-		if err != nil {
-			return nil, err
+
+		if err = json.Unmarshal(configJSON, &customConfig); err != nil {
+			return nil, http.CreateBadRequestError("Invalid body")
 		}
+
+		if err = customConfig.Validate(); err != nil {
+			return nil, http.CreateBadRequestError(err.Error())
+		}
+
 		return nil, managementComponent.UpdateRealmCustomConfiguration(ctx, m["realm"], customConfig)
 	}
 }

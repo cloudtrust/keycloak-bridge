@@ -34,6 +34,7 @@ func TestHTTPManagementHandler(t *testing.T) {
 
 	r := mux.NewRouter()
 	r.Handle("/realms/{realm}", managementHandler)
+	r.Handle("/realms/{realm}?email={email}", managementHandler)
 	r.Handle("/realms/{realm}/users", managementHandler2)
 	r.Handle("/realms/{realm}/users/{userID}/reset-password", managementHandler3)
 
@@ -53,7 +54,7 @@ func TestHTTPManagementHandler(t *testing.T) {
 
 		mockComponent.EXPECT().GetRealm(gomock.Any(), "master").Return(realmRep, nil).Times(1)
 
-		res, err := http.Get(ts.URL + "/realms/master")
+		res, err := http.Get(ts.URL + "/realms/master?email=toto@toto.com")
 
 		assert.Nil(t, err)
 		assert.Equal(t, http.StatusOK, res.StatusCode)
@@ -67,7 +68,7 @@ func TestHTTPManagementHandler(t *testing.T) {
 	{
 		var username = "toto"
 		var email = "toto@elca.ch"
-		var groups = []string{"123-785-7777"}
+		var groups = []string{"f467ed7c-0a1d-4eee-9bb8-669c6f89c0ee"}
 
 		var user = api.UserRepresentation{
 			Username: &username,
@@ -97,10 +98,10 @@ func TestHTTPManagementHandler(t *testing.T) {
 		}
 		passwordJSON, _ := json.Marshal(passwordRep)
 
-		mockComponent.EXPECT().ResetPassword(gomock.Any(), "master", "123456", gomock.Any()).Return(nil).Times(1)
+		mockComponent.EXPECT().ResetPassword(gomock.Any(), "master", "f467ed7c-0a1d-4eee-9bb8-669c6f89c0ee", gomock.Any()).Return(nil).Times(1)
 
 		var body = strings.NewReader(string(passwordJSON))
-		res, err := http.Post(ts.URL+"/realms/master/users/123456/reset-password", "application/json", body)
+		res, err := http.Post(ts.URL+"/realms/master/users/f467ed7c-0a1d-4eee-9bb8-669c6f89c0ee/reset-password", "application/json", body)
 
 		assert.Nil(t, err)
 		assert.Equal(t, http.StatusOK, res.StatusCode)
@@ -119,13 +120,14 @@ func TestHTTPErrorHandler(t *testing.T) {
 
 	r := mux.NewRouter()
 	r.Handle("/realms/{realm}/users", managementHandler)
+	r.Handle("/realms/{realm}/users?email={email}", managementHandler)
 
 	ts := httptest.NewServer(r)
 	defer ts.Close()
 
 	var username = "toto"
 	var email = "toto@elca.ch"
-	var groups = []string{"145-782-2214"}
+	var groups = []string{"f467ed7c-0a1d-4eee-9bb8-669c6f89c0ee"}
 
 	var user = api.UserRepresentation{
 		Username: &username,
@@ -164,8 +166,26 @@ func TestHTTPErrorHandler(t *testing.T) {
 		res, err := http.Post(ts.URL+"/realms/master/users", "application/json", body)
 
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusInternalServerError, res.StatusCode)
-		assert.Equal(t, http.NoBody, res.Body)
+		assert.Equal(t, http.StatusBadRequest, res.StatusCode)
+
+	}
+
+	// Bad request, invalid path param
+	{
+		var body = strings.NewReader("?/%&asd==")
+		res, err := http.Post(ts.URL+"/realms/master!!/users", "application/json", body)
+
+		assert.Nil(t, err)
+		assert.Equal(t, http.StatusBadRequest, res.StatusCode)
+	}
+
+	// Bad request, invalid query param
+	{
+		var body = strings.NewReader("?/%&asd==")
+		res, err := http.Post(ts.URL+"/realms/master/users?email=tito!", "application/json", body)
+
+		assert.Nil(t, err)
+		assert.Equal(t, http.StatusBadRequest, res.StatusCode)
 	}
 
 	// Keycloak Error
@@ -221,7 +241,7 @@ func TestHTTPXForwardHeaderHandler(t *testing.T) {
 	{
 		var username = "toto"
 		var email = "toto@elca.ch"
-		var groups = []string{"145-782-2214"}
+		var groups = []string{"f467ed7c-0a1d-4eee-9bb8-669c6f89c0ee"}
 
 		var user = api.UserRepresentation{
 			Username: &username,

@@ -22,7 +22,7 @@ cors-debug: true
 
 # Security
 ## Audience for JWT token
-audience-required: "backofficeid"
+audience-required: "account"
 
 ## Password used to protect /internal/event endpoint
 event-basic-auth-token: "superpasswordverylongandstrong"
@@ -31,8 +31,6 @@ event-basic-auth-token: "superpasswordverylongandstrong"
 # Keycloak configs
 keycloak-api-uri: http://localhost:8080
 keycloak-oidc-uri: http://localhost:8080
-keycloak-username: admin
-keycloak-password: admin
 keycloak-timeout: 5s
 
 # DB Audit RW
@@ -43,10 +41,19 @@ db-audit-rw-database: auditevents
 db-audit-rw-protocol: tcp
 db-audit-rw-max-open-conns: 10
 db-audit-rw-max-idle-conns: 2
+<<<<<<< HEAD
 db-audit-rw-conn-max-lifetime: 3600
 db-audit-migration: false
 db-audit-migration-version: 
 
+||||||| merged common ancestors
+db-audit-rw-conn-max-lifetime: 3600
+=======
+db-audit-rw-conn-max-lifetime: 10
+db-audit-migration: false
+db-audit-migration-version: 
+
+>>>>>>> origin/master
 
 # DB Audit RO
 db-audit-ro-host-port: 127.0.0.1:3306
@@ -56,7 +63,7 @@ db-audit-ro-database: auditevents
 db-audit-ro-protocol: tcp
 db-audit-ro-max-open-conns: 10
 db-audit-ro-max-idle-conns: 2
-db-audit-ro-conn-max-lifetime: 3600
+db-audit-ro-conn-max-lifetime: 10
 
 # DB Configuration
 db-config-host-port: 127.0.0.1:3306
@@ -66,9 +73,17 @@ db-config-database: cloudtrust_configuration
 db-config-protocol: tcp
 db-config-max-open-conns: 10
 db-config-max-idle-conns: 2
+<<<<<<< HEAD
 db-config-conn-max-lifetime: 3600
 db-config-migration: false
 db-config-migration-version: 4.1
+||||||| merged common ancestors
+db-config-conn-max-lifetime: 3600
+=======
+db-config-conn-max-lifetime: 10
+db-config-migration: false
+db-config-migration-version: 4.1
+>>>>>>> origin/master
 
 # audit events
 events-db: false

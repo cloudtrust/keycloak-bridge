@@ -33,7 +33,7 @@ func TestHTTPManagementHandler(t *testing.T) {
 	{
 		var params map[string]string
 		params = make(map[string]string)
-		params["realmTarget"] = "master"
+		params["realm"] = "master"
 
 		var eventsResp = api.AuditEventsRepresentation{}
 		var event = api.AuditRepresentation{
