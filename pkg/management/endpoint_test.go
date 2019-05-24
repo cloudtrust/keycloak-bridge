@@ -693,6 +693,28 @@ func TestGetRoleEndpoint(t *testing.T) {
 	}
 }
 
+func TestGetGroupsEndpoint(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
+
+	var e = MakeGetGroupsEndpoint(mockManagementComponent)
+
+	// No error
+	{
+		var realm = "master"
+		var ctx = context.Background()
+		var req = make(map[string]string)
+		req["realm"] = realm
+
+		mockManagementComponent.EXPECT().GetGroups(ctx, realm).Return([]api.GroupRepresentation{}, nil).Times(1)
+		var res, err = e(ctx, req)
+		assert.Nil(t, err)
+		assert.NotNil(t, res)
+	}
+}
+
 func TestGetClientRolesEndpoint(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()

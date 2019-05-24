@@ -145,6 +145,9 @@ func TestDeny(t *testing.T) {
 		_, err = authorizationMW.GetRole(ctx, realmName, roleID)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
+		_, err = authorizationMW.GetGroups(ctx, realmName)
+		assert.Equal(t, security.ForbiddenError{}, err)
+
 		_, err = authorizationMW.GetClientRoles(ctx, realmName, clientID)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
@@ -236,6 +239,7 @@ func TestAllowed(t *testing.T) {
 					"DeleteCredentialsForUser": {"*": {"*": {} }},
 					"GetRoles": {"*": {"*": {} }},
 					"GetRole": {"*": {"*": {} }},
+					"GetGroups": {"*": {"*": {} }},
 					"GetClientRoles": {"*": {"*": {} }},
 					"CreateClientRole": {"*": {"*": {} }},
 					"GetRealmCustomConfiguration": {"*": {"*": {} }},
@@ -339,6 +343,10 @@ func TestAllowed(t *testing.T) {
 
 		mockManagementComponent.EXPECT().GetRole(ctx, realmName, roleID).Return(api.RoleRepresentation{}, nil).Times(1)
 		_, err = authorizationMW.GetRole(ctx, realmName, roleID)
+		assert.Nil(t, err)
+
+		mockManagementComponent.EXPECT().GetGroups(ctx, realmName).Return([]api.GroupRepresentation{}, nil).Times(1)
+		_, err = authorizationMW.GetGroups(ctx, realmName)
 		assert.Nil(t, err)
 
 		mockManagementComponent.EXPECT().GetClientRoles(ctx, realmName, clientID).Return([]api.RoleRepresentation{}, nil).Times(1)
