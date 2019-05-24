@@ -41,19 +41,10 @@ db-audit-rw-database: auditevents
 db-audit-rw-protocol: tcp
 db-audit-rw-max-open-conns: 10
 db-audit-rw-max-idle-conns: 2
-<<<<<<< HEAD
-db-audit-rw-conn-max-lifetime: 3600
-db-audit-migration: false
-db-audit-migration-version: 
-
-||||||| merged common ancestors
-db-audit-rw-conn-max-lifetime: 3600
-=======
 db-audit-rw-conn-max-lifetime: 10
 db-audit-migration: false
 db-audit-migration-version: 
 
->>>>>>> origin/master
 
 # DB Audit RO
 db-audit-ro-host-port: 127.0.0.1:3306
@@ -83,7 +74,6 @@ db-config-conn-max-lifetime: 3600
 db-config-conn-max-lifetime: 10
 db-config-migration: false
 db-config-migration-version: 4.1
->>>>>>> origin/master
 
 # audit events
 events-db: false
