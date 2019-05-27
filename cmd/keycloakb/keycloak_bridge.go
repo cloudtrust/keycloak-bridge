@@ -7,7 +7,6 @@ import (
 	"net/http/pprof"
 	"os"
 	"os/signal"
-	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -98,12 +97,6 @@ func main() {
 
 		// Enabled units
 		pprofRouteEnabled = c.GetBool("pprof-route-enabled")
-
-		// Database version checks
-		auditMigrationEnabled  = c.GetBool("db-audit-migration")
-		auditMigrationVersion  = c.GetString("db-audit-migration-version")
-		configMigrationEnabled = c.GetBool("db-config-migration")
-		configMigrationVersion = c.GetString("db-config-migration-version")
 
 		// Influx
 		influxWriteInterval = c.GetDuration("influx-write-interval")
@@ -248,25 +241,6 @@ func main() {
 			logger.Log("msg", "could not create RO DB connection for audit events", "error", err)
 			return
 		}
-
-		// DB migration version
-		// checking that the flyway_schema_history has the minimum imposed migration version
-		// auditevents DB
-		if auditMigrationEnabled {
-			// DB schema versioning is enabled
-			if auditMigrationVersion != "" {
-				var err error
-				err = checkMigrationVersion(logger, *auditRwDbParams, eventsRODBConn, auditMigrationVersion)
-				if err != nil {
-					return
-				}
-			} else {
-				// DB schema versioning is enabled but no minimum version was given
-				logger.Log("msg", "Check of DB schema is enabled, but no minimum version provided", "DB", auditRoDbParams.Database)
-				return
-			}
-		}
-
 	}
 
 	var configurationDBConn database.CloudtrustDB
@@ -276,21 +250,6 @@ func main() {
 		if err != nil {
 			logger.Log("msg", "could not create DB connection for configuration storage", "error", err)
 			return
-		}
-		// DB migration version
-		// cloudtrust_configurations DB
-		if configMigrationEnabled {
-			if configMigrationVersion != "" {
-				var err error
-				err = checkMigrationVersion(logger, *configDbParams, configurationDBConn, configMigrationVersion)
-				if err != nil {
-					return
-				}
-			} else {
-				// DB schema versioning is enabled but no minimum version was given
-				logger.Log("msg", "Check of DB schema is enabled, but no minimum version provided", "DB", configDbParams.Database)
-				return
-			}
 		}
 	}
 
@@ -754,71 +713,6 @@ func config(logger log.Logger) *viper.Viper {
 		}
 	}
 	return v
-}
-
-func checkMigrationVersion(logger log.Logger, dbParams database.DbConfig, conn database.CloudtrustDB, minMigrationVersion string) error {
-
-	var flywayVersion string
-	row := conn.QueryRow(`SELECT version FROM flyway_schema_history ORDER BY installed_rank DESC LIMIT 1;`)
-	err := row.Scan(&flywayVersion)
-	if err != nil {
-		logger.Log("msg", "could not query the flyway_schema_history", "error", err)
-		return err
-	}
-
-	//flyway version and config migration version must match the format x.y where x and y are integers
-	matched, err := regexp.MatchString(`^[0-9]+\.[0-9]+$`, minMigrationVersion)
-	if err != nil {
-		return err
-	}
-	if !matched {
-		logger.Log("msg", "the config migration version does not match the required format")
-		return fmt.Errorf("The config migration version does not match the required format")
-	}
-
-	matched, err = regexp.MatchString(`^[0-9]+\.[0-9]+$`, flywayVersion)
-	if err != nil {
-		return err
-	}
-	if !matched {
-		logger.Log("msg", "the flyway migration version does not match the required format")
-		return fmt.Errorf("The flyway migration version does not match the required format")
-	}
-
-	// compare the two versions of the type x.y (major.minor)
-	minRequiredVersion := strings.Split(minMigrationVersion, ".")
-	currentFlywayVersion := strings.Split(flywayVersion, ".")
-
-	majorRequired, err := strconv.Atoi(minRequiredVersion[0])
-	if err != nil {
-		logger.Log("msg", "could not convert majorRequired string to int", "error", err)
-		return err
-	}
-	minorRequired, err := strconv.Atoi(minRequiredVersion[1])
-	if err != nil {
-		logger.Log("msg", "could not convert minorRequired string to int", "error", err)
-		return err
-	}
-
-	majorFlyway, err := strconv.Atoi(currentFlywayVersion[0])
-	if err != nil {
-		logger.Log("msg", "could not convert majorFlyway string to int", "error", err)
-		return err
-	}
-	minorFlyway, err := strconv.Atoi(currentFlywayVersion[1])
-	if err != nil {
-		logger.Log("msg", "could not convert minorFlyway string to int", "error", err)
-		return err
-	}
-
-	// it is required for the last script version of the flyway is to be "bigger" than the required version
-	if (majorFlyway < majorRequired) || (majorFlyway == majorRequired && minorFlyway < minorRequired) {
-		logger.Log("msg", "the DB schema is not up-to-date", "DB", dbParams.Database)
-		return fmt.Errorf("DB schema not up-to-date")
-	}
-
-	logger.Log("msg", "DB schema version fits the requirements")
-	return nil
 }
 
 func configureEventsHandler(ComponentName string, ComponentID string, idGenerator idgenerator.IDGenerator, keycloakClient *keycloak.Client, audienceRequired string, tracer tracing.OpentracingClient, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {
