@@ -132,10 +132,16 @@
       "GetGroups": {
         "master": {
           "*": {}
+        }, 
+        "DEP": {
+          "*": {}
         }
       },
       "GetRoles": {
         "master": {
+          "*": {}
+        }, 
+        "DEP": {
           "*": {}
         }
       },  
@@ -266,12 +272,12 @@
         }
       },
       "GetGroups": {
-        "master": {
+        "DEP": {
           "*": {}
         }
       },
       "GetRoles": {
-        "master": {
+        "DEP": {
           "*": {}
         }
       },

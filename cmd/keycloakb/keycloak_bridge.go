@@ -598,7 +598,7 @@ func main() {
 		managementSubroute.Path("/realms/{realm}/clients/{clientID}/roles").Methods("POST").Handler(createClientRolesHandler)
 
 		//groups
-		managementSubroute.Path("/realms/{realm:[a-zA-Z0-9_-]+}/groups").Methods("GET").Handler(getGroupsHandler)
+		managementSubroute.Path("/realms/{realm}/groups").Methods("GET").Handler(getGroupsHandler)
 
 		// custom configuration par realm
 		managementSubroute.Path("/realms/{realm}/configuration").Methods("GET").Handler(getRealmCustomConfigurationHandler)
