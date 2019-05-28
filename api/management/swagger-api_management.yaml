@@ -707,6 +707,18 @@ paths:
           description: successful operation
         400:
           description: invalid information provided  (invalid client identifier or redirect URI not allowed for this client)
+  /realms/{realm}/statistics:
+    get:
+      tags:
+      - Statistics
+      summary: Get the statistics for a realm
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Statistics'
 components:
   schemas:
     Realm:
@@ -838,6 +850,37 @@ components:
           type: string
         default_redirect_uri:
           type: string
+    Statistics:
+      type: object
+      properties:
+        last_connection:
+          type: number
+        total_connections:
+          type: object
+          properties:
+            last_twelve_hours:
+              type: number
+            last_day:
+              type: number
+            last_week:
+              type: number
+            last_month:
+              type: number
+            last_year:
+              type: number
+        authenticators:
+          type: array
+          items:
+            type: object
+            properties:
+              username:
+                type: string
+              mobile_app:
+                type: number
+              sms:
+                type: number
+              paper_cards:
+                type: number
   securitySchemes:
     openId:
       type: openIdConnect
