@@ -129,10 +129,14 @@
         "master": {
           "integrator_agent": {}
         },
+        "DEP": {
+          "end_user": {}
+        }
+      },
       "GetGroups": {
         "master": {
           "*": {}
-        }, 
+        },
         "DEP": {
           "*": {}
         }
@@ -140,15 +144,11 @@
       "GetRoles": {
         "master": {
           "*": {}
-        }, 
+        },
         "DEP": {
           "*": {}
         }
       },  
-        "DEP": {
-          "end_user": {}
-        }
-      },
       "GetGroupsOfUser": {
         "master": {
           "integrator_agent": {}
