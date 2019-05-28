@@ -38,7 +38,7 @@ paths:
     get:
       tags:
       - Clients
-      summary: Get clients belonging to the realm. 
+      summary: Get clients belonging to the realm.
       parameters:
       - name: realm
         in: path
@@ -136,7 +136,7 @@ paths:
         in: query
         schema:
           type: string
-        allowEmptyValue: true 
+        allowEmptyValue: true
       - name: lastName
         in: query
         schema:
@@ -509,7 +509,7 @@ paths:
         400:
           description: "Invalid input"
         403:
-          description: "No permission to call this operation"        
+          description: "No permission to call this operation"
   /realms/{realm}/users/{userID}/credentials:
     get:
       tags:
@@ -707,6 +707,18 @@ paths:
           description: successful operation
         400:
           description: invalid information provided  (invalid client identifier or redirect URI not allowed for this client)
+  /realms/{realm}/statistics:
+    get:
+      tags:
+      - Statistics
+      summary: Get the statistics for a realm
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Statistics'
 components:
   schemas:
     Realm:
@@ -745,8 +757,8 @@ components:
         phoneNumber:
           type: string
         phoneNumberVerified:
-          type: boolean 
-          default: false 
+          type: boolean
+          default: false
         label:
           type: string
         gender:
@@ -755,7 +767,7 @@ components:
           type: string
         createdTimestamp:
           type: integer
-        groups: 
+        groups:
           type: array
           items:
             type: string
@@ -763,9 +775,9 @@ components:
           type: array
           items:
             type: string
-        locale: 
+        locale:
           type: string
-          default: "en"    
+          default: "en"
     UserStatus:
       type: object
       properties:
@@ -838,6 +850,28 @@ components:
           type: string
         default_redirect_uri:
           type: string
+    Statistics:
+      type: object
+      properties:
+        enabled_users:
+          type: number
+        disabled_users:
+          type: number
+        last_connection:
+          type: number
+        total_connections:
+          type: object
+          properties:
+            last_twelve_hours:
+              type: number
+            last_day:
+              type: number
+            last_week:
+              type: number
+            last_month:
+              type: number
+            last_year:
+              type: number
   securitySchemes:
     openId:
       type: openIdConnect
