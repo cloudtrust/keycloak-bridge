@@ -117,7 +117,6 @@ func initMap(params ...string) map[string]string {
 	return res
 }
 
-/*
 func TestGetEventsSummary(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -143,4 +142,3 @@ func TestGetEventsSummary(t *testing.T) {
 		assert.Equal(t, 1, len(res.Origins))
 	}
 }
-*/
