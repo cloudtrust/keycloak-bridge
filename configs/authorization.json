@@ -738,6 +738,13 @@
           "end_user": {}
         }
       }
+    },
+    "end_user": {
+      "GetClients":{
+        "DEP":{
+          "*":  {}
+        }
+      }
     }
   }
 }
