@@ -31,6 +31,16 @@
           "*": {}
         }
       },
+      "GetGroups": {
+        "master": {
+          "*": {}
+        }
+      },
+      "GetRoles": {
+        "master": {
+          "*": {}
+        }
+      },
       "UpdateUser": {
         "master": {
           "*": {}
@@ -123,6 +133,22 @@
           "end_user": {}
         }
       },
+      "GetGroups": {
+        "master": {
+          "*": {}
+        },
+        "DEP": {
+          "*": {}
+        }
+      },
+      "GetRoles": {
+        "master": {
+          "*": {}
+        },
+        "DEP": {
+          "*": {}
+        }
+      },  
       "GetGroupsOfUser": {
         "master": {
           "integrator_agent": {}
@@ -245,6 +271,16 @@
           "*": {}
         }
       },
+      "GetGroups": {
+        "DEP": {
+          "*": {}
+        }
+      },
+      "GetRoles": {
+        "DEP": {
+          "*": {}
+        }
+      },
       "UpdateUser": {
         "DEP": {
           "*": {}
@@ -335,6 +371,16 @@
           "l2_support_agent": {}
         }
       },
+      "GetGroups": {
+        "master": {
+          "*": {}
+        }
+      },
+      "GetRoles": {
+        "master": {
+          "*": {}
+        }
+      },
       "UpdateUser": {
         "master": {
           "l2_support_agent": {}
@@ -399,6 +445,16 @@
         "*": {
           "*": {}
         }
+      }, 
+      "GetGroups": {
+        "master": {
+          "*": {}
+        }
+      },
+      "GetRoles": {
+        "master": {
+          "*": {}
+        }
       }
     },
     "l3_support_manager":{
@@ -428,6 +484,16 @@
       "GetGroupsOfUser": {
         "master": {
           "l3_support_agent": {}
+        }
+      },
+      "GetGroups": {
+        "master": {
+          "*": {}
+        }
+      },
+      "GetRoles": {
+        "master": {
+          "*": {}
         }
       },
       "UpdateUser": {
@@ -494,6 +560,16 @@
         "*": {
           "*": {}
         }
+      },
+      "GetGroups": {
+        "master": {
+          "*": {}
+        }
+      },
+      "GetRoles": {
+        "master": {
+          "*": {}
+        }
       }
     }
   },
@@ -518,6 +594,16 @@
         }
       },
       "GetRolesOfUser": {
+        "DEP": {
+          "*": {}
+        }
+      },
+      "GetGroups": {
+        "DEP": {
+          "*": {}
+        }
+      },
+      "GetRoles": {
         "DEP": {
           "*": {}
         }
@@ -606,6 +692,16 @@
           "end_user": {}
         }
       },
+      "GetGroups": {
+        "DEP": {
+          "*": {}
+        }
+      },
+      "GetRoles": {
+        "DEP": {
+          "*": {}
+        }
+      },
       "UpdateUser": {
         "DEP": {
           "l1_support_agent": {},
@@ -685,6 +781,16 @@
           "end_user": {}
         }
       },
+      "GetGroups": {
+        "DEP": {
+          "*": {}
+        }
+      },
+      "GetRoles": {
+        "DEP": {
+          "*": {}
+        }
+      },
       "UpdateUser": {
         "DEP": {
           "end_user": {}
@@ -736,6 +842,16 @@
       "SendVerifyEmail": {
         "DEP": {
           "end_user": {}
+        }
+      },
+      "GetGroups": {
+        "DEP": {
+          "*": {}
+        }
+      },
+      "GetRoles": {
+        "DEP": {
+          "*": {}
         }
       }
     }

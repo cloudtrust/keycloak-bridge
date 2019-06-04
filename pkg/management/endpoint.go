@@ -37,6 +37,7 @@ type Endpoints struct {
 	DeleteCredentialsForUser       endpoint.Endpoint
 	GetRoles                       endpoint.Endpoint
 	GetRole                        endpoint.Endpoint
+	GetGroups                      endpoint.Endpoint
 	GetClientRoles                 endpoint.Endpoint
 	CreateClientRole               endpoint.Endpoint
 	GetRealmCustomConfiguration    endpoint.Endpoint
@@ -67,6 +68,7 @@ type ManagementComponent interface {
 	DeleteCredentialsForUser(ctx context.Context, realmName string, userID string, credentialID string) error
 	GetRoles(ctx context.Context, realmName string) ([]api.RoleRepresentation, error)
 	GetRole(ctx context.Context, realmName string, roleID string) (api.RoleRepresentation, error)
+	GetGroups(ctx context.Context, realmName string) ([]api.GroupRepresentation, error)
 	GetClientRoles(ctx context.Context, realmName, idClient string) ([]api.RoleRepresentation, error)
 	CreateClientRole(ctx context.Context, realmName, clientID string, role api.RoleRepresentation) (string, error)
 	GetRealmCustomConfiguration(ctx context.Context, realmID string) (api.RealmCustomConfiguration, error)
@@ -370,6 +372,15 @@ func MakeGetRoleEndpoint(managementComponent ManagementComponent) cs.Endpoint {
 		var m = req.(map[string]string)
 
 		return managementComponent.GetRole(ctx, m["realm"], m["roleID"])
+	}
+}
+
+// MakeGetGroupsEndpoint creates an endpoint for GetGroups
+func MakeGetGroupsEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+
+		return managementComponent.GetGroups(ctx, m["realm"])
 	}
 }
 
