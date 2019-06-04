@@ -195,7 +195,7 @@ func (c *component) CreateUser(ctx context.Context, realmName string, user api.U
 
 	//store the API call into the DB
 	// the error should be treated
-	_ = c.reportEvent(ctx, "API_ACCOUNT_CREATION", "realm_name", realmName, "user_id", userID, "username", username)
+	_ = c.reportEvent(ctx, "API_ACCOUNT_CREATION", database.CtEventRealmName, realmName, database.CtEventUserID, userID, database.CtEventUsername, username)
 
 	return locationURL, nil
 }
@@ -211,7 +211,7 @@ func (c *component) DeleteUser(ctx context.Context, realmName, userID string) er
 
 	//store the API call into the DB
 	// the error should be treated
-	_ = c.reportEvent(ctx, "API_ACCOUNT_DELETION", "realm_name", realmName, "user_id", userID)
+	_ = c.reportEvent(ctx, "API_ACCOUNT_DELETION", database.CtEventRealmName, realmName, database.CtEventUserID, userID)
 
 	return nil
 }
@@ -235,7 +235,7 @@ func (c *component) GetUser(ctx context.Context, realmName, userID string) (api.
 
 	//store the API call into the DB
 	// the error should be treated
-	_ = c.reportEvent(ctx, "GET_DETAILS", "realm_name", realmName, "user_id", userID, "username", username)
+	_ = c.reportEvent(ctx, "GET_DETAILS", database.CtEventRealmName, realmName, database.CtEventUserID, userID, database.CtEventUsername, username)
 
 	return userRep, nil
 
@@ -313,7 +313,7 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 			ctEventType = "LOCK_ACCOUNT"
 		}
 		// the error should be treated
-		_ = c.reportEvent(ctx, ctEventType, "realm_name", realmName, "user_id", userID, "username", username)
+		_ = c.reportEvent(ctx, ctEventType, database.CtEventRealmName, realmName, database.CtEventUserID, userID, database.CtEventUsername, username)
 	}
 
 	return nil
@@ -473,7 +473,7 @@ func (c *component) ResetPassword(ctx context.Context, realmName string, userID 
 
 	//store the API call into the DB
 	// the error should be treated
-	_ = c.reportEvent(ctx, "INIT_PASSWORD", "realm_name", realmName, "user_id", userID)
+	_ = c.reportEvent(ctx, "INIT_PASSWORD", database.CtEventRealmName, realmName, database.CtEventUserID, userID)
 
 	return nil
 }
