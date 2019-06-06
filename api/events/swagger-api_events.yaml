@@ -140,25 +140,6 @@ paths:
                       $ref: '#/components/schemas/Event'
                   count:
                     type: number
-  /events/realms/{realm}/statistics:
-    get:
-      tags:
-      - Statistics
-      summary: Get the statistics for a realm
-      parameters:
-      - name: realm
-        in: path
-        description: realm name (not id!)
-        required: true
-        schema:
-          type: string
-      responses:
-        200:
-          description: successful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Statistics'
 components:
   schemas:
     Event:
@@ -192,24 +173,6 @@ components:
           type: string
         additionalInfo:
           type: string
-    Statistics:
-      type: object
-      properties:
-        lastConnection:
-          type: number
-        totalConnections:
-          type: object
-          properties:
-            lastTwelveHours:
-              type: number
-            lastDay:
-              type: number
-            lastWeek:
-              type: number
-            lastMonth:
-              type: number
-            lastYear:
-              type: number
   securitySchemes:
     openId:
       type: openIdConnect
@@ -217,4 +180,3 @@ components:
 security:
   - openId:
     - todo
-  

@@ -28,6 +28,7 @@ import (
 	"github.com/cloudtrust/keycloak-bridge/pkg/events"
 	"github.com/cloudtrust/keycloak-bridge/pkg/export"
 	"github.com/cloudtrust/keycloak-bridge/pkg/management"
+	"github.com/cloudtrust/keycloak-bridge/pkg/statistics"
 	keycloak "github.com/cloudtrust/keycloak-client"
 	"github.com/go-kit/kit/endpoint"
 	"github.com/go-kit/kit/log"
@@ -327,6 +328,22 @@ func main() {
 
 	baseEventsDBModule := database.NewEventsDBModule(eventsDBConn)
 
+	// new module for reading events from the DB
+	eventsRODBModule := keycloakb.NewEventsDBModule(eventsRODBConn)
+
+	// Statistics service.
+	var statisticsEndpoints statistics.Endpoints
+	{
+		var statisticsLogger = log.With(logger, "svc", "statistics")
+
+		statisticsComponent := statistics.NewComponent(eventsRODBModule)
+		statisticsComponent = statistics.MakeAuthorizationManagementComponentMW(log.With(statisticsLogger, "mw", "endpoint"), authorizationManager)(statisticsComponent)
+
+		statisticsEndpoints = statistics.Endpoints{
+			GetStatistics: prepareEndpoint(statistics.MakeGetStatisticsEndpoint(statisticsComponent), "get_statistics", influxMetrics, statisticsLogger, tracer, rateLimit["event"]),
+		}
+	}
+
 	// Events service.
 	var eventsEndpoints events.Endpoints
 	{
@@ -335,8 +352,6 @@ func main() {
 		// module to store API calls of the back office to the DB
 		eventsDBModule := configureEventsDbModule(baseEventsDBModule, influxMetrics, eventsLogger, tracer)
 
-		// new module for sending the events to the DB
-		eventsRODBModule := events.NewDBModule(eventsRODBConn)
 		eventsComponent := events.NewComponent(eventsRODBModule, eventsDBModule)
 		eventsComponent = events.MakeAuthorizationManagementComponentMW(log.With(eventsLogger, "mw", "endpoint"), authorizationManager)(eventsComponent)
 
@@ -344,7 +359,6 @@ func main() {
 			GetEvents:        prepareEndpoint(events.MakeGetEventsEndpoint(eventsComponent), "get_events", influxMetrics, eventsLogger, tracer, rateLimit["event"]),
 			GetEventsSummary: prepareEndpoint(events.MakeGetEventsSummaryEndpoint(eventsComponent), "get_events_summary", influxMetrics, eventsLogger, tracer, rateLimit["event"]),
 			GetUserEvents:    prepareEndpoint(events.MakeGetUserEventsEndpoint(eventsComponent), "get_user_events", influxMetrics, eventsLogger, tracer, rateLimit["event"]),
-			GetStatistics:    prepareEndpoint(events.MakeGetStatisticsEndpoint(eventsComponent), "get_events_statistics", influxMetrics, eventsLogger, tracer, rateLimit["event"]),
 		}
 	}
 
@@ -475,16 +489,18 @@ func main() {
 		// Version.
 		route.Handle("/", http.HandlerFunc(commonhttp.MakeVersionHandler(ComponentName, ComponentID, Version, Environment, GitCommit)))
 
+		// Statistics
+		var getStatisticsHandler = configureEventsHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(statisticsEndpoints.GetStatistics)
+		route.Path("/statistics/realms/{realm}").Methods("GET").Handler(getStatisticsHandler)
+
 		// Events
 		var getEventsHandler = configureEventsHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(eventsEndpoints.GetEvents)
 		var getEventsSummaryHandler = configureEventsHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(eventsEndpoints.GetEventsSummary)
 		var getUserEventsHandler = configureEventsHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(eventsEndpoints.GetUserEvents)
-		var getStatisticsHandler = configureEventsHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(eventsEndpoints.GetStatistics)
 
 		route.Path("/events").Methods("GET").Handler(getEventsHandler)
 		route.Path("/events/summary").Methods("GET").Handler(getEventsSummaryHandler)
 		route.Path("/events/realms/{realm}/users/{userID}/events").Methods("GET").Handler(getUserEventsHandler)
-		route.Path("/events/realms/{realm}/statistics").Methods("GET").Handler(getStatisticsHandler)
 
 		// Management
 		var managementSubroute = route.PathPrefix("/management").Subrouter()

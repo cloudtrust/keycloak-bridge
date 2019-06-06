@@ -99,7 +99,7 @@
           "*": {}
         }
       },
-      "EV_GetStatistics": {
+      "ST_GetStatistics": {
         "master": {
           "*": {}
         }
@@ -663,7 +663,7 @@
           "*": {}
         }
       },
-      "EV_GetStatistics": {
+      "ST_GetStatistics": {
         "DEP": {
           "*": {}
         }

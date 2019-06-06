@@ -45,13 +45,6 @@ func MakeGetUserEventsEndpoint(ec Component) cs.Endpoint {
 	}
 }
 
-// MakeGetStatisticsEndpoint makes the events summary endpoint.
-func MakeGetStatisticsEndpoint(ec Component) cs.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
-		return ec.GetStatistics(ctx, req.(map[string]string))
-	}
-}
-
 func filterParameters(allParams map[string]string, paramNames ...string) map[string]string {
 	var res map[string]string
 	res = make(map[string]string)

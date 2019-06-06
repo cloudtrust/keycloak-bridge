@@ -6,6 +6,7 @@ import (
 	"github.com/cloudtrust/common-service/database"
 	"github.com/cloudtrust/common-service/http"
 	api "github.com/cloudtrust/keycloak-bridge/api/events"
+	app "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 )
 
 // Component is the interface of the events component.
@@ -13,16 +14,15 @@ type Component interface {
 	GetEvents(context.Context, map[string]string) (api.AuditEventsRepresentation, error)
 	GetEventsSummary(context.Context) (api.EventSummaryRepresentation, error)
 	GetUserEvents(context.Context, map[string]string) (api.AuditEventsRepresentation, error)
-	GetStatistics(context.Context, map[string]string) (api.StatisticsRepresentation, error)
 }
 
 type component struct {
-	db            DBModule
+	db            app.EventsDBModule
 	eventDBModule database.EventsDBModule
 }
 
 // NewComponent returns a component
-func NewComponent(db DBModule, eventDBModule database.EventsDBModule) Component {
+func NewComponent(db app.EventsDBModule, eventDBModule database.EventsDBModule) Component {
 	return &component{
 		db:            db,
 		eventDBModule: eventDBModule,
@@ -63,31 +63,4 @@ func (ec *component) GetUserEvents(ctx context.Context, params map[string]string
 	}
 	ec.reportEvent(ctx, "GET_ACTIVITY", "realm_name", params["realm"], "user_id", params["userID"])
 	return ec.GetEvents(ctx, params)
-}
-
-// Grabs statistics
-func (ec *component) GetStatistics(ctx context.Context, m map[string]string) (api.StatisticsRepresentation, error) {
-	var res api.StatisticsRepresentation
-	var err error
-	var realmName = m["realm"]
-
-	res.LastConnection, err = ec.db.GetLastConnection(ctx, realmName)
-
-	if err == nil {
-		res.TotalConnections.LastTwelveHours, err = ec.db.GetTotalConnectionsCount(ctx, realmName, "12 HOUR")
-	}
-	if err == nil {
-		res.TotalConnections.LastDay, err = ec.db.GetTotalConnectionsCount(ctx, realmName, "1 DAY")
-	}
-	if err == nil {
-		res.TotalConnections.LastWeek, err = ec.db.GetTotalConnectionsCount(ctx, realmName, "1 WEEK")
-	}
-	if err == nil {
-		res.TotalConnections.LastMonth, err = ec.db.GetTotalConnectionsCount(ctx, realmName, "1 MONTH")
-	}
-	if err == nil {
-		res.TotalConnections.LastYear, err = ec.db.GetTotalConnectionsCount(ctx, realmName, "1 YEAR")
-	}
-
-	return res, err
 }

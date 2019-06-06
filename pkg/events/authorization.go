@@ -13,7 +13,6 @@ const (
 	EVGetEvents        = "EV_GetEvents"
 	EVGetEventsSummary = "EV_GetEventsSummary"
 	EVGetUserEvents    = "EV_GetUserEvents"
-	EVGetStatistics    = "EV_GetStatistics"
 )
 
 // Tracking middleware at component level.
@@ -66,15 +65,4 @@ func (c *authorizationComponentMW) GetUserEvents(ctx context.Context, m map[stri
 	}
 
 	return c.next.GetUserEvents(ctx, m)
-}
-
-func (c *authorizationComponentMW) GetStatistics(ctx context.Context, m map[string]string) (api.StatisticsRepresentation, error) {
-	var action = EVGetStatistics
-	var targetRealm = m["realm"] // Get the realm provided as parameter in path
-
-	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
-		return api.StatisticsRepresentation{}, err
-	}
-
-	return c.next.GetStatistics(ctx, m)
 }

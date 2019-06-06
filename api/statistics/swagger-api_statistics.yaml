@@ -1,0 +1,57 @@
+openapi: 3.0.1
+info:
+  title: Swagger Cloudtrust Management
+  description: 'Statistics API for Cloudtrust.'
+  version: 1.0.0
+servers:
+- url: http://localhost:8888
+tags:
+- name: Statistics
+  description: Statistics management
+paths:
+  /statistics/realms/{realm}:
+    get:
+      tags:
+      - Statistics
+      summary: Get the statistics for a realm
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Statistics'
+components:
+  schemas:
+    Statistics:
+      type: object
+      properties:
+        lastConnection:
+          type: number
+        totalConnections:
+          type: object
+          properties:
+            lastTwelveHours:
+              type: number
+            lastDay:
+              type: number
+            lastWeek:
+              type: number
+            lastMonth:
+              type: number
+            lastYear:
+              type: number
+  securitySchemes:
+    openId:
+      type: openIdConnect
+      openIdConnectUrl: http://toto.com/.well-known/openid-configuration
+security:
+  - openId:
+    - todo

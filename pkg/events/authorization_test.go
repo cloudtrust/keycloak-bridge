@@ -20,8 +20,7 @@ const (
 			"toe": {
 				"EV_GetEvents": {"*": {"*": {} }},
 				"EV_GetEventsSummary": {"*": {"*": {} }},
-				"EV_GetUserEvents": {"*": {"*": {} }},
-				"EV_GetStatistics": {"*": {"*": {} }}
+				"EV_GetUserEvents": {"*": {"*": {} }}
 			}
 		}
 	}`
@@ -100,21 +99,6 @@ func TestGetUserEventsAllow(t *testing.T) {
 func TestGetUserEventsDeny(t *testing.T) {
 	testAuthorization(t, WithoutAuthorization, func(auth Component, mockComponent *mock.Component, ctx context.Context, mp map[string]string) {
 		_, err := auth.GetUserEvents(ctx, mp)
-		assert.Equal(t, security.ForbiddenError{}, err)
-	})
-}
-
-func TestGetStatisticsAllow(t *testing.T) {
-	testAuthorization(t, WithAuthorization, func(auth Component, mockComponent *mock.Component, ctx context.Context, mp map[string]string) {
-		mockComponent.EXPECT().GetStatistics(ctx, mp).Return(api.StatisticsRepresentation{}, nil).Times(1)
-		_, err := auth.GetStatistics(ctx, mp)
-		assert.Nil(t, err)
-	})
-}
-
-func TestGetStatisticsDeny(t *testing.T) {
-	testAuthorization(t, WithoutAuthorization, func(auth Component, mockComponent *mock.Component, ctx context.Context, mp map[string]string) {
-		_, err := auth.GetStatistics(ctx, mp)
 		assert.Equal(t, security.ForbiddenError{}, err)
 	})
 }

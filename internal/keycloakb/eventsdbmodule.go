@@ -1,4 +1,4 @@
-package events
+package keycloakb
 
 import (
 	"context"
@@ -11,8 +11,8 @@ import (
 	api "github.com/cloudtrust/keycloak-bridge/api/events"
 )
 
-// DBModule is the interface of the audit events module.
-type DBModule interface {
+// EventsDBModule is the interface of the audit events module.
+type EventsDBModule interface {
 	GetEventsCount(context.Context, map[string]string) (int, error)
 	GetEvents(context.Context, map[string]string) ([]api.AuditRepresentation, error)
 	GetEventsSummary(context.Context) (api.EventSummaryRepresentation, error)
@@ -24,8 +24,8 @@ type eventsDBModule struct {
 	db database.CloudtrustDB
 }
 
-// NewDBModule returns an events database module.
-func NewDBModule(db database.CloudtrustDB) DBModule {
+// NewEventsDBModule returns an events database module.
+func NewEventsDBModule(db database.CloudtrustDB) EventsDBModule {
 	return &eventsDBModule{
 		db: db,
 	}
