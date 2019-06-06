@@ -782,7 +782,7 @@ components:
           type: string
         clientId:
           type: string
-        description:
+        protocol:
           type: string
         enabled:
           type: boolean
