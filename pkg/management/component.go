@@ -36,6 +36,7 @@ type KeycloakClient interface {
 	DeleteCredentialsForUser(accessToken string, realmReq, realmName string, userID string, credentialID string) error
 	GetRoles(accessToken string, realmName string) ([]kc.RoleRepresentation, error)
 	GetRole(accessToken string, realmName string, roleID string) (kc.RoleRepresentation, error)
+	GetGroups(accessToken string, realmName string) ([]kc.GroupRepresentation, error)
 	GetClientRoles(accessToken string, realmName, idClient string) ([]kc.RoleRepresentation, error)
 	CreateClientRole(accessToken string, realmName, clientID string, role kc.RoleRepresentation) (string, error)
 	GetGroup(accessToken string, realmName, groupID string) (kc.GroupRepresentation, error)
@@ -65,6 +66,7 @@ type Component interface {
 	DeleteCredentialsForUser(ctx context.Context, realmName string, userID string, credentialID string) error
 	GetRoles(ctx context.Context, realmName string) ([]api.RoleRepresentation, error)
 	GetRole(ctx context.Context, realmName string, roleID string) (api.RoleRepresentation, error)
+	GetGroups(ctx context.Context, realmName string) ([]api.GroupRepresentation, error)
 	GetClientRoles(ctx context.Context, realmName, idClient string) ([]api.RoleRepresentation, error)
 	CreateClientRole(ctx context.Context, realmName, clientID string, role api.RoleRepresentation) (string, error)
 	GetRealmCustomConfiguration(ctx context.Context, realmName string) (api.RealmCustomConfiguration, error)
@@ -571,6 +573,27 @@ func (c *component) GetRole(ctx context.Context, realmName string, roleID string
 	roleRep.Description = roleKc.Description
 
 	return roleRep, err
+}
+
+func (c *component) GetGroups(ctx context.Context, realmName string) ([]api.GroupRepresentation, error) {
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+
+	groupsKc, err := c.keycloakClient.GetGroups(accessToken, realmName)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var groupsRep []api.GroupRepresentation
+	for _, groupKc := range groupsKc {
+		var groupRep api.GroupRepresentation
+		groupRep.Id = groupKc.Id
+		groupRep.Name = groupKc.Name
+
+		groupsRep = append(groupsRep, groupRep)
+	}
+
+	return groupsRep, nil
 }
 
 func (c *component) GetClientRoles(ctx context.Context, realmName, idClient string) ([]api.RoleRepresentation, error) {

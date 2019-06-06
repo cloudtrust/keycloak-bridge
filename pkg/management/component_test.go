@@ -1522,6 +1522,59 @@ func TestGetRole(t *testing.T) {
 	}
 }
 
+func TestGetGroups(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
+	var mockEventDBModule = mock.NewEventDBModule(mockCtrl)
+	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
+
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule)
+
+	var accessToken = "TOKEN=="
+	var realmName = "master"
+
+	// Get groups with succces
+	{
+		var id = "1234-7454-4516"
+		var path = "path_group"
+		var name = "group1"
+		var realmRoles = []string{"role1"}
+
+		var kcGroupRep = kc.GroupRepresentation{
+			Id:         &id,
+			Name:       &name,
+			Path:       &path,
+			RealmRoles: &realmRoles,
+		}
+
+		var kcGroupsRep []kc.GroupRepresentation
+		kcGroupsRep = append(kcGroupsRep, kcGroupRep)
+
+		mockKeycloakClient.EXPECT().GetGroups(accessToken, realmName).Return(kcGroupsRep, nil).Times(1)
+
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+
+		apiGroupsRep, err := managementComponent.GetGroups(ctx, "master")
+
+		var apiGroupRep = apiGroupsRep[0]
+		assert.Nil(t, err)
+		assert.Equal(t, id, *apiGroupRep.Id)
+		assert.Equal(t, name, *apiGroupRep.Name)
+	}
+
+	//Error
+	{
+		mockKeycloakClient.EXPECT().GetGroups(accessToken, realmName).Return([]kc.GroupRepresentation{}, fmt.Errorf("Unexpected error")).Times(1)
+
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+
+		_, err := managementComponent.GetGroups(ctx, "master")
+
+		assert.NotNil(t, err)
+	}
+}
+
 func TestGetClientRoles(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
