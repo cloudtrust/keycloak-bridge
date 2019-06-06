@@ -507,6 +507,9 @@ func (c *component) SendNewEnrolmentCode(ctx context.Context, realmName string, 
 		return "", err
 	}
 
+	// store the API call into the DB
+	_ = c.reportEvent(ctx, "SMS_CHALLENGE", "realm_name", realmName, "user_id", userID)
+
 	return *smsCodeKc.Code, err
 }
 

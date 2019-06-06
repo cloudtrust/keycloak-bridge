@@ -3,6 +3,7 @@ package events
 import (
 	"context"
 
+	"github.com/cloudtrust/common-service/database"
 	"github.com/cloudtrust/common-service/http"
 	api "github.com/cloudtrust/keycloak-bridge/api/events"
 )
@@ -15,14 +16,20 @@ type EventsComponent interface {
 }
 
 type component struct {
-	db EventsDBModule
+	db            EventsDBModule
+	eventDBModule database.EventsDBModule
 }
 
 // NewEventsComponent returns an events DB module
-func NewEventsComponent(db EventsDBModule) EventsComponent {
+func NewEventsComponent(db EventsDBModule, eventDBModule database.EventsDBModule) EventsComponent {
 	return &component{
-		db: db,
+		db:            db,
+		eventDBModule: eventDBModule,
 	}
+}
+
+func (ec *component) reportEvent(ctx context.Context, apiCall string, values ...string) error {
+	return ec.eventDBModule.ReportEvent(ctx, apiCall, "back-office", values...)
 }
 
 // Get events according to optional parameters
@@ -53,5 +60,6 @@ func (ec *component) GetUserEvents(ctx context.Context, params map[string]string
 	if val, ok := params["userID"]; !ok || len(val) == 0 {
 		return api.AuditEventsRepresentation{}, http.CreateMissingParameterError("userID")
 	}
+	ec.reportEvent(ctx, "GET_ACTIVITY", "realm_name", params["realm"], "user_id", params["userID"])
 	return ec.GetEvents(ctx, params)
 }

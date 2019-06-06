@@ -325,14 +325,19 @@ func main() {
 		}
 	}
 
+	baseEventsDBModule := database.NewEventsDBModule(eventsDBConn)
+
 	// Events service.
 	var eventsEndpoints events.Endpoints
 	{
 		var eventsLogger = log.With(logger, "svc", "events")
 
+		// module to store API calls of the back office to the DB
+		eventsDBModule := configureEventsDbModule(baseEventsDBModule, influxMetrics, eventsLogger, tracer)
+
 		// new module for sending the events to the DB
 		eventsRODBModule := events.NewEventsDBModule(eventsRODBConn)
-		eventsComponent := events.NewEventsComponent(eventsRODBModule)
+		eventsComponent := events.NewEventsComponent(eventsRODBModule, eventsDBModule)
 		eventsComponent = events.MakeAuthorizationManagementComponentMW(log.With(eventsLogger, "mw", "endpoint"), authorizationManager)(eventsComponent)
 
 		eventsEndpoints = events.Endpoints{
@@ -341,8 +346,6 @@ func main() {
 			GetUserEvents:    prepareEndpoint(events.MakeGetUserEventsEndpoint(eventsComponent), "get_user_events", influxMetrics, eventsLogger, tracer, rateLimit["event"]),
 		}
 	}
-
-	baseEventsDBModule := database.NewEventsDBModule(eventsDBConn)
 
 	// Management service.
 	var managementEndpoints = management.Endpoints{}
