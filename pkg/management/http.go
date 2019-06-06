@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	commonhttp "github.com/cloudtrust/common-service/http"
-	"github.com/cloudtrust/keycloak-bridge/api/management"
+	management_api "github.com/cloudtrust/keycloak-bridge/api/management"
 	kc_client "github.com/cloudtrust/keycloak-client"
 	"github.com/go-kit/kit/endpoint"
 	"github.com/go-kit/kit/log"
@@ -28,7 +28,7 @@ func decodeManagementRequest(ctx context.Context, req *http.Request) (interface{
 	var pathParams = map[string]string{
 		"realm":        management_api.RegExpRealmName,
 		"userID":       management_api.RegExpID,
-		"clientID":     management_api.RegExpID,
+		"clientID":     management_api.RegExpClientID,
 		"roleID":       management_api.RegExpID,
 		"credentialID": management_api.RegExpID,
 	}
@@ -39,7 +39,7 @@ func decodeManagementRequest(ctx context.Context, req *http.Request) (interface{
 		"lastName":     management_api.RegExpLastName,
 		"username":     management_api.RegExpUsername,
 		"search":       management_api.RegExpSearch,
-		"client_id":    management_api.RegExpID,
+		"client_id":    management_api.RegExpClientID,
 		"redirect_uri": management_api.RegExpRedirectURI,
 		"lifespan":     management_api.RegExpLifespan,
 		"groupIds":     management_api.RegExpGroupIds,

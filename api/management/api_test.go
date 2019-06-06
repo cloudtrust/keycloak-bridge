@@ -115,8 +115,6 @@ func TestValidateUserRepresentation(t *testing.T) {
 	username := "username!"
 	email := "usernamcompany.com"
 	phoneNumber := "415174234"
-	firstName := "Firstname!"
-	lastName := "Lastname]"
 	label := ""
 	gender := "Male"
 	birthDate := "1990-13-28"
@@ -125,7 +123,7 @@ func TestValidateUserRepresentation(t *testing.T) {
 	roles := []string{"abcded7", "7767ed7c-0a1d-4eee-9bb8-669c6f898888"}
 
 	var users []UserRepresentation
-	for i := 0; i < 12; i++ {
+	for i := 0; i < 10; i++ {
 		users = append(users, createValidUserRepresentation())
 	}
 
@@ -133,14 +131,12 @@ func TestValidateUserRepresentation(t *testing.T) {
 	users[1].Username = &username
 	users[2].Email = &email
 	users[3].PhoneNumber = &phoneNumber
-	users[4].FirstName = &firstName
-	users[5].LastName = &lastName
-	users[6].Label = &label
-	users[7].Gender = &gender
-	users[8].BirthDate = &birthDate
-	users[9].Groups = &groups
-	users[10].Roles = &roles
-	users[11].Locale = &locale
+	users[4].Label = &label
+	users[5].Gender = &gender
+	users[6].BirthDate = &birthDate
+	users[7].Groups = &groups
+	users[8].Roles = &roles
+	users[9].Locale = &locale
 
 	for _, user := range users {
 		assert.NotNil(t, user.Validate())
