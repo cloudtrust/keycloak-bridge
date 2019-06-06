@@ -12,10 +12,11 @@ type Endpoints struct {
 	GetEvents        endpoint.Endpoint
 	GetEventsSummary endpoint.Endpoint
 	GetUserEvents    endpoint.Endpoint
+	GetStatistics    endpoint.Endpoint
 }
 
 // MakeGetEventsEndpoint makes the events endpoint.
-func MakeGetEventsEndpoint(ec EventsComponent) cs.Endpoint {
+func MakeGetEventsEndpoint(ec Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		params := filterParameters(req.(map[string]string), "first", "max", "dateFrom", "dateTo", "realmTarget", "origin", "ctEventType")
 
@@ -30,17 +31,24 @@ func MakeGetEventsEndpoint(ec EventsComponent) cs.Endpoint {
 }
 
 // MakeGetEventsSummaryEndpoint makes the events summary endpoint.
-func MakeGetEventsSummaryEndpoint(ec EventsComponent) cs.Endpoint {
+func MakeGetEventsSummaryEndpoint(ec Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		return ec.GetEventsSummary(ctx)
 	}
 }
 
 // MakeGetUserEventsEndpoint makes the events summary endpoint.
-func MakeGetUserEventsEndpoint(ec EventsComponent) cs.Endpoint {
+func MakeGetUserEventsEndpoint(ec Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		params := filterParameters(req.(map[string]string), "first", "max", "dateFrom", "dateTo", "realm", "userID", "origin", "ctEventType")
 		return ec.GetUserEvents(ctx, params)
+	}
+}
+
+// MakeGetStatisticsEndpoint makes the events summary endpoint.
+func MakeGetStatisticsEndpoint(ec Component) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		return ec.GetStatistics(ctx, req.(map[string]string))
 	}
 }
 

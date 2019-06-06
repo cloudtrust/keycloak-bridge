@@ -336,14 +336,15 @@ func main() {
 		eventsDBModule := configureEventsDbModule(baseEventsDBModule, influxMetrics, eventsLogger, tracer)
 
 		// new module for sending the events to the DB
-		eventsRODBModule := events.NewEventsDBModule(eventsRODBConn)
-		eventsComponent := events.NewEventsComponent(eventsRODBModule, eventsDBModule)
+		eventsRODBModule := events.NewDBModule(eventsRODBConn)
+		eventsComponent := events.NewComponent(eventsRODBModule, eventsDBModule)
 		eventsComponent = events.MakeAuthorizationManagementComponentMW(log.With(eventsLogger, "mw", "endpoint"), authorizationManager)(eventsComponent)
 
 		eventsEndpoints = events.Endpoints{
 			GetEvents:        prepareEndpoint(events.MakeGetEventsEndpoint(eventsComponent), "get_events", influxMetrics, eventsLogger, tracer, rateLimit["event"]),
 			GetEventsSummary: prepareEndpoint(events.MakeGetEventsSummaryEndpoint(eventsComponent), "get_events_summary", influxMetrics, eventsLogger, tracer, rateLimit["event"]),
 			GetUserEvents:    prepareEndpoint(events.MakeGetUserEventsEndpoint(eventsComponent), "get_user_events", influxMetrics, eventsLogger, tracer, rateLimit["event"]),
+			GetStatistics:    prepareEndpoint(events.MakeGetStatisticsEndpoint(eventsComponent), "get_events_statistics", influxMetrics, eventsLogger, tracer, rateLimit["event"]),
 		}
 	}
 
@@ -478,10 +479,12 @@ func main() {
 		var getEventsHandler = configureEventsHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(eventsEndpoints.GetEvents)
 		var getEventsSummaryHandler = configureEventsHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(eventsEndpoints.GetEventsSummary)
 		var getUserEventsHandler = configureEventsHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(eventsEndpoints.GetUserEvents)
+		var getStatisticsHandler = configureEventsHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(eventsEndpoints.GetStatistics)
 
 		route.Path("/events").Methods("GET").Handler(getEventsHandler)
 		route.Path("/events/summary").Methods("GET").Handler(getEventsSummaryHandler)
 		route.Path("/events/realms/{realm}/users/{userID}/events").Methods("GET").Handler(getUserEventsHandler)
+		route.Path("/events/realms/{realm}/statistics").Methods("GET").Handler(getStatisticsHandler)
 
 		// Management
 		var managementSubroute = route.PathPrefix("/management").Subrouter()

@@ -26,7 +26,7 @@ const (
 	}`
 )
 
-func testAuthorization(t *testing.T, jsonAuthz string, tester func(EventsComponent, *mock.EventsComponent, context.Context, map[string]string)) {
+func testAuthorization(t *testing.T, jsonAuthz string, tester func(Component, *mock.Component, context.Context, map[string]string)) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 	var mockLogger = log.NewNopLogger()
@@ -35,7 +35,7 @@ func testAuthorization(t *testing.T, jsonAuthz string, tester func(EventsCompone
 	var authorizations, err = security.NewAuthorizationManager(mockKeycloakClient, mockLogger, jsonAuthz)
 	assert.Nil(t, err)
 
-	mockEventsComponent := mock.NewEventsComponent(mockCtrl)
+	mockEventsComponent := mock.NewComponent(mockCtrl)
 
 	var authorizationMW = MakeAuthorizationManagementComponentMW(mockLogger, authorizations)(mockEventsComponent)
 
@@ -59,7 +59,7 @@ func testAuthorization(t *testing.T, jsonAuthz string, tester func(EventsCompone
 }
 
 func TestGetEventsAllow(t *testing.T) {
-	testAuthorization(t, WithAuthorization, func(auth EventsComponent, mockComponent *mock.EventsComponent, ctx context.Context, mp map[string]string) {
+	testAuthorization(t, WithAuthorization, func(auth Component, mockComponent *mock.Component, ctx context.Context, mp map[string]string) {
 		mockComponent.EXPECT().GetEvents(ctx, mp).Return(api.AuditEventsRepresentation{}, nil).Times(1)
 		_, err := auth.GetEvents(ctx, mp)
 		assert.Nil(t, err)
@@ -67,14 +67,14 @@ func TestGetEventsAllow(t *testing.T) {
 }
 
 func TestGetEventsDeny(t *testing.T) {
-	testAuthorization(t, WithoutAuthorization, func(auth EventsComponent, mockComponent *mock.EventsComponent, ctx context.Context, mp map[string]string) {
+	testAuthorization(t, WithoutAuthorization, func(auth Component, mockComponent *mock.Component, ctx context.Context, mp map[string]string) {
 		_, err := auth.GetEvents(ctx, mp)
 		assert.Equal(t, security.ForbiddenError{}, err)
 	})
 }
 
 func TestGetEventsSummaryAllow(t *testing.T) {
-	testAuthorization(t, WithAuthorization, func(auth EventsComponent, mockComponent *mock.EventsComponent, ctx context.Context, mp map[string]string) {
+	testAuthorization(t, WithAuthorization, func(auth Component, mockComponent *mock.Component, ctx context.Context, mp map[string]string) {
 		mockComponent.EXPECT().GetEventsSummary(ctx).Return(api.EventSummaryRepresentation{}, nil).Times(1)
 		_, err := auth.GetEventsSummary(ctx)
 		assert.Nil(t, err)
@@ -82,14 +82,14 @@ func TestGetEventsSummaryAllow(t *testing.T) {
 }
 
 func TestGetEventsSummaryDeny(t *testing.T) {
-	testAuthorization(t, WithoutAuthorization, func(auth EventsComponent, mockComponent *mock.EventsComponent, ctx context.Context, mp map[string]string) {
+	testAuthorization(t, WithoutAuthorization, func(auth Component, mockComponent *mock.Component, ctx context.Context, mp map[string]string) {
 		_, err := auth.GetEventsSummary(ctx)
 		assert.Equal(t, security.ForbiddenError{}, err)
 	})
 }
 
 func TestGetUserEventsAllow(t *testing.T) {
-	testAuthorization(t, WithAuthorization, func(auth EventsComponent, mockComponent *mock.EventsComponent, ctx context.Context, mp map[string]string) {
+	testAuthorization(t, WithAuthorization, func(auth Component, mockComponent *mock.Component, ctx context.Context, mp map[string]string) {
 		mockComponent.EXPECT().GetUserEvents(ctx, mp).Return(api.AuditEventsRepresentation{}, nil).Times(1)
 		_, err := auth.GetUserEvents(ctx, mp)
 		assert.Nil(t, err)
@@ -97,7 +97,7 @@ func TestGetUserEventsAllow(t *testing.T) {
 }
 
 func TestGetUserEventsDeny(t *testing.T) {
-	testAuthorization(t, WithoutAuthorization, func(auth EventsComponent, mockComponent *mock.EventsComponent, ctx context.Context, mp map[string]string) {
+	testAuthorization(t, WithoutAuthorization, func(auth Component, mockComponent *mock.Component, ctx context.Context, mp map[string]string) {
 		_, err := auth.GetUserEvents(ctx, mp)
 		assert.Equal(t, security.ForbiddenError{}, err)
 	})

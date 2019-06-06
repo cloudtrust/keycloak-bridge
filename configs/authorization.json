@@ -98,6 +98,11 @@
         "master": {
           "*": {}
         }
+      },
+      "EV_GetStatistics": {
+        "master": {
+          "*": {}
+        }
       }
     },
     "integrator_manager":{
@@ -654,6 +659,11 @@
         }
       },
       "EV_GetUserEvents": {
+        "DEP": {
+          "*": {}
+        }
+      },
+      "EV_GetStatistics": {
         "DEP": {
           "*": {}
         }

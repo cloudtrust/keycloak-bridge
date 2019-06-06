@@ -17,7 +17,7 @@ func TestModuleGetEvents(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	dbEvents := mock.NewDBEvents(mockCtrl)
-	module := NewEventsDBModule(dbEvents)
+	module := NewDBModule(dbEvents)
 
 	params := initMap("origin", "origin-1", "max", "5")
 	var empty [0]api.AuditRepresentation
@@ -36,7 +36,7 @@ func TestModuleGetEventsSummary(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	dbEvents := mock.NewDBEvents(mockCtrl)
-	module := NewEventsDBModule(dbEvents)
+	module := NewDBModule(dbEvents)
 
 	var expectedResult api.EventSummaryRepresentation
 	var expectedError error = http.CreateMissingParameterError("")
@@ -46,4 +46,18 @@ func TestModuleGetEventsSummary(t *testing.T) {
 
 	assert.Equal(t, expectedResult, res)
 	assert.Equal(t, expectedError, err)
+}
+
+func TestModuleGetTotalConnectionsCount(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	dbEvents := mock.NewDBEvents(mockCtrl)
+	module := NewDBModule(dbEvents)
+
+	// Check SQL injection
+	{
+		_, err := module.GetTotalConnectionsCount(context.TODO(), "realm", "1 DAY'; TRUNCATE TABLE PASSWORD; select '")
+		assert.NotNil(t, err)
+	}
 }
