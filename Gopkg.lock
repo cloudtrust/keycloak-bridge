@@ -18,7 +18,6 @@
   version = "2018.01.18"
 
 [[projects]]
-  branch = "master"
   digest = "1:2bdbfe0ba1aec14ad8ae7a42ffc29fcf07549a90eacd266197cbd78d9753e0da"
   name = "github.com/cloudtrust/common-service"
   packages = [
@@ -34,6 +33,7 @@
   ]
   pruneopts = "UT"
   revision = "cdc73eb2db7139f24f5e7de4a430c99c91097ab0"
+  version = "v1.0-rc2"
 
 [[projects]]
   digest = "1:a9ab922e4ed3a94a4e98509ef5f0847aae98562afb757d243da844379179a258"
@@ -133,7 +133,7 @@
   version = "v1.3.1"
 
 [[projects]]
-  digest = "1:debcbc62c53851dab1fc881438a65449dd5ffa12f64f059fd6e32b938799513d"
+  digest = "1:e02b687ade0c19c038ecce3ea326d756519adc4bba1203a9e76d620b12354892"
   name = "github.com/google/flatbuffers"
   packages = ["go"]
   pruneopts = "UT"
@@ -168,7 +168,7 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:2629521d27f3b04ce4d524cb52a25fdc77745071239c91d6fe9a7ce10131365a"
+  digest = "1:3c6faaeb500b7e6fadbe52c0b3fd62b6eed7801ed0d74bb3bd9577017df8d2f4"
   name = "github.com/influxdata/influxdb"
   packages = [
     "client/v2",
