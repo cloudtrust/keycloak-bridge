@@ -142,7 +142,7 @@ func (c *component) GetClient(ctx context.Context, realmName, idClient string) (
 	clientRep.Name = clientKc.Name
 	clientRep.BaseUrl = clientKc.BaseUrl
 	clientRep.ClientId = clientKc.ClientId
-	clientRep.Description = clientKc.Description
+	clientRep.Protocol = clientKc.Protocol
 	clientRep.Enabled = clientKc.Enabled
 
 	return clientRep, err
@@ -164,7 +164,7 @@ func (c *component) GetClients(ctx context.Context, realmName string) ([]api.Cli
 		clientRep.Name = clientKc.Name
 		clientRep.BaseUrl = clientKc.BaseUrl
 		clientRep.ClientId = clientKc.ClientId
-		clientRep.Description = clientKc.Description
+		clientRep.Protocol = clientKc.Protocol
 		clientRep.Enabled = clientKc.Enabled
 		clientsRep = append(clientsRep, clientRep)
 	}

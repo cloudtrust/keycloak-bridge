@@ -40,7 +40,7 @@ type ClientRepresentation struct {
 	Name        *string `json:"name,omitempty"`
 	BaseUrl     *string `json:"baseUrl,omitempty"`
 	ClientId    *string `json:"clientId,omitempty"`
-	Description *string `json:"description,omitempty"`
+	Protocol    *string `json:"protocol,omitempty"`
 	Enabled     *bool   `json:"enabled,omitempty"`
 }
 

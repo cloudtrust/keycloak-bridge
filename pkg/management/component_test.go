@@ -162,17 +162,17 @@ func TestGetClient(t *testing.T) {
 		var name = "clientName"
 		var baseURL = "http://toto.com"
 		var clientID = "client-id"
-		var description = "description"
+		var protocol = "saml"
 		var enabled = true
 		var username = "username"
 
 		var kcClientRep = kc.ClientRepresentation{
-			Id:          &id,
-			Name:        &name,
-			BaseUrl:     &baseURL,
-			ClientId:    &clientID,
-			Description: &description,
-			Enabled:     &enabled,
+			Id:       &id,
+			Name:     &name,
+			BaseUrl:  &baseURL,
+			ClientId: &clientID,
+			Protocol: &protocol,
+			Enabled:  &enabled,
 		}
 
 		mockKeycloakClient.EXPECT().GetClient(accessToken, realmName, id).Return(kcClientRep, nil).Times(1)
@@ -186,12 +186,12 @@ func TestGetClient(t *testing.T) {
 		apiClientRep, err := managementComponent.GetClient(ctx, "master", id)
 
 		var expectedAPIClientRep = api.ClientRepresentation{
-			Id:          &id,
-			Name:        &name,
-			BaseUrl:     &baseURL,
-			ClientId:    &clientID,
-			Description: &description,
-			Enabled:     &enabled,
+			Id:       &id,
+			Name:     &name,
+			BaseUrl:  &baseURL,
+			ClientId: &clientID,
+			Protocol: &protocol,
+			Enabled:  &enabled,
 		}
 
 		assert.Nil(t, err)
@@ -229,16 +229,16 @@ func TestGetClients(t *testing.T) {
 		var name = "clientName"
 		var baseURL = "http://toto.com"
 		var clientID = "client-id"
-		var description = "description"
+		var protocol = "saml"
 		var enabled = true
 
 		var kcClientRep = kc.ClientRepresentation{
-			Id:          &id,
-			Name:        &name,
-			BaseUrl:     &baseURL,
-			ClientId:    &clientID,
-			Description: &description,
-			Enabled:     &enabled,
+			Id:       &id,
+			Name:     &name,
+			BaseUrl:  &baseURL,
+			ClientId: &clientID,
+			Protocol: &protocol,
+			Enabled:  &enabled,
 		}
 
 		var kcClientsRep []kc.ClientRepresentation
@@ -251,12 +251,12 @@ func TestGetClients(t *testing.T) {
 		apiClientsRep, err := managementComponent.GetClients(ctx, "master")
 
 		var expectedAPIClientRep = api.ClientRepresentation{
-			Id:          &id,
-			Name:        &name,
-			BaseUrl:     &baseURL,
-			ClientId:    &clientID,
-			Description: &description,
-			Enabled:     &enabled,
+			Id:       &id,
+			Name:     &name,
+			BaseUrl:  &baseURL,
+			ClientId: &clientID,
+			Protocol: &protocol,
+			Enabled:  &enabled,
 		}
 
 		var expectedAPIClientsRep []api.ClientRepresentation
