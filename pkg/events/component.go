@@ -6,22 +6,23 @@ import (
 	"github.com/cloudtrust/common-service/database"
 	"github.com/cloudtrust/common-service/http"
 	api "github.com/cloudtrust/keycloak-bridge/api/events"
+	app "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 )
 
-// EventsComponent is the interface of the events component.
-type EventsComponent interface {
+// Component is the interface of the events component.
+type Component interface {
 	GetEvents(context.Context, map[string]string) (api.AuditEventsRepresentation, error)
 	GetEventsSummary(context.Context) (api.EventSummaryRepresentation, error)
 	GetUserEvents(context.Context, map[string]string) (api.AuditEventsRepresentation, error)
 }
 
 type component struct {
-	db            EventsDBModule
+	db            app.EventsDBModule
 	eventDBModule database.EventsDBModule
 }
 
-// NewEventsComponent returns an events DB module
-func NewEventsComponent(db EventsDBModule, eventDBModule database.EventsDBModule) EventsComponent {
+// NewComponent returns a component
+func NewComponent(db app.EventsDBModule, eventDBModule database.EventsDBModule) Component {
 	return &component{
 		db:            db,
 		eventDBModule: eventDBModule,

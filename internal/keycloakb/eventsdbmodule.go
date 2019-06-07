@@ -1,7 +1,10 @@
-package events
+package keycloakb
 
 import (
 	"context"
+	"errors"
+	"regexp"
+	"strings"
 
 	"github.com/cloudtrust/common-service/database"
 
@@ -13,6 +16,8 @@ type EventsDBModule interface {
 	GetEventsCount(context.Context, map[string]string) (int, error)
 	GetEvents(context.Context, map[string]string) ([]api.AuditRepresentation, error)
 	GetEventsSummary(context.Context) (api.EventSummaryRepresentation, error)
+	GetLastConnection(context.Context, string) (int64, error)
+	GetTotalConnectionsCount(context.Context, string, string) (int64, error)
 }
 
 type eventsDBModule struct {
@@ -53,6 +58,8 @@ const (
 		LIMIT ?, ?;
 		`
 	selectCountAuditEventsStmt        = `SELECT count(1) FROM audit ` + whereAuditEvents
+	selectLastConnectionTimeStmt      = `SELECT ifnull(unix_timestamp(max(audit_time)), 0) FROM audit WHERE realm_name=? AND ct_event_type='LOGON_OK'`
+	selectConnectionsCount            = `SELECT count(1) FROM audit WHERE realm_name=? AND ct_event_type='LOGON_OK' AND date_add(audit_time, INTERVAL ##INTERVAL##)>now()`
 	selectAuditSummaryRealmStmt       = `SELECT distinct realm_name FROM audit;`
 	selectAuditSummaryOriginStmt      = `SELECT distinct origin FROM audit;`
 	selectAuditSummaryCtEventTypeStmt = `SELECT distinct ct_event_type FROM audit;`
@@ -124,6 +131,26 @@ func (cm *eventsDBModule) GetEventsSummary(_ context.Context) (api.EventSummaryR
 		// Get ct_event_types
 		res.CtEventTypes, err = cm.queryStringArray(selectAuditSummaryCtEventTypeStmt)
 	}
+	return res, err
+}
+
+// GetLastConnection gets the time of last connection for the given realm
+func (cm *eventsDBModule) GetLastConnection(_ context.Context, realmName string) (int64, error) {
+	var res = int64(0)
+	var row = cm.db.QueryRow(selectLastConnectionTimeStmt, realmName)
+	var err = row.Scan(&res)
+	return res, err
+}
+
+// GetTotalConnectionsCount gets the number of connection for the given realm during the specified duration
+func (cm *eventsDBModule) GetTotalConnectionsCount(_ context.Context, realmName string, durationLabel string) (int64, error) {
+	var matched, err = regexp.MatchString(`^\d+ [A-Za-z]+$`, durationLabel)
+	if !matched || err != nil {
+		return 0, errors.New("Invalid duration label")
+	}
+	var res = int64(0)
+	var row = cm.db.QueryRow(strings.ReplaceAll(selectConnectionsCount, "##INTERVAL##", durationLabel), realmName)
+	err = row.Scan(&res)
 	return res, err
 }
 

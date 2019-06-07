@@ -14,14 +14,14 @@ func TestMakeGetEventsEndpoint(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mockEventsComponent = mock.NewEventsComponent(mockCtrl)
+	var mockComponent = mock.NewComponent(mockCtrl)
 
-	var e = MakeGetEventsEndpoint(mockEventsComponent)
+	var e = MakeGetEventsEndpoint(mockComponent)
 
 	var ctx = context.Background()
 	var req = make(map[string]string)
 
-	mockEventsComponent.EXPECT().GetEvents(ctx, req).Return(api.AuditEventsRepresentation{}, nil).Times(1)
+	mockComponent.EXPECT().GetEvents(ctx, req).Return(api.AuditEventsRepresentation{}, nil).Times(1)
 	var res, err = e(ctx, req)
 	assert.Nil(t, err)
 	assert.NotNil(t, res)
@@ -31,14 +31,14 @@ func TestMakeGetEventsSummaryEndpoint(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mockEventsComponent = mock.NewEventsComponent(mockCtrl)
+	var mockComponent = mock.NewComponent(mockCtrl)
 
-	var e = MakeGetEventsSummaryEndpoint(mockEventsComponent)
+	var e = MakeGetEventsSummaryEndpoint(mockComponent)
 
 	var ctx = context.Background()
 	var req = make(map[string]string)
 
-	mockEventsComponent.EXPECT().GetEventsSummary(ctx).Return(api.EventSummaryRepresentation{}, nil).Times(1)
+	mockComponent.EXPECT().GetEventsSummary(ctx).Return(api.EventSummaryRepresentation{}, nil).Times(1)
 	var res, err = e(ctx, req)
 	assert.Nil(t, err)
 	assert.NotNil(t, res)
@@ -48,14 +48,14 @@ func TestMakeGetUserEventsEndpoint(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mockEventsComponent = mock.NewEventsComponent(mockCtrl)
+	var mockComponent = mock.NewComponent(mockCtrl)
 
-	var e = MakeGetUserEventsEndpoint(mockEventsComponent)
+	var e = MakeGetUserEventsEndpoint(mockComponent)
 
 	var ctx = context.Background()
 	var req = make(map[string]string)
 
-	mockEventsComponent.EXPECT().GetUserEvents(ctx, req).Return(api.AuditEventsRepresentation{}, nil).Times(1)
+	mockComponent.EXPECT().GetUserEvents(ctx, req).Return(api.AuditEventsRepresentation{}, nil).Times(1)
 	var res, err = e(ctx, req)
 	assert.Nil(t, err)
 	assert.NotNil(t, res)

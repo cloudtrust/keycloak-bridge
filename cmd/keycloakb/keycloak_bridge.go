@@ -28,6 +28,7 @@ import (
 	"github.com/cloudtrust/keycloak-bridge/pkg/events"
 	"github.com/cloudtrust/keycloak-bridge/pkg/export"
 	"github.com/cloudtrust/keycloak-bridge/pkg/management"
+	"github.com/cloudtrust/keycloak-bridge/pkg/statistics"
 	keycloak "github.com/cloudtrust/keycloak-client"
 	"github.com/go-kit/kit/endpoint"
 	"github.com/go-kit/kit/log"
@@ -327,6 +328,22 @@ func main() {
 
 	baseEventsDBModule := database.NewEventsDBModule(eventsDBConn)
 
+	// new module for reading events from the DB
+	eventsRODBModule := keycloakb.NewEventsDBModule(eventsRODBConn)
+
+	// Statistics service.
+	var statisticsEndpoints statistics.Endpoints
+	{
+		var statisticsLogger = log.With(logger, "svc", "statistics")
+
+		statisticsComponent := statistics.NewComponent(eventsRODBModule)
+		statisticsComponent = statistics.MakeAuthorizationManagementComponentMW(log.With(statisticsLogger, "mw", "endpoint"), authorizationManager)(statisticsComponent)
+
+		statisticsEndpoints = statistics.Endpoints{
+			GetStatistics: prepareEndpoint(statistics.MakeGetStatisticsEndpoint(statisticsComponent), "get_statistics", influxMetrics, statisticsLogger, tracer, rateLimit["event"]),
+		}
+	}
+
 	// Events service.
 	var eventsEndpoints events.Endpoints
 	{
@@ -335,9 +352,7 @@ func main() {
 		// module to store API calls of the back office to the DB
 		eventsDBModule := configureEventsDbModule(baseEventsDBModule, influxMetrics, eventsLogger, tracer)
 
-		// new module for sending the events to the DB
-		eventsRODBModule := events.NewEventsDBModule(eventsRODBConn)
-		eventsComponent := events.NewEventsComponent(eventsRODBModule, eventsDBModule)
+		eventsComponent := events.NewComponent(eventsRODBModule, eventsDBModule)
 		eventsComponent = events.MakeAuthorizationManagementComponentMW(log.With(eventsLogger, "mw", "endpoint"), authorizationManager)(eventsComponent)
 
 		eventsEndpoints = events.Endpoints{
@@ -473,6 +488,10 @@ func main() {
 
 		// Version.
 		route.Handle("/", http.HandlerFunc(commonhttp.MakeVersionHandler(ComponentName, ComponentID, Version, Environment, GitCommit)))
+
+		// Statistics
+		var getStatisticsHandler = configureEventsHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(statisticsEndpoints.GetStatistics)
+		route.Path("/statistics/realms/{realm}").Methods("GET").Handler(getStatisticsHandler)
 
 		// Events
 		var getEventsHandler = configureEventsHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(eventsEndpoints.GetEvents)
