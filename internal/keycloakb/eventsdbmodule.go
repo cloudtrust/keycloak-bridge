@@ -103,13 +103,13 @@ func (cm *eventsDBModule) GetEvents(_ context.Context, m map[string]string) ([]a
 	defer rows.Close()
 
 	for rows.Next() {
-		var audit api.AuditRepresentation
-		err = rows.Scan(&audit.AuditID, &audit.AuditTime, &audit.Origin, &audit.RealmName, &audit.AgentUserID, &audit.AgentUsername, &audit.AgentRealmName,
-			&audit.UserID, &audit.Username, &audit.CtEventType, &audit.KcEventType, &audit.KcOperationType, &audit.ClientID, &audit.AdditionalInfo)
+		var dba api.DbAuditRepresentation
+		err = rows.Scan(&dba.AuditID, &dba.AuditTime, &dba.Origin, &dba.RealmName, &dba.AgentUserID, &dba.AgentUsername, &dba.AgentRealmName,
+			&dba.UserID, &dba.Username, &dba.CtEventType, &dba.KcEventType, &dba.KcOperationType, &dba.ClientID, &dba.AdditionalInfo)
 		if err != nil {
 			return res, err
 		}
-		res = append(res, audit)
+		res = append(res, dba.ToAuditRepresentation())
 	}
 
 	// Return an error from rows if any error was encountered by Rows.Scan
