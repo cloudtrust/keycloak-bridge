@@ -4,7 +4,7 @@ info:
   description: 'Statistics API for Cloudtrust.'
   version: 1.0.0
 servers:
-- url: http://localhost:8888
+- url: http://localhost:8877
 tags:
 - name: Statistics
   description: Statistics management
