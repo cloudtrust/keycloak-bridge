@@ -98,11 +98,6 @@
         "master": {
           "*": {}
         }
-      },
-      "ST_GetStatistics": {
-        "master": {
-          "*": {}
-        }
       }
     },
     "integrator_manager":{
