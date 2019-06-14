@@ -312,7 +312,7 @@ const (
 	RegExpID = `^[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}$`
 
 	// Client
-	RegExpClientID = `^[a-zA-Z0-9_-.]{1,255}$`
+	RegExpClientID = `^[a-zA-Z0-9-_.]{1,255}$`
 
 	// User
 	RegExpUsername    = `^[a-zA-Z0-9-_.]{1,128}$`
