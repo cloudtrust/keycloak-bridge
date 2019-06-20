@@ -188,7 +188,7 @@ func TestValidateRealmCustomConfiguration(t *testing.T) {
 		assert.Nil(t, config.Validate())
 	}
 
-	defaultClientID := "f467ed7c"
+	defaultClientID := "something$invalid"
 	defaultRedirectURI := "ht//tp://company.com"
 
 	var configs []RealmCustomConfiguration
@@ -276,7 +276,7 @@ func createValidPasswordRepresentation() PasswordRepresentation {
 }
 
 func createValidRealmCustomConfiguration() RealmCustomConfiguration {
-	defaultClientID := "f467ed7c-0a1d-4eee-9bb8-669c6f89c0ee"
+	defaultClientID := "backofficeid"
 	defaultRedirectURI := "http://company.com"
 
 	return RealmCustomConfiguration{
