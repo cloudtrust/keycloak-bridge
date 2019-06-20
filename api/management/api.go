@@ -284,7 +284,7 @@ func (password PasswordRepresentation) Validate() error {
 }
 
 func (config RealmCustomConfiguration) Validate() error {
-	if config.DefaultClientId != nil && !matchesRegExp(*config.DefaultClientId, RegExpID) {
+	if config.DefaultClientId != nil && !matchesRegExp(*config.DefaultClientId, RegExpClientID) {
 		return errors.New("Invalid default client ID")
 	}
 
