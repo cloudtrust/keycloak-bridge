@@ -474,8 +474,8 @@ func (c *component) ResetPassword(ctx context.Context, realmName string, userID 
 	}
 
 	//store the API call into the DB
-	// the error should be treated
-	_ = c.reportEvent(ctx, "INIT_PASSWORD", database.CtEventRealmName, realmName, database.CtEventUserID, userID)
+	//_ = c.reportEvent(ctx, "INIT_PASSWORD", database.CtEventRealmName, realmName, database.CtEventUserID, userID)
+	// removed as it is not used
 
 	return nil
 }
@@ -490,9 +490,14 @@ func (c *component) ExecuteActionsEmail(ctx context.Context, realmName string, u
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 
 	var actions = []string{}
+	var init_password_action = "sms-password-set"
 
 	for _, requiredAction := range requiredActions {
 		actions = append(actions, string(requiredAction))
+		if string(requiredAction) == init_password_action {
+			//store the API call into the DB
+			_ = c.reportEvent(ctx, "INIT_PASSWORD", database.CtEventRealmName, realmName, database.CtEventUserID, userID)
+		}
 	}
 
 	return c.keycloakClient.ExecuteActionsEmail(accessToken, realmName, userID, actions, paramKV...)
