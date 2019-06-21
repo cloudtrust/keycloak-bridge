@@ -490,11 +490,11 @@ func (c *component) ExecuteActionsEmail(ctx context.Context, realmName string, u
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 
 	var actions = []string{}
-	var init_password_action = "sms-password-set"
+	var initPasswordAction = "sms-password-set"
 
 	for _, requiredAction := range requiredActions {
 		actions = append(actions, string(requiredAction))
-		if string(requiredAction) == init_password_action {
+		if string(requiredAction) == initPasswordAction {
 			//store the API call into the DB
 			_ = c.reportEvent(ctx, "INIT_PASSWORD", database.CtEventRealmName, realmName, database.CtEventUserID, userID)
 		}
