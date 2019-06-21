@@ -13,6 +13,10 @@ import (
 	kc "github.com/cloudtrust/keycloak-client"
 )
 
+const (
+	initPasswordAction = "sms-password-set"
+)
+
 // KeycloakClient are methods from keycloak-client used by this component
 type KeycloakClient interface {
 	GetRealms(accessToken string) ([]kc.RealmRepresentation, error)
@@ -490,7 +494,6 @@ func (c *component) ExecuteActionsEmail(ctx context.Context, realmName string, u
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 
 	var actions = []string{}
-	var initPasswordAction = "sms-password-set"
 
 	for _, requiredAction := range requiredActions {
 		actions = append(actions, string(requiredAction))

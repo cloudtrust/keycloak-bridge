@@ -1281,8 +1281,8 @@ func TestExecuteActionsEmail(t *testing.T) {
 	var accessToken = "TOKEN=="
 	var realmName = "master"
 	var userID = "1245-7854-8963"
-	var reqActions = []api.RequiredAction{"sms-password-set", "action1", "action2"}
-	var actions = []string{"sms-password-set", "action1", "action2"}
+	var reqActions = []api.RequiredAction{initPasswordAction, "action1", "action2"}
+	var actions = []string{initPasswordAction, "action1", "action2"}
 
 	var key1 = "key1"
 	var value1 = "value1"
