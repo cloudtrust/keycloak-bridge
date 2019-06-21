@@ -32,6 +32,7 @@ type KeycloakClient interface {
 	SendVerifyEmail(accessToken string, realmName string, userID string, paramKV ...string) error
 	ExecuteActionsEmail(accessToken string, realmName string, userID string, actions []string, paramKV ...string) error
 	SendNewEnrolmentCode(accessToken string, realmName string, userID string) (kc.SmsCodeRepresentation, error)
+	SendReminderEmail(accessToken string, realmName string, userID string, paramKV ...string) error
 	GetCredentialsForUser(accessToken string, realmReq, realmName string, userID string) ([]kc.CredentialRepresentation, error)
 	DeleteCredentialsForUser(accessToken string, realmReq, realmName string, userID string, credentialID string) error
 	GetRoles(accessToken string, realmName string) ([]kc.RoleRepresentation, error)
@@ -62,6 +63,7 @@ type Component interface {
 	SendVerifyEmail(ctx context.Context, realmName string, userID string, paramKV ...string) error
 	ExecuteActionsEmail(ctx context.Context, realmName string, userID string, actions []api.RequiredAction, paramKV ...string) error
 	SendNewEnrolmentCode(ctx context.Context, realmName string, userID string) (string, error)
+	SendReminderEmail(ctx context.Context, realmName string, userID string, paramKV ...string) error
 	GetCredentialsForUser(ctx context.Context, realmName string, userID string) ([]api.CredentialRepresentation, error)
 	DeleteCredentialsForUser(ctx context.Context, realmName string, userID string, credentialID string) error
 	GetRoles(ctx context.Context, realmName string) ([]api.RoleRepresentation, error)
@@ -511,6 +513,12 @@ func (c *component) SendNewEnrolmentCode(ctx context.Context, realmName string, 
 	_ = c.reportEvent(ctx, "SMS_CHALLENGE", "realm_name", realmName, "user_id", userID)
 
 	return *smsCodeKc.Code, err
+}
+
+func (c *component) SendReminderEmail(ctx context.Context, realmName string, userID string, paramKV ...string) error {
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+
+	return c.keycloakClient.SendVerifyEmail(accessToken, realmName, userID, paramKV...)
 }
 
 func (c *component) GetCredentialsForUser(ctx context.Context, realmName string, userID string) ([]api.CredentialRepresentation, error) {

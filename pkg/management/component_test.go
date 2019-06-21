@@ -1352,6 +1352,50 @@ func TestSendNewEnrolmentCode(t *testing.T) {
 	}
 }
 
+func TestSendReminderEmail(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
+	var mockEventDBModule = mock.NewEventDBModule(mockCtrl)
+	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
+
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule)
+
+	var accessToken = "TOKEN=="
+	var realmName = "master"
+	var userID = "1245-7854-8963"
+
+	var key1 = "key1"
+	var value1 = "value1"
+	var key2 = "key2"
+	var value2 = "value2"
+	var key3 = "key3"
+	var value3 = "value3"
+
+	// Send email
+	{
+
+		mockKeycloakClient.EXPECT().SendReminderEmail(accessToken, realmName, userID, key1, value1, key2, value2, key3, value3).Return(nil).Times(1)
+
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+
+		err := managementComponent.SendReminderEmail(ctx, "master", userID, key1, value1, key2, value2, key3, value3)
+
+		assert.Nil(t, err)
+	}
+
+	// Error
+	{
+		mockKeycloakClient.EXPECT().SendReminderEmail(accessToken, realmName, userID).Return(fmt.Errorf("Invalid input")).Times(1)
+
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+
+		err := managementComponent.SendReminderEmail(ctx, "master", userID)
+
+		assert.NotNil(t, err)
+	}
+}
+
 func TestGetCredentialsForUser(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()

@@ -599,6 +599,50 @@ func TestSendNewEnrolmentCodeEndpoint(t *testing.T) {
 
 }
 
+func TestSendReminderEmailEndpoint(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
+
+	var e = MakeSendReminderEmailEndpoint(mockManagementComponent)
+
+	// No error - Without param
+	{
+		var realm = "master"
+		var userID = "123-456-789"
+		var ctx = context.Background()
+		var req = make(map[string]string)
+		req["realm"] = realm
+		req["userID"] = userID
+
+		mockManagementComponent.EXPECT().SendReminderEmail(ctx, realm, userID).Return(nil).Times(1)
+		var res, err = e(ctx, req)
+		assert.Nil(t, err)
+		assert.Nil(t, res)
+	}
+
+	// No error - With params
+	{
+		var realm = "master"
+		var userID = "123-456-789"
+		var ctx = context.Background()
+		var req = make(map[string]string)
+		var lifespan = 3600
+		req["realm"] = realm
+		req["userID"] = userID
+		req["client_id"] = "123789"
+		req["redirect_uri"] = "http://redirect.com"
+		req["lifespan"] = string(lifespan)
+		req["toto"] = "tutu" // Check this param is not transmitted
+
+		mockManagementComponent.EXPECT().SendReminderEmail(ctx, realm, userID, "client_id", req["client_id"], "redirect_uri", req["redirect_uri"], "lifespan", req["lifespan"]).Return(nil).Times(1)
+		var res, err = e(ctx, req)
+		assert.Nil(t, err)
+		assert.Nil(t, res)
+	}
+}
+
 func TestGetCredentialsForUserEndpoint(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()

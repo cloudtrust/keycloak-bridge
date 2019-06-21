@@ -72,6 +72,13 @@
           "l3_support_manager": {}
         }
       },
+      "SendReminderEmail": {
+        "master": {
+          "integrator_manager": {},
+          "l2_support_manager": {},
+          "l3_support_manager": {}
+        }
+      },
       "GetCredentialsForUser": {
         "master": {
           "*": {}
@@ -197,6 +204,14 @@
           "end_user": {}
         }
       },
+      "SendReminderEmail": {
+        "master": {
+          "integrator_agent": {}
+        },
+        "DEP": {
+          "end_user": {}
+        }
+      },
       "GetCredentialsForUser": {
         "master": {
           "integrator_agent": {}
@@ -306,6 +321,11 @@
           "*": {}
         }
       },
+      "SendReminderEmail": {
+        "DEP": {
+          "*": {}
+        }
+      },
       "GetCredentialsForUser": {
         "DEP": {
           "*": {}
@@ -402,6 +422,11 @@
         }
       },
       "ExecuteActionsEmail": {
+        "master": {
+          "l2_support_agent": {}
+        }
+      },
+      "SendReminderEmail": {
         "master": {
           "l2_support_agent": {}
         }
@@ -517,6 +542,11 @@
         }
       },
       "ExecuteActionsEmail": {
+        "master": {
+          "l3_support_agent": {}
+        }
+      },
+      "SendReminderEmail": {
         "master": {
           "l3_support_agent": {}
         }
@@ -638,6 +668,11 @@
           "*": {}
         }
       },
+      "SendReminderEmail": {
+        "DEP": {
+          "*": {}
+        }
+      },
       "SendNewEnrolmentCode":{
         "DEP": {
           "end_user": {}
@@ -737,6 +772,12 @@
           "end_user": {}
         }
       },
+      "SendReminderEmail": {
+        "DEP": {
+          "l1_support_agent": {},
+          "end_user": {}
+        }
+      },
       "GetCredentialsForUser": {
         "DEP": {
           "l1_support_agent": {},
@@ -817,6 +858,11 @@
           "end_user": {}
         }
       },
+      "SendReminderEmail": {
+        "DEP": {
+          "end_user": {}
+        }
+      },
       "GetCredentialsForUser": {
         "DEP": {
           "end_user": {}
@@ -845,6 +891,11 @@
         }
       },
       "SendVerifyEmail": {
+        "DEP": {
+          "end_user": {}
+        }
+      },
+      "SendReminderEmail": {
         "DEP": {
           "end_user": {}
         }

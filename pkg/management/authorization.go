@@ -28,6 +28,7 @@ const (
 	SendVerifyEmail                = "SendVerifyEmail"
 	ExecuteActionsEmail            = "ExecuteActionsEmail"
 	SendNewEnrolmentCode           = "SendNewEnrolmentCode"
+	SendReminderEmail              = "SendReminderEmail"
 	GetCredentialsForUser          = "GetCredentialsForUser"
 	DeleteCredentialsForUser       = "DeleteCredentialsForUser"
 	GetRoles                       = "GetRoles"
@@ -258,6 +259,17 @@ func (c *authorizationComponentMW) SendNewEnrolmentCode(ctx context.Context, rea
 	}
 
 	return c.next.SendNewEnrolmentCode(ctx, realmName, userID)
+}
+
+func (c *authorizationComponentMW) SendReminderEmail(ctx context.Context, realmName string, userID string, paramKV ...string) error {
+	var action = SendReminderEmail
+	var targetRealm = realmName
+
+	if err := c.authManager.CheckAuthorizationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
+		return err
+	}
+
+	return c.next.SendReminderEmail(ctx, realmName, userID, paramKV...)
 }
 
 func (c *authorizationComponentMW) GetCredentialsForUser(ctx context.Context, realmName string, userID string) ([]api.CredentialRepresentation, error) {
