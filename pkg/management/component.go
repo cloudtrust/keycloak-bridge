@@ -518,7 +518,7 @@ func (c *component) SendNewEnrolmentCode(ctx context.Context, realmName string, 
 func (c *component) SendReminderEmail(ctx context.Context, realmName string, userID string, paramKV ...string) error {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 
-	return c.keycloakClient.SendVerifyEmail(accessToken, realmName, userID, paramKV...)
+	return c.keycloakClient.SendReminderEmail(accessToken, realmName, userID, paramKV...)
 }
 
 func (c *component) GetCredentialsForUser(ctx context.Context, realmName string, userID string) ([]api.CredentialRepresentation, error) {
