@@ -66,9 +66,14 @@ paths:
                 type: object
                 properties:
                   events:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Event'
+                    type: object
+                    properties:
+                      count:
+                        type: integer
+                      events:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Event'
                   count:
                     type: number
   /events/summary:
