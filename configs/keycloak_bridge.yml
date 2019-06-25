@@ -18,6 +18,8 @@ cors-allow-credentials: true
 cors-allowed-headers:
   - "Authorization"
   - "Content-Type"
+cors-exposed-headers:
+  - "Location"
 cors-debug: true
 
 # Security
