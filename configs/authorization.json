@@ -604,7 +604,8 @@
       },
       "CreateUser": {
         "DEP": {
-          "l1_support_manager": {}
+          "l1_support_manager": {},
+          "registration_officer": {}
         }
       },
       "GetUser": {
