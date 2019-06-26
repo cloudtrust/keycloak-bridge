@@ -230,7 +230,7 @@
         "*": {}
       },
       "GetRealmCustomConfiguration": {
-        "DEP": {
+        "*": {
           "*": {}
         }
       },
@@ -449,6 +449,11 @@
         "master": {
           "l2_support_agent": {}
         }
+      },
+      "GetRealmCustomConfiguration": {
+        "master": {
+          "*": {}
+        }
       }
     },
     "l2_support_agent": {
@@ -563,6 +568,11 @@
       "EV_GetUserEvents": {
         "master": {
           "l3_support_agent": {}
+        }
+      },
+      "GetRealmCustomConfiguration": {
+        "master": {
+          "*": {}
         }
       }
     },
@@ -792,6 +802,11 @@
           "l1_support_agent": {},
           "end_user": {}
         }
+      },
+      "GetRealmCustomConfiguration": {
+        "DEP": {
+          "*": {}
+        }
       }
     },
     "l1_support_agent": {
@@ -868,6 +883,11 @@
       "EV_GetUserEvents": {
         "DEP": {
           "end_user": {}
+        }
+      },
+      "GetRealmCustomConfiguration": {
+        "DEP": {
+          "*": {}
         }
       }
     },
