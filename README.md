@@ -48,8 +48,6 @@ account-http-host-port | HTTP server listening address | 0.0.0.0:8866
 Key | Description | Default value
 --- | ----------- | -------------
 keycloak-host-port | Keycloak host:port | "127.0.0.1:8080"
-keycloak-username | Keycloak username | ""
-keycloak-password | Keycloak password | ""
 keycloak-timeout-ms | Keycloak requests timeout in milliseconds | 5000
 
 

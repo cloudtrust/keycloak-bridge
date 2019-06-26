@@ -28,6 +28,7 @@ import (
 	"github.com/cloudtrust/keycloak-bridge/pkg/events"
 	"github.com/cloudtrust/keycloak-bridge/pkg/export"
 	"github.com/cloudtrust/keycloak-bridge/pkg/management"
+	"github.com/cloudtrust/keycloak-bridge/pkg/statistics"
 	keycloak "github.com/cloudtrust/keycloak-client"
 	"github.com/go-kit/kit/endpoint"
 	"github.com/go-kit/kit/log"
@@ -122,6 +123,7 @@ func main() {
 			AllowedMethods:   c.GetStringSlice("cors-allowed-methods"),
 			AllowCredentials: c.GetBool("cors-allow-credential"),
 			AllowedHeaders:   c.GetStringSlice("cors-allowed-headers"),
+			ExposedHeaders:   c.GetStringSlice("cors-exposed-headers"),
 			Debug:            c.GetBool("cors-debug"),
 		}
 	)
@@ -325,14 +327,33 @@ func main() {
 		}
 	}
 
+	baseEventsDBModule := database.NewEventsDBModule(eventsDBConn)
+
+	// new module for reading events from the DB
+	eventsRODBModule := keycloakb.NewEventsDBModule(eventsRODBConn)
+
+	// Statistics service.
+	var statisticsEndpoints statistics.Endpoints
+	{
+		var statisticsLogger = log.With(logger, "svc", "statistics")
+
+		statisticsComponent := statistics.NewComponent(eventsRODBModule)
+		statisticsComponent = statistics.MakeAuthorizationManagementComponentMW(log.With(statisticsLogger, "mw", "endpoint"), authorizationManager)(statisticsComponent)
+
+		statisticsEndpoints = statistics.Endpoints{
+			GetStatistics: prepareEndpoint(statistics.MakeGetStatisticsEndpoint(statisticsComponent), "get_statistics", influxMetrics, statisticsLogger, tracer, rateLimit["event"]),
+		}
+	}
+
 	// Events service.
 	var eventsEndpoints events.Endpoints
 	{
 		var eventsLogger = log.With(logger, "svc", "events")
 
-		// new module for sending the events to the DB
-		eventsRODBModule := events.NewEventsDBModule(eventsRODBConn)
-		eventsComponent := events.NewEventsComponent(eventsRODBModule)
+		// module to store API calls of the back office to the DB
+		eventsDBModule := configureEventsDbModule(baseEventsDBModule, influxMetrics, eventsLogger, tracer)
+
+		eventsComponent := events.NewComponent(eventsRODBModule, eventsDBModule)
 		eventsComponent = events.MakeAuthorizationManagementComponentMW(log.With(eventsLogger, "mw", "endpoint"), authorizationManager)(eventsComponent)
 
 		eventsEndpoints = events.Endpoints{
@@ -341,8 +362,6 @@ func main() {
 			GetUserEvents:    prepareEndpoint(events.MakeGetUserEventsEndpoint(eventsComponent), "get_user_events", influxMetrics, eventsLogger, tracer, rateLimit["event"]),
 		}
 	}
-
-	baseEventsDBModule := database.NewEventsDBModule(eventsDBConn)
 
 	// Management service.
 	var managementEndpoints = management.Endpoints{}
@@ -382,6 +401,7 @@ func main() {
 			GetRolesOfUser:                 prepareEndpoint(management.MakeGetRolesOfUserEndpoint(keycloakComponent), "get_user_roles", influxMetrics, managementLogger, tracer, rateLimit["management"]),
 			GetRoles:                       prepareEndpoint(management.MakeGetRolesEndpoint(keycloakComponent), "get_roles_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
 			GetRole:                        prepareEndpoint(management.MakeGetRoleEndpoint(keycloakComponent), "get_role_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
+			GetGroups:                      prepareEndpoint(management.MakeGetGroupsEndpoint(keycloakComponent), "get_groups_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
 			GetClientRoles:                 prepareEndpoint(management.MakeGetClientRolesEndpoint(keycloakComponent), "get_client_roles_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
 			CreateClientRole:               prepareEndpoint(management.MakeCreateClientRoleEndpoint(keycloakComponent), "create_client_role_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
 			GetClientRoleForUser:           prepareEndpoint(management.MakeGetClientRolesForUserEndpoint(keycloakComponent), "get_client_roles_for_user_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
@@ -470,6 +490,10 @@ func main() {
 		// Version.
 		route.Handle("/", http.HandlerFunc(commonhttp.MakeVersionHandler(ComponentName, ComponentID, Version, Environment, GitCommit)))
 
+		// Statistics
+		var getStatisticsHandler = configureEventsHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(statisticsEndpoints.GetStatistics)
+		route.Path("/statistics/realms/{realm}").Methods("GET").Handler(getStatisticsHandler)
+
 		// Events
 		var getEventsHandler = configureEventsHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(eventsEndpoints.GetEvents)
 		var getEventsSummaryHandler = configureEventsHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(eventsEndpoints.GetEventsSummary)
@@ -504,6 +528,8 @@ func main() {
 		var getRoleHandler = configureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetRole)
 		var getClientRolesHandler = configureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetClientRoles)
 		var createClientRolesHandler = configureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.CreateClientRole)
+
+		var getGroupsHandler = configureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetGroups)
 
 		var resetPasswordHandler = configureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.ResetPassword)
 		var sendVerifyEmailHandler = configureManagementHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.SendVerifyEmail)
@@ -552,6 +578,9 @@ func main() {
 		managementSubroute.Path("/realms/{realm}/roles-by-id/{roleID}").Methods("GET").Handler(getRoleHandler)
 		managementSubroute.Path("/realms/{realm}/clients/{clientID}/roles").Methods("GET").Handler(getClientRolesHandler)
 		managementSubroute.Path("/realms/{realm}/clients/{clientID}/roles").Methods("POST").Handler(createClientRolesHandler)
+
+		//groups
+		managementSubroute.Path("/realms/{realm}/groups").Methods("GET").Handler(getGroupsHandler)
 
 		// custom configuration par realm
 		managementSubroute.Path("/realms/{realm}/configuration").Methods("GET").Handler(getRealmCustomConfigurationHandler)
@@ -614,6 +643,7 @@ func config(logger log.Logger) *viper.Viper {
 	v.SetDefault("cors-allowed-methods", []string{})
 	v.SetDefault("cors-allow-credentials", true)
 	v.SetDefault("cors-allowed-headers", []string{})
+	v.SetDefault("cors-exposed-headers", []string{})
 	v.SetDefault("cors-debug", false)
 
 	// Keycloak default.

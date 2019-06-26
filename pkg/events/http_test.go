@@ -19,7 +19,7 @@ import (
 func TestHTTPManagementHandler(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
-	var mockComponent = mock.NewEventsComponent(mockCtrl)
+	var mockComponent = mock.NewComponent(mockCtrl)
 
 	var managementHandler1 = MakeEventsHandler(keycloakb.ToGoKitEndpoint(MakeGetEventsEndpoint(mockComponent)), log.NewNopLogger())
 

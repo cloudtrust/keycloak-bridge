@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cloudtrust/common-service/database"
 	"github.com/cloudtrust/keycloak-bridge/api/event/fb"
 	flatbuffers "github.com/google/flatbuffers/go"
 	"github.com/stretchr/testify/assert"
@@ -204,7 +205,7 @@ func TestEventToMapNewCTEvent(t *testing.T) {
 	var event *fb.Event
 	{
 		var builder = flatbuffers.NewBuilder(0)
-		var key1 = builder.CreateString("ct_event_type")
+		var key1 = builder.CreateString(database.CtEventType)
 		var value1 = builder.CreateString(customEvent)
 		fb.TupleStart(builder)
 		fb.TupleAddKey(builder, key1)
@@ -224,7 +225,7 @@ func TestEventToMapNewCTEvent(t *testing.T) {
 	}
 
 	var m = eventToMap(event)
-	assert.Equal(t, customEvent, m["ct_event_type"])
+	assert.Equal(t, customEvent, m[database.CtEventType])
 
 }
 
@@ -243,7 +244,7 @@ func TestEventToMapLogon(t *testing.T) {
 	}
 
 	var m = eventToMap(event)
-	assert.Equal(t, "LOGON_OK", m["ct_event_type"])
+	assert.Equal(t, "LOGON_OK", m[database.CtEventType])
 
 }
 
@@ -262,7 +263,7 @@ func TestEventToMapLogonError(t *testing.T) {
 	}
 
 	var m = eventToMap(event)
-	assert.Equal(t, "LOGON_ERROR", m["ct_event_type"])
+	assert.Equal(t, "LOGON_ERROR", m[database.CtEventType])
 
 }
 
@@ -281,7 +282,7 @@ func TestEventToMapLogout(t *testing.T) {
 	}
 
 	var m = eventToMap(event)
-	assert.Equal(t, "LOGOUT", m["ct_event_type"])
+	assert.Equal(t, "LOGOUT", m[database.CtEventType])
 
 }
 
@@ -320,7 +321,7 @@ func TestEventToMapEmailConfirmed(t *testing.T) {
 	}
 
 	var m = eventToMap(event)
-	assert.Equal(t, "EMAIL_CONFIRMED", m["ct_event_type"])
+	assert.Equal(t, "EMAIL_CONFIRMED", m[database.CtEventType])
 
 }
 
@@ -361,7 +362,7 @@ func TestEventToMapConfirmEmailExpired(t *testing.T) {
 	}
 
 	var m = eventToMap(event)
-	assert.Equal(t, "CONFIRM_EMAIL_EXPIRED", m["ct_event_type"])
+	assert.Equal(t, "CONFIRM_EMAIL_EXPIRED", m[database.CtEventType])
 
 }
 
@@ -402,7 +403,7 @@ func TestEventToMapPasswordReset(t *testing.T) {
 	}
 
 	var m = eventToMap(event)
-	assert.Equal(t, "PASSWORD_RESET", m["ct_event_type"])
+	assert.Equal(t, "PASSWORD_RESET", m[database.CtEventType])
 
 }
 
@@ -461,17 +462,17 @@ func TestAdminEventToMap(t *testing.T) {
 
 	var m = adminEventToMap(adminEvent)
 
-	assert.Equal(t, time.Unix(0, epoch*1000000).UTC().Format("2006-01-02 15:04:05.000"), m["audit_time"])
-	assert.Equal(t, fb.EnumNamesOperationType[int8(optype)], m["kc_operation_type"])
-	assert.Equal(t, realmID, m["realm_name"])
+	assert.Equal(t, time.Unix(0, epoch*1000000).UTC().Format("2006-01-02 15:04:05.000"), m[database.CtEventAuditTime])
+	assert.Equal(t, fb.EnumNamesOperationType[int8(optype)], m[database.CtEventKcOperationType])
+	assert.Equal(t, realmID, m[database.CtEventRealmName])
 	var f = make(map[string]string)
-	err := json.Unmarshal([]byte(m["additional_info"]), &f)
+	err := json.Unmarshal([]byte(m[database.CtEventAdditionalInfo]), &f)
 	assert.Nil(t, err)
 	assert.Equal(t, strconv.FormatInt(uid, 10), f["uid"])
 	assert.Equal(t, resourcePath, f["resource_path"])
 	assert.Equal(t, representation, f["representation"])
 	assert.Equal(t, error, f["error"])
-	assert.Equal(t, "ADMIN", m["ct_event_type"])
+	assert.Equal(t, "ADMIN", m[database.CtEventType])
 
 }
 
@@ -513,7 +514,7 @@ func TestAdminEventToMapAccountCreated(t *testing.T) {
 	}
 
 	var m = adminEventToMap(adminEvent)
-	assert.Equal(t, "ACCOUNT_CREATED", m["ct_event_type"])
+	assert.Equal(t, "ACCOUNT_CREATED", m[database.CtEventType])
 
 }
 
@@ -571,7 +572,7 @@ func TestAdminEventToMapActivationEmailSent(t *testing.T) {
 	}
 
 	var m = adminEventToMap(adminEvent)
-	assert.Equal(t, "ACTIVATION_EMAIL_SENT", m["ct_event_type"])
+	assert.Equal(t, "ACTIVATION_EMAIL_SENT", m[database.CtEventType])
 
 }
 

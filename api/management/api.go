@@ -40,7 +40,7 @@ type ClientRepresentation struct {
 	Name        *string `json:"name,omitempty"`
 	BaseUrl     *string `json:"baseUrl,omitempty"`
 	ClientId    *string `json:"clientId,omitempty"`
-	Description *string `json:"description,omitempty"`
+	Protocol    *string `json:"protocol,omitempty"`
 	Enabled     *bool   `json:"enabled,omitempty"`
 }
 
@@ -284,7 +284,7 @@ func (password PasswordRepresentation) Validate() error {
 }
 
 func (config RealmCustomConfiguration) Validate() error {
-	if config.DefaultClientId != nil && !matchesRegExp(*config.DefaultClientId, RegExpID) {
+	if config.DefaultClientId != nil && !matchesRegExp(*config.DefaultClientId, RegExpClientID) {
 		return errors.New("Invalid default client ID")
 	}
 
@@ -311,11 +311,14 @@ func matchesRegExp(value, re string) bool {
 const (
 	RegExpID = `^[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}$`
 
+	// Client
+	RegExpClientID = `^[a-zA-Z0-9-_.]{1,255}$`
+
 	// User
-	RegExpUsername    = `^[a-zA-Z0-9-_@.]{1,128}$`
+	RegExpUsername    = `^[a-zA-Z0-9-_.]{1,128}$`
 	RegExpEmail       = `^.+\@.+\..+`
-	RegExpFirstName   = `^[a-zA-Z ,.'-]{1,128}$`
-	RegExpLastName    = `^[a-zA-Z ,.'-]{1,128}$`
+	RegExpFirstName   = `^.{1,128}$`
+	RegExpLastName    = `^.{1,128}$`
 	RegExpPhoneNumber = `^\+[1-9]\d{1,14}$`
 	RegExpLabel       = `^.{1,255}$`
 	RegExpGender      = `^[MF]$`
@@ -337,8 +340,7 @@ const (
 
 	// Others
 	RegExpRealmName = `^[a-zA-Z0-9_-]{1,36}$`
-	RegExpSearch = `^.{1,128}$`
-	RegExpLifespan = `^[0-9]{1,10}$`
-	RegExpGroupIds = `^([a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12})(,[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}){0,20}$`
-
+	RegExpSearch    = `^.{1,128}$`
+	RegExpLifespan  = `^[0-9]{1,10}$`
+	RegExpGroupIds  = `^([a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12})(,[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}){0,20}$`
 )

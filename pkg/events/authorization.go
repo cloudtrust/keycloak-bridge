@@ -19,12 +19,12 @@ const (
 type authorizationComponentMW struct {
 	authManager security.AuthorizationManager
 	logger      log.Logger
-	next        EventsComponent
+	next        Component
 }
 
 // MakeAuthorizationManagementComponentMW checks authorization and return an error if the action is not allowed.
-func MakeAuthorizationManagementComponentMW(logger log.Logger, authorizationManager security.AuthorizationManager) func(EventsComponent) EventsComponent {
-	return func(next EventsComponent) EventsComponent {
+func MakeAuthorizationManagementComponentMW(logger log.Logger, authorizationManager security.AuthorizationManager) func(Component) Component {
+	return func(next Component) Component {
 		return &authorizationComponentMW{
 			authManager: authorizationManager,
 			logger:      logger,

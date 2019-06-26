@@ -3,26 +3,34 @@ package events
 import (
 	"context"
 
+	"github.com/cloudtrust/common-service/database"
 	"github.com/cloudtrust/common-service/http"
 	api "github.com/cloudtrust/keycloak-bridge/api/events"
+	app "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 )
 
-// EventsComponent is the interface of the events component.
-type EventsComponent interface {
+// Component is the interface of the events component.
+type Component interface {
 	GetEvents(context.Context, map[string]string) (api.AuditEventsRepresentation, error)
 	GetEventsSummary(context.Context) (api.EventSummaryRepresentation, error)
 	GetUserEvents(context.Context, map[string]string) (api.AuditEventsRepresentation, error)
 }
 
 type component struct {
-	db EventsDBModule
+	db            app.EventsDBModule
+	eventDBModule database.EventsDBModule
 }
 
-// NewEventsComponent returns an events DB module
-func NewEventsComponent(db EventsDBModule) EventsComponent {
+// NewComponent returns a component
+func NewComponent(db app.EventsDBModule, eventDBModule database.EventsDBModule) Component {
 	return &component{
-		db: db,
+		db:            db,
+		eventDBModule: eventDBModule,
 	}
+}
+
+func (ec *component) reportEvent(ctx context.Context, apiCall string, values ...string) error {
+	return ec.eventDBModule.ReportEvent(ctx, apiCall, "back-office", values...)
 }
 
 // Get events according to optional parameters
@@ -53,5 +61,6 @@ func (ec *component) GetUserEvents(ctx context.Context, params map[string]string
 	if val, ok := params["userID"]; !ok || len(val) == 0 {
 		return api.AuditEventsRepresentation{}, http.CreateMissingParameterError("userID")
 	}
+	ec.reportEvent(ctx, "GET_ACTIVITY", "realm_name", params["realm"], "user_id", params["userID"])
 	return ec.GetEvents(ctx, params)
 }

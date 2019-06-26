@@ -62,7 +62,7 @@ func (c *component) UpdatePassword(ctx context.Context, currentPassword, newPass
 	}
 
 	//store the API call into the DB
-	_ = c.reportEvent(ctx, "PASSWORD_RESET", "realm_name", realm, "user_id", userID, "username", username)
+	_ = c.reportEvent(ctx, "PASSWORD_RESET", database.CtEventRealmName, realm, database.CtEventUserID, userID, database.CtEventUsername, username)
 
 	return updateError
 }

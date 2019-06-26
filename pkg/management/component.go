@@ -36,6 +36,7 @@ type KeycloakClient interface {
 	DeleteCredentialsForUser(accessToken string, realmReq, realmName string, userID string, credentialID string) error
 	GetRoles(accessToken string, realmName string) ([]kc.RoleRepresentation, error)
 	GetRole(accessToken string, realmName string, roleID string) (kc.RoleRepresentation, error)
+	GetGroups(accessToken string, realmName string) ([]kc.GroupRepresentation, error)
 	GetClientRoles(accessToken string, realmName, idClient string) ([]kc.RoleRepresentation, error)
 	CreateClientRole(accessToken string, realmName, clientID string, role kc.RoleRepresentation) (string, error)
 	GetGroup(accessToken string, realmName, groupID string) (kc.GroupRepresentation, error)
@@ -65,6 +66,7 @@ type Component interface {
 	DeleteCredentialsForUser(ctx context.Context, realmName string, userID string, credentialID string) error
 	GetRoles(ctx context.Context, realmName string) ([]api.RoleRepresentation, error)
 	GetRole(ctx context.Context, realmName string, roleID string) (api.RoleRepresentation, error)
+	GetGroups(ctx context.Context, realmName string) ([]api.GroupRepresentation, error)
 	GetClientRoles(ctx context.Context, realmName, idClient string) ([]api.RoleRepresentation, error)
 	CreateClientRole(ctx context.Context, realmName, clientID string, role api.RoleRepresentation) (string, error)
 	GetRealmCustomConfiguration(ctx context.Context, realmName string) (api.RealmCustomConfiguration, error)
@@ -140,7 +142,7 @@ func (c *component) GetClient(ctx context.Context, realmName, idClient string) (
 	clientRep.Name = clientKc.Name
 	clientRep.BaseUrl = clientKc.BaseUrl
 	clientRep.ClientId = clientKc.ClientId
-	clientRep.Description = clientKc.Description
+	clientRep.Protocol = clientKc.Protocol
 	clientRep.Enabled = clientKc.Enabled
 
 	return clientRep, err
@@ -162,7 +164,7 @@ func (c *component) GetClients(ctx context.Context, realmName string) ([]api.Cli
 		clientRep.Name = clientKc.Name
 		clientRep.BaseUrl = clientKc.BaseUrl
 		clientRep.ClientId = clientKc.ClientId
-		clientRep.Description = clientKc.Description
+		clientRep.Protocol = clientKc.Protocol
 		clientRep.Enabled = clientKc.Enabled
 		clientsRep = append(clientsRep, clientRep)
 	}
@@ -195,7 +197,7 @@ func (c *component) CreateUser(ctx context.Context, realmName string, user api.U
 
 	//store the API call into the DB
 	// the error should be treated
-	_ = c.reportEvent(ctx, "API_ACCOUNT_CREATION", "realm_name", realmName, "user_id", userID, "username", username)
+	_ = c.reportEvent(ctx, "API_ACCOUNT_CREATION", database.CtEventRealmName, realmName, database.CtEventUserID, userID, database.CtEventUsername, username)
 
 	return locationURL, nil
 }
@@ -211,7 +213,7 @@ func (c *component) DeleteUser(ctx context.Context, realmName, userID string) er
 
 	//store the API call into the DB
 	// the error should be treated
-	_ = c.reportEvent(ctx, "API_ACCOUNT_DELETION", "realm_name", realmName, "user_id", userID)
+	_ = c.reportEvent(ctx, "API_ACCOUNT_DELETION", database.CtEventRealmName, realmName, database.CtEventUserID, userID)
 
 	return nil
 }
@@ -235,7 +237,7 @@ func (c *component) GetUser(ctx context.Context, realmName, userID string) (api.
 
 	//store the API call into the DB
 	// the error should be treated
-	_ = c.reportEvent(ctx, "GET_DETAILS", "realm_name", realmName, "user_id", userID, "username", username)
+	_ = c.reportEvent(ctx, "GET_DETAILS", database.CtEventRealmName, realmName, database.CtEventUserID, userID, database.CtEventUsername, username)
 
 	return userRep, nil
 
@@ -313,7 +315,7 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 			ctEventType = "LOCK_ACCOUNT"
 		}
 		// the error should be treated
-		_ = c.reportEvent(ctx, ctEventType, "realm_name", realmName, "user_id", userID, "username", username)
+		_ = c.reportEvent(ctx, ctEventType, database.CtEventRealmName, realmName, database.CtEventUserID, userID, database.CtEventUsername, username)
 	}
 
 	return nil
@@ -473,7 +475,7 @@ func (c *component) ResetPassword(ctx context.Context, realmName string, userID 
 
 	//store the API call into the DB
 	// the error should be treated
-	_ = c.reportEvent(ctx, "INIT_PASSWORD", "realm_name", realmName, "user_id", userID)
+	_ = c.reportEvent(ctx, "INIT_PASSWORD", database.CtEventRealmName, realmName, database.CtEventUserID, userID)
 
 	return nil
 }
@@ -504,6 +506,9 @@ func (c *component) SendNewEnrolmentCode(ctx context.Context, realmName string, 
 	if err != nil {
 		return "", err
 	}
+
+	// store the API call into the DB
+	_ = c.reportEvent(ctx, "SMS_CHALLENGE", "realm_name", realmName, "user_id", userID)
 
 	return *smsCodeKc.Code, err
 }
@@ -571,6 +576,27 @@ func (c *component) GetRole(ctx context.Context, realmName string, roleID string
 	roleRep.Description = roleKc.Description
 
 	return roleRep, err
+}
+
+func (c *component) GetGroups(ctx context.Context, realmName string) ([]api.GroupRepresentation, error) {
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+
+	groupsKc, err := c.keycloakClient.GetGroups(accessToken, realmName)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var groupsRep []api.GroupRepresentation
+	for _, groupKc := range groupsKc {
+		var groupRep api.GroupRepresentation
+		groupRep.Id = groupKc.Id
+		groupRep.Name = groupKc.Name
+
+		groupsRep = append(groupsRep, groupRep)
+	}
+
+	return groupsRep, nil
 }
 
 func (c *component) GetClientRoles(ctx context.Context, realmName, idClient string) ([]api.RoleRepresentation, error) {
