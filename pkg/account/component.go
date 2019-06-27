@@ -51,14 +51,16 @@ func (c *component) UpdatePassword(ctx context.Context, currentPassword, newPass
 
 	_, err := c.keycloakClient.UpdatePassword(accessToken, realm, currentPassword, newPassword, confirmPassword)
 
-	var updateError error
-	switch err.Error() {
-	case "invalidPasswordExistingMessage":
-		updateError = commonhttp.Error{
-			Status:  http.StatusBadRequest,
-			Message: err.Error()}
-	default:
-		updateError = err
+	var updateError error = nil
+	if err != nil {
+		switch err.Error() {
+		case "invalidPasswordExistingMessage":
+			updateError = commonhttp.Error{
+				Status:  http.StatusBadRequest,
+				Message: err.Error()}
+		default:
+			updateError = err
+		}
 	}
 
 	//store the API call into the DB
