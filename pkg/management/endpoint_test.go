@@ -508,6 +508,7 @@ func TestSendVerifyEmailEndpoint(t *testing.T) {
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Nil(t, res)
+
 	}
 }
 
@@ -640,6 +641,7 @@ func TestSendReminderEmailEndpoint(t *testing.T) {
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Nil(t, res)
+		// the mock does not except to be called with req["toto"]; as the test passes it means that e has filtered out req["tutu"] and it is not transmitted to SendReminderEmail
 	}
 }
 
