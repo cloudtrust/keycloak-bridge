@@ -105,6 +105,19 @@
         "master": {
           "*": {}
         }
+      },
+      "GetClients":{
+        "*": {}
+      },
+      "GetRealmCustomConfiguration": {
+        "*": {
+          "*": {}
+        }
+      },
+      "UpdateRealmCustomConfiguration": {
+        "*": {
+          "*": {}
+        }
       }
     },
     "integrator_manager":{
@@ -155,7 +168,7 @@
         "DEP": {
           "*": {}
         }
-      },  
+      },
       "GetGroupsOfUser": {
         "master": {
           "integrator_agent": {}
@@ -227,6 +240,9 @@
         "DEP": {
           "end_user": {}
         }
+      },
+      "GetClients":{
+        "*": {}
       },
       "GetRealmCustomConfiguration": {
         "DEP": {
@@ -335,6 +351,9 @@
         "DEP": {
           "*": {}
         }
+      },
+      "GetClients":{
+        "*": {}
       },
       "GetRealmCustomConfiguration": {
         "DEP": {
@@ -470,7 +489,7 @@
         "*": {
           "*": {}
         }
-      }, 
+      },
       "GetGroups": {
         "master": {
           "*": {}
@@ -615,7 +634,8 @@
       },
       "CreateUser": {
         "DEP": {
-          "l1_support_manager": {}
+          "l1_support_manager": {},
+          "registration_officer": {}
         }
       },
       "GetUser": {
@@ -694,6 +714,19 @@
         }
       },
       "ST_GetStatistics": {
+        "DEP": {
+          "*": {}
+        }
+      },
+      "GetClients":{
+        "*": {}
+      },
+      "GetRealmCustomConfiguration": {
+        "DEP": {
+          "*": {}
+        }
+      },
+      "UpdateRealmCustomConfiguration": {
         "DEP": {
           "*": {}
         }

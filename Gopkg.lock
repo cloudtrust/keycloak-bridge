@@ -18,7 +18,7 @@
   version = "2018.01.18"
 
 [[projects]]
-  digest = "1:2bdbfe0ba1aec14ad8ae7a42ffc29fcf07549a90eacd266197cbd78d9753e0da"
+  digest = "1:55970311556fb570208aa7ab17c45b01a5d47003d9e3f2a8283ba825c0db312e"
   name = "github.com/cloudtrust/common-service"
   packages = [
     ".",
@@ -32,8 +32,8 @@
     "tracking",
   ]
   pruneopts = "UT"
-  revision = "cdc73eb2db7139f24f5e7de4a430c99c91097ab0"
-  version = "v1.0-rc2"
+  revision = "75894bb5016d15f22c3b62491dfe84801de718f4"
+  version = "v1.0-rc3"
 
 [[projects]]
   digest = "1:a9ab922e4ed3a94a4e98509ef5f0847aae98562afb757d243da844379179a258"
@@ -357,7 +357,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:b8fa1ff0fc20983395978b3f771bb10438accbfe19326b02e236c1d4bf1c91b2"
+  digest = "1:5cdf4eb6946922ebe638b90e548e1a86085b778d9daf0889951b39f44e6bbe6c"
   name = "golang.org/x/crypto"
   packages = [
     "ed25519",
@@ -365,11 +365,11 @@
     "pbkdf2",
   ]
   pruneopts = "UT"
-  revision = "f99c8df09eb5bff426315721bfa5f16a99cad32c"
+  revision = "cc06ce4a13d484c0101a9e92913248488a75786d"
 
 [[projects]]
   branch = "master"
-  digest = "1:c2be8ebcdd05ff53516bf03f8c5ff67e791a4e64ed6d8f798e672965f76be72e"
+  digest = "1:2c735d06e93d752568307521dc2b86f7f53ea4bfc5fc8cac255059d7d93212f7"
   name = "golang.org/x/net"
   packages = [
     "context",
@@ -378,7 +378,7 @@
     "publicsuffix",
   ]
   pruneopts = "UT"
-  revision = "1492cefac77f61bc789c00f41ead8f8d7307cd21"
+  revision = "3b0461eec859c4b73bb64fdc8285971fd33e3938"
 
 [[projects]]
   branch = "master"
@@ -393,11 +393,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:8f5108406bc43c7669b0d67d282e40d05c9f268615fcaf8c1f0f76965aa3f09f"
+  digest = "1:d4488b7ca589840d020983978f9f139b89872b90d8a6d725de2fcac6c9448273"
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = "UT"
-  revision = "7fc4e5ec1444df20dd195ae7c3bbfcd7114d3faa"
+  revision = "c5567b49c5d04a5f83870795b8c0e2df43a8ce32"
 
 [[projects]]
   digest = "1:8d8faad6b12a3a4c819a3f9618cb6ee1fa1cfc33253abeeea8b55336721e3405"

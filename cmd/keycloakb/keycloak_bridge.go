@@ -123,6 +123,7 @@ func main() {
 			AllowedMethods:   c.GetStringSlice("cors-allowed-methods"),
 			AllowCredentials: c.GetBool("cors-allow-credential"),
 			AllowedHeaders:   c.GetStringSlice("cors-allowed-headers"),
+			ExposedHeaders:   c.GetStringSlice("cors-exposed-headers"),
 			Debug:            c.GetBool("cors-debug"),
 		}
 	)
@@ -645,6 +646,7 @@ func config(logger log.Logger) *viper.Viper {
 	v.SetDefault("cors-allowed-methods", []string{})
 	v.SetDefault("cors-allow-credentials", true)
 	v.SetDefault("cors-allowed-headers", []string{})
+	v.SetDefault("cors-exposed-headers", []string{})
 	v.SetDefault("cors-debug", false)
 
 	// Keycloak default.
