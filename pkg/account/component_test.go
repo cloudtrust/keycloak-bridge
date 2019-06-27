@@ -78,13 +78,13 @@ func TestUpdatePasswordWrongPwd(t *testing.T) {
 
 	err := component.UpdatePassword(ctx, oldPasswd, newPasswd, newPasswd)
 
-	assert.Equal(t, true, err != nil)
+	assert.True(t, err != nil)
 
 	mockKeycloakClient.EXPECT().UpdatePassword(accessToken, realm, oldPasswd, newPasswd, newPasswd).Return("", fmt.Errorf("invalid")).Times(1)
 	mockEventDBModule.EXPECT().ReportEvent(gomock.Any(), "PASSWORD_RESET", "self-service", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
 
 	err = component.UpdatePassword(ctx, oldPasswd, newPasswd, newPasswd)
 
-	assert.Equal(t, true, err != nil)
+	assert.True(t, err != nil)
 
 }
