@@ -478,8 +478,7 @@ func (c *component) ResetPassword(ctx context.Context, realmName string, userID 
 	}
 
 	//store the API call into the DB
-	//_ = c.reportEvent(ctx, "INIT_PASSWORD", database.CtEventRealmName, realmName, database.CtEventUserID, userID)
-	// removed as it is not used
+	_ = c.reportEvent(ctx, "INIT_PASSWORD", database.CtEventRealmName, realmName, database.CtEventUserID, userID)
 
 	return nil
 }
