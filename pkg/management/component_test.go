@@ -789,6 +789,7 @@ func TestGetUsers(t *testing.T) {
 		attributes["birthDate"] = []string{birthDate}
 		attributes["phoneNumberVerified"] = []string{strconv.FormatBool(phoneNumberVerified)}
 
+		var count = 1
 		var kcUserRep = kc.UserRepresentation{
 			Id:               &id,
 			Username:         &username,
@@ -800,9 +801,10 @@ func TestGetUsers(t *testing.T) {
 			Attributes:       &attributes,
 			CreatedTimestamp: &createdTimestamp,
 		}
-
-		var kcUsersRep []kc.UserRepresentation
-		kcUsersRep = append(kcUsersRep, kcUserRep)
+		var kcUsersRep = kc.UsersPageRepresentation{
+			Count: &count,
+			Users: []kc.UserRepresentation{kcUserRep},
+		}
 
 		mockKeycloakClient.EXPECT().GetUsers(accessToken, realmName, targetRealmName, "groupId", "123-456-789").Return(kcUsersRep, nil).Times(1)
 
@@ -811,7 +813,7 @@ func TestGetUsers(t *testing.T) {
 
 		apiUsersRep, err := managementComponent.GetUsers(ctx, "DEP", []string{"123-456-789"})
 
-		var apiUserRep = apiUsersRep[0]
+		var apiUserRep = apiUsersRep.Users[0]
 		assert.Nil(t, err)
 		assert.Equal(t, username, *apiUserRep.Username)
 		assert.Equal(t, email, *apiUserRep.Email)
@@ -830,7 +832,7 @@ func TestGetUsers(t *testing.T) {
 
 	//Error
 	{
-		mockKeycloakClient.EXPECT().GetUsers(accessToken, realmName, targetRealmName, "groupId", "123-456-789").Return([]kc.UserRepresentation{}, fmt.Errorf("Unexpected error")).Times(1)
+		mockKeycloakClient.EXPECT().GetUsers(accessToken, realmName, targetRealmName, "groupId", "123-456-789").Return(kc.UsersPageRepresentation{}, fmt.Errorf("Unexpected error")).Times(1)
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, "master")

@@ -43,6 +43,8 @@ func decodeManagementRequest(ctx context.Context, req *http.Request) (interface{
 		"redirect_uri": management_api.RegExpRedirectURI,
 		"lifespan":     management_api.RegExpLifespan,
 		"groupIds":     management_api.RegExpGroupIds,
+		"first":        management_api.RegExpNumber,
+		"max":          management_api.RegExpNumber,
 	}
 
 	return commonhttp.DecodeRequest(ctx, req, pathParams, queryParams)

@@ -70,6 +70,14 @@ func TestConvertToAPIUser(t *testing.T) {
 	assert.NotNil(t, *ConvertToAPIUser(kcUser).Locale)
 }
 
+func TestConvertToAPIUsersPage(t *testing.T) {
+	var count = 10
+	var input = kc.UsersPageRepresentation{Count: &count, Users: []kc.UserRepresentation{kc.UserRepresentation{}, kc.UserRepresentation{}}}
+	var output = ConvertToAPIUsersPage(input)
+	assert.Equal(t, count, *output.Count)
+	assert.Equal(t, len(input.Users), len(output.Users))
+}
+
 func TestConvertToKCUser(t *testing.T) {
 	var user UserRepresentation
 
