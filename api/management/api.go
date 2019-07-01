@@ -93,7 +93,7 @@ func ConvertCredential(credKc *kc.CredentialRepresentation) CredentialRepresenta
 	if credKc.Config != nil {
 		var m map[string][]string
 		m = make(map[string][]string)
-		for _, key := range []string{"deviceInfo_Manufacturer", "deviceInfo_Model", "deviceInfo_Name", "deviceInfo_Plateform"} {
+		for _, key := range []string{"deviceInfo_Manufacturer", "deviceInfo_Model", "deviceInfo_Name", "deviceInfo_Plateform", "shortId", "usedChallenges", "availableChallenges", "cardStatus", "expirationDate"} {
 			value, ok := (*credKc.Config)[key]
 			if ok {
 				m[key] = value
