@@ -33,6 +33,7 @@ type Endpoints struct {
 	SendVerifyEmail                endpoint.Endpoint
 	ExecuteActionsEmail            endpoint.Endpoint
 	SendNewEnrolmentCode           endpoint.Endpoint
+	SendReminderEmail              endpoint.Endpoint
 	GetCredentialsForUser          endpoint.Endpoint
 	DeleteCredentialsForUser       endpoint.Endpoint
 	GetRoles                       endpoint.Endpoint
@@ -64,6 +65,7 @@ type ManagementComponent interface {
 	SendVerifyEmail(ctx context.Context, realmName string, userID string, paramKV ...string) error
 	ExecuteActionsEmail(ctx context.Context, realmName string, userID string, actions []api.RequiredAction, paramKV ...string) error
 	SendNewEnrolmentCode(ctx context.Context, realmName string, userID string) (string, error)
+	SendReminderEmail(ctx context.Context, realmName string, userID string, paramKV ...string) error
 	GetCredentialsForUser(ctx context.Context, realmName string, userID string) ([]api.CredentialRepresentation, error)
 	DeleteCredentialsForUser(ctx context.Context, realmName string, userID string, credentialID string) error
 	GetRoles(ctx context.Context, realmName string) ([]api.RoleRepresentation, error)
@@ -336,6 +338,22 @@ func MakeSendNewEnrolmentCodeEndpoint(managementComponent ManagementComponent) c
 
 		code, err := managementComponent.SendNewEnrolmentCode(ctx, m["realm"], m["userID"])
 		return map[string]string{"code": code}, err
+	}
+}
+
+// MakeSendReminderEmailEndpoint creates an endpoint for SendReminderEmail
+func MakeSendReminderEmailEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+
+		var paramKV []string
+		for _, key := range []string{"client_id", "redirect_uri", "lifespan"} {
+			if m[key] != "" {
+				paramKV = append(paramKV, key, m[key])
+			}
+		}
+
+		return nil, managementComponent.SendReminderEmail(ctx, m["realm"], m["userID"], paramKV...)
 	}
 }
 
