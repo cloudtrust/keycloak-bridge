@@ -36,12 +36,12 @@
   version = "v1.0-rc3"
 
 [[projects]]
-  digest = "1:a9ab922e4ed3a94a4e98509ef5f0847aae98562afb757d243da844379179a258"
+  branch = "master"
+  digest = "1:ad1c467c1d931254c7d18e84a6700eef566eb5261da686475f0d4fa8d4412073"
   name = "github.com/cloudtrust/keycloak-client"
   packages = ["."]
   pruneopts = "UT"
-  revision = "b42cfdd4631a1a7a991348c2834d476c2a2cc38d"
-  version = "v1.0-rc2"
+  revision = "09b74eae8c8362450ccf11ea8678c1c12c614baf"
 
 [[projects]]
   digest = "1:f6e5e1bc64c2908167e6aa9a1fe0c084d515132a1c63ad5b6c84036aa06dc0c1"
@@ -133,7 +133,7 @@
   version = "v1.3.1"
 
 [[projects]]
-  digest = "1:e02b687ade0c19c038ecce3ea326d756519adc4bba1203a9e76d620b12354892"
+  digest = "1:debcbc62c53851dab1fc881438a65449dd5ffa12f64f059fd6e32b938799513d"
   name = "github.com/google/flatbuffers"
   packages = ["go"]
   pruneopts = "UT"
@@ -141,12 +141,12 @@
   version = "1.11.0"
 
 [[projects]]
-  digest = "1:3af6be4fee7c08f81f13d36f04ffb63ad4b6b5aaba12cce96095c7c2863d4912"
+  digest = "1:cbec35fe4d5a4fba369a656a8cd65e244ea2c743007d8f6c1ccb132acf9d1296"
   name = "github.com/gorilla/mux"
   packages = ["."]
   pruneopts = "UT"
-  revision = "ed099d42384823742bba0bf9a72b53b55c9e2e38"
-  version = "v1.7.2"
+  revision = "00bdffe0f3c77e27d2cf6f5c70232a2d3e4d9c15"
+  version = "v1.7.3"
 
 [[projects]]
   digest = "1:c0d19ab64b32ce9fe5cf4ddceba78d5bc9807f0016db6b1183599da3dcc24d10"
@@ -168,7 +168,7 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:3c6faaeb500b7e6fadbe52c0b3fd62b6eed7801ed0d74bb3bd9577017df8d2f4"
+  digest = "1:2629521d27f3b04ce4d524cb52a25fdc77745071239c91d6fe9a7ce10131365a"
   name = "github.com/influxdata/influxdb"
   packages = [
     "client/v2",
@@ -176,8 +176,8 @@
     "pkg/escape",
   ]
   pruneopts = "UT"
-  revision = "01c8dd416270f424ab0c40f9291e269ac6921964"
-  version = "v1.7.6"
+  revision = "f8fdf652f348fc9980997fe1c972e2b79ddd13b0"
+  version = "v1.7.7"
 
 [[projects]]
   branch = "master"
@@ -378,7 +378,7 @@
     "publicsuffix",
   ]
   pruneopts = "UT"
-  revision = "3b0461eec859c4b73bb64fdc8285971fd33e3938"
+  revision = "da137c7871d730100384dbcf36e6f8fa493aef5b"
 
 [[projects]]
   branch = "master"
@@ -393,11 +393,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:d4488b7ca589840d020983978f9f139b89872b90d8a6d725de2fcac6c9448273"
+  digest = "1:730ba27cd66db3b98ec8f51a6f20d45ec277d490cca36b1f54e31d3fcaf4840e"
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = "UT"
-  revision = "c5567b49c5d04a5f83870795b8c0e2df43a8ce32"
+  revision = "04f50cda93cbb67f2afa353c52f342100e80e625"
 
 [[projects]]
   digest = "1:8d8faad6b12a3a4c819a3f9618cb6ee1fa1cfc33253abeeea8b55336721e3405"
