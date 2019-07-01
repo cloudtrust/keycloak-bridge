@@ -1283,8 +1283,8 @@ func TestExecuteActionsEmail(t *testing.T) {
 	var accessToken = "TOKEN=="
 	var realmName = "master"
 	var userID = "1245-7854-8963"
-	var reqActions = []api.RequiredAction{"action1", "action2"}
-	var actions = []string{"action1", "action2"}
+	var reqActions = []api.RequiredAction{initPasswordAction, "action1", "action2"}
+	var actions = []string{initPasswordAction, "action1", "action2"}
 
 	var key1 = "key1"
 	var value1 = "value1"
@@ -1293,9 +1293,11 @@ func TestExecuteActionsEmail(t *testing.T) {
 
 	// Send email actions
 	{
+
 		mockKeycloakClient.EXPECT().ExecuteActionsEmail(accessToken, realmName, userID, actions, key1, value1, key2, value2).Return(nil).Times(1)
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		mockEventDBModule.EXPECT().ReportEvent(ctx, "INIT_PASSWORD", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(2)
 
 		err := managementComponent.ExecuteActionsEmail(ctx, "master", userID, reqActions, key1, value1, key2, value2)
 
