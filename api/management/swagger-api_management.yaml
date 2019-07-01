@@ -152,15 +152,30 @@ paths:
         schema:
           type: string
         allowEmptyValue: true
+      - name: first
+        in: query
+        schema:
+          type: number
+        allowEmptyValue: true
+      - name: max
+        in: query
+        schema:
+          type: number
+        allowEmptyValue: true
       responses:
         200:
           description: successful operation
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/User'
+                type: object
+                properties:
+                  count:
+                    type: number
+                  users:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/User'
   /realms/{realm}/users/{userID}:
     get:
       tags:

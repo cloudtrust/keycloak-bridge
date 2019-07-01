@@ -54,7 +54,7 @@ type ManagementComponent interface {
 	DeleteUser(ctx context.Context, realmName, userID string) error
 	GetUser(ctx context.Context, realmName, userID string) (api.UserRepresentation, error)
 	UpdateUser(ctx context.Context, realmName, userID string, user api.UserRepresentation) error
-	GetUsers(ctx context.Context, realmName string, groupIDs []string, paramKV ...string) ([]api.UserRepresentation, error)
+	GetUsers(ctx context.Context, realmName string, groupIDs []string, paramKV ...string) (api.UsersPageRepresentation, error)
 	CreateUser(ctx context.Context, realmName string, user api.UserRepresentation) (string, error)
 	GetUserAccountStatus(ctx context.Context, realmName, userID string) (map[string]bool, error)
 	GetRolesOfUser(ctx context.Context, realmName, userID string) ([]api.RoleRepresentation, error)
@@ -190,7 +190,7 @@ func MakeGetUsersEndpoint(managementComponent ManagementComponent) cs.Endpoint {
 		var m = req.(map[string]string)
 
 		var paramKV []string
-		for _, key := range []string{"email", "firstName", "lastName", "username", "search"} {
+		for _, key := range []string{"email", "firstName", "lastName", "username", "search", "first", "max"} {
 			if m[key] != "" {
 				paramKV = append(paramKV, key, m[key])
 			}

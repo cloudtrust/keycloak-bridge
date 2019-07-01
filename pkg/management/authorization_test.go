@@ -288,7 +288,7 @@ func TestAllowed(t *testing.T) {
 		assert.Nil(t, err)
 
 		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), realmName, groupID).Return(groupName, nil).Times(1)
-		mockManagementComponent.EXPECT().GetUsers(ctx, realmName, groupIDs).Return([]api.UserRepresentation{}, nil).Times(1)
+		mockManagementComponent.EXPECT().GetUsers(ctx, realmName, groupIDs).Return(api.UsersPageRepresentation{}, nil).Times(1)
 		_, err = authorizationMW.GetUsers(ctx, realmName, groupIDs)
 		assert.Nil(t, err)
 

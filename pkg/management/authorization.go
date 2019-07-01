@@ -136,13 +136,13 @@ func (c *authorizationComponentMW) UpdateUser(ctx context.Context, realmName, us
 	return c.next.UpdateUser(ctx, realmName, userID, user)
 }
 
-func (c *authorizationComponentMW) GetUsers(ctx context.Context, realmName string, groupIDs []string, paramKV ...string) ([]api.UserRepresentation, error) {
+func (c *authorizationComponentMW) GetUsers(ctx context.Context, realmName string, groupIDs []string, paramKV ...string) (api.UsersPageRepresentation, error) {
 	var action = GetUsers
 	var targetRealm = realmName
 
 	for _, groupID := range groupIDs {
 		if err := c.authManager.CheckAuthorizationOnTargetGroupID(ctx, action, targetRealm, groupID); err != nil {
-			return []api.UserRepresentation{}, err
+			return api.UsersPageRepresentation{}, err
 		}
 	}
 

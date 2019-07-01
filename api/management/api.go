@@ -27,6 +27,12 @@ type UserRepresentation struct {
 	Locale              *string   `json:"locale,omitempty"`
 }
 
+// UsersPageRepresentation used to manage paging in GetUsers
+type UsersPageRepresentation struct {
+	Users []UserRepresentation `json:"users,omitempty"`
+	Count *int                 `json:"count,omitempty"`
+}
+
 type RealmRepresentation struct {
 	Id              *string `json:"id,omitempty"`
 	KeycloakVersion *string `json:"keycloakVersion,omitempty"`
@@ -36,12 +42,12 @@ type RealmRepresentation struct {
 }
 
 type ClientRepresentation struct {
-	Id          *string `json:"id,omitempty"`
-	Name        *string `json:"name,omitempty"`
-	BaseUrl     *string `json:"baseUrl,omitempty"`
-	ClientId    *string `json:"clientId,omitempty"`
-	Protocol    *string `json:"protocol,omitempty"`
-	Enabled     *bool   `json:"enabled,omitempty"`
+	Id       *string `json:"id,omitempty"`
+	Name     *string `json:"name,omitempty"`
+	BaseUrl  *string `json:"baseUrl,omitempty"`
+	ClientId *string `json:"clientId,omitempty"`
+	Protocol *string `json:"protocol,omitempty"`
+	Enabled  *bool   `json:"enabled,omitempty"`
 }
 
 type CredentialRepresentation struct {
@@ -145,6 +151,18 @@ func ConvertToAPIUser(userKc kc.UserRepresentation) UserRepresentation {
 		}
 	}
 	return userRep
+}
+
+// ConvertToAPIUsersPage converts paged users results from KC model to API one
+func ConvertToAPIUsersPage(users kc.UsersPageRepresentation) UsersPageRepresentation {
+	var slice []UserRepresentation
+	for _, u := range users.Users {
+		slice = append(slice, ConvertToAPIUser(u))
+	}
+	return UsersPageRepresentation{
+		Count: users.Count,
+		Users: slice,
+	}
 }
 
 // ConvertToKCUser creates a KC user representation from an API user
@@ -308,6 +326,7 @@ func matchesRegExp(value, re string) bool {
 	return res
 }
 
+// Regular expressions for parameters validation
 const (
 	RegExpID = `^[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}$`
 
@@ -329,13 +348,13 @@ const (
 	RegExpName        = `^[a-zA-Z0-9-_]{1,128}$`
 	RegExpDescription = `^.{1,255}$`
 
-	//Password
+	// Password
 	RegExpPassword = `^.{1,255}$`
 
-	//RealmCustomConfiguration
+	// RealmCustomConfiguration
 	RegExpRedirectURI = `^\w+:(\/?\/?)[^\s]+$`
 
-	//RequiredAction
+	// RequiredAction
 	RegExpRequiredAction = `^[a-zA-Z0-9-_]{1,255}$`
 
 	// Others
@@ -343,4 +362,5 @@ const (
 	RegExpSearch    = `^.{1,128}$`
 	RegExpLifespan  = `^[0-9]{1,10}$`
 	RegExpGroupIds  = `^([a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12})(,[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}){0,20}$`
+	RegExpNumber    = `^\d+$`
 )

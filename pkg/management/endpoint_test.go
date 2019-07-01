@@ -244,7 +244,7 @@ func TestGetUsersEndpoint(t *testing.T) {
 		req["realm"] = realm
 		req["groupIds"] = groupIDs
 
-		mockManagementComponent.EXPECT().GetUsers(ctx, realm, []string{groupID1, groupID2}).Return([]api.UserRepresentation{}, nil).Times(1)
+		mockManagementComponent.EXPECT().GetUsers(ctx, realm, []string{groupID1, groupID2}).Return(api.UsersPageRepresentation{}, nil).Times(1)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.NotNil(t, res)
@@ -264,7 +264,7 @@ func TestGetUsersEndpoint(t *testing.T) {
 		req["toto"] = "tutu" // Check this param is not transmitted
 		req["groupIds"] = "123-784dsf-sdf567"
 
-		mockManagementComponent.EXPECT().GetUsers(ctx, realm, []string{req["groupIds"]}, "email", req["email"], "firstName", req["firstName"], "lastName", req["lastName"], "username", req["username"], "search", req["search"]).Return([]api.UserRepresentation{}, nil).Times(1)
+		mockManagementComponent.EXPECT().GetUsers(ctx, realm, []string{req["groupIds"]}, "email", req["email"], "firstName", req["firstName"], "lastName", req["lastName"], "username", req["username"], "search", req["search"]).Return(api.UsersPageRepresentation{}, nil).Times(1)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.NotNil(t, res)
