@@ -534,7 +534,7 @@ paths:
       parameters:
       - name: realm
         in: path
-        description: Realm name (not id!)
+        description: realm name (not id!)
         required: true
         schema:
           type: string
@@ -544,13 +544,30 @@ paths:
         required: true
         schema:
           type: string
+      - name: client_id
+        in: query
+        schema:
+          type: string
+        allowEmptyValue: true
+      - name: redirect_uri
+        in: query
+        schema:
+          type: string
+          allowEmptyValue: true
+      - name: lifespan
+        in: query
+        schema:
+          type: string          
+        allowEmptyValue: true
       responses:
         200:
-          description: "successful operation"
+          description: Mail successfully sent
         400:
-          description: "Invalid input"
+          description: Invalid input
+        401:
+          description: Not authenticated
         403:
-          description: "No permission to call this operation"        
+          description: No permission to call this operation    
   /realms/{realm}/users/{userID}/credentials:
     get:
       tags:
