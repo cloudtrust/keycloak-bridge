@@ -553,7 +553,7 @@ paths:
         in: query
         schema:
           type: string
-          allowEmptyValue: true
+        allowEmptyValue: true
       - name: lifespan
         in: query
         schema:
