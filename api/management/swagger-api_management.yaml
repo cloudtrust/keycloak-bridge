@@ -529,8 +529,7 @@ paths:
     post:
       tags:
       - Users
-      summary: >
-        Send a reminder email for a particular userID.
+      summary: Send a reminder email for a particular userID.
       parameters:
       - name: realm
         in: path
