@@ -78,6 +78,13 @@ func TestConvertToAPIUsersPage(t *testing.T) {
 	assert.Equal(t, len(input.Users), len(output.Users))
 }
 
+func TestConvertToAPIUsersPageEmptySet(t *testing.T) {
+	var input = kc.UsersPageRepresentation{Count: nil, Users: nil}
+	var output = ConvertToAPIUsersPage(input)
+	assert.NotNil(t, output.Users)
+	assert.Equal(t, 0, len(output.Users))
+}
+
 func TestConvertToKCUser(t *testing.T) {
 	var user UserRepresentation
 
