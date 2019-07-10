@@ -29,7 +29,7 @@ type UserRepresentation struct {
 
 // UsersPageRepresentation used to manage paging in GetUsers
 type UsersPageRepresentation struct {
-	Users []UserRepresentation `json:"users,omitempty"`
+	Users []UserRepresentation `json:"users"`
 	Count *int                 `json:"count,omitempty"`
 }
 
@@ -155,7 +155,7 @@ func ConvertToAPIUser(userKc kc.UserRepresentation) UserRepresentation {
 
 // ConvertToAPIUsersPage converts paged users results from KC model to API one
 func ConvertToAPIUsersPage(users kc.UsersPageRepresentation) UsersPageRepresentation {
-	var slice []UserRepresentation
+	var slice []UserRepresentation = make([]UserRepresentation, 0)
 	for _, u := range users.Users {
 		slice = append(slice, ConvertToAPIUser(u))
 	}
