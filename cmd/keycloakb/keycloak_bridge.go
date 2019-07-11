@@ -463,6 +463,8 @@ func main() {
 	var exportEndpoint = export.MakeExportEndpoint(exportComponent)
 	var exportSaveAndExportEndpoint = export.MakeStoreAndExportEndpoint(exportComponent)
 
+	commonhttp.SetEmitter(ComponentName)
+
 	// HTTP Internal Call Server (Event reception from Keycloak & Export API).
 	go func() {
 		var logger = log.With(logger, "transport", "http")

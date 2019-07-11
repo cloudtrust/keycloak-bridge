@@ -56,23 +56,12 @@ func (c *component) UpdatePassword(ctx context.Context, currentPassword, newPass
 
 	if currentPassword == newPassword || newPassword != confirmPassword {
 		return commonhttp.Error{
-			Status: http.StatusBadRequest,
+			Status:  http.StatusBadRequest,
+			Message: ComponentName + ".",
 		}
 	}
 
 	_, err := c.keycloakAccountClient.UpdatePassword(accessToken, realm, currentPassword, newPassword, confirmPassword)
-
-	var updateError error = nil
-	if err != nil {
-		switch err.Error() {
-		case "invalidPasswordExistingMessage":
-			updateError = commonhttp.Error{
-				Status:  http.StatusBadRequest,
-				Message: err.Error()}
-		default:
-			updateError = err
-		}
-	}
 
 	//store the API call into the DB
 	err = c.reportEvent(ctx, "PASSWORD_RESET", database.CtEventRealmName, realm, database.CtEventUserID, userID, database.CtEventUsername, username)

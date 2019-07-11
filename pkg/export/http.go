@@ -43,7 +43,7 @@ func encodeHTTPReply(_ context.Context, w http.ResponseWriter, res interface{}) 
 	var reply = res.(map[string]interface{})
 	var data, err = json.MarshalIndent(reply, "", "  ")
 	if err != nil {
-		return errors.Wrap(err, "could not marshal response")
+		return errors.Wrap(err, "cannotMarshalResponse")
 	}
 
 	w.WriteHeader(http.StatusOK)
@@ -55,5 +55,5 @@ func encodeHTTPReply(_ context.Context, w http.ResponseWriter, res interface{}) 
 func errorHandler(ctx context.Context, err error, w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "application/octet-stream")
 	w.WriteHeader(http.StatusInternalServerError)
-	w.Write([]byte(err.Error()))
+	w.Write([]byte(ComponentName + "." + err.Error()))
 }

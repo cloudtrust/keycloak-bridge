@@ -51,7 +51,7 @@ func decodeHTTPRequest(_ context.Context, r *http.Request) (res interface{}, err
 	{
 		var err = json.NewDecoder(r.Body).Decode(&request)
 		if err != nil {
-			return nil, errors.Wrap(err, "could not decode JSON request")
+			return nil, errors.Wrap(err, "cannotDecodeJSONRequest")
 		}
 	}
 
@@ -61,7 +61,7 @@ func decodeHTTPRequest(_ context.Context, r *http.Request) (res interface{}, err
 		bEvent, err = base64.StdEncoding.DecodeString(request.Object)
 
 		if err != nil {
-			return nil, errors.Wrap(err, "could not decode Base64 object from request")
+			return nil, errors.Wrap(err, "cannotDecodeBase64ObjectFromRequest")
 		}
 	}
 
@@ -69,14 +69,14 @@ func decodeHTTPRequest(_ context.Context, r *http.Request) (res interface{}, err
 	{
 		if !(objType == "AdminEvent" || objType == "Event") {
 			var err = ErrInvalidArgument{InvalidParam: "type"}
-			return nil, errors.Wrap(err, "could not decode Base64 object from request")
+			return nil, errors.Wrap(err, "cannotDecodeBase64ObjectFromRequest")
 		}
 	}
 
 	// Check valid buffer (at least 4 bytes)
 	if len(bEvent) < 4 {
 		var err = ErrInvalidArgument{InvalidParam: "obj"}
-		return nil, errors.Wrap(err, "invalid flatbuffer length")
+		return nil, errors.Wrap(err, "invalidFlatbufferLength")
 	}
 
 	return Request{
@@ -97,7 +97,7 @@ type ErrInvalidArgument struct {
 }
 
 func (e ErrInvalidArgument) Error() string {
-	return fmt.Sprintf("Invalid argument: %s", e.InvalidParam)
+	return fmt.Sprintf("invalidArgument.%s", e.InvalidParam)
 }
 
 // errorHandler encodes the reply when there is an error.
@@ -110,5 +110,5 @@ func errorHandler(ctx context.Context, err error, w http.ResponseWriter) {
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 
-	json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
+	w.Write([]byte(ComponentName + "." + err.Error()))
 }

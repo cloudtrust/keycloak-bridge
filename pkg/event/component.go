@@ -13,6 +13,11 @@ import (
 	"github.com/cloudtrust/keycloak-bridge/api/event/fb"
 )
 
+var (
+	// ComponentName is the name of the component.
+	ComponentName = "keycloak-bridge"
+)
+
 const (
 	timeFormat = "2006-01-02 15:04:05.000"
 )
