@@ -120,7 +120,7 @@ func MakeCreateUserEndpoint(managementComponent ManagementComponent) cs.Endpoint
 		var user api.UserRepresentation
 
 		if err = json.Unmarshal([]byte(m["body"]), &user); err != nil {
-			return nil, http.CreateBadRequestError("Invalid body")
+			return nil, http.CreateBadRequestError("invalidBody")
 		}
 
 		if err = user.Validate(); err != nil {
@@ -173,7 +173,7 @@ func MakeUpdateUserEndpoint(managementComponent ManagementComponent) cs.Endpoint
 		var user api.UserRepresentation
 
 		if err = json.Unmarshal([]byte(m["body"]), &user); err != nil {
-			return nil, http.CreateBadRequestError("Invalid body")
+			return nil, http.CreateBadRequestError("invalidBody")
 		}
 
 		if err = user.Validate(); err != nil {
@@ -252,7 +252,7 @@ func MakeAddClientRolesToUserEndpoint(managementComponent ManagementComponent) c
 		var roles []api.RoleRepresentation
 
 		if err = json.Unmarshal([]byte(m["body"]), &roles); err != nil {
-			return nil, http.CreateBadRequestError("Invalid body")
+			return nil, http.CreateBadRequestError("invalidBody")
 		}
 
 		for _, role := range roles {
@@ -274,7 +274,7 @@ func MakeResetPasswordEndpoint(managementComponent ManagementComponent) cs.Endpo
 		var password api.PasswordRepresentation
 
 		if err = json.Unmarshal([]byte(m["body"]), &password); err != nil {
-			return nil, http.CreateBadRequestError("Invalid body")
+			return nil, http.CreateBadRequestError("invalidBody")
 		}
 
 		if err = password.Validate(); err != nil {
@@ -322,7 +322,7 @@ func MakeExecuteActionsEmailEndpoint(managementComponent ManagementComponent) cs
 		var actions []api.RequiredAction
 
 		if err = json.Unmarshal([]byte(m["body"]), &actions); err != nil {
-			return nil, http.CreateBadRequestError("Invalid body")
+			return nil, http.CreateBadRequestError("invalidBody")
 		}
 
 		for _, action := range actions {
@@ -424,7 +424,7 @@ func MakeCreateClientRoleEndpoint(managementComponent ManagementComponent) cs.En
 		var role api.RoleRepresentation
 
 		if err = json.Unmarshal([]byte(m["body"]), &role); err != nil {
-			return nil, http.CreateBadRequestError("Invalid body")
+			return nil, http.CreateBadRequestError("invalidBody")
 		}
 
 		if err = role.Validate(); err != nil {
@@ -466,7 +466,7 @@ func MakeUpdateRealmCustomConfigurationEndpoint(managementComponent ManagementCo
 		var customConfig api.RealmCustomConfiguration
 
 		if err = json.Unmarshal(configJSON, &customConfig); err != nil {
-			return nil, http.CreateBadRequestError("Invalid body")
+			return nil, http.CreateBadRequestError("invalidBody")
 		}
 
 		if err = customConfig.Validate(); err != nil {
@@ -488,7 +488,7 @@ type ConvertLocationError struct {
 }
 
 func (e ConvertLocationError) Error() string {
-	return fmt.Sprintf("Location received from Keycloak do not match regexp: %s", e.Location)
+	return fmt.Sprintf("locationReceivedFromKeycloakDoesNotMatchRegexp.%s", e.Location)
 }
 
 // We are currently using a mapping 1:1 for REST API of Bridge and Keycloak, thus we take a shortcut to convert the location of the resource

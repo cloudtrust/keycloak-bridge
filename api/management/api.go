@@ -228,45 +228,45 @@ func ConvertToKCUser(user UserRepresentation) kc.UserRepresentation {
 // Validate is a validator for UserRepresentation
 func (user UserRepresentation) Validate() error {
 	if user.Id != nil && !matchesRegExp(*user.Id, RegExpID) {
-		return errors.New("Invalid user ID")
+		return errors.New("invalidUserID")
 	}
 
 	if user.Username != nil && !matchesRegExp(*user.Username, RegExpUsername) {
-		return errors.New("Invalid username")
+		return errors.New("invalidUsername")
 	}
 
 	if user.Email != nil && !matchesRegExp(*user.Email, RegExpEmail) {
-		return errors.New("Invalid email")
+		return errors.New("invalidEmail")
 	}
 
 	if user.FirstName != nil && !matchesRegExp(*user.FirstName, RegExpFirstName) {
-		return errors.New("Invalid firstname")
+		return errors.New("invalidFirstname")
 	}
 
 	if user.LastName != nil && !matchesRegExp(*user.LastName, RegExpLastName) {
-		return errors.New("Invalid lastname")
+		return errors.New("invalidLastname")
 	}
 
 	if user.PhoneNumber != nil && !matchesRegExp(*user.PhoneNumber, RegExpPhoneNumber) {
-		return errors.New("Invalid phone number")
+		return errors.New("invalidPhoneNumber")
 	}
 
 	if user.Label != nil && !matchesRegExp(*user.Label, RegExpLabel) {
-		return errors.New("Invalid label")
+		return errors.New("invalidLabel")
 	}
 
 	if user.Gender != nil && !matchesRegExp(*user.Gender, RegExpGender) {
-		return errors.New("Invalid gender")
+		return errors.New("invalidGender")
 	}
 
 	if user.BirthDate != nil && !matchesRegExp(*user.BirthDate, RegExpBirthDate) {
-		return errors.New("Invalid birthdate")
+		return errors.New("invalidBirthdate")
 	}
 
 	if user.Groups != nil {
 		for _, groupID := range *(user.Groups) {
 			if !matchesRegExp(groupID, RegExpID) {
-				return errors.New("Invalid group ID")
+				return errors.New("invalidGroupID")
 			}
 		}
 	}
@@ -274,13 +274,13 @@ func (user UserRepresentation) Validate() error {
 	if user.Roles != nil {
 		for _, roleID := range *(user.Roles) {
 			if !matchesRegExp(roleID, RegExpID) {
-				return errors.New("Invalid role ID")
+				return errors.New("invalidRoleID")
 			}
 		}
 	}
 
 	if user.Locale != nil && !matchesRegExp(*user.Locale, RegExpLocale) {
-		return errors.New("Invalid locale")
+		return errors.New("invalidLocale")
 	}
 
 	return nil
@@ -289,19 +289,19 @@ func (user UserRepresentation) Validate() error {
 // Validate is a validator for RoleRepresentation
 func (role RoleRepresentation) Validate() error {
 	if role.Id != nil && !matchesRegExp(*role.Id, RegExpID) {
-		return errors.New("Invalid role ID")
+		return errors.New("invalidRoleID")
 	}
 
 	if role.Name != nil && !matchesRegExp(*role.Name, RegExpName) {
-		return errors.New("Invalid username")
+		return errors.New("invalidUsername")
 	}
 
 	if role.Description != nil && !matchesRegExp(*role.Description, RegExpDescription) {
-		return errors.New("Invalid description")
+		return errors.New("invalidDescription")
 	}
 
 	if role.ContainerId != nil && !matchesRegExp(*role.ContainerId, RegExpID) {
-		return errors.New("Invalid container ID")
+		return errors.New("invalidContainerID")
 	}
 
 	return nil
@@ -310,7 +310,7 @@ func (role RoleRepresentation) Validate() error {
 // Validate is a validator for PasswordRepresentation
 func (password PasswordRepresentation) Validate() error {
 	if password.Value != nil && !matchesRegExp(*password.Value, RegExpPassword) {
-		return errors.New("Invalid password")
+		return errors.New("invalidPassword")
 	}
 
 	return nil
@@ -319,11 +319,11 @@ func (password PasswordRepresentation) Validate() error {
 // Validate is a validator for RealmCustomConfiguration
 func (config RealmCustomConfiguration) Validate() error {
 	if config.DefaultClientId != nil && !matchesRegExp(*config.DefaultClientId, RegExpClientID) {
-		return errors.New("Invalid default client ID")
+		return errors.New("invalidDefaultClientID")
 	}
 
 	if config.DefaultRedirectUri != nil && !matchesRegExp(*config.DefaultRedirectUri, RegExpRedirectURI) {
-		return errors.New("Invalid default redirect uri")
+		return errors.New("invalidDefaultRedirectUri")
 	}
 
 	return nil
@@ -332,7 +332,7 @@ func (config RealmCustomConfiguration) Validate() error {
 // Validate is a validator for RequiredAction
 func (requiredAction RequiredAction) Validate() error {
 	if requiredAction != "" && !matchesRegExp(string(requiredAction), RegExpRequiredAction) {
-		return errors.New("Invalid required action")
+		return errors.New("invalidRequiredAction")
 	}
 
 	return nil

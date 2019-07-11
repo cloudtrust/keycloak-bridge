@@ -14,6 +14,11 @@ import (
 	kc "github.com/cloudtrust/keycloak-client"
 )
 
+var (
+	// ComponentName is the name of the component.
+	ComponentName = "keycloak-bridge"
+)
+
 const (
 	initPasswordAction = "sms-password-set"
 )
@@ -875,7 +880,7 @@ func (c *component) UpdateRealmCustomConfiguration(ctx context.Context, realmNam
 	if !match {
 		return http.Error{
 			Status:  400,
-			Message: "Invalid client ID or redirect URI",
+			Message: "invalidClientIDOrRedirectURI",
 		}
 	}
 	// transform customConfig object into JSON string

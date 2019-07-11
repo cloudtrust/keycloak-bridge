@@ -38,7 +38,7 @@ func (c *StorageModule) Save(componentName, version string, config []byte) error
 	var _, err = c.db.Exec(upsertConfigStmt, componentName, version, config)
 
 	if err != nil {
-		return errors.Wrapf(err, "component '%s' with version '%s' could not update config", componentName, version)
+		return errors.Wrapf(err, "cannotUpdateConfig.component'%s'WithVersion'%s'", componentName, version)
 	}
 
 	return nil
@@ -53,7 +53,7 @@ func (c *StorageModule) Read(componentName, version string) ([]byte, error) {
 
 	var err = row.Scan(&cName, &v, &config)
 	if err != nil {
-		return nil, errors.Wrapf(err, "component '%s' with version '%s' could not update config", componentName, version)
+		return nil, errors.Wrapf(err, "cannotUpdateConfig.component'%s'WithVersion'%s'", componentName, version)
 	}
 
 	return config, nil
