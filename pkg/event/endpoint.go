@@ -20,7 +20,7 @@ func MakeEventEndpoint(c MuxComponent) cs.Endpoint {
 		case Request:
 			return nil, c.Event(ctx, r.Type, r.Object)
 		default:
-			return nil, fmt.Errorf(ComponentName+".wrongTypeRequest.%T", req)
+			return nil, fmt.Errorf("wrongTypeRequest.%T", req)
 		}
 	}
 }

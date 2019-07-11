@@ -323,7 +323,7 @@ func (config RealmCustomConfiguration) Validate() error {
 	}
 
 	if config.DefaultRedirectUri != nil && !matchesRegExp(*config.DefaultRedirectUri, RegExpRedirectURI) {
-		return errors.New("invalidDefaultRedirectUri")
+		return errors.New("invalidDefaultRedirectURI")
 	}
 
 	return nil
