@@ -525,6 +525,48 @@ paths:
           description: "Invalid input"
         403:
           description: "No permission to call this operation"
+  /realms/{realm}/users/{userID}/send-reminder-email:
+    post:
+      tags:
+      - Users
+      summary: Send a reminder email for a particular userID.
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
+      - name: client_id
+        in: query
+        schema:
+          type: string
+        allowEmptyValue: true
+      - name: redirect_uri
+        in: query
+        schema:
+          type: string
+        allowEmptyValue: true
+      - name: lifespan
+        in: query
+        schema:
+          type: string          
+        allowEmptyValue: true
+      responses:
+        200:
+          description: Mail successfully sent
+        400:
+          description: Invalid input
+        401:
+          description: Not authenticated
+        403:
+          description: No permission to call this operation    
   /realms/{realm}/users/{userID}/credentials:
     get:
       tags:
