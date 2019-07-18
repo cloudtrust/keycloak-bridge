@@ -1,6 +1,8 @@
 package management_api
 
 import (
+	"encoding/json"
+	"strings"
 	"testing"
 
 	kc "github.com/cloudtrust/keycloak-client"
@@ -78,6 +80,20 @@ func TestConvertToAPIUsersPage(t *testing.T) {
 	assert.Equal(t, len(input.Users), len(output.Users))
 }
 
+func TestConvertToAPIUsersPageEmptySet(t *testing.T) {
+	var input = kc.UsersPageRepresentation{Count: nil, Users: nil}
+	var output = ConvertToAPIUsersPage(input)
+	assert.NotNil(t, output.Users)
+	assert.NotNil(t, output.Count)
+	assert.Equal(t, 0, len(output.Users))
+	assert.Equal(t, 0, *output.Count)
+
+	var jsonRaw, _ = json.Marshal(output)
+	var json = string(jsonRaw)
+	assert.True(t, strings.Contains(json, `"users":[]`))
+	assert.True(t, strings.Contains(json, `"count":0`))
+}
+
 func TestConvertToKCUser(t *testing.T) {
 	var user UserRepresentation
 
@@ -129,9 +145,10 @@ func TestValidateUserRepresentation(t *testing.T) {
 	locale := "english"
 	groups := []string{"f467ed7c", "7767ed7c-0a1d-4eee-9bb8-669c6f89c007"}
 	roles := []string{"abcded7", "7767ed7c-0a1d-4eee-9bb8-669c6f898888"}
+	empty := ""
 
 	var users []UserRepresentation
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 12; i++ {
 		users = append(users, createValidUserRepresentation())
 	}
 
@@ -145,6 +162,8 @@ func TestValidateUserRepresentation(t *testing.T) {
 	users[7].Groups = &groups
 	users[8].Roles = &roles
 	users[9].Locale = &locale
+	users[10].FirstName = &empty
+	users[11].LastName = &empty
 
 	for _, user := range users {
 		assert.NotNil(t, user.Validate())
