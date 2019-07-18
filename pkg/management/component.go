@@ -594,7 +594,7 @@ func (c *component) GetGroups(ctx context.Context, realmName string) ([]api.Grou
 		return nil, err
 	}
 
-	var groupsRep []api.GroupRepresentation
+	var groupsRep = []api.GroupRepresentation{}
 	for _, groupKc := range groupsKc {
 		var groupRep api.GroupRepresentation
 		groupRep.Id = groupKc.Id

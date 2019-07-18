@@ -1584,7 +1584,7 @@ func TestGetGroups(t *testing.T) {
 	var accessToken = "TOKEN=="
 	var realmName = "master"
 
-	// Get groups with succces
+	// Get groups with succces, non empty result
 	{
 		var id = "1234-7454-4516"
 		var path = "path_group"
@@ -1611,6 +1611,19 @@ func TestGetGroups(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Equal(t, id, *apiGroupRep.Id)
 		assert.Equal(t, name, *apiGroupRep.Name)
+	}
+
+	// Get groups with success, empty result
+	{
+		var kcGroupsRep []kc.GroupRepresentation
+		mockKeycloakClient.EXPECT().GetGroups(accessToken, realmName).Return(kcGroupsRep, nil).Times(1)
+
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		apiGroupsRep, err := managementComponent.GetGroups(ctx, "master")
+
+		assert.Nil(t, err)
+		assert.NotNil(t, apiGroupsRep)
+		assert.Equal(t, 0, len(apiGroupsRep))
 	}
 
 	//Error
