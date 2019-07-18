@@ -8,6 +8,7 @@ import (
 	kc "github.com/cloudtrust/keycloak-client"
 )
 
+// UserRepresentation struct
 type UserRepresentation struct {
 	Id                  *string   `json:"id,omitempty"`
 	Username            *string   `json:"username,omitempty"`
@@ -29,10 +30,11 @@ type UserRepresentation struct {
 
 // UsersPageRepresentation used to manage paging in GetUsers
 type UsersPageRepresentation struct {
-	Users []UserRepresentation `json:"users,omitempty"`
-	Count *int                 `json:"count,omitempty"`
+	Users []UserRepresentation `json:"users"`
+	Count *int                 `json:"count"`
 }
 
+// RealmRepresentation struct
 type RealmRepresentation struct {
 	Id              *string `json:"id,omitempty"`
 	KeycloakVersion *string `json:"keycloakVersion,omitempty"`
@@ -41,6 +43,7 @@ type RealmRepresentation struct {
 	Enabled         *bool   `json:"enabled,omitempty"`
 }
 
+// ClientRepresentation struct
 type ClientRepresentation struct {
 	Id       *string `json:"id,omitempty"`
 	Name     *string `json:"name,omitempty"`
@@ -50,6 +53,7 @@ type ClientRepresentation struct {
 	Enabled  *bool   `json:"enabled,omitempty"`
 }
 
+// CredentialRepresentation struct
 type CredentialRepresentation struct {
 	Id          *string              `json:"id,omitempty"`
 	Type        *string              `json:"type,omitempty"`
@@ -58,6 +62,7 @@ type CredentialRepresentation struct {
 	Config      *map[string][]string `json:"config,omitempty"`
 }
 
+// RoleRepresentation struct
 type RoleRepresentation struct {
 	ClientRole  *bool   `json:"clientRole,omitempty"`
 	Composite   *bool   `json:"composite,omitempty"`
@@ -67,20 +72,24 @@ type RoleRepresentation struct {
 	Name        *string `json:"name,omitempty"`
 }
 
+// GroupRepresentation struct
 type GroupRepresentation struct {
 	Id   *string `json:"id,omitempty"`
 	Name *string `json:"name,omitempty"`
 }
 
+// PasswordRepresentation struct
 type PasswordRepresentation struct {
 	Value *string `json:"value,omitempty"`
 }
 
+// RealmCustomConfiguration struct
 type RealmCustomConfiguration struct {
 	DefaultClientId    *string `json:"default_client_id,omitempty"`
 	DefaultRedirectUri *string `json:"default_redirect_uri,omitempty"`
 }
 
+// RequiredAction type
 type RequiredAction string
 
 // ConvertCredential creates an API credential from a KC credential
@@ -155,12 +164,18 @@ func ConvertToAPIUser(userKc kc.UserRepresentation) UserRepresentation {
 
 // ConvertToAPIUsersPage converts paged users results from KC model to API one
 func ConvertToAPIUsersPage(users kc.UsersPageRepresentation) UsersPageRepresentation {
-	var slice []UserRepresentation
+	var slice = []UserRepresentation{}
+	var count = 0
+
 	for _, u := range users.Users {
 		slice = append(slice, ConvertToAPIUser(u))
 	}
+
+	if users.Count != nil {
+		count = *users.Count
+	}
 	return UsersPageRepresentation{
-		Count: users.Count,
+		Count: &count,
 		Users: slice,
 	}
 }
@@ -213,6 +228,7 @@ func ConvertToKCUser(user UserRepresentation) kc.UserRepresentation {
 
 // Validators
 
+// Validate is a validator for UserRepresentation
 func (user UserRepresentation) Validate() error {
 	if user.Id != nil && !matchesRegExp(*user.Id, RegExpID) {
 		return errors.New("Invalid user ID")
@@ -273,6 +289,7 @@ func (user UserRepresentation) Validate() error {
 	return nil
 }
 
+// Validate is a validator for RoleRepresentation
 func (role RoleRepresentation) Validate() error {
 	if role.Id != nil && !matchesRegExp(*role.Id, RegExpID) {
 		return errors.New("Invalid role ID")
@@ -293,6 +310,7 @@ func (role RoleRepresentation) Validate() error {
 	return nil
 }
 
+// Validate is a validator for PasswordRepresentation
 func (password PasswordRepresentation) Validate() error {
 	if password.Value != nil && !matchesRegExp(*password.Value, RegExpPassword) {
 		return errors.New("Invalid password")
@@ -301,6 +319,7 @@ func (password PasswordRepresentation) Validate() error {
 	return nil
 }
 
+// Validate is a validator for RealmCustomConfiguration
 func (config RealmCustomConfiguration) Validate() error {
 	if config.DefaultClientId != nil && !matchesRegExp(*config.DefaultClientId, RegExpClientID) {
 		return errors.New("Invalid default client ID")
@@ -313,6 +332,7 @@ func (config RealmCustomConfiguration) Validate() error {
 	return nil
 }
 
+// Validate is a validator for RequiredAction
 func (requiredAction RequiredAction) Validate() error {
 	if requiredAction != "" && !matchesRegExp(string(requiredAction), RegExpRequiredAction) {
 		return errors.New("Invalid required action")
