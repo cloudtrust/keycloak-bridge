@@ -192,7 +192,7 @@ func main() {
 	}
 
 	// Keycloak adaptor for common-service library
-	commonKcAdaptor := keycloakb.NewKeycloakAuthClient(keycloakClient)
+	commonKcAdaptor := keycloakb.NewKeycloakAuthClient(keycloakClient, logger)
 
 	// Authorization Manager
 	var authorizationManager security.AuthorizationManager
@@ -400,7 +400,7 @@ func main() {
 
 		var keycloakComponent management.Component
 		{
-			keycloakComponent = management.NewComponent(keycloakClient, eventsDBModule, configDBModule)
+			keycloakComponent = management.NewComponent(keycloakClient, eventsDBModule, configDBModule, managementLogger)
 			keycloakComponent = management.MakeAuthorizationManagementComponentMW(log.With(managementLogger, "mw", "endpoint"), authorizationManager)(keycloakComponent)
 		}
 
@@ -453,10 +453,10 @@ func main() {
 	}
 
 	// Export configuration
-	var exportModule = export.NewModule(keycloakClient)
+	var exportModule = export.NewModule(keycloakClient, logger)
 	var cfgStorageModue = export.NewConfigStorageModule(eventsDBConn)
 
-	var exportComponent = export.NewComponent(ComponentName, Version, exportModule, cfgStorageModue)
+	var exportComponent = export.NewComponent(ComponentName, Version, logger, exportModule, cfgStorageModue)
 	var exportEndpoint = export.MakeExportEndpoint(exportComponent)
 	var exportSaveAndExportEndpoint = export.MakeStoreAndExportEndpoint(exportComponent)
 

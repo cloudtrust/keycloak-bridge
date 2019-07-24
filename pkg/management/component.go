@@ -10,6 +10,7 @@ import (
 	"github.com/cloudtrust/common-service/database"
 	"github.com/cloudtrust/common-service/http"
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
+	internal "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	kc "github.com/cloudtrust/keycloak-client"
 )
 
@@ -84,14 +85,16 @@ type component struct {
 	keycloakClient KeycloakClient
 	eventDBModule  database.EventsDBModule
 	configDBModule ConfigurationDBModule
+	logger         internal.Logger
 }
 
 // NewComponent returns the management component.
-func NewComponent(keycloakClient KeycloakClient, eventDBModule database.EventsDBModule, configDBModule ConfigurationDBModule) Component {
+func NewComponent(keycloakClient KeycloakClient, eventDBModule database.EventsDBModule, configDBModule ConfigurationDBModule, logger internal.Logger) Component {
 	return &component{
 		keycloakClient: keycloakClient,
 		eventDBModule:  eventDBModule,
 		configDBModule: configDBModule,
+		logger:         logger,
 	}
 }
 
@@ -105,6 +108,7 @@ func (c *component) GetRealms(ctx context.Context) ([]api.RealmRepresentation, e
 	realmsKc, err := c.keycloakClient.GetRealms(accessToken)
 
 	if err != nil {
+		c.logger.Warn("err", err.Error())
 		return nil, err
 	}
 
@@ -129,13 +133,18 @@ func (c *component) GetRealm(ctx context.Context, realm string) (api.RealmRepres
 	var realmRep api.RealmRepresentation
 	realmKc, err := c.keycloakClient.GetRealm(accessToken, realm)
 
+	if err != nil {
+		c.logger.Warn("err", err.Error())
+		return api.RealmRepresentation{}, err
+	}
+
 	realmRep.Id = realmKc.Id
 	realmRep.KeycloakVersion = realmKc.KeycloakVersion
 	realmRep.Realm = realmKc.Realm
 	realmRep.DisplayName = realmKc.DisplayName
 	realmRep.Enabled = realmKc.Enabled
 
-	return realmRep, err
+	return realmRep, nil
 }
 
 func (c *component) GetClient(ctx context.Context, realmName, idClient string) (api.ClientRepresentation, error) {
@@ -144,6 +153,11 @@ func (c *component) GetClient(ctx context.Context, realmName, idClient string) (
 	var clientRep api.ClientRepresentation
 	clientKc, err := c.keycloakClient.GetClient(accessToken, realmName, idClient)
 
+	if err != nil {
+		c.logger.Warn("err", err.Error())
+		return api.ClientRepresentation{}, err
+	}
+
 	clientRep.Id = clientKc.Id
 	clientRep.Name = clientKc.Name
 	clientRep.BaseUrl = clientKc.BaseUrl
@@ -151,7 +165,7 @@ func (c *component) GetClient(ctx context.Context, realmName, idClient string) (
 	clientRep.Protocol = clientKc.Protocol
 	clientRep.Enabled = clientKc.Enabled
 
-	return clientRep, err
+	return clientRep, nil
 }
 
 func (c *component) GetClients(ctx context.Context, realmName string) ([]api.ClientRepresentation, error) {
@@ -160,6 +174,7 @@ func (c *component) GetClients(ctx context.Context, realmName string) ([]api.Cli
 	clientsKc, err := c.keycloakClient.GetClients(accessToken, realmName)
 
 	if err != nil {
+		c.logger.Warn("err", err.Error())
 		return nil, err
 	}
 
@@ -189,6 +204,7 @@ func (c *component) CreateUser(ctx context.Context, realmName string, user api.U
 	locationURL, err := c.keycloakClient.CreateUser(accessToken, ctxRealm, realmName, userRep)
 
 	if err != nil {
+		c.logger.Warn("err", err.Error())
 		return "", err
 	}
 
@@ -214,6 +230,7 @@ func (c *component) DeleteUser(ctx context.Context, realmName, userID string) er
 	err := c.keycloakClient.DeleteUser(accessToken, realmName, userID)
 
 	if err != nil {
+		c.logger.Warn("err", err.Error())
 		return err
 	}
 
@@ -231,6 +248,7 @@ func (c *component) GetUser(ctx context.Context, realmName, userID string) (api.
 	userKc, err := c.keycloakClient.GetUser(accessToken, realmName, userID)
 
 	if err != nil {
+		c.logger.Warn("err", err.Error())
 		return userRep, err
 	}
 
@@ -256,6 +274,7 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 	// get the "old" user representation
 	oldUserKc, err := c.keycloakClient.GetUser(accessToken, realmName, userID)
 	if err != nil {
+		c.logger.Warn("err", err.Error())
 		return err
 	}
 
@@ -301,6 +320,7 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 	err = c.keycloakClient.UpdateUser(accessToken, realmName, userID, userRep)
 
 	if err != nil {
+		c.logger.Warn("err", err.Error())
 		return err
 	}
 
@@ -338,6 +358,7 @@ func (c *component) GetUsers(ctx context.Context, realmName string, groupIDs []s
 	usersKc, err := c.keycloakClient.GetUsers(accessToken, ctxRealm, realmName, paramKV...)
 
 	if err != nil {
+		c.logger.Warn("err", err.Error())
 		return api.UsersPageRepresentation{}, err
 	}
 
@@ -355,6 +376,7 @@ func (c *component) GetUserAccountStatus(ctx context.Context, realmName, userID 
 	userKc, err := c.keycloakClient.GetUser(accessToken, realmName, userID)
 
 	if err != nil {
+		c.logger.Warn("err", err.Error())
 		return res, err
 	}
 
@@ -373,6 +395,7 @@ func (c *component) GetRolesOfUser(ctx context.Context, realmName, userID string
 	rolesKc, err := c.keycloakClient.GetRealmLevelRoleMappings(accessToken, realmName, userID)
 
 	if err != nil {
+		c.logger.Warn("err", err.Error())
 		return nil, err
 	}
 
@@ -398,6 +421,7 @@ func (c *component) GetGroupsOfUser(ctx context.Context, realmName, userID strin
 	groupsKc, err := c.keycloakClient.GetGroupsOfUser(accessToken, realmName, userID)
 
 	if err != nil {
+		c.logger.Warn("err", err.Error())
 		return nil, err
 	}
 
@@ -419,6 +443,7 @@ func (c *component) GetClientRolesForUser(ctx context.Context, realmName, userID
 	rolesKc, err := c.keycloakClient.GetClientRoleMappings(accessToken, realmName, userID, clientID)
 
 	if err != nil {
+		c.logger.Warn("err", err.Error())
 		return nil, err
 	}
 
@@ -454,7 +479,13 @@ func (c *component) AddClientRolesToUser(ctx context.Context, realmName, userID,
 		rolesRep = append(rolesRep, roleRep)
 	}
 
-	return c.keycloakClient.AddClientRolesToUserRoleMapping(accessToken, realmName, userID, clientID, rolesRep)
+	err := c.keycloakClient.AddClientRolesToUserRoleMapping(accessToken, realmName, userID, clientID, rolesRep)
+
+	if err != nil {
+		c.logger.Warn("err", err.Error())
+	}
+
+	return err
 }
 
 func (c *component) ResetPassword(ctx context.Context, realmName string, userID string, password api.PasswordRepresentation) error {
@@ -468,6 +499,7 @@ func (c *component) ResetPassword(ctx context.Context, realmName string, userID 
 	err := c.keycloakClient.ResetPassword(accessToken, realmName, userID, credKc)
 
 	if err != nil {
+		c.logger.Warn("err", err.Error())
 		return err
 	}
 
@@ -480,7 +512,13 @@ func (c *component) ResetPassword(ctx context.Context, realmName string, userID 
 func (c *component) SendVerifyEmail(ctx context.Context, realmName string, userID string, paramKV ...string) error {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 
-	return c.keycloakClient.SendVerifyEmail(accessToken, realmName, userID, paramKV...)
+	err := c.keycloakClient.SendVerifyEmail(accessToken, realmName, userID, paramKV...)
+
+	if err != nil {
+		c.logger.Warn("err", err.Error())
+	}
+
+	return err
 }
 
 func (c *component) ExecuteActionsEmail(ctx context.Context, realmName string, userID string, requiredActions []api.RequiredAction, paramKV ...string) error {
@@ -496,7 +534,13 @@ func (c *component) ExecuteActionsEmail(ctx context.Context, realmName string, u
 		}
 	}
 
-	return c.keycloakClient.ExecuteActionsEmail(accessToken, realmName, userID, actions, paramKV...)
+	err := c.keycloakClient.ExecuteActionsEmail(accessToken, realmName, userID, actions, paramKV...)
+
+	if err != nil {
+		c.logger.Warn("err", err.Error())
+	}
+
+	return err
 }
 
 func (c *component) SendNewEnrolmentCode(ctx context.Context, realmName string, userID string) (string, error) {
@@ -505,6 +549,7 @@ func (c *component) SendNewEnrolmentCode(ctx context.Context, realmName string, 
 	smsCodeKc, err := c.keycloakClient.SendNewEnrolmentCode(accessToken, realmName, userID)
 
 	if err != nil {
+		c.logger.Warn("err", err.Error())
 		return "", err
 	}
 
@@ -517,7 +562,13 @@ func (c *component) SendNewEnrolmentCode(ctx context.Context, realmName string, 
 func (c *component) SendReminderEmail(ctx context.Context, realmName string, userID string, paramKV ...string) error {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 
-	return c.keycloakClient.SendReminderEmail(accessToken, realmName, userID, paramKV...)
+	err := c.keycloakClient.SendReminderEmail(accessToken, realmName, userID, paramKV...)
+
+	if err != nil {
+		c.logger.Warn("err", err.Error())
+	}
+
+	return err
 }
 
 func (c *component) GetCredentialsForUser(ctx context.Context, realmName string, userID string) ([]api.CredentialRepresentation, error) {
@@ -526,6 +577,7 @@ func (c *component) GetCredentialsForUser(ctx context.Context, realmName string,
 
 	credsKc, err := c.keycloakClient.GetCredentialsForUser(accessToken, ctxRealm, realmName, userID)
 	if err != nil {
+		c.logger.Warn("err", err.Error())
 		return nil, err
 	}
 
@@ -541,7 +593,13 @@ func (c *component) DeleteCredentialsForUser(ctx context.Context, realmName stri
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 	var ctxRealm = ctx.Value(cs.CtContextRealm).(string)
 
-	return c.keycloakClient.DeleteCredentialsForUser(accessToken, ctxRealm, realmName, userID, credentialID)
+	err := c.keycloakClient.DeleteCredentialsForUser(accessToken, ctxRealm, realmName, userID, credentialID)
+
+	if err != nil {
+		c.logger.Warn("err", err.Error())
+	}
+
+	return err
 }
 
 func (c *component) GetRoles(ctx context.Context, realmName string) ([]api.RoleRepresentation, error) {
@@ -550,6 +608,7 @@ func (c *component) GetRoles(ctx context.Context, realmName string) ([]api.RoleR
 	rolesKc, err := c.keycloakClient.GetRoles(accessToken, realmName)
 
 	if err != nil {
+		c.logger.Warn("err", err.Error())
 		return nil, err
 	}
 
@@ -575,6 +634,11 @@ func (c *component) GetRole(ctx context.Context, realmName string, roleID string
 	var roleRep api.RoleRepresentation
 	roleKc, err := c.keycloakClient.GetRole(accessToken, realmName, roleID)
 
+	if err != nil {
+		c.logger.Warn("err", err.Error())
+		return api.RoleRepresentation{}, err
+	}
+
 	roleRep.Id = roleKc.Id
 	roleRep.Name = roleKc.Name
 	roleRep.Composite = roleKc.Composite
@@ -582,7 +646,7 @@ func (c *component) GetRole(ctx context.Context, realmName string, roleID string
 	roleRep.ContainerId = roleKc.ContainerId
 	roleRep.Description = roleKc.Description
 
-	return roleRep, err
+	return roleRep, nil
 }
 
 func (c *component) GetGroups(ctx context.Context, realmName string) ([]api.GroupRepresentation, error) {
@@ -591,6 +655,7 @@ func (c *component) GetGroups(ctx context.Context, realmName string) ([]api.Grou
 	groupsKc, err := c.keycloakClient.GetGroups(accessToken, realmName)
 
 	if err != nil {
+		c.logger.Warn("err", err.Error())
 		return nil, err
 	}
 
@@ -612,6 +677,7 @@ func (c *component) GetClientRoles(ctx context.Context, realmName, idClient stri
 	rolesKc, err := c.keycloakClient.GetClientRoles(accessToken, realmName, idClient)
 
 	if err != nil {
+		c.logger.Warn("err", err.Error())
 		return nil, err
 	}
 
@@ -645,6 +711,7 @@ func (c *component) CreateClientRole(ctx context.Context, realmName, clientID st
 	locationURL, err := c.keycloakClient.CreateClientRole(accessToken, realmName, clientID, roleRep)
 
 	if err != nil {
+		c.logger.Warn("err", err.Error())
 		return "", err
 	}
 
@@ -662,6 +729,7 @@ func (c *component) GetRealmCustomConfiguration(ctx context.Context, realmName s
 	// get the realm config from Keycloak
 	realmConfig, err := c.keycloakClient.GetRealm(accessToken, realmName)
 	if err != nil {
+		c.logger.Warn("err", err.Error())
 		return customConfig, err
 	}
 	// from the realm ID, fetch the custom configuration
@@ -669,6 +737,7 @@ func (c *component) GetRealmCustomConfiguration(ctx context.Context, realmName s
 	customConfigJSON, err := c.configDBModule.GetConfiguration(ctx, *realmID)
 	// DB error
 	if err != nil {
+		c.logger.Error("err", err.Error())
 		return customConfig, err
 	}
 	// empty config
@@ -691,11 +760,13 @@ func (c *component) UpdateRealmCustomConfiguration(ctx context.Context, realmNam
 	// get the realm config from Keycloak
 	realmConfig, err := c.keycloakClient.GetRealm(accessToken, realmName)
 	if err != nil {
+		c.logger.Error("err", err.Error())
 		return err
 	}
 	// get the desired client (from its ID)
 	clients, err := c.keycloakClient.GetClients(accessToken, realmName)
 	if err != nil {
+		c.logger.Error("err", err.Error())
 		return err
 	}
 	var match = false

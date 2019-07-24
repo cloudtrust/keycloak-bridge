@@ -13,18 +13,21 @@ type KeycloakClient interface {
 
 type kcAuthClient struct {
 	keycloak KeycloakClient
+	logger   Logger
 }
 
 // NewKeycloakAuthClient creates an adaptor for Authorization management to access Keycloak
-func NewKeycloakAuthClient(client KeycloakClient) security.KeycloakClient {
+func NewKeycloakAuthClient(client KeycloakClient, logger Logger) security.KeycloakClient {
 	return &kcAuthClient{
 		keycloak: client,
+		logger:   logger,
 	}
 }
 
 func (k *kcAuthClient) GetGroupNamesOfUser(accessToken string, realmName, userID string) ([]string, error) {
 	grps, err := k.keycloak.GetGroupsOfUser(accessToken, realmName, userID)
 	if err != nil || grps == nil {
+		k.logger.Warn("err", err.Error())
 		return nil, err
 	}
 	var res []string
@@ -39,6 +42,7 @@ func (k *kcAuthClient) GetGroupNamesOfUser(accessToken string, realmName, userID
 func (k *kcAuthClient) GetGroupName(accessToken string, realmName, groupID string) (string, error) {
 	grp, err := k.keycloak.GetGroup(accessToken, realmName, groupID)
 	if err != nil || grp.Name == nil {
+		k.logger.Warn("err", err.Error())
 		return "", err
 	}
 	return *(grp.Name), nil
