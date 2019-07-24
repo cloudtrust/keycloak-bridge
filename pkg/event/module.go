@@ -3,8 +3,8 @@ package event
 import (
 	"context"
 
+	"github.com/cloudtrust/common-service/log"
 	"github.com/cloudtrust/common-service/metrics"
-	"github.com/go-kit/kit/log"
 	influx "github.com/influxdata/influxdb/client/v2"
 )
 
@@ -27,7 +27,7 @@ func NewConsoleModule(logger log.Logger) ConsoleModule {
 func (cm *consoleModule) Print(_ context.Context, m map[string]string) error {
 	// Log
 	for k, v := range m {
-		cm.logger.Log(k, v)
+		cm.logger.Info(k, v)
 	}
 	return nil
 }

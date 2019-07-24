@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/cloudtrust/keycloak-bridge/pkg/event/mock"
-	"github.com/go-kit/kit/log"
+	"github.com/cloudtrust/common-service/log"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )

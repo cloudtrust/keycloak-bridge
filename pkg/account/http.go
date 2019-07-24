@@ -5,8 +5,8 @@ import (
 	"net/http"
 
 	commonhttp "github.com/cloudtrust/common-service/http"
+	"github.com/cloudtrust/common-service/log"
 	"github.com/go-kit/kit/endpoint"
-	"github.com/go-kit/kit/log"
 	http_transport "github.com/go-kit/kit/transport/http"
 )
 

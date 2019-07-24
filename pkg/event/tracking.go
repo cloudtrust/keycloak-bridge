@@ -5,8 +5,8 @@ import (
 	"encoding/base64"
 
 	cs "github.com/cloudtrust/common-service"
+	"github.com/cloudtrust/common-service/log"
 	"github.com/cloudtrust/common-service/tracking"
-	"github.com/go-kit/kit/log"
 )
 
 // Tracking middleware at component level.
@@ -41,7 +41,7 @@ func (m *trackingMuxComponentMW) Event(ctx context.Context, eventType string, ob
 		}
 
 		m.sentry.CaptureError(err, tags)
-		m.logger.Log("unit", "Event", "correlation_id", corrID, "event_type", eventType, "obj", b64Obj, "error", err.Error())
+		m.logger.Debug("unit", "Event", "correlation_id", corrID, "event_type", eventType, "obj", b64Obj, "error", err.Error())
 	}
 	return err
 }

@@ -8,7 +8,7 @@ import (
 	"github.com/cloudtrust/common-service/security"
 	api "github.com/cloudtrust/keycloak-bridge/api/events"
 	"github.com/cloudtrust/keycloak-bridge/pkg/events/mock"
-	"github.com/go-kit/kit/log"
+	"github.com/cloudtrust/common-service/log"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )

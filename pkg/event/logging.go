@@ -6,8 +6,8 @@ import (
 
 	cs "github.com/cloudtrust/common-service"
 	"github.com/cloudtrust/common-service/database"
+	"github.com/cloudtrust/common-service/log"
 	"github.com/cloudtrust/keycloak-bridge/api/event/fb"
-	"github.com/go-kit/kit/log"
 )
 
 // Logging middleware for the mux component.
@@ -29,7 +29,7 @@ func MakeMuxComponentLoggingMW(log log.Logger) func(MuxComponent) MuxComponent {
 // muxComponentLoggingMW implements MuxComponent.
 func (m *muxComponentLoggingMW) Event(ctx context.Context, eventType string, obj []byte) error {
 	defer func(begin time.Time) {
-		m.logger.Log("unit", "Event", "type", eventType, "correlation_id", ctx.Value(cs.CtContextCorrelationID).(string), "took", time.Since(begin))
+		m.logger.Info("unit", "Event", "type", eventType, "correlation_id", ctx.Value(cs.CtContextCorrelationID).(string), "took", time.Since(begin))
 	}(time.Now())
 	return m.next.Event(ctx, eventType, obj)
 }
@@ -53,7 +53,7 @@ func MakeComponentLoggingMW(log log.Logger) func(Component) Component {
 // componentLoggingMW implements Component.
 func (m *componentLoggingMW) Event(ctx context.Context, event *fb.Event) error {
 	defer func(begin time.Time) {
-		m.logger.Log("unit", "Event", "correlation_id", ctx.Value(cs.CtContextCorrelationID).(string), "took", time.Since(begin))
+		m.logger.Info("unit", "Event", "correlation_id", ctx.Value(cs.CtContextCorrelationID).(string), "took", time.Since(begin))
 	}(time.Now())
 	return m.next.Event(ctx, event)
 }
@@ -77,7 +77,7 @@ func MakeAdminComponentLoggingMW(log log.Logger) func(AdminComponent) AdminCompo
 // adminComponentLoggingMW implements AdminComponent.
 func (m *adminComponentLoggingMW) AdminEvent(ctx context.Context, adminEvent *fb.AdminEvent) error {
 	defer func(begin time.Time) {
-		m.logger.Log("unit", "AdminEvent", "correlation_id", ctx.Value(cs.CtContextCorrelationID).(string), "took", time.Since(begin))
+		m.logger.Info("unit", "AdminEvent", "correlation_id", ctx.Value(cs.CtContextCorrelationID).(string), "took", time.Since(begin))
 	}(time.Now())
 	return m.next.AdminEvent(ctx, adminEvent)
 }
@@ -101,7 +101,7 @@ func MakeConsoleModuleLoggingMW(log log.Logger) func(ConsoleModule) ConsoleModul
 // consoleModuleLoggingMW implements ConsoleModule.
 func (m *consoleModuleLoggingMW) Print(ctx context.Context, mp map[string]string) error {
 	defer func(begin time.Time) {
-		m.logger.Log("method", "Print", "args", mp, "took", time.Since(begin))
+		m.logger.Debug("method", "Print", "args", mp, "took", time.Since(begin))
 	}(time.Now())
 	return m.next.Print(ctx, mp)
 }
@@ -125,7 +125,7 @@ func MakeStatisticModuleLoggingMW(log log.Logger) func(StatisticModule) Statisti
 // statisticModuleLoggingMW implements StatisticModule.
 func (m *statisticModuleLoggingMW) Stats(ctx context.Context, mp map[string]string) error {
 	defer func(begin time.Time) {
-		m.logger.Log("method", "Stats", "args", mp, "took", time.Since(begin))
+		m.logger.Debug("method", "Stats", "args", mp, "took", time.Since(begin))
 	}(time.Now())
 	return m.next.Stats(ctx, mp)
 }
@@ -149,14 +149,14 @@ func MakeEventsDBModuleLoggingMW(log log.Logger) func(database.EventsDBModule) d
 // statisticModuleLoggingMW implements StatisticModule.
 func (m *eventsDBModuleLoggingMW) Store(ctx context.Context, mp map[string]string) error {
 	defer func(begin time.Time) {
-		m.logger.Log("method", "Store", "args", mp, "took", time.Since(begin))
+		m.logger.Debug("method", "Store", "args", mp, "took", time.Since(begin))
 	}(time.Now())
 	return m.next.Store(ctx, mp)
 }
 
 func (m *eventsDBModuleLoggingMW) ReportEvent(ctx context.Context, apiCall string, origin string, values ...string) error {
 	defer func(begin time.Time) {
-		m.logger.Log("method", "ReportEvent", "args", apiCall, origin, values, "took", time.Since(begin))
+		m.logger.Info("method", "ReportEvent", "args", apiCall, origin, values, "took", time.Since(begin))
 	}(time.Now())
 	return m.next.ReportEvent(ctx, apiCall, origin, values...)
 }

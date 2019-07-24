@@ -17,6 +17,7 @@ import (
 	"github.com/cloudtrust/common-service/database"
 	commonhttp "github.com/cloudtrust/common-service/http"
 	"github.com/cloudtrust/common-service/idgenerator"
+	"github.com/cloudtrust/common-service/log"
 	"github.com/cloudtrust/common-service/metrics"
 	"github.com/cloudtrust/common-service/middleware"
 	"github.com/cloudtrust/common-service/security"
@@ -31,7 +32,8 @@ import (
 	"github.com/cloudtrust/keycloak-bridge/pkg/statistics"
 	keycloak "github.com/cloudtrust/keycloak-client"
 	"github.com/go-kit/kit/endpoint"
-	"github.com/go-kit/kit/log"
+	kit_log "github.com/go-kit/kit/log"
+	kit_level "github.com/go-kit/kit/log/level"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
@@ -61,22 +63,22 @@ func main() {
 	ComponentID = strconv.FormatUint(rand.Uint64(), 10)
 
 	// Logger.
-	var logger = log.NewJSONLogger(os.Stdout)
+	var logger = log.NewLeveledLogger(kit_log.NewJSONLogger(os.Stdout))
 	{
 		// Timestamp
-		logger = log.With(logger, "ts", log.DefaultTimestampUTC)
+		logger = log.With(logger, "ts", kit_log.DefaultTimestampUTC)
 
 		// Caller
-		logger = log.With(logger, "caller", log.DefaultCaller)
+		logger = log.With(logger, "caller", kit_log.DefaultCaller)
 
 		// Add component name, component ID and version to the logger tags.
 		logger = log.With(logger, "component_name", ComponentName, "component_id", ComponentID, "component_version", Version)
 	}
-	defer logger.Log("msg", "Shutdown")
+	defer logger.Info("msg", "Shutdown")
 
 	// Log component version infos.
-	logger.Log("msg", "Starting")
-	logger.Log("environment", Environment, "git_commit", GitCommit)
+	logger.Info("msg", "Starting")
+	logger.Info("environment", Environment, "git_commit", GitCommit)
 
 	// Configurations.
 	var c = config(log.With(logger, "unit", "config"))
@@ -126,6 +128,8 @@ func main() {
 			ExposedHeaders:   c.GetStringSlice("cors-exposed-headers"),
 			Debug:            c.GetBool("cors-debug"),
 		}
+
+		logLevel = c.GetString("log-level")
 	)
 
 	// Unique ID generator
@@ -139,13 +143,27 @@ func main() {
 		errc <- fmt.Errorf("%s", <-c)
 	}()
 
+	// Configure log filtering
+	{
+		var level kit_level.Option
+		var err error
+		level, err = log.ConvertToLevel(logLevel)
+
+		if err != nil {
+			logger.Error("error", err)
+			return
+		}
+
+		logger = log.AllowLevel(logger, level)
+	}
+
 	// Security - Audience required
 	var audienceRequired string
 	{
 		audienceRequired = c.GetString("audience-required")
 
 		if audienceRequired == "" {
-			logger.Log("msg", "audience parameter(audience-required) cannot be empty")
+			logger.Error("msg", "audience parameter(audience-required) cannot be empty")
 			return
 		}
 	}
@@ -156,7 +174,7 @@ func main() {
 		eventExpectedAuthToken = c.GetString("event-basic-auth-token")
 
 		if eventExpectedAuthToken == "" {
-			logger.Log("msg", "password for event endpoint (event-basic-auth-token) cannot be empty")
+			logger.Error("msg", "password for event endpoint (event-basic-auth-token) cannot be empty")
 			return
 		}
 	}
@@ -168,7 +186,7 @@ func main() {
 		keycloakClient, err = keycloak.New(keycloakConfig)
 
 		if err != nil {
-			logger.Log("msg", "could not create Keycloak client", "error", err)
+			logger.Error("msg", "could not create Keycloak client", "error", err)
 			return
 		}
 	}
@@ -183,7 +201,7 @@ func main() {
 		authorizationManager, err = security.NewAuthorizationManagerFromFile(commonKcAdaptor, logger, authorizationConfigFile)
 
 		if err != nil {
-			logger.Log("msg", "could not load authorizations", "error", err)
+			logger.Error("msg", "could not load authorizations", "error", err)
 			return
 		}
 	}
@@ -194,7 +212,7 @@ func main() {
 		var err error
 		sentryClient, err = tracking.NewSentry(c, "sentry")
 		if err != nil {
-			logger.Log("msg", "could not create Sentry client", "error", err)
+			logger.Error("msg", "could not create Sentry client", "error", err)
 			return
 		}
 		defer sentryClient.Close()
@@ -205,7 +223,7 @@ func main() {
 		var err error
 		influxMetrics, err = metrics.NewMetrics(c, "influx", logger)
 		if err != nil {
-			logger.Log("msg", "could not create Influx client", "error", err)
+			logger.Error("msg", "could not create Influx client", "error", err)
 			return
 		}
 		defer influxMetrics.Close()
@@ -219,7 +237,7 @@ func main() {
 
 		tracer, err = tracing.CreateJaegerClient(c, "jaeger", ComponentName)
 		if err != nil {
-			logger.Log("msg", "could not create Jaeger tracer", "error", err)
+			logger.Error("msg", "could not create Jaeger tracer", "error", err)
 			return
 		}
 		defer tracer.Close()
@@ -230,7 +248,7 @@ func main() {
 		var err error
 		eventsDBConn, err = auditRwDbParams.OpenDatabase()
 		if err != nil {
-			logger.Log("msg", "could not create R/W DB connection for audit events", "error", err)
+			logger.Error("msg", "could not create R/W DB connection for audit events", "error", err)
 			return
 		}
 	}
@@ -240,7 +258,7 @@ func main() {
 		var err error
 		eventsRODBConn, err = auditRoDbParams.OpenDatabase()
 		if err != nil {
-			logger.Log("msg", "could not create RO DB connection for audit events", "error", err)
+			logger.Error("msg", "could not create RO DB connection for audit events", "error", err)
 			return
 		}
 	}
@@ -250,7 +268,7 @@ func main() {
 		var err error
 		configurationDBConn, err = configDbParams.OpenDatabase()
 		if err != nil {
-			logger.Log("msg", "could not create DB connection for configuration storage", "error", err)
+			logger.Error("msg", "could not create DB connection for configuration storage", "error", err)
 			return
 		}
 	}
@@ -445,7 +463,7 @@ func main() {
 	// HTTP Internal Call Server (Event reception from Keycloak & Export API).
 	go func() {
 		var logger = log.With(logger, "transport", "http")
-		logger.Log("addr", httpAddrInternal)
+		logger.Info("addr", httpAddrInternal)
 
 		var route = mux.NewRouter()
 
@@ -484,7 +502,7 @@ func main() {
 	// HTTP Management Server (Backoffice API).
 	go func() {
 		var logger = log.With(logger, "transport", "http")
-		logger.Log("addr", httpAddrManagement)
+		logger.Info("addr", httpAddrManagement)
 
 		var route = mux.NewRouter()
 
@@ -597,7 +615,7 @@ func main() {
 	// HTTP Self-service Server (Account API).
 	go func() {
 		var logger = log.With(logger, "transport", "http")
-		logger.Log("addr", httpAddrAccount)
+		logger.Info("addr", httpAddrAccount)
 
 		var route = mux.NewRouter()
 
@@ -619,18 +637,21 @@ func main() {
 		influxMetrics.WriteLoop(tic.C)
 	}()
 
-	logger.Log("msg", "Started")
-	logger.Log("error", <-errc)
+	logger.Info("msg", "Started")
+	logger.Error("error", <-errc)
 }
 
 func config(logger log.Logger) *viper.Viper {
-	logger.Log("msg", "load configuration and command args")
+	logger.Info("msg", "load configuration and command args")
 
 	var v = viper.New()
 
 	// Component default.
 	v.SetDefault("config-file", "./configs/keycloak_bridge.yml")
 	v.SetDefault("authorization-file", "./configs/authorization.json")
+
+	// Log level
+	v.SetDefault("log-level", "info")
 
 	// Publishing
 	v.SetDefault("internal-http-host-port", "0.0.0.0:8888")
@@ -724,7 +745,7 @@ func config(logger log.Logger) *viper.Viper {
 	v.SetConfigFile(v.GetString("config-file"))
 	var err = v.ReadInConfig()
 	if err != nil {
-		logger.Log("error", err)
+		logger.Error("error", err)
 	}
 
 	// If the host/port is not set, we consider the components deactivated.
@@ -738,11 +759,11 @@ func config(logger log.Logger) *viper.Viper {
 
 	for _, k := range keys {
 		if _, censored := censoredParameters[k]; censored {
-			logger.Log(k, "*************")
+			logger.Info(k, "*************")
 		} else if strings.Contains(k, "password") {
-			logger.Log(k, "*************")
+			logger.Info(k, "*************")
 		} else {
-			logger.Log(k, v.Get(k))
+			logger.Info(k, v.Get(k))
 		}
 	}
 	return v

@@ -27,7 +27,8 @@
 
 [[constraint]]
   name = "github.com/cloudtrust/common-service"
-  version = "1.0-rc3"
+  branch="log_fix"
+  #version = "1.0-rc3"
 
 [[constraint]]
   name = "github.com/cloudtrust/keycloak-client"

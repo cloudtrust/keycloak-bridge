@@ -6,6 +6,13 @@ internal-http-host-port: 0.0.0.0:8888
 management-http-host-port: 0.0.0.0:8877
 account-http-host-port: 0.0.0.0:8866
 
+# Log level
+#   - error: log only error log level
+#   - warn: log error and warn log levels
+#   - info: log error, warn, info log levels
+#   - debug: log error, warn, info, debug log levels
+log-level: debug
+
 # CORS
 cors-allowed-origins:
   - "http://localhost"

@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/go-kit/kit/log"
+	"github.com/cloudtrust/common-service/log"
 )
 
 // Logging middleware for the statistic module.
@@ -26,7 +26,7 @@ func MakeConfigurationDBModuleLoggingMW(log log.Logger) func(ConfigurationDBModu
 // configDBModuleLoggingMW implements ConfigurationDBModule.
 func (m *configDBModuleLoggingMW) StoreOrUpdate(ctx context.Context, realmName string, configJSON string) error {
 	defer func(begin time.Time) {
-		m.logger.Log("method", "StoreOrUpdate", "args", realmName, configJSON, "took", time.Since(begin))
+		m.logger.Info("method", "StoreOrUpdate", "args", realmName, configJSON, "took", time.Since(begin))
 	}(time.Now())
 	return m.next.StoreOrUpdate(ctx, realmName, configJSON)
 }
@@ -34,7 +34,7 @@ func (m *configDBModuleLoggingMW) StoreOrUpdate(ctx context.Context, realmName s
 // configDBModuleLoggingMW implements ConfigurationDBModule.
 func (m *configDBModuleLoggingMW) GetConfiguration(ctx context.Context, realmName string) (string, error) {
 	defer func(begin time.Time) {
-		m.logger.Log("method", "GetConfiguration", "args", realmName, "took", time.Since(begin))
+		m.logger.Info("method", "GetConfiguration", "args", realmName, "took", time.Since(begin))
 	}(time.Now())
 	return m.next.GetConfiguration(ctx, realmName)
 }

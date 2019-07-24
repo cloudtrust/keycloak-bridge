@@ -11,12 +11,12 @@ import (
 	"testing"
 
 	commonhttp "github.com/cloudtrust/common-service/http"
+	"github.com/cloudtrust/common-service/log"
 	"github.com/cloudtrust/common-service/security"
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/cloudtrust/keycloak-bridge/pkg/management/mock"
 	kc_client "github.com/cloudtrust/keycloak-client"
-	"github.com/go-kit/kit/log"
 	"github.com/golang/mock/gomock"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
