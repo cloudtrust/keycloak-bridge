@@ -26,10 +26,15 @@ func NewKeycloakAuthClient(client KeycloakClient, logger Logger) security.Keyclo
 
 func (k *kcAuthClient) GetGroupNamesOfUser(accessToken string, realmName, userID string) ([]string, error) {
 	grps, err := k.keycloak.GetGroupsOfUser(accessToken, realmName, userID)
-	if err != nil || grps == nil {
+	if err != nil {
 		k.logger.Warn("err", err.Error())
 		return nil, err
 	}
+
+	if grps == nil {
+		return nil, nil
+	}
+
 	var res []string
 	for _, grp := range grps {
 		if grp.Name != nil {
@@ -41,9 +46,14 @@ func (k *kcAuthClient) GetGroupNamesOfUser(accessToken string, realmName, userID
 
 func (k *kcAuthClient) GetGroupName(accessToken string, realmName, groupID string) (string, error) {
 	grp, err := k.keycloak.GetGroup(accessToken, realmName, groupID)
-	if err != nil || grp.Name == nil {
+	if err != nil {
 		k.logger.Warn("err", err.Error())
 		return "", err
 	}
+
+	if grp.Name == nil {
+		return "", nil
+	}
+
 	return *(grp.Name), nil
 }

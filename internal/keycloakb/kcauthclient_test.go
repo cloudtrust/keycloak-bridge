@@ -6,6 +6,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/cloudtrust/common-service/log"
 	"github.com/cloudtrust/common-service/security"
 
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/mock"
@@ -24,9 +25,10 @@ const (
 func testKeycloakAuthClient(t *testing.T, testable func(t *testing.T, mockKeycloak *mock.KeycloakClient, authClient security.KeycloakClient)) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
+	var mockLogger = log.NewNopLogger()
 	var mockKeycloak = mock.NewKeycloakClient(mockCtrl)
 
-	testable(t, mockKeycloak, NewKeycloakAuthClient(mockKeycloak))
+	testable(t, mockKeycloak, NewKeycloakAuthClient(mockKeycloak, mockLogger))
 }
 
 func TestGetGroupNamesOfUserError(t *testing.T) {

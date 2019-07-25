@@ -10,6 +10,7 @@ import (
 
 	cs "github.com/cloudtrust/common-service"
 	commonhttp "github.com/cloudtrust/common-service/http"
+	"github.com/cloudtrust/common-service/log"
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
 	"github.com/cloudtrust/keycloak-bridge/pkg/management/mock"
 	kc "github.com/cloudtrust/keycloak-client"
@@ -23,8 +24,9 @@ func TestGetRealms(t *testing.T) {
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 	var mockEventDBModule = mock.NewEventDBModule(mockCtrl)
 	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
+	var mockLogger = log.NewNopLogger()
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule)
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule, mockLogger)
 
 	var accessToken = "TOKEN=="
 
@@ -86,8 +88,9 @@ func TestGetRealm(t *testing.T) {
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 	var mockEventDBModule = mock.NewEventDBModule(mockCtrl)
 	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
+	var mockLogger = log.NewNopLogger()
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule)
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -150,8 +153,9 @@ func TestGetClient(t *testing.T) {
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 	var mockEventDBModule = mock.NewEventDBModule(mockCtrl)
 	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
+	var mockLogger = log.NewNopLogger()
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule)
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -217,8 +221,9 @@ func TestGetClients(t *testing.T) {
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 	var mockEventDBModule = mock.NewEventDBModule(mockCtrl)
 	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
+	var mockLogger = log.NewNopLogger()
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule)
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -284,8 +289,9 @@ func TestCreateUser(t *testing.T) {
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 	var mockEventDBModule = mock.NewEventDBModule(mockCtrl)
 	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
+	var mockLogger = log.NewNopLogger()
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule)
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var username = "test"
@@ -403,8 +409,9 @@ func TestDeleteUser(t *testing.T) {
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 	var mockEventDBModule = mock.NewEventDBModule(mockCtrl)
 	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
+	var mockLogger = log.NewNopLogger()
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule)
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var userID = "1234-7558-7645"
@@ -444,8 +451,9 @@ func TestGetUser(t *testing.T) {
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 	var mockEventDBModule = mock.NewEventDBModule(mockCtrl)
 	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
+	var mockLogger = log.NewNopLogger()
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule)
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -532,8 +540,9 @@ func TestUpdateUser(t *testing.T) {
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 	var mockEventDBModule = mock.NewEventDBModule(mockCtrl)
 	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
+	var mockLogger = log.NewNopLogger()
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule)
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -759,8 +768,9 @@ func TestGetUsers(t *testing.T) {
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 	var mockEventDBModule = mock.NewEventDBModule(mockCtrl)
 	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
+	var mockLogger = log.NewNopLogger()
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule)
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -849,8 +859,9 @@ func TestGetUserAccountStatus(t *testing.T) {
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 	var mockEventDBModule = mock.NewEventDBModule(mockCtrl)
 	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
+	var mockLogger = log.NewNopLogger()
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule)
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var realmReq = "master"
@@ -927,8 +938,9 @@ func TestGetClientRolesForUser(t *testing.T) {
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 	var mockEventDBModule = mock.NewEventDBModule(mockCtrl)
 	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
+	var mockLogger = log.NewNopLogger()
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule)
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -990,8 +1002,9 @@ func TestAddClientRolesToUser(t *testing.T) {
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 	var mockEventDBModule = mock.NewEventDBModule(mockCtrl)
 	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
+	var mockLogger = log.NewNopLogger()
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule)
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -1067,8 +1080,9 @@ func TestGetRolesOfUser(t *testing.T) {
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 	var mockEventDBModule = mock.NewEventDBModule(mockCtrl)
 	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
+	var mockLogger = log.NewNopLogger()
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule)
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -1129,8 +1143,9 @@ func TestGetGroupsOfUser(t *testing.T) {
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 	var mockEventDBModule = mock.NewEventDBModule(mockCtrl)
 	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
+	var mockLogger = log.NewNopLogger()
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule)
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -1179,8 +1194,9 @@ func TestResetPassword(t *testing.T) {
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 	var mockEventDBModule = mock.NewEventDBModule(mockCtrl)
 	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
+	var mockLogger = log.NewNopLogger()
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule)
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -1235,8 +1251,9 @@ func TestSendVerifyEmail(t *testing.T) {
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 	var mockEventDBModule = mock.NewEventDBModule(mockCtrl)
 	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
+	var mockLogger = log.NewNopLogger()
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule)
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -1277,8 +1294,9 @@ func TestExecuteActionsEmail(t *testing.T) {
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 	var mockEventDBModule = mock.NewEventDBModule(mockCtrl)
 	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
+	var mockLogger = log.NewNopLogger()
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule)
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -1322,8 +1340,9 @@ func TestSendNewEnrolmentCode(t *testing.T) {
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 	var mockEventDBModule = mock.NewEventDBModule(mockCtrl)
 	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
+	var mockLogger = log.NewNopLogger()
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule)
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -1362,8 +1381,9 @@ func TestSendReminderEmail(t *testing.T) {
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 	var mockEventDBModule = mock.NewEventDBModule(mockCtrl)
 	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
+	var mockLogger = log.NewNopLogger()
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule)
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -1406,8 +1426,9 @@ func TestGetCredentialsForUser(t *testing.T) {
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 	var mockEventDBModule = mock.NewEventDBModule(mockCtrl)
 	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
+	var mockLogger = log.NewNopLogger()
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule)
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule, mockLogger)
 	var accessToken = "TOKEN=="
 	var realmReq = "master"
 	var realmName = "otherRealm"
@@ -1432,8 +1453,9 @@ func TestDeleteCredentialsForUser(t *testing.T) {
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 	var mockEventDBModule = mock.NewEventDBModule(mockCtrl)
 	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
+	var mockLogger = log.NewNopLogger()
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule)
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule, mockLogger)
 	var accessToken = "TOKEN=="
 	var realmReq = "master"
 	var realmName = "master"
@@ -1459,8 +1481,9 @@ func TestGetRoles(t *testing.T) {
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 	var mockEventDBModule = mock.NewEventDBModule(mockCtrl)
 	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
+	var mockLogger = log.NewNopLogger()
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule)
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -1520,8 +1543,9 @@ func TestGetRole(t *testing.T) {
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 	var mockEventDBModule = mock.NewEventDBModule(mockCtrl)
 	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
+	var mockLogger = log.NewNopLogger()
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule)
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -1578,8 +1602,9 @@ func TestGetGroups(t *testing.T) {
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 	var mockEventDBModule = mock.NewEventDBModule(mockCtrl)
 	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
+	var mockLogger = log.NewNopLogger()
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule)
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -1644,8 +1669,9 @@ func TestGetClientRoles(t *testing.T) {
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 	var mockEventDBModule = mock.NewEventDBModule(mockCtrl)
 	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
+	var mockLogger = log.NewNopLogger()
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule)
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -1706,8 +1732,9 @@ func TestCreateClientRole(t *testing.T) {
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 	var mockEventDBModule = mock.NewEventDBModule(mockCtrl)
 	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
+	var mockLogger = log.NewNopLogger()
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule)
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -1770,8 +1797,9 @@ func TestGetRealmCustomConfiguration(t *testing.T) {
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 	var mockEventDBModule = mock.NewEventDBModule(mockCtrl)
 	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
+	var mockLogger = log.NewNopLogger()
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule)
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var realmID = "master_id"
@@ -1928,8 +1956,9 @@ func TestUpdateRealmCustomConfiguration(t *testing.T) {
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 	var mockEventDBModule = mock.NewEventDBModule(mockCtrl)
 	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
+	var mockLogger = log.NewNopLogger()
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule)
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var realmID = "master_id"

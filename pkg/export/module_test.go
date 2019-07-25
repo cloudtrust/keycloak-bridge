@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cloudtrust/common-service/log"
 	"github.com/cloudtrust/keycloak-bridge/pkg/export/mock"
 	keycloak "github.com/cloudtrust/keycloak-client"
 	"github.com/golang/mock/gomock"
@@ -21,10 +22,11 @@ func TestGetRealms(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 	var mockKeycloak = mock.NewKeycloakClient(mockCtrl)
+	var mockLogger = log.NewNopLogger()
 
 	var accessToken = "TOKEN=="
 
-	var m = NewModule(mockKeycloak)
+	var m = NewModule(mockKeycloak, mockLogger)
 
 	var (
 		realm  = "realm"
@@ -52,10 +54,11 @@ func TestExportRealm(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 	var mockKeycloak = mock.NewKeycloakClient(mockCtrl)
+	var mockLogger = log.NewNopLogger()
 
 	var accessToken = "TOKEN=="
 
-	var m = NewModule(mockKeycloak)
+	var m = NewModule(mockKeycloak, mockLogger)
 
 	var (
 		realmName = "realm"

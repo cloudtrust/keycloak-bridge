@@ -19,7 +19,7 @@
 
 [[projects]]
   branch = "log_fix"
-  digest = "1:6196144048d96c6405eff08aaaec534226e8c8d6b0a463e72fd5f7d9b07c0619"
+  digest = "1:c50f52460841e921e17337d3e1f42e899d8bb2b81d3e70ee1dde7c58ff309985"
   name = "github.com/cloudtrust/common-service"
   packages = [
     ".",
@@ -34,7 +34,7 @@
     "tracking",
   ]
   pruneopts = "UT"
-  revision = "06a55795c7ff7bc10b384b6e295b5e73c003f016"
+  revision = "0cf84c5747cb93eb2ba6cc2d648ac1444c753638"
 
 [[projects]]
   digest = "1:e788bd2debcb3ebc7de8dd1b67ffa73cc642084ec8b3658853aa92af999e30b2"
