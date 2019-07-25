@@ -18,8 +18,7 @@
   version = "2018.01.18"
 
 [[projects]]
-  branch = "log_fix"
-  digest = "1:c50f52460841e921e17337d3e1f42e899d8bb2b81d3e70ee1dde7c58ff309985"
+  digest = "1:d705b7e1c833fb5332be29b202f9306fe0dfd78e5237d7d319c23b45032ded6b"
   name = "github.com/cloudtrust/common-service"
   packages = [
     ".",
@@ -34,7 +33,8 @@
     "tracking",
   ]
   pruneopts = "UT"
-  revision = "0cf84c5747cb93eb2ba6cc2d648ac1444c753638"
+  revision = "da6db34d3d418be00cd85ec9547b913e20e1d4b2"
+  version = "v1.0-rc4"
 
 [[projects]]
   digest = "1:e788bd2debcb3ebc7de8dd1b67ffa73cc642084ec8b3658853aa92af999e30b2"
