@@ -5,10 +5,10 @@ import (
 	"net/http"
 
 	commonhttp "github.com/cloudtrust/common-service/http"
+	"github.com/cloudtrust/common-service/log"
 	management_api "github.com/cloudtrust/keycloak-bridge/api/management"
 	kc_client "github.com/cloudtrust/keycloak-client"
 	"github.com/go-kit/kit/endpoint"
-	"github.com/go-kit/kit/log"
 	http_transport "github.com/go-kit/kit/transport/http"
 
 	"github.com/pkg/errors"
@@ -68,11 +68,9 @@ func managementErrorHandler(logger log.Logger) func(context.Context, error, http
 	return func(ctx context.Context, err error, w http.ResponseWriter) {
 		switch e := errors.Cause(err).(type) {
 		case kc_client.HTTPError:
-			logger.Log("HTTPErrorHandler", e.HTTPStatus, "msg", e.Error())
 			w.WriteHeader(e.HTTPStatus)
 		case ConvertLocationError:
 			// 201-Created, even if ConvertLocationError occurs, the creation was a success
-			logger.Log("HTTPErrorHandler", http.StatusCreated, "msg", e.Error())
 			w.WriteHeader(http.StatusCreated)
 		default:
 			defaultHandler(ctx, err, w)

@@ -5,7 +5,7 @@ import (
 
 	"github.com/cloudtrust/common-service/security"
 	api "github.com/cloudtrust/keycloak-bridge/api/statistics"
-	"github.com/go-kit/kit/log"
+	"github.com/cloudtrust/common-service/log"
 )
 
 // Actions used for authorization module

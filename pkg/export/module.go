@@ -3,6 +3,7 @@ package export
 import (
 	"context"
 
+	internal "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	keycloak "github.com/cloudtrust/keycloak-client"
 	"github.com/pkg/errors"
 )
@@ -15,13 +16,15 @@ type KeycloakClient interface {
 
 // Module wraps a KeycloakClient to Get/Export realms
 type Module struct {
-	kc KeycloakClient
+	kc     KeycloakClient
+	logger internal.Logger
 }
 
 // NewModule returns a user module.
-func NewModule(kc KeycloakClient) *Module {
+func NewModule(kc KeycloakClient, logger internal.Logger) *Module {
 	return &Module{
-		kc: kc,
+		kc:     kc,
+		logger: logger,
 	}
 }
 
@@ -31,6 +34,7 @@ func (m *Module) GetRealms(ctx context.Context) ([]string, error) {
 	var accessToken = "TOKEN=="
 	var realms, err = m.kc.GetRealms(accessToken)
 	if err != nil {
+		m.logger.Warn("err", err.Error())
 		return res, errors.Wrap(err, "could not get list of realms")
 	}
 
@@ -45,5 +49,12 @@ func (m *Module) GetRealms(ctx context.Context) ([]string, error) {
 // ExportRealm exports the desired realm.
 func (m *Module) ExportRealm(ctx context.Context, realmName string) (keycloak.RealmRepresentation, error) {
 	var accessToken = "TOKEN=="
-	return m.kc.ExportRealm(accessToken, realmName)
+	res, err := m.kc.ExportRealm(accessToken, realmName)
+
+	if err != nil {
+		m.logger.Warn("err", err.Error())
+		return keycloak.RealmRepresentation{}, err
+	}
+
+	return res, nil
 }

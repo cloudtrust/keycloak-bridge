@@ -3,9 +3,9 @@ package events
 import (
 	"context"
 
+	"github.com/cloudtrust/common-service/log"
 	"github.com/cloudtrust/common-service/security"
 	api "github.com/cloudtrust/keycloak-bridge/api/events"
-	"github.com/go-kit/kit/log"
 )
 
 // Actions used for authorization module

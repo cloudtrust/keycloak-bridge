@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
+	internal "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	keycloak "github.com/cloudtrust/keycloak-client"
 	"github.com/pkg/errors"
 )
@@ -11,6 +12,7 @@ import (
 type component struct {
 	componentName    string
 	componentVersion string
+	logger           internal.Logger
 	re               RealmExporter
 	s                Storage
 }
@@ -28,12 +30,13 @@ type Storage interface {
 }
 
 // NewComponent returns an export component.
-func NewComponent(componentName, componentVersion string, re RealmExporter, s Storage) Component {
+func NewComponent(componentName, componentVersion string, logger internal.Logger, re RealmExporter, s Storage) Component {
 	return &component{
 		componentName:    componentName,
 		componentVersion: componentVersion,
 		re:               re,
 		s:                s,
+		logger:           logger,
 	}
 }
 
@@ -41,6 +44,7 @@ func NewComponent(componentName, componentVersion string, re RealmExporter, s St
 func (c *component) Export(ctx context.Context) (map[string]interface{}, error) {
 	var data, err = c.s.Read(c.componentName, c.componentVersion)
 	if err != nil {
+		c.logger.Warn("err", err.Error())
 		return nil, err
 	}
 	var res = map[string]interface{}{}
@@ -60,6 +64,7 @@ func (c *component) StoreAndExport(ctx context.Context) (map[string]interface{},
 		var err error
 		realms, err = c.re.GetRealms(ctx)
 		if err != nil {
+			c.logger.Warn("err", err.Error())
 			return nil, errors.Wrap(err, "export failed, could not get keycloak realms")
 		}
 	}
@@ -70,6 +75,7 @@ func (c *component) StoreAndExport(ctx context.Context) (map[string]interface{},
 		if err == nil {
 			realmsMap[r] = realm
 		} else {
+			c.logger.Warn("err", err.Error())
 			realmsMap[r] = err.Error()
 		}
 	}

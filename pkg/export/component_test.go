@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cloudtrust/common-service/log"
 	"github.com/cloudtrust/keycloak-bridge/pkg/export/mock"
 	keycloak "github.com/cloudtrust/keycloak-client"
 	"github.com/golang/mock/gomock"
@@ -28,13 +29,14 @@ func TestExport(t *testing.T) {
 	defer mockCtrl.Finish()
 	var mockRealmExporter = mock.NewRealmExporter(mockCtrl)
 	var mockStorage = mock.NewStorage(mockCtrl)
+	var mockLogger = log.NewNopLogger()
 
 	var (
 		componentName = "keycloak-bridge"
 		version       = "1.0"
 		realms        = []string{"master", "test", "internal"}
 	)
-	var c = NewComponent(componentName, version, mockRealmExporter, mockStorage)
+	var c = NewComponent(componentName, version, mockLogger, mockRealmExporter, mockStorage)
 
 	var data, err = json.Marshal(config{
 		Name:    componentName,
@@ -60,6 +62,7 @@ func TestStoreAndExport(t *testing.T) {
 	defer mockCtrl.Finish()
 	var mockRealmExporter = mock.NewRealmExporter(mockCtrl)
 	var mockStorage = mock.NewStorage(mockCtrl)
+	var mockLogger = log.NewNopLogger()
 
 	var (
 		componentName = "keycloak-bridge"
@@ -68,7 +71,7 @@ func TestStoreAndExport(t *testing.T) {
 		ctx           = context.Background()
 		rr            = []keycloak.RealmRepresentation{{Realm: &realms[0]}, {Realm: &realms[1]}, {Realm: &realms[2]}}
 	)
-	var c = NewComponent(componentName, version, mockRealmExporter, mockStorage)
+	var c = NewComponent(componentName, version, mockLogger, mockRealmExporter, mockStorage)
 
 	var realmMap = map[string]interface{}{
 		"master":   rr[0],

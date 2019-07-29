@@ -30,7 +30,7 @@ func TestMuxComponentLoggingMW(t *testing.T) {
 
 	// Event.
 	mockMuxComponent.EXPECT().Event(ctx, "Event", event).Return(nil).Times(1)
-	mockLogger.EXPECT().Log("unit", "Event", "type", "Event", "correlation_id", corrID, "took", gomock.Any()).Return(nil).Times(1)
+	mockLogger.EXPECT().Info("unit", "Event", "type", "Event", "correlation_id", corrID, "took", gomock.Any()).Return(nil).Times(1)
 	m.Event(ctx, "Event", event)
 
 	// Event without correlation ID.
@@ -57,7 +57,7 @@ func TestComponentLoggingMW(t *testing.T) {
 
 	// Event.
 	mockComponent.EXPECT().Event(ctx, event).Return(nil).Times(1)
-	mockLogger.EXPECT().Log("unit", "Event", "correlation_id", corrID, "took", gomock.Any()).Return(nil).Times(1)
+	mockLogger.EXPECT().Info("unit", "Event", "correlation_id", corrID, "took", gomock.Any()).Return(nil).Times(1)
 	m.Event(ctx, event)
 
 	// Event without correlation ID.
@@ -84,7 +84,7 @@ func TestAdminComponentLoggingMW(t *testing.T) {
 
 	// Event.
 	mockAdminComponent.EXPECT().AdminEvent(ctx, event).Return(nil).Times(1)
-	mockLogger.EXPECT().Log("unit", "AdminEvent", "correlation_id", corrID, "took", gomock.Any()).Return(nil).Times(1)
+	mockLogger.EXPECT().Info("unit", "AdminEvent", "correlation_id", corrID, "took", gomock.Any()).Return(nil).Times(1)
 	m.AdminEvent(ctx, event)
 
 	// Event without correlation ID.
@@ -110,7 +110,7 @@ func TestConsoleModuleLoggingMW(t *testing.T) {
 
 	// Print.
 	mockConsoleModule.EXPECT().Print(ctx, mp).Return(nil).Times(1)
-	mockLogger.EXPECT().Log("method", "Print", "args", mp, "took", gomock.Any()).Return(nil).Times(1)
+	mockLogger.EXPECT().Debug("method", "Print", "args", mp, "took", gomock.Any()).Return(nil).Times(1)
 	m.Print(ctx, mp)
 }
 
@@ -129,7 +129,7 @@ func TestStatisticModuleLoggingMW(t *testing.T) {
 
 	// Stats.
 	mockStatisticModule.EXPECT().Stats(ctx, mp).Return(nil).Times(1)
-	mockLogger.EXPECT().Log("method", "Stats", "args", mp, "took", gomock.Any()).Return(nil).Times(1)
+	mockLogger.EXPECT().Debug("method", "Stats", "args", mp, "took", gomock.Any()).Return(nil).Times(1)
 	m.Stats(ctx, mp)
 }
 
@@ -147,6 +147,6 @@ func TestEventsDBModuleLoggingMW(t *testing.T) {
 
 	// Store events.
 	mockEventsDBModule.EXPECT().Store(ctx, mp).Return(nil).Times(1)
-	mockLogger.EXPECT().Log("method", "Store", "args", mp, "took", gomock.Any()).Return(nil).Times(1)
+	mockLogger.EXPECT().Debug("method", "Store", "args", mp, "took", gomock.Any()).Return(nil).Times(1)
 	m.Store(ctx, mp)
 }

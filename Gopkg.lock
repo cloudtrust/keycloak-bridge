@@ -18,13 +18,14 @@
   version = "2018.01.18"
 
 [[projects]]
-  digest = "1:55970311556fb570208aa7ab17c45b01a5d47003d9e3f2a8283ba825c0db312e"
+  digest = "1:d705b7e1c833fb5332be29b202f9306fe0dfd78e5237d7d319c23b45032ded6b"
   name = "github.com/cloudtrust/common-service"
   packages = [
     ".",
     "database",
     "http",
     "idgenerator",
+    "log",
     "metrics",
     "middleware",
     "security",
@@ -32,8 +33,8 @@
     "tracking",
   ]
   pruneopts = "UT"
-  revision = "75894bb5016d15f22c3b62491dfe84801de718f4"
-  version = "v1.0-rc3"
+  revision = "da6db34d3d418be00cd85ec9547b913e20e1d4b2"
+  version = "v1.0-rc4"
 
 [[projects]]
   digest = "1:e788bd2debcb3ebc7de8dd1b67ffa73cc642084ec8b3658853aa92af999e30b2"
@@ -84,11 +85,12 @@
   version = "v0.2.0"
 
 [[projects]]
-  digest = "1:d3bddc85b95446035729f10d290dc420c74ca9403ccb1b82b44cd68a0b239000"
+  digest = "1:15c75b28cf00c6cc6763b2544a6424aa2b94c0f1d6ed0230a1fd7e0c381a6d22"
   name = "github.com/go-kit/kit"
   packages = [
     "endpoint",
     "log",
+    "log/level",
     "metrics",
     "metrics/generic",
     "metrics/influx",
@@ -125,12 +127,12 @@
   version = "1.3.1"
 
 [[projects]]
-  digest = "1:318f1c959a8a740366fce4b1e1eb2fd914036b4af58fbd0a003349b305f118ad"
+  digest = "1:573ca21d3669500ff845bdebee890eb7fc7f0f50c59f2132f2a0c6b03d85086a"
   name = "github.com/golang/protobuf"
   packages = ["proto"]
   pruneopts = "UT"
-  revision = "b5d812f8a3706043e23a9cd5babf2e5423744d30"
-  version = "v1.3.1"
+  revision = "6c65a5562fc06764971b7c5d05c76c75e84bdbf7"
+  version = "v1.3.2"
 
 [[projects]]
   digest = "1:e02b687ade0c19c038ecce3ea326d756519adc4bba1203a9e76d620b12354892"
@@ -188,7 +190,7 @@
   revision = "b84e30acd515aadc4b783ad4ff83aff3299bdfe0"
 
 [[projects]]
-  digest = "1:bdd53b87de8185da386bae179c84d4848854c6870bacacf6a154fe63e2e750f7"
+  digest = "1:12cb143f2148bf54bcd9fe622abac17325e85eeb1d84b8ec6caf1c80232108fd"
   name = "github.com/lib/pq"
   packages = [
     ".",
@@ -196,8 +198,8 @@
     "scram",
   ]
   pruneopts = "UT"
-  revision = "bc6a3c0594130b1e34005880bc600b6d3f49fa7f"
-  version = "v1.1.1"
+  revision = "3427c32cb71afc948325f299f040e53c1dd78979"
+  version = "v1.2.0"
 
 [[projects]]
   digest = "1:5a0ef768465592efca0412f7e838cdc0826712f8447e70e6ccc52eb441e9ab13"
@@ -378,7 +380,7 @@
     "publicsuffix",
   ]
   pruneopts = "UT"
-  revision = "da137c7871d730100384dbcf36e6f8fa493aef5b"
+  revision = "ca1201d0de80cfde86cb01aea620983605dfe99b"
 
 [[projects]]
   branch = "master"
@@ -393,11 +395,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:730ba27cd66db3b98ec8f51a6f20d45ec277d490cca36b1f54e31d3fcaf4840e"
+  digest = "1:5632b0c4d972da51b5914f09fc5c1a8535e9d8d5d937e95ef83c423a0dd67f13"
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = "UT"
-  revision = "04f50cda93cbb67f2afa353c52f342100e80e625"
+  revision = "fae7ac547cb717d141c433a2a173315e216b64c4"
 
 [[projects]]
   digest = "1:8d8faad6b12a3a4c819a3f9618cb6ee1fa1cfc33253abeeea8b55336721e3405"
@@ -500,6 +502,7 @@
     "github.com/cloudtrust/common-service/database",
     "github.com/cloudtrust/common-service/http",
     "github.com/cloudtrust/common-service/idgenerator",
+    "github.com/cloudtrust/common-service/log",
     "github.com/cloudtrust/common-service/metrics",
     "github.com/cloudtrust/common-service/middleware",
     "github.com/cloudtrust/common-service/security",
@@ -508,6 +511,7 @@
     "github.com/cloudtrust/keycloak-client",
     "github.com/go-kit/kit/endpoint",
     "github.com/go-kit/kit/log",
+    "github.com/go-kit/kit/log/level",
     "github.com/go-kit/kit/ratelimit",
     "github.com/go-kit/kit/transport/http",
     "github.com/go-sql-driver/mysql",
