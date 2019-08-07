@@ -3,8 +3,13 @@ package management
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"math/rand"
 	"regexp"
+	"strconv"
 	"strings"
+	"time"
+	"unicode"
 
 	cs "github.com/cloudtrust/common-service"
 	"github.com/cloudtrust/common-service/database"
@@ -64,7 +69,7 @@ type Component interface {
 	GetGroupsOfUser(ctx context.Context, realmName, userID string) ([]api.GroupRepresentation, error)
 	GetClientRolesForUser(ctx context.Context, realmName, userID, clientID string) ([]api.RoleRepresentation, error)
 	AddClientRolesToUser(ctx context.Context, realmName, userID, clientID string, roles []api.RoleRepresentation) error
-	ResetPassword(ctx context.Context, realmName string, userID string, password api.PasswordRepresentation) error
+	ResetPassword(ctx context.Context, realmName string, userID string, password api.PasswordRepresentation) (string, error)
 	SendVerifyEmail(ctx context.Context, realmName string, userID string, paramKV ...string) error
 	ExecuteActionsEmail(ctx context.Context, realmName string, userID string, actions []api.RequiredAction, paramKV ...string) error
 	SendNewEnrolmentCode(ctx context.Context, realmName string, userID string) (string, error)
@@ -488,25 +493,127 @@ func (c *component) AddClientRolesToUser(ctx context.Context, realmName, userID,
 	return err
 }
 
-func (c *component) ResetPassword(ctx context.Context, realmName string, userID string, password api.PasswordRepresentation) error {
+func (c *component) ResetPassword(ctx context.Context, realmName string, userID string, password api.PasswordRepresentation) (string, error) {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 
+	fmt.Println("Reset password")
+
+	var pwd string
 	var credKc kc.CredentialRepresentation
 	var passwordType = "password"
 	credKc.Type = &passwordType
-	credKc.Value = password.Value
+
+	if password.Value == nil {
+		// no password value was provided; a new password, that respects the password policy of the realm, will be generated
+		var minLength int = 8
+
+		//obtain password policy
+		realmKc, _ := c.keycloakClient.GetRealm(accessToken, realmName)
+		fmt.Println("******************************")
+		if realmKc.PasswordPolicy == nil {
+			// no Keycloak password policy impose
+			pwd = generatePassword(minLength)
+		} else {
+			policy := *realmKc.PasswordPolicy
+			fmt.Println(policy)
+			pwd = generatePasswordFromKeycloakPolicy(policy, minLength)
+			for pwd == userID {
+				// with small probability the generated password is the same as the username
+				pwd = generatePasswordFromKeycloakPolicy(policy, minLength)
+			}
+		}
+		credKc.Value = &pwd
+		fmt.Println(pwd)
+	} else {
+		credKc.Value = password.Value
+	}
 
 	err := c.keycloakClient.ResetPassword(accessToken, realmName, userID, credKc)
 
 	if err != nil {
 		c.logger.Warn("err", err.Error())
-		return err
+		return pwd, err
 	}
 
 	//store the API call into the DB
 	_ = c.reportEvent(ctx, "INIT_PASSWORD", database.CtEventRealmName, realmName, database.CtEventUserID, userID)
 
-	return nil
+	return pwd, nil
+}
+
+func generatePassword(minLength int) string {
+	// generate a random password
+	fmt.Println("no keycloak policy")
+	var pwdElems []string
+	const alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ?!0123456789"
+	for j := 0; j < minLength; j++ {
+		pwdElems = append(pwdElems, string(alphabet[rand.Intn(len(alphabet))]))
+	}
+	fmt.Println(pwdElems)
+	pwd := strings.Join(pwdElems, "")
+	return pwd
+}
+
+func generatePasswordFromKeycloakPolicy(policy string, minLength int) string {
+	// Keycloak password policy is a string of the form
+	// "forceExpiredPasswordChange(365) and specialChars(1) and upperCase(1) and lowerCase(1) and length(4) and digits(1) and notUsername(undefined)"
+	var pwdElems []string
+	policyItems := strings.Split(policy, "and")
+	fmt.Println(policyItems)
+
+	// generate a random password that corresponds to the password policy
+	//reg := regexp.MustCompile(`[a-zA-z]+[(]{1}[0-9]+[)]{1}`)
+	//pwdReq := string(reg.Find([]byte()))
+
+	f := func(c rune) bool {
+		return !unicode.IsLetter(c) && !unicode.IsNumber(c)
+	}
+
+	// the minimum length of the password
+	for i := 0; i < len(policyItems); i++ {
+		keyValueItem := strings.FieldsFunc(policyItems[i], f)
+		switch keyValueItem[0] {
+		case "length":
+			minLength, _ = strconv.Atoi(keyValueItem[1]) // need to use must compile
+		}
+	}
+
+	rand.Seed(time.Now().Unix())
+	for i := 0; i < len(policyItems); i++ {
+		keyValueItem := strings.FieldsFunc(policyItems[i], f)
+		minRequired, _ := strconv.Atoi(keyValueItem[1])
+		switch keyValueItem[0] {
+		case "specialChars":
+			// piclk randomly special characters from ?!#%$
+			specialChars := []string{"?", "!", "#", "%", "$"}
+			for j := 0; j < minRequired; j++ {
+				pwdElems = append(pwdElems, specialChars[rand.Intn(len(specialChars))])
+			}
+			fmt.Println(pwdElems)
+		case "upperCase":
+			const upperCase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+			for j := 0; j < minRequired; j++ {
+				pwdElems = append(pwdElems, string(upperCase[rand.Intn(len(upperCase))]))
+			}
+			fmt.Println(pwdElems)
+		case "lowerCase":
+			const lowerCase = "abcdefghijklmnopqrstuvwxyz"
+			for j := 0; j < minLength; j++ { // make sure that the password has the minimum length required
+				pwdElems = append(pwdElems, string(lowerCase[rand.Intn(len(lowerCase))]))
+			}
+			fmt.Println(pwdElems)
+		case "digits":
+			for j := 0; j < minRequired; j++ {
+				pwdElems = append(pwdElems, strconv.Itoa(rand.Intn(10)))
+			}
+			fmt.Println(pwdElems)
+		}
+	}
+	rand.Shuffle(len(pwdElems), func(i, j int) { pwdElems[i], pwdElems[j] = pwdElems[j], pwdElems[i] })
+	fmt.Println(pwdElems)
+	pwd := strings.Join(pwdElems, "")
+	return pwd
+
 }
 
 func (c *component) SendVerifyEmail(ctx context.Context, realmName string, userID string, paramKV ...string) error {
