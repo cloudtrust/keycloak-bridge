@@ -419,10 +419,11 @@ paths:
       responses:
         200:
           description: successful operation
-          content:
-              schema:
-                type: string
-              description: The newly generated password, if no value was provided.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Password'
+            description: The newly generated password, if no value was provided.
   /realms/{realm}/users/{userID}/send-verify-email:
     put:
       tags:
