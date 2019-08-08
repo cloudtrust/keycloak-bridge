@@ -1,7 +1,6 @@
 package keycloakb
 
 import (
-	"fmt"
 	"math/rand"
 	"strconv"
 	"strings"
@@ -48,7 +47,6 @@ func GeneratePasswordFromKeycloakPolicy(policy string, minLength int) (string, e
 				for j := 0; j < minLength; j++ {
 					// make sure that the password has the minimum length required by choosing random lower case letters
 					pwdElems = append(pwdElems, string(lowerCase[rand.Intn(len(lowerCase))]))
-					fmt.Println(pwdElems)
 				}
 			} else {
 				return "", err
@@ -62,38 +60,32 @@ func GeneratePasswordFromKeycloakPolicy(policy string, minLength int) (string, e
 		switch keyValueItem[0] {
 		case "specialChars":
 			// pick randomly special characters from ?!#%$
-			fmt.Println("specialChars")
 			minRequired, err := strconv.Atoi(keyValueItem[1])
 			if err == nil {
 				specialChars := []string{"?", "!", "#", "%", "$"}
 				for j := 0; j < minRequired; j++ {
 					pwdElems = append(pwdElems, specialChars[rand.Intn(len(specialChars))])
-					fmt.Println(pwdElems)
 				}
 			} else {
 				return "", err
 			}
 
 		case "upperCase":
-			fmt.Println("upperCase")
 			minRequired, err := strconv.Atoi(keyValueItem[1])
 			if err == nil {
 				const upperCase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 				for j := 0; j < minRequired; j++ {
 					pwdElems = append(pwdElems, string(upperCase[rand.Intn(len(upperCase))]))
-					fmt.Println(pwdElems)
 				}
 			} else {
 				return "", err
 			}
 
 		case "digits":
-			fmt.Println("digits")
 			minRequired, err := strconv.Atoi(keyValueItem[1])
 			if err == nil {
 				for j := 0; j < minRequired; j++ {
 					pwdElems = append(pwdElems, strconv.Itoa(rand.Intn(10)))
-					fmt.Println(pwdElems)
 				}
 			} else {
 				return "", err
@@ -103,7 +95,6 @@ func GeneratePasswordFromKeycloakPolicy(policy string, minLength int) (string, e
 	}
 	rand.Shuffle(len(pwdElems), func(i, j int) { pwdElems[i], pwdElems[j] = pwdElems[j], pwdElems[i] })
 	pwd := strings.Join(pwdElems, "")
-	fmt.Println(pwd)
 	return pwd, nil
 
 }

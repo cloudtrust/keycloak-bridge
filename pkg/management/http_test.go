@@ -98,7 +98,7 @@ func TestHTTPManagementHandler(t *testing.T) {
 		}
 		passwordJSON, _ := json.Marshal(passwordRep)
 
-		mockComponent.EXPECT().ResetPassword(gomock.Any(), "master", "f467ed7c-0a1d-4eee-9bb8-669c6f89c0ee", gomock.Any()).Return(nil).Times(1)
+		mockComponent.EXPECT().ResetPassword(gomock.Any(), "master", "f467ed7c-0a1d-4eee-9bb8-669c6f89c0ee", gomock.Any()).Return("", nil).Times(1)
 
 		var body = strings.NewReader(string(passwordJSON))
 		res, err := http.Post(ts.URL+"/realms/master/users/f467ed7c-0a1d-4eee-9bb8-669c6f89c0ee/reset-password", "application/json", body)
