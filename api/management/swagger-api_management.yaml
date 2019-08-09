@@ -17,9 +17,9 @@ tags:
   description: Roles management
 paths:
   /rights:
-    tags:
-    - Rights
     get:
+      tags:
+      - Rights
       summary: Get the rights of the current user (subset of authorization.json).
       responses:
         200:
