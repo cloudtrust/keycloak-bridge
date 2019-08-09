@@ -8,7 +8,11 @@ import (
 )
 
 const (
-	lowerCase = "abcdefghijklmnopqrstuvwxyz"
+	lowerCase    = "abcdefghijklmnopqrstuvwxyz"
+	upperCase    = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	specialChars = "?!#%$"
+	digits       = "0123456789"
+	alphabet     = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ?!*0123456789"
 )
 
 // appendCharacters appends a number of characters from a certain alphabet to a string array
@@ -42,9 +46,8 @@ func GeneratePassword(policy *string, minLength int, userID string) (string, err
 
 // GeneratePassword generates a password of a given length
 func GeneratePasswordNoKeycloakPolicy(minLength int) string {
-
 	var pwdElems []string
-	pwdElems = appendCharacters(pwdElems, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ?!*0123456789", minLength)
+	pwdElems = appendCharacters(pwdElems, alphabet, minLength)
 	pwd := strings.Join(pwdElems, "")
 	return pwd
 }
@@ -71,7 +74,7 @@ func GeneratePasswordFromKeycloakPolicy(policy string) (string, error) {
 			minRequired, err := strconv.Atoi(keyValueItem[1])
 			if err == nil {
 				// make sure that the password has the minimum length required by choosing random lower case letters
-				pwdElems = appendCharacters(pwdElems, "abcdefghijklmnopqrstuvwxyz", minRequired)
+				pwdElems = appendCharacters(pwdElems, lowerCase, minRequired)
 			} else {
 				return "", err
 			}
@@ -79,7 +82,7 @@ func GeneratePasswordFromKeycloakPolicy(policy string) (string, error) {
 			// pick randomly special characters from ?!#%$
 			minRequired, err := strconv.Atoi(keyValueItem[1])
 			if err == nil {
-				pwdElems = appendCharacters(pwdElems, "?!#%$", minRequired)
+				pwdElems = appendCharacters(pwdElems, specialChars, minRequired)
 			} else {
 				return "", err
 			}
@@ -87,7 +90,7 @@ func GeneratePasswordFromKeycloakPolicy(policy string) (string, error) {
 		case "upperCase":
 			minRequired, err := strconv.Atoi(keyValueItem[1])
 			if err == nil {
-				pwdElems = appendCharacters(pwdElems, "ABCDEFGHIJKLMNOPQRSTUVWXYZ", minRequired)
+				pwdElems = appendCharacters(pwdElems, upperCase, minRequired)
 			} else {
 				return "", err
 			}
@@ -95,7 +98,7 @@ func GeneratePasswordFromKeycloakPolicy(policy string) (string, error) {
 		case "digits":
 			minRequired, err := strconv.Atoi(keyValueItem[1])
 			if err == nil {
-				pwdElems = appendCharacters(pwdElems, "0123456789", minRequired)
+				pwdElems = appendCharacters(pwdElems, digits, minRequired)
 			} else {
 				return "", err
 			}
