@@ -21,7 +21,19 @@ func MakeAccountHandler(e endpoint.Endpoint, logger log.Logger) *http_transport.
 
 // decodeEventsRequest gets the HTTP parameters and body content
 func decodeEventsRequest(ctx context.Context, req *http.Request) (interface{}, error) {
-	pathParams := map[string]string{"realm": "^[a-zA-Z0-9_-]{1,36}$"}
+	pathParams := map[string]string{}
 	queryParams := map[string]string{}
+	return commonhttp.DecodeRequest(ctx, req, pathParams, queryParams)
+}
+
+// decodeEventsRequest gets the HTTP parameters and body content
+func decodeManagementRequest(ctx context.Context, req *http.Request) (interface{}, error) {
+	var pathParams = map[string]string{
+		"credentialID":         account_api.RegExpID,
+		"previousCredentialID": account_api.RegExpID,
+	}
+
+	var queryParams = map[string]string{}
+
 	return commonhttp.DecodeRequest(ctx, req, pathParams, queryParams)
 }

@@ -445,7 +445,7 @@ func main() {
 		eventsDBModule := configureEventsDbModule(baseEventsDBModule, influxMetrics, accountLogger, tracer)
 
 		// new module for account service
-		accountComponent := account.NewComponent(keycloakClient, eventsDBModule)
+		accountComponent := account.NewComponent(keycloakClient.AccountClient(), eventsDBModule, logger)
 
 		accountEndpoints = account.Endpoints{
 			UpdatePassword: prepareEndpoint(account.MakeUpdatePasswordEndpoint(accountComponent), "update_password", influxMetrics, accountLogger, tracer, rateLimit["account"]),

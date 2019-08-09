@@ -2,16 +2,26 @@ package account
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 
 	cs "github.com/cloudtrust/common-service"
 	"github.com/cloudtrust/common-service/database"
 	commonhttp "github.com/cloudtrust/common-service/http"
+	api "github.com/cloudtrust/keycloak-bridge/api/account"
+	internal "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
+	kc "github.com/cloudtrust/keycloak-client"
 )
 
-// KeycloakClient interface exposes methods we need to call to send requests to Keycloak API
-type KeycloakClient interface {
+// KeycloakAccountClient interface exposes methods we need to call to send requests to Keycloak API of Account
+type KeycloakAccountClient interface {
 	UpdatePassword(accessToken, realm, currentPassword, newPassword, confirmPassword string) (string, error)
+	GetCredentials(accessToken string, realmName string) ([]kc.CredentialRepresentation, error)
+	GetCredentialTypes(accessToken string, realmName string) ([]string, error)
+	UpdateLabelCredential(accessToken string, realmName string, credentialID string, label string) error
+	DeleteCredential(accessToken string, realmName string, credentialID string) error
+	MoveToFirst(accessToken string, realmName string, credentialID string) error
+	MoveAfter(accessToken string, realmName string, credentialID string, previousCredentialID string) error
 }
 
 // Component interface exposes methods used by the bridge API
@@ -21,15 +31,17 @@ type Component interface {
 
 // Component is the management component.
 type component struct {
-	keycloakClient KeycloakClient
-	eventDBModule  database.EventsDBModule
+	keycloakAccountClient KeycloakAccountClient
+	eventDBModule         database.EventsDBModule
+	logger                internal.Logger
 }
 
 // NewComponent returns the self-service component.
-func NewComponent(keycloakClient KeycloakClient, eventDBModule database.EventsDBModule) Component {
+func NewComponent(keycloakAccountClient KeycloakAccountClient, eventDBModule database.EventsDBModule, logger internal.Logger) Component {
 	return &component{
-		keycloakClient: keycloakClient,
-		eventDBModule:  eventDBModule,
+		keycloakAccountClient: keycloakAccountClient,
+		eventDBModule:         eventDBModule,
+		logger:                logger,
 	}
 }
 
@@ -49,7 +61,7 @@ func (c *component) UpdatePassword(ctx context.Context, currentPassword, newPass
 		}
 	}
 
-	_, err := c.keycloakClient.UpdatePassword(accessToken, realm, currentPassword, newPassword, confirmPassword)
+	_, err := c.keycloakAccountClient.UpdatePassword(accessToken, realm, currentPassword, newPassword, confirmPassword)
 
 	var updateError error = nil
 	if err != nil {
@@ -67,4 +79,105 @@ func (c *component) UpdatePassword(ctx context.Context, currentPassword, newPass
 	_ = c.reportEvent(ctx, "PASSWORD_RESET", database.CtEventRealmName, realm, database.CtEventUserID, userID, database.CtEventUsername, username)
 
 	return updateError
+}
+
+func (c *component) GetCredentials(ctx context.Context) ([]api.CredentialRepresentation, error) {
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+	var currentRealm = ctx.Value(cs.CtContextRealm).(string)
+
+	credentialsKc, err := c.keycloakAccountClient.GetCredentials(accessToken, currentRealm)
+
+	if err != nil {
+		c.logger.Warn("err", err.Error())
+		return nil, err
+	}
+
+	var credentialsRep = []api.CredentialRepresentation{}
+	for _, credentialKc := range credentialsKc {
+		var credentialRep = api.ConvertCredential(&credentialKc)
+		credentialsRep = append(credentialsRep, credentialRep)
+	}
+
+	return credentialsRep, err
+}
+
+func (c *component) GetCredentialTypes(ctx context.Context) ([]string, error) {
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+	var currentRealm = ctx.Value(cs.CtContextRealm).(string)
+
+	credentialTypes, err := c.keycloakAccountClient.GetCredentialTypes(accessToken, currentRealm)
+
+	if err != nil {
+		c.logger.Warn("err", err.Error())
+		return nil, err
+	}
+
+	return credentialTypes, nil
+}
+
+func (c *component) UpdateLabelCredential(ctx context.Context, credentialID string, label string) error {
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+	var currentRealm = ctx.Value(cs.CtContextRealm).(string)
+	var userID = ctx.Value(cs.CtContextUserID).(string)
+	var username = ctx.Value(cs.CtContextUsername).(string)
+
+	err := c.keycloakAccountClient.UpdateLabelCredential(accessToken, currentRealm, credentialID, label)
+
+	if err != nil {
+		c.logger.Warn("err", err.Error())
+		return err
+	}
+
+	//store the API call into the DB
+	// the error should be treated
+	additionalInfos, _ := json.Marshal(map[string]string{"credentialID": credentialID, "label": label})
+	_ = c.reportEvent(ctx, "SELF_UPDATE_CREDENTIAL", database.CtEventRealmName, currentRealm, database.CtEventUserID, userID, database.CtEventUsername, username, database.CtEventAdditionalInfo, string(additionalInfos))
+
+	return nil
+}
+
+func (c *component) DeleteCredential(ctx context.Context, credentialID string) error {
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+	var currentRealm = ctx.Value(cs.CtContextRealm).(string)
+	var userID = ctx.Value(cs.CtContextUserID).(string)
+	var username = ctx.Value(cs.CtContextUsername).(string)
+
+	err := c.keycloakAccountClient.DeleteCredential(accessToken, currentRealm, credentialID)
+
+	if err != nil {
+		c.logger.Warn("err", err.Error())
+		return err
+	}
+
+	//store the API call into the DB
+	// the error should be treated
+	additionalInfos, _ := json.Marshal(map[string]string{"credentialID": credentialID})
+	_ = c.reportEvent(ctx, "SELF_DELETE_CREDENTIAL", database.CtEventRealmName, currentRealm, database.CtEventUserID, userID, database.CtEventUsername, username, database.CtEventAdditionalInfo, string(additionalInfos))
+
+	return nil
+}
+
+func (c *component) MoveCredential(ctx context.Context, credentialID string, previousCredentialID string) error {
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+	var currentRealm = ctx.Value(cs.CtContextRealm).(string)
+	var userID = ctx.Value(cs.CtContextUserID).(string)
+	var username = ctx.Value(cs.CtContextUsername).(string)
+
+	var err error
+	if previousCredentialID == "" {
+		err = c.keycloakAccountClient.MoveToFirst(accessToken, currentRealm, credentialID)
+	} else {
+		err = c.keycloakAccountClient.MoveAfter(accessToken, currentRealm, credentialID, previousCredentialID)
+	}
+
+	if err != nil {
+		c.logger.Warn("err", err.Error())
+		return err
+	}
+
+	//store the API call into the DB
+	// the error should be treated
+	_ = c.reportEvent(ctx, "SELF_MOVE_CREDENTIAL", database.CtEventRealmName, currentRealm, database.CtEventUserID, userID, database.CtEventUsername, username)
+
+	return nil
 }
