@@ -504,25 +504,15 @@ func (c *component) ResetPassword(ctx context.Context, realmName string, userID 
 		//obtain password policy
 		realmKc, err := c.keycloakClient.GetRealm(accessToken, realmName)
 		if err == nil {
-			if realmKc.PasswordPolicy == nil {
-				// no Keycloak password policy impose
-				pwd = internal.GeneratePassword(minLength)
-			} else {
-				policy := *realmKc.PasswordPolicy
-				pwd, err = internal.GeneratePasswordFromKeycloakPolicy(policy, minLength)
-				for pwd == userID {
-					// with small probability the generated password is the same as the username
-					pwd, err = internal.GeneratePasswordFromKeycloakPolicy(policy, minLength)
-				}
-				if err != nil {
-					return pwd, err
-				}
+			// generate password according to the policy of the realm
+			pwd, err = internal.GeneratePassword(realmKc.PasswordPolicy, minLength, userID)
+			if err != nil {
+				return pwd, err
 			}
 			credKc.Value = &pwd
 		} else {
 			return "", err
 		}
-
 	} else {
 		credKc.Value = password.Value
 	}
