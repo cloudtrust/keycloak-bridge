@@ -27,6 +27,11 @@ type KeycloakAccountClient interface {
 // Component interface exposes methods used by the bridge API
 type Component interface {
 	UpdatePassword(ctx context.Context, currentPassword, newPassword, confirmPassword string) error
+	GetCredentials(ctx context.Context) ([]api.CredentialRepresentation, error)
+	GetCredentialTypes(ctx context.Context) ([]string, error)
+	UpdateLabelCredential(ctx context.Context, credentialID string, label string) error
+	DeleteCredential(ctx context.Context, credentialID string) error
+	MoveCredential(ctx context.Context, credentialID string, previousCredentialID string) error
 }
 
 // Component is the management component.

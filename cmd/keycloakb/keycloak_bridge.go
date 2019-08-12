@@ -448,7 +448,12 @@ func main() {
 		accountComponent := account.NewComponent(keycloakClient.AccountClient(), eventsDBModule, logger)
 
 		accountEndpoints = account.Endpoints{
-			UpdatePassword: prepareEndpoint(account.MakeUpdatePasswordEndpoint(accountComponent), "update_password", influxMetrics, accountLogger, tracer, rateLimit["account"]),
+			UpdatePassword:        prepareEndpoint(account.MakeUpdatePasswordEndpoint(accountComponent), "update_password", influxMetrics, accountLogger, tracer, rateLimit["account"]),
+			GetCredentials:        prepareEndpoint(account.MakeGetCredentialsEndpoint(accountComponent), "get_credentials", influxMetrics, accountLogger, tracer, rateLimit["account"]),
+			GetCredentialTypes:    prepareEndpoint(account.MakeGetCredentialTypesEndpoint(accountComponent), "get_credential_types", influxMetrics, accountLogger, tracer, rateLimit["account"]),
+			DeleteCredential:      prepareEndpoint(account.MakeDeleteCredentialEndpoint(accountComponent), "delete_credential", influxMetrics, accountLogger, tracer, rateLimit["account"]),
+			UpdateLabelCredential: prepareEndpoint(account.MakeUpdateLabelCredentialEndpoint(accountComponent), "update_label_credential", influxMetrics, accountLogger, tracer, rateLimit["account"]),
+			MoveCredential:        prepareEndpoint(account.MakeMoveCredentialEndpoint(accountComponent), "move_credential", influxMetrics, accountLogger, tracer, rateLimit["account"]),
 		}
 	}
 
@@ -624,7 +629,18 @@ func main() {
 
 		// Account
 		var updatePasswordHandler = configureAccountHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(accountEndpoints.UpdatePassword)
+		var getCredentialsHandler = configureAccountHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(accountEndpoints.GetCredentials)
+		var getCredentialTypesHandler = configureAccountHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(accountEndpoints.GetCredentialTypes)
+		var deleteCredentialHandler = configureAccountHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(accountEndpoints.DeleteCredential)
+		var updateLabelCredentialHandler = configureAccountHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(accountEndpoints.UpdateLabelCredential)
+		var moveCredentialHandler = configureAccountHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(accountEndpoints.MoveCredential)
+
 		route.Path("/account/credentials/password").Methods("POST").Handler(updatePasswordHandler)
+		route.Path("/account/credentials").Methods("GET").Handler(getCredentialsHandler)
+		route.Path("/account/credentials/types").Methods("GET").Handler(getCredentialTypesHandler)
+		route.Path("/account/credentials/{credentialID}").Methods("DELETE").Handler(deleteCredentialHandler)
+		route.Path("/account/credentials/{credentialID}").Methods("PUT").Handler(updateLabelCredentialHandler)
+		route.Path("/account/credentials/{credentialID}/after/{previousCredentialID}").Methods("POST").Handler(moveCredentialHandler)
 
 		c := cors.New(corsOptions)
 		errc <- http.ListenAndServe(httpAddrAccount, c.Handler(route))

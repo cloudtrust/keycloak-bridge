@@ -12,7 +12,12 @@ import (
 
 // Endpoints wraps a service behind a set of endpoints.
 type Endpoints struct {
-	UpdatePassword endpoint.Endpoint
+	UpdatePassword        endpoint.Endpoint
+	GetCredentials        endpoint.Endpoint
+	GetCredentialTypes    endpoint.Endpoint
+	UpdateLabelCredential endpoint.Endpoint
+	DeleteCredential      endpoint.Endpoint
+	MoveCredential        endpoint.Endpoint
 }
 
 // UpdatePasswordBody is the definition of the expected body content of UpdatePassword method
@@ -54,15 +59,7 @@ func MakeUpdatePasswordEndpoint(component AccountComponent) cs.Endpoint {
 // MakeGetCredentialsEndpoint makes the GetCredentials endpoint to list credentials of the current user.
 func MakeGetCredentialsEndpoint(component AccountComponent) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
-		var m = req.(map[string]string)
-		var body UpdatePasswordBody
-
-		err := json.Unmarshal([]byte(m["body"]), &body)
-		if err != nil {
-			return nil, http.CreateBadRequestError("Invalid body")
-		}
-
-		return nil, component.UpdatePassword(ctx, body.CurrentPassword, body.NewPassword, body.ConfirmPassword)
+		return component.GetCredentials(ctx)
 	}
 }
 

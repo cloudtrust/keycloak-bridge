@@ -38,8 +38,8 @@ event-basic-auth-token: "superpasswordverylongandstrong"
 
 
 # Keycloak configs
-keycloak-api-uri: http://localhost:8080
-keycloak-oidc-uri: http://localhost:8080
+keycloak-api-uri: http://localhost:8081
+keycloak-oidc-uri: http://localhost:8081
 keycloak-timeout: 5s
 
 # DB Audit RW
@@ -54,6 +54,7 @@ db-audit-rw-max-idle-conns: 2
 db-audit-rw-conn-max-lifetime: 10
 db-audit-rw-migration: false
 db-audit-rw-migration-version: 0.1
+db-audit-rw-connection-check: false
 
 
 # DB Audit RO
@@ -68,6 +69,7 @@ db-audit-ro-max-idle-conns: 2
 db-audit-ro-conn-max-lifetime: 10
 db-audit-ro-migration: false
 db-audit-ro-migration-version: 0.1
+db-audit-ro-connection-check: false
 
 # DB Configuration
 db-config-host-port: 127.0.0.1:3306
@@ -81,6 +83,7 @@ db-config-max-idle-conns: 2
 db-config-conn-max-lifetime: 10
 db-config-migration: false
 db-config-migration-version: 0.1
+db-config-connection-check: false
 
 # audit events
 events-db: false
