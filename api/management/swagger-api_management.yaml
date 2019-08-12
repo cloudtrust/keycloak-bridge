@@ -6,7 +6,6 @@ info:
 servers:
 - url: http://localhost:8888/management
 tags:
-- name: Rights
 - name: Realms
   description: Realms management
 - name: Clients
@@ -16,18 +15,6 @@ tags:
 - name: Roles
   description: Roles management
 paths:
-  /rights:
-    get:
-      tags:
-      - Rights
-      summary: Get the rights of the current user (subset of authorization.json).
-      responses:
-        200:
-          description: successful operation
-          content:
-            application/json:
-              schema:
-                type: object
   /realms/{realm}:
     get:
       tags:
