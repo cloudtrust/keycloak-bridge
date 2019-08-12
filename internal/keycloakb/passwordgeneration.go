@@ -8,10 +8,10 @@ import (
 )
 
 const (
-	lowerCase    = "abcdefghijklmnopqrstuvwxyz"
-	upperCase    = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	lowerCase    = "abcdefghijkmnopqrstuvwxyz"
+	upperCase    = "ABCDEFGHJKLMNPQRSTUVWXYZ"
 	specialChars = "?!#%$"
-	digits       = "0123456789"
+	digits       = "23456789"
 	alphabet     = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ?!*0123456789"
 )
 
