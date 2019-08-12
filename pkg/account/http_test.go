@@ -19,10 +19,10 @@ import (
 func TestHTTPAccountHandler(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
-	var mockComponent = mock.NewComponent(mockCtrl)
+	var mockAccountComponent = mock.NewAccountComponent(mockCtrl)
 
 	r := mux.NewRouter()
-	r.Handle("/path/to/{realm}/password", MakeAccountHandler(keycloakb.ToGoKitEndpoint(MakeUpdatePasswordEndpoint(mockComponent)), log.NewNopLogger()))
+	r.Handle("/path/to/{realm}/password", MakeAccountHandler(keycloakb.ToGoKitEndpoint(MakeUpdatePasswordEndpoint(mockAccountComponent)), log.NewNopLogger()))
 
 	ts := httptest.NewServer(r)
 	defer ts.Close()
@@ -35,7 +35,7 @@ func TestHTTPAccountHandler(t *testing.T) {
 		}
 		json, _ := json.MarshalIndent(body, "", " ")
 
-		mockComponent.EXPECT().UpdatePassword(gomock.Any(), body.CurrentPassword, body.NewPassword, body.ConfirmPassword).Return(nil).Times(1)
+		mockAccountComponent.EXPECT().UpdatePassword(gomock.Any(), body.CurrentPassword, body.NewPassword, body.ConfirmPassword).Return(nil).Times(1)
 
 		res, err := http.Post(ts.URL+"/path/to/master/password", "application/json", ioutil.NopCloser(bytes.NewBuffer(json)))
 

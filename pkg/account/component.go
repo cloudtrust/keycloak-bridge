@@ -182,7 +182,8 @@ func (c *component) MoveCredential(ctx context.Context, credentialID string, pre
 
 	//store the API call into the DB
 	// the error should be treated
-	_ = c.reportEvent(ctx, "SELF_MOVE_CREDENTIAL", database.CtEventRealmName, currentRealm, database.CtEventUserID, userID, database.CtEventUsername, username)
+	additionalInfos, _ := json.Marshal(map[string]string{"credentialID": credentialID, "previousCredentialID": previousCredentialID})
+	_ = c.reportEvent(ctx, "SELF_MOVE_CREDENTIAL", database.CtEventRealmName, currentRealm, database.CtEventUserID, userID, database.CtEventUsername, username, database.CtEventAdditionalInfo, string(additionalInfos))
 
 	return nil
 }

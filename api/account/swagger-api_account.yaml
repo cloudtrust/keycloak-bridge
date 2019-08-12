@@ -57,24 +57,6 @@ paths:
                 items:
                   $ref: '#/components/schemas/Type'
   /account/credentials/{credentialId}:
-    get:
-      tags:
-      - Credentials
-      summary: Get credential representation
-      parameters:
-      - name: credentialId
-        in: path
-        description: id of the credential
-        required: true
-        schema:
-          type: string
-      responses:
-        200:
-          description: Returns a representation of the credential.
-          content:
-            application/json:
-              schema:
-                  $ref: '#/components/schemas/Credential'
     put:
       tags:
       - Credentials
