@@ -86,7 +86,6 @@ func GeneratePasswordFromKeycloakPolicy(policy string) (string, error) {
 			} else {
 				return "", err
 			}
-
 		case "upperCase":
 			minRequired, err := strconv.Atoi(keyValueItem[1])
 			if err == nil {
@@ -94,7 +93,6 @@ func GeneratePasswordFromKeycloakPolicy(policy string) (string, error) {
 			} else {
 				return "", err
 			}
-
 		case "digits":
 			minRequired, err := strconv.Atoi(keyValueItem[1])
 			if err == nil {
