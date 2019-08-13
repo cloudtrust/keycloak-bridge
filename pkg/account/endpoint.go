@@ -20,17 +20,6 @@ type Endpoints struct {
 	MoveCredential        endpoint.Endpoint
 }
 
-// UpdatePasswordBody is the definition of the expected body content of UpdatePassword method
-type UpdatePasswordBody struct {
-	CurrentPassword string `json:"currentPassword,omitempty"`
-	NewPassword     string `json:"newPassword,omitempty"`
-	ConfirmPassword string `json:"confirmPassword,omitempty"`
-}
-
-type LabelBody struct {
-	Label string `json:"label,omitempty"`
-}
-
 // AccountComponent describes methods of the Account API
 type AccountComponent interface {
 	UpdatePassword(ctx context.Context, currentPassword, newPassword, confirmPassword string) error
@@ -45,11 +34,15 @@ type AccountComponent interface {
 func MakeUpdatePasswordEndpoint(component AccountComponent) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
-		var body UpdatePasswordBody
+		var body api.UpdatePasswordBody
 
 		err := json.Unmarshal([]byte(m["body"]), &body)
 		if err != nil {
 			return nil, http.CreateBadRequestError("Invalid body")
+		}
+
+		if err = body.Validate(); err != nil {
+			return nil, http.CreateBadRequestError(err.Error())
 		}
 
 		return nil, component.UpdatePassword(ctx, body.CurrentPassword, body.NewPassword, body.ConfirmPassword)
@@ -75,14 +68,22 @@ func MakeUpdateLabelCredentialEndpoint(component AccountComponent) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		var body LabelBody
+		var body api.CredentialRepresentation
 
 		err := json.Unmarshal([]byte(m["body"]), &body)
 		if err != nil {
 			return nil, http.CreateBadRequestError("Invalid body")
 		}
 
-		return nil, component.UpdateLabelCredential(ctx, m["credentialID"], body.Label)
+		if err = body.Validate(); err != nil {
+			return nil, http.CreateBadRequestError(err.Error())
+		}
+
+		if body.UserLabel == nil {
+			return nil, http.CreateBadRequestError("User label missing")
+		}
+
+		return nil, component.UpdateLabelCredential(ctx, m["credentialID"], *body.UserLabel)
 	}
 }
 

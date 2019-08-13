@@ -169,7 +169,7 @@ func (c *component) MoveCredential(ctx context.Context, credentialID string, pre
 	var username = ctx.Value(cs.CtContextUsername).(string)
 
 	var err error
-	if previousCredentialID == "" {
+	if previousCredentialID == "null" {
 		err = c.keycloakAccountClient.MoveToFirst(accessToken, currentRealm, credentialID)
 	} else {
 		err = c.keycloakAccountClient.MoveAfter(accessToken, currentRealm, credentialID, previousCredentialID)

@@ -60,7 +60,7 @@ paths:
     put:
       tags:
       - Credentials
-      summary: Update credential representation
+      summary: Update UserLabel of credential (all other attributes will be ignored)
       parameters:
       - name: credentialId
         in: path
@@ -76,6 +76,20 @@ paths:
       responses:
         200:
           description: Successfuly updated.
+    delete:
+      tags:
+      - Credentials
+      summary: Delete the credential
+      parameters:
+      - name: credentialId
+        in: path
+        description: id of the credential
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation
   /account/credentials/{credentialId}/after/{previousCredentialId}:
     post:
       tags:
@@ -118,8 +132,12 @@ components:
           type: string
         userLabel:
           type: string
+        createdDate:
+          type: integer
         credentialData:
           type: object
+        temporary:
+          type: boolean
     Type:
       type: string
   securitySchemes:

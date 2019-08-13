@@ -24,7 +24,7 @@ func MakeAccountHandler(e endpoint.Endpoint, logger log.Logger) *http_transport.
 func decodeAccountRequest(ctx context.Context, req *http.Request) (interface{}, error) {
 	var pathParams = map[string]string{
 		"credentialID":         account_api.RegExpID,
-		"previousCredentialID": account_api.RegExpID,
+		"previousCredentialID": account_api.RegExpIDNullable,
 	}
 
 	var queryParams = map[string]string{}

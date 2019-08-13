@@ -38,11 +38,11 @@
 
 [[projects]]
   branch = "credentials"
-  digest = "1:c743eb19ffd37e25c57900526e469712e3c3ae961f811e3c8a4dd62d4b190cf3"
+  digest = "1:9419feacde5caa87002ea5b280f859475dcc1b8322e4e1c23ac7ea97bc902b88"
   name = "github.com/cloudtrust/keycloak-client"
   packages = ["."]
   pruneopts = "UT"
-  revision = "96d36566fb0d4d7ffcd721a197895d687093c45c"
+  revision = "42c0766b01f9cf90bea0a69aab907e3e42458eba"
 
 [[projects]]
   digest = "1:f6e5e1bc64c2908167e6aa9a1fe0c084d515132a1c63ad5b6c84036aa06dc0c1"
@@ -395,11 +395,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:8d30f87f59931cdd4d45e450185216a34eba66c1f1f68a314ac0fa49d19f9826"
+  digest = "1:47844666be86089349a441f5f0ece22f42a87a8cb8c9a31294c593f43209ad19"
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = "UT"
-  revision = "9eafafc0a87e0fd0aeeba439a4573537970c44c7"
+  revision = "fde4db37ae7ad8191b03d30d27f258b5291ae4e3"
 
 [[projects]]
   digest = "1:8d8faad6b12a3a4c819a3f9618cb6ee1fa1cfc33253abeeea8b55336721e3405"

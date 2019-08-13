@@ -55,11 +55,13 @@ type ClientRepresentation struct {
 
 // CredentialRepresentation struct
 type CredentialRepresentation struct {
-	Id          *string              `json:"id,omitempty"`
-	Type        *string              `json:"type,omitempty"`
-	Algorithm   *string              `json:"algorithm,omitempty"`
-	CreatedDate *int64               `json:"createdDate,omitempty"`
-	Config      *map[string][]string `json:"config,omitempty"`
+	Id             *string `json:"id,omitempty"`
+	Type           *string `json:"type,omitempty"`
+	UserLabel      *string `json:"userLabel,omitempty"`
+	CreatedDate    *int64  `json:"createdDate,omitempty"`
+	CredentialData *string `json:"credentialData,omitempty"`
+	Value          *string `json:"value,omitempty"`
+	Temporary      *bool   `json:"temporary,omitempty"`
 }
 
 // RoleRepresentation struct
@@ -97,19 +99,12 @@ func ConvertCredential(credKc *kc.CredentialRepresentation) CredentialRepresenta
 	var cred CredentialRepresentation
 	cred.Id = credKc.Id
 	cred.Type = credKc.Type
-	cred.Algorithm = credKc.Algorithm
+	cred.UserLabel = credKc.UserLabel
 	cred.CreatedDate = credKc.CreatedDate
-	if credKc.Config != nil {
-		var m map[string][]string
-		m = make(map[string][]string)
-		for _, key := range []string{"deviceInfo_Manufacturer", "deviceInfo_Model", "deviceInfo_Name", "deviceInfo_Plateform", "shortId", "usedChallenges", "availableChallenges", "cardStatus", "expirationDate"} {
-			value, ok := (*credKc.Config)[key]
-			if ok {
-				m[key] = value
-			}
-		}
-		cred.Config = &m
-	}
+	cred.CredentialData = credKc.CredentialData
+	cred.Temporary = credKc.Temporary
+	cred.Value = credKc.Value
+
 	return cred
 }
 
