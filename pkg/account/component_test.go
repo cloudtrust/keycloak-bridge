@@ -304,7 +304,7 @@ func TestMoveCredential(t *testing.T) {
 		mockKeycloakAccountClient.EXPECT().MoveToFirst(accessToken, realm, credentialID).Return(nil).Times(1)
 		mockEventDBModule.EXPECT().ReportEvent(gomock.Any(), "SELF_MOVE_CREDENTIAL", "self-service", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
 
-		err := component.MoveCredential(ctx, credentialID, "")
+		err := component.MoveCredential(ctx, credentialID, "null")
 
 		assert.Nil(t, err)
 	}
@@ -318,7 +318,7 @@ func TestMoveCredential(t *testing.T) {
 
 	{
 		mockKeycloakAccountClient.EXPECT().MoveToFirst(accessToken, realm, credentialID).Return(fmt.Errorf("Unexpected error")).Times(1)
-		err := component.MoveCredential(ctx, credentialID, "")
+		err := component.MoveCredential(ctx, credentialID, "null")
 
 		assert.NotNil(t, err)
 	}

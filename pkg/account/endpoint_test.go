@@ -15,12 +15,12 @@ func TestMakeUpdatePasswordEndpoint(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	mockAccountComponent := mock.NewAccountComponent(mockCtrl)
-	mockAccountComponent.EXPECT().UpdatePassword(gomock.Any(), "", "", "").Return(nil).Times(1)
+	mockAccountComponent.EXPECT().UpdatePassword(gomock.Any(), "password", "password2", "password2").Return(nil).Times(1)
 
 	m := map[string]string{}
 
 	{
-		m["body"] = "{}"
+		m["body"] = "{ \"currentPassword\":\"password\", \"newPassword\":\"password2\", \"confirmPassword\":\"password2\"}"
 		_, err := MakeUpdatePasswordEndpoint(mockAccountComponent)(context.Background(), m)
 		assert.Nil(t, err)
 	}
@@ -66,7 +66,7 @@ func TestMakeUpdateLabelCredentialEndpoint(t *testing.T) {
 	m := map[string]string{}
 
 	{
-		m["body"] = "{ \"label\": \"label\"}"
+		m["body"] = "{ \"userLabel\": \"label\"}"
 		m["credentialID"] = "id"
 		_, err := MakeUpdateLabelCredentialEndpoint(mockAccountComponent)(context.Background(), m)
 		assert.Nil(t, err)
