@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/cloudtrust/common-service/log"
+	account_api "github.com/cloudtrust/keycloak-bridge/api/account"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/cloudtrust/keycloak-bridge/pkg/account/mock"
 	"github.com/golang/mock/gomock"
@@ -28,7 +29,7 @@ func TestHTTPAccountHandler(t *testing.T) {
 	defer ts.Close()
 
 	{
-		body := UpdatePasswordBody{
+		body := account_api.UpdatePasswordBody{
 			CurrentPassword: "current",
 			NewPassword:     "new",
 			ConfirmPassword: "confirm",
