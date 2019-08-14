@@ -12,7 +12,7 @@ const (
 	upperCase    = "ABCDEFGHJKLMNPQRSTUVWXYZ"
 	specialChars = "?!#%$"
 	digits       = "23456789"
-	alphabet     = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ?!*0123456789"
+	alphabet     = "abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ?!*23456789"
 )
 
 // appendCharacters appends a number of characters from a certain alphabet to a string array
