@@ -69,7 +69,7 @@ func main() {
 		logger = log.With(logger, "ts", kit_log.DefaultTimestampUTC)
 
 		// Caller
-		logger = log.With(logger, "caller", kit_log.DefaultCaller)
+		logger = log.With(logger, "caller", kit_log.Caller(6))
 
 		// Add component name, component ID and version to the logger tags.
 		logger = log.With(logger, "component_name", ComponentName, "component_id", ComponentID, "component_version", Version)
