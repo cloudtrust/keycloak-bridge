@@ -101,7 +101,6 @@ func GeneratePasswordFromKeycloakPolicy(policy string) (string, error) {
 				return "", err
 			}
 		}
-
 	}
 	rand.Shuffle(len(pwdElems), func(i, j int) { pwdElems[i], pwdElems[j] = pwdElems[j], pwdElems[i] })
 	pwd := strings.Join(pwdElems, "")
