@@ -87,8 +87,10 @@ type PasswordRepresentation struct {
 
 // RealmCustomConfiguration struct
 type RealmCustomConfiguration struct {
-	DefaultClientId    *string `json:"default_client_id,omitempty"`
-	DefaultRedirectUri *string `json:"default_redirect_uri,omitempty"`
+	DefaultClientId              *string `json:"default_client_id,omitempty"`
+	DefaultRedirectUri           *string `json:"default_redirect_uri,omitempty"`
+	SelfAuthenticatorMgmtEnabled *bool   `json:"self_authenticator_mgmt_enabled"`
+	SelfPasswordChangeEnabled    *bool   `json:"self_password_change_enabled"`
 }
 
 // RequiredAction type
