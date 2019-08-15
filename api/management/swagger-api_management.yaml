@@ -1,7 +1,7 @@
 openapi: 3.0.1
 info:
   title: Swagger Cloudtrust Management
-  description: 'Mangement API for Cloudtrust.'
+  description: 'Mangement API for Cloudtrust'
   version: 1.0.0
 servers:
 - url: http://localhost:8888/management
