@@ -121,7 +121,7 @@ func TestDeny(t *testing.T) {
 		err = authorizationMW.AddClientRolesToUser(ctx, realmName, userID, clientID, roles)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
-		err = authorizationMW.ResetPassword(ctx, realmName, userID, password)
+		_, err = authorizationMW.ResetPassword(ctx, realmName, userID, password)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
 		err = authorizationMW.SendVerifyEmail(ctx, realmName, userID)
@@ -317,8 +317,8 @@ func TestAllowed(t *testing.T) {
 		err = authorizationMW.AddClientRolesToUser(ctx, realmName, userID, clientID, roles)
 		assert.Nil(t, err)
 
-		mockManagementComponent.EXPECT().ResetPassword(ctx, realmName, userID, password).Return(nil).Times(1)
-		err = authorizationMW.ResetPassword(ctx, realmName, userID, password)
+		mockManagementComponent.EXPECT().ResetPassword(ctx, realmName, userID, password).Return("", nil).Times(1)
+		_, err = authorizationMW.ResetPassword(ctx, realmName, userID, password)
 		assert.Nil(t, err)
 
 		mockManagementComponent.EXPECT().SendVerifyEmail(ctx, realmName, userID).Return(nil).Times(1)

@@ -61,7 +61,7 @@ type ManagementComponent interface {
 	GetGroupsOfUser(ctx context.Context, realmName, userID string) ([]api.GroupRepresentation, error)
 	GetClientRolesForUser(ctx context.Context, realmName, userID, clientID string) ([]api.RoleRepresentation, error)
 	AddClientRolesToUser(ctx context.Context, realmName, userID, clientID string, roles []api.RoleRepresentation) error
-	ResetPassword(ctx context.Context, realmName string, userID string, password api.PasswordRepresentation) error
+	ResetPassword(ctx context.Context, realmName string, userID string, password api.PasswordRepresentation) (string, error)
 	SendVerifyEmail(ctx context.Context, realmName string, userID string, paramKV ...string) error
 	ExecuteActionsEmail(ctx context.Context, realmName string, userID string, actions []api.RequiredAction, paramKV ...string) error
 	SendNewEnrolmentCode(ctx context.Context, realmName string, userID string) (string, error)
@@ -281,7 +281,11 @@ func MakeResetPasswordEndpoint(managementComponent ManagementComponent) cs.Endpo
 			return nil, http.CreateBadRequestError(err.Error())
 		}
 
-		return nil, managementComponent.ResetPassword(ctx, m["realm"], m["userID"], password)
+		pwd, err := managementComponent.ResetPassword(ctx, m["realm"], m["userID"], password)
+		if pwd != "" {
+			return pwd, err
+		}
+		return nil, err
 	}
 }
 
