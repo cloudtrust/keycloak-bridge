@@ -66,7 +66,7 @@ func main() {
 	var logger = log.NewLeveledLogger(kit_log.NewJSONLogger(os.Stdout))
 	{
 		// Timestamp
-		logger = log.With(logger, "ts", kit_log.DefaultTimestampUTC)
+		logger = log.With(logger, "_ts", kit_log.DefaultTimestampUTC)
 
 		// Caller
 		logger = log.With(logger, "caller", kit_log.DefaultCaller)
