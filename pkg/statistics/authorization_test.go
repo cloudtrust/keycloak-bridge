@@ -5,10 +5,10 @@ import (
 	"testing"
 
 	cs "github.com/cloudtrust/common-service"
+	"github.com/cloudtrust/common-service/log"
 	"github.com/cloudtrust/common-service/security"
 	api "github.com/cloudtrust/keycloak-bridge/api/statistics"
 	"github.com/cloudtrust/keycloak-bridge/pkg/statistics/mock"
-	"github.com/cloudtrust/common-service/log"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
@@ -16,7 +16,7 @@ import (
 const (
 	WithoutAuthorization = `{}`
 	WithAuthorization    = `{
-		"master": {
+		"master": { 
 			"toe": {
 				"ST_GetStatistics": {"*": {"*": {} }}
 			}
@@ -58,15 +58,15 @@ func testAuthorization(t *testing.T, jsonAuthz string, tester func(Component, *m
 
 func TestGetStatisticsAllow(t *testing.T) {
 	testAuthorization(t, WithAuthorization, func(auth Component, mockComponent *mock.Component, ctx context.Context, mp map[string]string) {
-		mockComponent.EXPECT().GetStatistics(ctx, mp).Return(api.StatisticsRepresentation{}, nil).Times(1)
-		_, err := auth.GetStatistics(ctx, mp)
+		mockComponent.EXPECT().GetStatistics(ctx, mp["realm"]).Return(api.StatisticsRepresentation{}, nil).Times(1)
+		_, err := auth.GetStatistics(ctx, mp["realm"])
 		assert.Nil(t, err)
 	})
 }
 
 func TestGetStatisticsDeny(t *testing.T) {
 	testAuthorization(t, WithoutAuthorization, func(auth Component, mockComponent *mock.Component, ctx context.Context, mp map[string]string) {
-		_, err := auth.GetStatistics(ctx, mp)
+		_, err := auth.GetStatistics(ctx, mp["realm"])
 		assert.Equal(t, security.ForbiddenError{}, err)
 	})
 }
