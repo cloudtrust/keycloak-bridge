@@ -3,14 +3,15 @@ package statistics
 import (
 	"context"
 
+	"github.com/cloudtrust/common-service/log"
 	"github.com/cloudtrust/common-service/security"
 	api "github.com/cloudtrust/keycloak-bridge/api/statistics"
-	"github.com/cloudtrust/common-service/log"
 )
 
 // Actions used for authorization module
 const (
-	STGetStatistics = "ST_GetStatistics"
+	STGetStatistics      = "ST_GetStatistics"
+	STGetMigrationReport = "ST_GetMigrationReport"
 )
 
 // Tracking middleware at component level.
@@ -31,13 +32,22 @@ func MakeAuthorizationManagementComponentMW(logger log.Logger, authorizationMana
 	}
 }
 
-func (c *authorizationComponentMW) GetStatistics(ctx context.Context, m map[string]string) (api.StatisticsRepresentation, error) {
+func (c *authorizationComponentMW) GetStatistics(ctx context.Context, realm string) (api.StatisticsRepresentation, error) {
 	var action = STGetStatistics
-	var targetRealm = m["realm"] // Get the realm provided as parameter in path
 
-	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
+	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, realm); err != nil {
 		return api.StatisticsRepresentation{}, err
 	}
 
-	return c.next.GetStatistics(ctx, m)
+	return c.next.GetStatistics(ctx, realm)
+}
+
+func (c *authorizationComponentMW) GetMigrationReport(ctx context.Context, realm string) (map[string]bool, error) {
+	var action = STGetMigrationReport
+
+	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, realm); err != nil {
+		return map[string]bool{}, err
+	}
+
+	return c.next.GetMigrationReport(ctx, realm)
 }

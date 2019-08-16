@@ -5,8 +5,9 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/cloudtrust/common-service/log"
 	api "github.com/cloudtrust/keycloak-bridge/api/statistics"
-	"github.com/cloudtrust/keycloak-bridge/pkg/events/mock"
+	"github.com/cloudtrust/keycloak-bridge/pkg/statistics/mock"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
@@ -15,7 +16,9 @@ func executeTest(t *testing.T, tester func(mockDBModule *mock.EventsDBModule, co
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 	var mockDBModule = mock.NewEventsDBModule(mockCtrl)
-	tester(mockDBModule, NewComponent(mockDBModule))
+	var mockKcClient = mock.NewKcClient(mockCtrl)
+	var mockLogger = log.NewNopLogger()
+	tester(mockDBModule, NewComponent(mockDBModule, mockKcClient, mockLogger))
 }
 
 func TestGetStatistics(t *testing.T) {
@@ -23,11 +26,12 @@ func TestGetStatistics(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mockDBModule = mock.NewEventsDBModule(mockCtrl)
-	component := NewComponent(mockDBModule)
+	var mockKcClient = mock.NewKcClient(mockCtrl)
+	var mockLogger = log.NewNopLogger()
+	component := NewComponent(mockDBModule, mockKcClient, mockLogger)
 
 	var errDbModule = errors.New("Dummy error in db module")
 	var realm = "the_realm_name"
-	var params = map[string]string{"realm": realm}
 	var expected = api.StatisticsRepresentation{
 		LastConnection: 1234567890,
 		TotalConnections: api.StatisticsConnectionsRepresentation{
@@ -42,7 +46,7 @@ func TestGetStatistics(t *testing.T) {
 	{
 		// db.GetLastConnection fails
 		mockDBModule.EXPECT().GetLastConnection(gomock.Any(), realm).Return(int64(0), errDbModule).Times(1)
-		_, err := component.GetStatistics(context.TODO(), params)
+		_, err := component.GetStatistics(context.TODO(), realm)
 		assert.Equal(t, errDbModule, err)
 	}
 
@@ -54,7 +58,7 @@ func TestGetStatistics(t *testing.T) {
 		mockDBModule.EXPECT().GetTotalConnectionsCount(gomock.Any(), realm, "1 WEEK").Return(expected.TotalConnections.LastWeek, nil).Times(1)
 		mockDBModule.EXPECT().GetTotalConnectionsCount(gomock.Any(), realm, "1 MONTH").Return(expected.TotalConnections.LastMonth, nil).Times(1)
 		mockDBModule.EXPECT().GetTotalConnectionsCount(gomock.Any(), realm, "1 YEAR").Return(expected.TotalConnections.LastYear, nil).Times(1)
-		res, err := component.GetStatistics(context.TODO(), params)
+		res, err := component.GetStatistics(context.TODO(), realm)
 		assert.Nil(t, err)
 		assert.Equal(t, expected, res)
 	}
