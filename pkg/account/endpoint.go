@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 
 	cs "github.com/cloudtrust/common-service"
+	errors "github.com/cloudtrust/common-service/errors"
 	errrorhandler "github.com/cloudtrust/common-service/errors"
 	api "github.com/cloudtrust/keycloak-bridge/api/account"
 	internal "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
@@ -57,6 +58,10 @@ func MakeUpdatePasswordEndpoint(component AccountComponent) cs.Endpoint {
 
 		if err = body.Validate(); err != nil {
 			return nil, errrorhandler.CreateBadRequestError(err.Error())
+		}
+
+		if err = body.Validate(); err != nil {
+			return nil, errors.CreateBadRequestError(err.Error())
 		}
 
 		return nil, component.UpdatePassword(ctx, body.CurrentPassword, body.NewPassword, body.ConfirmPassword)
