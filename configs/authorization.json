@@ -953,6 +953,11 @@
           "end_user": {}
         }
       },
+      "ResetPassword": {
+        "DEP": {
+          "end_user": {}
+        }
+      },
       "GetGroups": {
         "DEP": {
           "*": {}

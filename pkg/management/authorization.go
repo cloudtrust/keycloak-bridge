@@ -217,12 +217,12 @@ func (c *authorizationComponentMW) AddClientRolesToUser(ctx context.Context, rea
 	return c.next.AddClientRolesToUser(ctx, realmName, userID, clientID, roles)
 }
 
-func (c *authorizationComponentMW) ResetPassword(ctx context.Context, realmName string, userID string, password api.PasswordRepresentation) error {
+func (c *authorizationComponentMW) ResetPassword(ctx context.Context, realmName string, userID string, password api.PasswordRepresentation) (string, error) {
 	var action = ResetPassword
 	var targetRealm = realmName
 
 	if err := c.authManager.CheckAuthorizationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
-		return err
+		return "", err
 	}
 
 	return c.next.ResetPassword(ctx, realmName, userID, password)

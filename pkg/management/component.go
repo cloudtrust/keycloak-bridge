@@ -64,7 +64,7 @@ type Component interface {
 	GetGroupsOfUser(ctx context.Context, realmName, userID string) ([]api.GroupRepresentation, error)
 	GetClientRolesForUser(ctx context.Context, realmName, userID, clientID string) ([]api.RoleRepresentation, error)
 	AddClientRolesToUser(ctx context.Context, realmName, userID, clientID string, roles []api.RoleRepresentation) error
-	ResetPassword(ctx context.Context, realmName string, userID string, password api.PasswordRepresentation) error
+	ResetPassword(ctx context.Context, realmName string, userID string, password api.PasswordRepresentation) (string, error)
 	SendVerifyEmail(ctx context.Context, realmName string, userID string, paramKV ...string) error
 	ExecuteActionsEmail(ctx context.Context, realmName string, userID string, actions []api.RequiredAction, paramKV ...string) error
 	SendNewEnrolmentCode(ctx context.Context, realmName string, userID string) (string, error)
@@ -488,25 +488,45 @@ func (c *component) AddClientRolesToUser(ctx context.Context, realmName, userID,
 	return err
 }
 
-func (c *component) ResetPassword(ctx context.Context, realmName string, userID string, password api.PasswordRepresentation) error {
+func (c *component) ResetPassword(ctx context.Context, realmName string, userID string, password api.PasswordRepresentation) (string, error) {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 
+	var pwd string
+	var err error
 	var credKc kc.CredentialRepresentation
 	var passwordType = "password"
 	credKc.Type = &passwordType
-	credKc.Value = password.Value
 
-	err := c.keycloakClient.ResetPassword(accessToken, realmName, userID, credKc)
+	if password.Value == nil {
+		// no password value was provided; a new password, that respects the password policy of the realm, will be generated
+		var minLength int = 12
 
+		//obtain password policy
+		realmKc, err := c.keycloakClient.GetRealm(accessToken, realmName)
+		if err == nil {
+			// generate password according to the policy of the realm
+			pwd, err = internal.GeneratePassword(realmKc.PasswordPolicy, minLength, userID)
+			if err != nil {
+				return pwd, err
+			}
+			credKc.Value = &pwd
+		} else {
+			return "", err
+		}
+	} else {
+		credKc.Value = password.Value
+	}
+
+	err = c.keycloakClient.ResetPassword(accessToken, realmName, userID, credKc)
 	if err != nil {
 		c.logger.Warn("err", err.Error())
-		return err
+		return pwd, err
 	}
 
 	//store the API call into the DB
 	_ = c.reportEvent(ctx, "INIT_PASSWORD", database.CtEventRealmName, realmName, database.CtEventUserID, userID)
 
-	return nil
+	return pwd, nil
 }
 
 func (c *component) SendVerifyEmail(ctx context.Context, realmName string, userID string, paramKV ...string) error {
