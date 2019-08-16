@@ -14,8 +14,8 @@ import (
 	kc "github.com/cloudtrust/keycloak-client"
 )
 
-// KeycloakClient interface exposes methods we need to call to send requests to Keycloak API
-type KeycloakClient interface {
+// KeycloakAccountClient interface exposes methods we need to call to send requests to Keycloak API of Account
+type KeycloakAccountClient interface {
 	UpdatePassword(accessToken, realm, currentPassword, newPassword, confirmPassword string) (string, error)
 	UpdateAccount(accessToken, realm string, user kc.UserRepresentation) error
 	GetAccount(accessToken, realm string) (kc.UserRepresentation, error)
@@ -60,7 +60,7 @@ func (c *component) UpdatePassword(ctx context.Context, currentPassword, newPass
 		}
 	}
 
-	_, err := c.keycloakClient.UpdatePassword(accessToken, realm, currentPassword, newPassword, confirmPassword)
+	_, err := c.keycloakAccountClient.UpdatePassword(accessToken, realm, currentPassword, newPassword, confirmPassword)
 
 	var updateError error = nil
 	if err != nil {

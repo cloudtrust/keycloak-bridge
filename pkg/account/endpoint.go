@@ -35,11 +35,15 @@ type AccountComponent interface {
 func MakeUpdatePasswordEndpoint(component AccountComponent) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
-		var body UpdatePasswordBody
+		var body api.UpdatePasswordBody
 
 		err := json.Unmarshal([]byte(m["body"]), &body)
 		if err != nil {
 			return nil, http.CreateBadRequestError("Invalid body")
+		}
+
+		if err = body.Validate(); err != nil {
+			return nil, http.CreateBadRequestError(err.Error())
 		}
 
 		return nil, component.UpdatePassword(ctx, body.CurrentPassword, body.NewPassword, body.ConfirmPassword)
