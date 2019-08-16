@@ -37,12 +37,12 @@
   version = "v1.0-rc5"
 
 [[projects]]
-  digest = "1:e788bd2debcb3ebc7de8dd1b67ffa73cc642084ec8b3658853aa92af999e30b2"
+  branch = "credentials"
+  digest = "1:9419feacde5caa87002ea5b280f859475dcc1b8322e4e1c23ac7ea97bc902b88"
   name = "github.com/cloudtrust/keycloak-client"
   packages = ["."]
   pruneopts = "UT"
-  revision = "96fb4f2b1d24477e97d5693d86299f73fd62d244"
-  version = "v1.0-rc3"
+  revision = "42c0766b01f9cf90bea0a69aab907e3e42458eba"
 
 [[projects]]
   digest = "1:f6e5e1bc64c2908167e6aa9a1fe0c084d515132a1c63ad5b6c84036aa06dc0c1"
