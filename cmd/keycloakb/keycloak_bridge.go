@@ -66,10 +66,10 @@ func main() {
 	var logger = log.NewLeveledLogger(kit_log.NewJSONLogger(os.Stdout))
 	{
 		// Timestamp
-		logger = log.With(logger, "ts", kit_log.DefaultTimestampUTC)
+		logger = log.With(logger, "_ts", kit_log.DefaultTimestampUTC)
 
 		// Caller
-		logger = log.With(logger, "caller", kit_log.DefaultCaller)
+		logger = log.With(logger, "caller", kit_log.Caller(6))
 
 		// Add component name, component ID and version to the logger tags.
 		logger = log.With(logger, "component_name", ComponentName, "component_id", ComponentID, "component_version", Version)
@@ -355,11 +355,12 @@ func main() {
 	{
 		var statisticsLogger = log.With(logger, "svc", "statistics")
 
-		statisticsComponent := statistics.NewComponent(eventsRODBModule)
+		statisticsComponent := statistics.NewComponent(eventsRODBModule, keycloakClient, statisticsLogger)
 		statisticsComponent = statistics.MakeAuthorizationManagementComponentMW(log.With(statisticsLogger, "mw", "endpoint"), authorizationManager)(statisticsComponent)
 
 		statisticsEndpoints = statistics.Endpoints{
-			GetStatistics: prepareEndpoint(statistics.MakeGetStatisticsEndpoint(statisticsComponent), "get_statistics", influxMetrics, statisticsLogger, tracer, rateLimit["event"]),
+			GetStatistics:      prepareEndpoint(statistics.MakeGetStatisticsEndpoint(statisticsComponent), "get_statistics", influxMetrics, statisticsLogger, tracer, rateLimit["event"]),
+			GetMigrationReport: prepareEndpoint(statistics.MakeGetMigrationReportEndpoint(statisticsComponent), "get_migration_report", influxMetrics, statisticsLogger, tracer, rateLimit["event"]),
 		}
 	}
 
@@ -514,9 +515,15 @@ func main() {
 		// Version.
 		route.Handle("/", http.HandlerFunc(commonhttp.MakeVersionHandler(ComponentName, ComponentID, Version, Environment, GitCommit)))
 
+		// Rights
+		var rightsHandler = configureRightsHandler(ComponentName, ComponentID, idGenerator, authorizationManager, keycloakClient, audienceRequired, tracer, logger)
+		route.Path("/rights").Methods("GET").Handler(rightsHandler)
+
 		// Statistics
-		var getStatisticsHandler = configureEventsHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(statisticsEndpoints.GetStatistics)
+		var getStatisticsHandler = configureStatisiticsHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(statisticsEndpoints.GetStatistics)
+		var getMigrationReportHandler = configureStatisiticsHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(statisticsEndpoints.GetMigrationReport)
 		route.Path("/statistics/realms/{realm}").Methods("GET").Handler(getStatisticsHandler)
+		route.Path("/statistics/realms/{realm}/migration").Methods("GET").Handler(getMigrationReportHandler)
 
 		// Events
 		var getEventsHandler = configureEventsHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(eventsEndpoints.GetEvents)
@@ -795,6 +802,16 @@ func configureEventsHandler(ComponentName string, ComponentID string, idGenerato
 	}
 }
 
+func configureStatisiticsHandler(ComponentName string, ComponentID string, idGenerator idgenerator.IDGenerator, keycloakClient *keycloak.Client, audienceRequired string, tracer tracing.OpentracingClient, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {
+	return func(endpoint endpoint.Endpoint) http.Handler {
+		var handler http.Handler
+		handler = statistics.MakeStatisticsHandler(endpoint, logger)
+		handler = middleware.MakeHTTPCorrelationIDMW(idGenerator, tracer, logger, ComponentName, ComponentID)(handler)
+		handler = middleware.MakeHTTPOIDCTokenValidationMW(keycloakClient, audienceRequired, logger)(handler)
+		return handler
+	}
+}
+
 func configureManagementHandler(ComponentName string, ComponentID string, idGenerator idgenerator.IDGenerator, keycloakClient *keycloak.Client, audienceRequired string, tracer tracing.OpentracingClient, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {
 	return func(endpoint endpoint.Endpoint) http.Handler {
 		var handler http.Handler
@@ -803,6 +820,14 @@ func configureManagementHandler(ComponentName string, ComponentID string, idGene
 		handler = middleware.MakeHTTPOIDCTokenValidationMW(keycloakClient, audienceRequired, logger)(handler)
 		return handler
 	}
+}
+
+func configureRightsHandler(ComponentName string, ComponentID string, idGenerator idgenerator.IDGenerator, authorizationManager security.AuthorizationManager, keycloakClient *keycloak.Client, audienceRequired string, tracer tracing.OpentracingClient, logger log.Logger) http.Handler {
+	var handler http.Handler
+	handler = commonhttp.MakeRightsHandler(authorizationManager)
+	handler = middleware.MakeHTTPCorrelationIDMW(idGenerator, tracer, logger, ComponentName, ComponentID)(handler)
+	handler = middleware.MakeHTTPOIDCTokenValidationMW(keycloakClient, audienceRequired, logger)(handler)
+	return handler
 }
 
 func configureAccountHandler(ComponentName string, ComponentID string, idGenerator idgenerator.IDGenerator, keycloakClient *keycloak.Client, audienceRequired string, tracer tracing.OpentracingClient, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {

@@ -1,7 +1,7 @@
 openapi: 3.0.1
 info:
   title: Swagger Cloudtrust Management
-  description: 'Mangement API for Cloudtrust.'
+  description: 'Mangement API for Cloudtrust'
   version: 1.0.0
 servers:
 - url: http://localhost:8888/management
@@ -395,7 +395,8 @@ paths:
     put:
       tags:
       - Users
-      summary: Set up a new password for the user.
+      summary: Set up a new password for the user. The value of the password is optional. 
+      If no password is provided, a password is generated and returned in the response.
       parameters:
       - name: realm
         in: path
@@ -414,9 +415,15 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/Password'
+            allowEmptyValue: true
       responses:
         200:
           description: successful operation
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Password'
+            description: The newly generated password, if no value was provided.
   /realms/{realm}/users/{userID}/send-verify-email:
     put:
       tags:

@@ -20,8 +20,9 @@ func TestMakeGetStatisticsEndpoint(t *testing.T) {
 
 	var ctx = context.Background()
 	var req = make(map[string]string)
+	req["realm"] = "realm"
 
-	mockComponent.EXPECT().GetStatistics(ctx, req).Return(api.StatisticsRepresentation{}, nil).Times(1)
+	mockComponent.EXPECT().GetStatistics(ctx, "realm").Return(api.StatisticsRepresentation{}, nil).Times(1)
 	var res, err = e(ctx, req)
 	assert.Nil(t, err)
 	assert.NotNil(t, res)

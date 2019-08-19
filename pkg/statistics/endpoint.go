@@ -9,12 +9,22 @@ import (
 
 // Endpoints exposed for path /events
 type Endpoints struct {
-	GetStatistics endpoint.Endpoint
+	GetStatistics      endpoint.Endpoint
+	GetMigrationReport endpoint.Endpoint
 }
 
-// MakeGetStatisticsEndpoint makes the events summary endpoint.
+// MakeGetStatisticsEndpoint makes the statistic summary endpoint.
 func MakeGetStatisticsEndpoint(ec Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
-		return ec.GetStatistics(ctx, req.(map[string]string))
+		var m = req.(map[string]string)
+		return ec.GetStatistics(ctx, m["realm"])
+	}
+}
+
+// MakeGetMigrationReportEndpoint makes the migration reporting endpoint.
+func MakeGetMigrationReportEndpoint(ec Component) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+		return ec.GetMigrationReport(ctx, m["realm"])
 	}
 }

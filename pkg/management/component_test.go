@@ -1224,11 +1224,74 @@ func TestResetPassword(t *testing.T) {
 			Value: &password,
 		}
 
-		err := managementComponent.ResetPassword(ctx, "master", userID, passwordRep)
+		_, err := managementComponent.ResetPassword(ctx, "master", userID, passwordRep)
 
 		assert.Nil(t, err)
 	}
 
+	// No password offered
+	{
+		var id = "master_id"
+		var keycloakVersion = "4.8.3"
+		var realm = "master"
+		var displayName = "Master"
+		var enabled = true
+
+		var policy = "forceExpiredPasswordChange(365) and specialChars(1) and upperCase(1) and lowerCase(1) and length(4) and digits(1) and notUsername(undefined)"
+		var kcRealmRep = kc.RealmRepresentation{
+			Id:              &id,
+			KeycloakVersion: &keycloakVersion,
+			Realm:           &realm,
+			DisplayName:     &displayName,
+			Enabled:         &enabled,
+			PasswordPolicy:  &policy,
+		}
+
+		mockKeycloakClient.EXPECT().ResetPassword(accessToken, realmName, userID, gomock.Any()).Return(nil).Times(1)
+		mockKeycloakClient.EXPECT().GetRealm(accessToken, realmName).Return(kcRealmRep, nil).AnyTimes()
+
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
+		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
+
+		mockEventDBModule.EXPECT().ReportEvent(ctx, "INIT_PASSWORD", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+
+		var passwordRep = api.PasswordRepresentation{
+			Value: nil,
+		}
+
+		pwd, err := managementComponent.ResetPassword(ctx, "master", userID, passwordRep)
+
+		assert.Nil(t, err)
+		assert.NotNil(t, pwd)
+	}
+
+	// No password offered, no keycloak policy
+	{
+		var id = "master_id"
+
+		var kcRealmRep = kc.RealmRepresentation{
+			Id: &id,
+		}
+
+		mockKeycloakClient.EXPECT().ResetPassword(accessToken, realmName, userID, gomock.Any()).Return(nil).Times(1)
+		mockKeycloakClient.EXPECT().GetRealm(accessToken, realmName).Return(kcRealmRep, nil).AnyTimes()
+
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
+		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
+
+		mockEventDBModule.EXPECT().ReportEvent(ctx, "INIT_PASSWORD", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+
+		var passwordRep = api.PasswordRepresentation{
+			Value: nil,
+		}
+
+		pwd, err := managementComponent.ResetPassword(ctx, "master", userID, passwordRep)
+
+		assert.Nil(t, err)
+		assert.NotNil(t, pwd)
+	}
 	// Error
 	{
 		mockKeycloakClient.EXPECT().ResetPassword(accessToken, realmName, userID, gomock.Any()).Return(fmt.Errorf("Invalid input")).Times(1)
@@ -1239,10 +1302,11 @@ func TestResetPassword(t *testing.T) {
 			Value: &password,
 		}
 
-		err := managementComponent.ResetPassword(ctx, "master", userID, passwordRep)
+		_, err := managementComponent.ResetPassword(ctx, "master", userID, passwordRep)
 
 		assert.NotNil(t, err)
 	}
+
 }
 
 func TestSendVerifyEmail(t *testing.T) {

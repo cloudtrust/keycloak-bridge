@@ -447,7 +447,7 @@ func TestResetPasswordEndpoint(t *testing.T) {
 		passwordJSON, _ := json.Marshal(api.PasswordRepresentation{})
 		req["body"] = string(passwordJSON)
 
-		mockManagementComponent.EXPECT().ResetPassword(ctx, realm, userID, api.PasswordRepresentation{}).Return(nil).Times(1)
+		mockManagementComponent.EXPECT().ResetPassword(ctx, realm, userID, api.PasswordRepresentation{}).Return("", nil).Times(1)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Nil(t, res)
