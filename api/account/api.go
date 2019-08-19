@@ -38,6 +38,7 @@ func ConvertCredential(credKc *kc.CredentialRepresentation) CredentialRepresenta
 	cred.CreatedDate = credKc.CreatedDate
 	cred.CredentialData = credKc.CredentialData
 	cred.Temporary = credKc.Temporary
+	// credKc.Value is ignored. It may contains secret for legacy credential thus we don't want to transmit it.
 	return cred
 }
 
