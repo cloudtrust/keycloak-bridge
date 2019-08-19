@@ -37,20 +37,12 @@
   version = "v1.0-rc5"
 
 [[projects]]
-<<<<<<< HEAD
-=======
-  branch = "credentials"
->>>>>>> origin/master
   digest = "1:9419feacde5caa87002ea5b280f859475dcc1b8322e4e1c23ac7ea97bc902b88"
   name = "github.com/cloudtrust/keycloak-client"
   packages = ["."]
   pruneopts = "UT"
-<<<<<<< HEAD
   revision = "356892abd73ed182ceeb30aa5e815b4f74a2ed27"
   version = "v1.0-rc4"
-=======
-  revision = "42c0766b01f9cf90bea0a69aab907e3e42458eba"
->>>>>>> origin/master
 
 [[projects]]
   digest = "1:f6e5e1bc64c2908167e6aa9a1fe0c084d515132a1c63ad5b6c84036aa06dc0c1"
