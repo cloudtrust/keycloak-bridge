@@ -74,12 +74,6 @@ func TestValidateCredentialRepresentation(t *testing.T) {
 		assert.NotNil(t, credential.Validate())
 	}
 
-	{
-		credential := createValidCredentialRepresentation()
-		credential.UserLabel = &value
-		assert.NotNil(t, credential.Validate())
-	}
-
 }
 
 func createValidUpdatePasswordBody() UpdatePasswordBody {
