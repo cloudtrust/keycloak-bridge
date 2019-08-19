@@ -84,7 +84,7 @@ func matchesRegExp(value, re string) bool {
 const (
 	RegExpID         = `^[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}$`
 	RegExpIDNullable = `^([a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12})|(null)$`
-	RegExpLabel      = `^.{1,255}$`
+	RegExpLabel      = `^.{0,255}$`
 	RegExpType       = `^[a-zA-Z0-9-_]{1,128}$`
 
 	// Password
