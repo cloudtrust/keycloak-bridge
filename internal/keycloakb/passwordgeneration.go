@@ -8,11 +8,11 @@ import (
 )
 
 const (
-	lowerCase    = "abcdefghijkmnopqrstuvwxyz"
-	upperCase    = "ABCDEFGHJKLMNPQRSTUVWXYZ"
+	lowerCase    = "abcdefghjkmnpqrtuvwxyz"
+	upperCase    = "ABCDEFGHJKLMNPQRTUVWXYZ"
 	specialChars = "?!#%$"
-	digits       = "23456789"
-	alphabet     = "abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ?!*23456789"
+	digits       = "2346789"
+	alphabet     = "abcdefghjkmnpqrtuvwxyzABCDEFGHJKLMNPQRTUVWXYZ2346789"
 )
 
 // appendCharacters appends a number of characters from a certain alphabet to a string array

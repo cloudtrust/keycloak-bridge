@@ -499,7 +499,7 @@ func (c *component) ResetPassword(ctx context.Context, realmName string, userID 
 
 	if password.Value == nil {
 		// no password value was provided; a new password, that respects the password policy of the realm, will be generated
-		var minLength int = 12
+		var minLength int = 8
 
 		//obtain password policy
 		realmKc, err := c.keycloakClient.GetRealm(accessToken, realmName)
