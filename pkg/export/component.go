@@ -70,7 +70,7 @@ func (c *component) StoreAndExport(ctx context.Context) (map[string]interface{},
 		realms, err = c.re.GetRealms(ctx)
 		if err != nil {
 			c.logger.Warn("err", err.Error())
-			return nil, errors.Wrap(err, "exportFailed.cannotGetKeycloakRealms")
+			return nil, errors.Wrap(err, "cannotGetKeycloakRealms")
 		}
 	}
 
