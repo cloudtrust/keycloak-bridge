@@ -135,7 +135,7 @@
   version = "v1.3.2"
 
 [[projects]]
-  digest = "1:e02b687ade0c19c038ecce3ea326d756519adc4bba1203a9e76d620b12354892"
+  digest = "1:debcbc62c53851dab1fc881438a65449dd5ffa12f64f059fd6e32b938799513d"
   name = "github.com/google/flatbuffers"
   packages = ["go"]
   pruneopts = "UT"
@@ -170,7 +170,7 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:3c6faaeb500b7e6fadbe52c0b3fd62b6eed7801ed0d74bb3bd9577017df8d2f4"
+  digest = "1:2629521d27f3b04ce4d524cb52a25fdc77745071239c91d6fe9a7ce10131365a"
   name = "github.com/influxdata/influxdb"
   packages = [
     "client/v2",

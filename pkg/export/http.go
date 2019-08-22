@@ -55,5 +55,5 @@ func encodeHTTPReply(_ context.Context, w http.ResponseWriter, res interface{}) 
 func errorHandler(ctx context.Context, err error, w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "application/octet-stream")
 	w.WriteHeader(http.StatusInternalServerError)
-	w.Write([]byte(ComponentName + "." + err.Error()))
+	w.Write([]byte(main.ComponentName + "." + err.Error()))
 }

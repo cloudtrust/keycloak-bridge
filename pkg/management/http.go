@@ -77,6 +77,7 @@ func managementErrorHandler(logger log.Logger) func(context.Context, error, http
 			w.Write([]byte(ComponentName + "."))
 		default:
 			defaultHandler(ctx, err, w)
+			
 		}
 	}
 }

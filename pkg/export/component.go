@@ -9,11 +9,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-var (
-	// ComponentName is the name of the component.
-	ComponentName = "keycloak-bridge"
-)
-
 type component struct {
 	componentName    string
 	componentVersion string
@@ -88,13 +83,13 @@ func (c *component) StoreAndExport(ctx context.Context) (map[string]interface{},
 	// Store
 	var data, err = json.Marshal(realmsMap)
 	if err != nil {
-		return nil, errors.Wrapf(err, "cannotMarshalConfig.component%sWithVersion%s", c.componentName, c.componentVersion)
+		return nil, errors.Wrapf(err, "cannotMarshalConfig.%s.%s", c.componentName, c.componentVersion)
 	}
 
 	err = c.s.Save(c.componentName, c.componentVersion, data)
 
 	if err != nil {
-		return nil, errors.Wrapf(err, "cannotSaveConfigInDB.component%sWithVersion%s", c.componentName, c.componentVersion)
+		return nil, errors.Wrapf(err, "cannotSaveConfigInDB.%s.%s", c.componentName, c.componentVersion)
 	}
 
 	return realmsMap, nil

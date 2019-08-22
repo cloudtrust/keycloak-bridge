@@ -8,7 +8,12 @@ import (
 	"net/http"
 
 	cs "github.com/cloudtrust/common-service"
+<<<<<<< Updated upstream
 	internal "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
+||||||| merged common ancestors
+=======
+	main "github.com/cloudtrust/keycloak-bridge/cmd/main"
+>>>>>>> Stashed changes
 	"github.com/go-kit/kit/endpoint"
 	http_transport "github.com/go-kit/kit/transport/http"
 	"github.com/pkg/errors"
@@ -111,5 +116,12 @@ func errorHandler(ctx context.Context, err error, w http.ResponseWriter) {
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 
+<<<<<<< Updated upstream
 	w.Write([]byte(internal.ComponentName + "." + err.Error()))
+||||||| merged common ancestors
+	w.Write([]byte(ComponentName + "." + err.Error()))
+=======
+	w.Write([]byte(main.ComponentName + "." + err.Error()))
+
+>>>>>>> Stashed changes
 }
