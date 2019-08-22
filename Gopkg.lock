@@ -37,26 +37,12 @@
   version = "v1.0-rc5"
 
 [[projects]]
-<<<<<<< HEAD
   digest = "1:e788bd2debcb3ebc7de8dd1b67ffa73cc642084ec8b3658853aa92af999e30b2"
-||||||| parent of d9810f6... Fixup: Dependency on a branch of keycloak-client instead of a version
-  branch = "credentials"
-  digest = "1:9419feacde5caa87002ea5b280f859475dcc1b8322e4e1c23ac7ea97bc902b88"
-=======
-  digest = "1:9419feacde5caa87002ea5b280f859475dcc1b8322e4e1c23ac7ea97bc902b88"
->>>>>>> d9810f6... Fixup: Dependency on a branch of keycloak-client instead of a version
   name = "github.com/cloudtrust/keycloak-client"
   packages = ["."]
   pruneopts = "UT"
-<<<<<<< HEAD
   revision = "96fb4f2b1d24477e97d5693d86299f73fd62d244"
   version = "v1.0-rc3"
-||||||| parent of d9810f6... Fixup: Dependency on a branch of keycloak-client instead of a version
-  revision = "42c0766b01f9cf90bea0a69aab907e3e42458eba"
-=======
-  revision = "356892abd73ed182ceeb30aa5e815b4f74a2ed27"
-  version = "v1.0-rc4"
->>>>>>> d9810f6... Fixup: Dependency on a branch of keycloak-client instead of a version
 
 [[projects]]
   digest = "1:d64c893fc7d2c3d395f421b00d21f0adb8ceffc4d3c90299e732b3985ca16eb4"

@@ -372,7 +372,7 @@ func main() {
 		// module to store API calls of the back office to the DB
 		eventsDBModule := configureEventsDbModule(baseEventsDBModule, influxMetrics, eventsLogger, tracer)
 
-		eventsComponent := events.NewComponent(eventsRODBModule, eventsDBModule)
+		eventsComponent := events.NewComponent(eventsRODBModule, eventsDBModule, eventsLogger)
 		eventsComponent = events.MakeAuthorizationManagementComponentMW(log.With(eventsLogger, "mw", "endpoint"), authorizationManager)(eventsComponent)
 
 		eventsEndpoints = events.Endpoints{
@@ -446,7 +446,7 @@ func main() {
 		eventsDBModule := configureEventsDbModule(baseEventsDBModule, influxMetrics, accountLogger, tracer)
 
 		// new module for account service
-		accountComponent := account.NewComponent(keycloakClient, eventsDBModule)
+		accountComponent := account.NewComponent(keycloakClient, eventsDBModule, accountLogger)
 
 		accountEndpoints = account.Endpoints{
 			UpdatePassword: prepareEndpoint(account.MakeUpdatePasswordEndpoint(accountComponent), "update_password", influxMetrics, accountLogger, tracer, rateLimit["account"]),
