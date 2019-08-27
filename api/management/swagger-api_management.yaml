@@ -420,10 +420,14 @@ paths:
         200:
           description: successful operation
         content:
-          application/json:
+          text/plain:
             schema:
-              $ref: '#/components/schemas/Password'
-            description: The newly generated password, if no value was provided.
+              type: string
+            description: The newly generated password, if no value was provided. 
+            The generated password is a string that either follows the password 
+            policy imposed by the realm or 
+            has length 8 and contains letters (upper case, lower case) and numbers.
+            The password does not contain the following ambiguous characters - l, i,1, 0, o, O, 5, s, S.  
   /realms/{realm}/users/{userID}/send-verify-email:
     put:
       tags:
