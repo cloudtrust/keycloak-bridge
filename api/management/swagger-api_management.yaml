@@ -418,7 +418,6 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/Password'
-            allowEmptyValue: true
       responses:
         200:
           description: successful operation
