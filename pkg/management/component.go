@@ -14,11 +14,6 @@ import (
 	kc "github.com/cloudtrust/keycloak-client"
 )
 
-var (
-	// ComponentName is the name of the component.
-	ComponentName = "keycloak-bridge"
-)
-
 const (
 	initPasswordAction = "sms-password-set"
 )

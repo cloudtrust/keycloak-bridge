@@ -57,7 +57,7 @@ func (c *component) UpdatePassword(ctx context.Context, currentPassword, newPass
 	if currentPassword == newPassword || newPassword != confirmPassword {
 		return commonhttp.Error{
 			Status:  http.StatusBadRequest,
-			Message: ComponentName + "." + "invalidValues",
+			Message: internal.ComponentName + "." + "invalidValues",
 		}
 	}
 
