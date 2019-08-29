@@ -820,6 +820,7 @@ components:
           type: string
         createdTimestamp:
           type: integer
+          format: int64
         groups:
           type: array
           items:
