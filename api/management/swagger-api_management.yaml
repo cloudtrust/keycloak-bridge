@@ -395,8 +395,11 @@ paths:
     put:
       tags:
       - Users
-      summary: Set up a new password for the user. The value of the password is optional. 
-      If no password is provided, a password is generated and returned in the response.
+      summary: >
+        Set up a new password for the user. The value of the password is optional. 
+        If no password is provided (i.e. the body is an empty JSON), a password is generated and returned in the response.
+        The generated password is a string that either follows the password policy imposed by the realm or has length 8 and contains letters (upper case, lower case) and numbers.
+        The password does not contain the following ambiguous characters - l, i,1, 0, o, O, 5, s, S.
       parameters:
       - name: realm
         in: path
@@ -415,15 +418,13 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/Password'
-            allowEmptyValue: true
       responses:
         200:
           description: successful operation
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Password'
-            description: The newly generated password, if no value was provided.
+          content:
+            text/plain:
+              schema:
+                type: string
   /realms/{realm}/users/{userID}/send-verify-email:
     put:
       tags:
@@ -819,6 +820,7 @@ components:
           type: string
         createdTimestamp:
           type: integer
+          format: int64
         groups:
           type: array
           items:
