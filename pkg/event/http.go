@@ -52,7 +52,7 @@ func decodeHTTPRequest(_ context.Context, r *http.Request) (res interface{}, err
 	{
 		var err = json.NewDecoder(r.Body).Decode(&request)
 		if err != nil {
-			return nil, errors.Wrap(err, "cannotDecodeJSONRequest")
+			return nil, errors.Wrap(err, "invalidJSONRequest")
 		}
 	}
 
@@ -62,7 +62,7 @@ func decodeHTTPRequest(_ context.Context, r *http.Request) (res interface{}, err
 		bEvent, err = base64.StdEncoding.DecodeString(request.Object)
 
 		if err != nil {
-			return nil, errors.Wrap(err, "cannotDecodeBase64ObjectFromRequest")
+			return nil, errors.Wrap(err, "invalidBase64Object")
 		}
 	}
 
@@ -70,7 +70,7 @@ func decodeHTTPRequest(_ context.Context, r *http.Request) (res interface{}, err
 	{
 		if !(objType == "AdminEvent" || objType == "Event") {
 			var err = ErrInvalidArgument{InvalidParam: "type"}
-			return nil, errors.Wrap(err, "cannotDecodeBase64ObjectFromRequest")
+			return nil, errors.Wrap(err, "invalidBase64Object")
 		}
 	}
 
@@ -110,5 +110,6 @@ func errorHandler(ctx context.Context, err error, w http.ResponseWriter) {
 	default:
 		w.WriteHeader(http.StatusInternalServerError)
 	}
+	// no leakage issue as this is done internally between the bridge and keycloak
 	w.Write([]byte(internal.ComponentName + "." + err.Error()))
 }
