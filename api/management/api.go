@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"strconv"
 
+	internal "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	kc "github.com/cloudtrust/keycloak-client"
 )
 
@@ -228,45 +229,45 @@ func ConvertToKCUser(user UserRepresentation) kc.UserRepresentation {
 // Validate is a validator for UserRepresentation
 func (user UserRepresentation) Validate() error {
 	if user.Id != nil && !matchesRegExp(*user.Id, RegExpID) {
-		return errors.New("invalidParameter.userID")
+		return errors.New(internal.MsgErrInvalidParam + "." + internal.UserId)
 	}
 
 	if user.Username != nil && !matchesRegExp(*user.Username, RegExpUsername) {
-		return errors.New("invalidParameter.username")
+		return errors.New(internal.MsgErrInvalidParam + "." + internal.Username)
 	}
 
 	if user.Email != nil && !matchesRegExp(*user.Email, RegExpEmail) {
-		return errors.New("invalidParameter.email")
+		return errors.New(internal.MsgErrInvalidParam + "." + internal.Email)
 	}
 
 	if user.FirstName != nil && !matchesRegExp(*user.FirstName, RegExpFirstName) {
-		return errors.New("invalidParameter.firstname")
+		return errors.New(internal.MsgErrInvalidParam + "." + internal.Firstname)
 	}
 
 	if user.LastName != nil && !matchesRegExp(*user.LastName, RegExpLastName) {
-		return errors.New("invalidParameter.lastname")
+		return errors.New(internal.MsgErrInvalidParam + "." + internal.Lastname)
 	}
 
 	if user.PhoneNumber != nil && !matchesRegExp(*user.PhoneNumber, RegExpPhoneNumber) {
-		return errors.New("invalidParameter.phoneNumber")
+		return errors.New(internal.MsgErrInvalidParam + "." + internal.PhoneNumber)
 	}
 
 	if user.Label != nil && !matchesRegExp(*user.Label, RegExpLabel) {
-		return errors.New("invalidParameter.label")
+		return errors.New(internal.MsgErrInvalidParam + "." + internal.Label)
 	}
 
 	if user.Gender != nil && !matchesRegExp(*user.Gender, RegExpGender) {
-		return errors.New("invalidParameter.gender")
+		return errors.New(internal.MsgErrInvalidParam + "." + internal.Gender)
 	}
 
 	if user.BirthDate != nil && !matchesRegExp(*user.BirthDate, RegExpBirthDate) {
-		return errors.New("invalidParameter.birthdate")
+		return errors.New(internal.MsgErrInvalidParam + "." + internal.Birthdate)
 	}
 
 	if user.Groups != nil {
 		for _, groupID := range *(user.Groups) {
 			if !matchesRegExp(groupID, RegExpID) {
-				return errors.New("invalidParameter.groupID")
+				return errors.New(internal.MsgErrInvalidParam + "." + internal.GroudId)
 			}
 		}
 	}
@@ -274,13 +275,13 @@ func (user UserRepresentation) Validate() error {
 	if user.Roles != nil {
 		for _, roleID := range *(user.Roles) {
 			if !matchesRegExp(roleID, RegExpID) {
-				return errors.New("invalidParameter.roleID")
+				return errors.New(internal.MsgErrInvalidParam + "." + internal.RoleId)
 			}
 		}
 	}
 
 	if user.Locale != nil && !matchesRegExp(*user.Locale, RegExpLocale) {
-		return errors.New("invalidParameter.locale")
+		return errors.New(internal.MsgErrInvalidParam + "." + internal.Locale)
 	}
 
 	return nil
@@ -289,19 +290,19 @@ func (user UserRepresentation) Validate() error {
 // Validate is a validator for RoleRepresentation
 func (role RoleRepresentation) Validate() error {
 	if role.Id != nil && !matchesRegExp(*role.Id, RegExpID) {
-		return errors.New("invalidParameter.roleID")
+		return errors.New(internal.MsgErrInvalidParam + "." + internal.RoleId)
 	}
 
 	if role.Name != nil && !matchesRegExp(*role.Name, RegExpName) {
-		return errors.New("invalidParameter.username")
+		return errors.New(internal.MsgErrInvalidParam + "." + internal.Username)
 	}
 
 	if role.Description != nil && !matchesRegExp(*role.Description, RegExpDescription) {
-		return errors.New("invalidParameter.description")
+		return errors.New(internal.MsgErrInvalidParam + "." + internal.Description)
 	}
 
 	if role.ContainerId != nil && !matchesRegExp(*role.ContainerId, RegExpID) {
-		return errors.New("invalidParameter.containerID")
+		return errors.New(internal.MsgErrInvalidParam + "." + internal.ContainerId)
 	}
 
 	return nil
@@ -310,7 +311,7 @@ func (role RoleRepresentation) Validate() error {
 // Validate is a validator for PasswordRepresentation
 func (password PasswordRepresentation) Validate() error {
 	if password.Value != nil && !matchesRegExp(*password.Value, RegExpPassword) {
-		return errors.New("invalidParameter.password")
+		return errors.New(internal.MsgErrInvalidParam + "." + internal.Password)
 	}
 
 	return nil
@@ -319,11 +320,11 @@ func (password PasswordRepresentation) Validate() error {
 // Validate is a validator for RealmCustomConfiguration
 func (config RealmCustomConfiguration) Validate() error {
 	if config.DefaultClientId != nil && !matchesRegExp(*config.DefaultClientId, RegExpClientID) {
-		return errors.New("invalidParameter.defaultClientID")
+		return errors.New(internal.MsgErrInvalidParam + "." + internal.DefaultClientID)
 	}
 
 	if config.DefaultRedirectUri != nil && !matchesRegExp(*config.DefaultRedirectUri, RegExpRedirectURI) {
-		return errors.New("invalidParameter.defaultRedirectURI")
+		return errors.New(internal.MsgErrInvalidParam + "." + internal.DefaultRedirectURI)
 	}
 
 	return nil
@@ -332,7 +333,7 @@ func (config RealmCustomConfiguration) Validate() error {
 // Validate is a validator for RequiredAction
 func (requiredAction RequiredAction) Validate() error {
 	if requiredAction != "" && !matchesRegExp(string(requiredAction), RegExpRequiredAction) {
-		return errors.New("invalidParameter.requiredAction")
+		return errors.New(internal.MsgErrInvalidParam + "." + internal.RequiredAction)
 	}
 
 	return nil

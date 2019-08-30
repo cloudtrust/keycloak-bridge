@@ -43,6 +43,8 @@ import (
 )
 
 var (
+	// ComponentID is an unique ID generated at component startup.
+	ComponentID = "unknown"
 	// Environment is filled by the compiler.
 	Environment = "unknown"
 	// GitCommit is filled by the compiler.
@@ -54,7 +56,7 @@ func init() {
 }
 
 func main() {
-	ComponentID = strconv.FormatUint(rand.Uint64(), 10)
+	ComponentID := strconv.FormatUint(rand.Uint64(), 10)
 
 	// Logger.
 	var logger = log.NewLeveledLogger(kit_log.NewJSONLogger(os.Stdout))
@@ -66,7 +68,7 @@ func main() {
 		logger = log.With(logger, "caller", kit_log.Caller(6))
 
 		// Add component name, component ID and version to the logger tags.
-		logger = log.With(logger, "component_name", keycloakb.keycloakb.ComponentName, "component_id", ComponentID, "component_version", keycloakb.Version)
+		logger = log.With(logger, "component_name", keycloakb.ComponentName, "component_id", ComponentID, "component_version", keycloakb.Version)
 	}
 	defer logger.Info("msg", "Shutdown")
 
@@ -127,7 +129,7 @@ func main() {
 	)
 
 	// Unique ID generator
-	var idGenerator = idgenerator.New(keycloakb.keycloakb.ComponentName, keycloakb.ComponentID)
+	var idGenerator = idgenerator.New(keycloakb.ComponentName, ComponentID)
 
 	// Critical errors channel.
 	var errc = make(chan error)
@@ -467,7 +469,7 @@ func main() {
 		var route = mux.NewRouter()
 
 		// keycloakb.Version.
-		route.Handle("/", commonhttp.Makekeycloakb.VersionHandler(keycloakb.ComponentName, ComponentID, keycloakb.Version, Environment, GitCommit))
+		route.Handle("/", commonhttp.MakeVersionHandler(keycloakb.ComponentName, ComponentID, keycloakb.Version, Environment, GitCommit))
 
 		// Event.
 		var eventSubroute = route.PathPrefix("/event").Subrouter()
@@ -506,7 +508,7 @@ func main() {
 		var route = mux.NewRouter()
 
 		// keycloakb.Version.
-		route.Handle("/", http.HandlerFunc(commonhttp.Makekeycloakb.VersionHandler(keycloakb.ComponentName, ComponentID, keycloakb.Version, Environment, GitCommit)))
+		route.Handle("/", http.HandlerFunc(commonhttp.MakeVersionHandler(keycloakb.ComponentName, ComponentID, keycloakb.Version, Environment, GitCommit)))
 
 		// Rights
 		var rightsHandler = configureRightsHandler(keycloakb.ComponentName, ComponentID, idGenerator, authorizationManager, keycloakClient, audienceRequired, tracer, logger)
@@ -625,7 +627,7 @@ func main() {
 		var route = mux.NewRouter()
 
 		// keycloakb.Version.
-		route.Handle("/", http.HandlerFunc(commonhttp.Makekeycloakb.VersionHandler(keycloakb.ComponentName, ComponentID, keycloakb.Version, Environment, GitCommit)))
+		route.Handle("/", http.HandlerFunc(commonhttp.MakeVersionHandler(keycloakb.ComponentName, ComponentID, keycloakb.Version, Environment, GitCommit)))
 
 		// Account
 		var updatePasswordHandler = configureAccountHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(accountEndpoints.UpdatePassword)
@@ -779,49 +781,49 @@ func config(logger log.Logger) *viper.Viper {
 	return v
 }
 
-func configureEventsHandler(keycloakb.ComponentName string, ComponentID string, idGenerator idgenerator.IDGenerator, keycloakClient *keycloak.Client, audienceRequired string, tracer tracing.OpentracingClient, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {
+func configureEventsHandler(ComponentName string, ComponentID string, idGenerator idgenerator.IDGenerator, keycloakClient *keycloak.Client, audienceRequired string, tracer tracing.OpentracingClient, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {
 	return func(endpoint endpoint.Endpoint) http.Handler {
 		var handler http.Handler
 		handler = events.MakeEventsHandler(endpoint, logger)
-		handler = middleware.MakeHTTPCorrelationIDMW(idGenerator, tracer, logger, keycloakb.ComponentName, ComponentID)(handler)
+		handler = middleware.MakeHTTPCorrelationIDMW(idGenerator, tracer, logger, ComponentName, ComponentID)(handler)
 		handler = middleware.MakeHTTPOIDCTokenValidationMW(keycloakClient, audienceRequired, logger)(handler)
 		return handler
 	}
 }
 
-func configureStatisiticsHandler(keycloakb.ComponentName string, ComponentID string, idGenerator idgenerator.IDGenerator, keycloakClient *keycloak.Client, audienceRequired string, tracer tracing.OpentracingClient, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {
+func configureStatisiticsHandler(ComponentName string, ComponentID string, idGenerator idgenerator.IDGenerator, keycloakClient *keycloak.Client, audienceRequired string, tracer tracing.OpentracingClient, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {
 	return func(endpoint endpoint.Endpoint) http.Handler {
 		var handler http.Handler
 		handler = statistics.MakeStatisticsHandler(endpoint, logger)
-		handler = middleware.MakeHTTPCorrelationIDMW(idGenerator, tracer, logger, keycloakb.ComponentName, ComponentID)(handler)
+		handler = middleware.MakeHTTPCorrelationIDMW(idGenerator, tracer, logger, ComponentName, ComponentID)(handler)
 		handler = middleware.MakeHTTPOIDCTokenValidationMW(keycloakClient, audienceRequired, logger)(handler)
 		return handler
 	}
 }
 
-func configureManagementHandler(keycloakb.ComponentName string, ComponentID string, idGenerator idgenerator.IDGenerator, keycloakClient *keycloak.Client, audienceRequired string, tracer tracing.OpentracingClient, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {
+func configureManagementHandler(ComponentName string, ComponentID string, idGenerator idgenerator.IDGenerator, keycloakClient *keycloak.Client, audienceRequired string, tracer tracing.OpentracingClient, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {
 	return func(endpoint endpoint.Endpoint) http.Handler {
 		var handler http.Handler
 		handler = management.MakeManagementHandler(endpoint, logger)
-		handler = middleware.MakeHTTPCorrelationIDMW(idGenerator, tracer, logger, keycloakb.ComponentName, ComponentID)(handler)
+		handler = middleware.MakeHTTPCorrelationIDMW(idGenerator, tracer, logger, ComponentName, ComponentID)(handler)
 		handler = middleware.MakeHTTPOIDCTokenValidationMW(keycloakClient, audienceRequired, logger)(handler)
 		return handler
 	}
 }
 
-func configureRightsHandler(keycloakb.ComponentName string, ComponentID string, idGenerator idgenerator.IDGenerator, authorizationManager security.AuthorizationManager, keycloakClient *keycloak.Client, audienceRequired string, tracer tracing.OpentracingClient, logger log.Logger) http.Handler {
+func configureRightsHandler(ComponentName string, ComponentID string, idGenerator idgenerator.IDGenerator, authorizationManager security.AuthorizationManager, keycloakClient *keycloak.Client, audienceRequired string, tracer tracing.OpentracingClient, logger log.Logger) http.Handler {
 	var handler http.Handler
 	handler = commonhttp.MakeRightsHandler(authorizationManager)
-	handler = middleware.MakeHTTPCorrelationIDMW(idGenerator, tracer, logger, keycloakb.ComponentName, ComponentID)(handler)
+	handler = middleware.MakeHTTPCorrelationIDMW(idGenerator, tracer, logger, ComponentName, ComponentID)(handler)
 	handler = middleware.MakeHTTPOIDCTokenValidationMW(keycloakClient, audienceRequired, logger)(handler)
 	return handler
 }
 
-func configureAccountHandler(keycloakb.ComponentName string, ComponentID string, idGenerator idgenerator.IDGenerator, keycloakClient *keycloak.Client, audienceRequired string, tracer tracing.OpentracingClient, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {
+func configureAccountHandler(ComponentName string, ComponentID string, idGenerator idgenerator.IDGenerator, keycloakClient *keycloak.Client, audienceRequired string, tracer tracing.OpentracingClient, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {
 	return func(endpoint endpoint.Endpoint) http.Handler {
 		var handler http.Handler
 		handler = account.MakeAccountHandler(endpoint, logger)
-		handler = middleware.MakeHTTPCorrelationIDMW(idGenerator, tracer, logger, keycloakb.ComponentName, ComponentID)(handler)
+		handler = middleware.MakeHTTPCorrelationIDMW(idGenerator, tracer, logger, ComponentName, ComponentID)(handler)
 		handler = middleware.MakeHTTPOIDCTokenValidationMW(keycloakClient, audienceRequired, logger)(handler)
 		return handler
 	}
