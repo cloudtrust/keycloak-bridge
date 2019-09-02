@@ -70,11 +70,11 @@ func managementErrorHandler(logger log.Logger) func(context.Context, error, http
 		switch e := errors.Cause(err).(type) {
 		case kc_client.HTTPError:
 			w.WriteHeader(e.HTTPStatus)
-			w.Write([]byte(internal.ComponentName + "." + "unknowError"))
+			w.Write([]byte(internal.ComponentName + "." + internal.MsgErrUnknown))
 		case ConvertLocationError:
 			// 201-Created, even if ConvertLocationError occurs, the creation was a success
 			w.WriteHeader(http.StatusCreated)
-			w.Write([]byte(internal.ComponentName + "." + "unknowError"))
+			w.Write([]byte(internal.ComponentName + "." + internal.MsgErrUnknown))
 		default:
 			defaultHandler(ctx, err, w)
 

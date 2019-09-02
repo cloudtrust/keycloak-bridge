@@ -7,6 +7,7 @@ import (
 	cs "github.com/cloudtrust/common-service"
 	"github.com/cloudtrust/common-service/http"
 	api "github.com/cloudtrust/keycloak-bridge/api/account"
+	internal "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/go-kit/kit/endpoint"
 )
 
@@ -65,7 +66,7 @@ func MakeUpdateAccountEndpoint(component AccountComponent) cs.Endpoint {
 
 		err := json.Unmarshal([]byte(m["body"]), &body)
 		if err != nil {
-			return nil, http.CreateBadRequestError("Invalid body")
+			return nil, http.CreateBadRequestError(internal.MsgErrInvalidParam + "." + internal.Body)
 		}
 
 		if err = body.Validate(); err != nil {

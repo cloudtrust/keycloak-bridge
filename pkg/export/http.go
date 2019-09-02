@@ -44,7 +44,7 @@ func encodeHTTPReply(_ context.Context, w http.ResponseWriter, res interface{}) 
 	var reply = res.(map[string]interface{})
 	var data, err = json.MarshalIndent(reply, "", "  ")
 	if err != nil {
-		return errors.Wrap(err, "cannotMarshalResponse")
+		return errors.Wrap(err, internal.MsgErrCannotMarshal+internal.Response)
 	}
 
 	w.WriteHeader(http.StatusOK)

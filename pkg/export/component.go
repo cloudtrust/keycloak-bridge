@@ -65,7 +65,7 @@ func (c *component) StoreAndExport(ctx context.Context) (map[string]interface{},
 		realms, err = c.re.GetRealms(ctx)
 		if err != nil {
 			c.logger.Warn("err", err.Error())
-			return nil, errors.Wrap(err, "cannotGetKeycloakRealms")
+			return nil, errors.Wrap(err, internal.MsgErrCannotObtain+"."+internal.KeycloakRealms)
 		}
 	}
 
@@ -83,13 +83,13 @@ func (c *component) StoreAndExport(ctx context.Context) (map[string]interface{},
 	// Store
 	var data, err = json.Marshal(realmsMap)
 	if err != nil {
-		return nil, errors.Wrapf(err, "cannotMarshalConfig.%s.%s", c.componentName, c.componentVersion)
+		return nil, errors.Wrapf(err, internal.MsgErrCannotMarshal+"."+internal.Config+".%s.%s", c.componentName, c.componentVersion)
 	}
 
 	err = c.s.Save(c.componentName, c.componentVersion, data)
 
 	if err != nil {
-		return nil, errors.Wrapf(err, "cannotSaveConfigInDB.%s.%s", c.componentName, c.componentVersion)
+		return nil, errors.Wrapf(err, internal.MsgErrCannotSaveConfigInDB+".%s.%s", c.componentName, c.componentVersion)
 	}
 
 	return realmsMap, nil

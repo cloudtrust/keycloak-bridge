@@ -52,7 +52,7 @@ func decodeHTTPRequest(_ context.Context, r *http.Request) (res interface{}, err
 	{
 		var err = json.NewDecoder(r.Body).Decode(&request)
 		if err != nil {
-			return nil, errors.Wrap(err, "invalidJSONRequest")
+			return nil, errors.Wrap(err, internal.MsgErrInvalidJSONRequest)
 		}
 	}
 
@@ -62,7 +62,7 @@ func decodeHTTPRequest(_ context.Context, r *http.Request) (res interface{}, err
 		bEvent, err = base64.StdEncoding.DecodeString(request.Object)
 
 		if err != nil {
-			return nil, errors.Wrap(err, "invalidBase64Object")
+			return nil, errors.Wrap(err, internal.MsgErrInvalidBase64Object)
 		}
 	}
 
@@ -70,14 +70,14 @@ func decodeHTTPRequest(_ context.Context, r *http.Request) (res interface{}, err
 	{
 		if !(objType == "AdminEvent" || objType == "Event") {
 			var err = ErrInvalidArgument{InvalidParam: "type"}
-			return nil, errors.Wrap(err, "invalidBase64Object")
+			return nil, errors.Wrap(err, internal.MsgErrInvalidBase64Object)
 		}
 	}
 
 	// Check valid buffer (at least 4 bytes)
 	if len(bEvent) < 4 {
 		var err = ErrInvalidArgument{InvalidParam: "obj"}
-		return nil, errors.Wrap(err, "invalidFlatbufferLength")
+		return nil, errors.Wrap(err, internal.MsgErrInvalidLength+"."+internal.Flatbuffer)
 	}
 
 	return Request{
