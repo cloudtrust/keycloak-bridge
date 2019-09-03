@@ -37,12 +37,12 @@
   version = "v1.0-rc5"
 
 [[projects]]
-  digest = "1:e788bd2debcb3ebc7de8dd1b67ffa73cc642084ec8b3658853aa92af999e30b2"
+  branch = "CLOUDTRUST-1617_updateAccount"
+  digest = "1:14811d4324419839c74dfdb85f11d7f6baa0beda686b68cfea3fe4b2eeac4d30"
   name = "github.com/cloudtrust/keycloak-client"
   packages = ["."]
   pruneopts = "UT"
-  revision = "96fb4f2b1d24477e97d5693d86299f73fd62d244"
-  version = "v1.0-rc3"
+  revision = "fc77b8c1d85ac90417bf67891ba1819b84de45d0"
 
 [[projects]]
   digest = "1:d64c893fc7d2c3d395f421b00d21f0adb8ceffc4d3c90299e732b3985ca16eb4"
@@ -324,7 +324,7 @@
   version = "v1.4.0"
 
 [[projects]]
-  digest = "1:3b0ac1ac6f703e6d43f4e29c97da2c9e34465c66e2e19f9828e9841d1c9279a4"
+  digest = "1:042f4318540f23144e86fece78332544c90aab9d3acc477f24623ffe3642ae31"
   name = "github.com/uber/jaeger-client-go"
   packages = [
     ".",
@@ -346,8 +346,8 @@
     "utils",
   ]
   pruneopts = "UT"
-  revision = "2f47546e3facd43297739439600bcf43f44cce5d"
-  version = "v2.16.0"
+  revision = "85825f3f682a6fb24b12a4604be2a101432c7534"
+  version = "v2.17.0"
 
 [[projects]]
   digest = "1:c9d69a04f7fa171f50360bbcc32196b4de8ab8837ef772f6302d0140a1e3e7f6"
@@ -395,11 +395,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:d0c076b09de3e3682b81fa13a5150f7fc8ac93d9d90a0a7d46a882fb539d3523"
+  digest = "1:b8340ec580cc3c81782c6c46ad20bf17c4b567be60cc2901e8bc220a8b473de1"
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = "UT"
-  revision = "1e83adbbebd0f5dc971915fd7e5db032c3d2b731"
+  revision = "9109b7679e13aa34a54834cfb4949cac4b96e576"
 
 [[projects]]
   digest = "1:8d8faad6b12a3a4c819a3f9618cb6ee1fa1cfc33253abeeea8b55336721e3405"

@@ -31,7 +31,8 @@
 
 [[constraint]]
   name = "github.com/cloudtrust/keycloak-client"
-  version = "=v1.0-rc3"
+  #version = "=v1.0-rc3"
+  branch="CLOUDTRUST-1617_updateAccount"
 
 [[constraint]]
   name = "github.com/go-kit/kit"
