@@ -47,4 +47,6 @@ const (
 	Response           = "response"
 	ListOfRealms       = "listOfRealms"
 	Groups             = "groups"
+	ClientId           = "clientId"
+	RedirectURI        = "redirectURI"
 )

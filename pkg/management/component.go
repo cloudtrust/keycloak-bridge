@@ -875,7 +875,7 @@ func (c *component) UpdateRealmCustomConfiguration(ctx context.Context, realmNam
 	if !match {
 		return http.Error{
 			Status:  400,
-			Message: "invalidClientIDOrRedirectURI",
+			Message: internal.MsgErrInvalidParam + "." + internal.ClientId + "Or" + internal.RedirectURI,
 		}
 	}
 	// transform customConfig object into JSON string
