@@ -9,7 +9,9 @@ import (
 	cs "github.com/cloudtrust/common-service"
 	"github.com/cloudtrust/common-service/database"
 	commonhttp "github.com/cloudtrust/common-service/http"
+	api "github.com/cloudtrust/keycloak-bridge/api/account"
 	internal "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
+	kc "github.com/cloudtrust/keycloak-client"
 )
 
 // KeycloakClient interface exposes methods we need to call to send requests to Keycloak API
