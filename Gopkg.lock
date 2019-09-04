@@ -18,7 +18,7 @@
   version = "2018.01.18"
 
 [[projects]]
-  digest = "1:ff8129fae7d887e9b661497b88761ef3b9c82878ac371b1d5483430e83805f13"
+  digest = "1:60e7c2f3eb39c73949e89c516d02ec89df71c14951c7cc7a9f01e32d466558ee"
   name = "github.com/cloudtrust/common-service"
   packages = [
     ".",
@@ -33,16 +33,16 @@
     "tracking",
   ]
   pruneopts = "UT"
-  revision = "cdbabf6b3fc8984d7710dfe2d52341a474d9f343"
-  version = "v1.0-rc5"
+  revision = "84f451814b254b1c75b98b68fe1b8f908575dce2"
+  version = "v1.0-rc6"
 
 [[projects]]
-  branch = "CLOUDTRUST-1617_updateAccount"
-  digest = "1:14811d4324419839c74dfdb85f11d7f6baa0beda686b68cfea3fe4b2eeac4d30"
+  digest = "1:46022f907405f86d36dbb41b6cbc81f894d06a4be72cf2e25b01004beb16163f"
   name = "github.com/cloudtrust/keycloak-client"
   packages = ["."]
   pruneopts = "UT"
-  revision = "fc77b8c1d85ac90417bf67891ba1819b84de45d0"
+  revision = "509d5f3b96d2e449c2476ba3edca58bb6d027e7c"
+  version = "v1.0-rc4"
 
 [[projects]]
   digest = "1:d64c893fc7d2c3d395f421b00d21f0adb8ceffc4d3c90299e732b3985ca16eb4"
@@ -395,11 +395,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:b8340ec580cc3c81782c6c46ad20bf17c4b567be60cc2901e8bc220a8b473de1"
+  digest = "1:767025ef5997eeba9a3b7fba288b8b9e71b44f0e3a2ec6dcd01f144d3dc8f173"
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = "UT"
-  revision = "9109b7679e13aa34a54834cfb4949cac4b96e576"
+  revision = "43c01164e93111c754a278ab423ba01063c44917"
 
 [[projects]]
   digest = "1:8d8faad6b12a3a4c819a3f9618cb6ee1fa1cfc33253abeeea8b55336721e3405"

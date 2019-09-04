@@ -41,7 +41,7 @@ paths:
     post:
       tags:
       - Account
-      summary: Update account representation of the current user.
+      summary: Update account representation of the current user
       requestBody:
         content:
           application/json:
