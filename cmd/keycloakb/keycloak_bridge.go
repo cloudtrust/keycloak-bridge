@@ -450,6 +450,8 @@ func main() {
 
 		accountEndpoints = account.Endpoints{
 			UpdatePassword: prepareEndpoint(account.MakeUpdatePasswordEndpoint(accountComponent), "update_password", influxMetrics, accountLogger, tracer, rateLimit["account"]),
+			GetAccount:     prepareEndpoint(account.MakeGetAccountEndpoint(accountComponent), "get_account", influxMetrics, accountLogger, tracer, rateLimit["account"]),
+			UpdateAccount:  prepareEndpoint(account.MakeUpdateAccountEndpoint(accountComponent), "update_account", influxMetrics, accountLogger, tracer, rateLimit["account"]),
 		}
 	}
 
@@ -631,7 +633,12 @@ func main() {
 
 		// Account
 		var updatePasswordHandler = configureAccountHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(accountEndpoints.UpdatePassword)
+		var getAccountHandler = configureAccountHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(accountEndpoints.GetAccount)
+		var updateAccountHandler = configureAccountHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(accountEndpoints.UpdateAccount)
+
 		route.Path("/account/credentials/password").Methods("POST").Handler(updatePasswordHandler)
+		route.Path("/account").Methods("GET").Handler(getAccountHandler)
+		route.Path("/account").Methods("POST").Handler(updateAccountHandler)
 
 		c := cors.New(corsOptions)
 		errc <- http.ListenAndServe(httpAddrAccount, c.Handler(route))

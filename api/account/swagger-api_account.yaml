@@ -26,6 +26,30 @@ paths:
           description: Bad parameters (same old and new passwords, different new and confirm passwords, ...)
         403:
           description: Caller is not allowed to change the password
+  /account:
+    get:
+      tags:
+      - Account
+      summary: Get account representation of the current user
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+    post:
+      tags:
+      - Account
+      summary: Update account representation of the current user
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        200:
+          description: successful operation
 components:
   schemas:
     UpdatePassword:
@@ -36,6 +60,19 @@ components:
         newPassword:
           type: string
         confirmPassword:
+          type: string
+    User:
+      type: object
+      properties:
+        username:
+          type: string
+        email:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        phoneNumber:
           type: string
   securitySchemes:
     openId:

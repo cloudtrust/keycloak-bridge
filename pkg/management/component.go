@@ -314,7 +314,7 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 	if user.PhoneNumber != nil {
 		if oldUserKc.Attributes != nil {
 			var m = *oldUserKc.Attributes
-			if m["phoneNumber"][0] != *user.PhoneNumber {
+			if _, ok := m["phoneNumber"]; !ok || m["phoneNumber"][0] != *user.PhoneNumber {
 				var verified = false
 				user.PhoneNumberVerified = &verified
 			}
