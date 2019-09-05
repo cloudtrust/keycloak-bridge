@@ -15,6 +15,7 @@ import (
 
 	cs "github.com/cloudtrust/common-service"
 	"github.com/cloudtrust/common-service/database"
+	errorhandler "github.com/cloudtrust/common-service/errors"
 	commonhttp "github.com/cloudtrust/common-service/http"
 	"github.com/cloudtrust/common-service/idgenerator"
 	"github.com/cloudtrust/common-service/log"
@@ -459,7 +460,7 @@ func main() {
 	var exportEndpoint = export.MakeExportEndpoint(exportComponent)
 	var exportSaveAndExportEndpoint = export.MakeStoreAndExportEndpoint(exportComponent)
 
-	commonhttp.SetEmitter(keycloakb.ComponentName)
+	errorhandler.SetEmitter(keycloakb.ComponentName)
 
 	// HTTP Internal Call Server (Event reception from Keycloak & Export API).
 	go func() {
@@ -630,9 +631,9 @@ func main() {
 		route.Handle("/", http.HandlerFunc(commonhttp.MakeVersionHandler(keycloakb.ComponentName, ComponentID, keycloakb.Version, Environment, GitCommit)))
 
 		// Account
-		var updatePasswordHandler = configureAccountHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(accountEndpoints.UpdatePassword)
-		var getAccountHandler = configureAccountHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(accountEndpoints.GetAccount)
-		var updateAccountHandler = configureAccountHandler(ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(accountEndpoints.UpdateAccount)
+		var updatePasswordHandler = configureAccountHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(accountEndpoints.UpdatePassword)
+		var getAccountHandler = configureAccountHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(accountEndpoints.GetAccount)
+		var updateAccountHandler = configureAccountHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(accountEndpoints.UpdateAccount)
 
 		route.Path("/account/credentials/password").Methods("POST").Handler(updatePasswordHandler)
 		route.Path("/account").Methods("GET").Handler(getAccountHandler)

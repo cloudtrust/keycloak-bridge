@@ -13,19 +13,22 @@ func TestConvertCredential(t *testing.T) {
 	var credKc kc.CredentialRepresentation
 	var credType = "password"
 	var credID = "123456"
-	var configKc = "{}"
+	var configKc map[string][]string
+	configKc = make(map[string][]string)
+	configKc["undesired_Key"] = make([]string, 0)
+	configKc["deviceInfo_Model"] = make([]string, 0)
 
 	credKc.Type = &credType
 	credKc.Id = &credID
-	credKc.CredentialData = nil
+	credKc.Config = nil
 
 	assert.Equal(t, credKc.Type, ConvertCredential(&credKc).Type)
 	assert.Equal(t, credKc.Id, ConvertCredential(&credKc).Id)
-	assert.Nil(t, ConvertCredential(&credKc).CredentialData)
+	assert.Nil(t, ConvertCredential(&credKc).Config)
 
-	credKc.CredentialData = &configKc
-	assert.NotNil(t, ConvertCredential(&credKc).CredentialData)
-	assert.Equal(t, "{}", *ConvertCredential(&credKc).CredentialData)
+	credKc.Config = &configKc
+	assert.NotNil(t, ConvertCredential(&credKc).Config)
+	assert.Equal(t, 1, len(*ConvertCredential(&credKc).Config))
 }
 
 func TestConvertToAPIUser(t *testing.T) {

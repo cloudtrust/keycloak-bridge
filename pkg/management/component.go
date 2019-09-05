@@ -8,7 +8,7 @@ import (
 
 	cs "github.com/cloudtrust/common-service"
 	"github.com/cloudtrust/common-service/database"
-	"github.com/cloudtrust/common-service/http"
+	errorhandler "github.com/cloudtrust/common-service/errors"
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
 	internal "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	kc "github.com/cloudtrust/keycloak-client"
@@ -873,7 +873,7 @@ func (c *component) UpdateRealmCustomConfiguration(ctx context.Context, realmNam
 		}
 	}
 	if !match {
-		return http.Error{
+		return errorhandler.Error{
 			Status:  400,
 			Message: internal.MsgErrInvalidParam + "." + internal.ClientId + "Or" + internal.RedirectURI,
 		}

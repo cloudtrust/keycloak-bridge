@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/cloudtrust/common-service/log"
-	account_api "github.com/cloudtrust/keycloak-bridge/api/account"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/cloudtrust/keycloak-bridge/pkg/account/mock"
 	"github.com/golang/mock/gomock"
@@ -20,23 +19,23 @@ import (
 func TestHTTPAccountHandler(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
-	var mockAccountComponent = mock.NewAccountComponent(mockCtrl)
+	var mockComponent = mock.NewComponent(mockCtrl)
 
 	r := mux.NewRouter()
-	r.Handle("/path/to/{realm}/password", MakeAccountHandler(keycloakb.ToGoKitEndpoint(MakeUpdatePasswordEndpoint(mockAccountComponent)), log.NewNopLogger()))
+	r.Handle("/path/to/{realm}/password", MakeAccountHandler(keycloakb.ToGoKitEndpoint(MakeUpdatePasswordEndpoint(mockComponent)), log.NewNopLogger()))
 
 	ts := httptest.NewServer(r)
 	defer ts.Close()
 
 	{
-		body := account_api.UpdatePasswordBody{
+		body := UpdatePasswordBody{
 			CurrentPassword: "current",
 			NewPassword:     "new",
 			ConfirmPassword: "confirm",
 		}
 		json, _ := json.MarshalIndent(body, "", " ")
 
-		mockAccountComponent.EXPECT().UpdatePassword(gomock.Any(), body.CurrentPassword, body.NewPassword, body.ConfirmPassword).Return(nil).Times(1)
+		mockComponent.EXPECT().UpdatePassword(gomock.Any(), body.CurrentPassword, body.NewPassword, body.ConfirmPassword).Return(nil).Times(1)
 
 		res, err := http.Post(ts.URL+"/path/to/master/password", "application/json", ioutil.NopCloser(bytes.NewBuffer(json)))
 

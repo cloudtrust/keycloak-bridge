@@ -8,14 +8,14 @@ import (
 
 	cs "github.com/cloudtrust/common-service"
 	"github.com/cloudtrust/common-service/database"
-	commonhttp "github.com/cloudtrust/common-service/http"
+	errorhandler "github.com/cloudtrust/common-service/errors"
 	api "github.com/cloudtrust/keycloak-bridge/api/account"
 	internal "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	kc "github.com/cloudtrust/keycloak-client"
 )
 
-// KeycloakAccountClient interface exposes methods we need to call to send requests to Keycloak API of Account
-type KeycloakAccountClient interface {
+// KeycloakClient interface exposes methods we need to call to send requests to Keycloak API
+type KeycloakClient interface {
 	UpdatePassword(accessToken, realm, currentPassword, newPassword, confirmPassword string) (string, error)
 	UpdateAccount(accessToken, realm string, user kc.UserRepresentation) error
 	GetAccount(accessToken, realm string) (kc.UserRepresentation, error)
@@ -55,29 +55,29 @@ func (c *component) UpdatePassword(ctx context.Context, currentPassword, newPass
 	var username = ctx.Value(cs.CtContextUsername).(string)
 
 	if currentPassword == newPassword || newPassword != confirmPassword {
-		return commonhttp.Error{
+		return errorhandler.Error{
 			Status:  http.StatusBadRequest,
 			Message: internal.ComponentName + "." + "invalidValues",
 		}
 	}
 
-	_, err := c.keycloakAccountClient.UpdatePassword(accessToken, realm, currentPassword, newPassword, confirmPassword)
+	_, err := c.keycloakClient.UpdatePassword(accessToken, realm, currentPassword, newPassword, confirmPassword)
 
 	//store the API call into the DB
-	err = c.reportEvent(ctx, "PASSWORD_RESET", database.CtEventRealmName, realm, database.CtEventUserID, userID, database.CtEventUsername, username)
-	if err != nil {
+	errEvent := c.reportEvent(ctx, "PASSWORD_RESET", database.CtEventRealmName, realm, database.CtEventUserID, userID, database.CtEventUsername, username)
+	if errEvent != nil {
 		//store in the logs also the event that failed to be stored in the DB
 		m := map[string]interface{}{"event_name": "PASSWORD_RESET", database.CtEventRealmName: realm, database.CtEventUserID: userID, database.CtEventUsername: username}
 		eventJSON, errMarshal := json.Marshal(m)
 		if errMarshal == nil {
-			c.logger.Error("err", err.Error(), "event", string(eventJSON))
+			c.logger.Error("err", errEvent.Error(), "event", string(eventJSON))
 		} else {
-			c.logger.Error("err", err.Error())
+			c.logger.Error("err", errEvent.Error())
 		}
 
 	}
 
-	return updateError
+	return err
 }
 
 func (c *component) GetAccount(ctx context.Context) (api.AccountRepresentation, error) {

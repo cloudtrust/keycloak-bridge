@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	cs "github.com/cloudtrust/common-service"
-	"github.com/cloudtrust/common-service/http"
+	errorhandler "github.com/cloudtrust/common-service/errors"
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
 	internal "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/go-kit/kit/endpoint"
@@ -121,15 +121,15 @@ func MakeCreateUserEndpoint(managementComponent ManagementComponent) cs.Endpoint
 		var user api.UserRepresentation
 
 		if err = json.Unmarshal([]byte(m["body"]), &user); err != nil {
-			return nil, http.CreateBadRequestError(internal.MsgErrInvalidParam + "." + internal.Body)
+			return nil, errorhandler.CreateBadRequestError(internal.MsgErrInvalidParam + "." + internal.Body)
 		}
 
 		if err = user.Validate(); err != nil {
-			return nil, http.CreateBadRequestError(err.Error())
+			return nil, errorhandler.CreateBadRequestError(err.Error())
 		}
 
 		if user.Groups == nil || len(*user.Groups) == 0 {
-			return nil, http.CreateMissingParameterError(internal.Groups)
+			return nil, errorhandler.CreateMissingParameterError(internal.Groups)
 		}
 
 		var keycloakLocation string
@@ -174,11 +174,11 @@ func MakeUpdateUserEndpoint(managementComponent ManagementComponent) cs.Endpoint
 		var user api.UserRepresentation
 
 		if err = json.Unmarshal([]byte(m["body"]), &user); err != nil {
-			return nil, http.CreateBadRequestError(internal.MsgErrInvalidParam + internal.Body)
+			return nil, errorhandler.CreateBadRequestError(internal.MsgErrInvalidParam + internal.Body)
 		}
 
 		if err = user.Validate(); err != nil {
-			return nil, http.CreateBadRequestError(err.Error())
+			return nil, errorhandler.CreateBadRequestError(err.Error())
 		}
 
 		return nil, managementComponent.UpdateUser(ctx, m["realm"], m["userID"], user)
@@ -199,7 +199,7 @@ func MakeGetUsersEndpoint(managementComponent ManagementComponent) cs.Endpoint {
 
 		_, ok := m["groupIds"]
 		if !ok {
-			return nil, http.CreateMissingParameterError(internal.GroudIds)
+			return nil, errorhandler.CreateMissingParameterError(internal.GroudIds)
 		}
 
 		groupIDs := strings.Split(m["groupIds"], ",")
@@ -253,12 +253,12 @@ func MakeAddClientRolesToUserEndpoint(managementComponent ManagementComponent) c
 		var roles []api.RoleRepresentation
 
 		if err = json.Unmarshal([]byte(m["body"]), &roles); err != nil {
-			return nil, http.CreateBadRequestError(internal.MsgErrInvalidParam + "." + internal.Body)
+			return nil, errorhandler.CreateBadRequestError(internal.MsgErrInvalidParam + "." + internal.Body)
 		}
 
 		for _, role := range roles {
 			if err = role.Validate(); err != nil {
-				return nil, http.CreateBadRequestError(err.Error())
+				return nil, errorhandler.CreateBadRequestError(err.Error())
 			}
 		}
 
@@ -275,11 +275,11 @@ func MakeResetPasswordEndpoint(managementComponent ManagementComponent) cs.Endpo
 		var password api.PasswordRepresentation
 
 		if err = json.Unmarshal([]byte(m["body"]), &password); err != nil {
-			return nil, http.CreateBadRequestError(internal.MsgErrInvalidParam + "." + internal.Body)
+			return nil, errorhandler.CreateBadRequestError(internal.MsgErrInvalidParam + "." + internal.Body)
 		}
 
 		if err = password.Validate(); err != nil {
-			return nil, http.CreateBadRequestError(err.Error())
+			return nil, errorhandler.CreateBadRequestError(err.Error())
 		}
 
 		pwd, err := managementComponent.ResetPassword(ctx, m["realm"], m["userID"], password)
@@ -323,12 +323,12 @@ func MakeExecuteActionsEmailEndpoint(managementComponent ManagementComponent) cs
 		var actions []api.RequiredAction
 
 		if err = json.Unmarshal([]byte(m["body"]), &actions); err != nil {
-			return nil, http.CreateBadRequestError(internal.MsgErrInvalidParam + "." + internal.Body)
+			return nil, errorhandler.CreateBadRequestError(internal.MsgErrInvalidParam + "." + internal.Body)
 		}
 
 		for _, action := range actions {
 			if err = action.Validate(); err != nil {
-				return nil, http.CreateBadRequestError(err.Error())
+				return nil, errorhandler.CreateBadRequestError(err.Error())
 			}
 		}
 
@@ -425,11 +425,11 @@ func MakeCreateClientRoleEndpoint(managementComponent ManagementComponent) cs.En
 		var role api.RoleRepresentation
 
 		if err = json.Unmarshal([]byte(m["body"]), &role); err != nil {
-			return nil, http.CreateBadRequestError(internal.MsgErrInvalidParam + "." + internal.Body)
+			return nil, errorhandler.CreateBadRequestError(internal.MsgErrInvalidParam + "." + internal.Body)
 		}
 
 		if err = role.Validate(); err != nil {
-			return nil, http.CreateBadRequestError(err.Error())
+			return nil, errorhandler.CreateBadRequestError(err.Error())
 		}
 
 		var keycloakLocation string
@@ -467,11 +467,11 @@ func MakeUpdateRealmCustomConfigurationEndpoint(managementComponent ManagementCo
 		var customConfig api.RealmCustomConfiguration
 
 		if err = json.Unmarshal(configJSON, &customConfig); err != nil {
-			return nil, http.CreateBadRequestError(internal.MsgErrInvalidParam + "." + internal.Body)
+			return nil, errorhandler.CreateBadRequestError(internal.MsgErrInvalidParam + "." + internal.Body)
 		}
 
 		if err = customConfig.Validate(); err != nil {
-			return nil, http.CreateBadRequestError(err.Error())
+			return nil, errorhandler.CreateBadRequestError(err.Error())
 		}
 
 		return nil, managementComponent.UpdateRealmCustomConfiguration(ctx, m["realm"], customConfig)

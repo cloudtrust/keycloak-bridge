@@ -56,13 +56,11 @@ type ClientRepresentation struct {
 
 // CredentialRepresentation struct
 type CredentialRepresentation struct {
-	Id             *string `json:"id,omitempty"`
-	Type           *string `json:"type,omitempty"`
-	UserLabel      *string `json:"userLabel,omitempty"`
-	CreatedDate    *int64  `json:"createdDate,omitempty"`
-	CredentialData *string `json:"credentialData,omitempty"`
-	Value          *string `json:"value,omitempty"`
-	Temporary      *bool   `json:"temporary,omitempty"`
+	Id          *string              `json:"id,omitempty"`
+	Type        *string              `json:"type,omitempty"`
+	Algorithm   *string              `json:"algorithm,omitempty"`
+	CreatedDate *int64               `json:"createdDate,omitempty"`
+	Config      *map[string][]string `json:"config,omitempty"`
 }
 
 // RoleRepresentation struct
@@ -88,10 +86,8 @@ type PasswordRepresentation struct {
 
 // RealmCustomConfiguration struct
 type RealmCustomConfiguration struct {
-	DefaultClientId              *string `json:"default_client_id,omitempty"`
-	DefaultRedirectUri           *string `json:"default_redirect_uri,omitempty"`
-	SelfAuthenticatorMgmtEnabled *bool   `json:"self_authenticator_mgmt_enabled"`
-	SelfPasswordChangeEnabled    *bool   `json:"self_password_change_enabled"`
+	DefaultClientId    *string `json:"default_client_id,omitempty"`
+	DefaultRedirectUri *string `json:"default_redirect_uri,omitempty"`
 }
 
 // RequiredAction type
@@ -102,12 +98,19 @@ func ConvertCredential(credKc *kc.CredentialRepresentation) CredentialRepresenta
 	var cred CredentialRepresentation
 	cred.Id = credKc.Id
 	cred.Type = credKc.Type
-	cred.UserLabel = credKc.UserLabel
+	cred.Algorithm = credKc.Algorithm
 	cred.CreatedDate = credKc.CreatedDate
-	cred.CredentialData = credKc.CredentialData
-	cred.Temporary = credKc.Temporary
-	cred.Value = credKc.Value
-
+	if credKc.Config != nil {
+		var m map[string][]string
+		m = make(map[string][]string)
+		for _, key := range []string{"deviceInfo_Manufacturer", "deviceInfo_Model", "deviceInfo_Name", "deviceInfo_Plateform", "shortId", "usedChallenges", "availableChallenges", "cardStatus", "expirationDate"} {
+			value, ok := (*credKc.Config)[key]
+			if ok {
+				m[key] = value
+			}
+		}
+		cred.Config = &m
+	}
 	return cred
 }
 
