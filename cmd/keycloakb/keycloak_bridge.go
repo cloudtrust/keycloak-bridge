@@ -469,7 +469,7 @@ func main() {
 
 		var route = mux.NewRouter()
 
-		// keycloakb.Version.
+		// Version.
 		route.Handle("/", commonhttp.MakeVersionHandler(keycloakb.ComponentName, ComponentID, keycloakb.Version, Environment, GitCommit))
 
 		// Event.
@@ -508,7 +508,7 @@ func main() {
 
 		var route = mux.NewRouter()
 
-		// keycloakb.Version.
+		// Version.
 		route.Handle("/", http.HandlerFunc(commonhttp.MakeVersionHandler(keycloakb.ComponentName, ComponentID, keycloakb.Version, Environment, GitCommit)))
 
 		// Rights
@@ -627,7 +627,7 @@ func main() {
 
 		var route = mux.NewRouter()
 
-		// keycloakb.Version.
+		// Version.
 		route.Handle("/", http.HandlerFunc(commonhttp.MakeVersionHandler(keycloakb.ComponentName, ComponentID, keycloakb.Version, Environment, GitCommit)))
 
 		// Account

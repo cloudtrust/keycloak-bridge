@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	commonhttp "github.com/cloudtrust/common-service/http"
+	commonhttp "github.com/cloudtrust/common-service/errors"
 	"github.com/cloudtrust/common-service/log"
 	"github.com/cloudtrust/common-service/security"
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
