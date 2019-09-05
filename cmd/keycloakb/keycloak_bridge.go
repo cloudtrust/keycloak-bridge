@@ -381,6 +381,15 @@ func main() {
 		}
 	}
 
+	// module for storing and retrieving the custom configuration
+	var configDBModule keycloakb.ConfigurationDBModule
+	{
+		configDBModule = keycloakb.NewConfigurationDBModule(configurationDBConn)
+		configDBModule = management.MakeConfigurationDBModuleInstrumentingMW(influxMetrics.NewHistogram("configDB_module"))(configDBModule)
+		configDBModule = management.MakeConfigurationDBModuleLoggingMW(log.With(logger, "mw", "module", "unit", "configDB"))(configDBModule)
+		configDBModule = management.MakeConfigurationDBModuleTracingMW(tracer)(configDBModule)
+	}
+
 	// Management service.
 	var managementEndpoints = management.Endpoints{}
 	{
@@ -388,15 +397,6 @@ func main() {
 
 		// module to store API calls of the back office to the DB
 		eventsDBModule := configureEventsDbModule(baseEventsDBModule, influxMetrics, managementLogger, tracer)
-
-		// module for storing and retrieving the custom configuration
-		var configDBModule management.ConfigurationDBModule
-		{
-			configDBModule = management.NewConfigurationDBModule(configurationDBConn)
-			configDBModule = management.MakeConfigurationDBModuleInstrumentingMW(influxMetrics.NewHistogram("configDB_module"))(configDBModule)
-			configDBModule = management.MakeConfigurationDBModuleLoggingMW(log.With(managementLogger, "mw", "module", "unit", "configDB"))(configDBModule)
-			configDBModule = management.MakeConfigurationDBModuleTracingMW(tracer)(configDBModule)
-		}
 
 		var keycloakComponent management.Component
 		{
@@ -445,7 +445,7 @@ func main() {
 		eventsDBModule := configureEventsDbModule(baseEventsDBModule, influxMetrics, accountLogger, tracer)
 
 		// new module for account service
-		accountComponent := account.NewComponent(keycloakClient.AccountClient(), eventsDBModule, accountLogger)
+		accountComponent := account.NewComponent(keycloakClient.AccountClient(), eventsDBModule, configDBModule, logger)
 
 		accountEndpoints = account.Endpoints{
 			GetAccount:                prepareEndpoint(account.MakeGetAccountEndpoint(accountComponent), "get_account", influxMetrics, accountLogger, tracer, rateLimit["account"]),

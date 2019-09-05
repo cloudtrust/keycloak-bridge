@@ -6,17 +6,18 @@ import (
 
 	cs "github.com/cloudtrust/common-service"
 	cm "github.com/cloudtrust/common-service/metrics"
+	internal "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 )
 
 // Instrumenting middleware at module level.
 type configDBModuleInstrumentingMW struct {
 	h    cm.Histogram
-	next ConfigurationDBModule
+	next internal.ConfigurationDBModule
 }
 
 // MakeConfigurationDBModuleInstrumentingMW makes an instrumenting middleware at module level.
-func MakeConfigurationDBModuleInstrumentingMW(h cm.Histogram) func(ConfigurationDBModule) ConfigurationDBModule {
-	return func(next ConfigurationDBModule) ConfigurationDBModule {
+func MakeConfigurationDBModuleInstrumentingMW(h cm.Histogram) func(internal.ConfigurationDBModule) internal.ConfigurationDBModule {
+	return func(next internal.ConfigurationDBModule) internal.ConfigurationDBModule {
 		return &configDBModuleInstrumentingMW{
 			h:    h,
 			next: next,

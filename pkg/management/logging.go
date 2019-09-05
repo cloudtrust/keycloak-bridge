@@ -5,17 +5,18 @@ import (
 	"time"
 
 	"github.com/cloudtrust/common-service/log"
+	internal "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 )
 
 // Logging middleware for the statistic module.
 type configDBModuleLoggingMW struct {
 	logger log.Logger
-	next   ConfigurationDBModule
+	next   internal.ConfigurationDBModule
 }
 
 // MakeConfigurationDBModuleLoggingMW makes a logging middleware for the statistic module.
-func MakeConfigurationDBModuleLoggingMW(log log.Logger) func(ConfigurationDBModule) ConfigurationDBModule {
-	return func(next ConfigurationDBModule) ConfigurationDBModule {
+func MakeConfigurationDBModuleLoggingMW(log log.Logger) func(internal.ConfigurationDBModule) internal.ConfigurationDBModule {
+	return func(next internal.ConfigurationDBModule) internal.ConfigurationDBModule {
 		return &configDBModuleLoggingMW{
 			logger: log,
 			next:   next,
