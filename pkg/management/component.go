@@ -84,12 +84,12 @@ type Component interface {
 type component struct {
 	keycloakClient KeycloakClient
 	eventDBModule  database.EventsDBModule
-	configDBModule ConfigurationDBModule
+	configDBModule internal.ConfigurationDBModule
 	logger         internal.Logger
 }
 
 // NewComponent returns the management component.
-func NewComponent(keycloakClient KeycloakClient, eventDBModule database.EventsDBModule, configDBModule ConfigurationDBModule, logger internal.Logger) Component {
+func NewComponent(keycloakClient KeycloakClient, eventDBModule database.EventsDBModule, configDBModule internal.ConfigurationDBModule, logger internal.Logger) Component {
 	return &component{
 		keycloakClient: keycloakClient,
 		eventDBModule:  eventDBModule,

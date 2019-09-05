@@ -2,12 +2,15 @@ package account
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"testing"
 
 	cs "github.com/cloudtrust/common-service"
 	"github.com/cloudtrust/common-service/log"
 	account_api "github.com/cloudtrust/keycloak-bridge/api/account"
+	apim "github.com/cloudtrust/keycloak-bridge/api/management"
 	"github.com/cloudtrust/keycloak-bridge/pkg/account/mock"
 	kc "github.com/cloudtrust/keycloak-client"
 	"github.com/golang/mock/gomock"
@@ -20,8 +23,9 @@ func genericUpdatePasswordTest(t *testing.T, oldPasswd, newPasswd, confirmPasswo
 
 	mockKeycloakAccountClient := mock.NewKeycloakAccountClient(mockCtrl)
 	mockEventDBModule := mock.NewEventsDBModule(mockCtrl)
+	mockConfigDBModule := mock.NewConfigurationDBModule(mockCtrl)
 	mockLogger := log.NewNopLogger()
-	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockLogger)
+	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigDBModule, mockLogger)
 
 	accessToken := "access token"
 	realm := "sample realm"
@@ -66,8 +70,9 @@ func TestUpdatePasswordWrongPwd(t *testing.T) {
 
 	mockKeycloakAccountClient := mock.NewKeycloakAccountClient(mockCtrl)
 	mockEventDBModule := mock.NewEventsDBModule(mockCtrl)
+	mockConfigDBModule := mock.NewConfigurationDBModule(mockCtrl)
 	mockLogger := log.NewNopLogger()
-	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockLogger)
+	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigDBModule, mockLogger)
 
 	accessToken := "access token"
 	realm := "sample realm"
@@ -100,8 +105,9 @@ func TestGetCredentials(t *testing.T) {
 
 	mockKeycloakAccountClient := mock.NewKeycloakAccountClient(mockCtrl)
 	mockEventDBModule := mock.NewEventsDBModule(mockCtrl)
+	mockConfigDBModule := mock.NewConfigurationDBModule(mockCtrl)
 	mockLogger := log.NewNopLogger()
-	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockLogger)
+	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigDBModule, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var currentRealm = "master"
@@ -157,22 +163,57 @@ func TestGetCredentialTypes(t *testing.T) {
 
 	mockKeycloakAccountClient := mock.NewKeycloakAccountClient(mockCtrl)
 	mockEventDBModule := mock.NewEventsDBModule(mockCtrl)
+	mockConfigDBModule := mock.NewConfigurationDBModule(mockCtrl)
 	mockLogger := log.NewNopLogger()
-	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockLogger)
+	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigDBModule, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var currentRealm = "master"
 	var currentUserID = "1234-789"
+	var bTrue = true
+	var credTypes = []string{"password", "OTP"}
+
+	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+	ctx = context.WithValue(ctx, cs.CtContextRealm, currentRealm)
+	ctx = context.WithValue(ctx, cs.CtContextUserID, currentUserID)
+
+	// DB access fails
+	{
+		var expectedError = errors.New("db request fails")
+		mockConfigDBModule.EXPECT().GetConfiguration(ctx, currentRealm).Return("", expectedError).Times(1)
+
+		resCredTypes, err := component.GetCredentialTypes(ctx)
+		assert.Equal(t, expectedError, err)
+		assert.Nil(t, resCredTypes)
+	}
+
+	// DB returns invalid JSON
+	{
+		mockConfigDBModule.EXPECT().GetConfiguration(ctx, currentRealm).Return("{", nil).Times(1)
+
+		resCredTypes, err := component.GetCredentialTypes(ctx)
+		assert.NotNil(t, err)
+		assert.Nil(t, resCredTypes)
+	}
+
+	// DB returns empty JSON (realm is not configured in DB)
+	{
+		mockConfigDBModule.EXPECT().GetConfiguration(ctx, currentRealm).Return("", nil).Times(1)
+
+		resCredTypes, err := component.GetCredentialTypes(ctx)
+		assert.Nil(t, err)
+		assert.Equal(t, []string{}, resCredTypes)
+	}
 
 	// Get credential types with succces
 	{
-		var credTypes = []string{"paper", "push"}
+		var validJSON, _ = json.Marshal(apim.RealmCustomConfiguration{
+			SelfAuthenticatorMgmtEnabled: &bTrue,
+			SelfPasswordChangeEnabled:    &bTrue,
+		})
 
+		mockConfigDBModule.EXPECT().GetConfiguration(ctx, currentRealm).Return(string(validJSON), nil).Times(1)
 		mockKeycloakAccountClient.EXPECT().GetCredentialTypes(accessToken, currentRealm).Return(credTypes, nil).Times(1)
-
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
-		ctx = context.WithValue(ctx, cs.CtContextRealm, currentRealm)
-		ctx = context.WithValue(ctx, cs.CtContextUserID, currentUserID)
 
 		resCredTypes, err := component.GetCredentialTypes(ctx)
 
@@ -180,13 +221,27 @@ func TestGetCredentialTypes(t *testing.T) {
 		assert.Equal(t, credTypes, resCredTypes)
 	}
 
+	// Get filtered credential types with succces
+	{
+		var expectedCredTypes = []string{"OTP"}
+		var validJSON, _ = json.Marshal(apim.RealmCustomConfiguration{
+			SelfAuthenticatorMgmtEnabled: &bTrue,
+			SelfPasswordChangeEnabled:    nil,
+		})
+
+		mockConfigDBModule.EXPECT().GetConfiguration(ctx, currentRealm).Return(string(validJSON), nil).Times(1)
+		mockKeycloakAccountClient.EXPECT().GetCredentialTypes(accessToken, currentRealm).Return(credTypes, nil).Times(1)
+
+		resCredTypes, err := component.GetCredentialTypes(ctx)
+
+		assert.Nil(t, err)
+		assert.Equal(t, expectedCredTypes, resCredTypes)
+	}
+
 	//Error
 	{
+		mockConfigDBModule.EXPECT().GetConfiguration(ctx, currentRealm).Return("{}", nil).Times(1)
 		mockKeycloakAccountClient.EXPECT().GetCredentialTypes(accessToken, currentRealm).Return([]string{}, fmt.Errorf("Unexpected error")).Times(1)
-
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
-		ctx = context.WithValue(ctx, cs.CtContextRealm, currentRealm)
-		ctx = context.WithValue(ctx, cs.CtContextUserID, currentUserID)
 
 		_, err := component.GetCredentialTypes(ctx)
 
@@ -201,8 +256,9 @@ func TestUpdateLabelCredential(t *testing.T) {
 
 	mockKeycloakAccountClient := mock.NewKeycloakAccountClient(mockCtrl)
 	mockEventDBModule := mock.NewEventsDBModule(mockCtrl)
+	mockConfigDBModule := mock.NewConfigurationDBModule(mockCtrl)
 	mockLogger := log.NewNopLogger()
-	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockLogger)
+	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigDBModule, mockLogger)
 
 	accessToken := "access token"
 	realm := "sample realm"
@@ -240,8 +296,9 @@ func TestDeleteCredential(t *testing.T) {
 
 	mockKeycloakAccountClient := mock.NewKeycloakAccountClient(mockCtrl)
 	mockEventDBModule := mock.NewEventsDBModule(mockCtrl)
+	mockConfigDBModule := mock.NewConfigurationDBModule(mockCtrl)
 	mockLogger := log.NewNopLogger()
-	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockLogger)
+	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigDBModule, mockLogger)
 
 	accessToken := "access token"
 	realm := "sample realm"
@@ -277,8 +334,9 @@ func TestMoveCredential(t *testing.T) {
 
 	mockKeycloakAccountClient := mock.NewKeycloakAccountClient(mockCtrl)
 	mockEventDBModule := mock.NewEventsDBModule(mockCtrl)
+	mockConfigDBModule := mock.NewConfigurationDBModule(mockCtrl)
 	mockLogger := log.NewNopLogger()
-	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockLogger)
+	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigDBModule, mockLogger)
 
 	accessToken := "access token"
 	realm := "sample realm"

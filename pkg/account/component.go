@@ -9,6 +9,7 @@ import (
 	"github.com/cloudtrust/common-service/database"
 	commonhttp "github.com/cloudtrust/common-service/http"
 	api "github.com/cloudtrust/keycloak-bridge/api/account"
+	apim "github.com/cloudtrust/keycloak-bridge/api/management"
 	internal "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	kc "github.com/cloudtrust/keycloak-client"
 )
@@ -38,14 +39,16 @@ type Component interface {
 type component struct {
 	keycloakAccountClient KeycloakAccountClient
 	eventDBModule         database.EventsDBModule
+	configDBModule        internal.ConfigurationDBModule
 	logger                internal.Logger
 }
 
 // NewComponent returns the self-service component.
-func NewComponent(keycloakAccountClient KeycloakAccountClient, eventDBModule database.EventsDBModule, logger internal.Logger) Component {
+func NewComponent(keycloakAccountClient KeycloakAccountClient, eventDBModule database.EventsDBModule, configDBModule internal.ConfigurationDBModule, logger internal.Logger) Component {
 	return &component{
 		keycloakAccountClient: keycloakAccountClient,
 		eventDBModule:         eventDBModule,
+		configDBModule:        configDBModule,
 		logger:                logger,
 	}
 }
@@ -68,7 +71,7 @@ func (c *component) UpdatePassword(ctx context.Context, currentPassword, newPass
 
 	_, err := c.keycloakAccountClient.UpdatePassword(accessToken, realm, currentPassword, newPassword, confirmPassword)
 
-	var updateError error = nil
+	var updateError error
 	if err != nil {
 		switch err.Error() {
 		case "invalidPasswordExistingMessage":
@@ -110,6 +113,22 @@ func (c *component) GetCredentialTypes(ctx context.Context) ([]string, error) {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 	var currentRealm = ctx.Value(cs.CtContextRealm).(string)
 
+	var customConfig apim.RealmCustomConfiguration
+	{
+		confJSON, err := c.configDBModule.GetConfiguration(ctx, currentRealm)
+		if err == nil {
+			if confJSON == "" {
+				c.logger.Warn("err", "GetCredentialTypes called but realm is not configured", "realm", currentRealm)
+				return []string{}, nil
+			}
+			err = json.Unmarshal([]byte(confJSON), &customConfig)
+		}
+		if err != nil {
+			c.logger.Warn("err", err.Error())
+			return nil, err
+		}
+	}
+
 	credentialTypes, err := c.keycloakAccountClient.GetCredentialTypes(accessToken, currentRealm)
 
 	if err != nil {
@@ -117,7 +136,18 @@ func (c *component) GetCredentialTypes(ctx context.Context) ([]string, error) {
 		return nil, err
 	}
 
-	return credentialTypes, nil
+	var pwdEnabled = customConfig.SelfPasswordChangeEnabled != nil && *customConfig.SelfPasswordChangeEnabled
+	var otherEnabled = customConfig.SelfAuthenticatorMgmtEnabled != nil && *customConfig.SelfAuthenticatorMgmtEnabled
+
+	res := []string{}
+	for _, value := range credentialTypes {
+		var isPassword = value == "password"
+		if isPassword && pwdEnabled || !isPassword && otherEnabled {
+			res = append(res, value)
+		}
+	}
+
+	return res, nil
 }
 
 func (c *component) UpdateLabelCredential(ctx context.Context, credentialID string, label string) error {

@@ -5,17 +5,18 @@ import (
 
 	cs "github.com/cloudtrust/common-service"
 	"github.com/cloudtrust/common-service/tracing"
+	internal "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 )
 
 // Tracing middleware at module level.
 type configDBModuleTracingMW struct {
 	tracer tracing.OpentracingClient
-	next   ConfigurationDBModule
+	next   internal.ConfigurationDBModule
 }
 
 // MakeConfigurationDBModuleTracingMW makes a tracing middleware at component level.
-func MakeConfigurationDBModuleTracingMW(tracer tracing.OpentracingClient) func(ConfigurationDBModule) ConfigurationDBModule {
-	return func(next ConfigurationDBModule) ConfigurationDBModule {
+func MakeConfigurationDBModuleTracingMW(tracer tracing.OpentracingClient) func(internal.ConfigurationDBModule) internal.ConfigurationDBModule {
+	return func(next internal.ConfigurationDBModule) internal.ConfigurationDBModule {
 		return &configDBModuleTracingMW{
 			tracer: tracer,
 			next:   next,

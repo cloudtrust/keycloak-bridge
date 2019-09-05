@@ -18,7 +18,7 @@
   version = "2018.01.18"
 
 [[projects]]
-  digest = "1:ff8129fae7d887e9b661497b88761ef3b9c82878ac371b1d5483430e83805f13"
+  digest = "1:9c43c695f16fb18341e47b69e74745223e472d4b9ddf9eb8af1c9dd4c03e3fc4"
   name = "github.com/cloudtrust/common-service"
   packages = [
     ".",
@@ -33,16 +33,16 @@
     "tracking",
   ]
   pruneopts = "UT"
-  revision = "cdbabf6b3fc8984d7710dfe2d52341a474d9f343"
-  version = "v1.0-rc5"
+  revision = "60d9ac8dc46cb48dfbafe273fe2e04aa3c2b555c"
+  version = "v1.0-rc6"
 
 [[projects]]
+  branch = "multi-token"
   digest = "1:9419feacde5caa87002ea5b280f859475dcc1b8322e4e1c23ac7ea97bc902b88"
   name = "github.com/cloudtrust/keycloak-client"
   packages = ["."]
   pruneopts = "UT"
-  revision = "356892abd73ed182ceeb30aa5e815b4f74a2ed27"
-  version = "v1.0-rc4"
+  revision = "e8ad027efd2809ab1cd40cecdf8f2cf66135559b"
 
 [[projects]]
   digest = "1:f6e5e1bc64c2908167e6aa9a1fe0c084d515132a1c63ad5b6c84036aa06dc0c1"
@@ -135,7 +135,7 @@
   version = "v1.3.2"
 
 [[projects]]
-  digest = "1:e02b687ade0c19c038ecce3ea326d756519adc4bba1203a9e76d620b12354892"
+  digest = "1:debcbc62c53851dab1fc881438a65449dd5ffa12f64f059fd6e32b938799513d"
   name = "github.com/google/flatbuffers"
   packages = ["go"]
   pruneopts = "UT"
@@ -170,7 +170,7 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:3c6faaeb500b7e6fadbe52c0b3fd62b6eed7801ed0d74bb3bd9577017df8d2f4"
+  digest = "1:2629521d27f3b04ce4d524cb52a25fdc77745071239c91d6fe9a7ce10131365a"
   name = "github.com/influxdata/influxdb"
   packages = [
     "client/v2",
