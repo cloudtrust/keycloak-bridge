@@ -2,6 +2,7 @@ package account
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"strconv"
 
@@ -74,7 +75,18 @@ func (c *component) UpdatePassword(ctx context.Context, currentPassword, newPass
 	}
 
 	//store the API call into the DB
-	_ = c.reportEvent(ctx, "PASSWORD_RESET", database.CtEventRealmName, realm, database.CtEventUserID, userID, database.CtEventUsername, username)
+	err = c.reportEvent(ctx, "PASSWORD_RESET", database.CtEventRealmName, realm, database.CtEventUserID, userID, database.CtEventUsername, username)
+	if err != nil {
+		//store in the logs also the event that failed to be stored in the DB
+		m := map[string]interface{}{"event_name": "PASSWORD_RESET", database.CtEventRealmName: realm, database.CtEventUserID: userID, database.CtEventUsername: username}
+		eventJSON, errMarshal := json.Marshal(m)
+		if errMarshal == nil {
+			c.logger.Error("err", err.Error(), "event", string(eventJSON))
+		} else {
+			c.logger.Error("err", err.Error())
+		}
+
+	}
 
 	return updateError
 }

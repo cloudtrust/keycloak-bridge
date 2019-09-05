@@ -372,7 +372,7 @@ func main() {
 		// module to store API calls of the back office to the DB
 		eventsDBModule := configureEventsDbModule(baseEventsDBModule, influxMetrics, eventsLogger, tracer)
 
-		eventsComponent := events.NewComponent(eventsRODBModule, eventsDBModule)
+		eventsComponent := events.NewComponent(eventsRODBModule, eventsDBModule, eventsLogger)
 		eventsComponent = events.MakeAuthorizationManagementComponentMW(log.With(eventsLogger, "mw", "endpoint"), authorizationManager)(eventsComponent)
 
 		eventsEndpoints = events.Endpoints{
