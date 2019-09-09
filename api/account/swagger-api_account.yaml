@@ -50,6 +50,13 @@ paths:
       responses:
         200:
           description: successful operation
+    delete:
+      tags:
+      - Account
+      summary: Delete account
+      responses:
+        200:
+          description: successful operation
 components:
   schemas:
     UpdatePassword:

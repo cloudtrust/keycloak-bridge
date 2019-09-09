@@ -362,3 +362,38 @@ func TestGetUser(t *testing.T) {
 		assert.NotNil(t, err)
 	}
 }
+
+func TestDeleteUser(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+	mockKeycloakClient := mock.NewAccKeycloakClient(mockCtrl)
+	mockEventDBModule := mock.NewEventsDBModule(mockCtrl)
+	var mockLogger = log.NewNopLogger()
+
+	var accountComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockLogger)
+
+	var accessToken = "TOKEN=="
+	var realmName = "master"
+	var username = "username"
+
+	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+	ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
+	ctx = context.WithValue(ctx, cs.CtContextUsername, username)
+
+	// Delete user with succces
+	{
+		mockKeycloakClient.EXPECT().DeleteAccount(accessToken, realmName).Return(nil).Times(1)
+
+		err := accountComponent.DeleteAccount(ctx)
+
+		assert.Nil(t, err)
+	}
+
+	//Error
+	{
+		mockKeycloakClient.EXPECT().DeleteAccount(accessToken, realmName).Return(fmt.Errorf("Unexpected error")).Times(1)
+		err := accountComponent.DeleteAccount(ctx)
+
+		assert.NotNil(t, err)
+	}
+}
