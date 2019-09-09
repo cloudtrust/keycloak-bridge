@@ -37,12 +37,12 @@
   version = "v1.0-rc6"
 
 [[projects]]
-  branch = "CLOUDTRUST-1646_Self-deleteAPI"
   digest = "1:c208ec31409d2ce6b646ef0f3da4489e1992ce03c0c97093757cf41652d49b7e"
   name = "github.com/cloudtrust/keycloak-client"
   packages = ["."]
   pruneopts = "UT"
-  revision = "23bde87d86817a4c80ecad870e0cbf65689229e4"
+  revision = "6cca247d50d3f17eb63502e4a5e6168175563679"
+  version = "v1.0-rc5"
 
 [[projects]]
   digest = "1:d64c893fc7d2c3d395f421b00d21f0adb8ceffc4d3c90299e732b3985ca16eb4"
