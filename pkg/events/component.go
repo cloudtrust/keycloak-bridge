@@ -2,6 +2,7 @@ package events
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/cloudtrust/common-service/database"
 	"github.com/cloudtrust/common-service/http"
@@ -19,13 +20,15 @@ type Component interface {
 type component struct {
 	db            app.EventsDBModule
 	eventDBModule database.EventsDBModule
+	logger        app.Logger
 }
 
 // NewComponent returns a component
-func NewComponent(db app.EventsDBModule, eventDBModule database.EventsDBModule) Component {
+func NewComponent(db app.EventsDBModule, eventDBModule database.EventsDBModule, logger app.Logger) Component {
 	return &component{
 		db:            db,
 		eventDBModule: eventDBModule,
+		logger:        logger,
 	}
 }
 
@@ -61,6 +64,17 @@ func (ec *component) GetUserEvents(ctx context.Context, params map[string]string
 	if val, ok := params["userID"]; !ok || len(val) == 0 {
 		return api.AuditEventsRepresentation{}, http.CreateMissingParameterError("userID")
 	}
-	ec.reportEvent(ctx, "GET_ACTIVITY", "realm_name", params["realm"], "user_id", params["userID"])
+
+	err := ec.reportEvent(ctx, "GET_ACTIVITY", database.CtEventRealmName, params["realm"], database.CtEventUserID, params["userID"])
+	if err != nil {
+		//store in the logs also the event that failed to be stored in the DB
+		m := map[string]interface{}{"event_name": "GET_ACTIVITY", database.CtEventRealmName: params["realm"], database.CtEventUserID: params["userID"]}
+		eventJSON, errMarshal := json.Marshal(m)
+		if errMarshal == nil {
+			ec.logger.Error("err", err.Error(), "event", string(eventJSON))
+		} else {
+			ec.logger.Error("err", err.Error())
+		}
+	}
 	return ec.GetEvents(ctx, params)
 }
