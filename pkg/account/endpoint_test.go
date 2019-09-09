@@ -72,3 +72,16 @@ func TestMakeUpdateAccountEndpoint(t *testing.T) {
 		assert.NotNil(t, err)
 	}
 }
+
+func TestMakeDeleteAccountEndpoint(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	mockAccountComponent := mock.NewAccountComponent(mockCtrl)
+	mockAccountComponent.EXPECT().DeleteAccount(gomock.Any()).Return(nil).Times(1)
+
+	{
+		_, err := MakeDeleteAccountEndpoint(mockAccountComponent)(context.Background(), nil)
+		assert.Nil(t, err)
+	}
+}

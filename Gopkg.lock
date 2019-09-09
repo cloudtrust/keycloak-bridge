@@ -37,12 +37,12 @@
   version = "v1.0-rc6"
 
 [[projects]]
-  digest = "1:46022f907405f86d36dbb41b6cbc81f894d06a4be72cf2e25b01004beb16163f"
+  branch = "CLOUDTRUST-1646_Self-deleteAPI"
+  digest = "1:c208ec31409d2ce6b646ef0f3da4489e1992ce03c0c97093757cf41652d49b7e"
   name = "github.com/cloudtrust/keycloak-client"
   packages = ["."]
   pruneopts = "UT"
-  revision = "509d5f3b96d2e449c2476ba3edca58bb6d027e7c"
-  version = "v1.0-rc4"
+  revision = "23bde87d86817a4c80ecad870e0cbf65689229e4"
 
 [[projects]]
   digest = "1:d64c893fc7d2c3d395f421b00d21f0adb8ceffc4d3c90299e732b3985ca16eb4"
@@ -170,7 +170,7 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:3c6faaeb500b7e6fadbe52c0b3fd62b6eed7801ed0d74bb3bd9577017df8d2f4"
+  digest = "1:4ffdbf6b310da314d1d171f356012e16157ceb43869c7e43e0f3c438c0c3d5d3"
   name = "github.com/influxdata/influxdb"
   packages = [
     "client/v2",
@@ -178,8 +178,8 @@
     "pkg/escape",
   ]
   pruneopts = "UT"
-  revision = "f8fdf652f348fc9980997fe1c972e2b79ddd13b0"
-  version = "v1.7.7"
+  revision = "ff383cdc0420217e3460dabe17db54f8557d95b6"
+  version = "v1.7.8"
 
 [[projects]]
   branch = "master"
@@ -350,12 +350,12 @@
   version = "v2.17.0"
 
 [[projects]]
-  digest = "1:c9d69a04f7fa171f50360bbcc32196b4de8ab8837ef772f6302d0140a1e3e7f6"
+  digest = "1:d7b6fd08442b8d26882fae2c859a0d63962d72a533476a217d46743ed30cb803"
   name = "github.com/uber/jaeger-lib"
   packages = ["metrics"]
   pruneopts = "UT"
-  revision = "0e30338a695636fe5bcf7301e8030ce8dd2a8530"
-  version = "v2.0.0"
+  revision = "ddfc2ce1aed400905f44214f07a8ed78a20bff44"
+  version = "v2.1.1"
 
 [[projects]]
   branch = "master"
@@ -367,7 +367,7 @@
     "pbkdf2",
   ]
   pruneopts = "UT"
-  revision = "9756ffdc24725223350eb3266ffb92590d28f278"
+  revision = "094676da4a83be5288d281081bba63a173ce6772"
 
 [[projects]]
   branch = "master"
@@ -380,7 +380,7 @@
     "publicsuffix",
   ]
   pruneopts = "UT"
-  revision = "ba9fcec4b297b415637633c5a6e8fa592e4a16c3"
+  revision = "a7b16738d86b947dd0fadb08ca2c2342b51958b6"
 
 [[projects]]
   branch = "master"
@@ -395,11 +395,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:767025ef5997eeba9a3b7fba288b8b9e71b44f0e3a2ec6dcd01f144d3dc8f173"
+  digest = "1:4ec1b768c44e807ef27625da30de71233819c218c07bd4f0337b439461ccf690"
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = "UT"
-  revision = "43c01164e93111c754a278ab423ba01063c44917"
+  revision = "f460065e899abee61eb86816fd1fd684ea5a0f26"
 
 [[projects]]
   digest = "1:8d8faad6b12a3a4c819a3f9618cb6ee1fa1cfc33253abeeea8b55336721e3405"

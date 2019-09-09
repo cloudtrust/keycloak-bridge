@@ -31,7 +31,8 @@
 
 [[constraint]]
   name = "github.com/cloudtrust/keycloak-client"
-  version = "v1.0-rc4"
+  #version = "v1.0-rc4"
+  branch = "CLOUDTRUST-1646_Self-deleteAPI"
 
 [[constraint]]
   name = "github.com/go-kit/kit"

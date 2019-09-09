@@ -15,6 +15,7 @@ type Endpoints struct {
 	UpdatePassword endpoint.Endpoint
 	GetAccount     endpoint.Endpoint
 	UpdateAccount  endpoint.Endpoint
+	DeleteAccount  endpoint.Endpoint
 }
 
 // UpdatePasswordBody is the definition of the expected body content of UpdatePassword method
@@ -29,6 +30,7 @@ type AccountComponent interface {
 	UpdatePassword(ctx context.Context, currentPassword, newPassword, confirmPassword string) error
 	GetAccount(ctx context.Context) (api.AccountRepresentation, error)
 	UpdateAccount(ctx context.Context, account api.AccountRepresentation) error
+	DeleteAccount(ctx context.Context) error
 }
 
 // MakeUpdatePasswordEndpoint makes the UpdatePassword endpoint to update connected user's own password.
@@ -69,5 +71,12 @@ func MakeUpdateAccountEndpoint(component AccountComponent) cs.Endpoint {
 		}
 
 		return nil, component.UpdateAccount(ctx, body)
+	}
+}
+
+// MakeDeleteAccountEndpoint makes the DeleteAccount endpoint to delete connected user.
+func MakeDeleteAccountEndpoint(component AccountComponent) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		return nil, component.DeleteAccount(ctx)
 	}
 }
