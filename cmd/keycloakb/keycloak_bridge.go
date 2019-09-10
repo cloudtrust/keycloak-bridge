@@ -112,9 +112,11 @@ func main() {
 
 		// Rate limiting
 		rateLimit = map[string]int{
-			"account":    c.GetInt("rate-account"),
 			"event":      c.GetInt("rate-event"),
+			"account":    c.GetInt("rate-account"),
 			"management": c.GetInt("rate-management"),
+			"statistics": c.GetInt("rate-statistics"),
+			"events":     c.GetInt("rate-events"),
 		}
 
 		corsOptions = cors.Options{
@@ -356,8 +358,8 @@ func main() {
 		statisticsComponent = statistics.MakeAuthorizationManagementComponentMW(log.With(statisticsLogger, "mw", "endpoint"), authorizationManager)(statisticsComponent)
 
 		statisticsEndpoints = statistics.Endpoints{
-			GetStatistics:      prepareEndpoint(statistics.MakeGetStatisticsEndpoint(statisticsComponent), "get_statistics", influxMetrics, statisticsLogger, tracer, rateLimit["event"]),
-			GetMigrationReport: prepareEndpoint(statistics.MakeGetMigrationReportEndpoint(statisticsComponent), "get_migration_report", influxMetrics, statisticsLogger, tracer, rateLimit["event"]),
+			GetStatistics:      prepareEndpoint(statistics.MakeGetStatisticsEndpoint(statisticsComponent), "get_statistics", influxMetrics, statisticsLogger, tracer, rateLimit["statistics"]),
+			GetMigrationReport: prepareEndpoint(statistics.MakeGetMigrationReportEndpoint(statisticsComponent), "get_migration_report", influxMetrics, statisticsLogger, tracer, rateLimit["statistics"]),
 		}
 	}
 
@@ -373,9 +375,9 @@ func main() {
 		eventsComponent = events.MakeAuthorizationManagementComponentMW(log.With(eventsLogger, "mw", "endpoint"), authorizationManager)(eventsComponent)
 
 		eventsEndpoints = events.Endpoints{
-			GetEvents:        prepareEndpoint(events.MakeGetEventsEndpoint(eventsComponent), "get_events", influxMetrics, eventsLogger, tracer, rateLimit["event"]),
-			GetEventsSummary: prepareEndpoint(events.MakeGetEventsSummaryEndpoint(eventsComponent), "get_events_summary", influxMetrics, eventsLogger, tracer, rateLimit["event"]),
-			GetUserEvents:    prepareEndpoint(events.MakeGetUserEventsEndpoint(eventsComponent), "get_user_events", influxMetrics, eventsLogger, tracer, rateLimit["event"]),
+			GetEvents:        prepareEndpoint(events.MakeGetEventsEndpoint(eventsComponent), "get_events", influxMetrics, eventsLogger, tracer, rateLimit["events"]),
+			GetEventsSummary: prepareEndpoint(events.MakeGetEventsSummaryEndpoint(eventsComponent), "get_events_summary", influxMetrics, eventsLogger, tracer, rateLimit["events"]),
+			GetUserEvents:    prepareEndpoint(events.MakeGetUserEventsEndpoint(eventsComponent), "get_user_events", influxMetrics, eventsLogger, tracer, rateLimit["events"]),
 		}
 	}
 
@@ -449,6 +451,7 @@ func main() {
 			UpdatePassword: prepareEndpoint(account.MakeUpdatePasswordEndpoint(accountComponent), "update_password", influxMetrics, accountLogger, tracer, rateLimit["account"]),
 			GetAccount:     prepareEndpoint(account.MakeGetAccountEndpoint(accountComponent), "get_account", influxMetrics, accountLogger, tracer, rateLimit["account"]),
 			UpdateAccount:  prepareEndpoint(account.MakeUpdateAccountEndpoint(accountComponent), "update_account", influxMetrics, accountLogger, tracer, rateLimit["account"]),
+			DeleteAccount:  prepareEndpoint(account.MakeDeleteAccountEndpoint(accountComponent), "delete_account", influxMetrics, accountLogger, tracer, rateLimit["account"]),
 		}
 	}
 
@@ -477,7 +480,7 @@ func main() {
 
 		var eventHandler http.Handler
 		{
-			eventHandler = event.MakeHTTPEventHandler(eventEndpoints.Endpoint)
+			eventHandler = event.MakeHTTPEventHandler(eventEndpoints.Endpoint, logger)
 			eventHandler = middleware.MakeHTTPCorrelationIDMW(idGenerator, tracer, logger, keycloakb.ComponentName, ComponentID)(eventHandler)
 			eventHandler = tracer.MakeHTTPTracingMW(keycloakb.ComponentName, "http_server_event")(eventHandler)
 			eventHandler = middleware.MakeHTTPBasicAuthenticationMW(eventExpectedAuthToken, logger)(eventHandler)
@@ -634,10 +637,12 @@ func main() {
 		var updatePasswordHandler = configureAccountHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(accountEndpoints.UpdatePassword)
 		var getAccountHandler = configureAccountHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(accountEndpoints.GetAccount)
 		var updateAccountHandler = configureAccountHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(accountEndpoints.UpdateAccount)
+		var deleteAccountHandler = configureAccountHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(accountEndpoints.DeleteAccount)
 
 		route.Path("/account/credentials/password").Methods("POST").Handler(updatePasswordHandler)
 		route.Path("/account").Methods("GET").Handler(getAccountHandler)
 		route.Path("/account").Methods("POST").Handler(updateAccountHandler)
+		route.Path("/account").Methods("DELETE").Handler(deleteAccountHandler)
 
 		c := cors.New(corsOptions)
 		errc <- http.ListenAndServe(httpAddrAccount, c.Handler(route))
@@ -703,9 +708,11 @@ func config(logger log.Logger) *viper.Viper {
 	v.SetDefault("db-config-migration-version", "")
 
 	// Rate limiting (in requests/second)
-	v.SetDefault("rate-account", 1000)
 	v.SetDefault("rate-event", 1000)
+	v.SetDefault("rate-account", 1000)
 	v.SetDefault("rate-management", 1000)
+	v.SetDefault("rate-statistics", 1000)
+	v.SetDefault("rate-events", 1000)
 
 	// Influx DB client default.
 	v.SetDefault("influx", false)

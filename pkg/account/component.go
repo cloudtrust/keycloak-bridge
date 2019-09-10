@@ -19,6 +19,7 @@ type KeycloakClient interface {
 	UpdatePassword(accessToken, realm, currentPassword, newPassword, confirmPassword string) (string, error)
 	UpdateAccount(accessToken, realm string, user kc.UserRepresentation) error
 	GetAccount(accessToken, realm string) (kc.UserRepresentation, error)
+	DeleteAccount(accessToken, realm string) error
 }
 
 // Component interface exposes methods used by the bridge API
@@ -26,6 +27,7 @@ type Component interface {
 	UpdatePassword(ctx context.Context, currentPassword, newPassword, confirmPassword string) error
 	GetAccount(ctx context.Context) (api.AccountRepresentation, error)
 	UpdateAccount(context.Context, api.AccountRepresentation) error
+	DeleteAccount(context.Context) error
 }
 
 // Component is the management component.
@@ -168,6 +170,20 @@ func (c *component) UpdateAccount(ctx context.Context, user api.AccountRepresent
 
 	//store the API call into the DB
 	_ = c.reportEvent(ctx, "UPDATE_ACCOUNT", database.CtEventRealmName, realm, database.CtEventUserID, userID, database.CtEventUsername, username)
+
+	return nil
+}
+
+func (c *component) DeleteAccount(ctx context.Context) error {
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+	var realm = ctx.Value(cs.CtContextRealm).(string)
+
+	err := c.keycloakClient.DeleteAccount(accessToken, realm)
+
+	if err != nil {
+		c.logger.Warn("err", err.Error())
+		return err
+	}
 
 	return nil
 }

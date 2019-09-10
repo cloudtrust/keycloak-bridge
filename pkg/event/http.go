@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	cs "github.com/cloudtrust/common-service"
+	"github.com/cloudtrust/common-service/log"
 	internal "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/go-kit/kit/endpoint"
 	http_transport "github.com/go-kit/kit/transport/http"
@@ -15,11 +16,11 @@ import (
 )
 
 // MakeHTTPEventHandler makes a HTTP handler for the event endpoint.
-func MakeHTTPEventHandler(e endpoint.Endpoint) *http_transport.Server {
+func MakeHTTPEventHandler(e endpoint.Endpoint, logger log.Logger) *http_transport.Server {
 	return http_transport.NewServer(e,
 		decodeHTTPRequest,
 		encodeHTTPReply,
-		http_transport.ServerErrorEncoder(errorHandler),
+		http_transport.ServerErrorEncoder(errorHandler(logger)),
 		http_transport.ServerBefore(fetchHTTPCorrelationID),
 	)
 }
@@ -102,14 +103,18 @@ func (e ErrInvalidArgument) Error() string {
 }
 
 // errorHandler encodes the reply when there is an error.
-func errorHandler(ctx context.Context, err error, w http.ResponseWriter) {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	switch errors.Cause(err).(type) {
-	case ErrInvalidArgument:
-		w.WriteHeader(http.StatusBadRequest)
-	default:
-		w.WriteHeader(http.StatusInternalServerError)
+func errorHandler(logger log.Logger) func(ctx context.Context, err error, w http.ResponseWriter) {
+	return func(ctx context.Context, err error, w http.ResponseWriter) {
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		switch errors.Cause(err).(type) {
+		case ErrInvalidArgument:
+			logger.Error("errorHandler", http.StatusBadRequest, "msg", err.Error())
+			w.WriteHeader(http.StatusBadRequest)
+		default:
+			logger.Error("errorHandler", http.StatusInternalServerError, "msg", err.Error())
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+
+		json.NewEncoder(w).Encode(map[string]interface{}{"error": err.Error()})
 	}
-	// no leakage issue as this is done internally between the bridge and keycloak
-	w.Write([]byte(internal.ComponentName + "." + err.Error()))
 }
