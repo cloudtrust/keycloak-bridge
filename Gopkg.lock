@@ -170,13 +170,7 @@
   version = "v1.0.0"
 
 [[projects]]
-<<<<<<< HEAD
-  digest = "1:2629521d27f3b04ce4d524cb52a25fdc77745071239c91d6fe9a7ce10131365a"
-||||||| merged common ancestors
-  digest = "1:3c6faaeb500b7e6fadbe52c0b3fd62b6eed7801ed0d74bb3bd9577017df8d2f4"
-=======
   digest = "1:4ffdbf6b310da314d1d171f356012e16157ceb43869c7e43e0f3c438c0c3d5d3"
->>>>>>> origin
   name = "github.com/influxdata/influxdb"
   packages = [
     "client/v2",
