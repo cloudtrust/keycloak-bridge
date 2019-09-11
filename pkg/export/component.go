@@ -83,13 +83,13 @@ func (c *component) StoreAndExport(ctx context.Context) (map[string]interface{},
 	// Store
 	var data, err = json.Marshal(realmsMap)
 	if err != nil {
-		return nil, errors.Wrapf(err, internal.MsgErrCannotMarshal+"."+internal.Config+".%s.%s", c.componentName, c.componentVersion)
+		return nil, errors.Wrapf(err, internal.MsgErrCannotMarshal+"."+internal.Config+"."+c.componentName+"."+c.componentVersion)
 	}
 
 	err = c.s.Save(c.componentName, c.componentVersion, data)
 
 	if err != nil {
-		return nil, errors.Wrapf(err, internal.MsgErrCannotSaveConfigInDB+".%s.%s", c.componentName, c.componentVersion)
+		return nil, errors.Wrapf(err, internal.MsgErrCannotSaveConfigInDB+"."+c.componentName+"."+c.componentVersion)
 	}
 
 	return realmsMap, nil

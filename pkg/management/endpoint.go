@@ -140,10 +140,11 @@ func MakeCreateUserEndpoint(managementComponent ManagementComponent) cs.Endpoint
 		}
 
 		url, err := convertLocationURL(keycloakLocation, m["scheme"], m["host"])
+		// TODO: log the error and the unhappy url
 
 		return LocationHeader{
 			URL: url,
-		}, err
+		}, nil
 	}
 }
 
@@ -440,10 +441,11 @@ func MakeCreateClientRoleEndpoint(managementComponent ManagementComponent) cs.En
 		}
 
 		url, err := convertLocationURL(keycloakLocation, m["scheme"], m["host"])
+		// TODO: log the error and the unhappy url
 
 		return LocationHeader{
 			URL: url,
-		}, err
+		}, nil
 	}
 }
 
