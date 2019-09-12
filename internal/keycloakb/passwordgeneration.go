@@ -107,3 +107,13 @@ func GeneratePasswordFromKeycloakPolicy(policy string) (string, error) {
 	return pwd, nil
 
 }
+
+// GenerateInitialCode generates a code of the format UpperCase +  digits + LowerCase
+func GenerateInitialCode(nbUpperCase int, nbDigits int, nbLowerCase int) string {
+	var pwdElems []string
+	pwdElems = appendCharacters(pwdElems, upperCase, nbUpperCase)
+	pwdElems = appendCharacters(pwdElems, digits, nbDigits)
+	pwdElems = appendCharacters(pwdElems, lowerCase, nbLowerCase)
+	pwd := strings.Join(pwdElems, "")
+	return pwd
+}

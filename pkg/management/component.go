@@ -534,21 +534,30 @@ func (c *component) ResetPassword(ctx context.Context, realmName string, userID 
 	credKc.Type = &passwordType
 
 	if password.Value == nil {
-		// no password value was provided; a new password, that respects the password policy of the realm, will be generated
-		var minLength int = 8
+		// the commented code respects the following scenario: if the realm has a pwd policy, the generated pwd respects this policy
+		/*
+			// no password value was provided; a new password, that respects the password policy of the realm, will be generated
+			var minLength int = 8
 
-		//obtain password policy
-		realmKc, err := c.keycloakClient.GetRealm(accessToken, realmName)
-		if err == nil {
-			// generate password according to the policy of the realm
-			pwd, err = internal.GeneratePassword(realmKc.PasswordPolicy, minLength, userID)
-			if err != nil {
-				return pwd, err
+			//obtain password policy
+			realmKc, err := c.keycloakClient.GetRealm(accessToken, realmName)
+			if err == nil {
+				// generate password according to the policy of the realm
+				pwd, err = internal.GeneratePassword(realmKc.PasswordPolicy, minLength, userID)
+				if err != nil {
+					return pwd, err
+				}
+				credKc.Value = &pwd
+			} else {
+				return "", err
 			}
-			credKc.Value = &pwd
-		} else {
-			return "", err
-		}
+		*/
+		// generate a password of the format UpperCase + 6 digits + LowerCase
+		var nbUpperCase = 1
+		var nbDigits = 6
+		var nbLowerCase = 1
+		pwd = internal.GenerateInitialCode(nbUpperCase, nbDigits, nbLowerCase)
+		credKc.Value = &pwd
 	} else {
 		credKc.Value = password.Value
 	}
