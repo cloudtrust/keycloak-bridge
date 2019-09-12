@@ -5,8 +5,9 @@ import (
 	"encoding/json"
 
 	cs "github.com/cloudtrust/common-service"
-	"github.com/cloudtrust/common-service/http"
+	errrorhandler "github.com/cloudtrust/common-service/errors"
 	api "github.com/cloudtrust/keycloak-bridge/api/account"
+	internal "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/go-kit/kit/endpoint"
 )
 
@@ -41,7 +42,7 @@ func MakeUpdatePasswordEndpoint(component AccountComponent) cs.Endpoint {
 
 		err := json.Unmarshal([]byte(m["body"]), &body)
 		if err != nil {
-			return nil, http.CreateBadRequestError("Invalid body")
+			return nil, errrorhandler.CreateBadRequestError(internal.MsgErrInvalidParam + "." + internal.Body)
 		}
 
 		return nil, component.UpdatePassword(ctx, body.CurrentPassword, body.NewPassword, body.ConfirmPassword)
@@ -63,11 +64,11 @@ func MakeUpdateAccountEndpoint(component AccountComponent) cs.Endpoint {
 
 		err := json.Unmarshal([]byte(m["body"]), &body)
 		if err != nil {
-			return nil, http.CreateBadRequestError("Invalid body")
+			return nil, errrorhandler.CreateBadRequestError(internal.MsgErrInvalidParam + "." + internal.Body)
 		}
 
 		if err = body.Validate(); err != nil {
-			return nil, http.CreateBadRequestError(err.Error())
+			return nil, errrorhandler.CreateBadRequestError(err.Error())
 		}
 
 		return nil, component.UpdateAccount(ctx, body)

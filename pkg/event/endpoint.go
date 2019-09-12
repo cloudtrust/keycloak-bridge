@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	cs "github.com/cloudtrust/common-service"
+	internal "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/go-kit/kit/endpoint"
 )
 
@@ -20,7 +21,7 @@ func MakeEventEndpoint(c MuxComponent) cs.Endpoint {
 		case Request:
 			return nil, c.Event(ctx, r.Type, r.Object)
 		default:
-			return nil, fmt.Errorf("request has wrong type: %T", req)
+			return nil, fmt.Errorf(internal.MsgErrWrongTypeRequest+".%T", req)
 		}
 	}
 }

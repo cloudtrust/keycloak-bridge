@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 
 	"github.com/cloudtrust/common-service/database"
-	"github.com/cloudtrust/common-service/http"
+	errorhandler "github.com/cloudtrust/common-service/errors"
 	api "github.com/cloudtrust/keycloak-bridge/api/events"
 	app "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 )
@@ -59,10 +59,10 @@ func (ec *component) GetEventsSummary(ctx context.Context) (api.EventSummaryRepr
 // Get all events related to a given realm and a given user
 func (ec *component) GetUserEvents(ctx context.Context, params map[string]string) (api.AuditEventsRepresentation, error) {
 	if val, ok := params["realm"]; !ok || len(val) == 0 {
-		return api.AuditEventsRepresentation{}, http.CreateMissingParameterError("realm")
+		return api.AuditEventsRepresentation{}, errorhandler.CreateMissingParameterError(app.Realm)
 	}
 	if val, ok := params["userID"]; !ok || len(val) == 0 {
-		return api.AuditEventsRepresentation{}, http.CreateMissingParameterError("userID")
+		return api.AuditEventsRepresentation{}, errorhandler.CreateMissingParameterError(app.UserId)
 	}
 
 	err := ec.reportEvent(ctx, "GET_ACTIVITY", database.CtEventRealmName, params["realm"], database.CtEventUserID, params["userID"])
