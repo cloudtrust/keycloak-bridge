@@ -8,7 +8,7 @@ import (
 
 	cs "github.com/cloudtrust/common-service"
 	"github.com/cloudtrust/common-service/database"
-	commonhttp "github.com/cloudtrust/common-service/http"
+	errorhandler "github.com/cloudtrust/common-service/errors"
 	api "github.com/cloudtrust/keycloak-bridge/api/account"
 	internal "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	kc "github.com/cloudtrust/keycloak-client"
@@ -57,40 +57,29 @@ func (c *component) UpdatePassword(ctx context.Context, currentPassword, newPass
 	var username = ctx.Value(cs.CtContextUsername).(string)
 
 	if currentPassword == newPassword || newPassword != confirmPassword {
-		return commonhttp.Error{
-			Status: http.StatusBadRequest,
+		return errorhandler.Error{
+			Status:  http.StatusBadRequest,
+			Message: internal.ComponentName + "." + "invalidValues",
 		}
 	}
 
 	_, err := c.keycloakClient.UpdatePassword(accessToken, realm, currentPassword, newPassword, confirmPassword)
 
-	var updateError error = nil
-	if err != nil {
-		switch err.Error() {
-		case "invalidPasswordExistingMessage":
-			updateError = commonhttp.Error{
-				Status:  http.StatusBadRequest,
-				Message: err.Error()}
-		default:
-			updateError = err
-		}
-	}
-
 	//store the API call into the DB
-	err = c.reportEvent(ctx, "PASSWORD_RESET", database.CtEventRealmName, realm, database.CtEventUserID, userID, database.CtEventUsername, username)
-	if err != nil {
+	errEvent := c.reportEvent(ctx, "PASSWORD_RESET", database.CtEventRealmName, realm, database.CtEventUserID, userID, database.CtEventUsername, username)
+	if errEvent != nil {
 		//store in the logs also the event that failed to be stored in the DB
 		m := map[string]interface{}{"event_name": "PASSWORD_RESET", database.CtEventRealmName: realm, database.CtEventUserID: userID, database.CtEventUsername: username}
 		eventJSON, errMarshal := json.Marshal(m)
 		if errMarshal == nil {
-			c.logger.Error("err", err.Error(), "event", string(eventJSON))
+			c.logger.Error("err", errEvent.Error(), "event", string(eventJSON))
 		} else {
-			c.logger.Error("err", err.Error())
+			c.logger.Error("err", errEvent.Error())
 		}
 
 	}
 
-	return updateError
+	return err
 }
 
 func (c *component) GetAccount(ctx context.Context) (api.AccountRepresentation, error) {
