@@ -11,7 +11,7 @@ import (
 
 	cs "github.com/cloudtrust/common-service"
 	"github.com/cloudtrust/common-service/database"
-	commonhttp "github.com/cloudtrust/common-service/http"
+	commonhttp "github.com/cloudtrust/common-service/errors"
 	"github.com/cloudtrust/common-service/log"
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
 	"github.com/cloudtrust/keycloak-bridge/pkg/management/mock"

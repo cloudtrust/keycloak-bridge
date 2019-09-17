@@ -9,6 +9,7 @@ import (
 
 	cs "github.com/cloudtrust/common-service"
 	"github.com/cloudtrust/common-service/log"
+	internal "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/go-kit/kit/endpoint"
 	http_transport "github.com/go-kit/kit/transport/http"
 	"github.com/pkg/errors"
@@ -52,7 +53,7 @@ func decodeHTTPRequest(_ context.Context, r *http.Request) (res interface{}, err
 	{
 		var err = json.NewDecoder(r.Body).Decode(&request)
 		if err != nil {
-			return nil, errors.Wrap(err, "could not decode JSON request")
+			return nil, errors.Wrap(err, internal.MsgErrInvalidJSONRequest)
 		}
 	}
 
@@ -62,7 +63,7 @@ func decodeHTTPRequest(_ context.Context, r *http.Request) (res interface{}, err
 		bEvent, err = base64.StdEncoding.DecodeString(request.Object)
 
 		if err != nil {
-			return nil, errors.Wrap(err, "could not decode Base64 object from request")
+			return nil, errors.Wrap(err, internal.MsgErrInvalidBase64Object)
 		}
 	}
 
@@ -70,14 +71,14 @@ func decodeHTTPRequest(_ context.Context, r *http.Request) (res interface{}, err
 	{
 		if !(objType == "AdminEvent" || objType == "Event") {
 			var err = ErrInvalidArgument{InvalidParam: "type"}
-			return nil, errors.Wrap(err, "could not decode Base64 object from request")
+			return nil, errors.Wrap(err, internal.MsgErrInvalidBase64Object)
 		}
 	}
 
 	// Check valid buffer (at least 4 bytes)
 	if len(bEvent) < 4 {
 		var err = ErrInvalidArgument{InvalidParam: "obj"}
-		return nil, errors.Wrap(err, "invalid flatbuffer length")
+		return nil, errors.Wrap(err, internal.MsgErrInvalidLength+"."+internal.Flatbuffer)
 	}
 
 	return Request{
@@ -98,7 +99,7 @@ type ErrInvalidArgument struct {
 }
 
 func (e ErrInvalidArgument) Error() string {
-	return fmt.Sprintf("Invalid argument: %s", e.InvalidParam)
+	return fmt.Sprintf("invalidArgument.%s", e.InvalidParam)
 }
 
 // errorHandler encodes the reply when there is an error.

@@ -18,11 +18,12 @@
   version = "2018.01.18"
 
 [[projects]]
-  digest = "1:9c43c695f16fb18341e47b69e74745223e472d4b9ddf9eb8af1c9dd4c03e3fc4"
+  digest = "1:a29f27a0e74a248e39b61be9ed5ca3fc6e0450b94802338b15cd00f99489d7cc"
   name = "github.com/cloudtrust/common-service"
   packages = [
     ".",
     "database",
+    "errors",
     "http",
     "idgenerator",
     "log",
@@ -33,16 +34,16 @@
     "tracking",
   ]
   pruneopts = "UT"
-  revision = "60d9ac8dc46cb48dfbafe273fe2e04aa3c2b555c"
-  version = "v1.0-rc6"
+  revision = "bb18af383d1e95e6ced6966fb39f04594959df69"
+  version = "v1.0-rc7"
 
 [[projects]]
-  digest = "1:c208ec31409d2ce6b646ef0f3da4489e1992ce03c0c97093757cf41652d49b7e"
+  digest = "1:800dc367e584af6b6b33521cbd55b88a0614390962cd31d750301074b4730c8a"
   name = "github.com/cloudtrust/keycloak-client"
   packages = ["."]
   pruneopts = "UT"
-  revision = "6cca247d50d3f17eb63502e4a5e6168175563679"
-  version = "v1.0-rc5"
+  revision = "09bdf1babeab38bfd9c839bf060b5ac77c6f2fee"
+  version = "v1.0-rc6"
 
 [[projects]]
   digest = "1:d64c893fc7d2c3d395f421b00d21f0adb8ceffc4d3c90299e732b3985ca16eb4"
@@ -324,7 +325,7 @@
   version = "v1.4.0"
 
 [[projects]]
-  digest = "1:042f4318540f23144e86fece78332544c90aab9d3acc477f24623ffe3642ae31"
+  digest = "1:f53b962835b372abf1166fd3c8c19002960e75d7a75336257cbc27e36fa67899"
   name = "github.com/uber/jaeger-client-go"
   packages = [
     ".",
@@ -346,8 +347,8 @@
     "utils",
   ]
   pruneopts = "UT"
-  revision = "85825f3f682a6fb24b12a4604be2a101432c7534"
-  version = "v2.17.0"
+  revision = "258182f41c1950c24e0acd5407abd810b6174d87"
+  version = "v2.18.0"
 
 [[projects]]
   digest = "1:d7b6fd08442b8d26882fae2c859a0d63962d72a533476a217d46743ed30cb803"
@@ -367,7 +368,7 @@
     "pbkdf2",
   ]
   pruneopts = "UT"
-  revision = "094676da4a83be5288d281081bba63a173ce6772"
+  revision = "227b76d455e791cb042b03e633e2f7fbcfdf74a5"
 
 [[projects]]
   branch = "master"
@@ -380,7 +381,7 @@
     "publicsuffix",
   ]
   pruneopts = "UT"
-  revision = "a7b16738d86b947dd0fadb08ca2c2342b51958b6"
+  revision = "24e19bdeb0f2d062d8e2640d50a7aaf2a7f80e7a"
 
 [[projects]]
   branch = "master"
@@ -395,11 +396,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:4ec1b768c44e807ef27625da30de71233819c218c07bd4f0337b439461ccf690"
+  digest = "1:6465a0bb4bc14250ff15eeef30d436baa62aabccb803306a047865790fcf5297"
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = "UT"
-  revision = "f460065e899abee61eb86816fd1fd684ea5a0f26"
+  revision = "bc967efca4b87fb45e946a3ea4cb891883404fd0"
 
 [[projects]]
   digest = "1:8d8faad6b12a3a4c819a3f9618cb6ee1fa1cfc33253abeeea8b55336721e3405"
@@ -500,6 +501,7 @@
   input-imports = [
     "github.com/cloudtrust/common-service",
     "github.com/cloudtrust/common-service/database",
+    "github.com/cloudtrust/common-service/errors",
     "github.com/cloudtrust/common-service/http",
     "github.com/cloudtrust/common-service/idgenerator",
     "github.com/cloudtrust/common-service/log",
