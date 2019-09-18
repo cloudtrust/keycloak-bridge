@@ -64,6 +64,10 @@ func (c *component) UpdatePassword(ctx context.Context, currentPassword, newPass
 	}
 
 	_, err := c.keycloakClient.UpdatePassword(accessToken, realm, currentPassword, newPassword, confirmPassword)
+	if err != nil {
+		c.logger.Warn("err", err.Error())
+		return err
+	}
 
 	//store the API call into the DB
 	errEvent := c.reportEvent(ctx, "PASSWORD_RESET", database.CtEventRealmName, realm, database.CtEventUserID, userID, database.CtEventUsername, username)
