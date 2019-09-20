@@ -38,12 +38,12 @@
   version = "v1.0-rc7"
 
 [[projects]]
-  digest = "1:800dc367e584af6b6b33521cbd55b88a0614390962cd31d750301074b4730c8a"
+  digest = "1:b7fe35bbcb6bcec1370a98330b8aa1f7effd146b47afd887df1aa8a19e3d9984"
   name = "github.com/cloudtrust/keycloak-client"
   packages = ["."]
   pruneopts = "UT"
-  revision = "09bdf1babeab38bfd9c839bf060b5ac77c6f2fee"
-  version = "v1.0-rc6"
+  revision = "7227ae18a9e2c8a51c9b998c65af3d225b83560b"
+  version = "v1.0-rc7"
 
 [[projects]]
   digest = "1:d64c893fc7d2c3d395f421b00d21f0adb8ceffc4d3c90299e732b3985ca16eb4"
@@ -301,12 +301,12 @@
   version = "v1.1.0"
 
 [[projects]]
-  digest = "1:c1b1102241e7f645bc8e0c22ae352e8f0dc6484b6cb4d132fa9f24174e0119e2"
+  digest = "1:524b71991fc7d9246cc7dc2d9e0886ccb97648091c63e30eef619e6862c955dd"
   name = "github.com/spf13/pflag"
   packages = ["."]
   pruneopts = "UT"
-  revision = "298182f68c66c05229eb03ac171abe6e309ee79a"
-  version = "v1.0.3"
+  revision = "2e9d26c8c37aae03e3f9d4e90b7116f5accb7cab"
+  version = "v1.0.5"
 
 [[projects]]
   digest = "1:11118bd196646c6515fea3d6c43f66162833c6ae4939bfb229b9956d91c6cf17"
@@ -325,7 +325,7 @@
   version = "v1.4.0"
 
 [[projects]]
-  digest = "1:f53b962835b372abf1166fd3c8c19002960e75d7a75336257cbc27e36fa67899"
+  digest = "1:45ee71c24ead976e38a32f00cdbb9d8f1067bef17134bf3fa606fa3d67e6236f"
   name = "github.com/uber/jaeger-client-go"
   packages = [
     ".",
@@ -347,8 +347,8 @@
     "utils",
   ]
   pruneopts = "UT"
-  revision = "258182f41c1950c24e0acd5407abd810b6174d87"
-  version = "v2.18.0"
+  revision = "9a8d51c6717212c22073c8a3f8fe6a69d13559f8"
+  version = "v2.18.1"
 
 [[projects]]
   digest = "1:d7b6fd08442b8d26882fae2c859a0d63962d72a533476a217d46743ed30cb803"
@@ -381,7 +381,7 @@
     "publicsuffix",
   ]
   pruneopts = "UT"
-  revision = "24e19bdeb0f2d062d8e2640d50a7aaf2a7f80e7a"
+  revision = "a8b05e9114ab0cb08faec337c959aed24b68bf50"
 
 [[projects]]
   branch = "master"
@@ -396,11 +396,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:6465a0bb4bc14250ff15eeef30d436baa62aabccb803306a047865790fcf5297"
+  digest = "1:ec9d9815894f067c7878330735b9e4dfa6dc61234d2ba136b60a1436d6b5ea94"
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = "UT"
-  revision = "bc967efca4b87fb45e946a3ea4cb891883404fd0"
+  revision = "0c1ff786ef13daa914a3351c5e6b0321aed5960e"
 
 [[projects]]
   digest = "1:8d8faad6b12a3a4c819a3f9618cb6ee1fa1cfc33253abeeea8b55336721e3405"
