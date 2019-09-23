@@ -84,3 +84,19 @@ func TestGeneratePassword(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, len(pwd), minLength)
 }
+
+func TestGenerateInitialCode(t *testing.T) {
+	var noupperCase = 1
+	var nolowerCase = 1
+	var nodigits = 6
+
+	regDigits := regexp.MustCompile("[0-9]")
+	regUpperCase := regexp.MustCompile("[A-Z]")
+	regLowerCase := regexp.MustCompile("[a-z]")
+
+	pwd := GenerateInitialCode(noupperCase, nodigits, nolowerCase)
+	assert.Equal(t, len(pwd), nodigits+nolowerCase+noupperCase)
+	assert.Equal(t, len(regDigits.FindAllStringIndex(pwd, -1)), nodigits)
+	assert.Equal(t, len(regLowerCase.FindAllStringIndex(pwd, -1)), nolowerCase)
+	assert.Equal(t, len(regUpperCase.FindAllStringIndex(pwd, -1)), noupperCase)
+}

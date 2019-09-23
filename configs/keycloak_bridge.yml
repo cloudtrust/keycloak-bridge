@@ -90,7 +90,11 @@ events-db: false
 
 # Rate limiting in requests/second.
 rate-event: 1000
+rate-account: 1000
 rate-management: 1000
+rate-statistics: 1000
+rate-events: 1000
+
 
 # Influx DB configs
 influx: false

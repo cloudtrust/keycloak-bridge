@@ -2,9 +2,10 @@ package events
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/cloudtrust/common-service/database"
-	"github.com/cloudtrust/common-service/http"
+	errorhandler "github.com/cloudtrust/common-service/errors"
 	api "github.com/cloudtrust/keycloak-bridge/api/events"
 	app "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 )
@@ -19,13 +20,15 @@ type Component interface {
 type component struct {
 	db            app.EventsDBModule
 	eventDBModule database.EventsDBModule
+	logger        app.Logger
 }
 
 // NewComponent returns a component
-func NewComponent(db app.EventsDBModule, eventDBModule database.EventsDBModule) Component {
+func NewComponent(db app.EventsDBModule, eventDBModule database.EventsDBModule, logger app.Logger) Component {
 	return &component{
 		db:            db,
 		eventDBModule: eventDBModule,
+		logger:        logger,
 	}
 }
 
@@ -56,11 +59,22 @@ func (ec *component) GetEventsSummary(ctx context.Context) (api.EventSummaryRepr
 // Get all events related to a given realm and a given user
 func (ec *component) GetUserEvents(ctx context.Context, params map[string]string) (api.AuditEventsRepresentation, error) {
 	if val, ok := params["realm"]; !ok || len(val) == 0 {
-		return api.AuditEventsRepresentation{}, http.CreateMissingParameterError("realm")
+		return api.AuditEventsRepresentation{}, errorhandler.CreateMissingParameterError(app.Realm)
 	}
 	if val, ok := params["userID"]; !ok || len(val) == 0 {
-		return api.AuditEventsRepresentation{}, http.CreateMissingParameterError("userID")
+		return api.AuditEventsRepresentation{}, errorhandler.CreateMissingParameterError(app.UserId)
 	}
-	ec.reportEvent(ctx, "GET_ACTIVITY", "realm_name", params["realm"], "user_id", params["userID"])
+
+	err := ec.reportEvent(ctx, "GET_ACTIVITY", database.CtEventRealmName, params["realm"], database.CtEventUserID, params["userID"])
+	if err != nil {
+		//store in the logs also the event that failed to be stored in the DB
+		m := map[string]interface{}{"event_name": "GET_ACTIVITY", database.CtEventRealmName: params["realm"], database.CtEventUserID: params["userID"]}
+		eventJSON, errMarshal := json.Marshal(m)
+		if errMarshal == nil {
+			ec.logger.Error("err", err.Error(), "event", string(eventJSON))
+		} else {
+			ec.logger.Error("err", err.Error())
+		}
+	}
 	return ec.GetEvents(ctx, params)
 }

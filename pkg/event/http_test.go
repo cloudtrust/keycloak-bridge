@@ -14,6 +14,7 @@ import (
 	"time"
 
 	cs "github.com/cloudtrust/common-service"
+	"github.com/cloudtrust/common-service/log"
 	"github.com/cloudtrust/keycloak-bridge/api/event/fb"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/cloudtrust/keycloak-bridge/pkg/event/mock"
@@ -26,8 +27,9 @@ func TestHTTPEventHandler(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 	var mockComponent = mock.NewMuxComponent(mockCtrl)
+	var mockLogger = log.NewNopLogger()
 
-	var eventHandler = MakeHTTPEventHandler(keycloakb.ToGoKitEndpoint(MakeEventEndpoint(mockComponent)))
+	var eventHandler = MakeHTTPEventHandler(keycloakb.ToGoKitEndpoint(MakeEventEndpoint(mockComponent)), mockLogger)
 
 	rand.Seed(time.Now().UnixNano())
 	var uid = rand.Int63()
@@ -55,8 +57,9 @@ func TestHTTPErrorHandler(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 	var mockComponent = mock.NewMuxComponent(mockCtrl)
+	var mockLogger = log.NewNopLogger()
 
-	var eventHandler = MakeHTTPEventHandler(keycloakb.ToGoKitEndpoint(MakeEventEndpoint(mockComponent)))
+	var eventHandler = MakeHTTPEventHandler(keycloakb.ToGoKitEndpoint(MakeEventEndpoint(mockComponent)), mockLogger)
 
 	rand.Seed(time.Now().UnixNano())
 	var uid = rand.Int63()
@@ -159,8 +162,9 @@ func TestFetchHTTPCorrelationID(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 	var mockComponent = mock.NewMuxComponent(mockCtrl)
+	var mockLogger = log.NewNopLogger()
 
-	var eventHandler = MakeHTTPEventHandler(keycloakb.ToGoKitEndpoint(MakeEventEndpoint(mockComponent)))
+	var eventHandler = MakeHTTPEventHandler(keycloakb.ToGoKitEndpoint(MakeEventEndpoint(mockComponent)), mockLogger)
 
 	rand.Seed(time.Now().UnixNano())
 	var corrID = strconv.FormatUint(rand.Uint64(), 10)

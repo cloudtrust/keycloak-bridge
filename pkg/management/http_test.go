@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	commonhttp "github.com/cloudtrust/common-service/http"
+	commonhttp "github.com/cloudtrust/common-service/errors"
 	"github.com/cloudtrust/common-service/log"
 	"github.com/cloudtrust/common-service/security"
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
@@ -157,7 +157,7 @@ func TestHTTPErrorHandler(t *testing.T) {
 
 		assert.Nil(t, err)
 		assert.Equal(t, http.StatusForbidden, res.StatusCode)
-		assert.Equal(t, http.NoBody, res.Body)
+
 	}
 
 	// Bad request.
@@ -201,7 +201,6 @@ func TestHTTPErrorHandler(t *testing.T) {
 
 		assert.Nil(t, err)
 		assert.Equal(t, http.StatusNotFound, res.StatusCode)
-		assert.Equal(t, http.NoBody, res.Body)
 	}
 
 	// HTTPResponse Error

@@ -1,4 +1,4 @@
-package account_api
+package account
 
 import (
 	"testing"

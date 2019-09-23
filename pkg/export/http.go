@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	cs "github.com/cloudtrust/common-service"
+	internal "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/go-kit/kit/endpoint"
 	http_transport "github.com/go-kit/kit/transport/http"
 	"github.com/pkg/errors"
@@ -43,7 +44,7 @@ func encodeHTTPReply(_ context.Context, w http.ResponseWriter, res interface{}) 
 	var reply = res.(map[string]interface{})
 	var data, err = json.MarshalIndent(reply, "", "  ")
 	if err != nil {
-		return errors.Wrap(err, "could not marshal response")
+		return errors.Wrap(err, internal.MsgErrCannotMarshal+internal.Response)
 	}
 
 	w.WriteHeader(http.StatusOK)
@@ -55,5 +56,5 @@ func encodeHTTPReply(_ context.Context, w http.ResponseWriter, res interface{}) 
 func errorHandler(ctx context.Context, err error, w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "application/octet-stream")
 	w.WriteHeader(http.StatusInternalServerError)
-	w.Write([]byte(err.Error()))
+	w.Write([]byte(internal.ComponentName + "." + err.Error()))
 }
