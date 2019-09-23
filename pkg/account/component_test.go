@@ -76,8 +76,12 @@ func TestUpdatePasswordWrongPwd(t *testing.T) {
 	mockKeycloakAccountClient := mock.NewKeycloakAccountClient(mockCtrl)
 	mockEventDBModule := mock.NewEventsDBModule(mockCtrl)
 	mockLogger := mock.NewLogger(mockCtrl)
+<<<<<<< HEAD
 	mockConfigDBModule := mock.NewConfigurationDBModule(mockCtrl)
 	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigDBModule, mockLogger)
+=======
+	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockLogger)
+>>>>>>> fix merge with master
 
 	accessToken := "access token"
 	realm := "sample realm"
@@ -124,7 +128,11 @@ func TestUpdateAccount(t *testing.T) {
 	mockConfigDBModule := mock.NewConfigurationDBModule(mockCtrl)
 	var mockLogger = log.NewNopLogger()
 
+<<<<<<< HEAD
 	var accountComponent = NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigDBModule, mockLogger)
+=======
+	var accountComponent = NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockLogger)
+>>>>>>> fix merge with master
 
 	accessToken := "access token"
 	realmName := "master"
@@ -300,7 +308,11 @@ func TestGetUser(t *testing.T) {
 	mockConfigDBModule := mock.NewConfigurationDBModule(mockCtrl)
 	var mockLogger = log.NewNopLogger()
 
+<<<<<<< HEAD
 	var accountComponent = NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigDBModule, mockLogger)
+=======
+	var accountComponent = NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockLogger)
+>>>>>>> fix merge with master
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -377,7 +389,11 @@ func TestDeleteUser(t *testing.T) {
 	mockConfigDBModule := mock.NewConfigurationDBModule(mockCtrl)
 	var mockLogger = log.NewNopLogger()
 
+<<<<<<< HEAD
 	var accountComponent = NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigDBModule, mockLogger)
+=======
+	var accountComponent = NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockLogger)
+>>>>>>> fix merge with master
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -506,6 +522,7 @@ func TestGetCredentialRegistrators(t *testing.T) {
 	{
 		mockConfigDBModule.EXPECT().GetConfiguration(ctx, currentRealm).Return("", nil).Times(1)
 
+<<<<<<< HEAD
 		resCredTypes, err := component.GetCredentialRegistrators(ctx)
 		assert.Nil(t, err)
 		assert.Equal(t, []string{}, resCredTypes)
@@ -513,6 +530,8 @@ func TestGetCredentialRegistrators(t *testing.T) {
 
 	// Get credential types with succces
 	{
+=======
+>>>>>>> fix merge with master
 		mockKeycloakAccountClient.EXPECT().GetCredentialRegistrators(accessToken, currentRealm).Return(credTypes, nil).Times(1)
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
