@@ -32,7 +32,7 @@ type KeycloakAccountClient interface {
 type Component interface {
 	UpdatePassword(ctx context.Context, currentPassword, newPassword, confirmPassword string) error
 	GetCredentials(ctx context.Context) ([]api.CredentialRepresentation, error)
-	GetCredentialTypes(ctx context.Context) ([]string, error)
+	GetCredentialRegistrators(ctx context.Context) ([]string, error)
 	UpdateLabelCredential(ctx context.Context, credentialID string, label string) error
 	DeleteCredential(ctx context.Context, credentialID string) error
 	MoveCredential(ctx context.Context, credentialID string, previousCredentialID string) error
@@ -219,7 +219,7 @@ func (c *component) GetCredentials(ctx context.Context) ([]api.CredentialReprese
 	return credentialsRep, err
 }
 
-func (c *component) GetCredentialTypes(ctx context.Context) ([]string, error) {
+func (c *component) GetCredentialRegistrators(ctx context.Context) ([]string, error) {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 	var currentRealm = ctx.Value(cs.CtContextRealm).(string)
 

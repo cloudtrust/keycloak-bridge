@@ -456,7 +456,7 @@ func TestGetCredentials(t *testing.T) {
 	}
 }
 
-func TestGetCredentialTypes(t *testing.T) {
+func TestGetCredentialRegistrators(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 
@@ -479,7 +479,7 @@ func TestGetCredentialTypes(t *testing.T) {
 		ctx = context.WithValue(ctx, cs.CtContextRealm, currentRealm)
 		ctx = context.WithValue(ctx, cs.CtContextUserID, currentUserID)
 
-		resCredTypes, err := component.GetCredentialTypes(ctx)
+		resCredTypes, err := component.GetCredentialRegistrators(ctx)
 
 		assert.Nil(t, err)
 		assert.Equal(t, credTypes, resCredTypes)
@@ -493,7 +493,7 @@ func TestGetCredentialTypes(t *testing.T) {
 		ctx = context.WithValue(ctx, cs.CtContextRealm, currentRealm)
 		ctx = context.WithValue(ctx, cs.CtContextUserID, currentUserID)
 
-		_, err := component.GetCredentialTypes(ctx)
+		_, err := component.GetCredentialRegistrators(ctx)
 
 		assert.NotNil(t, err)
 	}

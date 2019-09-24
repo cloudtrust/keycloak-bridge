@@ -13,15 +13,15 @@ import (
 
 // Endpoints wraps a service behind a set of endpoints.
 type Endpoints struct {
-	UpdatePassword        endpoint.Endpoint
-	GetCredentials        endpoint.Endpoint
-	GetCredentialTypes    endpoint.Endpoint
-	UpdateLabelCredential endpoint.Endpoint
-	DeleteCredential      endpoint.Endpoint
-	MoveCredential        endpoint.Endpoint
-	GetAccount            endpoint.Endpoint
-	UpdateAccount         endpoint.Endpoint
-	DeleteAccount         endpoint.Endpoint
+	UpdatePassword            endpoint.Endpoint
+	GetCredentials            endpoint.Endpoint
+	GetCredentialRegistrators endpoint.Endpoint
+	UpdateLabelCredential     endpoint.Endpoint
+	DeleteCredential          endpoint.Endpoint
+	MoveCredential            endpoint.Endpoint
+	GetAccount                endpoint.Endpoint
+	UpdateAccount             endpoint.Endpoint
+	DeleteAccount             endpoint.Endpoint
 }
 
 // UpdatePasswordBody is the definition of the expected body content of UpdatePassword method
@@ -35,7 +35,7 @@ type UpdatePasswordBody struct {
 type AccountComponent interface {
 	UpdatePassword(ctx context.Context, currentPassword, newPassword, confirmPassword string) error
 	GetCredentials(ctx context.Context) ([]api.CredentialRepresentation, error)
-	GetCredentialTypes(ctx context.Context) ([]string, error)
+	GetCredentialRegistrators(ctx context.Context) ([]string, error)
 	UpdateLabelCredential(ctx context.Context, credentialID string, label string) error
 	DeleteCredential(ctx context.Context, credentialID string) error
 	MoveCredential(ctx context.Context, credentialID string, previousCredentialID string) error
@@ -70,10 +70,10 @@ func MakeGetCredentialsEndpoint(component AccountComponent) cs.Endpoint {
 	}
 }
 
-// MakeGetCredentialTypesEndpoint make the GetCredentialTypes endpoint to retrieve the list of possible kind of credentials.
-func MakeGetCredentialTypesEndpoint(component AccountComponent) cs.Endpoint {
+// MakeGetCredentialRegistratorsEndpoint make the GetCredentialRegistrators endpoint to retrieve the list of possible kind of credentials.
+func MakeGetCredentialRegistratorsEndpoint(component AccountComponent) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
-		return component.GetCredentialTypes(ctx)
+		return component.GetCredentialRegistrators(ctx)
 	}
 }
 
