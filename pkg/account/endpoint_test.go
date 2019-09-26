@@ -44,15 +44,15 @@ func TestMakeGetCredentialsEndpoint(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func TestMakeGetCredentialTypesEndpoint(t *testing.T) {
+func TestMakeGetCredentialRegistratorsEndpoint(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
 	mockAccountComponent := mock.NewAccountComponent(mockCtrl)
-	mockAccountComponent.EXPECT().GetCredentialTypes(gomock.Any()).Return([]string{}, nil).Times(1)
+	mockAccountComponent.EXPECT().GetCredentialRegistrators(gomock.Any()).Return([]string{}, nil).Times(1)
 
 	m := map[string]string{}
-	_, err := MakeGetCredentialTypesEndpoint(mockAccountComponent)(context.Background(), m)
+	_, err := MakeGetCredentialRegistratorsEndpoint(mockAccountComponent)(context.Background(), m)
 	assert.Nil(t, err)
 }
 

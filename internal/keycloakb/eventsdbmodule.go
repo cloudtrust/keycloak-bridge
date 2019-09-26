@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/cloudtrust/common-service/database"
-
 	api "github.com/cloudtrust/keycloak-bridge/api/events"
 )
 
@@ -146,7 +145,7 @@ func (cm *eventsDBModule) GetLastConnection(_ context.Context, realmName string)
 func (cm *eventsDBModule) GetTotalConnectionsCount(_ context.Context, realmName string, durationLabel string) (int64, error) {
 	var matched, err = regexp.MatchString(`^\d+ [A-Za-z]+$`, durationLabel)
 	if !matched || err != nil {
-		return 0, errors.New("Invalid duration label")
+		return 0, errors.New(MsgErrInvalidParam + "." + DurationLabel)
 	}
 	var res = int64(0)
 	var row = cm.db.QueryRow(strings.ReplaceAll(selectConnectionsCount, "##INTERVAL##", durationLabel), realmName)

@@ -107,9 +107,7 @@
         }
       },
       "ST_GetMigrationReport": {
-        "master": {
-          "*": {}
-        }
+        "*": {}
       },
       "GetClients":{
         "*": {}
