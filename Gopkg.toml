@@ -27,21 +27,12 @@
 
 [[constraint]]
   name = "github.com/cloudtrust/common-service"
-<<<<<<< HEAD
-  version = "=v1.0-rc6"
-
-[[constraint]]
-  name = "github.com/cloudtrust/keycloak-client"
-  branch = "multi-token"
-#  version = "v1.0-rc6"
-=======
   version = "v1.0-rc7"
 
 [[constraint]]
   name = "github.com/cloudtrust/keycloak-client"
   #version = "v1.0-rc7"
   branch="multi-token"
->>>>>>> multi-token-features
 
 [[constraint]]
   name = "github.com/go-kit/kit"
