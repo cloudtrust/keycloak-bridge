@@ -200,7 +200,7 @@ func MakeGetUsersEndpoint(managementComponent ManagementComponent) cs.Endpoint {
 
 		_, ok := m["groupIds"]
 		if !ok {
-			return nil, errorhandler.CreateMissingParameterError(internal.GroudIds)
+			return nil, errorhandler.CreateMissingParameterError(internal.GroudIDs)
 		}
 
 		groupIDs := strings.Split(m["groupIds"], ",")

@@ -19,16 +19,26 @@ func TestModuleGetEvents(t *testing.T) {
 	dbEvents := mock.NewDBEvents(mockCtrl)
 	module := NewEventsDBModule(dbEvents)
 
-	params := map[string]string{"origin": "origin-1", "max": "5"}
-	var empty [0]api.AuditRepresentation
-	var expectedResult = empty[:]
-	var expectedError error = errorhandler.CreateMissingParameterError("")
-	var rows sql.Rows
-	dbEvents.EXPECT().Query(gomock.Any(), params["origin"], nil, nil, nil, nil, nil, 0, params["max"]).Return(&rows, expectedError).Times(1)
-	res, err := module.GetEvents(context.Background(), params)
+	{
+		// Multiple values not yet supported for exclude
+		params := map[string]string{"exclude": "value1,value2"}
+		_, err := module.GetEvents(context.Background(), params)
 
-	assert.Equal(t, expectedResult, res)
-	assert.Equal(t, expectedError, err)
+		assert.NotNil(t, err)
+	}
+
+	{
+		params := map[string]string{"origin": "origin-1", "max": "5"}
+		var empty [0]api.AuditRepresentation
+		var expectedResult = empty[:]
+		var expectedError error = errorhandler.CreateMissingParameterError("")
+		var rows sql.Rows
+		dbEvents.EXPECT().Query(gomock.Any(), params["origin"], nil, nil, nil, nil, nil, nil, 0, params["max"]).Return(&rows, expectedError).Times(1)
+		res, err := module.GetEvents(context.Background(), params)
+
+		assert.Equal(t, expectedResult, res)
+		assert.Equal(t, expectedError, err)
+	}
 }
 
 func TestModuleGetEventsSummary(t *testing.T) {

@@ -18,7 +18,7 @@ type Endpoints struct {
 // MakeGetEventsEndpoint makes the events endpoint.
 func MakeGetEventsEndpoint(ec Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
-		params := filterParameters(req.(map[string]string), "first", "max", "dateFrom", "dateTo", "realmTarget", "origin", "ctEventType")
+		params := filterParameters(req.(map[string]string), "first", "max", "dateFrom", "dateTo", "realmTarget", "origin", "ctEventType", "exclude")
 
 		//Rewrite realmTarget into realm
 		if value, ok := params["realmTarget"]; ok {

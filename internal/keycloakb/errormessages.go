@@ -1,5 +1,6 @@
 package keycloakb
 
+// Normalized error messages
 const (
 	MsgErrInvalidParam         = "invalidParameter"
 	MsgErrMissingParam         = "missingParameter"
@@ -18,9 +19,9 @@ const (
 	ConfirmPassword    = "confirmPassword"
 	Password           = "password"
 	Type               = "type"
-	Id                 = "id"
+	ID                 = "id"
 	Label              = "label"
-	UserId             = "userID"
+	UserID             = "userID"
 	Username           = "username"
 	User               = "user"
 	Email              = "email"
@@ -29,12 +30,12 @@ const (
 	PhoneNumber        = "phoneNumber"
 	Gender             = "gender"
 	Birthdate          = "birthdate"
-	GroudId            = "groupId"
-	GroudIds           = "groupIds"
-	RoleId             = "roleId"
+	GroudID            = "groupId"
+	GroudIDs           = "groupIds"
+	RoleID             = "roleId"
 	Locale             = "locale"
 	Description        = "description"
-	ContainerId        = "containerId"
+	ContainerID        = "containerId"
 	DefaultClientID    = "defaultClientID"
 	DefaultRedirectURI = "defaultRedirectURI"
 	RequiredAction     = "requiredAction"
@@ -47,6 +48,7 @@ const (
 	Response           = "response"
 	ListOfRealms       = "listOfRealms"
 	Groups             = "groups"
-	ClientId           = "clientId"
+	ClientID           = "clientId"
 	RedirectURI        = "redirectURI"
+	Exclude            = "exclude"
 )

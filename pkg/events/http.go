@@ -30,6 +30,7 @@ func decodeEventsRequest(ctx context.Context, req *http.Request) (interface{}, e
 		"origin":      `^[\w-@.]{1,128}$`,
 		"realmTarget": `^[\w-]{1,36}$`,
 		"ctEventType": `^[\w-]{1,128}$`,
+		"exclude":     `^[\w-]{1,128}(,[\w-]{1,128})*$`,
 		"dateFrom":    `^\d{1,10}$`,
 		"dateTo":      `^\d{1,10}$`,
 		"first":       `^\d{1,10}$`,

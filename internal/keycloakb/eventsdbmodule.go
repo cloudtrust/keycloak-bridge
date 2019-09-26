@@ -6,6 +6,8 @@ import (
 	"regexp"
 	"strings"
 
+	errorhandler "github.com/cloudtrust/common-service/errors"
+
 	"github.com/cloudtrust/common-service/database"
 	api "github.com/cloudtrust/keycloak-bridge/api/events"
 )
@@ -39,6 +41,7 @@ type selectAuditEventsParameters struct {
 	dateTo      interface{}
 	first       interface{}
 	max         interface{}
+	exclude     interface{}
 }
 
 const (
@@ -48,6 +51,7 @@ const (
 	AND user_id = IFNULL(?, user_id)
 	AND ct_event_type = IFNULL(?, ct_event_type)
 	AND unix_timestamp(audit_time) between IFNULL(?, unix_timestamp(audit_time)) and IFNULL(?, unix_timestamp(audit_time))
+	AND ct_event_type <> IFNULL(?, 'not-a-ct-event-type')
 	`
 
 	selectAuditEventsStmt = `SELECT audit_id, unix_timestamp(audit_time), origin, realm_name, agent_user_id, agent_username, agent_realm_name,
@@ -64,8 +68,8 @@ const (
 	selectAuditSummaryCtEventTypeStmt = `SELECT distinct ct_event_type FROM audit;`
 )
 
-func createAuditEventsParametersFromMap(m map[string]string) selectAuditEventsParameters {
-	return selectAuditEventsParameters{
+func createAuditEventsParametersFromMap(m map[string]string) (selectAuditEventsParameters, error) {
+	res := selectAuditEventsParameters{
 		origin:      getSQLParam(m, "origin", nil),
 		realm:       getSQLParam(m, "realm", nil),
 		userID:      getSQLParam(m, "userID", nil),
@@ -74,16 +78,25 @@ func createAuditEventsParametersFromMap(m map[string]string) selectAuditEventsPa
 		dateTo:      getSQLParam(m, "dateTo", nil),
 		first:       getSQLParam(m, "first", 0),
 		max:         getSQLParam(m, "max", 500),
+		exclude:     getSQLParam(m, "exclude", nil),
 	}
+	if res.exclude != nil && strings.Contains(res.exclude.(string), ",") {
+		// Multiple values are not supported yet
+		return res, errorhandler.CreateInvalidQueryParameterError(Exclude)
+	}
+	return res, nil
 }
 
 // GetEvents gets the count of events matching some criterias (dateFrom, dateTo, realm, ...)
 func (cm *eventsDBModule) GetEventsCount(_ context.Context, m map[string]string) (int, error) {
-	params := createAuditEventsParametersFromMap(m)
+	params, err := createAuditEventsParametersFromMap(m)
+	if err != nil {
+		return 0, err
+	}
 
 	var count int
-	row := cm.db.QueryRow(selectCountAuditEventsStmt, params.origin, params.realm, params.userID, params.ctEventType, params.dateFrom, params.dateTo)
-	err := row.Scan(&count)
+	row := cm.db.QueryRow(selectCountAuditEventsStmt, params.origin, params.realm, params.userID, params.ctEventType, params.dateFrom, params.dateTo, params.exclude)
+	err = row.Scan(&count)
 	if err != nil {
 		return 0, err
 	}
@@ -93,9 +106,12 @@ func (cm *eventsDBModule) GetEventsCount(_ context.Context, m map[string]string)
 // GetEvents gets the events matching some criterias (dateFrom, dateTo, realm, ...)
 func (cm *eventsDBModule) GetEvents(_ context.Context, m map[string]string) ([]api.AuditRepresentation, error) {
 	var res = []api.AuditRepresentation{}
-	params := createAuditEventsParametersFromMap(m)
+	params, errParams := createAuditEventsParametersFromMap(m)
+	if errParams != nil {
+		return nil, errParams
+	}
 
-	rows, err := cm.db.Query(selectAuditEventsStmt, params.origin, params.realm, params.userID, params.ctEventType, params.dateFrom, params.dateTo, params.first, params.max)
+	rows, err := cm.db.Query(selectAuditEventsStmt, params.origin, params.realm, params.userID, params.ctEventType, params.dateFrom, params.dateTo, params.exclude, params.first, params.max)
 	if err != nil {
 		return res, err
 	}

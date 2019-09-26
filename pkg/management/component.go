@@ -883,7 +883,7 @@ func (c *component) UpdateRealmCustomConfiguration(ctx context.Context, realmNam
 	if !match {
 		return errorhandler.Error{
 			Status:  400,
-			Message: internal.MsgErrInvalidParam + "." + internal.ClientId + "Or" + internal.RedirectURI,
+			Message: internal.MsgErrInvalidParam + "." + internal.ClientID + "Or" + internal.RedirectURI,
 		}
 	}
 	// transform customConfig object into JSON string
