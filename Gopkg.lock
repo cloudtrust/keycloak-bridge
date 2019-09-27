@@ -38,12 +38,12 @@
   version = "v1.0-rc7"
 
 [[projects]]
-  branch = "multi-token"
   digest = "1:cee36d919ff77c1274a9d56c8422b32b33e592d0c274d754343de94fceeb8d4b"
   name = "github.com/cloudtrust/keycloak-client"
   packages = ["."]
   pruneopts = "UT"
-  revision = "b812e65fa8aaa95463eb02cd14d8c12712743ba9"
+  revision = "c5e13ab423756cd29f249b93d7c068ad18ebc508"
+  version = "v1.0-rc9"
 
 [[projects]]
   digest = "1:d64c893fc7d2c3d395f421b00d21f0adb8ceffc4d3c90299e732b3985ca16eb4"
@@ -368,7 +368,7 @@
     "pbkdf2",
   ]
   pruneopts = "UT"
-  revision = "9ee001bba392397c76f100a2d5b13afc86f167f1"
+  revision = "cea2066c64117dea9cba47afc7c35e4d2299107d"
 
 [[projects]]
   branch = "master"
@@ -381,7 +381,7 @@
     "publicsuffix",
   ]
   pruneopts = "UT"
-  revision = "aa69164e4478b84860dc6769c710c699c67058a3"
+  revision = "c00fd9afed17cfdca9b3e1e3b8de7ef2b3f0347b"
 
 [[projects]]
   branch = "master"
@@ -400,7 +400,7 @@
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = "UT"
-  revision = "2837fb4f24fee082b8c39b1a6dc9e0ed9f3fbd4f"
+  revision = "855e68c8590b0d6a9d08863d2982eb8aeddd98d3"
 
 [[projects]]
   digest = "1:8d8faad6b12a3a4c819a3f9618cb6ee1fa1cfc33253abeeea8b55336721e3405"
@@ -449,8 +449,8 @@
     "urlfetch",
   ]
   pruneopts = "UT"
-  revision = "c71d63e301d75423acb410203c747cad31e9a5e7"
-  version = "v1.6.3"
+  revision = "bddb1f54ecfd64b1350fd2dd897fa11d426632bc"
+  version = "v1.6.4"
 
 [[projects]]
   digest = "1:fdc801e94ddbe703f6b4263ee96ed12fc9e1d754369bf9de874c7567ea2c9686"
