@@ -1000,7 +1000,7 @@ func TestGetUserAccountStatus(t *testing.T) {
 		enabled := true
 		userRep.Enabled = &enabled
 		mockKeycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(userRep, nil).Times(1)
-		mockKeycloakClient.EXPECT().GetCredentialsForUser(accessToken, realmReq, realmName, userID).Return(nil, fmt.Errorf("Unexpected error")).Times(1)
+		mockKeycloakClient.EXPECT().GetCredentials(accessToken, realmName, userID).Return(nil, fmt.Errorf("Unexpected error")).Times(1)
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmReq)
 		_, err := managementComponent.GetUserAccountStatus(ctx, realmName, userID)
@@ -1013,7 +1013,7 @@ func TestGetUserAccountStatus(t *testing.T) {
 		enabled := true
 		userRep.Enabled = &enabled
 		mockKeycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(userRep, nil).Times(1)
-		mockKeycloakClient.EXPECT().GetCredentialsForUser(accessToken, realmReq, realmName, userID).Return([]kc.CredentialRepresentation{}, nil).Times(1)
+		mockKeycloakClient.EXPECT().GetCredentials(accessToken, realmName, userID).Return([]kc.CredentialRepresentation{}, nil).Times(1)
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmReq)
 		status, err := managementComponent.GetUserAccountStatus(ctx, realmName, userID)
@@ -1028,7 +1028,7 @@ func TestGetUserAccountStatus(t *testing.T) {
 		enabled := true
 		userRep.Enabled = &enabled
 		mockKeycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(userRep, nil).Times(1)
-		mockKeycloakClient.EXPECT().GetCredentialsForUser(accessToken, realmReq, realmName, userID).Return([]kc.CredentialRepresentation{creds1, creds2}, nil).Times(1)
+		mockKeycloakClient.EXPECT().GetCredentials(accessToken, realmName, userID).Return([]kc.CredentialRepresentation{creds1, creds2}, nil).Times(1)
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmReq)
 		status, err := managementComponent.GetUserAccountStatus(ctx, realmName, userID)
@@ -1645,7 +1645,7 @@ func TestGetCredentialsForUser(t *testing.T) {
 
 	// Get credentials for user
 	{
-		mockKeycloakClient.EXPECT().GetCredentialsForUser(accessToken, realmReq, realmName, userID).Return([]kc.CredentialRepresentation{}, nil).Times(1)
+		mockKeycloakClient.EXPECT().GetCredentials(accessToken, realmName, userID).Return([]kc.CredentialRepresentation{}, nil).Times(1)
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmReq)
@@ -1673,7 +1673,7 @@ func TestDeleteCredentialsForUser(t *testing.T) {
 
 	// Get credentials for user
 	{
-		mockKeycloakClient.EXPECT().DeleteCredentialsForUser(accessToken, realmReq, realmName, userID, credential).Return(nil).Times(1)
+		mockKeycloakClient.EXPECT().DeleteCredential(accessToken, realmName, userID, credential).Return(nil).Times(1)
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmReq)
