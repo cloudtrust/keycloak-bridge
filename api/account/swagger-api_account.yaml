@@ -5,27 +5,7 @@ info:
   version: 1.0.0
 servers:
 - url: http://localhost:8888
-tags:
-- name: Account
-  description: Account management
 paths:
-  /account/credentials/password:
-    post:
-      tags:
-      - Password
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdatePassword'
-      summary: Update a password
-      responses:
-        200:
-          description: The password has been updated
-        400:
-          description: Bad parameters (same old and new passwords, different new and confirm passwords, ...)
-        403:
-          description: Caller is not allowed to change the password
   /account:
     get:
       tags:
@@ -37,7 +17,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User'
+                $ref: '#/components/schemas/Account'
     post:
       tags:
       - Account
@@ -46,7 +26,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/User'
+              $ref: '#/components/schemas/Account'
       responses:
         200:
           description: successful operation
@@ -57,6 +37,112 @@ paths:
       responses:
         200:
           description: successful operation
+  /account/credentials:
+    get:
+      tags:
+      - Credentials
+      summary: Get list of credentials of the user.
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: number
+                  credentials:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Credential'
+  /account/credentials/password:
+    post:
+      tags:
+      - Credentials
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePassword'
+      summary: Update password
+      responses:
+        200:
+          description: The password has been updated
+        400:
+          description: Bad parameters (same old and new passwords, different new and confirm passwords, ...)
+        403:
+          description: Caller is not allowed to change the password
+  /account/credentials/registrators:
+    get:
+      tags:
+      - Credentials
+      summary: Get all registrators available for the user
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RegistratorId'
+  /account/credentials/{credentialId}:
+    put:
+      tags:
+      - Credentials
+      summary: Update UserLabel of credential (all other attributes will be ignored)
+      parameters:
+      - name: credentialId
+        in: path
+        description: id of the credential
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Credential'
+      responses:
+        200:
+          description: Successfuly updated.
+    delete:
+      tags:
+      - Credentials
+      summary: Delete the credential
+      parameters:
+      - name: credentialId
+        in: path
+        description: id of the credential
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation
+  /account/credentials/{credentialId}/after/{previousCredentialId}:
+    post:
+      tags:
+      - Credentials
+      summary: Change priority order among credentials
+      parameters:
+      - name: credentialId
+        in: path
+        description: id of the credential to move
+        required: true
+        schema:
+          type: string
+      - name: previousCredentialId
+        in: path
+        description: id of the credential before the moved one. Use 'null' to move the credential at the top of the list.
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: Successful operation.
+
 components:
   schemas:
     UpdatePassword:
@@ -68,7 +154,24 @@ components:
           type: string
         confirmPassword:
           type: string
-    User:
+    Credential:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+        userLabel:
+          type: string
+        createdDate:
+          type: integer
+        credentialData:
+          type: object
+        temporary:
+          type: boolean
+    RegistratorId:
+      type: string
+    Account:
       type: object
       properties:
         username:

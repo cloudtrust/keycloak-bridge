@@ -38,14 +38,15 @@ type KeycloakClient interface {
 	ExecuteActionsEmail(accessToken string, realmName string, userID string, actions []string, paramKV ...string) error
 	SendNewEnrolmentCode(accessToken string, realmName string, userID string) (kc.SmsCodeRepresentation, error)
 	SendReminderEmail(accessToken string, realmName string, userID string, paramKV ...string) error
-	GetCredentialsForUser(accessToken string, realmReq, realmName string, userID string) ([]kc.CredentialRepresentation, error)
-	DeleteCredentialsForUser(accessToken string, realmReq, realmName string, userID string, credentialID string) error
 	GetRoles(accessToken string, realmName string) ([]kc.RoleRepresentation, error)
 	GetRole(accessToken string, realmName string, roleID string) (kc.RoleRepresentation, error)
 	GetGroups(accessToken string, realmName string) ([]kc.GroupRepresentation, error)
 	GetClientRoles(accessToken string, realmName, idClient string) ([]kc.RoleRepresentation, error)
 	CreateClientRole(accessToken string, realmName, clientID string, role kc.RoleRepresentation) (string, error)
 	GetGroup(accessToken string, realmName, groupID string) (kc.GroupRepresentation, error)
+	GetCredentials(accessToken string, realmName string, userID string) ([]kc.CredentialRepresentation, error)
+	UpdateCredential(accessToken string, realmName string, userID string, credentialID string, credential kc.CredentialRepresentation) error
+	DeleteCredential(accessToken string, realmName string, userID string, credentialID string) error
 }
 
 // Component is the management component interface.
@@ -669,9 +670,8 @@ func (c *component) SendReminderEmail(ctx context.Context, realmName string, use
 
 func (c *component) GetCredentialsForUser(ctx context.Context, realmName string, userID string) ([]api.CredentialRepresentation, error) {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
-	var ctxRealm = ctx.Value(cs.CtContextRealm).(string)
 
-	credsKc, err := c.keycloakClient.GetCredentialsForUser(accessToken, ctxRealm, realmName, userID)
+	credsKc, err := c.keycloakClient.GetCredentials(accessToken, realmName, userID)
 	if err != nil {
 		c.logger.Warn("err", err.Error())
 		return nil, err
@@ -687,7 +687,6 @@ func (c *component) GetCredentialsForUser(ctx context.Context, realmName string,
 
 func (c *component) DeleteCredentialsForUser(ctx context.Context, realmName string, userID string, credentialID string) error {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
-	var ctxRealm = ctx.Value(cs.CtContextRealm).(string)
 
 	// get the list of credentails of the user
 	credsKc, err := c.keycloakClient.GetCredentialsForUser(accessToken, ctxRealm, realmName, userID)
