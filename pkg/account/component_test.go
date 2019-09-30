@@ -75,6 +75,7 @@ func TestUpdatePasswordWrongPwd(t *testing.T) {
 
 	mockKeycloakAccountClient := mock.NewKeycloakAccountClient(mockCtrl)
 	mockEventDBModule := mock.NewEventsDBModule(mockCtrl)
+	mockConfigDBModule := mock.NewConfigurationDBModule(mockCtrl)
 	mockLogger := mock.NewLogger(mockCtrl)
 	mockConfigDBModule := mock.NewConfigurationDBModule(mockCtrl)
 	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigDBModule, mockLogger)
@@ -513,6 +514,12 @@ func TestGetCredentialRegistrators(t *testing.T) {
 
 	// Get credential types with succces
 	{
+		var validJSON, _ = json.Marshal(apim.RealmCustomConfiguration{
+			SelfAuthenticatorMgmtEnabled: &bTrue,
+			SelfPasswordChangeEnabled:    &bTrue,
+		})
+
+		mockConfigDBModule.EXPECT().GetConfiguration(ctx, currentRealm).Return(string(validJSON), nil).Times(1)
 		mockKeycloakAccountClient.EXPECT().GetCredentialRegistrators(accessToken, currentRealm).Return(credTypes, nil).Times(1)
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
