@@ -1673,8 +1673,8 @@ func TestDeleteCredentialsForUser(t *testing.T) {
 
 	// Delete credentials for user
 	{
-		mockKeycloakClient.EXPECT().GetCredentialsForUser(accessToken, realmReq, realmName, userID).Return([]kc.CredentialRepresentation{}, nil).Times(1)
-		mockKeycloakClient.EXPECT().DeleteCredentialsForUser(accessToken, realmReq, realmName, userID, credential).Return(nil).Times(1)
+		mockKeycloakClient.EXPECT().GetCredentials(accessToken, realmName, userID).Return([]kc.CredentialRepresentation{}, nil).Times(1)
+		mockKeycloakClient.EXPECT().DeleteCredential(accessToken, realmName, userID, credential).Return(nil).Times(1)
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmReq)
@@ -1685,9 +1685,9 @@ func TestDeleteCredentialsForUser(t *testing.T) {
 	}
 	// Delete credentials for user - error at obtaining the list of credentials
 	{
-		mockKeycloakClient.EXPECT().GetCredentialsForUser(accessToken, realmReq, realmName, userID).Return([]kc.CredentialRepresentation{}, errors.New("error")).Times(1)
+		mockKeycloakClient.EXPECT().GetCredentials(accessToken, realmName, userID).Return([]kc.CredentialRepresentation{}, errors.New("error")).Times(1)
 		mockLogger.EXPECT().Warn("msg", "Could not obtain list of credentials", "err", "error")
-		mockKeycloakClient.EXPECT().DeleteCredentialsForUser(accessToken, realmReq, realmName, userID, credential).Return(nil).Times(1)
+		mockKeycloakClient.EXPECT().DeleteCredential(accessToken, realmName, userID, credential).Return(nil).Times(1)
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmReq)
@@ -1699,8 +1699,8 @@ func TestDeleteCredentialsForUser(t *testing.T) {
 	}
 	// Delete credentials for user - error at deleting the credential
 	{
-		mockKeycloakClient.EXPECT().GetCredentialsForUser(accessToken, realmReq, realmName, userID).Return([]kc.CredentialRepresentation{}, nil).Times(1)
-		mockKeycloakClient.EXPECT().DeleteCredentialsForUser(accessToken, realmReq, realmName, userID, credential).Return(errors.New("error")).Times(1)
+		mockKeycloakClient.EXPECT().GetCredentials(accessToken, realmName, userID).Return([]kc.CredentialRepresentation{}, nil).Times(1)
+		mockKeycloakClient.EXPECT().DeleteCredential(accessToken, realmName, userID, credential).Return(errors.New("error")).Times(1)
 		mockLogger.EXPECT().Warn("err", "error")
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmReq)
@@ -1734,8 +1734,8 @@ func TestDeleteCredentialsForUser(t *testing.T) {
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmReq)
 
-		mockKeycloakClient.EXPECT().GetCredentialsForUser(accessToken, realmReq, realmName, userID).Return(credsKc, nil).Times(1)
-		mockKeycloakClient.EXPECT().DeleteCredentialsForUser(accessToken, realmReq, realmName, userID, otpId).Return(nil).Times(1)
+		mockKeycloakClient.EXPECT().GetCredentials(accessToken, realmName, userID).Return(credsKc, nil).Times(1)
+		mockKeycloakClient.EXPECT().DeleteCredential(accessToken, realmName, userID, otpId).Return(nil).Times(1)
 		mockEventDBModule.EXPECT().ReportEvent(ctx, "2ND_FACTOR_REMOVED", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 
 		err := managementComponent.DeleteCredentialsForUser(ctx, realmName, userID, otpId)
@@ -1766,8 +1766,8 @@ func TestDeleteCredentialsForUser(t *testing.T) {
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmReq)
 
-		mockKeycloakClient.EXPECT().GetCredentialsForUser(accessToken, realmReq, realmName, userID).Return(credsKc, nil).Times(1)
-		mockKeycloakClient.EXPECT().DeleteCredentialsForUser(accessToken, realmReq, realmName, userID, otpId).Return(nil).Times(1)
+		mockKeycloakClient.EXPECT().GetCredentials(accessToken, realmName, userID).Return(credsKc, nil).Times(1)
+		mockKeycloakClient.EXPECT().DeleteCredential(accessToken, realmName, userID, otpId).Return(nil).Times(1)
 		mockEventDBModule.EXPECT().ReportEvent(ctx, "2ND_FACTOR_REMOVED", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(errors.New("error")).Times(1)
 		m := map[string]interface{}{"event_name": "2ND_FACTOR_REMOVED", database.CtEventRealmName: realmName, database.CtEventUserID: userID}
 		eventJSON, _ := json.Marshal(m)

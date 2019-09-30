@@ -689,12 +689,12 @@ func (c *component) DeleteCredentialsForUser(ctx context.Context, realmName stri
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 
 	// get the list of credentails of the user
-	credsKc, err := c.keycloakClient.GetCredentialsForUser(accessToken, ctxRealm, realmName, userID)
+	credsKc, err := c.keycloakClient.GetCredentials(accessToken, realmName, userID)
 	if err != nil {
 		c.logger.Warn("msg", "Could not obtain list of credentials", "err", err.Error())
 	}
 
-	err = c.keycloakClient.DeleteCredentialsForUser(accessToken, ctxRealm, realmName, userID, credentialID)
+	err = c.keycloakClient.DeleteCredential(accessToken, realmName, userID, credentialID)
 
 	if err != nil {
 		c.logger.Warn("err", err.Error())
