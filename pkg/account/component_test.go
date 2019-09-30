@@ -85,14 +85,14 @@ func TestUpdatePasswordWrongPwd(t *testing.T) {
 	ctx = context.WithValue(ctx, cs.CtContextUserID, userID)
 	ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 
-	mockKeycloakClient.EXPECT().UpdatePassword(accessToken, realm, oldPasswd, newPasswd, newPasswd).Return("", fmt.Errorf("invalidPasswordExistingMessage")).Times(1)
+	mockKeycloakAccountClient.EXPECT().UpdatePassword(accessToken, realm, oldPasswd, newPasswd, newPasswd).Return("", fmt.Errorf("invalidPasswordExistingMessage")).Times(1)
 	mockLogger.EXPECT().Warn("err", "invalidPasswordExistingMessage")
 
 	err := component.UpdatePassword(ctx, oldPasswd, newPasswd, newPasswd)
 
 	assert.True(t, err != nil)
 
-	mockKeycloakClient.EXPECT().UpdatePassword(accessToken, realm, oldPasswd, newPasswd, newPasswd).Return("", fmt.Errorf("invalid")).Times(1)
+	mockKeycloakAccountClient.EXPECT().UpdatePassword(accessToken, realm, oldPasswd, newPasswd, newPasswd).Return("", fmt.Errorf("invalid")).Times(1)
 	mockLogger.EXPECT().Warn("err", "invalid")
 
 	err = component.UpdatePassword(ctx, oldPasswd, newPasswd, newPasswd)

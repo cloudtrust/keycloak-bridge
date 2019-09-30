@@ -74,7 +74,7 @@ func (c *component) UpdatePassword(ctx context.Context, currentPassword, newPass
 		}
 	}
 
-	_, err := c.keycloakClient.UpdatePassword(accessToken, realm, currentPassword, newPassword, confirmPassword)
+	_, err := c.keycloakAccountClient.UpdatePassword(accessToken, realm, currentPassword, newPassword, confirmPassword)
 	if err != nil {
 		c.logger.Warn("err", err.Error())
 		return err
@@ -94,7 +94,7 @@ func (c *component) UpdatePassword(ctx context.Context, currentPassword, newPass
 
 	}
 
-	return err
+	return nil
 }
 
 func (c *component) GetAccount(ctx context.Context) (api.AccountRepresentation, error) {
