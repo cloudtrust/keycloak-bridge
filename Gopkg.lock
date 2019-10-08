@@ -38,12 +38,12 @@
   version = "v1.0-rc7"
 
 [[projects]]
-  digest = "1:cee36d919ff77c1274a9d56c8422b32b33e592d0c274d754343de94fceeb8d4b"
+  digest = "1:87ba1ef01f9c3a60e83b1d28f0d07b605b84d51f27a1d4a0fffa9d96ea1bc78b"
   name = "github.com/cloudtrust/keycloak-client"
   packages = ["."]
   pruneopts = "UT"
-  revision = "c5e13ab423756cd29f249b93d7c068ad18ebc508"
-  version = "v1.0-rc9"
+  revision = "d7c35a0d423c989dab1296785c6227572d9eca61"
+  version = "v1.1.0"
 
 [[projects]]
   digest = "1:d64c893fc7d2c3d395f421b00d21f0adb8ceffc4d3c90299e732b3985ca16eb4"
@@ -368,7 +368,7 @@
     "pbkdf2",
   ]
   pruneopts = "UT"
-  revision = "cea2066c64117dea9cba47afc7c35e4d2299107d"
+  revision = "a832865fa7ada6126f4c6124ac49f71be71bff2a"
 
 [[projects]]
   branch = "master"
@@ -381,7 +381,7 @@
     "publicsuffix",
   ]
   pruneopts = "UT"
-  revision = "c00fd9afed17cfdca9b3e1e3b8de7ef2b3f0347b"
+  revision = "c5a3c61f89f3ed696ec36b629ef1b97541165225"
 
 [[projects]]
   branch = "master"
@@ -400,7 +400,7 @@
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = "UT"
-  revision = "855e68c8590b0d6a9d08863d2982eb8aeddd98d3"
+  revision = "c990c680b611ac1aeb7d8f2af94a825f98d69720"
 
 [[projects]]
   digest = "1:8d8faad6b12a3a4c819a3f9618cb6ee1fa1cfc33253abeeea8b55336721e3405"
