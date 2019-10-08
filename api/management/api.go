@@ -229,7 +229,7 @@ func ConvertToKCUser(user UserRepresentation) kc.UserRepresentation {
 // Validate is a validator for UserRepresentation
 func (user UserRepresentation) Validate() error {
 	if user.Id != nil && !matchesRegExp(*user.Id, RegExpID) {
-		return errors.New(internal.MsgErrInvalidParam + "." + internal.UserId)
+		return errors.New(internal.MsgErrInvalidParam + "." + internal.UserID)
 	}
 
 	if user.Username != nil && !matchesRegExp(*user.Username, RegExpUsername) {
@@ -267,7 +267,7 @@ func (user UserRepresentation) Validate() error {
 	if user.Groups != nil {
 		for _, groupID := range *(user.Groups) {
 			if !matchesRegExp(groupID, RegExpID) {
-				return errors.New(internal.MsgErrInvalidParam + "." + internal.GroudId)
+				return errors.New(internal.MsgErrInvalidParam + "." + internal.GroudID)
 			}
 		}
 	}
@@ -275,7 +275,7 @@ func (user UserRepresentation) Validate() error {
 	if user.Roles != nil {
 		for _, roleID := range *(user.Roles) {
 			if !matchesRegExp(roleID, RegExpID) {
-				return errors.New(internal.MsgErrInvalidParam + "." + internal.RoleId)
+				return errors.New(internal.MsgErrInvalidParam + "." + internal.RoleID)
 			}
 		}
 	}
@@ -290,7 +290,7 @@ func (user UserRepresentation) Validate() error {
 // Validate is a validator for RoleRepresentation
 func (role RoleRepresentation) Validate() error {
 	if role.Id != nil && !matchesRegExp(*role.Id, RegExpID) {
-		return errors.New(internal.MsgErrInvalidParam + "." + internal.RoleId)
+		return errors.New(internal.MsgErrInvalidParam + "." + internal.RoleID)
 	}
 
 	if role.Name != nil && !matchesRegExp(*role.Name, RegExpName) {
@@ -302,7 +302,7 @@ func (role RoleRepresentation) Validate() error {
 	}
 
 	if role.ContainerId != nil && !matchesRegExp(*role.ContainerId, RegExpID) {
-		return errors.New(internal.MsgErrInvalidParam + "." + internal.ContainerId)
+		return errors.New(internal.MsgErrInvalidParam + "." + internal.ContainerID)
 	}
 
 	return nil

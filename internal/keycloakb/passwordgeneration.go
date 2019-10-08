@@ -44,7 +44,7 @@ func GeneratePassword(policy *string, minLength int, userID string) (string, err
 	return pwd, err
 }
 
-// GeneratePassword generates a password of a given length
+// GeneratePasswordNoKeycloakPolicy generates a password of a given length
 func GeneratePasswordNoKeycloakPolicy(minLength int) string {
 	var pwdElems []string
 	pwdElems = appendCharacters(pwdElems, alphabet, minLength)
