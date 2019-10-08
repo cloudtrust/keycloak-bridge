@@ -56,6 +56,12 @@ paths:
         required: false
         schema:
           type: string
+      - name: exclude
+        in: query
+        description: CT event type to be excluded
+        required: false
+        schema:
+          type: string
       summary: Get all events
       responses:
         200:

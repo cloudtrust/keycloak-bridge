@@ -62,7 +62,7 @@ func (ec *component) GetUserEvents(ctx context.Context, params map[string]string
 		return api.AuditEventsRepresentation{}, errorhandler.CreateMissingParameterError(app.Realm)
 	}
 	if val, ok := params["userID"]; !ok || len(val) == 0 {
-		return api.AuditEventsRepresentation{}, errorhandler.CreateMissingParameterError(app.UserId)
+		return api.AuditEventsRepresentation{}, errorhandler.CreateMissingParameterError(app.UserID)
 	}
 
 	err := ec.reportEvent(ctx, "GET_ACTIVITY", database.CtEventRealmName, params["realm"], database.CtEventUserID, params["userID"])
