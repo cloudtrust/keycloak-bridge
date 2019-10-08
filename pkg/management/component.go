@@ -45,7 +45,7 @@ type KeycloakClient interface {
 	CreateClientRole(accessToken string, realmName, clientID string, role kc.RoleRepresentation) (string, error)
 	GetGroup(accessToken string, realmName, groupID string) (kc.GroupRepresentation, error)
 	GetCredentials(accessToken string, realmName string, userID string) ([]kc.CredentialRepresentation, error)
-	UpdateCredential(accessToken string, realmName string, userID string, credentialID string, credential kc.CredentialRepresentation) error
+	UpdateLabelCredential(accessToken string, realmName string, userID string, credentialID string, label string) error
 	DeleteCredential(accessToken string, realmName string, userID string, credentialID string) error
 }
 
