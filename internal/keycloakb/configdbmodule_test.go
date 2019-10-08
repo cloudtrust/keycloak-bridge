@@ -1,10 +1,10 @@
-package management
+package keycloakb
 
 import (
 	"context"
 	"testing"
 
-	"github.com/cloudtrust/keycloak-bridge/pkg/management/mock"
+	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/mock"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )

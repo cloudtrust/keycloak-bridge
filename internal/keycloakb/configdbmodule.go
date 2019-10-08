@@ -1,4 +1,4 @@
-package management
+package keycloakb
 
 import (
 	"context"
@@ -18,18 +18,12 @@ type DBConfiguration interface {
 	QueryRow(query string, args ...interface{}) *sql.Row
 }
 
-// ConfigurationDBModule is the interface of the configuration module.
-type ConfigurationDBModule interface {
-	StoreOrUpdate(context.Context, string, string) error
-	GetConfiguration(context.Context, string) (string, error)
-}
-
 type configurationDBModule struct {
 	db DBConfiguration
 }
 
 // NewConfigurationDBModule returns a ConfigurationDB module.
-func NewConfigurationDBModule(db DBConfiguration) ConfigurationDBModule {
+func NewConfigurationDBModule(db DBConfiguration) *configurationDBModule {
 	return &configurationDBModule{
 		db: db,
 	}

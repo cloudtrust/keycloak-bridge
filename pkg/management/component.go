@@ -49,6 +49,12 @@ type KeycloakClient interface {
 	DeleteCredential(accessToken string, realmName string, userID string, credentialID string) error
 }
 
+// ConfigurationDBModule is the interface of the configuration module.
+type ConfigurationDBModule interface {
+	StoreOrUpdate(context.Context, string, string) error
+	GetConfiguration(context.Context, string) (string, error)
+}
+
 // Component is the management component interface.
 type Component interface {
 	GetRealms(ctx context.Context) ([]api.RealmRepresentation, error)
@@ -817,15 +823,11 @@ func (c *component) CreateClientRole(ctx context.Context, realmName, clientID st
 func (c *component) GetRealmCustomConfiguration(ctx context.Context, realmName string) (api.RealmCustomConfiguration, error) {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 
-	var customConfig = api.RealmCustomConfiguration{
-		DefaultClientID:    new(string),
-		DefaultRedirectURI: new(string),
-	}
 	// get the realm config from Keycloak
 	realmConfig, err := c.keycloakClient.GetRealm(accessToken, realmName)
 	if err != nil {
 		c.logger.Warn("err", err.Error())
-		return customConfig, err
+		return api.RealmCustomConfiguration{}, err
 	}
 	// from the realm ID, fetch the custom configuration
 	realmID := realmConfig.Id
@@ -833,13 +835,29 @@ func (c *component) GetRealmCustomConfiguration(ctx context.Context, realmName s
 	// DB error
 	if err != nil {
 		c.logger.Error("err", err.Error())
-		return customConfig, err
+		return api.RealmCustomConfiguration{}, err
 	}
+
+	var falseBool = false
+	var customConfig = api.RealmCustomConfiguration{
+		DefaultClientID:                 new(string),
+		DefaultRedirectURI:              new(string),
+		APISelfAuthenticatorMgmtEnabled: &falseBool,
+		APISelfPasswordChangeEnabled:    &falseBool,
+		APISelfMailEditionEnabled:       &falseBool,
+		APISelfDeleteAccountEnabled:     &falseBool,
+		UISelfAuthenticatorMgmtEnabled:  &falseBool,
+		UISelfPasswordChangeEnabled:     &falseBool,
+		UISelfMailEditionEnabled:        &falseBool,
+		UISelfDeleteAccountEnabled:      &falseBool,
+	}
+
 	// empty config
 	if customConfigJSON == "" {
 		// database is empty
 		return customConfig, nil
 	}
+
 	// transform json string into
 	err = json.Unmarshal([]byte(customConfigJSON), &customConfig)
 	if err != nil {
