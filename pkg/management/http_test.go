@@ -47,7 +47,7 @@ func TestHTTPManagementHandler(t *testing.T) {
 		var realm = "master"
 
 		var realmRep = api.RealmRepresentation{
-			Id:    &id,
+			ID:    &id,
 			Realm: &realm,
 		}
 		realmJSON, _ := json.MarshalIndent(realmRep, "", " ")

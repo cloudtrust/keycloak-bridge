@@ -11,7 +11,7 @@ import (
 
 // UserRepresentation struct
 type UserRepresentation struct {
-	Id                  *string   `json:"id,omitempty"`
+	ID                  *string   `json:"id,omitempty"`
 	Username            *string   `json:"username,omitempty"`
 	Email               *string   `json:"email,omitempty"`
 	Enabled             *bool     `json:"enabled,omitempty"`
@@ -37,7 +37,7 @@ type UsersPageRepresentation struct {
 
 // RealmRepresentation struct
 type RealmRepresentation struct {
-	Id              *string `json:"id,omitempty"`
+	ID              *string `json:"id,omitempty"`
 	KeycloakVersion *string `json:"keycloakVersion,omitempty"`
 	Realm           *string `json:"realm,omitempty"`
 	DisplayName     *string `json:"displayName,omitempty"`
@@ -46,17 +46,17 @@ type RealmRepresentation struct {
 
 // ClientRepresentation struct
 type ClientRepresentation struct {
-	Id       *string `json:"id,omitempty"`
+	ID       *string `json:"id,omitempty"`
 	Name     *string `json:"name,omitempty"`
-	BaseUrl  *string `json:"baseUrl,omitempty"`
-	ClientId *string `json:"clientId,omitempty"`
+	BaseURL  *string `json:"baseUrl,omitempty"`
+	ClientID *string `json:"clientId,omitempty"`
 	Protocol *string `json:"protocol,omitempty"`
 	Enabled  *bool   `json:"enabled,omitempty"`
 }
 
 // CredentialRepresentation struct
 type CredentialRepresentation struct {
-	Id             *string `json:"id,omitempty"`
+	ID             *string `json:"id,omitempty"`
 	Type           *string `json:"type,omitempty"`
 	UserLabel      *string `json:"userLabel,omitempty"`
 	CreatedDate    *int64  `json:"createdDate,omitempty"`
@@ -69,15 +69,15 @@ type CredentialRepresentation struct {
 type RoleRepresentation struct {
 	ClientRole  *bool   `json:"clientRole,omitempty"`
 	Composite   *bool   `json:"composite,omitempty"`
-	ContainerId *string `json:"containerId,omitempty"`
+	ContainerID *string `json:"containerId,omitempty"`
 	Description *string `json:"description,omitempty"`
-	Id          *string `json:"id,omitempty"`
+	ID          *string `json:"id,omitempty"`
 	Name        *string `json:"name,omitempty"`
 }
 
 // GroupRepresentation struct
 type GroupRepresentation struct {
-	Id   *string `json:"id,omitempty"`
+	ID   *string `json:"id,omitempty"`
 	Name *string `json:"name,omitempty"`
 }
 
@@ -88,10 +88,12 @@ type PasswordRepresentation struct {
 
 // RealmCustomConfiguration struct
 type RealmCustomConfiguration struct {
-	DefaultClientId              *string `json:"default_client_id,omitempty"`
-	DefaultRedirectUri           *string `json:"default_redirect_uri,omitempty"`
-	SelfAuthenticatorMgmtEnabled *bool   `json:"self_authenticator_mgmt_enabled"`
-	SelfPasswordChangeEnabled    *bool   `json:"self_password_change_enabled"`
+	DefaultClientID                 *string `json:"default_client_id,omitempty"`
+	DefaultRedirectURI              *string `json:"default_redirect_uri,omitempty"`
+	APISelfAuthenticatorMgmtEnabled *bool   `json:"api_self_authenticator_mgmt_enabled"`
+	APISelfPasswordChangeEnabled    *bool   `json:"api_self_password_change_enabled"`
+	UISelfAuthenticatorMgmtEnabled  *bool   `json:"ui_self_authenticator_mgmt_enabled"`
+	UISelfPasswordChangeEnabled     *bool   `json:"ui_self_password_change_enabled"`
 }
 
 // RequiredAction type
@@ -100,7 +102,7 @@ type RequiredAction string
 // ConvertCredential creates an API credential from a KC credential
 func ConvertCredential(credKc *kc.CredentialRepresentation) CredentialRepresentation {
 	var cred CredentialRepresentation
-	cred.Id = credKc.Id
+	cred.ID = credKc.Id
 	cred.Type = credKc.Type
 	cred.UserLabel = credKc.UserLabel
 	cred.CreatedDate = credKc.CreatedDate
@@ -115,7 +117,7 @@ func ConvertCredential(credKc *kc.CredentialRepresentation) CredentialRepresenta
 func ConvertToAPIUser(userKc kc.UserRepresentation) UserRepresentation {
 	var userRep UserRepresentation
 
-	userRep.Id = userKc.Id
+	userRep.ID = userKc.Id
 	userRep.Username = userKc.Username
 	userRep.Email = userKc.Email
 	userRep.Enabled = userKc.Enabled
@@ -228,7 +230,7 @@ func ConvertToKCUser(user UserRepresentation) kc.UserRepresentation {
 
 // Validate is a validator for UserRepresentation
 func (user UserRepresentation) Validate() error {
-	if user.Id != nil && !matchesRegExp(*user.Id, RegExpID) {
+	if user.ID != nil && !matchesRegExp(*user.ID, RegExpID) {
 		return errors.New(internal.MsgErrInvalidParam + "." + internal.UserID)
 	}
 
@@ -289,7 +291,7 @@ func (user UserRepresentation) Validate() error {
 
 // Validate is a validator for RoleRepresentation
 func (role RoleRepresentation) Validate() error {
-	if role.Id != nil && !matchesRegExp(*role.Id, RegExpID) {
+	if role.ID != nil && !matchesRegExp(*role.ID, RegExpID) {
 		return errors.New(internal.MsgErrInvalidParam + "." + internal.RoleID)
 	}
 
@@ -301,7 +303,7 @@ func (role RoleRepresentation) Validate() error {
 		return errors.New(internal.MsgErrInvalidParam + "." + internal.Description)
 	}
 
-	if role.ContainerId != nil && !matchesRegExp(*role.ContainerId, RegExpID) {
+	if role.ContainerID != nil && !matchesRegExp(*role.ContainerID, RegExpID) {
 		return errors.New(internal.MsgErrInvalidParam + "." + internal.ContainerID)
 	}
 
@@ -319,11 +321,11 @@ func (password PasswordRepresentation) Validate() error {
 
 // Validate is a validator for RealmCustomConfiguration
 func (config RealmCustomConfiguration) Validate() error {
-	if config.DefaultClientId != nil && !matchesRegExp(*config.DefaultClientId, RegExpClientID) {
+	if config.DefaultClientID != nil && !matchesRegExp(*config.DefaultClientID, RegExpClientID) {
 		return errors.New(internal.MsgErrInvalidParam + "." + internal.DefaultClientID)
 	}
 
-	if config.DefaultRedirectUri != nil && !matchesRegExp(*config.DefaultRedirectUri, RegExpRedirectURI) {
+	if config.DefaultRedirectURI != nil && !matchesRegExp(*config.DefaultRedirectURI, RegExpRedirectURI) {
 		return errors.New(internal.MsgErrInvalidParam + "." + internal.DefaultRedirectURI)
 	}
 
