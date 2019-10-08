@@ -688,10 +688,36 @@ func (c *component) GetCredentialsForUser(ctx context.Context, realmName string,
 func (c *component) DeleteCredentialsForUser(ctx context.Context, realmName string, userID string, credentialID string) error {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 
-	err := c.keycloakClient.DeleteCredential(accessToken, realmName, userID, credentialID)
+	// get the list of credentails of the user
+	credsKc, err := c.keycloakClient.GetCredentials(accessToken, realmName, userID)
+	if err != nil {
+		c.logger.Warn("msg", "Could not obtain list of credentials", "err", err.Error())
+	}
+
+	err = c.keycloakClient.DeleteCredential(accessToken, realmName, userID, credentialID)
 
 	if err != nil {
 		c.logger.Warn("err", err.Error())
+		return err
+	}
+
+	// if a credential other than the password was deleted, record the event 2ND_FACTOR_REMOVED in the audit DB
+	for _, credKc := range credsKc {
+		if *credKc.Id == credentialID && *credKc.Type != "password" {
+
+			errEvent := c.reportEvent(ctx, "2ND_FACTOR_REMOVED", database.CtEventRealmName, realmName, database.CtEventUserID, userID)
+			if errEvent != nil {
+				//store in the logs also the event that failed to be stored in the DB
+				m := map[string]interface{}{"event_name": "2ND_FACTOR_REMOVED", database.CtEventRealmName: realmName, database.CtEventUserID: userID}
+				eventJSON, errMarshal := json.Marshal(m)
+				if errMarshal == nil {
+					c.logger.Error("err", errEvent.Error(), "event", string(eventJSON))
+				} else {
+					c.logger.Error("err", errEvent.Error())
+				}
+			}
+			break
+		}
 	}
 
 	return err
