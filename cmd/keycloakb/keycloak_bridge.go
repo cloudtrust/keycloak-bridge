@@ -403,7 +403,7 @@ func main() {
 		// module for storing and retrieving the custom configuration
 		var configDBModule management.ConfigurationDBModule
 		{
-			configDBModule = management.NewConfigurationDBModule(configurationRwDBConn)
+			configDBModule = keycloakb.NewConfigurationDBModule(configurationRwDBConn)
 			configDBModule = management.MakeConfigurationDBModuleInstrumentingMW(influxMetrics.NewHistogram("configDB_module"))(configDBModule)
 			configDBModule = management.MakeConfigurationDBModuleLoggingMW(log.With(managementLogger, "mw", "module", "unit", "configDB"))(configDBModule)
 			configDBModule = management.MakeConfigurationDBModuleTracingMW(tracer)(configDBModule)
@@ -672,6 +672,8 @@ func main() {
 		route.Path("/account").Methods("GET").Handler(getAccountHandler)
 		route.Path("/account").Methods("POST").Handler(updateAccountHandler)
 		route.Path("/account").Methods("DELETE").Handler(deleteAccountHandler)
+
+		route.Path("/account/configuration").Methods("GET").Handler(getGetConfiguration)
 
 		route.Path("/account/credentials").Methods("GET").Handler(getCredentialsHandler)
 		route.Path("/account/credentials/password").Methods("POST").Handler(updatePasswordHandler)

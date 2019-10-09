@@ -5,6 +5,7 @@ import (
 
 	cs "github.com/cloudtrust/common-service"
 	"github.com/cloudtrust/common-service/tracing"
+	internal "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 )
 
 // Tracing middleware at module level.
@@ -24,18 +25,18 @@ func MakeConfigurationDBModuleTracingMW(tracer tracing.OpentracingClient) func(C
 }
 
 // configDBModuleTracingMW implements StatisticModule.
-func (m *configDBModuleTracingMW) StoreOrUpdate(ctx context.Context, realmName string, configJSON string) error {
+func (m *configDBModuleTracingMW) StoreOrUpdate(ctx context.Context, realmName string, config internal.RealmConfiguration) error {
 	var f tracing.Finisher
 	ctx, f = m.tracer.TryStartSpanWithTag(ctx, "configurationDB_module", "correlation_id", ctx.Value(cs.CtContextCorrelationID).(string))
 	if f != nil {
 		defer f.Finish()
 	}
 
-	return m.next.StoreOrUpdate(ctx, realmName, configJSON)
+	return m.next.StoreOrUpdate(ctx, realmName, config)
 }
 
 // configDBModuleTracingMW implements StatisticModule.
-func (m *configDBModuleTracingMW) GetConfiguration(ctx context.Context, realmName string) (string, error) {
+func (m *configDBModuleTracingMW) GetConfiguration(ctx context.Context, realmName string) (internal.RealmConfiguration, error) {
 	var f tracing.Finisher
 	ctx, f = m.tracer.TryStartSpanWithTag(ctx, "configurationDB_module", "correlation_id", ctx.Value(cs.CtContextCorrelationID).(string))
 	if f != nil {

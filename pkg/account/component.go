@@ -41,18 +41,25 @@ type Component interface {
 	DeleteAccount(context.Context) error
 }
 
+// ConfigurationDBModule is the interface of the configuration module.
+type ConfigurationDBModule interface {
+	GetConfiguration(context.Context, string) (internal.RealmConfiguration, error)
+}
+
 // Component is the management component.
 type component struct {
 	keycloakAccountClient KeycloakAccountClient
 	eventDBModule         database.EventsDBModule
+	configDBModule        ConfigurationDBModule
 	logger                internal.Logger
 }
 
 // NewComponent returns the self-service component.
-func NewComponent(keycloakAccountClient KeycloakAccountClient, eventDBModule database.EventsDBModule, logger internal.Logger) Component {
+func NewComponent(keycloakAccountClient KeycloakAccountClient, eventDBModule database.EventsDBModule, configDBModule ConfigurationDBModule, logger internal.Logger) Component {
 	return &component{
 		keycloakAccountClient: keycloakAccountClient,
 		eventDBModule:         eventDBModule,
+		configDBModule:        configDBModule,
 		logger:                logger,
 	}
 }
@@ -280,8 +287,8 @@ func (c *component) MoveCredential(ctx context.Context, credentialID string, pre
 	var currentRealm = ctx.Value(cs.CtContextRealm).(string)
 	var userID = ctx.Value(cs.CtContextUserID).(string)
 	var username = ctx.Value(cs.CtContextUsername).(string)
-
 	var err error
+
 	if previousCredentialID == "null" {
 		err = c.keycloakAccountClient.MoveToFirst(accessToken, currentRealm, credentialID)
 	} else {
@@ -299,4 +306,20 @@ func (c *component) MoveCredential(ctx context.Context, credentialID string, pre
 	_ = c.reportEvent(ctx, "SELF_MOVE_CREDENTIAL", database.CtEventRealmName, currentRealm, database.CtEventUserID, userID, database.CtEventUsername, username, database.CtEventAdditionalInfo, string(additionalInfos))
 
 	return nil
+}
+
+func (c *component) GetConfiguration(ctx context.Context) (api.Configuration, error) {
+	var currentRealm = ctx.Value(cs.CtContextRealm).(string)
+
+	config, err := c.configDBModule.GetConfiguration(ctx, currentRealm)
+	if err != nil {
+		return api.Configuration{}, err
+	}
+
+	return api.Configuration{
+		AuthenticatorMgmtEnabled: config.UISelfAuthenticatorMgmtEnabled,
+		DeleteAccountEnabled:     config.UISelfDeleteAccountEnabled,
+		MailEditionEnabled:       config.UISelfMailEditionEnabled,
+		PasswordChangeEnabled:    config.UISelfPasswordChangeEnabled,
+	}, nil
 }
