@@ -51,8 +51,8 @@ type KeycloakClient interface {
 
 // ConfigurationDBModule is the interface of the configuration module.
 type ConfigurationDBModule interface {
-	StoreOrUpdate(context.Context, string, string) error
-	GetConfiguration(context.Context, string) (string, error)
+	StoreOrUpdate(context.Context, string, internal.RealmConfiguration) error
+	GetConfiguration(context.Context, string) (internal.RealmConfiguration, error)
 }
 
 // Component is the management component interface.
@@ -848,6 +848,7 @@ func (c *component) CreateClientRole(ctx context.Context, realmName, clientID st
 // Retrieve the configuration from the database
 func (c *component) GetRealmCustomConfiguration(ctx context.Context, realmName string) (api.RealmCustomConfiguration, error) {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+	var falseBool = false
 
 	// get the realm config from Keycloak
 	realmConfig, err := c.keycloakClient.GetRealm(accessToken, realmName)
@@ -857,39 +858,36 @@ func (c *component) GetRealmCustomConfiguration(ctx context.Context, realmName s
 	}
 	// from the realm ID, fetch the custom configuration
 	realmID := realmConfig.Id
-	customConfigJSON, err := c.configDBModule.GetConfiguration(ctx, *realmID)
+	config, err := c.configDBModule.GetConfiguration(ctx, *realmID)
 	// DB error
 	if err != nil {
 		c.logger.Error("err", err.Error())
-		return api.RealmCustomConfiguration{}, err
+		return api.RealmCustomConfiguration{
+			DefaultClientID:                 new(string),
+			DefaultRedirectURI:              new(string),
+			APISelfAuthenticatorMgmtEnabled: &falseBool,
+			APISelfPasswordChangeEnabled:    &falseBool,
+			APISelfMailEditionEnabled:       &falseBool,
+			APISelfDeleteAccountEnabled:     &falseBool,
+			UISelfAuthenticatorMgmtEnabled:  &falseBool,
+			UISelfPasswordChangeEnabled:     &falseBool,
+			UISelfMailEditionEnabled:        &falseBool,
+			UISelfDeleteAccountEnabled:      &falseBool,
+		}, err
 	}
 
-	var falseBool = false
-	var customConfig = api.RealmCustomConfiguration{
-		DefaultClientID:                 new(string),
-		DefaultRedirectURI:              new(string),
-		APISelfAuthenticatorMgmtEnabled: &falseBool,
-		APISelfPasswordChangeEnabled:    &falseBool,
-		APISelfMailEditionEnabled:       &falseBool,
-		APISelfDeleteAccountEnabled:     &falseBool,
-		UISelfAuthenticatorMgmtEnabled:  &falseBool,
-		UISelfPasswordChangeEnabled:     &falseBool,
-		UISelfMailEditionEnabled:        &falseBool,
-		UISelfDeleteAccountEnabled:      &falseBool,
-	}
-
-	// empty config
-	if customConfigJSON == "" {
-		// database is empty
-		return customConfig, nil
-	}
-
-	// transform json string into
-	err = json.Unmarshal([]byte(customConfigJSON), &customConfig)
-	if err != nil {
-		return customConfig, err
-	}
-	return customConfig, nil
+	return api.RealmCustomConfiguration{
+		DefaultClientID:                 config.DefaultClientID,
+		DefaultRedirectURI:              config.DefaultClientID,
+		APISelfAuthenticatorMgmtEnabled: config.APISelfAuthenticatorMgmtEnabled,
+		APISelfPasswordChangeEnabled:    config.APISelfPasswordChangeEnabled,
+		APISelfMailEditionEnabled:       config.APISelfMailEditionEnabled,
+		APISelfDeleteAccountEnabled:     config.APISelfDeleteAccountEnabled,
+		UISelfAuthenticatorMgmtEnabled:  config.UISelfAuthenticatorMgmtEnabled,
+		UISelfPasswordChangeEnabled:     config.UISelfPasswordChangeEnabled,
+		UISelfMailEditionEnabled:        config.UISelfMailEditionEnabled,
+		UISelfDeleteAccountEnabled:      config.UISelfDeleteAccountEnabled,
+	}, nil
 }
 
 // Update the configuration in the database; verify that the content of the configuration is coherent with Keycloak configuration
@@ -930,13 +928,23 @@ func (c *component) UpdateRealmCustomConfiguration(ctx context.Context, realmNam
 			Message: internal.MsgErrInvalidParam + "." + internal.ClientID + "Or" + internal.RedirectURI,
 		}
 	}
-	// transform customConfig object into JSON string
-	configJSON, err := json.Marshal(customConfig)
-	if err != nil {
-		return err
+
+	// transform customConfig object into DTO
+	var config = internal.RealmConfiguration{
+		DefaultClientID:                 customConfig.DefaultClientID,
+		DefaultRedirectURI:              customConfig.DefaultRedirectURI,
+		APISelfAuthenticatorMgmtEnabled: customConfig.APISelfAuthenticatorMgmtEnabled,
+		APISelfDeleteAccountEnabled:     customConfig.APISelfDeleteAccountEnabled,
+		APISelfMailEditionEnabled:       customConfig.APISelfMailEditionEnabled,
+		APISelfPasswordChangeEnabled:    customConfig.APISelfPasswordChangeEnabled,
+		UISelfAuthenticatorMgmtEnabled:  customConfig.UISelfAuthenticatorMgmtEnabled,
+		UISelfDeleteAccountEnabled:      customConfig.UISelfDeleteAccountEnabled,
+		UISelfMailEditionEnabled:        customConfig.UISelfMailEditionEnabled,
+		UISelfPasswordChangeEnabled:     customConfig.UISelfPasswordChangeEnabled,
 	}
+
 	// from the realm ID, update the custom configuration in the DB
 	realmID := realmConfig.Id
-	err = c.configDBModule.StoreOrUpdate(ctx, *realmID, string(configJSON))
+	err = c.configDBModule.StoreOrUpdate(ctx, *realmID, config)
 	return err
 }

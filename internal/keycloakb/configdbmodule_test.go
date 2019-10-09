@@ -16,6 +16,6 @@ func TestConfigurationDBModule(t *testing.T) {
 
 	mockDB.EXPECT().Exec(gomock.Any(), "realmId", gomock.Any(), gomock.Any()).Return(nil, nil).Times(1)
 	var configDBModule = NewConfigurationDBModule(mockDB)
-	var err = configDBModule.StoreOrUpdate(context.Background(), "realmId", "{}")
+	var err = configDBModule.StoreOrUpdate(context.Background(), "realmId", RealmConfiguration{})
 	assert.Nil(t, err)
 }
