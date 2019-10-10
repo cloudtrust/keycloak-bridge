@@ -18,7 +18,7 @@ type AccountRepresentation struct {
 
 // CredentialRepresentation struct
 type CredentialRepresentation struct {
-	Id             *string `json:"id,omitempty"`
+	ID             *string `json:"id,omitempty"`
 	Type           *string `json:"type,omitempty"`
 	UserLabel      *string `json:"userLabel,omitempty"`
 	CreatedDate    *int64  `json:"createdDate,omitempty"`
@@ -41,7 +41,7 @@ type LabelBody struct {
 // ConvertCredential creates an API credential from a KC credential
 func ConvertCredential(credKc *kc.CredentialRepresentation) CredentialRepresentation {
 	var cred CredentialRepresentation
-	cred.Id = credKc.Id
+	cred.ID = credKc.Id
 	cred.Type = credKc.Type
 	cred.UserLabel = credKc.UserLabel
 	cred.CreatedDate = credKc.CreatedDate
@@ -139,7 +139,7 @@ func (updatePwd UpdatePasswordBody) Validate() error {
 
 // Validate is a validator for CredentialRepresentation
 func (credential CredentialRepresentation) Validate() error {
-	if credential.Id != nil && !matchesRegExp(*credential.Id, RegExpID) {
+	if credential.ID != nil && !matchesRegExp(*credential.ID, RegExpID) {
 		return errors.New("Invalid Id")
 	}
 

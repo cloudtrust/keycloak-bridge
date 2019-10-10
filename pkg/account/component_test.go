@@ -432,7 +432,7 @@ func TestGetCredentials(t *testing.T) {
 		apiCredsRep, err := component.GetCredentials(ctx)
 
 		var expectedAPICredRep = account_api.CredentialRepresentation{
-			Id: &id,
+			ID: &id,
 		}
 
 		var expectedAPICredsRep []account_api.CredentialRepresentation
