@@ -18,8 +18,7 @@
   version = "2018.01.18"
 
 [[projects]]
-  branch = "issuer"
-  digest = "1:33fa58e2c47f3c984a9b8a52ec7488aff350583cd885e39b76ff849fad805258"
+  digest = "1:2bf3a8c3fd188b74dddfdfed5d982b595266ba192ad525aa9f340f1cc66a7188"
   name = "github.com/cloudtrust/common-service"
   packages = [
     ".",
@@ -35,15 +34,16 @@
     "tracking",
   ]
   pruneopts = "UT"
-  revision = "75dcf0fc2951c6c9efa75bf71ac3bfa323bfdb40"
+  revision = "926680e453c4688a250df9cf4b663ba373787c1b"
+  version = "v1.1.0"
 
 [[projects]]
-  branch = "issuer"
-  digest = "1:44df7dc10501b26337ad05101db888e1f9841f976fab9a724f30f612ef28d160"
+  digest = "1:e0941b314bcb906a3d485ac6b6ca575f6ab9d0a2cf877201d775c66e48148eb7"
   name = "github.com/cloudtrust/keycloak-client"
   packages = ["."]
   pruneopts = "UT"
-  revision = "f6c81acdc95b7da53c47933ce95faed054e1ef37"
+  revision = "b8f0ef8fe71893a8ea84e0334f6a75c346f8167a"
+  version = "v1.1.1"
 
 [[projects]]
   digest = "1:d64c893fc7d2c3d395f421b00d21f0adb8ceffc4d3c90299e732b3985ca16eb4"
@@ -136,7 +136,7 @@
   version = "v1.3.2"
 
 [[projects]]
-  digest = "1:debcbc62c53851dab1fc881438a65449dd5ffa12f64f059fd6e32b938799513d"
+  digest = "1:e02b687ade0c19c038ecce3ea326d756519adc4bba1203a9e76d620b12354892"
   name = "github.com/google/flatbuffers"
   packages = ["go"]
   pruneopts = "UT"
@@ -171,7 +171,7 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:4e0dfc2efcb96e8b36998900576b38ab08d0f1e82fb855ac9366f5bbcb8aeef4"
+  digest = "1:4ffdbf6b310da314d1d171f356012e16157ceb43869c7e43e0f3c438c0c3d5d3"
   name = "github.com/influxdata/influxdb"
   packages = [
     "client/v2",
@@ -395,12 +395,12 @@
   revision = "0f29369cfe4552d0e4bcddc57cc75f4d7e672a33"
 
 [[projects]]
-  branch = "release-branch.go1.11"
-  digest = "1:33a43cb31975899cfcd81600d1390467db1778ae87102f80668a753fed8c663e"
+  branch = "master"
+  digest = "1:7c927f17d868be652a4cfe7de23e4292dea5b14d974a1d536e3b7cb7e79fd695"
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = "UT"
-  revision = "98c5dad5d1a0e8a73845ecc8897d0bd56586511d"
+  revision = "b09406accb4736d857a32bf9444cd7edae2ffa79"
 
 [[projects]]
   digest = "1:8d8faad6b12a3a4c819a3f9618cb6ee1fa1cfc33253abeeea8b55336721e3405"
