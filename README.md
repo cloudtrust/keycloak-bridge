@@ -47,8 +47,9 @@ account-http-host-port | HTTP server listening address | 0.0.0.0:8866
 
 Key | Description | Default value
 --- | ----------- | -------------
-keycloak-host-port | Keycloak host:port | "127.0.0.1:8080"
-keycloak-timeout-ms | Keycloak requests timeout in milliseconds | 5000
+keycloak-api-uri | Keycloak protocol:host:port | "http://127.0.0.1:8080"
+keycloak-oidc-uri | Keycloak protocol:host:port (multiple value supported) | "http://127.0.0.1:8080 http://localhost:8080"
+keycloak-timeout | Keycloak requests timeout in milliseconds | 5000
 
 
 ### ENV variables

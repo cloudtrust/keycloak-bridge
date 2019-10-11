@@ -39,7 +39,7 @@ event-basic-auth-token: "superpasswordverylongandstrong"
 
 # Keycloak configs
 keycloak-api-uri: http://localhost:8080
-keycloak-oidc-uri: http://localhost:8080
+keycloak-oidc-uri: http://localhost:8080 http://127.0.0.1:8080
 keycloak-timeout: 5s
 
 # DB Audit RW

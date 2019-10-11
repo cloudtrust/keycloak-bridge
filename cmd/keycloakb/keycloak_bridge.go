@@ -706,7 +706,7 @@ func config(logger log.Logger) *viper.Viper {
 
 	// Keycloak default.
 	v.SetDefault("keycloak-api-uri", "http://127.0.0.1:8080")
-	v.SetDefault("keycloak-oidc-uri", "http://127.0.0.1:8080")
+	v.SetDefault("keycloak-oidc-uri", "http://127.0.0.1:8080 http://localhost:8080")
 	v.SetDefault("keycloak-timeout", "5s")
 
 	// Storage events in DB (read/write)
