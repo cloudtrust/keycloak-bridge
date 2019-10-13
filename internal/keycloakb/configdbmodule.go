@@ -4,7 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"errors"
+
+	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 )
 
 const (
@@ -24,18 +25,13 @@ type configurationDBModule struct {
 	db DBConfiguration
 }
 
-// RealmConfiguration struct
-type RealmConfiguration struct {
-	DefaultClientID                 *string `json:"default_client_id,omitempty"`
-	DefaultRedirectURI              *string `json:"default_redirect_uri,omitempty"`
-	APISelfAuthenticatorMgmtEnabled *bool   `json:"api_self_authenticator_mgmt_enabled"`
-	APISelfPasswordChangeEnabled    *bool   `json:"api_self_password_change_enabled"`
-	APISelfMailEditionEnabled       *bool   `json:"api_self_mail_edition_enabled"`
-	APISelfDeleteAccountEnabled     *bool   `json:"api_self_delete_account_enabled"`
-	UISelfAuthenticatorMgmtEnabled  *bool   `json:"ui_self_authenticator_mgmt_enabled"`
-	UISelfPasswordChangeEnabled     *bool   `json:"ui_self_password_change_enabled"`
-	UISelfMailEditionEnabled        *bool   `json:"ui_self_mail_edition_enabled"`
-	UISelfDeleteAccountEnabled      *bool   `json:"ui_self_delete_account_enabled"`
+// MissingRealmConfigurationErr is the error thrown if no configuration is found in DB
+type MissingRealmConfigurationErr struct {
+	realmID string
+}
+
+func (e MissingRealmConfigurationErr) Error() string {
+	return "RealmConfiguration is not configured for " + e.realmID
 }
 
 // NewConfigurationDBModule returns a ConfigurationDB module.
@@ -45,7 +41,7 @@ func NewConfigurationDBModule(db DBConfiguration) *configurationDBModule {
 	}
 }
 
-func (c *configurationDBModule) StoreOrUpdate(context context.Context, realmID string, config RealmConfiguration) error {
+func (c *configurationDBModule) StoreOrUpdate(context context.Context, realmID string, config dto.RealmConfiguration) error {
 	// transform customConfig object into JSON string
 	configJSON, err := json.Marshal(config)
 	if err != nil {
@@ -57,18 +53,19 @@ func (c *configurationDBModule) StoreOrUpdate(context context.Context, realmID s
 	return err
 }
 
-func (c *configurationDBModule) GetConfiguration(context context.Context, realmID string) (RealmConfiguration, error) {
+func (c *configurationDBModule) GetConfiguration(context context.Context, realmID string) (dto.RealmConfiguration, error) {
 	var configJSON string
-	var config = RealmConfiguration{}
+	var config = dto.RealmConfiguration{}
 	row := c.db.QueryRow(selectConfigStmt, realmID)
 
 	switch err := row.Scan(&configJSON); err {
 	case sql.ErrNoRows:
-		err = errors.New("RealmConfiguration is not configured for " + realmID)
-		return RealmConfiguration{}, err
+		return dto.RealmConfiguration{}, &MissingRealmConfigurationErr{
+			realmID: realmID,
+		}
 	default:
 		if err != nil {
-			return RealmConfiguration{}, err
+			return dto.RealmConfiguration{}, err
 		}
 
 		err = json.Unmarshal([]byte(configJSON), &config)

@@ -456,7 +456,7 @@ func main() {
 		eventsDBModule := configureEventsDbModule(baseEventsDBModule, influxMetrics, accountLogger, tracer)
 
 		// module for retrieving the custom configuration
-		var configDBModule keycloakb.ConfigurationDBModule
+		var configDBModule account.ConfigurationDBModule
 		{
 			configDBModule = keycloakb.NewConfigurationDBModule(configurationRoDBConn)
 			configDBModule = management.MakeConfigurationDBModuleInstrumentingMW(influxMetrics.NewHistogram("configDB_module"))(configDBModule)

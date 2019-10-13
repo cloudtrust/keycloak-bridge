@@ -1,4 +1,4 @@
-package management
+package keycloakb
 
 import (
 	"context"
@@ -6,13 +6,19 @@ import (
 
 	cs "github.com/cloudtrust/common-service"
 	cm "github.com/cloudtrust/common-service/metrics"
-	internal "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
+	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 )
 
 // Instrumenting middleware at module level.
 type configDBModuleInstrumentingMW struct {
 	h    cm.Histogram
 	next ConfigurationDBModule
+}
+
+// ConfigurationDBModule is the interface of the configuration module.
+type ConfigurationDBModule interface {
+	StoreOrUpdate(context.Context, string, dto.RealmConfiguration) error
+	GetConfiguration(context.Context, string) (dto.RealmConfiguration, error)
 }
 
 // MakeConfigurationDBModuleInstrumentingMW makes an instrumenting middleware at module level.
@@ -26,7 +32,7 @@ func MakeConfigurationDBModuleInstrumentingMW(h cm.Histogram) func(Configuration
 }
 
 // configDBModuleInstrumentingMW implements Module.
-func (m *configDBModuleInstrumentingMW) StoreOrUpdate(ctx context.Context, realmName string, config internal.RealmConfiguration) error {
+func (m *configDBModuleInstrumentingMW) StoreOrUpdate(ctx context.Context, realmName string, config dto.RealmConfiguration) error {
 	defer func(begin time.Time) {
 		m.h.With("correlation_id", ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
 	}(time.Now())
@@ -34,7 +40,7 @@ func (m *configDBModuleInstrumentingMW) StoreOrUpdate(ctx context.Context, realm
 }
 
 // configDBModuleInstrumentingMW implements Module.
-func (m *configDBModuleInstrumentingMW) GetConfiguration(ctx context.Context, realmName string) (internal.RealmConfiguration, error) {
+func (m *configDBModuleInstrumentingMW) GetConfiguration(ctx context.Context, realmName string) (dto.RealmConfiguration, error) {
 	defer func(begin time.Time) {
 		m.h.With("correlation_id", ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
 	}(time.Now())

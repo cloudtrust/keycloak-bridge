@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/cloudtrust/common-service/log"
-	internal "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
+	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 )
 
 // Logging middleware for the statistic module.
@@ -25,7 +25,7 @@ func MakeConfigurationDBModuleLoggingMW(log log.Logger) func(ConfigurationDBModu
 }
 
 // configDBModuleLoggingMW implements ConfigurationDBModule.
-func (m *configDBModuleLoggingMW) StoreOrUpdate(ctx context.Context, realmName string, config internal.RealmConfiguration) error {
+func (m *configDBModuleLoggingMW) StoreOrUpdate(ctx context.Context, realmName string, config dto.RealmConfiguration) error {
 	defer func(begin time.Time) {
 		m.logger.Info("method", "StoreOrUpdate", "args", realmName, config, "took", time.Since(begin))
 	}(time.Now())
@@ -33,7 +33,7 @@ func (m *configDBModuleLoggingMW) StoreOrUpdate(ctx context.Context, realmName s
 }
 
 // configDBModuleLoggingMW implements ConfigurationDBModule.
-func (m *configDBModuleLoggingMW) GetConfiguration(ctx context.Context, realmName string) (internal.RealmConfiguration, error) {
+func (m *configDBModuleLoggingMW) GetConfiguration(ctx context.Context, realmName string) (dto.RealmConfiguration, error) {
 	defer func(begin time.Time) {
 		m.logger.Info("method", "GetConfiguration", "args", realmName, "took", time.Since(begin))
 	}(time.Now())

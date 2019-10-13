@@ -10,6 +10,7 @@ import (
 	"github.com/cloudtrust/common-service/database"
 	errorhandler "github.com/cloudtrust/common-service/errors"
 	api "github.com/cloudtrust/keycloak-bridge/api/account"
+	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 	internal "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	kc "github.com/cloudtrust/keycloak-client"
 )
@@ -43,7 +44,7 @@ type Component interface {
 
 // ConfigurationDBModule is the interface of the configuration module.
 type ConfigurationDBModule interface {
-	GetConfiguration(context.Context, string) (internal.RealmConfiguration, error)
+	GetConfiguration(context.Context, string) (dto.RealmConfiguration, error)
 }
 
 // Component is the management component.

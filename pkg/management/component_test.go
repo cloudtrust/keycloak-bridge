@@ -14,6 +14,8 @@ import (
 	commonhttp "github.com/cloudtrust/common-service/errors"
 	"github.com/cloudtrust/common-service/log"
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
+	"github.com/cloudtrust/keycloak-bridge/internal/dto"
+	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/cloudtrust/keycloak-bridge/pkg/management/mock"
 	kc "github.com/cloudtrust/keycloak-client"
 	"github.com/golang/mock/gomock"
@@ -2129,23 +2131,19 @@ func TestGetRealmCustomConfiguration(t *testing.T) {
 		var clientID = "ClientID"
 		var redirectURI = "http://redirect.url.com/test"
 
-		var customRealmConfigStr = `{
-				"default_client_id": "` + clientID + `",
-				"default_redirect_uri": "` + redirectURI + `"
-			}`
-		var configInit = api.RealmCustomConfiguration{
+		var realmConfig = dto.RealmConfiguration{
 			DefaultClientID:    &clientID,
 			DefaultRedirectURI: &redirectURI,
 		}
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
-		mockConfigurationDBModule.EXPECT().GetConfiguration(ctx, realmID).Return(customRealmConfigStr, nil).Times(1)
+		mockConfigurationDBModule.EXPECT().GetConfiguration(ctx, realmID).Return(realmConfig, nil).Times(1)
 
 		configJSON, err := managementComponent.GetRealmCustomConfiguration(ctx, realmID)
 
 		assert.Nil(t, err)
-		assert.Equal(t, *configJSON.DefaultClientID, *configInit.DefaultClientID)
-		assert.Equal(t, *configJSON.DefaultRedirectURI, *configInit.DefaultRedirectURI)
+		assert.Equal(t, *configJSON.DefaultClientID, *realmConfig.DefaultClientID)
+		assert.Equal(t, *configJSON.DefaultRedirectURI, *realmConfig.DefaultRedirectURI)
 	}
 
 	// Get empty config
@@ -2167,39 +2165,13 @@ func TestGetRealmCustomConfiguration(t *testing.T) {
 		mockKeycloakClient.EXPECT().GetRealm(accessToken, realmID).Return(kcRealmRep, nil).Times(1)
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
-		mockConfigurationDBModule.EXPECT().GetConfiguration(ctx, realmID).Return("", nil).Times(1)
+		mockConfigurationDBModule.EXPECT().GetConfiguration(ctx, realmID).Return(dto.RealmConfiguration{}, keycloakb.MissingRealmConfigurationErr{}).Times(1)
 
 		configJSON, err := managementComponent.GetRealmCustomConfiguration(ctx, realmID)
 
 		assert.Nil(t, err)
 		assert.Equal(t, *configJSON.DefaultClientID, *new(string))
 		assert.Equal(t, *configJSON.DefaultRedirectURI, *new(string))
-	}
-
-	// Invalid structure in DB
-	{
-		var id = realmID
-		var keycloakVersion = "4.8.3"
-		var realm = "master"
-		var displayName = "Master"
-		var enabled = true
-
-		var kcRealmRep = kc.RealmRepresentation{
-			Id:              &id,
-			KeycloakVersion: &keycloakVersion,
-			Realm:           &realm,
-			DisplayName:     &displayName,
-			Enabled:         &enabled,
-		}
-
-		mockKeycloakClient.EXPECT().GetRealm(accessToken, realmID).Return(kcRealmRep, nil).Times(1)
-
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
-		mockConfigurationDBModule.EXPECT().GetConfiguration(ctx, realmID).Return("928743", nil).Times(1)
-
-		_, err := managementComponent.GetRealmCustomConfiguration(ctx, realmID)
-
-		assert.NotNil(t, err)
 	}
 
 	// Unknown realm
@@ -2246,7 +2218,7 @@ func TestGetRealmCustomConfiguration(t *testing.T) {
 		mockKeycloakClient.EXPECT().GetRealm(accessToken, realmID).Return(kcRealmRep, nil).Times(1)
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
-		mockConfigurationDBModule.EXPECT().GetConfiguration(ctx, realmID).Return("", errors.New("error")).Times(1)
+		mockConfigurationDBModule.EXPECT().GetConfiguration(ctx, realmID).Return(dto.RealmConfiguration{}, errors.New("error")).Times(1)
 
 		_, err := managementComponent.GetRealmCustomConfiguration(ctx, realmID)
 

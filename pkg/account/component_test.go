@@ -27,7 +27,8 @@ func genericUpdatePasswordTest(t *testing.T, oldPasswd, newPasswd, confirmPasswo
 	mockKeycloakAccountClient := mock.NewKeycloakAccountClient(mockCtrl)
 	mockEventDBModule := mock.NewEventsDBModule(mockCtrl)
 	mockLogger := log.NewNopLogger()
-	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockLogger)
+	mockConfigurationDBModule := mock.NewConfigurationDBModule(mockCtrl)
+	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigurationDBModule, mockLogger)
 
 	accessToken := "access token"
 	realm := "sample realm"
@@ -74,7 +75,8 @@ func TestUpdatePasswordWrongPwd(t *testing.T) {
 	mockKeycloakAccountClient := mock.NewKeycloakAccountClient(mockCtrl)
 	mockEventDBModule := mock.NewEventsDBModule(mockCtrl)
 	mockLogger := mock.NewLogger(mockCtrl)
-	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockLogger)
+	mockConfigurationDBModule := mock.NewConfigurationDBModule(mockCtrl)
+	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigurationDBModule, mockLogger)
 
 	accessToken := "access token"
 	realm := "sample realm"
@@ -119,8 +121,9 @@ func TestUpdateAccount(t *testing.T) {
 	mockKeycloakAccountClient := mock.NewKeycloakAccountClient(mockCtrl)
 	mockEventDBModule := mock.NewEventsDBModule(mockCtrl)
 	var mockLogger = log.NewNopLogger()
+	mockConfigurationDBModule := mock.NewConfigurationDBModule(mockCtrl)
 
-	var accountComponent = NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockLogger)
+	var accountComponent = NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigurationDBModule, mockLogger)
 
 	accessToken := "access token"
 	realmName := "master"
@@ -294,8 +297,9 @@ func TestGetUser(t *testing.T) {
 	mockKeycloakAccountClient := mock.NewKeycloakAccountClient(mockCtrl)
 	mockEventDBModule := mock.NewEventsDBModule(mockCtrl)
 	var mockLogger = log.NewNopLogger()
+	mockConfigurationDBModule := mock.NewConfigurationDBModule(mockCtrl)
 
-	var accountComponent = NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockLogger)
+	var accountComponent = NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigurationDBModule, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -370,8 +374,9 @@ func TestDeleteUser(t *testing.T) {
 	mockKeycloakAccountClient := mock.NewKeycloakAccountClient(mockCtrl)
 	mockEventDBModule := mock.NewEventsDBModule(mockCtrl)
 	var mockLogger = log.NewNopLogger()
+	mockConfigurationDBModule := mock.NewConfigurationDBModule(mockCtrl)
 
-	var accountComponent = NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockLogger)
+	var accountComponent = NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigurationDBModule, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -406,7 +411,9 @@ func TestGetCredentials(t *testing.T) {
 	mockKeycloakAccountClient := mock.NewKeycloakAccountClient(mockCtrl)
 	mockEventDBModule := mock.NewEventsDBModule(mockCtrl)
 	mockLogger := log.NewNopLogger()
-	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockLogger)
+	mockConfigurationDBModule := mock.NewConfigurationDBModule(mockCtrl)
+
+	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigurationDBModule, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var currentRealm = "master"
@@ -463,7 +470,9 @@ func TestGetCredentialRegistrators(t *testing.T) {
 	mockKeycloakAccountClient := mock.NewKeycloakAccountClient(mockCtrl)
 	mockEventDBModule := mock.NewEventsDBModule(mockCtrl)
 	mockLogger := log.NewNopLogger()
-	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockLogger)
+	mockConfigurationDBModule := mock.NewConfigurationDBModule(mockCtrl)
+
+	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigurationDBModule, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var currentRealm = "master"
@@ -507,7 +516,9 @@ func TestUpdateLabelCredential(t *testing.T) {
 	mockKeycloakAccountClient := mock.NewKeycloakAccountClient(mockCtrl)
 	mockEventDBModule := mock.NewEventsDBModule(mockCtrl)
 	mockLogger := log.NewNopLogger()
-	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockLogger)
+	mockConfigurationDBModule := mock.NewConfigurationDBModule(mockCtrl)
+
+	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigurationDBModule, mockLogger)
 
 	accessToken := "access token"
 	realm := "sample realm"
@@ -546,7 +557,9 @@ func TestDeleteCredential(t *testing.T) {
 	mockKeycloakAccountClient := mock.NewKeycloakAccountClient(mockCtrl)
 	mockEventDBModule := mock.NewEventsDBModule(mockCtrl)
 	mockLogger := log.NewNopLogger()
-	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockLogger)
+	mockConfigurationDBModule := mock.NewConfigurationDBModule(mockCtrl)
+
+	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigurationDBModule, mockLogger)
 
 	accessToken := "access token"
 	realm := "sample realm"
@@ -583,7 +596,9 @@ func TestMoveCredential(t *testing.T) {
 	mockKeycloakAccountClient := mock.NewKeycloakAccountClient(mockCtrl)
 	mockEventDBModule := mock.NewEventsDBModule(mockCtrl)
 	mockLogger := log.NewNopLogger()
-	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockLogger)
+	mockConfigurationDBModule := mock.NewConfigurationDBModule(mockCtrl)
+
+	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigurationDBModule, mockLogger)
 
 	accessToken := "access token"
 	realm := "sample realm"
