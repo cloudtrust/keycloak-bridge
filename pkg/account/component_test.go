@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cloudtrust/keycloak-bridge/internal/dto"
+
 	cs "github.com/cloudtrust/common-service"
 	"github.com/cloudtrust/common-service/database"
 	"github.com/cloudtrust/common-service/log"
@@ -643,4 +645,65 @@ func TestMoveCredential(t *testing.T) {
 		assert.NotNil(t, err)
 	}
 
+}
+
+func TestGetConfiguration(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	mockKeycloakAccountClient := mock.NewKeycloakAccountClient(mockCtrl)
+	mockEventDBModule := mock.NewEventsDBModule(mockCtrl)
+	mockLogger := log.NewNopLogger()
+	mockConfigurationDBModule := mock.NewConfigurationDBModule(mockCtrl)
+
+	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigurationDBModule, mockLogger)
+
+	var accessToken = "TOKEN=="
+	var currentRealm = "master"
+	var currentUserID = "1234-789"
+
+	// Get configuration with succces
+	{
+		var falseBool = false
+		var trueBool = true
+		var config = dto.RealmConfiguration{
+			APISelfAuthenticatorDeletionEnabled: &falseBool,
+			APISelfDeleteAccountEnabled:         &falseBool,
+			APISelfMailEditionEnabled:           &falseBool,
+			APISelfPasswordChangeEnabled:        &falseBool,
+			DefaultClientID:                     new(string),
+			DefaultRedirectURI:                  new(string),
+			UISelfAuthenticatorDeletionEnabled:  &trueBool,
+			UISelfDeleteAccountEnabled:          &trueBool,
+			UISelfMailEditionEnabled:            &trueBool,
+			UISelfPasswordChangeEnabled:         &trueBool,
+		}
+
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx = context.WithValue(ctx, cs.CtContextRealm, currentRealm)
+		ctx = context.WithValue(ctx, cs.CtContextUserID, currentUserID)
+
+		mockConfigurationDBModule.EXPECT().GetConfiguration(ctx, currentRealm).Return(config, nil).Times(1)
+
+		resConfig, err := component.GetConfiguration(ctx)
+
+		assert.Nil(t, err)
+		assert.Equal(t, *config.UISelfAuthenticatorDeletionEnabled, *resConfig.AuthenticatorDeletionEnabled)
+		assert.Equal(t, *config.UISelfDeleteAccountEnabled, *resConfig.DeleteAccountEnabled)
+		assert.Equal(t, *config.UISelfMailEditionEnabled, *resConfig.MailEditionEnabled)
+		assert.Equal(t, *config.UISelfPasswordChangeEnabled, *resConfig.PasswordChangeEnabled)
+	}
+
+	//Error
+	{
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx = context.WithValue(ctx, cs.CtContextRealm, currentRealm)
+		ctx = context.WithValue(ctx, cs.CtContextUserID, currentUserID)
+
+		mockConfigurationDBModule.EXPECT().GetConfiguration(ctx, currentRealm).Return(dto.RealmConfiguration{}, fmt.Errorf("Unexpected error")).Times(1)
+
+		_, err := component.GetConfiguration(ctx)
+
+		assert.NotNil(t, err)
+	}
 }

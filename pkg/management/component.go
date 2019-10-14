@@ -867,16 +867,16 @@ func (c *component) GetRealmCustomConfiguration(ctx context.Context, realmName s
 		case internal.MissingRealmConfigurationErr:
 			c.logger.Warn("message", e.Error())
 			return api.RealmCustomConfiguration{
-				DefaultClientID:                 new(string),
-				DefaultRedirectURI:              new(string),
-				APISelfAuthenticatorMgmtEnabled: &falseBool,
-				APISelfPasswordChangeEnabled:    &falseBool,
-				APISelfMailEditionEnabled:       &falseBool,
-				APISelfDeleteAccountEnabled:     &falseBool,
-				UISelfAuthenticatorMgmtEnabled:  &falseBool,
-				UISelfPasswordChangeEnabled:     &falseBool,
-				UISelfMailEditionEnabled:        &falseBool,
-				UISelfDeleteAccountEnabled:      &falseBool,
+				DefaultClientID:                     new(string),
+				DefaultRedirectURI:                  new(string),
+				APISelfAuthenticatorDeletionEnabled: &falseBool,
+				APISelfPasswordChangeEnabled:        &falseBool,
+				APISelfMailEditionEnabled:           &falseBool,
+				APISelfDeleteAccountEnabled:         &falseBool,
+				UISelfAuthenticatorDeletionEnabled:  &falseBool,
+				UISelfPasswordChangeEnabled:         &falseBool,
+				UISelfMailEditionEnabled:            &falseBool,
+				UISelfDeleteAccountEnabled:          &falseBool,
 			}, nil
 		default:
 			c.logger.Error("err", e.Error())
@@ -885,16 +885,16 @@ func (c *component) GetRealmCustomConfiguration(ctx context.Context, realmName s
 	}
 
 	return api.RealmCustomConfiguration{
-		DefaultClientID:                 config.DefaultClientID,
-		DefaultRedirectURI:              config.DefaultRedirectURI,
-		APISelfAuthenticatorMgmtEnabled: config.APISelfAuthenticatorMgmtEnabled,
-		APISelfPasswordChangeEnabled:    config.APISelfPasswordChangeEnabled,
-		APISelfMailEditionEnabled:       config.APISelfMailEditionEnabled,
-		APISelfDeleteAccountEnabled:     config.APISelfDeleteAccountEnabled,
-		UISelfAuthenticatorMgmtEnabled:  config.UISelfAuthenticatorMgmtEnabled,
-		UISelfPasswordChangeEnabled:     config.UISelfPasswordChangeEnabled,
-		UISelfMailEditionEnabled:        config.UISelfMailEditionEnabled,
-		UISelfDeleteAccountEnabled:      config.UISelfDeleteAccountEnabled,
+		DefaultClientID:                     config.DefaultClientID,
+		DefaultRedirectURI:                  config.DefaultRedirectURI,
+		APISelfAuthenticatorDeletionEnabled: config.APISelfAuthenticatorDeletionEnabled,
+		APISelfPasswordChangeEnabled:        config.APISelfPasswordChangeEnabled,
+		APISelfMailEditionEnabled:           config.APISelfMailEditionEnabled,
+		APISelfDeleteAccountEnabled:         config.APISelfDeleteAccountEnabled,
+		UISelfAuthenticatorDeletionEnabled:  config.UISelfAuthenticatorDeletionEnabled,
+		UISelfPasswordChangeEnabled:         config.UISelfPasswordChangeEnabled,
+		UISelfMailEditionEnabled:            config.UISelfMailEditionEnabled,
+		UISelfDeleteAccountEnabled:          config.UISelfDeleteAccountEnabled,
 	}, nil
 }
 
@@ -939,16 +939,16 @@ func (c *component) UpdateRealmCustomConfiguration(ctx context.Context, realmNam
 
 	// transform customConfig object into DTO
 	var config = dto.RealmConfiguration{
-		DefaultClientID:                 customConfig.DefaultClientID,
-		DefaultRedirectURI:              customConfig.DefaultRedirectURI,
-		APISelfAuthenticatorMgmtEnabled: customConfig.APISelfAuthenticatorMgmtEnabled,
-		APISelfDeleteAccountEnabled:     customConfig.APISelfDeleteAccountEnabled,
-		APISelfMailEditionEnabled:       customConfig.APISelfMailEditionEnabled,
-		APISelfPasswordChangeEnabled:    customConfig.APISelfPasswordChangeEnabled,
-		UISelfAuthenticatorMgmtEnabled:  customConfig.UISelfAuthenticatorMgmtEnabled,
-		UISelfDeleteAccountEnabled:      customConfig.UISelfDeleteAccountEnabled,
-		UISelfMailEditionEnabled:        customConfig.UISelfMailEditionEnabled,
-		UISelfPasswordChangeEnabled:     customConfig.UISelfPasswordChangeEnabled,
+		DefaultClientID:                     customConfig.DefaultClientID,
+		DefaultRedirectURI:                  customConfig.DefaultRedirectURI,
+		APISelfAuthenticatorDeletionEnabled: customConfig.APISelfAuthenticatorDeletionEnabled,
+		APISelfDeleteAccountEnabled:         customConfig.APISelfDeleteAccountEnabled,
+		APISelfMailEditionEnabled:           customConfig.APISelfMailEditionEnabled,
+		APISelfPasswordChangeEnabled:        customConfig.APISelfPasswordChangeEnabled,
+		UISelfAuthenticatorDeletionEnabled:  customConfig.UISelfAuthenticatorDeletionEnabled,
+		UISelfDeleteAccountEnabled:          customConfig.UISelfDeleteAccountEnabled,
+		UISelfMailEditionEnabled:            customConfig.UISelfMailEditionEnabled,
+		UISelfPasswordChangeEnabled:         customConfig.UISelfPasswordChangeEnabled,
 	}
 
 	// from the realm ID, update the custom configuration in the DB

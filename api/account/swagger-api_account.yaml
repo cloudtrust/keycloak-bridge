@@ -199,6 +199,8 @@ components:
     Configuration:
       type: object
       properties:
+        authenticator_deletion_enabled:
+          type: boolean
         password_change_enabled:
           type: boolean
         mail_edition_enabled:

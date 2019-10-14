@@ -904,7 +904,7 @@ components:
           type: string
         default_redirect_uri:
           type: string
-        api_self_authenticator_mgmt_enabled:
+        api_self_authenticator_deletion_enabled:
           type: boolean
         api_self_password_change_enabled:
           type: boolean
@@ -912,7 +912,7 @@ components:
           type: boolean
         api_self_delete_account_enabled:
           type: boolean
-        ui_self_authenticator_mgmt_enabled:
+        ui_self_authenticator_deletion_enabled:
           type: boolean
         ui_self_password_change_enabled:
           type: boolean

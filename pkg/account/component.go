@@ -40,11 +40,13 @@ type Component interface {
 	GetAccount(ctx context.Context) (api.AccountRepresentation, error)
 	UpdateAccount(context.Context, api.AccountRepresentation) error
 	DeleteAccount(context.Context) error
+	GetConfiguration(context.Context) (api.Configuration, error)
 }
 
 // ConfigurationDBModule is the interface of the configuration module.
 type ConfigurationDBModule interface {
 	GetConfiguration(context.Context, string) (dto.RealmConfiguration, error)
+	StoreOrUpdate(context.Context, string, dto.RealmConfiguration) error
 }
 
 // Component is the management component.
@@ -322,9 +324,9 @@ func (c *component) GetConfiguration(ctx context.Context) (api.Configuration, er
 	}
 
 	return api.Configuration{
-		AuthenticatorMgmtEnabled: config.UISelfAuthenticatorMgmtEnabled,
-		DeleteAccountEnabled:     config.UISelfDeleteAccountEnabled,
-		MailEditionEnabled:       config.UISelfMailEditionEnabled,
-		PasswordChangeEnabled:    config.UISelfPasswordChangeEnabled,
+		AuthenticatorDeletionEnabled: config.UISelfAuthenticatorDeletionEnabled,
+		DeleteAccountEnabled:         config.UISelfDeleteAccountEnabled,
+		MailEditionEnabled:           config.UISelfMailEditionEnabled,
+		PasswordChangeEnabled:        config.UISelfPasswordChangeEnabled,
 	}, nil
 }
