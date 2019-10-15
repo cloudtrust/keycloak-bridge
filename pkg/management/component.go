@@ -914,26 +914,40 @@ func (c *component) UpdateRealmCustomConfiguration(ctx context.Context, realmNam
 		c.logger.Error("err", err.Error())
 		return err
 	}
-	var match = false
-	for _, client := range clients {
-		if *client.ClientId != *customConfig.DefaultClientID {
-			continue
-		}
-		for _, redirectURI := range *client.RedirectUris {
-			// escape the regex-specific characters (dots for intance)...
-			matcher := regexp.QuoteMeta(redirectURI)
-			// ... but keep the stars
-			matcher = strings.Replace(matcher, "\\*", "*", -1)
-			match, _ = regexp.MatchString(matcher, *customConfig.DefaultRedirectURI)
-			if match {
-				break
-			}
-		}
-	}
-	if !match {
+
+	// Both DefaultClientID and DefaultRedirectURI must be specified together or not at all
+	if (customConfig.DefaultClientID == nil && customConfig.DefaultRedirectURI != nil) ||
+		(customConfig.DefaultClientID != nil && customConfig.DefaultRedirectURI == nil) {
 		return errorhandler.Error{
 			Status:  400,
-			Message: internal.MsgErrInvalidParam + "." + internal.ClientID + "Or" + internal.RedirectURI,
+			Message: internal.MsgErrInvalidParam + "." + internal.ClientID + "And" + internal.RedirectURI,
+		}
+	}
+
+	if customConfig.DefaultClientID != nil && customConfig.DefaultRedirectURI != nil {
+		var match = false
+
+		for _, client := range clients {
+			if *client.ClientId != *customConfig.DefaultClientID {
+				continue
+			}
+			for _, redirectURI := range *client.RedirectUris {
+				// escape the regex-specific characters (dots for intance)...
+				matcher := regexp.QuoteMeta(redirectURI)
+				// ... but keep the stars
+				matcher = strings.Replace(matcher, "\\*", "*", -1)
+				match, _ = regexp.MatchString(matcher, *customConfig.DefaultRedirectURI)
+				if match {
+					break
+				}
+			}
+		}
+
+		if !match {
+			return errorhandler.Error{
+				Status:  400,
+				Message: internal.MsgErrInvalidParam + "." + internal.ClientID + "Or" + internal.RedirectURI,
+			}
 		}
 	}
 

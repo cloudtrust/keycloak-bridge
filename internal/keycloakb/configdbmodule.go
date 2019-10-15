@@ -60,7 +60,7 @@ func (c *configurationDBModule) GetConfiguration(context context.Context, realmI
 
 	switch err := row.Scan(&configJSON); err {
 	case sql.ErrNoRows:
-		return dto.RealmConfiguration{}, &MissingRealmConfigurationErr{
+		return dto.RealmConfiguration{}, MissingRealmConfigurationErr{
 			realmID: realmID,
 		}
 	default:

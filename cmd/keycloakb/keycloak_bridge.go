@@ -466,6 +466,7 @@ func main() {
 
 		// new module for account service
 		accountComponent := account.NewComponent(keycloakClient.AccountClient(), eventsDBModule, configDBModule, accountLogger)
+		accountComponent = account.MakeAuthorizationAccountComponentMW(log.With(accountLogger, "mw", "endpoint"), configDBModule)(accountComponent)
 
 		accountEndpoints = account.Endpoints{
 			GetAccount:                prepareEndpoint(account.MakeGetAccountEndpoint(accountComponent), "get_account", influxMetrics, accountLogger, tracer, rateLimit["account"]),
