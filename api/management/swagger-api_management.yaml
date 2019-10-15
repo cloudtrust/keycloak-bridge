@@ -908,17 +908,17 @@ components:
           type: boolean
         api_self_password_change_enabled:
           type: boolean
-        api_self_mail_edition_enabled:
+        api_self_mail_editing_enabled:
           type: boolean
-        api_self_delete_account_enabled:
+        api_self_account_deletion_enabled:
           type: boolean
-        ui_self_authenticator_deletion_enabled:
+        show_authenticators_tab:
           type: boolean
-        ui_self_password_change_enabled:
+        show_password_tab:
           type: boolean
-        ui_self_mail_edition_enabled:
+        show_mail_editing:
           type: boolean
-        ui_self_delete_account_enabled:
+        show_account_deletion_button:
           type: boolean
   securitySchemes:
     openId:

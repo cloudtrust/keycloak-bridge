@@ -92,12 +92,12 @@ type RealmCustomConfiguration struct {
 	DefaultRedirectURI                  *string `json:"default_redirect_uri"`
 	APISelfAuthenticatorDeletionEnabled *bool   `json:"api_self_authenticator_deletion_enabled"`
 	APISelfPasswordChangeEnabled        *bool   `json:"api_self_password_change_enabled"`
-	APISelfMailEditionEnabled           *bool   `json:"api_self_mail_edition_enabled"`
-	APISelfDeleteAccountEnabled         *bool   `json:"api_self_delete_account_enabled"`
-	UISelfAuthenticatorDeletionEnabled  *bool   `json:"ui_self_authenticator_deletion_enabled"`
-	UISelfPasswordChangeEnabled         *bool   `json:"ui_self_password_change_enabled"`
-	UISelfMailEditionEnabled            *bool   `json:"ui_self_mail_edition_enabled"`
-	UISelfDeleteAccountEnabled          *bool   `json:"ui_self_delete_account_enabled"`
+	APISelfMailEditingEnabled           *bool   `json:"api_self_mail_editing_enabled"`
+	APISelfAccountDeletionEnabled       *bool   `json:"api_self_account_deletion_enabled"`
+	ShowAuthenticatorsTab               *bool   `json:"show_authenticators_tab"`
+	ShowPasswordTab                     *bool   `json:"show_password_tab"`
+	ShowMailEditing                     *bool   `json:"show_mail_editing"`
+	ShowAccountDeletionButton           *bool   `json:"show_account_deletion_button"`
 }
 
 // RequiredAction type

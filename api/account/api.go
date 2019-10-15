@@ -29,10 +29,10 @@ type CredentialRepresentation struct {
 
 // Configuration struct
 type Configuration struct {
-	AuthenticatorDeletionEnabled *bool `json:"authenticator_deletion_enabled"`
-	PasswordChangeEnabled        *bool `json:"password_change_enabled"`
-	MailEditionEnabled           *bool `json:"mail_edition_enabled"`
-	DeleteAccountEnabled         *bool `json:"delete_account_enabled"`
+	ShowAuthenticatorsTab     *bool `json:"show_authenticators_tab"`
+	ShowPasswordTab           *bool `json:"show_password_tab"`
+	ShowMailEditing           *bool `json:"show_mail_editing"`
+	ShowAccountDeletionButton *bool `json:"show_account_deletion_button"`
 }
 
 // UpdatePasswordBody is the definition of the expected body content of UpdatePassword method

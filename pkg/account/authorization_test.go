@@ -80,8 +80,8 @@ func TestDeny(t *testing.T) {
 		DefaultClientID:                     new(string),
 		DefaultRedirectURI:                  new(string),
 		APISelfAuthenticatorDeletionEnabled: &falseBool,
-		APISelfDeleteAccountEnabled:         &falseBool,
-		APISelfMailEditionEnabled:           &falseBool,
+		APISelfAccountDeletionEnabled:       &falseBool,
+		APISelfMailEditingEnabled:           &falseBool,
 		APISelfPasswordChangeEnabled:        &falseBool,
 	}
 
@@ -128,8 +128,8 @@ func TestAllowed(t *testing.T) {
 		DefaultClientID:                     new(string),
 		DefaultRedirectURI:                  new(string),
 		APISelfAuthenticatorDeletionEnabled: &trueBool,
-		APISelfDeleteAccountEnabled:         &trueBool,
-		APISelfMailEditionEnabled:           &trueBool,
+		APISelfAccountDeletionEnabled:       &trueBool,
+		APISelfMailEditingEnabled:           &trueBool,
 		APISelfPasswordChangeEnabled:        &trueBool,
 	}
 

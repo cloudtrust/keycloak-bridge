@@ -668,15 +668,15 @@ func TestGetConfiguration(t *testing.T) {
 		var trueBool = true
 		var config = dto.RealmConfiguration{
 			APISelfAuthenticatorDeletionEnabled: &falseBool,
-			APISelfDeleteAccountEnabled:         &falseBool,
-			APISelfMailEditionEnabled:           &falseBool,
+			APISelfAccountDeletionEnabled:       &falseBool,
+			APISelfMailEditingEnabled:           &falseBool,
 			APISelfPasswordChangeEnabled:        &falseBool,
 			DefaultClientID:                     new(string),
 			DefaultRedirectURI:                  new(string),
-			UISelfAuthenticatorDeletionEnabled:  &trueBool,
-			UISelfDeleteAccountEnabled:          &trueBool,
-			UISelfMailEditionEnabled:            &trueBool,
-			UISelfPasswordChangeEnabled:         &trueBool,
+			ShowAuthenticatorsTab:               &trueBool,
+			ShowAccountDeletionButton:           &trueBool,
+			ShowMailEditing:                     &trueBool,
+			ShowPasswordTab:                     &trueBool,
 		}
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
@@ -688,10 +688,10 @@ func TestGetConfiguration(t *testing.T) {
 		resConfig, err := component.GetConfiguration(ctx)
 
 		assert.Nil(t, err)
-		assert.Equal(t, *config.UISelfAuthenticatorDeletionEnabled, *resConfig.AuthenticatorDeletionEnabled)
-		assert.Equal(t, *config.UISelfDeleteAccountEnabled, *resConfig.DeleteAccountEnabled)
-		assert.Equal(t, *config.UISelfMailEditionEnabled, *resConfig.MailEditionEnabled)
-		assert.Equal(t, *config.UISelfPasswordChangeEnabled, *resConfig.PasswordChangeEnabled)
+		assert.Equal(t, *config.ShowAuthenticatorsTab, *resConfig.ShowAuthenticatorsTab)
+		assert.Equal(t, *config.ShowAccountDeletionButton, *resConfig.ShowAccountDeletionButton)
+		assert.Equal(t, *config.ShowMailEditing, *resConfig.ShowMailEditing)
+		assert.Equal(t, *config.ShowPasswordTab, *resConfig.ShowPasswordTab)
 	}
 
 	//Error

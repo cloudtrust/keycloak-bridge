@@ -141,7 +141,7 @@ func (c *authorizationComponentMW) UpdateAccount(ctx context.Context, account ap
 		return err
 	}
 
-	if !isEnabled(config.APISelfMailEditionEnabled) {
+	if !isEnabled(config.APISelfMailEditingEnabled) {
 		infos, _ := json.Marshal(map[string]string{
 			"Action":       action,
 			"currentRealm": currentRealm,
@@ -168,7 +168,7 @@ func (c *authorizationComponentMW) DeleteAccount(ctx context.Context) error {
 		return err
 	}
 
-	if !isEnabled(config.APISelfDeleteAccountEnabled) {
+	if !isEnabled(config.APISelfAccountDeletionEnabled) {
 		infos, _ := json.Marshal(map[string]string{
 			"Action":       action,
 			"currentRealm": currentRealm,

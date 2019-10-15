@@ -324,9 +324,9 @@ func (c *component) GetConfiguration(ctx context.Context) (api.Configuration, er
 	}
 
 	return api.Configuration{
-		AuthenticatorDeletionEnabled: config.UISelfAuthenticatorDeletionEnabled,
-		DeleteAccountEnabled:         config.UISelfDeleteAccountEnabled,
-		MailEditionEnabled:           config.UISelfMailEditionEnabled,
-		PasswordChangeEnabled:        config.UISelfPasswordChangeEnabled,
+		ShowAuthenticatorsTab:     config.ShowAuthenticatorsTab,
+		ShowAccountDeletionButton: config.ShowAccountDeletionButton,
+		ShowMailEditing:           config.ShowMailEditing,
+		ShowPasswordTab:           config.ShowPasswordTab,
 	}, nil
 }
