@@ -61,7 +61,7 @@ func (c *authorizationComponentMW) UpdatePassword(ctx context.Context, currentPa
 		return err
 	}
 
-	if !*config.APISelfPasswordChangeEnabled {
+	if !isEnabled(config.APISelfPasswordChangeEnabled) {
 		infos, _ := json.Marshal(map[string]string{
 			"Action":       action,
 			"currentRealm": currentRealm,
@@ -109,7 +109,7 @@ func (c *authorizationComponentMW) DeleteCredential(ctx context.Context, credent
 		return err
 	}
 
-	if !*config.APISelfAuthenticatorDeletionEnabled {
+	if !isEnabled(config.APISelfAuthenticatorDeletionEnabled) {
 		infos, _ := json.Marshal(map[string]string{
 			"Action":       action,
 			"currentRealm": currentRealm,
@@ -141,7 +141,7 @@ func (c *authorizationComponentMW) UpdateAccount(ctx context.Context, account ap
 		return err
 	}
 
-	if !*config.APISelfMailEditionEnabled {
+	if !isEnabled(config.APISelfMailEditionEnabled) {
 		infos, _ := json.Marshal(map[string]string{
 			"Action":       action,
 			"currentRealm": currentRealm,
@@ -168,7 +168,7 @@ func (c *authorizationComponentMW) DeleteAccount(ctx context.Context) error {
 		return err
 	}
 
-	if !*config.APISelfDeleteAccountEnabled {
+	if !isEnabled(config.APISelfDeleteAccountEnabled) {
 		infos, _ := json.Marshal(map[string]string{
 			"Action":       action,
 			"currentRealm": currentRealm,
@@ -182,4 +182,8 @@ func (c *authorizationComponentMW) DeleteAccount(ctx context.Context) error {
 func (c *authorizationComponentMW) GetConfiguration(ctx context.Context) (api.Configuration, error) {
 	//No restriction for this call
 	return c.next.GetConfiguration(ctx)
+}
+
+func isEnabled(booleanPtr *bool) bool {
+	return booleanPtr != nil && *booleanPtr
 }
