@@ -267,6 +267,26 @@ func TestEventToMapLogonError(t *testing.T) {
 
 }
 
+func TestEventToMapLogonErrorLocked(t *testing.T) {
+	var etype int8 = 1
+
+	var event *fb.Event
+	{
+		var builder = flatbuffers.NewBuilder(0)
+		var error = builder.CreateString("user_temporarily_disabled")
+		fb.EventStart(builder)
+		fb.EventAddType(builder, etype)
+		fb.EventAddError(builder, error)
+		var eventOffset = fb.EventEnd(builder)
+		builder.Finish(eventOffset)
+		event = fb.GetRootAsEvent(builder.FinishedBytes(), 0)
+	}
+
+	var m = eventToMap(event)
+	assert.Equal(t, "TEMPORARILY_LOCKED", m[database.CtEventType])
+
+}
+
 func TestEventToMapLogout(t *testing.T) {
 	var etype int8 = 4
 

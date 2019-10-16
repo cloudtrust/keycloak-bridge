@@ -174,8 +174,14 @@ func addCTtypeToEvent(event map[string]string) map[string]string {
 		return event
 
 	case "LOGIN_ERROR":
-		//LOGON_ERROR
-		event[database.CtEventType] = "LOGON_ERROR"
+		if f["error"] == "user_temporarily_disabled" {
+			//TEMPORARILY_LOCKED
+			event[database.CtEventType] = "TEMPORARILY_LOCKED"
+		} else {
+			//LOGON_ERROR
+			event[database.CtEventType] = "LOGON_ERROR"
+		}
+
 		return event
 	case "LOGOUT":
 		//LOGOUT
