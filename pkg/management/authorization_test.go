@@ -45,13 +45,13 @@ func TestDeny(t *testing.T) {
 	}, nil).AnyTimes()
 
 	var user = api.UserRepresentation{
-		Id:       &userID,
+		ID:       &userID,
 		Username: &userUsername,
 		Groups:   &groupIDs,
 	}
 
 	var role = api.RoleRepresentation{
-		Id:   &roleID,
+		ID:   &roleID,
 		Name: &roleName,
 	}
 
@@ -62,8 +62,8 @@ func TestDeny(t *testing.T) {
 	}
 
 	var customConfig = api.RealmCustomConfiguration{
-		DefaultClientId:    &clientID,
-		DefaultRedirectUri: &clientURI,
+		DefaultClientID:    &clientID,
+		DefaultRedirectURI: &clientURI,
 	}
 
 	// Nothing allowed
@@ -194,13 +194,13 @@ func TestAllowed(t *testing.T) {
 	mockKeycloakClient.EXPECT().GetGroupNamesOfUser(accessToken, realmName, userID).Return([]string{groupName}, nil).AnyTimes()
 
 	var user = api.UserRepresentation{
-		Id:       &userID,
+		ID:       &userID,
 		Username: &userUsername,
 		Groups:   &groupIDs,
 	}
 
 	var role = api.RoleRepresentation{
-		Id:   &roleID,
+		ID:   &roleID,
 		Name: &roleName,
 	}
 
@@ -211,8 +211,8 @@ func TestAllowed(t *testing.T) {
 	}
 
 	var customConfig = api.RealmCustomConfiguration{
-		DefaultClientId:    &clientID,
-		DefaultRedirectUri: &clientURI,
+		DefaultClientID:    &clientID,
+		DefaultRedirectURI: &clientURI,
 	}
 
 	// Anything allowed

@@ -108,7 +108,8 @@ func main() {
 		auditRoDbParams = database.GetDbConfig(c, "db-audit-ro", false)
 
 		// DB for custom configuration
-		configDbParams = database.GetDbConfig(c, "db-config", !c.GetBool("config-db"))
+		configRwDbParams = database.GetDbConfig(c, "db-config-rw", !c.GetBool("config-db-rw"))
+		configRoDbParams = database.GetDbConfig(c, "db-config-ro", !c.GetBool("config-db-ro"))
 
 		// Rate limiting
 		rateLimit = map[string]int{
@@ -262,12 +263,22 @@ func main() {
 		}
 	}
 
-	var configurationDBConn database.CloudtrustDB
+	var configurationRwDBConn database.CloudtrustDB
 	{
 		var err error
-		configurationDBConn, err = configDbParams.OpenDatabase()
+		configurationRwDBConn, err = configRwDbParams.OpenDatabase()
 		if err != nil {
-			logger.Error("msg", "could not create DB connection for configuration storage", "error", err)
+			logger.Error("msg", "could not create DB connection for configuration storage (RW)", "error", err)
+			return
+		}
+	}
+
+	var configurationRoDBConn database.CloudtrustDB
+	{
+		var err error
+		configurationRoDBConn, err = configRoDbParams.OpenDatabase()
+		if err != nil {
+			logger.Error("msg", "could not create DB connection for configuration storage (RO)", "error", err)
 			return
 		}
 	}
@@ -392,8 +403,8 @@ func main() {
 		// module for storing and retrieving the custom configuration
 		var configDBModule management.ConfigurationDBModule
 		{
-			configDBModule = management.NewConfigurationDBModule(configurationDBConn)
-			configDBModule = management.MakeConfigurationDBModuleInstrumentingMW(influxMetrics.NewHistogram("configDB_module"))(configDBModule)
+			configDBModule = keycloakb.NewConfigurationDBModule(configurationRwDBConn)
+			configDBModule = keycloakb.MakeConfigurationDBModuleInstrumentingMW(influxMetrics.NewHistogram("configDB_module"))(configDBModule)
 			configDBModule = management.MakeConfigurationDBModuleLoggingMW(log.With(managementLogger, "mw", "module", "unit", "configDB"))(configDBModule)
 			configDBModule = management.MakeConfigurationDBModuleTracingMW(tracer)(configDBModule)
 		}
@@ -444,8 +455,18 @@ func main() {
 		// Configure events db module
 		eventsDBModule := configureEventsDbModule(baseEventsDBModule, influxMetrics, accountLogger, tracer)
 
+		// module for retrieving the custom configuration
+		var configDBModule account.ConfigurationDBModule
+		{
+			configDBModule = keycloakb.NewConfigurationDBModule(configurationRoDBConn)
+			configDBModule = keycloakb.MakeConfigurationDBModuleInstrumentingMW(influxMetrics.NewHistogram("configDB_module"))(configDBModule)
+			configDBModule = management.MakeConfigurationDBModuleLoggingMW(log.With(logger, "mw", "module", "unit", "configDB"))(configDBModule)
+			configDBModule = management.MakeConfigurationDBModuleTracingMW(tracer)(configDBModule)
+		}
+
 		// new module for account service
-		accountComponent := account.NewComponent(keycloakClient.AccountClient(), eventsDBModule, accountLogger)
+		accountComponent := account.NewComponent(keycloakClient.AccountClient(), eventsDBModule, configDBModule, accountLogger)
+		accountComponent = account.MakeAuthorizationAccountComponentMW(log.With(accountLogger, "mw", "endpoint"), configDBModule)(accountComponent)
 
 		accountEndpoints = account.Endpoints{
 			GetAccount:                prepareEndpoint(account.MakeGetAccountEndpoint(accountComponent), "get_account", influxMetrics, accountLogger, tracer, rateLimit["account"]),
@@ -457,6 +478,7 @@ func main() {
 			DeleteCredential:          prepareEndpoint(account.MakeDeleteCredentialEndpoint(accountComponent), "delete_credential", influxMetrics, accountLogger, tracer, rateLimit["account"]),
 			UpdateLabelCredential:     prepareEndpoint(account.MakeUpdateLabelCredentialEndpoint(accountComponent), "update_label_credential", influxMetrics, accountLogger, tracer, rateLimit["account"]),
 			MoveCredential:            prepareEndpoint(account.MakeMoveCredentialEndpoint(accountComponent), "move_credential", influxMetrics, accountLogger, tracer, rateLimit["account"]),
+			GetConfiguration:          prepareEndpoint(account.MakeGetConfigurationEndpoint(accountComponent), "get_configuration", influxMetrics, accountLogger, tracer, rateLimit["account"]),
 		}
 	}
 
@@ -648,10 +670,13 @@ func main() {
 		var getAccountHandler = configureAccountHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(accountEndpoints.GetAccount)
 		var updateAccountHandler = configureAccountHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(accountEndpoints.UpdateAccount)
 		var deleteAccountHandler = configureAccountHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(accountEndpoints.DeleteAccount)
+		var getGetConfiguration = configureAccountHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(accountEndpoints.GetConfiguration)
 
 		route.Path("/account").Methods("GET").Handler(getAccountHandler)
 		route.Path("/account").Methods("POST").Handler(updateAccountHandler)
 		route.Path("/account").Methods("DELETE").Handler(deleteAccountHandler)
+
+		route.Path("/account/configuration").Methods("GET").Handler(getGetConfiguration)
 
 		route.Path("/account/credentials").Methods("GET").Handler(getCredentialsHandler)
 		route.Path("/account/credentials/password").Methods("POST").Handler(updatePasswordHandler)
@@ -716,12 +741,19 @@ func config(logger log.Logger) *viper.Viper {
 	// Storage events in DB (read only)
 	database.ConfigureDbDefault(v, "db-audit-ro", "CT_BRIDGE_DB_AUDIT_RO_USERNAME", "CT_BRIDGE_DB_AUDIT_RO_PASSWORD")
 
-	//Storage custom configuration in DB
-	v.SetDefault("config-db", true)
-	database.ConfigureDbDefault(v, "db-config", "CT_BRIDGE_DB_CONFIG_USERNAME", "CT_BRIDGE_DB_CONFIG_PASSWORD")
+	//Storage custom configuration in DB (read/write)
+	v.SetDefault("config-db-rw", true)
+	database.ConfigureDbDefault(v, "db-config-rw", "CT_BRIDGE_DB_CONFIG_RW_USERNAME", "CT_BRIDGE_DB_CONFIG_RW_PASSWORD")
 
-	v.SetDefault("db-config-migration", false)
-	v.SetDefault("db-config-migration-version", "")
+	v.SetDefault("db-config-rw-migration", false)
+	v.SetDefault("db-config-rw-migration-version", "")
+
+	//Storage custom configuration in DB (read only)
+	v.SetDefault("config-db-ro", true)
+	database.ConfigureDbDefault(v, "db-config-ro", "CT_BRIDGE_DB_CONFIG_RO_USERNAME", "CT_BRIDGE_DB_CONFIG_RO_PASSWORD")
+
+	v.SetDefault("db-config-ro-migration", false)
+	v.SetDefault("db-config-ro-migration-version", "")
 
 	// Rate limiting (in requests/second)
 	v.SetDefault("rate-event", 1000)

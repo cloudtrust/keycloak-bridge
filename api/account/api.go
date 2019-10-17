@@ -27,6 +27,14 @@ type CredentialRepresentation struct {
 	Temporary      *bool   `json:"temporary,omitempty"`
 }
 
+// Configuration struct
+type Configuration struct {
+	ShowAuthenticatorsTab     *bool `json:"show_authenticators_tab"`
+	ShowPasswordTab           *bool `json:"show_password_tab"`
+	ShowMailEditing           *bool `json:"show_mail_editing"`
+	ShowAccountDeletionButton *bool `json:"show_account_deletion_button"`
+}
+
 // UpdatePasswordBody is the definition of the expected body content of UpdatePassword method
 type UpdatePasswordBody struct {
 	CurrentPassword string `json:"currentPassword"`
@@ -34,6 +42,7 @@ type UpdatePasswordBody struct {
 	ConfirmPassword string `json:"confirmPassword"`
 }
 
+// LabelBody struct
 type LabelBody struct {
 	Label string `json:"label,omitempty"`
 }

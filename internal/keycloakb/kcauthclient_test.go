@@ -1,7 +1,5 @@
 package keycloakb
 
-//go:generate mockgen -destination=./mock/keycloak_client.go -package=mock -mock_names=KeycloakClient=KeycloakClient github.com/cloudtrust/keycloak-bridge/internal/keycloakb KeycloakClient
-
 import (
 	"errors"
 	"testing"

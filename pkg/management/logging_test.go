@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cloudtrust/keycloak-bridge/internal/dto"
+
 	cs "github.com/cloudtrust/common-service"
 	"github.com/cloudtrust/keycloak-bridge/pkg/management/mock"
 	"github.com/golang/mock/gomock"
@@ -25,12 +27,12 @@ func TestComponentLoggingMW(t *testing.T) {
 	var ctx = context.WithValue(context.Background(), cs.CtContextCorrelationID, corrID)
 
 	// Get configuration.
-	mockComponent.EXPECT().GetConfiguration(ctx, "realmID").Return("", nil).Times(1)
+	mockComponent.EXPECT().GetConfiguration(ctx, "realmID").Return(dto.RealmConfiguration{}, nil).Times(1)
 	mockLogger.EXPECT().Info("method", "GetConfiguration", "args", "realmID", "took", gomock.Any()).Return(nil).Times(1)
 	m.GetConfiguration(ctx, "realmID")
 
 	// Update configuration.
-	mockComponent.EXPECT().StoreOrUpdate(ctx, "realmID", "{}").Return(nil).Times(1)
-	mockLogger.EXPECT().Info("method", "StoreOrUpdate", "args", "realmID", "{}", "took", gomock.Any()).Return(nil).Times(1)
-	m.StoreOrUpdate(ctx, "realmID", "{}")
+	mockComponent.EXPECT().StoreOrUpdate(ctx, "realmID", dto.RealmConfiguration{}).Return(nil).Times(1)
+	mockLogger.EXPECT().Info("method", "StoreOrUpdate", "args", "realmID", dto.RealmConfiguration{}, "took", gomock.Any()).Return(nil).Times(1)
+	m.StoreOrUpdate(ctx, "realmID", dto.RealmConfiguration{})
 }

@@ -73,6 +73,18 @@ paths:
           description: Bad parameters (same old and new passwords, different new and confirm passwords, ...)
         403:
           description: Caller is not allowed to change the password
+  /account/configuration:
+    get:
+      tags:
+      - Credentials
+      summary: Get self-service configuration
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Configuration'
   /account/credentials/registrators:
     get:
       tags:
@@ -184,6 +196,17 @@ components:
           type: string
         phoneNumber:
           type: string
+    Configuration:
+      type: object
+      properties:
+        show_authenticators_tab:
+          type: boolean
+        show_password_tab:
+          type: boolean
+        show_mail_editing:
+          type: boolean
+        show_account_deletion_button:
+          type: boolean
   securitySchemes:
     openId:
       type: openIdConnect
