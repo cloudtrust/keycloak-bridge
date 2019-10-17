@@ -904,6 +904,22 @@ components:
           type: string
         default_redirect_uri:
           type: string
+        api_self_authenticator_deletion_enabled:
+          type: boolean
+        api_self_password_change_enabled:
+          type: boolean
+        api_self_mail_editing_enabled:
+          type: boolean
+        api_self_account_deletion_enabled:
+          type: boolean
+        show_authenticators_tab:
+          type: boolean
+        show_password_tab:
+          type: boolean
+        show_mail_editing:
+          type: boolean
+        show_account_deletion_button:
+          type: boolean
   securitySchemes:
     openId:
       type: openIdConnect

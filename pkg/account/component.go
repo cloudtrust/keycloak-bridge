@@ -10,6 +10,7 @@ import (
 	"github.com/cloudtrust/common-service/database"
 	errorhandler "github.com/cloudtrust/common-service/errors"
 	api "github.com/cloudtrust/keycloak-bridge/api/account"
+	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 	internal "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	kc "github.com/cloudtrust/keycloak-client"
 )
@@ -39,20 +40,29 @@ type Component interface {
 	GetAccount(ctx context.Context) (api.AccountRepresentation, error)
 	UpdateAccount(context.Context, api.AccountRepresentation) error
 	DeleteAccount(context.Context) error
+	GetConfiguration(context.Context) (api.Configuration, error)
+}
+
+// ConfigurationDBModule is the interface of the configuration module.
+type ConfigurationDBModule interface {
+	GetConfiguration(context.Context, string) (dto.RealmConfiguration, error)
+	StoreOrUpdate(context.Context, string, dto.RealmConfiguration) error
 }
 
 // Component is the management component.
 type component struct {
 	keycloakAccountClient KeycloakAccountClient
 	eventDBModule         database.EventsDBModule
+	configDBModule        ConfigurationDBModule
 	logger                internal.Logger
 }
 
 // NewComponent returns the self-service component.
-func NewComponent(keycloakAccountClient KeycloakAccountClient, eventDBModule database.EventsDBModule, logger internal.Logger) Component {
+func NewComponent(keycloakAccountClient KeycloakAccountClient, eventDBModule database.EventsDBModule, configDBModule ConfigurationDBModule, logger internal.Logger) Component {
 	return &component{
 		keycloakAccountClient: keycloakAccountClient,
 		eventDBModule:         eventDBModule,
+		configDBModule:        configDBModule,
 		logger:                logger,
 	}
 }
@@ -284,8 +294,8 @@ func (c *component) MoveCredential(ctx context.Context, credentialID string, pre
 	var currentRealm = ctx.Value(cs.CtContextRealm).(string)
 	var userID = ctx.Value(cs.CtContextUserID).(string)
 	var username = ctx.Value(cs.CtContextUsername).(string)
-
 	var err error
+
 	if previousCredentialID == "null" {
 		err = c.keycloakAccountClient.MoveToFirst(accessToken, currentRealm, credentialID)
 	} else {
@@ -303,4 +313,20 @@ func (c *component) MoveCredential(ctx context.Context, credentialID string, pre
 	_ = c.reportEvent(ctx, "SELF_MOVE_CREDENTIAL", database.CtEventRealmName, currentRealm, database.CtEventUserID, userID, database.CtEventUsername, username, database.CtEventAdditionalInfo, string(additionalInfos))
 
 	return nil
+}
+
+func (c *component) GetConfiguration(ctx context.Context) (api.Configuration, error) {
+	var currentRealm = ctx.Value(cs.CtContextRealm).(string)
+
+	config, err := c.configDBModule.GetConfiguration(ctx, currentRealm)
+	if err != nil {
+		return api.Configuration{}, err
+	}
+
+	return api.Configuration{
+		ShowAuthenticatorsTab:     config.ShowAuthenticatorsTab,
+		ShowAccountDeletionButton: config.ShowAccountDeletionButton,
+		ShowMailEditing:           config.ShowMailEditing,
+		ShowPasswordTab:           config.ShowPasswordTab,
+	}, nil
 }

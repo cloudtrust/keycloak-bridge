@@ -20,7 +20,7 @@ func TestConvertCredential(t *testing.T) {
 	credKc.CredentialData = nil
 
 	assert.Equal(t, credKc.Type, ConvertCredential(&credKc).Type)
-	assert.Equal(t, credKc.Id, ConvertCredential(&credKc).Id)
+	assert.Equal(t, credKc.Id, ConvertCredential(&credKc).ID)
 	assert.Nil(t, ConvertCredential(&credKc).CredentialData)
 
 	credKc.CredentialData = &configKc
@@ -149,7 +149,7 @@ func TestValidateUserRepresentation(t *testing.T) {
 		users = append(users, createValidUserRepresentation())
 	}
 
-	users[0].Id = &id
+	users[0].ID = &id
 	users[1].Username = &username
 	users[2].Email = &email
 	users[3].PhoneNumber = &phoneNumber
@@ -182,10 +182,10 @@ func TestValidateRoleRepresentation(t *testing.T) {
 		roles = append(roles, createValidRoleRepresentation())
 	}
 
-	roles[0].Id = &id
+	roles[0].ID = &id
 	roles[1].Name = &name
 	roles[2].Description = &description
-	roles[3].ContainerId = &id
+	roles[3].ContainerID = &id
 
 	for _, role := range roles {
 		assert.NotNil(t, role.Validate())
@@ -220,8 +220,8 @@ func TestValidateRealmCustomConfiguration(t *testing.T) {
 		configs = append(configs, createValidRealmCustomConfiguration())
 	}
 
-	configs[0].DefaultClientId = &defaultClientID
-	configs[1].DefaultRedirectUri = &defaultRedirectURI
+	configs[0].DefaultClientID = &defaultClientID
+	configs[1].DefaultRedirectURI = &defaultRedirectURI
 
 	for _, config := range configs {
 		assert.NotNil(t, config.Validate())
@@ -255,7 +255,7 @@ func createValidUserRepresentation() UserRepresentation {
 	locale := "en"
 
 	var user = UserRepresentation{}
-	user.Id = &id
+	user.ID = &id
 	user.Username = &username
 	user.Email = &email
 	user.Enabled = &boolTrue
@@ -281,10 +281,10 @@ func createValidRoleRepresentation() RoleRepresentation {
 	boolTrue := true
 
 	var role = RoleRepresentation{}
-	role.Id = &id
+	role.ID = &id
 	role.Name = &name
 	role.Description = &description
-	role.ContainerId = &id
+	role.ContainerID = &id
 	role.ClientRole = &boolTrue
 	role.Composite = &boolTrue
 
@@ -304,8 +304,8 @@ func createValidRealmCustomConfiguration() RealmCustomConfiguration {
 	defaultRedirectURI := "http://company.com"
 
 	return RealmCustomConfiguration{
-		DefaultClientId:    &defaultClientID,
-		DefaultRedirectUri: &defaultRedirectURI,
+		DefaultClientID:    &defaultClientID,
+		DefaultRedirectURI: &defaultRedirectURI,
 	}
 }
 

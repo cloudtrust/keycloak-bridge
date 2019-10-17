@@ -14,6 +14,8 @@ import (
 	commonhttp "github.com/cloudtrust/common-service/errors"
 	"github.com/cloudtrust/common-service/log"
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
+	"github.com/cloudtrust/keycloak-bridge/internal/dto"
+	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/cloudtrust/keycloak-bridge/pkg/management/mock"
 	kc "github.com/cloudtrust/keycloak-client"
 	"github.com/golang/mock/gomock"
@@ -58,7 +60,7 @@ func TestGetRealms(t *testing.T) {
 		apiRealmsRep, err := managementComponent.GetRealms(ctx)
 
 		var expectedAPIRealmRep = api.RealmRepresentation{
-			Id:              &id,
+			ID:              &id,
 			KeycloakVersion: &keycloakVersion,
 			Realm:           &realm,
 			DisplayName:     &displayName,
@@ -125,7 +127,7 @@ func TestGetRealm(t *testing.T) {
 		apiRealmRep, err := managementComponent.GetRealm(ctx, "master")
 
 		var expectedAPIRealmRep = api.RealmRepresentation{
-			Id:              &id,
+			ID:              &id,
 			KeycloakVersion: &keycloakVersion,
 			Realm:           &realm,
 			DisplayName:     &displayName,
@@ -192,10 +194,10 @@ func TestGetClient(t *testing.T) {
 		apiClientRep, err := managementComponent.GetClient(ctx, "master", id)
 
 		var expectedAPIClientRep = api.ClientRepresentation{
-			Id:       &id,
+			ID:       &id,
 			Name:     &name,
-			BaseUrl:  &baseURL,
-			ClientId: &clientID,
+			BaseURL:  &baseURL,
+			ClientID: &clientID,
 			Protocol: &protocol,
 			Enabled:  &enabled,
 		}
@@ -258,10 +260,10 @@ func TestGetClients(t *testing.T) {
 		apiClientsRep, err := managementComponent.GetClients(ctx, "master")
 
 		var expectedAPIClientRep = api.ClientRepresentation{
-			Id:       &id,
+			ID:       &id,
 			Name:     &name,
-			BaseUrl:  &baseURL,
-			ClientId: &clientID,
+			BaseURL:  &baseURL,
+			ClientID: &clientID,
 			Protocol: &protocol,
 			Enabled:  &enabled,
 		}
@@ -394,7 +396,7 @@ func TestCreateUser(t *testing.T) {
 		mockEventDBModule.EXPECT().Store(ctx, gomock.Any()).Return(nil).AnyTimes()
 
 		var userRep = api.UserRepresentation{
-			Id:                  &userID,
+			ID:                  &userID,
 			Username:            &username,
 			Email:               &email,
 			Enabled:             &enabled,
@@ -1081,11 +1083,11 @@ func TestGetClientRolesForUser(t *testing.T) {
 
 		var apiRoleRep = apiRolesRep[0]
 		assert.Nil(t, err)
-		assert.Equal(t, id, *apiRoleRep.Id)
+		assert.Equal(t, id, *apiRoleRep.ID)
 		assert.Equal(t, name, *apiRoleRep.Name)
 		assert.Equal(t, clientRole, *apiRoleRep.ClientRole)
 		assert.Equal(t, composite, *apiRoleRep.Composite)
-		assert.Equal(t, containerID, *apiRoleRep.ContainerId)
+		assert.Equal(t, containerID, *apiRoleRep.ContainerID)
 		assert.Equal(t, description, *apiRoleRep.Description)
 	}
 
@@ -1152,11 +1154,11 @@ func TestAddClientRolesToUser(t *testing.T) {
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		var roleRep = api.RoleRepresentation{
-			Id:          &id,
+			ID:          &id,
 			Name:        &name,
 			ClientRole:  &clientRole,
 			Composite:   &composite,
-			ContainerId: &containerID,
+			ContainerID: &containerID,
 			Description: &description,
 		}
 		var rolesRep []api.RoleRepresentation
@@ -1222,11 +1224,11 @@ func TestGetRolesOfUser(t *testing.T) {
 
 		var apiRoleRep = apiRolesRep[0]
 		assert.Nil(t, err)
-		assert.Equal(t, id, *apiRoleRep.Id)
+		assert.Equal(t, id, *apiRoleRep.ID)
 		assert.Equal(t, name, *apiRoleRep.Name)
 		assert.Equal(t, clientRole, *apiRoleRep.ClientRole)
 		assert.Equal(t, composite, *apiRoleRep.Composite)
-		assert.Equal(t, containerID, *apiRoleRep.ContainerId)
+		assert.Equal(t, containerID, *apiRoleRep.ContainerID)
 		assert.Equal(t, description, *apiRoleRep.Description)
 	}
 
@@ -1277,7 +1279,7 @@ func TestGetGroupsOfUser(t *testing.T) {
 
 		var apiGroupRep = apiGroupsRep[0]
 		assert.Nil(t, err)
-		assert.Equal(t, id, *apiGroupRep.Id)
+		assert.Equal(t, id, *apiGroupRep.ID)
 		assert.Equal(t, name, *apiGroupRep.Name)
 	}
 
@@ -1821,11 +1823,11 @@ func TestGetRoles(t *testing.T) {
 
 		var apiRoleRep = apiRolesRep[0]
 		assert.Nil(t, err)
-		assert.Equal(t, id, *apiRoleRep.Id)
+		assert.Equal(t, id, *apiRoleRep.ID)
 		assert.Equal(t, name, *apiRoleRep.Name)
 		assert.Equal(t, clientRole, *apiRoleRep.ClientRole)
 		assert.Equal(t, composite, *apiRoleRep.Composite)
-		assert.Equal(t, containerID, *apiRoleRep.ContainerId)
+		assert.Equal(t, containerID, *apiRoleRep.ContainerID)
 		assert.Equal(t, description, *apiRoleRep.Description)
 	}
 
@@ -1879,11 +1881,11 @@ func TestGetRole(t *testing.T) {
 		apiRoleRep, err := managementComponent.GetRole(ctx, "master", id)
 
 		assert.Nil(t, err)
-		assert.Equal(t, id, *apiRoleRep.Id)
+		assert.Equal(t, id, *apiRoleRep.ID)
 		assert.Equal(t, name, *apiRoleRep.Name)
 		assert.Equal(t, clientRole, *apiRoleRep.ClientRole)
 		assert.Equal(t, composite, *apiRoleRep.Composite)
-		assert.Equal(t, containerID, *apiRoleRep.ContainerId)
+		assert.Equal(t, containerID, *apiRoleRep.ContainerID)
 		assert.Equal(t, description, *apiRoleRep.Description)
 	}
 
@@ -1938,7 +1940,7 @@ func TestGetGroups(t *testing.T) {
 
 		var apiGroupRep = apiGroupsRep[0]
 		assert.Nil(t, err)
-		assert.Equal(t, id, *apiGroupRep.Id)
+		assert.Equal(t, id, *apiGroupRep.ID)
 		assert.Equal(t, name, *apiGroupRep.Name)
 	}
 
@@ -2010,11 +2012,11 @@ func TestGetClientRoles(t *testing.T) {
 
 		var apiRoleRep = apiRolesRep[0]
 		assert.Nil(t, err)
-		assert.Equal(t, id, *apiRoleRep.Id)
+		assert.Equal(t, id, *apiRoleRep.ID)
 		assert.Equal(t, name, *apiRoleRep.Name)
 		assert.Equal(t, clientRole, *apiRoleRep.ClientRole)
 		assert.Equal(t, composite, *apiRoleRep.Composite)
-		assert.Equal(t, containerID, *apiRoleRep.ContainerId)
+		assert.Equal(t, containerID, *apiRoleRep.ContainerID)
 		assert.Equal(t, description, *apiRoleRep.Description)
 	}
 
@@ -2069,11 +2071,11 @@ func TestCreateClientRole(t *testing.T) {
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		var roleRep = api.RoleRepresentation{
-			Id:          &id,
+			ID:          &id,
 			Name:        &name,
 			ClientRole:  &clientRole,
 			Composite:   &composite,
-			ContainerId: &containerID,
+			ContainerID: &containerID,
 			Description: &description,
 		}
 
@@ -2129,23 +2131,19 @@ func TestGetRealmCustomConfiguration(t *testing.T) {
 		var clientID = "ClientID"
 		var redirectURI = "http://redirect.url.com/test"
 
-		var customRealmConfigStr = `{
-				"default_client_id": "` + clientID + `",
-				"default_redirect_uri": "` + redirectURI + `"
-			}`
-		var configInit = api.RealmCustomConfiguration{
-			DefaultClientId:    &clientID,
-			DefaultRedirectUri: &redirectURI,
+		var realmConfig = dto.RealmConfiguration{
+			DefaultClientID:    &clientID,
+			DefaultRedirectURI: &redirectURI,
 		}
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
-		mockConfigurationDBModule.EXPECT().GetConfiguration(ctx, realmID).Return(customRealmConfigStr, nil).Times(1)
+		mockConfigurationDBModule.EXPECT().GetConfiguration(ctx, realmID).Return(realmConfig, nil).Times(1)
 
 		configJSON, err := managementComponent.GetRealmCustomConfiguration(ctx, realmID)
 
 		assert.Nil(t, err)
-		assert.Equal(t, *configJSON.DefaultClientId, *configInit.DefaultClientId)
-		assert.Equal(t, *configJSON.DefaultRedirectUri, *configInit.DefaultRedirectUri)
+		assert.Equal(t, *configJSON.DefaultClientID, *realmConfig.DefaultClientID)
+		assert.Equal(t, *configJSON.DefaultRedirectURI, *realmConfig.DefaultRedirectURI)
 	}
 
 	// Get empty config
@@ -2167,39 +2165,13 @@ func TestGetRealmCustomConfiguration(t *testing.T) {
 		mockKeycloakClient.EXPECT().GetRealm(accessToken, realmID).Return(kcRealmRep, nil).Times(1)
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
-		mockConfigurationDBModule.EXPECT().GetConfiguration(ctx, realmID).Return("", nil).Times(1)
+		mockConfigurationDBModule.EXPECT().GetConfiguration(ctx, realmID).Return(dto.RealmConfiguration{}, keycloakb.MissingRealmConfigurationErr{}).Times(1)
 
 		configJSON, err := managementComponent.GetRealmCustomConfiguration(ctx, realmID)
 
 		assert.Nil(t, err)
-		assert.Equal(t, *configJSON.DefaultClientId, *new(string))
-		assert.Equal(t, *configJSON.DefaultRedirectUri, *new(string))
-	}
-
-	// Invalid structure in DB
-	{
-		var id = realmID
-		var keycloakVersion = "4.8.3"
-		var realm = "master"
-		var displayName = "Master"
-		var enabled = true
-
-		var kcRealmRep = kc.RealmRepresentation{
-			Id:              &id,
-			KeycloakVersion: &keycloakVersion,
-			Realm:           &realm,
-			DisplayName:     &displayName,
-			Enabled:         &enabled,
-		}
-
-		mockKeycloakClient.EXPECT().GetRealm(accessToken, realmID).Return(kcRealmRep, nil).Times(1)
-
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
-		mockConfigurationDBModule.EXPECT().GetConfiguration(ctx, realmID).Return("928743", nil).Times(1)
-
-		_, err := managementComponent.GetRealmCustomConfiguration(ctx, realmID)
-
-		assert.NotNil(t, err)
+		assert.Equal(t, *configJSON.DefaultClientID, *new(string))
+		assert.Equal(t, *configJSON.DefaultRedirectURI, *new(string))
 	}
 
 	// Unknown realm
@@ -2246,7 +2218,7 @@ func TestGetRealmCustomConfiguration(t *testing.T) {
 		mockKeycloakClient.EXPECT().GetRealm(accessToken, realmID).Return(kcRealmRep, nil).Times(1)
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
-		mockConfigurationDBModule.EXPECT().GetConfiguration(ctx, realmID).Return("", errors.New("error")).Times(1)
+		mockConfigurationDBModule.EXPECT().GetConfiguration(ctx, realmID).Return(dto.RealmConfiguration{}, errors.New("error")).Times(1)
 
 		_, err := managementComponent.GetRealmCustomConfiguration(ctx, realmID)
 
@@ -2303,8 +2275,8 @@ func TestUpdateRealmCustomConfiguration(t *testing.T) {
 	var clientID = "clientID1"
 	var redirectURI = "https://www.cloudtrust.io/test"
 	var configInit = api.RealmCustomConfiguration{
-		DefaultClientId:    &clientID,
-		DefaultRedirectUri: &redirectURI,
+		DefaultClientID:    &clientID,
+		DefaultRedirectURI: &redirectURI,
 	}
 
 	// Update config with appropriate values
@@ -2325,8 +2297,8 @@ func TestUpdateRealmCustomConfiguration(t *testing.T) {
 		var clientID = "clientID1Nok"
 		var redirectURI = "https://www.cloudtrust.io/test"
 		var configInit = api.RealmCustomConfiguration{
-			DefaultClientId:    &clientID,
-			DefaultRedirectUri: &redirectURI,
+			DefaultClientID:    &clientID,
+			DefaultRedirectURI: &redirectURI,
 		}
 		err := managementComponent.UpdateRealmCustomConfiguration(ctx, realmID, configInit)
 
@@ -2344,8 +2316,8 @@ func TestUpdateRealmCustomConfiguration(t *testing.T) {
 		var clientID = "clientID1"
 		var redirectURI = "https://www.cloudtrustnok.io/test"
 		var configInit = api.RealmCustomConfiguration{
-			DefaultClientId:    &clientID,
-			DefaultRedirectUri: &redirectURI,
+			DefaultClientID:    &clientID,
+			DefaultRedirectURI: &redirectURI,
 		}
 		err := managementComponent.UpdateRealmCustomConfiguration(ctx, realmID, configInit)
 
@@ -2363,8 +2335,8 @@ func TestUpdateRealmCustomConfiguration(t *testing.T) {
 		var clientID = "clientID1"
 		var redirectURI = "https://wwwacloudtrust.io/test"
 		var configInit = api.RealmCustomConfiguration{
-			DefaultClientId:    &clientID,
-			DefaultRedirectUri: &redirectURI,
+			DefaultClientID:    &clientID,
+			DefaultRedirectURI: &redirectURI,
 		}
 		err := managementComponent.UpdateRealmCustomConfiguration(ctx, realmID, configInit)
 

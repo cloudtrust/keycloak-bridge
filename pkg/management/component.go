@@ -10,8 +10,10 @@ import (
 	"github.com/cloudtrust/common-service/database"
 	errorhandler "github.com/cloudtrust/common-service/errors"
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
+	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 	internal "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	kc "github.com/cloudtrust/keycloak-client"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -47,6 +49,12 @@ type KeycloakClient interface {
 	GetCredentials(accessToken string, realmName string, userID string) ([]kc.CredentialRepresentation, error)
 	UpdateLabelCredential(accessToken string, realmName string, userID string, credentialID string, label string) error
 	DeleteCredential(accessToken string, realmName string, userID string, credentialID string) error
+}
+
+// ConfigurationDBModule is the interface of the configuration module.
+type ConfigurationDBModule interface {
+	StoreOrUpdate(context.Context, string, dto.RealmConfiguration) error
+	GetConfiguration(context.Context, string) (dto.RealmConfiguration, error)
 }
 
 // Component is the management component interface.
@@ -116,7 +124,7 @@ func (c *component) GetRealms(ctx context.Context) ([]api.RealmRepresentation, e
 	var realmsRep = []api.RealmRepresentation{}
 	for _, realmKc := range realmsKc {
 		var realmRep api.RealmRepresentation
-		realmRep.Id = realmKc.Id
+		realmRep.ID = realmKc.Id
 		realmRep.KeycloakVersion = realmKc.KeycloakVersion
 		realmRep.Realm = realmKc.Realm
 		realmRep.DisplayName = realmKc.DisplayName
@@ -139,7 +147,7 @@ func (c *component) GetRealm(ctx context.Context, realm string) (api.RealmRepres
 		return api.RealmRepresentation{}, err
 	}
 
-	realmRep.Id = realmKc.Id
+	realmRep.ID = realmKc.Id
 	realmRep.KeycloakVersion = realmKc.KeycloakVersion
 	realmRep.Realm = realmKc.Realm
 	realmRep.DisplayName = realmKc.DisplayName
@@ -159,10 +167,10 @@ func (c *component) GetClient(ctx context.Context, realmName, idClient string) (
 		return api.ClientRepresentation{}, err
 	}
 
-	clientRep.Id = clientKc.Id
+	clientRep.ID = clientKc.Id
 	clientRep.Name = clientKc.Name
-	clientRep.BaseUrl = clientKc.BaseUrl
-	clientRep.ClientId = clientKc.ClientId
+	clientRep.BaseURL = clientKc.BaseUrl
+	clientRep.ClientID = clientKc.ClientId
 	clientRep.Protocol = clientKc.Protocol
 	clientRep.Enabled = clientKc.Enabled
 
@@ -182,10 +190,10 @@ func (c *component) GetClients(ctx context.Context, realmName string) ([]api.Cli
 	var clientsRep = []api.ClientRepresentation{}
 	for _, clientKc := range clientsKc {
 		var clientRep api.ClientRepresentation
-		clientRep.Id = clientKc.Id
+		clientRep.ID = clientKc.Id
 		clientRep.Name = clientKc.Name
-		clientRep.BaseUrl = clientKc.BaseUrl
-		clientRep.ClientId = clientKc.ClientId
+		clientRep.BaseURL = clientKc.BaseUrl
+		clientRep.ClientID = clientKc.ClientId
 		clientRep.Protocol = clientKc.Protocol
 		clientRep.Enabled = clientKc.Enabled
 		clientsRep = append(clientsRep, clientRep)
@@ -439,11 +447,11 @@ func (c *component) GetRolesOfUser(ctx context.Context, realmName, userID string
 	var rolesRep = []api.RoleRepresentation{}
 	for _, roleKc := range rolesKc {
 		var roleRep api.RoleRepresentation
-		roleRep.Id = roleKc.Id
+		roleRep.ID = roleKc.Id
 		roleRep.Name = roleKc.Name
 		roleRep.Composite = roleKc.Composite
 		roleRep.ClientRole = roleKc.ClientRole
-		roleRep.ContainerId = roleKc.ContainerId
+		roleRep.ContainerID = roleKc.ContainerId
 		roleRep.Description = roleKc.Description
 
 		rolesRep = append(rolesRep, roleRep)
@@ -465,7 +473,7 @@ func (c *component) GetGroupsOfUser(ctx context.Context, realmName, userID strin
 	var groupsRep = []api.GroupRepresentation{}
 	for _, groupKc := range groupsKc {
 		var groupRep api.GroupRepresentation
-		groupRep.Id = groupKc.Id
+		groupRep.ID = groupKc.Id
 		groupRep.Name = groupKc.Name
 
 		groupsRep = append(groupsRep, groupRep)
@@ -487,11 +495,11 @@ func (c *component) GetClientRolesForUser(ctx context.Context, realmName, userID
 	var rolesRep = []api.RoleRepresentation{}
 	for _, roleKc := range rolesKc {
 		var roleRep api.RoleRepresentation
-		roleRep.Id = roleKc.Id
+		roleRep.ID = roleKc.Id
 		roleRep.Name = roleKc.Name
 		roleRep.Composite = roleKc.Composite
 		roleRep.ClientRole = roleKc.ClientRole
-		roleRep.ContainerId = roleKc.ContainerId
+		roleRep.ContainerID = roleKc.ContainerId
 		roleRep.Description = roleKc.Description
 
 		rolesRep = append(rolesRep, roleRep)
@@ -506,11 +514,11 @@ func (c *component) AddClientRolesToUser(ctx context.Context, realmName, userID,
 	var rolesRep = []kc.RoleRepresentation{}
 	for _, role := range roles {
 		var roleRep kc.RoleRepresentation
-		roleRep.Id = role.Id
+		roleRep.Id = role.ID
 		roleRep.Name = role.Name
 		roleRep.Composite = role.Composite
 		roleRep.ClientRole = role.ClientRole
-		roleRep.ContainerId = role.ContainerId
+		roleRep.ContainerId = role.ContainerID
 		roleRep.Description = role.Description
 
 		rolesRep = append(rolesRep, roleRep)
@@ -736,11 +744,11 @@ func (c *component) GetRoles(ctx context.Context, realmName string) ([]api.RoleR
 	var rolesRep = []api.RoleRepresentation{}
 	for _, roleKc := range rolesKc {
 		var roleRep api.RoleRepresentation
-		roleRep.Id = roleKc.Id
+		roleRep.ID = roleKc.Id
 		roleRep.Name = roleKc.Name
 		roleRep.Composite = roleKc.Composite
 		roleRep.ClientRole = roleKc.ClientRole
-		roleRep.ContainerId = roleKc.ContainerId
+		roleRep.ContainerID = roleKc.ContainerId
 		roleRep.Description = roleKc.Description
 
 		rolesRep = append(rolesRep, roleRep)
@@ -760,11 +768,11 @@ func (c *component) GetRole(ctx context.Context, realmName string, roleID string
 		return api.RoleRepresentation{}, err
 	}
 
-	roleRep.Id = roleKc.Id
+	roleRep.ID = roleKc.Id
 	roleRep.Name = roleKc.Name
 	roleRep.Composite = roleKc.Composite
 	roleRep.ClientRole = roleKc.ClientRole
-	roleRep.ContainerId = roleKc.ContainerId
+	roleRep.ContainerID = roleKc.ContainerId
 	roleRep.Description = roleKc.Description
 
 	return roleRep, nil
@@ -783,7 +791,7 @@ func (c *component) GetGroups(ctx context.Context, realmName string) ([]api.Grou
 	var groupsRep = []api.GroupRepresentation{}
 	for _, groupKc := range groupsKc {
 		var groupRep api.GroupRepresentation
-		groupRep.Id = groupKc.Id
+		groupRep.ID = groupKc.Id
 		groupRep.Name = groupKc.Name
 
 		groupsRep = append(groupsRep, groupRep)
@@ -805,11 +813,11 @@ func (c *component) GetClientRoles(ctx context.Context, realmName, idClient stri
 	var rolesRep = []api.RoleRepresentation{}
 	for _, roleKc := range rolesKc {
 		var roleRep api.RoleRepresentation
-		roleRep.Id = roleKc.Id
+		roleRep.ID = roleKc.Id
 		roleRep.Name = roleKc.Name
 		roleRep.Composite = roleKc.Composite
 		roleRep.ClientRole = roleKc.ClientRole
-		roleRep.ContainerId = roleKc.ContainerId
+		roleRep.ContainerID = roleKc.ContainerId
 		roleRep.Description = roleKc.Description
 
 		rolesRep = append(rolesRep, roleRep)
@@ -822,11 +830,11 @@ func (c *component) CreateClientRole(ctx context.Context, realmName, clientID st
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 
 	var roleRep kc.RoleRepresentation
-	roleRep.Id = role.Id
+	roleRep.Id = role.ID
 	roleRep.Name = role.Name
 	roleRep.Composite = role.Composite
 	roleRep.ClientRole = role.ClientRole
-	roleRep.ContainerId = role.ContainerId
+	roleRep.ContainerId = role.ContainerID
 	roleRep.Description = role.Description
 
 	locationURL, err := c.keycloakClient.CreateClientRole(accessToken, realmName, clientID, roleRep)
@@ -842,36 +850,52 @@ func (c *component) CreateClientRole(ctx context.Context, realmName, clientID st
 // Retrieve the configuration from the database
 func (c *component) GetRealmCustomConfiguration(ctx context.Context, realmName string) (api.RealmCustomConfiguration, error) {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+	var falseBool = false
 
-	var customConfig = api.RealmCustomConfiguration{
-		DefaultClientId:    new(string),
-		DefaultRedirectUri: new(string),
-	}
 	// get the realm config from Keycloak
 	realmConfig, err := c.keycloakClient.GetRealm(accessToken, realmName)
 	if err != nil {
 		c.logger.Warn("err", err.Error())
-		return customConfig, err
+		return api.RealmCustomConfiguration{}, err
 	}
 	// from the realm ID, fetch the custom configuration
 	realmID := realmConfig.Id
-	customConfigJSON, err := c.configDBModule.GetConfiguration(ctx, *realmID)
+	config, err := c.configDBModule.GetConfiguration(ctx, *realmID)
 	// DB error
 	if err != nil {
-		c.logger.Error("err", err.Error())
-		return customConfig, err
+		switch e := errors.Cause(err).(type) {
+		case internal.MissingRealmConfigurationErr:
+			c.logger.Warn("message", e.Error())
+			return api.RealmCustomConfiguration{
+				DefaultClientID:                     new(string),
+				DefaultRedirectURI:                  new(string),
+				APISelfAuthenticatorDeletionEnabled: &falseBool,
+				APISelfPasswordChangeEnabled:        &falseBool,
+				APISelfMailEditingEnabled:           &falseBool,
+				APISelfAccountDeletionEnabled:       &falseBool,
+				ShowAuthenticatorsTab:               &falseBool,
+				ShowPasswordTab:                     &falseBool,
+				ShowMailEditing:                     &falseBool,
+				ShowAccountDeletionButton:           &falseBool,
+			}, nil
+		default:
+			c.logger.Error("err", e.Error())
+			return api.RealmCustomConfiguration{}, err
+		}
 	}
-	// empty config
-	if customConfigJSON == "" {
-		// database is empty
-		return customConfig, nil
-	}
-	// transform json string into
-	err = json.Unmarshal([]byte(customConfigJSON), &customConfig)
-	if err != nil {
-		return customConfig, err
-	}
-	return customConfig, nil
+
+	return api.RealmCustomConfiguration{
+		DefaultClientID:                     config.DefaultClientID,
+		DefaultRedirectURI:                  config.DefaultRedirectURI,
+		APISelfAuthenticatorDeletionEnabled: config.APISelfAuthenticatorDeletionEnabled,
+		APISelfPasswordChangeEnabled:        config.APISelfPasswordChangeEnabled,
+		APISelfMailEditingEnabled:           config.APISelfMailEditingEnabled,
+		APISelfAccountDeletionEnabled:       config.APISelfAccountDeletionEnabled,
+		ShowAuthenticatorsTab:               config.ShowAuthenticatorsTab,
+		ShowPasswordTab:                     config.ShowPasswordTab,
+		ShowMailEditing:                     config.ShowMailEditing,
+		ShowAccountDeletionButton:           config.ShowAccountDeletionButton,
+	}, nil
 }
 
 // Update the configuration in the database; verify that the content of the configuration is coherent with Keycloak configuration
@@ -890,35 +914,59 @@ func (c *component) UpdateRealmCustomConfiguration(ctx context.Context, realmNam
 		c.logger.Error("err", err.Error())
 		return err
 	}
-	var match = false
-	for _, client := range clients {
-		if *client.ClientId != *customConfig.DefaultClientId {
-			continue
+
+	// Both DefaultClientID and DefaultRedirectURI must be specified together or not at all
+	if (customConfig.DefaultClientID == nil && customConfig.DefaultRedirectURI != nil) ||
+		(customConfig.DefaultClientID != nil && customConfig.DefaultRedirectURI == nil) {
+		return errorhandler.Error{
+			Status:  400,
+			Message: internal.MsgErrInvalidParam + "." + internal.ClientID + "And" + internal.RedirectURI,
 		}
-		for _, redirectURI := range *client.RedirectUris {
-			// escape the regex-specific characters (dots for intance)...
-			matcher := regexp.QuoteMeta(redirectURI)
-			// ... but keep the stars
-			matcher = strings.Replace(matcher, "\\*", "*", -1)
-			match, _ = regexp.MatchString(matcher, *customConfig.DefaultRedirectUri)
-			if match {
-				break
+	}
+
+	if customConfig.DefaultClientID != nil && customConfig.DefaultRedirectURI != nil {
+		var match = false
+
+		for _, client := range clients {
+			if *client.ClientId != *customConfig.DefaultClientID {
+				continue
+			}
+			for _, redirectURI := range *client.RedirectUris {
+				// escape the regex-specific characters (dots for intance)...
+				matcher := regexp.QuoteMeta(redirectURI)
+				// ... but keep the stars
+				matcher = strings.Replace(matcher, "\\*", "*", -1)
+				match, _ = regexp.MatchString(matcher, *customConfig.DefaultRedirectURI)
+				if match {
+					break
+				}
+			}
+		}
+
+		if !match {
+			return errorhandler.Error{
+				Status:  400,
+				Message: internal.MsgErrInvalidParam + "." + internal.ClientID + "Or" + internal.RedirectURI,
 			}
 		}
 	}
-	if !match {
-		return errorhandler.Error{
-			Status:  400,
-			Message: internal.MsgErrInvalidParam + "." + internal.ClientID + "Or" + internal.RedirectURI,
-		}
+
+	// transform customConfig object into DTO
+	var config = dto.RealmConfiguration{
+		DefaultClientID:                     customConfig.DefaultClientID,
+		DefaultRedirectURI:                  customConfig.DefaultRedirectURI,
+		APISelfAuthenticatorDeletionEnabled: customConfig.APISelfAuthenticatorDeletionEnabled,
+		APISelfPasswordChangeEnabled:        customConfig.APISelfPasswordChangeEnabled,
+		APISelfMailEditingEnabled:           customConfig.APISelfMailEditingEnabled,
+		APISelfAccountDeletionEnabled:       customConfig.APISelfAccountDeletionEnabled,
+		ShowAuthenticatorsTab:               customConfig.ShowAuthenticatorsTab,
+		ShowPasswordTab:                     customConfig.ShowPasswordTab,
+		ShowMailEditing:                     customConfig.ShowMailEditing,
+		ShowAccountDeletionButton:           customConfig.ShowAccountDeletionButton,
 	}
-	// transform customConfig object into JSON string
-	configJSON, err := json.Marshal(customConfig)
-	if err != nil {
-		return err
-	}
+
 	// from the realm ID, update the custom configuration in the DB
 	realmID := realmConfig.Id
-	err = c.configDBModule.StoreOrUpdate(ctx, *realmID, string(configJSON))
+	err = c.configDBModule.StoreOrUpdate(ctx, *realmID, config)
 	return err
 }

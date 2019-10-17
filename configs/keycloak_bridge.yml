@@ -71,19 +71,33 @@ db-audit-ro-migration: false
 db-audit-ro-migration-version: 0.1
 db-audit-ro-connection-check: false
 
-# DB Configuration
-db-config-host-port: 127.0.0.1:3306
-db-config-username: bridge
-db-config-password: bridge-password 
-db-config-database: cloudtrust_configuration
-db-config-protocol: tcp
-db-config-parameters: 
-db-config-max-open-conns: 10
-db-config-max-idle-conns: 2
-db-config-conn-max-lifetime: 10
-db-config-migration: false
-db-config-migration-version: 0.1
-db-config-connection-check: false
+# DB Configuration RW
+db-config-rw-host-port: 172.17.0.2:3306
+db-config-rw-username: bridge
+db-config-rw-password: bridge-password
+db-config-rw-database: configuration
+db-config-rw-protocol: tcp
+db-config-rw-parameters:
+db-config-rw-max-open-conns: 10
+db-config-rw-max-idle-conns: 2
+db-config-rw-conn-max-lifetime: 10
+db-config-rw-migration: false
+db-config-rw-migration-version: 0.1
+db-config-rw-connection-check: true
+
+# DB Configuration RO
+db-config-ro-host-port: 172.17.0.2:3306
+db-config-ro-username: bridge
+db-config-ro-password: bridge-password
+db-config-ro-database: configuration
+db-config-ro-protocol: tcp
+db-config-ro-parameters:
+db-config-ro-max-open-conns: 10
+db-config-ro-max-idle-conns: 2
+db-config-ro-conn-max-lifetime: 10
+db-config-ro-migration: false
+db-config-ro-migration-version: 0.1
+db-config-ro-connection-check: true
 
 # audit events
 events-db: false
