@@ -81,8 +81,8 @@ pipeline {
                 curl -u"${USR}:${PWD}" -T "${BUILD_PATH}/bin/${APP}-${params.VERSION}.tar.gz" --keepalive-time 2 "${REPO_URL}/${APP}-${params.VERSION}.tar.gz"
               """
             }
-            def git_url = "${env.GIT_URL_1}".replaceFirst("^(http[s]?://www\\.|http[s]?://|www\\.)","")
-            withCredentials([usernamePassword(credentialsId: "bgu",
+            def git_url = "${env.GIT_URL}".replaceFirst("^(http[s]?://www\\.|http[s]?://|www\\.)","")
+            withCredentials([usernamePassword(credentialsId: "3d6daa6f-8eea-43d0-b69e-0616258d5b1b",
                 passwordVariable: 'PWD',
                 usernameVariable: 'USR')]) {
               sh("git config --global user.email 'ci@dev.null'")
