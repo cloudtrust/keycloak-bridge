@@ -71,3 +71,8 @@ func TestModuleGetTotalConnectionsCount(t *testing.T) {
 		assert.NotNil(t, err)
 	}
 }
+
+func TestCreateStats(t *testing.T) {
+	assert.Equal(t, [][]int64{{3, 0}, {2, 0}, {9, 0}, {8, 0}, {7, 0}}, createStats(5, 3, 2, 9, true))
+	assert.Equal(t, [][]int64{{7, 0}, {8, 0}, {9, 0}, {2, 0}, {3, 0}}, createStats(5, 3, 2, 9, false))
+}

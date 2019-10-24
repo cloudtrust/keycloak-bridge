@@ -731,6 +731,26 @@
           "*": {}
         }
       },
+      "ST_GetStatisticsUsers": {
+        "DEP": {
+          "*": {}
+        }
+      },
+      "ST_GetStatisticsAuthenticators": {
+        "DEP": {
+          "*": {}
+        }
+      },
+      "ST_GetStatisticsAuthentications": {
+        "DEP": {
+          "*": {}
+        }
+      },
+      "ST_GetStatisticsAuthenticationsLog": {
+        "DEP": {
+          "*": {}
+        }
+      },
       "GetClients":{
         "*": {}
       },

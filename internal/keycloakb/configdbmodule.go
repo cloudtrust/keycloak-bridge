@@ -27,7 +27,7 @@ type configurationDBModule struct {
 }
 
 // NewConfigurationDBModule returns a ConfigurationDB module.
-func NewConfigurationDBModule(db DBConfiguration) *configurationDBModule {
+func NewConfigurationDBModule(db DBConfiguration) ConfigurationDBModule {
 	return &configurationDBModule{
 		db: db,
 	}

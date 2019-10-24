@@ -28,6 +28,102 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Statistics'
+  /statistics/realms/{realm}/users:
+    get:
+      tags:
+      - Statistics
+      summary: Get the statistics on the users, for a certain realm
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatisticsUsers'   
+  /statistics/realms/{realm}/authenticators:
+    get:
+      tags:
+      - Statistics
+      summary: Get the statistics on the authenticators used by the users, for a certain realm
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatisticsAuthenticators'  
+  /statistics/realms/{realm}/authentications-graph:
+    get:
+      tags:
+      - Statistics
+      summary: Get the statistics on the authentications, on different time periods, for a certain realm
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: unit
+        in: query
+        description: unit of time, i.e. hours, days or months
+        required: true
+        schema:
+          type: string
+      - name: timeshift
+        in: query
+        description: timeshift compared to UTC in minutes. Must start with + or - (default: +0)
+        required: false
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StatisticsAuthentications'     
+  /statistics/realms/{realm}/authentications-log:
+    get:
+      tags:
+      - Statistics
+      summary: Get the information on the last authentications, successful or failed, for a certain realm
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: max
+        in: query
+        description: number of authentications 
+        required: true
+        schema:
+          type: string          
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StatisticsConnection'                                               
 components:
   schemas:
     Statistics:
@@ -48,6 +144,38 @@ components:
               type: number
             lastYear:
               type: number
+    StatisticsUsers:
+      type: object
+      properties:
+        total:
+          type: number
+        disabled:
+          type: number
+        inactive:
+          type: number      
+    StatisticsAuthenticators:
+      type: object
+      additionalProperties:
+        type: number       
+    StatisticsAuthentications:
+      type: array
+      items:
+        type: array
+        items:
+          type: integer  
+        minItems: 2
+        maxItems: 2        
+    StatisticsConnection:
+      type: object
+      properties:
+        date:
+          type: string 
+        result:
+          type: string
+        user:
+          type: string
+        IP: 
+          type: string    
   securitySchemes:
     openId:
       type: openIdConnect
