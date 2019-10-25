@@ -262,8 +262,21 @@ func (c *component) UpdateLabelCredential(ctx context.Context, credentialID stri
 
 	//store the API call into the DB
 	// the error should be treated
-	additionalInfos, _ := json.Marshal(map[string]string{"credentialID": credentialID, "label": label})
-	_ = c.reportEvent(ctx, "SELF_UPDATE_CREDENTIAL", database.CtEventRealmName, currentRealm, database.CtEventUserID, userID, database.CtEventUsername, username, database.CtEventAdditionalInfo, string(additionalInfos))
+	additionalInfos, err := json.Marshal(map[string]string{"credentialID": credentialID, "label": label})
+	if err != nil {
+		c.logger.Warn("err", err.Error())
+	}
+	errEvent := c.reportEvent(ctx, "SELF_UPDATE_CREDENTIAL", database.CtEventRealmName, currentRealm, database.CtEventUserID, userID, database.CtEventUsername, username, database.CtEventAdditionalInfo, string(additionalInfos))
+	if errEvent != nil {
+		//store in the logs also the event that failed to be stored in the DB
+		m := map[string]interface{}{"event_name": "SELF_UPDATE_CREDENTIAL", database.CtEventRealmName: currentRealm, database.CtEventUserID: userID, database.CtEventUsername: username, database.CtEventAdditionalInfo: string(additionalInfos)}
+		eventJSON, errMarshal := json.Marshal(m)
+		if errMarshal == nil {
+			c.logger.Error("err", errEvent.Error(), "event", string(eventJSON))
+		} else {
+			c.logger.Error("err", errEvent.Error())
+		}
+	}
 
 	return nil
 }
@@ -283,9 +296,21 @@ func (c *component) DeleteCredential(ctx context.Context, credentialID string) e
 
 	//store the API call into the DB
 	// the error should be treated
-	additionalInfos, _ := json.Marshal(map[string]string{"credentialID": credentialID})
-	_ = c.reportEvent(ctx, "SELF_DELETE_CREDENTIAL", database.CtEventRealmName, currentRealm, database.CtEventUserID, userID, database.CtEventUsername, username, database.CtEventAdditionalInfo, string(additionalInfos))
-
+	additionalInfos, err := json.Marshal(map[string]string{"credentialID": credentialID})
+	if err != nil {
+		c.logger.Warn("err", err.Error())
+	}
+	errEvent := c.reportEvent(ctx, "SELF_DELETE_CREDENTIAL", database.CtEventRealmName, currentRealm, database.CtEventUserID, userID, database.CtEventUsername, username, database.CtEventAdditionalInfo, string(additionalInfos))
+	if errEvent != nil {
+		//store in the logs also the event that failed to be stored in the DB
+		m := map[string]interface{}{"event_name": "SELF_DELETE_CREDENTIAL", database.CtEventRealmName: currentRealm, database.CtEventUserID: userID, database.CtEventUsername: username, database.CtEventAdditionalInfo: string(additionalInfos)}
+		eventJSON, errMarshal := json.Marshal(m)
+		if errMarshal == nil {
+			c.logger.Error("err", errEvent.Error(), "event", string(eventJSON))
+		} else {
+			c.logger.Error("err", errEvent.Error())
+		}
+	}
 	return nil
 }
 
@@ -309,9 +334,21 @@ func (c *component) MoveCredential(ctx context.Context, credentialID string, pre
 
 	//store the API call into the DB
 	// the error should be treated
-	additionalInfos, _ := json.Marshal(map[string]string{"credentialID": credentialID, "previousCredentialID": previousCredentialID})
-	_ = c.reportEvent(ctx, "SELF_MOVE_CREDENTIAL", database.CtEventRealmName, currentRealm, database.CtEventUserID, userID, database.CtEventUsername, username, database.CtEventAdditionalInfo, string(additionalInfos))
-
+	additionalInfos, err := json.Marshal(map[string]string{"credentialID": credentialID, "previousCredentialID": previousCredentialID})
+	if err != nil {
+		c.logger.Warn("err", err.Error())
+	}
+	errEvent := c.reportEvent(ctx, "SELF_MOVE_CREDENTIAL", database.CtEventRealmName, currentRealm, database.CtEventUserID, userID, database.CtEventUsername, username, database.CtEventAdditionalInfo, string(additionalInfos))
+	if errEvent != nil {
+		//store in the logs also the event that failed to be stored in the DB
+		m := map[string]interface{}{"event_name": "SELF_MOVE_CREDENTIAL", database.CtEventRealmName: currentRealm, database.CtEventUserID: userID, database.CtEventUsername: username, database.CtEventAdditionalInfo: string(additionalInfos)}
+		eventJSON, errMarshal := json.Marshal(m)
+		if errMarshal == nil {
+			c.logger.Error("err", errEvent.Error(), "event", string(eventJSON))
+		} else {
+			c.logger.Error("err", errEvent.Error())
+		}
+	}
 	return nil
 }
 

@@ -24,6 +24,7 @@ const (
 	UserID             = "userId"
 	Username           = "username"
 	User               = "user"
+	UserLabel          = "userLabel"
 	Email              = "email"
 	Firstname          = "firstname"
 	Lastname           = "lastname"
