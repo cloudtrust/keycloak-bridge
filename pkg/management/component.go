@@ -864,7 +864,7 @@ func (c *component) GetRealmCustomConfiguration(ctx context.Context, realmName s
 	// DB error
 	if err != nil {
 		switch e := errors.Cause(err).(type) {
-		case internal.MissingRealmConfigurationErr:
+		case errorhandler.Error:
 			c.logger.Warn("message", e.Error())
 			return api.RealmCustomConfiguration{
 				DefaultClientID:                     new(string),

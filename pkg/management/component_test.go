@@ -12,10 +12,10 @@ import (
 	cs "github.com/cloudtrust/common-service"
 	"github.com/cloudtrust/common-service/database"
 	commonhttp "github.com/cloudtrust/common-service/errors"
+	errorhandler "github.com/cloudtrust/common-service/errors"
 	"github.com/cloudtrust/common-service/log"
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
-	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/cloudtrust/keycloak-bridge/pkg/management/mock"
 	kc "github.com/cloudtrust/keycloak-client"
 	"github.com/golang/mock/gomock"
@@ -2165,7 +2165,7 @@ func TestGetRealmCustomConfiguration(t *testing.T) {
 		mockKeycloakClient.EXPECT().GetRealm(accessToken, realmID).Return(kcRealmRep, nil).Times(1)
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
-		mockConfigurationDBModule.EXPECT().GetConfiguration(ctx, realmID).Return(dto.RealmConfiguration{}, keycloakb.MissingRealmConfigurationErr{}).Times(1)
+		mockConfigurationDBModule.EXPECT().GetConfiguration(ctx, realmID).Return(dto.RealmConfiguration{}, errorhandler.Error{}).Times(1)
 
 		configJSON, err := managementComponent.GetRealmCustomConfiguration(ctx, realmID)
 
