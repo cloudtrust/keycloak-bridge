@@ -3,7 +3,6 @@ package account
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -321,7 +320,6 @@ func (c *component) GetConfiguration(ctx context.Context) (api.Configuration, er
 
 	config, err := c.configDBModule.GetConfiguration(ctx, currentRealm)
 	if err != nil {
-		fmt.Println("isssue")
 		return api.Configuration{}, err
 	}
 
