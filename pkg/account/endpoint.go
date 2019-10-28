@@ -88,7 +88,7 @@ func MakeUpdateLabelCredentialEndpoint(component AccountComponent) cs.Endpoint {
 
 		err := json.Unmarshal([]byte(m["body"]), &body)
 		if err != nil {
-			return nil, errrorhandler.CreateBadRequestError("Invalid body")
+			return nil, errrorhandler.CreateBadRequestError(internal.MsgErrInvalidParam + "." + internal.Body)
 		}
 
 		if err = body.Validate(); err != nil {
@@ -96,7 +96,7 @@ func MakeUpdateLabelCredentialEndpoint(component AccountComponent) cs.Endpoint {
 		}
 
 		if body.UserLabel == nil {
-			return nil, errrorhandler.CreateBadRequestError("User label missing")
+			return nil, errrorhandler.CreateBadRequestError(internal.MsgErrMissingParam + "." + internal.UserLabel)
 		}
 
 		return nil, component.UpdateLabelCredential(ctx, m["credentialID"], *body.UserLabel)

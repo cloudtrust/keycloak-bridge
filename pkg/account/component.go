@@ -67,8 +67,12 @@ func NewComponent(keycloakAccountClient KeycloakAccountClient, eventDBModule dat
 	}
 }
 
-func (c *component) reportEvent(ctx context.Context, apiCall string, values ...string) error {
-	return c.eventDBModule.ReportEvent(ctx, apiCall, "self-service", values...)
+func (c *component) reportEvent(ctx context.Context, apiCall string, values ...string) {
+	errEvent := c.eventDBModule.ReportEvent(ctx, apiCall, "self-service", values...)
+	if errEvent != nil {
+		//store in the logs also the event that failed to be stored in the DB
+		internal.LogUnrecordedEvent(ctx, c.logger, apiCall, errEvent.Error(), values...)
+	}
 }
 
 func (c *component) UpdatePassword(ctx context.Context, currentPassword, newPassword, confirmPassword string) error {
@@ -91,18 +95,7 @@ func (c *component) UpdatePassword(ctx context.Context, currentPassword, newPass
 	}
 
 	//store the API call into the DB
-	errEvent := c.reportEvent(ctx, "PASSWORD_RESET", database.CtEventRealmName, realm, database.CtEventUserID, userID, database.CtEventUsername, username)
-	if errEvent != nil {
-		//store in the logs also the event that failed to be stored in the DB
-		m := map[string]interface{}{"event_name": "PASSWORD_RESET", database.CtEventRealmName: realm, database.CtEventUserID: userID, database.CtEventUsername: username}
-		eventJSON, errMarshal := json.Marshal(m)
-		if errMarshal == nil {
-			c.logger.Error("err", errEvent.Error(), "event", string(eventJSON))
-		} else {
-			c.logger.Error("err", errEvent.Error())
-		}
-
-	}
+	c.reportEvent(ctx, "PASSWORD_RESET", database.CtEventRealmName, realm, database.CtEventUserID, userID, database.CtEventUsername, username)
 
 	return nil
 }
@@ -194,7 +187,7 @@ func (c *component) UpdateAccount(ctx context.Context, user api.AccountRepresent
 	}
 
 	//store the API call into the DB
-	_ = c.reportEvent(ctx, "UPDATE_ACCOUNT", database.CtEventRealmName, realm, database.CtEventUserID, userID, database.CtEventUsername, username)
+	c.reportEvent(ctx, "UPDATE_ACCOUNT", database.CtEventRealmName, realm, database.CtEventUserID, userID, database.CtEventUsername, username)
 
 	return nil
 }
@@ -209,6 +202,9 @@ func (c *component) DeleteAccount(ctx context.Context) error {
 		c.logger.Warn("err", err.Error())
 		return err
 	}
+
+	//store the API call into the DB
+	c.reportEvent(ctx, "SELF_DELETE_ACCOUNT", database.CtEventRealmName, realm)
 
 	return nil
 }
@@ -263,7 +259,8 @@ func (c *component) UpdateLabelCredential(ctx context.Context, credentialID stri
 	//store the API call into the DB
 	// the error should be treated
 	additionalInfos, _ := json.Marshal(map[string]string{"credentialID": credentialID, "label": label})
-	_ = c.reportEvent(ctx, "SELF_UPDATE_CREDENTIAL", database.CtEventRealmName, currentRealm, database.CtEventUserID, userID, database.CtEventUsername, username, database.CtEventAdditionalInfo, string(additionalInfos))
+
+	c.reportEvent(ctx, "SELF_UPDATE_CREDENTIAL", database.CtEventRealmName, currentRealm, database.CtEventUserID, userID, database.CtEventUsername, username, database.CtEventAdditionalInfo, string(additionalInfos))
 
 	return nil
 }
@@ -281,10 +278,10 @@ func (c *component) DeleteCredential(ctx context.Context, credentialID string) e
 		return err
 	}
 
-	//store the API call into the DB
-	// the error should be treated
 	additionalInfos, _ := json.Marshal(map[string]string{"credentialID": credentialID})
-	_ = c.reportEvent(ctx, "SELF_DELETE_CREDENTIAL", database.CtEventRealmName, currentRealm, database.CtEventUserID, userID, database.CtEventUsername, username, database.CtEventAdditionalInfo, string(additionalInfos))
+
+	//store the API call into the DB
+	c.reportEvent(ctx, "SELF_DELETE_CREDENTIAL", database.CtEventRealmName, currentRealm, database.CtEventUserID, userID, database.CtEventUsername, username, database.CtEventAdditionalInfo, string(additionalInfos))
 
 	return nil
 }
@@ -307,10 +304,10 @@ func (c *component) MoveCredential(ctx context.Context, credentialID string, pre
 		return err
 	}
 
+	additionalInfos, err := json.Marshal(map[string]string{"credentialID": credentialID, "previousCredentialID": previousCredentialID})
+
 	//store the API call into the DB
-	// the error should be treated
-	additionalInfos, _ := json.Marshal(map[string]string{"credentialID": credentialID, "previousCredentialID": previousCredentialID})
-	_ = c.reportEvent(ctx, "SELF_MOVE_CREDENTIAL", database.CtEventRealmName, currentRealm, database.CtEventUserID, userID, database.CtEventUsername, username, database.CtEventAdditionalInfo, string(additionalInfos))
+	c.reportEvent(ctx, "SELF_MOVE_CREDENTIAL", database.CtEventRealmName, currentRealm, database.CtEventUserID, userID, database.CtEventUsername, username, database.CtEventAdditionalInfo, string(additionalInfos))
 
 	return nil
 }

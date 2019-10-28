@@ -4,6 +4,7 @@ import (
 	"errors"
 	"regexp"
 
+	internal "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	kc "github.com/cloudtrust/keycloak-client"
 )
 
@@ -107,23 +108,23 @@ func ConvertToKCUser(user AccountRepresentation) kc.UserRepresentation {
 // Validate is a validator for AccountRepresentation
 func (user AccountRepresentation) Validate() error {
 	if user.Username != nil && !matchesRegExp(*user.Username, RegExpUsername) {
-		return errors.New("Invalid username")
+		return errors.New(internal.MsgErrInvalidParam + "." + internal.Username)
 	}
 
 	if user.Email != nil && !matchesRegExp(*user.Email, RegExpEmail) {
-		return errors.New("Invalid email")
+		return errors.New(internal.MsgErrInvalidParam + "." + internal.Email)
 	}
 
 	if user.FirstName != nil && !matchesRegExp(*user.FirstName, RegExpFirstName) {
-		return errors.New("Invalid firstname")
+		return errors.New(internal.MsgErrInvalidParam + "." + internal.Firstname)
 	}
 
 	if user.LastName != nil && !matchesRegExp(*user.LastName, RegExpLastName) {
-		return errors.New("Invalid lastname")
+		return errors.New(internal.MsgErrInvalidParam + "." + internal.Lastname)
 	}
 
 	if user.PhoneNumber != nil && !matchesRegExp(*user.PhoneNumber, RegExpPhoneNumber) {
-		return errors.New("Invalid phone number")
+		return errors.New(internal.MsgErrInvalidParam + "." + internal.PhoneNumber)
 	}
 
 	return nil
@@ -132,15 +133,15 @@ func (user AccountRepresentation) Validate() error {
 // Validate is a validator for UpdatePasswordBody
 func (updatePwd UpdatePasswordBody) Validate() error {
 	if !matchesRegExp(updatePwd.CurrentPassword, RegExpPassword) {
-		return errors.New("Invalid current Password")
+		return errors.New(internal.MsgErrInvalidParam + "." + internal.CurrentPassword)
 	}
 
 	if !matchesRegExp(updatePwd.NewPassword, RegExpPassword) {
-		return errors.New("Invalid new Password")
+		return errors.New(internal.MsgErrInvalidParam + "." + internal.NewPassword)
 	}
 
 	if !matchesRegExp(updatePwd.ConfirmPassword, RegExpPassword) {
-		return errors.New("Invalid confirm Password")
+		return errors.New(internal.MsgErrInvalidParam + "." + internal.ConfirmPassword)
 	}
 
 	return nil
@@ -149,15 +150,15 @@ func (updatePwd UpdatePasswordBody) Validate() error {
 // Validate is a validator for CredentialRepresentation
 func (credential CredentialRepresentation) Validate() error {
 	if credential.ID != nil && !matchesRegExp(*credential.ID, RegExpID) {
-		return errors.New("Invalid Id")
+		return errors.New(internal.MsgErrInvalidParam + "." + internal.ID)
 	}
 
 	if credential.Type != nil && !matchesRegExp(*credential.Type, RegExpType) {
-		return errors.New("Invalid Type")
+		return errors.New(internal.MsgErrInvalidParam + "." + internal.Type)
 	}
 
 	if credential.UserLabel != nil && !matchesRegExp(*credential.UserLabel, RegExpLabel) {
-		return errors.New("Invalid Label")
+		return errors.New(internal.MsgErrInvalidParam + "." + internal.Label)
 	}
 
 	return nil

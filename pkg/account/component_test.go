@@ -391,6 +391,7 @@ func TestDeleteUser(t *testing.T) {
 	// Delete user with succces
 	{
 		mockKeycloakAccountClient.EXPECT().DeleteAccount(accessToken, realmName).Return(nil).Times(1)
+		mockEventDBModule.EXPECT().ReportEvent(ctx, "SELF_DELETE_ACCOUNT", "self-service", gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
 		err := accountComponent.DeleteAccount(ctx)
 

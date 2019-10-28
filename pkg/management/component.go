@@ -2,7 +2,6 @@ package management
 
 import (
 	"context"
-	"encoding/json"
 	"regexp"
 	"strings"
 
@@ -107,8 +106,12 @@ func NewComponent(keycloakClient KeycloakClient, eventDBModule database.EventsDB
 	}
 }
 
-func (c *component) reportEvent(ctx context.Context, apiCall string, values ...string) error {
-	return c.eventDBModule.ReportEvent(ctx, apiCall, "back-office", values...)
+func (c *component) reportEvent(ctx context.Context, apiCall string, values ...string) {
+	errEvent := c.eventDBModule.ReportEvent(ctx, apiCall, "back-office", values...)
+	if errEvent != nil {
+		//store in the logs also the event that failed to be stored in the DB
+		internal.LogUnrecordedEvent(ctx, c.logger, apiCall, errEvent.Error(), values...)
+	}
 }
 
 func (c *component) GetRealms(ctx context.Context) ([]api.RealmRepresentation, error) {
@@ -227,17 +230,7 @@ func (c *component) CreateUser(ctx context.Context, realmName string, user api.U
 	userID := string(reg.Find([]byte(locationURL)))
 
 	//store the API call into the DB
-	err = c.reportEvent(ctx, "API_ACCOUNT_CREATION", database.CtEventRealmName, realmName, database.CtEventUserID, userID, database.CtEventUsername, username)
-	if err != nil {
-		//store in the logs also the event that failed to be stored in the DB
-		m := map[string]interface{}{"event_name": "API_ACCOUNT_CREATION", database.CtEventRealmName: realmName, database.CtEventUserID: userID, database.CtEventUsername: username}
-		eventJSON, errMarshal := json.Marshal(m)
-		if errMarshal == nil {
-			c.logger.Error("err", err.Error(), "event", string(eventJSON))
-		} else {
-			c.logger.Error("err", err.Error())
-		}
-	}
+	c.reportEvent(ctx, "API_ACCOUNT_CREATION", database.CtEventRealmName, realmName, database.CtEventUserID, userID, database.CtEventUsername, username)
 
 	return locationURL, nil
 }
@@ -253,17 +246,7 @@ func (c *component) DeleteUser(ctx context.Context, realmName, userID string) er
 	}
 
 	//store the API call into the DB
-	err = c.reportEvent(ctx, "API_ACCOUNT_DELETION", database.CtEventRealmName, realmName, database.CtEventUserID, userID)
-	if err != nil {
-		//store in the logs also the event that failed to be stored in the DB
-		m := map[string]interface{}{"event_name": "API_ACCOUNT_DELETION", database.CtEventRealmName: realmName, database.CtEventUserID: userID}
-		eventJSON, errMarshal := json.Marshal(m)
-		if errMarshal == nil {
-			c.logger.Error("err", err.Error(), "event", string(eventJSON))
-		} else {
-			c.logger.Error("err", err.Error())
-		}
-	}
+	c.reportEvent(ctx, "API_ACCOUNT_DELETION", database.CtEventRealmName, realmName, database.CtEventUserID, userID)
 
 	return nil
 }
@@ -287,17 +270,8 @@ func (c *component) GetUser(ctx context.Context, realmName, userID string) (api.
 	}
 
 	//store the API call into the DB
-	err = c.reportEvent(ctx, "GET_DETAILS", database.CtEventRealmName, realmName, database.CtEventUserID, userID, database.CtEventUsername, username)
-	if err != nil {
-		//store in the logs also the event that failed to be stored in the DB
-		m := map[string]interface{}{"event_name": "GET_DETAILS", database.CtEventRealmName: realmName, database.CtEventUserID: userID, database.CtEventUsername: username}
-		eventJSON, errMarshal := json.Marshal(m)
-		if errMarshal == nil {
-			c.logger.Error("err", err.Error(), "event", string(eventJSON))
-		} else {
-			c.logger.Error("err", err.Error())
-		}
-	}
+	c.reportEvent(ctx, "GET_DETAILS", database.CtEventRealmName, realmName, database.CtEventUserID, userID, database.CtEventUsername, username)
+
 	return userRep, nil
 
 }
@@ -376,17 +350,8 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 			ctEventType = "LOCK_ACCOUNT"
 		}
 
-		err = c.reportEvent(ctx, ctEventType, database.CtEventRealmName, realmName, database.CtEventUserID, userID, database.CtEventUsername, username)
-		if err != nil {
-			//store in the logs also the event that failed to be stored in the DB
-			m := map[string]interface{}{"event_name": ctEventType, database.CtEventRealmName: realmName, database.CtEventUserID: userID, database.CtEventUsername: username}
-			eventJSON, errMarshal := json.Marshal(m)
-			if errMarshal == nil {
-				c.logger.Error("err", err.Error(), "event", string(eventJSON))
-			} else {
-				c.logger.Error("err", err.Error())
-			}
-		}
+		c.reportEvent(ctx, ctEventType, database.CtEventRealmName, realmName, database.CtEventUserID, userID, database.CtEventUsername, username)
+
 	}
 
 	return nil
@@ -578,17 +543,7 @@ func (c *component) ResetPassword(ctx context.Context, realmName string, userID 
 	}
 
 	//store the API call into the DB
-	err = c.reportEvent(ctx, "INIT_PASSWORD", database.CtEventRealmName, realmName, database.CtEventUserID, userID)
-	if err != nil {
-		//store in the logs also the event that failed to be stored in the DB
-		m := map[string]interface{}{"event_name": "INIT_PASSWORD", database.CtEventRealmName: realmName, database.CtEventUserID: userID}
-		eventJSON, errMarshal := json.Marshal(m)
-		if errMarshal == nil {
-			c.logger.Error("err", err.Error(), "event", string(eventJSON))
-		} else {
-			c.logger.Error("err", err.Error())
-		}
-	}
+	c.reportEvent(ctx, "INIT_PASSWORD", database.CtEventRealmName, realmName, database.CtEventUserID, userID)
 
 	return pwd, nil
 }
@@ -614,18 +569,7 @@ func (c *component) ExecuteActionsEmail(ctx context.Context, realmName string, u
 		actions = append(actions, string(requiredAction))
 		if string(requiredAction) == initPasswordAction {
 			//store the API call into the DB
-			err := c.reportEvent(ctx, "INIT_PASSWORD", database.CtEventRealmName, realmName, database.CtEventUserID, userID)
-			if err != nil {
-				//store in the logs also the event that failed to be stored in the DB
-				m := map[string]interface{}{"event_name": "INIT_PASSWORD", database.CtEventRealmName: realmName, database.CtEventUserID: userID}
-				eventJSON, errMarshal := json.Marshal(m)
-				if errMarshal == nil {
-					c.logger.Error("err", err.Error(), "event", string(eventJSON))
-				} else {
-					c.logger.Error("err", err.Error())
-				}
-
-			}
+			c.reportEvent(ctx, "INIT_PASSWORD", database.CtEventRealmName, realmName, database.CtEventUserID, userID)
 		}
 	}
 
@@ -649,17 +593,7 @@ func (c *component) SendNewEnrolmentCode(ctx context.Context, realmName string, 
 	}
 
 	// store the API call into the DB
-	errEvent := c.reportEvent(ctx, "SMS_CHALLENGE", database.CtEventRealmName, realmName, database.CtEventUserID, userID)
-	if errEvent != nil {
-		//store in the logs also the event that failed to be stored in the DB
-		m := map[string]interface{}{"event_name": "SMS_CHALLENGE", database.CtEventRealmName: realmName, database.CtEventUserID: userID}
-		eventJSON, errMarshal := json.Marshal(m)
-		if errMarshal == nil {
-			c.logger.Error("err", errEvent.Error(), "event", string(eventJSON))
-		} else {
-			c.logger.Error("err", errEvent.Error())
-		}
-	}
+	c.reportEvent(ctx, "SMS_CHALLENGE", database.CtEventRealmName, realmName, database.CtEventUserID, userID)
 
 	return *smsCodeKc.Code, err
 }
@@ -713,17 +647,7 @@ func (c *component) DeleteCredentialsForUser(ctx context.Context, realmName stri
 	for _, credKc := range credsKc {
 		if *credKc.Id == credentialID && *credKc.Type != "password" {
 
-			errEvent := c.reportEvent(ctx, "2ND_FACTOR_REMOVED", database.CtEventRealmName, realmName, database.CtEventUserID, userID)
-			if errEvent != nil {
-				//store in the logs also the event that failed to be stored in the DB
-				m := map[string]interface{}{"event_name": "2ND_FACTOR_REMOVED", database.CtEventRealmName: realmName, database.CtEventUserID: userID}
-				eventJSON, errMarshal := json.Marshal(m)
-				if errMarshal == nil {
-					c.logger.Error("err", errEvent.Error(), "event", string(eventJSON))
-				} else {
-					c.logger.Error("err", errEvent.Error())
-				}
-			}
+			c.reportEvent(ctx, "2ND_FACTOR_REMOVED", database.CtEventRealmName, realmName, database.CtEventUserID, userID)
 			break
 		}
 	}
