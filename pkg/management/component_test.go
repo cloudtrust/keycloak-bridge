@@ -2170,8 +2170,8 @@ func TestGetRealmCustomConfiguration(t *testing.T) {
 		configJSON, err := managementComponent.GetRealmCustomConfiguration(ctx, realmID)
 
 		assert.Nil(t, err)
-		assert.Equal(t, *configJSON.DefaultClientID, *new(string))
-		assert.Equal(t, *configJSON.DefaultRedirectURI, *new(string))
+		assert.Nil(t, configJSON.DefaultClientID)
+		assert.Nil(t, configJSON.DefaultRedirectURI)
 	}
 
 	// Unknown realm
