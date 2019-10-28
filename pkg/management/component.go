@@ -867,8 +867,8 @@ func (c *component) GetRealmCustomConfiguration(ctx context.Context, realmName s
 		case internal.MissingRealmConfigurationErr:
 			c.logger.Warn("message", e.Error())
 			return api.RealmCustomConfiguration{
-				DefaultClientID:                     new(string),
-				DefaultRedirectURI:                  new(string),
+				DefaultClientID:                     nil,
+				DefaultRedirectURI:                  nil,
 				APISelfAuthenticatorDeletionEnabled: &falseBool,
 				APISelfPasswordChangeEnabled:        &falseBool,
 				APISelfMailEditingEnabled:           &falseBool,
