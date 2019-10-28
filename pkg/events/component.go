@@ -2,7 +2,6 @@ package events
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/cloudtrust/common-service/database"
 	errorhandler "github.com/cloudtrust/common-service/errors"
@@ -32,8 +31,13 @@ func NewComponent(db app.EventsDBModule, eventDBModule database.EventsDBModule, 
 	}
 }
 
-func (ec *component) reportEvent(ctx context.Context, apiCall string, values ...string) error {
-	return ec.eventDBModule.ReportEvent(ctx, apiCall, "back-office", values...)
+func (ec *component) reportEvent(ctx context.Context, apiCall string, values ...string) {
+	errEvent := ec.eventDBModule.ReportEvent(ctx, apiCall, "back-office", values...)
+	if errEvent != nil {
+		//store in the logs also the event that failed to be stored in the DB
+		app.LogUnrecordedEvent(ctx, ec.logger, apiCall, errEvent.Error(), values...)
+	}
+
 }
 
 // Get events according to optional parameters
@@ -65,16 +69,6 @@ func (ec *component) GetUserEvents(ctx context.Context, params map[string]string
 		return api.AuditEventsRepresentation{}, errorhandler.CreateMissingParameterError(app.UserID)
 	}
 
-	err := ec.reportEvent(ctx, "GET_ACTIVITY", database.CtEventRealmName, params["realm"], database.CtEventUserID, params["userID"])
-	if err != nil {
-		//store in the logs also the event that failed to be stored in the DB
-		m := map[string]interface{}{"event_name": "GET_ACTIVITY", database.CtEventRealmName: params["realm"], database.CtEventUserID: params["userID"]}
-		eventJSON, errMarshal := json.Marshal(m)
-		if errMarshal == nil {
-			ec.logger.Error("err", err.Error(), "event", string(eventJSON))
-		} else {
-			ec.logger.Error("err", err.Error())
-		}
-	}
+	ec.reportEvent(ctx, "GET_ACTIVITY", database.CtEventRealmName, params["realm"], database.CtEventUserID, params["userID"])
 	return ec.GetEvents(ctx, params)
 }
