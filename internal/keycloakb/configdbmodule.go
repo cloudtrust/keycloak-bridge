@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 
+	errorhandler "github.com/cloudtrust/common-service/errors"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 )
 
@@ -23,15 +24,6 @@ type DBConfiguration interface {
 
 type configurationDBModule struct {
 	db DBConfiguration
-}
-
-// MissingRealmConfigurationErr is the error thrown if no configuration is found in DB
-type MissingRealmConfigurationErr struct {
-	realmID string
-}
-
-func (e MissingRealmConfigurationErr) Error() string {
-	return "RealmConfiguration is not configured for " + e.realmID
 }
 
 // NewConfigurationDBModule returns a ConfigurationDB module.
@@ -60,9 +52,11 @@ func (c *configurationDBModule) GetConfiguration(context context.Context, realmI
 
 	switch err := row.Scan(&configJSON); err {
 	case sql.ErrNoRows:
-		return dto.RealmConfiguration{}, MissingRealmConfigurationErr{
-			realmID: realmID,
+		return dto.RealmConfiguration{}, errorhandler.Error{
+			Status:  404,
+			Message: MsgErrNotConfigured + "." + RealmConfiguration + "." + realmID,
 		}
+
 	default:
 		if err != nil {
 			return dto.RealmConfiguration{}, err

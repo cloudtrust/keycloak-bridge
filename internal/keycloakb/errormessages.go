@@ -13,7 +13,9 @@ const (
 	MsgErrCannotSaveConfigInDB = "cannotSaveConfigInDB"
 	MsgErrCannotUpdate         = "cannotUpdate"
 	MsgErrUnknown              = "unknowError"
+	MsgErrNotConfigured        = "notConfigured"
 
+	RealmConfiguration = "realmConfiguration"
 	CurrentPassword    = "currentPassword"
 	NewPassword        = "newPassword"
 	ConfirmPassword    = "confirmPassword"

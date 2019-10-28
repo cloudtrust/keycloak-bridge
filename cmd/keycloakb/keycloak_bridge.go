@@ -670,13 +670,13 @@ func main() {
 		var getAccountHandler = configureAccountHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(accountEndpoints.GetAccount)
 		var updateAccountHandler = configureAccountHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(accountEndpoints.UpdateAccount)
 		var deleteAccountHandler = configureAccountHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(accountEndpoints.DeleteAccount)
-		var getGetConfiguration = configureAccountHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(accountEndpoints.GetConfiguration)
+		var getConfigurationHandler = configureAccountHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(accountEndpoints.GetConfiguration)
 
 		route.Path("/account").Methods("GET").Handler(getAccountHandler)
 		route.Path("/account").Methods("POST").Handler(updateAccountHandler)
 		route.Path("/account").Methods("DELETE").Handler(deleteAccountHandler)
 
-		route.Path("/account/configuration").Methods("GET").Handler(getGetConfiguration)
+		route.Path("/account/configuration").Methods("GET").Handler(getConfigurationHandler)
 
 		route.Path("/account/credentials").Methods("GET").Handler(getCredentialsHandler)
 		route.Path("/account/credentials/password").Methods("POST").Handler(updatePasswordHandler)
