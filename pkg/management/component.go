@@ -844,7 +844,7 @@ func (c *component) UpdateRealmCustomConfiguration(ctx context.Context, realmNam
 		(customConfig.DefaultClientID != nil && customConfig.DefaultRedirectURI == nil) {
 		return errorhandler.Error{
 			Status:  400,
-			Message: internal.ComponentName + "." + internal.MsgErrInvalidParam + "." + internal.ClientID + "And" + internal.RedirectURI,
+			Message: internal.ComponentName + "." + internal.MsgErrInvalidParam + "." + internal.ClientID + "AND" + internal.RedirectURI,
 		}
 	}
 
@@ -870,7 +870,7 @@ func (c *component) UpdateRealmCustomConfiguration(ctx context.Context, realmNam
 		if !match {
 			return errorhandler.Error{
 				Status:  400,
-				Message: internal.ComponentName + "." + internal.MsgErrInvalidParam + "." + internal.ClientID + "Or" + internal.RedirectURI,
+				Message: internal.ComponentName + "." + internal.MsgErrInvalidParam + "." + internal.ClientID + "OR" + internal.RedirectURI,
 			}
 		}
 	}
