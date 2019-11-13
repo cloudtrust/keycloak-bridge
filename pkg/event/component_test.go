@@ -181,7 +181,7 @@ func TestEventToMap(t *testing.T) {
 	}
 
 	var m = eventToMap(event)
-	assert.Equal(t, time.Unix(0, epoch*1000000).UTC().Format("2006-01-02 15:04:05.000"), m["audit_time"])
+	assert.Equal(t, time.Unix(0, epoch*1000000).Local().Format("2006-01-02 15:04:05.000"), m["audit_time"])
 	assert.Equal(t, fb.EnumNamesEventType[int8(etype)], m["kc_event_type"])
 	assert.Equal(t, realmID, m["realm_name"])
 	assert.Equal(t, clientID, m["client_id"])

@@ -205,7 +205,7 @@ func adminEventToMap(adminEvent *fb.AdminEvent) map[string]string {
 
 	addInfo["uid"] = fmt.Sprint(adminEvent.Uid())
 
-	//TZ set to Locale to avoid to have to add UTC into connection string to DB
+	//TZ set to Local to avoid to have to add UTC into connection string to DB
 	time := epochMilliToTime(adminEvent.Time()).Local()
 	adminEventMap[database.CtEventAuditTime] = time.Format(timeFormat) //audit_time
 
@@ -250,7 +250,8 @@ func eventToMap(event *fb.Event) map[string]string {
 
 	addInfo["uid"] = fmt.Sprint(event.Uid())
 
-	time := epochMilliToTime(event.Time()).UTC()
+	//TZ set to Local to avoid to have to add UTC into connection string to DB
+	time := epochMilliToTime(event.Time()).Local()
 	eventMap[database.CtEventAuditTime] = time.Format(timeFormat) //audit_time
 
 	eventMap[database.CtEventKcEventType] = fb.EnumNamesEventType[int8(event.Type())] // kc_event_type
