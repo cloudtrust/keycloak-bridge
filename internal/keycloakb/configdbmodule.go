@@ -54,7 +54,7 @@ func (c *configurationDBModule) GetConfiguration(context context.Context, realmI
 	case sql.ErrNoRows:
 		return dto.RealmConfiguration{}, errorhandler.Error{
 			Status:  404,
-			Message: MsgErrNotConfigured + "." + RealmConfiguration + "." + realmID,
+			Message: ComponentName + "." + MsgErrNotConfigured + "." + RealmConfiguration + "." + realmID,
 		}
 
 	default:
