@@ -61,7 +61,7 @@ func main() {
 	ComponentID := strconv.FormatUint(rand.Uint64(), 10)
 	ctx := context.Background()
 
-	// Access_log logger
+	// Access log logger
 	var accessLogger = kit_log.NewJSONLogger(os.Stdout)
 	{
 		// Timestamp
