@@ -59,7 +59,20 @@ func init() {
 func main() {
 	ComponentID := strconv.FormatUint(rand.Uint64(), 10)
 
-	// Logger.
+	// Access_log logger
+	var accessLogger = kit_log.NewJSONLogger(os.Stdout)
+	{
+		// Timestamp
+		accessLogger = kit_log.With(accessLogger, "_ts", kit_log.DefaultTimestampUTC)
+
+		// Add component name, component ID and version to the logger tags.
+		accessLogger = kit_log.With(accessLogger, "component_name", keycloakb.ComponentName, "component_id", ComponentID, "component_version", keycloakb.Version)
+
+		// Add access_log type
+		accessLogger = kit_log.With(accessLogger, "type", "access_log")
+	}
+
+	// Leveled Logger.
 	var logger = log.NewLeveledLogger(kit_log.NewJSONLogger(os.Stdout))
 	{
 		// Timestamp
@@ -130,6 +143,9 @@ func main() {
 		}
 
 		logLevel = c.GetString("log-level")
+
+		// Access logs
+		accessLogsEnabled = c.GetBool("access-logs")
 	)
 
 	// Unique ID generator
@@ -528,7 +544,12 @@ func main() {
 			debugSubroute.HandleFunc("/pprof/trace", http.HandlerFunc(pprof.Trace))
 		}
 
-		errc <- http.ListenAndServe(httpAddrInternal, route)
+		var handler http.Handler = route
+		if accessLogsEnabled {
+			handler = commonhttp.MakeAccessLogHandler(accessLogger, route)
+		}
+
+		errc <- http.ListenAndServe(httpAddrInternal, handler)
 	}()
 
 	// HTTP Management Server (Backoffice API).
@@ -646,7 +667,13 @@ func main() {
 		managementSubroute.Path("/realms/{realm}/configuration").Methods("PUT").Handler(updateRealmCustomConfigurationHandler)
 
 		c := cors.New(corsOptions)
-		errc <- http.ListenAndServe(httpAddrManagement, c.Handler(route))
+
+		var handler = c.Handler(route)
+		if accessLogsEnabled {
+			handler = commonhttp.MakeAccessLogHandler(accessLogger, route)
+		}
+
+		errc <- http.ListenAndServe(httpAddrManagement, handler)
 
 	}()
 
@@ -686,7 +713,13 @@ func main() {
 		route.Path("/account/credentials/{credentialID}/after/{previousCredentialID}").Methods("POST").Handler(moveCredentialHandler)
 
 		c := cors.New(corsOptions)
-		errc <- http.ListenAndServe(httpAddrAccount, c.Handler(route))
+
+		var handler = c.Handler(route)
+		if accessLogsEnabled {
+			handler = commonhttp.MakeAccessLogHandler(accessLogger, route)
+		}
+
+		errc <- http.ListenAndServe(httpAddrAccount, handler)
 	}()
 
 	// Influx writing.
@@ -711,6 +744,9 @@ func config(logger log.Logger) *viper.Viper {
 
 	// Log level
 	v.SetDefault("log-level", "info")
+
+	// Access Logs
+	v.SetDefault("access-logs", true)
 
 	// Publishing
 	v.SetDefault("internal-http-host-port", "0.0.0.0:8888")

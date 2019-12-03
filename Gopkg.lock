@@ -18,7 +18,7 @@
   version = "2018.01.18"
 
 [[projects]]
-  digest = "1:c5f4fa1c3ccebf9d2eed56ce3251fabfbb81f76bd4fe9847b6a95e32e5df88cc"
+  digest = "1:e388ff28ca426e8b497fd6400518a06a818be2e0cd221273d59e751959f31dbc"
   name = "github.com/cloudtrust/common-service"
   packages = [
     ".",
@@ -34,8 +34,8 @@
     "tracking",
   ]
   pruneopts = "UT"
-  revision = "f99ce80b66efad1efaaf9f48318e4cc6148092c9"
-  version = "v1.1.1"
+  revision = "446508902475ecbc70f435a5eb5ebfea280439d0"
+  version = "v1.2.0"
 
 [[projects]]
   digest = "1:f264e0da3a485f26f54f0b5d4ed648c1e3f2ffabbb9561f7aca52550f6a782d5"
@@ -333,7 +333,7 @@
   version = "v1.2.0"
 
 [[projects]]
-  digest = "1:b0fcdb2b7d3f20b60e024bb8c8be5a47d72c353f21e9a083fb1a226de4a94c43"
+  digest = "1:f32fa8138a53759550421434c10abd0f0f5006fd28e61632ee36e9d105e39728"
   name = "github.com/uber/jaeger-client-go"
   packages = [
     ".",
@@ -355,8 +355,8 @@
     "utils",
   ]
   pruneopts = "UT"
-  revision = "d4d621cd6ed9aa5f1fc91eb0d0211d336bd6b79d"
-  version = "v2.19.0"
+  revision = "5b163d27fabddbb0e7fae4548c8933c379210610"
+  version = "v2.20.1"
 
 [[projects]]
   digest = "1:d7b6fd08442b8d26882fae2c859a0d63962d72a533476a217d46743ed30cb803"
@@ -365,6 +365,14 @@
   pruneopts = "UT"
   revision = "a87ae9d84fb038a8d79266298970720be7c80fcd"
   version = "v2.2.0"
+
+[[projects]]
+  digest = "1:c708d00d1097e62bf4f3a72f239efa7dafc257581421b0b7d3789e1ff5299f30"
+  name = "go.uber.org/atomic"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "40ae6a40a970ef4cdbffa7b24b280e316db8accc"
+  version = "v1.5.1"
 
 [[projects]]
   branch = "master"
@@ -376,11 +384,22 @@
     "pbkdf2",
   ]
   pruneopts = "UT"
-  revision = "c7e5f84aec591254278750bee18f39e5dd19cdb5"
+  revision = "86a70503ff7e82ffc18c7b0de83db35da4791e6a"
 
 [[projects]]
   branch = "master"
-  digest = "1:4ac0242c7bfb597dea2f37aa84fb69f744634d247860c1d46241cd667e3e16c9"
+  digest = "1:334b27eac455cb6567ea28cd424230b07b1a64334a2f861a8075ac26ce10af43"
+  name = "golang.org/x/lint"
+  packages = [
+    ".",
+    "golint",
+  ]
+  pruneopts = "UT"
+  revision = "fdd1cda4f05fd1fd86124f0ef9ce31a0b72c8448"
+
+[[projects]]
+  branch = "master"
+  digest = "1:9725290eca00e3899655c3383877acef8ec6cec62a9f7994f3b22d2887b19bfb"
   name = "golang.org/x/net"
   packages = [
     "context",
@@ -389,26 +408,26 @@
     "publicsuffix",
   ]
   pruneopts = "UT"
-  revision = "a882066a44e04a21d46e51451c71e131344e830e"
+  revision = "ef20fe5d793301b553005db740f730d87993f778"
 
 [[projects]]
   branch = "master"
-  digest = "1:8d1c112fb1679fa097e9a9255a786ee47383fa2549a3da71bcb1334a693ebcfe"
+  digest = "1:55d36eb35766a3f105fa36cfb2faf053cc33c019108a6adee799c4e7d59d62b2"
   name = "golang.org/x/oauth2"
   packages = [
     ".",
     "internal",
   ]
   pruneopts = "UT"
-  revision = "0f29369cfe4552d0e4bcddc57cc75f4d7e672a33"
+  revision = "858c2ad4c8b6c5d10852cb89079f6ca1c7309787"
 
 [[projects]]
   branch = "master"
-  digest = "1:824b4d14e35e35e821d3127319e51eb838f72434100750ad395db96d00b5a871"
+  digest = "1:72f7bc975a18badcb4b05585929a12e042ab45cb0bee781aaab8044f39bd41f5"
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = "UT"
-  revision = "ac3223d8017937d8cd94de35a801ea2459f6d5a0"
+  revision = "6d18c012aee9febd81bbf9806760c8c4480e870d"
 
 [[projects]]
   digest = "1:8d8faad6b12a3a4c819a3f9618cb6ee1fa1cfc33253abeeea8b55336721e3405"
@@ -442,6 +461,19 @@
   packages = ["rate"]
   pruneopts = "UT"
   revision = "555d28b269f0569763d25dbe1a237ae74c6bcc82"
+
+[[projects]]
+  branch = "master"
+  digest = "1:4eb5ea8395fb60212dd58b92c9db80bab59d5e99c7435f9a6a0a528c373b60e7"
+  name = "golang.org/x/tools"
+  packages = [
+    "go/ast/astutil",
+    "go/gcexportdata",
+    "go/internal/gcimporter",
+    "go/types/typeutil",
+  ]
+  pruneopts = "UT"
+  revision = "db047d72ee39222674197c28adb04e2107488d83"
 
 [[projects]]
   digest = "1:602f92501b1cc299f1febc5febb27acdf80c4bc70aaa833942e8000e2e77ddee"
@@ -496,12 +528,12 @@
   version = "v2.4.0"
 
 [[projects]]
-  digest = "1:f26a5d382387e03a40d1471dddfba85dfff9bf05352d7e42d37612677c4d3c5c"
+  digest = "1:b75b3deb2bce8bc079e16bb2aecfe01eb80098f5650f9e93e5643ca8b7b73737"
   name = "gopkg.in/yaml.v2"
   packages = ["."]
   pruneopts = "UT"
-  revision = "f90ceb4f409096b60e2e9076b38b304b8246e5fa"
-  version = "v2.2.5"
+  revision = "1f64d6156d11335c3f22d9330b0ad14fc1e789ce"
+  version = "v2.2.7"
 
 [solve-meta]
   analyzer-name = "dep"
