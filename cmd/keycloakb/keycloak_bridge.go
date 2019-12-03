@@ -66,7 +66,7 @@ func main() {
 		accessLogger = kit_log.With(accessLogger, "_ts", kit_log.DefaultTimestampUTC)
 
 		// Add component name, component ID and version to the logger tags.
-		accessLogger = kit_log.With(accessLogger, "component_name", ComponentName, "component_id", ComponentID, "component_version", Version)
+		accessLogger = kit_log.With(accessLogger, "component_name", keycloakb.ComponentName, "component_id", ComponentID, "component_version", keycloakb.Version)
 
 		// Add access_log type
 		accessLogger = kit_log.With(accessLogger, "type", "access_log")
