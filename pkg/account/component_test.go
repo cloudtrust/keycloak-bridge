@@ -90,14 +90,14 @@ func TestUpdatePasswordWrongPwd(t *testing.T) {
 	ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 
 	mockKeycloakAccountClient.EXPECT().UpdatePassword(accessToken, realm, oldPasswd, newPasswd, newPasswd).Return("", fmt.Errorf("invalidPasswordExistingMessage")).Times(1)
-	mockLogger.EXPECT().Warn("err", "invalidPasswordExistingMessage")
+	mockLogger.EXPECT().Warn(gomock.Any(), "err", "invalidPasswordExistingMessage")
 
 	err := component.UpdatePassword(ctx, oldPasswd, newPasswd, newPasswd)
 
 	assert.True(t, err != nil)
 
 	mockKeycloakAccountClient.EXPECT().UpdatePassword(accessToken, realm, oldPasswd, newPasswd, newPasswd).Return("", fmt.Errorf("invalid")).Times(1)
-	mockLogger.EXPECT().Warn("err", "invalid")
+	mockLogger.EXPECT().Warn(gomock.Any(), "err", "invalid")
 
 	err = component.UpdatePassword(ctx, oldPasswd, newPasswd, newPasswd)
 
@@ -109,10 +109,9 @@ func TestUpdatePasswordWrongPwd(t *testing.T) {
 		mockEventDBModule.EXPECT().ReportEvent(gomock.Any(), "PASSWORD_RESET", "self-service", database.CtEventRealmName, realm, database.CtEventUserID, userID, database.CtEventUsername, username).Return(errors.New("error")).Times(1)
 		m := map[string]interface{}{"event_name": "PASSWORD_RESET", database.CtEventRealmName: realm, database.CtEventUserID: userID, database.CtEventUsername: username}
 		eventJSON, _ := json.Marshal(m)
-		mockLogger.EXPECT().Error("err", "error", "event", string(eventJSON))
+		mockLogger.EXPECT().Error(gomock.Any(), "err", "error", "event", string(eventJSON))
 		err = component.UpdatePassword(ctx, oldPasswd, newPasswd, newPasswd)
 		assert.True(t, err == nil)
-
 	}
 
 }

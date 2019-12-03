@@ -44,7 +44,7 @@ func NewComponent(componentName, componentVersion string, logger internal.Logger
 func (c *component) Export(ctx context.Context) (map[string]interface{}, error) {
 	var data, err = c.s.Read(c.componentName, c.componentVersion)
 	if err != nil {
-		c.logger.Warn("err", err.Error())
+		c.logger.Warn(ctx, "err", err.Error())
 		return nil, err
 	}
 	var res = map[string]interface{}{}
@@ -64,7 +64,7 @@ func (c *component) StoreAndExport(ctx context.Context) (map[string]interface{},
 		var err error
 		realms, err = c.re.GetRealms(ctx)
 		if err != nil {
-			c.logger.Warn("err", err.Error())
+			c.logger.Warn(ctx, "err", err.Error())
 			return nil, errors.Wrap(err, internal.MsgErrCannotObtain+"."+internal.KeycloakRealms)
 		}
 	}
@@ -75,7 +75,7 @@ func (c *component) StoreAndExport(ctx context.Context) (map[string]interface{},
 		if err == nil {
 			realmsMap[r] = realm
 		} else {
-			c.logger.Warn("err", err.Error())
+			c.logger.Warn(ctx, "err", err.Error())
 			realmsMap[r] = err.Error()
 		}
 	}

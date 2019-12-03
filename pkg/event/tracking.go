@@ -41,7 +41,7 @@ func (m *trackingMuxComponentMW) Event(ctx context.Context, eventType string, ob
 		}
 
 		m.sentry.CaptureError(err, tags)
-		m.logger.Debug("unit", "Event", "correlation_id", corrID, "event_type", eventType, "obj", b64Obj, "error", err.Error())
+		m.logger.Debug(ctx, "unit", "Event", "correlation_id", corrID, "event_type", eventType, "obj", b64Obj, "error", err.Error())
 	}
 	return err
 }

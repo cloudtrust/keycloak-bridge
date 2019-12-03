@@ -24,10 +24,10 @@ func NewConsoleModule(logger log.Logger) ConsoleModule {
 	}
 }
 
-func (cm *consoleModule) Print(_ context.Context, m map[string]string) error {
+func (cm *consoleModule) Print(ctx context.Context, m map[string]string) error {
 	// Log
 	for k, v := range m {
-		cm.logger.Info(k, v)
+		cm.logger.Info(ctx, k, v)
 	}
 	return nil
 }
