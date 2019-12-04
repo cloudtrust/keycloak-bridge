@@ -72,7 +72,7 @@ func (ec *component) GetMigrationReport(ctx context.Context, realmName string) (
 	usersKc, err := ec.keycloakClient.GetUsers(accessToken, ctxRealm, realmName, paramKV...)
 
 	if err != nil {
-		ec.logger.Warn("err", err.Error())
+		ec.logger.Warn(ctx, "err", err.Error())
 		return map[string]bool{}, err
 	}
 

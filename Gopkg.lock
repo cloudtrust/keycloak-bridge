@@ -18,7 +18,7 @@
   version = "2018.01.18"
 
 [[projects]]
-  digest = "1:e388ff28ca426e8b497fd6400518a06a818be2e0cd221273d59e751959f31dbc"
+  digest = "1:60ea23b7ed3a67fac14c3db423da3454b601552e5084fc8adb054dac4c55b1cb"
   name = "github.com/cloudtrust/common-service"
   packages = [
     ".",
@@ -34,16 +34,16 @@
     "tracking",
   ]
   pruneopts = "UT"
-  revision = "446508902475ecbc70f435a5eb5ebfea280439d0"
-  version = "v1.2.0"
+  revision = "c70fa40bf8452fc44dd84d8e20d3f037bd14fce1"
+  version = "v1.2.2"
 
 [[projects]]
-  digest = "1:f264e0da3a485f26f54f0b5d4ed648c1e3f2ffabbb9561f7aca52550f6a782d5"
+  digest = "1:a307ae9193bfd1d4c72e27113af4955483ab264db159d3371eed5c4b4c7949ef"
   name = "github.com/cloudtrust/keycloak-client"
   packages = ["."]
   pruneopts = "UT"
-  revision = "f81ac90387fe8b2b6489460077d9eeb6bec73691"
-  version = "v1.1.2"
+  revision = "2414a4a82a5216bf7f8d4a3eec68431153720ef2"
+  version = "v1.2.1"
 
 [[projects]]
   digest = "1:d64c893fc7d2c3d395f421b00d21f0adb8ceffc4d3c90299e732b3985ca16eb4"
@@ -473,7 +473,7 @@
     "go/types/typeutil",
   ]
   pruneopts = "UT"
-  revision = "db047d72ee39222674197c28adb04e2107488d83"
+  revision = "c197fd4bf3712fd6a7d00f39b376956dd5d58449"
 
 [[projects]]
   digest = "1:602f92501b1cc299f1febc5febb27acdf80c4bc70aaa833942e8000e2e77ddee"
