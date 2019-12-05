@@ -34,7 +34,7 @@ func (m *Module) GetRealms(ctx context.Context) ([]string, error) {
 	var accessToken = "TOKEN=="
 	var realms, err = m.kc.GetRealms(accessToken)
 	if err != nil {
-		m.logger.Warn("err", err.Error())
+		m.logger.Warn(ctx, "err", err.Error())
 		return res, errors.Wrap(err, internal.MsgErrCannotObtain+internal.ListOfRealms)
 	}
 
@@ -52,7 +52,7 @@ func (m *Module) ExportRealm(ctx context.Context, realmName string) (keycloak.Re
 	res, err := m.kc.ExportRealm(accessToken, realmName)
 
 	if err != nil {
-		m.logger.Warn("err", err.Error())
+		m.logger.Warn(ctx, "err", err.Error())
 		return keycloak.RealmRepresentation{}, err
 	}
 

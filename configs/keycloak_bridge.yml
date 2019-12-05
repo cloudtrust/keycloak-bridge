@@ -13,6 +13,9 @@ account-http-host-port: 0.0.0.0:8866
 #   - debug: log error, warn, info, debug log levels
 log-level: debug
 
+# Access logs
+access-logs: true
+
 # CORS
 cors-allowed-origins:
   - "http://localhost"

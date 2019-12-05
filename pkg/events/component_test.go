@@ -66,7 +66,7 @@ func TestGetUserEventsWithResult(t *testing.T) {
 			mockWriteDB.EXPECT().ReportEvent(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(errors.New("error")).Times(1)
 			m := map[string]interface{}{"event_name": "GET_ACTIVITY", database.CtEventRealmName: params["realm"], database.CtEventUserID: params["userID"]}
 			eventJSON, _ := json.Marshal(m)
-			mockLogger.EXPECT().Error("err", "error", "event", string(eventJSON))
+			mockLogger.EXPECT().Error(gomock.Any(), "err", "error", "event", string(eventJSON))
 			// Execute test
 			res, err := component.GetUserEvents(context.Background(), params)
 

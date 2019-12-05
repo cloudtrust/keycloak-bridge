@@ -1,6 +1,8 @@
 package keycloakb
 
 import (
+	"context"
+
 	"github.com/cloudtrust/common-service/security"
 	kc "github.com/cloudtrust/keycloak-client"
 )
@@ -24,10 +26,10 @@ func NewKeycloakAuthClient(client KeycloakClient, logger Logger) security.Keyclo
 	}
 }
 
-func (k *kcAuthClient) GetGroupNamesOfUser(accessToken string, realmName, userID string) ([]string, error) {
+func (k *kcAuthClient) GetGroupNamesOfUser(ctx context.Context, accessToken string, realmName, userID string) ([]string, error) {
 	grps, err := k.keycloak.GetGroupsOfUser(accessToken, realmName, userID)
 	if err != nil {
-		k.logger.Warn("err", err.Error())
+		k.logger.Warn(ctx, "err", err.Error())
 		return nil, err
 	}
 
@@ -44,10 +46,10 @@ func (k *kcAuthClient) GetGroupNamesOfUser(accessToken string, realmName, userID
 	return res, nil
 }
 
-func (k *kcAuthClient) GetGroupName(accessToken string, realmName, groupID string) (string, error) {
+func (k *kcAuthClient) GetGroupName(ctx context.Context, accessToken string, realmName, groupID string) (string, error) {
 	grp, err := k.keycloak.GetGroup(accessToken, realmName, groupID)
 	if err != nil {
-		k.logger.Warn("err", err.Error())
+		k.logger.Warn(ctx, "err", err.Error())
 		return "", err
 	}
 

@@ -40,7 +40,7 @@ func TestDeny(t *testing.T) {
 	var pass = "P@ssw0rd"
 	var clientURI = "https://wwww.cloudtrust.io"
 
-	mockKeycloakClient.EXPECT().GetGroupNamesOfUser(accessToken, realmName, userID).Return([]string{
+	mockKeycloakClient.EXPECT().GetGroupNamesOfUser(gomock.Any(), accessToken, realmName, userID).Return([]string{
 		groupName,
 	}, nil).AnyTimes()
 
@@ -98,11 +98,11 @@ func TestDeny(t *testing.T) {
 		err = authorizationMW.UpdateUser(ctx, realmName, userID, user)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
-		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), realmName, groupID).Return(groupName, nil).Times(1)
+		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), gomock.Any(), realmName, groupID).Return(groupName, nil).Times(1)
 		_, err = authorizationMW.GetUsers(ctx, realmName, groupIDs)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
-		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), realmName, groupID).Return(groupName, nil).Times(1)
+		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), gomock.Any(), realmName, groupID).Return(groupName, nil).Times(1)
 		_, err = authorizationMW.CreateUser(ctx, realmName, user)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
@@ -191,7 +191,7 @@ func TestAllowed(t *testing.T) {
 	var pass = "P@ssw0rd"
 	var clientURI = "https://wwww.cloudtrust.io"
 
-	mockKeycloakClient.EXPECT().GetGroupNamesOfUser(accessToken, realmName, userID).Return([]string{groupName}, nil).AnyTimes()
+	mockKeycloakClient.EXPECT().GetGroupNamesOfUser(gomock.Any(), accessToken, realmName, userID).Return([]string{groupName}, nil).AnyTimes()
 
 	var user = api.UserRepresentation{
 		ID:       &userID,
@@ -287,12 +287,12 @@ func TestAllowed(t *testing.T) {
 		err = authorizationMW.UpdateUser(ctx, realmName, userID, user)
 		assert.Nil(t, err)
 
-		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), realmName, groupID).Return(groupName, nil).Times(1)
+		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), gomock.Any(), realmName, groupID).Return(groupName, nil).Times(1)
 		mockManagementComponent.EXPECT().GetUsers(ctx, realmName, groupIDs).Return(api.UsersPageRepresentation{}, nil).Times(1)
 		_, err = authorizationMW.GetUsers(ctx, realmName, groupIDs)
 		assert.Nil(t, err)
 
-		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), realmName, groupID).Return(groupName, nil).Times(1)
+		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), gomock.Any(), realmName, groupID).Return(groupName, nil).Times(1)
 		mockManagementComponent.EXPECT().CreateUser(ctx, realmName, user).Return("", nil).Times(1)
 		_, err = authorizationMW.CreateUser(ctx, realmName, user)
 		assert.Nil(t, err)
