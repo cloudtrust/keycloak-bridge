@@ -51,7 +51,7 @@ db-audit-rw-username: root
 db-audit-rw-password: admin
 db-audit-rw-database: auditevents
 db-audit-rw-protocol: tcp
-db-audit-rw-parameters: 
+db-audit-rw-parameters: time_zone='%2B00:00'
 db-audit-rw-max-open-conns: 10
 db-audit-rw-max-idle-conns: 2
 db-audit-rw-conn-max-lifetime: 10
@@ -66,7 +66,7 @@ db-audit-ro-username: root
 db-audit-ro-password: admin
 db-audit-ro-database: auditevents
 db-audit-ro-protocol: tcp
-db-audit-ro-parameters: 
+db-audit-ro-parameters: time_zone='%2B00:00'
 db-audit-ro-max-open-conns: 10
 db-audit-ro-max-idle-conns: 2
 db-audit-ro-conn-max-lifetime: 10
@@ -80,7 +80,7 @@ db-config-rw-username: bridge
 db-config-rw-password: bridge-password
 db-config-rw-database: configuration
 db-config-rw-protocol: tcp
-db-config-rw-parameters:
+db-config-rw-parameters: time_zone='%2B00:00'
 db-config-rw-max-open-conns: 10
 db-config-rw-max-idle-conns: 2
 db-config-rw-conn-max-lifetime: 10
@@ -94,7 +94,7 @@ db-config-ro-username: bridge
 db-config-ro-password: bridge-password
 db-config-ro-database: configuration
 db-config-ro-protocol: tcp
-db-config-ro-parameters:
+db-config-ro-parameters: time_zone='%2B00:00'
 db-config-ro-max-open-conns: 10
 db-config-ro-max-idle-conns: 2
 db-config-ro-conn-max-lifetime: 10

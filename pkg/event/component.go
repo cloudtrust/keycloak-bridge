@@ -13,6 +13,10 @@ import (
 	"github.com/cloudtrust/keycloak-bridge/api/event/fb"
 )
 
+const (
+	timeFormat = "2006-01-02 15:04:05.000"
+)
+
 // MuxComponent is the Mux component interface.
 type MuxComponent interface {
 	Event(ctx context.Context, eventType string, obj []byte) error
@@ -203,7 +207,7 @@ func adminEventToMap(adminEvent *fb.AdminEvent) map[string]string {
 
 	//TZ set to UTC and insert the time as a string
 	timeEvent := epochMilliToTime(adminEvent.Time()).UTC()
-	adminEventMap[database.CtEventAuditTime] = timeEvent.Format(time.RFC3339) //audit_time
+	adminEventMap[database.CtEventAuditTime] = timeEvent.Format(timeFormat) //audit_time
 
 	adminEventMap[database.CtEventRealmName] = string(adminEvent.RealmId()) //realm_name
 	adminEventMap[database.CtEventOrigin] = "keycloak"                      //origin
@@ -248,7 +252,7 @@ func eventToMap(event *fb.Event) map[string]string {
 
 	//TZ set to UTC and insert the time as a string
 	timeEvent := epochMilliToTime(event.Time()).UTC()
-	eventMap[database.CtEventAuditTime] = timeEvent.Format(time.RFC3339) //audit_time
+	eventMap[database.CtEventAuditTime] = timeEvent.Format(timeFormat) //audit_time
 
 	eventMap[database.CtEventKcEventType] = fb.EnumNamesEventType[int8(event.Type())] // kc_event_type
 	eventMap[database.CtEventRealmName] = string(event.RealmId())                     //realm_name
