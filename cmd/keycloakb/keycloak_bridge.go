@@ -668,12 +668,14 @@ func main() {
 		managementSubroute.Path("/realms/{realm}/configuration").Methods("GET").Handler(getRealmCustomConfigurationHandler)
 		managementSubroute.Path("/realms/{realm}/configuration").Methods("PUT").Handler(updateRealmCustomConfigurationHandler)
 
-		c := cors.New(corsOptions)
+		var handler http.Handler = route
 
-		var handler = c.Handler(route)
 		if accessLogsEnabled {
-			handler = commonhttp.MakeAccessLogHandler(accessLogger, route)
+			handler = commonhttp.MakeAccessLogHandler(accessLogger, handler)
 		}
+
+		c := cors.New(corsOptions)
+		handler = c.Handler(handler)
 
 		errc <- http.ListenAndServe(httpAddrManagement, handler)
 
@@ -714,12 +716,14 @@ func main() {
 		route.Path("/account/credentials/{credentialID}").Methods("PUT").Handler(updateLabelCredentialHandler)
 		route.Path("/account/credentials/{credentialID}/after/{previousCredentialID}").Methods("POST").Handler(moveCredentialHandler)
 
-		c := cors.New(corsOptions)
+		var handler http.Handler = route
 
-		var handler = c.Handler(route)
 		if accessLogsEnabled {
-			handler = commonhttp.MakeAccessLogHandler(accessLogger, route)
+			handler = commonhttp.MakeAccessLogHandler(accessLogger, handler)
 		}
+
+		c := cors.New(corsOptions)
+		handler = c.Handler(handler)
 
 		errc <- http.ListenAndServe(httpAddrAccount, handler)
 	}()
