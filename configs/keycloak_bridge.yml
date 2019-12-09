@@ -28,8 +28,10 @@ cors-allow-credentials: true
 cors-allowed-headers:
   - "Authorization"
   - "Content-Type"
+  - "X-Correlation-Id"
 cors-exposed-headers:
   - "Location"
+  - "X-Correlation-Id"
 cors-debug: true
 
 # Security

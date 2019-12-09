@@ -79,6 +79,9 @@
           "l3_support_manager": {}
         }
       },
+      "GetRequiredActions": {
+        "master": {}
+      },
       "GetCredentialsForUser": {
         "master": {
           "*": {}
@@ -228,6 +231,9 @@
           "end_user": {}
         }
       },
+      "GetRequiredActions": {
+        "DEP": {}
+      },
       "GetCredentialsForUser": {
         "master": {
           "integrator_agent": {}
@@ -345,6 +351,9 @@
           "*": {}
         }
       },
+      "GetRequiredActions": {
+        "DEP": {}
+      },
       "GetCredentialsForUser": {
         "DEP": {
           "*": {}
@@ -452,6 +461,9 @@
         "master": {
           "l2_support_agent": {}
         }
+      },
+      "GetRequiredActions": {
+        "master": {}
       },
       "GetCredentialsForUser": {
         "master": {
@@ -577,6 +589,9 @@
         "master": {
           "l3_support_agent": {}
         }
+      },
+      "GetRequiredActions": {
+        "master": {}
       },
       "GetCredentialsForUser": {
         "master": {
@@ -706,6 +721,9 @@
           "*": {}
         }
       },
+      "GetRequiredActions": {
+        "DEP": {}
+      },
       "SendNewEnrolmentCode":{
         "DEP": {
           "end_user": {}
@@ -824,6 +842,9 @@
           "end_user": {}
         }
       },
+      "GetRequiredActions": {
+        "DEP": {}
+      },
       "GetCredentialsForUser": {
         "DEP": {
           "l1_support_agent": {},
@@ -913,6 +934,9 @@
         "DEP": {
           "end_user": {}
         }
+      },
+      "GetRequiredActions": {
+        "DEP": {}
       },
       "GetCredentialsForUser": {
         "DEP": {

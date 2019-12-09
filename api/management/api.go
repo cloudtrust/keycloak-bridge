@@ -54,6 +54,12 @@ type ClientRepresentation struct {
 	Enabled  *bool   `json:"enabled,omitempty"`
 }
 
+type RequiredActionRepresentation struct {
+	Alias         *string `json:"alias,omitempty"`
+	DefaultAction *bool   `json:"defaultAction,omitempty"`
+	Name          *string `json:"name,omitempty"`
+}
+
 // CredentialRepresentation struct
 type CredentialRepresentation struct {
 	ID             *string `json:"id,omitempty"`
@@ -228,6 +234,16 @@ func ConvertToKCUser(user UserRepresentation) kc.UserRepresentation {
 	}
 
 	return userRep
+}
+
+// ConvertRequiredAction creates an API requiredAction from a KC requiredAction
+func ConvertRequiredAction(ra *kc.RequiredActionProviderRepresentation) RequiredActionRepresentation {
+	var raRep RequiredActionRepresentation
+	raRep.Alias = ra.Alias
+	raRep.Name = ra.Name
+	raRep.DefaultAction = ra.DefaultAction
+
+	return raRep
 }
 
 // Validators

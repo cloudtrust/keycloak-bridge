@@ -224,6 +224,7 @@ func TestAllowed(t *testing.T) {
 					"GetRealm": {"*": {"*": {} }},
 					"GetClient": {"*": {"*": {} }},
 					"GetClients": {"*": {"*": {} }},
+					"GetRequiredActions": {"*": {"*": {} }},
 					"DeleteUser": {"*": {"*": {} }},
 					"GetUser": {"*": {"*": {} }},
 					"UpdateUser": {"*": {"*": {} }},
