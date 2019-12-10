@@ -5,9 +5,11 @@ import (
 	"errors"
 	"testing"
 
+	cs "github.com/cloudtrust/common-service"
 	"github.com/cloudtrust/common-service/log"
 	api "github.com/cloudtrust/keycloak-bridge/api/statistics"
 	"github.com/cloudtrust/keycloak-bridge/pkg/statistics/mock"
+	kc "github.com/cloudtrust/keycloak-client"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
@@ -61,5 +63,168 @@ func TestGetStatistics(t *testing.T) {
 		res, err := component.GetStatistics(context.TODO(), realm)
 		assert.Nil(t, err)
 		assert.Equal(t, expected, res)
+	}
+}
+
+func TestGetStatisticsUsers(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockDBModule = mock.NewEventsDBModule(mockCtrl)
+	var mockKcClient = mock.NewKcClient(mockCtrl)
+	var mockLogger = log.NewNopLogger()
+	component := NewComponent(mockDBModule, mockKcClient, mockLogger)
+
+	var realm = "the_realm_name"
+	var accessToken = "TOKEN=="
+	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+	ctx = context.WithValue(ctx, cs.CtContextRealm, realm)
+	statisticsKC := kc.StatisticsUsersRepresentation{
+		Total:    3,
+		Disabled: 0,
+		Inactive: 2,
+	}
+	expected := api.StatisticsUsersRepresentation{
+		Total:    3,
+		Disabled: 0,
+		Inactive: 2,
+	}
+
+	{ // fails
+		mockKcClient.EXPECT().GetStatisticsUsers(accessToken, realm).Return(statisticsKC, errors.New("error")).Times(1)
+		res, err := component.GetStatisticsUsers(ctx, realm)
+		assert.NotNil(t, err)
+		assert.Equal(t, api.StatisticsUsersRepresentation{}, res)
+	}
+
+	{ // success
+
+		mockKcClient.EXPECT().GetStatisticsUsers(accessToken, realm).Return(statisticsKC, nil).Times(1)
+		res, err := component.GetStatisticsUsers(ctx, realm)
+		assert.Nil(t, err)
+		assert.Equal(t, expected, res)
+	}
+}
+
+func TestGetStatisticsAuthenticators(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockDBModule = mock.NewEventsDBModule(mockCtrl)
+	var mockKcClient = mock.NewKcClient(mockCtrl)
+	var mockLogger = log.NewNopLogger()
+	component := NewComponent(mockDBModule, mockKcClient, mockLogger)
+
+	var realm = "the_realm_name"
+	var accessToken = "TOKEN=="
+	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+	ctx = context.WithValue(ctx, cs.CtContextRealm, realm)
+	statisticsKC := map[string]int64{
+		"password": 3,
+		"otp":      1,
+	}
+
+	{ // fails
+		mockKcClient.EXPECT().GetStatisticsAuthenticators(accessToken, realm).Return(statisticsKC, errors.New("error")).Times(1)
+		res, err := component.GetStatisticsAuthenticators(ctx, realm)
+		assert.NotNil(t, err)
+		assert.Nil(t, res)
+	}
+
+	{ // success
+
+		mockKcClient.EXPECT().GetStatisticsAuthenticators(accessToken, realm).Return(statisticsKC, nil).Times(1)
+		res, err := component.GetStatisticsAuthenticators(ctx, realm)
+		assert.Nil(t, err)
+		assert.Equal(t, statisticsKC, res)
+	}
+}
+
+func TestGetStatisticsAuthentications(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockDBModule = mock.NewEventsDBModule(mockCtrl)
+	var mockKcClient = mock.NewKcClient(mockCtrl)
+	var mockLogger = log.NewNopLogger()
+	component := NewComponent(mockDBModule, mockKcClient, mockLogger)
+
+	var timeshift = 0
+	var realm = "the_realm_name"
+	var accessToken = "TOKEN=="
+	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+	ctx = context.WithValue(ctx, cs.CtContextRealm, realm)
+
+	statisticsKC := make([][]int64, 2)
+	statisticsKC[0] = make([]int64, 2)
+	statisticsKC[1] = make([]int64, 2)
+	statisticsKC[0][0] = 12
+	statisticsKC[0][1] = 11
+	statisticsKC[1][0] = 11
+	statisticsKC[1][1] = 11
+
+	{ // fails - statistics by hours
+		mockDBModule.EXPECT().GetTotalConnectionsHoursCount(ctx, realm, gomock.Any(), timeshift).Return([][]int64{}, errors.New("error")).Times(1)
+		res, err := component.GetStatisticsAuthentications(ctx, realm, "hours", nil)
+		assert.NotNil(t, err)
+		assert.Nil(t, res)
+	}
+	{ // fails - statistics by days
+		mockDBModule.EXPECT().GetTotalConnectionsDaysCount(ctx, realm, gomock.Any(), timeshift).Return([][]int64{}, errors.New("error")).Times(1)
+		res, err := component.GetStatisticsAuthentications(ctx, realm, "days", nil)
+		assert.NotNil(t, err)
+		assert.Nil(t, res)
+	}
+	{ // fails - statistics by months
+		mockDBModule.EXPECT().GetTotalConnectionsMonthsCount(ctx, realm, gomock.Any(), timeshift).Return([][]int64{}, errors.New("error")).Times(1)
+		res, err := component.GetStatisticsAuthentications(ctx, realm, "months", nil)
+		assert.NotNil(t, err)
+		assert.Nil(t, res)
+	}
+	{ // fails - invalid param
+		res, err := component.GetStatisticsAuthentications(ctx, realm, "ramdom", nil)
+		assert.NotNil(t, err)
+		assert.Nil(t, res)
+	}
+
+	{ // success
+		mockDBModule.EXPECT().GetTotalConnectionsDaysCount(ctx, realm, gomock.Any(), timeshift).Return(statisticsKC, nil).Times(1)
+		res, err := component.GetStatisticsAuthentications(ctx, realm, "days", nil)
+		assert.Nil(t, err)
+		assert.Equal(t, statisticsKC, res)
+	}
+}
+
+func TestGetStatisticsAuthenticationsLog(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockDBModule = mock.NewEventsDBModule(mockCtrl)
+	var mockKcClient = mock.NewKcClient(mockCtrl)
+	var mockLogger = log.NewNopLogger()
+	component := NewComponent(mockDBModule, mockKcClient, mockLogger)
+
+	var realm = "the_realm_name"
+	var accessToken = "TOKEN=="
+	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+	ctx = context.WithValue(ctx, cs.CtContextRealm, realm)
+
+	var resExpected = []api.StatisticsConnectionRepresentation{
+		{"123", "LOGON_OK", "user", "127.0.0.1"},
+	}
+
+	{ // fails
+		mockDBModule.EXPECT().GetLastConnections(ctx, realm, "9").Return([]api.StatisticsConnectionRepresentation{}, errors.New("error")).Times(1)
+		res, err := component.GetStatisticsAuthenticationsLog(ctx, realm, "9")
+		assert.NotNil(t, err)
+		assert.Nil(t, res)
+	}
+
+	{ // success
+		mockDBModule.EXPECT().GetLastConnections(ctx, realm, "9").Return(resExpected, nil).Times(1)
+		res, err := component.GetStatisticsAuthenticationsLog(ctx, realm, "9")
+
+		assert.Nil(t, err)
+		assert.Equal(t, resExpected, res)
 	}
 }

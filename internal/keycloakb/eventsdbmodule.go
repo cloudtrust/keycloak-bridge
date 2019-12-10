@@ -2,14 +2,17 @@ package keycloakb
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"regexp"
 	"strings"
+	"time"
 
 	errorhandler "github.com/cloudtrust/common-service/errors"
 
 	"github.com/cloudtrust/common-service/database"
 	api "github.com/cloudtrust/keycloak-bridge/api/events"
+	api_stat "github.com/cloudtrust/keycloak-bridge/api/statistics"
 )
 
 // EventsDBModule is the interface of the audit events module.
@@ -19,6 +22,10 @@ type EventsDBModule interface {
 	GetEventsSummary(context.Context) (api.EventSummaryRepresentation, error)
 	GetLastConnection(context.Context, string) (int64, error)
 	GetTotalConnectionsCount(context.Context, string, string) (int64, error)
+	GetTotalConnectionsHoursCount(context.Context, string, *time.Location, int) ([][]int64, error)
+	GetTotalConnectionsDaysCount(context.Context, string, *time.Location, int) ([][]int64, error)
+	GetTotalConnectionsMonthsCount(context.Context, string, *time.Location, int) ([][]int64, error)
+	GetLastConnections(context.Context, string, string) ([]api_stat.StatisticsConnectionRepresentation, error)
 }
 
 type eventsDBModule struct {
@@ -62,10 +69,42 @@ const (
 		`
 	selectCountAuditEventsStmt        = `SELECT count(1) FROM audit ` + whereAuditEvents
 	selectLastConnectionTimeStmt      = `SELECT ifnull(unix_timestamp(max(audit_time)), 0) FROM audit WHERE realm_name=? AND ct_event_type='LOGON_OK'`
-	selectConnectionsCount            = `SELECT count(1) FROM audit WHERE realm_name=? AND ct_event_type='LOGON_OK' AND date_add(audit_time, INTERVAL ##INTERVAL##)>now()`
 	selectAuditSummaryRealmStmt       = `SELECT distinct realm_name FROM audit;`
 	selectAuditSummaryOriginStmt      = `SELECT distinct origin FROM audit;`
 	selectAuditSummaryCtEventTypeStmt = `SELECT distinct ct_event_type FROM audit;`
+	selectConnectionsCount            = `SELECT count(1) FROM audit WHERE realm_name=? AND ct_event_type='LOGON_OK' AND date_add(audit_time, INTERVAL ##INTERVAL##)>now()`
+	selectConnectionsHoursCount       = `
+			SELECT date_format(date_add(audit_time, INTERVAL ? MINUTE), '%H'), count(1)
+			FROM audit
+			WHERE realm_name=?
+			  AND ct_event_type='LOGON_OK'
+			  AND audit_time between date_add(?, INTERVAL -1 DAY) and ?
+			GROUP by date_format(date_add(audit_time, INTERVAL ? MINUTE), '%Y-%m-%d %H')
+			ORDER BY audit_time
+	`
+	selectConnectionsDaysCount = `
+			SELECT date_format(date_add(audit_time, INTERVAL ? MINUTE), '%d'), count(1)
+			FROM audit
+			WHERE realm_name=?
+			  AND ct_event_type='LOGON_OK' 
+			  AND audit_time between date_add(?, INTERVAL -1 MONTH) and ?
+			GROUP by date_format(date_add(audit_time, INTERVAL ? MINUTE), '%Y-%m-%d')
+			ORDER BY audit_time
+	`
+	selectConnectionsMonthsCount = `
+			SELECT date_format(date_add(audit_time, INTERVAL ? MINUTE), '%m'), count(1)
+			FROM audit
+			WHERE realm_name=?
+			  AND ct_event_type='LOGON_OK'
+			  AND audit_time between date_add(?, INTERVAL -12 MONTH) and ?
+			GROUP by date_format(date_add(audit_time, INTERVAL ? MINUTE), '%Y-%m')
+			ORDER BY audit_time
+	`
+	selectConnectionStmt = `SELECT unix_timestamp(audit_time), ct_event_type, username, additional_info 
+							FROM audit WHERE realm_name=? AND (ct_event_type='LOGON_OK' OR ct_event_type='LOGON_ERROR') 	
+							ORDER BY audit_time DESC
+							LIMIT ?;
+				`
 )
 
 func createAuditEventsParametersFromMap(m map[string]string) (selectAuditEventsParameters, error) {
@@ -85,6 +124,57 @@ func createAuditEventsParametersFromMap(m map[string]string) (selectAuditEventsP
 		return res, errorhandler.CreateInvalidQueryParameterError(Exclude)
 	}
 	return res, nil
+}
+
+func createStats(size int, firstValue, minValue, maxValue int, descending bool) [][]int64 {
+	var res = make([][]int64, size)
+	var currentValue = firstValue
+
+	for i := 0; i < size; i++ {
+		res[i] = make([]int64, 2)
+		res[i][0] = int64(currentValue)
+		if currentValue == minValue {
+			currentValue = maxValue
+		} else {
+			currentValue--
+		}
+	}
+
+	if !descending {
+		for i := 0; i < size/2; i++ {
+			res[i][0], res[size-i-1][0] = res[size-i-1][0], res[i][0]
+		}
+	}
+
+	return res
+}
+
+func (cm *eventsDBModule) executeConnectionsQuery(stats [][]int64, query string, realmName string, maxTime time.Time, minutesShift int) error {
+	rows, err := cm.db.Query(query, minutesShift, realmName, maxTime, maxTime, minutesShift)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	var unitConn int64
+	var nbConns int64
+	var nextIdx = 0
+
+	for rows.Next() {
+		err = rows.Scan(&unitConn, &nbConns)
+		if err != nil {
+			return err
+		}
+		for nextIdx < len(stats) && stats[nextIdx][0] != unitConn {
+			nextIdx++
+		}
+		if nextIdx < len(stats) {
+			stats[nextIdx][1] = nbConns
+		}
+		nextIdx++
+	}
+
+	return rows.Err()
 }
 
 // GetEvents gets the count of events matching some criterias (dateFrom, dateTo, realm, ...)
@@ -166,6 +256,69 @@ func (cm *eventsDBModule) GetTotalConnectionsCount(_ context.Context, realmName 
 	var res = int64(0)
 	var row = cm.db.QueryRow(strings.ReplaceAll(selectConnectionsCount, "##INTERVAL##", durationLabel), realmName)
 	err = row.Scan(&res)
+	return res, err
+}
+
+// GetTotalConnectionsHoursCount gets the number of connections for the given realm for the last 24 hours, hour by hour
+func (cm *eventsDBModule) GetTotalConnectionsHoursCount(_ context.Context, realmName string, location *time.Location, minutesShift int) ([][]int64, error) {
+	var now = time.Now()
+	var nowLocalized = now.In(location)
+	var res = createStats(24, nowLocalized.Hour(), 0, 23, false)
+
+	maxTime := NextHour(nowLocalized)
+	err := cm.executeConnectionsQuery(res, selectConnectionsHoursCount, realmName, maxTime, minutesShift)
+
+	return res, err
+}
+
+// GetTotalConnectionsHoursCount gets the number of connections for the given realm for the last 30 days, day by day
+func (cm *eventsDBModule) GetTotalConnectionsDaysCount(_ context.Context, realmName string, location *time.Location, minutesShift int) ([][]int64, error) {
+	var now = time.Now()
+	var nowLocalized = now.In(location)
+	var maxDay = ThisMonth(nowLocalized).Add(-time.Hour).Day()
+	var res = createStats(maxDay, nowLocalized.Day(), 1, maxDay, false)
+
+	maxTime := NextDay(nowLocalized)
+	err := cm.executeConnectionsQuery(res, selectConnectionsDaysCount, realmName, maxTime, minutesShift)
+
+	return res, err
+}
+
+// GetTotalConnectionsHoursCount gets the number of connections for the given realm for the last 24 hours, hour by hour
+func (cm *eventsDBModule) GetTotalConnectionsMonthsCount(_ context.Context, realmName string, location *time.Location, minutesShift int) ([][]int64, error) {
+	var now = time.Now()
+	var nowLocalized = now.In(location)
+	var res = createStats(12, int(nowLocalized.Month()), 1, 12, false)
+
+	maxTime := NextMonth(nowLocalized)
+	err := cm.executeConnectionsQuery(res, selectConnectionsMonthsCount, realmName, maxTime, minutesShift)
+
+	return res, err
+}
+
+// GetLastConnections gives information on the last authentications
+func (cm *eventsDBModule) GetLastConnections(_ context.Context, realmName string, nbConnections string) ([]api_stat.StatisticsConnectionRepresentation, error) {
+
+	var res = []api_stat.StatisticsConnectionRepresentation{}
+	rows, err := cm.db.Query(selectConnectionStmt, realmName, nbConnections)
+	if err != nil {
+		return res, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var dbc api_stat.DbConnectionRepresentation
+		var addInfos string
+		err = rows.Scan(&dbc.Date, &dbc.Result, &dbc.User, &addInfos)
+		if err != nil {
+			return res, err
+		}
+		var infos map[string]string
+		_ = json.Unmarshal([]byte(addInfos), &infos)
+		dbc.IP = string(infos["ip_address"])
+		res = append(res, dbc.ToConnRepresentation())
+	}
+
 	return res, err
 }
 

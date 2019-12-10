@@ -9,10 +9,13 @@ import (
 
 // Endpoints exposed for path /events
 type Endpoints struct {
-	GetEvents        endpoint.Endpoint
-	GetEventsSummary endpoint.Endpoint
-	GetUserEvents    endpoint.Endpoint
-	GetStatistics    endpoint.Endpoint
+	GetEvents                   endpoint.Endpoint
+	GetEventsSummary            endpoint.Endpoint
+	GetUserEvents               endpoint.Endpoint
+	GetStatistics               endpoint.Endpoint
+	GetStatisticsUsers          endpoint.Endpoint
+	GetStatisticsAuthenticators endpoint.Endpoint
+	//GetStatisticsAuthentications endpoint.Endpoint
 }
 
 // MakeGetEventsEndpoint makes the events endpoint.
