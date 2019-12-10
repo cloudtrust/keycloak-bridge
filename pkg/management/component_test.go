@@ -287,6 +287,74 @@ func TestGetClients(t *testing.T) {
 	}
 }
 
+func TestGetRequiredActions(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
+	var mockEventDBModule = mock.NewEventDBModule(mockCtrl)
+	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
+	var mockLogger = log.NewNopLogger()
+
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule, mockLogger)
+
+	var accessToken = "TOKEN=="
+	var realmName = "master"
+
+	// Get required actions with succces
+	{
+		var alias = "ALIAS"
+		var name = "name"
+		var boolTrue = true
+		var boolFalse = false
+
+		var kcRa = kc.RequiredActionProviderRepresentation{
+			Alias:         &alias,
+			Name:          &name,
+			Enabled:       &boolTrue,
+			DefaultAction: &boolTrue,
+		}
+
+		var kcDisabledRa = kc.RequiredActionProviderRepresentation{
+			Alias:         &alias,
+			Name:          &name,
+			Enabled:       &boolFalse,
+			DefaultAction: &boolFalse,
+		}
+
+		var kcRasRep []kc.RequiredActionProviderRepresentation
+		kcRasRep = append(kcRasRep, kcRa, kcDisabledRa)
+
+		mockKeycloakClient.EXPECT().GetRequiredActions(accessToken, realmName).Return(kcRasRep, nil).Times(1)
+
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+
+		apiRasRep, err := managementComponent.GetRequiredActions(ctx, "master")
+
+		var expectedAPIRaRep = api.RequiredActionRepresentation{
+			Alias:         &alias,
+			Name:          &name,
+			DefaultAction: &boolTrue,
+		}
+
+		var expectedAPIRasRep []api.RequiredActionRepresentation
+		expectedAPIRasRep = append(expectedAPIRasRep, expectedAPIRaRep)
+
+		assert.Nil(t, err)
+		assert.Equal(t, expectedAPIRasRep, apiRasRep)
+	}
+
+	//Error
+	{
+		mockKeycloakClient.EXPECT().GetRequiredActions(accessToken, realmName).Return([]kc.RequiredActionProviderRepresentation{}, fmt.Errorf("Unexpected error")).Times(1)
+
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+
+		_, err := managementComponent.GetRequiredActions(ctx, "master")
+
+		assert.NotNil(t, err)
+	}
+}
+
 func TestCreateUser(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()

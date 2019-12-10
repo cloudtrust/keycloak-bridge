@@ -89,6 +89,9 @@ func TestDeny(t *testing.T) {
 		_, err = authorizationMW.GetClients(ctx, realmName)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
+		_, err = authorizationMW.GetRequiredActions(ctx, realmName)
+		assert.Equal(t, security.ForbiddenError{}, err)
+
 		err = authorizationMW.DeleteUser(ctx, realmName, userID)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
@@ -224,6 +227,7 @@ func TestAllowed(t *testing.T) {
 					"GetRealm": {"*": {"*": {} }},
 					"GetClient": {"*": {"*": {} }},
 					"GetClients": {"*": {"*": {} }},
+					"GetRequiredActions": {"*": {"*": {} }},
 					"DeleteUser": {"*": {"*": {} }},
 					"GetUser": {"*": {"*": {} }},
 					"UpdateUser": {"*": {"*": {} }},
@@ -273,6 +277,10 @@ func TestAllowed(t *testing.T) {
 
 		mockManagementComponent.EXPECT().GetClients(ctx, realmName).Return([]api.ClientRepresentation{}, nil).Times(1)
 		_, err = authorizationMW.GetClients(ctx, realmName)
+		assert.Nil(t, err)
+
+		mockManagementComponent.EXPECT().GetRequiredActions(ctx, realmName).Return([]api.RequiredActionRepresentation{}, nil).Times(1)
+		_, err = authorizationMW.GetRequiredActions(ctx, realmName)
 		assert.Nil(t, err)
 
 		mockManagementComponent.EXPECT().DeleteUser(ctx, realmName, userID).Return(nil).Times(1)

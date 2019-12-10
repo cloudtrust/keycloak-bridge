@@ -88,6 +88,25 @@ func TestGetClientsEndpoint(t *testing.T) {
 	assert.NotNil(t, res)
 }
 
+func TestGetRequiredActionsEndpoint(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
+
+	var e = MakeGetRequiredActionsEndpoint(mockManagementComponent)
+
+	var realm = "master"
+	var ctx = context.Background()
+	var req = make(map[string]string)
+	req["realm"] = realm
+
+	mockManagementComponent.EXPECT().GetRequiredActions(ctx, realm).Return([]api.RequiredActionRepresentation{}, nil).Times(1)
+	var res, err = e(ctx, req)
+	assert.Nil(t, err)
+	assert.NotNil(t, res)
+}
+
 func TestCreateUserEndpoint(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()

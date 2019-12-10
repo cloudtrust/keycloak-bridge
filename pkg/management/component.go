@@ -23,6 +23,7 @@ const (
 type KeycloakClient interface {
 	GetRealms(accessToken string) ([]kc.RealmRepresentation, error)
 	GetRealm(accessToken string, realmName string) (kc.RealmRepresentation, error)
+	GetRequiredActions(accessToken string, realmName string) ([]kc.RequiredActionProviderRepresentation, error)
 	GetClient(accessToken string, realmName, idClient string) (kc.ClientRepresentation, error)
 	GetClients(accessToken string, realmName string, paramKV ...string) ([]kc.ClientRepresentation, error)
 	DeleteUser(accessToken string, realmName, userID string) error
@@ -62,6 +63,7 @@ type Component interface {
 	GetRealm(ctx context.Context, realmName string) (api.RealmRepresentation, error)
 	GetClient(ctx context.Context, realmName, idClient string) (api.ClientRepresentation, error)
 	GetClients(ctx context.Context, realmName string) ([]api.ClientRepresentation, error)
+	GetRequiredActions(ctx context.Context, realmName string) ([]api.RequiredActionRepresentation, error)
 	DeleteUser(ctx context.Context, realmName, userID string) error
 	GetUser(ctx context.Context, realmName, userID string) (api.UserRepresentation, error)
 	UpdateUser(ctx context.Context, realmName, userID string, user api.UserRepresentation) error
@@ -203,6 +205,27 @@ func (c *component) GetClients(ctx context.Context, realmName string) ([]api.Cli
 	}
 
 	return clientsRep, nil
+}
+
+func (c *component) GetRequiredActions(ctx context.Context, realmName string) ([]api.RequiredActionRepresentation, error) {
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+
+	requiredActionsKc, err := c.keycloakClient.GetRequiredActions(accessToken, realmName)
+
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return nil, err
+	}
+
+	var requiredActionsRep = []api.RequiredActionRepresentation{}
+	for _, requiredActionKc := range requiredActionsKc {
+		if *(requiredActionKc.Enabled) == true {
+			var requiredActionRep = api.ConvertRequiredAction(&requiredActionKc)
+			requiredActionsRep = append(requiredActionsRep, requiredActionRep)
+		}
+	}
+
+	return requiredActionsRep, nil
 }
 
 func (c *component) CreateUser(ctx context.Context, realmName string, user api.UserRepresentation) (string, error) {
