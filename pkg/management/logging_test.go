@@ -28,11 +28,11 @@ func TestComponentLoggingMW(t *testing.T) {
 
 	// Get configuration.
 	mockComponent.EXPECT().GetConfiguration(ctx, "realmID").Return(dto.RealmConfiguration{}, nil).Times(1)
-	mockLogger.EXPECT().Info("method", "GetConfiguration", "args", "realmID", "took", gomock.Any()).Return(nil).Times(1)
+	mockLogger.EXPECT().Info(gomock.Any(), "method", "GetConfiguration", "args", "realmID", "took", gomock.Any()).Return(nil).Times(1)
 	m.GetConfiguration(ctx, "realmID")
 
 	// Update configuration.
 	mockComponent.EXPECT().StoreOrUpdate(ctx, "realmID", dto.RealmConfiguration{}).Return(nil).Times(1)
-	mockLogger.EXPECT().Info("method", "StoreOrUpdate", "args", "realmID", dto.RealmConfiguration{}, "took", gomock.Any()).Return(nil).Times(1)
+	mockLogger.EXPECT().Info(gomock.Any(), "method", "StoreOrUpdate", "args", "realmID", dto.RealmConfiguration{}, "took", gomock.Any()).Return(nil).Times(1)
 	m.StoreOrUpdate(ctx, "realmID", dto.RealmConfiguration{})
 }

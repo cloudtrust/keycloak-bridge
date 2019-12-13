@@ -7,16 +7,16 @@ import (
 
 // Logger interface for logging with level
 type Logger interface {
-	Debug(keyvals ...interface{}) error
-	Info(keyvals ...interface{}) error
-	Warn(keyvals ...interface{}) error
-	Error(keyvals ...interface{}) error
+	Debug(ctx context.Context, keyvals ...interface{}) error
+	Info(ctx context.Context, keyvals ...interface{}) error
+	Warn(ctx context.Context, keyvals ...interface{}) error
+	Error(ctx context.Context, keyvals ...interface{}) error
 }
 
 // LogUnrecordedEvent logs the events that could not be reported in the DB
 func LogUnrecordedEvent(ctx context.Context, logger Logger, eventName string, errorMessage string, values ...string) {
 	if len(values)%2 != 0 {
-		logger.Error("err", "When logging an unrecorded event the number of parameters should be even")
+		logger.Error(ctx, "err", "When logging an unrecorded event the number of parameters should be even")
 	}
 	m := map[string]interface{}{"event_name": eventName}
 	for i := 0; i < len(values); i += 2 {
@@ -24,8 +24,8 @@ func LogUnrecordedEvent(ctx context.Context, logger Logger, eventName string, er
 	}
 	eventJSON, errMarshal := json.Marshal(m)
 	if errMarshal == nil {
-		logger.Error("err", errorMessage, "event", string(eventJSON))
+		logger.Error(ctx, "err", errorMessage, "event", string(eventJSON))
 	} else {
-		logger.Error("err", errorMessage)
+		logger.Error(ctx, "err", errorMessage)
 	}
 }

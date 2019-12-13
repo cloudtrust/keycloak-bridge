@@ -20,6 +20,7 @@ type Endpoints struct {
 	GetRealm                       endpoint.Endpoint
 	GetClient                      endpoint.Endpoint
 	GetClients                     endpoint.Endpoint
+	GetRequiredActions             endpoint.Endpoint
 	DeleteUser                     endpoint.Endpoint
 	GetUser                        endpoint.Endpoint
 	UpdateUser                     endpoint.Endpoint
@@ -53,6 +54,7 @@ type ManagementComponent interface {
 	GetRealm(ctx context.Context, realmName string) (api.RealmRepresentation, error)
 	GetClient(ctx context.Context, realmName, idClient string) (api.ClientRepresentation, error)
 	GetClients(ctx context.Context, realmName string) ([]api.ClientRepresentation, error)
+	GetRequiredActions(ctx context.Context, realmName string) ([]api.RequiredActionRepresentation, error)
 	DeleteUser(ctx context.Context, realmName, userID string) error
 	GetUser(ctx context.Context, realmName, userID string) (api.UserRepresentation, error)
 	UpdateUser(ctx context.Context, realmName, userID string, user api.UserRepresentation) error
@@ -111,6 +113,15 @@ func MakeGetClientsEndpoint(managementComponent ManagementComponent) cs.Endpoint
 		var m = req.(map[string]string)
 
 		return managementComponent.GetClients(ctx, m["realm"])
+	}
+}
+
+// MakeGetRequiredActionsEndpoint creates an endpoint for GetRequiredActions
+func MakeGetRequiredActionsEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+
+		return managementComponent.GetRequiredActions(ctx, m["realm"])
 	}
 }
 

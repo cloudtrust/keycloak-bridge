@@ -108,10 +108,10 @@ func errorHandler(logger log.Logger) func(ctx context.Context, err error, w http
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		switch errors.Cause(err).(type) {
 		case ErrInvalidArgument:
-			logger.Error("errorHandler", http.StatusBadRequest, "msg", err.Error())
+			logger.Error(ctx, "errorHandler", http.StatusBadRequest, "msg", err.Error())
 			w.WriteHeader(http.StatusBadRequest)
 		default:
-			logger.Error("errorHandler", http.StatusInternalServerError, "msg", err.Error())
+			logger.Error(ctx, "errorHandler", http.StatusInternalServerError, "msg", err.Error())
 			w.WriteHeader(http.StatusInternalServerError)
 		}
 

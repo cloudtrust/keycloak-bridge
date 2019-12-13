@@ -55,6 +55,27 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Client'
+  /realms/{realm}/required-actions:
+    get:
+      tags:
+      - Required Actions
+      summary: Get required actions available for the realm.
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: Returns a list of required actions enabled in the realm.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RequiredAction'
   /realms/{realm}/clients/{clientID}:
     get:
       tags:
@@ -853,6 +874,16 @@ components:
         enabled:
           type: boolean
           default: true
+    RequiredAction:
+      type: object
+      properties:
+        alias:
+          type: string
+        name:
+          type: string
+        defaultAction:
+          type: boolean
+          default: false
     Role:
       type: object
       properties:

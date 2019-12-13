@@ -14,6 +14,7 @@ const (
 	GetRealm                       = "GetRealm"
 	GetClient                      = "GetClient"
 	GetClients                     = "GetClients"
+	GetRequiredActions             = "GetRequiredActions"
 	DeleteUser                     = "DeleteUser"
 	GetUser                        = "GetUser"
 	UpdateUser                     = "UpdateUser"
@@ -101,6 +102,17 @@ func (c *authorizationComponentMW) GetClients(ctx context.Context, realmName str
 	}
 
 	return c.next.GetClients(ctx, realmName)
+}
+
+func (c *authorizationComponentMW) GetRequiredActions(ctx context.Context, realmName string) ([]api.RequiredActionRepresentation, error) {
+	var action = GetRequiredActions
+	var targetRealm = realmName
+
+	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
+		return []api.RequiredActionRepresentation{}, err
+	}
+
+	return c.next.GetRequiredActions(ctx, realmName)
 }
 
 func (c *authorizationComponentMW) DeleteUser(ctx context.Context, realmName, userID string) error {

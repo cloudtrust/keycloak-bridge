@@ -126,6 +126,21 @@ func TestConvertToKCUser(t *testing.T) {
 	assert.Equal(t, locale, (*ConvertToKCUser(user).Attributes)["locale"][0])
 }
 
+func TestConvertRequiredAction(t *testing.T) {
+	var raKc kc.RequiredActionProviderRepresentation
+	var alias = "alias"
+	var name = "name"
+	var boolTrue = true
+
+	raKc.Alias = &alias
+	raKc.Name = &name
+	raKc.DefaultAction = &boolTrue
+
+	assert.Equal(t, raKc.Alias, ConvertRequiredAction(&raKc).Alias)
+	assert.Equal(t, raKc.Name, ConvertRequiredAction(&raKc).Name)
+	assert.Equal(t, raKc.DefaultAction, ConvertRequiredAction(&raKc).DefaultAction)
+}
+
 func TestValidateUserRepresentation(t *testing.T) {
 	{
 		user := createValidUserRepresentation()

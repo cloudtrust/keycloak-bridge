@@ -287,6 +287,74 @@ func TestGetClients(t *testing.T) {
 	}
 }
 
+func TestGetRequiredActions(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
+	var mockEventDBModule = mock.NewEventDBModule(mockCtrl)
+	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
+	var mockLogger = log.NewNopLogger()
+
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule, mockLogger)
+
+	var accessToken = "TOKEN=="
+	var realmName = "master"
+
+	// Get required actions with succces
+	{
+		var alias = "ALIAS"
+		var name = "name"
+		var boolTrue = true
+		var boolFalse = false
+
+		var kcRa = kc.RequiredActionProviderRepresentation{
+			Alias:         &alias,
+			Name:          &name,
+			Enabled:       &boolTrue,
+			DefaultAction: &boolTrue,
+		}
+
+		var kcDisabledRa = kc.RequiredActionProviderRepresentation{
+			Alias:         &alias,
+			Name:          &name,
+			Enabled:       &boolFalse,
+			DefaultAction: &boolFalse,
+		}
+
+		var kcRasRep []kc.RequiredActionProviderRepresentation
+		kcRasRep = append(kcRasRep, kcRa, kcDisabledRa)
+
+		mockKeycloakClient.EXPECT().GetRequiredActions(accessToken, realmName).Return(kcRasRep, nil).Times(1)
+
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+
+		apiRasRep, err := managementComponent.GetRequiredActions(ctx, "master")
+
+		var expectedAPIRaRep = api.RequiredActionRepresentation{
+			Alias:         &alias,
+			Name:          &name,
+			DefaultAction: &boolTrue,
+		}
+
+		var expectedAPIRasRep []api.RequiredActionRepresentation
+		expectedAPIRasRep = append(expectedAPIRasRep, expectedAPIRaRep)
+
+		assert.Nil(t, err)
+		assert.Equal(t, expectedAPIRasRep, apiRasRep)
+	}
+
+	//Error
+	{
+		mockKeycloakClient.EXPECT().GetRequiredActions(accessToken, realmName).Return([]kc.RequiredActionProviderRepresentation{}, fmt.Errorf("Unexpected error")).Times(1)
+
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+
+		_, err := managementComponent.GetRequiredActions(ctx, "master")
+
+		assert.NotNil(t, err)
+	}
+}
+
 func TestCreateUser(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -342,7 +410,7 @@ func TestCreateUser(t *testing.T) {
 		mockEventDBModule.EXPECT().ReportEvent(ctx, "API_ACCOUNT_CREATION", "back-office", database.CtEventRealmName, realmName, database.CtEventUserID, userID, database.CtEventUsername, username).Return(errors.New("error")).Times(1)
 		m := map[string]interface{}{"event_name": "API_ACCOUNT_CREATION", database.CtEventRealmName: realmName, database.CtEventUserID: userID, database.CtEventUsername: username}
 		eventJSON, _ := json.Marshal(m)
-		mockLogger.EXPECT().Error("err", "error", "event", string(eventJSON))
+		mockLogger.EXPECT().Error(ctx, "err", "error", "event", string(eventJSON))
 
 		var userRep = api.UserRepresentation{
 			Username: &username,
@@ -427,7 +495,7 @@ func TestCreateUser(t *testing.T) {
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 
 		var userRep = api.UserRepresentation{}
-		mockLogger.EXPECT().Warn("err", "Invalid input")
+		mockLogger.EXPECT().Warn(ctx, "err", "Invalid input")
 
 		location, err := managementComponent.CreateUser(ctx, targetRealmName, userRep)
 
@@ -476,7 +544,7 @@ func TestDeleteUser(t *testing.T) {
 		mockEventDBModule.EXPECT().ReportEvent(ctx, "API_ACCOUNT_DELETION", "back-office", database.CtEventRealmName, realmName, database.CtEventUserID, userID).Return(errors.New("error")).Times(1)
 		m := map[string]interface{}{"event_name": "API_ACCOUNT_DELETION", database.CtEventRealmName: realmName, database.CtEventUserID: userID}
 		eventJSON, _ := json.Marshal(m)
-		mockLogger.EXPECT().Error("err", "error", "event", string(eventJSON))
+		mockLogger.EXPECT().Error(ctx, "err", "error", "event", string(eventJSON))
 		err := managementComponent.DeleteUser(ctx, "master", userID)
 
 		assert.Nil(t, err)
@@ -488,7 +556,7 @@ func TestDeleteUser(t *testing.T) {
 		mockKeycloakClient.EXPECT().DeleteUser(accessToken, realmName, userID).Return(fmt.Errorf("Invalid input")).Times(1)
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
-		mockLogger.EXPECT().Warn("err", "Invalid input")
+		mockLogger.EXPECT().Warn(ctx, "err", "Invalid input")
 
 		err := managementComponent.DeleteUser(ctx, "master", userID)
 
@@ -587,7 +655,7 @@ func TestGetUser(t *testing.T) {
 		mockEventDBModule.EXPECT().ReportEvent(ctx, "GET_DETAILS", "back-office", database.CtEventRealmName, realmName, database.CtEventUserID, id, database.CtEventUsername, username).Return(errors.New("error")).Times(1)
 		m := map[string]interface{}{"event_name": "GET_DETAILS", database.CtEventRealmName: realmName, database.CtEventUserID: id, database.CtEventUsername: username}
 		eventJSON, _ := json.Marshal(m)
-		mockLogger.EXPECT().Error("err", "error", "event", string(eventJSON))
+		mockLogger.EXPECT().Error(ctx, "err", "error", "event", string(eventJSON))
 
 		apiUserRep, err := managementComponent.GetUser(ctx, "master", id)
 		assert.Nil(t, err)
@@ -600,7 +668,7 @@ func TestGetUser(t *testing.T) {
 		mockKeycloakClient.EXPECT().GetUser(accessToken, realmName, id).Return(kc.UserRepresentation{}, fmt.Errorf("Unexpected error")).Times(1)
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
-		mockLogger.EXPECT().Warn("err", "Unexpected error")
+		mockLogger.EXPECT().Warn(ctx, "err", "Unexpected error")
 
 		_, err := managementComponent.GetUser(ctx, "master", id)
 
@@ -831,7 +899,7 @@ func TestUpdateUser(t *testing.T) {
 		mockEventDBModule.EXPECT().ReportEvent(ctx, "UNLOCK_ACCOUNT", "back-office", database.CtEventRealmName, realmName, database.CtEventUserID, id, database.CtEventUsername, username).Return(errors.New("error")).Times(1)
 		m := map[string]interface{}{"event_name": "UNLOCK_ACCOUNT", database.CtEventRealmName: realmName, database.CtEventUserID: id, database.CtEventUsername: username}
 		eventJSON, _ := json.Marshal(m)
-		mockLogger.EXPECT().Error("err", "error", "event", string(eventJSON))
+		mockLogger.EXPECT().Error(ctx, "err", "error", "event", string(eventJSON))
 		mockKeycloakClient.EXPECT().GetUser(accessToken, realmName, id).Return(kcUserRep, nil).Times(1)
 		mockKeycloakClient.EXPECT().UpdateUser(accessToken, realmName, id, gomock.Any()).Return(nil).Times(1)
 
@@ -847,7 +915,7 @@ func TestUpdateUser(t *testing.T) {
 		mockKeycloakClient.EXPECT().GetUser(accessToken, realmName, id).Return(kc.UserRepresentation{}, fmt.Errorf("Unexpected error")).Times(1)
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
-		mockLogger.EXPECT().Warn("err", "Unexpected error")
+		mockLogger.EXPECT().Warn(ctx, "err", "Unexpected error")
 		err := managementComponent.UpdateUser(ctx, "master", id, api.UserRepresentation{})
 
 		assert.NotNil(t, err)
@@ -860,7 +928,7 @@ func TestUpdateUser(t *testing.T) {
 		}
 		mockKeycloakClient.EXPECT().GetUser(accessToken, realmName, id).Return(kcUserRep, nil).AnyTimes()
 		mockKeycloakClient.EXPECT().UpdateUser(accessToken, realmName, id, gomock.Any()).Return(fmt.Errorf("Unexpected error")).Times(1)
-		mockLogger.EXPECT().Warn("err", "Unexpected error")
+		mockLogger.EXPECT().Warn(gomock.Any(), "err", "Unexpected error")
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		err := managementComponent.UpdateUser(ctx, "master", id, api.UserRepresentation{})
@@ -1351,7 +1419,7 @@ func TestResetPassword(t *testing.T) {
 		mockEventDBModule.EXPECT().ReportEvent(ctx, "INIT_PASSWORD", "back-office", database.CtEventRealmName, realmName, database.CtEventUserID, userID).Return(errors.New("error")).Times(1)
 		m := map[string]interface{}{"event_name": "INIT_PASSWORD", database.CtEventRealmName: realmName, database.CtEventUserID: userID}
 		eventJSON, _ := json.Marshal(m)
-		mockLogger.EXPECT().Error("err", "error", "event", string(eventJSON))
+		mockLogger.EXPECT().Error(gomock.Any(), "err", "error", "event", string(eventJSON))
 		var passwordRep = api.PasswordRepresentation{
 			Value: &password,
 		}
@@ -1433,7 +1501,7 @@ func TestResetPassword(t *testing.T) {
 		var passwordRep = api.PasswordRepresentation{
 			Value: &password,
 		}
-		mockLogger.EXPECT().Warn("err", "Invalid input")
+		mockLogger.EXPECT().Warn(gomock.Any(), "err", "Invalid input")
 		_, err := managementComponent.ResetPassword(ctx, "master", userID, passwordRep)
 
 		assert.NotNil(t, err)
@@ -1568,7 +1636,7 @@ func TestSendNewEnrolmentCode(t *testing.T) {
 		mockEventDBModule.EXPECT().ReportEvent(ctx, "SMS_CHALLENGE", "back-office", database.CtEventRealmName, realmName, database.CtEventUserID, userID).Return(errors.New("error")).Times(1)
 		m := map[string]interface{}{"event_name": "SMS_CHALLENGE", database.CtEventRealmName: realmName, database.CtEventUserID: userID}
 		eventJSON, _ := json.Marshal(m)
-		mockLogger.EXPECT().Error("err", "error", "event", string(eventJSON))
+		mockLogger.EXPECT().Error(gomock.Any(), "err", "error", "event", string(eventJSON))
 		codeRes, err := managementComponent.SendNewEnrolmentCode(ctx, "master", userID)
 
 		assert.Nil(t, err)
@@ -1579,7 +1647,7 @@ func TestSendNewEnrolmentCode(t *testing.T) {
 		mockKeycloakClient.EXPECT().SendNewEnrolmentCode(accessToken, realmName, userID).Return(kc.SmsCodeRepresentation{}, fmt.Errorf("Invalid input")).Times(1)
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
-		mockLogger.EXPECT().Warn("err", "Invalid input")
+		mockLogger.EXPECT().Warn(gomock.Any(), "err", "Invalid input")
 		_, err := managementComponent.SendNewEnrolmentCode(ctx, "master", userID)
 
 		assert.NotNil(t, err)
@@ -1688,7 +1756,7 @@ func TestDeleteCredentialsForUser(t *testing.T) {
 	// Delete credentials for user - error at obtaining the list of credentials
 	{
 		mockKeycloakClient.EXPECT().GetCredentials(accessToken, realmName, userID).Return([]kc.CredentialRepresentation{}, errors.New("error")).Times(1)
-		mockLogger.EXPECT().Warn("msg", "Could not obtain list of credentials", "err", "error")
+		mockLogger.EXPECT().Warn(gomock.Any(), "msg", "Could not obtain list of credentials", "err", "error")
 		mockKeycloakClient.EXPECT().DeleteCredential(accessToken, realmName, userID, credential).Return(nil).Times(1)
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
@@ -1703,7 +1771,7 @@ func TestDeleteCredentialsForUser(t *testing.T) {
 	{
 		mockKeycloakClient.EXPECT().GetCredentials(accessToken, realmName, userID).Return([]kc.CredentialRepresentation{}, nil).Times(1)
 		mockKeycloakClient.EXPECT().DeleteCredential(accessToken, realmName, userID, credential).Return(errors.New("error")).Times(1)
-		mockLogger.EXPECT().Warn("err", "error")
+		mockLogger.EXPECT().Warn(gomock.Any(), "err", "error")
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmReq)
 
@@ -1773,7 +1841,7 @@ func TestDeleteCredentialsForUser(t *testing.T) {
 		mockEventDBModule.EXPECT().ReportEvent(ctx, "2ND_FACTOR_REMOVED", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(errors.New("error")).Times(1)
 		m := map[string]interface{}{"event_name": "2ND_FACTOR_REMOVED", database.CtEventRealmName: realmName, database.CtEventUserID: userID}
 		eventJSON, _ := json.Marshal(m)
-		mockLogger.EXPECT().Error("err", "error", "event", string(eventJSON))
+		mockLogger.EXPECT().Error(gomock.Any(), "err", "error", "event", string(eventJSON))
 		err := managementComponent.DeleteCredentialsForUser(ctx, realmName, userID, otpId)
 
 		assert.Nil(t, err)

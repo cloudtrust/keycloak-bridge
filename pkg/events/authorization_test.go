@@ -5,10 +5,10 @@ import (
 	"testing"
 
 	cs "github.com/cloudtrust/common-service"
+	"github.com/cloudtrust/common-service/log"
 	"github.com/cloudtrust/common-service/security"
 	api "github.com/cloudtrust/keycloak-bridge/api/events"
 	"github.com/cloudtrust/keycloak-bridge/pkg/events/mock"
-	"github.com/cloudtrust/common-service/log"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
@@ -53,7 +53,7 @@ func testAuthorization(t *testing.T, jsonAuthz string, tester func(Component, *m
 	mp["realm"] = realmName
 	mp["userID"] = userID
 
-	mockKeycloakClient.EXPECT().GetGroupNamesOfUser(accessToken, realmName, userID).Return([]string{groupName}, nil).AnyTimes()
+	mockKeycloakClient.EXPECT().GetGroupNamesOfUser(ctx, accessToken, realmName, userID).Return([]string{groupName}, nil).AnyTimes()
 
 	tester(authorizationMW, mockEventsComponent, ctx, mp)
 }

@@ -27,7 +27,7 @@ type configurationDBModule struct {
 }
 
 // NewConfigurationDBModule returns a ConfigurationDB module.
-func NewConfigurationDBModule(db DBConfiguration) *configurationDBModule {
+func NewConfigurationDBModule(db DBConfiguration) ConfigurationDBModule {
 	return &configurationDBModule{
 		db: db,
 	}
@@ -54,7 +54,7 @@ func (c *configurationDBModule) GetConfiguration(context context.Context, realmI
 	case sql.ErrNoRows:
 		return dto.RealmConfiguration{}, errorhandler.Error{
 			Status:  404,
-			Message: MsgErrNotConfigured + "." + RealmConfiguration + "." + realmID,
+			Message: ComponentName + "." + MsgErrNotConfigured + "." + RealmConfiguration + "." + realmID,
 		}
 
 	default:

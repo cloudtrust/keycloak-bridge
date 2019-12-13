@@ -51,7 +51,7 @@ type EventSummaryRepresentation struct {
 	CtEventTypes []string `json:"ctEventTypes,omitempty"`
 }
 
-func toString(sqlValue sql.NullString) string {
+func ToString(sqlValue sql.NullString) string {
 	if sqlValue.Valid {
 		return sqlValue.String
 	}
@@ -63,17 +63,17 @@ func (dba *DbAuditRepresentation) ToAuditRepresentation() AuditRepresentation {
 	return AuditRepresentation{
 		AuditID:         dba.AuditID,
 		AuditTime:       dba.AuditTime,
-		Origin:          toString(dba.Origin),
-		RealmName:       toString(dba.RealmName),
-		AgentUserID:     toString(dba.AgentUserID),
-		AgentUsername:   toString(dba.AgentUsername),
-		AgentRealmName:  toString(dba.AgentRealmName),
-		UserID:          toString(dba.UserID),
-		Username:        toString(dba.Username),
-		CtEventType:     toString(dba.CtEventType),
-		KcEventType:     toString(dba.KcEventType),
-		KcOperationType: toString(dba.KcOperationType),
-		ClientID:        toString(dba.ClientID),
-		AdditionalInfo:  toString(dba.AdditionalInfo),
+		Origin:          ToString(dba.Origin),
+		RealmName:       ToString(dba.RealmName),
+		AgentUserID:     ToString(dba.AgentUserID),
+		AgentUsername:   ToString(dba.AgentUsername),
+		AgentRealmName:  ToString(dba.AgentRealmName),
+		UserID:          ToString(dba.UserID),
+		Username:        ToString(dba.Username),
+		CtEventType:     ToString(dba.CtEventType),
+		KcEventType:     ToString(dba.KcEventType),
+		KcOperationType: ToString(dba.KcOperationType),
+		ClientID:        ToString(dba.ClientID),
+		AdditionalInfo:  ToString(dba.AdditionalInfo),
 	}
 }

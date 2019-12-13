@@ -90,7 +90,7 @@ func (c *component) UpdatePassword(ctx context.Context, currentPassword, newPass
 
 	_, err := c.keycloakAccountClient.UpdatePassword(accessToken, realm, currentPassword, newPassword, confirmPassword)
 	if err != nil {
-		c.logger.Warn("err", err.Error())
+		c.logger.Warn(ctx, "err", err.Error())
 		return err
 	}
 
@@ -108,7 +108,7 @@ func (c *component) GetAccount(ctx context.Context) (api.AccountRepresentation, 
 	userKc, err := c.keycloakAccountClient.GetAccount(accessToken, realm)
 
 	if err != nil {
-		c.logger.Warn("err", err.Error())
+		c.logger.Warn(ctx, "err", err.Error())
 		return userRep, err
 	}
 
@@ -127,7 +127,7 @@ func (c *component) UpdateAccount(ctx context.Context, user api.AccountRepresent
 	// get the "old" user representation
 	oldUserKc, err := c.keycloakAccountClient.GetAccount(accessToken, realm)
 	if err != nil {
-		c.logger.Warn("err", err.Error())
+		c.logger.Warn(ctx, "err", err.Error())
 		return err
 	}
 
@@ -182,7 +182,7 @@ func (c *component) UpdateAccount(ctx context.Context, user api.AccountRepresent
 	err = c.keycloakAccountClient.UpdateAccount(accessToken, realm, userRep)
 
 	if err != nil {
-		c.logger.Warn("err", err.Error())
+		c.logger.Warn(ctx, "err", err.Error())
 		return err
 	}
 
@@ -199,7 +199,7 @@ func (c *component) DeleteAccount(ctx context.Context) error {
 	err := c.keycloakAccountClient.DeleteAccount(accessToken, realm)
 
 	if err != nil {
-		c.logger.Warn("err", err.Error())
+		c.logger.Warn(ctx, "err", err.Error())
 		return err
 	}
 
@@ -216,7 +216,7 @@ func (c *component) GetCredentials(ctx context.Context) ([]api.CredentialReprese
 	credentialsKc, err := c.keycloakAccountClient.GetCredentials(accessToken, currentRealm)
 
 	if err != nil {
-		c.logger.Warn("err", err.Error())
+		c.logger.Warn(ctx, "err", err.Error())
 		return nil, err
 	}
 
@@ -236,7 +236,7 @@ func (c *component) GetCredentialRegistrators(ctx context.Context) ([]string, er
 	credentialTypes, err := c.keycloakAccountClient.GetCredentialRegistrators(accessToken, currentRealm)
 
 	if err != nil {
-		c.logger.Warn("err", err.Error())
+		c.logger.Warn(ctx, "err", err.Error())
 		return nil, err
 	}
 
@@ -252,7 +252,7 @@ func (c *component) UpdateLabelCredential(ctx context.Context, credentialID stri
 	err := c.keycloakAccountClient.UpdateLabelCredential(accessToken, currentRealm, credentialID, label)
 
 	if err != nil {
-		c.logger.Warn("err", err.Error())
+		c.logger.Warn(ctx, "err", err.Error())
 		return err
 	}
 
@@ -274,7 +274,7 @@ func (c *component) DeleteCredential(ctx context.Context, credentialID string) e
 	err := c.keycloakAccountClient.DeleteCredential(accessToken, currentRealm, credentialID)
 
 	if err != nil {
-		c.logger.Warn("err", err.Error())
+		c.logger.Warn(ctx, "err", err.Error())
 		return err
 	}
 
@@ -300,7 +300,7 @@ func (c *component) MoveCredential(ctx context.Context, credentialID string, pre
 	}
 
 	if err != nil {
-		c.logger.Warn("err", err.Error())
+		c.logger.Warn(ctx, "err", err.Error())
 		return err
 	}
 

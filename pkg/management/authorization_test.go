@@ -40,7 +40,7 @@ func TestDeny(t *testing.T) {
 	var pass = "P@ssw0rd"
 	var clientURI = "https://wwww.cloudtrust.io"
 
-	mockKeycloakClient.EXPECT().GetGroupNamesOfUser(accessToken, realmName, userID).Return([]string{
+	mockKeycloakClient.EXPECT().GetGroupNamesOfUser(gomock.Any(), accessToken, realmName, userID).Return([]string{
 		groupName,
 	}, nil).AnyTimes()
 
@@ -89,6 +89,9 @@ func TestDeny(t *testing.T) {
 		_, err = authorizationMW.GetClients(ctx, realmName)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
+		_, err = authorizationMW.GetRequiredActions(ctx, realmName)
+		assert.Equal(t, security.ForbiddenError{}, err)
+
 		err = authorizationMW.DeleteUser(ctx, realmName, userID)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
@@ -98,11 +101,11 @@ func TestDeny(t *testing.T) {
 		err = authorizationMW.UpdateUser(ctx, realmName, userID, user)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
-		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), realmName, groupID).Return(groupName, nil).Times(1)
+		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), gomock.Any(), realmName, groupID).Return(groupName, nil).Times(1)
 		_, err = authorizationMW.GetUsers(ctx, realmName, groupIDs)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
-		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), realmName, groupID).Return(groupName, nil).Times(1)
+		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), gomock.Any(), realmName, groupID).Return(groupName, nil).Times(1)
 		_, err = authorizationMW.CreateUser(ctx, realmName, user)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
@@ -191,7 +194,7 @@ func TestAllowed(t *testing.T) {
 	var pass = "P@ssw0rd"
 	var clientURI = "https://wwww.cloudtrust.io"
 
-	mockKeycloakClient.EXPECT().GetGroupNamesOfUser(accessToken, realmName, userID).Return([]string{groupName}, nil).AnyTimes()
+	mockKeycloakClient.EXPECT().GetGroupNamesOfUser(gomock.Any(), accessToken, realmName, userID).Return([]string{groupName}, nil).AnyTimes()
 
 	var user = api.UserRepresentation{
 		ID:       &userID,
@@ -224,6 +227,7 @@ func TestAllowed(t *testing.T) {
 					"GetRealm": {"*": {"*": {} }},
 					"GetClient": {"*": {"*": {} }},
 					"GetClients": {"*": {"*": {} }},
+					"GetRequiredActions": {"*": {"*": {} }},
 					"DeleteUser": {"*": {"*": {} }},
 					"GetUser": {"*": {"*": {} }},
 					"UpdateUser": {"*": {"*": {} }},
@@ -275,6 +279,10 @@ func TestAllowed(t *testing.T) {
 		_, err = authorizationMW.GetClients(ctx, realmName)
 		assert.Nil(t, err)
 
+		mockManagementComponent.EXPECT().GetRequiredActions(ctx, realmName).Return([]api.RequiredActionRepresentation{}, nil).Times(1)
+		_, err = authorizationMW.GetRequiredActions(ctx, realmName)
+		assert.Nil(t, err)
+
 		mockManagementComponent.EXPECT().DeleteUser(ctx, realmName, userID).Return(nil).Times(1)
 		err = authorizationMW.DeleteUser(ctx, realmName, userID)
 		assert.Nil(t, err)
@@ -287,12 +295,12 @@ func TestAllowed(t *testing.T) {
 		err = authorizationMW.UpdateUser(ctx, realmName, userID, user)
 		assert.Nil(t, err)
 
-		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), realmName, groupID).Return(groupName, nil).Times(1)
+		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), gomock.Any(), realmName, groupID).Return(groupName, nil).Times(1)
 		mockManagementComponent.EXPECT().GetUsers(ctx, realmName, groupIDs).Return(api.UsersPageRepresentation{}, nil).Times(1)
 		_, err = authorizationMW.GetUsers(ctx, realmName, groupIDs)
 		assert.Nil(t, err)
 
-		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), realmName, groupID).Return(groupName, nil).Times(1)
+		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), gomock.Any(), realmName, groupID).Return(groupName, nil).Times(1)
 		mockManagementComponent.EXPECT().CreateUser(ctx, realmName, user).Return("", nil).Times(1)
 		_, err = authorizationMW.CreateUser(ctx, realmName, user)
 		assert.Nil(t, err)

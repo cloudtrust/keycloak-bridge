@@ -86,6 +86,9 @@
           "l3_support_manager": {}
         }
       },
+      "GetRequiredActions": {
+        "master": {}
+      },
       "GetCredentialsForUser": {
         "master": {
           "*": {}
@@ -243,6 +246,9 @@
           "end_user": {}
         }
       },
+      "GetRequiredActions": {
+        "DEP": {}
+      },
       "GetCredentialsForUser": {
         "master": {
           "integrator_agent": {}
@@ -365,6 +371,9 @@
           "*": {}
         }
       },
+      "GetRequiredActions": {
+        "DEP": {}
+      },
       "GetCredentialsForUser": {
         "DEP": {
           "*": {}
@@ -477,6 +486,9 @@
         "master": {
           "l2_support_agent": {}
         }
+      },
+      "GetRequiredActions": {
+        "master": {}
       },
       "GetCredentialsForUser": {
         "master": {
@@ -608,6 +620,9 @@
           "l3_support_agent": {}
         }
       },
+      "GetRequiredActions": {
+        "master": {}
+      },
       "GetCredentialsForUser": {
         "master": {
           "l3_support_agent": {}
@@ -736,6 +751,9 @@
           "*": {}
         }
       },
+      "GetRequiredActions": {
+        "DEP": {}
+      },
       "SendNewEnrolmentCode":{
         "DEP": {
           "end_user": {}
@@ -762,6 +780,26 @@
         }
       },
       "ST_GetStatistics": {
+        "DEP": {
+          "*": {}
+        }
+      },
+      "ST_GetStatisticsUsers": {
+        "DEP": {
+          "*": {}
+        }
+      },
+      "ST_GetStatisticsAuthenticators": {
+        "DEP": {
+          "*": {}
+        }
+      },
+      "ST_GetStatisticsAuthentications": {
+        "DEP": {
+          "*": {}
+        }
+      },
+      "ST_GetStatisticsAuthenticationsLog": {
         "DEP": {
           "*": {}
         }
@@ -865,6 +903,9 @@
           "end_user": {}
         }
       },
+      "GetRequiredActions": {
+        "DEP": {}
+      },
       "GetCredentialsForUser": {
         "DEP": {
           "l1_support_agent": {},
@@ -959,6 +1000,9 @@
         "DEP": {
           "end_user": {}
         }
+      },
+      "GetRequiredActions": {
+        "DEP": {}
       },
       "GetCredentialsForUser": {
         "DEP": {

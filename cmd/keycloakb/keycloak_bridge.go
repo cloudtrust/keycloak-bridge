@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"math/rand"
 	"net/http"
@@ -58,8 +59,22 @@ func init() {
 
 func main() {
 	ComponentID := strconv.FormatUint(rand.Uint64(), 10)
+	ctx := context.Background()
 
-	// Logger.
+	// Access log logger
+	var accessLogger = kit_log.NewJSONLogger(os.Stdout)
+	{
+		// Timestamp
+		accessLogger = kit_log.With(accessLogger, "_ts", kit_log.DefaultTimestampUTC)
+
+		// Add component name, component ID and version to the logger tags.
+		accessLogger = kit_log.With(accessLogger, "component_name", keycloakb.ComponentName, "component_id", ComponentID, "component_version", keycloakb.Version)
+
+		// Add access_log type
+		accessLogger = kit_log.With(accessLogger, "type", "access_log")
+	}
+
+	// Leveled Logger.
 	var logger = log.NewLeveledLogger(kit_log.NewJSONLogger(os.Stdout))
 	{
 		// Timestamp
@@ -71,14 +86,14 @@ func main() {
 		// Add component name, component ID and version to the logger tags.
 		logger = log.With(logger, "component_name", keycloakb.ComponentName, "component_id", ComponentID, "component_version", keycloakb.Version)
 	}
-	defer logger.Info("msg", "Shutdown")
+	defer logger.Info(ctx, "msg", "Shutdown")
 
 	// Log component version infos.
-	logger.Info("msg", "Starting")
-	logger.Info("environment", Environment, "git_commit", GitCommit)
+	logger.Info(ctx, "msg", "Starting")
+	logger.Info(ctx, "environment", Environment, "git_commit", GitCommit)
 
 	// Configurations.
-	var c = config(log.With(logger, "unit", "config"))
+	var c = config(ctx, log.With(logger, "unit", "config"))
 	var (
 		// Component
 		authorizationConfigFile = c.GetString("authorization-file")
@@ -130,6 +145,9 @@ func main() {
 		}
 
 		logLevel = c.GetString("log-level")
+
+		// Access logs
+		accessLogsEnabled = c.GetBool("access-logs")
 	)
 
 	// Unique ID generator
@@ -150,7 +168,7 @@ func main() {
 		level, err = log.ConvertToLevel(logLevel)
 
 		if err != nil {
-			logger.Error("error", err)
+			logger.Error(ctx, "error", err)
 			return
 		}
 
@@ -163,7 +181,7 @@ func main() {
 		audienceRequired = c.GetString("audience-required")
 
 		if audienceRequired == "" {
-			logger.Error("msg", "audience parameter(audience-required) cannot be empty")
+			logger.Error(ctx, "msg", "audience parameter(audience-required) cannot be empty")
 			return
 		}
 	}
@@ -174,7 +192,7 @@ func main() {
 		eventExpectedAuthToken = c.GetString("event-basic-auth-token")
 
 		if eventExpectedAuthToken == "" {
-			logger.Error("msg", "password for event endpoint (event-basic-auth-token) cannot be empty")
+			logger.Error(ctx, "msg", "password for event endpoint (event-basic-auth-token) cannot be empty")
 			return
 		}
 	}
@@ -186,7 +204,7 @@ func main() {
 		keycloakClient, err = keycloak.New(keycloakConfig)
 
 		if err != nil {
-			logger.Error("msg", "could not create Keycloak client", "error", err)
+			logger.Error(ctx, "msg", "could not create Keycloak client", "error", err)
 			return
 		}
 	}
@@ -201,7 +219,7 @@ func main() {
 		authorizationManager, err = security.NewAuthorizationManagerFromFile(commonKcAdaptor, logger, authorizationConfigFile)
 
 		if err != nil {
-			logger.Error("msg", "could not load authorizations", "error", err)
+			logger.Error(ctx, "msg", "could not load authorizations", "error", err)
 			return
 		}
 	}
@@ -212,7 +230,7 @@ func main() {
 		var err error
 		sentryClient, err = tracking.NewSentry(c, "sentry")
 		if err != nil {
-			logger.Error("msg", "could not create Sentry client", "error", err)
+			logger.Error(ctx, "msg", "could not create Sentry client", "error", err)
 			return
 		}
 		defer sentryClient.Close()
@@ -223,7 +241,7 @@ func main() {
 		var err error
 		influxMetrics, err = metrics.NewMetrics(c, "influx", logger)
 		if err != nil {
-			logger.Error("msg", "could not create Influx client", "error", err)
+			logger.Error(ctx, "msg", "could not create Influx client", "error", err)
 			return
 		}
 		defer influxMetrics.Close()
@@ -237,7 +255,7 @@ func main() {
 
 		tracer, err = tracing.CreateJaegerClient(c, "jaeger", keycloakb.ComponentName)
 		if err != nil {
-			logger.Error("msg", "could not create Jaeger tracer", "error", err)
+			logger.Error(ctx, "msg", "could not create Jaeger tracer", "error", err)
 			return
 		}
 		defer tracer.Close()
@@ -248,7 +266,7 @@ func main() {
 		var err error
 		eventsDBConn, err = auditRwDbParams.OpenDatabase()
 		if err != nil {
-			logger.Error("msg", "could not create R/W DB connection for audit events", "error", err)
+			logger.Error(ctx, "msg", "could not create R/W DB connection for audit events", "error", err)
 			return
 		}
 	}
@@ -258,7 +276,7 @@ func main() {
 		var err error
 		eventsRODBConn, err = auditRoDbParams.OpenDatabase()
 		if err != nil {
-			logger.Error("msg", "could not create RO DB connection for audit events", "error", err)
+			logger.Error(ctx, "msg", "could not create RO DB connection for audit events", "error", err)
 			return
 		}
 	}
@@ -268,7 +286,7 @@ func main() {
 		var err error
 		configurationRwDBConn, err = configRwDbParams.OpenDatabase()
 		if err != nil {
-			logger.Error("msg", "could not create DB connection for configuration storage (RW)", "error", err)
+			logger.Error(ctx, "msg", "could not create DB connection for configuration storage (RW)", "error", err)
 			return
 		}
 	}
@@ -278,7 +296,7 @@ func main() {
 		var err error
 		configurationRoDBConn, err = configRoDbParams.OpenDatabase()
 		if err != nil {
-			logger.Error("msg", "could not create DB connection for configuration storage (RO)", "error", err)
+			logger.Error(ctx, "msg", "could not create DB connection for configuration storage (RO)", "error", err)
 			return
 		}
 	}
@@ -369,8 +387,12 @@ func main() {
 		statisticsComponent = statistics.MakeAuthorizationManagementComponentMW(log.With(statisticsLogger, "mw", "endpoint"), authorizationManager)(statisticsComponent)
 
 		statisticsEndpoints = statistics.Endpoints{
-			GetStatistics:      prepareEndpoint(statistics.MakeGetStatisticsEndpoint(statisticsComponent), "get_statistics", influxMetrics, statisticsLogger, tracer, rateLimit["statistics"]),
-			GetMigrationReport: prepareEndpoint(statistics.MakeGetMigrationReportEndpoint(statisticsComponent), "get_migration_report", influxMetrics, statisticsLogger, tracer, rateLimit["statistics"]),
+			GetStatistics:                   prepareEndpoint(statistics.MakeGetStatisticsEndpoint(statisticsComponent), "get_statistics", influxMetrics, statisticsLogger, tracer, rateLimit["statistics"]),
+			GetStatisticsUsers:              prepareEndpoint(statistics.MakeGetStatisticsUsersEndpoint(statisticsComponent), "get_statistics_users", influxMetrics, statisticsLogger, tracer, rateLimit["statistics"]),
+			GetStatisticsAuthentications:    prepareEndpoint(statistics.MakeGetStatisticsAuthenticationsEndpoint(statisticsComponent), "get_statistics_authentications", influxMetrics, statisticsLogger, tracer, rateLimit["statistics"]),
+			GetStatisticsAuthenticationsLog: prepareEndpoint(statistics.MakeGetStatisticsAuthenticationsLogEndpoint(statisticsComponent), "get_statistics_authentications_log", influxMetrics, statisticsLogger, tracer, rateLimit["statistics"]),
+			GetStatisticsAuthenticators:     prepareEndpoint(statistics.MakeGetStatisticsAuthenticatorsEndpoint(statisticsComponent), "get_statistics_authenticators", influxMetrics, statisticsLogger, tracer, rateLimit["statistics"]),
+			GetMigrationReport:              prepareEndpoint(statistics.MakeGetMigrationReportEndpoint(statisticsComponent), "get_migration_report", influxMetrics, statisticsLogger, tracer, rateLimit["statistics"]),
 		}
 	}
 
@@ -420,6 +442,7 @@ func main() {
 			GetRealm:                       prepareEndpoint(management.MakeGetRealmEndpoint(keycloakComponent), "realm_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
 			GetClients:                     prepareEndpoint(management.MakeGetClientsEndpoint(keycloakComponent), "get_clients_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
 			GetClient:                      prepareEndpoint(management.MakeGetClientEndpoint(keycloakComponent), "get_client_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
+			GetRequiredActions:             prepareEndpoint(management.MakeGetRequiredActionsEndpoint(keycloakComponent), "get_required-actions_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
 			CreateUser:                     prepareEndpoint(management.MakeCreateUserEndpoint(keycloakComponent), "create_user_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
 			GetUser:                        prepareEndpoint(management.MakeGetUserEndpoint(keycloakComponent), "get_user_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
 			UpdateUser:                     prepareEndpoint(management.MakeUpdateUserEndpoint(keycloakComponent), "update_user_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
@@ -495,7 +518,7 @@ func main() {
 	// HTTP Internal Call Server (Event reception from Keycloak & Export API).
 	go func() {
 		var logger = log.With(logger, "transport", "http")
-		logger.Info("addr", httpAddrInternal)
+		logger.Info(ctx, "addr", httpAddrInternal)
 
 		var route = mux.NewRouter()
 
@@ -528,13 +551,18 @@ func main() {
 			debugSubroute.HandleFunc("/pprof/trace", http.HandlerFunc(pprof.Trace))
 		}
 
-		errc <- http.ListenAndServe(httpAddrInternal, route)
+		var handler http.Handler = route
+		if accessLogsEnabled {
+			handler = commonhttp.MakeAccessLogHandler(accessLogger, route)
+		}
+
+		errc <- http.ListenAndServe(httpAddrInternal, handler)
 	}()
 
 	// HTTP Management Server (Backoffice API).
 	go func() {
 		var logger = log.With(logger, "transport", "http")
-		logger.Info("addr", httpAddrManagement)
+		logger.Info(ctx, "addr", httpAddrManagement)
 
 		var route = mux.NewRouter()
 
@@ -547,8 +575,17 @@ func main() {
 
 		// Statistics
 		var getStatisticsHandler = configureStatisiticsHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(statisticsEndpoints.GetStatistics)
+		var getStatisticsUsersHandler = configureStatisiticsHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(statisticsEndpoints.GetStatisticsUsers)
+		var getStatisticsAuthenticatorsHandler = configureStatisiticsHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(statisticsEndpoints.GetStatisticsAuthenticators)
+		var getStatisticsAuthenticationsHandler = configureStatisiticsHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(statisticsEndpoints.GetStatisticsAuthentications)
+		var getStatisticsAuthenticationsLogHandler = configureStatisiticsHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(statisticsEndpoints.GetStatisticsAuthenticationsLog)
 		var getMigrationReportHandler = configureStatisiticsHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(statisticsEndpoints.GetMigrationReport)
+
 		route.Path("/statistics/realms/{realm}").Methods("GET").Handler(getStatisticsHandler)
+		route.Path("/statistics/realms/{realm}/users").Methods("GET").Handler(getStatisticsUsersHandler)
+		route.Path("/statistics/realms/{realm}/authenticators").Methods("GET").Handler(getStatisticsAuthenticatorsHandler)
+		route.Path("/statistics/realms/{realm}/authentications-graph").Methods("GET").Handler(getStatisticsAuthenticationsHandler)
+		route.Path("/statistics/realms/{realm}/authentications-log").Methods("GET").Handler(getStatisticsAuthenticationsLogHandler)
 		route.Path("/statistics/realms/{realm}/migration").Methods("GET").Handler(getMigrationReportHandler)
 
 		// Events
@@ -568,6 +605,8 @@ func main() {
 
 		var getClientsHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetClients)
 		var getClientHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetClient)
+
+		var getRequiredActionsHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetRequiredActions)
 
 		var createUserHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.CreateUser)
 		var getUserHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetUser)
@@ -609,6 +648,9 @@ func main() {
 		managementSubroute.Path("/realms/{realm}/clients").Methods("GET").Handler(getClientsHandler)
 		managementSubroute.Path("/realms/{realm}/clients/{clientID}").Methods("GET").Handler(getClientHandler)
 
+		//required-actions
+		managementSubroute.Path("/realms/{realm}/required-actions").Methods("GET").Handler(getRequiredActionsHandler)
+
 		//users
 		managementSubroute.Path("/realms/{realm}/users").Methods("GET").Handler(getUsersHandler)
 		managementSubroute.Path("/realms/{realm}/users").Methods("POST").Handler(createUserHandler)
@@ -647,15 +689,23 @@ func main() {
 		managementSubroute.Path("/realms/{realm}/configuration").Methods("GET").Handler(getRealmCustomConfigurationHandler)
 		managementSubroute.Path("/realms/{realm}/configuration").Methods("PUT").Handler(updateRealmCustomConfigurationHandler)
 
+		var handler http.Handler = route
+
+		if accessLogsEnabled {
+			handler = commonhttp.MakeAccessLogHandler(accessLogger, handler)
+		}
+
 		c := cors.New(corsOptions)
-		errc <- http.ListenAndServe(httpAddrManagement, c.Handler(route))
+		handler = c.Handler(handler)
+
+		errc <- http.ListenAndServe(httpAddrManagement, handler)
 
 	}()
 
 	// HTTP Self-service Server (Account API).
 	go func() {
 		var logger = log.With(logger, "transport", "http")
-		logger.Info("addr", httpAddrAccount)
+		logger.Info(ctx, "addr", httpAddrAccount)
 
 		var route = mux.NewRouter()
 
@@ -687,8 +737,16 @@ func main() {
 		route.Path("/account/credentials/{credentialID}").Methods("PUT").Handler(updateLabelCredentialHandler)
 		route.Path("/account/credentials/{credentialID}/after/{previousCredentialID}").Methods("POST").Handler(moveCredentialHandler)
 
+		var handler http.Handler = route
+
+		if accessLogsEnabled {
+			handler = commonhttp.MakeAccessLogHandler(accessLogger, handler)
+		}
+
 		c := cors.New(corsOptions)
-		errc <- http.ListenAndServe(httpAddrAccount, c.Handler(route))
+		handler = c.Handler(handler)
+
+		errc <- http.ListenAndServe(httpAddrAccount, handler)
 	}()
 
 	// Influx writing.
@@ -698,12 +756,12 @@ func main() {
 		influxMetrics.WriteLoop(tic.C)
 	}()
 
-	logger.Info("msg", "Started")
-	logger.Error("error", <-errc)
+	logger.Info(ctx, "msg", "Started")
+	logger.Error(ctx, "error", <-errc)
 }
 
-func config(logger log.Logger) *viper.Viper {
-	logger.Info("msg", "load configuration and command args")
+func config(ctx context.Context, logger log.Logger) *viper.Viper {
+	logger.Info(ctx, "msg", "load configuration and command args")
 
 	var v = viper.New()
 
@@ -713,6 +771,9 @@ func config(logger log.Logger) *viper.Viper {
 
 	// Log level
 	v.SetDefault("log-level", "info")
+
+	// Access Logs
+	v.SetDefault("access-logs", true)
 
 	// Publishing
 	v.SetDefault("internal-http-host-port", "0.0.0.0:8888")
@@ -815,7 +876,7 @@ func config(logger log.Logger) *viper.Viper {
 	v.SetConfigFile(v.GetString("config-file"))
 	var err = v.ReadInConfig()
 	if err != nil {
-		logger.Error("error", err)
+		logger.Error(ctx, "error", err)
 	}
 
 	// If the host/port is not set, we consider the components deactivated.
@@ -829,11 +890,11 @@ func config(logger log.Logger) *viper.Viper {
 
 	for _, k := range keys {
 		if _, censored := censoredParameters[k]; censored {
-			logger.Info(k, "*************")
+			logger.Info(ctx, k, "*************")
 		} else if strings.Contains(k, "password") {
-			logger.Info(k, "*************")
+			logger.Info(ctx, k, "*************")
 		} else {
-			logger.Info(k, v.Get(k))
+			logger.Info(ctx, k, v.Get(k))
 		}
 	}
 	return v
