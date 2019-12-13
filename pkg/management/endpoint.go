@@ -35,6 +35,7 @@ type Endpoints struct {
 	ExecuteActionsEmail            endpoint.Endpoint
 	SendNewEnrolmentCode           endpoint.Endpoint
 	SendReminderEmail              endpoint.Endpoint
+	ResetSmsCounter                endpoint.Endpoint
 	GetCredentialsForUser          endpoint.Endpoint
 	DeleteCredentialsForUser       endpoint.Endpoint
 	GetRoles                       endpoint.Endpoint
@@ -67,6 +68,7 @@ type ManagementComponent interface {
 	ExecuteActionsEmail(ctx context.Context, realmName string, userID string, actions []api.RequiredAction, paramKV ...string) error
 	SendNewEnrolmentCode(ctx context.Context, realmName string, userID string) (string, error)
 	SendReminderEmail(ctx context.Context, realmName string, userID string, paramKV ...string) error
+	ResetSmsCounter(ctx context.Context, realmName string, userID string) error
 	GetCredentialsForUser(ctx context.Context, realmName string, userID string) ([]api.CredentialRepresentation, error)
 	DeleteCredentialsForUser(ctx context.Context, realmName string, userID string, credentialID string) error
 	GetRoles(ctx context.Context, realmName string) ([]api.RoleRepresentation, error)
@@ -360,6 +362,16 @@ func MakeSendReminderEmailEndpoint(managementComponent ManagementComponent) cs.E
 		}
 
 		return nil, managementComponent.SendReminderEmail(ctx, m["realm"], m["userID"], paramKV...)
+	}
+}
+
+// MakeResetSmsCounterEndpoint creates an endpoint for ResetSmsCounter
+func MakeResetSmsCounterEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+
+		err := managementComponent.ResetSmsCounter(ctx, m["realm"], m["userID"])
+		return err
 	}
 }
 

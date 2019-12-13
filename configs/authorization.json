@@ -79,6 +79,13 @@
           "l3_support_manager": {}
         }
       },
+      "ResetSmsCounter": {
+        "master": {
+          "integrator_manager": {},
+          "l2_support_manager": {},
+          "l3_support_manager": {}
+        }
+      },
       "GetCredentialsForUser": {
         "master": {
           "*": {}
@@ -228,6 +235,14 @@
           "end_user": {}
         }
       },
+      "ResetSmsCounter": {
+        "master": {
+          "integrator_agent": {}
+        },
+        "DEP": {
+          "end_user": {}
+        }
+      },
       "GetCredentialsForUser": {
         "master": {
           "integrator_agent": {}
@@ -345,6 +360,11 @@
           "*": {}
         }
       },
+      "ResetSmsCounter": {
+        "DEP": {
+          "*": {}
+        }
+      },
       "GetCredentialsForUser": {
         "DEP": {
           "*": {}
@@ -449,6 +469,11 @@
         }
       },
       "SendReminderEmail": {
+        "master": {
+          "l2_support_agent": {}
+        }
+      },
+      "ResetSmsCounter": {
         "master": {
           "l2_support_agent": {}
         }
@@ -574,6 +599,11 @@
         }
       },
       "SendReminderEmail": {
+        "master": {
+          "l3_support_agent": {}
+        }
+      },
+      "ResetSmsCounter": {
         "master": {
           "l3_support_agent": {}
         }
@@ -711,6 +741,11 @@
           "end_user": {}
         }
       },
+      "ResetSmsCounter": {
+        "DEP": {
+          "*": {}
+        }
+      },
       "GetCredentialsForUser": {
         "DEP": {
           "*": {}
@@ -824,6 +859,12 @@
           "end_user": {}
         }
       },
+      "ResetSmsCounter": {
+        "DEP": {
+          "l1_support_agent": {},
+          "end_user": {}
+        }
+      },
       "GetCredentialsForUser": {
         "DEP": {
           "l1_support_agent": {},
@@ -910,6 +951,11 @@
         }
       },
       "SendReminderEmail": {
+        "DEP": {
+          "end_user": {}
+        }
+      },
+      "ResetSmsCounter": {
         "DEP": {
           "end_user": {}
         }

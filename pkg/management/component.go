@@ -39,6 +39,7 @@ type KeycloakClient interface {
 	ExecuteActionsEmail(accessToken string, realmName string, userID string, actions []string, paramKV ...string) error
 	SendNewEnrolmentCode(accessToken string, realmName string, userID string) (kc.SmsCodeRepresentation, error)
 	SendReminderEmail(accessToken string, realmName string, userID string, paramKV ...string) error
+	ResetSmsCounter(accessToken string, realmName string, userID string) error
 	GetRoles(accessToken string, realmName string) ([]kc.RoleRepresentation, error)
 	GetRole(accessToken string, realmName string, roleID string) (kc.RoleRepresentation, error)
 	GetGroups(accessToken string, realmName string) ([]kc.GroupRepresentation, error)
@@ -77,6 +78,7 @@ type Component interface {
 	ExecuteActionsEmail(ctx context.Context, realmName string, userID string, actions []api.RequiredAction, paramKV ...string) error
 	SendNewEnrolmentCode(ctx context.Context, realmName string, userID string) (string, error)
 	SendReminderEmail(ctx context.Context, realmName string, userID string, paramKV ...string) error
+	ResetSmsCounter(ctx context.Context, realmName string, userID string) error
 	GetCredentialsForUser(ctx context.Context, realmName string, userID string) ([]api.CredentialRepresentation, error)
 	DeleteCredentialsForUser(ctx context.Context, realmName string, userID string, credentialID string) error
 	GetRoles(ctx context.Context, realmName string) ([]api.RoleRepresentation, error)
@@ -268,6 +270,7 @@ func (c *component) GetUser(ctx context.Context, realmName, userID string) (api.
 	if userKc.Username != nil {
 		username = *userKc.Username
 	}
+	fmt.Prinln(userRep)
 
 	//store the API call into the DB
 	c.reportEvent(ctx, "GET_DETAILS", database.CtEventRealmName, realmName, database.CtEventUserID, userID, database.CtEventUsername, username)
@@ -608,6 +611,29 @@ func (c *component) SendReminderEmail(ctx context.Context, realmName string, use
 	}
 
 	return err
+}
+
+func (c *component) ResetSmsCounter(ctx context.Context, realmName, userID string) error {
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+	var userRep kc.UserRepresentation
+
+	// get the user representation
+	userKc, err := c.keycloakClient.GetUser(accessToken, realmName, userID)
+	if err != nil {
+		c.logger.Warn("err", err.Error())
+		return err
+	}
+	//reset the counter
+	userKc.Attributes["smsSent"] = 0
+
+	err = c.keycloakClient.UpdateUser(accessToken, realmName, userID, userKc)
+
+	if err != nil {
+		c.logger.Warn("err", err.Error())
+		return err
+	}
+
+	return nil
 }
 
 func (c *component) GetCredentialsForUser(ctx context.Context, realmName string, userID string) ([]api.CredentialRepresentation, error) {

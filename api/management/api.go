@@ -165,7 +165,7 @@ func ConvertToAPIUser(userKc kc.UserRepresentation) UserRepresentation {
 		}
 		if m["smsSent"] != nil {
 			var smsSent = m["smsSent"][0]
-			//TODO
+			userRep.SmsSent = &smsSent
 		}
 	}
 	return userRep
