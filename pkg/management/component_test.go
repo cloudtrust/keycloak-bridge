@@ -1712,12 +1712,43 @@ func TestResetSmsCounter(t *testing.T) {
 	var accessToken = "TOKEN=="
 	var realmName = "master"
 	var userID = "1245-7854-8963"
+	var id = "1234-7454-4516"
+	var username = "username"
+	var email = "toto@elca.ch"
+	var enabled = true
+	var emailVerified = true
+	var firstName = "Titi"
+	var lastName = "Tutu"
+	var phoneNumber = "+41789456"
+	var phoneNumberVerified = true
+	var label = "Label"
+	var gender = "M"
+	var birthDate = "01/01/1988"
+	var createdTimestamp = time.Now().UTC().Unix()
+	var attributes = make(map[string][]string)
+	attributes["phoneNumber"] = []string{phoneNumber}
+	attributes["label"] = []string{label}
+	attributes["gender"] = []string{gender}
+	attributes["birthDate"] = []string{birthDate}
+	attributes["phoneNumberVerified"] = []string{strconv.FormatBool(phoneNumberVerified)}
+	attributes["smsSent"] = []string{"5"}
 
+	var kcUserRep = kc.UserRepresentation{
+		Id:               &id,
+		Username:         &username,
+		Email:            &email,
+		Enabled:          &enabled,
+		EmailVerified:    &emailVerified,
+		FirstName:        &firstName,
+		LastName:         &lastName,
+		Attributes:       &attributes,
+		CreatedTimestamp: &createdTimestamp,
+	}
 	// Reset SMS counter
 	{
 
-		mockKeycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(kc.UserRepresentation{}, nil).Times(1)
-		mockKeycloakClient.EXPECT().UpdateUser(accessToken, realmName, userID, kc.UserRepresentation{}).Return(nil).Times(1)
+		mockKeycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(kcUserRep, nil).Times(1)
+		mockKeycloakClient.EXPECT().UpdateUser(accessToken, realmName, userID, kcUserRep).Return(nil).Times(1)
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
@@ -1740,8 +1771,8 @@ func TestResetSmsCounter(t *testing.T) {
 	// Error at UpdateUser
 	{
 
-		mockKeycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(kc.UserRepresentation{}, nil).Times(1)
-		mockKeycloakClient.EXPECT().UpdateUser(accessToken, realmName, userID, kc.UserRepresentation{}).Return(fmt.Errorf("error")).Times(1)
+		mockKeycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(kcUserRep, nil).Times(1)
+		mockKeycloakClient.EXPECT().UpdateUser(accessToken, realmName, userID, kcUserRep).Return(fmt.Errorf("error")).Times(1)
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		err := managementComponent.ResetSmsCounter(ctx, "master", userID)

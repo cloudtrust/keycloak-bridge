@@ -651,16 +651,13 @@ func (c *component) ResetSmsCounter(ctx context.Context, realmName, userID strin
 		var m = *userKc.Attributes
 		if m["smsSent"] != nil {
 			(*userKc.Attributes)["smsSent"][0] = strconv.Itoa(resetCounter)
+			err = c.keycloakClient.UpdateUser(accessToken, realmName, userID, userKc)
+			if err != nil {
+				c.logger.Warn(ctx, "err", err.Error())
+				return err
+			}
 		}
 	}
-
-	err = c.keycloakClient.UpdateUser(accessToken, realmName, userID, userKc)
-
-	if err != nil {
-		c.logger.Warn(ctx, "err", err.Error())
-		return err
-	}
-
 	return nil
 }
 

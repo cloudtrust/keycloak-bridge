@@ -595,7 +595,28 @@ paths:
         401:
           description: Not authenticated
         403:
-          description: No permission to call this operation    
+          description: No permission to call this operation  
+  /realms/{realm}/users/{userID}/reset-sms-counter:
+    put:
+      tags:
+      - Users
+      summary: Reset the smsSent attribute of the user to value 0.
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation          
   /realms/{realm}/users/{userID}/credentials:
     get:
       tags:
