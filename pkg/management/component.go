@@ -3,6 +3,7 @@ package management
 import (
 	"context"
 	"regexp"
+	"strconv"
 	"strings"
 
 	cs "github.com/cloudtrust/common-service"
@@ -79,6 +80,7 @@ type Component interface {
 	ExecuteActionsEmail(ctx context.Context, realmName string, userID string, actions []api.RequiredAction, paramKV ...string) error
 	SendNewEnrolmentCode(ctx context.Context, realmName string, userID string) (string, error)
 	SendReminderEmail(ctx context.Context, realmName string, userID string, paramKV ...string) error
+	ResetSmsCounter(ctx context.Context, realmName string, userID string) error
 	GetCredentialsForUser(ctx context.Context, realmName string, userID string) ([]api.CredentialRepresentation, error)
 	DeleteCredentialsForUser(ctx context.Context, realmName string, userID string, credentialID string) error
 	GetRoles(ctx context.Context, realmName string) ([]api.RoleRepresentation, error)
@@ -631,6 +633,32 @@ func (c *component) SendReminderEmail(ctx context.Context, realmName string, use
 	}
 
 	return err
+}
+
+func (c *component) ResetSmsCounter(ctx context.Context, realmName, userID string) error {
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+
+	// get the user representation
+	userKc, err := c.keycloakClient.GetUser(accessToken, realmName, userID)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return err
+	}
+
+	//reset the counter, if the smsSent attribute exists
+	resetCounter := 0
+	if userKc.Attributes != nil {
+		var m = *userKc.Attributes
+		if m["smsSent"] != nil {
+			(*userKc.Attributes)["smsSent"][0] = strconv.Itoa(resetCounter)
+			err = c.keycloakClient.UpdateUser(accessToken, realmName, userID, userKc)
+			if err != nil {
+				c.logger.Warn(ctx, "err", err.Error())
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 func (c *component) GetCredentialsForUser(ctx context.Context, realmName string, userID string) ([]api.CredentialRepresentation, error) {

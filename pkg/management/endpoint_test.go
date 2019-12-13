@@ -664,6 +664,28 @@ func TestSendReminderEmailEndpoint(t *testing.T) {
 	}
 }
 
+func TestResetSmsCounterEndpoint(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
+
+	var e = MakeResetSmsCounterEndpoint(mockManagementComponent)
+
+	var realm = "master"
+	var userID = "123-456-789"
+	var ctx = context.Background()
+	var req = make(map[string]string)
+	req["realm"] = realm
+	req["userID"] = userID
+
+	mockManagementComponent.EXPECT().ResetSmsCounter(ctx, realm, userID).Return(nil).Times(1)
+	var res, err = e(ctx, req)
+	assert.Nil(t, err)
+	assert.Nil(t, res)
+
+}
+
 func TestGetCredentialsForUserEndpoint(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()

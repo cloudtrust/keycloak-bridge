@@ -79,6 +79,13 @@
           "l3_support_manager": {}
         }
       },
+      "ResetSmsCounter": {
+        "master": {
+          "integrator_manager": {},
+          "l2_support_manager": {},
+          "l3_support_manager": {}
+        }
+      },
       "GetRequiredActions": {
         "master": {}
       },
@@ -231,6 +238,14 @@
           "end_user": {}
         }
       },
+      "ResetSmsCounter": {
+        "master": {
+          "integrator_agent": {}
+        },
+        "DEP": {
+          "end_user": {}
+        }
+      },
       "GetRequiredActions": {
         "DEP": {}
       },
@@ -351,6 +366,11 @@
           "*": {}
         }
       },
+      "ResetSmsCounter": {
+        "DEP": {
+          "*": {}
+        }
+      },
       "GetRequiredActions": {
         "DEP": {}
       },
@@ -458,6 +478,11 @@
         }
       },
       "SendReminderEmail": {
+        "master": {
+          "l2_support_agent": {}
+        }
+      },
+      "ResetSmsCounter": {
         "master": {
           "l2_support_agent": {}
         }
@@ -586,6 +611,11 @@
         }
       },
       "SendReminderEmail": {
+        "master": {
+          "l3_support_agent": {}
+        }
+      },
+      "ResetSmsCounter": {
         "master": {
           "l3_support_agent": {}
         }
@@ -729,6 +759,11 @@
           "end_user": {}
         }
       },
+      "ResetSmsCounter": {
+        "DEP": {
+          "*": {}
+        }
+      },
       "GetCredentialsForUser": {
         "DEP": {
           "*": {}
@@ -862,6 +897,12 @@
           "end_user": {}
         }
       },
+      "ResetSmsCounter": {
+        "DEP": {
+          "l1_support_agent": {},
+          "end_user": {}
+        }
+      },
       "GetRequiredActions": {
         "DEP": {}
       },
@@ -951,6 +992,11 @@
         }
       },
       "SendReminderEmail": {
+        "DEP": {
+          "end_user": {}
+        }
+      },
+      "ResetSmsCounter": {
         "DEP": {
           "end_user": {}
         }
