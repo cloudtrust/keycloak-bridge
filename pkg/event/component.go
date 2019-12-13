@@ -205,9 +205,9 @@ func adminEventToMap(adminEvent *fb.AdminEvent) map[string]string {
 
 	addInfo["uid"] = fmt.Sprint(adminEvent.Uid())
 
-	//TZ set to Locale to avoid to have to add UTC into connection string to DB
-	time := epochMilliToTime(adminEvent.Time()).Local()
-	adminEventMap[database.CtEventAuditTime] = time.Format(timeFormat) //audit_time
+	//TZ set to UTC and insert the time as a string
+	timeEvent := epochMilliToTime(adminEvent.Time()).UTC()
+	adminEventMap[database.CtEventAuditTime] = timeEvent.Format(timeFormat) //audit_time
 
 	adminEventMap[database.CtEventRealmName] = string(adminEvent.RealmId()) //realm_name
 	adminEventMap[database.CtEventOrigin] = "keycloak"                      //origin
@@ -250,8 +250,9 @@ func eventToMap(event *fb.Event) map[string]string {
 
 	addInfo["uid"] = fmt.Sprint(event.Uid())
 
-	time := epochMilliToTime(event.Time()).UTC()
-	eventMap[database.CtEventAuditTime] = time.Format(timeFormat) //audit_time
+	//TZ set to UTC and insert the time as a string
+	timeEvent := epochMilliToTime(event.Time()).UTC()
+	eventMap[database.CtEventAuditTime] = timeEvent.Format(timeFormat) //audit_time
 
 	eventMap[database.CtEventKcEventType] = fb.EnumNamesEventType[int8(event.Type())] // kc_event_type
 	eventMap[database.CtEventRealmName] = string(event.RealmId())                     //realm_name
