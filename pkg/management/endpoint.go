@@ -381,8 +381,7 @@ func MakeResetSmsCounterEndpoint(managementComponent ManagementComponent) cs.End
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		err := managementComponent.ResetSmsCounter(ctx, m["realm"], m["userID"])
-		return err
+		return nil, managementComponent.ResetSmsCounter(ctx, m["realm"], m["userID"])
 	}
 }
 

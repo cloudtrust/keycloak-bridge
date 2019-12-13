@@ -27,7 +27,7 @@ type UserRepresentation struct {
 	Groups              *[]string `json:"groups,omitempty"`
 	Roles               *[]string `json:"roles,omitempty"`
 	Locale              *string   `json:"locale,omitempty"`
-	SmsSent             *int64    `json:"smsSent,omitempty"`
+	SmsSent             *int      `json:"smsSent,omitempty"`
 }
 
 // UsersPageRepresentation used to manage paging in GetUsers
@@ -171,7 +171,8 @@ func ConvertToAPIUser(userKc kc.UserRepresentation) UserRepresentation {
 		}
 		if m["smsSent"] != nil {
 			var smsSent = m["smsSent"][0]
-			userRep.SmsSent = &smsSent
+			counter, _ := strconv.Atoi(smsSent)
+			userRep.SmsSent = &counter
 		}
 	}
 	return userRep

@@ -3,6 +3,7 @@ package management
 import (
 	"context"
 	"regexp"
+	"strconv"
 	"strings"
 
 	cs "github.com/cloudtrust/common-service"
@@ -40,7 +41,6 @@ type KeycloakClient interface {
 	ExecuteActionsEmail(accessToken string, realmName string, userID string, actions []string, paramKV ...string) error
 	SendNewEnrolmentCode(accessToken string, realmName string, userID string) (kc.SmsCodeRepresentation, error)
 	SendReminderEmail(accessToken string, realmName string, userID string, paramKV ...string) error
-	ResetSmsCounter(accessToken string, realmName string, userID string) error
 	GetRoles(accessToken string, realmName string) ([]kc.RoleRepresentation, error)
 	GetRole(accessToken string, realmName string, roleID string) (kc.RoleRepresentation, error)
 	GetGroups(accessToken string, realmName string) ([]kc.GroupRepresentation, error)
@@ -293,7 +293,6 @@ func (c *component) GetUser(ctx context.Context, realmName, userID string) (api.
 	if userKc.Username != nil {
 		username = *userKc.Username
 	}
-	fmt.Prinln(userRep)
 
 	//store the API call into the DB
 	c.reportEvent(ctx, "GET_DETAILS", database.CtEventRealmName, realmName, database.CtEventUserID, userID, database.CtEventUsername, username)
@@ -638,21 +637,27 @@ func (c *component) SendReminderEmail(ctx context.Context, realmName string, use
 
 func (c *component) ResetSmsCounter(ctx context.Context, realmName, userID string) error {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
-	var userRep kc.UserRepresentation
 
 	// get the user representation
 	userKc, err := c.keycloakClient.GetUser(accessToken, realmName, userID)
 	if err != nil {
-		c.logger.Warn("err", err.Error())
+		c.logger.Warn(ctx, "err", err.Error())
 		return err
 	}
-	//reset the counter
-	userKc.Attributes["smsSent"] = 0
+
+	//reset the counter, if the smsSent attribute exists
+	resetCounter := 0
+	if userKc.Attributes != nil {
+		var m = *userKc.Attributes
+		if m["smsSent"] != nil {
+			(*userKc.Attributes)["smsSent"][0] = strconv.Itoa(resetCounter)
+		}
+	}
 
 	err = c.keycloakClient.UpdateUser(accessToken, realmName, userID, userKc)
 
 	if err != nil {
-		c.logger.Warn("err", err.Error())
+		c.logger.Warn(ctx, "err", err.Error())
 		return err
 	}
 

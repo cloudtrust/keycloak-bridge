@@ -139,6 +139,9 @@ func TestDeny(t *testing.T) {
 		err = authorizationMW.SendReminderEmail(ctx, realmName, userID)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
+		err = authorizationMW.ResetSmsCounter(ctx, realmName, userID)
+		assert.Equal(t, security.ForbiddenError{}, err)
+
 		_, err = authorizationMW.GetCredentialsForUser(ctx, realmName, userID)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
@@ -243,6 +246,7 @@ func TestAllowed(t *testing.T) {
 					"ExecuteActionsEmail": {"*": {"*": {} }},
 					"SendNewEnrolmentCode": {"*": {"*": {} }},
 					"SendReminderEmail": {"*": {"*": {} }},
+					"ResetSmsCounter": {"*": {"*": {} }},
 					"GetCredentialsForUser": {"*": {"*": {} }},
 					"DeleteCredentialsForUser": {"*": {"*": {} }},
 					"GetRoles": {"*": {"*": {} }},
@@ -343,6 +347,10 @@ func TestAllowed(t *testing.T) {
 
 		mockManagementComponent.EXPECT().SendReminderEmail(ctx, realmName, userID).Return(nil).Times(1)
 		err = authorizationMW.SendReminderEmail(ctx, realmName, userID)
+		assert.Nil(t, err)
+
+		mockManagementComponent.EXPECT().ResetSmsCounter(ctx, realmName, userID).Return(nil).Times(1)
+		err = authorizationMW.ResetSmsCounter(ctx, realmName, userID)
 		assert.Nil(t, err)
 
 		mockManagementComponent.EXPECT().GetCredentialsForUser(ctx, realmName, userID).Return([]api.CredentialRepresentation{}, nil).Times(1)
