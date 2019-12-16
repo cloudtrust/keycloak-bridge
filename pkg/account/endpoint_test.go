@@ -108,3 +108,15 @@ func TestMakeMoveCredentialEndpoint(t *testing.T) {
 	_, err := MakeMoveCredentialEndpoint(mockAccountComponent)(context.Background(), m)
 	assert.Nil(t, err)
 }
+
+func TestMakeGetAccountEndpoint(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	mockAccountComponent := mock.NewAccountComponent(mockCtrl)
+	mockAccountComponent.EXPECT().GetAccount(gomock.Any()).Return(nil).Times(1)
+
+	m := map[string]string{}
+	_, err := MakeGetAccountEndpoint(mockAccountComponent)(context.Background(), m)
+	assert.Nil(t, err)
+}
