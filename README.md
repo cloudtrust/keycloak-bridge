@@ -86,6 +86,39 @@ It is manadatory to load an authorization JSON file, if no authorization file is
 
 The keycloak event-emitter module sends all events to the bridge's event endpoint. The event emitter use HTTP with flatbuffers.
 
+### Monitoring of keycloak-bridge
+
+An endpoint allows to get a status of the Bridge and its components health.
+URL: ```http://{bridge.host}:{bridge.port}/health/check```
+
+Status example:
+```
+{
+ "name": "keycloak-bridge",
+ "state": "DOWN",
+ "details": [
+  {
+   "name": "Audit R/W",
+   "type": "database",
+   "state": "DOWN",
+   "message": "bad connection"
+  },
+  {
+   "name": "Config RO",
+   "type": "database",
+   "state": "UP",
+   "connection": "established"
+  },
+  {
+   "name": "Keycloak",
+   "type": "http",
+   "state": "DOWN",
+   "message": "Can't hit target: Get http://127.0.0.1:8080: dial tcp 127.0.0.1:8080: connectex: No connection could be made because the target machine actively refused it."
+  }
+ ]
+}
+```
+
 ## About monitoring
 
 Each HTTP request will trigger a set of operations that are going to be logged, measured, tracked and traced. For those information to be usable, we must be able to link the logs, metrics, traces and error report together. We achieve that with a unique correlation ID. For a given request, the same correlation ID will appear on the logs, metrics, traces and error report.

@@ -14,6 +14,9 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/cloudtrust/common-service/database/sqltypes"
+	"github.com/cloudtrust/common-service/healthcheck"
+
 	cs "github.com/cloudtrust/common-service"
 	"github.com/cloudtrust/common-service/database"
 	errorhandler "github.com/cloudtrust/common-service/errors"
@@ -261,45 +264,55 @@ func main() {
 		defer tracer.Close()
 	}
 
-	var eventsDBConn database.CloudtrustDB
+	var eventsDBConn sqltypes.CloudtrustDB
 	{
 		var err error
-		eventsDBConn, err = auditRwDbParams.OpenDatabase()
+		eventsDBConn, err = database.NewReconnectableCloudtrustDB(auditRwDbParams)
 		if err != nil {
 			logger.Error(ctx, "msg", "could not create R/W DB connection for audit events", "error", err)
 			return
 		}
 	}
 
-	var eventsRODBConn database.CloudtrustDB
+	var eventsRODBConn sqltypes.CloudtrustDB
 	{
 		var err error
-		eventsRODBConn, err = auditRoDbParams.OpenDatabase()
+		eventsRODBConn, err = database.NewReconnectableCloudtrustDB(auditRoDbParams)
 		if err != nil {
 			logger.Error(ctx, "msg", "could not create RO DB connection for audit events", "error", err)
 			return
 		}
 	}
 
-	var configurationRwDBConn database.CloudtrustDB
+	var configurationRwDBConn sqltypes.CloudtrustDB
 	{
 		var err error
-		configurationRwDBConn, err = configRwDbParams.OpenDatabase()
+		configurationRwDBConn, err = database.NewReconnectableCloudtrustDB(configRwDbParams)
 		if err != nil {
 			logger.Error(ctx, "msg", "could not create DB connection for configuration storage (RW)", "error", err)
 			return
 		}
 	}
 
-	var configurationRoDBConn database.CloudtrustDB
+	var configurationRoDBConn sqltypes.CloudtrustDB
 	{
 		var err error
-		configurationRoDBConn, err = configRoDbParams.OpenDatabase()
+		configurationRoDBConn, err = database.NewReconnectableCloudtrustDB(configRoDbParams)
 		if err != nil {
 			logger.Error(ctx, "msg", "could not create DB connection for configuration storage (RO)", "error", err)
 			return
 		}
 	}
+
+	// Health check configuration
+	var healthChecker = healthcheck.NewHealthChecker(keycloakb.ComponentName, logger)
+	var healthCheckCacheDuration = c.GetDuration("livenessprobe-cache-duration") * time.Second
+	var httpTimeout = c.GetDuration("livenessprobe-http-timeout") * time.Second
+	healthChecker.AddDatabase("Audit R/W", eventsDBConn, healthCheckCacheDuration)
+	healthChecker.AddDatabase("Audit RO", eventsRODBConn, healthCheckCacheDuration)
+	healthChecker.AddDatabase("Config R/W", configurationRwDBConn, healthCheckCacheDuration)
+	healthChecker.AddDatabase("Config RO", configurationRoDBConn, healthCheckCacheDuration)
+	healthChecker.AddHTTPEndpoint("Keycloak", keycloakConfig.AddrAPI, httpTimeout, 200, healthCheckCacheDuration)
 
 	// Event service.
 	var eventEndpoints = event.Endpoints{}
@@ -525,6 +538,7 @@ func main() {
 
 		// Version.
 		route.Handle("/", commonhttp.MakeVersionHandler(keycloakb.ComponentName, ComponentID, keycloakb.Version, Environment, GitCommit))
+		route.Handle("/health/check", healthChecker.MakeHandler())
 
 		// Event.
 		var eventSubroute = route.PathPrefix("/event").Subrouter()
@@ -569,6 +583,7 @@ func main() {
 
 		// Version.
 		route.Handle("/", http.HandlerFunc(commonhttp.MakeVersionHandler(keycloakb.ComponentName, ComponentID, keycloakb.Version, Environment, GitCommit)))
+		route.Handle("/health/check", healthChecker.MakeHandler())
 
 		// Rights
 		var rightsHandler = configureRightsHandler(keycloakb.ComponentName, ComponentID, idGenerator, authorizationManager, keycloakClient, audienceRequired, tracer, logger)
@@ -712,6 +727,7 @@ func main() {
 
 		// Version.
 		route.Handle("/", http.HandlerFunc(commonhttp.MakeVersionHandler(keycloakb.ComponentName, ComponentID, keycloakb.Version, Environment, GitCommit)))
+		route.Handle("/health/check", healthChecker.MakeHandler())
 
 		// Account
 		var updatePasswordHandler = configureAccountHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(accountEndpoints.UpdatePassword)
@@ -851,6 +867,10 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 
 	// Debug routes enabled.
 	v.SetDefault("pprof-route-enabled", true)
+
+	// Liveness probe
+	v.SetDefault("livenessprobe-http-timeout", 5)
+	v.SetDefault("livenessprobe-cache-duration", 10)
 
 	// First level of override.
 	pflag.String("config-file", v.GetString("config-file"), "The configuration file path can be relative or absolute.")

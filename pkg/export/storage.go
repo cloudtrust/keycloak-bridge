@@ -3,6 +3,7 @@ package export
 import (
 	"database/sql"
 
+	"github.com/cloudtrust/common-service/database/sqltypes"
 	internal "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/pkg/errors"
 )
@@ -24,7 +25,7 @@ type StorageModule struct {
 // DB interface
 type DB interface {
 	Exec(query string, args ...interface{}) (sql.Result, error)
-	QueryRow(query string, args ...interface{}) *sql.Row
+	QueryRow(query string, args ...interface{}) sqltypes.SQLRow
 }
 
 // NewConfigStorageModule returns the storage module.

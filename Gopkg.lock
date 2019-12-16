@@ -18,12 +18,15 @@
   version = "2018.01.18"
 
 [[projects]]
-  digest = "1:60ea23b7ed3a67fac14c3db423da3454b601552e5084fc8adb054dac4c55b1cb"
+  branch = "jira-2064"
+  digest = "1:dcbad43e7b7aeda88e403ae84473cf2dab4e4568cfc6b4316f2da9f3369f18cf"
   name = "github.com/cloudtrust/common-service"
   packages = [
     ".",
     "database",
+    "database/sqltypes",
     "errors",
+    "healthcheck",
     "http",
     "idgenerator",
     "log",
@@ -34,16 +37,15 @@
     "tracking",
   ]
   pruneopts = "UT"
-  revision = "c70fa40bf8452fc44dd84d8e20d3f037bd14fce1"
-  version = "v1.2.2"
+  revision = "1e7bf2c8f15b13c3ba06b5a74959df2f07a06f4a"
 
 [[projects]]
-  digest = "1:a307ae9193bfd1d4c72e27113af4955483ab264db159d3371eed5c4b4c7949ef"
+  branch = "jira-2064"
+  digest = "1:db3536980b9794fb3ca22e01812b81c39153149ca35bd4f719850d9cb814f338"
   name = "github.com/cloudtrust/keycloak-client"
   packages = ["."]
   pruneopts = "UT"
-  revision = "2414a4a82a5216bf7f8d4a3eec68431153720ef2"
-  version = "v1.2.1"
+  revision = "24f8ae3f2e892469424d2539965e7223817ec95d"
 
 [[projects]]
   digest = "1:d64c893fc7d2c3d395f421b00d21f0adb8ceffc4d3c90299e732b3985ca16eb4"
@@ -191,7 +193,7 @@
   revision = "b84e30acd515aadc4b783ad4ff83aff3299bdfe0"
 
 [[projects]]
-  digest = "1:12cb143f2148bf54bcd9fe622abac17325e85eeb1d84b8ec6caf1c80232108fd"
+  digest = "1:9ff22c26414baf7deaf74f2a788fe7b97666048bcbe346c52cfe823442abbdfb"
   name = "github.com/lib/pq"
   packages = [
     ".",
@@ -199,8 +201,8 @@
     "scram",
   ]
   pruneopts = "UT"
-  revision = "3427c32cb71afc948325f299f040e53c1dd78979"
-  version = "v1.2.0"
+  revision = "99274577be97ac9b1d95a2d61d566dc9b7cc6a54"
+  version = "v1.3.0"
 
 [[projects]]
   digest = "1:5a0ef768465592efca0412f7e838cdc0826712f8447e70e6ccc52eb441e9ab13"
@@ -285,12 +287,12 @@
   version = "v1.2.2"
 
 [[projects]]
-  digest = "1:08d65904057412fc0270fc4812a1c90c594186819243160dc779a402d4b6d0bc"
+  digest = "1:ff4cd55a3666b6ea3a876c9e133bfb54d6c812e725409a773f2c94a0b3a92f4f"
   name = "github.com/spf13/cast"
   packages = ["."]
   pruneopts = "UT"
-  revision = "8c9545af88b134710ab1cd196795e7f2388358d7"
-  version = "v1.3.0"
+  revision = "1ffadf551085444af981432dd0f6d1160c11ec64"
+  version = "v1.3.1"
 
 [[projects]]
   digest = "1:1b753ec16506f5864d26a28b43703c58831255059644351bbcb019b843950900"
@@ -309,12 +311,12 @@
   version = "v1.0.5"
 
 [[projects]]
-  digest = "1:0b60fc944fb6a7b6c985832bd341bdb7ed8fe894fea330414e7774bb24652962"
+  digest = "1:8d0b79a29be9946ea00b2f2b778ec5b36db07453d97abe9d754b25bc2cc49a0e"
   name = "github.com/spf13/viper"
   packages = ["."]
   pruneopts = "UT"
-  revision = "72b022eb357a56469725dcd03918449e2278d02e"
-  version = "v1.5.0"
+  revision = "eabbc68a3ecd5cf8c11a2f84dbda5e7a38493b2f"
+  version = "v1.6.1"
 
 [[projects]]
   digest = "1:8548c309c65a85933a625be5e7d52b6ac927ca30c56869fae58123b8a77a75e1"
@@ -384,7 +386,7 @@
     "pbkdf2",
   ]
   pruneopts = "UT"
-  revision = "86a70503ff7e82ffc18c7b0de83db35da4791e6a"
+  revision = "e9b2fee46413994441b28dfca259d911d963dfed"
 
 [[projects]]
   branch = "master"
@@ -408,7 +410,7 @@
     "publicsuffix",
   ]
   pruneopts = "UT"
-  revision = "ef20fe5d793301b553005db740f730d87993f778"
+  revision = "c0dbc17a35534bf2e581d7a942408dc936316da4"
 
 [[projects]]
   branch = "master"
@@ -423,11 +425,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:72f7bc975a18badcb4b05585929a12e042ab45cb0bee781aaab8044f39bd41f5"
+  digest = "1:d2596218ce23d219199231ef6b5108ab3accc4fd1d63ba90ae465121eec44781"
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = "UT"
-  revision = "6d18c012aee9febd81bbf9806760c8c4480e870d"
+  revision = "4a24b406529242041050cb1dec3e0e4c46a5f1b6"
 
 [[projects]]
   digest = "1:8d8faad6b12a3a4c819a3f9618cb6ee1fa1cfc33253abeeea8b55336721e3405"
@@ -473,7 +475,7 @@
     "go/types/typeutil",
   ]
   pruneopts = "UT"
-  revision = "c197fd4bf3712fd6a7d00f39b376956dd5d58449"
+  revision = "979b82bfef62cbd5954bf1ec69c0fec5dbf2a1e0"
 
 [[projects]]
   digest = "1:602f92501b1cc299f1febc5febb27acdf80c4bc70aaa833942e8000e2e77ddee"
@@ -516,7 +518,15 @@
   version = "v2.0.3"
 
 [[projects]]
-  digest = "1:8ebd7bc4892e673e8d3c6377c71e8c691b92c5e51cd3159efb8343b580213b70"
+  digest = "1:591460fbfc463bda7071ac906bed19cbf64cffd5fcb80a6d1490e87b9dfad942"
+  name = "gopkg.in/ini.v1"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "87e589f4917038ae250cff2446db7573f47e97ca"
+  version = "v1.51.0"
+
+[[projects]]
+  digest = "1:3c4aaca5a82adc021322f239e0cf3f46852bb0b18ae050d0feab2e9e4c527462"
   name = "gopkg.in/square/go-jose.v2"
   packages = [
     ".",
@@ -524,8 +534,8 @@
     "json",
   ]
   pruneopts = "UT"
-  revision = "8fd82ff1d52a5162ff23c0a48e2c64a1fa4a3f8f"
-  version = "v2.4.0"
+  revision = "4ef0f1b175ccd65472d154e1207c4d7b8102545f"
+  version = "v2.4.1"
 
 [[projects]]
   digest = "1:b75b3deb2bce8bc079e16bb2aecfe01eb80098f5650f9e93e5643ca8b7b73737"
@@ -541,7 +551,9 @@
   input-imports = [
     "github.com/cloudtrust/common-service",
     "github.com/cloudtrust/common-service/database",
+    "github.com/cloudtrust/common-service/database/sqltypes",
     "github.com/cloudtrust/common-service/errors",
+    "github.com/cloudtrust/common-service/healthcheck",
     "github.com/cloudtrust/common-service/http",
     "github.com/cloudtrust/common-service/idgenerator",
     "github.com/cloudtrust/common-service/log",
