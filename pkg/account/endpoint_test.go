@@ -30,6 +30,7 @@ func TestMakeUpdatePasswordEndpoint(t *testing.T) {
 		_, err := MakeUpdatePasswordEndpoint(mockAccountComponent)(context.Background(), m)
 		assert.NotNil(t, err)
 	}
+
 }
 
 func TestMakeGetCredentialsEndpoint(t *testing.T) {
@@ -77,6 +78,12 @@ func TestMakeUpdateLabelCredentialEndpoint(t *testing.T) {
 		_, err := MakeUpdateLabelCredentialEndpoint(mockAccountComponent)(context.Background(), m)
 		assert.NotNil(t, err)
 	}
+	{
+		m["body"] = "{ \"phoneNumber\": \"label\"}"
+		m["credentialID"] = "id"
+		_, err := MakeUpdateLabelCredentialEndpoint(mockAccountComponent)(context.Background(), m)
+		assert.NotNil(t, err)
+	}
 
 }
 
@@ -106,5 +113,68 @@ func TestMakeMoveCredentialEndpoint(t *testing.T) {
 	m["credentialID"] = "id1"
 	m["previousCredentialID"] = "id2"
 	_, err := MakeMoveCredentialEndpoint(mockAccountComponent)(context.Background(), m)
+	assert.Nil(t, err)
+}
+
+func TestMakeGetAccountEndpoint(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	mockAccountComponent := mock.NewAccountComponent(mockCtrl)
+	mockAccountComponent.EXPECT().GetAccount(gomock.Any()).Return(account_api.AccountRepresentation{}, nil).Times(1)
+
+	m := map[string]string{}
+	_, err := MakeGetAccountEndpoint(mockAccountComponent)(context.Background(), m)
+	assert.Nil(t, err)
+}
+
+func TestMakeUpdateAccountEndpoint(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	mockAccountComponent := mock.NewAccountComponent(mockCtrl)
+	mockAccountComponent.EXPECT().UpdateAccount(gomock.Any(), account_api.AccountRepresentation{}).Return(nil).Times(1)
+	{
+		m := map[string]string{}
+		m["body"] = "{ \"userLabel\": \"label\"}"
+		_, err := MakeUpdateAccountEndpoint(mockAccountComponent)(context.Background(), m)
+		assert.Nil(t, err)
+	}
+	{
+		m := map[string]string{}
+		m["body"] = "{"
+		_, err := MakeUpdateAccountEndpoint(mockAccountComponent)(context.Background(), m)
+		assert.NotNil(t, err)
+	}
+	{
+		m := map[string]string{}
+		m["body"] = "{\"phoneNumber\": \"label\"}"
+		_, err := MakeUpdateAccountEndpoint(mockAccountComponent)(context.Background(), m)
+		assert.NotNil(t, err)
+	}
+
+}
+
+func TestMakeDeleteAccountEndpoint(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	mockAccountComponent := mock.NewAccountComponent(mockCtrl)
+	mockAccountComponent.EXPECT().DeleteAccount(gomock.Any()).Return(nil).Times(1)
+
+	m := map[string]string{}
+	_, err := MakeDeleteAccountEndpoint(mockAccountComponent)(context.Background(), m)
+	assert.Nil(t, err)
+}
+
+func TestMakeGetConfigurationEndpoint(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	mockAccountComponent := mock.NewAccountComponent(mockCtrl)
+	mockAccountComponent.EXPECT().GetConfiguration(gomock.Any()).Return(account_api.Configuration{}, nil).Times(1)
+
+	m := map[string]string{}
+	_, err := MakeGetConfigurationEndpoint(mockAccountComponent)(context.Background(), m)
 	assert.Nil(t, err)
 }
