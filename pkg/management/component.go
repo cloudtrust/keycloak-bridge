@@ -589,7 +589,6 @@ func (c *component) ExecuteActionsEmail(ctx context.Context, realmName string, u
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 
 	var actions = []string{}
-
 	for _, requiredAction := range requiredActions {
 		actions = append(actions, string(requiredAction))
 		if string(requiredAction) == initPasswordAction {
@@ -597,6 +596,12 @@ func (c *component) ExecuteActionsEmail(ctx context.Context, realmName string, u
 			c.reportEvent(ctx, "INIT_PASSWORD", database.CtEventRealmName, realmName, database.CtEventUserID, userID)
 		}
 	}
+
+	//store the API call into the DB with the parameters and the required actions
+	listActions := strings.Join(actions, ",")
+	values := append(paramKV, "required_actions", listActions)
+	additionalInfo := database.CreateAdditionalInfo(values...)
+	c.reportEvent(ctx, "ACTION_EMAIL", database.CtEventRealmName, realmName, database.CtEventUserID, userID, database.CtEventAdditionalInfo, additionalInfo)
 
 	err := c.keycloakClient.ExecuteActionsEmail(accessToken, realmName, userID, actions, paramKV...)
 

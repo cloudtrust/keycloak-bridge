@@ -1567,7 +1567,6 @@ func TestExecuteActionsEmail(t *testing.T) {
 	var userID = "1245-7854-8963"
 	var reqActions = []api.RequiredAction{initPasswordAction, "action1", "action2"}
 	var actions = []string{initPasswordAction, "action1", "action2"}
-
 	var key1 = "key1"
 	var value1 = "value1"
 	var key2 = "key2"
@@ -1579,22 +1578,38 @@ func TestExecuteActionsEmail(t *testing.T) {
 		mockKeycloakClient.EXPECT().ExecuteActionsEmail(accessToken, realmName, userID, actions, key1, value1, key2, value2).Return(nil).Times(1)
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
-		mockEventDBModule.EXPECT().ReportEvent(ctx, "INIT_PASSWORD", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(2)
+		mockEventDBModule.EXPECT().ReportEvent(ctx, "INIT_PASSWORD", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
+		mockEventDBModule.EXPECT().ReportEvent(ctx, "ACTION_EMAIL", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 
 		err := managementComponent.ExecuteActionsEmail(ctx, "master", userID, reqActions, key1, value1, key2, value2)
 
 		assert.Nil(t, err)
 	}
-
 	// Error
 	{
 		mockKeycloakClient.EXPECT().ExecuteActionsEmail(accessToken, realmName, userID, actions).Return(fmt.Errorf("Invalid input")).Times(1)
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		mockEventDBModule.EXPECT().ReportEvent(ctx, "ACTION_EMAIL", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
+		mockEventDBModule.EXPECT().ReportEvent(ctx, "INIT_PASSWORD", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 
 		err := managementComponent.ExecuteActionsEmail(ctx, "master", userID, reqActions)
 
 		assert.NotNil(t, err)
+	}
+	// Send email actions, but not sms-password-set
+	{
+
+		var actions2 = []string{"action1", "action2"}
+		var reqActions2 = []api.RequiredAction{"action1", "action2"}
+		mockKeycloakClient.EXPECT().ExecuteActionsEmail(accessToken, realmName, userID, actions2, key1, value1, key2, value2).Return(nil).Times(1)
+
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		mockEventDBModule.EXPECT().ReportEvent(ctx, "ACTION_EMAIL", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
+
+		err := managementComponent.ExecuteActionsEmail(ctx, "master", userID, reqActions2, key1, value1, key2, value2)
+
+		assert.Nil(t, err)
 	}
 }
 
