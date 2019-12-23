@@ -2,6 +2,7 @@ package statistics
 
 import (
 	"context"
+	"regexp"
 	"time"
 
 	cs "github.com/cloudtrust/common-service"
@@ -138,6 +139,11 @@ func (ec *component) GetStatisticsAuthentications(ctx context.Context, realmName
 func (ec *component) GetStatisticsAuthenticationsLog(ctx context.Context, realmName string, max string) ([]api.StatisticsConnectionRepresentation, error) {
 
 	var res []api.StatisticsConnectionRepresentation
+
+	if ok, _ := regexp.MatchString(api.RegExpTwoDigitsNumber, max); !ok {
+		ec.logger.Warn(ctx, "err", "Invalid parameter max")
+		return nil, errorhandler.CreateBadRequestError(internal.MsgErrInvalidParam + "." + internal.Max)
+	}
 
 	res, err := ec.db.GetLastConnections(ctx, realmName, max)
 	if err != nil {

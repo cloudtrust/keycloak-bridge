@@ -227,4 +227,10 @@ func TestGetStatisticsAuthenticationsLog(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Equal(t, resExpected, res)
 	}
+	{ // fails - invalid param max
+		res, err := component.GetStatisticsAuthenticationsLog(ctx, realm, "101")
+
+		assert.NotNil(t, err)
+		assert.Nil(t, res)
+	}
 }
