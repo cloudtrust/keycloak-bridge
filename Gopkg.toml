@@ -27,12 +27,12 @@
 
 [[constraint]]
   name = "github.com/cloudtrust/common-service"
-  branch = "jira-2064"
+  branch = "master"
   #version = "v1.2.2"
 
 [[constraint]]
   name = "github.com/cloudtrust/keycloak-client"
-  branch = "jira-2064"
+  branch = "master"
   #version = "v1.2.1"
 
 [[constraint]]
