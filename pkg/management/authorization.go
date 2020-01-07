@@ -31,6 +31,7 @@ const (
 	SendNewEnrolmentCode           = "SendNewEnrolmentCode"
 	SendReminderEmail              = "SendReminderEmail"
 	ResetSmsCounter                = "ResetSmsCounter"
+	RecoveryCode                   = "RecoveryCode"
 	GetCredentialsForUser          = "GetCredentialsForUser"
 	DeleteCredentialsForUser       = "DeleteCredentialsForUser"
 	GetRoles                       = "GetRoles"
@@ -239,6 +240,17 @@ func (c *authorizationComponentMW) ResetPassword(ctx context.Context, realmName 
 	}
 
 	return c.next.ResetPassword(ctx, realmName, userID, password)
+}
+
+func (c *authorizationComponentMW) RecoveryCode(ctx context.Context, realmName string, userID string) (string, error) {
+	var action = RecoveryCode
+	var targetRealm = realmName
+
+	if err := c.authManager.CheckAuthorizationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
+		return "", err
+	}
+
+	return c.next.RecoveryCode(ctx, realmName, userID)
 }
 
 func (c *authorizationComponentMW) SendVerifyEmail(ctx context.Context, realmName string, userID string, paramKV ...string) error {

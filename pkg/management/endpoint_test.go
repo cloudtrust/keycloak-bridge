@@ -686,6 +686,28 @@ func TestResetSmsCounterEndpoint(t *testing.T) {
 
 }
 
+func TestRecoveryCodeEndpoint(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
+
+	var e = MakeRecoveryCodeEndpoint(mockManagementComponent)
+
+	var realm = "master"
+	var userID = "123-456-789"
+	var ctx = context.Background()
+	var req = make(map[string]string)
+	req["realm"] = realm
+	req["userID"] = userID
+
+	mockManagementComponent.EXPECT().RecoveryCode(ctx, realm, userID).Return("123456", nil).Times(1)
+	var res, err = e(ctx, req)
+	assert.Nil(t, err)
+	assert.Equal(t, "123456", res)
+
+}
+
 func TestGetCredentialsForUserEndpoint(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()

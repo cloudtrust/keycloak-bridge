@@ -40,12 +40,12 @@
   revision = "e164d81b968e97a3fc079275352764978e35ab42"
 
 [[projects]]
-  branch = "master"
-  digest = "1:9f6d4c5d4f68f1195fba4c4fc0b6e10424eaff07965ff0d656dc056f24d5ea04"
+  branch = "CLOUDTRUST-2147_RecoveryModeAPI"
+  digest = "1:4ed30ae83a9812587b9c1f6c5d6ffdc38996c9aed45c7a0c71140c0f246672f1"
   name = "github.com/cloudtrust/keycloak-client"
   packages = ["."]
   pruneopts = "UT"
-  revision = "eaca1582c80f7441ac7baa6d39d68b08e4ac3ffd"
+  revision = "80397ac336a938078a0a41c7e42aa3f08ef38595"
 
 [[projects]]
   digest = "1:d64c893fc7d2c3d395f421b00d21f0adb8ceffc4d3c90299e732b3985ca16eb4"
@@ -138,7 +138,7 @@
   version = "v1.3.2"
 
 [[projects]]
-  digest = "1:debcbc62c53851dab1fc881438a65449dd5ffa12f64f059fd6e32b938799513d"
+  digest = "1:e02b687ade0c19c038ecce3ea326d756519adc4bba1203a9e76d620b12354892"
   name = "github.com/google/flatbuffers"
   packages = ["go"]
   pruneopts = "UT"
@@ -173,7 +173,7 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:c266355b17e65dc0128f4a9df906567b28e135b774e0b395aab3d748af0871e2"
+  digest = "1:9b73396bc7a21f88702fe3d314ca7860843c08f9c787bb47f008075f840df23d"
   name = "github.com/influxdata/influxdb"
   packages = [
     "client/v2",
