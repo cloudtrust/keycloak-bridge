@@ -692,7 +692,7 @@ func TestRecoveryCodeEndpoint(t *testing.T) {
 
 	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
 
-	var e = MakeRecoveryCodeEndpoint(mockManagementComponent)
+	var e = MakeCreateRecoveryCodeEndpoint(mockManagementComponent)
 
 	var realm = "master"
 	var userID = "123-456-789"
@@ -701,7 +701,7 @@ func TestRecoveryCodeEndpoint(t *testing.T) {
 	req["realm"] = realm
 	req["userID"] = userID
 
-	mockManagementComponent.EXPECT().RecoveryCode(ctx, realm, userID).Return("123456", nil).Times(1)
+	mockManagementComponent.EXPECT().CreateRecoveryCode(ctx, realm, userID).Return("123456", nil).Times(1)
 	var res, err = e(ctx, req)
 	assert.Nil(t, err)
 	assert.Equal(t, "123456", res)

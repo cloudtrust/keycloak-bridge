@@ -1537,9 +1537,9 @@ func TestRecoveryCode(t *testing.T) {
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 
-		mockEventDBModule.EXPECT().ReportEvent(ctx, "RECOVERY_CODE", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
+		mockEventDBModule.EXPECT().ReportEvent(ctx, "CREATE_RECOVERY_CODE", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 
-		recoveryCode, err := managementComponent.RecoveryCode(ctx, "master", userID)
+		recoveryCode, err := managementComponent.CreateRecoveryCode(ctx, "master", userID)
 
 		assert.Nil(t, err)
 		assert.Equal(t, code, recoveryCode)
@@ -1560,7 +1560,7 @@ func TestRecoveryCode(t *testing.T) {
 		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 
 		mockLogger.EXPECT().Warn(gomock.Any(), "err", "409:Conflict")
-		_, err := managementComponent.RecoveryCode(ctx, "master", userID)
+		_, err := managementComponent.CreateRecoveryCode(ctx, "master", userID)
 
 		assert.NotNil(t, err)
 	}
@@ -1575,7 +1575,7 @@ func TestRecoveryCode(t *testing.T) {
 		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 
 		mockLogger.EXPECT().Warn(gomock.Any(), "err", "Error")
-		_, err := managementComponent.RecoveryCode(ctx, "master", userID)
+		_, err := managementComponent.CreateRecoveryCode(ctx, "master", userID)
 
 		assert.NotNil(t, err)
 	}

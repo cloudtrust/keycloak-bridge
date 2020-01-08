@@ -142,7 +142,7 @@ func TestDeny(t *testing.T) {
 		err = authorizationMW.ResetSmsCounter(ctx, realmName, userID)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
-		_, err = authorizationMW.RecoveryCode(ctx, realmName, userID)
+		_, err = authorizationMW.CreateRecoveryCode(ctx, realmName, userID)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
 		_, err = authorizationMW.GetCredentialsForUser(ctx, realmName, userID)
@@ -250,7 +250,7 @@ func TestAllowed(t *testing.T) {
 					"SendNewEnrolmentCode": {"*": {"*": {} }},
 					"SendReminderEmail": {"*": {"*": {} }},
 					"ResetSmsCounter": {"*": {"*": {} }},
-					"RecoveryCode": {"*": {"*": {} }},
+					"CreateRecoveryCode": {"*": {"*": {} }},
 					"GetCredentialsForUser": {"*": {"*": {} }},
 					"DeleteCredentialsForUser": {"*": {"*": {} }},
 					"GetRoles": {"*": {"*": {} }},
@@ -357,8 +357,8 @@ func TestAllowed(t *testing.T) {
 		err = authorizationMW.ResetSmsCounter(ctx, realmName, userID)
 		assert.Nil(t, err)
 
-		mockManagementComponent.EXPECT().RecoveryCode(ctx, realmName, userID).Return("123456", nil).Times(1)
-		code, err := authorizationMW.RecoveryCode(ctx, realmName, userID)
+		mockManagementComponent.EXPECT().CreateRecoveryCode(ctx, realmName, userID).Return("123456", nil).Times(1)
+		code, err := authorizationMW.CreateRecoveryCode(ctx, realmName, userID)
 		assert.Nil(t, err)
 		assert.NotNil(t, code)
 

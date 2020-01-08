@@ -82,7 +82,7 @@ type Component interface {
 	SendNewEnrolmentCode(ctx context.Context, realmName string, userID string) (string, error)
 	SendReminderEmail(ctx context.Context, realmName string, userID string, paramKV ...string) error
 	ResetSmsCounter(ctx context.Context, realmName string, userID string) error
-	RecoveryCode(ctx context.Context, realmName string, userID string) (string, error)
+	CreateRecoveryCode(ctx context.Context, realmName string, userID string) (string, error)
 	GetCredentialsForUser(ctx context.Context, realmName string, userID string) ([]api.CredentialRepresentation, error)
 	DeleteCredentialsForUser(ctx context.Context, realmName string, userID string, credentialID string) error
 	GetRoles(ctx context.Context, realmName string) ([]api.RoleRepresentation, error)
@@ -663,7 +663,7 @@ func (c *component) ResetSmsCounter(ctx context.Context, realmName, userID strin
 	return nil
 }
 
-func (c *component) RecoveryCode(ctx context.Context, realmName, userID string) (string, error) {
+func (c *component) CreateRecoveryCode(ctx context.Context, realmName, userID string) (string, error) {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 
 	recoveryCodeKc, err := c.keycloakClient.CreateRecoveryCode(accessToken, realmName, userID)
@@ -674,7 +674,7 @@ func (c *component) RecoveryCode(ctx context.Context, realmName, userID string) 
 	}
 
 	// store the API call into the DB
-	c.reportEvent(ctx, "RECOVERY_CODE", database.CtEventRealmName, realmName, database.CtEventUserID, userID)
+	c.reportEvent(ctx, "CREATE_RECOVERY_CODE", database.CtEventRealmName, realmName, database.CtEventUserID, userID)
 
 	return *recoveryCodeKc.Code, err
 }
