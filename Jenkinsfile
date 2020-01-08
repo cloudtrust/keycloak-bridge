@@ -50,7 +50,7 @@ pipeline {
             golint | tee golint.out || true
             gometalinter | tee gometalinter.out || true
 
-            nancy -noColor Gopkg.lock || true
+            nancy -no-color Gopkg.lock || true
 
             JAVA_TOOL_OPTIONS="" sonar-scanner \
               -Dsonar.host.url=http://sonarqube:9000 \
