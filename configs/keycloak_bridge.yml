@@ -140,3 +140,7 @@ jaeger-write-interval: 1s
 
 # Debug routes
 pprof-route-enabled: true
+
+# Liveness probe
+livenessprobe-http-timeout: 5
+livenessprobe-cache-duration: 10

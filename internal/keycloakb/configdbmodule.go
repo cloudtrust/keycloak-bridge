@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 
+	"github.com/cloudtrust/common-service/database/sqltypes"
 	errorhandler "github.com/cloudtrust/common-service/errors"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 )
@@ -19,7 +20,7 @@ const (
 // DBConfiguration interface
 type DBConfiguration interface {
 	Exec(query string, args ...interface{}) (sql.Result, error)
-	QueryRow(query string, args ...interface{}) *sql.Row
+	QueryRow(query string, args ...interface{}) sqltypes.SQLRow
 }
 
 type configurationDBModule struct {
@@ -52,14 +53,14 @@ func (c *configurationDBModule) GetConfiguration(context context.Context, realmI
 
 	switch err := row.Scan(&configJSON); err {
 	case sql.ErrNoRows:
-		return dto.RealmConfiguration{}, errorhandler.Error{
+		return config, errorhandler.Error{
 			Status:  404,
 			Message: ComponentName + "." + MsgErrNotConfigured + "." + RealmConfiguration + "." + realmID,
 		}
 
 	default:
 		if err != nil {
-			return dto.RealmConfiguration{}, err
+			return config, err
 		}
 
 		err = json.Unmarshal([]byte(configJSON), &config)
