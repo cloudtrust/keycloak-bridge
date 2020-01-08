@@ -1509,6 +1509,79 @@ func TestResetPassword(t *testing.T) {
 
 }
 
+func TestRecoveryCode(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
+	var mockEventDBModule = mock.NewEventDBModule(mockCtrl)
+	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
+	var mockLogger = mock.NewLogger(mockCtrl)
+
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule, mockLogger)
+
+	var accessToken = "TOKEN=="
+	var realmName = "master"
+	var userID = "41dbf4a8-32a9-4000-8c17-edc854c31231"
+	var username = "username"
+	var code = "123456"
+
+	// RecoveryCode
+	{
+		var kcCodeRep = kc.RecoveryCodeRepresentation{
+			Code: &code,
+		}
+
+		mockKeycloakClient.EXPECT().CreateRecoveryCode(accessToken, realmName, userID).Return(kcCodeRep, nil).Times(1)
+
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
+		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
+
+		mockEventDBModule.EXPECT().ReportEvent(ctx, "CREATE_RECOVERY_CODE", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
+
+		recoveryCode, err := managementComponent.CreateRecoveryCode(ctx, "master", userID)
+
+		assert.Nil(t, err)
+		assert.Equal(t, code, recoveryCode)
+	}
+
+	// RecoveryCode already exists
+	{
+		var err409 = kc.HTTPError{
+			HTTPStatus: 409,
+			Message:    "Conflict",
+		}
+		var kcCodeRep = kc.RecoveryCodeRepresentation{}
+
+		mockKeycloakClient.EXPECT().CreateRecoveryCode(accessToken, realmName, userID).Return(kcCodeRep, err409).Times(1)
+
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
+		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
+
+		mockLogger.EXPECT().Warn(gomock.Any(), "err", "409:Conflict")
+		_, err := managementComponent.CreateRecoveryCode(ctx, "master", userID)
+
+		assert.NotNil(t, err)
+	}
+
+	// Error
+	{
+		var kcCodeRep = kc.RecoveryCodeRepresentation{}
+		mockKeycloakClient.EXPECT().CreateRecoveryCode(accessToken, realmName, userID).Return(kcCodeRep, fmt.Errorf("Error")).Times(1)
+
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
+		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
+
+		mockLogger.EXPECT().Warn(gomock.Any(), "err", "Error")
+		_, err := managementComponent.CreateRecoveryCode(ctx, "master", userID)
+
+		assert.NotNil(t, err)
+	}
+
+}
+
 func TestSendVerifyEmail(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()

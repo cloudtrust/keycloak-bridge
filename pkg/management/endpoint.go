@@ -37,6 +37,7 @@ type Endpoints struct {
 	SendNewEnrolmentCode           endpoint.Endpoint
 	SendReminderEmail              endpoint.Endpoint
 	ResetSmsCounter                endpoint.Endpoint
+	CreateRecoveryCode             endpoint.Endpoint
 	GetCredentialsForUser          endpoint.Endpoint
 	DeleteCredentialsForUser       endpoint.Endpoint
 	GetRoles                       endpoint.Endpoint
@@ -71,6 +72,7 @@ type ManagementComponent interface {
 	SendNewEnrolmentCode(ctx context.Context, realmName string, userID string) (string, error)
 	SendReminderEmail(ctx context.Context, realmName string, userID string, paramKV ...string) error
 	ResetSmsCounter(ctx context.Context, realmName string, userID string) error
+	CreateRecoveryCode(ctx context.Context, realmName string, userID string) (string, error)
 	GetCredentialsForUser(ctx context.Context, realmName string, userID string) ([]api.CredentialRepresentation, error)
 	DeleteCredentialsForUser(ctx context.Context, realmName string, userID string, credentialID string) error
 	GetRoles(ctx context.Context, realmName string) ([]api.RoleRepresentation, error)
@@ -382,6 +384,15 @@ func MakeResetSmsCounterEndpoint(managementComponent ManagementComponent) cs.End
 		var m = req.(map[string]string)
 
 		return nil, managementComponent.ResetSmsCounter(ctx, m["realm"], m["userID"])
+	}
+}
+
+// MakeCreateRecoveryCodeEndpoint creates an endpoint for MakeCreateRecoveryCode
+func MakeCreateRecoveryCodeEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+
+		return managementComponent.CreateRecoveryCode(ctx, m["realm"], m["userID"])
 	}
 }
 
