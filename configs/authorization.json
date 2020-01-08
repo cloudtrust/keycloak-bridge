@@ -58,13 +58,6 @@
           "l3_support_manager": {}
         }
       },
-      "SendVerifyEmail": {
-        "master": {
-          "integrator_manager": {},
-          "l2_support_manager": {},
-          "l3_support_manager": {}
-        }
-      },
       "ExecuteActionsEmail": {
         "master": {
           "integrator_manager": {},
@@ -221,14 +214,6 @@
           "end_user": {}
         }
       },
-      "SendVerifyEmail": {
-        "master": {
-          "integrator_agent": {}
-        },
-        "DEP": {
-          "end_user": {}
-        }
-      },
       "ExecuteActionsEmail": {
         "master": {
           "integrator_agent": {}
@@ -358,11 +343,6 @@
           "*": {}
         }
       },
-      "SendVerifyEmail": {
-        "DEP": {
-          "*": {}
-        }
-      },
       "ExecuteActionsEmail": {
         "DEP": {
           "*": {}
@@ -470,11 +450,6 @@
         }
       },
       "ResetPassword": {
-        "master": {
-          "l2_support_agent": {}
-        }
-      },
-      "SendVerifyEmail": {
         "master": {
           "l2_support_agent": {}
         }
@@ -607,11 +582,6 @@
           "l3_support_agent": {}
         }
       },
-      "SendVerifyEmail": {
-        "master": {
-          "l3_support_agent": {}
-        }
-      },
       "ExecuteActionsEmail": {
         "master": {
           "l3_support_agent": {}
@@ -739,11 +709,6 @@
         }
       },
       "ResetPassword": {
-        "DEP": {
-          "*": {}
-        }
-      },
-      "SendVerifyEmail": {
         "DEP": {
           "*": {}
         }
@@ -886,12 +851,6 @@
           "end_user": {}
         }
       },
-      "SendVerifyEmail": {
-        "DEP": {
-          "l1_support_agent": {},
-          "end_user": {}
-        }
-      },
       "ExecuteActionsEmail": {
         "DEP": {
           "l1_support_agent": {},
@@ -988,11 +947,6 @@
           "end_user": {}
         }
       },
-      "SendVerifyEmail": {
-        "DEP": {
-          "end_user": {}
-        }
-      },
       "ExecuteActionsEmail": {
         "DEP": {
           "end_user": {}
@@ -1039,11 +993,6 @@
     },
     "registration_officer": {
       "CreateUser": {
-        "DEP": {
-          "end_user": {}
-        }
-      },
-      "SendVerifyEmail": {
         "DEP": {
           "end_user": {}
         }

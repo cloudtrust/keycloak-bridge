@@ -37,7 +37,6 @@ type KeycloakClient interface {
 	AddClientRolesToUserRoleMapping(accessToken string, realmName, userID, clientID string, roles []kc.RoleRepresentation) error
 	GetRealmLevelRoleMappings(accessToken string, realmName, userID string) ([]kc.RoleRepresentation, error)
 	ResetPassword(accessToken string, realmName string, userID string, cred kc.CredentialRepresentation) error
-	SendVerifyEmail(accessToken string, realmName string, userID string, paramKV ...string) error
 	ExecuteActionsEmail(accessToken string, realmName string, userID string, actions []string, paramKV ...string) error
 	SendNewEnrolmentCode(accessToken string, realmName string, userID string) (kc.SmsCodeRepresentation, error)
 	CreateRecoveryCode(accessToken string, realmName string, userID string) (kc.RecoveryCodeRepresentation, error)
@@ -77,7 +76,6 @@ type Component interface {
 	GetClientRolesForUser(ctx context.Context, realmName, userID, clientID string) ([]api.RoleRepresentation, error)
 	AddClientRolesToUser(ctx context.Context, realmName, userID, clientID string, roles []api.RoleRepresentation) error
 	ResetPassword(ctx context.Context, realmName string, userID string, password api.PasswordRepresentation) (string, error)
-	SendVerifyEmail(ctx context.Context, realmName string, userID string, paramKV ...string) error
 	ExecuteActionsEmail(ctx context.Context, realmName string, userID string, actions []api.RequiredAction, paramKV ...string) error
 	SendNewEnrolmentCode(ctx context.Context, realmName string, userID string) (string, error)
 	SendReminderEmail(ctx context.Context, realmName string, userID string, paramKV ...string) error
@@ -573,18 +571,6 @@ func (c *component) ResetPassword(ctx context.Context, realmName string, userID 
 	c.reportEvent(ctx, "INIT_PASSWORD", database.CtEventRealmName, realmName, database.CtEventUserID, userID)
 
 	return pwd, nil
-}
-
-func (c *component) SendVerifyEmail(ctx context.Context, realmName string, userID string, paramKV ...string) error {
-	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
-
-	err := c.keycloakClient.SendVerifyEmail(accessToken, realmName, userID, paramKV...)
-
-	if err != nil {
-		c.logger.Warn(ctx, "err", err.Error())
-	}
-
-	return err
 }
 
 func (c *component) ExecuteActionsEmail(ctx context.Context, realmName string, userID string, requiredActions []api.RequiredAction, paramKV ...string) error {

@@ -26,7 +26,6 @@ const (
 	GetClientRolesForUser          = "GetClientRolesForUser"
 	AddClientRolesToUser           = "AddClientRolesToUser"
 	ResetPassword                  = "ResetPassword"
-	SendVerifyEmail                = "SendVerifyEmail"
 	ExecuteActionsEmail            = "ExecuteActionsEmail"
 	SendNewEnrolmentCode           = "SendNewEnrolmentCode"
 	SendReminderEmail              = "SendReminderEmail"
@@ -251,17 +250,6 @@ func (c *authorizationComponentMW) CreateRecoveryCode(ctx context.Context, realm
 	}
 
 	return c.next.CreateRecoveryCode(ctx, realmName, userID)
-}
-
-func (c *authorizationComponentMW) SendVerifyEmail(ctx context.Context, realmName string, userID string, paramKV ...string) error {
-	var action = SendVerifyEmail
-	var targetRealm = realmName
-
-	if err := c.authManager.CheckAuthorizationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
-		return err
-	}
-
-	return c.next.SendVerifyEmail(ctx, realmName, userID, paramKV...)
 }
 
 func (c *authorizationComponentMW) ExecuteActionsEmail(ctx context.Context, realmName string, userID string, actions []api.RequiredAction, paramKV ...string) error {
