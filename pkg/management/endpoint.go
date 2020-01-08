@@ -32,7 +32,6 @@ type Endpoints struct {
 	GetClientRoleForUser           endpoint.Endpoint
 	AddClientRoleToUser            endpoint.Endpoint
 	ResetPassword                  endpoint.Endpoint
-	SendVerifyEmail                endpoint.Endpoint
 	ExecuteActionsEmail            endpoint.Endpoint
 	SendNewEnrolmentCode           endpoint.Endpoint
 	SendReminderEmail              endpoint.Endpoint
@@ -67,7 +66,6 @@ type ManagementComponent interface {
 	GetClientRolesForUser(ctx context.Context, realmName, userID, clientID string) ([]api.RoleRepresentation, error)
 	AddClientRolesToUser(ctx context.Context, realmName, userID, clientID string, roles []api.RoleRepresentation) error
 	ResetPassword(ctx context.Context, realmName string, userID string, password api.PasswordRepresentation) (string, error)
-	SendVerifyEmail(ctx context.Context, realmName string, userID string, paramKV ...string) error
 	ExecuteActionsEmail(ctx context.Context, realmName string, userID string, actions []api.RequiredAction, paramKV ...string) error
 	SendNewEnrolmentCode(ctx context.Context, realmName string, userID string) (string, error)
 	SendReminderEmail(ctx context.Context, realmName string, userID string, paramKV ...string) error
@@ -303,22 +301,6 @@ func MakeResetPasswordEndpoint(managementComponent ManagementComponent) cs.Endpo
 			return pwd, err
 		}
 		return nil, err
-	}
-}
-
-// MakeSendVerifyEmailEndpoint creates an endpoint for SendVerifyEmail
-func MakeSendVerifyEmailEndpoint(managementComponent ManagementComponent) cs.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
-		var m = req.(map[string]string)
-
-		var paramKV []string
-		for _, key := range []string{"client_id", "redirect_uri"} {
-			if m[key] != "" {
-				paramKV = append(paramKV, key, m[key])
-			}
-		}
-
-		return nil, managementComponent.SendVerifyEmail(ctx, m["realm"], m["userID"], paramKV...)
 	}
 }
 

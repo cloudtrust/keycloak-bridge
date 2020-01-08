@@ -1582,49 +1582,6 @@ func TestRecoveryCode(t *testing.T) {
 
 }
 
-func TestSendVerifyEmail(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
-	defer mockCtrl.Finish()
-	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
-	var mockEventDBModule = mock.NewEventDBModule(mockCtrl)
-	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
-	var mockLogger = log.NewNopLogger()
-
-	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule, mockLogger)
-
-	var accessToken = "TOKEN=="
-	var realmName = "master"
-	var userID = "1245-7854-8963"
-
-	var key1 = "key1"
-	var value1 = "value1"
-	var key2 = "key2"
-	var value2 = "value2"
-
-	// Send email
-	{
-
-		mockKeycloakClient.EXPECT().SendVerifyEmail(accessToken, realmName, userID, key1, value1, key2, value2).Return(nil).Times(1)
-
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
-
-		err := managementComponent.SendVerifyEmail(ctx, "master", userID, key1, value1, key2, value2)
-
-		assert.Nil(t, err)
-	}
-
-	// Error
-	{
-		mockKeycloakClient.EXPECT().SendVerifyEmail(accessToken, realmName, userID).Return(fmt.Errorf("Invalid input")).Times(1)
-
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
-
-		err := managementComponent.SendVerifyEmail(ctx, "master", userID)
-
-		assert.NotNil(t, err)
-	}
-}
-
 func TestExecuteActionsEmail(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()

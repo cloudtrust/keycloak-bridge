@@ -127,9 +127,6 @@ func TestDeny(t *testing.T) {
 		_, err = authorizationMW.ResetPassword(ctx, realmName, userID, password)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
-		err = authorizationMW.SendVerifyEmail(ctx, realmName, userID)
-		assert.Equal(t, security.ForbiddenError{}, err)
-
 		err = authorizationMW.ExecuteActionsEmail(ctx, realmName, userID, []api.RequiredAction{})
 		assert.Equal(t, security.ForbiddenError{}, err)
 
@@ -245,7 +242,6 @@ func TestAllowed(t *testing.T) {
 					"GetClientRolesForUser": {"*": {"*": {} }},
 					"AddClientRolesToUser": {"*": {"*": {} }},
 					"ResetPassword": {"*": {"*": {} }},
-					"SendVerifyEmail": {"*": {"*": {} }},
 					"ExecuteActionsEmail": {"*": {"*": {} }},
 					"SendNewEnrolmentCode": {"*": {"*": {} }},
 					"SendReminderEmail": {"*": {"*": {} }},
@@ -335,10 +331,6 @@ func TestAllowed(t *testing.T) {
 
 		mockManagementComponent.EXPECT().ResetPassword(ctx, realmName, userID, password).Return("", nil).Times(1)
 		_, err = authorizationMW.ResetPassword(ctx, realmName, userID, password)
-		assert.Nil(t, err)
-
-		mockManagementComponent.EXPECT().SendVerifyEmail(ctx, realmName, userID).Return(nil).Times(1)
-		err = authorizationMW.SendVerifyEmail(ctx, realmName, userID)
 		assert.Nil(t, err)
 
 		mockManagementComponent.EXPECT().ExecuteActionsEmail(ctx, realmName, userID, []api.RequiredAction{}).Return(nil).Times(1)
