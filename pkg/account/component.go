@@ -41,6 +41,7 @@ type Component interface {
 	UpdateAccount(context.Context, api.AccountRepresentation) error
 	DeleteAccount(context.Context) error
 	GetConfiguration(context.Context) (api.Configuration, error)
+	ExportProfile(context.Context) error
 }
 
 // ConfigurationDBModule is the interface of the configuration module.
@@ -326,4 +327,21 @@ func (c *component) GetConfiguration(ctx context.Context) (api.Configuration, er
 		ShowMailEditing:           config.ShowMailEditing,
 		ShowPasswordTab:           config.ShowPasswordTab,
 	}, nil
+}
+
+func (c *component) ExportProfile(ctx context.Context) error {
+	//TODO
+
+	//gather data on the user
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+	var realm = ctx.Value(cs.CtContextRealm).(string)
+	userKc, err := c.keycloakAccountClient.GetAccount(accessToken, realm)
+
+	userRep, err := json.Marshal(userKc)
+	//fmt.Println(userKc)
+	//fmt.Println(string(userRep))
+	//fmt.Println(err)
+
+	//gather data on the events related to the user
+	return nil
 }

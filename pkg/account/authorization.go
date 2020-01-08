@@ -25,6 +25,7 @@ const (
 	UpdateAccount             = "UpdateAccount"
 	DeleteAccount             = "DeleteAccount"
 	GetConfiguration          = "GetConfiguration"
+	ExportProfile             = "ExportProfile" //TODO: check if it is needed
 )
 
 // Tracking middleware at component level.
@@ -182,6 +183,11 @@ func (c *authorizationComponentMW) DeleteAccount(ctx context.Context) error {
 func (c *authorizationComponentMW) GetConfiguration(ctx context.Context) (api.Configuration, error) {
 	//No restriction for this call
 	return c.next.GetConfiguration(ctx)
+}
+
+func (c *authorizationComponentMW) ExportProfile(ctx context.Context) error {
+	// No restriction for this call
+	return c.next.ExportProfile(ctx)
 }
 
 func isEnabled(booleanPtr *bool) bool {
