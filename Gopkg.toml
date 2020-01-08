@@ -33,7 +33,7 @@
 [[constraint]]
   name = "github.com/cloudtrust/keycloak-client"
   #version = "v1.2.1"
-  branch="CLOUDTRUST-2147_RecoveryModeAPI"
+  branch="master"
 
 [[constraint]]
   name = "github.com/go-kit/kit"
