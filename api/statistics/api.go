@@ -9,9 +9,10 @@ import (
 
 // RegExp for parameters of statistics API
 const (
-	RegExpPeriod    = `^hours|days|months$`
-	RegExpNumber    = `^\d+$`
-	RegExpTimeshift = `^[+-]\d{1,4}$`
+	RegExpPeriod          = `^hours|days|months$`
+	RegExpNumber          = `^\d+$`
+	RegExpTimeshift       = `^[+-]\d{1,4}$`
+	RegExpTwoDigitsNumber = `^\d{1,2}$`
 )
 
 // StatisticsRepresentation elements returned by GetStatistics
