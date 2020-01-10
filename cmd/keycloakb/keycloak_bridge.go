@@ -306,8 +306,8 @@ func main() {
 
 	// Health check configuration
 	var healthChecker = healthcheck.NewHealthChecker(keycloakb.ComponentName, logger)
-	var healthCheckCacheDuration = c.GetDuration("livenessprobe-cache-duration") * time.Second
-	var httpTimeout = c.GetDuration("livenessprobe-http-timeout") * time.Second
+	var healthCheckCacheDuration = c.GetDuration("livenessprobe-cache-duration") * time.Millisecond
+	var httpTimeout = c.GetDuration("livenessprobe-http-timeout") * time.Millisecond
 	healthChecker.AddDatabase("Audit R/W", eventsDBConn, healthCheckCacheDuration)
 	healthChecker.AddDatabase("Audit RO", eventsRODBConn, healthCheckCacheDuration)
 	healthChecker.AddDatabase("Config R/W", configurationRwDBConn, healthCheckCacheDuration)
@@ -869,8 +869,8 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 	v.SetDefault("pprof-route-enabled", true)
 
 	// Liveness probe
-	v.SetDefault("livenessprobe-http-timeout", 5)
-	v.SetDefault("livenessprobe-cache-duration", 10)
+	v.SetDefault("livenessprobe-http-timeout", 900)
+	v.SetDefault("livenessprobe-cache-duration", 500)
 
 	// First level of override.
 	pflag.String("config-file", v.GetString("config-file"), "The configuration file path can be relative or absolute.")

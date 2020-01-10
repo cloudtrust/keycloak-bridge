@@ -52,6 +52,14 @@ keycloak-oidc-uri | Keycloak protocol:host:port (multiple value supported) | "ht
 keycloak-timeout | Keycloak requests timeout in milliseconds | 5000
 
 
+### Health check
+
+Key | Description | Default value
+--- | ----------- | -------------
+livenessprobe-cache-duration | Health check results are not re-evaluated under this number of milliseconds | 500
+livenessprobe-http-timeout | Timeout in milliseconds for HTTP checks | 900
+
+
 ### ENV variables
 
 Some parameters can be overridden with following ENV variables:
