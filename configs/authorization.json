@@ -36,6 +36,16 @@
           "*": {}
         }
       },
+      "CreateGroup": {
+        "master": {
+          "*": {}
+        }
+      },
+      "DeleteGroup": {
+        "master": {
+          "*": {}
+        }
+      },
       "GetRoles": {
         "master": {
           "*": {}

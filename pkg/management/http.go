@@ -31,6 +31,7 @@ func decodeManagementRequest(ctx context.Context, req *http.Request) (interface{
 		"userID":       management_api.RegExpID,
 		"clientID":     management_api.RegExpClientID,
 		"roleID":       management_api.RegExpID,
+		"groupID":      management_api.RegExpID,
 		"credentialID": management_api.RegExpID,
 	}
 

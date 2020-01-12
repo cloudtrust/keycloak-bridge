@@ -16,34 +16,45 @@ import (
 
 // Endpoints wraps a service behind a set of endpoints.
 type Endpoints struct {
-	GetRealms                      endpoint.Endpoint
-	GetRealm                       endpoint.Endpoint
-	GetClient                      endpoint.Endpoint
-	GetClients                     endpoint.Endpoint
-	GetRequiredActions             endpoint.Endpoint
-	DeleteUser                     endpoint.Endpoint
-	GetUser                        endpoint.Endpoint
-	UpdateUser                     endpoint.Endpoint
-	GetUsers                       endpoint.Endpoint
-	CreateUser                     endpoint.Endpoint
-	GetRolesOfUser                 endpoint.Endpoint
-	GetGroupsOfUser                endpoint.Endpoint
-	GetUserAccountStatus           endpoint.Endpoint
-	GetClientRoleForUser           endpoint.Endpoint
-	AddClientRoleToUser            endpoint.Endpoint
-	ResetPassword                  endpoint.Endpoint
-	ExecuteActionsEmail            endpoint.Endpoint
-	SendNewEnrolmentCode           endpoint.Endpoint
-	SendReminderEmail              endpoint.Endpoint
-	ResetSmsCounter                endpoint.Endpoint
-	CreateRecoveryCode             endpoint.Endpoint
-	GetCredentialsForUser          endpoint.Endpoint
-	DeleteCredentialsForUser       endpoint.Endpoint
-	GetRoles                       endpoint.Endpoint
-	GetRole                        endpoint.Endpoint
-	GetGroups                      endpoint.Endpoint
-	GetClientRoles                 endpoint.Endpoint
-	CreateClientRole               endpoint.Endpoint
+	GetRealms          endpoint.Endpoint
+	GetRealm           endpoint.Endpoint
+	GetClient          endpoint.Endpoint
+	GetClients         endpoint.Endpoint
+	GetRequiredActions endpoint.Endpoint
+
+	DeleteUser           endpoint.Endpoint
+	GetUser              endpoint.Endpoint
+	UpdateUser           endpoint.Endpoint
+	GetUsers             endpoint.Endpoint
+	CreateUser           endpoint.Endpoint
+	GetRolesOfUser       endpoint.Endpoint
+	GetGroupsOfUser      endpoint.Endpoint
+	GetUserAccountStatus endpoint.Endpoint
+	GetClientRoleForUser endpoint.Endpoint
+	AddClientRoleToUser  endpoint.Endpoint
+
+	ResetPassword            endpoint.Endpoint
+	ExecuteActionsEmail      endpoint.Endpoint
+	SendNewEnrolmentCode     endpoint.Endpoint
+	SendReminderEmail        endpoint.Endpoint
+	ResetSmsCounter          endpoint.Endpoint
+	CreateRecoveryCode       endpoint.Endpoint
+	GetCredentialsForUser    endpoint.Endpoint
+	DeleteCredentialsForUser endpoint.Endpoint
+
+	GetRoles         endpoint.Endpoint
+	GetRole          endpoint.Endpoint
+	GetClientRoles   endpoint.Endpoint
+	CreateClientRole endpoint.Endpoint
+
+	GetGroups            endpoint.Endpoint
+	CreateGroup          endpoint.Endpoint
+	DeleteGroup          endpoint.Endpoint
+	GetAuthorizations    endpoint.Endpoint
+	UpdateAuthorizations endpoint.Endpoint
+	GetPermissions       endpoint.Endpoint
+	GetTargetGroups      endpoint.Endpoint
+
 	GetRealmCustomConfiguration    endpoint.Endpoint
 	UpdateRealmCustomConfiguration endpoint.Endpoint
 }
@@ -75,9 +86,17 @@ type ManagementComponent interface {
 	DeleteCredentialsForUser(ctx context.Context, realmName string, userID string, credentialID string) error
 	GetRoles(ctx context.Context, realmName string) ([]api.RoleRepresentation, error)
 	GetRole(ctx context.Context, realmName string, roleID string) (api.RoleRepresentation, error)
-	GetGroups(ctx context.Context, realmName string) ([]api.GroupRepresentation, error)
 	GetClientRoles(ctx context.Context, realmName, idClient string) ([]api.RoleRepresentation, error)
 	CreateClientRole(ctx context.Context, realmName, clientID string, role api.RoleRepresentation) (string, error)
+
+	GetGroups(ctx context.Context, realmName string) ([]api.GroupRepresentation, error)
+	CreateGroup(ctx context.Context, realmName string, group api.GroupRepresentation) (string, error)
+	DeleteGroup(ctx context.Context, realmName string, groupID string) error
+	//GetAuthorizations(ctx context.Context, realmName string, groupName string) (api.AuthorizationsRepresentation, error)
+	//UpdateAuthorizations(ctx context.Context, realmName string, groupName string, group api.AuthorizationsRepresentation) error
+	//GetPermissions(ctx context.Context, realmName string) ([]api.PermissionRepresentation, error)
+	//GetTargetGroups(ctx context.Context, realmName string) ([]api.GroupRepresentation, error)
+
 	GetRealmCustomConfiguration(ctx context.Context, realmID string) (api.RealmCustomConfiguration, error)
 	UpdateRealmCustomConfiguration(ctx context.Context, realmID string, customConfig api.RealmCustomConfiguration) error
 }
@@ -213,7 +232,7 @@ func MakeGetUsersEndpoint(managementComponent ManagementComponent) cs.Endpoint {
 
 		_, ok := m["groupIds"]
 		if !ok {
-			return nil, errorhandler.CreateMissingParameterError(internal.GroudIDs)
+			return nil, errorhandler.CreateMissingParameterError(internal.GroupIDs)
 		}
 
 		groupIDs := strings.Split(m["groupIds"], ",")
@@ -414,15 +433,6 @@ func MakeGetRoleEndpoint(managementComponent ManagementComponent) cs.Endpoint {
 	}
 }
 
-// MakeGetGroupsEndpoint creates an endpoint for GetGroups
-func MakeGetGroupsEndpoint(managementComponent ManagementComponent) cs.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
-		var m = req.(map[string]string)
-
-		return managementComponent.GetGroups(ctx, m["realm"])
-	}
-}
-
 // MakeGetClientRolesEndpoint creates an endpoint for GetClientRoles
 func MakeGetClientRolesEndpoint(managementComponent ManagementComponent) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
@@ -463,6 +473,100 @@ func MakeCreateClientRoleEndpoint(managementComponent ManagementComponent) cs.En
 		}, nil
 	}
 }
+
+// MakeGetGroupsEndpoint creates an endpoint for GetGroups
+func MakeGetGroupsEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+
+		return managementComponent.GetGroups(ctx, m["realm"])
+	}
+}
+
+// MakeCreateGroupEndpoint makes the endpoint to create a group.
+func MakeCreateGroupEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+		var err error
+
+		var group api.GroupRepresentation
+
+		if err = json.Unmarshal([]byte(m["body"]), &group); err != nil {
+			return nil, errorhandler.CreateBadRequestError(internal.MsgErrInvalidParam + "." + internal.Body)
+		}
+
+		if err = group.Validate(); err != nil {
+			return nil, errorhandler.CreateBadRequestError(err.Error())
+		}
+
+		var keycloakLocation string
+		keycloakLocation, err = managementComponent.CreateGroup(ctx, m["realm"], group)
+
+		if err != nil {
+			return nil, err
+		}
+
+		url, err := convertLocationURL(keycloakLocation, m["scheme"], m["host"])
+		// TODO: log the error and the unhappy url
+
+		return LocationHeader{
+			URL: url,
+		}, nil
+	}
+}
+
+// MakeDeleteGroupEndpoint creates an endpoint for DeleteGroup
+func MakeDeleteGroupEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+
+		return nil, managementComponent.DeleteGroup(ctx, m["realm"], m["groupID"])
+	}
+}
+
+/*
+// MakeGetAuthorizationEndpoint creates an endpoint for GetAuthorizations
+func MakeGetAuthorizationsEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+
+		return managementComponent.GetAuthorizations(ctx, m["realm"], m["group"])
+	}
+}
+
+// MakeUpdateAuthorizationsEndpoint creates an endpoint for UpdateAuthorizations
+func MakeUpdateAuthorizationsEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+		var err error
+
+		var authorizations api.AuthorizationsRepresentation
+
+		if err = json.Unmarshal([]byte(m["body"]), &authorizations); err != nil {
+			return nil, errorhandler.CreateBadRequestError(internal.MsgErrInvalidParam + "." + internal.Body)
+		}
+
+		return nil, managementComponent.UpdateAuthorizations(ctx, m["realm"], m["group"], authorizations)
+	}
+}
+
+// MakeGetPermissionsEndpoint creates an endpoint for GetPermissions
+func MakeGetPermissionsEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+
+		return managementComponent.GetPermissions(ctx, m["realm"])
+	}
+}
+
+// MakeGetTargetGroupsEndpoint creates an endpoint for GetTargetGroups
+func MakeGetTargetGroupsEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+
+		return managementComponent.GetTargetGroups(ctx, m["realm"])
+	}
+}*/
 
 // MakeGetRealmCustomConfigurationEndpoint creates an endpoint for GetRealmCustomConfiguration
 func MakeGetRealmCustomConfigurationEndpoint(managementComponent ManagementComponent) cs.Endpoint {

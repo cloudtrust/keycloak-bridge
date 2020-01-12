@@ -47,6 +47,8 @@ type KeycloakClient interface {
 	GetClientRoles(accessToken string, realmName, idClient string) ([]kc.RoleRepresentation, error)
 	CreateClientRole(accessToken string, realmName, clientID string, role kc.RoleRepresentation) (string, error)
 	GetGroup(accessToken string, realmName, groupID string) (kc.GroupRepresentation, error)
+	CreateGroup(accessToken string, realmName string, group kc.GroupRepresentation) (string, error)
+	DeleteGroup(accessToken string, realmName string, groupID string) error
 	GetCredentials(accessToken string, realmName string, userID string) ([]kc.CredentialRepresentation, error)
 	UpdateLabelCredential(accessToken string, realmName string, userID string, credentialID string, label string) error
 	DeleteCredential(accessToken string, realmName string, userID string, credentialID string) error
@@ -85,9 +87,17 @@ type Component interface {
 	DeleteCredentialsForUser(ctx context.Context, realmName string, userID string, credentialID string) error
 	GetRoles(ctx context.Context, realmName string) ([]api.RoleRepresentation, error)
 	GetRole(ctx context.Context, realmName string, roleID string) (api.RoleRepresentation, error)
-	GetGroups(ctx context.Context, realmName string) ([]api.GroupRepresentation, error)
 	GetClientRoles(ctx context.Context, realmName, idClient string) ([]api.RoleRepresentation, error)
 	CreateClientRole(ctx context.Context, realmName, clientID string, role api.RoleRepresentation) (string, error)
+
+	GetGroups(ctx context.Context, realmName string) ([]api.GroupRepresentation, error)
+	CreateGroup(ctx context.Context, realmName string, group api.GroupRepresentation) (string, error)
+	DeleteGroup(ctx context.Context, realmName string, groupID string) error
+	//GetAuthorizations(ctx context.Context, realmName string, groupName string) (api.AuthorizationsRepresentation, error)
+	//	UpdateAuthorizations(ctx context.Context, realmName string, groupName string, group api.AuthorizationsRepresentation) error
+	//	GetPermissions(ctx context.Context, realmName string) ([]api.PermissionRepresentation, error)
+	//	GetTargetGroups(ctx context.Context, realmName string) ([]api.GroupRepresentation, error)
+
 	GetRealmCustomConfiguration(ctx context.Context, realmName string) (api.RealmCustomConfiguration, error)
 	UpdateRealmCustomConfiguration(ctx context.Context, realmID string, customConfig api.RealmCustomConfiguration) error
 }
@@ -783,6 +793,51 @@ func (c *component) GetGroups(ctx context.Context, realmName string) ([]api.Grou
 
 	return groupsRep, nil
 }
+
+func (c *component) CreateGroup(ctx context.Context, realmName string, group api.GroupRepresentation) (string, error) {
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+
+	var groupRep kc.GroupRepresentation
+	groupRep = api.ConvertToKCGroup(group)
+
+	locationURL, err := c.keycloakClient.CreateGroup(accessToken, realmName, groupRep)
+
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return "", err
+	}
+
+	//retrieve the group ID
+	reg := regexp.MustCompile(`[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}`)
+	groupID := string(reg.Find([]byte(locationURL)))
+
+	//store the API call into the DB
+	c.reportEvent(ctx, "API_GROUP_CREATION", database.CtEventRealmName, realmName, database.CtEventGroupID, groupID, database.CtEventGroupName, *group.Name)
+
+	return locationURL, nil
+}
+
+func (c *component) DeleteGroup(ctx context.Context, realmName, groupID string) error {
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+
+	err := c.keycloakClient.DeleteGroup(accessToken, realmName, groupID)
+
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return err
+	}
+
+	//store the API call into the DB
+	c.reportEvent(ctx, "API_GROUP_DELETION", database.CtEventRealmName, realmName, database.CtEventGroupID, groupID)
+
+	return nil
+}
+
+/*
+	GetAuthorizations(ctx context.Context, realmName string, groupName string) (api.AuthorizationsRepresentation, error)
+	UpdateAuthorizations(ctx context.Context, realmName string, groupName string, group api.AuthorizationsRepresentation) error
+	GetPermissions(ctx context.Context, realmName string) ([]api.PermissionRepresentation, error)
+	GetTargetGroups(ctx context.Context, realmName string) ([]api.GroupRepresentation, error)*/
 
 func (c *component) GetClientRoles(ctx context.Context, realmName, idClient string) ([]api.RoleRepresentation, error) {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)

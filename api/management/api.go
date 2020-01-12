@@ -88,6 +88,16 @@ type GroupRepresentation struct {
 	Name *string `json:"name,omitempty"`
 }
 
+// AuthorizationsRepresentation struct
+type AuthorizationsRepresentation struct {
+	Matrix *map[string]map[string]map[string]struct{} `json:"matrix,omitempty"`
+}
+
+// PermissionRepresentation struct
+type PermissionRepresentation struct {
+	Name *string `json:"name,omitempty"`
+}
+
 // PasswordRepresentation struct
 type PasswordRepresentation struct {
 	Value *string `json:"value,omitempty"`
@@ -242,6 +252,15 @@ func ConvertToKCUser(user UserRepresentation) kc.UserRepresentation {
 	return userRep
 }
 
+// ConvertToKCGroup creates a KC group representation from an API group
+func ConvertToKCGroup(group GroupRepresentation) kc.GroupRepresentation {
+	var groupRep kc.GroupRepresentation
+
+	groupRep.Name = group.Name
+
+	return groupRep
+}
+
 // ConvertRequiredAction creates an API requiredAction from a KC requiredAction
 func ConvertRequiredAction(ra *kc.RequiredActionProviderRepresentation) RequiredActionRepresentation {
 	var raRep RequiredActionRepresentation
@@ -295,7 +314,7 @@ func (user UserRepresentation) Validate() error {
 	if user.Groups != nil {
 		for _, groupID := range *(user.Groups) {
 			if !matchesRegExp(groupID, RegExpID) {
-				return errors.New(internal.MsgErrInvalidParam + "." + internal.GroudID)
+				return errors.New(internal.MsgErrInvalidParam + "." + internal.GroupID)
 			}
 		}
 	}
@@ -331,6 +350,19 @@ func (role RoleRepresentation) Validate() error {
 
 	if role.ContainerID != nil && !matchesRegExp(*role.ContainerID, RegExpID) {
 		return errors.New(internal.MsgErrInvalidParam + "." + internal.ContainerID)
+	}
+
+	return nil
+}
+
+// Validate is a validator for GroupRepresentation
+func (group GroupRepresentation) Validate() error {
+	if group.ID != nil && !matchesRegExp(*group.ID, RegExpID) {
+		return errors.New(internal.MsgErrInvalidParam + "." + internal.GroupID)
+	}
+
+	if group.Name != nil && !matchesRegExp(*group.Name, RegExpName) {
+		return errors.New(internal.MsgErrInvalidParam + "." + internal.Name)
 	}
 
 	return nil
@@ -374,7 +406,9 @@ func matchesRegExp(value, re string) bool {
 
 // Regular expressions for parameters validation
 const (
-	RegExpID = `^[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}$`
+	RegExpID          = `^[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}$`
+	RegExpName        = `^[a-zA-Z0-9-_]{1,128}$`
+	RegExpDescription = `^.{1,255}$`
 
 	// Client
 	RegExpClientID = `^[a-zA-Z0-9-_.]{1,255}$`
@@ -389,10 +423,6 @@ const (
 	RegExpGender      = `^[MF]$`
 	RegExpBirthDate   = `^(\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01]))$`
 	RegExpLocale      = `^[a-z]{2}$`
-
-	// Role
-	RegExpName        = `^[a-zA-Z0-9-_]{1,128}$`
-	RegExpDescription = `^.{1,255}$`
 
 	// Password
 	RegExpPassword = `^.{1,255}$`
