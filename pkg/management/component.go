@@ -56,8 +56,12 @@ type KeycloakClient interface {
 
 // ConfigurationDBModule is the interface of the configuration module.
 type ConfigurationDBModule interface {
+	NewTransaction(context context.Context) (database.Transaction, error)
 	StoreOrUpdate(context.Context, string, dto.RealmConfiguration) error
 	GetConfiguration(context.Context, string) (dto.RealmConfiguration, error)
+	GetAuthorizations(context context.Context, realmID string, groupID string) ([]dto.Authorization, error)
+	CreateAuthorization(context context.Context, authz dto.Authorization) error
+	DeleteAuthorizations(context context.Context, realmID string, groupID string) error
 }
 
 // Component is the management component interface.
@@ -93,8 +97,8 @@ type Component interface {
 	GetGroups(ctx context.Context, realmName string) ([]api.GroupRepresentation, error)
 	CreateGroup(ctx context.Context, realmName string, group api.GroupRepresentation) (string, error)
 	DeleteGroup(ctx context.Context, realmName string, groupID string) error
-	//GetAuthorizations(ctx context.Context, realmName string, groupName string) (api.AuthorizationsRepresentation, error)
-	//	UpdateAuthorizations(ctx context.Context, realmName string, groupName string, group api.AuthorizationsRepresentation) error
+	GetAuthorizations(ctx context.Context, realmName string, groupID string) (api.AuthorizationsRepresentation, error)
+	UpdateAuthorizations(ctx context.Context, realmName string, groupID string, group api.AuthorizationsRepresentation) error
 	//	GetPermissions(ctx context.Context, realmName string) ([]api.PermissionRepresentation, error)
 	//	GetTargetGroups(ctx context.Context, realmName string) ([]api.GroupRepresentation, error)
 
@@ -111,7 +115,8 @@ type component struct {
 }
 
 // NewComponent returns the management component.
-func NewComponent(keycloakClient KeycloakClient, eventDBModule database.EventsDBModule, configDBModule ConfigurationDBModule, logger internal.Logger) Component {
+func NewComponent(keycloakClient KeycloakClient, eventDBModule database.EventsDBModule,
+	configDBModule ConfigurationDBModule, logger internal.Logger) Component {
 	return &component{
 		keycloakClient: keycloakClient,
 		eventDBModule:  eventDBModule,
@@ -830,14 +835,91 @@ func (c *component) DeleteGroup(ctx context.Context, realmName, groupID string) 
 	//store the API call into the DB
 	c.reportEvent(ctx, "API_GROUP_DELETION", database.CtEventRealmName, realmName, database.CtEventGroupID, groupID)
 
+	//TODO : maj des authorization -> remove line which have the deleted group
+
 	return nil
 }
 
+func (c *component) GetAuthorizations(ctx context.Context, realmName string, groupID string) (api.AuthorizationsRepresentation, error) {
+	authorizations, err := c.configDBModule.GetAuthorizations(ctx, realmName, groupID)
+
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return api.AuthorizationsRepresentation{}, err
+	}
+
+	var matrix = dto.ConvertToMap(authorizations)
+
+	return api.AuthorizationsRepresentation{
+		Matrix: &matrix,
+	}, nil
+
+	// convert the array of authz in matrix, i.e. map[stringmap[stringmap[stirng]]]...
+
+	//convert groupID into groupName
+
+}
+
+func (c *component) UpdateAuthorizations(ctx context.Context, realmName string, groupID string, auth api.AuthorizationsRepresentation) error {
+	// convert into array
+	// validate
+	// -> for each line
+	// check action is valid one
+	// check taget realm is among allowed one (itself if not master, if master ensure it exists)
+	// check target group (exist in the current realm if not master, if master it exists)
+	// check if there is a * or / or whatever, there is nothing else
+
+	// COnvert groupName into groupID
+
+	authorisations := dto.ConvertToAuthorizations(realmName, groupID, *auth.Matrix)
+
+	tx, err := c.configDBModule.NewTransaction(ctx)
+	defer tx.Close()
+
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return err
+	}
+
+	err = c.configDBModule.DeleteAuthorizations(ctx, realmName, groupID)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return err
+	}
+
+	for _, authorisation := range authorisations {
+		err = c.configDBModule.CreateAuthorization(ctx, authorisation)
+		if err != nil {
+			c.logger.Warn(ctx, "err", err.Error())
+			return err
+		}
+	}
+
+	return tx.Commit()
+
+	//once validated
+
+	// determine the role-mappings needed in KC
+
+	//retrieve the current ones and add/remove if needed
+
+	// finally persist in AuthzDB via authz>DBModule
+	// ---> into a transaction
+	// ------------> delete all lines
+	// ------------> add all lines
+	// -----> commit
+
+}
+
 /*
-	GetAuthorizations(ctx context.Context, realmName string, groupName string) (api.AuthorizationsRepresentation, error)
-	UpdateAuthorizations(ctx context.Context, realmName string, groupName string, group api.AuthorizationsRepresentation) error
-	GetPermissions(ctx context.Context, realmName string) ([]api.PermissionRepresentation, error)
-	GetTargetGroups(ctx context.Context, realmName string) ([]api.GroupRepresentation, error)*/
+
+	GetActions(ctx context.Context, realmName string) ([]api.ActionRepresentation, error)
+	---> retrieve all actions (--> refactoring needed as action of paper card must also be returned....)
+	GetTargetGroups(ctx context.Context, realmName string) ([]api.GroupRepresentation, error)
+	---> return groups of current realm if non master, else all
+
+
+*/
 
 func (c *component) GetClientRoles(ctx context.Context, realmName, idClient string) ([]api.RoleRepresentation, error) {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)

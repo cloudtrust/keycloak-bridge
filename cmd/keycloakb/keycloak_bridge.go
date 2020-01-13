@@ -438,7 +438,7 @@ func main() {
 		// module for storing and retrieving the custom configuration
 		var configDBModule management.ConfigurationDBModule
 		{
-			configDBModule = keycloakb.NewConfigurationDBModule(configurationRwDBConn)
+			configDBModule = keycloakb.NewConfigurationDBModule(configurationRwDBConn, managementLogger)
 			configDBModule = keycloakb.MakeConfigurationDBModuleInstrumentingMW(influxMetrics.NewHistogram("configDB_module"))(configDBModule)
 			configDBModule = management.MakeConfigurationDBModuleLoggingMW(log.With(managementLogger, "mw", "module", "unit", "configDB"))(configDBModule)
 			configDBModule = management.MakeConfigurationDBModuleTracingMW(tracer)(configDBModule)
@@ -467,9 +467,11 @@ func main() {
 			GetRoles:             prepareEndpoint(management.MakeGetRolesEndpoint(keycloakComponent), "get_roles_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
 			GetRole:              prepareEndpoint(management.MakeGetRoleEndpoint(keycloakComponent), "get_role_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
 
-			GetGroups:   prepareEndpoint(management.MakeGetGroupsEndpoint(keycloakComponent), "get_groups_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
-			CreateGroup: prepareEndpoint(management.MakeCreateGroupEndpoint(keycloakComponent), "create_group_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
-			DeleteGroup: prepareEndpoint(management.MakeDeleteGroupEndpoint(keycloakComponent), "delete_group_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
+			GetGroups:            prepareEndpoint(management.MakeGetGroupsEndpoint(keycloakComponent), "get_groups_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
+			CreateGroup:          prepareEndpoint(management.MakeCreateGroupEndpoint(keycloakComponent), "create_group_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
+			DeleteGroup:          prepareEndpoint(management.MakeDeleteGroupEndpoint(keycloakComponent), "delete_group_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
+			GetAuthorizations:    prepareEndpoint(management.MakeGetAuthorizationsEndpoint(keycloakComponent), "get_authorizations_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
+			UpdateAuthorizations: prepareEndpoint(management.MakeUpdateAuthorizationsEndpoint(keycloakComponent), "update_authorizations_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
 
 			GetClientRoles:                 prepareEndpoint(management.MakeGetClientRolesEndpoint(keycloakComponent), "get_client_roles_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
 			CreateClientRole:               prepareEndpoint(management.MakeCreateClientRoleEndpoint(keycloakComponent), "create_client_role_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
@@ -499,7 +501,7 @@ func main() {
 		// module for retrieving the custom configuration
 		var configDBModule account.ConfigurationDBModule
 		{
-			configDBModule = keycloakb.NewConfigurationDBModule(configurationRoDBConn)
+			configDBModule = keycloakb.NewConfigurationDBModule(configurationRoDBConn, accountLogger)
 			configDBModule = keycloakb.MakeConfigurationDBModuleInstrumentingMW(influxMetrics.NewHistogram("configDB_module"))(configDBModule)
 			configDBModule = management.MakeConfigurationDBModuleLoggingMW(log.With(logger, "mw", "module", "unit", "configDB"))(configDBModule)
 			configDBModule = management.MakeConfigurationDBModuleTracingMW(tracer)(configDBModule)
@@ -648,6 +650,8 @@ func main() {
 		var getGroupsHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetGroups)
 		var createGroupHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.CreateGroup)
 		var deleteGroupHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.DeleteGroup)
+		var getAuthorizationsHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetAuthorizations)
+		var updateAuthorizationsHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.UpdateAuthorizations)
 
 		var resetPasswordHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.ResetPassword)
 		var executeActionsEmailHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.ExecuteActionsEmail)
@@ -708,9 +712,9 @@ func main() {
 		managementSubroute.Path("/realms/{realm}/groups").Methods("GET").Handler(getGroupsHandler)
 		managementSubroute.Path("/realms/{realm}/groups").Methods("POST").Handler(createGroupHandler)
 		managementSubroute.Path("/realms/{realm}/groups/{groupID}").Methods("DELETE").Handler(deleteGroupHandler)
-		/*managementSubroute.Path("/realms/{realm}/groups/{group}/authorizations").Methods("GET").Handler(getAuthorizationsHandler)
-		managementSubroute.Path("/realms/{realm}/groups/{group}/authorizations").Methods("PUT").Handler(updateAuthorizationsHandler)
-		managementSubroute.Path("/realms/{realm}/permissions").Methods("GET").Handler(getPermissionsHandler)
+		managementSubroute.Path("/realms/{realm}/groups/{groupID}/authorizations").Methods("GET").Handler(getAuthorizationsHandler)
+		managementSubroute.Path("/realms/{realm}/groups/{groupID}/authorizations").Methods("PUT").Handler(updateAuthorizationsHandler)
+		/*managementSubroute.Path("/realms/{realm}/permissions").Methods("GET").Handler(getPermissionsHandler)
 		managementSubroute.Path("/realms/{realm}/target-groups").Methods("GET").Handler(getTargetGroupsHandler)*/
 
 		// custom configuration par realm

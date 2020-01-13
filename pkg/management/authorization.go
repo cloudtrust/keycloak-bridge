@@ -38,6 +38,8 @@ const (
 	GetGroups                      = "GetGroups"
 	CreateGroup                    = "CreateGroup"
 	DeleteGroup                    = "DeleteGroup"
+	GetAuthorizations              = "GetAuthorizations"
+	UpdateAuthorizations           = "UpdateAuthorizations"
 	GetClientRoles                 = "GetClientRoles"
 	CreateClientRole               = "CreateClientRole"
 	GetRealmCustomConfiguration    = "GetRealmCustomConfiguration"
@@ -373,6 +375,26 @@ func (c *authorizationComponentMW) DeleteGroup(ctx context.Context, realmName st
 	}
 
 	return c.next.DeleteGroup(ctx, realmName, groupID)
+}
+
+func (c *authorizationComponentMW) GetAuthorizations(ctx context.Context, realmName string, groupID string) (api.AuthorizationsRepresentation, error) {
+	var action = GetAuthorizations
+
+	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, realmName); err != nil {
+		return api.AuthorizationsRepresentation{}, err
+	}
+
+	return c.next.GetAuthorizations(ctx, realmName, groupID)
+}
+
+func (c *authorizationComponentMW) UpdateAuthorizations(ctx context.Context, realmName string, groupID string, group api.AuthorizationsRepresentation) error {
+	var action = UpdateAuthorizations
+
+	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, realmName); err != nil {
+		return err
+	}
+
+	return c.next.UpdateAuthorizations(ctx, realmName, groupID, group)
 }
 
 func (c *authorizationComponentMW) GetClientRoles(ctx context.Context, realmName, idClient string) ([]api.RoleRepresentation, error) {

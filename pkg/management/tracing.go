@@ -4,6 +4,7 @@ import (
 	"context"
 
 	cs "github.com/cloudtrust/common-service"
+	"github.com/cloudtrust/common-service/database"
 	"github.com/cloudtrust/common-service/tracing"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 )
@@ -44,4 +45,48 @@ func (m *configDBModuleTracingMW) GetConfiguration(ctx context.Context, realmNam
 	}
 
 	return m.next.GetConfiguration(ctx, realmName)
+}
+
+// configDBModuleTracingMW implements StatisticModule.
+func (m *configDBModuleTracingMW) NewTransaction(ctx context.Context) (database.Transaction, error) {
+	var f tracing.Finisher
+	ctx, f = m.tracer.TryStartSpanWithTag(ctx, "configurationDB_module", "correlation_id", ctx.Value(cs.CtContextCorrelationID).(string))
+	if f != nil {
+		defer f.Finish()
+	}
+
+	return m.next.NewTransaction(ctx)
+}
+
+// configDBModuleTracingMW implements StatisticModule.
+func (m *configDBModuleTracingMW) GetAuthorizations(ctx context.Context, realmID string, groupID string) ([]dto.Authorization, error) {
+	var f tracing.Finisher
+	ctx, f = m.tracer.TryStartSpanWithTag(ctx, "configurationDB_module", "correlation_id", ctx.Value(cs.CtContextCorrelationID).(string))
+	if f != nil {
+		defer f.Finish()
+	}
+
+	return m.next.GetAuthorizations(ctx, realmID, groupID)
+}
+
+// configDBModuleTracingMW implements StatisticModule.
+func (m *configDBModuleTracingMW) CreateAuthorization(ctx context.Context, authz dto.Authorization) error {
+	var f tracing.Finisher
+	ctx, f = m.tracer.TryStartSpanWithTag(ctx, "configurationDB_module", "correlation_id", ctx.Value(cs.CtContextCorrelationID).(string))
+	if f != nil {
+		defer f.Finish()
+	}
+
+	return m.next.CreateAuthorization(ctx, authz)
+}
+
+// configDBModuleTracingMW implements StatisticModule.
+func (m *configDBModuleTracingMW) DeleteAuthorizations(ctx context.Context, realmID string, groupID string) error {
+	var f tracing.Finisher
+	ctx, f = m.tracer.TryStartSpanWithTag(ctx, "configurationDB_module", "correlation_id", ctx.Value(cs.CtContextCorrelationID).(string))
+	if f != nil {
+		defer f.Finish()
+	}
+
+	return m.next.DeleteAuthorizations(ctx, realmID, groupID)
 }

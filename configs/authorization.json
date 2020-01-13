@@ -46,6 +46,16 @@
           "*": {}
         }
       },
+      "GetAuthorizations": {
+        "master": {
+          "*": {}
+        }
+      },
+      "UpdateAuthorizations": {
+        "master": {
+          "*": {}
+        }
+      },
       "GetRoles": {
         "master": {
           "*": {}

@@ -92,8 +92,8 @@ type ManagementComponent interface {
 	GetGroups(ctx context.Context, realmName string) ([]api.GroupRepresentation, error)
 	CreateGroup(ctx context.Context, realmName string, group api.GroupRepresentation) (string, error)
 	DeleteGroup(ctx context.Context, realmName string, groupID string) error
-	//GetAuthorizations(ctx context.Context, realmName string, groupName string) (api.AuthorizationsRepresentation, error)
-	//UpdateAuthorizations(ctx context.Context, realmName string, groupName string, group api.AuthorizationsRepresentation) error
+	GetAuthorizations(ctx context.Context, realmName string, groupID string) (api.AuthorizationsRepresentation, error)
+	UpdateAuthorizations(ctx context.Context, realmName string, groupID string, group api.AuthorizationsRepresentation) error
 	//GetPermissions(ctx context.Context, realmName string) ([]api.PermissionRepresentation, error)
 	//GetTargetGroups(ctx context.Context, realmName string) ([]api.GroupRepresentation, error)
 
@@ -524,13 +524,12 @@ func MakeDeleteGroupEndpoint(managementComponent ManagementComponent) cs.Endpoin
 	}
 }
 
-/*
 // MakeGetAuthorizationEndpoint creates an endpoint for GetAuthorizations
 func MakeGetAuthorizationsEndpoint(managementComponent ManagementComponent) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return managementComponent.GetAuthorizations(ctx, m["realm"], m["group"])
+		return managementComponent.GetAuthorizations(ctx, m["realm"], m["groupID"])
 	}
 }
 
@@ -546,10 +545,11 @@ func MakeUpdateAuthorizationsEndpoint(managementComponent ManagementComponent) c
 			return nil, errorhandler.CreateBadRequestError(internal.MsgErrInvalidParam + "." + internal.Body)
 		}
 
-		return nil, managementComponent.UpdateAuthorizations(ctx, m["realm"], m["group"], authorizations)
+		return nil, managementComponent.UpdateAuthorizations(ctx, m["realm"], m["groupID"], authorizations)
 	}
 }
 
+/*
 // MakeGetPermissionsEndpoint creates an endpoint for GetPermissions
 func MakeGetPermissionsEndpoint(managementComponent ManagementComponent) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
