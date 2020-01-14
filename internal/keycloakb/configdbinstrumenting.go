@@ -24,6 +24,7 @@ type ConfigurationDBModule interface {
 	GetAuthorizations(context context.Context, realmID string, groupID string) ([]dto.Authorization, error)
 	CreateAuthorization(context context.Context, authz dto.Authorization) error
 	DeleteAuthorizations(context context.Context, realmID string, groupID string) error
+	DeleteAuthorizationsWithGroupID(context context.Context, groupID string) error
 }
 
 // MakeConfigurationDBModuleInstrumentingMW makes an instrumenting middleware at module level.
@@ -82,4 +83,12 @@ func (m *configDBModuleInstrumentingMW) DeleteAuthorizations(ctx context.Context
 		m.h.With("correlation_id", ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
 	}(time.Now())
 	return m.next.DeleteAuthorizations(ctx, realmID, groupID)
+}
+
+// configDBModuleInstrumentingMW implements Module.
+func (m *configDBModuleInstrumentingMW) DeleteAuthorizationsWithGroupID(ctx context.Context, groupID string) error {
+	defer func(begin time.Time) {
+		m.h.With("correlation_id", ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
+	}(time.Now())
+	return m.next.DeleteAuthorizationsWithGroupID(ctx, groupID)
 }

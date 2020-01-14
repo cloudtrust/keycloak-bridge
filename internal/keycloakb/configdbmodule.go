@@ -21,7 +21,8 @@ const (
 	selectAuthzStmt = `SELECT realm_id, group_id, action, target_realm_id, target_group_id FROM authorizations WHERE realm_id = ? AND group_id = ?;`
 	deleteAuthzStmt = `DELETE FROM authorizations WHERE realm_id = ? AND group_id = ?;`
 	createAuthzStmt = `INSERT INTO authorizations (realm_id, group_id, action, target_realm_id, target_group_id) 
-	    VALUES (?, ?, ?, ?, ?);`
+		VALUES (?, ?, ?, ?, ?);`
+	deleteAuthzWithGroupIDStmt = `DELETE FROM authorizations WHERE group_id = ? OR target_group_id = ?;`
 )
 
 // DBConfiguration interface
@@ -113,6 +114,11 @@ func (c *configurationDBModule) CreateAuthorization(context context.Context, aut
 
 func (c *configurationDBModule) DeleteAuthorizations(context context.Context, realmID string, groupID string) error {
 	_, err := c.db.Exec(deleteAuthzStmt, realmID, groupID)
+	return err
+}
+
+func (c *configurationDBModule) DeleteAuthorizationsWithGroupID(context context.Context, groupID string) error {
+	_, err := c.db.Exec(deleteAuthzWithGroupIDStmt, groupID, groupID)
 	return err
 }
 

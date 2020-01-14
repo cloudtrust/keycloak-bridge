@@ -2,6 +2,7 @@ package management
 
 import (
 	"context"
+	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
@@ -62,6 +63,7 @@ type ConfigurationDBModule interface {
 	GetAuthorizations(context context.Context, realmID string, groupID string) ([]dto.Authorization, error)
 	CreateAuthorization(context context.Context, authz dto.Authorization) error
 	DeleteAuthorizations(context context.Context, realmID string, groupID string) error
+	DeleteAuthorizationsWithGroupID(context context.Context, groupID string) error
 }
 
 // Component is the management component interface.
@@ -826,7 +828,12 @@ func (c *component) DeleteGroup(ctx context.Context, realmName, groupID string) 
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 
 	err := c.keycloakClient.DeleteGroup(accessToken, realmName, groupID)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return err
+	}
 
+	err = c.configDBModule.DeleteAuthorizationsWithGroupID(ctx, groupID)
 	if err != nil {
 		c.logger.Warn(ctx, "err", err.Error())
 		return err
@@ -835,43 +842,170 @@ func (c *component) DeleteGroup(ctx context.Context, realmName, groupID string) 
 	//store the API call into the DB
 	c.reportEvent(ctx, "API_GROUP_DELETION", database.CtEventRealmName, realmName, database.CtEventGroupID, groupID)
 
-	//TODO : maj des authorization -> remove line which have the deleted group
-
 	return nil
 }
 
 func (c *component) GetAuthorizations(ctx context.Context, realmName string, groupID string) (api.AuthorizationsRepresentation, error) {
-	authorizations, err := c.configDBModule.GetAuthorizations(ctx, realmName, groupID)
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 
+	authorizations, err := c.configDBModule.GetAuthorizations(ctx, realmName, groupID)
 	if err != nil {
 		c.logger.Warn(ctx, "err", err.Error())
 		return api.AuthorizationsRepresentation{}, err
 	}
 
-	var matrix = dto.ConvertToMap(authorizations)
+	groups, err := c.keycloakClient.GetGroups(accessToken, realmName)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return api.AuthorizationsRepresentation{}, err
+	}
+
+	// Build a mapping groupID -> groupName
+	var groupIDMapping = make(map[string]string)
+	for _, group := range groups {
+		groupIDMapping[*group.Id] = *group.Name
+	}
+
+	// Convert targetGroupId to targetGroupName
+	var convertedAuthorizations = []dto.Authorization{}
+	for _, auth := range authorizations {
+		var targetGroup *string
+
+		if auth.TargetGroupID != nil {
+			v, ok := groupIDMapping[*auth.TargetGroupID]
+
+			if ok {
+				var groupName = string(v)
+				targetGroup = &groupName
+			}
+		}
+
+		convertedAuthorizations = append(convertedAuthorizations, dto.Authorization{
+			RealmID:       auth.RealmID,
+			GroupID:       auth.GroupID,
+			Action:        auth.Action,
+			TargetRealmID: auth.TargetRealmID,
+			TargetGroupID: targetGroup,
+		})
+	}
+
+	var matrix = dto.ConvertToMap(convertedAuthorizations)
 
 	return api.AuthorizationsRepresentation{
 		Matrix: &matrix,
 	}, nil
-
-	// convert the array of authz in matrix, i.e. map[stringmap[stringmap[stirng]]]...
-
-	//convert groupID into groupName
-
 }
 
 func (c *component) UpdateAuthorizations(ctx context.Context, realmName string, groupID string, auth api.AuthorizationsRepresentation) error {
-	// convert into array
-	// validate
-	// -> for each line
-	// check action is valid one
-	// check taget realm is among allowed one (itself if not master, if master ensure it exists)
-	// check target group (exist in the current realm if not master, if master it exists)
-	// check if there is a * or / or whatever, there is nothing else
-
-	// COnvert groupName into groupID
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+	var currentRealm = ctx.Value(cs.CtContextRealm).(string)
 
 	authorisations := dto.ConvertToAuthorizations(realmName, groupID, *auth.Matrix)
+
+	//	var allowedActions = make(map[string]struct{})
+	// TODO retrieve list of allowed actions
+
+	var allowedTargetRealmsAndGroupIDs = make(map[string]map[string]string)
+
+	realms, err := c.keycloakClient.GetRealms(accessToken)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return err
+	}
+
+	// * is allowed as targetRealm only for master
+	if currentRealm == "master" {
+		allowedTargetRealmsAndGroupIDs["*"] = make(map[string]string)
+	}
+
+	for _, realm := range realms {
+		var realmID = *realm.Id
+		allowedTargetRealmsAndGroupIDs[realmID] = make(map[string]string)
+
+		groups, err := c.keycloakClient.GetGroups(accessToken, realmID)
+		if err != nil {
+			c.logger.Warn(ctx, "err", err.Error())
+			return err
+		}
+
+		for _, group := range groups {
+			allowedTargetRealmsAndGroupIDs[realmID][*group.Name] = *group.Id
+		}
+
+		allowedTargetRealmsAndGroupIDs[realmID]["*"] = "*"
+	}
+
+	for _, auth := range authorisations {
+		// Check Action
+		/*	_, ok := allowedActions[*auth.Action]
+
+			if !ok {
+				return fmt.Errorf("Bad request")
+			}
+		*/
+		// Check TargetRealm
+		if auth.TargetRealmID != nil {
+			_, ok := allowedTargetRealmsAndGroupIDs[*auth.TargetRealmID]
+
+			if !ok {
+				return fmt.Errorf("Bad request")
+			}
+		}
+
+		// Check TargetGroupID
+		if auth.TargetGroupID != nil {
+			_, ok := allowedTargetRealmsAndGroupIDs[*auth.TargetRealmID][*auth.TargetGroupID]
+
+			if !ok {
+				return fmt.Errorf("Bad request")
+			}
+		}
+	}
+
+	var checker = dto.ConvertToMap(authorisations)
+	for _, u := range checker {
+		for realmID, v := range u {
+			// Check if * as targetRealm, there is no other targetRealm rule
+			if realmID == "*" && len(u) != 1 {
+				return fmt.Errorf("Bad request")
+			}
+
+			// Check if * as TargetRealm, there is no TargetGroupID
+			if realmID == "*" && len(v) != 0 {
+				return fmt.Errorf("Bad request")
+			}
+
+			// Check if * as targetGroupId, there is no other targetGroupID rule
+			for targetGroup := range v {
+				if targetGroup == "*" && len(v) != 1 {
+					return fmt.Errorf("Bad request")
+				}
+			}
+		}
+	}
+
+	// Convert groupName into groupID
+	var convertedAuthorizations = []dto.Authorization{}
+	for _, authz := range authorisations {
+		var targetGroupIDPtr *string
+
+		if authz.TargetRealmID != nil && authz.TargetGroupID != nil {
+			var targetGroupID = string(allowedTargetRealmsAndGroupIDs[*authz.TargetRealmID][*authz.TargetGroupID])
+			targetGroupIDPtr = &targetGroupID
+		}
+
+		convertedAuthorizations = append(convertedAuthorizations, dto.Authorization{
+			RealmID:       authz.RealmID,
+			GroupID:       authz.GroupID,
+			Action:        authz.Action,
+			TargetRealmID: authz.TargetRealmID,
+			TargetGroupID: targetGroupIDPtr,
+		})
+	}
+
+	// TODO
+	// determine the role-mappings needed in KC
+	//retrieve the current ones and add/remove if needed
 
 	tx, err := c.configDBModule.NewTransaction(ctx)
 	defer tx.Close()
@@ -887,7 +1021,7 @@ func (c *component) UpdateAuthorizations(ctx context.Context, realmName string, 
 		return err
 	}
 
-	for _, authorisation := range authorisations {
+	for _, authorisation := range convertedAuthorizations {
 		err = c.configDBModule.CreateAuthorization(ctx, authorisation)
 		if err != nil {
 			c.logger.Warn(ctx, "err", err.Error())
@@ -896,28 +1030,12 @@ func (c *component) UpdateAuthorizations(ctx context.Context, realmName string, 
 	}
 
 	return tx.Commit()
-
-	//once validated
-
-	// determine the role-mappings needed in KC
-
-	//retrieve the current ones and add/remove if needed
-
-	// finally persist in AuthzDB via authz>DBModule
-	// ---> into a transaction
-	// ------------> delete all lines
-	// ------------> add all lines
-	// -----> commit
-
 }
 
 /*
-
+	TODO
 	GetActions(ctx context.Context, realmName string) ([]api.ActionRepresentation, error)
 	---> retrieve all actions (--> refactoring needed as action of paper card must also be returned....)
-	GetTargetGroups(ctx context.Context, realmName string) ([]api.GroupRepresentation, error)
-	---> return groups of current realm if non master, else all
-
 
 */
 

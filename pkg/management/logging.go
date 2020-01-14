@@ -72,3 +72,11 @@ func (m *configDBModuleLoggingMW) DeleteAuthorizations(ctx context.Context, real
 	}(time.Now())
 	return m.next.DeleteAuthorizations(ctx, realmID, groupID)
 }
+
+// configDBModuleLoggingMW implements ConfigurationDBModule.
+func (m *configDBModuleLoggingMW) DeleteAuthorizationsWithGroupID(ctx context.Context, groupID string) error {
+	defer func(begin time.Time) {
+		m.logger.Info(ctx, "method", "DeleteAuthorizationsWithGroupID", "args", groupID, "took", time.Since(begin))
+	}(time.Now())
+	return m.next.DeleteAuthorizationsWithGroupID(ctx, groupID)
+}

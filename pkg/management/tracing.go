@@ -90,3 +90,14 @@ func (m *configDBModuleTracingMW) DeleteAuthorizations(ctx context.Context, real
 
 	return m.next.DeleteAuthorizations(ctx, realmID, groupID)
 }
+
+// configDBModuleTracingMW implements StatisticModule.
+func (m *configDBModuleTracingMW) DeleteAuthorizationsWithGroupID(ctx context.Context, groupID string) error {
+	var f tracing.Finisher
+	ctx, f = m.tracer.TryStartSpanWithTag(ctx, "configurationDB_module", "correlation_id", ctx.Value(cs.CtContextCorrelationID).(string))
+	if f != nil {
+		defer f.Finish()
+	}
+
+	return m.next.DeleteAuthorizationsWithGroupID(ctx, groupID)
+}

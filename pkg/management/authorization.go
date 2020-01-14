@@ -370,7 +370,7 @@ func (c *authorizationComponentMW) DeleteGroup(ctx context.Context, realmName st
 	var action = DeleteGroup
 	var targetRealm = realmName
 
-	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
+	if err := c.authManager.CheckAuthorizationOnTargetGroupID(ctx, action, targetRealm, groupID); err != nil {
 		return err
 	}
 
@@ -380,7 +380,7 @@ func (c *authorizationComponentMW) DeleteGroup(ctx context.Context, realmName st
 func (c *authorizationComponentMW) GetAuthorizations(ctx context.Context, realmName string, groupID string) (api.AuthorizationsRepresentation, error) {
 	var action = GetAuthorizations
 
-	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, realmName); err != nil {
+	if err := c.authManager.CheckAuthorizationOnTargetGroupID(ctx, action, realmName, groupID); err != nil {
 		return api.AuthorizationsRepresentation{}, err
 	}
 
@@ -390,7 +390,7 @@ func (c *authorizationComponentMW) GetAuthorizations(ctx context.Context, realmN
 func (c *authorizationComponentMW) UpdateAuthorizations(ctx context.Context, realmName string, groupID string, group api.AuthorizationsRepresentation) error {
 	var action = UpdateAuthorizations
 
-	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, realmName); err != nil {
+	if err := c.authManager.CheckAuthorizationOnTargetGroupID(ctx, action, realmName, groupID); err != nil {
 		return err
 	}
 
