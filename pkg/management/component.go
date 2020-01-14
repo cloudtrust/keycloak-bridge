@@ -50,6 +50,10 @@ type KeycloakClient interface {
 	GetGroup(accessToken string, realmName, groupID string) (kc.GroupRepresentation, error)
 	CreateGroup(accessToken string, realmName string, group kc.GroupRepresentation) (string, error)
 	DeleteGroup(accessToken string, realmName string, groupID string) error
+	AssignClientRole(accessToken string, realmName string, groupID string, clientID string, role []kc.RoleRepresentation) error
+	RemoveClientRole(accessToken string, realmName string, groupID string, clientID string, role []kc.RoleRepresentation) error
+	GetGroupClientRoles(accessToken string, realmName string, groupID string, clientID string) ([]kc.RoleRepresentation, error)
+	GetAvailableGroupClientRoles(accessToken string, realmName string, groupID string, clientID string) ([]kc.RoleRepresentation, error)
 	GetCredentials(accessToken string, realmName string, userID string) ([]kc.CredentialRepresentation, error)
 	UpdateLabelCredential(accessToken string, realmName string, userID string, credentialID string, label string) error
 	DeleteCredential(accessToken string, realmName string, userID string, credentialID string) error
@@ -901,9 +905,6 @@ func (c *component) UpdateAuthorizations(ctx context.Context, realmName string, 
 
 	authorisations := dto.ConvertToAuthorizations(realmName, groupID, *auth.Matrix)
 
-	//	var allowedActions = make(map[string]struct{})
-	// TODO retrieve list of allowed actions
-
 	var allowedTargetRealmsAndGroupIDs = make(map[string]map[string]string)
 
 	realms, err := c.keycloakClient.GetRealms(accessToken)
@@ -935,13 +936,6 @@ func (c *component) UpdateAuthorizations(ctx context.Context, realmName string, 
 	}
 
 	for _, auth := range authorisations {
-		// Check Action
-		/*	_, ok := allowedActions[*auth.Action]
-
-			if !ok {
-				return fmt.Errorf("Bad request")
-			}
-		*/
 		// Check TargetRealm
 		if auth.TargetRealmID != nil {
 			_, ok := allowedTargetRealmsAndGroupIDs[*auth.TargetRealmID]
@@ -1002,9 +996,74 @@ func (c *component) UpdateAuthorizations(ctx context.Context, realmName string, 
 		})
 	}
 
-	// TODO
-	// determine the role-mappings needed in KC
-	//retrieve the current ones and add/remove if needed
+	// TODO Would be good to provide only KC roles which are really needed.
+	// For simplicity, we provides "manage-users", "view-clients", "view-realms", "view-users" to all groups which have at least one Management Action
+	// We also do it for each realms avaialble.
+	var kcRolesNeeded = false
+
+	for _, authz := range convertedAuthorizations {
+		if authz.Action != nil && strings.HasPrefix(*authz.Action, "MGMT_") {
+			kcRolesNeeded = true
+		}
+	}
+
+	// Check if roles are assigned
+	clients, err := c.keycloakClient.GetClients(accessToken, realmName)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return err
+	}
+
+	for _, client := range clients {
+		// filter clients, only keep realm-management and the ones ending with -realm
+		if *client.ClientId != "realm-management" && !strings.HasSuffix(*client.ClientId, "-realm") {
+			continue
+		}
+
+		availableRoles, err := c.keycloakClient.GetAvailableGroupClientRoles(accessToken, realmName, groupID, *client.Id)
+		if err != nil {
+			c.logger.Warn(ctx, "err", err.Error())
+			return err
+		}
+
+		currentRoles, err := c.keycloakClient.GetGroupClientRoles(accessToken, realmName, groupID, *client.Id)
+		if err != nil {
+			c.logger.Warn(ctx, "err", err.Error())
+			return err
+		}
+
+		if kcRolesNeeded {
+			var rolesToAdd = []kc.RoleRepresentation{}
+			for _, role := range availableRoles {
+				if stringInSlice(*role.Name, []string{"manage-users", "view-clients", "view-realm", "view-users"}) {
+					rolesToAdd = append(rolesToAdd, role)
+				}
+			}
+
+			if len(rolesToAdd) != 0 {
+				err = c.keycloakClient.AssignClientRole(accessToken, realmName, groupID, *client.Id, rolesToAdd)
+				if err != nil {
+					c.logger.Warn(ctx, "err", err.Error())
+					return err
+				}
+			}
+		} else {
+			var rolesToRemove = []kc.RoleRepresentation{}
+			for _, role := range currentRoles {
+				if stringInSlice(*role.Name, []string{"manage-users", "view-clients", "view-realm", "view-users"}) {
+					rolesToRemove = append(rolesToRemove, role)
+				}
+			}
+
+			if len(rolesToRemove) != 0 {
+				err = c.keycloakClient.RemoveClientRole(accessToken, realmName, groupID, *client.Id, rolesToRemove)
+				if err != nil {
+					c.logger.Warn(ctx, "err", err.Error())
+					return err
+				}
+			}
+		}
+	}
 
 	tx, err := c.configDBModule.NewTransaction(ctx)
 	defer tx.Close()
@@ -1204,4 +1263,13 @@ func (c *component) UpdateRealmCustomConfiguration(ctx context.Context, realmNam
 	realmID := realmConfig.Id
 	err = c.configDBModule.StoreOrUpdate(ctx, *realmID, config)
 	return err
+}
+
+func stringInSlice(a string, list []string) bool {
+	for _, b := range list {
+		if b == a {
+			return true
+		}
+	}
+	return false
 }
