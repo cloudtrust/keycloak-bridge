@@ -8,11 +8,25 @@ import (
 	api "github.com/cloudtrust/keycloak-bridge/api/events"
 )
 
+var actions []string
+
+type Action int
+
+func (a Action) String() string {
+	return actions[int(a)]
+}
+
+func customIota(s string) Action {
+	actions = append(actions, s)
+	return Action(len(actions) - 1)
+}
+
 // Actions used for authorization module
-const (
-	EVGetEvents        = "EV_GetEvents"
-	EVGetEventsSummary = "EV_GetEventsSummary"
-	EVGetUserEvents    = "EV_GetUserEvents"
+var (
+	EVGetActions       = customIota("EV_GetActions")
+	EVGetEvents        = customIota("EV_GetEvents")
+	EVGetEventsSummary = customIota("EV_GetEventsSummary")
+	EVGetUserEvents    = customIota("EV_GetUserEvents")
 )
 
 // Tracking middleware at component level.
@@ -33,8 +47,19 @@ func MakeAuthorizationManagementComponentMW(logger log.Logger, authorizationMana
 	}
 }
 
+func (c *authorizationComponentMW) GetActions(ctx context.Context) ([]string, error) {
+	var action = EVGetActions.String()
+	var targetRealm = "*" // For this method, there is no target realm, so we use the wildcard to express there is no constraints.
+
+	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
+		return []string{}, err
+	}
+
+	return c.next.GetActions(ctx)
+}
+
 func (c *authorizationComponentMW) GetEvents(ctx context.Context, m map[string]string) (api.AuditEventsRepresentation, error) {
-	var action = EVGetEvents
+	var action = EVGetEvents.String()
 	var targetRealm = "*" // For this method, there is no target realm, so we use the wildcard to express there is no constraints.
 
 	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
@@ -45,7 +70,7 @@ func (c *authorizationComponentMW) GetEvents(ctx context.Context, m map[string]s
 }
 
 func (c *authorizationComponentMW) GetEventsSummary(ctx context.Context) (api.EventSummaryRepresentation, error) {
-	var action = EVGetEventsSummary
+	var action = EVGetEventsSummary.String()
 	var targetRealm = "*" // For this method, there is no target realm, so we use the wildcard to express there is no constraints.
 
 	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
@@ -56,7 +81,7 @@ func (c *authorizationComponentMW) GetEventsSummary(ctx context.Context) (api.Ev
 }
 
 func (c *authorizationComponentMW) GetUserEvents(ctx context.Context, m map[string]string) (api.AuditEventsRepresentation, error) {
-	var action = EVGetUserEvents
+	var action = EVGetUserEvents.String()
 	var targetRealm = m["realm"] // Get the realm provided as parameter in path
 	var targetUser = m["userID"] // Get the user provided as parameter in path
 

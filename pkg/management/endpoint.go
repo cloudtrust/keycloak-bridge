@@ -52,8 +52,7 @@ type Endpoints struct {
 	DeleteGroup          endpoint.Endpoint
 	GetAuthorizations    endpoint.Endpoint
 	UpdateAuthorizations endpoint.Endpoint
-	GetPermissions       endpoint.Endpoint
-	GetTargetGroups      endpoint.Endpoint
+	GetActions           endpoint.Endpoint
 
 	GetRealmCustomConfiguration    endpoint.Endpoint
 	UpdateRealmCustomConfiguration endpoint.Endpoint
@@ -94,8 +93,7 @@ type ManagementComponent interface {
 	DeleteGroup(ctx context.Context, realmName string, groupID string) error
 	GetAuthorizations(ctx context.Context, realmName string, groupID string) (api.AuthorizationsRepresentation, error)
 	UpdateAuthorizations(ctx context.Context, realmName string, groupID string, group api.AuthorizationsRepresentation) error
-	//GetPermissions(ctx context.Context, realmName string) ([]api.PermissionRepresentation, error)
-	//GetTargetGroups(ctx context.Context, realmName string) ([]api.GroupRepresentation, error)
+	GetActions(ctx context.Context) ([]string, error)
 
 	GetRealmCustomConfiguration(ctx context.Context, realmID string) (api.RealmCustomConfiguration, error)
 	UpdateRealmCustomConfiguration(ctx context.Context, realmID string, customConfig api.RealmCustomConfiguration) error
@@ -524,7 +522,7 @@ func MakeDeleteGroupEndpoint(managementComponent ManagementComponent) cs.Endpoin
 	}
 }
 
-// MakeGetAuthorizationEndpoint creates an endpoint for GetAuthorizations
+// MakeGetAuthorizationsEndpoint creates an endpoint for GetAuthorizations
 func MakeGetAuthorizationsEndpoint(managementComponent ManagementComponent) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
@@ -549,24 +547,12 @@ func MakeUpdateAuthorizationsEndpoint(managementComponent ManagementComponent) c
 	}
 }
 
-/*
-// MakeGetPermissionsEndpoint creates an endpoint for GetPermissions
-func MakeGetPermissionsEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+// MakeGetActionsEndpoint creates an endpoint for GetActions
+func MakeGetActionsEndpoint(managementComponent ManagementComponent) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
-		var m = req.(map[string]string)
-
-		return managementComponent.GetPermissions(ctx, m["realm"])
+		return managementComponent.GetActions(ctx)
 	}
 }
-
-// MakeGetTargetGroupsEndpoint creates an endpoint for GetTargetGroups
-func MakeGetTargetGroupsEndpoint(managementComponent ManagementComponent) cs.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
-		var m = req.(map[string]string)
-
-		return managementComponent.GetTargetGroups(ctx, m["realm"])
-	}
-}*/
 
 // MakeGetRealmCustomConfigurationEndpoint creates an endpoint for GetRealmCustomConfiguration
 func MakeGetRealmCustomConfigurationEndpoint(managementComponent ManagementComponent) cs.Endpoint {

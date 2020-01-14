@@ -8,14 +8,28 @@ import (
 	api "github.com/cloudtrust/keycloak-bridge/api/statistics"
 )
 
+var actions []string
+
+type Action int
+
+func (a Action) String() string {
+	return actions[int(a)]
+}
+
+func customIota(s string) Action {
+	actions = append(actions, s)
+	return Action(len(actions) - 1)
+}
+
 // Actions used for authorization module
-const (
-	STGetStatistics                   = "ST_GetStatistics"
-	STGetStatisticsUsers              = "ST_GetStatisticsUsers"
-	STGetStatisticsAuthenticators     = "ST_GetStatisticsAuthenticators"
-	STGetStatisticsAuthentications    = "ST_GetStatisticsAuthentications"
-	STGetStatisticsAuthenticationsLog = "ST_GetStatisticsAuthenticationsLog"
-	STGetMigrationReport              = "ST_GetMigrationReport"
+var (
+	STGetActions                      = customIota("ST_GetActions")
+	STGetStatistics                   = customIota("ST_GetStatistics")
+	STGetStatisticsUsers              = customIota("ST_GetStatisticsUsers")
+	STGetStatisticsAuthenticators     = customIota("ST_GetStatisticsAuthenticators")
+	STGetStatisticsAuthentications    = customIota("ST_GetStatisticsAuthentications")
+	STGetStatisticsAuthenticationsLog = customIota("ST_GetStatisticsAuthenticationsLog")
+	STGetMigrationReport              = customIota("ST_GetMigrationReport")
 )
 
 // Tracking middleware at component level.
@@ -36,8 +50,19 @@ func MakeAuthorizationManagementComponentMW(logger log.Logger, authorizationMana
 	}
 }
 
+func (c *authorizationComponentMW) GetActions(ctx context.Context) ([]string, error) {
+	var action = STGetActions.String()
+	var targetRealm = "*" // For this method, there is no target realm, so we use the wildcard to express there is no constraints.
+
+	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
+		return []string{}, err
+	}
+
+	return c.next.GetActions(ctx)
+}
+
 func (c *authorizationComponentMW) GetStatistics(ctx context.Context, realm string) (api.StatisticsRepresentation, error) {
-	var action = STGetStatistics
+	var action = STGetStatistics.String()
 
 	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, realm); err != nil {
 		return api.StatisticsRepresentation{}, err
@@ -47,7 +72,7 @@ func (c *authorizationComponentMW) GetStatistics(ctx context.Context, realm stri
 }
 
 func (c *authorizationComponentMW) GetStatisticsUsers(ctx context.Context, realm string) (api.StatisticsUsersRepresentation, error) {
-	var action = STGetStatisticsUsers
+	var action = STGetStatisticsUsers.String()
 
 	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, realm); err != nil {
 		return api.StatisticsUsersRepresentation{}, err
@@ -57,7 +82,7 @@ func (c *authorizationComponentMW) GetStatisticsUsers(ctx context.Context, realm
 }
 
 func (c *authorizationComponentMW) GetStatisticsAuthenticators(ctx context.Context, realm string) (map[string]int64, error) {
-	var action = STGetStatisticsAuthenticators
+	var action = STGetStatisticsAuthenticators.String()
 
 	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, realm); err != nil {
 		return nil, err
@@ -67,7 +92,7 @@ func (c *authorizationComponentMW) GetStatisticsAuthenticators(ctx context.Conte
 }
 
 func (c *authorizationComponentMW) GetStatisticsAuthentications(ctx context.Context, realm string, unit string, timeshift *string) ([][]int64, error) {
-	var action = STGetStatisticsAuthentications
+	var action = STGetStatisticsAuthentications.String()
 
 	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, realm); err != nil {
 		return nil, err
@@ -77,7 +102,7 @@ func (c *authorizationComponentMW) GetStatisticsAuthentications(ctx context.Cont
 }
 
 func (c *authorizationComponentMW) GetStatisticsAuthenticationsLog(ctx context.Context, realm string, max string) ([]api.StatisticsConnectionRepresentation, error) {
-	var action = STGetStatisticsAuthenticationsLog
+	var action = STGetStatisticsAuthenticationsLog.String()
 
 	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, realm); err != nil {
 		return nil, err
@@ -87,7 +112,7 @@ func (c *authorizationComponentMW) GetStatisticsAuthenticationsLog(ctx context.C
 }
 
 func (c *authorizationComponentMW) GetMigrationReport(ctx context.Context, realm string) (map[string]bool, error) {
-	var action = STGetMigrationReport
+	var action = STGetMigrationReport.String()
 
 	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, realm); err != nil {
 		return map[string]bool{}, err

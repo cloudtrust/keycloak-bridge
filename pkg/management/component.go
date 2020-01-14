@@ -101,8 +101,7 @@ type Component interface {
 	DeleteGroup(ctx context.Context, realmName string, groupID string) error
 	GetAuthorizations(ctx context.Context, realmName string, groupID string) (api.AuthorizationsRepresentation, error)
 	UpdateAuthorizations(ctx context.Context, realmName string, groupID string, group api.AuthorizationsRepresentation) error
-	//	GetPermissions(ctx context.Context, realmName string) ([]api.PermissionRepresentation, error)
-	//	GetTargetGroups(ctx context.Context, realmName string) ([]api.GroupRepresentation, error)
+	GetActions(ctx context.Context) ([]string, error)
 
 	GetRealmCustomConfiguration(ctx context.Context, realmName string) (api.RealmCustomConfiguration, error)
 	UpdateRealmCustomConfiguration(ctx context.Context, realmID string, customConfig api.RealmCustomConfiguration) error
@@ -1032,12 +1031,9 @@ func (c *component) UpdateAuthorizations(ctx context.Context, realmName string, 
 	return tx.Commit()
 }
 
-/*
-	TODO
-	GetActions(ctx context.Context, realmName string) ([]api.ActionRepresentation, error)
-	---> retrieve all actions (--> refactoring needed as action of paper card must also be returned....)
-
-*/
+func (c *component) GetActions(ctx context.Context) ([]string, error) {
+	return actions, nil
+}
 
 func (c *component) GetClientRoles(ctx context.Context, realmName, idClient string) ([]api.RoleRepresentation, error) {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)

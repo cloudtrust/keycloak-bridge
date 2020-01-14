@@ -9,6 +9,7 @@ import (
 
 // Endpoints exposed for path /events
 type Endpoints struct {
+	GetActions                  endpoint.Endpoint
 	GetEvents                   endpoint.Endpoint
 	GetEventsSummary            endpoint.Endpoint
 	GetUserEvents               endpoint.Endpoint
@@ -16,6 +17,13 @@ type Endpoints struct {
 	GetStatisticsUsers          endpoint.Endpoint
 	GetStatisticsAuthenticators endpoint.Endpoint
 	//GetStatisticsAuthentications endpoint.Endpoint
+}
+
+// MakeGetActionsEndpoint creates an endpoint for GetActions
+func MakeGetActionsEndpoint(ec Component) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		return ec.GetActions(ctx)
+	}
 }
 
 // MakeGetEventsEndpoint makes the events endpoint.

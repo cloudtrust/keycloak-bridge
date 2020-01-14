@@ -11,6 +11,7 @@ import (
 
 // Component is the interface of the events component.
 type Component interface {
+	GetActions(ctx context.Context) ([]string, error)
 	GetEvents(context.Context, map[string]string) (api.AuditEventsRepresentation, error)
 	GetEventsSummary(context.Context) (api.EventSummaryRepresentation, error)
 	GetUserEvents(context.Context, map[string]string) (api.AuditEventsRepresentation, error)
@@ -38,6 +39,11 @@ func (ec *component) reportEvent(ctx context.Context, apiCall string, values ...
 		app.LogUnrecordedEvent(ctx, ec.logger, apiCall, errEvent.Error(), values...)
 	}
 
+}
+
+// Get actions
+func (ec *component) GetActions(ctx context.Context) ([]string, error) {
+	return actions, nil
 }
 
 // Get events according to optional parameters

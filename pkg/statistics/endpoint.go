@@ -11,12 +11,20 @@ import (
 
 // Endpoints exposed for path /events
 type Endpoints struct {
+	GetActions                      endpoint.Endpoint
 	GetStatistics                   endpoint.Endpoint
 	GetStatisticsUsers              endpoint.Endpoint
 	GetStatisticsAuthenticators     endpoint.Endpoint
 	GetStatisticsAuthentications    endpoint.Endpoint
 	GetStatisticsAuthenticationsLog endpoint.Endpoint
 	GetMigrationReport              endpoint.Endpoint
+}
+
+// MakeGetActionsEndpoint creates an endpoint for GetActions
+func MakeGetActionsEndpoint(ec Component) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		return ec.GetActions(ctx)
+	}
 }
 
 // MakeGetStatisticsEndpoint makes the statistic summary endpoint.
