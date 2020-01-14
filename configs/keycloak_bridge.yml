@@ -5,6 +5,7 @@
 internal-http-host-port: 0.0.0.0:8888
 management-http-host-port: 0.0.0.0:8877
 account-http-host-port: 0.0.0.0:8866
+register-http-host-port: 0.0.0.0:8855
 
 # Log level
 #   - error: log only error log level
@@ -40,7 +41,6 @@ audience-required: "account"
 
 ## Password used to protect /internal/event endpoint
 event-basic-auth-token: "superpasswordverylongandstrong"
-
 
 # Keycloak configs
 keycloak-api-uri: http://localhost:8080
@@ -104,6 +104,20 @@ db-config-ro-migration: false
 db-config-ro-migration-version: 0.1
 db-config-ro-connection-check: true
 
+# DB Users RW
+db-users-rw-host-port: 172.17.0.2:3306
+db-users-rw-username: bridge
+db-users-rw-password: bridge-password
+db-users-rw-database: users
+db-users-rw-protocol: tcp
+db-users-rw-parameters: time_zone='%2B00:00'
+db-users-rw-max-open-conns: 10
+db-users-rw-max-idle-conns: 2
+db-users-rw-conn-max-lifetime: 10
+db-users-rw-migration: false
+db-users-rw-migration-version: 0.1
+db-users-rw-connection-check: true
+
 # audit events
 events-db: false
 
@@ -113,7 +127,7 @@ rate-account: 1000
 rate-management: 1000
 rate-statistics: 1000
 rate-events: 1000
-
+rate-register: 1000
 
 # Influx DB configs
 influx: false
@@ -142,5 +156,13 @@ jaeger-write-interval: 1s
 pprof-route-enabled: true
 
 # Liveness probe
-livenessprobe-http-timeout: 5
-livenessprobe-cache-duration: 10
+livenessprobe-http-timeout: 900
+livenessprobe-cache-duration: 500
+
+# Register API parameters
+register-enabled: false
+register-realm: trustid
+register-techuser-username: technicaluser
+register-techuser-password: technicalsuperpasswordverylongandstrong
+register-techuser-client-id: admin-cli
+recaptcha-url: https://www.google.com/recaptcha/api/siteverify

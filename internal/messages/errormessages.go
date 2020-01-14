@@ -15,6 +15,7 @@ const (
 	MsgErrUnknown              = "unknowError"
 	MsgErrNotConfigured        = "notConfigured"
 
+	BodyContent        = "bodyContent"
 	RealmConfiguration = "realmConfiguration"
 	Authorization      = "authorization"
 	CurrentPassword    = "currentPassword"

@@ -41,6 +41,7 @@ Key | Description | Default value
 internal-http-host-port | HTTP server listening address | 0.0.0.0:8888
 management-http-host-port | HTTP server listening address | 0.0.0.0:8877
 account-http-host-port | HTTP server listening address | 0.0.0.0:8866
+register-http-host-port | HTTP server listening address | 0.0.0.0:8855
 
 
 ### Keycloak
@@ -66,12 +67,17 @@ Some parameters can be overridden with following ENV variables:
 
 ENV Variable | Parameter
 --- | -----------
+CT_BRIDGE_REGISTER_USERNAME | register-techuser-username
+CT_BRIDGE_REGISTER_PASSWORD | register-techuser-password
+CT_BRIDGE_REGISTER_CLIENT_ID | register-techuser-client-id
 CT_BRIDGE_DB_AUDIT_RW_USERNAME | db-audit-rw-username
 CT_BRIDGE_DB_AUDIT_RW_PASSWORD | db-audit-rw-password
 CT_BRIDGE_DB_AUDIT_RO_USERNAME | db-audit-ro-username
 CT_BRIDGE_DB_AUDIT_RO_PASSWORD | db-audit-ro-password
 CT_BRIDGE_DB_CONFIG_USERNAME | db-config-username
 CT_BRIDGE_DB_CONFIG_PASSWORD | db-config-password
+CT_BRIDGE_DB_USERS_USERNAME | db-users-username
+CT_BRIDGE_DB_USERS_PASSWORD | db-users-password
 CT_BRIDGE_INFLUX_USERNAME | influx-username
 CT_BRIDGE_INFLUX_PASSWORD | influx-password
 CT_BRIDGE_SENTRY_DSN | sentry-dsn
@@ -145,7 +151,7 @@ correlation_id:<correlation_id>
 
 ## Tests
 
-Gomock is used to automatically genarate mocks. See the Cloudtrust [Gitbook](https://cloudtrust.github.io/doc/chapter-godevel/testing.html) for more information.
+Gomock is used to automatically generate mocks. See the Cloudtrust [Gitbook](https://cloudtrust.github.io/doc/chapter-godevel/testing.html) for more information.
 
 The unit tests don't cover:
 
