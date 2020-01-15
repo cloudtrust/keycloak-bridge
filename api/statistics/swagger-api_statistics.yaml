@@ -9,6 +9,20 @@ tags:
 - name: Statistics
   description: Statistics management
 paths:
+  /statistics/actions:
+    get:
+      tags:
+      - Actions
+      summary: Get the list of all possible actions
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
   /statistics/realms/{realm}:
     get:
       tags:
@@ -86,7 +100,7 @@ paths:
           type: string
       - name: timeshift
         in: query
-        description: timeshift compared to UTC in minutes. Must start with + or - (default: +0)
+        description: timeshift compared to UTC in minutes. Must start with + or - (default +0)
         required: false
         schema:
           type: string

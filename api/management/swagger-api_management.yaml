@@ -15,6 +15,20 @@ tags:
 - name: Roles
   description: Roles management
 paths:
+  /actions:
+    get:
+      tags:
+      - Actions
+      summary: Get the list of all possible actions
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
   /realms/{realm}:
     get:
       tags:
@@ -767,6 +781,122 @@ paths:
               schema:
                 type: string
               description: URL of the new resource.
+  /realms/{realm}/groups:
+    get:
+      tags:
+      - Groups
+      summary: Get the groups available for the realm
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Group'
+    post:
+      tags:
+      - Groups
+      summary: Create a new group into the realm
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Group'
+      responses:
+        201:
+          description: successful operation
+          headers:
+            Location:
+              schema:
+                type: string
+              description: URL of the new resource.
+  /realms/{realm}/groups/{groupID}:
+    delete:
+      tags:
+      - Groups
+      summary: Delete the group
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: groupID
+        in: path
+        description: group id
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation
+  /realms/{realm}/groups/{groupID}/authorizations:
+    get:
+      tags:
+      - Groups
+      summary: Get the authorizations of the group
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: groupID
+        in: path
+        description: group id
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                  $ref: '#/components/schemas/Authorizations'
+    put:
+      tags:
+      - Groups
+      summary: Update the authorizations of the group
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: groupID
+        in: path
+        description: group id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Authorizations'    
+      responses:
+        200:
+          description: successful operation
   /realms/{realm}/configuration:
     get:
       tags:
@@ -920,6 +1050,11 @@ components:
           type: string
         name:
           type: string
+    Authorizations:
+      type: object
+      properties:
+        matrix:
+          type: object
     Password:
       type: object
       properties:

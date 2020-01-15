@@ -90,7 +90,7 @@ type GroupRepresentation struct {
 
 // AuthorizationsRepresentation struct
 type AuthorizationsRepresentation struct {
-	Matrix *map[string]map[string]map[string]struct{} `json:"matrix,omitempty"`
+	Matrix *map[string]map[string]map[string]struct{} `json:"matrix"`
 }
 
 // PermissionRepresentation struct
