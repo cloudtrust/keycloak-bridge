@@ -5,7 +5,7 @@ import (
 
 	cs "github.com/cloudtrust/common-service"
 	errorhandler "github.com/cloudtrust/common-service/errors"
-	internal "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
+	msg "github.com/cloudtrust/keycloak-bridge/internal/messages"
 	"github.com/go-kit/kit/endpoint"
 )
 
@@ -56,7 +56,7 @@ func MakeGetStatisticsAuthenticationsEndpoint(ec Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 		if _, ok := m["unit"]; !ok {
-			return nil, errorhandler.CreateMissingParameterError(internal.Unit)
+			return nil, errorhandler.CreateMissingParameterError(msg.Unit)
 		}
 		var timeshift *string = nil
 		if timeshiftStr, ok := m["timeshift"]; ok {
@@ -72,7 +72,7 @@ func MakeGetStatisticsAuthenticationsLogEndpoint(ec Component) cs.Endpoint {
 		var m = req.(map[string]string)
 		_, ok := m["max"]
 		if !ok {
-			return nil, errorhandler.CreateMissingParameterError(internal.Max)
+			return nil, errorhandler.CreateMissingParameterError(msg.Max)
 		}
 		return ec.GetStatisticsAuthenticationsLog(ctx, m["realm"], m["max"])
 	}

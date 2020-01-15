@@ -10,6 +10,7 @@ import (
 	errorhandler "github.com/cloudtrust/common-service/errors"
 	"github.com/cloudtrust/common-service/log"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
+	msg "github.com/cloudtrust/keycloak-bridge/internal/messages"
 )
 
 const (
@@ -70,7 +71,7 @@ func (c *configurationDBModule) GetConfiguration(context context.Context, realmI
 	case sql.ErrNoRows:
 		return config, errorhandler.Error{
 			Status:  404,
-			Message: ComponentName + "." + MsgErrNotConfigured + "." + RealmConfiguration + "." + realmID,
+			Message: ComponentName + "." + msg.MsgErrNotConfigured + "." + msg.RealmConfiguration + "." + realmID,
 		}
 
 	default:

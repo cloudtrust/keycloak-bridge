@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 
 	internal "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
+	msg "github.com/cloudtrust/keycloak-bridge/internal/messages"
 	keycloak "github.com/cloudtrust/keycloak-client"
 	"github.com/pkg/errors"
 )
@@ -65,7 +66,7 @@ func (c *component) StoreAndExport(ctx context.Context) (map[string]interface{},
 		realms, err = c.re.GetRealms(ctx)
 		if err != nil {
 			c.logger.Warn(ctx, "err", err.Error())
-			return nil, errors.Wrap(err, internal.MsgErrCannotObtain+"."+internal.KeycloakRealms)
+			return nil, errors.Wrap(err, msg.MsgErrCannotObtain+"."+msg.KeycloakRealms)
 		}
 	}
 
@@ -83,13 +84,13 @@ func (c *component) StoreAndExport(ctx context.Context) (map[string]interface{},
 	// Store
 	var data, err = json.Marshal(realmsMap)
 	if err != nil {
-		return nil, errors.Wrapf(err, internal.MsgErrCannotMarshal+"."+internal.Config+"."+c.componentName+"."+c.componentVersion)
+		return nil, errors.Wrapf(err, msg.MsgErrCannotMarshal+"."+msg.Config+"."+c.componentName+"."+c.componentVersion)
 	}
 
 	err = c.s.Save(c.componentName, c.componentVersion, data)
 
 	if err != nil {
-		return nil, errors.Wrapf(err, internal.MsgErrCannotSaveConfigInDB+"."+c.componentName+"."+c.componentVersion)
+		return nil, errors.Wrapf(err, msg.MsgErrCannotSaveConfigInDB+"."+c.componentName+"."+c.componentVersion)
 	}
 
 	return realmsMap, nil

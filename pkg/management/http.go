@@ -7,7 +7,8 @@ import (
 	commonhttp "github.com/cloudtrust/common-service/http"
 	"github.com/cloudtrust/common-service/log"
 	management_api "github.com/cloudtrust/keycloak-bridge/api/management"
-	internal "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
+	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
+	msg "github.com/cloudtrust/keycloak-bridge/internal/messages"
 	kc_client "github.com/cloudtrust/keycloak-client"
 	"github.com/go-kit/kit/endpoint"
 	http_transport "github.com/go-kit/kit/transport/http"
@@ -71,7 +72,7 @@ func managementErrorHandler(logger log.Logger) func(context.Context, error, http
 		switch e := errors.Cause(err).(type) {
 		case kc_client.HTTPError:
 			w.WriteHeader(e.HTTPStatus)
-			w.Write([]byte(internal.ComponentName + "." + internal.MsgErrUnknown))
+			w.Write([]byte(keycloakb.ComponentName + "." + msg.MsgErrUnknown))
 		default:
 			defaultHandler(ctx, err, w)
 

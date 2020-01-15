@@ -5,7 +5,8 @@ import (
 	"regexp"
 	"strconv"
 
-	internal "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
+	"github.com/cloudtrust/keycloak-bridge/internal/dto"
+	internal "github.com/cloudtrust/keycloak-bridge/internal/messages"
 	kc "github.com/cloudtrust/keycloak-client"
 )
 
@@ -254,6 +255,88 @@ func ConvertToKCGroup(group GroupRepresentation) kc.GroupRepresentation {
 	groupRep.Name = group.Name
 
 	return groupRep
+}
+
+// ConvertToAPIAuthorizations creates a API authorization representation from an array of DB Authorization
+func ConvertToAPIAuthorizations(authorizations []dto.Authorization) AuthorizationsRepresentation {
+	var matrix = make(map[string]map[string]map[string]struct{})
+
+	for _, authz := range authorizations {
+		_, ok := matrix[*authz.Action]
+		if !ok {
+			matrix[*authz.Action] = make(map[string]map[string]struct{})
+		}
+
+		if authz.TargetRealmID == nil {
+			continue
+		}
+
+		_, ok = matrix[*authz.Action][*authz.TargetRealmID]
+		if !ok {
+			matrix[*authz.Action][*authz.TargetRealmID] = make(map[string]struct{})
+		}
+
+		if authz.TargetGroupID == nil {
+			continue
+		}
+
+		matrix[*authz.Action][*authz.TargetRealmID][*authz.TargetGroupID] = struct{}{}
+	}
+
+	return AuthorizationsRepresentation{
+		Matrix: &matrix,
+	}
+
+}
+
+// ConvertToDBAuthorizations creates an array of DB Authorization from an API AuthorizationsRepresentation
+func ConvertToDBAuthorizations(realmID, groupID string, apiAuthorizations AuthorizationsRepresentation) []dto.Authorization {
+	var authorizations = []dto.Authorization{}
+
+	if apiAuthorizations.Matrix == nil {
+		return authorizations
+	}
+
+	for action, u := range *apiAuthorizations.Matrix {
+		if len(u) == 0 {
+			var act = string(action)
+			authorizations = append(authorizations, dto.Authorization{
+				RealmID: &realmID,
+				GroupID: &groupID,
+				Action:  &act,
+			})
+			continue
+		}
+
+		for targeteRealmID, v := range u {
+			if len(v) == 0 {
+				var act = string(action)
+				var targetRealm = string(targeteRealmID)
+				authorizations = append(authorizations, dto.Authorization{
+					RealmID:       &realmID,
+					GroupID:       &groupID,
+					Action:        &act,
+					TargetRealmID: &targetRealm,
+				})
+				continue
+			}
+
+			for targetGroupID := range v {
+				var act = string(action)
+				var targetRealm = string(targeteRealmID)
+				var targetGroup = string(targetGroupID)
+				authorizations = append(authorizations, dto.Authorization{
+					RealmID:       &realmID,
+					GroupID:       &groupID,
+					Action:        &act,
+					TargetRealmID: &targetRealm,
+					TargetGroupID: &targetGroup,
+				})
+			}
+		}
+	}
+
+	return authorizations
 }
 
 // ConvertRequiredAction creates an API requiredAction from a KC requiredAction

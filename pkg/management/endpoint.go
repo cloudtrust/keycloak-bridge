@@ -10,7 +10,7 @@ import (
 	cs "github.com/cloudtrust/common-service"
 	errorhandler "github.com/cloudtrust/common-service/errors"
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
-	internal "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
+	msg "github.com/cloudtrust/keycloak-bridge/internal/messages"
 	"github.com/go-kit/kit/endpoint"
 )
 
@@ -151,7 +151,7 @@ func MakeCreateUserEndpoint(managementComponent ManagementComponent) cs.Endpoint
 		var user api.UserRepresentation
 
 		if err = json.Unmarshal([]byte(m["body"]), &user); err != nil {
-			return nil, errorhandler.CreateBadRequestError(internal.MsgErrInvalidParam + "." + internal.Body)
+			return nil, errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Body)
 		}
 
 		if err = user.Validate(); err != nil {
@@ -159,7 +159,7 @@ func MakeCreateUserEndpoint(managementComponent ManagementComponent) cs.Endpoint
 		}
 
 		if user.Groups == nil || len(*user.Groups) == 0 {
-			return nil, errorhandler.CreateMissingParameterError(internal.Groups)
+			return nil, errorhandler.CreateMissingParameterError(msg.Groups)
 		}
 
 		var keycloakLocation string
@@ -205,7 +205,7 @@ func MakeUpdateUserEndpoint(managementComponent ManagementComponent) cs.Endpoint
 		var user api.UserRepresentation
 
 		if err = json.Unmarshal([]byte(m["body"]), &user); err != nil {
-			return nil, errorhandler.CreateBadRequestError(internal.MsgErrInvalidParam + internal.Body)
+			return nil, errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + msg.Body)
 		}
 
 		if err = user.Validate(); err != nil {
@@ -230,7 +230,7 @@ func MakeGetUsersEndpoint(managementComponent ManagementComponent) cs.Endpoint {
 
 		_, ok := m["groupIds"]
 		if !ok {
-			return nil, errorhandler.CreateMissingParameterError(internal.GroupIDs)
+			return nil, errorhandler.CreateMissingParameterError(msg.GroupIDs)
 		}
 
 		groupIDs := strings.Split(m["groupIds"], ",")
@@ -284,7 +284,7 @@ func MakeAddClientRolesToUserEndpoint(managementComponent ManagementComponent) c
 		var roles []api.RoleRepresentation
 
 		if err = json.Unmarshal([]byte(m["body"]), &roles); err != nil {
-			return nil, errorhandler.CreateBadRequestError(internal.MsgErrInvalidParam + "." + internal.Body)
+			return nil, errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Body)
 		}
 
 		for _, role := range roles {
@@ -306,7 +306,7 @@ func MakeResetPasswordEndpoint(managementComponent ManagementComponent) cs.Endpo
 		var password api.PasswordRepresentation
 
 		if err = json.Unmarshal([]byte(m["body"]), &password); err != nil {
-			return nil, errorhandler.CreateBadRequestError(internal.MsgErrInvalidParam + "." + internal.Body)
+			return nil, errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Body)
 		}
 
 		if err = password.Validate(); err != nil {
@@ -338,7 +338,7 @@ func MakeExecuteActionsEmailEndpoint(managementComponent ManagementComponent) cs
 		var actions []api.RequiredAction
 
 		if err = json.Unmarshal([]byte(m["body"]), &actions); err != nil {
-			return nil, errorhandler.CreateBadRequestError(internal.MsgErrInvalidParam + "." + internal.Body)
+			return nil, errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Body)
 		}
 
 		for _, action := range actions {
@@ -449,7 +449,7 @@ func MakeCreateClientRoleEndpoint(managementComponent ManagementComponent) cs.En
 		var role api.RoleRepresentation
 
 		if err = json.Unmarshal([]byte(m["body"]), &role); err != nil {
-			return nil, errorhandler.CreateBadRequestError(internal.MsgErrInvalidParam + "." + internal.Body)
+			return nil, errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Body)
 		}
 
 		if err = role.Validate(); err != nil {
@@ -490,7 +490,7 @@ func MakeCreateGroupEndpoint(managementComponent ManagementComponent) cs.Endpoin
 		var group api.GroupRepresentation
 
 		if err = json.Unmarshal([]byte(m["body"]), &group); err != nil {
-			return nil, errorhandler.CreateBadRequestError(internal.MsgErrInvalidParam + "." + internal.Body)
+			return nil, errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Body)
 		}
 
 		if err = group.Validate(); err != nil {
@@ -540,7 +540,7 @@ func MakeUpdateAuthorizationsEndpoint(managementComponent ManagementComponent) c
 		var authorizations api.AuthorizationsRepresentation
 
 		if err = json.Unmarshal([]byte(m["body"]), &authorizations); err != nil {
-			return nil, errorhandler.CreateBadRequestError(internal.MsgErrInvalidParam + "." + internal.Body)
+			return nil, errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Body)
 		}
 
 		return nil, managementComponent.UpdateAuthorizations(ctx, m["realm"], m["groupID"], authorizations)
@@ -574,7 +574,7 @@ func MakeUpdateRealmCustomConfigurationEndpoint(managementComponent ManagementCo
 		var customConfig api.RealmCustomConfiguration
 
 		if err = json.Unmarshal(configJSON, &customConfig); err != nil {
-			return nil, errorhandler.CreateBadRequestError(internal.MsgErrInvalidParam + "." + internal.Body)
+			return nil, errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Body)
 		}
 
 		if err = customConfig.Validate(); err != nil {

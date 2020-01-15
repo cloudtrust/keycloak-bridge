@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 	kc "github.com/cloudtrust/keycloak-client"
 	"github.com/stretchr/testify/assert"
 )
@@ -139,6 +140,108 @@ func TestConvertToKCGroup(t *testing.T) {
 	var name = "a name"
 	group.Name = &name
 	assert.Equal(t, name, *ConvertToKCGroup(group).Name)
+}
+
+func TestConvertToDBAuthorizations(t *testing.T) {
+	// Nil matrix authorizations
+	{
+		var apiAuthorizations = AuthorizationsRepresentation{}
+
+		authorizations := ConvertToDBAuthorizations("realmID", "groupID", apiAuthorizations)
+		assert.Equal(t, 0, len(authorizations))
+	}
+
+	// Empty matrix authorizations
+	{
+		var jsonMatrix = `{}`
+
+		var matrix map[string]map[string]map[string]struct{}
+		if err := json.Unmarshal([]byte(jsonMatrix), &matrix); err != nil {
+			assert.Fail(t, "")
+		}
+
+		var apiAuthorizations = AuthorizationsRepresentation{
+			Matrix: &matrix,
+		}
+
+		authorizations := ConvertToDBAuthorizations("realmID", "groupID", apiAuthorizations)
+		assert.Equal(t, 0, len(authorizations))
+	}
+
+	// Valid matrix authorizations
+	{
+		var jsonMatrix = `{
+			"Action1": {},
+			"Action2": {"*": {} },
+			"Action3": {"*": {"*": {} }}, 
+			"Action4": {"realm1": {} },
+			"Action5": {"realm1": {"groupName1": {} }},
+			"Action6": {"realm1": {"groupName1": {}, "groupName2": {}}},
+			"Action7": {"realm1": {}, "realm2": {}},
+			"Action8": {"realm1": {"groupName1": {} }, "realm2": {"groupName1": {} }},
+			"Action9": {"realm1": {"groupName1": {}, "groupName2": {}}, "realm2": {"groupName1": {}, "groupName2": {}}}
+		}`
+
+		var matrix map[string]map[string]map[string]struct{}
+		if err := json.Unmarshal([]byte(jsonMatrix), &matrix); err != nil {
+			assert.Fail(t, "")
+		}
+
+		var apiAuthorizations = AuthorizationsRepresentation{
+			Matrix: &matrix,
+		}
+
+		authorizations := ConvertToDBAuthorizations("realmID", "groupID", apiAuthorizations)
+		assert.Equal(t, 15, len(authorizations))
+	}
+}
+
+func TestConvertToAPIAuthorizations(t *testing.T) {
+	var master = "master"
+	var groupID1 = "1234-54451-4545"
+	var groupID2 = "1234-54451-4545"
+	var action = "action"
+	var action2 = "action2"
+	var any = "*"
+
+	var authorizations = []dto.Authorization{}
+
+	var authz1 = dto.Authorization{
+		RealmID: &master,
+		GroupID: &groupID2,
+		Action:  &action2,
+	}
+
+	var authz2 = dto.Authorization{
+		RealmID:       &master,
+		GroupID:       &groupID2,
+		Action:        &action2,
+		TargetRealmID: &any,
+	}
+
+	var authz3 = dto.Authorization{
+		RealmID:       &master,
+		GroupID:       &groupID1,
+		Action:        &action,
+		TargetRealmID: &master,
+		TargetGroupID: &groupID1,
+	}
+
+	authorizations = append(authorizations, authz1)
+	authorizations = append(authorizations, authz2)
+	authorizations = append(authorizations, authz3)
+
+	var apiAuthorizations = ConvertToAPIAuthorizations(authorizations)
+	var matrix = *apiAuthorizations.Matrix
+
+	_, ok := matrix[action][master][groupID1]
+	assert.Equal(t, true, ok)
+
+	_, ok = matrix[action][master][master]
+	assert.Equal(t, false, ok)
+
+	_, ok = matrix[action2][any]
+	assert.Equal(t, true, ok)
 }
 
 func TestConvertRequiredAction(t *testing.T) {

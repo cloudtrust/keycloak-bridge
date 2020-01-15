@@ -7,12 +7,13 @@ import (
 
 	errorhandler "github.com/cloudtrust/common-service/errors"
 	stats_api "github.com/cloudtrust/keycloak-bridge/api/statistics"
+	msg "github.com/cloudtrust/keycloak-bridge/internal/messages"
 )
 
 // ConvertMinutesShift converts a string describing a timezone shift to a numeric value
 func ConvertMinutesShift(value string) (int, error) {
 	if ok, err := regexp.MatchString(stats_api.RegExpTimeshift, value); err != nil || !ok {
-		return 0, errorhandler.CreateInvalidQueryParameterError(Timeshift)
+		return 0, errorhandler.CreateInvalidQueryParameterError(msg.Timeshift)
 	}
 	res, _ := strconv.Atoi(value)
 	return res, nil
