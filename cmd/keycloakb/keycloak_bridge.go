@@ -442,8 +442,6 @@ func main() {
 		{
 			configDBModule = keycloakb.NewConfigurationDBModule(configurationRwDBConn, managementLogger)
 			configDBModule = keycloakb.MakeConfigurationDBModuleInstrumentingMW(influxMetrics.NewHistogram("configDB_module"))(configDBModule)
-			configDBModule = management.MakeConfigurationDBModuleLoggingMW(log.With(managementLogger, "mw", "module", "unit", "configDB"))(configDBModule)
-			configDBModule = management.MakeConfigurationDBModuleTracingMW(tracer)(configDBModule)
 		}
 
 		var keycloakComponent management.Component
@@ -512,8 +510,6 @@ func main() {
 		{
 			configDBModule = keycloakb.NewConfigurationDBModule(configurationRoDBConn, accountLogger)
 			configDBModule = keycloakb.MakeConfigurationDBModuleInstrumentingMW(influxMetrics.NewHistogram("configDB_module"))(configDBModule)
-			configDBModule = management.MakeConfigurationDBModuleLoggingMW(log.With(logger, "mw", "module", "unit", "configDB"))(configDBModule)
-			configDBModule = management.MakeConfigurationDBModuleTracingMW(tracer)(configDBModule)
 		}
 
 		// new module for account service
