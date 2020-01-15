@@ -22,6 +22,17 @@ func executeTest(t *testing.T, tester func(mockDBModule *mock.EventsDBModule, mo
 	tester(mockDBModule, mockWriteDB, mockLogger, NewComponent(mockDBModule, mockWriteDB, mockLogger))
 }
 
+func TestGetActions(t *testing.T) {
+	executeTest(t, func(mockDBModule *mock.EventsDBModule, mockWriteDB *mock.WriteDBModule, mockLogger *mock.Logger, component Component) {
+		// Execute test
+		res, err := component.GetActions(context.Background())
+
+		// Check result
+		assert.Nil(t, err)
+		assert.Equal(t, actions, res)
+	})
+}
+
 func TestGetEvents(t *testing.T) {
 	executeTest(t, func(mockDBModule *mock.EventsDBModule, mockWriteDB *mock.WriteDBModule, mockLogger *mock.Logger, component Component) {
 		params := make(map[string]string)

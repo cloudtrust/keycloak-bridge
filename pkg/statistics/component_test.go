@@ -253,5 +253,4 @@ func TestGetActions(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.Equal(t, actions, res)
-
 }
