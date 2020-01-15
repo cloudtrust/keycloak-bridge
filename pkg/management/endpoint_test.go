@@ -12,6 +12,22 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestGetActionsEndpoint(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
+
+	var e = MakeGetActionsEndpoint(mockManagementComponent)
+
+	var ctx = context.Background()
+
+	mockManagementComponent.EXPECT().GetActions(ctx).Return([]string{}, nil).Times(1)
+	var res, err = e(ctx, nil)
+	assert.Nil(t, err)
+	assert.NotNil(t, res)
+}
+
 func TestGetRealmsEndpoint(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -781,6 +797,106 @@ func TestGetGroupsEndpoint(t *testing.T) {
 	}
 }
 
+func TestCreateGroupEndpoint(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
+
+	var e = MakeCreateGroupEndpoint(mockManagementComponent)
+
+	var realm = "master"
+	var location = "https://location.url/auth/admin/master/groups/123456"
+	var ctx = context.Background()
+
+	var name = "name"
+
+	// No error
+	{
+		var req = make(map[string]string)
+		req["scheme"] = "https"
+		req["host"] = "elca.ch"
+		req["realm"] = realm
+
+		groupJSON, _ := json.Marshal(api.GroupRepresentation{Name: &name})
+		req["body"] = string(groupJSON)
+
+		mockManagementComponent.EXPECT().CreateGroup(ctx, realm, api.GroupRepresentation{Name: &name}).Return(location, nil).Times(1)
+		res, err := e(ctx, req)
+		assert.Nil(t, err)
+
+		locationHeader := res.(LocationHeader)
+		assert.Equal(t, "https://elca.ch/management/master/groups/123456", locationHeader.URL)
+	}
+
+	// Error - Cannot unmarshall
+	{
+		var req = make(map[string]string)
+		req["body"] = string("JSON")
+		_, err := e(ctx, req)
+		assert.NotNil(t, err)
+	}
+
+	// Error - Keycloak client error
+	{
+		var req = make(map[string]string)
+		req["scheme"] = "https"
+		req["host"] = "elca.ch"
+		req["realm"] = realm
+		groupJSON, _ := json.Marshal(api.GroupRepresentation{Name: &name})
+		req["body"] = string(groupJSON)
+
+		mockManagementComponent.EXPECT().CreateGroup(ctx, realm, gomock.Any()).Return("", fmt.Errorf("Error")).Times(1)
+		_, err := e(ctx, req)
+		assert.NotNil(t, err)
+	}
+}
+
+func TestDeleteGroupEndpoint(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
+
+	var e = MakeDeleteGroupEndpoint(mockManagementComponent)
+
+	var realm = "master"
+	var groupID = "1234-452-4578"
+	var ctx = context.Background()
+	var req = make(map[string]string)
+	req["realm"] = realm
+	req["groupID"] = groupID
+
+	mockManagementComponent.EXPECT().DeleteGroup(ctx, realm, groupID).Return(nil).Times(1)
+	var res, err = e(ctx, req)
+	assert.Nil(t, err)
+	assert.Nil(t, res)
+}
+
+func TestGetAuthorizationsEndpoint(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
+
+	var e = MakeGetAuthorizationsEndpoint(mockManagementComponent)
+
+	// No error
+	{
+		var realm = "master"
+		var groupID = "123456"
+		var ctx = context.Background()
+		var req = make(map[string]string)
+		req["realm"] = realm
+		req["groupID"] = groupID
+
+		mockManagementComponent.EXPECT().GetAuthorizations(ctx, realm, groupID).Return(api.AuthorizationsRepresentation{}, nil).Times(1)
+		var res, err = e(ctx, req)
+		assert.Nil(t, err)
+		assert.NotNil(t, res)
+	}
+}
+
 func TestGetClientRolesEndpoint(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -802,6 +918,49 @@ func TestGetClientRolesEndpoint(t *testing.T) {
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.NotNil(t, res)
+	}
+}
+
+func TestUpdateAuthorizationsEndpoint(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
+
+	var e = MakeUpdateAuthorizationsEndpoint(mockManagementComponent)
+
+	// No error
+	{
+		var realmName = "master"
+		var groupID = "123456"
+		var authorizationsJSON = "{\"matrix\":{}}"
+		var ctx = context.Background()
+		var req = make(map[string]string)
+		req["realm"] = realmName
+		req["groupID"] = groupID
+		req["body"] = authorizationsJSON
+
+		mockManagementComponent.EXPECT().UpdateAuthorizations(ctx, realmName, groupID, gomock.Any()).Return(nil).Times(1)
+		var res, err = e(ctx, req)
+		assert.Nil(t, err)
+		assert.Nil(t, res)
+	}
+
+	// JSON error
+	{
+		var realmName = "master"
+		var groupID = "123456"
+		var configJSON = "{\"DefaultClientId\":\"clientId\", \"DefaultRedirectUri\":\"http://cloudtrust.io\""
+		var ctx = context.Background()
+		var req = make(map[string]string)
+		req["realm"] = realmName
+		req["groupID"] = groupID
+		req["body"] = configJSON
+
+		mockManagementComponent.EXPECT().UpdateAuthorizations(ctx, realmName, groupID, gomock.Any()).Return(nil).Times(0)
+		var res, err = e(ctx, req)
+		assert.NotNil(t, err)
+		assert.Nil(t, res)
 	}
 }
 

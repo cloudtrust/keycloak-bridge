@@ -35,4 +35,5 @@ func TestComponentLoggingMW(t *testing.T) {
 	mockComponent.EXPECT().StoreOrUpdate(ctx, "realmID", dto.RealmConfiguration{}).Return(nil).Times(1)
 	mockLogger.EXPECT().Info(gomock.Any(), "method", "StoreOrUpdate", "args", "realmID", dto.RealmConfiguration{}, "took", gomock.Any()).Return(nil).Times(1)
 	m.StoreOrUpdate(ctx, "realmID", dto.RealmConfiguration{})
+
 }
