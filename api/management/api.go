@@ -93,11 +93,6 @@ type AuthorizationsRepresentation struct {
 	Matrix *map[string]map[string]map[string]struct{} `json:"matrix"`
 }
 
-// PermissionRepresentation struct
-type PermissionRepresentation struct {
-	Name *string `json:"name,omitempty"`
-}
-
 // PasswordRepresentation struct
 type PasswordRepresentation struct {
 	Value *string `json:"value,omitempty"`

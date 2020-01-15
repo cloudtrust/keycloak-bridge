@@ -10,6 +10,22 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestMakeGetActionsEndpoint(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockComponent = mock.NewComponent(mockCtrl)
+
+	var e = MakeGetActionsEndpoint(mockComponent)
+
+	var ctx = context.Background()
+
+	mockComponent.EXPECT().GetActions(ctx).Return([]string{}, nil).Times(1)
+	var res, err = e(ctx, nil)
+	assert.Nil(t, err)
+	assert.NotNil(t, res)
+}
+
 func TestMakeGetStatisticsEndpoint(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
