@@ -714,6 +714,7 @@ func (c *component) DeleteCredentialsForUser(ctx context.Context, realmName stri
 	credsKc, err := c.keycloakClient.GetCredentials(accessToken, realmName, userID)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Could not obtain list of credentials", "err", err.Error())
+		return err
 	}
 
 	err = c.keycloakClient.DeleteCredential(accessToken, realmName, userID, credentialID)
@@ -889,6 +890,7 @@ func (c *component) UpdateAuthorizations(ctx context.Context, realmName string, 
 			// * is allowed as targetRealm only for master
 			if currentRealm == "master" {
 				allowedTargetRealmsAndGroupIDs["*"] = make(map[string]string)
+				allowedTargetRealmsAndGroupIDs["*"]["*"] = "*"
 			}
 
 			for _, realm := range realms {
@@ -912,6 +914,7 @@ func (c *component) UpdateAuthorizations(ctx context.Context, realmName string, 
 		// Perform validation
 		err := keycloakb.Validate(authorisations, allowedTargetRealmsAndGroupIDs)
 		if err != nil {
+			c.logger.Warn(ctx, "err", err.Error())
 			return err
 		}
 	}
@@ -994,12 +997,11 @@ func (c *component) UpdateAuthorizations(ctx context.Context, realmName string, 
 	// Persists the new authorizations in DB
 	{
 		tx, err := c.configDBModule.NewTransaction(ctx)
-		defer tx.Close()
-
 		if err != nil {
 			c.logger.Warn(ctx, "err", err.Error())
 			return err
 		}
+		defer tx.Close()
 
 		err = c.configDBModule.DeleteAuthorizations(ctx, realmName, groupID)
 		if err != nil {
@@ -1015,8 +1017,16 @@ func (c *component) UpdateAuthorizations(ctx context.Context, realmName string, 
 			}
 		}
 
-		return tx.Commit()
+		err = tx.Commit()
+		if err != nil {
+			c.logger.Warn(ctx, "err", err.Error())
+			return err
+		}
 	}
+
+	c.reportEvent(ctx, "API_AUTHORIZATIONS_UPDATE", database.CtEventRealmName, realmName, database.CtEventGroupID, groupID)
+
+	return nil
 }
 
 func (c *component) GetActions(ctx context.Context) ([]string, error) {

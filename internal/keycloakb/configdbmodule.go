@@ -26,12 +26,6 @@ const (
 	deleteAuthzWithGroupIDStmt = `DELETE FROM authorizations WHERE group_id = ? OR target_group_id = ?;`
 )
 
-// DBConfiguration interface
-type DBConfiguration interface {
-	Exec(query string, args ...interface{}) (sql.Result, error)
-	QueryRow(query string, args ...interface{}) sqltypes.SQLRow
-}
-
 // Scanner used to get data from SQL cursors
 type Scanner interface {
 	Scan(...interface{}) error
