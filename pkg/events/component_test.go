@@ -29,7 +29,7 @@ func TestGetActions(t *testing.T) {
 
 		// Check result
 		assert.Nil(t, err)
-		assert.Equal(t, actions, res)
+		assert.Equal(t, len(actions), len(res))
 	})
 }
 

@@ -60,6 +60,8 @@ type Endpoints struct {
 
 // ManagementComponent is the interface of the component to send a query to Keycloak.
 type ManagementComponent interface {
+	GetActions(ctx context.Context) ([]api.ActionRepresentation, error)
+
 	GetRealms(ctx context.Context) ([]api.RealmRepresentation, error)
 	GetRealm(ctx context.Context, realmName string) (api.RealmRepresentation, error)
 	GetClient(ctx context.Context, realmName, idClient string) (api.ClientRepresentation, error)
@@ -93,7 +95,6 @@ type ManagementComponent interface {
 	DeleteGroup(ctx context.Context, realmName string, groupID string) error
 	GetAuthorizations(ctx context.Context, realmName string, groupID string) (api.AuthorizationsRepresentation, error)
 	UpdateAuthorizations(ctx context.Context, realmName string, groupID string, group api.AuthorizationsRepresentation) error
-	GetActions(ctx context.Context) ([]string, error)
 
 	GetRealmCustomConfiguration(ctx context.Context, realmID string) (api.RealmCustomConfiguration, error)
 	UpdateRealmCustomConfiguration(ctx context.Context, realmID string, customConfig api.RealmCustomConfiguration) error

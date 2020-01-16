@@ -94,6 +94,12 @@ type AuthorizationsRepresentation struct {
 	Matrix *map[string]map[string]map[string]struct{} `json:"matrix"`
 }
 
+// ActionRepresentation struct
+type ActionRepresentation struct {
+	Name  *string `json:"name"`
+	Scope *string `json:"scope"`
+}
+
 // PasswordRepresentation struct
 type PasswordRepresentation struct {
 	Value *string `json:"value,omitempty"`

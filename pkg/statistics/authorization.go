@@ -8,28 +8,27 @@ import (
 	api "github.com/cloudtrust/keycloak-bridge/api/statistics"
 )
 
-var actions []string
+var actions []security.Action
 
-type Action int
+func newAction(as string, scope security.Scope) security.Action {
+	a := security.Action{
+		Name:  as,
+		Scope: scope,
+	}
 
-func (a Action) String() string {
-	return actions[int(a)]
-}
-
-func customIota(s string) Action {
-	actions = append(actions, s)
-	return Action(len(actions) - 1)
+	actions = append(actions, a)
+	return a
 }
 
 // Actions used for authorization module
 var (
-	STGetActions                      = customIota("ST_GetActions")
-	STGetStatistics                   = customIota("ST_GetStatistics")
-	STGetStatisticsUsers              = customIota("ST_GetStatisticsUsers")
-	STGetStatisticsAuthenticators     = customIota("ST_GetStatisticsAuthenticators")
-	STGetStatisticsAuthentications    = customIota("ST_GetStatisticsAuthentications")
-	STGetStatisticsAuthenticationsLog = customIota("ST_GetStatisticsAuthenticationsLog")
-	STGetMigrationReport              = customIota("ST_GetMigrationReport")
+	STGetActions                      = newAction("ST_GetActions", security.ScopeGlobal)
+	STGetStatistics                   = newAction("ST_GetStatistics", security.ScopeRealm)
+	STGetStatisticsUsers              = newAction("ST_GetStatisticsUsers", security.ScopeRealm)
+	STGetStatisticsAuthenticators     = newAction("ST_GetStatisticsAuthenticators", security.ScopeRealm)
+	STGetStatisticsAuthentications    = newAction("ST_GetStatisticsAuthentications", security.ScopeRealm)
+	STGetStatisticsAuthenticationsLog = newAction("ST_GetStatisticsAuthenticationsLog", security.ScopeRealm)
+	STGetMigrationReport              = newAction("ST_GetMigrationReport", security.ScopeRealm)
 )
 
 // Tracking middleware at component level.
@@ -50,12 +49,12 @@ func MakeAuthorizationManagementComponentMW(logger log.Logger, authorizationMana
 	}
 }
 
-func (c *authorizationComponentMW) GetActions(ctx context.Context) ([]string, error) {
+func (c *authorizationComponentMW) GetActions(ctx context.Context) ([]api.ActionRepresentation, error) {
 	var action = STGetActions.String()
 	var targetRealm = "*" // For this method, there is no target realm, so we use the wildcard to express there is no constraints.
 
 	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
-		return []string{}, err
+		return []api.ActionRepresentation{}, err
 	}
 
 	return c.next.GetActions(ctx)

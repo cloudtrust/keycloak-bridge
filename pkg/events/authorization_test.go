@@ -61,7 +61,7 @@ func testAuthorization(t *testing.T, jsonAuthz string, tester func(Component, *m
 
 func TestGetActionsAllow(t *testing.T) {
 	testAuthorization(t, WithAuthorization, func(auth Component, mockComponent *mock.Component, ctx context.Context, mp map[string]string) {
-		mockComponent.EXPECT().GetActions(ctx).Return([]string{}, nil).Times(1)
+		mockComponent.EXPECT().GetActions(ctx).Return([]api.ActionRepresentation{}, nil).Times(1)
 		_, err := auth.GetActions(ctx)
 		assert.Nil(t, err)
 	})

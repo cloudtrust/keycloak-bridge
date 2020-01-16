@@ -16,7 +16,7 @@ import (
 
 // Component is the interface of the events component.
 type Component interface {
-	GetActions(context.Context) ([]string, error)
+	GetActions(context.Context) ([]api.ActionRepresentation, error)
 	GetStatistics(context.Context, string) (api.StatisticsRepresentation, error)
 	GetStatisticsUsers(context.Context, string) (api.StatisticsUsersRepresentation, error)
 	GetStatisticsAuthenticators(context.Context, string) (map[string]int64, error)
@@ -48,8 +48,20 @@ func NewComponent(db keycloakb.EventsDBModule, keycloakClient KeycloakClient, lo
 }
 
 // Get actions
-func (ec *component) GetActions(ctx context.Context) ([]string, error) {
-	return actions, nil
+func (ec *component) GetActions(ctx context.Context) ([]api.ActionRepresentation, error) {
+	var apiActions = []api.ActionRepresentation{}
+
+	for _, action := range actions {
+		var name = action.Name
+		var scope = string(action.Scope)
+
+		apiActions = append(apiActions, api.ActionRepresentation{
+			Name:  &name,
+			Scope: &scope,
+		})
+	}
+
+	return apiActions, nil
 }
 
 // Grabs statistics

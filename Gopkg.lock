@@ -19,7 +19,7 @@
 
 [[projects]]
   branch = "CLOUDTRUST-2109_authorizationsManagement"
-  digest = "1:c6e9d6599093af9645b80c749eae2c325984e269780d8d290b20d19ec298ed16"
+  digest = "1:b3b80b3e698afef8d008bc747ff0cc61284830349a4311d5a063e92fe5e4a595"
   name = "github.com/cloudtrust/common-service"
   packages = [
     ".",
@@ -37,7 +37,7 @@
     "tracking",
   ]
   pruneopts = "UT"
-  revision = "e89ed6ea9b03c9ea324d8acb917fcf3f07855925"
+  revision = "eb2e795bb93aab46c2dad4c6400becb734b2843d"
 
 [[projects]]
   branch = "CLOUDTRUST-2109_authorizationsManagement"
@@ -303,12 +303,12 @@
   version = "v1.0.5"
 
 [[projects]]
-  digest = "1:8d0b79a29be9946ea00b2f2b778ec5b36db07453d97abe9d754b25bc2cc49a0e"
+  digest = "1:11118bd196646c6515fea3d6c43f66162833c6ae4939bfb229b9956d91c6cf17"
   name = "github.com/spf13/viper"
   packages = ["."]
   pruneopts = "UT"
-  revision = "eabbc68a3ecd5cf8c11a2f84dbda5e7a38493b2f"
-  version = "v1.6.1"
+  revision = "b5bf975e5823809fb22c7644d008757f78a4259e"
+  version = "v1.4.0"
 
 [[projects]]
   digest = "1:8548c309c65a85933a625be5e7d52b6ac927ca30c56869fae58123b8a77a75e1"
@@ -319,21 +319,14 @@
   version = "v1.4.0"
 
 [[projects]]
-  digest = "1:f4b32291cad5efac2bfdba89ccde6aa04618b62ce06c1a571da2dc4f3f2677fb"
-  name = "github.com/subosito/gotenv"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "2ef7124db659d49edac6aa459693a15ae36c671a"
-  version = "v1.2.0"
-
-[[projects]]
-  digest = "1:b106ba2e50a6d4308343759f4039cf636869b4d8ccddd248848f17127055d0f3"
+  digest = "1:aa09821e052afd6d97d168f0c4df863e3a2d59ea3e5deee10970d906acef3db0"
   name = "github.com/uber/jaeger-client-go"
   packages = [
     ".",
     "config",
     "internal/baggage",
     "internal/baggage/remote",
+    "internal/reporterstats",
     "internal/spanlog",
     "internal/throttler",
     "internal/throttler/remote",
@@ -349,8 +342,8 @@
     "utils",
   ]
   pruneopts = "UT"
-  revision = "f2e1f58485aacf2975cdde9c9f5396e6d98c35ba"
-  version = "v2.21.1"
+  revision = "56611ffff7c29c5b9aa926b84faadda4a609cc59"
+  version = "v2.22.0"
 
 [[projects]]
   digest = "1:d7b6fd08442b8d26882fae2c859a0d63962d72a533476a217d46743ed30cb803"
@@ -378,7 +371,7 @@
     "pbkdf2",
   ]
   pruneopts = "UT"
-  revision = "61a87790db17894570dfb32dbaa0a4af9ce60cb4"
+  revision = "6d4e4cb37c7d6416dfea8472e751c7b6615267a6"
 
 [[projects]]
   branch = "master"
@@ -421,7 +414,7 @@
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = "UT"
-  revision = "86b910548bc16777f40503131aa424ae0a092199"
+  revision = "b77594299b429d05028403d72b68172959c7dad5"
 
 [[projects]]
   digest = "1:8d8faad6b12a3a4c819a3f9618cb6ee1fa1cfc33253abeeea8b55336721e3405"
@@ -467,7 +460,7 @@
     "go/types/typeutil",
   ]
   pruneopts = "UT"
-  revision = "d31a08c2edf2cd930cbead4c1e6e3e1b26e94bd5"
+  revision = "473961ec044c1c001df816e5edb29e4a31db4c01"
 
 [[projects]]
   digest = "1:e0a1881f9e0564bebdeac98c75e59f07acdde6ed3a5396e0e613eaad31194866"
@@ -507,14 +500,6 @@
   pruneopts = "UT"
   revision = "e0f81be2f4064ea7aa7470e9daddd2dc8e8152c7"
   version = "v2.0.3"
-
-[[projects]]
-  digest = "1:c4b5592c342f273e18de68e16957f536f6648f2e90c9d7ece653ac90c22079a9"
-  name = "gopkg.in/ini.v1"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "94291fffe2b14f4632ec0e67c1bfecfc1287a168"
-  version = "v1.51.1"
 
 [[projects]]
   digest = "1:3c4aaca5a82adc021322f239e0cf3f46852bb0b18ae050d0feab2e9e4c527462"

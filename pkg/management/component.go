@@ -72,11 +72,14 @@ type ConfigurationDBModule interface {
 
 // Component is the management component interface.
 type Component interface {
+	GetActions(ctx context.Context) ([]api.ActionRepresentation, error)
+
 	GetRealms(ctx context.Context) ([]api.RealmRepresentation, error)
 	GetRealm(ctx context.Context, realmName string) (api.RealmRepresentation, error)
 	GetClient(ctx context.Context, realmName, idClient string) (api.ClientRepresentation, error)
 	GetClients(ctx context.Context, realmName string) ([]api.ClientRepresentation, error)
 	GetRequiredActions(ctx context.Context, realmName string) ([]api.RequiredActionRepresentation, error)
+
 	DeleteUser(ctx context.Context, realmName, userID string) error
 	GetUser(ctx context.Context, realmName, userID string) (api.UserRepresentation, error)
 	UpdateUser(ctx context.Context, realmName, userID string, user api.UserRepresentation) error
@@ -87,6 +90,7 @@ type Component interface {
 	GetGroupsOfUser(ctx context.Context, realmName, userID string) ([]api.GroupRepresentation, error)
 	GetClientRolesForUser(ctx context.Context, realmName, userID, clientID string) ([]api.RoleRepresentation, error)
 	AddClientRolesToUser(ctx context.Context, realmName, userID, clientID string, roles []api.RoleRepresentation) error
+
 	ResetPassword(ctx context.Context, realmName string, userID string, password api.PasswordRepresentation) (string, error)
 	ExecuteActionsEmail(ctx context.Context, realmName string, userID string, actions []api.RequiredAction, paramKV ...string) error
 	SendNewEnrolmentCode(ctx context.Context, realmName string, userID string) (string, error)
@@ -105,7 +109,6 @@ type Component interface {
 	DeleteGroup(ctx context.Context, realmName string, groupID string) error
 	GetAuthorizations(ctx context.Context, realmName string, groupID string) (api.AuthorizationsRepresentation, error)
 	UpdateAuthorizations(ctx context.Context, realmName string, groupID string, group api.AuthorizationsRepresentation) error
-	GetActions(ctx context.Context) ([]string, error)
 
 	GetRealmCustomConfiguration(ctx context.Context, realmName string) (api.RealmCustomConfiguration, error)
 	UpdateRealmCustomConfiguration(ctx context.Context, realmID string, customConfig api.RealmCustomConfiguration) error
@@ -718,7 +721,6 @@ func (c *component) DeleteCredentialsForUser(ctx context.Context, realmName stri
 	}
 
 	err = c.keycloakClient.DeleteCredential(accessToken, realmName, userID, credentialID)
-
 	if err != nil {
 		c.logger.Warn(ctx, "err", err.Error())
 		return err
@@ -727,7 +729,6 @@ func (c *component) DeleteCredentialsForUser(ctx context.Context, realmName stri
 	// if a credential other than the password was deleted, record the event 2ND_FACTOR_REMOVED in the audit DB
 	for _, credKc := range credsKc {
 		if *credKc.Id == credentialID && *credKc.Type != "password" {
-
 			c.reportEvent(ctx, "2ND_FACTOR_REMOVED", database.CtEventRealmName, realmName, database.CtEventUserID, userID)
 			break
 		}
@@ -1028,8 +1029,20 @@ func (c *component) UpdateAuthorizations(ctx context.Context, realmName string, 
 	return nil
 }
 
-func (c *component) GetActions(ctx context.Context) ([]string, error) {
-	return actions, nil
+func (c *component) GetActions(ctx context.Context) ([]api.ActionRepresentation, error) {
+	var apiActions = []api.ActionRepresentation{}
+
+	for _, action := range actions {
+		var name = action.Name
+		var scope = string(action.Scope)
+
+		apiActions = append(apiActions, api.ActionRepresentation{
+			Name:  &name,
+			Scope: &scope,
+		})
+	}
+
+	return apiActions, nil
 }
 
 func (c *component) GetClientRoles(ctx context.Context, realmName, idClient string) ([]api.RoleRepresentation, error) {

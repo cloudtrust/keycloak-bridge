@@ -8,56 +8,55 @@ import (
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
 )
 
-var actions []string
+var actions []security.Action
 
-type Action int
+func newAction(as string, scope security.Scope) security.Action {
+	a := security.Action{
+		Name:  as,
+		Scope: scope,
+	}
 
-func (a Action) String() string {
-	return actions[int(a)]
-}
-
-func customIota(s string) Action {
-	actions = append(actions, s)
-	return Action(len(actions) - 1)
+	actions = append(actions, a)
+	return a
 }
 
 // Creates constants for API method names
 var (
-	MGMTGetActions                     = customIota("MGMT_GetActions")
-	MGMTGetRealms                      = customIota("MGMT_GetRealms")
-	MGMTGetRealm                       = customIota("MGMT_GetRealm")
-	MGMTGetClient                      = customIota("MGMT_GetClient")
-	MGMTGetClients                     = customIota("MGMT_GetClients")
-	MGMTGetRequiredActions             = customIota("MGMT_GetRequiredActions")
-	MGMTDeleteUser                     = customIota("MGMT_DeleteUser")
-	MGMTGetUser                        = customIota("MGMT_GetUser")
-	MGMTUpdateUser                     = customIota("MGMT_UpdateUser")
-	MGMTGetUsers                       = customIota("MGMT_GetUsers")
-	MGMTCreateUser                     = customIota("MGMT_CreateUser")
-	MGMTGetUserAccountStatus           = customIota("MGMT_GetUserAccountStatus")
-	MGMTGetRolesOfUser                 = customIota("MGMT_GetRolesOfUser")
-	MGMTGetGroupsOfUser                = customIota("MGMT_GetGroupsOfUser")
-	MGMTGetClientRolesForUser          = customIota("MGMT_GetClientRolesForUser")
-	MGMTAddClientRolesToUser           = customIota("MGMT_AddClientRolesToUser")
-	MGMTResetPassword                  = customIota("MGMT_ResetPassword")
-	MGMTExecuteActionsEmail            = customIota("MGMT_ExecuteActionsEmail")
-	MGMTSendNewEnrolmentCode           = customIota("MGMT_SendNewEnrolmentCode")
-	MGMTSendReminderEmail              = customIota("MGMT_SendReminderEmail")
-	MGMTResetSmsCounter                = customIota("MGMT_ResetSmsCounter")
-	MGMTCreateRecoveryCode             = customIota("MGMT_CreateRecoveryCode")
-	MGMTGetCredentialsForUser          = customIota("MGMT_GetCredentialsForUser")
-	MGMTDeleteCredentialsForUser       = customIota("MGMT_DeleteCredentialsForUser")
-	MGMTGetRoles                       = customIota("MGMT_GetRoles")
-	MGMTGetRole                        = customIota("MGMT_GetRole")
-	MGMTGetGroups                      = customIota("MGMT_GetGroups")
-	MGMTCreateGroup                    = customIota("MGMT_CreateGroup")
-	MGMTDeleteGroup                    = customIota("MGMT_DeleteGroup")
-	MGMTGetAuthorizations              = customIota("MGMT_GetAuthorizations")
-	MGMTUpdateAuthorizations           = customIota("MGMT_UpdateAuthorizations")
-	MGMTGetClientRoles                 = customIota("MGMT_GetClientRoles")
-	MGMTCreateClientRole               = customIota("MGMT_CreateClientRole")
-	MGMTGetRealmCustomConfiguration    = customIota("MGMT_GetRealmCustomConfiguration")
-	MGMTUpdateRealmCustomConfiguration = customIota("MGMT_UpdateRealmCustomConfiguration")
+	MGMTGetActions                     = newAction("MGMT_GetActions", security.ScopeGlobal)
+	MGMTGetRealms                      = newAction("MGMT_GetRealms", security.ScopeGlobal)
+	MGMTGetRealm                       = newAction("MGMT_GetRealm", security.ScopeRealm)
+	MGMTGetClient                      = newAction("MGMT_GetClient", security.ScopeRealm)
+	MGMTGetClients                     = newAction("MGMT_GetClients", security.ScopeRealm)
+	MGMTGetRequiredActions             = newAction("MGMT_GetRequiredActions", security.ScopeRealm)
+	MGMTDeleteUser                     = newAction("MGMT_DeleteUser", security.ScopeGroup)
+	MGMTGetUser                        = newAction("MGMT_GetUser", security.ScopeGroup)
+	MGMTUpdateUser                     = newAction("MGMT_UpdateUser", security.ScopeGroup)
+	MGMTGetUsers                       = newAction("MGMT_GetUsers", security.ScopeGroup)
+	MGMTCreateUser                     = newAction("MGMT_CreateUser", security.ScopeGroup)
+	MGMTGetUserAccountStatus           = newAction("MGMT_GetUserAccountStatus", security.ScopeGroup)
+	MGMTGetRolesOfUser                 = newAction("MGMT_GetRolesOfUser", security.ScopeGroup)
+	MGMTGetGroupsOfUser                = newAction("MGMT_GetGroupsOfUser", security.ScopeGroup)
+	MGMTGetClientRolesForUser          = newAction("MGMT_GetClientRolesForUser", security.ScopeGroup)
+	MGMTAddClientRolesToUser           = newAction("MGMT_AddClientRolesToUser", security.ScopeGroup)
+	MGMTResetPassword                  = newAction("MGMT_ResetPassword", security.ScopeGroup)
+	MGMTExecuteActionsEmail            = newAction("MGMT_ExecuteActionsEmail", security.ScopeGroup)
+	MGMTSendNewEnrolmentCode           = newAction("MGMT_SendNewEnrolmentCode", security.ScopeGroup)
+	MGMTSendReminderEmail              = newAction("MGMT_SendReminderEmail", security.ScopeGroup)
+	MGMTResetSmsCounter                = newAction("MGMT_ResetSmsCounter", security.ScopeGroup)
+	MGMTCreateRecoveryCode             = newAction("MGMT_CreateRecoveryCode", security.ScopeGroup)
+	MGMTGetCredentialsForUser          = newAction("MGMT_GetCredentialsForUser", security.ScopeGroup)
+	MGMTDeleteCredentialsForUser       = newAction("MGMT_DeleteCredentialsForUser", security.ScopeGroup)
+	MGMTGetRoles                       = newAction("MGMT_GetRoles", security.ScopeRealm)
+	MGMTGetRole                        = newAction("MGMT_GetRole", security.ScopeRealm)
+	MGMTGetGroups                      = newAction("MGMT_GetGroups", security.ScopeRealm)
+	MGMTCreateGroup                    = newAction("MGMT_CreateGroup", security.ScopeRealm)
+	MGMTDeleteGroup                    = newAction("MGMT_DeleteGroup", security.ScopeGroup)
+	MGMTGetAuthorizations              = newAction("MGMT_GetAuthorizations", security.ScopeGroup)
+	MGMTUpdateAuthorizations           = newAction("MGMT_UpdateAuthorizations", security.ScopeGroup)
+	MGMTGetClientRoles                 = newAction("MGMT_GetClientRoles", security.ScopeRealm)
+	MGMTCreateClientRole               = newAction("MGMT_CreateClientRole", security.ScopeRealm)
+	MGMTGetRealmCustomConfiguration    = newAction("MGMT_GetRealmCustomConfiguration", security.ScopeRealm)
+	MGMTUpdateRealmCustomConfiguration = newAction("MGMT_UpdateRealmCustomConfiguration", security.ScopeRealm)
 )
 
 // Tracking middleware at component level.
@@ -78,12 +77,12 @@ func MakeAuthorizationManagementComponentMW(logger log.Logger, authorizationMana
 	}
 }
 
-func (c *authorizationComponentMW) GetActions(ctx context.Context) ([]string, error) {
+func (c *authorizationComponentMW) GetActions(ctx context.Context) ([]api.ActionRepresentation, error) {
 	var action = MGMTGetActions.String()
 	var targetRealm = "*" // For this method, there is no target realm, so we use the wildcard to express there is no constraints.
 
 	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
-		return []string{}, err
+		return []api.ActionRepresentation{}, err
 	}
 
 	return c.next.GetActions(ctx)

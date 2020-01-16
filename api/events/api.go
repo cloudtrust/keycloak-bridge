@@ -2,6 +2,12 @@ package events_api
 
 import "database/sql"
 
+// ActionRepresentation struct
+type ActionRepresentation struct {
+	Name  *string `json:"name"`
+	Scope *string `json:"scope"`
+}
+
 // AuditEventsRepresentation is the type of the GetEvents response
 type AuditEventsRepresentation struct {
 	Events []AuditRepresentation `json:"events"`

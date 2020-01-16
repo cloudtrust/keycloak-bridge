@@ -310,7 +310,7 @@ func TestAllowed(t *testing.T) {
 		ctx = context.WithValue(ctx, cs.CtContextGroups, groups)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, "master")
 
-		mockManagementComponent.EXPECT().GetActions(ctx).Return([]string{}, nil).Times(1)
+		mockManagementComponent.EXPECT().GetActions(ctx).Return([]api.ActionRepresentation{}, nil).Times(1)
 		_, err = authorizationMW.GetActions(ctx)
 		assert.Nil(t, err)
 
