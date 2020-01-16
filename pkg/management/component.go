@@ -812,7 +812,6 @@ func (c *component) CreateGroup(ctx context.Context, realmName string, group api
 	groupRep = api.ConvertToKCGroup(group)
 
 	locationURL, err := c.keycloakClient.CreateGroup(accessToken, realmName, groupRep)
-
 	if err != nil {
 		c.logger.Warn(ctx, "err", err.Error())
 		return "", err
@@ -915,7 +914,7 @@ func (c *component) UpdateAuthorizations(ctx context.Context, realmName string, 
 		err := keycloakb.Validate(authorisations, allowedTargetRealmsAndGroupIDs)
 		if err != nil {
 			c.logger.Warn(ctx, "err", err.Error())
-			return err
+			return errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Authorization)
 		}
 	}
 
