@@ -11,20 +11,18 @@ func TestValidate(t *testing.T) {
 	var realmName = "DEP"
 	var action1 = "action1"
 	var action2 = "action2"
-	var groupID1 = "1111-646-54646"
-	var groupID2 = "2222-646-54646"
 	var unknown = "unknown"
 	var groupName1 = "groupName1"
 	var groupName2 = "groupName2"
 	var star = "*"
 
-	var allowedTargetRealmsAndGroupIDs = make(map[string]map[string]string)
-	allowedTargetRealmsAndGroupIDs["*"] = make(map[string]string)
-	allowedTargetRealmsAndGroupIDs["*"]["*"] = "*"
-	allowedTargetRealmsAndGroupIDs[realmName] = make(map[string]string)
-	allowedTargetRealmsAndGroupIDs[realmName][groupID1] = groupName1
-	allowedTargetRealmsAndGroupIDs[realmName][groupID2] = groupName2
-	allowedTargetRealmsAndGroupIDs[realmName]["*"] = "*"
+	var allowedTargetRealmsAndGroupNames = make(map[string]map[string]struct{})
+	allowedTargetRealmsAndGroupNames["*"] = make(map[string]struct{})
+	allowedTargetRealmsAndGroupNames["*"]["*"] = struct{}{}
+	allowedTargetRealmsAndGroupNames[realmName] = make(map[string]struct{})
+	allowedTargetRealmsAndGroupNames[realmName][groupName1] = struct{}{}
+	allowedTargetRealmsAndGroupNames[realmName][groupName2] = struct{}{}
+	allowedTargetRealmsAndGroupNames[realmName]["*"] = struct{}{}
 
 	var authorizations = []dto.Authorization{}
 
@@ -33,29 +31,29 @@ func TestValidate(t *testing.T) {
 		authorizations = []dto.Authorization{
 			dto.Authorization{
 				RealmID:       &realmName,
-				GroupID:       &groupID1,
+				GroupName:     &groupName1,
 				Action:        &action2,
 				TargetRealmID: &unknown,
 			},
 		}
 
-		err := Validate(authorizations, allowedTargetRealmsAndGroupIDs)
+		err := Validate(authorizations, allowedTargetRealmsAndGroupNames)
 		assert.NotNil(t, err)
 	}
 
-	// Invalid targetGroupID
+	// Invalid targetGroupName
 	{
 		authorizations = []dto.Authorization{
 			dto.Authorization{
-				RealmID:       &realmName,
-				GroupID:       &groupID1,
-				Action:        &action2,
-				TargetRealmID: &realmName,
-				TargetGroupID: &unknown,
+				RealmID:         &realmName,
+				GroupName:       &groupName1,
+				Action:          &action2,
+				TargetRealmID:   &realmName,
+				TargetGroupName: &unknown,
 			},
 		}
 
-		err := Validate(authorizations, allowedTargetRealmsAndGroupIDs)
+		err := Validate(authorizations, allowedTargetRealmsAndGroupNames)
 		assert.NotNil(t, err)
 	}
 
@@ -64,42 +62,42 @@ func TestValidate(t *testing.T) {
 		authorizations = []dto.Authorization{
 			dto.Authorization{
 				RealmID:       &realmName,
-				GroupID:       &groupID1,
+				GroupName:     &groupName1,
 				Action:        &action2,
 				TargetRealmID: &star,
 			},
 			dto.Authorization{
 				RealmID:       &realmName,
-				GroupID:       &groupID1,
+				GroupName:     &groupName1,
 				Action:        &action2,
 				TargetRealmID: &realmName,
 			},
 		}
 
-		err := Validate(authorizations, allowedTargetRealmsAndGroupIDs)
+		err := Validate(authorizations, allowedTargetRealmsAndGroupNames)
 		assert.NotNil(t, err)
 	}
 
-	// Incompatible rules due to * in targetGroupID
+	// Incompatible rules due to * in targetGroupName
 	{
 		authorizations = []dto.Authorization{
 			dto.Authorization{
-				RealmID:       &realmName,
-				GroupID:       &groupID1,
-				Action:        &action2,
-				TargetRealmID: &realmName,
-				TargetGroupID: &star,
+				RealmID:         &realmName,
+				GroupName:       &groupName1,
+				Action:          &action2,
+				TargetRealmID:   &realmName,
+				TargetGroupName: &star,
 			},
 			dto.Authorization{
-				RealmID:       &realmName,
-				GroupID:       &groupID1,
-				Action:        &action2,
-				TargetRealmID: &realmName,
-				TargetGroupID: &groupID1,
+				RealmID:         &realmName,
+				GroupName:       &groupName1,
+				Action:          &action2,
+				TargetRealmID:   &realmName,
+				TargetGroupName: &groupName1,
 			},
 		}
 
-		err := Validate(authorizations, allowedTargetRealmsAndGroupIDs)
+		err := Validate(authorizations, allowedTargetRealmsAndGroupNames)
 		assert.NotNil(t, err)
 	}
 
@@ -107,22 +105,22 @@ func TestValidate(t *testing.T) {
 	{
 		authorizations = []dto.Authorization{
 			dto.Authorization{
-				RealmID:       &realmName,
-				GroupID:       &groupID1,
-				Action:        &action2,
-				TargetRealmID: &realmName,
-				TargetGroupID: &star,
+				RealmID:         &realmName,
+				GroupName:       &groupName1,
+				Action:          &action2,
+				TargetRealmID:   &realmName,
+				TargetGroupName: &star,
 			},
 			dto.Authorization{
-				RealmID:       &realmName,
-				GroupID:       &groupID1,
-				Action:        &action1,
-				TargetRealmID: &star,
-				TargetGroupID: &star,
+				RealmID:         &realmName,
+				GroupName:       &groupName1,
+				Action:          &action1,
+				TargetRealmID:   &star,
+				TargetGroupName: &star,
 			},
 		}
 
-		err := Validate(authorizations, allowedTargetRealmsAndGroupIDs)
+		err := Validate(authorizations, allowedTargetRealmsAndGroupNames)
 		assert.Nil(t, err)
 	}
 }

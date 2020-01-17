@@ -198,8 +198,8 @@ func TestConvertToDBAuthorizations(t *testing.T) {
 
 func TestConvertToAPIAuthorizations(t *testing.T) {
 	var master = "master"
-	var groupID1 = "1234-54451-4545"
-	var groupID2 = "1234-54451-4545"
+	var groupName1 = "groupName1"
+	var groupName2 = "groupName2"
 	var action = "action"
 	var action2 = "action2"
 	var any = "*"
@@ -207,24 +207,24 @@ func TestConvertToAPIAuthorizations(t *testing.T) {
 	var authorizations = []dto.Authorization{}
 
 	var authz1 = dto.Authorization{
-		RealmID: &master,
-		GroupID: &groupID2,
-		Action:  &action2,
+		RealmID:   &master,
+		GroupName: &groupName2,
+		Action:    &action2,
 	}
 
 	var authz2 = dto.Authorization{
 		RealmID:       &master,
-		GroupID:       &groupID2,
+		GroupName:     &groupName2,
 		Action:        &action2,
 		TargetRealmID: &any,
 	}
 
 	var authz3 = dto.Authorization{
-		RealmID:       &master,
-		GroupID:       &groupID1,
-		Action:        &action,
-		TargetRealmID: &master,
-		TargetGroupID: &groupID1,
+		RealmID:         &master,
+		GroupName:       &groupName1,
+		Action:          &action,
+		TargetRealmID:   &master,
+		TargetGroupName: &groupName1,
 	}
 
 	authorizations = append(authorizations, authz1)
@@ -234,7 +234,7 @@ func TestConvertToAPIAuthorizations(t *testing.T) {
 	var apiAuthorizations = ConvertToAPIAuthorizations(authorizations)
 	var matrix = *apiAuthorizations.Matrix
 
-	_, ok := matrix[action][master][groupID1]
+	_, ok := matrix[action][master][groupName1]
 	assert.Equal(t, true, ok)
 
 	_, ok = matrix[action][master][master]

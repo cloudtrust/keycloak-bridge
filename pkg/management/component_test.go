@@ -2293,7 +2293,7 @@ func TestDeleteGroup(t *testing.T) {
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 
-		mockConfigurationDBModule.EXPECT().DeleteAuthorizationsWithGroupID(ctx, groupID).Return(nil).Times(1)
+		mockConfigurationDBModule.EXPECT().DeleteAllAuthorizationsWithGroup(ctx, realmName, groupName).Return(nil).Times(1)
 		mockEventDBModule.EXPECT().ReportEvent(ctx, "API_GROUP_DELETION", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 
 		err := managementComponent.DeleteGroup(ctx, targetRealmName, groupID)
