@@ -18,8 +18,7 @@
   version = "2020.01.04"
 
 [[projects]]
-  branch = "master"
-  digest = "1:dcbad43e7b7aeda88e403ae84473cf2dab4e4568cfc6b4316f2da9f3369f18cf"
+  digest = "1:322a1a210f4c9184dddbcab126c38a0f51c41cfc85106085830ae850f69f2640"
   name = "github.com/cloudtrust/common-service"
   packages = [
     ".",
@@ -37,15 +36,16 @@
     "tracking",
   ]
   pruneopts = "UT"
-  revision = "e164d81b968e97a3fc079275352764978e35ab42"
+  revision = "ae957836daffbc39f197fa5f27201f8d100179d5"
+  version = "v1.2.3"
 
 [[projects]]
-  branch = "CLOUDTRUST-2147_RecoveryModeAPI"
-  digest = "1:4ed30ae83a9812587b9c1f6c5d6ffdc38996c9aed45c7a0c71140c0f246672f1"
+  digest = "1:9869696bd8e3e9cc1ab16ff7ec3a36fce32b4428a232725fb78f0fb29d137ffc"
   name = "github.com/cloudtrust/keycloak-client"
   packages = ["."]
   pruneopts = "UT"
-  revision = "80397ac336a938078a0a41c7e42aa3f08ef38595"
+  revision = "ebb7c377b01d3c0876fa415672946cd1dc9a58b4"
+  version = "v1.2.2"
 
 [[projects]]
   digest = "1:d64c893fc7d2c3d395f421b00d21f0adb8ceffc4d3c90299e732b3985ca16eb4"
@@ -114,12 +114,12 @@
   version = "v0.5.0"
 
 [[projects]]
-  digest = "1:ec6f9bf5e274c833c911923c9193867f3f18788c461f76f05f62bb1510e0ae65"
+  digest = "1:a3af33fd30536d9c5a7b6ad542390919e57c1125097a194c7b3d9904109a0611"
   name = "github.com/go-sql-driver/mysql"
   packages = ["."]
   pruneopts = "UT"
-  revision = "72cd26f257d44c1114970e19afddcd812016007e"
-  version = "v1.4.1"
+  revision = "17ef3dd9d98b69acec3e85878995ada9533a9370"
+  version = "v1.5.0"
 
 [[projects]]
   digest = "1:be408f349cae090a7c17a279633d6e62b00068e64af66a582cae0983de8890ea"
@@ -303,12 +303,12 @@
   version = "v1.0.5"
 
 [[projects]]
-  digest = "1:8d0b79a29be9946ea00b2f2b778ec5b36db07453d97abe9d754b25bc2cc49a0e"
+  digest = "1:11118bd196646c6515fea3d6c43f66162833c6ae4939bfb229b9956d91c6cf17"
   name = "github.com/spf13/viper"
   packages = ["."]
   pruneopts = "UT"
-  revision = "eabbc68a3ecd5cf8c11a2f84dbda5e7a38493b2f"
-  version = "v1.6.1"
+  revision = "b5bf975e5823809fb22c7644d008757f78a4259e"
+  version = "v1.4.0"
 
 [[projects]]
   digest = "1:8548c309c65a85933a625be5e7d52b6ac927ca30c56869fae58123b8a77a75e1"
@@ -319,21 +319,14 @@
   version = "v1.4.0"
 
 [[projects]]
-  digest = "1:f4b32291cad5efac2bfdba89ccde6aa04618b62ce06c1a571da2dc4f3f2677fb"
-  name = "github.com/subosito/gotenv"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "2ef7124db659d49edac6aa459693a15ae36c671a"
-  version = "v1.2.0"
-
-[[projects]]
-  digest = "1:b106ba2e50a6d4308343759f4039cf636869b4d8ccddd248848f17127055d0f3"
+  digest = "1:54bf58828a4074c2304fcc52f018eb19fc02d5853ebd5121817330792c776734"
   name = "github.com/uber/jaeger-client-go"
   packages = [
     ".",
     "config",
     "internal/baggage",
     "internal/baggage/remote",
+    "internal/reporterstats",
     "internal/spanlog",
     "internal/throttler",
     "internal/throttler/remote",
@@ -349,8 +342,8 @@
     "utils",
   ]
   pruneopts = "UT"
-  revision = "f2e1f58485aacf2975cdde9c9f5396e6d98c35ba"
-  version = "v2.21.1"
+  revision = "2d55657eac169e2a86b4fcc1a421e26a9a485b63"
+  version = "v2.22.1"
 
 [[projects]]
   digest = "1:d7b6fd08442b8d26882fae2c859a0d63962d72a533476a217d46743ed30cb803"
@@ -378,7 +371,7 @@
     "pbkdf2",
   ]
   pruneopts = "UT"
-  revision = "53104e6ec876ad4e22ad27cce588b01392043c1b"
+  revision = "6d4e4cb37c7d6416dfea8472e751c7b6615267a6"
 
 [[projects]]
   branch = "master"
@@ -402,26 +395,26 @@
     "publicsuffix",
   ]
   pruneopts = "UT"
-  revision = "c0dbc17a35534bf2e581d7a942408dc936316da4"
+  revision = "6afb5195e5aab057fda82e27171243402346b0ad"
 
 [[projects]]
   branch = "master"
-  digest = "1:55d36eb35766a3f105fa36cfb2faf053cc33c019108a6adee799c4e7d59d62b2"
+  digest = "1:911b45b658f5fab1a26259e2fd1085ab296f9d3e46117311d25f8dae51efe720"
   name = "golang.org/x/oauth2"
   packages = [
     ".",
     "internal",
   ]
   pruneopts = "UT"
-  revision = "858c2ad4c8b6c5d10852cb89079f6ca1c7309787"
+  revision = "bf48bf16ab8d622ce64ec6ce98d2c98f916b6303"
 
 [[projects]]
   branch = "master"
-  digest = "1:c1b1f11d25f274813ed6642e8eb55237183a3456d4a809cfcb0395d0fc50a46c"
+  digest = "1:e13350b7207ecc34977340d53522e0335dd36ed86ca7c346a36d2e88eb0fadfc"
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = "UT"
-  revision = "b016eb3dc98ea7f69ed55e8216b87187067ae621"
+  revision = "b77594299b429d05028403d72b68172959c7dad5"
 
 [[projects]]
   digest = "1:8d8faad6b12a3a4c819a3f9618cb6ee1fa1cfc33253abeeea8b55336721e3405"
@@ -467,13 +460,12 @@
     "go/types/typeutil",
   ]
   pruneopts = "UT"
-  revision = "53017a39ae3660ac73c3a5aa30e4af6fd0ed8b6c"
+  revision = "39095c1d176c032bd8915f1173c0c77f502f579d"
 
 [[projects]]
-  digest = "1:602f92501b1cc299f1febc5febb27acdf80c4bc70aaa833942e8000e2e77ddee"
+  digest = "1:e0a1881f9e0564bebdeac98c75e59f07acdde6ed3a5396e0e613eaad31194866"
   name = "google.golang.org/appengine"
   packages = [
-    "cloudsql",
     "internal",
     "internal/base",
     "internal/datastore",
@@ -508,14 +500,6 @@
   pruneopts = "UT"
   revision = "e0f81be2f4064ea7aa7470e9daddd2dc8e8152c7"
   version = "v2.0.3"
-
-[[projects]]
-  digest = "1:c4b5592c342f273e18de68e16957f536f6648f2e90c9d7ece653ac90c22079a9"
-  name = "gopkg.in/ini.v1"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "94291fffe2b14f4632ec0e67c1bfecfc1287a168"
-  version = "v1.51.1"
 
 [[projects]]
   digest = "1:3c4aaca5a82adc021322f239e0cf3f46852bb0b18ae050d0feab2e9e4c527462"
