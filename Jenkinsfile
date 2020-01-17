@@ -67,8 +67,7 @@ pipeline {
               -Dsonar.go.tests.reportPaths=./report.json \
               -Dsonar.go.govet.reportPaths=./govet.out \
               -Dsonar.go.golint.reportPaths=./golint.out \
-              -Dsonar.go.gometalinter.reportPaths=./gometalinter.out
-
+              -Dsonar.go.gometalinter.reportPaths=./gometalinter.out || true
           """
 
           if (params.CREATE_RELEASE == "true"){
