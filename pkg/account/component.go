@@ -51,7 +51,7 @@ type ConfigurationDBModule interface {
 	GetAuthorizations(context context.Context, realmID string, groupID string) ([]dto.Authorization, error)
 	CreateAuthorization(context context.Context, authz dto.Authorization) error
 	DeleteAuthorizations(context context.Context, realmID string, groupID string) error
-	DeleteAuthorizationsWithGroupID(context context.Context, groupID string) error
+	DeleteAllAuthorizationsWithGroup(context context.Context, realmID, groupName string) error
 }
 
 // Component is the management component.

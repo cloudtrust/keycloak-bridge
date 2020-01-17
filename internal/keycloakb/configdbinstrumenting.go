@@ -21,10 +21,10 @@ type ConfigurationDBModule interface {
 	NewTransaction(context context.Context) (database.Transaction, error)
 	StoreOrUpdate(context.Context, string, dto.RealmConfiguration) error
 	GetConfiguration(context.Context, string) (dto.RealmConfiguration, error)
-	GetAuthorizations(context context.Context, realmID string, groupID string) ([]dto.Authorization, error)
+	GetAuthorizations(context context.Context, realmID string, groupName string) ([]dto.Authorization, error)
 	CreateAuthorization(context context.Context, authz dto.Authorization) error
-	DeleteAuthorizations(context context.Context, realmID string, groupID string) error
-	DeleteAuthorizationsWithGroupID(context context.Context, groupID string) error
+	DeleteAuthorizations(context context.Context, realmID string, groupName string) error
+	DeleteAllAuthorizationsWithGroup(context context.Context, realmName, groupName string) error
 }
 
 // MakeConfigurationDBModuleInstrumentingMW makes an instrumenting middleware at module level.
@@ -86,9 +86,9 @@ func (m *configDBModuleInstrumentingMW) DeleteAuthorizations(ctx context.Context
 }
 
 // configDBModuleInstrumentingMW implements Module.
-func (m *configDBModuleInstrumentingMW) DeleteAuthorizationsWithGroupID(ctx context.Context, groupID string) error {
+func (m *configDBModuleInstrumentingMW) DeleteAllAuthorizationsWithGroup(ctx context.Context, realmID, groupName string) error {
 	defer func(begin time.Time) {
 		m.h.With("correlation_id", ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
 	}(time.Now())
-	return m.next.DeleteAuthorizationsWithGroupID(ctx, groupID)
+	return m.next.DeleteAllAuthorizationsWithGroup(ctx, realmID, groupName)
 }

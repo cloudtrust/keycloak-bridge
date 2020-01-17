@@ -282,11 +282,11 @@ func ConvertToAPIAuthorizations(authorizations []dto.Authorization) Authorizatio
 			matrix[*authz.Action][*authz.TargetRealmID] = make(map[string]struct{})
 		}
 
-		if authz.TargetGroupID == nil {
+		if authz.TargetGroupName == nil {
 			continue
 		}
 
-		matrix[*authz.Action][*authz.TargetRealmID][*authz.TargetGroupID] = struct{}{}
+		matrix[*authz.Action][*authz.TargetRealmID][*authz.TargetGroupName] = struct{}{}
 	}
 
 	return AuthorizationsRepresentation{
@@ -307,9 +307,9 @@ func ConvertToDBAuthorizations(realmID, groupID string, apiAuthorizations Author
 		if len(u) == 0 {
 			var act = string(action)
 			authorizations = append(authorizations, dto.Authorization{
-				RealmID: &realmID,
-				GroupID: &groupID,
-				Action:  &act,
+				RealmID:   &realmID,
+				GroupName: &groupID,
+				Action:    &act,
 			})
 			continue
 		}
@@ -320,23 +320,23 @@ func ConvertToDBAuthorizations(realmID, groupID string, apiAuthorizations Author
 				var targetRealm = string(targeteRealmID)
 				authorizations = append(authorizations, dto.Authorization{
 					RealmID:       &realmID,
-					GroupID:       &groupID,
+					GroupName:     &groupID,
 					Action:        &act,
 					TargetRealmID: &targetRealm,
 				})
 				continue
 			}
 
-			for targetGroupID := range v {
+			for targetGroupName := range v {
 				var act = string(action)
 				var targetRealm = string(targeteRealmID)
-				var targetGroup = string(targetGroupID)
+				var targetGroup = string(targetGroupName)
 				authorizations = append(authorizations, dto.Authorization{
-					RealmID:       &realmID,
-					GroupID:       &groupID,
-					Action:        &act,
-					TargetRealmID: &targetRealm,
-					TargetGroupID: &targetGroup,
+					RealmID:         &realmID,
+					GroupName:       &groupID,
+					Action:          &act,
+					TargetRealmID:   &targetRealm,
+					TargetGroupName: &targetGroup,
 				})
 			}
 		}
@@ -398,7 +398,7 @@ func (user UserRepresentation) Validate() error {
 	if user.Groups != nil {
 		for _, groupID := range *(user.Groups) {
 			if !matchesRegExp(groupID, RegExpID) {
-				return errors.New(internal.MsgErrInvalidParam + "." + internal.GroupID)
+				return errors.New(internal.MsgErrInvalidParam + "." + internal.GroupName)
 			}
 		}
 	}
@@ -442,7 +442,7 @@ func (role RoleRepresentation) Validate() error {
 // Validate is a validator for GroupRepresentation
 func (group GroupRepresentation) Validate() error {
 	if group.ID != nil && !matchesRegExp(*group.ID, RegExpID) {
-		return errors.New(internal.MsgErrInvalidParam + "." + internal.GroupID)
+		return errors.New(internal.MsgErrInvalidParam + "." + internal.GroupName)
 	}
 
 	if group.Name != nil && !matchesRegExp(*group.Name, RegExpName) {

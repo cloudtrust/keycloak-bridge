@@ -18,12 +18,11 @@ const (
 	  VALUES (?, ?) 
 	  ON DUPLICATE KEY UPDATE configuration = ?;`
 	selectConfigStmt = `SELECT configuration FROM realm_configuration WHERE (realm_id = ?)`
-
-	selectAuthzStmt = `SELECT realm_id, group_id, action, target_realm_id, target_group_id FROM authorizations WHERE realm_id = ? AND group_id = ?;`
-	deleteAuthzStmt = `DELETE FROM authorizations WHERE realm_id = ? AND group_id = ?;`
-	createAuthzStmt = `INSERT INTO authorizations (realm_id, group_id, action, target_realm_id, target_group_id) 
+	selectAuthzStmt  = `SELECT realm_id, group_name, action, target_realm_id, target_group_name FROM authorizations WHERE realm_id = ? AND group_name = ?;`
+	createAuthzStmt  = `INSERT INTO authorizations (realm_id, group_name, action, target_realm_id, target_group_name) 
 		VALUES (?, ?, ?, ?, ?);`
-	deleteAuthzWithGroupIDStmt = `DELETE FROM authorizations WHERE group_id = ? OR target_group_id = ?;`
+	deleteAuthzStmt             = `DELETE FROM authorizations WHERE realm_id = ? AND group_name = ?;`
+	deleteAllAuthzWithGroupStmt = `DELETE FROM authorizations WHERE (realm_id = ? AND group_name = ?) OR (target_realm_id = ? AND target_group_name = ?);`
 )
 
 // Scanner used to get data from SQL cursors
@@ -78,11 +77,11 @@ func (c *configurationDBModule) GetConfiguration(context context.Context, realmI
 	}
 }
 
-func (c *configurationDBModule) GetAuthorizations(ctx context.Context, realmID string, groupID string) ([]dto.Authorization, error) {
+func (c *configurationDBModule) GetAuthorizations(ctx context.Context, realmID string, groupName string) ([]dto.Authorization, error) {
 	// Get Authorizations from DB
-	rows, err := c.db.Query(selectAuthzStmt, realmID, groupID)
+	rows, err := c.db.Query(selectAuthzStmt, realmID, groupName)
 	if err != nil {
-		c.logger.Warn(ctx, "msg", "Can't get authorizations", "error", err.Error(), "realmID", realmID, "groupID", groupID)
+		c.logger.Warn(ctx, "msg", "Can't get authorizations", "error", err.Error(), "realmID", realmID, "groupName", groupName)
 		return nil, err
 	}
 	defer rows.Close()
@@ -92,7 +91,7 @@ func (c *configurationDBModule) GetAuthorizations(ctx context.Context, realmID s
 	for rows.Next() {
 		authz, err = c.scanAuthorization(rows)
 		if err != nil {
-			c.logger.Warn(ctx, "msg", "Can't get authorizations. Scan failed", "error", err.Error(), "realmID", realmID, "groupID", groupID)
+			c.logger.Warn(ctx, "msg", "Can't get authorizations. Scan failed", "error", err.Error(), "realmID", realmID, "groupName", groupName)
 			return nil, err
 		}
 		res = append(res, authz)
@@ -102,18 +101,18 @@ func (c *configurationDBModule) GetAuthorizations(ctx context.Context, realmID s
 }
 
 func (c *configurationDBModule) CreateAuthorization(context context.Context, auth dto.Authorization) error {
-	_, err := c.db.Exec(createAuthzStmt, nullableString(auth.RealmID), nullableString(auth.GroupID),
-		nullableString(auth.Action), nullableString(auth.TargetRealmID), nullableString(auth.TargetGroupID))
+	_, err := c.db.Exec(createAuthzStmt, nullableString(auth.RealmID), nullableString(auth.GroupName),
+		nullableString(auth.Action), nullableString(auth.TargetRealmID), nullableString(auth.TargetGroupName))
 	return err
 }
 
-func (c *configurationDBModule) DeleteAuthorizations(context context.Context, realmID string, groupID string) error {
-	_, err := c.db.Exec(deleteAuthzStmt, realmID, groupID)
+func (c *configurationDBModule) DeleteAuthorizations(context context.Context, realmID string, groupName string) error {
+	_, err := c.db.Exec(deleteAuthzStmt, realmID, groupName)
 	return err
 }
 
-func (c *configurationDBModule) DeleteAuthorizationsWithGroupID(context context.Context, groupID string) error {
-	_, err := c.db.Exec(deleteAuthzWithGroupIDStmt, groupID, groupID)
+func (c *configurationDBModule) DeleteAllAuthorizationsWithGroup(context context.Context, realmID, groupName string) error {
+	_, err := c.db.Exec(deleteAllAuthzWithGroupStmt, realmID, groupName, realmID, groupName)
 	return err
 }
 
@@ -123,24 +122,24 @@ func (c *configurationDBModule) NewTransaction(context context.Context) (databas
 
 func (c *configurationDBModule) scanAuthorization(scanner Scanner) (dto.Authorization, error) {
 	var (
-		realmID       string
-		groupID       string
-		action        string
-		targetGroupID string
-		targetRealmID string
+		realmID         string
+		groupName       string
+		action          string
+		targetGroupName string
+		targetRealmID   string
 	)
 
-	err := scanner.Scan(&realmID, &groupID, &action, &targetRealmID, &targetGroupID)
+	err := scanner.Scan(&realmID, &groupName, &action, &targetRealmID, &targetGroupName)
 	if err != nil {
 		return dto.Authorization{}, err
 	}
 
 	return dto.Authorization{
-		RealmID:       &realmID,
-		GroupID:       &groupID,
-		Action:        &action,
-		TargetRealmID: &targetRealmID,
-		TargetGroupID: &targetGroupID,
+		RealmID:         &realmID,
+		GroupName:       &groupName,
+		Action:          &action,
+		TargetRealmID:   &targetRealmID,
+		TargetGroupName: &targetGroupName,
 	}, nil
 }
 

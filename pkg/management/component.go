@@ -67,7 +67,7 @@ type ConfigurationDBModule interface {
 	GetAuthorizations(context context.Context, realmID string, groupID string) ([]dto.Authorization, error)
 	CreateAuthorization(context context.Context, authz dto.Authorization) error
 	DeleteAuthorizations(context context.Context, realmID string, groupID string) error
-	DeleteAuthorizationsWithGroupID(context context.Context, groupID string) error
+	DeleteAllAuthorizationsWithGroup(context context.Context, realmID, groupName string) error
 }
 
 // Component is the management component interface.
@@ -831,52 +831,64 @@ func (c *component) CreateGroup(ctx context.Context, realmName string, group api
 func (c *component) DeleteGroup(ctx context.Context, realmName, groupID string) error {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 
-	err := c.keycloakClient.DeleteGroup(accessToken, realmName, groupID)
+	group, err := c.keycloakClient.GetGroup(accessToken, realmName, groupID)
 	if err != nil {
 		c.logger.Warn(ctx, "err", err.Error())
 		return err
 	}
 
-	err = c.configDBModule.DeleteAuthorizationsWithGroupID(ctx, groupID)
+	var groupName = *group.Name
+
+	err = c.keycloakClient.DeleteGroup(accessToken, realmName, groupID)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return err
+	}
+
+	err = c.configDBModule.DeleteAllAuthorizationsWithGroup(ctx, realmName, groupName)
 	if err != nil {
 		c.logger.Warn(ctx, "err", err.Error())
 		return err
 	}
 
 	//store the API call into the DB
-	c.reportEvent(ctx, "API_GROUP_DELETION", database.CtEventRealmName, realmName, database.CtEventGroupID, groupID)
+	c.reportEvent(ctx, "API_GROUP_DELETION", database.CtEventRealmName, realmName, database.CtEventGroupName, groupName)
 
 	return nil
 }
 
 func (c *component) GetAuthorizations(ctx context.Context, realmName string, groupID string) (api.AuthorizationsRepresentation, error) {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
-
-	authorizations, err := c.configDBModule.GetAuthorizations(ctx, realmName, groupID)
+	group, err := c.keycloakClient.GetGroup(accessToken, realmName, groupID)
 	if err != nil {
 		c.logger.Warn(ctx, "err", err.Error())
 		return api.AuthorizationsRepresentation{}, err
 	}
 
-	groups, err := c.keycloakClient.GetGroups(accessToken, realmName)
+	authorizations, err := c.configDBModule.GetAuthorizations(ctx, realmName, *group.Name)
 	if err != nil {
 		c.logger.Warn(ctx, "err", err.Error())
 		return api.AuthorizationsRepresentation{}, err
 	}
 
-	// Convert targetGroupId to targetGroupName
-	var convertedAuthorizations = keycloakb.TranslateGroupIDIntoGroupName(authorizations, groups)
-
-	return api.ConvertToAPIAuthorizations(convertedAuthorizations), nil
+	return api.ConvertToAPIAuthorizations(authorizations), nil
 }
 
 func (c *component) UpdateAuthorizations(ctx context.Context, realmName string, groupID string, auth api.AuthorizationsRepresentation) error {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 	var currentRealm = ctx.Value(cs.CtContextRealm).(string)
 
-	authorisations := api.ConvertToDBAuthorizations(realmName, groupID, auth)
+	group, err := c.keycloakClient.GetGroup(accessToken, realmName, groupID)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return err
+	}
 
-	var allowedTargetRealmsAndGroupIDs = make(map[string]map[string]string)
+	var groupName = *group.Name
+
+	authorizations := api.ConvertToDBAuthorizations(realmName, groupName, auth)
+
+	var allowedTargetRealmsAndGroupNames = make(map[string]map[string]struct{})
 	// Validate the authorizations provided
 	{
 		// Retrieve the info needed for validation
@@ -889,13 +901,13 @@ func (c *component) UpdateAuthorizations(ctx context.Context, realmName string, 
 
 			// * is allowed as targetRealm only for master
 			if currentRealm == "master" {
-				allowedTargetRealmsAndGroupIDs["*"] = make(map[string]string)
-				allowedTargetRealmsAndGroupIDs["*"]["*"] = "*"
+				allowedTargetRealmsAndGroupNames["*"] = make(map[string]struct{})
+				allowedTargetRealmsAndGroupNames["*"]["*"] = struct{}{}
 			}
 
 			for _, realm := range realms {
 				var realmID = *realm.Id
-				allowedTargetRealmsAndGroupIDs[realmID] = make(map[string]string)
+				allowedTargetRealmsAndGroupNames[realmID] = make(map[string]struct{})
 
 				groups, err := c.keycloakClient.GetGroups(accessToken, realmID)
 				if err != nil {
@@ -904,23 +916,20 @@ func (c *component) UpdateAuthorizations(ctx context.Context, realmName string, 
 				}
 
 				for _, group := range groups {
-					allowedTargetRealmsAndGroupIDs[realmID][*group.Name] = *group.Id
+					allowedTargetRealmsAndGroupNames[realmID][*group.Name] = struct{}{}
 				}
 
-				allowedTargetRealmsAndGroupIDs[realmID]["*"] = "*"
+				allowedTargetRealmsAndGroupNames[realmID]["*"] = struct{}{}
 			}
 		}
 
 		// Perform validation
-		err := keycloakb.Validate(authorisations, allowedTargetRealmsAndGroupIDs)
+		err := keycloakb.Validate(authorizations, allowedTargetRealmsAndGroupNames)
 		if err != nil {
 			c.logger.Warn(ctx, "err", err.Error())
 			return errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Authorization)
 		}
 	}
-
-	// Convert groupName into groupID
-	var convertedAuthorizations = keycloakb.TranslateGroupNameIntoGroupID(authorisations, allowedTargetRealmsAndGroupIDs)
 
 	// Assign KC roles to groups
 	{
@@ -929,7 +938,7 @@ func (c *component) UpdateAuthorizations(ctx context.Context, realmName string, 
 		// We also do it for each realms avaialble.
 		var kcRolesNeeded = false
 
-		for _, authz := range convertedAuthorizations {
+		for _, authz := range authorizations {
 			if authz.Action != nil && strings.HasPrefix(*authz.Action, "MGMT_") {
 				kcRolesNeeded = true
 			}
@@ -1003,13 +1012,13 @@ func (c *component) UpdateAuthorizations(ctx context.Context, realmName string, 
 		}
 		defer tx.Close()
 
-		err = c.configDBModule.DeleteAuthorizations(ctx, realmName, groupID)
+		err = c.configDBModule.DeleteAuthorizations(ctx, realmName, groupName)
 		if err != nil {
 			c.logger.Warn(ctx, "err", err.Error())
 			return err
 		}
 
-		for _, authorisation := range convertedAuthorizations {
+		for _, authorisation := range authorizations {
 			err = c.configDBModule.CreateAuthorization(ctx, authorisation)
 			if err != nil {
 				c.logger.Warn(ctx, "err", err.Error())
@@ -1024,7 +1033,7 @@ func (c *component) UpdateAuthorizations(ctx context.Context, realmName string, 
 		}
 	}
 
-	c.reportEvent(ctx, "API_AUTHORIZATIONS_UPDATE", database.CtEventRealmName, realmName, database.CtEventGroupID, groupID)
+	c.reportEvent(ctx, "API_AUTHORIZATIONS_UPDATE", database.CtEventRealmName, realmName, database.CtEventGroupName, groupName)
 
 	return nil
 }

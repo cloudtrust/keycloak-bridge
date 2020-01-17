@@ -35,6 +35,7 @@ const (
 	Gender             = "gender"
 	Birthdate          = "birthdate"
 	GroupID            = "groupId"
+	GroupName          = "groupName"
 	Name               = "name"
 	GroupIDs           = "groupIds"
 	RoleID             = "roleId"
