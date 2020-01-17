@@ -303,12 +303,12 @@
   version = "v1.0.5"
 
 [[projects]]
-  digest = "1:11118bd196646c6515fea3d6c43f66162833c6ae4939bfb229b9956d91c6cf17"
+  digest = "1:83d0e0f3f46dc86daf27e4d7c834c8c492db787c53c09d94183de7478db92142"
   name = "github.com/spf13/viper"
   packages = ["."]
   pruneopts = "UT"
-  revision = "b5bf975e5823809fb22c7644d008757f78a4259e"
-  version = "v1.4.0"
+  revision = "4525543ce4fe90f7970f5e2cdc300b8ffc8c0582"
+  version = "v1.6.2"
 
 [[projects]]
   digest = "1:8548c309c65a85933a625be5e7d52b6ac927ca30c56869fae58123b8a77a75e1"
@@ -317,6 +317,14 @@
   pruneopts = "UT"
   revision = "221dbe5ed46703ee255b1da0dec05086f5035f62"
   version = "v1.4.0"
+
+[[projects]]
+  digest = "1:f4b32291cad5efac2bfdba89ccde6aa04618b62ce06c1a571da2dc4f3f2677fb"
+  name = "github.com/subosito/gotenv"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "2ef7124db659d49edac6aa459693a15ae36c671a"
+  version = "v1.2.0"
 
 [[projects]]
   digest = "1:54bf58828a4074c2304fcc52f018eb19fc02d5853ebd5121817330792c776734"
@@ -500,6 +508,14 @@
   pruneopts = "UT"
   revision = "e0f81be2f4064ea7aa7470e9daddd2dc8e8152c7"
   version = "v2.0.3"
+
+[[projects]]
+  digest = "1:c4b5592c342f273e18de68e16957f536f6648f2e90c9d7ece653ac90c22079a9"
+  name = "gopkg.in/ini.v1"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "94291fffe2b14f4632ec0e67c1bfecfc1287a168"
+  version = "v1.51.1"
 
 [[projects]]
   digest = "1:3c4aaca5a82adc021322f239e0cf3f46852bb0b18ae050d0feab2e9e4c527462"
