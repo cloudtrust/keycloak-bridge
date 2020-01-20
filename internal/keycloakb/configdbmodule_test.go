@@ -8,7 +8,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/cloudtrust/common-service/database/sqltypes"
 	"github.com/cloudtrust/common-service/log"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/mock"
@@ -16,12 +15,6 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
-
-func useMockDB(t *testing.T, fn func(sqltypes.CloudtrustDB)) {
-	var mockCtrl = gomock.NewController(t)
-	defer mockCtrl.Finish()
-	fn(mock.NewCloudtrustDB(mockCtrl))
-}
 
 func TestConfigurationDBModule(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)

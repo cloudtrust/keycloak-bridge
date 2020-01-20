@@ -256,11 +256,9 @@ func ConvertToKCUser(user UserRepresentation) kc.UserRepresentation {
 
 // ConvertToKCGroup creates a KC group representation from an API group
 func ConvertToKCGroup(group GroupRepresentation) kc.GroupRepresentation {
-	var groupRep kc.GroupRepresentation
-
-	groupRep.Name = group.Name
-
-	return groupRep
+	return kc.GroupRepresentation{
+		Name: group.Name,
+	}
 }
 
 // ConvertToAPIAuthorizations creates a API authorization representation from an array of DB Authorization
@@ -314,10 +312,10 @@ func ConvertToDBAuthorizations(realmID, groupID string, apiAuthorizations Author
 			continue
 		}
 
-		for targeteRealmID, v := range u {
+		for targetRealmID, v := range u {
 			if len(v) == 0 {
 				var act = string(action)
-				var targetRealm = string(targeteRealmID)
+				var targetRealm = string(targetRealmID)
 				authorizations = append(authorizations, dto.Authorization{
 					RealmID:       &realmID,
 					GroupName:     &groupID,
@@ -329,7 +327,7 @@ func ConvertToDBAuthorizations(realmID, groupID string, apiAuthorizations Author
 
 			for targetGroupName := range v {
 				var act = string(action)
-				var targetRealm = string(targeteRealmID)
+				var targetRealm = string(targetRealmID)
 				var targetGroup = string(targetGroupName)
 				authorizations = append(authorizations, dto.Authorization{
 					RealmID:         &realmID,
