@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 	kc "github.com/cloudtrust/keycloak-client"
 	"github.com/stretchr/testify/assert"
 )
@@ -67,6 +68,12 @@ func TestConvertToAPIUser(t *testing.T) {
 	kcUser.Attributes = &m
 	m["locale"] = []string{"en"}
 	assert.NotNil(t, *ConvertToAPIUser(kcUser).Locale)
+
+	// SmsSent
+	assert.Nil(t, ConvertToAPIUser(kcUser).SmsSent)
+	kcUser.Attributes = &m
+	m["smsSent"] = []string{"0"}
+	assert.NotNil(t, *ConvertToAPIUser(kcUser).SmsSent)
 }
 
 func TestConvertToAPIUsersPage(t *testing.T) {
@@ -124,6 +131,117 @@ func TestConvertToKCUser(t *testing.T) {
 	var locale = "it"
 	user.Locale = &locale
 	assert.Equal(t, locale, (*ConvertToKCUser(user).Attributes)["locale"][0])
+}
+
+func TestConvertToKCGroup(t *testing.T) {
+	var group GroupRepresentation
+
+	// Name
+	var name = "a name"
+	group.Name = &name
+	assert.Equal(t, name, *ConvertToKCGroup(group).Name)
+}
+
+func TestConvertToDBAuthorizations(t *testing.T) {
+	// Nil matrix authorizations
+	{
+		var apiAuthorizations = AuthorizationsRepresentation{}
+
+		authorizations := ConvertToDBAuthorizations("realmID", "groupID", apiAuthorizations)
+		assert.Equal(t, 0, len(authorizations))
+	}
+
+	// Empty matrix authorizations
+	{
+		var jsonMatrix = `{}`
+
+		var matrix map[string]map[string]map[string]struct{}
+		if err := json.Unmarshal([]byte(jsonMatrix), &matrix); err != nil {
+			assert.Fail(t, "")
+		}
+
+		var apiAuthorizations = AuthorizationsRepresentation{
+			Matrix: &matrix,
+		}
+
+		authorizations := ConvertToDBAuthorizations("realmID", "groupID", apiAuthorizations)
+		assert.Equal(t, 0, len(authorizations))
+	}
+
+	// Valid matrix authorizations
+	{
+		var jsonMatrix = `{
+			"Action1": {},
+			"Action2": {"*": {} },
+			"Action3": {"*": {"*": {} }}, 
+			"Action4": {"realm1": {} },
+			"Action5": {"realm1": {"groupName1": {} }},
+			"Action6": {"realm1": {"groupName1": {}, "groupName2": {}}},
+			"Action7": {"realm1": {}, "realm2": {}},
+			"Action8": {"realm1": {"groupName1": {} }, "realm2": {"groupName1": {} }},
+			"Action9": {"realm1": {"groupName1": {}, "groupName2": {}}, "realm2": {"groupName1": {}, "groupName2": {}}}
+		}`
+
+		var matrix map[string]map[string]map[string]struct{}
+		if err := json.Unmarshal([]byte(jsonMatrix), &matrix); err != nil {
+			assert.Fail(t, "")
+		}
+
+		var apiAuthorizations = AuthorizationsRepresentation{
+			Matrix: &matrix,
+		}
+
+		authorizations := ConvertToDBAuthorizations("realmID", "groupID", apiAuthorizations)
+		assert.Equal(t, 15, len(authorizations))
+	}
+}
+
+func TestConvertToAPIAuthorizations(t *testing.T) {
+	var master = "master"
+	var groupName1 = "groupName1"
+	var groupName2 = "groupName2"
+	var action = "action"
+	var action2 = "action2"
+	var any = "*"
+
+	var authorizations = []dto.Authorization{}
+
+	var authz1 = dto.Authorization{
+		RealmID:   &master,
+		GroupName: &groupName2,
+		Action:    &action2,
+	}
+
+	var authz2 = dto.Authorization{
+		RealmID:       &master,
+		GroupName:     &groupName2,
+		Action:        &action2,
+		TargetRealmID: &any,
+	}
+
+	var authz3 = dto.Authorization{
+		RealmID:         &master,
+		GroupName:       &groupName1,
+		Action:          &action,
+		TargetRealmID:   &master,
+		TargetGroupName: &groupName1,
+	}
+
+	authorizations = append(authorizations, authz1)
+	authorizations = append(authorizations, authz2)
+	authorizations = append(authorizations, authz3)
+
+	var apiAuthorizations = ConvertToAPIAuthorizations(authorizations)
+	var matrix = *apiAuthorizations.Matrix
+
+	_, ok := matrix[action][master][groupName1]
+	assert.Equal(t, true, ok)
+
+	_, ok = matrix[action][master][master]
+	assert.Equal(t, false, ok)
+
+	_, ok = matrix[action2][any]
+	assert.Equal(t, true, ok)
 }
 
 func TestConvertRequiredAction(t *testing.T) {
@@ -204,6 +322,28 @@ func TestValidateRoleRepresentation(t *testing.T) {
 
 	for _, role := range roles {
 		assert.NotNil(t, role.Validate())
+	}
+}
+
+func TestValidateGroupRepresentation(t *testing.T) {
+	{
+		group := createValidGroupRepresentation()
+		assert.Nil(t, group.Validate())
+	}
+
+	id := "f467ed7c"
+	name := "name *"
+
+	var groups []GroupRepresentation
+	for i := 0; i < 2; i++ {
+		groups = append(groups, createValidGroupRepresentation())
+	}
+
+	groups[0].ID = &id
+	groups[1].Name = &name
+
+	for _, group := range groups {
+		assert.NotNil(t, group.Validate())
 	}
 }
 
@@ -304,6 +444,17 @@ func createValidRoleRepresentation() RoleRepresentation {
 	role.Composite = &boolTrue
 
 	return role
+}
+
+func createValidGroupRepresentation() GroupRepresentation {
+	id := "f467ed7c-0a1d-4eee-9bb8-669c6f89c0ee"
+	name := "name"
+
+	var group = GroupRepresentation{}
+	group.ID = &id
+	group.Name = &name
+
+	return group
 }
 
 func createValidPasswordRepresentation() PasswordRepresentation {

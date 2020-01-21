@@ -18,6 +18,7 @@ const (
 	WithAuthorization    = `{
 		"master": { 
 			"toe": {
+				"ST_GetActions": {"*": {}},
 				"ST_GetStatistics": {"*": {"*": {} }},
 				"ST_GetStatisticsUsers": {"*": {"*": {} }},
 				"ST_GetStatisticsAuthenticators": {"*": {"*": {} }},
@@ -60,6 +61,14 @@ func testAuthorization(t *testing.T, jsonAuthz string, tester func(Component, *m
 	tester(authorizationMW, mockComponent, ctx, mp)
 }
 
+func TestGetActionsAllow(t *testing.T) {
+	testAuthorization(t, WithAuthorization, func(auth Component, mockComponent *mock.Component, ctx context.Context, mp map[string]string) {
+		mockComponent.EXPECT().GetActions(ctx).Return([]api.ActionRepresentation{}, nil).Times(1)
+		_, err := auth.GetActions(ctx)
+		assert.Nil(t, err)
+	})
+}
+
 func TestGetStatisticsAllow(t *testing.T) {
 	testAuthorization(t, WithAuthorization, func(auth Component, mockComponent *mock.Component, ctx context.Context, mp map[string]string) {
 		mockComponent.EXPECT().GetStatistics(ctx, mp["realm"]).Return(api.StatisticsRepresentation{}, nil).Times(1)
@@ -96,6 +105,13 @@ func TestGetStatisticsAuthenticationsLogAllow(t *testing.T) {
 		mockComponent.EXPECT().GetStatisticsAuthenticationsLog(ctx, mp["realm"], mp["max"]).Return([]api.StatisticsConnectionRepresentation{}, nil).Times(1)
 		_, err := auth.GetStatisticsAuthenticationsLog(ctx, mp["realm"], mp["max"])
 		assert.Nil(t, err)
+	})
+}
+
+func TestGetActionsDeny(t *testing.T) {
+	testAuthorization(t, WithoutAuthorization, func(auth Component, mockComponent *mock.Component, ctx context.Context, mp map[string]string) {
+		_, err := auth.GetActions(ctx)
+		assert.Equal(t, security.ForbiddenError{}, err)
 	})
 }
 

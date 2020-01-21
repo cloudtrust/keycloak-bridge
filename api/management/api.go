@@ -5,7 +5,8 @@ import (
 	"regexp"
 	"strconv"
 
-	internal "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
+	"github.com/cloudtrust/keycloak-bridge/internal/dto"
+	internal "github.com/cloudtrust/keycloak-bridge/internal/messages"
 	kc "github.com/cloudtrust/keycloak-client"
 )
 
@@ -86,6 +87,17 @@ type RoleRepresentation struct {
 type GroupRepresentation struct {
 	ID   *string `json:"id,omitempty"`
 	Name *string `json:"name,omitempty"`
+}
+
+// AuthorizationsRepresentation struct
+type AuthorizationsRepresentation struct {
+	Matrix *map[string]map[string]map[string]struct{} `json:"matrix"`
+}
+
+// ActionRepresentation struct
+type ActionRepresentation struct {
+	Name  *string `json:"name"`
+	Scope *string `json:"scope"`
 }
 
 // PasswordRepresentation struct
@@ -242,6 +254,95 @@ func ConvertToKCUser(user UserRepresentation) kc.UserRepresentation {
 	return userRep
 }
 
+// ConvertToKCGroup creates a KC group representation from an API group
+func ConvertToKCGroup(group GroupRepresentation) kc.GroupRepresentation {
+	return kc.GroupRepresentation{
+		Name: group.Name,
+	}
+}
+
+// ConvertToAPIAuthorizations creates a API authorization representation from an array of DB Authorization
+func ConvertToAPIAuthorizations(authorizations []dto.Authorization) AuthorizationsRepresentation {
+	var matrix = make(map[string]map[string]map[string]struct{})
+
+	for _, authz := range authorizations {
+		_, ok := matrix[*authz.Action]
+		if !ok {
+			matrix[*authz.Action] = make(map[string]map[string]struct{})
+		}
+
+		if authz.TargetRealmID == nil {
+			continue
+		}
+
+		_, ok = matrix[*authz.Action][*authz.TargetRealmID]
+		if !ok {
+			matrix[*authz.Action][*authz.TargetRealmID] = make(map[string]struct{})
+		}
+
+		if authz.TargetGroupName == nil {
+			continue
+		}
+
+		matrix[*authz.Action][*authz.TargetRealmID][*authz.TargetGroupName] = struct{}{}
+	}
+
+	return AuthorizationsRepresentation{
+		Matrix: &matrix,
+	}
+
+}
+
+// ConvertToDBAuthorizations creates an array of DB Authorization from an API AuthorizationsRepresentation
+func ConvertToDBAuthorizations(realmID, groupID string, apiAuthorizations AuthorizationsRepresentation) []dto.Authorization {
+	var authorizations = []dto.Authorization{}
+
+	if apiAuthorizations.Matrix == nil {
+		return authorizations
+	}
+
+	for action, u := range *apiAuthorizations.Matrix {
+		if len(u) == 0 {
+			var act = string(action)
+			authorizations = append(authorizations, dto.Authorization{
+				RealmID:   &realmID,
+				GroupName: &groupID,
+				Action:    &act,
+			})
+			continue
+		}
+
+		for targetRealmID, v := range u {
+			if len(v) == 0 {
+				var act = string(action)
+				var targetRealm = string(targetRealmID)
+				authorizations = append(authorizations, dto.Authorization{
+					RealmID:       &realmID,
+					GroupName:     &groupID,
+					Action:        &act,
+					TargetRealmID: &targetRealm,
+				})
+				continue
+			}
+
+			for targetGroupName := range v {
+				var act = string(action)
+				var targetRealm = string(targetRealmID)
+				var targetGroup = string(targetGroupName)
+				authorizations = append(authorizations, dto.Authorization{
+					RealmID:         &realmID,
+					GroupName:       &groupID,
+					Action:          &act,
+					TargetRealmID:   &targetRealm,
+					TargetGroupName: &targetGroup,
+				})
+			}
+		}
+	}
+
+	return authorizations
+}
+
 // ConvertRequiredAction creates an API requiredAction from a KC requiredAction
 func ConvertRequiredAction(ra *kc.RequiredActionProviderRepresentation) RequiredActionRepresentation {
 	var raRep RequiredActionRepresentation
@@ -295,7 +396,7 @@ func (user UserRepresentation) Validate() error {
 	if user.Groups != nil {
 		for _, groupID := range *(user.Groups) {
 			if !matchesRegExp(groupID, RegExpID) {
-				return errors.New(internal.MsgErrInvalidParam + "." + internal.GroudID)
+				return errors.New(internal.MsgErrInvalidParam + "." + internal.GroupName)
 			}
 		}
 	}
@@ -331,6 +432,19 @@ func (role RoleRepresentation) Validate() error {
 
 	if role.ContainerID != nil && !matchesRegExp(*role.ContainerID, RegExpID) {
 		return errors.New(internal.MsgErrInvalidParam + "." + internal.ContainerID)
+	}
+
+	return nil
+}
+
+// Validate is a validator for GroupRepresentation
+func (group GroupRepresentation) Validate() error {
+	if group.ID != nil && !matchesRegExp(*group.ID, RegExpID) {
+		return errors.New(internal.MsgErrInvalidParam + "." + internal.GroupName)
+	}
+
+	if group.Name != nil && !matchesRegExp(*group.Name, RegExpName) {
+		return errors.New(internal.MsgErrInvalidParam + "." + internal.Name)
 	}
 
 	return nil
@@ -374,7 +488,9 @@ func matchesRegExp(value, re string) bool {
 
 // Regular expressions for parameters validation
 const (
-	RegExpID = `^[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}$`
+	RegExpID          = `^[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}$`
+	RegExpName        = `^[a-zA-Z0-9-_]{1,128}$`
+	RegExpDescription = `^.{1,255}$`
 
 	// Client
 	RegExpClientID = `^[a-zA-Z0-9-_.]{1,255}$`
@@ -389,10 +505,6 @@ const (
 	RegExpGender      = `^[MF]$`
 	RegExpBirthDate   = `^(\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01]))$`
 	RegExpLocale      = `^[a-z]{2}$`
-
-	// Role
-	RegExpName        = `^[a-zA-Z0-9-_]{1,128}$`
-	RegExpDescription = `^.{1,255}$`
 
 	// Password
 	RegExpPassword = `^.{1,255}$`

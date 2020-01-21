@@ -234,3 +234,23 @@ func TestGetStatisticsAuthenticationsLog(t *testing.T) {
 		assert.Nil(t, res)
 	}
 }
+
+func TestGetActions(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockDBModule = mock.NewEventsDBModule(mockCtrl)
+	var mockKcClient = mock.NewKcClient(mockCtrl)
+	var mockLogger = log.NewNopLogger()
+	component := NewComponent(mockDBModule, mockKcClient, mockLogger)
+
+	var realm = "the_realm_name"
+	var accessToken = "TOKEN=="
+	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+	ctx = context.WithValue(ctx, cs.CtContextRealm, realm)
+
+	res, err := component.GetActions(ctx)
+
+	assert.Nil(t, err)
+	assert.Equal(t, len(actions), len(res))
+}

@@ -8,25 +8,22 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/cloudtrust/common-service/log"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/mock"
+	msg "github.com/cloudtrust/keycloak-bridge/internal/messages"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 
-func useMockDB(t *testing.T, fn func(DBConfiguration)) {
-	var mockCtrl = gomock.NewController(t)
-	defer mockCtrl.Finish()
-	fn(mock.NewDBConfiguration(mockCtrl))
-}
-
 func TestConfigurationDBModule(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
-	var mockDB = mock.NewDBConfiguration(mockCtrl)
+	var mockDB = mock.NewCloudtrustDB(mockCtrl)
+	var mockLogger = log.NewNopLogger()
 
 	mockDB.EXPECT().Exec(gomock.Any(), "realmId", gomock.Any(), gomock.Any()).Return(nil, nil).Times(1)
-	var configDBModule = NewConfigurationDBModule(mockDB)
+	var configDBModule = NewConfigurationDBModule(mockDB, mockLogger)
 	var err = configDBModule.StoreOrUpdate(context.Background(), "realmId", dto.RealmConfiguration{})
 	assert.Nil(t, err)
 }
@@ -35,10 +32,11 @@ func TestGetConfiguration(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mockDB = mock.NewDBConfiguration(mockCtrl)
+	var mockDB = mock.NewCloudtrustDB(mockCtrl)
 	var mockSQLRow = mock.NewSQLRow(mockCtrl)
+	var mockLogger = log.NewNopLogger()
 
-	var configDBModule = NewConfigurationDBModule(mockDB)
+	var configDBModule = NewConfigurationDBModule(mockDB, mockLogger)
 	var realmID = "myrealm"
 	var expectedError = errors.New("sql")
 
@@ -65,7 +63,7 @@ func TestGetConfiguration(t *testing.T) {
 		mockSQLRow.EXPECT().Scan(gomock.Any()).Return(sql.ErrNoRows)
 		_, err := configDBModule.GetConfiguration(context.TODO(), realmID)
 		assert.NotNil(t, err)
-		assert.True(t, strings.Contains(err.Error(), MsgErrNotConfigured))
+		assert.True(t, strings.Contains(err.Error(), msg.MsgErrNotConfigured))
 	}
 
 	{

@@ -13,6 +13,7 @@ import (
 
 	api "github.com/cloudtrust/keycloak-bridge/api/events"
 	api_stat "github.com/cloudtrust/keycloak-bridge/api/statistics"
+	msg "github.com/cloudtrust/keycloak-bridge/internal/messages"
 )
 
 // EventsDBModule is the interface of the audit events module.
@@ -121,7 +122,7 @@ func createAuditEventsParametersFromMap(m map[string]string) (selectAuditEventsP
 	}
 	if res.exclude != nil && strings.Contains(res.exclude.(string), ",") {
 		// Multiple values are not supported yet
-		return res, errorhandler.CreateInvalidQueryParameterError(Exclude)
+		return res, errorhandler.CreateInvalidQueryParameterError(msg.Exclude)
 	}
 	return res, nil
 }
@@ -251,7 +252,7 @@ func (cm *eventsDBModule) GetLastConnection(_ context.Context, realmName string)
 func (cm *eventsDBModule) GetTotalConnectionsCount(_ context.Context, realmName string, durationLabel string) (int64, error) {
 	var matched, err = regexp.MatchString(`^\d+ [A-Za-z]+$`, durationLabel)
 	if !matched || err != nil {
-		return 0, errors.New(MsgErrInvalidParam + "." + DurationLabel)
+		return 0, errors.New(msg.MsgErrInvalidParam + "." + msg.DurationLabel)
 	}
 	var res = int64(0)
 	var row = cm.db.QueryRow(strings.ReplaceAll(selectConnectionsCount, "##INTERVAL##", durationLabel), realmName)

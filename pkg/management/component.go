@@ -11,7 +11,8 @@ import (
 	errorhandler "github.com/cloudtrust/common-service/errors"
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
-	internal "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
+	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
+	msg "github.com/cloudtrust/keycloak-bridge/internal/messages"
 	kc "github.com/cloudtrust/keycloak-client"
 	"github.com/pkg/errors"
 )
@@ -47,6 +48,12 @@ type KeycloakClient interface {
 	GetClientRoles(accessToken string, realmName, idClient string) ([]kc.RoleRepresentation, error)
 	CreateClientRole(accessToken string, realmName, clientID string, role kc.RoleRepresentation) (string, error)
 	GetGroup(accessToken string, realmName, groupID string) (kc.GroupRepresentation, error)
+	CreateGroup(accessToken string, realmName string, group kc.GroupRepresentation) (string, error)
+	DeleteGroup(accessToken string, realmName string, groupID string) error
+	AssignClientRole(accessToken string, realmName string, groupID string, clientID string, role []kc.RoleRepresentation) error
+	RemoveClientRole(accessToken string, realmName string, groupID string, clientID string, role []kc.RoleRepresentation) error
+	GetGroupClientRoles(accessToken string, realmName string, groupID string, clientID string) ([]kc.RoleRepresentation, error)
+	GetAvailableGroupClientRoles(accessToken string, realmName string, groupID string, clientID string) ([]kc.RoleRepresentation, error)
 	GetCredentials(accessToken string, realmName string, userID string) ([]kc.CredentialRepresentation, error)
 	UpdateLabelCredential(accessToken string, realmName string, userID string, credentialID string, label string) error
 	DeleteCredential(accessToken string, realmName string, userID string, credentialID string) error
@@ -54,17 +61,25 @@ type KeycloakClient interface {
 
 // ConfigurationDBModule is the interface of the configuration module.
 type ConfigurationDBModule interface {
+	NewTransaction(context context.Context) (database.Transaction, error)
 	StoreOrUpdate(context.Context, string, dto.RealmConfiguration) error
 	GetConfiguration(context.Context, string) (dto.RealmConfiguration, error)
+	GetAuthorizations(context context.Context, realmID string, groupID string) ([]dto.Authorization, error)
+	CreateAuthorization(context context.Context, authz dto.Authorization) error
+	DeleteAuthorizations(context context.Context, realmID string, groupID string) error
+	DeleteAllAuthorizationsWithGroup(context context.Context, realmID, groupName string) error
 }
 
 // Component is the management component interface.
 type Component interface {
+	GetActions(ctx context.Context) ([]api.ActionRepresentation, error)
+
 	GetRealms(ctx context.Context) ([]api.RealmRepresentation, error)
 	GetRealm(ctx context.Context, realmName string) (api.RealmRepresentation, error)
 	GetClient(ctx context.Context, realmName, idClient string) (api.ClientRepresentation, error)
 	GetClients(ctx context.Context, realmName string) ([]api.ClientRepresentation, error)
 	GetRequiredActions(ctx context.Context, realmName string) ([]api.RequiredActionRepresentation, error)
+
 	DeleteUser(ctx context.Context, realmName, userID string) error
 	GetUser(ctx context.Context, realmName, userID string) (api.UserRepresentation, error)
 	UpdateUser(ctx context.Context, realmName, userID string, user api.UserRepresentation) error
@@ -75,6 +90,7 @@ type Component interface {
 	GetGroupsOfUser(ctx context.Context, realmName, userID string) ([]api.GroupRepresentation, error)
 	GetClientRolesForUser(ctx context.Context, realmName, userID, clientID string) ([]api.RoleRepresentation, error)
 	AddClientRolesToUser(ctx context.Context, realmName, userID, clientID string, roles []api.RoleRepresentation) error
+
 	ResetPassword(ctx context.Context, realmName string, userID string, password api.PasswordRepresentation) (string, error)
 	ExecuteActionsEmail(ctx context.Context, realmName string, userID string, actions []api.RequiredAction, paramKV ...string) error
 	SendNewEnrolmentCode(ctx context.Context, realmName string, userID string) (string, error)
@@ -85,9 +101,15 @@ type Component interface {
 	DeleteCredentialsForUser(ctx context.Context, realmName string, userID string, credentialID string) error
 	GetRoles(ctx context.Context, realmName string) ([]api.RoleRepresentation, error)
 	GetRole(ctx context.Context, realmName string, roleID string) (api.RoleRepresentation, error)
-	GetGroups(ctx context.Context, realmName string) ([]api.GroupRepresentation, error)
 	GetClientRoles(ctx context.Context, realmName, idClient string) ([]api.RoleRepresentation, error)
 	CreateClientRole(ctx context.Context, realmName, clientID string, role api.RoleRepresentation) (string, error)
+
+	GetGroups(ctx context.Context, realmName string) ([]api.GroupRepresentation, error)
+	CreateGroup(ctx context.Context, realmName string, group api.GroupRepresentation) (string, error)
+	DeleteGroup(ctx context.Context, realmName string, groupID string) error
+	GetAuthorizations(ctx context.Context, realmName string, groupID string) (api.AuthorizationsRepresentation, error)
+	UpdateAuthorizations(ctx context.Context, realmName string, groupID string, group api.AuthorizationsRepresentation) error
+
 	GetRealmCustomConfiguration(ctx context.Context, realmName string) (api.RealmCustomConfiguration, error)
 	UpdateRealmCustomConfiguration(ctx context.Context, realmID string, customConfig api.RealmCustomConfiguration) error
 }
@@ -97,11 +119,12 @@ type component struct {
 	keycloakClient KeycloakClient
 	eventDBModule  database.EventsDBModule
 	configDBModule ConfigurationDBModule
-	logger         internal.Logger
+	logger         keycloakb.Logger
 }
 
 // NewComponent returns the management component.
-func NewComponent(keycloakClient KeycloakClient, eventDBModule database.EventsDBModule, configDBModule ConfigurationDBModule, logger internal.Logger) Component {
+func NewComponent(keycloakClient KeycloakClient, eventDBModule database.EventsDBModule,
+	configDBModule ConfigurationDBModule, logger keycloakb.Logger) Component {
 	return &component{
 		keycloakClient: keycloakClient,
 		eventDBModule:  eventDBModule,
@@ -114,7 +137,7 @@ func (c *component) reportEvent(ctx context.Context, apiCall string, values ...s
 	errEvent := c.eventDBModule.ReportEvent(ctx, apiCall, "back-office", values...)
 	if errEvent != nil {
 		//store in the logs also the event that failed to be stored in the DB
-		internal.LogUnrecordedEvent(ctx, c.logger, apiCall, errEvent.Error(), values...)
+		keycloakb.LogUnrecordedEvent(ctx, c.logger, apiCall, errEvent.Error(), values...)
 	}
 }
 
@@ -555,7 +578,7 @@ func (c *component) ResetPassword(ctx context.Context, realmName string, userID 
 		var nbUpperCase = 1
 		var nbDigits = 6
 		var nbLowerCase = 1
-		pwd = internal.GenerateInitialCode(nbUpperCase, nbDigits, nbLowerCase)
+		pwd = keycloakb.GenerateInitialCode(nbUpperCase, nbDigits, nbLowerCase)
 		credKc.Value = &pwd
 	} else {
 		credKc.Value = password.Value
@@ -694,10 +717,10 @@ func (c *component) DeleteCredentialsForUser(ctx context.Context, realmName stri
 	credsKc, err := c.keycloakClient.GetCredentials(accessToken, realmName, userID)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Could not obtain list of credentials", "err", err.Error())
+		return err
 	}
 
 	err = c.keycloakClient.DeleteCredential(accessToken, realmName, userID, credentialID)
-
 	if err != nil {
 		c.logger.Warn(ctx, "err", err.Error())
 		return err
@@ -706,7 +729,6 @@ func (c *component) DeleteCredentialsForUser(ctx context.Context, realmName stri
 	// if a credential other than the password was deleted, record the event 2ND_FACTOR_REMOVED in the audit DB
 	for _, credKc := range credsKc {
 		if *credKc.Id == credentialID && *credKc.Type != "password" {
-
 			c.reportEvent(ctx, "2ND_FACTOR_REMOVED", database.CtEventRealmName, realmName, database.CtEventUserID, userID)
 			break
 		}
@@ -782,6 +804,254 @@ func (c *component) GetGroups(ctx context.Context, realmName string) ([]api.Grou
 	}
 
 	return groupsRep, nil
+}
+
+func (c *component) CreateGroup(ctx context.Context, realmName string, group api.GroupRepresentation) (string, error) {
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+
+	var groupRep kc.GroupRepresentation
+	groupRep = api.ConvertToKCGroup(group)
+
+	locationURL, err := c.keycloakClient.CreateGroup(accessToken, realmName, groupRep)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return "", err
+	}
+
+	//retrieve the group ID
+	reg := regexp.MustCompile(`[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}`)
+	groupID := string(reg.Find([]byte(locationURL)))
+
+	//store the API call into the DB
+	c.reportEvent(ctx, "API_GROUP_CREATION", database.CtEventRealmName, realmName, database.CtEventGroupID, groupID, database.CtEventGroupName, *group.Name)
+
+	return locationURL, nil
+}
+
+func (c *component) DeleteGroup(ctx context.Context, realmName, groupID string) error {
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+
+	group, err := c.keycloakClient.GetGroup(accessToken, realmName, groupID)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return err
+	}
+
+	var groupName = *group.Name
+
+	err = c.keycloakClient.DeleteGroup(accessToken, realmName, groupID)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return err
+	}
+
+	err = c.configDBModule.DeleteAllAuthorizationsWithGroup(ctx, realmName, groupName)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return err
+	}
+
+	//store the API call into the DB
+	c.reportEvent(ctx, "API_GROUP_DELETION", database.CtEventRealmName, realmName, database.CtEventGroupName, groupName)
+
+	return nil
+}
+
+func (c *component) GetAuthorizations(ctx context.Context, realmName string, groupID string) (api.AuthorizationsRepresentation, error) {
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+	group, err := c.keycloakClient.GetGroup(accessToken, realmName, groupID)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return api.AuthorizationsRepresentation{}, err
+	}
+
+	authorizations, err := c.configDBModule.GetAuthorizations(ctx, realmName, *group.Name)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return api.AuthorizationsRepresentation{}, err
+	}
+
+	return api.ConvertToAPIAuthorizations(authorizations), nil
+}
+
+func (c *component) UpdateAuthorizations(ctx context.Context, realmName string, groupID string, auth api.AuthorizationsRepresentation) error {
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+	var currentRealm = ctx.Value(cs.CtContextRealm).(string)
+
+	group, err := c.keycloakClient.GetGroup(accessToken, realmName, groupID)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return err
+	}
+
+	var groupName = *group.Name
+
+	authorizations := api.ConvertToDBAuthorizations(realmName, groupName, auth)
+
+	var allowedTargetRealmsAndGroupNames = make(map[string]map[string]struct{})
+	// Validate the authorizations provided
+	{
+		// Retrieve the info needed for validation
+		{
+			realms, err := c.keycloakClient.GetRealms(accessToken)
+			if err != nil {
+				c.logger.Warn(ctx, "err", err.Error())
+				return err
+			}
+
+			// * is allowed as targetRealm only for master
+			if currentRealm == "master" {
+				allowedTargetRealmsAndGroupNames["*"] = make(map[string]struct{})
+				allowedTargetRealmsAndGroupNames["*"]["*"] = struct{}{}
+			}
+
+			for _, realm := range realms {
+				var realmID = *realm.Id
+				allowedTargetRealmsAndGroupNames[realmID] = make(map[string]struct{})
+
+				groups, err := c.keycloakClient.GetGroups(accessToken, realmID)
+				if err != nil {
+					c.logger.Warn(ctx, "err", err.Error())
+					return err
+				}
+
+				for _, group := range groups {
+					allowedTargetRealmsAndGroupNames[realmID][*group.Name] = struct{}{}
+				}
+
+				allowedTargetRealmsAndGroupNames[realmID]["*"] = struct{}{}
+			}
+		}
+
+		// Perform validation
+		err := keycloakb.Validate(authorizations, allowedTargetRealmsAndGroupNames)
+		if err != nil {
+			c.logger.Warn(ctx, "err", err.Error())
+			return errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Authorization)
+		}
+	}
+
+	// Assign KC roles to groups
+	{
+		// TODO Would be good to provide only KC roles which are really needed.
+		// For simplicity, we provides "manage-users", "view-clients", "view-realms", "view-users" to all groups which have at least one Management Action
+		// We also do it for each realms avaialble.
+		var kcRolesNeeded = false
+
+		for _, authz := range authorizations {
+			if authz.Action != nil && strings.HasPrefix(*authz.Action, "MGMT_") {
+				kcRolesNeeded = true
+			}
+		}
+
+		// Check if roles are assigned
+		clients, err := c.keycloakClient.GetClients(accessToken, realmName)
+		if err != nil {
+			c.logger.Warn(ctx, "err", err.Error())
+			return err
+		}
+
+		for _, client := range clients {
+			// filter clients, only keep realm-management and the ones ending with -realm
+			if *client.ClientId != "realm-management" && !strings.HasSuffix(*client.ClientId, "-realm") {
+				continue
+			}
+
+			availableRoles, err := c.keycloakClient.GetAvailableGroupClientRoles(accessToken, realmName, groupID, *client.Id)
+			if err != nil {
+				c.logger.Warn(ctx, "err", err.Error())
+				return err
+			}
+
+			currentRoles, err := c.keycloakClient.GetGroupClientRoles(accessToken, realmName, groupID, *client.Id)
+			if err != nil {
+				c.logger.Warn(ctx, "err", err.Error())
+				return err
+			}
+
+			if kcRolesNeeded {
+				var rolesToAdd = []kc.RoleRepresentation{}
+				for _, role := range availableRoles {
+					if stringInSlice(*role.Name, []string{"manage-users", "view-clients", "view-realm", "view-users"}) {
+						rolesToAdd = append(rolesToAdd, role)
+					}
+				}
+
+				if len(rolesToAdd) != 0 {
+					err = c.keycloakClient.AssignClientRole(accessToken, realmName, groupID, *client.Id, rolesToAdd)
+					if err != nil {
+						c.logger.Warn(ctx, "err", err.Error())
+						return err
+					}
+				}
+			} else {
+				var rolesToRemove = []kc.RoleRepresentation{}
+				for _, role := range currentRoles {
+					if stringInSlice(*role.Name, []string{"manage-users", "view-clients", "view-realm", "view-users"}) {
+						rolesToRemove = append(rolesToRemove, role)
+					}
+				}
+
+				if len(rolesToRemove) != 0 {
+					err = c.keycloakClient.RemoveClientRole(accessToken, realmName, groupID, *client.Id, rolesToRemove)
+					if err != nil {
+						c.logger.Warn(ctx, "err", err.Error())
+						return err
+					}
+				}
+			}
+		}
+	}
+
+	// Persists the new authorizations in DB
+	{
+		tx, err := c.configDBModule.NewTransaction(ctx)
+		if err != nil {
+			c.logger.Warn(ctx, "err", err.Error())
+			return err
+		}
+		defer tx.Close()
+
+		err = c.configDBModule.DeleteAuthorizations(ctx, realmName, groupName)
+		if err != nil {
+			c.logger.Warn(ctx, "err", err.Error())
+			return err
+		}
+
+		for _, authorisation := range authorizations {
+			err = c.configDBModule.CreateAuthorization(ctx, authorisation)
+			if err != nil {
+				c.logger.Warn(ctx, "err", err.Error())
+				return err
+			}
+		}
+
+		err = tx.Commit()
+		if err != nil {
+			c.logger.Warn(ctx, "err", err.Error())
+			return err
+		}
+	}
+
+	c.reportEvent(ctx, "API_AUTHORIZATIONS_UPDATE", database.CtEventRealmName, realmName, database.CtEventGroupName, groupName)
+
+	return nil
+}
+
+func (c *component) GetActions(ctx context.Context) ([]api.ActionRepresentation, error) {
+	var apiActions = []api.ActionRepresentation{}
+
+	for _, action := range actions {
+		var name = action.Name
+		var scope = string(action.Scope)
+
+		apiActions = append(apiActions, api.ActionRepresentation{
+			Name:  &name,
+			Scope: &scope,
+		})
+	}
+
+	return apiActions, nil
 }
 
 func (c *component) GetClientRoles(ctx context.Context, realmName, idClient string) ([]api.RoleRepresentation, error) {
@@ -904,7 +1174,7 @@ func (c *component) UpdateRealmCustomConfiguration(ctx context.Context, realmNam
 		(customConfig.DefaultClientID != nil && customConfig.DefaultRedirectURI == nil) {
 		return errorhandler.Error{
 			Status:  400,
-			Message: internal.ComponentName + "." + internal.MsgErrInvalidParam + "." + internal.ClientID + "AND" + internal.RedirectURI,
+			Message: keycloakb.ComponentName + "." + msg.MsgErrInvalidParam + "." + msg.ClientID + "AND" + msg.RedirectURI,
 		}
 	}
 
@@ -930,7 +1200,7 @@ func (c *component) UpdateRealmCustomConfiguration(ctx context.Context, realmNam
 		if !match {
 			return errorhandler.Error{
 				Status:  400,
-				Message: internal.ComponentName + "." + internal.MsgErrInvalidParam + "." + internal.ClientID + "OR" + internal.RedirectURI,
+				Message: keycloakb.ComponentName + "." + msg.MsgErrInvalidParam + "." + msg.ClientID + "OR" + msg.RedirectURI,
 			}
 		}
 	}
@@ -953,4 +1223,13 @@ func (c *component) UpdateRealmCustomConfiguration(ctx context.Context, realmNam
 	realmID := realmConfig.Id
 	err = c.configDBModule.StoreOrUpdate(ctx, *realmID, config)
 	return err
+}
+
+func stringInSlice(a string, list []string) bool {
+	for _, b := range list {
+		if b == a {
+			return true
+		}
+	}
+	return false
 }

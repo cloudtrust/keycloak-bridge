@@ -18,6 +18,7 @@ const (
 	WithAuthorization    = `{
 		"master": {
 			"toe": {
+				"EV_GetActions": {"*": {}},
 				"EV_GetEvents": {"*": {"*": {} }},
 				"EV_GetEventsSummary": {"*": {"*": {} }},
 				"EV_GetUserEvents": {"*": {"*": {} }}
@@ -58,6 +59,14 @@ func testAuthorization(t *testing.T, jsonAuthz string, tester func(Component, *m
 	tester(authorizationMW, mockEventsComponent, ctx, mp)
 }
 
+func TestGetActionsAllow(t *testing.T) {
+	testAuthorization(t, WithAuthorization, func(auth Component, mockComponent *mock.Component, ctx context.Context, mp map[string]string) {
+		mockComponent.EXPECT().GetActions(ctx).Return([]api.ActionRepresentation{}, nil).Times(1)
+		_, err := auth.GetActions(ctx)
+		assert.Nil(t, err)
+	})
+}
+
 func TestGetEventsAllow(t *testing.T) {
 	testAuthorization(t, WithAuthorization, func(auth Component, mockComponent *mock.Component, ctx context.Context, mp map[string]string) {
 		mockComponent.EXPECT().GetEvents(ctx, mp).Return(api.AuditEventsRepresentation{}, nil).Times(1)
@@ -78,6 +87,13 @@ func TestGetEventsSummaryAllow(t *testing.T) {
 		mockComponent.EXPECT().GetEventsSummary(ctx).Return(api.EventSummaryRepresentation{}, nil).Times(1)
 		_, err := auth.GetEventsSummary(ctx)
 		assert.Nil(t, err)
+	})
+}
+
+func TestGetActionsDeny(t *testing.T) {
+	testAuthorization(t, WithoutAuthorization, func(auth Component, mockComponent *mock.Component, ctx context.Context, mp map[string]string) {
+		_, err := auth.GetActions(ctx)
+		assert.Equal(t, security.ForbiddenError{}, err)
 	})
 }
 

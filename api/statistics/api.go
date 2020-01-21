@@ -15,6 +15,12 @@ const (
 	RegExpTwoDigitsNumber = `^\d{1,2}$`
 )
 
+// ActionRepresentation struct
+type ActionRepresentation struct {
+	Name  *string `json:"name"`
+	Scope *string `json:"scope"`
+}
+
 // StatisticsRepresentation elements returned by GetStatistics
 type StatisticsRepresentation struct {
 	LastConnection   int64                               `json:"lastConnection,omitempty"`

@@ -8,38 +8,55 @@ import (
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
 )
 
+var actions []security.Action
+
+func newAction(as string, scope security.Scope) security.Action {
+	a := security.Action{
+		Name:  as,
+		Scope: scope,
+	}
+
+	actions = append(actions, a)
+	return a
+}
+
 // Creates constants for API method names
-const (
-	GetRealms                      = "GetRealms"
-	GetRealm                       = "GetRealm"
-	GetClient                      = "GetClient"
-	GetClients                     = "GetClients"
-	GetRequiredActions             = "GetRequiredActions"
-	DeleteUser                     = "DeleteUser"
-	GetUser                        = "GetUser"
-	UpdateUser                     = "UpdateUser"
-	GetUsers                       = "GetUsers"
-	CreateUser                     = "CreateUser"
-	GetUserAccountStatus           = "GetUserAccountStatus"
-	GetRolesOfUser                 = "GetRolesOfUser"
-	GetGroupsOfUser                = "GetGroupsOfUser"
-	GetClientRolesForUser          = "GetClientRolesForUser"
-	AddClientRolesToUser           = "AddClientRolesToUser"
-	ResetPassword                  = "ResetPassword"
-	ExecuteActionsEmail            = "ExecuteActionsEmail"
-	SendNewEnrolmentCode           = "SendNewEnrolmentCode"
-	SendReminderEmail              = "SendReminderEmail"
-	ResetSmsCounter                = "ResetSmsCounter"
-	CreateRecoveryCode             = "CreateRecoveryCode"
-	GetCredentialsForUser          = "GetCredentialsForUser"
-	DeleteCredentialsForUser       = "DeleteCredentialsForUser"
-	GetRoles                       = "GetRoles"
-	GetRole                        = "GetRole"
-	GetGroups                      = "GetGroups"
-	GetClientRoles                 = "GetClientRoles"
-	CreateClientRole               = "CreateClientRole"
-	GetRealmCustomConfiguration    = "GetRealmCustomConfiguration"
-	UpdateRealmCustomConfiguration = "UpdateRealmCustomConfiguration"
+var (
+	MGMTGetActions                     = newAction("MGMT_GetActions", security.ScopeGlobal)
+	MGMTGetRealms                      = newAction("MGMT_GetRealms", security.ScopeGlobal)
+	MGMTGetRealm                       = newAction("MGMT_GetRealm", security.ScopeRealm)
+	MGMTGetClient                      = newAction("MGMT_GetClient", security.ScopeRealm)
+	MGMTGetClients                     = newAction("MGMT_GetClients", security.ScopeRealm)
+	MGMTGetRequiredActions             = newAction("MGMT_GetRequiredActions", security.ScopeRealm)
+	MGMTDeleteUser                     = newAction("MGMT_DeleteUser", security.ScopeGroup)
+	MGMTGetUser                        = newAction("MGMT_GetUser", security.ScopeGroup)
+	MGMTUpdateUser                     = newAction("MGMT_UpdateUser", security.ScopeGroup)
+	MGMTGetUsers                       = newAction("MGMT_GetUsers", security.ScopeGroup)
+	MGMTCreateUser                     = newAction("MGMT_CreateUser", security.ScopeGroup)
+	MGMTGetUserAccountStatus           = newAction("MGMT_GetUserAccountStatus", security.ScopeGroup)
+	MGMTGetRolesOfUser                 = newAction("MGMT_GetRolesOfUser", security.ScopeGroup)
+	MGMTGetGroupsOfUser                = newAction("MGMT_GetGroupsOfUser", security.ScopeGroup)
+	MGMTGetClientRolesForUser          = newAction("MGMT_GetClientRolesForUser", security.ScopeGroup)
+	MGMTAddClientRolesToUser           = newAction("MGMT_AddClientRolesToUser", security.ScopeGroup)
+	MGMTResetPassword                  = newAction("MGMT_ResetPassword", security.ScopeGroup)
+	MGMTExecuteActionsEmail            = newAction("MGMT_ExecuteActionsEmail", security.ScopeGroup)
+	MGMTSendNewEnrolmentCode           = newAction("MGMT_SendNewEnrolmentCode", security.ScopeGroup)
+	MGMTSendReminderEmail              = newAction("MGMT_SendReminderEmail", security.ScopeGroup)
+	MGMTResetSmsCounter                = newAction("MGMT_ResetSmsCounter", security.ScopeGroup)
+	MGMTCreateRecoveryCode             = newAction("MGMT_CreateRecoveryCode", security.ScopeGroup)
+	MGMTGetCredentialsForUser          = newAction("MGMT_GetCredentialsForUser", security.ScopeGroup)
+	MGMTDeleteCredentialsForUser       = newAction("MGMT_DeleteCredentialsForUser", security.ScopeGroup)
+	MGMTGetRoles                       = newAction("MGMT_GetRoles", security.ScopeRealm)
+	MGMTGetRole                        = newAction("MGMT_GetRole", security.ScopeRealm)
+	MGMTGetGroups                      = newAction("MGMT_GetGroups", security.ScopeRealm)
+	MGMTCreateGroup                    = newAction("MGMT_CreateGroup", security.ScopeRealm)
+	MGMTDeleteGroup                    = newAction("MGMT_DeleteGroup", security.ScopeGroup)
+	MGMTGetAuthorizations              = newAction("MGMT_GetAuthorizations", security.ScopeGroup)
+	MGMTUpdateAuthorizations           = newAction("MGMT_UpdateAuthorizations", security.ScopeGroup)
+	MGMTGetClientRoles                 = newAction("MGMT_GetClientRoles", security.ScopeRealm)
+	MGMTCreateClientRole               = newAction("MGMT_CreateClientRole", security.ScopeRealm)
+	MGMTGetRealmCustomConfiguration    = newAction("MGMT_GetRealmCustomConfiguration", security.ScopeRealm)
+	MGMTUpdateRealmCustomConfiguration = newAction("MGMT_UpdateRealmCustomConfiguration", security.ScopeRealm)
 )
 
 // Tracking middleware at component level.
@@ -60,9 +77,20 @@ func MakeAuthorizationManagementComponentMW(logger log.Logger, authorizationMana
 	}
 }
 
+func (c *authorizationComponentMW) GetActions(ctx context.Context) ([]api.ActionRepresentation, error) {
+	var action = MGMTGetActions.String()
+	var targetRealm = "*" // For this method, there is no target realm, so we use the wildcard to express there is no constraints.
+
+	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
+		return []api.ActionRepresentation{}, err
+	}
+
+	return c.next.GetActions(ctx)
+}
+
 // authorizationComponentMW implements Component.
 func (c *authorizationComponentMW) GetRealms(ctx context.Context) ([]api.RealmRepresentation, error) {
-	var action = GetRealms
+	var action = MGMTGetRealms.String()
 	var targetRealm = "*" // For this method, there is no target realm, so we use the wildcard to express there is no constraints.
 
 	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
@@ -73,7 +101,7 @@ func (c *authorizationComponentMW) GetRealms(ctx context.Context) ([]api.RealmRe
 }
 
 func (c *authorizationComponentMW) GetRealm(ctx context.Context, realm string) (api.RealmRepresentation, error) {
-	var action = GetRealm
+	var action = MGMTGetRealm.String()
 	var targetRealm = realm
 
 	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
@@ -84,7 +112,7 @@ func (c *authorizationComponentMW) GetRealm(ctx context.Context, realm string) (
 }
 
 func (c *authorizationComponentMW) GetClient(ctx context.Context, realmName, idClient string) (api.ClientRepresentation, error) {
-	var action = GetClient
+	var action = MGMTGetClient.String()
 	var targetRealm = realmName
 
 	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
@@ -95,7 +123,7 @@ func (c *authorizationComponentMW) GetClient(ctx context.Context, realmName, idC
 }
 
 func (c *authorizationComponentMW) GetClients(ctx context.Context, realmName string) ([]api.ClientRepresentation, error) {
-	var action = GetClients
+	var action = MGMTGetClients.String()
 	var targetRealm = realmName
 
 	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
@@ -106,7 +134,7 @@ func (c *authorizationComponentMW) GetClients(ctx context.Context, realmName str
 }
 
 func (c *authorizationComponentMW) GetRequiredActions(ctx context.Context, realmName string) ([]api.RequiredActionRepresentation, error) {
-	var action = GetRequiredActions
+	var action = MGMTGetRequiredActions.String()
 	var targetRealm = realmName
 
 	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
@@ -117,7 +145,7 @@ func (c *authorizationComponentMW) GetRequiredActions(ctx context.Context, realm
 }
 
 func (c *authorizationComponentMW) DeleteUser(ctx context.Context, realmName, userID string) error {
-	var action = DeleteUser
+	var action = MGMTDeleteUser.String()
 	var targetRealm = realmName
 
 	if err := c.authManager.CheckAuthorizationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
@@ -128,7 +156,7 @@ func (c *authorizationComponentMW) DeleteUser(ctx context.Context, realmName, us
 }
 
 func (c *authorizationComponentMW) GetUser(ctx context.Context, realmName, userID string) (api.UserRepresentation, error) {
-	var action = GetUser
+	var action = MGMTGetUser.String()
 	var targetRealm = realmName
 
 	if err := c.authManager.CheckAuthorizationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
@@ -139,7 +167,7 @@ func (c *authorizationComponentMW) GetUser(ctx context.Context, realmName, userI
 }
 
 func (c *authorizationComponentMW) UpdateUser(ctx context.Context, realmName, userID string, user api.UserRepresentation) error {
-	var action = UpdateUser
+	var action = MGMTUpdateUser.String()
 	var targetRealm = realmName
 
 	if err := c.authManager.CheckAuthorizationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
@@ -150,7 +178,7 @@ func (c *authorizationComponentMW) UpdateUser(ctx context.Context, realmName, us
 }
 
 func (c *authorizationComponentMW) GetUsers(ctx context.Context, realmName string, groupIDs []string, paramKV ...string) (api.UsersPageRepresentation, error) {
-	var action = GetUsers
+	var action = MGMTGetUsers.String()
 	var targetRealm = realmName
 
 	for _, groupID := range groupIDs {
@@ -163,7 +191,7 @@ func (c *authorizationComponentMW) GetUsers(ctx context.Context, realmName strin
 }
 
 func (c *authorizationComponentMW) CreateUser(ctx context.Context, realmName string, user api.UserRepresentation) (string, error) {
-	var action = CreateUser
+	var action = MGMTCreateUser.String()
 	var targetRealm = realmName
 
 	for _, targetGroup := range *user.Groups {
@@ -176,7 +204,7 @@ func (c *authorizationComponentMW) CreateUser(ctx context.Context, realmName str
 }
 
 func (c *authorizationComponentMW) GetUserAccountStatus(ctx context.Context, realmName, userID string) (map[string]bool, error) {
-	var action = GetUserAccountStatus
+	var action = MGMTGetUserAccountStatus.String()
 	var targetRealm = realmName
 
 	if err := c.authManager.CheckAuthorizationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
@@ -187,7 +215,7 @@ func (c *authorizationComponentMW) GetUserAccountStatus(ctx context.Context, rea
 }
 
 func (c *authorizationComponentMW) GetRolesOfUser(ctx context.Context, realmName, userID string) ([]api.RoleRepresentation, error) {
-	var action = GetRolesOfUser
+	var action = MGMTGetRolesOfUser.String()
 	var targetRealm = realmName
 
 	if err := c.authManager.CheckAuthorizationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
@@ -198,7 +226,7 @@ func (c *authorizationComponentMW) GetRolesOfUser(ctx context.Context, realmName
 }
 
 func (c *authorizationComponentMW) GetGroupsOfUser(ctx context.Context, realmName, userID string) ([]api.GroupRepresentation, error) {
-	var action = GetGroupsOfUser
+	var action = MGMTGetGroupsOfUser.String()
 	var targetRealm = realmName
 
 	if err := c.authManager.CheckAuthorizationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
@@ -209,7 +237,7 @@ func (c *authorizationComponentMW) GetGroupsOfUser(ctx context.Context, realmNam
 }
 
 func (c *authorizationComponentMW) GetClientRolesForUser(ctx context.Context, realmName, userID, clientID string) ([]api.RoleRepresentation, error) {
-	var action = GetClientRolesForUser
+	var action = MGMTGetClientRolesForUser.String()
 	var targetRealm = realmName
 
 	if err := c.authManager.CheckAuthorizationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
@@ -220,7 +248,7 @@ func (c *authorizationComponentMW) GetClientRolesForUser(ctx context.Context, re
 }
 
 func (c *authorizationComponentMW) AddClientRolesToUser(ctx context.Context, realmName, userID, clientID string, roles []api.RoleRepresentation) error {
-	var action = AddClientRolesToUser
+	var action = MGMTAddClientRolesToUser.String()
 	var targetRealm = realmName
 
 	if err := c.authManager.CheckAuthorizationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
@@ -231,7 +259,7 @@ func (c *authorizationComponentMW) AddClientRolesToUser(ctx context.Context, rea
 }
 
 func (c *authorizationComponentMW) ResetPassword(ctx context.Context, realmName string, userID string, password api.PasswordRepresentation) (string, error) {
-	var action = ResetPassword
+	var action = MGMTResetPassword.String()
 	var targetRealm = realmName
 
 	if err := c.authManager.CheckAuthorizationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
@@ -242,7 +270,7 @@ func (c *authorizationComponentMW) ResetPassword(ctx context.Context, realmName 
 }
 
 func (c *authorizationComponentMW) CreateRecoveryCode(ctx context.Context, realmName string, userID string) (string, error) {
-	var action = CreateRecoveryCode
+	var action = MGMTCreateRecoveryCode.String()
 	var targetRealm = realmName
 
 	if err := c.authManager.CheckAuthorizationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
@@ -253,7 +281,7 @@ func (c *authorizationComponentMW) CreateRecoveryCode(ctx context.Context, realm
 }
 
 func (c *authorizationComponentMW) ExecuteActionsEmail(ctx context.Context, realmName string, userID string, actions []api.RequiredAction, paramKV ...string) error {
-	var action = ExecuteActionsEmail
+	var action = MGMTExecuteActionsEmail.String()
 	var targetRealm = realmName
 
 	if err := c.authManager.CheckAuthorizationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
@@ -264,7 +292,7 @@ func (c *authorizationComponentMW) ExecuteActionsEmail(ctx context.Context, real
 }
 
 func (c *authorizationComponentMW) SendNewEnrolmentCode(ctx context.Context, realmName string, userID string) (string, error) {
-	var action = SendNewEnrolmentCode
+	var action = MGMTSendNewEnrolmentCode.String()
 	var targetRealm = realmName
 
 	if err := c.authManager.CheckAuthorizationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
@@ -275,7 +303,7 @@ func (c *authorizationComponentMW) SendNewEnrolmentCode(ctx context.Context, rea
 }
 
 func (c *authorizationComponentMW) SendReminderEmail(ctx context.Context, realmName string, userID string, paramKV ...string) error {
-	var action = SendReminderEmail
+	var action = MGMTSendReminderEmail.String()
 	var targetRealm = realmName
 
 	if err := c.authManager.CheckAuthorizationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
@@ -286,7 +314,7 @@ func (c *authorizationComponentMW) SendReminderEmail(ctx context.Context, realmN
 }
 
 func (c *authorizationComponentMW) ResetSmsCounter(ctx context.Context, realmName string, userID string) error {
-	var action = ResetSmsCounter
+	var action = MGMTResetSmsCounter.String()
 	var targetRealm = realmName
 
 	if err := c.authManager.CheckAuthorizationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
@@ -297,7 +325,7 @@ func (c *authorizationComponentMW) ResetSmsCounter(ctx context.Context, realmNam
 }
 
 func (c *authorizationComponentMW) GetCredentialsForUser(ctx context.Context, realmName string, userID string) ([]api.CredentialRepresentation, error) {
-	var action = GetCredentialsForUser
+	var action = MGMTGetCredentialsForUser.String()
 	var targetRealm = realmName
 
 	if err := c.authManager.CheckAuthorizationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
@@ -308,7 +336,7 @@ func (c *authorizationComponentMW) GetCredentialsForUser(ctx context.Context, re
 }
 
 func (c *authorizationComponentMW) DeleteCredentialsForUser(ctx context.Context, realmName string, userID string, credentialID string) error {
-	var action = DeleteCredentialsForUser
+	var action = MGMTDeleteCredentialsForUser.String()
 	var targetRealm = realmName
 
 	if err := c.authManager.CheckAuthorizationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
@@ -319,7 +347,7 @@ func (c *authorizationComponentMW) DeleteCredentialsForUser(ctx context.Context,
 }
 
 func (c *authorizationComponentMW) GetRoles(ctx context.Context, realmName string) ([]api.RoleRepresentation, error) {
-	var action = GetRoles
+	var action = MGMTGetRoles.String()
 	var targetRealm = realmName
 
 	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
@@ -330,7 +358,7 @@ func (c *authorizationComponentMW) GetRoles(ctx context.Context, realmName strin
 }
 
 func (c *authorizationComponentMW) GetRole(ctx context.Context, realmName string, roleID string) (api.RoleRepresentation, error) {
-	var action = GetRole
+	var action = MGMTGetRole.String()
 	var targetRealm = realmName
 
 	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
@@ -341,7 +369,7 @@ func (c *authorizationComponentMW) GetRole(ctx context.Context, realmName string
 }
 
 func (c *authorizationComponentMW) GetGroups(ctx context.Context, realmName string) ([]api.GroupRepresentation, error) {
-	var action = GetGroups
+	var action = MGMTGetGroups.String()
 	var targetRealm = realmName
 
 	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
@@ -351,8 +379,50 @@ func (c *authorizationComponentMW) GetGroups(ctx context.Context, realmName stri
 	return c.next.GetGroups(ctx, realmName)
 }
 
+func (c *authorizationComponentMW) CreateGroup(ctx context.Context, realmName string, group api.GroupRepresentation) (string, error) {
+	var action = MGMTCreateGroup.String()
+	var targetRealm = realmName
+
+	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
+		return "", err
+	}
+
+	return c.next.CreateGroup(ctx, realmName, group)
+}
+
+func (c *authorizationComponentMW) DeleteGroup(ctx context.Context, realmName string, groupID string) error {
+	var action = MGMTDeleteGroup.String()
+	var targetRealm = realmName
+
+	if err := c.authManager.CheckAuthorizationOnTargetGroupID(ctx, action, targetRealm, groupID); err != nil {
+		return err
+	}
+
+	return c.next.DeleteGroup(ctx, realmName, groupID)
+}
+
+func (c *authorizationComponentMW) GetAuthorizations(ctx context.Context, realmName string, groupID string) (api.AuthorizationsRepresentation, error) {
+	var action = MGMTGetAuthorizations.String()
+
+	if err := c.authManager.CheckAuthorizationOnTargetGroupID(ctx, action, realmName, groupID); err != nil {
+		return api.AuthorizationsRepresentation{}, err
+	}
+
+	return c.next.GetAuthorizations(ctx, realmName, groupID)
+}
+
+func (c *authorizationComponentMW) UpdateAuthorizations(ctx context.Context, realmName string, groupID string, group api.AuthorizationsRepresentation) error {
+	var action = MGMTUpdateAuthorizations.String()
+
+	if err := c.authManager.CheckAuthorizationOnTargetGroupID(ctx, action, realmName, groupID); err != nil {
+		return err
+	}
+
+	return c.next.UpdateAuthorizations(ctx, realmName, groupID, group)
+}
+
 func (c *authorizationComponentMW) GetClientRoles(ctx context.Context, realmName, idClient string) ([]api.RoleRepresentation, error) {
-	var action = GetClientRoles
+	var action = MGMTGetClientRoles.String()
 	var targetRealm = realmName
 
 	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
@@ -363,7 +433,7 @@ func (c *authorizationComponentMW) GetClientRoles(ctx context.Context, realmName
 }
 
 func (c *authorizationComponentMW) CreateClientRole(ctx context.Context, realmName, clientID string, role api.RoleRepresentation) (string, error) {
-	var action = CreateClientRole
+	var action = MGMTCreateClientRole.String()
 	var targetRealm = realmName
 
 	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
@@ -374,7 +444,7 @@ func (c *authorizationComponentMW) CreateClientRole(ctx context.Context, realmNa
 }
 
 func (c *authorizationComponentMW) GetRealmCustomConfiguration(ctx context.Context, realmName string) (api.RealmCustomConfiguration, error) {
-	var action = GetRealmCustomConfiguration
+	var action = MGMTGetRealmCustomConfiguration.String()
 	var targetRealm = realmName
 
 	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
@@ -385,7 +455,7 @@ func (c *authorizationComponentMW) GetRealmCustomConfiguration(ctx context.Conte
 }
 
 func (c *authorizationComponentMW) UpdateRealmCustomConfiguration(ctx context.Context, realmName string, customConfig api.RealmCustomConfiguration) error {
-	var action = UpdateRealmCustomConfiguration
+	var action = MGMTUpdateRealmCustomConfiguration.String()
 	var targetRealm = realmName
 
 	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {

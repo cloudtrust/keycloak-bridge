@@ -10,12 +10,13 @@ import (
 	"github.com/cloudtrust/common-service/log"
 	api "github.com/cloudtrust/keycloak-bridge/api/statistics"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
-	internal "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
+	msg "github.com/cloudtrust/keycloak-bridge/internal/messages"
 	kc "github.com/cloudtrust/keycloak-client"
 )
 
 // Component is the interface of the events component.
 type Component interface {
+	GetActions(context.Context) ([]api.ActionRepresentation, error)
 	GetStatistics(context.Context, string) (api.StatisticsRepresentation, error)
 	GetStatisticsUsers(context.Context, string) (api.StatisticsUsersRepresentation, error)
 	GetStatisticsAuthenticators(context.Context, string) (map[string]int64, error)
@@ -44,6 +45,23 @@ func NewComponent(db keycloakb.EventsDBModule, keycloakClient KeycloakClient, lo
 		keycloakClient: keycloakClient,
 		logger:         logger,
 	}
+}
+
+// Get actions
+func (ec *component) GetActions(ctx context.Context) ([]api.ActionRepresentation, error) {
+	var apiActions = []api.ActionRepresentation{}
+
+	for _, action := range actions {
+		var name = action.Name
+		var scope = string(action.Scope)
+
+		apiActions = append(apiActions, api.ActionRepresentation{
+			Name:  &name,
+			Scope: &scope,
+		})
+	}
+
+	return apiActions, nil
 }
 
 // Grabs statistics
@@ -108,7 +126,7 @@ func (ec *component) GetStatisticsAuthentications(ctx context.Context, realmName
 	var timeshiftValue = 0
 
 	if timeshift != nil {
-		timeshiftValue, err = internal.ConvertMinutesShift(*timeshift)
+		timeshiftValue, err = keycloakb.ConvertMinutesShift(*timeshift)
 		if err != nil {
 			return nil, err
 		}
@@ -125,7 +143,7 @@ func (ec *component) GetStatisticsAuthentications(ctx context.Context, realmName
 		res, err = ec.db.GetTotalConnectionsMonthsCount(ctx, realmName, location, timeshiftValue)
 	default:
 		ec.logger.Warn(ctx, "err", "Invalid parameter value")
-		return nil, errorhandler.CreateInvalidQueryParameterError(internal.Unit)
+		return nil, errorhandler.CreateInvalidQueryParameterError(msg.Unit)
 	}
 	if err != nil {
 		ec.logger.Warn(ctx, "err", err.Error())
@@ -142,7 +160,7 @@ func (ec *component) GetStatisticsAuthenticationsLog(ctx context.Context, realmN
 
 	if ok, _ := regexp.MatchString(api.RegExpTwoDigitsNumber, max); !ok {
 		ec.logger.Warn(ctx, "err", "Invalid parameter max")
-		return nil, errorhandler.CreateBadRequestError(internal.MsgErrInvalidParam + "." + internal.Max)
+		return nil, errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Max)
 	}
 
 	res, err := ec.db.GetLastConnections(ctx, realmName, max)

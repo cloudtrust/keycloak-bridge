@@ -45,8 +45,13 @@ type Component interface {
 
 // ConfigurationDBModule is the interface of the configuration module.
 type ConfigurationDBModule interface {
-	GetConfiguration(context.Context, string) (dto.RealmConfiguration, error)
+	NewTransaction(context context.Context) (database.Transaction, error)
 	StoreOrUpdate(context.Context, string, dto.RealmConfiguration) error
+	GetConfiguration(context.Context, string) (dto.RealmConfiguration, error)
+	GetAuthorizations(context context.Context, realmID string, groupID string) ([]dto.Authorization, error)
+	CreateAuthorization(context context.Context, authz dto.Authorization) error
+	DeleteAuthorizations(context context.Context, realmID string, groupID string) error
+	DeleteAllAuthorizationsWithGroup(context context.Context, realmID, groupName string) error
 }
 
 // Component is the management component.

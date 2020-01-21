@@ -37,6 +37,8 @@ func TestDeny(t *testing.T) {
 	var groupIDs = []string{groupID}
 	var groupName = "titi"
 
+	var authzMatrix = map[string]map[string]map[string]struct{}{}
+
 	var pass = "P@ssw0rd"
 	var clientURI = "https://wwww.cloudtrust.io"
 
@@ -57,6 +59,14 @@ func TestDeny(t *testing.T) {
 
 	var roles = []api.RoleRepresentation{role}
 
+	var group = api.GroupRepresentation{
+		Name: &groupName,
+	}
+
+	var authz = api.AuthorizationsRepresentation{
+		Matrix: &authzMatrix,
+	}
+
 	var password = api.PasswordRepresentation{
 		Value: &pass,
 	}
@@ -76,6 +86,9 @@ func TestDeny(t *testing.T) {
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextGroups, groups)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, "master")
+
+		_, err = authorizationMW.GetActions(ctx)
+		assert.Equal(t, security.ForbiddenError{}, err)
 
 		_, err = authorizationMW.GetRealms(ctx)
 		assert.Equal(t, security.ForbiddenError{}, err)
@@ -157,6 +170,21 @@ func TestDeny(t *testing.T) {
 		_, err = authorizationMW.GetGroups(ctx, realmName)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
+		_, err = authorizationMW.CreateGroup(ctx, realmName, group)
+		assert.Equal(t, security.ForbiddenError{}, err)
+
+		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), gomock.Any(), realmName, groupID).Return(groupName, nil).Times(1)
+		err = authorizationMW.DeleteGroup(ctx, realmName, groupID)
+		assert.Equal(t, security.ForbiddenError{}, err)
+
+		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), gomock.Any(), realmName, groupID).Return(groupName, nil).Times(1)
+		_, err = authorizationMW.GetAuthorizations(ctx, realmName, groupID)
+		assert.Equal(t, security.ForbiddenError{}, err)
+
+		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), gomock.Any(), realmName, groupID).Return(groupName, nil).Times(1)
+		err = authorizationMW.UpdateAuthorizations(ctx, realmName, groupID, authz)
+		assert.Equal(t, security.ForbiddenError{}, err)
+
 		_, err = authorizationMW.GetClientRoles(ctx, realmName, clientID)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
@@ -194,6 +222,8 @@ func TestAllowed(t *testing.T) {
 	var groupIDs = []string{groupID}
 	var groupName = "titi"
 
+	var authzMatrix = map[string]map[string]map[string]struct{}{}
+
 	var pass = "P@ssw0rd"
 	var clientURI = "https://wwww.cloudtrust.io"
 
@@ -212,6 +242,14 @@ func TestAllowed(t *testing.T) {
 
 	var roles = []api.RoleRepresentation{role}
 
+	var group = api.GroupRepresentation{
+		Name: &groupName,
+	}
+
+	var authz = api.AuthorizationsRepresentation{
+		Matrix: &authzMatrix,
+	}
+
 	var password = api.PasswordRepresentation{
 		Value: &pass,
 	}
@@ -226,36 +264,41 @@ func TestAllowed(t *testing.T) {
 		var authorizations, err = security.NewAuthorizationManager(mockKeycloakClient, log.NewNopLogger(), `{"master":
 			{
 				"toe": {
-					"GetRealms": {"*": {}},
-					"GetRealm": {"*": {"*": {} }},
-					"GetClient": {"*": {"*": {} }},
-					"GetClients": {"*": {"*": {} }},
-					"GetRequiredActions": {"*": {"*": {} }},
-					"DeleteUser": {"*": {"*": {} }},
-					"GetUser": {"*": {"*": {} }},
-					"UpdateUser": {"*": {"*": {} }},
-					"GetUsers": {"*": {"*": {} }},
-					"CreateUser": {"*": {"*": {} }},
-					"GetUserAccountStatus": {"*": {"*": {} }},
-					"GetRolesOfUser": {"*": {"*": {} }},
-					"GetGroupsOfUser": {"*": {"*": {} }},
-					"GetClientRolesForUser": {"*": {"*": {} }},
-					"AddClientRolesToUser": {"*": {"*": {} }},
-					"ResetPassword": {"*": {"*": {} }},
-					"ExecuteActionsEmail": {"*": {"*": {} }},
-					"SendNewEnrolmentCode": {"*": {"*": {} }},
-					"SendReminderEmail": {"*": {"*": {} }},
-					"ResetSmsCounter": {"*": {"*": {} }},
-					"CreateRecoveryCode": {"*": {"*": {} }},
-					"GetCredentialsForUser": {"*": {"*": {} }},
-					"DeleteCredentialsForUser": {"*": {"*": {} }},
-					"GetRoles": {"*": {"*": {} }},
-					"GetRole": {"*": {"*": {} }},
-					"GetGroups": {"*": {"*": {} }},
-					"GetClientRoles": {"*": {"*": {} }},
-					"CreateClientRole": {"*": {"*": {} }},
-					"GetRealmCustomConfiguration": {"*": {"*": {} }},
-					"UpdateRealmCustomConfiguration": {"*": {"*": {} }}
+					"MGMT_GetActions": {"*": {}},
+					"MGMT_GetRealms": {"*": {}},
+					"MGMT_GetRealm": {"*": {"*": {} }},
+					"MGMT_GetClient": {"*": {"*": {} }},
+					"MGMT_GetClients": {"*": {"*": {} }},
+					"MGMT_GetRequiredActions": {"*": {"*": {} }},
+					"MGMT_DeleteUser": {"*": {"*": {} }},
+					"MGMT_GetUser": {"*": {"*": {} }},
+					"MGMT_UpdateUser": {"*": {"*": {} }},
+					"MGMT_GetUsers": {"*": {"*": {} }},
+					"MGMT_CreateUser": {"*": {"*": {} }},
+					"MGMT_GetUserAccountStatus": {"*": {"*": {} }},
+					"MGMT_GetRolesOfUser": {"*": {"*": {} }},
+					"MGMT_GetGroupsOfUser": {"*": {"*": {} }},
+					"MGMT_GetClientRolesForUser": {"*": {"*": {} }},
+					"MGMT_AddClientRolesToUser": {"*": {"*": {} }},
+					"MGMT_ResetPassword": {"*": {"*": {} }},
+					"MGMT_ExecuteActionsEmail": {"*": {"*": {} }},
+					"MGMT_SendNewEnrolmentCode": {"*": {"*": {} }},
+					"MGMT_SendReminderEmail": {"*": {"*": {} }},
+					"MGMT_ResetSmsCounter": {"*": {"*": {} }},
+					"MGMT_CreateRecoveryCode": {"*": {"*": {} }},
+					"MGMT_GetCredentialsForUser": {"*": {"*": {} }},
+					"MGMT_DeleteCredentialsForUser": {"*": {"*": {} }},
+					"MGMT_GetRoles": {"*": {"*": {} }},
+					"MGMT_GetRole": {"*": {"*": {} }},
+					"MGMT_GetGroups": {"*": {"*": {} }},
+					"MGMT_CreateGroup": {"*": {"*": {} }},
+					"MGMT_DeleteGroup": {"*": {"*": {} }},
+					"MGMT_GetAuthorizations": {"*": {"*": {} }},
+					"MGMT_UpdateAuthorizations": {"*": {"*": {} }},
+					"MGMT_GetClientRoles": {"*": {"*": {} }},
+					"MGMT_CreateClientRole": {"*": {"*": {} }},
+					"MGMT_GetRealmCustomConfiguration": {"*": {"*": {} }},
+					"MGMT_UpdateRealmCustomConfiguration": {"*": {"*": {} }}
 				}
 			}
 		}`)
@@ -266,6 +309,10 @@ func TestAllowed(t *testing.T) {
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextGroups, groups)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, "master")
+
+		mockManagementComponent.EXPECT().GetActions(ctx).Return([]api.ActionRepresentation{}, nil).Times(1)
+		_, err = authorizationMW.GetActions(ctx)
+		assert.Nil(t, err)
 
 		mockManagementComponent.EXPECT().GetRealms(ctx).Return([]api.RealmRepresentation{}, nil).Times(1)
 		_, err = authorizationMW.GetRealms(ctx)
@@ -372,6 +419,25 @@ func TestAllowed(t *testing.T) {
 
 		mockManagementComponent.EXPECT().GetGroups(ctx, realmName).Return([]api.GroupRepresentation{}, nil).Times(1)
 		_, err = authorizationMW.GetGroups(ctx, realmName)
+		assert.Nil(t, err)
+
+		mockManagementComponent.EXPECT().CreateGroup(ctx, realmName, group).Return("", nil).Times(1)
+		_, err = authorizationMW.CreateGroup(ctx, realmName, group)
+		assert.Nil(t, err)
+
+		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), gomock.Any(), realmName, groupID).Return(groupName, nil).Times(1)
+		mockManagementComponent.EXPECT().DeleteGroup(ctx, realmName, groupID).Return(nil).Times(1)
+		err = authorizationMW.DeleteGroup(ctx, realmName, groupID)
+		assert.Nil(t, err)
+
+		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), gomock.Any(), realmName, groupID).Return(groupName, nil).Times(1)
+		mockManagementComponent.EXPECT().GetAuthorizations(ctx, realmName, groupID).Return(api.AuthorizationsRepresentation{}, nil).Times(1)
+		_, err = authorizationMW.GetAuthorizations(ctx, realmName, groupID)
+		assert.Nil(t, err)
+
+		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), gomock.Any(), realmName, groupID).Return(groupName, nil).Times(1)
+		mockManagementComponent.EXPECT().UpdateAuthorizations(ctx, realmName, groupID, authz).Return(nil).Times(1)
+		err = authorizationMW.UpdateAuthorizations(ctx, realmName, groupID, authz)
 		assert.Nil(t, err)
 
 		mockManagementComponent.EXPECT().GetClientRoles(ctx, realmName, clientID).Return([]api.RoleRepresentation{}, nil).Times(1)

@@ -7,7 +7,7 @@ import (
 	cs "github.com/cloudtrust/common-service"
 	errrorhandler "github.com/cloudtrust/common-service/errors"
 	api "github.com/cloudtrust/keycloak-bridge/api/account"
-	internal "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
+	msg "github.com/cloudtrust/keycloak-bridge/internal/messages"
 	"github.com/go-kit/kit/endpoint"
 )
 
@@ -54,7 +54,7 @@ func MakeUpdatePasswordEndpoint(component AccountComponent) cs.Endpoint {
 
 		err := json.Unmarshal([]byte(m["body"]), &body)
 		if err != nil {
-			return nil, errrorhandler.CreateBadRequestError(internal.MsgErrInvalidParam + "." + internal.Body)
+			return nil, errrorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Body)
 		}
 
 		if err = body.Validate(); err != nil {
@@ -88,7 +88,7 @@ func MakeUpdateLabelCredentialEndpoint(component AccountComponent) cs.Endpoint {
 
 		err := json.Unmarshal([]byte(m["body"]), &body)
 		if err != nil {
-			return nil, errrorhandler.CreateBadRequestError(internal.MsgErrInvalidParam + "." + internal.Body)
+			return nil, errrorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Body)
 		}
 
 		if err = body.Validate(); err != nil {
@@ -96,7 +96,7 @@ func MakeUpdateLabelCredentialEndpoint(component AccountComponent) cs.Endpoint {
 		}
 
 		if body.UserLabel == nil {
-			return nil, errrorhandler.CreateBadRequestError(internal.MsgErrMissingParam + "." + internal.UserLabel)
+			return nil, errrorhandler.CreateBadRequestError(msg.MsgErrMissingParam + "." + msg.UserLabel)
 		}
 
 		return nil, component.UpdateLabelCredential(ctx, m["credentialID"], *body.UserLabel)
@@ -136,7 +136,7 @@ func MakeUpdateAccountEndpoint(component AccountComponent) cs.Endpoint {
 
 		err := json.Unmarshal([]byte(m["body"]), &body)
 		if err != nil {
-			return nil, errrorhandler.CreateBadRequestError(internal.MsgErrInvalidParam + "." + internal.Body)
+			return nil, errrorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Body)
 		}
 
 		if err = body.Validate(); err != nil {

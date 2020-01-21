@@ -10,46 +10,58 @@ import (
 	cs "github.com/cloudtrust/common-service"
 	errorhandler "github.com/cloudtrust/common-service/errors"
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
-	internal "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
+	msg "github.com/cloudtrust/keycloak-bridge/internal/messages"
 	"github.com/go-kit/kit/endpoint"
 )
 
 // Endpoints wraps a service behind a set of endpoints.
 type Endpoints struct {
-	GetRealms                      endpoint.Endpoint
-	GetRealm                       endpoint.Endpoint
-	GetClient                      endpoint.Endpoint
-	GetClients                     endpoint.Endpoint
-	GetRequiredActions             endpoint.Endpoint
-	DeleteUser                     endpoint.Endpoint
-	GetUser                        endpoint.Endpoint
-	UpdateUser                     endpoint.Endpoint
-	GetUsers                       endpoint.Endpoint
-	CreateUser                     endpoint.Endpoint
-	GetRolesOfUser                 endpoint.Endpoint
-	GetGroupsOfUser                endpoint.Endpoint
-	GetUserAccountStatus           endpoint.Endpoint
-	GetClientRoleForUser           endpoint.Endpoint
-	AddClientRoleToUser            endpoint.Endpoint
-	ResetPassword                  endpoint.Endpoint
-	ExecuteActionsEmail            endpoint.Endpoint
-	SendNewEnrolmentCode           endpoint.Endpoint
-	SendReminderEmail              endpoint.Endpoint
-	ResetSmsCounter                endpoint.Endpoint
-	CreateRecoveryCode             endpoint.Endpoint
-	GetCredentialsForUser          endpoint.Endpoint
-	DeleteCredentialsForUser       endpoint.Endpoint
-	GetRoles                       endpoint.Endpoint
-	GetRole                        endpoint.Endpoint
-	GetGroups                      endpoint.Endpoint
-	GetClientRoles                 endpoint.Endpoint
-	CreateClientRole               endpoint.Endpoint
+	GetRealms          endpoint.Endpoint
+	GetRealm           endpoint.Endpoint
+	GetClient          endpoint.Endpoint
+	GetClients         endpoint.Endpoint
+	GetRequiredActions endpoint.Endpoint
+
+	DeleteUser           endpoint.Endpoint
+	GetUser              endpoint.Endpoint
+	UpdateUser           endpoint.Endpoint
+	GetUsers             endpoint.Endpoint
+	CreateUser           endpoint.Endpoint
+	GetRolesOfUser       endpoint.Endpoint
+	GetGroupsOfUser      endpoint.Endpoint
+	GetUserAccountStatus endpoint.Endpoint
+	GetClientRoleForUser endpoint.Endpoint
+	AddClientRoleToUser  endpoint.Endpoint
+
+	ResetPassword            endpoint.Endpoint
+	ExecuteActionsEmail      endpoint.Endpoint
+	SendNewEnrolmentCode     endpoint.Endpoint
+	SendReminderEmail        endpoint.Endpoint
+	ResetSmsCounter          endpoint.Endpoint
+	CreateRecoveryCode       endpoint.Endpoint
+	GetCredentialsForUser    endpoint.Endpoint
+	DeleteCredentialsForUser endpoint.Endpoint
+
+	GetRoles         endpoint.Endpoint
+	GetRole          endpoint.Endpoint
+	GetClientRoles   endpoint.Endpoint
+	CreateClientRole endpoint.Endpoint
+
+	GetGroups            endpoint.Endpoint
+	CreateGroup          endpoint.Endpoint
+	DeleteGroup          endpoint.Endpoint
+	GetAuthorizations    endpoint.Endpoint
+	UpdateAuthorizations endpoint.Endpoint
+	GetActions           endpoint.Endpoint
+
 	GetRealmCustomConfiguration    endpoint.Endpoint
 	UpdateRealmCustomConfiguration endpoint.Endpoint
 }
 
 // ManagementComponent is the interface of the component to send a query to Keycloak.
 type ManagementComponent interface {
+	GetActions(ctx context.Context) ([]api.ActionRepresentation, error)
+
 	GetRealms(ctx context.Context) ([]api.RealmRepresentation, error)
 	GetRealm(ctx context.Context, realmName string) (api.RealmRepresentation, error)
 	GetClient(ctx context.Context, realmName, idClient string) (api.ClientRepresentation, error)
@@ -75,9 +87,15 @@ type ManagementComponent interface {
 	DeleteCredentialsForUser(ctx context.Context, realmName string, userID string, credentialID string) error
 	GetRoles(ctx context.Context, realmName string) ([]api.RoleRepresentation, error)
 	GetRole(ctx context.Context, realmName string, roleID string) (api.RoleRepresentation, error)
-	GetGroups(ctx context.Context, realmName string) ([]api.GroupRepresentation, error)
 	GetClientRoles(ctx context.Context, realmName, idClient string) ([]api.RoleRepresentation, error)
 	CreateClientRole(ctx context.Context, realmName, clientID string, role api.RoleRepresentation) (string, error)
+
+	GetGroups(ctx context.Context, realmName string) ([]api.GroupRepresentation, error)
+	CreateGroup(ctx context.Context, realmName string, group api.GroupRepresentation) (string, error)
+	DeleteGroup(ctx context.Context, realmName string, groupID string) error
+	GetAuthorizations(ctx context.Context, realmName string, groupID string) (api.AuthorizationsRepresentation, error)
+	UpdateAuthorizations(ctx context.Context, realmName string, groupID string, group api.AuthorizationsRepresentation) error
+
 	GetRealmCustomConfiguration(ctx context.Context, realmID string) (api.RealmCustomConfiguration, error)
 	UpdateRealmCustomConfiguration(ctx context.Context, realmID string, customConfig api.RealmCustomConfiguration) error
 }
@@ -134,7 +152,7 @@ func MakeCreateUserEndpoint(managementComponent ManagementComponent) cs.Endpoint
 		var user api.UserRepresentation
 
 		if err = json.Unmarshal([]byte(m["body"]), &user); err != nil {
-			return nil, errorhandler.CreateBadRequestError(internal.MsgErrInvalidParam + "." + internal.Body)
+			return nil, errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Body)
 		}
 
 		if err = user.Validate(); err != nil {
@@ -142,7 +160,7 @@ func MakeCreateUserEndpoint(managementComponent ManagementComponent) cs.Endpoint
 		}
 
 		if user.Groups == nil || len(*user.Groups) == 0 {
-			return nil, errorhandler.CreateMissingParameterError(internal.Groups)
+			return nil, errorhandler.CreateMissingParameterError(msg.Groups)
 		}
 
 		var keycloakLocation string
@@ -188,7 +206,7 @@ func MakeUpdateUserEndpoint(managementComponent ManagementComponent) cs.Endpoint
 		var user api.UserRepresentation
 
 		if err = json.Unmarshal([]byte(m["body"]), &user); err != nil {
-			return nil, errorhandler.CreateBadRequestError(internal.MsgErrInvalidParam + internal.Body)
+			return nil, errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + msg.Body)
 		}
 
 		if err = user.Validate(); err != nil {
@@ -213,7 +231,7 @@ func MakeGetUsersEndpoint(managementComponent ManagementComponent) cs.Endpoint {
 
 		_, ok := m["groupIds"]
 		if !ok {
-			return nil, errorhandler.CreateMissingParameterError(internal.GroudIDs)
+			return nil, errorhandler.CreateMissingParameterError(msg.GroupIDs)
 		}
 
 		groupIDs := strings.Split(m["groupIds"], ",")
@@ -267,7 +285,7 @@ func MakeAddClientRolesToUserEndpoint(managementComponent ManagementComponent) c
 		var roles []api.RoleRepresentation
 
 		if err = json.Unmarshal([]byte(m["body"]), &roles); err != nil {
-			return nil, errorhandler.CreateBadRequestError(internal.MsgErrInvalidParam + "." + internal.Body)
+			return nil, errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Body)
 		}
 
 		for _, role := range roles {
@@ -289,7 +307,7 @@ func MakeResetPasswordEndpoint(managementComponent ManagementComponent) cs.Endpo
 		var password api.PasswordRepresentation
 
 		if err = json.Unmarshal([]byte(m["body"]), &password); err != nil {
-			return nil, errorhandler.CreateBadRequestError(internal.MsgErrInvalidParam + "." + internal.Body)
+			return nil, errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Body)
 		}
 
 		if err = password.Validate(); err != nil {
@@ -321,7 +339,7 @@ func MakeExecuteActionsEmailEndpoint(managementComponent ManagementComponent) cs
 		var actions []api.RequiredAction
 
 		if err = json.Unmarshal([]byte(m["body"]), &actions); err != nil {
-			return nil, errorhandler.CreateBadRequestError(internal.MsgErrInvalidParam + "." + internal.Body)
+			return nil, errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Body)
 		}
 
 		for _, action := range actions {
@@ -414,15 +432,6 @@ func MakeGetRoleEndpoint(managementComponent ManagementComponent) cs.Endpoint {
 	}
 }
 
-// MakeGetGroupsEndpoint creates an endpoint for GetGroups
-func MakeGetGroupsEndpoint(managementComponent ManagementComponent) cs.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
-		var m = req.(map[string]string)
-
-		return managementComponent.GetGroups(ctx, m["realm"])
-	}
-}
-
 // MakeGetClientRolesEndpoint creates an endpoint for GetClientRoles
 func MakeGetClientRolesEndpoint(managementComponent ManagementComponent) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
@@ -441,7 +450,7 @@ func MakeCreateClientRoleEndpoint(managementComponent ManagementComponent) cs.En
 		var role api.RoleRepresentation
 
 		if err = json.Unmarshal([]byte(m["body"]), &role); err != nil {
-			return nil, errorhandler.CreateBadRequestError(internal.MsgErrInvalidParam + "." + internal.Body)
+			return nil, errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Body)
 		}
 
 		if err = role.Validate(); err != nil {
@@ -461,6 +470,88 @@ func MakeCreateClientRoleEndpoint(managementComponent ManagementComponent) cs.En
 		return LocationHeader{
 			URL: url,
 		}, nil
+	}
+}
+
+// MakeGetGroupsEndpoint creates an endpoint for GetGroups
+func MakeGetGroupsEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+
+		return managementComponent.GetGroups(ctx, m["realm"])
+	}
+}
+
+// MakeCreateGroupEndpoint makes the endpoint to create a group.
+func MakeCreateGroupEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+		var err error
+
+		var group api.GroupRepresentation
+
+		if err = json.Unmarshal([]byte(m["body"]), &group); err != nil {
+			return nil, errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Body)
+		}
+
+		if err = group.Validate(); err != nil {
+			return nil, errorhandler.CreateBadRequestError(err.Error())
+		}
+
+		var keycloakLocation string
+		keycloakLocation, err = managementComponent.CreateGroup(ctx, m["realm"], group)
+
+		if err != nil {
+			return nil, err
+		}
+
+		url, err := convertLocationURL(keycloakLocation, m["scheme"], m["host"])
+		// TODO: log the error and the unhappy url
+
+		return LocationHeader{
+			URL: url,
+		}, nil
+	}
+}
+
+// MakeDeleteGroupEndpoint creates an endpoint for DeleteGroup
+func MakeDeleteGroupEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+
+		return nil, managementComponent.DeleteGroup(ctx, m["realm"], m["groupID"])
+	}
+}
+
+// MakeGetAuthorizationsEndpoint creates an endpoint for GetAuthorizations
+func MakeGetAuthorizationsEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+
+		return managementComponent.GetAuthorizations(ctx, m["realm"], m["groupID"])
+	}
+}
+
+// MakeUpdateAuthorizationsEndpoint creates an endpoint for UpdateAuthorizations
+func MakeUpdateAuthorizationsEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+		var err error
+
+		var authorizations api.AuthorizationsRepresentation
+
+		if err = json.Unmarshal([]byte(m["body"]), &authorizations); err != nil {
+			return nil, errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Body)
+		}
+
+		return nil, managementComponent.UpdateAuthorizations(ctx, m["realm"], m["groupID"], authorizations)
+	}
+}
+
+// MakeGetActionsEndpoint creates an endpoint for GetActions
+func MakeGetActionsEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		return managementComponent.GetActions(ctx)
 	}
 }
 
@@ -484,7 +575,7 @@ func MakeUpdateRealmCustomConfigurationEndpoint(managementComponent ManagementCo
 		var customConfig api.RealmCustomConfiguration
 
 		if err = json.Unmarshal(configJSON, &customConfig); err != nil {
-			return nil, errorhandler.CreateBadRequestError(internal.MsgErrInvalidParam + "." + internal.Body)
+			return nil, errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Body)
 		}
 
 		if err = customConfig.Validate(); err != nil {

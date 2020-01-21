@@ -4,6 +4,7 @@ import (
 	"context"
 
 	internal "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
+	msg "github.com/cloudtrust/keycloak-bridge/internal/messages"
 	keycloak "github.com/cloudtrust/keycloak-client"
 	"github.com/pkg/errors"
 )
@@ -35,7 +36,7 @@ func (m *Module) GetRealms(ctx context.Context) ([]string, error) {
 	var realms, err = m.kc.GetRealms(accessToken)
 	if err != nil {
 		m.logger.Warn(ctx, "err", err.Error())
-		return res, errors.Wrap(err, internal.MsgErrCannotObtain+internal.ListOfRealms)
+		return res, errors.Wrap(err, msg.MsgErrCannotObtain+msg.ListOfRealms)
 	}
 
 	for _, realm := range realms {

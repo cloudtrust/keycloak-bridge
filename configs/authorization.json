@@ -1,105 +1,131 @@
 {
   "master":{
     "toe_administrator":{
-      "GetRealms": {
+      "MGMT_GetRealms": {
         "*": {}
       },
-      "GetUsers": {
+      "MGMT_GetUsers": {
         "master": {
           "*": {}
         }
       },
-      "CreateUser": {
+      "MGMT_CreateUser": {
         "master": {
           "integrator_manager": {},
           "l2_support_manager": {},
           "l3_support_manager": {}
         }
       },
-      "GetUser": {
+      "MGMT_GetUser": {
         "master": {
           "*": {}
         }
       },
-      "GetRolesOfUser": {
+      "MGMT_GetRolesOfUser": {
         "master": {
           "*": {}
         }
       },
-      "GetGroupsOfUser": {
+      "MGMT_GetGroupsOfUser": {
         "master": {
           "*": {}
         }
       },
-      "GetGroups": {
+      "MGMT_GetGroups": {
         "master": {
           "*": {}
         }
       },
-      "GetRoles": {
+      "MGMT_CreateGroup": {
         "master": {
           "*": {}
         }
       },
-      "UpdateUser": {
+      "MGMT_DeleteGroup": {
         "master": {
           "*": {}
         }
       },
-      "DeleteUser": {
+      "MGMT_GetAuthorizations": {
         "master": {
           "*": {}
         }
       },
-      "ResetPassword": {
+      "MGMT_UpdateAuthorizations": {
+        "master": {
+          "*": {}
+        }
+      },
+      "MGMT_GetActions": {
+        "*": {}
+      },
+      "MGMT_GetRoles": {
+        "master": {
+          "*": {}
+        }
+      },
+      "MGMT_UpdateUser": {
+        "master": {
+          "*": {}
+        }
+      },
+      "MGMT_DeleteUser": {
+        "master": {
+          "*": {}
+        }
+      },
+      "MGMT_ResetPassword": {
         "master": {
           "integrator_manager": {},
           "l2_support_manager": {},
           "l3_support_manager": {}
         }
       },
-      "ExecuteActionsEmail": {
+      "MGMT_ExecuteActionsEmail": {
         "master": {
           "integrator_manager": {},
           "l2_support_manager": {},
           "l3_support_manager": {}
         }
       },
-      "SendReminderEmail": {
+      "MGMT_SendReminderEmail": {
         "master": {
           "integrator_manager": {},
           "l2_support_manager": {},
           "l3_support_manager": {}
         }
       },
-      "ResetSmsCounter": {
+      "MGMT_ResetSmsCounter": {
         "master": {
           "integrator_manager": {},
           "l2_support_manager": {},
           "l3_support_manager": {}
         }
       },
-      "RecoveryCode": {
+      "MGMT_RecoveryCode": {
         "master": {
           "integrator_manager": {},
           "l2_support_manager": {},
           "l3_support_manager": {}
         }
       },
-      "GetRequiredActions": {
+      "MGMT_GetRequiredActions": {
         "master": {}
       },
-      "GetCredentialsForUser": {
+      "MGMT_GetCredentialsForUser": {
         "master": {
           "*": {}
         }
       },
-      "DeleteCredentialsForUser": {
+      "MGMT_DeleteCredentialsForUser": {
         "master": {
           "integrator_manager": {},
           "l2_support_manager": {},
           "l3_support_manager": {}
         }
+      },
+      "EV_GetActions": {
+        "*": {}
       },
       "EV_GetEvents": {
         "*": {
@@ -116,18 +142,21 @@
           "*": {}
         }
       },
+      "ST_GetActions": {
+        "*": {}
+      },
       "ST_GetMigrationReport": {
         "*": {}
       },
-      "GetClients":{
+      "MGMT_GetClients":{
         "*": {}
       },
-      "GetRealmCustomConfiguration": {
+      "MGMT_GetRealmCustomConfiguration": {
         "*": {
           "*": {}
         }
       },
-      "UpdateRealmCustomConfiguration": {
+      "MGMT_UpdateRealmCustomConfiguration": {
         "*": {
           "*": {}
         }

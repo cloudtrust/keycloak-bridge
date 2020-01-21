@@ -7,10 +7,12 @@ import (
 	errorhandler "github.com/cloudtrust/common-service/errors"
 	api "github.com/cloudtrust/keycloak-bridge/api/events"
 	app "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
+	msg "github.com/cloudtrust/keycloak-bridge/internal/messages"
 )
 
 // Component is the interface of the events component.
 type Component interface {
+	GetActions(ctx context.Context) ([]api.ActionRepresentation, error)
 	GetEvents(context.Context, map[string]string) (api.AuditEventsRepresentation, error)
 	GetEventsSummary(context.Context) (api.EventSummaryRepresentation, error)
 	GetUserEvents(context.Context, map[string]string) (api.AuditEventsRepresentation, error)
@@ -40,6 +42,23 @@ func (ec *component) reportEvent(ctx context.Context, apiCall string, values ...
 
 }
 
+// Get actions
+func (ec *component) GetActions(ctx context.Context) ([]api.ActionRepresentation, error) {
+	var apiActions = []api.ActionRepresentation{}
+
+	for _, action := range actions {
+		var name = action.Name
+		var scope = string(action.Scope)
+
+		apiActions = append(apiActions, api.ActionRepresentation{
+			Name:  &name,
+			Scope: &scope,
+		})
+	}
+
+	return apiActions, nil
+}
+
 // Get events according to optional parameters
 func (ec *component) GetEvents(ctx context.Context, params map[string]string) (api.AuditEventsRepresentation, error) {
 	var empty [0]api.AuditRepresentation
@@ -63,10 +82,10 @@ func (ec *component) GetEventsSummary(ctx context.Context) (api.EventSummaryRepr
 // Get all events related to a given realm and a given user
 func (ec *component) GetUserEvents(ctx context.Context, params map[string]string) (api.AuditEventsRepresentation, error) {
 	if val, ok := params["realm"]; !ok || len(val) == 0 {
-		return api.AuditEventsRepresentation{}, errorhandler.CreateMissingParameterError(app.Realm)
+		return api.AuditEventsRepresentation{}, errorhandler.CreateMissingParameterError(msg.Realm)
 	}
 	if val, ok := params["userID"]; !ok || len(val) == 0 {
-		return api.AuditEventsRepresentation{}, errorhandler.CreateMissingParameterError(app.UserID)
+		return api.AuditEventsRepresentation{}, errorhandler.CreateMissingParameterError(msg.UserID)
 	}
 
 	ec.reportEvent(ctx, "GET_ACTIVITY", database.CtEventRealmName, params["realm"], database.CtEventUserID, params["userID"])
