@@ -861,7 +861,7 @@ func main() {
 			// Register
 			var registerUserHandler = configureRegisterHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, recaptchaURL, tracer, logger)(registerEndpoints.RegisterUser)
 
-			route.Path("/register/realm/{realm}/user").Methods("POST").Handler(registerUserHandler)
+			route.Path("/register/user").Methods("POST").Handler(registerUserHandler)
 
 			var handler http.Handler = route
 

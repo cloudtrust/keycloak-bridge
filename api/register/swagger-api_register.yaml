@@ -9,7 +9,7 @@ tags:
 - name: Register
   description: Self registering of a user
 paths:
-  /register/realm/{realm}/user:
+  /register/user:
     post:
       tags:
       - Register
@@ -18,7 +18,7 @@ paths:
         - BasicAuth: [recaptcha]
       parameters:
       - name: realm
-        in: path
+        in: query
         description: realm name (not id!)
         required: true
         schema:

@@ -18,7 +18,7 @@ const (
 // MakeRegisterHandler make an HTTP handler for the self-register endpoint.
 func MakeRegisterHandler(e endpoint.Endpoint, logger log.Logger) *http_transport.Server {
 	pathParams := map[string]string{"realm": RegExpRealmName}
-	queryParams := map[string]string{}
+	queryParams := map[string]string{"realm": RegExpRealmName}
 
 	return http_transport.NewServer(e,
 		func(ctx context.Context, req *http.Request) (interface{}, error) {
