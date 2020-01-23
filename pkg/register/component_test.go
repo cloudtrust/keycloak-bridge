@@ -91,7 +91,7 @@ func TestRegisterUser(t *testing.T) {
 		mockTokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
 		mockKeycloakClient.EXPECT().GetUsers(accessToken, targetRealm, targetRealm, "email", *validUser.EmailAddress).Return(usersSearchResult, nil)
 		mockKeycloakClient.EXPECT().CreateUser(accessToken, targetRealm, targetRealm, gomock.Any()).
-			Return("", errorhandler.Error{Status: http.StatusConflict}).
+			Return("", errorhandler.Error{Status: http.StatusConflict, Message: "keycloak.existing.username"}).
 			Times(10)
 
 		var _, err = component.RegisterUser(ctx, confRealm, validUser)

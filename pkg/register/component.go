@@ -118,7 +118,7 @@ func (c *component) RegisterUser(ctx context.Context, realmName string, user api
 			userID = ""
 			switch e := err.(type) {
 			case errorhandler.Error:
-				if e.Status == http.StatusConflict {
+				if e.Status == http.StatusConflict && e.Message == "keycloak.existing.username" {
 					// Username already exists
 					continue
 				}

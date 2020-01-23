@@ -19,7 +19,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:bcc4a183598d5be200dd8c0389deb82fc9aea3dc74515c7943b5c26aadc4fff9"
+  digest = "1:3891614a9c07e7eaed78766bdcf50a7eab97ed11b1e0a36470c993a78aacef5c"
   name = "github.com/cloudtrust/common-service"
   packages = [
     ".",
@@ -37,7 +37,7 @@
     "tracking",
   ]
   pruneopts = "UT"
-  revision = "739cff91a05f8dbcf3a0c4e6e57b95089f2a052b"
+  revision = "36655fd025a52c74a067ad7acebccf9c81ea28b4"
 
 [[projects]]
   branch = "master"
@@ -426,11 +426,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:46aee4748419921a611e49842c732b3b8afe6a0926017ad1a68b9d0e11fdd288"
+  digest = "1:8a44970c7e8c0a1c8646af14605c1ffd31374074d68101c2e11d7761df12c9d1"
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = "UT"
-  revision = "34d275377bf96a094e8d5b0c61750ddd54cd6b36"
+  revision = "e047566fdf82409bf7a52212cf71df83ea2772fb"
 
 [[projects]]
   digest = "1:8d8faad6b12a3a4c819a3f9618cb6ee1fa1cfc33253abeeea8b55336721e3405"
@@ -476,7 +476,7 @@
     "go/types/typeutil",
   ]
   pruneopts = "UT"
-  revision = "dc16b66866f162ba54d3dddf5358df8e86d25dca"
+  revision = "593de606220b6283bd14765aab1e244ea650cd84"
 
 [[projects]]
   digest = "1:e0a1881f9e0564bebdeac98c75e59f07acdde6ed3a5396e0e613eaad31194866"
@@ -538,12 +538,12 @@
   version = "v2.4.1"
 
 [[projects]]
-  digest = "1:b75b3deb2bce8bc079e16bb2aecfe01eb80098f5650f9e93e5643ca8b7b73737"
+  digest = "1:55b110c99c5fdc4f14930747326acce56b52cfce60b24b1c03ef686ac0e46bb1"
   name = "gopkg.in/yaml.v2"
   packages = ["."]
   pruneopts = "UT"
-  revision = "1f64d6156d11335c3f22d9330b0ad14fc1e789ce"
-  version = "v2.2.7"
+  revision = "53403b58ad1b561927d19068c655246f2db79d48"
+  version = "v2.2.8"
 
 [solve-meta]
   analyzer-name = "dep"
