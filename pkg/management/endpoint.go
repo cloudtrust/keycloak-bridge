@@ -29,6 +29,7 @@ type Endpoints struct {
 	CreateUser           endpoint.Endpoint
 	GetRolesOfUser       endpoint.Endpoint
 	GetGroupsOfUser      endpoint.Endpoint
+	SetTrustIDGroups     endpoint.Endpoint
 	GetUserAccountStatus endpoint.Endpoint
 	GetClientRoleForUser endpoint.Endpoint
 	AddClientRoleToUser  endpoint.Endpoint
@@ -77,6 +78,7 @@ type ManagementComponent interface {
 	GetUserAccountStatus(ctx context.Context, realmName, userID string) (map[string]bool, error)
 	GetRolesOfUser(ctx context.Context, realmName, userID string) ([]api.RoleRepresentation, error)
 	GetGroupsOfUser(ctx context.Context, realmName, userID string) ([]api.GroupRepresentation, error)
+	SetTrustIDGroups(ctx context.Context, realmName, userID string, groups []string) error
 	GetClientRolesForUser(ctx context.Context, realmName, userID, clientID string) ([]api.RoleRepresentation, error)
 	AddClientRolesToUser(ctx context.Context, realmName, userID, clientID string, roles []api.RoleRepresentation) error
 	ResetPassword(ctx context.Context, realmName string, userID string, password api.PasswordRepresentation) (string, error)
@@ -259,6 +261,21 @@ func MakeGetGroupsOfUserEndpoint(managementComponent ManagementComponent) cs.End
 		var m = req.(map[string]string)
 
 		return managementComponent.GetGroupsOfUser(ctx, m["realm"], m["userID"])
+	}
+}
+
+// MakeSetTrustIDGroupsEndpoint creates an endpoint for SetTrustIDGroups
+func MakeSetTrustIDGroupsEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+
+		var groupNames []string
+
+		if err := json.Unmarshal([]byte(m["body"]), &groupNames); err != nil {
+			return nil, errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Body)
+		}
+
+		return nil, managementComponent.SetTrustIDGroups(ctx, m["realm"], m["userID"], groupNames)
 	}
 }
 

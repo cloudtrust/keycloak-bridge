@@ -36,6 +36,7 @@ var (
 	MGMTGetUserAccountStatus           = newAction("MGMT_GetUserAccountStatus", security.ScopeGroup)
 	MGMTGetRolesOfUser                 = newAction("MGMT_GetRolesOfUser", security.ScopeGroup)
 	MGMTGetGroupsOfUser                = newAction("MGMT_GetGroupsOfUser", security.ScopeGroup)
+	MGMTSetTrustIDGroups               = newAction("MGMT_SetTrustIDGroups", security.ScopeGroup)
 	MGMTGetClientRolesForUser          = newAction("MGMT_GetClientRolesForUser", security.ScopeGroup)
 	MGMTAddClientRolesToUser           = newAction("MGMT_AddClientRolesToUser", security.ScopeGroup)
 	MGMTResetPassword                  = newAction("MGMT_ResetPassword", security.ScopeGroup)
@@ -235,6 +236,17 @@ func (c *authorizationComponentMW) GetGroupsOfUser(ctx context.Context, realmNam
 	}
 
 	return c.next.GetGroupsOfUser(ctx, realmName, userID)
+}
+
+func (c *authorizationComponentMW) SetTrustIDGroups(ctx context.Context, realmName, userID string, groupNames []string) error {
+	var action = MGMTSetTrustIDGroups.String()
+	var targetRealm = realmName
+
+	if err := c.authManager.CheckAuthorizationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
+		return err
+	}
+
+	return c.next.SetTrustIDGroups(ctx, realmName, userID, groupNames)
 }
 
 func (c *authorizationComponentMW) GetClientRolesForUser(ctx context.Context, realmName, userID, clientID string) ([]api.RoleRepresentation, error) {

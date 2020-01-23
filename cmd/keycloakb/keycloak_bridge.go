@@ -215,6 +215,9 @@ func main() {
 		}
 	}
 
+	// Security - allowed trustID groups
+	var trustIDGroups = c.GetStringSlice("trustid-groups")
+
 	// Keycloak client.
 	var keycloakClient *keycloak.Client
 	{
@@ -480,7 +483,7 @@ func main() {
 
 		var keycloakComponent management.Component
 		{
-			keycloakComponent = management.NewComponent(keycloakClient, eventsDBModule, configDBModule, managementLogger)
+			keycloakComponent = management.NewComponent(keycloakClient, eventsDBModule, configDBModule, trustIDGroups, managementLogger)
 			keycloakComponent = management.MakeAuthorizationManagementComponentMW(log.With(managementLogger, "mw", "endpoint"), authorizationManager)(keycloakComponent)
 		}
 
@@ -501,6 +504,7 @@ func main() {
 			GetUsers:             prepareEndpoint(management.MakeGetUsersEndpoint(keycloakComponent), "get_users_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
 			GetUserAccountStatus: prepareEndpoint(management.MakeGetUserAccountStatusEndpoint(keycloakComponent), "get_user_accountstatus", influxMetrics, managementLogger, tracer, rateLimit["management"]),
 			GetGroupsOfUser:      prepareEndpoint(management.MakeGetGroupsOfUserEndpoint(keycloakComponent), "get_user_groups", influxMetrics, managementLogger, tracer, rateLimit["management"]),
+			SetTrustIDGroups:     prepareEndpoint(management.MakeSetTrustIDGroupsEndpoint(keycloakComponent), "set_trustid_groups_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
 			GetRolesOfUser:       prepareEndpoint(management.MakeGetRolesOfUserEndpoint(keycloakComponent), "get_user_roles", influxMetrics, managementLogger, tracer, rateLimit["management"]),
 
 			GetRoles: prepareEndpoint(management.MakeGetRolesEndpoint(keycloakComponent), "get_roles_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
@@ -717,6 +721,7 @@ func main() {
 		var getRolesForUserHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetRolesOfUser)
 		var getGroupsForUserHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetGroupsOfUser)
 		var getUserAccountStatusHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetUserAccountStatus)
+		var setTrustIDGroupsHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.SetTrustIDGroups)
 
 		var getClientRoleForUserHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetClientRoleForUser)
 		var addClientRoleToUserHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.AddClientRoleToUser)
@@ -771,6 +776,7 @@ func main() {
 		managementSubroute.Path("/realms/{realm}/users/{userID}/groups").Methods("GET").Handler(getGroupsForUserHandler)
 		managementSubroute.Path("/realms/{realm}/users/{userID}/roles").Methods("GET").Handler(getRolesForUserHandler)
 		managementSubroute.Path("/realms/{realm}/users/{userID}/status").Methods("GET").Handler(getUserAccountStatusHandler)
+		managementSubroute.Path("/realms/{realm}/users/{userID}/trustIdGroups").Methods("PUT").Handler(setTrustIDGroupsHandler)
 
 		// role mappings
 		managementSubroute.Path("/realms/{realm}/users/{userID}/role-mappings/clients/{clientID}").Methods("GET").Handler(getClientRoleForUserHandler)
@@ -937,6 +943,15 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 	// Security - Audience check
 	v.SetDefault("audience-required", "")
 	v.SetDefault("event-basic-auth-token", "")
+	v.SetDefault("trustid-groups",
+		[]string{
+			"l1_support_manager",
+			"l1_support_agent",
+			"product_administrator",
+			"registration_officer",
+			"papercard_administrator",
+			"technical",
+			"end_user"})
 
 	// CORS configuration
 	v.SetDefault("cors-allowed-origins", []string{})
