@@ -1,0 +1,70 @@
+openapi: 3.0.1
+info:
+  title: Swagger Cloudtrust Register
+  description: 'Self-register API for Cloudtrust.'
+  version: 1.0.0
+servers:
+- url: http://localhost:8855
+tags:
+- name: Register
+  description: Self registering of a user
+paths:
+  /register/user:
+    post:
+      tags:
+      - Register
+      summary: Create a user
+      security:
+        - BasicAuth: [recaptcha]
+      parameters:
+      - name: realm
+        in: query
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        200:
+          description: successful operation. Returns the generated username
+          content:
+            application/json:
+              schema:
+                type: string
+components:
+  schemas:
+    User:
+      type: object
+      required: [gender, firstName, lastName, emailAddress, phoneNumber]
+      properties:
+        gender:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        emailAddress:
+          type: string
+        phoneNumber:
+          type: string
+        birthDate:
+          type: string
+        birthLocation:
+          type: string
+        idDocumentType:
+          type: string
+        idDocumentNumber:
+          type: string
+        idDocumentExpiration:
+          type: string
+  securitySchemes:
+    BasicAuth:
+      type: http
+      scheme: basic
+    openId:
+      type: openIdConnect
+      openIdConnectUrl: http://toto.com/.well-known/openid-configuration

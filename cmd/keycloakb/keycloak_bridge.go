@@ -34,6 +34,7 @@ import (
 	"github.com/cloudtrust/keycloak-bridge/pkg/events"
 	"github.com/cloudtrust/keycloak-bridge/pkg/export"
 	"github.com/cloudtrust/keycloak-bridge/pkg/management"
+	"github.com/cloudtrust/keycloak-bridge/pkg/register"
 	"github.com/cloudtrust/keycloak-bridge/pkg/statistics"
 	keycloak "github.com/cloudtrust/keycloak-client"
 	"github.com/go-kit/kit/endpoint"
@@ -105,6 +106,7 @@ func main() {
 		httpAddrInternal   = c.GetString("internal-http-host-port")
 		httpAddrManagement = c.GetString("management-http-host-port")
 		httpAddrAccount    = c.GetString("account-http-host-port")
+		httpAddrRegister   = c.GetString("register-http-host-port")
 
 		// Keycloak
 		keycloakConfig = keycloak.Config{
@@ -129,6 +131,9 @@ func main() {
 		configRwDbParams = database.GetDbConfig(c, "db-config-rw", !c.GetBool("config-db-rw"))
 		configRoDbParams = database.GetDbConfig(c, "db-config-ro", !c.GetBool("config-db-ro"))
 
+		// DB for users
+		usersRwDbParams = database.GetDbConfig(c, "db-users-rw", !c.GetBool("users-db-rw"))
+
 		// Rate limiting
 		rateLimit = map[string]int{
 			"event":      c.GetInt("rate-event"),
@@ -136,6 +141,7 @@ func main() {
 			"management": c.GetInt("rate-management"),
 			"statistics": c.GetInt("rate-statistics"),
 			"events":     c.GetInt("rate-events"),
+			"register":   c.GetInt("rate-register"),
 		}
 
 		corsOptions = cors.Options{
@@ -151,6 +157,14 @@ func main() {
 
 		// Access logs
 		accessLogsEnabled = c.GetBool("access-logs")
+
+		// Register parameters
+		registerEnabled  = c.GetBool("register-enabled")
+		registerRealm    = c.GetString("register-realm")
+		registerUsername = c.GetString("register-techuser-username")
+		registerPassword = c.GetString("register-techuser-password")
+		registerClientID = c.GetString("register-techuser-client-id")
+		recaptchaURL     = c.GetString("recaptcha-url")
 	)
 
 	// Unique ID generator
@@ -304,6 +318,16 @@ func main() {
 		}
 	}
 
+	var usersRwDBConn sqltypes.CloudtrustDB
+	{
+		var err error
+		usersRwDBConn, err = database.NewReconnectableCloudtrustDB(usersRwDbParams)
+		if err != nil {
+			logger.Error(ctx, "msg", "could not create DB connection for users (RW)", "error", err)
+			return
+		}
+	}
+
 	// Health check configuration
 	var healthChecker = healthcheck.NewHealthChecker(keycloakb.ComponentName, logger)
 	var healthCheckCacheDuration = c.GetDuration("livenessprobe-cache-duration") * time.Millisecond
@@ -438,11 +462,7 @@ func main() {
 		eventsDBModule := configureEventsDbModule(baseEventsDBModule, influxMetrics, managementLogger, tracer)
 
 		// module for storing and retrieving the custom configuration
-		var configDBModule management.ConfigurationDBModule
-		{
-			configDBModule = keycloakb.NewConfigurationDBModule(configurationRwDBConn, managementLogger)
-			configDBModule = keycloakb.MakeConfigurationDBModuleInstrumentingMW(influxMetrics.NewHistogram("configDB_module"))(configDBModule)
-		}
+		var configDBModule = createConfigurationDBModule(configurationRwDBConn, influxMetrics, managementLogger)
 
 		var keycloakComponent management.Component
 		{
@@ -527,6 +547,39 @@ func main() {
 			UpdateLabelCredential:     prepareEndpoint(account.MakeUpdateLabelCredentialEndpoint(accountComponent), "update_label_credential", influxMetrics, accountLogger, tracer, rateLimit["account"]),
 			MoveCredential:            prepareEndpoint(account.MakeMoveCredentialEndpoint(accountComponent), "move_credential", influxMetrics, accountLogger, tracer, rateLimit["account"]),
 			GetConfiguration:          prepareEndpoint(account.MakeGetConfigurationEndpoint(accountComponent), "get_configuration", influxMetrics, accountLogger, tracer, rateLimit["account"]),
+		}
+	}
+
+	// Create OIDC token provider and validate technical user credentials
+	var oidcTokenProvider keycloak.OidcTokenProvider
+	{
+		oidcTokenProvider = keycloak.NewOidcTokenProvider(keycloakConfig, registerRealm, registerUsername, registerPassword, registerClientID, logger)
+		var _, err = oidcTokenProvider.ProvideToken(context.Background())
+		if err != nil {
+			logger.Warn(context.Background(), "msg", "OIDC token provider validation failed for technical user", "err", err.Error())
+		}
+	}
+
+	// Register service.
+	var registerEndpoints register.Endpoints
+	{
+		var registerLogger = log.With(logger, "svc", "register")
+
+		// Configure events db module
+		eventsDBModule := configureEventsDbModule(baseEventsDBModule, influxMetrics, registerLogger, tracer)
+
+		// module for storing and retrieving the custom configuration
+		var configDBModule = createConfigurationDBModule(configurationRwDBConn, influxMetrics, registerLogger)
+
+		// module for storing and retrieving details of the self-registered users
+		var usersDBModule = register.NewUsersDBModule(usersRwDBConn, registerLogger)
+
+		// new module for register service
+		registerComponent := register.NewComponent(registerRealm, keycloakClient, oidcTokenProvider, usersDBModule, configDBModule, eventsDBModule, registerLogger)
+		registerComponent = register.MakeAuthorizationRegisterComponentMW(log.With(registerLogger, "mw", "endpoint"))(registerComponent)
+
+		registerEndpoints = register.Endpoints{
+			RegisterUser: prepareEndpoint(register.MakeRegisterUserEndpoint(registerComponent), "register_user", influxMetrics, registerLogger, tracer, rateLimit["register"]),
 		}
 	}
 
@@ -793,6 +846,36 @@ func main() {
 		errc <- http.ListenAndServe(httpAddrAccount, handler)
 	}()
 
+	// HTTP register Server (Register API).
+	if registerEnabled {
+		go func() {
+			var logger = log.With(logger, "transport", "http")
+			logger.Info(ctx, "addr", httpAddrRegister)
+
+			var route = mux.NewRouter()
+
+			// Version.
+			route.Handle("/", http.HandlerFunc(commonhttp.MakeVersionHandler(keycloakb.ComponentName, ComponentID, keycloakb.Version, Environment, GitCommit)))
+			route.Handle("/health/check", healthChecker.MakeHandler())
+
+			// Register
+			var registerUserHandler = configureRegisterHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, recaptchaURL, tracer, logger)(registerEndpoints.RegisterUser)
+
+			route.Path("/register/user").Methods("POST").Handler(registerUserHandler)
+
+			var handler http.Handler = route
+
+			if accessLogsEnabled {
+				handler = commonhttp.MakeAccessLogHandler(accessLogger, handler)
+			}
+
+			c := cors.New(corsOptions)
+			handler = c.Handler(handler)
+
+			errc <- http.ListenAndServe(httpAddrRegister, handler)
+		}()
+	}
+
 	// Influx writing.
 	go func() {
 		var tic = time.NewTicker(influxWriteInterval)
@@ -823,6 +906,7 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 	v.SetDefault("internal-http-host-port", "0.0.0.0:8888")
 	v.SetDefault("management-http-host-port", "0.0.0.0:8877")
 	v.SetDefault("account-http-host-port", "0.0.0.0:8866")
+	v.SetDefault("register-http-host-port", "0.0.0.0:8855")
 
 	// Security - Audience check
 	v.SetDefault("audience-required", "")
@@ -862,12 +946,20 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 	v.SetDefault("db-config-ro-migration", false)
 	v.SetDefault("db-config-ro-migration-version", "")
 
+	//Storage users in DB (read/write)
+	v.SetDefault("users-db-rw", true)
+	database.ConfigureDbDefault(v, "db-users-rw", "CT_BRIDGE_DB_USERS_RW_USERNAME", "CT_BRIDGE_DB_USERS_RW_PASSWORD")
+
+	v.SetDefault("db-users-rw-migration", false)
+	v.SetDefault("db-users-rw-migration-version", "")
+
 	// Rate limiting (in requests/second)
 	v.SetDefault("rate-event", 1000)
 	v.SetDefault("rate-account", 1000)
 	v.SetDefault("rate-management", 1000)
 	v.SetDefault("rate-statistics", 1000)
 	v.SetDefault("rate-events", 1000)
+	v.SetDefault("rate-register", 1000)
 
 	// Influx DB client default.
 	v.SetDefault("influx", false)
@@ -899,6 +991,14 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 	v.SetDefault("livenessprobe-http-timeout", 900)
 	v.SetDefault("livenessprobe-cache-duration", 500)
 
+	// Register parameters
+	v.SetDefault("register-enabled", false)
+	v.SetDefault("register-realm", "trustid")
+	v.SetDefault("register-techuser-username", "")
+	v.SetDefault("register-techuser-password", "")
+	v.SetDefault("register-techuser-client-id", "")
+	v.SetDefault("recaptcha-url", "https://www.google.com/recaptcha/api/siteverify")
+
 	// First level of override.
 	pflag.String("config-file", v.GetString("config-file"), "The configuration file path can be relative or absolute.")
 	pflag.String("authorization-file", v.GetString("authorization-file"), "The authorization file path can be relative or absolute.")
@@ -909,6 +1009,9 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 	// Bind ENV variables
 	// We use env variables to bind Openshift secrets
 	var censoredParameters = map[string]bool{}
+
+	v.BindEnv("register-techuser-username", "CT_BRIDGE_REGISTER_USERNAME")
+	v.BindEnv("register-techuser-password", "CT_BRIDGE_REGISTER_PASSWORD")
 
 	v.BindEnv("influx-username", "CT_BRIDGE_INFLUX_USERNAME")
 	v.BindEnv("influx-password", "CT_BRIDGE_INFLUX_PASSWORD")
@@ -994,6 +1097,25 @@ func configureAccountHandler(ComponentName string, ComponentID string, idGenerat
 		handler = middleware.MakeHTTPOIDCTokenValidationMW(keycloakClient, audienceRequired, logger)(handler)
 		return handler
 	}
+}
+
+func configureRegisterHandler(ComponentName string, ComponentID string, idGenerator idgenerator.IDGenerator, keycloakClient *keycloak.Client, recaptchaURL string, tracer tracing.OpentracingClient, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {
+	return func(endpoint endpoint.Endpoint) http.Handler {
+		var handler http.Handler
+		handler = register.MakeRegisterHandler(endpoint, logger)
+		handler = middleware.MakeHTTPCorrelationIDMW(idGenerator, tracer, logger, ComponentName, ComponentID)(handler)
+		handler = register.MakeHTTPRecaptchaValidationMW(recaptchaURL, logger)(handler)
+		return handler
+	}
+}
+
+func createConfigurationDBModule(configDBConn sqltypes.CloudtrustDB, influxMetrics metrics.Metrics, logger log.Logger) keycloakb.ConfigurationDBModule {
+	var configDBModule keycloakb.ConfigurationDBModule
+	{
+		configDBModule = keycloakb.NewConfigurationDBModule(configDBConn, logger)
+		configDBModule = keycloakb.MakeConfigurationDBModuleInstrumentingMW(influxMetrics.NewHistogram("configDB_module"))(configDBModule)
+	}
+	return configDBModule
 }
 
 func configureEventsDbModule(baseEventsDBModule database.EventsDBModule, influxMetrics metrics.Metrics, logger log.Logger, tracer tracing.OpentracingClient) database.EventsDBModule {
