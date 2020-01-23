@@ -165,6 +165,21 @@
         "*": {
           "*": {}
         }
+      },
+      "KYC_GetActions": {
+        "*": {
+          "*": {}
+        }
+      },
+      "KYC_GetUser": {
+        "*": {
+          "registration_officer":{}
+        }
+      },
+      "KYC_ValidateUser": {
+        "*": {
+          "registration_officer":{}
+        }
       }
     },
     "integrator_manager":{

@@ -1,14 +1,13 @@
-package register
+package keycloakb
 
 import (
 	"context"
 	"database/sql"
 	"encoding/json"
 
-	"github.com/cloudtrust/common-service/log"
-	apiregister "github.com/cloudtrust/keycloak-bridge/api/register"
-
 	"github.com/cloudtrust/common-service/database/sqltypes"
+	"github.com/cloudtrust/common-service/log"
+	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 )
 
 const (
@@ -25,8 +24,8 @@ const (
 
 // UsersDBModule interface
 type UsersDBModule interface {
-	StoreOrUpdateUser(ctx context.Context, realm string, user apiregister.DBUser) error
-	GetUser(ctx context.Context, realm string, userID string) (*apiregister.DBUser, error)
+	StoreOrUpdateUser(ctx context.Context, realm string, user dto.DBUser) error
+	GetUser(ctx context.Context, realm string, userID string) (*dto.DBUser, error)
 }
 
 type usersDBModule struct {
@@ -42,7 +41,7 @@ func NewUsersDBModule(db sqltypes.CloudtrustDB, logger log.Logger) UsersDBModule
 	}
 }
 
-func (c *usersDBModule) StoreOrUpdateUser(ctx context.Context, realm string, user apiregister.DBUser) error {
+func (c *usersDBModule) StoreOrUpdateUser(ctx context.Context, realm string, user dto.DBUser) error {
 	// transform user object into JSON string
 	userJSON, err := json.Marshal(user)
 	if err != nil {
@@ -54,9 +53,9 @@ func (c *usersDBModule) StoreOrUpdateUser(ctx context.Context, realm string, use
 	return err
 }
 
-func (c *usersDBModule) GetUser(ctx context.Context, realm string, userID string) (*apiregister.DBUser, error) {
+func (c *usersDBModule) GetUser(ctx context.Context, realm string, userID string) (*dto.DBUser, error) {
 	var detailsJSON string
-	var details = apiregister.DBUser{}
+	var details = dto.DBUser{}
 	row := c.db.QueryRow(selectUserStmt, realm, userID)
 
 	switch err := row.Scan(&detailsJSON); err {

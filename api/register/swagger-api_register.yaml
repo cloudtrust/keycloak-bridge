@@ -13,7 +13,7 @@ paths:
     post:
       tags:
       - Register
-      summary: Create a user
+      summary: Creates a user
       security:
         - BasicAuth: [recaptcha]
       parameters:
@@ -30,11 +30,15 @@ paths:
               $ref: '#/components/schemas/User'
       responses:
         200:
-          description: successful operation. Returns the generated username
+          description: Successful operation. Returns the generated username
           content:
             application/json:
               schema:
                 type: string
+        400:
+          description: Invalid information provided
+        403:
+          description: Invalid RECAPTCHA token
   /register/config:
     get:
       tags:
@@ -96,6 +100,3 @@ components:
     BasicAuth:
       type: http
       scheme: basic
-    openId:
-      type: openIdConnect
-      openIdConnectUrl: http://toto.com/.well-known/openid-configuration

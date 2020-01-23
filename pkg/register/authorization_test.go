@@ -15,6 +15,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func configureMock(mockResponse *mock.ResponseWriter, statusCode int, header http.Header) {
+	mockResponse.EXPECT().WriteHeader(statusCode).Times(1)
+	mockResponse.EXPECT().Header().Return(header).Times(1)
+	mockResponse.EXPECT().Write(gomock.Any()).Times(1)
+}
+
 func TestMakeHTTPRecaptchaValidationMW(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -32,22 +38,19 @@ func TestMakeHTTPRecaptchaValidationMW(t *testing.T) {
 	defer ts.Close()
 
 	var authHandler = MakeHTTPRecaptchaValidationMW(ts.URL+recaptchaPath, recaptchaSecret, logger.NewNopLogger())(mockHTTPHandler)
+
 	var req = http.Request{
 		Header: make(http.Header),
 	}
 
 	t.Run("Missing authentication", func(t *testing.T) {
-		mockResponseWriter.EXPECT().WriteHeader(http.StatusForbidden).Times(1)
-		mockResponseWriter.EXPECT().Header().Return(req.Header).Times(1)
-		mockResponseWriter.EXPECT().Write(gomock.Any()).Times(1)
+		configureMock(mockResponseWriter, http.StatusForbidden, req.Header)
 		authHandler.ServeHTTP(mockResponseWriter, &req)
 	})
 
 	t.Run("Not a valid token", func(t *testing.T) {
 		req.Header.Set("Authorization", "Don't match regexp")
-		mockResponseWriter.EXPECT().WriteHeader(http.StatusForbidden).Times(1)
-		mockResponseWriter.EXPECT().Header().Return(req.Header).Times(1)
-		mockResponseWriter.EXPECT().Write(gomock.Any()).Times(1)
+		configureMock(mockResponseWriter, http.StatusForbidden, req.Header)
 		authHandler.ServeHTTP(mockResponseWriter, &req)
 	})
 
@@ -56,9 +59,17 @@ func TestMakeHTTPRecaptchaValidationMW(t *testing.T) {
 		mockRecaptchaHandler.EXPECT().ServeHTTP(gomock.Any(), gomock.Any()).Do(func(w http.ResponseWriter, req *http.Request) {
 			w.WriteHeader(400)
 		}).Times(1)
-		mockResponseWriter.EXPECT().WriteHeader(http.StatusForbidden).Times(1)
-		mockResponseWriter.EXPECT().Header().Return(req.Header).Times(1)
-		mockResponseWriter.EXPECT().Write(gomock.Any()).Times(1)
+		configureMock(mockResponseWriter, http.StatusForbidden, req.Header)
+		authHandler.ServeHTTP(mockResponseWriter, &req)
+	})
+
+	t.Run("Can't deserialize captcha response", func(t *testing.T) {
+		req.Header.Set("Authorization", recaptchaSecret)
+		mockRecaptchaHandler.EXPECT().ServeHTTP(gomock.Any(), gomock.Any()).Do(func(w http.ResponseWriter, req *http.Request) {
+			w.WriteHeader(200)
+			w.Write([]byte(`{"success":f`))
+		})
+		configureMock(mockResponseWriter, http.StatusForbidden, req.Header)
 		authHandler.ServeHTTP(mockResponseWriter, &req)
 	})
 
@@ -67,10 +78,8 @@ func TestMakeHTTPRecaptchaValidationMW(t *testing.T) {
 		mockRecaptchaHandler.EXPECT().ServeHTTP(gomock.Any(), gomock.Any()).Do(func(w http.ResponseWriter, req *http.Request) {
 			w.WriteHeader(200)
 			w.Write([]byte(`{"success":false}`))
-		}).Times(1)
-		mockResponseWriter.EXPECT().WriteHeader(403).Times(1)
-		mockResponseWriter.EXPECT().Header().Return(req.Header).Times(1)
-		mockResponseWriter.EXPECT().Write(gomock.Any()).Times(1)
+		})
+		configureMock(mockResponseWriter, http.StatusForbidden, req.Header)
 		authHandler.ServeHTTP(mockResponseWriter, &req)
 	})
 
@@ -79,7 +88,7 @@ func TestMakeHTTPRecaptchaValidationMW(t *testing.T) {
 		mockRecaptchaHandler.EXPECT().ServeHTTP(gomock.Any(), gomock.Any()).Do(func(w http.ResponseWriter, req *http.Request) {
 			w.WriteHeader(200)
 			w.Write([]byte(`{"success":true}`))
-		}).Times(1)
+		})
 		mockHTTPHandler.EXPECT().ServeHTTP(gomock.Any(), gomock.Any()).Times(1)
 		authHandler.ServeHTTP(mockResponseWriter, &req)
 	})
@@ -94,14 +103,14 @@ func TestMakeAuthorizationRegisterComponentMW(t *testing.T) {
 
 	var ctx = context.TODO()
 	var realm = "master"
-	var user = apiregister.User{}
+	var user = apiregister.UserRepresentation{}
 	var expectedErr = errors.New("")
 
 	mockComponent.EXPECT().RegisterUser(ctx, realm, user).Return("", expectedErr).Times(1)
 	var _, err = component.RegisterUser(ctx, realm, user)
 	assert.Equal(t, expectedErr, err)
 
-	mockComponent.EXPECT().GetConfiguration(ctx, realm).Return(apiregister.Configuration{}, expectedErr).Times(1)
+	mockComponent.EXPECT().GetConfiguration(ctx, realm).Return(apiregister.ConfigurationRepresentation{}, expectedErr).Times(1)
 	_, err = component.GetConfiguration(ctx, realm)
 	assert.Equal(t, expectedErr, err)
 }

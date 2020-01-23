@@ -54,20 +54,27 @@ type ConfigurationDBModule interface {
 	DeleteAllAuthorizationsWithGroup(context context.Context, realmID, groupName string) error
 }
 
+// UsersDBModule is the minimum required interface to access the users database
+type UsersDBModule interface {
+	GetUser(ctx context.Context, realm string, userID string) (*dto.DBUser, error)
+}
+
 // Component is the management component.
 type component struct {
 	keycloakAccountClient KeycloakAccountClient
 	eventDBModule         database.EventsDBModule
 	configDBModule        ConfigurationDBModule
+	usersDBModule         UsersDBModule
 	logger                internal.Logger
 }
 
 // NewComponent returns the self-service component.
-func NewComponent(keycloakAccountClient KeycloakAccountClient, eventDBModule database.EventsDBModule, configDBModule ConfigurationDBModule, logger internal.Logger) Component {
+func NewComponent(keycloakAccountClient KeycloakAccountClient, eventDBModule database.EventsDBModule, configDBModule ConfigurationDBModule, usersDBModule UsersDBModule, logger internal.Logger) Component {
 	return &component{
 		keycloakAccountClient: keycloakAccountClient,
 		eventDBModule:         eventDBModule,
 		configDBModule:        configDBModule,
+		usersDBModule:         usersDBModule,
 		logger:                logger,
 	}
 }
@@ -117,7 +124,22 @@ func (c *component) GetAccount(ctx context.Context) (api.AccountRepresentation, 
 		return userRep, err
 	}
 
+	var dbUser *dto.DBUser
+	if userKc.Id != nil {
+		dbUser, err = c.usersDBModule.GetUser(ctx, realm, *userKc.Id)
+		if err != nil {
+			c.logger.Warn(ctx, "err", err.Error())
+			return userRep, err
+		}
+	}
+
 	userRep = api.ConvertToAPIAccount(userKc)
+	if dbUser != nil {
+		userRep.BirthLocation = dbUser.BirthLocation
+		userRep.IDDocumentType = dbUser.IDDocumentType
+		userRep.IDDocumentNumber = dbUser.IDDocumentNumber
+		userRep.IDDocumentExpiration = dbUser.IDDocumentExpiration
+	}
 
 	return userRep, nil
 }

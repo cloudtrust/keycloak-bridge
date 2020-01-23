@@ -14,6 +14,7 @@ const (
 	MsgErrCannotUpdate         = "cannotUpdate"
 	MsgErrUnknown              = "unknowError"
 	MsgErrNotConfigured        = "notConfigured"
+	MsgErrUnverified           = "unverifiedFlag"
 
 	BodyContent                       = "bodyContent"
 	RealmConfiguration                = "realmConfiguration"
