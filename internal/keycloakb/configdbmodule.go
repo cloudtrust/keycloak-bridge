@@ -125,8 +125,8 @@ func (c *configurationDBModule) scanAuthorization(scanner Scanner) (dto.Authoriz
 		realmID         string
 		groupName       string
 		action          string
-		targetGroupName string
-		targetRealmID   string
+		targetRealmID   sql.NullString
+		targetGroupName sql.NullString
 	)
 
 	err := scanner.Scan(&realmID, &groupName, &action, &targetRealmID, &targetGroupName)
@@ -134,13 +134,21 @@ func (c *configurationDBModule) scanAuthorization(scanner Scanner) (dto.Authoriz
 		return dto.Authorization{}, err
 	}
 
-	return dto.Authorization{
-		RealmID:         &realmID,
-		GroupName:       &groupName,
-		Action:          &action,
-		TargetRealmID:   &targetRealmID,
-		TargetGroupName: &targetGroupName,
-	}, nil
+	var authz = dto.Authorization{
+		RealmID:   &realmID,
+		GroupName: &groupName,
+		Action:    &action,
+	}
+
+	if targetRealmID.Valid {
+		authz.TargetRealmID = &targetRealmID.String
+	}
+
+	if targetGroupName.Valid {
+		authz.TargetGroupName = &targetGroupName.String
+	}
+
+	return authz, nil
 }
 
 func nullableString(value *string) interface{} {

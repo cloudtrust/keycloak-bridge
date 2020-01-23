@@ -28,7 +28,7 @@ paths:
               schema:
                 type: array
                 items:
-                  type: string
+                  $ref: '#/components/schemas/Actions'
   /realms/{realm}:
     get:
       tags:
@@ -939,6 +939,13 @@ paths:
           description: invalid information provided  (invalid client identifier or redirect URI not allowed for this client)
 components:
   schemas:
+    Actions:
+      type: object
+      properties:
+        name:
+          type: string
+        scope:
+          type: string
     Realm:
       type: object
       properties:
