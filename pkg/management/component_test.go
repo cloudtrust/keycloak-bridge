@@ -3217,3 +3217,55 @@ func TestUpdateRealmCustomConfiguration(t *testing.T) {
 		assert.NotNil(t, err)
 	}
 }
+
+func TestCreateShadowUser(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
+	var mockEventDBModule = mock.NewEventDBModule(mockCtrl)
+	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
+	var mockLogger = mock.NewLogger(mockCtrl)
+
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule, mockLogger)
+
+	var accessToken = "TOKEN=="
+	var username = "test"
+	var realmName = "master"
+	var userID = "41dbf4a8-32a9-4000-8c17-edc854c31231"
+	var provider = "provider"
+
+	// Create shadow user
+	{
+		fedIDKC := kc.FederatedIdentityRepresentation{UserName: &username, UserId: &userID}
+		fedID := api.FederatedIdentityRepresentation{Username: &username, UserID: &userID}
+
+		mockKeycloakClient.EXPECT().CreateShadowUser(accessToken, realmName, userID, provider, fedIDKC).Return(nil).Times(1)
+
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
+		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
+		
+		err := managementComponent.CreateShadowUser(ctx, realmName, userID, provider, fedID)
+
+		assert.Nil(t, err)
+	}
+
+
+
+	// Error from KC client
+	{
+		fedIDKC := kc.FederatedIdentityRepresentation{UserName: &username, UserId: &userID}
+		fedID := api.FederatedIdentityRepresentation{Username: &username, UserID: &userID}
+
+		mockKeycloakClient.EXPECT().CreateShadowUser(accessToken, realmName, userID, provider, fedIDKC).Return(fmt.Errorf("error")).Times(1)
+
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
+		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
+		
+		mockLogger.EXPECT().Warn(ctx, "err", "error")
+		err := managementComponent.CreateShadowUser(ctx, realmName, userID, provider, fedID)
+		
+		assert.NotNil(t, err)
+	}
+}

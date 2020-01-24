@@ -161,7 +161,7 @@
           "*": {}
         }
       }
-    },
+      },
     "integrator_manager":{
       "GetRealms": {
         "*": {}
@@ -817,6 +817,11 @@
         "DEP": {
           "*": {}
         }
+      }, 
+      "MGMT_CreateShadowUser": {
+        "DEP": {
+          "end_user": {}
+        }
       }
     },
     "l1_support_manager": {
@@ -1052,6 +1057,11 @@
         "DEP":{
           "*":  {}
         }
+      }
+    },
+    "MGMT_CreateShadowUser": {
+      "DEP": {
+        "end_user": {}
       }
     }
   }

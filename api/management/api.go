@@ -119,6 +119,12 @@ type RealmCustomConfiguration struct {
 	ShowAccountDeletionButton           *bool   `json:"show_account_deletion_button"`
 }
 
+// FederatedIdentityRepresentation struct
+type FederatedIdentityRepresentation struct {
+	UserID   *string `json:"userID,omitempty"`
+	Username *string `json:"username,omitempty"`
+}
+
 // RequiredAction type
 type RequiredAction string
 
@@ -353,6 +359,16 @@ func ConvertRequiredAction(ra *kc.RequiredActionProviderRepresentation) Required
 	return raRep
 }
 
+// ConvertToKCFedID creates a KC federated identity representation from an API federated identity representation
+func ConvertToKCFedID(fedID FederatedIdentityRepresentation) kc.FederatedIdentityRepresentation {
+	var kcFedID kc.FederatedIdentityRepresentation
+
+	kcFedID.UserId = fedID.UserID
+	kcFedID.UserName = fedID.Username
+
+	return kcFedID
+}
+
 // Validators
 
 // Validate is a validator for UserRepresentation
@@ -476,6 +492,19 @@ func (config RealmCustomConfiguration) Validate() error {
 func (requiredAction RequiredAction) Validate() error {
 	if requiredAction != "" && !matchesRegExp(string(requiredAction), RegExpRequiredAction) {
 		return errors.New(internal.MsgErrInvalidParam + "." + internal.RequiredAction)
+	}
+
+	return nil
+}
+
+// Validate is a validator for FederatedIdentityRepresentation
+func (fedID FederatedIdentityRepresentation) Validate() error {
+	if matchesRegExp(*fedID.UserID, RegExpID) {
+		return errors.New(internal.MsgErrInvalidParam + "." + internal.UserID)
+	}
+
+	if !matchesRegExp(*fedID.Username, RegExpUsername) {
+		return errors.New(internal.MsgErrInvalidParam + "." + internal.Username)
 	}
 
 	return nil

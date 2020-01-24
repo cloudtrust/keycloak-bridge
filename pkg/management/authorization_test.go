@@ -42,6 +42,8 @@ func TestDeny(t *testing.T) {
 	var pass = "P@ssw0rd"
 	var clientURI = "https://wwww.cloudtrust.io"
 
+	var provider = "provider"
+
 	mockKeycloakClient.EXPECT().GetGroupNamesOfUser(gomock.Any(), accessToken, realmName, userID).Return([]string{
 		groupName,
 	}, nil).AnyTimes()
@@ -74,6 +76,11 @@ func TestDeny(t *testing.T) {
 	var customConfig = api.RealmCustomConfiguration{
 		DefaultClientID:    &clientID,
 		DefaultRedirectURI: &clientURI,
+	}
+
+	var fedID = api.FederatedIdentityRepresentation{
+		UserID:   &userID,
+		Username: &userUsername,
 	}
 
 	// Nothing allowed
@@ -196,6 +203,9 @@ func TestDeny(t *testing.T) {
 
 		err = authorizationMW.UpdateRealmCustomConfiguration(ctx, realmName, customConfig)
 		assert.Equal(t, security.ForbiddenError{}, err)
+
+		err = authorizationMW.CreateShadowUser(ctx, realmName, userID, provider, fedID)
+		assert.Equal(t, security.ForbiddenError{}, err)
 	}
 }
 
@@ -227,6 +237,8 @@ func TestAllowed(t *testing.T) {
 	var pass = "P@ssw0rd"
 	var clientURI = "https://wwww.cloudtrust.io"
 
+	var provider = "provider"
+
 	mockKeycloakClient.EXPECT().GetGroupNamesOfUser(gomock.Any(), accessToken, realmName, userID).Return([]string{groupName}, nil).AnyTimes()
 
 	var user = api.UserRepresentation{
@@ -257,6 +269,11 @@ func TestAllowed(t *testing.T) {
 	var customConfig = api.RealmCustomConfiguration{
 		DefaultClientID:    &clientID,
 		DefaultRedirectURI: &clientURI,
+	}
+
+	var fedID = api.FederatedIdentityRepresentation{
+		UserID:   &userID,
+		Username: &userUsername,
 	}
 
 	// Anything allowed
@@ -298,7 +315,8 @@ func TestAllowed(t *testing.T) {
 					"MGMT_GetClientRoles": {"*": {"*": {} }},
 					"MGMT_CreateClientRole": {"*": {"*": {} }},
 					"MGMT_GetRealmCustomConfiguration": {"*": {"*": {} }},
-					"MGMT_UpdateRealmCustomConfiguration": {"*": {"*": {} }}
+					"MGMT_UpdateRealmCustomConfiguration": {"*": {"*": {} }},
+					"MGMT_CreateShadowUser":  {"*": {"*": {} }}
 				}
 			}
 		}`)
@@ -454,6 +472,10 @@ func TestAllowed(t *testing.T) {
 
 		mockManagementComponent.EXPECT().UpdateRealmCustomConfiguration(ctx, realmName, customConfig).Return(nil).Times(1)
 		err = authorizationMW.UpdateRealmCustomConfiguration(ctx, realmName, customConfig)
+		assert.Nil(t, err)
+
+		mockManagementComponent.EXPECT().CreateShadowUser(ctx, realmName, userID, provider, fedID).Return(nil).Times(1)
+		err = authorizationMW.CreateShadowUser(ctx, realmName, userID, provider, fedID)
 		assert.Nil(t, err)
 	}
 }

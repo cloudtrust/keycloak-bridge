@@ -61,4 +61,5 @@ const (
 	Unit               = "unit"
 	Max                = "max"
 	Timeshift          = "timeshift"
+	IdentityProvider   = "identityProvider"
 )

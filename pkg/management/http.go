@@ -34,6 +34,7 @@ func decodeManagementRequest(ctx context.Context, req *http.Request) (interface{
 		"roleID":       management_api.RegExpID,
 		"groupID":      management_api.RegExpID,
 		"credentialID": management_api.RegExpID,
+		"provider":     management_api.RegExpName,
 	}
 
 	var queryParams = map[string]string{

@@ -1084,6 +1084,51 @@ func TestUpdateRealmCustomConfigurationEndpoint(t *testing.T) {
 	}
 }
 
+func TestCreateShadowUserEndpoint(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
+
+	var e = MakeCreateShadowUserEndpoint(mockManagementComponent)
+
+	var realm = "master"
+	var ctx = context.Background()
+	var username = "username"
+	var userID = "userID"
+	var provider = "provider"
+
+	var req = make(map[string]string)
+	req["userID"] = userID
+	req["provider"] = provider
+	req["realm"] = realm
+
+	fedID, _ := json.Marshal(api.FederatedIdentityRepresentation{Username: &username, UserID: &userID})
+	req["body"] = string(fedID)
+
+	// No error
+	{
+		mockManagementComponent.EXPECT().CreateShadowUser(ctx, realm, userID, provider, api.FederatedIdentityRepresentation{Username: &username, UserID: &userID}).Return(nil).Times(1)
+		_, err := e(ctx, req)
+		assert.Nil(t, err)
+	}
+
+	// Error
+	{
+		var req2 = make(map[string]string)
+		req2["body"] = string("JSON")
+		_, err := e(ctx, req2)
+		assert.NotNil(t, err)
+	}
+
+	// Error - Keycloak client error
+	{
+		mockManagementComponent.EXPECT().CreateShadowUser(ctx, realm, userID, provider, api.FederatedIdentityRepresentation{Username: &username, UserID: &userID}).Return(fmt.Errorf("error")).Times(1)
+		_, err := e(ctx, req)
+		assert.NotNil(t, err)
+	}
+}
+
 func TestConvertLocationUrl(t *testing.T) {
 
 	res, err := convertLocationURL("http://localhost:8080/auth/realms/master/api/admin/realms/dep/users/1522-4245245-4542545/credentials", "https", "ct-bridge.services.com")

@@ -514,6 +514,8 @@ func main() {
 
 			GetRealmCustomConfiguration:    prepareEndpoint(management.MakeGetRealmCustomConfigurationEndpoint(keycloakComponent), "get_realm_custom_config_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
 			UpdateRealmCustomConfiguration: prepareEndpoint(management.MakeUpdateRealmCustomConfigurationEndpoint(keycloakComponent), "update_realm_custom_config_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
+
+			CreateShadowUser: prepareEndpoint(management.MakeCreateShadowUserEndpoint(keycloakComponent), "create_shadow_user_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
 		}
 	}
 
@@ -729,6 +731,8 @@ func main() {
 		var getRealmCustomConfigurationHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetRealmCustomConfiguration)
 		var updateRealmCustomConfigurationHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.UpdateRealmCustomConfiguration)
 
+		var createShadowUserHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.CreateShadowUser)
+
 		// actions
 		managementSubroute.Path("/actions").Methods("GET").Handler(getManagementActionsHandler)
 
@@ -784,6 +788,9 @@ func main() {
 		// custom configuration par realm
 		managementSubroute.Path("/realms/{realm}/configuration").Methods("GET").Handler(getRealmCustomConfigurationHandler)
 		managementSubroute.Path("/realms/{realm}/configuration").Methods("PUT").Handler(updateRealmCustomConfigurationHandler)
+
+		// brokering - shadow users
+		managementSubroute.Path("/realms/{realm}/users/{userID}/federated-identity/{provider}").Methods("POST").Handler(createShadowUserHandler)
 
 		var handler http.Handler = route
 
