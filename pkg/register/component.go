@@ -2,7 +2,8 @@ package register
 
 import (
 	"context"
-	"math/rand"
+	"crypto/rand"
+	"math/big"
 	"net/http"
 	"regexp"
 	"strings"
@@ -196,7 +197,9 @@ func (c *component) generateUsername(chars []rune, length int) string {
 	var b strings.Builder
 
 	for j := 0; j < length; j++ {
-		b.WriteRune(chars[rand.Intn(len(chars))])
+		nBig, _ := rand.Int(rand.Reader, big.NewInt(int64(len(chars))))
+		index := int(nBig.Int64())
+		b.WriteRune(chars[index])
 	}
 	return b.String()
 }
