@@ -165,6 +165,7 @@ func main() {
 		registerPassword = c.GetString("register-techuser-password")
 		registerClientID = c.GetString("register-techuser-client-id")
 		recaptchaURL     = c.GetString("recaptcha-url")
+		recaptchaSecret  = c.GetString("recaptcha-secret")
 	)
 
 	// Unique ID generator
@@ -224,6 +225,12 @@ func main() {
 			logger.Error(ctx, "msg", "could not create Keycloak client", "error", err)
 			return
 		}
+	}
+
+	// Recaptcha secret
+	if registerEnabled && recaptchaSecret == "" {
+		logger.Error(ctx, "msg", "Recaptcha secret is not configured")
+		return
 	}
 
 	// Keycloak adaptor for common-service library
@@ -859,7 +866,7 @@ func main() {
 			route.Handle("/health/check", healthChecker.MakeHandler())
 
 			// Register
-			var registerUserHandler = configureRegisterHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, recaptchaURL, tracer, logger)(registerEndpoints.RegisterUser)
+			var registerUserHandler = configureRegisterHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, recaptchaURL, recaptchaSecret, tracer, logger)(registerEndpoints.RegisterUser)
 
 			route.Path("/register/user").Methods("POST").Handler(registerUserHandler)
 
@@ -998,6 +1005,7 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 	v.SetDefault("register-techuser-password", "")
 	v.SetDefault("register-techuser-client-id", "")
 	v.SetDefault("recaptcha-url", "https://www.google.com/recaptcha/api/siteverify")
+	v.SetDefault("recaptcha-secret", "")
 
 	// First level of override.
 	pflag.String("config-file", v.GetString("config-file"), "The configuration file path can be relative or absolute.")
@@ -1012,6 +1020,7 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 
 	v.BindEnv("register-techuser-username", "CT_BRIDGE_REGISTER_USERNAME")
 	v.BindEnv("register-techuser-password", "CT_BRIDGE_REGISTER_PASSWORD")
+	v.BindEnv("recaptcha-secret", "CT_BRIDGE_RECAPTCHA_SECRET")
 
 	v.BindEnv("influx-username", "CT_BRIDGE_INFLUX_USERNAME")
 	v.BindEnv("influx-password", "CT_BRIDGE_INFLUX_PASSWORD")
@@ -1099,12 +1108,12 @@ func configureAccountHandler(ComponentName string, ComponentID string, idGenerat
 	}
 }
 
-func configureRegisterHandler(ComponentName string, ComponentID string, idGenerator idgenerator.IDGenerator, keycloakClient *keycloak.Client, recaptchaURL string, tracer tracing.OpentracingClient, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {
+func configureRegisterHandler(ComponentName string, ComponentID string, idGenerator idgenerator.IDGenerator, keycloakClient *keycloak.Client, recaptchaURL, recaptchaSecret string, tracer tracing.OpentracingClient, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {
 	return func(endpoint endpoint.Endpoint) http.Handler {
 		var handler http.Handler
 		handler = register.MakeRegisterHandler(endpoint, logger)
 		handler = middleware.MakeHTTPCorrelationIDMW(idGenerator, tracer, logger, ComponentName, ComponentID)(handler)
-		handler = register.MakeHTTPRecaptchaValidationMW(recaptchaURL, logger)(handler)
+		handler = register.MakeHTTPRecaptchaValidationMW(recaptchaURL, recaptchaSecret, logger)(handler)
 		return handler
 	}
 }
