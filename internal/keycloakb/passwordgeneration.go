@@ -1,7 +1,9 @@
 package keycloakb
 
 import (
-	"math/rand"
+	crand "crypto/rand"
+	"math/big"
+	mrand "math/rand"
 	"strconv"
 	"strings"
 	"unicode"
@@ -19,7 +21,9 @@ const (
 func appendCharacters(pwdElems []string, alphabet string, length int) []string {
 
 	for j := 0; j < length; j++ {
-		pwdElems = append(pwdElems, string(alphabet[rand.Intn(len(alphabet))]))
+		nBig, _ := crand.Int(crand.Reader, big.NewInt(int64(len(alphabet))))
+		index := int(nBig.Int64())
+		pwdElems = append(pwdElems, string(alphabet[index]))
 	}
 	return pwdElems
 }
@@ -102,7 +106,7 @@ func GeneratePasswordFromKeycloakPolicy(policy string) (string, error) {
 			}
 		}
 	}
-	rand.Shuffle(len(pwdElems), func(i, j int) { pwdElems[i], pwdElems[j] = pwdElems[j], pwdElems[i] })
+	mrand.Shuffle(len(pwdElems), func(i, j int) { pwdElems[i], pwdElems[j] = pwdElems[j], pwdElems[i] })
 	pwd := strings.Join(pwdElems, "")
 	return pwd, nil
 
