@@ -39,3 +39,18 @@ func TestMakeRegisterUserEndpoint(t *testing.T) {
 		assert.NotNil(t, err)
 	}
 }
+
+func TestMakeGetConfigurationEndpoint(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	mockRegisterComponent := mock.NewComponent(mockCtrl)
+
+	var realm = "master"
+	var m = map[string]string{}
+
+	m["realm"] = realm
+	mockRegisterComponent.EXPECT().GetConfiguration(gomock.Any(), realm).Return(apiregister.Configuration{}, nil).Times(1)
+	_, err := MakeGetConfigurationEndpoint(mockRegisterComponent)(context.Background(), m)
+	assert.Nil(t, err)
+}

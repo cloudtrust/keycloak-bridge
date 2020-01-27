@@ -1134,6 +1134,8 @@ func (c *component) GetRealmCustomConfiguration(ctx context.Context, realmName s
 				ShowPasswordTab:                     &falseBool,
 				ShowMailEditing:                     &falseBool,
 				ShowAccountDeletionButton:           &falseBool,
+				CancelRegistrationURL:               nil,
+				ConfirmedRegistrationURL:            nil,
 			}, nil
 		default:
 			c.logger.Error(ctx, "err", e.Error())
@@ -1152,6 +1154,8 @@ func (c *component) GetRealmCustomConfiguration(ctx context.Context, realmName s
 		ShowPasswordTab:                     config.ShowPasswordTab,
 		ShowMailEditing:                     config.ShowMailEditing,
 		ShowAccountDeletionButton:           config.ShowAccountDeletionButton,
+		CancelRegistrationURL:               config.CancelRegistrationURL,
+		ConfirmedRegistrationURL:            config.ConfirmedRegistrationURL,
 	}, nil
 }
 
@@ -1220,6 +1224,8 @@ func (c *component) UpdateRealmCustomConfiguration(ctx context.Context, realmNam
 		ShowPasswordTab:                     customConfig.ShowPasswordTab,
 		ShowMailEditing:                     customConfig.ShowMailEditing,
 		ShowAccountDeletionButton:           customConfig.ShowAccountDeletionButton,
+		CancelRegistrationURL:               customConfig.CancelRegistrationURL,
+		ConfirmedRegistrationURL:            customConfig.ConfirmedRegistrationURL,
 	}
 
 	// from the realm ID, update the custom configuration in the DB

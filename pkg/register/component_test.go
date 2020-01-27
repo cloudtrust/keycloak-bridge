@@ -233,3 +233,33 @@ func TestCheckExistingUser(t *testing.T) {
 		assert.NotNil(t, err)
 	})
 }
+
+func TestGetConfiguration(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
+	var mockTokenProvider = mock.NewOidcTokenProvider(mockCtrl)
+	var mockConfigDB = mock.NewConfigurationDBModule(mockCtrl)
+	var mockUsersDB = mock.NewUsersDBModule(mockCtrl)
+	var mockEventsDB = mock.NewEventsDBModule(mockCtrl)
+
+	var ctx = context.TODO()
+	var targetRealm = "cloudtrust"
+	var confRealm = "test"
+	var component = NewComponent(targetRealm, mockKeycloakClient, mockTokenProvider, mockUsersDB, mockConfigDB, mockEventsDB, log.NewNopLogger())
+
+	t.Run("Retrieve configuration sucessfully", func(t *testing.T) {
+		// Retrieve configuration sucessfully
+		mockConfigDB.EXPECT().GetConfiguration(gomock.Any(), gomock.Any()).Return(dto.RealmConfiguration{}, nil)
+		var _, err = component.GetConfiguration(ctx, confRealm)
+		assert.Nil(t, err)
+	})
+
+	t.Run("Retrieve configuration in DB fails", func(t *testing.T) {
+		// Retrieve configuration in DB fails
+		mockConfigDB.EXPECT().GetConfiguration(gomock.Any(), gomock.Any()).Return(dto.RealmConfiguration{}, errors.New("GetConfiguration fails"))
+		var _, err = component.GetConfiguration(ctx, confRealm)
+		assert.NotNil(t, err)
+	})
+}

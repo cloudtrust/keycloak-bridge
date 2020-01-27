@@ -25,6 +25,11 @@ type User struct {
 	IDDocumentExpiration *string `json:"idDocumentExpiration,omitempty"`
 }
 
+// Configuration representation
+type Configuration struct {
+	CancelURL *string `json:"cancelUrl,omitempty"`
+}
+
 // DBUser struct
 type DBUser struct {
 	UserID               *string `json:"-"`

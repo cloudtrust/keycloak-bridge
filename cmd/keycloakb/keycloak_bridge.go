@@ -236,6 +236,17 @@ func main() {
 	// Keycloak adaptor for common-service library
 	commonKcAdaptor := keycloakb.NewKeycloakAuthClient(keycloakClient, logger)
 
+	// Public Keycloak URL
+	var keycloakPublicURL string
+	{
+		urls := strings.Split(keycloakConfig.AddrTokenProvider, " ")
+		if len(urls) < 1 {
+			logger.Error(ctx, "msg", "at least one keycloak Public URL must be provided")
+			return
+		}
+		keycloakPublicURL = urls[0]
+	}
+
 	// Authorization Manager
 	var authorizationManager security.AuthorizationManager
 	{
@@ -584,7 +595,7 @@ func main() {
 		var usersDBModule = register.NewUsersDBModule(usersRwDBConn, registerLogger)
 
 		// new module for register service
-		registerComponent := register.NewComponent(registerRealm, keycloakClient, oidcTokenProvider, usersDBModule, configDBModule, eventsDBModule, registerLogger)
+		registerComponent := register.NewComponent(keycloakPublicURL, registerRealm, keycloakClient, oidcTokenProvider, usersDBModule, configDBModule, eventsDBModule, registerLogger)
 		registerComponent = register.MakeAuthorizationRegisterComponentMW(log.With(registerLogger, "mw", "endpoint"))(registerComponent)
 
 		registerEndpoints = register.Endpoints{

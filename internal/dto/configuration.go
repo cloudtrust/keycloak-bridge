@@ -13,4 +13,6 @@ type RealmConfiguration struct {
 	ShowMailEditing                     *bool     `json:"show_mail_editing,omitempty"`
 	ShowAccountDeletionButton           *bool     `json:"show_account_deletion_button,omitempty"`
 	RegisterExecuteActions              *[]string `json:"register_execute_actions,omitempty"`
+	CancelRegistrationURL               *string   `json:"cancel_registration_url,omitempty"`
+	ConfirmedRegistrationURL            *string   `json:"confirmed_registration_url,omitempty"`
 }

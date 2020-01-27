@@ -35,6 +35,30 @@ paths:
             application/json:
               schema:
                 type: string
+  /register/config:
+    get:
+      tags:
+      - Configuration
+      summary: Get configuration
+      parameters:
+      - name: realm
+        in: query
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Configuration'
+      responses:
+        200:
+          description: successful operation. Returns the configuration
+          content:
+            application/json:
+              schema:
+                type: string
 components:
   schemas:
     User:
@@ -62,6 +86,11 @@ components:
         idDocumentNumber:
           type: string
         idDocumentExpiration:
+          type: string
+    Configuration:
+      type: object
+      properties:
+        cancelUrl:
           type: string
   securitySchemes:
     BasicAuth:
