@@ -60,7 +60,7 @@ const (
 
 var (
 	allowedGender       = map[string]bool{"M": true, "F": true}
-	allowedDocumentType = map[string]bool{"Identity card": true, "Passport": true}
+	allowedDocumentType = map[string]bool{"ID_CARD": true, "PASSPORT": true, "RESIDENCE_PERMIT": true}
 )
 
 // UserFromJSON creates a User using its json representation
