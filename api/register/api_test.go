@@ -16,7 +16,7 @@ func createValidUser() User {
 		phoneNumber     = "00 33 686 550011"
 		birthDate       = "29.02.2020"
 		birthLocation   = "Bermuda"
-		idDocType       = "Passport"
+		idDocType       = "PASSPORT"
 		idDocNumber     = "123456789"
 		idDocExpiration = "23.02.2039"
 	)

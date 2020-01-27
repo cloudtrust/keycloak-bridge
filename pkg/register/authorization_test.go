@@ -2,7 +2,6 @@ package register
 
 import (
 	"context"
-	"encoding/base64"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -25,83 +24,63 @@ func TestMakeHTTPRecaptchaValidationMW(t *testing.T) {
 	var mockResponseWriter = mock.NewResponseWriter(mockCtrl)
 
 	var recaptchaPath = "/recaptcha"
+	var recaptchaSecret = "thesecretfortherecaptchaverifyprocess"
 	r := mux.NewRouter()
 	r.Handle(recaptchaPath, mockRecaptchaHandler)
 
 	ts := httptest.NewServer(r)
 	defer ts.Close()
 
-	var authHandler = MakeHTTPRecaptchaValidationMW(ts.URL+recaptchaPath, logger.NewNopLogger())(mockHTTPHandler)
+	var authHandler = MakeHTTPRecaptchaValidationMW(ts.URL+recaptchaPath, recaptchaSecret, logger.NewNopLogger())(mockHTTPHandler)
 	var req = http.Request{
 		Header: make(http.Header),
 	}
 
-	t.Run("Missing Basic authentication", func(t *testing.T) {
-		mockResponseWriter.EXPECT().WriteHeader(403)
-		mockResponseWriter.EXPECT().Header().Return(req.Header)
-		mockResponseWriter.EXPECT().Write(gomock.Any())
+	t.Run("Missing authentication", func(t *testing.T) {
+		mockResponseWriter.EXPECT().WriteHeader(http.StatusForbidden).Times(1)
+		mockResponseWriter.EXPECT().Header().Return(req.Header).Times(1)
+		mockResponseWriter.EXPECT().Write(gomock.Any()).Times(1)
 		authHandler.ServeHTTP(mockResponseWriter, &req)
 	})
 
-	t.Run("Not a valid Basic authentication", func(t *testing.T) {
-		req.Header.Set("Authorization", "Dont match regexp")
-		mockResponseWriter.EXPECT().WriteHeader(403)
-		mockResponseWriter.EXPECT().Header().Return(req.Header)
-		mockResponseWriter.EXPECT().Write(gomock.Any())
-		authHandler.ServeHTTP(mockResponseWriter, &req)
-	})
-
-	t.Run("Basic authentication is not a base 64 value", func(t *testing.T) {
-		var invalidBase64 = "AB"
-		req.Header.Set("Authorization", "Basic "+invalidBase64)
-		mockResponseWriter.EXPECT().WriteHeader(403)
-		mockResponseWriter.EXPECT().Header().Return(req.Header)
-		mockResponseWriter.EXPECT().Write(gomock.Any())
-		authHandler.ServeHTTP(mockResponseWriter, &req)
-	})
-
-	t.Run("Basic authentication decoded value is not like 'type:secret=qwerty,token=abcdef-789www'", func(t *testing.T) {
-		var basicAuthenticationValue = base64.StdEncoding.EncodeToString([]byte("admin=password"))
-		req.Header.Set("Authorization", "Basic "+basicAuthenticationValue)
-		mockResponseWriter.EXPECT().WriteHeader(403)
-		mockResponseWriter.EXPECT().Header().Return(req.Header)
-		mockResponseWriter.EXPECT().Write(gomock.Any())
+	t.Run("Not a valid token", func(t *testing.T) {
+		req.Header.Set("Authorization", "Don't match regexp")
+		mockResponseWriter.EXPECT().WriteHeader(http.StatusForbidden).Times(1)
+		mockResponseWriter.EXPECT().Header().Return(req.Header).Times(1)
+		mockResponseWriter.EXPECT().Write(gomock.Any()).Times(1)
 		authHandler.ServeHTTP(mockResponseWriter, &req)
 	})
 
 	t.Run("Recaptcha bad HTTP status", func(t *testing.T) {
-		var basicAuthenticationValue = base64.StdEncoding.EncodeToString([]byte("recaptcha:secret=abcdef,token=123456"))
-		req.Header.Set("Authorization", "Basic "+basicAuthenticationValue)
+		req.Header.Set("Authorization", recaptchaSecret)
 		mockRecaptchaHandler.EXPECT().ServeHTTP(gomock.Any(), gomock.Any()).Do(func(w http.ResponseWriter, req *http.Request) {
 			w.WriteHeader(400)
-		})
-		mockResponseWriter.EXPECT().WriteHeader(403)
-		mockResponseWriter.EXPECT().Header().Return(req.Header)
-		mockResponseWriter.EXPECT().Write(gomock.Any())
+		}).Times(1)
+		mockResponseWriter.EXPECT().WriteHeader(http.StatusForbidden).Times(1)
+		mockResponseWriter.EXPECT().Header().Return(req.Header).Times(1)
+		mockResponseWriter.EXPECT().Write(gomock.Any()).Times(1)
 		authHandler.ServeHTTP(mockResponseWriter, &req)
 	})
 
 	t.Run("Invalid recaptcha code", func(t *testing.T) {
-		var basicAuthenticationValue = base64.StdEncoding.EncodeToString([]byte("recaptcha:secret=abcdef,token=123456"))
-		req.Header.Set("Authorization", "Basic "+basicAuthenticationValue)
+		req.Header.Set("Authorization", recaptchaSecret)
 		mockRecaptchaHandler.EXPECT().ServeHTTP(gomock.Any(), gomock.Any()).Do(func(w http.ResponseWriter, req *http.Request) {
 			w.WriteHeader(200)
 			w.Write([]byte(`{"success":false}`))
-		})
-		mockResponseWriter.EXPECT().WriteHeader(403)
-		mockResponseWriter.EXPECT().Header().Return(req.Header)
-		mockResponseWriter.EXPECT().Write(gomock.Any())
+		}).Times(1)
+		mockResponseWriter.EXPECT().WriteHeader(403).Times(1)
+		mockResponseWriter.EXPECT().Header().Return(req.Header).Times(1)
+		mockResponseWriter.EXPECT().Write(gomock.Any()).Times(1)
 		authHandler.ServeHTTP(mockResponseWriter, &req)
 	})
 
 	t.Run("Recaptcha code is valid", func(t *testing.T) {
-		var basicAuthenticationValue = base64.StdEncoding.EncodeToString([]byte("recaptcha:secret=abcdef,token=abcdef"))
-		req.Header.Set("Authorization", "Basic "+basicAuthenticationValue)
+		req.Header.Set("Authorization", recaptchaSecret)
 		mockRecaptchaHandler.EXPECT().ServeHTTP(gomock.Any(), gomock.Any()).Do(func(w http.ResponseWriter, req *http.Request) {
 			w.WriteHeader(200)
 			w.Write([]byte(`{"success":true}`))
-		})
-		mockHTTPHandler.EXPECT().ServeHTTP(gomock.Any(), gomock.Any())
+		}).Times(1)
+		mockHTTPHandler.EXPECT().ServeHTTP(gomock.Any(), gomock.Any()).Times(1)
 		authHandler.ServeHTTP(mockResponseWriter, &req)
 	})
 }

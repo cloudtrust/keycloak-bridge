@@ -53,10 +53,12 @@ components:
           type: string
         birthDate:
           type: string
+          description: format is DD.MM.YYYY
         birthLocation:
           type: string
         idDocumentType:
           type: string
+          enum: [ID_CARD, PASSPORT, RESIDENCE_PERMIT]
         idDocumentNumber:
           type: string
         idDocumentExpiration:

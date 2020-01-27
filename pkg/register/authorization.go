@@ -3,7 +3,6 @@ package register
 import (
 	"bytes"
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -18,8 +17,7 @@ import (
 )
 
 const (
-	regexpBasicAuth = `^[Bb]asic (.+)$`
-	regExpRecaptcha = `^([\w\d]+):secret=(.+),token=(.+)$`
+	regexpRecaptchaToken = `^[\w\d-]+$`
 )
 
 type recaptchaResponse struct {
@@ -30,44 +28,25 @@ type recaptchaResponse struct {
 }
 
 // MakeHTTPRecaptchaValidationMW retrieves the recaptcha code and checks its validity
-func MakeHTTPRecaptchaValidationMW(recaptchaURL string, logger log.Logger) func(http.Handler) http.Handler {
+func MakeHTTPRecaptchaValidationMW(recaptchaURL string, recaptchaSecret string, logger log.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			var authorizationHeader = req.Header.Get("Authorization")
+			var recaptchaToken = req.Header.Get("Authorization")
 			var ctx = context.TODO()
 
-			if authorizationHeader == "" {
+			if recaptchaToken == "" {
 				logger.Info(ctx, "Authorization Error", "Missing Authorization header")
 				httpErrorHandler(ctx, http.StatusForbidden, errors.New(errorhandler.MsgErrMissingParam+"."+errorhandler.AuthHeader), w)
 				return
 			}
 
-			var r = regexp.MustCompile(regexpBasicAuth)
-			var match = r.FindStringSubmatch(authorizationHeader)
-			if match == nil {
-				logger.Info(ctx, "Authorization Error", "Missing basic token")
+			if match, _ := regexp.MatchString(regexpRecaptchaToken, recaptchaToken); !match {
+				logger.Info(ctx, "Authorization Error", "Invalid recaptcha token")
 				httpErrorHandler(ctx, http.StatusForbidden, errors.New(errorhandler.MsgErrMissingParam+"."+errorhandler.BasicToken), w)
 				return
 			}
 
-			// Decode base 64 (RegExp matched: we got exactly 2 values. match[0] is the global matched string, match[1] is the first group)
-			decodedToken, err := base64.StdEncoding.DecodeString(match[1])
-			if err != nil {
-				logger.Info(ctx, "Authorization Error", "Invalid base64 token")
-				httpErrorHandler(ctx, http.StatusForbidden, errors.New(errorhandler.MsgErrInvalidParam+"."+errorhandler.Token), w)
-				return
-			}
-
-			// Extract username & password values
-			r = regexp.MustCompile(regExpRecaptcha)
-			match = r.FindStringSubmatch(string(decodedToken))
-			if match == nil {
-				logger.Info(ctx, "Authorization Error", "Invalid token format (recaptcha:secret={secret},token={token})")
-				httpErrorHandler(ctx, http.StatusForbidden, errors.New(errorhandler.MsgErrInvalidParam+"."+errorhandler.Token), w)
-				return
-			}
-
-			if !checkRecaptcha(ctx, recaptchaURL, match[2], match[3], logger) {
+			if !checkRecaptcha(ctx, recaptchaURL, recaptchaSecret, recaptchaToken, logger) {
 				httpErrorHandler(ctx, http.StatusForbidden, errors.New(errorhandler.MsgErrInvalidParam+"."+errorhandler.Token), w)
 				return
 			}
