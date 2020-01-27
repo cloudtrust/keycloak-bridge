@@ -1107,26 +1107,28 @@ func TestCreateShadowUserEndpoint(t *testing.T) {
 	req["body"] = string(fedID)
 
 	// No error
-	{
+	t.Run("Create shadow user successfully", func(t *testing.T) {
 		mockManagementComponent.EXPECT().CreateShadowUser(ctx, realm, userID, provider, api.FederatedIdentityRepresentation{Username: &username, UserID: &userID}).Return(nil).Times(1)
 		_, err := e(ctx, req)
 		assert.Nil(t, err)
-	}
+	})
 
 	// Error
-	{
+	t.Run("Create shadow user - error at unmarshal", func(t *testing.T) {
+
 		var req2 = make(map[string]string)
 		req2["body"] = string("JSON")
 		_, err := e(ctx, req2)
 		assert.NotNil(t, err)
-	}
+	})
 
 	// Error - Keycloak client error
-	{
+	t.Run("Create shadow user - error at KC client", func(t *testing.T) {
+
 		mockManagementComponent.EXPECT().CreateShadowUser(ctx, realm, userID, provider, api.FederatedIdentityRepresentation{Username: &username, UserID: &userID}).Return(fmt.Errorf("error")).Times(1)
 		_, err := e(ctx, req)
 		assert.NotNil(t, err)
-	}
+	})
 }
 
 func TestConvertLocationUrl(t *testing.T) {

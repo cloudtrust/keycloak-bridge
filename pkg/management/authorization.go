@@ -469,7 +469,7 @@ func (c *authorizationComponentMW) UpdateRealmCustomConfiguration(ctx context.Co
 func (c *authorizationComponentMW) CreateShadowUser(ctx context.Context, realmName string, userID string, provider string, fedID api.FederatedIdentityRepresentation) error {
 	var action = MGMTCreateShadowUser.String()
 	var targetRealm = realmName
-	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
+	if err := c.authManager.CheckAuthorizationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
 		return err
 	}
 

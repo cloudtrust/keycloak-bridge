@@ -3235,7 +3235,7 @@ func TestCreateShadowUser(t *testing.T) {
 	var provider = "provider"
 
 	// Create shadow user
-	{
+	t.Run("Create shadow user successfully", func(t *testing.T) {
 		fedIDKC := kc.FederatedIdentityRepresentation{UserName: &username, UserId: &userID}
 		fedID := api.FederatedIdentityRepresentation{Username: &username, UserID: &userID}
 
@@ -3244,16 +3244,14 @@ func TestCreateShadowUser(t *testing.T) {
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
-		
+
 		err := managementComponent.CreateShadowUser(ctx, realmName, userID, provider, fedID)
 
 		assert.Nil(t, err)
-	}
-
-
+	})
 
 	// Error from KC client
-	{
+	t.Run("Create shadow user - error at KC client", func(t *testing.T) {
 		fedIDKC := kc.FederatedIdentityRepresentation{UserName: &username, UserId: &userID}
 		fedID := api.FederatedIdentityRepresentation{Username: &username, UserID: &userID}
 
@@ -3262,10 +3260,10 @@ func TestCreateShadowUser(t *testing.T) {
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
-		
+
 		mockLogger.EXPECT().Warn(ctx, "err", "error")
 		err := managementComponent.CreateShadowUser(ctx, realmName, userID, provider, fedID)
-		
+
 		assert.NotNil(t, err)
-	}
+	})
 }

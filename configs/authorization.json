@@ -161,7 +161,7 @@
           "*": {}
         }
       }
-      },
+    },
     "integrator_manager":{
       "GetRealms": {
         "*": {}
