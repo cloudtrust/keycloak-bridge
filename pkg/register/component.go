@@ -121,7 +121,7 @@ func (c *component) RegisterUser(ctx context.Context, realmName string, user api
 			kcUser = &kc.UserRepresentation{}
 			kcUser.Username = &username
 			user.UpdateUserRepresentation(kcUser)
-			(*kcUser.Attributes)["trustid_auth_token"] = []string{authToken}
+			(*kcUser.Attributes)["trustIDAuthToken"] = []string{authToken}
 
 			userID, err = c.keycloakClient.CreateUser(accessToken, c.realm, c.realm, *kcUser)
 			// Create success: just have to get the userID and exist this loop
@@ -148,7 +148,7 @@ func (c *component) RegisterUser(ctx context.Context, realmName string, user api
 	} else {
 		userID = *kcUser.Id
 		user.UpdateUserRepresentation(kcUser)
-		(*kcUser.Attributes)["trustid_auth_token"] = []string{authToken}
+		(*kcUser.Attributes)["trustIDAuthToken"] = []string{authToken}
 
 		err = c.keycloakClient.UpdateUser(accessToken, c.realm, userID, *kcUser)
 		if err != nil {
