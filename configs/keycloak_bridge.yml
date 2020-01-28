@@ -105,7 +105,6 @@ db-config-ro-migration-version: 0.1
 db-config-ro-connection-check: true
 
 # DB Users RW
-db-users-rw: false
 db-users-rw-host-port: 172.17.0.2:3306
 db-users-rw-username: bridge
 db-users-rw-password: bridge-password
@@ -161,7 +160,7 @@ livenessprobe-http-timeout: 900
 livenessprobe-cache-duration: 500
 
 # Register API parameters
-register-enabled: false
+register-enabled: true
 register-realm: trustid
 register-techuser-username: technicaluser
 register-techuser-password: technicalsuperpasswordverylongandstrong

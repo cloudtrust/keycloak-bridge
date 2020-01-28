@@ -884,7 +884,7 @@ func main() {
 			var registerUserHandler = configureRegisterHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, recaptchaURL, recaptchaSecret, tracer, logger)(registerEndpoints.RegisterUser)
 
 			// COnfiguration
-			var getConfigurationHandler = configureRegisterHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, recaptchaURL, recaptchaSecret, tracer, logger)(registerEndpoints.GetConfiguration)
+			var getConfigurationHandler = configurePublicRegisterHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, recaptchaURL, recaptchaSecret, tracer, logger)(registerEndpoints.GetConfiguration)
 
 			route.Path("/register/user").Methods("POST").Handler(registerUserHandler)
 			route.Path("/register/config").Methods("GET").Handler(getConfigurationHandler)

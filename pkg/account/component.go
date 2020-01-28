@@ -326,9 +326,10 @@ func (c *component) GetConfiguration(ctx context.Context) (api.Configuration, er
 	}
 
 	return api.Configuration{
-		ShowAuthenticatorsTab:     config.ShowAuthenticatorsTab,
-		ShowAccountDeletionButton: config.ShowAccountDeletionButton,
-		ShowMailEditing:           config.ShowMailEditing,
-		ShowPasswordTab:           config.ShowPasswordTab,
+		ShowAuthenticatorsTab:             config.ShowAuthenticatorsTab,
+		ShowAccountDeletionButton:         config.ShowAccountDeletionButton,
+		ShowMailEditing:                   config.ShowMailEditing,
+		ShowPasswordTab:                   config.ShowPasswordTab,
+		RedirectSuccessfulRegistrationURL: config.RedirectSuccessfulRegistrationURL,
 	}, nil
 }
