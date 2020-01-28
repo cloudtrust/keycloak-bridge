@@ -253,8 +253,8 @@ func TestGetConfiguration(t *testing.T) {
 	var confRealm = "test"
 	var component = NewComponent(keycloakURL, targetRealm, mockKeycloakClient, mockTokenProvider, mockUsersDB, mockConfigDB, mockEventsDB, log.NewNopLogger())
 
-	t.Run("Retrieve configuration sucessfully", func(t *testing.T) {
-		// Retrieve configuration sucessfully
+	t.Run("Retrieve configuration successfully", func(t *testing.T) {
+		// Retrieve configuration successfully
 		mockConfigDB.EXPECT().GetConfiguration(gomock.Any(), gomock.Any()).Return(dto.RealmConfiguration{}, nil)
 		var _, err = component.GetConfiguration(ctx, confRealm)
 		assert.Nil(t, err)

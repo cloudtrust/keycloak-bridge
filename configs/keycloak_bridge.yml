@@ -105,6 +105,7 @@ db-config-ro-migration-version: 0.1
 db-config-ro-connection-check: true
 
 # DB Users RW
+db-users-rw: false
 db-users-rw-host-port: 172.17.0.2:3306
 db-users-rw-username: bridge
 db-users-rw-password: bridge-password
@@ -116,7 +117,7 @@ db-users-rw-max-idle-conns: 2
 db-users-rw-conn-max-lifetime: 10
 db-users-rw-migration: false
 db-users-rw-migration-version: 0.1
-db-users-rw-connection-check: true
+db-users-rw-connection-check: false
 
 # audit events
 events-db: false

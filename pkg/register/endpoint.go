@@ -12,7 +12,8 @@ import (
 
 // Endpoints for self service
 type Endpoints struct {
-	RegisterUser endpoint.Endpoint
+	RegisterUser     endpoint.Endpoint
+	GetConfiguration endpoint.Endpoint
 }
 
 // MakeRegisterUserEndpoint endpoint creation
