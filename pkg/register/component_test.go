@@ -162,8 +162,8 @@ func TestRegisterUser(t *testing.T) {
 		var token = "abcdef"
 		var userID = "abc789def"
 		var requiredActions = []string{"execute", "actions"}
-		var confirmURL = "http://couldtrust.ch"
-		var realmConfiguration = dto.RealmConfiguration{RegisterExecuteActions: &requiredActions, ConfirmedRegistrationURL: &confirmURL}
+		var successURL = "http://couldtrust.ch"
+		var realmConfiguration = dto.RealmConfiguration{RegisterExecuteActions: &requiredActions, RedirectSuccessfulRegistrationURL: &successURL}
 		mockConfigDB.EXPECT().GetConfiguration(ctx, confRealm).Return(realmConfiguration, nil)
 		mockTokenProvider.EXPECT().ProvideToken(ctx).Return(token, nil)
 		mockKeycloakClient.EXPECT().GetUsers(accessToken, targetRealm, targetRealm, "email", *validUser.EmailAddress).Return(usersSearchResult, nil)
