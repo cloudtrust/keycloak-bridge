@@ -40,12 +40,12 @@
   version = "v1.2.4"
 
 [[projects]]
-  digest = "1:88610fd105a561f8c2fa2acf27d92b683763de7bdab90a589ee4c0d7f0039c49"
+  digest = "1:60fd3a1ff013fefa32a92ab704a5d1d69c3dec3e85df23c46068c137ac1dd4ad"
   name = "github.com/cloudtrust/keycloak-client"
   packages = ["."]
   pruneopts = "UT"
-  revision = "1a314855515117cacbd0ff7fcead35393f81fc6b"
-  version = "v1.2.4"
+  revision = "837b7c8be16fb7a1026a00fd418d9c6917b382c1"
+  version = "v1.2.5"
 
 [[projects]]
   digest = "1:d64c893fc7d2c3d395f421b00d21f0adb8ceffc4d3c90299e732b3985ca16eb4"
