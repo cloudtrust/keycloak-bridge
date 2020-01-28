@@ -6,6 +6,7 @@ import (
 	b64 "encoding/base64"
 	"math/big"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strings"
 
@@ -171,17 +172,26 @@ func (c *component) RegisterUser(ctx context.Context, realmName string, user api
 	}
 
 	// Send execute actions email
-	var redirectURL = c.keycloakURL + "/auth/realms/" + c.realm + "/protocol/openid-connect/auth?client_id=selfserviceid"
-	redirectURL += "&scope=openid"
-	redirectURL += "&response_type=code"
-	redirectURL += "&auth_token=" + authToken
+	redirectURL, err := url.Parse(c.keycloakURL + "/auth/realms/" + c.realm + "/protocol/openid-connect/auth")
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Can't parse keycloak URL", "err", err.Error())
+		return "", err
+	}
+	var parameters = url.Values{}
+	parameters.Add("client_id", "selfserviceid")
+	parameters.Add("scope", "openid")
+	parameters.Add("response_type", "code")
+	parameters.Add("auth_token", authToken)
 
 	if realmConf.ConfirmedRegistrationURL != nil {
-		redirectURL += "&redirect_uri=" + *realmConf.ConfirmedRegistrationURL
+		parameters.Add("redirect_uri", *realmConf.ConfirmedRegistrationURL)
+		parameters.Add("login_hint", *kcUser.Username)
 	}
 
+	redirectURL.RawQuery = parameters.Encode()
+
 	if realmConf.RegisterExecuteActions != nil && len(*realmConf.RegisterExecuteActions) > 0 {
-		err = c.keycloakClient.ExecuteActionsEmail(accessToken, c.realm, userID, *realmConf.RegisterExecuteActions, "redirect_uri", redirectURL)
+		err = c.keycloakClient.ExecuteActionsEmail(accessToken, c.realm, userID, *realmConf.RegisterExecuteActions, "redirect_uri", redirectURL.String())
 		if err != nil {
 			c.logger.Warn(ctx, "msg", "ExecuteActionsEmail failed", "err", err.Error())
 			return "", err
