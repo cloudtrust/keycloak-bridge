@@ -107,7 +107,7 @@
           "l3_support_manager": {}
         }
       },
-      "MGMT_RecoveryCode": {
+      "MGMT_CreateRecoveryCode": {
         "master": {
           "integrator_manager": {},
           "l2_support_manager": {},
