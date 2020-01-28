@@ -27,7 +27,7 @@ type User struct {
 
 // Configuration representation
 type Configuration struct {
-	CancelURL *string `json:"cancelUrl,omitempty"`
+	RedirectCancelledRegistrationURL *string `json:"redirect_cancelled_registration_url,omitempty"`
 }
 
 // DBUser struct

@@ -183,8 +183,8 @@ func (c *component) RegisterUser(ctx context.Context, realmName string, user api
 	parameters.Add("response_type", "code")
 	parameters.Add("auth_token", authToken)
 
-	if realmConf.ConfirmedRegistrationURL != nil {
-		parameters.Add("redirect_uri", *realmConf.ConfirmedRegistrationURL)
+	if realmConf.RedirectSuccessfulRegistrationURL != nil {
+		parameters.Add("redirect_uri", *realmConf.RedirectSuccessfulRegistrationURL)
 		parameters.Add("login_hint", *kcUser.Username)
 	}
 
@@ -238,7 +238,7 @@ func (c *component) GetConfiguration(ctx context.Context, realmName string) (api
 	}
 
 	return apiregister.Configuration{
-		CancelURL: realmConf.CancelRegistrationURL,
+		RedirectCancelledRegistrationURL: realmConf.RedirectCancelledRegistrationURL,
 	}, nil
 }
 
