@@ -57,6 +57,7 @@ var (
 	MGMTCreateClientRole               = newAction("MGMT_CreateClientRole", security.ScopeRealm)
 	MGMTGetRealmCustomConfiguration    = newAction("MGMT_GetRealmCustomConfiguration", security.ScopeRealm)
 	MGMTUpdateRealmCustomConfiguration = newAction("MGMT_UpdateRealmCustomConfiguration", security.ScopeRealm)
+	MGMTCreateShadowUser               = newAction("MGMT_CreateShadowUser", security.ScopeRealm)
 )
 
 // Tracking middleware at component level.
@@ -463,4 +464,14 @@ func (c *authorizationComponentMW) UpdateRealmCustomConfiguration(ctx context.Co
 	}
 
 	return c.next.UpdateRealmCustomConfiguration(ctx, realmName, customConfig)
+}
+
+func (c *authorizationComponentMW) CreateShadowUser(ctx context.Context, realmName string, userID string, provider string, fedID api.FederatedIdentityRepresentation) error {
+	var action = MGMTCreateShadowUser.String()
+	var targetRealm = realmName
+	if err := c.authManager.CheckAuthorizationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
+		return err
+	}
+
+	return c.next.CreateShadowUser(ctx, realmName, userID, provider, fedID)
 }

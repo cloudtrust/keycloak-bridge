@@ -56,6 +56,8 @@ type Endpoints struct {
 
 	GetRealmCustomConfiguration    endpoint.Endpoint
 	UpdateRealmCustomConfiguration endpoint.Endpoint
+
+	CreateShadowUser endpoint.Endpoint
 }
 
 // ManagementComponent is the interface of the component to send a query to Keycloak.
@@ -98,6 +100,8 @@ type ManagementComponent interface {
 
 	GetRealmCustomConfiguration(ctx context.Context, realmID string) (api.RealmCustomConfiguration, error)
 	UpdateRealmCustomConfiguration(ctx context.Context, realmID string, customConfig api.RealmCustomConfiguration) error
+
+	CreateShadowUser(ctx context.Context, realmName string, userID string, provider string, fedID api.FederatedIdentityRepresentation) error
 }
 
 // MakeGetRealmsEndpoint makes the Realms endpoint to retrieve all available realms.
@@ -583,6 +587,32 @@ func MakeUpdateRealmCustomConfigurationEndpoint(managementComponent ManagementCo
 		}
 
 		return nil, managementComponent.UpdateRealmCustomConfiguration(ctx, m["realm"], customConfig)
+	}
+}
+
+// MakeCreateShadowUserEndpoint makes the endpoint to create a shadow user.
+func MakeCreateShadowUserEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+		var err error
+
+		var fedID api.FederatedIdentityRepresentation
+
+		if err = json.Unmarshal([]byte(m["body"]), &fedID); err != nil {
+			return nil, errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Body)
+		}
+
+		if err = fedID.Validate(); err != nil {
+			return nil, errorhandler.CreateBadRequestError(err.Error())
+		}
+
+		err = managementComponent.CreateShadowUser(ctx, m["realm"], m["userID"], m["provider"], fedID)
+
+		if err != nil {
+			return nil, err
+		}
+
+		return nil, nil
 	}
 }
 

@@ -57,6 +57,7 @@ type KeycloakClient interface {
 	GetCredentials(accessToken string, realmName string, userID string) ([]kc.CredentialRepresentation, error)
 	UpdateLabelCredential(accessToken string, realmName string, userID string, credentialID string, label string) error
 	DeleteCredential(accessToken string, realmName string, userID string, credentialID string) error
+	CreateShadowUser(accessToken string, realmName string, userID string, provider string, fedID kc.FederatedIdentityRepresentation) error
 }
 
 // ConfigurationDBModule is the interface of the configuration module.
@@ -112,6 +113,8 @@ type Component interface {
 
 	GetRealmCustomConfiguration(ctx context.Context, realmName string) (api.RealmCustomConfiguration, error)
 	UpdateRealmCustomConfiguration(ctx context.Context, realmID string, customConfig api.RealmCustomConfiguration) error
+
+	CreateShadowUser(ctx context.Context, realmName string, userID string, provider string, fedID api.FederatedIdentityRepresentation) error
 }
 
 // Component is the management component.
@@ -1223,6 +1226,21 @@ func (c *component) UpdateRealmCustomConfiguration(ctx context.Context, realmNam
 	realmID := realmConfig.Id
 	err = c.configDBModule.StoreOrUpdate(ctx, *realmID, config)
 	return err
+}
+
+func (c *component) CreateShadowUser(ctx context.Context, realmName string, userID string, provider string, fedID api.FederatedIdentityRepresentation) error {
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+
+	var fedIDKC kc.FederatedIdentityRepresentation
+	fedIDKC = api.ConvertToKCFedID(fedID)
+
+	err := c.keycloakClient.CreateShadowUser(accessToken, realmName, userID, provider, fedIDKC)
+
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return err
+	}
+	return nil
 }
 
 func stringInSlice(a string, list []string) bool {
