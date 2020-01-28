@@ -12,7 +12,8 @@ import (
 
 // Endpoints for self service
 type Endpoints struct {
-	RegisterUser endpoint.Endpoint
+	RegisterUser     endpoint.Endpoint
+	GetConfiguration endpoint.Endpoint
 }
 
 // MakeRegisterUserEndpoint endpoint creation
@@ -29,5 +30,18 @@ func MakeRegisterUserEndpoint(component Component) cs.Endpoint {
 			return nil, commonerrors.CreateBadRequestError(commonerrors.MsgErrInvalidParam + "." + msg.BodyContent)
 		}
 		return component.RegisterUser(context.WithValue(ctx, cs.CtContextRealmID, realm), realm, user)
+	}
+}
+
+// MakeGetConfigurationEndpoint endpoint creation
+func MakeGetConfigurationEndpoint(component Component) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+		var realm = m["realm"]
+		if realm == "" {
+			return nil, commonerrors.CreateBadRequestError(commonerrors.MsgErrInvalidParam + "." + msg.Realm)
+		}
+
+		return component.GetConfiguration(context.WithValue(ctx, cs.CtContextRealmID, realm), realm)
 	}
 }

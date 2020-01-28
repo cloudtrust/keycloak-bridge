@@ -117,6 +117,8 @@ type RealmCustomConfiguration struct {
 	ShowPasswordTab                     *bool   `json:"show_password_tab"`
 	ShowMailEditing                     *bool   `json:"show_mail_editing"`
 	ShowAccountDeletionButton           *bool   `json:"show_account_deletion_button"`
+	RedirectCancelledRegistrationURL    *string `json:"redirect_cancelled_registration_url"`
+	RedirectSuccessfulRegistrationURL   *string `json:"redirect_successful_registration_url"`
 }
 
 // FederatedIdentityRepresentation struct
@@ -483,6 +485,14 @@ func (config RealmCustomConfiguration) Validate() error {
 
 	if config.DefaultRedirectURI != nil && !matchesRegExp(*config.DefaultRedirectURI, RegExpRedirectURI) {
 		return errors.New(internal.MsgErrInvalidParam + "." + internal.DefaultRedirectURI)
+	}
+
+	if config.RedirectCancelledRegistrationURL != nil && !matchesRegExp(*config.RedirectCancelledRegistrationURL, RegExpRedirectURI) {
+		return errors.New(internal.MsgErrInvalidParam + "." + internal.RedirectCancelledRegistrationURL)
+	}
+
+	if config.RedirectSuccessfulRegistrationURL != nil && !matchesRegExp(*config.RedirectSuccessfulRegistrationURL, RegExpRedirectURI) {
+		return errors.New(internal.MsgErrInvalidParam + "." + internal.RedirectSuccessfulRegistrationURL)
 	}
 
 	return nil

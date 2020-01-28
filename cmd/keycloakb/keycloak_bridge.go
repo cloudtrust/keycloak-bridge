@@ -236,6 +236,13 @@ func main() {
 	// Keycloak adaptor for common-service library
 	commonKcAdaptor := keycloakb.NewKeycloakAuthClient(keycloakClient, logger)
 
+	// Public Keycloak URL
+	var keycloakPublicURL string
+	{
+		urls := strings.Split(keycloakConfig.AddrTokenProvider, " ")
+		keycloakPublicURL = urls[0]
+	}
+
 	// Authorization Manager
 	var authorizationManager security.AuthorizationManager
 	{
@@ -584,11 +591,12 @@ func main() {
 		var usersDBModule = register.NewUsersDBModule(usersRwDBConn, registerLogger)
 
 		// new module for register service
-		registerComponent := register.NewComponent(registerRealm, keycloakClient, oidcTokenProvider, usersDBModule, configDBModule, eventsDBModule, registerLogger)
+		registerComponent := register.NewComponent(keycloakPublicURL, registerRealm, keycloakClient, oidcTokenProvider, usersDBModule, configDBModule, eventsDBModule, registerLogger)
 		registerComponent = register.MakeAuthorizationRegisterComponentMW(log.With(registerLogger, "mw", "endpoint"))(registerComponent)
 
 		registerEndpoints = register.Endpoints{
-			RegisterUser: prepareEndpoint(register.MakeRegisterUserEndpoint(registerComponent), "register_user", influxMetrics, registerLogger, tracer, rateLimit["register"]),
+			RegisterUser:     prepareEndpoint(register.MakeRegisterUserEndpoint(registerComponent), "register_user", influxMetrics, registerLogger, tracer, rateLimit["register"]),
+			GetConfiguration: prepareEndpoint(register.MakeGetConfigurationEndpoint(registerComponent), "get_configuration", influxMetrics, registerLogger, tracer, rateLimit["register"]),
 		}
 	}
 
@@ -875,7 +883,11 @@ func main() {
 			// Register
 			var registerUserHandler = configureRegisterHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, recaptchaURL, recaptchaSecret, tracer, logger)(registerEndpoints.RegisterUser)
 
+			// COnfiguration
+			var getConfigurationHandler = configurePublicRegisterHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, recaptchaURL, recaptchaSecret, tracer, logger)(registerEndpoints.GetConfiguration)
+
 			route.Path("/register/user").Methods("POST").Handler(registerUserHandler)
+			route.Path("/register/config").Methods("GET").Handler(getConfigurationHandler)
 
 			var handler http.Handler = route
 
@@ -1121,6 +1133,15 @@ func configureRegisterHandler(ComponentName string, ComponentID string, idGenera
 		handler = register.MakeRegisterHandler(endpoint, logger)
 		handler = middleware.MakeHTTPCorrelationIDMW(idGenerator, tracer, logger, ComponentName, ComponentID)(handler)
 		handler = register.MakeHTTPRecaptchaValidationMW(recaptchaURL, recaptchaSecret, logger)(handler)
+		return handler
+	}
+}
+
+func configurePublicRegisterHandler(ComponentName string, ComponentID string, idGenerator idgenerator.IDGenerator, keycloakClient *keycloak.Client, recaptchaURL, recaptchaSecret string, tracer tracing.OpentracingClient, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {
+	return func(endpoint endpoint.Endpoint) http.Handler {
+		var handler http.Handler
+		handler = register.MakeRegisterHandler(endpoint, logger)
+		handler = middleware.MakeHTTPCorrelationIDMW(idGenerator, tracer, logger, ComponentName, ComponentID)(handler)
 		return handler
 	}
 }

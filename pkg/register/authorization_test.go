@@ -100,4 +100,8 @@ func TestMakeAuthorizationRegisterComponentMW(t *testing.T) {
 	mockComponent.EXPECT().RegisterUser(ctx, realm, user).Return("", expectedErr).Times(1)
 	var _, err = component.RegisterUser(ctx, realm, user)
 	assert.Equal(t, expectedErr, err)
+
+	mockComponent.EXPECT().GetConfiguration(ctx, realm).Return(apiregister.Configuration{}, expectedErr).Times(1)
+	_, err = component.GetConfiguration(ctx, realm)
+	assert.Equal(t, expectedErr, err)
 }

@@ -1139,6 +1139,9 @@ components:
           type: boolean
         show_account_deletion_button:
           type: boolean
+        redirect_cancelled_registration_url:
+          type: string
+        redirect_successful_registration_url:
     FederatedIdentity:
       type: object
       properties:

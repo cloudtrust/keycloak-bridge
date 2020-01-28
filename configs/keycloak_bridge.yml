@@ -116,7 +116,7 @@ db-users-rw-max-idle-conns: 2
 db-users-rw-conn-max-lifetime: 10
 db-users-rw-migration: false
 db-users-rw-migration-version: 0.1
-db-users-rw-connection-check: true
+db-users-rw-connection-check: false
 
 # audit events
 events-db: false
@@ -160,7 +160,7 @@ livenessprobe-http-timeout: 900
 livenessprobe-cache-duration: 500
 
 # Register API parameters
-register-enabled: false
+register-enabled: true
 register-realm: trustid
 register-techuser-username: technicaluser
 register-techuser-password: technicalsuperpasswordverylongandstrong

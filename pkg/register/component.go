@@ -3,8 +3,10 @@ package register
 import (
 	"context"
 	"crypto/rand"
+	b64 "encoding/base64"
 	"math/big"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strings"
 
@@ -34,10 +36,12 @@ type ConfigurationDBModule interface {
 // Component is the register component interface.
 type Component interface {
 	RegisterUser(ctx context.Context, realmName string, user apiregister.User) (string, error)
+	GetConfiguration(ctx context.Context, realmName string) (apiregister.Configuration, error)
 }
 
 // Component is the management component.
 type component struct {
+	keycloakURL    string
 	realm          string
 	keycloakClient KeycloakClient
 	tokenProvider  keycloak.OidcTokenProvider
@@ -48,8 +52,12 @@ type component struct {
 }
 
 // NewComponent returns the management component.
-func NewComponent(realm string, keycloakClient KeycloakClient, tokenProvider keycloak.OidcTokenProvider, usersDBModule UsersDBModule, configDBModule ConfigurationDBModule, eventsDBModule database.EventsDBModule, logger internal.Logger) Component {
+func NewComponent(keycloakURL string, realm string, keycloakClient KeycloakClient,
+	tokenProvider keycloak.OidcTokenProvider, usersDBModule UsersDBModule,
+	configDBModule ConfigurationDBModule, eventsDBModule database.EventsDBModule, logger internal.Logger) Component {
+
 	return &component{
+		keycloakURL:    keycloakURL,
 		realm:          realm,
 		keycloakClient: keycloakClient,
 		tokenProvider:  tokenProvider,
@@ -99,6 +107,11 @@ func (c *component) RegisterUser(ctx context.Context, realmName string, user api
 		return "", err
 	}
 
+	authToken, err := c.generateAuthToken()
+	if err != nil {
+		return "", err
+	}
+
 	var userID string
 	if kcUser == nil {
 		var chars = []rune("0123456789")
@@ -109,6 +122,8 @@ func (c *component) RegisterUser(ctx context.Context, realmName string, user api
 			kcUser = &kc.UserRepresentation{}
 			kcUser.Username = &username
 			user.UpdateUserRepresentation(kcUser)
+			(*kcUser.Attributes)["trustIDAuthToken"] = []string{authToken}
+
 			userID, err = c.keycloakClient.CreateUser(accessToken, c.realm, c.realm, *kcUser)
 			// Create success: just have to get the userID and exist this loop
 			if err == nil {
@@ -134,6 +149,8 @@ func (c *component) RegisterUser(ctx context.Context, realmName string, user api
 	} else {
 		userID = *kcUser.Id
 		user.UpdateUserRepresentation(kcUser)
+		(*kcUser.Attributes)["trustIDAuthToken"] = []string{authToken}
+
 		err = c.keycloakClient.UpdateUser(accessToken, c.realm, userID, *kcUser)
 		if err != nil {
 			c.logger.Warn(ctx, "msg", "Failed to update user through Keycloak API", "err", err.Error())
@@ -155,8 +172,26 @@ func (c *component) RegisterUser(ctx context.Context, realmName string, user api
 	}
 
 	// Send execute actions email
+	redirectURL, err := url.Parse(c.keycloakURL + "/auth/realms/" + c.realm + "/protocol/openid-connect/auth")
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Can't parse keycloak URL", "err", err.Error())
+		return "", err
+	}
+	var parameters = url.Values{}
+	parameters.Add("client_id", "selfserviceid")
+	parameters.Add("scope", "openid")
+	parameters.Add("response_type", "code")
+	parameters.Add("auth_token", authToken)
+
+	if realmConf.RedirectSuccessfulRegistrationURL != nil {
+		parameters.Add("redirect_uri", *realmConf.RedirectSuccessfulRegistrationURL)
+		parameters.Add("login_hint", *kcUser.Username)
+	}
+
+	redirectURL.RawQuery = parameters.Encode()
+
 	if realmConf.RegisterExecuteActions != nil && len(*realmConf.RegisterExecuteActions) > 0 {
-		err = c.keycloakClient.ExecuteActionsEmail(accessToken, c.realm, userID, *realmConf.RegisterExecuteActions)
+		err = c.keycloakClient.ExecuteActionsEmail(accessToken, c.realm, userID, *realmConf.RegisterExecuteActions, "redirect_uri", redirectURL.String())
 		if err != nil {
 			c.logger.Warn(ctx, "msg", "ExecuteActionsEmail failed", "err", err.Error())
 			return "", err
@@ -193,6 +228,20 @@ func (c *component) checkExistingUser(ctx context.Context, accessToken string, u
 	return &kcUser, nil
 }
 
+func (c *component) GetConfiguration(ctx context.Context, realmName string) (apiregister.Configuration, error) {
+	// Get Realm configuration from database
+	var realmConf dto.RealmConfiguration
+	realmConf, err := c.configDBModule.GetConfiguration(ctx, realmName)
+	if err != nil {
+		c.logger.Info(ctx, "msg", "Can't get realm configuration from database", "err", err.Error())
+		return apiregister.Configuration{}, err
+	}
+
+	return apiregister.Configuration{
+		RedirectCancelledRegistrationURL: realmConf.RedirectCancelledRegistrationURL,
+	}, nil
+}
+
 func (c *component) generateUsername(chars []rune, length int) string {
 	var b strings.Builder
 
@@ -202,4 +251,15 @@ func (c *component) generateUsername(chars []rune, length int) string {
 		b.WriteRune(chars[index])
 	}
 	return b.String()
+}
+
+func (c *component) generateAuthToken() (string, error) {
+	var bToken = make([]byte, 32)
+	_, err := rand.Read(bToken)
+	if err != nil {
+		return "", err
+	}
+
+	token := b64.StdEncoding.EncodeToString(bToken)
+	return token, nil
 }
