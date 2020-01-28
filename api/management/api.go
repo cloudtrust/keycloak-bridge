@@ -117,8 +117,8 @@ type RealmCustomConfiguration struct {
 	ShowPasswordTab                     *bool   `json:"show_password_tab"`
 	ShowMailEditing                     *bool   `json:"show_mail_editing"`
 	ShowAccountDeletionButton           *bool   `json:"show_account_deletion_button"`
-	CancelRegistrationURL               *string `json:"cancel_registration_url,omitempty"`
-	ConfirmedRegistrationURL            *string `json:"confirmed_registration_url,omitempty"`
+	CancelRegistrationURL               *string `json:"cancel_registration_url"`
+	ConfirmedRegistrationURL            *string `json:"confirmed_registration_url"`
 }
 
 // FederatedIdentityRepresentation struct
