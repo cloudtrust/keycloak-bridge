@@ -159,13 +159,15 @@ func main() {
 		accessLogsEnabled = c.GetBool("access-logs")
 
 		// Register parameters
-		registerEnabled  = c.GetBool("register-enabled")
-		registerRealm    = c.GetString("register-realm")
-		registerUsername = c.GetString("register-techuser-username")
-		registerPassword = c.GetString("register-techuser-password")
-		registerClientID = c.GetString("register-techuser-client-id")
-		recaptchaURL     = c.GetString("recaptcha-url")
-		recaptchaSecret  = c.GetString("recaptcha-secret")
+		registerEnabled         = c.GetBool("register-enabled")
+		registerRealm           = c.GetString("register-realm")
+		registerUsername        = c.GetString("register-techuser-username")
+		registerPassword        = c.GetString("register-techuser-password")
+		registerClientID        = c.GetString("register-techuser-client-id")
+		registerEnduserClientID = c.GetString("register-enduser-client-id")
+		recaptchaURL            = c.GetString("recaptcha-url")
+		recaptchaSecret         = c.GetString("recaptcha-secret")
+		ssePublicURL            = c.GetString("sse-public-url")
 	)
 
 	// Unique ID generator
@@ -595,7 +597,7 @@ func main() {
 		var usersDBModule = register.NewUsersDBModule(usersRwDBConn, registerLogger)
 
 		// new module for register service
-		registerComponent := register.NewComponent(keycloakPublicURL, registerRealm, keycloakClient, oidcTokenProvider, usersDBModule, configDBModule, eventsDBModule, registerLogger)
+		registerComponent := register.NewComponent(keycloakPublicURL, registerRealm, ssePublicURL, registerEnduserClientID, keycloakClient, oidcTokenProvider, usersDBModule, configDBModule, eventsDBModule, registerLogger)
 		registerComponent = register.MakeAuthorizationRegisterComponentMW(log.With(registerLogger, "mw", "endpoint"))(registerComponent)
 
 		registerEndpoints = register.Endpoints{
@@ -1038,8 +1040,10 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 	v.SetDefault("register-techuser-username", "")
 	v.SetDefault("register-techuser-password", "")
 	v.SetDefault("register-techuser-client-id", "")
+	v.SetDefault("register-enduser-client-id", "")
 	v.SetDefault("recaptcha-url", "https://www.google.com/recaptcha/api/siteverify")
 	v.SetDefault("recaptcha-secret", "")
+	v.SetDefault("sse-public-url", "")
 
 	// First level of override.
 	pflag.String("config-file", v.GetString("config-file"), "The configuration file path can be relative or absolute.")
