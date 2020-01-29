@@ -86,6 +86,7 @@ func (u *User) UserToJSON() string {
 // UpdateUserRepresentation converts a given User to a Keycloak UserRepresentation
 func (u *User) UpdateUserRepresentation(kcUser *kc.UserRepresentation) {
 	var (
+		bTrue      = true
 		bFalse     = false
 		attributes = make(map[string][]string)
 	)
@@ -103,7 +104,7 @@ func (u *User) UpdateUserRepresentation(kcUser *kc.UserRepresentation) {
 
 	kcUser.Email = u.EmailAddress
 	kcUser.EmailVerified = &bFalse
-	kcUser.Enabled = &bFalse
+	kcUser.Enabled = &bTrue
 	kcUser.FirstName = u.FirstName
 	kcUser.LastName = u.LastName
 	kcUser.Attributes = &attributes

@@ -59,7 +59,7 @@ func TestToKeycloakUser(t *testing.T) {
 	assert.Equal(t, user.LastName, kcUser.LastName)
 	assert.Equal(t, user.EmailAddress, kcUser.Email)
 	assert.False(t, *kcUser.EmailVerified)
-	assert.False(t, *kcUser.Enabled)
+	assert.True(t, *kcUser.Enabled)
 }
 
 func TestValidateParameterIn(t *testing.T) {
