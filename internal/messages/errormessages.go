@@ -64,4 +64,5 @@ const (
 	Max                               = "max"
 	Timeshift                         = "timeshift"
 	IdentityProvider                  = "identityProvider"
+	TrustIDGroupName                  = "trustIDGroupName"
 )

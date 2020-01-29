@@ -392,6 +392,47 @@ func TestGetGroupsOfUserEndpoint(t *testing.T) {
 	}
 }
 
+func TestSetTrustIDGroupsEndpoint(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
+
+	var e = MakeSetTrustIDGroupsEndpoint(mockManagementComponent)
+
+	// No error
+	{
+		var realm = "master"
+		var userID = "123-123-456"
+		var ctx = context.Background()
+		var req = make(map[string]string)
+		req["realm"] = realm
+		req["userID"] = userID
+		body := []string{"grp1", "grp2"}
+		req["body"] = string("[\"grp1\", \"grp2\"]")
+
+		mockManagementComponent.EXPECT().SetTrustIDGroups(ctx, realm, userID, body).Return(nil).Times(1)
+		var res, err = e(ctx, req)
+		assert.Nil(t, err)
+		assert.Nil(t, res)
+	}
+
+	// Bad input
+	{
+		var realm = "master"
+		var userID = "123-123-456"
+		var ctx = context.Background()
+		var req = make(map[string]string)
+		req["realm"] = realm
+		req["userID"] = userID
+		req["body"] = ""
+
+		var res, err = e(ctx, req)
+		assert.NotNil(t, err)
+		assert.Nil(t, res)
+	}
+}
+
 func TestGetClientRolesForUserEndpoint(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()

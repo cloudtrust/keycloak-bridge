@@ -42,6 +42,17 @@ audience-required: "account"
 ## Password used to protect /internal/event endpoint
 event-basic-auth-token: "superpasswordverylongandstrong"
 
+
+## trustID groups allowed to be set
+trustid-groups: 
+  - "l1_support_manager"
+  - "l1_support_agent"
+  - "product_administrator"
+  - "registration_officer"
+  - "papercard_administrator"
+  - "technical"
+  - "end_user"
+
 # Keycloak configs
 keycloak-api-uri: http://localhost:8080
 keycloak-oidc-uri: http://localhost:8080 http://127.0.0.1:8080

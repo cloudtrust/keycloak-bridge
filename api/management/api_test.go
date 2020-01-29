@@ -74,6 +74,12 @@ func TestConvertToAPIUser(t *testing.T) {
 	kcUser.Attributes = &m
 	m["smsSent"] = []string{"0"}
 	assert.NotNil(t, *ConvertToAPIUser(kcUser).SmsSent)
+	
+	// trustID groups
+	assert.Nil(t, ConvertToAPIUser(kcUser).TrustIDGroups)
+	kcUser.Attributes = &m
+	m["trustIDGroups"] = []string{"en"}
+	assert.NotNil(t, *ConvertToAPIUser(kcUser).TrustIDGroups)
 }
 
 func TestConvertToAPIUsersPage(t *testing.T) {
@@ -131,6 +137,7 @@ func TestConvertToKCUser(t *testing.T) {
 	var locale = "it"
 	user.Locale = &locale
 	assert.Equal(t, locale, (*ConvertToKCUser(user).Attributes)["locale"][0])
+
 }
 
 func TestConvertToKCGroup(t *testing.T) {

@@ -36,6 +36,7 @@ func TestDeny(t *testing.T) {
 	var groupID = "123-789-454"
 	var groupIDs = []string{groupID}
 	var groupName = "titi"
+	var grpNames = []string{"grp1", "grp2"}
 
 	var authzMatrix = map[string]map[string]map[string]struct{}{}
 
@@ -138,6 +139,9 @@ func TestDeny(t *testing.T) {
 		_, err = authorizationMW.GetGroupsOfUser(ctx, realmName, userID)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
+		err = authorizationMW.SetTrustIDGroups(ctx, realmName, userID, grpNames)
+		assert.Equal(t, security.ForbiddenError{}, err)
+
 		_, err = authorizationMW.GetClientRolesForUser(ctx, realmName, userID, clientID)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
@@ -231,6 +235,7 @@ func TestAllowed(t *testing.T) {
 	var groupID = "123-789-454"
 	var groupIDs = []string{groupID}
 	var groupName = "titi"
+	var grpNames = []string{"grp1", "grp2"}
 
 	var authzMatrix = map[string]map[string]map[string]struct{}{}
 
@@ -295,6 +300,7 @@ func TestAllowed(t *testing.T) {
 					"MGMT_GetUserAccountStatus": {"*": {"*": {} }},
 					"MGMT_GetRolesOfUser": {"*": {"*": {} }},
 					"MGMT_GetGroupsOfUser": {"*": {"*": {} }},
+					"MGMT_SetTrustIDGroups": {"*": {"*": {} }},
 					"MGMT_GetClientRolesForUser": {"*": {"*": {} }},
 					"MGMT_AddClientRolesToUser": {"*": {"*": {} }},
 					"MGMT_ResetPassword": {"*": {"*": {} }},
@@ -437,6 +443,10 @@ func TestAllowed(t *testing.T) {
 
 		mockManagementComponent.EXPECT().GetGroups(ctx, realmName).Return([]api.GroupRepresentation{}, nil).Times(1)
 		_, err = authorizationMW.GetGroups(ctx, realmName)
+		assert.Nil(t, err)
+
+		mockManagementComponent.EXPECT().SetTrustIDGroups(ctx, realmName, userID, grpNames).Return(nil).Times(1)
+		err = authorizationMW.SetTrustIDGroups(ctx, realmName, userID, grpNames)
 		assert.Nil(t, err)
 
 		mockManagementComponent.EXPECT().CreateGroup(ctx, realmName, group).Return("", nil).Times(1)

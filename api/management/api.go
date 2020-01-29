@@ -26,6 +26,7 @@ type UserRepresentation struct {
 	BirthDate           *string   `json:"birthDate,omitempty"`
 	CreatedTimestamp    *int64    `json:"createdTimestamp,omitempty"`
 	Groups              *[]string `json:"groups,omitempty"`
+	TrustIDGroups       *[]string `json:"trustIdGroups,omitempty"`
 	Roles               *[]string `json:"roles,omitempty"`
 	Locale              *string   `json:"locale,omitempty"`
 	SmsSent             *int      `json:"smsSent,omitempty"`
@@ -193,6 +194,11 @@ func ConvertToAPIUser(userKc kc.UserRepresentation) UserRepresentation {
 			var smsSent = m["smsSent"][0]
 			counter, _ := strconv.Atoi(smsSent)
 			userRep.SmsSent = &counter
+		}
+
+		if m["trustIDGroups"] != nil {
+			var trustIDGroups = m["trustIDGroups"]
+			userRep.TrustIDGroups = &trustIDGroups
 		}
 	}
 	return userRep

@@ -89,6 +89,7 @@ type Component interface {
 	GetUserAccountStatus(ctx context.Context, realmName, userID string) (map[string]bool, error)
 	GetRolesOfUser(ctx context.Context, realmName, userID string) ([]api.RoleRepresentation, error)
 	GetGroupsOfUser(ctx context.Context, realmName, userID string) ([]api.GroupRepresentation, error)
+	SetTrustIDGroups(ctx context.Context, realmName, userID string, groupNames []string) error
 	GetClientRolesForUser(ctx context.Context, realmName, userID, clientID string) ([]api.RoleRepresentation, error)
 	AddClientRolesToUser(ctx context.Context, realmName, userID, clientID string, roles []api.RoleRepresentation) error
 
@@ -119,20 +120,28 @@ type Component interface {
 
 // Component is the management component.
 type component struct {
-	keycloakClient KeycloakClient
-	eventDBModule  database.EventsDBModule
-	configDBModule ConfigurationDBModule
-	logger         keycloakb.Logger
+	keycloakClient          KeycloakClient
+	eventDBModule           database.EventsDBModule
+	configDBModule          ConfigurationDBModule
+	authorizedTrustIDGroups map[string]bool
+	logger                  keycloakb.Logger
 }
 
 // NewComponent returns the management component.
 func NewComponent(keycloakClient KeycloakClient, eventDBModule database.EventsDBModule,
-	configDBModule ConfigurationDBModule, logger keycloakb.Logger) Component {
+	configDBModule ConfigurationDBModule, authorizedTrustIDGroups []string, logger keycloakb.Logger) Component {
+
+	var authzedTrustIDGroups = make(map[string]bool)
+	for _, grp := range authorizedTrustIDGroups {
+		authzedTrustIDGroups[grp] = true
+	}
+
 	return &component{
-		keycloakClient: keycloakClient,
-		eventDBModule:  eventDBModule,
-		configDBModule: configDBModule,
-		logger:         logger,
+		keycloakClient:          keycloakClient,
+		eventDBModule:           eventDBModule,
+		configDBModule:          configDBModule,
+		authorizedTrustIDGroups: authzedTrustIDGroups,
+		logger:                  logger,
 	}
 }
 
@@ -496,6 +505,43 @@ func (c *component) GetGroupsOfUser(ctx context.Context, realmName, userID strin
 	}
 
 	return groupsRep, nil
+}
+
+func (c *component) SetTrustIDGroups(ctx context.Context, realmName, userID string, groupNames []string) error {
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+
+	// validate the input - trustID groups must be valid
+	var extGroupNames []string
+	for _, groupName := range groupNames {
+		if _, ok := c.authorizedTrustIDGroups[groupName]; ok {
+			extGroupNames = append(extGroupNames, "/"+groupName)
+		} else {
+			// unauthorized call (unknown trustID group) --> error
+			c.logger.Warn(ctx, "msg", groupName+" group is not allowed to be set as a trustID group")
+			return errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.TrustIDGroupName)
+		}
+	}
+
+	// get the "old" user representation
+	currentUser, err := c.keycloakClient.GetUser(accessToken, realmName, userID)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return err
+	}
+
+	// set the trustID groups attributes
+	if currentUser.Attributes == nil {
+		var emtpyMap = make(map[string][]string)
+		currentUser.Attributes = &emtpyMap
+	}
+	(*currentUser.Attributes)["trustIDGroups"] = extGroupNames
+
+	err = c.keycloakClient.UpdateUser(accessToken, realmName, userID, currentUser)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return err
+	}
+	return nil
 }
 
 func (c *component) GetClientRolesForUser(ctx context.Context, realmName, userID, clientID string) ([]api.RoleRepresentation, error) {
