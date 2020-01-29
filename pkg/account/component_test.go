@@ -685,13 +685,51 @@ func TestGetConfiguration(t *testing.T) {
 
 		mockConfigurationDBModule.EXPECT().GetConfiguration(ctx, currentRealm).Return(config, nil).Times(1)
 
-		resConfig, err := component.GetConfiguration(ctx)
+		resConfig, err := component.GetConfiguration(ctx, "")
 
 		assert.Nil(t, err)
 		assert.Equal(t, *config.ShowAuthenticatorsTab, *resConfig.ShowAuthenticatorsTab)
 		assert.Equal(t, *config.ShowAccountDeletionButton, *resConfig.ShowAccountDeletionButton)
 		assert.Equal(t, *config.ShowMailEditing, *resConfig.ShowMailEditing)
 		assert.Equal(t, *config.ShowPasswordTab, *resConfig.ShowPasswordTab)
+	}
+
+	// Get configuration with override realm with succces
+	{
+		var overrideRealm = "customerRealm"
+		var successURL = "https://success.io"
+		var falseBool = false
+		var trueBool = true
+		var config = dto.RealmConfiguration{
+			APISelfAuthenticatorDeletionEnabled: &falseBool,
+			APISelfAccountDeletionEnabled:       &falseBool,
+			APISelfMailEditingEnabled:           &falseBool,
+			APISelfPasswordChangeEnabled:        &falseBool,
+			DefaultClientID:                     new(string),
+			DefaultRedirectURI:                  new(string),
+			ShowAuthenticatorsTab:               &trueBool,
+			ShowAccountDeletionButton:           &trueBool,
+			ShowMailEditing:                     &trueBool,
+			ShowPasswordTab:                     &trueBool,
+		}
+
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx = context.WithValue(ctx, cs.CtContextRealm, currentRealm)
+		ctx = context.WithValue(ctx, cs.CtContextUserID, currentUserID)
+
+		mockConfigurationDBModule.EXPECT().GetConfiguration(ctx, currentRealm).Return(config, nil).Times(1)
+		mockConfigurationDBModule.EXPECT().GetConfiguration(ctx, overrideRealm).Return(dto.RealmConfiguration{
+			RedirectSuccessfulRegistrationURL: &successURL,
+		}, nil).Times(1)
+
+		resConfig, err := component.GetConfiguration(ctx, overrideRealm)
+
+		assert.Nil(t, err)
+		assert.Equal(t, *config.ShowAuthenticatorsTab, *resConfig.ShowAuthenticatorsTab)
+		assert.Equal(t, *config.ShowAccountDeletionButton, *resConfig.ShowAccountDeletionButton)
+		assert.Equal(t, *config.ShowMailEditing, *resConfig.ShowMailEditing)
+		assert.Equal(t, *config.ShowPasswordTab, *resConfig.ShowPasswordTab)
+		assert.Equal(t, successURL, *resConfig.RedirectSuccessfulRegistrationURL)
 	}
 
 	//Error
@@ -702,7 +740,7 @@ func TestGetConfiguration(t *testing.T) {
 
 		mockConfigurationDBModule.EXPECT().GetConfiguration(ctx, currentRealm).Return(dto.RealmConfiguration{}, fmt.Errorf("Unexpected error")).Times(1)
 
-		_, err := component.GetConfiguration(ctx)
+		_, err := component.GetConfiguration(ctx, "")
 
 		assert.NotNil(t, err)
 	}

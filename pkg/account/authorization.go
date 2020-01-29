@@ -179,9 +179,9 @@ func (c *authorizationComponentMW) DeleteAccount(ctx context.Context) error {
 	return c.next.DeleteAccount(ctx)
 }
 
-func (c *authorizationComponentMW) GetConfiguration(ctx context.Context) (api.Configuration, error) {
+func (c *authorizationComponentMW) GetConfiguration(ctx context.Context, realmIDOverride string) (api.Configuration, error) {
 	//No restriction for this call
-	return c.next.GetConfiguration(ctx)
+	return c.next.GetConfiguration(ctx, realmIDOverride)
 }
 
 func isEnabled(booleanPtr *bool) bool {

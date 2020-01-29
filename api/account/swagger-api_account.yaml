@@ -77,7 +77,13 @@ paths:
     get:
       tags:
       - Credentials
-      summary: Get self-service configuration
+      summary: Get self-service configuration. Realm query parameter is used to override some configuration parameters with the value specified for the realm
+      parameters:
+      - name: realm
+        in: query
+        schema:
+          type: string
+        allowEmptyValue: true
       responses:
         200:
           description: successful operation

@@ -43,7 +43,7 @@ type AccountComponent interface {
 	GetAccount(ctx context.Context) (api.AccountRepresentation, error)
 	UpdateAccount(ctx context.Context, account api.AccountRepresentation) error
 	DeleteAccount(ctx context.Context) error
-	GetConfiguration(ctx context.Context) (api.Configuration, error)
+	GetConfiguration(ctx context.Context, realmIDOverride string) (api.Configuration, error)
 }
 
 // MakeUpdatePasswordEndpoint makes the UpdatePassword endpoint to update connected user's own password.
@@ -157,6 +157,8 @@ func MakeDeleteAccountEndpoint(component AccountComponent) cs.Endpoint {
 // MakeGetConfigurationEndpoint makes the GetConfiguration endpoint to get the config for selfservice application.
 func MakeGetConfigurationEndpoint(component AccountComponent) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
-		return component.GetConfiguration(ctx)
+		var m = req.(map[string]string)
+
+		return component.GetConfiguration(ctx, m["realm_id"])
 	}
 }

@@ -56,8 +56,8 @@ func TestNoRestrictions(t *testing.T) {
 		_, err = authorizationMW.GetAccount(ctx)
 		assert.Nil(t, err)
 
-		mockAccountComponent.EXPECT().GetConfiguration(ctx).Return(api.Configuration{}, nil).Times(1)
-		_, err = authorizationMW.GetConfiguration(ctx)
+		mockAccountComponent.EXPECT().GetConfiguration(ctx, "").Return(api.Configuration{}, nil).Times(1)
+		_, err = authorizationMW.GetConfiguration(ctx, "")
 		assert.Nil(t, err)
 	}
 }
