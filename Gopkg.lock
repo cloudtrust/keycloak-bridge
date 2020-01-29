@@ -40,12 +40,12 @@
   version = "v1.2.4"
 
 [[projects]]
-  digest = "1:830ee7d78db489187b71c33e88767b6ca076d1347c6f9f25bb9962a77eaa4b9d"
+  digest = "1:d5e16a9936cbe85b7da69f39b28f3bce4a9cbc76c54b0cbd81bff38e0512b4c7"
   name = "github.com/cloudtrust/keycloak-client"
   packages = ["."]
   pruneopts = "UT"
-  revision = "40716bd43cd160d269efeb8c01ead9c1702c03f5"
-  version = "v1.2.6"
+  revision = "ca765a03b1663c649927cdf982fdb4b4dac3be5a"
+  version = "v1.2.7"
 
 [[projects]]
   digest = "1:910c5b111ca13127693df80a59be2c952ad97313626116c0c9895e7b588f2a29"
@@ -138,7 +138,7 @@
   version = "v1.3.2"
 
 [[projects]]
-  digest = "1:debcbc62c53851dab1fc881438a65449dd5ffa12f64f059fd6e32b938799513d"
+  digest = "1:e02b687ade0c19c038ecce3ea326d756519adc4bba1203a9e76d620b12354892"
   name = "github.com/google/flatbuffers"
   packages = ["go"]
   pruneopts = "UT"
@@ -173,7 +173,7 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:c266355b17e65dc0128f4a9df906567b28e135b774e0b395aab3d748af0871e2"
+  digest = "1:9b73396bc7a21f88702fe3d314ca7860843c08f9c787bb47f008075f840df23d"
   name = "github.com/influxdata/influxdb"
   packages = [
     "client/v2",
