@@ -360,6 +360,37 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Group'
+  /realms/{realm}/users/{userID}/trustIdGroups:
+    put:
+      tags:
+      - Users
+      summary: Set the trustID groups for the user
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        description: trustID groups
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: string
+              example:
+                ["product_administrator","registration_officer"]
+      responses:
+        200:
+          description: successful operation
   /realms/{realm}/users/{userID}/role-mappings/clients/{clientID}:
     get:
       tags:
@@ -1142,6 +1173,7 @@ components:
         redirect_cancelled_registration_url:
           type: string
         redirect_successful_registration_url:
+          type: string
     FederatedIdentity:
       type: object
       properties:
