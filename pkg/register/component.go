@@ -41,30 +41,34 @@ type Component interface {
 
 // Component is the management component.
 type component struct {
-	keycloakURL    string
-	realm          string
-	keycloakClient KeycloakClient
-	tokenProvider  keycloak.OidcTokenProvider
-	usersDBModule  UsersDBModule
-	configDBModule ConfigurationDBModule
-	eventsDBModule database.EventsDBModule
-	logger         internal.Logger
+	keycloakURL             string
+	realm                   string
+	ssePublicURL            string
+	registerEnduserClientID string
+	keycloakClient          KeycloakClient
+	tokenProvider           keycloak.OidcTokenProvider
+	usersDBModule           UsersDBModule
+	configDBModule          ConfigurationDBModule
+	eventsDBModule          database.EventsDBModule
+	logger                  internal.Logger
 }
 
 // NewComponent returns the management component.
-func NewComponent(keycloakURL string, realm string, keycloakClient KeycloakClient,
+func NewComponent(keycloakURL string, realm string, ssePublicURL string, registerEnduserClientID string, keycloakClient KeycloakClient,
 	tokenProvider keycloak.OidcTokenProvider, usersDBModule UsersDBModule,
 	configDBModule ConfigurationDBModule, eventsDBModule database.EventsDBModule, logger internal.Logger) Component {
 
 	return &component{
-		keycloakURL:    keycloakURL,
-		realm:          realm,
-		keycloakClient: keycloakClient,
-		tokenProvider:  tokenProvider,
-		usersDBModule:  usersDBModule,
-		configDBModule: configDBModule,
-		eventsDBModule: eventsDBModule,
-		logger:         logger,
+		keycloakURL:             keycloakURL,
+		realm:                   realm,
+		ssePublicURL:            ssePublicURL,
+		registerEnduserClientID: registerEnduserClientID,
+		keycloakClient:          keycloakClient,
+		tokenProvider:           tokenProvider,
+		usersDBModule:           usersDBModule,
+		configDBModule:          configDBModule,
+		eventsDBModule:          eventsDBModule,
+		logger:                  logger,
 	}
 }
 
@@ -178,13 +182,13 @@ func (c *component) RegisterUser(ctx context.Context, realmName string, user api
 		return "", err
 	}
 	var parameters = url.Values{}
-	parameters.Add("client_id", "selfserviceid")
+	parameters.Add("client_id", c.registerEnduserClientID)
 	parameters.Add("scope", "openid")
 	parameters.Add("response_type", "code")
 	parameters.Add("auth_token", authToken)
 
-	if realmConf.RedirectSuccessfulRegistrationURL != nil {
-		parameters.Add("redirect_uri", *realmConf.RedirectSuccessfulRegistrationURL)
+	if c.ssePublicURL != "" {
+		parameters.Add("redirect_uri", c.ssePublicURL+"/"+c.realm+"/confirmation/"+realmName)
 		parameters.Add("login_hint", *kcUser.Username)
 	}
 
@@ -192,7 +196,7 @@ func (c *component) RegisterUser(ctx context.Context, realmName string, user api
 
 	if realmConf.RegisterExecuteActions != nil && len(*realmConf.RegisterExecuteActions) > 0 {
 		err = c.keycloakClient.ExecuteActionsEmail(accessToken, c.realm, userID,
-			*realmConf.RegisterExecuteActions, "client_id", "selfserviceid", "redirect_uri", redirectURL.String())
+			*realmConf.RegisterExecuteActions, "client_id", c.registerEnduserClientID, "redirect_uri", redirectURL.String())
 		if err != nil {
 			c.logger.Warn(ctx, "msg", "ExecuteActionsEmail failed", "err", err.Error())
 			return "", err

@@ -1180,6 +1180,7 @@ func (c *component) GetRealmCustomConfiguration(ctx context.Context, realmName s
 				ShowPasswordTab:                     &falseBool,
 				ShowMailEditing:                     &falseBool,
 				ShowAccountDeletionButton:           &falseBool,
+				RegisterExecuteActions:              nil,
 				RedirectCancelledRegistrationURL:    nil,
 				RedirectSuccessfulRegistrationURL:   nil,
 			}, nil
@@ -1200,6 +1201,7 @@ func (c *component) GetRealmCustomConfiguration(ctx context.Context, realmName s
 		ShowPasswordTab:                     config.ShowPasswordTab,
 		ShowMailEditing:                     config.ShowMailEditing,
 		ShowAccountDeletionButton:           config.ShowAccountDeletionButton,
+		RegisterExecuteActions:              config.RegisterExecuteActions,
 		RedirectCancelledRegistrationURL:    config.RedirectCancelledRegistrationURL,
 		RedirectSuccessfulRegistrationURL:   config.RedirectSuccessfulRegistrationURL,
 	}, nil
@@ -1270,6 +1272,7 @@ func (c *component) UpdateRealmCustomConfiguration(ctx context.Context, realmNam
 		ShowPasswordTab:                     customConfig.ShowPasswordTab,
 		ShowMailEditing:                     customConfig.ShowMailEditing,
 		ShowAccountDeletionButton:           customConfig.ShowAccountDeletionButton,
+		RegisterExecuteActions:              customConfig.RegisterExecuteActions,
 		RedirectCancelledRegistrationURL:    customConfig.RedirectCancelledRegistrationURL,
 		RedirectSuccessfulRegistrationURL:   customConfig.RedirectSuccessfulRegistrationURL,
 	}

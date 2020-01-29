@@ -108,18 +108,19 @@ type PasswordRepresentation struct {
 
 // RealmCustomConfiguration struct
 type RealmCustomConfiguration struct {
-	DefaultClientID                     *string `json:"default_client_id"`
-	DefaultRedirectURI                  *string `json:"default_redirect_uri"`
-	APISelfAuthenticatorDeletionEnabled *bool   `json:"api_self_authenticator_deletion_enabled"`
-	APISelfPasswordChangeEnabled        *bool   `json:"api_self_password_change_enabled"`
-	APISelfMailEditingEnabled           *bool   `json:"api_self_mail_editing_enabled"`
-	APISelfAccountDeletionEnabled       *bool   `json:"api_self_account_deletion_enabled"`
-	ShowAuthenticatorsTab               *bool   `json:"show_authenticators_tab"`
-	ShowPasswordTab                     *bool   `json:"show_password_tab"`
-	ShowMailEditing                     *bool   `json:"show_mail_editing"`
-	ShowAccountDeletionButton           *bool   `json:"show_account_deletion_button"`
-	RedirectCancelledRegistrationURL    *string `json:"redirect_cancelled_registration_url"`
-	RedirectSuccessfulRegistrationURL   *string `json:"redirect_successful_registration_url"`
+	DefaultClientID                     *string   `json:"default_client_id"`
+	DefaultRedirectURI                  *string   `json:"default_redirect_uri"`
+	APISelfAuthenticatorDeletionEnabled *bool     `json:"api_self_authenticator_deletion_enabled"`
+	APISelfPasswordChangeEnabled        *bool     `json:"api_self_password_change_enabled"`
+	APISelfMailEditingEnabled           *bool     `json:"api_self_mail_editing_enabled"`
+	APISelfAccountDeletionEnabled       *bool     `json:"api_self_account_deletion_enabled"`
+	ShowAuthenticatorsTab               *bool     `json:"show_authenticators_tab"`
+	ShowPasswordTab                     *bool     `json:"show_password_tab"`
+	ShowMailEditing                     *bool     `json:"show_mail_editing"`
+	ShowAccountDeletionButton           *bool     `json:"show_account_deletion_button"`
+	RegisterExecuteActions              *[]string `json:"register_execute_actions"`
+	RedirectCancelledRegistrationURL    *string   `json:"redirect_cancelled_registration_url"`
+	RedirectSuccessfulRegistrationURL   *string   `json:"redirect_successful_registration_url"`
 }
 
 // FederatedIdentityRepresentation struct
