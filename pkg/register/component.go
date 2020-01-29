@@ -191,7 +191,8 @@ func (c *component) RegisterUser(ctx context.Context, realmName string, user api
 	redirectURL.RawQuery = parameters.Encode()
 
 	if realmConf.RegisterExecuteActions != nil && len(*realmConf.RegisterExecuteActions) > 0 {
-		err = c.keycloakClient.ExecuteActionsEmail(accessToken, c.realm, userID, *realmConf.RegisterExecuteActions, "redirect_uri", redirectURL.String())
+		err = c.keycloakClient.ExecuteActionsEmail(accessToken, c.realm, userID,
+			*realmConf.RegisterExecuteActions, "client_id", "selfserviceid", "redirect_uri", redirectURL.String())
 		if err != nil {
 			c.logger.Warn(ctx, "msg", "ExecuteActionsEmail failed", "err", err.Error())
 			return "", err
