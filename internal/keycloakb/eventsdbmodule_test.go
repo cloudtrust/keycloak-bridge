@@ -33,11 +33,30 @@ func TestModuleGetEvents(t *testing.T) {
 		var expectedResult = empty[:]
 		var expectedError error = errorhandler.CreateMissingParameterError("")
 		var rows sql.Rows
-		dbEvents.EXPECT().Query(gomock.Any(), params["origin"], nil, nil, nil, nil, nil, nil, 0, params["max"]).Return(&rows, expectedError).Times(1)
+		dbEvents.EXPECT().Query(gomock.Any(), params["origin"], params["origin"], nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, 0, params["max"]).Return(&rows, expectedError).Times(1)
 		res, err := module.GetEvents(context.Background(), params)
 
 		assert.Equal(t, expectedResult, res)
 		assert.Equal(t, expectedError, err)
+	}
+}
+
+func TestModuleGetEventsCount(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	dbEvents := mock.NewDBEvents(mockCtrl)
+	module := NewEventsDBModule(dbEvents)
+
+	{
+		params := map[string]string{"origin": "origin-1", "max": "5"}
+		var expectedResult = 0
+		var row sql.Rows
+		dbEvents.EXPECT().QueryRow(gomock.Any(), params["origin"], params["origin"], nil, nil, nil, nil, nil, nil, nil, nil, nil, nil).Return(&row).Times(1)
+		res, _ := module.GetEventsCount(context.Background(), params)
+
+		assert.Equal(t, expectedResult, res)
+		assert.NotNil(t, res)
 	}
 }
 
