@@ -28,7 +28,7 @@ func decodeAccountRequest(ctx context.Context, req *http.Request) (interface{}, 
 	}
 
 	var queryParams = map[string]string{
-		"realm_id": account_api.RegExpID,
+		"realm_id": account_api.RegExpRealmName,
 	}
 
 	return commonhttp.DecodeRequest(ctx, req, pathParams, queryParams)
