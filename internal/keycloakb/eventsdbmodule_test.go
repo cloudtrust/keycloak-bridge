@@ -33,7 +33,7 @@ func TestModuleGetEvents(t *testing.T) {
 		var expectedResult = empty[:]
 		var expectedError error = errorhandler.CreateMissingParameterError("")
 		var rows sql.Rows
-		dbEvents.EXPECT().Query(gomock.Any(), params["origin"], nil, nil, nil, nil, nil, nil, 0, params["max"]).Return(&rows, expectedError).Times(1)
+		dbEvents.EXPECT().Query(gomock.Any(), params["origin"], params["origin"], nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, 0, params["max"]).Return(&rows, expectedError).Times(1)
 		res, err := module.GetEvents(context.Background(), params)
 
 		assert.Equal(t, expectedResult, res)

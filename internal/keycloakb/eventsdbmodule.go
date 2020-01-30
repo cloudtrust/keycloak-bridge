@@ -54,12 +54,12 @@ type selectAuditEventsParameters struct {
 
 const (
 	whereAuditEvents = `
-	WHERE origin = IFNULL(?, origin)
-	AND realm_name = IFNULL(?, realm_name)
-	AND user_id = IFNULL(?, user_id)
-	AND ct_event_type = IFNULL(?, ct_event_type)
+	WHERE (IFNULL(?, TRUE) OR origin = ?)
+	AND (IFNULL(?, TRUE) OR realm_name = ?)
+	AND (IFNULL(?, TRUE) OR user_id = ?)
+	AND (IFNULL(?, TRUE) OR ct_event_type = ?)
 	AND unix_timestamp(audit_time) between IFNULL(?, unix_timestamp(audit_time)) and IFNULL(?, unix_timestamp(audit_time))
-	AND ct_event_type <> IFNULL(?, 'not-a-ct-event-type')
+	AND (IFNULL(?, TRUE) OR ct_event_type <> ?)
 	`
 
 	selectAuditEventsStmt = `SELECT audit_id, unix_timestamp(audit_time), origin, realm_name, agent_user_id, agent_username, agent_realm_name,
@@ -186,7 +186,14 @@ func (cm *eventsDBModule) GetEventsCount(_ context.Context, m map[string]string)
 	}
 
 	var count int
-	row := cm.db.QueryRow(selectCountAuditEventsStmt, params.origin, params.realm, params.userID, params.ctEventType, params.dateFrom, params.dateTo, params.exclude)
+	row := cm.db.QueryRow(selectCountAuditEventsStmt,
+		params.origin, params.origin,
+		params.realm, params.realm,
+		params.userID, params.userID,
+		params.ctEventType, params.ctEventType,
+		params.dateFrom,
+		params.dateTo,
+		params.exclude, params.exclude)
 	err = row.Scan(&count)
 	if err != nil {
 		return 0, err
@@ -202,7 +209,16 @@ func (cm *eventsDBModule) GetEvents(_ context.Context, m map[string]string) ([]a
 		return nil, errParams
 	}
 
-	rows, err := cm.db.Query(selectAuditEventsStmt, params.origin, params.realm, params.userID, params.ctEventType, params.dateFrom, params.dateTo, params.exclude, params.first, params.max)
+	rows, err := cm.db.Query(selectAuditEventsStmt,
+		params.origin, params.origin,
+		params.realm, params.realm,
+		params.userID, params.userID,
+		params.ctEventType, params.ctEventType,
+		params.dateFrom,
+		params.dateTo,
+		params.exclude, params.exclude,
+		params.first,
+		params.max)
 	if err != nil {
 		return res, err
 	}
