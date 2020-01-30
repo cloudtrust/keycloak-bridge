@@ -176,6 +176,7 @@ const (
 	RegExpIDNullable = `^([a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12})|(null)$`
 	RegExpLabel      = `^.{0,255}$`
 	RegExpType       = `^[a-zA-Z0-9-_]{1,128}$`
+	RegExpRealmName  = `^[a-zA-Z0-9_-]{1,36}$`
 
 	// Password
 	RegExpPassword = `^.{1,255}$`
