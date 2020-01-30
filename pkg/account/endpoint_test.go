@@ -172,7 +172,7 @@ func TestMakeGetConfigurationEndpoint(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	mockAccountComponent := mock.NewAccountComponent(mockCtrl)
-	mockAccountComponent.EXPECT().GetConfiguration(gomock.Any()).Return(account_api.Configuration{}, nil).Times(1)
+	mockAccountComponent.EXPECT().GetConfiguration(gomock.Any(), gomock.Any()).Return(account_api.Configuration{}, nil).Times(1)
 
 	m := map[string]string{}
 	_, err := MakeGetConfigurationEndpoint(mockAccountComponent)(context.Background(), m)

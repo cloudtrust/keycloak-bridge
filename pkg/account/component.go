@@ -40,7 +40,7 @@ type Component interface {
 	GetAccount(ctx context.Context) (api.AccountRepresentation, error)
 	UpdateAccount(context.Context, api.AccountRepresentation) error
 	DeleteAccount(context.Context) error
-	GetConfiguration(context.Context) (api.Configuration, error)
+	GetConfiguration(context.Context, string) (api.Configuration, error)
 }
 
 // ConfigurationDBModule is the interface of the configuration module.
@@ -317,7 +317,7 @@ func (c *component) MoveCredential(ctx context.Context, credentialID string, pre
 	return nil
 }
 
-func (c *component) GetConfiguration(ctx context.Context) (api.Configuration, error) {
+func (c *component) GetConfiguration(ctx context.Context, realmIdOverride string) (api.Configuration, error) {
 	var currentRealm = ctx.Value(cs.CtContextRealm).(string)
 
 	config, err := c.configDBModule.GetConfiguration(ctx, currentRealm)
@@ -325,11 +325,22 @@ func (c *component) GetConfiguration(ctx context.Context) (api.Configuration, er
 		return api.Configuration{}, err
 	}
 
-	return api.Configuration{
+	var apiConfig = api.Configuration{
 		ShowAuthenticatorsTab:             config.ShowAuthenticatorsTab,
 		ShowAccountDeletionButton:         config.ShowAccountDeletionButton,
 		ShowMailEditing:                   config.ShowMailEditing,
 		ShowPasswordTab:                   config.ShowPasswordTab,
 		RedirectSuccessfulRegistrationURL: config.RedirectSuccessfulRegistrationURL,
-	}, nil
+	}
+
+	if realmIdOverride != "" {
+		overrideConfig, err := c.configDBModule.GetConfiguration(ctx, realmIdOverride)
+		if err != nil {
+			return api.Configuration{}, err
+		}
+
+		apiConfig.RedirectSuccessfulRegistrationURL = overrideConfig.RedirectSuccessfulRegistrationURL
+	}
+
+	return apiConfig, nil
 }

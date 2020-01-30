@@ -185,7 +185,7 @@ func (c *component) RegisterUser(ctx context.Context, realmName string, user api
 	parameters.Add("client_id", c.registerEnduserClientID)
 	parameters.Add("scope", "openid")
 	parameters.Add("response_type", "code")
-	parameters.Add("auth_token", authToken)
+	parameters.Add("trustid_auth_token", authToken)
 
 	if c.ssePublicURL != "" {
 		parameters.Add("redirect_uri", c.ssePublicURL+"/"+c.realm+"/confirmation/"+realmName)

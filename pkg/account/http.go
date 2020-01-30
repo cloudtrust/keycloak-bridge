@@ -27,7 +27,9 @@ func decodeAccountRequest(ctx context.Context, req *http.Request) (interface{}, 
 		"previousCredentialID": account_api.RegExpIDNullable,
 	}
 
-	var queryParams = map[string]string{}
+	var queryParams = map[string]string{
+		"realm_id": account_api.RegExpID,
+	}
 
 	return commonhttp.DecodeRequest(ctx, req, pathParams, queryParams)
 }
