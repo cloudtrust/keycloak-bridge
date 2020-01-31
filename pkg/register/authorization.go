@@ -108,11 +108,11 @@ func MakeAuthorizationRegisterComponentMW(logger log.Logger) func(Component) Com
 }
 
 // authorizationComponentMW implements Component.
-func (c *authorizationComponentMW) RegisterUser(ctx context.Context, realmName string, user apiregister.User) (string, error) {
+func (c *authorizationComponentMW) RegisterUser(ctx context.Context, realmName string, user apiregister.UserRepresentation) (string, error) {
 	return c.next.RegisterUser(ctx, realmName, user)
 }
 
 // authorizationComponentMW implements Component.
-func (c *authorizationComponentMW) GetConfiguration(ctx context.Context, realmName string) (apiregister.Configuration, error) {
+func (c *authorizationComponentMW) GetConfiguration(ctx context.Context, realmName string) (apiregister.ConfigurationRepresentation, error) {
 	return c.next.GetConfiguration(ctx, realmName)
 }

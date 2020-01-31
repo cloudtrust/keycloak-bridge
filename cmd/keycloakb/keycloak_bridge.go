@@ -33,6 +33,7 @@ import (
 	"github.com/cloudtrust/keycloak-bridge/pkg/event"
 	"github.com/cloudtrust/keycloak-bridge/pkg/events"
 	"github.com/cloudtrust/keycloak-bridge/pkg/export"
+	"github.com/cloudtrust/keycloak-bridge/pkg/kyc"
 	"github.com/cloudtrust/keycloak-bridge/pkg/management"
 	"github.com/cloudtrust/keycloak-bridge/pkg/register"
 	"github.com/cloudtrust/keycloak-bridge/pkg/statistics"
@@ -142,6 +143,7 @@ func main() {
 			"statistics": c.GetInt("rate-statistics"),
 			"events":     c.GetInt("rate-events"),
 			"register":   c.GetInt("rate-register"),
+			"kyc":        c.GetInt("rate-kyc"),
 		}
 
 		corsOptions = cors.Options{
@@ -355,6 +357,7 @@ func main() {
 	healthChecker.AddDatabase("Audit RO", eventsRODBConn, healthCheckCacheDuration)
 	healthChecker.AddDatabase("Config R/W", configurationRwDBConn, healthCheckCacheDuration)
 	healthChecker.AddDatabase("Config RO", configurationRoDBConn, healthCheckCacheDuration)
+	healthChecker.AddDatabase("Users R/W", usersRwDBConn, healthCheckCacheDuration)
 	healthChecker.AddHTTPEndpoint("Keycloak", keycloakConfig.AddrAPI, httpTimeout, 200, healthCheckCacheDuration)
 
 	// Event service.
@@ -554,8 +557,11 @@ func main() {
 			configDBModule = keycloakb.MakeConfigurationDBModuleInstrumentingMW(influxMetrics.NewHistogram("configDB_module"))(configDBModule)
 		}
 
+		// module for storing and retrieving details of the self-registered users
+		var usersDBModule = keycloakb.NewUsersDBModule(usersRwDBConn, accountLogger)
+
 		// new module for account service
-		accountComponent := account.NewComponent(keycloakClient.AccountClient(), eventsDBModule, configDBModule, accountLogger)
+		accountComponent := account.NewComponent(keycloakClient.AccountClient(), eventsDBModule, configDBModule, usersDBModule, accountLogger)
 		accountComponent = account.MakeAuthorizationAccountComponentMW(log.With(accountLogger, "mw", "endpoint"), configDBModule)(accountComponent)
 
 		accountEndpoints = account.Endpoints{
@@ -594,7 +600,7 @@ func main() {
 		var configDBModule = createConfigurationDBModule(configurationRwDBConn, influxMetrics, registerLogger)
 
 		// module for storing and retrieving details of the self-registered users
-		var usersDBModule = register.NewUsersDBModule(usersRwDBConn, registerLogger)
+		var usersDBModule = keycloakb.NewUsersDBModule(usersRwDBConn, registerLogger)
 
 		// new module for register service
 		registerComponent := register.NewComponent(keycloakPublicURL, registerRealm, ssePublicURL, registerEnduserClientID, keycloakClient, oidcTokenProvider, usersDBModule, configDBModule, eventsDBModule, registerLogger)
@@ -603,6 +609,31 @@ func main() {
 		registerEndpoints = register.Endpoints{
 			RegisterUser:     prepareEndpoint(register.MakeRegisterUserEndpoint(registerComponent), "register_user", influxMetrics, registerLogger, tracer, rateLimit["register"]),
 			GetConfiguration: prepareEndpoint(register.MakeGetConfigurationEndpoint(registerComponent), "get_configuration", influxMetrics, registerLogger, tracer, rateLimit["register"]),
+		}
+	}
+
+	// KYC service.
+	var kycEndpoints kyc.Endpoints
+	{
+		var kycLogger = log.With(logger, "svc", "kyc")
+
+		// Configure events db module
+		eventsDBModule := configureEventsDbModule(baseEventsDBModule, influxMetrics, kycLogger, tracer)
+
+		// module for storing and retrieving the custom configuration
+		var configDBModule = createConfigurationDBModule(configurationRwDBConn, influxMetrics, kycLogger)
+
+		// module for storing and retrieving details of the users
+		var usersDBModule = keycloakb.NewUsersDBModule(usersRwDBConn, kycLogger)
+
+		// new module for KYC service
+		kycComponent := kyc.NewComponent(registerRealm, keycloakClient, usersDBModule, configDBModule, eventsDBModule, kycLogger)
+		kycComponent = kyc.MakeAuthorizationRegisterComponentMW(registerRealm, log.With(kycLogger, "mw", "endpoint"), authorizationManager)(kycComponent)
+
+		kycEndpoints = kyc.Endpoints{
+			GetActions:   prepareEndpoint(kyc.MakeGetActionsEndpoint(kycComponent), "register_get_actions", influxMetrics, kycLogger, tracer, rateLimit["kyc"]),
+			GetUser:      prepareEndpoint(kyc.MakeGetUserEndpoint(kycComponent), "get_user", influxMetrics, kycLogger, tracer, rateLimit["kyc"]),
+			ValidateUser: prepareEndpoint(kyc.MakeValidateUserEndpoint(kycComponent), "validate_user", influxMetrics, kycLogger, tracer, rateLimit["kyc"]),
 		}
 	}
 
@@ -755,6 +786,11 @@ func main() {
 
 		var createShadowUserHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.CreateShadowUser)
 
+		// KYC handlers
+		var kycGetActionsHandler = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(kycEndpoints.GetActions)
+		var kycGetUserHandler = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(kycEndpoints.GetUser)
+		var kycValidateUserHandler = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(kycEndpoints.ValidateUser)
+
 		// actions
 		managementSubroute.Path("/actions").Methods("GET").Handler(getManagementActionsHandler)
 
@@ -814,6 +850,11 @@ func main() {
 
 		// brokering - shadow users
 		managementSubroute.Path("/realms/{realm}/users/{userID}/federated-identity/{provider}").Methods("POST").Handler(createShadowUserHandler)
+
+		// KYC methods
+		route.Path("/kyc/actions").Methods("GET").Handler(kycGetActionsHandler)
+		route.Path("/kyc/users").Methods("GET").Handler(kycGetUserHandler)
+		route.Path("/kyc/users/{userId}").Methods("PUT").Handler(kycValidateUserHandler)
 
 		var handler http.Handler = route
 
@@ -888,12 +929,13 @@ func main() {
 			route.Handle("/", http.HandlerFunc(commonhttp.MakeVersionHandler(keycloakb.ComponentName, ComponentID, keycloakb.Version, Environment, GitCommit)))
 			route.Handle("/health/check", healthChecker.MakeHandler())
 
-			// Register
+			// Handler with recaptcha token
 			var registerUserHandler = configureRegisterHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, recaptchaURL, recaptchaSecret, tracer, logger)(registerEndpoints.RegisterUser)
 
-			// COnfiguration
+			// Configuration
 			var getConfigurationHandler = configurePublicRegisterHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, recaptchaURL, recaptchaSecret, tracer, logger)(registerEndpoints.GetConfiguration)
 
+			// Register
 			route.Path("/register/user").Methods("POST").Handler(registerUserHandler)
 			route.Path("/register/config").Methods("GET").Handler(getConfigurationHandler)
 
@@ -1003,6 +1045,7 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 	v.SetDefault("rate-statistics", 1000)
 	v.SetDefault("rate-events", 1000)
 	v.SetDefault("rate-register", 1000)
+	v.SetDefault("rate-kyc", 1000)
 
 	// Influx DB client default.
 	v.SetDefault("influx", false)
@@ -1146,6 +1189,16 @@ func configureAccountHandler(ComponentName string, ComponentID string, idGenerat
 	}
 }
 
+func configureKYCHandler(ComponentName string, ComponentID string, idGenerator idgenerator.IDGenerator, keycloakClient *keycloak.Client, audienceRequired string, tracer tracing.OpentracingClient, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {
+	return func(endpoint endpoint.Endpoint) http.Handler {
+		var handler http.Handler
+		handler = kyc.MakeKYCHandler(endpoint, logger)
+		handler = middleware.MakeHTTPCorrelationIDMW(idGenerator, tracer, logger, ComponentName, ComponentID)(handler)
+		handler = middleware.MakeHTTPOIDCTokenValidationMW(keycloakClient, audienceRequired, logger)(handler)
+		return handler
+	}
+}
+
 func configureRegisterHandler(ComponentName string, ComponentID string, idGenerator idgenerator.IDGenerator, keycloakClient *keycloak.Client, recaptchaURL, recaptchaSecret string, tracer tracing.OpentracingClient, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {
 	return func(endpoint endpoint.Endpoint) http.Handler {
 		var handler http.Handler
@@ -1181,9 +1234,9 @@ func configureEventsDbModule(baseEventsDBModule database.EventsDBModule, influxM
 	return eventsDBModule
 }
 
-func prepareEndpoint(e cs.Endpoint, endpointName string, influxMetrics metrics.Metrics, managementLogger log.Logger, tracer tracing.OpentracingClient, rateLimit int) endpoint.Endpoint {
+func prepareEndpoint(e cs.Endpoint, endpointName string, influxMetrics metrics.Metrics, logger log.Logger, tracer tracing.OpentracingClient, rateLimit int) endpoint.Endpoint {
 	e = middleware.MakeEndpointInstrumentingMW(influxMetrics, endpointName)(e)
-	e = middleware.MakeEndpointLoggingMW(log.With(managementLogger, "mw", endpointName))(e)
+	e = middleware.MakeEndpointLoggingMW(log.With(logger, "mw", endpointName))(e)
 	e = tracer.MakeEndpointTracingMW(endpointName)(e)
 	return keycloakb.LimitRate(e, rateLimit)
 }

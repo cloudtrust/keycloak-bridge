@@ -10,11 +10,17 @@ import (
 
 // AccountRepresentation struct
 type AccountRepresentation struct {
-	Username    *string `json:"username,omitempty"`
-	Email       *string `json:"email,omitempty"`
-	FirstName   *string `json:"firstName,omitempty"`
-	LastName    *string `json:"lastName,omitempty"`
-	PhoneNumber *string `json:"phoneNumber,omitempty"`
+	Username             *string `json:"username,omitempty"`
+	Email                *string `json:"email,omitempty"`
+	Gender               *string `json:"gender,omitempty"`
+	FirstName            *string `json:"firstName,omitempty"`
+	LastName             *string `json:"lastName,omitempty"`
+	PhoneNumber          *string `json:"phoneNumber,omitempty"`
+	BirthDate            *string `json:"birthDate,omitempty"`
+	BirthLocation        *string `json:"birthLocation,omitempty"`
+	IDDocumentType       *string `json:"idDocumentType,omitempty"`
+	IDDocumentNumber     *string `json:"idDocumentNumber,omitempty"`
+	IDDocumentExpiration *string `json:"idDocumentExpiration,omitempty"`
 }
 
 // CredentialRepresentation struct
@@ -74,9 +80,14 @@ func ConvertToAPIAccount(userKc kc.UserRepresentation) AccountRepresentation {
 	if userKc.Attributes != nil {
 		var m = *userKc.Attributes
 
-		if m["phoneNumber"] != nil {
-			var phoneNumber = m["phoneNumber"][0]
-			userRep.PhoneNumber = &phoneNumber
+		if value, ok := m["phoneNumber"]; ok && len(value) > 0 {
+			userRep.PhoneNumber = &value[0]
+		}
+		if value, ok := m["gender"]; ok && len(value) > 0 {
+			userRep.Gender = &value[0]
+		}
+		if value, ok := m["birthDate"]; ok && len(value) > 0 {
+			userRep.BirthDate = &value[0]
 		}
 	}
 	return userRep

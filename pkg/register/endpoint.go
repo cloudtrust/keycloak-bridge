@@ -29,7 +29,8 @@ func MakeRegisterUserEndpoint(component Component) cs.Endpoint {
 		if err != nil {
 			return nil, commonerrors.CreateBadRequestError(commonerrors.MsgErrInvalidParam + "." + msg.BodyContent)
 		}
-		return component.RegisterUser(context.WithValue(ctx, cs.CtContextRealmID, realm), realm, user)
+
+		return component.RegisterUser(ctx, realm, user)
 	}
 }
 
@@ -42,6 +43,6 @@ func MakeGetConfigurationEndpoint(component Component) cs.Endpoint {
 			return nil, commonerrors.CreateBadRequestError(commonerrors.MsgErrInvalidParam + "." + msg.Realm)
 		}
 
-		return component.GetConfiguration(context.WithValue(ctx, cs.CtContextRealmID, realm), realm)
+		return component.GetConfiguration(ctx, realm)
 	}
 }

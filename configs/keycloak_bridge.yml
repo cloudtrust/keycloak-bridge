@@ -139,6 +139,7 @@ rate-management: 1000
 rate-statistics: 1000
 rate-events: 1000
 rate-register: 1000
+rate-kyc: 1000
 
 # Influx DB configs
 influx: false

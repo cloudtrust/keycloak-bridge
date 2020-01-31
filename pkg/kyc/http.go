@@ -1,4 +1,4 @@
-package register
+package kyc
 
 import (
 	"context"
@@ -6,19 +6,21 @@ import (
 
 	commonhttp "github.com/cloudtrust/common-service/http"
 	"github.com/cloudtrust/common-service/log"
+	apimgmt "github.com/cloudtrust/keycloak-bridge/api/management"
 	"github.com/go-kit/kit/endpoint"
 	http_transport "github.com/go-kit/kit/transport/http"
 )
 
 // Regular expressions
 const (
-	RegExpRealmName = `^[a-zA-Z0-9_-]{1,36}$`
+	RegExpUserName = apimgmt.RegExpUsername
+	RegExpUserID   = apimgmt.RegExpID
 )
 
-// MakeRegisterHandler make an HTTP handler for the self-register endpoint.
-func MakeRegisterHandler(e endpoint.Endpoint, logger log.Logger) *http_transport.Server {
-	pathParams := map[string]string{}
-	queryParams := map[string]string{"realm": RegExpRealmName}
+// MakeKYCHandler make an HTTP handler for the KYC endpoint.
+func MakeKYCHandler(e endpoint.Endpoint, logger log.Logger) *http_transport.Server {
+	pathParams := map[string]string{"userId": RegExpUserID}
+	queryParams := map[string]string{"username": RegExpUserName}
 
 	return http_transport.NewServer(e,
 		func(ctx context.Context, req *http.Request) (interface{}, error) {
