@@ -35,9 +35,9 @@ paths:
       security:
         - openId: []
       parameters:
-      - name: userId
+      - name: username
         in: query
-        description: id of the user to be retrieved
+        description: name of the user to be retrieved
         required: true
         schema:
           type: string
@@ -129,6 +129,9 @@ components:
         comment:
           type: string
           description: Used only by validateUser
+        validation:
+          type: string
+          description: Only provided by getUser
   securitySchemes:
     openId:
       type: openIdConnect

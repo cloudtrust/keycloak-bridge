@@ -32,6 +32,7 @@ type UserRepresentation struct {
 	IDDocumentNumber     *string `json:"idDocumentNumber,omitempty"`
 	IDDocumentExpiration *string `json:"idDocumentExpiration,omitempty"`
 	Comment              *string `json:"comment,omitempty"`
+	Validation           *string `json:"validation,omitempty"`
 }
 
 // Parameter references

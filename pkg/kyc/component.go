@@ -99,11 +99,16 @@ func (c *component) GetUser(ctx context.Context, username string) (apikyc.UserRe
 		return apikyc.UserRepresentation{}, err
 	}
 
+	if dbUser == nil {
+		dbUser = &dto.DBUser{}
+	}
+
 	var res = apikyc.UserRepresentation{
 		BirthLocation:        dbUser.BirthLocation,
 		IDDocumentType:       dbUser.IDDocumentType,
 		IDDocumentNumber:     dbUser.IDDocumentNumber,
 		IDDocumentExpiration: dbUser.IDDocumentExpiration,
+		Validation:           dbUser.LastValidation(),
 	}
 	res.ImportFromKeycloak(&kcUser)
 
