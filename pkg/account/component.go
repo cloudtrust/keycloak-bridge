@@ -115,6 +115,7 @@ func (c *component) UpdatePassword(ctx context.Context, currentPassword, newPass
 func (c *component) GetAccount(ctx context.Context) (api.AccountRepresentation, error) {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 	var realm = ctx.Value(cs.CtContextRealm).(string)
+	var userID = ctx.Value(cs.CtContextUserID).(string)
 
 	var userRep api.AccountRepresentation
 	userKc, err := c.keycloakAccountClient.GetAccount(accessToken, realm)
@@ -125,12 +126,10 @@ func (c *component) GetAccount(ctx context.Context) (api.AccountRepresentation, 
 	}
 
 	var dbUser *dto.DBUser
-	if userKc.Id != nil {
-		dbUser, err = c.usersDBModule.GetUser(ctx, realm, *userKc.Id)
-		if err != nil {
-			c.logger.Warn(ctx, "err", err.Error())
-			return userRep, err
-		}
+	dbUser, err = c.usersDBModule.GetUser(ctx, realm, userID)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return userRep, err
 	}
 
 	userRep = api.ConvertToAPIAccount(userKc)
@@ -339,7 +338,7 @@ func (c *component) MoveCredential(ctx context.Context, credentialID string, pre
 	return nil
 }
 
-func (c *component) GetConfiguration(ctx context.Context, realmIdOverride string) (api.Configuration, error) {
+func (c *component) GetConfiguration(ctx context.Context, realmIDOverride string) (api.Configuration, error) {
 	var currentRealm = ctx.Value(cs.CtContextRealm).(string)
 
 	config, err := c.configDBModule.GetConfiguration(ctx, currentRealm)
@@ -355,8 +354,8 @@ func (c *component) GetConfiguration(ctx context.Context, realmIdOverride string
 		RedirectSuccessfulRegistrationURL: config.RedirectSuccessfulRegistrationURL,
 	}
 
-	if realmIdOverride != "" {
-		overrideConfig, err := c.configDBModule.GetConfiguration(ctx, realmIdOverride)
+	if realmIDOverride != "" {
+		overrideConfig, err := c.configDBModule.GetConfiguration(ctx, realmIDOverride)
 		if err != nil {
 			return api.Configuration{}, err
 		}
