@@ -314,9 +314,10 @@ func TestGetUser(t *testing.T) {
 	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 	ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 	ctx = context.WithValue(ctx, cs.CtContextUsername, username)
+	ctx = context.WithValue(ctx, cs.CtContextUserID, userID)
 
 	t.Run("Call to Keycloak fails", func(t *testing.T) {
-		mockKeycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kc.UserRepresentation{}, fmt.Errorf("Unexpected error")).Times(1)
+		mockKeycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kc.UserRepresentation{}, fmt.Errorf("Unexpected error"))
 		_, err := accountComponent.GetAccount(ctx)
 
 		assert.NotNil(t, err)
@@ -324,7 +325,7 @@ func TestGetUser(t *testing.T) {
 
 	t.Run("Call to database fails", func(t *testing.T) {
 		var dbError = errors.New("db error")
-		mockKeycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kc.UserRepresentation{Id: &userID}, nil).Times(1)
+		mockKeycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kc.UserRepresentation{}, nil)
 		mockUsersDBModule.EXPECT().GetUser(ctx, realmName, userID).Return(nil, dbError)
 		_, err := accountComponent.GetAccount(ctx)
 
@@ -353,7 +354,6 @@ func TestGetUser(t *testing.T) {
 	attributes["locale"] = []string{locale}
 
 	var kcUserRep = kc.UserRepresentation{
-		Id:               &userID,
 		Username:         &username,
 		Email:            &email,
 		Enabled:          &enabled,
