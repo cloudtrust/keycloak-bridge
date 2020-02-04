@@ -39,9 +39,11 @@ func ValidateParameterRegExp(prmName string, value *string, regExp string, manda
 }
 
 // ValidateParameterPhoneNumber validates a phone number (lib phonenumbes is based on the Java library libphonenumber)
-func ValidateParameterPhoneNumber(prmName string, value *string) error {
+func ValidateParameterPhoneNumber(prmName string, value *string, mandatory bool) error {
 	if value == nil {
-		return cerrors.CreateMissingParameterError(prmName)
+		if mandatory {
+			return cerrors.CreateMissingParameterError(prmName)
+		}
 	}
 	var metadata, err = phonenumbers.Parse(*value, "CH")
 	if err != nil || !phonenumbers.IsPossibleNumber(metadata) {
@@ -59,6 +61,21 @@ func ValidateParameterDate(prmName string, value *string, dateLayout string, man
 	} else {
 		var _, err = time.Parse(dateLayout, *value)
 		if err != nil {
+			return cerrors.CreateBadRequestError(cerrors.MsgErrInvalidParam + "." + prmName)
+		}
+	}
+	return nil
+}
+
+// ValidateParameterTimestamp validates a datetime integer
+func ValidateParameterTimestamp(prmName string, value *int64, mandatory bool) error {
+	if value == nil {
+		if mandatory {
+			return cerrors.CreateMissingParameterError(prmName)
+		}
+	} else {
+		t := time.Unix(*value, 0)
+		if time.Now().Before(t) {
 			return cerrors.CreateBadRequestError(cerrors.MsgErrInvalidParam + "." + prmName)
 		}
 	}
