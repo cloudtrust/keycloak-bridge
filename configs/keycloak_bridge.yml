@@ -42,6 +42,9 @@ audience-required: "account"
 ## Password used to protect /internal/event endpoint
 event-basic-auth-token: "superpasswordverylongandstrong"
 
+## Password used to protect /internal/validation endpoint
+validation-basic-auth-token: "superpasswordverylongandstrong"
+
 
 ## trustID groups allowed to be set
 trustid-groups: 
@@ -133,6 +136,7 @@ db-users-rw-connection-check: false
 events-db: false
 
 # Rate limiting in requests/second.
+rate-validation: 1000
 rate-event: 1000
 rate-account: 1000
 rate-management: 1000
