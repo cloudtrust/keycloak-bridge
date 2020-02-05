@@ -1,15 +1,25 @@
 package validation
 
-import "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
+import (
+	"strconv"
+	"time"
+
+	"github.com/cloudtrust/keycloak-bridge/internal/dto"
+	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
+	kc "github.com/cloudtrust/keycloak-client"
+)
 
 // UserRepresentation struct
 type UserRepresentation struct {
 	UserID               *string `json:"userId,omitempty"`
+	Username             *string `json:"username,omitempty"`
 	Gender               *string `json:"gender,omitempty"`
 	FirstName            *string `json:"firstName,omitempty"`
 	LastName             *string `json:"lastName,omitempty"`
 	EmailAddress         *string `json:"emailAddress,omitempty"`
+	EmailAddressVerified *bool   `json:"emailAddressVerified,omitempty"`
 	PhoneNumber          *string `json:"phoneNumber,omitempty"`
+	PhoneNumberVerified  *bool   `json:"phoneNumberVerified,omitempty"`
 	BirthDate            *string `json:"birthDate,omitempty"`
 	BirthLocation        *string `json:"birthLocation,omitempty"`
 	IDDocumentType       *string `json:"idDocumentType,omitempty"`
@@ -50,7 +60,7 @@ const (
 	prmCheckNature    = "check_nature"
 	prmCheckProofType = "check_proof_type"
 
-	regExpID            = `^[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}$`
+	RegExpID            = `^[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}$`
 	regExpNames         = `^([\wàáâäçèéêëìíîïñòóôöùúûüß]+([ '-][\wàáâäçèéêëìíîïñòóôöùúûüß]+)*){1,50}$`
 	regExpFirstName     = regExpNames
 	regExpLastName      = regExpNames
@@ -79,9 +89,100 @@ var (
 	}
 )
 
+// ConvertCheck creates a DBCheck
+func (c *CheckRepresentation) ConvertCheck() dto.DBCheck {
+	var check = dto.DBCheck{}
+	check.Operator = c.Operator
+	datetime := time.Unix(*c.DateTime, 0)
+	check.DateTime = &datetime
+	check.Type = c.Type
+	check.Nature = c.Nature
+	check.ProofType = c.ProofType
+	check.ProofData = c.ProofData
+
+	return check
+}
+
+// ExportToKeycloak exports user details into a Keycloak UserRepresentation
+func (u *UserRepresentation) ExportToKeycloak(kcUser *kc.UserRepresentation) {
+	var bFalse = false
+	var bTrue = true
+	var attributes = make(map[string][]string)
+
+	if kcUser.Attributes != nil {
+		attributes = *kcUser.Attributes
+	}
+
+	if u.Gender != nil {
+		attributes["gender"] = []string{*u.Gender}
+	}
+	if u.PhoneNumber != nil {
+		if value, ok := attributes["phoneNumber"]; !ok || (len(value) > 0 && value[0] != *u.PhoneNumber) {
+			attributes["phoneNumber"] = []string{*u.PhoneNumber}
+			attributes["phoneNumberVerified"] = []string{"false"}
+		}
+	}
+	if u.BirthDate != nil {
+		attributes["birthDate"] = []string{*u.BirthDate}
+	}
+
+	if u.Username != nil {
+		kcUser.Username = u.Username
+	}
+	if u.EmailAddress != nil && (kcUser.Email == nil || *kcUser.Email != *u.EmailAddress) {
+		kcUser.Email = u.EmailAddress
+		kcUser.EmailVerified = &bFalse
+	}
+	if u.FirstName != nil {
+		kcUser.FirstName = u.FirstName
+	}
+	if u.LastName != nil {
+		kcUser.LastName = u.LastName
+	}
+	kcUser.Attributes = &attributes
+	kcUser.Enabled = &bTrue
+}
+
+// ImportFromKeycloak import details from Keycloak
+func (u *UserRepresentation) ImportFromKeycloak(kcUser *kc.UserRepresentation) {
+	var phoneNumber = u.PhoneNumber
+	var phoneNumberVerified = u.PhoneNumberVerified
+	var gender = u.Gender
+	var birthdate = u.BirthDate
+
+	if kcUser.Attributes != nil {
+		var m = *kcUser.Attributes
+		if value, ok := m["phoneNumber"]; ok && len(value) > 0 {
+			phoneNumber = &value[0]
+		}
+		if value, ok := m["phoneNumberVerified"]; ok && len(value) > 0 {
+			if verified, err := strconv.ParseBool(value[0]); err == nil {
+				phoneNumberVerified = &verified
+			}
+		}
+		if value, ok := m["gender"]; ok && len(value) > 0 {
+			gender = &value[0]
+		}
+		if value, ok := m["birthDate"]; ok && len(value) > 0 {
+			birthdate = &value[0]
+		}
+	}
+
+	u.UserID = kcUser.Id
+	u.Username = kcUser.Username
+	u.Gender = gender
+	u.FirstName = kcUser.FirstName
+	u.LastName = kcUser.LastName
+	u.EmailAddress = kcUser.Email
+	u.EmailAddressVerified = kcUser.EmailVerified
+	u.PhoneNumber = phoneNumber
+	u.PhoneNumberVerified = phoneNumberVerified
+	u.BirthDate = birthdate
+}
+
 // Validate checks the validity of the given User
 func (u *UserRepresentation) Validate() error {
-	var err = keycloakb.ValidateParameterRegExp(prmUserID, u.UserID, regExpID, false)
+	var err = keycloakb.ValidateParameterRegExp(prmUserID, u.UserID, RegExpID, false)
 	if err != nil {
 		return err
 	}
@@ -132,7 +233,7 @@ func (u *UserRepresentation) Validate() error {
 
 // Validate checks the validity of the given check
 func (c *CheckRepresentation) Validate() error {
-	var err = keycloakb.ValidateParameterRegExp(prmUserID, c.UserID, regExpID, true)
+	var err = keycloakb.ValidateParameterRegExp(prmUserID, c.UserID, RegExpID, true)
 	if err != nil {
 		return err
 	}

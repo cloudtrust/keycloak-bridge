@@ -5,8 +5,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/cloudtrust/keycloak-client"
-
 	cs "github.com/cloudtrust/common-service"
 	"github.com/cloudtrust/common-service/database"
 	errorhandler "github.com/cloudtrust/common-service/errors"
@@ -25,9 +23,17 @@ type KeycloakClient interface {
 	GetUsers(accessToken string, reqRealmName, targetRealmName string, paramKV ...string) (kc.UsersPageRepresentation, error)
 }
 
-// ConfigurationDBModule is the interface of the configuration module.
-type ConfigurationDBModule interface {
-	GetConfiguration(context.Context, string) (dto.RealmConfiguration, error)
+// UsersDBModule is the interface from the users module
+type UsersDBModule interface {
+	StoreOrUpdateUser(ctx context.Context, realm string, user dto.DBUser) error
+	GetUser(ctx context.Context, realm string, userID string) (*dto.DBUser, error)
+	CreateCheck(ctx context.Context, realm string, userID string, check dto.DBCheck) error
+}
+
+// EventsDBModule is the interface of the audit events module
+type EventsDBModule interface {
+	Store(context.Context, map[string]string) error
+	ReportEvent(ctx context.Context, apiCall string, origin string, values ...string) error
 }
 
 // Component is the register component interface.
@@ -41,20 +47,17 @@ type Component interface {
 type component struct {
 	socialRealmName string
 	keycloakClient  KeycloakClient
-	tokenProvider   keycloak.OidcTokenProvider
 	usersDBModule   keycloakb.UsersDBModule
-	configDBModule  ConfigurationDBModule
 	eventsDBModule  database.EventsDBModule
 	logger          internal.Logger
 }
 
 // NewComponent returns the management component.
-func NewComponent(socialRealmName string, keycloakClient KeycloakClient, usersDBModule keycloakb.UsersDBModule, configDBModule ConfigurationDBModule, eventsDBModule database.EventsDBModule, logger internal.Logger) Component {
+func NewComponent(socialRealmName string, keycloakClient KeycloakClient, usersDBModule UsersDBModule, eventsDBModule EventsDBModule, logger internal.Logger) Component {
 	return &component{
 		socialRealmName: socialRealmName,
 		keycloakClient:  keycloakClient,
 		usersDBModule:   usersDBModule,
-		configDBModule:  configDBModule,
 		eventsDBModule:  eventsDBModule,
 		logger:          logger,
 	}
@@ -108,7 +111,6 @@ func (c *component) GetUser(ctx context.Context, username string) (apikyc.UserRe
 		IDDocumentType:       dbUser.IDDocumentType,
 		IDDocumentNumber:     dbUser.IDDocumentNumber,
 		IDDocumentExpiration: dbUser.IDDocumentExpiration,
-		Validation:           dbUser.LastValidation(),
 	}
 	res.ImportFromKeycloak(&kcUser)
 
@@ -164,16 +166,11 @@ func (c *component) ValidateUser(ctx context.Context, userID string, user apikyc
 	}
 
 	var now = time.Now()
-	var validation = dto.DBValidation{
-		Date:         &now,
-		OperatorName: &operatorName,
-		Comment:      user.Comment,
-	}
+
 	dbUser.BirthLocation = user.BirthLocation
 	dbUser.IDDocumentType = user.IDDocumentType
 	dbUser.IDDocumentNumber = user.IDDocumentNumber
 	dbUser.IDDocumentExpiration = user.IDDocumentExpiration
-	dbUser.Validations = append(dbUser.Validations, validation)
 
 	user.ExportToKeycloak(&kcUser)
 	err = c.keycloakClient.UpdateUser(accessToken, c.socialRealmName, userID, kcUser)
@@ -186,6 +183,22 @@ func (c *component) ValidateUser(ctx context.Context, userID string, user apikyc
 	err = c.usersDBModule.StoreOrUpdateUser(ctx, c.socialRealmName, *dbUser)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Can't store user details in database", "err", err.Error())
+		return err
+	}
+
+	// Store check in database
+	var validation = dto.DBCheck{
+		Operator: &operatorName,
+		DateTime: &now,
+		Status:   ptr("VERIFIED"),
+		Type:     ptr("IDENTITY_CHECK"),
+		Nature:   ptr("PHYSICAL_CHECK"),
+		Comment:  user.Comment,
+	}
+
+	err = c.usersDBModule.CreateCheck(ctx, c.socialRealmName, userID, validation)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Can't store validation check in database", "err", err.Error())
 		return err
 	}
 
@@ -216,4 +229,8 @@ func isPhoneNumberVerified(attribs *map[string][]string) bool {
 		return verified && err == nil
 	}
 	return false
+}
+
+func ptr(value string) *string {
+	return &value
 }

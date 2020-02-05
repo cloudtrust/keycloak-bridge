@@ -2,28 +2,30 @@ package validation
 
 import (
 	"context"
-	"log"
 	"net/http"
 
+	commonhttp "github.com/cloudtrust/common-service/http"
+	"github.com/cloudtrust/common-service/log"
 	api "github.com/cloudtrust/keycloak-bridge/api/validation"
 	"github.com/go-kit/kit/endpoint"
+	http_transport "github.com/go-kit/kit/transport/http"
 )
 
-// Regular expressions
-const (
-	RegExpUserID = api.RegExpID
-)
-
-// MakeValidationHandler make an HTTP handler for the Validation endpoint.
+// MakeValidationHandler make an HTTP handler for a Validation endpoint.
 func MakeValidationHandler(e endpoint.Endpoint, logger log.Logger) *http_transport.Server {
-	pathParams := map[string]string{"userId": RegExpUserID}
-	queryParams := map[string]string{}
-
 	return http_transport.NewServer(e,
-		func(ctx context.Context, req *http.Request) (interface{}, error) {
-			return commonhttp.DecodeRequest(ctx, req, pathParams, queryParams)
-		},
+		decodeManagementRequest,
 		commonhttp.EncodeReply,
 		http_transport.ServerErrorEncoder(commonhttp.ErrorHandler(logger)),
 	)
+}
+
+// decodeEventsRequest gets the HTTP parameters and body content
+func decodeManagementRequest(ctx context.Context, req *http.Request) (interface{}, error) {
+	var pathParams = map[string]string{
+		"user_id": api.RegExpID,
+	}
+	var queryParams = map[string]string{}
+
+	return commonhttp.DecodeRequest(ctx, req, pathParams, queryParams)
 }

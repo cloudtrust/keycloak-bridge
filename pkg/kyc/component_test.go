@@ -48,11 +48,10 @@ func TestGetActions(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
-	var mockConfigDB = mock.NewConfigurationDBModule(mockCtrl)
 	var mockUsersDB = mock.NewUsersDBModule(mockCtrl)
 	var mockEventsDB = mock.NewEventsDBModule(mockCtrl)
 
-	var component = NewComponent("realm", mockKeycloakClient, mockUsersDB, mockConfigDB, mockEventsDB, log.NewNopLogger())
+	var component = NewComponent("realm", mockKeycloakClient, mockUsersDB, mockEventsDB, log.NewNopLogger())
 
 	t.Run("GetActions", func(t *testing.T) {
 		var res, err = component.GetActions(context.TODO())
@@ -66,7 +65,6 @@ func TestGetUserComponent(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
-	var mockConfigDB = mock.NewConfigurationDBModule(mockCtrl)
 	var mockUsersDB = mock.NewUsersDBModule(mockCtrl)
 	var mockEventsDB = mock.NewEventsDBModule(mockCtrl)
 
@@ -82,7 +80,7 @@ func TestGetUserComponent(t *testing.T) {
 	var kcSearchResp = kc.UsersPageRepresentation{Count: &one, Users: []kc.UserRepresentation{kcUser}}
 	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
-	var component = NewComponent(realm, mockKeycloakClient, mockUsersDB, mockConfigDB, mockEventsDB, log.NewNopLogger())
+	var component = NewComponent(realm, mockKeycloakClient, mockUsersDB, mockEventsDB, log.NewNopLogger())
 
 	t.Run("GetUsers from Keycloak fails", func(t *testing.T) {
 		var kcError = errors.New("kc error")
@@ -133,7 +131,6 @@ func TestValidateUser(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
-	var mockConfigDB = mock.NewConfigurationDBModule(mockCtrl)
 	var mockUsersDB = mock.NewUsersDBModule(mockCtrl)
 	var mockEventsDB = mock.NewEventsDBModule(mockCtrl)
 
@@ -146,7 +143,7 @@ func TestValidateUser(t *testing.T) {
 	var ctx = context.TODO()
 	var dbUser = dto.DBUser{UserID: &userID}
 
-	var component = NewComponent(targetRealm, mockKeycloakClient, mockUsersDB, mockConfigDB, mockEventsDB, log.NewNopLogger())
+	var component = NewComponent(targetRealm, mockKeycloakClient, mockUsersDB, mockEventsDB, log.NewNopLogger())
 
 	ctx = context.WithValue(ctx, cs.CtContextAccessToken, accessToken)
 	ctx = context.WithValue(ctx, cs.CtContextUsername, "operator")
@@ -212,11 +209,24 @@ func TestValidateUser(t *testing.T) {
 		assert.Equal(t, dbError, err)
 	})
 
+	t.Run("Store check in DB fails", func(t *testing.T) {
+		var dbError = errors.New("db update error")
+		mockKeycloakClient.EXPECT().GetUser(accessToken, targetRealm, userID).Return(kcUser, nil)
+		mockUsersDB.EXPECT().GetUser(ctx, targetRealm, userID).Return(&dbUser, nil)
+		mockKeycloakClient.EXPECT().UpdateUser(accessToken, targetRealm, userID, gomock.Any()).Return(nil)
+		mockUsersDB.EXPECT().StoreOrUpdateUser(ctx, targetRealm, gomock.Any()).Return(nil)
+		mockUsersDB.EXPECT().CreateCheck(ctx, targetRealm, userID, gomock.Any()).Return(dbError)
+
+		var err = component.ValidateUser(ctx, userID, validUser)
+		assert.Equal(t, dbError, err)
+	})
+
 	t.Run("ValidateUser is successful", func(t *testing.T) {
 		mockKeycloakClient.EXPECT().GetUser(accessToken, targetRealm, userID).Return(kcUser, nil)
 		mockUsersDB.EXPECT().GetUser(ctx, targetRealm, userID).Return(&dbUser, nil)
 		mockKeycloakClient.EXPECT().UpdateUser(accessToken, targetRealm, userID, gomock.Any()).Return(nil)
 		mockUsersDB.EXPECT().StoreOrUpdateUser(ctx, targetRealm, gomock.Any()).Return(nil)
+		mockUsersDB.EXPECT().CreateCheck(ctx, targetRealm, userID, gomock.Any()).Return(nil)
 		mockEventsDB.EXPECT().ReportEvent(gomock.Any(), "VALIDATE_USER", "back-office", gomock.Any())
 
 		var err = component.ValidateUser(ctx, userID, validUser)
@@ -228,6 +238,7 @@ func TestValidateUser(t *testing.T) {
 		mockUsersDB.EXPECT().GetUser(ctx, targetRealm, userID).Return(&dbUser, nil)
 		mockKeycloakClient.EXPECT().UpdateUser(accessToken, targetRealm, userID, gomock.Any()).Return(nil)
 		mockUsersDB.EXPECT().StoreOrUpdateUser(ctx, targetRealm, gomock.Any()).Return(nil)
+		mockUsersDB.EXPECT().CreateCheck(ctx, targetRealm, userID, gomock.Any()).Return(nil)
 		mockEventsDB.EXPECT().ReportEvent(gomock.Any(), "VALIDATE_USER", "back-office", gomock.Any()).Return(errors.New("report fails"))
 
 		var err = component.ValidateUser(ctx, userID, validUser)

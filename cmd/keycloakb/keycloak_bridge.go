@@ -620,14 +620,11 @@ func main() {
 		// Configure events db module
 		eventsDBModule := configureEventsDbModule(baseEventsDBModule, influxMetrics, kycLogger, tracer)
 
-		// module for storing and retrieving the custom configuration
-		var configDBModule = createConfigurationDBModule(configurationRwDBConn, influxMetrics, kycLogger)
-
 		// module for storing and retrieving details of the users
 		var usersDBModule = keycloakb.NewUsersDBModule(usersRwDBConn, kycLogger)
 
 		// new module for KYC service
-		kycComponent := kyc.NewComponent(registerRealm, keycloakClient, usersDBModule, configDBModule, eventsDBModule, kycLogger)
+		kycComponent := kyc.NewComponent(registerRealm, keycloakClient, usersDBModule, eventsDBModule, kycLogger)
 		kycComponent = kyc.MakeAuthorizationRegisterComponentMW(registerRealm, log.With(kycLogger, "mw", "endpoint"), authorizationManager)(kycComponent)
 
 		kycEndpoints = kyc.Endpoints{

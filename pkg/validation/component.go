@@ -2,18 +2,15 @@ package validation
 
 import (
 	"context"
-	"strconv"
-	"time"
 
 	"github.com/cloudtrust/keycloak-client"
 
 	"github.com/cloudtrust/common-service/database"
 	errorhandler "github.com/cloudtrust/common-service/errors"
-	apikyc "github.com/cloudtrust/keycloak-bridge/api/kyc"
+	api "github.com/cloudtrust/keycloak-bridge/api/validation"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	internal "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
-	messages "github.com/cloudtrust/keycloak-bridge/internal/messages"
 	kc "github.com/cloudtrust/keycloak-client"
 )
 
@@ -21,12 +18,20 @@ import (
 type KeycloakClient interface {
 	UpdateUser(accessToken string, realmName, userID string, user kc.UserRepresentation) error
 	GetUser(accessToken string, realmName, userID string) (kc.UserRepresentation, error)
+	GetUsers(accessToken string, reqRealmName, targetRealmName string, paramKV ...string) (kc.UsersPageRepresentation, error)
 }
 
+// UsersDBModule is the interface from the users module
 type UsersDBModule interface {
+	StoreOrUpdateUser(ctx context.Context, realm string, user dto.DBUser) error
+	GetUser(ctx context.Context, realm string, userID string) (*dto.DBUser, error)
+	CreateCheck(ctx context.Context, realm string, userID string, check dto.DBCheck) error
 }
 
+// EventsDBModule is the interface of the audit events module
 type EventsDBModule interface {
+	Store(context.Context, map[string]string) error
+	ReportEvent(ctx context.Context, apiCall string, origin string, values ...string) error
 }
 
 // Component is the register component interface.
@@ -57,144 +62,144 @@ func NewComponent(socialRealmName string, keycloakClient KeycloakClient, usersDB
 	}
 }
 
-func (c *component) reportEvent(ctx context.Context, apiCall string, values ...string) {
-	errEvent := c.eventsDBModule.ReportEvent(ctx, apiCall, "back-office", values...)
-	if errEvent != nil {
-		//store in the logs also the event that failed to be stored in the DB
-		internal.LogUnrecordedEvent(ctx, c.logger, apiCall, errEvent.Error(), values...)
-	}
-}
-
-func (c *component) GetUser(ctx context.Context, username string) (apikyc.UserRepresentation, error) {
-	// TODO
-	// retrieve KcUSer
-	// retrieve user PII, and combine
-	// return
-	var kcUser, err = c.getUserByUsername(accessToken, c.socialRealmName, c.socialRealmName, username)
+func (c *component) GetUser(ctx context.Context, userID string) (api.UserRepresentation, error) {
+	accessToken, err := c.tokenProvider.ProvideToken(ctx)
 	if err != nil {
-		c.logger.Info(ctx, "msg", "GetUser: can't find user in Keycloak", "err", err.Error())
-		return apikyc.UserRepresentation{}, errorhandler.CreateInternalServerError("keycloak")
+		c.logger.Warn(ctx, "msg", "GetUser: can't accessToken for technical user", "err", err.Error())
+		return api.UserRepresentation{}, errorhandler.CreateInternalServerError("keycloak")
+	}
+
+	kcUser, err := c.keycloakClient.GetUser(accessToken, c.socialRealmName, userID)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "GetUser: can't find user in Keycloak", "err", err.Error())
+		return api.UserRepresentation{}, errorhandler.CreateInternalServerError("keycloak")
 	}
 
 	var dbUser *dto.DBUser
 	dbUser, err = c.usersDBModule.GetUser(ctx, c.socialRealmName, *kcUser.Id)
 	if err != nil {
-		c.logger.Info(ctx, "msg", "GetUser: can't find user in keycloak")
-		return apikyc.UserRepresentation{}, err
+		c.logger.Warn(ctx, "msg", "GetUser: can't find user in keycloak")
+		return api.UserRepresentation{}, err
 	}
 
 	if dbUser == nil {
 		dbUser = &dto.DBUser{}
 	}
 
-	var res = apikyc.UserRepresentation{
-		BirthLocation:        dbUser.BirthLocation,
-		IDDocumentType:       dbUser.IDDocumentType,
-		IDDocumentNumber:     dbUser.IDDocumentNumber,
-		IDDocumentExpiration: dbUser.IDDocumentExpiration,
-		Validation:           dbUser.LastValidation(),
-	}
+	var res = api.UserRepresentation{}
 	res.ImportFromKeycloak(&kcUser)
+	res.BirthLocation = dbUser.BirthLocation
+	res.IDDocumentType = dbUser.IDDocumentType
+	res.IDDocumentNumber = dbUser.IDDocumentNumber
+	res.IDDocumentExpiration = dbUser.IDDocumentExpiration
 
 	return res, nil
 }
 
 func (c *component) UpdateUser(ctx context.Context, userID string, user api.UserRepresentation) error {
+	var err error
+	var kcUpdate = needKcUserUpdate(user)
+	var dbUpdate = needDBUserUpdate(user)
 
-	/*
-		check if there is some changes which must be put in KC
-		if yes -> update user KC
-
-		if changes in PII -> update DB
-
-		Event if there any changes
-
-	*/
-
-	// Gets user from Keycloak
-	var kcUser kc.UserRepresentation
-	kcUser, err = c.keycloakClient.GetUser(accessToken, c.socialRealmName, userID)
+	accessToken, err := c.tokenProvider.ProvideToken(ctx)
 	if err != nil {
-		c.logger.Warn(ctx, "msg", "Can't get user from Keycloak", "err", err.Error())
-		return err
+		c.logger.Warn(ctx, "msg", "UpdateUser: can't accessToken for technical user", "err", err.Error())
+		return errorhandler.CreateInternalServerError("keycloak")
 	}
 
-	// Some parameters might not be updated by operator
-	user.UserID = &userID
-	user.EmailAddress = nil
-	user.PhoneNumber = nil
-	user.EmailAddressVerified = nil
-	user.PhoneNumberVerified = nil
-	user.Username = kcUser.Username
+	if kcUpdate {
+		kcUser, err := c.keycloakClient.GetUser(accessToken, c.socialRealmName, userID)
+		if err != nil {
+			c.logger.Warn(ctx, "msg", "UpdateUser: can't get user", "err", err.Error(), "userID", userID)
+			return errorhandler.CreateInternalServerError("keycloak")
+		}
 
-	if kcUser.EmailVerified == nil || !*kcUser.EmailVerified {
-		c.logger.Warn(ctx, "msg", "Can't validate user with unverified email", "uid", userID)
-		return errorhandler.CreateBadRequestError(messages.MsgErrUnverified + "." + messages.Email)
-	}
-	if !isPhoneNumberVerified(kcUser.Attributes) {
-		c.logger.Warn(ctx, "msg", "Can't validate user with unverified phone number", "uid", userID)
-		return errorhandler.CreateBadRequestError(messages.MsgErrUnverified + "." + messages.PhoneNumber)
+		user.ExportToKeycloak(&kcUser)
+		err = c.keycloakClient.UpdateUser(accessToken, c.socialRealmName, userID, kcUser)
+		if err != nil {
+			c.logger.Warn(ctx, "msg", "UpdateUser: can't update user in KC", "err", err.Error(), "userID", userID)
+			return errorhandler.CreateInternalServerError("keycloak")
+		}
 	}
 
-	// Gets user from database
-	var dbUser *dto.DBUser
-	dbUser, err = c.usersDBModule.GetUser(ctx, c.socialRealmName, userID)
-	if err != nil {
-		c.logger.Warn(ctx, "msg", "Failed to get user from database", "err", err.Error())
-		return err
-	}
-	if dbUser == nil {
-		c.logger.Warn(ctx, "msg", "User not found in database", "uid", userID)
-		return errorhandler.CreateNotFoundError("user")
+	if dbUpdate {
+		var uID = userID
+		var userDB = dto.DBUser{
+			UserID:               &uID,
+			IDDocumentType:       user.IDDocumentType,
+			IDDocumentNumber:     user.IDDocumentNumber,
+			IDDocumentExpiration: user.IDDocumentExpiration,
+		}
+
+		err = c.usersDBModule.StoreOrUpdateUser(ctx, c.socialRealmName, userDB)
+		if err != nil {
+			c.logger.Warn(ctx, "msg", "Can't update user in DB", "err", err.Error())
+			return err
+		}
 	}
 
-	var now = time.Now()
-	var validation = dto.DBValidation{
-		Date:         &now,
-		OperatorName: &operatorName,
-		Comment:      user.Comment,
+	if kcUpdate || dbUpdate {
+		// store the API call into the DB
+		c.reportEvent(ctx, "VALIDATION_UPDATE_USER", database.CtEventRealmName, c.socialRealmName, database.CtEventUserID, userID, database.CtEventUsername, *user.Username)
 	}
-	dbUser.BirthLocation = user.BirthLocation
-	dbUser.IDDocumentType = user.IDDocumentType
-	dbUser.IDDocumentNumber = user.IDDocumentNumber
-	dbUser.IDDocumentExpiration = user.IDDocumentExpiration
-	dbUser.Validations = append(dbUser.Validations, validation)
-
-	user.ExportToKeycloak(&kcUser)
-	err = c.keycloakClient.UpdateUser(accessToken, c.socialRealmName, userID, kcUser)
-	if err != nil {
-		c.logger.Warn(ctx, "msg", "Failed to update user through Keycloak API", "err", err.Error())
-		return err
-	}
-
-	// Store user in database
-	err = c.usersDBModule.StoreOrUpdateUser(ctx, c.socialRealmName, *dbUser)
-	if err != nil {
-		c.logger.Warn(ctx, "msg", "Can't store user details in database", "err", err.Error())
-		return err
-	}
-
-	// store the API call into the DB
-	c.reportEvent(ctx, "VALIDATE_USER", database.CtEventRealmName, c.socialRealmName, database.CtEventUserID, userID, database.CtEventUsername, *user.Username)
 
 	return nil
+}
+
+func needKcUserUpdate(user api.UserRepresentation) bool {
+	var kcUserAttrs = []*string{
+		user.Gender,
+		user.FirstName,
+		user.LastName,
+		user.EmailAddress,
+		user.PhoneNumber,
+		user.BirthDate,
+	}
+
+	for _, attr := range kcUserAttrs {
+		if attr != nil {
+			return true
+		}
+	}
+	return false
+}
+
+func needDBUserUpdate(user api.UserRepresentation) bool {
+	var dbUserAttrs = []*string{
+		user.BirthLocation,
+		user.IDDocumentNumber,
+		user.IDDocumentType,
+		user.IDDocumentExpiration,
+	}
+
+	for _, attr := range dbUserAttrs {
+		if attr != nil {
+			return true
+		}
+	}
+	return false
 }
 
 func (c *component) CreateCheck(ctx context.Context, userID string, check api.CheckRepresentation) error {
 
-	// Put in DB
+	dbCheck := check.ConvertCheck()
+	err := c.usersDBModule.CreateCheck(ctx, c.socialRealmName, userID, dbCheck)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Can't store check in DB", "err", err.Error())
+		return err
+	}
 
 	// Event
+	c.reportEvent(ctx, "VALIDATION_STORE_CHECK", database.CtEventRealmName, c.socialRealmName,
+		database.CtEventUserID, userID, "operator", *check.Operator, "status", *check.Status)
+
 	return nil
 }
 
-func isPhoneNumberVerified(attribs *map[string][]string) bool {
-	if attribs == nil {
-		return false
+func (c *component) reportEvent(ctx context.Context, apiCall string, values ...string) {
+	errEvent := c.eventsDBModule.ReportEvent(ctx, apiCall, "back-office", values...)
+	if errEvent != nil {
+		//store in the logs also the event that failed to be stored in the DB
+		internal.LogUnrecordedEvent(ctx, c.logger, apiCall, errEvent.Error(), values...)
 	}
-	if value, ok := (*attribs)["phoneNumberVerified"]; ok && len(value) > 0 {
-		verified, err := strconv.ParseBool(value[0])
-		return verified && err == nil
-	}
-	return false
 }

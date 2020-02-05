@@ -32,7 +32,6 @@ type UserRepresentation struct {
 	IDDocumentNumber     *string `json:"idDocumentNumber,omitempty"`
 	IDDocumentExpiration *string `json:"idDocumentExpiration,omitempty"`
 	Comment              *string `json:"comment,omitempty"`
-	Validation           *string `json:"validation,omitempty"`
 }
 
 // Parameter references
@@ -175,7 +174,7 @@ func (u *UserRepresentation) Validate() error {
 	if err != nil {
 		return err
 	}
-	err = keycloakb.ValidateParameterPhoneNumber(prmUserPhoneNumber, u.PhoneNumber)
+	err = keycloakb.ValidateParameterPhoneNumber(prmUserPhoneNumber, u.PhoneNumber, true)
 	if err != nil {
 		return err
 	}
