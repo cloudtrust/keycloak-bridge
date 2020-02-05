@@ -18,7 +18,11 @@ import (
 type KeycloakClient interface {
 	UpdateUser(accessToken string, realmName, userID string, user kc.UserRepresentation) error
 	GetUser(accessToken string, realmName, userID string) (kc.UserRepresentation, error)
-	GetUsers(accessToken string, reqRealmName, targetRealmName string, paramKV ...string) (kc.UsersPageRepresentation, error)
+}
+
+// TokenProvider is the interface to retrieve accessToken to access KC
+type TokenProvider interface {
+	ProvideToken(ctx context.Context) (string, error)
 }
 
 // UsersDBModule is the interface from the users module
@@ -52,10 +56,11 @@ type component struct {
 }
 
 // NewComponent returns the management component.
-func NewComponent(socialRealmName string, keycloakClient KeycloakClient, usersDBModule keycloakb.UsersDBModule, eventsDBModule database.EventsDBModule, logger internal.Logger) Component {
+func NewComponent(socialRealmName string, keycloakClient KeycloakClient, tokenProvider TokenProvider, usersDBModule keycloakb.UsersDBModule, eventsDBModule database.EventsDBModule, logger internal.Logger) Component {
 	return &component{
 		socialRealmName: socialRealmName,
 		keycloakClient:  keycloakClient,
+		tokenProvider:   tokenProvider,
 		usersDBModule:   usersDBModule,
 		eventsDBModule:  eventsDBModule,
 		logger:          logger,
@@ -76,7 +81,7 @@ func (c *component) GetUser(ctx context.Context, userID string) (api.UserReprese
 	}
 
 	var dbUser *dto.DBUser
-	dbUser, err = c.usersDBModule.GetUser(ctx, c.socialRealmName, *kcUser.Id)
+	dbUser, err = c.usersDBModule.GetUser(ctx, c.socialRealmName, userID)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "GetUser: can't find user in keycloak")
 		return api.UserRepresentation{}, err
@@ -140,7 +145,7 @@ func (c *component) UpdateUser(ctx context.Context, userID string, user api.User
 
 	if kcUpdate || dbUpdate {
 		// store the API call into the DB
-		c.reportEvent(ctx, "VALIDATION_UPDATE_USER", database.CtEventRealmName, c.socialRealmName, database.CtEventUserID, userID, database.CtEventUsername, *user.Username)
+		c.reportEvent(ctx, "VALIDATION_UPDATE_USER", database.CtEventRealmName, c.socialRealmName, database.CtEventUserID, userID)
 	}
 
 	return nil

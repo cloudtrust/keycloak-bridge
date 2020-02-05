@@ -44,11 +44,13 @@ func ValidateParameterPhoneNumber(prmName string, value *string, mandatory bool)
 		if mandatory {
 			return cerrors.CreateMissingParameterError(prmName)
 		}
+	} else {
+		var metadata, err = phonenumbers.Parse(*value, "CH")
+		if err != nil || !phonenumbers.IsPossibleNumber(metadata) {
+			return cerrors.CreateBadRequestError(cerrors.MsgErrInvalidParam + "." + prmName)
+		}
 	}
-	var metadata, err = phonenumbers.Parse(*value, "CH")
-	if err != nil || !phonenumbers.IsPossibleNumber(metadata) {
-		return cerrors.CreateBadRequestError(cerrors.MsgErrInvalidParam + "." + prmName)
-	}
+
 	return nil
 }
 

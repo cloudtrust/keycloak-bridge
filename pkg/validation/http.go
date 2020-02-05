@@ -23,7 +23,7 @@ func MakeValidationHandler(e endpoint.Endpoint, logger log.Logger) *http_transpo
 // decodeEventsRequest gets the HTTP parameters and body content
 func decodeManagementRequest(ctx context.Context, req *http.Request) (interface{}, error) {
 	var pathParams = map[string]string{
-		"user_id": api.RegExpID,
+		"userID": api.RegExpID,
 	}
 	var queryParams = map[string]string{}
 

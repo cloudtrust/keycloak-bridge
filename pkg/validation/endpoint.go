@@ -63,6 +63,6 @@ func MakeCreateCheckEndpoint(component Component) cs.Endpoint {
 			return nil, errorhandler.CreateBadRequestError(err.Error())
 		}
 
-		return nil, component.CreateCheck(ctx, m["userId"], check)
+		return nil, component.CreateCheck(ctx, m["userID"], check)
 	}
 }
