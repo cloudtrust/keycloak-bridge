@@ -16,21 +16,31 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func createValidUser() apiregister.User {
+func createValidUser() apiregister.UserRepresentation {
 	var (
-		gender      = "M"
-		firstName   = "Marc"
-		lastName    = "El-Bichoun"
-		email       = "marcel.bichon@elca.ch"
-		phoneNumber = "00 33 686 550011"
+		gender        = "M"
+		firstName     = "Marc"
+		lastName      = "El-Bichoun"
+		email         = "marcel.bichon@elca.ch"
+		phoneNumber   = "00 33 686 550011"
+		birthDate     = "31.03.2001"
+		birthLocation = "Montreux"
+		docType       = "ID_CARD"
+		docNumber     = "MEL123789654ABC"
+		docExp        = "28.02.2050"
 	)
 
-	return apiregister.User{
-		Gender:       &gender,
-		FirstName:    &firstName,
-		LastName:     &lastName,
-		EmailAddress: &email,
-		PhoneNumber:  &phoneNumber,
+	return apiregister.UserRepresentation{
+		Gender:               &gender,
+		FirstName:            &firstName,
+		LastName:             &lastName,
+		EmailAddress:         &email,
+		PhoneNumber:          &phoneNumber,
+		BirthDate:            &birthDate,
+		BirthLocation:        &birthLocation,
+		IDDocumentType:       &docType,
+		IDDocumentNumber:     &docNumber,
+		IDDocumentExpiration: &docExp,
 	}
 }
 
@@ -58,7 +68,7 @@ func TestRegisterUser(t *testing.T) {
 
 	t.Run("User is not valid", func(t *testing.T) {
 		// User is not valid
-		var _, err = component.RegisterUser(ctx, confRealm, apiregister.User{})
+		var _, err = component.RegisterUser(ctx, confRealm, apiregister.UserRepresentation{})
 		assert.NotNil(t, err)
 	})
 
@@ -153,10 +163,42 @@ func TestRegisterUser(t *testing.T) {
 		mockKeycloakClient.EXPECT().GetUsers(accessToken, targetRealm, targetRealm, "email", *validUser.EmailAddress).Return(usersSearchResult, nil)
 		mockKeycloakClient.EXPECT().CreateUser(token, targetRealm, targetRealm, gomock.Any()).Return(userID, nil)
 		mockUsersDB.EXPECT().StoreOrUpdateUser(ctx, targetRealm, gomock.Any()).Return(nil)
-		mockEventsDB.EXPECT().ReportEvent(gomock.Any(), "REGISTER_USER", "back-office", gomock.Any())
+		mockEventsDB.EXPECT().ReportEvent(gomock.Any(), "REGISTER_USER", "back-office", gomock.Any()).Return(nil)
 
 		var _, err = component.RegisterUser(ctx, confRealm, createValidUser())
 		assert.Nil(t, err)
+	})
+
+	t.Run("Everything is ok but report event fails", func(t *testing.T) {
+		var token = "abcdef"
+		var userID = "abc789def"
+		mockConfigDB.EXPECT().GetConfiguration(ctx, confRealm).Return(dto.RealmConfiguration{}, nil)
+		mockTokenProvider.EXPECT().ProvideToken(ctx).Return(token, nil)
+		mockKeycloakClient.EXPECT().GetUsers(accessToken, targetRealm, targetRealm, "email", *validUser.EmailAddress).Return(usersSearchResult, nil)
+		mockKeycloakClient.EXPECT().CreateUser(token, targetRealm, targetRealm, gomock.Any()).Return(userID, nil)
+		mockUsersDB.EXPECT().StoreOrUpdateUser(ctx, targetRealm, gomock.Any()).Return(nil)
+		mockEventsDB.EXPECT().ReportEvent(gomock.Any(), "REGISTER_USER", "back-office", gomock.Any()).Return(errors.New("report event error"))
+
+		var _, err = component.RegisterUser(ctx, confRealm, createValidUser())
+		assert.Nil(t, err)
+	})
+
+	t.Run("Parse keycloak URL fails", func(t *testing.T) {
+		var token = "abcdef"
+		var userID = "abc789def"
+		var requiredActions = []string{"execute", "actions"}
+		var successURL = "http://couldtrust.ch"
+		var realmConfiguration = dto.RealmConfiguration{RegisterExecuteActions: &requiredActions, RedirectSuccessfulRegistrationURL: &successURL}
+		var component = NewComponent("not\nvalid\nURL", targetRealm, "", "", mockKeycloakClient, mockTokenProvider, mockUsersDB, mockConfigDB, mockEventsDB, log.NewNopLogger())
+
+		mockConfigDB.EXPECT().GetConfiguration(ctx, confRealm).Return(realmConfiguration, nil)
+		mockTokenProvider.EXPECT().ProvideToken(ctx).Return(token, nil)
+		mockKeycloakClient.EXPECT().GetUsers(accessToken, targetRealm, targetRealm, "email", *validUser.EmailAddress).Return(usersSearchResult, nil)
+		mockKeycloakClient.EXPECT().CreateUser(token, targetRealm, targetRealm, gomock.Any()).Return(userID, nil)
+		mockUsersDB.EXPECT().StoreOrUpdateUser(ctx, targetRealm, gomock.Any()).Return(nil)
+
+		var _, err = component.RegisterUser(ctx, confRealm, createValidUser())
+		assert.NotNil(t, err)
 	})
 
 	t.Run("Send execute actions mail fails", func(t *testing.T) {
@@ -196,7 +238,7 @@ func TestCheckExistingUser(t *testing.T) {
 	var targetRealm = "trustid"
 	var email = "user@trustid.swiss"
 	var userID = "ab54f9a-97bi94"
-	var user = apiregister.User{EmailAddress: &email}
+	var user = apiregister.UserRepresentation{EmailAddress: &email}
 	var verified = true
 	var keycloakUser = kc.UserRepresentation{Id: &userID}
 	var empty = 0

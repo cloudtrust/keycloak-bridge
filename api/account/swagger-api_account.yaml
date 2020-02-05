@@ -196,12 +196,31 @@ components:
           type: string
         email:
           type: string
+        gender:
+          type: string
+          description: only returned by /account
         firstName:
           type: string
         lastName:
           type: string
         phoneNumber:
           type: string
+        birthDate:
+          type: string
+          description: only returned by /account. format is DD.MM.YYYY
+        birthLocation:
+          type: string
+          description: only returned by /account
+        idDocumentType:
+          type: string
+          enum: [ID_CARD, PASSPORT, RESIDENCE_PERMIT]
+          description: only returned by /account
+        idDocumentNumber:
+          type: string
+          description: only returned by /account
+        idDocumentExpiration:
+          type: string
+          description: only returned by /account
     Configuration:
       type: object
       properties:

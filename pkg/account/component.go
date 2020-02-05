@@ -54,20 +54,27 @@ type ConfigurationDBModule interface {
 	DeleteAllAuthorizationsWithGroup(context context.Context, realmID, groupName string) error
 }
 
+// UsersDBModule is the minimum required interface to access the users database
+type UsersDBModule interface {
+	GetUser(ctx context.Context, realm string, userID string) (*dto.DBUser, error)
+}
+
 // Component is the management component.
 type component struct {
 	keycloakAccountClient KeycloakAccountClient
 	eventDBModule         database.EventsDBModule
 	configDBModule        ConfigurationDBModule
+	usersDBModule         UsersDBModule
 	logger                internal.Logger
 }
 
 // NewComponent returns the self-service component.
-func NewComponent(keycloakAccountClient KeycloakAccountClient, eventDBModule database.EventsDBModule, configDBModule ConfigurationDBModule, logger internal.Logger) Component {
+func NewComponent(keycloakAccountClient KeycloakAccountClient, eventDBModule database.EventsDBModule, configDBModule ConfigurationDBModule, usersDBModule UsersDBModule, logger internal.Logger) Component {
 	return &component{
 		keycloakAccountClient: keycloakAccountClient,
 		eventDBModule:         eventDBModule,
 		configDBModule:        configDBModule,
+		usersDBModule:         usersDBModule,
 		logger:                logger,
 	}
 }
@@ -108,6 +115,7 @@ func (c *component) UpdatePassword(ctx context.Context, currentPassword, newPass
 func (c *component) GetAccount(ctx context.Context) (api.AccountRepresentation, error) {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 	var realm = ctx.Value(cs.CtContextRealm).(string)
+	var userID = ctx.Value(cs.CtContextUserID).(string)
 
 	var userRep api.AccountRepresentation
 	userKc, err := c.keycloakAccountClient.GetAccount(accessToken, realm)
@@ -117,7 +125,20 @@ func (c *component) GetAccount(ctx context.Context) (api.AccountRepresentation, 
 		return userRep, err
 	}
 
+	var dbUser *dto.DBUser
+	dbUser, err = c.usersDBModule.GetUser(ctx, realm, userID)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return userRep, err
+	}
+
 	userRep = api.ConvertToAPIAccount(userKc)
+	if dbUser != nil {
+		userRep.BirthLocation = dbUser.BirthLocation
+		userRep.IDDocumentType = dbUser.IDDocumentType
+		userRep.IDDocumentNumber = dbUser.IDDocumentNumber
+		userRep.IDDocumentExpiration = dbUser.IDDocumentExpiration
+	}
 
 	return userRep, nil
 }
@@ -317,7 +338,7 @@ func (c *component) MoveCredential(ctx context.Context, credentialID string, pre
 	return nil
 }
 
-func (c *component) GetConfiguration(ctx context.Context, realmIdOverride string) (api.Configuration, error) {
+func (c *component) GetConfiguration(ctx context.Context, realmIDOverride string) (api.Configuration, error) {
 	var currentRealm = ctx.Value(cs.CtContextRealm).(string)
 
 	config, err := c.configDBModule.GetConfiguration(ctx, currentRealm)
@@ -333,8 +354,8 @@ func (c *component) GetConfiguration(ctx context.Context, realmIdOverride string
 		RedirectSuccessfulRegistrationURL: config.RedirectSuccessfulRegistrationURL,
 	}
 
-	if realmIdOverride != "" {
-		overrideConfig, err := c.configDBModule.GetConfiguration(ctx, realmIdOverride)
+	if realmIDOverride != "" {
+		overrideConfig, err := c.configDBModule.GetConfiguration(ctx, realmIDOverride)
 		if err != nil {
 			return api.Configuration{}, err
 		}

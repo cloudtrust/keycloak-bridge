@@ -22,15 +22,16 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func genericUpdatePasswordTest(t *testing.T, oldPasswd, newPasswd, confirmPassword string, kcCalls int, expectingError bool) {
+func TestUpdatePassword(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 
 	mockKeycloakAccountClient := mock.NewKeycloakAccountClient(mockCtrl)
 	mockEventDBModule := mock.NewEventsDBModule(mockCtrl)
-	mockLogger := log.NewNopLogger()
 	mockConfigurationDBModule := mock.NewConfigurationDBModule(mockCtrl)
-	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigurationDBModule, mockLogger)
+	mockUsersDBModule := mock.NewUsersDBModule(mockCtrl)
+	mockLogger := log.NewNopLogger()
+	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigurationDBModule, mockUsersDBModule, mockLogger)
 
 	accessToken := "access token"
 	realm := "sample realm"
@@ -41,30 +42,33 @@ func genericUpdatePasswordTest(t *testing.T, oldPasswd, newPasswd, confirmPasswo
 	ctx = context.WithValue(ctx, cs.CtContextUserID, userID)
 	ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 
-	mockKeycloakAccountClient.EXPECT().UpdatePassword(accessToken, realm, oldPasswd, newPasswd, confirmPassword).Return("", nil).Times(kcCalls)
-	mockEventDBModule.EXPECT().ReportEvent(gomock.Any(), "PASSWORD_RESET", "self-service", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(kcCalls)
+	t.Run("Update password: no change", func(t *testing.T) {
+		oldPasswd := "a p@55w0rd"
+		err := component.UpdatePassword(ctx, oldPasswd, oldPasswd, oldPasswd)
 
-	err := component.UpdatePassword(ctx, oldPasswd, newPasswd, confirmPassword)
+		assert.NotNil(t, err)
+	})
 
-	assert.Equal(t, expectingError, err != nil)
+	t.Run("Update password: bad confirm", func(t *testing.T) {
+		oldPasswd := "prev10u5"
+		newPasswd := "a p@55w0rd"
+		confirmPasswd := "bad one"
+		err := component.UpdatePassword(ctx, oldPasswd, newPasswd, confirmPasswd)
 
-}
+		assert.NotNil(t, err)
+	})
 
-func TestUpdatePasswordNoChange(t *testing.T) {
-	passwd := "a p@55w0rd"
-	genericUpdatePasswordTest(t, passwd, passwd, passwd, 0, true)
-}
+	t.Run("Update password: success", func(t *testing.T) {
+		oldPasswd := "prev10u5"
+		newPasswd := "a p@55w0rd"
+		confirmPasswd := "a p@55w0rd"
+		mockKeycloakAccountClient.EXPECT().UpdatePassword(accessToken, realm, oldPasswd, newPasswd, confirmPasswd).Return("", nil).Times(1)
+		mockEventDBModule.EXPECT().ReportEvent(gomock.Any(), "PASSWORD_RESET", "self-service", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
 
-func TestUpdatePasswordBadConfirm(t *testing.T) {
-	oldPasswd := "prev10u5"
-	newPasswd := "a p@55w0rd"
-	genericUpdatePasswordTest(t, oldPasswd, newPasswd, newPasswd+newPasswd, 0, true)
-}
+		err := component.UpdatePassword(ctx, oldPasswd, newPasswd, confirmPasswd)
 
-func TestUpdatePassword(t *testing.T) {
-	oldPasswd := "prev10u5"
-	newPasswd := "a p@55w0rd"
-	genericUpdatePasswordTest(t, oldPasswd, newPasswd, newPasswd, 1, false)
+		assert.Nil(t, err)
+	})
 }
 
 func TestUpdatePasswordWrongPwd(t *testing.T) {
@@ -76,9 +80,10 @@ func TestUpdatePasswordWrongPwd(t *testing.T) {
 
 	mockKeycloakAccountClient := mock.NewKeycloakAccountClient(mockCtrl)
 	mockEventDBModule := mock.NewEventsDBModule(mockCtrl)
-	mockLogger := mock.NewLogger(mockCtrl)
+	mockUsersDBModule := mock.NewUsersDBModule(mockCtrl)
 	mockConfigurationDBModule := mock.NewConfigurationDBModule(mockCtrl)
-	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigurationDBModule, mockLogger)
+	mockLogger := mock.NewLogger(mockCtrl)
+	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigurationDBModule, mockUsersDBModule, mockLogger)
 
 	accessToken := "access token"
 	realm := "sample realm"
@@ -119,12 +124,14 @@ func TestUpdatePasswordWrongPwd(t *testing.T) {
 func TestUpdateAccount(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
+
 	mockKeycloakAccountClient := mock.NewKeycloakAccountClient(mockCtrl)
 	mockEventDBModule := mock.NewEventsDBModule(mockCtrl)
-	var mockLogger = log.NewNopLogger()
+	mockUsersDBModule := mock.NewUsersDBModule(mockCtrl)
 	mockConfigurationDBModule := mock.NewConfigurationDBModule(mockCtrl)
+	mockLogger := log.NewNopLogger()
 
-	var accountComponent = NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigurationDBModule, mockLogger)
+	var accountComponent = NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigurationDBModule, mockUsersDBModule, mockLogger)
 
 	accessToken := "access token"
 	realmName := "master"
@@ -136,7 +143,6 @@ func TestUpdateAccount(t *testing.T) {
 	ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 
 	var id = "1234-7454-4516"
-	//var username = "username"
 	var email = "toto@elca.ch"
 	var enabled = true
 	var emailVerified = true
@@ -181,9 +187,7 @@ func TestUpdateAccount(t *testing.T) {
 	// Update account with succces
 	{
 		mockEventDBModule.EXPECT().ReportEvent(ctx, "UPDATE_ACCOUNT", "self-service", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-
 		mockKeycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kcUserRep, nil).Times(1)
-
 		mockKeycloakAccountClient.EXPECT().UpdateAccount(accessToken, realmName, gomock.Any()).DoAndReturn(
 			func(accessToken, realmName string, kcUserRep kc.UserRepresentation) error {
 				assert.Equal(t, username, *kcUserRep.Username)
@@ -231,7 +235,6 @@ func TestUpdateAccount(t *testing.T) {
 
 	// update by changing the phone number
 	{
-
 		mockKeycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(oldkcUserRep2, nil).Times(1)
 		mockKeycloakAccountClient.EXPECT().UpdateAccount(accessToken, realmName, gomock.Any()).DoAndReturn(
 			func(accessToken, realmName string, kcUserRep kc.UserRepresentation) error {
@@ -297,57 +300,73 @@ func TestGetUser(t *testing.T) {
 	defer mockCtrl.Finish()
 	mockKeycloakAccountClient := mock.NewKeycloakAccountClient(mockCtrl)
 	mockEventDBModule := mock.NewEventsDBModule(mockCtrl)
-	var mockLogger = log.NewNopLogger()
 	mockConfigurationDBModule := mock.NewConfigurationDBModule(mockCtrl)
+	mockUsersDBModule := mock.NewUsersDBModule(mockCtrl)
+	mockLogger := log.NewNopLogger()
 
-	var accountComponent = NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigurationDBModule, mockLogger)
+	var accountComponent = NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigurationDBModule, mockUsersDBModule, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
 	var username = "username"
+	var userID = "1234-7454-4516"
 
 	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 	ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 	ctx = context.WithValue(ctx, cs.CtContextUsername, username)
+	ctx = context.WithValue(ctx, cs.CtContextUserID, userID)
 
-	// Get user with succces
-	{
-		var id = "1234-7454-4516"
-		var email = "toto@elca.ch"
-		var enabled = true
-		var emailVerified = true
-		var firstName = "Titi"
-		var lastName = "Tutu"
-		var phoneNumber = "+41789456"
-		var phoneNumberVerified = true
-		var label = "Label"
-		var gender = "M"
-		var birthDate = "01/01/1988"
-		var createdTimestamp = time.Now().UTC().Unix()
-		var locale = "it"
+	t.Run("Call to Keycloak fails", func(t *testing.T) {
+		mockKeycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kc.UserRepresentation{}, fmt.Errorf("Unexpected error"))
+		_, err := accountComponent.GetAccount(ctx)
 
-		var attributes = make(map[string][]string)
-		attributes["phoneNumber"] = []string{phoneNumber}
-		attributes["label"] = []string{label}
-		attributes["gender"] = []string{gender}
-		attributes["birthDate"] = []string{birthDate}
-		attributes["phoneNumberVerified"] = []string{strconv.FormatBool(phoneNumberVerified)}
-		attributes["locale"] = []string{locale}
+		assert.NotNil(t, err)
+	})
 
-		var kcUserRep = kc.UserRepresentation{
-			Id:               &id,
-			Username:         &username,
-			Email:            &email,
-			Enabled:          &enabled,
-			EmailVerified:    &emailVerified,
-			FirstName:        &firstName,
-			LastName:         &lastName,
-			Attributes:       &attributes,
-			CreatedTimestamp: &createdTimestamp,
-		}
+	t.Run("Call to database fails", func(t *testing.T) {
+		var dbError = errors.New("db error")
+		mockKeycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kc.UserRepresentation{}, nil)
+		mockUsersDBModule.EXPECT().GetUser(ctx, realmName, userID).Return(nil, dbError)
+		_, err := accountComponent.GetAccount(ctx)
 
+		assert.Equal(t, dbError, err)
+	})
+
+	var email = "toto@elca.ch"
+	var enabled = true
+	var emailVerified = true
+	var firstName = "Titi"
+	var lastName = "Tutu"
+	var phoneNumber = "+41789456"
+	var phoneNumberVerified = true
+	var label = "Label"
+	var gender = "M"
+	var birthDate = "01/01/1988"
+	var createdTimestamp = time.Now().UTC().Unix()
+	var locale = "it"
+
+	var attributes = make(map[string][]string)
+	attributes["phoneNumber"] = []string{phoneNumber}
+	attributes["label"] = []string{label}
+	attributes["gender"] = []string{gender}
+	attributes["birthDate"] = []string{birthDate}
+	attributes["phoneNumberVerified"] = []string{strconv.FormatBool(phoneNumberVerified)}
+	attributes["locale"] = []string{locale}
+
+	var kcUserRep = kc.UserRepresentation{
+		Username:         &username,
+		Email:            &email,
+		Enabled:          &enabled,
+		EmailVerified:    &emailVerified,
+		FirstName:        &firstName,
+		LastName:         &lastName,
+		Attributes:       &attributes,
+		CreatedTimestamp: &createdTimestamp,
+	}
+
+	t.Run("Get user with succces", func(t *testing.T) {
 		mockKeycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kcUserRep, nil).Times(1)
-
+		mockUsersDBModule.EXPECT().GetUser(ctx, realmName, userID).Return(nil, nil)
 		mockEventDBModule.EXPECT().ReportEvent(ctx, "GET_DETAILS", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
 		apiUserRep, err := accountComponent.GetAccount(ctx)
@@ -355,18 +374,46 @@ func TestGetUser(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Equal(t, username, *apiUserRep.Username)
 		assert.Equal(t, email, *apiUserRep.Email)
+		assert.Equal(t, gender, *apiUserRep.Gender)
 		assert.Equal(t, firstName, *apiUserRep.FirstName)
 		assert.Equal(t, lastName, *apiUserRep.LastName)
 		assert.Equal(t, phoneNumber, *apiUserRep.PhoneNumber)
-	}
+		assert.Equal(t, birthDate, *apiUserRep.BirthDate)
+		assert.Nil(t, apiUserRep.BirthLocation)
+		assert.Nil(t, apiUserRep.IDDocumentType)
+		assert.Nil(t, apiUserRep.IDDocumentNumber)
+		assert.Nil(t, apiUserRep.IDDocumentExpiration)
+	})
 
-	//Error
-	{
-		mockKeycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kc.UserRepresentation{}, fmt.Errorf("Unexpected error")).Times(1)
-		_, err := accountComponent.GetAccount(ctx)
+	t.Run("Get user with succces", func(t *testing.T) {
+		var birthLocation = "Luzern"
+		var docType = "PASSPORT"
+		var docID = "PASS123456789"
+		var docExp = "31.12.2029"
+		mockKeycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kcUserRep, nil).Times(1)
+		mockUsersDBModule.EXPECT().GetUser(ctx, realmName, userID).Return(&dto.DBUser{
+			BirthLocation:        &birthLocation,
+			IDDocumentType:       &docType,
+			IDDocumentNumber:     &docID,
+			IDDocumentExpiration: &docExp,
+		}, nil)
+		mockEventDBModule.EXPECT().ReportEvent(ctx, "GET_DETAILS", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
-		assert.NotNil(t, err)
-	}
+		apiUserRep, err := accountComponent.GetAccount(ctx)
+
+		assert.Nil(t, err)
+		assert.Equal(t, username, *apiUserRep.Username)
+		assert.Equal(t, email, *apiUserRep.Email)
+		assert.Equal(t, gender, *apiUserRep.Gender)
+		assert.Equal(t, firstName, *apiUserRep.FirstName)
+		assert.Equal(t, lastName, *apiUserRep.LastName)
+		assert.Equal(t, phoneNumber, *apiUserRep.PhoneNumber)
+		assert.Equal(t, birthDate, *apiUserRep.BirthDate)
+		assert.Equal(t, birthLocation, *apiUserRep.BirthLocation)
+		assert.Equal(t, docType, *apiUserRep.IDDocumentType)
+		assert.Equal(t, docID, *apiUserRep.IDDocumentNumber)
+		assert.Equal(t, docExp, *apiUserRep.IDDocumentExpiration)
+	})
 }
 
 func TestDeleteUser(t *testing.T) {
@@ -374,10 +421,11 @@ func TestDeleteUser(t *testing.T) {
 	defer mockCtrl.Finish()
 	mockKeycloakAccountClient := mock.NewKeycloakAccountClient(mockCtrl)
 	mockEventDBModule := mock.NewEventsDBModule(mockCtrl)
-	var mockLogger = log.NewNopLogger()
+	mockUsersDBModule := mock.NewUsersDBModule(mockCtrl)
 	mockConfigurationDBModule := mock.NewConfigurationDBModule(mockCtrl)
+	mockLogger := log.NewNopLogger()
 
-	var accountComponent = NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigurationDBModule, mockLogger)
+	var accountComponent = NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigurationDBModule, mockUsersDBModule, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -387,23 +435,21 @@ func TestDeleteUser(t *testing.T) {
 	ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 	ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 
-	// Delete user with succces
-	{
+	t.Run("Delete user with succces", func(t *testing.T) {
 		mockKeycloakAccountClient.EXPECT().DeleteAccount(accessToken, realmName).Return(nil).Times(1)
 		mockEventDBModule.EXPECT().ReportEvent(ctx, "SELF_DELETE_ACCOUNT", "self-service", gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
 		err := accountComponent.DeleteAccount(ctx)
 
 		assert.Nil(t, err)
-	}
+	})
 
-	//Error
-	{
+	t.Run("Delete user fails", func(t *testing.T) {
 		mockKeycloakAccountClient.EXPECT().DeleteAccount(accessToken, realmName).Return(fmt.Errorf("Unexpected error")).Times(1)
 		err := accountComponent.DeleteAccount(ctx)
 
 		assert.NotNil(t, err)
-	}
+	})
 }
 
 func TestGetCredentials(t *testing.T) {
@@ -412,10 +458,11 @@ func TestGetCredentials(t *testing.T) {
 
 	mockKeycloakAccountClient := mock.NewKeycloakAccountClient(mockCtrl)
 	mockEventDBModule := mock.NewEventsDBModule(mockCtrl)
-	mockLogger := log.NewNopLogger()
 	mockConfigurationDBModule := mock.NewConfigurationDBModule(mockCtrl)
+	mockUsersDBModule := mock.NewUsersDBModule(mockCtrl)
+	mockLogger := log.NewNopLogger()
 
-	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigurationDBModule, mockLogger)
+	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigurationDBModule, mockUsersDBModule, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var currentRealm = "master"
@@ -471,10 +518,11 @@ func TestGetCredentialRegistrators(t *testing.T) {
 
 	mockKeycloakAccountClient := mock.NewKeycloakAccountClient(mockCtrl)
 	mockEventDBModule := mock.NewEventsDBModule(mockCtrl)
-	mockLogger := log.NewNopLogger()
 	mockConfigurationDBModule := mock.NewConfigurationDBModule(mockCtrl)
+	mockUsersDBModule := mock.NewUsersDBModule(mockCtrl)
+	mockLogger := log.NewNopLogger()
 
-	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigurationDBModule, mockLogger)
+	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigurationDBModule, mockUsersDBModule, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var currentRealm = "master"
@@ -517,10 +565,11 @@ func TestUpdateLabelCredential(t *testing.T) {
 
 	mockKeycloakAccountClient := mock.NewKeycloakAccountClient(mockCtrl)
 	mockEventDBModule := mock.NewEventsDBModule(mockCtrl)
-	mockLogger := log.NewNopLogger()
 	mockConfigurationDBModule := mock.NewConfigurationDBModule(mockCtrl)
+	mockUsersDBModule := mock.NewUsersDBModule(mockCtrl)
+	mockLogger := log.NewNopLogger()
 
-	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigurationDBModule, mockLogger)
+	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigurationDBModule, mockUsersDBModule, mockLogger)
 
 	accessToken := "access token"
 	realm := "sample realm"
@@ -558,10 +607,11 @@ func TestDeleteCredential(t *testing.T) {
 
 	mockKeycloakAccountClient := mock.NewKeycloakAccountClient(mockCtrl)
 	mockEventDBModule := mock.NewEventsDBModule(mockCtrl)
-	mockLogger := log.NewNopLogger()
 	mockConfigurationDBModule := mock.NewConfigurationDBModule(mockCtrl)
+	mockUsersDBModule := mock.NewUsersDBModule(mockCtrl)
+	mockLogger := log.NewNopLogger()
 
-	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigurationDBModule, mockLogger)
+	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigurationDBModule, mockUsersDBModule, mockLogger)
 
 	accessToken := "access token"
 	realm := "sample realm"
@@ -597,10 +647,11 @@ func TestMoveCredential(t *testing.T) {
 
 	mockKeycloakAccountClient := mock.NewKeycloakAccountClient(mockCtrl)
 	mockEventDBModule := mock.NewEventsDBModule(mockCtrl)
-	mockLogger := log.NewNopLogger()
 	mockConfigurationDBModule := mock.NewConfigurationDBModule(mockCtrl)
+	mockUsersDBModule := mock.NewUsersDBModule(mockCtrl)
+	mockLogger := log.NewNopLogger()
 
-	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigurationDBModule, mockLogger)
+	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigurationDBModule, mockUsersDBModule, mockLogger)
 
 	accessToken := "access token"
 	realm := "sample realm"
@@ -653,10 +704,11 @@ func TestGetConfiguration(t *testing.T) {
 
 	mockKeycloakAccountClient := mock.NewKeycloakAccountClient(mockCtrl)
 	mockEventDBModule := mock.NewEventsDBModule(mockCtrl)
-	mockLogger := log.NewNopLogger()
 	mockConfigurationDBModule := mock.NewConfigurationDBModule(mockCtrl)
+	mockUsersDBModule := mock.NewUsersDBModule(mockCtrl)
+	mockLogger := log.NewNopLogger()
 
-	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigurationDBModule, mockLogger)
+	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigurationDBModule, mockUsersDBModule, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var currentRealm = "master"

@@ -3,11 +3,10 @@ package apiregister
 import (
 	"testing"
 
-	kc "github.com/cloudtrust/keycloak-client"
 	"github.com/stretchr/testify/assert"
 )
 
-func createValidUser() User {
+func createValidUser() UserRepresentation {
 	var (
 		gender          = "M"
 		firstName       = "Marc"
@@ -21,7 +20,7 @@ func createValidUser() User {
 		idDocExpiration = "23.02.2039"
 	)
 
-	return User{
+	return UserRepresentation{
 		Gender:               &gender,
 		FirstName:            &firstName,
 		LastName:             &lastName,
@@ -49,11 +48,9 @@ func TestJSON(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
-func TestToKeycloakUser(t *testing.T) {
+func TestConvertToKeycloak(t *testing.T) {
 	var user = createValidUser()
-	var kcUser = kc.UserRepresentation{}
-
-	user.UpdateUserRepresentation(&kcUser)
+	var kcUser = user.ConvertToKeycloak()
 
 	assert.Equal(t, user.FirstName, kcUser.FirstName)
 	assert.Equal(t, user.LastName, kcUser.LastName)
@@ -70,19 +67,11 @@ func TestValidateParameterIn(t *testing.T) {
 	)
 
 	t.Run("Valid users", func(t *testing.T) {
-		var users = []User{user, user, user, user, user, user}
-		users[1].BirthDate = nil
-		users[2].BirthLocation = nil
-		users[3].IDDocumentType = nil
-		users[4].IDDocumentNumber = nil
-		users[5].IDDocumentExpiration = nil
-		for idx, aUser := range users {
-			assert.Nil(t, aUser.Validate(), "User is expected to be valid. Test #%d failed with user %s", idx, aUser.UserToJSON())
-		}
+		assert.Nil(t, user.Validate(), "User is expected to be valid")
 	})
 
 	t.Run("Invalid users", func(t *testing.T) {
-		var users = []User{user, user, user, user, user, user, user, user, user, user, user, user, user, user, user}
+		var users = []UserRepresentation{user, user, user, user, user, user, user, user, user, user, user, user, user, user, user, user, user, user, user, user}
 		// invalid values
 		users[0].Gender = &empty
 		users[1].FirstName = &empty
@@ -100,20 +89,14 @@ func TestValidateParameterIn(t *testing.T) {
 		users[12].LastName = nil
 		users[13].EmailAddress = nil
 		users[14].PhoneNumber = nil
+		users[15].BirthDate = nil
+		users[16].BirthLocation = nil
+		users[17].IDDocumentType = nil
+		users[18].IDDocumentNumber = nil
+		users[19].IDDocumentExpiration = nil
 
 		for idx, aUser := range users {
 			assert.NotNil(t, aUser.Validate(), "User is expected to be invalid. Test #%d failed with user %s", idx, aUser.UserToJSON())
 		}
 	})
-}
-
-func TestValidateParameterDate(t *testing.T) {
-	var invalidDate = "29.02.2019"
-	var validDate = "29.02.2020"
-
-	assert.NotNil(t, validateParameterDate("date", nil, true))
-	assert.Nil(t, validateParameterDate("date", nil, false))
-
-	assert.NotNil(t, validateParameterDate("date", &invalidDate, true))
-	assert.Nil(t, validateParameterDate("date", &validDate, true))
 }

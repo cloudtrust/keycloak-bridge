@@ -1,4 +1,4 @@
-package register
+package keycloakb
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/cloudtrust/common-service/log"
-	apiregister "github.com/cloudtrust/keycloak-bridge/api/register"
+	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/mock"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -21,11 +21,11 @@ func TestStoreOrUpdateUser(t *testing.T) {
 	var userID = "123789"
 	mockDB.EXPECT().Exec(gomock.Any(), "realmId", &userID, gomock.Any(), gomock.Any()).Return(nil, nil).Times(1)
 	var configDBModule = NewUsersDBModule(mockDB, log.NewNopLogger())
-	var err = configDBModule.StoreOrUpdateUser(context.Background(), "realmId", apiregister.DBUser{UserID: &userID})
+	var err = configDBModule.StoreOrUpdateUser(context.Background(), "realmId", dto.DBUser{UserID: &userID})
 	assert.Nil(t, err)
 }
 
-func TestGetUser(t *testing.T) {
+func TestGetUserDB(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 
