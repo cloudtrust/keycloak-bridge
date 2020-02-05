@@ -50,7 +50,7 @@ func (rcv *AuthDetails) UserId() []byte {
 	return nil
 }
 
-func (rcv *AuthDetails) IpAddress() []byte {
+func (rcv *AuthDetails) Username() []byte {
 	o := flatbuffers.UOffsetT(rcv._tab.Offset(10))
 	if o != 0 {
 		return rcv._tab.ByteVector(o + rcv._tab.Pos)
@@ -58,8 +58,16 @@ func (rcv *AuthDetails) IpAddress() []byte {
 	return nil
 }
 
+func (rcv *AuthDetails) IpAddress() []byte {
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(12))
+	if o != 0 {
+		return rcv._tab.ByteVector(o + rcv._tab.Pos)
+	}
+	return nil
+}
+
 func AuthDetailsStart(builder *flatbuffers.Builder) {
-	builder.StartObject(4)
+	builder.StartObject(5)
 }
 func AuthDetailsAddRealmId(builder *flatbuffers.Builder, realmId flatbuffers.UOffsetT) {
 	builder.PrependUOffsetTSlot(0, flatbuffers.UOffsetT(realmId), 0)
@@ -70,8 +78,11 @@ func AuthDetailsAddClientId(builder *flatbuffers.Builder, clientId flatbuffers.U
 func AuthDetailsAddUserId(builder *flatbuffers.Builder, userId flatbuffers.UOffsetT) {
 	builder.PrependUOffsetTSlot(2, flatbuffers.UOffsetT(userId), 0)
 }
+func AuthDetailsAddUsername(builder *flatbuffers.Builder, username flatbuffers.UOffsetT) {
+	builder.PrependUOffsetTSlot(3, flatbuffers.UOffsetT(username), 0)
+}
 func AuthDetailsAddIpAddress(builder *flatbuffers.Builder, ipAddress flatbuffers.UOffsetT) {
-	builder.PrependUOffsetTSlot(3, flatbuffers.UOffsetT(ipAddress), 0)
+	builder.PrependUOffsetTSlot(4, flatbuffers.UOffsetT(ipAddress), 0)
 }
 func AuthDetailsEnd(builder *flatbuffers.Builder) flatbuffers.UOffsetT {
 	return builder.EndObject()

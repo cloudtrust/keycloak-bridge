@@ -456,6 +456,12 @@ func TestAdminEventToMap(t *testing.T) {
 	var realmID = "realm"
 	var representation = "representation"
 	var error = "error"
+	var agentUsername = "agent_test_username"
+	var agentUserID = "agent_test_id"
+	var userID = "user_id"
+	var username = "username"
+	var ipAddr = "127.0.0.1"
+	var clientID = "clientid_test"
 
 	var adminEvent *fb.AdminEvent
 	{
@@ -466,23 +472,37 @@ func TestAdminEventToMap(t *testing.T) {
 		var resourceP = builder.CreateString(resourcePath)
 		var error = builder.CreateString(error)
 
-		var key1 = builder.CreateString("username")
-		var value1 = builder.CreateString("test_username")
-		fb.TupleStart(builder)
-		fb.TupleAddKey(builder, key1)
-		fb.TupleAddValue(builder, value1)
-		var detail1 = fb.TupleEnd(builder)
+		var agentUsrValue = builder.CreateString(agentUsername)
+		var agentIDValue = builder.CreateString(agentUserID)
+		var agentRealmValue = builder.CreateString(realmID)
+		var ipValue = builder.CreateString(ipAddr)
+		var clientIDValue = builder.CreateString(clientID)
 
-		var key2 = builder.CreateString("key2")
-		var value2 = builder.CreateString("value2")
+		fb.AuthDetailsStart(builder)
+		fb.AuthDetailsAddUserId(builder, agentIDValue)
+		fb.AuthDetailsAddUsername(builder, agentUsrValue)
+		fb.AuthDetailsAddRealmId(builder, agentRealmValue)
+		fb.AuthDetailsAddIpAddress(builder, ipValue)
+		fb.AuthDetailsAddClientId(builder, clientIDValue)
+		var authDetails = fb.AuthDetailsEnd(builder)
+
+		var key3 = builder.CreateString(database.CtEventUsername)
+		var value3 = builder.CreateString(username)
 		fb.TupleStart(builder)
-		fb.TupleAddKey(builder, key2)
-		fb.TupleAddValue(builder, value2)
-		var detail2 = fb.TupleEnd(builder)
+		fb.TupleAddKey(builder, key3)
+		fb.TupleAddValue(builder, value3)
+		var detail3 = fb.TupleEnd(builder)
+
+		var key4 = builder.CreateString(database.CtEventUserID)
+		var value4 = builder.CreateString(userID)
+		fb.TupleStart(builder)
+		fb.TupleAddKey(builder, key4)
+		fb.TupleAddValue(builder, value4)
+		var detail4 = fb.TupleEnd(builder)
 
 		fb.EventStartDetailsVector(builder, 2)
-		builder.PrependUOffsetT(detail1)
-		builder.PrependUOffsetT(detail2)
+		builder.PrependUOffsetT(detail3)
+		builder.PrependUOffsetT(detail4)
 		var details = builder.EndVector(2)
 
 		fb.AdminEventStart(builder)
@@ -494,7 +514,8 @@ func TestAdminEventToMap(t *testing.T) {
 		fb.AdminEventAddOperationType(builder, optype)
 		fb.AdminEventAddResourcePath(builder, resourceP)
 		fb.AdminEventAddError(builder, error)
-		fb.AdminEventAddAuthDetails(builder, details)
+		fb.AdminEventAddAuthDetails(builder, authDetails)
+		fb.AdminEventAddDetails(builder, details)
 		var eventOffset = fb.EventEnd(builder)
 		builder.Finish(eventOffset)
 		adminEvent = fb.GetRootAsAdminEvent(builder.FinishedBytes(), 0)
@@ -505,12 +526,19 @@ func TestAdminEventToMap(t *testing.T) {
 	assert.Equal(t, time.Unix(0, epoch*1000000).UTC().Format("2006-01-02 15:04:05.000"), m[database.CtEventAuditTime])
 	assert.Equal(t, fb.EnumNamesOperationType[int8(optype)], m[database.CtEventKcOperationType])
 	assert.Equal(t, realmID, m[database.CtEventRealmName])
+	assert.Equal(t, username, m[database.CtEventUsername])
+	assert.Equal(t, userID, m[database.CtEventUserID])
+	assert.Equal(t, agentUsername, m[database.CtEventAgentUsername])
+	assert.Equal(t, agentUserID, m[database.CtEventAgentUserID])
+	assert.Equal(t, clientID, m[database.CtEventClientID])
+	assert.Equal(t, realmID, m[database.CtEventAgentRealmName])
 	var f = make(map[string]string)
 	err := json.Unmarshal([]byte(m[database.CtEventAdditionalInfo]), &f)
 	assert.Nil(t, err)
 	assert.Equal(t, strconv.FormatInt(uid, 10), f["uid"])
 	assert.Equal(t, resourcePath, f["resource_path"])
 	assert.Equal(t, representation, f["representation"])
+	assert.Equal(t, ipAddr, f["ip_address"])
 	assert.Equal(t, error, f["error"])
 	assert.Equal(t, "ADMIN", m[database.CtEventType])
 
@@ -519,35 +547,35 @@ func TestAdminEventToMap(t *testing.T) {
 func TestAdminEventToMapAccountCreated(t *testing.T) {
 	var resourcePath = "users/8caefab3-90d1-492e-87e0-1bf6cecc76ea/role-mappings/realm "
 	var optype int8
+	var agentUsername = "agent_test_username"
+	var agentUserID = "agent_test_id"
+	var ipAddr = "127.0.0.1"
+	var clientID = "clientid_test"
+	var realmID = "realm"
 
 	var adminEvent *fb.AdminEvent
 	{
 		var builder = flatbuffers.NewBuilder(0)
 		var resourceP = builder.CreateString(resourcePath)
 
-		var key1 = builder.CreateString("username")
-		var value1 = builder.CreateString("test_username")
-		fb.TupleStart(builder)
-		fb.TupleAddKey(builder, key1)
-		fb.TupleAddValue(builder, value1)
-		var detail1 = fb.TupleEnd(builder)
+		var agentUsrValue = builder.CreateString(agentUsername)
+		var agentIDValue = builder.CreateString(agentUserID)
+		var agentRealmValue = builder.CreateString(realmID)
+		var ipValue = builder.CreateString(ipAddr)
+		var clientIDValue = builder.CreateString(clientID)
 
-		var key2 = builder.CreateString("key2")
-		var value2 = builder.CreateString("value2")
-		fb.TupleStart(builder)
-		fb.TupleAddKey(builder, key2)
-		fb.TupleAddValue(builder, value2)
-		var detail2 = fb.TupleEnd(builder)
-
-		fb.EventStartDetailsVector(builder, 2)
-		builder.PrependUOffsetT(detail1)
-		builder.PrependUOffsetT(detail2)
-		var details = builder.EndVector(2)
+		fb.AuthDetailsStart(builder)
+		fb.AuthDetailsAddUserId(builder, agentIDValue)
+		fb.AuthDetailsAddUsername(builder, agentUsrValue)
+		fb.AuthDetailsAddRealmId(builder, agentRealmValue)
+		fb.AuthDetailsAddIpAddress(builder, ipValue)
+		fb.AuthDetailsAddClientId(builder, clientIDValue)
+		var authDetails = fb.AuthDetailsEnd(builder)
 
 		fb.AdminEventStart(builder)
 		fb.AdminEventAddOperationType(builder, optype)
 		fb.AdminEventAddResourcePath(builder, resourceP)
-		fb.AdminEventAddAuthDetails(builder, details)
+		fb.AdminEventAddAuthDetails(builder, authDetails)
 		var eventOffset = fb.EventEnd(builder)
 		builder.Finish(eventOffset)
 		adminEvent = fb.GetRootAsAdminEvent(builder.FinishedBytes(), 0)
@@ -561,51 +589,35 @@ func TestAdminEventToMapAccountCreated(t *testing.T) {
 func TestAdminEventToMapActivationEmailSent(t *testing.T) {
 	var resourcePath = "users/8caefab3-90d1-492e-87e0-1bf6cecc76ea/send-verify-email"
 	var optype int8 = 3
+	var agentUsername = "agent_test_username"
+	var agentUserID = "agent_test_id"
+	var ipAddr = "127.0.0.1"
+	var clientID = "clientid_test"
+	var realmID = "realm"
 
 	var adminEvent *fb.AdminEvent
 	{
 		var builder = flatbuffers.NewBuilder(0)
 		var resourceP = builder.CreateString(resourcePath)
 
-		var key1 = builder.CreateString("clientId")
-		var value1 = builder.CreateString("test_username")
-		fb.TupleStart(builder)
-		fb.TupleAddKey(builder, key1)
-		fb.TupleAddValue(builder, value1)
-		var detail1 = fb.TupleEnd(builder)
+		var agentUsrValue = builder.CreateString(agentUsername)
+		var agentIDValue = builder.CreateString(agentUserID)
+		var agentRealmValue = builder.CreateString(realmID)
+		var ipValue = builder.CreateString(ipAddr)
+		var clientIDValue = builder.CreateString(clientID)
 
-		var key2 = builder.CreateString("ipAddress")
-		var value2 = builder.CreateString("127.0.0.1")
-		fb.TupleStart(builder)
-		fb.TupleAddKey(builder, key2)
-		fb.TupleAddValue(builder, value2)
-		var detail2 = fb.TupleEnd(builder)
-
-		var key3 = builder.CreateString("realmId")
-		var value3 = builder.CreateString("master")
-		fb.TupleStart(builder)
-		fb.TupleAddKey(builder, key3)
-		fb.TupleAddValue(builder, value3)
-		var detail3 = fb.TupleEnd(builder)
-
-		var key4 = builder.CreateString("userId")
-		var value4 = builder.CreateString("dummy_user")
-		fb.TupleStart(builder)
-		fb.TupleAddKey(builder, key4)
-		fb.TupleAddValue(builder, value4)
-		var detail4 = fb.TupleEnd(builder)
-
-		fb.EventStartDetailsVector(builder, 4)
-		builder.PrependUOffsetT(detail1)
-		builder.PrependUOffsetT(detail2)
-		builder.PrependUOffsetT(detail3)
-		builder.PrependUOffsetT(detail4)
-		var details = builder.EndVector(4)
+		fb.AuthDetailsStart(builder)
+		fb.AuthDetailsAddUserId(builder, agentIDValue)
+		fb.AuthDetailsAddUsername(builder, agentUsrValue)
+		fb.AuthDetailsAddRealmId(builder, agentRealmValue)
+		fb.AuthDetailsAddIpAddress(builder, ipValue)
+		fb.AuthDetailsAddClientId(builder, clientIDValue)
+		var authDetails = fb.AuthDetailsEnd(builder)
 
 		fb.AdminEventStart(builder)
 		fb.AdminEventAddOperationType(builder, optype)
 		fb.AdminEventAddResourcePath(builder, resourceP)
-		fb.AdminEventAddAuthDetails(builder, details)
+		fb.AdminEventAddAuthDetails(builder, authDetails)
 		var eventOffset = fb.EventEnd(builder)
 		builder.Finish(eventOffset)
 		adminEvent = fb.GetRootAsAdminEvent(builder.FinishedBytes(), 0)
@@ -639,47 +651,31 @@ func createAdminEvent(operationType int8, uid int64) *fb.AdminEvent {
 
 func createAdminEventBytes(operationType int8, uid int64) []byte {
 	var builder = flatbuffers.NewBuilder(0)
+	var agentUsername = "agent_test_username"
+	var agentUserID = "agent_test_id"
+	var ipAddr = "127.0.0.1"
+	var clientID = "clientid_test"
+	var realmID = "realm"
 
-	var key1 = builder.CreateString("clientId")
-	var value1 = builder.CreateString("test_username")
-	fb.TupleStart(builder)
-	fb.TupleAddKey(builder, key1)
-	fb.TupleAddValue(builder, value1)
-	var detail1 = fb.TupleEnd(builder)
+	var agentUsrValue = builder.CreateString(agentUsername)
+	var agentIDValue = builder.CreateString(agentUserID)
+	var agentRealmValue = builder.CreateString(realmID)
+	var ipValue = builder.CreateString(ipAddr)
+	var clientIDValue = builder.CreateString(clientID)
 
-	var key2 = builder.CreateString("ipAddress")
-	var value2 = builder.CreateString("127.0.0.1")
-	fb.TupleStart(builder)
-	fb.TupleAddKey(builder, key2)
-	fb.TupleAddValue(builder, value2)
-	var detail2 = fb.TupleEnd(builder)
-
-	var key3 = builder.CreateString("realmId")
-	var value3 = builder.CreateString("master")
-	fb.TupleStart(builder)
-	fb.TupleAddKey(builder, key3)
-	fb.TupleAddValue(builder, value3)
-	var detail3 = fb.TupleEnd(builder)
-
-	var key4 = builder.CreateString("userId")
-	var value4 = builder.CreateString("dummy_user")
-	fb.TupleStart(builder)
-	fb.TupleAddKey(builder, key4)
-	fb.TupleAddValue(builder, value4)
-	var detail4 = fb.TupleEnd(builder)
-
-	fb.EventStartDetailsVector(builder, 4)
-	builder.PrependUOffsetT(detail1)
-	builder.PrependUOffsetT(detail2)
-	builder.PrependUOffsetT(detail3)
-	builder.PrependUOffsetT(detail4)
-	var details = builder.EndVector(4)
+	fb.AuthDetailsStart(builder)
+	fb.AuthDetailsAddUserId(builder, agentIDValue)
+	fb.AuthDetailsAddUsername(builder, agentUsrValue)
+	fb.AuthDetailsAddRealmId(builder, agentRealmValue)
+	fb.AuthDetailsAddIpAddress(builder, ipValue)
+	fb.AuthDetailsAddClientId(builder, clientIDValue)
+	var authDetails = fb.AuthDetailsEnd(builder)
 
 	fb.AdminEventStart(builder)
 	fb.AdminEventAddTime(builder, time.Now().Unix())
 	fb.AdminEventAddUid(builder, uid)
 	fb.AdminEventAddOperationType(builder, operationType)
-	fb.AdminEventAddAuthDetails(builder, details)
+	fb.AdminEventAddAuthDetails(builder, authDetails)
 	var adminEventOffset = fb.AdminEventEnd(builder)
 	builder.Finish(adminEventOffset)
 	return builder.FinishedBytes()

@@ -71,19 +71,27 @@ func (rcv *AdminEvent) AuthDetails(obj *AuthDetails) *AuthDetails {
 	return nil
 }
 
-func (rcv *AdminEvent) ResourceType() int8 {
+func (rcv *AdminEvent) Details(obj *Tuple, j int) bool {
 	o := flatbuffers.UOffsetT(rcv._tab.Offset(12))
 	if o != 0 {
-		return rcv._tab.GetInt8(o + rcv._tab.Pos)
+		x := rcv._tab.Vector(o)
+		x += flatbuffers.UOffsetT(j) * 4
+		x = rcv._tab.Indirect(x)
+		obj.Init(rcv._tab.Bytes, x)
+		return true
+	}
+	return false
+}
+
+func (rcv *AdminEvent) DetailsLength() int {
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(12))
+	if o != 0 {
+		return rcv._tab.VectorLen(o)
 	}
 	return 0
 }
 
-func (rcv *AdminEvent) MutateResourceType(n int8) bool {
-	return rcv._tab.MutateInt8Slot(12, n)
-}
-
-func (rcv *AdminEvent) OperationType() int8 {
+func (rcv *AdminEvent) ResourceType() ResourceType {
 	o := flatbuffers.UOffsetT(rcv._tab.Offset(14))
 	if o != 0 {
 		return rcv._tab.GetInt8(o + rcv._tab.Pos)
@@ -91,19 +99,23 @@ func (rcv *AdminEvent) OperationType() int8 {
 	return 0
 }
 
-func (rcv *AdminEvent) MutateOperationType(n int8) bool {
+func (rcv *AdminEvent) MutateResourceType(n ResourceType) bool {
 	return rcv._tab.MutateInt8Slot(14, n)
 }
 
-func (rcv *AdminEvent) ResourcePath() []byte {
+func (rcv *AdminEvent) OperationType() OperationType {
 	o := flatbuffers.UOffsetT(rcv._tab.Offset(16))
 	if o != 0 {
-		return rcv._tab.ByteVector(o + rcv._tab.Pos)
+		return rcv._tab.GetInt8(o + rcv._tab.Pos)
 	}
-	return nil
+	return 0
 }
 
-func (rcv *AdminEvent) Representation() []byte {
+func (rcv *AdminEvent) MutateOperationType(n OperationType) bool {
+	return rcv._tab.MutateInt8Slot(16, n)
+}
+
+func (rcv *AdminEvent) ResourcePath() []byte {
 	o := flatbuffers.UOffsetT(rcv._tab.Offset(18))
 	if o != 0 {
 		return rcv._tab.ByteVector(o + rcv._tab.Pos)
@@ -111,7 +123,7 @@ func (rcv *AdminEvent) Representation() []byte {
 	return nil
 }
 
-func (rcv *AdminEvent) Error() []byte {
+func (rcv *AdminEvent) Representation() []byte {
 	o := flatbuffers.UOffsetT(rcv._tab.Offset(20))
 	if o != 0 {
 		return rcv._tab.ByteVector(o + rcv._tab.Pos)
@@ -119,8 +131,16 @@ func (rcv *AdminEvent) Error() []byte {
 	return nil
 }
 
+func (rcv *AdminEvent) Error() []byte {
+	o := flatbuffers.UOffsetT(rcv._tab.Offset(22))
+	if o != 0 {
+		return rcv._tab.ByteVector(o + rcv._tab.Pos)
+	}
+	return nil
+}
+
 func AdminEventStart(builder *flatbuffers.Builder) {
-	builder.StartObject(9)
+	builder.StartObject(10)
 }
 func AdminEventAddUid(builder *flatbuffers.Builder, uid int64) {
 	builder.PrependInt64Slot(0, uid, 0)
@@ -134,20 +154,26 @@ func AdminEventAddRealmId(builder *flatbuffers.Builder, realmId flatbuffers.UOff
 func AdminEventAddAuthDetails(builder *flatbuffers.Builder, authDetails flatbuffers.UOffsetT) {
 	builder.PrependUOffsetTSlot(3, flatbuffers.UOffsetT(authDetails), 0)
 }
+func AdminEventAddDetails(builder *flatbuffers.Builder, details flatbuffers.UOffsetT) {
+	builder.PrependUOffsetTSlot(4, flatbuffers.UOffsetT(details), 0)
+}
+func AdminEventStartDetailsVector(builder *flatbuffers.Builder, numElems int) flatbuffers.UOffsetT {
+	return builder.StartVector(4, numElems, 4)
+}
 func AdminEventAddResourceType(builder *flatbuffers.Builder, resourceType int8) {
-	builder.PrependInt8Slot(4, resourceType, 0)
+	builder.PrependInt8Slot(5, resourceType, 0)
 }
 func AdminEventAddOperationType(builder *flatbuffers.Builder, operationType int8) {
-	builder.PrependInt8Slot(5, operationType, 0)
+	builder.PrependInt8Slot(6, operationType, 0)
 }
 func AdminEventAddResourcePath(builder *flatbuffers.Builder, resourcePath flatbuffers.UOffsetT) {
-	builder.PrependUOffsetTSlot(6, flatbuffers.UOffsetT(resourcePath), 0)
+	builder.PrependUOffsetTSlot(7, flatbuffers.UOffsetT(resourcePath), 0)
 }
 func AdminEventAddRepresentation(builder *flatbuffers.Builder, representation flatbuffers.UOffsetT) {
-	builder.PrependUOffsetTSlot(7, flatbuffers.UOffsetT(representation), 0)
+	builder.PrependUOffsetTSlot(8, flatbuffers.UOffsetT(representation), 0)
 }
 func AdminEventAddError(builder *flatbuffers.Builder, error flatbuffers.UOffsetT) {
-	builder.PrependUOffsetTSlot(8, flatbuffers.UOffsetT(error), 0)
+	builder.PrependUOffsetTSlot(9, flatbuffers.UOffsetT(error), 0)
 }
 func AdminEventEnd(builder *flatbuffers.Builder) flatbuffers.UOffsetT {
 	return builder.EndObject()

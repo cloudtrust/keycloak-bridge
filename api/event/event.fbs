@@ -143,6 +143,7 @@ table AuthDetails {
     realmId:string;
     clientId:string;
     userId:string;
+    username:string; 
     ipAddress:string;
 }
 
@@ -164,6 +165,7 @@ table AdminEvent {
     time:long;
     realmId:string;
     authDetails:AuthDetails;
+    details:[Tuple];
     resourceType:ResourceType;
     operationType:OperationType;
     resourcePath:string;

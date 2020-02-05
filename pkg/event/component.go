@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -218,14 +217,22 @@ func adminEventToMap(adminEvent *fb.AdminEvent) map[string]string {
 	addInfo["ip_address"] = string(authDetails.IpAddress())
 	adminEventMap[database.CtEventAgentRealmName] = string(authDetails.RealmId()) // agent_realm_name
 	adminEventMap[database.CtEventAgentUserID] = string(authDetails.UserId())     //agent_user_id
+	adminEventMap[database.CtEventAgentUsername] = string(authDetails.Username()) //agent_username
+
+	//details contains the user_id and the username of the user affected by the action
+	var detailsLength = adminEvent.DetailsLength()
+	for i := 0; i < detailsLength; i++ {
+		var tuple = new(fb.Tuple)
+		adminEvent.Details(tuple, i)
+		if string(tuple.Key()) == database.CtEventUsername || string(tuple.Key()) == database.CtEventUserID {
+			adminEventMap[string(tuple.Key())] = string(tuple.Value())
+		}
+
+	}
 
 	addInfo["resource_type"] = string(adminEvent.ResourceType())
 	adminEventMap[database.CtEventKcOperationType] = fb.EnumNamesOperationType[int8(adminEvent.OperationType())] //kc_operation_type
 	addInfo["resource_path"] = string(adminEvent.ResourcePath())
-	reg := regexp.MustCompile(`[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}`)
-	if strings.HasPrefix(addInfo["resource_path"], "users") {
-		adminEventMap[database.CtEventUserID] = string(reg.Find([]byte(addInfo["resource_path"]))) //user_id
-	}
 
 	addInfo["representation"] = string(adminEvent.Representation())
 	addInfo["error"] = string(adminEvent.Error())
