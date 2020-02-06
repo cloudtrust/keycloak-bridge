@@ -4,6 +4,7 @@ import (
 	"strconv"
 	"time"
 
+	cerrors "github.com/cloudtrust/common-service/errors"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	kc "github.com/cloudtrust/keycloak-client"
@@ -11,32 +12,32 @@ import (
 
 // UserRepresentation struct
 type UserRepresentation struct {
-	UserID               *string `json:"userId,omitempty"`
-	Username             *string `json:"username,omitempty"`
-	Gender               *string `json:"gender,omitempty"`
-	FirstName            *string `json:"firstName,omitempty"`
-	LastName             *string `json:"lastName,omitempty"`
-	EmailAddress         *string `json:"emailAddress,omitempty"`
-	EmailAddressVerified *bool   `json:"emailAddressVerified,omitempty"`
-	PhoneNumber          *string `json:"phoneNumber,omitempty"`
-	PhoneNumberVerified  *bool   `json:"phoneNumberVerified,omitempty"`
-	BirthDate            *string `json:"birthDate,omitempty"`
-	BirthLocation        *string `json:"birthLocation,omitempty"`
-	IDDocumentType       *string `json:"idDocumentType,omitempty"`
-	IDDocumentNumber     *string `json:"idDocumentNumber,omitempty"`
-	IDDocumentExpiration *string `json:"idDocumentExpiration,omitempty"`
+	UserID               *string    `json:"userId,omitempty"`
+	Username             *string    `json:"username,omitempty"`
+	Gender               *string    `json:"gender,omitempty"`
+	FirstName            *string    `json:"firstName,omitempty"`
+	LastName             *string    `json:"lastName,omitempty"`
+	EmailAddress         *string    `json:"emailAddress,omitempty"`
+	EmailAddressVerified *bool      `json:"emailAddressVerified,omitempty"`
+	PhoneNumber          *string    `json:"phoneNumber,omitempty"`
+	PhoneNumberVerified  *bool      `json:"phoneNumberVerified,omitempty"`
+	BirthDate            *time.Time `json:"birthDate,omitempty"`
+	BirthLocation        *string    `json:"birthLocation,omitempty"`
+	IDDocumentType       *string    `json:"idDocumentType,omitempty"`
+	IDDocumentNumber     *string    `json:"idDocumentNumber,omitempty"`
+	IDDocumentExpiration *time.Time `json:"idDocumentExpiration,omitempty"`
 }
 
 // CheckRepresentation struct
 type CheckRepresentation struct {
-	UserID    *string `json:"userId,omitempty"`
-	Operator  *string `json:"operator,omitempty"`
-	DateTime  *int64  `json:"datetime,omitempty"`
-	Status    *string `json:"status,omitempty"`
-	Type      *string `json:"type,omitempty"`
-	Nature    *string `json:"nature,omitempty"`
-	ProofData *[]byte `json:"proofData,omitempty"`
-	ProofType *string `json:"proofType,omitempty"`
+	UserID    *string    `json:"userId,omitempty"`
+	Operator  *string    `json:"operator,omitempty"`
+	DateTime  *time.Time `json:"datetime,omitempty"`
+	Status    *string    `json:"status,omitempty"`
+	Type      *string    `json:"type,omitempty"`
+	Nature    *string    `json:"nature,omitempty"`
+	ProofData *[]byte    `json:"proofData,omitempty"`
+	ProofType *string    `json:"proofType,omitempty"`
 }
 
 // Parameter references
@@ -73,7 +74,7 @@ const (
 	regExpNature    = `[a-zA-Z0-9_-]{1,255}`
 	regExpProofType = `[a-zA-Z0-9_-]{1,255}`
 
-	dateLayout = "02.01.2006"
+	DateLayout = "02.01.2006"
 )
 
 var (
@@ -93,7 +94,7 @@ var (
 func (c *CheckRepresentation) ConvertCheck() dto.DBCheck {
 	var check = dto.DBCheck{}
 	check.Operator = c.Operator
-	datetime := time.Unix(*c.DateTime, 0)
+	datetime := *c.DateTime
 	check.DateTime = &datetime
 	check.Type = c.Type
 	check.Nature = c.Nature
@@ -123,7 +124,8 @@ func (u *UserRepresentation) ExportToKeycloak(kcUser *kc.UserRepresentation) {
 		}
 	}
 	if u.BirthDate != nil {
-		attributes["birthDate"] = []string{*u.BirthDate}
+		var birthDate = *u.BirthDate
+		attributes["birthDate"] = []string{birthDate.Format(DateLayout)}
 	}
 
 	if u.Username != nil {
@@ -144,7 +146,7 @@ func (u *UserRepresentation) ExportToKeycloak(kcUser *kc.UserRepresentation) {
 }
 
 // ImportFromKeycloak import details from Keycloak
-func (u *UserRepresentation) ImportFromKeycloak(kcUser *kc.UserRepresentation) {
+func (u *UserRepresentation) ImportFromKeycloak(kcUser kc.UserRepresentation) {
 	var phoneNumber = u.PhoneNumber
 	var phoneNumberVerified = u.PhoneNumberVerified
 	var gender = u.Gender
@@ -164,7 +166,8 @@ func (u *UserRepresentation) ImportFromKeycloak(kcUser *kc.UserRepresentation) {
 			gender = &value[0]
 		}
 		if value, ok := m["birthDate"]; ok && len(value) > 0 {
-			birthdate = &value[0]
+			date, _ := time.Parse(DateLayout, value[0])
+			birthdate = &date
 		}
 	}
 
@@ -208,10 +211,6 @@ func (u *UserRepresentation) Validate() error {
 	if err != nil {
 		return err
 	}
-	err = keycloakb.ValidateParameterDate(prmUserBirthDate, u.BirthDate, dateLayout, false)
-	if err != nil {
-		return err
-	}
 	err = keycloakb.ValidateParameterRegExp(prmUserBirthLocation, u.BirthLocation, regExpBirthLocation, false)
 	if err != nil {
 		return err
@@ -221,10 +220,6 @@ func (u *UserRepresentation) Validate() error {
 		return err
 	}
 	err = keycloakb.ValidateParameterRegExp(prmUserIDDocumentNumber, u.IDDocumentNumber, regExpIDDocumentNumber, false)
-	if err != nil {
-		return err
-	}
-	err = keycloakb.ValidateParameterDate(prmUserIDDocumentExpiration, u.IDDocumentExpiration, dateLayout, false)
 	if err != nil {
 		return err
 	}
@@ -243,9 +238,8 @@ func (c *CheckRepresentation) Validate() error {
 		return err
 	}
 
-	err = keycloakb.ValidateParameterTimestamp(prmCheckDatetime, c.DateTime, true)
-	if err != nil {
-		return err
+	if c.DateTime == nil {
+		return cerrors.CreateMissingParameterError(prmCheckDatetime)
 	}
 
 	err = keycloakb.ValidateParameterIn(prmCheckStatus, c.Status, allowedStatus, true)

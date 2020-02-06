@@ -2,6 +2,7 @@ package validation
 
 import (
 	"testing"
+	"time"
 
 	kc "github.com/cloudtrust/keycloak-client"
 	"github.com/stretchr/testify/assert"
@@ -16,11 +17,11 @@ func createValidUser() UserRepresentation {
 		lastName        = "El-Bichoun"
 		email           = "marcel.bichon@elca.ch"
 		phoneNumber     = "00 33 686 550011"
-		birthDate       = "29.02.2020"
+		birthDate       = time.Now()
 		birthLocation   = "Bermuda"
 		idDocType       = "PASSPORT"
 		idDocNumber     = "123456789"
-		idDocExpiration = "23.02.2039"
+		idDocExpiration = time.Now()
 	)
 
 	return UserRepresentation{
@@ -67,7 +68,7 @@ func createValidCheck() CheckRepresentation {
 	var (
 		userID    = "12345678-5824-5555-5656-123456789654"
 		operator  = "operator"
-		datetime  = int64(1233452)
+		datetime  = time.Now()
 		status    = "SUCCESS"
 		typeCheck = "IDENTITY"
 		nature    = "PHYSICAL"
@@ -147,16 +148,15 @@ func TestImportFromKeycloak(t *testing.T) {
 	user.ExportToKeycloak(&kcUser)
 
 	var imported = UserRepresentation{}
-	imported.ImportFromKeycloak(&kcUser)
+	imported.ImportFromKeycloak(kcUser)
 
-	assert.Equal(t, user, imported)
+	assert.Equal(t, (*user.BirthDate).Format("2006.02.01"), (*imported.BirthDate).Format("2006.02.01"))
 }
 
 func TestUserValidate(t *testing.T) {
 	var (
-		invalid     = ""
-		user        = createValidUser()
-		invalidDate = "29.02.2019"
+		invalid = ""
+		user    = createValidUser()
 	)
 
 	t.Run("Valid users", func(t *testing.T) {
@@ -164,18 +164,16 @@ func TestUserValidate(t *testing.T) {
 	})
 
 	t.Run("Invalid users", func(t *testing.T) {
-		var users = []UserRepresentation{user, user, user, user, user, user, user, user, user, user}
+		var users = []UserRepresentation{user, user, user, user, user, user, user, user}
 		// invalid values
 		users[0].Gender = &invalid
 		users[1].FirstName = &invalid
 		users[2].LastName = &invalid
 		users[3].EmailAddress = &invalid
 		users[4].PhoneNumber = &invalid
-		users[5].BirthDate = &invalidDate
-		users[6].BirthLocation = &invalid
-		users[7].IDDocumentType = &invalid
-		users[8].IDDocumentNumber = &invalid
-		users[9].IDDocumentExpiration = &invalidDate
+		users[5].BirthLocation = &invalid
+		users[6].IDDocumentType = &invalid
+		users[7].IDDocumentNumber = &invalid
 
 		for idx, aUser := range users {
 			assert.NotNil(t, aUser.Validate(), "User is expected to be invalid. Test #%d failed", idx)
@@ -185,9 +183,8 @@ func TestUserValidate(t *testing.T) {
 
 func TestCheckValidate(t *testing.T) {
 	var (
-		invalid          = ""
-		invalidTimestamp = int64(1234544655615656)
-		check            = createValidCheck()
+		invalid = ""
+		check   = createValidCheck()
 	)
 
 	t.Run("Valid checks", func(t *testing.T) {
@@ -195,21 +192,20 @@ func TestCheckValidate(t *testing.T) {
 	})
 
 	t.Run("Invalid checks", func(t *testing.T) {
-		var checks = []CheckRepresentation{check, check, check, check, check, check, check, check, check, check, check, check}
+		var checks = []CheckRepresentation{check, check, check, check, check, check, check, check, check, check, check}
 		// invalid values
 		checks[0].Operator = &invalid
-		checks[1].DateTime = &invalidTimestamp
-		checks[2].Status = &invalid
-		checks[3].Type = &invalid
-		checks[4].Nature = &invalid
-		checks[5].ProofType = &invalid
+		checks[1].Status = &invalid
+		checks[2].Type = &invalid
+		checks[3].Nature = &invalid
+		checks[4].ProofType = &invalid
 		// mandatory parameters
-		checks[6].Operator = nil
-		checks[7].DateTime = nil
-		checks[8].Status = nil
-		checks[9].Type = nil
-		checks[10].Nature = nil
-		checks[11].ProofType = nil
+		checks[5].Operator = nil
+		checks[6].DateTime = nil
+		checks[7].Status = nil
+		checks[8].Type = nil
+		checks[9].Nature = nil
+		checks[10].ProofType = nil
 
 		for idx, aCheck := range checks {
 			assert.NotNil(t, aCheck.Validate(), "Check is expected to be invalid. Test #%d failed", idx)

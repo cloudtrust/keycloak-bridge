@@ -43,7 +43,7 @@ audience-required: "account"
 event-basic-auth-token: "superpasswordverylongandstrong"
 
 ## Password used to protect /internal/validation endpoint
-validation-basic-auth-token: "superpasswordverylongandstrong"
+validation-basic-auth-token: "idnowsuperpasswordverylongandstrong"
 
 
 ## trustID groups allowed to be set
@@ -178,7 +178,7 @@ livenessprobe-cache-duration: 500
 # Register API parameters
 register-enabled: true
 register-realm: trustid
-register-techuser-username: technicaluser
+register-techuser-username: technical
 register-techuser-password: technicalsuperpasswordverylongandstrong
 register-techuser-client-id: admin-cli
 register-enduser-client-id: selfserviceid

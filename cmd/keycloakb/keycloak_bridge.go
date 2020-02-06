@@ -138,6 +138,7 @@ func main() {
 
 		// Rate limiting
 		rateLimit = map[string]int{
+			"validation": c.GetInt("rate-validation"),
 			"event":      c.GetInt("rate-event"),
 			"account":    c.GetInt("rate-account"),
 			"management": c.GetInt("rate-management"),

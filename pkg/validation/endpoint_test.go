@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"testing"
+	"time"
 
 	api "github.com/cloudtrust/keycloak-bridge/api/validation"
 	"github.com/cloudtrust/keycloak-bridge/pkg/validation/mock"
@@ -82,7 +83,7 @@ func TestCreateCheckEndpoint(t *testing.T) {
 
 		var userID = "12345678-5824-5555-5656-123456789654"
 		var operator = "operator"
-		var datetime = int64(1233452)
+		var datetime = time.Now()
 		var status = "SUCCESS"
 		var typeCheck = "IDENTITY"
 		var nature = "PHYSICAL"

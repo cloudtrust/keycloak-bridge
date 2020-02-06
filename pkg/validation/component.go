@@ -2,6 +2,7 @@ package validation
 
 import (
 	"context"
+	"time"
 
 	"github.com/cloudtrust/keycloak-client"
 
@@ -92,11 +93,18 @@ func (c *component) GetUser(ctx context.Context, userID string) (api.UserReprese
 	}
 
 	var res = api.UserRepresentation{}
-	res.ImportFromKeycloak(&kcUser)
+	res.ImportFromKeycloak(kcUser)
 	res.BirthLocation = dbUser.BirthLocation
 	res.IDDocumentType = dbUser.IDDocumentType
 	res.IDDocumentNumber = dbUser.IDDocumentNumber
-	res.IDDocumentExpiration = dbUser.IDDocumentExpiration
+
+	if dbUser.IDDocumentExpiration != nil {
+		expirationTime, err := time.Parse(api.DateLayout, *dbUser.IDDocumentExpiration)
+		if err != nil {
+			return api.UserRepresentation{}, err
+		}
+		res.IDDocumentExpiration = &expirationTime
+	}
 
 	return res, nil
 }
@@ -129,11 +137,16 @@ func (c *component) UpdateUser(ctx context.Context, userID string, user api.User
 
 	if dbUpdate {
 		var uID = userID
+
 		var userDB = dto.DBUser{
-			UserID:               &uID,
-			IDDocumentType:       user.IDDocumentType,
-			IDDocumentNumber:     user.IDDocumentNumber,
-			IDDocumentExpiration: user.IDDocumentExpiration,
+			UserID:           &uID,
+			IDDocumentType:   user.IDDocumentType,
+			IDDocumentNumber: user.IDDocumentNumber,
+		}
+
+		if user.IDDocumentExpiration != nil {
+			var expiration = (*user.IDDocumentExpiration).Format(api.DateLayout)
+			userDB.IDDocumentExpiration = &expiration
 		}
 
 		err = c.usersDBModule.StoreOrUpdateUser(ctx, c.socialRealmName, userDB)
@@ -158,7 +171,6 @@ func needKcUserUpdate(user api.UserRepresentation) bool {
 		user.LastName,
 		user.EmailAddress,
 		user.PhoneNumber,
-		user.BirthDate,
 	}
 
 	for _, attr := range kcUserAttrs {
@@ -166,6 +178,11 @@ func needKcUserUpdate(user api.UserRepresentation) bool {
 			return true
 		}
 	}
+
+	if user.BirthDate != nil {
+		return true
+	}
+
 	return false
 }
 
@@ -174,7 +191,6 @@ func needDBUserUpdate(user api.UserRepresentation) bool {
 		user.BirthLocation,
 		user.IDDocumentNumber,
 		user.IDDocumentType,
-		user.IDDocumentExpiration,
 	}
 
 	for _, attr := range dbUserAttrs {
@@ -182,6 +198,11 @@ func needDBUserUpdate(user api.UserRepresentation) bool {
 			return true
 		}
 	}
+
+	if user.IDDocumentExpiration != nil {
+		return true
+	}
+
 	return false
 }
 

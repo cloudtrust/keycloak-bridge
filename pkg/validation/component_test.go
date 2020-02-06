@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	log "github.com/cloudtrust/common-service/log"
 	apikyc "github.com/cloudtrust/keycloak-bridge/api/kyc"
@@ -93,13 +94,28 @@ func TestGetUserComponent(t *testing.T) {
 		assert.Nil(t, err)
 	})
 
-	t.Run("Happy path", func(t *testing.T) {
+	t.Run("Date parsing error", func(t *testing.T) {
+		var expirationDate = "01.01-2020"
 		mockTokenProvider.EXPECT().ProvideToken(gomock.Any()).Return(accessToken, nil)
 		mockKeycloakClient.EXPECT().GetUser(accessToken, realm, userID).Return(kc.UserRepresentation{}, nil)
-		mockUsersDB.EXPECT().GetUser(ctx, realm, userID).Return(&dto.DBUser{}, nil)
+		mockUsersDB.EXPECT().GetUser(ctx, realm, userID).Return(&dto.DBUser{
+			IDDocumentExpiration: &expirationDate,
+		}, nil)
+		var _, err = component.GetUser(ctx, userID)
+		assert.NotNil(t, err)
+	})
+
+	t.Run("Happy path", func(t *testing.T) {
+		var expirationDate = "01.01.2020"
+		mockTokenProvider.EXPECT().ProvideToken(gomock.Any()).Return(accessToken, nil)
+		mockKeycloakClient.EXPECT().GetUser(accessToken, realm, userID).Return(kc.UserRepresentation{}, nil)
+		mockUsersDB.EXPECT().GetUser(ctx, realm, userID).Return(&dto.DBUser{
+			IDDocumentExpiration: &expirationDate,
+		}, nil)
 		var _, err = component.GetUser(ctx, userID)
 		assert.Nil(t, err)
 	})
+
 }
 
 func TestUpdateUser(t *testing.T) {
@@ -145,8 +161,9 @@ func TestUpdateUser(t *testing.T) {
 	})
 
 	t.Run("Fails to update user in KC", func(t *testing.T) {
+		var date = time.Now()
 		var user = api.UserRepresentation{
-			FirstName: ptr("newFirstname"),
+			BirthDate: &date,
 		}
 		mockTokenProvider.EXPECT().ProvideToken(gomock.Any()).Return(accessToken, nil)
 		var kcError = errors.New("kc error")
@@ -183,9 +200,10 @@ func TestUpdateUser(t *testing.T) {
 	})
 
 	t.Run("Failure to store event", func(t *testing.T) {
+		var date = time.Now()
 		var user = api.UserRepresentation{
-			FirstName:      ptr("newFirstname"),
-			IDDocumentType: ptr("type"),
+			FirstName:            ptr("newFirstname"),
+			IDDocumentExpiration: &date,
 		}
 		mockTokenProvider.EXPECT().ProvideToken(gomock.Any()).Return(accessToken, nil)
 		mockKeycloakClient.EXPECT().GetUser(accessToken, targetRealm, userID).Return(kc.UserRepresentation{}, nil)
@@ -228,10 +246,10 @@ func TestCreateCheck(t *testing.T) {
 	var component = NewComponent(targetRealm, mockKeycloakClient, mockTokenProvider, mockUsersDB, mockEventsDB, log.NewNopLogger())
 
 	t.Run("Fails to store check in DB", func(t *testing.T) {
-		var timestamp = int64(12345678)
+		var datetime = time.Now()
 		var check = api.CheckRepresentation{
 			Operator: ptr("operator"),
-			DateTime: &timestamp,
+			DateTime: &datetime,
 			Status:   ptr("status"),
 		}
 		var dbError = errors.New("db error")
@@ -241,10 +259,10 @@ func TestCreateCheck(t *testing.T) {
 	})
 
 	t.Run("Success", func(t *testing.T) {
-		var timestamp = int64(12345678)
+		var datetime = time.Now()
 		var check = api.CheckRepresentation{
 			Operator: ptr("operator"),
-			DateTime: &timestamp,
+			DateTime: &datetime,
 			Status:   ptr("status"),
 		}
 		mockUsersDB.EXPECT().CreateCheck(ctx, targetRealm, userID, gomock.Any()).Return(nil)
