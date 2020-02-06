@@ -91,7 +91,7 @@ var (
 )
 
 // ConvertCheck creates a DBCheck
-func (c *CheckRepresentation) ConvertCheck() dto.DBCheck {
+func (c *CheckRepresentation) ConvertToDBCheck() dto.DBCheck {
 	var check = dto.DBCheck{}
 	check.Operator = c.Operator
 	datetime := *c.DateTime

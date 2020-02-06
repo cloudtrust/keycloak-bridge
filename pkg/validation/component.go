@@ -208,7 +208,7 @@ func needDBUserUpdate(user api.UserRepresentation) bool {
 
 func (c *component) CreateCheck(ctx context.Context, userID string, check api.CheckRepresentation) error {
 
-	dbCheck := check.ConvertCheck()
+	dbCheck := check.ConvertToDBCheck()
 	err := c.usersDBModule.CreateCheck(ctx, c.socialRealmName, userID, dbCheck)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Can't store check in DB", "err", err.Error())
