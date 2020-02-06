@@ -68,18 +68,3 @@ func ValidateParameterDate(prmName string, value *string, dateLayout string, man
 	}
 	return nil
 }
-
-// ValidateParameterTimestamp validates a datetime integer
-func ValidateParameterTimestamp(prmName string, value *int64, mandatory bool) error {
-	if value == nil {
-		if mandatory {
-			return cerrors.CreateMissingParameterError(prmName)
-		}
-	} else {
-		t := time.Unix(*value, 0)
-		if time.Now().Before(t) {
-			return cerrors.CreateBadRequestError(cerrors.MsgErrInvalidParam + "." + prmName)
-		}
-	}
-	return nil
-}

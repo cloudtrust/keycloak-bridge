@@ -71,7 +71,7 @@ func NewComponent(socialRealmName string, keycloakClient KeycloakClient, tokenPr
 func (c *component) GetUser(ctx context.Context, userID string) (api.UserRepresentation, error) {
 	accessToken, err := c.tokenProvider.ProvideToken(ctx)
 	if err != nil {
-		c.logger.Warn(ctx, "msg", "GetUser: can't accessToken for technical user", "err", err.Error())
+		c.logger.Warn(ctx, "msg", "GetUser: can't get accessToken for technical user", "err", err.Error())
 		return api.UserRepresentation{}, errorhandler.CreateInternalServerError("keycloak")
 	}
 
