@@ -158,46 +158,16 @@ func (u *UserRepresentation) ImportFromKeycloak(kcUser *kc.UserRepresentation) {
 
 // Validate checks the validity of the given User
 func (u *UserRepresentation) Validate() error {
-	var err = keycloakb.ValidateParameterIn(prmUserGender, u.Gender, allowedGender, true)
-	if err != nil {
-		return err
-	}
-
-	err = keycloakb.ValidateParameterRegExp(prmUserFirstName, u.FirstName, regExpFirstName, true)
-	if err != nil {
-		return err
-	}
-	err = keycloakb.ValidateParameterRegExp(prmUserLastName, u.LastName, regExpLastName, true)
-	if err != nil {
-		return err
-	}
-	err = keycloakb.ValidateParameterRegExp(prmUserEmail, u.EmailAddress, regExpEmail, true)
-	if err != nil {
-		return err
-	}
-	err = keycloakb.ValidateParameterPhoneNumber(prmUserPhoneNumber, u.PhoneNumber)
-	if err != nil {
-		return err
-	}
-	err = keycloakb.ValidateParameterDate(prmUserBirthDate, u.BirthDate, dateLayout, true)
-	if err != nil {
-		return err
-	}
-	err = keycloakb.ValidateParameterRegExp(prmUserBirthLocation, u.BirthLocation, regExpBirthLocation, true)
-	if err != nil {
-		return err
-	}
-	err = keycloakb.ValidateParameterIn(prmUserIDDocumentType, u.IDDocumentType, allowedDocumentType, true)
-	if err != nil {
-		return err
-	}
-	err = keycloakb.ValidateParameterRegExp(prmUserIDDocumentNumber, u.IDDocumentNumber, regExpIDDocumentNumber, true)
-	if err != nil {
-		return err
-	}
-	err = keycloakb.ValidateParameterDate(prmUserIDDocumentExpiration, u.IDDocumentExpiration, dateLayout, true)
-	if err != nil {
-		return err
-	}
-	return nil
+	return keycloakb.NewParameterValidator().
+		ValidateParameterIn(prmUserGender, u.Gender, allowedGender, true).
+		ValidateParameterRegExp(prmUserFirstName, u.FirstName, regExpFirstName, true).
+		ValidateParameterRegExp(prmUserLastName, u.LastName, regExpLastName, true).
+		ValidateParameterRegExp(prmUserEmail, u.EmailAddress, regExpEmail, true).
+		ValidateParameterPhoneNumber(prmUserPhoneNumber, u.PhoneNumber).
+		ValidateParameterDate(prmUserBirthDate, u.BirthDate, dateLayout, true).
+		ValidateParameterRegExp(prmUserBirthLocation, u.BirthLocation, regExpBirthLocation, true).
+		ValidateParameterIn(prmUserIDDocumentType, u.IDDocumentType, allowedDocumentType, true).
+		ValidateParameterRegExp(prmUserIDDocumentNumber, u.IDDocumentNumber, regExpIDDocumentNumber, true).
+		ValidateParameterDate(prmUserIDDocumentExpiration, u.IDDocumentExpiration, dateLayout, true).
+		Status()
 }
