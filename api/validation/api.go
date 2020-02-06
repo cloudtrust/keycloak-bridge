@@ -80,7 +80,7 @@ const (
 var (
 	allowedGender       = map[string]bool{"M": true, "F": true}
 	allowedDocumentType = map[string]bool{"ID_CARD": true, "PASSPORT": true, "RESIDENCE_PERMIT": true}
-	allowedCheckType    = map[string]bool{"IDENTITY": true}
+	allowedCheckType    = map[string]bool{"IDENTITY_CHECK": true}
 	allowedStatus       = map[string]bool{
 		"SUCCESS":                   true,
 		"SUCCESS_DATA_CHANGED":      true,
@@ -90,12 +90,13 @@ var (
 	}
 )
 
-// ConvertCheck creates a DBCheck
+// ConvertToDBCheck creates a DBCheck
 func (c *CheckRepresentation) ConvertToDBCheck() dto.DBCheck {
 	var check = dto.DBCheck{}
 	check.Operator = c.Operator
 	datetime := *c.DateTime
 	check.DateTime = &datetime
+	check.Status = c.Status
 	check.Type = c.Type
 	check.Nature = c.Nature
 	check.ProofType = c.ProofType
