@@ -70,7 +70,7 @@ func createValidCheck() CheckRepresentation {
 		operator  = "operator"
 		datetime  = time.Now()
 		status    = "SUCCESS"
-		typeCheck = "IDENTITY"
+		typeCheck = "IDENTITY_CHECK"
 		nature    = "PHYSICAL"
 		proofType = "ZIP"
 		proofData = []byte("data")

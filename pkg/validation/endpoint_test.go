@@ -82,7 +82,7 @@ func TestCreateCheckEndpoint(t *testing.T) {
 		var operator = "operator"
 		var datetime = time.Now()
 		var status = "SUCCESS"
-		var typeCheck = "IDENTITY"
+		var typeCheck = "IDENTITY_CHECK"
 		var nature = "PHYSICAL"
 		var proofType = "ZIP"
 		var proofData = []byte("data")
