@@ -7,7 +7,7 @@ servers:
 - url: http://localhost:8888
 tags:
 - name: UserData
-  description: User data infos
+  description: User data information
 - name: Check
   description: Validation checks
 paths:
@@ -15,7 +15,7 @@ paths:
     get:
       tags:
       - Check
-      summary: Get user data info
+      summary: Get user data information
       parameters:
       - name: userID
         in: path
@@ -33,7 +33,7 @@ paths:
     put:
       tags:
       - UserData
-      summary: Updates user data info
+      summary: Updates user data information
       parameters:
       - name: userID
         in: path

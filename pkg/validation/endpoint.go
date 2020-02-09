@@ -36,7 +36,7 @@ func MakeUpdateUserEndpoint(component Component) cs.Endpoint {
 		var user api.UserRepresentation
 
 		if err = json.Unmarshal([]byte(m["body"]), &user); err != nil {
-			return nil, errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + msg.Body)
+			return nil, errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Body)
 		}
 
 		if err = user.Validate(); err != nil {
@@ -56,7 +56,7 @@ func MakeCreateCheckEndpoint(component Component) cs.Endpoint {
 		var check api.CheckRepresentation
 
 		if err = json.Unmarshal([]byte(m["body"]), &check); err != nil {
-			return nil, errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + msg.Body)
+			return nil, errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Body)
 		}
 
 		if err = check.Validate(); err != nil {

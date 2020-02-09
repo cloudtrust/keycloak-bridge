@@ -39,8 +39,7 @@ func TestUpdateUserEndpoint(t *testing.T) {
 
 	var e = MakeUpdateUserEndpoint(mockComponent)
 
-	// No error
-	{
+	t.Run("No error", func(t *testing.T) {
 		var userID = "1234-452-4578"
 		var ctx = context.Background()
 		var req = make(map[string]string)
@@ -52,10 +51,9 @@ func TestUpdateUserEndpoint(t *testing.T) {
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Nil(t, res)
-	}
+	})
 
-	// Error - JSON unmarshalling error
-	{
+	t.Run("Error - JSON unmarshalling error", func(t *testing.T) {
 		var userID = "1234-452-4578"
 		var ctx = context.Background()
 		var req = make(map[string]string)
@@ -65,7 +63,7 @@ func TestUpdateUserEndpoint(t *testing.T) {
 		var res, err = e(ctx, req)
 		assert.NotNil(t, err)
 		assert.Nil(t, res)
-	}
+	})
 }
 
 func TestCreateCheckEndpoint(t *testing.T) {
@@ -76,8 +74,7 @@ func TestCreateCheckEndpoint(t *testing.T) {
 
 	var e = MakeCreateCheckEndpoint(mockComponent)
 
-	// No error
-	{
+	t.Run("No error", func(t *testing.T) {
 		var ctx = context.Background()
 		var req = make(map[string]string)
 
@@ -108,10 +105,9 @@ func TestCreateCheckEndpoint(t *testing.T) {
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Nil(t, res)
-	}
+	})
 
-	// Error - JSON unmarshalling error
-	{
+	t.Run("Error - JSON unmarshalling error", func(t *testing.T) {
 		var userID = "12345678-5824-5555-5656-123456789654"
 		var ctx = context.Background()
 		var req = make(map[string]string)
@@ -121,5 +117,5 @@ func TestCreateCheckEndpoint(t *testing.T) {
 		var res, err = e(ctx, req)
 		assert.NotNil(t, err)
 		assert.Nil(t, res)
-	}
+	})
 }
