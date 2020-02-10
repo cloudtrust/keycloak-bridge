@@ -18,14 +18,16 @@ const (
 	  SELECT details
 	  FROM user_details
 	  WHERE realm_id=?
-		AND user_id=?
-	`
+		AND user_id=?;`
+	createCheckStmt = `INSERT INTO checks (realm_id, user_id, operator, datetime, status, type, nature, proof_type, proof_data, comment)
+	  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
 )
 
 // UsersDBModule interface
 type UsersDBModule interface {
 	StoreOrUpdateUser(ctx context.Context, realm string, user dto.DBUser) error
 	GetUser(ctx context.Context, realm string, userID string) (*dto.DBUser, error)
+	CreateCheck(ctx context.Context, realm string, userID string, check dto.DBCheck) error
 }
 
 type usersDBModule struct {
@@ -70,4 +72,12 @@ func (c *usersDBModule) GetUser(ctx context.Context, realm string, userID string
 		details.UserID = &userID
 		return &details, err
 	}
+}
+
+func (c *usersDBModule) CreateCheck(ctx context.Context, realm string, userID string, check dto.DBCheck) error {
+	// insert check in DB
+	_, err := c.db.Exec(createCheckStmt, realm, userID, check.Operator,
+		check.DateTime, check.Status, check.Type, check.Nature,
+		check.ProofType, check.ProofData, check.Comment)
+	return err
 }

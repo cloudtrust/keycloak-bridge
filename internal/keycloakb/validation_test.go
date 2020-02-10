@@ -22,9 +22,9 @@ func TestValidateParameterPhoneNumber(t *testing.T) {
 	var valid = "+41235678901"
 	var invalid = valid + "0"
 
-	assert.NotNil(t, ValidateParameterPhoneNumber("element", nil))
-	assert.NotNil(t, ValidateParameterPhoneNumber("element", &invalid))
-	assert.Nil(t, ValidateParameterPhoneNumber("element", &valid))
+	assert.NotNil(t, ValidateParameterPhoneNumber("element", nil, true))
+	assert.NotNil(t, ValidateParameterPhoneNumber("element", &invalid, true))
+	assert.Nil(t, ValidateParameterPhoneNumber("element", &valid, true))
 }
 
 func TestValidateParameterRegExp(t *testing.T) {

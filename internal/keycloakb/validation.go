@@ -39,14 +39,18 @@ func ValidateParameterRegExp(prmName string, value *string, regExp string, manda
 }
 
 // ValidateParameterPhoneNumber validates a phone number (lib phonenumbes is based on the Java library libphonenumber)
-func ValidateParameterPhoneNumber(prmName string, value *string) error {
+func ValidateParameterPhoneNumber(prmName string, value *string, mandatory bool) error {
 	if value == nil {
-		return cerrors.CreateMissingParameterError(prmName)
+		if mandatory {
+			return cerrors.CreateMissingParameterError(prmName)
+		}
+	} else {
+		var metadata, err = phonenumbers.Parse(*value, "CH")
+		if err != nil || !phonenumbers.IsPossibleNumber(metadata) {
+			return cerrors.CreateBadRequestError(cerrors.MsgErrInvalidParam + "." + prmName)
+		}
 	}
-	var metadata, err = phonenumbers.Parse(*value, "CH")
-	if err != nil || !phonenumbers.IsPossibleNumber(metadata) {
-		return cerrors.CreateBadRequestError(cerrors.MsgErrInvalidParam + "." + prmName)
-	}
+
 	return nil
 }
 

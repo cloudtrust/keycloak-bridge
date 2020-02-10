@@ -127,7 +127,7 @@ func (u *UserRepresentation) Validate() error {
 	if err != nil {
 		return err
 	}
-	err = keycloakb.ValidateParameterPhoneNumber(prmUserPhoneNumber, u.PhoneNumber)
+	err = keycloakb.ValidateParameterPhoneNumber(prmUserPhoneNumber, u.PhoneNumber, true)
 	if err != nil {
 		return err
 	}

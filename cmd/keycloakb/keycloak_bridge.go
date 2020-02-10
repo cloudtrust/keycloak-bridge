@@ -37,6 +37,7 @@ import (
 	"github.com/cloudtrust/keycloak-bridge/pkg/management"
 	"github.com/cloudtrust/keycloak-bridge/pkg/register"
 	"github.com/cloudtrust/keycloak-bridge/pkg/statistics"
+	"github.com/cloudtrust/keycloak-bridge/pkg/validation"
 	keycloak "github.com/cloudtrust/keycloak-client"
 	"github.com/go-kit/kit/endpoint"
 	kit_log "github.com/go-kit/kit/log"
@@ -137,6 +138,7 @@ func main() {
 
 		// Rate limiting
 		rateLimit = map[string]int{
+			"validation": c.GetInt("rate-validation"),
 			"event":      c.GetInt("rate-event"),
 			"account":    c.GetInt("rate-account"),
 			"management": c.GetInt("rate-management"),
@@ -215,6 +217,16 @@ func main() {
 
 		if eventExpectedAuthToken == "" {
 			logger.Error(ctx, "msg", "password for event endpoint (event-basic-auth-token) cannot be empty")
+			return
+		}
+	}
+
+	var validationExpectedAuthToken string
+	{
+		validationExpectedAuthToken = c.GetString("validation-basic-auth-token")
+
+		if validationExpectedAuthToken == "" {
+			logger.Error(ctx, "msg", "password for validation endpoint (validation-basic-auth-token) cannot be empty")
 			return
 		}
 	}
@@ -349,6 +361,16 @@ func main() {
 		}
 	}
 
+	// Create OIDC token provider and validate technical user credentials
+	var oidcTokenProvider keycloak.OidcTokenProvider
+	{
+		oidcTokenProvider = keycloak.NewOidcTokenProvider(keycloakConfig, registerRealm, registerUsername, registerPassword, registerClientID, logger)
+		var _, err = oidcTokenProvider.ProvideToken(context.Background())
+		if err != nil {
+			logger.Warn(context.Background(), "msg", "OIDC token provider validation failed for technical user", "err", err.Error())
+		}
+	}
+
 	// Health check configuration
 	var healthChecker = healthcheck.NewHealthChecker(keycloakb.ComponentName, logger)
 	var healthCheckCacheDuration = c.GetDuration("livenessprobe-cache-duration") * time.Millisecond
@@ -436,6 +458,26 @@ func main() {
 
 	// new module for reading events from the DB
 	eventsRODBModule := keycloakb.NewEventsDBModule(eventsRODBConn)
+
+	// Validation service.
+	var validationEndpoints validation.Endpoints
+	{
+		var validationLogger = log.With(logger, "svc", "validation")
+
+		// module to store validation API calls
+		eventsDBModule := configureEventsDbModule(baseEventsDBModule, influxMetrics, validationLogger, tracer)
+
+		// module for storing and retrieving details of the users
+		var usersDBModule = keycloakb.NewUsersDBModule(usersRwDBConn, validationLogger)
+
+		validationComponent := validation.NewComponent(registerRealm, keycloakClient, oidcTokenProvider, usersDBModule, eventsDBModule, validationLogger)
+
+		validationEndpoints = validation.Endpoints{
+			GetUser:     prepareEndpoint(validation.MakeGetUserEndpoint(validationComponent), "get_user", influxMetrics, validationLogger, tracer, rateLimit["validation"]),
+			UpdateUser:  prepareEndpoint(validation.MakeUpdateUserEndpoint(validationComponent), "update_user", influxMetrics, validationLogger, tracer, rateLimit["validation"]),
+			CreateCheck: prepareEndpoint(validation.MakeCreateCheckEndpoint(validationComponent), "create_check", influxMetrics, validationLogger, tracer, rateLimit["validation"]),
+		}
+	}
 
 	// Statistics service.
 	var statisticsEndpoints statistics.Endpoints
@@ -578,16 +620,6 @@ func main() {
 		}
 	}
 
-	// Create OIDC token provider and validate technical user credentials
-	var oidcTokenProvider keycloak.OidcTokenProvider
-	{
-		oidcTokenProvider = keycloak.NewOidcTokenProvider(keycloakConfig, registerRealm, registerUsername, registerPassword, registerClientID, logger)
-		var _, err = oidcTokenProvider.ProvideToken(context.Background())
-		if err != nil {
-			logger.Warn(context.Background(), "msg", "OIDC token provider validation failed for technical user", "err", err.Error())
-		}
-	}
-
 	// Register service.
 	var registerEndpoints register.Endpoints
 	{
@@ -620,14 +652,11 @@ func main() {
 		// Configure events db module
 		eventsDBModule := configureEventsDbModule(baseEventsDBModule, influxMetrics, kycLogger, tracer)
 
-		// module for storing and retrieving the custom configuration
-		var configDBModule = createConfigurationDBModule(configurationRwDBConn, influxMetrics, kycLogger)
-
 		// module for storing and retrieving details of the users
 		var usersDBModule = keycloakb.NewUsersDBModule(usersRwDBConn, kycLogger)
 
 		// new module for KYC service
-		kycComponent := kyc.NewComponent(registerRealm, keycloakClient, usersDBModule, configDBModule, eventsDBModule, kycLogger)
+		kycComponent := kyc.NewComponent(registerRealm, keycloakClient, usersDBModule, eventsDBModule, kycLogger)
 		kycComponent = kyc.MakeAuthorizationRegisterComponentMW(registerRealm, log.With(kycLogger, "mw", "endpoint"), authorizationManager)(kycComponent)
 
 		kycEndpoints = kyc.Endpoints{
@@ -673,6 +702,17 @@ func main() {
 		// Export.
 		route.Handle("/export", export.MakeHTTPExportHandler(exportEndpoint)).Methods("GET")
 		route.Handle("/export", export.MakeHTTPExportHandler(exportSaveAndExportEndpoint)).Methods("POST")
+
+		// Validation
+		var getUserHandler = configureValidationHandler(keycloakb.ComponentName, ComponentID, idGenerator, validationExpectedAuthToken, tracer, logger)(validationEndpoints.GetUser)
+		var updateUserHandler = configureValidationHandler(keycloakb.ComponentName, ComponentID, idGenerator, validationExpectedAuthToken, tracer, logger)(validationEndpoints.UpdateUser)
+		var createCheckHandler = configureValidationHandler(keycloakb.ComponentName, ComponentID, idGenerator, validationExpectedAuthToken, tracer, logger)(validationEndpoints.CreateCheck)
+
+		var validationSubroute = route.PathPrefix("/validation").Subrouter()
+
+		validationSubroute.Path("/users/{userID}").Methods("GET").Handler(getUserHandler)
+		validationSubroute.Path("/users/{userID}").Methods("POST").Handler(updateUserHandler)
+		validationSubroute.Path("/users/{userID}/checks").Methods("POST").Handler(createCheckHandler)
 
 		// Debug.
 		if pprofRouteEnabled {
@@ -996,6 +1036,7 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 			"papercard_administrator",
 			"technical",
 			"end_user"})
+	v.SetDefault("validation-basic-auth-token", "")
 
 	// CORS configuration
 	v.SetDefault("cors-allowed-origins", []string{})
@@ -1039,6 +1080,7 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 	v.SetDefault("db-users-rw-migration-version", "")
 
 	// Rate limiting (in requests/second)
+	v.SetDefault("rate-validation", 1000)
 	v.SetDefault("rate-event", 1000)
 	v.SetDefault("rate-account", 1000)
 	v.SetDefault("rate-management", 1000)
@@ -1113,6 +1155,9 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 	v.BindEnv("event-basic-auth-token", "CT_BRIDGE_EVENT_BASIC_AUTH")
 	censoredParameters["event-basic-auth-token"] = true
 
+	v.BindEnv("validation-basic-auth-token", "CT_BRIDGE_VALIDATION_BASIC_AUTH")
+	censoredParameters["validation-basic-auth-token"] = true
+
 	// Load and log config.
 	v.SetConfigFile(v.GetString("config-file"))
 	var err = v.ReadInConfig()
@@ -1157,6 +1202,16 @@ func configureStatisiticsHandler(ComponentName string, ComponentID string, idGen
 		handler = statistics.MakeStatisticsHandler(endpoint, logger)
 		handler = middleware.MakeHTTPCorrelationIDMW(idGenerator, tracer, logger, ComponentName, ComponentID)(handler)
 		handler = middleware.MakeHTTPOIDCTokenValidationMW(keycloakClient, audienceRequired, logger)(handler)
+		return handler
+	}
+}
+
+func configureValidationHandler(ComponentName string, ComponentID string, idGenerator idgenerator.IDGenerator, expectedToken string, tracer tracing.OpentracingClient, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {
+	return func(endpoint endpoint.Endpoint) http.Handler {
+		var handler http.Handler
+		handler = validation.MakeValidationHandler(endpoint, logger)
+		handler = middleware.MakeHTTPCorrelationIDMW(idGenerator, tracer, logger, ComponentName, ComponentID)(handler)
+		handler = middleware.MakeHTTPBasicAuthenticationMW(expectedToken, logger)(handler)
 		return handler
 	}
 }
