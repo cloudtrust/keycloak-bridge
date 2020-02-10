@@ -150,7 +150,12 @@ func TestImportFromKeycloak(t *testing.T) {
 	var imported = UserRepresentation{}
 	imported.ImportFromKeycloak(kcUser)
 
-	assert.Equal(t, (*user.BirthDate).Format("2006.02.01"), (*imported.BirthDate).Format("2006.02.01"))
+	assert.Equal(t, (*user.BirthDate).Format(DateLayout), (*imported.BirthDate).Format(DateLayout))
+
+	user.BirthDate = nil
+	imported.BirthDate = nil
+	assert.Equal(t, user, imported)
+
 }
 
 func TestUserValidate(t *testing.T) {
