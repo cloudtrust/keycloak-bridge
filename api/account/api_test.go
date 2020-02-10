@@ -37,12 +37,14 @@ func TestConvertToAPIAccount(t *testing.T) {
 	attributes["phoneNumber"] = []string{"+41221234567"}
 	attributes["gender"] = []string{"M"}
 	attributes["birthDate"] = []string{"15.02.1920"}
+	attributes["locale"] = []string{"fr"}
 	kcUser = kc.UserRepresentation{Attributes: &attributes}
 
 	var user = ConvertToAPIAccount(kcUser)
 	assert.Equal(t, "+41221234567", *user.PhoneNumber)
 	assert.Equal(t, "M", *user.Gender)
 	assert.Equal(t, "15.02.1920", *user.BirthDate)
+	assert.Equal(t, "fr", *user.Locale)
 }
 
 func TestConvertToKCUser(t *testing.T) {
@@ -50,10 +52,12 @@ func TestConvertToKCUser(t *testing.T) {
 	assert.Nil(t, ConvertToKCUser(apiUser).Attributes)
 
 	var phoneNumber = "+41221234567"
-	apiUser = AccountRepresentation{PhoneNumber: &phoneNumber}
+	var locale = "fr"
+	apiUser = AccountRepresentation{PhoneNumber: &phoneNumber, Locale: &locale}
 	var kcUser = ConvertToKCUser(apiUser)
 	var kcAttributes = *kcUser.Attributes
 	assert.Equal(t, phoneNumber, kcAttributes["phoneNumber"][0])
+	assert.Equal(t, locale, kcAttributes["locale"][0])
 }
 
 func TestValidateAccountRepresentation(t *testing.T) {

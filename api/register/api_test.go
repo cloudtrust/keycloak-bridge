@@ -18,6 +18,7 @@ func createValidUser() UserRepresentation {
 		idDocType       = "PASSPORT"
 		idDocNumber     = "123456789"
 		idDocExpiration = "23.02.2039"
+		locale          = "de"
 	)
 
 	return UserRepresentation{
@@ -31,6 +32,7 @@ func createValidUser() UserRepresentation {
 		IDDocumentType:       &idDocType,
 		IDDocumentNumber:     &idDocNumber,
 		IDDocumentExpiration: &idDocExpiration,
+		Locale:               &locale,
 	}
 }
 
@@ -61,9 +63,10 @@ func TestConvertToKeycloak(t *testing.T) {
 
 func TestValidateParameterIn(t *testing.T) {
 	var (
-		empty       = ""
-		user        = createValidUser()
-		invalidDate = "29.02.2019"
+		empty         = ""
+		user          = createValidUser()
+		invalidDate   = "29.02.2019"
+		invalidLocale = "x789"
 	)
 
 	t.Run("Valid users", func(t *testing.T) {
@@ -71,7 +74,7 @@ func TestValidateParameterIn(t *testing.T) {
 	})
 
 	t.Run("Invalid users", func(t *testing.T) {
-		var users = []UserRepresentation{user, user, user, user, user, user, user, user, user, user, user, user, user, user, user, user, user, user, user, user}
+		var users = []UserRepresentation{user, user, user, user, user, user, user, user, user, user, user, user, user, user, user, user, user, user, user, user, user, user}
 		// invalid values
 		users[0].Gender = &empty
 		users[1].FirstName = &empty
@@ -83,17 +86,19 @@ func TestValidateParameterIn(t *testing.T) {
 		users[7].IDDocumentType = &empty
 		users[8].IDDocumentNumber = &empty
 		users[9].IDDocumentExpiration = &invalidDate
+		users[10].IDDocumentExpiration = &invalidLocale
 		// mandatory parameters
-		users[10].Gender = nil
-		users[11].FirstName = nil
-		users[12].LastName = nil
-		users[13].EmailAddress = nil
-		users[14].PhoneNumber = nil
-		users[15].BirthDate = nil
-		users[16].BirthLocation = nil
-		users[17].IDDocumentType = nil
-		users[18].IDDocumentNumber = nil
-		users[19].IDDocumentExpiration = nil
+		users[11].Gender = nil
+		users[12].FirstName = nil
+		users[13].LastName = nil
+		users[14].EmailAddress = nil
+		users[15].PhoneNumber = nil
+		users[16].BirthDate = nil
+		users[17].BirthLocation = nil
+		users[18].IDDocumentType = nil
+		users[19].IDDocumentNumber = nil
+		users[20].IDDocumentExpiration = nil
+		users[21].Locale = nil
 
 		for idx, aUser := range users {
 			assert.NotNil(t, aUser.Validate(), "User is expected to be invalid. Test #%d failed with user %s", idx, aUser.UserToJSON())

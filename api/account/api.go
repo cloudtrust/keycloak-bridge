@@ -21,6 +21,7 @@ type AccountRepresentation struct {
 	IDDocumentType       *string `json:"idDocumentType,omitempty"`
 	IDDocumentNumber     *string `json:"idDocumentNumber,omitempty"`
 	IDDocumentExpiration *string `json:"idDocumentExpiration,omitempty"`
+	Locale               *string `json:"locale,omitempty"`
 }
 
 // CredentialRepresentation struct
@@ -89,6 +90,9 @@ func ConvertToAPIAccount(userKc kc.UserRepresentation) AccountRepresentation {
 		if value, ok := m["birthDate"]; ok && len(value) > 0 {
 			userRep.BirthDate = &value[0]
 		}
+		if value, ok := m["locale"]; ok && len(value) > 0 {
+			userRep.Locale = &value[0]
+		}
 	}
 	return userRep
 }
@@ -106,6 +110,9 @@ func ConvertToKCUser(user AccountRepresentation) kc.UserRepresentation {
 
 	if user.PhoneNumber != nil {
 		attributes["phoneNumber"] = []string{*user.PhoneNumber}
+	}
+	if user.Locale != nil {
+		attributes["locale"] = []string{*user.Locale}
 	}
 
 	if len(attributes) > 0 {

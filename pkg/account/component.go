@@ -203,6 +203,10 @@ func (c *component) UpdateAccount(ctx context.Context, user api.AccountRepresent
 		mergedAttributes["phoneNumberVerified"] = []string{strconv.FormatBool(*phoneNumberVerified)}
 	}
 
+	if user.Locale != nil {
+		mergedAttributes["locale"] = []string{*user.Locale}
+	}
+
 	userRep.Attributes = &mergedAttributes
 
 	err = c.keycloakAccountClient.UpdateAccount(accessToken, realm, userRep)

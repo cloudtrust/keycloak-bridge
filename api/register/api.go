@@ -27,6 +27,7 @@ type UserRepresentation struct {
 	IDDocumentType       *string `json:"idDocumentType,omitempty"`
 	IDDocumentNumber     *string `json:"idDocumentNumber,omitempty"`
 	IDDocumentExpiration *string `json:"idDocumentExpiration,omitempty"`
+	Locale               *string `json:"locale,omitempty"`
 }
 
 // ConfigurationRepresentation representation
@@ -46,6 +47,7 @@ const (
 	prmUserIDDocumentType       = "user_idDocType"
 	prmUserIDDocumentNumber     = "user_idDocNumber"
 	prmUserIDDocumentExpiration = "user_idDocExpiration"
+	prmUserLocale               = "user_locale"
 
 	regExpNames         = `^([\wàáâäçèéêëìíîïñòóôöùúûüß]+([ '-][\wàáâäçèéêëìíîïñòóôöùúûüß]+)*){1,50}$`
 	regExpFirstName     = regExpNames
@@ -54,6 +56,7 @@ const (
 	regExpBirthLocation = regExpNames
 	// Multiple values with digits and letters separated by a single separator (space, dash)
 	regExpIDDocumentNumber = `^([\w\d]+([ -][\w\d]+)*){1,50}$`
+	regExpLocale           = `^\w{2}(-\w{2})?$`
 
 	dateLayout = "02.01.2006"
 )
@@ -96,6 +99,9 @@ func (u *UserRepresentation) ConvertToKeycloak() kc.UserRepresentation {
 	if u.BirthDate != nil {
 		attributes["birthDate"] = []string{*u.BirthDate}
 	}
+	if u.Locale != nil {
+		attributes["locale"] = []string{*u.Locale}
+	}
 
 	return kc.UserRepresentation{
 		Username:      u.Username,
@@ -114,7 +120,6 @@ func (u *UserRepresentation) Validate() error {
 	if err != nil {
 		return err
 	}
-
 	err = keycloakb.ValidateParameterRegExp(prmUserFirstName, u.FirstName, regExpFirstName, true)
 	if err != nil {
 		return err
@@ -148,6 +153,10 @@ func (u *UserRepresentation) Validate() error {
 		return err
 	}
 	err = keycloakb.ValidateParameterDate(prmUserIDDocumentExpiration, u.IDDocumentExpiration, dateLayout, true)
+	if err != nil {
+		return err
+	}
+	err = keycloakb.ValidateParameterRegExp(prmUserLocale, u.Locale, regExpLocale, true)
 	if err != nil {
 		return err
 	}
