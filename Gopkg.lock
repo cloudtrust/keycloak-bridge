@@ -19,7 +19,7 @@
 
 [[projects]]
   branch = "validation"
-  digest = "1:b9981ae8b656e7c553ef1962f2b7ae1f60f69912204a8eaef2e1682bb4e4a015"
+  digest = "1:bfdecb354f0efe307ee6de69fc1f57e368a499ea8319d29b9daaebdf644e3ffa"
   name = "github.com/cloudtrust/common-service"
   packages = [
     ".",
@@ -38,7 +38,7 @@
     "validation",
   ]
   pruneopts = "UT"
-  revision = "b4716aee5a9f386e5da5ad9392290e85d863e4b3"
+  revision = "a2fd235de5d0bf062789a6f0b2f58c81dbf96338"
 
 [[projects]]
   branch = "validation"
