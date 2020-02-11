@@ -1144,6 +1144,8 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 	v.BindEnv("register-techuser-username", "CT_BRIDGE_REGISTER_USERNAME")
 	v.BindEnv("register-techuser-password", "CT_BRIDGE_REGISTER_PASSWORD")
 	v.BindEnv("recaptcha-secret", "CT_BRIDGE_RECAPTCHA_SECRET")
+	censoredParameters["recaptcha-secret"] = true
+	censoredParameters["register-techuser-password"] = true
 
 	v.BindEnv("influx-username", "CT_BRIDGE_INFLUX_USERNAME")
 	v.BindEnv("influx-password", "CT_BRIDGE_INFLUX_PASSWORD")
