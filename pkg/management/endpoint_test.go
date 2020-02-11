@@ -1136,7 +1136,7 @@ func TestCreateShadowUserEndpoint(t *testing.T) {
 	var realm = "master"
 	var ctx = context.Background()
 	var username = "username"
-	var userID = "userID"
+	var userID = "abcdefgh-1234-ijkl-5678-mnopqrstuvwx"
 	var provider = "provider"
 
 	var req = make(map[string]string)

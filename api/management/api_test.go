@@ -74,7 +74,7 @@ func TestConvertToAPIUser(t *testing.T) {
 	kcUser.Attributes = &m
 	m["smsSent"] = []string{"0"}
 	assert.NotNil(t, *ConvertToAPIUser(kcUser).SmsSent)
-	
+
 	// trustID groups
 	assert.Nil(t, ConvertToAPIUser(kcUser).TrustIDGroups)
 	kcUser.Attributes = &m
@@ -302,8 +302,8 @@ func TestValidateUserRepresentation(t *testing.T) {
 	users[10].FirstName = &empty
 	users[11].LastName = &empty
 
-	for _, user := range users {
-		assert.NotNil(t, user.Validate())
+	for idx, user := range users {
+		assert.NotNil(t, user.Validate(), "Check is expected to be invalid. Test #%d failed", idx)
 	}
 }
 

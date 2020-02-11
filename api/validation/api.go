@@ -4,9 +4,8 @@ import (
 	"strconv"
 	"time"
 
-	cerrors "github.com/cloudtrust/common-service/errors"
+	"github.com/cloudtrust/common-service/validation"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
-	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	kc "github.com/cloudtrust/keycloak-client"
 )
 
@@ -186,82 +185,28 @@ func (u *UserRepresentation) ImportFromKeycloak(kcUser kc.UserRepresentation) {
 
 // Validate checks the validity of the given User
 func (u *UserRepresentation) Validate() error {
-	var err = keycloakb.ValidateParameterRegExp(prmUserID, u.UserID, RegExpID, false)
-	if err != nil {
-		return err
-	}
-
-	err = keycloakb.ValidateParameterIn(prmUserGender, u.Gender, allowedGender, false)
-	if err != nil {
-		return err
-	}
-
-	err = keycloakb.ValidateParameterRegExp(prmUserFirstName, u.FirstName, regExpFirstName, false)
-	if err != nil {
-		return err
-	}
-	err = keycloakb.ValidateParameterRegExp(prmUserLastName, u.LastName, regExpLastName, false)
-	if err != nil {
-		return err
-	}
-	err = keycloakb.ValidateParameterRegExp(prmUserEmail, u.EmailAddress, regExpEmail, false)
-	if err != nil {
-		return err
-	}
-	err = keycloakb.ValidateParameterPhoneNumber(prmUserPhoneNumber, u.PhoneNumber, false)
-	if err != nil {
-		return err
-	}
-	err = keycloakb.ValidateParameterRegExp(prmUserBirthLocation, u.BirthLocation, regExpBirthLocation, false)
-	if err != nil {
-		return err
-	}
-	err = keycloakb.ValidateParameterIn(prmUserIDDocumentType, u.IDDocumentType, allowedDocumentType, false)
-	if err != nil {
-		return err
-	}
-	err = keycloakb.ValidateParameterRegExp(prmUserIDDocumentNumber, u.IDDocumentNumber, regExpIDDocumentNumber, false)
-	if err != nil {
-		return err
-	}
-	return nil
+	return validation.NewParameterValidator().
+		ValidateParameterRegExp(prmUserID, u.UserID, RegExpID, false).
+		ValidateParameterIn(prmUserGender, u.Gender, allowedGender, false).
+		ValidateParameterRegExp(prmUserFirstName, u.FirstName, regExpFirstName, false).
+		ValidateParameterRegExp(prmUserLastName, u.LastName, regExpLastName, false).
+		ValidateParameterRegExp(prmUserEmail, u.EmailAddress, regExpEmail, false).
+		ValidateParameterPhoneNumber(prmUserPhoneNumber, u.PhoneNumber, false).
+		ValidateParameterRegExp(prmUserBirthLocation, u.BirthLocation, regExpBirthLocation, false).
+		ValidateParameterIn(prmUserIDDocumentType, u.IDDocumentType, allowedDocumentType, false).
+		ValidateParameterRegExp(prmUserIDDocumentNumber, u.IDDocumentNumber, regExpIDDocumentNumber, false).
+		Status()
 }
 
 // Validate checks the validity of the given check
 func (c *CheckRepresentation) Validate() error {
-	var err = keycloakb.ValidateParameterRegExp(prmUserID, c.UserID, RegExpID, true)
-	if err != nil {
-		return err
-	}
-
-	err = keycloakb.ValidateParameterRegExp(prmCheckOperator, c.Operator, regExpOperator, true)
-	if err != nil {
-		return err
-	}
-
-	if c.DateTime == nil {
-		return cerrors.CreateMissingParameterError(prmCheckDatetime)
-	}
-
-	err = keycloakb.ValidateParameterIn(prmCheckStatus, c.Status, allowedStatus, true)
-	if err != nil {
-		return err
-	}
-
-	err = keycloakb.ValidateParameterIn(prmCheckType, c.Type, allowedCheckType, true)
-	if err != nil {
-		return err
-	}
-
-	err = keycloakb.ValidateParameterRegExp(prmCheckNature, c.Nature, regExpNature, true)
-	if err != nil {
-		return err
-	}
-
-	err = keycloakb.ValidateParameterRegExp(prmCheckProofType, c.ProofType, regExpProofType, true)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return validation.NewParameterValidator().
+		ValidateParameterRegExp(prmUserID, c.UserID, RegExpID, true).
+		ValidateParameterRegExp(prmCheckOperator, c.Operator, regExpOperator, true).
+		ValidateParameterNotNil(prmCheckDatetime, c.DateTime).
+		ValidateParameterIn(prmCheckStatus, c.Status, allowedStatus, true).
+		ValidateParameterIn(prmCheckType, c.Type, allowedCheckType, true).
+		ValidateParameterRegExp(prmCheckNature, c.Nature, regExpNature, true).
+		ValidateParameterRegExp(prmCheckProofType, c.ProofType, regExpProofType, true).
+		Status()
 }

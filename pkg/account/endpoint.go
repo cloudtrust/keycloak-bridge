@@ -58,7 +58,7 @@ func MakeUpdatePasswordEndpoint(component AccountComponent) cs.Endpoint {
 		}
 
 		if err = body.Validate(); err != nil {
-			return nil, errrorhandler.CreateBadRequestError(err.Error())
+			return nil, err
 		}
 
 		return nil, component.UpdatePassword(ctx, body.CurrentPassword, body.NewPassword, body.ConfirmPassword)
@@ -92,7 +92,7 @@ func MakeUpdateLabelCredentialEndpoint(component AccountComponent) cs.Endpoint {
 		}
 
 		if err = body.Validate(); err != nil {
-			return nil, errrorhandler.CreateBadRequestError(err.Error())
+			return nil, err
 		}
 
 		if body.UserLabel == nil {
@@ -140,7 +140,7 @@ func MakeUpdateAccountEndpoint(component AccountComponent) cs.Endpoint {
 		}
 
 		if err = body.Validate(); err != nil {
-			return nil, errrorhandler.CreateBadRequestError(err.Error())
+			return nil, err
 		}
 
 		return nil, component.UpdateAccount(ctx, body)

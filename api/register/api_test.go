@@ -61,7 +61,7 @@ func TestConvertToKeycloak(t *testing.T) {
 	assert.True(t, *kcUser.Enabled)
 }
 
-func TestValidateParameterIn(t *testing.T) {
+func TestValidateUserRepresentation(t *testing.T) {
 	var (
 		empty         = ""
 		user          = createValidUser()
@@ -74,7 +74,10 @@ func TestValidateParameterIn(t *testing.T) {
 	})
 
 	t.Run("Invalid users", func(t *testing.T) {
-		var users = []UserRepresentation{user, user, user, user, user, user, user, user, user, user, user, user, user, user, user, user, user, user, user, user, user, user}
+		var users []UserRepresentation
+		for i := 0; i < 22; i++ {
+			users = append(users, user)
+		}
 		// invalid values
 		users[0].Gender = &empty
 		users[1].FirstName = &empty
@@ -86,7 +89,7 @@ func TestValidateParameterIn(t *testing.T) {
 		users[7].IDDocumentType = &empty
 		users[8].IDDocumentNumber = &empty
 		users[9].IDDocumentExpiration = &invalidDate
-		users[10].IDDocumentExpiration = &invalidLocale
+		users[10].Locale = &invalidLocale
 		// mandatory parameters
 		users[11].Gender = nil
 		users[12].FirstName = nil

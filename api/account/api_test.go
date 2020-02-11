@@ -64,9 +64,10 @@ func TestValidateAccountRepresentation(t *testing.T) {
 	var invalidName = ""
 	var invalidEmail = "bobby-at-mail.com"
 	var invalidPhone = "+412212345AB"
+	var invalidLocale = "fr-123"
 	var accounts []AccountRepresentation
 
-	for i := 0; i < 5; i++ {
+	for i := 0; i < 6; i++ {
 		accounts = append(accounts, createValidAccountRepresentation())
 	}
 
@@ -77,6 +78,7 @@ func TestValidateAccountRepresentation(t *testing.T) {
 	accounts[2].LastName = &invalidName
 	accounts[3].Email = &invalidEmail
 	accounts[4].PhoneNumber = &invalidPhone
+	accounts[5].Locale = &invalidLocale
 
 	for _, account := range accounts {
 		assert.NotNil(t, account.Validate())
@@ -145,6 +147,7 @@ func createValidAccountRepresentation() AccountRepresentation {
 	var validName = "Bobby"
 	var validEmail = "bobby@mail.com"
 	var validPhone = "+41221234567"
+	var validLocale = "fr"
 
 	return AccountRepresentation{
 		Username:    &validName,
@@ -152,6 +155,7 @@ func createValidAccountRepresentation() AccountRepresentation {
 		LastName:    &validName,
 		Email:       &validEmail,
 		PhoneNumber: &validPhone,
+		Locale:      &validLocale,
 	}
 }
 

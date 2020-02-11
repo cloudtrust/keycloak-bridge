@@ -18,7 +18,8 @@
   version = "2020.01.04"
 
 [[projects]]
-  digest = "1:d89b022b7e25578e238f7e4683a29e4e8c7ae3845fc87f3a1a24e80ef9df0eeb"
+  branch = "validation"
+  digest = "1:b9981ae8b656e7c553ef1962f2b7ae1f60f69912204a8eaef2e1682bb4e4a015"
   name = "github.com/cloudtrust/common-service"
   packages = [
     ".",
@@ -34,18 +35,18 @@
     "security",
     "tracing",
     "tracking",
+    "validation",
   ]
   pruneopts = "UT"
-  revision = "a378b70b4d40f96407e066b6d4fb17d70f29074c"
-  version = "v1.2.4"
+  revision = "b4716aee5a9f386e5da5ad9392290e85d863e4b3"
 
 [[projects]]
-  digest = "1:d5e16a9936cbe85b7da69f39b28f3bce4a9cbc76c54b0cbd81bff38e0512b4c7"
+  branch = "validation"
+  digest = "1:71cf3ff9622cbd9accbb19448f23c30cb1975474a3bee20efc229e521c62cf63"
   name = "github.com/cloudtrust/keycloak-client"
   packages = ["."]
   pruneopts = "UT"
-  revision = "ca765a03b1663c649927cdf982fdb4b4dac3be5a"
-  version = "v1.2.7"
+  revision = "b3a4178420b8953126b2eac53b242c73e430a16f"
 
 [[projects]]
   digest = "1:910c5b111ca13127693df80a59be2c952ad97313626116c0c9895e7b588f2a29"
@@ -181,8 +182,8 @@
     "pkg/escape",
   ]
   pruneopts = "UT"
-  revision = "23bc63d43a8dc05f53afa46e3526ebb5578f3d88"
-  version = "v1.7.9"
+  revision = "f46f63d4e2d9684a2dd716594ab609ccd32f0a5b"
+  version = "v1.7.10"
 
 [[projects]]
   digest = "1:9ff22c26414baf7deaf74f2a788fe7b97666048bcbe346c52cfe823442abbdfb"
@@ -387,7 +388,7 @@
     "pbkdf2",
   ]
   pruneopts = "UT"
-  revision = "69ecbb4d6d5dab05e49161c6e77ea40a030884e1"
+  revision = "86ce3cb696783b739e41e834e2eead3e1b4aa3fb"
 
 [[projects]]
   branch = "master"
@@ -411,7 +412,7 @@
     "publicsuffix",
   ]
   pruneopts = "UT"
-  revision = "6afb5195e5aab057fda82e27171243402346b0ad"
+  revision = "16171245cfb220d5317888b716d69c1fb4e7992b"
 
 [[projects]]
   branch = "master"
@@ -426,11 +427,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:fea09edda033799f8e99ab9042bda910bf1e3bf088c03eaf2ba8aba3adbbc8bf"
+  digest = "1:72b7c210f8cfe1431d2f300fbf37f25e52aa77324b05ab6b698483054033803e"
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = "UT"
-  revision = "9fbb57f87de9ccfe3a99d4e3270ce8a926ebba4f"
+  revision = "d101bd2416d505c0448a6ce8a282482678040a89"
 
 [[projects]]
   digest = "1:8d8faad6b12a3a4c819a3f9618cb6ee1fa1cfc33253abeeea8b55336721e3405"
@@ -476,7 +477,7 @@
     "go/types/typeutil",
   ]
   pruneopts = "UT"
-  revision = "b4207ef4930765bb7d8205504a8e9217f20be1dd"
+  revision = "2de505fc5306574bc26fdcf5aca1e37ed187421e"
 
 [[projects]]
   digest = "1:e0a1881f9e0564bebdeac98c75e59f07acdde6ed3a5396e0e613eaad31194866"
@@ -518,12 +519,12 @@
   version = "v2.0.3"
 
 [[projects]]
-  digest = "1:c4b5592c342f273e18de68e16957f536f6648f2e90c9d7ece653ac90c22079a9"
+  digest = "1:ef4bd1cd2563d93d3f48352fc24d499a4a2b54c11932814173653ece7db13800"
   name = "gopkg.in/ini.v1"
   packages = ["."]
   pruneopts = "UT"
-  revision = "94291fffe2b14f4632ec0e67c1bfecfc1287a168"
-  version = "v1.51.1"
+  revision = "32cf4f7e9c77f151e18b53067b55549b4d1d411d"
+  version = "v1.52.0"
 
 [[projects]]
   digest = "1:3c4aaca5a82adc021322f239e0cf3f46852bb0b18ae050d0feab2e9e4c527462"
@@ -562,6 +563,7 @@
     "github.com/cloudtrust/common-service/security",
     "github.com/cloudtrust/common-service/tracing",
     "github.com/cloudtrust/common-service/tracking",
+    "github.com/cloudtrust/common-service/validation",
     "github.com/cloudtrust/keycloak-client",
     "github.com/go-kit/kit/endpoint",
     "github.com/go-kit/kit/log",
@@ -574,7 +576,6 @@
     "github.com/gorilla/mux",
     "github.com/influxdata/influxdb/client/v2",
     "github.com/lib/pq",
-    "github.com/nyaruka/phonenumbers",
     "github.com/pkg/errors",
     "github.com/rs/cors",
     "github.com/spf13/pflag",
