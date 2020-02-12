@@ -14,62 +14,60 @@ pipeline {
     APP="ct-bridge"
   }
   stages {
-    stage('Init') {
-      steps {
-        script {
-          echo "========================================="
-          echo "CREATE_RELEASE=${params.CREATE_RELEASE}"
-          echo "VERSION=${params.VERSION}"
-          echo "REPOSITORY_URL=${params.REPO_URL}"
-          echo "========================================="
-          sh 'printenv'
-        }
-      }
-    }
     stage('Build') {
       agent {
         label 'jenkins-slave-go-ct'
       }
       steps {
         script {
-          sh """
-            set -eo pipefail
+          sh 'printenv'
+          def isBranch = ""
+          if (!env.CHANGE_ID) {
+            isBranch = " || true"
+          }
+          withCredentials([usernamePassword(credentialsId: 'sonarqube', usernameVariable: 'USER', passwordVariable: 'PASS')]) {
+            sh """
+              set -eo pipefail
 
-            mkdir -p "${BUILD_PATH}"
-            cp -r "${WORKSPACE}/." "${BUILD_PATH}/"
-            cd "${BUILD_PATH}"
+              mkdir -p "${BUILD_PATH}"
+              cp -r "${WORKSPACE}/." "${BUILD_PATH}/"
+              cd "${BUILD_PATH}"
 
-            dep ensure
+              golint ./... | tee golint.out || true
 
-            ./scripts/build.sh --version "${params.VERSION}" --env "\$(uname -o)-\$(uname -m)"
+              dep ensure
 
-            go generate ./...
+              ./scripts/build.sh --version "${params.VERSION}" --env "\$(uname -o)-\$(uname -m)"
 
-            go test -coverprofile=coverage.out -json ./... | tee report.json
-            bash -c \"go vet ./... > >(cat) 2> >(tee govet.out)\" || true
-            golint | tee golint.out || true
-            gometalinter | tee gometalinter.out || true
+              go generate ./...
 
-            nancy -no-color Gopkg.lock || true
+              go test -coverprofile=coverage.out -json ./... | tee report.json
+              go tool cover -func=coverage.out
+              bash -c \"go vet ./... > >(cat) 2> >(tee govet.out)\" || true
+              gometalinter --vendor --disable=gotype --disable=golint --disable=vet --disable=gocyclo --exclude=/usr/local/go/src --deadline=300s ./... | tee gometalinter.out || true
 
-            JAVA_TOOL_OPTIONS="" sonar-scanner \
-              -Dsonar.host.url=http://sonarqube:9000 \
-              -Dsonar.sourceEncoding=UTF-8 \
-              -Dsonar.projectKey=keycloak-bridge \
-              -Dsonar.projectName=keycloak-bridge \
-              -Dsonar.projectVersion="${params.VERSION}" \
-              -Dsonar.sources=. \
-              -Dsonar.exclusions=**/*_test.go,**/vendor/**,**/mock/** \
-              -Dsonar.tests=. \
-              -Dsonar.test.inclusions=**/*_test.go \
-              -Dsonar.test.exclusions=**/vendor/** \
-              -Dsonar.go.coverage.reportPaths=./coverage.out \
-              -Dsonar.go.tests.reportPaths=./report.json \
-              -Dsonar.go.govet.reportPaths=./govet.out \
-              -Dsonar.go.golint.reportPaths=./golint.out \
-              -Dsonar.go.gometalinter.reportPaths=./gometalinter.out
+              nancy -no-color Gopkg.lock || true
 
-          """
+              JAVA_TOOL_OPTIONS="" sonar-scanner \
+                -Dsonar.host.url=https://sonarqube-cloudtrust-cicd.openshift.west.ch.elca-cloud.com \
+                -Dsonar.login="${USER}" \
+                -Dsonar.password="${PASS}" \
+                -Dsonar.sourceEncoding=UTF-8 \
+                -Dsonar.projectKey=keycloak-bridge \
+                -Dsonar.projectName=keycloak-bridge \
+                -Dsonar.projectVersion="${env.GIT_COMMIT}" \
+                -Dsonar.sources=. \
+                -Dsonar.exclusions=**/*_test.go,**/vendor/**,**/mock/** \
+                -Dsonar.tests=. \
+                -Dsonar.test.inclusions=**/*_test.go \
+                -Dsonar.test.exclusions=**/vendor/** \
+                -Dsonar.go.coverage.reportPaths=./coverage.out \
+                -Dsonar.go.tests.reportPaths=./report.json \
+                -Dsonar.go.govet.reportPaths=./govet.out \
+                -Dsonar.go.golint.reportPaths=./golint.out \
+                -Dsonar.go.gometalinter.reportPaths=./gometalinter.out ${isBranch}
+            """
+          }
 
           if (params.CREATE_RELEASE == "true"){
             echo "creating release ${VERSION} and uploading it to ${REPO_URL}"
@@ -78,7 +76,7 @@ pipeline {
               sh """
                 cd ${BUILD_PATH}/bin
                 tar -czvf ${APP}-${params.VERSION}.tar.gz ./keycloak_bridge
-                curl -k -u"${USR}:${PWD}" -T "${BUILD_PATH}/bin/${APP}-${params.VERSION}.tar.gz" --keepalive-time 2 "${REPO_URL}/${APP}-${params.VERSION}.tar.gz"
+                curl --fail -k -u"${USR}:${PWD}" -T "${BUILD_PATH}/bin/${APP}-${params.VERSION}.tar.gz" --keepalive-time 2 "${REPO_URL}/${APP}-${params.VERSION}.tar.gz"
               """
             }
             def git_url = "${env.GIT_URL}".replaceFirst("^(http[s]?://www\\.|http[s]?://|www\\.)","")
