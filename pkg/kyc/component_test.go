@@ -60,6 +60,53 @@ func TestGetActions(t *testing.T) {
 	})
 }
 
+func TestGetUserByUsernameComponent(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
+	var mockUsersDB = mock.NewUsersDBModule(mockCtrl)
+	var mockEventsDB = mock.NewEventsDBModule(mockCtrl)
+
+	var accessToken = "abcd-1234"
+	var realm = "my-realm"
+	var username = "utr167x"
+	var userID = "1234567890"
+	var groupIDs = []string{"not", "used", "values"}
+	var kcUser = kc.UserRepresentation{
+		Id:       &userID,
+		Username: &username,
+	}
+	var one = 1
+	var kcUsersSearch = kc.UsersPageRepresentation{Count: &one, Users: []kc.UserRepresentation{kcUser}}
+	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+
+	var component = NewComponent(realm, mockKeycloakClient, mockUsersDB, mockEventsDB, log.NewNopLogger())
+
+	t.Run("GetUserByUsername from Keycloak fails", func(t *testing.T) {
+		var kcError = errors.New("kc error")
+		mockKeycloakClient.EXPECT().GetUsers(accessToken, realm, realm, "username", username).Return(kcUsersSearch, kcError)
+		var _, err = component.GetUserByUsername(ctx, username, groupIDs)
+		assert.NotNil(t, err)
+	})
+
+	t.Run("GetUserByUsername from Keycloak fails", func(t *testing.T) {
+		var none = 0
+		var searchNoResult = kc.UsersPageRepresentation{Count: &none, Users: []kc.UserRepresentation{}}
+		mockKeycloakClient.EXPECT().GetUsers(accessToken, realm, realm, "username", username).Return(searchNoResult, nil)
+		var _, err = component.GetUserByUsername(ctx, username, groupIDs)
+		assert.NotNil(t, err)
+	})
+
+	t.Run("GetUserByUsername success", func(t *testing.T) {
+		mockKeycloakClient.EXPECT().GetUsers(accessToken, realm, realm, "username", username).Return(kcUsersSearch, nil)
+		mockUsersDB.EXPECT().GetUser(ctx, realm, *kcUser.Id).Return(&dto.DBUser{}, nil)
+		var user, err = component.GetUserByUsername(ctx, username, groupIDs)
+		assert.Nil(t, err)
+		assert.NotNil(t, user)
+	})
+}
+
 func TestGetUserComponent(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -72,41 +119,32 @@ func TestGetUserComponent(t *testing.T) {
 	var realm = "my-realm"
 	var username = "utr167x"
 	var userID = "1234567890"
-	var one = 1
 	var kcUser = kc.UserRepresentation{
 		Id:       &userID,
 		Username: &username,
 	}
-	var kcSearchResp = kc.UsersPageRepresentation{Count: &one, Users: []kc.UserRepresentation{kcUser}}
 	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 	var component = NewComponent(realm, mockKeycloakClient, mockUsersDB, mockEventsDB, log.NewNopLogger())
 
-	t.Run("GetUsers from Keycloak fails", func(t *testing.T) {
+	t.Run("GetUser from Keycloak fails", func(t *testing.T) {
 		var kcError = errors.New("kc error")
-		mockKeycloakClient.EXPECT().GetUsers(accessToken, realm, realm, "username", username).Return(kc.UsersPageRepresentation{}, kcError)
-		var _, err = component.GetUser(ctx, username)
+		mockKeycloakClient.EXPECT().GetUser(accessToken, realm, userID).Return(kc.UserRepresentation{}, kcError)
+		var _, err = component.GetUser(ctx, userID)
 		assert.NotNil(t, err)
 	})
 
-	t.Run("User not found in KC", func(t *testing.T) {
-		var count = 0
-		mockKeycloakClient.EXPECT().GetUsers(accessToken, realm, realm, "username", username).Return(kc.UsersPageRepresentation{Count: &count}, nil)
-		var _, err = component.GetUser(ctx, username)
-		assert.NotNil(t, err)
-	})
-
-	t.Run("GetUsers from DB fails", func(t *testing.T) {
-		mockKeycloakClient.EXPECT().GetUsers(accessToken, realm, realm, "username", username).Return(kcSearchResp, nil)
+	t.Run("GetUser from DB fails", func(t *testing.T) {
+		mockKeycloakClient.EXPECT().GetUser(accessToken, realm, userID).Return(kcUser, nil)
 		mockUsersDB.EXPECT().GetUser(ctx, realm, *kcUser.Id).Return(nil, errors.New("database"))
-		var _, err = component.GetUser(ctx, username)
+		var _, err = component.GetUser(ctx, userID)
 		assert.NotNil(t, err)
 	})
 
-	t.Run("GetUsers success", func(t *testing.T) {
-		mockKeycloakClient.EXPECT().GetUsers(accessToken, realm, realm, "username", username).Return(kcSearchResp, nil)
+	t.Run("GetUser success", func(t *testing.T) {
+		mockKeycloakClient.EXPECT().GetUser(accessToken, realm, userID).Return(kcUser, nil)
 		mockUsersDB.EXPECT().GetUser(ctx, realm, *kcUser.Id).Return(&dto.DBUser{}, nil)
-		var user, err = component.GetUser(ctx, username)
+		var user, err = component.GetUser(ctx, userID)
 		assert.Nil(t, err)
 		assert.NotNil(t, user)
 	})

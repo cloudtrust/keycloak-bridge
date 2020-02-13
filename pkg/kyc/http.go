@@ -15,12 +15,16 @@ import (
 const (
 	RegExpUserName = apimgmt.RegExpUsername
 	RegExpUserID   = apimgmt.RegExpID
+	RegExpGroupIds = apimgmt.RegExpGroupIds
 )
 
 // MakeKYCHandler make an HTTP handler for the KYC endpoint.
 func MakeKYCHandler(e endpoint.Endpoint, logger log.Logger) *http_transport.Server {
 	pathParams := map[string]string{"userId": RegExpUserID}
-	queryParams := map[string]string{"username": RegExpUserName}
+	queryParams := map[string]string{
+		"username": RegExpUserName,
+		"groupIds": RegExpGroupIds,
+	}
 
 	return http_transport.NewServer(e,
 		func(ctx context.Context, req *http.Request) (interface{}, error) {

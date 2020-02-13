@@ -31,13 +31,19 @@ paths:
     get:
       tags:
       - KYC
-      summary: Gets a user
+      summary: Gets a user (search by username)
       security:
         - openId: []
       parameters:
       - name: username
         in: query
         description: name of the user to be retrieved
+        required: true
+        schema:
+          type: string
+      - name: groupIds
+        in: query
+        description: list of groupId the users may belong to (list comma seperated)
         required: true
         schema:
           type: string
@@ -50,9 +56,29 @@ paths:
                 $ref: '#/components/schemas/User'
         403:
           description: No permission to call this operation
-        404:
-          description: User not found
   /kyc/users/{userId}:
+    get:
+      tags:
+      - KYC
+      summary: Gets a user
+      security:
+        - openId: []
+      parameters:
+      - name: userId
+        in: path
+        description: user id
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        403:
+          description: No permission to call this operation
     put:
       tags:
       - KYC
@@ -75,7 +101,7 @@ paths:
               $ref: '#/components/schemas/User'
       responses:
         200:
-          description: Successful operation. Returns the generated username
+          description: Successful operation
           content:
             application/json:
               schema:
@@ -97,9 +123,12 @@ components:
       type: object
       required: [gender, firstName, lastName, emailAddress, phoneNumber]
       properties:
-        id:
+        userId:
           type: string
-          description: User ID is used by GET user, ignored by PUT user
+          description: Ignored by PUT user
+        username:
+          type: string
+          description: Ignored by PUT user
         gender:
           type: string
         firstName:
@@ -108,12 +137,16 @@ components:
           type: string
         emailAddress:
           type: string
+          description: Ignored by PUT user
         emailAddressVerified:
           type: boolean
+          description: Ignored by PUT user
         phoneNumber:
           type: string
+          description: Ignored by PUT user
         phoneNumberVerified:
           type: boolean
+          description: Ignored by PUT user
         birthDate:
           type: string
           description: format is DD.MM.YYYY

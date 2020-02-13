@@ -10,16 +10,16 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:c659a6247d43eca4d74b53fade2e032a8882b055ba5aad02d154189b18ae3739"
+  digest = "1:875c90e39ff3e917c933c3f611bc61657bda8834e7fc59498f1a4ff0e23edefb"
   name = "github.com/certifi/gocertifi"
   packages = ["."]
   pruneopts = "UT"
-  revision = "a6d78f326758ac5f79e9c3eddc38723d07216c3a"
-  version = "2020.01.04"
+  revision = "c7c1fbc02894e7114f06f6a4d9ab31eee2225bdb"
+  version = "2020.02.11"
 
 [[projects]]
-  branch = "validation"
-  digest = "1:bfdecb354f0efe307ee6de69fc1f57e368a499ea8319d29b9daaebdf644e3ffa"
+  branch = "master"
+  digest = "1:a04a4e86d8b1fbb095a569998ba5adec39501d7872d79075a4aabaa791ad465c"
   name = "github.com/cloudtrust/common-service"
   packages = [
     ".",
@@ -38,15 +38,15 @@
     "validation",
   ]
   pruneopts = "UT"
-  revision = "a2fd235de5d0bf062789a6f0b2f58c81dbf96338"
+  revision = "790d30f843ed1e0868693c39f2345a7840925075"
 
 [[projects]]
-  branch = "validation"
-  digest = "1:71cf3ff9622cbd9accbb19448f23c30cb1975474a3bee20efc229e521c62cf63"
+  branch = "dev"
+  digest = "1:140e5ecc3aa692117302296807e3ae5f6e53f587036af47330806bd42b6dde73"
   name = "github.com/cloudtrust/keycloak-client"
   packages = ["."]
   pruneopts = "UT"
-  revision = "b3a4178420b8953126b2eac53b242c73e430a16f"
+  revision = "aecba0a68c090df0174b1f53f33b5c9a43ea061c"
 
 [[projects]]
   digest = "1:910c5b111ca13127693df80a59be2c952ad97313626116c0c9895e7b588f2a29"
@@ -147,12 +147,12 @@
   version = "1.11.0"
 
 [[projects]]
-  digest = "1:cbec35fe4d5a4fba369a656a8cd65e244ea2c743007d8f6c1ccb132acf9d1296"
+  digest = "1:25ebe6496abb289ef977c081b2d49f56dd97c32db4ca083d37f95923909ced02"
   name = "github.com/gorilla/mux"
   packages = ["."]
   pruneopts = "UT"
-  revision = "00bdffe0f3c77e27d2cf6f5c70232a2d3e4d9c15"
-  version = "v1.7.3"
+  revision = "75dcda0896e109a2a22c9315bca3bb21b87b2ba5"
+  version = "v1.7.4"
 
 [[projects]]
   digest = "1:c0d19ab64b32ce9fe5cf4ddceba78d5bc9807f0016db6b1183599da3dcc24d10"
@@ -427,11 +427,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:72b7c210f8cfe1431d2f300fbf37f25e52aa77324b05ab6b698483054033803e"
+  digest = "1:21170ea1a15ba3b4e49dd934e130f4e21edf3c117e24f07502fe46e45ff3a8fc"
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = "UT"
-  revision = "d101bd2416d505c0448a6ce8a282482678040a89"
+  revision = "12a6c2dcc1e4cb348b57847c73987099e261714b"
 
 [[projects]]
   digest = "1:8d8faad6b12a3a4c819a3f9618cb6ee1fa1cfc33253abeeea8b55336721e3405"
@@ -477,7 +477,7 @@
     "go/types/typeutil",
   ]
   pruneopts = "UT"
-  revision = "2de505fc5306574bc26fdcf5aca1e37ed187421e"
+  revision = "49b8ac185c84c5092be0953fb92b7660db9b8162"
 
 [[projects]]
   digest = "1:e0a1881f9e0564bebdeac98c75e59f07acdde6ed3a5396e0e613eaad31194866"

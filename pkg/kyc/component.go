@@ -39,7 +39,8 @@ type EventsDBModule interface {
 // Component is the register component interface.
 type Component interface {
 	GetActions(ctx context.Context) ([]apikyc.ActionRepresentation, error)
-	GetUser(ctx context.Context, username string) (apikyc.UserRepresentation, error)
+	GetUser(ctx context.Context, userID string) (apikyc.UserRepresentation, error)
+	GetUserByUsername(ctx context.Context, username string, groupIDs []string) (apikyc.UserRepresentation, error)
 	ValidateUser(ctx context.Context, userID string, user apikyc.UserRepresentation) error
 }
 
@@ -87,16 +88,29 @@ func (c *component) GetActions(ctx context.Context) ([]apikyc.ActionRepresentati
 	return apiActions, nil
 }
 
-func (c *component) GetUser(ctx context.Context, username string) (apikyc.UserRepresentation, error) {
+func (c *component) GetUserByUsername(ctx context.Context, username string, _ []string) (apikyc.UserRepresentation, error) {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 	var kcUser, err = c.getUserByUsername(accessToken, c.socialRealmName, c.socialRealmName, username)
 	if err != nil {
 		c.logger.Info(ctx, "msg", "GetUser: can't find user in Keycloak", "err", err.Error())
 		return apikyc.UserRepresentation{}, errorhandler.CreateInternalServerError("keycloak")
 	}
+	return c.getUser(ctx, *kcUser.Id, kcUser)
+}
 
-	var dbUser *dto.DBUser
-	dbUser, err = c.usersDBModule.GetUser(ctx, c.socialRealmName, *kcUser.Id)
+func (c *component) GetUser(ctx context.Context, userID string) (apikyc.UserRepresentation, error) {
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+
+	var kcUser, err = c.keycloakClient.GetUser(accessToken, c.socialRealmName, userID)
+	if err != nil {
+		c.logger.Info(ctx, "msg", "GetUser: can't find user in Keycloak", "err", err.Error())
+		return apikyc.UserRepresentation{}, errorhandler.CreateInternalServerError("keycloak")
+	}
+	return c.getUser(ctx, userID, kcUser)
+}
+
+func (c *component) getUser(ctx context.Context, userID string, kcUser kc.UserRepresentation) (apikyc.UserRepresentation, error) {
+	var dbUser, err = c.usersDBModule.GetUser(ctx, c.socialRealmName, *kcUser.Id)
 	if err != nil {
 		c.logger.Info(ctx, "msg", "GetUser: can't find user in keycloak")
 		return apikyc.UserRepresentation{}, err
