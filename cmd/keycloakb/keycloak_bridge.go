@@ -660,9 +660,10 @@ func main() {
 		kycComponent = kyc.MakeAuthorizationRegisterComponentMW(registerRealm, log.With(kycLogger, "mw", "endpoint"), authorizationManager)(kycComponent)
 
 		kycEndpoints = kyc.Endpoints{
-			GetActions:   prepareEndpoint(kyc.MakeGetActionsEndpoint(kycComponent), "register_get_actions", influxMetrics, kycLogger, tracer, rateLimit["kyc"]),
-			GetUser:      prepareEndpoint(kyc.MakeGetUserEndpoint(kycComponent), "get_user", influxMetrics, kycLogger, tracer, rateLimit["kyc"]),
-			ValidateUser: prepareEndpoint(kyc.MakeValidateUserEndpoint(kycComponent), "validate_user", influxMetrics, kycLogger, tracer, rateLimit["kyc"]),
+			GetActions:        prepareEndpoint(kyc.MakeGetActionsEndpoint(kycComponent), "register_get_actions", influxMetrics, kycLogger, tracer, rateLimit["kyc"]),
+			GetUser:           prepareEndpoint(kyc.MakeGetUserEndpoint(kycComponent), "get_user", influxMetrics, kycLogger, tracer, rateLimit["kyc"]),
+			GetUserByUsername: prepareEndpoint(kyc.MakeGetUserByUsernameEndpoint(kycComponent), "get_user_by_username", influxMetrics, kycLogger, tracer, rateLimit["kyc"]),
+			ValidateUser:      prepareEndpoint(kyc.MakeValidateUserEndpoint(kycComponent), "validate_user", influxMetrics, kycLogger, tracer, rateLimit["kyc"]),
 		}
 	}
 
@@ -829,6 +830,7 @@ func main() {
 		// KYC handlers
 		var kycGetActionsHandler = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(kycEndpoints.GetActions)
 		var kycGetUserHandler = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(kycEndpoints.GetUser)
+		var kycGetUserByUsernameHandler = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(kycEndpoints.GetUserByUsername)
 		var kycValidateUserHandler = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(kycEndpoints.ValidateUser)
 
 		// actions
@@ -893,7 +895,8 @@ func main() {
 
 		// KYC methods
 		route.Path("/kyc/actions").Methods("GET").Handler(kycGetActionsHandler)
-		route.Path("/kyc/users").Methods("GET").Handler(kycGetUserHandler)
+		route.Path("/kyc/users").Methods("GET").Handler(kycGetUserByUsernameHandler)
+		route.Path("/kyc/users/{userId}").Methods("GET").Handler(kycGetUserHandler)
 		route.Path("/kyc/users/{userId}").Methods("PUT").Handler(kycValidateUserHandler)
 
 		var handler http.Handler = route

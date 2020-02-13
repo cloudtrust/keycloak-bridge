@@ -27,9 +27,10 @@ const (
 
 // Creates constants for API method names
 var (
-	KYCGetActions   = newAction("KYC_GetActions", security.ScopeGlobal)
-	KYCGetUser      = newAction("KYC_GetUser", security.ScopeGroup)
-	KYCValidateUser = newAction("KYC_ValidateUser", security.ScopeGroup)
+	KYCGetActions        = newAction("KYC_GetActions", security.ScopeGlobal)
+	KYCGetUser           = newAction("KYC_GetUser", security.ScopeGroup)
+	KYCGetUserByUsername = newAction("KYC_GetUserByUsername", security.ScopeGroup)
+	KYCValidateUser      = newAction("KYC_ValidateUser", security.ScopeGroup)
 )
 
 type authorizationComponentMW struct {
@@ -63,16 +64,28 @@ func (c *authorizationComponentMW) GetActions(ctx context.Context) ([]apikyc.Act
 	return c.next.GetActions(ctx)
 }
 
-func (c *authorizationComponentMW) GetUser(ctx context.Context, username string) (apikyc.UserRepresentation, error) {
+func (c *authorizationComponentMW) GetUserByUsername(ctx context.Context, username string, groupIDs []string) (apikyc.UserRepresentation, error) {
+	var action = KYCGetUserByUsername.String()
+	var targetRealm = c.realmName
+
+	for _, groupID := range groupIDs {
+		if err := c.authManager.CheckAuthorizationOnTargetGroupID(ctx, action, targetRealm, groupID); err != nil {
+			return apikyc.UserRepresentation{}, err
+		}
+	}
+
+	return c.next.GetUserByUsername(ctx, username, groupIDs)
+}
+
+func (c *authorizationComponentMW) GetUser(ctx context.Context, userID string) (apikyc.UserRepresentation, error) {
 	var action = KYCGetUser.String()
 	var targetRealm = c.realmName
-	var groupID = RegistrationOfficer
 
-	if err := c.authManager.CheckAuthorizationOnTargetGroup(ctx, action, targetRealm, groupID); err != nil {
+	if err := c.authManager.CheckAuthorizationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
 		return apikyc.UserRepresentation{}, err
 	}
 
-	return c.next.GetUser(ctx, username)
+	return c.next.GetUser(ctx, userID)
 }
 
 func (c *authorizationComponentMW) ValidateUser(ctx context.Context, userID string, user apikyc.UserRepresentation) error {
