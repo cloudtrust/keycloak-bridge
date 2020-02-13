@@ -37,12 +37,14 @@ func TestConvertToAPIAccount(t *testing.T) {
 	attributes["phoneNumber"] = []string{"+41221234567"}
 	attributes["gender"] = []string{"M"}
 	attributes["birthDate"] = []string{"15.02.1920"}
+	attributes["locale"] = []string{"fr"}
 	kcUser = kc.UserRepresentation{Attributes: &attributes}
 
 	var user = ConvertToAPIAccount(kcUser)
 	assert.Equal(t, "+41221234567", *user.PhoneNumber)
 	assert.Equal(t, "M", *user.Gender)
 	assert.Equal(t, "15.02.1920", *user.BirthDate)
+	assert.Equal(t, "fr", *user.Locale)
 }
 
 func TestConvertToKCUser(t *testing.T) {
@@ -50,19 +52,22 @@ func TestConvertToKCUser(t *testing.T) {
 	assert.Nil(t, ConvertToKCUser(apiUser).Attributes)
 
 	var phoneNumber = "+41221234567"
-	apiUser = AccountRepresentation{PhoneNumber: &phoneNumber}
+	var locale = "fr"
+	apiUser = AccountRepresentation{PhoneNumber: &phoneNumber, Locale: &locale}
 	var kcUser = ConvertToKCUser(apiUser)
 	var kcAttributes = *kcUser.Attributes
 	assert.Equal(t, phoneNumber, kcAttributes["phoneNumber"][0])
+	assert.Equal(t, locale, kcAttributes["locale"][0])
 }
 
 func TestValidateAccountRepresentation(t *testing.T) {
 	var invalidName = ""
 	var invalidEmail = "bobby-at-mail.com"
 	var invalidPhone = "+412212345AB"
+	var invalidLocale = "fr-123"
 	var accounts []AccountRepresentation
 
-	for i := 0; i < 5; i++ {
+	for i := 0; i < 6; i++ {
 		accounts = append(accounts, createValidAccountRepresentation())
 	}
 
@@ -73,6 +78,7 @@ func TestValidateAccountRepresentation(t *testing.T) {
 	accounts[2].LastName = &invalidName
 	accounts[3].Email = &invalidEmail
 	accounts[4].PhoneNumber = &invalidPhone
+	accounts[5].Locale = &invalidLocale
 
 	for _, account := range accounts {
 		assert.NotNil(t, account.Validate())
@@ -141,6 +147,7 @@ func createValidAccountRepresentation() AccountRepresentation {
 	var validName = "Bobby"
 	var validEmail = "bobby@mail.com"
 	var validPhone = "+41221234567"
+	var validLocale = "fr"
 
 	return AccountRepresentation{
 		Username:    &validName,
@@ -148,6 +155,7 @@ func createValidAccountRepresentation() AccountRepresentation {
 		LastName:    &validName,
 		Email:       &validEmail,
 		PhoneNumber: &validPhone,
+		Locale:      &validLocale,
 	}
 }
 

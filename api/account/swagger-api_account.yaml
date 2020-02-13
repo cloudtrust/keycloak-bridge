@@ -221,6 +221,8 @@ components:
         idDocumentExpiration:
           type: string
           description: only returned by /account
+        locale:
+          type: string
     Configuration:
       type: object
       properties:

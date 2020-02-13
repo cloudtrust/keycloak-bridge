@@ -142,7 +142,7 @@ func TestImportFromKeycloak(t *testing.T) {
 	assert.Equal(t, user, imported)
 }
 
-func TestValidateParameterIn(t *testing.T) {
+func TestValidateUserRepresentation(t *testing.T) {
 	var (
 		empty       = ""
 		user        = createValidUser()
@@ -154,7 +154,10 @@ func TestValidateParameterIn(t *testing.T) {
 	})
 
 	t.Run("Invalid users", func(t *testing.T) {
-		var users = []UserRepresentation{user, user, user, user, user, user, user, user, user, user, user, user, user, user, user, user, user, user, user, user}
+		var users []UserRepresentation
+		for i := 0; i < 20; i++ {
+			users = append(users, user)
+		}
 		// invalid values
 		users[0].Gender = &empty
 		users[1].FirstName = &empty

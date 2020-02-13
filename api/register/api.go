@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
+	"github.com/cloudtrust/common-service/validation"
 	kc "github.com/cloudtrust/keycloak-client"
 )
 
@@ -27,6 +27,7 @@ type UserRepresentation struct {
 	IDDocumentType       *string `json:"idDocumentType,omitempty"`
 	IDDocumentNumber     *string `json:"idDocumentNumber,omitempty"`
 	IDDocumentExpiration *string `json:"idDocumentExpiration,omitempty"`
+	Locale               *string `json:"locale,omitempty"`
 }
 
 // ConfigurationRepresentation representation
@@ -46,6 +47,7 @@ const (
 	prmUserIDDocumentType       = "user_idDocType"
 	prmUserIDDocumentNumber     = "user_idDocNumber"
 	prmUserIDDocumentExpiration = "user_idDocExpiration"
+	prmUserLocale               = "user_locale"
 
 	regExpNames         = `^([\wàáâäçèéêëìíîïñòóôöùúûüß]+([ '-][\wàáâäçèéêëìíîïñòóôöùúûüß]+)*){1,50}$`
 	regExpFirstName     = regExpNames
@@ -54,6 +56,7 @@ const (
 	regExpBirthLocation = regExpNames
 	// Multiple values with digits and letters separated by a single separator (space, dash)
 	regExpIDDocumentNumber = `^([\w\d]+([ -][\w\d]+)*){1,50}$`
+	regExpLocale           = `^\w{2}(-\w{2})?$`
 
 	dateLayout = "02.01.2006"
 )
@@ -96,6 +99,9 @@ func (u *UserRepresentation) ConvertToKeycloak() kc.UserRepresentation {
 	if u.BirthDate != nil {
 		attributes["birthDate"] = []string{*u.BirthDate}
 	}
+	if u.Locale != nil {
+		attributes["locale"] = []string{*u.Locale}
+	}
 
 	return kc.UserRepresentation{
 		Username:      u.Username,
@@ -110,46 +116,17 @@ func (u *UserRepresentation) ConvertToKeycloak() kc.UserRepresentation {
 
 // Validate checks the validity of the given User
 func (u *UserRepresentation) Validate() error {
-	var err = keycloakb.ValidateParameterIn(prmUserGender, u.Gender, allowedGender, true)
-	if err != nil {
-		return err
-	}
-
-	err = keycloakb.ValidateParameterRegExp(prmUserFirstName, u.FirstName, regExpFirstName, true)
-	if err != nil {
-		return err
-	}
-	err = keycloakb.ValidateParameterRegExp(prmUserLastName, u.LastName, regExpLastName, true)
-	if err != nil {
-		return err
-	}
-	err = keycloakb.ValidateParameterRegExp(prmUserEmail, u.EmailAddress, regExpEmail, true)
-	if err != nil {
-		return err
-	}
-	err = keycloakb.ValidateParameterPhoneNumber(prmUserPhoneNumber, u.PhoneNumber, true)
-	if err != nil {
-		return err
-	}
-	err = keycloakb.ValidateParameterDate(prmUserBirthDate, u.BirthDate, dateLayout, true)
-	if err != nil {
-		return err
-	}
-	err = keycloakb.ValidateParameterRegExp(prmUserBirthLocation, u.BirthLocation, regExpBirthLocation, true)
-	if err != nil {
-		return err
-	}
-	err = keycloakb.ValidateParameterIn(prmUserIDDocumentType, u.IDDocumentType, allowedDocumentType, true)
-	if err != nil {
-		return err
-	}
-	err = keycloakb.ValidateParameterRegExp(prmUserIDDocumentNumber, u.IDDocumentNumber, regExpIDDocumentNumber, true)
-	if err != nil {
-		return err
-	}
-	err = keycloakb.ValidateParameterDate(prmUserIDDocumentExpiration, u.IDDocumentExpiration, dateLayout, true)
-	if err != nil {
-		return err
-	}
-	return nil
+	return validation.NewParameterValidator().
+		ValidateParameterIn(prmUserGender, u.Gender, allowedGender, true).
+		ValidateParameterRegExp(prmUserFirstName, u.FirstName, regExpFirstName, true).
+		ValidateParameterRegExp(prmUserLastName, u.LastName, regExpLastName, true).
+		ValidateParameterRegExp(prmUserEmail, u.EmailAddress, regExpEmail, true).
+		ValidateParameterPhoneNumber(prmUserPhoneNumber, u.PhoneNumber, true).
+		ValidateParameterDate(prmUserBirthDate, u.BirthDate, dateLayout, true).
+		ValidateParameterRegExp(prmUserBirthLocation, u.BirthLocation, regExpBirthLocation, true).
+		ValidateParameterIn(prmUserIDDocumentType, u.IDDocumentType, allowedDocumentType, true).
+		ValidateParameterRegExp(prmUserIDDocumentNumber, u.IDDocumentNumber, regExpIDDocumentNumber, true).
+		ValidateParameterDate(prmUserIDDocumentExpiration, u.IDDocumentExpiration, dateLayout, true).
+		ValidateParameterRegExp(prmUserLocale, u.Locale, regExpLocale, true).
+		Status()
 }

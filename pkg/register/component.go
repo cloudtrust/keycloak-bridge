@@ -121,7 +121,7 @@ func (c *component) RegisterUser(ctx context.Context, clientRealmName string, us
 	// store the API call into the DB
 	c.reportEvent(ctx, "REGISTER_USER", database.CtEventRealmName, c.realm, database.CtEventUserID, userID, database.CtEventUsername, username)
 
-	return "", nil
+	return username, nil
 }
 
 func (c *component) storeUser(ctx context.Context, accessToken string, user apiregister.UserRepresentation, existingKcUser *kc.UserRepresentation, realmConf dto.RealmConfiguration) (string, string, error) {

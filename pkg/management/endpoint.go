@@ -162,7 +162,7 @@ func MakeCreateUserEndpoint(managementComponent ManagementComponent) cs.Endpoint
 		}
 
 		if err = user.Validate(); err != nil {
-			return nil, errorhandler.CreateBadRequestError(err.Error())
+			return nil, err
 		}
 
 		if user.Groups == nil || len(*user.Groups) == 0 {
@@ -216,7 +216,7 @@ func MakeUpdateUserEndpoint(managementComponent ManagementComponent) cs.Endpoint
 		}
 
 		if err = user.Validate(); err != nil {
-			return nil, errorhandler.CreateBadRequestError(err.Error())
+			return nil, err
 		}
 
 		return nil, managementComponent.UpdateUser(ctx, m["realm"], m["userID"], user)
@@ -311,7 +311,7 @@ func MakeAddClientRolesToUserEndpoint(managementComponent ManagementComponent) c
 
 		for _, role := range roles {
 			if err = role.Validate(); err != nil {
-				return nil, errorhandler.CreateBadRequestError(err.Error())
+				return nil, err
 			}
 		}
 
@@ -332,7 +332,7 @@ func MakeResetPasswordEndpoint(managementComponent ManagementComponent) cs.Endpo
 		}
 
 		if err = password.Validate(); err != nil {
-			return nil, errorhandler.CreateBadRequestError(err.Error())
+			return nil, err
 		}
 
 		pwd, err := managementComponent.ResetPassword(ctx, m["realm"], m["userID"], password)
@@ -365,7 +365,7 @@ func MakeExecuteActionsEmailEndpoint(managementComponent ManagementComponent) cs
 
 		for _, action := range actions {
 			if err = action.Validate(); err != nil {
-				return nil, errorhandler.CreateBadRequestError(err.Error())
+				return nil, err
 			}
 		}
 
@@ -475,7 +475,7 @@ func MakeCreateClientRoleEndpoint(managementComponent ManagementComponent) cs.En
 		}
 
 		if err = role.Validate(); err != nil {
-			return nil, errorhandler.CreateBadRequestError(err.Error())
+			return nil, err
 		}
 
 		var keycloakLocation string
@@ -516,7 +516,7 @@ func MakeCreateGroupEndpoint(managementComponent ManagementComponent) cs.Endpoin
 		}
 
 		if err = group.Validate(); err != nil {
-			return nil, errorhandler.CreateBadRequestError(err.Error())
+			return nil, err
 		}
 
 		var keycloakLocation string
@@ -600,7 +600,7 @@ func MakeUpdateRealmCustomConfigurationEndpoint(managementComponent ManagementCo
 		}
 
 		if err = customConfig.Validate(); err != nil {
-			return nil, errorhandler.CreateBadRequestError(err.Error())
+			return nil, err
 		}
 
 		return nil, managementComponent.UpdateRealmCustomConfiguration(ctx, m["realm"], customConfig)
@@ -620,7 +620,7 @@ func MakeCreateShadowUserEndpoint(managementComponent ManagementComponent) cs.En
 		}
 
 		if err = fedID.Validate(); err != nil {
-			return nil, errorhandler.CreateBadRequestError(err.Error())
+			return nil, err
 		}
 
 		err = managementComponent.CreateShadowUser(ctx, m["realm"], m["userID"], m["provider"], fedID)

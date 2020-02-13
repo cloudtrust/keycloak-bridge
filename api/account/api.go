@@ -1,9 +1,7 @@
 package account
 
 import (
-	"errors"
-	"regexp"
-
+	"github.com/cloudtrust/common-service/validation"
 	msg "github.com/cloudtrust/keycloak-bridge/internal/messages"
 	kc "github.com/cloudtrust/keycloak-client"
 )
@@ -21,6 +19,7 @@ type AccountRepresentation struct {
 	IDDocumentType       *string `json:"idDocumentType,omitempty"`
 	IDDocumentNumber     *string `json:"idDocumentNumber,omitempty"`
 	IDDocumentExpiration *string `json:"idDocumentExpiration,omitempty"`
+	Locale               *string `json:"locale,omitempty"`
 }
 
 // CredentialRepresentation struct
@@ -89,6 +88,9 @@ func ConvertToAPIAccount(userKc kc.UserRepresentation) AccountRepresentation {
 		if value, ok := m["birthDate"]; ok && len(value) > 0 {
 			userRep.BirthDate = &value[0]
 		}
+		if value, ok := m["locale"]; ok && len(value) > 0 {
+			userRep.Locale = &value[0]
+		}
 	}
 	return userRep
 }
@@ -107,6 +109,9 @@ func ConvertToKCUser(user AccountRepresentation) kc.UserRepresentation {
 	if user.PhoneNumber != nil {
 		attributes["phoneNumber"] = []string{*user.PhoneNumber}
 	}
+	if user.Locale != nil {
+		attributes["locale"] = []string{*user.Locale}
+	}
 
 	if len(attributes) > 0 {
 		userRep.Attributes = &attributes
@@ -119,66 +124,32 @@ func ConvertToKCUser(user AccountRepresentation) kc.UserRepresentation {
 
 // Validate is a validator for AccountRepresentation
 func (user AccountRepresentation) Validate() error {
-	if user.Username != nil && !matchesRegExp(*user.Username, RegExpUsername) {
-		return errors.New(msg.MsgErrInvalidParam + "." + msg.Username)
-	}
-
-	if user.Email != nil && !matchesRegExp(*user.Email, RegExpEmail) {
-		return errors.New(msg.MsgErrInvalidParam + "." + msg.Email)
-	}
-
-	if user.FirstName != nil && !matchesRegExp(*user.FirstName, RegExpFirstName) {
-		return errors.New(msg.MsgErrInvalidParam + "." + msg.Firstname)
-	}
-
-	if user.LastName != nil && !matchesRegExp(*user.LastName, RegExpLastName) {
-		return errors.New(msg.MsgErrInvalidParam + "." + msg.Lastname)
-	}
-
-	if user.PhoneNumber != nil && !matchesRegExp(*user.PhoneNumber, RegExpPhoneNumber) {
-		return errors.New(msg.MsgErrInvalidParam + "." + msg.PhoneNumber)
-	}
-
-	return nil
+	return validation.NewParameterValidator().
+		ValidateParameterRegExp(msg.Username, user.Username, RegExpUsername, false).
+		ValidateParameterRegExp(msg.Email, user.Email, RegExpEmail, false).
+		ValidateParameterRegExp(msg.Firstname, user.FirstName, RegExpFirstName, false).
+		ValidateParameterRegExp(msg.Lastname, user.LastName, RegExpLastName, false).
+		ValidateParameterRegExp(msg.PhoneNumber, user.PhoneNumber, RegExpPhoneNumber, false).
+		ValidateParameterRegExp(msg.Locale, user.Locale, RegExpLocale, false).
+		Status()
 }
 
 // Validate is a validator for UpdatePasswordBody
 func (updatePwd UpdatePasswordBody) Validate() error {
-	if !matchesRegExp(updatePwd.CurrentPassword, RegExpPassword) {
-		return errors.New(msg.MsgErrInvalidParam + "." + msg.CurrentPassword)
-	}
-
-	if !matchesRegExp(updatePwd.NewPassword, RegExpPassword) {
-		return errors.New(msg.MsgErrInvalidParam + "." + msg.NewPassword)
-	}
-
-	if !matchesRegExp(updatePwd.ConfirmPassword, RegExpPassword) {
-		return errors.New(msg.MsgErrInvalidParam + "." + msg.ConfirmPassword)
-	}
-
-	return nil
+	return validation.NewParameterValidator().
+		ValidateParameterRegExp(msg.CurrentPassword, &updatePwd.CurrentPassword, RegExpPassword, true).
+		ValidateParameterRegExp(msg.NewPassword, &updatePwd.NewPassword, RegExpPassword, true).
+		ValidateParameterRegExp(msg.ConfirmPassword, &updatePwd.ConfirmPassword, RegExpPassword, true).
+		Status()
 }
 
 // Validate is a validator for CredentialRepresentation
 func (credential CredentialRepresentation) Validate() error {
-	if credential.ID != nil && !matchesRegExp(*credential.ID, RegExpID) {
-		return errors.New(msg.MsgErrInvalidParam + "." + msg.ID)
-	}
-
-	if credential.Type != nil && !matchesRegExp(*credential.Type, RegExpType) {
-		return errors.New(msg.MsgErrInvalidParam + "." + msg.Type)
-	}
-
-	if credential.UserLabel != nil && !matchesRegExp(*credential.UserLabel, RegExpLabel) {
-		return errors.New(msg.MsgErrInvalidParam + "." + msg.Label)
-	}
-
-	return nil
-}
-
-func matchesRegExp(value, re string) bool {
-	res, _ := regexp.MatchString(re, value)
-	return res
+	return validation.NewParameterValidator().
+		ValidateParameterRegExp(msg.ID, credential.ID, RegExpID, false).
+		ValidateParameterRegExp(msg.Type, credential.Type, RegExpType, false).
+		ValidateParameterRegExp(msg.Label, credential.UserLabel, RegExpLabel, false).
+		Status()
 }
 
 // Regular expressions for parameters validation
@@ -197,4 +168,5 @@ const (
 	RegExpFirstName   = `^.{1,128}$`
 	RegExpLastName    = `^.{1,128}$`
 	RegExpPhoneNumber = `^\+[1-9]\d{1,14}$`
+	RegExpLocale      = `^\w{2}(-\w{2})?$`
 )

@@ -182,6 +182,7 @@ func TestUpdateAccount(t *testing.T) {
 		FirstName:   &firstName,
 		LastName:    &lastName,
 		PhoneNumber: &phoneNumber,
+		Locale:      &locale,
 	}
 
 	// Update account with succces

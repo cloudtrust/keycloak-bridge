@@ -27,7 +27,7 @@ func MakeGetUserEndpoint(component Component) cs.Endpoint {
 	}
 }
 
-// MakeGetUserEndpoint endpoint creation
+// MakeUpdateUserEndpoint endpoint creation
 func MakeUpdateUserEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
@@ -40,7 +40,7 @@ func MakeUpdateUserEndpoint(component Component) cs.Endpoint {
 		}
 
 		if err = user.Validate(); err != nil {
-			return nil, errorhandler.CreateBadRequestError(err.Error())
+			return nil, err
 		}
 
 		return nil, component.UpdateUser(ctx, m["userID"], user)
@@ -60,7 +60,7 @@ func MakeCreateCheckEndpoint(component Component) cs.Endpoint {
 		}
 
 		if err = check.Validate(); err != nil {
-			return nil, errorhandler.CreateBadRequestError(err.Error())
+			return nil, err
 		}
 
 		return nil, component.CreateCheck(ctx, m["userID"], check)

@@ -28,6 +28,7 @@ func createValidUser() apiregister.UserRepresentation {
 		docType       = "ID_CARD"
 		docNumber     = "MEL123789654ABC"
 		docExp        = "28.02.2050"
+		locale        = "fr"
 	)
 
 	return apiregister.UserRepresentation{
@@ -41,6 +42,7 @@ func createValidUser() apiregister.UserRepresentation {
 		IDDocumentType:       &docType,
 		IDDocumentNumber:     &docNumber,
 		IDDocumentExpiration: &docExp,
+		Locale:               &locale,
 	}
 }
 

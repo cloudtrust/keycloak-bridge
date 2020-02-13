@@ -91,6 +91,8 @@ components:
           type: string
         idDocumentExpiration:
           type: string
+        locale:
+          type: string
     Configuration:
       type: object
       properties:
