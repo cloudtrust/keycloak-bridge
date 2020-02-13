@@ -80,7 +80,7 @@ func (c *component) reportEvent(ctx context.Context, apiCall string, values ...s
 	}
 }
 
-func (c *component) RegisterUser(ctx context.Context, clientRealmName string, user apiregister.UserRepresentation) (string, error) {
+func (c *component) RegisterUser(ctx context.Context, customerRealmName string, user apiregister.UserRepresentation) (string, error) {
 	// Validate input request
 	var err = user.Validate()
 	if err != nil {
@@ -90,7 +90,7 @@ func (c *component) RegisterUser(ctx context.Context, clientRealmName string, us
 
 	// Get Realm configuration from database
 	var realmConf dto.RealmConfiguration
-	realmConf, err = c.configDBModule.GetConfiguration(ctx, clientRealmName)
+	realmConf, err = c.configDBModule.GetConfiguration(ctx, customerRealmName)
 	if err != nil {
 		c.logger.Info(ctx, "msg", "Can't get realm configuration from database", "err", err.Error())
 		return "", err
@@ -112,7 +112,7 @@ func (c *component) RegisterUser(ctx context.Context, clientRealmName string, us
 	}
 
 	var username, userID string
-	userID, username, err = c.storeUser(ctx, accessToken, user, kcUser, realmConf)
+	userID, username, err = c.storeUser(ctx, accessToken, customerRealmName, user, kcUser, realmConf)
 
 	if err != nil {
 		return "", err
@@ -124,7 +124,7 @@ func (c *component) RegisterUser(ctx context.Context, clientRealmName string, us
 	return username, nil
 }
 
-func (c *component) storeUser(ctx context.Context, accessToken string, user apiregister.UserRepresentation, existingKcUser *kc.UserRepresentation, realmConf dto.RealmConfiguration) (string, string, error) {
+func (c *component) storeUser(ctx context.Context, accessToken string, customerRealmName string, user apiregister.UserRepresentation, existingKcUser *kc.UserRepresentation, realmConf dto.RealmConfiguration) (string, string, error) {
 	authToken, err := c.generateAuthToken()
 
 	var userID string
@@ -198,7 +198,7 @@ func (c *component) storeUser(ctx context.Context, accessToken string, user apir
 	parameters.Add("trustid_auth_token", authToken)
 
 	if c.ssePublicURL != "" {
-		parameters.Add("redirect_uri", c.ssePublicURL+"/"+c.realm+"/confirmation/"+c.realm)
+		parameters.Add("redirect_uri", c.ssePublicURL+"/"+c.realm+"/confirmation/"+customerRealmName)
 		parameters.Add("login_hint", *kcUser.Username)
 	}
 

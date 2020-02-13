@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"strings"
 	"testing"
 
 	errorhandler "github.com/cloudtrust/common-service/errors"
@@ -215,7 +216,12 @@ func TestRegisterUser(t *testing.T) {
 		mockKeycloakClient.EXPECT().GetUsers(accessToken, targetRealm, targetRealm, "email", *validUser.EmailAddress).Return(usersSearchResult, nil)
 		mockKeycloakClient.EXPECT().CreateUser(token, targetRealm, targetRealm, gomock.Any()).Return(userID, nil)
 		mockUsersDB.EXPECT().StoreOrUpdateUser(ctx, targetRealm, gomock.Any()).Return(nil)
-		mockKeycloakClient.EXPECT().ExecuteActionsEmail(token, targetRealm, userID, requiredActions, gomock.Any()).Return(sendActionsError)
+		mockKeycloakClient.EXPECT().ExecuteActionsEmail(token, targetRealm, userID, requiredActions, "client_id", gomock.Any(), "redirect_uri", gomock.Any()).DoAndReturn(
+			func(_ string, _ string, _ string, _ []string, _ string, _ string, _ string, fullURL string) error {
+				expectedSubStringURL := "%2F" + targetRealm + "%2Fconfirmation%2F" + confRealm
+				assert.True(t, strings.Contains(fullURL, expectedSubStringURL))
+				return sendActionsError
+			})
 
 		var _, err = component.RegisterUser(ctx, confRealm, createValidUser())
 		assert.Equal(t, sendActionsError, err)
