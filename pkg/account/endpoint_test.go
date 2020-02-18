@@ -14,7 +14,7 @@ func TestMakeUpdatePasswordEndpoint(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	mockAccountComponent := mock.NewAccountComponent(mockCtrl)
+	mockAccountComponent := mock.NewComponent(mockCtrl)
 	mockAccountComponent.EXPECT().UpdatePassword(gomock.Any(), "password", "password2", "password2").Return(nil).Times(1)
 
 	m := map[string]string{}
@@ -37,7 +37,7 @@ func TestMakeGetCredentialsEndpoint(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	mockAccountComponent := mock.NewAccountComponent(mockCtrl)
+	mockAccountComponent := mock.NewComponent(mockCtrl)
 	mockAccountComponent.EXPECT().GetCredentials(gomock.Any()).Return([]account_api.CredentialRepresentation{}, nil).Times(1)
 
 	m := map[string]string{}
@@ -49,7 +49,7 @@ func TestMakeGetCredentialRegistratorsEndpoint(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	mockAccountComponent := mock.NewAccountComponent(mockCtrl)
+	mockAccountComponent := mock.NewComponent(mockCtrl)
 	mockAccountComponent.EXPECT().GetCredentialRegistrators(gomock.Any()).Return([]string{}, nil).Times(1)
 
 	m := map[string]string{}
@@ -61,7 +61,7 @@ func TestMakeUpdateLabelCredentialEndpoint(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	mockAccountComponent := mock.NewAccountComponent(mockCtrl)
+	mockAccountComponent := mock.NewComponent(mockCtrl)
 	mockAccountComponent.EXPECT().UpdateLabelCredential(gomock.Any(), "id", "label").Return(nil).Times(1)
 
 	m := map[string]string{}
@@ -91,7 +91,7 @@ func TestMakeDeleteCredentialEndpoint(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	mockAccountComponent := mock.NewAccountComponent(mockCtrl)
+	mockAccountComponent := mock.NewComponent(mockCtrl)
 	mockAccountComponent.EXPECT().DeleteCredential(gomock.Any(), "id").Return(nil).Times(1)
 
 	m := map[string]string{}
@@ -105,7 +105,7 @@ func TestMakeMoveCredentialEndpoint(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	mockAccountComponent := mock.NewAccountComponent(mockCtrl)
+	mockAccountComponent := mock.NewComponent(mockCtrl)
 	mockAccountComponent.EXPECT().MoveCredential(gomock.Any(), "id1", "id2").Return(nil).Times(1)
 
 	m := map[string]string{}
@@ -120,7 +120,7 @@ func TestMakeGetAccountEndpoint(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	mockAccountComponent := mock.NewAccountComponent(mockCtrl)
+	mockAccountComponent := mock.NewComponent(mockCtrl)
 	mockAccountComponent.EXPECT().GetAccount(gomock.Any()).Return(account_api.AccountRepresentation{}, nil).Times(1)
 
 	m := map[string]string{}
@@ -132,7 +132,7 @@ func TestMakeUpdateAccountEndpoint(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	mockAccountComponent := mock.NewAccountComponent(mockCtrl)
+	mockAccountComponent := mock.NewComponent(mockCtrl)
 	mockAccountComponent.EXPECT().UpdateAccount(gomock.Any(), account_api.AccountRepresentation{}).Return(nil).Times(1)
 	{
 		m := map[string]string{}
@@ -155,26 +155,35 @@ func TestMakeUpdateAccountEndpoint(t *testing.T) {
 
 }
 
-func TestMakeDeleteAccountEndpoint(t *testing.T) {
-	mockCtrl := gomock.NewController(t)
+func TestSimpleEndpoints(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	mockAccountComponent := mock.NewAccountComponent(mockCtrl)
-	mockAccountComponent.EXPECT().DeleteAccount(gomock.Any()).Return(nil).Times(1)
+	var mockAccountComponent = mock.NewComponent(mockCtrl)
+	var m = map[string]string{}
 
-	m := map[string]string{}
-	_, err := MakeDeleteAccountEndpoint(mockAccountComponent)(context.Background(), m)
-	assert.Nil(t, err)
-}
+	t.Run("MakeDeleteAccountEndpoint", func(t *testing.T) {
+		mockAccountComponent.EXPECT().DeleteAccount(gomock.Any()).Return(nil).Times(1)
 
-func TestMakeGetConfigurationEndpoint(t *testing.T) {
-	mockCtrl := gomock.NewController(t)
-	defer mockCtrl.Finish()
+		var _, err = MakeDeleteAccountEndpoint(mockAccountComponent)(context.Background(), m)
+		assert.Nil(t, err)
+	})
 
-	mockAccountComponent := mock.NewAccountComponent(mockCtrl)
-	mockAccountComponent.EXPECT().GetConfiguration(gomock.Any(), gomock.Any()).Return(account_api.Configuration{}, nil).Times(1)
+	t.Run("MakeGetConfigurationEndpoint", func(t *testing.T) {
+		mockAccountComponent.EXPECT().GetConfiguration(gomock.Any(), gomock.Any()).Return(account_api.Configuration{}, nil).Times(1)
+		_, err := MakeGetConfigurationEndpoint(mockAccountComponent)(context.Background(), m)
+		assert.Nil(t, err)
+	})
 
-	m := map[string]string{}
-	_, err := MakeGetConfigurationEndpoint(mockAccountComponent)(context.Background(), m)
-	assert.Nil(t, err)
+	t.Run("MakeSendVerifyEmailEndpoint", func(t *testing.T) {
+		mockAccountComponent.EXPECT().SendVerifyEmail(gomock.Any()).Return(nil).Times(1)
+		_, err := MakeSendVerifyEmailEndpoint(mockAccountComponent)(context.Background(), m)
+		assert.Nil(t, err)
+	})
+
+	t.Run("MakeSendVerifyPhoneNumberEndpoint", func(t *testing.T) {
+		mockAccountComponent.EXPECT().SendVerifyPhoneNumber(gomock.Any()).Return(nil).Times(1)
+		_, err := MakeSendVerifyPhoneNumberEndpoint(mockAccountComponent)(context.Background(), m)
+		assert.Nil(t, err)
+	})
 }

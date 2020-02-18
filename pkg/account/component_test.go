@@ -186,8 +186,7 @@ func TestUpdateAccount(t *testing.T) {
 		Locale:      &locale,
 	}
 
-	// Update account with succces
-	{
+	t.Run("Update account with succces", func(t *testing.T) {
 		mockEventDBModule.EXPECT().ReportEvent(ctx, "UPDATE_ACCOUNT", "self-service", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 		mockKeycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kcUserRep, nil).Times(1)
 		mockKeycloakAccountClient.EXPECT().UpdateAccount(accessToken, realmName, gomock.Any()).DoAndReturn(
@@ -203,10 +202,9 @@ func TestUpdateAccount(t *testing.T) {
 		err := accountComponent.UpdateAccount(ctx, userRep)
 
 		assert.Nil(t, err)
-	}
+	})
 
-	// update by changing the email address
-	{
+	t.Run("Update by changing the email address", func(t *testing.T) {
 		var oldEmail = "toti@elca.ch"
 		var oldkcUserRep = kc.UserRepresentation{
 			Id:            &id,
@@ -220,11 +218,14 @@ func TestUpdateAccount(t *testing.T) {
 				assert.Equal(t, false, *kcUserRep.EmailVerified)
 				return nil
 			}).Times(1)
+		mockKeycloakAccountClient.EXPECT().ExecuteActionsEmail(accessToken, realmName, []string{ActionVerifyEmail}).Return(nil).Times(1)
+		mockEventDBModule.EXPECT().ReportEvent(ctx, "ACTION_EMAIL", "self-service", database.CtEventRealmName, realmName,
+			database.CtEventUserID, userID, database.CtEventAdditionalInfo, gomock.Any()).Return(nil).Times(1)
 
 		err := accountComponent.UpdateAccount(ctx, userRep)
 
 		assert.Nil(t, err)
-	}
+	})
 
 	var oldNumber = "+41789467"
 	var oldAttributes = make(map[string][]string)
@@ -235,8 +236,7 @@ func TestUpdateAccount(t *testing.T) {
 		Attributes: &oldAttributes,
 	}
 
-	// update by changing the phone number
-	{
+	t.Run("Update by changing the phone number", func(t *testing.T) {
 		mockKeycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(oldkcUserRep2, nil).Times(1)
 		mockKeycloakAccountClient.EXPECT().UpdateAccount(accessToken, realmName, gomock.Any()).DoAndReturn(
 			func(accessToken, realmName string, kcUserRep kc.UserRepresentation) error {
@@ -245,14 +245,16 @@ func TestUpdateAccount(t *testing.T) {
 				assert.Equal(t, false, verified)
 				return nil
 			}).Times(1)
+		mockKeycloakAccountClient.EXPECT().ExecuteActionsEmail(accessToken, realmName, []string{ActionVerifyPhoneNumber}).Return(nil).Times(1)
+		mockEventDBModule.EXPECT().ReportEvent(ctx, "ACTION_EMAIL", "self-service", database.CtEventRealmName, realmName,
+			database.CtEventUserID, userID, database.CtEventAdditionalInfo, gomock.Any()).Return(nil).Times(1)
 
 		err := accountComponent.UpdateAccount(ctx, userRep)
 
 		assert.Nil(t, err)
-	}
+	})
 
-	// update without attributes
-	{
+	t.Run("Update without attributes", func(t *testing.T) {
 		var userRepWithoutAttr = api.AccountRepresentation{
 			Username:  &username,
 			Email:     &email,
@@ -272,18 +274,16 @@ func TestUpdateAccount(t *testing.T) {
 		err := accountComponent.UpdateAccount(ctx, userRepWithoutAttr)
 
 		assert.Nil(t, err)
-	}
+	})
 
-	//Error - get user
-	{
+	t.Run("Error - get user", func(t *testing.T) {
 		mockKeycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kc.UserRepresentation{}, fmt.Errorf("Unexpected error")).Times(1)
 
 		err := accountComponent.UpdateAccount(ctx, api.AccountRepresentation{})
 
 		assert.NotNil(t, err)
-	}
-	//Error - update user
-	{
+	})
+	t.Run("Error - update user", func(t *testing.T) {
 		var id = "1234-79894-7594"
 		var kcUserRep = kc.UserRepresentation{
 			Id: &id,
@@ -294,7 +294,7 @@ func TestUpdateAccount(t *testing.T) {
 		err := accountComponent.UpdateAccount(ctx, api.AccountRepresentation{})
 
 		assert.NotNil(t, err)
-	}
+	})
 }
 
 func TestGetUser(t *testing.T) {
@@ -722,8 +722,8 @@ func TestGetConfiguration(t *testing.T) {
 		var trueBool = true
 		var config = configuration.RealmConfiguration{
 			APISelfAuthenticatorDeletionEnabled: &falseBool,
+			APISelfAccountEditingEnabled:        &falseBool,
 			APISelfAccountDeletionEnabled:       &falseBool,
-			APISelfMailEditingEnabled:           &falseBool,
 			APISelfPasswordChangeEnabled:        &falseBool,
 			DefaultClientID:                     new(string),
 			DefaultRedirectURI:                  new(string),
@@ -756,8 +756,8 @@ func TestGetConfiguration(t *testing.T) {
 		var trueBool = true
 		var config = configuration.RealmConfiguration{
 			APISelfAuthenticatorDeletionEnabled: &falseBool,
+			APISelfAccountEditingEnabled:        &falseBool,
 			APISelfAccountDeletionEnabled:       &falseBool,
-			APISelfMailEditingEnabled:           &falseBool,
 			APISelfPasswordChangeEnabled:        &falseBool,
 			DefaultClientID:                     new(string),
 			DefaultRedirectURI:                  new(string),
@@ -798,4 +798,61 @@ func TestGetConfiguration(t *testing.T) {
 
 		assert.NotNil(t, err)
 	}
+}
+
+func TestSendVerify(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var (
+		mockKeycloakAccountClient = mock.NewKeycloakAccountClient(mockCtrl)
+		mockEventDBModule         = mock.NewEventsDBModule(mockCtrl)
+		mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
+		mockUsersDBModule         = mock.NewUsersDBModule(mockCtrl)
+		mockLogger                = log.NewNopLogger()
+
+		component     = NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigurationDBModule, mockUsersDBModule, mockLogger)
+		accessToken   = "TOKEN=="
+		currentRealm  = "master"
+		currentUserID = "1234-789"
+		ctx           = context.TODO()
+	)
+
+	ctx = context.WithValue(ctx, cs.CtContextAccessToken, accessToken)
+	ctx = context.WithValue(ctx, cs.CtContextRealm, currentRealm)
+	ctx = context.WithValue(ctx, cs.CtContextUserID, currentUserID)
+
+	// SendVerifyEmail
+	t.Run("SendVerifyEmail - fails", func(t *testing.T) {
+		var expected = errors.New("kc fails")
+		mockKeycloakAccountClient.EXPECT().ExecuteActionsEmail(accessToken, currentRealm, []string{ActionVerifyEmail}).Return(expected)
+		var err = component.SendVerifyEmail(ctx)
+		assert.Equal(t, expected, err)
+	})
+	t.Run("SendVerifyEmail - success", func(t *testing.T) {
+		gomock.InOrder(
+			mockKeycloakAccountClient.EXPECT().ExecuteActionsEmail(accessToken, currentRealm, []string{ActionVerifyEmail}).Return(nil),
+			mockEventDBModule.EXPECT().ReportEvent(ctx, "ACTION_EMAIL", "self-service", database.CtEventRealmName, currentRealm,
+				database.CtEventUserID, currentUserID, database.CtEventAdditionalInfo, gomock.Any()),
+		)
+		assert.Nil(t, component.SendVerifyEmail(ctx))
+	})
+
+	// SendVerifyPhoneNumber
+	t.Run("SendVerifyPhoneNumber - fails", func(t *testing.T) {
+		var expected = errors.New("kc fails")
+		gomock.InOrder(
+			mockKeycloakAccountClient.EXPECT().ExecuteActionsEmail(accessToken, currentRealm, []string{ActionVerifyPhoneNumber}).Return(expected),
+		)
+		var err = component.SendVerifyPhoneNumber(ctx)
+		assert.Equal(t, expected, err)
+	})
+	t.Run("SendVerifyPhoneNumber - success", func(t *testing.T) {
+		gomock.InOrder(
+			mockKeycloakAccountClient.EXPECT().ExecuteActionsEmail(accessToken, currentRealm, []string{ActionVerifyPhoneNumber}).Return(nil),
+			mockEventDBModule.EXPECT().ReportEvent(ctx, "ACTION_EMAIL", "self-service", database.CtEventRealmName, currentRealm,
+				database.CtEventUserID, currentUserID, database.CtEventAdditionalInfo, gomock.Any()),
+		)
+		assert.Nil(t, component.SendVerifyPhoneNumber(ctx))
+	})
 }

@@ -22,7 +22,7 @@ func TestNoRestrictions(t *testing.T) {
 
 	var mockLogger = log.NewNopLogger()
 	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
-	var mockAccountComponent = mock.NewAccountComponent(mockCtrl)
+	var mockAccountComponent = mock.NewComponent(mockCtrl)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -37,29 +37,53 @@ func TestNoRestrictions(t *testing.T) {
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 
-		mockAccountComponent.EXPECT().GetCredentials(ctx).Return([]api.CredentialRepresentation{}, nil).Times(1)
-		_, err = authorizationMW.GetCredentials(ctx)
-		assert.Nil(t, err)
+		t.Run("GetCredentials", func(t *testing.T) {
+			mockAccountComponent.EXPECT().GetCredentials(ctx).Return([]api.CredentialRepresentation{}, nil).Times(1)
+			_, err = authorizationMW.GetCredentials(ctx)
+			assert.Nil(t, err)
+		})
 
-		mockAccountComponent.EXPECT().GetCredentialRegistrators(ctx).Return([]string{}, nil).Times(1)
-		_, err = authorizationMW.GetCredentialRegistrators(ctx)
-		assert.Nil(t, err)
+		t.Run("GetCredentialRegistrators", func(t *testing.T) {
+			mockAccountComponent.EXPECT().GetCredentialRegistrators(ctx).Return([]string{}, nil).Times(1)
+			_, err = authorizationMW.GetCredentialRegistrators(ctx)
+			assert.Nil(t, err)
+		})
 
-		mockAccountComponent.EXPECT().UpdateLabelCredential(ctx, credentialID, "newLabel").Return(nil).Times(1)
-		err = authorizationMW.UpdateLabelCredential(ctx, credentialID, "newLabel")
-		assert.Nil(t, err)
+		t.Run("UpdateLabelCredential", func(t *testing.T) {
+			mockAccountComponent.EXPECT().UpdateLabelCredential(ctx, credentialID, "newLabel").Return(nil).Times(1)
+			err = authorizationMW.UpdateLabelCredential(ctx, credentialID, "newLabel")
+			assert.Nil(t, err)
+		})
 
-		mockAccountComponent.EXPECT().MoveCredential(ctx, credentialID, credentialID).Return(nil).Times(1)
-		err = authorizationMW.MoveCredential(ctx, credentialID, credentialID)
-		assert.Nil(t, err)
+		t.Run("MoveCredential", func(t *testing.T) {
+			mockAccountComponent.EXPECT().MoveCredential(ctx, credentialID, credentialID).Return(nil).Times(1)
+			err = authorizationMW.MoveCredential(ctx, credentialID, credentialID)
+			assert.Nil(t, err)
+		})
 
-		mockAccountComponent.EXPECT().GetAccount(ctx).Return(api.AccountRepresentation{}, nil).Times(1)
-		_, err = authorizationMW.GetAccount(ctx)
-		assert.Nil(t, err)
+		t.Run("GetAccount", func(t *testing.T) {
+			mockAccountComponent.EXPECT().GetAccount(ctx).Return(api.AccountRepresentation{}, nil).Times(1)
+			_, err = authorizationMW.GetAccount(ctx)
+			assert.Nil(t, err)
+		})
 
-		mockAccountComponent.EXPECT().GetConfiguration(ctx, "").Return(api.Configuration{}, nil).Times(1)
-		_, err = authorizationMW.GetConfiguration(ctx, "")
-		assert.Nil(t, err)
+		t.Run("GetConfiguration", func(t *testing.T) {
+			mockAccountComponent.EXPECT().GetConfiguration(ctx, "").Return(api.Configuration{}, nil).Times(1)
+			_, err = authorizationMW.GetConfiguration(ctx, "")
+			assert.Nil(t, err)
+		})
+
+		t.Run("SendVerifyEmail", func(t *testing.T) {
+			mockAccountComponent.EXPECT().SendVerifyEmail(ctx).Return(nil).Times(1)
+			err = authorizationMW.SendVerifyEmail(ctx)
+			assert.Nil(t, err)
+		})
+
+		t.Run("SendVerifyPhoneNumber", func(t *testing.T) {
+			mockAccountComponent.EXPECT().SendVerifyPhoneNumber(ctx).Return(nil).Times(1)
+			err = authorizationMW.SendVerifyPhoneNumber(ctx)
+			assert.Nil(t, err)
+		})
 	}
 }
 
@@ -69,7 +93,7 @@ func TestDeny(t *testing.T) {
 
 	var mockLogger = log.NewNopLogger()
 	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
-	var mockAccountComponent = mock.NewAccountComponent(mockCtrl)
+	var mockAccountComponent = mock.NewComponent(mockCtrl)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -81,8 +105,8 @@ func TestDeny(t *testing.T) {
 		DefaultClientID:                     new(string),
 		DefaultRedirectURI:                  new(string),
 		APISelfAuthenticatorDeletionEnabled: &falseBool,
+		APISelfAccountEditingEnabled:        &falseBool,
 		APISelfAccountDeletionEnabled:       &falseBool,
-		APISelfMailEditingEnabled:           &falseBool,
 		APISelfPasswordChangeEnabled:        &falseBool,
 	}
 
@@ -117,7 +141,7 @@ func TestAllowed(t *testing.T) {
 
 	var mockLogger = log.NewNopLogger()
 	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
-	var mockAccountComponent = mock.NewAccountComponent(mockCtrl)
+	var mockAccountComponent = mock.NewComponent(mockCtrl)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -129,8 +153,8 @@ func TestAllowed(t *testing.T) {
 		DefaultClientID:                     new(string),
 		DefaultRedirectURI:                  new(string),
 		APISelfAuthenticatorDeletionEnabled: &trueBool,
+		APISelfAccountEditingEnabled:        &trueBool,
 		APISelfAccountDeletionEnabled:       &trueBool,
-		APISelfMailEditingEnabled:           &trueBool,
 		APISelfPasswordChangeEnabled:        &trueBool,
 	}
 
@@ -170,7 +194,7 @@ func TestError(t *testing.T) {
 
 	var mockLogger = log.NewNopLogger()
 	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
-	var mockAccountComponent = mock.NewAccountComponent(mockCtrl)
+	var mockAccountComponent = mock.NewComponent(mockCtrl)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"

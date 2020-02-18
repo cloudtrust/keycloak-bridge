@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"strings"
 
 	cs "github.com/cloudtrust/common-service"
 	"github.com/cloudtrust/common-service/configuration"
@@ -14,6 +15,12 @@ import (
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 	internal "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	kc "github.com/cloudtrust/keycloak-client"
+)
+
+// Constants
+const (
+	ActionVerifyEmail       = "VERIFY_EMAIL"
+	ActionVerifyPhoneNumber = "mobilephone-validation"
 )
 
 // KeycloakAccountClient interface exposes methods we need to call to send requests to Keycloak API of Account
@@ -28,6 +35,7 @@ type KeycloakAccountClient interface {
 	UpdateAccount(accessToken, realm string, user kc.UserRepresentation) error
 	GetAccount(accessToken, realm string) (kc.UserRepresentation, error)
 	DeleteAccount(accessToken, realm string) error
+	ExecuteActionsEmail(accessToken string, realmName string, actions []string) error
 }
 
 // Component interface exposes methods used by the bridge API
@@ -42,6 +50,8 @@ type Component interface {
 	UpdateAccount(context.Context, api.AccountRepresentation) error
 	DeleteAccount(context.Context) error
 	GetConfiguration(context.Context, string) (api.Configuration, error)
+	SendVerifyEmail(ctx context.Context) error
+	SendVerifyPhoneNumber(ctx context.Context) error
 }
 
 // ConfigurationDBModule is the interface of the configuration module.
@@ -159,11 +169,13 @@ func (c *component) UpdateAccount(ctx context.Context, user api.AccountRepresent
 	}
 
 	var emailVerified, phoneNumberVerified *bool
+	var actions []string
 
 	// when the email changes, set the EmailVerified to false
 	if user.Email != nil && oldUserKc.Email != nil && *oldUserKc.Email != *user.Email {
 		var verified = false
 		emailVerified = &verified
+		actions = append(actions, ActionVerifyEmail)
 	}
 
 	// when the phone number changes, set the PhoneNumberVerified to false
@@ -173,6 +185,7 @@ func (c *component) UpdateAccount(ctx context.Context, user api.AccountRepresent
 			if _, ok := m["phoneNumber"]; !ok || m["phoneNumber"][0] != *user.PhoneNumber {
 				var verified = false
 				phoneNumberVerified = &verified
+				actions = append(actions, ActionVerifyPhoneNumber)
 			}
 		} else { // the user has no attributes until now, i.e. he has not set yet his phone number
 			var verified = false
@@ -220,7 +233,11 @@ func (c *component) UpdateAccount(ctx context.Context, user api.AccountRepresent
 	//store the API call into the DB
 	c.reportEvent(ctx, "UPDATE_ACCOUNT", database.CtEventRealmName, realm, database.CtEventUserID, userID, database.CtEventUsername, username)
 
-	return nil
+	if len(actions) > 0 {
+		err = c.executeActions(ctx, actions)
+	}
+
+	return err
 }
 
 func (c *component) DeleteAccount(ctx context.Context) error {
@@ -369,4 +386,31 @@ func (c *component) GetConfiguration(ctx context.Context, realmIDOverride string
 	}
 
 	return apiConfig, nil
+}
+
+func (c *component) SendVerifyEmail(ctx context.Context) error {
+	return c.executeActions(ctx, []string{ActionVerifyEmail})
+}
+
+func (c *component) SendVerifyPhoneNumber(ctx context.Context) error {
+	return c.executeActions(ctx, []string{ActionVerifyPhoneNumber})
+}
+
+func (c *component) executeActions(ctx context.Context, actions []string) error {
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+	var currentRealm = ctx.Value(cs.CtContextRealm).(string)
+	var userID = ctx.Value(cs.CtContextUserID).(string)
+	var err = c.keycloakAccountClient.ExecuteActionsEmail(accessToken, currentRealm, actions)
+
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return err
+	}
+
+	var additionalInfos = map[string]string{"actions": strings.Join(actions, ",")}
+	var additionalBytes, _ = json.Marshal(additionalInfos)
+	var additionalString = string(additionalBytes)
+	c.reportEvent(ctx, "ACTION_EMAIL", database.CtEventRealmName, currentRealm, database.CtEventUserID, userID, database.CtEventAdditionalInfo, additionalString)
+
+	return err
 }
