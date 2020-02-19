@@ -18,7 +18,6 @@
   version = "2020.02.11"
 
 [[projects]]
-  branch = "master"
   digest = "1:a04a4e86d8b1fbb095a569998ba5adec39501d7872d79075a4aabaa791ad465c"
   name = "github.com/cloudtrust/common-service"
   packages = [
@@ -39,14 +38,15 @@
   ]
   pruneopts = "UT"
   revision = "790d30f843ed1e0868693c39f2345a7840925075"
+  version = "v1.2.5"
 
 [[projects]]
-  branch = "dev"
-  digest = "1:140e5ecc3aa692117302296807e3ae5f6e53f587036af47330806bd42b6dde73"
+  digest = "1:7eed9d5991890695d6366cafe35cb5c39d25078af08fb2724468074a40f57ac3"
   name = "github.com/cloudtrust/keycloak-client"
   packages = ["."]
   pruneopts = "UT"
-  revision = "aecba0a68c090df0174b1f53f33b5c9a43ea061c"
+  revision = "bed936333920662e7b25204300c6efff6916327c"
+  version = "v1.2.8"
 
 [[projects]]
   digest = "1:910c5b111ca13127693df80a59be2c952ad97313626116c0c9895e7b588f2a29"
@@ -139,7 +139,7 @@
   version = "v1.3.3"
 
 [[projects]]
-  digest = "1:debcbc62c53851dab1fc881438a65449dd5ffa12f64f059fd6e32b938799513d"
+  digest = "1:e02b687ade0c19c038ecce3ea326d756519adc4bba1203a9e76d620b12354892"
   name = "github.com/google/flatbuffers"
   packages = ["go"]
   pruneopts = "UT"
@@ -174,7 +174,7 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:c266355b17e65dc0128f4a9df906567b28e135b774e0b395aab3d748af0871e2"
+  digest = "1:9b73396bc7a21f88702fe3d314ca7860843c08f9c787bb47f008075f840df23d"
   name = "github.com/influxdata/influxdb"
   packages = [
     "client/v2",
@@ -320,12 +320,12 @@
   version = "v1.6.2"
 
 [[projects]]
-  digest = "1:8548c309c65a85933a625be5e7d52b6ac927ca30c56869fae58123b8a77a75e1"
+  digest = "1:5e8f46b412421d2d6cceea845d28ac46f3f5a5f60a6e86f0ee75e24fd43a02a9"
   name = "github.com/stretchr/testify"
   packages = ["assert"]
   pruneopts = "UT"
-  revision = "221dbe5ed46703ee255b1da0dec05086f5035f62"
-  version = "v1.4.0"
+  revision = "3ebf1ddaeb260c4b1ae502a01c7844fa8c1fa0e9"
+  version = "v1.5.1"
 
 [[projects]]
   digest = "1:f4b32291cad5efac2bfdba89ccde6aa04618b62ce06c1a571da2dc4f3f2677fb"
@@ -371,12 +371,12 @@
   version = "v2.2.0"
 
 [[projects]]
-  digest = "1:c708d00d1097e62bf4f3a72f239efa7dafc257581421b0b7d3789e1ff5299f30"
+  digest = "1:a5158647b553c61877aa9ae74f4015000294e47981e6b8b07525edcbb0747c81"
   name = "go.uber.org/atomic"
   packages = ["."]
   pruneopts = "UT"
-  revision = "40ae6a40a970ef4cdbffa7b24b280e316db8accc"
-  version = "v1.5.1"
+  revision = "df976f2515e274675050de7b3f42545de80594fd"
+  version = "v1.4.0"
 
 [[projects]]
   branch = "master"
@@ -388,18 +388,7 @@
     "pbkdf2",
   ]
   pruneopts = "UT"
-  revision = "86ce3cb696783b739e41e834e2eead3e1b4aa3fb"
-
-[[projects]]
-  branch = "master"
-  digest = "1:802fc3c45ff4507b6e4a5c0c5ea55836242aeac3b8eddfe31d5d80a3cac50731"
-  name = "golang.org/x/lint"
-  packages = [
-    ".",
-    "golint",
-  ]
-  pruneopts = "UT"
-  revision = "910be7a94367618fd0fd25eaabbee4fdc0ac7092"
+  revision = "1d94cc7ab1c630336ab82ccb9c9cda72a875c382"
 
 [[projects]]
   branch = "master"
@@ -412,7 +401,7 @@
     "publicsuffix",
   ]
   pruneopts = "UT"
-  revision = "16171245cfb220d5317888b716d69c1fb4e7992b"
+  revision = "46282727080fcf56da5781d0a9ef2fda184be5e6"
 
 [[projects]]
   branch = "master"
@@ -427,11 +416,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:21170ea1a15ba3b4e49dd934e130f4e21edf3c117e24f07502fe46e45ff3a8fc"
+  digest = "1:f4caa38f81f81dc7832d923b152eddd743c2f088ef0269bcd6cba53ce5851485"
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = "UT"
-  revision = "12a6c2dcc1e4cb348b57847c73987099e261714b"
+  revision = "cb0a6d8edb6c3528b01a0be84a5fe513dbf880a6"
 
 [[projects]]
   digest = "1:8d8faad6b12a3a4c819a3f9618cb6ee1fa1cfc33253abeeea8b55336721e3405"
@@ -467,19 +456,6 @@
   revision = "555d28b269f0569763d25dbe1a237ae74c6bcc82"
 
 [[projects]]
-  branch = "master"
-  digest = "1:1050c11c1d756701b8a247428e7af6cdc4f45b5bca163ae8b9c78ea0e2455e87"
-  name = "golang.org/x/tools"
-  packages = [
-    "go/ast/astutil",
-    "go/gcexportdata",
-    "go/internal/gcimporter",
-    "go/types/typeutil",
-  ]
-  pruneopts = "UT"
-  revision = "49b8ac185c84c5092be0953fb92b7660db9b8162"
-
-[[projects]]
   digest = "1:e0a1881f9e0564bebdeac98c75e59f07acdde6ed3a5396e0e613eaad31194866"
   name = "google.golang.org/appengine"
   packages = [
@@ -496,7 +472,7 @@
   version = "v1.6.5"
 
 [[projects]]
-  digest = "1:fdc801e94ddbe703f6b4263ee96ed12fc9e1d754369bf9de874c7567ea2c9686"
+  digest = "1:8a982874c5980269b7e0d398fb07b5d0385657dd56ff2df3fec2959ddde52133"
   name = "gopkg.in/h2non/gentleman.v2"
   packages = [
     ".",
@@ -515,8 +491,8 @@
     "utils",
   ]
   pruneopts = "UT"
-  revision = "e0f81be2f4064ea7aa7470e9daddd2dc8e8152c7"
-  version = "v2.0.3"
+  revision = "34f7caeaf69f4668a88f8294ec18665fd2756b84"
+  version = "v2.0.4"
 
 [[projects]]
   digest = "1:ef4bd1cd2563d93d3f48352fc24d499a4a2b54c11932814173653ece7db13800"
