@@ -396,7 +396,7 @@ func (user UserRepresentation) Validate() error {
 
 	if user.Groups != nil {
 		for _, groupID := range *(user.Groups) {
-			v = v.ValidateParameterRegExp(internal.GroupName, &groupID, RegExpID, true)
+			v = v.ValidateParameterRegExp(internal.GroupID, &groupID, RegExpID, true)
 		}
 	}
 

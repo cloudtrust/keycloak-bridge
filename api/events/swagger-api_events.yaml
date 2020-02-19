@@ -22,7 +22,7 @@ paths:
               schema:
                 type: array
                 items:
-                  type: string
+                  $ref: '#/components/schemas/Actions'
   /events:
     get:
       tags:
@@ -162,6 +162,13 @@ paths:
                     type: number
 components:
   schemas:
+    Actions:
+      type: object
+      properties:
+        name:
+          type: string
+        scope:
+          type: string
     Event:
       type: object
       properties:

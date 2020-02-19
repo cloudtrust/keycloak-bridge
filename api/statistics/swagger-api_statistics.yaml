@@ -22,7 +22,7 @@ paths:
               schema:
                 type: array
                 items:
-                  type: string
+                  $ref: '#/components/schemas/Actions'
   /statistics/realms/{realm}:
     get:
       tags:
@@ -140,6 +140,13 @@ paths:
                   $ref: '#/components/schemas/StatisticsConnection'                                               
 components:
   schemas:
+    Actions:
+      type: object
+      properties:
+        name:
+          type: string
+        scope:
+          type: string
     Statistics:
       type: object
       properties:
