@@ -3,8 +3,8 @@ package management_api
 import (
 	"strconv"
 
+	"github.com/cloudtrust/common-service/configuration"
 	"github.com/cloudtrust/common-service/validation"
-	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 	internal "github.com/cloudtrust/keycloak-bridge/internal/messages"
 	kc "github.com/cloudtrust/keycloak-client"
 )
@@ -277,7 +277,7 @@ func ConvertToKCGroup(group GroupRepresentation) kc.GroupRepresentation {
 }
 
 // ConvertToAPIAuthorizations creates a API authorization representation from an array of DB Authorization
-func ConvertToAPIAuthorizations(authorizations []dto.Authorization) AuthorizationsRepresentation {
+func ConvertToAPIAuthorizations(authorizations []configuration.Authorization) AuthorizationsRepresentation {
 	var matrix = make(map[string]map[string]map[string]struct{})
 
 	for _, authz := range authorizations {
@@ -309,8 +309,8 @@ func ConvertToAPIAuthorizations(authorizations []dto.Authorization) Authorizatio
 }
 
 // ConvertToDBAuthorizations creates an array of DB Authorization from an API AuthorizationsRepresentation
-func ConvertToDBAuthorizations(realmID, groupID string, apiAuthorizations AuthorizationsRepresentation) []dto.Authorization {
-	var authorizations = []dto.Authorization{}
+func ConvertToDBAuthorizations(realmID, groupName string, apiAuthorizations AuthorizationsRepresentation) []configuration.Authorization {
+	var authorizations = []configuration.Authorization{}
 
 	if apiAuthorizations.Matrix == nil {
 		return authorizations
@@ -319,9 +319,9 @@ func ConvertToDBAuthorizations(realmID, groupID string, apiAuthorizations Author
 	for action, u := range *apiAuthorizations.Matrix {
 		if len(u) == 0 {
 			var act = string(action)
-			authorizations = append(authorizations, dto.Authorization{
+			authorizations = append(authorizations, configuration.Authorization{
 				RealmID:   &realmID,
-				GroupName: &groupID,
+				GroupName: &groupName,
 				Action:    &act,
 			})
 			continue
@@ -331,9 +331,9 @@ func ConvertToDBAuthorizations(realmID, groupID string, apiAuthorizations Author
 			if len(v) == 0 {
 				var act = string(action)
 				var targetRealm = string(targetRealmID)
-				authorizations = append(authorizations, dto.Authorization{
+				authorizations = append(authorizations, configuration.Authorization{
 					RealmID:       &realmID,
-					GroupName:     &groupID,
+					GroupName:     &groupName,
 					Action:        &act,
 					TargetRealmID: &targetRealm,
 				})
@@ -344,9 +344,9 @@ func ConvertToDBAuthorizations(realmID, groupID string, apiAuthorizations Author
 				var act = string(action)
 				var targetRealm = string(targetRealmID)
 				var targetGroup = string(targetGroupName)
-				authorizations = append(authorizations, dto.Authorization{
+				authorizations = append(authorizations, configuration.Authorization{
 					RealmID:         &realmID,
-					GroupName:       &groupID,
+					GroupName:       &groupName,
 					Action:          &act,
 					TargetRealmID:   &targetRealm,
 					TargetGroupName: &targetGroup,

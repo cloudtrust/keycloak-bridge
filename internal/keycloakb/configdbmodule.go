@@ -5,11 +5,11 @@ import (
 	"database/sql"
 	"encoding/json"
 
+	"github.com/cloudtrust/common-service/configuration"
 	"github.com/cloudtrust/common-service/database"
 	"github.com/cloudtrust/common-service/database/sqltypes"
 	errorhandler "github.com/cloudtrust/common-service/errors"
 	"github.com/cloudtrust/common-service/log"
-	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 	msg "github.com/cloudtrust/keycloak-bridge/internal/messages"
 )
 
@@ -17,9 +17,8 @@ const (
 	updateConfigStmt = `INSERT INTO realm_configuration (realm_id, configuration) 
 	  VALUES (?, ?) 
 	  ON DUPLICATE KEY UPDATE configuration = ?;`
-	selectConfigStmt = `SELECT configuration FROM realm_configuration WHERE (realm_id = ?)`
-	selectAuthzStmt  = `SELECT realm_id, group_name, action, target_realm_id, target_group_name FROM authorizations WHERE realm_id = ? AND group_name = ?;`
-	createAuthzStmt  = `INSERT INTO authorizations (realm_id, group_name, action, target_realm_id, target_group_name) 
+	selectAuthzStmt = `SELECT realm_id, group_name, action, target_realm_id, target_group_name FROM authorizations WHERE realm_id = ? AND group_name = ?;`
+	createAuthzStmt = `INSERT INTO authorizations (realm_id, group_name, action, target_realm_id, target_group_name) 
 		VALUES (?, ?, ?, ?, ?);`
 	deleteAuthzStmt             = `DELETE FROM authorizations WHERE realm_id = ? AND group_name = ?;`
 	deleteAllAuthzWithGroupStmt = `DELETE FROM authorizations WHERE (realm_id = ? AND group_name = ?) OR (target_realm_id = ? AND target_group_name = ?);`
@@ -31,6 +30,7 @@ type Scanner interface {
 }
 
 type configurationDBModule struct {
+	configuration.ConfigurationReaderDBModule
 	db     sqltypes.CloudtrustDB
 	logger log.Logger
 }
@@ -38,12 +38,13 @@ type configurationDBModule struct {
 // NewConfigurationDBModule returns a ConfigurationDB module.
 func NewConfigurationDBModule(db sqltypes.CloudtrustDB, logger log.Logger) ConfigurationDBModule {
 	return &configurationDBModule{
-		db:     db,
-		logger: logger,
+		ConfigurationReaderDBModule: *configuration.NewConfigurationReaderDBModule(db, logger),
+		db:                          db,
+		logger:                      logger,
 	}
 }
 
-func (c *configurationDBModule) StoreOrUpdate(context context.Context, realmID string, config dto.RealmConfiguration) error {
+func (c *configurationDBModule) StoreOrUpdate(context context.Context, realmID string, config configuration.RealmConfiguration) error {
 	// transform customConfig object into JSON string
 	configJSON, err := json.Marshal(config)
 	if err != nil {
@@ -55,29 +56,19 @@ func (c *configurationDBModule) StoreOrUpdate(context context.Context, realmID s
 	return err
 }
 
-func (c *configurationDBModule) GetConfiguration(context context.Context, realmID string) (dto.RealmConfiguration, error) {
-	var configJSON string
-	var config = dto.RealmConfiguration{}
-	row := c.db.QueryRow(selectConfigStmt, realmID)
+func (c *configurationDBModule) GetConfiguration(ctx context.Context, realmID string) (configuration.RealmConfiguration, error) {
+	config, err := c.ConfigurationReaderDBModule.GetConfiguration(ctx, realmID)
 
-	switch err := row.Scan(&configJSON); err {
-	case sql.ErrNoRows:
+	if err == sql.ErrNoRows {
 		return config, errorhandler.Error{
 			Status:  404,
 			Message: ComponentName + "." + msg.MsgErrNotConfigured + "." + msg.RealmConfiguration + "." + realmID,
 		}
-
-	default:
-		if err != nil {
-			return config, err
-		}
-
-		err = json.Unmarshal([]byte(configJSON), &config)
-		return config, err
 	}
+	return config, err
 }
 
-func (c *configurationDBModule) GetAuthorizations(ctx context.Context, realmID string, groupName string) ([]dto.Authorization, error) {
+func (c *configurationDBModule) GetAuthorizations(ctx context.Context, realmID string, groupName string) ([]configuration.Authorization, error) {
 	// Get Authorizations from DB
 	rows, err := c.db.Query(selectAuthzStmt, realmID, groupName)
 	if err != nil {
@@ -86,8 +77,8 @@ func (c *configurationDBModule) GetAuthorizations(ctx context.Context, realmID s
 	}
 	defer rows.Close()
 
-	var authz dto.Authorization
-	var res = make([]dto.Authorization, 0)
+	var authz configuration.Authorization
+	var res = make([]configuration.Authorization, 0)
 	for rows.Next() {
 		authz, err = c.scanAuthorization(rows)
 		if err != nil {
@@ -100,7 +91,7 @@ func (c *configurationDBModule) GetAuthorizations(ctx context.Context, realmID s
 	return res, nil
 }
 
-func (c *configurationDBModule) CreateAuthorization(context context.Context, auth dto.Authorization) error {
+func (c *configurationDBModule) CreateAuthorization(context context.Context, auth configuration.Authorization) error {
 	_, err := c.db.Exec(createAuthzStmt, nullableString(auth.RealmID), nullableString(auth.GroupName),
 		nullableString(auth.Action), nullableString(auth.TargetRealmID), nullableString(auth.TargetGroupName))
 	return err
@@ -120,7 +111,7 @@ func (c *configurationDBModule) NewTransaction(context context.Context) (databas
 	return database.NewTransaction(c.db)
 }
 
-func (c *configurationDBModule) scanAuthorization(scanner Scanner) (dto.Authorization, error) {
+func (c *configurationDBModule) scanAuthorization(scanner Scanner) (configuration.Authorization, error) {
 	var (
 		realmID         string
 		groupName       string
@@ -131,10 +122,10 @@ func (c *configurationDBModule) scanAuthorization(scanner Scanner) (dto.Authoriz
 
 	err := scanner.Scan(&realmID, &groupName, &action, &targetRealmID, &targetGroupName)
 	if err != nil {
-		return dto.Authorization{}, err
+		return configuration.Authorization{}, err
 	}
 
-	var authz = dto.Authorization{
+	var authz = configuration.Authorization{
 		RealmID:   &realmID,
 		GroupName: &groupName,
 		Action:    &action,

@@ -12,6 +12,7 @@ import (
 
 	"github.com/cloudtrust/keycloak-client"
 
+	"github.com/cloudtrust/common-service/configuration"
 	"github.com/cloudtrust/common-service/database"
 	errorhandler "github.com/cloudtrust/common-service/errors"
 	apiregister "github.com/cloudtrust/keycloak-bridge/api/register"
@@ -31,7 +32,7 @@ type KeycloakClient interface {
 
 // ConfigurationDBModule is the interface of the configuration module.
 type ConfigurationDBModule interface {
-	GetConfiguration(context.Context, string) (dto.RealmConfiguration, error)
+	GetConfiguration(context.Context, string) (configuration.RealmConfiguration, error)
 }
 
 // Component is the register component interface.
@@ -89,7 +90,7 @@ func (c *component) RegisterUser(ctx context.Context, customerRealmName string, 
 	}
 
 	// Get Realm configuration from database
-	var realmConf dto.RealmConfiguration
+	var realmConf configuration.RealmConfiguration
 	realmConf, err = c.configDBModule.GetConfiguration(ctx, customerRealmName)
 	if err != nil {
 		c.logger.Info(ctx, "msg", "Can't get realm configuration from database", "err", err.Error())
@@ -124,7 +125,7 @@ func (c *component) RegisterUser(ctx context.Context, customerRealmName string, 
 	return username, nil
 }
 
-func (c *component) storeUser(ctx context.Context, accessToken string, customerRealmName string, user apiregister.UserRepresentation, existingKcUser *kc.UserRepresentation, realmConf dto.RealmConfiguration) (string, string, error) {
+func (c *component) storeUser(ctx context.Context, accessToken string, customerRealmName string, user apiregister.UserRepresentation, existingKcUser *kc.UserRepresentation, realmConf configuration.RealmConfiguration) (string, string, error) {
 	authToken, err := c.generateAuthToken()
 
 	var userID string
@@ -242,7 +243,7 @@ func (c *component) checkExistingUser(ctx context.Context, accessToken string, u
 
 func (c *component) GetConfiguration(ctx context.Context, realmName string) (apiregister.ConfigurationRepresentation, error) {
 	// Get Realm configuration from database
-	var realmConf dto.RealmConfiguration
+	var realmConf configuration.RealmConfiguration
 	realmConf, err := c.configDBModule.GetConfiguration(ctx, realmName)
 	if err != nil {
 		c.logger.Info(ctx, "msg", "Can't get realm configuration from database", "err", err.Error())

@@ -3,7 +3,7 @@ package keycloakb
 import (
 	"testing"
 
-	"github.com/cloudtrust/keycloak-bridge/internal/dto"
+	"github.com/cloudtrust/common-service/configuration"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -24,12 +24,12 @@ func TestValidate(t *testing.T) {
 	allowedTargetRealmsAndGroupNames[realmName][groupName2] = struct{}{}
 	allowedTargetRealmsAndGroupNames[realmName]["*"] = struct{}{}
 
-	var authorizations = []dto.Authorization{}
+	var authorizations = []configuration.Authorization{}
 
 	// Invalid targetRealm
 	{
-		authorizations = []dto.Authorization{
-			dto.Authorization{
+		authorizations = []configuration.Authorization{
+			configuration.Authorization{
 				RealmID:       &realmName,
 				GroupName:     &groupName1,
 				Action:        &action2,
@@ -43,8 +43,8 @@ func TestValidate(t *testing.T) {
 
 	// Invalid targetGroupName
 	{
-		authorizations = []dto.Authorization{
-			dto.Authorization{
+		authorizations = []configuration.Authorization{
+			configuration.Authorization{
 				RealmID:         &realmName,
 				GroupName:       &groupName1,
 				Action:          &action2,
@@ -59,14 +59,14 @@ func TestValidate(t *testing.T) {
 
 	// Incompatible rules due to * in targetRealm
 	{
-		authorizations = []dto.Authorization{
-			dto.Authorization{
+		authorizations = []configuration.Authorization{
+			configuration.Authorization{
 				RealmID:       &realmName,
 				GroupName:     &groupName1,
 				Action:        &action2,
 				TargetRealmID: &star,
 			},
-			dto.Authorization{
+			configuration.Authorization{
 				RealmID:       &realmName,
 				GroupName:     &groupName1,
 				Action:        &action2,
@@ -80,15 +80,15 @@ func TestValidate(t *testing.T) {
 
 	// Incompatible rules due to * in targetGroupName
 	{
-		authorizations = []dto.Authorization{
-			dto.Authorization{
+		authorizations = []configuration.Authorization{
+			configuration.Authorization{
 				RealmID:         &realmName,
 				GroupName:       &groupName1,
 				Action:          &action2,
 				TargetRealmID:   &realmName,
 				TargetGroupName: &star,
 			},
-			dto.Authorization{
+			configuration.Authorization{
 				RealmID:         &realmName,
 				GroupName:       &groupName1,
 				Action:          &action2,
@@ -103,15 +103,15 @@ func TestValidate(t *testing.T) {
 
 	// Valid set of authorizations
 	{
-		authorizations = []dto.Authorization{
-			dto.Authorization{
+		authorizations = []configuration.Authorization{
+			configuration.Authorization{
 				RealmID:         &realmName,
 				GroupName:       &groupName1,
 				Action:          &action2,
 				TargetRealmID:   &realmName,
 				TargetGroupName: &star,
 			},
-			dto.Authorization{
+			configuration.Authorization{
 				RealmID:         &realmName,
 				GroupName:       &groupName1,
 				Action:          &action1,

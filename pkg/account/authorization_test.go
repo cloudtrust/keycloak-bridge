@@ -6,10 +6,11 @@ import (
 	"testing"
 
 	cs "github.com/cloudtrust/common-service"
+	"github.com/cloudtrust/common-service/configuration"
 	"github.com/cloudtrust/common-service/log"
 	"github.com/cloudtrust/common-service/security"
 	api "github.com/cloudtrust/keycloak-bridge/api/account"
-	"github.com/cloudtrust/keycloak-bridge/internal/dto"
+
 	"github.com/cloudtrust/keycloak-bridge/pkg/account/mock"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -76,7 +77,7 @@ func TestDeny(t *testing.T) {
 	var falseBool = false
 	var credentialID = "786-5684-6464"
 
-	var realmConfig = dto.RealmConfiguration{
+	var realmConfig = configuration.RealmConfiguration{
 		DefaultClientID:                     new(string),
 		DefaultRedirectURI:                  new(string),
 		APISelfAuthenticatorDeletionEnabled: &falseBool,
@@ -124,7 +125,7 @@ func TestAllowed(t *testing.T) {
 	var trueBool = true
 	var credentialID = "786-5684-6464"
 
-	var realmConfig = dto.RealmConfiguration{
+	var realmConfig = configuration.RealmConfiguration{
 		DefaultClientID:                     new(string),
 		DefaultRedirectURI:                  new(string),
 		APISelfAuthenticatorDeletionEnabled: &trueBool,
@@ -176,7 +177,7 @@ func TestError(t *testing.T) {
 
 	var credentialID = "786-5684-6464"
 
-	var realmConfig = dto.RealmConfiguration{}
+	var realmConfig = configuration.RealmConfiguration{}
 
 	mockConfigurationDBModule.EXPECT().GetConfiguration(gomock.Any(), realmName).Return(realmConfig, errors.New("unexpected error")).AnyTimes()
 

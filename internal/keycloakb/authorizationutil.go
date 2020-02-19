@@ -3,12 +3,12 @@ package keycloakb
 import (
 	"errors"
 
+	"github.com/cloudtrust/common-service/configuration"
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
-	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 )
 
 // Validate the content of the provided array. Returns an error if any issue is detected
-func Validate(authorizations []dto.Authorization, allowedTargetRealmsAndGroupNames map[string]map[string]struct{}) error {
+func Validate(authorizations []configuration.Authorization, allowedTargetRealmsAndGroupNames map[string]map[string]struct{}) error {
 	for _, auth := range authorizations {
 		// Check TargetRealm
 		if auth.TargetRealmID != nil {

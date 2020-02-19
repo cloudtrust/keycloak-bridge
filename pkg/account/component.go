@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	cs "github.com/cloudtrust/common-service"
+	"github.com/cloudtrust/common-service/configuration"
 	"github.com/cloudtrust/common-service/database"
 	errorhandler "github.com/cloudtrust/common-service/errors"
 	api "github.com/cloudtrust/keycloak-bridge/api/account"
@@ -46,10 +47,10 @@ type Component interface {
 // ConfigurationDBModule is the interface of the configuration module.
 type ConfigurationDBModule interface {
 	NewTransaction(context context.Context) (database.Transaction, error)
-	StoreOrUpdate(context.Context, string, dto.RealmConfiguration) error
-	GetConfiguration(context.Context, string) (dto.RealmConfiguration, error)
-	GetAuthorizations(context context.Context, realmID string, groupID string) ([]dto.Authorization, error)
-	CreateAuthorization(context context.Context, authz dto.Authorization) error
+	StoreOrUpdate(context.Context, string, configuration.RealmConfiguration) error
+	GetConfiguration(context.Context, string) (configuration.RealmConfiguration, error)
+	GetAuthorizations(context context.Context, realmID string, groupID string) ([]configuration.Authorization, error)
+	CreateAuthorization(context context.Context, authz configuration.Authorization) error
 	DeleteAuthorizations(context context.Context, realmID string, groupID string) error
 	DeleteAllAuthorizationsWithGroup(context context.Context, realmID, groupName string) error
 }

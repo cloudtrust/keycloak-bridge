@@ -5,9 +5,9 @@ import (
 	"time"
 
 	cs "github.com/cloudtrust/common-service"
+	"github.com/cloudtrust/common-service/configuration"
 	"github.com/cloudtrust/common-service/database"
 	cm "github.com/cloudtrust/common-service/metrics"
-	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 )
 
 // Instrumenting middleware at module level.
@@ -19,10 +19,10 @@ type configDBModuleInstrumentingMW struct {
 // ConfigurationDBModule is the interface of the configuration module.
 type ConfigurationDBModule interface {
 	NewTransaction(context context.Context) (database.Transaction, error)
-	StoreOrUpdate(context.Context, string, dto.RealmConfiguration) error
-	GetConfiguration(context.Context, string) (dto.RealmConfiguration, error)
-	GetAuthorizations(context context.Context, realmID string, groupName string) ([]dto.Authorization, error)
-	CreateAuthorization(context context.Context, authz dto.Authorization) error
+	StoreOrUpdate(context.Context, string, configuration.RealmConfiguration) error
+	GetConfiguration(context.Context, string) (configuration.RealmConfiguration, error)
+	GetAuthorizations(context context.Context, realmID string, groupName string) ([]configuration.Authorization, error)
+	CreateAuthorization(context context.Context, authz configuration.Authorization) error
 	DeleteAuthorizations(context context.Context, realmID string, groupName string) error
 	DeleteAllAuthorizationsWithGroup(context context.Context, realmName, groupName string) error
 }
@@ -46,7 +46,7 @@ func (m *configDBModuleInstrumentingMW) NewTransaction(ctx context.Context) (dat
 }
 
 // configDBModuleInstrumentingMW implements Module.
-func (m *configDBModuleInstrumentingMW) StoreOrUpdate(ctx context.Context, realmName string, config dto.RealmConfiguration) error {
+func (m *configDBModuleInstrumentingMW) StoreOrUpdate(ctx context.Context, realmName string, config configuration.RealmConfiguration) error {
 	defer func(begin time.Time) {
 		m.h.With("correlation_id", ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
 	}(time.Now())
@@ -54,7 +54,7 @@ func (m *configDBModuleInstrumentingMW) StoreOrUpdate(ctx context.Context, realm
 }
 
 // configDBModuleInstrumentingMW implements Module.
-func (m *configDBModuleInstrumentingMW) GetConfiguration(ctx context.Context, realmName string) (dto.RealmConfiguration, error) {
+func (m *configDBModuleInstrumentingMW) GetConfiguration(ctx context.Context, realmName string) (configuration.RealmConfiguration, error) {
 	defer func(begin time.Time) {
 		m.h.With("correlation_id", ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
 	}(time.Now())
@@ -62,7 +62,7 @@ func (m *configDBModuleInstrumentingMW) GetConfiguration(ctx context.Context, re
 }
 
 // configDBModuleInstrumentingMW implements Module.
-func (m *configDBModuleInstrumentingMW) GetAuthorizations(ctx context.Context, realmID string, groupID string) ([]dto.Authorization, error) {
+func (m *configDBModuleInstrumentingMW) GetAuthorizations(ctx context.Context, realmID string, groupID string) ([]configuration.Authorization, error) {
 	defer func(begin time.Time) {
 		m.h.With("correlation_id", ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
 	}(time.Now())
@@ -70,7 +70,7 @@ func (m *configDBModuleInstrumentingMW) GetAuthorizations(ctx context.Context, r
 }
 
 // configDBModuleInstrumentingMW implements Module.
-func (m *configDBModuleInstrumentingMW) CreateAuthorization(ctx context.Context, auth dto.Authorization) error {
+func (m *configDBModuleInstrumentingMW) CreateAuthorization(ctx context.Context, auth configuration.Authorization) error {
 	defer func(begin time.Time) {
 		m.h.With("correlation_id", ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
 	}(time.Now())

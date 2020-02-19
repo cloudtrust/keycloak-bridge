@@ -91,7 +91,7 @@ func (rcv *AdminEvent) DetailsLength() int {
 	return 0
 }
 
-func (rcv *AdminEvent) ResourceType() ResourceType {
+func (rcv *AdminEvent) ResourceType() int8 {
 	o := flatbuffers.UOffsetT(rcv._tab.Offset(14))
 	if o != 0 {
 		return rcv._tab.GetInt8(o + rcv._tab.Pos)
@@ -99,11 +99,11 @@ func (rcv *AdminEvent) ResourceType() ResourceType {
 	return 0
 }
 
-func (rcv *AdminEvent) MutateResourceType(n ResourceType) bool {
+func (rcv *AdminEvent) MutateResourceType(n int8) bool {
 	return rcv._tab.MutateInt8Slot(14, n)
 }
 
-func (rcv *AdminEvent) OperationType() OperationType {
+func (rcv *AdminEvent) OperationType() int8 {
 	o := flatbuffers.UOffsetT(rcv._tab.Offset(16))
 	if o != 0 {
 		return rcv._tab.GetInt8(o + rcv._tab.Pos)
@@ -111,7 +111,7 @@ func (rcv *AdminEvent) OperationType() OperationType {
 	return 0
 }
 
-func (rcv *AdminEvent) MutateOperationType(n OperationType) bool {
+func (rcv *AdminEvent) MutateOperationType(n int8) bool {
 	return rcv._tab.MutateInt8Slot(16, n)
 }
 

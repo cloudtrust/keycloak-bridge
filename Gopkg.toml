@@ -27,11 +27,11 @@
 
 [[constraint]]
   name = "github.com/cloudtrust/common-service"
-  version = "v1.2.5"
+  version = "v2.0.0"
 
 [[constraint]]
   name = "github.com/cloudtrust/keycloak-client"
-  version = "v1.2.8"
+  version = "v1.2.9"
 
 [[constraint]]
   name = "github.com/go-kit/kit"
