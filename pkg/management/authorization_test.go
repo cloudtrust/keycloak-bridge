@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/cloudtrust/common-service/configuration"
+
 	cs "github.com/cloudtrust/common-service"
 	"github.com/cloudtrust/common-service/log"
 	"github.com/cloudtrust/common-service/security"
@@ -20,6 +22,7 @@ func TestDeny(t *testing.T) {
 	var mockLogger = log.NewNopLogger()
 	var mockKeycloakClient = mock.NewKcClientAuth(mockCtrl)
 	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
+	var mockAuthorizationDBReader = mock.NewAuthorizationDBReader(mockCtrl)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -44,6 +47,7 @@ func TestDeny(t *testing.T) {
 	var clientURI = "https://wwww.cloudtrust.io"
 
 	var provider = "provider"
+	mockAuthorizationDBReader.EXPECT().GetAuthorizations(gomock.Any()).Return([]configuration.Authorization{}, nil)
 
 	mockKeycloakClient.EXPECT().GetGroupNamesOfUser(gomock.Any(), accessToken, realmName, userID).Return([]string{
 		groupName,
@@ -86,7 +90,7 @@ func TestDeny(t *testing.T) {
 
 	// Nothing allowed
 	{
-		var authorizations, err = security.NewAuthorizationManager(mockKeycloakClient, log.NewNopLogger(), `{}`)
+		var authorizations, err = security.NewAuthorizationManager(mockAuthorizationDBReader, mockKeycloakClient, log.NewNopLogger())
 		assert.Nil(t, err)
 
 		var authorizationMW = MakeAuthorizationManagementComponentMW(mockLogger, authorizations)(mockManagementComponent)
@@ -219,6 +223,7 @@ func TestAllowed(t *testing.T) {
 	var mockLogger = log.NewNopLogger()
 	var mockKeycloakClient = mock.NewKcClientAuth(mockCtrl)
 	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
+	var mockAuthorizationDBReader = mock.NewAuthorizationDBReader(mockCtrl)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -231,6 +236,8 @@ func TestAllowed(t *testing.T) {
 	var userUsername = "toto"
 
 	var roleName = "role"
+	var toe = "toe"
+	var any = "*"
 
 	var groupID = "123-789-454"
 	var groupIDs = []string{groupID}
@@ -281,54 +288,25 @@ func TestAllowed(t *testing.T) {
 		Username: &userUsername,
 	}
 
+	var authorizations = []configuration.Authorization{}
+	for _, action := range actions {
+		var action = string(action.Name)
+		authorizations = append(authorizations, configuration.Authorization{
+			RealmID:         &realmName,
+			GroupName:       &toe,
+			Action:          &action,
+			TargetRealmID:   &any,
+			TargetGroupName: &any,
+		})
+	}
+	mockAuthorizationDBReader.EXPECT().GetAuthorizations(gomock.Any()).Return(authorizations, nil)
+
 	// Anything allowed
 	{
-		var authorizations, err = security.NewAuthorizationManager(mockKeycloakClient, log.NewNopLogger(), `{"master":
-			{
-				"toe": {
-					"MGMT_GetActions": {"*": {}},
-					"MGMT_GetRealms": {"*": {}},
-					"MGMT_GetRealm": {"*": {"*": {} }},
-					"MGMT_GetClient": {"*": {"*": {} }},
-					"MGMT_GetClients": {"*": {"*": {} }},
-					"MGMT_GetRequiredActions": {"*": {"*": {} }},
-					"MGMT_DeleteUser": {"*": {"*": {} }},
-					"MGMT_GetUser": {"*": {"*": {} }},
-					"MGMT_UpdateUser": {"*": {"*": {} }},
-					"MGMT_GetUsers": {"*": {"*": {} }},
-					"MGMT_CreateUser": {"*": {"*": {} }},
-					"MGMT_GetUserAccountStatus": {"*": {"*": {} }},
-					"MGMT_GetRolesOfUser": {"*": {"*": {} }},
-					"MGMT_GetGroupsOfUser": {"*": {"*": {} }},
-					"MGMT_SetTrustIDGroups": {"*": {"*": {} }},
-					"MGMT_GetClientRolesForUser": {"*": {"*": {} }},
-					"MGMT_AddClientRolesToUser": {"*": {"*": {} }},
-					"MGMT_ResetPassword": {"*": {"*": {} }},
-					"MGMT_ExecuteActionsEmail": {"*": {"*": {} }},
-					"MGMT_SendNewEnrolmentCode": {"*": {"*": {} }},
-					"MGMT_SendReminderEmail": {"*": {"*": {} }},
-					"MGMT_ResetSmsCounter": {"*": {"*": {} }},
-					"MGMT_CreateRecoveryCode": {"*": {"*": {} }},
-					"MGMT_GetCredentialsForUser": {"*": {"*": {} }},
-					"MGMT_DeleteCredentialsForUser": {"*": {"*": {} }},
-					"MGMT_GetRoles": {"*": {"*": {} }},
-					"MGMT_GetRole": {"*": {"*": {} }},
-					"MGMT_GetGroups": {"*": {"*": {} }},
-					"MGMT_CreateGroup": {"*": {"*": {} }},
-					"MGMT_DeleteGroup": {"*": {"*": {} }},
-					"MGMT_GetAuthorizations": {"*": {"*": {} }},
-					"MGMT_UpdateAuthorizations": {"*": {"*": {} }},
-					"MGMT_GetClientRoles": {"*": {"*": {} }},
-					"MGMT_CreateClientRole": {"*": {"*": {} }},
-					"MGMT_GetRealmCustomConfiguration": {"*": {"*": {} }},
-					"MGMT_UpdateRealmCustomConfiguration": {"*": {"*": {} }},
-					"MGMT_CreateShadowUser":  {"*": {"*": {} }}
-				}
-			}
-		}`)
+		var authorizationManager, err = security.NewAuthorizationManager(mockAuthorizationDBReader, mockKeycloakClient, log.NewNopLogger())
 		assert.Nil(t, err)
 
-		var authorizationMW = MakeAuthorizationManagementComponentMW(mockLogger, authorizations)(mockManagementComponent)
+		var authorizationMW = MakeAuthorizationManagementComponentMW(mockLogger, authorizationManager)(mockManagementComponent)
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextGroups, groups)

@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/cloudtrust/keycloak-bridge/internal/dto"
+	"github.com/cloudtrust/common-service/configuration"
 
 	cs "github.com/cloudtrust/common-service"
 	"github.com/cloudtrust/common-service/security"
@@ -50,7 +50,7 @@ func (c *authorizationComponentMW) UpdatePassword(ctx context.Context, currentPa
 	var action = UpdatePassword
 	var currentRealm = ctx.Value(cs.CtContextRealm).(string)
 
-	var config = dto.RealmConfiguration{}
+	var config = configuration.RealmConfiguration{}
 	var err error
 
 	if config, err = c.configDBModule.GetConfiguration(ctx, currentRealm); err != nil {
@@ -98,7 +98,7 @@ func (c *authorizationComponentMW) DeleteCredential(ctx context.Context, credent
 	var action = DeleteCredential
 	var currentRealm = ctx.Value(cs.CtContextRealm).(string)
 
-	var config = dto.RealmConfiguration{}
+	var config = configuration.RealmConfiguration{}
 	var err error
 
 	if config, err = c.configDBModule.GetConfiguration(ctx, currentRealm); err != nil {
@@ -130,7 +130,7 @@ func (c *authorizationComponentMW) UpdateAccount(ctx context.Context, account ap
 	var action = UpdateAccount
 	var currentRealm = ctx.Value(cs.CtContextRealm).(string)
 
-	var config = dto.RealmConfiguration{}
+	var config = configuration.RealmConfiguration{}
 	var err error
 
 	if config, err = c.configDBModule.GetConfiguration(ctx, currentRealm); err != nil {
@@ -158,7 +158,7 @@ func (c *authorizationComponentMW) DeleteAccount(ctx context.Context) error {
 	var currentRealm = ctx.Value(cs.CtContextRealm).(string)
 
 	var err error
-	var config = dto.RealmConfiguration{}
+	var config = configuration.RealmConfiguration{}
 
 	if config, err = c.configDBModule.GetConfiguration(ctx, currentRealm); err != nil {
 		infos, _ := json.Marshal(map[string]string{

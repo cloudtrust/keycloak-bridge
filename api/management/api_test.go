@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/cloudtrust/keycloak-bridge/internal/dto"
+	"github.com/cloudtrust/common-service/configuration"
 	kc "github.com/cloudtrust/keycloak-client"
 	"github.com/stretchr/testify/assert"
 )
@@ -211,22 +211,22 @@ func TestConvertToAPIAuthorizations(t *testing.T) {
 	var action2 = "action2"
 	var any = "*"
 
-	var authorizations = []dto.Authorization{}
+	var authorizations = []configuration.Authorization{}
 
-	var authz1 = dto.Authorization{
+	var authz1 = configuration.Authorization{
 		RealmID:   &master,
 		GroupName: &groupName2,
 		Action:    &action2,
 	}
 
-	var authz2 = dto.Authorization{
+	var authz2 = configuration.Authorization{
 		RealmID:       &master,
 		GroupName:     &groupName2,
 		Action:        &action2,
 		TargetRealmID: &any,
 	}
 
-	var authz3 = dto.Authorization{
+	var authz3 = configuration.Authorization{
 		RealmID:         &master,
 		GroupName:       &groupName1,
 		Action:          &action,

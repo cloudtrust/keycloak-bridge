@@ -7,10 +7,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/cloudtrust/common-service/configuration"
 	errorhandler "github.com/cloudtrust/common-service/errors"
 	log "github.com/cloudtrust/common-service/log"
 	apiregister "github.com/cloudtrust/keycloak-bridge/api/register"
-	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 	"github.com/cloudtrust/keycloak-bridge/pkg/register/mock"
 	kc "github.com/cloudtrust/keycloak-client"
 	"github.com/golang/mock/gomock"
@@ -77,7 +77,7 @@ func TestRegisterUser(t *testing.T) {
 
 	t.Run("Can't get realm configuration from DB", func(t *testing.T) {
 		var dbError = errors.New("db error")
-		mockConfigDB.EXPECT().GetConfiguration(ctx, confRealm).Return(dto.RealmConfiguration{}, dbError)
+		mockConfigDB.EXPECT().GetConfiguration(ctx, confRealm).Return(configuration.RealmConfiguration{}, dbError)
 
 		var _, err = component.RegisterUser(ctx, confRealm, createValidUser())
 		assert.Equal(t, dbError, err)
@@ -85,7 +85,7 @@ func TestRegisterUser(t *testing.T) {
 
 	t.Run("Can't get access token", func(t *testing.T) {
 		var tokenError = errors.New("token error")
-		mockConfigDB.EXPECT().GetConfiguration(ctx, confRealm).Return(dto.RealmConfiguration{}, nil)
+		mockConfigDB.EXPECT().GetConfiguration(ctx, confRealm).Return(configuration.RealmConfiguration{}, nil)
 		mockTokenProvider.EXPECT().ProvideToken(ctx).Return("", tokenError)
 
 		var _, err = component.RegisterUser(ctx, confRealm, createValidUser())
@@ -94,7 +94,7 @@ func TestRegisterUser(t *testing.T) {
 
 	t.Run("checkExistingUser fails", func(t *testing.T) {
 		var kcError = errors.New("kc GetUsers error")
-		mockConfigDB.EXPECT().GetConfiguration(ctx, confRealm).Return(dto.RealmConfiguration{}, nil)
+		mockConfigDB.EXPECT().GetConfiguration(ctx, confRealm).Return(configuration.RealmConfiguration{}, nil)
 		mockTokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
 		mockKeycloakClient.EXPECT().GetUsers(accessToken, targetRealm, targetRealm, "email", *validUser.EmailAddress).Return(kc.UsersPageRepresentation{}, kcError)
 
@@ -103,7 +103,7 @@ func TestRegisterUser(t *testing.T) {
 	})
 
 	t.Run("Can't generate unused username", func(t *testing.T) {
-		mockConfigDB.EXPECT().GetConfiguration(ctx, confRealm).Return(dto.RealmConfiguration{}, nil)
+		mockConfigDB.EXPECT().GetConfiguration(ctx, confRealm).Return(configuration.RealmConfiguration{}, nil)
 		mockTokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
 		mockKeycloakClient.EXPECT().GetUsers(accessToken, targetRealm, targetRealm, "email", *validUser.EmailAddress).Return(usersSearchResult, nil)
 		mockKeycloakClient.EXPECT().CreateUser(accessToken, targetRealm, targetRealm, gomock.Any()).
@@ -116,7 +116,7 @@ func TestRegisterUser(t *testing.T) {
 
 	t.Run("Create user in Keycloak fails", func(t *testing.T) {
 		var keycloakError = errors.New("keycloak create error")
-		mockConfigDB.EXPECT().GetConfiguration(ctx, confRealm).Return(dto.RealmConfiguration{}, nil)
+		mockConfigDB.EXPECT().GetConfiguration(ctx, confRealm).Return(configuration.RealmConfiguration{}, nil)
 		mockTokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
 		mockKeycloakClient.EXPECT().GetUsers(accessToken, targetRealm, targetRealm, "email", *validUser.EmailAddress).Return(usersSearchResult, nil)
 		mockKeycloakClient.EXPECT().CreateUser(accessToken, targetRealm, targetRealm, gomock.Any()).Return("", keycloakError)
@@ -135,7 +135,7 @@ func TestRegisterUser(t *testing.T) {
 			Count: &one,
 			Users: []kc.UserRepresentation{user},
 		}
-		mockConfigDB.EXPECT().GetConfiguration(ctx, confRealm).Return(dto.RealmConfiguration{}, nil)
+		mockConfigDB.EXPECT().GetConfiguration(ctx, confRealm).Return(configuration.RealmConfiguration{}, nil)
 		mockTokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
 		mockKeycloakClient.EXPECT().GetUsers(accessToken, targetRealm, targetRealm, "email", *validUser.EmailAddress).Return(userExistsSearch, nil)
 		mockKeycloakClient.EXPECT().UpdateUser(accessToken, targetRealm, userID, gomock.Any()).Return(updateError)
@@ -148,7 +148,7 @@ func TestRegisterUser(t *testing.T) {
 		var insertError = errors.New("insert error")
 		var token = "abcdef"
 		var userID = "abc789def"
-		mockConfigDB.EXPECT().GetConfiguration(ctx, confRealm).Return(dto.RealmConfiguration{}, nil)
+		mockConfigDB.EXPECT().GetConfiguration(ctx, confRealm).Return(configuration.RealmConfiguration{}, nil)
 		mockTokenProvider.EXPECT().ProvideToken(ctx).Return(token, nil)
 		mockKeycloakClient.EXPECT().GetUsers(accessToken, targetRealm, targetRealm, "email", *validUser.EmailAddress).Return(usersSearchResult, nil)
 		mockKeycloakClient.EXPECT().CreateUser(token, targetRealm, targetRealm, gomock.Any()).Return(userID, nil)
@@ -161,7 +161,7 @@ func TestRegisterUser(t *testing.T) {
 	t.Run("No required actions. RegisterUser is successful", func(t *testing.T) {
 		var token = "abcdef"
 		var userID = "abc789def"
-		mockConfigDB.EXPECT().GetConfiguration(ctx, confRealm).Return(dto.RealmConfiguration{}, nil)
+		mockConfigDB.EXPECT().GetConfiguration(ctx, confRealm).Return(configuration.RealmConfiguration{}, nil)
 		mockTokenProvider.EXPECT().ProvideToken(ctx).Return(token, nil)
 		mockKeycloakClient.EXPECT().GetUsers(accessToken, targetRealm, targetRealm, "email", *validUser.EmailAddress).Return(usersSearchResult, nil)
 		mockKeycloakClient.EXPECT().CreateUser(token, targetRealm, targetRealm, gomock.Any()).Return(userID, nil)
@@ -175,7 +175,7 @@ func TestRegisterUser(t *testing.T) {
 	t.Run("Everything is ok but report event fails", func(t *testing.T) {
 		var token = "abcdef"
 		var userID = "abc789def"
-		mockConfigDB.EXPECT().GetConfiguration(ctx, confRealm).Return(dto.RealmConfiguration{}, nil)
+		mockConfigDB.EXPECT().GetConfiguration(ctx, confRealm).Return(configuration.RealmConfiguration{}, nil)
 		mockTokenProvider.EXPECT().ProvideToken(ctx).Return(token, nil)
 		mockKeycloakClient.EXPECT().GetUsers(accessToken, targetRealm, targetRealm, "email", *validUser.EmailAddress).Return(usersSearchResult, nil)
 		mockKeycloakClient.EXPECT().CreateUser(token, targetRealm, targetRealm, gomock.Any()).Return(userID, nil)
@@ -191,7 +191,7 @@ func TestRegisterUser(t *testing.T) {
 		var userID = "abc789def"
 		var requiredActions = []string{"execute", "actions"}
 		var successURL = "http://couldtrust.ch"
-		var realmConfiguration = dto.RealmConfiguration{RegisterExecuteActions: &requiredActions, RedirectSuccessfulRegistrationURL: &successURL}
+		var realmConfiguration = configuration.RealmConfiguration{RegisterExecuteActions: &requiredActions, RedirectSuccessfulRegistrationURL: &successURL}
 		var component = NewComponent("not\nvalid\nURL", targetRealm, "", "", mockKeycloakClient, mockTokenProvider, mockUsersDB, mockConfigDB, mockEventsDB, log.NewNopLogger())
 
 		mockConfigDB.EXPECT().GetConfiguration(ctx, confRealm).Return(realmConfiguration, nil)
@@ -210,7 +210,7 @@ func TestRegisterUser(t *testing.T) {
 		var userID = "abc789def"
 		var requiredActions = []string{"execute", "actions"}
 		var successURL = "http://couldtrust.ch"
-		var realmConfiguration = dto.RealmConfiguration{RegisterExecuteActions: &requiredActions, RedirectSuccessfulRegistrationURL: &successURL}
+		var realmConfiguration = configuration.RealmConfiguration{RegisterExecuteActions: &requiredActions, RedirectSuccessfulRegistrationURL: &successURL}
 		mockConfigDB.EXPECT().GetConfiguration(ctx, confRealm).Return(realmConfiguration, nil)
 		mockTokenProvider.EXPECT().ProvideToken(ctx).Return(token, nil)
 		mockKeycloakClient.EXPECT().GetUsers(accessToken, targetRealm, targetRealm, "email", *validUser.EmailAddress).Return(usersSearchResult, nil)
@@ -311,14 +311,14 @@ func TestGetConfiguration(t *testing.T) {
 
 	t.Run("Retrieve configuration successfully", func(t *testing.T) {
 		// Retrieve configuration successfully
-		mockConfigDB.EXPECT().GetConfiguration(gomock.Any(), gomock.Any()).Return(dto.RealmConfiguration{}, nil)
+		mockConfigDB.EXPECT().GetConfiguration(gomock.Any(), gomock.Any()).Return(configuration.RealmConfiguration{}, nil)
 		var _, err = component.GetConfiguration(ctx, confRealm)
 		assert.Nil(t, err)
 	})
 
 	t.Run("Retrieve configuration in DB fails", func(t *testing.T) {
 		// Retrieve configuration in DB fails
-		mockConfigDB.EXPECT().GetConfiguration(gomock.Any(), gomock.Any()).Return(dto.RealmConfiguration{}, errors.New("GetConfiguration fails"))
+		mockConfigDB.EXPECT().GetConfiguration(gomock.Any(), gomock.Any()).Return(configuration.RealmConfiguration{}, errors.New("GetConfiguration fails"))
 		var _, err = component.GetConfiguration(ctx, confRealm)
 		assert.NotNil(t, err)
 	})

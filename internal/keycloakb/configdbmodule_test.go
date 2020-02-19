@@ -8,8 +8,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/cloudtrust/common-service/configuration"
 	"github.com/cloudtrust/common-service/log"
-	"github.com/cloudtrust/keycloak-bridge/internal/dto"
+
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/mock"
 	msg "github.com/cloudtrust/keycloak-bridge/internal/messages"
 	"github.com/golang/mock/gomock"
@@ -24,7 +25,7 @@ func TestConfigurationDBModule(t *testing.T) {
 
 	mockDB.EXPECT().Exec(gomock.Any(), "realmId", gomock.Any(), gomock.Any()).Return(nil, nil).Times(1)
 	var configDBModule = NewConfigurationDBModule(mockDB, mockLogger)
-	var err = configDBModule.StoreOrUpdate(context.Background(), "realmId", dto.RealmConfiguration{})
+	var err = configDBModule.StoreOrUpdate(context.Background(), "realmId", configuration.RealmConfiguration{})
 	assert.Nil(t, err)
 }
 
@@ -43,7 +44,7 @@ func TestGetConfiguration(t *testing.T) {
 	{
 		// No error
 		var dummyURL = "dummy://path/to/nothing"
-		var expectedResult = dto.RealmConfiguration{DefaultRedirectURI: &dummyURL}
+		var expectedResult = configuration.RealmConfiguration{DefaultRedirectURI: &dummyURL}
 		var jsonBytes, _ = json.Marshal(expectedResult)
 		var json = string(jsonBytes)
 		mockDB.EXPECT().QueryRow(gomock.Any(), realmID).Return(mockSQLRow)

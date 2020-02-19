@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	cs "github.com/cloudtrust/common-service"
+	"github.com/cloudtrust/common-service/configuration"
 	"github.com/cloudtrust/common-service/log"
 	"github.com/cloudtrust/common-service/security"
 	api "github.com/cloudtrust/keycloak-bridge/api/statistics"
@@ -13,29 +14,40 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const (
-	WithoutAuthorization = `{}`
-	WithAuthorization    = `{
-		"master": { 
-			"toe": {
-				"ST_GetActions": {"*": {}},
-				"ST_GetStatistics": {"*": {"*": {} }},
-				"ST_GetStatisticsUsers": {"*": {"*": {} }},
-				"ST_GetStatisticsAuthenticators": {"*": {"*": {} }},
-				"ST_GetStatisticsAuthentications": {"*": {"*": {} }},
-				"ST_GetStatisticsAuthenticationsLog": {"*": {"*": {} }}
-			}
-		}
-	}`
+var (
+	WithoutAuthorization = []configuration.Authorization{}
 )
 
-func testAuthorization(t *testing.T, jsonAuthz string, tester func(Component, *mock.Component, context.Context, map[string]string)) {
+func WithAuthorization() []configuration.Authorization {
+	var realmName = "master"
+	var toe = "toe"
+	var any = "*"
+
+	var authorizations = []configuration.Authorization{}
+	for _, action := range actions {
+		var action = string(action.Name)
+		authorizations = append(authorizations, configuration.Authorization{
+			RealmID:         &realmName,
+			GroupName:       &toe,
+			Action:          &action,
+			TargetRealmID:   &any,
+			TargetGroupName: &any,
+		})
+	}
+
+	return authorizations
+}
+
+func testAuthorization(t *testing.T, authz []configuration.Authorization, tester func(Component, *mock.Component, context.Context, map[string]string)) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 	var mockLogger = log.NewNopLogger()
 
 	mockKeycloakClient := mock.NewKeycloakClient(mockCtrl)
-	var authorizations, err = security.NewAuthorizationManager(mockKeycloakClient, mockLogger, jsonAuthz)
+	var mockAuthorizationDBReader = mock.NewAuthorizationDBReader(mockCtrl)
+	mockAuthorizationDBReader.EXPECT().GetAuthorizations(gomock.Any()).Return(authz, nil)
+
+	var authorizations, err = security.NewAuthorizationManager(mockAuthorizationDBReader, mockKeycloakClient, mockLogger)
 	assert.Nil(t, err)
 
 	mockComponent := mock.NewComponent(mockCtrl)
@@ -62,7 +74,7 @@ func testAuthorization(t *testing.T, jsonAuthz string, tester func(Component, *m
 }
 
 func TestGetActionsAllow(t *testing.T) {
-	testAuthorization(t, WithAuthorization, func(auth Component, mockComponent *mock.Component, ctx context.Context, mp map[string]string) {
+	testAuthorization(t, WithAuthorization(), func(auth Component, mockComponent *mock.Component, ctx context.Context, mp map[string]string) {
 		mockComponent.EXPECT().GetActions(ctx).Return([]api.ActionRepresentation{}, nil).Times(1)
 		_, err := auth.GetActions(ctx)
 		assert.Nil(t, err)
@@ -70,14 +82,14 @@ func TestGetActionsAllow(t *testing.T) {
 }
 
 func TestGetStatisticsAllow(t *testing.T) {
-	testAuthorization(t, WithAuthorization, func(auth Component, mockComponent *mock.Component, ctx context.Context, mp map[string]string) {
+	testAuthorization(t, WithAuthorization(), func(auth Component, mockComponent *mock.Component, ctx context.Context, mp map[string]string) {
 		mockComponent.EXPECT().GetStatistics(ctx, mp["realm"]).Return(api.StatisticsRepresentation{}, nil).Times(1)
 		_, err := auth.GetStatistics(ctx, mp["realm"])
 		assert.Nil(t, err)
 	})
 }
 func TestGetStatisticsUsersAllow(t *testing.T) {
-	testAuthorization(t, WithAuthorization, func(auth Component, mockComponent *mock.Component, ctx context.Context, mp map[string]string) {
+	testAuthorization(t, WithAuthorization(), func(auth Component, mockComponent *mock.Component, ctx context.Context, mp map[string]string) {
 		mockComponent.EXPECT().GetStatisticsUsers(ctx, mp["realm"]).Return(api.StatisticsUsersRepresentation{}, nil).Times(1)
 		_, err := auth.GetStatisticsUsers(ctx, mp["realm"])
 		assert.Nil(t, err)
@@ -85,7 +97,7 @@ func TestGetStatisticsUsersAllow(t *testing.T) {
 }
 
 func TestGetStatisticsAuthenticatorsAllow(t *testing.T) {
-	testAuthorization(t, WithAuthorization, func(auth Component, mockComponent *mock.Component, ctx context.Context, mp map[string]string) {
+	testAuthorization(t, WithAuthorization(), func(auth Component, mockComponent *mock.Component, ctx context.Context, mp map[string]string) {
 		mockComponent.EXPECT().GetStatisticsAuthenticators(ctx, mp["realm"]).Return(map[string]int64{}, nil).Times(1)
 		_, err := auth.GetStatisticsAuthenticators(ctx, mp["realm"])
 		assert.Nil(t, err)
@@ -93,7 +105,7 @@ func TestGetStatisticsAuthenticatorsAllow(t *testing.T) {
 }
 
 func TestGetStatisticsAuthenticationsAllow(t *testing.T) {
-	testAuthorization(t, WithAuthorization, func(auth Component, mockComponent *mock.Component, ctx context.Context, mp map[string]string) {
+	testAuthorization(t, WithAuthorization(), func(auth Component, mockComponent *mock.Component, ctx context.Context, mp map[string]string) {
 		mockComponent.EXPECT().GetStatisticsAuthentications(ctx, mp["realm"], mp["unit"], nil).Return([][]int64{}, nil).Times(1)
 		_, err := auth.GetStatisticsAuthentications(ctx, mp["realm"], mp["unit"], nil)
 		assert.Nil(t, err)
@@ -101,7 +113,7 @@ func TestGetStatisticsAuthenticationsAllow(t *testing.T) {
 }
 
 func TestGetStatisticsAuthenticationsLogAllow(t *testing.T) {
-	testAuthorization(t, WithAuthorization, func(auth Component, mockComponent *mock.Component, ctx context.Context, mp map[string]string) {
+	testAuthorization(t, WithAuthorization(), func(auth Component, mockComponent *mock.Component, ctx context.Context, mp map[string]string) {
 		mockComponent.EXPECT().GetStatisticsAuthenticationsLog(ctx, mp["realm"], mp["max"]).Return([]api.StatisticsConnectionRepresentation{}, nil).Times(1)
 		_, err := auth.GetStatisticsAuthenticationsLog(ctx, mp["realm"], mp["max"])
 		assert.Nil(t, err)

@@ -119,13 +119,9 @@ components:
           type: string
         nature:
           type: string
-  components:
-    securitySchemes:
-      basicAuth:
-        type: http
-        scheme: basic
-
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
 security:
   - basicAuth: []
-        
-      

@@ -10,12 +10,13 @@ import (
 	"time"
 
 	cs "github.com/cloudtrust/common-service"
+	"github.com/cloudtrust/common-service/configuration"
 	"github.com/cloudtrust/common-service/database"
 	commonhttp "github.com/cloudtrust/common-service/errors"
 	errorhandler "github.com/cloudtrust/common-service/errors"
 	"github.com/cloudtrust/common-service/log"
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
-	"github.com/cloudtrust/keycloak-bridge/internal/dto"
+
 	"github.com/cloudtrust/keycloak-bridge/pkg/management/mock"
 	kc "github.com/cloudtrust/keycloak-client"
 	"github.com/golang/mock/gomock"
@@ -2505,8 +2506,8 @@ func TestGetAuthorizations(t *testing.T) {
 
 	// Get authorizations with succces
 	{
-		var dtoAuthz = []dto.Authorization{
-			dto.Authorization{
+		var configurationAuthz = []configuration.Authorization{
+			configuration.Authorization{
 				RealmID:   &realmName,
 				GroupName: &groupName,
 				Action:    &action,
@@ -2517,7 +2518,7 @@ func TestGetAuthorizations(t *testing.T) {
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 
-		mockConfigurationDBModule.EXPECT().GetAuthorizations(ctx, targetRealmname, groupName).Return(dtoAuthz, nil).Times(1)
+		mockConfigurationDBModule.EXPECT().GetAuthorizations(ctx, targetRealmname, groupName).Return(configurationAuthz, nil).Times(1)
 		mockKeycloakClient.EXPECT().GetGroup(accessToken, targetRealmname, groupID).Return(group, nil).Times(1)
 
 		apiAuthorizationRep, err := managementComponent.GetAuthorizations(ctx, targetRealmname, groupID)
@@ -2537,7 +2538,7 @@ func TestGetAuthorizations(t *testing.T) {
 	//Error when retrieving authorizations from DB
 	{
 		mockKeycloakClient.EXPECT().GetGroup(accessToken, targetRealmname, groupID).Return(group, nil).Times(1)
-		mockConfigurationDBModule.EXPECT().GetAuthorizations(gomock.Any(), targetRealmname, groupName).Return([]dto.Authorization{}, fmt.Errorf("Error")).Times(1)
+		mockConfigurationDBModule.EXPECT().GetAuthorizations(gomock.Any(), targetRealmname, groupName).Return([]configuration.Authorization{}, fmt.Errorf("Error")).Times(1)
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		mockLogger.EXPECT().Warn(ctx, "err", "Error")
@@ -3107,7 +3108,7 @@ func TestGetRealmCustomConfiguration(t *testing.T) {
 		var clientID = "ClientID"
 		var redirectURI = "http://redirect.url.com/test"
 
-		var realmConfig = dto.RealmConfiguration{
+		var realmConfig = configuration.RealmConfiguration{
 			DefaultClientID:    &clientID,
 			DefaultRedirectURI: &redirectURI,
 		}
@@ -3141,7 +3142,7 @@ func TestGetRealmCustomConfiguration(t *testing.T) {
 		mockKeycloakClient.EXPECT().GetRealm(accessToken, realmID).Return(kcRealmRep, nil).Times(1)
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
-		mockConfigurationDBModule.EXPECT().GetConfiguration(ctx, realmID).Return(dto.RealmConfiguration{}, errorhandler.Error{}).Times(1)
+		mockConfigurationDBModule.EXPECT().GetConfiguration(ctx, realmID).Return(configuration.RealmConfiguration{}, errorhandler.Error{}).Times(1)
 
 		configJSON, err := managementComponent.GetRealmCustomConfiguration(ctx, realmID)
 
@@ -3194,7 +3195,7 @@ func TestGetRealmCustomConfiguration(t *testing.T) {
 		mockKeycloakClient.EXPECT().GetRealm(accessToken, realmID).Return(kcRealmRep, nil).Times(1)
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
-		mockConfigurationDBModule.EXPECT().GetConfiguration(ctx, realmID).Return(dto.RealmConfiguration{}, errors.New("error")).Times(1)
+		mockConfigurationDBModule.EXPECT().GetConfiguration(ctx, realmID).Return(configuration.RealmConfiguration{}, errors.New("error")).Times(1)
 
 		_, err := managementComponent.GetRealmCustomConfiguration(ctx, realmID)
 

@@ -14,6 +14,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/cloudtrust/common-service/configuration"
 	"github.com/cloudtrust/common-service/database/sqltypes"
 	"github.com/cloudtrust/common-service/healthcheck"
 
@@ -101,9 +102,6 @@ func main() {
 	// Configurations.
 	var c = config(ctx, log.With(logger, "unit", "config"))
 	var (
-		// Component
-		authorizationConfigFile = c.GetString("authorization-file")
-
 		// Publishing
 		httpAddrInternal   = c.GetString("internal-http-host-port")
 		httpAddrManagement = c.GetString("management-http-host-port")
@@ -262,18 +260,6 @@ func main() {
 		keycloakPublicURL = urls[0]
 	}
 
-	// Authorization Manager
-	var authorizationManager security.AuthorizationManager
-	{
-		var err error
-		authorizationManager, err = security.NewAuthorizationManagerFromFile(commonKcAdaptor, logger, authorizationConfigFile)
-
-		if err != nil {
-			logger.Error(ctx, "msg", "could not load authorizations", "error", err)
-			return
-		}
-	}
-
 	var sentryClient tracking.SentryTracking
 	{
 		var logger = log.With(logger, "unit", "sentry")
@@ -381,6 +367,25 @@ func main() {
 	healthChecker.AddDatabase("Config RO", configurationRoDBConn, healthCheckCacheDuration)
 	healthChecker.AddDatabase("Users R/W", usersRwDBConn, healthCheckCacheDuration)
 	healthChecker.AddHTTPEndpoint("Keycloak", keycloakConfig.AddrAPI, httpTimeout, 200, healthCheckCacheDuration)
+
+	// Authorization Manager
+	var authorizationManager security.AuthorizationManager
+	{
+		var authorizationLogger = log.With(logger, "svc", "authorization")
+
+		var configurationReaderDBModule *configuration.ConfigurationReaderDBModule
+		{
+			configurationReaderDBModule = configuration.NewConfigurationReaderDBModule(configurationRoDBConn, authorizationLogger)
+		}
+
+		var err error
+		authorizationManager, err = security.NewAuthorizationManager(configurationReaderDBModule, commonKcAdaptor, authorizationLogger)
+
+		if err != nil {
+			logger.Error(ctx, "msg", "could not load authorizations", "error", err)
+			return
+		}
+	}
 
 	// Event service.
 	var eventEndpoints = event.Endpoints{}
@@ -1013,7 +1018,6 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 
 	// Component default.
 	v.SetDefault("config-file", "./configs/keycloak_bridge.yml")
-	v.SetDefault("authorization-file", "./configs/authorization.json")
 
 	// Log level
 	v.SetDefault("log-level", "info")
@@ -1135,9 +1139,7 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 
 	// First level of override.
 	pflag.String("config-file", v.GetString("config-file"), "The configuration file path can be relative or absolute.")
-	pflag.String("authorization-file", v.GetString("authorization-file"), "The authorization file path can be relative or absolute.")
 	v.BindPFlag("config-file", pflag.Lookup("config-file"))
-	v.BindPFlag("authorization-file", pflag.Lookup("authorization-file"))
 	pflag.Parse()
 
 	// Bind ENV variables

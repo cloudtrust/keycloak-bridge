@@ -9,9 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cloudtrust/keycloak-bridge/internal/dto"
-
 	cs "github.com/cloudtrust/common-service"
+	"github.com/cloudtrust/common-service/configuration"
 	"github.com/cloudtrust/common-service/database"
 	"github.com/cloudtrust/common-service/log"
 	account_api "github.com/cloudtrust/keycloak-bridge/api/account"
@@ -20,6 +19,8 @@ import (
 	kc "github.com/cloudtrust/keycloak-client"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 )
 
 func TestUpdatePassword(t *testing.T) {
@@ -719,7 +720,7 @@ func TestGetConfiguration(t *testing.T) {
 	{
 		var falseBool = false
 		var trueBool = true
-		var config = dto.RealmConfiguration{
+		var config = configuration.RealmConfiguration{
 			APISelfAuthenticatorDeletionEnabled: &falseBool,
 			APISelfAccountDeletionEnabled:       &falseBool,
 			APISelfMailEditingEnabled:           &falseBool,
@@ -753,7 +754,7 @@ func TestGetConfiguration(t *testing.T) {
 		var successURL = "https://success.io"
 		var falseBool = false
 		var trueBool = true
-		var config = dto.RealmConfiguration{
+		var config = configuration.RealmConfiguration{
 			APISelfAuthenticatorDeletionEnabled: &falseBool,
 			APISelfAccountDeletionEnabled:       &falseBool,
 			APISelfMailEditingEnabled:           &falseBool,
@@ -771,7 +772,7 @@ func TestGetConfiguration(t *testing.T) {
 		ctx = context.WithValue(ctx, cs.CtContextUserID, currentUserID)
 
 		mockConfigurationDBModule.EXPECT().GetConfiguration(ctx, currentRealm).Return(config, nil).Times(1)
-		mockConfigurationDBModule.EXPECT().GetConfiguration(ctx, overrideRealm).Return(dto.RealmConfiguration{
+		mockConfigurationDBModule.EXPECT().GetConfiguration(ctx, overrideRealm).Return(configuration.RealmConfiguration{
 			RedirectSuccessfulRegistrationURL: &successURL,
 		}, nil).Times(1)
 
@@ -791,7 +792,7 @@ func TestGetConfiguration(t *testing.T) {
 		ctx = context.WithValue(ctx, cs.CtContextRealm, currentRealm)
 		ctx = context.WithValue(ctx, cs.CtContextUserID, currentUserID)
 
-		mockConfigurationDBModule.EXPECT().GetConfiguration(ctx, currentRealm).Return(dto.RealmConfiguration{}, fmt.Errorf("Unexpected error")).Times(1)
+		mockConfigurationDBModule.EXPECT().GetConfiguration(ctx, currentRealm).Return(configuration.RealmConfiguration{}, fmt.Errorf("Unexpected error")).Times(1)
 
 		_, err := component.GetConfiguration(ctx, "")
 

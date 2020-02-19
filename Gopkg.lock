@@ -18,10 +18,11 @@
   version = "2020.02.11"
 
 [[projects]]
-  digest = "1:a04a4e86d8b1fbb095a569998ba5adec39501d7872d79075a4aabaa791ad465c"
+  digest = "1:733a4527e6ba895d019309ca5265cd89a357d91b94993aa42539873b99a592ac"
   name = "github.com/cloudtrust/common-service"
   packages = [
     ".",
+    "configuration",
     "database",
     "database/sqltypes",
     "errors",
@@ -37,16 +38,16 @@
     "validation",
   ]
   pruneopts = "UT"
-  revision = "790d30f843ed1e0868693c39f2345a7840925075"
-  version = "v1.2.5"
+  revision = "99fca6e38484c8bc6f448d09baa11f7564007913"
+  version = "v2.0.0"
 
 [[projects]]
-  digest = "1:7eed9d5991890695d6366cafe35cb5c39d25078af08fb2724468074a40f57ac3"
+  digest = "1:d1a295cb165121470d2453c54d97ae4ec2c2d2eae70becef72db2a85b1f63018"
   name = "github.com/cloudtrust/keycloak-client"
   packages = ["."]
   pruneopts = "UT"
-  revision = "bed936333920662e7b25204300c6efff6916327c"
-  version = "v1.2.8"
+  revision = "8ef3ad24fa816dfd0591b11a03acb174dcf95207"
+  version = "v1.2.9"
 
 [[projects]]
   digest = "1:910c5b111ca13127693df80a59be2c952ad97313626116c0c9895e7b588f2a29"
@@ -312,12 +313,12 @@
   version = "v1.0.5"
 
 [[projects]]
-  digest = "1:83d0e0f3f46dc86daf27e4d7c834c8c492db787c53c09d94183de7478db92142"
+  digest = "1:11118bd196646c6515fea3d6c43f66162833c6ae4939bfb229b9956d91c6cf17"
   name = "github.com/spf13/viper"
   packages = ["."]
   pruneopts = "UT"
-  revision = "4525543ce4fe90f7970f5e2cdc300b8ffc8c0582"
-  version = "v1.6.2"
+  revision = "b5bf975e5823809fb22c7644d008757f78a4259e"
+  version = "v1.4.0"
 
 [[projects]]
   digest = "1:5e8f46b412421d2d6cceea845d28ac46f3f5a5f60a6e86f0ee75e24fd43a02a9"
@@ -326,14 +327,6 @@
   pruneopts = "UT"
   revision = "3ebf1ddaeb260c4b1ae502a01c7844fa8c1fa0e9"
   version = "v1.5.1"
-
-[[projects]]
-  digest = "1:f4b32291cad5efac2bfdba89ccde6aa04618b62ce06c1a571da2dc4f3f2677fb"
-  name = "github.com/subosito/gotenv"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "2ef7124db659d49edac6aa459693a15ae36c671a"
-  version = "v1.2.0"
 
 [[projects]]
   digest = "1:54bf58828a4074c2304fcc52f018eb19fc02d5853ebd5121817330792c776734"
@@ -495,14 +488,6 @@
   version = "v2.0.4"
 
 [[projects]]
-  digest = "1:ef4bd1cd2563d93d3f48352fc24d499a4a2b54c11932814173653ece7db13800"
-  name = "gopkg.in/ini.v1"
-  packages = ["."]
-  pruneopts = "UT"
-  revision = "32cf4f7e9c77f151e18b53067b55549b4d1d411d"
-  version = "v1.52.0"
-
-[[projects]]
   digest = "1:3c4aaca5a82adc021322f239e0cf3f46852bb0b18ae050d0feab2e9e4c527462"
   name = "gopkg.in/square/go-jose.v2"
   packages = [
@@ -527,6 +512,7 @@
   analyzer-version = 1
   input-imports = [
     "github.com/cloudtrust/common-service",
+    "github.com/cloudtrust/common-service/configuration",
     "github.com/cloudtrust/common-service/database",
     "github.com/cloudtrust/common-service/database/sqltypes",
     "github.com/cloudtrust/common-service/errors",
