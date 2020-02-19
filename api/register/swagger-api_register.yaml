@@ -51,18 +51,13 @@ paths:
         required: true
         schema:
           type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Configuration'
       responses:
         200:
           description: successful operation. Returns the configuration
           content:
             application/json:
               schema:
-                type: string
+                $ref: '#/components/schemas/Configuration'
 components:
   schemas:
     User:
