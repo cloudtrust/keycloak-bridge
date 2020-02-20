@@ -196,6 +196,9 @@ components:
           type: string
         email:
           type: string
+        emailVerified:
+          type: boolean
+          description: only returned by /account
         gender:
           type: string
           description: only returned by /account
@@ -205,6 +208,9 @@ components:
           type: string
         phoneNumber:
           type: string
+        phoneNumberVerified:
+          type: boolean
+          description: only returned by /account
         birthDate:
           type: string
           description: only returned by /account. format is DD.MM.YYYY

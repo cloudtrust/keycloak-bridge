@@ -1,6 +1,8 @@
 package account
 
 import (
+	"strconv"
+
 	"github.com/cloudtrust/common-service/validation"
 	msg "github.com/cloudtrust/keycloak-bridge/internal/messages"
 	kc "github.com/cloudtrust/keycloak-client"
@@ -10,10 +12,12 @@ import (
 type AccountRepresentation struct {
 	Username             *string `json:"username,omitempty"`
 	Email                *string `json:"email,omitempty"`
+	EmailVerified        *bool   `json:"emailVerified,omitempty"`
 	Gender               *string `json:"gender,omitempty"`
 	FirstName            *string `json:"firstName,omitempty"`
 	LastName             *string `json:"lastName,omitempty"`
 	PhoneNumber          *string `json:"phoneNumber,omitempty"`
+	PhoneNumberVerified  *bool   `json:"phoneNumberVerified,omitempty"`
 	BirthDate            *string `json:"birthDate,omitempty"`
 	BirthLocation        *string `json:"birthLocation,omitempty"`
 	IDDocumentType       *string `json:"idDocumentType,omitempty"`
@@ -73,6 +77,7 @@ func ConvertToAPIAccount(userKc kc.UserRepresentation) AccountRepresentation {
 
 	userRep.Username = userKc.Username
 	userRep.Email = userKc.Email
+	userRep.EmailVerified = userKc.EmailVerified
 	userRep.FirstName = userKc.FirstName
 	userRep.LastName = userKc.LastName
 
@@ -90,6 +95,11 @@ func ConvertToAPIAccount(userKc kc.UserRepresentation) AccountRepresentation {
 		}
 		if value, ok := m["locale"]; ok && len(value) > 0 {
 			userRep.Locale = &value[0]
+		}
+		if value, ok := m["phoneNumberVerified"]; ok && len(value) > 0 {
+			if verified, err := strconv.ParseBool(value[0]); err == nil {
+				userRep.PhoneNumberVerified = &verified
+			}
 		}
 	}
 	return userRep
