@@ -925,7 +925,6 @@ func (c *component) GetAuthorizations(ctx context.Context, realmName string, gro
 
 func (c *component) UpdateAuthorizations(ctx context.Context, realmName string, groupID string, auth api.AuthorizationsRepresentation) error {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
-	var currentRealm = ctx.Value(cs.CtContextRealm).(string)
 
 	group, err := c.keycloakClient.GetGroup(accessToken, realmName, groupID)
 	if err != nil {
@@ -949,7 +948,7 @@ func (c *component) UpdateAuthorizations(ctx context.Context, realmName string, 
 			}
 
 			// * is allowed as targetRealm only for master
-			if currentRealm == "master" {
+			if realmName == "master" {
 				allowedTargetRealmsAndGroupNames["*"] = make(map[string]struct{})
 				allowedTargetRealmsAndGroupNames["*"]["*"] = struct{}{}
 			}
