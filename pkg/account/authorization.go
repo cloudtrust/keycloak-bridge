@@ -146,7 +146,7 @@ func (c *authorizationComponentMW) UpdateAccount(ctx context.Context, account ap
 			"Action":       action,
 			"currentRealm": currentRealm,
 		})
-		c.logger.Debug(ctx, "ForbiddenError", "Mail edition disabled", "infos", string(infos))
+		c.logger.Debug(ctx, "ForbiddenError", "Account edition disabled", "infos", string(infos))
 		return security.ForbiddenError{}
 	}
 

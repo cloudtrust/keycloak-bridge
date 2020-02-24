@@ -1158,13 +1158,15 @@ components:
           type: boolean
         api_self_password_change_enabled:
           type: boolean
-        api_self_mail_editing_enabled:
+        api_self_account_editing_enabled:
           type: boolean
         api_self_account_deletion_enabled:
           type: boolean
         show_authenticators_tab:
           type: boolean
         show_password_tab:
+          type: boolean
+        show_profile_tab:
           type: boolean
         show_mail_editing:
           type: boolean
