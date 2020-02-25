@@ -116,7 +116,7 @@ func (c *component) UpdateUser(ctx context.Context, userID string, user api.User
 
 	accessToken, err := c.tokenProvider.ProvideToken(ctx)
 	if err != nil {
-		c.logger.Warn(ctx, "msg", "UpdateUser: can't accessToken for technical user", "err", err.Error())
+		c.logger.Warn(ctx, "msg", "UpdateUser: can't get accessToken for technical user", "err", err.Error())
 		return errorhandler.CreateInternalServerError("keycloak")
 	}
 

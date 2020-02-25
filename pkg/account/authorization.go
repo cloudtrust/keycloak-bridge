@@ -141,7 +141,7 @@ func (c *authorizationComponentMW) UpdateAccount(ctx context.Context, account ap
 		return err
 	}
 
-	if !isEnabled(config.APISelfMailEditingEnabled) {
+	if !isEnabled(config.APISelfAccountEditingEnabled) {
 		infos, _ := json.Marshal(map[string]string{
 			"Action":       action,
 			"currentRealm": currentRealm,
@@ -182,6 +182,16 @@ func (c *authorizationComponentMW) DeleteAccount(ctx context.Context) error {
 func (c *authorizationComponentMW) GetConfiguration(ctx context.Context, realmIDOverride string) (api.Configuration, error) {
 	//No restriction for this call
 	return c.next.GetConfiguration(ctx, realmIDOverride)
+}
+
+func (c *authorizationComponentMW) SendVerifyEmail(ctx context.Context) error {
+	// No restriction for this call
+	return c.next.SendVerifyEmail(ctx)
+}
+
+func (c *authorizationComponentMW) SendVerifyPhoneNumber(ctx context.Context) error {
+	// No restriction for this call
+	return c.next.SendVerifyPhoneNumber(ctx)
 }
 
 func isEnabled(booleanPtr *bool) bool {

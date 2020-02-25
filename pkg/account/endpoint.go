@@ -23,6 +23,8 @@ type Endpoints struct {
 	UpdateAccount             endpoint.Endpoint
 	DeleteAccount             endpoint.Endpoint
 	GetConfiguration          endpoint.Endpoint
+	SendVerifyEmail           endpoint.Endpoint
+	SendVerifyPhoneNumber     endpoint.Endpoint
 }
 
 // UpdatePasswordBody is the definition of the expected body content of UpdatePassword method
@@ -32,22 +34,8 @@ type UpdatePasswordBody struct {
 	ConfirmPassword string `json:"confirmPassword,omitempty"`
 }
 
-// AccountComponent describes methods of the Account API
-type AccountComponent interface {
-	UpdatePassword(ctx context.Context, currentPassword, newPassword, confirmPassword string) error
-	GetCredentials(ctx context.Context) ([]api.CredentialRepresentation, error)
-	GetCredentialRegistrators(ctx context.Context) ([]string, error)
-	UpdateLabelCredential(ctx context.Context, credentialID string, label string) error
-	DeleteCredential(ctx context.Context, credentialID string) error
-	MoveCredential(ctx context.Context, credentialID string, previousCredentialID string) error
-	GetAccount(ctx context.Context) (api.AccountRepresentation, error)
-	UpdateAccount(ctx context.Context, account api.AccountRepresentation) error
-	DeleteAccount(ctx context.Context) error
-	GetConfiguration(ctx context.Context, realmIDOverride string) (api.Configuration, error)
-}
-
 // MakeUpdatePasswordEndpoint makes the UpdatePassword endpoint to update connected user's own password.
-func MakeUpdatePasswordEndpoint(component AccountComponent) cs.Endpoint {
+func MakeUpdatePasswordEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 		var body api.UpdatePasswordBody
@@ -66,21 +54,21 @@ func MakeUpdatePasswordEndpoint(component AccountComponent) cs.Endpoint {
 }
 
 // MakeGetCredentialsEndpoint makes the GetCredentials endpoint to list credentials of the current user.
-func MakeGetCredentialsEndpoint(component AccountComponent) cs.Endpoint {
+func MakeGetCredentialsEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		return component.GetCredentials(ctx)
 	}
 }
 
 // MakeGetCredentialRegistratorsEndpoint make the GetCredentialRegistrators endpoint to retrieve the list of possible kind of credentials.
-func MakeGetCredentialRegistratorsEndpoint(component AccountComponent) cs.Endpoint {
+func MakeGetCredentialRegistratorsEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		return component.GetCredentialRegistrators(ctx)
 	}
 }
 
 // MakeUpdateLabelCredentialEndpoint make the UpdateLabelCredential endpoint to set a new label for a credential.
-func MakeUpdateLabelCredentialEndpoint(component AccountComponent) cs.Endpoint {
+func MakeUpdateLabelCredentialEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
@@ -104,7 +92,7 @@ func MakeUpdateLabelCredentialEndpoint(component AccountComponent) cs.Endpoint {
 }
 
 // MakeDeleteCredentialEndpoint make the DeleteCredential endpoint to delete a credential of the current user.
-func MakeDeleteCredentialEndpoint(component AccountComponent) cs.Endpoint {
+func MakeDeleteCredentialEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
@@ -113,7 +101,7 @@ func MakeDeleteCredentialEndpoint(component AccountComponent) cs.Endpoint {
 }
 
 // MakeMoveCredentialEndpoint make the MoveCredential endpoint to change the priority of a credential of the current user.
-func MakeMoveCredentialEndpoint(component AccountComponent) cs.Endpoint {
+func MakeMoveCredentialEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
@@ -122,14 +110,14 @@ func MakeMoveCredentialEndpoint(component AccountComponent) cs.Endpoint {
 }
 
 // MakeGetAccountEndpoint makes the GetAccount endpoint to get connected user's info.
-func MakeGetAccountEndpoint(component AccountComponent) cs.Endpoint {
+func MakeGetAccountEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		return component.GetAccount(ctx)
 	}
 }
 
 // MakeUpdateAccountEndpoint makes the UpdateAccount endpoint to update connected user's own info.
-func MakeUpdateAccountEndpoint(component AccountComponent) cs.Endpoint {
+func MakeUpdateAccountEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 		var body api.AccountRepresentation
@@ -148,17 +136,31 @@ func MakeUpdateAccountEndpoint(component AccountComponent) cs.Endpoint {
 }
 
 // MakeDeleteAccountEndpoint makes the DeleteAccount endpoint to delete connected user.
-func MakeDeleteAccountEndpoint(component AccountComponent) cs.Endpoint {
+func MakeDeleteAccountEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		return nil, component.DeleteAccount(ctx)
 	}
 }
 
 // MakeGetConfigurationEndpoint makes the GetConfiguration endpoint to get the config for selfservice application.
-func MakeGetConfigurationEndpoint(component AccountComponent) cs.Endpoint {
+func MakeGetConfigurationEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
 		return component.GetConfiguration(ctx, m["realm_id"])
+	}
+}
+
+// MakeSendVerifyEmailEndpoint makes the SendVerifyEmail endpoint
+func MakeSendVerifyEmailEndpoint(component Component) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		return nil, component.SendVerifyEmail(ctx)
+	}
+}
+
+// MakeSendVerifyPhoneNumberEndpoint makes the SendVerifyPhoneNumber endpoint
+func MakeSendVerifyPhoneNumberEndpoint(component Component) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		return nil, component.SendVerifyPhoneNumber(ctx)
 	}
 }

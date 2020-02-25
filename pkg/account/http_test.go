@@ -20,7 +20,7 @@ import (
 func TestHTTPAccountHandler(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
-	var mockAccountComponent = mock.NewAccountComponent(mockCtrl)
+	var mockAccountComponent = mock.NewComponent(mockCtrl)
 
 	r := mux.NewRouter()
 	r.Handle("/path/to/{realm}/password", MakeAccountHandler(keycloakb.ToGoKitEndpoint(MakeUpdatePasswordEndpoint(mockAccountComponent)), log.NewNopLogger()))
