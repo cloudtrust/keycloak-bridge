@@ -3,6 +3,7 @@ package management
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -1058,71 +1059,73 @@ func TestCreateClientRoleEndpoint(t *testing.T) {
 	}
 }
 
-func TestGetRealmCustomConfigurationEndpoint(t *testing.T) {
+func TestConfigurationEndpoints(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 
 	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
 
-	var e = MakeGetRealmCustomConfigurationEndpoint(mockManagementComponent)
+	var realmName = "master"
+	var clientID = "123456"
+	var groupName = "my-group"
+	var ctx = context.Background()
 
-	// No error
-	{
-		var realmName = "master"
-		var clientID = "123456"
-		var ctx = context.Background()
-		var req = make(map[string]string)
-		req["realm"] = realmName
-		req["clientID"] = clientID
+	t.Run("MakeGetRealmCustomConfigurationEndpoint - No error", func(t *testing.T) {
+		var req = map[string]string{"realm": realmName, "clientID": clientID}
+		var e = MakeGetRealmCustomConfigurationEndpoint(mockManagementComponent)
 
 		mockManagementComponent.EXPECT().GetRealmCustomConfiguration(ctx, realmName).Return(api.RealmCustomConfiguration{}, nil).Times(1)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.NotNil(t, res)
-	}
-}
+	})
 
-func TestUpdateRealmCustomConfigurationEndpoint(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
-	defer mockCtrl.Finish()
-
-	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
-
-	var e = MakeUpdateRealmCustomConfigurationEndpoint(mockManagementComponent)
-
-	// No error
-	{
-		var realmName = "master"
-		var clientID = "123456"
+	t.Run("MakeUpdateRealmCustomConfigurationEndpoint - No error", func(t *testing.T) {
 		var configJSON = "{\"DefaultClientId\":\"clientId\", \"DefaultRedirectUri\":\"http://cloudtrust.io\"}"
-		var ctx = context.Background()
-		var req = make(map[string]string)
-		req["realm"] = realmName
-		req["clientID"] = clientID
-		req["body"] = configJSON
+		var req = map[string]string{"realm": realmName, "clientID": clientID, "body": configJSON}
+		var e = MakeUpdateRealmCustomConfigurationEndpoint(mockManagementComponent)
 
 		mockManagementComponent.EXPECT().UpdateRealmCustomConfiguration(ctx, realmName, gomock.Any()).Return(nil).Times(1)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Nil(t, res)
-	}
+	})
 
-	// JSON error
-	{
-		var realmName = "master"
-		var clientID = "123456"
+	t.Run("MakeUpdateRealmCustomConfigurationEndpoint - JSON error", func(t *testing.T) {
 		var configJSON = "{\"DefaultClientId\":\"clientId\", \"DefaultRedirectUri\":\"http://cloudtrust.io\""
-		var ctx = context.Background()
-		var req = make(map[string]string)
-		req["realm"] = realmName
-		req["clientID"] = clientID
-		req["body"] = configJSON
+		var req = map[string]string{"realm": realmName, "clientID": clientID, "body": configJSON}
+		var e = MakeUpdateRealmCustomConfigurationEndpoint(mockManagementComponent)
 
 		mockManagementComponent.EXPECT().UpdateRealmCustomConfiguration(ctx, realmName, gomock.Any()).Return(nil).Times(0)
 		var res, err = e(ctx, req)
 		assert.NotNil(t, err)
 		assert.Nil(t, res)
-	}
+	})
+
+	t.Run("MakeGetRealmBackOfficeConfigurationEndpoint", func(t *testing.T) {
+		var req = map[string]string{"realm": realmName, "groupName": groupName}
+		var expectedConf api.BackOfficeConfiguration
+		var expectedErr = errors.New("any error")
+		var e = MakeGetRealmBackOfficeConfigurationEndpoint(mockManagementComponent)
+
+		mockManagementComponent.EXPECT().GetRealmBackOfficeConfiguration(ctx, realmName, groupName).Return(expectedConf, expectedErr).Times(1)
+		var res, err = e(ctx, req)
+		assert.Equal(t, expectedErr, err)
+		assert.Equal(t, expectedConf, res)
+	})
+
+	t.Run("MakeUpdateRealmBackOfficeConfigurationEndpoint", func(t *testing.T) {
+		var config api.BackOfficeConfiguration
+		var configJSON, _ = json.Marshal(config)
+		var req = map[string]string{"realm": realmName, "groupName": groupName, "body": string(configJSON)}
+		var expectedErr = errors.New("update error")
+		var e = MakeUpdateRealmBackOfficeConfigurationEndpoint(mockManagementComponent)
+
+		mockManagementComponent.EXPECT().UpdateRealmBackOfficeConfiguration(ctx, realmName, groupName, config).Return(expectedErr).Times(1)
+		var res, err = e(ctx, req)
+		assert.Equal(t, expectedErr, err)
+		assert.Nil(t, res)
+	})
 }
 
 func TestCreateShadowUserEndpoint(t *testing.T) {

@@ -55,8 +55,11 @@ type Endpoints struct {
 	UpdateAuthorizations endpoint.Endpoint
 	GetActions           endpoint.Endpoint
 
-	GetRealmCustomConfiguration    endpoint.Endpoint
-	UpdateRealmCustomConfiguration endpoint.Endpoint
+	GetRealmCustomConfiguration         endpoint.Endpoint
+	UpdateRealmCustomConfiguration      endpoint.Endpoint
+	GetRealmBackOfficeConfiguration     endpoint.Endpoint
+	UpdateRealmBackOfficeConfiguration  endpoint.Endpoint
+	GetUserRealmBackOfficeConfiguration endpoint.Endpoint
 
 	CreateShadowUser endpoint.Endpoint
 }
@@ -102,6 +105,9 @@ type ManagementComponent interface {
 
 	GetRealmCustomConfiguration(ctx context.Context, realmID string) (api.RealmCustomConfiguration, error)
 	UpdateRealmCustomConfiguration(ctx context.Context, realmID string, customConfig api.RealmCustomConfiguration) error
+	GetRealmBackOfficeConfiguration(ctx context.Context, realmName string, groupID string) (api.BackOfficeConfiguration, error)
+	UpdateRealmBackOfficeConfiguration(ctx context.Context, realmName string, groupID string, boConf api.BackOfficeConfiguration) error
+	GetUserRealmBackOfficeConfiguration(ctx context.Context, realmName string) (api.BackOfficeConfiguration, error)
 
 	CreateShadowUser(ctx context.Context, realmName string, userID string, provider string, fedID api.FederatedIdentityRepresentation) error
 }
@@ -604,6 +610,45 @@ func MakeUpdateRealmCustomConfigurationEndpoint(managementComponent ManagementCo
 		}
 
 		return nil, managementComponent.UpdateRealmCustomConfiguration(ctx, m["realm"], customConfig)
+	}
+}
+
+// MakeGetRealmBackOfficeConfigurationEndpoint creates an endpoint for GetRealmBackOfficeConfiguration
+func MakeGetRealmBackOfficeConfigurationEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+		var groupName = m["groupName"]
+		if groupName == "" {
+			return nil, errorhandler.CreateMissingParameterError(msg.GroupName)
+		}
+
+		return managementComponent.GetRealmBackOfficeConfiguration(ctx, m["realm"], groupName)
+	}
+}
+
+// MakeUpdateRealmBackOfficeConfigurationEndpoint creates an endpoint for UpdateRealmBackOfficeConfiguration
+func MakeUpdateRealmBackOfficeConfigurationEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+		var boConf, err = api.NewBackOfficeConfigurationFromJSON(m["body"])
+		if err != nil {
+			return nil, err
+		}
+		var groupName = m["groupName"]
+		if groupName == "" {
+			return nil, errorhandler.CreateMissingParameterError(msg.GroupName)
+		}
+
+		return nil, managementComponent.UpdateRealmBackOfficeConfiguration(ctx, m["realm"], groupName, boConf)
+	}
+}
+
+// MakeGetUserRealmBackOfficeConfigurationEndpoint creates an endpoint for GetUserRealmBackOfficeConfiguration
+func MakeGetUserRealmBackOfficeConfigurationEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+
+		return managementComponent.GetUserRealmBackOfficeConfiguration(ctx, m["realm"])
 	}
 }
 

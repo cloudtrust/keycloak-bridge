@@ -8,11 +8,11 @@ import (
 	"strings"
 
 	cs "github.com/cloudtrust/common-service"
-	"github.com/cloudtrust/common-service/configuration"
 	"github.com/cloudtrust/common-service/database"
 	errorhandler "github.com/cloudtrust/common-service/errors"
 	api "github.com/cloudtrust/keycloak-bridge/api/account"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
+	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	internal "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	kc "github.com/cloudtrust/keycloak-client"
 )
@@ -54,17 +54,6 @@ type Component interface {
 	SendVerifyPhoneNumber(ctx context.Context) error
 }
 
-// ConfigurationDBModule is the interface of the configuration module.
-type ConfigurationDBModule interface {
-	NewTransaction(context context.Context) (database.Transaction, error)
-	StoreOrUpdate(context.Context, string, configuration.RealmConfiguration) error
-	GetConfiguration(context.Context, string) (configuration.RealmConfiguration, error)
-	GetAuthorizations(context context.Context, realmID string, groupID string) ([]configuration.Authorization, error)
-	CreateAuthorization(context context.Context, authz configuration.Authorization) error
-	DeleteAuthorizations(context context.Context, realmID string, groupID string) error
-	DeleteAllAuthorizationsWithGroup(context context.Context, realmID, groupName string) error
-}
-
 // UsersDBModule is the minimum required interface to access the users database
 type UsersDBModule interface {
 	StoreOrUpdateUser(ctx context.Context, realm string, user dto.DBUser) error
@@ -75,13 +64,13 @@ type UsersDBModule interface {
 type component struct {
 	keycloakAccountClient KeycloakAccountClient
 	eventDBModule         database.EventsDBModule
-	configDBModule        ConfigurationDBModule
+	configDBModule        keycloakb.ConfigurationDBModule
 	usersDBModule         UsersDBModule
 	logger                internal.Logger
 }
 
 // NewComponent returns the self-service component.
-func NewComponent(keycloakAccountClient KeycloakAccountClient, eventDBModule database.EventsDBModule, configDBModule ConfigurationDBModule, usersDBModule UsersDBModule, logger internal.Logger) Component {
+func NewComponent(keycloakAccountClient KeycloakAccountClient, eventDBModule database.EventsDBModule, configDBModule keycloakb.ConfigurationDBModule, usersDBModule UsersDBModule, logger internal.Logger) Component {
 	return &component{
 		keycloakAccountClient: keycloakAccountClient,
 		eventDBModule:         eventDBModule,

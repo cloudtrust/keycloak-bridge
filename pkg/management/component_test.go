@@ -16,6 +16,7 @@ import (
 	errorhandler "github.com/cloudtrust/common-service/errors"
 	"github.com/cloudtrust/common-service/log"
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
+	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 
 	"github.com/cloudtrust/keycloak-bridge/pkg/management/mock"
 	kc "github.com/cloudtrust/keycloak-client"
@@ -3363,7 +3364,7 @@ func TestUpdateRealmCustomConfiguration(t *testing.T) {
 	{
 		mockKeycloakClient.EXPECT().GetRealm(accessToken, realmID).Return(kcRealmRep, nil).Times(1)
 		mockKeycloakClient.EXPECT().GetClients(accessToken, realmID).Return(clients, nil).Times(1)
-		mockConfigurationDBModule.EXPECT().StoreOrUpdate(ctx, realmID, gomock.Any()).Return(nil).Times(1)
+		mockConfigurationDBModule.EXPECT().StoreOrUpdateConfiguration(ctx, realmID, gomock.Any()).Return(nil).Times(1)
 		err := managementComponent.UpdateRealmCustomConfiguration(ctx, realmID, configInit)
 
 		assert.Nil(t, err)
@@ -3442,6 +3443,112 @@ func TestUpdateRealmCustomConfiguration(t *testing.T) {
 
 		assert.NotNil(t, err)
 	}
+}
+
+func createBackOfficeConfiguration(JSON string) dto.BackOfficeConfiguration {
+	var conf dto.BackOfficeConfiguration
+	json.Unmarshal([]byte(JSON), &conf)
+	return conf
+}
+
+func TestRealmBackOfficeConfiguration(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
+	var mockEventDBModule = mock.NewEventDBModule(mockCtrl)
+	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
+	var mockLogger = log.NewNopLogger()
+	var allowedTrustIDGroups = []string{"grp1", "grp2"}
+
+	var component = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
+
+	var realmID = "master_id"
+	var groupName = "the.group"
+	var config = api.BackOfficeConfiguration{}
+	var ctx = context.WithValue(context.TODO(), cs.CtContextGroups, []string{"grp1", "grp2"})
+	var largeConf = `
+		{
+			"realm1": {
+				"a": [ "grp1" ]
+			},
+			"realm2": {
+				"a": [ "grp1" ],
+				"b": [ "grp2" ],
+				"c": [ "grp1", "grp2" ]
+			}
+		}
+	`
+	var smallConf = `
+		{
+			"realm2": {
+				"a": [ "grp1" ],
+				"c": [ "grp2" ]
+			}
+		}
+	`
+
+	t.Run("UpdateRealmBackOfficeConfiguration - db.GetBackOfficeConfiguration fails", func(t *testing.T) {
+		var expectedError = errors.New("db error")
+		mockConfigurationDBModule.EXPECT().GetBackOfficeConfiguration(ctx, realmID, []string{groupName}).Return(nil, expectedError)
+		var err = component.UpdateRealmBackOfficeConfiguration(ctx, realmID, groupName, config)
+		assert.Equal(t, expectedError, err)
+	})
+
+	t.Run("UpdateRealmBackOfficeConfiguration - remove items", func(t *testing.T) {
+		var dbConf = createBackOfficeConfiguration(largeConf)
+		var requestConf, _ = api.NewBackOfficeConfigurationFromJSON(smallConf)
+		mockConfigurationDBModule.EXPECT().GetBackOfficeConfiguration(ctx, realmID, []string{groupName}).Return(dbConf, nil)
+		mockConfigurationDBModule.EXPECT().DeleteBackOfficeConfiguration(ctx, realmID, groupName, "realm1", nil, nil).Return(nil)
+		mockConfigurationDBModule.EXPECT().DeleteBackOfficeConfiguration(ctx, realmID, groupName, "realm2", gomock.Not(nil), nil).Return(nil)
+		mockConfigurationDBModule.EXPECT().DeleteBackOfficeConfiguration(ctx, realmID, groupName, "realm2", gomock.Not(nil), gomock.Not(nil)).Return(nil)
+		var err = component.UpdateRealmBackOfficeConfiguration(ctx, realmID, groupName, requestConf)
+		assert.Nil(t, err)
+	})
+
+	t.Run("UpdateRealmBackOfficeConfiguration - add items", func(t *testing.T) {
+		var dbConf = createBackOfficeConfiguration(smallConf)
+		var requestConf, _ = api.NewBackOfficeConfigurationFromJSON(largeConf)
+		mockConfigurationDBModule.EXPECT().GetBackOfficeConfiguration(ctx, realmID, []string{groupName}).Return(dbConf, nil)
+		mockConfigurationDBModule.EXPECT().InsertBackOfficeConfiguration(ctx, realmID, groupName, "realm1", "a", []string{"grp1"}).Return(nil)
+		mockConfigurationDBModule.EXPECT().InsertBackOfficeConfiguration(ctx, realmID, groupName, "realm2", "b", []string{"grp2"}).Return(nil)
+		mockConfigurationDBModule.EXPECT().InsertBackOfficeConfiguration(ctx, realmID, groupName, "realm2", "c", []string{"grp1"}).Return(nil)
+		var err = component.UpdateRealmBackOfficeConfiguration(ctx, realmID, groupName, requestConf)
+		assert.Nil(t, err)
+	})
+
+	t.Run("GetRealmBackOfficeConfiguration - error", func(t *testing.T) {
+		var dbConf = createBackOfficeConfiguration(smallConf)
+		var expectedError = errors.New("db error")
+		mockConfigurationDBModule.EXPECT().GetBackOfficeConfiguration(ctx, realmID, []string{groupName}).Return(dbConf, expectedError)
+		var res, err = component.GetRealmBackOfficeConfiguration(ctx, realmID, groupName)
+		assert.Equal(t, expectedError, err)
+		assert.Nil(t, res)
+	})
+
+	t.Run("GetRealmBackOfficeConfiguration - success", func(t *testing.T) {
+		var dbConf = createBackOfficeConfiguration(smallConf)
+		mockConfigurationDBModule.EXPECT().GetBackOfficeConfiguration(ctx, realmID, []string{groupName}).Return(dbConf, nil)
+		var res, err = component.GetRealmBackOfficeConfiguration(ctx, realmID, groupName)
+		assert.Nil(t, err)
+		assert.Equal(t, api.BackOfficeConfiguration(dbConf), res)
+	})
+
+	t.Run("GetUserRealmBackOfficeConfiguration - db error", func(t *testing.T) {
+		var dbError = errors.New("db error")
+		var groups = ctx.Value(cs.CtContextGroups).([]string)
+		mockConfigurationDBModule.EXPECT().GetBackOfficeConfiguration(ctx, realmID, groups).Return(nil, dbError)
+		var _, err = component.GetUserRealmBackOfficeConfiguration(ctx, realmID)
+		assert.Equal(t, dbError, err)
+	})
+
+	t.Run("GetUserRealmBackOfficeConfiguration - success", func(t *testing.T) {
+		var dbConf = createBackOfficeConfiguration(smallConf)
+		var groups = ctx.Value(cs.CtContextGroups).([]string)
+		mockConfigurationDBModule.EXPECT().GetBackOfficeConfiguration(ctx, realmID, groups).Return(dbConf, nil)
+		var res, err = component.GetUserRealmBackOfficeConfiguration(ctx, realmID)
+		assert.Nil(t, err)
+		assert.Equal(t, api.BackOfficeConfiguration(dbConf), res)
+	})
 }
 
 func TestCreateShadowUser(t *testing.T) {

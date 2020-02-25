@@ -11,6 +11,7 @@ import (
 
 	"github.com/cloudtrust/common-service/log"
 	api "github.com/cloudtrust/keycloak-bridge/api/account"
+	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 )
 
 // Creates constants for API method names
@@ -30,12 +31,12 @@ const (
 // Tracking middleware at component level.
 type authorizationComponentMW struct {
 	logger         log.Logger
-	configDBModule ConfigurationDBModule
+	configDBModule keycloakb.ConfigurationDBModule
 	next           Component
 }
 
 // MakeAuthorizationAccountComponentMW checks authorization and return an error if the action is not allowed.
-func MakeAuthorizationAccountComponentMW(logger log.Logger, configDBModule ConfigurationDBModule) func(Component) Component {
+func MakeAuthorizationAccountComponentMW(logger log.Logger, configDBModule keycloakb.ConfigurationDBModule) func(Component) Component {
 	return func(next Component) Component {
 		return &authorizationComponentMW{
 			logger:         logger,
