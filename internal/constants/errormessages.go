@@ -1,4 +1,4 @@
-package keycloakb
+package constants
 
 // Normalized error messages
 const (

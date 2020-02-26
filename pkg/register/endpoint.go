@@ -6,7 +6,7 @@ import (
 	cs "github.com/cloudtrust/common-service"
 	commonerrors "github.com/cloudtrust/common-service/errors"
 	apiregister "github.com/cloudtrust/keycloak-bridge/api/register"
-	msg "github.com/cloudtrust/keycloak-bridge/internal/messages"
+	msg "github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/go-kit/kit/endpoint"
 )
 

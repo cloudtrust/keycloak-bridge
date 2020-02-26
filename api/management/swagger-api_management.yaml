@@ -1124,6 +1124,7 @@ components:
           type: string
         birthDate:
           type: string
+          description: format is DD.MM.YYYY
         createdTimestamp:
           type: integer
           format: int64

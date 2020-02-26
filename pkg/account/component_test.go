@@ -20,6 +20,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 )
 
@@ -152,9 +153,7 @@ func TestUpdateAccount(t *testing.T) {
 	var phoneNumber = "+41789456"
 	var phoneNumberVerified = true
 	var label = "Label"
-	var previousGender = "F"
 	var gender = "M"
-	var previousBirthDate = "02/02/1988"
 	var birthDate = "01/01/1988"
 	var birthLocation = "Antananarivo"
 	var locale = "de"
@@ -163,13 +162,13 @@ func TestUpdateAccount(t *testing.T) {
 	var idDocExpiration = "01.01.2050"
 	var createdTimestamp = time.Now().UTC().Unix()
 
-	var attributes = make(map[string][]string)
-	attributes["phoneNumber"] = []string{phoneNumber}
-	attributes["label"] = []string{label}
-	attributes["gender"] = []string{previousGender}
-	attributes["birthDate"] = []string{previousBirthDate}
-	attributes["phoneNumberVerified"] = []string{strconv.FormatBool(phoneNumberVerified)}
-	attributes["locale"] = []string{locale}
+	var attributes = make(kc.Attributes)
+	attributes.SetString(constants.AttrbPhoneNumber, phoneNumber)
+	attributes.SetString(constants.AttrbLabel, label)
+	attributes.SetString(constants.AttrbGender, gender)
+	attributes.SetString(constants.AttrbBirthDate, birthDate)
+	attributes.SetBool(constants.AttrbPhoneNumberVerified, phoneNumberVerified)
+	attributes.SetString(constants.AttrbLocale, locale)
 
 	var kcUserRep = kc.UserRepresentation{
 		Id:               &id,
@@ -268,7 +267,7 @@ func TestUpdateAccount(t *testing.T) {
 	})
 
 	var oldNumber = "+41789467"
-	var oldAttributes = make(map[string][]string)
+	var oldAttributes = make(kc.Attributes)
 	oldAttributes["phoneNumber"] = []string{oldNumber}
 	oldAttributes["phoneNumberVerified"] = []string{strconv.FormatBool(phoneNumberVerified)}
 	var oldkcUserRep2 = kc.UserRepresentation{
@@ -391,7 +390,7 @@ func TestGetUser(t *testing.T) {
 	var createdTimestamp = time.Now().UTC().Unix()
 	var locale = "it"
 
-	var attributes = make(map[string][]string)
+	var attributes = make(kc.Attributes)
 	attributes["phoneNumber"] = []string{phoneNumber}
 	attributes["label"] = []string{label}
 	attributes["gender"] = []string{gender}

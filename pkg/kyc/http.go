@@ -6,16 +6,16 @@ import (
 
 	commonhttp "github.com/cloudtrust/common-service/http"
 	"github.com/cloudtrust/common-service/log"
-	apimgmt "github.com/cloudtrust/keycloak-bridge/api/management"
+	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/go-kit/kit/endpoint"
 	http_transport "github.com/go-kit/kit/transport/http"
 )
 
 // Regular expressions
 const (
-	RegExpUserName = apimgmt.RegExpUsername
-	RegExpUserID   = apimgmt.RegExpID
-	RegExpGroupIds = apimgmt.RegExpGroupIds
+	RegExpUserName = constants.RegExpUsername
+	RegExpUserID   = constants.RegExpID
+	RegExpGroupIds = constants.RegExpGroupIds
 )
 
 // MakeKYCHandler make an HTTP handler for the KYC endpoint.

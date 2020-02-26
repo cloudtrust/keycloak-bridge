@@ -7,7 +7,7 @@ import (
 	errorhandler "github.com/cloudtrust/common-service/errors"
 	api "github.com/cloudtrust/keycloak-bridge/api/events"
 	app "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
-	msg "github.com/cloudtrust/keycloak-bridge/internal/messages"
+	msg "github.com/cloudtrust/keycloak-bridge/internal/constants"
 )
 
 // Component is the interface of the events component.

@@ -18,6 +18,7 @@
   version = "2020.02.11"
 
 [[projects]]
+  branch = "master"
   digest = "1:f00a04c3f9923917a7b65d7f2e785a653f88cd9fca0e164abac4f369a4533a62"
   name = "github.com/cloudtrust/common-service"
   packages = [
@@ -39,15 +40,14 @@
   ]
   pruneopts = "UT"
   revision = "6f43146697b189b011f98619ca2674c29d769ea0"
-  version = "v2.0.1"
 
 [[projects]]
-  digest = "1:507116b0244b41be01dcbf553c56ab9045f2df92ff48bde722d155811ca0ab37"
+  branch = "ct-2314"
+  digest = "1:719b32ee3fea2854b9cb5d64647644c896321935acb0362c41864ca8bc11f1a0"
   name = "github.com/cloudtrust/keycloak-client"
   packages = ["."]
   pruneopts = "UT"
-  revision = "ce6d81a660e6e317d454ecfe2bb80057f8501531"
-  version = "v1.2.10"
+  revision = "07d73c9ac42b8cb8b538b78387287714c4a4d700"
 
 [[projects]]
   digest = "1:910c5b111ca13127693df80a59be2c952ad97313626116c0c9895e7b588f2a29"
@@ -140,7 +140,7 @@
   version = "v1.3.4"
 
 [[projects]]
-  digest = "1:e02b687ade0c19c038ecce3ea326d756519adc4bba1203a9e76d620b12354892"
+  digest = "1:debcbc62c53851dab1fc881438a65449dd5ffa12f64f059fd6e32b938799513d"
   name = "github.com/google/flatbuffers"
   packages = ["go"]
   pruneopts = "UT"
@@ -175,7 +175,7 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:9b73396bc7a21f88702fe3d314ca7860843c08f9c787bb47f008075f840df23d"
+  digest = "1:c266355b17e65dc0128f4a9df906567b28e135b774e0b395aab3d748af0871e2"
   name = "github.com/influxdata/influxdb"
   packages = [
     "client/v2",
@@ -313,12 +313,12 @@
   version = "v1.0.5"
 
 [[projects]]
-  digest = "1:11118bd196646c6515fea3d6c43f66162833c6ae4939bfb229b9956d91c6cf17"
+  digest = "1:83d0e0f3f46dc86daf27e4d7c834c8c492db787c53c09d94183de7478db92142"
   name = "github.com/spf13/viper"
   packages = ["."]
   pruneopts = "UT"
-  revision = "b5bf975e5823809fb22c7644d008757f78a4259e"
-  version = "v1.4.0"
+  revision = "4525543ce4fe90f7970f5e2cdc300b8ffc8c0582"
+  version = "v1.6.2"
 
 [[projects]]
   digest = "1:5e8f46b412421d2d6cceea845d28ac46f3f5a5f60a6e86f0ee75e24fd43a02a9"
@@ -327,6 +327,14 @@
   pruneopts = "UT"
   revision = "3ebf1ddaeb260c4b1ae502a01c7844fa8c1fa0e9"
   version = "v1.5.1"
+
+[[projects]]
+  digest = "1:f4b32291cad5efac2bfdba89ccde6aa04618b62ce06c1a571da2dc4f3f2677fb"
+  name = "github.com/subosito/gotenv"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "2ef7124db659d49edac6aa459693a15ae36c671a"
+  version = "v1.2.0"
 
 [[projects]]
   digest = "1:54bf58828a4074c2304fcc52f018eb19fc02d5853ebd5121817330792c776734"
@@ -486,6 +494,14 @@
   pruneopts = "UT"
   revision = "34f7caeaf69f4668a88f8294ec18665fd2756b84"
   version = "v2.0.4"
+
+[[projects]]
+  digest = "1:ef4bd1cd2563d93d3f48352fc24d499a4a2b54c11932814173653ece7db13800"
+  name = "gopkg.in/ini.v1"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "32cf4f7e9c77f151e18b53067b55549b4d1d411d"
+  version = "v1.52.0"
 
 [[projects]]
   digest = "1:3c4aaca5a82adc021322f239e0cf3f46852bb0b18ae050d0feab2e9e4c527462"

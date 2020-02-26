@@ -16,6 +16,7 @@ import (
 	errorhandler "github.com/cloudtrust/common-service/errors"
 	"github.com/cloudtrust/common-service/log"
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
+	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 
 	"github.com/cloudtrust/keycloak-bridge/pkg/management/mock"
@@ -625,14 +626,14 @@ func TestGetUser(t *testing.T) {
 		var locale = "it"
 		var trustIDGroups = []string{"grp1", "grp2"}
 
-		var attributes = make(map[string][]string)
-		attributes["phoneNumber"] = []string{phoneNumber}
-		attributes["label"] = []string{label}
-		attributes["gender"] = []string{gender}
-		attributes["birthDate"] = []string{birthDate}
-		attributes["phoneNumberVerified"] = []string{strconv.FormatBool(phoneNumberVerified)}
-		attributes["locale"] = []string{locale}
-		attributes["trustIDGroups"] = trustIDGroups
+		var attributes = make(kc.Attributes)
+		attributes.SetString(constants.AttrbPhoneNumber, phoneNumber)
+		attributes.SetString(constants.AttrbLabel, label)
+		attributes.SetString(constants.AttrbGender, gender)
+		attributes.SetString(constants.AttrbBirthDate, birthDate)
+		attributes.SetBool(constants.AttrbPhoneNumberVerified, phoneNumberVerified)
+		attributes.SetString(constants.AttrbLocale, locale)
+		attributes.Set(constants.AttrbTrustIDGroups, trustIDGroups)
 
 		var kcUserRep = kc.UserRepresentation{
 			Id:               &id,
@@ -740,13 +741,13 @@ func TestUpdateUser(t *testing.T) {
 		var locale = "de"
 		var createdTimestamp = time.Now().UTC().Unix()
 
-		var attributes = make(map[string][]string)
-		attributes["phoneNumber"] = []string{phoneNumber}
-		attributes["label"] = []string{label}
-		attributes["gender"] = []string{gender}
-		attributes["birthDate"] = []string{birthDate}
-		attributes["phoneNumberVerified"] = []string{strconv.FormatBool(phoneNumberVerified)}
-		attributes["locale"] = []string{locale}
+		var attributes = make(kc.Attributes)
+		attributes.SetString(constants.AttrbPhoneNumber, phoneNumber)
+		attributes.SetString(constants.AttrbLabel, label)
+		attributes.SetString(constants.AttrbGender, gender)
+		attributes.SetString(constants.AttrbBirthDate, birthDate)
+		attributes.SetBool(constants.AttrbPhoneNumberVerified, phoneNumberVerified)
+		attributes.SetString(constants.AttrbLocale, locale)
 
 		var kcUserRep = kc.UserRepresentation{
 			Id:               &id,
@@ -793,8 +794,8 @@ func TestUpdateUser(t *testing.T) {
 				assert.Equal(t, firstName, *kcUserRep.FirstName)
 				assert.Equal(t, lastName, *kcUserRep.LastName)
 				assert.Equal(t, phoneNumber, (*kcUserRep.Attributes)["phoneNumber"][0])
-				verified, _ := strconv.ParseBool(((*kcUserRep.Attributes)["phoneNumberVerified"][0]))
-				assert.Equal(t, phoneNumberVerified, verified)
+				verified, _ := kcUserRep.Attributes.GetBool(constants.AttrbPhoneNumberVerified)
+				assert.Equal(t, phoneNumberVerified, *verified)
 				assert.Equal(t, label, (*kcUserRep.Attributes)["label"][0])
 				assert.Equal(t, gender, (*kcUserRep.Attributes)["gender"][0])
 				assert.Equal(t, birthDate, (*kcUserRep.Attributes)["birthDate"][0])
@@ -868,9 +869,9 @@ func TestUpdateUser(t *testing.T) {
 		// update by changing the phone number
 
 		var oldNumber = "+41789467"
-		var oldAttributes = make(map[string][]string)
-		oldAttributes["phoneNumber"] = []string{oldNumber}
-		oldAttributes["phoneNumberVerified"] = []string{strconv.FormatBool(phoneNumberVerified)}
+		var oldAttributes = make(kc.Attributes)
+		oldAttributes.SetString(constants.AttrbPhoneNumber, oldNumber)
+		oldAttributes.SetBool(constants.AttrbPhoneNumberVerified, phoneNumberVerified)
 		var oldkcUserRep2 = kc.UserRepresentation{
 			Id:         &id,
 			Attributes: &oldAttributes,
@@ -1002,12 +1003,12 @@ func TestGetUsers(t *testing.T) {
 		var birthDate = "01/01/1988"
 		var createdTimestamp = time.Now().UTC().Unix()
 
-		var attributes = make(map[string][]string)
-		attributes["phoneNumber"] = []string{phoneNumber}
-		attributes["label"] = []string{label}
-		attributes["gender"] = []string{gender}
-		attributes["birthDate"] = []string{birthDate}
-		attributes["phoneNumberVerified"] = []string{strconv.FormatBool(phoneNumberVerified)}
+		var attributes = make(kc.Attributes)
+		attributes.SetString(constants.AttrbPhoneNumber, phoneNumber)
+		attributes.SetString(constants.AttrbLabel, label)
+		attributes.SetString(constants.AttrbGender, gender)
+		attributes.SetString(constants.AttrbBirthDate, birthDate)
+		attributes.SetBool(constants.AttrbPhoneNumberVerified, phoneNumberVerified)
 
 		var count = 1
 		var kcUserRep = kc.UserRepresentation{
@@ -1426,8 +1427,8 @@ func TestSetTrustIDGroups(t *testing.T) {
 		}
 		grpNames := []string{"grp1", "grp2"}
 		extGrpNames := []string{"/grp1", "/grp2"}
-		attrs := make(map[string][]string)
-		attrs["trustIDGroups"] = extGrpNames
+		attrs := make(kc.Attributes)
+		attrs.Set(constants.AttrbTrustIDGroups, extGrpNames)
 		var kcUserRep2 = kc.UserRepresentation{
 			Username:   &username,
 			Attributes: &attrs,
@@ -1471,8 +1472,8 @@ func TestSetTrustIDGroups(t *testing.T) {
 		}
 		grpNames := []string{"grp1", "grp2"}
 		extGrpNames := []string{"/grp1", "/grp2"}
-		attrs := make(map[string][]string)
-		attrs["trustIDGroups"] = extGrpNames
+		attrs := make(kc.Attributes)
+		attrs.Set(constants.AttrbTrustIDGroups, extGrpNames)
 		var kcUserRep2 = kc.UserRepresentation{
 			Username:   &username,
 			Attributes: &attrs,
@@ -1901,13 +1902,13 @@ func TestResetSmsCounter(t *testing.T) {
 	var gender = "M"
 	var birthDate = "01/01/1988"
 	var createdTimestamp = time.Now().UTC().Unix()
-	var attributes = make(map[string][]string)
-	attributes["phoneNumber"] = []string{phoneNumber}
-	attributes["label"] = []string{label}
-	attributes["gender"] = []string{gender}
-	attributes["birthDate"] = []string{birthDate}
-	attributes["phoneNumberVerified"] = []string{strconv.FormatBool(phoneNumberVerified)}
-	attributes["smsSent"] = []string{"5"}
+	var attributes = make(kc.Attributes)
+	attributes.SetString(constants.AttrbPhoneNumber, phoneNumber)
+	attributes.SetString(constants.AttrbLabel, label)
+	attributes.SetString(constants.AttrbGender, gender)
+	attributes.SetString(constants.AttrbBirthDate, birthDate)
+	attributes.SetBool(constants.AttrbPhoneNumberVerified, phoneNumberVerified)
+	attributes.SetInt(constants.AttrbSmsSent, 5)
 
 	var kcUserRep = kc.UserRepresentation{
 		Id:               &id,

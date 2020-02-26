@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/cloudtrust/common-service/validation"
+	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	kc "github.com/cloudtrust/keycloak-client"
 )
 
@@ -82,24 +83,20 @@ func (u *UserRepresentation) UserToJSON() string {
 func (u *UserRepresentation) ExportToKeycloak(kcUser *kc.UserRepresentation) {
 	var bFalse = false
 	var bTrue = true
-	var attributes = make(map[string][]string)
+	var attributes = make(kc.Attributes)
 
 	if kcUser.Attributes != nil {
 		attributes = *kcUser.Attributes
 	}
 
-	if u.Gender != nil {
-		attributes["gender"] = []string{*u.Gender}
-	}
+	attributes.SetStringWhenNotNil(constants.AttrbGender, u.Gender)
 	if u.PhoneNumber != nil {
-		if value, ok := attributes["phoneNumber"]; !ok || (len(value) > 0 && value[0] != *u.PhoneNumber) {
-			attributes["phoneNumber"] = []string{*u.PhoneNumber}
-			attributes["phoneNumberVerified"] = []string{"false"}
+		if value := attributes.GetString(constants.AttrbPhoneNumber); value == nil || *value != *u.PhoneNumber {
+			attributes.SetString(constants.AttrbPhoneNumber, *u.PhoneNumber)
+			attributes.SetBool(constants.AttrbPhoneNumberVerified, false)
 		}
 	}
-	if u.BirthDate != nil {
-		attributes["birthDate"] = []string{*u.BirthDate}
-	}
+	attributes.SetDateWhenNotNil(constants.AttrbBirthDate, u.BirthDate, constants.SupportedDateLayouts)
 
 	if u.Username != nil {
 		kcUser.Username = u.Username

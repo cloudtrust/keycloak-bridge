@@ -7,7 +7,7 @@ import (
 
 	errorhandler "github.com/cloudtrust/common-service/errors"
 	stats_api "github.com/cloudtrust/keycloak-bridge/api/statistics"
-	msg "github.com/cloudtrust/keycloak-bridge/internal/messages"
+	msg "github.com/cloudtrust/keycloak-bridge/internal/constants"
 )
 
 // ConvertMinutesShift converts a string describing a timezone shift to a numeric value

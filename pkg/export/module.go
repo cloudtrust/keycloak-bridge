@@ -4,7 +4,7 @@ import (
 	"context"
 
 	internal "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
-	msg "github.com/cloudtrust/keycloak-bridge/internal/messages"
+	msg "github.com/cloudtrust/keycloak-bridge/internal/constants"
 	keycloak "github.com/cloudtrust/keycloak-client"
 	"github.com/pkg/errors"
 )

@@ -155,7 +155,7 @@ func createUser(userID, username string, emailVerified bool, phoneNumberVerified
 	if phoneNumberVerified {
 		pnv = "true"
 	}
-	var attributes = map[string][]string{"phoneNumberVerified": []string{pnv}}
+	var attributes = kc.Attributes{"phoneNumberVerified": []string{pnv}}
 	return kc.UserRepresentation{
 		Id:            &userID,
 		Username:      &username,
@@ -281,32 +281,5 @@ func TestValidateUser(t *testing.T) {
 
 		var err = component.ValidateUser(ctx, userID, validUser)
 		assert.Nil(t, err)
-	})
-}
-
-func TestIsPhoneNumberVerified(t *testing.T) {
-	t.Run("No attributes", func(t *testing.T) {
-		assert.False(t, isPhoneNumberVerified(nil))
-	})
-
-	var attrbs = make(map[string][]string)
-
-	t.Run("No phoneNumberVerified attribute", func(t *testing.T) {
-		assert.False(t, isPhoneNumberVerified(&attrbs))
-	})
-
-	t.Run("Invalid phoneNumberVerified attribute", func(t *testing.T) {
-		attrbs["phoneNumberVerified"] = []string{"not a boolean"}
-		assert.False(t, isPhoneNumberVerified(&attrbs))
-	})
-
-	t.Run("phoneNumberVerified is false", func(t *testing.T) {
-		attrbs["phoneNumberVerified"] = []string{"false"}
-		assert.False(t, isPhoneNumberVerified(&attrbs))
-	})
-
-	t.Run("phoneNumberVerified is true", func(t *testing.T) {
-		attrbs["phoneNumberVerified"] = []string{"true"}
-		assert.True(t, isPhoneNumberVerified(&attrbs))
 	})
 }
