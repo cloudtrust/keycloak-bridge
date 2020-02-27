@@ -2,11 +2,11 @@ package apikyc
 
 import (
 	"encoding/json"
-	"strconv"
 	"strings"
 
 	"github.com/cloudtrust/common-service/validation"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
+	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	kc "github.com/cloudtrust/keycloak-client"
 )
 
@@ -18,21 +18,29 @@ type ActionRepresentation struct {
 
 // UserRepresentation contains user details
 type UserRepresentation struct {
-	UserID               *string `json:"userId,omitempty"`
-	Username             *string `json:"username,omitempty"`
-	Gender               *string `json:"gender,omitempty"`
-	FirstName            *string `json:"firstName,omitempty"`
-	LastName             *string `json:"lastName,omitempty"`
-	EmailAddress         *string `json:"emailAddress,omitempty"`
-	EmailAddressVerified *bool   `json:"emailAddressVerified,omitempty"`
-	PhoneNumber          *string `json:"phoneNumber,omitempty"`
-	PhoneNumberVerified  *bool   `json:"phoneNumberVerified,omitempty"`
-	BirthDate            *string `json:"birthDate,omitempty"`
-	BirthLocation        *string `json:"birthLocation,omitempty"`
-	IDDocumentType       *string `json:"idDocumentType,omitempty"`
-	IDDocumentNumber     *string `json:"idDocumentNumber,omitempty"`
-	IDDocumentExpiration *string `json:"idDocumentExpiration,omitempty"`
-	Comment              *string `json:"comment,omitempty"`
+	UserID               *string                        `json:"userId,omitempty"`
+	Username             *string                        `json:"username,omitempty"`
+	Gender               *string                        `json:"gender,omitempty"`
+	FirstName            *string                        `json:"firstName,omitempty"`
+	LastName             *string                        `json:"lastName,omitempty"`
+	EmailAddress         *string                        `json:"emailAddress,omitempty"`
+	EmailAddressVerified *bool                          `json:"emailAddressVerified,omitempty"`
+	PhoneNumber          *string                        `json:"phoneNumber,omitempty"`
+	PhoneNumberVerified  *bool                          `json:"phoneNumberVerified,omitempty"`
+	BirthDate            *string                        `json:"birthDate,omitempty"`
+	BirthLocation        *string                        `json:"birthLocation,omitempty"`
+	IDDocumentType       *string                        `json:"idDocumentType,omitempty"`
+	IDDocumentNumber     *string                        `json:"idDocumentNumber,omitempty"`
+	IDDocumentExpiration *string                        `json:"idDocumentExpiration,omitempty"`
+	Comment              *string                        `json:"comment,omitempty"`
+	Accreditations       *[]AccreditationRepresentation `json:"accreditations,omitempty"`
+}
+
+// AccreditationRepresentation is a representation of accreditations
+type AccreditationRepresentation struct {
+	Type       *string `json:"type"`
+	ExpiryDate *string `json:"expiryDate"`
+	Expired    *bool   `json:"expired,omitempty"`
 }
 
 // Parameter references
@@ -121,23 +129,29 @@ func (u *UserRepresentation) ImportFromKeycloak(kcUser *kc.UserRepresentation) {
 	var phoneNumberVerified = u.PhoneNumberVerified
 	var gender = u.Gender
 	var birthdate = u.BirthDate
+	var accreditations = u.Accreditations
 
-	if kcUser.Attributes != nil {
-		var m = *kcUser.Attributes
-		if value, ok := m["phoneNumber"]; ok && len(value) > 0 {
-			phoneNumber = &value[0]
+	if value := kcUser.GetAttributeString(constants.AttrbPhoneNumber); value != nil {
+		phoneNumber = value
+	}
+	if value, err := kcUser.GetAttributeBool(constants.AttrbPhoneNumberVerified); err == nil && value != nil {
+		phoneNumberVerified = value
+	}
+	if value := kcUser.GetAttributeString(constants.AttrbGender); value != nil {
+		gender = value
+	}
+	if value := kcUser.GetAttributeDate(constants.AttrbBirthDate, constants.SupportedDateLayouts); value != nil {
+		birthdate = value
+	}
+	if values := kcUser.GetAttribute(constants.AttrbAccreditations); len(values) > 0 {
+		var accreds []AccreditationRepresentation
+		for _, accredJSON := range values {
+			var accred AccreditationRepresentation
+			json.Unmarshal([]byte(accredJSON), &accred)
+			accred.Expired = keycloakb.IsDateInThePast(accred.ExpiryDate)
+			accreds = append(accreds, accred)
 		}
-		if value, ok := m["phoneNumberVerified"]; ok && len(value) > 0 {
-			if verified, err := strconv.ParseBool(value[0]); err == nil {
-				phoneNumberVerified = &verified
-			}
-		}
-		if value, ok := m["gender"]; ok && len(value) > 0 {
-			gender = &value[0]
-		}
-		if value, ok := m["birthDate"]; ok && len(value) > 0 {
-			birthdate = &value[0]
-		}
+		accreditations = &accreds
 	}
 
 	u.UserID = kcUser.Id
@@ -150,6 +164,7 @@ func (u *UserRepresentation) ImportFromKeycloak(kcUser *kc.UserRepresentation) {
 	u.PhoneNumber = phoneNumber
 	u.PhoneNumberVerified = phoneNumberVerified
 	u.BirthDate = birthdate
+	u.Accreditations = accreditations
 }
 
 // Validate checks the validity of the given User

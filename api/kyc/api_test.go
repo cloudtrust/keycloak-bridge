@@ -3,9 +3,15 @@ package apikyc
 import (
 	"testing"
 
+	"github.com/cloudtrust/keycloak-bridge/internal/constants"
+
 	kc "github.com/cloudtrust/keycloak-client"
 	"github.com/stretchr/testify/assert"
 )
+
+func ptr(value string) *string {
+	return &value
+}
 
 func createValidUser() UserRepresentation {
 	var (
@@ -21,6 +27,9 @@ func createValidUser() UserRepresentation {
 		idDocType       = "PASSPORT"
 		idDocNumber     = "123456789"
 		idDocExpiration = "23.02.2039"
+		accred1         = AccreditationRepresentation{Type: ptr("short"), ExpiryDate: ptr("31.12.2024")}
+		accred2         = AccreditationRepresentation{Type: ptr("long"), ExpiryDate: ptr("31.12.2039")}
+		creds           = []AccreditationRepresentation{accred1, accred2}
 	)
 
 	return UserRepresentation{
@@ -37,6 +46,7 @@ func createValidUser() UserRepresentation {
 		IDDocumentType:       &idDocType,
 		IDDocumentNumber:     &idDocNumber,
 		IDDocumentExpiration: &idDocExpiration,
+		Accreditations:       &creds,
 	}
 }
 
@@ -51,6 +61,7 @@ func createValidKeycloakUser() kc.UserRepresentation {
 			"phoneNumber":         []string{"00 33 686 550011"},
 			"phoneNumberVerified": []string{"true"},
 			"birthDate":           []string{"29.02.2020"},
+			"accreditations":      []string{`{"type":"one","expiryDate":"05.04.2020"}`, `{"type":"two","expiryDate":"05.03.2022"}`},
 		}
 	)
 
@@ -127,19 +138,17 @@ func TestExportToKeycloak(t *testing.T) {
 }
 
 func TestImportFromKeycloak(t *testing.T) {
-	var user = createValidUser()
-	user.BirthLocation = nil
-	user.IDDocumentType = nil
-	user.IDDocumentNumber = nil
-	user.IDDocumentExpiration = nil
-
-	var kcUser kc.UserRepresentation
-	user.ExportToKeycloak(&kcUser)
+	var kcUser = createValidKeycloakUser()
+	kcUser.SetAttributeBool(constants.AttrbPhoneNumberVerified, true)
 
 	var imported = UserRepresentation{}
 	imported.ImportFromKeycloak(&kcUser)
 
-	assert.Equal(t, user, imported)
+	assert.Equal(t, *kcUser.FirstName, *imported.FirstName)
+	assert.Equal(t, *kcUser.LastName, *imported.LastName)
+	assert.Equal(t, *kcUser.GetAttributeString(constants.AttrbGender), *imported.Gender)
+	assert.Len(t, kcUser.GetAttribute(constants.AttrbAccreditations), 2)
+	assert.True(t, *imported.PhoneNumberVerified)
 }
 
 func TestValidateUserRepresentation(t *testing.T) {

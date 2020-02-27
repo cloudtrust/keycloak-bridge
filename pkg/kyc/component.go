@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/cloudtrust/common-service/configuration"
+
 	cs "github.com/cloudtrust/common-service"
 	"github.com/cloudtrust/common-service/database"
 	errorhandler "github.com/cloudtrust/common-service/errors"
@@ -49,16 +51,18 @@ type component struct {
 	keycloakClient  KeycloakClient
 	usersDBModule   keycloakb.UsersDBModule
 	eventsDBModule  database.EventsDBModule
+	accredsModule   keycloakb.AccreditationsModule
 	logger          internal.Logger
 }
 
 // NewComponent returns the management component.
-func NewComponent(socialRealmName string, keycloakClient KeycloakClient, usersDBModule UsersDBModule, eventsDBModule EventsDBModule, logger internal.Logger) Component {
+func NewComponent(socialRealmName string, keycloakClient KeycloakClient, usersDBModule UsersDBModule, eventsDBModule EventsDBModule, accredsModule keycloakb.AccreditationsModule, logger internal.Logger) Component {
 	return &component{
 		socialRealmName: socialRealmName,
 		keycloakClient:  keycloakClient,
 		usersDBModule:   usersDBModule,
 		eventsDBModule:  eventsDBModule,
+		accredsModule:   accredsModule,
 		logger:          logger,
 	}
 }
@@ -143,9 +147,9 @@ func (c *component) ValidateUser(ctx context.Context, userID string, user apikyc
 
 	// Gets user from Keycloak
 	var kcUser kc.UserRepresentation
-	kcUser, err = c.keycloakClient.GetUser(accessToken, c.socialRealmName, userID)
+	kcUser, _, err = c.accredsModule.GetUserAndPrepareAccreditations(ctx, accessToken, c.socialRealmName, userID, configuration.CheckKeyPhysical)
 	if err != nil {
-		c.logger.Warn(ctx, "msg", "Can't get user from Keycloak", "err", err.Error())
+		c.logger.Warn(ctx, "msg", "Can't get user/accreditations", "err", err.Error())
 		return err
 	}
 

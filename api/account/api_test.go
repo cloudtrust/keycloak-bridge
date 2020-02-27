@@ -44,6 +44,7 @@ func TestConvertToAPIAccount(t *testing.T) {
 		"birthDate":           []string{"15.02.1920"},
 		"locale":              []string{"fr"},
 		"phoneNumberVerified": []string{"true"},
+		"accreditations":      []string{`{"type":"one","expiryDate":"05.04.2020"}`, `{"type":"two","expiryDate":"05.03.2022"}`},
 	}
 
 	t.Run("Check attributes are copied", func(t *testing.T) {
@@ -54,6 +55,7 @@ func TestConvertToAPIAccount(t *testing.T) {
 		assert.Equal(t, "15.02.1920", *user.BirthDate)
 		assert.Equal(t, "fr", *user.Locale)
 		assert.True(t, *user.PhoneNumberVerified)
+		assert.Len(t, *user.Accreditations, 2)
 	})
 
 	t.Run("PhoneNumberVerified is invalid", func(t *testing.T) {

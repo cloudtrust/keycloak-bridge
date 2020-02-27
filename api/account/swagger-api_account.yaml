@@ -244,6 +244,21 @@ components:
           description: only returned by /account
         locale:
           type: string
+        accreditations:
+          type: array
+          description: only returned by /account
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+                description: accreditation type
+              expiryDate:
+                type: string
+                description: expiry date. format is DD.MM.YYYY
+              expired:
+                type: bool
+                description: true if the expiry date has passed
     Configuration:
       type: object
       properties:
