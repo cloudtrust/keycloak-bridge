@@ -75,6 +75,55 @@ func TestGetConfiguration(t *testing.T) {
 	}
 }
 
+func TestStoreOrGetAdminConfiguration(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockDB = mock.NewCloudtrustDB(mockCtrl)
+	var mockSQLRow = mock.NewSQLRow(mockCtrl)
+	var mockLogger = log.NewNopLogger()
+
+	var configDBModule = NewConfigurationDBModule(mockDB, mockLogger)
+	var realmID = "myrealm"
+	var adminConfig configuration.RealmAdminConfiguration
+	var adminConfigStr = "{}"
+	var sqlError = errors.New("sql")
+	var ctx = context.TODO()
+
+	t.Run("Store-SQL fails", func(t *testing.T) {
+		mockDB.EXPECT().Exec(gomock.Any(), gomock.Any()).Return(nil, sqlError)
+		assert.Equal(t, sqlError, configDBModule.StoreOrUpdateAdminConfiguration(ctx, realmID, adminConfig))
+	})
+	t.Run("Store-success", func(t *testing.T) {
+		mockDB.EXPECT().Exec(gomock.Any(), gomock.Any()).Return(nil, nil)
+		assert.Nil(t, configDBModule.StoreOrUpdateAdminConfiguration(ctx, realmID, adminConfig))
+	})
+	t.Run("Get-SQL query fails", func(t *testing.T) {
+		mockDB.EXPECT().QueryRow(gomock.Any(), realmID).Return(mockSQLRow)
+		mockSQLRow.EXPECT().Scan(gomock.Any()).Return(sqlError)
+		var _, err = configDBModule.GetAdminConfiguration(ctx, realmID)
+		assert.Equal(t, sqlError, err)
+	})
+
+	t.Run("Get-SQL query returns no row", func(t *testing.T) {
+		mockDB.EXPECT().QueryRow(gomock.Any(), realmID).Return(mockSQLRow)
+		mockSQLRow.EXPECT().Scan(gomock.Any()).Return(sql.ErrNoRows)
+		var _, err = configDBModule.GetAdminConfiguration(ctx, realmID)
+		assert.NotNil(t, err)
+	})
+
+	t.Run("Get-SQL query returns an admin configuration", func(t *testing.T) {
+		mockDB.EXPECT().QueryRow(gomock.Any(), realmID).Return(mockSQLRow)
+		mockSQLRow.EXPECT().Scan(gomock.Any()).DoAndReturn(func(conf *string) error {
+			*conf = adminConfigStr
+			return nil
+		})
+		var conf, err = configDBModule.GetAdminConfiguration(ctx, realmID)
+		assert.Nil(t, err)
+		assert.Equal(t, adminConfig, conf)
+	})
+}
+
 func TestBackOfficeConfiguration(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()

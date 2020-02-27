@@ -289,6 +289,43 @@ func TestFederatedIdentityRepresentation(t *testing.T) {
 	})
 }
 
+func TestConvertRealmAdminConfiguration(t *testing.T) {
+	t.Run("Empty struct", func(t *testing.T) {
+		var config = configuration.RealmAdminConfiguration{}
+		var res = ConvertRealmAdminConfigurationFromDBStruct(config)
+		assert.Nil(t, res.Mode)
+		assert.Nil(t, res.AvailableChecks)
+		assert.Nil(t, res.Accreditations)
+		assert.Equal(t, config, res.ConvertToDBStruct())
+	})
+	t.Run("Empty struct", func(t *testing.T) {
+		var mode = "mode"
+		var typeValue = "type"
+		var condition = "condition"
+		var validity = "2y"
+		var accred = configuration.RealmAdminAccreditation{
+			Type:      &typeValue,
+			Condition: &condition,
+			Validity:  &validity,
+		}
+		var config = configuration.RealmAdminConfiguration{
+			Mode:            &mode,
+			AvailableChecks: map[string]bool{"true": true, "false": false},
+			Accreditations:  []configuration.RealmAdminAccreditation{accred},
+		}
+		var res = ConvertRealmAdminConfigurationFromDBStruct(config)
+		assert.Equal(t, mode, *res.Mode)
+		assert.Len(t, res.AvailableChecks, 2)
+		assert.True(t, res.AvailableChecks["true"])
+		assert.False(t, res.AvailableChecks["false"])
+		assert.Len(t, res.Accreditations, 1)
+		assert.Equal(t, typeValue, *res.Accreditations[0].Type)
+		assert.Equal(t, condition, *res.Accreditations[0].Condition)
+		assert.Equal(t, validity, *res.Accreditations[0].Validity)
+		assert.Equal(t, config, res.ConvertToDBStruct())
+	})
+}
+
 func TestNewBackOfficeConfigurationFromJSON(t *testing.T) {
 	t.Run("Invalid JSON", func(t *testing.T) {
 		var _, err = NewBackOfficeConfigurationFromJSON(`{"shop":{"shelves":{"articles":{"books": [1, 2, 3], "chairs": [4, 5, 6]}}}}`)
@@ -444,17 +481,29 @@ func TestValidateRealmCustomConfiguration(t *testing.T) {
 	}
 }
 
+func TestValidateRealmAdminConfiguration(t *testing.T) {
+	var realmAdminConf = RealmAdminConfiguration{}
+
+	assert.NotNil(t, realmAdminConf.Validate())
+
+	var mode = "any-value"
+	realmAdminConf.Mode = &mode
+	assert.Nil(t, realmAdminConf.Validate())
+}
+
 func TestValidateRequiredAction(t *testing.T) {
-	{
+	t.Run("Valid required action", func(t *testing.T) {
 		action := createValidRequiredAction()
 		assert.Nil(t, action.Validate())
-	}
-
-	action := RequiredAction("^")
-	assert.NotNil(t, action.Validate())
-
-	action = RequiredAction("")
-	assert.Nil(t, action.Validate())
+	})
+	t.Run("Invalid required action", func(t *testing.T) {
+		action := RequiredAction("^")
+		assert.NotNil(t, action.Validate())
+	})
+	t.Run("Empty required action", func(t *testing.T) {
+		action := RequiredAction("")
+		assert.Nil(t, action.Validate())
+	})
 }
 
 func TestValidateFederatedIdentityRepresentation(t *testing.T) {

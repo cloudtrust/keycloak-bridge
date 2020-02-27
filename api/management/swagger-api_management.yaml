@@ -968,6 +968,46 @@ paths:
           description: successful operation
         400:
           description: invalid information provided  (invalid client identifier or redirect URI not allowed for this client)
+  /realms/{realm}/admin-configuration:
+    get:
+      tags:
+      - Configuration
+      summary: Get the admin configuration of the specified realm
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminConfiguration'
+    put:
+      tags:
+      - Configuration
+      summary: Update the admin configuration for the given realm
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminConfiguration'
+      responses:
+        200:
+          description: successful operation
+        400:
+          description: invalid information provided
   /realms/{realm}/backoffice-configuration:
     get:
       tags:
@@ -1246,6 +1286,26 @@ components:
           type: string
         redirect_successful_registration_url:
           type: string
+    AdminConfiguration:
+      type: object
+      properties:
+        mode:
+          type: string
+        available-checks:
+          type: object
+          additionalProperties:
+            type: boolean
+        accreditations:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+              validity:
+                type: string
+              condition:
+                type: string
     BackOfficeConfiguration:
       type: object
       additionalProperties:

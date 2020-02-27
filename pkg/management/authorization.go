@@ -58,6 +58,8 @@ var (
 	MGMTCreateClientRole                    = newAction("MGMT_CreateClientRole", security.ScopeRealm)
 	MGMTGetRealmCustomConfiguration         = newAction("MGMT_GetRealmCustomConfiguration", security.ScopeRealm)
 	MGMTUpdateRealmCustomConfiguration      = newAction("MGMT_UpdateRealmCustomConfiguration", security.ScopeRealm)
+	MGMTGetRealmAdminConfiguration          = newAction("MGMT_GetRealmAdminConfiguration", security.ScopeRealm)
+	MGMTUpdateRealmAdminConfiguration       = newAction("MGMT_UpdateRealmAdminConfiguration", security.ScopeRealm)
 	MGMTGetRealmBackOfficeConfiguration     = newAction("MGMT_GetRealmBackOfficeConfiguration", security.ScopeGroup)
 	MGMTUpdateRealmBackOfficeConfiguration  = newAction("MGMT_UpdateRealmBackOfficeConfiguration", security.ScopeGroup)
 	MGMTGetUserRealmBackOfficeConfiguration = newAction("MGMT_GetUserRealmBackOfficeConfiguration", security.ScopeRealm)
@@ -479,6 +481,28 @@ func (c *authorizationComponentMW) UpdateRealmCustomConfiguration(ctx context.Co
 	}
 
 	return c.next.UpdateRealmCustomConfiguration(ctx, realmName, customConfig)
+}
+
+func (c *authorizationComponentMW) GetRealmAdminConfiguration(ctx context.Context, realmName string) (api.RealmAdminConfiguration, error) {
+	var action = MGMTGetRealmAdminConfiguration.String()
+	var targetRealm = realmName
+
+	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
+		return api.RealmAdminConfiguration{}, err
+	}
+
+	return c.next.GetRealmAdminConfiguration(ctx, realmName)
+}
+
+func (c *authorizationComponentMW) UpdateRealmAdminConfiguration(ctx context.Context, realmName string, adminConfig api.RealmAdminConfiguration) error {
+	var action = MGMTUpdateRealmAdminConfiguration.String()
+	var targetRealm = realmName
+
+	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
+		return err
+	}
+
+	return c.next.UpdateRealmAdminConfiguration(ctx, realmName, adminConfig)
 }
 
 func (c *authorizationComponentMW) GetRealmBackOfficeConfiguration(ctx context.Context, realmName string, groupName string) (api.BackOfficeConfiguration, error) {

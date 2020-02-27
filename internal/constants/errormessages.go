@@ -18,6 +18,7 @@ const (
 
 	BodyContent                       = "bodyContent"
 	RealmConfiguration                = "realmConfiguration"
+	RealmAdminConfiguration           = "realmAdminConfiguration"
 	Authorization                     = "authorization"
 	CurrentPassword                   = "currentPassword"
 	NewPassword                       = "newPassword"

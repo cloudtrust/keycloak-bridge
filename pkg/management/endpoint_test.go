@@ -1128,6 +1128,84 @@ func TestConfigurationEndpoints(t *testing.T) {
 	})
 }
 
+func TestGetRealmAdminConfigurationEndpoint(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
+
+	var e = MakeGetRealmAdminConfigurationEndpoint(mockManagementComponent)
+	var ctx = context.Background()
+
+	t.Run("No error", func(t *testing.T) {
+		var realmName = "master"
+		var adminConfig api.RealmAdminConfiguration
+		var req = make(map[string]string)
+		req["realm"] = realmName
+
+		mockManagementComponent.EXPECT().GetRealmAdminConfiguration(ctx, realmName).Return(adminConfig, nil).Times(1)
+		var res, err = e(ctx, req)
+		assert.Nil(t, err)
+		assert.NotNil(t, res)
+	})
+	t.Run("Request fails at component level", func(t *testing.T) {
+		var realmName = "master"
+		var adminConfig api.RealmAdminConfiguration
+		var expectedError = errors.New("component error")
+		var req = make(map[string]string)
+		req["realm"] = realmName
+
+		mockManagementComponent.EXPECT().GetRealmAdminConfiguration(ctx, realmName).Return(adminConfig, expectedError).Times(1)
+		var _, err = e(ctx, req)
+		assert.Equal(t, expectedError, err)
+	})
+}
+
+func TestUpdateRealmAdminConfigurationEndpoint(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
+
+	var e = MakeUpdateRealmAdminConfigurationEndpoint(mockManagementComponent)
+	var ctx = context.Background()
+
+	t.Run("No error", func(t *testing.T) {
+		var realmName = "master"
+		var configJSON = `{"mode":"modeValue"}`
+		var req = make(map[string]string)
+		req["realm"] = realmName
+		req["body"] = configJSON
+
+		mockManagementComponent.EXPECT().UpdateRealmAdminConfiguration(ctx, realmName, gomock.Any()).Return(nil).Times(1)
+		var res, err = e(ctx, req)
+		assert.Nil(t, err)
+		assert.Nil(t, res)
+	})
+	t.Run("Invalid body content", func(t *testing.T) {
+		var realmName = "master"
+		var configJSON = `{}`
+		var req = make(map[string]string)
+		req["realm"] = realmName
+		req["body"] = configJSON
+
+		var _, err = e(ctx, req)
+		assert.NotNil(t, err)
+	})
+	t.Run("JSON error", func(t *testing.T) {
+		var realmName = "master"
+		var configJSON = `{`
+		var req = make(map[string]string)
+		req["realm"] = realmName
+		req["body"] = configJSON
+
+		mockManagementComponent.EXPECT().UpdateRealmAdminConfiguration(ctx, realmName, gomock.Any()).Return(nil).Times(0)
+		var res, err = e(ctx, req)
+		assert.NotNil(t, err)
+		assert.Nil(t, res)
+	})
+}
+
 func TestCreateShadowUserEndpoint(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
