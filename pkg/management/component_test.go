@@ -2572,7 +2572,8 @@ func TestUpdateAuthorizations(t *testing.T) {
 	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
 
 	var accessToken = "TOKEN=="
-	var realmName = "master"
+	var currentRealmName = "master"
+	var realmName = "customer1"
 	var targetRealmName = "DEP"
 	var ID = "00000-32a9-4000-8c17-edc854c31231"
 	var groupID = "41dbf4a8-32a9-4000-8c17-edc854c31231"
@@ -2652,7 +2653,7 @@ func TestUpdateAuthorizations(t *testing.T) {
 		}
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
-		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
+		ctx = context.WithValue(ctx, cs.CtContextRealm, currentRealmName)
 		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 
 		mockKeycloakClient.EXPECT().GetGroup(accessToken, targetRealmName, groupID).Return(group, nil).Times(1)
@@ -2940,6 +2941,104 @@ func TestUpdateAuthorizations(t *testing.T) {
 		mockLogger.EXPECT().Warn(ctx, "err", gomock.Any()).Times(1)
 		err := managementComponent.UpdateAuthorizations(ctx, targetRealmName, groupID, apiAuthorizations)
 		assert.NotNil(t, err)
+	}
+}
+
+func TestUpdateAuthorizationsWithAny(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
+	var mockEventDBModule = mock.NewEventDBModule(mockCtrl)
+	var mockTransaction = mock.NewTransaction(mockCtrl)
+	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
+	var mockLogger = mock.NewLogger(mockCtrl)
+	var allowedTrustIDGroups = []string{"grp1", "grp2"}
+
+	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
+
+	var accessToken = "TOKEN=="
+	var currentRealmName = "master"
+	var targetRealmName = "DEP"
+	var targetMasterRealmName = "master"
+	var groupID = "41dbf4a8-32a9-4000-8c17-edc854c31231"
+	var groupName = "groupName"
+	var username = "username"
+
+	var group = kc.GroupRepresentation{
+		Id:   &groupID,
+		Name: &groupName,
+	}
+	var groups = []kc.GroupRepresentation{}
+	var clients = []kc.ClientRepresentation{}
+
+	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+	ctx = context.WithValue(ctx, cs.CtContextRealm, currentRealmName)
+	ctx = context.WithValue(ctx, cs.CtContextUsername, username)
+
+	// Check * as target realm is forbidden for non master realm
+	{
+		var action = "action"
+		var matrix = map[string]map[string]map[string]struct{}{
+			action: {"*": {}},
+		}
+
+		var apiAuthorizations = api.AuthorizationsRepresentation{
+			Matrix: &matrix,
+		}
+
+		var realm = kc.RealmRepresentation{
+			Id:    &targetRealmName,
+			Realm: &targetRealmName,
+		}
+		var realms = []kc.RealmRepresentation{realm}
+
+		mockKeycloakClient.EXPECT().GetGroup(accessToken, targetRealmName, groupID).Return(group, nil).Times(1)
+		mockKeycloakClient.EXPECT().GetRealms(accessToken).Return(realms, nil).Times(1)
+		mockKeycloakClient.EXPECT().GetGroups(accessToken, targetRealmName).Return(groups, nil).Times(1)
+		mockLogger.EXPECT().Warn(ctx, "err", gomock.Any()).Times(1)
+
+		err := managementComponent.UpdateAuthorizations(ctx, targetRealmName, groupID, apiAuthorizations)
+
+		assert.NotNil(t, err)
+	}
+
+	// Check * as target realm is allowed for master realm
+	{
+		var action = "action"
+		var matrix = map[string]map[string]map[string]struct{}{
+			action: {"*": {}},
+		}
+
+		var apiAuthorizations = api.AuthorizationsRepresentation{
+			Matrix: &matrix,
+		}
+
+		var realm = kc.RealmRepresentation{
+			Id:    &targetMasterRealmName,
+			Realm: &targetMasterRealmName,
+		}
+		var realms = []kc.RealmRepresentation{realm}
+
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx = context.WithValue(ctx, cs.CtContextRealm, targetMasterRealmName)
+		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
+
+		mockKeycloakClient.EXPECT().GetGroup(accessToken, targetMasterRealmName, groupID).Return(group, nil).Times(1)
+		mockKeycloakClient.EXPECT().GetRealms(accessToken).Return(realms, nil).Times(1)
+		mockKeycloakClient.EXPECT().GetGroups(accessToken, targetMasterRealmName).Return(groups, nil).Times(1)
+		mockKeycloakClient.EXPECT().GetClients(accessToken, targetMasterRealmName).Return(clients, nil).Times(1)
+
+		mockConfigurationDBModule.EXPECT().NewTransaction(ctx).Return(mockTransaction, nil).Times(1)
+		mockConfigurationDBModule.EXPECT().DeleteAuthorizations(ctx, targetMasterRealmName, groupName).Return(nil).Times(1)
+		mockConfigurationDBModule.EXPECT().CreateAuthorization(ctx, gomock.Any()).Return(nil).Times(1)
+		mockTransaction.EXPECT().Close().Times(1)
+		mockTransaction.EXPECT().Commit().Times(1)
+
+		mockEventDBModule.EXPECT().ReportEvent(ctx, "API_AUTHORIZATIONS_UPDATE", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
+
+		err := managementComponent.UpdateAuthorizations(ctx, targetMasterRealmName, groupID, apiAuthorizations)
+
+		assert.Nil(t, err)
 	}
 }
 
