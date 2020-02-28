@@ -1999,21 +1999,28 @@ func TestDeleteCredentialsForUser(t *testing.T) {
 	var realmName = "master"
 	var userID = "1245-7854-8963"
 	var credential = "987-654-321"
+	var typeCred = "otp-push"
 
-	// Delete credentials for user
-	{
-		mockKeycloakClient.EXPECT().GetCredentials(accessToken, realmName, userID).Return([]kc.CredentialRepresentation{}, nil).Times(1)
+	t.Run("Delete credentials for user", func(t *testing.T) {
+		mockKeycloakClient.EXPECT().GetCredentials(accessToken, realmName, userID).Return([]kc.CredentialRepresentation{
+			kc.CredentialRepresentation{
+				Id:   &credential,
+				Type: &typeCred,
+			},
+		}, nil).Times(1)
 		mockKeycloakClient.EXPECT().DeleteCredential(accessToken, realmName, userID, credential).Return(nil).Times(1)
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmReq)
 
+		mockEventDBModule.EXPECT().ReportEvent(ctx, "2ND_FACTOR_REMOVED", "back-office", database.CtEventRealmName, realmName, database.CtEventUserID, userID)
+
 		err := managementComponent.DeleteCredentialsForUser(ctx, realmName, userID, credential)
 
 		assert.Nil(t, err)
-	}
-	// Delete credentials for user - error at obtaining the list of credentials
-	{
+	})
+
+	t.Run("Delete credentials for user - error at obtaining the list of credentials", func(t *testing.T) {
 		mockKeycloakClient.EXPECT().GetCredentials(accessToken, realmName, userID).Return([]kc.CredentialRepresentation{}, errors.New("error")).Times(1)
 		mockLogger.EXPECT().Warn(gomock.Any(), "msg", "Could not obtain list of credentials", "err", "error")
 
@@ -2022,11 +2029,27 @@ func TestDeleteCredentialsForUser(t *testing.T) {
 
 		err := managementComponent.DeleteCredentialsForUser(ctx, realmName, userID, credential)
 		assert.NotNil(t, err)
+	})
 
-	}
-	// Delete credentials for user - error at deleting the credential
-	{
+	t.Run("Delete credentials for user - try to delete credential of another user", func(t *testing.T) {
 		mockKeycloakClient.EXPECT().GetCredentials(accessToken, realmName, userID).Return([]kc.CredentialRepresentation{}, nil).Times(1)
+
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx = context.WithValue(ctx, cs.CtContextRealm, realmReq)
+
+		mockLogger.EXPECT().Warn(ctx, "msg", "Try to delete credential of another user", "credId", credential, "userId", userID)
+
+		err := managementComponent.DeleteCredentialsForUser(ctx, realmName, userID, credential)
+		assert.NotNil(t, err)
+	})
+
+	t.Run("Delete credentials for user - error at deleting the credential", func(t *testing.T) {
+		mockKeycloakClient.EXPECT().GetCredentials(accessToken, realmName, userID).Return([]kc.CredentialRepresentation{
+			kc.CredentialRepresentation{
+				Id:   &credential,
+				Type: &typeCred,
+			},
+		}, nil).Times(1)
 		mockKeycloakClient.EXPECT().DeleteCredential(accessToken, realmName, userID, credential).Return(errors.New("error")).Times(1)
 		mockLogger.EXPECT().Warn(gomock.Any(), "err", "error")
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
@@ -2034,11 +2057,9 @@ func TestDeleteCredentialsForUser(t *testing.T) {
 
 		err := managementComponent.DeleteCredentialsForUser(ctx, realmName, userID, credential)
 		assert.NotNil(t, err)
+	})
 
-	}
-	// Delete credentials for user
-	{
-
+	t.Run("Delete credentials for user", func(t *testing.T) {
 		pwdId := "51389847-08f4-4a0f-9f9c-694554e626f2"
 		pwd := "password"
 		var credKcPwd = kc.CredentialRepresentation{
@@ -2067,10 +2088,9 @@ func TestDeleteCredentialsForUser(t *testing.T) {
 		err := managementComponent.DeleteCredentialsForUser(ctx, realmName, userID, otpId)
 
 		assert.Nil(t, err)
-	}
-	// Delete credentials for user - error at storing the event
-	{
+	})
 
+	t.Run("Delete credentials for user - error at storing the event", func(t *testing.T) {
 		pwdId := "51389847-08f4-4a0f-9f9c-694554e626f2"
 		pwd := "password"
 		var credKcPwd = kc.CredentialRepresentation{
@@ -2101,7 +2121,7 @@ func TestDeleteCredentialsForUser(t *testing.T) {
 		err := managementComponent.DeleteCredentialsForUser(ctx, realmName, userID, otpId)
 
 		assert.Nil(t, err)
-	}
+	})
 
 }
 

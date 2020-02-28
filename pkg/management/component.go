@@ -769,6 +769,20 @@ func (c *component) DeleteCredentialsForUser(ctx context.Context, realmName stri
 		return err
 	}
 
+	// Ensure the credential is owned by user
+	var ownedByUser = false
+	for _, credKc := range credsKc {
+		if *credKc.Id == credentialID {
+			ownedByUser = true
+			break
+		}
+	}
+
+	if !ownedByUser {
+		c.logger.Warn(ctx, "msg", "Try to delete credential of another user", "credId", credentialID, "userId", userID)
+		return errorhandler.CreateNotFoundError(msg.MsgErrInvalidParam + "." + msg.CredentialID)
+	}
+
 	err = c.keycloakClient.DeleteCredential(accessToken, realmName, userID, credentialID)
 	if err != nil {
 		c.logger.Warn(ctx, "err", err.Error())

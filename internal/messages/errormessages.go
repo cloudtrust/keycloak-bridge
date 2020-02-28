@@ -41,6 +41,7 @@ const (
 	Name                              = "name"
 	GroupIDs                          = "groupIds"
 	RoleID                            = "roleId"
+	CredentialID                      = "credentialID"
 	Locale                            = "locale"
 	Description                       = "description"
 	ContainerID                       = "containerId"
