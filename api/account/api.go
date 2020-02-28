@@ -43,7 +43,6 @@ type Configuration struct {
 	ShowAuthenticatorsTab             *bool   `json:"show_authenticators_tab"`
 	ShowPasswordTab                   *bool   `json:"show_password_tab"`
 	ShowProfileTab                    *bool   `json:"show_profile_tab"`
-	ShowMailEditing                   *bool   `json:"show_mail_editing"`
 	ShowAccountDeletionButton         *bool   `json:"show_account_deletion_button"`
 	RedirectSuccessfulRegistrationURL *string `json:"redirect_successful_registration_url"`
 }

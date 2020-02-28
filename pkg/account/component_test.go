@@ -773,8 +773,8 @@ func TestGetConfiguration(t *testing.T) {
 			DefaultRedirectURI:                  new(string),
 			ShowAuthenticatorsTab:               &trueBool,
 			ShowAccountDeletionButton:           &trueBool,
-			ShowMailEditing:                     &trueBool,
 			ShowPasswordTab:                     &trueBool,
+			ShowProfileTab:                      &trueBool,
 		}
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
@@ -788,8 +788,8 @@ func TestGetConfiguration(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Equal(t, *config.ShowAuthenticatorsTab, *resConfig.ShowAuthenticatorsTab)
 		assert.Equal(t, *config.ShowAccountDeletionButton, *resConfig.ShowAccountDeletionButton)
-		assert.Equal(t, *config.ShowMailEditing, *resConfig.ShowMailEditing)
 		assert.Equal(t, *config.ShowPasswordTab, *resConfig.ShowPasswordTab)
+		assert.Equal(t, *config.ShowProfileTab, *resConfig.ShowProfileTab)
 	}
 
 	// Get configuration with override realm with succces
@@ -807,8 +807,8 @@ func TestGetConfiguration(t *testing.T) {
 			DefaultRedirectURI:                  new(string),
 			ShowAuthenticatorsTab:               &trueBool,
 			ShowAccountDeletionButton:           &trueBool,
-			ShowMailEditing:                     &trueBool,
 			ShowPasswordTab:                     &trueBool,
+			ShowProfileTab:                      &trueBool,
 		}
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
@@ -825,7 +825,7 @@ func TestGetConfiguration(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Equal(t, *config.ShowAuthenticatorsTab, *resConfig.ShowAuthenticatorsTab)
 		assert.Equal(t, *config.ShowAccountDeletionButton, *resConfig.ShowAccountDeletionButton)
-		assert.Equal(t, *config.ShowMailEditing, *resConfig.ShowMailEditing)
+		assert.Equal(t, *config.ShowProfileTab, *resConfig.ShowProfileTab)
 		assert.Equal(t, *config.ShowPasswordTab, *resConfig.ShowPasswordTab)
 		assert.Equal(t, successURL, *resConfig.RedirectSuccessfulRegistrationURL)
 	}

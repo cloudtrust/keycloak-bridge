@@ -1168,8 +1168,6 @@ components:
           type: boolean
         show_profile_tab:
           type: boolean
-        show_mail_editing:
-          type: boolean
         show_account_deletion_button:
           type: boolean
         redirect_cancelled_registration_url:

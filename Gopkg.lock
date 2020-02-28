@@ -19,7 +19,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:8e740e260711d74a52146e3eed8e203e3ed7e72b228fdf891c6e39dcd0808cba"
+  digest = "1:9b1685882a38720f9867b1246236571179c4f705ded4ae1dc90686263cefe870"
   name = "github.com/cloudtrust/common-service"
   packages = [
     ".",
@@ -39,7 +39,7 @@
     "validation",
   ]
   pruneopts = "UT"
-  revision = "bb889caf59451e4434253125e12864d06eb0bd02"
+  revision = "b9f14ada4af152b9fc1c81c349422f4ad4f0fd88"
 
 [[projects]]
   branch = "master"
@@ -128,16 +128,16 @@
   name = "github.com/golang/mock"
   packages = ["gomock"]
   pruneopts = "UT"
-  revision = "3dcdcb6994c4de42a73bd2e4790178be3ed4554b"
-  version = "v1.4.0"
+  revision = "b48cb6623c04dae64c28537143aca42d16561daf"
+  version = "v1.4.1"
 
 [[projects]]
   digest = "1:d1e35b720b5f5156502ffdd174000c81295919293735342da78582e4dc7a8bcd"
   name = "github.com/golang/protobuf"
   packages = ["proto"]
   pruneopts = "UT"
-  revision = "d23c5127dc24889085f8ccea5c9d560a57a879d8"
-  version = "v1.3.3"
+  revision = "5d5b4c10bd43f85e63bd9e4a3fa9b1ea2ef88af2"
+  version = "v1.3.4"
 
 [[projects]]
   digest = "1:debcbc62c53851dab1fc881438a65449dd5ffa12f64f059fd6e32b938799513d"
@@ -393,7 +393,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:9725290eca00e3899655c3383877acef8ec6cec62a9f7994f3b22d2887b19bfb"
+  digest = "1:596d0dfadc456ff8a0c277995d969b6ad4f0da9be0e49cd558f7ce31d23eff9b"
   name = "golang.org/x/net"
   packages = [
     "context",
@@ -402,7 +402,7 @@
     "publicsuffix",
   ]
   pruneopts = "UT"
-  revision = "5a598a2470a0279bd28bab287167dc1ef0813153"
+  revision = "0de0cce0169b09b364e001f108dc0399ea8630b3"
 
 [[projects]]
   branch = "master"
