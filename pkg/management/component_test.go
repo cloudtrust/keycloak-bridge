@@ -1999,6 +1999,18 @@ func TestDeleteCredentialsForUser(t *testing.T) {
 	var realmName = "master"
 	var userID = "1245-7854-8963"
 	var credential = "987-654-321"
+	var pwdID = "51389847-08f4-4a0f-9f9c-694554e626f2"
+	var pwd = "password"
+	var credKcPwd = kc.CredentialRepresentation{
+		Id:   &pwdID,
+		Type: &pwd,
+	}
+	var otpID = "51389847-08f4-4a0f-9f9c-694554e626f3"
+	var totp = "totp"
+	var credKcOtp = kc.CredentialRepresentation{
+		Id:   &otpID,
+		Type: &totp,
+	}
 	var typeCred = "otp-push"
 
 	t.Run("Delete credentials for user", func(t *testing.T) {
@@ -2060,20 +2072,6 @@ func TestDeleteCredentialsForUser(t *testing.T) {
 	})
 
 	t.Run("Delete credentials for user", func(t *testing.T) {
-		pwdId := "51389847-08f4-4a0f-9f9c-694554e626f2"
-		pwd := "password"
-		var credKcPwd = kc.CredentialRepresentation{
-			Id:   &pwdId,
-			Type: &pwd,
-		}
-
-		otpId := "51389847-08f4-4a0f-9f9c-694554e626f3"
-		totp := "totp"
-		var credKcOtp = kc.CredentialRepresentation{
-			Id:   &otpId,
-			Type: &totp,
-		}
-
 		var credsKc []kc.CredentialRepresentation
 		credsKc = append(credsKc, credKcPwd)
 		credsKc = append(credsKc, credKcOtp)
@@ -2082,29 +2080,15 @@ func TestDeleteCredentialsForUser(t *testing.T) {
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmReq)
 
 		mockKeycloakClient.EXPECT().GetCredentials(accessToken, realmName, userID).Return(credsKc, nil).Times(1)
-		mockKeycloakClient.EXPECT().DeleteCredential(accessToken, realmName, userID, otpId).Return(nil).Times(1)
+		mockKeycloakClient.EXPECT().DeleteCredential(accessToken, realmName, userID, otpID).Return(nil).Times(1)
 		mockEventDBModule.EXPECT().ReportEvent(ctx, "2ND_FACTOR_REMOVED", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 
-		err := managementComponent.DeleteCredentialsForUser(ctx, realmName, userID, otpId)
+		err := managementComponent.DeleteCredentialsForUser(ctx, realmName, userID, otpID)
 
 		assert.Nil(t, err)
 	})
 
 	t.Run("Delete credentials for user - error at storing the event", func(t *testing.T) {
-		pwdId := "51389847-08f4-4a0f-9f9c-694554e626f2"
-		pwd := "password"
-		var credKcPwd = kc.CredentialRepresentation{
-			Id:   &pwdId,
-			Type: &pwd,
-		}
-
-		otpId := "51389847-08f4-4a0f-9f9c-694554e626f3"
-		totp := "totp"
-		var credKcOtp = kc.CredentialRepresentation{
-			Id:   &otpId,
-			Type: &totp,
-		}
-
 		var credsKc []kc.CredentialRepresentation
 		credsKc = append(credsKc, credKcPwd)
 		credsKc = append(credsKc, credKcOtp)
@@ -2113,16 +2097,15 @@ func TestDeleteCredentialsForUser(t *testing.T) {
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmReq)
 
 		mockKeycloakClient.EXPECT().GetCredentials(accessToken, realmName, userID).Return(credsKc, nil).Times(1)
-		mockKeycloakClient.EXPECT().DeleteCredential(accessToken, realmName, userID, otpId).Return(nil).Times(1)
+		mockKeycloakClient.EXPECT().DeleteCredential(accessToken, realmName, userID, otpID).Return(nil).Times(1)
 		mockEventDBModule.EXPECT().ReportEvent(ctx, "2ND_FACTOR_REMOVED", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(errors.New("error")).Times(1)
 		m := map[string]interface{}{"event_name": "2ND_FACTOR_REMOVED", database.CtEventRealmName: realmName, database.CtEventUserID: userID}
 		eventJSON, _ := json.Marshal(m)
 		mockLogger.EXPECT().Error(gomock.Any(), "err", "error", "event", string(eventJSON))
-		err := managementComponent.DeleteCredentialsForUser(ctx, realmName, userID, otpId)
+		err := managementComponent.DeleteCredentialsForUser(ctx, realmName, userID, otpID)
 
 		assert.Nil(t, err)
 	})
-
 }
 
 func TestGetRoles(t *testing.T) {
@@ -2547,12 +2530,12 @@ func TestGetAuthorizations(t *testing.T) {
 			"action": {},
 		}
 
-		var expectedApiAuthorization = api.AuthorizationsRepresentation{
+		var expectedAPIAuthorization = api.AuthorizationsRepresentation{
 			Matrix: &matrix,
 		}
 
 		assert.Nil(t, err)
-		assert.Equal(t, expectedApiAuthorization, apiAuthorizationRep)
+		assert.Equal(t, expectedAPIAuthorization, apiAuthorizationRep)
 	}
 
 	//Error when retrieving authorizations from DB

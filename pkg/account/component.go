@@ -67,6 +67,7 @@ type ConfigurationDBModule interface {
 
 // UsersDBModule is the minimum required interface to access the users database
 type UsersDBModule interface {
+	StoreOrUpdateUser(ctx context.Context, realm string, user dto.DBUser) error
 	GetUser(ctx context.Context, realm string, userID string) (*dto.DBUser, error)
 }
 
@@ -217,6 +218,14 @@ func (c *component) UpdateAccount(ctx context.Context, user api.AccountRepresent
 		mergedAttributes["phoneNumberVerified"] = []string{strconv.FormatBool(*phoneNumberVerified)}
 	}
 
+	if user.Gender != nil {
+		mergedAttributes["gender"] = []string{*user.Gender}
+	}
+
+	if user.BirthDate != nil {
+		mergedAttributes["birthDate"] = []string{*user.BirthDate}
+	}
+
 	if user.Locale != nil {
 		mergedAttributes["locale"] = []string{*user.Locale}
 	}
@@ -230,11 +239,46 @@ func (c *component) UpdateAccount(ctx context.Context, user api.AccountRepresent
 		return err
 	}
 
-	//store the API call into the DB
+	//store the API call into the DB - As user is partially update, report event even if database update fails
 	c.reportEvent(ctx, "UPDATE_ACCOUNT", database.CtEventRealmName, realm, database.CtEventUserID, userID, database.CtEventUsername, username)
 
 	if len(actions) > 0 {
 		err = c.executeActions(ctx, actions)
+	}
+
+	var oldUser *dto.DBUser
+	oldUser, err = c.usersDBModule.GetUser(ctx, realm, userID)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return err
+	}
+
+	var dbUser = dto.DBUser{
+		UserID:               &userID,
+		BirthLocation:        user.BirthLocation,
+		IDDocumentType:       user.IDDocumentType,
+		IDDocumentNumber:     user.IDDocumentNumber,
+		IDDocumentExpiration: user.IDDocumentExpiration,
+	}
+	if oldUser != nil {
+		// Keep old values when none was provided
+		if dbUser.BirthLocation == nil {
+			dbUser.BirthLocation = oldUser.BirthLocation
+		}
+		if dbUser.IDDocumentType == nil {
+			dbUser.IDDocumentType = oldUser.IDDocumentType
+		}
+		if dbUser.IDDocumentNumber == nil {
+			dbUser.IDDocumentNumber = oldUser.IDDocumentNumber
+		}
+		if dbUser.IDDocumentExpiration == nil {
+			dbUser.IDDocumentExpiration = oldUser.IDDocumentExpiration
+		}
+	}
+
+	err = c.usersDBModule.StoreOrUpdateUser(ctx, realm, dbUser)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
 	}
 
 	return err
@@ -369,10 +413,11 @@ func (c *component) GetConfiguration(ctx context.Context, realmIDOverride string
 	}
 
 	var apiConfig = api.Configuration{
+		EditingEnabled:                    config.APISelfAccountEditingEnabled,
 		ShowAuthenticatorsTab:             config.ShowAuthenticatorsTab,
 		ShowAccountDeletionButton:         config.ShowAccountDeletionButton,
-		ShowMailEditing:                   config.ShowMailEditing,
 		ShowPasswordTab:                   config.ShowPasswordTab,
+		ShowProfileTab:                    config.ShowProfileTab,
 		RedirectSuccessfulRegistrationURL: config.RedirectSuccessfulRegistrationURL,
 	}
 

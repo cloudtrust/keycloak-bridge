@@ -39,9 +39,10 @@ type CredentialRepresentation struct {
 
 // Configuration struct
 type Configuration struct {
+	EditingEnabled                    *bool   `json:"editing_enabled"`
 	ShowAuthenticatorsTab             *bool   `json:"show_authenticators_tab"`
 	ShowPasswordTab                   *bool   `json:"show_password_tab"`
-	ShowMailEditing                   *bool   `json:"show_mail_editing"`
+	ShowProfileTab                    *bool   `json:"show_profile_tab"`
 	ShowAccountDeletionButton         *bool   `json:"show_account_deletion_button"`
 	RedirectSuccessfulRegistrationURL *string `json:"redirect_successful_registration_url"`
 }

@@ -152,16 +152,22 @@ func TestUpdateAccount(t *testing.T) {
 	var phoneNumber = "+41789456"
 	var phoneNumberVerified = true
 	var label = "Label"
+	var previousGender = "F"
 	var gender = "M"
+	var previousBirthDate = "02/02/1988"
 	var birthDate = "01/01/1988"
+	var birthLocation = "Antananarivo"
 	var locale = "de"
+	var idDocType = "PASSPORT"
+	var idDocNumber = "ABC123-DEF456"
+	var idDocExpiration = "01.01.2050"
 	var createdTimestamp = time.Now().UTC().Unix()
 
 	var attributes = make(map[string][]string)
 	attributes["phoneNumber"] = []string{phoneNumber}
 	attributes["label"] = []string{label}
-	attributes["gender"] = []string{gender}
-	attributes["birthDate"] = []string{birthDate}
+	attributes["gender"] = []string{previousGender}
+	attributes["birthDate"] = []string{previousBirthDate}
 	attributes["phoneNumberVerified"] = []string{strconv.FormatBool(phoneNumberVerified)}
 	attributes["locale"] = []string{locale}
 
@@ -176,13 +182,22 @@ func TestUpdateAccount(t *testing.T) {
 		Attributes:       &attributes,
 		CreatedTimestamp: &createdTimestamp,
 	}
+	var dbUser = dto.DBUser{
+		UserID:               &userID,
+		BirthLocation:        &birthLocation,
+		IDDocumentType:       &idDocType,
+		IDDocumentNumber:     &idDocNumber,
+		IDDocumentExpiration: &idDocExpiration,
+	}
 
 	var userRep = api.AccountRepresentation{
 		Username:    &username,
 		Email:       &email,
 		FirstName:   &firstName,
 		LastName:    &lastName,
+		Gender:      &gender,
 		PhoneNumber: &phoneNumber,
+		BirthDate:   &birthDate,
 		Locale:      &locale,
 	}
 
@@ -198,10 +213,33 @@ func TestUpdateAccount(t *testing.T) {
 				assert.Equal(t, phoneNumber, (*kcUserRep.Attributes)["phoneNumber"][0])
 				return nil
 			}).Times(1)
+		mockUsersDBModule.EXPECT().GetUser(ctx, realmName, userID).Return(&dbUser, nil)
+		mockUsersDBModule.EXPECT().StoreOrUpdateUser(ctx, realmName, gomock.Any()).Return(nil)
 
 		err := accountComponent.UpdateAccount(ctx, userRep)
 
 		assert.Nil(t, err)
+	})
+	t.Run("Keycloak update succces - DB get user fails", func(t *testing.T) {
+		mockEventDBModule.EXPECT().ReportEvent(ctx, "UPDATE_ACCOUNT", "self-service", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+		mockKeycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kcUserRep, nil).Times(1)
+		mockKeycloakAccountClient.EXPECT().UpdateAccount(accessToken, realmName, gomock.Any()).Return(nil).Times(1)
+		mockUsersDBModule.EXPECT().GetUser(ctx, realmName, userID).Return(nil, errors.New("db error"))
+
+		err := accountComponent.UpdateAccount(ctx, userRep)
+
+		assert.NotNil(t, err)
+	})
+	t.Run("Keycloak update succces - DB update fails", func(t *testing.T) {
+		mockEventDBModule.EXPECT().ReportEvent(ctx, "UPDATE_ACCOUNT", "self-service", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+		mockKeycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kcUserRep, nil).Times(1)
+		mockKeycloakAccountClient.EXPECT().UpdateAccount(accessToken, realmName, gomock.Any()).Return(nil).Times(1)
+		mockUsersDBModule.EXPECT().GetUser(ctx, realmName, userID).Return(nil, nil)
+		mockUsersDBModule.EXPECT().StoreOrUpdateUser(ctx, realmName, gomock.Any()).Return(errors.New("db error"))
+
+		err := accountComponent.UpdateAccount(ctx, userRep)
+
+		assert.NotNil(t, err)
 	})
 
 	t.Run("Update by changing the email address", func(t *testing.T) {
@@ -221,6 +259,8 @@ func TestUpdateAccount(t *testing.T) {
 		mockKeycloakAccountClient.EXPECT().ExecuteActionsEmail(accessToken, realmName, []string{ActionVerifyEmail}).Return(nil).Times(1)
 		mockEventDBModule.EXPECT().ReportEvent(ctx, "ACTION_EMAIL", "self-service", database.CtEventRealmName, realmName,
 			database.CtEventUserID, userID, database.CtEventAdditionalInfo, gomock.Any()).Return(nil).Times(1)
+		mockUsersDBModule.EXPECT().GetUser(ctx, realmName, userID).Return(nil, nil)
+		mockUsersDBModule.EXPECT().StoreOrUpdateUser(ctx, realmName, gomock.Any()).Return(nil)
 
 		err := accountComponent.UpdateAccount(ctx, userRep)
 
@@ -248,6 +288,8 @@ func TestUpdateAccount(t *testing.T) {
 		mockKeycloakAccountClient.EXPECT().ExecuteActionsEmail(accessToken, realmName, []string{ActionVerifyPhoneNumber}).Return(nil).Times(1)
 		mockEventDBModule.EXPECT().ReportEvent(ctx, "ACTION_EMAIL", "self-service", database.CtEventRealmName, realmName,
 			database.CtEventUserID, userID, database.CtEventAdditionalInfo, gomock.Any()).Return(nil).Times(1)
+		mockUsersDBModule.EXPECT().GetUser(ctx, realmName, userID).Return(nil, nil)
+		mockUsersDBModule.EXPECT().StoreOrUpdateUser(ctx, realmName, gomock.Any()).Return(nil)
 
 		err := accountComponent.UpdateAccount(ctx, userRep)
 
@@ -270,6 +312,8 @@ func TestUpdateAccount(t *testing.T) {
 				assert.Equal(t, true, verified)
 				return nil
 			}).Times(1)
+		mockUsersDBModule.EXPECT().GetUser(ctx, realmName, userID).Return(nil, nil)
+		mockUsersDBModule.EXPECT().StoreOrUpdateUser(ctx, realmName, gomock.Any()).Return(nil)
 
 		err := accountComponent.UpdateAccount(ctx, userRepWithoutAttr)
 
@@ -729,8 +773,8 @@ func TestGetConfiguration(t *testing.T) {
 			DefaultRedirectURI:                  new(string),
 			ShowAuthenticatorsTab:               &trueBool,
 			ShowAccountDeletionButton:           &trueBool,
-			ShowMailEditing:                     &trueBool,
 			ShowPasswordTab:                     &trueBool,
+			ShowProfileTab:                      &trueBool,
 		}
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
@@ -744,8 +788,8 @@ func TestGetConfiguration(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Equal(t, *config.ShowAuthenticatorsTab, *resConfig.ShowAuthenticatorsTab)
 		assert.Equal(t, *config.ShowAccountDeletionButton, *resConfig.ShowAccountDeletionButton)
-		assert.Equal(t, *config.ShowMailEditing, *resConfig.ShowMailEditing)
 		assert.Equal(t, *config.ShowPasswordTab, *resConfig.ShowPasswordTab)
+		assert.Equal(t, *config.ShowProfileTab, *resConfig.ShowProfileTab)
 	}
 
 	// Get configuration with override realm with succces
@@ -763,8 +807,8 @@ func TestGetConfiguration(t *testing.T) {
 			DefaultRedirectURI:                  new(string),
 			ShowAuthenticatorsTab:               &trueBool,
 			ShowAccountDeletionButton:           &trueBool,
-			ShowMailEditing:                     &trueBool,
 			ShowPasswordTab:                     &trueBool,
+			ShowProfileTab:                      &trueBool,
 		}
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
@@ -781,7 +825,7 @@ func TestGetConfiguration(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Equal(t, *config.ShowAuthenticatorsTab, *resConfig.ShowAuthenticatorsTab)
 		assert.Equal(t, *config.ShowAccountDeletionButton, *resConfig.ShowAccountDeletionButton)
-		assert.Equal(t, *config.ShowMailEditing, *resConfig.ShowMailEditing)
+		assert.Equal(t, *config.ShowProfileTab, *resConfig.ShowProfileTab)
 		assert.Equal(t, *config.ShowPasswordTab, *resConfig.ShowPasswordTab)
 		assert.Equal(t, successURL, *resConfig.RedirectSuccessfulRegistrationURL)
 	}

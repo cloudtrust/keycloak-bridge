@@ -247,11 +247,13 @@ components:
     Configuration:
       type: object
       properties:
+        editing_enabled:
+          type: boolean
         show_authenticators_tab:
           type: boolean
         show_password_tab:
           type: boolean
-        show_mail_editing:
+        show_profile:
           type: boolean
         show_account_deletion_button:
           type: boolean

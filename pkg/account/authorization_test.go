@@ -110,29 +110,29 @@ func TestDeny(t *testing.T) {
 		APISelfPasswordChangeEnabled:        &falseBool,
 	}
 
-	mockConfigurationDBModule.EXPECT().GetConfiguration(gomock.Any(), realmName).Return(realmConfig, nil).AnyTimes()
-
+	var authorizationMW = MakeAuthorizationAccountComponentMW(mockLogger, mockConfigurationDBModule)(mockAccountComponent)
+	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+	ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 	var err error
 
-	// Nothing allowed
-	{
-		var authorizationMW = MakeAuthorizationAccountComponentMW(mockLogger, mockConfigurationDBModule)(mockAccountComponent)
+	mockConfigurationDBModule.EXPECT().GetConfiguration(gomock.Any(), realmName).Return(realmConfig, nil).AnyTimes()
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
-		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
-
+	t.Run("UpdatePassword not allowed", func(t *testing.T) {
 		err = authorizationMW.UpdatePassword(ctx, "currentPassword", "newPassword", "newPAssword")
 		assert.Equal(t, security.ForbiddenError{}, err)
-
+	})
+	t.Run("DeleteCredential not allowed", func(t *testing.T) {
 		err = authorizationMW.DeleteCredential(ctx, credentialID)
 		assert.Equal(t, security.ForbiddenError{}, err)
-
+	})
+	t.Run("UpdateAccount - Edition deactivated", func(t *testing.T) {
 		err = authorizationMW.UpdateAccount(ctx, api.AccountRepresentation{})
 		assert.Equal(t, security.ForbiddenError{}, err)
-
+	})
+	t.Run("DeleteAccount not allowed", func(t *testing.T) {
 		err = authorizationMW.DeleteAccount(ctx)
 		assert.Equal(t, security.ForbiddenError{}, err)
-	}
+	})
 }
 
 func TestAllowed(t *testing.T) {

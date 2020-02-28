@@ -116,7 +116,7 @@ type RealmCustomConfiguration struct {
 	APISelfAccountDeletionEnabled       *bool     `json:"api_self_account_deletion_enabled"`
 	ShowAuthenticatorsTab               *bool     `json:"show_authenticators_tab"`
 	ShowPasswordTab                     *bool     `json:"show_password_tab"`
-	ShowMailEditing                     *bool     `json:"show_mail_editing"`
+	ShowProfileTab                      *bool     `json:"show_profile_tab"`
 	ShowAccountDeletionButton           *bool     `json:"show_account_deletion_button"`
 	RegisterExecuteActions              *[]string `json:"register_execute_actions"`
 	RedirectCancelledRegistrationURL    *string   `json:"redirect_cancelled_registration_url"`
