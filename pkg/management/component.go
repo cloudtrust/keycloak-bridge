@@ -779,7 +779,7 @@ func (c *component) DeleteCredentialsForUser(ctx context.Context, realmName stri
 	}
 
 	if !ownedByUser {
-		c.logger.Warn(ctx, "Try to delete credential of another user", "credId", credentialID, "userId", userID)
+		c.logger.Warn(ctx, "msg", "Try to delete credential of another user", "credId", credentialID, "userId", userID)
 		return errorhandler.CreateNotFoundError(msg.MsgErrInvalidParam + "." + msg.CredentialID)
 	}
 
