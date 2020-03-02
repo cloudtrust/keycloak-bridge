@@ -18,8 +18,8 @@
   version = "2020.02.11"
 
 [[projects]]
-  branch = "master"
-  digest = "1:9b1685882a38720f9867b1246236571179c4f705ded4ae1dc90686263cefe870"
+  branch = "ct-2228"
+  digest = "1:689cea228059240cb417b820232204cc3ed309555f6dd679429fbbb334f52d3b"
   name = "github.com/cloudtrust/common-service"
   packages = [
     ".",
@@ -39,15 +39,15 @@
     "validation",
   ]
   pruneopts = "UT"
-  revision = "b9f14ada4af152b9fc1c81c349422f4ad4f0fd88"
+  revision = "dcac57a6791de4b86f7530ced165fff7af3e9a6a"
 
 [[projects]]
-  branch = "master"
-  digest = "1:999dd3f7c6704616c1eb42ff8ccc55e11ed1aaee6e97c50fd8b24e64b0eeaf1b"
+  branch = "ct-2228"
+  digest = "1:f3b876977cb6ef33f1ef370097fb071b54d55253dcc4347a878df4734d64f570"
   name = "github.com/cloudtrust/keycloak-client"
   packages = ["."]
   pruneopts = "UT"
-  revision = "214ab9f5ed6947638e3964bb081ef562b7f31b78"
+  revision = "f8f42371adabbfbeb6aa5bb53be0acdecb4b7054"
 
 [[projects]]
   digest = "1:910c5b111ca13127693df80a59be2c952ad97313626116c0c9895e7b588f2a29"
@@ -402,7 +402,7 @@
     "publicsuffix",
   ]
   pruneopts = "UT"
-  revision = "0de0cce0169b09b364e001f108dc0399ea8630b3"
+  revision = "244492dfa37ae2ce87222fd06250a03160745faa"
 
 [[projects]]
   branch = "master"
@@ -417,11 +417,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:578046baf093df15df2904bbb0fe06f3f2385bad59987532201007754aa7e1d5"
+  digest = "1:a70084a3b2539ae837aa84c5ab561c6eddfc48eb64737d4f4414405694e47b0e"
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = "UT"
-  revision = "d5e6a3e2c0ae16fc7480523ebcb7fd4dd3215489"
+  revision = "062a44052db13d4260a3225603b5b501907478f5"
 
 [[projects]]
   digest = "1:8d8faad6b12a3a4c819a3f9618cb6ee1fa1cfc33253abeeea8b55336721e3405"

@@ -67,4 +67,5 @@ const (
 	Timeshift                         = "timeshift"
 	IdentityProvider                  = "identityProvider"
 	TrustIDGroupName                  = "trustIDGroupName"
+	AccreditationType                 = "accreditationType"
 )

@@ -376,14 +376,17 @@ func TestValidateRealmCustomConfiguration(t *testing.T) {
 
 	defaultClientID := "something$invalid"
 	defaultRedirectURI := "ht//tp://company.com"
+	blank := ""
 
 	var configs []RealmCustomConfiguration
-	for i := 0; i < 2; i++ {
+	for i := 0; i < 4; i++ {
 		configs = append(configs, createValidRealmCustomConfiguration())
 	}
 
 	configs[0].DefaultClientID = &defaultClientID
 	configs[1].DefaultRedirectURI = &defaultRedirectURI
+	configs[2].AccreditationType = &blank
+	configs[3].AccreditationType = nil
 
 	for _, config := range configs {
 		assert.NotNil(t, config.Validate())
@@ -475,10 +478,14 @@ func createValidPasswordRepresentation() PasswordRepresentation {
 func createValidRealmCustomConfiguration() RealmCustomConfiguration {
 	defaultClientID := "backofficeid"
 	defaultRedirectURI := "http://company.com"
+	physicalIdentification := true
+	accreditationType := "DEP"
 
 	return RealmCustomConfiguration{
-		DefaultClientID:    &defaultClientID,
-		DefaultRedirectURI: &defaultRedirectURI,
+		DefaultClientID:        &defaultClientID,
+		DefaultRedirectURI:     &defaultRedirectURI,
+		PhysicalIdentification: &physicalIdentification,
+		AccreditationType:      &accreditationType,
 	}
 }
 

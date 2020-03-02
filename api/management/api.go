@@ -121,6 +121,8 @@ type RealmCustomConfiguration struct {
 	RegisterExecuteActions              *[]string `json:"register_execute_actions"`
 	RedirectCancelledRegistrationURL    *string   `json:"redirect_cancelled_registration_url"`
 	RedirectSuccessfulRegistrationURL   *string   `json:"redirect_successful_registration_url"`
+	PhysicalIdentification              *bool     `json:"physical_identification"`
+	AccreditationType                   *string   `json:"accreditation_type"`
 }
 
 // FederatedIdentityRepresentation struct
@@ -436,11 +438,13 @@ func (password PasswordRepresentation) Validate() error {
 
 // Validate is a validator for RealmCustomConfiguration
 func (config RealmCustomConfiguration) Validate() error {
+	var physicalIdentEnabled = config.PhysicalIdentification != nil && *config.PhysicalIdentification
 	return validation.NewParameterValidator().
 		ValidateParameterRegExp(internal.DefaultClientID, config.DefaultClientID, RegExpClientID, false).
 		ValidateParameterRegExp(internal.DefaultRedirectURI, config.DefaultRedirectURI, RegExpRedirectURI, false).
 		ValidateParameterRegExp(internal.RedirectCancelledRegistrationURL, config.RedirectCancelledRegistrationURL, RegExpRedirectURI, false).
 		ValidateParameterRegExp(internal.RedirectSuccessfulRegistrationURL, config.RedirectSuccessfulRegistrationURL, RegExpRedirectURI, false).
+		ValidateParameterRegExp(internal.AccreditationType, config.AccreditationType, RegExpName, physicalIdentEnabled).
 		Status()
 }
 

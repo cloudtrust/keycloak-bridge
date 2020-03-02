@@ -1174,6 +1174,10 @@ components:
           type: string
         redirect_successful_registration_url:
           type: string
+        physicalIdentification:
+          type: boolean
+        accreditation_type:
+          type: string
     FederatedIdentity:
       type: object
       properties:
