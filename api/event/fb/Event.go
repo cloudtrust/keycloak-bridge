@@ -50,7 +50,7 @@ func (rcv *Event) MutateTime(n int64) bool {
 	return rcv._tab.MutateInt64Slot(6, n)
 }
 
-func (rcv *Event) Type() int8 {
+func (rcv *Event) Type() EventType {
 	o := flatbuffers.UOffsetT(rcv._tab.Offset(8))
 	if o != 0 {
 		return rcv._tab.GetInt8(o + rcv._tab.Pos)
@@ -58,7 +58,7 @@ func (rcv *Event) Type() int8 {
 	return 0
 }
 
-func (rcv *Event) MutateType(n int8) bool {
+func (rcv *Event) MutateType(n EventType) bool {
 	return rcv._tab.MutateInt8Slot(8, n)
 }
 
