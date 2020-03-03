@@ -11,6 +11,7 @@ import (
 	"github.com/cloudtrust/common-service/database"
 	errorhandler "github.com/cloudtrust/common-service/errors"
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
+	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	msg "github.com/cloudtrust/keycloak-bridge/internal/messages"
 	kc "github.com/cloudtrust/keycloak-client"
@@ -60,17 +61,6 @@ type KeycloakClient interface {
 	CreateShadowUser(accessToken string, realmName string, userID string, provider string, fedID kc.FederatedIdentityRepresentation) error
 }
 
-// ConfigurationDBModule is the interface of the configuration module.
-type ConfigurationDBModule interface {
-	NewTransaction(context context.Context) (database.Transaction, error)
-	StoreOrUpdate(context.Context, string, configuration.RealmConfiguration) error
-	GetConfiguration(context.Context, string) (configuration.RealmConfiguration, error)
-	GetAuthorizations(context context.Context, realmID string, groupID string) ([]configuration.Authorization, error)
-	CreateAuthorization(context context.Context, authz configuration.Authorization) error
-	DeleteAuthorizations(context context.Context, realmID string, groupID string) error
-	DeleteAllAuthorizationsWithGroup(context context.Context, realmID, groupName string) error
-}
-
 // Component is the management component interface.
 type Component interface {
 	GetActions(ctx context.Context) ([]api.ActionRepresentation, error)
@@ -114,6 +104,9 @@ type Component interface {
 
 	GetRealmCustomConfiguration(ctx context.Context, realmName string) (api.RealmCustomConfiguration, error)
 	UpdateRealmCustomConfiguration(ctx context.Context, realmID string, customConfig api.RealmCustomConfiguration) error
+	GetRealmBackOfficeConfiguration(ctx context.Context, realmID string, groupName string) (api.BackOfficeConfiguration, error)
+	UpdateRealmBackOfficeConfiguration(ctx context.Context, realmID string, groupName string, config api.BackOfficeConfiguration) error
+	GetUserRealmBackOfficeConfiguration(ctx context.Context, realmID string) (api.BackOfficeConfiguration, error)
 
 	CreateShadowUser(ctx context.Context, realmName string, userID string, provider string, fedID api.FederatedIdentityRepresentation) error
 }
@@ -122,14 +115,14 @@ type Component interface {
 type component struct {
 	keycloakClient          KeycloakClient
 	eventDBModule           database.EventsDBModule
-	configDBModule          ConfigurationDBModule
+	configDBModule          keycloakb.ConfigurationDBModule
 	authorizedTrustIDGroups map[string]bool
 	logger                  keycloakb.Logger
 }
 
 // NewComponent returns the management component.
 func NewComponent(keycloakClient KeycloakClient, eventDBModule database.EventsDBModule,
-	configDBModule ConfigurationDBModule, authorizedTrustIDGroups []string, logger keycloakb.Logger) Component {
+	configDBModule keycloakb.ConfigurationDBModule, authorizedTrustIDGroups []string, logger keycloakb.Logger) Component {
 
 	var authzedTrustIDGroups = make(map[string]bool)
 	for _, grp := range authorizedTrustIDGroups {
@@ -1292,8 +1285,128 @@ func (c *component) UpdateRealmCustomConfiguration(ctx context.Context, realmNam
 
 	// from the realm ID, update the custom configuration in the DB
 	realmID := realmConfig.Id
-	err = c.configDBModule.StoreOrUpdate(ctx, *realmID, config)
+	err = c.configDBModule.StoreOrUpdateConfiguration(ctx, *realmID, config)
 	return err
+}
+
+func (c *component) GetRealmBackOfficeConfiguration(ctx context.Context, realmID string, groupName string) (api.BackOfficeConfiguration, error) {
+	var dbResult, err = c.configDBModule.GetBackOfficeConfiguration(ctx, realmID, []string{groupName})
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return nil, err
+	}
+
+	return api.BackOfficeConfiguration(dbResult), nil
+}
+
+func (c *component) UpdateRealmBackOfficeConfiguration(ctx context.Context, realmID string, groupName string, configuration api.BackOfficeConfiguration) error {
+	var dbResult, err = c.configDBModule.GetBackOfficeConfiguration(ctx, realmID, []string{groupName})
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return err
+	}
+
+	err = c.removeObsoleteItemsFromBackOfficeConfiguration(ctx, realmID, groupName, dbResult, configuration)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return err
+	}
+
+	err = c.addBackOfficeConfigurationNewItems(ctx, realmID, groupName, dbResult, configuration)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+	}
+
+	return err
+}
+
+func (c *component) removeObsoleteItemsFromBackOfficeConfiguration(ctx context.Context, realmID string, groupName string, oldConf dto.BackOfficeConfiguration, newConf api.BackOfficeConfiguration) error {
+	var err error
+
+	// Remove elements which were present in the old configuration and are not present in the new one
+	for existingRealm, existingRealmConf := range oldConf {
+		if newRealmConf, ok := newConf[existingRealm]; !ok {
+			err = c.configDBModule.DeleteBackOfficeConfiguration(ctx, realmID, groupName, existingRealm, nil, nil)
+			if err != nil {
+				return err
+			}
+		} else {
+			for existingType, existingTypeConf := range existingRealmConf {
+				if newTypeConf, ok := newRealmConf[existingType]; !ok {
+					err = c.configDBModule.DeleteBackOfficeConfiguration(ctx, realmID, groupName, existingRealm, &existingType, nil)
+					if err != nil {
+						return err
+					}
+				} else {
+					for _, existingGroupName := range existingTypeConf {
+						if !c.findString(newTypeConf, existingGroupName) {
+							err = c.configDBModule.DeleteBackOfficeConfiguration(ctx, realmID, groupName, existingRealm, &existingType, &existingGroupName)
+							if err != nil {
+								return err
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+func (c *component) addBackOfficeConfigurationNewItems(ctx context.Context, realmID string, groupName string, oldConf dto.BackOfficeConfiguration, newConf api.BackOfficeConfiguration) error {
+	var err error
+
+	// Add elements which are in the new configuration and are not present in the old one
+	for newRealmID, newRealmConf := range newConf {
+		if oldRealmConf, ok := oldConf[newRealmID]; !ok {
+			for boType, boGroups := range newRealmConf {
+				err = c.configDBModule.InsertBackOfficeConfiguration(ctx, realmID, groupName, newRealmID, boType, boGroups)
+				if err != nil {
+					return err
+				}
+			}
+		} else {
+			for newTypeConf, newGroups := range newRealmConf {
+				if oldGroups, ok := oldRealmConf[newTypeConf]; !ok {
+					err = c.configDBModule.InsertBackOfficeConfiguration(ctx, realmID, groupName, newRealmID, newTypeConf, newGroups)
+					if err != nil {
+						return err
+					}
+				} else {
+					for _, newGroupName := range newGroups {
+						if !c.findString(oldGroups, newGroupName) {
+							err = c.configDBModule.InsertBackOfficeConfiguration(ctx, realmID, groupName, newRealmID, newTypeConf, []string{newGroupName})
+							if err != nil {
+								return err
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func (c *component) findString(groups []string, searchGroup string) bool {
+	for _, aGroup := range groups {
+		if aGroup == searchGroup {
+			return true
+		}
+	}
+	return false
+}
+
+func (c *component) GetUserRealmBackOfficeConfiguration(ctx context.Context, realmName string) (api.BackOfficeConfiguration, error) {
+	var groups = ctx.Value(cs.CtContextGroups).([]string)
+	var dbResult, err = c.configDBModule.GetBackOfficeConfiguration(ctx, realmName, groups)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return nil, err
+	}
+
+	return api.BackOfficeConfiguration(dbResult), nil
 }
 
 func (c *component) CreateShadowUser(ctx context.Context, realmName string, userID string, provider string, fedID api.FederatedIdentityRepresentation) error {

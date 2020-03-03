@@ -49,6 +49,7 @@ func decodeManagementRequest(ctx context.Context, req *http.Request) (interface{
 		"groupIds":     management_api.RegExpGroupIds,
 		"first":        management_api.RegExpNumber,
 		"max":          management_api.RegExpNumber,
+		"groupName":    management_api.RegExpName,
 	}
 
 	return commonhttp.DecodeRequest(ctx, req, pathParams, queryParams)

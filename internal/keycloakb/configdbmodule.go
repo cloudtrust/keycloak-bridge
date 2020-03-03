@@ -4,12 +4,14 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"strings"
 
 	"github.com/cloudtrust/common-service/configuration"
 	"github.com/cloudtrust/common-service/database"
 	"github.com/cloudtrust/common-service/database/sqltypes"
 	errorhandler "github.com/cloudtrust/common-service/errors"
 	"github.com/cloudtrust/common-service/log"
+	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 	msg "github.com/cloudtrust/keycloak-bridge/internal/messages"
 )
 
@@ -17,6 +19,23 @@ const (
 	updateConfigStmt = `INSERT INTO realm_configuration (realm_id, configuration) 
 	  VALUES (?, ?) 
 	  ON DUPLICATE KEY UPDATE configuration = ?;`
+	selectBOConfigStmt = `
+		SELECT distinct target_realm_id, target_type, target_group_name
+		FROM backoffice_configuration
+		WHERE realm_id=? AND group_name IN (???)
+	`
+	insertBOConfigStmt = `
+		INSERT INTO backoffice_configuration (realm_id, group_name, target_realm_id, target_type, target_group_name)
+		VALUES (?,?,?,?,?)
+	`
+	deleteBOConfigStmt = `
+		DELETE FROM backoffice_configuration
+		WHERE realm_id=?
+		  AND group_name=?
+		  AND target_realm_id=?
+		  AND (? IS NULL OR target_type=?)
+		  AND (? IS NULL OR target_group_name=?)
+	`
 	selectAuthzStmt = `SELECT realm_id, group_name, action, target_realm_id, target_group_name FROM authorizations WHERE realm_id = ? AND group_name = ?;`
 	createAuthzStmt = `INSERT INTO authorizations (realm_id, group_name, action, target_realm_id, target_group_name) 
 		VALUES (?, ?, ?, ?, ?);`
@@ -44,7 +63,7 @@ func NewConfigurationDBModule(db sqltypes.CloudtrustDB, logger log.Logger) Confi
 	}
 }
 
-func (c *configurationDBModule) StoreOrUpdate(context context.Context, realmID string, config configuration.RealmConfiguration) error {
+func (c *configurationDBModule) StoreOrUpdateConfiguration(context context.Context, realmID string, config configuration.RealmConfiguration) error {
 	// transform customConfig object into JSON string
 	configJSON, err := json.Marshal(config)
 	if err != nil {
@@ -66,6 +85,62 @@ func (c *configurationDBModule) GetConfiguration(ctx context.Context, realmID st
 		}
 	}
 	return config, err
+}
+
+func (c *configurationDBModule) GetBackOfficeConfiguration(ctx context.Context, realmID string, groupNames []string) (dto.BackOfficeConfiguration, error) {
+	var sqlRequest = strings.Replace(selectBOConfigStmt, "???", "?"+strings.Repeat(",?", len(groupNames)-1), 1)
+	var args = []interface{}{realmID}
+	for _, grp := range groupNames {
+		args = append(args, grp)
+	}
+
+	var rows, err = c.db.Query(sqlRequest, args...)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Can't get back-office configuration", "error", err.Error(), "realmID", realmID, "groups", strings.Join(groupNames, ","))
+		return nil, err
+	}
+
+	var res = make(dto.BackOfficeConfiguration)
+	for rows.Next() {
+		var targetRealmID, targetType, targetGroupName string
+		err = rows.Scan(&targetRealmID, &targetType, &targetGroupName)
+		if err != nil {
+			c.logger.Warn(ctx, "msg", "Can't get row from back-office configuration", "error", err.Error(), "realmID", realmID, "groups", strings.Join(groupNames, ","))
+			return nil, err
+		}
+		if _, ok := res[targetRealmID]; !ok {
+			res[targetRealmID] = make(map[string][]string)
+		}
+		if realmSubConf, ok := res[targetRealmID][targetType]; !ok {
+			res[targetRealmID][targetType] = []string{targetGroupName}
+		} else {
+			res[targetRealmID][targetType] = append(realmSubConf, targetGroupName)
+		}
+	}
+
+	return res, nil
+}
+
+func (c *configurationDBModule) DeleteBackOfficeConfiguration(ctx context.Context, realmID, groupName, targetRealmID string, targetType *string, targetGroupName *string) error {
+	var _, err = c.db.Exec(deleteBOConfigStmt, realmID, groupName, targetRealmID, targetType, targetType, targetGroupName, targetGroupName)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Can't delete back-office configuration", "error", err.Error(), "realmName", realmID, "group", groupName,
+			"targetRealmName", targetRealmID, "targetType", targetType, "group", targetGroupName)
+		return err
+	}
+	return nil
+}
+
+func (c *configurationDBModule) InsertBackOfficeConfiguration(ctx context.Context, realmID, groupName, targetRealmID, targetType string, targetGroupNames []string) error {
+	for _, targetGroupName := range targetGroupNames {
+		var _, err = c.db.Exec(insertBOConfigStmt, realmID, groupName, targetRealmID, targetType, targetGroupName)
+		if err != nil {
+			c.logger.Warn(ctx, "msg", "Can't insert into back-office configuration", "error", err.Error(), "realmID", realmID, "groupName", groupName,
+				"targetRealmName", targetRealmID, "targetType", targetType, "group", targetGroupName)
+			return err
+		}
+	}
+	return nil
 }
 
 func (c *configurationDBModule) GetAuthorizations(ctx context.Context, realmID string, groupName string) ([]configuration.Authorization, error) {

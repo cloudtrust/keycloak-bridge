@@ -266,6 +266,58 @@ func TestConvertRequiredAction(t *testing.T) {
 	assert.Equal(t, raKc.DefaultAction, ConvertRequiredAction(&raKc).DefaultAction)
 }
 
+func TestFederatedIdentityRepresentation(t *testing.T) {
+	var userID = "id"
+	var username = "uname"
+	var fir = FederatedIdentityRepresentation{UserID: &userID, Username: &username}
+
+	t.Run("ConvertToKCFedID", func(t *testing.T) {
+		var res = ConvertToKCFedID(fir)
+		assert.Equal(t, userID, *res.UserId)
+		assert.Equal(t, username, *res.UserName)
+	})
+
+	t.Run("Validate - fails", func(t *testing.T) {
+		assert.NotNil(t, fir.Validate())
+	})
+	t.Run("Validate - success", func(t *testing.T) {
+		var uid = "abcdefgh-1234-1234-1234-1234abcd5678"
+		fir.UserID = &uid
+		assert.Nil(t, fir.Validate())
+	})
+}
+
+func TestNewBackOfficeConfigurationFromJSON(t *testing.T) {
+	t.Run("Invalid JSON", func(t *testing.T) {
+		var _, err = NewBackOfficeConfigurationFromJSON(`{"shop":{"shelves":{"articles":{"books": [1, 2, 3], "chairs": [4, 5, 6]}}}}`)
+		assert.NotNil(t, err)
+	})
+	t.Run("Valid JSON", func(t *testing.T) {
+		var boConf, err = NewBackOfficeConfigurationFromJSON(`
+			{
+				"realm1": {
+					"customers": [ "group1", "group2", "group4" ],
+					"teams": [ "group1", "group3" ]
+				}
+			}
+		`)
+		assert.Nil(t, err)
+		assert.Len(t, boConf["realm1"], 2)
+		assert.Len(t, boConf["realm1"]["customers"], 3)
+		assert.Len(t, boConf["realm1"]["teams"], 2)
+	})
+	t.Run("Inalid configuration", func(t *testing.T) {
+		var _, err = NewBackOfficeConfigurationFromJSON(`
+			{
+				"not-a-valid-value": {
+					"my-realm": []
+				}
+			}
+		`)
+		assert.NotNil(t, err)
+	})
+}
+
 func TestValidateUserRepresentation(t *testing.T) {
 	{
 		user := createValidUserRepresentation()

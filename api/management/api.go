@@ -1,7 +1,10 @@
 package management_api
 
 import (
+	"encoding/json"
 	"strconv"
+
+	errorhandler "github.com/cloudtrust/common-service/errors"
 
 	"github.com/cloudtrust/common-service/configuration"
 	"github.com/cloudtrust/common-service/validation"
@@ -122,6 +125,17 @@ type RealmCustomConfiguration struct {
 	RedirectCancelledRegistrationURL    *string   `json:"redirect_cancelled_registration_url"`
 	RedirectSuccessfulRegistrationURL   *string   `json:"redirect_successful_registration_url"`
 }
+
+// BackOffice configuration keys
+const (
+	BOConfKeyCustomers = "customers"
+	BOConfKeyTeams     = "teams"
+)
+
+var allowedBoConfKeys = map[string]bool{BOConfKeyCustomers: true, BOConfKeyTeams: true}
+
+// BackOfficeConfiguration type
+type BackOfficeConfiguration map[string]map[string][]string
 
 // FederatedIdentityRepresentation struct
 type FederatedIdentityRepresentation struct {
@@ -379,6 +393,25 @@ func ConvertToKCFedID(fedID FederatedIdentityRepresentation) kc.FederatedIdentit
 }
 
 // Validators
+
+// NewBackOfficeConfigurationFromJSON creates and validates a new BackOfficeConfiguration from a JSON value
+func NewBackOfficeConfigurationFromJSON(confJSON string) (BackOfficeConfiguration, error) {
+	var boConf BackOfficeConfiguration
+	var err = json.Unmarshal([]byte(confJSON), &boConf)
+	if err != nil {
+		return BackOfficeConfiguration{}, errorhandler.CreateBadRequestError(errorhandler.MsgErrInvalidQueryParam + ".body")
+	}
+
+	var validator = validation.NewParameterValidator()
+	for _, realmConf := range boConf {
+		for keyBoConf, valueBoConf := range realmConf {
+			validator = validator.ValidateParameterIn("body.userType", &keyBoConf, allowedBoConfKeys, true).
+				ValidateParameterNotNil("body.allowedGroups", &valueBoConf)
+		}
+	}
+
+	return boConf, validator.Status()
+}
 
 // Validate is a validator for UserRepresentation
 func (user UserRepresentation) Validate() error {

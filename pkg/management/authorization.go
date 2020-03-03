@@ -22,43 +22,46 @@ func newAction(as string, scope security.Scope) security.Action {
 
 // Creates constants for API method names
 var (
-	MGMTGetActions                     = newAction("MGMT_GetActions", security.ScopeGlobal)
-	MGMTGetRealms                      = newAction("MGMT_GetRealms", security.ScopeGlobal)
-	MGMTGetRealm                       = newAction("MGMT_GetRealm", security.ScopeRealm)
-	MGMTGetClient                      = newAction("MGMT_GetClient", security.ScopeRealm)
-	MGMTGetClients                     = newAction("MGMT_GetClients", security.ScopeRealm)
-	MGMTGetRequiredActions             = newAction("MGMT_GetRequiredActions", security.ScopeRealm)
-	MGMTDeleteUser                     = newAction("MGMT_DeleteUser", security.ScopeGroup)
-	MGMTGetUser                        = newAction("MGMT_GetUser", security.ScopeGroup)
-	MGMTUpdateUser                     = newAction("MGMT_UpdateUser", security.ScopeGroup)
-	MGMTGetUsers                       = newAction("MGMT_GetUsers", security.ScopeGroup)
-	MGMTCreateUser                     = newAction("MGMT_CreateUser", security.ScopeGroup)
-	MGMTGetUserAccountStatus           = newAction("MGMT_GetUserAccountStatus", security.ScopeGroup)
-	MGMTGetRolesOfUser                 = newAction("MGMT_GetRolesOfUser", security.ScopeGroup)
-	MGMTGetGroupsOfUser                = newAction("MGMT_GetGroupsOfUser", security.ScopeGroup)
-	MGMTSetTrustIDGroups               = newAction("MGMT_SetTrustIDGroups", security.ScopeGroup)
-	MGMTGetClientRolesForUser          = newAction("MGMT_GetClientRolesForUser", security.ScopeGroup)
-	MGMTAddClientRolesToUser           = newAction("MGMT_AddClientRolesToUser", security.ScopeGroup)
-	MGMTResetPassword                  = newAction("MGMT_ResetPassword", security.ScopeGroup)
-	MGMTExecuteActionsEmail            = newAction("MGMT_ExecuteActionsEmail", security.ScopeGroup)
-	MGMTSendNewEnrolmentCode           = newAction("MGMT_SendNewEnrolmentCode", security.ScopeGroup)
-	MGMTSendReminderEmail              = newAction("MGMT_SendReminderEmail", security.ScopeGroup)
-	MGMTResetSmsCounter                = newAction("MGMT_ResetSmsCounter", security.ScopeGroup)
-	MGMTCreateRecoveryCode             = newAction("MGMT_CreateRecoveryCode", security.ScopeGroup)
-	MGMTGetCredentialsForUser          = newAction("MGMT_GetCredentialsForUser", security.ScopeGroup)
-	MGMTDeleteCredentialsForUser       = newAction("MGMT_DeleteCredentialsForUser", security.ScopeGroup)
-	MGMTGetRoles                       = newAction("MGMT_GetRoles", security.ScopeRealm)
-	MGMTGetRole                        = newAction("MGMT_GetRole", security.ScopeRealm)
-	MGMTGetGroups                      = newAction("MGMT_GetGroups", security.ScopeRealm)
-	MGMTCreateGroup                    = newAction("MGMT_CreateGroup", security.ScopeRealm)
-	MGMTDeleteGroup                    = newAction("MGMT_DeleteGroup", security.ScopeGroup)
-	MGMTGetAuthorizations              = newAction("MGMT_GetAuthorizations", security.ScopeGroup)
-	MGMTUpdateAuthorizations           = newAction("MGMT_UpdateAuthorizations", security.ScopeGroup)
-	MGMTGetClientRoles                 = newAction("MGMT_GetClientRoles", security.ScopeRealm)
-	MGMTCreateClientRole               = newAction("MGMT_CreateClientRole", security.ScopeRealm)
-	MGMTGetRealmCustomConfiguration    = newAction("MGMT_GetRealmCustomConfiguration", security.ScopeRealm)
-	MGMTUpdateRealmCustomConfiguration = newAction("MGMT_UpdateRealmCustomConfiguration", security.ScopeRealm)
-	MGMTCreateShadowUser               = newAction("MGMT_CreateShadowUser", security.ScopeRealm)
+	MGMTGetActions                          = newAction("MGMT_GetActions", security.ScopeGlobal)
+	MGMTGetRealms                           = newAction("MGMT_GetRealms", security.ScopeGlobal)
+	MGMTGetRealm                            = newAction("MGMT_GetRealm", security.ScopeRealm)
+	MGMTGetClient                           = newAction("MGMT_GetClient", security.ScopeRealm)
+	MGMTGetClients                          = newAction("MGMT_GetClients", security.ScopeRealm)
+	MGMTGetRequiredActions                  = newAction("MGMT_GetRequiredActions", security.ScopeRealm)
+	MGMTDeleteUser                          = newAction("MGMT_DeleteUser", security.ScopeGroup)
+	MGMTGetUser                             = newAction("MGMT_GetUser", security.ScopeGroup)
+	MGMTUpdateUser                          = newAction("MGMT_UpdateUser", security.ScopeGroup)
+	MGMTGetUsers                            = newAction("MGMT_GetUsers", security.ScopeGroup)
+	MGMTCreateUser                          = newAction("MGMT_CreateUser", security.ScopeGroup)
+	MGMTGetUserAccountStatus                = newAction("MGMT_GetUserAccountStatus", security.ScopeGroup)
+	MGMTGetRolesOfUser                      = newAction("MGMT_GetRolesOfUser", security.ScopeGroup)
+	MGMTGetGroupsOfUser                     = newAction("MGMT_GetGroupsOfUser", security.ScopeGroup)
+	MGMTSetTrustIDGroups                    = newAction("MGMT_SetTrustIDGroups", security.ScopeGroup)
+	MGMTGetClientRolesForUser               = newAction("MGMT_GetClientRolesForUser", security.ScopeGroup)
+	MGMTAddClientRolesToUser                = newAction("MGMT_AddClientRolesToUser", security.ScopeGroup)
+	MGMTResetPassword                       = newAction("MGMT_ResetPassword", security.ScopeGroup)
+	MGMTExecuteActionsEmail                 = newAction("MGMT_ExecuteActionsEmail", security.ScopeGroup)
+	MGMTSendNewEnrolmentCode                = newAction("MGMT_SendNewEnrolmentCode", security.ScopeGroup)
+	MGMTSendReminderEmail                   = newAction("MGMT_SendReminderEmail", security.ScopeGroup)
+	MGMTResetSmsCounter                     = newAction("MGMT_ResetSmsCounter", security.ScopeGroup)
+	MGMTCreateRecoveryCode                  = newAction("MGMT_CreateRecoveryCode", security.ScopeGroup)
+	MGMTGetCredentialsForUser               = newAction("MGMT_GetCredentialsForUser", security.ScopeGroup)
+	MGMTDeleteCredentialsForUser            = newAction("MGMT_DeleteCredentialsForUser", security.ScopeGroup)
+	MGMTGetRoles                            = newAction("MGMT_GetRoles", security.ScopeRealm)
+	MGMTGetRole                             = newAction("MGMT_GetRole", security.ScopeRealm)
+	MGMTGetGroups                           = newAction("MGMT_GetGroups", security.ScopeRealm)
+	MGMTCreateGroup                         = newAction("MGMT_CreateGroup", security.ScopeRealm)
+	MGMTDeleteGroup                         = newAction("MGMT_DeleteGroup", security.ScopeGroup)
+	MGMTGetAuthorizations                   = newAction("MGMT_GetAuthorizations", security.ScopeGroup)
+	MGMTUpdateAuthorizations                = newAction("MGMT_UpdateAuthorizations", security.ScopeGroup)
+	MGMTGetClientRoles                      = newAction("MGMT_GetClientRoles", security.ScopeRealm)
+	MGMTCreateClientRole                    = newAction("MGMT_CreateClientRole", security.ScopeRealm)
+	MGMTGetRealmCustomConfiguration         = newAction("MGMT_GetRealmCustomConfiguration", security.ScopeRealm)
+	MGMTUpdateRealmCustomConfiguration      = newAction("MGMT_UpdateRealmCustomConfiguration", security.ScopeRealm)
+	MGMTGetRealmBackOfficeConfiguration     = newAction("MGMT_GetRealmBackOfficeConfiguration", security.ScopeGroup)
+	MGMTUpdateRealmBackOfficeConfiguration  = newAction("MGMT_UpdateRealmBackOfficeConfiguration", security.ScopeGroup)
+	MGMTGetUserRealmBackOfficeConfiguration = newAction("MGMT_GetUserRealmBackOfficeConfiguration", security.ScopeRealm)
+	MGMTCreateShadowUser                    = newAction("MGMT_CreateShadowUser", security.ScopeRealm)
 )
 
 // Tracking middleware at component level.
@@ -476,6 +479,39 @@ func (c *authorizationComponentMW) UpdateRealmCustomConfiguration(ctx context.Co
 	}
 
 	return c.next.UpdateRealmCustomConfiguration(ctx, realmName, customConfig)
+}
+
+func (c *authorizationComponentMW) GetRealmBackOfficeConfiguration(ctx context.Context, realmName string, groupName string) (api.BackOfficeConfiguration, error) {
+	var action = MGMTGetRealmBackOfficeConfiguration.String()
+	var targetRealm = realmName
+
+	if err := c.authManager.CheckAuthorizationOnTargetGroup(ctx, action, targetRealm, groupName); err != nil {
+		return api.BackOfficeConfiguration{}, err
+	}
+
+	return c.next.GetRealmBackOfficeConfiguration(ctx, realmName, groupName)
+}
+
+func (c *authorizationComponentMW) UpdateRealmBackOfficeConfiguration(ctx context.Context, realmName string, groupName string, config api.BackOfficeConfiguration) error {
+	var action = MGMTUpdateRealmBackOfficeConfiguration.String()
+	var targetRealm = realmName
+
+	if err := c.authManager.CheckAuthorizationOnTargetGroup(ctx, action, targetRealm, groupName); err != nil {
+		return err
+	}
+
+	return c.next.UpdateRealmBackOfficeConfiguration(ctx, realmName, groupName, config)
+}
+
+func (c *authorizationComponentMW) GetUserRealmBackOfficeConfiguration(ctx context.Context, realmName string) (api.BackOfficeConfiguration, error) {
+	var action = MGMTGetUserRealmBackOfficeConfiguration.String()
+	var targetRealm = realmName
+
+	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
+		return api.BackOfficeConfiguration{}, err
+	}
+
+	return c.next.GetUserRealmBackOfficeConfiguration(ctx, realmName)
 }
 
 func (c *authorizationComponentMW) CreateShadowUser(ctx context.Context, realmName string, userID string, provider string, fedID api.FederatedIdentityRepresentation) error {

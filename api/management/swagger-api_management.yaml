@@ -968,6 +968,77 @@ paths:
           description: successful operation
         400:
           description: invalid information provided  (invalid client identifier or redirect URI not allowed for this client)
+  /realms/{realm}/backoffice-configuration:
+    get:
+      tags:
+      - Configuration
+      summary: Get the current backoffice configuration. Result is an aggregation of configurations from all the user's groups.
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackOfficeConfiguration'
+  /realms/{realm}/backoffice-configuration/groups:
+    get:
+      tags:
+      - Configuration
+      summary: Get the backoffice configuration for the given realmID/groupName
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: groupName
+        in: query
+        description: group name
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackOfficeConfiguration'
+    put:
+      tags:
+      - Configuration
+      summary: Update the backoffice configuration for the given realmID/groupName
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: groupName
+        in: query
+        description: group name
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BackOfficeConfiguration'
+      responses:
+        200:
+          description: successful operation
+        400:
+          description: invalid information provided
   /realms/{realm}/users/{userID}/federated-identity/{provider}:
     post:
       tags:
@@ -1174,6 +1245,16 @@ components:
           type: string
         redirect_successful_registration_url:
           type: string
+    BackOfficeConfiguration:
+      type: object
+      additionalProperties:
+        type: object
+        items:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
     FederatedIdentity:
       type: object
       properties:

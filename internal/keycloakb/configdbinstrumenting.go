@@ -8,6 +8,7 @@ import (
 	"github.com/cloudtrust/common-service/configuration"
 	"github.com/cloudtrust/common-service/database"
 	cm "github.com/cloudtrust/common-service/metrics"
+	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 )
 
 // Instrumenting middleware at module level.
@@ -19,8 +20,11 @@ type configDBModuleInstrumentingMW struct {
 // ConfigurationDBModule is the interface of the configuration module.
 type ConfigurationDBModule interface {
 	NewTransaction(context context.Context) (database.Transaction, error)
-	StoreOrUpdate(context.Context, string, configuration.RealmConfiguration) error
+	StoreOrUpdateConfiguration(context.Context, string, configuration.RealmConfiguration) error
 	GetConfiguration(context.Context, string) (configuration.RealmConfiguration, error)
+	GetBackOfficeConfiguration(context.Context, string, []string) (dto.BackOfficeConfiguration, error)
+	DeleteBackOfficeConfiguration(context.Context, string, string, string, *string, *string) error
+	InsertBackOfficeConfiguration(context.Context, string, string, string, string, []string) error
 	GetAuthorizations(context context.Context, realmID string, groupName string) ([]configuration.Authorization, error)
 	CreateAuthorization(context context.Context, authz configuration.Authorization) error
 	DeleteAuthorizations(context context.Context, realmID string, groupName string) error
@@ -46,11 +50,11 @@ func (m *configDBModuleInstrumentingMW) NewTransaction(ctx context.Context) (dat
 }
 
 // configDBModuleInstrumentingMW implements Module.
-func (m *configDBModuleInstrumentingMW) StoreOrUpdate(ctx context.Context, realmName string, config configuration.RealmConfiguration) error {
+func (m *configDBModuleInstrumentingMW) StoreOrUpdateConfiguration(ctx context.Context, realmName string, config configuration.RealmConfiguration) error {
 	defer func(begin time.Time) {
 		m.h.With("correlation_id", ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
 	}(time.Now())
-	return m.next.StoreOrUpdate(ctx, realmName, config)
+	return m.next.StoreOrUpdateConfiguration(ctx, realmName, config)
 }
 
 // configDBModuleInstrumentingMW implements Module.
@@ -59,6 +63,28 @@ func (m *configDBModuleInstrumentingMW) GetConfiguration(ctx context.Context, re
 		m.h.With("correlation_id", ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
 	}(time.Now())
 	return m.next.GetConfiguration(ctx, realmName)
+}
+
+// configDBModuleInstrumentingMW implements Module.
+func (m *configDBModuleInstrumentingMW) GetBackOfficeConfiguration(ctx context.Context, realmName string, groupNames []string) (dto.BackOfficeConfiguration, error) {
+	defer func(begin time.Time) {
+		m.h.With("correlation_id", ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
+	}(time.Now())
+	return m.next.GetBackOfficeConfiguration(ctx, realmName, groupNames)
+}
+
+func (m *configDBModuleInstrumentingMW) DeleteBackOfficeConfiguration(ctx context.Context, realmID string, groupName string, confType string, targetRealmID *string, targetGroupName *string) error {
+	defer func(begin time.Time) {
+		m.h.With("correlation_id", ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
+	}(time.Now())
+	return m.next.DeleteBackOfficeConfiguration(ctx, realmID, groupName, confType, targetRealmID, targetGroupName)
+}
+
+func (m *configDBModuleInstrumentingMW) InsertBackOfficeConfiguration(ctx context.Context, realmID, groupName, confType, targetRealmID string, targetGroupNames []string) error {
+	defer func(begin time.Time) {
+		m.h.With("correlation_id", ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
+	}(time.Now())
+	return m.next.InsertBackOfficeConfiguration(ctx, realmID, groupName, confType, targetRealmID, targetGroupNames)
 }
 
 // configDBModuleInstrumentingMW implements Module.
