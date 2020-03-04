@@ -3,6 +3,7 @@ package keycloakb
 import (
 	"context"
 
+	"github.com/cloudtrust/common-service/middleware"
 	"github.com/cloudtrust/common-service/security"
 	kc "github.com/cloudtrust/keycloak-client"
 )
@@ -11,11 +12,16 @@ import (
 type KeycloakClient interface {
 	GetGroupsOfUser(accessToken string, realmName, userID string) ([]kc.GroupRepresentation, error)
 	GetGroup(accessToken string, realmName, groupID string) (kc.GroupRepresentation, error)
+	GetRealm(accessToken string, realmName string) (kc.RealmRepresentation, error)
 }
 
 type kcAuthClient struct {
 	keycloak KeycloakClient
 	logger   Logger
+}
+
+type idretriever struct {
+	kcClient KeycloakClient
 }
 
 // NewKeycloakAuthClient creates an adaptor for Authorization management to access Keycloak
@@ -58,4 +64,22 @@ func (k *kcAuthClient) GetGroupName(ctx context.Context, accessToken string, rea
 	}
 
 	return *(grp.Name), nil
+}
+
+// NewRealmIDRetriever is a tool use to convert a realm name in a realm ID
+func NewRealmIDRetriever(kcClient KeycloakClient) middleware.IDRetriever {
+	return &idretriever{
+		kcClient: kcClient,
+	}
+}
+
+func (ir *idretriever) GetID(accessToken, name string) (string, error) {
+	var realm, err = ir.kcClient.GetRealm(accessToken, name)
+	if err != nil {
+		return "", err
+	}
+	if realm.Id == nil {
+		return "", nil
+	}
+	return *realm.Id, nil
 }
