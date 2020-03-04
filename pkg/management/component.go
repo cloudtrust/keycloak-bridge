@@ -104,6 +104,8 @@ type Component interface {
 
 	GetRealmCustomConfiguration(ctx context.Context, realmName string) (api.RealmCustomConfiguration, error)
 	UpdateRealmCustomConfiguration(ctx context.Context, realmID string, customConfig api.RealmCustomConfiguration) error
+	GetRealmAdminConfiguration(ctx context.Context, realmName string) (api.RealmAdminConfiguration, error)
+	UpdateRealmAdminConfiguration(ctx context.Context, realmID string, adminConfig api.RealmAdminConfiguration) error
 	GetRealmBackOfficeConfiguration(ctx context.Context, realmID string, groupName string) (api.BackOfficeConfiguration, error)
 	UpdateRealmBackOfficeConfiguration(ctx context.Context, realmID string, groupName string, config api.BackOfficeConfiguration) error
 	GetUserRealmBackOfficeConfiguration(ctx context.Context, realmID string) (api.BackOfficeConfiguration, error)
@@ -1284,6 +1286,58 @@ func (c *component) UpdateRealmCustomConfiguration(ctx context.Context, realmNam
 	return err
 }
 
+func (c *component) GetUserRealmBackOfficeConfiguration(ctx context.Context, realmName string) (api.BackOfficeConfiguration, error) {
+	var groups = ctx.Value(cs.CtContextGroups).([]string)
+	var dbResult, err = c.configDBModule.GetBackOfficeConfiguration(ctx, realmName, groups)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return nil, err
+	}
+
+	return api.BackOfficeConfiguration(dbResult), nil
+}
+
+// Retrieve the admin configuration from the database
+func (c *component) GetRealmAdminConfiguration(ctx context.Context, realmName string) (api.RealmAdminConfiguration, error) {
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+
+	// get the realm config from Keycloak
+	realmConfig, err := c.keycloakClient.GetRealm(accessToken, realmName)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return api.RealmAdminConfiguration{}, err
+	}
+
+	var config configuration.RealmAdminConfiguration
+	config, err = c.configDBModule.GetAdminConfiguration(ctx, *realmConfig.Id)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return api.RealmAdminConfiguration{}, err
+	}
+
+	return api.ConvertRealmAdminConfigurationFromDBStruct(config), nil
+}
+
+// Update the configuration in the database
+func (c *component) UpdateRealmAdminConfiguration(ctx context.Context, realmName string, adminConfig api.RealmAdminConfiguration) error {
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+
+	// get the realm config from Keycloak
+	realmRepr, err := c.keycloakClient.GetRealm(accessToken, realmName)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return err
+	}
+
+	err = c.configDBModule.StoreOrUpdateAdminConfiguration(ctx, *realmRepr.Id, adminConfig.ConvertToDBStruct())
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return err
+	}
+
+	return nil
+}
+
 func (c *component) GetRealmBackOfficeConfiguration(ctx context.Context, realmID string, groupName string) (api.BackOfficeConfiguration, error) {
 	var dbResult, err = c.configDBModule.GetBackOfficeConfiguration(ctx, realmID, []string{groupName})
 	if err != nil {
@@ -1391,17 +1445,6 @@ func (c *component) findString(groups []string, searchGroup string) bool {
 		}
 	}
 	return false
-}
-
-func (c *component) GetUserRealmBackOfficeConfiguration(ctx context.Context, realmName string) (api.BackOfficeConfiguration, error) {
-	var groups = ctx.Value(cs.CtContextGroups).([]string)
-	var dbResult, err = c.configDBModule.GetBackOfficeConfiguration(ctx, realmName, groups)
-	if err != nil {
-		c.logger.Warn(ctx, "err", err.Error())
-		return nil, err
-	}
-
-	return api.BackOfficeConfiguration(dbResult), nil
 }
 
 func (c *component) CreateShadowUser(ctx context.Context, realmName string, userID string, provider string, fedID api.FederatedIdentityRepresentation) error {

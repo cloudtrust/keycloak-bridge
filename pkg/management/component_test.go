@@ -3446,6 +3446,84 @@ func TestUpdateRealmCustomConfiguration(t *testing.T) {
 	}
 }
 
+func TestGetRealmAdminConfiguration(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
+	var mockEventDBModule = mock.NewEventDBModule(mockCtrl)
+	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
+	var logger = log.NewNopLogger()
+
+	var allowedTrustIDGroups = []string{"grp1", "grp2"}
+	var realmName = "myrealm"
+	var realmID = "1234-5678"
+	var accessToken = "acce-ssto-ken"
+	var expectedError = errors.New("expectedError")
+	var dbAdminConfig configuration.RealmAdminConfiguration
+	var apiAdminConfig = api.ConvertRealmAdminConfigurationFromDBStruct(dbAdminConfig)
+	var ctx = context.WithValue(context.TODO(), cs.CtContextAccessToken, accessToken)
+
+	var component = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule, allowedTrustIDGroups, logger)
+
+	t.Run("Request to Keycloak client fails", func(t *testing.T) {
+		mockKeycloakClient.EXPECT().GetRealm(accessToken, realmName).Return(kc.RealmRepresentation{}, expectedError)
+		var _, err = component.GetRealmAdminConfiguration(ctx, realmName)
+		assert.Equal(t, expectedError, err)
+	})
+	t.Run("Request to database fails", func(t *testing.T) {
+		mockKeycloakClient.EXPECT().GetRealm(accessToken, realmName).Return(kc.RealmRepresentation{Id: &realmID}, nil)
+		mockConfigurationDBModule.EXPECT().GetAdminConfiguration(ctx, gomock.Any()).Return(dbAdminConfig, expectedError)
+		var _, err = component.GetRealmAdminConfiguration(ctx, realmName)
+		assert.Equal(t, expectedError, err)
+	})
+	t.Run("Success", func(t *testing.T) {
+		mockKeycloakClient.EXPECT().GetRealm(accessToken, realmName).Return(kc.RealmRepresentation{Id: &realmID}, nil)
+		mockConfigurationDBModule.EXPECT().GetAdminConfiguration(ctx, realmID).Return(dbAdminConfig, nil)
+		var res, err = component.GetRealmAdminConfiguration(ctx, realmName)
+		assert.Nil(t, err)
+		assert.Equal(t, apiAdminConfig, res)
+	})
+}
+
+func TestUpdateRealmAdminConfiguration(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
+	var mockEventDBModule = mock.NewEventDBModule(mockCtrl)
+	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
+	var logger = log.NewNopLogger()
+
+	var allowedTrustIDGroups = []string{"grp1", "grp2"}
+	var realmName = "myrealm"
+	var realmID = "1234-5678"
+	var accessToken = "acce-ssto-ken"
+	var expectedError = errors.New("expectedError")
+	var ctx = context.WithValue(context.TODO(), cs.CtContextAccessToken, accessToken)
+	var adminConfig api.RealmAdminConfiguration
+
+	var component = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule, allowedTrustIDGroups, logger)
+
+	t.Run("Request to Keycloak client fails", func(t *testing.T) {
+		mockKeycloakClient.EXPECT().GetRealm(accessToken, realmName).Return(kc.RealmRepresentation{}, expectedError)
+		var err = component.UpdateRealmAdminConfiguration(ctx, realmName, adminConfig)
+		assert.Equal(t, expectedError, err)
+	})
+	t.Run("Request to database fails", func(t *testing.T) {
+		mockKeycloakClient.EXPECT().GetRealm(accessToken, realmName).Return(kc.RealmRepresentation{Id: &realmID}, nil)
+		mockConfigurationDBModule.EXPECT().StoreOrUpdateAdminConfiguration(ctx, realmID, gomock.Any()).Return(expectedError)
+		var err = component.UpdateRealmAdminConfiguration(ctx, realmName, adminConfig)
+		assert.Equal(t, expectedError, err)
+	})
+	t.Run("Success", func(t *testing.T) {
+		mockKeycloakClient.EXPECT().GetRealm(accessToken, realmName).Return(kc.RealmRepresentation{Id: &realmID}, nil)
+		mockConfigurationDBModule.EXPECT().StoreOrUpdateAdminConfiguration(ctx, realmID, gomock.Any()).Return(nil)
+		var err = component.UpdateRealmAdminConfiguration(ctx, realmName, adminConfig)
+		assert.Nil(t, err)
+	})
+}
+
 func createBackOfficeConfiguration(JSON string) dto.BackOfficeConfiguration {
 	var conf dto.BackOfficeConfiguration
 	json.Unmarshal([]byte(JSON), &conf)

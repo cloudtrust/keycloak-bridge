@@ -22,6 +22,8 @@ type ConfigurationDBModule interface {
 	NewTransaction(context context.Context) (database.Transaction, error)
 	StoreOrUpdateConfiguration(context.Context, string, configuration.RealmConfiguration) error
 	GetConfiguration(context.Context, string) (configuration.RealmConfiguration, error)
+	StoreOrUpdateAdminConfiguration(context.Context, string, configuration.RealmAdminConfiguration) error
+	GetAdminConfiguration(context.Context, string) (configuration.RealmAdminConfiguration, error)
 	GetBackOfficeConfiguration(context.Context, string, []string) (dto.BackOfficeConfiguration, error)
 	DeleteBackOfficeConfiguration(context.Context, string, string, string, *string, *string) error
 	InsertBackOfficeConfiguration(context.Context, string, string, string, string, []string) error
@@ -63,6 +65,22 @@ func (m *configDBModuleInstrumentingMW) GetConfiguration(ctx context.Context, re
 		m.h.With("correlation_id", ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
 	}(time.Now())
 	return m.next.GetConfiguration(ctx, realmName)
+}
+
+// configDBModuleInstrumentingMW implements Module.
+func (m *configDBModuleInstrumentingMW) StoreOrUpdateAdminConfiguration(ctx context.Context, realmName string, config configuration.RealmAdminConfiguration) error {
+	defer func(begin time.Time) {
+		m.h.With("correlation_id", ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
+	}(time.Now())
+	return m.next.StoreOrUpdateAdminConfiguration(ctx, realmName, config)
+}
+
+// configDBModuleInstrumentingMW implements Module.
+func (m *configDBModuleInstrumentingMW) GetAdminConfiguration(ctx context.Context, realmName string) (configuration.RealmAdminConfiguration, error) {
+	defer func(begin time.Time) {
+		m.h.With("correlation_id", ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
+	}(time.Now())
+	return m.next.GetAdminConfiguration(ctx, realmName)
 }
 
 // configDBModuleInstrumentingMW implements Module.

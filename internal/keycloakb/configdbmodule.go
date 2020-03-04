@@ -16,9 +16,12 @@ import (
 )
 
 const (
-	updateConfigStmt = `INSERT INTO realm_configuration (realm_id, configuration) 
+	updateConfigStmt = `INSERT INTO realm_configuration (realm_id, configuration)
 	  VALUES (?, ?) 
 	  ON DUPLICATE KEY UPDATE configuration = ?;`
+	updateAdminConfigStmt = `INSERT INTO realm_configuration (realm_id, admin_configuration)
+	  VALUES (?, ?)
+	  ON DUPLICATE KEY UPDATE admin_configuration = ?;`
 	selectBOConfigStmt = `
 		SELECT distinct target_realm_id, target_type, target_group_name
 		FROM backoffice_configuration
@@ -82,6 +85,26 @@ func (c *configurationDBModule) GetConfiguration(ctx context.Context, realmID st
 		return config, errorhandler.Error{
 			Status:  404,
 			Message: ComponentName + "." + msg.MsgErrNotConfigured + "." + msg.RealmConfiguration + "." + realmID,
+		}
+	}
+	return config, err
+}
+
+func (c *configurationDBModule) StoreOrUpdateAdminConfiguration(context context.Context, realmID string, config configuration.RealmAdminConfiguration) error {
+	var bytes, _ = json.Marshal(config)
+	var configJSON = string(bytes)
+	// update value in DB
+	var _, err = c.db.Exec(updateAdminConfigStmt, realmID, configJSON, configJSON)
+	return err
+}
+
+func (c *configurationDBModule) GetAdminConfiguration(ctx context.Context, realmID string) (configuration.RealmAdminConfiguration, error) {
+	config, err := c.ConfigurationReaderDBModule.GetAdminConfiguration(ctx, realmID)
+
+	if err == sql.ErrNoRows {
+		return config, errorhandler.Error{
+			Status:  404,
+			Message: ComponentName + "." + msg.MsgErrNotConfigured + "." + msg.RealmAdminConfiguration + "." + realmID,
 		}
 	}
 	return config, err

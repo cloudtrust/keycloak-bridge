@@ -137,6 +137,20 @@ var allowedBoConfKeys = map[string]bool{BOConfKeyCustomers: true, BOConfKeyTeams
 // BackOfficeConfiguration type
 type BackOfficeConfiguration map[string]map[string][]string
 
+// RealmAdminConfiguration struct
+type RealmAdminConfiguration struct {
+	Mode            *string                   `json:"mode"`
+	AvailableChecks map[string]bool           `json:"available-checks,omitempty"`
+	Accreditations  []RealmAdminAccreditation `json:"accreditations,omitempty"`
+}
+
+// RealmAdminAccreditation struct
+type RealmAdminAccreditation struct {
+	Type      *string `json:"type,omitempty"`
+	Validity  *string `json:"validity,omitempty"`
+	Condition *string `json:"condition,omitempty"`
+}
+
 // FederatedIdentityRepresentation struct
 type FederatedIdentityRepresentation struct {
 	UserID   *string `json:"userID,omitempty"`
@@ -375,6 +389,56 @@ func ConvertToKCFedID(fedID FederatedIdentityRepresentation) kc.FederatedIdentit
 	return kcFedID
 }
 
+// ConvertRealmAdminConfigurationFromDBStruct converts a RealmAdminConfiguration from DB struct to API struct
+func ConvertRealmAdminConfigurationFromDBStruct(conf configuration.RealmAdminConfiguration) RealmAdminConfiguration {
+	return RealmAdminConfiguration{
+		Mode:            conf.Mode,
+		AvailableChecks: conf.AvailableChecks,
+		Accreditations:  ConvertRealmAccreditationsFromDBStruct(conf.Accreditations),
+	}
+}
+
+// ConvertToDBStruct converts a realm admin configuration into its database version
+func (rac *RealmAdminConfiguration) ConvertToDBStruct() configuration.RealmAdminConfiguration {
+	return configuration.RealmAdminConfiguration{
+		Mode:            rac.Mode,
+		AvailableChecks: rac.AvailableChecks,
+		Accreditations:  rac.ConvertRealmAccreditationsToDBStruct(),
+	}
+}
+
+// ConvertRealmAccreditationsToDBStruct converts a slice of realm admin accreditation into its database version
+func (rac *RealmAdminConfiguration) ConvertRealmAccreditationsToDBStruct() []configuration.RealmAdminAccreditation {
+	if len(rac.Accreditations) == 0 {
+		return nil
+	}
+	var res []configuration.RealmAdminAccreditation
+	for _, accred := range rac.Accreditations {
+		res = append(res, configuration.RealmAdminAccreditation{
+			Type:      accred.Type,
+			Validity:  accred.Validity,
+			Condition: accred.Condition,
+		})
+	}
+	return res
+}
+
+// ConvertRealmAccreditationsFromDBStruct converts an array of accreditation from DB struct to API struct
+func ConvertRealmAccreditationsFromDBStruct(accreds []configuration.RealmAdminAccreditation) []RealmAdminAccreditation {
+	if len(accreds) == 0 {
+		return nil
+	}
+	var res []RealmAdminAccreditation
+	for _, accred := range accreds {
+		res = append(res, RealmAdminAccreditation{
+			Type:      accred.Type,
+			Validity:  accred.Validity,
+			Condition: accred.Condition,
+		})
+	}
+	return res
+}
+
 // Validators
 
 // NewBackOfficeConfigurationFromJSON creates and validates a new BackOfficeConfiguration from a JSON value
@@ -457,6 +521,13 @@ func (config RealmCustomConfiguration) Validate() error {
 		ValidateParameterRegExp(constants.DefaultRedirectURI, config.DefaultRedirectURI, constants.RegExpRedirectURI, false).
 		ValidateParameterRegExp(constants.RedirectCancelledRegistrationURL, config.RedirectCancelledRegistrationURL, constants.RegExpRedirectURI, false).
 		ValidateParameterRegExp(constants.RedirectSuccessfulRegistrationURL, config.RedirectSuccessfulRegistrationURL, constants.RegExpRedirectURI, false).
+		Status()
+}
+
+// Validate is a validator for RealmAdminConfiguration
+func (config RealmAdminConfiguration) Validate() error {
+	return validation.NewParameterValidator().
+		ValidateParameterRegExp("mode", config.Mode, RegExpName, true).
 		Status()
 }
 

@@ -33,6 +33,7 @@ func TestComponentInstrumentingMW(t *testing.T) {
 	var groupNames = []string{"group1", "group2", "group3"}
 	var groupName = groupNames[0]
 	var confType = "customers"
+	var adminConfig = configuration.RealmAdminConfiguration{}
 
 	t.Run("Get configuration", func(t *testing.T) {
 		mockComponent.EXPECT().GetConfiguration(ctx, realmID).Return(configuration.RealmConfiguration{}, nil).Times(1)
@@ -62,6 +63,62 @@ func TestComponentInstrumentingMW(t *testing.T) {
 		assert.Panics(t, f)
 	})
 
+	// Get configuration.
+	mockComponent.EXPECT().GetConfiguration(ctx, "realmID").Return(configuration.RealmConfiguration{}, nil).Times(1)
+	mockHistogram.EXPECT().With("correlation_id", corrID).Return(mockHistogram).Times(1)
+	mockHistogram.EXPECT().Observe(gomock.Any()).Return().Times(1)
+	m.GetConfiguration(ctx, "realmID")
+
+	// Get configuration without correlation ID.
+	mockComponent.EXPECT().GetConfiguration(context.Background(), "realmID").Return(configuration.RealmConfiguration{}, nil).Times(1)
+	var f = func() {
+		m.GetConfiguration(context.Background(), "realmID")
+	}
+	assert.Panics(t, f)
+
+	// Update configuration.
+	mockComponent.EXPECT().StoreOrUpdateConfiguration(ctx, "realmID", configuration.RealmConfiguration{}).Return(nil).Times(1)
+	mockHistogram.EXPECT().With("correlation_id", corrID).Return(mockHistogram).Times(1)
+	mockHistogram.EXPECT().Observe(gomock.Any()).Return().Times(1)
+	m.StoreOrUpdateConfiguration(ctx, "realmID", configuration.RealmConfiguration{})
+
+	// Update configuration without correlation ID.
+	mockComponent.EXPECT().StoreOrUpdateConfiguration(context.Background(), "realmID", configuration.RealmConfiguration{}).Return(nil).Times(1)
+	f = func() {
+		m.StoreOrUpdateConfiguration(context.Background(), "realmID", configuration.RealmConfiguration{})
+	}
+	assert.Panics(t, f)
+
+	t.Run("Get admin configuration with correlation ID", func(t *testing.T) {
+		mockComponent.EXPECT().GetAdminConfiguration(ctx, "realmID").Return(adminConfig, nil).Times(1)
+		mockHistogram.EXPECT().With("correlation_id", corrID).Return(mockHistogram).Times(1)
+		mockHistogram.EXPECT().Observe(gomock.Any()).Return().Times(1)
+		m.GetAdminConfiguration(ctx, "realmID")
+	})
+
+	t.Run("Get admin configuration without correlation ID", func(t *testing.T) {
+		mockComponent.EXPECT().GetAdminConfiguration(context.Background(), "realmID").Return(adminConfig, nil).Times(1)
+		var f = func() {
+			m.GetAdminConfiguration(context.Background(), "realmID")
+		}
+		assert.Panics(t, f)
+	})
+
+	t.Run("Update admin configuration with correlation ID", func(t *testing.T) {
+		mockComponent.EXPECT().StoreOrUpdateAdminConfiguration(ctx, "realmID", gomock.Any()).Return(nil).Times(1)
+		mockHistogram.EXPECT().With("correlation_id", corrID).Return(mockHistogram).Times(1)
+		mockHistogram.EXPECT().Observe(gomock.Any()).Return().Times(1)
+		m.StoreOrUpdateAdminConfiguration(ctx, "realmID", configuration.RealmAdminConfiguration{})
+	})
+
+	t.Run("Update configuration without correlation ID", func(t *testing.T) {
+		mockComponent.EXPECT().StoreOrUpdateAdminConfiguration(context.Background(), "realmID", gomock.Any()).Return(nil).Times(1)
+		f = func() {
+			m.StoreOrUpdateAdminConfiguration(context.Background(), "realmID", configuration.RealmAdminConfiguration{})
+		}
+		assert.Panics(t, f)
+	})
+
 	t.Run("Get Back-office configuration", func(t *testing.T) {
 		mockComponent.EXPECT().GetBackOfficeConfiguration(ctx, realmID, groupNames).Return(dto.BackOfficeConfiguration{}, nil)
 		mockHistogram.EXPECT().With("correlation_id", corrID).Return(mockHistogram).Times(1)
@@ -87,7 +144,6 @@ func TestComponentInstrumentingMW(t *testing.T) {
 			m.DeleteBackOfficeConfiguration(context.Background(), realmID, groupName, confType, nil, nil)
 		})
 	})
-
 	t.Run("Insert Back-office configuration", func(t *testing.T) {
 		mockComponent.EXPECT().InsertBackOfficeConfiguration(ctx, realmID, groupName, confType, realmID, groupNames).Return(nil)
 		mockHistogram.EXPECT().With("correlation_id", corrID).Return(mockHistogram).Times(1)

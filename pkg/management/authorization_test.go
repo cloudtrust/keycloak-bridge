@@ -82,7 +82,9 @@ func TestDeny(t *testing.T) {
 		DefaultClientID:    &clientID,
 		DefaultRedirectURI: &clientURI,
 	}
-	var config api.BackOfficeConfiguration
+
+	var boConfig api.BackOfficeConfiguration
+	var adminConfig api.RealmAdminConfiguration
 
 	var fedID = api.FederatedIdentityRepresentation{
 		UserID:   &userID,
@@ -213,10 +215,16 @@ func TestDeny(t *testing.T) {
 		err = authorizationMW.UpdateRealmCustomConfiguration(ctx, realmName, customConfig)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
+		_, err = authorizationMW.GetRealmAdminConfiguration(ctx, realmName)
+		assert.Equal(t, security.ForbiddenError{}, err)
+
+		err = authorizationMW.UpdateRealmAdminConfiguration(ctx, realmName, adminConfig)
+		assert.Equal(t, security.ForbiddenError{}, err)
+
 		_, err = authorizationMW.GetRealmBackOfficeConfiguration(ctx, realmName, groupID)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
-		err = authorizationMW.UpdateRealmBackOfficeConfiguration(ctx, realmName, groupID, config)
+		err = authorizationMW.UpdateRealmBackOfficeConfiguration(ctx, realmName, groupID, boConfig)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
 		_, err = authorizationMW.GetUserRealmBackOfficeConfiguration(ctx, realmName)
@@ -293,6 +301,7 @@ func TestAllowed(t *testing.T) {
 		DefaultRedirectURI: &clientURI,
 	}
 	var config api.BackOfficeConfiguration
+	var adminConfig api.RealmAdminConfiguration
 
 	var fedID = api.FederatedIdentityRepresentation{
 		UserID:   &userID,
@@ -471,6 +480,14 @@ func TestAllowed(t *testing.T) {
 
 		mockManagementComponent.EXPECT().UpdateRealmCustomConfiguration(ctx, realmName, customConfig).Return(nil).Times(1)
 		err = authorizationMW.UpdateRealmCustomConfiguration(ctx, realmName, customConfig)
+		assert.Nil(t, err)
+
+		mockManagementComponent.EXPECT().GetRealmAdminConfiguration(ctx, realmName).Return(adminConfig, nil).Times(1)
+		_, err = authorizationMW.GetRealmAdminConfiguration(ctx, realmName)
+		assert.Nil(t, err)
+
+		mockManagementComponent.EXPECT().UpdateRealmAdminConfiguration(ctx, realmName, adminConfig).Return(nil).Times(1)
+		err = authorizationMW.UpdateRealmAdminConfiguration(ctx, realmName, adminConfig)
 		assert.Nil(t, err)
 
 		mockManagementComponent.EXPECT().GetRealmBackOfficeConfiguration(ctx, realmName, groupID).Return(config, nil).Times(1)

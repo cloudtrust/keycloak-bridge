@@ -57,6 +57,8 @@ type Endpoints struct {
 
 	GetRealmCustomConfiguration         endpoint.Endpoint
 	UpdateRealmCustomConfiguration      endpoint.Endpoint
+	GetRealmAdminConfiguration          endpoint.Endpoint
+	UpdateRealmAdminConfiguration       endpoint.Endpoint
 	GetRealmBackOfficeConfiguration     endpoint.Endpoint
 	UpdateRealmBackOfficeConfiguration  endpoint.Endpoint
 	GetUserRealmBackOfficeConfiguration endpoint.Endpoint
@@ -105,6 +107,8 @@ type ManagementComponent interface {
 
 	GetRealmCustomConfiguration(ctx context.Context, realmID string) (api.RealmCustomConfiguration, error)
 	UpdateRealmCustomConfiguration(ctx context.Context, realmID string, customConfig api.RealmCustomConfiguration) error
+	GetRealmAdminConfiguration(ctx context.Context, realmID string) (api.RealmAdminConfiguration, error)
+	UpdateRealmAdminConfiguration(ctx context.Context, realmID string, adminConfig api.RealmAdminConfiguration) error
 	GetRealmBackOfficeConfiguration(ctx context.Context, realmName string, groupID string) (api.BackOfficeConfiguration, error)
 	UpdateRealmBackOfficeConfiguration(ctx context.Context, realmName string, groupID string, boConf api.BackOfficeConfiguration) error
 	GetUserRealmBackOfficeConfiguration(ctx context.Context, realmName string) (api.BackOfficeConfiguration, error)
@@ -610,6 +614,36 @@ func MakeUpdateRealmCustomConfigurationEndpoint(managementComponent ManagementCo
 		}
 
 		return nil, managementComponent.UpdateRealmCustomConfiguration(ctx, m["realm"], customConfig)
+	}
+}
+
+// MakeGetRealmAdminConfigurationEndpoint creates an endpoint for GetRealmAdminConfiguration
+func MakeGetRealmAdminConfigurationEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+		return managementComponent.GetRealmAdminConfiguration(ctx, m["realm"])
+	}
+}
+
+// MakeUpdateRealmAdminConfigurationEndpoint creates an endpoint for UpdateRealmAdminConfiguration
+func MakeUpdateRealmAdminConfigurationEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+		var err error
+
+		configJSON := m["body"]
+
+		var adminConfig api.RealmAdminConfiguration
+
+		if err = json.Unmarshal([]byte(configJSON), &adminConfig); err != nil {
+			return nil, errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Body)
+		}
+
+		if err = adminConfig.Validate(); err != nil {
+			return nil, err
+		}
+
+		return nil, managementComponent.UpdateRealmAdminConfiguration(ctx, m["realm"], adminConfig)
 	}
 }
 
