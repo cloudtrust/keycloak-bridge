@@ -4,13 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"strconv"
 	"strings"
 
 	cs "github.com/cloudtrust/common-service"
 	"github.com/cloudtrust/common-service/database"
 	errorhandler "github.com/cloudtrust/common-service/errors"
 	api "github.com/cloudtrust/keycloak-bridge/api/account"
+	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	internal "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
@@ -190,7 +190,7 @@ func (c *component) UpdateAccount(ctx context.Context, user api.AccountRepresent
 	}
 
 	// Merge the attributes coming from the old user representation and the updated user representation in order not to lose anything
-	var mergedAttributes = make(map[string][]string)
+	var mergedAttributes = make(kc.Attributes)
 
 	//Populate with the old attributes
 	if oldUserKc.Attributes != nil {
@@ -199,25 +199,11 @@ func (c *component) UpdateAccount(ctx context.Context, user api.AccountRepresent
 		}
 	}
 
-	if user.PhoneNumber != nil {
-		mergedAttributes["phoneNumber"] = []string{*user.PhoneNumber}
-	}
-
-	if phoneNumberVerified != nil {
-		mergedAttributes["phoneNumberVerified"] = []string{strconv.FormatBool(*phoneNumberVerified)}
-	}
-
-	if user.Gender != nil {
-		mergedAttributes["gender"] = []string{*user.Gender}
-	}
-
-	if user.BirthDate != nil {
-		mergedAttributes["birthDate"] = []string{*user.BirthDate}
-	}
-
-	if user.Locale != nil {
-		mergedAttributes["locale"] = []string{*user.Locale}
-	}
+	mergedAttributes.SetStringWhenNotNil(constants.AttrbPhoneNumber, user.PhoneNumber)
+	mergedAttributes.SetBoolWhenNotNil(constants.AttrbPhoneNumberVerified, phoneNumberVerified)
+	mergedAttributes.SetStringWhenNotNil(constants.AttrbGender, user.Gender)
+	mergedAttributes.SetDateWhenNotNil(constants.AttrbBirthDate, user.BirthDate, constants.SupportedDateLayouts)
+	mergedAttributes.SetStringWhenNotNil(constants.AttrbLocale, user.Locale)
 
 	userRep.Attributes = &mergedAttributes
 

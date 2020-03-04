@@ -2,17 +2,16 @@ package kyc
 
 import (
 	"context"
-	"strconv"
 	"time"
 
 	cs "github.com/cloudtrust/common-service"
 	"github.com/cloudtrust/common-service/database"
 	errorhandler "github.com/cloudtrust/common-service/errors"
 	apikyc "github.com/cloudtrust/keycloak-bridge/api/kyc"
+	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	internal "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
-	messages "github.com/cloudtrust/keycloak-bridge/internal/messages"
 	kc "github.com/cloudtrust/keycloak-client"
 )
 
@@ -160,11 +159,11 @@ func (c *component) ValidateUser(ctx context.Context, userID string, user apikyc
 
 	if kcUser.EmailVerified == nil || !*kcUser.EmailVerified {
 		c.logger.Warn(ctx, "msg", "Can't validate user with unverified email", "uid", userID)
-		return errorhandler.CreateBadRequestError(messages.MsgErrUnverified + "." + messages.Email)
+		return errorhandler.CreateBadRequestError(constants.MsgErrUnverified + "." + constants.Email)
 	}
-	if !isPhoneNumberVerified(kcUser.Attributes) {
+	if verified, verifiedErr := kcUser.GetAttributeBool(constants.AttrbPhoneNumberVerified); verifiedErr != nil || verified == nil || !*verified {
 		c.logger.Warn(ctx, "msg", "Can't validate user with unverified phone number", "uid", userID)
-		return errorhandler.CreateBadRequestError(messages.MsgErrUnverified + "." + messages.PhoneNumber)
+		return errorhandler.CreateBadRequestError(constants.MsgErrUnverified + "." + constants.PhoneNumber)
 	}
 
 	// Gets user from database
@@ -232,17 +231,6 @@ func (c *component) getUserByUsername(accessToken, reqRealmName, targetRealmName
 	}
 
 	return kcUsers.Users[0], nil
-}
-
-func isPhoneNumberVerified(attribs *map[string][]string) bool {
-	if attribs == nil {
-		return false
-	}
-	if value, ok := (*attribs)["phoneNumberVerified"]; ok && len(value) > 0 {
-		verified, err := strconv.ParseBool(value[0])
-		return verified && err == nil
-	}
-	return false
 }
 
 func ptr(value string) *string {

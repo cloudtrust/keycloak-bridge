@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/cloudtrust/common-service/configuration"
+	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	kc "github.com/cloudtrust/keycloak-client"
 	"github.com/stretchr/testify/assert"
 )
@@ -31,54 +32,55 @@ func TestConvertCredential(t *testing.T) {
 
 func TestConvertToAPIUser(t *testing.T) {
 	var kcUser kc.UserRepresentation
-	m := make(map[string][]string)
+	m := make(kc.Attributes)
 
 	// Phone number
 	assert.Nil(t, ConvertToAPIUser(kcUser).PhoneNumber)
 	kcUser.Attributes = &m
-	m["phoneNumber"] = []string{"+4122555555"}
+	m.SetString(constants.AttrbPhoneNumber, "+4122555555")
 	assert.NotNil(t, ConvertToAPIUser(kcUser).PhoneNumber)
 
 	// Label
 	assert.Nil(t, ConvertToAPIUser(kcUser).Label)
 	kcUser.Attributes = &m
-	m["label"] = []string{"a label"}
+	m.SetString(constants.AttrbLabel, "a label")
 	assert.NotNil(t, ConvertToAPIUser(kcUser).Label)
 
 	// Gender
 	assert.Nil(t, ConvertToAPIUser(kcUser).Gender)
 	kcUser.Attributes = &m
-	m["gender"] = []string{"a gender"}
+	m.SetString(constants.AttrbGender, "a gender")
 	assert.NotNil(t, ConvertToAPIUser(kcUser).Gender)
 
 	// Birthdate
 	assert.Nil(t, ConvertToAPIUser(kcUser).BirthDate)
 	kcUser.Attributes = &m
-	m["birthDate"] = []string{"25/12/0"}
+	m.SetString(constants.AttrbBirthDate, "25/12/0")
 	assert.NotNil(t, ConvertToAPIUser(kcUser).BirthDate)
 
 	// PhoneNumberVerified
 	assert.Nil(t, ConvertToAPIUser(kcUser).PhoneNumberVerified)
 	kcUser.Attributes = &m
-	m["phoneNumberVerified"] = []string{"true"}
+	m.SetBool(constants.AttrbPhoneNumberVerified, true)
 	assert.True(t, *ConvertToAPIUser(kcUser).PhoneNumberVerified)
 
 	// Locale
 	assert.Nil(t, ConvertToAPIUser(kcUser).Locale)
 	kcUser.Attributes = &m
-	m["locale"] = []string{"en"}
+	m.SetString(constants.AttrbLocale, "en")
 	assert.NotNil(t, *ConvertToAPIUser(kcUser).Locale)
 
 	// SmsSent
 	assert.Nil(t, ConvertToAPIUser(kcUser).SmsSent)
 	kcUser.Attributes = &m
+	m.SetInt(constants.AttrbSmsSent, 0)
 	m["smsSent"] = []string{"0"}
 	assert.NotNil(t, *ConvertToAPIUser(kcUser).SmsSent)
 
 	// trustID groups
 	assert.Nil(t, ConvertToAPIUser(kcUser).TrustIDGroups)
 	kcUser.Attributes = &m
-	m["trustIDGroups"] = []string{"en"}
+	m.SetString(constants.AttrbTrustIDGroups, "en")
 	assert.NotNil(t, *ConvertToAPIUser(kcUser).TrustIDGroups)
 }
 
@@ -450,6 +452,28 @@ func TestValidateRequiredAction(t *testing.T) {
 
 	action := RequiredAction("^")
 	assert.NotNil(t, action.Validate())
+
+	action = RequiredAction("")
+	assert.Nil(t, action.Validate())
+}
+
+func TestValidateFederatedIdentityRepresentation(t *testing.T) {
+	var userID = "abcd1234-abcd-1234-efgh-abcd1234efgh"
+	var username = "abcdef"
+	var invalid = "invalid"
+	var fi FederatedIdentityRepresentation
+
+	fi.UserID = &userID
+	fi.Username = &username
+	assert.Nil(t, fi.Validate())
+
+	fi.UserID = &invalid
+	fi.Username = &username
+	assert.NotNil(t, fi.Validate())
+
+	fi.UserID = &userID
+	fi.Username = nil
+	assert.NotNil(t, fi.Validate())
 }
 
 func createValidUserRepresentation() UserRepresentation {

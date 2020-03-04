@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/cloudtrust/common-service/validation"
+	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	kc "github.com/cloudtrust/keycloak-client"
 )
 
@@ -57,8 +58,6 @@ const (
 	// Multiple values with digits and letters separated by a single separator (space, dash)
 	regExpIDDocumentNumber = `^([\w\d]+([ -][\w\d]+)*){1,50}$`
 	regExpLocale           = `^\w{2}(-\w{2})?$`
-
-	dateLayout = "02.01.2006"
 )
 
 var (
@@ -86,22 +85,16 @@ func (u *UserRepresentation) ConvertToKeycloak() kc.UserRepresentation {
 	var (
 		bTrue      = true
 		bFalse     = false
-		attributes = make(map[string][]string)
+		attributes = make(kc.Attributes)
 	)
 
-	if u.Gender != nil {
-		attributes["gender"] = []string{*u.Gender}
-	}
+	attributes.SetStringWhenNotNil(constants.AttrbGender, u.Gender)
 	if u.PhoneNumber != nil {
-		attributes["phoneNumber"] = []string{*u.PhoneNumber}
-		attributes["phoneNumberVerified"] = []string{"false"}
+		attributes.SetString(constants.AttrbPhoneNumber, *u.PhoneNumber)
+		attributes.SetBool(constants.AttrbPhoneNumberVerified, false)
 	}
-	if u.BirthDate != nil {
-		attributes["birthDate"] = []string{*u.BirthDate}
-	}
-	if u.Locale != nil {
-		attributes["locale"] = []string{*u.Locale}
-	}
+	attributes.SetDateWhenNotNil(constants.AttrbBirthDate, u.BirthDate, constants.SupportedDateLayouts)
+	attributes.SetStringWhenNotNil(constants.AttrbLocale, u.Locale)
 
 	return kc.UserRepresentation{
 		Username:      u.Username,
@@ -122,11 +115,11 @@ func (u *UserRepresentation) Validate() error {
 		ValidateParameterRegExp(prmUserLastName, u.LastName, regExpLastName, true).
 		ValidateParameterRegExp(prmUserEmail, u.EmailAddress, regExpEmail, true).
 		ValidateParameterPhoneNumber(prmUserPhoneNumber, u.PhoneNumber, true).
-		ValidateParameterDate(prmUserBirthDate, u.BirthDate, dateLayout, true).
+		ValidateParameterDateMultipleLayout(prmUserBirthDate, u.BirthDate, constants.SupportedDateLayouts, true).
 		ValidateParameterRegExp(prmUserBirthLocation, u.BirthLocation, regExpBirthLocation, true).
 		ValidateParameterIn(prmUserIDDocumentType, u.IDDocumentType, allowedDocumentType, true).
 		ValidateParameterRegExp(prmUserIDDocumentNumber, u.IDDocumentNumber, regExpIDDocumentNumber, true).
-		ValidateParameterDate(prmUserIDDocumentExpiration, u.IDDocumentExpiration, dateLayout, true).
+		ValidateParameterDateMultipleLayout(prmUserIDDocumentExpiration, u.IDDocumentExpiration, constants.SupportedDateLayouts, true).
 		ValidateParameterRegExp(prmUserLocale, u.Locale, regExpLocale, true).
 		Status()
 }

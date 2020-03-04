@@ -6,9 +6,9 @@ import (
 
 	commonhttp "github.com/cloudtrust/common-service/http"
 	"github.com/cloudtrust/common-service/log"
-	management_api "github.com/cloudtrust/keycloak-bridge/api/management"
+	api "github.com/cloudtrust/keycloak-bridge/api/management"
+	msg "github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
-	msg "github.com/cloudtrust/keycloak-bridge/internal/messages"
 	kc_client "github.com/cloudtrust/keycloak-client"
 	"github.com/go-kit/kit/endpoint"
 	http_transport "github.com/go-kit/kit/transport/http"
@@ -28,28 +28,28 @@ func MakeManagementHandler(e endpoint.Endpoint, logger log.Logger) *http_transpo
 // decodeEventsRequest gets the HTTP parameters and body content
 func decodeManagementRequest(ctx context.Context, req *http.Request) (interface{}, error) {
 	var pathParams = map[string]string{
-		"realm":        management_api.RegExpRealmName,
-		"userID":       management_api.RegExpID,
-		"clientID":     management_api.RegExpClientID,
-		"roleID":       management_api.RegExpID,
-		"groupID":      management_api.RegExpID,
-		"credentialID": management_api.RegExpID,
-		"provider":     management_api.RegExpName,
+		"realm":        api.RegExpRealmName,
+		"userID":       api.RegExpID,
+		"clientID":     api.RegExpClientID,
+		"roleID":       api.RegExpID,
+		"groupID":      api.RegExpID,
+		"credentialID": api.RegExpID,
+		"provider":     api.RegExpName,
 	}
 
 	var queryParams = map[string]string{
-		"email":        management_api.RegExpEmail,
-		"firstName":    management_api.RegExpFirstName,
-		"lastName":     management_api.RegExpLastName,
-		"username":     management_api.RegExpUsername,
-		"search":       management_api.RegExpSearch,
-		"client_id":    management_api.RegExpClientID,
-		"redirect_uri": management_api.RegExpRedirectURI,
-		"lifespan":     management_api.RegExpLifespan,
-		"groupIds":     management_api.RegExpGroupIds,
-		"first":        management_api.RegExpNumber,
-		"max":          management_api.RegExpNumber,
-		"groupName":    management_api.RegExpName,
+		"email":        api.RegExpEmail,
+		"firstName":    api.RegExpFirstName,
+		"lastName":     api.RegExpLastName,
+		"username":     api.RegExpUsername,
+		"search":       api.RegExpSearch,
+		"client_id":    api.RegExpClientID,
+		"redirect_uri": api.RegExpRedirectURI,
+		"lifespan":     api.RegExpLifespan,
+		"groupIds":     api.RegExpGroupIds,
+		"first":        api.RegExpNumber,
+		"max":          api.RegExpNumber,
+		"groupName":    api.RegExpName,
 	}
 
 	return commonhttp.DecodeRequest(ctx, req, pathParams, queryParams)

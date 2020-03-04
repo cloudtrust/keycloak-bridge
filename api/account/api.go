@@ -1,10 +1,9 @@
 package account
 
 import (
-	"strconv"
-
 	"github.com/cloudtrust/common-service/validation"
-	msg "github.com/cloudtrust/keycloak-bridge/internal/messages"
+	"github.com/cloudtrust/keycloak-bridge/internal/constants"
+	msg "github.com/cloudtrust/keycloak-bridge/internal/constants"
 	kc "github.com/cloudtrust/keycloak-client"
 )
 
@@ -82,27 +81,22 @@ func ConvertToAPIAccount(userKc kc.UserRepresentation) AccountRepresentation {
 	userRep.FirstName = userKc.FirstName
 	userRep.LastName = userKc.LastName
 
-	if userKc.Attributes != nil {
-		var m = *userKc.Attributes
-
-		if value, ok := m["phoneNumber"]; ok && len(value) > 0 {
-			userRep.PhoneNumber = &value[0]
-		}
-		if value, ok := m["gender"]; ok && len(value) > 0 {
-			userRep.Gender = &value[0]
-		}
-		if value, ok := m["birthDate"]; ok && len(value) > 0 {
-			userRep.BirthDate = &value[0]
-		}
-		if value, ok := m["locale"]; ok && len(value) > 0 {
-			userRep.Locale = &value[0]
-		}
-		if value, ok := m["phoneNumberVerified"]; ok && len(value) > 0 {
-			if verified, err := strconv.ParseBool(value[0]); err == nil {
-				userRep.PhoneNumberVerified = &verified
-			}
-		}
+	if value := userKc.GetAttributeString(constants.AttrbPhoneNumber); value != nil {
+		userRep.PhoneNumber = value
 	}
+	if value := userKc.GetAttributeString(constants.AttrbGender); value != nil {
+		userRep.Gender = value
+	}
+	if value := userKc.GetAttributeDate(constants.AttrbBirthDate, constants.SupportedDateLayouts); value != nil {
+		userRep.BirthDate = value
+	}
+	if value := userKc.GetAttributeString(constants.AttrbLocale); value != nil {
+		userRep.Locale = value
+	}
+	if verified, err := userKc.GetAttributeBool(constants.AttrbPhoneNumberVerified); err == nil && verified != nil {
+		userRep.PhoneNumberVerified = verified
+	}
+
 	return userRep
 }
 
@@ -115,14 +109,9 @@ func ConvertToKCUser(user AccountRepresentation) kc.UserRepresentation {
 	userRep.FirstName = user.FirstName
 	userRep.LastName = user.LastName
 
-	var attributes = make(map[string][]string)
-
-	if user.PhoneNumber != nil {
-		attributes["phoneNumber"] = []string{*user.PhoneNumber}
-	}
-	if user.Locale != nil {
-		attributes["locale"] = []string{*user.Locale}
-	}
+	var attributes = make(kc.Attributes)
+	attributes.SetStringWhenNotNil(constants.AttrbPhoneNumber, user.PhoneNumber)
+	attributes.SetStringWhenNotNil(constants.AttrbLocale, user.Locale)
 
 	if len(attributes) > 0 {
 		userRep.Attributes = &attributes

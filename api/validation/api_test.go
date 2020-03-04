@@ -4,6 +4,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cloudtrust/keycloak-bridge/internal/constants"
+
 	kc "github.com/cloudtrust/keycloak-client"
 	"github.com/stretchr/testify/assert"
 )
@@ -47,7 +49,7 @@ func createValidKeycloakUser() kc.UserRepresentation {
 		firstName  = "Marc"
 		lastName   = "El-Bichoun"
 		email      = "marcel.bichon@elca.ch"
-		attributes = map[string][]string{
+		attributes = kc.Attributes{
 			"gender":              []string{"M"},
 			"phoneNumber":         []string{"00 33 686 550011"},
 			"phoneNumberVerified": []string{"true"},
@@ -138,6 +140,7 @@ func TestExportToKeycloak(t *testing.T) {
 }
 
 func TestImportFromKeycloak(t *testing.T) {
+	var dateLayout = constants.SupportedDateLayouts[0]
 	var user = createValidUser()
 	user.BirthLocation = nil
 	user.IDDocumentType = nil
@@ -150,12 +153,11 @@ func TestImportFromKeycloak(t *testing.T) {
 	var imported = UserRepresentation{}
 	imported.ImportFromKeycloak(kcUser)
 
-	assert.Equal(t, (*user.BirthDate).Format(DateLayout), (*imported.BirthDate).Format(DateLayout))
+	assert.Equal(t, (*user.BirthDate).Format(dateLayout), (*imported.BirthDate).Format(dateLayout))
 
 	user.BirthDate = nil
 	imported.BirthDate = nil
 	assert.Equal(t, user, imported)
-
 }
 
 func TestUserValidate(t *testing.T) {

@@ -11,8 +11,8 @@ import (
 	"github.com/cloudtrust/common-service/configuration"
 	"github.com/cloudtrust/common-service/log"
 
+	msg "github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/mock"
-	msg "github.com/cloudtrust/keycloak-bridge/internal/messages"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )

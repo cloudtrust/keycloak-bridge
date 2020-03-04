@@ -13,7 +13,7 @@ import (
 
 	api "github.com/cloudtrust/keycloak-bridge/api/events"
 	api_stat "github.com/cloudtrust/keycloak-bridge/api/statistics"
-	msg "github.com/cloudtrust/keycloak-bridge/internal/messages"
+	msg "github.com/cloudtrust/keycloak-bridge/internal/constants"
 )
 
 // EventsDBModule is the interface of the audit events module.

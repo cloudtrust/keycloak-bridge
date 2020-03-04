@@ -11,9 +11,9 @@ import (
 	"github.com/cloudtrust/common-service/database"
 	errorhandler "github.com/cloudtrust/common-service/errors"
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
+	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
-	msg "github.com/cloudtrust/keycloak-bridge/internal/messages"
 	kc "github.com/cloudtrust/keycloak-client"
 	"github.com/pkg/errors"
 )
@@ -348,13 +348,8 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 
 	// when the phone number changes, set the PhoneNumberVerified to false
 	if user.PhoneNumber != nil {
-		if oldUserKc.Attributes != nil {
-			var m = *oldUserKc.Attributes
-			if _, ok := m["phoneNumber"]; !ok || m["phoneNumber"][0] != *user.PhoneNumber {
-				var verified = false
-				user.PhoneNumberVerified = &verified
-			}
-		} else { // the user has no attributes until now, i.e. he has not set yet his phone number
+		var oldPhoneNumber = oldUserKc.GetAttributeString(constants.AttrbPhoneNumber)
+		if oldPhoneNumber == nil || *oldPhoneNumber != *user.PhoneNumber {
 			var verified = false
 			user.PhoneNumberVerified = &verified
 		}
@@ -363,7 +358,7 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 	userRep = api.ConvertToKCUser(user)
 
 	// Merge the attributes coming from the old user representation and the updated user representation in order not to lose anything
-	var mergedAttributes = make(map[string][]string)
+	var mergedAttributes = make(kc.Attributes)
 
 	//Populate with the old attributes
 	if oldUserKc.Attributes != nil {
@@ -511,7 +506,7 @@ func (c *component) SetTrustIDGroups(ctx context.Context, realmName, userID stri
 		} else {
 			// unauthorized call (unknown trustID group) --> error
 			c.logger.Warn(ctx, "msg", groupName+" group is not allowed to be set as a trustID group")
-			return errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.TrustIDGroupName)
+			return errorhandler.CreateBadRequestError(constants.MsgErrInvalidParam + "." + constants.TrustIDGroupName)
 		}
 	}
 
@@ -524,7 +519,7 @@ func (c *component) SetTrustIDGroups(ctx context.Context, realmName, userID stri
 
 	// set the trustID groups attributes
 	if currentUser.Attributes == nil {
-		var emtpyMap = make(map[string][]string)
+		var emtpyMap = make(kc.Attributes)
 		currentUser.Attributes = &emtpyMap
 	}
 	(*currentUser.Attributes)["trustIDGroups"] = extGroupNames
@@ -773,7 +768,7 @@ func (c *component) DeleteCredentialsForUser(ctx context.Context, realmName stri
 
 	if !ownedByUser {
 		c.logger.Warn(ctx, "msg", "Try to delete credential of another user", "credId", credentialID, "userId", userID)
-		return errorhandler.CreateNotFoundError(msg.MsgErrInvalidParam + "." + msg.CredentialID)
+		return errorhandler.CreateNotFoundError(constants.MsgErrInvalidParam + "." + constants.CredentialID)
 	}
 
 	err = c.keycloakClient.DeleteCredential(accessToken, realmName, userID, credentialID)
@@ -979,10 +974,10 @@ func (c *component) UpdateAuthorizations(ctx context.Context, realmName string, 
 		}
 
 		// Perform validation
-		err := keycloakb.Validate(authorizations, allowedTargetRealmsAndGroupNames)
+		err := Validate(authorizations, allowedTargetRealmsAndGroupNames)
 		if err != nil {
 			c.logger.Warn(ctx, "err", err.Error())
-			return errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Authorization)
+			return errorhandler.CreateBadRequestError(constants.MsgErrInvalidParam + "." + constants.Authorization)
 		}
 	}
 
@@ -1235,7 +1230,7 @@ func (c *component) UpdateRealmCustomConfiguration(ctx context.Context, realmNam
 		(customConfig.DefaultClientID != nil && customConfig.DefaultRedirectURI == nil) {
 		return errorhandler.Error{
 			Status:  400,
-			Message: keycloakb.ComponentName + "." + msg.MsgErrInvalidParam + "." + msg.ClientID + "AND" + msg.RedirectURI,
+			Message: keycloakb.ComponentName + "." + constants.MsgErrInvalidParam + "." + constants.ClientID + "AND" + constants.RedirectURI,
 		}
 	}
 
@@ -1261,7 +1256,7 @@ func (c *component) UpdateRealmCustomConfiguration(ctx context.Context, realmNam
 		if !match {
 			return errorhandler.Error{
 				Status:  400,
-				Message: keycloakb.ComponentName + "." + msg.MsgErrInvalidParam + "." + msg.ClientID + "OR" + msg.RedirectURI,
+				Message: keycloakb.ComponentName + "." + constants.MsgErrInvalidParam + "." + constants.ClientID + "OR" + constants.RedirectURI,
 			}
 		}
 	}

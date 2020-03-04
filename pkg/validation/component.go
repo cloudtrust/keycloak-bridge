@@ -9,10 +9,15 @@ import (
 	"github.com/cloudtrust/common-service/database"
 	errorhandler "github.com/cloudtrust/common-service/errors"
 	api "github.com/cloudtrust/keycloak-bridge/api/validation"
+	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	internal "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	kc "github.com/cloudtrust/keycloak-client"
+)
+
+var (
+	dateLayout = constants.SupportedDateLayouts[0]
 )
 
 // KeycloakClient are methods from keycloak-client used by this component
@@ -99,7 +104,7 @@ func (c *component) GetUser(ctx context.Context, userID string) (api.UserReprese
 	res.IDDocumentNumber = dbUser.IDDocumentNumber
 
 	if dbUser.IDDocumentExpiration != nil {
-		expirationTime, err := time.Parse(api.DateLayout, *dbUser.IDDocumentExpiration)
+		expirationTime, err := time.Parse(dateLayout, *dbUser.IDDocumentExpiration)
 		if err != nil {
 			return api.UserRepresentation{}, err
 		}
@@ -145,7 +150,7 @@ func (c *component) UpdateUser(ctx context.Context, userID string, user api.User
 		}
 
 		if user.IDDocumentExpiration != nil {
-			var expiration = (*user.IDDocumentExpiration).Format(api.DateLayout)
+			var expiration = (*user.IDDocumentExpiration).Format(dateLayout)
 			userDB.IDDocumentExpiration = &expiration
 		}
 

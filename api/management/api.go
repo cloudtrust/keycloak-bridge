@@ -8,7 +8,7 @@ import (
 
 	"github.com/cloudtrust/common-service/configuration"
 	"github.com/cloudtrust/common-service/validation"
-	internal "github.com/cloudtrust/keycloak-bridge/internal/messages"
+	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	kc "github.com/cloudtrust/keycloak-client"
 )
 
@@ -250,31 +250,14 @@ func ConvertToKCUser(user UserRepresentation) kc.UserRepresentation {
 	userRep.Groups = user.Groups
 	userRep.RealmRoles = user.Roles
 
-	var attributes = make(map[string][]string)
+	var attributes = make(kc.Attributes)
 
-	if user.PhoneNumber != nil {
-		attributes["phoneNumber"] = []string{*user.PhoneNumber}
-	}
-
-	if user.Label != nil {
-		attributes["label"] = []string{*user.Label}
-	}
-
-	if user.Gender != nil {
-		attributes["gender"] = []string{*user.Gender}
-	}
-
-	if user.BirthDate != nil {
-		attributes["birthDate"] = []string{*user.BirthDate}
-	}
-
-	if user.PhoneNumberVerified != nil {
-		attributes["phoneNumberVerified"] = []string{strconv.FormatBool(*user.PhoneNumberVerified)}
-	}
-
-	if user.Locale != nil {
-		attributes["locale"] = []string{*user.Locale}
-	}
+	attributes.SetStringWhenNotNil(constants.AttrbPhoneNumber, user.PhoneNumber)
+	attributes.SetBoolWhenNotNil(constants.AttrbPhoneNumberVerified, user.PhoneNumberVerified)
+	attributes.SetStringWhenNotNil(constants.AttrbLabel, user.Label)
+	attributes.SetStringWhenNotNil(constants.AttrbGender, user.Gender)
+	attributes.SetDateWhenNotNil(constants.AttrbBirthDate, user.BirthDate, constants.SupportedDateLayouts)
+	attributes.SetStringWhenNotNil(constants.AttrbLocale, user.Locale)
 
 	if len(attributes) > 0 {
 		userRep.Attributes = &attributes
@@ -416,26 +399,26 @@ func NewBackOfficeConfigurationFromJSON(confJSON string) (BackOfficeConfiguratio
 // Validate is a validator for UserRepresentation
 func (user UserRepresentation) Validate() error {
 	var v = validation.NewParameterValidator().
-		ValidateParameterRegExp(internal.UserID, user.ID, RegExpID, false).
-		ValidateParameterRegExp(internal.Username, user.Username, RegExpUsername, false).
-		ValidateParameterRegExp(internal.Email, user.Email, RegExpEmail, false).
-		ValidateParameterRegExp(internal.Firstname, user.FirstName, RegExpFirstName, false).
-		ValidateParameterRegExp(internal.Lastname, user.LastName, RegExpLastName, false).
-		ValidateParameterRegExp(internal.PhoneNumber, user.PhoneNumber, RegExpPhoneNumber, false).
-		ValidateParameterRegExp(internal.Label, user.Label, RegExpLabel, false).
-		ValidateParameterRegExp(internal.Gender, user.Gender, RegExpGender, false).
-		ValidateParameterRegExp(internal.Birthdate, user.BirthDate, RegExpBirthDate, false).
-		ValidateParameterRegExp(internal.Locale, user.Locale, RegExpLocale, false)
+		ValidateParameterRegExp(constants.UserID, user.ID, constants.RegExpID, false).
+		ValidateParameterRegExp(constants.Username, user.Username, constants.RegExpUsername, false).
+		ValidateParameterRegExp(constants.Email, user.Email, constants.RegExpEmail, false).
+		ValidateParameterRegExp(constants.Firstname, user.FirstName, constants.RegExpFirstName, false).
+		ValidateParameterRegExp(constants.Lastname, user.LastName, constants.RegExpLastName, false).
+		ValidateParameterRegExp(constants.PhoneNumber, user.PhoneNumber, constants.RegExpPhoneNumber, false).
+		ValidateParameterRegExp(constants.Label, user.Label, constants.RegExpLabel, false).
+		ValidateParameterRegExp(constants.Gender, user.Gender, constants.RegExpGender, false).
+		ValidateParameterDateMultipleLayout(constants.Birthdate, user.BirthDate, constants.SupportedDateLayouts, false).
+		ValidateParameterRegExp(constants.Locale, user.Locale, constants.RegExpLocale, false)
 
 	if user.Groups != nil {
 		for _, groupID := range *(user.Groups) {
-			v = v.ValidateParameterRegExp(internal.GroupID, &groupID, RegExpID, true)
+			v = v.ValidateParameterRegExp(constants.GroupID, &groupID, constants.RegExpID, true)
 		}
 	}
 
 	if user.Roles != nil {
 		for _, roleID := range *(user.Roles) {
-			v = v.ValidateParameterRegExp(internal.RoleID, &roleID, RegExpID, true)
+			v = v.ValidateParameterRegExp(constants.RoleID, &roleID, constants.RegExpID, true)
 		}
 	}
 
@@ -445,35 +428,35 @@ func (user UserRepresentation) Validate() error {
 // Validate is a validator for RoleRepresentation
 func (role RoleRepresentation) Validate() error {
 	return validation.NewParameterValidator().
-		ValidateParameterRegExp(internal.RoleID, role.ID, RegExpID, false).
-		ValidateParameterRegExp(internal.Username, role.Name, RegExpName, false).
-		ValidateParameterRegExp(internal.Description, role.Description, RegExpDescription, false).
-		ValidateParameterRegExp(internal.ContainerID, role.ContainerID, RegExpID, false).
+		ValidateParameterRegExp(constants.RoleID, role.ID, constants.RegExpID, false).
+		ValidateParameterRegExp(constants.Username, role.Name, constants.RegExpName, false).
+		ValidateParameterRegExp(constants.Description, role.Description, constants.RegExpDescription, false).
+		ValidateParameterRegExp(constants.ContainerID, role.ContainerID, constants.RegExpID, false).
 		Status()
 }
 
 // Validate is a validator for GroupRepresentation
 func (group GroupRepresentation) Validate() error {
 	return validation.NewParameterValidator().
-		ValidateParameterRegExp(internal.GroupName, group.ID, RegExpID, false).
-		ValidateParameterRegExp(internal.Name, group.Name, RegExpName, false).
+		ValidateParameterRegExp(constants.GroupName, group.ID, constants.RegExpID, false).
+		ValidateParameterRegExp(constants.Name, group.Name, constants.RegExpName, false).
 		Status()
 }
 
 // Validate is a validator for PasswordRepresentation
 func (password PasswordRepresentation) Validate() error {
 	return validation.NewParameterValidator().
-		ValidateParameterRegExp(internal.Password, password.Value, RegExpPassword, false).
+		ValidateParameterRegExp(constants.Password, password.Value, constants.RegExpPassword, false).
 		Status()
 }
 
 // Validate is a validator for RealmCustomConfiguration
 func (config RealmCustomConfiguration) Validate() error {
 	return validation.NewParameterValidator().
-		ValidateParameterRegExp(internal.DefaultClientID, config.DefaultClientID, RegExpClientID, false).
-		ValidateParameterRegExp(internal.DefaultRedirectURI, config.DefaultRedirectURI, RegExpRedirectURI, false).
-		ValidateParameterRegExp(internal.RedirectCancelledRegistrationURL, config.RedirectCancelledRegistrationURL, RegExpRedirectURI, false).
-		ValidateParameterRegExp(internal.RedirectSuccessfulRegistrationURL, config.RedirectSuccessfulRegistrationURL, RegExpRedirectURI, false).
+		ValidateParameterRegExp(constants.DefaultClientID, config.DefaultClientID, constants.RegExpClientID, false).
+		ValidateParameterRegExp(constants.DefaultRedirectURI, config.DefaultRedirectURI, constants.RegExpRedirectURI, false).
+		ValidateParameterRegExp(constants.RedirectCancelledRegistrationURL, config.RedirectCancelledRegistrationURL, constants.RegExpRedirectURI, false).
+		ValidateParameterRegExp(constants.RedirectSuccessfulRegistrationURL, config.RedirectSuccessfulRegistrationURL, constants.RegExpRedirectURI, false).
 		Status()
 }
 
@@ -482,7 +465,7 @@ func (requiredAction RequiredAction) Validate() error {
 	if requiredAction != "" {
 		var value = string(requiredAction)
 		return validation.NewParameterValidator().
-			ValidateParameterRegExp(internal.RequiredAction, &value, RegExpRequiredAction, true).
+			ValidateParameterRegExp(constants.RequiredAction, &value, constants.RegExpRequiredAction, true).
 			Status()
 	}
 	return nil
@@ -491,44 +474,43 @@ func (requiredAction RequiredAction) Validate() error {
 // Validate is a validator for FederatedIdentityRepresentation
 func (fedID FederatedIdentityRepresentation) Validate() error {
 	return validation.NewParameterValidator().
-		ValidateParameterRegExp(internal.UserID, fedID.UserID, RegExpID, true).
-		ValidateParameterRegExp(internal.Username, fedID.Username, RegExpUsername, true).
+		ValidateParameterRegExp(constants.UserID, fedID.UserID, constants.RegExpID, true).
+		ValidateParameterRegExp(constants.Username, fedID.Username, constants.RegExpUsername, true).
 		Status()
 }
 
 // Regular expressions for parameters validation
 const (
-	RegExpID          = `^[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}$`
-	RegExpName        = `^[a-zA-Z0-9-_]{1,128}$`
-	RegExpDescription = `^.{1,255}$`
+	RegExpID          = constants.RegExpID
+	RegExpName        = constants.RegExpName
+	RegExpDescription = constants.RegExpDescription
 
 	// Client
-	RegExpClientID = `^[a-zA-Z0-9-_.]{1,255}$`
+	RegExpClientID = constants.RegExpClientID
 
 	// User
-	RegExpUsername    = `^[a-zA-Z0-9-_.]{1,128}$`
-	RegExpEmail       = `^.+\@.+\..+`
-	RegExpFirstName   = `^.{1,128}$`
-	RegExpLastName    = `^.{1,128}$`
-	RegExpPhoneNumber = `^\+[1-9]\d{1,14}$`
-	RegExpLabel       = `^.{1,255}$`
-	RegExpGender      = `^[MF]$`
-	RegExpBirthDate   = `^(\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01]))$`
-	RegExpLocale      = `^[a-z]{2}$`
+	RegExpUsername    = constants.RegExpUsername
+	RegExpEmail       = constants.RegExpEmail
+	RegExpFirstName   = constants.RegExpFirstName
+	RegExpLastName    = constants.RegExpLastName
+	RegExpPhoneNumber = constants.RegExpPhoneNumber
+	RegExpLabel       = constants.RegExpLabel
+	RegExpGender      = constants.RegExpGender
+	RegExpLocale      = constants.RegExpLocale
 
 	// Password
-	RegExpPassword = `^.{1,255}$`
+	RegExpPassword = constants.RegExpPassword
 
 	// RealmCustomConfiguration
-	RegExpRedirectURI = `^\w+:(\/?\/?)[^\s]+$`
+	RegExpRedirectURI = constants.RegExpRedirectURI
 
 	// RequiredAction
-	RegExpRequiredAction = `^[a-zA-Z0-9-_]{1,255}$`
+	RegExpRequiredAction = constants.RegExpRequiredAction
 
 	// Others
-	RegExpRealmName = `^[a-zA-Z0-9_-]{1,36}$`
-	RegExpSearch    = `^.{1,128}$`
-	RegExpLifespan  = `^[0-9]{1,10}$`
-	RegExpGroupIds  = `^([a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12})(,[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}){0,20}$`
-	RegExpNumber    = `^\d+$`
+	RegExpRealmName = constants.RegExpRealmName
+	RegExpSearch    = constants.RegExpSearch
+	RegExpLifespan  = constants.RegExpLifespan
+	RegExpGroupIds  = constants.RegExpGroupIds
+	RegExpNumber    = constants.RegExpNumber
 )

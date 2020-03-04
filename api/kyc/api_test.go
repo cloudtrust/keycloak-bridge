@@ -46,7 +46,7 @@ func createValidKeycloakUser() kc.UserRepresentation {
 		firstName  = "Marc"
 		lastName   = "El-Bichoun"
 		email      = "marcel.bichon@elca.ch"
-		attributes = map[string][]string{
+		attributes = kc.Attributes{
 			"gender":              []string{"M"},
 			"phoneNumber":         []string{"00 33 686 550011"},
 			"phoneNumberVerified": []string{"true"},

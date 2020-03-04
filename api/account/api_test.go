@@ -3,6 +3,8 @@ package account
 import (
 	"testing"
 
+	"github.com/cloudtrust/keycloak-bridge/internal/constants"
+
 	kc "github.com/cloudtrust/keycloak-client"
 	"github.com/stretchr/testify/assert"
 )
@@ -30,27 +32,35 @@ func TestConvertToAPIAccount(t *testing.T) {
 	var kcUser = kc.UserRepresentation{}
 	assert.Nil(t, nil, ConvertToAPIAccount(kcUser))
 
-	var attributes = make(map[string][]string)
-	kcUser = kc.UserRepresentation{Attributes: &attributes}
-	assert.Nil(t, nil, ConvertToAPIAccount(kcUser).PhoneNumber)
+	t.Run("Empty attributes", func(t *testing.T) {
+		var attributes = make(kc.Attributes)
+		kcUser = kc.UserRepresentation{Attributes: &attributes}
+		assert.Nil(t, nil, ConvertToAPIAccount(kcUser).PhoneNumber)
+	})
 
-	attributes["phoneNumber"] = []string{"+41221234567"}
-	attributes["gender"] = []string{"M"}
-	attributes["birthDate"] = []string{"15.02.1920"}
-	attributes["locale"] = []string{"fr"}
-	attributes["phoneNumberVerified"] = []string{"true"}
-	kcUser = kc.UserRepresentation{Attributes: &attributes}
+	var attributes = kc.Attributes{
+		"phoneNumber":         []string{"+41221234567"},
+		"gender":              []string{"M"},
+		"birthDate":           []string{"15.02.1920"},
+		"locale":              []string{"fr"},
+		"phoneNumberVerified": []string{"true"},
+	}
 
-	var user = ConvertToAPIAccount(kcUser)
-	assert.Equal(t, "+41221234567", *user.PhoneNumber)
-	assert.Equal(t, "M", *user.Gender)
-	assert.Equal(t, "15.02.1920", *user.BirthDate)
-	assert.Equal(t, "fr", *user.Locale)
-	assert.True(t, *user.PhoneNumberVerified)
+	t.Run("Check attributes are copied", func(t *testing.T) {
+		kcUser = kc.UserRepresentation{Attributes: &attributes}
+		var user = ConvertToAPIAccount(kcUser)
+		assert.Equal(t, "+41221234567", *user.PhoneNumber)
+		assert.Equal(t, "M", *user.Gender)
+		assert.Equal(t, "15.02.1920", *user.BirthDate)
+		assert.Equal(t, "fr", *user.Locale)
+		assert.True(t, *user.PhoneNumberVerified)
+	})
 
-	attributes["phoneNumberVerified"] = []string{"vielleicht"}
-	user = ConvertToAPIAccount(kcUser)
-	assert.Nil(t, user.PhoneNumberVerified)
+	t.Run("PhoneNumberVerified is invalid", func(t *testing.T) {
+		attributes.SetString(constants.AttrbPhoneNumberVerified, "vielleicht")
+		var user = ConvertToAPIAccount(kcUser)
+		assert.Nil(t, user.PhoneNumberVerified)
+	})
 }
 
 func TestConvertToKCUser(t *testing.T) {

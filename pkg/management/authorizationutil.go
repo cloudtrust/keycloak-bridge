@@ -1,4 +1,4 @@
-package keycloakb
+package management
 
 import (
 	"errors"

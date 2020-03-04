@@ -11,8 +11,8 @@ import (
 	"github.com/cloudtrust/common-service/database/sqltypes"
 	errorhandler "github.com/cloudtrust/common-service/errors"
 	"github.com/cloudtrust/common-service/log"
+	msg "github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
-	msg "github.com/cloudtrust/keycloak-bridge/internal/messages"
 )
 
 const (

@@ -4,7 +4,7 @@ import (
 	"database/sql"
 
 	"github.com/cloudtrust/common-service/database/sqltypes"
-	msg "github.com/cloudtrust/keycloak-bridge/internal/messages"
+	msg "github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/pkg/errors"
 )
 

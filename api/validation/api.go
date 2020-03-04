@@ -1,10 +1,10 @@
 package validation
 
 import (
-	"strconv"
 	"time"
 
 	"github.com/cloudtrust/common-service/validation"
+	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 	kc "github.com/cloudtrust/keycloak-client"
 )
@@ -60,20 +60,18 @@ const (
 	prmCheckNature    = "check_nature"
 	prmCheckProofType = "check_proof_type"
 
-	RegExpID            = `^[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}$`
-	regExpNames         = `^([\wàáâäçèéêëìíîïñòóôöùúûüß]+([ '-][\wàáâäçèéêëìíîïñòóôöùúûüß]+)*){1,50}$`
-	regExpFirstName     = regExpNames
-	regExpLastName      = regExpNames
-	regExpEmail         = `^.+\@.+\..+$`
-	regExpBirthLocation = regExpNames
+	RegExpID            = constants.RegExpID
+	regExpNames         = constants.RegExpNameSpecialChars
+	regExpFirstName     = constants.RegExpNameSpecialChars
+	regExpLastName      = constants.RegExpNameSpecialChars
+	regExpEmail         = constants.RegExpEmail
+	regExpBirthLocation = constants.RegExpNameSpecialChars
 	// Multiple values with digits and letters separated by a single separator (space, dash)
 	regExpIDDocumentNumber = `^([\w\d]+([ -][\w\d]+)*){1,50}$`
 
 	regExpOperator  = `[a-zA-Z0-9_-]{1,255}`
 	regExpNature    = `[a-zA-Z0-9_-]{1,255}`
 	regExpProofType = `[a-zA-Z0-9_-]{1,255}`
-
-	DateLayout = "02.01.2006"
 )
 
 var (
@@ -108,25 +106,20 @@ func (c *CheckRepresentation) ConvertToDBCheck() dto.DBCheck {
 func (u *UserRepresentation) ExportToKeycloak(kcUser *kc.UserRepresentation) {
 	var bFalse = false
 	var bTrue = true
-	var attributes = make(map[string][]string)
+	var attributes = make(kc.Attributes)
 
 	if kcUser.Attributes != nil {
 		attributes = *kcUser.Attributes
 	}
 
-	if u.Gender != nil {
-		attributes["gender"] = []string{*u.Gender}
-	}
+	attributes.SetStringWhenNotNil(constants.AttrbGender, u.Gender)
 	if u.PhoneNumber != nil {
-		if value, ok := attributes["phoneNumber"]; !ok || (len(value) > 0 && value[0] != *u.PhoneNumber) {
-			attributes["phoneNumber"] = []string{*u.PhoneNumber}
-			attributes["phoneNumberVerified"] = []string{"false"}
+		if phoneNumber := attributes.GetString(constants.AttrbPhoneNumber); phoneNumber == nil || *phoneNumber != *u.PhoneNumber {
+			attributes.SetString(constants.AttrbPhoneNumber, *u.PhoneNumber)
+			attributes.SetBool(constants.AttrbPhoneNumberVerified, false)
 		}
 	}
-	if u.BirthDate != nil {
-		var birthDate = *u.BirthDate
-		attributes["birthDate"] = []string{birthDate.Format(DateLayout)}
-	}
+	attributes.SetTimeWhenNotNil(constants.AttrbBirthDate, u.BirthDate, constants.SupportedDateLayouts[0])
 
 	if u.Username != nil {
 		kcUser.Username = u.Username
@@ -153,21 +146,17 @@ func (u *UserRepresentation) ImportFromKeycloak(kcUser kc.UserRepresentation) {
 	var birthdate = u.BirthDate
 
 	if kcUser.Attributes != nil {
-		var m = *kcUser.Attributes
-		if value, ok := m["phoneNumber"]; ok && len(value) > 0 {
-			phoneNumber = &value[0]
+		if pn := kcUser.GetAttributeString(constants.AttrbPhoneNumber); pn != nil {
+			phoneNumber = pn
 		}
-		if value, ok := m["phoneNumberVerified"]; ok && len(value) > 0 {
-			if verified, err := strconv.ParseBool(value[0]); err == nil {
-				phoneNumberVerified = &verified
-			}
+		if value, err := kcUser.GetAttributeBool(constants.AttrbPhoneNumberVerified); err == nil && value != nil {
+			phoneNumberVerified = value
 		}
-		if value, ok := m["gender"]; ok && len(value) > 0 {
-			gender = &value[0]
+		if value := kcUser.GetAttributeString(constants.AttrbGender); value != nil {
+			gender = value
 		}
-		if value, ok := m["birthDate"]; ok && len(value) > 0 {
-			date, _ := time.Parse(DateLayout, value[0])
-			birthdate = &date
+		if value, err := kcUser.Attributes.GetTime(constants.AttrbBirthDate, constants.SupportedDateLayouts); err == nil && value != nil {
+			birthdate = value
 		}
 	}
 
