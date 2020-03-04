@@ -3,6 +3,7 @@ package statistics
 import (
 	"context"
 
+	cs "github.com/cloudtrust/common-service"
 	"github.com/cloudtrust/common-service/log"
 	"github.com/cloudtrust/common-service/security"
 	api "github.com/cloudtrust/keycloak-bridge/api/statistics"
@@ -51,7 +52,10 @@ func MakeAuthorizationManagementComponentMW(logger log.Logger, authorizationMana
 
 func (c *authorizationComponentMW) GetActions(ctx context.Context) ([]api.ActionRepresentation, error) {
 	var action = STGetActions.String()
-	var targetRealm = "*" // For this method, there is no target realm, so we use the wildcard to express there is no constraints.
+
+	// For this method, there is no target realm provided
+	// as parameter, so we pick the current realm of the user.
+	var targetRealm = ctx.Value(cs.CtContextRealm).(string)
 
 	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
 		return []api.ActionRepresentation{}, err

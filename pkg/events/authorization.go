@@ -3,6 +3,7 @@ package events
 import (
 	"context"
 
+	cs "github.com/cloudtrust/common-service"
 	"github.com/cloudtrust/common-service/log"
 	"github.com/cloudtrust/common-service/security"
 	api "github.com/cloudtrust/keycloak-bridge/api/events"
@@ -48,7 +49,10 @@ func MakeAuthorizationManagementComponentMW(logger log.Logger, authorizationMana
 
 func (c *authorizationComponentMW) GetActions(ctx context.Context) ([]api.ActionRepresentation, error) {
 	var action = EVGetActions.String()
-	var targetRealm = "*" // For this method, there is no target realm, so we use the wildcard to express there is no constraints.
+
+	// For this method, there is no target realm provided
+	// as parameter, so we pick the current realm of the user.
+	var targetRealm = ctx.Value(cs.CtContextRealm).(string)
 
 	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
 		return []api.ActionRepresentation{}, err
@@ -59,7 +63,9 @@ func (c *authorizationComponentMW) GetActions(ctx context.Context) ([]api.Action
 
 func (c *authorizationComponentMW) GetEvents(ctx context.Context, m map[string]string) (api.AuditEventsRepresentation, error) {
 	var action = EVGetEvents.String()
-	var targetRealm = "*" // For this method, there is no target realm, so we use the wildcard to express there is no constraints.
+
+	// For this method, there is no target realm, as events from any realm can be retrieved the target realm is any realm.
+	var targetRealm = "*"
 
 	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
 		return api.AuditEventsRepresentation{}, err
@@ -70,7 +76,7 @@ func (c *authorizationComponentMW) GetEvents(ctx context.Context, m map[string]s
 
 func (c *authorizationComponentMW) GetEventsSummary(ctx context.Context) (api.EventSummaryRepresentation, error) {
 	var action = EVGetEventsSummary.String()
-	var targetRealm = "*" // For this method, there is no target realm, so we use the wildcard to express there is no constraints.
+	var targetRealm = "*" // For this method, there is no target realm, as events from any realm can be retrieved the target realm is any realm.
 
 	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
 		return api.EventSummaryRepresentation{}, err
