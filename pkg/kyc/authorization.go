@@ -3,6 +3,7 @@ package kyc
 import (
 	"context"
 
+	cs "github.com/cloudtrust/common-service"
 	"github.com/cloudtrust/common-service/log"
 	"github.com/cloudtrust/common-service/security"
 	apikyc "github.com/cloudtrust/keycloak-bridge/api/kyc"

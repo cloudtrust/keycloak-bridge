@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	cs "github.com/cloudtrust/common-service"
 	logger "github.com/cloudtrust/common-service/log"
 	apikyc "github.com/cloudtrust/keycloak-bridge/api/kyc"
 	"github.com/cloudtrust/keycloak-bridge/pkg/kyc/mock"
@@ -19,8 +20,8 @@ func TestMakeAuthorizationRegisterComponentMW(t *testing.T) {
 	var mockComponent = mock.NewComponent(mockCtrl)
 	var mockAuthManager = mock.NewAuthorizationManager(mockCtrl)
 
-	var ctx = context.TODO()
 	var realm = "master"
+	var ctx = context.WithValue(context.Background(), cs.CtContextRealm, realm)
 	var user = apikyc.UserRepresentation{}
 	var userID = "user4673"
 	var groupIDs = []string{"group1", "group2"}
