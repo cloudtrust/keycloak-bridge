@@ -259,6 +259,10 @@ components:
           type: boolean
         redirect_successful_registration_url:
           type: string
+        available-checks:
+          type: object
+          additionalProperties:
+            type: boolean
   securitySchemes:
     openId:
       type: openIdConnect
