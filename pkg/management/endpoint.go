@@ -42,6 +42,7 @@ type Endpoints struct {
 	CreateRecoveryCode       endpoint.Endpoint
 	GetCredentialsForUser    endpoint.Endpoint
 	DeleteCredentialsForUser endpoint.Endpoint
+	ClearUserLoginFailures   endpoint.Endpoint
 
 	GetRoles         endpoint.Endpoint
 	GetRole          endpoint.Endpoint
@@ -94,6 +95,7 @@ type ManagementComponent interface {
 	CreateRecoveryCode(ctx context.Context, realmName string, userID string) (string, error)
 	GetCredentialsForUser(ctx context.Context, realmName string, userID string) ([]api.CredentialRepresentation, error)
 	DeleteCredentialsForUser(ctx context.Context, realmName string, userID string, credentialID string) error
+	ClearUserLoginFailures(ctx context.Context, realmName, userID string) error
 	GetRoles(ctx context.Context, realmName string) ([]api.RoleRepresentation, error)
 	GetRole(ctx context.Context, realmName string, roleID string) (api.RoleRepresentation, error)
 	GetClientRoles(ctx context.Context, realmName, idClient string) ([]api.RoleRepresentation, error)
@@ -442,6 +444,15 @@ func MakeDeleteCredentialsForUserEndpoint(managementComponent ManagementComponen
 		var m = req.(map[string]string)
 
 		return nil, managementComponent.DeleteCredentialsForUser(ctx, m["realm"], m["userID"], m["credentialID"])
+	}
+}
+
+// MakeClearUserLoginFailures creates an endpoint for ClearUserLoginFailures
+func MakeClearUserLoginFailures(managementComponent ManagementComponent) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+
+		return nil, managementComponent.ClearUserLoginFailures(ctx, m["realm"], m["userID"])
 	}
 }
 

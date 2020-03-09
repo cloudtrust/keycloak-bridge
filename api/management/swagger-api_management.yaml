@@ -655,33 +655,6 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Credential'
-  /realms/{realm}/users/{userID}/recovery-code:
-    post:
-      tags:
-      - Credentials
-      summary: Set a recovery code for the user
-      parameters:
-      - name: realm
-        in: path
-        description: realm name (not id!)
-        required: true
-        schema:
-          type: string
-      - name: userID
-        in: path
-        description: User id
-        required: true
-        schema:
-          type: string
-      responses:
-        201:
-          description: successful operation
-          content:
-            text/plain:
-              schema:
-                type: string
-        409:
-          description: recovery code already set
   /realms/{realm}/users/{userID}/credentials/{credentialID}:
     delete:
       tags:
@@ -709,6 +682,54 @@ paths:
       responses:
         200:
           description: successful operation
+  /realms/{realm}/users/{userID}/clear-login-failures:
+    delete:
+      tags:
+      - login-failures
+      summary: Delete the login failures for the user
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation
+  /realms/{realm}/users/{userID}/recovery-code:
+    post:
+      tags:
+      - Credentials
+      summary: Set a recovery code for the user
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
+      responses:
+        201:
+          description: successful operation
+          content:
+            text/plain:
+              schema:
+                type: string
+        409:
+          description: recovery code already set
   /realms/{realm}/roles:
     get:
       tags:

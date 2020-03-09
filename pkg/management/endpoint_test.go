@@ -771,6 +771,28 @@ func TestDeleteCredentialsForUserEndpoint(t *testing.T) {
 	}
 }
 
+func TestClearUserLoginFailuresEndpoint(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
+	var e = MakeClearUserLoginFailures(mockManagementComponent)
+
+	// No error - Without param
+	{
+		var realm = "master"
+		var userID = "123-456-789"
+		var ctx = context.Background()
+		var req = make(map[string]string)
+		req["realm"] = realm
+		req["userID"] = userID
+
+		mockManagementComponent.EXPECT().ClearUserLoginFailures(ctx, realm, userID).Return(nil).Times(1)
+		var _, err = e(ctx, req)
+		assert.Nil(t, err)
+	}
+}
+
 func TestGetRolesEndpoint(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()

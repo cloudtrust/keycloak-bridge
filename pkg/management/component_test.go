@@ -2110,6 +2110,35 @@ func TestDeleteCredentialsForUser(t *testing.T) {
 	})
 }
 
+func TestClearUserLoginFailures(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
+	var mockEventDBModule = mock.NewEventDBModule(mockCtrl)
+	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
+	var logger = log.NewNopLogger()
+
+	var accessToken = "TOKEN=="
+	var realm = "master"
+	var userID = "1245-7854-8963"
+	var allowedTrustIDGroups = []string{"grp1", "grp2"}
+	var ctx = context.WithValue(context.TODO(), cs.CtContextAccessToken, accessToken)
+	var component = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule, allowedTrustIDGroups, logger)
+
+	t.Run("Error occured", func(t *testing.T) {
+		var expectedError = errors.New("kc error")
+		mockKeycloakClient.EXPECT().ClearUserLoginFailures(accessToken, realm, userID).Return(expectedError)
+		var err = component.ClearUserLoginFailures(ctx, realm, userID)
+		assert.Equal(t, expectedError, err)
+	})
+	t.Run("Success", func(t *testing.T) {
+		mockKeycloakClient.EXPECT().ClearUserLoginFailures(accessToken, realm, userID).Return(nil)
+		mockEventDBModule.EXPECT().ReportEvent(ctx, "LOGIN_FAILURE_CLEARED", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+		var err = component.ClearUserLoginFailures(ctx, realm, userID)
+		assert.Nil(t, err)
+	})
+}
+
 func TestGetRoles(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
