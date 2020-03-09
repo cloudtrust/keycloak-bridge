@@ -475,13 +475,13 @@ func TestCreateUser(t *testing.T) {
 				assert.Equal(t, emailVerified, *kcUserRep.EmailVerified)
 				assert.Equal(t, firstName, *kcUserRep.FirstName)
 				assert.Equal(t, lastName, *kcUserRep.LastName)
-				assert.Equal(t, phoneNumber, (*kcUserRep.Attributes)["phoneNumber"][0])
-				verified, _ := strconv.ParseBool(((*kcUserRep.Attributes)["phoneNumberVerified"][0]))
-				assert.Equal(t, phoneNumberVerified, verified)
-				assert.Equal(t, label, (*kcUserRep.Attributes)["label"][0])
-				assert.Equal(t, gender, (*kcUserRep.Attributes)["gender"][0])
-				assert.Equal(t, birthDate, (*kcUserRep.Attributes)["birthDate"][0])
-				assert.Equal(t, locale, (*kcUserRep.Attributes)["locale"][0])
+				assert.Equal(t, phoneNumber, *kcUserRep.GetAttributeString(constants.AttrbPhoneNumber))
+				verified, _ := kcUserRep.GetAttributeBool(constants.AttrbPhoneNumberVerified)
+				assert.Equal(t, phoneNumberVerified, *verified)
+				assert.Equal(t, label, *kcUserRep.GetAttributeString(constants.AttrbLabel))
+				assert.Equal(t, gender, *kcUserRep.GetAttributeString(constants.AttrbGender))
+				assert.Equal(t, birthDate, *kcUserRep.GetAttributeString(constants.AttrbBirthDate))
+				assert.Equal(t, locale, *kcUserRep.GetAttributeString(constants.AttrbLocale))
 
 				return locationURL, nil
 			}).Times(1)
@@ -793,13 +793,13 @@ func TestUpdateUser(t *testing.T) {
 				assert.Equal(t, emailVerified, *kcUserRep.EmailVerified)
 				assert.Equal(t, firstName, *kcUserRep.FirstName)
 				assert.Equal(t, lastName, *kcUserRep.LastName)
-				assert.Equal(t, phoneNumber, (*kcUserRep.Attributes)["phoneNumber"][0])
-				verified, _ := kcUserRep.Attributes.GetBool(constants.AttrbPhoneNumberVerified)
+				assert.Equal(t, phoneNumber, *kcUserRep.GetAttributeString(constants.AttrbPhoneNumber))
+				verified, _ := kcUserRep.GetAttributeBool(constants.AttrbPhoneNumberVerified)
 				assert.Equal(t, phoneNumberVerified, *verified)
-				assert.Equal(t, label, (*kcUserRep.Attributes)["label"][0])
-				assert.Equal(t, gender, (*kcUserRep.Attributes)["gender"][0])
-				assert.Equal(t, birthDate, (*kcUserRep.Attributes)["birthDate"][0])
-				assert.Equal(t, locale, (*kcUserRep.Attributes)["locale"][0])
+				assert.Equal(t, label, *kcUserRep.GetAttributeString(constants.AttrbLabel))
+				assert.Equal(t, gender, *kcUserRep.GetAttributeString(constants.AttrbGender))
+				assert.Equal(t, birthDate, *kcUserRep.GetAttributeString(constants.AttrbBirthDate))
+				assert.Equal(t, locale, *kcUserRep.GetAttributeString(constants.AttrbLocale))
 				return nil
 			}).Times(1)
 
@@ -817,13 +817,13 @@ func TestUpdateUser(t *testing.T) {
 				assert.Equal(t, emailVerified, *kcUserRep.EmailVerified)
 				assert.Equal(t, firstName, *kcUserRep.FirstName)
 				assert.Equal(t, lastName, *kcUserRep.LastName)
-				assert.Equal(t, phoneNumber, (*kcUserRep.Attributes)["phoneNumber"][0])
-				verified, _ := strconv.ParseBool(((*kcUserRep.Attributes)["phoneNumberVerified"][0]))
-				assert.Equal(t, phoneNumberVerified, verified)
-				assert.Equal(t, label, (*kcUserRep.Attributes)["label"][0])
-				assert.Equal(t, gender, (*kcUserRep.Attributes)["gender"][0])
-				assert.Equal(t, birthDate, (*kcUserRep.Attributes)["birthDate"][0])
-				assert.Equal(t, locale, (*kcUserRep.Attributes)["locale"][0])
+				assert.Equal(t, phoneNumber, *kcUserRep.GetAttributeString(constants.AttrbPhoneNumber))
+				verified, _ := kcUserRep.GetAttributeBool(constants.AttrbPhoneNumberVerified)
+				assert.Equal(t, phoneNumberVerified, *verified)
+				assert.Equal(t, label, *kcUserRep.GetAttributeString(constants.AttrbLabel))
+				assert.Equal(t, gender, *kcUserRep.GetAttributeString(constants.AttrbGender))
+				assert.Equal(t, birthDate, *kcUserRep.GetAttributeString(constants.AttrbBirthDate))
+				assert.Equal(t, locale, *kcUserRep.GetAttributeString(constants.AttrbLocale))
 				return nil
 			}).Times(1)
 
@@ -880,9 +880,9 @@ func TestUpdateUser(t *testing.T) {
 		mockEventDBModule.EXPECT().ReportEvent(ctx, "LOCK_ACCOUNT", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 		mockKeycloakClient.EXPECT().UpdateUser(accessToken, realmName, id, gomock.Any()).DoAndReturn(
 			func(accessToken, realmName, id string, kcUserRep kc.UserRepresentation) error {
-				verified, _ := strconv.ParseBool(((*kcUserRep.Attributes)["phoneNumberVerified"][0]))
-				assert.Equal(t, phoneNumber, (*kcUserRep.Attributes)["phoneNumber"][0])
-				assert.Equal(t, false, verified)
+				verified, _ := kcUserRep.GetAttributeBool(constants.AttrbPhoneNumberVerified)
+				assert.Equal(t, phoneNumber, *kcUserRep.GetAttributeString(constants.AttrbPhoneNumber))
+				assert.Equal(t, false, *verified)
 				return nil
 			}).Times(1)
 
@@ -903,9 +903,9 @@ func TestUpdateUser(t *testing.T) {
 		mockEventDBModule.EXPECT().ReportEvent(ctx, "LOCK_ACCOUNT", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 		mockKeycloakClient.EXPECT().UpdateUser(accessToken, realmName, id, gomock.Any()).DoAndReturn(
 			func(accessToken, realmName, id string, kcUserRep kc.UserRepresentation) error {
-				verified, _ := strconv.ParseBool(((*kcUserRep.Attributes)["phoneNumberVerified"][0]))
-				assert.Equal(t, oldNumber, (*kcUserRep.Attributes)["phoneNumber"][0])
-				assert.Equal(t, true, verified)
+				verified, _ := kcUserRep.GetAttributeBool(constants.AttrbPhoneNumberVerified)
+				assert.Equal(t, oldNumber, *kcUserRep.GetAttributeString(constants.AttrbPhoneNumber))
+				assert.Equal(t, true, *verified)
 				return nil
 			}).Times(1)
 

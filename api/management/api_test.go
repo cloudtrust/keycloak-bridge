@@ -119,32 +119,32 @@ func TestConvertToKCUser(t *testing.T) {
 	assert.Nil(t, ConvertToKCUser(user).Attributes)
 	var phoneNumber = "+4122555555"
 	user.PhoneNumber = &phoneNumber
-	assert.Equal(t, phoneNumber, (*ConvertToKCUser(user).Attributes)["phoneNumber"][0])
+	assert.Equal(t, phoneNumber, (*ConvertToKCUser(user).Attributes)[constants.AttrbPhoneNumber][0])
 
 	// Label
 	var label = "a label"
 	user.Label = &label
-	assert.Equal(t, label, (*ConvertToKCUser(user).Attributes)["label"][0])
+	assert.Equal(t, label, (*ConvertToKCUser(user).Attributes)[constants.AttrbLabel][0])
 
 	// Gender
 	var gender = "a gender"
 	user.Gender = &gender
-	assert.Equal(t, gender, (*ConvertToKCUser(user).Attributes)["gender"][0])
+	assert.Equal(t, gender, (*ConvertToKCUser(user).Attributes)[constants.AttrbGender][0])
 
 	// Birthdate
 	var date = "25/12/0"
 	user.BirthDate = &date
-	assert.Equal(t, date, (*ConvertToKCUser(user).Attributes)["birthDate"][0])
+	assert.Equal(t, date, (*ConvertToKCUser(user).Attributes)[constants.AttrbBirthDate][0])
 
 	// PhoneNumberVerified
 	var verified = true
 	user.PhoneNumberVerified = &verified
-	assert.Equal(t, "true", (*ConvertToKCUser(user).Attributes)["phoneNumberVerified"][0])
+	assert.Equal(t, "true", (*ConvertToKCUser(user).Attributes)[constants.AttrbPhoneNumberVerified][0])
 
 	// Locale
 	var locale = "it"
 	user.Locale = &locale
-	assert.Equal(t, locale, (*ConvertToKCUser(user).Attributes)["locale"][0])
+	assert.Equal(t, locale, (*ConvertToKCUser(user).Attributes)[constants.AttrbLocale][0])
 
 }
 

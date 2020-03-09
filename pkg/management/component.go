@@ -319,6 +319,7 @@ func (c *component) GetUser(ctx context.Context, realmName, userID string) (api.
 		c.logger.Warn(ctx, "err", err.Error())
 		return userRep, err
 	}
+	keycloakb.ConvertLegacyAttribute(&userKc)
 
 	userRep = api.ConvertToAPIUser(userKc)
 
@@ -344,6 +345,7 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 		c.logger.Warn(ctx, "err", err.Error())
 		return err
 	}
+	keycloakb.ConvertLegacyAttribute(&oldUserKc)
 
 	// when the email changes, set the EmailVerified to false
 	if user.Email != nil && oldUserKc.Email != nil && *oldUserKc.Email != *user.Email {
@@ -425,6 +427,9 @@ func (c *component) GetUsers(ctx context.Context, realmName string, groupIDs []s
 		return api.UsersPageRepresentation{}, err
 	}
 
+	for i := 0; i < *usersKc.Count; i++ {
+		keycloakb.ConvertLegacyAttribute(&usersKc.Users[i])
+	}
 	return api.ConvertToAPIUsersPage(usersKc), nil
 }
 
@@ -437,6 +442,7 @@ func (c *component) GetUserAccountStatus(ctx context.Context, realmName, userID 
 	res["enabled"] = false
 
 	userKc, err := c.keycloakClient.GetUser(accessToken, realmName, userID)
+	// Here, we don't call keycloakb.ConvertLegacyAttribute as attributes are not used
 
 	if err != nil {
 		c.logger.Warn(ctx, "err", err.Error())
@@ -521,6 +527,7 @@ func (c *component) SetTrustIDGroups(ctx context.Context, realmName, userID stri
 		c.logger.Warn(ctx, "err", err.Error())
 		return err
 	}
+	keycloakb.ConvertLegacyAttribute(&currentUser)
 
 	// set the trustID groups attributes
 	if currentUser.Attributes == nil {
@@ -708,6 +715,8 @@ func (c *component) ResetSmsCounter(ctx context.Context, realmName, userID strin
 	if userKc.Attributes != nil {
 		var m = *userKc.Attributes
 		if m["smsSent"] != nil {
+			// ensure there is no unencrypted PII
+			keycloakb.ConvertLegacyAttribute(&userKc)
 			(*userKc.Attributes)["smsSent"][0] = strconv.Itoa(resetCounter)
 			err = c.keycloakClient.UpdateUser(accessToken, realmName, userID, userKc)
 			if err != nil {

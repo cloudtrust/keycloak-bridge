@@ -98,6 +98,7 @@ func (c *component) GetUserByUsername(ctx context.Context, username string, _ []
 		c.logger.Info(ctx, "msg", "GetUser: can't find user in Keycloak", "err", err.Error())
 		return apikyc.UserRepresentation{}, errorhandler.CreateInternalServerError("keycloak")
 	}
+	keycloakb.ConvertLegacyAttribute(&kcUser)
 	return c.getUser(ctx, *kcUser.Id, kcUser)
 }
 
@@ -109,6 +110,7 @@ func (c *component) GetUser(ctx context.Context, userID string) (apikyc.UserRepr
 		c.logger.Info(ctx, "msg", "GetUser: can't find user in Keycloak", "err", err.Error())
 		return apikyc.UserRepresentation{}, errorhandler.CreateInternalServerError("keycloak")
 	}
+	keycloakb.ConvertLegacyAttribute(&kcUser)
 	return c.getUser(ctx, userID, kcUser)
 }
 
@@ -152,6 +154,7 @@ func (c *component) ValidateUser(ctx context.Context, userID string, user apikyc
 		c.logger.Warn(ctx, "msg", "Can't get user/accreditations", "err", err.Error())
 		return err
 	}
+	keycloakb.ConvertLegacyAttribute(&kcUser)
 
 	// Some parameters might not be updated by operator
 	user.UserID = &userID
@@ -234,7 +237,9 @@ func (c *component) getUserByUsername(accessToken, reqRealmName, targetRealmName
 		return kc.UserRepresentation{}, errorhandler.CreateNotFoundError("username")
 	}
 
-	return kcUsers.Users[0], nil
+	var res = kcUsers.Users[0]
+	keycloakb.ConvertLegacyAttribute(&res)
+	return res, nil
 }
 
 func ptr(value string) *string {

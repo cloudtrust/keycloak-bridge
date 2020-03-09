@@ -127,6 +127,7 @@ func (c *component) GetAccount(ctx context.Context) (api.AccountRepresentation, 
 		c.logger.Warn(ctx, "err", err.Error())
 		return userRep, err
 	}
+	keycloakb.ConvertLegacyAttribute(&userKc)
 
 	var dbUser *dto.DBUser
 	dbUser, err = c.usersDBModule.GetUser(ctx, realm, userID)
@@ -159,6 +160,7 @@ func (c *component) UpdateAccount(ctx context.Context, user api.AccountRepresent
 		c.logger.Warn(ctx, "err", err.Error())
 		return err
 	}
+	keycloakb.ConvertLegacyAttribute(&oldUserKc)
 
 	var emailVerified, phoneNumberVerified *bool
 	var actions []string
@@ -173,8 +175,7 @@ func (c *component) UpdateAccount(ctx context.Context, user api.AccountRepresent
 	// when the phone number changes, set the PhoneNumberVerified to false
 	if user.PhoneNumber != nil {
 		if oldUserKc.Attributes != nil {
-			var m = *oldUserKc.Attributes
-			if _, ok := m["phoneNumber"]; !ok || m["phoneNumber"][0] != *user.PhoneNumber {
+			if value := oldUserKc.GetAttributeString(constants.AttrbPhoneNumber); *value != *user.PhoneNumber {
 				var verified = false
 				phoneNumberVerified = &verified
 				actions = append(actions, ActionVerifyPhoneNumber)
