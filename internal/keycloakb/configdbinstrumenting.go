@@ -6,7 +6,7 @@ import (
 
 	cs "github.com/cloudtrust/common-service"
 	"github.com/cloudtrust/common-service/configuration"
-	"github.com/cloudtrust/common-service/database"
+	"github.com/cloudtrust/common-service/database/sqltypes"
 	cm "github.com/cloudtrust/common-service/metrics"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 )
@@ -19,7 +19,7 @@ type configDBModuleInstrumentingMW struct {
 
 // ConfigurationDBModule is the interface of the configuration module.
 type ConfigurationDBModule interface {
-	NewTransaction(context context.Context) (database.Transaction, error)
+	NewTransaction(context context.Context) (sqltypes.Transaction, error)
 	StoreOrUpdateConfiguration(context.Context, string, configuration.RealmConfiguration) error
 	GetConfiguration(context.Context, string) (configuration.RealmConfiguration, error)
 	StoreOrUpdateAdminConfiguration(context.Context, string, configuration.RealmAdminConfiguration) error
@@ -44,7 +44,7 @@ func MakeConfigurationDBModuleInstrumentingMW(h cm.Histogram) func(Configuration
 }
 
 // configDBModuleInstrumentingMW implements Module.
-func (m *configDBModuleInstrumentingMW) NewTransaction(ctx context.Context) (database.Transaction, error) {
+func (m *configDBModuleInstrumentingMW) NewTransaction(ctx context.Context) (sqltypes.Transaction, error) {
 	defer func(begin time.Time) {
 		m.h.With("correlation_id", ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
 	}(time.Now())

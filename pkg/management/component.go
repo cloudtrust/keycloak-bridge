@@ -2,6 +2,7 @@ package management
 
 import (
 	"context"
+	"database/sql"
 	"regexp"
 	"strconv"
 	"strings"
@@ -1326,6 +1327,9 @@ func (c *component) GetRealmAdminConfiguration(ctx context.Context, realmName st
 	var config configuration.RealmAdminConfiguration
 	config, err = c.configDBModule.GetAdminConfiguration(ctx, *realmConfig.Id)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return api.CreateDefaultRealmAdminConfiguration(), nil
+		}
 		c.logger.Warn(ctx, "err", err.Error())
 		return api.RealmAdminConfiguration{}, err
 	}

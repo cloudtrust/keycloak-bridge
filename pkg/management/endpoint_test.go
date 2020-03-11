@@ -1194,7 +1194,7 @@ func TestUpdateRealmAdminConfigurationEndpoint(t *testing.T) {
 
 	t.Run("No error", func(t *testing.T) {
 		var realmName = "master"
-		var configJSON = `{"mode":"modeValue"}`
+		var configJSON = `{"mode":"trustID"}`
 		var req = make(map[string]string)
 		req["realm"] = realmName
 		req["body"] = configJSON

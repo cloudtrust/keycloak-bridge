@@ -758,29 +758,29 @@ func TestGetConfiguration(t *testing.T) {
 	var accessToken = "TOKEN=="
 	var currentRealm = "master"
 	var currentUserID = "1234-789"
+	var falseBool = false
+	var trueBool = true
+	var config = configuration.RealmConfiguration{
+		APISelfAuthenticatorDeletionEnabled: &falseBool,
+		APISelfAccountEditingEnabled:        &falseBool,
+		APISelfAccountDeletionEnabled:       &falseBool,
+		APISelfPasswordChangeEnabled:        &falseBool,
+		DefaultClientID:                     new(string),
+		DefaultRedirectURI:                  new(string),
+		ShowAuthenticatorsTab:               &trueBool,
+		ShowAccountDeletionButton:           &trueBool,
+		ShowPasswordTab:                     &trueBool,
+		ShowProfileTab:                      &trueBool,
+	}
+	var adminConfig configuration.RealmAdminConfiguration
 
-	// Get configuration with succces
-	{
-		var falseBool = false
-		var trueBool = true
-		var config = configuration.RealmConfiguration{
-			APISelfAuthenticatorDeletionEnabled: &falseBool,
-			APISelfAccountEditingEnabled:        &falseBool,
-			APISelfAccountDeletionEnabled:       &falseBool,
-			APISelfPasswordChangeEnabled:        &falseBool,
-			DefaultClientID:                     new(string),
-			DefaultRedirectURI:                  new(string),
-			ShowAuthenticatorsTab:               &trueBool,
-			ShowAccountDeletionButton:           &trueBool,
-			ShowPasswordTab:                     &trueBool,
-			ShowProfileTab:                      &trueBool,
-		}
-
+	t.Run("Get configuration with succces", func(t *testing.T) {
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, currentRealm)
 		ctx = context.WithValue(ctx, cs.CtContextUserID, currentUserID)
 
 		mockConfigurationDBModule.EXPECT().GetConfiguration(ctx, currentRealm).Return(config, nil).Times(1)
+		mockConfigurationDBModule.EXPECT().GetAdminConfiguration(ctx, currentRealm).Return(adminConfig, nil).Times(1)
 
 		resConfig, err := component.GetConfiguration(ctx, "")
 
@@ -789,32 +789,18 @@ func TestGetConfiguration(t *testing.T) {
 		assert.Equal(t, *config.ShowAccountDeletionButton, *resConfig.ShowAccountDeletionButton)
 		assert.Equal(t, *config.ShowPasswordTab, *resConfig.ShowPasswordTab)
 		assert.Equal(t, *config.ShowProfileTab, *resConfig.ShowProfileTab)
-	}
+	})
 
-	// Get configuration with override realm with succces
-	{
+	t.Run("Get configuration with override realm with succces", func(t *testing.T) {
 		var overrideRealm = "customerRealm"
 		var successURL = "https://success.io"
-		var falseBool = false
-		var trueBool = true
-		var config = configuration.RealmConfiguration{
-			APISelfAuthenticatorDeletionEnabled: &falseBool,
-			APISelfAccountEditingEnabled:        &falseBool,
-			APISelfAccountDeletionEnabled:       &falseBool,
-			APISelfPasswordChangeEnabled:        &falseBool,
-			DefaultClientID:                     new(string),
-			DefaultRedirectURI:                  new(string),
-			ShowAuthenticatorsTab:               &trueBool,
-			ShowAccountDeletionButton:           &trueBool,
-			ShowPasswordTab:                     &trueBool,
-			ShowProfileTab:                      &trueBool,
-		}
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, currentRealm)
 		ctx = context.WithValue(ctx, cs.CtContextUserID, currentUserID)
 
 		mockConfigurationDBModule.EXPECT().GetConfiguration(ctx, currentRealm).Return(config, nil).Times(1)
+		mockConfigurationDBModule.EXPECT().GetAdminConfiguration(ctx, currentRealm).Return(adminConfig, nil).Times(1)
 		mockConfigurationDBModule.EXPECT().GetConfiguration(ctx, overrideRealm).Return(configuration.RealmConfiguration{
 			RedirectSuccessfulRegistrationURL: &successURL,
 		}, nil).Times(1)
@@ -827,10 +813,9 @@ func TestGetConfiguration(t *testing.T) {
 		assert.Equal(t, *config.ShowProfileTab, *resConfig.ShowProfileTab)
 		assert.Equal(t, *config.ShowPasswordTab, *resConfig.ShowPasswordTab)
 		assert.Equal(t, successURL, *resConfig.RedirectSuccessfulRegistrationURL)
-	}
+	})
 
-	//Error
-	{
+	t.Run("Error on GetConfiguration", func(t *testing.T) {
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, currentRealm)
 		ctx = context.WithValue(ctx, cs.CtContextUserID, currentUserID)
@@ -840,7 +825,19 @@ func TestGetConfiguration(t *testing.T) {
 		_, err := component.GetConfiguration(ctx, "")
 
 		assert.NotNil(t, err)
-	}
+	})
+	t.Run("Error on GetAdminConfiguration", func(t *testing.T) {
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx = context.WithValue(ctx, cs.CtContextRealm, currentRealm)
+		ctx = context.WithValue(ctx, cs.CtContextUserID, currentUserID)
+
+		mockConfigurationDBModule.EXPECT().GetConfiguration(ctx, currentRealm).Return(configuration.RealmConfiguration{}, nil).Times(1)
+		mockConfigurationDBModule.EXPECT().GetAdminConfiguration(ctx, currentRealm).Return(configuration.RealmAdminConfiguration{}, fmt.Errorf("Unexpected error")).Times(1)
+
+		_, err := component.GetConfiguration(ctx, "")
+
+		assert.NotNil(t, err)
+	})
 }
 
 func TestSendVerify(t *testing.T) {

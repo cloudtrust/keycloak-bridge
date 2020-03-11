@@ -132,7 +132,10 @@ const (
 	BOConfKeyTeams     = "teams"
 )
 
-var allowedBoConfKeys = map[string]bool{BOConfKeyCustomers: true, BOConfKeyTeams: true}
+var (
+	allowedBoConfKeys    = map[string]bool{BOConfKeyCustomers: true, BOConfKeyTeams: true}
+	allowedAdminConfMode = map[string]bool{"trustID": true, "corporate": true}
+)
 
 // BackOfficeConfiguration type
 type BackOfficeConfiguration map[string]map[string][]string
@@ -140,15 +143,15 @@ type BackOfficeConfiguration map[string]map[string][]string
 // RealmAdminConfiguration struct
 type RealmAdminConfiguration struct {
 	Mode            *string                   `json:"mode"`
-	AvailableChecks map[string]bool           `json:"available-checks,omitempty"`
-	Accreditations  []RealmAdminAccreditation `json:"accreditations,omitempty"`
+	AvailableChecks map[string]bool           `json:"available-checks"`
+	Accreditations  []RealmAdminAccreditation `json:"accreditations"`
 }
 
 // RealmAdminAccreditation struct
 type RealmAdminAccreditation struct {
-	Type      *string `json:"type,omitempty"`
-	Validity  *string `json:"validity,omitempty"`
-	Condition *string `json:"condition,omitempty"`
+	Type      *string `json:"type"`
+	Validity  *string `json:"validity"`
+	Condition *string `json:"condition"`
 }
 
 // FederatedIdentityRepresentation struct
@@ -389,6 +392,16 @@ func ConvertToKCFedID(fedID FederatedIdentityRepresentation) kc.FederatedIdentit
 	return kcFedID
 }
 
+// CreateDefaultRealmAdminConfiguration creates a default admin configuration
+func CreateDefaultRealmAdminConfiguration() RealmAdminConfiguration {
+	var mode = "corporate"
+	var checks = make(map[string]bool)
+	for _, key := range configuration.AvailableCheckKeys {
+		checks[key] = false
+	}
+	return RealmAdminConfiguration{Mode: &mode, AvailableChecks: checks, Accreditations: make([]RealmAdminAccreditation, 0)}
+}
+
 // ConvertRealmAdminConfigurationFromDBStruct converts a RealmAdminConfiguration from DB struct to API struct
 func ConvertRealmAdminConfigurationFromDBStruct(conf configuration.RealmAdminConfiguration) RealmAdminConfiguration {
 	return RealmAdminConfiguration{
@@ -399,7 +412,7 @@ func ConvertRealmAdminConfigurationFromDBStruct(conf configuration.RealmAdminCon
 }
 
 // ConvertToDBStruct converts a realm admin configuration into its database version
-func (rac *RealmAdminConfiguration) ConvertToDBStruct() configuration.RealmAdminConfiguration {
+func (rac RealmAdminConfiguration) ConvertToDBStruct() configuration.RealmAdminConfiguration {
 	return configuration.RealmAdminConfiguration{
 		Mode:            rac.Mode,
 		AvailableChecks: rac.AvailableChecks,
@@ -408,7 +421,7 @@ func (rac *RealmAdminConfiguration) ConvertToDBStruct() configuration.RealmAdmin
 }
 
 // ConvertRealmAccreditationsToDBStruct converts a slice of realm admin accreditation into its database version
-func (rac *RealmAdminConfiguration) ConvertRealmAccreditationsToDBStruct() []configuration.RealmAdminAccreditation {
+func (rac RealmAdminConfiguration) ConvertRealmAccreditationsToDBStruct() []configuration.RealmAdminAccreditation {
 	if len(rac.Accreditations) == 0 {
 		return nil
 	}
@@ -426,7 +439,7 @@ func (rac *RealmAdminConfiguration) ConvertRealmAccreditationsToDBStruct() []con
 // ConvertRealmAccreditationsFromDBStruct converts an array of accreditation from DB struct to API struct
 func ConvertRealmAccreditationsFromDBStruct(accreds []configuration.RealmAdminAccreditation) []RealmAdminAccreditation {
 	if len(accreds) == 0 {
-		return nil
+		return make([]RealmAdminAccreditation, 0)
 	}
 	var res []RealmAdminAccreditation
 	for _, accred := range accreds {
@@ -525,9 +538,43 @@ func (config RealmCustomConfiguration) Validate() error {
 }
 
 // Validate is a validator for RealmAdminConfiguration
-func (config RealmAdminConfiguration) Validate() error {
+func (rac RealmAdminConfiguration) Validate() error {
 	return validation.NewParameterValidator().
-		ValidateParameterRegExp("mode", config.Mode, RegExpName, true).
+		ValidateParameterIn("mode", rac.Mode, allowedAdminConfMode, true).
+		ValidateParameterFunc(func() error {
+			if len(rac.AvailableChecks) > 0 {
+				for k := range rac.AvailableChecks {
+					if !validation.IsStringInSlice(configuration.AvailableCheckKeys, k) {
+						return errorhandler.CreateBadRequestError(constants.MsgErrInvalidParam + ".available-checks")
+					}
+				}
+			}
+			return nil
+		}).
+		ValidateParameterFunc(func() error {
+			if len(rac.Accreditations) > 0 {
+				for _, accred := range rac.Accreditations {
+					if err := accred.Validate(); err != nil {
+						return err
+					}
+				}
+			}
+			return nil
+		}).
+		Status()
+}
+
+// Validate is a validator for RealmAdminAccreditation
+func (acc RealmAdminAccreditation) Validate() error {
+	return validation.NewParameterValidator().
+		ValidateParameterLargeDuration("validity", acc.Validity, true).
+		ValidateParameterNotNil("condition", acc.Condition).
+		ValidateParameterFunc(func() error {
+			if !validation.IsStringInSlice(configuration.AvailableCheckKeys, *acc.Condition) {
+				return errorhandler.CreateBadRequestError(constants.MsgErrInvalidParam + ".condition")
+			}
+			return nil
+		}).
 		Status()
 }
 

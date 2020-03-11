@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/cloudtrust/common-service/configuration"
+
 	cs "github.com/cloudtrust/common-service"
 	"github.com/cloudtrust/common-service/database"
 	errorhandler "github.com/cloudtrust/common-service/errors"
@@ -387,6 +389,12 @@ func (c *component) GetConfiguration(ctx context.Context, realmIDOverride string
 		return api.Configuration{}, err
 	}
 
+	var adminConfig configuration.RealmAdminConfiguration
+	adminConfig, err = c.configDBModule.GetAdminConfiguration(ctx, currentRealm)
+	if err != nil {
+		return api.Configuration{}, err
+	}
+
 	var apiConfig = api.Configuration{
 		EditingEnabled:                    config.APISelfAccountEditingEnabled,
 		ShowAuthenticatorsTab:             config.ShowAuthenticatorsTab,
@@ -394,6 +402,7 @@ func (c *component) GetConfiguration(ctx context.Context, realmIDOverride string
 		ShowPasswordTab:                   config.ShowPasswordTab,
 		ShowProfileTab:                    config.ShowProfileTab,
 		RedirectSuccessfulRegistrationURL: config.RedirectSuccessfulRegistrationURL,
+		AvailableChecks:                   adminConfig.AvailableChecks,
 	}
 
 	if realmIDOverride != "" {

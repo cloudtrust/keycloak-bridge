@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/cloudtrust/common-service/configuration"
-	"github.com/cloudtrust/common-service/database"
 	"github.com/cloudtrust/common-service/database/sqltypes"
 	errorhandler "github.com/cloudtrust/common-service/errors"
 	"github.com/cloudtrust/common-service/log"
@@ -99,15 +98,7 @@ func (c *configurationDBModule) StoreOrUpdateAdminConfiguration(context context.
 }
 
 func (c *configurationDBModule) GetAdminConfiguration(ctx context.Context, realmID string) (configuration.RealmAdminConfiguration, error) {
-	config, err := c.ConfigurationReaderDBModule.GetAdminConfiguration(ctx, realmID)
-
-	if err == sql.ErrNoRows {
-		return config, errorhandler.Error{
-			Status:  404,
-			Message: ComponentName + "." + msg.MsgErrNotConfigured + "." + msg.RealmAdminConfiguration + "." + realmID,
-		}
-	}
-	return config, err
+	return c.ConfigurationReaderDBModule.GetAdminConfiguration(ctx, realmID)
 }
 
 func (c *configurationDBModule) GetBackOfficeConfiguration(ctx context.Context, realmID string, groupNames []string) (dto.BackOfficeConfiguration, error) {
@@ -205,8 +196,8 @@ func (c *configurationDBModule) DeleteAllAuthorizationsWithGroup(context context
 	return err
 }
 
-func (c *configurationDBModule) NewTransaction(context context.Context) (database.Transaction, error) {
-	return database.NewTransaction(c.db)
+func (c *configurationDBModule) NewTransaction(context context.Context) (sqltypes.Transaction, error) {
+	return c.db.BeginTx(context, nil)
 }
 
 func (c *configurationDBModule) scanAuthorization(scanner Scanner) (configuration.Authorization, error) {

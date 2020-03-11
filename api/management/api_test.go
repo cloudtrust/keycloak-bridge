@@ -294,8 +294,8 @@ func TestConvertRealmAdminConfiguration(t *testing.T) {
 		var config = configuration.RealmAdminConfiguration{}
 		var res = ConvertRealmAdminConfigurationFromDBStruct(config)
 		assert.Nil(t, res.Mode)
-		assert.Nil(t, res.AvailableChecks)
-		assert.Nil(t, res.Accreditations)
+		assert.Len(t, res.AvailableChecks, 0)
+		assert.Len(t, res.Accreditations, 0)
 		assert.Equal(t, config, res.ConvertToDBStruct())
 	})
 	t.Run("Empty struct", func(t *testing.T) {
@@ -481,14 +481,56 @@ func TestValidateRealmCustomConfiguration(t *testing.T) {
 	}
 }
 
+func createValidRealmAdminConfiguration() RealmAdminConfiguration {
+	var trustID = "trustID"
+	var value = "value"
+	var validity = "2y4m"
+	var condition = "IDNow"
+	var accred = RealmAdminAccreditation{Type: &value, Validity: &validity, Condition: &condition}
+	return RealmAdminConfiguration{
+		Mode:            &trustID,
+		AvailableChecks: map[string]bool{"IDNow": false, "physical-check": true},
+		Accreditations:  []RealmAdminAccreditation{accred},
+	}
+}
+
 func TestValidateRealmAdminConfiguration(t *testing.T) {
-	var realmAdminConf = RealmAdminConfiguration{}
-
-	assert.NotNil(t, realmAdminConf.Validate())
-
-	var mode = "any-value"
-	realmAdminConf.Mode = &mode
-	assert.Nil(t, realmAdminConf.Validate())
+	t.Run("Valid default configuration", func(t *testing.T) {
+		var conf = CreateDefaultRealmAdminConfiguration()
+		assert.Nil(t, conf.Validate())
+	})
+	t.Run("Valid configuration", func(t *testing.T) {
+		var realmAdminConf = createValidRealmAdminConfiguration()
+		assert.Nil(t, realmAdminConf.Validate())
+	})
+	t.Run("Missing mode", func(t *testing.T) {
+		var realmAdminConf = createValidRealmAdminConfiguration()
+		realmAdminConf.Mode = nil
+		assert.NotNil(t, realmAdminConf.Validate())
+	})
+	t.Run("Invalid mode", func(t *testing.T) {
+		var realmAdminConf = createValidRealmAdminConfiguration()
+		var invalid = "invalid"
+		realmAdminConf.Mode = &invalid
+		assert.NotNil(t, realmAdminConf.Validate())
+	})
+	t.Run("Invalid available checks", func(t *testing.T) {
+		var realmAdminConf = createValidRealmAdminConfiguration()
+		realmAdminConf.AvailableChecks["invalid-key"] = false
+		assert.NotNil(t, realmAdminConf.Validate())
+	})
+	t.Run("Invalid accreditation validity", func(t *testing.T) {
+		var realmAdminConf = createValidRealmAdminConfiguration()
+		var invalid = "2y4"
+		realmAdminConf.Accreditations[0].Validity = &invalid
+		assert.NotNil(t, realmAdminConf.Validate())
+	})
+	t.Run("Invalid accreditation condition", func(t *testing.T) {
+		var realmAdminConf = createValidRealmAdminConfiguration()
+		var invalid = "invalid-key"
+		realmAdminConf.Accreditations[0].Condition = &invalid
+		assert.NotNil(t, realmAdminConf.Validate())
+	})
 }
 
 func TestValidateRequiredAction(t *testing.T) {
