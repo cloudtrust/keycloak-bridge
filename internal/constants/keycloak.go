@@ -13,12 +13,13 @@ var (
 // Attribute keys definition
 const (
 	AttrbAccreditations      = kc.AttributeKey("accreditations")
-	AttrbBirthDate           = kc.AttributeKey("birthDate")
-	AttrbGender              = kc.AttributeKey("gender")
+	AttrbBirthDate           = kc.AttributeKey("ENC_birthDate")
+	AttrbGender              = kc.AttributeKey("ENC_gender")
 	AttrbLabel               = kc.AttributeKey("label")
 	AttrbLocale              = kc.AttributeKey("locale")
 	AttrbPhoneNumber         = kc.AttributeKey("phoneNumber")
 	AttrbPhoneNumberVerified = kc.AttributeKey("phoneNumberVerified")
 	AttrbSmsSent             = kc.AttributeKey("smsSent")
+	AttrbTrustIDAuthToken    = kc.AttributeKey("trustIDAuthToken")
 	AttrbTrustIDGroups       = kc.AttributeKey("trustIDGroups")
 )

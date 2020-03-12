@@ -16,6 +16,7 @@ import (
 	"github.com/cloudtrust/common-service/database"
 	errorhandler "github.com/cloudtrust/common-service/errors"
 	apiregister "github.com/cloudtrust/keycloak-bridge/api/register"
+	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	internal "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
@@ -130,7 +131,7 @@ func (c *component) storeUser(ctx context.Context, accessToken string, customerR
 
 	var userID string
 	var kcUser = user.ConvertToKeycloak()
-	(*kcUser.Attributes)["trustIDAuthToken"] = []string{authToken}
+	kcUser.SetAttributeString(constants.AttrbTrustIDAuthToken, authToken)
 
 	if existingKcUser == nil {
 		var chars = []rune("0123456789")
@@ -231,6 +232,7 @@ func (c *component) checkExistingUser(ctx context.Context, accessToken string, u
 	}
 
 	var kcUser kc.UserRepresentation = kcUsers.Users[0]
+	keycloakb.ConvertLegacyAttribute(&kcUser)
 	if kcUser.EmailVerified == nil || *kcUser.EmailVerified {
 		c.logger.Warn(ctx, "msg", "Attempt to register a user with email of an already validated user")
 		// Should not leak that email is already in use

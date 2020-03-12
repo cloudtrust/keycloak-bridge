@@ -57,11 +57,11 @@ func createValidKeycloakUser() kc.UserRepresentation {
 		lastName   = "El-Bichoun"
 		email      = "marcel.bichon@elca.ch"
 		attributes = kc.Attributes{
-			"gender":              []string{"M"},
-			"phoneNumber":         []string{"00 33 686 550011"},
-			"phoneNumberVerified": []string{"true"},
-			"birthDate":           []string{"29.02.2020"},
-			"accreditations":      []string{`{"type":"one","expiryDate":"05.04.2020"}`, `{"type":"two","expiryDate":"05.03.2022"}`},
+			constants.AttrbGender:              []string{"M"},
+			constants.AttrbPhoneNumber:         []string{"00 33 686 550011"},
+			constants.AttrbPhoneNumberVerified: []string{"true"},
+			constants.AttrbBirthDate:           []string{"29.02.2020"},
+			constants.AttrbAccreditations:      []string{`{"type":"one","expiryDate":"05.04.2020"}`, `{"type":"two","expiryDate":"05.03.2022"}`},
 		}
 	)
 
@@ -130,9 +130,9 @@ func TestExportToKeycloak(t *testing.T) {
 		assert.Equal(t, user.FirstName, kcUser.FirstName)
 		assert.Equal(t, user.LastName, kcUser.LastName)
 		assert.Equal(t, user.EmailAddress, kcUser.Email)
-		assert.Equal(t, *user.PhoneNumber, (*kcUser.Attributes)["phoneNumber"][0])
+		assert.Equal(t, *user.PhoneNumber, *kcUser.GetAttributeString(constants.AttrbPhoneNumber))
 		assert.False(t, *kcUser.EmailVerified)
-		assert.Equal(t, "false", (*kcUser.Attributes)["phoneNumberVerified"][0])
+		assert.Equal(t, "false", *kcUser.GetAttributeString(constants.AttrbPhoneNumberVerified))
 		assert.True(t, *kcUser.Enabled)
 	})
 }

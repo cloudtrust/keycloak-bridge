@@ -209,7 +209,7 @@ func TestUpdateAccount(t *testing.T) {
 				assert.Equal(t, email, *kcUserRep.Email)
 				assert.Equal(t, firstName, *kcUserRep.FirstName)
 				assert.Equal(t, lastName, *kcUserRep.LastName)
-				assert.Equal(t, phoneNumber, (*kcUserRep.Attributes)["phoneNumber"][0])
+				assert.Equal(t, phoneNumber, *kcUserRep.GetAttributeString(constants.AttrbPhoneNumber))
 				return nil
 			}).Times(1)
 		mockUsersDBModule.EXPECT().GetUser(ctx, realmName, userID).Return(&dbUser, nil)
@@ -268,8 +268,8 @@ func TestUpdateAccount(t *testing.T) {
 
 	var oldNumber = "+41789467"
 	var oldAttributes = make(kc.Attributes)
-	oldAttributes["phoneNumber"] = []string{oldNumber}
-	oldAttributes["phoneNumberVerified"] = []string{strconv.FormatBool(phoneNumberVerified)}
+	oldAttributes[constants.AttrbPhoneNumber] = []string{oldNumber}
+	oldAttributes[constants.AttrbPhoneNumberVerified] = []string{strconv.FormatBool(phoneNumberVerified)}
 	var oldkcUserRep2 = kc.UserRepresentation{
 		Id:         &id,
 		Attributes: &oldAttributes,
@@ -279,9 +279,9 @@ func TestUpdateAccount(t *testing.T) {
 		mockKeycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(oldkcUserRep2, nil).Times(1)
 		mockKeycloakAccountClient.EXPECT().UpdateAccount(accessToken, realmName, gomock.Any()).DoAndReturn(
 			func(accessToken, realmName string, kcUserRep kc.UserRepresentation) error {
-				verified, _ := strconv.ParseBool(((*kcUserRep.Attributes)["phoneNumberVerified"][0]))
-				assert.Equal(t, phoneNumber, (*kcUserRep.Attributes)["phoneNumber"][0])
-				assert.Equal(t, false, verified)
+				verified, _ := kcUserRep.GetAttributeBool(constants.AttrbPhoneNumberVerified)
+				assert.Equal(t, phoneNumber, *kcUserRep.GetAttributeString(constants.AttrbPhoneNumber))
+				assert.Equal(t, false, *verified)
 				return nil
 			}).Times(1)
 		mockKeycloakAccountClient.EXPECT().ExecuteActionsEmail(accessToken, realmName, []string{ActionVerifyPhoneNumber}).Return(nil).Times(1)
@@ -306,9 +306,9 @@ func TestUpdateAccount(t *testing.T) {
 		mockKeycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(oldkcUserRep2, nil).Times(1)
 		mockKeycloakAccountClient.EXPECT().UpdateAccount(accessToken, realmName, gomock.Any()).DoAndReturn(
 			func(accessToken, realmName string, kcUserRep kc.UserRepresentation) error {
-				verified, _ := strconv.ParseBool(((*kcUserRep.Attributes)["phoneNumberVerified"][0]))
-				assert.Equal(t, oldNumber, (*kcUserRep.Attributes)["phoneNumber"][0])
-				assert.Equal(t, true, verified)
+				verified, _ := kcUserRep.GetAttributeBool(constants.AttrbPhoneNumberVerified)
+				assert.Equal(t, oldNumber, *kcUserRep.GetAttributeString(constants.AttrbPhoneNumber))
+				assert.Equal(t, true, *verified)
 				return nil
 			}).Times(1)
 		mockUsersDBModule.EXPECT().GetUser(ctx, realmName, userID).Return(nil, nil)
@@ -391,12 +391,12 @@ func TestGetUser(t *testing.T) {
 	var locale = "it"
 
 	var attributes = make(kc.Attributes)
-	attributes["phoneNumber"] = []string{phoneNumber}
-	attributes["label"] = []string{label}
-	attributes["gender"] = []string{gender}
-	attributes["birthDate"] = []string{birthDate}
-	attributes["phoneNumberVerified"] = []string{strconv.FormatBool(phoneNumberVerified)}
-	attributes["locale"] = []string{locale}
+	attributes[constants.AttrbPhoneNumber] = []string{phoneNumber}
+	attributes[constants.AttrbLabel] = []string{label}
+	attributes[constants.AttrbGender] = []string{gender}
+	attributes[constants.AttrbBirthDate] = []string{birthDate}
+	attributes[constants.AttrbPhoneNumberVerified] = []string{strconv.FormatBool(phoneNumberVerified)}
+	attributes[constants.AttrbLocale] = []string{locale}
 
 	var kcUserRep = kc.UserRepresentation{
 		Username:         &username,

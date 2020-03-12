@@ -39,12 +39,12 @@ func TestConvertToAPIAccount(t *testing.T) {
 	})
 
 	var attributes = kc.Attributes{
-		"phoneNumber":         []string{"+41221234567"},
-		"gender":              []string{"M"},
-		"birthDate":           []string{"15.02.1920"},
-		"locale":              []string{"fr"},
-		"phoneNumberVerified": []string{"true"},
-		"accreditations":      []string{`{"type":"one","expiryDate":"05.04.2020"}`, `{"type":"two","expiryDate":"05.03.2022"}`},
+		constants.AttrbPhoneNumber:         []string{"+41221234567"},
+		constants.AttrbGender:              []string{"M"},
+		constants.AttrbBirthDate:           []string{"15.02.1920"},
+		constants.AttrbLocale:              []string{"fr"},
+		constants.AttrbPhoneNumberVerified: []string{"true"},
+		constants.AttrbAccreditations:      []string{`{"type":"one","expiryDate":"05.04.2020"}`, `{"type":"two","expiryDate":"05.03.2022"}`},
 	}
 
 	t.Run("Check attributes are copied", func(t *testing.T) {
@@ -73,9 +73,8 @@ func TestConvertToKCUser(t *testing.T) {
 	var locale = "fr"
 	apiUser = AccountRepresentation{PhoneNumber: &phoneNumber, Locale: &locale}
 	var kcUser = ConvertToKCUser(apiUser)
-	var kcAttributes = *kcUser.Attributes
-	assert.Equal(t, phoneNumber, kcAttributes["phoneNumber"][0])
-	assert.Equal(t, locale, kcAttributes["locale"][0])
+	assert.Equal(t, phoneNumber, *kcUser.GetAttributeString(constants.AttrbPhoneNumber))
+	assert.Equal(t, locale, *kcUser.GetAttributeString(constants.AttrbLocale))
 }
 
 func TestValidateAccountRepresentation(t *testing.T) {

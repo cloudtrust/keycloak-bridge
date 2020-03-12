@@ -111,6 +111,7 @@ func (c *component) GetUser(ctx context.Context, userID string) (api.UserReprese
 	if err != nil {
 		return api.UserRepresentation{}, err
 	}
+	keycloakb.ConvertLegacyAttribute(&kcUser)
 
 	var dbUser *dto.DBUser
 	dbUser, err = c.usersDBModule.GetUser(ctx, c.socialRealmName, userID)
@@ -150,6 +151,7 @@ func (c *component) UpdateUser(ctx context.Context, userID string, user api.User
 		if err != nil {
 			return err
 		}
+		keycloakb.ConvertLegacyAttribute(&kcUser)
 
 		user.ExportToKeycloak(&kcUser)
 		err = c.updateKeycloakUser(ctx, userID, kcUser)
