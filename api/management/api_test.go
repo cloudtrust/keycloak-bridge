@@ -34,54 +34,60 @@ func TestConvertToAPIUser(t *testing.T) {
 	var kcUser kc.UserRepresentation
 	m := make(kc.Attributes)
 
-	// Phone number
-	assert.Nil(t, ConvertToAPIUser(kcUser).PhoneNumber)
-	kcUser.Attributes = &m
-	m.SetString(constants.AttrbPhoneNumber, "+4122555555")
-	assert.NotNil(t, ConvertToAPIUser(kcUser).PhoneNumber)
-
-	// Label
-	assert.Nil(t, ConvertToAPIUser(kcUser).Label)
-	kcUser.Attributes = &m
-	m.SetString(constants.AttrbLabel, "a label")
-	assert.NotNil(t, ConvertToAPIUser(kcUser).Label)
-
-	// Gender
-	assert.Nil(t, ConvertToAPIUser(kcUser).Gender)
-	kcUser.Attributes = &m
-	m.SetString(constants.AttrbGender, "a gender")
-	assert.NotNil(t, ConvertToAPIUser(kcUser).Gender)
-
-	// Birthdate
-	assert.Nil(t, ConvertToAPIUser(kcUser).BirthDate)
-	kcUser.Attributes = &m
-	m.SetString(constants.AttrbBirthDate, "25/12/0")
-	assert.NotNil(t, ConvertToAPIUser(kcUser).BirthDate)
-
-	// PhoneNumberVerified
-	assert.Nil(t, ConvertToAPIUser(kcUser).PhoneNumberVerified)
-	kcUser.Attributes = &m
-	m.SetBool(constants.AttrbPhoneNumberVerified, true)
-	assert.True(t, *ConvertToAPIUser(kcUser).PhoneNumberVerified)
-
-	// Locale
-	assert.Nil(t, ConvertToAPIUser(kcUser).Locale)
-	kcUser.Attributes = &m
-	m.SetString(constants.AttrbLocale, "en")
-	assert.NotNil(t, *ConvertToAPIUser(kcUser).Locale)
-
-	// SmsSent
-	assert.Nil(t, ConvertToAPIUser(kcUser).SmsSent)
-	kcUser.Attributes = &m
-	m.SetInt(constants.AttrbSmsSent, 0)
-	m["smsSent"] = []string{"0"}
-	assert.NotNil(t, *ConvertToAPIUser(kcUser).SmsSent)
-
-	// trustID groups
-	assert.Nil(t, ConvertToAPIUser(kcUser).TrustIDGroups)
-	kcUser.Attributes = &m
-	m.SetString(constants.AttrbTrustIDGroups, "en")
-	assert.NotNil(t, *ConvertToAPIUser(kcUser).TrustIDGroups)
+	t.Run("Phone number", func(t *testing.T) {
+		assert.Nil(t, ConvertToAPIUser(kcUser).PhoneNumber)
+		kcUser.Attributes = &m
+		m.SetString(constants.AttrbPhoneNumber, "+4122555555")
+		assert.NotNil(t, ConvertToAPIUser(kcUser).PhoneNumber)
+	})
+	t.Run("Label", func(t *testing.T) {
+		assert.Nil(t, ConvertToAPIUser(kcUser).Label)
+		kcUser.Attributes = &m
+		m.SetString(constants.AttrbLabel, "a label")
+		assert.NotNil(t, ConvertToAPIUser(kcUser).Label)
+	})
+	t.Run("Gender", func(t *testing.T) {
+		assert.Nil(t, ConvertToAPIUser(kcUser).Gender)
+		kcUser.Attributes = &m
+		m.SetString(constants.AttrbGender, "a gender")
+		assert.NotNil(t, ConvertToAPIUser(kcUser).Gender)
+	})
+	t.Run("Birthdate", func(t *testing.T) {
+		assert.Nil(t, ConvertToAPIUser(kcUser).BirthDate)
+		kcUser.Attributes = &m
+		m.SetString(constants.AttrbBirthDate, "25/12/0")
+		assert.NotNil(t, ConvertToAPIUser(kcUser).BirthDate)
+	})
+	t.Run("Phone number verified", func(t *testing.T) {
+		assert.Nil(t, ConvertToAPIUser(kcUser).PhoneNumberVerified)
+		kcUser.Attributes = &m
+		m.SetBool(constants.AttrbPhoneNumberVerified, true)
+		assert.True(t, *ConvertToAPIUser(kcUser).PhoneNumberVerified)
+	})
+	t.Run("Locale", func(t *testing.T) {
+		assert.Nil(t, ConvertToAPIUser(kcUser).Locale)
+		kcUser.Attributes = &m
+		m.SetString(constants.AttrbLocale, "en")
+		assert.NotNil(t, *ConvertToAPIUser(kcUser).Locale)
+	})
+	t.Run("SMS sent", func(t *testing.T) {
+		assert.Nil(t, ConvertToAPIUser(kcUser).SmsSent)
+		kcUser.Attributes = &m
+		m.SetInt(constants.AttrbSmsSent, 0)
+		m["smsSent"] = []string{"0"}
+		assert.NotNil(t, *ConvertToAPIUser(kcUser).SmsSent)
+	})
+	t.Run("trustID groups", func(t *testing.T) {
+		assert.Nil(t, ConvertToAPIUser(kcUser).TrustIDGroups)
+		kcUser.Attributes = &m
+		m.SetString(constants.AttrbTrustIDGroups, "en")
+		assert.NotNil(t, *ConvertToAPIUser(kcUser).TrustIDGroups)
+	})
+	t.Run("Accreditations", func(t *testing.T) {
+		assert.Nil(t, ConvertToAPIUser(kcUser).Accreditations)
+		kcUser.SetAttribute("accreditations", []string{`{"type":"one","expiryDate":"05.04.2020"}`, `{"type":"two","expiryDate":"05.03.2022"}`})
+		assert.Len(t, *ConvertToAPIUser(kcUser).Accreditations, 2)
+	})
 }
 
 func TestConvertToAPIUsersPage(t *testing.T) {

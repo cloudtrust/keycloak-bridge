@@ -12,6 +12,7 @@ var (
 
 // Attribute keys definition
 const (
+	AttrbAccreditations      = kc.AttributeKey("accreditations")
 	AttrbBirthDate           = kc.AttributeKey("birthDate")
 	AttrbGender              = kc.AttributeKey("gender")
 	AttrbLabel               = kc.AttributeKey("label")

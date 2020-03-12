@@ -219,3 +219,21 @@ func TestCheckValidate(t *testing.T) {
 		}
 	})
 }
+
+func TestIsIdentificationSuccessful(t *testing.T) {
+	var check CheckRepresentation
+	t.Run("Status is nil", func(t *testing.T) {
+		check.Status = nil
+		assert.False(t, check.IsIdentificationSuccessful())
+	})
+	t.Run("Status is not a known success value", func(t *testing.T) {
+		var unknown = "unknown"
+		check.Status = &unknown
+		assert.False(t, check.IsIdentificationSuccessful())
+	})
+	t.Run("Status is a success value", func(t *testing.T) {
+		var success = "SUCCESS"
+		check.Status = &success
+		assert.True(t, check.IsIdentificationSuccessful())
+	})
+}

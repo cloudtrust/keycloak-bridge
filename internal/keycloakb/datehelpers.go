@@ -7,6 +7,7 @@ import (
 
 	errorhandler "github.com/cloudtrust/common-service/errors"
 	stats_api "github.com/cloudtrust/keycloak-bridge/api/statistics"
+	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	msg "github.com/cloudtrust/keycloak-bridge/internal/constants"
 )
 
@@ -45,4 +46,17 @@ func NextMonth(ref time.Time) time.Time {
 		month = time.Month(int(month) + 1)
 	}
 	return time.Date(year, month, 1, 0, 0, 0, 0, ref.Location()).UTC()
+}
+
+// IsDateInThePast tells if a date is in the past or not
+func IsDateInThePast(value *string) *bool {
+	if value == nil {
+		return nil
+	}
+	var date, err = time.Parse(constants.SupportedDateLayouts[0], *value)
+	if err != nil {
+		return nil
+	}
+	var expired = date.Before(time.Now())
+	return &expired
 }

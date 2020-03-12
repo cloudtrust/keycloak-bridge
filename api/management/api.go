@@ -2,36 +2,44 @@ package management_api
 
 import (
 	"encoding/json"
-	"strconv"
 
 	errorhandler "github.com/cloudtrust/common-service/errors"
 
 	"github.com/cloudtrust/common-service/configuration"
 	"github.com/cloudtrust/common-service/validation"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
+	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	kc "github.com/cloudtrust/keycloak-client"
 )
 
 // UserRepresentation struct
 type UserRepresentation struct {
-	ID                  *string   `json:"id,omitempty"`
-	Username            *string   `json:"username,omitempty"`
-	Email               *string   `json:"email,omitempty"`
-	Enabled             *bool     `json:"enabled,omitempty"`
-	EmailVerified       *bool     `json:"emailVerified,omitempty"`
-	PhoneNumberVerified *bool     `json:"phoneNumberVerified,omitempty"`
-	FirstName           *string   `json:"firstName,omitempty"`
-	LastName            *string   `json:"lastName,omitempty"`
-	PhoneNumber         *string   `json:"phoneNumber,omitempty"`
-	Label               *string   `json:"label,omitempty"`
-	Gender              *string   `json:"gender,omitempty"`
-	BirthDate           *string   `json:"birthDate,omitempty"`
-	CreatedTimestamp    *int64    `json:"createdTimestamp,omitempty"`
-	Groups              *[]string `json:"groups,omitempty"`
-	TrustIDGroups       *[]string `json:"trustIdGroups,omitempty"`
-	Roles               *[]string `json:"roles,omitempty"`
-	Locale              *string   `json:"locale,omitempty"`
-	SmsSent             *int      `json:"smsSent,omitempty"`
+	ID                  *string                        `json:"id,omitempty"`
+	Username            *string                        `json:"username,omitempty"`
+	Email               *string                        `json:"email,omitempty"`
+	Enabled             *bool                          `json:"enabled,omitempty"`
+	EmailVerified       *bool                          `json:"emailVerified,omitempty"`
+	PhoneNumberVerified *bool                          `json:"phoneNumberVerified,omitempty"`
+	FirstName           *string                        `json:"firstName,omitempty"`
+	LastName            *string                        `json:"lastName,omitempty"`
+	PhoneNumber         *string                        `json:"phoneNumber,omitempty"`
+	Label               *string                        `json:"label,omitempty"`
+	Gender              *string                        `json:"gender,omitempty"`
+	BirthDate           *string                        `json:"birthDate,omitempty"`
+	CreatedTimestamp    *int64                         `json:"createdTimestamp,omitempty"`
+	Groups              *[]string                      `json:"groups,omitempty"`
+	TrustIDGroups       *[]string                      `json:"trustIdGroups,omitempty"`
+	Roles               *[]string                      `json:"roles,omitempty"`
+	Locale              *string                        `json:"locale,omitempty"`
+	SmsSent             *int                           `json:"smsSent,omitempty"`
+	Accreditations      *[]AccreditationRepresentation `json:"accreditations,omitempty"`
+}
+
+// AccreditationRepresentation is a representation of accreditations
+type AccreditationRepresentation struct {
+	Type       *string `json:"type"`
+	ExpiryDate *string `json:"expiryDate"`
+	Expired    *bool   `json:"expired,omitempty"`
 }
 
 // UsersPageRepresentation used to manage paging in GetUsers
@@ -190,49 +198,41 @@ func ConvertToAPIUser(userKc kc.UserRepresentation) UserRepresentation {
 	userRep.LastName = userKc.LastName
 	userRep.CreatedTimestamp = userKc.CreatedTimestamp
 
-	if userKc.Attributes != nil {
-		var m = *userKc.Attributes
-
-		if m["phoneNumber"] != nil {
-			var phoneNumber = m["phoneNumber"][0]
-			userRep.PhoneNumber = &phoneNumber
-		}
-
-		if m["label"] != nil {
-			var label = m["label"][0]
-			userRep.Label = &label
-		}
-
-		if m["gender"] != nil {
-			var gender = m["gender"][0]
-			userRep.Gender = &gender
-		}
-
-		if m["birthDate"] != nil {
-			var birthDate = m["birthDate"][0]
-			userRep.BirthDate = &birthDate
-		}
-
-		if m["phoneNumberVerified"] != nil {
-			var phoneNumberVerified, _ = strconv.ParseBool(m["phoneNumberVerified"][0])
-			userRep.PhoneNumberVerified = &phoneNumberVerified
-		}
-
-		if m["locale"] != nil {
-			var locale = m["locale"][0]
-			userRep.Locale = &locale
-		}
-		if m["smsSent"] != nil {
-			var smsSent = m["smsSent"][0]
-			counter, _ := strconv.Atoi(smsSent)
-			userRep.SmsSent = &counter
-		}
-
-		if m["trustIDGroups"] != nil {
-			var trustIDGroups = m["trustIDGroups"]
-			userRep.TrustIDGroups = &trustIDGroups
-		}
+	if value := userKc.GetAttributeString(constants.AttrbPhoneNumber); value != nil {
+		userRep.PhoneNumber = value
 	}
+	if value, err := userKc.GetAttributeBool(constants.AttrbPhoneNumberVerified); err == nil && value != nil {
+		userRep.PhoneNumberVerified = value
+	}
+	if value := userKc.GetAttributeString(constants.AttrbLabel); value != nil {
+		userRep.Label = value
+	}
+	if value := userKc.GetAttributeString(constants.AttrbGender); value != nil {
+		userRep.Gender = value
+	}
+	if value := userKc.GetAttributeDate(constants.AttrbBirthDate, constants.SupportedDateLayouts); value != nil {
+		userRep.BirthDate = value
+	}
+	if value := userKc.GetAttributeString(constants.AttrbLocale); value != nil {
+		userRep.Locale = value
+	}
+	if value, err := userKc.GetAttributeInt(constants.AttrbSmsSent); err == nil && value != nil {
+		userRep.SmsSent = value
+	}
+	if value := userKc.GetAttribute(constants.AttrbTrustIDGroups); value != nil {
+		userRep.TrustIDGroups = &value
+	}
+	if values := userKc.GetAttribute(constants.AttrbAccreditations); len(values) > 0 {
+		var accreds []AccreditationRepresentation
+		for _, accredJSON := range values {
+			var accred AccreditationRepresentation
+			json.Unmarshal([]byte(accredJSON), &accred)
+			accred.Expired = keycloakb.IsDateInThePast(accred.ExpiryDate)
+			accreds = append(accreds, accred)
+		}
+		userRep.Accreditations = &accreds
+	}
+
 	return userRep
 }
 

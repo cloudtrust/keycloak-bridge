@@ -165,6 +165,21 @@ components:
         validation:
           type: string
           description: Only provided by getUser
+        accreditations:
+          type: array
+          description: Used only by getUser
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+                description: accreditation type
+              expiryDate:
+                type: string
+                description: expiry date. format is DD.MM.YYYY
+              expired:
+                type: bool
+                description: true if the expiry date has passed
   securitySchemes:
     openId:
       type: openIdConnect

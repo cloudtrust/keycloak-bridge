@@ -210,29 +210,28 @@ func TestGetStatisticsAuthenticationsLog(t *testing.T) {
 	ctx = context.WithValue(ctx, cs.CtContextRealm, realm)
 
 	var resExpected = []api.StatisticsConnectionRepresentation{
-		{"123", "LOGON_OK", "user", "127.0.0.1"},
+		{Date: "01.02.2003", Result: "LOGON_OK", User: "user", IP: "127.0.0.1"},
 	}
 
-	{ // fails
+	t.Run("fails", func(t *testing.T) {
 		mockDBModule.EXPECT().GetLastConnections(ctx, realm, "9").Return([]api.StatisticsConnectionRepresentation{}, errors.New("error")).Times(1)
 		res, err := component.GetStatisticsAuthenticationsLog(ctx, realm, "9")
 		assert.NotNil(t, err)
 		assert.Nil(t, res)
-	}
-
-	{ // success
+	})
+	t.Run("success", func(t *testing.T) {
 		mockDBModule.EXPECT().GetLastConnections(ctx, realm, "9").Return(resExpected, nil).Times(1)
 		res, err := component.GetStatisticsAuthenticationsLog(ctx, realm, "9")
 
 		assert.Nil(t, err)
 		assert.Equal(t, resExpected, res)
-	}
-	{ // fails - invalid param max
+	})
+	t.Run("fails - invalid param max", func(t *testing.T) {
 		res, err := component.GetStatisticsAuthenticationsLog(ctx, realm, "101")
 
 		assert.NotNil(t, err)
 		assert.Nil(t, res)
-	}
+	})
 }
 
 func TestGetActions(t *testing.T) {

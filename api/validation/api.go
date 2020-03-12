@@ -85,6 +85,10 @@ var (
 		"REVIEW_PENDING":            true,
 		"FRAUD_SUSPICION_PENDING":   true,
 	}
+	successStatus = map[string]bool{
+		"SUCCESS":              true,
+		"SUCCESS_DATA_CHANGED": true,
+	}
 )
 
 // ConvertToDBCheck creates a DBCheck
@@ -198,4 +202,9 @@ func (c *CheckRepresentation) Validate() error {
 		ValidateParameterRegExp(prmCheckNature, c.Nature, regExpNature, true).
 		ValidateParameterRegExp(prmCheckProofType, c.ProofType, regExpProofType, true).
 		Status()
+}
+
+// IsIdentificationSuccessful tells whether a check is success or not
+func (c *CheckRepresentation) IsIdentificationSuccessful() bool {
+	return c.Status != nil && successStatus[*c.Status]
 }

@@ -475,7 +475,14 @@ func main() {
 		// module for storing and retrieving details of the users
 		var usersDBModule = keycloakb.NewUsersDBModule(usersRwDBConn, validationLogger)
 
-		validationComponent := validation.NewComponent(registerRealm, keycloakClient, oidcTokenProvider, usersDBModule, eventsDBModule, validationLogger)
+		// accreditations module
+		var accredsModule keycloakb.AccreditationsModule
+		{
+			var configurationReaderDBModule = configuration.NewConfigurationReaderDBModule(configurationRoDBConn, validationLogger)
+			accredsModule = keycloakb.NewAccreditationsModule(keycloakClient, configurationReaderDBModule, validationLogger)
+		}
+
+		validationComponent := validation.NewComponent(registerRealm, keycloakClient, oidcTokenProvider, usersDBModule, eventsDBModule, accredsModule, validationLogger)
 
 		validationEndpoints = validation.Endpoints{
 			GetUser:     prepareEndpoint(validation.MakeGetUserEndpoint(validationComponent), "get_user", influxMetrics, validationLogger, tracer, rateLimit["validation"]),
@@ -669,8 +676,15 @@ func main() {
 		// module for storing and retrieving details of the users
 		var usersDBModule = keycloakb.NewUsersDBModule(usersRwDBConn, kycLogger)
 
+		// accreditations module
+		var accredsModule keycloakb.AccreditationsModule
+		{
+			var configurationReaderDBModule = configuration.NewConfigurationReaderDBModule(configurationRoDBConn, kycLogger)
+			accredsModule = keycloakb.NewAccreditationsModule(keycloakClient, configurationReaderDBModule, kycLogger)
+		}
+
 		// new module for KYC service
-		kycComponent := kyc.NewComponent(registerRealm, keycloakClient, usersDBModule, eventsDBModule, kycLogger)
+		kycComponent := kyc.NewComponent(registerRealm, keycloakClient, usersDBModule, eventsDBModule, accredsModule, kycLogger)
 		kycComponent = kyc.MakeAuthorizationRegisterComponentMW(registerRealm, log.With(kycLogger, "mw", "endpoint"), authorizationManager)(kycComponent)
 
 		kycEndpoints = kyc.Endpoints{

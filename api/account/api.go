@@ -1,28 +1,39 @@
 package account
 
 import (
+	"encoding/json"
+
 	"github.com/cloudtrust/common-service/validation"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	msg "github.com/cloudtrust/keycloak-bridge/internal/constants"
+	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	kc "github.com/cloudtrust/keycloak-client"
 )
 
 // AccountRepresentation struct
 type AccountRepresentation struct {
-	Username             *string `json:"username,omitempty"`
-	Email                *string `json:"email,omitempty"`
-	EmailVerified        *bool   `json:"emailVerified,omitempty"`
-	Gender               *string `json:"gender,omitempty"`
-	FirstName            *string `json:"firstName,omitempty"`
-	LastName             *string `json:"lastName,omitempty"`
-	PhoneNumber          *string `json:"phoneNumber,omitempty"`
-	PhoneNumberVerified  *bool   `json:"phoneNumberVerified,omitempty"`
-	BirthDate            *string `json:"birthDate,omitempty"`
-	BirthLocation        *string `json:"birthLocation,omitempty"`
-	IDDocumentType       *string `json:"idDocumentType,omitempty"`
-	IDDocumentNumber     *string `json:"idDocumentNumber,omitempty"`
-	IDDocumentExpiration *string `json:"idDocumentExpiration,omitempty"`
-	Locale               *string `json:"locale,omitempty"`
+	Username             *string                        `json:"username,omitempty"`
+	Email                *string                        `json:"email,omitempty"`
+	EmailVerified        *bool                          `json:"emailVerified,omitempty"`
+	Gender               *string                        `json:"gender,omitempty"`
+	FirstName            *string                        `json:"firstName,omitempty"`
+	LastName             *string                        `json:"lastName,omitempty"`
+	PhoneNumber          *string                        `json:"phoneNumber,omitempty"`
+	PhoneNumberVerified  *bool                          `json:"phoneNumberVerified,omitempty"`
+	BirthDate            *string                        `json:"birthDate,omitempty"`
+	BirthLocation        *string                        `json:"birthLocation,omitempty"`
+	IDDocumentType       *string                        `json:"idDocumentType,omitempty"`
+	IDDocumentNumber     *string                        `json:"idDocumentNumber,omitempty"`
+	IDDocumentExpiration *string                        `json:"idDocumentExpiration,omitempty"`
+	Locale               *string                        `json:"locale,omitempty"`
+	Accreditations       *[]AccreditationRepresentation `json:"accreditations,omitempty"`
+}
+
+// AccreditationRepresentation is a representation of accreditations
+type AccreditationRepresentation struct {
+	Type       *string `json:"type"`
+	ExpiryDate *string `json:"expiryDate"`
+	Expired    *bool   `json:"expired,omitempty"`
 }
 
 // CredentialRepresentation struct
@@ -72,7 +83,7 @@ func ConvertCredential(credKc *kc.CredentialRepresentation) CredentialRepresenta
 	return cred
 }
 
-// ConvertToAPIAccount creates an API account representation from  a KC user representation
+// ConvertToAPIAccount creates an API account representation from a KC user representation
 func ConvertToAPIAccount(userKc kc.UserRepresentation) AccountRepresentation {
 	var userRep AccountRepresentation
 
@@ -85,6 +96,9 @@ func ConvertToAPIAccount(userKc kc.UserRepresentation) AccountRepresentation {
 	if value := userKc.GetAttributeString(constants.AttrbPhoneNumber); value != nil {
 		userRep.PhoneNumber = value
 	}
+	if verified, err := userKc.GetAttributeBool(constants.AttrbPhoneNumberVerified); err == nil && verified != nil {
+		userRep.PhoneNumberVerified = verified
+	}
 	if value := userKc.GetAttributeString(constants.AttrbGender); value != nil {
 		userRep.Gender = value
 	}
@@ -94,8 +108,15 @@ func ConvertToAPIAccount(userKc kc.UserRepresentation) AccountRepresentation {
 	if value := userKc.GetAttributeString(constants.AttrbLocale); value != nil {
 		userRep.Locale = value
 	}
-	if verified, err := userKc.GetAttributeBool(constants.AttrbPhoneNumberVerified); err == nil && verified != nil {
-		userRep.PhoneNumberVerified = verified
+	if values := userKc.GetAttribute(constants.AttrbAccreditations); len(values) > 0 {
+		var accreds []AccreditationRepresentation
+		for _, accredJSON := range values {
+			var accred AccreditationRepresentation
+			json.Unmarshal([]byte(accredJSON), &accred)
+			accred.Expired = keycloakb.IsDateInThePast(accred.ExpiryDate)
+			accreds = append(accreds, accred)
+		}
+		userRep.Accreditations = &accreds
 	}
 
 	return userRep

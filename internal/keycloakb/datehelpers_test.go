@@ -106,3 +106,21 @@ func TestNextMonth(t *testing.T) {
 	assert.Equal(t, nextMonthIndia, NextMonth(reference.In(locIndia)))
 	assert.Equal(t, nextMonthCookIsland, NextMonth(reference.In(locCookIsland)))
 }
+
+func TestIsDateInThePast(t *testing.T) {
+	t.Run("Nil value", func(t *testing.T) {
+		assert.Nil(t, IsDateInThePast(nil))
+	})
+	t.Run("Invalid value", func(t *testing.T) {
+		var date = "32.13.2049"
+		assert.Nil(t, IsDateInThePast(&date))
+	})
+	t.Run("Date in the past", func(t *testing.T) {
+		var date = "01.01.2010"
+		assert.True(t, *IsDateInThePast(&date))
+	})
+	t.Run("Date in the future", func(t *testing.T) {
+		var date = "31.12.2100"
+		assert.False(t, *IsDateInThePast(&date))
+	})
+}

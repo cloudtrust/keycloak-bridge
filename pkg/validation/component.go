@@ -24,6 +24,7 @@ var (
 type KeycloakClient interface {
 	UpdateUser(accessToken string, realmName, userID string, user kc.UserRepresentation) error
 	GetUser(accessToken string, realmName, userID string) (kc.UserRepresentation, error)
+	GetRealm(accessToken string, realmName string) (kc.RealmRepresentation, error)
 }
 
 // TokenProvider is the interface to retrieve accessToken to access KC
@@ -58,32 +59,57 @@ type component struct {
 	tokenProvider   keycloak.OidcTokenProvider
 	usersDBModule   keycloakb.UsersDBModule
 	eventsDBModule  database.EventsDBModule
+	accredsModule   keycloakb.AccreditationsModule
 	logger          internal.Logger
 }
 
 // NewComponent returns the management component.
-func NewComponent(socialRealmName string, keycloakClient KeycloakClient, tokenProvider TokenProvider, usersDBModule keycloakb.UsersDBModule, eventsDBModule database.EventsDBModule, logger internal.Logger) Component {
+func NewComponent(socialRealmName string, keycloakClient KeycloakClient, tokenProvider TokenProvider, usersDBModule keycloakb.UsersDBModule, eventsDBModule database.EventsDBModule, accredsModule keycloakb.AccreditationsModule, logger internal.Logger) Component {
 	return &component{
 		socialRealmName: socialRealmName,
 		keycloakClient:  keycloakClient,
 		tokenProvider:   tokenProvider,
 		usersDBModule:   usersDBModule,
 		eventsDBModule:  eventsDBModule,
+		accredsModule:   accredsModule,
 		logger:          logger,
 	}
 }
 
-func (c *component) GetUser(ctx context.Context, userID string) (api.UserRepresentation, error) {
+func (c *component) getKeycloakUser(ctx context.Context, userID string) (kc.UserRepresentation, error) {
 	accessToken, err := c.tokenProvider.ProvideToken(ctx)
 	if err != nil {
-		c.logger.Warn(ctx, "msg", "GetUser: can't get accessToken for technical user", "err", err.Error())
-		return api.UserRepresentation{}, errorhandler.CreateInternalServerError("keycloak")
+		c.logger.Warn(ctx, "msg", "getKeycloakUser: can't get accessToken for technical user", "err", err.Error())
+		return kc.UserRepresentation{}, errorhandler.CreateInternalServerError("keycloak")
 	}
 
 	kcUser, err := c.keycloakClient.GetUser(accessToken, c.socialRealmName, userID)
 	if err != nil {
-		c.logger.Warn(ctx, "msg", "GetUser: can't find user in Keycloak", "err", err.Error())
-		return api.UserRepresentation{}, errorhandler.CreateInternalServerError("keycloak")
+		c.logger.Warn(ctx, "msg", "getKeycloakUser: can't find user in Keycloak", "err", err.Error())
+		return kc.UserRepresentation{}, errorhandler.CreateInternalServerError("keycloak")
+	}
+	return kcUser, nil
+}
+
+func (c *component) updateKeycloakUser(ctx context.Context, userID string, userKC kc.UserRepresentation) error {
+	accessToken, err := c.tokenProvider.ProvideToken(ctx)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "updateKeycloakUser: can't get accessToken for technical user", "err", err.Error())
+		return errorhandler.CreateInternalServerError("keycloak")
+	}
+
+	err = c.keycloakClient.UpdateUser(accessToken, c.socialRealmName, userID, userKC)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "updateKeycloakUser: can't update user in KC", "err", err.Error(), "userID", userID)
+		return errorhandler.CreateInternalServerError("keycloak")
+	}
+	return nil
+}
+
+func (c *component) GetUser(ctx context.Context, userID string) (api.UserRepresentation, error) {
+	var kcUser, err = c.getKeycloakUser(ctx, userID)
+	if err != nil {
+		return api.UserRepresentation{}, err
 	}
 
 	var dbUser *dto.DBUser
@@ -119,24 +145,16 @@ func (c *component) UpdateUser(ctx context.Context, userID string, user api.User
 	var kcUpdate = needKcUserUpdate(user)
 	var dbUpdate = needDBUserUpdate(user)
 
-	accessToken, err := c.tokenProvider.ProvideToken(ctx)
-	if err != nil {
-		c.logger.Warn(ctx, "msg", "UpdateUser: can't get accessToken for technical user", "err", err.Error())
-		return errorhandler.CreateInternalServerError("keycloak")
-	}
-
 	if kcUpdate {
-		kcUser, err := c.keycloakClient.GetUser(accessToken, c.socialRealmName, userID)
+		kcUser, err := c.getKeycloakUser(ctx, userID)
 		if err != nil {
-			c.logger.Warn(ctx, "msg", "UpdateUser: can't get user", "err", err.Error(), "userID", userID)
-			return errorhandler.CreateInternalServerError("keycloak")
+			return err
 		}
 
 		user.ExportToKeycloak(&kcUser)
-		err = c.keycloakClient.UpdateUser(accessToken, c.socialRealmName, userID, kcUser)
+		err = c.updateKeycloakUser(ctx, userID, kcUser)
 		if err != nil {
-			c.logger.Warn(ctx, "msg", "UpdateUser: can't update user in KC", "err", err.Error(), "userID", userID)
-			return errorhandler.CreateInternalServerError("keycloak")
+			return err
 		}
 	}
 
@@ -212,12 +230,33 @@ func needDBUserUpdate(user api.UserRepresentation) bool {
 }
 
 func (c *component) CreateCheck(ctx context.Context, userID string, check api.CheckRepresentation) error {
+	var accessToken string
+	var err error
 
 	dbCheck := check.ConvertToDBCheck()
-	err := c.usersDBModule.CreateCheck(ctx, c.socialRealmName, userID, dbCheck)
+	err = c.usersDBModule.CreateCheck(ctx, c.socialRealmName, userID, dbCheck)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Can't store check in DB", "err", err.Error())
 		return err
+	}
+
+	if check.IsIdentificationSuccessful() {
+		accessToken, err = c.tokenProvider.ProvideToken(ctx)
+		if err != nil {
+			c.logger.Warn(ctx, "msg", "CreateCheck: can't get accessToken for technical user", "err", err.Error())
+			return errorhandler.CreateInternalServerError("keycloak")
+		}
+
+		var kcUser kc.UserRepresentation
+		kcUser, _, err = c.accredsModule.GetUserAndPrepareAccreditations(ctx, accessToken, c.socialRealmName, userID, keycloakb.CredsIDNow)
+		if err != nil {
+			return err
+		}
+
+		err = c.keycloakClient.UpdateUser(accessToken, c.socialRealmName, userID, kcUser)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Event
