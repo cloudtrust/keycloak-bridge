@@ -690,7 +690,7 @@ paths:
     put:
       tags:
       - Users
-      summary: Reset the smsSent attribute of the user to value 0.
+      summary: Reset the smsSent and smsAttempts attributes of the user to value 0.
       parameters:
       - name: realm
         in: path

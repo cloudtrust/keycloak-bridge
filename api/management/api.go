@@ -32,6 +32,7 @@ type UserRepresentation struct {
 	Roles               *[]string                      `json:"roles,omitempty"`
 	Locale              *string                        `json:"locale,omitempty"`
 	SmsSent             *int                           `json:"smsSent,omitempty"`
+	SmsAttempts         *int                           `json:"smsAttempts,omitempty"`
 	Accreditations      *[]AccreditationRepresentation `json:"accreditations,omitempty"`
 }
 
@@ -254,6 +255,9 @@ func ConvertToAPIUser(userKc kc.UserRepresentation) UserRepresentation {
 	}
 	if value, err := userKc.GetAttributeInt(constants.AttrbSmsSent); err == nil && value != nil {
 		userRep.SmsSent = value
+	}
+	if value, err := userKc.GetAttributeInt(constants.AttrbSmsAttempts); err == nil && value != nil {
+		userRep.SmsAttempts = value
 	}
 	if value := userKc.GetAttribute(constants.AttrbTrustIDGroups); value != nil {
 		userRep.TrustIDGroups = &value
