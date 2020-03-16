@@ -26,7 +26,6 @@ func TestMakeAuthorizationRegisterComponentMW(t *testing.T) {
 	var userID = "user4673"
 	var groupIDs = []string{"group1", "group2"}
 	var username = "username"
-	var group = RegistrationOfficer
 	var expectedErr = errors.New("")
 
 	var component = MakeAuthorizationRegisterComponentMW(realm, logger.NewNopLogger(), mockAuthManager)(mockComponent)
@@ -72,13 +71,13 @@ func TestMakeAuthorizationRegisterComponentMW(t *testing.T) {
 	})
 
 	t.Run("ValidateUser - not authorized", func(t *testing.T) {
-		mockAuthManager.EXPECT().CheckAuthorizationOnTargetGroup(ctx, KYCValidateUser.String(), realm, group).Return(expectedErr)
+		mockAuthManager.EXPECT().CheckAuthorizationOnTargetUser(ctx, KYCValidateUser.String(), realm, userID).Return(expectedErr)
 		var err = component.ValidateUser(ctx, userID, user)
 		assert.Equal(t, expectedErr, err)
 	})
 
 	t.Run("ValidateUser - authorized", func(t *testing.T) {
-		mockAuthManager.EXPECT().CheckAuthorizationOnTargetGroup(ctx, KYCValidateUser.String(), realm, group).Return(nil)
+		mockAuthManager.EXPECT().CheckAuthorizationOnTargetUser(ctx, KYCValidateUser.String(), realm, userID).Return(nil)
 		mockComponent.EXPECT().ValidateUser(ctx, userID, user).Return(expectedErr).Times(1)
 		var err = component.ValidateUser(ctx, userID, user)
 		assert.Equal(t, expectedErr, err)
