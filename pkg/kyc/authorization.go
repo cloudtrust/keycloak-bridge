@@ -21,11 +21,6 @@ func newAction(as string, scope security.Scope) security.Action {
 	return a
 }
 
-const (
-	// RegistrationOfficer is the name of the Keycloak group required for KYC API methods
-	RegistrationOfficer = "registration_officer"
-)
-
 // Creates constants for API method names
 var (
 	KYCGetActions        = newAction("KYC_GetActions", security.ScopeGlobal)
