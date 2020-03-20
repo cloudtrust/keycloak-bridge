@@ -41,12 +41,6 @@ paths:
         required: true
         schema:
           type: string
-      - name: groupIds
-        in: query
-        description: list of groupId the users may belong to (list comma seperated)
-        required: true
-        schema:
-          type: string
       responses:
         200:
           description: Successful operation. Returns the generated username

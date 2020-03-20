@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"strings"
 	"testing"
 
 	apikyc "github.com/cloudtrust/keycloak-bridge/api/kyc"
@@ -67,27 +66,19 @@ func TestMakeGetUserByUsernameEndpoint(t *testing.T) {
 
 	var realm = "master"
 	var username = "user1234"
-	var groupIDList = "group1,group2,group3"
-	var groupIDs = strings.Split(groupIDList, ",")
-	var m = map[string]string{"realm": realm, "username": username, "groupIds": groupIDList}
+	var m = map[string]string{"realm": realm, "username": username}
 	var expectedError = errors.New("get-user")
 
 	t.Run("GetUserByUsername - success case", func(t *testing.T) {
-		mockKYCComponent.EXPECT().GetUserByUsername(gomock.Any(), username, groupIDs).Return(apikyc.UserRepresentation{}, nil)
+		mockKYCComponent.EXPECT().GetUserByUsername(gomock.Any(), username).Return(apikyc.UserRepresentation{}, nil)
 		_, err := MakeGetUserByUsernameEndpoint(mockKYCComponent)(context.Background(), m)
 		assert.Nil(t, err)
 	})
 
 	t.Run("GetUserByUsername - failure case", func(t *testing.T) {
-		mockKYCComponent.EXPECT().GetUserByUsername(gomock.Any(), username, groupIDs).Return(apikyc.UserRepresentation{}, expectedError)
+		mockKYCComponent.EXPECT().GetUserByUsername(gomock.Any(), username).Return(apikyc.UserRepresentation{}, expectedError)
 		_, err := MakeGetUserByUsernameEndpoint(mockKYCComponent)(context.Background(), m)
 		assert.Equal(t, expectedError, err)
-	})
-
-	t.Run("GetUserByUsername - missing groupIDs", func(t *testing.T) {
-		var missingGroupIDs = map[string]string{"realm": realm, "username": username}
-		_, err := MakeGetUserByUsernameEndpoint(mockKYCComponent)(context.Background(), missingGroupIDs)
-		assert.NotNil(t, err)
 	})
 }
 

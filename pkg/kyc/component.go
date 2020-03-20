@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/cloudtrust/common-service/configuration"
+	"github.com/cloudtrust/keycloak-client"
 
 	cs "github.com/cloudtrust/common-service"
 	"github.com/cloudtrust/common-service/database"
@@ -22,6 +23,7 @@ type KeycloakClient interface {
 	UpdateUser(accessToken string, realmName, userID string, user kc.UserRepresentation) error
 	GetUser(accessToken string, realmName, userID string) (kc.UserRepresentation, error)
 	GetUsers(accessToken string, reqRealmName, targetRealmName string, paramKV ...string) (kc.UsersPageRepresentation, error)
+	GetGroups(accessToken string, realmName string) ([]kc.GroupRepresentation, error)
 }
 
 // UsersDBModule is the interface from the users module
@@ -41,7 +43,7 @@ type EventsDBModule interface {
 type Component interface {
 	GetActions(ctx context.Context) ([]apikyc.ActionRepresentation, error)
 	GetUser(ctx context.Context, userID string) (apikyc.UserRepresentation, error)
-	GetUserByUsername(ctx context.Context, username string, groupIDs []string) (apikyc.UserRepresentation, error)
+	GetUserByUsername(ctx context.Context, username string) (apikyc.UserRepresentation, error)
 	ValidateUser(ctx context.Context, userID string, user apikyc.UserRepresentation) error
 }
 
@@ -91,12 +93,17 @@ func (c *component) GetActions(ctx context.Context) ([]apikyc.ActionRepresentati
 	return apiActions, nil
 }
 
-func (c *component) GetUserByUsername(ctx context.Context, username string, _ []string) (apikyc.UserRepresentation, error) {
+func (c *component) GetUserByUsername(ctx context.Context, username string) (apikyc.UserRepresentation, error) {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
-	var kcUser, err = c.getUserByUsername(accessToken, c.socialRealmName, c.socialRealmName, username)
+	var group, err = c.getGroupByName(accessToken, c.socialRealmName, "end_user")
+	if err != nil {
+		return apikyc.UserRepresentation{}, err
+	}
+	var kcUser keycloak.UserRepresentation
+	kcUser, err = c.getUserByUsername(accessToken, c.socialRealmName, c.socialRealmName, username, *group.Id)
 	if err != nil {
 		c.logger.Info(ctx, "msg", "GetUser: can't find user in Keycloak", "err", err.Error())
-		return apikyc.UserRepresentation{}, errorhandler.CreateInternalServerError("keycloak")
+		return apikyc.UserRepresentation{}, err
 	}
 	keycloakb.ConvertLegacyAttribute(&kcUser)
 	return c.getUser(ctx, *kcUser.Id, kcUser)
@@ -228,13 +235,26 @@ func (c *component) ValidateUser(ctx context.Context, userID string, user apikyc
 	return nil
 }
 
-func (c *component) getUserByUsername(accessToken, reqRealmName, targetRealmName, username string) (kc.UserRepresentation, error) {
-	var kcUsers, err = c.keycloakClient.GetUsers(accessToken, reqRealmName, targetRealmName, "username", username)
+func (c *component) getGroupByName(accessToken, realmName, groupName string) (kc.GroupRepresentation, error) {
+	var groups, err = c.keycloakClient.GetGroups(accessToken, realmName)
+	if err != nil {
+		return kc.GroupRepresentation{}, err
+	}
+	for _, grp := range groups {
+		if *grp.Name == groupName {
+			return grp, nil
+		}
+	}
+	return kc.GroupRepresentation{}, errorhandler.CreateNotFoundError("group")
+}
+
+func (c *component) getUserByUsername(accessToken, reqRealmName, targetRealmName, username, groupID string) (kc.UserRepresentation, error) {
+	var kcUsers, err = c.keycloakClient.GetUsers(accessToken, reqRealmName, targetRealmName, "username", username, "groupId", groupID)
 	if err != nil {
 		return kc.UserRepresentation{}, errorhandler.CreateInternalServerError("keycloak")
 	}
 	if kcUsers.Count == nil || *kcUsers.Count != 1 || kcUsers.Users[0].Username == nil || *kcUsers.Users[0].Username != username {
-		return kc.UserRepresentation{}, errorhandler.CreateNotFoundError("username")
+		return kc.UserRepresentation{}, errorhandler.CreateNotFoundError("user")
 	}
 
 	var res = kcUsers.Users[0]

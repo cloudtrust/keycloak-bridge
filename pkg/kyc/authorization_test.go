@@ -24,7 +24,6 @@ func TestMakeAuthorizationRegisterComponentMW(t *testing.T) {
 	var ctx = context.WithValue(context.Background(), cs.CtContextRealm, realm)
 	var user = apikyc.UserRepresentation{}
 	var userID = "user4673"
-	var groupIDs = []string{"group1", "group2"}
 	var username = "username"
 	var expectedErr = errors.New("")
 
@@ -57,16 +56,16 @@ func TestMakeAuthorizationRegisterComponentMW(t *testing.T) {
 	})
 
 	t.Run("GetUserByUsername - not authorized", func(t *testing.T) {
-		mockAuthManager.EXPECT().CheckAuthorizationOnTargetGroupID(ctx, KYCGetUserByUsername.String(), realm, gomock.Any()).
+		mockAuthManager.EXPECT().CheckAuthorizationOnTargetRealm(ctx, KYCGetUserByUsername.String(), realm).
 			Return(nil).Return(expectedErr)
-		var _, err = component.GetUserByUsername(ctx, username, groupIDs)
+		var _, err = component.GetUserByUsername(ctx, username)
 		assert.Equal(t, expectedErr, err)
 	})
 
 	t.Run("GetUserByUsername - authorized", func(t *testing.T) {
-		mockAuthManager.EXPECT().CheckAuthorizationOnTargetGroupID(ctx, KYCGetUserByUsername.String(), realm, gomock.Any()).Return(nil).Times(2)
-		mockComponent.EXPECT().GetUserByUsername(ctx, username, groupIDs).Return(apikyc.UserRepresentation{}, expectedErr).Times(1)
-		var _, err = component.GetUserByUsername(ctx, username, groupIDs)
+		mockAuthManager.EXPECT().CheckAuthorizationOnTargetRealm(ctx, KYCGetUserByUsername.String(), realm).Return(nil)
+		mockComponent.EXPECT().GetUserByUsername(ctx, username).Return(apikyc.UserRepresentation{}, expectedErr).Times(1)
+		var _, err = component.GetUserByUsername(ctx, username)
 		assert.Equal(t, expectedErr, err)
 	})
 
