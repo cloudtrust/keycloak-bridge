@@ -146,7 +146,13 @@ func TestDeny(t *testing.T) {
 		_, err = authorizationMW.GetGroupsOfUser(ctx, realmName, userID)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
-		err = authorizationMW.SetTrustIDGroups(ctx, realmName, userID, grpNames)
+		_, err = authorizationMW.GetAvailableTrustIDGroups(ctx, realmName)
+		assert.Equal(t, security.ForbiddenError{}, err)
+
+		_, err = authorizationMW.GetTrustIDGroupsOfUser(ctx, realmName, userID)
+		assert.Equal(t, security.ForbiddenError{}, err)
+
+		err = authorizationMW.SetTrustIDGroupsToUser(ctx, realmName, userID, grpNames)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
 		_, err = authorizationMW.GetClientRolesForUser(ctx, realmName, userID, clientID)
@@ -450,8 +456,16 @@ func TestAllowed(t *testing.T) {
 		_, err = authorizationMW.GetGroups(ctx, realmName)
 		assert.Nil(t, err)
 
-		mockManagementComponent.EXPECT().SetTrustIDGroups(ctx, realmName, userID, grpNames).Return(nil).Times(1)
-		err = authorizationMW.SetTrustIDGroups(ctx, realmName, userID, grpNames)
+		mockManagementComponent.EXPECT().GetAvailableTrustIDGroups(ctx, realmName).Return(nil, nil).Times(1)
+		_, err = authorizationMW.GetAvailableTrustIDGroups(ctx, realmName)
+		assert.Nil(t, err)
+
+		mockManagementComponent.EXPECT().GetTrustIDGroupsOfUser(ctx, realmName, userID).Return(nil, nil).Times(1)
+		_, err = authorizationMW.GetTrustIDGroupsOfUser(ctx, realmName, userID)
+		assert.Nil(t, err)
+
+		mockManagementComponent.EXPECT().SetTrustIDGroupsToUser(ctx, realmName, userID, grpNames).Return(nil).Times(1)
+		err = authorizationMW.SetTrustIDGroupsToUser(ctx, realmName, userID, grpNames)
 		assert.Nil(t, err)
 
 		mockManagementComponent.EXPECT().CreateGroup(ctx, realmName, group).Return("", nil).Times(1)

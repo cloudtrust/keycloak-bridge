@@ -22,17 +22,19 @@ type Endpoints struct {
 	GetClients         endpoint.Endpoint
 	GetRequiredActions endpoint.Endpoint
 
-	DeleteUser           endpoint.Endpoint
-	GetUser              endpoint.Endpoint
-	UpdateUser           endpoint.Endpoint
-	GetUsers             endpoint.Endpoint
-	CreateUser           endpoint.Endpoint
-	GetRolesOfUser       endpoint.Endpoint
-	GetGroupsOfUser      endpoint.Endpoint
-	SetTrustIDGroups     endpoint.Endpoint
-	GetUserAccountStatus endpoint.Endpoint
-	GetClientRoleForUser endpoint.Endpoint
-	AddClientRoleToUser  endpoint.Endpoint
+	DeleteUser                endpoint.Endpoint
+	GetUser                   endpoint.Endpoint
+	UpdateUser                endpoint.Endpoint
+	GetUsers                  endpoint.Endpoint
+	CreateUser                endpoint.Endpoint
+	GetRolesOfUser            endpoint.Endpoint
+	GetGroupsOfUser           endpoint.Endpoint
+	GetAvailableTrustIDGroups endpoint.Endpoint
+	GetTrustIDGroupsOfUser    endpoint.Endpoint
+	SetTrustIDGroupsToUser    endpoint.Endpoint
+	GetUserAccountStatus      endpoint.Endpoint
+	GetClientRoleForUser      endpoint.Endpoint
+	AddClientRoleToUser       endpoint.Endpoint
 
 	ResetPassword            endpoint.Endpoint
 	ExecuteActionsEmail      endpoint.Endpoint
@@ -84,7 +86,9 @@ type ManagementComponent interface {
 	GetUserAccountStatus(ctx context.Context, realmName, userID string) (map[string]bool, error)
 	GetRolesOfUser(ctx context.Context, realmName, userID string) ([]api.RoleRepresentation, error)
 	GetGroupsOfUser(ctx context.Context, realmName, userID string) ([]api.GroupRepresentation, error)
-	SetTrustIDGroups(ctx context.Context, realmName, userID string, groups []string) error
+	GetAvailableTrustIDGroups(ctx context.Context, realmName string) ([]string, error)
+	GetTrustIDGroupsOfUser(ctx context.Context, realmName, userID string) ([]string, error)
+	SetTrustIDGroupsToUser(ctx context.Context, realmName, userID string, groups []string) error
 	GetClientRolesForUser(ctx context.Context, realmName, userID, clientID string) ([]api.RoleRepresentation, error)
 	AddClientRolesToUser(ctx context.Context, realmName, userID, clientID string, roles []api.RoleRepresentation) error
 	ResetPassword(ctx context.Context, realmName string, userID string, password api.PasswordRepresentation) (string, error)
@@ -276,8 +280,26 @@ func MakeGetGroupsOfUserEndpoint(managementComponent ManagementComponent) cs.End
 	}
 }
 
-// MakeSetTrustIDGroupsEndpoint creates an endpoint for SetTrustIDGroups
-func MakeSetTrustIDGroupsEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+// MakeGetAvailableTrustIDGroupsEndpoint creates an endpoint for GetAvailableTrustIDGroups
+func MakeGetAvailableTrustIDGroupsEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+
+		return managementComponent.GetAvailableTrustIDGroups(ctx, m["realm"])
+	}
+}
+
+// MakeGetTrustIDGroupsOfUserEndpoint creates an endpoint for GetTrustIDGroupsOfUser
+func MakeGetTrustIDGroupsOfUserEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+
+		return managementComponent.GetTrustIDGroupsOfUser(ctx, m["realm"], m["userID"])
+	}
+}
+
+// MakeSetTrustIDGroupsToUserEndpoint creates an endpoint for SetTrustIDGroupsToUser
+func MakeSetTrustIDGroupsToUserEndpoint(managementComponent ManagementComponent) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
@@ -287,7 +309,7 @@ func MakeSetTrustIDGroupsEndpoint(managementComponent ManagementComponent) cs.En
 			return nil, errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Body)
 		}
 
-		return nil, managementComponent.SetTrustIDGroups(ctx, m["realm"], m["userID"], groupNames)
+		return nil, managementComponent.SetTrustIDGroupsToUser(ctx, m["realm"], m["userID"], groupNames)
 	}
 }
 

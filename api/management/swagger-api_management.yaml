@@ -115,6 +115,29 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Client'
+  /realms/{realm}/trustIdGroups:
+    get:
+      tags:
+      - Users
+      summary: Get available trustID groups
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                example:
+                  ["product_administrator","registration_officer"]
   /realms/{realm}/users:
     post:
       tags:
@@ -361,6 +384,34 @@ paths:
                 items:
                   $ref: '#/components/schemas/Group'
   /realms/{realm}/users/{userID}/trustIdGroups:
+    get:
+      tags:
+      - Users
+      summary: Get the trustID groups for the user
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+                example:
+                  ["product_administrator","registration_officer"]
     put:
       tags:
       - Users
@@ -1213,7 +1264,7 @@ components:
                 type: string
                 description: expiry date. format is DD.MM.YYYY
               expired:
-                type: bool
+                type: boolean
                 description: true if the expiry date has passed
     UserStatus:
       type: object

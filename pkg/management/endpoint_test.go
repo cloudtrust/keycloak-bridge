@@ -393,16 +393,68 @@ func TestGetGroupsOfUserEndpoint(t *testing.T) {
 	}
 }
 
-func TestSetTrustIDGroupsEndpoint(t *testing.T) {
+func TestGetAvailableTrustIDGroupsEndpoint(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 
 	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
 
-	var e = MakeSetTrustIDGroupsEndpoint(mockManagementComponent)
+	var e = MakeGetAvailableTrustIDGroupsEndpoint(mockManagementComponent)
+	var realm = "master"
+	var ctx = context.Background()
+	var req = map[string]string{"realm": realm}
 
-	// No error
-	{
+	t.Run("No error", func(t *testing.T) {
+		mockManagementComponent.EXPECT().GetAvailableTrustIDGroups(ctx, realm).Return([]string{"grp1", "grp2"}, nil).Times(1)
+		var res, err = e(ctx, req)
+		assert.Nil(t, err)
+		assert.Len(t, res, 2)
+	})
+
+	t.Run("Bad input", func(t *testing.T) {
+		mockManagementComponent.EXPECT().GetAvailableTrustIDGroups(ctx, realm).Return(nil, errors.New("error")).Times(1)
+		var res, err = e(ctx, req)
+		assert.NotNil(t, err)
+		assert.Nil(t, res)
+	})
+}
+
+func TestGetTrustIDGroupsOfUserEndpoint(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
+
+	var e = MakeGetTrustIDGroupsOfUserEndpoint(mockManagementComponent)
+	var realm = "master"
+	var userID = "123-123-456"
+	var ctx = context.Background()
+	var req = map[string]string{"realm": realm, "userID": userID}
+
+	t.Run("No error", func(t *testing.T) {
+		mockManagementComponent.EXPECT().GetTrustIDGroupsOfUser(ctx, realm, userID).Return([]string{"grp1", "grp2"}, nil).Times(1)
+		var res, err = e(ctx, req)
+		assert.Nil(t, err)
+		assert.Len(t, res, 2)
+	})
+
+	t.Run("Bad input", func(t *testing.T) {
+		mockManagementComponent.EXPECT().GetTrustIDGroupsOfUser(ctx, realm, userID).Return(nil, errors.New("error")).Times(1)
+		var res, err = e(ctx, req)
+		assert.NotNil(t, err)
+		assert.Nil(t, res)
+	})
+}
+
+func TestSetTrustIDGroupsToUserEndpoint(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
+
+	var e = MakeSetTrustIDGroupsToUserEndpoint(mockManagementComponent)
+
+	t.Run("No error", func(t *testing.T) {
 		var realm = "master"
 		var userID = "123-123-456"
 		var ctx = context.Background()
@@ -412,14 +464,13 @@ func TestSetTrustIDGroupsEndpoint(t *testing.T) {
 		body := []string{"grp1", "grp2"}
 		req["body"] = string("[\"grp1\", \"grp2\"]")
 
-		mockManagementComponent.EXPECT().SetTrustIDGroups(ctx, realm, userID, body).Return(nil).Times(1)
+		mockManagementComponent.EXPECT().SetTrustIDGroupsToUser(ctx, realm, userID, body).Return(nil).Times(1)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Nil(t, res)
-	}
+	})
 
-	// Bad input
-	{
+	t.Run("Bad input", func(t *testing.T) {
 		var realm = "master"
 		var userID = "123-123-456"
 		var ctx = context.Background()
@@ -431,7 +482,7 @@ func TestSetTrustIDGroupsEndpoint(t *testing.T) {
 		var res, err = e(ctx, req)
 		assert.NotNil(t, err)
 		assert.Nil(t, res)
-	}
+	})
 }
 
 func TestGetClientRolesForUserEndpoint(t *testing.T) {

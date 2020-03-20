@@ -81,7 +81,9 @@ type Component interface {
 	GetUserAccountStatus(ctx context.Context, realmName, userID string) (map[string]bool, error)
 	GetRolesOfUser(ctx context.Context, realmName, userID string) ([]api.RoleRepresentation, error)
 	GetGroupsOfUser(ctx context.Context, realmName, userID string) ([]api.GroupRepresentation, error)
-	SetTrustIDGroups(ctx context.Context, realmName, userID string, groupNames []string) error
+	GetAvailableTrustIDGroups(ctx context.Context, realmName string) ([]string, error)
+	GetTrustIDGroupsOfUser(ctx context.Context, realmName, userID string) ([]string, error)
+	SetTrustIDGroupsToUser(ctx context.Context, realmName, userID string, groupNames []string) error
 	GetClientRolesForUser(ctx context.Context, realmName, userID, clientID string) ([]api.RoleRepresentation, error)
 	AddClientRolesToUser(ctx context.Context, realmName, userID, clientID string, roles []api.RoleRepresentation) error
 
@@ -506,7 +508,33 @@ func (c *component) GetGroupsOfUser(ctx context.Context, realmName, userID strin
 	return groupsRep, nil
 }
 
-func (c *component) SetTrustIDGroups(ctx context.Context, realmName, userID string, groupNames []string) error {
+func (c *component) GetAvailableTrustIDGroups(ctx context.Context, realmName string) ([]string, error) {
+	var res []string
+	for key := range c.authorizedTrustIDGroups {
+		res = append(res, key)
+	}
+	return res, nil
+}
+
+func (c *component) GetTrustIDGroupsOfUser(ctx context.Context, realmName, userID string) ([]string, error) {
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+	var currentUser, err = c.keycloakClient.GetUser(accessToken, realmName, userID)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return nil, err
+	}
+	var groups = make([]string, 0)
+	for _, grp := range currentUser.GetAttribute(constants.AttrbTrustIDGroups) {
+		if strings.HasPrefix(grp, "/") {
+			grp = grp[1:]
+		}
+		groups = append(groups, grp)
+	}
+
+	return groups, nil
+}
+
+func (c *component) SetTrustIDGroupsToUser(ctx context.Context, realmName, userID string, groupNames []string) error {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 
 	// validate the input - trustID groups must be valid
@@ -531,10 +559,10 @@ func (c *component) SetTrustIDGroups(ctx context.Context, realmName, userID stri
 
 	// set the trustID groups attributes
 	if currentUser.Attributes == nil {
-		var emtpyMap = make(kc.Attributes)
-		currentUser.Attributes = &emtpyMap
+		var emptyMap = make(kc.Attributes)
+		currentUser.Attributes = &emptyMap
 	}
-	(*currentUser.Attributes)["trustIDGroups"] = extGroupNames
+	(*currentUser.Attributes)[constants.AttrbTrustIDGroups] = extGroupNames
 
 	err = c.keycloakClient.UpdateUser(accessToken, realmName, userID, currentUser)
 	if err != nil {
