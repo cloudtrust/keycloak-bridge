@@ -18,6 +18,7 @@ import (
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
+	"github.com/cloudtrust/keycloak-client"
 
 	"github.com/cloudtrust/keycloak-bridge/pkg/management/mock"
 	kc "github.com/cloudtrust/keycloak-client"
@@ -1404,7 +1405,65 @@ func TestGetGroupsOfUser(t *testing.T) {
 	}
 }
 
-func TestSetTrustIDGroups(t *testing.T) {
+func TestGetAvailableTrustIDGroups(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
+	var mockEventDBModule = mock.NewEventDBModule(mockCtrl)
+	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
+	var mockLogger = log.NewNopLogger()
+
+	var allowedTrustIDGroups = []string{"grp1", "grp2"}
+	var realmName = "master"
+
+	var component = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
+
+	var res, err = component.GetAvailableTrustIDGroups(context.TODO(), realmName)
+	assert.Nil(t, err)
+	assert.Len(t, res, len(allowedTrustIDGroups))
+}
+
+func TestGetTrustIDGroupsOfUser(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
+	var mockEventDBModule = mock.NewEventDBModule(mockCtrl)
+	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
+	var mockLogger = log.NewNopLogger()
+
+	var allowedTrustIDGroups = []string{"grp1", "grp2"}
+	var groups = []string{"some", "/groups"}
+	var accessToken = "TOKEN=="
+	var realmName = "master"
+	var userID = "789-789-456"
+	var attrbs = keycloak.Attributes{constants.AttrbTrustIDGroups: groups}
+	var ctx = context.WithValue(context.TODO(), cs.CtContextAccessToken, accessToken)
+
+	var component = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
+
+	t.Run("Keycloak fails", func(t *testing.T) {
+		mockKeycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(kc.UserRepresentation{}, errors.New("kc error"))
+		var _, err = component.GetTrustIDGroupsOfUser(ctx, realmName, userID)
+		assert.NotNil(t, err)
+	})
+	t.Run("User without attributes", func(t *testing.T) {
+		mockKeycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(kc.UserRepresentation{}, nil)
+		var res, err = component.GetTrustIDGroupsOfUser(ctx, realmName, userID)
+		assert.Nil(t, err)
+		assert.Len(t, res, 0)
+	})
+	t.Run("User has attributes", func(t *testing.T) {
+		mockKeycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(kc.UserRepresentation{Attributes: &attrbs}, nil)
+		var res, err = component.GetTrustIDGroupsOfUser(ctx, realmName, userID)
+		assert.Nil(t, err)
+		assert.Equal(t, "some", res[0])
+		assert.Equal(t, "groups", res[1]) // Without heading slash
+	})
+}
+
+func TestSetTrustIDGroupsToUser(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
@@ -1438,7 +1497,7 @@ func TestSetTrustIDGroups(t *testing.T) {
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
-		err := managementComponent.SetTrustIDGroups(ctx, realmName, userID, grpNames)
+		err := managementComponent.SetTrustIDGroupsToUser(ctx, realmName, userID, grpNames)
 
 		assert.Nil(t, err)
 	})
@@ -1450,7 +1509,7 @@ func TestSetTrustIDGroups(t *testing.T) {
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
-		err := managementComponent.SetTrustIDGroups(ctx, realmName, userID, grpNames)
+		err := managementComponent.SetTrustIDGroupsToUser(ctx, realmName, userID, grpNames)
 
 		assert.NotNil(t, err)
 	})
@@ -1461,7 +1520,7 @@ func TestSetTrustIDGroups(t *testing.T) {
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
-		err := managementComponent.SetTrustIDGroups(ctx, realmName, userID, grpNames)
+		err := managementComponent.SetTrustIDGroupsToUser(ctx, realmName, userID, grpNames)
 
 		assert.NotNil(t, err)
 	})
@@ -1483,7 +1542,7 @@ func TestSetTrustIDGroups(t *testing.T) {
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
-		err := managementComponent.SetTrustIDGroups(ctx, realmName, userID, grpNames)
+		err := managementComponent.SetTrustIDGroupsToUser(ctx, realmName, userID, grpNames)
 
 		assert.NotNil(t, err)
 	})

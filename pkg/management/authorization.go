@@ -37,6 +37,8 @@ var (
 	MGMTGetUserAccountStatus                = newAction("MGMT_GetUserAccountStatus", security.ScopeGroup)
 	MGMTGetRolesOfUser                      = newAction("MGMT_GetRolesOfUser", security.ScopeGroup)
 	MGMTGetGroupsOfUser                     = newAction("MGMT_GetGroupsOfUser", security.ScopeGroup)
+	MGMTGetAvailableTrustIDGroups           = newAction("MGMT_GetAvailableTrustIDGroups", security.ScopeRealm)
+	MGMTGetTrustIDGroups                    = newAction("MGMT_GetTrustIDGroups", security.ScopeGroup)
 	MGMTSetTrustIDGroups                    = newAction("MGMT_SetTrustIDGroups", security.ScopeGroup)
 	MGMTGetClientRolesForUser               = newAction("MGMT_GetClientRolesForUser", security.ScopeGroup)
 	MGMTAddClientRolesToUser                = newAction("MGMT_AddClientRolesToUser", security.ScopeGroup)
@@ -251,7 +253,29 @@ func (c *authorizationComponentMW) GetGroupsOfUser(ctx context.Context, realmNam
 	return c.next.GetGroupsOfUser(ctx, realmName, userID)
 }
 
-func (c *authorizationComponentMW) SetTrustIDGroups(ctx context.Context, realmName, userID string, groupNames []string) error {
+func (c *authorizationComponentMW) GetAvailableTrustIDGroups(ctx context.Context, realmName string) ([]string, error) {
+	var action = MGMTGetAvailableTrustIDGroups.String()
+	var targetRealm = realmName
+
+	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
+		return []string{}, err
+	}
+
+	return c.next.GetAvailableTrustIDGroups(ctx, realmName)
+}
+
+func (c *authorizationComponentMW) GetTrustIDGroupsOfUser(ctx context.Context, realmName, userID string) ([]string, error) {
+	var action = MGMTGetTrustIDGroups.String()
+	var targetRealm = realmName
+
+	if err := c.authManager.CheckAuthorizationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
+		return nil, err
+	}
+
+	return c.next.GetTrustIDGroupsOfUser(ctx, realmName, userID)
+}
+
+func (c *authorizationComponentMW) SetTrustIDGroupsToUser(ctx context.Context, realmName, userID string, groupNames []string) error {
 	var action = MGMTSetTrustIDGroups.String()
 	var targetRealm = realmName
 
@@ -259,7 +283,7 @@ func (c *authorizationComponentMW) SetTrustIDGroups(ctx context.Context, realmNa
 		return err
 	}
 
-	return c.next.SetTrustIDGroups(ctx, realmName, userID, groupNames)
+	return c.next.SetTrustIDGroupsToUser(ctx, realmName, userID, groupNames)
 }
 
 func (c *authorizationComponentMW) GetClientRolesForUser(ctx context.Context, realmName, userID, clientID string) ([]api.RoleRepresentation, error) {
