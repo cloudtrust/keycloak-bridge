@@ -21,11 +21,6 @@ func newAction(as string, scope security.Scope) security.Action {
 	return a
 }
 
-const (
-	// RegistrationOfficer is the name of the Keycloak group required for KYC API methods
-	RegistrationOfficer = "registration_officer"
-)
-
 // Creates constants for API method names
 var (
 	KYCGetActions        = newAction("KYC_GetActions", security.ScopeGlobal)
@@ -95,9 +90,8 @@ func (c *authorizationComponentMW) GetUser(ctx context.Context, userID string) (
 func (c *authorizationComponentMW) ValidateUser(ctx context.Context, userID string, user apikyc.UserRepresentation) error {
 	var action = KYCValidateUser.String()
 	var targetRealm = c.realmName
-	var groupID = RegistrationOfficer
 
-	if err := c.authManager.CheckAuthorizationOnTargetGroup(ctx, action, targetRealm, groupID); err != nil {
+	if err := c.authManager.CheckAuthorizationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
 		return err
 	}
 
