@@ -29,6 +29,7 @@ type Endpoints struct {
 	CreateUser                endpoint.Endpoint
 	GetRolesOfUser            endpoint.Endpoint
 	GetGroupsOfUser           endpoint.Endpoint
+	SetGroupsToUser           endpoint.Endpoint
 	GetAvailableTrustIDGroups endpoint.Endpoint
 	GetTrustIDGroupsOfUser    endpoint.Endpoint
 	SetTrustIDGroupsToUser    endpoint.Endpoint
@@ -69,104 +70,51 @@ type Endpoints struct {
 	CreateShadowUser endpoint.Endpoint
 }
 
-// ManagementComponent is the interface of the component to send a query to Keycloak.
-type ManagementComponent interface {
-	GetActions(ctx context.Context) ([]api.ActionRepresentation, error)
-
-	GetRealms(ctx context.Context) ([]api.RealmRepresentation, error)
-	GetRealm(ctx context.Context, realmName string) (api.RealmRepresentation, error)
-	GetClient(ctx context.Context, realmName, idClient string) (api.ClientRepresentation, error)
-	GetClients(ctx context.Context, realmName string) ([]api.ClientRepresentation, error)
-	GetRequiredActions(ctx context.Context, realmName string) ([]api.RequiredActionRepresentation, error)
-	DeleteUser(ctx context.Context, realmName, userID string) error
-	GetUser(ctx context.Context, realmName, userID string) (api.UserRepresentation, error)
-	UpdateUser(ctx context.Context, realmName, userID string, user api.UserRepresentation) error
-	GetUsers(ctx context.Context, realmName string, groupIDs []string, paramKV ...string) (api.UsersPageRepresentation, error)
-	CreateUser(ctx context.Context, realmName string, user api.UserRepresentation) (string, error)
-	GetUserAccountStatus(ctx context.Context, realmName, userID string) (map[string]bool, error)
-	GetRolesOfUser(ctx context.Context, realmName, userID string) ([]api.RoleRepresentation, error)
-	GetGroupsOfUser(ctx context.Context, realmName, userID string) ([]api.GroupRepresentation, error)
-	GetAvailableTrustIDGroups(ctx context.Context, realmName string) ([]string, error)
-	GetTrustIDGroupsOfUser(ctx context.Context, realmName, userID string) ([]string, error)
-	SetTrustIDGroupsToUser(ctx context.Context, realmName, userID string, groups []string) error
-	GetClientRolesForUser(ctx context.Context, realmName, userID, clientID string) ([]api.RoleRepresentation, error)
-	AddClientRolesToUser(ctx context.Context, realmName, userID, clientID string, roles []api.RoleRepresentation) error
-	ResetPassword(ctx context.Context, realmName string, userID string, password api.PasswordRepresentation) (string, error)
-	ExecuteActionsEmail(ctx context.Context, realmName string, userID string, actions []api.RequiredAction, paramKV ...string) error
-	SendNewEnrolmentCode(ctx context.Context, realmName string, userID string) (string, error)
-	SendReminderEmail(ctx context.Context, realmName string, userID string, paramKV ...string) error
-	ResetSmsCounter(ctx context.Context, realmName string, userID string) error
-	CreateRecoveryCode(ctx context.Context, realmName string, userID string) (string, error)
-	GetCredentialsForUser(ctx context.Context, realmName string, userID string) ([]api.CredentialRepresentation, error)
-	DeleteCredentialsForUser(ctx context.Context, realmName string, userID string, credentialID string) error
-	ClearUserLoginFailures(ctx context.Context, realmName, userID string) error
-	GetRoles(ctx context.Context, realmName string) ([]api.RoleRepresentation, error)
-	GetRole(ctx context.Context, realmName string, roleID string) (api.RoleRepresentation, error)
-	GetClientRoles(ctx context.Context, realmName, idClient string) ([]api.RoleRepresentation, error)
-	CreateClientRole(ctx context.Context, realmName, clientID string, role api.RoleRepresentation) (string, error)
-
-	GetGroups(ctx context.Context, realmName string) ([]api.GroupRepresentation, error)
-	CreateGroup(ctx context.Context, realmName string, group api.GroupRepresentation) (string, error)
-	DeleteGroup(ctx context.Context, realmName string, groupID string) error
-	GetAuthorizations(ctx context.Context, realmName string, groupID string) (api.AuthorizationsRepresentation, error)
-	UpdateAuthorizations(ctx context.Context, realmName string, groupID string, group api.AuthorizationsRepresentation) error
-
-	GetRealmCustomConfiguration(ctx context.Context, realmID string) (api.RealmCustomConfiguration, error)
-	UpdateRealmCustomConfiguration(ctx context.Context, realmID string, customConfig api.RealmCustomConfiguration) error
-	GetRealmAdminConfiguration(ctx context.Context, realmID string) (api.RealmAdminConfiguration, error)
-	UpdateRealmAdminConfiguration(ctx context.Context, realmID string, adminConfig api.RealmAdminConfiguration) error
-	GetRealmBackOfficeConfiguration(ctx context.Context, realmName string, groupID string) (api.BackOfficeConfiguration, error)
-	UpdateRealmBackOfficeConfiguration(ctx context.Context, realmName string, groupID string, boConf api.BackOfficeConfiguration) error
-	GetUserRealmBackOfficeConfiguration(ctx context.Context, realmName string) (api.BackOfficeConfiguration, error)
-
-	CreateShadowUser(ctx context.Context, realmName string, userID string, provider string, fedID api.FederatedIdentityRepresentation) error
-}
-
 // MakeGetRealmsEndpoint makes the Realms endpoint to retrieve all available realms.
-func MakeGetRealmsEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+func MakeGetRealmsEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
-		return managementComponent.GetRealms(ctx)
+		return component.GetRealms(ctx)
 	}
 }
 
 // MakeGetRealmEndpoint makes the Realm endpoint to retrieve a realm.
-func MakeGetRealmEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+func MakeGetRealmEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return managementComponent.GetRealm(ctx, m["realm"])
+		return component.GetRealm(ctx, m["realm"])
 	}
 }
 
 // MakeGetClientEndpoint creates an endpoint for GetClient
-func MakeGetClientEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+func MakeGetClientEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return managementComponent.GetClient(ctx, m["realm"], m["clientID"])
+		return component.GetClient(ctx, m["realm"], m["clientID"])
 	}
 }
 
 // MakeGetClientsEndpoint creates an endpoint for GetClients
-func MakeGetClientsEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+func MakeGetClientsEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return managementComponent.GetClients(ctx, m["realm"])
+		return component.GetClients(ctx, m["realm"])
 	}
 }
 
 // MakeGetRequiredActionsEndpoint creates an endpoint for GetRequiredActions
-func MakeGetRequiredActionsEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+func MakeGetRequiredActionsEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return managementComponent.GetRequiredActions(ctx, m["realm"])
+		return component.GetRequiredActions(ctx, m["realm"])
 	}
 }
 
 // MakeCreateUserEndpoint makes the endpoint to create a user.
-func MakeCreateUserEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+func MakeCreateUserEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 		var err error
@@ -186,7 +134,7 @@ func MakeCreateUserEndpoint(managementComponent ManagementComponent) cs.Endpoint
 		}
 
 		var keycloakLocation string
-		keycloakLocation, err = managementComponent.CreateUser(ctx, m["realm"], user)
+		keycloakLocation, err = component.CreateUser(ctx, m["realm"], user)
 
 		if err != nil {
 			return nil, err
@@ -202,25 +150,25 @@ func MakeCreateUserEndpoint(managementComponent ManagementComponent) cs.Endpoint
 }
 
 // MakeDeleteUserEndpoint creates an endpoint for DeleteUser
-func MakeDeleteUserEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+func MakeDeleteUserEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return nil, managementComponent.DeleteUser(ctx, m["realm"], m["userID"])
+		return nil, component.DeleteUser(ctx, m["realm"], m["userID"])
 	}
 }
 
 // MakeGetUserEndpoint creates an endpoint for GetUser
-func MakeGetUserEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+func MakeGetUserEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return managementComponent.GetUser(ctx, m["realm"], m["userID"])
+		return component.GetUser(ctx, m["realm"], m["userID"])
 	}
 }
 
 // MakeUpdateUserEndpoint creates an endpoint for UpdateUser
-func MakeUpdateUserEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+func MakeUpdateUserEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 		var err error
@@ -235,12 +183,12 @@ func MakeUpdateUserEndpoint(managementComponent ManagementComponent) cs.Endpoint
 			return nil, err
 		}
 
-		return nil, managementComponent.UpdateUser(ctx, m["realm"], m["userID"], user)
+		return nil, component.UpdateUser(ctx, m["realm"], m["userID"], user)
 	}
 }
 
 // MakeGetUsersEndpoint creates an endpoint for GetUsers
-func MakeGetUsersEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+func MakeGetUsersEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
@@ -258,48 +206,62 @@ func MakeGetUsersEndpoint(managementComponent ManagementComponent) cs.Endpoint {
 
 		groupIDs := strings.Split(m["groupIds"], ",")
 
-		return managementComponent.GetUsers(ctx, m["realm"], groupIDs, paramKV...)
+		return component.GetUsers(ctx, m["realm"], groupIDs, paramKV...)
 	}
 }
 
 // MakeGetRolesOfUserEndpoint creates an endpoint for GetRolesOfUser
-func MakeGetRolesOfUserEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+func MakeGetRolesOfUserEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return managementComponent.GetRolesOfUser(ctx, m["realm"], m["userID"])
+		return component.GetRolesOfUser(ctx, m["realm"], m["userID"])
 	}
 }
 
 // MakeGetGroupsOfUserEndpoint creates an endpoint for GetGroupsOfUser
-func MakeGetGroupsOfUserEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+func MakeGetGroupsOfUserEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return managementComponent.GetGroupsOfUser(ctx, m["realm"], m["userID"])
+		return component.GetGroupsOfUser(ctx, m["realm"], m["userID"])
+	}
+}
+
+// MakeSetGroupsToUserEndpoint creates an endpoint for SetGroupsToUser
+func MakeSetGroupsToUserEndpoint(component Component) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+
+		var groupIDs []string
+		if err := json.Unmarshal([]byte(m["body"]), &groupIDs); err != nil {
+			return nil, errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Body)
+		}
+
+		return nil, component.SetGroupsToUser(ctx, m["realm"], m["userID"], groupIDs)
 	}
 }
 
 // MakeGetAvailableTrustIDGroupsEndpoint creates an endpoint for GetAvailableTrustIDGroups
-func MakeGetAvailableTrustIDGroupsEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+func MakeGetAvailableTrustIDGroupsEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return managementComponent.GetAvailableTrustIDGroups(ctx, m["realm"])
+		return component.GetAvailableTrustIDGroups(ctx, m["realm"])
 	}
 }
 
 // MakeGetTrustIDGroupsOfUserEndpoint creates an endpoint for GetTrustIDGroupsOfUser
-func MakeGetTrustIDGroupsOfUserEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+func MakeGetTrustIDGroupsOfUserEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return managementComponent.GetTrustIDGroupsOfUser(ctx, m["realm"], m["userID"])
+		return component.GetTrustIDGroupsOfUser(ctx, m["realm"], m["userID"])
 	}
 }
 
 // MakeSetTrustIDGroupsToUserEndpoint creates an endpoint for SetTrustIDGroupsToUser
-func MakeSetTrustIDGroupsToUserEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+func MakeSetTrustIDGroupsToUserEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
@@ -309,30 +271,30 @@ func MakeSetTrustIDGroupsToUserEndpoint(managementComponent ManagementComponent)
 			return nil, errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Body)
 		}
 
-		return nil, managementComponent.SetTrustIDGroupsToUser(ctx, m["realm"], m["userID"], groupNames)
+		return nil, component.SetTrustIDGroupsToUser(ctx, m["realm"], m["userID"], groupNames)
 	}
 }
 
 // MakeGetUserAccountStatusEndpoint creates an endpoint for GetUserAccountStatus
-func MakeGetUserAccountStatusEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+func MakeGetUserAccountStatusEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return managementComponent.GetUserAccountStatus(ctx, m["realm"], m["userID"])
+		return component.GetUserAccountStatus(ctx, m["realm"], m["userID"])
 	}
 }
 
 // MakeGetClientRolesForUserEndpoint creates an endpoint for GetClientRolesForUser
-func MakeGetClientRolesForUserEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+func MakeGetClientRolesForUserEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return managementComponent.GetClientRolesForUser(ctx, m["realm"], m["userID"], m["clientID"])
+		return component.GetClientRolesForUser(ctx, m["realm"], m["userID"], m["clientID"])
 	}
 }
 
 // MakeAddClientRolesToUserEndpoint creates an endpoint for AddClientRolesToUser
-func MakeAddClientRolesToUserEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+func MakeAddClientRolesToUserEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 		var err error
@@ -349,12 +311,12 @@ func MakeAddClientRolesToUserEndpoint(managementComponent ManagementComponent) c
 			}
 		}
 
-		return nil, managementComponent.AddClientRolesToUser(ctx, m["realm"], m["userID"], m["clientID"], roles)
+		return nil, component.AddClientRolesToUser(ctx, m["realm"], m["userID"], m["clientID"], roles)
 	}
 }
 
 // MakeResetPasswordEndpoint creates an endpoint for ResetPassword
-func MakeResetPasswordEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+func MakeResetPasswordEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 		var err error
@@ -369,7 +331,7 @@ func MakeResetPasswordEndpoint(managementComponent ManagementComponent) cs.Endpo
 			return nil, err
 		}
 
-		pwd, err := managementComponent.ResetPassword(ctx, m["realm"], m["userID"], password)
+		pwd, err := component.ResetPassword(ctx, m["realm"], m["userID"], password)
 		if pwd != "" {
 			return pwd, err
 		}
@@ -378,7 +340,7 @@ func MakeResetPasswordEndpoint(managementComponent ManagementComponent) cs.Endpo
 }
 
 // MakeExecuteActionsEmailEndpoint creates an endpoint for ExecuteActionsEmail
-func MakeExecuteActionsEmailEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+func MakeExecuteActionsEmailEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 		var err error
@@ -403,22 +365,22 @@ func MakeExecuteActionsEmailEndpoint(managementComponent ManagementComponent) cs
 			}
 		}
 
-		return nil, managementComponent.ExecuteActionsEmail(ctx, m["realm"], m["userID"], actions, paramKV...)
+		return nil, component.ExecuteActionsEmail(ctx, m["realm"], m["userID"], actions, paramKV...)
 	}
 }
 
 // MakeSendNewEnrolmentCodeEndpoint creates an endpoint for SendNewEnrolmentCode
-func MakeSendNewEnrolmentCodeEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+func MakeSendNewEnrolmentCodeEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		code, err := managementComponent.SendNewEnrolmentCode(ctx, m["realm"], m["userID"])
+		code, err := component.SendNewEnrolmentCode(ctx, m["realm"], m["userID"])
 		return map[string]string{"code": code}, err
 	}
 }
 
 // MakeSendReminderEmailEndpoint creates an endpoint for SendReminderEmail
-func MakeSendReminderEmailEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+func MakeSendReminderEmailEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
@@ -429,84 +391,84 @@ func MakeSendReminderEmailEndpoint(managementComponent ManagementComponent) cs.E
 			}
 		}
 
-		return nil, managementComponent.SendReminderEmail(ctx, m["realm"], m["userID"], paramKV...)
+		return nil, component.SendReminderEmail(ctx, m["realm"], m["userID"], paramKV...)
 	}
 }
 
 // MakeResetSmsCounterEndpoint creates an endpoint for ResetSmsCounter
-func MakeResetSmsCounterEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+func MakeResetSmsCounterEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return nil, managementComponent.ResetSmsCounter(ctx, m["realm"], m["userID"])
+		return nil, component.ResetSmsCounter(ctx, m["realm"], m["userID"])
 	}
 }
 
 // MakeCreateRecoveryCodeEndpoint creates an endpoint for MakeCreateRecoveryCode
-func MakeCreateRecoveryCodeEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+func MakeCreateRecoveryCodeEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return managementComponent.CreateRecoveryCode(ctx, m["realm"], m["userID"])
+		return component.CreateRecoveryCode(ctx, m["realm"], m["userID"])
 	}
 }
 
 // MakeGetCredentialsForUserEndpoint creates an endpoint for GetCredentialsForUser
-func MakeGetCredentialsForUserEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+func MakeGetCredentialsForUserEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return managementComponent.GetCredentialsForUser(ctx, m["realm"], m["userID"])
+		return component.GetCredentialsForUser(ctx, m["realm"], m["userID"])
 	}
 }
 
 // MakeDeleteCredentialsForUserEndpoint creates an endpoint for DeleteCredentialsForUser
-func MakeDeleteCredentialsForUserEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+func MakeDeleteCredentialsForUserEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return nil, managementComponent.DeleteCredentialsForUser(ctx, m["realm"], m["userID"], m["credentialID"])
+		return nil, component.DeleteCredentialsForUser(ctx, m["realm"], m["userID"], m["credentialID"])
 	}
 }
 
 // MakeClearUserLoginFailures creates an endpoint for ClearUserLoginFailures
-func MakeClearUserLoginFailures(managementComponent ManagementComponent) cs.Endpoint {
+func MakeClearUserLoginFailures(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return nil, managementComponent.ClearUserLoginFailures(ctx, m["realm"], m["userID"])
+		return nil, component.ClearUserLoginFailures(ctx, m["realm"], m["userID"])
 	}
 }
 
 // MakeGetRolesEndpoint creates an endpoint for GetRoles
-func MakeGetRolesEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+func MakeGetRolesEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return managementComponent.GetRoles(ctx, m["realm"])
+		return component.GetRoles(ctx, m["realm"])
 	}
 }
 
 // MakeGetRoleEndpoint creates an endpoint for GetRole
-func MakeGetRoleEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+func MakeGetRoleEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return managementComponent.GetRole(ctx, m["realm"], m["roleID"])
+		return component.GetRole(ctx, m["realm"], m["roleID"])
 	}
 }
 
 // MakeGetClientRolesEndpoint creates an endpoint for GetClientRoles
-func MakeGetClientRolesEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+func MakeGetClientRolesEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return managementComponent.GetClientRoles(ctx, m["realm"], m["clientID"])
+		return component.GetClientRoles(ctx, m["realm"], m["clientID"])
 	}
 }
 
 // MakeCreateClientRoleEndpoint creates an endpoint for CreateClientRole
-func MakeCreateClientRoleEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+func MakeCreateClientRoleEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 		var err error
@@ -522,7 +484,7 @@ func MakeCreateClientRoleEndpoint(managementComponent ManagementComponent) cs.En
 		}
 
 		var keycloakLocation string
-		keycloakLocation, err = managementComponent.CreateClientRole(ctx, m["realm"], m["clientID"], role)
+		keycloakLocation, err = component.CreateClientRole(ctx, m["realm"], m["clientID"], role)
 
 		if err != nil {
 			return nil, err
@@ -538,16 +500,16 @@ func MakeCreateClientRoleEndpoint(managementComponent ManagementComponent) cs.En
 }
 
 // MakeGetGroupsEndpoint creates an endpoint for GetGroups
-func MakeGetGroupsEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+func MakeGetGroupsEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return managementComponent.GetGroups(ctx, m["realm"])
+		return component.GetGroups(ctx, m["realm"])
 	}
 }
 
 // MakeCreateGroupEndpoint makes the endpoint to create a group.
-func MakeCreateGroupEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+func MakeCreateGroupEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 		var err error
@@ -563,7 +525,7 @@ func MakeCreateGroupEndpoint(managementComponent ManagementComponent) cs.Endpoin
 		}
 
 		var keycloakLocation string
-		keycloakLocation, err = managementComponent.CreateGroup(ctx, m["realm"], group)
+		keycloakLocation, err = component.CreateGroup(ctx, m["realm"], group)
 
 		if err != nil {
 			return nil, err
@@ -579,25 +541,25 @@ func MakeCreateGroupEndpoint(managementComponent ManagementComponent) cs.Endpoin
 }
 
 // MakeDeleteGroupEndpoint creates an endpoint for DeleteGroup
-func MakeDeleteGroupEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+func MakeDeleteGroupEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return nil, managementComponent.DeleteGroup(ctx, m["realm"], m["groupID"])
+		return nil, component.DeleteGroup(ctx, m["realm"], m["groupID"])
 	}
 }
 
 // MakeGetAuthorizationsEndpoint creates an endpoint for GetAuthorizations
-func MakeGetAuthorizationsEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+func MakeGetAuthorizationsEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return managementComponent.GetAuthorizations(ctx, m["realm"], m["groupID"])
+		return component.GetAuthorizations(ctx, m["realm"], m["groupID"])
 	}
 }
 
 // MakeUpdateAuthorizationsEndpoint creates an endpoint for UpdateAuthorizations
-func MakeUpdateAuthorizationsEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+func MakeUpdateAuthorizationsEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 		var err error
@@ -608,28 +570,28 @@ func MakeUpdateAuthorizationsEndpoint(managementComponent ManagementComponent) c
 			return nil, errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Body)
 		}
 
-		return nil, managementComponent.UpdateAuthorizations(ctx, m["realm"], m["groupID"], authorizations)
+		return nil, component.UpdateAuthorizations(ctx, m["realm"], m["groupID"], authorizations)
 	}
 }
 
 // MakeGetActionsEndpoint creates an endpoint for GetActions
-func MakeGetActionsEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+func MakeGetActionsEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
-		return managementComponent.GetActions(ctx)
+		return component.GetActions(ctx)
 	}
 }
 
 // MakeGetRealmCustomConfigurationEndpoint creates an endpoint for GetRealmCustomConfiguration
-func MakeGetRealmCustomConfigurationEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+func MakeGetRealmCustomConfigurationEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return managementComponent.GetRealmCustomConfiguration(ctx, m["realm"])
+		return component.GetRealmCustomConfiguration(ctx, m["realm"])
 	}
 }
 
 // MakeUpdateRealmCustomConfigurationEndpoint creates an endpoint for UpdateRealmCustomConfiguration
-func MakeUpdateRealmCustomConfigurationEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+func MakeUpdateRealmCustomConfigurationEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 		var err error
@@ -646,20 +608,20 @@ func MakeUpdateRealmCustomConfigurationEndpoint(managementComponent ManagementCo
 			return nil, err
 		}
 
-		return nil, managementComponent.UpdateRealmCustomConfiguration(ctx, m["realm"], customConfig)
+		return nil, component.UpdateRealmCustomConfiguration(ctx, m["realm"], customConfig)
 	}
 }
 
 // MakeGetRealmAdminConfigurationEndpoint creates an endpoint for GetRealmAdminConfiguration
-func MakeGetRealmAdminConfigurationEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+func MakeGetRealmAdminConfigurationEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
-		return managementComponent.GetRealmAdminConfiguration(ctx, m["realm"])
+		return component.GetRealmAdminConfiguration(ctx, m["realm"])
 	}
 }
 
 // MakeUpdateRealmAdminConfigurationEndpoint creates an endpoint for UpdateRealmAdminConfiguration
-func MakeUpdateRealmAdminConfigurationEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+func MakeUpdateRealmAdminConfigurationEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 		var err error
@@ -676,12 +638,12 @@ func MakeUpdateRealmAdminConfigurationEndpoint(managementComponent ManagementCom
 			return nil, err
 		}
 
-		return nil, managementComponent.UpdateRealmAdminConfiguration(ctx, m["realm"], adminConfig)
+		return nil, component.UpdateRealmAdminConfiguration(ctx, m["realm"], adminConfig)
 	}
 }
 
 // MakeGetRealmBackOfficeConfigurationEndpoint creates an endpoint for GetRealmBackOfficeConfiguration
-func MakeGetRealmBackOfficeConfigurationEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+func MakeGetRealmBackOfficeConfigurationEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 		var groupName = m["groupName"]
@@ -689,12 +651,12 @@ func MakeGetRealmBackOfficeConfigurationEndpoint(managementComponent ManagementC
 			return nil, errorhandler.CreateMissingParameterError(msg.GroupName)
 		}
 
-		return managementComponent.GetRealmBackOfficeConfiguration(ctx, m["realm"], groupName)
+		return component.GetRealmBackOfficeConfiguration(ctx, m["realm"], groupName)
 	}
 }
 
 // MakeUpdateRealmBackOfficeConfigurationEndpoint creates an endpoint for UpdateRealmBackOfficeConfiguration
-func MakeUpdateRealmBackOfficeConfigurationEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+func MakeUpdateRealmBackOfficeConfigurationEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 		var boConf, err = api.NewBackOfficeConfigurationFromJSON(m["body"])
@@ -706,21 +668,21 @@ func MakeUpdateRealmBackOfficeConfigurationEndpoint(managementComponent Manageme
 			return nil, errorhandler.CreateMissingParameterError(msg.GroupName)
 		}
 
-		return nil, managementComponent.UpdateRealmBackOfficeConfiguration(ctx, m["realm"], groupName, boConf)
+		return nil, component.UpdateRealmBackOfficeConfiguration(ctx, m["realm"], groupName, boConf)
 	}
 }
 
 // MakeGetUserRealmBackOfficeConfigurationEndpoint creates an endpoint for GetUserRealmBackOfficeConfiguration
-func MakeGetUserRealmBackOfficeConfigurationEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+func MakeGetUserRealmBackOfficeConfigurationEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return managementComponent.GetUserRealmBackOfficeConfiguration(ctx, m["realm"])
+		return component.GetUserRealmBackOfficeConfiguration(ctx, m["realm"])
 	}
 }
 
 // MakeCreateShadowUserEndpoint makes the endpoint to create a shadow user.
-func MakeCreateShadowUserEndpoint(managementComponent ManagementComponent) cs.Endpoint {
+func MakeCreateShadowUserEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 		var err error
@@ -735,7 +697,7 @@ func MakeCreateShadowUserEndpoint(managementComponent ManagementComponent) cs.En
 			return nil, err
 		}
 
-		err = managementComponent.CreateShadowUser(ctx, m["realm"], m["userID"], m["provider"], fedID)
+		err = component.CreateShadowUser(ctx, m["realm"], m["userID"], m["provider"], fedID)
 
 		if err != nil {
 			return nil, err

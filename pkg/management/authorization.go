@@ -37,6 +37,7 @@ var (
 	MGMTGetUserAccountStatus                = newAction("MGMT_GetUserAccountStatus", security.ScopeGroup)
 	MGMTGetRolesOfUser                      = newAction("MGMT_GetRolesOfUser", security.ScopeGroup)
 	MGMTGetGroupsOfUser                     = newAction("MGMT_GetGroupsOfUser", security.ScopeGroup)
+	MGMTSetGroupsToUser                     = newAction("MGMT_SetGroupsToUser", security.ScopeGroup)
 	MGMTGetAvailableTrustIDGroups           = newAction("MGMT_GetAvailableTrustIDGroups", security.ScopeRealm)
 	MGMTGetTrustIDGroups                    = newAction("MGMT_GetTrustIDGroups", security.ScopeGroup)
 	MGMTSetTrustIDGroups                    = newAction("MGMT_SetTrustIDGroups", security.ScopeGroup)
@@ -251,6 +252,17 @@ func (c *authorizationComponentMW) GetGroupsOfUser(ctx context.Context, realmNam
 	}
 
 	return c.next.GetGroupsOfUser(ctx, realmName, userID)
+}
+
+func (c *authorizationComponentMW) SetGroupsToUser(ctx context.Context, realmName, userID string, groupIDs []string) error {
+	var action = MGMTSetGroupsToUser.String()
+	var targetRealm = realmName
+
+	if err := c.authManager.CheckAuthorizationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
+		return err
+	}
+
+	return c.next.SetGroupsToUser(ctx, realmName, userID, groupIDs)
 }
 
 func (c *authorizationComponentMW) GetAvailableTrustIDGroups(ctx context.Context, realmName string) ([]string, error) {
