@@ -31,7 +31,7 @@
 
 [[constraint]]
   name = "github.com/cloudtrust/keycloak-client"
-  branch = "ct-2402-assigngroupstousers"
+  branch = "master"
 
 [[constraint]]
   name = "github.com/go-kit/kit"
