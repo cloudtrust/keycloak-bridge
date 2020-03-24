@@ -42,12 +42,12 @@
   version = "v2.1.0"
 
 [[projects]]
-  digest = "1:531094d9bc71b10d462fba40e831420f22fbe877d26303bc207e4b64bacd9509"
+  branch = "master"
+  digest = "1:d47e2f5bb72595d308680a65f2ede7912020e5f200afcfebe67e8cf716ea7422"
   name = "github.com/cloudtrust/keycloak-client"
   packages = ["."]
   pruneopts = "UT"
-  revision = "8ff2bc5438f41a4d165677d6cb38168be8bb80bc"
-  version = "v1.3.0"
+  revision = "1d00080d5b6093a9637b9a7a8d559354897b931f"
 
 [[projects]]
   digest = "1:910c5b111ca13127693df80a59be2c952ad97313626116c0c9895e7b588f2a29"
@@ -66,12 +66,12 @@
   version = "v1.1.1"
 
 [[projects]]
-  digest = "1:925a2ad8acf10a486cdae4366eaf45847b16d6d7448e654814d8f1d51adeefe4"
+  digest = "1:80057945464ffb5b0da1f026beb8df0e8dbd098eaf771a349291bed2cd29a83e"
   name = "github.com/fsnotify/fsnotify"
   packages = ["."]
   pruneopts = "UT"
-  revision = "4bf2d1fec78374803a39307bfb8d340688f4f28e"
-  version = "v1.4.8"
+  revision = "45d7d09e39ef4ac08d493309fa031790c15bfe8a"
+  version = "v1.4.9"
 
 [[projects]]
   digest = "1:cb07c3f044a051a6e3c984dc6f09ba5cb7d51d74fb9a0f15db294561c98740f8"
@@ -128,24 +128,24 @@
   name = "github.com/golang/mock"
   packages = ["gomock"]
   pruneopts = "UT"
-  revision = "b48cb6623c04dae64c28537143aca42d16561daf"
-  version = "v1.4.1"
+  revision = "3a35fb6e3e18b9dbfee291262260dee7372d2a92"
+  version = "v1.4.3"
 
 [[projects]]
   digest = "1:d1e35b720b5f5156502ffdd174000c81295919293735342da78582e4dc7a8bcd"
   name = "github.com/golang/protobuf"
   packages = ["proto"]
   pruneopts = "UT"
-  revision = "5d5b4c10bd43f85e63bd9e4a3fa9b1ea2ef88af2"
-  version = "v1.3.4"
+  revision = "84668698ea25b64748563aa20726db66a6b8d299"
+  version = "v1.3.5"
 
 [[projects]]
-  digest = "1:debcbc62c53851dab1fc881438a65449dd5ffa12f64f059fd6e32b938799513d"
+  digest = "1:0d14ca4e58b26ba21372d2a300dca2702b32b492f21d910c940557bb738c95cf"
   name = "github.com/google/flatbuffers"
   packages = ["go"]
   pruneopts = "UT"
-  revision = "bf9eb67ab9371755c6bcece13cadc7693bcbf264"
-  version = "1.11.0"
+  revision = "6df40a2471737b27271bdd9b900ab5f3aec746c7"
+  version = "v1.12.0"
 
 [[projects]]
   digest = "1:25ebe6496abb289ef977c081b2d49f56dd97c32db4ca083d37f95923909ced02"
@@ -207,12 +207,12 @@
   version = "v1.8.1"
 
 [[projects]]
-  digest = "1:53bc4cd4914cd7cd52139990d5170d6dc99067ae31c56530621b18b35fc30318"
+  digest = "1:6ea2d98ba8ae7c06a918970661b744be5d1a385c40917b9c317e9a4f2c36ac6f"
   name = "github.com/mitchellh/mapstructure"
   packages = ["."]
   pruneopts = "UT"
-  revision = "3536a929edddb9a5b34bd6861dc4a9647cb459fe"
-  version = "v1.1.2"
+  revision = "694aaefbc689be1915c2ef39e880409057931a94"
+  version = "v1.2.2"
 
 [[projects]]
   digest = "1:725947f73517dbc6592fb0c51d88fc3f7a7dfc4c2735499c3e4f42ddbc1170be"
@@ -389,7 +389,7 @@
     "pbkdf2",
   ]
   pruneopts = "UT"
-  revision = "78000ba7a073cafc0278790f6bce552a0f25850e"
+  revision = "0ec3e9974c59449edd84298612e9f16fa13368e8"
 
 [[projects]]
   branch = "master"
@@ -402,7 +402,7 @@
     "publicsuffix",
   ]
   pruneopts = "UT"
-  revision = "244492dfa37ae2ce87222fd06250a03160745faa"
+  revision = "118fecf932d8fea033f3b7aca66fba22cfdd517d"
 
 [[projects]]
   branch = "master"
@@ -417,11 +417,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:8d59aa6f03198132e0ca3bf998677f9698e1e27fc67976c85d85086ac3496530"
+  digest = "1:8b163cc073aac41680c1ce438eae6b046f04511952e60c3cff2915033fe6f58b"
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = "UT"
-  revision = "5c8b2ff67527cb88b770f693cebf3799036d8bc0"
+  revision = "85ca7c5b95cdf1e557abb38a283d1e61a5959c31"
 
 [[projects]]
   digest = "1:8d8faad6b12a3a4c819a3f9618cb6ee1fa1cfc33253abeeea8b55336721e3405"
@@ -496,12 +496,12 @@
   version = "v2.0.4"
 
 [[projects]]
-  digest = "1:b9e2424fb01adfa88b03cf56d3ccd83bd3ce6a1a1b573031ca282178b6397d5a"
+  digest = "1:a064971c78455f088b48483cf48a61dbe2f173dc02043cf76a06e19acba3c5e4"
   name = "gopkg.in/ini.v1"
   packages = ["."]
   pruneopts = "UT"
-  revision = "8e0f5b3a15fc93a84881c6cc50129bd62e83a314"
-  version = "v1.54.0"
+  revision = "39bc4ddcb8b9d0100f7a040816380ccda878b94a"
+  version = "v1.55.0"
 
 [[projects]]
   digest = "1:3c4aaca5a82adc021322f239e0cf3f46852bb0b18ae050d0feab2e9e4c527462"
