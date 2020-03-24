@@ -402,6 +402,7 @@ func TestAllowed(t *testing.T) {
 		_, err = authorizationMW.GetGroupsOfUser(ctx, realmName, userID)
 		assert.Nil(t, err)
 
+		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), gomock.Any(), realmName, groupID).Return(groupName, nil).Times(len(groupIDs))
 		mockManagementComponent.EXPECT().SetGroupsToUser(ctx, realmName, userID, groupIDs).Return(nil).Times(1)
 		err = authorizationMW.SetGroupsToUser(ctx, realmName, userID, groupIDs)
 		assert.Nil(t, err)
