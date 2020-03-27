@@ -2,7 +2,6 @@ package kyc
 
 import (
 	"context"
-	"strings"
 
 	cs "github.com/cloudtrust/common-service"
 	commonerrors "github.com/cloudtrust/common-service/errors"
@@ -32,13 +31,7 @@ func MakeGetUserByUsernameEndpoint(component Component) cs.Endpoint {
 		var m = req.(map[string]string)
 		var user = m["username"]
 
-		_, ok := m["groupIds"]
-		if !ok {
-			return nil, commonerrors.CreateMissingParameterError(msg.GroupIDs)
-		}
-		groupIDs := strings.Split(m["groupIds"], ",")
-
-		return component.GetUserByUsername(ctx, user, groupIDs)
+		return component.GetUserByUsername(ctx, user)
 	}
 }
 
