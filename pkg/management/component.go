@@ -64,6 +64,7 @@ type KeycloakClient interface {
 	DeleteCredential(accessToken string, realmName string, userID string, credentialID string) error
 	CreateShadowUser(accessToken string, realmName string, userID string, provider string, fedID kc.FederatedIdentityRepresentation) error
 	ClearUserLoginFailures(accessToken string, realmName, userID string) error
+	GetAttackDetectionStatus(accessToken string, realmName, userID string) (map[string]interface{}, error)
 }
 
 // Component is the management component interface.
@@ -100,6 +101,7 @@ type Component interface {
 	GetCredentialsForUser(ctx context.Context, realmName string, userID string) ([]api.CredentialRepresentation, error)
 	DeleteCredentialsForUser(ctx context.Context, realmName string, userID string, credentialID string) error
 	ClearUserLoginFailures(ctx context.Context, realmName, userID string) error
+	GetAttackDetectionStatus(ctx context.Context, realmName, userID string) (api.AttackDetectionStatusRepresentation, error)
 	GetRoles(ctx context.Context, realmName string) ([]api.RoleRepresentation, error)
 	GetRole(ctx context.Context, realmName string, roleID string) (api.RoleRepresentation, error)
 	GetClientRoles(ctx context.Context, realmName, idClient string) ([]api.RoleRepresentation, error)
@@ -880,6 +882,17 @@ func (c *component) ClearUserLoginFailures(ctx context.Context, realmName, userI
 	c.reportEvent(ctx, "LOGIN_FAILURE_CLEARED", database.CtEventRealmName, realmName, database.CtEventUserID, userID)
 
 	return nil
+}
+
+func (c *component) GetAttackDetectionStatus(ctx context.Context, realmName, userID string) (api.AttackDetectionStatusRepresentation, error) {
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+	var mapValues, err = c.keycloakClient.GetAttackDetectionStatus(accessToken, realmName, userID)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return api.AttackDetectionStatusRepresentation{}, err
+	}
+
+	return api.ConvertAttackDetectionStatus(mapValues), nil
 }
 
 func (c *component) GetRoles(ctx context.Context, realmName string) ([]api.RoleRepresentation, error) {

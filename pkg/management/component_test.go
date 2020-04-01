@@ -2251,6 +2251,38 @@ func TestClearUserLoginFailures(t *testing.T) {
 	})
 }
 
+func TestGetAttackDetectionStatus(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
+	var mockEventDBModule = mock.NewEventDBModule(mockCtrl)
+	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
+	var logger = log.NewNopLogger()
+
+	var accessToken = "TOKEN=="
+	var realm = "master"
+	var userID = "1245-7854-8963"
+	var allowedTrustIDGroups = []string{"grp1", "grp2"}
+	var ctx = context.WithValue(context.TODO(), cs.CtContextAccessToken, accessToken)
+	var component = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule, allowedTrustIDGroups, logger)
+	var kcResult = map[string]interface{}{}
+
+	t.Run("Error occured", func(t *testing.T) {
+		var expectedError = errors.New("kc error")
+		mockKeycloakClient.EXPECT().GetAttackDetectionStatus(accessToken, realm, userID).Return(kcResult, expectedError)
+		var _, err = component.GetAttackDetectionStatus(ctx, realm, userID)
+		assert.Equal(t, expectedError, err)
+	})
+	t.Run("Success", func(t *testing.T) {
+		var expectedFailures int64 = 57
+		kcResult["numFailures"] = expectedFailures
+		mockKeycloakClient.EXPECT().GetAttackDetectionStatus(accessToken, realm, userID).Return(kcResult, nil)
+		var res, err = component.GetAttackDetectionStatus(ctx, realm, userID)
+		assert.Nil(t, err)
+		assert.Equal(t, expectedFailures, *res.NumFailures)
+	})
+}
+
 func TestGetRoles(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()

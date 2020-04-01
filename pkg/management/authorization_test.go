@@ -191,6 +191,9 @@ func TestDeny(t *testing.T) {
 		err = authorizationMW.ClearUserLoginFailures(ctx, realmName, userID)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
+		_, err = authorizationMW.GetAttackDetectionStatus(ctx, realmName, userID)
+		assert.Equal(t, security.ForbiddenError{}, err)
+
 		_, err = authorizationMW.GetRoles(ctx, realmName)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
@@ -450,6 +453,10 @@ func TestAllowed(t *testing.T) {
 
 		mockManagementComponent.EXPECT().ClearUserLoginFailures(ctx, realmName, userID).Return(nil).Times(1)
 		err = authorizationMW.ClearUserLoginFailures(ctx, realmName, userID)
+		assert.Nil(t, err)
+
+		mockManagementComponent.EXPECT().GetAttackDetectionStatus(ctx, realmName, userID).Return(api.AttackDetectionStatusRepresentation{}, nil).Times(1)
+		_, err = authorizationMW.GetAttackDetectionStatus(ctx, realmName, userID)
 		assert.Nil(t, err)
 
 		mockManagementComponent.EXPECT().GetRoles(ctx, realmName).Return([]api.RoleRepresentation{}, nil).Times(1)
