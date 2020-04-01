@@ -62,7 +62,7 @@ type KeycloakClient interface {
 	GetCredentials(accessToken string, realmName string, userID string) ([]kc.CredentialRepresentation, error)
 	UpdateLabelCredential(accessToken string, realmName string, userID string, credentialID string, label string) error
 	DeleteCredential(accessToken string, realmName string, userID string, credentialID string) error
-	CreateShadowUser(accessToken string, realmName string, userID string, provider string, fedID kc.FederatedIdentityRepresentation) error
+	LinkShadowUser(accessToken string, realmName string, userID string, provider string, fedID kc.FederatedIdentityRepresentation) error
 	ClearUserLoginFailures(accessToken string, realmName, userID string) error
 }
 
@@ -119,7 +119,7 @@ type Component interface {
 	UpdateRealmBackOfficeConfiguration(ctx context.Context, realmID string, groupName string, config api.BackOfficeConfiguration) error
 	GetUserRealmBackOfficeConfiguration(ctx context.Context, realmID string) (api.BackOfficeConfiguration, error)
 
-	CreateShadowUser(ctx context.Context, realmName string, userID string, provider string, fedID api.FederatedIdentityRepresentation) error
+	LinkShadowUser(ctx context.Context, realmName string, userID string, provider string, fedID api.FederatedIdentityRepresentation) error
 }
 
 // Component is the management component.
@@ -1542,13 +1542,13 @@ func (c *component) findString(groups []string, searchGroup string) bool {
 	return false
 }
 
-func (c *component) CreateShadowUser(ctx context.Context, realmName string, userID string, provider string, fedID api.FederatedIdentityRepresentation) error {
+func (c *component) LinkShadowUser(ctx context.Context, realmName string, userID string, provider string, fedID api.FederatedIdentityRepresentation) error {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 
 	var fedIDKC kc.FederatedIdentityRepresentation
 	fedIDKC = api.ConvertToKCFedID(fedID)
 
-	err := c.keycloakClient.CreateShadowUser(accessToken, realmName, userID, provider, fedIDKC)
+	err := c.keycloakClient.LinkShadowUser(accessToken, realmName, userID, provider, fedIDKC)
 
 	if err != nil {
 		c.logger.Warn(ctx, "err", err.Error())

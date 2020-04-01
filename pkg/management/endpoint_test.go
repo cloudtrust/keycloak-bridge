@@ -1308,13 +1308,13 @@ func TestUpdateRealmAdminConfigurationEndpoint(t *testing.T) {
 	})
 }
 
-func TestCreateShadowUserEndpoint(t *testing.T) {
+func TestLinkShadowUserEndpoint(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 
 	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
 
-	var e = MakeCreateShadowUserEndpoint(mockManagementComponent)
+	var e = MakeLinkShadowUserEndpoint(mockManagementComponent)
 
 	var realm = "master"
 	var ctx = context.Background()
@@ -1332,7 +1332,7 @@ func TestCreateShadowUserEndpoint(t *testing.T) {
 
 	// No error
 	t.Run("Create shadow user successfully", func(t *testing.T) {
-		mockManagementComponent.EXPECT().CreateShadowUser(ctx, realm, userID, provider, api.FederatedIdentityRepresentation{Username: &username, UserID: &userID}).Return(nil).Times(1)
+		mockManagementComponent.EXPECT().LinkShadowUser(ctx, realm, userID, provider, api.FederatedIdentityRepresentation{Username: &username, UserID: &userID}).Return(nil).Times(1)
 		_, err := e(ctx, req)
 		assert.Nil(t, err)
 	})
@@ -1349,7 +1349,7 @@ func TestCreateShadowUserEndpoint(t *testing.T) {
 	// Error - Keycloak client error
 	t.Run("Create shadow user - error at KC client", func(t *testing.T) {
 
-		mockManagementComponent.EXPECT().CreateShadowUser(ctx, realm, userID, provider, api.FederatedIdentityRepresentation{Username: &username, UserID: &userID}).Return(fmt.Errorf("error")).Times(1)
+		mockManagementComponent.EXPECT().LinkShadowUser(ctx, realm, userID, provider, api.FederatedIdentityRepresentation{Username: &username, UserID: &userID}).Return(fmt.Errorf("error")).Times(1)
 		_, err := e(ctx, req)
 		assert.NotNil(t, err)
 	})
