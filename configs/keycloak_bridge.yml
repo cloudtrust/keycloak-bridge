@@ -90,11 +90,11 @@ db-audit-ro-migration: false
 db-audit-ro-migration-version: 0.1
 db-audit-ro-connection-check: false
 
-# DB Configuration RW
+# DB Cloudtrust RW
 db-config-rw-host-port: 172.17.0.2:3306
 db-config-rw-username: bridge
 db-config-rw-password: bridge-password
-db-config-rw-database: configuration
+db-config-rw-database: cloudtrust
 db-config-rw-protocol: tcp
 db-config-rw-parameters: time_zone='%2B00:00'
 db-config-rw-max-open-conns: 10
@@ -104,11 +104,11 @@ db-config-rw-migration: false
 db-config-rw-migration-version: 0.1
 db-config-rw-connection-check: true
 
-# DB Configuration RO
+# DB Cloudtrust RO
 db-config-ro-host-port: 172.17.0.2:3306
 db-config-ro-username: bridge
 db-config-ro-password: bridge-password
-db-config-ro-database: configuration
+db-config-ro-database: cloudtrust
 db-config-ro-protocol: tcp
 db-config-ro-parameters: time_zone='%2B00:00'
 db-config-ro-max-open-conns: 10
