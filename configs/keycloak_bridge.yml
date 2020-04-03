@@ -30,6 +30,8 @@ cors-allowed-headers:
   - "Authorization"
   - "Content-Type"
   - "X-Correlation-Id"
+  - "Cache-Control"
+  - "Pragma"
 cors-exposed-headers:
   - "Location"
   - "X-Correlation-Id"
