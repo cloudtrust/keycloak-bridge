@@ -79,14 +79,18 @@ pipeline {
                 curl --fail -k -u"${USR}:${PWD}" -T "${BUILD_PATH}/bin/${APP}-${params.VERSION}.tar.gz" --keepalive-time 2 "${REPO_URL}/${APP}-${params.VERSION}.tar.gz"
               """
             }
-            def git_url = "${env.GIT_URL}".replaceFirst("^(http[s]?://www\\.|http[s]?://|www\\.)","")
-            withCredentials([usernamePassword(credentialsId: "support-triustid-ch",
-                passwordVariable: 'PWD',
-                usernameVariable: 'USR')]) {
-              sh("git config --global user.email 'ci@dev.null'")
-              sh("git config --global user.name 'ci'")
-              sh("git tag ${VERSION} -m 'CI'")
-              sh("git push https://${USR}:${PWD}@${git_url} --tags")
+            if (!env.TAG_NAME || env.TAG_NAME != params.VERSION) {
+              def git_url = "${env.GIT_URL}".replaceFirst("^(http[s]?://www\\.|http[s]?://|www\\.)","")
+              withCredentials([usernamePassword(credentialsId: "support-triustid-ch",
+                  passwordVariable: 'PWD',
+                  usernameVariable: 'USR')]) {
+                sh("git config --global user.email 'ci@dev.null'")
+                sh("git config --global user.name 'ci'")
+                sh("git tag ${VERSION} -m 'CI'")
+                sh("git push https://${USR}:${PWD}@${git_url} --tags")
+              }
+            } else {
+              echo "Tag ${env.TAG_NAME} already exists. Skipping."
             }
             echo "release ${VERSION} available at ${REPO_URL}/${APP}-${params.VERSION}.tar.gz"
           }
