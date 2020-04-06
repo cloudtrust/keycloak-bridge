@@ -2021,6 +2021,7 @@ func TestResetSmsCounter(t *testing.T) {
 	attributes.SetString(constants.AttrbBirthDate, birthDate)
 	attributes.SetBool(constants.AttrbPhoneNumberVerified, phoneNumberVerified)
 	attributes.SetInt(constants.AttrbSmsSent, 5)
+	attributes.SetInt(constants.AttrbSmsAttempts, 5)
 
 	var kcUserRep = kc.UserRepresentation{
 		Id:               &id,

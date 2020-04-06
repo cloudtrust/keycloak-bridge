@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"regexp"
-	"strconv"
 	"strings"
 
 	cs "github.com/cloudtrust/common-service"
@@ -779,14 +778,14 @@ func (c *component) ResetSmsCounter(ctx context.Context, realmName, userID strin
 		return err
 	}
 
-	//reset the counter, if the smsSent attribute exists
-	resetCounter := 0
+	//reset the counters, if the smsSent or smsAttempts attributes exist
 	if userKc.Attributes != nil {
 		var m = *userKc.Attributes
-		if m["smsSent"] != nil {
+		if m["smsSent"] != nil || m["smsAttempts"] != nil {
 			// ensure there is no unencrypted PII
 			keycloakb.ConvertLegacyAttribute(&userKc)
-			(*userKc.Attributes)["smsSent"][0] = strconv.Itoa(resetCounter)
+			userKc.SetAttributeInt(constants.AttrbSmsSent, 0)
+			userKc.SetAttributeInt(constants.AttrbSmsAttempts, 0)
 			err = c.keycloakClient.UpdateUser(accessToken, realmName, userID, userKc)
 			if err != nil {
 				c.logger.Warn(ctx, "err", err.Error())

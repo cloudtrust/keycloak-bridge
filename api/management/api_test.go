@@ -97,8 +97,13 @@ func TestConvertToAPIUser(t *testing.T) {
 		assert.Nil(t, ConvertToAPIUser(kcUser).SmsSent)
 		kcUser.Attributes = &m
 		m.SetInt(constants.AttrbSmsSent, 0)
-		m["smsSent"] = []string{"0"}
 		assert.NotNil(t, *ConvertToAPIUser(kcUser).SmsSent)
+	})
+	t.Run("SMS failed attempts", func(t *testing.T) {
+		assert.Nil(t, ConvertToAPIUser(kcUser).SmsAttempts)
+		kcUser.Attributes = &m
+		m.SetInt(constants.AttrbSmsAttempts, 0)
+		assert.NotNil(t, *ConvertToAPIUser(kcUser).SmsAttempts)
 	})
 	t.Run("trustID groups", func(t *testing.T) {
 		assert.Nil(t, ConvertToAPIUser(kcUser).TrustIDGroups)
