@@ -58,7 +58,7 @@ func MakeGetStatisticsAuthenticationsEndpoint(ec Component) cs.Endpoint {
 		if _, ok := m["unit"]; !ok {
 			return nil, errorhandler.CreateMissingParameterError(msg.Unit)
 		}
-		var timeshift *string = nil
+		var timeshift *string
 		if timeshiftStr, ok := m["timeshift"]; ok {
 			timeshift = &timeshiftStr
 		}
