@@ -69,7 +69,7 @@ var (
 	MGMTGetRealmBackOfficeConfiguration     = newAction("MGMT_GetRealmBackOfficeConfiguration", security.ScopeGroup)
 	MGMTUpdateRealmBackOfficeConfiguration  = newAction("MGMT_UpdateRealmBackOfficeConfiguration", security.ScopeGroup)
 	MGMTGetUserRealmBackOfficeConfiguration = newAction("MGMT_GetUserRealmBackOfficeConfiguration", security.ScopeRealm)
-	MGMTCreateShadowUser                    = newAction("MGMT_CreateShadowUser", security.ScopeRealm)
+	MGMTLinkShadowUser                      = newAction("MGMT_LinkShadowUser", security.ScopeRealm)
 )
 
 // Tracking middleware at component level.
@@ -601,12 +601,12 @@ func (c *authorizationComponentMW) GetUserRealmBackOfficeConfiguration(ctx conte
 	return c.next.GetUserRealmBackOfficeConfiguration(ctx, realmName)
 }
 
-func (c *authorizationComponentMW) CreateShadowUser(ctx context.Context, realmName string, userID string, provider string, fedID api.FederatedIdentityRepresentation) error {
-	var action = MGMTCreateShadowUser.String()
+func (c *authorizationComponentMW) LinkShadowUser(ctx context.Context, realmName string, userID string, provider string, fedID api.FederatedIdentityRepresentation) error {
+	var action = MGMTLinkShadowUser.String()
 	var targetRealm = realmName
 	if err := c.authManager.CheckAuthorizationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
 		return err
 	}
 
-	return c.next.CreateShadowUser(ctx, realmName, userID, provider, fedID)
+	return c.next.LinkShadowUser(ctx, realmName, userID, provider, fedID)
 }

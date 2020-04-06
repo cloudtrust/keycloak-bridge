@@ -242,7 +242,7 @@ func TestDeny(t *testing.T) {
 		_, err = authorizationMW.GetUserRealmBackOfficeConfiguration(ctx, realmName)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
-		err = authorizationMW.CreateShadowUser(ctx, realmName, userID, provider, fedID)
+		err = authorizationMW.LinkShadowUser(ctx, realmName, userID, provider, fedID)
 		assert.Equal(t, security.ForbiddenError{}, err)
 	}
 }
@@ -531,8 +531,8 @@ func TestAllowed(t *testing.T) {
 		_, err = authorizationMW.GetUserRealmBackOfficeConfiguration(ctx, realmName)
 		assert.Nil(t, err)
 
-		mockManagementComponent.EXPECT().CreateShadowUser(ctx, realmName, userID, provider, fedID).Return(nil).Times(1)
-		err = authorizationMW.CreateShadowUser(ctx, realmName, userID, provider, fedID)
+		mockManagementComponent.EXPECT().LinkShadowUser(ctx, realmName, userID, provider, fedID).Return(nil).Times(1)
+		err = authorizationMW.LinkShadowUser(ctx, realmName, userID, provider, fedID)
 		assert.Nil(t, err)
 	}
 }

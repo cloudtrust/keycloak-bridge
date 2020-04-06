@@ -67,7 +67,7 @@ type Endpoints struct {
 	UpdateRealmBackOfficeConfiguration  endpoint.Endpoint
 	GetUserRealmBackOfficeConfiguration endpoint.Endpoint
 
-	CreateShadowUser endpoint.Endpoint
+	LinkShadowUser endpoint.Endpoint
 }
 
 // MakeGetRealmsEndpoint makes the Realms endpoint to retrieve all available realms.
@@ -681,8 +681,8 @@ func MakeGetUserRealmBackOfficeConfigurationEndpoint(component Component) cs.End
 	}
 }
 
-// MakeCreateShadowUserEndpoint makes the endpoint to create a shadow user.
-func MakeCreateShadowUserEndpoint(component Component) cs.Endpoint {
+// MakeLinkShadowUserEndpoint makes the endpoint to create a shadow user.
+func MakeLinkShadowUserEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 		var err error
@@ -697,7 +697,7 @@ func MakeCreateShadowUserEndpoint(component Component) cs.Endpoint {
 			return nil, err
 		}
 
-		err = component.CreateShadowUser(ctx, m["realm"], m["userID"], m["provider"], fedID)
+		err = component.LinkShadowUser(ctx, m["realm"], m["userID"], m["provider"], fedID)
 
 		if err != nil {
 			return nil, err
