@@ -30,6 +30,29 @@ func TestConvertCredential(t *testing.T) {
 	assert.Equal(t, "{}", *ConvertCredential(&credKc).CredentialData)
 }
 
+func TestConvertAttackDetectionStatus(t *testing.T) {
+	t.Run("missing keys", func(t *testing.T) {
+		var status = map[string]interface{}{}
+		assert.Equal(t, AttackDetectionStatusRepresentation{}, ConvertAttackDetectionStatus(status))
+	})
+	t.Run("nil values", func(t *testing.T) {
+		var status = map[string]interface{}{"numFailures": nil, "disabled": nil, "lastIPFailure": nil, "lastFailure": nil}
+		var res = ConvertAttackDetectionStatus(status)
+		assert.Nil(t, res.NumFailures)
+		assert.Nil(t, res.Disabled)
+		assert.Nil(t, res.LastIPFailure)
+		assert.Nil(t, res.LastFailure)
+	})
+	t.Run("success", func(t *testing.T) {
+		var status = map[string]interface{}{"numFailures": "57", "disabled": "true", "lastIPFailure": "127.0.0.1", "lastFailure": "7"}
+		var res = ConvertAttackDetectionStatus(status)
+		assert.Equal(t, int64(57), *res.NumFailures)
+		assert.True(t, *res.Disabled)
+		assert.Equal(t, "127.0.0.1", *res.LastIPFailure)
+		assert.Equal(t, int64(7), *res.LastFailure)
+	})
+}
+
 func TestConvertToAPIUser(t *testing.T) {
 	var kcUser kc.UserRepresentation
 	m := make(kc.Attributes)

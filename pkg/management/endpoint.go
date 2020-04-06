@@ -46,6 +46,7 @@ type Endpoints struct {
 	GetCredentialsForUser    endpoint.Endpoint
 	DeleteCredentialsForUser endpoint.Endpoint
 	ClearUserLoginFailures   endpoint.Endpoint
+	GetAttackDetectionStatus endpoint.Endpoint
 
 	GetRoles         endpoint.Endpoint
 	GetRole          endpoint.Endpoint
@@ -437,6 +438,15 @@ func MakeClearUserLoginFailures(component Component) cs.Endpoint {
 		var m = req.(map[string]string)
 
 		return nil, component.ClearUserLoginFailures(ctx, m["realm"], m["userID"])
+	}
+}
+
+// MakeGetAttackDetectionStatus creates an endpoint for GetAttackDetectionStatus
+func MakeGetAttackDetectionStatus(component Component) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+
+		return component.GetAttackDetectionStatus(ctx, m["realm"], m["userID"])
 	}
 }
 

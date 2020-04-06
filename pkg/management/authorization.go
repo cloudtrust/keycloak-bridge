@@ -53,6 +53,7 @@ var (
 	MGMTGetCredentialsForUser               = newAction("MGMT_GetCredentialsForUser", security.ScopeGroup)
 	MGMTDeleteCredentialsForUser            = newAction("MGMT_DeleteCredentialsForUser", security.ScopeGroup)
 	MGMTClearUserLoginFailures              = newAction("MGMT_ClearUserLoginFailures", security.ScopeGroup)
+	MGMTGetAttackDetectionStatus            = newAction("MGMT_GetAttackDetectionStatus", security.ScopeGroup)
 	MGMTGetRoles                            = newAction("MGMT_GetRoles", security.ScopeRealm)
 	MGMTGetRole                             = newAction("MGMT_GetRole", security.ScopeRealm)
 	MGMTGetGroups                           = newAction("MGMT_GetGroups", security.ScopeRealm)
@@ -425,6 +426,17 @@ func (c *authorizationComponentMW) ClearUserLoginFailures(ctx context.Context, r
 	}
 
 	return c.next.ClearUserLoginFailures(ctx, realmName, userID)
+}
+
+func (c *authorizationComponentMW) GetAttackDetectionStatus(ctx context.Context, realmName, userID string) (api.AttackDetectionStatusRepresentation, error) {
+	var action = MGMTGetAttackDetectionStatus.String()
+	var targetRealm = realmName
+
+	if err := c.authManager.CheckAuthorizationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
+		return api.AttackDetectionStatusRepresentation{}, err
+	}
+
+	return c.next.GetAttackDetectionStatus(ctx, realmName, userID)
 }
 
 func (c *authorizationComponentMW) GetRoles(ctx context.Context, realmName string) ([]api.RoleRepresentation, error) {

@@ -851,15 +851,14 @@ func TestDeleteCredentialsForUserEndpoint(t *testing.T) {
 	}
 }
 
-func TestClearUserLoginFailuresEndpoint(t *testing.T) {
+func TestBruteForceEndpoints(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 
 	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
-	var e = MakeClearUserLoginFailures(mockManagementComponent)
 
-	// No error - Without param
-	{
+	t.Run("MakeClearUserLoginFailures. No error. Without param", func(t *testing.T) {
+		var e = MakeClearUserLoginFailures(mockManagementComponent)
 		var realm = "master"
 		var userID = "123-456-789"
 		var ctx = context.Background()
@@ -870,7 +869,21 @@ func TestClearUserLoginFailuresEndpoint(t *testing.T) {
 		mockManagementComponent.EXPECT().ClearUserLoginFailures(ctx, realm, userID).Return(nil).Times(1)
 		var _, err = e(ctx, req)
 		assert.Nil(t, err)
-	}
+	})
+
+	t.Run("MakeGetAttackDetectionStatus. No error. Without param", func(t *testing.T) {
+		var e = MakeGetAttackDetectionStatus(mockManagementComponent)
+		var realm = "master"
+		var userID = "123-456-789"
+		var ctx = context.Background()
+		var req = make(map[string]string)
+		req["realm"] = realm
+		req["userID"] = userID
+
+		mockManagementComponent.EXPECT().GetAttackDetectionStatus(ctx, realm, userID).Return(api.AttackDetectionStatusRepresentation{}, nil).Times(1)
+		var _, err = e(ctx, req)
+		assert.Nil(t, err)
+	})
 }
 
 func TestGetRolesEndpoint(t *testing.T) {

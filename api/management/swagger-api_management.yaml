@@ -761,6 +761,33 @@ paths:
       responses:
         200:
           description: successful operation
+  /realms/{realm}/users/{userID}/attack-detection-status:
+    get:
+      tags:
+      - login-failures
+      summary: Get the credential brute force status for the user
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AttackDetectionStatus'
   /realms/{realm}/users/{userID}/clear-login-failures:
     delete:
       tags:
@@ -1374,6 +1401,17 @@ components:
             type: array
             items:
               type: string
+    AttackDetectionStatus:
+      type: object
+      properties:
+        numFailures:
+          type: integer
+        disabled:
+          type: boolean
+        lastIPFailure:
+          type: string
+        lastFailure:
+          type: integer
     Configuration:
       type: object
       properties:

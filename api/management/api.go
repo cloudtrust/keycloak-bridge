@@ -3,13 +3,13 @@ package management_api
 import (
 	"encoding/json"
 
-	errorhandler "github.com/cloudtrust/common-service/errors"
-
 	"github.com/cloudtrust/common-service/configuration"
+	errorhandler "github.com/cloudtrust/common-service/errors"
 	"github.com/cloudtrust/common-service/validation"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	kc "github.com/cloudtrust/keycloak-client"
+	"github.com/spf13/cast"
 )
 
 // UserRepresentation struct
@@ -83,6 +83,14 @@ type CredentialRepresentation struct {
 	CredentialData *string `json:"credentialData,omitempty"`
 	Value          *string `json:"value,omitempty"`
 	Temporary      *bool   `json:"temporary,omitempty"`
+}
+
+// AttackDetectionStatusRepresentation struct
+type AttackDetectionStatusRepresentation struct {
+	NumFailures   *int64  `json:"numFailures,omitempty"`
+	Disabled      *bool   `json:"disabled,omitempty"`
+	LastIPFailure *string `json:"lastIPFailure,omitempty"`
+	LastFailure   *int64  `json:"lastFailure,omitempty"`
 }
 
 // RoleRepresentation struct
@@ -183,6 +191,34 @@ func ConvertCredential(credKc *kc.CredentialRepresentation) CredentialRepresenta
 	cred.Value = credKc.Value
 
 	return cred
+}
+
+// ConvertAttackDetectionStatus creates a brute force status from a map
+func ConvertAttackDetectionStatus(status map[string]interface{}) AttackDetectionStatusRepresentation {
+	var res AttackDetectionStatusRepresentation
+
+	if value, ok := status["numFailures"]; ok && value != nil {
+		if conv, err := cast.ToInt64E(value); err == nil {
+			res.NumFailures = &conv
+		}
+	}
+	if value, ok := status["disabled"]; ok && value != nil {
+		if conv, err := cast.ToBoolE(value); err == nil {
+			res.Disabled = &conv
+		}
+	}
+	if value, ok := status["lastIPFailure"]; ok && value != nil {
+		if conv, err := cast.ToStringE(value); err == nil {
+			res.LastIPFailure = &conv
+		}
+	}
+	if value, ok := status["lastFailure"]; ok && value != nil {
+		if conv, err := cast.ToInt64E(value); err == nil {
+			res.LastFailure = &conv
+		}
+	}
+
+	return res
 }
 
 // ConvertToAPIUser creates an API user representation from  a KC user representation
