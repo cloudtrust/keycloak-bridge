@@ -29,7 +29,8 @@ type Endpoints struct {
 	CreateUser                endpoint.Endpoint
 	GetRolesOfUser            endpoint.Endpoint
 	GetGroupsOfUser           endpoint.Endpoint
-	SetGroupsToUser           endpoint.Endpoint
+	AddGroupToUser            endpoint.Endpoint
+	DeleteGroupForUser        endpoint.Endpoint
 	GetAvailableTrustIDGroups endpoint.Endpoint
 	GetTrustIDGroupsOfUser    endpoint.Endpoint
 	SetTrustIDGroupsToUser    endpoint.Endpoint
@@ -229,17 +230,21 @@ func MakeGetGroupsOfUserEndpoint(component Component) cs.Endpoint {
 	}
 }
 
-// MakeSetGroupsToUserEndpoint creates an endpoint for SetGroupsToUser
-func MakeSetGroupsToUserEndpoint(component Component) cs.Endpoint {
+// MakeAddGroupToUserEndpoint creates an endpoint for AddGroupToUser
+func MakeAddGroupToUserEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		var groupIDs []string
-		if err := json.Unmarshal([]byte(m["body"]), &groupIDs); err != nil {
-			return nil, errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Body)
-		}
+		return nil, component.AddGroupToUser(ctx, m["realm"], m["userID"], m["groupID"])
+	}
+}
 
-		return nil, component.SetGroupsToUser(ctx, m["realm"], m["userID"], groupIDs)
+// MakeDeleteGroupForUserEndpoint creates an endpoint for DeleteGroupForUser
+func MakeDeleteGroupForUserEndpoint(component Component) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+
+		return nil, component.DeleteGroupForUser(ctx, m["realm"], m["userID"], m["groupID"])
 	}
 }
 

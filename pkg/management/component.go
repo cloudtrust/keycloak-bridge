@@ -10,7 +10,6 @@ import (
 	"github.com/cloudtrust/common-service/configuration"
 	"github.com/cloudtrust/common-service/database"
 	errorhandler "github.com/cloudtrust/common-service/errors"
-	"github.com/cloudtrust/common-service/validation"
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
@@ -84,7 +83,8 @@ type Component interface {
 	GetUserAccountStatus(ctx context.Context, realmName, userID string) (map[string]bool, error)
 	GetRolesOfUser(ctx context.Context, realmName, userID string) ([]api.RoleRepresentation, error)
 	GetGroupsOfUser(ctx context.Context, realmName, userID string) ([]api.GroupRepresentation, error)
-	SetGroupsToUser(ctx context.Context, realmName, userID string, groupIDs []string) error
+	AddGroupToUser(ctx context.Context, realmName, userID string, groupID string) error
+	DeleteGroupForUser(ctx context.Context, realmName, userID string, groupID string) error
 	GetAvailableTrustIDGroups(ctx context.Context, realmName string) ([]string, error)
 	GetTrustIDGroupsOfUser(ctx context.Context, realmName, userID string) ([]string, error)
 	SetTrustIDGroupsToUser(ctx context.Context, realmName, userID string, groupNames []string) error
@@ -513,39 +513,16 @@ func (c *component) GetGroupsOfUser(ctx context.Context, realmName, userID strin
 	return groupsRep, nil
 }
 
-func (c *component) SetGroupsToUser(ctx context.Context, realmName, userID string, groupIDs []string) error {
+func (c *component) AddGroupToUser(ctx context.Context, realmName, userID string, groupID string) error {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 
-	var groupsKc, err = c.keycloakClient.GetGroupsOfUser(accessToken, realmName, userID)
-	if err != nil {
-		c.logger.Warn(ctx, "err", err.Error())
-		return err
-	}
+	return c.keycloakClient.AddGroupToUser(accessToken, realmName, userID, groupID)
+}
 
-	var alreadyActiveGroups = make(map[string]bool)
-	for _, grp := range groupsKc {
-		if !validation.IsStringInSlice(groupIDs, *grp.Id) {
-			err = c.keycloakClient.DeleteGroupFromUser(accessToken, realmName, userID, *grp.Id)
-			if err != nil {
-				c.logger.Warn(ctx, "err", err.Error())
-				return err
-			}
-		} else {
-			alreadyActiveGroups[*grp.Id] = true
-		}
-	}
+func (c *component) DeleteGroupForUser(ctx context.Context, realmName, userID string, groupID string) error {
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 
-	for _, groupID := range groupIDs {
-		if _, ok := alreadyActiveGroups[groupID]; !ok {
-			err = c.keycloakClient.AddGroupToUser(accessToken, realmName, userID, groupID)
-			if err != nil {
-				c.logger.Warn(ctx, "err", err.Error())
-				return err
-			}
-		}
-	}
-
-	return nil
+	return c.keycloakClient.DeleteGroupFromUser(accessToken, realmName, userID, groupID)
 }
 
 func (c *component) GetAvailableTrustIDGroups(ctx context.Context, realmName string) ([]string, error) {

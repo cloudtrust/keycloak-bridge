@@ -146,7 +146,10 @@ func TestDeny(t *testing.T) {
 		_, err = authorizationMW.GetGroupsOfUser(ctx, realmName, userID)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
-		err = authorizationMW.SetGroupsToUser(ctx, realmName, userID, groupIDs)
+		err = authorizationMW.AddGroupToUser(ctx, realmName, userID, groupID)
+		assert.Equal(t, security.ForbiddenError{}, err)
+
+		err = authorizationMW.DeleteGroupForUser(ctx, realmName, userID, groupID)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
 		_, err = authorizationMW.GetAvailableTrustIDGroups(ctx, realmName)
@@ -405,9 +408,14 @@ func TestAllowed(t *testing.T) {
 		_, err = authorizationMW.GetGroupsOfUser(ctx, realmName, userID)
 		assert.Nil(t, err)
 
-		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), gomock.Any(), realmName, groupID).Return(groupName, nil).Times(len(groupIDs))
-		mockManagementComponent.EXPECT().SetGroupsToUser(ctx, realmName, userID, groupIDs).Return(nil).Times(1)
-		err = authorizationMW.SetGroupsToUser(ctx, realmName, userID, groupIDs)
+		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), gomock.Any(), realmName, groupID).Return(groupName, nil).Times(1)
+		mockManagementComponent.EXPECT().AddGroupToUser(ctx, realmName, userID, groupID).Return(nil).Times(1)
+		err = authorizationMW.AddGroupToUser(ctx, realmName, userID, groupID)
+		assert.Nil(t, err)
+
+		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), gomock.Any(), realmName, groupID).Return(groupName, nil).Times(1)
+		mockManagementComponent.EXPECT().DeleteGroupForUser(ctx, realmName, userID, groupID).Return(nil).Times(1)
+		err = authorizationMW.DeleteGroupForUser(ctx, realmName, userID, groupID)
 		assert.Nil(t, err)
 
 		mockManagementComponent.EXPECT().GetClientRolesForUser(ctx, realmName, userID, clientID).Return([]api.RoleRepresentation{}, nil).Times(1)
