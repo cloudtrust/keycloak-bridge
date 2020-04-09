@@ -154,7 +154,7 @@ func (u *UserRepresentation) ImportFromKeycloak(kcUser *kc.UserRepresentation) {
 		accreditations = &accreds
 	}
 
-	u.UserID = kcUser.Id
+	u.UserID = kcUser.ID
 	u.Username = kcUser.Username
 	u.Gender = gender
 	u.FirstName = kcUser.FirstName

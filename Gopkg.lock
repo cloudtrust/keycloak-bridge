@@ -18,7 +18,7 @@
   version = "2020.02.11"
 
 [[projects]]
-  digest = "1:cdb49b18870ab72a686c68be1fde488484b2dda49ef161d71a93aed879dfb709"
+  digest = "1:96d138992715e79982bf5e11a71dc745d028c65c0b68b3906b9f3206b3fd0e09"
   name = "github.com/cloudtrust/common-service"
   packages = [
     ".",
@@ -38,16 +38,20 @@
     "validation",
   ]
   pruneopts = "UT"
-  revision = "5fe45695250a8712a92d0e089add532fa06fd24d"
-  version = "v2.1.0"
+  revision = "3a38f0fb73305dc93ec4d0d8a3b6ec1cfb98fa5b"
+  version = "v2.1.1"
 
 [[projects]]
-  branch = "master"
-  digest = "1:8f3324a9c98afa4464cbbf1f9a604f67ffb827815e5331b2d2dcf343c7e6cc28"
+  digest = "1:d18e18a3c48f9a890b87327c52f4dcb4121c14b71534259867e570bffa17933c"
   name = "github.com/cloudtrust/keycloak-client"
-  packages = ["."]
+  packages = [
+    ".",
+    "api",
+    "toolbox",
+  ]
   pruneopts = "UT"
-  revision = "278fdd9af516d49f5b0273572135d9685ab1f154"
+  revision = "9e6eaad399a985b9b927def1d95e43f8b093d09d"
+  version = "v2.0.0"
 
 [[projects]]
   digest = "1:910c5b111ca13127693df80a59be2c952ad97313626116c0c9895e7b588f2a29"
@@ -132,12 +136,12 @@
   version = "v1.4.3"
 
 [[projects]]
-  digest = "1:d1e35b720b5f5156502ffdd174000c81295919293735342da78582e4dc7a8bcd"
+  digest = "1:112b07cad4bd500e6e445cc0b9294ca310faa41199c19475c557daa2c7519549"
   name = "github.com/golang/protobuf"
   packages = ["proto"]
   pruneopts = "UT"
-  revision = "84668698ea25b64748563aa20726db66a6b8d299"
-  version = "v1.3.5"
+  revision = "1b794fe86dd6a0c7c52ae69b5c9cb0aeedc52afa"
+  version = "v1.4.0"
 
 [[projects]]
   digest = "1:0d14ca4e58b26ba21372d2a300dca2702b32b492f21d910c940557bb738c95cf"
@@ -175,7 +179,7 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:c266355b17e65dc0128f4a9df906567b28e135b774e0b395aab3d748af0871e2"
+  digest = "1:9503164eeca57526c77c3c64872566feaa164be6675616e4442b682e3d0f3360"
   name = "github.com/influxdata/influxdb"
   packages = [
     "client/v2",
@@ -183,8 +187,8 @@
     "pkg/escape",
   ]
   pruneopts = "UT"
-  revision = "f46f63d4e2d9684a2dd716594ab609ccd32f0a5b"
-  version = "v1.7.10"
+  revision = "781490de48220d7695a05c29e5a36f550a4568f5"
+  version = "v1.8.0"
 
 [[projects]]
   digest = "1:9ff22c26414baf7deaf74f2a788fe7b97666048bcbe346c52cfe823442abbdfb"
@@ -215,12 +219,12 @@
   version = "v1.2.2"
 
 [[projects]]
-  digest = "1:725947f73517dbc6592fb0c51d88fc3f7a7dfc4c2735499c3e4f42ddbc1170be"
+  digest = "1:b6e65e7106074b9b971cde361022959c30c427878665655ed7ea3e9b9f4cd2fe"
   name = "github.com/nyaruka/phonenumbers"
   packages = ["."]
   pruneopts = "UT"
-  revision = "0eaac607c796da2841fc99313671f128a9d4868c"
-  version = "v1.0.54"
+  revision = "8ab2b54b05ef7ba0ab5249455449e8306a6df9b4"
+  version = "v1.0.55"
 
 [[projects]]
   digest = "1:11e62d6050198055e6cd87ed57e5d8c669e84f839c16e16f192374d913d1a70d"
@@ -313,12 +317,12 @@
   version = "v1.0.5"
 
 [[projects]]
-  digest = "1:83d0e0f3f46dc86daf27e4d7c834c8c492db787c53c09d94183de7478db92142"
+  digest = "1:2b847e001d1c560af97042148c7e03b455b83cd8cb8ec1c9c786e289885ac089"
   name = "github.com/spf13/viper"
   packages = ["."]
   pruneopts = "UT"
-  revision = "4525543ce4fe90f7970f5e2cdc300b8ffc8c0582"
-  version = "v1.6.2"
+  revision = "59b19175035095196a623aac8d0f5c83481f3d77"
+  version = "v1.6.3"
 
 [[projects]]
   digest = "1:5e8f46b412421d2d6cceea845d28ac46f3f5a5f60a6e86f0ee75e24fd43a02a9"
@@ -389,7 +393,7 @@
     "pbkdf2",
   ]
   pruneopts = "UT"
-  revision = "baeed622b8d86045ff442b324772b0ad306a2b3f"
+  revision = "0848c9571904fcbcb24543358ca8b5a7dbfde875"
 
 [[projects]]
   branch = "master"
@@ -417,11 +421,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:842f1500cf319662226ee2f897aa1bf5e9228bb851af8a9aaef5c425fe90f14e"
+  digest = "1:f88172369bcdae548777d8f2c59b11561f7e41686f426c583a7abaeec6978cc7"
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = "UT"
-  revision = "c3d80250170dec19bf61949c81233cede5ddaf61"
+  revision = "669c56c373c468cbe0f0c12b7939832b26088d33"
 
 [[projects]]
   digest = "1:8d8faad6b12a3a4c819a3f9618cb6ee1fa1cfc33253abeeea8b55336721e3405"
@@ -473,6 +477,42 @@
   version = "v1.6.5"
 
 [[projects]]
+  digest = "1:f1865c7b6c5f85632ff40fd729aa3393e66a2db3de74d43ab7c594be7e9bfe25"
+  name = "google.golang.org/protobuf"
+  packages = [
+    "encoding/prototext",
+    "encoding/protowire",
+    "internal/descfmt",
+    "internal/descopts",
+    "internal/detrand",
+    "internal/encoding/defval",
+    "internal/encoding/messageset",
+    "internal/encoding/tag",
+    "internal/encoding/text",
+    "internal/errors",
+    "internal/fieldnum",
+    "internal/fieldsort",
+    "internal/filedesc",
+    "internal/filetype",
+    "internal/flags",
+    "internal/genname",
+    "internal/impl",
+    "internal/mapsort",
+    "internal/pragma",
+    "internal/set",
+    "internal/strs",
+    "internal/version",
+    "proto",
+    "reflect/protoreflect",
+    "reflect/protoregistry",
+    "runtime/protoiface",
+    "runtime/protoimpl",
+  ]
+  pruneopts = "UT"
+  revision = "3b9eee12916ce611400f93d6c2fed2fc2911b0ad"
+  version = "v1.21.0"
+
+[[projects]]
   digest = "1:8a982874c5980269b7e0d398fb07b5d0385657dd56ff2df3fec2959ddde52133"
   name = "gopkg.in/h2non/gentleman.v2"
   packages = [
@@ -504,7 +544,7 @@
   version = "v1.55.0"
 
 [[projects]]
-  digest = "1:3c4aaca5a82adc021322f239e0cf3f46852bb0b18ae050d0feab2e9e4c527462"
+  digest = "1:11dd25b4604cee057da7b3135528ea8c8e47bc3047dcd36fa1cae79a8a5c1dde"
   name = "gopkg.in/square/go-jose.v2"
   packages = [
     ".",
@@ -512,8 +552,8 @@
     "json",
   ]
   pruneopts = "UT"
-  revision = "4ef0f1b175ccd65472d154e1207c4d7b8102545f"
-  version = "v2.4.1"
+  revision = "2204b3eaf539b5d4ad438a05b5e0a10e85816bf9"
+  version = "v2.5.0"
 
 [[projects]]
   digest = "1:55b110c99c5fdc4f14930747326acce56b52cfce60b24b1c03ef686ac0e46bb1"
@@ -543,6 +583,8 @@
     "github.com/cloudtrust/common-service/tracking",
     "github.com/cloudtrust/common-service/validation",
     "github.com/cloudtrust/keycloak-client",
+    "github.com/cloudtrust/keycloak-client/api",
+    "github.com/cloudtrust/keycloak-client/toolbox",
     "github.com/go-kit/kit/endpoint",
     "github.com/go-kit/kit/log",
     "github.com/go-kit/kit/log/level",

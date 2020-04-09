@@ -4,8 +4,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/cloudtrust/keycloak-client"
-
 	"github.com/cloudtrust/common-service/database"
 	errorhandler "github.com/cloudtrust/common-service/errors"
 	api "github.com/cloudtrust/keycloak-bridge/api/validation"
@@ -14,6 +12,7 @@ import (
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	internal "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	kc "github.com/cloudtrust/keycloak-client"
+	"github.com/cloudtrust/keycloak-client/toolbox"
 )
 
 var (
@@ -56,7 +55,7 @@ type Component interface {
 type component struct {
 	socialRealmName string
 	keycloakClient  KeycloakClient
-	tokenProvider   keycloak.OidcTokenProvider
+	tokenProvider   toolbox.OidcTokenProvider
 	usersDBModule   keycloakb.UsersDBModule
 	eventsDBModule  database.EventsDBModule
 	accredsModule   keycloakb.AccreditationsModule

@@ -78,8 +78,8 @@ func (ir *idretriever) GetID(accessToken, name string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if realm.Id == nil {
+	if realm.ID == nil {
 		return "", nil
 	}
-	return *realm.Id, nil
+	return *realm.ID, nil
 }

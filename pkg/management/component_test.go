@@ -68,7 +68,7 @@ func TestGetRealms(t *testing.T) {
 		var enabled = true
 
 		var kcRealmRep = kc.RealmRepresentation{
-			Id:              &id,
+			ID:              &id,
 			KeycloakVersion: &keycloakVersion,
 			Realm:           &realm,
 			DisplayName:     &displayName,
@@ -135,7 +135,7 @@ func TestGetRealm(t *testing.T) {
 		var enabled = true
 
 		var kcRealmRep = kc.RealmRepresentation{
-			Id:              &id,
+			ID:              &id,
 			KeycloakVersion: &keycloakVersion,
 			Realm:           &realm,
 			DisplayName:     &displayName,
@@ -202,10 +202,10 @@ func TestGetClient(t *testing.T) {
 		var username = "username"
 
 		var kcClientRep = kc.ClientRepresentation{
-			Id:       &id,
+			ID:       &id,
 			Name:     &name,
-			BaseUrl:  &baseURL,
-			ClientId: &clientID,
+			BaseURL:  &baseURL,
+			ClientID: &clientID,
 			Protocol: &protocol,
 			Enabled:  &enabled,
 		}
@@ -270,10 +270,10 @@ func TestGetClients(t *testing.T) {
 		var enabled = true
 
 		var kcClientRep = kc.ClientRepresentation{
-			Id:       &id,
+			ID:       &id,
 			Name:     &name,
-			BaseUrl:  &baseURL,
-			ClientId: &clientID,
+			BaseURL:  &baseURL,
+			ClientID: &clientID,
 			Protocol: &protocol,
 			Enabled:  &enabled,
 		}
@@ -637,7 +637,7 @@ func TestGetUser(t *testing.T) {
 		attributes.Set(constants.AttrbTrustIDGroups, trustIDGroups)
 
 		var kcUserRep = kc.UserRepresentation{
-			Id:               &id,
+			ID:               &id,
 			Username:         &username,
 			Email:            &email,
 			Enabled:          &enabled,
@@ -678,7 +678,7 @@ func TestGetUser(t *testing.T) {
 	{
 
 		var kcUserRep = kc.UserRepresentation{
-			Id:       &id,
+			ID:       &id,
 			Username: &username,
 		}
 		mockKeycloakClient.EXPECT().GetUser(accessToken, realmName, id).Return(kcUserRep, nil).Times(1)
@@ -751,7 +751,7 @@ func TestUpdateUser(t *testing.T) {
 		attributes.SetString(constants.AttrbLocale, locale)
 
 		var kcUserRep = kc.UserRepresentation{
-			Id:               &id,
+			ID:               &id,
 			Username:         &username,
 			Email:            &email,
 			Enabled:          &enabled,
@@ -850,7 +850,7 @@ func TestUpdateUser(t *testing.T) {
 		// update by changing the email address
 		var oldEmail = "toti@elca.ch"
 		var oldkcUserRep = kc.UserRepresentation{
-			Id:            &id,
+			ID:            &id,
 			Email:         &oldEmail,
 			EmailVerified: &emailVerified,
 		}
@@ -874,7 +874,7 @@ func TestUpdateUser(t *testing.T) {
 		oldAttributes.SetString(constants.AttrbPhoneNumber, oldNumber)
 		oldAttributes.SetBool(constants.AttrbPhoneNumberVerified, phoneNumberVerified)
 		var oldkcUserRep2 = kc.UserRepresentation{
-			Id:         &id,
+			ID:         &id,
 			Attributes: &oldAttributes,
 		}
 		mockKeycloakClient.EXPECT().GetUser(accessToken, realmName, id).Return(oldkcUserRep2, nil).Times(1)
@@ -918,7 +918,7 @@ func TestUpdateUser(t *testing.T) {
 	{
 		enabled = true
 		var kcUserRep = kc.UserRepresentation{
-			Id:       &id,
+			ID:       &id,
 			Username: &username,
 			Enabled:  &enabled,
 		}
@@ -960,7 +960,7 @@ func TestUpdateUser(t *testing.T) {
 	{
 		var id = "1234-79894-7594"
 		var kcUserRep = kc.UserRepresentation{
-			Id: &id,
+			ID: &id,
 		}
 		mockKeycloakClient.EXPECT().GetUser(accessToken, realmName, id).Return(kcUserRep, nil).AnyTimes()
 		mockKeycloakClient.EXPECT().UpdateUser(accessToken, realmName, id, gomock.Any()).Return(fmt.Errorf("Unexpected error")).Times(1)
@@ -1013,7 +1013,7 @@ func TestGetUsers(t *testing.T) {
 
 		var count = 1
 		var kcUserRep = kc.UserRepresentation{
-			Id:               &id,
+			ID:               &id,
 			Username:         &username,
 			Email:            &email,
 			Enabled:          &enabled,
@@ -1171,11 +1171,11 @@ func TestGetClientRolesForUser(t *testing.T) {
 		var name = "client name"
 
 		var kcRoleRep = kc.RoleRepresentation{
-			Id:          &id,
+			ID:          &id,
 			Name:        &name,
 			ClientRole:  &clientRole,
 			Composite:   &composite,
-			ContainerId: &containerID,
+			ContainerID: &containerID,
 			Description: &description,
 		}
 
@@ -1236,11 +1236,11 @@ func TestAddClientRolesToUser(t *testing.T) {
 		var name = "client name"
 
 		var kcRoleRep = kc.RoleRepresentation{
-			Id:          &id,
+			ID:          &id,
 			Name:        &name,
 			ClientRole:  &clientRole,
 			Composite:   &composite,
-			ContainerId: &containerID,
+			ContainerID: &containerID,
 			Description: &description,
 		}
 
@@ -1250,11 +1250,11 @@ func TestAddClientRolesToUser(t *testing.T) {
 		mockKeycloakClient.EXPECT().AddClientRolesToUserRoleMapping(accessToken, realmName, userID, clientID, gomock.Any()).DoAndReturn(
 			func(accessToken, realmName, userID, clientID string, roles []kc.RoleRepresentation) error {
 				var role = roles[0]
-				assert.Equal(t, id, *role.Id)
+				assert.Equal(t, id, *role.ID)
 				assert.Equal(t, name, *role.Name)
 				assert.Equal(t, clientRole, *role.ClientRole)
 				assert.Equal(t, composite, *role.Composite)
-				assert.Equal(t, containerID, *role.ContainerId)
+				assert.Equal(t, containerID, *role.ContainerID)
 				assert.Equal(t, description, *role.Description)
 				return nil
 			}).Times(1)
@@ -1314,11 +1314,11 @@ func TestGetRolesOfUser(t *testing.T) {
 		var name = "client name"
 
 		var kcRoleRep = kc.RoleRepresentation{
-			Id:          &id,
+			ID:          &id,
 			Name:        &name,
 			ClientRole:  &clientRole,
 			Composite:   &composite,
-			ContainerId: &containerID,
+			ContainerID: &containerID,
 			Description: &description,
 		}
 
@@ -1374,7 +1374,7 @@ func TestGetGroupsOfUser(t *testing.T) {
 		var name = "client name"
 
 		var kcGroupRep = kc.GroupRepresentation{
-			Id:   &id,
+			ID:   &id,
 			Name: &name,
 		}
 
@@ -1665,7 +1665,7 @@ func TestResetPassword(t *testing.T) {
 
 		var policy = "forceExpiredPasswordChange(365) and specialChars(1) and upperCase(1) and lowerCase(1) and length(4) and digits(1) and notUsername(undefined)"
 		var kcRealmRep = kc.RealmRepresentation{
-			Id:              &id,
+			ID:              &id,
 			KeycloakVersion: &keycloakVersion,
 			Realm:           &realm,
 			DisplayName:     &displayName,
@@ -1697,7 +1697,7 @@ func TestResetPassword(t *testing.T) {
 		var id = "master_id"
 
 		var kcRealmRep = kc.RealmRepresentation{
-			Id: &id,
+			ID: &id,
 		}
 
 		mockKeycloakClient.EXPECT().ResetPassword(accessToken, realmName, userID, gomock.Any()).Return(nil).Times(1)
@@ -2011,7 +2011,7 @@ func TestResetSmsCounter(t *testing.T) {
 	attributes.SetInt(constants.AttrbSmsAttempts, 5)
 
 	var kcUserRep = kc.UserRepresentation{
-		Id:               &id,
+		ID:               &id,
 		Username:         &username,
 		Email:            &email,
 		Enabled:          &enabled,
@@ -2104,13 +2104,13 @@ func TestDeleteCredentialsForUser(t *testing.T) {
 	var pwdID = "51389847-08f4-4a0f-9f9c-694554e626f2"
 	var pwd = "password"
 	var credKcPwd = kc.CredentialRepresentation{
-		Id:   &pwdID,
+		ID:   &pwdID,
 		Type: &pwd,
 	}
 	var otpID = "51389847-08f4-4a0f-9f9c-694554e626f3"
 	var totp = "totp"
 	var credKcOtp = kc.CredentialRepresentation{
-		Id:   &otpID,
+		ID:   &otpID,
 		Type: &totp,
 	}
 	var typeCred = "otp-push"
@@ -2118,7 +2118,7 @@ func TestDeleteCredentialsForUser(t *testing.T) {
 	t.Run("Delete credentials for user", func(t *testing.T) {
 		mockKeycloakClient.EXPECT().GetCredentials(accessToken, realmName, userID).Return([]kc.CredentialRepresentation{
 			kc.CredentialRepresentation{
-				Id:   &credential,
+				ID:   &credential,
 				Type: &typeCred,
 			},
 		}, nil).Times(1)
@@ -2160,7 +2160,7 @@ func TestDeleteCredentialsForUser(t *testing.T) {
 	t.Run("Delete credentials for user - error at deleting the credential", func(t *testing.T) {
 		mockKeycloakClient.EXPECT().GetCredentials(accessToken, realmName, userID).Return([]kc.CredentialRepresentation{
 			kc.CredentialRepresentation{
-				Id:   &credential,
+				ID:   &credential,
 				Type: &typeCred,
 			},
 		}, nil).Times(1)
@@ -2295,11 +2295,11 @@ func TestGetRoles(t *testing.T) {
 		var name = "name"
 
 		var kcRoleRep = kc.RoleRepresentation{
-			Id:          &id,
+			ID:          &id,
 			Name:        &name,
 			ClientRole:  &clientRole,
 			Composite:   &composite,
-			ContainerId: &containerID,
+			ContainerID: &containerID,
 			Description: &description,
 		}
 
@@ -2358,11 +2358,11 @@ func TestGetRole(t *testing.T) {
 		var name = "name"
 
 		var kcRoleRep = kc.RoleRepresentation{
-			Id:          &id,
+			ID:          &id,
 			Name:        &name,
 			ClientRole:  &clientRole,
 			Composite:   &composite,
-			ContainerId: &containerID,
+			ContainerID: &containerID,
 			Description: &description,
 		}
 
@@ -2416,7 +2416,7 @@ func TestGetGroups(t *testing.T) {
 		var realmRoles = []string{"role1"}
 
 		var kcGroupRep = kc.GroupRepresentation{
-			Id:         &id,
+			ID:         &id,
 			Name:       &name,
 			Path:       &path,
 			RealmRoles: &realmRoles,
@@ -2571,7 +2571,7 @@ func TestDeleteGroup(t *testing.T) {
 	var username = "username"
 
 	var group = kc.GroupRepresentation{
-		Id:   &groupID,
+		ID:   &groupID,
 		Name: &groupName,
 	}
 
@@ -2666,7 +2666,7 @@ func TestGetAuthorizations(t *testing.T) {
 	var action = "action"
 
 	var group = kc.GroupRepresentation{
-		Id:   &groupID,
+		ID:   &groupID,
 		Name: &groupName,
 	}
 
@@ -2754,46 +2754,46 @@ func TestUpdateAuthorizations(t *testing.T) {
 	var clientID2 = "backofficeid"
 
 	var realm = kc.RealmRepresentation{
-		Id:    &targetRealmName,
+		ID:    &targetRealmName,
 		Realm: &targetRealmName,
 	}
 	var realms = []kc.RealmRepresentation{realm}
 
 	var group = kc.GroupRepresentation{
-		Id:   &groupID,
+		ID:   &groupID,
 		Name: &groupName,
 	}
 	var groups = []kc.GroupRepresentation{group}
 
 	var client = kc.ClientRepresentation{
-		Id:       &ID,
-		ClientId: &clientID,
+		ID:       &ID,
+		ClientID: &clientID,
 	}
 	var client2 = kc.ClientRepresentation{
-		Id:       &ID2,
-		ClientId: &clientID2,
+		ID:       &ID2,
+		ClientID: &clientID2,
 	}
 	var clients = []kc.ClientRepresentation{client, client2}
 
 	var roleName = []string{"manage-users", "view-clients", "view-realm", "view-users", "other"}
 	var roleManageUser = kc.RoleRepresentation{
-		Id:   &ID1,
+		ID:   &ID1,
 		Name: &roleName[0],
 	}
 	var roleViewClients = kc.RoleRepresentation{
-		Id:   &ID2,
+		ID:   &ID2,
 		Name: &roleName[1],
 	}
 	var roleViewRealm = kc.RoleRepresentation{
-		Id:   &ID3,
+		ID:   &ID3,
 		Name: &roleName[2],
 	}
 	var roleViewUsers = kc.RoleRepresentation{
-		Id:   &ID4,
+		ID:   &ID4,
 		Name: &roleName[3],
 	}
 	var roleOther = kc.RoleRepresentation{
-		Id:   &ID5,
+		ID:   &ID5,
 		Name: &roleName[4],
 	}
 
@@ -3131,7 +3131,7 @@ func TestUpdateAuthorizationsWithAny(t *testing.T) {
 	var username = "username"
 
 	var group = kc.GroupRepresentation{
-		Id:   &groupID,
+		ID:   &groupID,
 		Name: &groupName,
 	}
 	var groups = []kc.GroupRepresentation{}
@@ -3153,7 +3153,7 @@ func TestUpdateAuthorizationsWithAny(t *testing.T) {
 		}
 
 		var realm = kc.RealmRepresentation{
-			Id:    &targetRealmName,
+			ID:    &targetRealmName,
 			Realm: &targetRealmName,
 		}
 		var realms = []kc.RealmRepresentation{realm}
@@ -3180,7 +3180,7 @@ func TestUpdateAuthorizationsWithAny(t *testing.T) {
 		}
 
 		var realm = kc.RealmRepresentation{
-			Id:    &targetMasterRealmName,
+			ID:    &targetMasterRealmName,
 			Realm: &targetMasterRealmName,
 		}
 		var realms = []kc.RealmRepresentation{realm}
@@ -3233,11 +3233,11 @@ func TestGetClientRoles(t *testing.T) {
 		var name = "name"
 
 		var kcRoleRep = kc.RoleRepresentation{
-			Id:          &id,
+			ID:          &id,
 			Name:        &name,
 			ClientRole:  &clientRole,
 			Composite:   &composite,
-			ContainerId: &containerID,
+			ContainerID: &containerID,
 			Description: &description,
 		}
 
@@ -3300,11 +3300,11 @@ func TestCreateClientRole(t *testing.T) {
 
 		mockKeycloakClient.EXPECT().CreateClientRole(accessToken, realmName, clientID, gomock.Any()).DoAndReturn(
 			func(accessToken, realmName, clientID string, role kc.RoleRepresentation) (string, error) {
-				assert.Equal(t, id, *role.Id)
+				assert.Equal(t, id, *role.ID)
 				assert.Equal(t, name, *role.Name)
 				assert.Equal(t, clientRole, *role.ClientRole)
 				assert.Equal(t, composite, *role.Composite)
-				assert.Equal(t, containerID, *role.ContainerId)
+				assert.Equal(t, containerID, *role.ContainerID)
 				assert.Equal(t, description, *role.Description)
 				return locationURL, nil
 			}).Times(1)
@@ -3361,7 +3361,7 @@ func TestGetRealmCustomConfiguration(t *testing.T) {
 		var enabled = true
 
 		var kcRealmRep = kc.RealmRepresentation{
-			Id:              &id,
+			ID:              &id,
 			KeycloakVersion: &keycloakVersion,
 			Realm:           &realm,
 			DisplayName:     &displayName,
@@ -3397,7 +3397,7 @@ func TestGetRealmCustomConfiguration(t *testing.T) {
 		var enabled = true
 
 		var kcRealmRep = kc.RealmRepresentation{
-			Id:              &id,
+			ID:              &id,
 			KeycloakVersion: &keycloakVersion,
 			Realm:           &realm,
 			DisplayName:     &displayName,
@@ -3425,7 +3425,7 @@ func TestGetRealmCustomConfiguration(t *testing.T) {
 		var enabled = true
 
 		var kcRealmRep = kc.RealmRepresentation{
-			Id:              &id,
+			ID:              &id,
 			KeycloakVersion: &keycloakVersion,
 			Realm:           &realm,
 			DisplayName:     &displayName,
@@ -3450,7 +3450,7 @@ func TestGetRealmCustomConfiguration(t *testing.T) {
 		var enabled = true
 
 		var kcRealmRep = kc.RealmRepresentation{
-			Id:              &id,
+			ID:              &id,
 			KeycloakVersion: &keycloakVersion,
 			Realm:           &realm,
 			DisplayName:     &displayName,
@@ -3489,7 +3489,7 @@ func TestUpdateRealmCustomConfiguration(t *testing.T) {
 	var enabled = true
 
 	var kcRealmRep = kc.RealmRepresentation{
-		Id:              &id,
+		ID:              &id,
 		KeycloakVersion: &keycloakVersion,
 		Realm:           &realm,
 		DisplayName:     &displayName,
@@ -3504,12 +3504,12 @@ func TestUpdateRealmCustomConfiguration(t *testing.T) {
 	var clientName2 = "clientName2"
 	var redirectURIs2 = []string{"https://www.cloudtrust2.io/*", "https://www.cloudtrust2-old.com/*"}
 	clients[0] = kc.ClientRepresentation{
-		ClientId:     &clientID1,
+		ClientID:     &clientID1,
 		Name:         &clientName1,
 		RedirectUris: &redirectURIs1,
 	}
 	clients[1] = kc.ClientRepresentation{
-		ClientId:     &clientID2,
+		ClientID:     &clientID2,
 		Name:         &clientName2,
 		RedirectUris: &redirectURIs2,
 	}
@@ -3633,13 +3633,13 @@ func TestGetRealmAdminConfiguration(t *testing.T) {
 		assert.Equal(t, expectedError, err)
 	})
 	t.Run("Request to database fails", func(t *testing.T) {
-		mockKeycloakClient.EXPECT().GetRealm(accessToken, realmName).Return(kc.RealmRepresentation{Id: &realmID}, nil)
+		mockKeycloakClient.EXPECT().GetRealm(accessToken, realmName).Return(kc.RealmRepresentation{ID: &realmID}, nil)
 		mockConfigurationDBModule.EXPECT().GetAdminConfiguration(ctx, gomock.Any()).Return(dbAdminConfig, expectedError)
 		var _, err = component.GetRealmAdminConfiguration(ctx, realmName)
 		assert.Equal(t, expectedError, err)
 	})
 	t.Run("Success", func(t *testing.T) {
-		mockKeycloakClient.EXPECT().GetRealm(accessToken, realmName).Return(kc.RealmRepresentation{Id: &realmID}, nil)
+		mockKeycloakClient.EXPECT().GetRealm(accessToken, realmName).Return(kc.RealmRepresentation{ID: &realmID}, nil)
 		mockConfigurationDBModule.EXPECT().GetAdminConfiguration(ctx, realmID).Return(dbAdminConfig, nil)
 		var res, err = component.GetRealmAdminConfiguration(ctx, realmName)
 		assert.Nil(t, err)
@@ -3672,13 +3672,13 @@ func TestUpdateRealmAdminConfiguration(t *testing.T) {
 		assert.Equal(t, expectedError, err)
 	})
 	t.Run("Request to database fails", func(t *testing.T) {
-		mockKeycloakClient.EXPECT().GetRealm(accessToken, realmName).Return(kc.RealmRepresentation{Id: &realmID}, nil)
+		mockKeycloakClient.EXPECT().GetRealm(accessToken, realmName).Return(kc.RealmRepresentation{ID: &realmID}, nil)
 		mockConfigurationDBModule.EXPECT().StoreOrUpdateAdminConfiguration(ctx, realmID, gomock.Any()).Return(expectedError)
 		var err = component.UpdateRealmAdminConfiguration(ctx, realmName, adminConfig)
 		assert.Equal(t, expectedError, err)
 	})
 	t.Run("Success", func(t *testing.T) {
-		mockKeycloakClient.EXPECT().GetRealm(accessToken, realmName).Return(kc.RealmRepresentation{Id: &realmID}, nil)
+		mockKeycloakClient.EXPECT().GetRealm(accessToken, realmName).Return(kc.RealmRepresentation{ID: &realmID}, nil)
 		mockConfigurationDBModule.EXPECT().StoreOrUpdateAdminConfiguration(ctx, realmID, gomock.Any()).Return(nil)
 		var err = component.UpdateRealmAdminConfiguration(ctx, realmName, adminConfig)
 		assert.Nil(t, err)
@@ -3810,7 +3810,7 @@ func TestLinkShadowUser(t *testing.T) {
 
 	// Create shadow user
 	t.Run("Create shadow user successfully", func(t *testing.T) {
-		fedIDKC := kc.FederatedIdentityRepresentation{UserName: &username, UserId: &userID}
+		fedIDKC := kc.FederatedIdentityRepresentation{UserName: &username, UserID: &userID}
 		fedID := api.FederatedIdentityRepresentation{Username: &username, UserID: &userID}
 
 		mockKeycloakClient.EXPECT().LinkShadowUser(accessToken, realmName, userID, provider, fedIDKC).Return(nil).Times(1)
@@ -3826,7 +3826,7 @@ func TestLinkShadowUser(t *testing.T) {
 
 	// Error from KC client
 	t.Run("Create shadow user - error at KC client", func(t *testing.T) {
-		fedIDKC := kc.FederatedIdentityRepresentation{UserName: &username, UserId: &userID}
+		fedIDKC := kc.FederatedIdentityRepresentation{UserName: &username, UserID: &userID}
 		fedID := api.FederatedIdentityRepresentation{Username: &username, UserID: &userID}
 
 		mockKeycloakClient.EXPECT().LinkShadowUser(accessToken, realmName, userID, provider, fedIDKC).Return(fmt.Errorf("error")).Times(1)

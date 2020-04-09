@@ -109,7 +109,7 @@ func TestGetID(t *testing.T) {
 	})
 	t.Run("Success", func(t *testing.T) {
 		var id = "the-realm-identifier"
-		mockKeycloak.EXPECT().GetRealm(accessToken, realm).Return(kc.RealmRepresentation{Id: &id}, nil)
+		mockKeycloak.EXPECT().GetRealm(accessToken, realm).Return(kc.RealmRepresentation{ID: &id}, nil)
 		res, err := idRetriever.GetID(accessToken, realm)
 		assert.Nil(t, err)
 		assert.Equal(t, id, res)
