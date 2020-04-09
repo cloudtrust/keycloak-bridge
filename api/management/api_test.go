@@ -1,4 +1,4 @@
-package management_api
+package apimanagement
 
 import (
 	"encoding/json"
@@ -18,11 +18,11 @@ func TestConvertCredential(t *testing.T) {
 	var configKc = "{}"
 
 	credKc.Type = &credType
-	credKc.Id = &credID
+	credKc.ID = &credID
 	credKc.CredentialData = nil
 
 	assert.Equal(t, credKc.Type, ConvertCredential(&credKc).Type)
-	assert.Equal(t, credKc.Id, ConvertCredential(&credKc).ID)
+	assert.Equal(t, credKc.ID, ConvertCredential(&credKc).ID)
 	assert.Nil(t, ConvertCredential(&credKc).CredentialData)
 
 	credKc.CredentialData = &configKc
@@ -309,7 +309,7 @@ func TestFederatedIdentityRepresentation(t *testing.T) {
 
 	t.Run("ConvertToKCFedID", func(t *testing.T) {
 		var res = ConvertToKCFedID(fir)
-		assert.Equal(t, userID, *res.UserId)
+		assert.Equal(t, userID, *res.UserID)
 		assert.Equal(t, username, *res.UserName)
 	})
 

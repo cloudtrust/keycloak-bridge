@@ -10,7 +10,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/cloudtrust/keycloak-client"
+	"github.com/cloudtrust/keycloak-client/toolbox"
 
 	"github.com/cloudtrust/common-service/configuration"
 	"github.com/cloudtrust/common-service/database"
@@ -49,7 +49,7 @@ type component struct {
 	ssePublicURL            string
 	registerEnduserClientID string
 	keycloakClient          KeycloakClient
-	tokenProvider           keycloak.OidcTokenProvider
+	tokenProvider           toolbox.OidcTokenProvider
 	usersDBModule           keycloakb.UsersDBModule
 	configDBModule          ConfigurationDBModule
 	eventsDBModule          database.EventsDBModule
@@ -58,7 +58,7 @@ type component struct {
 
 // NewComponent returns the management component.
 func NewComponent(keycloakURL string, realm string, ssePublicURL string, registerEnduserClientID string, keycloakClient KeycloakClient,
-	tokenProvider keycloak.OidcTokenProvider, usersDBModule keycloakb.UsersDBModule,
+	tokenProvider toolbox.OidcTokenProvider, usersDBModule keycloakb.UsersDBModule,
 	configDBModule ConfigurationDBModule, eventsDBModule database.EventsDBModule, logger internal.Logger) Component {
 	return &component{
 		keycloakURL:             keycloakURL,
@@ -163,8 +163,8 @@ func (c *component) storeUser(ctx context.Context, accessToken string, customerR
 			return "", "", errorhandler.CreateInternalServerError("username.generation")
 		}
 	} else {
-		userID = *existingKcUser.Id
-		kcUser.Id = existingKcUser.Id
+		userID = *existingKcUser.ID
+		kcUser.ID = existingKcUser.ID
 		kcUser.Username = existingKcUser.Username
 
 		err = c.keycloakClient.UpdateUser(accessToken, c.realm, userID, kcUser)

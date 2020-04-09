@@ -61,8 +61,8 @@ func TestAccreditationsModule(t *testing.T) {
 	var anyError = errors.New("I don't know")
 	var condition = "physical"
 	var otherCondition = "other"
-	var kcRealm = kc.RealmRepresentation{Id: &realmID}
-	var kcUser = kc.UserRepresentation{Id: &userID}
+	var kcRealm = kc.RealmRepresentation{ID: &realmID}
+	var kcUser = kc.UserRepresentation{ID: &userID}
 
 	t.Run("Keycloak.GetRealm fails", func(t *testing.T) {
 		mockKeycloak.EXPECT().GetRealm(accessToken, realmName).Return(kc.RealmRepresentation{}, anyError)

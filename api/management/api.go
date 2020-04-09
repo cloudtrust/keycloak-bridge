@@ -1,4 +1,4 @@
-package management_api
+package apimanagement
 
 import (
 	"encoding/json"
@@ -183,7 +183,7 @@ type RequiredAction string
 // ConvertCredential creates an API credential from a KC credential
 func ConvertCredential(credKc *kc.CredentialRepresentation) CredentialRepresentation {
 	var cred CredentialRepresentation
-	cred.ID = credKc.Id
+	cred.ID = credKc.ID
 	cred.Type = credKc.Type
 	cred.UserLabel = credKc.UserLabel
 	cred.CreatedDate = credKc.CreatedDate
@@ -226,7 +226,7 @@ func ConvertAttackDetectionStatus(status map[string]interface{}) AttackDetection
 func ConvertToAPIUser(userKc kc.UserRepresentation) UserRepresentation {
 	var userRep UserRepresentation
 
-	userRep.ID = userKc.Id
+	userRep.ID = userKc.ID
 	userRep.Username = userKc.Username
 	userRep.Email = userKc.Email
 	userRep.Enabled = userKc.Enabled
@@ -426,7 +426,7 @@ func ConvertRequiredAction(ra *kc.RequiredActionProviderRepresentation) Required
 func ConvertToKCFedID(fedID FederatedIdentityRepresentation) kc.FederatedIdentityRepresentation {
 	var kcFedID kc.FederatedIdentityRepresentation
 
-	kcFedID.UserId = fedID.UserID
+	kcFedID.UserID = fedID.UserID
 	kcFedID.UserName = fedID.Username
 
 	return kcFedID

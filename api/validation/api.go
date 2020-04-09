@@ -1,4 +1,4 @@
-package validation
+package apivalidation
 
 import (
 	"time"
@@ -164,7 +164,7 @@ func (u *UserRepresentation) ImportFromKeycloak(kcUser kc.UserRepresentation) {
 		}
 	}
 
-	u.UserID = kcUser.Id
+	u.UserID = kcUser.ID
 	u.Username = kcUser.Username
 	u.Gender = gender
 	u.FirstName = kcUser.FirstName

@@ -1,4 +1,4 @@
-package events_api
+package apievents
 
 import "database/sql"
 
@@ -57,6 +57,7 @@ type EventSummaryRepresentation struct {
 	CtEventTypes []string `json:"ctEventTypes,omitempty"`
 }
 
+// ToString gives string representation of the specified sqlValue
 func ToString(sqlValue sql.NullString) string {
 	if sqlValue.Valid {
 		return sqlValue.String

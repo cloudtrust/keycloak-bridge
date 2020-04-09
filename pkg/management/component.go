@@ -171,7 +171,7 @@ func (c *component) GetRealms(ctx context.Context) ([]api.RealmRepresentation, e
 	var realmsRep = []api.RealmRepresentation{}
 	for _, realmKc := range realmsKc {
 		var realmRep api.RealmRepresentation
-		realmRep.ID = realmKc.Id
+		realmRep.ID = realmKc.ID
 		realmRep.KeycloakVersion = realmKc.KeycloakVersion
 		realmRep.Realm = realmKc.Realm
 		realmRep.DisplayName = realmKc.DisplayName
@@ -194,7 +194,7 @@ func (c *component) GetRealm(ctx context.Context, realm string) (api.RealmRepres
 		return api.RealmRepresentation{}, err
 	}
 
-	realmRep.ID = realmKc.Id
+	realmRep.ID = realmKc.ID
 	realmRep.KeycloakVersion = realmKc.KeycloakVersion
 	realmRep.Realm = realmKc.Realm
 	realmRep.DisplayName = realmKc.DisplayName
@@ -214,10 +214,10 @@ func (c *component) GetClient(ctx context.Context, realmName, idClient string) (
 		return api.ClientRepresentation{}, err
 	}
 
-	clientRep.ID = clientKc.Id
+	clientRep.ID = clientKc.ID
 	clientRep.Name = clientKc.Name
-	clientRep.BaseURL = clientKc.BaseUrl
-	clientRep.ClientID = clientKc.ClientId
+	clientRep.BaseURL = clientKc.BaseURL
+	clientRep.ClientID = clientKc.ClientID
 	clientRep.Protocol = clientKc.Protocol
 	clientRep.Enabled = clientKc.Enabled
 
@@ -237,10 +237,10 @@ func (c *component) GetClients(ctx context.Context, realmName string) ([]api.Cli
 	var clientsRep = []api.ClientRepresentation{}
 	for _, clientKc := range clientsKc {
 		var clientRep api.ClientRepresentation
-		clientRep.ID = clientKc.Id
+		clientRep.ID = clientKc.ID
 		clientRep.Name = clientKc.Name
-		clientRep.BaseURL = clientKc.BaseUrl
-		clientRep.ClientID = clientKc.ClientId
+		clientRep.BaseURL = clientKc.BaseURL
+		clientRep.ClientID = clientKc.ClientID
 		clientRep.Protocol = clientKc.Protocol
 		clientRep.Enabled = clientKc.Enabled
 		clientsRep = append(clientsRep, clientRep)
@@ -478,11 +478,11 @@ func (c *component) GetRolesOfUser(ctx context.Context, realmName, userID string
 	var rolesRep = []api.RoleRepresentation{}
 	for _, roleKc := range rolesKc {
 		var roleRep api.RoleRepresentation
-		roleRep.ID = roleKc.Id
+		roleRep.ID = roleKc.ID
 		roleRep.Name = roleKc.Name
 		roleRep.Composite = roleKc.Composite
 		roleRep.ClientRole = roleKc.ClientRole
-		roleRep.ContainerID = roleKc.ContainerId
+		roleRep.ContainerID = roleKc.ContainerID
 		roleRep.Description = roleKc.Description
 
 		rolesRep = append(rolesRep, roleRep)
@@ -504,7 +504,7 @@ func (c *component) GetGroupsOfUser(ctx context.Context, realmName, userID strin
 	var groupsRep = []api.GroupRepresentation{}
 	for _, groupKc := range groupsKc {
 		var groupRep api.GroupRepresentation
-		groupRep.ID = groupKc.Id
+		groupRep.ID = groupKc.ID
 		groupRep.Name = groupKc.Name
 
 		groupsRep = append(groupsRep, groupRep)
@@ -602,11 +602,11 @@ func (c *component) GetClientRolesForUser(ctx context.Context, realmName, userID
 	var rolesRep = []api.RoleRepresentation{}
 	for _, roleKc := range rolesKc {
 		var roleRep api.RoleRepresentation
-		roleRep.ID = roleKc.Id
+		roleRep.ID = roleKc.ID
 		roleRep.Name = roleKc.Name
 		roleRep.Composite = roleKc.Composite
 		roleRep.ClientRole = roleKc.ClientRole
-		roleRep.ContainerID = roleKc.ContainerId
+		roleRep.ContainerID = roleKc.ContainerID
 		roleRep.Description = roleKc.Description
 
 		rolesRep = append(rolesRep, roleRep)
@@ -621,11 +621,11 @@ func (c *component) AddClientRolesToUser(ctx context.Context, realmName, userID,
 	var rolesRep = []kc.RoleRepresentation{}
 	for _, role := range roles {
 		var roleRep kc.RoleRepresentation
-		roleRep.Id = role.ID
+		roleRep.ID = role.ID
 		roleRep.Name = role.Name
 		roleRep.Composite = role.Composite
 		roleRep.ClientRole = role.ClientRole
-		roleRep.ContainerId = role.ContainerID
+		roleRep.ContainerID = role.ContainerID
 		roleRep.Description = role.Description
 
 		rolesRep = append(rolesRep, roleRep)
@@ -819,7 +819,7 @@ func (c *component) DeleteCredentialsForUser(ctx context.Context, realmName stri
 	// Ensure the credential is owned by user
 	var ownedByUser = false
 	for _, credKc := range credsKc {
-		if *credKc.Id == credentialID {
+		if *credKc.ID == credentialID {
 			ownedByUser = true
 			break
 		}
@@ -838,7 +838,7 @@ func (c *component) DeleteCredentialsForUser(ctx context.Context, realmName stri
 
 	// if a credential other than the password was deleted, record the event 2ND_FACTOR_REMOVED in the audit DB
 	for _, credKc := range credsKc {
-		if *credKc.Id == credentialID && *credKc.Type != "password" {
+		if *credKc.ID == credentialID && *credKc.Type != "password" {
 			c.reportEvent(ctx, "2ND_FACTOR_REMOVED", database.CtEventRealmName, realmName, database.CtEventUserID, userID)
 			break
 		}
@@ -884,11 +884,11 @@ func (c *component) GetRoles(ctx context.Context, realmName string) ([]api.RoleR
 	var rolesRep = []api.RoleRepresentation{}
 	for _, roleKc := range rolesKc {
 		var roleRep api.RoleRepresentation
-		roleRep.ID = roleKc.Id
+		roleRep.ID = roleKc.ID
 		roleRep.Name = roleKc.Name
 		roleRep.Composite = roleKc.Composite
 		roleRep.ClientRole = roleKc.ClientRole
-		roleRep.ContainerID = roleKc.ContainerId
+		roleRep.ContainerID = roleKc.ContainerID
 		roleRep.Description = roleKc.Description
 
 		rolesRep = append(rolesRep, roleRep)
@@ -908,11 +908,11 @@ func (c *component) GetRole(ctx context.Context, realmName string, roleID string
 		return api.RoleRepresentation{}, err
 	}
 
-	roleRep.ID = roleKc.Id
+	roleRep.ID = roleKc.ID
 	roleRep.Name = roleKc.Name
 	roleRep.Composite = roleKc.Composite
 	roleRep.ClientRole = roleKc.ClientRole
-	roleRep.ContainerID = roleKc.ContainerId
+	roleRep.ContainerID = roleKc.ContainerID
 	roleRep.Description = roleKc.Description
 
 	return roleRep, nil
@@ -931,7 +931,7 @@ func (c *component) GetGroups(ctx context.Context, realmName string) ([]api.Grou
 	var groupsRep = []api.GroupRepresentation{}
 	for _, groupKc := range groupsKc {
 		var groupRep api.GroupRepresentation
-		groupRep.ID = groupKc.Id
+		groupRep.ID = groupKc.ID
 		groupRep.Name = groupKc.Name
 
 		groupsRep = append(groupsRep, groupRep)
@@ -1039,7 +1039,7 @@ func (c *component) UpdateAuthorizations(ctx context.Context, realmName string, 
 			}
 
 			for _, realm := range realms {
-				var realmID = *realm.Id
+				var realmID = *realm.ID
 				allowedTargetRealmsAndGroupNames[realmID] = make(map[string]struct{})
 
 				groups, err := c.keycloakClient.GetGroups(accessToken, realmID)
@@ -1086,17 +1086,17 @@ func (c *component) UpdateAuthorizations(ctx context.Context, realmName string, 
 
 		for _, client := range clients {
 			// filter clients, only keep realm-management and the ones ending with -realm
-			if *client.ClientId != "realm-management" && !strings.HasSuffix(*client.ClientId, "-realm") {
+			if *client.ClientID != "realm-management" && !strings.HasSuffix(*client.ClientID, "-realm") {
 				continue
 			}
 
-			availableRoles, err := c.keycloakClient.GetAvailableGroupClientRoles(accessToken, realmName, groupID, *client.Id)
+			availableRoles, err := c.keycloakClient.GetAvailableGroupClientRoles(accessToken, realmName, groupID, *client.ID)
 			if err != nil {
 				c.logger.Warn(ctx, "err", err.Error())
 				return err
 			}
 
-			currentRoles, err := c.keycloakClient.GetGroupClientRoles(accessToken, realmName, groupID, *client.Id)
+			currentRoles, err := c.keycloakClient.GetGroupClientRoles(accessToken, realmName, groupID, *client.ID)
 			if err != nil {
 				c.logger.Warn(ctx, "err", err.Error())
 				return err
@@ -1111,7 +1111,7 @@ func (c *component) UpdateAuthorizations(ctx context.Context, realmName string, 
 				}
 
 				if len(rolesToAdd) != 0 {
-					err = c.keycloakClient.AssignClientRole(accessToken, realmName, groupID, *client.Id, rolesToAdd)
+					err = c.keycloakClient.AssignClientRole(accessToken, realmName, groupID, *client.ID, rolesToAdd)
 					if err != nil {
 						c.logger.Warn(ctx, "err", err.Error())
 						return err
@@ -1126,7 +1126,7 @@ func (c *component) UpdateAuthorizations(ctx context.Context, realmName string, 
 				}
 
 				if len(rolesToRemove) != 0 {
-					err = c.keycloakClient.RemoveClientRole(accessToken, realmName, groupID, *client.Id, rolesToRemove)
+					err = c.keycloakClient.RemoveClientRole(accessToken, realmName, groupID, *client.ID, rolesToRemove)
 					if err != nil {
 						c.logger.Warn(ctx, "err", err.Error())
 						return err
@@ -1200,11 +1200,11 @@ func (c *component) GetClientRoles(ctx context.Context, realmName, idClient stri
 	var rolesRep = []api.RoleRepresentation{}
 	for _, roleKc := range rolesKc {
 		var roleRep api.RoleRepresentation
-		roleRep.ID = roleKc.Id
+		roleRep.ID = roleKc.ID
 		roleRep.Name = roleKc.Name
 		roleRep.Composite = roleKc.Composite
 		roleRep.ClientRole = roleKc.ClientRole
-		roleRep.ContainerID = roleKc.ContainerId
+		roleRep.ContainerID = roleKc.ContainerID
 		roleRep.Description = roleKc.Description
 
 		rolesRep = append(rolesRep, roleRep)
@@ -1217,11 +1217,11 @@ func (c *component) CreateClientRole(ctx context.Context, realmName, clientID st
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 
 	var roleRep kc.RoleRepresentation
-	roleRep.Id = role.ID
+	roleRep.ID = role.ID
 	roleRep.Name = role.Name
 	roleRep.Composite = role.Composite
 	roleRep.ClientRole = role.ClientRole
-	roleRep.ContainerId = role.ContainerID
+	roleRep.ContainerID = role.ContainerID
 	roleRep.Description = role.Description
 
 	locationURL, err := c.keycloakClient.CreateClientRole(accessToken, realmName, clientID, roleRep)
@@ -1246,7 +1246,7 @@ func (c *component) GetRealmCustomConfiguration(ctx context.Context, realmName s
 		return api.RealmCustomConfiguration{}, err
 	}
 	// from the realm ID, fetch the custom configuration
-	realmID := realmConfig.Id
+	realmID := realmConfig.ID
 	config, err := c.configDBModule.GetConfiguration(ctx, *realmID)
 	// DB error
 	if err != nil {
@@ -1321,7 +1321,7 @@ func (c *component) UpdateRealmCustomConfiguration(ctx context.Context, realmNam
 		var match = false
 
 		for _, client := range clients {
-			if *client.ClientId != *customConfig.DefaultClientID {
+			if *client.ClientID != *customConfig.DefaultClientID {
 				continue
 			}
 			for _, redirectURI := range *client.RedirectUris {
@@ -1362,7 +1362,7 @@ func (c *component) UpdateRealmCustomConfiguration(ctx context.Context, realmNam
 	}
 
 	// from the realm ID, update the custom configuration in the DB
-	realmID := realmConfig.Id
+	realmID := realmConfig.ID
 	err = c.configDBModule.StoreOrUpdateConfiguration(ctx, *realmID, config)
 	return err
 }
@@ -1390,7 +1390,7 @@ func (c *component) GetRealmAdminConfiguration(ctx context.Context, realmName st
 	}
 
 	var config configuration.RealmAdminConfiguration
-	config, err = c.configDBModule.GetAdminConfiguration(ctx, *realmConfig.Id)
+	config, err = c.configDBModule.GetAdminConfiguration(ctx, *realmConfig.ID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return api.CreateDefaultRealmAdminConfiguration(), nil
@@ -1413,7 +1413,7 @@ func (c *component) UpdateRealmAdminConfiguration(ctx context.Context, realmName
 		return err
 	}
 
-	err = c.configDBModule.StoreOrUpdateAdminConfiguration(ctx, *realmRepr.Id, adminConfig.ConvertToDBStruct())
+	err = c.configDBModule.StoreOrUpdateAdminConfiguration(ctx, *realmRepr.ID, adminConfig.ConvertToDBStruct())
 	if err != nil {
 		c.logger.Warn(ctx, "err", err.Error())
 		return err

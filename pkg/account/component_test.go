@@ -171,7 +171,7 @@ func TestUpdateAccount(t *testing.T) {
 	attributes.SetString(constants.AttrbLocale, locale)
 
 	var kcUserRep = kc.UserRepresentation{
-		Id:               &id,
+		ID:               &id,
 		Username:         &username,
 		Email:            &email,
 		Enabled:          &enabled,
@@ -244,7 +244,7 @@ func TestUpdateAccount(t *testing.T) {
 	t.Run("Update by changing the email address", func(t *testing.T) {
 		var oldEmail = "toti@elca.ch"
 		var oldkcUserRep = kc.UserRepresentation{
-			Id:            &id,
+			ID:            &id,
 			Email:         &oldEmail,
 			EmailVerified: &emailVerified,
 		}
@@ -271,7 +271,7 @@ func TestUpdateAccount(t *testing.T) {
 	oldAttributes[constants.AttrbPhoneNumber] = []string{oldNumber}
 	oldAttributes[constants.AttrbPhoneNumberVerified] = []string{strconv.FormatBool(phoneNumberVerified)}
 	var oldkcUserRep2 = kc.UserRepresentation{
-		Id:         &id,
+		ID:         &id,
 		Attributes: &oldAttributes,
 	}
 
@@ -329,7 +329,7 @@ func TestUpdateAccount(t *testing.T) {
 	t.Run("Error - update user", func(t *testing.T) {
 		var id = "1234-79894-7594"
 		var kcUserRep = kc.UserRepresentation{
-			Id: &id,
+			ID: &id,
 		}
 		mockKeycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kcUserRep, nil).AnyTimes()
 		mockKeycloakAccountClient.EXPECT().UpdateAccount(accessToken, realmName, gomock.Any()).Return(fmt.Errorf("Unexpected error")).Times(1)
@@ -518,7 +518,7 @@ func TestGetCredentials(t *testing.T) {
 		var id = "1245"
 
 		var kcCredRep = kc.CredentialRepresentation{
-			Id: &id,
+			ID: &id,
 		}
 
 		var kcCredsRep []kc.CredentialRepresentation
