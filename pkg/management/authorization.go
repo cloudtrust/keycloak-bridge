@@ -37,8 +37,7 @@ var (
 	MGMTGetUserAccountStatus                = newAction("MGMT_GetUserAccountStatus", security.ScopeGroup)
 	MGMTGetRolesOfUser                      = newAction("MGMT_GetRolesOfUser", security.ScopeGroup)
 	MGMTGetGroupsOfUser                     = newAction("MGMT_GetGroupsOfUser", security.ScopeGroup)
-	MGMTAddGroupToUser                      = newAction("MGMT_AddGroupToUser", security.ScopeGroup)
-	MGMTDeleteGroupForUser                  = newAction("MGMT_DeleteGroupForUser", security.ScopeGroup)
+	MGMTSetGroupsToUser                     = newAction("MGMT_SetGroupsToUser", security.ScopeGroup)
 	MGMTAssignableGroupsToUser              = newAction("MGMT_AssignableGroupsToUser", security.ScopeGroup)
 	MGMTGetAvailableTrustIDGroups           = newAction("MGMT_GetAvailableTrustIDGroups", security.ScopeRealm)
 	MGMTGetTrustIDGroups                    = newAction("MGMT_GetTrustIDGroups", security.ScopeGroup)
@@ -258,7 +257,7 @@ func (c *authorizationComponentMW) GetGroupsOfUser(ctx context.Context, realmNam
 }
 
 func (c *authorizationComponentMW) AddGroupToUser(ctx context.Context, realmName, userID string, groupID string) error {
-	var action = MGMTAddGroupToUser.String()
+	var action = MGMTSetGroupsToUser.String()
 	var targetRealm = realmName
 
 	if err := c.authManager.CheckAuthorizationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
@@ -274,7 +273,7 @@ func (c *authorizationComponentMW) AddGroupToUser(ctx context.Context, realmName
 }
 
 func (c *authorizationComponentMW) DeleteGroupForUser(ctx context.Context, realmName, userID string, groupID string) error {
-	var action = MGMTDeleteGroupForUser.String()
+	var action = MGMTSetGroupsToUser.String()
 	var targetRealm = realmName
 
 	if err := c.authManager.CheckAuthorizationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
