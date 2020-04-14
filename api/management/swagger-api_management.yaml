@@ -383,10 +383,11 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Group'
-    put:
+  /realms/{realm}/users/{userID}/groups/{groupID}:
+    post:
       tags:
       - Users
-      summary: Set groups of user
+      summary: Add group to user
       parameters:
       - name: realm
         in: path
@@ -400,14 +401,38 @@ paths:
         required: true
         schema:
           type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: array
-              items:
-                type: string
-                description: list of group identifiers
+      - name: groupID
+        in: path
+        description: Group id
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation
+    delete:
+      tags:
+      - Users
+      summary: Remove group for user
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
+      - name: groupID
+        in: path
+        description: Group id
+        required: true
+        schema:
+          type: string
       responses:
         200:
           description: successful operation
