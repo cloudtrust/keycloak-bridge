@@ -256,7 +256,7 @@ func (c *authorizationComponentMW) GetGroupsOfUser(ctx context.Context, realmNam
 	return c.next.GetGroupsOfUser(ctx, realmName, userID)
 }
 
-func (c *authorizationComponentMW) SetGroupsToUser(ctx context.Context, realmName, userID string, groupIDs []string) error {
+func (c *authorizationComponentMW) AddGroupToUser(ctx context.Context, realmName, userID string, groupID string) error {
 	var action = MGMTSetGroupsToUser.String()
 	var targetRealm = realmName
 
@@ -265,13 +265,27 @@ func (c *authorizationComponentMW) SetGroupsToUser(ctx context.Context, realmNam
 	}
 
 	action = MGMTAssignableGroupsToUser.String()
-	for _, groupID := range groupIDs {
-		if err := c.authManager.CheckAuthorizationOnTargetGroupID(ctx, action, targetRealm, groupID); err != nil {
-			return err
-		}
+	if err := c.authManager.CheckAuthorizationOnTargetGroupID(ctx, action, targetRealm, groupID); err != nil {
+		return err
 	}
 
-	return c.next.SetGroupsToUser(ctx, realmName, userID, groupIDs)
+	return c.next.AddGroupToUser(ctx, realmName, userID, groupID)
+}
+
+func (c *authorizationComponentMW) DeleteGroupForUser(ctx context.Context, realmName, userID string, groupID string) error {
+	var action = MGMTSetGroupsToUser.String()
+	var targetRealm = realmName
+
+	if err := c.authManager.CheckAuthorizationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
+		return err
+	}
+
+	action = MGMTAssignableGroupsToUser.String()
+	if err := c.authManager.CheckAuthorizationOnTargetGroupID(ctx, action, targetRealm, groupID); err != nil {
+		return err
+	}
+
+	return c.next.DeleteGroupForUser(ctx, realmName, userID, groupID)
 }
 
 func (c *authorizationComponentMW) GetAvailableTrustIDGroups(ctx context.Context, realmName string) ([]string, error) {

@@ -1418,42 +1418,29 @@ func TestSetGroupsToUser(t *testing.T) {
 	var realmName = "my-realm"
 	var userID = "USER-IDEN-IFIE-R123"
 	var allowedTrustIDGroups = []string{"won't be used"}
-	var userGroup1ID = "user-group-1"
-	var userGroup2ID = "user-group-2"
-	var userGroup3ID = "user-group-3"
-	var userGroup1 = kc.GroupRepresentation{Id: &userGroup1ID}
-	var userGroup2 = kc.GroupRepresentation{Id: &userGroup2ID}
-	var currentUserGroups = []kc.GroupRepresentation{userGroup1, userGroup2}
+	var groupID = "user-group-1"
 	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 	var managementComponent = NewComponent(mockKeycloakClient, mockEventDBModule, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
 
-	t.Run("KC.GetGroupsOfUser fails", func(t *testing.T) {
-		var groupIDs []string
-		mockKeycloakClient.EXPECT().GetGroupsOfUser(accessToken, realmName, userID).Return([]kc.GroupRepresentation{}, errors.New("kc error"))
-		var err = managementComponent.SetGroupsToUser(ctx, realmName, userID, groupIDs)
+	t.Run("AddGroupToUser: KC fails", func(t *testing.T) {
+		mockKeycloakClient.EXPECT().AddGroupToUser(accessToken, realmName, userID, groupID).Return(errors.New("kc error"))
+		var err = managementComponent.AddGroupToUser(ctx, realmName, userID, groupID)
 		assert.NotNil(t, err)
 	})
-	t.Run("KC.DeleteGroupOfUser fails", func(t *testing.T) {
-		var groupIDs = []string{userGroup1ID}
-		mockKeycloakClient.EXPECT().GetGroupsOfUser(accessToken, realmName, userID).Return(currentUserGroups, nil)
-		mockKeycloakClient.EXPECT().DeleteGroupFromUser(accessToken, realmName, userID, userGroup2ID).Return(errors.New("kc error"))
-		var err = managementComponent.SetGroupsToUser(ctx, realmName, userID, groupIDs)
+	t.Run("DeleteGroupForUser: KC fails", func(t *testing.T) {
+		mockKeycloakClient.EXPECT().DeleteGroupFromUser(accessToken, realmName, userID, groupID).Return(errors.New("kc error"))
+		var err = managementComponent.DeleteGroupForUser(ctx, realmName, userID, groupID)
 		assert.NotNil(t, err)
 	})
-	t.Run("KC.AddGroupOfUser fails", func(t *testing.T) {
-		var groupIDs = []string{userGroup1ID, userGroup2ID, userGroup3ID}
-		mockKeycloakClient.EXPECT().GetGroupsOfUser(accessToken, realmName, userID).Return(currentUserGroups, nil)
-		mockKeycloakClient.EXPECT().AddGroupToUser(accessToken, realmName, userID, userGroup3ID).Return(errors.New("kc error"))
-		var err = managementComponent.SetGroupsToUser(ctx, realmName, userID, groupIDs)
-		assert.NotNil(t, err)
+	t.Run("AddGroupToUser: Success", func(t *testing.T) {
+		mockKeycloakClient.EXPECT().AddGroupToUser(accessToken, realmName, userID, groupID).Return(nil)
+		var err = managementComponent.AddGroupToUser(ctx, realmName, userID, groupID)
+		assert.Nil(t, err)
 	})
-	t.Run("Success", func(t *testing.T) {
-		var groupIDs = []string{userGroup1ID, userGroup3ID}
-		mockKeycloakClient.EXPECT().GetGroupsOfUser(accessToken, realmName, userID).Return(currentUserGroups, nil)
-		mockKeycloakClient.EXPECT().DeleteGroupFromUser(accessToken, realmName, userID, userGroup2ID).Return(nil)
-		mockKeycloakClient.EXPECT().AddGroupToUser(accessToken, realmName, userID, userGroup3ID).Return(nil)
-		var err = managementComponent.SetGroupsToUser(ctx, realmName, userID, groupIDs)
+	t.Run("DeleteGroupForUser: Success", func(t *testing.T) {
+		mockKeycloakClient.EXPECT().DeleteGroupFromUser(accessToken, realmName, userID, groupID).Return(nil)
+		var err = managementComponent.DeleteGroupForUser(ctx, realmName, userID, groupID)
 		assert.Nil(t, err)
 	})
 }
