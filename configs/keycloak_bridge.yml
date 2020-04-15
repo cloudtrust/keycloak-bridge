@@ -65,6 +65,8 @@ keycloak-oidc-uri: http://localhost:8080 http://127.0.0.1:8080
 keycloak-timeout: 5s
 
 # DB Audit RW
+# db-audit-rw-enabled was previously named events-db
+db-audit-rw-enabled: false
 db-audit-rw-host-port: 127.0.0.1:3306
 db-audit-rw-username: root
 db-audit-rw-password: admin
@@ -78,8 +80,8 @@ db-audit-rw-migration: false
 db-audit-rw-migration-version: 0.1
 db-audit-rw-connection-check: false
 
-
 # DB Audit RO
+db-audit-ro-enabled: true
 db-audit-ro-host-port: 127.0.0.1:3306
 db-audit-ro-username: root
 db-audit-ro-password: admin
@@ -94,6 +96,7 @@ db-audit-ro-migration-version: 0.1
 db-audit-ro-connection-check: false
 
 # DB Configuration RW
+db-config-rw-enabled: true
 db-config-rw-host-port: 172.17.0.2:3306
 db-config-rw-username: bridge
 db-config-rw-password: bridge-password
@@ -108,6 +111,7 @@ db-config-rw-migration-version: 0.1
 db-config-rw-connection-check: true
 
 # DB Configuration RO
+db-config-ro-enabled: true
 db-config-ro-host-port: 172.17.0.2:3306
 db-config-ro-username: bridge
 db-config-ro-password: bridge-password
@@ -122,6 +126,7 @@ db-config-ro-migration-version: 0.1
 db-config-ro-connection-check: true
 
 # DB Users RW
+db-users-rw-enabled: true
 db-users-rw-host-port: 172.17.0.2:3306
 db-users-rw-username: bridge
 db-users-rw-password: bridge-password
@@ -134,9 +139,6 @@ db-users-rw-conn-max-lifetime: 10
 db-users-rw-migration: false
 db-users-rw-migration-version: 0.1
 db-users-rw-connection-check: false
-
-# audit events
-events-db: false
 
 # Rate limiting in requests/second.
 rate-validation: 1000

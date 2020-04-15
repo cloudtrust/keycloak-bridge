@@ -80,15 +80,15 @@ func TestGetUserByUsernameComponent(t *testing.T) {
 	var grpOtherID = "33333-44444"
 	var grpOtherName = "other_group"
 	var kcUser = kc.UserRepresentation{
-		Id:       &userID,
+		ID:       &userID,
 		Username: &username,
 	}
 	var kcGroup1 = kc.GroupRepresentation{
-		Id:   &grpOtherID,
+		ID:   &grpOtherID,
 		Name: &grpOtherName,
 	}
 	var kcGroup2 = kc.GroupRepresentation{
-		Id:   &grpEndUserID,
+		ID:   &grpEndUserID,
 		Name: &grpEndUserName,
 	}
 	var one = 1
@@ -130,7 +130,7 @@ func TestGetUserByUsernameComponent(t *testing.T) {
 	t.Run("GetUserByUsername success", func(t *testing.T) {
 		mockKeycloakClient.EXPECT().GetGroups(accessToken, realm).Return(kcGroupSearch, nil)
 		mockKeycloakClient.EXPECT().GetUsers(accessToken, realm, realm, "username", username, "groupId", grpEndUserID).Return(kcUsersSearch, nil)
-		mockUsersDB.EXPECT().GetUser(ctx, realm, *kcUser.Id).Return(&dto.DBUser{}, nil)
+		mockUsersDB.EXPECT().GetUser(ctx, realm, *kcUser.ID).Return(&dto.DBUser{}, nil)
 		var user, err = component.GetUserByUsername(ctx, username)
 		assert.Nil(t, err)
 		assert.NotNil(t, user)
@@ -151,7 +151,7 @@ func TestGetUserComponent(t *testing.T) {
 	var username = "utr167x"
 	var userID = "1234567890"
 	var kcUser = kc.UserRepresentation{
-		Id:       &userID,
+		ID:       &userID,
 		Username: &username,
 	}
 	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
@@ -167,14 +167,14 @@ func TestGetUserComponent(t *testing.T) {
 
 	t.Run("GetUser from DB fails", func(t *testing.T) {
 		mockKeycloakClient.EXPECT().GetUser(accessToken, realm, userID).Return(kcUser, nil)
-		mockUsersDB.EXPECT().GetUser(ctx, realm, *kcUser.Id).Return(nil, errors.New("database"))
+		mockUsersDB.EXPECT().GetUser(ctx, realm, *kcUser.ID).Return(nil, errors.New("database"))
 		var _, err = component.GetUser(ctx, userID)
 		assert.NotNil(t, err)
 	})
 
 	t.Run("GetUser success", func(t *testing.T) {
 		mockKeycloakClient.EXPECT().GetUser(accessToken, realm, userID).Return(kcUser, nil)
-		mockUsersDB.EXPECT().GetUser(ctx, realm, *kcUser.Id).Return(&dto.DBUser{}, nil)
+		mockUsersDB.EXPECT().GetUser(ctx, realm, *kcUser.ID).Return(&dto.DBUser{}, nil)
 		var user, err = component.GetUser(ctx, userID)
 		assert.Nil(t, err)
 		assert.NotNil(t, user)
@@ -188,7 +188,7 @@ func createUser(userID, username string, emailVerified bool, phoneNumberVerified
 	}
 	var attributes = kc.Attributes{"phoneNumberVerified": []string{pnv}}
 	return kc.UserRepresentation{
-		Id:            &userID,
+		ID:            &userID,
 		Username:      &username,
 		EmailVerified: &emailVerified,
 		Attributes:    &attributes,

@@ -73,7 +73,7 @@ func (am *accredsModule) GetUserAndPrepareAccreditations(ctx context.Context, ac
 
 	// Retrieve admin configuration from configuration DB
 	var rac configuration.RealmAdminConfiguration
-	rac, err = am.confDBModule.GetAdminConfiguration(ctx, *realm.Id)
+	rac, err = am.confDBModule.GetAdminConfiguration(ctx, *realm.ID)
 	if err != nil {
 		am.logger.Warn(ctx, "msg", "CreateAccreditations: can't get admin configuration", "err", err.Error())
 		return kcUser, 0, errorhandler.CreateInternalServerError("keycloak")

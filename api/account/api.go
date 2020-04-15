@@ -1,4 +1,4 @@
-package account
+package apiaccount
 
 import (
 	"encoding/json"
@@ -73,7 +73,7 @@ type LabelBody struct {
 // ConvertCredential creates an API credential from a KC credential
 func ConvertCredential(credKc *kc.CredentialRepresentation) CredentialRepresentation {
 	var cred CredentialRepresentation
-	cred.ID = credKc.Id
+	cred.ID = credKc.ID
 	cred.Type = credKc.Type
 	cred.UserLabel = credKc.UserLabel
 	cred.CreatedDate = credKc.CreatedDate

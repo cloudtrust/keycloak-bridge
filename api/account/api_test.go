@@ -1,4 +1,4 @@
-package account
+package apiaccount
 
 import (
 	"testing"
@@ -16,11 +16,11 @@ func TestConvertCredential(t *testing.T) {
 	var configKc = "{}"
 
 	credKc.Type = &credType
-	credKc.Id = &credID
+	credKc.ID = &credID
 	credKc.CredentialData = nil
 
 	assert.Equal(t, credKc.Type, ConvertCredential(&credKc).Type)
-	assert.Equal(t, credKc.Id, ConvertCredential(&credKc).ID)
+	assert.Equal(t, credKc.ID, ConvertCredential(&credKc).ID)
 	assert.Nil(t, ConvertCredential(&credKc).CredentialData)
 
 	credKc.CredentialData = &configKc

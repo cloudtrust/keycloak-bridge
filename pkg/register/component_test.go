@@ -130,7 +130,7 @@ func TestRegisterUser(t *testing.T) {
 		var userID = "abc789def"
 		var one = 1
 		var disabled = false
-		var user = kc.UserRepresentation{Id: &userID, Email: validUser.EmailAddress, EmailVerified: &disabled}
+		var user = kc.UserRepresentation{ID: &userID, Email: validUser.EmailAddress, EmailVerified: &disabled}
 		var userExistsSearch = kc.UsersPageRepresentation{
 			Count: &one,
 			Users: []kc.UserRepresentation{user},
@@ -248,7 +248,7 @@ func TestCheckExistingUser(t *testing.T) {
 	var userID = "ab54f9a-97bi94"
 	var user = apiregister.UserRepresentation{EmailAddress: &email}
 	var verified = true
-	var keycloakUser = kc.UserRepresentation{Id: &userID}
+	var keycloakUser = kc.UserRepresentation{ID: &userID}
 	var empty = 0
 	var one = 1
 	var foundUsers = kc.UsersPageRepresentation{Count: &one, Users: []kc.UserRepresentation{keycloakUser}}

@@ -1,4 +1,4 @@
-package events_api
+package apievents
 
 import (
 	"database/sql"

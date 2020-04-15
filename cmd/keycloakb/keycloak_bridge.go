@@ -40,6 +40,8 @@ import (
 	"github.com/cloudtrust/keycloak-bridge/pkg/statistics"
 	"github.com/cloudtrust/keycloak-bridge/pkg/validation"
 	keycloak "github.com/cloudtrust/keycloak-client"
+	keycloakapi "github.com/cloudtrust/keycloak-client/api"
+	"github.com/cloudtrust/keycloak-client/toolbox"
 	"github.com/go-kit/kit/endpoint"
 	kit_log "github.com/go-kit/kit/log"
 	kit_level "github.com/go-kit/kit/log/level"
@@ -58,6 +60,10 @@ var (
 	Environment = "unknown"
 	// GitCommit is filled by the compiler.
 	GitCommit = "unknown"
+)
+
+const (
+	defaultPublishingIP = "0.0.0.0"
 )
 
 func init() {
@@ -122,17 +128,17 @@ func main() {
 		influxWriteInterval = c.GetDuration("influx-write-interval")
 
 		// DB - for the moment used just for audit events
-		auditRwDbParams = database.GetDbConfig(c, "db-audit-rw", !c.GetBool("events-db"))
+		auditRwDbParams = database.GetDbConfig(c, "db-audit-rw")
 
 		// DB - Read only user for audit events
-		auditRoDbParams = database.GetDbConfig(c, "db-audit-ro", false)
+		auditRoDbParams = database.GetDbConfig(c, "db-audit-ro")
 
 		// DB for custom configuration
-		configRwDbParams = database.GetDbConfig(c, "db-config-rw", !c.GetBool("config-db-rw"))
-		configRoDbParams = database.GetDbConfig(c, "db-config-ro", !c.GetBool("config-db-ro"))
+		configRwDbParams = database.GetDbConfig(c, "db-config-rw")
+		configRoDbParams = database.GetDbConfig(c, "db-config-ro")
 
 		// DB for users
-		usersRwDbParams = database.GetDbConfig(c, "db-users-rw", !c.GetBool("users-db-rw"))
+		usersRwDbParams = database.GetDbConfig(c, "db-users-rw")
 
 		// Rate limiting
 		rateLimit = map[string]int{
@@ -233,10 +239,10 @@ func main() {
 	var trustIDGroups = c.GetStringSlice("trustid-groups")
 
 	// Keycloak client.
-	var keycloakClient *keycloak.Client
+	var keycloakClient *keycloakapi.Client
 	{
 		var err error
-		keycloakClient, err = keycloak.New(keycloakConfig)
+		keycloakClient, err = keycloakapi.New(keycloakConfig)
 
 		if err != nil {
 			logger.Error(ctx, "msg", "could not create Keycloak client", "error", err)
@@ -348,9 +354,9 @@ func main() {
 	}
 
 	// Create OIDC token provider and validate technical user credentials
-	var oidcTokenProvider keycloak.OidcTokenProvider
+	var oidcTokenProvider toolbox.OidcTokenProvider
 	{
-		oidcTokenProvider = keycloak.NewOidcTokenProvider(keycloakConfig, registerRealm, registerUsername, registerPassword, registerClientID, logger)
+		oidcTokenProvider = toolbox.NewOidcTokenProvider(keycloakConfig, registerRealm, registerUsername, registerPassword, registerClientID, logger)
 		var _, err = oidcTokenProvider.ProvideToken(context.Background())
 		if err != nil {
 			logger.Warn(context.Background(), "msg", "OIDC token provider validation failed for technical user", "err", err.Error())
@@ -1093,10 +1099,10 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 	v.SetDefault("access-logs", true)
 
 	// Publishing
-	v.SetDefault("internal-http-host-port", "0.0.0.0:8888")
-	v.SetDefault("management-http-host-port", "0.0.0.0:8877")
-	v.SetDefault("account-http-host-port", "0.0.0.0:8866")
-	v.SetDefault("register-http-host-port", "0.0.0.0:8855")
+	v.SetDefault("internal-http-host-port", defaultPublishingIP+":8888")
+	v.SetDefault("management-http-host-port", defaultPublishingIP+":8877")
+	v.SetDefault("account-http-host-port", defaultPublishingIP+":8866")
+	v.SetDefault("register-http-host-port", defaultPublishingIP+":8855")
 
 	// Security - Audience check
 	v.SetDefault("audience-required", "")
@@ -1126,28 +1132,28 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 	v.SetDefault("keycloak-timeout", "5s")
 
 	// Storage events in DB (read/write)
-	v.SetDefault("events-db", false)
+	v.SetDefault("db-audit-rw-enabled", false)
 	database.ConfigureDbDefault(v, "db-audit-rw", "CT_BRIDGE_DB_AUDIT_RW_USERNAME", "CT_BRIDGE_DB_AUDIT_RW_PASSWORD")
 
 	// Storage events in DB (read only)
 	database.ConfigureDbDefault(v, "db-audit-ro", "CT_BRIDGE_DB_AUDIT_RO_USERNAME", "CT_BRIDGE_DB_AUDIT_RO_PASSWORD")
 
 	//Storage custom configuration in DB (read/write)
-	v.SetDefault("config-db-rw", true)
+	v.SetDefault("config-db-rw-enabled", true)
 	database.ConfigureDbDefault(v, "db-config-rw", "CT_BRIDGE_DB_CONFIG_RW_USERNAME", "CT_BRIDGE_DB_CONFIG_RW_PASSWORD")
 
 	v.SetDefault("db-config-rw-migration", false)
 	v.SetDefault("db-config-rw-migration-version", "")
 
 	//Storage custom configuration in DB (read only)
-	v.SetDefault("config-db-ro", true)
+	v.SetDefault("config-db-ro-enabled", true)
 	database.ConfigureDbDefault(v, "db-config-ro", "CT_BRIDGE_DB_CONFIG_RO_USERNAME", "CT_BRIDGE_DB_CONFIG_RO_PASSWORD")
 
 	v.SetDefault("db-config-ro-migration", false)
 	v.SetDefault("db-config-ro-migration-version", "")
 
 	//Storage users in DB (read/write)
-	v.SetDefault("users-db-rw", true)
+	v.SetDefault("db-users-rw-enabled", true)
 	database.ConfigureDbDefault(v, "db-users-rw", "CT_BRIDGE_DB_USERS_RW_USERNAME", "CT_BRIDGE_DB_USERS_RW_PASSWORD")
 
 	v.SetDefault("db-users-rw-migration", false)
@@ -1260,7 +1266,7 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 	return v
 }
 
-func configureEventsHandler(ComponentName string, ComponentID string, idGenerator idgenerator.IDGenerator, keycloakClient *keycloak.Client, audienceRequired string, tracer tracing.OpentracingClient, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {
+func configureEventsHandler(ComponentName string, ComponentID string, idGenerator idgenerator.IDGenerator, keycloakClient *keycloakapi.Client, audienceRequired string, tracer tracing.OpentracingClient, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {
 	return func(endpoint endpoint.Endpoint) http.Handler {
 		var handler http.Handler
 		handler = events.MakeEventsHandler(endpoint, logger)
@@ -1270,7 +1276,7 @@ func configureEventsHandler(ComponentName string, ComponentID string, idGenerato
 	}
 }
 
-func configureStatisiticsHandler(ComponentName string, ComponentID string, idGenerator idgenerator.IDGenerator, keycloakClient *keycloak.Client, audienceRequired string, tracer tracing.OpentracingClient, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {
+func configureStatisiticsHandler(ComponentName string, ComponentID string, idGenerator idgenerator.IDGenerator, keycloakClient *keycloakapi.Client, audienceRequired string, tracer tracing.OpentracingClient, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {
 	return func(endpoint endpoint.Endpoint) http.Handler {
 		var handler http.Handler
 		handler = statistics.MakeStatisticsHandler(endpoint, logger)
@@ -1290,7 +1296,7 @@ func configureValidationHandler(ComponentName string, ComponentID string, idGene
 	}
 }
 
-func configureManagementHandler(ComponentName string, ComponentID string, idGenerator idgenerator.IDGenerator, keycloakClient *keycloak.Client, audienceRequired string, tracer tracing.OpentracingClient, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {
+func configureManagementHandler(ComponentName string, ComponentID string, idGenerator idgenerator.IDGenerator, keycloakClient *keycloakapi.Client, audienceRequired string, tracer tracing.OpentracingClient, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {
 	return func(endpoint endpoint.Endpoint) http.Handler {
 		var handler http.Handler
 		handler = management.MakeManagementHandler(endpoint, logger)
@@ -1300,7 +1306,7 @@ func configureManagementHandler(ComponentName string, ComponentID string, idGene
 	}
 }
 
-func configureRightsHandler(ComponentName string, ComponentID string, idGenerator idgenerator.IDGenerator, authorizationManager security.AuthorizationManager, keycloakClient *keycloak.Client, audienceRequired string, tracer tracing.OpentracingClient, logger log.Logger) http.Handler {
+func configureRightsHandler(ComponentName string, ComponentID string, idGenerator idgenerator.IDGenerator, authorizationManager security.AuthorizationManager, keycloakClient *keycloakapi.Client, audienceRequired string, tracer tracing.OpentracingClient, logger log.Logger) http.Handler {
 	var handler http.Handler
 	handler = commonhttp.MakeRightsHandler(authorizationManager)
 	handler = middleware.MakeHTTPCorrelationIDMW(idGenerator, tracer, logger, ComponentName, ComponentID)(handler)
@@ -1308,7 +1314,7 @@ func configureRightsHandler(ComponentName string, ComponentID string, idGenerato
 	return handler
 }
 
-func configureAccountHandler(ComponentName string, ComponentID string, idGenerator idgenerator.IDGenerator, keycloakClient *keycloak.Client, audienceRequired string, tracer tracing.OpentracingClient, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {
+func configureAccountHandler(ComponentName string, ComponentID string, idGenerator idgenerator.IDGenerator, keycloakClient *keycloakapi.Client, audienceRequired string, tracer tracing.OpentracingClient, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {
 	return func(endpoint endpoint.Endpoint) http.Handler {
 		var handler http.Handler
 		handler = account.MakeAccountHandler(endpoint, logger)
@@ -1318,7 +1324,7 @@ func configureAccountHandler(ComponentName string, ComponentID string, idGenerat
 	}
 }
 
-func configureKYCHandler(ComponentName string, ComponentID string, idGenerator idgenerator.IDGenerator, keycloakClient *keycloak.Client,
+func configureKYCHandler(ComponentName string, ComponentID string, idGenerator idgenerator.IDGenerator, keycloakClient *keycloakapi.Client,
 	audienceRequired string, tracer tracing.OpentracingClient, idRetriever middleware.IDRetriever, configReader middleware.AdminConfigurationRetriever,
 	verifyAvailableChecks bool, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {
 	return func(endpoint endpoint.Endpoint) http.Handler {
@@ -1333,7 +1339,7 @@ func configureKYCHandler(ComponentName string, ComponentID string, idGenerator i
 	}
 }
 
-func configureRegisterHandler(ComponentName string, ComponentID string, idGenerator idgenerator.IDGenerator, keycloakClient *keycloak.Client, recaptchaURL, recaptchaSecret string, tracer tracing.OpentracingClient, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {
+func configureRegisterHandler(ComponentName string, ComponentID string, idGenerator idgenerator.IDGenerator, keycloakClient *keycloakapi.Client, recaptchaURL, recaptchaSecret string, tracer tracing.OpentracingClient, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {
 	return func(endpoint endpoint.Endpoint) http.Handler {
 		var handler http.Handler
 		handler = register.MakeRegisterHandler(endpoint, logger)
@@ -1343,7 +1349,7 @@ func configureRegisterHandler(ComponentName string, ComponentID string, idGenera
 	}
 }
 
-func configurePublicRegisterHandler(ComponentName string, ComponentID string, idGenerator idgenerator.IDGenerator, keycloakClient *keycloak.Client, recaptchaURL, recaptchaSecret string, tracer tracing.OpentracingClient, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {
+func configurePublicRegisterHandler(ComponentName string, ComponentID string, idGenerator idgenerator.IDGenerator, keycloakClient *keycloakapi.Client, recaptchaURL, recaptchaSecret string, tracer tracing.OpentracingClient, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {
 	return func(endpoint endpoint.Endpoint) http.Handler {
 		var handler http.Handler
 		handler = register.MakeRegisterHandler(endpoint, logger)

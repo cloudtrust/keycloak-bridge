@@ -1,4 +1,4 @@
-package stats_api
+package apistatistics
 
 import (
 	"database/sql"

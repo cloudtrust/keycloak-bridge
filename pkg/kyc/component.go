@@ -100,13 +100,13 @@ func (c *component) GetUserByUsername(ctx context.Context, username string) (api
 		return apikyc.UserRepresentation{}, err
 	}
 	var kcUser keycloak.UserRepresentation
-	kcUser, err = c.getUserByUsername(accessToken, c.socialRealmName, c.socialRealmName, username, *group.Id)
+	kcUser, err = c.getUserByUsername(accessToken, c.socialRealmName, c.socialRealmName, username, *group.ID)
 	if err != nil {
 		c.logger.Info(ctx, "msg", "GetUser: can't find user in Keycloak", "err", err.Error())
 		return apikyc.UserRepresentation{}, err
 	}
 	keycloakb.ConvertLegacyAttribute(&kcUser)
-	return c.getUser(ctx, *kcUser.Id, kcUser)
+	return c.getUser(ctx, *kcUser.ID, kcUser)
 }
 
 func (c *component) GetUser(ctx context.Context, userID string) (apikyc.UserRepresentation, error) {
@@ -122,7 +122,7 @@ func (c *component) GetUser(ctx context.Context, userID string) (apikyc.UserRepr
 }
 
 func (c *component) getUser(ctx context.Context, userID string, kcUser kc.UserRepresentation) (apikyc.UserRepresentation, error) {
-	var dbUser, err = c.usersDBModule.GetUser(ctx, c.socialRealmName, *kcUser.Id)
+	var dbUser, err = c.usersDBModule.GetUser(ctx, c.socialRealmName, *kcUser.ID)
 	if err != nil {
 		c.logger.Info(ctx, "msg", "GetUser: can't find user in keycloak")
 		return apikyc.UserRepresentation{}, err
