@@ -10,6 +10,7 @@ import (
 
 	"github.com/cloudtrust/common-service/database/sqltypes"
 	"github.com/cloudtrust/common-service/log"
+	"github.com/cloudtrust/common-service/security"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 )
 
@@ -41,6 +42,7 @@ type UsersDBModule interface {
 
 type usersDBModule struct {
 	db     sqltypes.CloudtrustDB
+	cipher security.CrypterDecrypter
 	logger log.Logger
 }
 
@@ -61,9 +63,10 @@ func nullStringToDatePtr(value sql.NullString) *time.Time {
 }
 
 // NewUsersDBModule returns a UsersDB module.
-func NewUsersDBModule(db sqltypes.CloudtrustDB, logger log.Logger) UsersDBModule {
+func NewUsersDBModule(db sqltypes.CloudtrustDB, cipher security.CrypterDecrypter, logger log.Logger) UsersDBModule {
 	return &usersDBModule{
 		db:     db,
+		cipher: cipher,
 		logger: logger,
 	}
 }
@@ -74,26 +77,37 @@ func (c *usersDBModule) StoreOrUpdateUser(ctx context.Context, realm string, use
 	if err != nil {
 		return err
 	}
+	// encrypt the JSON containing the details on the user
+	encryptedData, err := c.cipher.Encrypt(userJSON, nil)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Can't encrypt the user details", "error", err.Error(), "realmID", realm, "userID", &user.UserID)
+		return err
+	}
 
 	// update value in DB
-	_, err = c.db.Exec(updateUserStmt, realm, user.UserID, string(userJSON), string(userJSON))
+	_, err = c.db.Exec(updateUserStmt, realm, user.UserID, encryptedData, encryptedData)
 	return err
 }
 
 func (c *usersDBModule) GetUser(ctx context.Context, realm string, userID string) (*dto.DBUser, error) {
-	var detailsJSON string
+	var encryptedDetails []byte
 	var details = dto.DBUser{}
 	row := c.db.QueryRow(selectUserStmt, realm, userID)
 
-	switch err := row.Scan(&detailsJSON); err {
+	switch err := row.Scan(&encryptedDetails); err {
 	case sql.ErrNoRows:
 		return nil, nil
 	default:
 		if err != nil {
 			return nil, err
 		}
-
-		err = json.Unmarshal([]byte(detailsJSON), &details)
+		//decrypt the user details & unmarshal
+		detailsJSON, err := c.cipher.Decrypt(encryptedDetails, nil)
+		if err != nil {
+			c.logger.Warn(ctx, "msg", "Can't decrypt the user details", "error", err.Error(), "realmID", realm, "userID", userID)
+			return nil, err
+		}
+		err = json.Unmarshal(detailsJSON, &details)
 		details.UserID = &userID
 		return &details, err
 	}

@@ -27,7 +27,8 @@
 
 [[constraint]]
   name = "github.com/cloudtrust/common-service"
-  version = "v2.2.1"
+#  version = "v2.2.1"
+  branch = "CT-2237-encrypt-PII"
 
 [[constraint]]
   name = "github.com/cloudtrust/keycloak-client"

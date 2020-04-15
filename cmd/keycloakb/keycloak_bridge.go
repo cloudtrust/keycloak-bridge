@@ -314,6 +314,13 @@ func main() {
 		}
 	}
 
+	// Security - AES encryption mechanism for users PII
+	aesEncryption, err := security.NewAesGcmEncrypterFromBase64(c.GetString("db-aesgcm-key"), c.GetInt("db-aesgcm-tag-size"))
+	if err != nil {
+		logger.Error(ctx, "msg", "could not create AES-GCM encrypting tool instance", "error", err)
+		return
+	}
+
 	// Security - allowed trustID groups
 	var trustIDGroups = c.GetStringSlice(CfgTrustIDGroups)
 
@@ -561,7 +568,7 @@ func main() {
 		eventsDBModule := configureEventsDbModule(baseEventsDBModule, influxMetrics, validationLogger, tracer)
 
 		// module for storing and retrieving details of the users
-		var usersDBModule = keycloakb.NewUsersDBModule(usersRwDBConn, validationLogger)
+		var usersDBModule = keycloakb.NewUsersDBModule(usersRwDBConn, aesEncryption, validationLogger)
 
 		// accreditations module
 		var accredsModule keycloakb.AccreditationsModule
