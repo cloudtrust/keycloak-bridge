@@ -32,6 +32,7 @@ cors-allowed-headers:
   - "X-Correlation-Id"
   - "Cache-Control"
   - "Pragma"
+  - "Accept"
 cors-exposed-headers:
   - "Location"
   - "X-Correlation-Id"
