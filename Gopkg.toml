@@ -32,7 +32,8 @@
 
 [[constraint]]
   name = "github.com/cloudtrust/keycloak-client"
-  version = "v2.0.3"
+#  version = "v2.0.3"
+ branch = "CT-2237-encrypt-PII"
 
 [[constraint]]
   name = "github.com/go-kit/kit"

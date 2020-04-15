@@ -723,7 +723,7 @@ func main() {
 		}
 
 		// module for storing and retrieving details of the self-registered users
-		var usersDBModule = keycloakb.NewUsersDBModule(usersRwDBConn, accountLogger)
+		var usersDBModule = keycloakb.NewUsersDBModule(usersRwDBConn, aesEncryption, accountLogger)
 
 		// new module for account service
 		accountComponent := account.NewComponent(keycloakClient.AccountClient(), eventsDBModule, configDBModule, usersDBModule, accountLogger)
@@ -783,7 +783,7 @@ func main() {
 		var configDBModule = createConfigurationDBModule(configurationRwDBConn, influxMetrics, registerLogger)
 
 		// module for storing and retrieving details of the self-registered users
-		var usersDBModule = keycloakb.NewUsersDBModule(usersRwDBConn, registerLogger)
+		var usersDBModule = keycloakb.NewUsersDBModule(usersRwDBConn, aesEncryption, registerLogger)
 
 		// new module for register service
 		registerComponent := register.NewComponent(keycloakPublicURL, registerRealm, ssePublicURL, registerEnduserClientID, registerEnduserGroups, keycloakClient, oidcTokenProvider, usersDBModule, configDBModule, eventsDBModule, registerLogger)
@@ -805,7 +805,7 @@ func main() {
 		eventsDBModule := configureEventsDbModule(baseEventsDBModule, influxMetrics, kycLogger, tracer)
 
 		// module for storing and retrieving details of the users
-		var usersDBModule = keycloakb.NewUsersDBModule(usersRwDBConn, kycLogger)
+		var usersDBModule = keycloakb.NewUsersDBModule(usersRwDBConn, aesEncryption, kycLogger)
 
 		// accreditations module
 		var accredsModule keycloakb.AccreditationsModule

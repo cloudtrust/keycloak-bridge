@@ -30,7 +30,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/User'
-    put:
+    post:
       tags:
       - UserData
       summary: Updates user data information

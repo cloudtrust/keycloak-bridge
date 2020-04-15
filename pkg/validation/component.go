@@ -151,6 +151,7 @@ func (c *component) UpdateUser(ctx context.Context, userID string, user api.User
 
 		var userDB = dto.DBUser{
 			UserID:           &uID,
+			BirthLocation:    user.BirthLocation,
 			IDDocumentType:   user.IDDocumentType,
 			IDDocumentNumber: user.IDDocumentNumber,
 		}
