@@ -149,7 +149,7 @@ func addCTtypeToEvent(event map[string]string) map[string]string {
 	}
 
 	switch t := event[database.CtEventKcEventType]; t {
-	case "CUSTOM_REQUIRED_ACTION":
+	case "CUSTOM_REQUIRED_ACTION", "EXECUTE_ACTION_TOKEN":
 		//EMAIL_CONFIRMED
 		if f["custom_required_action"] == "VERIFY_EMAIL" {
 			event[database.CtEventType] = "EMAIL_CONFIRMED"
