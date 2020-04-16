@@ -4,11 +4,13 @@ import (
 	"context"
 	"crypto/rand"
 	b64 "encoding/base64"
+	"encoding/json"
 	"math/big"
 	"net/http"
 	"net/url"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/cloudtrust/keycloak-client/toolbox"
 
@@ -22,6 +24,18 @@ import (
 	internal "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	kc "github.com/cloudtrust/keycloak-client"
 )
+
+// TrustIDAuthToken struct
+type TrustIDAuthToken struct {
+	Token     string `json:"token"`
+	CreatedAt int64  `json:"created_at"`
+}
+
+// ToJSON converts TrustIDAuthToken to its JSON representation
+func (t TrustIDAuthToken) ToJSON() string {
+	var authBytes, _ = json.Marshal(t)
+	return string(authBytes)
+}
 
 // KeycloakClient are methods from keycloak-client used by this component
 type KeycloakClient interface {
@@ -131,7 +145,7 @@ func (c *component) storeUser(ctx context.Context, accessToken string, customerR
 
 	var userID string
 	var kcUser = user.ConvertToKeycloak()
-	kcUser.SetAttributeString(constants.AttrbTrustIDAuthToken, authToken)
+	kcUser.SetAttributeString(constants.AttrbTrustIDAuthToken, authToken.ToJSON())
 
 	if existingKcUser == nil {
 		var chars = []rune("0123456789")
@@ -197,7 +211,7 @@ func (c *component) storeUser(ctx context.Context, accessToken string, customerR
 	parameters.Add("client_id", c.registerEnduserClientID)
 	parameters.Add("scope", "openid")
 	parameters.Add("response_type", "code")
-	parameters.Add("trustid_auth_token", authToken)
+	parameters.Add("trustid_auth_token", authToken.Token)
 
 	if c.ssePublicURL != "" {
 		parameters.Add("redirect_uri", c.ssePublicURL+"/"+c.realm+"/confirmation/"+customerRealmName)
@@ -223,8 +237,8 @@ func (c *component) checkExistingUser(ctx context.Context, accessToken string, u
 	// Search user by email
 	var kcUsers, err = c.keycloakClient.GetUsers(accessToken, c.realm, c.realm, "email", *user.EmailAddress)
 	if err != nil {
-		c.logger.Warn(ctx, "msg", "Can't get user from db", "err", err.Error())
-		return nil, errorhandler.CreateInternalServerError("database")
+		c.logger.Warn(ctx, "msg", "Can't get user from keycloak", "err", err.Error())
+		return nil, errorhandler.CreateInternalServerError("keycloak")
 	}
 	if kcUsers.Count == nil || *kcUsers.Count == 0 {
 		// New user: go on registering
@@ -268,13 +282,15 @@ func (c *component) generateUsername(chars []rune, length int) string {
 	return b.String()
 }
 
-func (c *component) generateAuthToken() (string, error) {
+func (c *component) generateAuthToken() (TrustIDAuthToken, error) {
 	var bToken = make([]byte, 32)
 	_, err := rand.Read(bToken)
 	if err != nil {
-		return "", err
+		return TrustIDAuthToken{}, err
 	}
 
-	token := b64.StdEncoding.EncodeToString(bToken)
-	return token, nil
+	return TrustIDAuthToken{
+		Token:     b64.StdEncoding.EncodeToString(bToken),
+		CreatedAt: time.Now().Unix(),
+	}, nil
 }
