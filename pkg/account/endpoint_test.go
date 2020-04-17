@@ -20,13 +20,13 @@ func TestMakeUpdatePasswordEndpoint(t *testing.T) {
 	m := map[string]string{}
 
 	{
-		m["body"] = "{ \"currentPassword\":\"password\", \"newPassword\":\"password2\", \"confirmPassword\":\"password2\"}"
+		m[ReqBody] = "{ \"currentPassword\":\"password\", \"newPassword\":\"password2\", \"confirmPassword\":\"password2\"}"
 		_, err := MakeUpdatePasswordEndpoint(mockAccountComponent)(context.Background(), m)
 		assert.Nil(t, err)
 	}
 
 	{
-		m["body"] = "{"
+		m[ReqBody] = "{"
 		_, err := MakeUpdatePasswordEndpoint(mockAccountComponent)(context.Background(), m)
 		assert.NotNil(t, err)
 	}
@@ -67,20 +67,20 @@ func TestMakeUpdateLabelCredentialEndpoint(t *testing.T) {
 	m := map[string]string{}
 
 	{
-		m["body"] = "{ \"userLabel\": \"label\"}"
-		m["credentialID"] = "id"
+		m[ReqBody] = "{ \"userLabel\": \"label\"}"
+		m[PrmCredentialID] = "id"
 		_, err := MakeUpdateLabelCredentialEndpoint(mockAccountComponent)(context.Background(), m)
 		assert.Nil(t, err)
 	}
 
 	{
-		m["body"] = "{"
+		m[ReqBody] = "{"
 		_, err := MakeUpdateLabelCredentialEndpoint(mockAccountComponent)(context.Background(), m)
 		assert.NotNil(t, err)
 	}
 	{
-		m["body"] = "{ \"phoneNumber\": \"label\"}"
-		m["credentialID"] = "id"
+		m[ReqBody] = "{ \"phoneNumber\": \"label\"}"
+		m[PrmCredentialID] = "id"
 		_, err := MakeUpdateLabelCredentialEndpoint(mockAccountComponent)(context.Background(), m)
 		assert.NotNil(t, err)
 	}
@@ -96,7 +96,7 @@ func TestMakeDeleteCredentialEndpoint(t *testing.T) {
 
 	m := map[string]string{}
 
-	m["credentialID"] = "id"
+	m[PrmCredentialID] = "id"
 	_, err := MakeDeleteCredentialEndpoint(mockAccountComponent)(context.Background(), m)
 	assert.Nil(t, err)
 }
@@ -110,8 +110,8 @@ func TestMakeMoveCredentialEndpoint(t *testing.T) {
 
 	m := map[string]string{}
 
-	m["credentialID"] = "id1"
-	m["previousCredentialID"] = "id2"
+	m[PrmCredentialID] = "id1"
+	m[PrmPrevCredentialID] = "id2"
 	_, err := MakeMoveCredentialEndpoint(mockAccountComponent)(context.Background(), m)
 	assert.Nil(t, err)
 }
@@ -136,19 +136,19 @@ func TestMakeUpdateAccountEndpoint(t *testing.T) {
 	mockAccountComponent.EXPECT().UpdateAccount(gomock.Any(), account_api.AccountRepresentation{}).Return(nil).Times(1)
 	{
 		m := map[string]string{}
-		m["body"] = "{ \"userLabel\": \"label\"}"
+		m[ReqBody] = "{ \"userLabel\": \"label\"}"
 		_, err := MakeUpdateAccountEndpoint(mockAccountComponent)(context.Background(), m)
 		assert.Nil(t, err)
 	}
 	{
 		m := map[string]string{}
-		m["body"] = "{"
+		m[ReqBody] = "{"
 		_, err := MakeUpdateAccountEndpoint(mockAccountComponent)(context.Background(), m)
 		assert.NotNil(t, err)
 	}
 	{
 		m := map[string]string{}
-		m["body"] = "{\"phoneNumber\": \"label\"}"
+		m[ReqBody] = "{\"phoneNumber\": \"label\"}"
 		_, err := MakeUpdateAccountEndpoint(mockAccountComponent)(context.Background(), m)
 		assert.NotNil(t, err)
 	}

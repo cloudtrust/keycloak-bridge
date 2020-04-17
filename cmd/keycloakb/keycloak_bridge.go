@@ -62,8 +62,67 @@ var (
 	GitCommit = "unknown"
 )
 
+// RateKey is used for rate limits
+type RateKey int
+
+// Constants
 const (
 	defaultPublishingIP = "0.0.0.0"
+
+	RateKeyAccount    = iota
+	RateKeyEvent      = iota
+	RateKeyEvents     = iota
+	RateKeyKYC        = iota
+	RateKeyManagement = iota
+	RateKeyRegister   = iota
+	RateKeyStatistics = iota
+	RateKeyValidation = iota
+
+	CfgConfigFile               = "config-file"
+	CfgHTTPAddrInternal         = "internal-http-host-port"
+	CfgHTTPAddrManagement       = "management-http-host-port"
+	CfgHTTPAddrAccount          = "account-http-host-port"
+	CfgHTTPAddrRegister         = "register-http-host-port"
+	CfgAddrTokenProvider        = "keycloak-oidc-uri"
+	CfgAddrAPI                  = "keycloak-api-uri"
+	CfgTimeout                  = "keycloak-timeout"
+	CfgAudienceRequired         = "audience-required"
+	CfgEventBasicAuthToken      = "event-basic-auth-token"
+	CfgValidationBasicAuthToken = "validation-basic-auth-token"
+	CfgPprofRouteEnabled        = "pprof-route-enabled"
+	CfgInfluxWriteInterval      = "influx-write-interval"
+	CfgSentryDsn                = "sentry-dsn"
+	CfgAuditRwDbParams          = "db-audit-rw"
+	CfgAuditRoDbParams          = "db-audit-ro"
+	CfgConfigRwDbParams         = "db-config-rw"
+	CfgConfigRoDbParams         = "db-config-ro"
+	CfgUsersRwDbParams          = "db-users-rw"
+	CfgRateKeyValidation        = "rate-validation"
+	CfgRateKeyEvent             = "rate-event"
+	CfgRateKeyAccount           = "rate-account"
+	CfgRateKeyManagement        = "rate-management"
+	CfgRateKeyStatistics        = "rate-statistics"
+	CfgRateKeyEvents            = "rate-events"
+	CfgRateKeyRegister          = "rate-register"
+	CfgRateKeyKYC               = "rate-kyc"
+	CfgAllowedOrigins           = "cors-allowed-origins"
+	CfgAllowedMethods           = "cors-allowed-methods"
+	CfgAllowCredentials         = "cors-allow-credentials"
+	CfgAllowedHeaders           = "cors-allowed-headers"
+	CfgExposedHeaders           = "cors-exposed-headers"
+	CfgDebug                    = "cors-debug"
+	CfgLogLevel                 = "log-level"
+	CfgAccessLogsEnabled        = "access-logs"
+	CfgTrustIDGroups            = "trustid-groups"
+	CfgRegisterEnabled          = "register-enabled"
+	CfgRegisterRealm            = "register-realm"
+	CfgRegisterUsername         = "register-techuser-username"
+	CfgRegisterPassword         = "register-techuser-password"
+	CfgRegisterClientID         = "register-techuser-client-id"
+	CfgRegisterEnduserClientID  = "register-enduser-client-id"
+	CfgRecaptchaURL             = "recaptcha-url"
+	CfgRecaptchaSecret          = "recaptcha-secret"
+	CfgSsePublicURL             = "sse-public-url"
 )
 
 func init() {
@@ -109,73 +168,73 @@ func main() {
 	var c = config(ctx, log.With(logger, "unit", "config"))
 	var (
 		// Publishing
-		httpAddrInternal   = c.GetString("internal-http-host-port")
-		httpAddrManagement = c.GetString("management-http-host-port")
-		httpAddrAccount    = c.GetString("account-http-host-port")
-		httpAddrRegister   = c.GetString("register-http-host-port")
+		httpAddrInternal   = c.GetString(CfgHTTPAddrInternal)
+		httpAddrManagement = c.GetString(CfgHTTPAddrManagement)
+		httpAddrAccount    = c.GetString(CfgHTTPAddrAccount)
+		httpAddrRegister   = c.GetString(CfgHTTPAddrRegister)
 
 		// Keycloak
 		keycloakConfig = keycloak.Config{
-			AddrTokenProvider: c.GetString("keycloak-oidc-uri"),
-			AddrAPI:           c.GetString("keycloak-api-uri"),
-			Timeout:           c.GetDuration("keycloak-timeout"),
+			AddrTokenProvider: c.GetString(CfgAddrTokenProvider),
+			AddrAPI:           c.GetString(CfgAddrAPI),
+			Timeout:           c.GetDuration(CfgTimeout),
 		}
 
 		// Enabled units
-		pprofRouteEnabled = c.GetBool("pprof-route-enabled")
+		pprofRouteEnabled = c.GetBool(CfgPprofRouteEnabled)
 
 		// Influx
-		influxWriteInterval = c.GetDuration("influx-write-interval")
+		influxWriteInterval = c.GetDuration(CfgInfluxWriteInterval)
 
 		// DB - for the moment used just for audit events
-		auditRwDbParams = database.GetDbConfig(c, "db-audit-rw")
+		auditRwDbParams = database.GetDbConfig(c, CfgAuditRwDbParams)
 
 		// DB - Read only user for audit events
-		auditRoDbParams = database.GetDbConfig(c, "db-audit-ro")
+		auditRoDbParams = database.GetDbConfig(c, CfgAuditRoDbParams)
 
 		// DB for custom configuration
-		configRwDbParams = database.GetDbConfig(c, "db-config-rw")
-		configRoDbParams = database.GetDbConfig(c, "db-config-ro")
+		configRwDbParams = database.GetDbConfig(c, CfgConfigRwDbParams)
+		configRoDbParams = database.GetDbConfig(c, CfgConfigRoDbParams)
 
 		// DB for users
-		usersRwDbParams = database.GetDbConfig(c, "db-users-rw")
+		usersRwDbParams = database.GetDbConfig(c, CfgUsersRwDbParams)
 
 		// Rate limiting
-		rateLimit = map[string]int{
-			"validation": c.GetInt("rate-validation"),
-			"event":      c.GetInt("rate-event"),
-			"account":    c.GetInt("rate-account"),
-			"management": c.GetInt("rate-management"),
-			"statistics": c.GetInt("rate-statistics"),
-			"events":     c.GetInt("rate-events"),
-			"register":   c.GetInt("rate-register"),
-			"kyc":        c.GetInt("rate-kyc"),
+		rateLimit = map[RateKey]int{
+			RateKeyValidation: c.GetInt(CfgRateKeyValidation),
+			RateKeyEvent:      c.GetInt(CfgRateKeyEvent),
+			RateKeyAccount:    c.GetInt(CfgRateKeyAccount),
+			RateKeyManagement: c.GetInt(CfgRateKeyManagement),
+			RateKeyStatistics: c.GetInt(CfgRateKeyStatistics),
+			RateKeyEvents:     c.GetInt(CfgRateKeyEvents),
+			RateKeyRegister:   c.GetInt(CfgRateKeyRegister),
+			RateKeyKYC:        c.GetInt(CfgRateKeyKYC),
 		}
 
 		corsOptions = cors.Options{
-			AllowedOrigins:   c.GetStringSlice("cors-allowed-origins"),
-			AllowedMethods:   c.GetStringSlice("cors-allowed-methods"),
-			AllowCredentials: c.GetBool("cors-allow-credential"),
-			AllowedHeaders:   c.GetStringSlice("cors-allowed-headers"),
-			ExposedHeaders:   c.GetStringSlice("cors-exposed-headers"),
-			Debug:            c.GetBool("cors-debug"),
+			AllowedOrigins:   c.GetStringSlice(CfgAllowedOrigins),
+			AllowedMethods:   c.GetStringSlice(CfgAllowedMethods),
+			AllowCredentials: c.GetBool(CfgAllowCredentials),
+			AllowedHeaders:   c.GetStringSlice(CfgAllowedHeaders),
+			ExposedHeaders:   c.GetStringSlice(CfgExposedHeaders),
+			Debug:            c.GetBool(CfgDebug),
 		}
 
-		logLevel = c.GetString("log-level")
+		logLevel = c.GetString(CfgLogLevel)
 
 		// Access logs
-		accessLogsEnabled = c.GetBool("access-logs")
+		accessLogsEnabled = c.GetBool(CfgAccessLogsEnabled)
 
 		// Register parameters
-		registerEnabled         = c.GetBool("register-enabled")
-		registerRealm           = c.GetString("register-realm")
-		registerUsername        = c.GetString("register-techuser-username")
-		registerPassword        = c.GetString("register-techuser-password")
-		registerClientID        = c.GetString("register-techuser-client-id")
-		registerEnduserClientID = c.GetString("register-enduser-client-id")
-		recaptchaURL            = c.GetString("recaptcha-url")
-		recaptchaSecret         = c.GetString("recaptcha-secret")
-		ssePublicURL            = c.GetString("sse-public-url")
+		registerEnabled         = c.GetBool(CfgRegisterEnabled)
+		registerRealm           = c.GetString(CfgRegisterRealm)
+		registerUsername        = c.GetString(CfgRegisterUsername)
+		registerPassword        = c.GetString(CfgRegisterPassword)
+		registerClientID        = c.GetString(CfgRegisterClientID)
+		registerEnduserClientID = c.GetString(CfgRegisterEnduserClientID)
+		recaptchaURL            = c.GetString(CfgRecaptchaURL)
+		recaptchaSecret         = c.GetString(CfgRecaptchaSecret)
+		ssePublicURL            = c.GetString(CfgSsePublicURL)
 	)
 
 	// Unique ID generator
@@ -206,7 +265,7 @@ func main() {
 	// Security - Audience required
 	var audienceRequired string
 	{
-		audienceRequired = c.GetString("audience-required")
+		audienceRequired = c.GetString(CfgAudienceRequired)
 
 		if audienceRequired == "" {
 			logger.Error(ctx, "msg", "audience parameter(audience-required) cannot be empty")
@@ -217,7 +276,7 @@ func main() {
 	// Security - Basic AuthN token to protect internal/event endpoint
 	var eventExpectedAuthToken string
 	{
-		eventExpectedAuthToken = c.GetString("event-basic-auth-token")
+		eventExpectedAuthToken = c.GetString(CfgEventBasicAuthToken)
 
 		if eventExpectedAuthToken == "" {
 			logger.Error(ctx, "msg", "password for event endpoint (event-basic-auth-token) cannot be empty")
@@ -227,7 +286,7 @@ func main() {
 
 	var validationExpectedAuthToken string
 	{
-		validationExpectedAuthToken = c.GetString("validation-basic-auth-token")
+		validationExpectedAuthToken = c.GetString(CfgValidationBasicAuthToken)
 
 		if validationExpectedAuthToken == "" {
 			logger.Error(ctx, "msg", "password for validation endpoint (validation-basic-auth-token) cannot be empty")
@@ -236,7 +295,7 @@ func main() {
 	}
 
 	// Security - allowed trustID groups
-	var trustIDGroups = c.GetStringSlice("trustid-groups")
+	var trustIDGroups = c.GetStringSlice(CfgTrustIDGroups)
 
 	// Keycloak client.
 	var keycloakClient *keycloakapi.Client
@@ -461,7 +520,7 @@ func main() {
 		}
 
 		eventEndpoints = event.Endpoints{
-			Endpoint: keycloakb.LimitRate(eventEndpoint, rateLimit["event"]),
+			Endpoint: keycloakb.LimitRate(eventEndpoint, rateLimit[RateKeyEvent]),
 		}
 	}
 
@@ -490,10 +549,11 @@ func main() {
 
 		validationComponent := validation.NewComponent(registerRealm, keycloakClient, oidcTokenProvider, usersDBModule, eventsDBModule, accredsModule, validationLogger)
 
+		var rateLimitValidation = rateLimit[RateKeyValidation]
 		validationEndpoints = validation.Endpoints{
-			GetUser:     prepareEndpoint(validation.MakeGetUserEndpoint(validationComponent), "get_user", influxMetrics, validationLogger, tracer, rateLimit["validation"]),
-			UpdateUser:  prepareEndpoint(validation.MakeUpdateUserEndpoint(validationComponent), "update_user", influxMetrics, validationLogger, tracer, rateLimit["validation"]),
-			CreateCheck: prepareEndpoint(validation.MakeCreateCheckEndpoint(validationComponent), "create_check", influxMetrics, validationLogger, tracer, rateLimit["validation"]),
+			GetUser:     prepareEndpoint(validation.MakeGetUserEndpoint(validationComponent), "get_user", influxMetrics, validationLogger, tracer, rateLimitValidation),
+			UpdateUser:  prepareEndpoint(validation.MakeUpdateUserEndpoint(validationComponent), "update_user", influxMetrics, validationLogger, tracer, rateLimitValidation),
+			CreateCheck: prepareEndpoint(validation.MakeCreateCheckEndpoint(validationComponent), "create_check", influxMetrics, validationLogger, tracer, rateLimitValidation),
 		}
 	}
 
@@ -505,14 +565,15 @@ func main() {
 		statisticsComponent := statistics.NewComponent(eventsRODBModule, keycloakClient, statisticsLogger)
 		statisticsComponent = statistics.MakeAuthorizationManagementComponentMW(log.With(statisticsLogger, "mw", "endpoint"), authorizationManager)(statisticsComponent)
 
+		var rateLimitStatistics = rateLimit[RateKeyStatistics]
 		statisticsEndpoints = statistics.Endpoints{
-			GetActions:                      prepareEndpoint(statistics.MakeGetActionsEndpoint(statisticsComponent), "get_actions", influxMetrics, statisticsLogger, tracer, rateLimit["statistics"]),
-			GetStatistics:                   prepareEndpoint(statistics.MakeGetStatisticsEndpoint(statisticsComponent), "get_statistics", influxMetrics, statisticsLogger, tracer, rateLimit["statistics"]),
-			GetStatisticsUsers:              prepareEndpoint(statistics.MakeGetStatisticsUsersEndpoint(statisticsComponent), "get_statistics_users", influxMetrics, statisticsLogger, tracer, rateLimit["statistics"]),
-			GetStatisticsAuthentications:    prepareEndpoint(statistics.MakeGetStatisticsAuthenticationsEndpoint(statisticsComponent), "get_statistics_authentications", influxMetrics, statisticsLogger, tracer, rateLimit["statistics"]),
-			GetStatisticsAuthenticationsLog: prepareEndpoint(statistics.MakeGetStatisticsAuthenticationsLogEndpoint(statisticsComponent), "get_statistics_authentications_log", influxMetrics, statisticsLogger, tracer, rateLimit["statistics"]),
-			GetStatisticsAuthenticators:     prepareEndpoint(statistics.MakeGetStatisticsAuthenticatorsEndpoint(statisticsComponent), "get_statistics_authenticators", influxMetrics, statisticsLogger, tracer, rateLimit["statistics"]),
-			GetMigrationReport:              prepareEndpoint(statistics.MakeGetMigrationReportEndpoint(statisticsComponent), "get_migration_report", influxMetrics, statisticsLogger, tracer, rateLimit["statistics"]),
+			GetActions:                      prepareEndpoint(statistics.MakeGetActionsEndpoint(statisticsComponent), "get_actions", influxMetrics, statisticsLogger, tracer, rateLimitStatistics),
+			GetStatistics:                   prepareEndpoint(statistics.MakeGetStatisticsEndpoint(statisticsComponent), "get_statistics", influxMetrics, statisticsLogger, tracer, rateLimitStatistics),
+			GetStatisticsUsers:              prepareEndpoint(statistics.MakeGetStatisticsUsersEndpoint(statisticsComponent), "get_statistics_users", influxMetrics, statisticsLogger, tracer, rateLimitStatistics),
+			GetStatisticsAuthentications:    prepareEndpoint(statistics.MakeGetStatisticsAuthenticationsEndpoint(statisticsComponent), "get_statistics_authentications", influxMetrics, statisticsLogger, tracer, rateLimitStatistics),
+			GetStatisticsAuthenticationsLog: prepareEndpoint(statistics.MakeGetStatisticsAuthenticationsLogEndpoint(statisticsComponent), "get_statistics_authentications_log", influxMetrics, statisticsLogger, tracer, rateLimitStatistics),
+			GetStatisticsAuthenticators:     prepareEndpoint(statistics.MakeGetStatisticsAuthenticatorsEndpoint(statisticsComponent), "get_statistics_authenticators", influxMetrics, statisticsLogger, tracer, rateLimitStatistics),
+			GetMigrationReport:              prepareEndpoint(statistics.MakeGetMigrationReportEndpoint(statisticsComponent), "get_migration_report", influxMetrics, statisticsLogger, tracer, rateLimitStatistics),
 		}
 	}
 
@@ -527,11 +588,12 @@ func main() {
 		eventsComponent := events.NewComponent(eventsRODBModule, eventsDBModule, eventsLogger)
 		eventsComponent = events.MakeAuthorizationManagementComponentMW(log.With(eventsLogger, "mw", "endpoint"), authorizationManager)(eventsComponent)
 
+		var rateLimitEvents = rateLimit[RateKeyEvents]
 		eventsEndpoints = events.Endpoints{
-			GetActions:       prepareEndpoint(events.MakeGetActionsEndpoint(eventsComponent), "get_actions", influxMetrics, eventsLogger, tracer, rateLimit["events"]),
-			GetEvents:        prepareEndpoint(events.MakeGetEventsEndpoint(eventsComponent), "get_events", influxMetrics, eventsLogger, tracer, rateLimit["events"]),
-			GetEventsSummary: prepareEndpoint(events.MakeGetEventsSummaryEndpoint(eventsComponent), "get_events_summary", influxMetrics, eventsLogger, tracer, rateLimit["events"]),
-			GetUserEvents:    prepareEndpoint(events.MakeGetUserEventsEndpoint(eventsComponent), "get_user_events", influxMetrics, eventsLogger, tracer, rateLimit["events"]),
+			GetActions:       prepareEndpoint(events.MakeGetActionsEndpoint(eventsComponent), "get_actions", influxMetrics, eventsLogger, tracer, rateLimitEvents),
+			GetEvents:        prepareEndpoint(events.MakeGetEventsEndpoint(eventsComponent), "get_events", influxMetrics, eventsLogger, tracer, rateLimitEvents),
+			GetEventsSummary: prepareEndpoint(events.MakeGetEventsSummaryEndpoint(eventsComponent), "get_events_summary", influxMetrics, eventsLogger, tracer, rateLimitEvents),
+			GetUserEvents:    prepareEndpoint(events.MakeGetUserEventsEndpoint(eventsComponent), "get_user_events", influxMetrics, eventsLogger, tracer, rateLimitEvents),
 		}
 	}
 
@@ -552,65 +614,66 @@ func main() {
 			keycloakComponent = management.MakeAuthorizationManagementComponentMW(log.With(managementLogger, "mw", "endpoint"), authorizationManager)(keycloakComponent)
 		}
 
+		var rateLimitMgmt = rateLimit[RateKeyManagement]
 		managementEndpoints = management.Endpoints{
-			GetActions: prepareEndpoint(management.MakeGetActionsEndpoint(keycloakComponent), "get_actions_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
+			GetActions: prepareEndpoint(management.MakeGetActionsEndpoint(keycloakComponent), "get_actions_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 
-			GetRealms: prepareEndpoint(management.MakeGetRealmsEndpoint(keycloakComponent), "realms_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
-			GetRealm:  prepareEndpoint(management.MakeGetRealmEndpoint(keycloakComponent), "realm_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
+			GetRealms: prepareEndpoint(management.MakeGetRealmsEndpoint(keycloakComponent), "realms_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			GetRealm:  prepareEndpoint(management.MakeGetRealmEndpoint(keycloakComponent), "realm_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 
-			GetClients:         prepareEndpoint(management.MakeGetClientsEndpoint(keycloakComponent), "get_clients_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
-			GetClient:          prepareEndpoint(management.MakeGetClientEndpoint(keycloakComponent), "get_client_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
-			GetRequiredActions: prepareEndpoint(management.MakeGetRequiredActionsEndpoint(keycloakComponent), "get_required-actions_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
+			GetClients:         prepareEndpoint(management.MakeGetClientsEndpoint(keycloakComponent), "get_clients_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			GetClient:          prepareEndpoint(management.MakeGetClientEndpoint(keycloakComponent), "get_client_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			GetRequiredActions: prepareEndpoint(management.MakeGetRequiredActionsEndpoint(keycloakComponent), "get_required-actions_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 
-			CreateUser:                prepareEndpoint(management.MakeCreateUserEndpoint(keycloakComponent), "create_user_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
-			GetUser:                   prepareEndpoint(management.MakeGetUserEndpoint(keycloakComponent), "get_user_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
-			UpdateUser:                prepareEndpoint(management.MakeUpdateUserEndpoint(keycloakComponent), "update_user_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
-			DeleteUser:                prepareEndpoint(management.MakeDeleteUserEndpoint(keycloakComponent), "delete_user_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
-			GetUsers:                  prepareEndpoint(management.MakeGetUsersEndpoint(keycloakComponent), "get_users_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
-			GetUserAccountStatus:      prepareEndpoint(management.MakeGetUserAccountStatusEndpoint(keycloakComponent), "get_user_accountstatus", influxMetrics, managementLogger, tracer, rateLimit["management"]),
-			GetGroupsOfUser:           prepareEndpoint(management.MakeGetGroupsOfUserEndpoint(keycloakComponent), "get_user_groups", influxMetrics, managementLogger, tracer, rateLimit["management"]),
-			AddGroupToUser:            prepareEndpoint(management.MakeAddGroupToUserEndpoint(keycloakComponent), "add_user_group", influxMetrics, managementLogger, tracer, rateLimit["management"]),
-			DeleteGroupForUser:        prepareEndpoint(management.MakeDeleteGroupForUserEndpoint(keycloakComponent), "del_user_group", influxMetrics, managementLogger, tracer, rateLimit["management"]),
-			GetAvailableTrustIDGroups: prepareEndpoint(management.MakeGetAvailableTrustIDGroupsEndpoint(keycloakComponent), "get_available_trustid_groups_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
-			GetTrustIDGroupsOfUser:    prepareEndpoint(management.MakeGetTrustIDGroupsOfUserEndpoint(keycloakComponent), "get_user_trustid_groups_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
-			SetTrustIDGroupsToUser:    prepareEndpoint(management.MakeSetTrustIDGroupsToUserEndpoint(keycloakComponent), "set_user_trustid_groups_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
-			GetRolesOfUser:            prepareEndpoint(management.MakeGetRolesOfUserEndpoint(keycloakComponent), "get_user_roles", influxMetrics, managementLogger, tracer, rateLimit["management"]),
+			CreateUser:                prepareEndpoint(management.MakeCreateUserEndpoint(keycloakComponent), "create_user_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			GetUser:                   prepareEndpoint(management.MakeGetUserEndpoint(keycloakComponent), "get_user_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			UpdateUser:                prepareEndpoint(management.MakeUpdateUserEndpoint(keycloakComponent), "update_user_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			DeleteUser:                prepareEndpoint(management.MakeDeleteUserEndpoint(keycloakComponent), "delete_user_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			GetUsers:                  prepareEndpoint(management.MakeGetUsersEndpoint(keycloakComponent), "get_users_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			GetUserAccountStatus:      prepareEndpoint(management.MakeGetUserAccountStatusEndpoint(keycloakComponent), "get_user_accountstatus", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			GetGroupsOfUser:           prepareEndpoint(management.MakeGetGroupsOfUserEndpoint(keycloakComponent), "get_user_groups", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			AddGroupToUser:            prepareEndpoint(management.MakeAddGroupToUserEndpoint(keycloakComponent), "add_user_group", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			DeleteGroupForUser:        prepareEndpoint(management.MakeDeleteGroupForUserEndpoint(keycloakComponent), "del_user_group", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			GetAvailableTrustIDGroups: prepareEndpoint(management.MakeGetAvailableTrustIDGroupsEndpoint(keycloakComponent), "get_available_trustid_groups_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			GetTrustIDGroupsOfUser:    prepareEndpoint(management.MakeGetTrustIDGroupsOfUserEndpoint(keycloakComponent), "get_user_trustid_groups_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			SetTrustIDGroupsToUser:    prepareEndpoint(management.MakeSetTrustIDGroupsToUserEndpoint(keycloakComponent), "set_user_trustid_groups_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			GetRolesOfUser:            prepareEndpoint(management.MakeGetRolesOfUserEndpoint(keycloakComponent), "get_user_roles", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 
-			GetRoles: prepareEndpoint(management.MakeGetRolesEndpoint(keycloakComponent), "get_roles_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
-			GetRole:  prepareEndpoint(management.MakeGetRoleEndpoint(keycloakComponent), "get_role_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
+			GetRoles: prepareEndpoint(management.MakeGetRolesEndpoint(keycloakComponent), "get_roles_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			GetRole:  prepareEndpoint(management.MakeGetRoleEndpoint(keycloakComponent), "get_role_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 
-			GetGroups:            prepareEndpoint(management.MakeGetGroupsEndpoint(keycloakComponent), "get_groups_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
-			CreateGroup:          prepareEndpoint(management.MakeCreateGroupEndpoint(keycloakComponent), "create_group_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
-			DeleteGroup:          prepareEndpoint(management.MakeDeleteGroupEndpoint(keycloakComponent), "delete_group_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
-			GetAuthorizations:    prepareEndpoint(management.MakeGetAuthorizationsEndpoint(keycloakComponent), "get_authorizations_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
-			UpdateAuthorizations: prepareEndpoint(management.MakeUpdateAuthorizationsEndpoint(keycloakComponent), "update_authorizations_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
+			GetGroups:            prepareEndpoint(management.MakeGetGroupsEndpoint(keycloakComponent), "get_groups_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			CreateGroup:          prepareEndpoint(management.MakeCreateGroupEndpoint(keycloakComponent), "create_group_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			DeleteGroup:          prepareEndpoint(management.MakeDeleteGroupEndpoint(keycloakComponent), "delete_group_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			GetAuthorizations:    prepareEndpoint(management.MakeGetAuthorizationsEndpoint(keycloakComponent), "get_authorizations_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			UpdateAuthorizations: prepareEndpoint(management.MakeUpdateAuthorizationsEndpoint(keycloakComponent), "update_authorizations_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 
-			GetClientRoles:       prepareEndpoint(management.MakeGetClientRolesEndpoint(keycloakComponent), "get_client_roles_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
-			CreateClientRole:     prepareEndpoint(management.MakeCreateClientRoleEndpoint(keycloakComponent), "create_client_role_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
-			GetClientRoleForUser: prepareEndpoint(management.MakeGetClientRolesForUserEndpoint(keycloakComponent), "get_client_roles_for_user_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
-			AddClientRoleToUser:  prepareEndpoint(management.MakeAddClientRolesToUserEndpoint(keycloakComponent), "get_client_roles_for_user_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
+			GetClientRoles:       prepareEndpoint(management.MakeGetClientRolesEndpoint(keycloakComponent), "get_client_roles_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			CreateClientRole:     prepareEndpoint(management.MakeCreateClientRoleEndpoint(keycloakComponent), "create_client_role_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			GetClientRoleForUser: prepareEndpoint(management.MakeGetClientRolesForUserEndpoint(keycloakComponent), "get_client_roles_for_user_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			AddClientRoleToUser:  prepareEndpoint(management.MakeAddClientRolesToUserEndpoint(keycloakComponent), "get_client_roles_for_user_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 
-			ResetPassword:            prepareEndpointWithoutLogging(management.MakeResetPasswordEndpoint(keycloakComponent), "reset_password_endpoint", influxMetrics, tracer, rateLimit["management"]),
-			ExecuteActionsEmail:      prepareEndpoint(management.MakeExecuteActionsEmailEndpoint(keycloakComponent), "execute_actions_email_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
-			SendReminderEmail:        prepareEndpoint(management.MakeSendReminderEmailEndpoint(keycloakComponent), "send_reminder_email_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
-			SendNewEnrolmentCode:     prepareEndpoint(management.MakeSendNewEnrolmentCodeEndpoint(keycloakComponent), "send_new_enrolment_code_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
-			ResetSmsCounter:          prepareEndpoint(management.MakeResetSmsCounterEndpoint(keycloakComponent), "reset_sms_counter_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
-			CreateRecoveryCode:       prepareEndpoint(management.MakeCreateRecoveryCodeEndpoint(keycloakComponent), "create_recovery_code_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
-			GetCredentialsForUser:    prepareEndpoint(management.MakeGetCredentialsForUserEndpoint(keycloakComponent), "get_credentials_for_user_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
-			DeleteCredentialsForUser: prepareEndpoint(management.MakeDeleteCredentialsForUserEndpoint(keycloakComponent), "delete_credentials_for_user_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
-			ClearUserLoginFailures:   prepareEndpoint(management.MakeClearUserLoginFailures(keycloakComponent), "clear_user_login_failures_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
-			GetAttackDetectionStatus: prepareEndpoint(management.MakeGetAttackDetectionStatus(keycloakComponent), "get_attack_detection_status_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
+			ResetPassword:            prepareEndpointWithoutLogging(management.MakeResetPasswordEndpoint(keycloakComponent), "reset_password_endpoint", influxMetrics, tracer, rateLimitMgmt),
+			ExecuteActionsEmail:      prepareEndpoint(management.MakeExecuteActionsEmailEndpoint(keycloakComponent), "execute_actions_email_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			SendReminderEmail:        prepareEndpoint(management.MakeSendReminderEmailEndpoint(keycloakComponent), "send_reminder_email_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			SendNewEnrolmentCode:     prepareEndpoint(management.MakeSendNewEnrolmentCodeEndpoint(keycloakComponent), "send_new_enrolment_code_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			ResetSmsCounter:          prepareEndpoint(management.MakeResetSmsCounterEndpoint(keycloakComponent), "reset_sms_counter_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			CreateRecoveryCode:       prepareEndpoint(management.MakeCreateRecoveryCodeEndpoint(keycloakComponent), "create_recovery_code_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			GetCredentialsForUser:    prepareEndpoint(management.MakeGetCredentialsForUserEndpoint(keycloakComponent), "get_credentials_for_user_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			DeleteCredentialsForUser: prepareEndpoint(management.MakeDeleteCredentialsForUserEndpoint(keycloakComponent), "delete_credentials_for_user_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			ClearUserLoginFailures:   prepareEndpoint(management.MakeClearUserLoginFailures(keycloakComponent), "clear_user_login_failures_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			GetAttackDetectionStatus: prepareEndpoint(management.MakeGetAttackDetectionStatus(keycloakComponent), "get_attack_detection_status_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 
-			GetRealmCustomConfiguration:    prepareEndpoint(management.MakeGetRealmCustomConfigurationEndpoint(keycloakComponent), "get_realm_custom_config_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
-			UpdateRealmCustomConfiguration: prepareEndpoint(management.MakeUpdateRealmCustomConfigurationEndpoint(keycloakComponent), "update_realm_custom_config_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
-			GetRealmAdminConfiguration:     prepareEndpoint(management.MakeGetRealmAdminConfigurationEndpoint(keycloakComponent), "get_realm_admin_config_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
-			UpdateRealmAdminConfiguration:  prepareEndpoint(management.MakeUpdateRealmAdminConfigurationEndpoint(keycloakComponent), "update_realm_admin_config_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
+			GetRealmCustomConfiguration:    prepareEndpoint(management.MakeGetRealmCustomConfigurationEndpoint(keycloakComponent), "get_realm_custom_config_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			UpdateRealmCustomConfiguration: prepareEndpoint(management.MakeUpdateRealmCustomConfigurationEndpoint(keycloakComponent), "update_realm_custom_config_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			GetRealmAdminConfiguration:     prepareEndpoint(management.MakeGetRealmAdminConfigurationEndpoint(keycloakComponent), "get_realm_admin_config_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			UpdateRealmAdminConfiguration:  prepareEndpoint(management.MakeUpdateRealmAdminConfigurationEndpoint(keycloakComponent), "update_realm_admin_config_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 
-			GetRealmBackOfficeConfiguration:     prepareEndpoint(management.MakeGetRealmBackOfficeConfigurationEndpoint(keycloakComponent), "get_realm_back_office_config_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
-			UpdateRealmBackOfficeConfiguration:  prepareEndpoint(management.MakeUpdateRealmBackOfficeConfigurationEndpoint(keycloakComponent), "update_realm_back_office_config_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
-			GetUserRealmBackOfficeConfiguration: prepareEndpoint(management.MakeGetUserRealmBackOfficeConfigurationEndpoint(keycloakComponent), "get_user_realm_back_office_config_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
+			GetRealmBackOfficeConfiguration:     prepareEndpoint(management.MakeGetRealmBackOfficeConfigurationEndpoint(keycloakComponent), "get_realm_back_office_config_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			UpdateRealmBackOfficeConfiguration:  prepareEndpoint(management.MakeUpdateRealmBackOfficeConfigurationEndpoint(keycloakComponent), "update_realm_back_office_config_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			GetUserRealmBackOfficeConfiguration: prepareEndpoint(management.MakeGetUserRealmBackOfficeConfigurationEndpoint(keycloakComponent), "get_user_realm_back_office_config_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 
-			LinkShadowUser: prepareEndpoint(management.MakeLinkShadowUserEndpoint(keycloakComponent), "link_shadow_user_endpoint", influxMetrics, managementLogger, tracer, rateLimit["management"]),
+			LinkShadowUser: prepareEndpoint(management.MakeLinkShadowUserEndpoint(keycloakComponent), "link_shadow_user_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 		}
 	}
 
@@ -636,19 +699,20 @@ func main() {
 		accountComponent := account.NewComponent(keycloakClient.AccountClient(), eventsDBModule, configDBModule, usersDBModule, accountLogger)
 		accountComponent = account.MakeAuthorizationAccountComponentMW(log.With(accountLogger, "mw", "endpoint"), configDBModule)(accountComponent)
 
+		var rateLimitAccount = rateLimit[RateKeyAccount]
 		accountEndpoints = account.Endpoints{
-			GetAccount:                prepareEndpoint(account.MakeGetAccountEndpoint(accountComponent), "get_account", influxMetrics, accountLogger, tracer, rateLimit["account"]),
-			UpdateAccount:             prepareEndpoint(account.MakeUpdateAccountEndpoint(accountComponent), "update_account", influxMetrics, accountLogger, tracer, rateLimit["account"]),
-			DeleteAccount:             prepareEndpoint(account.MakeDeleteAccountEndpoint(accountComponent), "delete_account", influxMetrics, accountLogger, tracer, rateLimit["account"]),
-			UpdatePassword:            prepareEndpointWithoutLogging(account.MakeUpdatePasswordEndpoint(accountComponent), "update_password", influxMetrics, tracer, rateLimit["account"]),
-			GetCredentials:            prepareEndpoint(account.MakeGetCredentialsEndpoint(accountComponent), "get_credentials", influxMetrics, accountLogger, tracer, rateLimit["account"]),
-			GetCredentialRegistrators: prepareEndpoint(account.MakeGetCredentialRegistratorsEndpoint(accountComponent), "get_credential_registrators", influxMetrics, accountLogger, tracer, rateLimit["account"]),
-			DeleteCredential:          prepareEndpoint(account.MakeDeleteCredentialEndpoint(accountComponent), "delete_credential", influxMetrics, accountLogger, tracer, rateLimit["account"]),
-			UpdateLabelCredential:     prepareEndpoint(account.MakeUpdateLabelCredentialEndpoint(accountComponent), "update_label_credential", influxMetrics, accountLogger, tracer, rateLimit["account"]),
-			MoveCredential:            prepareEndpoint(account.MakeMoveCredentialEndpoint(accountComponent), "move_credential", influxMetrics, accountLogger, tracer, rateLimit["account"]),
-			GetConfiguration:          prepareEndpoint(account.MakeGetConfigurationEndpoint(accountComponent), "get_configuration", influxMetrics, accountLogger, tracer, rateLimit["account"]),
-			SendVerifyEmail:           prepareEndpoint(account.MakeSendVerifyEmailEndpoint(accountComponent), "send_verify_email", influxMetrics, accountLogger, tracer, rateLimit["account"]),
-			SendVerifyPhoneNumber:     prepareEndpoint(account.MakeSendVerifyPhoneNumberEndpoint(accountComponent), "send_verify_phone_number", influxMetrics, accountLogger, tracer, rateLimit["account"]),
+			GetAccount:                prepareEndpoint(account.MakeGetAccountEndpoint(accountComponent), "get_account", influxMetrics, accountLogger, tracer, rateLimitAccount),
+			UpdateAccount:             prepareEndpoint(account.MakeUpdateAccountEndpoint(accountComponent), "update_account", influxMetrics, accountLogger, tracer, rateLimitAccount),
+			DeleteAccount:             prepareEndpoint(account.MakeDeleteAccountEndpoint(accountComponent), "delete_account", influxMetrics, accountLogger, tracer, rateLimitAccount),
+			UpdatePassword:            prepareEndpointWithoutLogging(account.MakeUpdatePasswordEndpoint(accountComponent), "update_password", influxMetrics, tracer, rateLimitAccount),
+			GetCredentials:            prepareEndpoint(account.MakeGetCredentialsEndpoint(accountComponent), "get_credentials", influxMetrics, accountLogger, tracer, rateLimitAccount),
+			GetCredentialRegistrators: prepareEndpoint(account.MakeGetCredentialRegistratorsEndpoint(accountComponent), "get_credential_registrators", influxMetrics, accountLogger, tracer, rateLimitAccount),
+			DeleteCredential:          prepareEndpoint(account.MakeDeleteCredentialEndpoint(accountComponent), "delete_credential", influxMetrics, accountLogger, tracer, rateLimitAccount),
+			UpdateLabelCredential:     prepareEndpoint(account.MakeUpdateLabelCredentialEndpoint(accountComponent), "update_label_credential", influxMetrics, accountLogger, tracer, rateLimitAccount),
+			MoveCredential:            prepareEndpoint(account.MakeMoveCredentialEndpoint(accountComponent), "move_credential", influxMetrics, accountLogger, tracer, rateLimitAccount),
+			GetConfiguration:          prepareEndpoint(account.MakeGetConfigurationEndpoint(accountComponent), "get_configuration", influxMetrics, accountLogger, tracer, rateLimitAccount),
+			SendVerifyEmail:           prepareEndpoint(account.MakeSendVerifyEmailEndpoint(accountComponent), "send_verify_email", influxMetrics, accountLogger, tracer, rateLimitAccount),
+			SendVerifyPhoneNumber:     prepareEndpoint(account.MakeSendVerifyPhoneNumberEndpoint(accountComponent), "send_verify_phone_number", influxMetrics, accountLogger, tracer, rateLimitAccount),
 		}
 	}
 
@@ -670,9 +734,10 @@ func main() {
 		registerComponent := register.NewComponent(keycloakPublicURL, registerRealm, ssePublicURL, registerEnduserClientID, keycloakClient, oidcTokenProvider, usersDBModule, configDBModule, eventsDBModule, registerLogger)
 		registerComponent = register.MakeAuthorizationRegisterComponentMW(log.With(registerLogger, "mw", "endpoint"))(registerComponent)
 
+		var rateLimitRegister = rateLimit[RateKeyRegister]
 		registerEndpoints = register.Endpoints{
-			RegisterUser:     prepareEndpoint(register.MakeRegisterUserEndpoint(registerComponent), "register_user", influxMetrics, registerLogger, tracer, rateLimit["register"]),
-			GetConfiguration: prepareEndpoint(register.MakeGetConfigurationEndpoint(registerComponent), "get_configuration", influxMetrics, registerLogger, tracer, rateLimit["register"]),
+			RegisterUser:     prepareEndpoint(register.MakeRegisterUserEndpoint(registerComponent), "register_user", influxMetrics, registerLogger, tracer, rateLimitRegister),
+			GetConfiguration: prepareEndpoint(register.MakeGetConfigurationEndpoint(registerComponent), "get_configuration", influxMetrics, registerLogger, tracer, rateLimitRegister),
 		}
 	}
 
@@ -698,11 +763,12 @@ func main() {
 		kycComponent := kyc.NewComponent(registerRealm, keycloakClient, usersDBModule, eventsDBModule, accredsModule, kycLogger)
 		kycComponent = kyc.MakeAuthorizationRegisterComponentMW(registerRealm, log.With(kycLogger, "mw", "endpoint"), authorizationManager)(kycComponent)
 
+		var rateLimitKyc = rateLimit[RateKeyKYC]
 		kycEndpoints = kyc.Endpoints{
-			GetActions:        prepareEndpoint(kyc.MakeGetActionsEndpoint(kycComponent), "register_get_actions", influxMetrics, kycLogger, tracer, rateLimit["kyc"]),
-			GetUser:           prepareEndpoint(kyc.MakeGetUserEndpoint(kycComponent), "get_user", influxMetrics, kycLogger, tracer, rateLimit["kyc"]),
-			GetUserByUsername: prepareEndpoint(kyc.MakeGetUserByUsernameEndpoint(kycComponent), "get_user_by_username", influxMetrics, kycLogger, tracer, rateLimit["kyc"]),
-			ValidateUser:      prepareEndpoint(kyc.MakeValidateUserEndpoint(kycComponent), "validate_user", influxMetrics, kycLogger, tracer, rateLimit["kyc"]),
+			GetActions:        prepareEndpoint(kyc.MakeGetActionsEndpoint(kycComponent), "register_get_actions", influxMetrics, kycLogger, tracer, rateLimitKyc),
+			GetUser:           prepareEndpoint(kyc.MakeGetUserEndpoint(kycComponent), "get_user", influxMetrics, kycLogger, tracer, rateLimitKyc),
+			GetUserByUsername: prepareEndpoint(kyc.MakeGetUserByUsernameEndpoint(kycComponent), "get_user_by_username", influxMetrics, kycLogger, tracer, rateLimitKyc),
+			ValidateUser:      prepareEndpoint(kyc.MakeValidateUserEndpoint(kycComponent), "validate_user", influxMetrics, kycLogger, tracer, rateLimitKyc),
 		}
 	}
 
@@ -1054,7 +1120,7 @@ func main() {
 			var registerUserHandler = configureRegisterHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, recaptchaURL, recaptchaSecret, tracer, logger)(registerEndpoints.RegisterUser)
 
 			// Configuration
-			var getConfigurationHandler = configurePublicRegisterHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, recaptchaURL, recaptchaSecret, tracer, logger)(registerEndpoints.GetConfiguration)
+			var getConfigurationHandler = configurePublicRegisterHandler(keycloakb.ComponentName, ComponentID, idGenerator, tracer, logger)(registerEndpoints.GetConfiguration)
 
 			// Register
 			route.Path("/register/user").Methods("POST").Handler(registerUserHandler)
@@ -1090,24 +1156,24 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 	var v = viper.New()
 
 	// Component default.
-	v.SetDefault("config-file", "./configs/keycloak_bridge.yml")
+	v.SetDefault(CfgConfigFile, "./configs/keycloak_bridge.yml")
 
 	// Log level
-	v.SetDefault("log-level", "info")
+	v.SetDefault(CfgLogLevel, "info")
 
 	// Access Logs
-	v.SetDefault("access-logs", true)
+	v.SetDefault(CfgAccessLogsEnabled, true)
 
 	// Publishing
-	v.SetDefault("internal-http-host-port", defaultPublishingIP+":8888")
-	v.SetDefault("management-http-host-port", defaultPublishingIP+":8877")
-	v.SetDefault("account-http-host-port", defaultPublishingIP+":8866")
-	v.SetDefault("register-http-host-port", defaultPublishingIP+":8855")
+	v.SetDefault(CfgHTTPAddrInternal, defaultPublishingIP+":8888")
+	v.SetDefault(CfgHTTPAddrManagement, defaultPublishingIP+":8877")
+	v.SetDefault(CfgHTTPAddrAccount, defaultPublishingIP+":8866")
+	v.SetDefault(CfgHTTPAddrRegister, defaultPublishingIP+":8855")
 
 	// Security - Audience check
-	v.SetDefault("audience-required", "")
-	v.SetDefault("event-basic-auth-token", "")
-	v.SetDefault("trustid-groups",
+	v.SetDefault(CfgAudienceRequired, "")
+	v.SetDefault(CfgEventBasicAuthToken, "")
+	v.SetDefault(CfgTrustIDGroups,
 		[]string{
 			"l1_support_manager",
 			"l1_support_agent",
@@ -1116,58 +1182,58 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 			"papercard_administrator",
 			"technical",
 			"end_user"})
-	v.SetDefault("validation-basic-auth-token", "")
+	v.SetDefault(CfgValidationBasicAuthToken, "")
 
 	// CORS configuration
-	v.SetDefault("cors-allowed-origins", []string{})
-	v.SetDefault("cors-allowed-methods", []string{})
-	v.SetDefault("cors-allow-credentials", true)
-	v.SetDefault("cors-allowed-headers", []string{})
-	v.SetDefault("cors-exposed-headers", []string{})
-	v.SetDefault("cors-debug", false)
+	v.SetDefault(CfgAllowedOrigins, []string{})
+	v.SetDefault(CfgAllowedMethods, []string{})
+	v.SetDefault(CfgAllowCredentials, true)
+	v.SetDefault(CfgAllowedHeaders, []string{})
+	v.SetDefault(CfgExposedHeaders, []string{})
+	v.SetDefault(CfgDebug, false)
 
 	// Keycloak default.
-	v.SetDefault("keycloak-api-uri", "http://127.0.0.1:8080")
-	v.SetDefault("keycloak-oidc-uri", "http://127.0.0.1:8080 http://localhost:8080")
-	v.SetDefault("keycloak-timeout", "5s")
+	v.SetDefault(CfgAddrAPI, "http://127.0.0.1:8080")
+	v.SetDefault(CfgAddrTokenProvider, "http://127.0.0.1:8080 http://localhost:8080")
+	v.SetDefault(CfgTimeout, "5s")
 
 	// Storage events in DB (read/write)
-	v.SetDefault("db-audit-rw-enabled", false)
-	database.ConfigureDbDefault(v, "db-audit-rw", "CT_BRIDGE_DB_AUDIT_RW_USERNAME", "CT_BRIDGE_DB_AUDIT_RW_PASSWORD")
+	v.SetDefault(CfgAuditRwDbParams+"-enabled", false)
+	database.ConfigureDbDefault(v, CfgAuditRwDbParams, "CT_BRIDGE_DB_AUDIT_RW_USERNAME", "CT_BRIDGE_DB_AUDIT_RW_PASSWORD")
 
 	// Storage events in DB (read only)
-	database.ConfigureDbDefault(v, "db-audit-ro", "CT_BRIDGE_DB_AUDIT_RO_USERNAME", "CT_BRIDGE_DB_AUDIT_RO_PASSWORD")
+	database.ConfigureDbDefault(v, CfgAuditRoDbParams, "CT_BRIDGE_DB_AUDIT_RO_USERNAME", "CT_BRIDGE_DB_AUDIT_RO_PASSWORD")
 
 	//Storage custom configuration in DB (read/write)
-	v.SetDefault("config-db-rw-enabled", true)
-	database.ConfigureDbDefault(v, "db-config-rw", "CT_BRIDGE_DB_CONFIG_RW_USERNAME", "CT_BRIDGE_DB_CONFIG_RW_PASSWORD")
+	v.SetDefault(CfgConfigRwDbParams+"-enabled", true)
+	database.ConfigureDbDefault(v, CfgConfigRwDbParams, "CT_BRIDGE_DB_CONFIG_RW_USERNAME", "CT_BRIDGE_DB_CONFIG_RW_PASSWORD")
 
-	v.SetDefault("db-config-rw-migration", false)
-	v.SetDefault("db-config-rw-migration-version", "")
+	v.SetDefault(CfgConfigRwDbParams+"-migration", false)
+	v.SetDefault(CfgConfigRwDbParams+"-migration-version", "")
 
 	//Storage custom configuration in DB (read only)
-	v.SetDefault("config-db-ro-enabled", true)
-	database.ConfigureDbDefault(v, "db-config-ro", "CT_BRIDGE_DB_CONFIG_RO_USERNAME", "CT_BRIDGE_DB_CONFIG_RO_PASSWORD")
+	v.SetDefault(CfgConfigRoDbParams+"-enabled", true)
+	database.ConfigureDbDefault(v, CfgConfigRoDbParams, "CT_BRIDGE_DB_CONFIG_RO_USERNAME", "CT_BRIDGE_DB_CONFIG_RO_PASSWORD")
 
-	v.SetDefault("db-config-ro-migration", false)
-	v.SetDefault("db-config-ro-migration-version", "")
+	v.SetDefault(CfgConfigRoDbParams+"-migration", false)
+	v.SetDefault(CfgConfigRoDbParams+"-migration-version", "")
 
 	//Storage users in DB (read/write)
-	v.SetDefault("db-users-rw-enabled", true)
-	database.ConfigureDbDefault(v, "db-users-rw", "CT_BRIDGE_DB_USERS_RW_USERNAME", "CT_BRIDGE_DB_USERS_RW_PASSWORD")
+	v.SetDefault(CfgUsersRwDbParams+"-enabled", true)
+	database.ConfigureDbDefault(v, CfgUsersRwDbParams, "CT_BRIDGE_DB_USERS_RW_USERNAME", "CT_BRIDGE_DB_USERS_RW_PASSWORD")
 
-	v.SetDefault("db-users-rw-migration", false)
-	v.SetDefault("db-users-rw-migration-version", "")
+	v.SetDefault(CfgUsersRwDbParams+"-migration", false)
+	v.SetDefault(CfgUsersRwDbParams+"-migration-version", "")
 
 	// Rate limiting (in requests/second)
-	v.SetDefault("rate-validation", 1000)
-	v.SetDefault("rate-event", 1000)
-	v.SetDefault("rate-account", 1000)
-	v.SetDefault("rate-management", 1000)
-	v.SetDefault("rate-statistics", 1000)
-	v.SetDefault("rate-events", 1000)
-	v.SetDefault("rate-register", 1000)
-	v.SetDefault("rate-kyc", 1000)
+	v.SetDefault(CfgRateKeyValidation, 1000)
+	v.SetDefault(CfgRateKeyEvent, 1000)
+	v.SetDefault(CfgRateKeyAccount, 1000)
+	v.SetDefault(CfgRateKeyManagement, 1000)
+	v.SetDefault(CfgRateKeyStatistics, 1000)
+	v.SetDefault(CfgRateKeyEvents, 1000)
+	v.SetDefault(CfgRateKeyRegister, 1000)
+	v.SetDefault(CfgRateKeyKYC, 1000)
 
 	// Influx DB client default.
 	v.SetDefault("influx", false)
@@ -1178,11 +1244,11 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 	v.SetDefault("influx-precision", "")
 	v.SetDefault("influx-retention-policy", "")
 	v.SetDefault("influx-write-consistency", "")
-	v.SetDefault("influx-write-interval", "1s")
+	v.SetDefault(CfgInfluxWriteInterval, "1s")
 
 	// Sentry client default.
 	v.SetDefault("sentry", false)
-	v.SetDefault("sentry-dsn", "")
+	v.SetDefault(CfgSentryDsn, "")
 
 	// Jaeger tracing default.
 	v.SetDefault("jaeger", false)
@@ -1193,53 +1259,53 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 	v.SetDefault("jaeger-write-interval", "1s")
 
 	// Debug routes enabled.
-	v.SetDefault("pprof-route-enabled", true)
+	v.SetDefault(CfgPprofRouteEnabled, true)
 
 	// Liveness probe
 	v.SetDefault("livenessprobe-http-timeout", 900)
 	v.SetDefault("livenessprobe-cache-duration", 500)
 
 	// Register parameters
-	v.SetDefault("register-enabled", false)
-	v.SetDefault("register-realm", "trustid")
-	v.SetDefault("register-techuser-username", "")
-	v.SetDefault("register-techuser-password", "")
-	v.SetDefault("register-techuser-client-id", "")
-	v.SetDefault("register-enduser-client-id", "")
-	v.SetDefault("recaptcha-url", "https://www.google.com/recaptcha/api/siteverify")
-	v.SetDefault("recaptcha-secret", "")
-	v.SetDefault("sse-public-url", "")
+	v.SetDefault(CfgRegisterEnabled, false)
+	v.SetDefault(CfgRegisterRealm, "trustid")
+	v.SetDefault(CfgRegisterUsername, "")
+	v.SetDefault(CfgRegisterPassword, "")
+	v.SetDefault(CfgRegisterClientID, "")
+	v.SetDefault(CfgRegisterEnduserClientID, "")
+	v.SetDefault(CfgRecaptchaURL, "https://www.google.com/recaptcha/api/siteverify")
+	v.SetDefault(CfgRecaptchaSecret, "")
+	v.SetDefault(CfgSsePublicURL, "")
 
 	// First level of override.
-	pflag.String("config-file", v.GetString("config-file"), "The configuration file path can be relative or absolute.")
-	v.BindPFlag("config-file", pflag.Lookup("config-file"))
+	pflag.String(CfgConfigFile, v.GetString(CfgConfigFile), "The configuration file path can be relative or absolute.")
+	v.BindPFlag(CfgConfigFile, pflag.Lookup(CfgConfigFile))
 	pflag.Parse()
 
 	// Bind ENV variables
 	// We use env variables to bind Openshift secrets
 	var censoredParameters = map[string]bool{}
 
-	v.BindEnv("register-techuser-username", "CT_BRIDGE_REGISTER_USERNAME")
-	v.BindEnv("register-techuser-password", "CT_BRIDGE_REGISTER_PASSWORD")
-	v.BindEnv("recaptcha-secret", "CT_BRIDGE_RECAPTCHA_SECRET")
-	censoredParameters["recaptcha-secret"] = true
-	censoredParameters["register-techuser-password"] = true
+	v.BindEnv(CfgRegisterUsername, "CT_BRIDGE_REGISTER_USERNAME")
+	v.BindEnv(CfgRegisterPassword, "CT_BRIDGE_REGISTER_PASSWORD")
+	v.BindEnv(CfgRecaptchaSecret, "CT_BRIDGE_RECAPTCHA_SECRET")
+	censoredParameters[CfgRecaptchaSecret] = true
+	censoredParameters[CfgRegisterPassword] = true
 
 	v.BindEnv("influx-username", "CT_BRIDGE_INFLUX_USERNAME")
 	v.BindEnv("influx-password", "CT_BRIDGE_INFLUX_PASSWORD")
 	censoredParameters["influx-password"] = true
 
-	v.BindEnv("sentry-dsn", "CT_BRIDGE_SENTRY_DSN")
-	censoredParameters["sentry-dsn"] = true
+	v.BindEnv(CfgSentryDsn, "CT_BRIDGE_SENTRY_DSN")
+	censoredParameters[CfgSentryDsn] = true
 
-	v.BindEnv("event-basic-auth-token", "CT_BRIDGE_EVENT_BASIC_AUTH")
-	censoredParameters["event-basic-auth-token"] = true
+	v.BindEnv(CfgEventBasicAuthToken, "CT_BRIDGE_EVENT_BASIC_AUTH")
+	censoredParameters[CfgEventBasicAuthToken] = true
 
-	v.BindEnv("validation-basic-auth-token", "CT_BRIDGE_VALIDATION_BASIC_AUTH")
-	censoredParameters["validation-basic-auth-token"] = true
+	v.BindEnv(CfgValidationBasicAuthToken, "CT_BRIDGE_VALIDATION_BASIC_AUTH")
+	censoredParameters[CfgValidationBasicAuthToken] = true
 
 	// Load and log config.
-	v.SetConfigFile(v.GetString("config-file"))
+	v.SetConfigFile(v.GetString(CfgConfigFile))
 	var err = v.ReadInConfig()
 	if err != nil {
 		logger.Error(ctx, "error", err)
@@ -1247,7 +1313,7 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 
 	// If the host/port is not set, we consider the components deactivated.
 	v.Set("influx", v.GetString("influx-host-port") != "")
-	v.Set("sentry", v.GetString("sentry-dsn") != "")
+	v.Set("sentry", v.GetString(CfgSentryDsn) != "")
 	v.Set("jaeger", v.GetString("jaeger-sampler-host-port") != "")
 
 	// Log config in alphabetical order.
@@ -1349,7 +1415,7 @@ func configureRegisterHandler(ComponentName string, ComponentID string, idGenera
 	}
 }
 
-func configurePublicRegisterHandler(ComponentName string, ComponentID string, idGenerator idgenerator.IDGenerator, keycloakClient *keycloakapi.Client, recaptchaURL, recaptchaSecret string, tracer tracing.OpentracingClient, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {
+func configurePublicRegisterHandler(ComponentName string, ComponentID string, idGenerator idgenerator.IDGenerator, tracer tracing.OpentracingClient, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {
 	return func(endpoint endpoint.Endpoint) http.Handler {
 		var handler http.Handler
 		handler = register.MakeRegisterHandler(endpoint, logger)

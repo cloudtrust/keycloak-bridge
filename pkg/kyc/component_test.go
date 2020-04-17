@@ -113,7 +113,7 @@ func TestGetUserByUsernameComponent(t *testing.T) {
 	t.Run("GetUserByUsername from Keycloak fails", func(t *testing.T) {
 		var kcError = errors.New("kc error")
 		mockKeycloakClient.EXPECT().GetGroups(accessToken, realm).Return(kcGroupSearch, nil)
-		mockKeycloakClient.EXPECT().GetUsers(accessToken, realm, realm, "username", username, "groupId", grpEndUserID).Return(kcUsersSearch, kcError)
+		mockKeycloakClient.EXPECT().GetUsers(accessToken, realm, realm, PrmQryUserName, username, "groupId", grpEndUserID).Return(kcUsersSearch, kcError)
 		var _, err = component.GetUserByUsername(ctx, username)
 		assert.NotNil(t, err)
 	})
@@ -122,14 +122,14 @@ func TestGetUserByUsernameComponent(t *testing.T) {
 		var none = 0
 		var searchNoResult = kc.UsersPageRepresentation{Count: &none, Users: []kc.UserRepresentation{}}
 		mockKeycloakClient.EXPECT().GetGroups(accessToken, realm).Return(kcGroupSearch, nil)
-		mockKeycloakClient.EXPECT().GetUsers(accessToken, realm, realm, "username", username, "groupId", grpEndUserID).Return(searchNoResult, nil)
+		mockKeycloakClient.EXPECT().GetUsers(accessToken, realm, realm, PrmQryUserName, username, "groupId", grpEndUserID).Return(searchNoResult, nil)
 		var _, err = component.GetUserByUsername(ctx, username)
 		assert.NotNil(t, err)
 	})
 
 	t.Run("GetUserByUsername success", func(t *testing.T) {
 		mockKeycloakClient.EXPECT().GetGroups(accessToken, realm).Return(kcGroupSearch, nil)
-		mockKeycloakClient.EXPECT().GetUsers(accessToken, realm, realm, "username", username, "groupId", grpEndUserID).Return(kcUsersSearch, nil)
+		mockKeycloakClient.EXPECT().GetUsers(accessToken, realm, realm, PrmQryUserName, username, "groupId", grpEndUserID).Return(kcUsersSearch, nil)
 		mockUsersDB.EXPECT().GetUser(ctx, realm, *kcUser.ID).Return(&dto.DBUser{}, nil)
 		var user, err = component.GetUserByUsername(ctx, username)
 		assert.Nil(t, err)

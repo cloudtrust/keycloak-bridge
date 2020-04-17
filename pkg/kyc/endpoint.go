@@ -20,7 +20,7 @@ type Endpoints struct {
 
 // MakeGetActionsEndpoint creates an endpoint for GetActions
 func MakeGetActionsEndpoint(component Component) cs.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, _ interface{}) (interface{}, error) {
 		return component.GetActions(ctx)
 	}
 }
@@ -29,7 +29,7 @@ func MakeGetActionsEndpoint(component Component) cs.Endpoint {
 func MakeGetUserByUsernameEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
-		var user = m["username"]
+		var user = m[PrmQryUserName]
 
 		return component.GetUserByUsername(ctx, user)
 	}
@@ -39,7 +39,7 @@ func MakeGetUserByUsernameEndpoint(component Component) cs.Endpoint {
 func MakeGetUserEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
-		var user = m["userId"]
+		var user = m[PrmUserID]
 		return component.GetUser(ctx, user)
 	}
 }
@@ -48,8 +48,8 @@ func MakeGetUserEndpoint(component Component) cs.Endpoint {
 func MakeValidateUserEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
-		var userID = m["userId"]
-		var user, err = apikyc.UserFromJSON(m["body"])
+		var userID = m[PrmUserID]
+		var user, err = apikyc.UserFromJSON(m[ReqBody])
 		if err != nil {
 			return nil, commonerrors.CreateBadRequestError(commonerrors.MsgErrInvalidParam + "." + msg.BodyContent)
 		}

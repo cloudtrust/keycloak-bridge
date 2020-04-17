@@ -1235,18 +1235,6 @@ func TestAddClientRolesToUser(t *testing.T) {
 		var clientRole = true
 		var name = "client name"
 
-		var kcRoleRep = kc.RoleRepresentation{
-			ID:          &id,
-			Name:        &name,
-			ClientRole:  &clientRole,
-			Composite:   &composite,
-			ContainerID: &containerID,
-			Description: &description,
-		}
-
-		var kcRolesRep []kc.RoleRepresentation
-		kcRolesRep = append(kcRolesRep, kcRoleRep)
-
 		mockKeycloakClient.EXPECT().AddClientRolesToUserRoleMapping(accessToken, realmName, userID, clientID, gomock.Any()).DoAndReturn(
 			func(accessToken, realmName, userID, clientID string, roles []kc.RoleRepresentation) error {
 				var role = roles[0]

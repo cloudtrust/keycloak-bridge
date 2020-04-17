@@ -20,12 +20,12 @@ type Endpoints struct {
 func MakeRegisterUserEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
-		var realm = m["realm"]
+		var realm = m[PrmRealm]
 		if realm == "" {
 			return nil, commonerrors.CreateBadRequestError(commonerrors.MsgErrInvalidParam + "." + msg.Realm)
 		}
 
-		var user, err = apiregister.UserFromJSON(m["body"])
+		var user, err = apiregister.UserFromJSON(m[ReqBody])
 		if err != nil {
 			return nil, commonerrors.CreateBadRequestError(commonerrors.MsgErrInvalidParam + "." + msg.BodyContent)
 		}
@@ -38,7 +38,7 @@ func MakeRegisterUserEndpoint(component Component) cs.Endpoint {
 func MakeGetConfigurationEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
-		var realm = m["realm"]
+		var realm = m[PrmRealm]
 		if realm == "" {
 			return nil, commonerrors.CreateBadRequestError(commonerrors.MsgErrInvalidParam + "." + msg.Realm)
 		}

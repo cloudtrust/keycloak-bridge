@@ -9,8 +9,8 @@ import (
 	errorhandler "github.com/cloudtrust/common-service/errors"
 	"github.com/cloudtrust/common-service/log"
 	api "github.com/cloudtrust/keycloak-bridge/api/statistics"
-	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	msg "github.com/cloudtrust/keycloak-bridge/internal/constants"
+	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	kc "github.com/cloudtrust/keycloak-client"
 )
 
@@ -178,7 +178,7 @@ func (ec *component) GetMigrationReport(ctx context.Context, realmName string) (
 	var ctxRealm = ctx.Value(cs.CtContextRealm).(string)
 
 	var paramKV = []string{}
-	paramKV = append(paramKV, "max", "0") //All
+	paramKV = append(paramKV, PrmQryMax, "0") //All
 
 	usersKc, err := ec.keycloakClient.GetUsers(accessToken, ctxRealm, realmName, paramKV...)
 

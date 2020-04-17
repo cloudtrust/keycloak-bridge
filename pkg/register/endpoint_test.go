@@ -25,24 +25,24 @@ func TestMakeRegisterUserEndpoint(t *testing.T) {
 
 	t.Run("No specified realm", func(t *testing.T) {
 		var bytes, _ = json.Marshal(user)
-		m["realm"] = ""
-		m["body"] = string(bytes)
+		m[PrmRealm] = ""
+		m[ReqBody] = string(bytes)
 		_, err := MakeRegisterUserEndpoint(mockRegisterComponent)(context.Background(), m)
 		assert.NotNil(t, err)
 	})
 
 	t.Run("Valid request", func(t *testing.T) {
 		var bytes, _ = json.Marshal(user)
-		m["realm"] = realm
-		m["body"] = string(bytes)
+		m[PrmRealm] = realm
+		m[ReqBody] = string(bytes)
 		mockRegisterComponent.EXPECT().RegisterUser(gomock.Any(), realm, user).Return("", nil).Times(1)
 		_, err := MakeRegisterUserEndpoint(mockRegisterComponent)(context.Background(), m)
 		assert.Nil(t, err)
 	})
 
 	t.Run("Invalid JSON in body", func(t *testing.T) {
-		m["realm"] = realm
-		m["body"] = "{"
+		m[PrmRealm] = realm
+		m[ReqBody] = "{"
 		_, err := MakeRegisterUserEndpoint(mockRegisterComponent)(context.Background(), m)
 		assert.NotNil(t, err)
 	})
@@ -62,7 +62,7 @@ func TestMakeGetConfigurationEndpoint(t *testing.T) {
 
 	t.Run("Success", func(t *testing.T) {
 		var realm = "my-realm"
-		var m = map[string]string{"realm": realm}
+		var m = map[string]string{PrmRealm: realm}
 		mockRegisterComponent.EXPECT().GetConfiguration(gomock.Any(), realm).Return(apiregister.ConfigurationRepresentation{}, nil).Times(1)
 		_, err := MakeGetConfigurationEndpoint(mockRegisterComponent)(context.Background(), m)
 		assert.Nil(t, err)

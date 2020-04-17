@@ -10,6 +10,11 @@ import (
 	"github.com/cloudtrust/keycloak-bridge/api/event/fb"
 )
 
+const (
+	// KeyCorrelationID is histogram field for correlation ID
+	KeyCorrelationID = "correlation_id"
+)
+
 // Instrumenting middleware for the mux component.
 type muxComponentInstrumentingMW struct {
 	h    metrics.Histogram
@@ -29,7 +34,7 @@ func MakeMuxComponentInstrumentingMW(h metrics.Histogram) func(MuxComponent) Mux
 // muxComponentInstrumentingMW implements MuxComponent.
 func (m *muxComponentInstrumentingMW) Event(ctx context.Context, eventType string, obj []byte) error {
 	defer func(begin time.Time) {
-		m.h.With("correlation_id", ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
+		m.h.With(KeyCorrelationID, ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
 	}(time.Now())
 	return m.next.Event(ctx, eventType, obj)
 }
@@ -53,7 +58,7 @@ func MakeComponentInstrumentingMW(h metrics.Histogram) func(Component) Component
 // componentInstrumentingMW implements Component.
 func (m *componentInstrumentingMW) Event(ctx context.Context, event *fb.Event) error {
 	defer func(begin time.Time) {
-		m.h.With("correlation_id", ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
+		m.h.With(KeyCorrelationID, ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
 	}(time.Now())
 	return m.next.Event(ctx, event)
 }
@@ -77,7 +82,7 @@ func MakeAdminComponentInstrumentingMW(h metrics.Histogram) func(AdminComponent)
 // adminComponentInstrumentingMW implements AdminComponent.
 func (m *adminComponentInstrumentingMW) AdminEvent(ctx context.Context, adminEvent *fb.AdminEvent) error {
 	defer func(begin time.Time) {
-		m.h.With("correlation_id", ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
+		m.h.With(KeyCorrelationID, ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
 	}(time.Now())
 	return m.next.AdminEvent(ctx, adminEvent)
 }
@@ -101,7 +106,7 @@ func MakeConsoleModuleInstrumentingMW(h metrics.Histogram) func(ConsoleModule) C
 // consoleModuleInstrumentingMW implements Module.
 func (m *consoleModuleInstrumentingMW) Print(ctx context.Context, mp map[string]string) error {
 	defer func(begin time.Time) {
-		m.h.With("correlation_id", ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
+		m.h.With(KeyCorrelationID, ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
 	}(time.Now())
 	return m.next.Print(ctx, mp)
 }
@@ -125,7 +130,7 @@ func MakeStatisticModuleInstrumentingMW(h metrics.Histogram) func(StatisticModul
 // consoleModuleInstrumentingMW implements Module.
 func (m *statisticModuleInstrumentingMW) Stats(ctx context.Context, mp map[string]string) error {
 	defer func(begin time.Time) {
-		m.h.With("correlation_id", ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
+		m.h.With(KeyCorrelationID, ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
 	}(time.Now())
 	return m.next.Stats(ctx, mp)
 }
@@ -149,14 +154,14 @@ func MakeEventsDBModuleInstrumentingMW(h metrics.Histogram) func(database.Events
 // consoleModuleInstrumentingMW implements Module.
 func (m *eventsDBModuleInstrumentingMW) Store(ctx context.Context, mp map[string]string) error {
 	defer func(begin time.Time) {
-		m.h.With("correlation_id", ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
+		m.h.With(KeyCorrelationID, ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
 	}(time.Now())
 	return m.next.Store(ctx, mp)
 }
 
 func (m *eventsDBModuleInstrumentingMW) ReportEvent(ctx context.Context, apiCall string, origin string, values ...string) error {
 	defer func(begin time.Time) {
-		m.h.With("correlation_id", ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
+		m.h.With(KeyCorrelationID, ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
 	}(time.Now())
 	return m.next.ReportEvent(ctx, apiCall, origin, values...)
 }

@@ -1,6 +1,7 @@
 package apiaccount
 
 import (
+	"context"
 	"encoding/json"
 
 	"github.com/cloudtrust/common-service/validation"
@@ -84,7 +85,7 @@ func ConvertCredential(credKc *kc.CredentialRepresentation) CredentialRepresenta
 }
 
 // ConvertToAPIAccount creates an API account representation from a KC user representation
-func ConvertToAPIAccount(userKc kc.UserRepresentation) AccountRepresentation {
+func ConvertToAPIAccount(ctx context.Context, userKc kc.UserRepresentation, logger keycloakb.Logger) AccountRepresentation {
 	var userRep AccountRepresentation
 
 	userRep.Username = userKc.Username
@@ -112,9 +113,12 @@ func ConvertToAPIAccount(userKc kc.UserRepresentation) AccountRepresentation {
 		var accreds []AccreditationRepresentation
 		for _, accredJSON := range values {
 			var accred AccreditationRepresentation
-			json.Unmarshal([]byte(accredJSON), &accred)
-			accred.Expired = keycloakb.IsDateInThePast(accred.ExpiryDate)
-			accreds = append(accreds, accred)
+			if json.Unmarshal([]byte(accredJSON), &accred) == nil {
+				accred.Expired = keycloakb.IsDateInThePast(accred.ExpiryDate)
+				accreds = append(accreds, accred)
+			} else {
+				logger.Warn(ctx, "msg", "Can't unmarshall JSON", "json", accredJSON)
+			}
 		}
 		userRep.Accreditations = &accreds
 	}

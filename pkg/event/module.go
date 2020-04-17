@@ -62,22 +62,3 @@ func (sm *statisticModule) Stats(ctx context.Context, m map[string]string) error
 	}
 	return sm.influx.Stats(ctx, "event_statistics", tags, fields)
 }
-
-const (
-	insertEvent = `INSERT INTO audit (
-		audit_time,
-		origin,
-		realm_name,
-		agent_user_id,
-		agent_username,
-		agent_realm_name,
-		user_id,
-		username,
-		ct_event_type,
-		kc_event_type,
-		kc_operation_type,
-		client_id,
-		additional_info) 
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-		`
-)

@@ -41,17 +41,15 @@ type CheckRepresentation struct {
 
 // Parameter references
 const (
-	prmUserID                   = "user_id"
-	prmUserGender               = "user_gender"
-	prmUserFirstName            = "user_firstName"
-	prmUserLastName             = "user_lastName"
-	prmUserEmail                = "user_emailAddress"
-	prmUserPhoneNumber          = "user_phoneNumber"
-	prmUserBirthDate            = "user_birthDate"
-	prmUserBirthLocation        = "user_birthLocation"
-	prmUserIDDocumentType       = "user_idDocType"
-	prmUserIDDocumentNumber     = "user_idDocNumber"
-	prmUserIDDocumentExpiration = "user_idDocExpiration"
+	prmUserID               = "user_id"
+	prmUserGender           = "user_gender"
+	prmUserFirstName        = "user_firstName"
+	prmUserLastName         = "user_lastName"
+	prmUserEmail            = "user_emailAddress"
+	prmUserPhoneNumber      = "user_phoneNumber"
+	prmUserBirthLocation    = "user_birthLocation"
+	prmUserIDDocumentType   = "user_idDocType"
+	prmUserIDDocumentNumber = "user_idDocNumber"
 
 	prmCheckOperator  = "check_operator"
 	prmCheckDatetime  = "check_datetime"
@@ -61,7 +59,6 @@ const (
 	prmCheckProofType = "check_proof_type"
 
 	RegExpID            = constants.RegExpID
-	regExpNames         = constants.RegExpNameSpecialChars
 	regExpFirstName     = constants.RegExpNameSpecialChars
 	regExpLastName      = constants.RegExpNameSpecialChars
 	regExpEmail         = constants.RegExpEmail
@@ -69,9 +66,10 @@ const (
 	// Multiple values with digits and letters separated by a single separator (space, dash)
 	regExpIDDocumentNumber = `^([\w\d]+([ -][\w\d]+)*){1,50}$`
 
-	regExpOperator  = `[a-zA-Z0-9_-]{1,255}`
-	regExpNature    = `[a-zA-Z0-9_-]{1,255}`
-	regExpProofType = `[a-zA-Z0-9_-]{1,255}`
+	regExpAlphaNum255 = `[a-zA-Z0-9_-]{1,255}`
+	regExpOperator    = regExpAlphaNum255
+	regExpNature      = regExpAlphaNum255
+	regExpProofType   = regExpAlphaNum255
 )
 
 var (

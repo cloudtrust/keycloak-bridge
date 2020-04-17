@@ -4,10 +4,6 @@ import (
 	"time"
 )
 
-const (
-	dateLayout = "02.01.2006"
-)
-
 // DBUser struct
 type DBUser struct {
 	UserID               *string `json:"-"`

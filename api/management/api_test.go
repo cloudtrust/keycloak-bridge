@@ -1,11 +1,13 @@
 package apimanagement
 
 import (
+	"context"
 	"encoding/json"
 	"strings"
 	"testing"
 
 	"github.com/cloudtrust/common-service/configuration"
+	"github.com/cloudtrust/common-service/log"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	kc "github.com/cloudtrust/keycloak-client"
 	"github.com/stretchr/testify/assert"
@@ -54,90 +56,98 @@ func TestConvertAttackDetectionStatus(t *testing.T) {
 }
 
 func TestConvertToAPIUser(t *testing.T) {
+	var ctx = context.TODO()
+	var logger = log.NewNopLogger()
+
 	var kcUser kc.UserRepresentation
 	m := make(kc.Attributes)
 
 	t.Run("Phone number", func(t *testing.T) {
-		assert.Nil(t, ConvertToAPIUser(kcUser).PhoneNumber)
+		assert.Nil(t, ConvertToAPIUser(ctx, kcUser, logger).PhoneNumber)
 		kcUser.Attributes = &m
 		m.SetString(constants.AttrbPhoneNumber, "+4122555555")
-		assert.NotNil(t, ConvertToAPIUser(kcUser).PhoneNumber)
+		assert.NotNil(t, ConvertToAPIUser(ctx, kcUser, logger).PhoneNumber)
 	})
 	t.Run("Label", func(t *testing.T) {
-		assert.Nil(t, ConvertToAPIUser(kcUser).Label)
+		assert.Nil(t, ConvertToAPIUser(ctx, kcUser, logger).Label)
 		kcUser.Attributes = &m
 		m.SetString(constants.AttrbLabel, "a label")
-		assert.NotNil(t, ConvertToAPIUser(kcUser).Label)
+		assert.NotNil(t, ConvertToAPIUser(ctx, kcUser, logger).Label)
 	})
 	t.Run("Gender", func(t *testing.T) {
-		assert.Nil(t, ConvertToAPIUser(kcUser).Gender)
+		assert.Nil(t, ConvertToAPIUser(ctx, kcUser, logger).Gender)
 		kcUser.Attributes = &m
 		m.SetString(constants.AttrbGender, "a gender")
-		assert.NotNil(t, ConvertToAPIUser(kcUser).Gender)
+		assert.NotNil(t, ConvertToAPIUser(ctx, kcUser, logger).Gender)
 	})
 	t.Run("Birthdate", func(t *testing.T) {
-		assert.Nil(t, ConvertToAPIUser(kcUser).BirthDate)
+		assert.Nil(t, ConvertToAPIUser(ctx, kcUser, logger).BirthDate)
 		kcUser.Attributes = &m
 		m.SetString(constants.AttrbBirthDate, "25/12/0")
-		assert.NotNil(t, ConvertToAPIUser(kcUser).BirthDate)
+		assert.NotNil(t, ConvertToAPIUser(ctx, kcUser, logger).BirthDate)
 	})
 	t.Run("Phone number verified", func(t *testing.T) {
-		assert.Nil(t, ConvertToAPIUser(kcUser).PhoneNumberVerified)
+		assert.Nil(t, ConvertToAPIUser(ctx, kcUser, logger).PhoneNumberVerified)
 		kcUser.Attributes = &m
 		m.SetBool(constants.AttrbPhoneNumberVerified, true)
-		assert.True(t, *ConvertToAPIUser(kcUser).PhoneNumberVerified)
+		assert.True(t, *ConvertToAPIUser(ctx, kcUser, logger).PhoneNumberVerified)
 	})
 	t.Run("Locale", func(t *testing.T) {
-		assert.Nil(t, ConvertToAPIUser(kcUser).Locale)
+		assert.Nil(t, ConvertToAPIUser(ctx, kcUser, logger).Locale)
 		kcUser.Attributes = &m
 		m.SetString(constants.AttrbLocale, "en")
-		assert.NotNil(t, *ConvertToAPIUser(kcUser).Locale)
+		assert.NotNil(t, *ConvertToAPIUser(ctx, kcUser, logger).Locale)
 	})
 	t.Run("SMS sent", func(t *testing.T) {
-		assert.Nil(t, ConvertToAPIUser(kcUser).SmsSent)
+		assert.Nil(t, ConvertToAPIUser(ctx, kcUser, logger).SmsSent)
 		kcUser.Attributes = &m
 		m.SetInt(constants.AttrbSmsSent, 0)
-		assert.NotNil(t, *ConvertToAPIUser(kcUser).SmsSent)
+		assert.NotNil(t, *ConvertToAPIUser(ctx, kcUser, logger).SmsSent)
 	})
 	t.Run("SMS failed attempts", func(t *testing.T) {
-		assert.Nil(t, ConvertToAPIUser(kcUser).SmsAttempts)
+		assert.Nil(t, ConvertToAPIUser(ctx, kcUser, logger).SmsAttempts)
 		kcUser.Attributes = &m
 		m.SetInt(constants.AttrbSmsAttempts, 0)
-		assert.NotNil(t, *ConvertToAPIUser(kcUser).SmsAttempts)
+		assert.NotNil(t, *ConvertToAPIUser(ctx, kcUser, logger).SmsAttempts)
 	})
 	t.Run("trustID groups", func(t *testing.T) {
-		assert.Nil(t, ConvertToAPIUser(kcUser).TrustIDGroups)
+		assert.Nil(t, ConvertToAPIUser(ctx, kcUser, logger).TrustIDGroups)
 		kcUser.Attributes = &m
 		m.SetString(constants.AttrbTrustIDGroups, "en")
-		assert.NotNil(t, *ConvertToAPIUser(kcUser).TrustIDGroups)
+		assert.NotNil(t, *ConvertToAPIUser(ctx, kcUser, logger).TrustIDGroups)
 	})
 	t.Run("Accreditations", func(t *testing.T) {
-		assert.Nil(t, ConvertToAPIUser(kcUser).Accreditations)
-		kcUser.SetAttribute("accreditations", []string{`{"type":"one","expiryDate":"05.04.2020"}`, `{"type":"two","expiryDate":"05.03.2022"}`})
-		assert.Len(t, *ConvertToAPIUser(kcUser).Accreditations, 2)
+		assert.Nil(t, ConvertToAPIUser(ctx, kcUser, logger).Accreditations)
+		kcUser.SetAttribute("accreditations", []string{`{"type":"one","expiryDate":"05.04.2020"}`, `{"type":"two","expiryDate":"05.03.2022"}`, `{`})
+		assert.Len(t, *ConvertToAPIUser(ctx, kcUser, logger).Accreditations, 2)
 	})
 }
 
 func TestConvertToAPIUsersPage(t *testing.T) {
-	var count = 10
-	var input = kc.UsersPageRepresentation{Count: &count, Users: []kc.UserRepresentation{kc.UserRepresentation{}, kc.UserRepresentation{}}}
-	var output = ConvertToAPIUsersPage(input)
-	assert.Equal(t, count, *output.Count)
-	assert.Equal(t, len(input.Users), len(output.Users))
-}
+	var ctx = context.TODO()
+	var logger = log.NewNopLogger()
 
-func TestConvertToAPIUsersPageEmptySet(t *testing.T) {
-	var input = kc.UsersPageRepresentation{Count: nil, Users: nil}
-	var output = ConvertToAPIUsersPage(input)
-	assert.NotNil(t, output.Users)
-	assert.NotNil(t, output.Count)
-	assert.Equal(t, 0, len(output.Users))
-	assert.Equal(t, 0, *output.Count)
+	t.Run("With content", func(t *testing.T) {
+		var count = 10
+		var input = kc.UsersPageRepresentation{Count: &count, Users: []kc.UserRepresentation{kc.UserRepresentation{}, kc.UserRepresentation{}}}
+		var output = ConvertToAPIUsersPage(ctx, input, logger)
+		assert.Equal(t, count, *output.Count)
+		assert.Equal(t, len(input.Users), len(output.Users))
+	})
 
-	var jsonRaw, _ = json.Marshal(output)
-	var json = string(jsonRaw)
-	assert.True(t, strings.Contains(json, `"users":[]`))
-	assert.True(t, strings.Contains(json, `"count":0`))
+	t.Run("Empty set", func(t *testing.T) {
+		var input = kc.UsersPageRepresentation{Count: nil, Users: nil}
+		var output = ConvertToAPIUsersPage(ctx, input, logger)
+		assert.NotNil(t, output.Users)
+		assert.NotNil(t, output.Count)
+		assert.Equal(t, 0, len(output.Users))
+		assert.Equal(t, 0, *output.Count)
+
+		var jsonRaw, _ = json.Marshal(output)
+		var json = string(jsonRaw)
+		assert.True(t, strings.Contains(json, `"users":[]`))
+		assert.True(t, strings.Contains(json, `"count":0`))
+	})
 }
 
 func TestConvertToKCUser(t *testing.T) {

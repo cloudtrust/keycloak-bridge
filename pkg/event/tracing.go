@@ -28,7 +28,7 @@ func MakeMuxComponentTracingMW(tracer tracing.OpentracingClient) func(MuxCompone
 // muxComponentTracingMW implements MuxComponent.
 func (m *muxComponentTracingMW) Event(ctx context.Context, eventType string, obj []byte) error {
 	var f tracing.Finisher
-	ctx, f = m.tracer.TryStartSpanWithTag(ctx, "mux_component", "correlation_id", ctx.Value(cs.CtContextCorrelationID).(string))
+	ctx, f = m.tracer.TryStartSpanWithTag(ctx, "mux_component", KeyCorrelationID, ctx.Value(cs.CtContextCorrelationID).(string))
 	if f != nil {
 		defer f.Finish()
 	}
@@ -55,7 +55,7 @@ func MakeComponentTracingMW(tracer tracing.OpentracingClient) func(Component) Co
 // componentTracingMW implements Component.
 func (m *componentTracingMW) Event(ctx context.Context, event *fb.Event) error {
 	var f tracing.Finisher
-	ctx, f = m.tracer.TryStartSpanWithTag(ctx, "event_component", "correlation_id", ctx.Value(cs.CtContextCorrelationID).(string))
+	ctx, f = m.tracer.TryStartSpanWithTag(ctx, "event_component", KeyCorrelationID, ctx.Value(cs.CtContextCorrelationID).(string))
 	if f != nil {
 		defer f.Finish()
 	}
@@ -82,7 +82,7 @@ func MakeAdminComponentTracingMW(tracer tracing.OpentracingClient) func(AdminCom
 // adminComponentTracingMW implements Component.
 func (m *adminComponentTracingMW) AdminEvent(ctx context.Context, adminEvent *fb.AdminEvent) error {
 	var f tracing.Finisher
-	ctx, f = m.tracer.TryStartSpanWithTag(ctx, "admin_event_component", "correlation_id", ctx.Value(cs.CtContextCorrelationID).(string))
+	ctx, f = m.tracer.TryStartSpanWithTag(ctx, "admin_event_component", KeyCorrelationID, ctx.Value(cs.CtContextCorrelationID).(string))
 	if f != nil {
 		defer f.Finish()
 	}
@@ -109,7 +109,7 @@ func MakeConsoleModuleTracingMW(tracer tracing.OpentracingClient) func(ConsoleMo
 // consoleModuleTracingMW implements ConsoleModule.
 func (m *consoleModuleTracingMW) Print(ctx context.Context, mp map[string]string) error {
 	var f tracing.Finisher
-	ctx, f = m.tracer.TryStartSpanWithTag(ctx, "console_module", "correlation_id", ctx.Value(cs.CtContextCorrelationID).(string))
+	ctx, f = m.tracer.TryStartSpanWithTag(ctx, "console_module", KeyCorrelationID, ctx.Value(cs.CtContextCorrelationID).(string))
 	if f != nil {
 		defer f.Finish()
 	}
@@ -136,7 +136,7 @@ func MakeStatisticModuleTracingMW(tracer tracing.OpentracingClient) func(Statist
 // statisticModuleTracingMW implements StatisticModule.
 func (m *statisticModuleTracingMW) Stats(ctx context.Context, mp map[string]string) error {
 	var f tracing.Finisher
-	ctx, f = m.tracer.TryStartSpanWithTag(ctx, "statistic_module", "correlation_id", ctx.Value(cs.CtContextCorrelationID).(string))
+	ctx, f = m.tracer.TryStartSpanWithTag(ctx, "statistic_module", KeyCorrelationID, ctx.Value(cs.CtContextCorrelationID).(string))
 	if f != nil {
 		defer f.Finish()
 	}
@@ -163,7 +163,7 @@ func MakeEventsDBModuleTracingMW(tracer tracing.OpentracingClient) func(database
 // statisticModuleTracingMW implements StatisticModule.
 func (m *eventsDBModuleTracingMW) Store(ctx context.Context, mp map[string]string) error {
 	var f tracing.Finisher
-	ctx, f = m.tracer.TryStartSpanWithTag(ctx, "eventsDB_module", "correlation_id", ctx.Value(cs.CtContextCorrelationID).(string))
+	ctx, f = m.tracer.TryStartSpanWithTag(ctx, "eventsDB_module", KeyCorrelationID, ctx.Value(cs.CtContextCorrelationID).(string))
 	if f != nil {
 		defer f.Finish()
 	}
@@ -174,7 +174,7 @@ func (m *eventsDBModuleTracingMW) Store(ctx context.Context, mp map[string]strin
 // statisticModuleTracingMW implements StatisticModule.
 func (m *eventsDBModuleTracingMW) ReportEvent(ctx context.Context, apiCall string, origin string, values ...string) error {
 	var f tracing.Finisher
-	ctx, f = m.tracer.TryStartSpanWithTag(ctx, "eventsDB_module", "correlation_id", ctx.Value(cs.CtContextCorrelationID).(string))
+	ctx, f = m.tracer.TryStartSpanWithTag(ctx, "eventsDB_module", KeyCorrelationID, ctx.Value(cs.CtContextCorrelationID).(string))
 	if f != nil {
 		defer f.Finish()
 	}

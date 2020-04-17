@@ -1,6 +1,7 @@
 package apikyc
 
 import (
+	"context"
 	"encoding/json"
 	"strings"
 
@@ -124,7 +125,7 @@ func (u *UserRepresentation) ExportToKeycloak(kcUser *kc.UserRepresentation) {
 }
 
 // ImportFromKeycloak import details from Keycloak
-func (u *UserRepresentation) ImportFromKeycloak(kcUser *kc.UserRepresentation) {
+func (u *UserRepresentation) ImportFromKeycloak(ctx context.Context, kcUser *kc.UserRepresentation, logger keycloakb.Logger) {
 	var phoneNumber = u.PhoneNumber
 	var phoneNumberVerified = u.PhoneNumberVerified
 	var gender = u.Gender
@@ -147,9 +148,12 @@ func (u *UserRepresentation) ImportFromKeycloak(kcUser *kc.UserRepresentation) {
 		var accreds []AccreditationRepresentation
 		for _, accredJSON := range values {
 			var accred AccreditationRepresentation
-			json.Unmarshal([]byte(accredJSON), &accred)
-			accred.Expired = keycloakb.IsDateInThePast(accred.ExpiryDate)
-			accreds = append(accreds, accred)
+			if json.Unmarshal([]byte(accredJSON), &accred) == nil {
+				accred.Expired = keycloakb.IsDateInThePast(accred.ExpiryDate)
+				accreds = append(accreds, accred)
+			} else {
+				logger.Warn(ctx, "msg", "Can't unmarshall JSON", "json", accredJSON)
+			}
 		}
 		accreditations = &accreds
 	}

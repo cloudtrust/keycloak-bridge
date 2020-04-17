@@ -6,8 +6,8 @@ import (
 	"net/http"
 
 	cs "github.com/cloudtrust/common-service"
-	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	msg "github.com/cloudtrust/keycloak-bridge/internal/constants"
+	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/go-kit/kit/endpoint"
 	http_transport "github.com/go-kit/kit/transport/http"
 	"github.com/pkg/errors"
@@ -54,7 +54,7 @@ func encodeHTTPReply(_ context.Context, w http.ResponseWriter, res interface{}) 
 }
 
 // errorHandler encodes the reply when there is an error.
-func errorHandler(ctx context.Context, err error, w http.ResponseWriter) {
+func errorHandler(_ context.Context, err error, w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "application/octet-stream")
 	w.WriteHeader(http.StatusInternalServerError)
 	w.Write([]byte(keycloakb.ComponentName + "." + err.Error()))

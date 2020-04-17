@@ -88,7 +88,7 @@ func decodeHTTPRequest(_ context.Context, r *http.Request) (res interface{}, err
 }
 
 // encodeHTTPReply encodes the http event reply.
-func encodeHTTPReply(_ context.Context, w http.ResponseWriter, response interface{}) error {
+func encodeHTTPReply(_ context.Context, w http.ResponseWriter, _ interface{}) error {
 	w.WriteHeader(http.StatusOK)
 	return nil
 }

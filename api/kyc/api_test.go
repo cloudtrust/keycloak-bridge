@@ -1,8 +1,10 @@
 package apikyc
 
 import (
+	"context"
 	"testing"
 
+	"github.com/cloudtrust/common-service/log"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 
 	kc "github.com/cloudtrust/keycloak-client"
@@ -138,16 +140,24 @@ func TestExportToKeycloak(t *testing.T) {
 }
 
 func TestImportFromKeycloak(t *testing.T) {
+	var ctx = context.TODO()
+	var logger = log.NewNopLogger()
+
 	var kcUser = createValidKeycloakUser()
 	kcUser.SetAttributeBool(constants.AttrbPhoneNumberVerified, true)
 
+	// Add an invalid JSON accreditation: it will be ignored
+	var accreds = append(kcUser.Attributes.Get(constants.AttrbAccreditations), "{")
+	kcUser.Attributes.Set(constants.AttrbAccreditations, accreds)
+	assert.Equal(t, 3, len(kcUser.Attributes.Get(constants.AttrbAccreditations)))
+
 	var imported = UserRepresentation{}
-	imported.ImportFromKeycloak(&kcUser)
+	imported.ImportFromKeycloak(ctx, &kcUser, logger)
 
 	assert.Equal(t, *kcUser.FirstName, *imported.FirstName)
 	assert.Equal(t, *kcUser.LastName, *imported.LastName)
 	assert.Equal(t, *kcUser.GetAttributeString(constants.AttrbGender), *imported.Gender)
-	assert.Len(t, kcUser.GetAttribute(constants.AttrbAccreditations), 2)
+	assert.Len(t, *imported.Accreditations, 2)
 	assert.True(t, *imported.PhoneNumberVerified)
 }
 

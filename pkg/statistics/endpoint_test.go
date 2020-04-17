@@ -36,9 +36,9 @@ func TestMakeGetStatisticsEndpoint(t *testing.T) {
 
 	var ctx = context.Background()
 	var req = make(map[string]string)
-	req["realm"] = "realm"
+	req[PrmRealm] = PrmRealm
 
-	mockComponent.EXPECT().GetStatistics(ctx, "realm").Return(api.StatisticsRepresentation{}, nil).Times(1)
+	mockComponent.EXPECT().GetStatistics(ctx, PrmRealm).Return(api.StatisticsRepresentation{}, nil).Times(1)
 	var res, err = e(ctx, req)
 	assert.Nil(t, err)
 	assert.NotNil(t, res)
@@ -54,7 +54,7 @@ func TestMakeGetStatisticsUsersEndpoint(t *testing.T) {
 
 	var ctx = context.Background()
 	var req = make(map[string]string)
-	req["realm"] = "realm"
+	req[PrmRealm] = "realm"
 
 	mockComponent.EXPECT().GetStatisticsUsers(ctx, "realm").Return(api.StatisticsUsersRepresentation{}, nil).Times(1)
 	var res, err = e(ctx, req)
@@ -72,7 +72,7 @@ func TestMakeGetStatisticsAuthenticatorsEndpoint(t *testing.T) {
 
 	var ctx = context.Background()
 	var req = make(map[string]string)
-	req["realm"] = "realm"
+	req[PrmRealm] = "realm"
 
 	mockComponent.EXPECT().GetStatisticsAuthenticators(ctx, "realm").Return(map[string]int64{}, nil).Times(1)
 	var res, err = e(ctx, req)
@@ -90,10 +90,10 @@ func TestMakeGetStatisticsAuthenticationsEndpoint(t *testing.T) {
 
 	var ctx = context.Background()
 	var req = make(map[string]string)
-	req["realm"] = "realm"
-	req["unit"] = "hours"
+	req[PrmRealm] = "realm"
+	req[PrmQryUnit] = "hours"
 
-	mockComponent.EXPECT().GetStatisticsAuthentications(ctx, "realm", "hours", nil).Return([][]int64{}, nil).Times(1)
+	mockComponent.EXPECT().GetStatisticsAuthentications(ctx, PrmRealm, "hours", nil).Return([][]int64{}, nil).Times(1)
 	var res, err = e(ctx, req)
 	assert.Nil(t, err)
 	assert.NotNil(t, res)
@@ -109,8 +109,8 @@ func TestMakeGetStatisticsAuthenticationsLogEndpoint(t *testing.T) {
 
 	var ctx = context.Background()
 	var req = make(map[string]string)
-	req["realm"] = "realm"
-	req["max"] = "6"
+	req[PrmRealm] = PrmRealm
+	req[PrmQryMax] = "6"
 
 	mockComponent.EXPECT().GetStatisticsAuthenticationsLog(ctx, "realm", "6").Return([]api.StatisticsConnectionRepresentation{}, nil).Times(1)
 	var res, err = e(ctx, req)

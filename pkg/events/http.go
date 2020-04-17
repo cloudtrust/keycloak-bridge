@@ -10,6 +10,10 @@ import (
 	http_transport "github.com/go-kit/kit/transport/http"
 )
 
+const (
+	regExpDateUnix = `^\d{1,10}$`
+)
+
 // MakeEventsHandler make an HTTP handler for an Events endpoint.
 func MakeEventsHandler(e endpoint.Endpoint, logger log.Logger) *http_transport.Server {
 	return http_transport.NewServer(e,
@@ -31,10 +35,10 @@ func decodeEventsRequest(ctx context.Context, req *http.Request) (interface{}, e
 		"realmTarget": `^[\w-]{1,36}$`,
 		"ctEventType": `^[\w-]{1,128}$`,
 		"exclude":     `^[\w-]{1,128}(,[\w-]{1,128})*$`,
-		"dateFrom":    `^\d{1,10}$`,
-		"dateTo":      `^\d{1,10}$`,
-		"first":       `^\d{1,10}$`,
-		"max":         `^\d{1,10}$`,
+		"dateFrom":    regExpDateUnix,
+		"dateTo":      regExpDateUnix,
+		"first":       regExpDateUnix,
+		"max":         regExpDateUnix,
 	}
 
 	return commonhttp.DecodeRequest(ctx, req, pathParams, queryParams)

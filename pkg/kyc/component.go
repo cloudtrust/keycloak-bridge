@@ -138,7 +138,7 @@ func (c *component) getUser(ctx context.Context, userID string, kcUser kc.UserRe
 		IDDocumentNumber:     dbUser.IDDocumentNumber,
 		IDDocumentExpiration: dbUser.IDDocumentExpiration,
 	}
-	res.ImportFromKeycloak(&kcUser)
+	res.ImportFromKeycloak(ctx, &kcUser, c.logger)
 
 	return res, nil
 }
