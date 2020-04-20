@@ -434,7 +434,7 @@ func (c *component) GetUsers(ctx context.Context, realmName string, groupIDs []s
 		return api.UsersPageRepresentation{}, err
 	}
 
-	for i := 0; i < *usersKc.Count; i++ {
+	for i := 0; i < len(usersKc.Users); i++ {
 		keycloakb.ConvertLegacyAttribute(&usersKc.Users[i])
 	}
 	return api.ConvertToAPIUsersPage(usersKc), nil
