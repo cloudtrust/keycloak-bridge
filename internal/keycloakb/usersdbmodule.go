@@ -114,10 +114,17 @@ func (c *usersDBModule) GetUser(ctx context.Context, realm string, userID string
 }
 
 func (c *usersDBModule) CreateCheck(ctx context.Context, realm string, userID string, check dto.DBCheck) error {
+	// encrypt the proof data & protect integrity of userID associated to the proof data
+	encryptedData, err := c.cipher.Encrypt(*check.ProofData, []byte(userID))
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Can't encrypt the proof data", "error", err.Error(), "realmID", realm, "userID", userID)
+		return err
+	}
 	// insert check in DB
-	_, err := c.db.Exec(createCheckStmt, realm, userID, check.Operator,
+	_, err = c.db.Exec(createCheckStmt, realm, userID, check.Operator,
 		check.DateTime, check.Status, check.Type, check.Nature,
-		check.ProofType, check.ProofData, check.Comment)
+		check.ProofType, encryptedData, check.Comment)
+
 	return err
 }
 

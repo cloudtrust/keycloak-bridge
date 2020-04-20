@@ -759,7 +759,7 @@ func main() {
 		}
 
 		// module for storing and retrieving details of the self-registered users
-		var usersDBModule = keycloakb.NewUsersDBModule(usersRwDBConn, mobileLogger)
+		var usersDBModule = keycloakb.NewUsersDBModule(usersRwDBConn, aesEncryption, mobileLogger)
 
 		// new module for mobile service
 		mobileComponent := mobile.NewComponent(keycloakClient, configDBModule, usersDBModule, oidcTokenProvider, mobileLogger)

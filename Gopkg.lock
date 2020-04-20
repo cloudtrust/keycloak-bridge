@@ -42,7 +42,7 @@
   version = "v2.2.1"
 
 [[projects]]
-  digest = "1:109464734d57d053f3cc69b82873205d4c478bd215c95aad555ba0a30940a16a"
+  digest = "1:6eeacdeeb2d1480f667440e2090c771fc4c8790502b8d76b494c518365f3fea9"
   name = "github.com/cloudtrust/keycloak-client"
   packages = [
     ".",
@@ -50,8 +50,8 @@
     "toolbox",
   ]
   pruneopts = "UT"
-  revision = "533900cd234dc51fd1c7d380569abf1469a87f91"
-  version = "v2.0.3"
+  revision = "16d34783cc647718726b4a821b4a47e34f4cfbe1"
+  version = "v2.0.4"
 
 [[projects]]
   digest = "1:910c5b111ca13127693df80a59be2c952ad97313626116c0c9895e7b588f2a29"
@@ -144,7 +144,7 @@
   version = "v1.4.2"
 
 [[projects]]
-  digest = "1:0d14ca4e58b26ba21372d2a300dca2702b32b492f21d910c940557bb738c95cf"
+  digest = "1:50fb21618b73dde1f0b72d56d6e09218b764c62130699dc541a3d6c360192153"
   name = "github.com/google/flatbuffers"
   packages = ["go"]
   pruneopts = "UT"
