@@ -1011,7 +1011,7 @@ func TestGetUsers(t *testing.T) {
 		attributes.SetString(constants.AttrbBirthDate, birthDate)
 		attributes.SetBool(constants.AttrbPhoneNumberVerified, phoneNumberVerified)
 
-		var count = 1
+		var count = 10
 		var kcUserRep = kc.UserRepresentation{
 			ID:               &id,
 			Username:         &username,
