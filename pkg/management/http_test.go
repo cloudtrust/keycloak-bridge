@@ -253,7 +253,7 @@ func TestHTTPXForwardHeaderHandler(t *testing.T) {
 
 		var body = strings.NewReader(string(userJSON))
 
-		req, err := http.NewRequest("POST", ts.URL+"/realms/master/users", body)
+		req, _ := http.NewRequest("POST", ts.URL+"/realms/master/users", body)
 		req.Header.Set("X-Forwarded-Proto", "https")
 		req.Host = "toto.com"
 		res, err := client.Do(req)

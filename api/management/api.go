@@ -1,6 +1,7 @@
 package apimanagement
 
 import (
+	"context"
 	"encoding/json"
 
 	"github.com/cloudtrust/common-service/configuration"
@@ -198,11 +199,8 @@ func ConvertCredential(credKc *kc.CredentialRepresentation) CredentialRepresenta
 func ConvertAttackDetectionStatus(status map[string]interface{}) AttackDetectionStatusRepresentation {
 	var res AttackDetectionStatusRepresentation
 
-	if value, ok := status["numFailures"]; ok && value != nil {
-		if conv, err := cast.ToInt64E(value); err == nil {
-			res.NumFailures = &conv
-		}
-	}
+	res.NumFailures = convertEntryToInt64(&status, "numFailures")
+	res.LastFailure = convertEntryToInt64(&status, "lastFailure")
 	if value, ok := status["disabled"]; ok && value != nil {
 		if conv, err := cast.ToBoolE(value); err == nil {
 			res.Disabled = &conv
@@ -213,17 +211,21 @@ func ConvertAttackDetectionStatus(status map[string]interface{}) AttackDetection
 			res.LastIPFailure = &conv
 		}
 	}
-	if value, ok := status["lastFailure"]; ok && value != nil {
-		if conv, err := cast.ToInt64E(value); err == nil {
-			res.LastFailure = &conv
-		}
-	}
 
 	return res
 }
 
+func convertEntryToInt64(status *map[string]interface{}, key string) *int64 {
+	if value, ok := (*status)[key]; ok && value != nil {
+		if conv, err := cast.ToInt64E(value); err == nil {
+			return &conv
+		}
+	}
+	return nil
+}
+
 // ConvertToAPIUser creates an API user representation from  a KC user representation
-func ConvertToAPIUser(userKc kc.UserRepresentation) UserRepresentation {
+func ConvertToAPIUser(ctx context.Context, userKc kc.UserRepresentation, logger keycloakb.Logger) UserRepresentation {
 	var userRep UserRepresentation
 
 	userRep.ID = userKc.ID
@@ -266,9 +268,12 @@ func ConvertToAPIUser(userKc kc.UserRepresentation) UserRepresentation {
 		var accreds []AccreditationRepresentation
 		for _, accredJSON := range values {
 			var accred AccreditationRepresentation
-			json.Unmarshal([]byte(accredJSON), &accred)
-			accred.Expired = keycloakb.IsDateInThePast(accred.ExpiryDate)
-			accreds = append(accreds, accred)
+			if json.Unmarshal([]byte(accredJSON), &accred) == nil {
+				accred.Expired = keycloakb.IsDateInThePast(accred.ExpiryDate)
+				accreds = append(accreds, accred)
+			} else {
+				logger.Warn(ctx, "msg", "Can't unmarshall JSON", "json", accredJSON)
+			}
 		}
 		userRep.Accreditations = &accreds
 	}
@@ -277,12 +282,12 @@ func ConvertToAPIUser(userKc kc.UserRepresentation) UserRepresentation {
 }
 
 // ConvertToAPIUsersPage converts paged users results from KC model to API one
-func ConvertToAPIUsersPage(users kc.UsersPageRepresentation) UsersPageRepresentation {
+func ConvertToAPIUsersPage(ctx context.Context, users kc.UsersPageRepresentation, logger keycloakb.Logger) UsersPageRepresentation {
 	var slice = []UserRepresentation{}
 	var count = 0
 
 	for _, u := range users.Users {
-		slice = append(slice, ConvertToAPIUser(u))
+		slice = append(slice, ConvertToAPIUser(ctx, u, logger))
 	}
 
 	if users.Count != nil {
@@ -581,27 +586,31 @@ func (config RealmCustomConfiguration) Validate() error {
 func (rac RealmAdminConfiguration) Validate() error {
 	return validation.NewParameterValidator().
 		ValidateParameterIn("mode", rac.Mode, allowedAdminConfMode, true).
-		ValidateParameterFunc(func() error {
-			if len(rac.AvailableChecks) > 0 {
-				for k := range rac.AvailableChecks {
-					if !validation.IsStringInSlice(configuration.AvailableCheckKeys, k) {
-						return errorhandler.CreateBadRequestError(constants.MsgErrInvalidParam + ".available-checks")
-					}
-				}
-			}
-			return nil
-		}).
-		ValidateParameterFunc(func() error {
-			if len(rac.Accreditations) > 0 {
-				for _, accred := range rac.Accreditations {
-					if err := accred.Validate(); err != nil {
-						return err
-					}
-				}
-			}
-			return nil
-		}).
+		ValidateParameterFunc(rac.validateAvailableChecks).
+		ValidateParameterFunc(rac.validateAccreditations).
 		Status()
+}
+
+func (rac RealmAdminConfiguration) validateAvailableChecks() error {
+	if len(rac.AvailableChecks) > 0 {
+		for k := range rac.AvailableChecks {
+			if !validation.IsStringInSlice(configuration.AvailableCheckKeys, k) {
+				return errorhandler.CreateBadRequestError(constants.MsgErrInvalidParam + ".available-checks")
+			}
+		}
+	}
+	return nil
+}
+
+func (rac RealmAdminConfiguration) validateAccreditations() error {
+	if len(rac.Accreditations) > 0 {
+		for _, accred := range rac.Accreditations {
+			if err := accred.Validate(); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 // Validate is a validator for RealmAdminAccreditation

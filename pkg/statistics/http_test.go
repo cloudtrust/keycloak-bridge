@@ -33,7 +33,7 @@ func TestHTTPStatisticsHandler(t *testing.T) {
 	{
 		var params map[string]string
 		params = make(map[string]string)
-		params["realm"] = "master"
+		params[PrmRealm] = "master"
 
 		var stats = api.StatisticsRepresentation{}
 		statsJSON, _ := json.MarshalIndent(stats, "", " ")

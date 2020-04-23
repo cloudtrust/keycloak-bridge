@@ -22,7 +22,7 @@ type Endpoints struct {
 
 // MakeGetActionsEndpoint creates an endpoint for GetActions
 func MakeGetActionsEndpoint(ec Component) cs.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, _ interface{}) (interface{}, error) {
 		return ec.GetActions(ctx)
 	}
 }
@@ -31,7 +31,7 @@ func MakeGetActionsEndpoint(ec Component) cs.Endpoint {
 func MakeGetStatisticsEndpoint(ec Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
-		return ec.GetStatistics(ctx, m["realm"])
+		return ec.GetStatistics(ctx, m[PrmRealm])
 	}
 }
 
@@ -39,7 +39,7 @@ func MakeGetStatisticsEndpoint(ec Component) cs.Endpoint {
 func MakeGetStatisticsUsersEndpoint(ec Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
-		return ec.GetStatisticsUsers(ctx, m["realm"])
+		return ec.GetStatisticsUsers(ctx, m[PrmRealm])
 	}
 }
 
@@ -47,7 +47,7 @@ func MakeGetStatisticsUsersEndpoint(ec Component) cs.Endpoint {
 func MakeGetStatisticsAuthenticatorsEndpoint(ec Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
-		return ec.GetStatisticsAuthenticators(ctx, m["realm"])
+		return ec.GetStatisticsAuthenticators(ctx, m[PrmRealm])
 	}
 }
 
@@ -55,14 +55,14 @@ func MakeGetStatisticsAuthenticatorsEndpoint(ec Component) cs.Endpoint {
 func MakeGetStatisticsAuthenticationsEndpoint(ec Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
-		if _, ok := m["unit"]; !ok {
+		if _, ok := m[PrmQryUnit]; !ok {
 			return nil, errorhandler.CreateMissingParameterError(msg.Unit)
 		}
 		var timeshift *string
-		if timeshiftStr, ok := m["timeshift"]; ok {
+		if timeshiftStr, ok := m[PrmQryTimeshift]; ok {
 			timeshift = &timeshiftStr
 		}
-		return ec.GetStatisticsAuthentications(ctx, m["realm"], m["unit"], timeshift)
+		return ec.GetStatisticsAuthentications(ctx, m[PrmRealm], m[PrmQryUnit], timeshift)
 	}
 }
 
@@ -70,11 +70,11 @@ func MakeGetStatisticsAuthenticationsEndpoint(ec Component) cs.Endpoint {
 func MakeGetStatisticsAuthenticationsLogEndpoint(ec Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
-		_, ok := m["max"]
+		_, ok := m[PrmQryMax]
 		if !ok {
 			return nil, errorhandler.CreateMissingParameterError(msg.Max)
 		}
-		return ec.GetStatisticsAuthenticationsLog(ctx, m["realm"], m["max"])
+		return ec.GetStatisticsAuthenticationsLog(ctx, m[PrmRealm], m[PrmQryMax])
 	}
 }
 
@@ -82,6 +82,6 @@ func MakeGetStatisticsAuthenticationsLogEndpoint(ec Component) cs.Endpoint {
 func MakeGetMigrationReportEndpoint(ec Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
-		return ec.GetMigrationReport(ctx, m["realm"])
+		return ec.GetMigrationReport(ctx, m[PrmRealm])
 	}
 }

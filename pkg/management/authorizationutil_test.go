@@ -24,7 +24,7 @@ func TestValidate(t *testing.T) {
 	allowedTargetRealmsAndGroupNames[realmName][groupName2] = struct{}{}
 	allowedTargetRealmsAndGroupNames[realmName]["*"] = struct{}{}
 
-	var authorizations = []configuration.Authorization{}
+	var authorizations []configuration.Authorization
 
 	// Invalid targetRealm
 	{

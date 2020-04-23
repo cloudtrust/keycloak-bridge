@@ -19,14 +19,14 @@ type Component interface {
 
 // MakeExportEndpoint makes endpoint that reads the config in DB.
 func MakeExportEndpoint(c Component) endpoint.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, _ interface{}) (interface{}, error) {
 		return c.Export(ctx)
 	}
 }
 
 // MakeStoreAndExportEndpoint makes the endpoint that forces the keycloak exportation and stores the config in DB.
 func MakeStoreAndExportEndpoint(c Component) endpoint.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, _ interface{}) (interface{}, error) {
 		return c.StoreAndExport(ctx)
 	}
 }

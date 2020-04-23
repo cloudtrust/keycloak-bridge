@@ -1,8 +1,10 @@
 package apiaccount
 
 import (
+	"context"
 	"testing"
 
+	"github.com/cloudtrust/common-service/log"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 
 	kc "github.com/cloudtrust/keycloak-client"
@@ -29,13 +31,16 @@ func TestConvertCredential(t *testing.T) {
 }
 
 func TestConvertToAPIAccount(t *testing.T) {
+	var ctx = context.TODO()
+	var logger = log.NewNopLogger()
+
 	var kcUser = kc.UserRepresentation{}
-	assert.Nil(t, nil, ConvertToAPIAccount(kcUser))
+	assert.Nil(t, nil, ConvertToAPIAccount(ctx, kcUser, logger))
 
 	t.Run("Empty attributes", func(t *testing.T) {
 		var attributes = make(kc.Attributes)
 		kcUser = kc.UserRepresentation{Attributes: &attributes}
-		assert.Nil(t, nil, ConvertToAPIAccount(kcUser).PhoneNumber)
+		assert.Nil(t, nil, ConvertToAPIAccount(ctx, kcUser, logger).PhoneNumber)
 	})
 
 	var attributes = kc.Attributes{
@@ -49,7 +54,7 @@ func TestConvertToAPIAccount(t *testing.T) {
 
 	t.Run("Check attributes are copied", func(t *testing.T) {
 		kcUser = kc.UserRepresentation{Attributes: &attributes}
-		var user = ConvertToAPIAccount(kcUser)
+		var user = ConvertToAPIAccount(ctx, kcUser, logger)
 		assert.Equal(t, "+41221234567", *user.PhoneNumber)
 		assert.Equal(t, "M", *user.Gender)
 		assert.Equal(t, "15.02.1920", *user.BirthDate)
@@ -60,8 +65,16 @@ func TestConvertToAPIAccount(t *testing.T) {
 
 	t.Run("PhoneNumberVerified is invalid", func(t *testing.T) {
 		attributes.SetString(constants.AttrbPhoneNumberVerified, "vielleicht")
-		var user = ConvertToAPIAccount(kcUser)
+		var user = ConvertToAPIAccount(ctx, kcUser, logger)
 		assert.Nil(t, user.PhoneNumberVerified)
+
+		attributes.SetString(constants.AttrbPhoneNumberVerified, "true")
+	})
+
+	t.Run("Accreditations are invalid", func(t *testing.T) {
+		attributes.SetString(constants.AttrbAccreditations, "{")
+		var user = ConvertToAPIAccount(ctx, kcUser, logger)
+		assert.Len(t, *user.Accreditations, 0)
 	})
 }
 

@@ -24,10 +24,10 @@ func TestHTTPRegisterHandler(t *testing.T) {
 	r := mux.NewRouter()
 	r.Handle(URL, MakeRegisterHandler(func(ctx context.Context, request interface{}) (response interface{}, err error) {
 		var m = request.(map[string]string)
-		if m["realm"] != "fail" {
-			return m["realm"], nil
+		if m[PrmRealm] != "fail" {
+			return m[PrmRealm], nil
 		}
-		return m["realm"], errorhandler.CreateBadRequestError(errorMessage)
+		return m[PrmRealm], errorhandler.CreateBadRequestError(errorMessage)
 	}, log.NewNopLogger()))
 
 	ts := httptest.NewServer(r)

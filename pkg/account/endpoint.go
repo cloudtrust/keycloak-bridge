@@ -40,7 +40,7 @@ func MakeUpdatePasswordEndpoint(component Component) cs.Endpoint {
 		var m = req.(map[string]string)
 		var body api.UpdatePasswordBody
 
-		err := json.Unmarshal([]byte(m["body"]), &body)
+		err := json.Unmarshal([]byte(m[ReqBody]), &body)
 		if err != nil {
 			return nil, errrorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Body)
 		}
@@ -55,14 +55,14 @@ func MakeUpdatePasswordEndpoint(component Component) cs.Endpoint {
 
 // MakeGetCredentialsEndpoint makes the GetCredentials endpoint to list credentials of the current user.
 func MakeGetCredentialsEndpoint(component Component) cs.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, _ interface{}) (interface{}, error) {
 		return component.GetCredentials(ctx)
 	}
 }
 
 // MakeGetCredentialRegistratorsEndpoint make the GetCredentialRegistrators endpoint to retrieve the list of possible kind of credentials.
 func MakeGetCredentialRegistratorsEndpoint(component Component) cs.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, _ interface{}) (interface{}, error) {
 		return component.GetCredentialRegistrators(ctx)
 	}
 }
@@ -74,7 +74,7 @@ func MakeUpdateLabelCredentialEndpoint(component Component) cs.Endpoint {
 
 		var body api.CredentialRepresentation
 
-		err := json.Unmarshal([]byte(m["body"]), &body)
+		err := json.Unmarshal([]byte(m[ReqBody]), &body)
 		if err != nil {
 			return nil, errrorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Body)
 		}
@@ -87,7 +87,7 @@ func MakeUpdateLabelCredentialEndpoint(component Component) cs.Endpoint {
 			return nil, errrorhandler.CreateBadRequestError(msg.MsgErrMissingParam + "." + msg.UserLabel)
 		}
 
-		return nil, component.UpdateLabelCredential(ctx, m["credentialID"], *body.UserLabel)
+		return nil, component.UpdateLabelCredential(ctx, m[PrmCredentialID], *body.UserLabel)
 	}
 }
 
@@ -96,7 +96,7 @@ func MakeDeleteCredentialEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return nil, component.DeleteCredential(ctx, m["credentialID"])
+		return nil, component.DeleteCredential(ctx, m[PrmCredentialID])
 	}
 }
 
@@ -105,13 +105,13 @@ func MakeMoveCredentialEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return nil, component.MoveCredential(ctx, m["credentialID"], m["previousCredentialID"])
+		return nil, component.MoveCredential(ctx, m[PrmCredentialID], m[PrmPrevCredentialID])
 	}
 }
 
 // MakeGetAccountEndpoint makes the GetAccount endpoint to get connected user's info.
 func MakeGetAccountEndpoint(component Component) cs.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, _ interface{}) (interface{}, error) {
 		return component.GetAccount(ctx)
 	}
 }
@@ -122,7 +122,7 @@ func MakeUpdateAccountEndpoint(component Component) cs.Endpoint {
 		var m = req.(map[string]string)
 		var body api.AccountRepresentation
 
-		err := json.Unmarshal([]byte(m["body"]), &body)
+		err := json.Unmarshal([]byte(m[ReqBody]), &body)
 		if err != nil {
 			return nil, errrorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Body)
 		}
@@ -137,7 +137,7 @@ func MakeUpdateAccountEndpoint(component Component) cs.Endpoint {
 
 // MakeDeleteAccountEndpoint makes the DeleteAccount endpoint to delete connected user.
 func MakeDeleteAccountEndpoint(component Component) cs.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, _ interface{}) (interface{}, error) {
 		return nil, component.DeleteAccount(ctx)
 	}
 }
@@ -147,20 +147,20 @@ func MakeGetConfigurationEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return component.GetConfiguration(ctx, m["realm_id"])
+		return component.GetConfiguration(ctx, m[PrmQryRealmID])
 	}
 }
 
 // MakeSendVerifyEmailEndpoint makes the SendVerifyEmail endpoint
 func MakeSendVerifyEmailEndpoint(component Component) cs.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, _ interface{}) (interface{}, error) {
 		return nil, component.SendVerifyEmail(ctx)
 	}
 }
 
 // MakeSendVerifyPhoneNumberEndpoint makes the SendVerifyPhoneNumber endpoint
 func MakeSendVerifyPhoneNumberEndpoint(component Component) cs.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, _ interface{}) (interface{}, error) {
 		return nil, component.SendVerifyPhoneNumber(ctx)
 	}
 }

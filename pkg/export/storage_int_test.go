@@ -86,6 +86,7 @@ func TestReadConfig(t *testing.T) {
 
 	var cfg = config{}
 	err = json.Unmarshal(data, &cfg)
+	assert.Nil(t, err)
 	assert.Equal(t, "name", cfg.Name)
 	assert.Equal(t, "1.0", cfg.Version)
 	assert.Equal(t, []string{"master", "test", "internal"}, cfg.Realms)

@@ -16,6 +16,32 @@ import (
 	"github.com/pkg/errors"
 )
 
+// Path and query parameters
+const (
+	ReqBody = "body"
+
+	PrmRealm        = "realm"
+	PrmUserID       = "userID"
+	PrmClientID     = "clientID"
+	PrmRoleID       = "roleID"
+	PrmGroupID      = "groupID"
+	PrmCredentialID = "credentialID"
+	PrmProvider     = "provider"
+
+	PrmQryEmail       = "email"
+	PrmQryFirstName   = "firstName"
+	PrmQryLastName    = "lastName"
+	PrmQryUserName    = "username"
+	PrmQrySearch      = "search"
+	PrmQryClientID    = "client_id"
+	PrmQryRedirectURI = "redirect_uri"
+	PrmQryLifespan    = "lifespan"
+	PrmQryGroupIDs    = "groupIds"
+	PrmQryFirst       = "first"
+	PrmQryMax         = "max"
+	PrmQryGroupName   = "groupName"
+)
+
 // MakeManagementHandler make an HTTP handler for a Management endpoint.
 func MakeManagementHandler(e endpoint.Endpoint, logger log.Logger) *http_transport.Server {
 	return http_transport.NewServer(e,
@@ -28,28 +54,28 @@ func MakeManagementHandler(e endpoint.Endpoint, logger log.Logger) *http_transpo
 // decodeEventsRequest gets the HTTP parameters and body content
 func decodeManagementRequest(ctx context.Context, req *http.Request) (interface{}, error) {
 	var pathParams = map[string]string{
-		"realm":        api.RegExpRealmName,
-		"userID":       api.RegExpID,
-		"clientID":     api.RegExpClientID,
-		"roleID":       api.RegExpID,
-		"groupID":      api.RegExpID,
-		"credentialID": api.RegExpID,
-		"provider":     api.RegExpName,
+		PrmRealm:        api.RegExpRealmName,
+		PrmUserID:       api.RegExpID,
+		PrmClientID:     api.RegExpClientID,
+		PrmRoleID:       api.RegExpID,
+		PrmGroupID:      api.RegExpID,
+		PrmCredentialID: api.RegExpID,
+		PrmProvider:     api.RegExpName,
 	}
 
 	var queryParams = map[string]string{
-		"email":        api.RegExpEmail,
-		"firstName":    api.RegExpFirstName,
-		"lastName":     api.RegExpLastName,
-		"username":     api.RegExpUsername,
-		"search":       api.RegExpSearch,
-		"client_id":    api.RegExpClientID,
-		"redirect_uri": api.RegExpRedirectURI,
-		"lifespan":     api.RegExpLifespan,
-		"groupIds":     api.RegExpGroupIds,
-		"first":        api.RegExpNumber,
-		"max":          api.RegExpNumber,
-		"groupName":    api.RegExpName,
+		PrmQryEmail:       api.RegExpEmail,
+		PrmQryFirstName:   api.RegExpFirstName,
+		PrmQryLastName:    api.RegExpLastName,
+		PrmQryUserName:    api.RegExpUsername,
+		PrmQrySearch:      api.RegExpSearch,
+		PrmQryClientID:    api.RegExpClientID,
+		PrmQryRedirectURI: api.RegExpRedirectURI,
+		PrmQryLifespan:    api.RegExpLifespan,
+		PrmQryGroupIDs:    api.RegExpGroupIds,
+		PrmQryFirst:       api.RegExpNumber,
+		PrmQryMax:         api.RegExpNumber,
+		PrmQryGroupName:   api.RegExpName,
 	}
 
 	return commonhttp.DecodeRequest(ctx, req, pathParams, queryParams)

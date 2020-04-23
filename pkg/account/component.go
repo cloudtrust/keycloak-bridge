@@ -136,7 +136,7 @@ func (c *component) GetAccount(ctx context.Context) (api.AccountRepresentation, 
 		return userRep, err
 	}
 
-	userRep = api.ConvertToAPIAccount(userKc)
+	userRep = api.ConvertToAPIAccount(ctx, userKc, c.logger)
 	if dbUser != nil {
 		userRep.BirthLocation = dbUser.BirthLocation
 		userRep.IDDocumentType = dbUser.IDDocumentType
@@ -328,7 +328,7 @@ func (c *component) UpdateLabelCredential(ctx context.Context, credentialID stri
 
 	//store the API call into the DB
 	// the error should be treated
-	additionalInfos, _ := json.Marshal(map[string]string{"credentialID": credentialID, "label": label})
+	additionalInfos, _ := json.Marshal(map[string]string{PrmCredentialID: credentialID, "label": label})
 
 	c.reportEvent(ctx, "SELF_UPDATE_CREDENTIAL", database.CtEventRealmName, currentRealm, database.CtEventUserID, userID, database.CtEventUsername, username, database.CtEventAdditionalInfo, string(additionalInfos))
 
@@ -348,7 +348,7 @@ func (c *component) DeleteCredential(ctx context.Context, credentialID string) e
 		return err
 	}
 
-	additionalInfos, _ := json.Marshal(map[string]string{"credentialID": credentialID})
+	additionalInfos, _ := json.Marshal(map[string]string{PrmCredentialID: credentialID})
 
 	//store the API call into the DB
 	c.reportEvent(ctx, "SELF_DELETE_CREDENTIAL", database.CtEventRealmName, currentRealm, database.CtEventUserID, userID, database.CtEventUsername, username, database.CtEventAdditionalInfo, string(additionalInfos))
@@ -374,7 +374,7 @@ func (c *component) MoveCredential(ctx context.Context, credentialID string, pre
 		return err
 	}
 
-	additionalInfos, err := json.Marshal(map[string]string{"credentialID": credentialID, "previousCredentialID": previousCredentialID})
+	additionalInfos, err := json.Marshal(map[string]string{PrmCredentialID: credentialID, PrmPrevCredentialID: previousCredentialID})
 
 	//store the API call into the DB
 	c.reportEvent(ctx, "SELF_MOVE_CREDENTIAL", database.CtEventRealmName, currentRealm, database.CtEventUserID, userID, database.CtEventUsername, username, database.CtEventAdditionalInfo, string(additionalInfos))

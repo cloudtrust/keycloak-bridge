@@ -40,9 +40,8 @@ func TestMakeGetUserEndpoint(t *testing.T) {
 
 	mockKYCComponent := mock.NewComponent(mockCtrl)
 
-	var realm = "master"
 	var userID = "user1234"
-	var m = map[string]string{"realm": realm, "userId": userID}
+	var m = map[string]string{PrmUserID: userID}
 	var expectedError = errors.New("get-user")
 
 	t.Run("GetUser - success case", func(t *testing.T) {
@@ -64,9 +63,8 @@ func TestMakeGetUserByUsernameEndpoint(t *testing.T) {
 
 	mockKYCComponent := mock.NewComponent(mockCtrl)
 
-	var realm = "master"
 	var username = "user1234"
-	var m = map[string]string{"realm": realm, "username": username}
+	var m = map[string]string{PrmQryUserName: username}
 	var expectedError = errors.New("get-user")
 
 	t.Run("GetUserByUsername - success case", func(t *testing.T) {
@@ -88,7 +86,6 @@ func TestMakeValidateUserEndpoint(t *testing.T) {
 
 	mockKYCComponent := mock.NewComponent(mockCtrl)
 
-	var realm = "master"
 	var first = "John"
 	var last = "Doe"
 	var userID = "ux467913"
@@ -97,17 +94,15 @@ func TestMakeValidateUserEndpoint(t *testing.T) {
 
 	t.Run("ValidateUser - success case", func(t *testing.T) {
 		var bytes, _ = json.Marshal(user)
-		m["realm"] = realm
-		m["body"] = string(bytes)
-		m["userId"] = userID
+		m[ReqBody] = string(bytes)
+		m[PrmUserID] = userID
 		mockKYCComponent.EXPECT().ValidateUser(gomock.Any(), userID, user).Return(nil).Times(1)
 		_, err := MakeValidateUserEndpoint(mockKYCComponent)(context.Background(), m)
 		assert.Nil(t, err)
 	})
 
 	t.Run("ValidateUser - failure case", func(t *testing.T) {
-		m["realm"] = realm
-		m["body"] = "{"
+		m[ReqBody] = "{"
 		_, err := MakeValidateUserEndpoint(mockKYCComponent)(context.Background(), m)
 		assert.NotNil(t, err)
 	})

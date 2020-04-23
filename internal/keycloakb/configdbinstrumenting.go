@@ -11,6 +11,11 @@ import (
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 )
 
+const (
+	// KeyCorrelationID is histogram field for correlation ID
+	KeyCorrelationID = "correlation_id"
+)
+
 // Instrumenting middleware at module level.
 type configDBModuleInstrumentingMW struct {
 	h    cm.Histogram
@@ -46,7 +51,7 @@ func MakeConfigurationDBModuleInstrumentingMW(h cm.Histogram) func(Configuration
 // configDBModuleInstrumentingMW implements Module.
 func (m *configDBModuleInstrumentingMW) NewTransaction(ctx context.Context) (sqltypes.Transaction, error) {
 	defer func(begin time.Time) {
-		m.h.With("correlation_id", ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
+		m.h.With(KeyCorrelationID, ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
 	}(time.Now())
 	return m.next.NewTransaction(ctx)
 }
@@ -54,7 +59,7 @@ func (m *configDBModuleInstrumentingMW) NewTransaction(ctx context.Context) (sql
 // configDBModuleInstrumentingMW implements Module.
 func (m *configDBModuleInstrumentingMW) StoreOrUpdateConfiguration(ctx context.Context, realmName string, config configuration.RealmConfiguration) error {
 	defer func(begin time.Time) {
-		m.h.With("correlation_id", ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
+		m.h.With(KeyCorrelationID, ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
 	}(time.Now())
 	return m.next.StoreOrUpdateConfiguration(ctx, realmName, config)
 }
@@ -62,7 +67,7 @@ func (m *configDBModuleInstrumentingMW) StoreOrUpdateConfiguration(ctx context.C
 // configDBModuleInstrumentingMW implements Module.
 func (m *configDBModuleInstrumentingMW) GetConfiguration(ctx context.Context, realmName string) (configuration.RealmConfiguration, error) {
 	defer func(begin time.Time) {
-		m.h.With("correlation_id", ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
+		m.h.With(KeyCorrelationID, ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
 	}(time.Now())
 	return m.next.GetConfiguration(ctx, realmName)
 }
@@ -70,7 +75,7 @@ func (m *configDBModuleInstrumentingMW) GetConfiguration(ctx context.Context, re
 // configDBModuleInstrumentingMW implements Module.
 func (m *configDBModuleInstrumentingMW) StoreOrUpdateAdminConfiguration(ctx context.Context, realmName string, config configuration.RealmAdminConfiguration) error {
 	defer func(begin time.Time) {
-		m.h.With("correlation_id", ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
+		m.h.With(KeyCorrelationID, ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
 	}(time.Now())
 	return m.next.StoreOrUpdateAdminConfiguration(ctx, realmName, config)
 }
@@ -78,7 +83,7 @@ func (m *configDBModuleInstrumentingMW) StoreOrUpdateAdminConfiguration(ctx cont
 // configDBModuleInstrumentingMW implements Module.
 func (m *configDBModuleInstrumentingMW) GetAdminConfiguration(ctx context.Context, realmName string) (configuration.RealmAdminConfiguration, error) {
 	defer func(begin time.Time) {
-		m.h.With("correlation_id", ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
+		m.h.With(KeyCorrelationID, ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
 	}(time.Now())
 	return m.next.GetAdminConfiguration(ctx, realmName)
 }
@@ -86,21 +91,21 @@ func (m *configDBModuleInstrumentingMW) GetAdminConfiguration(ctx context.Contex
 // configDBModuleInstrumentingMW implements Module.
 func (m *configDBModuleInstrumentingMW) GetBackOfficeConfiguration(ctx context.Context, realmName string, groupNames []string) (dto.BackOfficeConfiguration, error) {
 	defer func(begin time.Time) {
-		m.h.With("correlation_id", ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
+		m.h.With(KeyCorrelationID, ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
 	}(time.Now())
 	return m.next.GetBackOfficeConfiguration(ctx, realmName, groupNames)
 }
 
 func (m *configDBModuleInstrumentingMW) DeleteBackOfficeConfiguration(ctx context.Context, realmID string, groupName string, confType string, targetRealmID *string, targetGroupName *string) error {
 	defer func(begin time.Time) {
-		m.h.With("correlation_id", ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
+		m.h.With(KeyCorrelationID, ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
 	}(time.Now())
 	return m.next.DeleteBackOfficeConfiguration(ctx, realmID, groupName, confType, targetRealmID, targetGroupName)
 }
 
 func (m *configDBModuleInstrumentingMW) InsertBackOfficeConfiguration(ctx context.Context, realmID, groupName, confType, targetRealmID string, targetGroupNames []string) error {
 	defer func(begin time.Time) {
-		m.h.With("correlation_id", ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
+		m.h.With(KeyCorrelationID, ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
 	}(time.Now())
 	return m.next.InsertBackOfficeConfiguration(ctx, realmID, groupName, confType, targetRealmID, targetGroupNames)
 }
@@ -108,7 +113,7 @@ func (m *configDBModuleInstrumentingMW) InsertBackOfficeConfiguration(ctx contex
 // configDBModuleInstrumentingMW implements Module.
 func (m *configDBModuleInstrumentingMW) GetAuthorizations(ctx context.Context, realmID string, groupID string) ([]configuration.Authorization, error) {
 	defer func(begin time.Time) {
-		m.h.With("correlation_id", ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
+		m.h.With(KeyCorrelationID, ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
 	}(time.Now())
 	return m.next.GetAuthorizations(ctx, realmID, groupID)
 }
@@ -116,7 +121,7 @@ func (m *configDBModuleInstrumentingMW) GetAuthorizations(ctx context.Context, r
 // configDBModuleInstrumentingMW implements Module.
 func (m *configDBModuleInstrumentingMW) CreateAuthorization(ctx context.Context, auth configuration.Authorization) error {
 	defer func(begin time.Time) {
-		m.h.With("correlation_id", ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
+		m.h.With(KeyCorrelationID, ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
 	}(time.Now())
 	return m.next.CreateAuthorization(ctx, auth)
 }
@@ -124,7 +129,7 @@ func (m *configDBModuleInstrumentingMW) CreateAuthorization(ctx context.Context,
 // configDBModuleInstrumentingMW implements Module.
 func (m *configDBModuleInstrumentingMW) DeleteAuthorizations(ctx context.Context, realmID string, groupID string) error {
 	defer func(begin time.Time) {
-		m.h.With("correlation_id", ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
+		m.h.With(KeyCorrelationID, ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
 	}(time.Now())
 	return m.next.DeleteAuthorizations(ctx, realmID, groupID)
 }
@@ -132,7 +137,7 @@ func (m *configDBModuleInstrumentingMW) DeleteAuthorizations(ctx context.Context
 // configDBModuleInstrumentingMW implements Module.
 func (m *configDBModuleInstrumentingMW) DeleteAllAuthorizationsWithGroup(ctx context.Context, realmID, groupName string) error {
 	defer func(begin time.Time) {
-		m.h.With("correlation_id", ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
+		m.h.With(KeyCorrelationID, ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
 	}(time.Now())
 	return m.next.DeleteAllAuthorizationsWithGroup(ctx, realmID, groupName)
 }

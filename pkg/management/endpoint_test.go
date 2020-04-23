@@ -57,7 +57,7 @@ func TestGetRealmEndpoint(t *testing.T) {
 	var realm = "master"
 	var ctx = context.Background()
 	var req = make(map[string]string)
-	req["realm"] = realm
+	req[PrmRealm] = realm
 
 	mockManagementComponent.EXPECT().GetRealm(ctx, realm).Return(api.RealmRepresentation{}, nil).Times(1)
 	var res, err = e(ctx, req)
@@ -77,8 +77,8 @@ func TestGetClientEndpoint(t *testing.T) {
 	var clientID = "1234-4567-7895"
 	var ctx = context.Background()
 	var req = make(map[string]string)
-	req["realm"] = realm
-	req["clientID"] = clientID
+	req[PrmRealm] = realm
+	req[PrmClientID] = clientID
 
 	mockManagementComponent.EXPECT().GetClient(ctx, realm, clientID).Return(api.ClientRepresentation{}, nil).Times(1)
 	var res, err = e(ctx, req)
@@ -97,7 +97,7 @@ func TestGetClientsEndpoint(t *testing.T) {
 	var realm = "master"
 	var ctx = context.Background()
 	var req = make(map[string]string)
-	req["realm"] = realm
+	req[PrmRealm] = realm
 
 	mockManagementComponent.EXPECT().GetClients(ctx, realm).Return([]api.ClientRepresentation{}, nil).Times(1)
 	var res, err = e(ctx, req)
@@ -116,7 +116,7 @@ func TestGetRequiredActionsEndpoint(t *testing.T) {
 	var realm = "master"
 	var ctx = context.Background()
 	var req = make(map[string]string)
-	req["realm"] = realm
+	req[PrmRealm] = realm
 
 	mockManagementComponent.EXPECT().GetRequiredActions(ctx, realm).Return([]api.RequiredActionRepresentation{}, nil).Times(1)
 	var res, err = e(ctx, req)
@@ -142,10 +142,10 @@ func TestCreateUserEndpoint(t *testing.T) {
 		var req = make(map[string]string)
 		req["scheme"] = "https"
 		req["host"] = "elca.ch"
-		req["realm"] = realm
+		req[PrmRealm] = realm
 
 		userJSON, _ := json.Marshal(api.UserRepresentation{Groups: &groups})
-		req["body"] = string(userJSON)
+		req[ReqBody] = string(userJSON)
 
 		mockManagementComponent.EXPECT().CreateUser(ctx, realm, api.UserRepresentation{Groups: &groups}).Return(location, nil).Times(1)
 		res, err := e(ctx, req)
@@ -158,7 +158,7 @@ func TestCreateUserEndpoint(t *testing.T) {
 	// Error - Cannot unmarshall
 	{
 		var req = make(map[string]string)
-		req["body"] = string("JSON")
+		req[ReqBody] = string("JSON")
 		_, err := e(ctx, req)
 		assert.NotNil(t, err)
 	}
@@ -168,9 +168,9 @@ func TestCreateUserEndpoint(t *testing.T) {
 		var req = make(map[string]string)
 		req["scheme"] = "https"
 		req["host"] = "elca.ch"
-		req["realm"] = realm
+		req[PrmRealm] = realm
 		userJSON, _ := json.Marshal(api.UserRepresentation{Groups: &groups})
-		req["body"] = string(userJSON)
+		req[ReqBody] = string(userJSON)
 
 		mockManagementComponent.EXPECT().CreateUser(ctx, realm, gomock.Any()).Return("", fmt.Errorf("Error")).Times(1)
 		_, err := e(ctx, req)
@@ -190,8 +190,8 @@ func TestDeleteUserEndpoint(t *testing.T) {
 	var userID = "1234-452-4578"
 	var ctx = context.Background()
 	var req = make(map[string]string)
-	req["realm"] = realm
-	req["userID"] = userID
+	req[PrmRealm] = realm
+	req[PrmUserID] = userID
 
 	mockManagementComponent.EXPECT().DeleteUser(ctx, realm, userID).Return(nil).Times(1)
 	var res, err = e(ctx, req)
@@ -211,8 +211,8 @@ func TestGetUserEndpoint(t *testing.T) {
 	var userID = "1234-452-4578"
 	var ctx = context.Background()
 	var req = make(map[string]string)
-	req["realm"] = realm
-	req["userID"] = userID
+	req[PrmRealm] = realm
+	req[PrmUserID] = userID
 
 	mockManagementComponent.EXPECT().GetUser(ctx, realm, userID).Return(api.UserRepresentation{}, nil).Times(1)
 	var res, err = e(ctx, req)
@@ -234,10 +234,10 @@ func TestUpdateUserEndpoint(t *testing.T) {
 		var userID = "1234-452-4578"
 		var ctx = context.Background()
 		var req = make(map[string]string)
-		req["realm"] = realm
-		req["userID"] = userID
+		req[PrmRealm] = realm
+		req[PrmUserID] = userID
 		userJSON, _ := json.Marshal(api.UserRepresentation{})
-		req["body"] = string(userJSON)
+		req[ReqBody] = string(userJSON)
 
 		mockManagementComponent.EXPECT().UpdateUser(ctx, realm, userID, gomock.Any()).Return(nil).Times(1)
 		var res, err = e(ctx, req)
@@ -251,9 +251,9 @@ func TestUpdateUserEndpoint(t *testing.T) {
 		var userID = "1234-452-4578"
 		var ctx = context.Background()
 		var req = make(map[string]string)
-		req["realm"] = realm
-		req["userID"] = userID
-		req["body"] = string("userJSON")
+		req[PrmRealm] = realm
+		req[PrmUserID] = userID
+		req[ReqBody] = string("userJSON")
 
 		var res, err = e(ctx, req)
 		assert.NotNil(t, err)
@@ -277,8 +277,8 @@ func TestGetUsersEndpoint(t *testing.T) {
 		var groupIDs = groupID1 + "," + groupID2
 		var ctx = context.Background()
 		var req = make(map[string]string)
-		req["realm"] = realm
-		req["groupIds"] = groupIDs
+		req[PrmRealm] = realm
+		req[PrmQryGroupIDs] = groupIDs
 
 		mockManagementComponent.EXPECT().GetUsers(ctx, realm, []string{groupID1, groupID2}).Return(api.UsersPageRepresentation{}, nil).Times(1)
 		var res, err = e(ctx, req)
@@ -291,16 +291,16 @@ func TestGetUsersEndpoint(t *testing.T) {
 		var realm = "master"
 		var ctx = context.Background()
 		var req = make(map[string]string)
-		req["realm"] = realm
-		req["email"] = "email@elca.ch"
-		req["firstName"] = "firstname"
-		req["lastName"] = "lastname"
-		req["search"] = "search"
-		req["username"] = "username"
+		req[PrmRealm] = realm
+		req[PrmQryEmail] = "email@elca.ch"
+		req[PrmQryFirstName] = "firstname"
+		req[PrmQryLastName] = "lastname"
+		req[PrmQrySearch] = "search"
+		req[PrmQryUserName] = "username"
 		req["toto"] = "tutu" // Check this param is not transmitted
-		req["groupIds"] = "123-784dsf-sdf567"
+		req[PrmQryGroupIDs] = "123-784dsf-sdf567"
 
-		mockManagementComponent.EXPECT().GetUsers(ctx, realm, []string{req["groupIds"]}, "email", req["email"], "firstName", req["firstName"], "lastName", req["lastName"], "username", req["username"], "search", req["search"]).Return(api.UsersPageRepresentation{}, nil).Times(1)
+		mockManagementComponent.EXPECT().GetUsers(ctx, realm, []string{req[PrmQryGroupIDs]}, "email", req[PrmQryEmail], "firstName", req[PrmQryFirstName], "lastName", req[PrmQryLastName], "username", req[PrmQryUserName], "search", req[PrmQrySearch]).Return(api.UsersPageRepresentation{}, nil).Times(1)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.NotNil(t, res)
@@ -311,7 +311,7 @@ func TestGetUsersEndpoint(t *testing.T) {
 		var realm = "master"
 		var ctx = context.Background()
 		var req = make(map[string]string)
-		req["realm"] = realm
+		req[PrmRealm] = realm
 
 		var res, err = e(ctx, req)
 		assert.NotNil(t, err)
@@ -333,8 +333,8 @@ func TestGetUserAccountStatusEndpoint(t *testing.T) {
 		var userID = "123-456-789"
 		var ctx = context.Background()
 		var req = make(map[string]string)
-		req["realm"] = realm
-		req["userID"] = userID
+		req[PrmRealm] = realm
+		req[PrmUserID] = userID
 		var m map[string]bool
 		m = make(map[string]bool)
 		m["enabled"] = false
@@ -359,8 +359,8 @@ func TestGetRolesOfUserEndpoint(t *testing.T) {
 		var userID = "123-123-456"
 		var ctx = context.Background()
 		var req = make(map[string]string)
-		req["realm"] = realm
-		req["userID"] = userID
+		req[PrmRealm] = realm
+		req[PrmUserID] = userID
 
 		mockManagementComponent.EXPECT().GetRolesOfUser(ctx, realm, userID).Return([]api.RoleRepresentation{}, nil).Times(1)
 		var res, err = e(ctx, req)
@@ -383,8 +383,8 @@ func TestGetGroupsOfUserEndpoint(t *testing.T) {
 		var userID = "123-123-456"
 		var ctx = context.Background()
 		var req = make(map[string]string)
-		req["realm"] = realm
-		req["userID"] = userID
+		req[PrmRealm] = realm
+		req[PrmUserID] = userID
 
 		mockManagementComponent.EXPECT().GetGroupsOfUser(ctx, realm, userID).Return([]api.GroupRepresentation{}, nil).Times(1)
 		var res, err = e(ctx, req)
@@ -404,9 +404,9 @@ func TestSetGroupsToUserEndpoint(t *testing.T) {
 	var groupID = "grp1"
 	var ctx = context.Background()
 	var req = make(map[string]string)
-	req["realm"] = realm
-	req["userID"] = userID
-	req["groupID"] = groupID
+	req[PrmRealm] = realm
+	req[PrmUserID] = userID
+	req[PrmGroupID] = groupID
 
 	t.Run("AddGroup: No error", func(t *testing.T) {
 		var e = MakeAddGroupToUserEndpoint(mockManagementComponent)
@@ -433,7 +433,7 @@ func TestGetAvailableTrustIDGroupsEndpoint(t *testing.T) {
 	var e = MakeGetAvailableTrustIDGroupsEndpoint(mockManagementComponent)
 	var realm = "master"
 	var ctx = context.Background()
-	var req = map[string]string{"realm": realm}
+	var req = map[string]string{PrmRealm: realm}
 
 	t.Run("No error", func(t *testing.T) {
 		mockManagementComponent.EXPECT().GetAvailableTrustIDGroups(ctx, realm).Return([]string{"grp1", "grp2"}, nil).Times(1)
@@ -460,7 +460,7 @@ func TestGetTrustIDGroupsOfUserEndpoint(t *testing.T) {
 	var realm = "master"
 	var userID = "123-123-456"
 	var ctx = context.Background()
-	var req = map[string]string{"realm": realm, "userID": userID}
+	var req = map[string]string{PrmRealm: realm, PrmUserID: userID}
 
 	t.Run("No error", func(t *testing.T) {
 		mockManagementComponent.EXPECT().GetTrustIDGroupsOfUser(ctx, realm, userID).Return([]string{"grp1", "grp2"}, nil).Times(1)
@@ -490,10 +490,10 @@ func TestSetTrustIDGroupsToUserEndpoint(t *testing.T) {
 		var userID = "123-123-456"
 		var ctx = context.Background()
 		var req = make(map[string]string)
-		req["realm"] = realm
-		req["userID"] = userID
+		req[PrmRealm] = realm
+		req[PrmUserID] = userID
 		body := []string{"grp1", "grp2"}
-		req["body"] = string("[\"grp1\", \"grp2\"]")
+		req[ReqBody] = string("[\"grp1\", \"grp2\"]")
 
 		mockManagementComponent.EXPECT().SetTrustIDGroupsToUser(ctx, realm, userID, body).Return(nil).Times(1)
 		var res, err = e(ctx, req)
@@ -506,9 +506,9 @@ func TestSetTrustIDGroupsToUserEndpoint(t *testing.T) {
 		var userID = "123-123-456"
 		var ctx = context.Background()
 		var req = make(map[string]string)
-		req["realm"] = realm
-		req["userID"] = userID
-		req["body"] = ""
+		req[PrmRealm] = realm
+		req[PrmUserID] = userID
+		req[ReqBody] = ""
 
 		var res, err = e(ctx, req)
 		assert.NotNil(t, err)
@@ -531,9 +531,9 @@ func TestGetClientRolesForUserEndpoint(t *testing.T) {
 		var clientID = "456-789-741"
 		var ctx = context.Background()
 		var req = make(map[string]string)
-		req["realm"] = realm
-		req["userID"] = userID
-		req["clientID"] = clientID
+		req[PrmRealm] = realm
+		req[PrmUserID] = userID
+		req[PrmClientID] = clientID
 
 		mockManagementComponent.EXPECT().GetClientRolesForUser(ctx, realm, userID, clientID).Return([]api.RoleRepresentation{}, nil).Times(1)
 		var res, err = e(ctx, req)
@@ -557,11 +557,11 @@ func TestAddClientRolesToUserEndpoint(t *testing.T) {
 		var clientID = "456-789-741"
 		var ctx = context.Background()
 		var req = make(map[string]string)
-		req["realm"] = realm
-		req["userID"] = userID
-		req["clientID"] = clientID
+		req[PrmRealm] = realm
+		req[PrmUserID] = userID
+		req[PrmClientID] = clientID
 		roleJSON, _ := json.Marshal([]api.RoleRepresentation{})
-		req["body"] = string(roleJSON)
+		req[ReqBody] = string(roleJSON)
 
 		mockManagementComponent.EXPECT().AddClientRolesToUser(ctx, realm, userID, clientID, []api.RoleRepresentation{}).Return(nil).Times(1)
 		var res, err = e(ctx, req)
@@ -576,10 +576,10 @@ func TestAddClientRolesToUserEndpoint(t *testing.T) {
 		var clientID = "456-789-741"
 		var ctx = context.Background()
 		var req = make(map[string]string)
-		req["realm"] = realm
-		req["userID"] = userID
-		req["clientID"] = clientID
-		req["body"] = string("roleJSON")
+		req[PrmRealm] = realm
+		req[PrmUserID] = userID
+		req[PrmClientID] = clientID
+		req[ReqBody] = string("roleJSON")
 
 		var res, err = e(ctx, req)
 		assert.NotNil(t, err)
@@ -601,10 +601,10 @@ func TestResetPasswordEndpoint(t *testing.T) {
 		var userID = "123-123-456"
 		var ctx = context.Background()
 		var req = make(map[string]string)
-		req["realm"] = realm
-		req["userID"] = userID
+		req[PrmRealm] = realm
+		req[PrmUserID] = userID
 		passwordJSON, _ := json.Marshal(api.PasswordRepresentation{})
-		req["body"] = string(passwordJSON)
+		req[ReqBody] = string(passwordJSON)
 
 		mockManagementComponent.EXPECT().ResetPassword(ctx, realm, userID, api.PasswordRepresentation{}).Return("", nil).Times(1)
 		var res, err = e(ctx, req)
@@ -618,9 +618,9 @@ func TestResetPasswordEndpoint(t *testing.T) {
 		var userID = "123-123-456"
 		var ctx = context.Background()
 		var req = make(map[string]string)
-		req["realm"] = realm
-		req["userID"] = userID
-		req["body"] = string("passwordJSON")
+		req[PrmRealm] = realm
+		req[PrmUserID] = userID
+		req[ReqBody] = string("passwordJSON")
 
 		var res, err = e(ctx, req)
 		assert.NotNil(t, err)
@@ -643,10 +643,10 @@ func TestExecuteActionsEmailEndpoint(t *testing.T) {
 		var actions = []api.RequiredAction{"action1", "action2"}
 		var ctx = context.Background()
 		var req = make(map[string]string)
-		req["realm"] = realm
-		req["userID"] = userID
+		req[PrmRealm] = realm
+		req[PrmUserID] = userID
 		actionsJSON, _ := json.Marshal(actions)
-		req["body"] = string(actionsJSON)
+		req[ReqBody] = string(actionsJSON)
 
 		mockManagementComponent.EXPECT().ExecuteActionsEmail(ctx, realm, userID, actions).Return(nil).Times(1)
 		var res, err = e(ctx, req)
@@ -661,15 +661,15 @@ func TestExecuteActionsEmailEndpoint(t *testing.T) {
 		var actions = []api.RequiredAction{"action1", "action2"}
 		var ctx = context.Background()
 		var req = make(map[string]string)
-		req["realm"] = realm
-		req["userID"] = userID
-		req["client_id"] = "123789"
-		req["redirect_uri"] = "http://redirect.com"
+		req[PrmRealm] = realm
+		req[PrmUserID] = userID
+		req[PrmQryClientID] = "123789"
+		req[PrmQryRedirectURI] = "http://redirect.com"
 		req["toto"] = "tutu" // Check this param is not transmitted
 		actionsJSON, _ := json.Marshal(actions)
-		req["body"] = string(actionsJSON)
+		req[ReqBody] = string(actionsJSON)
 
-		mockManagementComponent.EXPECT().ExecuteActionsEmail(ctx, realm, userID, actions, "client_id", req["client_id"], "redirect_uri", req["redirect_uri"]).Return(nil).Times(1)
+		mockManagementComponent.EXPECT().ExecuteActionsEmail(ctx, realm, userID, actions, PrmQryClientID, req[PrmQryClientID], PrmQryRedirectURI, req[PrmQryRedirectURI]).Return(nil).Times(1)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Nil(t, res)
@@ -682,11 +682,11 @@ func TestExecuteActionsEmailEndpoint(t *testing.T) {
 		var userID = "123-456-789"
 		var ctx = context.Background()
 		var req = make(map[string]string)
-		req["realm"] = realm
-		req["userID"] = userID
-		req["client_id"] = "123789"
-		req["redirect_uri"] = "http://redirect.com"
-		req["body"] = string("actions")
+		req[PrmRealm] = realm
+		req[PrmUserID] = userID
+		req[PrmQryClientID] = "123789"
+		req[PrmQryRedirectURI] = "http://redirect.com"
+		req[ReqBody] = string("actions")
 
 		var res, err = e(ctx, req)
 		assert.NotNil(t, err)
@@ -706,8 +706,8 @@ func TestSendNewEnrolmentCodeEndpoint(t *testing.T) {
 	var userID = "123-456-789"
 	var ctx = context.Background()
 	var req = make(map[string]string)
-	req["realm"] = realm
-	req["userID"] = userID
+	req[PrmRealm] = realm
+	req[PrmUserID] = userID
 
 	mockManagementComponent.EXPECT().SendNewEnrolmentCode(ctx, realm, userID).Return("1234", nil).Times(1)
 	var res, err = e(ctx, req)
@@ -730,8 +730,8 @@ func TestSendReminderEmailEndpoint(t *testing.T) {
 		var userID = "123-456-789"
 		var ctx = context.Background()
 		var req = make(map[string]string)
-		req["realm"] = realm
-		req["userID"] = userID
+		req[PrmRealm] = realm
+		req[PrmUserID] = userID
 
 		mockManagementComponent.EXPECT().SendReminderEmail(ctx, realm, userID).Return(nil).Times(1)
 		var res, err = e(ctx, req)
@@ -746,14 +746,14 @@ func TestSendReminderEmailEndpoint(t *testing.T) {
 		var ctx = context.Background()
 		var req = make(map[string]string)
 		var lifespan = 3600
-		req["realm"] = realm
-		req["userID"] = userID
-		req["client_id"] = "123789"
-		req["redirect_uri"] = "http://redirect.com"
-		req["lifespan"] = string(lifespan)
+		req[PrmRealm] = realm
+		req[PrmUserID] = userID
+		req[PrmQryClientID] = "123789"
+		req[PrmQryRedirectURI] = "http://redirect.com"
+		req[PrmQryLifespan] = string(lifespan)
 		req["toto"] = "tutu" // Check this param is not transmitted
 
-		mockManagementComponent.EXPECT().SendReminderEmail(ctx, realm, userID, "client_id", req["client_id"], "redirect_uri", req["redirect_uri"], "lifespan", req["lifespan"]).Return(nil).Times(1)
+		mockManagementComponent.EXPECT().SendReminderEmail(ctx, realm, userID, PrmQryClientID, req[PrmQryClientID], PrmQryRedirectURI, req[PrmQryRedirectURI], PrmQryLifespan, req[PrmQryLifespan]).Return(nil).Times(1)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Nil(t, res)
@@ -773,8 +773,8 @@ func TestResetSmsCounterEndpoint(t *testing.T) {
 	var userID = "123-456-789"
 	var ctx = context.Background()
 	var req = make(map[string]string)
-	req["realm"] = realm
-	req["userID"] = userID
+	req[PrmRealm] = realm
+	req[PrmUserID] = userID
 
 	mockManagementComponent.EXPECT().ResetSmsCounter(ctx, realm, userID).Return(nil).Times(1)
 	var res, err = e(ctx, req)
@@ -795,8 +795,8 @@ func TestRecoveryCodeEndpoint(t *testing.T) {
 	var userID = "123-456-789"
 	var ctx = context.Background()
 	var req = make(map[string]string)
-	req["realm"] = realm
-	req["userID"] = userID
+	req[PrmRealm] = realm
+	req[PrmUserID] = userID
 
 	mockManagementComponent.EXPECT().CreateRecoveryCode(ctx, realm, userID).Return("123456", nil).Times(1)
 	var res, err = e(ctx, req)
@@ -819,8 +819,8 @@ func TestGetCredentialsForUserEndpoint(t *testing.T) {
 		var userID = "123-456-789"
 		var ctx = context.Background()
 		var req = make(map[string]string)
-		req["realm"] = realm
-		req["userID"] = userID
+		req[PrmRealm] = realm
+		req[PrmUserID] = userID
 
 		mockManagementComponent.EXPECT().GetCredentialsForUser(ctx, realm, userID).Return([]api.CredentialRepresentation{}, nil).Times(1)
 		var _, err = e(ctx, req)
@@ -843,9 +843,9 @@ func TestDeleteCredentialsForUserEndpoint(t *testing.T) {
 		var credID = "987-654-321"
 		var ctx = context.Background()
 		var req = make(map[string]string)
-		req["realm"] = realm
-		req["userID"] = userID
-		req["credentialID"] = credID
+		req[PrmRealm] = realm
+		req[PrmUserID] = userID
+		req[PrmCredentialID] = credID
 
 		mockManagementComponent.EXPECT().DeleteCredentialsForUser(ctx, realm, userID, credID).Return(nil).Times(1)
 		var _, err = e(ctx, req)
@@ -865,8 +865,8 @@ func TestBruteForceEndpoints(t *testing.T) {
 		var userID = "123-456-789"
 		var ctx = context.Background()
 		var req = make(map[string]string)
-		req["realm"] = realm
-		req["userID"] = userID
+		req[PrmRealm] = realm
+		req[PrmUserID] = userID
 
 		mockManagementComponent.EXPECT().ClearUserLoginFailures(ctx, realm, userID).Return(nil).Times(1)
 		var _, err = e(ctx, req)
@@ -879,8 +879,8 @@ func TestBruteForceEndpoints(t *testing.T) {
 		var userID = "123-456-789"
 		var ctx = context.Background()
 		var req = make(map[string]string)
-		req["realm"] = realm
-		req["userID"] = userID
+		req[PrmRealm] = realm
+		req[PrmUserID] = userID
 
 		mockManagementComponent.EXPECT().GetAttackDetectionStatus(ctx, realm, userID).Return(api.AttackDetectionStatusRepresentation{}, nil).Times(1)
 		var _, err = e(ctx, req)
@@ -901,7 +901,7 @@ func TestGetRolesEndpoint(t *testing.T) {
 		var realm = "master"
 		var ctx = context.Background()
 		var req = make(map[string]string)
-		req["realm"] = realm
+		req[PrmRealm] = realm
 
 		mockManagementComponent.EXPECT().GetRoles(ctx, realm).Return([]api.RoleRepresentation{}, nil).Times(1)
 		var res, err = e(ctx, req)
@@ -924,8 +924,8 @@ func TestGetRoleEndpoint(t *testing.T) {
 		var roleID = "123456"
 		var ctx = context.Background()
 		var req = make(map[string]string)
-		req["realm"] = realm
-		req["roleID"] = roleID
+		req[PrmRealm] = realm
+		req[PrmRoleID] = roleID
 
 		mockManagementComponent.EXPECT().GetRole(ctx, realm, roleID).Return(api.RoleRepresentation{}, nil).Times(1)
 		var res, err = e(ctx, req)
@@ -947,7 +947,7 @@ func TestGetGroupsEndpoint(t *testing.T) {
 		var realm = "master"
 		var ctx = context.Background()
 		var req = make(map[string]string)
-		req["realm"] = realm
+		req[PrmRealm] = realm
 
 		mockManagementComponent.EXPECT().GetGroups(ctx, realm).Return([]api.GroupRepresentation{}, nil).Times(1)
 		var res, err = e(ctx, req)
@@ -975,10 +975,10 @@ func TestCreateGroupEndpoint(t *testing.T) {
 		var req = make(map[string]string)
 		req["scheme"] = "https"
 		req["host"] = "elca.ch"
-		req["realm"] = realm
+		req[PrmRealm] = realm
 
 		groupJSON, _ := json.Marshal(api.GroupRepresentation{Name: &name})
-		req["body"] = string(groupJSON)
+		req[ReqBody] = string(groupJSON)
 
 		mockManagementComponent.EXPECT().CreateGroup(ctx, realm, api.GroupRepresentation{Name: &name}).Return(location, nil).Times(1)
 		res, err := e(ctx, req)
@@ -991,7 +991,7 @@ func TestCreateGroupEndpoint(t *testing.T) {
 	// Error - Cannot unmarshall
 	{
 		var req = make(map[string]string)
-		req["body"] = string("JSON")
+		req[ReqBody] = string("JSON")
 		_, err := e(ctx, req)
 		assert.NotNil(t, err)
 	}
@@ -1001,9 +1001,9 @@ func TestCreateGroupEndpoint(t *testing.T) {
 		var req = make(map[string]string)
 		req["scheme"] = "https"
 		req["host"] = "elca.ch"
-		req["realm"] = realm
+		req[PrmRealm] = realm
 		groupJSON, _ := json.Marshal(api.GroupRepresentation{Name: &name})
-		req["body"] = string(groupJSON)
+		req[ReqBody] = string(groupJSON)
 
 		mockManagementComponent.EXPECT().CreateGroup(ctx, realm, gomock.Any()).Return("", fmt.Errorf("Error")).Times(1)
 		_, err := e(ctx, req)
@@ -1023,8 +1023,8 @@ func TestDeleteGroupEndpoint(t *testing.T) {
 	var groupID = "1234-452-4578"
 	var ctx = context.Background()
 	var req = make(map[string]string)
-	req["realm"] = realm
-	req["groupID"] = groupID
+	req[PrmRealm] = realm
+	req[PrmGroupID] = groupID
 
 	mockManagementComponent.EXPECT().DeleteGroup(ctx, realm, groupID).Return(nil).Times(1)
 	var res, err = e(ctx, req)
@@ -1046,8 +1046,8 @@ func TestGetAuthorizationsEndpoint(t *testing.T) {
 		var groupID = "123456"
 		var ctx = context.Background()
 		var req = make(map[string]string)
-		req["realm"] = realm
-		req["groupID"] = groupID
+		req[PrmRealm] = realm
+		req[PrmGroupID] = groupID
 
 		mockManagementComponent.EXPECT().GetAuthorizations(ctx, realm, groupID).Return(api.AuthorizationsRepresentation{}, nil).Times(1)
 		var res, err = e(ctx, req)
@@ -1070,8 +1070,8 @@ func TestGetClientRolesEndpoint(t *testing.T) {
 		var clientID = "123456"
 		var ctx = context.Background()
 		var req = make(map[string]string)
-		req["realm"] = realm
-		req["clientID"] = clientID
+		req[PrmRealm] = realm
+		req[PrmClientID] = clientID
 
 		mockManagementComponent.EXPECT().GetClientRoles(ctx, realm, clientID).Return([]api.RoleRepresentation{}, nil).Times(1)
 		var res, err = e(ctx, req)
@@ -1095,9 +1095,9 @@ func TestUpdateAuthorizationsEndpoint(t *testing.T) {
 		var authorizationsJSON = "{\"matrix\":{}}"
 		var ctx = context.Background()
 		var req = make(map[string]string)
-		req["realm"] = realmName
-		req["groupID"] = groupID
-		req["body"] = authorizationsJSON
+		req[PrmRealm] = realmName
+		req[PrmGroupID] = groupID
+		req[ReqBody] = authorizationsJSON
 
 		mockManagementComponent.EXPECT().UpdateAuthorizations(ctx, realmName, groupID, gomock.Any()).Return(nil).Times(1)
 		var res, err = e(ctx, req)
@@ -1112,9 +1112,9 @@ func TestUpdateAuthorizationsEndpoint(t *testing.T) {
 		var configJSON = "{\"DefaultClientId\":\"clientId\", \"DefaultRedirectUri\":\"http://cloudtrust.io\""
 		var ctx = context.Background()
 		var req = make(map[string]string)
-		req["realm"] = realmName
-		req["groupID"] = groupID
-		req["body"] = configJSON
+		req[PrmRealm] = realmName
+		req[PrmGroupID] = groupID
+		req[ReqBody] = configJSON
 
 		mockManagementComponent.EXPECT().UpdateAuthorizations(ctx, realmName, groupID, gomock.Any()).Return(nil).Times(0)
 		var res, err = e(ctx, req)
@@ -1140,10 +1140,10 @@ func TestCreateClientRoleEndpoint(t *testing.T) {
 		var req = make(map[string]string)
 		req["scheme"] = "https"
 		req["host"] = "elca.ch"
-		req["realm"] = realm
-		req["clientID"] = clientID
+		req[PrmRealm] = realm
+		req[PrmClientID] = clientID
 		roleJSON, _ := json.Marshal(api.RoleRepresentation{})
-		req["body"] = string(roleJSON)
+		req[ReqBody] = string(roleJSON)
 
 		mockManagementComponent.EXPECT().CreateClientRole(ctx, realm, clientID, api.RoleRepresentation{}).Return(location, nil).Times(1)
 		var res, err = e(ctx, req)
@@ -1155,7 +1155,7 @@ func TestCreateClientRoleEndpoint(t *testing.T) {
 	// Error - Cannot unmarshall
 	{
 		var req = make(map[string]string)
-		req["body"] = string("JSON")
+		req[ReqBody] = string("JSON")
 		_, err := e(ctx, req)
 		assert.NotNil(t, err)
 	}
@@ -1165,10 +1165,10 @@ func TestCreateClientRoleEndpoint(t *testing.T) {
 		var req = make(map[string]string)
 		req["scheme"] = "https"
 		req["host"] = "elca.ch"
-		req["realm"] = realm
-		req["clientID"] = clientID
+		req[PrmRealm] = realm
+		req[PrmClientID] = clientID
 		userJSON, _ := json.Marshal(api.RoleRepresentation{})
-		req["body"] = string(userJSON)
+		req[ReqBody] = string(userJSON)
 
 		mockManagementComponent.EXPECT().CreateClientRole(ctx, realm, clientID, gomock.Any()).Return("", fmt.Errorf("Error")).Times(1)
 		_, err := e(ctx, req)
@@ -1188,7 +1188,7 @@ func TestConfigurationEndpoints(t *testing.T) {
 	var ctx = context.Background()
 
 	t.Run("MakeGetRealmCustomConfigurationEndpoint - No error", func(t *testing.T) {
-		var req = map[string]string{"realm": realmName, "clientID": clientID}
+		var req = map[string]string{PrmRealm: realmName, PrmClientID: clientID}
 		var e = MakeGetRealmCustomConfigurationEndpoint(mockManagementComponent)
 
 		mockManagementComponent.EXPECT().GetRealmCustomConfiguration(ctx, realmName).Return(api.RealmCustomConfiguration{}, nil).Times(1)
@@ -1199,7 +1199,7 @@ func TestConfigurationEndpoints(t *testing.T) {
 
 	t.Run("MakeUpdateRealmCustomConfigurationEndpoint - No error", func(t *testing.T) {
 		var configJSON = "{\"DefaultClientId\":\"clientId\", \"DefaultRedirectUri\":\"http://cloudtrust.io\"}"
-		var req = map[string]string{"realm": realmName, "clientID": clientID, "body": configJSON}
+		var req = map[string]string{PrmRealm: realmName, PrmClientID: clientID, ReqBody: configJSON}
 		var e = MakeUpdateRealmCustomConfigurationEndpoint(mockManagementComponent)
 
 		mockManagementComponent.EXPECT().UpdateRealmCustomConfiguration(ctx, realmName, gomock.Any()).Return(nil).Times(1)
@@ -1210,7 +1210,7 @@ func TestConfigurationEndpoints(t *testing.T) {
 
 	t.Run("MakeUpdateRealmCustomConfigurationEndpoint - JSON error", func(t *testing.T) {
 		var configJSON = "{\"DefaultClientId\":\"clientId\", \"DefaultRedirectUri\":\"http://cloudtrust.io\""
-		var req = map[string]string{"realm": realmName, "clientID": clientID, "body": configJSON}
+		var req = map[string]string{PrmRealm: realmName, PrmClientID: clientID, ReqBody: configJSON}
 		var e = MakeUpdateRealmCustomConfigurationEndpoint(mockManagementComponent)
 
 		mockManagementComponent.EXPECT().UpdateRealmCustomConfiguration(ctx, realmName, gomock.Any()).Return(nil).Times(0)
@@ -1220,7 +1220,7 @@ func TestConfigurationEndpoints(t *testing.T) {
 	})
 
 	t.Run("MakeGetRealmBackOfficeConfigurationEndpoint", func(t *testing.T) {
-		var req = map[string]string{"realm": realmName, "groupName": groupName}
+		var req = map[string]string{PrmRealm: realmName, PrmQryGroupName: groupName}
 		var expectedConf api.BackOfficeConfiguration
 		var expectedErr = errors.New("any error")
 		var e = MakeGetRealmBackOfficeConfigurationEndpoint(mockManagementComponent)
@@ -1234,7 +1234,7 @@ func TestConfigurationEndpoints(t *testing.T) {
 	t.Run("MakeUpdateRealmBackOfficeConfigurationEndpoint", func(t *testing.T) {
 		var config api.BackOfficeConfiguration
 		var configJSON, _ = json.Marshal(config)
-		var req = map[string]string{"realm": realmName, "groupName": groupName, "body": string(configJSON)}
+		var req = map[string]string{PrmRealm: realmName, PrmQryGroupName: groupName, ReqBody: string(configJSON)}
 		var expectedErr = errors.New("update error")
 		var e = MakeUpdateRealmBackOfficeConfigurationEndpoint(mockManagementComponent)
 
@@ -1258,7 +1258,7 @@ func TestGetRealmAdminConfigurationEndpoint(t *testing.T) {
 		var realmName = "master"
 		var adminConfig api.RealmAdminConfiguration
 		var req = make(map[string]string)
-		req["realm"] = realmName
+		req[PrmRealm] = realmName
 
 		mockManagementComponent.EXPECT().GetRealmAdminConfiguration(ctx, realmName).Return(adminConfig, nil).Times(1)
 		var res, err = e(ctx, req)
@@ -1270,7 +1270,7 @@ func TestGetRealmAdminConfigurationEndpoint(t *testing.T) {
 		var adminConfig api.RealmAdminConfiguration
 		var expectedError = errors.New("component error")
 		var req = make(map[string]string)
-		req["realm"] = realmName
+		req[PrmRealm] = realmName
 
 		mockManagementComponent.EXPECT().GetRealmAdminConfiguration(ctx, realmName).Return(adminConfig, expectedError).Times(1)
 		var _, err = e(ctx, req)
@@ -1291,8 +1291,8 @@ func TestUpdateRealmAdminConfigurationEndpoint(t *testing.T) {
 		var realmName = "master"
 		var configJSON = `{"mode":"trustID"}`
 		var req = make(map[string]string)
-		req["realm"] = realmName
-		req["body"] = configJSON
+		req[PrmRealm] = realmName
+		req[ReqBody] = configJSON
 
 		mockManagementComponent.EXPECT().UpdateRealmAdminConfiguration(ctx, realmName, gomock.Any()).Return(nil).Times(1)
 		var res, err = e(ctx, req)
@@ -1303,8 +1303,8 @@ func TestUpdateRealmAdminConfigurationEndpoint(t *testing.T) {
 		var realmName = "master"
 		var configJSON = `{}`
 		var req = make(map[string]string)
-		req["realm"] = realmName
-		req["body"] = configJSON
+		req[PrmRealm] = realmName
+		req[ReqBody] = configJSON
 
 		var _, err = e(ctx, req)
 		assert.NotNil(t, err)
@@ -1313,8 +1313,8 @@ func TestUpdateRealmAdminConfigurationEndpoint(t *testing.T) {
 		var realmName = "master"
 		var configJSON = `{`
 		var req = make(map[string]string)
-		req["realm"] = realmName
-		req["body"] = configJSON
+		req[PrmRealm] = realmName
+		req[ReqBody] = configJSON
 
 		mockManagementComponent.EXPECT().UpdateRealmAdminConfiguration(ctx, realmName, gomock.Any()).Return(nil).Times(0)
 		var res, err = e(ctx, req)
@@ -1338,12 +1338,12 @@ func TestLinkShadowUserEndpoint(t *testing.T) {
 	var provider = "provider"
 
 	var req = make(map[string]string)
-	req["userID"] = userID
-	req["provider"] = provider
-	req["realm"] = realm
+	req[PrmUserID] = userID
+	req[PrmProvider] = provider
+	req[PrmRealm] = realm
 
 	fedID, _ := json.Marshal(api.FederatedIdentityRepresentation{Username: &username, UserID: &userID})
-	req["body"] = string(fedID)
+	req[ReqBody] = string(fedID)
 
 	// No error
 	t.Run("Create shadow user successfully", func(t *testing.T) {
@@ -1356,7 +1356,7 @@ func TestLinkShadowUserEndpoint(t *testing.T) {
 	t.Run("Create shadow user - error at unmarshal", func(t *testing.T) {
 
 		var req2 = make(map[string]string)
-		req2["body"] = string("JSON")
+		req2[ReqBody] = string("JSON")
 		_, err := e(ctx, req2)
 		assert.NotNil(t, err)
 	})

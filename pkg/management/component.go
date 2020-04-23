@@ -261,7 +261,7 @@ func (c *component) GetRequiredActions(ctx context.Context, realmName string) ([
 
 	var requiredActionsRep = []api.RequiredActionRepresentation{}
 	for _, requiredActionKc := range requiredActionsKc {
-		if *(requiredActionKc.Enabled) == true {
+		if *requiredActionKc.Enabled {
 			var requiredActionRep = api.ConvertRequiredAction(&requiredActionKc)
 			requiredActionsRep = append(requiredActionsRep, requiredActionRep)
 		}
@@ -328,7 +328,7 @@ func (c *component) GetUser(ctx context.Context, realmName, userID string) (api.
 	}
 	keycloakb.ConvertLegacyAttribute(&userKc)
 
-	userRep = api.ConvertToAPIUser(userKc)
+	userRep = api.ConvertToAPIUser(ctx, userKc, c.logger)
 
 	var username = ""
 	if userKc.Username != nil {
@@ -437,7 +437,7 @@ func (c *component) GetUsers(ctx context.Context, realmName string, groupIDs []s
 	for i := 0; i < len(usersKc.Users); i++ {
 		keycloakb.ConvertLegacyAttribute(&usersKc.Users[i])
 	}
-	return api.ConvertToAPIUsersPage(usersKc), nil
+	return api.ConvertToAPIUsersPage(ctx, usersKc, c.logger), nil
 }
 
 // GetUserAccountStatus gets the user status : user should be enabled in Keycloak and have multifactor activated

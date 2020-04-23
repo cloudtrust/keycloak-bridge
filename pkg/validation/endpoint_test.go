@@ -23,7 +23,7 @@ func TestGetUserEndpoint(t *testing.T) {
 	var userID = "1234-452-4578"
 	var ctx = context.Background()
 	var req = make(map[string]string)
-	req["userID"] = userID
+	req[PrmUserID] = userID
 
 	mockComponent.EXPECT().GetUser(ctx, userID).Return(api.UserRepresentation{}, nil).Times(1)
 	var res, err = e(ctx, req)
@@ -43,9 +43,9 @@ func TestUpdateUserEndpoint(t *testing.T) {
 		var userID = "1234-452-4578"
 		var ctx = context.Background()
 		var req = make(map[string]string)
-		req["userID"] = userID
+		req[PrmUserID] = userID
 		userJSON, _ := json.Marshal(api.UserRepresentation{})
-		req["body"] = string(userJSON)
+		req[ReqBody] = string(userJSON)
 
 		mockComponent.EXPECT().UpdateUser(ctx, userID, gomock.Any()).Return(nil).Times(1)
 		var res, err = e(ctx, req)
@@ -57,8 +57,8 @@ func TestUpdateUserEndpoint(t *testing.T) {
 		var userID = "1234-452-4578"
 		var ctx = context.Background()
 		var req = make(map[string]string)
-		req["userID"] = userID
-		req["body"] = string("userJSON")
+		req[PrmUserID] = userID
+		req[ReqBody] = string("userJSON")
 
 		var res, err = e(ctx, req)
 		assert.NotNil(t, err)
@@ -98,8 +98,8 @@ func TestCreateCheckEndpoint(t *testing.T) {
 			ProofData: &proofData,
 		})
 
-		req["userID"] = userID
-		req["body"] = string(checkJSON)
+		req[PrmUserID] = userID
+		req[ReqBody] = string(checkJSON)
 
 		mockComponent.EXPECT().CreateCheck(ctx, userID, gomock.Any()).Return(nil).Times(1)
 		var res, err = e(ctx, req)
@@ -111,8 +111,8 @@ func TestCreateCheckEndpoint(t *testing.T) {
 		var userID = "12345678-5824-5555-5656-123456789654"
 		var ctx = context.Background()
 		var req = make(map[string]string)
-		req["userID"] = userID
-		req["body"] = string("userJSON")
+		req[PrmUserID] = userID
+		req[ReqBody] = string("userJSON")
 
 		var res, err = e(ctx, req)
 		assert.NotNil(t, err)
