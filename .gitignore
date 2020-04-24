@@ -21,3 +21,4 @@ bin/*
 **/*.coverprofile
 configs/DEV/*
 **/mock
+.idea/
