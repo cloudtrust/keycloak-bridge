@@ -70,3 +70,61 @@ func TestGetUserDB(t *testing.T) {
 		assert.Equal(t, "Antananarivo", *user.BirthLocation)
 	})
 }
+
+func TestGetUserInformation(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockDB = mock.NewCloudtrustDB(mockCtrl)
+	var mockSQLRows = mock.NewSQLRows(mockCtrl)
+	var usersDBModule = NewUsersDBModule(mockDB, log.NewNopLogger())
+
+	var realm = "my-realm"
+	var userID = "user-id"
+	var ctx = context.TODO()
+	var unexpectedError = errors.New("unexpected")
+
+	t.Run("Unexpected error", func(t *testing.T) {
+		mockDB.EXPECT().Query(gomock.Any(), realm, userID).Return(mockSQLRows, unexpectedError)
+
+		var _, err = usersDBModule.GetUserChecks(ctx, realm, userID)
+		assert.Equal(t, unexpectedError, err)
+	})
+
+	t.Run("No row", func(t *testing.T) {
+		mockDB.EXPECT().Query(gomock.Any(), realm, userID).Return(mockSQLRows, sql.ErrNoRows)
+
+		var checks, err = usersDBModule.GetUserChecks(ctx, realm, userID)
+		assert.Nil(t, err)
+		assert.Nil(t, checks)
+	})
+
+	t.Run("Can't fetch result", func(t *testing.T) {
+		mockDB.EXPECT().Query(gomock.Any(), realm, userID).Return(mockSQLRows, nil)
+		mockSQLRows.EXPECT().Next().Return(true)
+		mockSQLRows.EXPECT().Scan(gomock.Any()).Return(unexpectedError)
+
+		var _, err = usersDBModule.GetUserChecks(ctx, realm, userID)
+		assert.Equal(t, unexpectedError, err)
+	})
+
+	t.Run("Success", func(t *testing.T) {
+		var natureValue = "nature"
+		gomock.InOrder(
+			mockDB.EXPECT().Query(gomock.Any(), realm, userID).Return(mockSQLRows, nil),
+			mockSQLRows.EXPECT().Next().Return(true),
+			mockSQLRows.EXPECT().Scan(gomock.Any()).DoAndReturn(func(checkID *int64, realm *string, userID *string, operator *sql.NullString,
+				datetime *sql.NullString, status *sql.NullString, checkType *sql.NullString, nature *sql.NullString, proofType *sql.NullString,
+				proofData *[]byte, comment *sql.NullString) error {
+				*nature = sql.NullString{Valid: true, String: natureValue}
+				return nil
+			}),
+			mockSQLRows.EXPECT().Next().Return(false),
+		)
+
+		var checks, err = usersDBModule.GetUserChecks(ctx, realm, userID)
+		assert.Nil(t, err)
+		assert.Len(t, checks, 1)
+		assert.Equal(t, natureValue, *checks[0].Nature)
+	})
+}

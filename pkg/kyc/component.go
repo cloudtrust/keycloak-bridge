@@ -51,7 +51,7 @@ type Component interface {
 type component struct {
 	socialRealmName string
 	keycloakClient  KeycloakClient
-	usersDBModule   keycloakb.UsersDBModule
+	usersDBModule   UsersDBModule
 	eventsDBModule  database.EventsDBModule
 	accredsModule   keycloakb.AccreditationsModule
 	logger          internal.Logger

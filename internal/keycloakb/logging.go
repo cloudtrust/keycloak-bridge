@@ -7,10 +7,10 @@ import (
 
 // Logger interface for logging with level
 type Logger interface {
-	Debug(ctx context.Context, keyvals ...interface{}) error
-	Info(ctx context.Context, keyvals ...interface{}) error
-	Warn(ctx context.Context, keyvals ...interface{}) error
-	Error(ctx context.Context, keyvals ...interface{}) error
+	Debug(ctx context.Context, keyvals ...interface{})
+	Info(ctx context.Context, keyvals ...interface{})
+	Warn(ctx context.Context, keyvals ...interface{})
+	Error(ctx context.Context, keyvals ...interface{})
 }
 
 // LogUnrecordedEvent logs the events that could not be reported in the DB

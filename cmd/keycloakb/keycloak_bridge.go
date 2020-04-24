@@ -36,6 +36,7 @@ import (
 	"github.com/cloudtrust/keycloak-bridge/pkg/export"
 	"github.com/cloudtrust/keycloak-bridge/pkg/kyc"
 	"github.com/cloudtrust/keycloak-bridge/pkg/management"
+	mobile "github.com/cloudtrust/keycloak-bridge/pkg/mobile"
 	"github.com/cloudtrust/keycloak-bridge/pkg/register"
 	"github.com/cloudtrust/keycloak-bridge/pkg/statistics"
 	"github.com/cloudtrust/keycloak-bridge/pkg/validation"
@@ -74,6 +75,7 @@ const (
 	RateKeyEvents     = iota
 	RateKeyKYC        = iota
 	RateKeyManagement = iota
+	RateKeyMobile     = iota
 	RateKeyRegister   = iota
 	RateKeyStatistics = iota
 	RateKeyValidation = iota
@@ -83,10 +85,12 @@ const (
 	CfgHTTPAddrManagement       = "management-http-host-port"
 	CfgHTTPAddrAccount          = "account-http-host-port"
 	CfgHTTPAddrRegister         = "register-http-host-port"
+	CfgHTTPAddrMobile           = "mobile-http-host-port"
 	CfgAddrTokenProvider        = "keycloak-oidc-uri"
 	CfgAddrAPI                  = "keycloak-api-uri"
 	CfgTimeout                  = "keycloak-timeout"
 	CfgAudienceRequired         = "audience-required"
+	CfgMobileAudienceRequired   = "mobile-audience-required"
 	CfgEventBasicAuthToken      = "event-basic-auth-token"
 	CfgValidationBasicAuthToken = "validation-basic-auth-token"
 	CfgPprofRouteEnabled        = "pprof-route-enabled"
@@ -100,6 +104,7 @@ const (
 	CfgRateKeyValidation        = "rate-validation"
 	CfgRateKeyEvent             = "rate-event"
 	CfgRateKeyAccount           = "rate-account"
+	CfgRateKeyMobile            = "rate-mobile"
 	CfgRateKeyManagement        = "rate-management"
 	CfgRateKeyStatistics        = "rate-statistics"
 	CfgRateKeyEvents            = "rate-events"
@@ -172,6 +177,7 @@ func main() {
 		httpAddrManagement = c.GetString(CfgHTTPAddrManagement)
 		httpAddrAccount    = c.GetString(CfgHTTPAddrAccount)
 		httpAddrRegister   = c.GetString(CfgHTTPAddrRegister)
+		httpAddrMobile     = c.GetString(CfgHTTPAddrMobile)
 
 		// Keycloak
 		keycloakConfig = keycloak.Config{
@@ -204,6 +210,7 @@ func main() {
 			RateKeyValidation: c.GetInt(CfgRateKeyValidation),
 			RateKeyEvent:      c.GetInt(CfgRateKeyEvent),
 			RateKeyAccount:    c.GetInt(CfgRateKeyAccount),
+			RateKeyMobile:     c.GetInt(CfgRateKeyMobile),
 			RateKeyManagement: c.GetInt(CfgRateKeyManagement),
 			RateKeyStatistics: c.GetInt(CfgRateKeyStatistics),
 			RateKeyEvents:     c.GetInt(CfgRateKeyEvents),
@@ -269,6 +276,17 @@ func main() {
 
 		if audienceRequired == "" {
 			logger.Error(ctx, "msg", "audience parameter(audience-required) cannot be empty")
+			return
+		}
+	}
+
+	// Security - Mobile audience required
+	var mobileAudienceRequired string
+	{
+		mobileAudienceRequired = c.GetString(CfgMobileAudienceRequired)
+
+		if mobileAudienceRequired == "" {
+			logger.Error(ctx, "msg", "mobile audience parameter(mobile-audience-required) cannot be empty")
 			return
 		}
 	}
@@ -716,6 +734,31 @@ func main() {
 		}
 	}
 
+	// Mobile service.
+	var mobileEndpoints mobile.Endpoints
+	{
+		var mobileLogger = log.With(logger, "svc", "mobile")
+
+		// module for retrieving the custom configuration
+		var configDBModule keycloakb.ConfigurationDBModule
+		{
+			configDBModule = keycloakb.NewConfigurationDBModule(configurationRoDBConn, mobileLogger)
+			configDBModule = keycloakb.MakeConfigurationDBModuleInstrumentingMW(influxMetrics.NewHistogram("configDB_module"))(configDBModule)
+		}
+
+		// module for storing and retrieving details of the self-registered users
+		var usersDBModule = keycloakb.NewUsersDBModule(usersRwDBConn, mobileLogger)
+
+		// new module for mobile service
+		mobileComponent := mobile.NewComponent(keycloakClient.AccountClient(), configDBModule, usersDBModule, mobileLogger)
+		mobileComponent = mobile.MakeAuthorizationMobileComponentMW(log.With(mobileLogger, "mw", "endpoint"), configDBModule)(mobileComponent)
+
+		var rateLimitMobile = rateLimit[RateKeyMobile]
+		mobileEndpoints = mobile.Endpoints{
+			GetUserInformation: prepareEndpoint(mobile.MakeGetUserInformationEndpoint(mobileComponent), "get_user_information", influxMetrics, mobileLogger, tracer, rateLimitMobile),
+		}
+	}
+
 	// Register service.
 	var registerEndpoints register.Endpoints
 	{
@@ -1104,6 +1147,34 @@ func main() {
 		errc <- http.ListenAndServe(httpAddrAccount, handler)
 	}()
 
+	// HTTP Mobile self-service Server (Mobile API).
+	go func() {
+		var logger = log.With(logger, "transport", "http")
+		logger.Info(ctx, "addr", httpAddrMobile)
+
+		var route = mux.NewRouter()
+
+		// Version.
+		route.Handle("/", http.HandlerFunc(commonhttp.MakeVersionHandler(keycloakb.ComponentName, ComponentID, keycloakb.Version, Environment, GitCommit)))
+		route.Handle("/health/check", healthChecker.MakeHandler())
+
+		// Mobile
+		var getUserInfoHandler = configureMobileHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, mobileAudienceRequired, tracer, logger)(mobileEndpoints.GetUserInformation)
+
+		route.Path("/mobile/userinfo").Methods("GET").Handler(getUserInfoHandler)
+
+		var handler http.Handler = route
+
+		if accessLogsEnabled {
+			handler = commonhttp.MakeAccessLogHandler(accessLogger, handler)
+		}
+
+		c := cors.New(corsOptions)
+		handler = c.Handler(handler)
+
+		errc <- http.ListenAndServe(httpAddrMobile, handler)
+	}()
+
 	// HTTP register Server (Register API).
 	if registerEnabled {
 		go func() {
@@ -1169,9 +1240,11 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 	v.SetDefault(CfgHTTPAddrManagement, defaultPublishingIP+":8877")
 	v.SetDefault(CfgHTTPAddrAccount, defaultPublishingIP+":8866")
 	v.SetDefault(CfgHTTPAddrRegister, defaultPublishingIP+":8855")
+	v.SetDefault(CfgHTTPAddrMobile, defaultPublishingIP+":8844")
 
 	// Security - Audience check
 	v.SetDefault(CfgAudienceRequired, "")
+	v.SetDefault(CfgMobileAudienceRequired, "")
 	v.SetDefault(CfgEventBasicAuthToken, "")
 	v.SetDefault(CfgTrustIDGroups,
 		[]string{
@@ -1229,6 +1302,7 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 	v.SetDefault(CfgRateKeyValidation, 1000)
 	v.SetDefault(CfgRateKeyEvent, 1000)
 	v.SetDefault(CfgRateKeyAccount, 1000)
+	v.SetDefault(CfgRateKeyMobile, 1000)
 	v.SetDefault(CfgRateKeyManagement, 1000)
 	v.SetDefault(CfgRateKeyStatistics, 1000)
 	v.SetDefault(CfgRateKeyEvents, 1000)
@@ -1384,6 +1458,16 @@ func configureAccountHandler(ComponentName string, ComponentID string, idGenerat
 	return func(endpoint endpoint.Endpoint) http.Handler {
 		var handler http.Handler
 		handler = account.MakeAccountHandler(endpoint, logger)
+		handler = middleware.MakeHTTPCorrelationIDMW(idGenerator, tracer, logger, ComponentName, ComponentID)(handler)
+		handler = middleware.MakeHTTPOIDCTokenValidationMW(keycloakClient, audienceRequired, logger)(handler)
+		return handler
+	}
+}
+
+func configureMobileHandler(ComponentName string, ComponentID string, idGenerator idgenerator.IDGenerator, keycloakClient *keycloakapi.Client, audienceRequired string, tracer tracing.OpentracingClient, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {
+	return func(endpoint endpoint.Endpoint) http.Handler {
+		var handler http.Handler
+		handler = mobile.MakeMobileHandler(endpoint, logger)
 		handler = middleware.MakeHTTPCorrelationIDMW(idGenerator, tracer, logger, ComponentName, ComponentID)(handler)
 		handler = middleware.MakeHTTPOIDCTokenValidationMW(keycloakClient, audienceRequired, logger)(handler)
 		return handler

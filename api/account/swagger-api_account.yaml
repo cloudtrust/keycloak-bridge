@@ -257,7 +257,7 @@ components:
                 type: string
                 description: expiry date. format is DD.MM.YYYY
               expired:
-                type: bool
+                type: boolean
                 description: true if the expiry date has passed
     Configuration:
       type: object

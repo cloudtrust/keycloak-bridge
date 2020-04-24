@@ -6,6 +6,7 @@ internal-http-host-port: 0.0.0.0:8888
 management-http-host-port: 0.0.0.0:8877
 account-http-host-port: 0.0.0.0:8866
 register-http-host-port: 0.0.0.0:8855
+mobile-http-host-port: 0.0.0.0:8844
 
 # Log level
 #   - error: log only error log level
@@ -41,6 +42,7 @@ cors-debug: true
 # Security
 ## Audience for JWT token
 audience-required: "account"
+mobile-audience-required: "mobile"
 
 ## Password used to protect /internal/event endpoint
 event-basic-auth-token: "superpasswordverylongandstrong"
@@ -149,6 +151,7 @@ rate-statistics: 1000
 rate-events: 1000
 rate-register: 1000
 rate-kyc: 1000
+rate-mobile: 1000
 
 # Influx DB configs
 influx: false
