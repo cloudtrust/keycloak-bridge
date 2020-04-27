@@ -18,7 +18,7 @@
   version = "2020.02.11"
 
 [[projects]]
-  digest = "1:96d138992715e79982bf5e11a71dc745d028c65c0b68b3906b9f3206b3fd0e09"
+  digest = "1:32506d6ffd4ffaf732ae82e388f923a2a75cc63a78eed1a81949c756efd55fa8"
   name = "github.com/cloudtrust/common-service"
   packages = [
     ".",
@@ -38,11 +38,11 @@
     "validation",
   ]
   pruneopts = "UT"
-  revision = "3a38f0fb73305dc93ec4d0d8a3b6ec1cfb98fa5b"
-  version = "v2.1.1"
+  revision = "387e4f3d4426493c34334e3bdb792b9a406bf1e9"
+  version = "v2.1.2"
 
 [[projects]]
-  digest = "1:d18e18a3c48f9a890b87327c52f4dcb4121c14b71534259867e570bffa17933c"
+  digest = "1:f73c5b8ae2805b708761478463ba5b5d8b2d2624c422888bc0459f6f5c3e2fa8"
   name = "github.com/cloudtrust/keycloak-client"
   packages = [
     ".",
@@ -50,8 +50,8 @@
     "toolbox",
   ]
   pruneopts = "UT"
-  revision = "9e6eaad399a985b9b927def1d95e43f8b093d09d"
-  version = "v2.0.0"
+  revision = "1cfc7c6228cfe10d30f6bd7cf1b8e4a68ef90123"
+  version = "v2.0.1"
 
 [[projects]]
   digest = "1:910c5b111ca13127693df80a59be2c952ad97313626116c0c9895e7b588f2a29"
@@ -191,7 +191,7 @@
   version = "v1.8.0"
 
 [[projects]]
-  digest = "1:9ff22c26414baf7deaf74f2a788fe7b97666048bcbe346c52cfe823442abbdfb"
+  digest = "1:05de5942f7d2b280d098f18b7ebc72fdf1587d01d13979ebb413acc833cf3245"
   name = "github.com/lib/pq"
   packages = [
     ".",
@@ -199,8 +199,8 @@
     "scram",
   ]
   pruneopts = "UT"
-  revision = "99274577be97ac9b1d95a2d61d566dc9b7cc6a54"
-  version = "v1.3.0"
+  revision = "11720195feb4140252d89ec87e6ec66810ca708b"
+  version = "v1.4.0"
 
 [[projects]]
   digest = "1:5a0ef768465592efca0412f7e838cdc0826712f8447e70e6ccc52eb441e9ab13"
@@ -341,7 +341,7 @@
   version = "v1.2.0"
 
 [[projects]]
-  digest = "1:54bf58828a4074c2304fcc52f018eb19fc02d5853ebd5121817330792c776734"
+  digest = "1:80a1a6e31a59bbe946fbdd775163630c4c5b0add52a42db37052465763970290"
   name = "github.com/uber/jaeger-client-go"
   packages = [
     ".",
@@ -364,8 +364,8 @@
     "utils",
   ]
   pruneopts = "UT"
-  revision = "2d55657eac169e2a86b4fcc1a421e26a9a485b63"
-  version = "v2.22.1"
+  revision = "e1cd868603cb355959eaaaf3b0a350e26262e08f"
+  version = "v2.23.0"
 
 [[projects]]
   digest = "1:d7b6fd08442b8d26882fae2c859a0d63962d72a533476a217d46743ed30cb803"
@@ -393,7 +393,7 @@
     "pbkdf2",
   ]
   pruneopts = "UT"
-  revision = "0848c9571904fcbcb24543358ca8b5a7dbfde875"
+  revision = "4bdfaf469ed5a1194e0ec57ec7b1af73991a7ee3"
 
 [[projects]]
   branch = "master"
@@ -406,7 +406,7 @@
     "publicsuffix",
   ]
   pruneopts = "UT"
-  revision = "d3edc9973b7eb1fb302b0ff2c62357091cea9a30"
+  revision = "ff2c4b7c35a07b0c1e90ce72aa7bfe41bb66a3cb"
 
 [[projects]]
   branch = "master"
@@ -425,7 +425,7 @@
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = "UT"
-  revision = "669c56c373c468cbe0f0c12b7939832b26088d33"
+  revision = "1957bb5e6d1f523308b49060df02171d06ddfc77"
 
 [[projects]]
   digest = "1:8d8faad6b12a3a4c819a3f9618cb6ee1fa1cfc33253abeeea8b55336721e3405"
@@ -454,14 +454,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:a2f668c709f9078828e99cb1768cb02e876cb81030545046a32b54b2ac2a9ea8"
+  digest = "1:908ad1a739c1afa54078eec5dc8a56b8ed01c0576b52ca61600471682fce4c33"
   name = "golang.org/x/time"
   packages = ["rate"]
   pruneopts = "UT"
-  revision = "555d28b269f0569763d25dbe1a237ae74c6bcc82"
+  revision = "89c76fbcd5d1cd4969e5d2fe19d48b19d5ad94a0"
 
 [[projects]]
-  digest = "1:e0a1881f9e0564bebdeac98c75e59f07acdde6ed3a5396e0e613eaad31194866"
+  digest = "1:15bbb120d95283019f8891f2762fab3e735075b2cf9b378497277d2fe6c4abca"
   name = "google.golang.org/appengine"
   packages = [
     "internal",
@@ -473,8 +473,8 @@
     "urlfetch",
   ]
   pruneopts = "UT"
-  revision = "971852bfffca25b069c31162ae8f247a3dba083b"
-  version = "v1.6.5"
+  revision = "553959209a20f3be281c16dd5be5c740a893978f"
+  version = "v1.6.6"
 
 [[projects]]
   digest = "1:f1865c7b6c5f85632ff40fd729aa3393e66a2db3de74d43ab7c594be7e9bfe25"

@@ -56,14 +56,14 @@ type component struct {
 	socialRealmName string
 	keycloakClient  KeycloakClient
 	tokenProvider   toolbox.OidcTokenProvider
-	usersDBModule   keycloakb.UsersDBModule
+	usersDBModule   UsersDBModule
 	eventsDBModule  database.EventsDBModule
 	accredsModule   keycloakb.AccreditationsModule
 	logger          internal.Logger
 }
 
 // NewComponent returns the management component.
-func NewComponent(socialRealmName string, keycloakClient KeycloakClient, tokenProvider TokenProvider, usersDBModule keycloakb.UsersDBModule, eventsDBModule database.EventsDBModule, accredsModule keycloakb.AccreditationsModule, logger internal.Logger) Component {
+func NewComponent(socialRealmName string, keycloakClient KeycloakClient, tokenProvider TokenProvider, usersDBModule UsersDBModule, eventsDBModule database.EventsDBModule, accredsModule keycloakb.AccreditationsModule, logger internal.Logger) Component {
 	return &component{
 		socialRealmName: socialRealmName,
 		keycloakClient:  keycloakClient,

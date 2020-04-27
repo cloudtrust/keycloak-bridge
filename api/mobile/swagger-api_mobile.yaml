@@ -1,0 +1,64 @@
+openapi: 3.0.1
+info:
+  title: Swagger Cloudtrust Management
+  description: 'API Mobile self service for Cloudtrust'
+  version: 1.0.0
+servers:
+- url: http://localhost:8844
+paths:
+  /mobile/userinfo:
+    get:
+      tags:
+      - UserInfo
+      summary: Gets information of the current user
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserInfo'
+components:
+  schemas:
+    UserInfo:
+      type: object
+      properties:
+        accreditations:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+                description: accreditation type
+              expiryDate:
+                type: string
+                description: expiry date. format is DD.MM.YYYY
+              expired:
+                type: boolean
+                description: true if the expiry date has passed
+        checks:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+                description: type
+              nature:
+                type: string
+                description: nature
+              date:
+                type: string
+                description: check date. format is DD.MM.YYYY
+        actions:
+          type: array
+          items:
+            type: string
+  securitySchemes:
+    openId:
+      type: openIdConnect
+      openIdConnectUrl: http://toto.com/.well-known/openid-configuration
+security:
+  - openId:
+    - todo

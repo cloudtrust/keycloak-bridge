@@ -4,6 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"strconv"
+	"strings"
+	"time"
 
 	"github.com/cloudtrust/common-service/database/sqltypes"
 	"github.com/cloudtrust/common-service/log"
@@ -21,6 +24,11 @@ const (
 		AND user_id=?;`
 	createCheckStmt = `INSERT INTO checks (realm_id, user_id, operator, datetime, status, type, nature, proof_type, proof_data, comment)
 	  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
+	selectCheckStmt = `
+	  SELECT check_id, realm_id, user_id, operator, unix_timestamp(datetime), status, type, nature, proof_type, proof_data, comment
+	  FROM checks
+	  WHERE realm_id=?
+		AND user_id=?;`
 )
 
 // UsersDBModule interface
@@ -28,11 +36,28 @@ type UsersDBModule interface {
 	StoreOrUpdateUser(ctx context.Context, realm string, user dto.DBUser) error
 	GetUser(ctx context.Context, realm string, userID string) (*dto.DBUser, error)
 	CreateCheck(ctx context.Context, realm string, userID string, check dto.DBCheck) error
+	GetUserChecks(ctx context.Context, realm string, userID string) ([]dto.DBCheck, error)
 }
 
 type usersDBModule struct {
 	db     sqltypes.CloudtrustDB
 	logger log.Logger
+}
+
+func nullStringToPtr(value sql.NullString) *string {
+	if value.Valid {
+		return &value.String
+	}
+	return nil
+}
+
+func nullStringToDatePtr(value sql.NullString) *time.Time {
+	if value.Valid {
+		var dateInt, _ = strconv.ParseInt(strings.Split(value.String, ".")[0], 10, 64)
+		var date = time.Unix(int64(dateInt), 0)
+		return &date
+	}
+	return nil
 }
 
 // NewUsersDBModule returns a UsersDB module.
@@ -80,4 +105,39 @@ func (c *usersDBModule) CreateCheck(ctx context.Context, realm string, userID st
 		check.DateTime, check.Status, check.Type, check.Nature,
 		check.ProofType, check.ProofData, check.Comment)
 	return err
+}
+
+func (c *usersDBModule) GetUserChecks(ctx context.Context, realm string, userID string) ([]dto.DBCheck, error) {
+	var rows, err = c.db.Query(selectCheckStmt, realm, userID)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	var result []dto.DBCheck
+	var checkID int64
+	var operator, datetime, status, checkType, nature, proofType, comment sql.NullString
+	var proofData []byte
+
+	for rows.Next() {
+		err = rows.Scan(&checkID, &realm, &userID, &operator, &datetime, &status, &checkType, &nature, &proofType, &proofData, &comment)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, dto.DBCheck{
+			Operator:  nullStringToPtr(operator),
+			DateTime:  nullStringToDatePtr(operator),
+			Status:    nullStringToPtr(status),
+			Type:      nullStringToPtr(checkType),
+			Nature:    nullStringToPtr(nature),
+			ProofData: &proofData,
+			ProofType: nullStringToPtr(proofType),
+			Comment:   nullStringToPtr(comment),
+		})
+	}
+
+	return result, err
 }
