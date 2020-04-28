@@ -141,11 +141,18 @@ func (c *usersDBModule) GetUserChecks(ctx context.Context, realm string, userID 
 	var result []dto.DBCheck
 	var checkID int64
 	var operator, datetime, status, checkType, nature, proofType, comment sql.NullString
-	var proofData []byte
+	var encryptedProofData []byte
 
 	for rows.Next() {
-		err = rows.Scan(&checkID, &realm, &userID, &operator, &datetime, &status, &checkType, &nature, &proofType, &proofData, &comment)
+		err = rows.Scan(&checkID, &realm, &userID, &operator, &datetime, &status, &checkType, &nature, &proofType, &encryptedProofData, &comment)
 		if err != nil {
+			return nil, err
+		}
+
+		//decrypt the proof data of the user
+		proofData, err := c.cipher.Decrypt(encryptedProofData, nil)
+		if err != nil {
+			c.logger.Warn(ctx, "msg", "Can't decrypt the proof data", "error", err.Error(), "realmID", realm, "userID", userID)
 			return nil, err
 		}
 		result = append(result, dto.DBCheck{

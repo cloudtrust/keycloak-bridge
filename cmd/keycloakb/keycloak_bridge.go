@@ -129,6 +129,8 @@ const (
 	CfgRecaptchaURL             = "recaptcha-url"
 	CfgRecaptchaSecret          = "recaptcha-secret"
 	CfgSsePublicURL             = "sse-public-url"
+	CfgDbAesGcmKey              = "db-aesgcm-key"
+	CfgDbAesGcmTagSize          = "db-aesgcm-tag-size"
 )
 
 func init() {
@@ -315,7 +317,7 @@ func main() {
 	}
 
 	// Security - AES encryption mechanism for users PII
-	aesEncryption, err := security.NewAesGcmEncrypterFromBase64(c.GetString("db-aesgcm-key"), c.GetInt("db-aesgcm-tag-size"))
+	aesEncryption, err := security.NewAesGcmEncrypterFromBase64(c.GetString(CfgDbAesGcmKey), c.GetInt(CfgDbAesGcmTagSize))
 	if err != nil {
 		logger.Error(ctx, "msg", "could not create AES-GCM encrypting tool instance", "error", err)
 		return
@@ -1386,6 +1388,10 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 
 	v.BindEnv(CfgValidationBasicAuthToken, "CT_BRIDGE_VALIDATION_BASIC_AUTH")
 	censoredParameters[CfgValidationBasicAuthToken] = true
+
+	v.BindEnv(CfgDbAesGcmKey, "CT_BRIDGE_DB_AES_KEY")
+	censoredParameters[CfgDbAesGcmKey] = true
+	v.SetDefault(CfgDbAesGcmTagSize, 16)
 
 	// Load and log config.
 	v.SetConfigFile(v.GetString(CfgConfigFile))

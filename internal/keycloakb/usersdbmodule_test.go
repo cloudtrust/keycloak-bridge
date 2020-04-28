@@ -146,6 +146,24 @@ func TestGetUserInformation(t *testing.T) {
 		assert.Equal(t, unexpectedError, err)
 	})
 
+	t.Run("Error at decryption", func(t *testing.T) {
+		var natureValue = "nature"
+		gomock.InOrder(
+			mockDB.EXPECT().Query(gomock.Any(), realm, userID).Return(mockSQLRows, nil),
+			mockSQLRows.EXPECT().Next().Return(true),
+			mockSQLRows.EXPECT().Scan(gomock.Any()).DoAndReturn(func(checkID *int64, realm *string, userID *string, operator *sql.NullString,
+				datetime *sql.NullString, status *sql.NullString, checkType *sql.NullString, nature *sql.NullString, proofType *sql.NullString,
+				proofData *[]byte, comment *sql.NullString) error {
+				*nature = sql.NullString{Valid: true, String: natureValue}
+				return nil
+			}),
+			mockCrypter.EXPECT().Decrypt(gomock.Any(), gomock.Any()).Return(nil, unexpectedError),
+		)
+
+		var _, err = usersDBModule.GetUserChecks(ctx, realm, userID)
+		assert.Equal(t, unexpectedError, err)
+	})
+
 	t.Run("Success", func(t *testing.T) {
 		var natureValue = "nature"
 		gomock.InOrder(
@@ -157,6 +175,7 @@ func TestGetUserInformation(t *testing.T) {
 				*nature = sql.NullString{Valid: true, String: natureValue}
 				return nil
 			}),
+			mockCrypter.EXPECT().Decrypt(gomock.Any(), gomock.Any()).Return(nil, nil),
 			mockSQLRows.EXPECT().Next().Return(false),
 		)
 
