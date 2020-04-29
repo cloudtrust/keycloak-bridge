@@ -881,7 +881,7 @@ func main() {
 		var validationSubroute = route.PathPrefix("/validation").Subrouter()
 
 		validationSubroute.Path("/users/{userID}").Methods("GET").Handler(getUserHandler)
-		validationSubroute.Path("/users/{userID}").Methods("POST").Handler(updateUserHandler)
+		validationSubroute.Path("/users/{userID}").Methods("PUT").Handler(updateUserHandler)
 		validationSubroute.Path("/users/{userID}/checks").Methods("POST").Handler(createCheckHandler)
 
 		// Debug.
