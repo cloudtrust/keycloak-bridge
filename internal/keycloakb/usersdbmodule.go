@@ -150,7 +150,7 @@ func (c *usersDBModule) GetUserChecks(ctx context.Context, realm string, userID 
 		}
 
 		//decrypt the proof data of the user
-		proofData, err := c.cipher.Decrypt(encryptedProofData, nil)
+		proofData, err := c.cipher.Decrypt(encryptedProofData, []byte(userID))
 		if err != nil {
 			c.logger.Warn(ctx, "msg", "Can't decrypt the proof data", "error", err.Error(), "realmID", realm, "userID", userID)
 			return nil, err
