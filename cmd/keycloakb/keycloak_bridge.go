@@ -1267,6 +1267,10 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 			"end_user"})
 	v.SetDefault(CfgValidationBasicAuthToken, "")
 
+	//Encryption key
+	v.SetDefault(CfgDbAesGcmTagSize, 16)
+	v.SetDefault(CfgDbAesGcmKey, "")
+
 	// CORS configuration
 	v.SetDefault(CfgAllowedOrigins, []string{})
 	v.SetDefault(CfgAllowedMethods, []string{})
@@ -1391,7 +1395,6 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 
 	v.BindEnv(CfgDbAesGcmKey, "CT_BRIDGE_DB_AES_KEY")
 	censoredParameters[CfgDbAesGcmKey] = true
-	v.SetDefault(CfgDbAesGcmTagSize, 16)
 
 	// Load and log config.
 	v.SetConfigFile(v.GetString(CfgConfigFile))
