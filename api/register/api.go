@@ -50,13 +50,12 @@ const (
 	prmUserIDDocumentExpiration = "user_idDocExpiration"
 	prmUserLocale               = "user_locale"
 
-	regExpNames         = `^([\wàáâäçèéêëìíîïñòóôöùúûüß]+([ '-][\wàáâäçèéêëìíîïñòóôöùúûüß]+)*){1,50}$`
-	regExpFirstName     = regExpNames
-	regExpLastName      = regExpNames
+	regExpFirstName     = constants.RegExpNameSpecialChars
+	regExpLastName      = constants.RegExpNameSpecialChars
 	regExpEmail         = `^.+\@.+\..+$`
-	regExpBirthLocation = regExpNames
+	regExpBirthLocation = constants.RegExpNameSpecialChars
 	// Multiple values with digits and letters separated by a single separator (space, dash)
-	regExpIDDocumentNumber = `^([\w\d]+([ -][\w\d]+)*){1,50}$`
+	regExpIDDocumentNumber = `^([\w\d]+([ -][\w\d]+)*)$`
 	regExpLocale           = `^\w{2}(-\w{2})?$`
 )
 
@@ -119,6 +118,7 @@ func (u *UserRepresentation) Validate() error {
 		ValidateParameterRegExp(prmUserBirthLocation, u.BirthLocation, regExpBirthLocation, true).
 		ValidateParameterIn(prmUserIDDocumentType, u.IDDocumentType, allowedDocumentType, true).
 		ValidateParameterRegExp(prmUserIDDocumentNumber, u.IDDocumentNumber, regExpIDDocumentNumber, true).
+		ValidateParameterLength(prmUserIDDocumentNumber, u.IDDocumentNumber, 1, 50, true).
 		ValidateParameterDateMultipleLayout(prmUserIDDocumentExpiration, u.IDDocumentExpiration, constants.SupportedDateLayouts, true).
 		ValidateParameterRegExp(prmUserLocale, u.Locale, regExpLocale, true).
 		Status()

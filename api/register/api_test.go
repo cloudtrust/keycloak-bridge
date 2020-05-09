@@ -14,7 +14,7 @@ func createValidUser() UserRepresentation {
 		email           = "marcel.bichon@elca.ch"
 		phoneNumber     = "00 33 686 550011"
 		birthDate       = "29.02.2020"
-		birthLocation   = "Bermuda"
+		birthLocation   = "St. Gallen"
 		idDocType       = "PASSPORT"
 		idDocNumber     = "123456789"
 		idDocExpiration = "23.02.2039"
