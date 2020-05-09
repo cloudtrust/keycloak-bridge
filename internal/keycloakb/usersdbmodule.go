@@ -129,7 +129,7 @@ func (c *usersDBModule) GetUserChecks(ctx context.Context, realm string, userID 
 		}
 		result = append(result, dto.DBCheck{
 			Operator:  nullStringToPtr(operator),
-			DateTime:  nullStringToDatePtr(operator),
+			DateTime:  nullStringToDatePtr(datetime),
 			Status:    nullStringToPtr(status),
 			Type:      nullStringToPtr(checkType),
 			Nature:    nullStringToPtr(nature),
