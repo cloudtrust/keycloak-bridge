@@ -27,29 +27,43 @@ type UsersDBModule interface {
 	GetUserChecks(ctx context.Context, realm string, userID string) ([]dto.DBCheck, error)
 }
 
+// TokenProvider is the interface to retrieve accessToken to access KC
+type TokenProvider interface {
+	ProvideToken(ctx context.Context) (string, error)
+}
+
 // Component is the management component
 type component struct {
 	keycloakAccountClient KeycloakAccountClient
 	configDBModule        keycloakb.ConfigurationDBModule
 	usersDBModule         UsersDBModule
+	tokenProvider         TokenProvider
 	logger                internal.Logger
 }
 
 // NewComponent returns the self-service component.
-func NewComponent(keycloakAccountClient KeycloakAccountClient, configDBModule keycloakb.ConfigurationDBModule, usersDBModule UsersDBModule, logger internal.Logger) Component {
+func NewComponent(keycloakAccountClient KeycloakAccountClient, configDBModule keycloakb.ConfigurationDBModule, usersDBModule UsersDBModule, tokenProvider TokenProvider, logger internal.Logger) Component {
 	return &component{
 		keycloakAccountClient: keycloakAccountClient,
 		configDBModule:        configDBModule,
 		usersDBModule:         usersDBModule,
+		tokenProvider:         tokenProvider,
 		logger:                logger,
 	}
 }
 
 func (c *component) GetUserInformation(ctx context.Context) (api.UserInformationRepresentation, error) {
-	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 	var realm = ctx.Value(cs.CtContextRealm).(string)
 	var userID = ctx.Value(cs.CtContextUserID).(string)
 	var userInfo api.UserInformationRepresentation
+
+	// Get an OIDC token to be able to request Keycloak
+	var accessToken string
+	accessToken, err := c.tokenProvider.ProvideToken(ctx)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Can't get OIDC token", "err", err.Error())
+		return api.UserInformationRepresentation{}, err
+	}
 
 	if userKc, err := c.keycloakAccountClient.GetAccount(accessToken, realm); err == nil {
 		keycloakb.ConvertLegacyAttribute(&userKc)
