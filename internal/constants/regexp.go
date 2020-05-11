@@ -15,7 +15,7 @@ const (
 	// User
 	RegExpUsername         = `^[a-zA-Z0-9-_.]{1,128}$`
 	RegExpEmail            = `^.+\@.+\..+$`
-	RegExpNameSpecialChars = `^([\wàáâäçèéêëìíîïñòóôöùúûüß]+([ '-][\wàáâäçèéêëìíîïñòóôöùúûüß]+)*){1,50}$`
+	RegExpNameSpecialChars = `^([\wàáâäçèéêëìíîïñòóôöùúûüß][\wàáâäçèéêëìíîïñòóôöùúûüß \.'-]{0,49})$`
 	RegExpFirstName        = regExpLen128
 	RegExpLastName         = regExpLen128
 	RegExpPhoneNumber      = `^\+[1-9]\d{1,14}$`
