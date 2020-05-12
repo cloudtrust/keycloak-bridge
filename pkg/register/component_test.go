@@ -62,12 +62,13 @@ func TestRegisterUser(t *testing.T) {
 	var keycloakURL = "https://idp.trustid.ch"
 	var ssePublicURL = "https://sse.trustid.ch"
 	var enduserClientID = "selfserviceid"
+	var enduserGroups = []string{"end_user"}
 	var confRealm = "test"
 	var validUser = createValidUser()
 	var accessToken = "abcdef"
 	var empty = 0
 	var usersSearchResult = kc.UsersPageRepresentation{Count: &empty}
-	var component = NewComponent(keycloakURL, targetRealm, ssePublicURL, enduserClientID, mockKeycloakClient, mockTokenProvider, mockUsersDB, mockConfigDB, mockEventsDB, log.NewNopLogger())
+	var component = NewComponent(keycloakURL, targetRealm, ssePublicURL, enduserClientID, enduserGroups, mockKeycloakClient, mockTokenProvider, mockUsersDB, mockConfigDB, mockEventsDB, log.NewNopLogger())
 
 	t.Run("User is not valid", func(t *testing.T) {
 		// User is not valid
@@ -191,8 +192,9 @@ func TestRegisterUser(t *testing.T) {
 		var userID = "abc789def"
 		var requiredActions = []string{"execute", "actions"}
 		var successURL = "http://couldtrust.ch"
+		var enduserGroups = []string{"end_user"}
 		var realmConfiguration = configuration.RealmConfiguration{RegisterExecuteActions: &requiredActions, RedirectSuccessfulRegistrationURL: &successURL}
-		var component = NewComponent("not\nvalid\nURL", targetRealm, "", "", mockKeycloakClient, mockTokenProvider, mockUsersDB, mockConfigDB, mockEventsDB, log.NewNopLogger())
+		var component = NewComponent("not\nvalid\nURL", targetRealm, "", "", enduserGroups, mockKeycloakClient, mockTokenProvider, mockUsersDB, mockConfigDB, mockEventsDB, log.NewNopLogger())
 
 		mockConfigDB.EXPECT().GetConfiguration(ctx, confRealm).Return(realmConfiguration, nil)
 		mockTokenProvider.EXPECT().ProvideToken(ctx).Return(token, nil)
@@ -243,6 +245,7 @@ func TestCheckExistingUser(t *testing.T) {
 	var keycloakURL = "https://idp.trustid.ch"
 	var ssePublicURL = "https://sse.trustid.ch"
 	var enduserClientID = "selfserviceid"
+	var enduserGroups = []string{"end_user"}
 	var targetRealm = "trustid"
 	var email = "user@trustid.swiss"
 	var userID = "ab54f9a-97bi94"
@@ -253,7 +256,7 @@ func TestCheckExistingUser(t *testing.T) {
 	var one = 1
 	var foundUsers = kc.UsersPageRepresentation{Count: &one, Users: []kc.UserRepresentation{keycloakUser}}
 
-	var component = &component{keycloakURL, targetRealm, ssePublicURL, enduserClientID, mockKeycloakClient, mockTokenProvider, mockUsersDB, mockConfigDB, mockEventsDB, log.NewNopLogger()}
+	var component = &component{keycloakURL, targetRealm, ssePublicURL, enduserClientID, enduserGroups, mockKeycloakClient, mockTokenProvider, mockUsersDB, mockConfigDB, mockEventsDB, log.NewNopLogger()}
 
 	t.Run("GetUsers fails", func(t *testing.T) {
 		mockKeycloakClient.EXPECT().GetUsers(accessToken, targetRealm, targetRealm, "email", email).Return(foundUsers, errors.New("GetUsers fails"))
@@ -305,9 +308,10 @@ func TestGetConfiguration(t *testing.T) {
 	var keycloakURL = "https://idp.trustid.ch"
 	var ssePublicURL = "https://sse.trustid.ch"
 	var enduserClientID = "selfserviceid"
+	var enduserGroups = []string{"end_user"}
 	var targetRealm = "cloudtrust"
 	var confRealm = "test"
-	var component = NewComponent(keycloakURL, targetRealm, ssePublicURL, enduserClientID, mockKeycloakClient, mockTokenProvider, mockUsersDB, mockConfigDB, mockEventsDB, log.NewNopLogger())
+	var component = NewComponent(keycloakURL, targetRealm, ssePublicURL, enduserClientID, enduserGroups, mockKeycloakClient, mockTokenProvider, mockUsersDB, mockConfigDB, mockEventsDB, log.NewNopLogger())
 
 	t.Run("Retrieve configuration successfully", func(t *testing.T) {
 		// Retrieve configuration successfully

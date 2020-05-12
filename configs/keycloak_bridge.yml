@@ -53,12 +53,8 @@ validation-basic-auth-token: "idnowsuperpasswordverylongandstrong"
 
 ## trustID groups allowed to be set
 trustid-groups: 
-  - "l1_support_manager"
   - "l1_support_agent"
-  - "product_administrator"
   - "registration_officer"
-  - "papercard_administrator"
-  - "technical"
   - "end_user"
 
 # Keycloak configs
@@ -190,6 +186,8 @@ register-techuser-username: technical
 register-techuser-password: technicalsuperpasswordverylongandstrong
 register-techuser-client-id: admin-cli
 register-enduser-client-id: selfserviceid
+register-enduser-groups: 
+  - "end_user"
 recaptcha-url: https://www.google.com/recaptcha/api/siteverify
 recaptcha-secret: theverymysterioussecretfortherecaptchaverifyoperation
 sse-public-url: https://sse.trustid.ch
