@@ -12,9 +12,9 @@ import (
 	kc "github.com/cloudtrust/keycloak-client"
 )
 
-// KeycloakAccountClient interface exposes methods we need to call to send requests to Keycloak API of Account
-type KeycloakAccountClient interface {
-	GetAccount(accessToken, realm string) (kc.UserRepresentation, error)
+// KeycloakClient interface exposes methods we need to call to send requests to Keycloak API
+type KeycloakClient interface {
+	GetUser(accessToken string, realmName, userID string) (kc.UserRepresentation, error)
 }
 
 // Component interface exposes methods used by the bridge API
@@ -34,21 +34,21 @@ type TokenProvider interface {
 
 // Component is the management component
 type component struct {
-	keycloakAccountClient KeycloakAccountClient
-	configDBModule        keycloakb.ConfigurationDBModule
-	usersDBModule         UsersDBModule
-	tokenProvider         TokenProvider
-	logger                internal.Logger
+	keycloakClient KeycloakClient
+	configDBModule keycloakb.ConfigurationDBModule
+	usersDBModule  UsersDBModule
+	tokenProvider  TokenProvider
+	logger         internal.Logger
 }
 
 // NewComponent returns the self-service component.
-func NewComponent(keycloakAccountClient KeycloakAccountClient, configDBModule keycloakb.ConfigurationDBModule, usersDBModule UsersDBModule, tokenProvider TokenProvider, logger internal.Logger) Component {
+func NewComponent(keycloakClient KeycloakClient, configDBModule keycloakb.ConfigurationDBModule, usersDBModule UsersDBModule, tokenProvider TokenProvider, logger internal.Logger) Component {
 	return &component{
-		keycloakAccountClient: keycloakAccountClient,
-		configDBModule:        configDBModule,
-		usersDBModule:         usersDBModule,
-		tokenProvider:         tokenProvider,
-		logger:                logger,
+		keycloakClient: keycloakClient,
+		configDBModule: configDBModule,
+		usersDBModule:  usersDBModule,
+		tokenProvider:  tokenProvider,
+		logger:         logger,
 	}
 }
 
@@ -65,7 +65,7 @@ func (c *component) GetUserInformation(ctx context.Context) (api.UserInformation
 		return api.UserInformationRepresentation{}, err
 	}
 
-	if userKc, err := c.keycloakAccountClient.GetAccount(accessToken, realm); err == nil {
+	if userKc, err := c.keycloakClient.GetUser(accessToken, realm, userID); err == nil {
 		keycloakb.ConvertLegacyAttribute(&userKc)
 		userInfo.SetAccreditations(ctx, userKc.GetAttribute(constants.AttrbAccreditations), c.logger)
 	} else {
