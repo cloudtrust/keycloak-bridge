@@ -21,13 +21,13 @@ import (
 func TestGetUser(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
-	mockKeycloakAccountClient := mock.NewKeycloakAccountClient(mockCtrl)
+	mockKeycloakClient := mock.NewKeycloakClient(mockCtrl)
 	mockConfigurationDBModule := mock.NewConfigurationDBModule(mockCtrl)
 	mockTokenProvider := mock.NewTokenProvider(mockCtrl)
 	mockUsersDBModule := mock.NewUsersDBModule(mockCtrl)
 	mockLogger := log.NewNopLogger()
 
-	var component = NewComponent(mockKeycloakAccountClient, mockConfigurationDBModule, mockUsersDBModule, mockTokenProvider, mockLogger)
+	var component = NewComponent(mockKeycloakClient, mockConfigurationDBModule, mockUsersDBModule, mockTokenProvider, mockLogger)
 
 	var accessToken = "the-access-token"
 	var realm = "the-realm"
@@ -45,7 +45,7 @@ func TestGetUser(t *testing.T) {
 	t.Run("Can't get user from keycloak", func(t *testing.T) {
 		var kcError = errors.New("keycloak error")
 		mockTokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
-		mockKeycloakAccountClient.EXPECT().GetAccount(accessToken, realm).Return(kc.UserRepresentation{}, kcError)
+		mockKeycloakClient.EXPECT().GetUser(accessToken, realm, userID).Return(kc.UserRepresentation{}, kcError)
 		var _, err = component.GetUserInformation(ctx)
 		assert.Equal(t, kcError, err)
 	})
@@ -53,7 +53,7 @@ func TestGetUser(t *testing.T) {
 	t.Run("Can't get user checks from database", func(t *testing.T) {
 		var dbError = errors.New("user DB error")
 		mockTokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
-		mockKeycloakAccountClient.EXPECT().GetAccount(accessToken, realm).Return(kc.UserRepresentation{}, nil)
+		mockKeycloakClient.EXPECT().GetUser(accessToken, realm, userID).Return(kc.UserRepresentation{}, nil)
 		mockUsersDBModule.EXPECT().GetUserChecks(ctx, realm, userID).Return(nil, dbError)
 		var _, err = component.GetUserInformation(ctx)
 		assert.Equal(t, dbError, err)
@@ -62,7 +62,7 @@ func TestGetUser(t *testing.T) {
 	t.Run("Can't get realm admin configuration from database", func(t *testing.T) {
 		var dbError = errors.New("config DB error")
 		mockTokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
-		mockKeycloakAccountClient.EXPECT().GetAccount(accessToken, realm).Return(kc.UserRepresentation{}, nil)
+		mockKeycloakClient.EXPECT().GetUser(accessToken, realm, userID).Return(kc.UserRepresentation{}, nil)
 		mockUsersDBModule.EXPECT().GetUserChecks(ctx, realm, userID).Return([]dto.DBCheck{}, nil)
 		mockConfigurationDBModule.EXPECT().GetAdminConfiguration(ctx, realm).Return(configuration.RealmAdminConfiguration{}, dbError)
 		var _, err = component.GetUserInformation(ctx)
@@ -78,7 +78,7 @@ func TestGetUser(t *testing.T) {
 		var availableChecks = map[string]bool{"one": true, "two": true}
 
 		mockTokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
-		mockKeycloakAccountClient.EXPECT().GetAccount(accessToken, realm).Return(kc.UserRepresentation{Attributes: &attrbs}, nil)
+		mockKeycloakClient.EXPECT().GetUser(accessToken, realm, userID).Return(kc.UserRepresentation{Attributes: &attrbs}, nil)
 		mockUsersDBModule.EXPECT().GetUserChecks(ctx, realm, userID).Return(checks, nil)
 		mockConfigurationDBModule.EXPECT().GetAdminConfiguration(ctx, realm).Return(configuration.RealmAdminConfiguration{AvailableChecks: availableChecks}, nil)
 		var userInfo, err = component.GetUserInformation(ctx)
