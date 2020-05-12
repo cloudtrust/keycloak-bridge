@@ -750,7 +750,7 @@ func main() {
 		var usersDBModule = keycloakb.NewUsersDBModule(usersRwDBConn, mobileLogger)
 
 		// new module for mobile service
-		mobileComponent := mobile.NewComponent(keycloakClient.AccountClient(), configDBModule, usersDBModule, mobileLogger)
+		mobileComponent := mobile.NewComponent(keycloakClient.AccountClient(), configDBModule, usersDBModule, oidcTokenProvider, mobileLogger)
 		mobileComponent = mobile.MakeAuthorizationMobileComponentMW(log.With(mobileLogger, "mw", "endpoint"), configDBModule)(mobileComponent)
 
 		var rateLimitMobile = rateLimit[RateKeyMobile]
