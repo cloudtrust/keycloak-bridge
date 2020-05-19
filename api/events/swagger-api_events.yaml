@@ -146,6 +146,12 @@ paths:
         required: false
         schema:
           type: number
+      - name: exclude
+        in: query
+        description: CT event type to be excluded
+        required: false
+        schema:
+          type: string
       responses:
         200:
           description: successful operation
