@@ -62,6 +62,7 @@ type component struct {
 	realm                   string
 	ssePublicURL            string
 	registerEnduserClientID string
+	registerEndUserGroups   []string
 	keycloakClient          KeycloakClient
 	tokenProvider           toolbox.OidcTokenProvider
 	usersDBModule           keycloakb.UsersDBModule
@@ -71,7 +72,7 @@ type component struct {
 }
 
 // NewComponent returns the management component.
-func NewComponent(keycloakURL string, realm string, ssePublicURL string, registerEnduserClientID string, keycloakClient KeycloakClient,
+func NewComponent(keycloakURL string, realm string, ssePublicURL string, registerEnduserClientID string, registerEndUserGroups []string, keycloakClient KeycloakClient,
 	tokenProvider toolbox.OidcTokenProvider, usersDBModule keycloakb.UsersDBModule,
 	configDBModule ConfigurationDBModule, eventsDBModule database.EventsDBModule, logger internal.Logger) Component {
 	return &component{
@@ -79,6 +80,7 @@ func NewComponent(keycloakURL string, realm string, ssePublicURL string, registe
 		realm:                   realm,
 		ssePublicURL:            ssePublicURL,
 		registerEnduserClientID: registerEnduserClientID,
+		registerEndUserGroups:   registerEndUserGroups,
 		keycloakClient:          keycloakClient,
 		tokenProvider:           tokenProvider,
 		usersDBModule:           usersDBModule,
@@ -152,6 +154,7 @@ func (c *component) storeUser(ctx context.Context, accessToken string, customerR
 		for i := 0; i < 10; i++ {
 			var username = c.generateUsername(chars, 8)
 			kcUser.Username = &username
+			kcUser.Groups = &c.registerEndUserGroups
 
 			userID, err = c.keycloakClient.CreateUser(accessToken, c.realm, c.realm, kcUser)
 
@@ -180,6 +183,7 @@ func (c *component) storeUser(ctx context.Context, accessToken string, customerR
 		userID = *existingKcUser.ID
 		kcUser.ID = existingKcUser.ID
 		kcUser.Username = existingKcUser.Username
+		kcUser.Groups = &c.registerEndUserGroups
 
 		err = c.keycloakClient.UpdateUser(accessToken, c.realm, userID, kcUser)
 		if err != nil {

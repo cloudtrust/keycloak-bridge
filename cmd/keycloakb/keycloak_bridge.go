@@ -125,6 +125,7 @@ const (
 	CfgRegisterPassword         = "register-techuser-password"
 	CfgRegisterClientID         = "register-techuser-client-id"
 	CfgRegisterEnduserClientID  = "register-enduser-client-id"
+	CfgRegisterEnduserGroups    = "register-enduser-groups"
 	CfgRecaptchaURL             = "recaptcha-url"
 	CfgRecaptchaSecret          = "recaptcha-secret"
 	CfgSsePublicURL             = "sse-public-url"
@@ -239,6 +240,7 @@ func main() {
 		registerPassword        = c.GetString(CfgRegisterPassword)
 		registerClientID        = c.GetString(CfgRegisterClientID)
 		registerEnduserClientID = c.GetString(CfgRegisterEnduserClientID)
+		registerEnduserGroups   = c.GetStringSlice(CfgRegisterEnduserGroups)
 		recaptchaURL            = c.GetString(CfgRecaptchaURL)
 		recaptchaSecret         = c.GetString(CfgRecaptchaSecret)
 		ssePublicURL            = c.GetString(CfgSsePublicURL)
@@ -774,7 +776,7 @@ func main() {
 		var usersDBModule = keycloakb.NewUsersDBModule(usersRwDBConn, registerLogger)
 
 		// new module for register service
-		registerComponent := register.NewComponent(keycloakPublicURL, registerRealm, ssePublicURL, registerEnduserClientID, keycloakClient, oidcTokenProvider, usersDBModule, configDBModule, eventsDBModule, registerLogger)
+		registerComponent := register.NewComponent(keycloakPublicURL, registerRealm, ssePublicURL, registerEnduserClientID, registerEnduserGroups, keycloakClient, oidcTokenProvider, usersDBModule, configDBModule, eventsDBModule, registerLogger)
 		registerComponent = register.MakeAuthorizationRegisterComponentMW(log.With(registerLogger, "mw", "endpoint"))(registerComponent)
 
 		var rateLimitRegister = rateLimit[RateKeyRegister]
@@ -1248,12 +1250,8 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 	v.SetDefault(CfgEventBasicAuthToken, "")
 	v.SetDefault(CfgTrustIDGroups,
 		[]string{
-			"l1_support_manager",
 			"l1_support_agent",
-			"product_administrator",
 			"registration_officer",
-			"papercard_administrator",
-			"technical",
 			"end_user"})
 	v.SetDefault(CfgValidationBasicAuthToken, "")
 
@@ -1346,6 +1344,7 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 	v.SetDefault(CfgRegisterPassword, "")
 	v.SetDefault(CfgRegisterClientID, "")
 	v.SetDefault(CfgRegisterEnduserClientID, "")
+	v.SetDefault(CfgRegisterEnduserGroups, "end_user")
 	v.SetDefault(CfgRecaptchaURL, "https://www.google.com/recaptcha/api/siteverify")
 	v.SetDefault(CfgRecaptchaSecret, "")
 	v.SetDefault(CfgSsePublicURL, "")
