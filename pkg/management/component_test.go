@@ -2785,8 +2785,7 @@ func TestUpdateAuthorizations(t *testing.T) {
 		Name: &roleName[4],
 	}
 
-	// Update authorizations with succces (MGMT_action so KC roles needed)
-	{
+	t.Run("Update authorizations with succces (MGMT_action so KC roles needed)", func(t *testing.T) {
 		var action = "MGMT_action"
 		var matrix = map[string]map[string]map[string]struct{}{
 			action: {},
@@ -2828,10 +2827,9 @@ func TestUpdateAuthorizations(t *testing.T) {
 
 		err := managementComponent.UpdateAuthorizations(ctx, targetRealmName, groupID, apiAuthorizations)
 		assert.Nil(t, err)
-	}
+	})
 
-	// Update authorizations with succces (action so no KC roles needed)
-	{
+	t.Run("Update authorizations with succces (action so no KC roles needed)", func(t *testing.T) {
 		var action = "action"
 		var matrix = map[string]map[string]map[string]struct{}{
 			action: {},
@@ -2873,10 +2871,9 @@ func TestUpdateAuthorizations(t *testing.T) {
 		err := managementComponent.UpdateAuthorizations(ctx, targetRealmName, groupID, apiAuthorizations)
 
 		assert.Nil(t, err)
-	}
+	})
 
-	// Errors
-	{
+	t.Run("Errors", func(t *testing.T) {
 		var action = "MGMT_action"
 		var matrix = map[string]map[string]map[string]struct{}{
 			action: {},
@@ -3032,9 +3029,9 @@ func TestUpdateAuthorizations(t *testing.T) {
 		mockLogger.EXPECT().Error(ctx, "err", "error", "event", string(eventJSON))
 		err = managementComponent.UpdateAuthorizations(ctx, targetRealmName, groupID, apiAuthorizations)
 		assert.Nil(t, err)
-	}
+	})
 
-	{
+	t.Run("YAT (yet another test)", func(t *testing.T) {
 		var action = "action"
 		var matrix = map[string]map[string]map[string]struct{}{
 			action: {},
@@ -3067,10 +3064,9 @@ func TestUpdateAuthorizations(t *testing.T) {
 		mockLogger.EXPECT().Warn(ctx, "err", "Unexpected error").Times(1)
 		err := managementComponent.UpdateAuthorizations(ctx, targetRealmName, groupID, apiAuthorizations)
 		assert.NotNil(t, err)
-	}
+	})
 
-	// Authorizations provided not valid
-	{
+	t.Run("Authorizations provided not valid", func(t *testing.T) {
 		var jsonMatrix = `{
 			"Action1": {},
 			"Action2": {"*": {}, "realm1": {}}
@@ -3095,7 +3091,7 @@ func TestUpdateAuthorizations(t *testing.T) {
 		mockLogger.EXPECT().Warn(ctx, "err", gomock.Any()).Times(1)
 		err := managementComponent.UpdateAuthorizations(ctx, targetRealmName, groupID, apiAuthorizations)
 		assert.NotNil(t, err)
-	}
+	})
 }
 
 func TestUpdateAuthorizationsWithAny(t *testing.T) {

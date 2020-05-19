@@ -29,7 +29,7 @@ func TestHTTPManagementHandler(t *testing.T) {
 	var mockLogger = log.NewNopLogger()
 
 	var managementHandler = MakeManagementHandler(keycloakb.ToGoKitEndpoint(MakeGetRealmEndpoint(mockComponent)), mockLogger)
-	var managementHandler2 = MakeManagementHandler(keycloakb.ToGoKitEndpoint(MakeCreateUserEndpoint(mockComponent)), mockLogger)
+	var managementHandler2 = MakeManagementHandler(keycloakb.ToGoKitEndpoint(MakeCreateUserEndpoint(mockComponent, mockLogger)), mockLogger)
 	var managementHandler3 = MakeManagementHandler(keycloakb.ToGoKitEndpoint(MakeResetPasswordEndpoint(mockComponent)), mockLogger)
 
 	r := mux.NewRouter()
@@ -116,7 +116,7 @@ func TestHTTPErrorHandler(t *testing.T) {
 	var mockComponent = mock.NewManagementComponent(mockCtrl)
 	var mockLogger = log.NewNopLogger()
 
-	var managementHandler = MakeManagementHandler(keycloakb.ToGoKitEndpoint(MakeCreateUserEndpoint(mockComponent)), mockLogger)
+	var managementHandler = MakeManagementHandler(keycloakb.ToGoKitEndpoint(MakeCreateUserEndpoint(mockComponent, mockLogger)), mockLogger)
 
 	r := mux.NewRouter()
 	r.Handle("/realms/{realm}/users", managementHandler)
@@ -226,7 +226,7 @@ func TestHTTPXForwardHeaderHandler(t *testing.T) {
 	var mockComponent = mock.NewManagementComponent(mockCtrl)
 	var mockLogger = log.NewNopLogger()
 
-	var managementHandler = MakeManagementHandler(keycloakb.ToGoKitEndpoint(MakeCreateUserEndpoint(mockComponent)), mockLogger)
+	var managementHandler = MakeManagementHandler(keycloakb.ToGoKitEndpoint(MakeCreateUserEndpoint(mockComponent, mockLogger)), mockLogger)
 
 	r := mux.NewRouter()
 	r.Handle("/realms/{realm}/users", managementHandler)

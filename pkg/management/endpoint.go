@@ -11,6 +11,7 @@ import (
 	errorhandler "github.com/cloudtrust/common-service/errors"
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
 	msg "github.com/cloudtrust/keycloak-bridge/internal/constants"
+	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/go-kit/kit/endpoint"
 )
 
@@ -116,7 +117,7 @@ func MakeGetRequiredActionsEndpoint(component Component) cs.Endpoint {
 }
 
 // MakeCreateUserEndpoint makes the endpoint to create a user.
-func MakeCreateUserEndpoint(component Component) cs.Endpoint {
+func MakeCreateUserEndpoint(component Component, logger keycloakb.Logger) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 		var err error
@@ -143,7 +144,9 @@ func MakeCreateUserEndpoint(component Component) cs.Endpoint {
 		}
 
 		url, err := convertLocationURL(keycloakLocation, m["scheme"], m["host"])
-		// TODO: log the error and the unhappy url
+		if err != nil {
+			logger.Warn(ctx, "msg", "Invalid location", "location", keycloakLocation, "err", err.Error())
+		}
 
 		return LocationHeader{
 			URL: url,
@@ -173,15 +176,14 @@ func MakeGetUserEndpoint(component Component) cs.Endpoint {
 func MakeUpdateUserEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
-		var err error
 
 		var user api.UserRepresentation
 
-		if err = json.Unmarshal([]byte(m[ReqBody]), &user); err != nil {
+		if err := json.Unmarshal([]byte(m[ReqBody]), &user); err != nil {
 			return nil, errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + msg.Body)
 		}
 
-		if err = user.Validate(); err != nil {
+		if err := user.Validate(); err != nil {
 			return nil, err
 		}
 
@@ -483,7 +485,7 @@ func MakeGetClientRolesEndpoint(component Component) cs.Endpoint {
 }
 
 // MakeCreateClientRoleEndpoint creates an endpoint for CreateClientRole
-func MakeCreateClientRoleEndpoint(component Component) cs.Endpoint {
+func MakeCreateClientRoleEndpoint(component Component, logger keycloakb.Logger) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 		var err error
@@ -506,7 +508,9 @@ func MakeCreateClientRoleEndpoint(component Component) cs.Endpoint {
 		}
 
 		url, err := convertLocationURL(keycloakLocation, m["scheme"], m["host"])
-		// TODO: log the error and the unhappy url
+		if err != nil {
+			logger.Warn(ctx, "msg", "Invalid location", "location", keycloakLocation, "err", err.Error())
+		}
 
 		return LocationHeader{
 			URL: url,
@@ -524,7 +528,7 @@ func MakeGetGroupsEndpoint(component Component) cs.Endpoint {
 }
 
 // MakeCreateGroupEndpoint makes the endpoint to create a group.
-func MakeCreateGroupEndpoint(component Component) cs.Endpoint {
+func MakeCreateGroupEndpoint(component Component, logger keycloakb.Logger) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 		var err error
@@ -547,7 +551,9 @@ func MakeCreateGroupEndpoint(component Component) cs.Endpoint {
 		}
 
 		url, err := convertLocationURL(keycloakLocation, m["scheme"], m["host"])
-		// TODO: log the error and the unhappy url
+		if err != nil {
+			logger.Warn(ctx, "msg", "Invalid location", "location", keycloakLocation, "err", err.Error())
+		}
 
 		return LocationHeader{
 			URL: url,
@@ -591,7 +597,7 @@ func MakeUpdateAuthorizationsEndpoint(component Component) cs.Endpoint {
 
 // MakeGetActionsEndpoint creates an endpoint for GetActions
 func MakeGetActionsEndpoint(component Component) cs.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, _ interface{}) (interface{}, error) {
 		return component.GetActions(ctx)
 	}
 }

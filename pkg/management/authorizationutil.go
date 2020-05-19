@@ -9,24 +9,8 @@ import (
 
 // Validate the content of the provided array. Returns an error if any issue is detected
 func Validate(authorizations []configuration.Authorization, allowedTargetRealmsAndGroupNames map[string]map[string]struct{}) error {
-	for _, auth := range authorizations {
-		// Check TargetRealm
-		if auth.TargetRealmID != nil {
-			_, ok := allowedTargetRealmsAndGroupNames[*auth.TargetRealmID]
-
-			if !ok {
-				return errors.New("Invalid target realm")
-			}
-		}
-
-		// Check TargetGroupName
-		if auth.TargetGroupName != nil {
-			_, ok := allowedTargetRealmsAndGroupNames[*auth.TargetRealmID][*auth.TargetGroupName]
-
-			if !ok {
-				return errors.New("Invalid target group")
-			}
-		}
+	if err := checkTarget(authorizations, allowedTargetRealmsAndGroupNames); err != nil {
+		return err
 	}
 
 	var authZ = api.ConvertToAPIAuthorizations(authorizations)
@@ -48,5 +32,24 @@ func Validate(authorizations []configuration.Authorization, allowedTargetRealmsA
 		}
 	}
 
+	return nil
+}
+
+func checkTarget(authorizations []configuration.Authorization, allowedTargetRealmsAndGroupNames map[string]map[string]struct{}) error {
+	for _, auth := range authorizations {
+		// Check TargetRealm
+		if auth.TargetRealmID != nil {
+			if _, ok := allowedTargetRealmsAndGroupNames[*auth.TargetRealmID]; !ok {
+				return errors.New("Invalid target realm")
+			}
+		}
+
+		// Check TargetGroupName
+		if auth.TargetGroupName != nil {
+			if _, ok := allowedTargetRealmsAndGroupNames[*auth.TargetRealmID][*auth.TargetGroupName]; !ok {
+				return errors.New("Invalid target group")
+			}
+		}
+	}
 	return nil
 }

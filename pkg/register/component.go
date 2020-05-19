@@ -150,34 +150,9 @@ func (c *component) storeUser(ctx context.Context, accessToken string, customerR
 	kcUser.SetAttributeString(constants.AttrbTrustIDAuthToken, authToken.ToJSON())
 
 	if existingKcUser == nil {
-		var chars = []rune("0123456789")
-		for i := 0; i < 10; i++ {
-			var username = c.generateUsername(chars, 8)
-			kcUser.Username = &username
-			kcUser.Groups = &c.registerEndUserGroups
-
-			userID, err = c.keycloakClient.CreateUser(accessToken, c.realm, c.realm, kcUser)
-
-			// Create success: just have to get the userID and exit this loop
-			if err == nil {
-				var re = regexp.MustCompile(`(^.*/users/)`)
-				userID = re.ReplaceAllString(userID, "")
-				break
-			}
-			userID = ""
-			switch e := err.(type) {
-			case errorhandler.Error:
-				if e.Status == http.StatusConflict && e.Message == "keycloak.existing.username" {
-					// Username already exists
-					continue
-				}
-			}
-			c.logger.Warn(ctx, "msg", "Failed to create user through Keycloak API", "err", err.Error())
+		userID, err = c.createKeycloakUser(ctx, accessToken, &kcUser)
+		if err != nil {
 			return "", "", err
-		}
-		if userID == "" {
-			c.logger.Warn(ctx, "msg", "Can't generate unused username after multiple attempts")
-			return "", "", errorhandler.CreateInternalServerError("username.generation")
 		}
 	} else {
 		userID = *existingKcUser.ID
@@ -206,10 +181,56 @@ func (c *component) storeUser(ctx context.Context, accessToken string, customerR
 	}
 
 	// Send execute actions email
+	if err = c.sendExecuteActionsEmail(ctx, accessToken, authToken, &kcUser, customerRealmName, userID, realmConf); err != nil {
+		return "", "", err
+	}
+
+	return userID, *kcUser.Username, nil
+}
+
+func (c *component) createKeycloakUser(ctx context.Context, accessToken string, kcUser *kc.UserRepresentation) (string, error) {
+	var chars = []rune("0123456789")
+	var userID string
+	var err error
+
+	for i := 0; i < 10; i++ {
+		var username = c.generateUsername(chars, 8)
+		kcUser.Username = &username
+		kcUser.Groups = &c.registerEndUserGroups
+
+		userID, err = c.keycloakClient.CreateUser(accessToken, c.realm, c.realm, *kcUser)
+
+		// Create success: just have to get the userID and exit this loop
+		if err == nil {
+			var re = regexp.MustCompile(`(^.*/users/)`)
+			userID = re.ReplaceAllString(userID, "")
+			break
+		}
+		userID = ""
+		switch e := err.(type) {
+		case errorhandler.Error:
+			if e.Status == http.StatusConflict && e.Message == "keycloak.existing.username" {
+				// Username already exists
+				continue
+			}
+		}
+		c.logger.Warn(ctx, "msg", "Failed to create user through Keycloak API", "err", err.Error())
+		return "", err
+	}
+	if userID == "" {
+		c.logger.Warn(ctx, "msg", "Can't generate unused username after multiple attempts")
+		return "", errorhandler.CreateInternalServerError("username.generation")
+	}
+	return userID, nil
+}
+
+func (c *component) sendExecuteActionsEmail(ctx context.Context, accessToken string, authToken TrustIDAuthToken, kcUser *kc.UserRepresentation,
+	customerRealmName, userID string, realmConf configuration.RealmConfiguration) error {
+
 	redirectURL, err := url.Parse(c.keycloakURL + "/auth/realms/" + c.realm + "/protocol/openid-connect/auth")
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Can't parse keycloak URL", "err", err.Error())
-		return "", "", errorhandler.CreateInternalServerError("url")
+		return errorhandler.CreateInternalServerError("url")
 	}
 	var parameters = url.Values{}
 	parameters.Add("client_id", c.registerEnduserClientID)
@@ -229,11 +250,10 @@ func (c *component) storeUser(ctx context.Context, accessToken string, customerR
 			*realmConf.RegisterExecuteActions, "client_id", c.registerEnduserClientID, "redirect_uri", redirectURL.String())
 		if err != nil {
 			c.logger.Warn(ctx, "msg", "ExecuteActionsEmail failed", "err", err.Error())
-			return "", "", err
+			return err
 		}
 	}
-
-	return userID, *kcUser.Username, nil
+	return nil
 }
 
 // Check if a user already exists in Keycloak... If such a user exists in database, he can register himself only if the existing user is not yet enabled

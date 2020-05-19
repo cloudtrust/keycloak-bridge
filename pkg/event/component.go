@@ -129,6 +129,22 @@ func addCTtypeToEvent(event map[string]string) map[string]string {
 	var f map[string]string
 	_ = json.Unmarshal(addInfo, &f)
 
+	if result := addCTtypeToEventFromOperationType(event, f); result != nil {
+		return result
+	}
+	if result := addCTtypeToEventFromEventType(event, f); result != nil {
+		return result
+	}
+
+	// for all those events that don't have set the ct_event_type, we assign an empty ct_event_type
+	if _, ok := event[database.CtEventType]; !ok {
+		event[database.CtEventType] = ""
+	}
+
+	return event
+}
+
+func addCTtypeToEventFromOperationType(event map[string]string, f map[string]string) map[string]string {
 	switch opType := event[database.CtEventKcOperationType]; opType {
 	case "CREATE":
 		//ACCOUNT_CREATED
@@ -147,7 +163,10 @@ func addCTtypeToEvent(event map[string]string) map[string]string {
 	default:
 		// Nothing to do here
 	}
+	return nil
+}
 
+func addCTtypeToEventFromEventType(event map[string]string, f map[string]string) map[string]string {
 	switch t := event[database.CtEventKcEventType]; t {
 	case "CUSTOM_REQUIRED_ACTION", "EXECUTE_ACTION_TOKEN":
 		//EMAIL_CONFIRMED
@@ -189,13 +208,7 @@ func addCTtypeToEvent(event map[string]string) map[string]string {
 	default:
 		// Nothing to do here
 	}
-
-	// for all those events that don't have set the ct_event_type, we assign an empty ct_event_type
-	if _, ok := event[database.CtEventType]; !ok {
-		event[database.CtEventType] = ""
-	}
-
-	return event
+	return nil
 }
 
 func adminEventToMap(adminEvent *fb.AdminEvent) map[string]string {

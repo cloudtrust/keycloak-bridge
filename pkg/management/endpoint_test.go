@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/cloudtrust/common-service/log"
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
 	"github.com/cloudtrust/keycloak-bridge/pkg/management/mock"
 	"github.com/golang/mock/gomock"
@@ -130,7 +131,7 @@ func TestCreateUserEndpoint(t *testing.T) {
 
 	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
 
-	var e = MakeCreateUserEndpoint(mockManagementComponent)
+	var e = MakeCreateUserEndpoint(mockManagementComponent, log.NewNopLogger())
 
 	var realm = "master"
 	var location = "https://location.url/auth/admin/master/users/123456"
@@ -962,7 +963,7 @@ func TestCreateGroupEndpoint(t *testing.T) {
 
 	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
 
-	var e = MakeCreateGroupEndpoint(mockManagementComponent)
+	var e = MakeCreateGroupEndpoint(mockManagementComponent, log.NewNopLogger())
 
 	var realm = "master"
 	var location = "https://location.url/auth/admin/master/groups/123456"
@@ -1129,7 +1130,7 @@ func TestCreateClientRoleEndpoint(t *testing.T) {
 
 	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
 
-	var e = MakeCreateClientRoleEndpoint(mockManagementComponent)
+	var e = MakeCreateClientRoleEndpoint(mockManagementComponent, log.NewNopLogger())
 	var ctx = context.Background()
 	var location = "https://location.url/auth/admin/master/role/123456"
 	var realm = "master"

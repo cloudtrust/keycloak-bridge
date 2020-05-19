@@ -43,46 +43,58 @@ func TestGeneratePasswordNoKeycloakPolicy(t *testing.T) {
 	}
 }
 
-func TestGeneratePasswordFromKeycloakPolicy(t *testing.T) {
-	var nospecialChars = 3
-	var noupperCase = 2
-	var nolowerCase = 3
-	var length = 10
-	var nodigits = 1
-	var policy = fmt.Sprintf("forceExpiredPasswordChange(365) and specialChars(%d) and upperCase(%d) and lowerCase(%d) and length(%d) and digits(%d) and notUsername(undefined)", nospecialChars, noupperCase, nolowerCase, length, nodigits)
-
-	regSpecialChars := regexp.MustCompile("[?!#%$]")
-	regDigits := regexp.MustCompile("[0-9]")
-	regUpperCase := regexp.MustCompile("[A-Z]")
-	regLowerCase := regexp.MustCompile("[a-z]")
-
-	pwd, err := GeneratePasswordFromKeycloakPolicy(policy)
-	assert.Equal(t, len(regDigits.FindAllStringIndex(pwd, -1)), nodigits)
-	assert.Equal(t, len(regLowerCase.FindAllStringIndex(pwd, -1)), nolowerCase+length)
-	assert.Equal(t, len(regUpperCase.FindAllStringIndex(pwd, -1)), noupperCase)
-	assert.Equal(t, len(regSpecialChars.FindAllStringIndex(pwd, -1)), nospecialChars)
-	assert.True(t, len(pwd) >= length)
-	assert.Equal(t, len(pwd), nodigits+nolowerCase+nospecialChars+noupperCase+length)
-	assert.Nil(t, err)
-}
-
 func TestGeneratePassword(t *testing.T) {
+	var definitionFormat = "forceExpiredPasswordChange(365) and specialChars(%d) and upperCase(%d) and lowerCase(%d) and length(%d) and digits(%d) and notUsername(undefined)"
+
+	t.Run("Invalid policy syntax", func(t *testing.T) {
+		_, err := GeneratePasswordFromKeycloakPolicy("upperCase(XX)")
+		assert.NotNil(t, err)
+	})
+
+	t.Run("FromKeycloakPolicy", func(t *testing.T) {
+		var nospecialChars = 3
+		var noupperCase = 2
+		var nolowerCase = 3
+		var length = 10
+		var nodigits = 1
+		var policy = fmt.Sprintf(definitionFormat, nospecialChars, noupperCase, nolowerCase, length, nodigits)
+
+		regSpecialChars := regexp.MustCompile("[?!#%$]")
+		regDigits := regexp.MustCompile("[0-9]")
+		regUpperCase := regexp.MustCompile("[A-Z]")
+		regLowerCase := regexp.MustCompile("[a-z]")
+
+		pwd, err := GeneratePasswordFromKeycloakPolicy(policy)
+		assert.Equal(t, len(regDigits.FindAllStringIndex(pwd, -1)), nodigits)
+		assert.Equal(t, len(regLowerCase.FindAllStringIndex(pwd, -1)), nolowerCase+length)
+		assert.Equal(t, len(regUpperCase.FindAllStringIndex(pwd, -1)), noupperCase)
+		assert.Equal(t, len(regSpecialChars.FindAllStringIndex(pwd, -1)), nospecialChars)
+		assert.True(t, len(pwd) >= length)
+		assert.Equal(t, len(pwd), nodigits+nolowerCase+nospecialChars+noupperCase+length)
+		assert.Nil(t, err)
+	})
+
 	var userID = "dummyID"
 	var minLength = 3
-	var nospecialChars = 3
-	var noupperCase = 2
-	var nolowerCase = 3
-	var length = 10
-	var nodigits = 1
-	var policy = fmt.Sprintf("forceExpiredPasswordChange(365) and specialChars(%d) and upperCase(%d) and lowerCase(%d) and length(%d) and digits(%d) and notUsername(undefined)", nospecialChars, noupperCase, nolowerCase, length, nodigits)
 
-	pwd, err := GeneratePassword(&policy, minLength, userID)
-	assert.Nil(t, err)
-	assert.Equal(t, len(pwd), nodigits+nolowerCase+nospecialChars+noupperCase+length)
+	t.Run("GeneratePassword", func(t *testing.T) {
+		var nospecialChars = 3
+		var noupperCase = 2
+		var nolowerCase = 3
+		var length = 10
+		var nodigits = 1
+		var policy = fmt.Sprintf(definitionFormat, nospecialChars, noupperCase, nolowerCase, length, nodigits)
 
-	pwd, err = GeneratePassword(nil, minLength, userID)
-	assert.Nil(t, err)
-	assert.Equal(t, len(pwd), minLength)
+		pwd, err := GeneratePassword(&policy, minLength, userID)
+		assert.Nil(t, err)
+		assert.Equal(t, len(pwd), nodigits+nolowerCase+nospecialChars+noupperCase+length)
+
+	})
+	t.Run("GeneratePassword no policy", func(t *testing.T) {
+		pwd, err := GeneratePassword(nil, minLength, userID)
+		assert.Nil(t, err)
+		assert.Equal(t, len(pwd), minLength)
+	})
 }
 
 func TestGenerateInitialCode(t *testing.T) {

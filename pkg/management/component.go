@@ -342,6 +342,13 @@ func (c *component) GetUser(ctx context.Context, realmName, userID string) (api.
 
 }
 
+func (c *component) isUpdated(newValue, oldValue *string) bool {
+	if oldValue == nil {
+		return newValue != nil
+	}
+	return newValue != nil && *oldValue != *newValue
+}
+
 func (c *component) UpdateUser(ctx context.Context, realmName, userID string, user api.UserRepresentation) error {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 	var userRep kc.UserRepresentation
@@ -355,42 +362,27 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 	keycloakb.ConvertLegacyAttribute(&oldUserKc)
 
 	// when the email changes, set the EmailVerified to false
-	if user.Email != nil && oldUserKc.Email != nil && *oldUserKc.Email != *user.Email {
+	if c.isUpdated(user.Email, oldUserKc.Email) {
 		var verified = false
 		user.EmailVerified = &verified
 	}
 
 	// when the phone number changes, set the PhoneNumberVerified to false
-	if user.PhoneNumber != nil {
-		var oldPhoneNumber = oldUserKc.GetAttributeString(constants.AttrbPhoneNumber)
-		if oldPhoneNumber == nil || *oldPhoneNumber != *user.PhoneNumber {
-			var verified = false
-			user.PhoneNumberVerified = &verified
-		}
+	if c.isUpdated(user.PhoneNumber, oldUserKc.GetAttributeString(constants.AttrbPhoneNumber)) {
+		var verified = false
+		user.PhoneNumberVerified = &verified
 	}
 
 	userRep = api.ConvertToKCUser(user)
 
 	// Merge the attributes coming from the old user representation and the updated user representation in order not to lose anything
 	var mergedAttributes = make(kc.Attributes)
+	mergedAttributes.Merge(oldUserKc.Attributes)
+	mergedAttributes.Merge(userRep.Attributes)
 
-	//Populate with the old attributes
-	if oldUserKc.Attributes != nil {
-		for key, attribute := range *oldUserKc.Attributes {
-			mergedAttributes[key] = attribute
-		}
-	}
-	// Update with the new ones
-	if userRep.Attributes != nil {
-		for key, attribute := range *userRep.Attributes {
-			mergedAttributes[key] = attribute
-		}
-	}
 	userRep.Attributes = &mergedAttributes
 
-	err = c.keycloakClient.UpdateUser(accessToken, realmName, userID, userRep)
-
-	if err != nil {
+	if err = c.keycloakClient.UpdateUser(accessToken, realmName, userID, userRep); err != nil {
 		c.logger.Warn(ctx, "err", err.Error())
 		return err
 	}
@@ -1021,6 +1013,54 @@ func (c *component) UpdateAuthorizations(ctx context.Context, realmName string, 
 
 	authorizations := api.ConvertToDBAuthorizations(realmName, groupName, auth)
 
+	if err = c.checkAllowedTargetRealmsAndGroupNames(ctx, realmName, authorizations); err != nil {
+		return err
+	}
+
+	// Assign KC roles to groups
+	if err = c.assignKCRolesToGroups(accessToken, realmName, groupID, authorizations); err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return err
+	}
+
+	// Persists the new authorizations in DB
+	{
+		tx, err := c.configDBModule.NewTransaction(ctx)
+		if err != nil {
+			c.logger.Warn(ctx, "err", err.Error())
+			return err
+		}
+		defer tx.Close()
+
+		err = c.configDBModule.DeleteAuthorizations(ctx, realmName, groupName)
+		if err != nil {
+			c.logger.Warn(ctx, "err", err.Error())
+			return err
+		}
+
+		for _, authorisation := range authorizations {
+			err = c.configDBModule.CreateAuthorization(ctx, authorisation)
+			if err != nil {
+				c.logger.Warn(ctx, "err", err.Error())
+				return err
+			}
+		}
+
+		err = tx.Commit()
+		if err != nil {
+			c.logger.Warn(ctx, "err", err.Error())
+			return err
+		}
+	}
+
+	c.reportEvent(ctx, "API_AUTHORIZATIONS_UPDATE", database.CtEventRealmName, realmName, database.CtEventGroupName, groupName)
+
+	return nil
+}
+
+func (c *component) checkAllowedTargetRealmsAndGroupNames(ctx context.Context, realmName string, authorizations []configuration.Authorization) error {
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+
 	var allowedTargetRealmsAndGroupNames = make(map[string]map[string]struct{})
 	// Validate the authorizations provided
 	{
@@ -1063,111 +1103,68 @@ func (c *component) UpdateAuthorizations(ctx context.Context, realmName string, 
 			return errorhandler.CreateBadRequestError(constants.MsgErrInvalidParam + "." + constants.Authorization)
 		}
 	}
+	return nil
+}
 
-	// Assign KC roles to groups
-	{
-		// TODO Would be good to provide only KC roles which are really needed.
-		// For simplicity, we provides "manage-users", "view-clients", "view-realms", "view-users" to all groups which have at least one Management Action
-		// We also do it for each realms avaialble.
-		var kcRolesNeeded = false
-
-		for _, authz := range authorizations {
-			if authz.Action != nil && strings.HasPrefix(*authz.Action, "MGMT_") {
-				kcRolesNeeded = true
-			}
-		}
-
-		// Check if roles are assigned
-		clients, err := c.keycloakClient.GetClients(accessToken, realmName)
-		if err != nil {
-			c.logger.Warn(ctx, "err", err.Error())
-			return err
-		}
-
-		for _, client := range clients {
-			// filter clients, only keep realm-management and the ones ending with -realm
-			if *client.ClientID != "realm-management" && !strings.HasSuffix(*client.ClientID, "-realm") {
-				continue
-			}
-
-			availableRoles, err := c.keycloakClient.GetAvailableGroupClientRoles(accessToken, realmName, groupID, *client.ID)
-			if err != nil {
-				c.logger.Warn(ctx, "err", err.Error())
-				return err
-			}
-
-			currentRoles, err := c.keycloakClient.GetGroupClientRoles(accessToken, realmName, groupID, *client.ID)
-			if err != nil {
-				c.logger.Warn(ctx, "err", err.Error())
-				return err
-			}
-
-			if kcRolesNeeded {
-				var rolesToAdd = []kc.RoleRepresentation{}
-				for _, role := range availableRoles {
-					if stringInSlice(*role.Name, []string{"manage-users", "view-clients", "view-realm", "view-users"}) {
-						rolesToAdd = append(rolesToAdd, role)
-					}
-				}
-
-				if len(rolesToAdd) != 0 {
-					err = c.keycloakClient.AssignClientRole(accessToken, realmName, groupID, *client.ID, rolesToAdd)
-					if err != nil {
-						c.logger.Warn(ctx, "err", err.Error())
-						return err
-					}
-				}
-			} else {
-				var rolesToRemove = []kc.RoleRepresentation{}
-				for _, role := range currentRoles {
-					if stringInSlice(*role.Name, []string{"manage-users", "view-clients", "view-realm", "view-users"}) {
-						rolesToRemove = append(rolesToRemove, role)
-					}
-				}
-
-				if len(rolesToRemove) != 0 {
-					err = c.keycloakClient.RemoveClientRole(accessToken, realmName, groupID, *client.ID, rolesToRemove)
-					if err != nil {
-						c.logger.Warn(ctx, "err", err.Error())
-						return err
-					}
-				}
-			}
+func (c *component) processRoles(roles []kc.RoleRepresentation, accessToken, realmName, groupID, clientID string, roleMgmtFunc func(string, string, string, string, []kc.RoleRepresentation) error) error {
+	var rolesToProcess []kc.RoleRepresentation
+	for _, role := range roles {
+		if stringInSlice(*role.Name, []string{"manage-users", "view-clients", "view-realm", "view-users"}) {
+			rolesToProcess = append(rolesToProcess, role)
 		}
 	}
 
-	// Persists the new authorizations in DB
-	{
-		tx, err := c.configDBModule.NewTransaction(ctx)
-		if err != nil {
-			c.logger.Warn(ctx, "err", err.Error())
-			return err
-		}
-		defer tx.Close()
-
-		err = c.configDBModule.DeleteAuthorizations(ctx, realmName, groupName)
-		if err != nil {
-			c.logger.Warn(ctx, "err", err.Error())
-			return err
-		}
-
-		for _, authorisation := range authorizations {
-			err = c.configDBModule.CreateAuthorization(ctx, authorisation)
-			if err != nil {
-				c.logger.Warn(ctx, "err", err.Error())
-				return err
-			}
-		}
-
-		err = tx.Commit()
-		if err != nil {
-			c.logger.Warn(ctx, "err", err.Error())
+	if len(rolesToProcess) != 0 {
+		if err := roleMgmtFunc(accessToken, realmName, groupID, clientID, rolesToProcess); err != nil {
 			return err
 		}
 	}
+	return nil
+}
 
-	c.reportEvent(ctx, "API_AUTHORIZATIONS_UPDATE", database.CtEventRealmName, realmName, database.CtEventGroupName, groupName)
+func (c *component) assignKCRolesToGroups(accessToken, realmName, groupID string, authorizations []configuration.Authorization) error {
+	// TODO Would be good to provide only KC roles which are really needed.
+	// For simplicity, we provides "manage-users", "view-clients", "view-realms", "view-users" to all groups which have at least one Management Action
+	// We also do it for each realms avaialble.
+	var kcRolesNeeded = false
 
+	for _, authz := range authorizations {
+		if authz.Action != nil && strings.HasPrefix(*authz.Action, "MGMT_") {
+			kcRolesNeeded = true
+		}
+	}
+
+	// Check if roles are assigned
+	clients, err := c.keycloakClient.GetClients(accessToken, realmName)
+	if err != nil {
+		return err
+	}
+
+	for _, client := range clients {
+		// filter clients, only keep realm-management and the ones ending with -realm
+		if *client.ClientID != "realm-management" && !strings.HasSuffix(*client.ClientID, "-realm") {
+			continue
+		}
+
+		availableRoles, err := c.keycloakClient.GetAvailableGroupClientRoles(accessToken, realmName, groupID, *client.ID)
+		if err != nil {
+			return err
+		}
+
+		currentRoles, err := c.keycloakClient.GetGroupClientRoles(accessToken, realmName, groupID, *client.ID)
+		if err != nil {
+			return err
+		}
+
+		if kcRolesNeeded {
+			err = c.processRoles(availableRoles, accessToken, realmName, groupID, *client.ID, c.keycloakClient.AssignClientRole)
+		} else {
+			err = c.processRoles(currentRoles, accessToken, realmName, groupID, *client.ID, c.keycloakClient.RemoveClientRole)
+		}
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -1311,36 +1308,13 @@ func (c *component) UpdateRealmCustomConfiguration(ctx context.Context, realmNam
 	// Both DefaultClientID and DefaultRedirectURI must be specified together or not at all
 	if (customConfig.DefaultClientID == nil && customConfig.DefaultRedirectURI != nil) ||
 		(customConfig.DefaultClientID != nil && customConfig.DefaultRedirectURI == nil) {
-		return errorhandler.Error{
-			Status:  400,
-			Message: keycloakb.ComponentName + "." + constants.MsgErrInvalidParam + "." + constants.ClientID + "AND" + constants.RedirectURI,
-		}
+		return errorhandler.CreateBadRequestError(constants.MsgErrInvalidParam + "." + constants.ClientID + "AND" + constants.RedirectURI)
 	}
 
-	if customConfig.DefaultClientID != nil && customConfig.DefaultRedirectURI != nil {
-		var match = false
-
-		for _, client := range clients {
-			if *client.ClientID != *customConfig.DefaultClientID {
-				continue
-			}
-			for _, redirectURI := range *client.RedirectUris {
-				// escape the regex-specific characters (dots for intance)...
-				matcher := regexp.QuoteMeta(redirectURI)
-				// ... but keep the stars
-				matcher = strings.Replace(matcher, "\\*", "*", -1)
-				match, _ = regexp.MatchString(matcher, *customConfig.DefaultRedirectURI)
-				if match {
-					break
-				}
-			}
-		}
-
-		if !match {
-			return errorhandler.Error{
-				Status:  400,
-				Message: keycloakb.ComponentName + "." + constants.MsgErrInvalidParam + "." + constants.ClientID + "OR" + constants.RedirectURI,
-			}
+	if !c.matchClients(customConfig, clients) {
+		return errorhandler.Error{
+			Status:  400,
+			Message: keycloakb.ComponentName + "." + constants.MsgErrInvalidParam + "." + constants.ClientID + "OR" + constants.RedirectURI,
 		}
 	}
 
@@ -1363,8 +1337,30 @@ func (c *component) UpdateRealmCustomConfiguration(ctx context.Context, realmNam
 
 	// from the realm ID, update the custom configuration in the DB
 	realmID := realmConfig.ID
-	err = c.configDBModule.StoreOrUpdateConfiguration(ctx, *realmID, config)
-	return err
+	return c.configDBModule.StoreOrUpdateConfiguration(ctx, *realmID, config)
+}
+
+func (c *component) matchClients(customConfig api.RealmCustomConfiguration, clients []kc.ClientRepresentation) bool {
+	if customConfig.DefaultClientID == nil || customConfig.DefaultRedirectURI == nil {
+		return true
+	}
+
+	for _, client := range clients {
+		if *client.ClientID != *customConfig.DefaultClientID {
+			continue
+		}
+		for _, redirectURI := range *client.RedirectUris {
+			// escape the regex-specific characters (dots for intance)...
+			matcher := regexp.QuoteMeta(redirectURI)
+			// ... but keep the stars
+			matcher = strings.Replace(matcher, "\\*", "*", -1)
+			if match, _ := regexp.MatchString(matcher, *customConfig.DefaultRedirectURI); match {
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 func (c *component) GetUserRealmBackOfficeConfiguration(ctx context.Context, realmName string) (api.BackOfficeConfiguration, error) {
