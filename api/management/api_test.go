@@ -616,6 +616,13 @@ func TestValidateFederatedIdentityRepresentation(t *testing.T) {
 	assert.NotNil(t, fi.Validate())
 }
 
+func TestToUserExportRepresentation(t *testing.T) {
+	var userID = "user-id"
+	var kcUser = kc.UserRepresentation{ID: &userID}
+	var res = ToUserExportRepresentation(kcUser)
+	assert.Equal(t, kcUser.ID, res.ID)
+}
+
 func createValidUserRepresentation() UserRepresentation {
 	var groups = []string{"f467ed7c-0a1d-4eee-9bb8-669c6f89c0ee", "7767ed7c-0a1d-4eee-9bb8-669c6f89c007"}
 	var roles = []string{"abcded7c-0a1d-4eee-9bb8-669c6f89c0ee", "7767ed7c-0a1d-4eee-9bb8-669c6f898888"}

@@ -87,7 +87,7 @@ func TestGetClientEndpoint(t *testing.T) {
 	assert.NotNil(t, res)
 }
 
-func TestGetClientsEndpoint(t *testing.T) {
+func TestPerRealmEndpoints(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 
@@ -119,10 +119,27 @@ func TestGetRequiredActionsEndpoint(t *testing.T) {
 	var req = make(map[string]string)
 	req[prmRealm] = realm
 
-	mockManagementComponent.EXPECT().GetRequiredActions(ctx, realm).Return([]api.RequiredActionRepresentation{}, nil).Times(1)
-	var res, err = e(ctx, req)
-	assert.Nil(t, err)
-	assert.NotNil(t, res)
+	t.Run("GetClients", func(t *testing.T) {
+		var e = MakeGetClientsEndpoint(mockManagementComponent)
+		mockManagementComponent.EXPECT().GetClients(ctx, realm).Return([]api.ClientRepresentation{}, nil).Times(1)
+		var res, err = e(ctx, req)
+		assert.Nil(t, err)
+		assert.NotNil(t, res)
+	})
+	t.Run("GetRequiredActions", func(t *testing.T) {
+		var e = MakeGetRequiredActionsEndpoint(mockManagementComponent)
+		mockManagementComponent.EXPECT().GetRequiredActions(ctx, realm).Return([]api.RequiredActionRepresentation{}, nil).Times(1)
+		var res, err = e(ctx, req)
+		assert.Nil(t, err)
+		assert.NotNil(t, res)
+	})
+	t.Run("ExportUsers", func(t *testing.T) {
+		var e = MakeExportUsersEndpoint(mockManagementComponent)
+		mockManagementComponent.EXPECT().ExportUsers(ctx, realm).Return([]api.UserExportRepresentation{}, nil).Times(1)
+		var res, err = e(ctx, req)
+		assert.Nil(t, err)
+		assert.NotNil(t, res)
+	})
 }
 
 func TestCreateUserEndpoint(t *testing.T) {
@@ -138,8 +155,7 @@ func TestCreateUserEndpoint(t *testing.T) {
 	var ctx = context.Background()
 	var groups = []string{"f467ed7c-0a1d-4eee-9bb8-669c6f89c0ee"}
 
-	// No error
-	{
+	t.Run("No error", func(t *testing.T) {
 		var req = make(map[string]string)
 		req[reqScheme] = "https"
 		req[reqHost] = "elca.ch"
@@ -154,18 +170,16 @@ func TestCreateUserEndpoint(t *testing.T) {
 
 		locationHeader := res.(LocationHeader)
 		assert.Equal(t, "https://elca.ch/management/master/users/123456", locationHeader.URL)
-	}
+	})
 
-	// Error - Cannot unmarshall
-	{
+	t.Run("Error - Cannot unmarshall", func(t *testing.T) {
 		var req = make(map[string]string)
 		req[reqBody] = string("JSON")
 		_, err := e(ctx, req)
 		assert.NotNil(t, err)
-	}
+	})
 
-	// Error - Keycloak client error
-	{
+	t.Run("Error - Keycloak client error", func(t *testing.T) {
 		var req = make(map[string]string)
 		req[reqScheme] = "https"
 		req[reqHost] = "elca.ch"
@@ -176,7 +190,7 @@ func TestCreateUserEndpoint(t *testing.T) {
 		mockManagementComponent.EXPECT().CreateUser(ctx, realm, gomock.Any()).Return("", fmt.Errorf("Error")).Times(1)
 		_, err := e(ctx, req)
 		assert.NotNil(t, err)
-	}
+	})
 }
 
 func TestDeleteUserEndpoint(t *testing.T) {

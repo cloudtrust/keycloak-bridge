@@ -22,6 +22,7 @@ type Endpoints struct {
 	GetClient          endpoint.Endpoint
 	GetClients         endpoint.Endpoint
 	GetRequiredActions endpoint.Endpoint
+	ExportUsers        endpoint.Endpoint
 
 	DeleteUser                endpoint.Endpoint
 	GetUser                   endpoint.Endpoint
@@ -114,6 +115,15 @@ func MakeGetRequiredActionsEndpoint(component Component) cs.Endpoint {
 		var m = req.(map[string]string)
 
 		return component.GetRequiredActions(ctx, m[prmRealm])
+	}
+}
+
+// MakeExportUsersEndpoint creates an endpoint for ExportUsers
+func MakeExportUsersEndpoint(component Component) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+
+		return component.ExportUsers(ctx, m[prmRealm])
 	}
 }
 

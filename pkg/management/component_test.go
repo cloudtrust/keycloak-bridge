@@ -36,7 +36,7 @@ func TestGetActions(t *testing.T) {
 	var mockLogger = log.NewNopLogger()
 	var allowedTrustIDGroups = []string{"grp1", "grp2"}
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
+	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, nil, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
@@ -57,7 +57,7 @@ func TestGetRealms(t *testing.T) {
 	var mockLogger = log.NewNopLogger()
 	var allowedTrustIDGroups = []string{"grp1", "grp2"}
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
+	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, nil, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
 
 	var accessToken = "TOKEN=="
 
@@ -123,7 +123,7 @@ func TestGetRealm(t *testing.T) {
 	var mockLogger = log.NewNopLogger()
 	var allowedTrustIDGroups = []string{"grp1", "grp2"}
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
+	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, nil, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -190,7 +190,7 @@ func TestGetClient(t *testing.T) {
 	var mockLogger = log.NewNopLogger()
 	var allowedTrustIDGroups = []string{"grp1", "grp2"}
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
+	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, nil, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -260,7 +260,7 @@ func TestGetClients(t *testing.T) {
 	var mockLogger = log.NewNopLogger()
 	var allowedTrustIDGroups = []string{"grp1", "grp2"}
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
+	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, nil, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -330,7 +330,7 @@ func TestGetRequiredActions(t *testing.T) {
 	var mockLogger = log.NewNopLogger()
 	var allowedTrustIDGroups = []string{"grp1", "grp2"}
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
+	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, nil, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -390,6 +390,93 @@ func TestGetRequiredActions(t *testing.T) {
 	}
 }
 
+func TestExportUsers(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockKeycloak = mock.NewKeycloakClient(mockCtrl)
+	var mockEventDBModule = mock.NewEventDBModule(mockCtrl)
+	var mockEventsReader = mock.NewEventsReader(mockCtrl)
+	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
+
+	var component = NewComponent(mockKeycloak, mockEventDBModule, mockEventsReader, mockConfigurationDBModule, nil, log.NewNopLogger())
+
+	var accessToken = "ACCESS_TOKEN=="
+	var userRealm = "user-realm"
+	var queryRealm = "query-realm"
+	var ctx = context.TODO()
+
+	ctx = context.WithValue(ctx, cs.CtContextAccessToken, accessToken)
+	ctx = context.WithValue(ctx, cs.CtContextRealm, userRealm)
+
+	t.Run("Keycloak get users fails", func(t *testing.T) {
+		var kcError = errors.New("keycloak error")
+		mockKeycloak.EXPECT().GetUsers(accessToken, userRealm, queryRealm, gomock.Any()).Return(kc.UsersPageRepresentation{}, kcError)
+
+		var _, err = component.ExportUsers(ctx, queryRealm)
+		assert.Equal(t, kcError, err)
+	})
+	t.Run("Keycloak get users returns empty result", func(t *testing.T) {
+		mockKeycloak.EXPECT().GetUsers(accessToken, userRealm, queryRealm, gomock.Any()).Return(kc.UsersPageRepresentation{}, nil)
+
+		var res, err = component.ExportUsers(ctx, queryRealm)
+		assert.Nil(t, err)
+		assert.Len(t, res, 0)
+	})
+
+	// Now, Keycloak will always returns 3 valid users
+	var count = 3
+	var userID1 = "user-id-1"
+	var userID2 = "user-id-2"
+	var userID3 = "user-id-3"
+	var usersResp = kc.UsersPageRepresentation{
+		Count: &count,
+		Users: []kc.UserRepresentation{kc.UserRepresentation{ID: &userID1}, kc.UserRepresentation{ID: &userID2}, kc.UserRepresentation{ID: &userID3}},
+	}
+	mockKeycloak.EXPECT().GetUsers(accessToken, userRealm, queryRealm, gomock.Any()).Return(usersResp, nil).AnyTimes()
+
+	t.Run("DB UsersLastLogin fails", func(t *testing.T) {
+		var dbError = errors.New("db fails")
+		mockEventsReader.EXPECT().GetUsersLastLogin(ctx, queryRealm).Return(map[string]int64{}, dbError)
+
+		var _, err = component.ExportUsers(ctx, queryRealm)
+		assert.Equal(t, dbError, err)
+	})
+
+	// Now, DB will always returns last logins for user1 and user2
+	var anyTimestamp = int64(123456789)
+	mockEventsReader.EXPECT().GetUsersLastLogin(ctx, queryRealm).Return(map[string]int64{userID1: anyTimestamp, userID2: anyTimestamp}, nil).AnyTimes()
+
+	t.Run("GetLockedUsers fails", func(t *testing.T) {
+		var kcError = errors.New("keycloak.glu error")
+		mockKeycloak.EXPECT().GetLockedUsers(accessToken, userRealm, queryRealm).Return(nil, kcError)
+
+		var _, err = component.ExportUsers(ctx, queryRealm)
+		assert.Equal(t, kcError, err)
+	})
+
+	// Now, Keycloak will always return a valid response. User3 is locked
+	mockKeycloak.EXPECT().GetLockedUsers(accessToken, userRealm, queryRealm).Return([]string{userID3}, nil).AnyTimes()
+
+	t.Run("GetUsersAuthenticatorsCount fails", func(t *testing.T) {
+		var kcError = errors.New("keycloak.guac error")
+		mockKeycloak.EXPECT().GetUsersAuthenticatorsCount(accessToken, userRealm, queryRealm).Return(nil, kcError)
+
+		var _, err = component.ExportUsers(ctx, queryRealm)
+		assert.Equal(t, kcError, err)
+	})
+
+	// Now, Keycloak will always return a valid response.
+	mockKeycloak.EXPECT().GetUsersAuthenticatorsCount(accessToken, userRealm, queryRealm).Return(map[string]int{userID1: 1, userID2: 2, userID3: 3}, nil).AnyTimes()
+
+	t.Run("Success", func(t *testing.T) {
+		var res, err = component.ExportUsers(ctx, queryRealm)
+
+		assert.Nil(t, err)
+		assert.Len(t, res, 3)
+	})
+}
+
 func TestCreateUser(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -400,7 +487,7 @@ func TestCreateUser(t *testing.T) {
 	var mockLogger = mock.NewLogger(mockCtrl)
 	var allowedTrustIDGroups = []string{"grp1", "grp2"}
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
+	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, nil, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var username = "test"
@@ -595,7 +682,7 @@ func TestDeleteUser(t *testing.T) {
 	var mockLogger = mock.NewLogger(mockCtrl)
 	var allowedTrustIDGroups = []string{"grp1", "grp2"}
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
+	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, nil, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var userID = "41dbf4a8-32a9-4000-8c17-edc854c31231"
@@ -671,7 +758,7 @@ func TestGetUser(t *testing.T) {
 	var mockLogger = mock.NewLogger(mockCtrl)
 	var allowedTrustIDGroups = []string{"grp1", "grp2"}
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
+	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, nil, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -901,7 +988,7 @@ func TestUpdateUser(t *testing.T) {
 	var mockLogger = mock.NewLogger(mockCtrl)
 	var allowedTrustIDGroups = []string{"grp1", "grp2"}
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
+	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, nil, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -1322,7 +1409,7 @@ func TestGetUsers(t *testing.T) {
 	var mockLogger = log.NewNopLogger()
 	var allowedTrustIDGroups = []string{"grp1", "grp2"}
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
+	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, nil, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -1415,7 +1502,7 @@ func TestGetUserAccountStatus(t *testing.T) {
 	var mockLogger = log.NewNopLogger()
 	var allowedTrustIDGroups = []string{"grp1", "grp2"}
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
+	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, nil, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var realmReq = "master"
@@ -1496,7 +1583,7 @@ func TestGetClientRolesForUser(t *testing.T) {
 	var mockLogger = log.NewNopLogger()
 	var allowedTrustIDGroups = []string{"grp1", "grp2"}
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
+	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, nil, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -1562,7 +1649,7 @@ func TestAddClientRolesToUser(t *testing.T) {
 	var mockLogger = log.NewNopLogger()
 	var allowedTrustIDGroups = []string{"grp1", "grp2"}
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
+	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, nil, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -1630,7 +1717,7 @@ func TestGetRolesOfUser(t *testing.T) {
 	var mockLogger = log.NewNopLogger()
 	var allowedTrustIDGroups = []string{"grp1", "grp2"}
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
+	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, nil, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -1695,7 +1782,7 @@ func TestGetGroupsOfUser(t *testing.T) {
 	var mockLogger = log.NewNopLogger()
 	var allowedTrustIDGroups = []string{"grp1", "grp2"}
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
+	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, nil, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -1755,7 +1842,7 @@ func TestSetGroupsToUser(t *testing.T) {
 	var groupID = "user-group-1"
 	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
+	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, nil, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
 
 	t.Run("AddGroupToUser: KC fails", func(t *testing.T) {
 		mockKeycloakClient.EXPECT().AddGroupToUser(accessToken, realmName, userID, groupID).Return(errors.New("kc error"))
@@ -1792,7 +1879,7 @@ func TestGetAvailableTrustIDGroups(t *testing.T) {
 	var allowedTrustIDGroups = []string{"grp1", "grp2"}
 	var realmName = "master"
 
-	var component = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
+	var component = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, nil, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
 
 	var res, err = component.GetAvailableTrustIDGroups(context.TODO(), realmName)
 	assert.Nil(t, err)
@@ -1817,7 +1904,7 @@ func TestGetTrustIDGroupsOfUser(t *testing.T) {
 	var attrbs = keycloak.Attributes{constants.AttrbTrustIDGroups: groups}
 	var ctx = context.WithValue(context.TODO(), cs.CtContextAccessToken, accessToken)
 
-	var component = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
+	var component = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, nil, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
 
 	t.Run("Keycloak fails", func(t *testing.T) {
 		mockKeycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(kc.UserRepresentation{}, errors.New("kc error"))
@@ -1849,7 +1936,7 @@ func TestSetTrustIDGroupsToUser(t *testing.T) {
 	var mockLogger = log.NewNopLogger()
 	var allowedTrustIDGroups = []string{"grp1", "grp2"}
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
+	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, nil, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
 
 	var accessToken = "TOKEN=="
 
@@ -1935,7 +2022,7 @@ func TestResetPassword(t *testing.T) {
 	var mockLogger = mock.NewLogger(mockCtrl)
 	var allowedTrustIDGroups = []string{"grp1", "grp2"}
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
+	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, nil, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -2083,7 +2170,7 @@ func TestRecoveryCode(t *testing.T) {
 	var mockLogger = mock.NewLogger(mockCtrl)
 	var allowedTrustIDGroups = []string{"grp1", "grp2"}
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
+	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModul, nil, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -2158,7 +2245,7 @@ func TestExecuteActionsEmail(t *testing.T) {
 	var mockLogger = log.NewNopLogger()
 	var allowedTrustIDGroups = []string{"grp1", "grp2"}
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
+	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, nil, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -2170,9 +2257,7 @@ func TestExecuteActionsEmail(t *testing.T) {
 	var key2 = "key2"
 	var value2 = "value2"
 
-	// Send email actions
-	{
-
+	t.Run("Send email actions", func(t *testing.T) {
 		mockKeycloakClient.EXPECT().ExecuteActionsEmail(accessToken, realmName, userID, actions, key1, value1, key2, value2).Return(nil).Times(1)
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
@@ -2182,9 +2267,8 @@ func TestExecuteActionsEmail(t *testing.T) {
 		err := managementComponent.ExecuteActionsEmail(ctx, "master", userID, reqActions, key1, value1, key2, value2)
 
 		assert.Nil(t, err)
-	}
-	// Error
-	{
+	})
+	t.Run("Error", func(t *testing.T) {
 		mockKeycloakClient.EXPECT().ExecuteActionsEmail(accessToken, realmName, userID, actions).Return(fmt.Errorf("Invalid input")).Times(1)
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
@@ -2194,10 +2278,8 @@ func TestExecuteActionsEmail(t *testing.T) {
 		err := managementComponent.ExecuteActionsEmail(ctx, "master", userID, reqActions)
 
 		assert.NotNil(t, err)
-	}
-	// Send email actions, but not sms-password-set
-	{
-
+	})
+	t.Run("Send email actions, but not sms-password-set", func(t *testing.T) {
 		var actions2 = []string{"action1", "action2"}
 		var reqActions2 = []api.RequiredAction{"action1", "action2"}
 		mockKeycloakClient.EXPECT().ExecuteActionsEmail(accessToken, realmName, userID, actions2, key1, value1, key2, value2).Return(nil).Times(1)
@@ -2208,7 +2290,7 @@ func TestExecuteActionsEmail(t *testing.T) {
 		err := managementComponent.ExecuteActionsEmail(ctx, "master", userID, reqActions2, key1, value1, key2, value2)
 
 		assert.Nil(t, err)
-	}
+	})
 }
 
 func TestSendNewEnrolmentCode(t *testing.T) {
@@ -2221,7 +2303,7 @@ func TestSendNewEnrolmentCode(t *testing.T) {
 	var mockLogger = mock.NewLogger(mockCtrl)
 	var allowedTrustIDGroups = []string{"grp1", "grp2"}
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
+	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, nil, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -2279,7 +2361,7 @@ func TestSendReminderEmail(t *testing.T) {
 	var mockLogger = log.NewNopLogger()
 	var allowedTrustIDGroups = []string{"grp1", "grp2"}
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
+	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, nil, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -2326,7 +2408,7 @@ func TestResetSmsCounter(t *testing.T) {
 	var mockLogger = log.NewNopLogger()
 	var allowedTrustIDGroups = []string{"grp1", "grp2"}
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
+	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, nil, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -2411,7 +2493,7 @@ func TestGetCredentialsForUser(t *testing.T) {
 	var mockLogger = log.NewNopLogger()
 	var allowedTrustIDGroups = []string{"grp1", "grp2"}
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
+	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, nil, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
 	var accessToken = "TOKEN=="
 	var realmReq = "master"
 	var realmName = "otherRealm"
@@ -2440,7 +2522,7 @@ func TestDeleteCredentialsForUser(t *testing.T) {
 	var mockLogger = mock.NewLogger(mockCtrl)
 	var allowedTrustIDGroups = []string{"grp1", "grp2"}
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
+	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, nil, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
 	var accessToken = "TOKEN=="
 	var realmReq = "master"
 	var realmName = "master"
@@ -2621,7 +2703,7 @@ func TestClearUserLoginFailures(t *testing.T) {
 	var userID = "1245-7854-8963"
 	var allowedTrustIDGroups = []string{"grp1", "grp2"}
 	var ctx = context.WithValue(context.TODO(), cs.CtContextAccessToken, accessToken)
-	var component = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, mockConfigurationDBModule, allowedTrustIDGroups, logger)
+	var component = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, nil, mockConfigurationDBModule, allowedTrustIDGroups, logger)
 
 	t.Run("Error occured", func(t *testing.T) {
 		var expectedError = errors.New("kc error")
@@ -2651,7 +2733,7 @@ func TestGetAttackDetectionStatus(t *testing.T) {
 	var userID = "1245-7854-8963"
 	var allowedTrustIDGroups = []string{"grp1", "grp2"}
 	var ctx = context.WithValue(context.TODO(), cs.CtContextAccessToken, accessToken)
-	var component = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, mockConfigurationDBModule, allowedTrustIDGroups, logger)
+	var component = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, nil, mockConfigurationDBModule, allowedTrustIDGroups, logger)
 	var kcResult = map[string]interface{}{}
 
 	t.Run("Error occured", func(t *testing.T) {
@@ -2680,7 +2762,7 @@ func TestGetRoles(t *testing.T) {
 	var mockLogger = log.NewNopLogger()
 	var allowedTrustIDGroups = []string{"grp1", "grp2"}
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
+	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, nil, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -2744,7 +2826,7 @@ func TestGetRole(t *testing.T) {
 	var mockLogger = log.NewNopLogger()
 	var allowedTrustIDGroups = []string{"grp1", "grp2"}
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
+	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, nil, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -2805,7 +2887,7 @@ func TestGetGroups(t *testing.T) {
 	var mockLogger = log.NewNopLogger()
 	var allowedTrustIDGroups = []string{"grp1", "grp2"}
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
+	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, nil, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -2874,7 +2956,7 @@ func TestCreateGroup(t *testing.T) {
 	var mockLogger = mock.NewLogger(mockCtrl)
 	var allowedTrustIDGroups = []string{"grp1", "grp2"}
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
+	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, nil, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var username = "username"
@@ -2965,7 +3047,7 @@ func TestDeleteGroup(t *testing.T) {
 	var mockLogger = mock.NewLogger(mockCtrl)
 	var allowedTrustIDGroups = []string{"grp1", "grp2"}
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
+	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, nil, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var groupID = "41dbf4a8-32a9-4000-8c17-edc854c31231"
@@ -3060,7 +3142,7 @@ func TestGetAuthorizations(t *testing.T) {
 	var mockLogger = mock.NewLogger(mockCtrl)
 	var allowedTrustIDGroups = []string{"grp1", "grp2"}
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
+	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, nil, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -3141,7 +3223,7 @@ func TestUpdateAuthorizations(t *testing.T) {
 	var mockLogger = mock.NewLogger(mockCtrl)
 	var allowedTrustIDGroups = []string{"grp1", "grp2"}
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
+	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, nil, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var currentRealmName = "master"
@@ -3523,7 +3605,7 @@ func TestUpdateAuthorizationsWithAny(t *testing.T) {
 	var mockLogger = mock.NewLogger(mockCtrl)
 	var allowedTrustIDGroups = []string{"grp1", "grp2"}
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
+	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, nil, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var currentRealmName = "master"
@@ -3621,7 +3703,7 @@ func TestGetClientRoles(t *testing.T) {
 	var mockLogger = log.NewNopLogger()
 	var allowedTrustIDGroups = []string{"grp1", "grp2"}
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
+	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, nil, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -3686,7 +3768,7 @@ func TestCreateClientRole(t *testing.T) {
 	var mockLogger = log.NewNopLogger()
 	var allowedTrustIDGroups = []string{"grp1", "grp2"}
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
+	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, nil, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -3753,7 +3835,7 @@ func TestGetRealmCustomConfiguration(t *testing.T) {
 	var mockLogger = log.NewNopLogger()
 	var allowedTrustIDGroups = []string{"grp1", "grp2"}
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
+	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, nil, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var realmID = "master_id"
@@ -3884,7 +3966,7 @@ func TestUpdateRealmCustomConfiguration(t *testing.T) {
 	var mockLogger = log.NewNopLogger()
 	var allowedTrustIDGroups = []string{"grp1", "grp2"}
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
+	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, nil, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var realmID = "master_id"
@@ -4033,7 +4115,7 @@ func TestGetRealmAdminConfiguration(t *testing.T) {
 	var apiAdminConfig = api.ConvertRealmAdminConfigurationFromDBStruct(dbAdminConfig)
 	var ctx = context.WithValue(context.TODO(), cs.CtContextAccessToken, accessToken)
 
-	var component = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, mockConfigurationDBModule, allowedTrustIDGroups, logger)
+	var component = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, nil, mockConfigurationDBModule, allowedTrustIDGroups, logger)
 
 	t.Run("Request to Keycloak client fails", func(t *testing.T) {
 		mockKeycloakClient.EXPECT().GetRealm(accessToken, realmName).Return(kc.RealmRepresentation{}, expectedError)
@@ -4073,7 +4155,7 @@ func TestUpdateRealmAdminConfiguration(t *testing.T) {
 	var ctx = context.WithValue(context.TODO(), cs.CtContextAccessToken, accessToken)
 	var adminConfig api.RealmAdminConfiguration
 
-	var component = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, mockConfigurationDBModule, allowedTrustIDGroups, logger)
+	var component = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, nil, mockConfigurationDBModule, allowedTrustIDGroups, logger)
 
 	t.Run("Request to Keycloak client fails", func(t *testing.T) {
 		mockKeycloakClient.EXPECT().GetRealm(accessToken, realmName).Return(kc.RealmRepresentation{}, expectedError)
@@ -4110,7 +4192,7 @@ func TestRealmBackOfficeConfiguration(t *testing.T) {
 	var mockLogger = log.NewNopLogger()
 	var allowedTrustIDGroups = []string{"grp1", "grp2"}
 
-	var component = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
+	var component = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, nil, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
 
 	var realmID = "master_id"
 	var groupName = "the.group"
@@ -4211,7 +4293,7 @@ func TestLinkShadowUser(t *testing.T) {
 	var mockLogger = mock.NewLogger(mockCtrl)
 	var allowedTrustIDGroups = []string{"grp1", "grp2"}
 
-	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
+	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, nil, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var username = "test"

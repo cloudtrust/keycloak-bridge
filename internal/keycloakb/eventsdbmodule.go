@@ -2,6 +2,7 @@ package keycloakb
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"regexp"
@@ -27,6 +28,7 @@ type EventsDBModule interface {
 	GetTotalConnectionsDaysCount(context.Context, string, *time.Location, int) ([][]int64, error)
 	GetTotalConnectionsMonthsCount(context.Context, string, *time.Location, int) ([][]int64, error)
 	GetLastConnections(context.Context, string, string) ([]api_stat.StatisticsConnectionRepresentation, error)
+	GetUsersLastLogin(context.Context, string) (map[string]int64, error)
 }
 
 type eventsDBModule struct {
@@ -105,6 +107,12 @@ const (
 							ORDER BY audit_time DESC
 							LIMIT ?;
 				`
+	selectUsersLastLogin = `
+		SELECT user_id, unix_timestamp(max(audit_time))
+		FROM audit
+		WHERE realm_name=?
+		  AND ct_event_type like 'LOGON_OK'
+	`
 )
 
 func createAuditEventsParametersFromMap(m map[string]string) (selectAuditEventsParameters, error) {
@@ -311,7 +319,6 @@ func (cm *eventsDBModule) GetTotalConnectionsMonthsCount(_ context.Context, real
 
 // GetLastConnections gives information on the last authentications
 func (cm *eventsDBModule) GetLastConnections(_ context.Context, realmName string, nbConnections string) ([]api_stat.StatisticsConnectionRepresentation, error) {
-
 	var res = []api_stat.StatisticsConnectionRepresentation{}
 	rows, err := cm.db.Query(selectConnectionStmt, realmName, nbConnections)
 	if err != nil {
@@ -333,6 +340,28 @@ func (cm *eventsDBModule) GetLastConnections(_ context.Context, realmName string
 	}
 
 	return res, err
+}
+
+func (cm *eventsDBModule) GetUsersLastLogin(_ context.Context, realmName string) (map[string]int64, error) {
+	rows, err := cm.db.Query(selectUsersLastLogin, realmName)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var res = make(map[string]int64)
+	for rows.Next() {
+		var userID sql.NullString
+		var timestamp sql.NullInt64
+		if err = rows.Scan(&userID, &timestamp); err != nil {
+			return nil, err
+		}
+		if userID.Valid && timestamp.Valid {
+			res[userID.String] = timestamp.Int64 * 1000
+		}
+	}
+
+	return res, nil
 }
 
 func getSQLParam(m map[string]string, name string, defaultValue interface{}) interface{} {

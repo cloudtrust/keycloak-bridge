@@ -124,6 +124,9 @@ func TestDeny(t *testing.T) {
 		_, err = authorizationMW.GetRequiredActions(ctx, realmName)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
+		_, err = authorizationMW.ExportUsers(ctx, realmName)
+		assert.Equal(t, security.ForbiddenError{}, err)
+
 		err = authorizationMW.DeleteUser(ctx, realmName, userID)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
@@ -379,6 +382,10 @@ func TestAllowed(t *testing.T) {
 
 		mockManagementComponent.EXPECT().GetRequiredActions(ctx, realmName).Return([]api.RequiredActionRepresentation{}, nil).Times(1)
 		_, err = authorizationMW.GetRequiredActions(ctx, realmName)
+		assert.Nil(t, err)
+
+		mockManagementComponent.EXPECT().ExportUsers(ctx, realmName).Return([]api.UserExportRepresentation{}, nil).Times(1)
+		_, err = authorizationMW.ExportUsers(ctx, realmName)
 		assert.Nil(t, err)
 
 		mockManagementComponent.EXPECT().DeleteUser(ctx, realmName, userID).Return(nil).Times(1)

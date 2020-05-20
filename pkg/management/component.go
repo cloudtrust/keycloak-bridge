@@ -64,6 +64,13 @@ type KeycloakClient interface {
 	LinkShadowUser(accessToken string, realmName string, userID string, provider string, fedID kc.FederatedIdentityRepresentation) error
 	ClearUserLoginFailures(accessToken string, realmName, userID string) error
 	GetAttackDetectionStatus(accessToken string, realmName, userID string) (map[string]interface{}, error)
+	GetLockedUsers(accessToken, reqRealmName, targetRealmName string) ([]string, error)
+	GetUsersAuthenticatorsCount(accessToken, reqRealmName, targetRealmName string) (map[string]int, error)
+}
+
+// EventsReader is the interface used to read events
+type EventsReader interface {
+	GetUsersLastLogin(ctx context.Context, realm string) (map[string]int64, error)
 }
 
 // UsersDetailsDBModule is the interface from the users module
@@ -82,6 +89,7 @@ type Component interface {
 	GetClient(ctx context.Context, realmName, idClient string) (api.ClientRepresentation, error)
 	GetClients(ctx context.Context, realmName string) ([]api.ClientRepresentation, error)
 	GetRequiredActions(ctx context.Context, realmName string) ([]api.RequiredActionRepresentation, error)
+	ExportUsers(ctx context.Context, realmName string) ([]api.UserExportRepresentation, error)
 
 	DeleteUser(ctx context.Context, realmName, userID string) error
 	GetUser(ctx context.Context, realmName, userID string) (api.UserRepresentation, error)
@@ -137,13 +145,14 @@ type component struct {
 	keycloakClient          KeycloakClient
 	usersDBModule           UsersDetailsDBModule
 	eventDBModule           database.EventsDBModule
+	eventsReader            EventsReader
 	configDBModule          keycloakb.ConfigurationDBModule
 	authorizedTrustIDGroups map[string]bool
 	logger                  keycloakb.Logger
 }
 
 // NewComponent returns the management component.
-func NewComponent(keycloakClient KeycloakClient, usersDBModule UsersDetailsDBModule, eventDBModule database.EventsDBModule,
+func NewComponent(keycloakClient KeycloakClient, usersDBModule UsersDetailsDBModule, eventDBModule database.EventsDBModule, eventsReader EventsReader,
 	configDBModule keycloakb.ConfigurationDBModule, authorizedTrustIDGroups []string, logger keycloakb.Logger) Component {
 
 	var authzedTrustIDGroups = make(map[string]bool)
@@ -155,6 +164,7 @@ func NewComponent(keycloakClient KeycloakClient, usersDBModule UsersDetailsDBMod
 		keycloakClient:          keycloakClient,
 		usersDBModule:           usersDBModule,
 		eventDBModule:           eventDBModule,
+		eventsReader:            eventsReader,
 		configDBModule:          configDBModule,
 		authorizedTrustIDGroups: authzedTrustIDGroups,
 		logger:                  logger,
@@ -279,6 +289,76 @@ func (c *component) GetRequiredActions(ctx context.Context, realmName string) ([
 	}
 
 	return requiredActionsRep, nil
+}
+
+func (c *component) ExportUsers(ctx context.Context, realmName string) ([]api.UserExportRepresentation, error) {
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+	var ctxRealm = ctx.Value(cs.CtContextRealm).(string)
+
+	var usersKc, err = c.keycloakClient.GetUsers(accessToken, ctxRealm, realmName, "first", "0", "max", "10000")
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Failed to get users from Keycloak", "err", err.Error())
+		return nil, err
+	}
+	if len(usersKc.Users) == 0 {
+		return []api.UserExportRepresentation{}, nil
+	}
+
+	var realmUsers = make(map[string]api.UserExportRepresentation)
+
+	for _, userKc := range usersKc.Users {
+		realmUsers[*userKc.ID] = api.ToUserExportRepresentation(userKc)
+	}
+
+	var lastLogins map[string]int64
+	lastLogins, err = c.eventsReader.GetUsersLastLogin(ctx, realmName)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Failed to get last logins from events", "err", err.Error())
+		return nil, err
+	}
+	for userID, lastLogin := range lastLogins {
+		c.updateUser(realmUsers, userID, func(user *api.UserExportRepresentation) {
+			user.LastConnectionTimestamp = &lastLogin
+		})
+	}
+
+	if lockedUsers, err := c.keycloakClient.GetLockedUsers(accessToken, ctxRealm, realmName); err == nil {
+		var lockedStatus = "LOCKED"
+		for _, uid := range lockedUsers {
+			c.updateUser(realmUsers, uid, func(user *api.UserExportRepresentation) {
+				user.AccountStatus = &lockedStatus
+			})
+		}
+	} else {
+		c.logger.Warn(ctx, "msg", "Failed to get locked users", "err", err.Error())
+		return nil, err
+	}
+
+	if mapAuthenticatorsCount, err := c.keycloakClient.GetUsersAuthenticatorsCount(accessToken, ctxRealm, realmName); err == nil {
+		for uid, count := range mapAuthenticatorsCount {
+			c.updateUser(realmUsers, uid, func(user *api.UserExportRepresentation) {
+				user.AuthenticatorsNumber = &count
+			})
+		}
+	} else {
+		c.logger.Warn(ctx, "msg", "Failed to get users authenticators count", "err", err.Error())
+		return nil, err
+	}
+
+	var res []api.UserExportRepresentation
+	for _, user := range realmUsers {
+		res = append(res, user)
+	}
+
+	return res, nil
+}
+
+func (c *component) updateUser(mapUsers map[string]api.UserExportRepresentation, key string, fn func(*api.UserExportRepresentation)) {
+	// We can't directly update a struct field in a map
+	if user, ok := mapUsers[key]; ok {
+		fn(&user)
+		mapUsers[key] = user
+	}
 }
 
 func (c *component) CreateUser(ctx context.Context, realmName string, user api.UserRepresentation) (string, error) {

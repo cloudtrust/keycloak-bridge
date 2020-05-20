@@ -29,6 +29,7 @@ var (
 	MGMTGetClient                           = newAction("MGMT_GetClient", security.ScopeRealm)
 	MGMTGetClients                          = newAction("MGMT_GetClients", security.ScopeRealm)
 	MGMTGetRequiredActions                  = newAction("MGMT_GetRequiredActions", security.ScopeRealm)
+	MGMTExportUsers                         = newAction("MGMT_ExportUsers", security.ScopeRealm)
 	MGMTDeleteUser                          = newAction("MGMT_DeleteUser", security.ScopeGroup)
 	MGMTGetUser                             = newAction("MGMT_GetUser", security.ScopeGroup)
 	MGMTUpdateUser                          = newAction("MGMT_UpdateUser", security.ScopeGroup)
@@ -168,6 +169,17 @@ func (c *authorizationComponentMW) GetRequiredActions(ctx context.Context, realm
 	}
 
 	return c.next.GetRequiredActions(ctx, realmName)
+}
+
+func (c *authorizationComponentMW) ExportUsers(ctx context.Context, realmName string) ([]api.UserExportRepresentation, error) {
+	var action = MGMTExportUsers.String()
+	var targetRealm = realmName
+
+	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
+		return []api.UserExportRepresentation{}, err
+	}
+
+	return c.next.ExportUsers(ctx, realmName)
 }
 
 func (c *authorizationComponentMW) DeleteUser(ctx context.Context, realmName, userID string) error {
