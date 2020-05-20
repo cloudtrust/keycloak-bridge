@@ -51,7 +51,7 @@ func MakeGetEventsSummaryEndpoint(ec Component) cs.Endpoint {
 // MakeGetUserEventsEndpoint makes the events summary endpoint.
 func MakeGetUserEventsEndpoint(ec Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
-		params := filterParameters(req.(map[string]string), "first", "max", "dateFrom", "dateTo", "realm", "userID", "origin", "ctEventType")
+		params := filterParameters(req.(map[string]string), "first", "max", "dateFrom", "dateTo", "realm", "userID", "origin", "ctEventType", "exclude")
 		return ec.GetUserEvents(ctx, params)
 	}
 }
