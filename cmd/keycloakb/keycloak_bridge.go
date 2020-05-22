@@ -321,7 +321,7 @@ func main() {
 	var keycloakClient *keycloakapi.Client
 	{
 		var err error
-		keycloakClient, err = keycloakapi.New(keycloakConfig)
+		keycloakClient, err = keycloakapi.New(keycloakConfig, cs.CtContextIssuerDomain)
 
 		if err != nil {
 			logger.Error(ctx, "msg", "could not create Keycloak client", "error", err)
@@ -453,6 +453,9 @@ func main() {
 	healthChecker.AddDatabase("Users R/W", usersRwDBConn, healthCheckCacheDuration)
 	healthChecker.AddHTTPEndpoint("Keycloak", keycloakConfig.AddrAPI, httpTimeout, 200, healthCheckCacheDuration)
 
+	// Actions allowed in Authorization Manager
+	var authActions = security.AppendActionNames(nil, events.GetActions(), kyc.GetActions(), management.GetActions(), statistics.GetActions())
+
 	// Authorization Manager
 	var authorizationManager security.AuthorizationManager
 	{
@@ -460,7 +463,7 @@ func main() {
 
 		var configurationReaderDBModule *configuration.ConfigurationReaderDBModule
 		{
-			configurationReaderDBModule = configuration.NewConfigurationReaderDBModule(configurationRoDBConn, authorizationLogger)
+			configurationReaderDBModule = configuration.NewConfigurationReaderDBModule(configurationRoDBConn, authorizationLogger, authActions)
 		}
 
 		var err error

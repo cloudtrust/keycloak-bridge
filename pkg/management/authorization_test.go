@@ -15,6 +15,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestGetActionsString(t *testing.T) {
+	assert.Len(t, GetActions(), len(actions))
+}
+
 func TestDeny(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()

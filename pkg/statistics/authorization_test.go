@@ -14,6 +14,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestGetActionsString(t *testing.T) {
+	assert.Len(t, GetActions(), len(actions))
+}
+
 var (
 	WithoutAuthorization = []configuration.Authorization{}
 )

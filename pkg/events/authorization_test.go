@@ -18,6 +18,10 @@ var (
 	WithoutAuthorization = []configuration.Authorization{}
 )
 
+func TestGetActionsString(t *testing.T) {
+	assert.Len(t, GetActions(), len(actions))
+}
+
 func WithAuthorization() []configuration.Authorization {
 	var realmName = "master"
 	var toe = "toe"

@@ -57,9 +57,9 @@ type configurationDBModule struct {
 }
 
 // NewConfigurationDBModule returns a ConfigurationDB module.
-func NewConfigurationDBModule(db sqltypes.CloudtrustDB, logger log.Logger) ConfigurationDBModule {
+func NewConfigurationDBModule(db sqltypes.CloudtrustDB, logger log.Logger, actions ...[]string) ConfigurationDBModule {
 	return &configurationDBModule{
-		ConfigurationReaderDBModule: *configuration.NewConfigurationReaderDBModule(db, logger),
+		ConfigurationReaderDBModule: *configuration.NewConfigurationReaderDBModule(db, logger, actions...),
 		db:                          db,
 		logger:                      logger,
 	}

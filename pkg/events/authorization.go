@@ -47,6 +47,11 @@ func MakeAuthorizationManagementComponentMW(logger log.Logger, authorizationMana
 	}
 }
 
+// GetActions returns available actions
+func GetActions() []security.Action {
+	return actions
+}
+
 func (c *authorizationComponentMW) GetActions(ctx context.Context) ([]api.ActionRepresentation, error) {
 	var action = EVGetActions.String()
 
