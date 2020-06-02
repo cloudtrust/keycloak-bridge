@@ -24,7 +24,7 @@ func newAction(as string, scope security.Scope) security.Action {
 // Actions used for authorization module
 var (
 	EVGetActions       = newAction("EV_GetActions", security.ScopeGlobal)
-	EVGetEvents        = newAction("EV_GetEvents", security.ScopeGlobal)
+	EVGetEvents        = newAction("EV_GetEvents", security.ScopeRealm)
 	EVGetEventsSummary = newAction("EV_GetEventsSummary", security.ScopeGlobal)
 	EVGetUserEvents    = newAction("EV_GetUserEvents", security.ScopeGroup)
 )
@@ -64,8 +64,13 @@ func (c *authorizationComponentMW) GetActions(ctx context.Context) ([]api.Action
 func (c *authorizationComponentMW) GetEvents(ctx context.Context, m map[string]string) (api.AuditEventsRepresentation, error) {
 	var action = EVGetEvents.String()
 
-	// For this method, there is no target realm, as events from any realm can be retrieved the target realm is any realm.
-	var targetRealm = "*"
+	// For this method, target realm is part of filter params.
+	// if no realm filter is provided, there is no target realm thus we use '*'
+	var targetRealm, ok = m["realm"]
+
+	if !ok {
+		targetRealm = "*"
+	}
 
 	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
 		return api.AuditEventsRepresentation{}, err
