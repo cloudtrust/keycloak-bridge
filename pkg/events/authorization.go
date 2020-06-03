@@ -25,7 +25,7 @@ func newAction(as string, scope security.Scope) security.Action {
 var (
 	EVGetActions       = newAction("EV_GetActions", security.ScopeGlobal)
 	EVGetEvents        = newAction("EV_GetEvents", security.ScopeRealm)
-	EVGetEventsSummary = newAction("EV_GetEventsSummary", security.ScopeGlobal)
+	EVGetEventsSummary = newAction("EV_GetEventsSummary", security.ScopeRealm)
 	EVGetUserEvents    = newAction("EV_GetUserEvents", security.ScopeGroup)
 )
 
@@ -79,15 +79,22 @@ func (c *authorizationComponentMW) GetEvents(ctx context.Context, m map[string]s
 	return c.next.GetEvents(ctx, m)
 }
 
-func (c *authorizationComponentMW) GetEventsSummary(ctx context.Context) (api.EventSummaryRepresentation, error) {
+func (c *authorizationComponentMW) GetEventsSummary(ctx context.Context, params map[string]string) (api.EventSummaryRepresentation, error) {
 	var action = EVGetEventsSummary.String()
-	var targetRealm = "*" // For this method, there is no target realm, as events from any realm can be retrieved the target realm is any realm.
+
+	// For this method, target realm is part of filter params.
+	// if no realm filter is provided, there is no target realm thus we use '*'
+	var targetRealm, ok = params["realm"]
+
+	if !ok {
+		targetRealm = "*"
+	}
 
 	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
 		return api.EventSummaryRepresentation{}, err
 	}
 
-	return c.next.GetEventsSummary(ctx)
+	return c.next.GetEventsSummary(ctx, params)
 }
 
 func (c *authorizationComponentMW) GetUserEvents(ctx context.Context, m map[string]string) (api.AuditEventsRepresentation, error) {

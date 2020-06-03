@@ -130,8 +130,8 @@ func TestGetEventsDeny(t *testing.T) {
 
 func TestGetEventsSummaryAllow(t *testing.T) {
 	testAuthorization(t, WithAuthorization(), func(auth Component, mockComponent *mock.Component, ctx context.Context, mp map[string]string) {
-		mockComponent.EXPECT().GetEventsSummary(ctx).Return(api.EventSummaryRepresentation{}, nil).Times(1)
-		_, err := auth.GetEventsSummary(ctx)
+		mockComponent.EXPECT().GetEventsSummary(ctx, mp).Return(api.EventSummaryRepresentation{}, nil).Times(1)
+		_, err := auth.GetEventsSummary(ctx, mp)
 		assert.Nil(t, err)
 	})
 }
@@ -145,7 +145,7 @@ func TestGetActionsDeny(t *testing.T) {
 
 func TestGetEventsSummaryDeny(t *testing.T) {
 	testAuthorization(t, WithoutAuthorization, func(auth Component, mockComponent *mock.Component, ctx context.Context, mp map[string]string) {
-		_, err := auth.GetEventsSummary(ctx)
+		_, err := auth.GetEventsSummary(ctx, mp)
 		assert.Equal(t, security.ForbiddenError{}, err)
 	})
 }

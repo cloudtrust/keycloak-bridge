@@ -43,8 +43,9 @@ func MakeGetEventsEndpoint(ec Component) cs.Endpoint {
 
 // MakeGetEventsSummaryEndpoint makes the events summary endpoint.
 func MakeGetEventsSummaryEndpoint(ec Component) cs.Endpoint {
-	return func(ctx context.Context, _ interface{}) (interface{}, error) {
-		return ec.GetEventsSummary(ctx)
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		params := filterParameters(req.(map[string]string), "realm")
+		return ec.GetEventsSummary(ctx, params)
 	}
 }
 
