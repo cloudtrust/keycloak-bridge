@@ -74,7 +74,7 @@ func (ec *component) GetEvents(ctx context.Context, params map[string]string) (a
 	return res, err
 }
 
-// Get all possible values for origin, and ctEventType
+// Get all possible values for origin and ctEventType
 func (ec *component) GetEventsSummary(ctx context.Context) (api.EventSummaryRepresentation, error) {
 	return ec.db.GetEventsSummary(ctx)
 }
