@@ -54,7 +54,7 @@ func TestMakeGetEventsSummaryEndpoint(t *testing.T) {
 	var ctx = context.Background()
 	var req = make(map[string]string)
 
-	mockComponent.EXPECT().GetEventsSummary(ctx, req).Return(api.EventSummaryRepresentation{}, nil).Times(1)
+	mockComponent.EXPECT().GetEventsSummary(ctx).Return(api.EventSummaryRepresentation{}, nil).Times(1)
 	var res, err = e(ctx, req)
 	assert.Nil(t, err)
 	assert.NotNil(t, res)

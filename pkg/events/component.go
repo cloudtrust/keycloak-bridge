@@ -14,7 +14,7 @@ import (
 type Component interface {
 	GetActions(ctx context.Context) ([]api.ActionRepresentation, error)
 	GetEvents(context.Context, map[string]string) (api.AuditEventsRepresentation, error)
-	GetEventsSummary(context.Context, map[string]string) (api.EventSummaryRepresentation, error)
+	GetEventsSummary(context.Context) (api.EventSummaryRepresentation, error)
 	GetUserEvents(context.Context, map[string]string) (api.AuditEventsRepresentation, error)
 }
 
@@ -74,8 +74,8 @@ func (ec *component) GetEvents(ctx context.Context, params map[string]string) (a
 	return res, err
 }
 
-// Get all possible values for origin, realm and ctEventType
-func (ec *component) GetEventsSummary(ctx context.Context, params map[string]string) (api.EventSummaryRepresentation, error) {
+// Get all possible values for origin, and ctEventType
+func (ec *component) GetEventsSummary(ctx context.Context) (api.EventSummaryRepresentation, error) {
 	return ec.db.GetEventsSummary(ctx)
 }
 

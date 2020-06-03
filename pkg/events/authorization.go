@@ -63,12 +63,17 @@ func (c *authorizationComponentMW) GetActions(ctx context.Context) ([]api.Action
 
 func (c *authorizationComponentMW) GetEvents(ctx context.Context, m map[string]string) (api.AuditEventsRepresentation, error) {
 	var action = EVGetEvents.String()
-
-	// For this method, target realm is part of filter params.
-	// if no realm filter is provided, there is no target realm thus we use '*'
+	var realmToken = ctx.Value(cs.CtContextRealm).(string)
 	var targetRealm, ok = m["realm"]
 
-	if !ok {
+	// If non master realm, we enforce targetRealm to be current realm
+	if realmToken != "master" {
+		targetRealm = realmToken
+		m["realm"] = realmToken
+	}
+
+	// If master realm, no target realm means any realms
+	if realmToken == "master" && !ok {
 		targetRealm = "*"
 	}
 
@@ -79,22 +84,15 @@ func (c *authorizationComponentMW) GetEvents(ctx context.Context, m map[string]s
 	return c.next.GetEvents(ctx, m)
 }
 
-func (c *authorizationComponentMW) GetEventsSummary(ctx context.Context, params map[string]string) (api.EventSummaryRepresentation, error) {
+func (c *authorizationComponentMW) GetEventsSummary(ctx context.Context) (api.EventSummaryRepresentation, error) {
 	var action = EVGetEventsSummary.String()
-
-	// For this method, target realm is part of filter params.
-	// if no realm filter is provided, there is no target realm thus we use '*'
-	var targetRealm, ok = params["realm"]
-
-	if !ok {
-		targetRealm = "*"
-	}
+	var targetRealm = ctx.Value(cs.CtContextRealm).(string)
 
 	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
 		return api.EventSummaryRepresentation{}, err
 	}
 
-	return c.next.GetEventsSummary(ctx, params)
+	return c.next.GetEventsSummary(ctx)
 }
 
 func (c *authorizationComponentMW) GetUserEvents(ctx context.Context, m map[string]string) (api.AuditEventsRepresentation, error) {

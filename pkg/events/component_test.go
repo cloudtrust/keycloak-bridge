@@ -157,8 +157,6 @@ func TestGetEventsSummary(t *testing.T) {
 	var mockLogger = mock.NewLogger(mockCtrl)
 	component := NewComponent(mockDBModule, mockWriteDB, mockLogger)
 
-	var params = map[string]string{}
-
 	// Test GetEventsSummary
 	{
 		// Prepare test
@@ -169,7 +167,7 @@ func TestGetEventsSummary(t *testing.T) {
 		}, nil).Times(1)
 
 		// Execute test
-		res, err := component.GetEventsSummary(context.Background(), params)
+		res, err := component.GetEventsSummary(context.Background())
 
 		// Check result
 		assert.Nil(t, err)
