@@ -96,13 +96,6 @@ paths:
       tags:
       - Events
       summary: Events summary. Used by the backoffice dropdowns.
-      parameters:
-      - name: realm
-        in: path
-        description: realm name (not id!)
-        required: false
-        schema:
-          type: string
       responses:
         200:
           description: Returns a summary of all events
