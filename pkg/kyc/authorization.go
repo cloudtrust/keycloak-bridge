@@ -36,6 +36,11 @@ type authorizationComponentMW struct {
 	next        Component
 }
 
+// GetActions returns available actions
+func GetActions() []security.Action {
+	return actions
+}
+
 // MakeAuthorizationRegisterComponentMW checks authorization and return an error if the action is not allowed.
 func MakeAuthorizationRegisterComponentMW(realmName string, logger log.Logger, authorizationManager security.AuthorizationManager) func(Component) Component {
 	return func(next Component) Component {
