@@ -38,6 +38,26 @@ func WithAuthorization() []configuration.Authorization {
 	return authorizations
 }
 
+func PartialAuthorization() []configuration.Authorization {
+	var realmName = "master"
+	var toe = "toe"
+	var any = "*"
+
+	var authorizations = []configuration.Authorization{}
+	for _, action := range actions {
+		var action = string(action.Name)
+		authorizations = append(authorizations, configuration.Authorization{
+			RealmID:         &realmName,
+			GroupName:       &toe,
+			Action:          &action,
+			TargetRealmID:   &realmName,
+			TargetGroupName: &any,
+		})
+	}
+
+	return authorizations
+}
+
 func testAuthorization(t *testing.T, authz []configuration.Authorization, tester func(Component, *mock.Component, context.Context, map[string]string)) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -87,10 +107,22 @@ func TestGetEventsAllow(t *testing.T) {
 		_, err := auth.GetEvents(ctx, mp)
 		assert.Nil(t, err)
 	})
+
+	testAuthorization(t, PartialAuthorization(), func(auth Component, mockComponent *mock.Component, ctx context.Context, mp map[string]string) {
+		mockComponent.EXPECT().GetEvents(ctx, mp).Return(api.AuditEventsRepresentation{}, nil).Times(1)
+		_, err := auth.GetEvents(ctx, mp)
+		assert.Nil(t, err)
+	})
 }
 
 func TestGetEventsDeny(t *testing.T) {
 	testAuthorization(t, WithoutAuthorization, func(auth Component, mockComponent *mock.Component, ctx context.Context, mp map[string]string) {
+		_, err := auth.GetEvents(ctx, mp)
+		assert.Equal(t, security.ForbiddenError{}, err)
+	})
+
+	testAuthorization(t, PartialAuthorization(), func(auth Component, mockComponent *mock.Component, ctx context.Context, mp map[string]string) {
+		delete(mp, "realm")
 		_, err := auth.GetEvents(ctx, mp)
 		assert.Equal(t, security.ForbiddenError{}, err)
 	})

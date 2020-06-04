@@ -104,10 +104,6 @@ paths:
               schema:
                 type: object
                 properties:
-                  realms:
-                    type: array
-                    items:
-                      type: string
                   origins:
                     type: array
                     items:
