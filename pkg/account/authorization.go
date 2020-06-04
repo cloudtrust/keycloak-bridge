@@ -26,6 +26,9 @@ const (
 	UpdateAccount             = "UpdateAccount"
 	DeleteAccount             = "DeleteAccount"
 	GetConfiguration          = "GetConfiguration"
+
+	infosAction       = "Action"
+	infosCurrentRealm = "currentRealm"
 )
 
 // Tracking middleware at component level.
@@ -56,7 +59,7 @@ func (c *authorizationComponentMW) UpdatePassword(ctx context.Context, currentPa
 
 	if config, err = c.configDBModule.GetConfiguration(ctx, currentRealm); err != nil {
 		infos, _ := json.Marshal(map[string]string{
-			"currentRealm": currentRealm,
+			infosCurrentRealm: currentRealm,
 		})
 		c.logger.Error(ctx, "Error", "Configuration not found", "infos", string(infos))
 		return err
@@ -64,8 +67,8 @@ func (c *authorizationComponentMW) UpdatePassword(ctx context.Context, currentPa
 
 	if !isEnabled(config.APISelfPasswordChangeEnabled) {
 		infos, _ := json.Marshal(map[string]string{
-			"Action":       action,
-			"currentRealm": currentRealm,
+			infosAction:       action,
+			infosCurrentRealm: currentRealm,
 		})
 		c.logger.Debug(ctx, "ForbiddenError", "Password change disabled", "infos", string(infos))
 		return security.ForbiddenError{}
@@ -104,7 +107,7 @@ func (c *authorizationComponentMW) DeleteCredential(ctx context.Context, credent
 
 	if config, err = c.configDBModule.GetConfiguration(ctx, currentRealm); err != nil {
 		infos, _ := json.Marshal(map[string]string{
-			"currentRealm": currentRealm,
+			infosCurrentRealm: currentRealm,
 		})
 		c.logger.Error(ctx, "Error", "Configuration not found", "infos", string(infos))
 		return err
@@ -112,8 +115,8 @@ func (c *authorizationComponentMW) DeleteCredential(ctx context.Context, credent
 
 	if !isEnabled(config.APISelfAuthenticatorDeletionEnabled) {
 		infos, _ := json.Marshal(map[string]string{
-			"Action":       action,
-			"currentRealm": currentRealm,
+			infosAction:       action,
+			infosCurrentRealm: currentRealm,
 		})
 		c.logger.Debug(ctx, "ForbiddenError", "Authenticator deletion disabled", "infos", string(infos))
 		return security.ForbiddenError{}
@@ -136,7 +139,7 @@ func (c *authorizationComponentMW) UpdateAccount(ctx context.Context, account ap
 
 	if config, err = c.configDBModule.GetConfiguration(ctx, currentRealm); err != nil {
 		infos, _ := json.Marshal(map[string]string{
-			"currentRealm": currentRealm,
+			infosCurrentRealm: currentRealm,
 		})
 		c.logger.Error(ctx, "Error", "Configuration not found", "infos", string(infos))
 		return err
@@ -144,8 +147,8 @@ func (c *authorizationComponentMW) UpdateAccount(ctx context.Context, account ap
 
 	if !isEnabled(config.APISelfAccountEditingEnabled) {
 		infos, _ := json.Marshal(map[string]string{
-			"Action":       action,
-			"currentRealm": currentRealm,
+			infosAction:       action,
+			infosCurrentRealm: currentRealm,
 		})
 		c.logger.Debug(ctx, "ForbiddenError", "Account edition disabled", "infos", string(infos))
 		return security.ForbiddenError{}
@@ -163,7 +166,7 @@ func (c *authorizationComponentMW) DeleteAccount(ctx context.Context) error {
 
 	if config, err = c.configDBModule.GetConfiguration(ctx, currentRealm); err != nil {
 		infos, _ := json.Marshal(map[string]string{
-			"currentRealm": currentRealm,
+			infosCurrentRealm: currentRealm,
 		})
 		c.logger.Error(ctx, "Error", "Configuration not found", "infos", string(infos))
 		return err
@@ -171,8 +174,8 @@ func (c *authorizationComponentMW) DeleteAccount(ctx context.Context) error {
 
 	if !isEnabled(config.APISelfAccountDeletionEnabled) {
 		infos, _ := json.Marshal(map[string]string{
-			"Action":       action,
-			"currentRealm": currentRealm,
+			infosAction:       action,
+			infosCurrentRealm: currentRealm,
 		})
 		c.logger.Debug(ctx, "ForbiddenError", "Account deletion disabled", "infos", string(infos))
 		return security.ForbiddenError{}

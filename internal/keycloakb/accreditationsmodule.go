@@ -81,19 +81,10 @@ func (am *accredsModule) GetUserAndPrepareAccreditations(ctx context.Context, ac
 
 	// Evaluate accreditations to be created
 	var newAccreds []string
-	for _, modelAccred := range rac.Accreditations {
-		if modelAccred.Condition == nil || *modelAccred.Condition == condition {
-			var expiry *string
-			expiry, err = am.convertDurationToDate(ctx, *modelAccred.Validity)
-			if err != nil {
-				return kcUser, 0, err
-			}
-			var newAccreditationJSON, _ = json.Marshal(AccreditationRepresentation{
-				Type:       modelAccred.Type,
-				ExpiryDate: expiry,
-			})
-			newAccreds = append(newAccreds, string(newAccreditationJSON))
-		}
+	newAccreds, err = am.evaluateAccreditations(ctx, rac.Accreditations, condition)
+	if err != nil {
+		am.logger.Warn(ctx, "msg", "Can't evaluate accreditations", "err", err.Error())
+		return kcUser, 0, err
 	}
 
 	// Get the user from Keycloak
@@ -118,6 +109,24 @@ func (am *accredsModule) GetUserAndPrepareAccreditations(ctx context.Context, ac
 	}
 
 	return kcUser, added, nil
+}
+
+func (am *accredsModule) evaluateAccreditations(ctx context.Context, accreds []configuration.RealmAdminAccreditation, condition string) ([]string, error) {
+	var newAccreds []string
+	for _, modelAccred := range accreds {
+		if modelAccred.Condition == nil || *modelAccred.Condition == condition {
+			var expiry, err = am.convertDurationToDate(ctx, *modelAccred.Validity)
+			if err != nil {
+				return nil, err
+			}
+			var newAccreditationJSON, _ = json.Marshal(AccreditationRepresentation{
+				Type:       modelAccred.Type,
+				ExpiryDate: expiry,
+			})
+			newAccreds = append(newAccreds, string(newAccreditationJSON))
+		}
+	}
+	return newAccreds, nil
 }
 
 func (am *accredsModule) convertDurationToDate(ctx context.Context, validity string) (*string, error) {

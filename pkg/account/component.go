@@ -193,15 +193,7 @@ func (c *component) UpdateAccount(ctx context.Context, user api.AccountRepresent
 	}
 
 	// Merge the attributes coming from the old user representation and the updated user representation in order not to lose anything
-	var mergedAttributes = make(kc.Attributes)
-
-	//Populate with the old attributes
-	if oldUserKc.Attributes != nil {
-		for key, attribute := range *oldUserKc.Attributes {
-			mergedAttributes[key] = attribute
-		}
-	}
-
+	var mergedAttributes = c.duplicateAttributes(oldUserKc.Attributes)
 	mergedAttributes.SetStringWhenNotNil(constants.AttrbPhoneNumber, user.PhoneNumber)
 	mergedAttributes.SetBoolWhenNotNil(constants.AttrbPhoneNumberVerified, phoneNumberVerified)
 	mergedAttributes.SetStringWhenNotNil(constants.AttrbGender, user.Gender)
@@ -231,6 +223,28 @@ func (c *component) UpdateAccount(ctx context.Context, user api.AccountRepresent
 		return err
 	}
 
+	var dbUser = c.mergeUser(userID, user, oldUser)
+
+	err = c.usersDBModule.StoreOrUpdateUser(ctx, realm, dbUser)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+	}
+
+	return err
+}
+
+func (c *component) duplicateAttributes(srcAttributes *kc.Attributes) kc.Attributes {
+	var copiedAttributes = make(kc.Attributes)
+	//Populate with the old attributes
+	if srcAttributes != nil {
+		for key, attribute := range *srcAttributes {
+			copiedAttributes[key] = attribute
+		}
+	}
+	return copiedAttributes
+}
+
+func (c *component) mergeUser(userID string, user api.AccountRepresentation, oldUser *dto.DBUser) dto.DBUser {
 	var dbUser = dto.DBUser{
 		UserID:               &userID,
 		BirthLocation:        user.BirthLocation,
@@ -253,13 +267,7 @@ func (c *component) UpdateAccount(ctx context.Context, user api.AccountRepresent
 			dbUser.IDDocumentExpiration = oldUser.IDDocumentExpiration
 		}
 	}
-
-	err = c.usersDBModule.StoreOrUpdateUser(ctx, realm, dbUser)
-	if err != nil {
-		c.logger.Warn(ctx, "err", err.Error())
-	}
-
-	return err
+	return dbUser
 }
 
 func (c *component) DeleteAccount(ctx context.Context) error {

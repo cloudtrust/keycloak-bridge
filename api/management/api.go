@@ -236,24 +236,14 @@ func ConvertToAPIUser(ctx context.Context, userKc kc.UserRepresentation, logger 
 	userRep.FirstName = userKc.FirstName
 	userRep.LastName = userKc.LastName
 	userRep.CreatedTimestamp = userKc.CreatedTimestamp
+	userRep.PhoneNumber = userKc.GetAttributeString(constants.AttrbPhoneNumber)
+	userRep.Label = userKc.GetAttributeString(constants.AttrbLabel)
+	userRep.Gender = userKc.GetAttributeString(constants.AttrbGender)
+	userRep.BirthDate = userKc.GetAttributeDate(constants.AttrbBirthDate, constants.SupportedDateLayouts)
+	userRep.Locale = userKc.GetAttributeString(constants.AttrbLocale)
 
-	if value := userKc.GetAttributeString(constants.AttrbPhoneNumber); value != nil {
-		userRep.PhoneNumber = value
-	}
 	if value, err := userKc.GetAttributeBool(constants.AttrbPhoneNumberVerified); err == nil && value != nil {
 		userRep.PhoneNumberVerified = value
-	}
-	if value := userKc.GetAttributeString(constants.AttrbLabel); value != nil {
-		userRep.Label = value
-	}
-	if value := userKc.GetAttributeString(constants.AttrbGender); value != nil {
-		userRep.Gender = value
-	}
-	if value := userKc.GetAttributeDate(constants.AttrbBirthDate, constants.SupportedDateLayouts); value != nil {
-		userRep.BirthDate = value
-	}
-	if value := userKc.GetAttributeString(constants.AttrbLocale); value != nil {
-		userRep.Locale = value
 	}
 	if value, err := userKc.GetAttributeInt(constants.AttrbSmsSent); err == nil && value != nil {
 		userRep.SmsSent = value

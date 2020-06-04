@@ -73,37 +73,23 @@ func GeneratePasswordFromKeycloakPolicy(policy string) (string, error) {
 
 	for i := 0; i < len(policyItems); i++ {
 		keyValueItem := strings.FieldsFunc(policyItems[i], f)
+		minRequired, err := strconv.Atoi(keyValueItem[1])
 		switch keyValueItem[0] {
 		case "length", "lowerCase":
-			minRequired, err := strconv.Atoi(keyValueItem[1])
-			if err == nil {
-				// make sure that the password has the minimum length required by choosing random lower case letters
-				pwdElems = appendCharacters(pwdElems, lowerCase, minRequired)
-			} else {
-				return "", err
-			}
+			// make sure that the password has the minimum length required by choosing random lower case letters
+			pwdElems = appendCharacters(pwdElems, lowerCase, minRequired)
 		case "specialChars":
 			// pick randomly special characters from ?!#%$
-			minRequired, err := strconv.Atoi(keyValueItem[1])
-			if err == nil {
-				pwdElems = appendCharacters(pwdElems, specialChars, minRequired)
-			} else {
-				return "", err
-			}
+			pwdElems = appendCharacters(pwdElems, specialChars, minRequired)
 		case "upperCase":
-			minRequired, err := strconv.Atoi(keyValueItem[1])
-			if err == nil {
-				pwdElems = appendCharacters(pwdElems, upperCase, minRequired)
-			} else {
-				return "", err
-			}
+			pwdElems = appendCharacters(pwdElems, upperCase, minRequired)
 		case "digits":
-			minRequired, err := strconv.Atoi(keyValueItem[1])
-			if err == nil {
-				pwdElems = appendCharacters(pwdElems, digits, minRequired)
-			} else {
-				return "", err
-			}
+			pwdElems = appendCharacters(pwdElems, digits, minRequired)
+		default:
+			err = nil
+		}
+		if err != nil {
+			return "", err
 		}
 	}
 	mrand.Shuffle(len(pwdElems), func(i, j int) { pwdElems[i], pwdElems[j] = pwdElems[j], pwdElems[i] })
