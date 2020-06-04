@@ -53,7 +53,6 @@ type DbAuditRepresentation struct {
 // EventSummaryRepresentation elements returned by GetEventsSummary
 type EventSummaryRepresentation struct {
 	Origins      []string `json:"origins,omitempty"`
-	Realms       []string `json:"realms,omitempty"`
 	CtEventTypes []string `json:"ctEventTypes,omitempty"`
 }
 

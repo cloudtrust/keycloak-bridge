@@ -70,7 +70,6 @@ const (
 		`
 	selectCountAuditEventsStmt        = `SELECT count(1) FROM audit ` + whereAuditEvents
 	selectLastConnectionTimeStmt      = `SELECT ifnull(unix_timestamp(max(audit_time)), 0) FROM audit WHERE realm_name=? AND ct_event_type='LOGON_OK'`
-	selectAuditSummaryRealmStmt       = `SELECT distinct realm_name FROM audit;`
 	selectAuditSummaryOriginStmt      = `SELECT distinct origin FROM audit;`
 	selectAuditSummaryCtEventTypeStmt = `SELECT distinct ct_event_type FROM audit;`
 	selectConnectionsCount            = `SELECT count(1) FROM audit WHERE realm_name=? AND ct_event_type='LOGON_OK' AND date_add(audit_time, INTERVAL ##INTERVAL##)>now()`
@@ -243,12 +242,9 @@ func (cm *eventsDBModule) GetEventsSummary(_ context.Context) (api.EventSummaryR
 	var res api.EventSummaryRepresentation
 	var err error
 
-	// Get realms
-	res.Realms, err = cm.queryStringArray(selectAuditSummaryRealmStmt)
-	if err == nil {
-		// Get origins
-		res.Origins, err = cm.queryStringArray(selectAuditSummaryOriginStmt)
-	}
+	// Get origins
+	res.Origins, err = cm.queryStringArray(selectAuditSummaryOriginStmt)
+
 	if err == nil {
 		// Get ct_event_types
 		res.CtEventTypes, err = cm.queryStringArray(selectAuditSummaryCtEventTypeStmt)

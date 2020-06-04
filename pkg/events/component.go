@@ -6,8 +6,8 @@ import (
 	"github.com/cloudtrust/common-service/database"
 	errorhandler "github.com/cloudtrust/common-service/errors"
 	api "github.com/cloudtrust/keycloak-bridge/api/events"
-	app "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	msg "github.com/cloudtrust/keycloak-bridge/internal/constants"
+	app "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 )
 
 // Component is the interface of the events component.
@@ -74,7 +74,7 @@ func (ec *component) GetEvents(ctx context.Context, params map[string]string) (a
 	return res, err
 }
 
-// Get all possible values for origin, realm and ctEventType
+// Get all possible values for origin and ctEventType
 func (ec *component) GetEventsSummary(ctx context.Context) (api.EventSummaryRepresentation, error) {
 	return ec.db.GetEventsSummary(ctx)
 }
