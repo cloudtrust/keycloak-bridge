@@ -69,12 +69,12 @@ func (c *authorizationComponentMW) GetActions(ctx context.Context) ([]api.Action
 func (c *authorizationComponentMW) GetEvents(ctx context.Context, m map[string]string) (api.AuditEventsRepresentation, error) {
 	var action = EVGetEvents.String()
 	var realmToken = ctx.Value(cs.CtContextRealm).(string)
-	var targetRealm, ok = m["realm"]
+	var targetRealm, ok = m[prmPathRealm]
 
 	// If non master realm, we enforce targetRealm to be current realm
 	if realmToken != "master" {
 		targetRealm = realmToken
-		m["realm"] = realmToken
+		m[prmPathRealm] = realmToken
 	}
 
 	// If master realm, no target realm means any realms
@@ -102,8 +102,8 @@ func (c *authorizationComponentMW) GetEventsSummary(ctx context.Context) (api.Ev
 
 func (c *authorizationComponentMW) GetUserEvents(ctx context.Context, m map[string]string) (api.AuditEventsRepresentation, error) {
 	var action = EVGetUserEvents.String()
-	var targetRealm = m["realm"] // Get the realm provided as parameter in path
-	var targetUser = m["userID"] // Get the user provided as parameter in path
+	var targetRealm = m[prmPathRealm] // Get the realm provided as parameter in path
+	var targetUser = m["userID"]      // Get the user provided as parameter in path
 
 	if err := c.authManager.CheckAuthorizationOnTargetUser(ctx, action, targetRealm, targetUser); err != nil {
 		return api.AuditEventsRepresentation{}, err

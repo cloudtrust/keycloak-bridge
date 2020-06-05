@@ -85,7 +85,7 @@ func MakeGetRealmEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return component.GetRealm(ctx, m[PrmRealm])
+		return component.GetRealm(ctx, m[prmRealm])
 	}
 }
 
@@ -94,7 +94,7 @@ func MakeGetClientEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return component.GetClient(ctx, m[PrmRealm], m[PrmClientID])
+		return component.GetClient(ctx, m[prmRealm], m[prmClientID])
 	}
 }
 
@@ -103,7 +103,7 @@ func MakeGetClientsEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return component.GetClients(ctx, m[PrmRealm])
+		return component.GetClients(ctx, m[prmRealm])
 	}
 }
 
@@ -112,7 +112,7 @@ func MakeGetRequiredActionsEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return component.GetRequiredActions(ctx, m[PrmRealm])
+		return component.GetRequiredActions(ctx, m[prmRealm])
 	}
 }
 
@@ -124,7 +124,7 @@ func MakeCreateUserEndpoint(component Component, logger keycloakb.Logger) cs.End
 
 		var user api.UserRepresentation
 
-		if err = json.Unmarshal([]byte(m[ReqBody]), &user); err != nil {
+		if err = json.Unmarshal([]byte(m[reqBody]), &user); err != nil {
 			return nil, errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Body)
 		}
 
@@ -137,13 +137,13 @@ func MakeCreateUserEndpoint(component Component, logger keycloakb.Logger) cs.End
 		}
 
 		var keycloakLocation string
-		keycloakLocation, err = component.CreateUser(ctx, m[PrmRealm], user)
+		keycloakLocation, err = component.CreateUser(ctx, m[prmRealm], user)
 
 		if err != nil {
 			return nil, err
 		}
 
-		url, err := convertLocationURL(keycloakLocation, m["scheme"], m["host"])
+		url, err := convertLocationURL(keycloakLocation, m[reqScheme], m[reqHost])
 		if err != nil {
 			logger.Warn(ctx, "msg", "Invalid location", "location", keycloakLocation, "err", err.Error())
 		}
@@ -159,7 +159,7 @@ func MakeDeleteUserEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return nil, component.DeleteUser(ctx, m[PrmRealm], m[PrmUserID])
+		return nil, component.DeleteUser(ctx, m[prmRealm], m[prmUserID])
 	}
 }
 
@@ -168,7 +168,7 @@ func MakeGetUserEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return component.GetUser(ctx, m[PrmRealm], m[PrmUserID])
+		return component.GetUser(ctx, m[prmRealm], m[prmUserID])
 	}
 }
 
@@ -179,7 +179,7 @@ func MakeUpdateUserEndpoint(component Component) cs.Endpoint {
 
 		var user api.UserRepresentation
 
-		if err := json.Unmarshal([]byte(m[ReqBody]), &user); err != nil {
+		if err := json.Unmarshal([]byte(m[reqBody]), &user); err != nil {
 			return nil, errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + msg.Body)
 		}
 
@@ -187,7 +187,7 @@ func MakeUpdateUserEndpoint(component Component) cs.Endpoint {
 			return nil, err
 		}
 
-		return nil, component.UpdateUser(ctx, m[PrmRealm], m[PrmUserID], user)
+		return nil, component.UpdateUser(ctx, m[prmRealm], m[prmUserID], user)
 	}
 }
 
@@ -197,20 +197,20 @@ func MakeGetUsersEndpoint(component Component) cs.Endpoint {
 		var m = req.(map[string]string)
 
 		var paramKV []string
-		for _, key := range []string{PrmQryEmail, PrmQryFirstName, PrmQryLastName, PrmQryUserName, PrmQrySearch, PrmQryFirst, PrmQryMax} {
+		for _, key := range []string{prmQryEmail, prmQryFirstName, prmQryLastName, prmQryUserName, prmQrySearch, prmQryFirst, prmQryMax} {
 			if m[key] != "" {
 				paramKV = append(paramKV, key, m[key])
 			}
 		}
 
-		_, ok := m[PrmQryGroupIDs]
+		_, ok := m[prmQryGroupIDs]
 		if !ok {
 			return nil, errorhandler.CreateMissingParameterError(msg.GroupIDs)
 		}
 
-		groupIDs := strings.Split(m[PrmQryGroupIDs], ",")
+		groupIDs := strings.Split(m[prmQryGroupIDs], ",")
 
-		return component.GetUsers(ctx, m[PrmRealm], groupIDs, paramKV...)
+		return component.GetUsers(ctx, m[prmRealm], groupIDs, paramKV...)
 	}
 }
 
@@ -219,7 +219,7 @@ func MakeGetRolesOfUserEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return component.GetRolesOfUser(ctx, m[PrmRealm], m[PrmUserID])
+		return component.GetRolesOfUser(ctx, m[prmRealm], m[prmUserID])
 	}
 }
 
@@ -228,7 +228,7 @@ func MakeGetGroupsOfUserEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return component.GetGroupsOfUser(ctx, m[PrmRealm], m[PrmUserID])
+		return component.GetGroupsOfUser(ctx, m[prmRealm], m[prmUserID])
 	}
 }
 
@@ -237,7 +237,7 @@ func MakeAddGroupToUserEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return nil, component.AddGroupToUser(ctx, m[PrmRealm], m[PrmUserID], m[PrmGroupID])
+		return nil, component.AddGroupToUser(ctx, m[prmRealm], m[prmUserID], m[prmGroupID])
 	}
 }
 
@@ -246,7 +246,7 @@ func MakeDeleteGroupForUserEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return nil, component.DeleteGroupForUser(ctx, m[PrmRealm], m[PrmUserID], m[PrmGroupID])
+		return nil, component.DeleteGroupForUser(ctx, m[prmRealm], m[prmUserID], m[prmGroupID])
 	}
 }
 
@@ -255,7 +255,7 @@ func MakeGetAvailableTrustIDGroupsEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return component.GetAvailableTrustIDGroups(ctx, m[PrmRealm])
+		return component.GetAvailableTrustIDGroups(ctx, m[prmRealm])
 	}
 }
 
@@ -264,7 +264,7 @@ func MakeGetTrustIDGroupsOfUserEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return component.GetTrustIDGroupsOfUser(ctx, m[PrmRealm], m[PrmUserID])
+		return component.GetTrustIDGroupsOfUser(ctx, m[prmRealm], m[prmUserID])
 	}
 }
 
@@ -275,11 +275,11 @@ func MakeSetTrustIDGroupsToUserEndpoint(component Component) cs.Endpoint {
 
 		var groupNames []string
 
-		if err := json.Unmarshal([]byte(m[ReqBody]), &groupNames); err != nil {
+		if err := json.Unmarshal([]byte(m[reqBody]), &groupNames); err != nil {
 			return nil, errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Body)
 		}
 
-		return nil, component.SetTrustIDGroupsToUser(ctx, m[PrmRealm], m[PrmUserID], groupNames)
+		return nil, component.SetTrustIDGroupsToUser(ctx, m[prmRealm], m[prmUserID], groupNames)
 	}
 }
 
@@ -288,7 +288,7 @@ func MakeGetUserAccountStatusEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return component.GetUserAccountStatus(ctx, m[PrmRealm], m[PrmUserID])
+		return component.GetUserAccountStatus(ctx, m[prmRealm], m[prmUserID])
 	}
 }
 
@@ -297,7 +297,7 @@ func MakeGetClientRolesForUserEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return component.GetClientRolesForUser(ctx, m[PrmRealm], m[PrmUserID], m[PrmClientID])
+		return component.GetClientRolesForUser(ctx, m[prmRealm], m[prmUserID], m[prmClientID])
 	}
 }
 
@@ -309,7 +309,7 @@ func MakeAddClientRolesToUserEndpoint(component Component) cs.Endpoint {
 
 		var roles []api.RoleRepresentation
 
-		if err = json.Unmarshal([]byte(m[ReqBody]), &roles); err != nil {
+		if err = json.Unmarshal([]byte(m[reqBody]), &roles); err != nil {
 			return nil, errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Body)
 		}
 
@@ -319,7 +319,7 @@ func MakeAddClientRolesToUserEndpoint(component Component) cs.Endpoint {
 			}
 		}
 
-		return nil, component.AddClientRolesToUser(ctx, m[PrmRealm], m[PrmUserID], m[PrmClientID], roles)
+		return nil, component.AddClientRolesToUser(ctx, m[prmRealm], m[prmUserID], m[prmClientID], roles)
 	}
 }
 
@@ -331,7 +331,7 @@ func MakeResetPasswordEndpoint(component Component) cs.Endpoint {
 
 		var password api.PasswordRepresentation
 
-		if err = json.Unmarshal([]byte(m[ReqBody]), &password); err != nil {
+		if err = json.Unmarshal([]byte(m[reqBody]), &password); err != nil {
 			return nil, errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Body)
 		}
 
@@ -339,7 +339,7 @@ func MakeResetPasswordEndpoint(component Component) cs.Endpoint {
 			return nil, err
 		}
 
-		pwd, err := component.ResetPassword(ctx, m[PrmRealm], m[PrmUserID], password)
+		pwd, err := component.ResetPassword(ctx, m[prmRealm], m[prmUserID], password)
 		if pwd != "" {
 			return pwd, err
 		}
@@ -354,7 +354,7 @@ func MakeExecuteActionsEmailEndpoint(component Component) cs.Endpoint {
 		var err error
 
 		var paramKV []string
-		for _, key := range []string{PrmQryClientID, PrmQryRedirectURI, PrmQryLifespan} {
+		for _, key := range []string{prmQryClientID, prmQryRedirectURI, prmQryLifespan} {
 			if m[key] != "" {
 				paramKV = append(paramKV, key, m[key])
 			}
@@ -363,7 +363,7 @@ func MakeExecuteActionsEmailEndpoint(component Component) cs.Endpoint {
 		//extract the actions
 		var actions []api.RequiredAction
 
-		if err = json.Unmarshal([]byte(m[ReqBody]), &actions); err != nil {
+		if err = json.Unmarshal([]byte(m[reqBody]), &actions); err != nil {
 			return nil, errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Body)
 		}
 
@@ -373,7 +373,7 @@ func MakeExecuteActionsEmailEndpoint(component Component) cs.Endpoint {
 			}
 		}
 
-		return nil, component.ExecuteActionsEmail(ctx, m[PrmRealm], m[PrmUserID], actions, paramKV...)
+		return nil, component.ExecuteActionsEmail(ctx, m[prmRealm], m[prmUserID], actions, paramKV...)
 	}
 }
 
@@ -382,7 +382,7 @@ func MakeSendNewEnrolmentCodeEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		code, err := component.SendNewEnrolmentCode(ctx, m[PrmRealm], m[PrmUserID])
+		code, err := component.SendNewEnrolmentCode(ctx, m[prmRealm], m[prmUserID])
 		return map[string]string{"code": code}, err
 	}
 }
@@ -393,13 +393,13 @@ func MakeSendReminderEmailEndpoint(component Component) cs.Endpoint {
 		var m = req.(map[string]string)
 
 		var paramKV []string
-		for _, key := range []string{PrmQryClientID, PrmQryRedirectURI, PrmQryLifespan} {
+		for _, key := range []string{prmQryClientID, prmQryRedirectURI, prmQryLifespan} {
 			if m[key] != "" {
 				paramKV = append(paramKV, key, m[key])
 			}
 		}
 
-		return nil, component.SendReminderEmail(ctx, m[PrmRealm], m[PrmUserID], paramKV...)
+		return nil, component.SendReminderEmail(ctx, m[prmRealm], m[prmUserID], paramKV...)
 	}
 }
 
@@ -408,7 +408,7 @@ func MakeResetSmsCounterEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return nil, component.ResetSmsCounter(ctx, m[PrmRealm], m[PrmUserID])
+		return nil, component.ResetSmsCounter(ctx, m[prmRealm], m[prmUserID])
 	}
 }
 
@@ -417,7 +417,7 @@ func MakeCreateRecoveryCodeEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return component.CreateRecoveryCode(ctx, m[PrmRealm], m[PrmUserID])
+		return component.CreateRecoveryCode(ctx, m[prmRealm], m[prmUserID])
 	}
 }
 
@@ -426,7 +426,7 @@ func MakeGetCredentialsForUserEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return component.GetCredentialsForUser(ctx, m[PrmRealm], m[PrmUserID])
+		return component.GetCredentialsForUser(ctx, m[prmRealm], m[prmUserID])
 	}
 }
 
@@ -435,7 +435,7 @@ func MakeDeleteCredentialsForUserEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return nil, component.DeleteCredentialsForUser(ctx, m[PrmRealm], m[PrmUserID], m[PrmCredentialID])
+		return nil, component.DeleteCredentialsForUser(ctx, m[prmRealm], m[prmUserID], m[prmCredentialID])
 	}
 }
 
@@ -444,7 +444,7 @@ func MakeClearUserLoginFailures(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return nil, component.ClearUserLoginFailures(ctx, m[PrmRealm], m[PrmUserID])
+		return nil, component.ClearUserLoginFailures(ctx, m[prmRealm], m[prmUserID])
 	}
 }
 
@@ -453,7 +453,7 @@ func MakeGetAttackDetectionStatus(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return component.GetAttackDetectionStatus(ctx, m[PrmRealm], m[PrmUserID])
+		return component.GetAttackDetectionStatus(ctx, m[prmRealm], m[prmUserID])
 	}
 }
 
@@ -462,7 +462,7 @@ func MakeGetRolesEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return component.GetRoles(ctx, m[PrmRealm])
+		return component.GetRoles(ctx, m[prmRealm])
 	}
 }
 
@@ -471,7 +471,7 @@ func MakeGetRoleEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return component.GetRole(ctx, m[PrmRealm], m[PrmRoleID])
+		return component.GetRole(ctx, m[prmRealm], m[prmRoleID])
 	}
 }
 
@@ -480,7 +480,7 @@ func MakeGetClientRolesEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return component.GetClientRoles(ctx, m[PrmRealm], m[PrmClientID])
+		return component.GetClientRoles(ctx, m[prmRealm], m[prmClientID])
 	}
 }
 
@@ -492,7 +492,7 @@ func MakeCreateClientRoleEndpoint(component Component, logger keycloakb.Logger) 
 
 		var role api.RoleRepresentation
 
-		if err = json.Unmarshal([]byte(m[ReqBody]), &role); err != nil {
+		if err = json.Unmarshal([]byte(m[reqBody]), &role); err != nil {
 			return nil, errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Body)
 		}
 
@@ -501,13 +501,13 @@ func MakeCreateClientRoleEndpoint(component Component, logger keycloakb.Logger) 
 		}
 
 		var keycloakLocation string
-		keycloakLocation, err = component.CreateClientRole(ctx, m[PrmRealm], m[PrmClientID], role)
+		keycloakLocation, err = component.CreateClientRole(ctx, m[prmRealm], m[prmClientID], role)
 
 		if err != nil {
 			return nil, err
 		}
 
-		url, err := convertLocationURL(keycloakLocation, m["scheme"], m["host"])
+		url, err := convertLocationURL(keycloakLocation, m[reqScheme], m[reqHost])
 		if err != nil {
 			logger.Warn(ctx, "msg", "Invalid location", "location", keycloakLocation, "err", err.Error())
 		}
@@ -523,7 +523,7 @@ func MakeGetGroupsEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return component.GetGroups(ctx, m[PrmRealm])
+		return component.GetGroups(ctx, m[prmRealm])
 	}
 }
 
@@ -535,7 +535,7 @@ func MakeCreateGroupEndpoint(component Component, logger keycloakb.Logger) cs.En
 
 		var group api.GroupRepresentation
 
-		if err = json.Unmarshal([]byte(m[ReqBody]), &group); err != nil {
+		if err = json.Unmarshal([]byte(m[reqBody]), &group); err != nil {
 			return nil, errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Body)
 		}
 
@@ -544,13 +544,13 @@ func MakeCreateGroupEndpoint(component Component, logger keycloakb.Logger) cs.En
 		}
 
 		var keycloakLocation string
-		keycloakLocation, err = component.CreateGroup(ctx, m[PrmRealm], group)
+		keycloakLocation, err = component.CreateGroup(ctx, m[prmRealm], group)
 
 		if err != nil {
 			return nil, err
 		}
 
-		url, err := convertLocationURL(keycloakLocation, m["scheme"], m["host"])
+		url, err := convertLocationURL(keycloakLocation, m[reqScheme], m[reqHost])
 		if err != nil {
 			logger.Warn(ctx, "msg", "Invalid location", "location", keycloakLocation, "err", err.Error())
 		}
@@ -566,7 +566,7 @@ func MakeDeleteGroupEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return nil, component.DeleteGroup(ctx, m[PrmRealm], m[PrmGroupID])
+		return nil, component.DeleteGroup(ctx, m[prmRealm], m[prmGroupID])
 	}
 }
 
@@ -575,7 +575,7 @@ func MakeGetAuthorizationsEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return component.GetAuthorizations(ctx, m[PrmRealm], m[PrmGroupID])
+		return component.GetAuthorizations(ctx, m[prmRealm], m[prmGroupID])
 	}
 }
 
@@ -587,11 +587,11 @@ func MakeUpdateAuthorizationsEndpoint(component Component) cs.Endpoint {
 
 		var authorizations api.AuthorizationsRepresentation
 
-		if err = json.Unmarshal([]byte(m[ReqBody]), &authorizations); err != nil {
+		if err = json.Unmarshal([]byte(m[reqBody]), &authorizations); err != nil {
 			return nil, errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Body)
 		}
 
-		return nil, component.UpdateAuthorizations(ctx, m[PrmRealm], m[PrmGroupID], authorizations)
+		return nil, component.UpdateAuthorizations(ctx, m[prmRealm], m[prmGroupID], authorizations)
 	}
 }
 
@@ -607,7 +607,7 @@ func MakeGetRealmCustomConfigurationEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return component.GetRealmCustomConfiguration(ctx, m[PrmRealm])
+		return component.GetRealmCustomConfiguration(ctx, m[prmRealm])
 	}
 }
 
@@ -617,7 +617,7 @@ func MakeUpdateRealmCustomConfigurationEndpoint(component Component) cs.Endpoint
 		var m = req.(map[string]string)
 		var err error
 
-		configJSON := []byte(m[ReqBody])
+		configJSON := []byte(m[reqBody])
 
 		var customConfig api.RealmCustomConfiguration
 
@@ -629,7 +629,7 @@ func MakeUpdateRealmCustomConfigurationEndpoint(component Component) cs.Endpoint
 			return nil, err
 		}
 
-		return nil, component.UpdateRealmCustomConfiguration(ctx, m[PrmRealm], customConfig)
+		return nil, component.UpdateRealmCustomConfiguration(ctx, m[prmRealm], customConfig)
 	}
 }
 
@@ -637,7 +637,7 @@ func MakeUpdateRealmCustomConfigurationEndpoint(component Component) cs.Endpoint
 func MakeGetRealmAdminConfigurationEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
-		return component.GetRealmAdminConfiguration(ctx, m[PrmRealm])
+		return component.GetRealmAdminConfiguration(ctx, m[prmRealm])
 	}
 }
 
@@ -647,7 +647,7 @@ func MakeUpdateRealmAdminConfigurationEndpoint(component Component) cs.Endpoint 
 		var m = req.(map[string]string)
 		var err error
 
-		configJSON := m[ReqBody]
+		configJSON := m[reqBody]
 
 		var adminConfig api.RealmAdminConfiguration
 
@@ -659,7 +659,7 @@ func MakeUpdateRealmAdminConfigurationEndpoint(component Component) cs.Endpoint 
 			return nil, err
 		}
 
-		return nil, component.UpdateRealmAdminConfiguration(ctx, m[PrmRealm], adminConfig)
+		return nil, component.UpdateRealmAdminConfiguration(ctx, m[prmRealm], adminConfig)
 	}
 }
 
@@ -667,12 +667,12 @@ func MakeUpdateRealmAdminConfigurationEndpoint(component Component) cs.Endpoint 
 func MakeGetRealmBackOfficeConfigurationEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
-		var groupName = m[PrmQryGroupName]
+		var groupName = m[prmQryGroupName]
 		if groupName == "" {
 			return nil, errorhandler.CreateMissingParameterError(msg.GroupName)
 		}
 
-		return component.GetRealmBackOfficeConfiguration(ctx, m[PrmRealm], groupName)
+		return component.GetRealmBackOfficeConfiguration(ctx, m[prmRealm], groupName)
 	}
 }
 
@@ -680,16 +680,16 @@ func MakeGetRealmBackOfficeConfigurationEndpoint(component Component) cs.Endpoin
 func MakeUpdateRealmBackOfficeConfigurationEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
-		var boConf, err = api.NewBackOfficeConfigurationFromJSON(m[ReqBody])
+		var boConf, err = api.NewBackOfficeConfigurationFromJSON(m[reqBody])
 		if err != nil {
 			return nil, err
 		}
-		var groupName = m[PrmQryGroupName]
+		var groupName = m[prmQryGroupName]
 		if groupName == "" {
 			return nil, errorhandler.CreateMissingParameterError(msg.GroupName)
 		}
 
-		return nil, component.UpdateRealmBackOfficeConfiguration(ctx, m[PrmRealm], groupName, boConf)
+		return nil, component.UpdateRealmBackOfficeConfiguration(ctx, m[prmRealm], groupName, boConf)
 	}
 }
 
@@ -698,7 +698,7 @@ func MakeGetUserRealmBackOfficeConfigurationEndpoint(component Component) cs.End
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return component.GetUserRealmBackOfficeConfiguration(ctx, m[PrmRealm])
+		return component.GetUserRealmBackOfficeConfiguration(ctx, m[prmRealm])
 	}
 }
 
@@ -710,7 +710,7 @@ func MakeLinkShadowUserEndpoint(component Component) cs.Endpoint {
 
 		var fedID api.FederatedIdentityRepresentation
 
-		if err = json.Unmarshal([]byte(m[ReqBody]), &fedID); err != nil {
+		if err = json.Unmarshal([]byte(m[reqBody]), &fedID); err != nil {
 			return nil, errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Body)
 		}
 
@@ -718,7 +718,7 @@ func MakeLinkShadowUserEndpoint(component Component) cs.Endpoint {
 			return nil, err
 		}
 
-		err = component.LinkShadowUser(ctx, m[PrmRealm], m[PrmUserID], m[PrmProvider], fedID)
+		err = component.LinkShadowUser(ctx, m[prmRealm], m[prmUserID], m[prmProvider], fedID)
 
 		if err != nil {
 			return nil, err
