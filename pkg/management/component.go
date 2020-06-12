@@ -373,6 +373,12 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 		user.PhoneNumberVerified = &verified
 	}
 
+	var revokeAccreditations = keycloakb.IsUpdated(user.FirstName, oldUserKc.FirstName,
+		user.LastName, oldUserKc.LastName,
+		user.Gender, oldUserKc.GetAttributeString(constants.AttrbGender),
+		user.BirthDate, oldUserKc.GetAttributeString(constants.AttrbBirthDate),
+	)
+
 	userRep = api.ConvertToKCUser(user)
 
 	// Merge the attributes coming from the old user representation and the updated user representation in order not to lose anything
@@ -381,6 +387,9 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 	mergedAttributes.Merge(userRep.Attributes)
 
 	userRep.Attributes = &mergedAttributes
+	if revokeAccreditations {
+		keycloakb.RevokeAccreditations(&userRep)
+	}
 
 	if err = c.keycloakClient.UpdateUser(accessToken, realmName, userID, userRep); err != nil {
 		c.logger.Warn(ctx, "err", err.Error())

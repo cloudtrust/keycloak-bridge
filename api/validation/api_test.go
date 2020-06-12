@@ -4,6 +4,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cloudtrust/keycloak-bridge/internal/dto"
+
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 
 	kc "github.com/cloudtrust/keycloak-client"
@@ -185,6 +187,109 @@ func TestUserValidate(t *testing.T) {
 		for idx, aUser := range users {
 			assert.NotNil(t, aUser.Validate(), "User is expected to be invalid. Test #%d failed", idx)
 		}
+	})
+}
+
+func ptr(v string) *string {
+	return &v
+}
+
+func TestHasUpdateOfAccreditationDependantInformationDB(t *testing.T) {
+	var user UserRepresentation
+	var dbUser dto.DBUser
+
+	t.Run("Nothing to update", func(t *testing.T) {
+		assert.False(t, user.HasUpdateOfAccreditationDependantInformationDB(&dbUser))
+	})
+	t.Run("Expiry date update", func(t *testing.T) {
+		var expiryTxt = "15.06.2018"
+		var expiry, _ = time.Parse(constants.SupportedDateLayouts[0], "29.12.2019")
+		user.IDDocumentExpiration = &expiry
+		dbUser.IDDocumentExpiration = &expiryTxt
+		assert.True(t, user.HasUpdateOfAccreditationDependantInformationDB(&dbUser))
+
+		expiry, _ = time.Parse(constants.SupportedDateLayouts[0], expiryTxt)
+		user.IDDocumentExpiration = &expiry
+		assert.False(t, user.HasUpdateOfAccreditationDependantInformationDB(&dbUser))
+	})
+	t.Run("Document type update", func(t *testing.T) {
+		var documentType = "TYPE1"
+		user.IDDocumentType = ptr("OTHER-TYPE")
+		dbUser.IDDocumentType = &documentType
+		assert.True(t, user.HasUpdateOfAccreditationDependantInformationDB(&dbUser))
+
+		user.IDDocumentType = &documentType
+		assert.False(t, user.HasUpdateOfAccreditationDependantInformationDB(&dbUser))
+	})
+	t.Run("Document number update", func(t *testing.T) {
+		var documentNumber = "1234567890"
+		user.IDDocumentNumber = ptr("OTHER-NUMBER")
+		dbUser.IDDocumentNumber = &documentNumber
+		assert.True(t, user.HasUpdateOfAccreditationDependantInformationDB(&dbUser))
+
+		user.IDDocumentNumber = &documentNumber
+		assert.False(t, user.HasUpdateOfAccreditationDependantInformationDB(&dbUser))
+	})
+	t.Run("Birth location update", func(t *testing.T) {
+		var birthLocation = "Where"
+		user.BirthLocation = ptr("Here !")
+		dbUser.BirthLocation = &birthLocation
+		assert.True(t, user.HasUpdateOfAccreditationDependantInformationDB(&dbUser))
+
+		user.BirthLocation = &birthLocation
+		assert.False(t, user.HasUpdateOfAccreditationDependantInformationDB(&dbUser))
+	})
+}
+
+func TestHasUpdateOfAccreditationDependantInformationKC(t *testing.T) {
+	var user UserRepresentation
+	var kcUser kc.UserRepresentation
+
+	t.Run("Nothing to update", func(t *testing.T) {
+		assert.False(t, user.HasUpdateOfAccreditationDependantInformationKC(&kcUser))
+	})
+	t.Run("Birth date update", func(t *testing.T) {
+		var birthDateTxt = "15.06.2018"
+		var birthDate, _ = time.Parse(constants.SupportedDateLayouts[0], "29.12.2019")
+		user.BirthDate = &birthDate
+		kcUser.SetAttributeString(constants.AttrbBirthDate, birthDateTxt)
+		assert.True(t, user.HasUpdateOfAccreditationDependantInformationKC(&kcUser))
+
+		birthDate, _ = time.Parse(constants.SupportedDateLayouts[0], birthDateTxt)
+		user.BirthDate = &birthDate
+		assert.False(t, user.HasUpdateOfAccreditationDependantInformationKC(&kcUser))
+	})
+	t.Run("First name update", func(t *testing.T) {
+		var name = "THE NAME"
+		user.FirstName = ptr("OTHER NAME")
+		kcUser.FirstName = &name
+		assert.True(t, user.HasUpdateOfAccreditationDependantInformationKC(&kcUser))
+
+		user.FirstName = &name
+		assert.False(t, user.HasUpdateOfAccreditationDependantInformationKC(&kcUser))
+	})
+	t.Run("Last name update", func(t *testing.T) {
+		var name = "THE NAME"
+		user.LastName = ptr("OTHER NAME")
+		kcUser.LastName = &name
+		assert.True(t, user.HasUpdateOfAccreditationDependantInformationKC(&kcUser))
+
+		user.LastName = &name
+		assert.False(t, user.HasUpdateOfAccreditationDependantInformationKC(&kcUser))
+	})
+	t.Run("Gender update", func(t *testing.T) {
+		var gender = "M"
+		user.Gender = ptr("F")
+		kcUser.SetAttributeString(constants.AttrbGender, gender)
+		assert.True(t, user.HasUpdateOfAccreditationDependantInformationKC(&kcUser))
+
+		user.Gender = ptr("m")
+		assert.False(t, user.HasUpdateOfAccreditationDependantInformationKC(&kcUser))
+	})
+	t.Run("Other fields does not matter", func(t *testing.T) {
+		user.EmailAddress = ptr("any@mail.me")
+		kcUser.Email = ptr("any.other@mail.me")
+		assert.False(t, user.HasUpdateOfAccreditationDependantInformationKC(&kcUser))
 	})
 }
 

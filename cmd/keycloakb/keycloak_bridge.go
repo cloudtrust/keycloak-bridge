@@ -321,7 +321,7 @@ func main() {
 	var keycloakClient *keycloakapi.Client
 	{
 		var err error
-		keycloakClient, err = keycloakapi.New(keycloakConfig, cs.CtContextIssuerDomain)
+		keycloakClient, err = keycloakapi.New(keycloakConfig)
 
 		if err != nil {
 			logger.Error(ctx, "msg", "could not create Keycloak client", "error", err)

@@ -120,7 +120,6 @@ func TestUpdatePasswordWrongPwd(t *testing.T) {
 		err = component.UpdatePassword(ctx, oldPasswd, newPasswd, newPasswd)
 		assert.True(t, err == nil)
 	}
-
 }
 
 func TestUpdateAccount(t *testing.T) {
@@ -222,7 +221,6 @@ func TestUpdateAccount(t *testing.T) {
 	t.Run("Keycloak update succces - DB get user fails", func(t *testing.T) {
 		mockEventDBModule.EXPECT().ReportEvent(ctx, "UPDATE_ACCOUNT", "self-service", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 		mockKeycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kcUserRep, nil).Times(1)
-		mockKeycloakAccountClient.EXPECT().UpdateAccount(accessToken, realmName, gomock.Any()).Return(nil).Times(1)
 		mockUsersDBModule.EXPECT().GetUser(ctx, realmName, userID).Return(nil, errors.New("db error"))
 
 		err := accountComponent.UpdateAccount(ctx, userRep)
@@ -242,6 +240,7 @@ func TestUpdateAccount(t *testing.T) {
 	})
 
 	t.Run("Update by changing the email address", func(t *testing.T) {
+		userRep.PhoneNumber = nil
 		var oldEmail = "toti@elca.ch"
 		var oldkcUserRep = kc.UserRepresentation{
 			ID:            &id,
@@ -264,6 +263,7 @@ func TestUpdateAccount(t *testing.T) {
 		err := accountComponent.UpdateAccount(ctx, userRep)
 
 		assert.Nil(t, err)
+		userRep.PhoneNumber = &phoneNumber
 	})
 
 	var oldNumber = "+41789467"
@@ -272,10 +272,12 @@ func TestUpdateAccount(t *testing.T) {
 	oldAttributes[constants.AttrbPhoneNumberVerified] = []string{strconv.FormatBool(phoneNumberVerified)}
 	var oldkcUserRep2 = kc.UserRepresentation{
 		ID:         &id,
+		Email:      &email,
 		Attributes: &oldAttributes,
 	}
 
 	t.Run("Update by changing the phone number", func(t *testing.T) {
+		userRep.Email = nil
 		mockKeycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(oldkcUserRep2, nil).Times(1)
 		mockKeycloakAccountClient.EXPECT().UpdateAccount(accessToken, realmName, gomock.Any()).DoAndReturn(
 			func(accessToken, realmName string, kcUserRep kc.UserRepresentation) error {
@@ -293,6 +295,7 @@ func TestUpdateAccount(t *testing.T) {
 		err := accountComponent.UpdateAccount(ctx, userRep)
 
 		assert.Nil(t, err)
+		userRep.Email = &email
 	})
 
 	t.Run("Update without attributes", func(t *testing.T) {
@@ -332,6 +335,7 @@ func TestUpdateAccount(t *testing.T) {
 			ID: &id,
 		}
 		mockKeycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kcUserRep, nil).AnyTimes()
+		mockUsersDBModule.EXPECT().GetUser(ctx, realmName, userID).Return(nil, nil)
 		mockKeycloakAccountClient.EXPECT().UpdateAccount(accessToken, realmName, gomock.Any()).Return(fmt.Errorf("Unexpected error")).Times(1)
 
 		err := accountComponent.UpdateAccount(ctx, api.AccountRepresentation{})
