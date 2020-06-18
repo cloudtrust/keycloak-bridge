@@ -35,6 +35,7 @@ type AccreditationRepresentation struct {
 	Type       *string `json:"type"`
 	ExpiryDate *string `json:"expiryDate"`
 	Expired    *bool   `json:"expired,omitempty"`
+	Revoked    *bool   `json:"revoked,omitempty"`
 }
 
 // CredentialRepresentation struct
@@ -114,7 +115,13 @@ func ConvertToAPIAccount(ctx context.Context, userKc kc.UserRepresentation, logg
 		for _, accredJSON := range values {
 			var accred AccreditationRepresentation
 			if json.Unmarshal([]byte(accredJSON), &accred) == nil {
-				accred.Expired = keycloakb.IsDateInThePast(accred.ExpiryDate)
+				// If accreditation is revoked, considers it as expired so that this version is backward compatible with backoffice
+				if accred.Revoked != nil && *accred.Revoked {
+					accred.Expired = accred.Revoked
+				} else {
+					accred.Expired = keycloakb.IsDateInThePast(accred.ExpiryDate)
+				}
+				accred.Revoked = nil
 				accreds = append(accreds, accred)
 			} else {
 				logger.Warn(ctx, "msg", "Can't unmarshall JSON", "json", accredJSON)

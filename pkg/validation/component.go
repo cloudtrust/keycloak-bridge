@@ -142,22 +142,9 @@ func (c *component) GetUser(ctx context.Context, userID string) (api.UserReprese
 
 func (c *component) UpdateUser(ctx context.Context, userID string, user api.UserRepresentation) error {
 	var err error
-	var kcUpdate = needKcUserUpdate(user)
-	var dbUpdate = needDBUserUpdate(user)
-
-	if kcUpdate {
-		kcUser, err := c.getKeycloakUser(ctx, userID)
-		if err != nil {
-			return err
-		}
-		keycloakb.ConvertLegacyAttribute(&kcUser)
-
-		user.ExportToKeycloak(&kcUser)
-		err = c.updateKeycloakUser(ctx, userID, kcUser)
-		if err != nil {
-			return err
-		}
-	}
+	var kcUpdate = needKcProcessing(user)
+	var dbUpdate = needDBProcessing(user)
+	var shouldRevokeAccreditations bool
 
 	if dbUpdate {
 		var uID = userID
@@ -166,6 +153,10 @@ func (c *component) UpdateUser(ctx context.Context, userID string, user api.User
 			UserID:           &uID,
 			IDDocumentType:   user.IDDocumentType,
 			IDDocumentNumber: user.IDDocumentNumber,
+		}
+
+		if existingUser, err := c.usersDBModule.GetUser(ctx, c.socialRealmName, uID); err == nil && existingUser != nil {
+			shouldRevokeAccreditations = user.HasUpdateOfAccreditationDependantInformationDB(existingUser)
 		}
 
 		if user.IDDocumentExpiration != nil {
@@ -180,6 +171,26 @@ func (c *component) UpdateUser(ctx context.Context, userID string, user api.User
 		}
 	}
 
+	if kcUpdate || shouldRevokeAccreditations {
+		kcUser, err := c.getKeycloakUser(ctx, userID)
+		if err != nil {
+			return err
+		}
+		keycloakb.ConvertLegacyAttribute(&kcUser)
+		if !shouldRevokeAccreditations || user.HasUpdateOfAccreditationDependantInformationKC(&kcUser) {
+			shouldRevokeAccreditations = true
+		}
+
+		user.ExportToKeycloak(&kcUser)
+		if shouldRevokeAccreditations {
+			keycloakb.RevokeAccreditations(&kcUser)
+		}
+		err = c.updateKeycloakUser(ctx, userID, kcUser)
+		if err != nil {
+			return err
+		}
+	}
+
 	if kcUpdate || dbUpdate {
 		// store the API call into the DB
 		c.reportEvent(ctx, "VALIDATION_UPDATE_USER", database.CtEventRealmName, c.socialRealmName, database.CtEventUserID, userID)
@@ -188,7 +199,7 @@ func (c *component) UpdateUser(ctx context.Context, userID string, user api.User
 	return nil
 }
 
-func needKcUserUpdate(user api.UserRepresentation) bool {
+func needKcProcessing(user api.UserRepresentation) bool {
 	var kcUserAttrs = []*string{
 		user.Gender,
 		user.FirstName,
@@ -210,7 +221,7 @@ func needKcUserUpdate(user api.UserRepresentation) bool {
 	return false
 }
 
-func needDBUserUpdate(user api.UserRepresentation) bool {
+func needDBProcessing(user api.UserRepresentation) bool {
 	var dbUserAttrs = []*string{
 		user.BirthLocation,
 		user.IDDocumentNumber,

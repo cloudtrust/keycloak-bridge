@@ -147,6 +147,10 @@ func (c *component) GetAccount(ctx context.Context) (api.AccountRepresentation, 
 	return userRep, nil
 }
 
+func isUpdated(newValue *string, oldValue *string) bool {
+	return newValue != nil && (oldValue == nil || *newValue != *oldValue)
+}
+
 func (c *component) UpdateAccount(ctx context.Context, user api.AccountRepresentation) error {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 	var realm = ctx.Value(cs.CtContextRealm).(string)
@@ -154,7 +158,7 @@ func (c *component) UpdateAccount(ctx context.Context, user api.AccountRepresent
 	var username = ctx.Value(cs.CtContextUsername).(string)
 	var userRep kc.UserRepresentation
 
-	// get the "old" user representation
+	// get the "old" user representation from Keycloak
 	oldUserKc, err := c.keycloakAccountClient.GetAccount(accessToken, realm)
 	if err != nil {
 		c.logger.Warn(ctx, "err", err.Error())
@@ -162,28 +166,39 @@ func (c *component) UpdateAccount(ctx context.Context, user api.AccountRepresent
 	}
 	keycloakb.ConvertLegacyAttribute(&oldUserKc)
 
+	// get the "old" user from DB
+	var oldUser *dto.DBUser
+	oldUser, err = c.usersDBModule.GetUser(ctx, realm, userID)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return err
+	}
+
 	var emailVerified, phoneNumberVerified *bool
 	var actions []string
 
+	var revokeAccreditations = oldUser == nil || keycloakb.IsUpdated(user.FirstName, oldUserKc.FirstName,
+		user.LastName, oldUserKc.LastName,
+		user.Gender, oldUserKc.GetAttributeString(constants.AttrbGender),
+		user.BirthDate, oldUserKc.GetAttributeString(constants.AttrbBirthDate),
+		user.BirthLocation, oldUser.BirthLocation,
+		user.IDDocumentType, oldUser.IDDocumentType,
+		user.IDDocumentNumber, oldUser.IDDocumentNumber,
+		user.IDDocumentExpiration, oldUser.IDDocumentExpiration,
+	)
+
 	// when the email changes, set the EmailVerified to false
-	if user.Email != nil && oldUserKc.Email != nil && *oldUserKc.Email != *user.Email {
+	if isUpdated(user.Email, oldUserKc.Email) {
 		var verified = false
 		emailVerified = &verified
 		actions = append(actions, ActionVerifyEmail)
 	}
 
 	// when the phone number changes, set the PhoneNumberVerified to false
-	if user.PhoneNumber != nil {
-		if oldUserKc.Attributes != nil {
-			if value := oldUserKc.GetAttributeString(constants.AttrbPhoneNumber); *value != *user.PhoneNumber {
-				var verified = false
-				phoneNumberVerified = &verified
-				actions = append(actions, ActionVerifyPhoneNumber)
-			}
-		} else { // the user has no attributes until now, i.e. he has not set yet his phone number
-			var verified = false
-			phoneNumberVerified = &verified
-		}
+	if isUpdated(user.PhoneNumber, oldUserKc.GetAttributeString(constants.AttrbPhoneNumber)) {
+		var verified = false
+		phoneNumberVerified = &verified
+		actions = append(actions, ActionVerifyPhoneNumber)
 	}
 
 	userRep = api.ConvertToKCUser(user)
@@ -201,6 +216,9 @@ func (c *component) UpdateAccount(ctx context.Context, user api.AccountRepresent
 	mergedAttributes.SetStringWhenNotNil(constants.AttrbLocale, user.Locale)
 
 	userRep.Attributes = &mergedAttributes
+	if revokeAccreditations {
+		keycloakb.RevokeAccreditations(&userRep)
+	}
 
 	err = c.keycloakAccountClient.UpdateAccount(accessToken, realm, userRep)
 
@@ -209,18 +227,16 @@ func (c *component) UpdateAccount(ctx context.Context, user api.AccountRepresent
 		return err
 	}
 
-	//store the API call into the DB - As user is partially update, report event even if database update fails
+	// store the API call into the DB - As user is partially update, report event even if database update fails
 	c.reportEvent(ctx, "UPDATE_ACCOUNT", database.CtEventRealmName, realm, database.CtEventUserID, userID, database.CtEventUsername, username)
 
 	if len(actions) > 0 {
 		err = c.executeActions(ctx, actions)
-	}
-
-	var oldUser *dto.DBUser
-	oldUser, err = c.usersDBModule.GetUser(ctx, realm, userID)
-	if err != nil {
-		c.logger.Warn(ctx, "err", err.Error())
-		return err
+		// Error occured but account is updated and event reported... should we return an error here ?
+		if err != nil {
+			c.logger.Warn(ctx, "err", err.Error())
+			return err
+		}
 	}
 
 	var dbUser = c.mergeUser(userID, user, oldUser)

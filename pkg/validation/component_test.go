@@ -146,6 +146,7 @@ func TestUpdateUser(t *testing.T) {
 		var err = component.UpdateUser(ctx, userID, user)
 		assert.NotNil(t, err)
 	})
+	mockTokenProvider.EXPECT().ProvideToken(gomock.Any()).Return(accessToken, nil).AnyTimes()
 
 	t.Run("No update needed", func(t *testing.T) {
 		var user = api.UserRepresentation{}
@@ -153,25 +154,37 @@ func TestUpdateUser(t *testing.T) {
 		assert.Nil(t, err)
 	})
 
-	t.Run("Fails to get user in KC", func(t *testing.T) {
+	t.Run("Fails to update user in DB", func(t *testing.T) {
+		var user = api.UserRepresentation{
+			FirstName:      ptr("newFirstname"),
+			IDDocumentType: ptr("type"),
+		}
+		mockUsersDB.EXPECT().GetUser(ctx, targetRealm, userID).Return(&dto.DBUser{}, nil)
+		var dbError = errors.New("db error")
+		mockUsersDB.EXPECT().StoreOrUpdateUser(ctx, targetRealm, gomock.Any()).Return(dbError)
+		var err = component.UpdateUser(ctx, userID, user)
+		assert.NotNil(t, err)
+	})
+	mockUsersDB.EXPECT().GetUser(ctx, targetRealm, userID).Return(&dto.DBUser{}, nil).AnyTimes()
+	mockUsersDB.EXPECT().StoreOrUpdateUser(ctx, targetRealm, gomock.Any()).Return(nil).AnyTimes()
+
+	t.Run("Fails to get user from KC", func(t *testing.T) {
 		var user = api.UserRepresentation{
 			FirstName: ptr("newFirstname"),
 		}
-		mockTokenProvider.EXPECT().ProvideToken(gomock.Any()).Return(accessToken, nil)
 		var kcError = errors.New("kc error")
 		mockKeycloakClient.EXPECT().GetUser(accessToken, targetRealm, userID).Return(kc.UserRepresentation{}, kcError)
 		var err = component.UpdateUser(ctx, userID, user)
 		assert.NotNil(t, err)
 	})
+	mockKeycloakClient.EXPECT().GetUser(accessToken, targetRealm, userID).Return(kc.UserRepresentation{}, nil).AnyTimes()
 
 	t.Run("Fails to update user in KC", func(t *testing.T) {
 		var date = time.Now()
 		var user = api.UserRepresentation{
 			BirthDate: &date,
 		}
-		mockTokenProvider.EXPECT().ProvideToken(gomock.Any()).Return(accessToken, nil).Times(2)
 		var kcError = errors.New("kc error")
-		mockKeycloakClient.EXPECT().GetUser(accessToken, targetRealm, userID).Return(kc.UserRepresentation{}, nil)
 		mockKeycloakClient.EXPECT().UpdateUser(accessToken, targetRealm, userID, gomock.Any()).Return(kcError)
 		var err = component.UpdateUser(ctx, userID, user)
 		assert.NotNil(t, err)
@@ -181,27 +194,12 @@ func TestUpdateUser(t *testing.T) {
 		var user = api.UserRepresentation{
 			FirstName: ptr("newFirstname"),
 		}
-		mockTokenProvider.EXPECT().ProvideToken(gomock.Any()).Return(accessToken, nil).Times(2)
 		var kcError = errors.New("kc error")
-		mockKeycloakClient.EXPECT().GetUser(accessToken, targetRealm, userID).Return(kc.UserRepresentation{}, nil)
 		mockKeycloakClient.EXPECT().UpdateUser(accessToken, targetRealm, userID, gomock.Any()).Return(kcError)
 		var err = component.UpdateUser(ctx, userID, user)
 		assert.NotNil(t, err)
 	})
-
-	t.Run("Fails to update user in DB", func(t *testing.T) {
-		var user = api.UserRepresentation{
-			FirstName:      ptr("newFirstname"),
-			IDDocumentType: ptr("type"),
-		}
-		mockTokenProvider.EXPECT().ProvideToken(gomock.Any()).Return(accessToken, nil).Times(2)
-		mockKeycloakClient.EXPECT().GetUser(accessToken, targetRealm, userID).Return(kc.UserRepresentation{}, nil)
-		mockKeycloakClient.EXPECT().UpdateUser(accessToken, targetRealm, userID, gomock.Any()).Return(nil)
-		var dbError = errors.New("db error")
-		mockUsersDB.EXPECT().StoreOrUpdateUser(ctx, targetRealm, gomock.Any()).Return(dbError)
-		var err = component.UpdateUser(ctx, userID, user)
-		assert.NotNil(t, err)
-	})
+	mockKeycloakClient.EXPECT().UpdateUser(accessToken, targetRealm, userID, gomock.Any()).Return(nil).AnyTimes()
 
 	t.Run("Failure to store event", func(t *testing.T) {
 		var date = time.Now()
@@ -209,26 +207,18 @@ func TestUpdateUser(t *testing.T) {
 			FirstName:            ptr("newFirstname"),
 			IDDocumentExpiration: &date,
 		}
-		mockTokenProvider.EXPECT().ProvideToken(gomock.Any()).Return(accessToken, nil).Times(2)
-		mockKeycloakClient.EXPECT().GetUser(accessToken, targetRealm, userID).Return(kc.UserRepresentation{}, nil)
-		mockKeycloakClient.EXPECT().UpdateUser(accessToken, targetRealm, userID, gomock.Any()).Return(nil)
-		mockUsersDB.EXPECT().StoreOrUpdateUser(ctx, targetRealm, gomock.Any()).Return(nil)
 		var e = errors.New("error")
 		mockEventsDB.EXPECT().ReportEvent(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(e)
 		var err = component.UpdateUser(ctx, userID, user)
 		assert.Nil(t, err)
 	})
+	mockEventsDB.EXPECT().ReportEvent(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
 	t.Run("Successful update", func(t *testing.T) {
 		var user = api.UserRepresentation{
 			FirstName:      ptr("newFirstname"),
 			IDDocumentType: ptr("type"),
 		}
-		mockTokenProvider.EXPECT().ProvideToken(gomock.Any()).Return(accessToken, nil).Times(2)
-		mockKeycloakClient.EXPECT().GetUser(accessToken, targetRealm, userID).Return(kc.UserRepresentation{}, nil)
-		mockKeycloakClient.EXPECT().UpdateUser(accessToken, targetRealm, userID, gomock.Any()).Return(nil)
-		mockUsersDB.EXPECT().StoreOrUpdateUser(ctx, targetRealm, gomock.Any()).Return(nil)
-		mockEventsDB.EXPECT().ReportEvent(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 		var err = component.UpdateUser(ctx, userID, user)
 		assert.Nil(t, err)
 	})

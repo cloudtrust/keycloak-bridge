@@ -3,6 +3,7 @@ package keycloakb
 import (
 	"context"
 	"encoding/json"
+	"strings"
 	"time"
 
 	"github.com/cloudtrust/common-service/configuration"
@@ -50,6 +51,47 @@ type accredsModule struct {
 type AccreditationRepresentation struct {
 	Type       *string `json:"type,omitempty"`
 	ExpiryDate *string `json:"expiryDate,omitempty"`
+	Revoked    *bool   `json:"revoked,omitempty"`
+}
+
+// IsUpdated checks if there are changes in provided values.
+// These values are provided by pair: first one is the new value (or nil if no update is expected) and the second one is the former value
+func IsUpdated(values ...*string) bool {
+	for i := 0; i < len(values)-1; i += 2 {
+		var newValue = values[i]
+		var formerValue = values[i+1]
+		if newValue != nil && (formerValue == nil || !strings.EqualFold(*newValue, *formerValue)) {
+			return true
+		}
+	}
+	return false
+}
+
+// RevokeAccreditations revokes active accreditations of the given user
+func RevokeAccreditations(kcUser *kc.UserRepresentation) {
+	var kcAccreds = kcUser.GetAttribute(constants.AttrbAccreditations)
+	if len(kcAccreds) == 0 {
+		return
+	}
+	var newAccreds []string
+	for _, accred := range kcAccreds {
+		newAccreds = append(newAccreds, revoke(accred))
+	}
+	kcUser.SetAttribute(constants.AttrbAccreditations, newAccreds)
+}
+
+func revoke(accredJSON string) string {
+	var accred AccreditationRepresentation
+	if err := json.Unmarshal([]byte(accredJSON), &accred); err == nil {
+		var today = time.Now()
+		if expiry, err := time.Parse(dateLayout, *accred.ExpiryDate); err == nil && today.Before(expiry) {
+			var bTrue = true
+			accred.Revoked = &bTrue
+			var bytes, _ = json.Marshal(accred)
+			accredJSON = string(bytes)
+		}
+	}
+	return accredJSON
 }
 
 // NewAccreditationsModule creates an accreditations module

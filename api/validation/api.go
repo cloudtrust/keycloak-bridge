@@ -6,6 +6,7 @@ import (
 	"github.com/cloudtrust/common-service/validation"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
+	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	kc "github.com/cloudtrust/keycloak-client"
 )
 
@@ -187,6 +188,32 @@ func (u *UserRepresentation) Validate() error {
 		ValidateParameterIn(prmUserIDDocumentType, u.IDDocumentType, allowedDocumentType, false).
 		ValidateParameterRegExp(prmUserIDDocumentNumber, u.IDDocumentNumber, regExpIDDocumentNumber, false).
 		Status()
+}
+
+// HasUpdateOfAccreditationDependantInformationDB checks user data contains an update of accreditation-dependant information
+func (u *UserRepresentation) HasUpdateOfAccreditationDependantInformationDB(formerUserInfo *dto.DBUser) bool {
+	var expiry *string
+	if u.IDDocumentExpiration != nil {
+		var converted = u.IDDocumentExpiration.Format(constants.SupportedDateLayouts[0])
+		expiry = &converted
+	}
+	return keycloakb.IsUpdated(u.BirthLocation, formerUserInfo.BirthLocation,
+		u.IDDocumentType, formerUserInfo.IDDocumentType,
+		u.IDDocumentNumber, formerUserInfo.IDDocumentNumber,
+		expiry, formerUserInfo.IDDocumentExpiration)
+}
+
+// HasUpdateOfAccreditationDependantInformationKC checks user data contains an update of accreditation-dependant information
+func (u *UserRepresentation) HasUpdateOfAccreditationDependantInformationKC(formerUserInfo *kc.UserRepresentation) bool {
+	var birthDate *string
+	if u.BirthDate != nil {
+		var converted = u.BirthDate.Format(constants.SupportedDateLayouts[0])
+		birthDate = &converted
+	}
+	return keycloakb.IsUpdated(u.FirstName, formerUserInfo.FirstName,
+		u.LastName, formerUserInfo.LastName,
+		u.Gender, formerUserInfo.GetAttributeString(constants.AttrbGender),
+		birthDate, formerUserInfo.GetAttributeString(constants.AttrbBirthDate))
 }
 
 // Validate checks the validity of the given check
