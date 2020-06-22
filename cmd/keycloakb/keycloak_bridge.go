@@ -579,7 +579,7 @@ func main() {
 			accredsModule = keycloakb.NewAccreditationsModule(keycloakClient, configurationReaderDBModule, validationLogger)
 		}
 
-		validationComponent := validation.NewComponent(registerRealm, keycloakClient, oidcTokenProvider, usersDBModule, eventsDBModule, accredsModule, validationLogger)
+		validationComponent := validation.NewComponent(keycloakClient, oidcTokenProvider, usersDBModule, eventsDBModule, accredsModule, validationLogger)
 
 		var rateLimitValidation = rateLimit[RateKeyValidation]
 		validationEndpoints = validation.Endpoints{

@@ -62,12 +62,12 @@ func TestGetUserComponent(t *testing.T) {
 
 	var ctx = context.Background()
 
-	var component = NewComponent(realm, mockKeycloakClient, mockTokenProvider, mockUsersDB, mockEventsDB, mockAccreditations, log.NewNopLogger())
+	var component = NewComponent(mockKeycloakClient, mockTokenProvider, mockUsersDB, mockEventsDB, mockAccreditations, log.NewNopLogger())
 
 	t.Run("Fails to retrieve token for technical user", func(t *testing.T) {
 		var kcError = errors.New("kc error")
 		mockTokenProvider.EXPECT().ProvideToken(gomock.Any()).Return("", kcError)
-		var _, err = component.GetUser(ctx, userID)
+		var _, err = component.GetUser(ctx, realm, userID)
 		assert.NotNil(t, err)
 	})
 
@@ -75,7 +75,7 @@ func TestGetUserComponent(t *testing.T) {
 		mockTokenProvider.EXPECT().ProvideToken(gomock.Any()).Return(accessToken, nil)
 		var kcError = errors.New("kc error")
 		mockKeycloakClient.EXPECT().GetUser(accessToken, realm, userID).Return(kc.UserRepresentation{}, kcError)
-		var _, err = component.GetUser(ctx, userID)
+		var _, err = component.GetUser(ctx, realm, userID)
 		assert.NotNil(t, err)
 	})
 
@@ -84,7 +84,7 @@ func TestGetUserComponent(t *testing.T) {
 		mockKeycloakClient.EXPECT().GetUser(accessToken, realm, userID).Return(kc.UserRepresentation{}, nil)
 		var dbError = errors.New("DB error")
 		mockUsersDB.EXPECT().GetUser(ctx, realm, userID).Return(&dto.DBUser{}, dbError)
-		var _, err = component.GetUser(ctx, userID)
+		var _, err = component.GetUser(ctx, realm, userID)
 		assert.NotNil(t, err)
 	})
 
@@ -92,7 +92,7 @@ func TestGetUserComponent(t *testing.T) {
 		mockTokenProvider.EXPECT().ProvideToken(gomock.Any()).Return(accessToken, nil)
 		mockKeycloakClient.EXPECT().GetUser(accessToken, realm, userID).Return(kc.UserRepresentation{}, nil)
 		mockUsersDB.EXPECT().GetUser(ctx, realm, userID).Return(nil, nil)
-		var _, err = component.GetUser(ctx, userID)
+		var _, err = component.GetUser(ctx, realm, userID)
 		assert.Nil(t, err)
 	})
 
@@ -103,7 +103,7 @@ func TestGetUserComponent(t *testing.T) {
 		mockUsersDB.EXPECT().GetUser(ctx, realm, userID).Return(&dto.DBUser{
 			IDDocumentExpiration: &expirationDate,
 		}, nil)
-		var _, err = component.GetUser(ctx, userID)
+		var _, err = component.GetUser(ctx, realm, userID)
 		assert.NotNil(t, err)
 	})
 
@@ -114,7 +114,7 @@ func TestGetUserComponent(t *testing.T) {
 		mockUsersDB.EXPECT().GetUser(ctx, realm, userID).Return(&dto.DBUser{
 			IDDocumentExpiration: &expirationDate,
 		}, nil)
-		var _, err = component.GetUser(ctx, userID)
+		var _, err = component.GetUser(ctx, realm, userID)
 		assert.Nil(t, err)
 	})
 
@@ -135,7 +135,7 @@ func TestUpdateUser(t *testing.T) {
 	var accessToken = "abcdef"
 	var ctx = context.TODO()
 
-	var component = NewComponent(targetRealm, mockKeycloakClient, mockTokenProvider, mockUsersDB, mockEventsDB, mockAccreditations, log.NewNopLogger())
+	var component = NewComponent(mockKeycloakClient, mockTokenProvider, mockUsersDB, mockEventsDB, mockAccreditations, log.NewNopLogger())
 
 	t.Run("Fails to retrieve token for technical user", func(t *testing.T) {
 		var user = api.UserRepresentation{
@@ -143,14 +143,14 @@ func TestUpdateUser(t *testing.T) {
 		}
 		var kcError = errors.New("kc error")
 		mockTokenProvider.EXPECT().ProvideToken(gomock.Any()).Return("", kcError)
-		var err = component.UpdateUser(ctx, userID, user)
+		var err = component.UpdateUser(ctx, targetRealm, userID, user)
 		assert.NotNil(t, err)
 	})
 	mockTokenProvider.EXPECT().ProvideToken(gomock.Any()).Return(accessToken, nil).AnyTimes()
 
 	t.Run("No update needed", func(t *testing.T) {
 		var user = api.UserRepresentation{}
-		var err = component.UpdateUser(ctx, userID, user)
+		var err = component.UpdateUser(ctx, targetRealm, userID, user)
 		assert.Nil(t, err)
 	})
 
@@ -162,7 +162,7 @@ func TestUpdateUser(t *testing.T) {
 		mockUsersDB.EXPECT().GetUser(ctx, targetRealm, userID).Return(&dto.DBUser{}, nil)
 		var dbError = errors.New("db error")
 		mockUsersDB.EXPECT().StoreOrUpdateUser(ctx, targetRealm, gomock.Any()).Return(dbError)
-		var err = component.UpdateUser(ctx, userID, user)
+		var err = component.UpdateUser(ctx, targetRealm, userID, user)
 		assert.NotNil(t, err)
 	})
 	mockUsersDB.EXPECT().GetUser(ctx, targetRealm, userID).Return(&dto.DBUser{}, nil).AnyTimes()
@@ -174,7 +174,7 @@ func TestUpdateUser(t *testing.T) {
 		}
 		var kcError = errors.New("kc error")
 		mockKeycloakClient.EXPECT().GetUser(accessToken, targetRealm, userID).Return(kc.UserRepresentation{}, kcError)
-		var err = component.UpdateUser(ctx, userID, user)
+		var err = component.UpdateUser(ctx, targetRealm, userID, user)
 		assert.NotNil(t, err)
 	})
 	mockKeycloakClient.EXPECT().GetUser(accessToken, targetRealm, userID).Return(kc.UserRepresentation{}, nil).AnyTimes()
@@ -186,7 +186,7 @@ func TestUpdateUser(t *testing.T) {
 		}
 		var kcError = errors.New("kc error")
 		mockKeycloakClient.EXPECT().UpdateUser(accessToken, targetRealm, userID, gomock.Any()).Return(kcError)
-		var err = component.UpdateUser(ctx, userID, user)
+		var err = component.UpdateUser(ctx, targetRealm, userID, user)
 		assert.NotNil(t, err)
 	})
 
@@ -196,7 +196,7 @@ func TestUpdateUser(t *testing.T) {
 		}
 		var kcError = errors.New("kc error")
 		mockKeycloakClient.EXPECT().UpdateUser(accessToken, targetRealm, userID, gomock.Any()).Return(kcError)
-		var err = component.UpdateUser(ctx, userID, user)
+		var err = component.UpdateUser(ctx, targetRealm, userID, user)
 		assert.NotNil(t, err)
 	})
 	mockKeycloakClient.EXPECT().UpdateUser(accessToken, targetRealm, userID, gomock.Any()).Return(nil).AnyTimes()
@@ -209,7 +209,7 @@ func TestUpdateUser(t *testing.T) {
 		}
 		var e = errors.New("error")
 		mockEventsDB.EXPECT().ReportEvent(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(e)
-		var err = component.UpdateUser(ctx, userID, user)
+		var err = component.UpdateUser(ctx, targetRealm, userID, user)
 		assert.Nil(t, err)
 	})
 	mockEventsDB.EXPECT().ReportEvent(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
@@ -219,7 +219,7 @@ func TestUpdateUser(t *testing.T) {
 			FirstName:      ptr("newFirstname"),
 			IDDocumentType: ptr("type"),
 		}
-		var err = component.UpdateUser(ctx, userID, user)
+		var err = component.UpdateUser(ctx, targetRealm, userID, user)
 		assert.Nil(t, err)
 	})
 }
@@ -245,12 +245,12 @@ func TestCreateCheck(t *testing.T) {
 		Status:   ptr("status"),
 	}
 
-	var component = NewComponent(targetRealm, mockKeycloakClient, mockTokenProvider, mockUsersDB, mockEventsDB, mockAccreditations, log.NewNopLogger())
+	var component = NewComponent(mockKeycloakClient, mockTokenProvider, mockUsersDB, mockEventsDB, mockAccreditations, log.NewNopLogger())
 
 	t.Run("Fails to store check in DB", func(t *testing.T) {
 		var dbError = errors.New("db error")
 		mockUsersDB.EXPECT().CreateCheck(ctx, targetRealm, userID, gomock.Any()).Return(dbError)
-		var err = component.CreateCheck(ctx, userID, check)
+		var err = component.CreateCheck(ctx, targetRealm, userID, check)
 		assert.NotNil(t, err)
 	})
 
@@ -258,7 +258,7 @@ func TestCreateCheck(t *testing.T) {
 		check.Status = ptr("SUCCESS")
 		mockUsersDB.EXPECT().CreateCheck(ctx, targetRealm, userID, gomock.Any()).Return(nil)
 		mockTokenProvider.EXPECT().ProvideToken(ctx).Return("", errors.New("no token"))
-		var err = component.CreateCheck(ctx, userID, check)
+		var err = component.CreateCheck(ctx, targetRealm, userID, check)
 		assert.NotNil(t, err)
 	})
 	t.Run("Accreditation module fails", func(t *testing.T) {
@@ -267,7 +267,7 @@ func TestCreateCheck(t *testing.T) {
 		mockUsersDB.EXPECT().CreateCheck(ctx, targetRealm, userID, gomock.Any()).Return(nil)
 		mockTokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
 		mockAccreditations.EXPECT().GetUserAndPrepareAccreditations(ctx, accessToken, targetRealm, userID, keycloakb.CredsIDNow).Return(kcUser, 0, errors.New("Accreds failed"))
-		var err = component.CreateCheck(ctx, userID, check)
+		var err = component.CreateCheck(ctx, targetRealm, userID, check)
 		assert.NotNil(t, err)
 	})
 
@@ -277,7 +277,7 @@ func TestCreateCheck(t *testing.T) {
 		mockEventsDB.EXPECT().ReportEvent(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(),
 			gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(),
 			gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
-		var err = component.CreateCheck(ctx, userID, check)
+		var err = component.CreateCheck(ctx, targetRealm, userID, check)
 		assert.Nil(t, err)
 	})
 	t.Run("Computed accreditations, fails to store them in Keycloak", func(t *testing.T) {
@@ -287,7 +287,7 @@ func TestCreateCheck(t *testing.T) {
 		mockTokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
 		mockAccreditations.EXPECT().GetUserAndPrepareAccreditations(ctx, accessToken, targetRealm, userID, keycloakb.CredsIDNow).Return(kcUser, 1, nil)
 		mockKeycloakClient.EXPECT().UpdateUser(accessToken, targetRealm, userID, kcUser).Return(errors.New("KC fails"))
-		var err = component.CreateCheck(ctx, userID, check)
+		var err = component.CreateCheck(ctx, targetRealm, userID, check)
 		assert.NotNil(t, err)
 	})
 	t.Run("Success with accreditations", func(t *testing.T) {
@@ -300,7 +300,7 @@ func TestCreateCheck(t *testing.T) {
 		mockEventsDB.EXPECT().ReportEvent(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(),
 			gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(),
 			gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
-		var err = component.CreateCheck(ctx, userID, check)
+		var err = component.CreateCheck(ctx, targetRealm, userID, check)
 		assert.Nil(t, err)
 	})
 }

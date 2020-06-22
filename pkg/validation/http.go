@@ -15,6 +15,7 @@ import (
 const (
 	ReqBody = "body"
 
+	PrmRealm  = "realm"
 	PrmUserID = "userID"
 )
 
@@ -30,8 +31,10 @@ func MakeValidationHandler(e endpoint.Endpoint, logger log.Logger) *http_transpo
 // decodeEventsRequest gets the HTTP parameters and body content
 func decodeManagementRequest(ctx context.Context, req *http.Request) (interface{}, error) {
 	var pathParams = map[string]string{
+		PrmRealm:  api.RegExpRealmName,
 		PrmUserID: api.RegExpID,
 	}
+
 	var queryParams = map[string]string{}
 
 	return commonhttp.DecodeRequest(ctx, req, pathParams, queryParams)

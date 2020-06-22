@@ -21,11 +21,13 @@ func TestGetUserEndpoint(t *testing.T) {
 	var e = MakeGetUserEndpoint(mockComponent)
 
 	var userID = "1234-452-4578"
+	var realm = "realm"
 	var ctx = context.Background()
 	var req = make(map[string]string)
+	req[PrmRealm] = realm
 	req[PrmUserID] = userID
 
-	mockComponent.EXPECT().GetUser(ctx, userID).Return(api.UserRepresentation{}, nil).Times(1)
+	mockComponent.EXPECT().GetUser(ctx, realm, userID).Return(api.UserRepresentation{}, nil).Times(1)
 	var res, err = e(ctx, req)
 	assert.Nil(t, err)
 	assert.NotNil(t, res)
@@ -41,13 +43,15 @@ func TestUpdateUserEndpoint(t *testing.T) {
 
 	t.Run("No error", func(t *testing.T) {
 		var userID = "1234-452-4578"
+		var realm = "realm"
 		var ctx = context.Background()
 		var req = make(map[string]string)
+		req[PrmRealm] = realm
 		req[PrmUserID] = userID
 		userJSON, _ := json.Marshal(api.UserRepresentation{})
 		req[ReqBody] = string(userJSON)
 
-		mockComponent.EXPECT().UpdateUser(ctx, userID, gomock.Any()).Return(nil).Times(1)
+		mockComponent.EXPECT().UpdateUser(ctx, realm, userID, gomock.Any()).Return(nil).Times(1)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Nil(t, res)
@@ -55,8 +59,10 @@ func TestUpdateUserEndpoint(t *testing.T) {
 
 	t.Run("Error - JSON unmarshalling error", func(t *testing.T) {
 		var userID = "1234-452-4578"
+		var realm = "realm"
 		var ctx = context.Background()
 		var req = make(map[string]string)
+		req[PrmRealm] = realm
 		req[PrmUserID] = userID
 		req[ReqBody] = string("userJSON")
 
@@ -79,6 +85,7 @@ func TestCreateCheckEndpoint(t *testing.T) {
 		var req = make(map[string]string)
 
 		var userID = "12345678-5824-5555-5656-123456789654"
+		var realm = "realm"
 		var operator = "operator"
 		var datetime = time.Now()
 		var status = "SUCCESS"
@@ -98,10 +105,11 @@ func TestCreateCheckEndpoint(t *testing.T) {
 			ProofData: &proofData,
 		})
 
+		req[PrmRealm] = realm
 		req[PrmUserID] = userID
 		req[ReqBody] = string(checkJSON)
 
-		mockComponent.EXPECT().CreateCheck(ctx, userID, gomock.Any()).Return(nil).Times(1)
+		mockComponent.EXPECT().CreateCheck(ctx, realm, userID, gomock.Any()).Return(nil).Times(1)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Nil(t, res)

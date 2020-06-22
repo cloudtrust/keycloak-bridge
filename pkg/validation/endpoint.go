@@ -22,8 +22,8 @@ type Endpoints struct {
 func MakeGetUserEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
-		var user = m[PrmUserID]
-		return component.GetUser(ctx, user)
+
+		return component.GetUser(ctx, m[PrmRealm], m[PrmUserID])
 	}
 }
 
@@ -43,7 +43,7 @@ func MakeUpdateUserEndpoint(component Component) cs.Endpoint {
 			return nil, err
 		}
 
-		return nil, component.UpdateUser(ctx, m[PrmUserID], user)
+		return nil, component.UpdateUser(ctx, m[PrmRealm], m[PrmUserID], user)
 	}
 }
 
@@ -63,6 +63,6 @@ func MakeCreateCheckEndpoint(component Component) cs.Endpoint {
 			return nil, err
 		}
 
-		return nil, component.CreateCheck(ctx, m[PrmUserID], check)
+		return nil, component.CreateCheck(ctx, m[PrmRealm], m[PrmUserID], check)
 	}
 }
