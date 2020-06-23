@@ -29,12 +29,12 @@ func MakeGetActionsEndpoint(ec Component) cs.Endpoint {
 // MakeGetEventsEndpoint makes the events endpoint.
 func MakeGetEventsEndpoint(ec Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
-		params := filterParameters(req.(map[string]string), "first", "max", "dateFrom", "dateTo", "realmTarget", "origin", "ctEventType", "exclude")
+		params := filterParameters(req.(map[string]string), prmQueryFirst, prmQueryMax, prmQueryDateFrom, prmQueryDateTo, prmQueryTargetRealm, prmQueryOrigin, prmQueryCtEventType, prmQueryExclude)
 
 		//Rewrite realmTarget into realm
-		if value, ok := params["realmTarget"]; ok {
-			params["realm"] = value
-			delete(params, "realmTarget")
+		if value, ok := params[prmQueryTargetRealm]; ok {
+			params[prmPathRealm] = value
+			delete(params, prmQueryTargetRealm)
 		}
 
 		return ec.GetEvents(ctx, params)
@@ -51,7 +51,7 @@ func MakeGetEventsSummaryEndpoint(ec Component) cs.Endpoint {
 // MakeGetUserEventsEndpoint makes the events summary endpoint.
 func MakeGetUserEventsEndpoint(ec Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
-		params := filterParameters(req.(map[string]string), "first", "max", "dateFrom", "dateTo", "realm", "userID", "origin", "ctEventType", "exclude")
+		params := filterParameters(req.(map[string]string), prmQueryFirst, prmQueryMax, prmQueryDateFrom, prmQueryDateTo, prmPathRealm, prmPathUserID, prmQueryOrigin, prmQueryCtEventType, prmQueryExclude)
 		return ec.GetUserEvents(ctx, params)
 	}
 }

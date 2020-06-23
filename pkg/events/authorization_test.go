@@ -89,7 +89,7 @@ func testAuthorization(t *testing.T, authz []configuration.Authorization, tester
 	ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 
 	mp := make(map[string]string)
-	mp["realm"] = realmName
+	mp[prmPathRealm] = realmName
 	mp["userID"] = userID
 
 	mockKeycloakClient.EXPECT().GetGroupNamesOfUser(ctx, accessToken, realmName, userID).Return([]string{groupName}, nil).AnyTimes()
@@ -126,7 +126,7 @@ func TestGetEventsDeny(t *testing.T) {
 	})
 
 	testAuthorization(t, PartialAuthorization(), func(auth Component, mockComponent *mock.Component, ctx context.Context, mp map[string]string) {
-		delete(mp, "realm")
+		delete(mp, prmPathRealm)
 		_, err := auth.GetEvents(ctx, mp)
 		assert.Equal(t, security.ForbiddenError{}, err)
 	})

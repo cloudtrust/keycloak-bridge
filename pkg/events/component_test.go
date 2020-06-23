@@ -56,7 +56,7 @@ func TestGetEvents(t *testing.T) {
 
 func TestGetUserEventsWithResult(t *testing.T) {
 	executeTest(t, func(mockDBModule *mock.EventsDBModule, mockWriteDB *mock.WriteDBModule, mockLogger *mock.Logger, component Component) {
-		params := initMap("realm", "master", "userID", "123-456")
+		params := initMap(prmPathRealm, "master", prmPathUserID, "123-456")
 		expectedCount := 1
 		expectedResult := []api.AuditRepresentation{}
 		mockDBModule.EXPECT().GetEventsCount(gomock.Any(), params).Return(expectedCount, nil).Times(1)
@@ -75,7 +75,7 @@ func TestGetUserEventsWithResult(t *testing.T) {
 			mockDBModule.EXPECT().GetEventsCount(gomock.Any(), params).Return(expectedCount, nil).Times(1)
 			mockDBModule.EXPECT().GetEvents(gomock.Any(), params).Return(expectedResult, nil).Times(1)
 			mockWriteDB.EXPECT().ReportEvent(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(errors.New("error")).Times(1)
-			m := map[string]interface{}{"event_name": "GET_ACTIVITY", database.CtEventRealmName: params["realm"], database.CtEventUserID: params["userID"]}
+			m := map[string]interface{}{"event_name": "GET_ACTIVITY", database.CtEventRealmName: params[prmPathRealm], database.CtEventUserID: params[prmPathUserID]}
 			eventJSON, _ := json.Marshal(m)
 			mockLogger.EXPECT().Error(gomock.Any(), "err", "error", "event", string(eventJSON))
 			// Execute test
@@ -91,7 +91,7 @@ func TestGetUserEventsWithResult(t *testing.T) {
 func TestGetUserEventsWithZeroCount(t *testing.T) {
 	executeTest(t, func(mockDBModule *mock.EventsDBModule, mockWriteDB *mock.WriteDBModule, mockLogger *mock.Logger, component Component) {
 		// Prepare test
-		params := initMap("realm", "master", "userID", "123-456")
+		params := initMap(prmPathRealm, "master", prmPathUserID, "123-456")
 		mockDBModule.EXPECT().GetEventsCount(gomock.Any(), params).Return(0, nil).Times(1)
 		mockDBModule.EXPECT().GetEvents(gomock.Any(), gomock.Any()).Times(0)
 		mockWriteDB.EXPECT().ReportEvent(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
@@ -122,19 +122,19 @@ func testInvalidRealmUserID(t *testing.T, params map[string]string) {
 }
 
 func TestGetUserEventsEmptyUserID(t *testing.T) {
-	testInvalidRealmUserID(t, initMap("realm", "master", "userID", ""))
+	testInvalidRealmUserID(t, initMap(prmPathRealm, "master", prmPathUserID, ""))
 }
 
 func TestGetUserEventsMissingUserID(t *testing.T) {
-	testInvalidRealmUserID(t, initMap("realm", "master"))
+	testInvalidRealmUserID(t, initMap(prmPathRealm, "master"))
 }
 
 func TestGetUserEventsEmptyRealm(t *testing.T) {
-	testInvalidRealmUserID(t, initMap("realm", "", "userID", "123-456-789"))
+	testInvalidRealmUserID(t, initMap(prmPathRealm, "", prmPathUserID, "123-456-789"))
 }
 
 func TestGetUserEventsMissingRealm(t *testing.T) {
-	testInvalidRealmUserID(t, initMap("userID", "123-456-789"))
+	testInvalidRealmUserID(t, initMap(prmPathUserID, "123-456-789"))
 }
 
 func initMap(params ...string) map[string]string {

@@ -18,28 +18,30 @@ import (
 
 // Path and query parameters
 const (
-	ReqBody = "body"
+	reqBody   = "body"
+	reqScheme = "scheme"
+	reqHost   = "host"
 
-	PrmRealm        = "realm"
-	PrmUserID       = "userID"
-	PrmClientID     = "clientID"
-	PrmRoleID       = "roleID"
-	PrmGroupID      = "groupID"
-	PrmCredentialID = "credentialID"
-	PrmProvider     = "provider"
+	prmRealm        = "realm"
+	prmUserID       = "userID"
+	prmClientID     = "clientID"
+	prmRoleID       = "roleID"
+	prmGroupID      = "groupID"
+	prmCredentialID = "credentialID"
+	prmProvider     = "provider"
 
-	PrmQryEmail       = "email"
-	PrmQryFirstName   = "firstName"
-	PrmQryLastName    = "lastName"
-	PrmQryUserName    = "username"
-	PrmQrySearch      = "search"
-	PrmQryClientID    = "client_id"
-	PrmQryRedirectURI = "redirect_uri"
-	PrmQryLifespan    = "lifespan"
-	PrmQryGroupIDs    = "groupIds"
-	PrmQryFirst       = "first"
-	PrmQryMax         = "max"
-	PrmQryGroupName   = "groupName"
+	prmQryEmail       = "email"
+	prmQryFirstName   = "firstName"
+	prmQryLastName    = "lastName"
+	prmQryUserName    = "username"
+	prmQrySearch      = "search"
+	prmQryClientID    = "client_id"
+	prmQryRedirectURI = "redirect_uri"
+	prmQryLifespan    = "lifespan"
+	prmQryGroupIDs    = "groupIds"
+	prmQryFirst       = "first"
+	prmQryMax         = "max"
+	prmQryGroupName   = "groupName"
 )
 
 // MakeManagementHandler make an HTTP handler for a Management endpoint.
@@ -54,28 +56,28 @@ func MakeManagementHandler(e endpoint.Endpoint, logger log.Logger) *http_transpo
 // decodeEventsRequest gets the HTTP parameters and body content
 func decodeManagementRequest(ctx context.Context, req *http.Request) (interface{}, error) {
 	var pathParams = map[string]string{
-		PrmRealm:        api.RegExpRealmName,
-		PrmUserID:       api.RegExpID,
-		PrmClientID:     api.RegExpClientID,
-		PrmRoleID:       api.RegExpID,
-		PrmGroupID:      api.RegExpID,
-		PrmCredentialID: api.RegExpID,
-		PrmProvider:     api.RegExpName,
+		prmRealm:        api.RegExpRealmName,
+		prmUserID:       api.RegExpID,
+		prmClientID:     api.RegExpClientID,
+		prmRoleID:       api.RegExpID,
+		prmGroupID:      api.RegExpID,
+		prmCredentialID: api.RegExpID,
+		prmProvider:     api.RegExpName,
 	}
 
 	var queryParams = map[string]string{
-		PrmQryEmail:       api.RegExpEmail,
-		PrmQryFirstName:   api.RegExpFirstName,
-		PrmQryLastName:    api.RegExpLastName,
-		PrmQryUserName:    api.RegExpUsername,
-		PrmQrySearch:      api.RegExpSearch,
-		PrmQryClientID:    api.RegExpClientID,
-		PrmQryRedirectURI: api.RegExpRedirectURI,
-		PrmQryLifespan:    api.RegExpLifespan,
-		PrmQryGroupIDs:    api.RegExpGroupIds,
-		PrmQryFirst:       api.RegExpNumber,
-		PrmQryMax:         api.RegExpNumber,
-		PrmQryGroupName:   api.RegExpName,
+		prmQryEmail:       api.RegExpEmail,
+		prmQryFirstName:   api.RegExpFirstName,
+		prmQryLastName:    api.RegExpLastName,
+		prmQryUserName:    api.RegExpUsername,
+		prmQrySearch:      api.RegExpSearch,
+		prmQryClientID:    api.RegExpClientID,
+		prmQryRedirectURI: api.RegExpRedirectURI,
+		prmQryLifespan:    api.RegExpLifespan,
+		prmQryGroupIDs:    api.RegExpGroupIds,
+		prmQryFirst:       api.RegExpNumber,
+		prmQryMax:         api.RegExpNumber,
+		prmQryGroupName:   api.RegExpName,
 	}
 
 	return commonhttp.DecodeRequest(ctx, req, pathParams, queryParams)

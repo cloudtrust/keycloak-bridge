@@ -7,10 +7,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/cloudtrust/common-service/log"
 	api "github.com/cloudtrust/keycloak-bridge/api/events"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/cloudtrust/keycloak-bridge/pkg/events/mock"
-	"github.com/cloudtrust/common-service/log"
 	"github.com/golang/mock/gomock"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
@@ -33,12 +33,12 @@ func TestHTTPManagementHandler(t *testing.T) {
 	{
 		var params map[string]string
 		params = make(map[string]string)
-		params["realm"] = "master"
+		params[prmPathRealm] = "master"
 
 		var eventsResp = api.AuditEventsRepresentation{}
 		var event = api.AuditRepresentation{
 			AuditID:   456,
-			RealmName: params["realm"],
+			RealmName: params[prmPathRealm],
 			Origin:    "back-office",
 		}
 		eventsResp.Events = append(eventsResp.Events, event)
