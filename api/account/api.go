@@ -58,6 +58,7 @@ type Configuration struct {
 	ShowAccountDeletionButton         *bool           `json:"show_account_deletion_button"`
 	RedirectSuccessfulRegistrationURL *string         `json:"redirect_successful_registration_url"`
 	AvailableChecks                   map[string]bool `json:"available-checks"`
+	BarcodeType                       *string         `json:"barcode_type"`
 }
 
 // UpdatePasswordBody is the definition of the expected body content of UpdatePassword method

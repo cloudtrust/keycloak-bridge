@@ -1273,6 +1273,7 @@ func (c *component) GetRealmCustomConfiguration(ctx context.Context, realmName s
 				RegisterExecuteActions:              nil,
 				RedirectCancelledRegistrationURL:    nil,
 				RedirectSuccessfulRegistrationURL:   nil,
+				BarcodeType:                         nil,
 			}, nil
 		default:
 			c.logger.Error(ctx, "err", e.Error())
@@ -1294,6 +1295,7 @@ func (c *component) GetRealmCustomConfiguration(ctx context.Context, realmName s
 		RegisterExecuteActions:              config.RegisterExecuteActions,
 		RedirectCancelledRegistrationURL:    config.RedirectCancelledRegistrationURL,
 		RedirectSuccessfulRegistrationURL:   config.RedirectSuccessfulRegistrationURL,
+		BarcodeType:                         config.BarcodeType,
 	}, nil
 }
 
@@ -1342,6 +1344,7 @@ func (c *component) UpdateRealmCustomConfiguration(ctx context.Context, realmNam
 		RegisterExecuteActions:              customConfig.RegisterExecuteActions,
 		RedirectCancelledRegistrationURL:    customConfig.RedirectCancelledRegistrationURL,
 		RedirectSuccessfulRegistrationURL:   customConfig.RedirectSuccessfulRegistrationURL,
+		BarcodeType:                         customConfig.BarcodeType,
 	}
 
 	// from the realm ID, update the custom configuration in the DB

@@ -50,6 +50,7 @@ const (
 	DefaultRedirectURI                = "defaultRedirectURI"
 	RedirectCancelledRegistrationURL  = "redirectCancelledRegistrationURL"
 	RedirectSuccessfulRegistrationURL = "redirectSuccessfulRegistrationURL"
+	BarcodeType                       = "barcodeType"
 	RequiredAction                    = "requiredAction"
 	DurationLabel                     = "durationLabel"
 	Body                              = "body"

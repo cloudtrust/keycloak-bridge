@@ -278,6 +278,9 @@ components:
           type: object
           additionalProperties:
             type: boolean
+        barcode_type:
+          type: string
+          enum: [CODE128]
   securitySchemes:
     openId:
       type: openIdConnect

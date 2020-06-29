@@ -1464,6 +1464,9 @@ components:
           type: string
         redirect_successful_registration_url:
           type: string
+        barcode_type:
+          type: string
+          enum: [CODE128]
     AdminConfiguration:
       type: object
       properties:

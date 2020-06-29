@@ -142,6 +142,7 @@ type RealmCustomConfiguration struct {
 	RegisterExecuteActions              *[]string `json:"register_execute_actions"`
 	RedirectCancelledRegistrationURL    *string   `json:"redirect_cancelled_registration_url"`
 	RedirectSuccessfulRegistrationURL   *string   `json:"redirect_successful_registration_url"`
+	BarcodeType                         *string   `json:"barcode_type"`
 }
 
 // BackOffice configuration keys
@@ -153,6 +154,7 @@ const (
 var (
 	allowedBoConfKeys    = map[string]bool{BOConfKeyCustomers: true, BOConfKeyTeams: true}
 	allowedAdminConfMode = map[string]bool{"trustID": true, "corporate": true}
+	allowedBarcodeType   = map[string]bool{"CODE128": true}
 )
 
 // BackOfficeConfiguration type
@@ -569,6 +571,7 @@ func (config RealmCustomConfiguration) Validate() error {
 		ValidateParameterRegExp(constants.DefaultRedirectURI, config.DefaultRedirectURI, constants.RegExpRedirectURI, false).
 		ValidateParameterRegExp(constants.RedirectCancelledRegistrationURL, config.RedirectCancelledRegistrationURL, constants.RegExpRedirectURI, false).
 		ValidateParameterRegExp(constants.RedirectSuccessfulRegistrationURL, config.RedirectSuccessfulRegistrationURL, constants.RegExpRedirectURI, false).
+		ValidateParameterIn(constants.BarcodeType, config.BarcodeType, allowedBarcodeType, false).
 		Status()
 }
 
