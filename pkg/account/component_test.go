@@ -298,6 +298,25 @@ func TestUpdateAccount(t *testing.T) {
 		userRep.Email = &email
 	})
 
+	t.Run("Update by changing the phone number-Execute actions email fails", func(t *testing.T) {
+		var anError = errors.New("any error")
+		userRep.Email = nil
+		mockKeycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(oldkcUserRep2, nil)
+		mockKeycloakAccountClient.EXPECT().UpdateAccount(accessToken, realmName, gomock.Any()).DoAndReturn(
+			func(accessToken, realmName string, kcUserRep kc.UserRepresentation) error {
+				verified, _ := kcUserRep.GetAttributeBool(constants.AttrbPhoneNumberVerified)
+				assert.Equal(t, phoneNumber, *kcUserRep.GetAttributeString(constants.AttrbPhoneNumber))
+				assert.Equal(t, false, *verified)
+				return nil
+			})
+		mockKeycloakAccountClient.EXPECT().ExecuteActionsEmail(accessToken, realmName, []string{ActionVerifyPhoneNumber}).Return(anError)
+		mockUsersDBModule.EXPECT().GetUser(ctx, realmName, userID).Return(nil, nil)
+
+		err := accountComponent.UpdateAccount(ctx, userRep)
+
+		assert.Equal(t, anError, err)
+	})
+
 	t.Run("Update without attributes", func(t *testing.T) {
 		var userRepWithoutAttr = api.AccountRepresentation{
 			Username:  &username,

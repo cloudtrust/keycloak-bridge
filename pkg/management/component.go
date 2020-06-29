@@ -1134,14 +1134,8 @@ func (c *component) processRoles(roles []kc.RoleRepresentation, accessToken, rea
 func (c *component) assignKCRolesToGroups(accessToken, realmName, groupID string, authorizations []configuration.Authorization) error {
 	// TODO Would be good to provide only KC roles which are really needed.
 	// For simplicity, we provides "manage-users", "view-clients", "view-realms", "view-users" to all groups which have at least one Management Action
-	// We also do it for each realms avaialble.
-	var kcRolesNeeded = false
-
-	for _, authz := range authorizations {
-		if authz.Action != nil && strings.HasPrefix(*authz.Action, "MGMT_") {
-			kcRolesNeeded = true
-		}
-	}
+	// We also do it for each realms available.
+	var kcRolesNeeded = c.hasAtLeastOneManagementAction(authorizations)
 
 	// Check if roles are assigned
 	clients, err := c.keycloakClient.GetClients(accessToken, realmName)
@@ -1175,6 +1169,15 @@ func (c *component) assignKCRolesToGroups(accessToken, realmName, groupID string
 		}
 	}
 	return nil
+}
+
+func (c *component) hasAtLeastOneManagementAction(authorizations []configuration.Authorization) bool {
+	for _, authz := range authorizations {
+		if authz.Action != nil && strings.HasPrefix(*authz.Action, "MGMT_") {
+			return true
+		}
+	}
+	return false
 }
 
 func (c *component) GetActions(ctx context.Context) ([]api.ActionRepresentation, error) {

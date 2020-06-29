@@ -18,7 +18,6 @@
   version = "2020.02.11"
 
 [[projects]]
-  branch = "ct-2691"
   digest = "1:61057cf572db7aae2000dcb57bb1a978b1e70a190525727b5aa1a72eff9dbc89"
   name = "github.com/cloudtrust/common-service"
   packages = [
@@ -39,11 +38,11 @@
     "validation",
   ]
   pruneopts = "UT"
-  revision = "36ddbbd04550c0a4685d7c13cf4c00cbefcf28cc"
+  revision = "22a293b4b2de317dd0260d47c62b862101551597"
+  version = "v2.2.2"
 
 [[projects]]
-  branch = "ct-2691"
-  digest = "1:cc9db7b3a6149e59fc96c101c8d1a89be45cb4646d5d0988c92775da16bbbd6f"
+  digest = "1:b6d25f441d8874a8789778e381d5df73d3d518f2f57228fb635e5abb32274fa4"
   name = "github.com/cloudtrust/keycloak-client"
   packages = [
     ".",
@@ -51,7 +50,8 @@
     "toolbox",
   ]
   pruneopts = "UT"
-  revision = "6af7dcca18ca52c83fc6d32eae7d8a84e6dcb089"
+  revision = "08f13f71dd18a4656cee1beca5b2e666f83f1129"
+  version = "v2.1.0"
 
 [[projects]]
   digest = "1:910c5b111ca13127693df80a59be2c952ad97313626116c0c9895e7b588f2a29"
