@@ -114,16 +114,23 @@ func (c *usersDBModule) GetUser(ctx context.Context, realm string, userID string
 }
 
 func (c *usersDBModule) CreateCheck(ctx context.Context, realm string, userID string, check dto.DBCheck) error {
-	// encrypt the proof data & protect integrity of userID associated to the proof data
-	encryptedData, err := c.cipher.Encrypt(*check.ProofData, []byte(userID))
-	if err != nil {
-		c.logger.Warn(ctx, "msg", "Can't encrypt the proof data", "error", err.Error(), "realmID", realm, "userID", userID)
-		return err
+	var proofData *[]byte
+	var err error
+
+	if check.ProofData != nil {
+		// encrypt the proof data & protect integrity of userID associated to the proof data
+		encryptedData, err := c.cipher.Encrypt(*check.ProofData, []byte(userID))
+		if err != nil {
+			c.logger.Warn(ctx, "msg", "Can't encrypt the proof data", "error", err.Error(), "realmID", realm, "userID", userID)
+			return err
+		}
+		proofData = &encryptedData
 	}
+
 	// insert check in DB
 	_, err = c.db.Exec(createCheckStmt, realm, userID, check.Operator,
 		check.DateTime, check.Status, check.Type, check.Nature,
-		check.ProofType, encryptedData, check.Comment)
+		check.ProofType, proofData, check.Comment)
 
 	return err
 }
@@ -149,12 +156,17 @@ func (c *usersDBModule) GetUserChecks(ctx context.Context, realm string, userID 
 			return nil, err
 		}
 
-		//decrypt the proof data of the user
-		proofData, err := c.cipher.Decrypt(encryptedProofData, []byte(userID))
-		if err != nil {
-			c.logger.Warn(ctx, "msg", "Can't decrypt the proof data", "error", err.Error(), "realmID", realm, "userID", userID)
-			return nil, err
+		var proofData []byte
+
+		if len(encryptedProofData) != 0 {
+			//decrypt the proof data of the user
+			proofData, err = c.cipher.Decrypt(encryptedProofData, []byte(userID))
+			if err != nil {
+				c.logger.Warn(ctx, "msg", "Can't decrypt the proof data", "error", err.Error(), "realmID", realm, "userID", userID)
+				return nil, err
+			}
 		}
+
 		result = append(result, dto.DBCheck{
 			Operator:  nullStringToPtr(operator),
 			DateTime:  nullStringToDatePtr(datetime),
