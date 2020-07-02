@@ -64,8 +64,8 @@ const (
 	regExpLastName      = constants.RegExpNameSpecialChars
 	regExpEmail         = constants.RegExpEmail
 	regExpBirthLocation = constants.RegExpNameSpecialChars
-	// Multiple values with digits and letters separated by a single separator (space, dash)
-	regExpIDDocumentNumber = `^([\w\d]+([ -][\w\d]+)*){1,50}$`
+	// Multiple values with digits and letters separated by a single separator (space, dash, dot)
+	regExpIDDocumentNumber = constants.RegExpIDDocumentNumber
 
 	regExpAlphaNum255 = `[a-zA-Z0-9_-]{1,255}`
 	regExpOperator    = regExpAlphaNum255

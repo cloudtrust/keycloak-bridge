@@ -57,13 +57,12 @@ const (
 	prmUserIDDocumentNumber     = "user_idDocNumber"
 	prmUserIDDocumentExpiration = "user_idDocExpiration"
 
-	regExpNames         = `^([\wàáâäçèéêëìíîïñòóôöùúûüß]+([ '-][\wàáâäçèéêëìíîïñòóôöùúûüß]+)*){1,50}$`
-	regExpFirstName     = regExpNames
-	regExpLastName      = regExpNames
-	regExpEmail         = `^.+\@.+\..+$`
-	regExpBirthLocation = regExpNames
-	// Multiple values with digits and letters separated by a single separator (space, dash)
-	regExpIDDocumentNumber = `^([\w\d]+([ -][\w\d]+)*){1,50}$`
+	regExpNames            = `^([\wàáâäçèéêëìíîïñòóôöùúûüß]+([ '-][\wàáâäçèéêëìíîïñòóôöùúûüß]+)*){1,50}$`
+	regExpFirstName        = regExpNames
+	regExpLastName         = regExpNames
+	regExpEmail            = `^.+\@.+\..+$`
+	regExpBirthLocation    = regExpNames
+	regExpIDDocumentNumber = constants.RegExpIDDocumentNumber
 
 	dateLayout = "02.01.2006"
 )

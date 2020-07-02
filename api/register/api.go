@@ -50,12 +50,11 @@ const (
 	prmUserIDDocumentExpiration = "user_idDocExpiration"
 	prmUserLocale               = "user_locale"
 
-	regExpFirstName     = constants.RegExpNameSpecialChars
-	regExpLastName      = constants.RegExpNameSpecialChars
-	regExpEmail         = `^.+\@.+\..+$`
-	regExpBirthLocation = constants.RegExpNameSpecialChars
-	// Multiple values with digits and letters separated by a single separator (space, dash)
-	regExpIDDocumentNumber = `^([\w\d]+([ -][\w\d]+)*)$`
+	regExpFirstName        = constants.RegExpNameSpecialChars
+	regExpLastName         = constants.RegExpNameSpecialChars
+	regExpEmail            = `^.+\@.+\..+$`
+	regExpBirthLocation    = constants.RegExpNameSpecialChars
+	regExpIDDocumentNumber = constants.RegExpIDDocumentNumber
 	regExpLocale           = `^\w{2}(-\w{2})?$`
 )
 
