@@ -2,7 +2,6 @@ package account
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
@@ -66,6 +65,8 @@ func TestUpdatePassword(t *testing.T) {
 		confirmPasswd := "a p@55w0rd"
 		mockKeycloakAccountClient.EXPECT().UpdatePassword(accessToken, realm, oldPasswd, newPasswd, confirmPasswd).Return("", nil).Times(1)
 		mockEventDBModule.EXPECT().ReportEvent(gomock.Any(), "PASSWORD_RESET", "self-service", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
+		mockKeycloakAccountClient.EXPECT().SendEmail(accessToken, realm, emailTemplateUpdatedPassword, emailSubjectUpdatedPassword, nil, gomock.Any()).Return(nil)
+		mockEventDBModule.EXPECT().ReportEvent(gomock.Any(), "UPDATED_PWD_EMAIL_SENT", "self-service", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
 		err := component.UpdatePassword(ctx, oldPasswd, newPasswd, confirmPasswd)
 
@@ -84,8 +85,7 @@ func TestUpdatePasswordWrongPwd(t *testing.T) {
 	mockEventDBModule := mock.NewEventsDBModule(mockCtrl)
 	mockUsersDBModule := mock.NewUsersDBModule(mockCtrl)
 	mockConfigurationDBModule := mock.NewConfigurationDBModule(mockCtrl)
-	mockLogger := mock.NewLogger(mockCtrl)
-	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigurationDBModule, mockUsersDBModule, mockLogger)
+	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigurationDBModule, mockUsersDBModule, log.NewNopLogger())
 
 	accessToken := "access token"
 	realm := "sample realm"
@@ -96,30 +96,25 @@ func TestUpdatePasswordWrongPwd(t *testing.T) {
 	ctx = context.WithValue(ctx, cs.CtContextUserID, userID)
 	ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 
-	mockKeycloakAccountClient.EXPECT().UpdatePassword(accessToken, realm, oldPasswd, newPasswd, newPasswd).Return("", fmt.Errorf("invalidPasswordExistingMessage")).Times(1)
-	mockLogger.EXPECT().Warn(gomock.Any(), "err", "invalidPasswordExistingMessage")
+	t.Run("Error test case 1", func(t *testing.T) {
+		mockKeycloakAccountClient.EXPECT().UpdatePassword(accessToken, realm, oldPasswd, newPasswd, newPasswd).Return("", fmt.Errorf("invalidPasswordExistingMessage")).Times(1)
 
-	err := component.UpdatePassword(ctx, oldPasswd, newPasswd, newPasswd)
+		assert.NotNil(t, component.UpdatePassword(ctx, oldPasswd, newPasswd, newPasswd))
+	})
 
-	assert.True(t, err != nil)
+	t.Run("Error test case 2", func(t *testing.T) {
+		mockKeycloakAccountClient.EXPECT().UpdatePassword(accessToken, realm, oldPasswd, newPasswd, newPasswd).Return("", fmt.Errorf("invalid")).Times(1)
 
-	mockKeycloakAccountClient.EXPECT().UpdatePassword(accessToken, realm, oldPasswd, newPasswd, newPasswd).Return("", fmt.Errorf("invalid")).Times(1)
-	mockLogger.EXPECT().Warn(gomock.Any(), "err", "invalid")
+		assert.NotNil(t, component.UpdatePassword(ctx, oldPasswd, newPasswd, newPasswd))
+	})
 
-	err = component.UpdatePassword(ctx, oldPasswd, newPasswd, newPasswd)
-
-	assert.True(t, err != nil)
-
-	// password reset succeeded, but storing the event failed
-	{
+	t.Run("Password reset succeeded but storing the event failed", func(t *testing.T) {
 		mockKeycloakAccountClient.EXPECT().UpdatePassword(accessToken, realm, oldPasswd, newPasswd, newPasswd).Return("", nil).Times(1)
 		mockEventDBModule.EXPECT().ReportEvent(gomock.Any(), "PASSWORD_RESET", "self-service", database.CtEventRealmName, realm, database.CtEventUserID, userID, database.CtEventUsername, username).Return(errors.New("error")).Times(1)
-		m := map[string]interface{}{"event_name": "PASSWORD_RESET", database.CtEventRealmName: realm, database.CtEventUserID: userID, database.CtEventUsername: username}
-		eventJSON, _ := json.Marshal(m)
-		mockLogger.EXPECT().Error(gomock.Any(), "err", "error", "event", string(eventJSON))
-		err = component.UpdatePassword(ctx, oldPasswd, newPasswd, newPasswd)
-		assert.True(t, err == nil)
-	}
+		mockKeycloakAccountClient.EXPECT().SendEmail(accessToken, realm, emailTemplateUpdatedPassword, emailSubjectUpdatedPassword, nil, gomock.Any()).Return(errors.New(""))
+
+		assert.Nil(t, component.UpdatePassword(ctx, oldPasswd, newPasswd, newPasswd))
+	})
 }
 
 func TestUpdateAccount(t *testing.T) {
@@ -160,6 +155,7 @@ func TestUpdateAccount(t *testing.T) {
 	var idDocNumber = "ABC123-DEF456"
 	var idDocExpiration = "01.01.2050"
 	var createdTimestamp = time.Now().UTC().Unix()
+	var anError = errors.New("any error")
 
 	var attributes = make(kc.Attributes)
 	attributes.SetString(constants.AttrbPhoneNumber, phoneNumber)
@@ -198,6 +194,14 @@ func TestUpdateAccount(t *testing.T) {
 		BirthDate:   &birthDate,
 		Locale:      &locale,
 	}
+
+	t.Run("GetAccount fails", func(t *testing.T) {
+		mockKeycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kcUserRep, anError)
+
+		var err = accountComponent.UpdateAccount(ctx, userRep)
+
+		assert.Equal(t, anError, err)
+	})
 
 	t.Run("Update account with succces", func(t *testing.T) {
 		mockEventDBModule.EXPECT().ReportEvent(ctx, "UPDATE_ACCOUNT", "self-service", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
@@ -259,12 +263,23 @@ func TestUpdateAccount(t *testing.T) {
 			database.CtEventUserID, userID, database.CtEventAdditionalInfo, gomock.Any()).Return(nil).Times(1)
 		mockUsersDBModule.EXPECT().GetUser(ctx, realmName, userID).Return(nil, nil)
 		mockUsersDBModule.EXPECT().StoreOrUpdateUser(ctx, realmName, gomock.Any()).Return(nil)
+		// Mail updated
+		mockKeycloakAccountClient.EXPECT().SendEmail(accessToken, realmName, emailTemplateUpdatedEmail, emailSubjectUpdatedEmail, &oldEmail, gomock.Any()).Return(nil)
+		mockEventDBModule.EXPECT().ReportEvent(ctx, "EMAIL_CHANGED_EMAIL_SENT", "self-service", database.CtEventRealmName, realmName,
+			database.CtEventUserID, userID, database.CtEventUsername, username).Return(nil)
+		// Profile updated
+		mockKeycloakAccountClient.EXPECT().SendEmail(accessToken, realmName, emailTemplateUpdatedProfile, emailSubjectUpdatedProfile, nil, gomock.Any()).Return(nil)
+		mockEventDBModule.EXPECT().ReportEvent(ctx, "PROFILE_CHANGED_EMAIL_SENT", "self-service", database.CtEventRealmName, realmName,
+			database.CtEventUserID, userID, database.CtEventUsername, username).Return(nil)
 
 		err := accountComponent.UpdateAccount(ctx, userRep)
 
 		assert.Nil(t, err)
 		userRep.PhoneNumber = &phoneNumber
 	})
+
+	// Profile update
+	mockKeycloakAccountClient.EXPECT().SendEmail(accessToken, realmName, emailTemplateUpdatedProfile, emailSubjectUpdatedProfile, nil, gomock.Any()).Return(anError).AnyTimes()
 
 	var oldNumber = "+41789467"
 	var oldAttributes = make(kc.Attributes)
