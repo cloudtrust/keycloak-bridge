@@ -779,7 +779,11 @@ func main() {
 		var usersDBModule = keycloakb.NewUsersDBModule(usersRwDBConn, registerLogger)
 
 		// new module for register service
-		registerComponent := register.NewComponent(keycloakPublicURL, registerRealm, ssePublicURL, registerEnduserClientID, registerEnduserGroups, keycloakClient, oidcTokenProvider, usersDBModule, configDBModule, eventsDBModule, registerLogger)
+		registerComponent, err := register.NewComponent(keycloakPublicURL, registerRealm, ssePublicURL, registerEnduserClientID, registerEnduserGroups, keycloakClient, oidcTokenProvider, usersDBModule, configDBModule, eventsDBModule, registerLogger)
+		if err != nil {
+			registerLogger.Error(ctx, "msg", "Can't initialize register component. Check the provided group names", "err", err.Error())
+			return
+		}
 		registerComponent = register.MakeAuthorizationRegisterComponentMW(log.With(registerLogger, "mw", "endpoint"))(registerComponent)
 
 		var rateLimitRegister = rateLimit[RateKeyRegister]
