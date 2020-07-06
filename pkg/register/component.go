@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	b64 "encoding/base64"
 	"encoding/json"
+	"errors"
 	"math/big"
 	"net/http"
 	"net/url"
@@ -17,6 +18,7 @@ import (
 	"github.com/cloudtrust/common-service/configuration"
 	"github.com/cloudtrust/common-service/database"
 	errorhandler "github.com/cloudtrust/common-service/errors"
+	"github.com/cloudtrust/common-service/validation"
 	apiregister "github.com/cloudtrust/keycloak-bridge/api/register"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
@@ -42,6 +44,7 @@ type KeycloakClient interface {
 	CreateUser(accessToken string, realmName string, targetRealmName string, user kc.UserRepresentation) (string, error)
 	UpdateUser(accessToken string, realmName, userID string, user kc.UserRepresentation) error
 	GetUsers(accessToken string, reqRealmName, targetRealmName string, paramKV ...string) (kc.UsersPageRepresentation, error)
+	GetGroups(accessToken string, realmName string) ([]kc.GroupRepresentation, error)
 	ExecuteActionsEmail(accessToken string, realmName string, userID string, actions []string, paramKV ...string) error
 }
 
@@ -74,13 +77,12 @@ type component struct {
 // NewComponent returns the management component.
 func NewComponent(keycloakURL string, realm string, ssePublicURL string, registerEnduserClientID string, registerEndUserGroups []string, keycloakClient KeycloakClient,
 	tokenProvider toolbox.OidcTokenProvider, usersDBModule keycloakb.UsersDBModule,
-	configDBModule ConfigurationDBModule, eventsDBModule database.EventsDBModule, logger internal.Logger) Component {
-	return &component{
+	configDBModule ConfigurationDBModule, eventsDBModule database.EventsDBModule, logger internal.Logger) (Component, error) {
+	var c = &component{
 		keycloakURL:             keycloakURL,
 		realm:                   realm,
 		ssePublicURL:            ssePublicURL,
 		registerEnduserClientID: registerEnduserClientID,
-		registerEndUserGroups:   registerEndUserGroups,
 		keycloakClient:          keycloakClient,
 		tokenProvider:           tokenProvider,
 		usersDBModule:           usersDBModule,
@@ -88,6 +90,34 @@ func NewComponent(keycloakURL string, realm string, ssePublicURL string, registe
 		eventsDBModule:          eventsDBModule,
 		logger:                  logger,
 	}
+	var err error
+	c.registerEndUserGroups, err = c.convertNamesToIDs(registerEndUserGroups)
+	return c, err
+}
+
+func (c *component) convertNamesToIDs(names []string) ([]string, error) {
+	var accessToken, err = c.tokenProvider.ProvideToken(context.Background())
+	if err != nil {
+		return nil, err
+	}
+
+	var groups []kc.GroupRepresentation
+	groups, err = c.keycloakClient.GetGroups(accessToken, c.realm)
+	if err != nil {
+		return nil, err
+	}
+
+	var res []string
+	for _, group := range groups {
+		if validation.IsStringInSlice(names, *group.Name) {
+			res = append(res, *group.ID)
+		}
+	}
+
+	if len(res) != len(names) {
+		return nil, errors.New("At least one group name could not be found")
+	}
+	return res, nil
 }
 
 func (c *component) reportEvent(ctx context.Context, apiCall string, values ...string) {

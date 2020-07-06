@@ -47,6 +47,66 @@ func createValidUser() apiregister.UserRepresentation {
 	}
 }
 
+func ptrString(value string) *string {
+	return &value
+}
+
+func TestGroupIDsResolution(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
+	var mockTokenProvider = mock.NewOidcTokenProvider(mockCtrl)
+
+	var targetRealm = "cloudtrust"
+	var group1 = kc.GroupRepresentation{ID: ptrString("id-group-1"), Name: ptrString("name-group-1")}
+	var group2 = kc.GroupRepresentation{ID: ptrString("id-group-2"), Name: ptrString("name-group-2")}
+	var group3 = kc.GroupRepresentation{ID: ptrString("id-group-3"), Name: ptrString("name-group-3")}
+	var enduserGroups = []string{*group1.Name, *group3.Name}
+	var groups = []kc.GroupRepresentation{group1, group2, group3}
+	var accessToken = "an-access-token"
+	var anyString = "???"
+	var anError = errors.New("any error")
+
+	t.Run("ProvideToken fails", func(t *testing.T) {
+		mockTokenProvider.EXPECT().ProvideToken(gomock.Any()).Return(accessToken, anError)
+		var _, err = NewComponent(anyString, targetRealm, anyString, anyString, enduserGroups, nil, mockTokenProvider, nil, nil, nil, nil)
+		assert.Equal(t, anError, err)
+	})
+	mockTokenProvider.EXPECT().ProvideToken(gomock.Any()).Return(accessToken, nil).AnyTimes()
+
+	t.Run("GetGroups fails", func(t *testing.T) {
+		mockKeycloakClient.EXPECT().GetGroups(accessToken, targetRealm).Return(nil, anError)
+		var _, err = NewComponent(anyString, targetRealm, anyString, anyString, enduserGroups, mockKeycloakClient, mockTokenProvider, nil, nil, nil, nil)
+		assert.Equal(t, anError, err)
+	})
+	t.Run("Unknown groups", func(t *testing.T) {
+		mockKeycloakClient.EXPECT().GetGroups(accessToken, targetRealm).Return([]kc.GroupRepresentation{}, nil)
+		var _, err = NewComponent(anyString, targetRealm, anyString, anyString, enduserGroups, mockKeycloakClient, mockTokenProvider, nil, nil, nil, nil)
+		assert.NotNil(t, err)
+	})
+	mockKeycloakClient.EXPECT().GetGroups(accessToken, targetRealm).Return(groups, nil).AnyTimes()
+
+	t.Run("Success", func(t *testing.T) {
+		var res, err = NewComponent(anyString, targetRealm, anyString, anyString, enduserGroups, mockKeycloakClient, mockTokenProvider, nil, nil, nil, nil)
+		assert.Nil(t, err)
+		assert.Len(t, res.(*component).registerEndUserGroups, len(enduserGroups))
+	})
+}
+
+func createComponent(keycloakURL, targetRealm, ssePublicURL, enduserClientID string, enduserGroups []string, keycloakClient *mock.KeycloakClient, tokenProvider *mock.OidcTokenProvider, usersDB *mock.UsersDBModule, configDB *mock.ConfigurationDBModule, eventsDB *mock.EventsDBModule) Component {
+	var accessToken = "the-access-token"
+	var group1ID = "end_user-group-id"
+	var group1Name = "end_user"
+	var group1 = kc.GroupRepresentation{ID: &group1ID, Name: &group1Name}
+	var groups = []kc.GroupRepresentation{group1}
+	tokenProvider.EXPECT().ProvideToken(gomock.Any()).Return(accessToken, nil)
+	keycloakClient.EXPECT().GetGroups(accessToken, targetRealm).Return(groups, nil)
+
+	var c, _ = NewComponent(keycloakURL, targetRealm, ssePublicURL, enduserClientID, enduserGroups, keycloakClient, tokenProvider, usersDB, configDB, eventsDB, log.NewNopLogger())
+	return c
+}
+
 func TestRegisterUser(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -68,7 +128,7 @@ func TestRegisterUser(t *testing.T) {
 	var accessToken = "abcdef"
 	var empty = 0
 	var usersSearchResult = kc.UsersPageRepresentation{Count: &empty}
-	var component = NewComponent(keycloakURL, targetRealm, ssePublicURL, enduserClientID, enduserGroups, mockKeycloakClient, mockTokenProvider, mockUsersDB, mockConfigDB, mockEventsDB, log.NewNopLogger())
+	var component = createComponent(keycloakURL, targetRealm, ssePublicURL, enduserClientID, enduserGroups, mockKeycloakClient, mockTokenProvider, mockUsersDB, mockConfigDB, mockEventsDB)
 
 	t.Run("User is not valid", func(t *testing.T) {
 		// User is not valid
@@ -194,7 +254,7 @@ func TestRegisterUser(t *testing.T) {
 		var successURL = "http://couldtrust.ch"
 		var enduserGroups = []string{"end_user"}
 		var realmConfiguration = configuration.RealmConfiguration{RegisterExecuteActions: &requiredActions, RedirectSuccessfulRegistrationURL: &successURL}
-		var component = NewComponent("not\nvalid\nURL", targetRealm, "", "", enduserGroups, mockKeycloakClient, mockTokenProvider, mockUsersDB, mockConfigDB, mockEventsDB, log.NewNopLogger())
+		var component = createComponent("not\nvalid\nURL", targetRealm, "", "", enduserGroups, mockKeycloakClient, mockTokenProvider, mockUsersDB, mockConfigDB, mockEventsDB)
 
 		mockConfigDB.EXPECT().GetConfiguration(ctx, confRealm).Return(realmConfiguration, nil)
 		mockTokenProvider.EXPECT().ProvideToken(ctx).Return(token, nil)
@@ -311,7 +371,7 @@ func TestGetConfiguration(t *testing.T) {
 	var enduserGroups = []string{"end_user"}
 	var targetRealm = "cloudtrust"
 	var confRealm = "test"
-	var component = NewComponent(keycloakURL, targetRealm, ssePublicURL, enduserClientID, enduserGroups, mockKeycloakClient, mockTokenProvider, mockUsersDB, mockConfigDB, mockEventsDB, log.NewNopLogger())
+	var component = createComponent(keycloakURL, targetRealm, ssePublicURL, enduserClientID, enduserGroups, mockKeycloakClient, mockTokenProvider, mockUsersDB, mockConfigDB, mockEventsDB)
 
 	t.Run("Retrieve configuration successfully", func(t *testing.T) {
 		// Retrieve configuration successfully
