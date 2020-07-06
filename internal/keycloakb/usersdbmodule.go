@@ -78,7 +78,7 @@ func (c *usersDBModule) StoreOrUpdateUser(ctx context.Context, realm string, use
 		return err
 	}
 	// encrypt the JSON containing the details on the user
-	encryptedData, err := c.cipher.Encrypt(userJSON, nil)
+	encryptedData, err := c.cipher.Encrypt(userJSON, []byte(*user.UserID))
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Can't encrypt the user details", "error", err.Error(), "realmID", realm, "userID", &user.UserID)
 		return err
@@ -102,7 +102,7 @@ func (c *usersDBModule) GetUser(ctx context.Context, realm string, userID string
 			return nil, err
 		}
 		//decrypt the user details & unmarshal
-		detailsJSON, err := c.cipher.Decrypt(encryptedDetails, nil)
+		detailsJSON, err := c.cipher.Decrypt(encryptedDetails, []byte(userID))
 		if err != nil {
 			c.logger.Warn(ctx, "msg", "Can't decrypt the user details", "error", err.Error(), "realmID", realm, "userID", userID)
 			return nil, err
