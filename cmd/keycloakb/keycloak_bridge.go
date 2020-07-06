@@ -129,6 +129,8 @@ const (
 	CfgRecaptchaURL             = "recaptcha-url"
 	CfgRecaptchaSecret          = "recaptcha-secret"
 	CfgSsePublicURL             = "sse-public-url"
+	CfgDbAesGcmKey              = "db-aesgcm-key"
+	CfgDbAesGcmTagSize          = "db-aesgcm-tag-size"
 )
 
 func init() {
@@ -312,6 +314,13 @@ func main() {
 			logger.Error(ctx, "msg", "password for validation endpoint (validation-basic-auth-token) cannot be empty")
 			return
 		}
+	}
+
+	// Security - AES encryption mechanism for users PII
+	aesEncryption, err := security.NewAesGcmEncrypterFromBase64(c.GetString(CfgDbAesGcmKey), c.GetInt(CfgDbAesGcmTagSize))
+	if err != nil {
+		logger.Error(ctx, "msg", "could not create AES-GCM encrypting tool instance", "error", err)
+		return
 	}
 
 	// Security - allowed trustID groups
@@ -561,7 +570,7 @@ func main() {
 		eventsDBModule := configureEventsDbModule(baseEventsDBModule, influxMetrics, validationLogger, tracer)
 
 		// module for storing and retrieving details of the users
-		var usersDBModule = keycloakb.NewUsersDBModule(usersRwDBConn, validationLogger)
+		var usersDBModule = keycloakb.NewUsersDBModule(usersRwDBConn, aesEncryption, validationLogger)
 
 		// accreditations module
 		var accredsModule keycloakb.AccreditationsModule
@@ -716,7 +725,7 @@ func main() {
 		}
 
 		// module for storing and retrieving details of the self-registered users
-		var usersDBModule = keycloakb.NewUsersDBModule(usersRwDBConn, accountLogger)
+		var usersDBModule = keycloakb.NewUsersDBModule(usersRwDBConn, aesEncryption, accountLogger)
 
 		// new module for account service
 		accountComponent := account.NewComponent(keycloakClient.AccountClient(), eventsDBModule, configDBModule, usersDBModule, accountLogger)
@@ -752,7 +761,7 @@ func main() {
 		}
 
 		// module for storing and retrieving details of the self-registered users
-		var usersDBModule = keycloakb.NewUsersDBModule(usersRwDBConn, mobileLogger)
+		var usersDBModule = keycloakb.NewUsersDBModule(usersRwDBConn, aesEncryption, mobileLogger)
 
 		// new module for mobile service
 		mobileComponent := mobile.NewComponent(keycloakClient, configDBModule, usersDBModule, oidcTokenProvider, mobileLogger)
@@ -776,7 +785,7 @@ func main() {
 		var configDBModule = createConfigurationDBModule(configurationRwDBConn, influxMetrics, registerLogger)
 
 		// module for storing and retrieving details of the self-registered users
-		var usersDBModule = keycloakb.NewUsersDBModule(usersRwDBConn, registerLogger)
+		var usersDBModule = keycloakb.NewUsersDBModule(usersRwDBConn, aesEncryption, registerLogger)
 
 		// new module for register service
 		registerComponent := register.NewComponent(keycloakPublicURL, registerRealm, ssePublicURL, registerEnduserClientID, registerEnduserGroups, keycloakClient, oidcTokenProvider, usersDBModule, configDBModule, eventsDBModule, registerLogger)
@@ -798,7 +807,7 @@ func main() {
 		eventsDBModule := configureEventsDbModule(baseEventsDBModule, influxMetrics, kycLogger, tracer)
 
 		// module for storing and retrieving details of the users
-		var usersDBModule = keycloakb.NewUsersDBModule(usersRwDBConn, kycLogger)
+		var usersDBModule = keycloakb.NewUsersDBModule(usersRwDBConn, aesEncryption, kycLogger)
 
 		// accreditations module
 		var accredsModule keycloakb.AccreditationsModule
@@ -872,7 +881,7 @@ func main() {
 		var validationSubroute = route.PathPrefix("/validation").Subrouter()
 
 		validationSubroute.Path("/users/{userID}").Methods("GET").Handler(getUserHandler)
-		validationSubroute.Path("/users/{userID}").Methods("POST").Handler(updateUserHandler)
+		validationSubroute.Path("/users/{userID}").Methods("PUT").Handler(updateUserHandler)
 		validationSubroute.Path("/users/{userID}/checks").Methods("POST").Handler(createCheckHandler)
 
 		// Debug.
@@ -1258,6 +1267,10 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 			"end_user"})
 	v.SetDefault(CfgValidationBasicAuthToken, "")
 
+	//Encryption key
+	v.SetDefault(CfgDbAesGcmTagSize, 16)
+	v.SetDefault(CfgDbAesGcmKey, "")
+
 	// CORS configuration
 	v.SetDefault(CfgAllowedOrigins, []string{})
 	v.SetDefault(CfgAllowedMethods, []string{})
@@ -1379,6 +1392,9 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 
 	v.BindEnv(CfgValidationBasicAuthToken, "CT_BRIDGE_VALIDATION_BASIC_AUTH")
 	censoredParameters[CfgValidationBasicAuthToken] = true
+
+	v.BindEnv(CfgDbAesGcmKey, "CT_BRIDGE_DB_AES_KEY")
+	censoredParameters[CfgDbAesGcmKey] = true
 
 	// Load and log config.
 	v.SetConfigFile(v.GetString(CfgConfigFile))

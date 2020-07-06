@@ -107,12 +107,13 @@ components:
         operator:
           type: string
         datetime:
-          type: integer
-          format: int64
+          type: string
+          format: date-time
         status:
           type: string
         proofData:
           type: string
+          format: byte
         proofType:
           type: string
         type:

@@ -10,6 +10,7 @@ import (
 
 	"github.com/cloudtrust/common-service/database/sqltypes"
 	"github.com/cloudtrust/common-service/log"
+	"github.com/cloudtrust/common-service/security"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 )
 
@@ -41,6 +42,7 @@ type UsersDBModule interface {
 
 type usersDBModule struct {
 	db     sqltypes.CloudtrustDB
+	cipher security.CrypterDecrypter
 	logger log.Logger
 }
 
@@ -61,9 +63,10 @@ func nullStringToDatePtr(value sql.NullString) *time.Time {
 }
 
 // NewUsersDBModule returns a UsersDB module.
-func NewUsersDBModule(db sqltypes.CloudtrustDB, logger log.Logger) UsersDBModule {
+func NewUsersDBModule(db sqltypes.CloudtrustDB, cipher security.CrypterDecrypter, logger log.Logger) UsersDBModule {
 	return &usersDBModule{
 		db:     db,
+		cipher: cipher,
 		logger: logger,
 	}
 }
@@ -74,36 +77,61 @@ func (c *usersDBModule) StoreOrUpdateUser(ctx context.Context, realm string, use
 	if err != nil {
 		return err
 	}
+	// encrypt the JSON containing the details on the user
+	encryptedData, err := c.cipher.Encrypt(userJSON, []byte(*user.UserID))
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Can't encrypt the user details", "error", err.Error(), "realmID", realm, "userID", &user.UserID)
+		return err
+	}
 
 	// update value in DB
-	_, err = c.db.Exec(updateUserStmt, realm, user.UserID, string(userJSON), string(userJSON))
+	_, err = c.db.Exec(updateUserStmt, realm, user.UserID, encryptedData, encryptedData)
 	return err
 }
 
 func (c *usersDBModule) GetUser(ctx context.Context, realm string, userID string) (*dto.DBUser, error) {
-	var detailsJSON string
+	var encryptedDetails []byte
 	var details = dto.DBUser{}
 	row := c.db.QueryRow(selectUserStmt, realm, userID)
 
-	switch err := row.Scan(&detailsJSON); err {
+	switch err := row.Scan(&encryptedDetails); err {
 	case sql.ErrNoRows:
 		return nil, nil
 	default:
 		if err != nil {
 			return nil, err
 		}
-
-		err = json.Unmarshal([]byte(detailsJSON), &details)
+		//decrypt the user details & unmarshal
+		detailsJSON, err := c.cipher.Decrypt(encryptedDetails, []byte(userID))
+		if err != nil {
+			c.logger.Warn(ctx, "msg", "Can't decrypt the user details", "error", err.Error(), "realmID", realm, "userID", userID)
+			return nil, err
+		}
+		err = json.Unmarshal(detailsJSON, &details)
 		details.UserID = &userID
 		return &details, err
 	}
 }
 
 func (c *usersDBModule) CreateCheck(ctx context.Context, realm string, userID string, check dto.DBCheck) error {
+	var proofData *[]byte
+	var err error
+
+	if check.ProofData != nil {
+		// encrypt the proof data & protect integrity of userID associated to the proof data
+		encryptedData, err := c.cipher.Encrypt(*check.ProofData, []byte(userID))
+		if err != nil {
+			c.logger.Warn(ctx, "msg", "Can't encrypt the proof data", "error", err.Error(), "realmID", realm, "userID", userID)
+			return err
+		}
+		proofData = &encryptedData
+	}
+
 	// insert check in DB
-	_, err := c.db.Exec(createCheckStmt, realm, userID, check.Operator,
+	_, err = c.db.Exec(createCheckStmt, realm, userID, check.Operator,
 		check.DateTime, check.Status, check.Type, check.Nature,
-		check.ProofType, check.ProofData, check.Comment)
+		check.ProofType, proofData, check.Comment)
+
 	return err
 }
 
@@ -120,13 +148,25 @@ func (c *usersDBModule) GetUserChecks(ctx context.Context, realm string, userID 
 	var result []dto.DBCheck
 	var checkID int64
 	var operator, datetime, status, checkType, nature, proofType, comment sql.NullString
-	var proofData []byte
+	var encryptedProofData []byte
 
 	for rows.Next() {
-		err = rows.Scan(&checkID, &realm, &userID, &operator, &datetime, &status, &checkType, &nature, &proofType, &proofData, &comment)
+		err = rows.Scan(&checkID, &realm, &userID, &operator, &datetime, &status, &checkType, &nature, &proofType, &encryptedProofData, &comment)
 		if err != nil {
 			return nil, err
 		}
+
+		var proofData []byte
+
+		if len(encryptedProofData) != 0 {
+			//decrypt the proof data of the user
+			proofData, err = c.cipher.Decrypt(encryptedProofData, []byte(userID))
+			if err != nil {
+				c.logger.Warn(ctx, "msg", "Can't decrypt the proof data", "error", err.Error(), "realmID", realm, "userID", userID)
+				return nil, err
+			}
+		}
+
 		result = append(result, dto.DBCheck{
 			Operator:  nullStringToPtr(operator),
 			DateTime:  nullStringToDatePtr(datetime),
