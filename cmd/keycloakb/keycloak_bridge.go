@@ -904,9 +904,9 @@ func main() {
 
 		var validationSubroute = route.PathPrefix("/validation").Subrouter()
 
-		validationSubroute.Path("/users/{userID}").Methods("GET").Handler(getUserHandler)
-		validationSubroute.Path("/users/{userID}").Methods("PUT").Handler(updateUserHandler)
-		validationSubroute.Path("/users/{userID}/checks").Methods("POST").Handler(createCheckHandler)
+		validationSubroute.Path("/realms/{realm}/users/{userID}").Methods("GET").Handler(getUserHandler)
+		validationSubroute.Path("/realms/{realm}/users/{userID}").Methods("PUT").Handler(updateUserHandler)
+		validationSubroute.Path("/realms/{realm}/users/{userID}/checks").Methods("POST").Handler(createCheckHandler)
 
 		// Debug.
 		if pprofRouteEnabled {
