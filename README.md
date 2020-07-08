@@ -72,6 +72,8 @@ CT_BRIDGE_REGISTER_USERNAME | register-techuser-username
 CT_BRIDGE_REGISTER_PASSWORD | register-techuser-password
 CT_BRIDGE_REGISTER_CLIENT_ID | register-techuser-client-id
 CT_BRIDGE_RECAPTCHA_SECRET | recaptcha-secret
+CT_BRIDGE_TECHNICAL_USERNAME | technical-username
+CT_BRIDGE_TECHNICAL_PASSWORD | technical-password
 CT_BRIDGE_DB_AUDIT_RW_USERNAME | db-audit-rw-username
 CT_BRIDGE_DB_AUDIT_RW_PASSWORD | db-audit-rw-password
 CT_BRIDGE_DB_AUDIT_RO_USERNAME | db-audit-ro-username
