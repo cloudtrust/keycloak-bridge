@@ -126,6 +126,10 @@ const (
 	CfgRegisterClientID         = "register-techuser-client-id"
 	CfgRegisterEnduserClientID  = "register-enduser-client-id"
 	CfgRegisterEnduserGroups    = "register-enduser-groups"
+	CfgTechnicalRealm           = "technical-realm"
+	CfgTechnicalUsername        = "technical-username"
+	CfgTechnicalPassword        = "technical-password"
+	CfgTechnicalClientID        = "technical-client-id"
 	CfgRecaptchaURL             = "recaptcha-url"
 	CfgRecaptchaSecret          = "recaptcha-secret"
 	CfgSsePublicURL             = "sse-public-url"
@@ -246,6 +250,12 @@ func main() {
 		recaptchaURL            = c.GetString(CfgRecaptchaURL)
 		recaptchaSecret         = c.GetString(CfgRecaptchaSecret)
 		ssePublicURL            = c.GetString(CfgSsePublicURL)
+
+		// Technical parameters
+		technicalRealm    = c.GetString(CfgTechnicalRealm)
+		technicalUsername = c.GetString(CfgTechnicalUsername)
+		technicalPassword = c.GetString(CfgTechnicalPassword)
+		technicalClientID = c.GetString(CfgTechnicalClientID)
 	)
 
 	// Unique ID generator
@@ -441,11 +451,21 @@ func main() {
 		}
 	}
 
-	// Create OIDC token provider and validate technical user credentials
+	// Create OIDC token provider and validate register user credentials
 	var oidcTokenProvider toolbox.OidcTokenProvider
 	{
 		oidcTokenProvider = toolbox.NewOidcTokenProvider(keycloakConfig, registerRealm, registerUsername, registerPassword, registerClientID, logger)
 		var _, err = oidcTokenProvider.ProvideToken(context.Background())
+		if err != nil {
+			logger.Warn(context.Background(), "msg", "OIDC token provider validation failed for register user", "err", err.Error())
+		}
+	}
+
+	// Create technical OIDC token provider and validate technical user credentials
+	var technicalTokenProvider toolbox.OidcTokenProvider
+	{
+		technicalTokenProvider = toolbox.NewOidcTokenProvider(keycloakConfig, technicalRealm, technicalUsername, technicalPassword, technicalClientID, logger)
+		var _, err = technicalTokenProvider.ProvideToken(context.Background())
 		if err != nil {
 			logger.Warn(context.Background(), "msg", "OIDC token provider validation failed for technical user", "err", err.Error())
 		}
@@ -579,7 +599,7 @@ func main() {
 			accredsModule = keycloakb.NewAccreditationsModule(keycloakClient, configurationReaderDBModule, validationLogger)
 		}
 
-		validationComponent := validation.NewComponent(registerRealm, keycloakClient, oidcTokenProvider, usersDBModule, eventsDBModule, accredsModule, validationLogger)
+		validationComponent := validation.NewComponent(keycloakClient, technicalTokenProvider, usersDBModule, eventsDBModule, accredsModule, validationLogger)
 
 		var rateLimitValidation = rateLimit[RateKeyValidation]
 		validationEndpoints = validation.Endpoints{
@@ -764,7 +784,7 @@ func main() {
 		var usersDBModule = keycloakb.NewUsersDBModule(usersRwDBConn, aesEncryption, mobileLogger)
 
 		// new module for mobile service
-		mobileComponent := mobile.NewComponent(keycloakClient, configDBModule, usersDBModule, oidcTokenProvider, mobileLogger)
+		mobileComponent := mobile.NewComponent(keycloakClient, configDBModule, usersDBModule, technicalTokenProvider, mobileLogger)
 		mobileComponent = mobile.MakeAuthorizationMobileComponentMW(log.With(mobileLogger, "mw", "endpoint"), configDBModule)(mobileComponent)
 
 		var rateLimitMobile = rateLimit[RateKeyMobile]
@@ -884,9 +904,9 @@ func main() {
 
 		var validationSubroute = route.PathPrefix("/validation").Subrouter()
 
-		validationSubroute.Path("/users/{userID}").Methods("GET").Handler(getUserHandler)
-		validationSubroute.Path("/users/{userID}").Methods("PUT").Handler(updateUserHandler)
-		validationSubroute.Path("/users/{userID}/checks").Methods("POST").Handler(createCheckHandler)
+		validationSubroute.Path("/realms/{realm}/users/{userID}").Methods("GET").Handler(getUserHandler)
+		validationSubroute.Path("/realms/{realm}/users/{userID}").Methods("PUT").Handler(updateUserHandler)
+		validationSubroute.Path("/realms/{realm}/users/{userID}/checks").Methods("POST").Handler(createCheckHandler)
 
 		// Debug.
 		if pprofRouteEnabled {
@@ -1369,6 +1389,12 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 	v.SetDefault(CfgRecaptchaSecret, "")
 	v.SetDefault(CfgSsePublicURL, "")
 
+	// Register parameters
+	v.SetDefault(CfgTechnicalRealm, "master")
+	v.SetDefault(CfgTechnicalUsername, "")
+	v.SetDefault(CfgTechnicalPassword, "")
+	v.SetDefault(CfgTechnicalClientID, "admin-cli")
+
 	// First level of override.
 	pflag.String(CfgConfigFile, v.GetString(CfgConfigFile), "The configuration file path can be relative or absolute.")
 	v.BindPFlag(CfgConfigFile, pflag.Lookup(CfgConfigFile))
@@ -1383,6 +1409,10 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 	v.BindEnv(CfgRecaptchaSecret, "CT_BRIDGE_RECAPTCHA_SECRET")
 	censoredParameters[CfgRecaptchaSecret] = true
 	censoredParameters[CfgRegisterPassword] = true
+
+	v.BindEnv(CfgTechnicalUsername, "CT_BRIDGE_TECHNICAL_USERNAME")
+	v.BindEnv(CfgTechnicalPassword, "CT_BRIDGE_TECHNICAL_PASSWORD")
+	censoredParameters[CfgTechnicalPassword] = true
 
 	v.BindEnv("influx-username", "CT_BRIDGE_INFLUX_USERNAME")
 	v.BindEnv("influx-password", "CT_BRIDGE_INFLUX_PASSWORD")

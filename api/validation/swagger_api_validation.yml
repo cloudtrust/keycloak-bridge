@@ -11,12 +11,18 @@ tags:
 - name: Check
   description: Validation checks
 paths:
-  /validation/users/{userID}:
+  /validation/realms/{realm}/users/{userID}:
     get:
       tags:
       - Check
       summary: Get user data information
       parameters:
+      - name: realm
+        in: path
+        description: Realm name (not id!)
+        required: true
+        schema:
+          type: string
       - name: userID
         in: path
         description: userID to retrieve
@@ -49,12 +55,18 @@ paths:
       responses:
         200:
           description: successful operation
-  /validation/users/{userID}/checks:
+  /validation/realms/{realm}/users/{userID}/checks:
     post:
       tags:
         - Check
       summary: Create validation check
       parameters:
+      - name: realm
+        in: path
+        description: Realm name (not id!)
+        required: true
+        schema:
+          type: string
       - name: userID
         in: path
         description: userID of user checked

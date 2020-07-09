@@ -28,7 +28,7 @@ func TestHTTPValidationHandler(t *testing.T) {
 	defer ts.Close()
 
 	{
-		mockComponent.EXPECT().GetUser(gomock.Any(), gomock.Any()).Return(api.UserRepresentation{}, nil).Times(1)
+		mockComponent.EXPECT().GetUser(gomock.Any(), gomock.Any(), gomock.Any()).Return(api.UserRepresentation{}, nil).Times(1)
 
 		res, err := http.Post(ts.URL+"/validation/users/12345678-5824-5555-5656-123456789654", "", nil)
 

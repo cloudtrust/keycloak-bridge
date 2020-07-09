@@ -59,6 +59,7 @@ const (
 	prmCheckNature    = "check_nature"
 	prmCheckProofType = "check_proof_type"
 
+	RegExpRealmName     = constants.RegExpRealmName
 	RegExpID            = constants.RegExpID
 	regExpFirstName     = constants.RegExpNameSpecialChars
 	regExpLastName      = constants.RegExpNameSpecialChars

@@ -195,3 +195,9 @@ register-enduser-groups:
 recaptcha-url: https://www.google.com/recaptcha/api/siteverify
 recaptcha-secret: theverymysterioussecretfortherecaptchaverifyoperation
 sse-public-url: https://sse.trustid.ch
+
+# Technical user
+technical-realm: master
+technical-username: technical
+technical-password: technicalsuperpasswordverylongandstrong
+technical-client-id: admin-cli
