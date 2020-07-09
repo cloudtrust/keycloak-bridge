@@ -42,7 +42,7 @@ type UsersDBModule interface {
 
 type usersDBModule struct {
 	db     sqltypes.CloudtrustDB
-	cipher security.CrypterDecrypter
+	cipher security.EncrypterDecrypter
 	logger log.Logger
 }
 
@@ -63,7 +63,7 @@ func nullStringToDatePtr(value sql.NullString) *time.Time {
 }
 
 // NewUsersDBModule returns a UsersDB module.
-func NewUsersDBModule(db sqltypes.CloudtrustDB, cipher security.CrypterDecrypter, logger log.Logger) UsersDBModule {
+func NewUsersDBModule(db sqltypes.CloudtrustDB, cipher security.EncrypterDecrypter, logger log.Logger) UsersDBModule {
 	return &usersDBModule{
 		db:     db,
 		cipher: cipher,

@@ -145,46 +145,14 @@ func (c *component) UpdateUser(ctx context.Context, realmName string, userID str
 	var shouldRevokeAccreditations bool
 
 	if dbUpdate {
-		var uID = userID
-
-		var userDB = dto.DBUser{
-			UserID:           &uID,
-			BirthLocation:    user.BirthLocation,
-			IDDocumentType:   user.IDDocumentType,
-			IDDocumentNumber: user.IDDocumentNumber,
-		}
-
-		if existingUser, err := c.usersDBModule.GetUser(ctx, realmName, uID); err == nil && existingUser != nil {
-			shouldRevokeAccreditations = user.HasUpdateOfAccreditationDependantInformationDB(existingUser)
-		}
-
-		if user.IDDocumentExpiration != nil {
-			var expiration = (*user.IDDocumentExpiration).Format(dateLayout)
-			userDB.IDDocumentExpiration = &expiration
-		}
-
-		err = c.usersDBModule.StoreOrUpdateUser(ctx, realmName, userDB)
+		shouldRevokeAccreditations, err = c.updateUserDatabase(ctx, realmName, userID, user)
 		if err != nil {
-			c.logger.Warn(ctx, "msg", "Can't update user in DB", "err", err.Error())
 			return err
 		}
 	}
 
 	if kcUpdate || shouldRevokeAccreditations {
-		kcUser, err := c.getKeycloakUser(ctx, realmName, userID)
-		if err != nil {
-			return err
-		}
-		keycloakb.ConvertLegacyAttribute(&kcUser)
-		if !shouldRevokeAccreditations || user.HasUpdateOfAccreditationDependantInformationKC(&kcUser) {
-			shouldRevokeAccreditations = true
-		}
-
-		user.ExportToKeycloak(&kcUser)
-		if shouldRevokeAccreditations {
-			keycloakb.RevokeAccreditations(&kcUser)
-		}
-		err = c.updateKeycloakUser(ctx, realmName, userID, kcUser)
+		err = c.updateUserKeycloak(ctx, realmName, userID, user, shouldRevokeAccreditations)
 		if err != nil {
 			return err
 		}
@@ -196,6 +164,53 @@ func (c *component) UpdateUser(ctx context.Context, realmName string, userID str
 	}
 
 	return nil
+}
+
+func (c *component) updateUserDatabase(ctx context.Context, realmName, userID string, user api.UserRepresentation) (bool, error) {
+	var shouldRevokeAccreditations bool
+	var userDB = dto.DBUser{
+		UserID:           &userID,
+		BirthLocation:    user.BirthLocation,
+		IDDocumentType:   user.IDDocumentType,
+		IDDocumentNumber: user.IDDocumentNumber,
+	}
+
+	if existingUser, err := c.usersDBModule.GetUser(ctx, realmName, userID); err == nil && existingUser != nil {
+		shouldRevokeAccreditations = user.HasUpdateOfAccreditationDependantInformationDB(existingUser)
+	}
+
+	if user.IDDocumentExpiration != nil {
+		var expiration = (*user.IDDocumentExpiration).Format(dateLayout)
+		userDB.IDDocumentExpiration = &expiration
+	}
+
+	var err = c.usersDBModule.StoreOrUpdateUser(ctx, realmName, userDB)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Can't update user in DB", "err", err.Error())
+		return false, err
+	}
+	return shouldRevokeAccreditations, nil
+}
+
+func (c *component) updateUserKeycloak(ctx context.Context, realmName, userID string, user api.UserRepresentation, revokeAccreds bool) error {
+	var shouldRevokeAccreditations = revokeAccreds
+
+	kcUser, err := c.getKeycloakUser(ctx, realmName, userID)
+	if err != nil {
+		return err
+	}
+
+	keycloakb.ConvertLegacyAttribute(&kcUser)
+	if !shouldRevokeAccreditations || user.HasUpdateOfAccreditationDependantInformationKC(&kcUser) {
+		shouldRevokeAccreditations = true
+	}
+
+	user.ExportToKeycloak(&kcUser)
+	if shouldRevokeAccreditations {
+		keycloakb.RevokeAccreditations(&kcUser)
+	}
+
+	return c.updateKeycloakUser(ctx, realmName, userID, kcUser)
 }
 
 func needKcProcessing(user api.UserRepresentation) bool {

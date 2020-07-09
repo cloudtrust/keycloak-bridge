@@ -18,7 +18,7 @@ func TestStoreOrUpdateUser(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 	var mockDB = mock.NewCloudtrustDB(mockCtrl)
-	var mockCrypter = mock.NewCrypterDecrypter(mockCtrl)
+	var mockCrypter = mock.NewEncrypterDecrypter(mockCtrl)
 
 	var userID = "123789"
 	t.Run("Update succesful", func(t *testing.T) {
@@ -53,7 +53,7 @@ func TestGetUserDB(t *testing.T) {
 
 	var mockDB = mock.NewCloudtrustDB(mockCtrl)
 	var mockSQLRow = mock.NewSQLRow(mockCtrl)
-	var mockCrypter = mock.NewCrypterDecrypter(mockCtrl)
+	var mockCrypter = mock.NewEncrypterDecrypter(mockCtrl)
 
 	var realm = "my-realm"
 	var userID = "user-id"
@@ -114,7 +114,7 @@ func TestGetUserInformation(t *testing.T) {
 
 	var mockDB = mock.NewCloudtrustDB(mockCtrl)
 	var mockSQLRows = mock.NewSQLRows(mockCtrl)
-	var mockCrypter = mock.NewCrypterDecrypter(mockCtrl)
+	var mockCrypter = mock.NewEncrypterDecrypter(mockCtrl)
 	var usersDBModule = NewUsersDBModule(mockDB, mockCrypter, log.NewNopLogger())
 
 	var realm = "my-realm"
@@ -210,7 +210,7 @@ func TestCreateCheck(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 	var mockDB = mock.NewCloudtrustDB(mockCtrl)
-	var mockCrypter = mock.NewCrypterDecrypter(mockCtrl)
+	var mockCrypter = mock.NewEncrypterDecrypter(mockCtrl)
 
 	var userID = "123789"
 	var realm = "realm"

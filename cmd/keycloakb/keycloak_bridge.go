@@ -69,6 +69,7 @@ type RateKey int
 // Constants
 const (
 	defaultPublishingIP = "0.0.0.0"
+	pathHealthCheck     = "/health/check"
 
 	RateKeyAccount    = iota
 	RateKeyEvent      = iota
@@ -879,7 +880,7 @@ func main() {
 
 		// Version.
 		route.Handle("/", commonhttp.MakeVersionHandler(keycloakb.ComponentName, ComponentID, keycloakb.Version, Environment, GitCommit))
-		route.Handle("/health/check", healthChecker.MakeHandler())
+		route.Handle(pathHealthCheck, healthChecker.MakeHandler())
 
 		// Event.
 		var eventSubroute = route.PathPrefix("/event").Subrouter()
@@ -935,7 +936,7 @@ func main() {
 
 		// Version.
 		route.Handle("/", http.HandlerFunc(commonhttp.MakeVersionHandler(keycloakb.ComponentName, ComponentID, keycloakb.Version, Environment, GitCommit)))
-		route.Handle("/health/check", healthChecker.MakeHandler())
+		route.Handle(pathHealthCheck, healthChecker.MakeHandler())
 
 		// Rights
 		var rightsHandler = configureRightsHandler(keycloakb.ComponentName, ComponentID, idGenerator, authorizationManager, keycloakClient, audienceRequired, tracer, logger)
@@ -1141,7 +1142,7 @@ func main() {
 
 		// Version.
 		route.Handle("/", http.HandlerFunc(commonhttp.MakeVersionHandler(keycloakb.ComponentName, ComponentID, keycloakb.Version, Environment, GitCommit)))
-		route.Handle("/health/check", healthChecker.MakeHandler())
+		route.Handle(pathHealthCheck, healthChecker.MakeHandler())
 
 		// Account
 		var updatePasswordHandler = configureAccountHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(accountEndpoints.UpdatePassword)
@@ -1194,7 +1195,7 @@ func main() {
 
 		// Version.
 		route.Handle("/", http.HandlerFunc(commonhttp.MakeVersionHandler(keycloakb.ComponentName, ComponentID, keycloakb.Version, Environment, GitCommit)))
-		route.Handle("/health/check", healthChecker.MakeHandler())
+		route.Handle(pathHealthCheck, healthChecker.MakeHandler())
 
 		// Mobile
 		var getUserInfoHandler = configureMobileHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, mobileAudienceRequired, tracer, logger)(mobileEndpoints.GetUserInformation)
@@ -1223,7 +1224,7 @@ func main() {
 
 			// Version.
 			route.Handle("/", http.HandlerFunc(commonhttp.MakeVersionHandler(keycloakb.ComponentName, ComponentID, keycloakb.Version, Environment, GitCommit)))
-			route.Handle("/health/check", healthChecker.MakeHandler())
+			route.Handle(pathHealthCheck, healthChecker.MakeHandler())
 
 			// Handler with recaptcha token
 			var registerUserHandler = configureRegisterHandler(keycloakb.ComponentName, ComponentID, idGenerator, recaptchaURL, recaptchaSecret, tracer, logger)(registerEndpoints.RegisterUser)
@@ -1309,32 +1310,20 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 	v.SetDefault(CfgTimeout, "5s")
 
 	// Storage events in DB (read/write)
-	v.SetDefault(CfgAuditRwDbParams+"-enabled", false)
 	database.ConfigureDbDefault(v, CfgAuditRwDbParams, "CT_BRIDGE_DB_AUDIT_RW_USERNAME", "CT_BRIDGE_DB_AUDIT_RW_PASSWORD")
+	v.SetDefault(CfgAuditRwDbParams+"-enabled", false)
 
 	// Storage events in DB (read only)
 	database.ConfigureDbDefault(v, CfgAuditRoDbParams, "CT_BRIDGE_DB_AUDIT_RO_USERNAME", "CT_BRIDGE_DB_AUDIT_RO_PASSWORD")
 
 	//Storage custom configuration in DB (read/write)
-	v.SetDefault(CfgConfigRwDbParams+"-enabled", true)
 	database.ConfigureDbDefault(v, CfgConfigRwDbParams, "CT_BRIDGE_DB_CONFIG_RW_USERNAME", "CT_BRIDGE_DB_CONFIG_RW_PASSWORD")
 
-	v.SetDefault(CfgConfigRwDbParams+"-migration", false)
-	v.SetDefault(CfgConfigRwDbParams+"-migration-version", "")
-
 	//Storage custom configuration in DB (read only)
-	v.SetDefault(CfgConfigRoDbParams+"-enabled", true)
 	database.ConfigureDbDefault(v, CfgConfigRoDbParams, "CT_BRIDGE_DB_CONFIG_RO_USERNAME", "CT_BRIDGE_DB_CONFIG_RO_PASSWORD")
 
-	v.SetDefault(CfgConfigRoDbParams+"-migration", false)
-	v.SetDefault(CfgConfigRoDbParams+"-migration-version", "")
-
 	//Storage users in DB (read/write)
-	v.SetDefault(CfgUsersRwDbParams+"-enabled", true)
 	database.ConfigureDbDefault(v, CfgUsersRwDbParams, "CT_BRIDGE_DB_USERS_RW_USERNAME", "CT_BRIDGE_DB_USERS_RW_PASSWORD")
-
-	v.SetDefault(CfgUsersRwDbParams+"-migration", false)
-	v.SetDefault(CfgUsersRwDbParams+"-migration-version", "")
 
 	// Rate limiting (in requests/second)
 	v.SetDefault(CfgRateKeyValidation, 1000)
