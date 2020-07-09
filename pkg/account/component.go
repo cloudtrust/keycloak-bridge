@@ -23,6 +23,13 @@ import (
 const (
 	ActionVerifyEmail       = "VERIFY_EMAIL"
 	ActionVerifyPhoneNumber = "mobilephone-validation"
+
+	emailTemplateUpdatedPassword = "notif-password-change.ftl"
+	emailSubjectUpdatedPassword  = "notifPasswordChangeSubject"
+	emailTemplateUpdatedEmail    = "notif-email-change.ftl"
+	emailSubjectUpdatedEmail     = "notifEmailChangeSubject"
+	emailTemplateUpdatedProfile  = "notif-profile-change.ftl"
+	emailSubjectUpdatedProfile   = "notifProfileChangeSubject"
 )
 
 // KeycloakAccountClient interface exposes methods we need to call to send requests to Keycloak API of Account
@@ -38,6 +45,7 @@ type KeycloakAccountClient interface {
 	GetAccount(accessToken, realm string) (kc.UserRepresentation, error)
 	DeleteAccount(accessToken, realm string) error
 	ExecuteActionsEmail(accessToken string, realmName string, actions []string) error
+	SendEmail(accessToken, realmName, template, subject string, recipient *string, attributes map[string]string) error
 }
 
 // Component interface exposes methods used by the bridge API
@@ -107,6 +115,12 @@ func (c *component) UpdatePassword(ctx context.Context, currentPassword, newPass
 	if err != nil {
 		c.logger.Warn(ctx, "err", err.Error())
 		return err
+	}
+
+	// account.update.password should be "trustID: Security Alert"
+	var attributes = make(map[string]string)
+	if c.sendEmail(ctx, emailTemplateUpdatedPassword, emailSubjectUpdatedPassword, nil, attributes) == nil {
+		c.reportEvent(ctx, "UPDATED_PWD_EMAIL_SENT", database.CtEventRealmName, realm, database.CtEventUserID, userID, database.CtEventUsername, username)
 	}
 
 	//store the API call into the DB
@@ -187,10 +201,18 @@ func (c *component) UpdateAccount(ctx context.Context, user api.AccountRepresent
 		user.IDDocumentExpiration, oldUser.IDDocumentExpiration,
 	)
 
+	// profileUpdated: Add here all fields which are not accreditation-dependant...
+	// phone number is not added here as there is already an email sent for phone number verification
+	var profileUpdated = revokeAccreditations || keycloakb.IsUpdated(user.Locale, oldUserKc.Attributes.GetString(constants.AttrbLocale))
+	var prevEmail *string
+
 	// when the email changes, set the EmailVerified to false
 	if isUpdated(user.Email, oldUserKc.Email) {
 		var verified = false
 		emailVerified = &verified
+		if oldUserKc.Email != nil && len(*oldUserKc.Email) > 0 {
+			prevEmail = oldUserKc.Email
+		}
 		actions = append(actions, ActionVerifyEmail)
 	}
 
@@ -198,6 +220,7 @@ func (c *component) UpdateAccount(ctx context.Context, user api.AccountRepresent
 	if isUpdated(user.PhoneNumber, oldUserKc.GetAttributeString(constants.AttrbPhoneNumber)) {
 		var verified = false
 		phoneNumberVerified = &verified
+		profileUpdated = true
 		actions = append(actions, ActionVerifyPhoneNumber)
 	}
 
@@ -221,7 +244,6 @@ func (c *component) UpdateAccount(ctx context.Context, user api.AccountRepresent
 	}
 
 	err = c.keycloakAccountClient.UpdateAccount(accessToken, realm, userRep)
-
 	if err != nil {
 		c.logger.Warn(ctx, "err", err.Error())
 		return err
@@ -244,9 +266,28 @@ func (c *component) UpdateAccount(ctx context.Context, user api.AccountRepresent
 	err = c.usersDBModule.StoreOrUpdateUser(ctx, realm, dbUser)
 	if err != nil {
 		c.logger.Warn(ctx, "err", err.Error())
+		return err
+	}
+
+	var attributes = make(map[string]string)
+	if prevEmail != nil && c.sendEmail(ctx, emailTemplateUpdatedEmail, emailSubjectUpdatedEmail, prevEmail, attributes) == nil {
+		c.reportEvent(ctx, "EMAIL_CHANGED_EMAIL_SENT", database.CtEventRealmName, realm, database.CtEventUserID, userID, database.CtEventUsername, username)
+	}
+	if profileUpdated && c.sendEmail(ctx, emailTemplateUpdatedProfile, emailSubjectUpdatedProfile, nil, attributes) == nil {
+		c.reportEvent(ctx, "PROFILE_CHANGED_EMAIL_SENT", database.CtEventRealmName, realm, database.CtEventUserID, userID, database.CtEventUsername, username)
 	}
 
 	return err
+}
+
+func (c *component) sendEmail(ctx context.Context, template, subject string, recipient *string, attributes map[string]string) error {
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+	var realm = ctx.Value(cs.CtContextRealm).(string)
+	if emailErr := c.keycloakAccountClient.SendEmail(accessToken, realm, template, subject, recipient, attributes); emailErr != nil {
+		c.logger.Warn(ctx, "msg", "Could not send email", "err", emailErr.Error(), "template", template)
+		return emailErr
+	}
+	return nil
 }
 
 func (c *component) duplicateAttributes(srcAttributes *kc.Attributes) kc.Attributes {
