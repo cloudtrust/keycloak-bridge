@@ -455,10 +455,12 @@ func main() {
 	// Create OIDC token provider and validate register user credentials
 	var oidcTokenProvider toolbox.OidcTokenProvider
 	{
-		oidcTokenProvider = toolbox.NewOidcTokenProvider(keycloakConfig, registerRealm, registerUsername, registerPassword, registerClientID, logger)
-		var _, err = oidcTokenProvider.ProvideToken(context.Background())
-		if err != nil {
-			logger.Warn(context.Background(), "msg", "OIDC token provider validation failed for register user", "err", err.Error())
+		if registerEnabled {
+			oidcTokenProvider = toolbox.NewOidcTokenProvider(keycloakConfig, registerRealm, registerUsername, registerPassword, registerClientID, logger)
+			var _, err = oidcTokenProvider.ProvideToken(context.Background())
+			if err != nil {
+				logger.Warn(context.Background(), "msg", "OIDC token provider validation failed for register user", "err", err.Error())
+			}
 		}
 	}
 
@@ -800,29 +802,31 @@ func main() {
 	// Register service.
 	var registerEndpoints register.Endpoints
 	{
-		var registerLogger = log.With(logger, "svc", "register")
+		if registerEnabled {
+			var registerLogger = log.With(logger, "svc", "register")
 
-		// Configure events db module
-		eventsDBModule := configureEventsDbModule(baseEventsDBModule, influxMetrics, registerLogger, tracer)
+			// Configure events db module
+			eventsDBModule := configureEventsDbModule(baseEventsDBModule, influxMetrics, registerLogger, tracer)
 
-		// module for storing and retrieving the custom configuration
-		var configDBModule = createConfigurationDBModule(configurationRwDBConn, influxMetrics, registerLogger)
+			// module for storing and retrieving the custom configuration
+			var configDBModule = createConfigurationDBModule(configurationRwDBConn, influxMetrics, registerLogger)
 
-		// module for storing and retrieving details of the self-registered users
-		var usersDBModule = keycloakb.NewUsersDetailsDBModule(usersRwDBConn, aesEncryption, registerLogger)
+			// module for storing and retrieving details of the self-registered users
+			var usersDBModule = keycloakb.NewUsersDetailsDBModule(usersRwDBConn, aesEncryption, registerLogger)
 
-		// new module for register service
-		registerComponent, err := register.NewComponent(keycloakPublicURL, registerRealm, ssePublicURL, registerEnduserClientID, registerEnduserGroups, keycloakClient, oidcTokenProvider, usersDBModule, configDBModule, eventsDBModule, registerLogger)
-		if err != nil {
-			registerLogger.Error(ctx, "msg", "Can't initialize register component. Check the provided group names", "err", err.Error())
-			return
-		}
-		registerComponent = register.MakeAuthorizationRegisterComponentMW(log.With(registerLogger, "mw", "endpoint"))(registerComponent)
+			// new module for register service
+			registerComponent, err := register.NewComponent(keycloakPublicURL, registerRealm, ssePublicURL, registerEnduserClientID, registerEnduserGroups, keycloakClient, oidcTokenProvider, usersDBModule, configDBModule, eventsDBModule, registerLogger)
+			if err != nil {
+				registerLogger.Error(ctx, "msg", "Can't initialize register component. Check the provided group names", "err", err.Error())
+				return
+			}
+			registerComponent = register.MakeAuthorizationRegisterComponentMW(log.With(registerLogger, "mw", "endpoint"))(registerComponent)
 
-		var rateLimitRegister = rateLimit[RateKeyRegister]
-		registerEndpoints = register.Endpoints{
-			RegisterUser:     prepareEndpoint(register.MakeRegisterUserEndpoint(registerComponent), "register_user", influxMetrics, registerLogger, tracer, rateLimitRegister),
-			GetConfiguration: prepareEndpoint(register.MakeGetConfigurationEndpoint(registerComponent), "get_configuration", influxMetrics, registerLogger, tracer, rateLimitRegister),
+			var rateLimitRegister = rateLimit[RateKeyRegister]
+			registerEndpoints = register.Endpoints{
+				RegisterUser:     prepareEndpoint(register.MakeRegisterUserEndpoint(registerComponent), "register_user", influxMetrics, registerLogger, tracer, rateLimitRegister),
+				GetConfiguration: prepareEndpoint(register.MakeGetConfigurationEndpoint(registerComponent), "get_configuration", influxMetrics, registerLogger, tracer, rateLimitRegister),
+			}
 		}
 	}
 
