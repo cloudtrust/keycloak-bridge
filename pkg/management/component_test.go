@@ -799,9 +799,7 @@ func TestGetUser(t *testing.T) {
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 
-		mockUsersDBModule.EXPECT().GetUser(ctx, realmName, id).Return(dto.DBUser{
-			UserID: &id,
-		}, nil).Times(1)
+		mockUsersDBModule.EXPECT().GetUser(ctx, realmName, id).Return(dto.DBUser{}, nil).Times(1)
 
 		mockEventDBModule.EXPECT().ReportEvent(ctx, "GET_DETAILS", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 
