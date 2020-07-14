@@ -65,6 +65,13 @@ type KeycloakClient interface {
 	GetAttackDetectionStatus(accessToken string, realmName, userID string) (map[string]interface{}, error)
 }
 
+// UsersDBModule is the interface from the users module
+type UsersDBModule interface {
+	StoreOrUpdateUser(ctx context.Context, realm string, user dto.DBUser) error
+	GetUser(ctx context.Context, realm string, userID string) (*dto.DBUser, error)
+	DeleteUser(ctx context.Context, realm string, userID string) error
+}
+
 // Component is the management component interface.
 type Component interface {
 	GetActions(ctx context.Context) ([]api.ActionRepresentation, error)
@@ -126,6 +133,7 @@ type Component interface {
 // Component is the management component.
 type component struct {
 	keycloakClient          KeycloakClient
+	usersDBModule           UsersDBModule
 	eventDBModule           database.EventsDBModule
 	configDBModule          keycloakb.ConfigurationDBModule
 	authorizedTrustIDGroups map[string]bool
@@ -133,7 +141,7 @@ type component struct {
 }
 
 // NewComponent returns the management component.
-func NewComponent(keycloakClient KeycloakClient, eventDBModule database.EventsDBModule,
+func NewComponent(keycloakClient KeycloakClient, usersDBModule UsersDBModule, eventDBModule database.EventsDBModule,
 	configDBModule keycloakb.ConfigurationDBModule, authorizedTrustIDGroups []string, logger keycloakb.Logger) Component {
 
 	var authzedTrustIDGroups = make(map[string]bool)
@@ -143,6 +151,7 @@ func NewComponent(keycloakClient KeycloakClient, eventDBModule database.EventsDB
 
 	return &component{
 		keycloakClient:          keycloakClient,
+		usersDBModule:           usersDBModule,
 		eventDBModule:           eventDBModule,
 		configDBModule:          configDBModule,
 		authorizedTrustIDGroups: authzedTrustIDGroups,
@@ -278,8 +287,8 @@ func (c *component) CreateUser(ctx context.Context, realmName string, user api.U
 
 	userRep = api.ConvertToKCUser(user)
 
+	// Store user in KC
 	locationURL, err := c.keycloakClient.CreateUser(accessToken, ctxRealm, realmName, userRep)
-
 	if err != nil {
 		c.logger.Warn(ctx, "err", err.Error())
 		return "", err
@@ -294,6 +303,19 @@ func (c *component) CreateUser(ctx context.Context, realmName string, user api.U
 	reg := regexp.MustCompile(`[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}`)
 	userID := string(reg.Find([]byte(locationURL)))
 
+	// Store user in database
+	err = c.usersDBModule.StoreOrUpdateUser(ctx, realmName, dto.DBUser{
+		UserID:               &userID,
+		BirthLocation:        user.BirthLocation,
+		IDDocumentType:       user.IDDocumentType,
+		IDDocumentNumber:     user.IDDocumentNumber,
+		IDDocumentExpiration: user.IDDocumentExpiration,
+	})
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Can't store user details in database", "err", err.Error())
+		return "", err
+	}
+
 	//store the API call into the DB
 	c.reportEvent(ctx, "API_ACCOUNT_CREATION", database.CtEventRealmName, realmName, database.CtEventUserID, userID, database.CtEventUsername, username)
 
@@ -304,7 +326,12 @@ func (c *component) DeleteUser(ctx context.Context, realmName, userID string) er
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 
 	err := c.keycloakClient.DeleteUser(accessToken, realmName, userID)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return err
+	}
 
+	err = c.usersDBModule.DeleteUser(ctx, realmName, userID)
 	if err != nil {
 		c.logger.Warn(ctx, "err", err.Error())
 		return err
@@ -335,11 +362,26 @@ func (c *component) GetUser(ctx context.Context, realmName, userID string) (api.
 		username = *userKc.Username
 	}
 
+	// Retrieve info from DB user
+	dbUser, err := c.usersDBModule.GetUser(ctx, realmName, *userKc.ID)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return api.UserRepresentation{}, err
+	}
+
+	if dbUser == nil {
+		dbUser = &dto.DBUser{}
+	}
+
+	userRep.BirthLocation = dbUser.BirthLocation
+	userRep.IDDocumentType = dbUser.IDDocumentType
+	userRep.IDDocumentNumber = dbUser.IDDocumentNumber
+	userRep.IDDocumentExpiration = dbUser.IDDocumentExpiration
+
 	//store the API call into the DB
 	c.reportEvent(ctx, "GET_DETAILS", database.CtEventRealmName, realmName, database.CtEventUserID, userID, database.CtEventUsername, username)
 
 	return userRep, nil
-
 }
 
 func (c *component) isUpdated(newValue, oldValue *string) bool {
@@ -360,6 +402,15 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 		return err
 	}
 	keycloakb.ConvertLegacyAttribute(&oldUserKc)
+
+	// get the "old" user infos from database
+	var oldDbUser *dto.DBUser = &dto.DBUser{}
+
+	oldDbUser, err = c.usersDBModule.GetUser(ctx, realmName, userID)
+	if err != nil {
+		// Log warning already performed in GetUser
+		return err
+	}
 
 	// when the email changes, set the EmailVerified to false
 	if c.isUpdated(user.Email, oldUserKc.Email) {
@@ -391,6 +442,7 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 		keycloakb.RevokeAccreditations(&userRep)
 	}
 
+	// Update in KC
 	if err = c.keycloakClient.UpdateUser(accessToken, realmName, userID, userRep); err != nil {
 		c.logger.Warn(ctx, "err", err.Error())
 		return err
@@ -414,7 +466,38 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 		}
 
 		c.reportEvent(ctx, ctEventType, database.CtEventRealmName, realmName, database.CtEventUserID, userID, database.CtEventUsername, username)
+	}
 
+	// Update in DB user for extra infos
+	// Store user in database
+	var userInfosUpdated = keycloakb.IsUpdated(user.BirthLocation, oldDbUser.BirthLocation)
+	userInfosUpdated = userInfosUpdated || keycloakb.IsUpdated(user.IDDocumentType, oldDbUser.IDDocumentType)
+	userInfosUpdated = userInfosUpdated || keycloakb.IsUpdated(user.IDDocumentNumber, oldDbUser.IDDocumentNumber)
+	userInfosUpdated = userInfosUpdated || keycloakb.IsUpdated(user.IDDocumentExpiration, oldDbUser.IDDocumentExpiration)
+
+	if userInfosUpdated {
+
+		if keycloakb.IsUpdated(user.BirthLocation, oldDbUser.BirthLocation) {
+			oldDbUser.BirthLocation = user.BirthLocation
+		}
+
+		if keycloakb.IsUpdated(user.IDDocumentType, oldDbUser.IDDocumentType) {
+			oldDbUser.IDDocumentType = user.IDDocumentType
+		}
+
+		if keycloakb.IsUpdated(user.IDDocumentNumber, oldDbUser.IDDocumentNumber) {
+			oldDbUser.IDDocumentNumber = user.IDDocumentNumber
+		}
+
+		if keycloakb.IsUpdated(user.IDDocumentExpiration, oldDbUser.IDDocumentExpiration) {
+			oldDbUser.IDDocumentExpiration = user.IDDocumentExpiration
+		}
+
+		err = c.usersDBModule.StoreOrUpdateUser(ctx, realmName, *oldDbUser)
+		if err != nil {
+			c.logger.Warn(ctx, "msg", "Can't store user details in database", "err", err.Error())
+			return err
+		}
 	}
 
 	return nil

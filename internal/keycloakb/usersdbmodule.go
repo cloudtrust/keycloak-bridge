@@ -23,6 +23,7 @@ const (
 	  FROM user_details
 	  WHERE realm_id=?
 		AND user_id=?;`
+	deleteUserStmt  = `DELETE FROM user_details WHERE realm_id=? AND user_id=?;`
 	createCheckStmt = `INSERT INTO checks (realm_id, user_id, operator, datetime, status, type, nature, proof_type, proof_data, comment)
 	  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
 	selectCheckStmt = `
@@ -111,6 +112,11 @@ func (c *usersDBModule) GetUser(ctx context.Context, realm string, userID string
 		details.UserID = &userID
 		return &details, err
 	}
+}
+
+func (c *usersDBModule) DeleteUser(ctx context.Context, realm string, userID string) error {
+	_, err := c.db.Exec(deleteUserStmt, realm, userID)
+	return err
 }
 
 func (c *usersDBModule) CreateCheck(ctx context.Context, realm string, userID string, check dto.DBCheck) error {
