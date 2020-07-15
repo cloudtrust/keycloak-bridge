@@ -29,7 +29,7 @@ type KeycloakClient interface {
 // UsersDBModule is the interface from the users module
 type UsersDBModule interface {
 	StoreOrUpdateUser(ctx context.Context, realm string, user dto.DBUser) error
-	GetUser(ctx context.Context, realm string, userID string) (*dto.DBUser, error)
+	GetUser(ctx context.Context, realm string, userID string) (dto.DBUser, error)
 	CreateCheck(ctx context.Context, realm string, userID string, check dto.DBCheck) error
 }
 
@@ -128,10 +128,6 @@ func (c *component) getUser(ctx context.Context, userID string, kcUser kc.UserRe
 		return apikyc.UserRepresentation{}, err
 	}
 
-	if dbUser == nil {
-		dbUser = &dto.DBUser{}
-	}
-
 	var res = apikyc.UserRepresentation{
 		BirthLocation:        dbUser.BirthLocation,
 		IDDocumentType:       dbUser.IDDocumentType,
@@ -181,15 +177,10 @@ func (c *component) ValidateUser(ctx context.Context, userID string, user apikyc
 	}
 
 	// Gets user from database
-	var dbUser *dto.DBUser
-	dbUser, err = c.usersDBModule.GetUser(ctx, c.socialRealmName, userID)
+	dbUser, err := c.usersDBModule.GetUser(ctx, c.socialRealmName, userID)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Failed to get user from database", "err", err.Error())
 		return err
-	}
-	if dbUser == nil {
-		c.logger.Warn(ctx, "msg", "User not found in database", "uid", userID)
-		return errorhandler.CreateNotFoundError("user")
 	}
 
 	var now = time.Now()
@@ -207,7 +198,7 @@ func (c *component) ValidateUser(ctx context.Context, userID string, user apikyc
 	}
 
 	// Store user in database
-	err = c.usersDBModule.StoreOrUpdateUser(ctx, c.socialRealmName, *dbUser)
+	err = c.usersDBModule.StoreOrUpdateUser(ctx, c.socialRealmName, dbUser)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Can't store user details in database", "err", err.Error())
 		return err

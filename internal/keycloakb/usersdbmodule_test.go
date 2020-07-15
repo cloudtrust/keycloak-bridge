@@ -76,7 +76,7 @@ func TestGetUserDB(t *testing.T) {
 		var configDBModule = NewUsersDBModule(mockDB, mockCrypter, log.NewNopLogger())
 		var user, err = configDBModule.GetUser(ctx, realm, userID)
 		assert.Nil(t, err)
-		assert.Nil(t, user)
+		assert.NotNil(t, user)
 	})
 	t.Run("Select: decryption error", func(t *testing.T) {
 		var unexpectedError = errors.New("incorrect key")
@@ -88,9 +88,8 @@ func TestGetUserDB(t *testing.T) {
 		})
 		mockCrypter.EXPECT().Decrypt(gomock.Any(), gomock.Any()).Return(nil, unexpectedError).Times(1)
 		var configDBModule = NewUsersDBModule(mockDB, mockCrypter, log.NewNopLogger())
-		var user, err = configDBModule.GetUser(ctx, realm, userID)
+		var _, err = configDBModule.GetUser(ctx, realm, userID)
 		assert.Equal(t, unexpectedError, err)
-		assert.Nil(t, user)
 	})
 
 	t.Run("Select successful", func(t *testing.T) {

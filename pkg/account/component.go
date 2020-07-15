@@ -67,7 +67,7 @@ type Component interface {
 // UsersDBModule is the minimum required interface to access the users database
 type UsersDBModule interface {
 	StoreOrUpdateUser(ctx context.Context, realm string, user dto.DBUser) error
-	GetUser(ctx context.Context, realm string, userID string) (*dto.DBUser, error)
+	GetUser(ctx context.Context, realm string, userID string) (dto.DBUser, error)
 }
 
 // Component is the management component.
@@ -143,20 +143,17 @@ func (c *component) GetAccount(ctx context.Context) (api.AccountRepresentation, 
 	}
 	keycloakb.ConvertLegacyAttribute(&userKc)
 
-	var dbUser *dto.DBUser
-	dbUser, err = c.usersDBModule.GetUser(ctx, realm, userID)
+	dbUser, err := c.usersDBModule.GetUser(ctx, realm, userID)
 	if err != nil {
 		c.logger.Warn(ctx, "err", err.Error())
 		return userRep, err
 	}
 
 	userRep = api.ConvertToAPIAccount(ctx, userKc, c.logger)
-	if dbUser != nil {
-		userRep.BirthLocation = dbUser.BirthLocation
-		userRep.IDDocumentType = dbUser.IDDocumentType
-		userRep.IDDocumentNumber = dbUser.IDDocumentNumber
-		userRep.IDDocumentExpiration = dbUser.IDDocumentExpiration
-	}
+	userRep.BirthLocation = dbUser.BirthLocation
+	userRep.IDDocumentType = dbUser.IDDocumentType
+	userRep.IDDocumentNumber = dbUser.IDDocumentNumber
+	userRep.IDDocumentExpiration = dbUser.IDDocumentExpiration
 
 	return userRep, nil
 }
@@ -181,8 +178,7 @@ func (c *component) UpdateAccount(ctx context.Context, user api.AccountRepresent
 	keycloakb.ConvertLegacyAttribute(&oldUserKc)
 
 	// get the "old" user from DB
-	var oldUser *dto.DBUser
-	oldUser, err = c.usersDBModule.GetUser(ctx, realm, userID)
+	oldUser, err := c.usersDBModule.GetUser(ctx, realm, userID)
 	if err != nil {
 		c.logger.Warn(ctx, "err", err.Error())
 		return err
@@ -191,7 +187,7 @@ func (c *component) UpdateAccount(ctx context.Context, user api.AccountRepresent
 	var emailVerified, phoneNumberVerified *bool
 	var actions []string
 
-	var revokeAccreditations = oldUser == nil || keycloakb.IsUpdated(user.FirstName, oldUserKc.FirstName,
+	var revokeAccreditations = keycloakb.IsUpdated(user.FirstName, oldUserKc.FirstName,
 		user.LastName, oldUserKc.LastName,
 		user.Gender, oldUserKc.GetAttributeString(constants.AttrbGender),
 		user.BirthDate, oldUserKc.GetAttributeString(constants.AttrbBirthDate),
@@ -203,7 +199,7 @@ func (c *component) UpdateAccount(ctx context.Context, user api.AccountRepresent
 
 	// profileUpdated: Add here all fields which are not accreditation-dependant...
 	// phone number is not added here as there is already an email sent for phone number verification
-	var profileUpdated = revokeAccreditations || keycloakb.IsUpdated(user.Locale, oldUserKc.Attributes.GetString(constants.AttrbLocale))
+	var profileUpdated = revokeAccreditations || keycloakb.IsUpdated(user.Locale, oldUserKc.GetAttributeString(constants.AttrbLocale))
 	var prevEmail *string
 
 	// when the email changes, set the EmailVerified to false
@@ -301,7 +297,7 @@ func (c *component) duplicateAttributes(srcAttributes *kc.Attributes) kc.Attribu
 	return copiedAttributes
 }
 
-func (c *component) mergeUser(userID string, user api.AccountRepresentation, oldUser *dto.DBUser) dto.DBUser {
+func (c *component) mergeUser(userID string, user api.AccountRepresentation, oldUser dto.DBUser) dto.DBUser {
 	var dbUser = dto.DBUser{
 		UserID:               &userID,
 		BirthLocation:        user.BirthLocation,
@@ -309,21 +305,21 @@ func (c *component) mergeUser(userID string, user api.AccountRepresentation, old
 		IDDocumentNumber:     user.IDDocumentNumber,
 		IDDocumentExpiration: user.IDDocumentExpiration,
 	}
-	if oldUser != nil {
-		// Keep old values when none was provided
-		if dbUser.BirthLocation == nil {
-			dbUser.BirthLocation = oldUser.BirthLocation
-		}
-		if dbUser.IDDocumentType == nil {
-			dbUser.IDDocumentType = oldUser.IDDocumentType
-		}
-		if dbUser.IDDocumentNumber == nil {
-			dbUser.IDDocumentNumber = oldUser.IDDocumentNumber
-		}
-		if dbUser.IDDocumentExpiration == nil {
-			dbUser.IDDocumentExpiration = oldUser.IDDocumentExpiration
-		}
+
+	// Keep old values when none was provided
+	if dbUser.BirthLocation == nil {
+		dbUser.BirthLocation = oldUser.BirthLocation
 	}
+	if dbUser.IDDocumentType == nil {
+		dbUser.IDDocumentType = oldUser.IDDocumentType
+	}
+	if dbUser.IDDocumentNumber == nil {
+		dbUser.IDDocumentNumber = oldUser.IDDocumentNumber
+	}
+	if dbUser.IDDocumentExpiration == nil {
+		dbUser.IDDocumentExpiration = oldUser.IDDocumentExpiration
+	}
+
 	return dbUser
 }
 

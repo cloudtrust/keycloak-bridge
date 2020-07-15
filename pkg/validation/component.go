@@ -34,7 +34,7 @@ type TokenProvider interface {
 // UsersDBModule is the interface from the users module
 type UsersDBModule interface {
 	StoreOrUpdateUser(ctx context.Context, realm string, user dto.DBUser) error
-	GetUser(ctx context.Context, realm string, userID string) (*dto.DBUser, error)
+	GetUser(ctx context.Context, realm string, userID string) (dto.DBUser, error)
 	CreateCheck(ctx context.Context, realm string, userID string, check dto.DBCheck) error
 }
 
@@ -110,15 +110,11 @@ func (c *component) GetUser(ctx context.Context, realmName string, userID string
 	}
 	keycloakb.ConvertLegacyAttribute(&kcUser)
 
-	var dbUser *dto.DBUser
+	var dbUser dto.DBUser
 	dbUser, err = c.usersDBModule.GetUser(ctx, realmName, userID)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "GetUser: can't find user in keycloak")
 		return api.UserRepresentation{}, err
-	}
-
-	if dbUser == nil {
-		dbUser = &dto.DBUser{}
 	}
 
 	var res = api.UserRepresentation{}
@@ -175,7 +171,7 @@ func (c *component) updateUserDatabase(ctx context.Context, realmName, userID st
 		IDDocumentNumber: user.IDDocumentNumber,
 	}
 
-	if existingUser, err := c.usersDBModule.GetUser(ctx, realmName, userID); err == nil && existingUser != nil {
+	if existingUser, err := c.usersDBModule.GetUser(ctx, realmName, userID); err == nil {
 		shouldRevokeAccreditations = user.HasUpdateOfAccreditationDependantInformationDB(existingUser)
 	}
 

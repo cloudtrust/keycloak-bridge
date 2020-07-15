@@ -420,14 +420,6 @@ func TestCreateUser(t *testing.T) {
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 
-		mockUsersDBModule.EXPECT().StoreOrUpdateUser(ctx, targetRealmName, dto.DBUser{
-			UserID:               &userID,
-			BirthLocation:        nil,
-			IDDocumentType:       nil,
-			IDDocumentNumber:     nil,
-			IDDocumentExpiration: nil,
-		}).Return(nil).Times(1)
-
 		mockEventDBModule.EXPECT().ReportEvent(ctx, "API_ACCOUNT_CREATION", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 
 		var userRep = api.UserRepresentation{
@@ -450,14 +442,6 @@ func TestCreateUser(t *testing.T) {
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
-
-		mockUsersDBModule.EXPECT().StoreOrUpdateUser(ctx, realmName, dto.DBUser{
-			UserID:               &userID,
-			BirthLocation:        nil,
-			IDDocumentType:       nil,
-			IDDocumentNumber:     nil,
-			IDDocumentExpiration: nil,
-		}).Return(nil).Times(1)
 
 		mockEventDBModule.EXPECT().ReportEvent(ctx, "API_ACCOUNT_CREATION", "back-office", database.CtEventRealmName, realmName, database.CtEventUserID, userID, database.CtEventUsername, username).Return(errors.New("error")).Times(1)
 		m := map[string]interface{}{"event_name": "API_ACCOUNT_CREATION", database.CtEventRealmName: realmName, database.CtEventUserID: userID, database.CtEventUsername: username}
@@ -586,7 +570,12 @@ func TestCreateUser(t *testing.T) {
 
 		mockUsersDBModule.EXPECT().StoreOrUpdateUser(ctx, targetRealmName, gomock.Any()).Return(fmt.Errorf("SQL error")).Times(1)
 
-		var userRep = api.UserRepresentation{}
+		var birthLocation = "Rolle"
+		var userRep = api.UserRepresentation{
+			ID:            &userID,
+			Username:      &username,
+			BirthLocation: &birthLocation,
+		}
 		mockLogger.EXPECT().Warn(ctx, "msg", "Can't store user details in database", "err", "SQL error")
 
 		location, err := managementComponent.CreateUser(ctx, targetRealmName, userRep)
@@ -735,7 +724,7 @@ func TestGetUser(t *testing.T) {
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 
-		mockUsersDBModule.EXPECT().GetUser(ctx, realmName, id).Return(&dto.DBUser{
+		mockUsersDBModule.EXPECT().GetUser(ctx, realmName, id).Return(dto.DBUser{
 			UserID:               &id,
 			BirthLocation:        &birthLocation,
 			IDDocumentExpiration: &idDocumentExpiration,
@@ -810,7 +799,9 @@ func TestGetUser(t *testing.T) {
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 
-		mockUsersDBModule.EXPECT().GetUser(ctx, realmName, id).Return(nil, nil).Times(1)
+		mockUsersDBModule.EXPECT().GetUser(ctx, realmName, id).Return(dto.DBUser{
+			UserID: &id,
+		}, nil).Times(1)
 
 		mockEventDBModule.EXPECT().ReportEvent(ctx, "GET_DETAILS", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 
@@ -852,7 +843,7 @@ func TestGetUser(t *testing.T) {
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 
-		mockUsersDBModule.EXPECT().GetUser(ctx, realmName, id).Return(&dto.DBUser{
+		mockUsersDBModule.EXPECT().GetUser(ctx, realmName, id).Return(dto.DBUser{
 			UserID:               &id,
 			BirthLocation:        &birthLocation,
 			IDDocumentExpiration: &idDocumentExpiration,
@@ -879,7 +870,7 @@ func TestGetUser(t *testing.T) {
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
-		mockUsersDBModule.EXPECT().GetUser(ctx, realmName, id).Return(nil, fmt.Errorf("SQL Error")).Times(1)
+		mockUsersDBModule.EXPECT().GetUser(ctx, realmName, id).Return(dto.DBUser{}, fmt.Errorf("SQL Error")).Times(1)
 		mockLogger.EXPECT().Warn(ctx, "err", "SQL Error")
 
 		_, err := managementComponent.GetUser(ctx, "master", id)
@@ -954,7 +945,7 @@ func TestUpdateUser(t *testing.T) {
 		CreatedTimestamp: &createdTimestamp,
 	}
 
-	var dbUserRep = &dto.DBUser{
+	var dbUserRep = dto.DBUser{
 		UserID:               &id,
 		BirthLocation:        &birthLocation,
 		IDDocumentType:       &idDocumentType,
@@ -1028,7 +1019,21 @@ func TestUpdateUser(t *testing.T) {
 			}).Times(2)
 
 		newIDDocumentExpiration := "21.12.2030"
-		userRep.IDDocumentExpiration = &newIDDocumentExpiration
+		var userAPI = api.UserRepresentation{
+			Username:             &username,
+			Email:                &email,
+			EmailVerified:        &emailVerified,
+			FirstName:            &firstName,
+			LastName:             &lastName,
+			PhoneNumber:          &phoneNumber,
+			PhoneNumberVerified:  &phoneNumberVerified,
+			Label:                &label,
+			Gender:               &gender,
+			BirthDate:            &birthDate,
+			Locale:               &locale,
+			BirthLocation:        &birthLocation,
+			IDDocumentExpiration: &newIDDocumentExpiration,
+		}
 
 		mockUsersDBModule.EXPECT().StoreOrUpdateUser(ctx, realmName, gomock.Any()).DoAndReturn(
 			func(ctx context.Context, realm string, user dto.DBUser) error {
@@ -1040,15 +1045,15 @@ func TestUpdateUser(t *testing.T) {
 				return nil
 			}).Times(1)
 
-		err := managementComponent.UpdateUser(ctx, realmName, id, userRep)
+		err := managementComponent.UpdateUser(ctx, realmName, id, userAPI)
 		assert.Nil(t, err)
 
 		newBirthLocation := "21.12.1988"
 		newIDDocumentType := "Permit"
 		newIDDocumentNumber := "123456frs"
-		userRep.BirthLocation = &newBirthLocation
-		userRep.IDDocumentType = &newIDDocumentType
-		userRep.IDDocumentNumber = &newIDDocumentNumber
+		userAPI.BirthLocation = &newBirthLocation
+		userAPI.IDDocumentType = &newIDDocumentType
+		userAPI.IDDocumentNumber = &newIDDocumentNumber
 
 		mockUsersDBModule.EXPECT().StoreOrUpdateUser(ctx, realmName, gomock.Any()).DoAndReturn(
 			func(ctx context.Context, realm string, user dto.DBUser) error {
@@ -1060,7 +1065,7 @@ func TestUpdateUser(t *testing.T) {
 				return nil
 			}).Times(1)
 
-		err = managementComponent.UpdateUser(ctx, realmName, id, userRep)
+		err = managementComponent.UpdateUser(ctx, realmName, id, userAPI)
 		assert.Nil(t, err)
 	})
 
@@ -1261,7 +1266,7 @@ func TestUpdateUser(t *testing.T) {
 		mockKeycloakClient.EXPECT().GetUser(accessToken, realmName, id).Return(kc.UserRepresentation{}, nil).Times(1)
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
-		mockUsersDBModule.EXPECT().GetUser(ctx, realmName, id).Return(nil, fmt.Errorf("SQL Error")).Times(1)
+		mockUsersDBModule.EXPECT().GetUser(ctx, realmName, id).Return(dto.DBUser{}, fmt.Errorf("SQL Error")).Times(1)
 
 		err := managementComponent.UpdateUser(ctx, "master", id, api.UserRepresentation{})
 

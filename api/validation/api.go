@@ -192,7 +192,7 @@ func (u *UserRepresentation) Validate() error {
 }
 
 // HasUpdateOfAccreditationDependantInformationDB checks user data contains an update of accreditation-dependant information
-func (u *UserRepresentation) HasUpdateOfAccreditationDependantInformationDB(formerUserInfo *dto.DBUser) bool {
+func (u *UserRepresentation) HasUpdateOfAccreditationDependantInformationDB(formerUserInfo dto.DBUser) bool {
 	var expiry *string
 	if u.IDDocumentExpiration != nil {
 		var converted = u.IDDocumentExpiration.Format(constants.SupportedDateLayouts[0])

@@ -68,7 +68,7 @@ type KeycloakClient interface {
 // UsersDBModule is the interface from the users module
 type UsersDBModule interface {
 	StoreOrUpdateUser(ctx context.Context, realm string, user dto.DBUser) error
-	GetUser(ctx context.Context, realm string, userID string) (*dto.DBUser, error)
+	GetUser(ctx context.Context, realm string, userID string) (dto.DBUser, error)
 	DeleteUser(ctx context.Context, realm string, userID string) error
 }
 
@@ -303,17 +303,24 @@ func (c *component) CreateUser(ctx context.Context, realmName string, user api.U
 	reg := regexp.MustCompile(`[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}`)
 	userID := string(reg.Find([]byte(locationURL)))
 
-	// Store user in database
-	err = c.usersDBModule.StoreOrUpdateUser(ctx, realmName, dto.DBUser{
-		UserID:               &userID,
-		BirthLocation:        user.BirthLocation,
-		IDDocumentType:       user.IDDocumentType,
-		IDDocumentNumber:     user.IDDocumentNumber,
-		IDDocumentExpiration: user.IDDocumentExpiration,
-	})
-	if err != nil {
-		c.logger.Warn(ctx, "msg", "Can't store user details in database", "err", err.Error())
-		return "", err
+	var userInfoToPersist = user.BirthLocation != nil
+	userInfoToPersist = userInfoToPersist || user.IDDocumentType != nil
+	userInfoToPersist = userInfoToPersist || user.IDDocumentNumber != nil
+	userInfoToPersist = userInfoToPersist || user.IDDocumentExpiration != nil
+
+	if userInfoToPersist {
+		// Store user in database
+		err = c.usersDBModule.StoreOrUpdateUser(ctx, realmName, dto.DBUser{
+			UserID:               &userID,
+			BirthLocation:        user.BirthLocation,
+			IDDocumentType:       user.IDDocumentType,
+			IDDocumentNumber:     user.IDDocumentNumber,
+			IDDocumentExpiration: user.IDDocumentExpiration,
+		})
+		if err != nil {
+			c.logger.Warn(ctx, "msg", "Can't store user details in database", "err", err.Error())
+			return "", err
+		}
 	}
 
 	//store the API call into the DB
@@ -369,10 +376,6 @@ func (c *component) GetUser(ctx context.Context, realmName, userID string) (api.
 		return api.UserRepresentation{}, err
 	}
 
-	if dbUser == nil {
-		dbUser = &dto.DBUser{}
-	}
-
 	userRep.BirthLocation = dbUser.BirthLocation
 	userRep.IDDocumentType = dbUser.IDDocumentType
 	userRep.IDDocumentNumber = dbUser.IDDocumentNumber
@@ -404,9 +407,7 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 	keycloakb.ConvertLegacyAttribute(&oldUserKc)
 
 	// get the "old" user infos from database
-	var oldDbUser *dto.DBUser = &dto.DBUser{}
-
-	oldDbUser, err = c.usersDBModule.GetUser(ctx, realmName, userID)
+	oldDbUser, err := c.usersDBModule.GetUser(ctx, realmName, userID)
 	if err != nil {
 		// Log warning already performed in GetUser
 		return err
@@ -493,7 +494,7 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 			oldDbUser.IDDocumentExpiration = user.IDDocumentExpiration
 		}
 
-		err = c.usersDBModule.StoreOrUpdateUser(ctx, realmName, *oldDbUser)
+		err = c.usersDBModule.StoreOrUpdateUser(ctx, realmName, oldDbUser)
 		if err != nil {
 			c.logger.Warn(ctx, "msg", "Can't store user details in database", "err", err.Error())
 			return err
