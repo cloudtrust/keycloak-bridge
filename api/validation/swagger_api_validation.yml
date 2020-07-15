@@ -95,7 +95,7 @@ components:
           type: string
         lastName:
           type: string
-        emailAddress:
+        email:
           type: string
         phoneNumber:
           type: string

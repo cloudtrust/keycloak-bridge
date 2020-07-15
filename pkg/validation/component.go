@@ -214,7 +214,7 @@ func needKcProcessing(user api.UserRepresentation) bool {
 		user.Gender,
 		user.FirstName,
 		user.LastName,
-		user.EmailAddress,
+		user.Email,
 		user.PhoneNumber,
 	}
 

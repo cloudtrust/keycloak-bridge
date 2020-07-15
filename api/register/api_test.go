@@ -25,7 +25,7 @@ func createValidUser() UserRepresentation {
 		Gender:               &gender,
 		FirstName:            &firstName,
 		LastName:             &lastName,
-		EmailAddress:         &email,
+		Email:                &email,
 		PhoneNumber:          &phoneNumber,
 		BirthDate:            &birthDate,
 		BirthLocation:        &birthLocation,
@@ -56,7 +56,7 @@ func TestConvertToKeycloak(t *testing.T) {
 
 	assert.Equal(t, user.FirstName, kcUser.FirstName)
 	assert.Equal(t, user.LastName, kcUser.LastName)
-	assert.Equal(t, user.EmailAddress, kcUser.Email)
+	assert.Equal(t, user.Email, kcUser.Email)
 	assert.False(t, *kcUser.EmailVerified)
 	assert.True(t, *kcUser.Enabled)
 }
@@ -82,7 +82,7 @@ func TestValidateUserRepresentation(t *testing.T) {
 		users[0].Gender = &empty
 		users[1].FirstName = &empty
 		users[2].LastName = &empty
-		users[3].EmailAddress = &empty
+		users[3].Email = &empty
 		users[4].PhoneNumber = &empty
 		users[5].BirthDate = &invalidDate
 		users[6].BirthLocation = &empty
@@ -94,7 +94,7 @@ func TestValidateUserRepresentation(t *testing.T) {
 		users[11].Gender = nil
 		users[12].FirstName = nil
 		users[13].LastName = nil
-		users[14].EmailAddress = nil
+		users[14].Email = nil
 		users[15].PhoneNumber = nil
 		users[16].BirthDate = nil
 		users[17].BirthLocation = nil

@@ -62,7 +62,7 @@ components:
   schemas:
     User:
       type: object
-      required: [gender, firstName, lastName, emailAddress, phoneNumber]
+      required: [gender, firstName, lastName, email, phoneNumber]
       properties:
         gender:
           type: string
@@ -70,7 +70,7 @@ components:
           type: string
         lastName:
           type: string
-        emailAddress:
+        email:
           type: string
         phoneNumber:
           type: string

@@ -160,10 +160,10 @@ func (c *component) ValidateUser(ctx context.Context, userID string, user apikyc
 	keycloakb.ConvertLegacyAttribute(&kcUser)
 
 	// Some parameters might not be updated by operator
-	user.UserID = &userID
-	user.EmailAddress = nil
+	user.ID = &userID
+	user.Email = nil
 	user.PhoneNumber = nil
-	user.EmailAddressVerified = nil
+	user.EmailVerified = nil
 	user.PhoneNumberVerified = nil
 	user.Username = kcUser.Username
 

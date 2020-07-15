@@ -21,7 +21,7 @@ type UserRepresentation struct {
 	Gender               *string `json:"gender,omitempty"`
 	FirstName            *string `json:"firstName,omitempty"`
 	LastName             *string `json:"lastName,omitempty"`
-	EmailAddress         *string `json:"emailAddress,omitempty"`
+	Email                *string `json:"email,omitempty"`
 	PhoneNumber          *string `json:"phoneNumber,omitempty"`
 	BirthDate            *string `json:"birthDate,omitempty"`
 	BirthLocation        *string `json:"birthLocation,omitempty"`
@@ -96,7 +96,7 @@ func (u *UserRepresentation) ConvertToKeycloak() kc.UserRepresentation {
 
 	return kc.UserRepresentation{
 		Username:      u.Username,
-		Email:         u.EmailAddress,
+		Email:         u.Email,
 		EmailVerified: &bFalse,
 		Enabled:       &bTrue,
 		FirstName:     u.FirstName,
@@ -111,7 +111,7 @@ func (u *UserRepresentation) Validate() error {
 		ValidateParameterIn(prmUserGender, u.Gender, allowedGender, true).
 		ValidateParameterRegExp(prmUserFirstName, u.FirstName, regExpFirstName, true).
 		ValidateParameterRegExp(prmUserLastName, u.LastName, regExpLastName, true).
-		ValidateParameterRegExp(prmUserEmail, u.EmailAddress, regExpEmail, true).
+		ValidateParameterRegExp(prmUserEmail, u.Email, regExpEmail, true).
 		ValidateParameterPhoneNumber(prmUserPhoneNumber, u.PhoneNumber, true).
 		ValidateParameterDateMultipleLayout(prmUserBirthDate, u.BirthDate, constants.SupportedDateLayouts, true).
 		ValidateParameterRegExp(prmUserBirthLocation, u.BirthLocation, regExpBirthLocation, true).

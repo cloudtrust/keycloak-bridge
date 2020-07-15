@@ -34,7 +34,7 @@ func createValidUser() apikyc.UserRepresentation {
 		Gender:               &gender,
 		FirstName:            &firstName,
 		LastName:             &lastName,
-		EmailAddress:         &email,
+		Email:                &email,
 		PhoneNumber:          &phoneNumber,
 		BirthDate:            &birthDate,
 		BirthLocation:        &birthLocation,

@@ -13,12 +13,12 @@ import (
 
 // AccountRepresentation struct
 type AccountRepresentation struct {
-	Username             *string                        `json:"username,omitempty"`
-	Email                *string                        `json:"email,omitempty"`
-	EmailVerified        *bool                          `json:"emailVerified,omitempty"`
 	Gender               *string                        `json:"gender,omitempty"`
 	FirstName            *string                        `json:"firstName,omitempty"`
 	LastName             *string                        `json:"lastName,omitempty"`
+	Username             *string                        `json:"username,omitempty"`
+	Email                *string                        `json:"email,omitempty"`
+	EmailVerified        *bool                          `json:"emailVerified,omitempty"`
 	PhoneNumber          *string                        `json:"phoneNumber,omitempty"`
 	PhoneNumberVerified  *bool                          `json:"phoneNumberVerified,omitempty"`
 	BirthDate            *string                        `json:"birthDate,omitempty"`

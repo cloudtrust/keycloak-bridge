@@ -117,7 +117,7 @@ components:
       type: object
       required: [gender, firstName, lastName, emailAddress, phoneNumber]
       properties:
-        userId:
+        id:
           type: string
           description: Ignored by PUT user
         username:
@@ -129,10 +129,10 @@ components:
           type: string
         lastName:
           type: string
-        emailAddress:
+        email:
           type: string
           description: Ignored by PUT user
-        emailAddressVerified:
+        emailVerified:
           type: boolean
           description: Ignored by PUT user
         phoneNumber:
@@ -156,9 +156,6 @@ components:
         comment:
           type: string
           description: Used only by validateUser
-        validation:
-          type: string
-          description: Only provided by getUser
         accreditations:
           type: array
           description: Used only by getUser

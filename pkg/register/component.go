@@ -289,7 +289,7 @@ func (c *component) sendExecuteActionsEmail(ctx context.Context, accessToken str
 // Check if a user already exists in Keycloak... If such a user exists in database, he can register himself only if the existing user is not yet enabled
 func (c *component) checkExistingUser(ctx context.Context, accessToken string, user apiregister.UserRepresentation) (*kc.UserRepresentation, error) {
 	// Search user by email
-	var kcUsers, err = c.keycloakClient.GetUsers(accessToken, c.realm, c.realm, "email", *user.EmailAddress)
+	var kcUsers, err = c.keycloakClient.GetUsers(accessToken, c.realm, c.realm, "email", *user.Email)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Can't get user from keycloak", "err", err.Error())
 		return nil, errorhandler.CreateInternalServerError("keycloak")

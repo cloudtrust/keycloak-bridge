@@ -36,7 +36,7 @@ func createValidUser() apiregister.UserRepresentation {
 		Gender:               &gender,
 		FirstName:            &firstName,
 		LastName:             &lastName,
-		EmailAddress:         &email,
+		Email:                &email,
 		PhoneNumber:          &phoneNumber,
 		BirthDate:            &birthDate,
 		BirthLocation:        &birthLocation,
@@ -157,7 +157,7 @@ func TestRegisterUser(t *testing.T) {
 		var kcError = errors.New("kc GetUsers error")
 		mockConfigDB.EXPECT().GetConfiguration(ctx, confRealm).Return(configuration.RealmConfiguration{}, nil)
 		mockTokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
-		mockKeycloakClient.EXPECT().GetUsers(accessToken, targetRealm, targetRealm, "email", *validUser.EmailAddress).Return(kc.UsersPageRepresentation{}, kcError)
+		mockKeycloakClient.EXPECT().GetUsers(accessToken, targetRealm, targetRealm, "email", *validUser.Email).Return(kc.UsersPageRepresentation{}, kcError)
 
 		var _, err = component.RegisterUser(ctx, confRealm, createValidUser())
 		assert.NotNil(t, err)
@@ -166,7 +166,7 @@ func TestRegisterUser(t *testing.T) {
 	t.Run("Can't generate unused username", func(t *testing.T) {
 		mockConfigDB.EXPECT().GetConfiguration(ctx, confRealm).Return(configuration.RealmConfiguration{}, nil)
 		mockTokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
-		mockKeycloakClient.EXPECT().GetUsers(accessToken, targetRealm, targetRealm, "email", *validUser.EmailAddress).Return(usersSearchResult, nil)
+		mockKeycloakClient.EXPECT().GetUsers(accessToken, targetRealm, targetRealm, "email", *validUser.Email).Return(usersSearchResult, nil)
 		mockKeycloakClient.EXPECT().CreateUser(accessToken, targetRealm, targetRealm, gomock.Any()).
 			Return("", errorhandler.Error{Status: http.StatusConflict, Message: "keycloak.existing.username"}).
 			Times(10)
@@ -179,7 +179,7 @@ func TestRegisterUser(t *testing.T) {
 		var keycloakError = errors.New("keycloak create error")
 		mockConfigDB.EXPECT().GetConfiguration(ctx, confRealm).Return(configuration.RealmConfiguration{}, nil)
 		mockTokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
-		mockKeycloakClient.EXPECT().GetUsers(accessToken, targetRealm, targetRealm, "email", *validUser.EmailAddress).Return(usersSearchResult, nil)
+		mockKeycloakClient.EXPECT().GetUsers(accessToken, targetRealm, targetRealm, "email", *validUser.Email).Return(usersSearchResult, nil)
 		mockKeycloakClient.EXPECT().CreateUser(accessToken, targetRealm, targetRealm, gomock.Any()).Return("", keycloakError)
 
 		var _, err = component.RegisterUser(ctx, confRealm, validUser)
@@ -191,14 +191,14 @@ func TestRegisterUser(t *testing.T) {
 		var userID = "abc789def"
 		var one = 1
 		var disabled = false
-		var user = kc.UserRepresentation{ID: &userID, Email: validUser.EmailAddress, EmailVerified: &disabled}
+		var user = kc.UserRepresentation{ID: &userID, Email: validUser.Email, EmailVerified: &disabled}
 		var userExistsSearch = kc.UsersPageRepresentation{
 			Count: &one,
 			Users: []kc.UserRepresentation{user},
 		}
 		mockConfigDB.EXPECT().GetConfiguration(ctx, confRealm).Return(configuration.RealmConfiguration{}, nil)
 		mockTokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
-		mockKeycloakClient.EXPECT().GetUsers(accessToken, targetRealm, targetRealm, "email", *validUser.EmailAddress).Return(userExistsSearch, nil)
+		mockKeycloakClient.EXPECT().GetUsers(accessToken, targetRealm, targetRealm, "email", *validUser.Email).Return(userExistsSearch, nil)
 		mockKeycloakClient.EXPECT().UpdateUser(accessToken, targetRealm, userID, gomock.Any()).Return(updateError)
 
 		var _, err = component.RegisterUser(ctx, confRealm, createValidUser())
@@ -211,7 +211,7 @@ func TestRegisterUser(t *testing.T) {
 		var userID = "abc789def"
 		mockConfigDB.EXPECT().GetConfiguration(ctx, confRealm).Return(configuration.RealmConfiguration{}, nil)
 		mockTokenProvider.EXPECT().ProvideToken(ctx).Return(token, nil)
-		mockKeycloakClient.EXPECT().GetUsers(accessToken, targetRealm, targetRealm, "email", *validUser.EmailAddress).Return(usersSearchResult, nil)
+		mockKeycloakClient.EXPECT().GetUsers(accessToken, targetRealm, targetRealm, "email", *validUser.Email).Return(usersSearchResult, nil)
 		mockKeycloakClient.EXPECT().CreateUser(token, targetRealm, targetRealm, gomock.Any()).Return(userID, nil)
 		mockUsersDB.EXPECT().StoreOrUpdateUser(ctx, targetRealm, gomock.Any()).Return(insertError)
 
@@ -224,7 +224,7 @@ func TestRegisterUser(t *testing.T) {
 		var userID = "abc789def"
 		mockConfigDB.EXPECT().GetConfiguration(ctx, confRealm).Return(configuration.RealmConfiguration{}, nil)
 		mockTokenProvider.EXPECT().ProvideToken(ctx).Return(token, nil)
-		mockKeycloakClient.EXPECT().GetUsers(accessToken, targetRealm, targetRealm, "email", *validUser.EmailAddress).Return(usersSearchResult, nil)
+		mockKeycloakClient.EXPECT().GetUsers(accessToken, targetRealm, targetRealm, "email", *validUser.Email).Return(usersSearchResult, nil)
 		mockKeycloakClient.EXPECT().CreateUser(token, targetRealm, targetRealm, gomock.Any()).Return(userID, nil)
 		mockUsersDB.EXPECT().StoreOrUpdateUser(ctx, targetRealm, gomock.Any()).Return(nil)
 		mockEventsDB.EXPECT().ReportEvent(gomock.Any(), "REGISTER_USER", "back-office", gomock.Any()).Return(nil)
@@ -238,7 +238,7 @@ func TestRegisterUser(t *testing.T) {
 		var userID = "abc789def"
 		mockConfigDB.EXPECT().GetConfiguration(ctx, confRealm).Return(configuration.RealmConfiguration{}, nil)
 		mockTokenProvider.EXPECT().ProvideToken(ctx).Return(token, nil)
-		mockKeycloakClient.EXPECT().GetUsers(accessToken, targetRealm, targetRealm, "email", *validUser.EmailAddress).Return(usersSearchResult, nil)
+		mockKeycloakClient.EXPECT().GetUsers(accessToken, targetRealm, targetRealm, "email", *validUser.Email).Return(usersSearchResult, nil)
 		mockKeycloakClient.EXPECT().CreateUser(token, targetRealm, targetRealm, gomock.Any()).Return(userID, nil)
 		mockUsersDB.EXPECT().StoreOrUpdateUser(ctx, targetRealm, gomock.Any()).Return(nil)
 		mockEventsDB.EXPECT().ReportEvent(gomock.Any(), "REGISTER_USER", "back-office", gomock.Any()).Return(errors.New("report event error"))
@@ -258,7 +258,7 @@ func TestRegisterUser(t *testing.T) {
 
 		mockConfigDB.EXPECT().GetConfiguration(ctx, confRealm).Return(realmConfiguration, nil)
 		mockTokenProvider.EXPECT().ProvideToken(ctx).Return(token, nil)
-		mockKeycloakClient.EXPECT().GetUsers(accessToken, targetRealm, targetRealm, "email", *validUser.EmailAddress).Return(usersSearchResult, nil)
+		mockKeycloakClient.EXPECT().GetUsers(accessToken, targetRealm, targetRealm, "email", *validUser.Email).Return(usersSearchResult, nil)
 		mockKeycloakClient.EXPECT().CreateUser(token, targetRealm, targetRealm, gomock.Any()).Return(userID, nil)
 		mockUsersDB.EXPECT().StoreOrUpdateUser(ctx, targetRealm, gomock.Any()).Return(nil)
 
@@ -275,7 +275,7 @@ func TestRegisterUser(t *testing.T) {
 		var realmConfiguration = configuration.RealmConfiguration{RegisterExecuteActions: &requiredActions, RedirectSuccessfulRegistrationURL: &successURL}
 		mockConfigDB.EXPECT().GetConfiguration(ctx, confRealm).Return(realmConfiguration, nil)
 		mockTokenProvider.EXPECT().ProvideToken(ctx).Return(token, nil)
-		mockKeycloakClient.EXPECT().GetUsers(accessToken, targetRealm, targetRealm, "email", *validUser.EmailAddress).Return(usersSearchResult, nil)
+		mockKeycloakClient.EXPECT().GetUsers(accessToken, targetRealm, targetRealm, "email", *validUser.Email).Return(usersSearchResult, nil)
 		mockKeycloakClient.EXPECT().CreateUser(token, targetRealm, targetRealm, gomock.Any()).Return(userID, nil)
 		mockUsersDB.EXPECT().StoreOrUpdateUser(ctx, targetRealm, gomock.Any()).Return(nil)
 		mockKeycloakClient.EXPECT().ExecuteActionsEmail(token, targetRealm, userID, requiredActions, "client_id", gomock.Any(), "redirect_uri", gomock.Any()).DoAndReturn(
@@ -309,7 +309,7 @@ func TestCheckExistingUser(t *testing.T) {
 	var targetRealm = "trustid"
 	var email = "user@trustid.swiss"
 	var userID = "ab54f9a-97bi94"
-	var user = apiregister.UserRepresentation{EmailAddress: &email}
+	var user = apiregister.UserRepresentation{Email: &email}
 	var verified = true
 	var keycloakUser = kc.UserRepresentation{ID: &userID}
 	var empty = 0
