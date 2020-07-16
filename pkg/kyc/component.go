@@ -26,10 +26,10 @@ type KeycloakClient interface {
 	GetGroups(accessToken string, realmName string) ([]kc.GroupRepresentation, error)
 }
 
-// UsersDBModule is the interface from the users module
-type UsersDBModule interface {
-	StoreOrUpdateUser(ctx context.Context, realm string, user dto.DBUser) error
-	GetUser(ctx context.Context, realm string, userID string) (dto.DBUser, error)
+// UsersDetailsDBModule is the interface from the users module
+type UsersDetailsDBModule interface {
+	StoreOrUpdateUserDetails(ctx context.Context, realm string, user dto.DBUser) error
+	GetUserDetails(ctx context.Context, realm string, userID string) (dto.DBUser, error)
 	CreateCheck(ctx context.Context, realm string, userID string, check dto.DBCheck) error
 }
 
@@ -51,14 +51,14 @@ type Component interface {
 type component struct {
 	socialRealmName string
 	keycloakClient  KeycloakClient
-	usersDBModule   UsersDBModule
+	usersDBModule   UsersDetailsDBModule
 	eventsDBModule  database.EventsDBModule
 	accredsModule   keycloakb.AccreditationsModule
 	logger          internal.Logger
 }
 
 // NewComponent returns the management component.
-func NewComponent(socialRealmName string, keycloakClient KeycloakClient, usersDBModule UsersDBModule, eventsDBModule EventsDBModule, accredsModule keycloakb.AccreditationsModule, logger internal.Logger) Component {
+func NewComponent(socialRealmName string, keycloakClient KeycloakClient, usersDBModule UsersDetailsDBModule, eventsDBModule EventsDBModule, accredsModule keycloakb.AccreditationsModule, logger internal.Logger) Component {
 	return &component{
 		socialRealmName: socialRealmName,
 		keycloakClient:  keycloakClient,
@@ -122,7 +122,7 @@ func (c *component) GetUser(ctx context.Context, userID string) (apikyc.UserRepr
 }
 
 func (c *component) getUser(ctx context.Context, userID string, kcUser kc.UserRepresentation) (apikyc.UserRepresentation, error) {
-	var dbUser, err = c.usersDBModule.GetUser(ctx, c.socialRealmName, *kcUser.ID)
+	var dbUser, err = c.usersDBModule.GetUserDetails(ctx, c.socialRealmName, *kcUser.ID)
 	if err != nil {
 		c.logger.Info(ctx, "msg", "GetUser: can't find user in keycloak")
 		return apikyc.UserRepresentation{}, err
@@ -177,7 +177,7 @@ func (c *component) ValidateUser(ctx context.Context, userID string, user apikyc
 	}
 
 	// Gets user from database
-	dbUser, err := c.usersDBModule.GetUser(ctx, c.socialRealmName, userID)
+	dbUser, err := c.usersDBModule.GetUserDetails(ctx, c.socialRealmName, userID)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Failed to get user from database", "err", err.Error())
 		return err
@@ -198,7 +198,7 @@ func (c *component) ValidateUser(ctx context.Context, userID string, user apikyc
 	}
 
 	// Store user in database
-	err = c.usersDBModule.StoreOrUpdateUser(ctx, c.socialRealmName, dbUser)
+	err = c.usersDBModule.StoreOrUpdateUserDetails(ctx, c.socialRealmName, dbUser)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Can't store user details in database", "err", err.Error())
 		return err

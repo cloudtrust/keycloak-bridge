@@ -68,7 +68,7 @@ type component struct {
 	registerEndUserGroups   []string
 	keycloakClient          KeycloakClient
 	tokenProvider           toolbox.OidcTokenProvider
-	usersDBModule           keycloakb.UsersDBModule
+	usersDBModule           keycloakb.UsersDetailsDBModule
 	configDBModule          ConfigurationDBModule
 	eventsDBModule          database.EventsDBModule
 	logger                  internal.Logger
@@ -76,7 +76,7 @@ type component struct {
 
 // NewComponent returns the management component.
 func NewComponent(keycloakURL string, realm string, ssePublicURL string, registerEnduserClientID string, registerEndUserGroups []string, keycloakClient KeycloakClient,
-	tokenProvider toolbox.OidcTokenProvider, usersDBModule keycloakb.UsersDBModule,
+	tokenProvider toolbox.OidcTokenProvider, usersDBModule keycloakb.UsersDetailsDBModule,
 	configDBModule ConfigurationDBModule, eventsDBModule database.EventsDBModule, logger internal.Logger) (Component, error) {
 	var c = &component{
 		keycloakURL:             keycloakURL,
@@ -198,7 +198,7 @@ func (c *component) storeUser(ctx context.Context, accessToken string, customerR
 	}
 
 	// Store user in database
-	err = c.usersDBModule.StoreOrUpdateUser(ctx, c.realm, dto.DBUser{
+	err = c.usersDBModule.StoreOrUpdateUserDetails(ctx, c.realm, dto.DBUser{
 		UserID:               &userID,
 		BirthLocation:        user.BirthLocation,
 		IDDocumentType:       user.IDDocumentType,

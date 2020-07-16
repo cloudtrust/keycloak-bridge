@@ -65,11 +65,11 @@ type KeycloakClient interface {
 	GetAttackDetectionStatus(accessToken string, realmName, userID string) (map[string]interface{}, error)
 }
 
-// UsersDBModule is the interface from the users module
-type UsersDBModule interface {
-	StoreOrUpdateUser(ctx context.Context, realm string, user dto.DBUser) error
-	GetUser(ctx context.Context, realm string, userID string) (dto.DBUser, error)
-	DeleteUser(ctx context.Context, realm string, userID string) error
+// UsersDetailsDBModule is the interface from the users module
+type UsersDetailsDBModule interface {
+	StoreOrUpdateUserDetails(ctx context.Context, realm string, user dto.DBUser) error
+	GetUserDetails(ctx context.Context, realm string, userID string) (dto.DBUser, error)
+	DeleteUserDetails(ctx context.Context, realm string, userID string) error
 }
 
 // Component is the management component interface.
@@ -133,7 +133,7 @@ type Component interface {
 // Component is the management component.
 type component struct {
 	keycloakClient          KeycloakClient
-	usersDBModule           UsersDBModule
+	usersDBModule           UsersDetailsDBModule
 	eventDBModule           database.EventsDBModule
 	configDBModule          keycloakb.ConfigurationDBModule
 	authorizedTrustIDGroups map[string]bool
@@ -141,7 +141,7 @@ type component struct {
 }
 
 // NewComponent returns the management component.
-func NewComponent(keycloakClient KeycloakClient, usersDBModule UsersDBModule, eventDBModule database.EventsDBModule,
+func NewComponent(keycloakClient KeycloakClient, usersDBModule UsersDetailsDBModule, eventDBModule database.EventsDBModule,
 	configDBModule keycloakb.ConfigurationDBModule, authorizedTrustIDGroups []string, logger keycloakb.Logger) Component {
 
 	var authzedTrustIDGroups = make(map[string]bool)
@@ -310,7 +310,7 @@ func (c *component) CreateUser(ctx context.Context, realmName string, user api.U
 
 	if userInfoToPersist {
 		// Store user in database
-		err = c.usersDBModule.StoreOrUpdateUser(ctx, realmName, dto.DBUser{
+		err = c.usersDBModule.StoreOrUpdateUserDetails(ctx, realmName, dto.DBUser{
 			UserID:               &userID,
 			BirthLocation:        user.BirthLocation,
 			IDDocumentType:       user.IDDocumentType,
@@ -338,7 +338,7 @@ func (c *component) DeleteUser(ctx context.Context, realmName, userID string) er
 		return err
 	}
 
-	err = c.usersDBModule.DeleteUser(ctx, realmName, userID)
+	err = c.usersDBModule.DeleteUserDetails(ctx, realmName, userID)
 	if err != nil {
 		c.logger.Warn(ctx, "err", err.Error())
 		return err
@@ -370,7 +370,7 @@ func (c *component) GetUser(ctx context.Context, realmName, userID string) (api.
 	}
 
 	// Retrieve info from DB user
-	dbUser, err := c.usersDBModule.GetUser(ctx, realmName, *userKc.ID)
+	dbUser, err := c.usersDBModule.GetUserDetails(ctx, realmName, *userKc.ID)
 	if err != nil {
 		c.logger.Warn(ctx, "err", err.Error())
 		return api.UserRepresentation{}, err
@@ -407,7 +407,7 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 	keycloakb.ConvertLegacyAttribute(&oldUserKc)
 
 	// get the "old" user infos from database
-	oldDbUser, err := c.usersDBModule.GetUser(ctx, realmName, userID)
+	oldDbUser, err := c.usersDBModule.GetUserDetails(ctx, realmName, userID)
 	if err != nil {
 		// Log warning already performed in GetUser
 		return err
@@ -494,7 +494,7 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 			oldDbUser.IDDocumentExpiration = user.IDDocumentExpiration
 		}
 
-		err = c.usersDBModule.StoreOrUpdateUser(ctx, realmName, oldDbUser)
+		err = c.usersDBModule.StoreOrUpdateUserDetails(ctx, realmName, oldDbUser)
 		if err != nil {
 			c.logger.Warn(ctx, "msg", "Can't store user details in database", "err", err.Error())
 			return err

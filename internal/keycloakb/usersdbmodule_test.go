@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestStoreOrUpdateUser(t *testing.T) {
+func TestStoreOrUpdateUserDetails(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 	var mockDB = mock.NewCloudtrustDB(mockCtrl)
@@ -24,24 +24,24 @@ func TestStoreOrUpdateUser(t *testing.T) {
 	t.Run("Update succesful", func(t *testing.T) {
 
 		mockDB.EXPECT().Exec(gomock.Any(), "realmId", &userID, gomock.Any(), gomock.Any()).Return(nil, nil).Times(1)
-		var configDBModule = NewUsersDBModule(mockDB, mockCrypter, log.NewNopLogger())
+		var configDBModule = NewUsersDetailsDBModule(mockDB, mockCrypter, log.NewNopLogger())
 		mockCrypter.EXPECT().Encrypt(gomock.Any(), gomock.Any()).Return(nil, nil).Times(1)
-		var err = configDBModule.StoreOrUpdateUser(context.Background(), "realmId", dto.DBUser{UserID: &userID})
+		var err = configDBModule.StoreOrUpdateUserDetails(context.Background(), "realmId", dto.DBUser{UserID: &userID})
 		assert.Nil(t, err)
 	})
 	t.Run("Update user: error at encryption", func(t *testing.T) {
 		var unexpectedError = errors.New("incorrect key")
-		var configDBModule = NewUsersDBModule(mockDB, mockCrypter, log.NewNopLogger())
+		var configDBModule = NewUsersDetailsDBModule(mockDB, mockCrypter, log.NewNopLogger())
 		mockCrypter.EXPECT().Encrypt(gomock.Any(), gomock.Any()).Return(nil, unexpectedError).Times(1)
-		var err = configDBModule.StoreOrUpdateUser(context.Background(), "realmId", dto.DBUser{UserID: &userID})
+		var err = configDBModule.StoreOrUpdateUserDetails(context.Background(), "realmId", dto.DBUser{UserID: &userID})
 		assert.Equal(t, unexpectedError, err)
 	})
 	t.Run("Update user: DB error", func(t *testing.T) {
 		var unexpectedError = errors.New("error")
 		mockDB.EXPECT().Exec(gomock.Any(), "realmId", &userID, gomock.Any(), gomock.Any()).Return(nil, unexpectedError).Times(1)
-		var configDBModule = NewUsersDBModule(mockDB, mockCrypter, log.NewNopLogger())
+		var configDBModule = NewUsersDetailsDBModule(mockDB, mockCrypter, log.NewNopLogger())
 		mockCrypter.EXPECT().Encrypt(gomock.Any(), gomock.Any()).Return(nil, nil).Times(1)
-		var err = configDBModule.StoreOrUpdateUser(context.Background(), "realmId", dto.DBUser{UserID: &userID})
+		var err = configDBModule.StoreOrUpdateUserDetails(context.Background(), "realmId", dto.DBUser{UserID: &userID})
 		assert.Equal(t, unexpectedError, err)
 	})
 
@@ -64,8 +64,8 @@ func TestGetUserDB(t *testing.T) {
 		mockDB.EXPECT().QueryRow(gomock.Any(), realm, userID).Return(mockSQLRow)
 		mockSQLRow.EXPECT().Scan(gomock.Any()).Return(unexpectedError)
 
-		var configDBModule = NewUsersDBModule(mockDB, mockCrypter, log.NewNopLogger())
-		var _, err = configDBModule.GetUser(ctx, realm, userID)
+		var configDBModule = NewUsersDetailsDBModule(mockDB, mockCrypter, log.NewNopLogger())
+		var _, err = configDBModule.GetUserDetails(ctx, realm, userID)
 		assert.Equal(t, unexpectedError, err)
 	})
 
@@ -73,8 +73,8 @@ func TestGetUserDB(t *testing.T) {
 		mockDB.EXPECT().QueryRow(gomock.Any(), realm, userID).Return(mockSQLRow)
 		mockSQLRow.EXPECT().Scan(gomock.Any()).Return(sql.ErrNoRows)
 
-		var configDBModule = NewUsersDBModule(mockDB, mockCrypter, log.NewNopLogger())
-		var user, err = configDBModule.GetUser(ctx, realm, userID)
+		var configDBModule = NewUsersDetailsDBModule(mockDB, mockCrypter, log.NewNopLogger())
+		var user, err = configDBModule.GetUserDetails(ctx, realm, userID)
 		assert.Nil(t, err)
 		assert.NotNil(t, user)
 	})
@@ -87,8 +87,8 @@ func TestGetUserDB(t *testing.T) {
 			return nil
 		})
 		mockCrypter.EXPECT().Decrypt(gomock.Any(), gomock.Any()).Return(nil, unexpectedError).Times(1)
-		var configDBModule = NewUsersDBModule(mockDB, mockCrypter, log.NewNopLogger())
-		var _, err = configDBModule.GetUser(ctx, realm, userID)
+		var configDBModule = NewUsersDetailsDBModule(mockDB, mockCrypter, log.NewNopLogger())
+		var _, err = configDBModule.GetUserDetails(ctx, realm, userID)
 		assert.Equal(t, unexpectedError, err)
 	})
 
@@ -100,8 +100,8 @@ func TestGetUserDB(t *testing.T) {
 			return nil
 		})
 		mockCrypter.EXPECT().Decrypt(gomock.Any(), gomock.Any()).Return([]byte(`{"birth_location": "Antananarivo"}`), nil).Times(1)
-		var configDBModule = NewUsersDBModule(mockDB, mockCrypter, log.NewNopLogger())
-		var user, err = configDBModule.GetUser(ctx, realm, userID)
+		var configDBModule = NewUsersDetailsDBModule(mockDB, mockCrypter, log.NewNopLogger())
+		var user, err = configDBModule.GetUserDetails(ctx, realm, userID)
 		assert.Nil(t, err)
 		assert.Equal(t, "Antananarivo", *user.BirthLocation)
 	})
@@ -114,7 +114,7 @@ func TestGetUserInformation(t *testing.T) {
 	var mockDB = mock.NewCloudtrustDB(mockCtrl)
 	var mockSQLRows = mock.NewSQLRows(mockCtrl)
 	var mockCrypter = mock.NewEncrypterDecrypter(mockCtrl)
-	var usersDBModule = NewUsersDBModule(mockDB, mockCrypter, log.NewNopLogger())
+	var usersDBModule = NewUsersDetailsDBModule(mockDB, mockCrypter, log.NewNopLogger())
 
 	var realm = "my-realm"
 	var userID = "user-id"
@@ -124,14 +124,14 @@ func TestGetUserInformation(t *testing.T) {
 	t.Run("Unexpected error", func(t *testing.T) {
 		mockDB.EXPECT().Query(gomock.Any(), realm, userID).Return(mockSQLRows, unexpectedError)
 
-		var _, err = usersDBModule.GetUserChecks(ctx, realm, userID)
+		var _, err = usersDBModule.GetChecks(ctx, realm, userID)
 		assert.Equal(t, unexpectedError, err)
 	})
 
 	t.Run("No row", func(t *testing.T) {
 		mockDB.EXPECT().Query(gomock.Any(), realm, userID).Return(mockSQLRows, sql.ErrNoRows)
 
-		var checks, err = usersDBModule.GetUserChecks(ctx, realm, userID)
+		var checks, err = usersDBModule.GetChecks(ctx, realm, userID)
 		assert.Nil(t, err)
 		assert.Nil(t, checks)
 	})
@@ -141,7 +141,7 @@ func TestGetUserInformation(t *testing.T) {
 		mockSQLRows.EXPECT().Next().Return(true)
 		mockSQLRows.EXPECT().Scan(gomock.Any()).Return(unexpectedError)
 
-		var _, err = usersDBModule.GetUserChecks(ctx, realm, userID)
+		var _, err = usersDBModule.GetChecks(ctx, realm, userID)
 		assert.Equal(t, unexpectedError, err)
 	})
 
@@ -156,7 +156,7 @@ func TestGetUserInformation(t *testing.T) {
 			mockCrypter.EXPECT().Decrypt(gomock.Any(), gomock.Any()).Return(nil, unexpectedError),
 		)
 
-		var _, err = usersDBModule.GetUserChecks(ctx, realm, userID)
+		var _, err = usersDBModule.GetChecks(ctx, realm, userID)
 		assert.Equal(t, unexpectedError, err)
 	})
 
@@ -174,7 +174,7 @@ func TestGetUserInformation(t *testing.T) {
 			mockSQLRows.EXPECT().Next().Return(false),
 		)
 
-		var checks, err = usersDBModule.GetUserChecks(ctx, realm, userID)
+		var checks, err = usersDBModule.GetChecks(ctx, realm, userID)
 		assert.Nil(t, err)
 		assert.Len(t, checks, 1)
 		assert.Equal(t, natureValue, *checks[0].Nature)
@@ -197,7 +197,7 @@ func TestGetUserInformation(t *testing.T) {
 			mockSQLRows.EXPECT().Next().Return(false),
 		)
 
-		var checks, err = usersDBModule.GetUserChecks(ctx, realm, userID)
+		var checks, err = usersDBModule.GetChecks(ctx, realm, userID)
 		assert.Nil(t, err)
 		assert.Len(t, checks, 1)
 		assert.Equal(t, natureValue, *checks[0].Nature)
@@ -218,14 +218,14 @@ func TestCreateCheck(t *testing.T) {
 
 		mockDB.EXPECT().Exec(gomock.Any(), realm, userID, gomock.Any(), gomock.Any(),
 			gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil).Times(1)
-		var configDBModule = NewUsersDBModule(mockDB, mockCrypter, log.NewNopLogger())
+		var configDBModule = NewUsersDetailsDBModule(mockDB, mockCrypter, log.NewNopLogger())
 		mockCrypter.EXPECT().Encrypt(gomock.Any(), gomock.Any()).Return(nil, nil).Times(1)
 		var err = configDBModule.CreateCheck(context.Background(), realm, userID, dto.DBCheck{ProofData: &proofData})
 		assert.Nil(t, err)
 	})
 	t.Run("Create check: error at encryption", func(t *testing.T) {
 		var unexpectedError = errors.New("incorrect key")
-		var configDBModule = NewUsersDBModule(mockDB, mockCrypter, log.NewNopLogger())
+		var configDBModule = NewUsersDetailsDBModule(mockDB, mockCrypter, log.NewNopLogger())
 		mockCrypter.EXPECT().Encrypt(gomock.Any(), gomock.Any()).Return(nil, unexpectedError).Times(1)
 		var err = configDBModule.CreateCheck(context.Background(), realm, userID, dto.DBCheck{ProofData: &proofData})
 		assert.Equal(t, unexpectedError, err)
@@ -234,7 +234,7 @@ func TestCreateCheck(t *testing.T) {
 		var unexpectedError = errors.New("error")
 		mockDB.EXPECT().Exec(gomock.Any(), realm, userID, gomock.Any(), gomock.Any(),
 			gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, unexpectedError).Times(1)
-		var configDBModule = NewUsersDBModule(mockDB, mockCrypter, log.NewNopLogger())
+		var configDBModule = NewUsersDetailsDBModule(mockDB, mockCrypter, log.NewNopLogger())
 		mockCrypter.EXPECT().Encrypt(gomock.Any(), gomock.Any()).Return(nil, nil).Times(1)
 		var err = configDBModule.CreateCheck(context.Background(), realm, userID, dto.DBCheck{ProofData: &proofData})
 		assert.Equal(t, unexpectedError, err)

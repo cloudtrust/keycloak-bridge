@@ -22,9 +22,9 @@ type Component interface {
 	GetUserInformation(ctx context.Context) (api.UserInformationRepresentation, error)
 }
 
-// UsersDBModule is the minimum required interface to access the users database
-type UsersDBModule interface {
-	GetUserChecks(ctx context.Context, realm string, userID string) ([]dto.DBCheck, error)
+// UsersDetailsDBModule is the minimum required interface to access the users database
+type UsersDetailsDBModule interface {
+	GetChecks(ctx context.Context, realm string, userID string) ([]dto.DBCheck, error)
 }
 
 // TokenProvider is the interface to retrieve accessToken to access KC
@@ -36,13 +36,13 @@ type TokenProvider interface {
 type component struct {
 	keycloakClient KeycloakClient
 	configDBModule keycloakb.ConfigurationDBModule
-	usersDBModule  UsersDBModule
+	usersDBModule  UsersDetailsDBModule
 	tokenProvider  TokenProvider
 	logger         internal.Logger
 }
 
 // NewComponent returns the self-service component.
-func NewComponent(keycloakClient KeycloakClient, configDBModule keycloakb.ConfigurationDBModule, usersDBModule UsersDBModule, tokenProvider TokenProvider, logger internal.Logger) Component {
+func NewComponent(keycloakClient KeycloakClient, configDBModule keycloakb.ConfigurationDBModule, usersDBModule UsersDetailsDBModule, tokenProvider TokenProvider, logger internal.Logger) Component {
 	return &component{
 		keycloakClient: keycloakClient,
 		configDBModule: configDBModule,
@@ -73,7 +73,7 @@ func (c *component) GetUserInformation(ctx context.Context) (api.UserInformation
 		return api.UserInformationRepresentation{}, err
 	}
 
-	if dbChecks, err := c.usersDBModule.GetUserChecks(ctx, realm, userID); err == nil {
+	if dbChecks, err := c.usersDBModule.GetChecks(ctx, realm, userID); err == nil {
 		userInfo.SetChecks(dbChecks)
 	} else {
 		c.logger.Warn(ctx, "err", err.Error())

@@ -94,7 +94,7 @@ func TestGroupIDsResolution(t *testing.T) {
 	})
 }
 
-func createComponent(keycloakURL, targetRealm, ssePublicURL, enduserClientID string, enduserGroups []string, keycloakClient *mock.KeycloakClient, tokenProvider *mock.OidcTokenProvider, usersDB *mock.UsersDBModule, configDB *mock.ConfigurationDBModule, eventsDB *mock.EventsDBModule) Component {
+func createComponent(keycloakURL, targetRealm, ssePublicURL, enduserClientID string, enduserGroups []string, keycloakClient *mock.KeycloakClient, tokenProvider *mock.OidcTokenProvider, usersDB *mock.UsersDetailsDBModule, configDB *mock.ConfigurationDBModule, eventsDB *mock.EventsDBModule) Component {
 	var accessToken = "the-access-token"
 	var group1ID = "end_user-group-id"
 	var group1Name = "end_user"
@@ -114,7 +114,7 @@ func TestRegisterUser(t *testing.T) {
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 	var mockTokenProvider = mock.NewOidcTokenProvider(mockCtrl)
 	var mockConfigDB = mock.NewConfigurationDBModule(mockCtrl)
-	var mockUsersDB = mock.NewUsersDBModule(mockCtrl)
+	var mockUsersDB = mock.NewUsersDetailsDBModule(mockCtrl)
 	var mockEventsDB = mock.NewEventsDBModule(mockCtrl)
 
 	var ctx = context.TODO()
@@ -213,7 +213,7 @@ func TestRegisterUser(t *testing.T) {
 		mockTokenProvider.EXPECT().ProvideToken(ctx).Return(token, nil)
 		mockKeycloakClient.EXPECT().GetUsers(accessToken, targetRealm, targetRealm, "email", *validUser.Email).Return(usersSearchResult, nil)
 		mockKeycloakClient.EXPECT().CreateUser(token, targetRealm, targetRealm, gomock.Any()).Return(userID, nil)
-		mockUsersDB.EXPECT().StoreOrUpdateUser(ctx, targetRealm, gomock.Any()).Return(insertError)
+		mockUsersDB.EXPECT().StoreOrUpdateUserDetails(ctx, targetRealm, gomock.Any()).Return(insertError)
 
 		var _, err = component.RegisterUser(ctx, confRealm, createValidUser())
 		assert.Equal(t, insertError, err)
@@ -226,7 +226,7 @@ func TestRegisterUser(t *testing.T) {
 		mockTokenProvider.EXPECT().ProvideToken(ctx).Return(token, nil)
 		mockKeycloakClient.EXPECT().GetUsers(accessToken, targetRealm, targetRealm, "email", *validUser.Email).Return(usersSearchResult, nil)
 		mockKeycloakClient.EXPECT().CreateUser(token, targetRealm, targetRealm, gomock.Any()).Return(userID, nil)
-		mockUsersDB.EXPECT().StoreOrUpdateUser(ctx, targetRealm, gomock.Any()).Return(nil)
+		mockUsersDB.EXPECT().StoreOrUpdateUserDetails(ctx, targetRealm, gomock.Any()).Return(nil)
 		mockEventsDB.EXPECT().ReportEvent(gomock.Any(), "REGISTER_USER", "back-office", gomock.Any()).Return(nil)
 
 		var _, err = component.RegisterUser(ctx, confRealm, createValidUser())
@@ -240,7 +240,7 @@ func TestRegisterUser(t *testing.T) {
 		mockTokenProvider.EXPECT().ProvideToken(ctx).Return(token, nil)
 		mockKeycloakClient.EXPECT().GetUsers(accessToken, targetRealm, targetRealm, "email", *validUser.Email).Return(usersSearchResult, nil)
 		mockKeycloakClient.EXPECT().CreateUser(token, targetRealm, targetRealm, gomock.Any()).Return(userID, nil)
-		mockUsersDB.EXPECT().StoreOrUpdateUser(ctx, targetRealm, gomock.Any()).Return(nil)
+		mockUsersDB.EXPECT().StoreOrUpdateUserDetails(ctx, targetRealm, gomock.Any()).Return(nil)
 		mockEventsDB.EXPECT().ReportEvent(gomock.Any(), "REGISTER_USER", "back-office", gomock.Any()).Return(errors.New("report event error"))
 
 		var _, err = component.RegisterUser(ctx, confRealm, createValidUser())
@@ -260,7 +260,7 @@ func TestRegisterUser(t *testing.T) {
 		mockTokenProvider.EXPECT().ProvideToken(ctx).Return(token, nil)
 		mockKeycloakClient.EXPECT().GetUsers(accessToken, targetRealm, targetRealm, "email", *validUser.Email).Return(usersSearchResult, nil)
 		mockKeycloakClient.EXPECT().CreateUser(token, targetRealm, targetRealm, gomock.Any()).Return(userID, nil)
-		mockUsersDB.EXPECT().StoreOrUpdateUser(ctx, targetRealm, gomock.Any()).Return(nil)
+		mockUsersDB.EXPECT().StoreOrUpdateUserDetails(ctx, targetRealm, gomock.Any()).Return(nil)
 
 		var _, err = component.RegisterUser(ctx, confRealm, createValidUser())
 		assert.NotNil(t, err)
@@ -277,7 +277,7 @@ func TestRegisterUser(t *testing.T) {
 		mockTokenProvider.EXPECT().ProvideToken(ctx).Return(token, nil)
 		mockKeycloakClient.EXPECT().GetUsers(accessToken, targetRealm, targetRealm, "email", *validUser.Email).Return(usersSearchResult, nil)
 		mockKeycloakClient.EXPECT().CreateUser(token, targetRealm, targetRealm, gomock.Any()).Return(userID, nil)
-		mockUsersDB.EXPECT().StoreOrUpdateUser(ctx, targetRealm, gomock.Any()).Return(nil)
+		mockUsersDB.EXPECT().StoreOrUpdateUserDetails(ctx, targetRealm, gomock.Any()).Return(nil)
 		mockKeycloakClient.EXPECT().ExecuteActionsEmail(token, targetRealm, userID, requiredActions, "client_id", gomock.Any(), "redirect_uri", gomock.Any()).DoAndReturn(
 			func(_ string, _ string, _ string, _ []string, _ string, _ string, _ string, fullURL string) error {
 				expectedSubStringURL := "%2F" + targetRealm + "%2Fconfirmation%2F" + confRealm
@@ -297,7 +297,7 @@ func TestCheckExistingUser(t *testing.T) {
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 	var mockTokenProvider = mock.NewOidcTokenProvider(mockCtrl)
 	var mockConfigDB = mock.NewConfigurationDBModule(mockCtrl)
-	var mockUsersDB = mock.NewUsersDBModule(mockCtrl)
+	var mockUsersDB = mock.NewUsersDetailsDBModule(mockCtrl)
 	var mockEventsDB = mock.NewEventsDBModule(mockCtrl)
 
 	var ctx = context.TODO()
@@ -361,7 +361,7 @@ func TestGetConfiguration(t *testing.T) {
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 	var mockTokenProvider = mock.NewOidcTokenProvider(mockCtrl)
 	var mockConfigDB = mock.NewConfigurationDBModule(mockCtrl)
-	var mockUsersDB = mock.NewUsersDBModule(mockCtrl)
+	var mockUsersDB = mock.NewUsersDetailsDBModule(mockCtrl)
 	var mockEventsDB = mock.NewEventsDBModule(mockCtrl)
 
 	var ctx = context.TODO()

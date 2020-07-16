@@ -51,7 +51,7 @@ func TestGetUserComponent(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
-	var mockUsersDB = mock.NewUsersDBModule(mockCtrl)
+	var mockUsersDB = mock.NewUsersDetailsDBModule(mockCtrl)
 	var mockEventsDB = mock.NewEventsDBModule(mockCtrl)
 	var mockTokenProvider = mock.NewTokenProvider(mockCtrl)
 	var mockAccreditations = mock.NewAccreditationsModule(mockCtrl)
@@ -83,7 +83,7 @@ func TestGetUserComponent(t *testing.T) {
 		mockTokenProvider.EXPECT().ProvideToken(gomock.Any()).Return(accessToken, nil)
 		mockKeycloakClient.EXPECT().GetUser(accessToken, realm, userID).Return(kc.UserRepresentation{}, nil)
 		var dbError = errors.New("DB error")
-		mockUsersDB.EXPECT().GetUser(ctx, realm, userID).Return(dto.DBUser{}, dbError)
+		mockUsersDB.EXPECT().GetUserDetails(ctx, realm, userID).Return(dto.DBUser{}, dbError)
 		var _, err = component.GetUser(ctx, realm, userID)
 		assert.NotNil(t, err)
 	})
@@ -91,7 +91,7 @@ func TestGetUserComponent(t *testing.T) {
 	t.Run("No user found in DB", func(t *testing.T) {
 		mockTokenProvider.EXPECT().ProvideToken(gomock.Any()).Return(accessToken, nil)
 		mockKeycloakClient.EXPECT().GetUser(accessToken, realm, userID).Return(kc.UserRepresentation{}, nil)
-		mockUsersDB.EXPECT().GetUser(ctx, realm, userID).Return(dto.DBUser{
+		mockUsersDB.EXPECT().GetUserDetails(ctx, realm, userID).Return(dto.DBUser{
 			UserID: &userID,
 		}, nil)
 		var _, err = component.GetUser(ctx, realm, userID)
@@ -102,7 +102,7 @@ func TestGetUserComponent(t *testing.T) {
 		var expirationDate = "01.01-2020"
 		mockTokenProvider.EXPECT().ProvideToken(gomock.Any()).Return(accessToken, nil)
 		mockKeycloakClient.EXPECT().GetUser(accessToken, realm, userID).Return(kc.UserRepresentation{}, nil)
-		mockUsersDB.EXPECT().GetUser(ctx, realm, userID).Return(dto.DBUser{
+		mockUsersDB.EXPECT().GetUserDetails(ctx, realm, userID).Return(dto.DBUser{
 			IDDocumentExpiration: &expirationDate,
 		}, nil)
 		var _, err = component.GetUser(ctx, realm, userID)
@@ -113,7 +113,7 @@ func TestGetUserComponent(t *testing.T) {
 		var expirationDate = "01.01.2020"
 		mockTokenProvider.EXPECT().ProvideToken(gomock.Any()).Return(accessToken, nil)
 		mockKeycloakClient.EXPECT().GetUser(accessToken, realm, userID).Return(kc.UserRepresentation{}, nil)
-		mockUsersDB.EXPECT().GetUser(ctx, realm, userID).Return(dto.DBUser{
+		mockUsersDB.EXPECT().GetUserDetails(ctx, realm, userID).Return(dto.DBUser{
 			IDDocumentExpiration: &expirationDate,
 		}, nil)
 		var _, err = component.GetUser(ctx, realm, userID)
@@ -127,7 +127,7 @@ func TestUpdateUser(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
-	var mockUsersDB = mock.NewUsersDBModule(mockCtrl)
+	var mockUsersDB = mock.NewUsersDetailsDBModule(mockCtrl)
 	var mockEventsDB = mock.NewEventsDBModule(mockCtrl)
 	var mockTokenProvider = mock.NewTokenProvider(mockCtrl)
 	var mockAccreditations = mock.NewAccreditationsModule(mockCtrl)
@@ -161,18 +161,18 @@ func TestUpdateUser(t *testing.T) {
 			FirstName:      ptr("newFirstname"),
 			IDDocumentType: ptr("type"),
 		}
-		mockUsersDB.EXPECT().GetUser(ctx, targetRealm, userID).Return(dto.DBUser{
+		mockUsersDB.EXPECT().GetUserDetails(ctx, targetRealm, userID).Return(dto.DBUser{
 			UserID: &userID,
 		}, nil)
 		var dbError = errors.New("db error")
-		mockUsersDB.EXPECT().StoreOrUpdateUser(ctx, targetRealm, gomock.Any()).Return(dbError)
+		mockUsersDB.EXPECT().StoreOrUpdateUserDetails(ctx, targetRealm, gomock.Any()).Return(dbError)
 		var err = component.UpdateUser(ctx, targetRealm, userID, user)
 		assert.NotNil(t, err)
 	})
-	mockUsersDB.EXPECT().GetUser(ctx, targetRealm, userID).Return(dto.DBUser{
+	mockUsersDB.EXPECT().GetUserDetails(ctx, targetRealm, userID).Return(dto.DBUser{
 		UserID: &userID,
 	}, nil).AnyTimes()
-	mockUsersDB.EXPECT().StoreOrUpdateUser(ctx, targetRealm, gomock.Any()).Return(nil).AnyTimes()
+	mockUsersDB.EXPECT().StoreOrUpdateUserDetails(ctx, targetRealm, gomock.Any()).Return(nil).AnyTimes()
 
 	t.Run("Fails to get user from KC", func(t *testing.T) {
 		var user = api.UserRepresentation{
@@ -235,7 +235,7 @@ func TestCreateCheck(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
-	var mockUsersDB = mock.NewUsersDBModule(mockCtrl)
+	var mockUsersDB = mock.NewUsersDetailsDBModule(mockCtrl)
 	var mockEventsDB = mock.NewEventsDBModule(mockCtrl)
 	var mockTokenProvider = mock.NewTokenProvider(mockCtrl)
 	var mockAccreditations = mock.NewAccreditationsModule(mockCtrl)

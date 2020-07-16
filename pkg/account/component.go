@@ -64,10 +64,10 @@ type Component interface {
 	SendVerifyPhoneNumber(ctx context.Context) error
 }
 
-// UsersDBModule is the minimum required interface to access the users database
-type UsersDBModule interface {
-	StoreOrUpdateUser(ctx context.Context, realm string, user dto.DBUser) error
-	GetUser(ctx context.Context, realm string, userID string) (dto.DBUser, error)
+// UsersDetailsDBModule is the minimum required interface to access the users database
+type UsersDetailsDBModule interface {
+	StoreOrUpdateUserDetails(ctx context.Context, realm string, user dto.DBUser) error
+	GetUserDetails(ctx context.Context, realm string, userID string) (dto.DBUser, error)
 }
 
 // Component is the management component.
@@ -75,12 +75,12 @@ type component struct {
 	keycloakAccountClient KeycloakAccountClient
 	eventDBModule         database.EventsDBModule
 	configDBModule        keycloakb.ConfigurationDBModule
-	usersDBModule         UsersDBModule
+	usersDBModule         UsersDetailsDBModule
 	logger                internal.Logger
 }
 
 // NewComponent returns the self-service component.
-func NewComponent(keycloakAccountClient KeycloakAccountClient, eventDBModule database.EventsDBModule, configDBModule keycloakb.ConfigurationDBModule, usersDBModule UsersDBModule, logger internal.Logger) Component {
+func NewComponent(keycloakAccountClient KeycloakAccountClient, eventDBModule database.EventsDBModule, configDBModule keycloakb.ConfigurationDBModule, usersDBModule UsersDetailsDBModule, logger internal.Logger) Component {
 	return &component{
 		keycloakAccountClient: keycloakAccountClient,
 		eventDBModule:         eventDBModule,
@@ -143,7 +143,7 @@ func (c *component) GetAccount(ctx context.Context) (api.AccountRepresentation, 
 	}
 	keycloakb.ConvertLegacyAttribute(&userKc)
 
-	dbUser, err := c.usersDBModule.GetUser(ctx, realm, userID)
+	dbUser, err := c.usersDBModule.GetUserDetails(ctx, realm, userID)
 	if err != nil {
 		c.logger.Warn(ctx, "err", err.Error())
 		return userRep, err
@@ -178,7 +178,7 @@ func (c *component) UpdateAccount(ctx context.Context, user api.AccountRepresent
 	keycloakb.ConvertLegacyAttribute(&oldUserKc)
 
 	// get the "old" user from DB
-	oldUser, err := c.usersDBModule.GetUser(ctx, realm, userID)
+	oldUser, err := c.usersDBModule.GetUserDetails(ctx, realm, userID)
 	if err != nil {
 		c.logger.Warn(ctx, "err", err.Error())
 		return err
@@ -259,7 +259,7 @@ func (c *component) UpdateAccount(ctx context.Context, user api.AccountRepresent
 
 	var dbUser = c.mergeUser(userID, user, oldUser)
 
-	err = c.usersDBModule.StoreOrUpdateUser(ctx, realm, dbUser)
+	err = c.usersDBModule.StoreOrUpdateUserDetails(ctx, realm, dbUser)
 	if err != nil {
 		c.logger.Warn(ctx, "err", err.Error())
 		return err
