@@ -31,10 +31,10 @@ type TokenProvider interface {
 	ProvideToken(ctx context.Context) (string, error)
 }
 
-// UsersDBModule is the interface from the users module
-type UsersDBModule interface {
-	StoreOrUpdateUser(ctx context.Context, realm string, user dto.DBUser) error
-	GetUser(ctx context.Context, realm string, userID string) (dto.DBUser, error)
+// UsersDetailsDBModule is the interface from the users module
+type UsersDetailsDBModule interface {
+	StoreOrUpdateUserDetails(ctx context.Context, realm string, user dto.DBUser) error
+	GetUserDetails(ctx context.Context, realm string, userID string) (dto.DBUser, error)
 	CreateCheck(ctx context.Context, realm string, userID string, check dto.DBCheck) error
 }
 
@@ -55,14 +55,14 @@ type Component interface {
 type component struct {
 	keycloakClient KeycloakClient
 	tokenProvider  toolbox.OidcTokenProvider
-	usersDBModule  UsersDBModule
+	usersDBModule  UsersDetailsDBModule
 	eventsDBModule database.EventsDBModule
 	accredsModule  keycloakb.AccreditationsModule
 	logger         internal.Logger
 }
 
 // NewComponent returns the management component.
-func NewComponent(keycloakClient KeycloakClient, tokenProvider TokenProvider, usersDBModule UsersDBModule, eventsDBModule database.EventsDBModule, accredsModule keycloakb.AccreditationsModule, logger internal.Logger) Component {
+func NewComponent(keycloakClient KeycloakClient, tokenProvider TokenProvider, usersDBModule UsersDetailsDBModule, eventsDBModule database.EventsDBModule, accredsModule keycloakb.AccreditationsModule, logger internal.Logger) Component {
 	return &component{
 		keycloakClient: keycloakClient,
 		tokenProvider:  tokenProvider,
@@ -111,7 +111,7 @@ func (c *component) GetUser(ctx context.Context, realmName string, userID string
 	keycloakb.ConvertLegacyAttribute(&kcUser)
 
 	var dbUser dto.DBUser
-	dbUser, err = c.usersDBModule.GetUser(ctx, realmName, userID)
+	dbUser, err = c.usersDBModule.GetUserDetails(ctx, realmName, userID)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "GetUser: can't find user in keycloak")
 		return api.UserRepresentation{}, err
@@ -171,7 +171,7 @@ func (c *component) updateUserDatabase(ctx context.Context, realmName, userID st
 		IDDocumentNumber: user.IDDocumentNumber,
 	}
 
-	if existingUser, err := c.usersDBModule.GetUser(ctx, realmName, userID); err == nil {
+	if existingUser, err := c.usersDBModule.GetUserDetails(ctx, realmName, userID); err == nil {
 		shouldRevokeAccreditations = user.HasUpdateOfAccreditationDependantInformationDB(existingUser)
 	}
 
@@ -180,7 +180,7 @@ func (c *component) updateUserDatabase(ctx context.Context, realmName, userID st
 		userDB.IDDocumentExpiration = &expiration
 	}
 
-	var err = c.usersDBModule.StoreOrUpdateUser(ctx, realmName, userDB)
+	var err = c.usersDBModule.StoreOrUpdateUserDetails(ctx, realmName, userDB)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Can't update user in DB", "err", err.Error())
 		return false, err
@@ -214,7 +214,7 @@ func needKcProcessing(user api.UserRepresentation) bool {
 		user.Gender,
 		user.FirstName,
 		user.LastName,
-		user.EmailAddress,
+		user.Email,
 		user.PhoneNumber,
 	}
 

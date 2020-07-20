@@ -34,7 +34,7 @@ func createValidUser() apikyc.UserRepresentation {
 		Gender:               &gender,
 		FirstName:            &firstName,
 		LastName:             &lastName,
-		EmailAddress:         &email,
+		Email:                &email,
 		PhoneNumber:          &phoneNumber,
 		BirthDate:            &birthDate,
 		BirthLocation:        &birthLocation,
@@ -49,7 +49,7 @@ func TestGetActions(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
-	var mockUsersDB = mock.NewUsersDBModule(mockCtrl)
+	var mockUsersDB = mock.NewUsersDetailsDBModule(mockCtrl)
 	var mockEventsDB = mock.NewEventsDBModule(mockCtrl)
 	var mockAccreditations = mock.NewAccreditationsModule(mockCtrl)
 
@@ -67,7 +67,7 @@ func TestGetUserByUsernameComponent(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
-	var mockUsersDB = mock.NewUsersDBModule(mockCtrl)
+	var mockUsersDB = mock.NewUsersDetailsDBModule(mockCtrl)
 	var mockEventsDB = mock.NewEventsDBModule(mockCtrl)
 	var mockAccreditations = mock.NewAccreditationsModule(mockCtrl)
 
@@ -130,7 +130,7 @@ func TestGetUserByUsernameComponent(t *testing.T) {
 	t.Run("GetUserByUsername success", func(t *testing.T) {
 		mockKeycloakClient.EXPECT().GetGroups(accessToken, realm).Return(kcGroupSearch, nil)
 		mockKeycloakClient.EXPECT().GetUsers(accessToken, realm, realm, PrmQryUserName, username, "groupId", grpEndUserID).Return(kcUsersSearch, nil)
-		mockUsersDB.EXPECT().GetUser(ctx, realm, *kcUser.ID).Return(dto.DBUser{
+		mockUsersDB.EXPECT().GetUserDetails(ctx, realm, *kcUser.ID).Return(dto.DBUser{
 			UserID: &userID,
 		}, nil)
 		var user, err = component.GetUserByUsername(ctx, username)
@@ -144,7 +144,7 @@ func TestGetUserComponent(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
-	var mockUsersDB = mock.NewUsersDBModule(mockCtrl)
+	var mockUsersDB = mock.NewUsersDetailsDBModule(mockCtrl)
 	var mockEventsDB = mock.NewEventsDBModule(mockCtrl)
 	var mockAccreditations = mock.NewAccreditationsModule(mockCtrl)
 
@@ -169,14 +169,14 @@ func TestGetUserComponent(t *testing.T) {
 
 	t.Run("GetUser from DB fails", func(t *testing.T) {
 		mockKeycloakClient.EXPECT().GetUser(accessToken, realm, userID).Return(kcUser, nil)
-		mockUsersDB.EXPECT().GetUser(ctx, realm, *kcUser.ID).Return(dto.DBUser{}, errors.New("database"))
+		mockUsersDB.EXPECT().GetUserDetails(ctx, realm, *kcUser.ID).Return(dto.DBUser{}, errors.New("database"))
 		var _, err = component.GetUser(ctx, userID)
 		assert.NotNil(t, err)
 	})
 
 	t.Run("GetUser success", func(t *testing.T) {
 		mockKeycloakClient.EXPECT().GetUser(accessToken, realm, userID).Return(kcUser, nil)
-		mockUsersDB.EXPECT().GetUser(ctx, realm, *kcUser.ID).Return(dto.DBUser{
+		mockUsersDB.EXPECT().GetUserDetails(ctx, realm, *kcUser.ID).Return(dto.DBUser{
 			UserID: &userID,
 		}, nil)
 		var user, err = component.GetUser(ctx, userID)
@@ -204,7 +204,7 @@ func TestValidateUser(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
-	var mockUsersDB = mock.NewUsersDBModule(mockCtrl)
+	var mockUsersDB = mock.NewUsersDetailsDBModule(mockCtrl)
 	var mockEventsDB = mock.NewEventsDBModule(mockCtrl)
 	var mockAccreditations = mock.NewAccreditationsModule(mockCtrl)
 
@@ -254,7 +254,7 @@ func TestValidateUser(t *testing.T) {
 	t.Run("SQL error when searching user in database", func(t *testing.T) {
 		var sqlError = errors.New("sql error")
 		mockAccreditations.EXPECT().GetUserAndPrepareAccreditations(ctx, accessToken, targetRealm, userID, configuration.CheckKeyPhysical).Return(kcUser, 0, nil)
-		mockUsersDB.EXPECT().GetUser(ctx, targetRealm, userID).Return(dto.DBUser{}, sqlError)
+		mockUsersDB.EXPECT().GetUserDetails(ctx, targetRealm, userID).Return(dto.DBUser{}, sqlError)
 
 		var err = component.ValidateUser(ctx, userID, validUser)
 		assert.NotNil(t, err)
@@ -263,7 +263,7 @@ func TestValidateUser(t *testing.T) {
 	t.Run("Keycloak update fails", func(t *testing.T) {
 		var kcError = errors.New("keycloak error")
 		mockAccreditations.EXPECT().GetUserAndPrepareAccreditations(ctx, accessToken, targetRealm, userID, configuration.CheckKeyPhysical).Return(kcUser, 0, nil)
-		mockUsersDB.EXPECT().GetUser(ctx, targetRealm, userID).Return(dbUser, nil)
+		mockUsersDB.EXPECT().GetUserDetails(ctx, targetRealm, userID).Return(dbUser, nil)
 		mockKeycloakClient.EXPECT().UpdateUser(accessToken, targetRealm, userID, gomock.Any()).Return(kcError)
 
 		var err = component.ValidateUser(ctx, userID, validUser)
@@ -273,9 +273,9 @@ func TestValidateUser(t *testing.T) {
 	t.Run("Update user in DB fails", func(t *testing.T) {
 		var dbError = errors.New("db update error")
 		mockAccreditations.EXPECT().GetUserAndPrepareAccreditations(ctx, accessToken, targetRealm, userID, configuration.CheckKeyPhysical).Return(kcUser, 0, nil)
-		mockUsersDB.EXPECT().GetUser(ctx, targetRealm, userID).Return(dbUser, nil)
+		mockUsersDB.EXPECT().GetUserDetails(ctx, targetRealm, userID).Return(dbUser, nil)
 		mockKeycloakClient.EXPECT().UpdateUser(accessToken, targetRealm, userID, gomock.Any()).Return(nil)
-		mockUsersDB.EXPECT().StoreOrUpdateUser(ctx, targetRealm, gomock.Any()).Return(dbError)
+		mockUsersDB.EXPECT().StoreOrUpdateUserDetails(ctx, targetRealm, gomock.Any()).Return(dbError)
 
 		var err = component.ValidateUser(ctx, userID, validUser)
 		assert.Equal(t, dbError, err)
@@ -284,9 +284,9 @@ func TestValidateUser(t *testing.T) {
 	t.Run("Store check in DB fails", func(t *testing.T) {
 		var dbError = errors.New("db update error")
 		mockAccreditations.EXPECT().GetUserAndPrepareAccreditations(ctx, accessToken, targetRealm, userID, configuration.CheckKeyPhysical).Return(kcUser, 0, nil)
-		mockUsersDB.EXPECT().GetUser(ctx, targetRealm, userID).Return(dbUser, nil)
+		mockUsersDB.EXPECT().GetUserDetails(ctx, targetRealm, userID).Return(dbUser, nil)
 		mockKeycloakClient.EXPECT().UpdateUser(accessToken, targetRealm, userID, gomock.Any()).Return(nil)
-		mockUsersDB.EXPECT().StoreOrUpdateUser(ctx, targetRealm, gomock.Any()).Return(nil)
+		mockUsersDB.EXPECT().StoreOrUpdateUserDetails(ctx, targetRealm, gomock.Any()).Return(nil)
 		mockUsersDB.EXPECT().CreateCheck(ctx, targetRealm, userID, gomock.Any()).Return(dbError)
 
 		var err = component.ValidateUser(ctx, userID, validUser)
@@ -295,9 +295,9 @@ func TestValidateUser(t *testing.T) {
 
 	t.Run("ValidateUser is successful", func(t *testing.T) {
 		mockAccreditations.EXPECT().GetUserAndPrepareAccreditations(ctx, accessToken, targetRealm, userID, configuration.CheckKeyPhysical).Return(kcUser, 0, nil)
-		mockUsersDB.EXPECT().GetUser(ctx, targetRealm, userID).Return(dbUser, nil)
+		mockUsersDB.EXPECT().GetUserDetails(ctx, targetRealm, userID).Return(dbUser, nil)
 		mockKeycloakClient.EXPECT().UpdateUser(accessToken, targetRealm, userID, gomock.Any()).Return(nil)
-		mockUsersDB.EXPECT().StoreOrUpdateUser(ctx, targetRealm, gomock.Any()).Return(nil)
+		mockUsersDB.EXPECT().StoreOrUpdateUserDetails(ctx, targetRealm, gomock.Any()).Return(nil)
 		mockUsersDB.EXPECT().CreateCheck(ctx, targetRealm, userID, gomock.Any()).Return(nil)
 		mockEventsDB.EXPECT().ReportEvent(gomock.Any(), "VALIDATE_USER", "back-office", gomock.Any())
 
@@ -307,9 +307,9 @@ func TestValidateUser(t *testing.T) {
 
 	t.Run("ValidateUser is successful - Report event fails", func(t *testing.T) {
 		mockAccreditations.EXPECT().GetUserAndPrepareAccreditations(ctx, accessToken, targetRealm, userID, configuration.CheckKeyPhysical).Return(kcUser, 0, nil)
-		mockUsersDB.EXPECT().GetUser(ctx, targetRealm, userID).Return(dbUser, nil)
+		mockUsersDB.EXPECT().GetUserDetails(ctx, targetRealm, userID).Return(dbUser, nil)
 		mockKeycloakClient.EXPECT().UpdateUser(accessToken, targetRealm, userID, gomock.Any()).Return(nil)
-		mockUsersDB.EXPECT().StoreOrUpdateUser(ctx, targetRealm, gomock.Any()).Return(nil)
+		mockUsersDB.EXPECT().StoreOrUpdateUserDetails(ctx, targetRealm, gomock.Any()).Return(nil)
 		mockUsersDB.EXPECT().CreateCheck(ctx, targetRealm, userID, gomock.Any()).Return(nil)
 		mockEventsDB.EXPECT().ReportEvent(gomock.Any(), "VALIDATE_USER", "back-office", gomock.Any()).Return(errors.New("report fails"))
 

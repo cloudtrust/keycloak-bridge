@@ -12,13 +12,13 @@ import (
 
 // UserRepresentation struct
 type UserRepresentation struct {
-	UserID               *string    `json:"userId,omitempty"`
+	ID                   *string    `json:"id,omitempty"`
 	Username             *string    `json:"username,omitempty"`
 	Gender               *string    `json:"gender,omitempty"`
 	FirstName            *string    `json:"firstName,omitempty"`
 	LastName             *string    `json:"lastName,omitempty"`
-	EmailAddress         *string    `json:"emailAddress,omitempty"`
-	EmailAddressVerified *bool      `json:"emailAddressVerified,omitempty"`
+	Email                *string    `json:"email,omitempty"`
+	EmailVerified        *bool      `json:"emailVerified,omitempty"`
 	PhoneNumber          *string    `json:"phoneNumber,omitempty"`
 	PhoneNumberVerified  *bool      `json:"phoneNumberVerified,omitempty"`
 	BirthDate            *time.Time `json:"birthDate,omitempty"`
@@ -128,8 +128,8 @@ func (u *UserRepresentation) ExportToKeycloak(kcUser *kc.UserRepresentation) {
 	if u.Username != nil {
 		kcUser.Username = u.Username
 	}
-	if u.EmailAddress != nil && (kcUser.Email == nil || *kcUser.Email != *u.EmailAddress) {
-		kcUser.Email = u.EmailAddress
+	if u.Email != nil && (kcUser.Email == nil || *kcUser.Email != *u.Email) {
+		kcUser.Email = u.Email
 		kcUser.EmailVerified = &bFalse
 	}
 	if u.FirstName != nil {
@@ -164,13 +164,13 @@ func (u *UserRepresentation) ImportFromKeycloak(kcUser kc.UserRepresentation) {
 		}
 	}
 
-	u.UserID = kcUser.ID
+	u.ID = kcUser.ID
 	u.Username = kcUser.Username
 	u.Gender = gender
 	u.FirstName = kcUser.FirstName
 	u.LastName = kcUser.LastName
-	u.EmailAddress = kcUser.Email
-	u.EmailAddressVerified = kcUser.EmailVerified
+	u.Email = kcUser.Email
+	u.EmailVerified = kcUser.EmailVerified
 	u.PhoneNumber = phoneNumber
 	u.PhoneNumberVerified = phoneNumberVerified
 	u.BirthDate = birthdate
@@ -179,11 +179,11 @@ func (u *UserRepresentation) ImportFromKeycloak(kcUser kc.UserRepresentation) {
 // Validate checks the validity of the given User
 func (u *UserRepresentation) Validate() error {
 	return validation.NewParameterValidator().
-		ValidateParameterRegExp(prmUserID, u.UserID, RegExpID, false).
+		ValidateParameterRegExp(prmUserID, u.ID, RegExpID, false).
 		ValidateParameterIn(prmUserGender, u.Gender, allowedGender, false).
 		ValidateParameterRegExp(prmUserFirstName, u.FirstName, regExpFirstName, false).
 		ValidateParameterRegExp(prmUserLastName, u.LastName, regExpLastName, false).
-		ValidateParameterRegExp(prmUserEmail, u.EmailAddress, regExpEmail, false).
+		ValidateParameterRegExp(prmUserEmail, u.Email, regExpEmail, false).
 		ValidateParameterPhoneNumber(prmUserPhoneNumber, u.PhoneNumber, false).
 		ValidateParameterRegExp(prmUserBirthLocation, u.BirthLocation, regExpBirthLocation, false).
 		ValidateParameterIn(prmUserIDDocumentType, u.IDDocumentType, allowedDocumentType, false).

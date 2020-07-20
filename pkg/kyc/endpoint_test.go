@@ -89,7 +89,7 @@ func TestMakeValidateUserEndpoint(t *testing.T) {
 	var first = "John"
 	var last = "Doe"
 	var userID = "ux467913"
-	var user = apikyc.UserRepresentation{UserID: &userID, FirstName: &first, LastName: &last}
+	var user = apikyc.UserRepresentation{ID: &userID, FirstName: &first, LastName: &last}
 	var m = map[string]string{}
 
 	t.Run("ValidateUser - success case", func(t *testing.T) {

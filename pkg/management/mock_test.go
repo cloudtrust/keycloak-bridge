@@ -9,4 +9,4 @@ package management
 //go:generate mockgen -destination=./mock/keycloak_client.go -package=mock -mock_names=KeycloakClient=KeycloakClient github.com/cloudtrust/keycloak-bridge/pkg/management KeycloakClient
 //go:generate mockgen -destination=./mock/database.go -package=mock -mock_names=Transaction=Transaction github.com/cloudtrust/common-service/database/sqltypes Transaction
 //go:generate mockgen -destination=./mock/authentication_db_reader.go -package=mock -mock_names=AuthorizationDBReader=AuthorizationDBReader github.com/cloudtrust/common-service/security AuthorizationDBReader
-//go:generate mockgen -destination=./mock/usersdbmodule.go -package=mock -mock_names=UsersDBModule=UsersDBModule github.com/cloudtrust/keycloak-bridge/pkg/management UsersDBModule
+//go:generate mockgen -destination=./mock/usersdbmodule.go -package=mock -mock_names=UsersDetailsDBModule=UsersDetailsDBModule github.com/cloudtrust/keycloak-bridge/pkg/management UsersDetailsDBModule

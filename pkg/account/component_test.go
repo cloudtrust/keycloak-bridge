@@ -30,9 +30,9 @@ func TestUpdatePassword(t *testing.T) {
 	mockKeycloakAccountClient := mock.NewKeycloakAccountClient(mockCtrl)
 	mockEventDBModule := mock.NewEventsDBModule(mockCtrl)
 	mockConfigurationDBModule := mock.NewConfigurationDBModule(mockCtrl)
-	mockUsersDBModule := mock.NewUsersDBModule(mockCtrl)
+	mockUsersDetailsDBModule := mock.NewUsersDetailsDBModule(mockCtrl)
 	mockLogger := log.NewNopLogger()
-	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigurationDBModule, mockUsersDBModule, mockLogger)
+	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigurationDBModule, mockUsersDetailsDBModule, mockLogger)
 
 	accessToken := "access token"
 	realm := "sample realm"
@@ -83,9 +83,9 @@ func TestUpdatePasswordWrongPwd(t *testing.T) {
 
 	mockKeycloakAccountClient := mock.NewKeycloakAccountClient(mockCtrl)
 	mockEventDBModule := mock.NewEventsDBModule(mockCtrl)
-	mockUsersDBModule := mock.NewUsersDBModule(mockCtrl)
+	mockUsersDetailsDBModule := mock.NewUsersDetailsDBModule(mockCtrl)
 	mockConfigurationDBModule := mock.NewConfigurationDBModule(mockCtrl)
-	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigurationDBModule, mockUsersDBModule, log.NewNopLogger())
+	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigurationDBModule, mockUsersDetailsDBModule, log.NewNopLogger())
 
 	accessToken := "access token"
 	realm := "sample realm"
@@ -123,11 +123,11 @@ func TestUpdateAccount(t *testing.T) {
 
 	mockKeycloakAccountClient := mock.NewKeycloakAccountClient(mockCtrl)
 	mockEventDBModule := mock.NewEventsDBModule(mockCtrl)
-	mockUsersDBModule := mock.NewUsersDBModule(mockCtrl)
+	mockUsersDetailsDBModule := mock.NewUsersDetailsDBModule(mockCtrl)
 	mockConfigurationDBModule := mock.NewConfigurationDBModule(mockCtrl)
 	mockLogger := log.NewNopLogger()
 
-	var accountComponent = NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigurationDBModule, mockUsersDBModule, mockLogger)
+	var accountComponent = NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigurationDBModule, mockUsersDetailsDBModule, mockLogger)
 
 	accessToken := "access token"
 	realmName := "master"
@@ -215,8 +215,8 @@ func TestUpdateAccount(t *testing.T) {
 				assert.Equal(t, phoneNumber, *kcUserRep.GetAttributeString(constants.AttrbPhoneNumber))
 				return nil
 			}).Times(1)
-		mockUsersDBModule.EXPECT().GetUser(ctx, realmName, userID).Return(dbUser, nil)
-		mockUsersDBModule.EXPECT().StoreOrUpdateUser(ctx, realmName, gomock.Any()).Return(nil)
+		mockUsersDetailsDBModule.EXPECT().GetUserDetails(ctx, realmName, userID).Return(dbUser, nil)
+		mockUsersDetailsDBModule.EXPECT().StoreOrUpdateUserDetails(ctx, realmName, gomock.Any()).Return(nil)
 
 		err := accountComponent.UpdateAccount(ctx, userRep)
 
@@ -225,7 +225,7 @@ func TestUpdateAccount(t *testing.T) {
 	t.Run("Keycloak update succces - DB get user fails", func(t *testing.T) {
 		mockEventDBModule.EXPECT().ReportEvent(ctx, "UPDATE_ACCOUNT", "self-service", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 		mockKeycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kcUserRep, nil).Times(1)
-		mockUsersDBModule.EXPECT().GetUser(ctx, realmName, userID).Return(dto.DBUser{}, errors.New("db error"))
+		mockUsersDetailsDBModule.EXPECT().GetUserDetails(ctx, realmName, userID).Return(dto.DBUser{}, errors.New("db error"))
 
 		err := accountComponent.UpdateAccount(ctx, userRep)
 
@@ -235,10 +235,10 @@ func TestUpdateAccount(t *testing.T) {
 		mockEventDBModule.EXPECT().ReportEvent(ctx, "UPDATE_ACCOUNT", "self-service", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 		mockKeycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kcUserRep, nil).Times(1)
 		mockKeycloakAccountClient.EXPECT().UpdateAccount(accessToken, realmName, gomock.Any()).Return(nil).Times(1)
-		mockUsersDBModule.EXPECT().GetUser(ctx, realmName, userID).Return(dto.DBUser{
+		mockUsersDetailsDBModule.EXPECT().GetUserDetails(ctx, realmName, userID).Return(dto.DBUser{
 			UserID: &userID,
 		}, nil)
-		mockUsersDBModule.EXPECT().StoreOrUpdateUser(ctx, realmName, gomock.Any()).Return(errors.New("db error"))
+		mockUsersDetailsDBModule.EXPECT().StoreOrUpdateUserDetails(ctx, realmName, gomock.Any()).Return(errors.New("db error"))
 
 		err := accountComponent.UpdateAccount(ctx, userRep)
 
@@ -263,10 +263,10 @@ func TestUpdateAccount(t *testing.T) {
 		mockKeycloakAccountClient.EXPECT().ExecuteActionsEmail(accessToken, realmName, []string{ActionVerifyEmail}).Return(nil).Times(1)
 		mockEventDBModule.EXPECT().ReportEvent(ctx, "ACTION_EMAIL", "self-service", database.CtEventRealmName, realmName,
 			database.CtEventUserID, userID, database.CtEventAdditionalInfo, gomock.Any()).Return(nil).Times(1)
-		mockUsersDBModule.EXPECT().GetUser(ctx, realmName, userID).Return(dto.DBUser{
+		mockUsersDetailsDBModule.EXPECT().GetUserDetails(ctx, realmName, userID).Return(dto.DBUser{
 			UserID: &userID,
 		}, nil)
-		mockUsersDBModule.EXPECT().StoreOrUpdateUser(ctx, realmName, gomock.Any()).Return(nil)
+		mockUsersDetailsDBModule.EXPECT().StoreOrUpdateUserDetails(ctx, realmName, gomock.Any()).Return(nil)
 		// Mail updated
 		mockKeycloakAccountClient.EXPECT().SendEmail(accessToken, realmName, emailTemplateUpdatedEmail, emailSubjectUpdatedEmail, &oldEmail, gomock.Any()).Return(nil)
 		mockEventDBModule.EXPECT().ReportEvent(ctx, "EMAIL_CHANGED_EMAIL_SENT", "self-service", database.CtEventRealmName, realmName,
@@ -308,10 +308,10 @@ func TestUpdateAccount(t *testing.T) {
 		mockKeycloakAccountClient.EXPECT().ExecuteActionsEmail(accessToken, realmName, []string{ActionVerifyPhoneNumber}).Return(nil).Times(1)
 		mockEventDBModule.EXPECT().ReportEvent(ctx, "ACTION_EMAIL", "self-service", database.CtEventRealmName, realmName,
 			database.CtEventUserID, userID, database.CtEventAdditionalInfo, gomock.Any()).Return(nil).Times(1)
-		mockUsersDBModule.EXPECT().GetUser(ctx, realmName, userID).Return(dto.DBUser{
+		mockUsersDetailsDBModule.EXPECT().GetUserDetails(ctx, realmName, userID).Return(dto.DBUser{
 			UserID: &userID,
 		}, nil)
-		mockUsersDBModule.EXPECT().StoreOrUpdateUser(ctx, realmName, gomock.Any()).Return(nil)
+		mockUsersDetailsDBModule.EXPECT().StoreOrUpdateUserDetails(ctx, realmName, gomock.Any()).Return(nil)
 
 		err := accountComponent.UpdateAccount(ctx, userRep)
 
@@ -331,7 +331,7 @@ func TestUpdateAccount(t *testing.T) {
 				return nil
 			})
 		mockKeycloakAccountClient.EXPECT().ExecuteActionsEmail(accessToken, realmName, []string{ActionVerifyPhoneNumber}).Return(anError)
-		mockUsersDBModule.EXPECT().GetUser(ctx, realmName, userID).Return(dto.DBUser{
+		mockUsersDetailsDBModule.EXPECT().GetUserDetails(ctx, realmName, userID).Return(dto.DBUser{
 			UserID: &userID,
 		}, nil)
 
@@ -356,10 +356,10 @@ func TestUpdateAccount(t *testing.T) {
 				assert.Equal(t, true, *verified)
 				return nil
 			}).Times(1)
-		mockUsersDBModule.EXPECT().GetUser(ctx, realmName, userID).Return(dto.DBUser{
+		mockUsersDetailsDBModule.EXPECT().GetUserDetails(ctx, realmName, userID).Return(dto.DBUser{
 			UserID: &userID,
 		}, nil)
-		mockUsersDBModule.EXPECT().StoreOrUpdateUser(ctx, realmName, gomock.Any()).Return(nil)
+		mockUsersDetailsDBModule.EXPECT().StoreOrUpdateUserDetails(ctx, realmName, gomock.Any()).Return(nil)
 
 		err := accountComponent.UpdateAccount(ctx, userRepWithoutAttr)
 
@@ -379,7 +379,7 @@ func TestUpdateAccount(t *testing.T) {
 			ID: &id,
 		}
 		mockKeycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kcUserRep, nil).AnyTimes()
-		mockUsersDBModule.EXPECT().GetUser(ctx, realmName, userID).Return(dto.DBUser{
+		mockUsersDetailsDBModule.EXPECT().GetUserDetails(ctx, realmName, userID).Return(dto.DBUser{
 			UserID: &userID,
 		}, nil)
 		mockKeycloakAccountClient.EXPECT().UpdateAccount(accessToken, realmName, gomock.Any()).Return(fmt.Errorf("Unexpected error")).Times(1)
@@ -396,10 +396,10 @@ func TestGetUser(t *testing.T) {
 	mockKeycloakAccountClient := mock.NewKeycloakAccountClient(mockCtrl)
 	mockEventDBModule := mock.NewEventsDBModule(mockCtrl)
 	mockConfigurationDBModule := mock.NewConfigurationDBModule(mockCtrl)
-	mockUsersDBModule := mock.NewUsersDBModule(mockCtrl)
+	mockUsersDetailsDBModule := mock.NewUsersDetailsDBModule(mockCtrl)
 	mockLogger := log.NewNopLogger()
 
-	var accountComponent = NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigurationDBModule, mockUsersDBModule, mockLogger)
+	var accountComponent = NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigurationDBModule, mockUsersDetailsDBModule, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -421,7 +421,7 @@ func TestGetUser(t *testing.T) {
 	t.Run("Call to database fails", func(t *testing.T) {
 		var dbError = errors.New("db error")
 		mockKeycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kc.UserRepresentation{}, nil)
-		mockUsersDBModule.EXPECT().GetUser(ctx, realmName, userID).Return(dto.DBUser{}, dbError)
+		mockUsersDetailsDBModule.EXPECT().GetUserDetails(ctx, realmName, userID).Return(dto.DBUser{}, dbError)
 		_, err := accountComponent.GetAccount(ctx)
 
 		assert.Equal(t, dbError, err)
@@ -461,7 +461,7 @@ func TestGetUser(t *testing.T) {
 
 	t.Run("Get user with succces", func(t *testing.T) {
 		mockKeycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kcUserRep, nil).Times(1)
-		mockUsersDBModule.EXPECT().GetUser(ctx, realmName, userID).Return(dto.DBUser{
+		mockUsersDetailsDBModule.EXPECT().GetUserDetails(ctx, realmName, userID).Return(dto.DBUser{
 			UserID: &userID,
 		}, nil)
 		mockEventDBModule.EXPECT().ReportEvent(ctx, "GET_DETAILS", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
@@ -488,7 +488,7 @@ func TestGetUser(t *testing.T) {
 		var docID = "PASS123456789"
 		var docExp = "31.12.2029"
 		mockKeycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kcUserRep, nil).Times(1)
-		mockUsersDBModule.EXPECT().GetUser(ctx, realmName, userID).Return(dto.DBUser{
+		mockUsersDetailsDBModule.EXPECT().GetUserDetails(ctx, realmName, userID).Return(dto.DBUser{
 			BirthLocation:        &birthLocation,
 			IDDocumentType:       &docType,
 			IDDocumentNumber:     &docID,
@@ -518,11 +518,11 @@ func TestDeleteUser(t *testing.T) {
 	defer mockCtrl.Finish()
 	mockKeycloakAccountClient := mock.NewKeycloakAccountClient(mockCtrl)
 	mockEventDBModule := mock.NewEventsDBModule(mockCtrl)
-	mockUsersDBModule := mock.NewUsersDBModule(mockCtrl)
+	mockUsersDetailsDBModule := mock.NewUsersDetailsDBModule(mockCtrl)
 	mockConfigurationDBModule := mock.NewConfigurationDBModule(mockCtrl)
 	mockLogger := log.NewNopLogger()
 
-	var accountComponent = NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigurationDBModule, mockUsersDBModule, mockLogger)
+	var accountComponent = NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigurationDBModule, mockUsersDetailsDBModule, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -556,10 +556,10 @@ func TestGetCredentials(t *testing.T) {
 	mockKeycloakAccountClient := mock.NewKeycloakAccountClient(mockCtrl)
 	mockEventDBModule := mock.NewEventsDBModule(mockCtrl)
 	mockConfigurationDBModule := mock.NewConfigurationDBModule(mockCtrl)
-	mockUsersDBModule := mock.NewUsersDBModule(mockCtrl)
+	mockUsersDetailsDBModule := mock.NewUsersDetailsDBModule(mockCtrl)
 	mockLogger := log.NewNopLogger()
 
-	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigurationDBModule, mockUsersDBModule, mockLogger)
+	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigurationDBModule, mockUsersDetailsDBModule, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var currentRealm = "master"
@@ -616,10 +616,10 @@ func TestGetCredentialRegistrators(t *testing.T) {
 	mockKeycloakAccountClient := mock.NewKeycloakAccountClient(mockCtrl)
 	mockEventDBModule := mock.NewEventsDBModule(mockCtrl)
 	mockConfigurationDBModule := mock.NewConfigurationDBModule(mockCtrl)
-	mockUsersDBModule := mock.NewUsersDBModule(mockCtrl)
+	mockUsersDetailsDBModule := mock.NewUsersDetailsDBModule(mockCtrl)
 	mockLogger := log.NewNopLogger()
 
-	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigurationDBModule, mockUsersDBModule, mockLogger)
+	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigurationDBModule, mockUsersDetailsDBModule, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var currentRealm = "master"
@@ -663,10 +663,10 @@ func TestUpdateLabelCredential(t *testing.T) {
 	mockKeycloakAccountClient := mock.NewKeycloakAccountClient(mockCtrl)
 	mockEventDBModule := mock.NewEventsDBModule(mockCtrl)
 	mockConfigurationDBModule := mock.NewConfigurationDBModule(mockCtrl)
-	mockUsersDBModule := mock.NewUsersDBModule(mockCtrl)
+	mockUsersDetailsDBModule := mock.NewUsersDetailsDBModule(mockCtrl)
 	mockLogger := log.NewNopLogger()
 
-	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigurationDBModule, mockUsersDBModule, mockLogger)
+	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigurationDBModule, mockUsersDetailsDBModule, mockLogger)
 
 	accessToken := "access token"
 	realm := "sample realm"
@@ -705,10 +705,10 @@ func TestDeleteCredential(t *testing.T) {
 	mockKeycloakAccountClient := mock.NewKeycloakAccountClient(mockCtrl)
 	mockEventDBModule := mock.NewEventsDBModule(mockCtrl)
 	mockConfigurationDBModule := mock.NewConfigurationDBModule(mockCtrl)
-	mockUsersDBModule := mock.NewUsersDBModule(mockCtrl)
+	mockUsersDetailsDBModule := mock.NewUsersDetailsDBModule(mockCtrl)
 	mockLogger := log.NewNopLogger()
 
-	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigurationDBModule, mockUsersDBModule, mockLogger)
+	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigurationDBModule, mockUsersDetailsDBModule, mockLogger)
 
 	accessToken := "access token"
 	realm := "sample realm"
@@ -745,10 +745,10 @@ func TestMoveCredential(t *testing.T) {
 	mockKeycloakAccountClient := mock.NewKeycloakAccountClient(mockCtrl)
 	mockEventDBModule := mock.NewEventsDBModule(mockCtrl)
 	mockConfigurationDBModule := mock.NewConfigurationDBModule(mockCtrl)
-	mockUsersDBModule := mock.NewUsersDBModule(mockCtrl)
+	mockUsersDetailsDBModule := mock.NewUsersDetailsDBModule(mockCtrl)
 	mockLogger := log.NewNopLogger()
 
-	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigurationDBModule, mockUsersDBModule, mockLogger)
+	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigurationDBModule, mockUsersDetailsDBModule, mockLogger)
 
 	accessToken := "access token"
 	realm := "sample realm"
@@ -802,10 +802,10 @@ func TestGetConfiguration(t *testing.T) {
 	mockKeycloakAccountClient := mock.NewKeycloakAccountClient(mockCtrl)
 	mockEventDBModule := mock.NewEventsDBModule(mockCtrl)
 	mockConfigurationDBModule := mock.NewConfigurationDBModule(mockCtrl)
-	mockUsersDBModule := mock.NewUsersDBModule(mockCtrl)
+	mockUsersDetailsDBModule := mock.NewUsersDetailsDBModule(mockCtrl)
 	mockLogger := log.NewNopLogger()
 
-	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigurationDBModule, mockUsersDBModule, mockLogger)
+	component := NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigurationDBModule, mockUsersDetailsDBModule, mockLogger)
 
 	var accessToken = "TOKEN=="
 	var currentRealm = "master"
@@ -900,10 +900,10 @@ func TestSendVerify(t *testing.T) {
 		mockKeycloakAccountClient = mock.NewKeycloakAccountClient(mockCtrl)
 		mockEventDBModule         = mock.NewEventsDBModule(mockCtrl)
 		mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
-		mockUsersDBModule         = mock.NewUsersDBModule(mockCtrl)
+		mockUsersDetailsDBModule  = mock.NewUsersDetailsDBModule(mockCtrl)
 		mockLogger                = log.NewNopLogger()
 
-		component     = NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigurationDBModule, mockUsersDBModule, mockLogger)
+		component     = NewComponent(mockKeycloakAccountClient, mockEventDBModule, mockConfigurationDBModule, mockUsersDetailsDBModule, mockLogger)
 		accessToken   = "TOKEN=="
 		currentRealm  = "master"
 		currentUserID = "1234-789"

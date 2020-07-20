@@ -15,16 +15,16 @@ import (
 )
 
 const (
-	updateUserStmt = `INSERT INTO user_details (realm_id, user_id, details)
+	updateUserDetailsStmt = `INSERT INTO user_details (realm_id, user_id, details)
 	  VALUES (?, ?, ?) 
 	  ON DUPLICATE KEY UPDATE details=?;`
-	selectUserStmt = `
+	selectUserDetailsStmt = `
 	  SELECT details
 	  FROM user_details
 	  WHERE realm_id=?
 		AND user_id=?;`
-	deleteUserStmt  = `DELETE FROM user_details WHERE realm_id=? AND user_id=?;`
-	createCheckStmt = `INSERT INTO checks (realm_id, user_id, operator, datetime, status, type, nature, proof_type, proof_data, comment)
+	deleteUserDetailsStmt = `DELETE FROM user_details WHERE realm_id=? AND user_id=?;`
+	createCheckStmt       = `INSERT INTO checks (realm_id, user_id, operator, datetime, status, type, nature, proof_type, proof_data, comment)
 	  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
 	selectCheckStmt = `
 	  SELECT check_id, realm_id, user_id, operator, unix_timestamp(datetime), status, type, nature, proof_type, proof_data, comment
@@ -33,13 +33,13 @@ const (
 		AND user_id=?;`
 )
 
-// UsersDBModule interface
-type UsersDBModule interface {
-	StoreOrUpdateUser(ctx context.Context, realm string, user dto.DBUser) error
-	GetUser(ctx context.Context, realm string, userID string) (dto.DBUser, error)
+// UsersDetailsDBModule interface
+type UsersDetailsDBModule interface {
+	StoreOrUpdateUserDetails(ctx context.Context, realm string, user dto.DBUser) error
+	GetUserDetails(ctx context.Context, realm string, userID string) (dto.DBUser, error)
+	DeleteUserDetails(ctx context.Context, realm string, userID string) error
 	CreateCheck(ctx context.Context, realm string, userID string, check dto.DBCheck) error
-	GetUserChecks(ctx context.Context, realm string, userID string) ([]dto.DBCheck, error)
-	DeleteUser(ctx context.Context, realm string, userID string) error
+	GetChecks(ctx context.Context, realm string, userID string) ([]dto.DBCheck, error)
 }
 
 type usersDBModule struct {
@@ -64,8 +64,8 @@ func nullStringToDatePtr(value sql.NullString) *time.Time {
 	return nil
 }
 
-// NewUsersDBModule returns a UsersDB module.
-func NewUsersDBModule(db sqltypes.CloudtrustDB, cipher security.EncrypterDecrypter, logger log.Logger) UsersDBModule {
+// NewUsersDetailsDBModule returns a UsersDB module.
+func NewUsersDetailsDBModule(db sqltypes.CloudtrustDB, cipher security.EncrypterDecrypter, logger log.Logger) UsersDetailsDBModule {
 	return &usersDBModule{
 		db:     db,
 		cipher: cipher,
@@ -73,7 +73,7 @@ func NewUsersDBModule(db sqltypes.CloudtrustDB, cipher security.EncrypterDecrypt
 	}
 }
 
-func (c *usersDBModule) StoreOrUpdateUser(ctx context.Context, realm string, user dto.DBUser) error {
+func (c *usersDBModule) StoreOrUpdateUserDetails(ctx context.Context, realm string, user dto.DBUser) error {
 	// transform user object into JSON string
 	userJSON, err := json.Marshal(user)
 	if err != nil {
@@ -87,14 +87,14 @@ func (c *usersDBModule) StoreOrUpdateUser(ctx context.Context, realm string, use
 	}
 
 	// update value in DB
-	_, err = c.db.Exec(updateUserStmt, realm, user.UserID, encryptedData, encryptedData)
+	_, err = c.db.Exec(updateUserDetailsStmt, realm, user.UserID, encryptedData, encryptedData)
 	return err
 }
 
-func (c *usersDBModule) GetUser(ctx context.Context, realm string, userID string) (dto.DBUser, error) {
+func (c *usersDBModule) GetUserDetails(ctx context.Context, realm string, userID string) (dto.DBUser, error) {
 	var encryptedDetails []byte
 	var details = dto.DBUser{}
-	row := c.db.QueryRow(selectUserStmt, realm, userID)
+	row := c.db.QueryRow(selectUserDetailsStmt, realm, userID)
 
 	switch err := row.Scan(&encryptedDetails); err {
 	case sql.ErrNoRows:
@@ -117,8 +117,8 @@ func (c *usersDBModule) GetUser(ctx context.Context, realm string, userID string
 	}
 }
 
-func (c *usersDBModule) DeleteUser(ctx context.Context, realm string, userID string) error {
-	_, err := c.db.Exec(deleteUserStmt, realm, userID)
+func (c *usersDBModule) DeleteUserDetails(ctx context.Context, realm string, userID string) error {
+	_, err := c.db.Exec(deleteUserDetailsStmt, realm, userID)
 	return err
 }
 
@@ -144,7 +144,7 @@ func (c *usersDBModule) CreateCheck(ctx context.Context, realm string, userID st
 	return err
 }
 
-func (c *usersDBModule) GetUserChecks(ctx context.Context, realm string, userID string) ([]dto.DBCheck, error) {
+func (c *usersDBModule) GetChecks(ctx context.Context, realm string, userID string) ([]dto.DBCheck, error) {
 	var rows, err = c.db.Query(selectCheckStmt, realm, userID)
 
 	if err != nil {

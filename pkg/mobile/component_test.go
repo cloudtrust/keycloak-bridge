@@ -24,10 +24,10 @@ func TestGetUser(t *testing.T) {
 	mockKeycloakClient := mock.NewKeycloakClient(mockCtrl)
 	mockConfigurationDBModule := mock.NewConfigurationDBModule(mockCtrl)
 	mockTokenProvider := mock.NewTokenProvider(mockCtrl)
-	mockUsersDBModule := mock.NewUsersDBModule(mockCtrl)
+	mockUsersDetailsDBModule := mock.NewUsersDetailsDBModule(mockCtrl)
 	mockLogger := log.NewNopLogger()
 
-	var component = NewComponent(mockKeycloakClient, mockConfigurationDBModule, mockUsersDBModule, mockTokenProvider, mockLogger)
+	var component = NewComponent(mockKeycloakClient, mockConfigurationDBModule, mockUsersDetailsDBModule, mockTokenProvider, mockLogger)
 
 	var accessToken = "the-access-token"
 	var realm = "the-realm"
@@ -54,7 +54,7 @@ func TestGetUser(t *testing.T) {
 		var dbError = errors.New("user DB error")
 		mockTokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
 		mockKeycloakClient.EXPECT().GetUser(accessToken, realm, userID).Return(kc.UserRepresentation{}, nil)
-		mockUsersDBModule.EXPECT().GetUserChecks(ctx, realm, userID).Return(nil, dbError)
+		mockUsersDetailsDBModule.EXPECT().GetChecks(ctx, realm, userID).Return(nil, dbError)
 		var _, err = component.GetUserInformation(ctx)
 		assert.Equal(t, dbError, err)
 	})
@@ -63,7 +63,7 @@ func TestGetUser(t *testing.T) {
 		var dbError = errors.New("config DB error")
 		mockTokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
 		mockKeycloakClient.EXPECT().GetUser(accessToken, realm, userID).Return(kc.UserRepresentation{}, nil)
-		mockUsersDBModule.EXPECT().GetUserChecks(ctx, realm, userID).Return([]dto.DBCheck{}, nil)
+		mockUsersDetailsDBModule.EXPECT().GetChecks(ctx, realm, userID).Return([]dto.DBCheck{}, nil)
 		mockConfigurationDBModule.EXPECT().GetAdminConfiguration(ctx, realm).Return(configuration.RealmAdminConfiguration{}, dbError)
 		var _, err = component.GetUserInformation(ctx)
 		assert.Equal(t, dbError, err)
@@ -79,7 +79,7 @@ func TestGetUser(t *testing.T) {
 
 		mockTokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
 		mockKeycloakClient.EXPECT().GetUser(accessToken, realm, userID).Return(kc.UserRepresentation{Attributes: &attrbs}, nil)
-		mockUsersDBModule.EXPECT().GetUserChecks(ctx, realm, userID).Return(checks, nil)
+		mockUsersDetailsDBModule.EXPECT().GetChecks(ctx, realm, userID).Return(checks, nil)
 		mockConfigurationDBModule.EXPECT().GetAdminConfiguration(ctx, realm).Return(configuration.RealmAdminConfiguration{AvailableChecks: availableChecks}, nil)
 		var userInfo, err = component.GetUserInformation(ctx)
 		assert.Nil(t, err)

@@ -39,8 +39,8 @@ func createValidUser() UserRepresentation {
 		Gender:               &gender,
 		FirstName:            &firstName,
 		LastName:             &lastName,
-		EmailAddress:         &email,
-		EmailAddressVerified: &bFalse,
+		Email:                &email,
+		EmailVerified:        &bFalse,
 		PhoneNumber:          &phoneNumber,
 		PhoneNumberVerified:  &bFalse,
 		BirthDate:            &birthDate,
@@ -99,7 +99,7 @@ func TestExportToKeycloak(t *testing.T) {
 
 		assert.Equal(t, user.FirstName, kcUser.FirstName)
 		assert.Equal(t, user.LastName, kcUser.LastName)
-		assert.Equal(t, user.EmailAddress, kcUser.Email)
+		assert.Equal(t, user.Email, kcUser.Email)
 		assert.False(t, *kcUser.EmailVerified)
 		assert.True(t, *kcUser.Enabled)
 	})
@@ -118,20 +118,20 @@ func TestExportToKeycloak(t *testing.T) {
 	t.Run("Updates both email and phone", func(t *testing.T) {
 		var user = createValidUser()
 		var kcUser = createValidKeycloakUser()
-		var newEmailAddress = "new-address@cloudtrust.io"
+		var newEmail = "new-address@cloudtrust.io"
 		var newPhoneNumber = "00 41 22 345 45 78"
 		var verified = true
-		user.EmailAddress = &newEmailAddress
+		user.Email = &newEmail
 		user.PhoneNumber = &newPhoneNumber
 		// Verified flags from api.UserRepresentation must be ignored
-		user.EmailAddressVerified = &verified
+		user.EmailVerified = &verified
 		user.PhoneNumberVerified = &verified
 
 		user.ExportToKeycloak(&kcUser)
 
 		assert.Equal(t, user.FirstName, kcUser.FirstName)
 		assert.Equal(t, user.LastName, kcUser.LastName)
-		assert.Equal(t, user.EmailAddress, kcUser.Email)
+		assert.Equal(t, user.Email, kcUser.Email)
 		assert.Equal(t, *user.PhoneNumber, *kcUser.GetAttributeString(constants.AttrbPhoneNumber))
 		assert.False(t, *kcUser.EmailVerified)
 		assert.Equal(t, "false", *kcUser.GetAttributeString(constants.AttrbPhoneNumberVerified))
@@ -181,7 +181,7 @@ func TestValidateUserRepresentation(t *testing.T) {
 		users[0].Gender = &empty
 		users[1].FirstName = &empty
 		users[2].LastName = &empty
-		users[3].EmailAddress = &empty
+		users[3].Email = &empty
 		users[4].PhoneNumber = &empty
 		users[5].BirthDate = &invalidDate
 		users[6].BirthLocation = &empty
@@ -192,7 +192,7 @@ func TestValidateUserRepresentation(t *testing.T) {
 		users[10].Gender = nil
 		users[11].FirstName = nil
 		users[12].LastName = nil
-		users[13].EmailAddress = nil
+		users[13].Email = nil
 		users[14].PhoneNumber = nil
 		users[15].BirthDate = nil
 		users[16].BirthLocation = nil

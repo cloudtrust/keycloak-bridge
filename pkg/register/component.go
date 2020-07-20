@@ -68,7 +68,7 @@ type component struct {
 	registerEndUserGroups   []string
 	keycloakClient          KeycloakClient
 	tokenProvider           toolbox.OidcTokenProvider
-	usersDBModule           keycloakb.UsersDBModule
+	usersDBModule           keycloakb.UsersDetailsDBModule
 	configDBModule          ConfigurationDBModule
 	eventsDBModule          database.EventsDBModule
 	logger                  internal.Logger
@@ -76,7 +76,7 @@ type component struct {
 
 // NewComponent returns the management component.
 func NewComponent(keycloakURL string, realm string, ssePublicURL string, registerEnduserClientID string, registerEndUserGroups []string, keycloakClient KeycloakClient,
-	tokenProvider toolbox.OidcTokenProvider, usersDBModule keycloakb.UsersDBModule,
+	tokenProvider toolbox.OidcTokenProvider, usersDBModule keycloakb.UsersDetailsDBModule,
 	configDBModule ConfigurationDBModule, eventsDBModule database.EventsDBModule, logger internal.Logger) (Component, error) {
 	var c = &component{
 		keycloakURL:             keycloakURL,
@@ -198,7 +198,7 @@ func (c *component) storeUser(ctx context.Context, accessToken string, customerR
 	}
 
 	// Store user in database
-	err = c.usersDBModule.StoreOrUpdateUser(ctx, c.realm, dto.DBUser{
+	err = c.usersDBModule.StoreOrUpdateUserDetails(ctx, c.realm, dto.DBUser{
 		UserID:               &userID,
 		BirthLocation:        user.BirthLocation,
 		IDDocumentType:       user.IDDocumentType,
@@ -289,7 +289,7 @@ func (c *component) sendExecuteActionsEmail(ctx context.Context, accessToken str
 // Check if a user already exists in Keycloak... If such a user exists in database, he can register himself only if the existing user is not yet enabled
 func (c *component) checkExistingUser(ctx context.Context, accessToken string, user apiregister.UserRepresentation) (*kc.UserRepresentation, error) {
 	// Search user by email
-	var kcUsers, err = c.keycloakClient.GetUsers(accessToken, c.realm, c.realm, "email", *user.EmailAddress)
+	var kcUsers, err = c.keycloakClient.GetUsers(accessToken, c.realm, c.realm, "email", *user.Email)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Can't get user from keycloak", "err", err.Error())
 		return nil, errorhandler.CreateInternalServerError("keycloak")
