@@ -172,6 +172,7 @@ paths:
       summary: >
         Get users.
         Returns a list of users, filtered according to query parameters.
+        BirthLocation, and ID documents fields are not returned by this call.
       parameters:
       - name: realm
         in: path
@@ -1293,34 +1294,39 @@ components:
           type: string
         username:
           type: string
-        email:
+        gender:
           type: string
-        enabled:
-          type: boolean
-          default: true
-        emailVerified:
-          type: boolean
-          default: false
         firstName:
           type: string
         lastName:
           type: string
+        email:
+          type: string
+        emailVerified:
+          type: boolean
+          default: false
         phoneNumber:
           type: string
         phoneNumberVerified:
           type: boolean
           default: false
-        label:
-          type: string
-        gender:
-          type: string
         birthDate:
           type: string
           description: format is DD.MM.YYYY
-        createdTimestamp:
-          type: integer
-          format: int64
+        birthLocation:
+          type: string
+        idDocumentType:
+          type: string
+          enum: [ID_CARD, PASSPORT, RESIDENCE_PERMIT]
+        idDocumentNumber:
+          type: string
+        idDocumentExpiration:
+          type: string
         groups:
+          type: array
+          items:
+            type: string
+        trustIdGroups:
           type: array
           items:
             type: string
@@ -1331,6 +1337,15 @@ components:
         locale:
           type: string
           default: "en"
+        smsSent:
+          type: integer
+        smsAttempts:
+          type: integer
+        enabled:
+          type: boolean
+          default: true
+        label:
+          type: string
         accreditations:
           type: array
           description: Used only by getUser
@@ -1346,6 +1361,9 @@ components:
               expired:
                 type: boolean
                 description: true if the expiry date has passed
+        createdTimestamp:
+          type: integer
+          format: int64
     UserStatus:
       type: object
       properties:

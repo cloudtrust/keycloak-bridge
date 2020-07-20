@@ -15,26 +15,30 @@ import (
 
 // UserRepresentation struct
 type UserRepresentation struct {
-	ID                  *string                        `json:"id,omitempty"`
-	Username            *string                        `json:"username,omitempty"`
-	Email               *string                        `json:"email,omitempty"`
-	Enabled             *bool                          `json:"enabled,omitempty"`
-	EmailVerified       *bool                          `json:"emailVerified,omitempty"`
-	PhoneNumberVerified *bool                          `json:"phoneNumberVerified,omitempty"`
-	FirstName           *string                        `json:"firstName,omitempty"`
-	LastName            *string                        `json:"lastName,omitempty"`
-	PhoneNumber         *string                        `json:"phoneNumber,omitempty"`
-	Label               *string                        `json:"label,omitempty"`
-	Gender              *string                        `json:"gender,omitempty"`
-	BirthDate           *string                        `json:"birthDate,omitempty"`
-	CreatedTimestamp    *int64                         `json:"createdTimestamp,omitempty"`
-	Groups              *[]string                      `json:"groups,omitempty"`
-	TrustIDGroups       *[]string                      `json:"trustIdGroups,omitempty"`
-	Roles               *[]string                      `json:"roles,omitempty"`
-	Locale              *string                        `json:"locale,omitempty"`
-	SmsSent             *int                           `json:"smsSent,omitempty"`
-	SmsAttempts         *int                           `json:"smsAttempts,omitempty"`
-	Accreditations      *[]AccreditationRepresentation `json:"accreditations,omitempty"`
+	ID                   *string                        `json:"id,omitempty"`
+	Username             *string                        `json:"username,omitempty"`
+	Gender               *string                        `json:"gender,omitempty"`
+	FirstName            *string                        `json:"firstName,omitempty"`
+	LastName             *string                        `json:"lastName,omitempty"`
+	Email                *string                        `json:"email,omitempty"`
+	EmailVerified        *bool                          `json:"emailVerified,omitempty"`
+	PhoneNumber          *string                        `json:"phoneNumber,omitempty"`
+	PhoneNumberVerified  *bool                          `json:"phoneNumberVerified,omitempty"`
+	BirthDate            *string                        `json:"birthDate,omitempty"`
+	BirthLocation        *string                        `json:"birthLocation,omitempty"`
+	IDDocumentType       *string                        `json:"idDocumentType,omitempty"`
+	IDDocumentNumber     *string                        `json:"idDocumentNumber,omitempty"`
+	IDDocumentExpiration *string                        `json:"idDocumentExpiration,omitempty"`
+	Groups               *[]string                      `json:"groups,omitempty"`
+	TrustIDGroups        *[]string                      `json:"trustIdGroups,omitempty"`
+	Roles                *[]string                      `json:"roles,omitempty"`
+	Locale               *string                        `json:"locale,omitempty"`
+	SmsSent              *int                           `json:"smsSent,omitempty"`
+	SmsAttempts          *int                           `json:"smsAttempts,omitempty"`
+	Enabled              *bool                          `json:"enabled,omitempty"`
+	Label                *string                        `json:"label,omitempty"`
+	Accreditations       *[]AccreditationRepresentation `json:"accreditations,omitempty"`
+	CreatedTimestamp     *int64                         `json:"createdTimestamp,omitempty"`
 }
 
 // AccreditationRepresentation is a representation of accreditations

@@ -199,45 +199,45 @@ func TestHasUpdateOfAccreditationDependantInformationDB(t *testing.T) {
 	var dbUser dto.DBUser
 
 	t.Run("Nothing to update", func(t *testing.T) {
-		assert.False(t, user.HasUpdateOfAccreditationDependantInformationDB(&dbUser))
+		assert.False(t, user.HasUpdateOfAccreditationDependantInformationDB(dbUser))
 	})
 	t.Run("Expiry date update", func(t *testing.T) {
 		var expiryTxt = "15.06.2018"
 		var expiry, _ = time.Parse(constants.SupportedDateLayouts[0], "29.12.2019")
 		user.IDDocumentExpiration = &expiry
 		dbUser.IDDocumentExpiration = &expiryTxt
-		assert.True(t, user.HasUpdateOfAccreditationDependantInformationDB(&dbUser))
+		assert.True(t, user.HasUpdateOfAccreditationDependantInformationDB(dbUser))
 
 		expiry, _ = time.Parse(constants.SupportedDateLayouts[0], expiryTxt)
 		user.IDDocumentExpiration = &expiry
-		assert.False(t, user.HasUpdateOfAccreditationDependantInformationDB(&dbUser))
+		assert.False(t, user.HasUpdateOfAccreditationDependantInformationDB(dbUser))
 	})
 	t.Run("Document type update", func(t *testing.T) {
 		var documentType = "TYPE1"
 		user.IDDocumentType = ptr("OTHER-TYPE")
 		dbUser.IDDocumentType = &documentType
-		assert.True(t, user.HasUpdateOfAccreditationDependantInformationDB(&dbUser))
+		assert.True(t, user.HasUpdateOfAccreditationDependantInformationDB(dbUser))
 
 		user.IDDocumentType = &documentType
-		assert.False(t, user.HasUpdateOfAccreditationDependantInformationDB(&dbUser))
+		assert.False(t, user.HasUpdateOfAccreditationDependantInformationDB(dbUser))
 	})
 	t.Run("Document number update", func(t *testing.T) {
 		var documentNumber = "1234567890"
 		user.IDDocumentNumber = ptr("OTHER-NUMBER")
 		dbUser.IDDocumentNumber = &documentNumber
-		assert.True(t, user.HasUpdateOfAccreditationDependantInformationDB(&dbUser))
+		assert.True(t, user.HasUpdateOfAccreditationDependantInformationDB(dbUser))
 
 		user.IDDocumentNumber = &documentNumber
-		assert.False(t, user.HasUpdateOfAccreditationDependantInformationDB(&dbUser))
+		assert.False(t, user.HasUpdateOfAccreditationDependantInformationDB(dbUser))
 	})
 	t.Run("Birth location update", func(t *testing.T) {
 		var birthLocation = "Where"
 		user.BirthLocation = ptr("Here !")
 		dbUser.BirthLocation = &birthLocation
-		assert.True(t, user.HasUpdateOfAccreditationDependantInformationDB(&dbUser))
+		assert.True(t, user.HasUpdateOfAccreditationDependantInformationDB(dbUser))
 
 		user.BirthLocation = &birthLocation
-		assert.False(t, user.HasUpdateOfAccreditationDependantInformationDB(&dbUser))
+		assert.False(t, user.HasUpdateOfAccreditationDependantInformationDB(dbUser))
 	})
 }
 

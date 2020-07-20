@@ -661,9 +661,12 @@ func main() {
 		// module for storing and retrieving the custom configuration
 		var configDBModule = createConfigurationDBModule(configurationRwDBConn, influxMetrics, managementLogger)
 
+		// module for storing and retrieving details of the users
+		var usersDBModule = keycloakb.NewUsersDBModule(usersRwDBConn, aesEncryption, managementLogger)
+
 		var keycloakComponent management.Component
 		{
-			keycloakComponent = management.NewComponent(keycloakClient, eventsDBModule, configDBModule, trustIDGroups, managementLogger)
+			keycloakComponent = management.NewComponent(keycloakClient, usersDBModule, eventsDBModule, configDBModule, trustIDGroups, managementLogger)
 			keycloakComponent = management.MakeAuthorizationManagementComponentMW(log.With(managementLogger, "mw", "endpoint"), authorizationManager)(keycloakComponent)
 		}
 
