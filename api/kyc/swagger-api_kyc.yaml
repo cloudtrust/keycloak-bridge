@@ -125,6 +125,8 @@ components:
           description: Ignored by PUT user
         gender:
           type: string
+          enum: [M,F,U]
+          description: Male, Female or Undefined
         firstName:
           type: string
         lastName:
