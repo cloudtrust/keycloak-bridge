@@ -22,3 +22,4 @@ bin/*
 configs/DEV/*
 **/mock
 .idea/
+__debug_bin
