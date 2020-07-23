@@ -41,18 +41,18 @@ func TestMakeGetUserEndpoint(t *testing.T) {
 	mockKYCComponent := mock.NewComponent(mockCtrl)
 
 	var userID = "user1234"
-	var m = map[string]string{PrmUserID: userID}
+	var m = map[string]string{prmUserID: userID}
 	var expectedError = errors.New("get-user")
 
-	t.Run("GetUser - success case", func(t *testing.T) {
-		mockKYCComponent.EXPECT().GetUser(gomock.Any(), userID).Return(apikyc.UserRepresentation{}, nil)
-		_, err := MakeGetUserEndpoint(mockKYCComponent)(context.Background(), m)
+	t.Run("GetUserInSocialRealm - success case", func(t *testing.T) {
+		mockKYCComponent.EXPECT().GetUserInSocialRealm(gomock.Any(), userID).Return(apikyc.UserRepresentation{}, nil)
+		_, err := MakeGetUserInSocialRealmEndpoint(mockKYCComponent)(context.Background(), m)
 		assert.Nil(t, err)
 	})
 
-	t.Run("GetUser - failure case", func(t *testing.T) {
-		mockKYCComponent.EXPECT().GetUser(gomock.Any(), userID).Return(apikyc.UserRepresentation{}, expectedError)
-		_, err := MakeGetUserEndpoint(mockKYCComponent)(context.Background(), m)
+	t.Run("GetUserInSocialRealm - failure case", func(t *testing.T) {
+		mockKYCComponent.EXPECT().GetUserInSocialRealm(gomock.Any(), userID).Return(apikyc.UserRepresentation{}, expectedError)
+		_, err := MakeGetUserInSocialRealmEndpoint(mockKYCComponent)(context.Background(), m)
 		assert.Equal(t, expectedError, err)
 	})
 }
@@ -64,19 +64,53 @@ func TestMakeGetUserByUsernameEndpoint(t *testing.T) {
 	mockKYCComponent := mock.NewComponent(mockCtrl)
 
 	var username = "user1234"
-	var m = map[string]string{PrmQryUserName: username}
+	var m = map[string]string{prmQryUserName: username}
 	var expectedError = errors.New("get-user")
 
-	t.Run("GetUserByUsername - success case", func(t *testing.T) {
-		mockKYCComponent.EXPECT().GetUserByUsername(gomock.Any(), username).Return(apikyc.UserRepresentation{}, nil)
-		_, err := MakeGetUserByUsernameEndpoint(mockKYCComponent)(context.Background(), m)
+	t.Run("GetUserByUsernameInSocialRealm - success case", func(t *testing.T) {
+		mockKYCComponent.EXPECT().GetUserByUsernameInSocialRealm(gomock.Any(), username).Return(apikyc.UserRepresentation{}, nil)
+		_, err := MakeGetUserByUsernameInSocialRealmEndpoint(mockKYCComponent)(context.Background(), m)
 		assert.Nil(t, err)
 	})
 
-	t.Run("GetUserByUsername - failure case", func(t *testing.T) {
-		mockKYCComponent.EXPECT().GetUserByUsername(gomock.Any(), username).Return(apikyc.UserRepresentation{}, expectedError)
-		_, err := MakeGetUserByUsernameEndpoint(mockKYCComponent)(context.Background(), m)
+	t.Run("GetUserByUsernameInSocialRealm - failure case", func(t *testing.T) {
+		mockKYCComponent.EXPECT().GetUserByUsernameInSocialRealm(gomock.Any(), username).Return(apikyc.UserRepresentation{}, expectedError)
+		_, err := MakeGetUserByUsernameInSocialRealmEndpoint(mockKYCComponent)(context.Background(), m)
 		assert.Equal(t, expectedError, err)
+	})
+}
+
+func TestMakeValidateUserInSocialRealmEndpoint(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	mockKYCComponent := mock.NewComponent(mockCtrl)
+
+	var userID = "ux467913"
+	var user = createValidUser()
+	var m = map[string]string{}
+
+	t.Run("ValidateUserInSocialRealm - success case", func(t *testing.T) {
+		var bytes, _ = json.Marshal(user)
+		m[reqBody] = string(bytes)
+		m[prmUserID] = userID
+		mockKYCComponent.EXPECT().ValidateUserInSocialRealm(gomock.Any(), userID, user).Return(nil).Times(1)
+		_, err := MakeValidateUserInSocialRealmEndpoint(mockKYCComponent)(context.Background(), m)
+		assert.Nil(t, err)
+	})
+
+	t.Run("ValidateUserInSocialRealm - failure case", func(t *testing.T) {
+		m[reqBody] = "{"
+		_, err := MakeValidateUserInSocialRealmEndpoint(mockKYCComponent)(context.Background(), m)
+		assert.NotNil(t, err)
+	})
+
+	t.Run("ValidateUserInSocialRealm - failure case - invalid user", func(t *testing.T) {
+		user.Gender = nil
+		var bytes, _ = json.Marshal(user)
+		m[reqBody] = string(bytes)
+		_, err := MakeValidateUserInSocialRealmEndpoint(mockKYCComponent)(context.Background(), m)
+		assert.NotNil(t, err)
 	})
 }
 
@@ -86,24 +120,60 @@ func TestMakeValidateUserEndpoint(t *testing.T) {
 
 	mockKYCComponent := mock.NewComponent(mockCtrl)
 
-	var first = "John"
-	var last = "Doe"
+	var realmName = "corporateRealm"
 	var userID = "ux467913"
-	var user = apikyc.UserRepresentation{ID: &userID, FirstName: &first, LastName: &last}
+	var user = createValidUser()
 	var m = map[string]string{}
 
 	t.Run("ValidateUser - success case", func(t *testing.T) {
 		var bytes, _ = json.Marshal(user)
-		m[ReqBody] = string(bytes)
-		m[PrmUserID] = userID
-		mockKYCComponent.EXPECT().ValidateUser(gomock.Any(), userID, user).Return(nil).Times(1)
+		m[reqBody] = string(bytes)
+		m[prmUserID] = userID
+		m[prmRealm] = realmName
+		mockKYCComponent.EXPECT().ValidateUser(gomock.Any(), realmName, userID, user).Return(nil).Times(1)
 		_, err := MakeValidateUserEndpoint(mockKYCComponent)(context.Background(), m)
 		assert.Nil(t, err)
 	})
 
 	t.Run("ValidateUser - failure case", func(t *testing.T) {
-		m[ReqBody] = "{"
+		m[reqBody] = "{"
 		_, err := MakeValidateUserEndpoint(mockKYCComponent)(context.Background(), m)
 		assert.NotNil(t, err)
 	})
+
+	t.Run("ValidateUser - failure case - invalid user", func(t *testing.T) {
+		user.Gender = nil
+		var bytes, _ = json.Marshal(user)
+		m[reqBody] = string(bytes)
+		_, err := MakeValidateUserEndpoint(mockKYCComponent)(context.Background(), m)
+		assert.NotNil(t, err)
+	})
+}
+
+func createValidUser() apikyc.UserRepresentation {
+	var (
+		gender        = "M"
+		firstName     = "Marc"
+		lastName      = "El-Bichoun"
+		email         = "marcel.bichon@elca.ch"
+		phoneNumber   = "00 33 686 550011"
+		birthDate     = "31.03.2001"
+		birthLocation = "Montreux"
+		docType       = "ID_CARD"
+		docNumber     = "MEL123789654ABC"
+		docExp        = "28.02.2050"
+	)
+
+	return apikyc.UserRepresentation{
+		Gender:               &gender,
+		FirstName:            &firstName,
+		LastName:             &lastName,
+		Email:                &email,
+		PhoneNumber:          &phoneNumber,
+		BirthDate:            &birthDate,
+		BirthLocation:        &birthLocation,
+		IDDocumentType:       &docType,
+		IDDocumentNumber:     &docNumber,
+		IDDocumentExpiration: &docExp,
+	}
 }

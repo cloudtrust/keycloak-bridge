@@ -12,10 +12,11 @@ import (
 
 // Endpoints for self service
 type Endpoints struct {
-	GetActions        endpoint.Endpoint
-	GetUser           endpoint.Endpoint
-	GetUserByUsername endpoint.Endpoint
-	ValidateUser      endpoint.Endpoint
+	GetActions                     endpoint.Endpoint
+	GetUserInSocialRealm           endpoint.Endpoint
+	GetUserByUsernameInSocialRealm endpoint.Endpoint
+	ValidateUserInSocialRealm      endpoint.Endpoint
+	ValidateUser                   endpoint.Endpoint
 }
 
 // MakeGetActionsEndpoint creates an endpoint for GetActions
@@ -25,22 +26,38 @@ func MakeGetActionsEndpoint(component Component) cs.Endpoint {
 	}
 }
 
-// MakeGetUserByUsernameEndpoint endpoint creation
-func MakeGetUserByUsernameEndpoint(component Component) cs.Endpoint {
+// MakeGetUserByUsernameInSocialRealmEndpoint endpoint creation
+func MakeGetUserByUsernameInSocialRealmEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
-		var user = m[PrmQryUserName]
+		var user = m[prmQryUserName]
 
-		return component.GetUserByUsername(ctx, user)
+		return component.GetUserByUsernameInSocialRealm(ctx, user)
 	}
 }
 
-// MakeGetUserEndpoint endpoint creation
-func MakeGetUserEndpoint(component Component) cs.Endpoint {
+// MakeGetUserInSocialRealmEndpoint endpoint creation
+func MakeGetUserInSocialRealmEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
-		var user = m[PrmUserID]
-		return component.GetUser(ctx, user)
+		return component.GetUserInSocialRealm(ctx, m[prmUserID])
+	}
+}
+
+// MakeValidateUserInSocialRealmEndpoint endpoint creation
+func MakeValidateUserInSocialRealmEndpoint(component Component) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+		var user, err = apikyc.UserFromJSON(m[reqBody])
+		if err != nil {
+			return nil, commonerrors.CreateBadRequestError(commonerrors.MsgErrInvalidParam + "." + msg.BodyContent)
+		}
+
+		if err := user.Validate(); err != nil {
+			return nil, err
+		}
+
+		return nil, component.ValidateUserInSocialRealm(ctx, m[prmUserID], user)
 	}
 }
 
@@ -48,11 +65,15 @@ func MakeGetUserEndpoint(component Component) cs.Endpoint {
 func MakeValidateUserEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
-		var userID = m[PrmUserID]
-		var user, err = apikyc.UserFromJSON(m[ReqBody])
+		var user, err = apikyc.UserFromJSON(m[reqBody])
 		if err != nil {
 			return nil, commonerrors.CreateBadRequestError(commonerrors.MsgErrInvalidParam + "." + msg.BodyContent)
 		}
-		return nil, component.ValidateUser(ctx, userID, user)
+
+		if err := user.Validate(); err != nil {
+			return nil, err
+		}
+
+		return nil, component.ValidateUser(ctx, m[prmRealm], m[prmUserID], user)
 	}
 }

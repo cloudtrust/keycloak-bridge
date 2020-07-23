@@ -51,8 +51,8 @@ event-basic-auth-token: "superpasswordverylongandstrong"
 validation-basic-auth-token: "idnowsuperpasswordverylongandstrong"
 
 # DB encryption key
-aesgcm-key: oYP5DhsaW8dLtBt89i9cvXqz+zQTJBHWdFejLWLN/28=
-aesgcm-tag-size: 16 
+db-aesgcm-key: oYP5DhsaW8dLtBt89i9cvXqz+zQTJBHWdFejLWLN/28=
+db-aesgcm-tag-size: 16 
 
 
 ## trustID groups allowed to be set
@@ -70,9 +70,9 @@ keycloak-timeout: 5s
 # db-audit-rw-enabled was previously named events-db
 db-audit-rw-enabled: false
 db-audit-rw-host-port: 127.0.0.1:3306
-db-audit-rw-username: root
-db-audit-rw-password: admin
-db-audit-rw-database: auditevents
+db-audit-rw-username: bridge
+db-audit-rw-password: bridge-password
+db-audit-rw-database: audit
 db-audit-rw-protocol: tcp
 db-audit-rw-parameters: time_zone='%2B00:00'
 db-audit-rw-max-open-conns: 10
@@ -85,9 +85,9 @@ db-audit-rw-connection-check: false
 # DB Audit RO
 db-audit-ro-enabled: true
 db-audit-ro-host-port: 127.0.0.1:3306
-db-audit-ro-username: root
-db-audit-ro-password: admin
-db-audit-ro-database: auditevents
+db-audit-ro-username: bridge
+db-audit-ro-password: bridge-password
+db-audit-ro-database: audit
 db-audit-ro-protocol: tcp
 db-audit-ro-parameters: time_zone='%2B00:00'
 db-audit-ro-max-open-conns: 10
@@ -102,7 +102,7 @@ db-config-rw-enabled: true
 db-config-rw-host-port: 172.17.0.2:3306
 db-config-rw-username: bridge
 db-config-rw-password: bridge-password
-db-config-rw-database: configuration
+db-config-rw-database: cloudtrust
 db-config-rw-protocol: tcp
 db-config-rw-parameters: time_zone='%2B00:00'
 db-config-rw-max-open-conns: 10
@@ -117,7 +117,7 @@ db-config-ro-enabled: true
 db-config-ro-host-port: 172.17.0.2:3306
 db-config-ro-username: bridge
 db-config-ro-password: bridge-password
-db-config-ro-database: configuration
+db-config-ro-database: cloudtrust
 db-config-ro-protocol: tcp
 db-config-ro-parameters: time_zone='%2B00:00'
 db-config-ro-max-open-conns: 10

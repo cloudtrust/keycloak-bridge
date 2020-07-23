@@ -19,9 +19,9 @@ func TestKYCRegisterHandler(t *testing.T) {
 	var URL = "/kyc/user"
 
 	r := mux.NewRouter()
-	r.Handle(URL+"/{userId}", MakeKYCHandler(func(ctx context.Context, request interface{}) (response interface{}, err error) {
+	r.Handle(URL+"/{userID}", MakeKYCHandler(func(ctx context.Context, request interface{}) (response interface{}, err error) {
 		var m = request.(map[string]string)
-		return m[PrmUserID] + ":" + m[PrmQryUserName], nil
+		return m[prmUserID] + ":" + m[prmQryUserName], nil
 	}, log.NewNopLogger()))
 
 	ts := httptest.NewServer(r)
