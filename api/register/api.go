@@ -50,6 +50,7 @@ const (
 	prmUserIDDocumentExpiration = "user_idDocExpiration"
 	prmUserLocale               = "user_locale"
 
+	regExpGender           = constants.RegExpGender
 	regExpFirstName        = constants.RegExpNameSpecialChars
 	regExpLastName         = constants.RegExpNameSpecialChars
 	regExpEmail            = `^.+\@.+\..+$`
@@ -59,7 +60,6 @@ const (
 )
 
 var (
-	allowedGender       = map[string]bool{"M": true, "F": true}
 	allowedDocumentType = map[string]bool{"ID_CARD": true, "PASSPORT": true, "RESIDENCE_PERMIT": true}
 )
 
@@ -108,7 +108,7 @@ func (u *UserRepresentation) ConvertToKeycloak() kc.UserRepresentation {
 // Validate checks the validity of the given User
 func (u *UserRepresentation) Validate() error {
 	return validation.NewParameterValidator().
-		ValidateParameterIn(prmUserGender, u.Gender, allowedGender, true).
+		ValidateParameterRegExp(prmUserGender, u.Gender, regExpGender, true).
 		ValidateParameterRegExp(prmUserFirstName, u.FirstName, regExpFirstName, true).
 		ValidateParameterRegExp(prmUserLastName, u.LastName, regExpLastName, true).
 		ValidateParameterRegExp(prmUserEmail, u.Email, regExpEmail, true).

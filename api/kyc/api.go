@@ -63,12 +63,12 @@ const (
 	regExpEmail            = `^.+\@.+\..+$`
 	regExpBirthLocation    = regExpNames
 	regExpIDDocumentNumber = constants.RegExpIDDocumentNumber
+	regExpGender           = constants.RegExpGender
 
 	dateLayout = "02.01.2006"
 )
 
 var (
-	allowedGender       = map[string]bool{"M": true, "F": true}
 	allowedDocumentType = map[string]bool{"ID_CARD": true, "PASSPORT": true, "RESIDENCE_PERMIT": true}
 )
 
@@ -173,7 +173,7 @@ func (u *UserRepresentation) ImportFromKeycloak(ctx context.Context, kcUser *kc.
 // Validate checks the validity of the given User
 func (u *UserRepresentation) Validate() error {
 	return validation.NewParameterValidator().
-		ValidateParameterIn(prmUserGender, u.Gender, allowedGender, true).
+		ValidateParameterRegExp(prmUserGender, u.Gender, regExpGender, true).
 		ValidateParameterRegExp(prmUserFirstName, u.FirstName, regExpFirstName, true).
 		ValidateParameterRegExp(prmUserLastName, u.LastName, regExpLastName, true).
 		ValidateParameterRegExp(prmUserEmail, u.Email, regExpEmail, true).

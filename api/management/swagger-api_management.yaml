@@ -1310,6 +1310,10 @@ components:
         phoneNumberVerified:
           type: boolean
           default: false
+        gender:
+          type: string
+          enum: [M,F,U]
+          description: Male, Female or Undefined
         birthDate:
           type: string
           description: format is DD.MM.YYYY

@@ -66,6 +66,8 @@ components:
       properties:
         gender:
           type: string
+          enum: [M,F,U]
+          description: Male, Female or Undefined
         firstName:
           type: string
         lastName:
