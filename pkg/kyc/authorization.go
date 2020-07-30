@@ -23,10 +23,11 @@ func newAction(as string, scope security.Scope) security.Action {
 
 // Creates constants for API method names
 var (
-	KYCGetActions        = newAction("KYC_GetActions", security.ScopeGlobal)
-	KYCGetUser           = newAction("KYC_GetUser", security.ScopeGroup)
-	KYCGetUserByUsername = newAction("KYC_GetUserByUsername", security.ScopeRealm)
-	KYCValidateUser      = newAction("KYC_ValidateUser", security.ScopeGroup)
+	KYCGetActions                     = newAction("KYC_GetActions", security.ScopeGlobal)
+	KYCGetUserInSocialRealm           = newAction("KYC_GetUserInSocialRealm", security.ScopeRealm)
+	KYCGetUserByUsernameInSocialRealm = newAction("KYC_GetUserByUsernameInSocialRealm", security.ScopeRealm)
+	KYCValidateUserInSocialRealm      = newAction("KYC_ValidateUserInSocialRealm", security.ScopeRealm)
+	KYCValidateUser                   = newAction("KYC_ValidateUser", security.ScopeGroup)
 )
 
 type authorizationComponentMW struct {
@@ -68,35 +69,55 @@ func (c *authorizationComponentMW) GetActions(ctx context.Context) ([]apikyc.Act
 	return c.next.GetActions(ctx)
 }
 
-func (c *authorizationComponentMW) GetUserByUsername(ctx context.Context, username string) (apikyc.UserRepresentation, error) {
-	var action = KYCGetUserByUsername.String()
+func (c *authorizationComponentMW) GetUserByUsernameInSocialRealm(ctx context.Context, username string) (apikyc.UserRepresentation, error) {
+	var action = KYCGetUserByUsernameInSocialRealm.String()
+
+	// For this method, there is no target realm provided
+	// as parameter, so we pick the current realm of the user.
 	var targetRealm = ctx.Value(cs.CtContextRealm).(string)
 
 	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
 		return apikyc.UserRepresentation{}, err
 	}
 
-	return c.next.GetUserByUsername(ctx, username)
+	return c.next.GetUserByUsernameInSocialRealm(ctx, username)
 }
 
-func (c *authorizationComponentMW) GetUser(ctx context.Context, userID string) (apikyc.UserRepresentation, error) {
-	var action = KYCGetUser.String()
+func (c *authorizationComponentMW) GetUserInSocialRealm(ctx context.Context, userID string) (apikyc.UserRepresentation, error) {
+	var action = KYCGetUserInSocialRealm.String()
+
+	// For this method, there is no target realm provided
+	// as parameter, so we pick the current realm of the user.
 	var targetRealm = ctx.Value(cs.CtContextRealm).(string)
 
-	if err := c.authManager.CheckAuthorizationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
+	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
 		return apikyc.UserRepresentation{}, err
 	}
 
-	return c.next.GetUser(ctx, userID)
+	return c.next.GetUserInSocialRealm(ctx, userID)
 }
 
-func (c *authorizationComponentMW) ValidateUser(ctx context.Context, userID string, user apikyc.UserRepresentation) error {
-	var action = KYCValidateUser.String()
+func (c *authorizationComponentMW) ValidateUserInSocialRealm(ctx context.Context, userID string, user apikyc.UserRepresentation) error {
+	var action = KYCValidateUserInSocialRealm.String()
+
+	// For this method, there is no target realm provided
+	// as parameter, so we pick the current realm of the user.
 	var targetRealm = ctx.Value(cs.CtContextRealm).(string)
+
+	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
+		return err
+	}
+
+	return c.next.ValidateUserInSocialRealm(ctx, userID, user)
+}
+
+func (c *authorizationComponentMW) ValidateUser(ctx context.Context, realmName string, userID string, user apikyc.UserRepresentation) error {
+	var action = KYCValidateUser.String()
+	var targetRealm = realmName
 
 	if err := c.authManager.CheckAuthorizationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
 		return err
 	}
 
-	return c.next.ValidateUser(ctx, userID, user)
+	return c.next.ValidateUser(ctx, realmName, userID, user)
 }

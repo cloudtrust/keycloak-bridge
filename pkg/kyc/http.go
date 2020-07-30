@@ -13,21 +13,21 @@ import (
 
 // Regular expressions and parameters
 const (
-	RegExpUserName = constants.RegExpUsername
-	RegExpUserID   = constants.RegExpID
-	RegExpGroupIds = constants.RegExpGroupIds
+	RegExpUserName  = constants.RegExpUsername
+	RegExpUserID    = constants.RegExpID
+	RegExpRealmName = constants.RegExpRealmName
 
-	ReqBody = "body"
+	reqBody = "body"
 
-	PrmUserID = "userId"
-
-	PrmQryUserName = "username"
+	prmRealm       = "realm"
+	prmUserID      = "userID"
+	prmQryUserName = "username"
 )
 
 // MakeKYCHandler make an HTTP handler for the KYC endpoint.
 func MakeKYCHandler(e endpoint.Endpoint, logger log.Logger) *http_transport.Server {
-	pathParams := map[string]string{PrmUserID: RegExpUserID}
-	queryParams := map[string]string{PrmQryUserName: RegExpUserName}
+	pathParams := map[string]string{prmRealm: RegExpRealmName, prmUserID: RegExpUserID}
+	queryParams := map[string]string{prmQryUserName: RegExpUserName}
 
 	return http_transport.NewServer(e,
 		func(ctx context.Context, req *http.Request) (interface{}, error) {

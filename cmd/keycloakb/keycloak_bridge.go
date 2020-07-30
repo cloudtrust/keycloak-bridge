@@ -849,15 +849,16 @@ func main() {
 		}
 
 		// new module for KYC service
-		kycComponent := kyc.NewComponent(registerRealm, keycloakClient, usersDBModule, eventsDBModule, accredsModule, kycLogger)
+		kycComponent := kyc.NewComponent(technicalTokenProvider, registerRealm, keycloakClient, usersDBModule, eventsDBModule, accredsModule, kycLogger)
 		kycComponent = kyc.MakeAuthorizationRegisterComponentMW(registerRealm, log.With(kycLogger, "mw", "endpoint"), authorizationManager)(kycComponent)
 
 		var rateLimitKyc = rateLimit[RateKeyKYC]
 		kycEndpoints = kyc.Endpoints{
-			GetActions:        prepareEndpoint(kyc.MakeGetActionsEndpoint(kycComponent), "register_get_actions", influxMetrics, kycLogger, tracer, rateLimitKyc),
-			GetUser:           prepareEndpoint(kyc.MakeGetUserEndpoint(kycComponent), "get_user", influxMetrics, kycLogger, tracer, rateLimitKyc),
-			GetUserByUsername: prepareEndpoint(kyc.MakeGetUserByUsernameEndpoint(kycComponent), "get_user_by_username", influxMetrics, kycLogger, tracer, rateLimitKyc),
-			ValidateUser:      prepareEndpoint(kyc.MakeValidateUserEndpoint(kycComponent), "validate_user", influxMetrics, kycLogger, tracer, rateLimitKyc),
+			GetActions:                     prepareEndpoint(kyc.MakeGetActionsEndpoint(kycComponent), "register_get_actions", influxMetrics, kycLogger, tracer, rateLimitKyc),
+			GetUserInSocialRealm:           prepareEndpoint(kyc.MakeGetUserInSocialRealmEndpoint(kycComponent), "get_user_in_social_realm", influxMetrics, kycLogger, tracer, rateLimitKyc),
+			GetUserByUsernameInSocialRealm: prepareEndpoint(kyc.MakeGetUserByUsernameInSocialRealmEndpoint(kycComponent), "get_user_by_usernamein_social_realm", influxMetrics, kycLogger, tracer, rateLimitKyc),
+			ValidateUserInSocialRealm:      prepareEndpoint(kyc.MakeValidateUserInSocialRealmEndpoint(kycComponent), "validate_userin_social_realm", influxMetrics, kycLogger, tracer, rateLimitKyc),
+			ValidateUser:                   prepareEndpoint(kyc.MakeValidateUserEndpoint(kycComponent), "validate_user", influxMetrics, kycLogger, tracer, rateLimitKyc),
 		}
 	}
 
@@ -1040,12 +1041,6 @@ func main() {
 
 		var linkShadowUserHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.LinkShadowUser)
 
-		// KYC handlers
-		var kycGetActionsHandler = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, idRetriever, configurationReaderDBModule, false, logger)(kycEndpoints.GetActions)
-		var kycGetUserHandler = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, idRetriever, configurationReaderDBModule, true, logger)(kycEndpoints.GetUser)
-		var kycGetUserByUsernameHandler = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, idRetriever, configurationReaderDBModule, true, logger)(kycEndpoints.GetUserByUsername)
-		var kycValidateUserHandler = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, idRetriever, configurationReaderDBModule, true, logger)(kycEndpoints.ValidateUser)
-
 		// actions
 		managementSubroute.Path("/actions").Methods("GET").Handler(getManagementActionsHandler)
 
@@ -1121,11 +1116,19 @@ func main() {
 		// brokering - shadow users
 		managementSubroute.Path("/realms/{realm}/users/{userID}/federated-identity/{provider}").Methods("POST").Handler(linkShadowUserHandler)
 
+		// KYC handlers
+		var kycGetActionsHandler = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, idRetriever, configurationReaderDBModule, false, logger)(kycEndpoints.GetActions)
+		var kycGetUserInSocialRealmHandler = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, idRetriever, configurationReaderDBModule, true, logger)(kycEndpoints.GetUserInSocialRealm)
+		var kycGetUserByUsernameInSocialRealmHandler = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, idRetriever, configurationReaderDBModule, true, logger)(kycEndpoints.GetUserByUsernameInSocialRealm)
+		var kycValidateUserInSocialRealmHandler = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, idRetriever, configurationReaderDBModule, true, logger)(kycEndpoints.ValidateUserInSocialRealm)
+		var kycValidateUserHandler = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, idRetriever, configurationReaderDBModule, true, logger)(kycEndpoints.ValidateUser)
+
 		// KYC methods
 		route.Path("/kyc/actions").Methods("GET").Handler(kycGetActionsHandler)
-		route.Path("/kyc/users").Methods("GET").Handler(kycGetUserByUsernameHandler)
-		route.Path("/kyc/users/{userId}").Methods("GET").Handler(kycGetUserHandler)
-		route.Path("/kyc/users/{userId}").Methods("PUT").Handler(kycValidateUserHandler)
+		route.Path("/kyc/social/users").Methods("GET").Handler(kycGetUserByUsernameInSocialRealmHandler)
+		route.Path("/kyc/social/users/{userID}").Methods("GET").Handler(kycGetUserInSocialRealmHandler)
+		route.Path("/kyc/social/users/{userID}").Methods("PUT").Handler(kycValidateUserInSocialRealmHandler)
+		route.Path("/kyc/realms/{realm}/users/{userID}").Methods("PUT").Handler(kycValidateUserHandler)
 
 		var handler http.Handler = route
 

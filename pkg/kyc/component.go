@@ -6,6 +6,7 @@ import (
 
 	"github.com/cloudtrust/common-service/configuration"
 	"github.com/cloudtrust/keycloak-client"
+	"github.com/cloudtrust/keycloak-client/toolbox"
 
 	cs "github.com/cloudtrust/common-service"
 	"github.com/cloudtrust/common-service/database"
@@ -42,13 +43,15 @@ type EventsDBModule interface {
 // Component is the register component interface.
 type Component interface {
 	GetActions(ctx context.Context) ([]apikyc.ActionRepresentation, error)
-	GetUser(ctx context.Context, userID string) (apikyc.UserRepresentation, error)
-	GetUserByUsername(ctx context.Context, username string) (apikyc.UserRepresentation, error)
-	ValidateUser(ctx context.Context, userID string, user apikyc.UserRepresentation) error
+	GetUserInSocialRealm(ctx context.Context, userID string) (apikyc.UserRepresentation, error)
+	GetUserByUsernameInSocialRealm(ctx context.Context, username string) (apikyc.UserRepresentation, error)
+	ValidateUserInSocialRealm(ctx context.Context, userID string, user apikyc.UserRepresentation) error
+	ValidateUser(ctx context.Context, realm string, userID string, user apikyc.UserRepresentation) error
 }
 
 // Component is the management component.
 type component struct {
+	tokenProvider   toolbox.OidcTokenProvider
 	socialRealmName string
 	keycloakClient  KeycloakClient
 	usersDBModule   UsersDetailsDBModule
@@ -58,22 +61,15 @@ type component struct {
 }
 
 // NewComponent returns the management component.
-func NewComponent(socialRealmName string, keycloakClient KeycloakClient, usersDBModule UsersDetailsDBModule, eventsDBModule EventsDBModule, accredsModule keycloakb.AccreditationsModule, logger internal.Logger) Component {
+func NewComponent(tokenProvider toolbox.OidcTokenProvider, socialRealmName string, keycloakClient KeycloakClient, usersDBModule UsersDetailsDBModule, eventsDBModule EventsDBModule, accredsModule keycloakb.AccreditationsModule, logger internal.Logger) Component {
 	return &component{
+		tokenProvider:   tokenProvider,
 		socialRealmName: socialRealmName,
 		keycloakClient:  keycloakClient,
 		usersDBModule:   usersDBModule,
 		eventsDBModule:  eventsDBModule,
 		accredsModule:   accredsModule,
 		logger:          logger,
-	}
-}
-
-func (c *component) reportEvent(ctx context.Context, apiCall string, values ...string) {
-	errEvent := c.eventsDBModule.ReportEvent(ctx, apiCall, "back-office", values...)
-	if errEvent != nil {
-		//store in the logs also the event that failed to be stored in the DB
-		internal.LogUnrecordedEvent(ctx, c.logger, apiCall, errEvent.Error(), values...)
 	}
 }
 
@@ -93,12 +89,18 @@ func (c *component) GetActions(ctx context.Context) ([]apikyc.ActionRepresentati
 	return apiActions, nil
 }
 
-func (c *component) GetUserByUsername(ctx context.Context, username string) (apikyc.UserRepresentation, error) {
-	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
-	var group, err = c.getGroupByName(accessToken, c.socialRealmName, "end_user")
+func (c *component) GetUserByUsernameInSocialRealm(ctx context.Context, username string) (apikyc.UserRepresentation, error) {
+	accessToken, err := c.tokenProvider.ProvideToken(ctx)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Can't get OIDC token", "err", err.Error())
+		return apikyc.UserRepresentation{}, err
+	}
+
+	group, err := c.getGroupByName(accessToken, c.socialRealmName, "end_user")
 	if err != nil {
 		return apikyc.UserRepresentation{}, err
 	}
+
 	var kcUser keycloak.UserRepresentation
 	kcUser, err = c.getUserByUsername(accessToken, c.socialRealmName, c.socialRealmName, username, *group.ID)
 	if err != nil {
@@ -109,10 +111,14 @@ func (c *component) GetUserByUsername(ctx context.Context, username string) (api
 	return c.getUser(ctx, *kcUser.ID, kcUser)
 }
 
-func (c *component) GetUser(ctx context.Context, userID string) (apikyc.UserRepresentation, error) {
-	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+func (c *component) GetUserInSocialRealm(ctx context.Context, userID string) (apikyc.UserRepresentation, error) {
+	accessToken, err := c.tokenProvider.ProvideToken(ctx)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Can't get OIDC token", "err", err.Error())
+		return apikyc.UserRepresentation{}, err
+	}
 
-	var kcUser, err = c.keycloakClient.GetUser(accessToken, c.socialRealmName, userID)
+	kcUser, err := c.keycloakClient.GetUser(accessToken, c.socialRealmName, userID)
 	if err != nil {
 		c.logger.Info(ctx, "msg", "GetUser: can't find user in Keycloak", "err", err.Error())
 		return apikyc.UserRepresentation{}, errorhandler.CreateInternalServerError("keycloak")
@@ -139,20 +145,27 @@ func (c *component) getUser(ctx context.Context, userID string, kcUser kc.UserRe
 	return res, nil
 }
 
-func (c *component) ValidateUser(ctx context.Context, userID string, user apikyc.UserRepresentation) error {
+func (c *component) ValidateUser(ctx context.Context, realmName string, userID string, user apikyc.UserRepresentation) error {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
-	var operatorName = ctx.Value(cs.CtContextUsername).(string)
+	return c.validateUser(ctx, accessToken, realmName, userID, user)
+}
 
-	// Validate input request
-	var err = user.Validate()
+func (c *component) ValidateUserInSocialRealm(ctx context.Context, userID string, user apikyc.UserRepresentation) error {
+	accessToken, err := c.tokenProvider.ProvideToken(ctx)
 	if err != nil {
-		c.logger.Info(ctx, "err", err.Error())
+		c.logger.Warn(ctx, "msg", "Can't get OIDC token", "err", err.Error())
 		return err
 	}
 
+	return c.validateUser(ctx, accessToken, c.socialRealmName, userID, user)
+}
+
+func (c *component) validateUser(ctx context.Context, accessToken string, realmName string, userID string, user apikyc.UserRepresentation) error {
+	var operatorName = ctx.Value(cs.CtContextUsername).(string)
+
 	// Gets user from Keycloak
 	var kcUser kc.UserRepresentation
-	kcUser, _, err = c.accredsModule.GetUserAndPrepareAccreditations(ctx, accessToken, c.socialRealmName, userID, configuration.CheckKeyPhysical)
+	kcUser, _, err := c.accredsModule.GetUserAndPrepareAccreditations(ctx, accessToken, realmName, userID, configuration.CheckKeyPhysical)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Can't get user/accreditations", "err", err.Error())
 		return err
@@ -177,7 +190,7 @@ func (c *component) ValidateUser(ctx context.Context, userID string, user apikyc
 	}
 
 	// Gets user from database
-	dbUser, err := c.usersDBModule.GetUserDetails(ctx, c.socialRealmName, userID)
+	dbUser, err := c.usersDBModule.GetUserDetails(ctx, realmName, userID)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Failed to get user from database", "err", err.Error())
 		return err
@@ -191,14 +204,14 @@ func (c *component) ValidateUser(ctx context.Context, userID string, user apikyc
 	dbUser.IDDocumentExpiration = user.IDDocumentExpiration
 
 	user.ExportToKeycloak(&kcUser)
-	err = c.keycloakClient.UpdateUser(accessToken, c.socialRealmName, userID, kcUser)
+	err = c.keycloakClient.UpdateUser(accessToken, realmName, userID, kcUser)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Failed to update user through Keycloak API", "err", err.Error())
 		return err
 	}
 
 	// Store user in database
-	err = c.usersDBModule.StoreOrUpdateUserDetails(ctx, c.socialRealmName, dbUser)
+	err = c.usersDBModule.StoreOrUpdateUserDetails(ctx, realmName, dbUser)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Can't store user details in database", "err", err.Error())
 		return err
@@ -214,14 +227,14 @@ func (c *component) ValidateUser(ctx context.Context, userID string, user apikyc
 		Comment:  user.Comment,
 	}
 
-	err = c.usersDBModule.CreateCheck(ctx, c.socialRealmName, userID, validation)
+	err = c.usersDBModule.CreateCheck(ctx, realmName, userID, validation)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Can't store validation check in database", "err", err.Error())
 		return err
 	}
 
 	// store the API call into the DB
-	c.reportEvent(ctx, "VALIDATE_USER", database.CtEventRealmName, c.socialRealmName, database.CtEventUserID, userID, database.CtEventUsername, *user.Username)
+	c.reportEvent(ctx, "VALIDATE_USER", database.CtEventRealmName, realmName, database.CtEventUserID, userID, database.CtEventUsername, *user.Username)
 
 	return nil
 }
@@ -251,6 +264,14 @@ func (c *component) getUserByUsername(accessToken, reqRealmName, targetRealmName
 	var res = kcUsers.Users[0]
 	keycloakb.ConvertLegacyAttribute(&res)
 	return res, nil
+}
+
+func (c *component) reportEvent(ctx context.Context, apiCall string, values ...string) {
+	errEvent := c.eventsDBModule.ReportEvent(ctx, apiCall, "back-office", values...)
+	if errEvent != nil {
+		//store in the logs also the event that failed to be stored in the DB
+		internal.LogUnrecordedEvent(ctx, c.logger, apiCall, errEvent.Error(), values...)
+	}
 }
 
 func ptr(value string) *string {
