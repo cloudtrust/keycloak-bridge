@@ -854,6 +854,29 @@ func TestDeleteCredentialsForUserEndpoint(t *testing.T) {
 	}
 }
 
+func TestResetCredentialFailuresForUserEndpoint(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
+
+	var e = MakeResetCredentialFailuresForUserEndpoint(mockManagementComponent)
+	var ctx = context.Background()
+	var req = make(map[string]string)
+
+	t.Run("Valid query", func(t *testing.T) {
+		var realm = "the-realm"
+		var user = "the-user"
+		var credential = "the-credential"
+		mockManagementComponent.EXPECT().ResetCredentialFailuresForUser(ctx, realm, user, credential).Return(nil)
+		req[prmRealm] = realm
+		req[prmUserID] = user
+		req[prmCredentialID] = credential
+		var _, err = e(ctx, req)
+		assert.Nil(t, err)
+	})
+}
+
 func TestBruteForceEndpoints(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()

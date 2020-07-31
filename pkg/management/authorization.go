@@ -52,6 +52,7 @@ var (
 	MGMTCreateRecoveryCode                  = newAction("MGMT_CreateRecoveryCode", security.ScopeGroup)
 	MGMTGetCredentialsForUser               = newAction("MGMT_GetCredentialsForUser", security.ScopeGroup)
 	MGMTDeleteCredentialsForUser            = newAction("MGMT_DeleteCredentialsForUser", security.ScopeGroup)
+	MGMTResetCredentialFailuresForUser      = newAction("MGMT_ResetCredentialFailuresForUser", security.ScopeGroup)
 	MGMTClearUserLoginFailures              = newAction("MGMT_ClearUserLoginFailures", security.ScopeGroup)
 	MGMTGetAttackDetectionStatus            = newAction("MGMT_GetAttackDetectionStatus", security.ScopeGroup)
 	MGMTGetRoles                            = newAction("MGMT_GetRoles", security.ScopeRealm)
@@ -434,6 +435,17 @@ func (c *authorizationComponentMW) DeleteCredentialsForUser(ctx context.Context,
 	}
 
 	return c.next.DeleteCredentialsForUser(ctx, realmName, userID, credentialID)
+}
+
+func (c *authorizationComponentMW) ResetCredentialFailuresForUser(ctx context.Context, realmName string, userID string, credentialID string) error {
+	var action = MGMTResetCredentialFailuresForUser.String()
+	var targetRealm = realmName
+
+	if err := c.authManager.CheckAuthorizationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
+		return err
+	}
+
+	return c.next.ResetCredentialFailuresForUser(ctx, realmName, userID, credentialID)
 }
 
 func (c *authorizationComponentMW) ClearUserLoginFailures(ctx context.Context, realmName, userID string) error {

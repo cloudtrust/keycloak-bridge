@@ -2555,6 +2555,58 @@ func TestDeleteCredentialsForUser(t *testing.T) {
 	})
 }
 
+func TestUnlockCredentialForUser(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
+	var mockEventDBModule = mock.NewEventDBModule(mockCtrl)
+	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
+
+	var managementComponent = NewComponent(mockKeycloakClient, nil, mockEventDBModule, mockConfigurationDBModule, nil, log.NewNopLogger())
+	var accessToken = "TOKEN=="
+	var realmName = "master"
+	var userID = "1245-7854-8963"
+	var credentialID = "987-654-321"
+	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+
+	t.Run("Detect credential type-Keycloak call fails", func(t *testing.T) {
+		var kcErr = errors.New("keycloak error")
+		mockKeycloakClient.EXPECT().GetCredentials(accessToken, realmName, userID).Return(nil, kcErr)
+
+		var err = managementComponent.ResetCredentialFailuresForUser(ctx, realmName, userID, credentialID)
+		assert.Equal(t, kcErr, err)
+	})
+
+	t.Run("Detect credential type-Credential not found", func(t *testing.T) {
+		mockKeycloakClient.EXPECT().GetCredentials(accessToken, realmName, userID).Return(nil, nil)
+
+		var err = managementComponent.ResetCredentialFailuresForUser(ctx, realmName, userID, credentialID)
+		assert.NotNil(t, err)
+	})
+
+	var foundCredType = "ctpapercard"
+	var credentials = []kc.CredentialRepresentation{
+		kc.CredentialRepresentation{ID: &credentialID, Type: &foundCredType},
+	}
+	mockKeycloakClient.EXPECT().GetCredentials(accessToken, realmName, userID).Return(credentials, nil).AnyTimes()
+
+	t.Run("Detect credential type-Credential found", func(t *testing.T) {
+		mockKeycloakClient.EXPECT().ResetPapercardFailures(accessToken, realmName, userID, credentialID).Return(nil)
+
+		var err = managementComponent.ResetCredentialFailuresForUser(ctx, realmName, userID, credentialID)
+		assert.Nil(t, err)
+	})
+
+	t.Run("Can't unlock paper card", func(t *testing.T) {
+		var unlockErr = errors.New("unlock error")
+		mockKeycloakClient.EXPECT().ResetPapercardFailures(accessToken, realmName, userID, credentialID).Return(unlockErr)
+
+		var err = managementComponent.ResetCredentialFailuresForUser(ctx, realmName, userID, credentialID)
+		assert.Equal(t, unlockErr, err)
+	})
+}
+
 func TestClearUserLoginFailures(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
