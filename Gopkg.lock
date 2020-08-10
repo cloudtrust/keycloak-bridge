@@ -42,7 +42,7 @@
   version = "v2.2.2"
 
 [[projects]]
-  digest = "1:b6d25f441d8874a8789778e381d5df73d3d518f2f57228fb635e5abb32274fa4"
+  digest = "1:1abc4c57d8d10966a1ab651ae06ccea2b7afd55571472960c3aa64e3822f1c56"
   name = "github.com/cloudtrust/keycloak-client"
   packages = [
     ".",
@@ -50,8 +50,8 @@
     "toolbox",
   ]
   pruneopts = "UT"
-  revision = "08f13f71dd18a4656cee1beca5b2e666f83f1129"
-  version = "v2.1.0"
+  revision = "883b640393bc7a74578eb085bc4a540c7b93b261"
+  version = "v2.2.0"
 
 [[projects]]
   digest = "1:910c5b111ca13127693df80a59be2c952ad97313626116c0c9895e7b588f2a29"
@@ -132,8 +132,8 @@
   name = "github.com/golang/mock"
   packages = ["gomock"]
   pruneopts = "UT"
-  revision = "3a35fb6e3e18b9dbfee291262260dee7372d2a92"
-  version = "v1.4.3"
+  revision = "f7b1909c82a8958747e5c87c6a5c3b2eaed8a33d"
+  version = "v1.4.4"
 
 [[projects]]
   digest = "1:9e1f58e0d3991f12e7b532161f56dc12c633fb01802ec60520d877599c2af2c5"
@@ -191,7 +191,7 @@
   version = "v1.8.1"
 
 [[projects]]
-  digest = "1:53fdcc6cb976299b987ca544ee5f5cea5a2348051d9211604c96dfe3ba788ac7"
+  digest = "1:d27eedd7296593e6ea74aed67aa0d04d97305c860209b0d4996a8aa2eac7fd0b"
   name = "github.com/lib/pq"
   packages = [
     ".",
@@ -199,8 +199,8 @@
     "scram",
   ]
   pruneopts = "UT"
-  revision = "8ae9eeaa02388a26cd5586023a0c4166c021a83d"
-  version = "v1.7.0"
+  revision = "e7751f584844fbf92a5a18b13a0af1c855e34460"
+  version = "v1.8.0"
 
 [[projects]]
   digest = "1:5a0ef768465592efca0412f7e838cdc0826712f8447e70e6ccc52eb441e9ab13"
@@ -211,20 +211,20 @@
   version = "v1.8.1"
 
 [[projects]]
-  digest = "1:297791112a7dced4f5bcc044c447cbc3d906667884e8f792f4eb8aa1aa27f3af"
+  digest = "1:aff0e9185b5df855488a42e064cb479e994636d3cefa47d053495123d086add4"
   name = "github.com/mitchellh/mapstructure"
   packages = ["."]
   pruneopts = "UT"
-  revision = "d16e9488127408e67948eb43b6d3fbb9f222da10"
-  version = "v1.3.2"
+  revision = "9e1e4717f8567d7ead72d070d064ad17d444a67e"
+  version = "v1.3.3"
 
 [[projects]]
-  digest = "1:5c15042d91c2788e1b436e85209a0ffd324b3999fcef6cc1b0cd57677431a1a8"
+  digest = "1:d4699da372e1acb0cd71c8b4d4d36cb0753d0700b6dfdda7dbf0ec4f7075cbe8"
   name = "github.com/nyaruka/phonenumbers"
   packages = ["."]
   pruneopts = "UT"
-  revision = "f3ceab37fa3f534ab8e4b73dab0e252b1c31755f"
-  version = "v1.0.56"
+  revision = "a57438c05896e7987419c7aa94b7faeddb48fea4"
+  version = "v1.0.57"
 
 [[projects]]
   digest = "1:86fbd18c1942728ab9cebc391bfe31266a27e2d2a0cf05c3bce8fc605e5f44c2"
@@ -282,15 +282,15 @@
   version = "v1.7.0"
 
 [[projects]]
-  digest = "1:737edd9913ce17ce195f540502be64dcc2cf14168e610ede7a945cd9bb0a8ce7"
+  digest = "1:88434e0bb3b3dbbae708c62511b04d005c0fda7a9d2bda40c29894f16bd6bb76"
   name = "github.com/spf13/afero"
   packages = [
     ".",
     "mem",
   ]
   pruneopts = "UT"
-  revision = "64b7ddd95f1fbe60faf105741af72d8f3579e5f0"
-  version = "v1.3.1"
+  revision = "238028b461aa4b67a4f04c765fa37354b75b749c"
+  version = "v1.3.3"
 
 [[projects]]
   digest = "1:ff4cd55a3666b6ea3a876c9e133bfb54d6c812e725409a773f2c94a0b3a92f4f"
@@ -317,12 +317,12 @@
   version = "v1.0.5"
 
 [[projects]]
-  digest = "1:973661255593cb4cca15cf62e3bd80cc34ee1490aae470aa61e668060838f94f"
+  digest = "1:b3027d4cb73b6576e8818c1012389dbcd8385e34bb8e4ee024891214c4338725"
   name = "github.com/spf13/viper"
   packages = ["."]
   pruneopts = "UT"
-  revision = "13df72109047b6ae9c907bce81e327265d6d8a9c"
-  version = "v1.7.0"
+  revision = "3826be313591f83193f048520482a7b3cf17d506"
+  version = "v1.7.1"
 
 [[projects]]
   digest = "1:2c8bb9a0858e2ab458c1641345b6eaa3754b7ae453f8d30b15701f8b12b7ead7"
@@ -341,7 +341,7 @@
   version = "v1.2.0"
 
 [[projects]]
-  digest = "1:56c20c3df8c6a7a9b895d1607f00dc810769cc3c2164a9ba3ad54d7e6be3c649"
+  digest = "1:a4ce817d57150d5a0e88e8eea7bb6b95436bdc4c6423d6d16a4cebfbc36649ce"
   name = "github.com/uber/jaeger-client-go"
   packages = [
     ".",
@@ -364,8 +364,8 @@
     "utils",
   ]
   pruneopts = "UT"
-  revision = "66c008c3d6ad856cac92a0af53186efbffa8e6a5"
-  version = "v2.24.0"
+  revision = "121ee6fb26fd9617fc30d0d95569a39c30ca3b76"
+  version = "v2.25.0"
 
 [[projects]]
   digest = "1:d7b6fd08442b8d26882fae2c859a0d63962d72a533476a217d46743ed30cb803"
@@ -393,7 +393,7 @@
     "pbkdf2",
   ]
   pruneopts = "UT"
-  revision = "ab33eee955e00ff7c973405b2780aca48d293014"
+  revision = "123391ffb6de907695e1066dc40c1ff09322aeb6"
 
 [[projects]]
   branch = "master"
@@ -421,14 +421,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:de18db9b6b884884bbb43eafaee3c72a06c8d4ac69d87411c52b5801a5e814f7"
+  digest = "1:feb2fa2670fbc18d915f9c2af7c621d7420d38fe9ee448d32c6fe9739b6f7797"
   name = "golang.org/x/sys"
   packages = [
     "internal/unsafeheader",
     "unix",
   ]
   pruneopts = "UT"
-  revision = "ddb9806d33aed8dbaac1cd6f1cba58952e87f933"
+  revision = "5acd03effb828bdfdbad4e129e7daf84af6670b4"
 
 [[projects]]
   digest = "1:fa940333c48808b0d86ef21f412ffcfd0e5084a82f13905c028a404803b1908f"

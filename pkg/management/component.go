@@ -60,6 +60,7 @@ type KeycloakClient interface {
 	GetCredentials(accessToken string, realmName string, userID string) ([]kc.CredentialRepresentation, error)
 	UpdateLabelCredential(accessToken string, realmName string, userID string, credentialID string, label string) error
 	DeleteCredential(accessToken string, realmName string, userID string, credentialID string) error
+	ResetPapercardFailures(accessToken string, realmName string, userID string, credentialID string) error
 	LinkShadowUser(accessToken string, realmName string, userID string, provider string, fedID kc.FederatedIdentityRepresentation) error
 	ClearUserLoginFailures(accessToken string, realmName, userID string) error
 	GetAttackDetectionStatus(accessToken string, realmName, userID string) (map[string]interface{}, error)
@@ -106,6 +107,7 @@ type Component interface {
 	CreateRecoveryCode(ctx context.Context, realmName string, userID string) (string, error)
 	GetCredentialsForUser(ctx context.Context, realmName string, userID string) ([]api.CredentialRepresentation, error)
 	DeleteCredentialsForUser(ctx context.Context, realmName string, userID string, credentialID string) error
+	ResetCredentialFailuresForUser(ctx context.Context, realmName string, userID string, credentialID string) error
 	ClearUserLoginFailures(ctx context.Context, realmName, userID string) error
 	GetAttackDetectionStatus(ctx context.Context, realmName, userID string) (api.AttackDetectionStatusRepresentation, error)
 	GetRoles(ctx context.Context, realmName string) ([]api.RoleRepresentation, error)
@@ -930,6 +932,46 @@ func (c *component) DeleteCredentialsForUser(ctx context.Context, realmName stri
 	}
 
 	return err
+}
+
+func (c *component) ResetCredentialFailuresForUser(ctx context.Context, realmName string, userID string, credentialID string) error {
+	var credType, err = c.getCredentialType(ctx, realmName, userID, credentialID)
+	if err != nil {
+		c.logger.Info(ctx, "msg", "Can't get credential type", "err", err.Error(), "id", credentialID)
+		return err
+	}
+
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+	if credType == "ctpapercard" {
+		err = c.keycloakClient.ResetPapercardFailures(accessToken, realmName, userID, credentialID)
+		if err != nil {
+			c.logger.Info(ctx, "msg", "Can't unlock papercard credential", "err", err.Error(), "id", credentialID)
+			return err
+		}
+	} else {
+		// Will not execute this as endpoint should check the credType
+		c.logger.Info(ctx, "msg", "Unsupported credential type", "type", credType)
+		return errorhandler.CreateNotFoundError("credential")
+	}
+
+	return nil
+}
+
+func (c *component) getCredentialType(ctx context.Context, realmName, userID, credentialID string) (string, error) {
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+	var creds, err = c.keycloakClient.GetCredentials(accessToken, realmName, userID)
+
+	if err != nil {
+		return "", err
+	}
+
+	for _, cred := range creds {
+		if *cred.ID == credentialID {
+			return *cred.Type, nil
+		}
+	}
+
+	return "", errorhandler.CreateNotFoundError("credential")
 }
 
 func (c *component) ClearUserLoginFailures(ctx context.Context, realmName, userID string) error {

@@ -39,16 +39,17 @@ type Endpoints struct {
 	GetClientRoleForUser      endpoint.Endpoint
 	AddClientRoleToUser       endpoint.Endpoint
 
-	ResetPassword            endpoint.Endpoint
-	ExecuteActionsEmail      endpoint.Endpoint
-	SendNewEnrolmentCode     endpoint.Endpoint
-	SendReminderEmail        endpoint.Endpoint
-	ResetSmsCounter          endpoint.Endpoint
-	CreateRecoveryCode       endpoint.Endpoint
-	GetCredentialsForUser    endpoint.Endpoint
-	DeleteCredentialsForUser endpoint.Endpoint
-	ClearUserLoginFailures   endpoint.Endpoint
-	GetAttackDetectionStatus endpoint.Endpoint
+	ResetPassword                  endpoint.Endpoint
+	ExecuteActionsEmail            endpoint.Endpoint
+	SendNewEnrolmentCode           endpoint.Endpoint
+	SendReminderEmail              endpoint.Endpoint
+	ResetSmsCounter                endpoint.Endpoint
+	CreateRecoveryCode             endpoint.Endpoint
+	GetCredentialsForUser          endpoint.Endpoint
+	DeleteCredentialsForUser       endpoint.Endpoint
+	ResetCredentialFailuresForUser endpoint.Endpoint
+	ClearUserLoginFailures         endpoint.Endpoint
+	GetAttackDetectionStatus       endpoint.Endpoint
 
 	GetRoles         endpoint.Endpoint
 	GetRole          endpoint.Endpoint
@@ -436,6 +437,15 @@ func MakeDeleteCredentialsForUserEndpoint(component Component) cs.Endpoint {
 		var m = req.(map[string]string)
 
 		return nil, component.DeleteCredentialsForUser(ctx, m[prmRealm], m[prmUserID], m[prmCredentialID])
+	}
+}
+
+// MakeResetCredentialFailuresForUserEndpoint creates an endpoint for UnlockCredentialForUser
+func MakeResetCredentialFailuresForUserEndpoint(component Component) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+
+		return nil, component.ResetCredentialFailuresForUser(ctx, m[prmRealm], m[prmUserID], m[prmCredentialID])
 	}
 }
 

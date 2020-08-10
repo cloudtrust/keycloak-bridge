@@ -787,6 +787,35 @@ paths:
       responses:
         200:
           description: successful operation
+  /realms/{realm}/users/{userID}/credentials/{credentialID}/reset-failures:
+    put:
+      tags:
+      - Credentials
+      summary: Reset a locked credential for the user (ex: paper card with too many wrong errors)
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
+      - name: credentialID
+        in: path
+        description: Credential id
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation
+        404:
+          description: realm, user or credential not found
   /realms/{realm}/users/{userID}/attack-detection-status:
     get:
       tags:

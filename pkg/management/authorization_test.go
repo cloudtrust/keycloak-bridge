@@ -195,6 +195,9 @@ func TestDeny(t *testing.T) {
 		err = authorizationMW.DeleteCredentialsForUser(ctx, realmName, userID, credentialID)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
+		err = authorizationMW.ResetCredentialFailuresForUser(ctx, realmName, userID, credentialID)
+		assert.Equal(t, security.ForbiddenError{}, err)
+
 		err = authorizationMW.ClearUserLoginFailures(ctx, realmName, userID)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
@@ -461,6 +464,10 @@ func TestAllowed(t *testing.T) {
 
 		mockManagementComponent.EXPECT().DeleteCredentialsForUser(ctx, realmName, userID, credentialID).Return(nil).Times(1)
 		err = authorizationMW.DeleteCredentialsForUser(ctx, realmName, userID, credentialID)
+		assert.Nil(t, err)
+
+		mockManagementComponent.EXPECT().ResetCredentialFailuresForUser(ctx, realmName, userID, credentialID).Return(nil).Times(1)
+		err = authorizationMW.ResetCredentialFailuresForUser(ctx, realmName, userID, credentialID)
 		assert.Nil(t, err)
 
 		mockManagementComponent.EXPECT().ClearUserLoginFailures(ctx, realmName, userID).Return(nil).Times(1)
