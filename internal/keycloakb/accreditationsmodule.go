@@ -136,19 +136,20 @@ func (am *accredsModule) GetUserAndPrepareAccreditations(ctx context.Context, ac
 		return kcUser, 0, err
 	}
 
-	// Update attributes in kcUser
-	// If no new accreditation, return
-	var added = 0
-	if len(newAccreds) > 0 {
-		var kcAccreds = kcUser.GetAttribute(constants.AttrbAccreditations)
-		for _, newAccred := range newAccreds {
-			if !validation.IsStringInSlice(kcAccreds, newAccred) {
-				kcAccreds = append(kcAccreds, newAccred)
-				added++
-			}
-		}
-		kcUser.SetAttribute(constants.AttrbAccreditations, kcAccreds)
+	if len(newAccreds) == 0 {
+		return kcUser, 0, errorhandler.CreateInternalServerError("noConfiguredAccreditations")
 	}
+
+	// Update attributes in kcUser
+	var added = 0
+	var kcAccreds = kcUser.GetAttribute(constants.AttrbAccreditations)
+	for _, newAccred := range newAccreds {
+		if !validation.IsStringInSlice(kcAccreds, newAccred) {
+			kcAccreds = append(kcAccreds, newAccred)
+			added++
+		}
+	}
+	kcUser.SetAttribute(constants.AttrbAccreditations, kcAccreds)
 
 	return kcUser, added, nil
 }

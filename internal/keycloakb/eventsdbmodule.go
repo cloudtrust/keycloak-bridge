@@ -64,7 +64,7 @@ const (
 
 	selectAuditEventsStmt = `SELECT audit_id, unix_timestamp(audit_time), origin, realm_name, agent_user_id, agent_username, agent_realm_name,
 	                            user_id, username, ct_event_type, kc_event_type, kc_operation_type, client_id, additional_info
-		FROM audit ` + whereAuditEvents + `		
+		FROM audit ` + whereAuditEvents + `
 		ORDER BY audit_time DESC
 		LIMIT ?, ?;
 		`
