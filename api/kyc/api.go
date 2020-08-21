@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"strings"
 
+	"github.com/cloudtrust/keycloak-bridge/internal/dto"
+
 	"github.com/cloudtrust/common-service/validation"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
@@ -30,9 +32,11 @@ type UserRepresentation struct {
 	PhoneNumberVerified  *bool                          `json:"phoneNumberVerified,omitempty"`
 	BirthDate            *string                        `json:"birthDate,omitempty"`
 	BirthLocation        *string                        `json:"birthLocation,omitempty"`
+	Nationality          *string                        `json:"nationality,omitempty"`
 	IDDocumentType       *string                        `json:"idDocumentType,omitempty"`
 	IDDocumentNumber     *string                        `json:"idDocumentNumber,omitempty"`
 	IDDocumentExpiration *string                        `json:"idDocumentExpiration,omitempty"`
+	IDDocumentCountry    *string                        `json:"idDocumentCountry,omitempty"`
 	Locale               *string                        `json:"locale,omitempty"`
 	Comment              *string                        `json:"comment,omitempty"`
 	Accreditations       *[]AccreditationRepresentation `json:"accreditations,omitempty"`
@@ -54,19 +58,23 @@ const (
 	prmUserPhoneNumber          = "user_phoneNumber"
 	prmUserBirthDate            = "user_birthDate"
 	prmUserBirthLocation        = "user_birthLocation"
+	prmUserNationality          = "user_nationality"
 	prmUserIDDocumentType       = "user_idDocType"
 	prmUserIDDocumentNumber     = "user_idDocNumber"
 	prmUserIDDocumentExpiration = "user_idDocExpiration"
+	prmUserIDDocumentCountry    = "user_idDocCountry"
 	prmUserLocale               = "user_locale"
 
-	regExpNames            = `^([\wàáâäçèéêëìíîïñòóôöùúûüß]+([ '-][\wàáâäçèéêëìíîïñòóôöùúûüß]+)*){1,50}$`
-	regExpFirstName        = regExpNames
-	regExpLastName         = regExpNames
-	regExpEmail            = `^.+\@.+\..+$`
-	regExpBirthLocation    = regExpNames
-	regExpIDDocumentNumber = constants.RegExpIDDocumentNumber
-	regExpGender           = constants.RegExpGender
-	regExpLocale           = constants.RegExpLocale
+	regExpNames             = `^([\wàáâäçèéêëìíîïñòóôöùúûüß]+([ '-][\wàáâäçèéêëìíîïñòóôöùúûüß]+)*){1,50}$`
+	regExpFirstName         = regExpNames
+	regExpLastName          = regExpNames
+	regExpEmail             = `^.+\@.+\..+$`
+	regExpBirthLocation     = regExpNames
+	regExpNationality       = constants.RegExpCountryCode
+	regExpIDDocumentNumber  = constants.RegExpIDDocumentNumber
+	regExpIDDocumentCountry = constants.RegExpCountryCode
+	regExpGender            = constants.RegExpGender
+	regExpLocale            = constants.RegExpLocale
 
 	dateLayout = "02.01.2006"
 )
@@ -88,6 +96,16 @@ func UserFromJSON(jsonRep string) (UserRepresentation, error) {
 func (u *UserRepresentation) UserToJSON() string {
 	var bytes, _ = json.Marshal(u)
 	return string(bytes)
+}
+
+// ExportToDBUser exports user details into a dto.DBUser
+func (u *UserRepresentation) ExportToDBUser(dbUser *dto.DBUser) {
+	dbUser.BirthLocation = u.BirthLocation
+	dbUser.Nationality = u.Nationality
+	dbUser.IDDocumentType = u.IDDocumentType
+	dbUser.IDDocumentNumber = u.IDDocumentNumber
+	dbUser.IDDocumentExpiration = u.IDDocumentExpiration
+	dbUser.IDDocumentCountry = u.IDDocumentCountry
 }
 
 // ExportToKeycloak exports user details into a Keycloak UserRepresentation
@@ -189,9 +207,11 @@ func (u *UserRepresentation) Validate() error {
 		ValidateParameterPhoneNumber(prmUserPhoneNumber, u.PhoneNumber, true).
 		ValidateParameterDate(prmUserBirthDate, u.BirthDate, dateLayout, true).
 		ValidateParameterRegExp(prmUserBirthLocation, u.BirthLocation, regExpBirthLocation, true).
+		ValidateParameterRegExp(prmUserNationality, u.Nationality, regExpNationality, true).
 		ValidateParameterIn(prmUserIDDocumentType, u.IDDocumentType, allowedDocumentType, true).
 		ValidateParameterRegExp(prmUserIDDocumentNumber, u.IDDocumentNumber, regExpIDDocumentNumber, true).
 		ValidateParameterDate(prmUserIDDocumentExpiration, u.IDDocumentExpiration, dateLayout, true).
+		ValidateParameterRegExp(prmUserIDDocumentCountry, u.IDDocumentCountry, regExpIDDocumentCountry, true).
 		ValidateParameterRegExp(prmUserLocale, u.Locale, regExpLocale, false).
 		Status()
 }

@@ -23,9 +23,11 @@ type AccountRepresentation struct {
 	PhoneNumberVerified  *bool                          `json:"phoneNumberVerified,omitempty"`
 	BirthDate            *string                        `json:"birthDate,omitempty"`
 	BirthLocation        *string                        `json:"birthLocation,omitempty"`
+	Nationality          *string                        `json:"nationality,omitempty"`
 	IDDocumentType       *string                        `json:"idDocumentType,omitempty"`
 	IDDocumentNumber     *string                        `json:"idDocumentNumber,omitempty"`
 	IDDocumentExpiration *string                        `json:"idDocumentExpiration,omitempty"`
+	IDDocumentCountry    *string                        `json:"idDocumentCountry,omitempty"`
 	Locale               *string                        `json:"locale,omitempty"`
 	Accreditations       *[]AccreditationRepresentation `json:"accreditations,omitempty"`
 }
@@ -192,19 +194,19 @@ func (credential CredentialRepresentation) Validate() error {
 
 // Regular expressions for parameters validation
 const (
-	RegExpID         = `^[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}$`
-	RegExpIDNullable = `^([a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12})|(null)$`
+	RegExpID         = constants.RegExpID
+	RegExpIDNullable = `^([a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12})$|^(null)$`
 	RegExpLabel      = `^.{0,255}$`
 	RegExpType       = `^[a-zA-Z0-9-_]{1,128}$`
-	RegExpRealmName  = `^[a-zA-Z0-9_-]{1,36}$`
+	RegExpRealmName  = constants.RegExpRealmName
 
 	// Password
-	RegExpPassword = `^.{1,255}$`
+	RegExpPassword = constants.RegExpPassword
 	// User
-	RegExpUsername    = `^[a-zA-Z0-9-_.]{1,128}$`
-	RegExpEmail       = `^.+\@.+\..+`
-	RegExpFirstName   = `^.{1,128}$`
-	RegExpLastName    = `^.{1,128}$`
-	RegExpPhoneNumber = `^\+[1-9]\d{1,14}$`
+	RegExpUsername    = constants.RegExpUsername
+	RegExpEmail       = constants.RegExpEmail
+	RegExpFirstName   = constants.RegExpFirstName
+	RegExpLastName    = constants.RegExpLastName
+	RegExpPhoneNumber = constants.RegExpPhoneNumber
 	RegExpLocale      = `^\w{2}(-\w{2})?$`
 )

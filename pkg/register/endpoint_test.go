@@ -32,9 +32,11 @@ func TestMakeRegisterUserEndpoint(t *testing.T) {
 			PhoneNumber:          ptr("+41220123456"),
 			BirthDate:            ptr("20.12.2012"),
 			BirthLocation:        ptr("Bern"),
+			Nationality:          ptr("CH"),
 			IDDocumentType:       ptr("PASSPORT"),
 			IDDocumentNumber:     ptr("012345678901234"),
 			IDDocumentExpiration: ptr("31.12.2059"),
+			IDDocumentCountry:    ptr("CH"),
 			Locale:               ptr("fr"),
 		}
 		m = map[string]string{}

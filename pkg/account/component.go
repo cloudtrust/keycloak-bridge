@@ -151,9 +151,11 @@ func (c *component) GetAccount(ctx context.Context) (api.AccountRepresentation, 
 
 	userRep = api.ConvertToAPIAccount(ctx, userKc, c.logger)
 	userRep.BirthLocation = dbUser.BirthLocation
+	userRep.Nationality = dbUser.Nationality
 	userRep.IDDocumentType = dbUser.IDDocumentType
 	userRep.IDDocumentNumber = dbUser.IDDocumentNumber
 	userRep.IDDocumentExpiration = dbUser.IDDocumentExpiration
+	userRep.IDDocumentCountry = dbUser.IDDocumentCountry
 
 	return userRep, nil
 }
@@ -192,9 +194,11 @@ func (c *component) UpdateAccount(ctx context.Context, user api.AccountRepresent
 		user.Gender, oldUserKc.GetAttributeString(constants.AttrbGender),
 		user.BirthDate, oldUserKc.GetAttributeString(constants.AttrbBirthDate),
 		user.BirthLocation, oldUser.BirthLocation,
+		user.Nationality, oldUser.Nationality,
 		user.IDDocumentType, oldUser.IDDocumentType,
 		user.IDDocumentNumber, oldUser.IDDocumentNumber,
 		user.IDDocumentExpiration, oldUser.IDDocumentExpiration,
+		user.IDDocumentCountry, oldUser.IDDocumentCountry,
 	)
 
 	// profileUpdated: Add here all fields which are not accreditation-dependant...
@@ -301,14 +305,19 @@ func (c *component) mergeUser(userID string, user api.AccountRepresentation, old
 	var dbUser = dto.DBUser{
 		UserID:               &userID,
 		BirthLocation:        user.BirthLocation,
+		Nationality:          user.Nationality,
 		IDDocumentType:       user.IDDocumentType,
 		IDDocumentNumber:     user.IDDocumentNumber,
 		IDDocumentExpiration: user.IDDocumentExpiration,
+		IDDocumentCountry:    user.IDDocumentCountry,
 	}
 
 	// Keep old values when none was provided
 	if dbUser.BirthLocation == nil {
 		dbUser.BirthLocation = oldUser.BirthLocation
+	}
+	if dbUser.Nationality == nil {
+		dbUser.Nationality = oldUser.Nationality
 	}
 	if dbUser.IDDocumentType == nil {
 		dbUser.IDDocumentType = oldUser.IDDocumentType
@@ -318,6 +327,9 @@ func (c *component) mergeUser(userID string, user api.AccountRepresentation, old
 	}
 	if dbUser.IDDocumentExpiration == nil {
 		dbUser.IDDocumentExpiration = oldUser.IDDocumentExpiration
+	}
+	if dbUser.IDDocumentCountry == nil {
+		dbUser.IDDocumentCountry = oldUser.IDDocumentCountry
 	}
 
 	return dbUser

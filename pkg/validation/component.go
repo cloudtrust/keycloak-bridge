@@ -120,8 +120,10 @@ func (c *component) GetUser(ctx context.Context, realmName string, userID string
 	var res = api.UserRepresentation{}
 	res.ImportFromKeycloak(kcUser)
 	res.BirthLocation = dbUser.BirthLocation
+	res.Nationality = dbUser.Nationality
 	res.IDDocumentType = dbUser.IDDocumentType
 	res.IDDocumentNumber = dbUser.IDDocumentNumber
+	res.IDDocumentCountry = dbUser.IDDocumentCountry
 
 	if dbUser.IDDocumentExpiration != nil {
 		expirationTime, err := time.Parse(dateLayout, *dbUser.IDDocumentExpiration)
@@ -165,10 +167,12 @@ func (c *component) UpdateUser(ctx context.Context, realmName string, userID str
 func (c *component) updateUserDatabase(ctx context.Context, realmName, userID string, user api.UserRepresentation) (bool, error) {
 	var shouldRevokeAccreditations bool
 	var userDB = dto.DBUser{
-		UserID:           &userID,
-		BirthLocation:    user.BirthLocation,
-		IDDocumentType:   user.IDDocumentType,
-		IDDocumentNumber: user.IDDocumentNumber,
+		UserID:            &userID,
+		BirthLocation:     user.BirthLocation,
+		Nationality:       user.Nationality,
+		IDDocumentType:    user.IDDocumentType,
+		IDDocumentNumber:  user.IDDocumentNumber,
+		IDDocumentCountry: user.IDDocumentCountry,
 	}
 
 	if existingUser, err := c.usersDBModule.GetUserDetails(ctx, realmName, userID); err == nil {
@@ -234,8 +238,10 @@ func needKcProcessing(user api.UserRepresentation) bool {
 func needDBProcessing(user api.UserRepresentation) bool {
 	var dbUserAttrs = []*string{
 		user.BirthLocation,
+		user.Nationality,
 		user.IDDocumentNumber,
 		user.IDDocumentType,
+		user.IDDocumentCountry,
 	}
 
 	for _, attr := range dbUserAttrs {
