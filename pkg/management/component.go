@@ -10,6 +10,7 @@ import (
 	"github.com/cloudtrust/common-service/configuration"
 	"github.com/cloudtrust/common-service/database"
 	errorhandler "github.com/cloudtrust/common-service/errors"
+	commonhttp "github.com/cloudtrust/common-service/http"
 	"github.com/cloudtrust/common-service/security"
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
@@ -73,7 +74,12 @@ type UsersDetailsDBModule interface {
 	StoreOrUpdateUserDetails(ctx context.Context, realm string, user dto.DBUser) error
 	GetUserDetails(ctx context.Context, realm string, userID string) (dto.DBUser, error)
 	DeleteUserDetails(ctx context.Context, realm string, userID string) error
-	GetChecks(ctx context.Context, realm string, userID string) ([]dto.DBCheck, error)
+	GetChecks(ctx context.Context, realm string, userID string, proofContent bool) ([]dto.DBCheck, error)
+}
+
+// UsersArchiveDBModule interface
+type UsersArchiveDBModule interface {
+	GetUserDetails(ctx context.Context, realm string, userID string) ([]dto.ArchiveUserRepresentation, error)
 }
 
 // OnboardingModule is the interface for the onboarding process
@@ -96,6 +102,8 @@ type Component interface {
 
 	DeleteUser(ctx context.Context, realmName, userID string) error
 	GetUser(ctx context.Context, realmName, userID string) (api.UserRepresentation, error)
+	GetUserProof(ctx context.Context, realmName, userID string) (commonhttp.MimeContent, error)
+	GetUserHisto(ctx context.Context, realmName, userID string) ([]api.UserRepresentation, error)
 	UpdateUser(ctx context.Context, realmName, userID string, user api.UpdatableUserRepresentation) error
 	LockUser(ctx context.Context, realmName, userID string) error
 	UnlockUser(ctx context.Context, realmName, userID string) error
@@ -153,6 +161,7 @@ type Component interface {
 type component struct {
 	keycloakClient          KeycloakClient
 	usersDBModule           UsersDetailsDBModule
+	usersArchiveDBModule    UsersArchiveDBModule
 	eventDBModule           database.EventsDBModule
 	configDBModule          keycloakb.ConfigurationDBModule
 	onboardingModule        OnboardingModule
@@ -162,7 +171,7 @@ type component struct {
 }
 
 // NewComponent returns the management component.
-func NewComponent(keycloakClient KeycloakClient, usersDBModule UsersDetailsDBModule, eventDBModule database.EventsDBModule,
+func NewComponent(keycloakClient KeycloakClient, usersDBModule UsersDetailsDBModule, usersArchiveDBModule UsersArchiveDBModule, eventDBModule database.EventsDBModule,
 	configDBModule keycloakb.ConfigurationDBModule, onboardingModule OnboardingModule, authorizedTrustIDGroups []string, socialRealmName string, logger keycloakb.Logger) Component {
 
 	var authzedTrustIDGroups = make(map[string]bool)
@@ -173,6 +182,7 @@ func NewComponent(keycloakClient KeycloakClient, usersDBModule UsersDetailsDBMod
 	return &component{
 		keycloakClient:          keycloakClient,
 		usersDBModule:           usersDBModule,
+		usersArchiveDBModule:    usersArchiveDBModule,
 		eventDBModule:           eventDBModule,
 		configDBModule:          configDBModule,
 		onboardingModule:        onboardingModule,
@@ -422,6 +432,33 @@ func (c *component) GetUser(ctx context.Context, realmName, userID string) (api.
 	return userRep, nil
 }
 
+func (c *component) GetUserProof(ctx context.Context, realmName, userID string) (commonhttp.MimeContent, error) {
+	var checks, err = c.usersDBModule.GetChecks(ctx, realmName, userID, true)
+	if err != nil {
+		return commonhttp.MimeContent{}, err
+	}
+	if len(checks) == 0 {
+		return commonhttp.MimeContent{}, errorhandler.CreateNotFoundError("check")
+	}
+	var idx = 0 //len(checks) - 1
+	return commonhttp.MimeContent{
+		MimeType: "application/octet-stream",
+		Content:  *checks[idx].ProofData,
+		Filename: "proof.bin",
+	}, nil
+}
+
+func (c *component) GetUserHisto(ctx context.Context, realmName, userID string) ([]api.UserRepresentation, error) {
+	var dbHisto, err = c.usersArchiveDBModule.GetUserDetails(ctx, realmName, userID)
+	if err != nil {
+		return nil, err
+	}
+	if len(dbHisto) == 0 {
+		return nil, errorhandler.CreateNotFoundError("userArchive")
+	}
+	return api.ConvertFromUserArchives(dbHisto), nil
+}
+
 func (c *component) isUpdated(newValue, oldValue *string) bool {
 	if oldValue == nil {
 		return newValue != nil
@@ -623,7 +660,7 @@ func (c *component) GetUsers(ctx context.Context, realmName string, groupIDs []s
 
 func (c *component) GetUserChecks(ctx context.Context, realmName, userID string) ([]api.UserCheck, error) {
 	// We can assume userID is valid as it is used to check authorizations...
-	var checks, err = c.usersDBModule.GetChecks(ctx, realmName, userID)
+	var checks, err = c.usersDBModule.GetChecks(ctx, realmName, userID, true)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Can't get user checks", "err", err.Error(), "realm", realmName, "user", userID)
 		return nil, err

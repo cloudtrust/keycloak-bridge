@@ -93,6 +93,7 @@ type AccreditationRepresentation struct {
 	ExpiryDate *string `json:"expiryDate"`
 	Revoked    *bool   `json:"revoked,omitempty"`
 	Expired    *bool   `json:"expired,omitempty"`
+	Revoked    *bool   `json:"revoked,omitempty"`
 }
 
 // UsersPageRepresentation used to manage paging in GetUsers
@@ -882,6 +883,64 @@ func ConvertToAPIUserChecks(checks []dto.DBCheck) []UserCheck {
 		})
 	}
 	return res
+}
+
+// ConvertFromUserArchives to a slice of UserRepresentation
+func ConvertFromUserArchives(userArchives []dto.ArchiveUserRepresentation) []UserRepresentation {
+	if len(userArchives) == 0 {
+		return nil
+	}
+	var res []UserRepresentation
+	for _, user := range userArchives {
+		res = append(res, ConvertFromUserArchive(user))
+	}
+	return res
+}
+
+// ConvertFromUserArchive to a UserRepresentation
+func ConvertFromUserArchive(userArchive dto.ArchiveUserRepresentation) UserRepresentation {
+	return UserRepresentation{
+		ID:                   userArchive.ID,
+		Username:             userArchive.Username,
+		Gender:               userArchive.Gender,
+		FirstName:            userArchive.FirstName,
+		LastName:             userArchive.LastName,
+		Email:                userArchive.Email,
+		EmailVerified:        userArchive.EmailVerified,
+		PhoneNumber:          userArchive.PhoneNumber,
+		PhoneNumberVerified:  userArchive.PhoneNumberVerified,
+		BirthDate:            userArchive.BirthDate,
+		BirthLocation:        userArchive.BirthLocation,
+		Nationality:          userArchive.Nationality,
+		IDDocumentType:       userArchive.IDDocumentType,
+		IDDocumentNumber:     userArchive.IDDocumentNumber,
+		IDDocumentExpiration: userArchive.IDDocumentExpiration,
+		IDDocumentCountry:    userArchive.IDDocumentCountry,
+		Locale:               userArchive.Locale,
+		Accreditations:       ConvertAccreditationsFromUserArchive(userArchive.Accreditations),
+	}
+}
+
+// ConvertAccreditationsFromUserArchive to a slice of AccreditationRepresentation
+func ConvertAccreditationsFromUserArchive(accreds []dto.ArchiveAccreditationRepresentation) *[]AccreditationRepresentation {
+	if accreds == nil || len(accreds) == 0 {
+		return nil
+	}
+	var res []AccreditationRepresentation
+	for _, accred := range accreds {
+		res = append(res, ConvertAccreditationFromUserArchive(accred))
+	}
+	return &res
+}
+
+// ConvertAccreditationFromUserArchive to a AccreditationRepresentation
+func ConvertAccreditationFromUserArchive(accred dto.ArchiveAccreditationRepresentation) AccreditationRepresentation {
+	return AccreditationRepresentation{
+		Type:       accred.Type,
+		ExpiryDate: accred.ExpiryDate,
+		Expired:    nil,
+		Revoked:    accred.Revoked,
+	}
 }
 
 // Regular expressions for parameters validation

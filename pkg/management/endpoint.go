@@ -9,6 +9,7 @@ import (
 
 	cs "github.com/cloudtrust/common-service"
 	errorhandler "github.com/cloudtrust/common-service/errors"
+	commonhttp "github.com/cloudtrust/common-service/http"
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
 	msg "github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
@@ -25,6 +26,8 @@ type Endpoints struct {
 
 	DeleteUser                  endpoint.Endpoint
 	GetUser                     endpoint.Endpoint
+	GetUserProof                endpoint.Endpoint
+	GetUserHisto                endpoint.Endpoint
 	UpdateUser                  endpoint.Endpoint
 	LockUser                    endpoint.Endpoint
 	UnlockUser                  endpoint.Endpoint
@@ -181,6 +184,33 @@ func MakeGetUserEndpoint(component Component) cs.Endpoint {
 		var m = req.(map[string]string)
 
 		return component.GetUser(ctx, m[prmRealm], m[prmUserID])
+	}
+}
+
+// MakeGetUserProofEndpoint creates an endpoint for GetUserProof
+func MakeGetUserProofEndpoint(component Component) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+		var res, err = component.GetUserProof(ctx, m[prmRealm], m[prmUserID])
+		if err != nil {
+			return nil, err
+		}
+		return commonhttp.GenericResponse{
+			StatusCode:  200,
+			MimeContent: &res,
+		}, nil
+	}
+}
+
+// MakeGetUserHistoEndpoint creates an endpoint for GetUserHisto
+func MakeGetUserHistoEndpoint(component Component) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+		var res, err = component.GetUserHisto(ctx, m[prmRealm], m[prmUserID])
+		if err != nil {
+			return nil, err
+		}
+		return res, nil
 	}
 }
 

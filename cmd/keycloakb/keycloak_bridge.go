@@ -129,6 +129,7 @@ const (
 	cfgDbAesGcmKey              = "db-aesgcm-key"
 	cfgDbAesGcmTagSize          = "db-aesgcm-tag-size"
 	cfgArchiveRwDbParams        = "db-archive-rw"
+	cfgArchiveRoDbParams        = "db-archive-ro"
 	cfgDbArchiveAesGcmKey       = "db-archive-aesgcm-key"
 	cfgDbArchiveAesGcmTagSize   = "db-archive-aesgcm-tag-size"
 )
@@ -210,6 +211,7 @@ func main() {
 
 		// DB for archiving users
 		archiveRwDbParams = database.GetDbConfig(c, cfgArchiveRwDbParams)
+		archiveRoDbParams = database.GetDbConfig(c, cfgArchiveRoDbParams)
 
 		// Rate limiting
 		rateLimit = map[RateKey]int{
@@ -447,6 +449,16 @@ func main() {
 		}
 	}
 
+	var archiveRoDBConn sqltypes.CloudtrustDB
+	{
+		var err error
+		archiveRoDBConn, err = database.NewReconnectableCloudtrustDB(archiveRoDbParams)
+		if err != nil {
+			logger.Error(ctx, "msg", "could not create DB connection for archive (RO)", "error", err)
+			return
+		}
+	}
+
 	// Create technical OIDC token provider and validate technical user credentials
 	var technicalTokenProvider toolbox.OidcTokenProvider
 	{
@@ -597,12 +609,14 @@ func main() {
 		// module for storing and retrieving details of the users
 		var usersDBModule = keycloakb.NewUsersDetailsDBModule(usersRwDBConn, aesEncryption, managementLogger)
 
+		var userArchiveDBReader = keycloakb.NewArchiveDBModule(archiveRoDBConn, archiveAesEncryption, managementLogger)
+
 		// module for onboarding process
 		var onboardingModule = keycloakb.NewOnboardingModule(keycloakClient, keycloakPublicURL, logger)
 
 		var keycloakComponent management.Component
 		{
-			keycloakComponent = management.NewComponent(keycloakClient, usersDBModule, eventsDBModule, configDBModule, onboardingModule, trustIDGroups, registerRealm, managementLogger)
+			keycloakComponent = management.NewComponent(keycloakClient, usersDBModule, userArchiveDBReader, eventsDBModule, configDBModule, onboardingModule, trustIDGroups, registerRealm, managementLogger)
 			keycloakComponent = management.MakeAuthorizationManagementComponentMW(log.With(managementLogger, "mw", "endpoint"), authorizationManager)(keycloakComponent)
 		}
 
@@ -619,6 +633,8 @@ func main() {
 
 			CreateUser:                  prepareEndpoint(management.MakeCreateUserEndpoint(keycloakComponent, managementLogger), "create_user_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 			GetUser:                     prepareEndpoint(management.MakeGetUserEndpoint(keycloakComponent), "get_user_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			GetUserProof:                prepareEndpoint(management.MakeGetUserProofEndpoint(keycloakComponent), "get_user_proof_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			GetUserHisto:                prepareEndpoint(management.MakeGetUserHistoEndpoint(keycloakComponent), "get_user_histo_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 			UpdateUser:                  prepareEndpoint(management.MakeUpdateUserEndpoint(keycloakComponent), "update_user_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 			LockUser:                    prepareEndpoint(management.MakeLockUserEndpoint(keycloakComponent), "lock_user_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 			UnlockUser:                  prepareEndpoint(management.MakeUnlockUserEndpoint(keycloakComponent), "unlock_user_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
@@ -939,6 +955,8 @@ func main() {
 
 		var createUserHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.CreateUser)
 		var getUserHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetUser)
+		var getUserProofHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetUserProof)
+		var getUserHistoHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetUserHisto)
 		var updateUserHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.UpdateUser)
 		var lockUserHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.LockUser)
 		var unlockUserHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.UnlockUser)
@@ -1018,6 +1036,8 @@ func main() {
 		managementSubroute.Path("/realms/{realm}/users").Methods("POST").Handler(createUserHandler)
 		managementSubroute.Path("/realms/{realm}/users/status").Methods("GET").Handler(getUserAccountStatusByEmailHandler)
 		managementSubroute.Path("/realms/{realm}/users/{userID}").Methods("GET").Handler(getUserHandler)
+		managementSubroute.Path("/realms/{realm}/users/{userID}/proof").Methods("GET").Handler(getUserProofHandler)
+		managementSubroute.Path("/realms/{realm}/users/{userID}/histo").Methods("GET").Handler(getUserHistoHandler)
 		managementSubroute.Path("/realms/{realm}/users/{userID}").Methods("PUT").Handler(updateUserHandler)
 		managementSubroute.Path("/realms/{realm}/users/{userID}").Methods("DELETE").Handler(deleteUserHandler)
 		managementSubroute.Path("/realms/{realm}/users/{userID}/lock").Methods("PUT").Handler(lockUserHandler)
@@ -1303,8 +1323,11 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 	//Storage users in DB (read/write)
 	database.ConfigureDbDefault(v, cfgUsersRwDbParams, "CT_BRIDGE_DB_USERS_RW_USERNAME", "CT_BRIDGE_DB_USERS_RW_PASSWORD")
 
-	//Storage archive in DB (read only)
+	//Storage archive in DB (write only)
 	database.ConfigureDbDefault(v, cfgArchiveRwDbParams, "CT_BRIDGE_DB_ARCHIVE_RW_USERNAME", "CT_BRIDGE_DB_ARCHIVE_RW_PASSWORD")
+
+	//Storage archive in DB (read only)
+	database.ConfigureDbDefault(v, cfgArchiveRoDbParams, "CT_BRIDGE_DB_ARCHIVE_RO_USERNAME", "CT_BRIDGE_DB_ARCHIVE_RO_PASSWORD")
 
 	// Rate limiting (in requests/second)
 	v.SetDefault(cfgRateKeyValidation, 1000)

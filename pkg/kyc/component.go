@@ -37,7 +37,7 @@ type UsersDetailsDBModule interface {
 	StoreOrUpdateUserDetails(ctx context.Context, realm string, user dto.DBUser) error
 	GetUserDetails(ctx context.Context, realm string, userID string) (dto.DBUser, error)
 	CreateCheck(ctx context.Context, realm string, userID string, check dto.DBCheck) error
-	GetChecks(ctx context.Context, realm string, userID string) ([]dto.DBCheck, error)
+	GetChecks(ctx context.Context, realm string, userID string, proofContent bool) ([]dto.DBCheck, error)
 }
 
 // ArchiveDBModule is the interface from the archive module
@@ -325,7 +325,7 @@ func (c *component) validateUser(ctx context.Context, accessToken string, realmN
 
 	var archiveUser = dto.ToArchiveUserRepresentation(kcUser)
 	archiveUser.SetDetails(dbUser)
-	if archiveUser.Checks, err = c.usersDBModule.GetChecks(ctx, realmName, userID); err != nil {
+	if archiveUser.Checks, err = c.usersDBModule.GetChecks(ctx, realmName, userID, true); err != nil {
 		c.logger.Warn(ctx, "msg", "Could not get user checks from database", "err", err.Error(), "realm", realmName, "user", userID)
 	}
 

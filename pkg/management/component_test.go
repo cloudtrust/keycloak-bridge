@@ -28,6 +28,7 @@ import (
 type componentMocks struct {
 	keycloakClient        *mock.KeycloakClient
 	usersDetailsDBModule  *mock.UsersDetailsDBModule
+	usersArchiveDBModule  *mock.UsersArchiveDBModule
 	eventDBModule         *mock.EventDBModule
 	configurationDBModule *mock.ConfigurationDBModule
 	onboardingModule      *mock.OnboardingModule
@@ -39,6 +40,7 @@ func createMocks(mockCtrl *gomock.Controller) componentMocks {
 	return componentMocks{
 		keycloakClient:        mock.NewKeycloakClient(mockCtrl),
 		usersDetailsDBModule:  mock.NewUsersDetailsDBModule(mockCtrl),
+		usersArchiveDBModule:  mock.NewUsersArchiveDBModule(mockCtrl),
 		eventDBModule:         mock.NewEventDBModule(mockCtrl),
 		configurationDBModule: mock.NewConfigurationDBModule(mockCtrl),
 		onboardingModule:      mock.NewOnboardingModule(mockCtrl),
@@ -56,8 +58,8 @@ const (
 )
 
 func createComponent(mocks componentMocks) Component {
-	return NewComponent(mocks.keycloakClient, mocks.usersDetailsDBModule, mocks.eventDBModule, mocks.configurationDBModule, mocks.onboardingModule,
-		allowedTrustIDGroups, socialRealmName, mocks.logger)
+	return NewComponent(mocks.keycloakClient, mocks.usersDetailsDBModule, mocks.usersArchiveDBModule, mocks.eventDBModule,
+		mocks.configurationDBModule, mocks.onboardingModule, allowedTrustIDGroups, socialRealmName, mocks.logger)
 }
 
 func ptrString(value string) *string {
@@ -1534,7 +1536,7 @@ func TestGetUserChecks(t *testing.T) {
 	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
 
 	t.Run("GetChecks returns an error", func(t *testing.T) {
-		mocks.usersDetailsDBModule.EXPECT().GetChecks(ctx, realmName, userID).Return(nil, errors.New("db error"))
+		mocks.usersDetailsDBModule.EXPECT().GetChecks(ctx, realmName, userID, true).Return(nil, errors.New("db error"))
 		_, err := managementComponent.GetUserChecks(ctx, realmName, userID)
 		assert.NotNil(t, err)
 	})
@@ -1544,7 +1546,7 @@ func TestGetUserChecks(t *testing.T) {
 			Operator: &operator,
 		}
 		var dbChecks = []dto.DBCheck{dbCheck, dbCheck}
-		mocks.usersDetailsDBModule.EXPECT().GetChecks(ctx, realmName, userID).Return(dbChecks, nil)
+		mocks.usersDetailsDBModule.EXPECT().GetChecks(ctx, realmName, userID, true).Return(dbChecks, nil)
 		res, err := managementComponent.GetUserChecks(ctx, realmName, userID)
 		assert.Nil(t, err)
 		assert.Len(t, res, len(dbChecks))

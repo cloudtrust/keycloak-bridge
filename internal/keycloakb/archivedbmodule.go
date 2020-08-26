@@ -11,6 +11,12 @@ import (
 )
 
 const (
+	getUserArchiveStmt = `
+	  SELECT timestamp, details
+	  FROM users
+	  WHERE realm_name=? and user_id=?
+	  ORDER BY timestamp desc
+	`
 	storeUserArchiveStmt = `
 	  INSERT users (realm_name, user_id, timestamp, details)
 	  VALUES (?, ?, UTC_TIMESTAMP, ?)
@@ -19,6 +25,7 @@ const (
 
 // ArchiveDBModule interface
 type ArchiveDBModule interface {
+	GetUserDetails(ctx context.Context, realm string, userID string) ([]dto.ArchiveUserRepresentation, error)
 	StoreUserDetails(ctx context.Context, realm string, user dto.ArchiveUserRepresentation) error
 }
 
@@ -35,6 +42,37 @@ func NewArchiveDBModule(db sqltypes.CloudtrustDB, cipher security.EncrypterDecry
 		cipher: cipher,
 		logger: logger,
 	}
+}
+
+func (a *archiveDBModule) GetUserDetails(ctx context.Context, realm string, userID string) ([]dto.ArchiveUserRepresentation, error) {
+	var rows, err = a.db.Query(getUserArchiveStmt, realm, userID)
+	if err != nil {
+		a.logger.Warn(ctx, "msg", "Can't read user rows", "error", err.Error(), "realmID", realm, "userID", userID)
+		return nil, err
+	}
+	defer rows.Close()
+
+	var res []dto.ArchiveUserRepresentation
+	for rows.Next() {
+		var timestamp, encryptedDetails string
+		if err = rows.Scan(&timestamp, &encryptedDetails); err != nil {
+			a.logger.Warn(ctx, "msg", "Can't fetch row", "error", err.Error(), "realmID", realm, "userID", userID)
+			return nil, err
+		}
+		var bytes, err = a.cipher.Decrypt([]byte(encryptedDetails), []byte(userID))
+		if err != nil {
+			a.logger.Warn(ctx, "msg", "Can't decrypt user details", "error", err.Error(), "realmID", realm, "userID", userID)
+			return nil, err
+		}
+		var details dto.ArchiveUserRepresentation
+		if err = json.Unmarshal(bytes, &details); err != nil {
+			a.logger.Warn(ctx, "msg", "Can't unmarshal user details", "error", err.Error(), "realmID", realm, "userID", userID)
+			return nil, err
+		}
+		res = append(res, details)
+	}
+
+	return res, nil
 }
 
 func (a *archiveDBModule) StoreUserDetails(ctx context.Context, realm string, user dto.ArchiveUserRepresentation) error {

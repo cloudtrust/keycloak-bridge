@@ -24,7 +24,7 @@ type Component interface {
 
 // UsersDetailsDBModule is the minimum required interface to access the users database
 type UsersDetailsDBModule interface {
-	GetChecks(ctx context.Context, realm string, userID string) ([]dto.DBCheck, error)
+	GetChecks(ctx context.Context, realm, userID string, proofContent bool) ([]dto.DBCheck, error)
 }
 
 // TokenProvider is the interface to retrieve accessToken to access KC
@@ -73,7 +73,7 @@ func (c *component) GetUserInformation(ctx context.Context) (api.UserInformation
 		return api.UserInformationRepresentation{}, err
 	}
 
-	if dbChecks, err := c.usersDBModule.GetChecks(ctx, realm, userID); err == nil {
+	if dbChecks, err := c.usersDBModule.GetChecks(ctx, realm, userID, false); err == nil {
 		userInfo.SetChecks(dbChecks)
 	} else {
 		c.logger.Warn(ctx, "err", err.Error())
