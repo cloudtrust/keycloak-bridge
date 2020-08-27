@@ -38,6 +38,11 @@ type UsersDetailsDBModule interface {
 	CreateCheck(ctx context.Context, realm string, userID string, check dto.DBCheck) error
 }
 
+// ArchiveDBModule is the interface from the archive module
+type ArchiveDBModule interface {
+	StoreUserDetails(ctx context.Context, realm string, user dto.ArchiveUserRepresentation) error
+}
+
 // EventsDBModule is the interface of the audit events module
 type EventsDBModule interface {
 	Store(context.Context, map[string]string) error
@@ -53,23 +58,25 @@ type Component interface {
 
 // Component is the management component.
 type component struct {
-	keycloakClient KeycloakClient
-	tokenProvider  toolbox.OidcTokenProvider
-	usersDBModule  UsersDetailsDBModule
-	eventsDBModule database.EventsDBModule
-	accredsModule  keycloakb.AccreditationsModule
-	logger         internal.Logger
+	keycloakClient  KeycloakClient
+	tokenProvider   toolbox.OidcTokenProvider
+	usersDBModule   UsersDetailsDBModule
+	archiveDBModule ArchiveDBModule
+	eventsDBModule  database.EventsDBModule
+	accredsModule   keycloakb.AccreditationsModule
+	logger          internal.Logger
 }
 
 // NewComponent returns the management component.
-func NewComponent(keycloakClient KeycloakClient, tokenProvider TokenProvider, usersDBModule UsersDetailsDBModule, eventsDBModule database.EventsDBModule, accredsModule keycloakb.AccreditationsModule, logger internal.Logger) Component {
+func NewComponent(keycloakClient KeycloakClient, tokenProvider TokenProvider, usersDBModule UsersDetailsDBModule, archiveDBModule ArchiveDBModule, eventsDBModule database.EventsDBModule, accredsModule keycloakb.AccreditationsModule, logger internal.Logger) Component {
 	return &component{
-		keycloakClient: keycloakClient,
-		tokenProvider:  tokenProvider,
-		usersDBModule:  usersDBModule,
-		eventsDBModule: eventsDBModule,
-		accredsModule:  accredsModule,
-		logger:         logger,
+		keycloakClient:  keycloakClient,
+		tokenProvider:   tokenProvider,
+		usersDBModule:   usersDBModule,
+		archiveDBModule: archiveDBModule,
+		eventsDBModule:  eventsDBModule,
+		accredsModule:   accredsModule,
+		logger:          logger,
 	}
 }
 
@@ -86,21 +93,6 @@ func (c *component) getKeycloakUser(ctx context.Context, realmName string, userI
 		return kc.UserRepresentation{}, errorhandler.CreateInternalServerError("keycloak")
 	}
 	return kcUser, nil
-}
-
-func (c *component) updateKeycloakUser(ctx context.Context, realmName string, userID string, userKC kc.UserRepresentation) error {
-	accessToken, err := c.tokenProvider.ProvideToken(ctx)
-	if err != nil {
-		c.logger.Warn(ctx, "msg", "updateKeycloakUser: can't get accessToken for technical user", "err", err.Error())
-		return errorhandler.CreateInternalServerError("keycloak")
-	}
-
-	err = c.keycloakClient.UpdateUser(accessToken, realmName, userID, userKC)
-	if err != nil {
-		c.logger.Warn(ctx, "msg", "updateKeycloakUser: can't update user in KC", "err", err.Error(), "realmName", realmName, "userID", userID)
-		return errorhandler.CreateInternalServerError("keycloak")
-	}
-	return nil
 }
 
 func (c *component) GetUser(ctx context.Context, realmName string, userID string) (api.UserRepresentation, error) {
@@ -137,6 +129,12 @@ func (c *component) GetUser(ctx context.Context, realmName string, userID string
 }
 
 func (c *component) UpdateUser(ctx context.Context, realmName string, userID string, user api.UserRepresentation) error {
+	var validationCtx = &validationContext{
+		ctx:       ctx,
+		realmName: realmName,
+		userID:    userID,
+	}
+
 	var err error
 	var kcUpdate = needKcProcessing(user)
 	var dbUpdate = needDBProcessing(user)
@@ -150,7 +148,7 @@ func (c *component) UpdateUser(ctx context.Context, realmName string, userID str
 	}
 
 	if kcUpdate || shouldRevokeAccreditations {
-		err = c.updateUserKeycloak(ctx, realmName, userID, user, shouldRevokeAccreditations)
+		err = c.updateUserKeycloak(validationCtx, user, shouldRevokeAccreditations)
 		if err != nil {
 			return err
 		}
@@ -159,6 +157,9 @@ func (c *component) UpdateUser(ctx context.Context, realmName string, userID str
 	if kcUpdate || dbUpdate {
 		// store the API call into the DB
 		c.reportEvent(ctx, "VALIDATION_UPDATE_USER", database.CtEventRealmName, realmName, database.CtEventUserID, userID)
+
+		// archive user
+		c.archiveUser(validationCtx)
 	}
 
 	return nil
@@ -192,25 +193,24 @@ func (c *component) updateUserDatabase(ctx context.Context, realmName, userID st
 	return shouldRevokeAccreditations, nil
 }
 
-func (c *component) updateUserKeycloak(ctx context.Context, realmName, userID string, user api.UserRepresentation, revokeAccreds bool) error {
+func (c *component) updateUserKeycloak(validationCtx *validationContext, user api.UserRepresentation, revokeAccreds bool) error {
 	var shouldRevokeAccreditations = revokeAccreds
 
-	kcUser, err := c.getKeycloakUser(ctx, realmName, userID)
+	var kcUser, err = c.getKeycloakUserCtx(validationCtx)
 	if err != nil {
 		return err
 	}
-
-	keycloakb.ConvertLegacyAttribute(&kcUser)
-	if !shouldRevokeAccreditations || user.HasUpdateOfAccreditationDependantInformationKC(&kcUser) {
+	keycloakb.ConvertLegacyAttribute(kcUser)
+	if !shouldRevokeAccreditations || user.HasUpdateOfAccreditationDependantInformationKC(kcUser) {
 		shouldRevokeAccreditations = true
 	}
 
-	user.ExportToKeycloak(&kcUser)
+	user.ExportToKeycloak(kcUser)
 	if shouldRevokeAccreditations {
-		keycloakb.RevokeAccreditations(&kcUser)
+		keycloakb.RevokeAccreditations(kcUser)
 	}
 
-	return c.updateKeycloakUser(ctx, realmName, userID, kcUser)
+	return c.updateKeycloakUser(validationCtx)
 }
 
 func needKcProcessing(user api.UserRepresentation) bool {
@@ -258,6 +258,11 @@ func needDBProcessing(user api.UserRepresentation) bool {
 }
 
 func (c *component) CreateCheck(ctx context.Context, realmName string, userID string, check api.CheckRepresentation) error {
+	var validationCtx = &validationContext{
+		ctx:       ctx,
+		realmName: realmName,
+		userID:    userID,
+	}
 	var accessToken string
 	var err error
 
@@ -269,7 +274,7 @@ func (c *component) CreateCheck(ctx context.Context, realmName string, userID st
 	}
 
 	if check.IsIdentificationSuccessful() {
-		accessToken, err = c.tokenProvider.ProvideToken(ctx)
+		accessToken, err = c.getAccessToken(validationCtx)
 		if err != nil {
 			c.logger.Warn(ctx, "msg", "CreateCheck: can't get accessToken for technical user", "err", err.Error())
 			return errorhandler.CreateInternalServerError("keycloak")
@@ -291,6 +296,8 @@ func (c *component) CreateCheck(ctx context.Context, realmName string, userID st
 	c.reportEvent(ctx, "VALIDATION_STORE_CHECK", database.CtEventRealmName, realmName,
 		database.CtEventUserID, userID, "operator", *check.Operator, "status", *check.Status)
 
+	c.archiveUser(validationCtx)
+
 	return nil
 }
 
@@ -300,4 +307,99 @@ func (c *component) reportEvent(ctx context.Context, apiCall string, values ...s
 		//store in the logs also the event that failed to be stored in the DB
 		internal.LogUnrecordedEvent(ctx, c.logger, apiCall, errEvent.Error(), values...)
 	}
+}
+
+type validationContext struct {
+	ctx         context.Context
+	accessToken *string
+	realmName   string
+	userID      string
+	kcUser      *kc.UserRepresentation
+	dbUser      *dto.DBUser
+}
+
+func (c *component) getAccessToken(v *validationContext) (string, error) {
+	if v.accessToken == nil {
+		if accessToken, err := c.tokenProvider.ProvideToken(v.ctx); err == nil {
+			v.accessToken = &accessToken
+		} else {
+			c.logger.Warn(v.ctx, "msg", "Can't get access token", "err", err.Error(), "realm", v.realmName, "user", v.userID)
+			return "", err
+		}
+	}
+	return *v.accessToken, nil
+}
+
+func (c *component) getKeycloakUserCtx(v *validationContext) (*kc.UserRepresentation, error) {
+	if v.kcUser == nil {
+		var accessToken, err = c.getAccessToken(v)
+		if err != nil {
+			return nil, err
+		}
+		if kcUser, err := c.keycloakClient.GetUser(accessToken, v.realmName, v.userID); err == nil {
+			v.kcUser = &kcUser
+		} else {
+			c.logger.Warn(v.ctx, "msg", "Can't get user from Keycloak", "err", err.Error(), "realm", v.realmName, "user", v.userID)
+			return nil, err
+		}
+	}
+	return v.kcUser, nil
+}
+
+func (c *component) updateKeycloakUser(v *validationContext) error {
+	accessToken, err := c.getAccessToken(v)
+	if err != nil {
+		return err
+	}
+
+	err = c.keycloakClient.UpdateUser(accessToken, v.realmName, v.userID, *v.kcUser)
+	if err != nil {
+		c.logger.Warn(v.ctx, "msg", "updateKeycloakUser: can't update user in KC", "err", err.Error(), "realmName", v.realmName, "userID", v.userID)
+		return errorhandler.CreateInternalServerError("keycloak")
+	}
+	return nil
+}
+
+func (c *component) getDbUser(v *validationContext) (*dto.DBUser, error) {
+	if v.dbUser == nil {
+		if dbUser, err := c.usersDBModule.GetUserDetails(v.ctx, v.realmName, v.userID); err == nil {
+			v.dbUser = &dbUser
+		} else {
+			c.logger.Warn(v.ctx, "msg", "Can't get user from database", "err", err.Error(), "realm", v.realmName, "user", v.userID)
+			return nil, err
+		}
+	}
+	return v.dbUser, nil
+}
+
+func (c *component) getUserWithAccreditations(v *validationContext) (*kc.UserRepresentation, error) {
+	if v.kcUser == nil {
+		var accessToken, err = c.getAccessToken(v)
+		if err != nil {
+			return nil, err
+		}
+		var kcUser kc.UserRepresentation
+		if kcUser, _, err = c.accredsModule.GetUserAndPrepareAccreditations(v.ctx, accessToken, v.realmName, v.userID, keycloakb.CredsIDNow); err == nil {
+			v.kcUser = &kcUser
+		} else {
+			return nil, err
+		}
+	}
+	return v.kcUser, nil
+}
+
+func (c *component) archiveUser(v *validationContext) {
+	var kcUser, err = c.getKeycloakUserCtx(v)
+	if err != nil {
+		return
+	}
+	var dbUser *dto.DBUser
+	dbUser, err = c.getDbUser(v)
+	if err != nil {
+		return
+	}
+
+	var archiveUser = dto.ToArchiveUserRepresentation(*kcUser)
+	archiveUser.SetDetails(*dbUser)
+	c.archiveDBModule.StoreUserDetails(v.ctx, v.realmName, archiveUser)
 }

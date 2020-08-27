@@ -132,6 +132,9 @@ const (
 	cfgSsePublicURL             = "sse-public-url"
 	cfgDbAesGcmKey              = "db-aesgcm-key"
 	cfgDbAesGcmTagSize          = "db-aesgcm-tag-size"
+	cfgArchiveRwDbParams        = "db-archive-rw"
+	cfgDbArchiveAesGcmKey       = "db-archive-aesgcm-key"
+	cfgDbArchiveAesGcmTagSize   = "db-archive-aesgcm-tag-size"
 )
 
 func init() {
@@ -208,6 +211,9 @@ func main() {
 
 		// DB for users
 		usersRwDbParams = database.GetDbConfig(c, cfgUsersRwDbParams)
+
+		// DB for archiving users
+		archiveRwDbParams = database.GetDbConfig(c, cfgArchiveRwDbParams)
 
 		// Rate limiting
 		rateLimit = map[RateKey]int{
@@ -309,7 +315,12 @@ func main() {
 	// Security - AES encryption mechanism for users PII
 	aesEncryption, err := security.NewAesGcmEncrypterFromBase64(c.GetString(cfgDbAesGcmKey), c.GetInt(cfgDbAesGcmTagSize))
 	if err != nil {
-		logger.Error(ctx, "msg", "could not create AES-GCM encrypting tool instance", "error", err)
+		logger.Error(ctx, "msg", "could not create AES-GCM encrypting tool instance (users)", "error", err)
+		return
+	}
+	archiveAesEncryption, err := security.NewAesGcmEncrypterFromBase64(c.GetString(cfgDbArchiveAesGcmKey), c.GetInt(cfgDbArchiveAesGcmTagSize))
+	if err != nil {
+		logger.Error(ctx, "msg", "could not create AES-GCM encrypting tool instance (archive)", "error", err)
 		return
 	}
 
@@ -431,6 +442,16 @@ func main() {
 		}
 	}
 
+	var archiveRwDBConn sqltypes.CloudtrustDB
+	{
+		var err error
+		archiveRwDBConn, err = database.NewReconnectableCloudtrustDB(archiveRwDbParams)
+		if err != nil {
+			logger.Error(ctx, "msg", "could not create DB connection for archive (RW)", "error", err)
+			return
+		}
+	}
+
 	// Create social realm configuration
 	var socialRealmConfiguration = getRealmRegisterConfiguration(c)
 
@@ -463,6 +484,7 @@ func main() {
 	healthChecker.AddDatabase("Config R/W", configurationRwDBConn, healthCheckCacheDuration)
 	healthChecker.AddDatabase("Config RO", configurationRoDBConn, healthCheckCacheDuration)
 	healthChecker.AddDatabase("Users R/W", usersRwDBConn, healthCheckCacheDuration)
+	healthChecker.AddDatabase("Archive RO", archiveRwDBConn, healthCheckCacheDuration)
 	healthChecker.AddHTTPEndpoint("Keycloak", keycloakConfig.AddrAPI, httpTimeout, 200, healthCheckCacheDuration)
 
 	// Actions allowed in Authorization Manager
@@ -498,6 +520,9 @@ func main() {
 		// module for storing and retrieving details of the users
 		var usersDBModule = keycloakb.NewUsersDetailsDBModule(usersRwDBConn, aesEncryption, validationLogger)
 
+		// module for archiving users
+		var archiveDBModule = keycloakb.NewArchiveDBModule(archiveRwDBConn, archiveAesEncryption, validationLogger)
+
 		// accreditations module
 		var accredsModule keycloakb.AccreditationsModule
 		{
@@ -505,7 +530,7 @@ func main() {
 			accredsModule = keycloakb.NewAccreditationsModule(keycloakClient, configurationReaderDBModule, validationLogger)
 		}
 
-		validationComponent := validation.NewComponent(keycloakClient, technicalTokenProvider, usersDBModule, eventsDBModule, accredsModule, validationLogger)
+		validationComponent := validation.NewComponent(keycloakClient, technicalTokenProvider, usersDBModule, archiveDBModule, eventsDBModule, accredsModule, validationLogger)
 
 		var rateLimitValidation = rateLimit[RateKeyValidation]
 		validationEndpoints = validation.Endpoints{
@@ -767,6 +792,9 @@ func main() {
 		// module for storing and retrieving details of the users
 		var usersDBModule = keycloakb.NewUsersDetailsDBModule(usersRwDBConn, aesEncryption, kycLogger)
 
+		// module for archiving users
+		var archiveDBModule = keycloakb.NewArchiveDBModule(archiveRwDBConn, archiveAesEncryption, kycLogger)
+
 		// accreditations module
 		var accredsModule keycloakb.AccreditationsModule
 		{
@@ -775,7 +803,7 @@ func main() {
 		}
 
 		// new module for KYC service
-		kycComponent := kyc.NewComponent(technicalTokenProvider, registerRealm, keycloakClient, usersDBModule, eventsDBModule, accredsModule, kycLogger)
+		kycComponent := kyc.NewComponent(technicalTokenProvider, registerRealm, keycloakClient, usersDBModule, archiveDBModule, eventsDBModule, accredsModule, kycLogger)
 		kycComponent = kyc.MakeAuthorizationRegisterComponentMW(registerRealm, authorizationManager, endpointPhysicalCheckAvailabilityChecker, log.With(kycLogger, "mw", "endpoint"))(kycComponent)
 
 		var rateLimitKyc = rateLimit[RateKeyKYC]
@@ -1227,6 +1255,8 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 	//Encryption key
 	v.SetDefault(cfgDbAesGcmTagSize, 16)
 	v.SetDefault(cfgDbAesGcmKey, "")
+	v.SetDefault(cfgDbArchiveAesGcmTagSize, 16)
+	v.SetDefault(cfgDbArchiveAesGcmKey, "")
 
 	// CORS configuration
 	v.SetDefault(cfgAllowedOrigins, []string{})
@@ -1256,6 +1286,9 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 
 	//Storage users in DB (read/write)
 	database.ConfigureDbDefault(v, cfgUsersRwDbParams, "CT_BRIDGE_DB_USERS_RW_USERNAME", "CT_BRIDGE_DB_USERS_RW_PASSWORD")
+
+	//Storage archive in DB (read only)
+	database.ConfigureDbDefault(v, cfgArchiveRwDbParams, "CT_BRIDGE_DB_ARCHIVE_RW_USERNAME", "CT_BRIDGE_DB_ARCHIVE_RW_PASSWORD")
 
 	// Rate limiting (in requests/second)
 	v.SetDefault(cfgRateKeyValidation, 1000)
