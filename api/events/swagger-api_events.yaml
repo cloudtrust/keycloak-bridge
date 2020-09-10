@@ -42,13 +42,13 @@ paths:
           type: number
       - name: dateFrom
         in: query
-        description: start date
+        description: start date expressed as seconds since Unix EPOCH
         required: false
         schema:
           type: number
       - name: dateTo
         in: query
-        description: end date
+        description: end date expressed as seconds since Unix EPOCH
         required: false
         schema:
           type: number

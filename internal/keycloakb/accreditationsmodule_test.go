@@ -9,6 +9,7 @@ import (
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 
 	"github.com/cloudtrust/common-service/configuration"
+	errorhandler "github.com/cloudtrust/common-service/errors"
 	"github.com/cloudtrust/common-service/log"
 	"github.com/cloudtrust/common-service/validation"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/mock"
@@ -123,7 +124,8 @@ func TestAccreditationsModule(t *testing.T) {
 		mockConfDB.EXPECT().GetAdminConfiguration(ctx, realmID).Return(createRealmAdminConfig(otherCondition), nil)
 		mockKeycloak.EXPECT().GetUser(accessToken, realmName, userID).Return(kc.UserRepresentation{}, nil)
 		var _, _, err = accredsModule.GetUserAndPrepareAccreditations(ctx, accessToken, realmName, userID, condition)
-		assert.Nil(t, err)
+		assert.IsType(t, errorhandler.Error{}, err)
+		assert.Equal(t, 500, err.(errorhandler.Error).Status)
 	})
 	t.Run("Invalid accreditation validity duration", func(t *testing.T) {
 		var credsConf = createRealmAdminConfig(condition)

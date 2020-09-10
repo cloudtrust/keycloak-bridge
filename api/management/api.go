@@ -584,30 +584,37 @@ func (rac RealmAdminConfiguration) Validate() error {
 	return validation.NewParameterValidator().
 		ValidateParameterIn("mode", rac.Mode, allowedAdminConfMode, true).
 		ValidateParameterFunc(rac.validateAvailableChecks).
-		ValidateParameterFunc(rac.validateAccreditations).
 		Status()
 }
 
 func (rac RealmAdminConfiguration) validateAvailableChecks() error {
-	if len(rac.AvailableChecks) > 0 {
-		for k := range rac.AvailableChecks {
-			if !validation.IsStringInSlice(configuration.AvailableCheckKeys, k) {
-				return errorhandler.CreateBadRequestError(constants.MsgErrInvalidParam + ".available-checks")
-			}
+	var accredConditions, err = rac.validateAccreditations()
+	if err != nil {
+		return err
+	}
+
+	for k, v := range rac.AvailableChecks {
+		if !validation.IsStringInSlice(configuration.AvailableCheckKeys, k) {
+			return errorhandler.CreateBadRequestError(constants.MsgErrInvalidParam + ".available-checks")
+		}
+		if _, ok := accredConditions[k]; v && !ok {
+			return errorhandler.CreateBadRequestError(constants.MsgErrMissingParam + ".accreditations." + k)
 		}
 	}
+
 	return nil
 }
 
-func (rac RealmAdminConfiguration) validateAccreditations() error {
-	if len(rac.Accreditations) > 0 {
-		for _, accred := range rac.Accreditations {
-			if err := accred.Validate(); err != nil {
-				return err
-			}
+func (rac RealmAdminConfiguration) validateAccreditations() (map[string]bool, error) {
+	var accredConditions = make(map[string]bool)
+	for _, accred := range rac.Accreditations {
+		if err := accred.Validate(); err != nil {
+			return nil, err
 		}
+		accredConditions[*accred.Condition] = true
 	}
-	return nil
+
+	return accredConditions, nil
 }
 
 // Validate is a validator for RealmAdminAccreditation

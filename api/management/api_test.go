@@ -529,7 +529,7 @@ func createValidRealmAdminConfiguration() RealmAdminConfiguration {
 	var trustID = "trustID"
 	var value = "value"
 	var validity = "2y4m"
-	var condition = "IDNow"
+	var condition = "physical-check"
 	var accred = RealmAdminAccreditation{Type: &value, Validity: &validity, Condition: &condition}
 	return RealmAdminConfiguration{
 		Mode:            &trustID,
@@ -561,6 +561,11 @@ func TestValidateRealmAdminConfiguration(t *testing.T) {
 	t.Run("Invalid available checks", func(t *testing.T) {
 		var realmAdminConf = createValidRealmAdminConfiguration()
 		realmAdminConf.AvailableChecks["invalid-key"] = false
+		assert.NotNil(t, realmAdminConf.Validate())
+	})
+	t.Run("Missing accreditation for enabled check", func(t *testing.T) {
+		var realmAdminConf = createValidRealmAdminConfiguration()
+		realmAdminConf.AvailableChecks["IDnow"] = true
 		assert.NotNil(t, realmAdminConf.Validate())
 	})
 	t.Run("Invalid accreditation validity", func(t *testing.T) {
