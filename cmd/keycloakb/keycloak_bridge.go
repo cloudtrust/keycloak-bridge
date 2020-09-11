@@ -831,6 +831,11 @@ func main() {
 		}
 	}
 
+	// Tools for endpoint middleware
+	var idRetriever = keycloakb.NewRealmIDRetriever(keycloakClient)
+	var configurationReaderDBModule = configuration.NewConfigurationReaderDBModule(configurationRoDBConn, logger)
+	var endpointPhysicalCheckAvailabilityChecker = middleware.NewEndpointAvailabilityChecker(configuration.CheckKeyPhysical, idRetriever, configurationReaderDBModule)
+
 	// KYC service.
 	var kycEndpoints kyc.Endpoints
 	{
@@ -851,7 +856,7 @@ func main() {
 
 		// new module for KYC service
 		kycComponent := kyc.NewComponent(technicalTokenProvider, registerRealm, keycloakClient, usersDBModule, eventsDBModule, accredsModule, kycLogger)
-		kycComponent = kyc.MakeAuthorizationRegisterComponentMW(registerRealm, log.With(kycLogger, "mw", "endpoint"), authorizationManager)(kycComponent)
+		kycComponent = kyc.MakeAuthorizationRegisterComponentMW(registerRealm, authorizationManager, endpointPhysicalCheckAvailabilityChecker, log.With(kycLogger, "mw", "endpoint"))(kycComponent)
 
 		var rateLimitKyc = rateLimit[RateKeyKYC]
 		kycEndpoints = kyc.Endpoints{
@@ -861,13 +866,6 @@ func main() {
 			ValidateUserInSocialRealm:      prepareEndpoint(kyc.MakeValidateUserInSocialRealmEndpoint(kycComponent), "validate_userin_social_realm", influxMetrics, kycLogger, tracer, rateLimitKyc),
 			ValidateUser:                   prepareEndpoint(kyc.MakeValidateUserEndpoint(kycComponent), "validate_user", influxMetrics, kycLogger, tracer, rateLimitKyc),
 		}
-	}
-
-	// Tools for endpoint middleware
-	var idRetriever = keycloakb.NewRealmIDRetriever(keycloakClient)
-	var configurationReaderDBModule *configuration.ConfigurationReaderDBModule
-	{
-		configurationReaderDBModule = configuration.NewConfigurationReaderDBModule(configurationRoDBConn, logger)
 	}
 
 	// Export configuration
@@ -1120,11 +1118,11 @@ func main() {
 		managementSubroute.Path("/realms/{realm}/users/{userID}/federated-identity/{provider}").Methods("POST").Handler(linkShadowUserHandler)
 
 		// KYC handlers
-		var kycGetActionsHandler = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, idRetriever, configurationReaderDBModule, false, logger)(kycEndpoints.GetActions)
-		var kycGetUserInSocialRealmHandler = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, idRetriever, configurationReaderDBModule, true, logger)(kycEndpoints.GetUserInSocialRealm)
-		var kycGetUserByUsernameInSocialRealmHandler = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, idRetriever, configurationReaderDBModule, true, logger)(kycEndpoints.GetUserByUsernameInSocialRealm)
-		var kycValidateUserInSocialRealmHandler = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, idRetriever, configurationReaderDBModule, true, logger)(kycEndpoints.ValidateUserInSocialRealm)
-		var kycValidateUserHandler = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, idRetriever, configurationReaderDBModule, true, logger)(kycEndpoints.ValidateUser)
+		var kycGetActionsHandler = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, endpointPhysicalCheckAvailabilityChecker, false, logger)(kycEndpoints.GetActions)
+		var kycGetUserInSocialRealmHandler = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, endpointPhysicalCheckAvailabilityChecker, true, logger)(kycEndpoints.GetUserInSocialRealm)
+		var kycGetUserByUsernameInSocialRealmHandler = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, endpointPhysicalCheckAvailabilityChecker, true, logger)(kycEndpoints.GetUserByUsernameInSocialRealm)
+		var kycValidateUserInSocialRealmHandler = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, endpointPhysicalCheckAvailabilityChecker, true, logger)(kycEndpoints.ValidateUserInSocialRealm)
+		var kycValidateUserHandler = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, endpointPhysicalCheckAvailabilityChecker, false, logger)(kycEndpoints.ValidateUser)
 
 		// KYC methods
 		route.Path("/kyc/actions").Methods("GET").Handler(kycGetActionsHandler)
@@ -1529,13 +1527,13 @@ func configureMobileHandler(ComponentName string, ComponentID string, idGenerato
 }
 
 func configureKYCHandler(ComponentName string, ComponentID string, idGenerator idgenerator.IDGenerator, keycloakClient *keycloakapi.Client,
-	audienceRequired string, tracer tracing.OpentracingClient, idRetriever middleware.IDRetriever, configReader middleware.AdminConfigurationRetriever,
+	audienceRequired string, tracer tracing.OpentracingClient, availabilityChecker middleware.EndpointAvailabilityChecker,
 	verifyAvailableChecks bool, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {
 	return func(endpoint endpoint.Endpoint) http.Handler {
 		var handler http.Handler
 		handler = kyc.MakeKYCHandler(endpoint, logger)
 		if verifyAvailableChecks {
-			handler = middleware.MakeEndpointAvailableCheckMW(configuration.CheckKeyPhysical, idRetriever, configReader, logger)(handler)
+			handler = middleware.MakeEndpointAvailableCheckMW(availabilityChecker, logger)(handler)
 		}
 		handler = middleware.MakeHTTPCorrelationIDMW(idGenerator, tracer, logger, ComponentName, ComponentID)(handler)
 		handler = middleware.MakeHTTPOIDCTokenValidationMW(keycloakClient, audienceRequired, logger)(handler)
@@ -1548,7 +1546,7 @@ func configureRegisterHandler(ComponentName string, ComponentID string, idGenera
 		var handler http.Handler
 		handler = register.MakeRegisterHandler(endpoint, logger)
 		handler = middleware.MakeHTTPCorrelationIDMW(idGenerator, tracer, logger, ComponentName, ComponentID)(handler)
-		handler = register.MakeHTTPRecaptchaValidationMW(recaptchaURL, recaptchaSecret, logger)(handler)
+		//handler = register.MakeHTTPRecaptchaValidationMW(recaptchaURL, recaptchaSecret, logger)(handler)
 		return handler
 	}
 }

@@ -18,7 +18,7 @@
   version = "2020.02.11"
 
 [[projects]]
-  digest = "1:61057cf572db7aae2000dcb57bb1a978b1e70a190525727b5aa1a72eff9dbc89"
+  digest = "1:150295a560c8f6d3289941df780eaa9b932a7143aea29244ac112dd39b3472a5"
   name = "github.com/cloudtrust/common-service"
   packages = [
     ".",
@@ -38,11 +38,11 @@
     "validation",
   ]
   pruneopts = "UT"
-  revision = "22a293b4b2de317dd0260d47c62b862101551597"
-  version = "v2.2.2"
+  revision = "5667719c513d46639b748223a16bd52aca739891"
+  version = "v2.2.3"
 
 [[projects]]
-  digest = "1:1abc4c57d8d10966a1ab651ae06ccea2b7afd55571472960c3aa64e3822f1c56"
+  digest = "1:a7fcca276c7c2c3c98d2833db759e84aae78b91193fe1cae06b038896b09621d"
   name = "github.com/cloudtrust/keycloak-client"
   packages = [
     ".",
@@ -50,8 +50,8 @@
     "toolbox",
   ]
   pruneopts = "UT"
-  revision = "883b640393bc7a74578eb085bc4a540c7b93b261"
-  version = "v2.2.0"
+  revision = "bf49836cc776ca6ad6508a75870659a79314d6fe"
+  version = "v2.2.1"
 
 [[projects]]
   digest = "1:910c5b111ca13127693df80a59be2c952ad97313626116c0c9895e7b588f2a29"
@@ -152,12 +152,12 @@
   version = "v1.12.0"
 
 [[projects]]
-  digest = "1:25ebe6496abb289ef977c081b2d49f56dd97c32db4ca083d37f95923909ced02"
+  digest = "1:6078383dbb7405bfa3ce16957f37564e3b716afa29b6eb45ffdb6674624d1e0d"
   name = "github.com/gorilla/mux"
   packages = ["."]
   pruneopts = "UT"
-  revision = "75dcda0896e109a2a22c9315bca3bb21b87b2ba5"
-  version = "v1.7.4"
+  revision = "98cb6bf42e086f6af920b965c38cacc07402d51b"
+  version = "v1.8.0"
 
 [[projects]]
   digest = "1:c0d19ab64b32ce9fe5cf4ddceba78d5bc9807f0016db6b1183599da3dcc24d10"
@@ -187,8 +187,8 @@
     "pkg/escape",
   ]
   pruneopts = "UT"
-  revision = "af0237819ab9c5997c1c0144862dc762b9d8fc25"
-  version = "v1.8.1"
+  revision = "6a1299e8c6c81ef8fd573ed2b700217121baf04e"
+  version = "v1.8.2"
 
 [[projects]]
   digest = "1:d27eedd7296593e6ea74aed67aa0d04d97305c860209b0d4996a8aa2eac7fd0b"
@@ -203,12 +203,12 @@
   version = "v1.8.0"
 
 [[projects]]
-  digest = "1:5a0ef768465592efca0412f7e838cdc0826712f8447e70e6ccc52eb441e9ab13"
+  digest = "1:7d2baa3cbd4a9afd35b7b9b18de1b14540f64086b14ed1cf01cdfc49a70c35d0"
   name = "github.com/magiconair/properties"
   packages = ["."]
   pruneopts = "UT"
-  revision = "de8848e004dd33dc07a2947b3d76f618a7fc7ef1"
-  version = "v1.8.1"
+  revision = "fb997392a7e693835970429956b62f6bbf19b3fd"
+  version = "v1.8.2"
 
 [[projects]]
   digest = "1:aff0e9185b5df855488a42e064cb479e994636d3cefa47d053495123d086add4"
@@ -264,14 +264,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:bd9efe4e0b0f768302a1e2f0c22458149278de533e521206e5ddc71848c269a0"
+  digest = "1:81b35b58acae11cd7d1076ddfe830d2a3c906f6674d7659e672820c24cc4a20f"
   name = "github.com/pquerna/cachecontrol"
   packages = [
     ".",
     "cacheobject",
   ]
   pruneopts = "UT"
-  revision = "1555304b9b35fdd2b425bccf1a5613677705e7d0"
+  revision = "67c6ae64274f94504771263b85e5a38700cbf31e"
 
 [[projects]]
   digest = "1:c5dfe46811af7e2eff7c11fc84b6c841520338613c056f659f262d5a4fb42fa8"
@@ -282,15 +282,15 @@
   version = "v1.7.0"
 
 [[projects]]
-  digest = "1:88434e0bb3b3dbbae708c62511b04d005c0fda7a9d2bda40c29894f16bd6bb76"
+  digest = "1:951fcde0e99119656cba0bbb6d79b087dda52a72eeff75ac086ac3fa9cd05a21"
   name = "github.com/spf13/afero"
   packages = [
     ".",
     "mem",
   ]
   pruneopts = "UT"
-  revision = "238028b461aa4b67a4f04c765fa37354b75b749c"
-  version = "v1.3.3"
+  revision = "27c9ee049885de0846b9326ffe09d128a545a323"
+  version = "v1.3.5"
 
 [[projects]]
   digest = "1:ff4cd55a3666b6ea3a876c9e133bfb54d6c812e725409a773f2c94a0b3a92f4f"
@@ -393,11 +393,11 @@
     "pbkdf2",
   ]
   pruneopts = "UT"
-  revision = "123391ffb6de907695e1066dc40c1ff09322aeb6"
+  revision = "5c72a883971a4325f8c62bf07b6d38c20ea47a6a"
 
 [[projects]]
   branch = "master"
-  digest = "1:9ff4369c170390f5e736ac062ee3c019c0f548cfc4e46380a6afdcb7a49d5ebf"
+  digest = "1:30b26c6efd473e5c3f1aa5a5818678cc00335deb45588525cc98549d5cf0ac23"
   name = "golang.org/x/net"
   packages = [
     "context",
@@ -406,29 +406,29 @@
     "publicsuffix",
   ]
   pruneopts = "UT"
-  revision = "ab34263943818b32f575efc978a3d24e80b04bd7"
+  revision = "62affa334b73ec65ed44a326519ac12c421905e3"
 
 [[projects]]
   branch = "master"
-  digest = "1:911b45b658f5fab1a26259e2fd1085ab296f9d3e46117311d25f8dae51efe720"
+  digest = "1:ae9e9f76ae913e3139f6de5c3afca2d139b2be2642246ddffcaa81845f9000d5"
   name = "golang.org/x/oauth2"
   packages = [
     ".",
     "internal",
   ]
   pruneopts = "UT"
-  revision = "bf48bf16ab8d622ce64ec6ce98d2c98f916b6303"
+  revision = "5d25da1a8d43b66f2898c444f899c7bcfd6a407e"
 
 [[projects]]
   branch = "master"
-  digest = "1:feb2fa2670fbc18d915f9c2af7c621d7420d38fe9ee448d32c6fe9739b6f7797"
+  digest = "1:f06d4a65885227119a36889e5b1f415d76f80a2b03b301603909e7c5e4c5f3ca"
   name = "golang.org/x/sys"
   packages = [
     "internal/unsafeheader",
     "unix",
   ]
   pruneopts = "UT"
-  revision = "5acd03effb828bdfdbad4e129e7daf84af6670b4"
+  revision = "eff7692f900947b7d782d16af70ca32cc40774f0"
 
 [[projects]]
   digest = "1:fa940333c48808b0d86ef21f412ffcfd0e5084a82f13905c028a404803b1908f"
@@ -538,12 +538,12 @@
   version = "v2.0.4"
 
 [[projects]]
-  digest = "1:2a8ce9278a57dba0bca00383d26744e88324c2696ad8538b3f7a69067d02d78c"
+  digest = "1:e5b45b5c171a805052785685402c31e4a2f3872a7bc2a12fa8c36818149fa437"
   name = "gopkg.in/ini.v1"
   packages = ["."]
   pruneopts = "UT"
-  revision = "1fc6efb6f20ef065ae00baf7f4fa7722cad0ec34"
-  version = "v1.57.0"
+  revision = "fcd0515f91612282aba5f5231a7dd71487e6dd8f"
+  version = "v1.61.0"
 
 [[projects]]
   digest = "1:c864e49942441f23f2b51ba1eacf4d43dedec45b76f06800207b20fc8642ad78"
