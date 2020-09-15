@@ -149,7 +149,7 @@ func addCTtypeToEventFromOperationType(event map[string]string, f map[string]str
 	case "CREATE":
 		//ACCOUNT_CREATED
 		// check if the resourcePath starts with prefix users
-		if strings.HasPrefix(f["resource_path"], "users") {
+		if f["resource_type"] == "USER" {
 			event[database.CtEventType] = "ACCOUNT_CREATED"
 			return event
 		}
@@ -243,7 +243,7 @@ func adminEventToMap(adminEvent *fb.AdminEvent) map[string]string {
 
 	}
 
-	addInfo["resource_type"] = string(adminEvent.ResourceType())
+	addInfo["resource_type"] = fb.EnumNamesResourceType[int8(adminEvent.ResourceType())]
 	adminEventMap[database.CtEventKcOperationType] = fb.EnumNamesOperationType[int8(adminEvent.OperationType())] //kc_operation_type
 	addInfo["resource_path"] = string(adminEvent.ResourcePath())
 
