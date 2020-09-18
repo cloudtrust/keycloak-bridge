@@ -305,6 +305,48 @@ paths:
       responses:
         200:
           description: successful operation
+  /realms/{realm}/users/{userID}/lock:
+    put:
+      tags:
+      - Users
+      summary: Lock an existing user.
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation
+  /realms/{realm}/users/{userID}/unlock:
+    put:
+      tags:
+      - Users
+      summary: Unlock an existing user.
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation
   /realms/{realm}/users/{userID}/status:
     get:
       tags:

@@ -26,6 +26,8 @@ type Endpoints struct {
 	DeleteUser                endpoint.Endpoint
 	GetUser                   endpoint.Endpoint
 	UpdateUser                endpoint.Endpoint
+	LockUser                  endpoint.Endpoint
+	UnlockUser                endpoint.Endpoint
 	GetUsers                  endpoint.Endpoint
 	CreateUser                endpoint.Endpoint
 	GetRolesOfUser            endpoint.Endpoint
@@ -189,6 +191,24 @@ func MakeUpdateUserEndpoint(component Component) cs.Endpoint {
 		}
 
 		return nil, component.UpdateUser(ctx, m[prmRealm], m[prmUserID], user)
+	}
+}
+
+// MakeLockUserEndpoint creates an endpoint for LockUser
+func MakeLockUserEndpoint(component Component) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+
+		return nil, component.LockUser(ctx, m[prmRealm], m[prmUserID])
+	}
+}
+
+// MakeUnlockUserEndpoint creates an endpoint for LockUser
+func MakeUnlockUserEndpoint(component Component) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+
+		return nil, component.UnlockUser(ctx, m[prmRealm], m[prmUserID])
 	}
 }
 

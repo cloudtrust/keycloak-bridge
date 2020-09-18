@@ -32,6 +32,8 @@ var (
 	MGMTDeleteUser                          = newAction("MGMT_DeleteUser", security.ScopeGroup)
 	MGMTGetUser                             = newAction("MGMT_GetUser", security.ScopeGroup)
 	MGMTUpdateUser                          = newAction("MGMT_UpdateUser", security.ScopeGroup)
+	MGMTLockUser                            = newAction("MGMT_LockUser", security.ScopeGroup)
+	MGMTUnlockUser                          = newAction("MGMT_UnlockUser", security.ScopeGroup)
 	MGMTGetUsers                            = newAction("MGMT_GetUsers", security.ScopeGroup)
 	MGMTCreateUser                          = newAction("MGMT_CreateUser", security.ScopeGroup)
 	MGMTGetUserAccountStatus                = newAction("MGMT_GetUserAccountStatus", security.ScopeGroup)
@@ -201,6 +203,28 @@ func (c *authorizationComponentMW) UpdateUser(ctx context.Context, realmName, us
 	}
 
 	return c.next.UpdateUser(ctx, realmName, userID, user)
+}
+
+func (c *authorizationComponentMW) LockUser(ctx context.Context, realmName, userID string) error {
+	var action = MGMTLockUser.String()
+	var targetRealm = realmName
+
+	if err := c.authManager.CheckAuthorizationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
+		return err
+	}
+
+	return c.next.LockUser(ctx, realmName, userID)
+}
+
+func (c *authorizationComponentMW) UnlockUser(ctx context.Context, realmName, userID string) error {
+	var action = MGMTUnlockUser.String()
+	var targetRealm = realmName
+
+	if err := c.authManager.CheckAuthorizationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
+		return err
+	}
+
+	return c.next.UnlockUser(ctx, realmName, userID)
 }
 
 func (c *authorizationComponentMW) GetUsers(ctx context.Context, realmName string, groupIDs []string, paramKV ...string) (api.UsersPageRepresentation, error) {
