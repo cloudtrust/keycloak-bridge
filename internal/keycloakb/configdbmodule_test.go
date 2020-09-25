@@ -29,6 +29,58 @@ func TestConfigurationDBModule(t *testing.T) {
 	assert.Nil(t, err)
 }
 
+func ptr(value string) *string {
+	return &value
+}
+
+func toJSONString(value interface{}) string {
+	var jsonConfBytes, _ = json.Marshal(value)
+	return string(jsonConfBytes)
+}
+
+func TestGetConfigurations(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockDB = mock.NewCloudtrustDB(mockCtrl)
+	var mockSQLRow = mock.NewSQLRow(mockCtrl)
+	var mockLogger = log.NewNopLogger()
+
+	var configDBModule = NewConfigurationDBModule(mockDB, mockLogger)
+	var realmID = "myrealm"
+	var expectedError = errors.New("sql")
+	var expectedRealmConf = configuration.RealmConfiguration{BarcodeType: ptr("value")}
+	var expectedRealmAdminConf = configuration.RealmAdminConfiguration{Mode: ptr("trustID")}
+
+	t.Run("No error", func(t *testing.T) {
+		mockDB.EXPECT().QueryRow(gomock.Any(), realmID).Return(mockSQLRow)
+		mockSQLRow.EXPECT().Scan(gomock.Any(), gomock.Any()).DoAndReturn(func(ptrConfJSON *string, ptrAdminConfJSON *string) error {
+			*ptrConfJSON = toJSONString(expectedRealmConf)
+			*ptrAdminConfJSON = toJSONString(expectedRealmAdminConf)
+			return nil
+		})
+		realmConf, realmAdminConf, err := configDBModule.GetConfigurations(context.TODO(), realmID)
+		assert.Nil(t, err)
+		assert.Equal(t, expectedRealmConf, realmConf)
+		assert.Equal(t, expectedRealmAdminConf, realmAdminConf)
+	})
+
+	t.Run("SQL not found", func(t *testing.T) {
+		mockDB.EXPECT().QueryRow(gomock.Any(), realmID).Return(mockSQLRow)
+		mockSQLRow.EXPECT().Scan(gomock.Any(), gomock.Any()).Return(sql.ErrNoRows)
+		_, _, err := configDBModule.GetConfigurations(context.TODO(), realmID)
+		assert.NotNil(t, err)
+		assert.True(t, strings.Contains(err.Error(), msg.MsgErrNotConfigured))
+	})
+
+	t.Run("Unexpected SQL error", func(t *testing.T) {
+		mockDB.EXPECT().QueryRow(gomock.Any(), realmID).Return(mockSQLRow)
+		mockSQLRow.EXPECT().Scan(gomock.Any(), gomock.Any()).Return(expectedError)
+		_, _, err := configDBModule.GetConfigurations(context.TODO(), realmID)
+		assert.Equal(t, expectedError, err)
+	})
+}
+
 func TestGetConfiguration(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -41,38 +93,32 @@ func TestGetConfiguration(t *testing.T) {
 	var realmID = "myrealm"
 	var expectedError = errors.New("sql")
 
-	{
-		// No error
-		var dummyURL = "dummy://path/to/nothing"
-		var expectedResult = configuration.RealmConfiguration{DefaultRedirectURI: &dummyURL}
-		var jsonBytes, _ = json.Marshal(expectedResult)
-		var json = string(jsonBytes)
+	t.Run("No error", func(t *testing.T) {
+		var expectedResult = configuration.RealmConfiguration{DefaultRedirectURI: ptr("dummy://path/to/nothing")}
 		mockDB.EXPECT().QueryRow(gomock.Any(), realmID).Return(mockSQLRow)
 		mockSQLRow.EXPECT().Scan(gomock.Any()).DoAndReturn(func(ptrJSON *string) error {
-			*ptrJSON = json
+			*ptrJSON = toJSONString(expectedResult)
 			return nil
 		})
 		result, err := configDBModule.GetConfiguration(context.TODO(), realmID)
 		assert.Nil(t, err)
 		assert.Equal(t, expectedResult, result)
-	}
+	})
 
-	{
-		// SQL not found
+	t.Run("SQL not found", func(t *testing.T) {
 		mockDB.EXPECT().QueryRow(gomock.Any(), realmID).Return(mockSQLRow)
 		mockSQLRow.EXPECT().Scan(gomock.Any()).Return(sql.ErrNoRows)
 		_, err := configDBModule.GetConfiguration(context.TODO(), realmID)
 		assert.NotNil(t, err)
 		assert.True(t, strings.Contains(err.Error(), msg.MsgErrNotConfigured))
-	}
+	})
 
-	{
-		// Unexpected SQL error
+	t.Run("Unexpected SQL error", func(t *testing.T) {
 		mockDB.EXPECT().QueryRow(gomock.Any(), realmID).Return(mockSQLRow)
 		mockSQLRow.EXPECT().Scan(gomock.Any()).Return(expectedError)
 		_, err := configDBModule.GetConfiguration(context.TODO(), realmID)
 		assert.Equal(t, expectedError, err)
-	}
+	})
 }
 
 func TestStoreOrGetAdminConfiguration(t *testing.T) {
@@ -86,7 +132,7 @@ func TestStoreOrGetAdminConfiguration(t *testing.T) {
 	var configDBModule = NewConfigurationDBModule(mockDB, mockLogger)
 	var realmID = "myrealm"
 	var adminConfig configuration.RealmAdminConfiguration
-	var adminConfigStr = "{}"
+	var adminConfigStr = toJSONString(adminConfig)
 	var sqlError = errors.New("sql")
 	var ctx = context.TODO()
 

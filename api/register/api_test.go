@@ -70,7 +70,7 @@ func TestValidateUserRepresentation(t *testing.T) {
 	)
 
 	t.Run("Valid users", func(t *testing.T) {
-		assert.Nil(t, user.Validate(), "User is expected to be valid")
+		assert.Nil(t, user.Validate(true), "User is expected to be valid")
 	})
 
 	t.Run("Invalid users", func(t *testing.T) {
@@ -104,7 +104,7 @@ func TestValidateUserRepresentation(t *testing.T) {
 		users[21].Locale = nil
 
 		for idx, aUser := range users {
-			assert.NotNil(t, aUser.Validate(), "User is expected to be invalid. Test #%d failed with user %s", idx, aUser.UserToJSON())
+			assert.NotNil(t, aUser.Validate(true), "User is expected to be invalid. Test #%d failed with user %s", idx, aUser.UserToJSON())
 		}
 	})
 }

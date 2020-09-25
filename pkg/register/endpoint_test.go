@@ -11,40 +11,73 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func ptr(value string) *string {
+	return &value
+}
+
 func TestMakeRegisterUserEndpoint(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
 	mockRegisterComponent := mock.NewComponent(mockCtrl)
 
-	var realm = "master"
-	var first = "John"
-	var last = "Doe"
-	var user = apiregister.UserRepresentation{FirstName: &first, LastName: &last}
-	var m = map[string]string{}
+	var (
+		realm       = "my-realm"
+		socialRealm = "social-realm"
+		user        = apiregister.UserRepresentation{
+			FirstName:            ptr("John"),
+			LastName:             ptr("Doe"),
+			Gender:               ptr("M"),
+			Email:                ptr("email@domain.com"),
+			PhoneNumber:          ptr("+41220123456"),
+			BirthDate:            ptr("20.12.2012"),
+			BirthLocation:        ptr("Bern"),
+			IDDocumentType:       ptr("PASSPORT"),
+			IDDocumentNumber:     ptr("012345678901234"),
+			IDDocumentExpiration: ptr("31.12.2059"),
+			Locale:               ptr("fr"),
+		}
+		m = map[string]string{}
+	)
 
 	t.Run("No specified realm", func(t *testing.T) {
 		var bytes, _ = json.Marshal(user)
-		m[PrmRealm] = ""
-		m[ReqBody] = string(bytes)
-		_, err := MakeRegisterUserEndpoint(mockRegisterComponent)(context.Background(), m)
+		m[prmRealm] = ""
+		m[reqBody] = string(bytes)
+		_, err := MakeRegisterUserEndpoint(mockRegisterComponent, realm)(context.Background(), m)
 		assert.NotNil(t, err)
 	})
 
 	t.Run("Valid request", func(t *testing.T) {
 		var bytes, _ = json.Marshal(user)
-		m[PrmRealm] = realm
-		m[ReqBody] = string(bytes)
-		mockRegisterComponent.EXPECT().RegisterUser(gomock.Any(), realm, user).Return("", nil).Times(1)
-		_, err := MakeRegisterUserEndpoint(mockRegisterComponent)(context.Background(), m)
+		var socialRealm = "realm-123456"
+		m[prmRealm] = realm
+		m[reqBody] = string(bytes)
+		mockRegisterComponent.EXPECT().RegisterUser(gomock.Any(), socialRealm, realm, user).Return("", nil).Times(1)
+		_, err := MakeRegisterUserEndpoint(mockRegisterComponent, socialRealm)(context.Background(), m)
 		assert.Nil(t, err)
 	})
 
 	t.Run("Invalid JSON in body", func(t *testing.T) {
-		m[PrmRealm] = realm
-		m[ReqBody] = "{"
-		_, err := MakeRegisterUserEndpoint(mockRegisterComponent)(context.Background(), m)
+		m[prmRealm] = realm
+		m[reqBody] = "{"
+		_, err := MakeRegisterUserEndpoint(mockRegisterComponent, socialRealm)(context.Background(), m)
 		assert.NotNil(t, err)
+	})
+	t.Run("Missing mandatory fields", func(t *testing.T) {
+		m[prmRealm] = realm
+		m[reqBody] = "{}"
+		_, err := MakeRegisterUserEndpoint(mockRegisterComponent, socialRealm)(context.Background(), m)
+		assert.NotNil(t, err)
+	})
+
+	t.Run("RegisterCorpUser", func(t *testing.T) {
+		m[prmCorpRealm] = socialRealm
+		var bytes, _ = json.Marshal(user)
+		m[reqBody] = string(bytes)
+		mockRegisterComponent.EXPECT().RegisterUser(gomock.Any(), socialRealm, socialRealm, user).Return("", nil).Times(1)
+		_, err := MakeRegisterCorpUserEndpoint(mockRegisterComponent)(context.Background(), m)
+		assert.Nil(t, err)
 	})
 }
 
@@ -62,7 +95,7 @@ func TestMakeGetConfigurationEndpoint(t *testing.T) {
 
 	t.Run("Success", func(t *testing.T) {
 		var realm = "my-realm"
-		var m = map[string]string{PrmRealm: realm}
+		var m = map[string]string{prmRealm: realm}
 		mockRegisterComponent.EXPECT().GetConfiguration(gomock.Any(), realm).Return(apiregister.ConfigurationRepresentation{}, nil).Times(1)
 		_, err := MakeGetConfigurationEndpoint(mockRegisterComponent)(context.Background(), m)
 		assert.Nil(t, err)

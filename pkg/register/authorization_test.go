@@ -102,12 +102,13 @@ func TestMakeAuthorizationRegisterComponentMW(t *testing.T) {
 	var component = MakeAuthorizationRegisterComponentMW(logger.NewNopLogger())(mockComponent)
 
 	var ctx = context.TODO()
-	var realm = "master"
+	var socialRealm = "social"
+	var realm = "my-realm"
 	var user = apiregister.UserRepresentation{}
 	var expectedErr = errors.New("")
 
-	mockComponent.EXPECT().RegisterUser(ctx, realm, user).Return("", expectedErr).Times(1)
-	var _, err = component.RegisterUser(ctx, realm, user)
+	mockComponent.EXPECT().RegisterUser(ctx, socialRealm, realm, user).Return("", expectedErr).Times(1)
+	var _, err = component.RegisterUser(ctx, socialRealm, realm, user)
 	assert.Equal(t, expectedErr, err)
 
 	mockComponent.EXPECT().GetConfiguration(ctx, realm).Return(apiregister.ConfigurationRepresentation{}, expectedErr).Times(1)

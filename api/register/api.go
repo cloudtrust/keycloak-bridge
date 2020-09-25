@@ -34,6 +34,7 @@ type UserRepresentation struct {
 // ConfigurationRepresentation representation
 type ConfigurationRepresentation struct {
 	RedirectCancelledRegistrationURL *string `json:"redirect_cancelled_registration_url,omitempty"`
+	Mode                             *string `json:"mode,omitempty"`
 }
 
 // Parameter references
@@ -106,19 +107,19 @@ func (u *UserRepresentation) ConvertToKeycloak() kc.UserRepresentation {
 }
 
 // Validate checks the validity of the given User
-func (u *UserRepresentation) Validate() error {
+func (u *UserRepresentation) Validate(allFieldsMandatory bool) error {
 	return validation.NewParameterValidator().
-		ValidateParameterRegExp(prmUserGender, u.Gender, regExpGender, true).
+		ValidateParameterRegExp(prmUserGender, u.Gender, regExpGender, allFieldsMandatory).
 		ValidateParameterRegExp(prmUserFirstName, u.FirstName, regExpFirstName, true).
 		ValidateParameterRegExp(prmUserLastName, u.LastName, regExpLastName, true).
 		ValidateParameterRegExp(prmUserEmail, u.Email, regExpEmail, true).
 		ValidateParameterPhoneNumber(prmUserPhoneNumber, u.PhoneNumber, true).
-		ValidateParameterDateMultipleLayout(prmUserBirthDate, u.BirthDate, constants.SupportedDateLayouts, true).
-		ValidateParameterRegExp(prmUserBirthLocation, u.BirthLocation, regExpBirthLocation, true).
-		ValidateParameterIn(prmUserIDDocumentType, u.IDDocumentType, allowedDocumentType, true).
-		ValidateParameterRegExp(prmUserIDDocumentNumber, u.IDDocumentNumber, regExpIDDocumentNumber, true).
-		ValidateParameterLength(prmUserIDDocumentNumber, u.IDDocumentNumber, 1, 50, true).
-		ValidateParameterDateMultipleLayout(prmUserIDDocumentExpiration, u.IDDocumentExpiration, constants.SupportedDateLayouts, true).
+		ValidateParameterDateMultipleLayout(prmUserBirthDate, u.BirthDate, constants.SupportedDateLayouts, allFieldsMandatory).
+		ValidateParameterRegExp(prmUserBirthLocation, u.BirthLocation, regExpBirthLocation, allFieldsMandatory).
+		ValidateParameterIn(prmUserIDDocumentType, u.IDDocumentType, allowedDocumentType, allFieldsMandatory).
+		ValidateParameterRegExp(prmUserIDDocumentNumber, u.IDDocumentNumber, regExpIDDocumentNumber, allFieldsMandatory).
+		ValidateParameterLength(prmUserIDDocumentNumber, u.IDDocumentNumber, 1, 50, allFieldsMandatory).
+		ValidateParameterDateMultipleLayout(prmUserIDDocumentExpiration, u.IDDocumentExpiration, constants.SupportedDateLayouts, allFieldsMandatory).
 		ValidateParameterRegExp(prmUserLocale, u.Locale, regExpLocale, true).
 		Status()
 }
