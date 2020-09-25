@@ -1546,7 +1546,7 @@ func configureRegisterHandler(ComponentName string, ComponentID string, idGenera
 		var handler http.Handler
 		handler = register.MakeRegisterHandler(endpoint, logger)
 		handler = middleware.MakeHTTPCorrelationIDMW(idGenerator, tracer, logger, ComponentName, ComponentID)(handler)
-		//handler = register.MakeHTTPRecaptchaValidationMW(recaptchaURL, recaptchaSecret, logger)(handler)
+		handler = register.MakeHTTPRecaptchaValidationMW(recaptchaURL, recaptchaSecret, logger)(handler)
 		return handler
 	}
 }
