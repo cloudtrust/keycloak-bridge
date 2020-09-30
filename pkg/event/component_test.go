@@ -574,6 +574,7 @@ func TestAdminEventToMapAccountCreated(t *testing.T) {
 
 		fb.AdminEventStart(builder)
 		fb.AdminEventAddOperationType(builder, optype)
+		fb.AdminEventAddResourceType(builder, fb.ResourceTypeUSER)
 		fb.AdminEventAddResourcePath(builder, resourceP)
 		fb.AdminEventAddAuthDetails(builder, authDetails)
 		var eventOffset = fb.EventEnd(builder)
