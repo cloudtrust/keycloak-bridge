@@ -86,6 +86,8 @@ type Component interface {
 	DeleteUser(ctx context.Context, realmName, userID string) error
 	GetUser(ctx context.Context, realmName, userID string) (api.UserRepresentation, error)
 	UpdateUser(ctx context.Context, realmName, userID string, user api.UserRepresentation) error
+	LockUser(ctx context.Context, realmName, userID string) error
+	UnlockUser(ctx context.Context, realmName, userID string) error
 	GetUsers(ctx context.Context, realmName string, groupIDs []string, paramKV ...string) (api.UsersPageRepresentation, error)
 	CreateUser(ctx context.Context, realmName string, user api.UserRepresentation) (string, error)
 	GetUserAccountStatus(ctx context.Context, realmName, userID string) (map[string]bool, error)
@@ -453,22 +455,7 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 
 	//store the API call into the DB in case where user.Enable is present
 	if user.Enabled != nil {
-		var username = ""
-		if user.Username != nil {
-			username = *user.Username
-		}
-
-		//add ct_event_type
-		var ctEventType string
-		if *user.Enabled {
-			// UNLOCK_ACCOUNT ct_event_type
-			ctEventType = "UNLOCK_ACCOUNT"
-		} else {
-			// LOCK_ACCOUNT ct_event_type
-			ctEventType = "LOCK_ACCOUNT"
-		}
-
-		c.reportEvent(ctx, ctEventType, database.CtEventRealmName, realmName, database.CtEventUserID, userID, database.CtEventUsername, username)
+		c.reportLockEvent(ctx, realmName, userID, user.Username, *user.Enabled)
 	}
 
 	// Update in DB user for extra infos
@@ -502,6 +489,61 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 			return err
 		}
 	}
+
+	return nil
+}
+
+func (c *component) reportLockEvent(ctx context.Context, realmName, userID string, username *string, enabled bool) {
+	var blank = ""
+	if username == nil {
+		username = &blank
+	}
+
+	//add ct_event_type
+	var ctEventType string
+	if enabled {
+		// UNLOCK_ACCOUNT ct_event_type
+		ctEventType = "UNLOCK_ACCOUNT"
+	} else {
+		// LOCK_ACCOUNT ct_event_type
+		ctEventType = "LOCK_ACCOUNT"
+	}
+
+	c.reportEvent(ctx, ctEventType, database.CtEventRealmName, realmName, database.CtEventUserID, userID, database.CtEventUsername, *username)
+}
+
+func (c *component) LockUser(ctx context.Context, realmName, userID string) error {
+	return c.setUserLock(ctx, realmName, userID, true)
+}
+
+func (c *component) UnlockUser(ctx context.Context, realmName, userID string) error {
+	return c.setUserLock(ctx, realmName, userID, false)
+}
+
+func (c *component) setUserLock(ctx context.Context, realmName, userID string, locked bool) error {
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+
+	// get the "old" user representation
+	oldUserKc, err := c.keycloakClient.GetUser(accessToken, realmName, userID)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return err
+	}
+	keycloakb.ConvertLegacyAttribute(&oldUserKc)
+
+	var enabled = !locked
+	if oldUserKc.Enabled != nil && *oldUserKc.Enabled == enabled {
+		return nil
+	}
+	oldUserKc.Enabled = &enabled
+
+	// Update in KC
+	if err = c.keycloakClient.UpdateUser(accessToken, realmName, userID, oldUserKc); err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return err
+	}
+
+	c.reportLockEvent(ctx, realmName, userID, oldUserKc.Username, enabled)
 
 	return nil
 }

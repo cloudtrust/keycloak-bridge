@@ -262,6 +262,53 @@ func TestUpdateUserEndpoint(t *testing.T) {
 	}
 }
 
+func TestLockUserEndpoints(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
+
+	var realm = "master"
+	var userID = "1234-452-4578"
+	var anyError = errors.New("any")
+	var ctx = context.Background()
+	var req = make(map[string]string)
+	req[prmRealm] = realm
+	req[prmUserID] = userID
+
+	t.Run("LockUser", func(t *testing.T) {
+		var e = MakeLockUserEndpoint(mockManagementComponent)
+
+		t.Run("No error", func(t *testing.T) {
+			mockManagementComponent.EXPECT().LockUser(ctx, realm, userID).Return(nil)
+			var res, err = e(ctx, req)
+			assert.Nil(t, err)
+			assert.Nil(t, res)
+		})
+		t.Run("Error occured", func(t *testing.T) {
+			mockManagementComponent.EXPECT().LockUser(ctx, realm, userID).Return(anyError)
+			var _, err = e(ctx, req)
+			assert.Equal(t, anyError, err)
+		})
+	})
+
+	t.Run("UnlockUser", func(t *testing.T) {
+		var e = MakeUnlockUserEndpoint(mockManagementComponent)
+
+		t.Run("No error", func(t *testing.T) {
+			mockManagementComponent.EXPECT().UnlockUser(ctx, realm, userID).Return(nil)
+			var res, err = e(ctx, req)
+			assert.Nil(t, err)
+			assert.Nil(t, res)
+		})
+		t.Run("Error occured", func(t *testing.T) {
+			mockManagementComponent.EXPECT().UnlockUser(ctx, realm, userID).Return(anyError)
+			var _, err = e(ctx, req)
+			assert.Equal(t, anyError, err)
+		})
+	})
+}
+
 func TestGetUsersEndpoint(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()

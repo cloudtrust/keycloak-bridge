@@ -686,6 +686,8 @@ func main() {
 			CreateUser:                prepareEndpoint(management.MakeCreateUserEndpoint(keycloakComponent, managementLogger), "create_user_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 			GetUser:                   prepareEndpoint(management.MakeGetUserEndpoint(keycloakComponent), "get_user_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 			UpdateUser:                prepareEndpoint(management.MakeUpdateUserEndpoint(keycloakComponent), "update_user_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			LockUser:                  prepareEndpoint(management.MakeLockUserEndpoint(keycloakComponent), "lock_user_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			UnlockUser:                prepareEndpoint(management.MakeUnlockUserEndpoint(keycloakComponent), "unlock_user_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 			DeleteUser:                prepareEndpoint(management.MakeDeleteUserEndpoint(keycloakComponent), "delete_user_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 			GetUsers:                  prepareEndpoint(management.MakeGetUsersEndpoint(keycloakComponent), "get_users_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 			GetUserAccountStatus:      prepareEndpoint(management.MakeGetUserAccountStatusEndpoint(keycloakComponent), "get_user_accountstatus", influxMetrics, managementLogger, tracer, rateLimitMgmt),
@@ -991,6 +993,8 @@ func main() {
 		var createUserHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.CreateUser)
 		var getUserHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetUser)
 		var updateUserHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.UpdateUser)
+		var lockUserHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.LockUser)
+		var unlockUserHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.UnlockUser)
 		var deleteUserHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.DeleteUser)
 		var getUsersHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetUsers)
 		var getRolesForUserHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetRolesOfUser)
@@ -1064,6 +1068,8 @@ func main() {
 		managementSubroute.Path("/realms/{realm}/users/{userID}").Methods("GET").Handler(getUserHandler)
 		managementSubroute.Path("/realms/{realm}/users/{userID}").Methods("PUT").Handler(updateUserHandler)
 		managementSubroute.Path("/realms/{realm}/users/{userID}").Methods("DELETE").Handler(deleteUserHandler)
+		managementSubroute.Path("/realms/{realm}/users/{userID}/lock").Methods("PUT").Handler(lockUserHandler)
+		managementSubroute.Path("/realms/{realm}/users/{userID}/unlock").Methods("PUT").Handler(unlockUserHandler)
 		managementSubroute.Path("/realms/{realm}/users/{userID}/groups").Methods("GET").Handler(getGroupsForUserHandler)
 		managementSubroute.Path("/realms/{realm}/users/{userID}/groups/{groupID}").Methods("POST").Handler(addGroupToUserHandler)
 		managementSubroute.Path("/realms/{realm}/users/{userID}/groups/{groupID}").Methods("DELETE").Handler(deleteGroupForUserHandler)

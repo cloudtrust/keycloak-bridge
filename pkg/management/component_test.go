@@ -1312,6 +1312,56 @@ func TestUpdateUser(t *testing.T) {
 	})
 }
 
+func TestLockUnlockUser(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
+	var mockEventDBModule = mock.NewEventDBModule(mockCtrl)
+
+	var managementComponent = NewComponent(mockKeycloakClient, nil, mockEventDBModule, nil, nil, log.NewNopLogger())
+
+	var accessToken = "TOKEN=="
+	var realmName = "myrealm"
+	var userID = "41dbf4a8-32a9-4000-8c17-edc854c31231"
+	var anyError = errors.New("any")
+	var bTrue = true
+	var bFalse = false
+	var ctx = context.TODO()
+	ctx = context.WithValue(ctx, cs.CtContextAccessToken, accessToken)
+
+	t.Run("GetUser fails", func(t *testing.T) {
+		mockKeycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(kc.UserRepresentation{}, anyError)
+		var err = managementComponent.LockUser(ctx, realmName, userID)
+		assert.Equal(t, anyError, err)
+	})
+	t.Run("Can't lock disabled user", func(t *testing.T) {
+		mockKeycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(kc.UserRepresentation{Enabled: &bFalse}, nil)
+		var err = managementComponent.LockUser(ctx, realmName, userID)
+		assert.Nil(t, err)
+	})
+	t.Run("UpdateUser fails", func(t *testing.T) {
+		mockKeycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(kc.UserRepresentation{Enabled: &bFalse}, nil)
+		mockKeycloakClient.EXPECT().UpdateUser(accessToken, realmName, userID, gomock.Any()).Return(anyError)
+		var err = managementComponent.UnlockUser(ctx, realmName, userID)
+		assert.Equal(t, anyError, err)
+	})
+	t.Run("Lock success", func(t *testing.T) {
+		mockKeycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(kc.UserRepresentation{Enabled: &bTrue}, nil)
+		mockKeycloakClient.EXPECT().UpdateUser(accessToken, realmName, userID, gomock.Any()).Return(nil)
+		mockEventDBModule.EXPECT().ReportEvent(ctx, "LOCK_ACCOUNT", "back-office", gomock.Any()).Return(nil).Times(1)
+		var err = managementComponent.LockUser(ctx, realmName, userID)
+		assert.Nil(t, err)
+	})
+	t.Run("Unlock success", func(t *testing.T) {
+		mockKeycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(kc.UserRepresentation{Enabled: &bFalse}, nil)
+		mockKeycloakClient.EXPECT().UpdateUser(accessToken, realmName, userID, gomock.Any()).Return(nil)
+		mockEventDBModule.EXPECT().ReportEvent(ctx, "UNLOCK_ACCOUNT", "back-office", gomock.Any()).Return(nil).Times(1)
+		var err = managementComponent.UnlockUser(ctx, realmName, userID)
+		assert.Nil(t, err)
+	})
+}
+
 func TestGetUsers(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
