@@ -12,7 +12,7 @@ const (
 	MsgErrCannotMarshal        = "cannotMarshal"
 	MsgErrCannotSaveConfigInDB = "cannotSaveConfigInDB"
 	MsgErrCannotUpdate         = "cannotUpdate"
-	MsgErrUnknown              = "unknowError"
+	MsgErrUnknown              = "unknownError"
 	MsgErrNotConfigured        = "notConfigured"
 	MsgErrUnverified           = "unverifiedFlag"
 
