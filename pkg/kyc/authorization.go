@@ -76,8 +76,8 @@ func (c *authorizationComponentMW) GetUserByUsernameInSocialRealm(ctx context.Co
 	var action = KYCGetUserByUsernameInSocialRealm.String()
 
 	// For this method, there is no target realm provided
-	// as parameter, so we pick the configured social realm.
-	var targetRealm = c.realmName
+	// as parameter, so we pick the current realm of the user.
+	var targetRealm = ctx.Value(cs.CtContextRealm).(string)
 
 	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
 		return apikyc.UserRepresentation{}, err
@@ -90,8 +90,8 @@ func (c *authorizationComponentMW) GetUserInSocialRealm(ctx context.Context, use
 	var action = KYCGetUserInSocialRealm.String()
 
 	// For this method, there is no target realm provided
-	// as parameter, so we pick the configured social realm.
-	var targetRealm = c.realmName
+	// as parameter, so we pick the current realm of the user.
+	var targetRealm = ctx.Value(cs.CtContextRealm).(string)
 
 	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
 		return apikyc.UserRepresentation{}, err
@@ -104,8 +104,8 @@ func (c *authorizationComponentMW) ValidateUserInSocialRealm(ctx context.Context
 	var action = KYCValidateUserInSocialRealm.String()
 
 	// For this method, there is no target realm provided
-	// as parameter, so we pick the configured social realm.
-	var targetRealm = c.realmName
+	// as parameter, so we pick the current realm of the user.
+	var targetRealm = ctx.Value(cs.CtContextRealm).(string)
 
 	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
 		return err
