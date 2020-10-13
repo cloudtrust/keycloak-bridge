@@ -155,6 +155,8 @@ components:
           type: string
         idDocumentExpiration:
           type: string
+        locale:
+          type: string
         comment:
           type: string
           description: Used only by validateUser
