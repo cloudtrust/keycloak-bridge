@@ -65,6 +65,18 @@ func NewConfigurationDBModule(db sqltypes.CloudtrustDB, logger log.Logger, actio
 	}
 }
 
+func (c *configurationDBModule) GetConfigurations(ctx context.Context, realmID string) (configuration.RealmConfiguration, configuration.RealmAdminConfiguration, error) {
+	config, adminConfig, err := c.ConfigurationReaderDBModule.GetRealmConfigurations(ctx, realmID)
+
+	if err == sql.ErrNoRows {
+		return config, adminConfig, errorhandler.Error{
+			Status:  404,
+			Message: ComponentName + "." + msg.MsgErrNotConfigured + "." + msg.RealmConfiguration + "." + realmID,
+		}
+	}
+	return config, adminConfig, err
+}
+
 func (c *configurationDBModule) StoreOrUpdateConfiguration(context context.Context, realmID string, config configuration.RealmConfiguration) error {
 	// transform customConfig object into JSON string
 	configJSON, err := json.Marshal(config)

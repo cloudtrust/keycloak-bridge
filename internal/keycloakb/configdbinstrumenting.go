@@ -25,6 +25,7 @@ type configDBModuleInstrumentingMW struct {
 // ConfigurationDBModule is the interface of the configuration module.
 type ConfigurationDBModule interface {
 	NewTransaction(context context.Context) (sqltypes.Transaction, error)
+	GetConfigurations(context.Context, string) (configuration.RealmConfiguration, configuration.RealmAdminConfiguration, error)
 	StoreOrUpdateConfiguration(context.Context, string, configuration.RealmConfiguration) error
 	GetConfiguration(context.Context, string) (configuration.RealmConfiguration, error)
 	StoreOrUpdateAdminConfiguration(context.Context, string, configuration.RealmAdminConfiguration) error
@@ -54,6 +55,14 @@ func (m *configDBModuleInstrumentingMW) NewTransaction(ctx context.Context) (sql
 		m.h.With(KeyCorrelationID, ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
 	}(time.Now())
 	return m.next.NewTransaction(ctx)
+}
+
+// configDBModuleInstrumentingMW implements Module.
+func (m *configDBModuleInstrumentingMW) GetConfigurations(ctx context.Context, realmName string) (configuration.RealmConfiguration, configuration.RealmAdminConfiguration, error) {
+	defer func(begin time.Time) {
+		m.h.With(KeyCorrelationID, ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
+	}(time.Now())
+	return m.next.GetConfigurations(ctx, realmName)
 }
 
 // configDBModuleInstrumentingMW implements Module.

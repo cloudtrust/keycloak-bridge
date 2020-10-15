@@ -184,17 +184,35 @@ livenessprobe-http-timeout: 900
 livenessprobe-cache-duration: 500
 
 # Register API parameters
+# removed register-techuser-username, register-techuser-password and register-techuser-client-id
 register-enabled: true
 register-realm: trustid
-register-techuser-username: technical
-register-techuser-password: technicalsuperpasswordverylongandstrong
-register-techuser-client-id: admin-cli
 register-enduser-client-id: selfserviceid
 register-enduser-groups: 
   - "end_user"
 recaptcha-url: https://www.google.com/recaptcha/api/siteverify
 recaptcha-secret: theverymysterioussecretfortherecaptchaverifyoperation
 sse-public-url: https://sse.trustid.ch
+
+# Corporate register
+corp-register-keys:
+  - capsule-corp
+  - bougeton-corp
+corp-register:
+  capsule-corp:
+    register-realm: capsule-corp
+    register-enduser-client-id: selfserviceid
+    register-enduser-groups: 
+      - end_user
+      - sayan
+    sse-public-url: https://sse.trustid.ch
+  bougeton-corp:
+    register-realm: bougeton-corp
+    register-enduser-client-id: selfserviceid
+    register-enduser-groups: 
+      - end_user
+      - dancer
+    sse-public-url: https://sse.trustid.ch
 
 # Technical user
 technical-realm: master

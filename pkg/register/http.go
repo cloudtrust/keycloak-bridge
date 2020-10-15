@@ -12,17 +12,18 @@ import (
 
 // Regular expressions and parameters
 const (
-	RegExpRealmName = `^[a-zA-Z0-9_-]{1,36}$`
+	regExpRealmName = `^[a-zA-Z0-9_-]{1,36}$`
 
-	ReqBody = "body"
+	reqBody = "body"
 
-	PrmRealm = "realm"
+	prmCorpRealm = "corpRealm"
+	prmRealm     = "realm"
 )
 
 // MakeRegisterHandler make an HTTP handler for the self-register endpoint.
 func MakeRegisterHandler(e endpoint.Endpoint, logger log.Logger) *http_transport.Server {
-	pathParams := map[string]string{}
-	queryParams := map[string]string{PrmRealm: RegExpRealmName}
+	pathParams := map[string]string{prmCorpRealm: regExpRealmName}
+	queryParams := map[string]string{prmRealm: regExpRealmName}
 
 	return http_transport.NewServer(e,
 		func(ctx context.Context, req *http.Request) (interface{}, error) {

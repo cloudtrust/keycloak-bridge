@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math/rand"
 	"net/http"
@@ -81,61 +82,60 @@ const (
 	RateKeyStatistics = iota
 	RateKeyValidation = iota
 
-	CfgConfigFile               = "config-file"
-	CfgHTTPAddrInternal         = "internal-http-host-port"
-	CfgHTTPAddrManagement       = "management-http-host-port"
-	CfgHTTPAddrAccount          = "account-http-host-port"
-	CfgHTTPAddrRegister         = "register-http-host-port"
-	CfgHTTPAddrMobile           = "mobile-http-host-port"
-	CfgAddrTokenProvider        = "keycloak-oidc-uri"
-	CfgAddrAPI                  = "keycloak-api-uri"
-	CfgTimeout                  = "keycloak-timeout"
-	CfgAudienceRequired         = "audience-required"
-	CfgMobileAudienceRequired   = "mobile-audience-required"
-	CfgEventBasicAuthToken      = "event-basic-auth-token"
-	CfgValidationBasicAuthToken = "validation-basic-auth-token"
-	CfgPprofRouteEnabled        = "pprof-route-enabled"
-	CfgInfluxWriteInterval      = "influx-write-interval"
-	CfgSentryDsn                = "sentry-dsn"
-	CfgAuditRwDbParams          = "db-audit-rw"
-	CfgAuditRoDbParams          = "db-audit-ro"
-	CfgConfigRwDbParams         = "db-config-rw"
-	CfgConfigRoDbParams         = "db-config-ro"
-	CfgUsersRwDbParams          = "db-users-rw"
-	CfgRateKeyValidation        = "rate-validation"
-	CfgRateKeyEvent             = "rate-event"
-	CfgRateKeyAccount           = "rate-account"
-	CfgRateKeyMobile            = "rate-mobile"
-	CfgRateKeyManagement        = "rate-management"
-	CfgRateKeyStatistics        = "rate-statistics"
-	CfgRateKeyEvents            = "rate-events"
-	CfgRateKeyRegister          = "rate-register"
-	CfgRateKeyKYC               = "rate-kyc"
-	CfgAllowedOrigins           = "cors-allowed-origins"
-	CfgAllowedMethods           = "cors-allowed-methods"
-	CfgAllowCredentials         = "cors-allow-credentials"
-	CfgAllowedHeaders           = "cors-allowed-headers"
-	CfgExposedHeaders           = "cors-exposed-headers"
-	CfgDebug                    = "cors-debug"
-	CfgLogLevel                 = "log-level"
-	CfgAccessLogsEnabled        = "access-logs"
-	CfgTrustIDGroups            = "trustid-groups"
-	CfgRegisterEnabled          = "register-enabled"
-	CfgRegisterRealm            = "register-realm"
-	CfgRegisterUsername         = "register-techuser-username"
-	CfgRegisterPassword         = "register-techuser-password"
-	CfgRegisterClientID         = "register-techuser-client-id"
-	CfgRegisterEnduserClientID  = "register-enduser-client-id"
-	CfgRegisterEnduserGroups    = "register-enduser-groups"
-	CfgTechnicalRealm           = "technical-realm"
-	CfgTechnicalUsername        = "technical-username"
-	CfgTechnicalPassword        = "technical-password"
-	CfgTechnicalClientID        = "technical-client-id"
-	CfgRecaptchaURL             = "recaptcha-url"
-	CfgRecaptchaSecret          = "recaptcha-secret"
-	CfgSsePublicURL             = "sse-public-url"
-	CfgDbAesGcmKey              = "db-aesgcm-key"
-	CfgDbAesGcmTagSize          = "db-aesgcm-tag-size"
+	cfgConfigFile               = "config-file"
+	cfgHTTPAddrInternal         = "internal-http-host-port"
+	cfgHTTPAddrManagement       = "management-http-host-port"
+	cfgHTTPAddrAccount          = "account-http-host-port"
+	cfgHTTPAddrRegister         = "register-http-host-port"
+	cfgHTTPAddrMobile           = "mobile-http-host-port"
+	cfgAddrTokenProvider        = "keycloak-oidc-uri"
+	cfgAddrAPI                  = "keycloak-api-uri"
+	cfgTimeout                  = "keycloak-timeout"
+	cfgAudienceRequired         = "audience-required"
+	cfgMobileAudienceRequired   = "mobile-audience-required"
+	cfgEventBasicAuthToken      = "event-basic-auth-token"
+	cfgValidationBasicAuthToken = "validation-basic-auth-token"
+	cfgPprofRouteEnabled        = "pprof-route-enabled"
+	cfgInfluxWriteInterval      = "influx-write-interval"
+	cfgSentryDsn                = "sentry-dsn"
+	cfgAuditRwDbParams          = "db-audit-rw"
+	cfgAuditRoDbParams          = "db-audit-ro"
+	cfgConfigRwDbParams         = "db-config-rw"
+	cfgConfigRoDbParams         = "db-config-ro"
+	cfgUsersRwDbParams          = "db-users-rw"
+	cfgRateKeyValidation        = "rate-validation"
+	cfgRateKeyEvent             = "rate-event"
+	cfgRateKeyAccount           = "rate-account"
+	cfgRateKeyMobile            = "rate-mobile"
+	cfgRateKeyManagement        = "rate-management"
+	cfgRateKeyStatistics        = "rate-statistics"
+	cfgRateKeyEvents            = "rate-events"
+	cfgRateKeyRegister          = "rate-register"
+	cfgRateKeyKYC               = "rate-kyc"
+	cfgAllowedOrigins           = "cors-allowed-origins"
+	cfgAllowedMethods           = "cors-allowed-methods"
+	cfgAllowCredentials         = "cors-allow-credentials"
+	cfgAllowedHeaders           = "cors-allowed-headers"
+	cfgExposedHeaders           = "cors-exposed-headers"
+	cfgDebug                    = "cors-debug"
+	cfgLogLevel                 = "log-level"
+	cfgAccessLogsEnabled        = "access-logs"
+	cfgTrustIDGroups            = "trustid-groups"
+	cfgRegisterEnabled          = "register-enabled"
+	cfgRegisterRealm            = "register-realm"
+	cfgRegisterEnduserClientID  = "register-enduser-client-id"
+	cfgRegisterEnduserGroups    = "register-enduser-groups"
+	cfgCorpRegisterKeys         = "corp-register-keys"
+	cfgCorpRegisterConfigs      = "corp-register"
+	cfgTechnicalRealm           = "technical-realm"
+	cfgTechnicalUsername        = "technical-username"
+	cfgTechnicalPassword        = "technical-password"
+	cfgTechnicalClientID        = "technical-client-id"
+	cfgRecaptchaURL             = "recaptcha-url"
+	cfgRecaptchaSecret          = "recaptcha-secret"
+	cfgSsePublicURL             = "sse-public-url"
+	cfgDbAesGcmKey              = "db-aesgcm-key"
+	cfgDbAesGcmTagSize          = "db-aesgcm-tag-size"
 )
 
 func init() {
@@ -181,82 +181,77 @@ func main() {
 	var c = config(ctx, log.With(logger, "unit", "config"))
 	var (
 		// Publishing
-		httpAddrInternal   = c.GetString(CfgHTTPAddrInternal)
-		httpAddrManagement = c.GetString(CfgHTTPAddrManagement)
-		httpAddrAccount    = c.GetString(CfgHTTPAddrAccount)
-		httpAddrRegister   = c.GetString(CfgHTTPAddrRegister)
-		httpAddrMobile     = c.GetString(CfgHTTPAddrMobile)
+		httpAddrInternal   = c.GetString(cfgHTTPAddrInternal)
+		httpAddrManagement = c.GetString(cfgHTTPAddrManagement)
+		httpAddrAccount    = c.GetString(cfgHTTPAddrAccount)
+		httpAddrRegister   = c.GetString(cfgHTTPAddrRegister)
+		httpAddrMobile     = c.GetString(cfgHTTPAddrMobile)
 
 		// Keycloak
 		keycloakConfig = keycloak.Config{
-			AddrTokenProvider: c.GetString(CfgAddrTokenProvider),
-			AddrAPI:           c.GetString(CfgAddrAPI),
-			Timeout:           c.GetDuration(CfgTimeout),
+			AddrTokenProvider: c.GetString(cfgAddrTokenProvider),
+			AddrAPI:           c.GetString(cfgAddrAPI),
+			Timeout:           c.GetDuration(cfgTimeout),
 		}
 
 		// Enabled units
-		pprofRouteEnabled = c.GetBool(CfgPprofRouteEnabled)
+		pprofRouteEnabled = c.GetBool(cfgPprofRouteEnabled)
 
 		// Influx
-		influxWriteInterval = c.GetDuration(CfgInfluxWriteInterval)
+		influxWriteInterval = c.GetDuration(cfgInfluxWriteInterval)
 
 		// DB - for the moment used just for audit events
-		auditRwDbParams = database.GetDbConfig(c, CfgAuditRwDbParams)
+		auditRwDbParams = database.GetDbConfig(c, cfgAuditRwDbParams)
 
 		// DB - Read only user for audit events
-		auditRoDbParams = database.GetDbConfig(c, CfgAuditRoDbParams)
+		auditRoDbParams = database.GetDbConfig(c, cfgAuditRoDbParams)
 
 		// DB for custom configuration
-		configRwDbParams = database.GetDbConfig(c, CfgConfigRwDbParams)
-		configRoDbParams = database.GetDbConfig(c, CfgConfigRoDbParams)
+		configRwDbParams = database.GetDbConfig(c, cfgConfigRwDbParams)
+		configRoDbParams = database.GetDbConfig(c, cfgConfigRoDbParams)
 
 		// DB for users
-		usersRwDbParams = database.GetDbConfig(c, CfgUsersRwDbParams)
+		usersRwDbParams = database.GetDbConfig(c, cfgUsersRwDbParams)
 
 		// Rate limiting
 		rateLimit = map[RateKey]int{
-			RateKeyValidation: c.GetInt(CfgRateKeyValidation),
-			RateKeyEvent:      c.GetInt(CfgRateKeyEvent),
-			RateKeyAccount:    c.GetInt(CfgRateKeyAccount),
-			RateKeyMobile:     c.GetInt(CfgRateKeyMobile),
-			RateKeyManagement: c.GetInt(CfgRateKeyManagement),
-			RateKeyStatistics: c.GetInt(CfgRateKeyStatistics),
-			RateKeyEvents:     c.GetInt(CfgRateKeyEvents),
-			RateKeyRegister:   c.GetInt(CfgRateKeyRegister),
-			RateKeyKYC:        c.GetInt(CfgRateKeyKYC),
+			RateKeyValidation: c.GetInt(cfgRateKeyValidation),
+			RateKeyEvent:      c.GetInt(cfgRateKeyEvent),
+			RateKeyAccount:    c.GetInt(cfgRateKeyAccount),
+			RateKeyMobile:     c.GetInt(cfgRateKeyMobile),
+			RateKeyManagement: c.GetInt(cfgRateKeyManagement),
+			RateKeyStatistics: c.GetInt(cfgRateKeyStatistics),
+			RateKeyEvents:     c.GetInt(cfgRateKeyEvents),
+			RateKeyRegister:   c.GetInt(cfgRateKeyRegister),
+			RateKeyKYC:        c.GetInt(cfgRateKeyKYC),
 		}
 
 		corsOptions = cors.Options{
-			AllowedOrigins:   c.GetStringSlice(CfgAllowedOrigins),
-			AllowedMethods:   c.GetStringSlice(CfgAllowedMethods),
-			AllowCredentials: c.GetBool(CfgAllowCredentials),
-			AllowedHeaders:   c.GetStringSlice(CfgAllowedHeaders),
-			ExposedHeaders:   c.GetStringSlice(CfgExposedHeaders),
-			Debug:            c.GetBool(CfgDebug),
+			AllowedOrigins:   c.GetStringSlice(cfgAllowedOrigins),
+			AllowedMethods:   c.GetStringSlice(cfgAllowedMethods),
+			AllowCredentials: c.GetBool(cfgAllowCredentials),
+			AllowedHeaders:   c.GetStringSlice(cfgAllowedHeaders),
+			ExposedHeaders:   c.GetStringSlice(cfgExposedHeaders),
+			Debug:            c.GetBool(cfgDebug),
 		}
 
-		logLevel = c.GetString(CfgLogLevel)
+		logLevel = c.GetString(cfgLogLevel)
 
 		// Access logs
-		accessLogsEnabled = c.GetBool(CfgAccessLogsEnabled)
+		accessLogsEnabled = c.GetBool(cfgAccessLogsEnabled)
 
 		// Register parameters
-		registerEnabled         = c.GetBool(CfgRegisterEnabled)
-		registerRealm           = c.GetString(CfgRegisterRealm)
-		registerUsername        = c.GetString(CfgRegisterUsername)
-		registerPassword        = c.GetString(CfgRegisterPassword)
-		registerClientID        = c.GetString(CfgRegisterClientID)
-		registerEnduserClientID = c.GetString(CfgRegisterEnduserClientID)
-		registerEnduserGroups   = c.GetStringSlice(CfgRegisterEnduserGroups)
-		recaptchaURL            = c.GetString(CfgRecaptchaURL)
-		recaptchaSecret         = c.GetString(CfgRecaptchaSecret)
-		ssePublicURL            = c.GetString(CfgSsePublicURL)
+		registerEnabled  = c.GetBool(cfgRegisterEnabled)
+		registerRealm    = c.GetString(cfgRegisterRealm)
+		recaptchaURL     = c.GetString(cfgRecaptchaURL)
+		recaptchaSecret  = c.GetString(cfgRecaptchaSecret)
+		corpRegisterKeys = c.GetStringSlice(cfgCorpRegisterKeys)
 
 		// Technical parameters
-		technicalRealm    = c.GetString(CfgTechnicalRealm)
-		technicalUsername = c.GetString(CfgTechnicalUsername)
-		technicalPassword = c.GetString(CfgTechnicalPassword)
-		technicalClientID = c.GetString(CfgTechnicalClientID)
+		technicalRealm    = c.GetString(cfgTechnicalRealm)
+		technicalUsername = c.GetString(cfgTechnicalUsername)
+		technicalPassword = c.GetString(cfgTechnicalPassword)
+		technicalClientID = c.GetString(cfgTechnicalClientID)
 	)
 
 	// Unique ID generator
@@ -287,7 +282,7 @@ func main() {
 	// Security - Audience required
 	var audienceRequired string
 	{
-		audienceRequired = c.GetString(CfgAudienceRequired)
+		audienceRequired = c.GetString(cfgAudienceRequired)
 
 		if audienceRequired == "" {
 			logger.Error(ctx, "msg", "audience parameter(audience-required) cannot be empty")
@@ -298,7 +293,7 @@ func main() {
 	// Security - Mobile audience required
 	var mobileAudienceRequired string
 	{
-		mobileAudienceRequired = c.GetString(CfgMobileAudienceRequired)
+		mobileAudienceRequired = c.GetString(cfgMobileAudienceRequired)
 
 		if mobileAudienceRequired == "" {
 			logger.Error(ctx, "msg", "mobile audience parameter(mobile-audience-required) cannot be empty")
@@ -309,7 +304,7 @@ func main() {
 	// Security - Basic AuthN token to protect internal/event endpoint
 	var eventExpectedAuthToken string
 	{
-		eventExpectedAuthToken = c.GetString(CfgEventBasicAuthToken)
+		eventExpectedAuthToken = c.GetString(cfgEventBasicAuthToken)
 
 		if eventExpectedAuthToken == "" {
 			logger.Error(ctx, "msg", "password for event endpoint (event-basic-auth-token) cannot be empty")
@@ -319,7 +314,7 @@ func main() {
 
 	var validationExpectedAuthToken string
 	{
-		validationExpectedAuthToken = c.GetString(CfgValidationBasicAuthToken)
+		validationExpectedAuthToken = c.GetString(cfgValidationBasicAuthToken)
 
 		if validationExpectedAuthToken == "" {
 			logger.Error(ctx, "msg", "password for validation endpoint (validation-basic-auth-token) cannot be empty")
@@ -328,14 +323,14 @@ func main() {
 	}
 
 	// Security - AES encryption mechanism for users PII
-	aesEncryption, err := security.NewAesGcmEncrypterFromBase64(c.GetString(CfgDbAesGcmKey), c.GetInt(CfgDbAesGcmTagSize))
+	aesEncryption, err := security.NewAesGcmEncrypterFromBase64(c.GetString(cfgDbAesGcmKey), c.GetInt(cfgDbAesGcmTagSize))
 	if err != nil {
 		logger.Error(ctx, "msg", "could not create AES-GCM encrypting tool instance", "error", err)
 		return
 	}
 
 	// Security - allowed trustID groups
-	var trustIDGroups = c.GetStringSlice(CfgTrustIDGroups)
+	var trustIDGroups = c.GetStringSlice(cfgTrustIDGroups)
 
 	// Keycloak client.
 	var keycloakClient *keycloakapi.Client
@@ -350,7 +345,7 @@ func main() {
 	}
 
 	// Recaptcha secret
-	if registerEnabled && recaptchaSecret == "" {
+	if (registerEnabled || len(corpRegisterKeys) > 0) && recaptchaSecret == "" {
 		logger.Error(ctx, "msg", "Recaptcha secret is not configured")
 		return
 	}
@@ -452,15 +447,16 @@ func main() {
 		}
 	}
 
-	// Create OIDC token provider and validate register user credentials
-	var oidcTokenProvider toolbox.OidcTokenProvider
+	// Create social realm configuration
+	var socialRealmConfiguration = getRealmRegisterConfiguration(c)
+
+	// Create configuration for realms using corporate register
+	var corpRegisters []register.RealmRegisterConfiguration
 	{
-		if registerEnabled {
-			oidcTokenProvider = toolbox.NewOidcTokenProvider(keycloakConfig, registerRealm, registerUsername, registerPassword, registerClientID, logger)
-			var _, err = oidcTokenProvider.ProvideToken(context.Background())
-			if err != nil {
-				logger.Warn(context.Background(), "msg", "OIDC token provider validation failed for register user", "err", err.Error())
-			}
+		corpRegisters, err = loadCorpRegisterConfigurations(c.Sub(cfgCorpRegisterConfigs), corpRegisterKeys)
+		if err != nil {
+			logger.Error(ctx, "msg", "could not load corporate register configurations", "err", err.Error())
+			return
 		}
 	}
 
@@ -805,7 +801,7 @@ func main() {
 	// Register service.
 	var registerEndpoints register.Endpoints
 	{
-		if registerEnabled {
+		if registerEnabled || len(corpRegisters) > 0 {
 			var registerLogger = log.With(logger, "svc", "register")
 
 			// Configure events db module
@@ -818,16 +814,24 @@ func main() {
 			var usersDBModule = keycloakb.NewUsersDetailsDBModule(usersRwDBConn, aesEncryption, registerLogger)
 
 			// new module for register service
-			registerComponent, err := register.NewComponent(keycloakPublicURL, registerRealm, ssePublicURL, registerEnduserClientID, registerEnduserGroups, keycloakClient, oidcTokenProvider, usersDBModule, configDBModule, eventsDBModule, registerLogger)
-			if err != nil {
-				registerLogger.Error(ctx, "msg", "Can't initialize register component. Check the provided group names", "err", err.Error())
+			registerComponentBuilder := register.NewComponentBuilder(keycloakPublicURL, keycloakClient, technicalTokenProvider, usersDBModule, configDBModule, eventsDBModule, registerLogger)
+			if err := registerComponentBuilder.AddTargetRealm(socialRealmConfiguration); err != nil {
+				registerLogger.Error(ctx, "msg", "Can't initialize register component. Check the provided group names", "err", err.Error(), "realm", registerRealm)
 				return
 			}
+			for _, corpRegisterConf := range corpRegisters {
+				if err := registerComponentBuilder.AddTargetRealm(corpRegisterConf); err != nil {
+					registerLogger.Error(ctx, "msg", "Can't initialize register component. Check the provided group names", "err", err.Error(), "realm", corpRegisterConf.Realm)
+					return
+				}
+			}
+			var registerComponent = registerComponentBuilder.Build()
 			registerComponent = register.MakeAuthorizationRegisterComponentMW(log.With(registerLogger, "mw", "endpoint"))(registerComponent)
 
 			var rateLimitRegister = rateLimit[RateKeyRegister]
 			registerEndpoints = register.Endpoints{
-				RegisterUser:     prepareEndpoint(register.MakeRegisterUserEndpoint(registerComponent), "register_user", influxMetrics, registerLogger, tracer, rateLimitRegister),
+				RegisterUser:     prepareEndpoint(register.MakeRegisterUserEndpoint(registerComponent, registerRealm), "register_user", influxMetrics, registerLogger, tracer, rateLimitRegister),
+				RegisterCorpUser: prepareEndpoint(register.MakeRegisterCorpUserEndpoint(registerComponent), "register_corp_user", influxMetrics, registerLogger, tracer, rateLimitRegister),
 				GetConfiguration: prepareEndpoint(register.MakeGetConfigurationEndpoint(registerComponent), "get_configuration", influxMetrics, registerLogger, tracer, rateLimitRegister),
 			}
 		}
@@ -1232,7 +1236,7 @@ func main() {
 	}()
 
 	// HTTP register Server (Register API).
-	if registerEnabled {
+	if registerEnabled || len(corpRegisters) > 0 {
 		go func() {
 			var logger = log.With(logger, "transport", "http")
 			logger.Info(ctx, "addr", httpAddrRegister)
@@ -1243,14 +1247,22 @@ func main() {
 			route.Handle("/", http.HandlerFunc(commonhttp.MakeVersionHandler(keycloakb.ComponentName, ComponentID, keycloakb.Version, Environment, GitCommit)))
 			route.Handle(pathHealthCheck, healthChecker.MakeHandler())
 
-			// Handler with recaptcha token
-			var registerUserHandler = configureRegisterHandler(keycloakb.ComponentName, ComponentID, idGenerator, recaptchaURL, recaptchaSecret, tracer, logger)(registerEndpoints.RegisterUser)
-
 			// Configuration
 			var getConfigurationHandler = configurePublicRegisterHandler(keycloakb.ComponentName, ComponentID, idGenerator, tracer, logger)(registerEndpoints.GetConfiguration)
 
 			// Register
-			route.Path("/register/user").Methods("POST").Handler(registerUserHandler)
+			if registerEnabled {
+				// Handler with recaptcha token
+				var registerUserHandler = configureRegisterHandler(keycloakb.ComponentName, ComponentID, idGenerator, recaptchaURL, recaptchaSecret, tracer, logger)(registerEndpoints.RegisterUser)
+
+				route.Path("/register/user").Methods("POST").Handler(registerUserHandler)
+			}
+			if len(corpRegisters) > 0 {
+				// Handler with recaptcha token
+				var registerCorpUserHandler = configureRegisterHandler(keycloakb.ComponentName, ComponentID, idGenerator, recaptchaURL, recaptchaSecret, tracer, logger)(registerEndpoints.RegisterCorpUser)
+
+				route.Path("/register/realms/{corpRealm}/user").Methods("POST").Handler(registerCorpUserHandler)
+			}
 			route.Path("/register/config").Methods("GET").Handler(getConfigurationHandler)
 
 			var handler http.Handler = route
@@ -1283,75 +1295,75 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 	var v = viper.New()
 
 	// Component default.
-	v.SetDefault(CfgConfigFile, "./configs/keycloak_bridge.yml")
+	v.SetDefault(cfgConfigFile, "./configs/keycloak_bridge.yml")
 
 	// Log level
-	v.SetDefault(CfgLogLevel, "info")
+	v.SetDefault(cfgLogLevel, "info")
 
 	// Access Logs
-	v.SetDefault(CfgAccessLogsEnabled, true)
+	v.SetDefault(cfgAccessLogsEnabled, true)
 
 	// Publishing
-	v.SetDefault(CfgHTTPAddrInternal, defaultPublishingIP+":8888")
-	v.SetDefault(CfgHTTPAddrManagement, defaultPublishingIP+":8877")
-	v.SetDefault(CfgHTTPAddrAccount, defaultPublishingIP+":8866")
-	v.SetDefault(CfgHTTPAddrRegister, defaultPublishingIP+":8855")
-	v.SetDefault(CfgHTTPAddrMobile, defaultPublishingIP+":8844")
+	v.SetDefault(cfgHTTPAddrInternal, defaultPublishingIP+":8888")
+	v.SetDefault(cfgHTTPAddrManagement, defaultPublishingIP+":8877")
+	v.SetDefault(cfgHTTPAddrAccount, defaultPublishingIP+":8866")
+	v.SetDefault(cfgHTTPAddrRegister, defaultPublishingIP+":8855")
+	v.SetDefault(cfgHTTPAddrMobile, defaultPublishingIP+":8844")
 
 	// Security - Audience check
-	v.SetDefault(CfgAudienceRequired, "")
-	v.SetDefault(CfgMobileAudienceRequired, "")
-	v.SetDefault(CfgEventBasicAuthToken, "")
-	v.SetDefault(CfgTrustIDGroups,
+	v.SetDefault(cfgAudienceRequired, "")
+	v.SetDefault(cfgMobileAudienceRequired, "")
+	v.SetDefault(cfgEventBasicAuthToken, "")
+	v.SetDefault(cfgTrustIDGroups,
 		[]string{
 			"l1_support_agent",
 			"registration_officer",
 			"end_user"})
-	v.SetDefault(CfgValidationBasicAuthToken, "")
+	v.SetDefault(cfgValidationBasicAuthToken, "")
 
 	//Encryption key
-	v.SetDefault(CfgDbAesGcmTagSize, 16)
-	v.SetDefault(CfgDbAesGcmKey, "")
+	v.SetDefault(cfgDbAesGcmTagSize, 16)
+	v.SetDefault(cfgDbAesGcmKey, "")
 
 	// CORS configuration
-	v.SetDefault(CfgAllowedOrigins, []string{})
-	v.SetDefault(CfgAllowedMethods, []string{})
-	v.SetDefault(CfgAllowCredentials, true)
-	v.SetDefault(CfgAllowedHeaders, []string{})
-	v.SetDefault(CfgExposedHeaders, []string{})
-	v.SetDefault(CfgDebug, false)
+	v.SetDefault(cfgAllowedOrigins, []string{})
+	v.SetDefault(cfgAllowedMethods, []string{})
+	v.SetDefault(cfgAllowCredentials, true)
+	v.SetDefault(cfgAllowedHeaders, []string{})
+	v.SetDefault(cfgExposedHeaders, []string{})
+	v.SetDefault(cfgDebug, false)
 
 	// Keycloak default.
-	v.SetDefault(CfgAddrAPI, "http://127.0.0.1:8080")
-	v.SetDefault(CfgAddrTokenProvider, "http://127.0.0.1:8080 http://localhost:8080")
-	v.SetDefault(CfgTimeout, "5s")
+	v.SetDefault(cfgAddrAPI, "http://127.0.0.1:8080")
+	v.SetDefault(cfgAddrTokenProvider, "http://127.0.0.1:8080 http://localhost:8080")
+	v.SetDefault(cfgTimeout, "5s")
 
 	// Storage events in DB (read/write)
-	database.ConfigureDbDefault(v, CfgAuditRwDbParams, "CT_BRIDGE_DB_AUDIT_RW_USERNAME", "CT_BRIDGE_DB_AUDIT_RW_PASSWORD")
-	v.SetDefault(CfgAuditRwDbParams+"-enabled", false)
+	database.ConfigureDbDefault(v, cfgAuditRwDbParams, "CT_BRIDGE_DB_AUDIT_RW_USERNAME", "CT_BRIDGE_DB_AUDIT_RW_PASSWORD")
+	v.SetDefault(cfgAuditRwDbParams+"-enabled", false)
 
 	// Storage events in DB (read only)
-	database.ConfigureDbDefault(v, CfgAuditRoDbParams, "CT_BRIDGE_DB_AUDIT_RO_USERNAME", "CT_BRIDGE_DB_AUDIT_RO_PASSWORD")
+	database.ConfigureDbDefault(v, cfgAuditRoDbParams, "CT_BRIDGE_DB_AUDIT_RO_USERNAME", "CT_BRIDGE_DB_AUDIT_RO_PASSWORD")
 
 	//Storage custom configuration in DB (read/write)
-	database.ConfigureDbDefault(v, CfgConfigRwDbParams, "CT_BRIDGE_DB_CONFIG_RW_USERNAME", "CT_BRIDGE_DB_CONFIG_RW_PASSWORD")
+	database.ConfigureDbDefault(v, cfgConfigRwDbParams, "CT_BRIDGE_DB_CONFIG_RW_USERNAME", "CT_BRIDGE_DB_CONFIG_RW_PASSWORD")
 
 	//Storage custom configuration in DB (read only)
-	database.ConfigureDbDefault(v, CfgConfigRoDbParams, "CT_BRIDGE_DB_CONFIG_RO_USERNAME", "CT_BRIDGE_DB_CONFIG_RO_PASSWORD")
+	database.ConfigureDbDefault(v, cfgConfigRoDbParams, "CT_BRIDGE_DB_CONFIG_RO_USERNAME", "CT_BRIDGE_DB_CONFIG_RO_PASSWORD")
 
 	//Storage users in DB (read/write)
-	database.ConfigureDbDefault(v, CfgUsersRwDbParams, "CT_BRIDGE_DB_USERS_RW_USERNAME", "CT_BRIDGE_DB_USERS_RW_PASSWORD")
+	database.ConfigureDbDefault(v, cfgUsersRwDbParams, "CT_BRIDGE_DB_USERS_RW_USERNAME", "CT_BRIDGE_DB_USERS_RW_PASSWORD")
 
 	// Rate limiting (in requests/second)
-	v.SetDefault(CfgRateKeyValidation, 1000)
-	v.SetDefault(CfgRateKeyEvent, 1000)
-	v.SetDefault(CfgRateKeyAccount, 1000)
-	v.SetDefault(CfgRateKeyMobile, 1000)
-	v.SetDefault(CfgRateKeyManagement, 1000)
-	v.SetDefault(CfgRateKeyStatistics, 1000)
-	v.SetDefault(CfgRateKeyEvents, 1000)
-	v.SetDefault(CfgRateKeyRegister, 1000)
-	v.SetDefault(CfgRateKeyKYC, 1000)
+	v.SetDefault(cfgRateKeyValidation, 1000)
+	v.SetDefault(cfgRateKeyEvent, 1000)
+	v.SetDefault(cfgRateKeyAccount, 1000)
+	v.SetDefault(cfgRateKeyMobile, 1000)
+	v.SetDefault(cfgRateKeyManagement, 1000)
+	v.SetDefault(cfgRateKeyStatistics, 1000)
+	v.SetDefault(cfgRateKeyEvents, 1000)
+	v.SetDefault(cfgRateKeyRegister, 1000)
+	v.SetDefault(cfgRateKeyKYC, 1000)
 
 	// Influx DB client default.
 	v.SetDefault("influx", false)
@@ -1362,11 +1374,11 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 	v.SetDefault("influx-precision", "")
 	v.SetDefault("influx-retention-policy", "")
 	v.SetDefault("influx-write-consistency", "")
-	v.SetDefault(CfgInfluxWriteInterval, "1s")
+	v.SetDefault(cfgInfluxWriteInterval, "1s")
 
 	// Sentry client default.
 	v.SetDefault("sentry", false)
-	v.SetDefault(CfgSentryDsn, "")
+	v.SetDefault(cfgSentryDsn, "")
 
 	// Jaeger tracing default.
 	v.SetDefault("jaeger", false)
@@ -1377,67 +1389,62 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 	v.SetDefault("jaeger-write-interval", "1s")
 
 	// Debug routes enabled.
-	v.SetDefault(CfgPprofRouteEnabled, true)
+	v.SetDefault(cfgPprofRouteEnabled, true)
 
 	// Liveness probe
 	v.SetDefault("livenessprobe-http-timeout", 900)
 	v.SetDefault("livenessprobe-cache-duration", 500)
 
 	// Register parameters
-	v.SetDefault(CfgRegisterEnabled, false)
-	v.SetDefault(CfgRegisterRealm, "trustid")
-	v.SetDefault(CfgRegisterUsername, "")
-	v.SetDefault(CfgRegisterPassword, "")
-	v.SetDefault(CfgRegisterClientID, "")
-	v.SetDefault(CfgRegisterEnduserClientID, "")
-	v.SetDefault(CfgRegisterEnduserGroups, "end_user")
-	v.SetDefault(CfgRecaptchaURL, "https://www.google.com/recaptcha/api/siteverify")
-	v.SetDefault(CfgRecaptchaSecret, "")
-	v.SetDefault(CfgSsePublicURL, "")
+	v.SetDefault(cfgRegisterEnabled, false)
+	v.SetDefault(cfgRegisterRealm, "trustid")
+	v.SetDefault(cfgRegisterEnduserClientID, "")
+	v.SetDefault(cfgRegisterEnduserGroups, "end_user")
+	v.SetDefault(cfgRecaptchaURL, "https://www.google.com/recaptcha/api/siteverify")
+	v.SetDefault(cfgRecaptchaSecret, "")
+	v.SetDefault(cfgSsePublicURL, "")
+	v.SetDefault(cfgCorpRegisterKeys, "")
 
 	// Register parameters
-	v.SetDefault(CfgTechnicalRealm, "master")
-	v.SetDefault(CfgTechnicalUsername, "")
-	v.SetDefault(CfgTechnicalPassword, "")
-	v.SetDefault(CfgTechnicalClientID, "admin-cli")
+	v.SetDefault(cfgTechnicalRealm, "master")
+	v.SetDefault(cfgTechnicalUsername, "")
+	v.SetDefault(cfgTechnicalPassword, "")
+	v.SetDefault(cfgTechnicalClientID, "admin-cli")
 
 	// First level of override.
-	pflag.String(CfgConfigFile, v.GetString(CfgConfigFile), "The configuration file path can be relative or absolute.")
-	v.BindPFlag(CfgConfigFile, pflag.Lookup(CfgConfigFile))
+	pflag.String(cfgConfigFile, v.GetString(cfgConfigFile), "The configuration file path can be relative or absolute.")
+	v.BindPFlag(cfgConfigFile, pflag.Lookup(cfgConfigFile))
 	pflag.Parse()
 
 	// Bind ENV variables
 	// We use env variables to bind Openshift secrets
 	var censoredParameters = map[string]bool{}
 
-	v.BindEnv(CfgRegisterUsername, "CT_BRIDGE_REGISTER_USERNAME")
-	v.BindEnv(CfgRegisterPassword, "CT_BRIDGE_REGISTER_PASSWORD")
-	v.BindEnv(CfgRecaptchaSecret, "CT_BRIDGE_RECAPTCHA_SECRET")
-	censoredParameters[CfgRecaptchaSecret] = true
-	censoredParameters[CfgRegisterPassword] = true
+	v.BindEnv(cfgRecaptchaSecret, "CT_BRIDGE_RECAPTCHA_SECRET")
+	censoredParameters[cfgRecaptchaSecret] = true
 
-	v.BindEnv(CfgTechnicalUsername, "CT_BRIDGE_TECHNICAL_USERNAME")
-	v.BindEnv(CfgTechnicalPassword, "CT_BRIDGE_TECHNICAL_PASSWORD")
-	censoredParameters[CfgTechnicalPassword] = true
+	v.BindEnv(cfgTechnicalUsername, "CT_BRIDGE_TECHNICAL_USERNAME")
+	v.BindEnv(cfgTechnicalPassword, "CT_BRIDGE_TECHNICAL_PASSWORD")
+	censoredParameters[cfgTechnicalPassword] = true
 
 	v.BindEnv("influx-username", "CT_BRIDGE_INFLUX_USERNAME")
 	v.BindEnv("influx-password", "CT_BRIDGE_INFLUX_PASSWORD")
 	censoredParameters["influx-password"] = true
 
-	v.BindEnv(CfgSentryDsn, "CT_BRIDGE_SENTRY_DSN")
-	censoredParameters[CfgSentryDsn] = true
+	v.BindEnv(cfgSentryDsn, "CT_BRIDGE_SENTRY_DSN")
+	censoredParameters[cfgSentryDsn] = true
 
-	v.BindEnv(CfgEventBasicAuthToken, "CT_BRIDGE_EVENT_BASIC_AUTH")
-	censoredParameters[CfgEventBasicAuthToken] = true
+	v.BindEnv(cfgEventBasicAuthToken, "CT_BRIDGE_EVENT_BASIC_AUTH")
+	censoredParameters[cfgEventBasicAuthToken] = true
 
-	v.BindEnv(CfgValidationBasicAuthToken, "CT_BRIDGE_VALIDATION_BASIC_AUTH")
-	censoredParameters[CfgValidationBasicAuthToken] = true
+	v.BindEnv(cfgValidationBasicAuthToken, "CT_BRIDGE_VALIDATION_BASIC_AUTH")
+	censoredParameters[cfgValidationBasicAuthToken] = true
 
-	v.BindEnv(CfgDbAesGcmKey, "CT_BRIDGE_DB_AES_KEY")
-	censoredParameters[CfgDbAesGcmKey] = true
+	v.BindEnv(cfgDbAesGcmKey, "CT_BRIDGE_DB_AES_KEY")
+	censoredParameters[cfgDbAesGcmKey] = true
 
 	// Load and log config.
-	v.SetConfigFile(v.GetString(CfgConfigFile))
+	v.SetConfigFile(v.GetString(cfgConfigFile))
 	var err = v.ReadInConfig()
 	if err != nil {
 		logger.Error(ctx, "error", err)
@@ -1445,7 +1452,7 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 
 	// If the host/port is not set, we consider the components deactivated.
 	v.Set("influx", v.GetString("influx-host-port") != "")
-	v.Set("sentry", v.GetString(CfgSentryDsn) != "")
+	v.Set("sentry", v.GetString(cfgSentryDsn) != "")
 	v.Set("jaeger", v.GetString("jaeger-sampler-host-port") != "")
 
 	// Log config in alphabetical order.
@@ -1462,6 +1469,32 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 		}
 	}
 	return v
+}
+
+func loadCorpRegisterConfigurations(corpConfs *viper.Viper, corpRegisterKeys []string) ([]register.RealmRegisterConfiguration, error) {
+	var corpRegisters []register.RealmRegisterConfiguration
+	if len(corpRegisterKeys) > 0 {
+		if corpConfs == nil {
+			return nil, errors.New("invalid corporate register configurations")
+		}
+		for _, key := range corpRegisterKeys {
+			var conf = corpConfs.Sub(key)
+			if conf == nil {
+				return nil, errors.New("missing corporate register configuration. missing key " + key)
+			}
+			corpRegisters = append(corpRegisters, getRealmRegisterConfiguration(conf))
+		}
+	}
+	return corpRegisters, nil
+}
+
+func getRealmRegisterConfiguration(v *viper.Viper) register.RealmRegisterConfiguration {
+	return register.RealmRegisterConfiguration{
+		Realm:           v.GetString(cfgRegisterRealm),
+		EndUserGroups:   v.GetStringSlice(cfgRegisterEnduserGroups),
+		EnduserClientID: v.GetString(cfgRegisterEnduserClientID),
+		SsePublicURL:    v.GetString(cfgSsePublicURL),
+	}
 }
 
 func configureEventsHandler(ComponentName string, ComponentID string, idGenerator idgenerator.IDGenerator, keycloakClient *keycloakapi.Client, audienceRequired string, tracer tracing.OpentracingClient, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {

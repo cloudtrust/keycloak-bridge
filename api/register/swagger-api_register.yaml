@@ -13,12 +13,42 @@ paths:
     post:
       tags:
       - Register
-      summary: Creates a user
+      summary: Creates a user in the configured realm (register-realm)
       security:
         - BasicAuth: [recaptcha]
       parameters:
       - name: realm
         in: query
+        description: realm name (not id!) of a realm configured with a redirect URL for the end of the process
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        200:
+          description: Successful operation. Returns the generated username
+          content:
+            application/json:
+              schema:
+                type: string
+        400:
+          description: Invalid information provided
+        403:
+          description: Invalid RECAPTCHA token
+  /register/realms/{realm}/user:
+    post:
+      tags:
+      - Register
+      summary: Creates a user in the realm specified in URL path
+      security:
+        - BasicAuth: [recaptcha]
+      parameters:
+      - name: realm
+        in: path
         description: realm name (not id!)
         required: true
         schema:
@@ -95,6 +125,9 @@ components:
       properties:
         cancelUrl:
           type: string
+        mode:
+          type: string
+          description: is the register API used for corporate or social mode
   securitySchemes:
     BasicAuth:
       type: http
