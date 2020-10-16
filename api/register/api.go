@@ -113,7 +113,7 @@ func (u *UserRepresentation) Validate(allFieldsMandatory bool) error {
 		ValidateParameterRegExp(prmUserFirstName, u.FirstName, regExpFirstName, true).
 		ValidateParameterRegExp(prmUserLastName, u.LastName, regExpLastName, true).
 		ValidateParameterRegExp(prmUserEmail, u.Email, regExpEmail, true).
-		ValidateParameterPhoneNumber(prmUserPhoneNumber, u.PhoneNumber, true).
+		ValidateParameterPhoneNumber(prmUserPhoneNumber, u.PhoneNumber, allFieldsMandatory).
 		ValidateParameterDateMultipleLayout(prmUserBirthDate, u.BirthDate, constants.SupportedDateLayouts, allFieldsMandatory).
 		ValidateParameterRegExp(prmUserBirthLocation, u.BirthLocation, regExpBirthLocation, allFieldsMandatory).
 		ValidateParameterIn(prmUserIDDocumentType, u.IDDocumentType, allowedDocumentType, allFieldsMandatory).
