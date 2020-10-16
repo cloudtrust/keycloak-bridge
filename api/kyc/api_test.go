@@ -29,6 +29,7 @@ func createValidUser() UserRepresentation {
 		idDocType       = "PASSPORT"
 		idDocNumber     = "123456789"
 		idDocExpiration = "23.02.2039"
+		locale          = "fr"
 		accred1         = AccreditationRepresentation{Type: ptr("short"), ExpiryDate: ptr("31.12.2024")}
 		accred2         = AccreditationRepresentation{Type: ptr("long"), ExpiryDate: ptr("31.12.2039")}
 		creds           = []AccreditationRepresentation{accred1, accred2}
@@ -48,6 +49,7 @@ func createValidUser() UserRepresentation {
 		IDDocumentType:       &idDocType,
 		IDDocumentNumber:     &idDocNumber,
 		IDDocumentExpiration: &idDocExpiration,
+		Locale:               &locale,
 		Accreditations:       &creds,
 	}
 }
@@ -64,6 +66,7 @@ func createValidKeycloakUser() kc.UserRepresentation {
 			constants.AttrbPhoneNumberVerified: []string{"true"},
 			constants.AttrbBirthDate:           []string{"29.02.2020"},
 			constants.AttrbAccreditations:      []string{`{"type":"one","expiryDate":"05.04.2020"}`, `{"type":"two","expiryDate":"05.03.2022"}`},
+			constants.AttrbLocale:              []string{"de"},
 		}
 	)
 
@@ -136,6 +139,7 @@ func TestExportToKeycloak(t *testing.T) {
 		assert.False(t, *kcUser.EmailVerified)
 		assert.Equal(t, "false", *kcUser.GetAttributeString(constants.AttrbPhoneNumberVerified))
 		assert.True(t, *kcUser.Enabled)
+		assert.Equal(t, *user.Locale, *kcUser.GetAttributeString(constants.AttrbLocale))
 	})
 }
 

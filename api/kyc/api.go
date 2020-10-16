@@ -33,6 +33,7 @@ type UserRepresentation struct {
 	IDDocumentType       *string                        `json:"idDocumentType,omitempty"`
 	IDDocumentNumber     *string                        `json:"idDocumentNumber,omitempty"`
 	IDDocumentExpiration *string                        `json:"idDocumentExpiration,omitempty"`
+	Locale               *string                        `json:"locale,omitempty"`
 	Comment              *string                        `json:"comment,omitempty"`
 	Accreditations       *[]AccreditationRepresentation `json:"accreditations,omitempty"`
 }
@@ -56,6 +57,7 @@ const (
 	prmUserIDDocumentType       = "user_idDocType"
 	prmUserIDDocumentNumber     = "user_idDocNumber"
 	prmUserIDDocumentExpiration = "user_idDocExpiration"
+	prmUserLocale               = "user_locale"
 
 	regExpNames            = `^([\wàáâäçèéêëìíîïñòóôöùúûüß]+([ '-][\wàáâäçèéêëìíîïñòóôöùúûüß]+)*){1,50}$`
 	regExpFirstName        = regExpNames
@@ -64,6 +66,7 @@ const (
 	regExpBirthLocation    = regExpNames
 	regExpIDDocumentNumber = constants.RegExpIDDocumentNumber
 	regExpGender           = constants.RegExpGender
+	regExpLocale           = constants.RegExpLocale
 
 	dateLayout = "02.01.2006"
 )
@@ -105,6 +108,7 @@ func (u *UserRepresentation) ExportToKeycloak(kcUser *kc.UserRepresentation) {
 		}
 	}
 	attributes.SetDateWhenNotNil(constants.AttrbBirthDate, u.BirthDate, constants.SupportedDateLayouts)
+	attributes.SetStringWhenNotNil(constants.Locale, u.Locale)
 
 	if u.Username != nil {
 		kcUser.Username = u.Username
@@ -130,6 +134,7 @@ func (u *UserRepresentation) ImportFromKeycloak(ctx context.Context, kcUser *kc.
 	var gender = u.Gender
 	var birthdate = u.BirthDate
 	var accreditations = u.Accreditations
+	var locale = u.Locale
 
 	if value := kcUser.GetAttributeString(constants.AttrbPhoneNumber); value != nil {
 		phoneNumber = value
@@ -156,6 +161,9 @@ func (u *UserRepresentation) ImportFromKeycloak(ctx context.Context, kcUser *kc.
 		}
 		accreditations = &accreds
 	}
+	if value := kcUser.GetAttributeString(constants.AttrbLocale); value != nil {
+		locale = value
+	}
 
 	u.ID = kcUser.ID
 	u.Username = kcUser.Username
@@ -168,6 +176,7 @@ func (u *UserRepresentation) ImportFromKeycloak(ctx context.Context, kcUser *kc.
 	u.PhoneNumberVerified = phoneNumberVerified
 	u.BirthDate = birthdate
 	u.Accreditations = accreditations
+	u.Locale = locale
 }
 
 // Validate checks the validity of the given User
@@ -183,5 +192,6 @@ func (u *UserRepresentation) Validate() error {
 		ValidateParameterIn(prmUserIDDocumentType, u.IDDocumentType, allowedDocumentType, true).
 		ValidateParameterRegExp(prmUserIDDocumentNumber, u.IDDocumentNumber, regExpIDDocumentNumber, true).
 		ValidateParameterDate(prmUserIDDocumentExpiration, u.IDDocumentExpiration, dateLayout, true).
+		ValidateParameterRegExp(prmUserLocale, u.Locale, regExpLocale, false).
 		Status()
 }
