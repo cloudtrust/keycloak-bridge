@@ -147,6 +147,9 @@ func TestDeny(t *testing.T) {
 		_, err = authorizationMW.CreateUser(ctx, realmName, user)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
+		_, err = authorizationMW.GetUserChecks(ctx, realmName, userID)
+		assert.Equal(t, security.ForbiddenError{}, err)
+
 		_, err = authorizationMW.GetUserAccountStatus(ctx, realmName, userID)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
@@ -415,6 +418,10 @@ func TestAllowed(t *testing.T) {
 		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), gomock.Any(), realmName, groupID).Return(groupName, nil).Times(1)
 		mockManagementComponent.EXPECT().CreateUser(ctx, realmName, user).Return("", nil).Times(1)
 		_, err = authorizationMW.CreateUser(ctx, realmName, user)
+		assert.Nil(t, err)
+
+		mockManagementComponent.EXPECT().GetUserChecks(ctx, realmName, userID).Return([]api.UserCheck{}, nil).Times(1)
+		_, err = authorizationMW.GetUserChecks(ctx, realmName, userID)
 		assert.Nil(t, err)
 
 		mockManagementComponent.EXPECT().GetUserAccountStatus(ctx, realmName, userID).Return(map[string]bool{"enabled": true}, nil).Times(1)

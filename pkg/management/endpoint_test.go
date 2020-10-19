@@ -367,6 +367,28 @@ func TestGetUsersEndpoint(t *testing.T) {
 	}
 }
 
+func TestMakeGetUserChecksEndpoint(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
+
+	var e = MakeGetUserChecksEndpoint(mockManagementComponent)
+
+	// No error - Without param
+	{
+		var realm = "master"
+		var userID = "123-456-789"
+		var ctx = context.Background()
+		var req = map[string]string{prmRealm: realm, prmUserID: userID}
+		var m = []api.UserCheck{}
+
+		mockManagementComponent.EXPECT().GetUserChecks(ctx, realm, userID).Return(m, nil).Times(1)
+		var _, err = e(ctx, req)
+		assert.Nil(t, err)
+	}
+}
+
 func TestGetUserAccountStatusEndpoint(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()

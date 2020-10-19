@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/cloudtrust/keycloak-bridge/internal/dto"
+
 	"github.com/cloudtrust/common-service/configuration"
 	errorhandler "github.com/cloudtrust/common-service/errors"
 	"github.com/cloudtrust/common-service/validation"
@@ -39,6 +41,17 @@ type UserRepresentation struct {
 	Label                *string                        `json:"label,omitempty"`
 	Accreditations       *[]AccreditationRepresentation `json:"accreditations,omitempty"`
 	CreatedTimestamp     *int64                         `json:"createdTimestamp,omitempty"`
+}
+
+// UserCheck is a representation of a user check
+type UserCheck struct {
+	Operator  *string `json:"operator,omitempty"`
+	CheckDate *string `json:"checkDate,omitempty"`
+	Status    *string `json:"status,omitempty"`
+	Type      *string `json:"type,omitempty"`
+	Nature    *string `json:"nature,omitempty"`
+	ProofType *string `json:"proofType,omitempty"`
+	Comment   *string `json:"comment,omitempty"`
 }
 
 // AccreditationRepresentation is a representation of accreditations
@@ -648,6 +661,33 @@ func (fedID FederatedIdentityRepresentation) Validate() error {
 		ValidateParameterRegExp(constants.UserID, fedID.UserID, constants.RegExpID, true).
 		ValidateParameterRegExp(constants.Username, fedID.Username, constants.RegExpUsername, true).
 		Status()
+}
+
+// ConvertToAPIUserChecks converts user checks from DB struct to API struct
+func ConvertToAPIUserChecks(checks []dto.DBCheck) []UserCheck {
+	if len(checks) == 0 {
+		return make([]UserCheck, 0)
+	}
+
+	var res []UserCheck
+	for _, check := range checks {
+		var checkDate *string
+		if check.DateTime != nil {
+			var date = check.DateTime.Format(constants.SupportedDateLayouts[0])
+			checkDate = &date
+		}
+
+		res = append(res, UserCheck{
+			Operator:  check.Operator,
+			CheckDate: checkDate,
+			Status:    check.Status,
+			Type:      check.Type,
+			Nature:    check.Nature,
+			ProofType: check.ProofType,
+			Comment:   check.Comment,
+		})
+	}
+	return res
 }
 
 // Regular expressions for parameters validation

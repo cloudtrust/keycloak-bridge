@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 
 	"github.com/cloudtrust/common-service/configuration"
 	"github.com/cloudtrust/common-service/log"
@@ -12,6 +15,10 @@ import (
 	kc "github.com/cloudtrust/keycloak-client"
 	"github.com/stretchr/testify/assert"
 )
+
+func ptr(value string) *string {
+	return &value
+}
 
 func TestConvertCredential(t *testing.T) {
 	var credKc kc.CredentialRepresentation
@@ -299,12 +306,10 @@ func TestConvertToAPIAuthorizations(t *testing.T) {
 
 func TestConvertRequiredAction(t *testing.T) {
 	var raKc kc.RequiredActionProviderRepresentation
-	var alias = "alias"
-	var name = "name"
 	var boolTrue = true
 
-	raKc.Alias = &alias
-	raKc.Name = &name
+	raKc.Alias = ptr("alias")
+	raKc.Name = ptr("name")
 	raKc.DefaultAction = &boolTrue
 
 	assert.Equal(t, raKc.Alias, ConvertRequiredAction(&raKc).Alias)
@@ -407,14 +412,6 @@ func TestValidateUserRepresentation(t *testing.T) {
 		assert.Nil(t, user.Validate())
 	}
 
-	id := "#12345"
-	username := "username!"
-	email := "usernamcompany.com"
-	phoneNumber := "415174234"
-	label := ""
-	gender := "Male"
-	birthDate := "1990-13-28"
-	locale := "english"
 	groups := []string{"f467ed7c", "7767ed7c-0a1d-4eee-9bb8-669c6f89c007"}
 	roles := []string{"abcded7", "7767ed7c-0a1d-4eee-9bb8-669c6f898888"}
 	empty := ""
@@ -424,16 +421,16 @@ func TestValidateUserRepresentation(t *testing.T) {
 		users = append(users, createValidUserRepresentation())
 	}
 
-	users[0].ID = &id
-	users[1].Username = &username
-	users[2].Email = &email
-	users[3].PhoneNumber = &phoneNumber
-	users[4].Label = &label
-	users[5].Gender = &gender
-	users[6].BirthDate = &birthDate
+	users[0].ID = ptr("#12345")
+	users[1].Username = ptr("username!")
+	users[2].Email = ptr("usernamcompany.com")
+	users[3].PhoneNumber = ptr("415174234")
+	users[4].Label = ptr("")
+	users[5].Gender = ptr("Male")
+	users[6].BirthDate = ptr("1990-13-28")
 	users[7].Groups = &groups
 	users[8].Roles = &roles
-	users[9].Locale = &locale
+	users[9].Locale = ptr("english")
 	users[10].FirstName = &empty
 	users[11].LastName = &empty
 
@@ -448,19 +445,15 @@ func TestValidateRoleRepresentation(t *testing.T) {
 		assert.Nil(t, role.Validate())
 	}
 
-	id := "f467ed7c"
-	name := "name *"
-	description := ""
-
 	var roles []RoleRepresentation
 	for i := 0; i < 4; i++ {
 		roles = append(roles, createValidRoleRepresentation())
 	}
 
-	roles[0].ID = &id
-	roles[1].Name = &name
-	roles[2].Description = &description
-	roles[3].ContainerID = &id
+	roles[0].ID = ptr("f467ed7c")
+	roles[1].Name = ptr("name *")
+	roles[2].Description = ptr("")
+	roles[3].ContainerID = ptr("12345678")
 
 	for _, role := range roles {
 		assert.NotNil(t, role.Validate())
@@ -473,16 +466,13 @@ func TestValidateGroupRepresentation(t *testing.T) {
 		assert.Nil(t, group.Validate())
 	}
 
-	id := "f467ed7c"
-	name := "name *"
-
 	var groups []GroupRepresentation
 	for i := 0; i < 2; i++ {
 		groups = append(groups, createValidGroupRepresentation())
 	}
 
-	groups[0].ID = &id
-	groups[1].Name = &name
+	groups[0].ID = ptr("f467ed7c")
+	groups[1].Name = ptr("name *")
 
 	for _, group := range groups {
 		assert.NotNil(t, group.Validate())
@@ -526,13 +516,12 @@ func TestValidateRealmCustomConfiguration(t *testing.T) {
 }
 
 func createValidRealmAdminConfiguration() RealmAdminConfiguration {
-	var trustID = "trustID"
 	var value = "value"
 	var validity = "2y4m"
 	var condition = "physical-check"
 	var accred = RealmAdminAccreditation{Type: &value, Validity: &validity, Condition: &condition}
 	return RealmAdminConfiguration{
-		Mode:            &trustID,
+		Mode:            ptr("trustID"),
 		AvailableChecks: map[string]bool{"IDNow": false, "physical-check": true},
 		Accreditations:  []RealmAdminAccreditation{accred},
 	}
@@ -620,49 +609,36 @@ func createValidUserRepresentation() UserRepresentation {
 	var groups = []string{"f467ed7c-0a1d-4eee-9bb8-669c6f89c0ee", "7767ed7c-0a1d-4eee-9bb8-669c6f89c007"}
 	var roles = []string{"abcded7c-0a1d-4eee-9bb8-669c6f89c0ee", "7767ed7c-0a1d-4eee-9bb8-669c6f898888"}
 
-	id := "f467ed7c-0a1d-4eee-9bb8-669c6f89c0ee"
-	username := "username"
-	email := "username@company.com"
 	boolTrue := true
-	phoneNumber := "+415174234"
-	firstName := "Firstname"
-	lastName := "Lastname"
-	label := "label"
-	gender := "F"
-	birthDate := "1990-12-28"
-	locale := "en"
 
 	var user = UserRepresentation{}
-	user.ID = &id
-	user.Username = &username
-	user.Email = &email
+	user.ID = ptr("f467ed7c-0a1d-4eee-9bb8-669c6f89c0ee")
+	user.Username = ptr("username")
+	user.Email = ptr("username@company.com")
 	user.Enabled = &boolTrue
 	user.EmailVerified = &boolTrue
-	user.PhoneNumber = &phoneNumber
+	user.PhoneNumber = ptr("+415174234")
 	user.PhoneNumberVerified = &boolTrue
-	user.FirstName = &firstName
-	user.LastName = &lastName
-	user.Label = &label
-	user.Gender = &gender
-	user.BirthDate = &birthDate
+	user.FirstName = ptr("Firstname")
+	user.LastName = ptr("Lastname")
+	user.Label = ptr("label")
+	user.Gender = ptr("F")
+	user.BirthDate = ptr("1990-12-28")
 	user.Groups = &groups
 	user.Roles = &roles
-	user.Locale = &locale
+	user.Locale = ptr("en")
 
 	return user
 }
 
 func createValidRoleRepresentation() RoleRepresentation {
-	id := "f467ed7c-0a1d-4eee-9bb8-669c6f89c0ee"
-	name := "name"
-	description := "description"
 	boolTrue := true
 
 	var role = RoleRepresentation{}
-	role.ID = &id
-	role.Name = &name
-	role.Description = &description
-	role.ContainerID = &id
+	role.ID = ptr("f467ed7c-0a1d-4eee-9bb8-669c6f89c0ee")
+	role.Name = ptr("name")
+	role.Description = ptr("description")
+	role.ContainerID = ptr("12345678-abcd-beef-feed-123456781234")
 	role.ClientRole = &boolTrue
 	role.Composite = &boolTrue
 
@@ -700,4 +676,29 @@ func createValidRealmCustomConfiguration() RealmCustomConfiguration {
 
 func createValidRequiredAction() RequiredAction {
 	return RequiredAction("verify-email")
+}
+
+func TestConvertToAPIUserChecks(t *testing.T) {
+	assert.Len(t, ConvertToAPIUserChecks([]dto.DBCheck{}), 0)
+
+	var check = dto.DBCheck{
+		Operator:  ptr("operator"),
+		DateTime:  nil,
+		Status:    ptr("status"),
+		Type:      ptr("type"),
+		Nature:    ptr("nature"),
+		ProofType: ptr("ZIP"),
+		Comment:   ptr("comment"),
+	}
+	var checks = []dto.DBCheck{check, check, check}
+	var converted = ConvertToAPIUserChecks(checks)
+	assert.Len(t, converted, len(checks))
+
+	var checkDate = "29.12.2019"
+	var date, _ = time.Parse(constants.SupportedDateLayouts[0], checkDate)
+	check.DateTime = &date
+	checks = []dto.DBCheck{check, check}
+	converted = ConvertToAPIUserChecks(checks)
+	assert.Len(t, converted, len(checks))
+	assert.Equal(t, checkDate, *converted[0].CheckDate)
 }

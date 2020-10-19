@@ -36,6 +36,7 @@ var (
 	MGMTUnlockUser                          = newAction("MGMT_UnlockUser", security.ScopeGroup)
 	MGMTGetUsers                            = newAction("MGMT_GetUsers", security.ScopeGroup)
 	MGMTCreateUser                          = newAction("MGMT_CreateUser", security.ScopeGroup)
+	MGMTGetUserChecks                       = newAction("MGMT_GetUserChecks", security.ScopeGroup)
 	MGMTGetUserAccountStatus                = newAction("MGMT_GetUserAccountStatus", security.ScopeGroup)
 	MGMTGetRolesOfUser                      = newAction("MGMT_GetRolesOfUser", security.ScopeGroup)
 	MGMTGetGroupsOfUser                     = newAction("MGMT_GetGroupsOfUser", security.ScopeGroup)
@@ -251,6 +252,17 @@ func (c *authorizationComponentMW) CreateUser(ctx context.Context, realmName str
 	}
 
 	return c.next.CreateUser(ctx, realmName, user)
+}
+
+func (c *authorizationComponentMW) GetUserChecks(ctx context.Context, realmName, userID string) ([]api.UserCheck, error) {
+	var action = MGMTGetUserChecks.String()
+	var targetRealm = realmName
+
+	if err := c.authManager.CheckAuthorizationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
+		return nil, err
+	}
+
+	return c.next.GetUserChecks(ctx, realmName, userID)
 }
 
 func (c *authorizationComponentMW) GetUserAccountStatus(ctx context.Context, realmName, userID string) (map[string]bool, error) {

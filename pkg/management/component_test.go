@@ -1455,6 +1455,38 @@ func TestGetUsers(t *testing.T) {
 	}
 }
 
+func TestGetUserChecks(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+	var mockUsersDetailsDBModule = mock.NewUsersDetailsDBModule(mockCtrl)
+	var mockLogger = log.NewNopLogger()
+
+	var managementComponent = NewComponent(nil, mockUsersDetailsDBModule, nil, nil, nil, mockLogger)
+
+	var accessToken = "TOKEN=="
+	var realmName = "aRealm"
+	var userID = "789-789-456"
+	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+
+	t.Run("GetChecks returns an error", func(t *testing.T) {
+		mockUsersDetailsDBModule.EXPECT().GetChecks(ctx, realmName, userID).Return(nil, errors.New("db error"))
+		_, err := managementComponent.GetUserChecks(ctx, realmName, userID)
+		assert.NotNil(t, err)
+	})
+	t.Run("GetChecks returns a check", func(t *testing.T) {
+		var operator = "The Operator"
+		var dbCheck = dto.DBCheck{
+			Operator: &operator,
+		}
+		var dbChecks = []dto.DBCheck{dbCheck, dbCheck}
+		mockUsersDetailsDBModule.EXPECT().GetChecks(ctx, realmName, userID).Return(dbChecks, nil)
+		res, err := managementComponent.GetUserChecks(ctx, realmName, userID)
+		assert.Nil(t, err)
+		assert.Len(t, res, len(dbChecks))
+		assert.Equal(t, operator, *res[0].Operator)
+	})
+}
+
 func TestGetUserAccountStatus(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
