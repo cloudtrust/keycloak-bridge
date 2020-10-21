@@ -37,6 +37,7 @@ type Endpoints struct {
 	GetAvailableTrustIDGroups endpoint.Endpoint
 	GetTrustIDGroupsOfUser    endpoint.Endpoint
 	SetTrustIDGroupsToUser    endpoint.Endpoint
+	GetUserChecks             endpoint.Endpoint
 	GetUserAccountStatus      endpoint.Endpoint
 	GetClientRoleForUser      endpoint.Endpoint
 	AddClientRoleToUser       endpoint.Endpoint
@@ -301,6 +302,15 @@ func MakeSetTrustIDGroupsToUserEndpoint(component Component) cs.Endpoint {
 		}
 
 		return nil, component.SetTrustIDGroupsToUser(ctx, m[prmRealm], m[prmUserID], groupNames)
+	}
+}
+
+// MakeGetUserChecksEndpoint creates an endpoint for GetUserChecks
+func MakeGetUserChecksEndpoint(component Component) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+
+		return component.GetUserChecks(ctx, m[prmRealm], m[prmUserID])
 	}
 }
 

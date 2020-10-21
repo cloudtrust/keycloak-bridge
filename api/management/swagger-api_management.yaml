@@ -538,6 +538,33 @@ paths:
       responses:
         200:
           description: successful operation
+  /realms/{realm}/users/{userID}/checks:
+    get:
+      tags:
+      - Users
+      summary: Get checks of the user
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserCheck'
   /realms/{realm}/users/{userID}/role-mappings/clients/{clientID}:
     get:
       tags:
@@ -833,7 +860,8 @@ paths:
     put:
       tags:
       - Credentials
-      summary: Reset a locked credential for the user (ex: paper card with too many wrong errors)
+      summary: >
+        Reset a locked credential for the user (ex: paper card with too many wrong errors)
       parameters:
       - name: realm
         in: path
@@ -1367,6 +1395,8 @@ components:
           type: string
         gender:
           type: string
+          enum: [M,F,U]
+          description: Male, Female or Undefined
         firstName:
           type: string
         lastName:
@@ -1381,10 +1411,6 @@ components:
         phoneNumberVerified:
           type: boolean
           default: false
-        gender:
-          type: string
-          enum: [M,F,U]
-          description: Male, Female or Undefined
         birthDate:
           type: string
           description: format is DD.MM.YYYY
@@ -1439,6 +1465,24 @@ components:
         createdTimestamp:
           type: integer
           format: int64
+    UserCheck:
+      type: object
+      properties:
+        operator:
+          type: string
+        checkDate:
+          type: string
+          description: check date. format is DD.MM.YYYY
+        status:
+          type: string
+        type:
+          type: string
+        nature:
+          type: string
+        proofType:
+          type: string
+        comment:
+          type: string
     UserStatus:
       type: object
       properties:

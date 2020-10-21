@@ -30,7 +30,8 @@ const (
 	  SELECT check_id, realm_id, user_id, operator, unix_timestamp(datetime), status, type, nature, proof_type, proof_data, comment
 	  FROM checks
 	  WHERE realm_id=?
-		AND user_id=?;`
+		AND user_id=?
+	  ORDER BY datetime DESC;`
 )
 
 // UsersDetailsDBModule interface

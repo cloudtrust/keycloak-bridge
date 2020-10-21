@@ -71,6 +71,7 @@ type UsersDetailsDBModule interface {
 	StoreOrUpdateUserDetails(ctx context.Context, realm string, user dto.DBUser) error
 	GetUserDetails(ctx context.Context, realm string, userID string) (dto.DBUser, error)
 	DeleteUserDetails(ctx context.Context, realm string, userID string) error
+	GetChecks(ctx context.Context, realm string, userID string) ([]dto.DBCheck, error)
 }
 
 // Component is the management component interface.
@@ -90,6 +91,7 @@ type Component interface {
 	UnlockUser(ctx context.Context, realmName, userID string) error
 	GetUsers(ctx context.Context, realmName string, groupIDs []string, paramKV ...string) (api.UsersPageRepresentation, error)
 	CreateUser(ctx context.Context, realmName string, user api.UserRepresentation) (string, error)
+	GetUserChecks(ctx context.Context, realmName, userID string) ([]api.UserCheck, error)
 	GetUserAccountStatus(ctx context.Context, realmName, userID string) (map[string]bool, error)
 	GetRolesOfUser(ctx context.Context, realmName, userID string) ([]api.RoleRepresentation, error)
 	GetGroupsOfUser(ctx context.Context, realmName, userID string) ([]api.GroupRepresentation, error)
@@ -567,6 +569,16 @@ func (c *component) GetUsers(ctx context.Context, realmName string, groupIDs []s
 		keycloakb.ConvertLegacyAttribute(&usersKc.Users[i])
 	}
 	return api.ConvertToAPIUsersPage(ctx, usersKc, c.logger), nil
+}
+
+func (c *component) GetUserChecks(ctx context.Context, realmName, userID string) ([]api.UserCheck, error) {
+	// We can assume userID is valid as it is used to check authorizations...
+	var checks, err = c.usersDBModule.GetChecks(ctx, realmName, userID)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Can't get user checks", "err", err.Error(), "realm", realmName, "user", userID)
+		return nil, err
+	}
+	return api.ConvertToAPIUserChecks(checks), nil
 }
 
 // GetUserAccountStatus gets the user status : user should be enabled in Keycloak and have multifactor activated
