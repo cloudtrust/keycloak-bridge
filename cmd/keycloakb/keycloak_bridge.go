@@ -32,7 +32,6 @@ import (
 	"github.com/cloudtrust/common-service/tracking"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/cloudtrust/keycloak-bridge/pkg/account"
-	"github.com/cloudtrust/keycloak-bridge/pkg/event"
 	"github.com/cloudtrust/keycloak-bridge/pkg/events"
 	"github.com/cloudtrust/keycloak-bridge/pkg/export"
 	"github.com/cloudtrust/keycloak-bridge/pkg/kyc"
@@ -73,7 +72,6 @@ const (
 	pathHealthCheck     = "/health/check"
 
 	RateKeyAccount    = iota
-	RateKeyEvent      = iota
 	RateKeyEvents     = iota
 	RateKeyKYC        = iota
 	RateKeyManagement = iota
@@ -93,7 +91,6 @@ const (
 	cfgTimeout                  = "keycloak-timeout"
 	cfgAudienceRequired         = "audience-required"
 	cfgMobileAudienceRequired   = "mobile-audience-required"
-	cfgEventBasicAuthToken      = "event-basic-auth-token"
 	cfgValidationBasicAuthToken = "validation-basic-auth-token"
 	cfgPprofRouteEnabled        = "pprof-route-enabled"
 	cfgInfluxWriteInterval      = "influx-write-interval"
@@ -104,7 +101,6 @@ const (
 	cfgConfigRoDbParams         = "db-config-ro"
 	cfgUsersRwDbParams          = "db-users-rw"
 	cfgRateKeyValidation        = "rate-validation"
-	cfgRateKeyEvent             = "rate-event"
 	cfgRateKeyAccount           = "rate-account"
 	cfgRateKeyMobile            = "rate-mobile"
 	cfgRateKeyManagement        = "rate-management"
@@ -216,7 +212,6 @@ func main() {
 		// Rate limiting
 		rateLimit = map[RateKey]int{
 			RateKeyValidation: c.GetInt(cfgRateKeyValidation),
-			RateKeyEvent:      c.GetInt(cfgRateKeyEvent),
 			RateKeyAccount:    c.GetInt(cfgRateKeyAccount),
 			RateKeyMobile:     c.GetInt(cfgRateKeyMobile),
 			RateKeyManagement: c.GetInt(cfgRateKeyManagement),
@@ -297,17 +292,6 @@ func main() {
 
 		if mobileAudienceRequired == "" {
 			logger.Error(ctx, "msg", "mobile audience parameter(mobile-audience-required) cannot be empty")
-			return
-		}
-	}
-
-	// Security - Basic AuthN token to protect internal/event endpoint
-	var eventExpectedAuthToken string
-	{
-		eventExpectedAuthToken = c.GetString(cfgEventBasicAuthToken)
-
-		if eventExpectedAuthToken == "" {
-			logger.Error(ctx, "msg", "password for event endpoint (event-basic-auth-token) cannot be empty")
 			return
 		}
 	}
@@ -503,90 +487,13 @@ func main() {
 		}
 	}
 
-	// Event service.
-	var eventEndpoints = event.Endpoints{}
-	{
-		var eventLogger = log.With(logger, "svc", "event")
-
-		var consoleModule event.ConsoleModule
-		{
-			consoleModule = event.NewConsoleModule(log.With(eventLogger, "module", "console"))
-			consoleModule = event.MakeConsoleModuleInstrumentingMW(influxMetrics.NewHistogram("console_module"))(consoleModule)
-			consoleModule = event.MakeConsoleModuleLoggingMW(log.With(eventLogger, "mw", "module", "unit", "console"))(consoleModule)
-			consoleModule = event.MakeConsoleModuleTracingMW(tracer)(consoleModule)
-		}
-
-		var statisticModule event.StatisticModule
-		{
-			statisticModule = event.NewStatisticModule(influxMetrics)
-			statisticModule = event.MakeStatisticModuleInstrumentingMW(influxMetrics.NewHistogram("statistic_module"))(statisticModule)
-			statisticModule = event.MakeStatisticModuleLoggingMW(log.With(eventLogger, "mw", "module", "unit", "statistic"))(statisticModule)
-			statisticModule = event.MakeStatisticModuleTracingMW(tracer)(statisticModule)
-		}
-
-		// new module for sending the events to the DB
-		var eventsDBModule database.EventsDBModule
-		{
-			eventsDBModule = database.NewEventsDBModule(eventsDBConn)
-			eventsDBModule = event.MakeEventsDBModuleInstrumentingMW(influxMetrics.NewHistogram("eventsDB_module"))(eventsDBModule)
-			eventsDBModule = event.MakeEventsDBModuleLoggingMW(log.With(eventLogger, "mw", "module", "unit", "eventsDB"))(eventsDBModule)
-			eventsDBModule = event.MakeEventsDBModuleTracingMW(tracer)(eventsDBModule)
-		}
-
-		var eventAdminComponent event.AdminComponent
-		{
-			var fns = []event.FuncEvent{consoleModule.Print, statisticModule.Stats, eventsDBModule.Store}
-			eventAdminComponent = event.NewAdminComponent(fns, fns, fns, fns)
-			eventAdminComponent = event.MakeAdminComponentInstrumentingMW(influxMetrics.NewHistogram("admin_component"))(eventAdminComponent)
-			eventAdminComponent = event.MakeAdminComponentLoggingMW(log.With(eventLogger, "mw", "component", "unit", "admin_event"))(eventAdminComponent)
-			eventAdminComponent = event.MakeAdminComponentTracingMW(tracer)(eventAdminComponent)
-		}
-
-		var eventComponent event.Component
-		{
-			var fns = []event.FuncEvent{consoleModule.Print, statisticModule.Stats, eventsDBModule.Store}
-			eventComponent = event.NewComponent(fns, fns)
-			eventComponent = event.MakeComponentInstrumentingMW(influxMetrics.NewHistogram("component"))(eventComponent)
-			eventComponent = event.MakeComponentLoggingMW(log.With(eventLogger, "mw", "component", "unit", "event"))(eventComponent)
-			eventComponent = event.MakeComponentTracingMW(tracer)(eventComponent)
-		}
-
-		// add ct_type
-
-		var muxComponent event.MuxComponent
-		{
-			muxComponent = event.NewMuxComponent(eventComponent, eventAdminComponent)
-			muxComponent = event.MakeMuxComponentInstrumentingMW(influxMetrics.NewHistogram("mux_component"))(muxComponent)
-			muxComponent = event.MakeMuxComponentLoggingMW(log.With(eventLogger, "mw", "component", "unit", "mux"))(muxComponent)
-			muxComponent = event.MakeMuxComponentTracingMW(tracer)(muxComponent)
-			muxComponent = event.MakeMuxComponentTrackingMW(sentryClient, log.With(eventLogger, "mw", "component"))(muxComponent)
-		}
-
-		var eventEndpoint cs.Endpoint
-		{
-			eventEndpoint = event.MakeEventEndpoint(muxComponent)
-			eventEndpoint = middleware.MakeEndpointInstrumentingMW(influxMetrics, "event_endpoint")(eventEndpoint)
-			eventEndpoint = middleware.MakeEndpointLoggingMW(log.With(eventLogger, "mw", "endpoint"))(eventEndpoint)
-			eventEndpoint = tracer.MakeEndpointTracingMW("event_endpoint")(eventEndpoint)
-		}
-
-		eventEndpoints = event.Endpoints{
-			Endpoint: keycloakb.LimitRate(eventEndpoint, rateLimit[RateKeyEvent]),
-		}
-	}
-
-	baseEventsDBModule := database.NewEventsDBModule(eventsDBConn)
-
-	// new module for reading events from the DB
-	eventsRODBModule := keycloakb.NewEventsDBModule(eventsRODBConn)
-
 	// Validation service.
 	var validationEndpoints validation.Endpoints
 	{
 		var validationLogger = log.With(logger, "svc", "validation")
 
-		// module to store validation API calls
-		eventsDBModule := configureEventsDbModule(baseEventsDBModule, influxMetrics, validationLogger, tracer)
+		// module to store validation events API calls
+		eventsDBModule := database.NewEventsDBModule(eventsDBConn)
 
 		// module for storing and retrieving details of the users
 		var usersDBModule = keycloakb.NewUsersDetailsDBModule(usersRwDBConn, aesEncryption, validationLogger)
@@ -613,6 +520,9 @@ func main() {
 	{
 		var statisticsLogger = log.With(logger, "svc", "statistics")
 
+		//module for reading events from the DB
+		eventsRODBModule := keycloakb.NewEventsDBModule(eventsRODBConn)
+
 		statisticsComponent := statistics.NewComponent(eventsRODBModule, keycloakClient, statisticsLogger)
 		statisticsComponent = statistics.MakeAuthorizationManagementComponentMW(log.With(statisticsLogger, "mw", "endpoint"), authorizationManager)(statisticsComponent)
 
@@ -634,9 +544,12 @@ func main() {
 		var eventsLogger = log.With(logger, "svc", "events")
 
 		// module to store API calls of the back office to the DB
-		eventsDBModule := configureEventsDbModule(baseEventsDBModule, influxMetrics, eventsLogger, tracer)
+		eventsRWDBModule := database.NewEventsDBModule(eventsDBConn)
 
-		eventsComponent := events.NewComponent(eventsRODBModule, eventsDBModule, eventsLogger)
+		//module for reading events from the DB
+		eventsRODBModule := keycloakb.NewEventsDBModule(eventsRODBConn)
+
+		eventsComponent := events.NewComponent(eventsRODBModule, eventsRWDBModule, eventsLogger)
 		eventsComponent = events.MakeAuthorizationManagementComponentMW(log.With(eventsLogger, "mw", "endpoint"), authorizationManager)(eventsComponent)
 
 		var rateLimitEvents = rateLimit[RateKeyEvents]
@@ -654,7 +567,7 @@ func main() {
 		var managementLogger = log.With(logger, "svc", "management")
 
 		// module to store API calls of the back office to the DB
-		eventsDBModule := configureEventsDbModule(baseEventsDBModule, influxMetrics, managementLogger, tracer)
+		eventsDBModule := database.NewEventsDBModule(eventsDBConn)
 
 		// module for storing and retrieving the custom configuration
 		var configDBModule = createConfigurationDBModule(configurationRwDBConn, influxMetrics, managementLogger)
@@ -741,7 +654,7 @@ func main() {
 		var accountLogger = log.With(logger, "svc", "account")
 
 		// Configure events db module
-		eventsDBModule := configureEventsDbModule(baseEventsDBModule, influxMetrics, accountLogger, tracer)
+		eventsDBModule := database.NewEventsDBModule(eventsDBConn)
 
 		// module for retrieving the custom configuration
 		var configDBModule keycloakb.ConfigurationDBModule
@@ -806,7 +719,7 @@ func main() {
 			var registerLogger = log.With(logger, "svc", "register")
 
 			// Configure events db module
-			eventsDBModule := configureEventsDbModule(baseEventsDBModule, influxMetrics, registerLogger, tracer)
+			eventsDBModule := database.NewEventsDBModule(eventsDBConn)
 
 			// module for storing and retrieving the custom configuration
 			var configDBModule = createConfigurationDBModule(configurationRwDBConn, influxMetrics, registerLogger)
@@ -849,7 +762,7 @@ func main() {
 		var kycLogger = log.With(logger, "svc", "kyc")
 
 		// Configure events db module
-		eventsDBModule := configureEventsDbModule(baseEventsDBModule, influxMetrics, kycLogger, tracer)
+		eventsDBModule := database.NewEventsDBModule(eventsDBConn)
 
 		// module for storing and retrieving details of the users
 		var usersDBModule = keycloakb.NewUsersDetailsDBModule(usersRwDBConn, aesEncryption, kycLogger)
@@ -885,7 +798,7 @@ func main() {
 
 	errorhandler.SetEmitter(keycloakb.ComponentName)
 
-	// HTTP Internal Call Server (Event reception from Keycloak & Export API).
+	// HTTP Internal Call Server (Export & Validation API).
 	go func() {
 		var logger = log.With(logger, "transport", "http")
 		logger.Info(ctx, "addr", httpAddrInternal)
@@ -895,18 +808,6 @@ func main() {
 		// Version.
 		route.Handle("/", commonhttp.MakeVersionHandler(keycloakb.ComponentName, ComponentID, keycloakb.Version, Environment, GitCommit))
 		route.Handle(pathHealthCheck, healthChecker.MakeHandler())
-
-		// Event.
-		var eventSubroute = route.PathPrefix("/event").Subrouter()
-
-		var eventHandler http.Handler
-		{
-			eventHandler = event.MakeHTTPEventHandler(eventEndpoints.Endpoint, logger)
-			eventHandler = middleware.MakeHTTPCorrelationIDMW(idGenerator, tracer, logger, keycloakb.ComponentName, ComponentID)(eventHandler)
-			eventHandler = tracer.MakeHTTPTracingMW(keycloakb.ComponentName, "http_server_event")(eventHandler)
-			eventHandler = middleware.MakeHTTPBasicAuthenticationMW(eventExpectedAuthToken, logger)(eventHandler)
-		}
-		eventSubroute.Handle("/receiver", eventHandler)
 
 		// Export.
 		route.Handle("/export", export.MakeHTTPExportHandler(exportEndpoint)).Methods("GET")
@@ -1316,7 +1217,6 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 	// Security - Audience check
 	v.SetDefault(cfgAudienceRequired, "")
 	v.SetDefault(cfgMobileAudienceRequired, "")
-	v.SetDefault(cfgEventBasicAuthToken, "")
 	v.SetDefault(cfgTrustIDGroups,
 		[]string{
 			"l1_support_agent",
@@ -1359,7 +1259,6 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 
 	// Rate limiting (in requests/second)
 	v.SetDefault(cfgRateKeyValidation, 1000)
-	v.SetDefault(cfgRateKeyEvent, 1000)
 	v.SetDefault(cfgRateKeyAccount, 1000)
 	v.SetDefault(cfgRateKeyMobile, 1000)
 	v.SetDefault(cfgRateKeyManagement, 1000)
@@ -1436,9 +1335,6 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 
 	v.BindEnv(cfgSentryDsn, "CT_BRIDGE_SENTRY_DSN")
 	censoredParameters[cfgSentryDsn] = true
-
-	v.BindEnv(cfgEventBasicAuthToken, "CT_BRIDGE_EVENT_BASIC_AUTH")
-	censoredParameters[cfgEventBasicAuthToken] = true
 
 	v.BindEnv(cfgValidationBasicAuthToken, "CT_BRIDGE_VALIDATION_BASIC_AUTH")
 	censoredParameters[cfgValidationBasicAuthToken] = true
@@ -1609,13 +1505,6 @@ func createConfigurationDBModule(configDBConn sqltypes.CloudtrustDB, influxMetri
 		configDBModule = keycloakb.MakeConfigurationDBModuleInstrumentingMW(influxMetrics.NewHistogram("configDB_module"))(configDBModule)
 	}
 	return configDBModule
-}
-
-func configureEventsDbModule(baseEventsDBModule database.EventsDBModule, influxMetrics metrics.Metrics, logger log.Logger, tracer tracing.OpentracingClient) database.EventsDBModule {
-	eventsDBModule := event.MakeEventsDBModuleInstrumentingMW(influxMetrics.NewHistogram("eventsDB_module"))(baseEventsDBModule)
-	eventsDBModule = event.MakeEventsDBModuleLoggingMW(log.With(logger, "mw", "module", "unit", "eventsDB"))(eventsDBModule)
-	eventsDBModule = event.MakeEventsDBModuleTracingMW(tracer)(eventsDBModule)
-	return eventsDBModule
 }
 
 func prepareEndpoint(e cs.Endpoint, endpointName string, influxMetrics metrics.Metrics, logger log.Logger, tracer tracing.OpentracingClient, rateLimit int) endpoint.Endpoint {

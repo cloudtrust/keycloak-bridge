@@ -38,21 +38,6 @@ if [ -z ${ENV} ] || [ -z ${VERSION} ]; then
 	exit 1
 fi
 
-# Directories flatbuffer.
-FB_EVENT_DIR="./api/event"
-
-# Delete the old dirs.
-echo "==> Removing old directories..."
-rm -f bin/*
-mkdir -p bin/
-rm -f "$FB_EVENT_DIR"/fb/*
-
-# Flatbuffers.
-echo
-echo "==> Flatbuffers:"
-flatc --grpc --go -o "$FB_EVENT_DIR" "$FB_EVENT_DIR"/event.fbs 
-ls -hl "$FB_EVENT_DIR"/fb
-
 # Build.
 echo
 echo "==> Build:"

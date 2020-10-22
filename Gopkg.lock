@@ -144,14 +144,6 @@
   version = "v1.4.3"
 
 [[projects]]
-  digest = "1:0d14ca4e58b26ba21372d2a300dca2702b32b492f21d910c940557bb738c95cf"
-  name = "github.com/google/flatbuffers"
-  packages = ["go"]
-  pruneopts = "UT"
-  revision = "6df40a2471737b27271bdd9b900ab5f3aec746c7"
-  version = "v1.12.0"
-
-[[projects]]
   digest = "1:6078383dbb7405bfa3ce16957f37564e3b716afa29b6eb45ffdb6674624d1e0d"
   name = "github.com/gorilla/mux"
   packages = ["."]
@@ -219,12 +211,12 @@
   version = "v1.3.3"
 
 [[projects]]
-  digest = "1:84d14c215fb7eabd4e1e89a62f7bf5ed5fee929ed9dffeb53f46daf3a895ba16"
+  digest = "1:fe2538db8d9ee15bf6777c74dfd9be3d8e29b07843bc009d8c8d65de8d60f116"
   name = "github.com/nyaruka/phonenumbers"
   packages = ["."]
   pruneopts = "UT"
-  revision = "41576efa1939bbdc62033e460938e740debdf245"
-  version = "v1.0.58"
+  revision = "a5776ac9657d930a5f974ef2b5c91e6847bc7b36"
+  version = "v1.0.59"
 
 [[projects]]
   digest = "1:86fbd18c1942728ab9cebc391bfe31266a27e2d2a0cf05c3bce8fc605e5f44c2"
@@ -393,7 +385,7 @@
     "pbkdf2",
   ]
   pruneopts = "UT"
-  revision = "84dcc777aaee85807c99afb056f496a3a8b3d8de"
+  revision = "9e8e0b390897c84cad53ebe9ed2d1d331a5394d9"
 
 [[projects]]
   branch = "master"
@@ -406,7 +398,7 @@
     "publicsuffix",
   ]
   pruneopts = "UT"
-  revision = "4f7140c49acb4c7e276e0b67dea953d5344ae064"
+  revision = "f5854403a9740e74b2e9e725e6cd7c8a57711905"
 
 [[projects]]
   branch = "master"
@@ -421,14 +413,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:fa5ad75709f4697315e1be021a03c77c7388f981001dff22717591015c4d9214"
+  digest = "1:178adb4fd56b97a2dd6ecc5fd38a5f3070ad5465ddb231568816a33545ac4b63"
   name = "golang.org/x/sys"
   packages = [
     "internal/unsafeheader",
     "unix",
   ]
   pruneopts = "UT"
-  revision = "e3ed0017c21142d3345308d92dcc7ad7020040c6"
+  revision = "6e5568b54d1aaee5899c0083c5776f88b8c5b907"
 
 [[projects]]
   digest = "1:fa940333c48808b0d86ef21f412ffcfd0e5084a82f13905c028a404803b1908f"
@@ -602,9 +594,7 @@
     "github.com/go-kit/kit/transport/http",
     "github.com/go-sql-driver/mysql",
     "github.com/golang/mock/gomock",
-    "github.com/google/flatbuffers/go",
     "github.com/gorilla/mux",
-    "github.com/influxdata/influxdb/client/v2",
     "github.com/lib/pq",
     "github.com/pkg/errors",
     "github.com/rs/cors",

@@ -1,15 +1,12 @@
 # Keycloak bridge [![Build Status][ci-img]][ci] [![Coverage Status][cov-img]][cov] [![GoDoc][godoc-img]][godoc] [![Go Report Card][report-img]][report] [![OpenTracing Badge][opentracing-img]][opentracing]
 
-The keycloak bridge has two purposes. All our interactions (administration) with keycloak pass through it, and keycloak sends all events (i.e. login, user creation,...) to the bridge, so that they can be processed, stored,...
+The keycloak bridge has one purpose, being a bridge for all the interactions with keycloak.
 
 The service includes logging, metrics, tracing, and error tracking. The logs are written to stdout.
 Metrics such as time tracking,... are collected and saved to an InfluxDB Time Series Database.
 Jaeger is used for distributed tracing and error tracking is managed with Sentry.
 
 ## Build
-
-The service uses [FlatBuffers](https://google.github.io/flatbuffers/) for data serialisation. Make sure you have FlatBuffers installed and up to date with ```flatc --version```. It was tested with "flatc version 1.8.0 (Nov 22 2017)".
-
 Build the service for the environment \<env>:
 
 ```bash
@@ -17,11 +14,6 @@ Build the service for the environment \<env>:
 ```
 
 Note: \<env> is used for versioning.
-
-## Container
-
-The keycloak bridge is intended to run in a container with keycloak (including the [event-emitter](https://github.com/cloudtrust/event-emitter) module).
-See the repository [keycloak-service](https://github.com/cloudtrust/keycloak-service).
 
 ## Configuration
 
@@ -85,24 +77,17 @@ CT_BRIDGE_DB_USERS_PASSWORD | db-users-password
 CT_BRIDGE_INFLUX_USERNAME | influx-username
 CT_BRIDGE_INFLUX_PASSWORD | influx-password
 CT_BRIDGE_SENTRY_DSN | sentry-dsn
-CT_BRIDGE_EVENT_BASIC_AUTH | event-basic-auth-token
 
 ## Usage
 
 Launch the keycloak bridge:
 
 ```bash
-./bin/keycloak_bridge --config-file <path/to/config/file.yml> --authorization-file <path/to/config/file.json>
+./bin/keycloak_bridge --config-file <path/to/config/file.yml>
 ```
 
 It is recommended to always provides an absolute path to the configuration file when the service is started, even though absolute and relative paths are supported.
 If no configuration file is passed, the service will try to load the default config file at ```./configs/keycloak_bridge.yml```, and if it fails it launches the service with the default parameters.
-
-It is manadatory to load an authorization JSON file, if no authorization file is passed, the service will try to load the default file at ```./configs/authorization.json```, and if it fails the bridge refuse to start.
-
-### Keycloak events
-
-The keycloak event-emitter module sends all events to the bridge's event endpoint. The event emitter use HTTP with flatbuffers.
 
 ### Monitoring of keycloak-bridge
 
