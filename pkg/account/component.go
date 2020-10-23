@@ -475,6 +475,7 @@ func (c *component) GetConfiguration(ctx context.Context, realmIDOverride string
 		}
 
 		apiConfig.RedirectSuccessfulRegistrationURL = overrideConfig.RedirectSuccessfulRegistrationURL
+		apiConfig.BarcodeType = overrideConfig.BarcodeType
 	}
 
 	return apiConfig, nil
