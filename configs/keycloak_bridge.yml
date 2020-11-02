@@ -44,9 +44,6 @@ cors-debug: true
 audience-required: "account"
 mobile-audience-required: "mobile"
 
-## Password used to protect /internal/event endpoint
-event-basic-auth-token: "superpasswordverylongandstrong"
-
 ## Password used to protect /internal/validation endpoint
 validation-basic-auth-token: "idnowsuperpasswordverylongandstrong"
 
@@ -144,7 +141,6 @@ db-users-rw-connection-check: false
 
 # Rate limiting in requests/second.
 rate-validation: 1000
-rate-event: 1000
 rate-account: 1000
 rate-management: 1000
 rate-statistics: 1000
