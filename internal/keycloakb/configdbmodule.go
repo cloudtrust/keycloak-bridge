@@ -125,6 +125,7 @@ func (c *configurationDBModule) GetBackOfficeConfiguration(ctx context.Context, 
 		c.logger.Warn(ctx, "msg", "Can't get back-office configuration", "error", err.Error(), "realmID", realmID, "groups", strings.Join(groupNames, ","))
 		return nil, err
 	}
+	defer rows.Close()
 
 	var res = make(dto.BackOfficeConfiguration)
 	for rows.Next() {

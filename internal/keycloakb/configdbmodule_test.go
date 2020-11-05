@@ -196,6 +196,7 @@ func TestBackOfficeConfiguration(t *testing.T) {
 	t.Run("GET-SQLRows is empty", func(t *testing.T) {
 		mockDB.EXPECT().Query(gomock.Any(), gomock.Any()).Return(mockSQLRows, nil)
 		mockSQLRows.EXPECT().Next().Return(false)
+		mockSQLRows.EXPECT().Close()
 		var conf, err = configDBModule.GetBackOfficeConfiguration(ctx, realmID, groupNames)
 		assert.Nil(t, err)
 		assert.Len(t, conf, 0)
@@ -204,6 +205,7 @@ func TestBackOfficeConfiguration(t *testing.T) {
 		mockDB.EXPECT().Query(gomock.Any(), gomock.Any()).Return(mockSQLRows, nil)
 		mockSQLRows.EXPECT().Next().Return(true)
 		mockSQLRows.EXPECT().Scan(gomock.Any()).Return(expectedError)
+		mockSQLRows.EXPECT().Close()
 		var _, err = configDBModule.GetBackOfficeConfiguration(ctx, realmID, groupNames)
 		assert.Equal(t, expectedError, err)
 	})
@@ -225,6 +227,7 @@ func TestBackOfficeConfiguration(t *testing.T) {
 				return nil
 			}),
 			mockSQLRows.EXPECT().Next().Return(false),
+			mockSQLRows.EXPECT().Close(),
 		)
 		var conf, err = configDBModule.GetBackOfficeConfiguration(ctx, realmID, groupNames)
 		assert.Nil(t, err)

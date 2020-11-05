@@ -154,6 +154,7 @@ func (c *usersDBModule) GetChecks(ctx context.Context, realm string, userID stri
 		}
 		return nil, err
 	}
+	defer rows.Close()
 
 	var result []dto.DBCheck
 	var checkID int64
