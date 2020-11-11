@@ -140,6 +140,7 @@ func TestGetUserInformation(t *testing.T) {
 		mockDB.EXPECT().Query(gomock.Any(), realm, userID).Return(mockSQLRows, nil)
 		mockSQLRows.EXPECT().Next().Return(true)
 		mockSQLRows.EXPECT().Scan(gomock.Any()).Return(unexpectedError)
+		mockSQLRows.EXPECT().Close()
 
 		var _, err = usersDBModule.GetChecks(ctx, realm, userID)
 		assert.Equal(t, unexpectedError, err)
@@ -154,6 +155,7 @@ func TestGetUserInformation(t *testing.T) {
 				return nil
 			}),
 			mockCrypter.EXPECT().Decrypt(gomock.Any(), gomock.Any()).Return(nil, unexpectedError),
+			mockSQLRows.EXPECT().Close(),
 		)
 
 		var _, err = usersDBModule.GetChecks(ctx, realm, userID)
@@ -172,6 +174,7 @@ func TestGetUserInformation(t *testing.T) {
 				return nil
 			}),
 			mockSQLRows.EXPECT().Next().Return(false),
+			mockSQLRows.EXPECT().Close(),
 		)
 
 		var checks, err = usersDBModule.GetChecks(ctx, realm, userID)
@@ -195,6 +198,7 @@ func TestGetUserInformation(t *testing.T) {
 			}),
 			mockCrypter.EXPECT().Decrypt(gomock.Any(), gomock.Any()).Return(nil, nil),
 			mockSQLRows.EXPECT().Next().Return(false),
+			mockSQLRows.EXPECT().Close(),
 		)
 
 		var checks, err = usersDBModule.GetChecks(ctx, realm, userID)
