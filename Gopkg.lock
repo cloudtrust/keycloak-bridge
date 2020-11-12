@@ -19,7 +19,7 @@
 
 [[projects]]
   branch = "new-flow"
-  digest = "1:f807f3074f31f37e6165ab1ebffdc6124adbac6d742317fe3d29f9d60b8aa3a8"
+  digest = "1:fb6ba397da161085e84241ed21c5fe02fbd0257561c5c091654e0ad8835dca06"
   name = "github.com/cloudtrust/common-service"
   packages = [
     ".",
@@ -39,11 +39,11 @@
     "validation",
   ]
   pruneopts = "UT"
-  revision = "f81e61739fc11a0f14b47e32a098e04a38dba3c8"
+  revision = "a4360319a0e9c09862338ca7300ff3aea8a23baa"
 
 [[projects]]
   branch = "new-flow"
-  digest = "1:d7402faa951b378280269a9008000e488597cde0db3221c22794f7bd4a6c7c41"
+  digest = "1:5408a93d0cf63c576949cdd4ce7846159d8d2f974a6ccdaa99fb94edfe6295e2"
   name = "github.com/cloudtrust/keycloak-client"
   packages = [
     ".",
@@ -51,7 +51,7 @@
     "toolbox",
   ]
   pruneopts = "UT"
-  revision = "6427bfee07a012682b43172545efdd9cd0243d4f"
+  revision = "7d2b9005dd960c1b4d15457dc18114df7516ca03"
 
 [[projects]]
   digest = "1:910c5b111ca13127693df80a59be2c952ad97313626116c0c9895e7b588f2a29"
@@ -309,12 +309,12 @@
   version = "v1.0.5"
 
 [[projects]]
-  digest = "1:11118bd196646c6515fea3d6c43f66162833c6ae4939bfb229b9956d91c6cf17"
+  digest = "1:b3027d4cb73b6576e8818c1012389dbcd8385e34bb8e4ee024891214c4338725"
   name = "github.com/spf13/viper"
   packages = ["."]
   pruneopts = "UT"
-  revision = "b5bf975e5823809fb22c7644d008757f78a4259e"
-  version = "v1.4.0"
+  revision = "3826be313591f83193f048520482a7b3cf17d506"
+  version = "v1.7.1"
 
 [[projects]]
   digest = "1:2c8bb9a0858e2ab458c1641345b6eaa3754b7ae453f8d30b15701f8b12b7ead7"
@@ -323,6 +323,14 @@
   pruneopts = "UT"
   revision = "f654a9112bbeac49ca2cd45bfbe11533c4666cf8"
   version = "v1.6.1"
+
+[[projects]]
+  digest = "1:f4b32291cad5efac2bfdba89ccde6aa04618b62ce06c1a571da2dc4f3f2677fb"
+  name = "github.com/subosito/gotenv"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "2ef7124db659d49edac6aa459693a15ae36c671a"
+  version = "v1.2.0"
 
 [[projects]]
   digest = "1:a4ce817d57150d5a0e88e8eea7bb6b95436bdc4c6423d6d16a4cebfbc36649ce"
@@ -405,14 +413,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:35460768f6f04c010d656662bb0941d73c6141fb68fa2c0952a74b7dbcbc0f78"
+  digest = "1:9a9dc02aee4fb5c43b17d3349577c77e1838d16473f6caf7bade035d3b1dc89a"
   name = "golang.org/x/sys"
   packages = [
     "internal/unsafeheader",
     "unix",
   ]
   pruneopts = "UT"
-  revision = "f84b799fce68db3cb46a8f6f819c1e56377181df"
+  revision = "ba5294a509c715d7fea0f9022a3d0ca21f64942a"
 
 [[projects]]
   digest = "1:a45009ae1e0da0b589cd5da9f30770041573e61f2f79fb3e86aa3790d5c495c4"
@@ -520,6 +528,14 @@
   pruneopts = "UT"
   revision = "34f7caeaf69f4668a88f8294ec18665fd2756b84"
   version = "v2.0.4"
+
+[[projects]]
+  digest = "1:f7059e57af5fc848220ebfbfb61e4d333179a6a07e70bc01f7ae5bc873586537"
+  name = "gopkg.in/ini.v1"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "5e97220809ffaa826f787728501264e9114cb834"
+  version = "v1.62.0"
 
 [[projects]]
   digest = "1:c864e49942441f23f2b51ba1eacf4d43dedec45b76f06800207b20fc8642ad78"

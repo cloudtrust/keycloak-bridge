@@ -96,7 +96,7 @@ db-audit-ro-connection-check: false
 
 # DB Configuration RW
 db-config-rw-enabled: true
-db-config-rw-host-port: 172.17.0.2:3306
+db-config-rw-host-port: 127.0.0.1:3306
 db-config-rw-username: bridge
 db-config-rw-password: bridge-password
 db-config-rw-database: cloudtrust
@@ -111,7 +111,7 @@ db-config-rw-connection-check: true
 
 # DB Configuration RO
 db-config-ro-enabled: true
-db-config-ro-host-port: 172.17.0.2:3306
+db-config-ro-host-port: 127.0.0.1:3306
 db-config-ro-username: bridge
 db-config-ro-password: bridge-password
 db-config-ro-database: cloudtrust
@@ -126,7 +126,7 @@ db-config-ro-connection-check: true
 
 # DB Users RW
 db-users-rw-enabled: true
-db-users-rw-host-port: 172.17.0.2:3306
+db-users-rw-host-port: 127.0.0.1:3306
 db-users-rw-username: bridge
 db-users-rw-password: bridge-password
 db-users-rw-database: users
@@ -181,34 +181,10 @@ livenessprobe-cache-duration: 500
 
 # Register API parameters
 # removed register-techuser-username, register-techuser-password and register-techuser-client-id
-register-enabled: true
 register-realm: trustid
-register-enduser-client-id: selfserviceid
-register-enduser-groups: 
-  - "end_user"
 recaptcha-url: https://www.google.com/recaptcha/api/siteverify
-recaptcha-secret: theverymysterioussecretfortherecaptchaverifyoperation
-sse-public-url: https://sse.trustid.ch
+recaptcha-secret: 6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe # Public test account, always ok
 
-# Corporate register
-corp-register-keys:
-  - capsule-corp
-  - bougeton-corp
-corp-register:
-  capsule-corp:
-    register-realm: capsule-corp
-    register-enduser-client-id: selfserviceid
-    register-enduser-groups: 
-      - end_user
-      - sayan
-    sse-public-url: https://sse.trustid.ch
-  bougeton-corp:
-    register-realm: bougeton-corp
-    register-enduser-client-id: selfserviceid
-    register-enduser-groups: 
-      - end_user
-      - dancer
-    sse-public-url: https://sse.trustid.ch
 
 # Technical user
 technical-realm: master

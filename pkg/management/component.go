@@ -75,6 +75,14 @@ type UsersDetailsDBModule interface {
 	GetChecks(ctx context.Context, realm string, userID string) ([]dto.DBCheck, error)
 }
 
+// OnboardingModule is the interface for the onboarding process
+type OnboardingModule interface {
+	GenerateAuthToken() (keycloakb.TrustIDAuthToken, error)
+	OnboardingAlreadyCompleted(kc.UserRepresentation) (bool, error)
+	SendOnboardingEmail(ctx context.Context, accessToken string, realmName string, userID string,
+		username string, autoLoginToken keycloakb.TrustIDAuthToken, onboardingClientID string, onboardingRedirectURI string) error
+}
+
 // Component is the management component interface.
 type Component interface {
 	GetActions(ctx context.Context) ([]api.ActionRepresentation, error)
@@ -107,6 +115,7 @@ type Component interface {
 	ResetPassword(ctx context.Context, realmName string, userID string, password api.PasswordRepresentation) (string, error)
 	ExecuteActionsEmail(ctx context.Context, realmName string, userID string, actions []api.RequiredAction, paramKV ...string) error
 	SendSmsCode(ctx context.Context, realmName string, userID string) (string, error)
+	SendOnboardingEmail(ctx context.Context, realmName string, userID string) error
 	SendReminderEmail(ctx context.Context, realmName string, userID string, paramKV ...string) error
 	ResetSmsCounter(ctx context.Context, realmName string, userID string) error
 	CreateRecoveryCode(ctx context.Context, realmName string, userID string) (string, error)
@@ -144,13 +153,14 @@ type component struct {
 	usersDBModule           UsersDetailsDBModule
 	eventDBModule           database.EventsDBModule
 	configDBModule          keycloakb.ConfigurationDBModule
+	onboardingModule        OnboardingModule
 	authorizedTrustIDGroups map[string]bool
 	logger                  keycloakb.Logger
 }
 
 // NewComponent returns the management component.
 func NewComponent(keycloakClient KeycloakClient, usersDBModule UsersDetailsDBModule, eventDBModule database.EventsDBModule,
-	configDBModule keycloakb.ConfigurationDBModule, authorizedTrustIDGroups []string, logger keycloakb.Logger) Component {
+	configDBModule keycloakb.ConfigurationDBModule, onboardingModule OnboardingModule, authorizedTrustIDGroups []string, logger keycloakb.Logger) Component {
 
 	var authzedTrustIDGroups = make(map[string]bool)
 	for _, grp := range authorizedTrustIDGroups {
@@ -162,6 +172,7 @@ func NewComponent(keycloakClient KeycloakClient, usersDBModule UsersDetailsDBMod
 		usersDBModule:           usersDBModule,
 		eventDBModule:           eventDBModule,
 		configDBModule:          configDBModule,
+		onboardingModule:        onboardingModule,
 		authorizedTrustIDGroups: authzedTrustIDGroups,
 		logger:                  logger,
 	}
@@ -876,6 +887,67 @@ func (c *component) SendSmsCode(ctx context.Context, realmName string, userID st
 	return *smsCodeKc.Code, err
 }
 
+func (c *component) SendOnboardingEmail(ctx context.Context, realmName string, userID string) error {
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+
+	// Get Realm configuration from database
+	realmConf, err := c.configDBModule.GetConfiguration(ctx, realmName)
+	if err != nil {
+		c.logger.Info(ctx, "msg", "Can't get realm configuration from database", "err", err.Error())
+		return err
+	}
+
+	if (realmConf.OnboardingRedirectURI == nil || *realmConf.OnboardingRedirectURI == "") ||
+		(realmConf.OnboardingClientID == nil || *realmConf.OnboardingClientID == "") {
+		return errorhandler.CreateEndpointNotEnabled(constants.MsgErrNotConfigured)
+	}
+
+	// Retieve user
+	kcUser, err := c.keycloakClient.GetUser(accessToken, realmName, userID)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Can't retrieve user", "userID", userID, "err", err.Error())
+		return err
+	}
+
+	// Ensure user is not already onboarded
+	alreadyOnboarded, err := c.onboardingModule.OnboardingAlreadyCompleted(kcUser)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Invalid OnboardingCompleted attribute for user", "userID", kcUser.ID, "err", err.Error())
+		return err
+	}
+
+	if alreadyOnboarded {
+		return errorhandler.CreateBadRequestError(constants.MsgErrAlreadyOnboardedUser)
+	}
+
+	// Generate trustIDAuthToken
+	autoLoginToken, err := c.onboardingModule.GenerateAuthToken()
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Can't generate trustIDAuthToken", "err", err.Error())
+		return err
+	}
+
+	// Set authToken for auto login at the end of onboarding process
+	kcUser.SetAttributeString(constants.AttrbTrustIDAuthToken, autoLoginToken.ToJSON())
+	err = c.keycloakClient.UpdateUser(accessToken, realmName, userID, kcUser)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Failed to update user through Keycloak API", "err", err.Error())
+		return err
+	}
+
+	// Send email
+	err = c.onboardingModule.SendOnboardingEmail(ctx, accessToken, realmName, userID,
+		*kcUser.Username, autoLoginToken, *realmConf.OnboardingClientID, *realmConf.OnboardingRedirectURI)
+	if err != nil {
+		return err
+	}
+
+	// store the API call into the DB
+	c.reportEvent(ctx, "EMAIL_ONBOARDING_SENT", database.CtEventRealmName, realmName, database.CtEventUserID, userID)
+
+	return nil
+}
+
 func (c *component) SendReminderEmail(ctx context.Context, realmName string, userID string, paramKV ...string) error {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 
@@ -1471,9 +1543,11 @@ func (c *component) GetRealmCustomConfiguration(ctx context.Context, realmName s
 				ShowPasswordTab:                     &falseBool,
 				ShowProfileTab:                      &falseBool,
 				ShowAccountDeletionButton:           &falseBool,
-				RegisterExecuteActions:              nil,
 				RedirectCancelledRegistrationURL:    nil,
 				RedirectSuccessfulRegistrationURL:   nil,
+				OnboardingRedirectURI:               nil,
+				OnboardingClientID:                  nil,
+				SelfRegisterGroupNames:              nil,
 				BarcodeType:                         nil,
 			}, nil
 		default:
@@ -1493,9 +1567,11 @@ func (c *component) GetRealmCustomConfiguration(ctx context.Context, realmName s
 		ShowPasswordTab:                     config.ShowPasswordTab,
 		ShowProfileTab:                      config.ShowProfileTab,
 		ShowAccountDeletionButton:           config.ShowAccountDeletionButton,
-		RegisterExecuteActions:              config.RegisterExecuteActions,
 		RedirectCancelledRegistrationURL:    config.RedirectCancelledRegistrationURL,
 		RedirectSuccessfulRegistrationURL:   config.RedirectSuccessfulRegistrationURL,
+		OnboardingRedirectURI:               config.OnboardingRedirectURI,
+		OnboardingClientID:                  config.OnboardingClientID,
+		SelfRegisterGroupNames:              config.SelfRegisterGroupNames,
 		BarcodeType:                         config.BarcodeType,
 	}, nil
 }
@@ -1542,9 +1618,11 @@ func (c *component) UpdateRealmCustomConfiguration(ctx context.Context, realmNam
 		ShowPasswordTab:                     customConfig.ShowPasswordTab,
 		ShowProfileTab:                      customConfig.ShowProfileTab,
 		ShowAccountDeletionButton:           customConfig.ShowAccountDeletionButton,
-		RegisterExecuteActions:              customConfig.RegisterExecuteActions,
 		RedirectCancelledRegistrationURL:    customConfig.RedirectCancelledRegistrationURL,
 		RedirectSuccessfulRegistrationURL:   customConfig.RedirectSuccessfulRegistrationURL,
+		OnboardingRedirectURI:               customConfig.OnboardingRedirectURI,
+		OnboardingClientID:                  customConfig.OnboardingClientID,
+		SelfRegisterGroupNames:              customConfig.SelfRegisterGroupNames,
 		BarcodeType:                         customConfig.BarcodeType,
 	}
 

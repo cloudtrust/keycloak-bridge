@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"math/rand"
 	"net/http"
@@ -117,12 +116,7 @@ const (
 	cfgLogLevel                 = "log-level"
 	cfgAccessLogsEnabled        = "access-logs"
 	cfgTrustIDGroups            = "trustid-groups"
-	cfgRegisterEnabled          = "register-enabled"
 	cfgRegisterRealm            = "register-realm"
-	cfgRegisterEnduserClientID  = "register-enduser-client-id"
-	cfgRegisterEnduserGroups    = "register-enduser-groups"
-	cfgCorpRegisterKeys         = "corp-register-keys"
-	cfgCorpRegisterConfigs      = "corp-register"
 	cfgTechnicalRealm           = "technical-realm"
 	cfgTechnicalUsername        = "technical-username"
 	cfgTechnicalPassword        = "technical-password"
@@ -236,11 +230,9 @@ func main() {
 		accessLogsEnabled = c.GetBool(cfgAccessLogsEnabled)
 
 		// Register parameters
-		registerEnabled  = c.GetBool(cfgRegisterEnabled)
-		registerRealm    = c.GetString(cfgRegisterRealm)
-		recaptchaURL     = c.GetString(cfgRecaptchaURL)
-		recaptchaSecret  = c.GetString(cfgRecaptchaSecret)
-		corpRegisterKeys = c.GetStringSlice(cfgCorpRegisterKeys)
+		registerRealm   = c.GetString(cfgRegisterRealm)
+		recaptchaURL    = c.GetString(cfgRecaptchaURL)
+		recaptchaSecret = c.GetString(cfgRecaptchaSecret)
 
 		// Technical parameters
 		technicalRealm    = c.GetString(cfgTechnicalRealm)
@@ -329,7 +321,7 @@ func main() {
 	}
 
 	// Recaptcha secret
-	if (registerEnabled || len(corpRegisterKeys) > 0) && recaptchaSecret == "" {
+	if recaptchaSecret == "" {
 		logger.Error(ctx, "msg", "Recaptcha secret is not configured")
 		return
 	}
@@ -427,19 +419,6 @@ func main() {
 		usersRwDBConn, err = database.NewReconnectableCloudtrustDB(usersRwDbParams)
 		if err != nil {
 			logger.Error(ctx, "msg", "could not create DB connection for users (RW)", "error", err)
-			return
-		}
-	}
-
-	// Create social realm configuration
-	var socialRealmConfiguration = getRealmRegisterConfiguration(c)
-
-	// Create configuration for realms using corporate register
-	var corpRegisters []register.RealmRegisterConfiguration
-	{
-		corpRegisters, err = loadCorpRegisterConfigurations(c.Sub(cfgCorpRegisterConfigs), corpRegisterKeys)
-		if err != nil {
-			logger.Error(ctx, "msg", "could not load corporate register configurations", "err", err.Error())
 			return
 		}
 	}
@@ -575,9 +554,12 @@ func main() {
 		// module for storing and retrieving details of the users
 		var usersDBModule = keycloakb.NewUsersDetailsDBModule(usersRwDBConn, aesEncryption, managementLogger)
 
+		// module for onboarding process
+		var onboardingModule = keycloakb.NewOnboardingModule(keycloakClient, keycloakPublicURL, logger)
+
 		var keycloakComponent management.Component
 		{
-			keycloakComponent = management.NewComponent(keycloakClient, usersDBModule, eventsDBModule, configDBModule, trustIDGroups, managementLogger)
+			keycloakComponent = management.NewComponent(keycloakClient, usersDBModule, eventsDBModule, configDBModule, onboardingModule, trustIDGroups, managementLogger)
 			keycloakComponent = management.MakeAuthorizationManagementComponentMW(log.With(managementLogger, "mw", "endpoint"), authorizationManager)(keycloakComponent)
 		}
 
@@ -625,6 +607,7 @@ func main() {
 
 			ResetPassword:                  prepareEndpointWithoutLogging(management.MakeResetPasswordEndpoint(keycloakComponent), "reset_password_endpoint", influxMetrics, tracer, rateLimitMgmt),
 			ExecuteActionsEmail:            prepareEndpoint(management.MakeExecuteActionsEmailEndpoint(keycloakComponent), "execute_actions_email_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			SendOnboardingEmail:            prepareEndpoint(management.MakeSendOnboardingEmailEndpoint(keycloakComponent), "send_onboarding_email_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 			SendReminderEmail:              prepareEndpoint(management.MakeSendReminderEmailEndpoint(keycloakComponent), "send_reminder_email_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 			SendSmsCode:                    prepareEndpoint(management.MakeSendSmsCodeEndpoint(keycloakComponent), "send_sms_code_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 			ResetSmsCounter:                prepareEndpoint(management.MakeResetSmsCounterEndpoint(keycloakComponent), "reset_sms_counter_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
@@ -716,40 +699,30 @@ func main() {
 	// Register service.
 	var registerEndpoints register.Endpoints
 	{
-		if registerEnabled || len(corpRegisters) > 0 {
-			var registerLogger = log.With(logger, "svc", "register")
+		var registerLogger = log.With(logger, "svc", "register")
 
-			// Configure events db module
-			eventsDBModule := database.NewEventsDBModule(eventsDBConn)
+		// Configure events db module
+		eventsDBModule := database.NewEventsDBModule(eventsDBConn)
 
-			// module for storing and retrieving the custom configuration
-			var configDBModule = createConfigurationDBModule(configurationRwDBConn, influxMetrics, registerLogger)
+		// module for storing and retrieving the custom configuration
+		var configDBModule = createConfigurationDBModule(configurationRwDBConn, influxMetrics, registerLogger)
 
-			// module for storing and retrieving details of the self-registered users
-			var usersDBModule = keycloakb.NewUsersDetailsDBModule(usersRwDBConn, aesEncryption, registerLogger)
+		// module for storing and retrieving details of the self-registered users
+		var usersDBModule = keycloakb.NewUsersDetailsDBModule(usersRwDBConn, aesEncryption, registerLogger)
 
-			// new module for register service
-			registerComponentBuilder := register.NewComponentBuilder(keycloakPublicURL, keycloakClient, technicalTokenProvider, usersDBModule, configDBModule, eventsDBModule, registerLogger)
-			if err := registerComponentBuilder.AddTargetRealm(socialRealmConfiguration); err != nil {
-				registerLogger.Error(ctx, "msg", "Can't initialize register component. Check the provided group names", "err", err.Error(), "realm", registerRealm)
-				return
-			}
-			for _, corpRegisterConf := range corpRegisters {
-				if err := registerComponentBuilder.AddTargetRealm(corpRegisterConf); err != nil {
-					registerLogger.Error(ctx, "msg", "Can't initialize register component. Check the provided group names", "err", err.Error(), "realm", corpRegisterConf.Realm)
-					return
-				}
-			}
-			var registerComponent = registerComponentBuilder.Build()
-			registerComponent = register.MakeAuthorizationRegisterComponentMW(log.With(registerLogger, "mw", "endpoint"))(registerComponent)
+		// module for onboarding process
+		var onboardingModule = keycloakb.NewOnboardingModule(keycloakClient, keycloakPublicURL, registerLogger)
 
-			var rateLimitRegister = rateLimit[RateKeyRegister]
-			registerEndpoints = register.Endpoints{
-				RegisterUser:     prepareEndpoint(register.MakeRegisterUserEndpoint(registerComponent, registerRealm), "register_user", influxMetrics, registerLogger, tracer, rateLimitRegister),
-				RegisterCorpUser: prepareEndpoint(register.MakeRegisterCorpUserEndpoint(registerComponent), "register_corp_user", influxMetrics, registerLogger, tracer, rateLimitRegister),
-				GetConfiguration: prepareEndpoint(register.MakeGetConfigurationEndpoint(registerComponent), "get_configuration", influxMetrics, registerLogger, tracer, rateLimitRegister),
-			}
+		registerComponent := register.NewComponent(keycloakPublicURL, keycloakClient, technicalTokenProvider, usersDBModule, configDBModule, eventsDBModule, onboardingModule, registerLogger)
+		registerComponent = register.MakeAuthorizationRegisterComponentMW(log.With(registerLogger, "mw", "endpoint"))(registerComponent)
+
+		var rateLimitRegister = rateLimit[RateKeyRegister]
+		registerEndpoints = register.Endpoints{
+			RegisterUser:     prepareEndpoint(register.MakeRegisterUserEndpoint(registerComponent, registerRealm), "register_user", influxMetrics, registerLogger, tracer, rateLimitRegister),
+			RegisterCorpUser: prepareEndpoint(register.MakeRegisterCorpUserEndpoint(registerComponent), "register_corp_user", influxMetrics, registerLogger, tracer, rateLimitRegister),
+			GetConfiguration: prepareEndpoint(register.MakeGetConfigurationEndpoint(registerComponent), "get_configuration", influxMetrics, registerLogger, tracer, rateLimitRegister),
 		}
+
 	}
 
 	// Tools for endpoint middleware
@@ -932,6 +905,7 @@ func main() {
 		var resetPasswordHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.ResetPassword)
 		var executeActionsEmailHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.ExecuteActionsEmail)
 		var sendSmsCodeHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.SendSmsCode)
+		var sendOnboardingEmail = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.SendOnboardingEmail)
 		var sendReminderEmailHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.SendReminderEmail)
 		var resetSmsCounterHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.ResetSmsCounter)
 		var createRecoveryCodeHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.CreateRecoveryCode)
@@ -995,6 +969,7 @@ func main() {
 		managementSubroute.Path("/realms/{realm}/users/{userID}/reset-password").Methods("PUT").Handler(resetPasswordHandler)
 		managementSubroute.Path("/realms/{realm}/users/{userID}/execute-actions-email").Methods("PUT").Handler(executeActionsEmailHandler)
 		managementSubroute.Path("/realms/{realm}/users/{userID}/send-sms-code").Methods("POST").Handler(sendSmsCodeHandler)
+		managementSubroute.Path("/realms/{realm}/users/{userID}/send-onboarding-email").Methods("POST").Handler(sendOnboardingEmail)
 		managementSubroute.Path("/realms/{realm}/users/{userID}/send-reminder-email").Methods("POST").Handler(sendReminderEmailHandler)
 		managementSubroute.Path("/realms/{realm}/users/{userID}/reset-sms-counter").Methods("PUT").Handler(resetSmsCounterHandler)
 		managementSubroute.Path("/realms/{realm}/users/{userID}/recovery-code").Methods("POST").Handler(createRecoveryCodeHandler)
@@ -1143,47 +1118,40 @@ func main() {
 	}()
 
 	// HTTP register Server (Register API).
-	if registerEnabled || len(corpRegisters) > 0 {
-		go func() {
-			var logger = log.With(logger, "transport", "http")
-			logger.Info(ctx, "addr", httpAddrRegister)
+	go func() {
+		var logger = log.With(logger, "transport", "http")
+		logger.Info(ctx, "addr", httpAddrRegister)
 
-			var route = mux.NewRouter()
+		var route = mux.NewRouter()
 
-			// Version.
-			route.Handle("/", http.HandlerFunc(commonhttp.MakeVersionHandler(keycloakb.ComponentName, ComponentID, keycloakb.Version, Environment, GitCommit)))
-			route.Handle(pathHealthCheck, healthChecker.MakeHandler())
+		// Version.
+		route.Handle("/", http.HandlerFunc(commonhttp.MakeVersionHandler(keycloakb.ComponentName, ComponentID, keycloakb.Version, Environment, GitCommit)))
+		route.Handle(pathHealthCheck, healthChecker.MakeHandler())
 
-			// Configuration
-			var getConfigurationHandler = configurePublicRegisterHandler(keycloakb.ComponentName, ComponentID, idGenerator, tracer, logger)(registerEndpoints.GetConfiguration)
+		// Configuration
+		var getConfigurationHandler = configurePublicRegisterHandler(keycloakb.ComponentName, ComponentID, idGenerator, tracer, logger)(registerEndpoints.GetConfiguration)
 
-			// Register
-			if registerEnabled {
-				// Handler with recaptcha token
-				var registerUserHandler = configureRegisterHandler(keycloakb.ComponentName, ComponentID, idGenerator, recaptchaURL, recaptchaSecret, tracer, logger)(registerEndpoints.RegisterUser)
+		// Handler with recaptcha token
+		var registerUserHandler = configureRegisterHandler(keycloakb.ComponentName, ComponentID, idGenerator, recaptchaURL, recaptchaSecret, tracer, logger)(registerEndpoints.RegisterUser)
+		route.Path("/register/user").Methods("POST").Handler(registerUserHandler)
 
-				route.Path("/register/user").Methods("POST").Handler(registerUserHandler)
-			}
-			if len(corpRegisters) > 0 {
-				// Handler with recaptcha token
-				var registerCorpUserHandler = configureRegisterHandler(keycloakb.ComponentName, ComponentID, idGenerator, recaptchaURL, recaptchaSecret, tracer, logger)(registerEndpoints.RegisterCorpUser)
+		// Handler with recaptcha token
+		var registerCorpUserHandler = configureRegisterHandler(keycloakb.ComponentName, ComponentID, idGenerator, recaptchaURL, recaptchaSecret, tracer, logger)(registerEndpoints.RegisterCorpUser)
+		route.Path("/register/realms/{corpRealm}/user").Methods("POST").Handler(registerCorpUserHandler)
 
-				route.Path("/register/realms/{corpRealm}/user").Methods("POST").Handler(registerCorpUserHandler)
-			}
-			route.Path("/register/config").Methods("GET").Handler(getConfigurationHandler)
+		route.Path("/register/config").Methods("GET").Handler(getConfigurationHandler)
 
-			var handler http.Handler = route
+		var handler http.Handler = route
 
-			if accessLogsEnabled {
-				handler = commonhttp.MakeAccessLogHandler(accessLogger, handler)
-			}
+		if accessLogsEnabled {
+			handler = commonhttp.MakeAccessLogHandler(accessLogger, handler)
+		}
 
-			c := cors.New(corsOptions)
-			handler = c.Handler(handler)
+		c := cors.New(corsOptions)
+		handler = c.Handler(handler)
 
-			errc <- http.ListenAndServe(httpAddrRegister, handler)
-		}()
-	}
+		errc <- http.ListenAndServe(httpAddrRegister, handler)
+	}()
 
 	// Influx writing.
 	go func() {
@@ -1301,14 +1269,9 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 	v.SetDefault("livenessprobe-cache-duration", 500)
 
 	// Register parameters
-	v.SetDefault(cfgRegisterEnabled, false)
 	v.SetDefault(cfgRegisterRealm, "trustid")
-	v.SetDefault(cfgRegisterEnduserClientID, "")
-	v.SetDefault(cfgRegisterEnduserGroups, "end_user")
 	v.SetDefault(cfgRecaptchaURL, "https://www.google.com/recaptcha/api/siteverify")
 	v.SetDefault(cfgRecaptchaSecret, "")
-	v.SetDefault(cfgSsePublicURL, "")
-	v.SetDefault(cfgCorpRegisterKeys, "")
 
 	// Register parameters
 	v.SetDefault(cfgTechnicalRealm, "master")
@@ -1371,32 +1334,6 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 		}
 	}
 	return v
-}
-
-func loadCorpRegisterConfigurations(corpConfs *viper.Viper, corpRegisterKeys []string) ([]register.RealmRegisterConfiguration, error) {
-	var corpRegisters []register.RealmRegisterConfiguration
-	if len(corpRegisterKeys) > 0 {
-		if corpConfs == nil {
-			return nil, errors.New("invalid corporate register configurations")
-		}
-		for _, key := range corpRegisterKeys {
-			var conf = corpConfs.Sub(key)
-			if conf == nil {
-				return nil, errors.New("missing corporate register configuration. missing key " + key)
-			}
-			corpRegisters = append(corpRegisters, getRealmRegisterConfiguration(conf))
-		}
-	}
-	return corpRegisters, nil
-}
-
-func getRealmRegisterConfiguration(v *viper.Viper) register.RealmRegisterConfiguration {
-	return register.RealmRegisterConfiguration{
-		Realm:           v.GetString(cfgRegisterRealm),
-		EndUserGroups:   v.GetStringSlice(cfgRegisterEnduserGroups),
-		EnduserClientID: v.GetString(cfgRegisterEnduserClientID),
-		SsePublicURL:    v.GetString(cfgSsePublicURL),
-	}
 }
 
 func configureEventsHandler(ComponentName string, ComponentID string, idGenerator idgenerator.IDGenerator, keycloakClient *keycloakapi.Client, audienceRequired string, tracer tracing.OpentracingClient, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {

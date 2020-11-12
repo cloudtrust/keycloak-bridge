@@ -718,7 +718,7 @@ paths:
       tags:
       - Users
       summary: >
-        Send an sms code to a user.
+        Send an sms code to a user and returns the value to the requester. This can be used by support to ensure the person claiming for something really owns the mobile as a proof of its identity.
       parameters:
       - name: realm
         in: path
@@ -735,6 +735,39 @@ paths:
       responses:
         200:
           description: "Code correctly sent by SMS"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+        400:
+          description: "Invalid input"
+        403:
+          description: "No permission to call this operation"
+  /realms/{realm}/users/{userID}/send-onboarding-email:
+    post:
+      tags:
+      - Users
+      summary: >
+        Send an onboarding email to the user. He will receives an email to start the onboarding process. At the end of the process, he will be authenticated.
+      parameters:
+      - name: realm
+        in: path
+        description: Realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: "Onboarding email sent"
           content:
             application/json:
               schema:
@@ -1633,6 +1666,14 @@ components:
           type: string
         redirect_successful_registration_url:
           type: string
+        onboarding_redirect_uri:
+          type: string
+        onboarding_client_id:
+          type: string
+        self_register_group_names:
+          type: array
+          items:
+            type: string
         barcode_type:
           type: string
           enum: [CODE128]
@@ -1656,6 +1697,8 @@ components:
                 type: string
               condition:
                 type: string
+        self_register_enabled:
+          type: boolean
     BackOfficeConfiguration:
       type: object
       additionalProperties:
