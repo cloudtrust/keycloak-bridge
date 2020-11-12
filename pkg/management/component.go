@@ -42,7 +42,7 @@ type KeycloakClient interface {
 	GetRealmLevelRoleMappings(accessToken string, realmName, userID string) ([]kc.RoleRepresentation, error)
 	ResetPassword(accessToken string, realmName string, userID string, cred kc.CredentialRepresentation) error
 	ExecuteActionsEmail(accessToken string, realmName string, userID string, actions []string, paramKV ...string) error
-	SendNewEnrolmentCode(accessToken string, realmName string, userID string) (kc.SmsCodeRepresentation, error)
+	SendSmsCode(accessToken string, realmName string, userID string) (kc.SmsCodeRepresentation, error)
 	CreateRecoveryCode(accessToken string, realmName string, userID string) (kc.RecoveryCodeRepresentation, error)
 	CreateActivationCode(accessToken string, realmName string, userID string) (kc.ActivationCodeRepresentation, error)
 	SendReminderEmail(accessToken string, realmName string, userID string, paramKV ...string) error
@@ -106,7 +106,7 @@ type Component interface {
 
 	ResetPassword(ctx context.Context, realmName string, userID string, password api.PasswordRepresentation) (string, error)
 	ExecuteActionsEmail(ctx context.Context, realmName string, userID string, actions []api.RequiredAction, paramKV ...string) error
-	SendNewEnrolmentCode(ctx context.Context, realmName string, userID string) (string, error)
+	SendSmsCode(ctx context.Context, realmName string, userID string) (string, error)
 	SendReminderEmail(ctx context.Context, realmName string, userID string, paramKV ...string) error
 	ResetSmsCounter(ctx context.Context, realmName string, userID string) error
 	CreateRecoveryCode(ctx context.Context, realmName string, userID string) (string, error)
@@ -860,10 +860,10 @@ func (c *component) ExecuteActionsEmail(ctx context.Context, realmName string, u
 	return err
 }
 
-func (c *component) SendNewEnrolmentCode(ctx context.Context, realmName string, userID string) (string, error) {
+func (c *component) SendSmsCode(ctx context.Context, realmName string, userID string) (string, error) {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 
-	smsCodeKc, err := c.keycloakClient.SendNewEnrolmentCode(accessToken, realmName, userID)
+	smsCodeKc, err := c.keycloakClient.SendSmsCode(accessToken, realmName, userID)
 
 	if err != nil {
 		c.logger.Warn(ctx, "err", err.Error())

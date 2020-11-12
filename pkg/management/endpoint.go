@@ -44,7 +44,7 @@ type Endpoints struct {
 
 	ResetPassword                  endpoint.Endpoint
 	ExecuteActionsEmail            endpoint.Endpoint
-	SendNewEnrolmentCode           endpoint.Endpoint
+	SendSmsCode                    endpoint.Endpoint
 	SendReminderEmail              endpoint.Endpoint
 	ResetSmsCounter                endpoint.Endpoint
 	CreateRecoveryCode             endpoint.Endpoint
@@ -409,12 +409,12 @@ func MakeExecuteActionsEmailEndpoint(component Component) cs.Endpoint {
 	}
 }
 
-// MakeSendNewEnrolmentCodeEndpoint creates an endpoint for SendNewEnrolmentCode
-func MakeSendNewEnrolmentCodeEndpoint(component Component) cs.Endpoint {
+// MakeSendSmsCodeEndpoint creates an endpoint for SendSmsCode
+func MakeSendSmsCodeEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		code, err := component.SendNewEnrolmentCode(ctx, m[prmRealm], m[prmUserID])
+		code, err := component.SendSmsCode(ctx, m[prmRealm], m[prmUserID])
 		return map[string]string{"code": code}, err
 	}
 }

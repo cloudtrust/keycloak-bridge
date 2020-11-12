@@ -626,7 +626,7 @@ func main() {
 			ResetPassword:                  prepareEndpointWithoutLogging(management.MakeResetPasswordEndpoint(keycloakComponent), "reset_password_endpoint", influxMetrics, tracer, rateLimitMgmt),
 			ExecuteActionsEmail:            prepareEndpoint(management.MakeExecuteActionsEmailEndpoint(keycloakComponent), "execute_actions_email_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 			SendReminderEmail:              prepareEndpoint(management.MakeSendReminderEmailEndpoint(keycloakComponent), "send_reminder_email_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
-			SendNewEnrolmentCode:           prepareEndpoint(management.MakeSendNewEnrolmentCodeEndpoint(keycloakComponent), "send_new_enrolment_code_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			SendSmsCode:                    prepareEndpoint(management.MakeSendSmsCodeEndpoint(keycloakComponent), "send_sms_code_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 			ResetSmsCounter:                prepareEndpoint(management.MakeResetSmsCounterEndpoint(keycloakComponent), "reset_sms_counter_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 			CreateRecoveryCode:             prepareEndpoint(management.MakeCreateRecoveryCodeEndpoint(keycloakComponent), "create_recovery_code_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 			CreateActivationCode:           prepareEndpoint(management.MakeCreateActivationCodeEndpoint(keycloakComponent), "create_activation_code_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
@@ -931,7 +931,7 @@ func main() {
 
 		var resetPasswordHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.ResetPassword)
 		var executeActionsEmailHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.ExecuteActionsEmail)
-		var sendNewEnrolmentCodeHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.SendNewEnrolmentCode)
+		var sendSmsCodeHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.SendSmsCode)
 		var sendReminderEmailHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.SendReminderEmail)
 		var resetSmsCounterHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.ResetSmsCounter)
 		var createRecoveryCodeHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.CreateRecoveryCode)
@@ -994,7 +994,7 @@ func main() {
 
 		managementSubroute.Path("/realms/{realm}/users/{userID}/reset-password").Methods("PUT").Handler(resetPasswordHandler)
 		managementSubroute.Path("/realms/{realm}/users/{userID}/execute-actions-email").Methods("PUT").Handler(executeActionsEmailHandler)
-		managementSubroute.Path("/realms/{realm}/users/{userID}/send-new-enrolment-code").Methods("POST").Handler(sendNewEnrolmentCodeHandler)
+		managementSubroute.Path("/realms/{realm}/users/{userID}/send-sms-code").Methods("POST").Handler(sendSmsCodeHandler)
 		managementSubroute.Path("/realms/{realm}/users/{userID}/send-reminder-email").Methods("POST").Handler(sendReminderEmailHandler)
 		managementSubroute.Path("/realms/{realm}/users/{userID}/reset-sms-counter").Methods("PUT").Handler(resetSmsCounterHandler)
 		managementSubroute.Path("/realms/{realm}/users/{userID}/recovery-code").Methods("POST").Handler(createRecoveryCodeHandler)

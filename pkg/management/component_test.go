@@ -2341,7 +2341,7 @@ func TestExecuteActionsEmail(t *testing.T) {
 	}
 }
 
-func TestSendNewEnrolmentCode(t *testing.T) {
+func TestSendSmsCode(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
@@ -2357,24 +2357,24 @@ func TestSendNewEnrolmentCode(t *testing.T) {
 	var realmName = "master"
 	var userID = "1245-7854-8963"
 
-	// Send new enrolment code
+	// Send new sms code
 	{
 		var code = "1234"
-		mockKeycloakClient.EXPECT().SendNewEnrolmentCode(accessToken, realmName, userID).Return(kc.SmsCodeRepresentation{Code: &code}, nil).Times(1)
+		mockKeycloakClient.EXPECT().SendSmsCode(accessToken, realmName, userID).Return(kc.SmsCodeRepresentation{Code: &code}, nil).Times(1)
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		mockEventDBModule.EXPECT().ReportEvent(ctx, "SMS_CHALLENGE", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 
-		codeRes, err := managementComponent.SendNewEnrolmentCode(ctx, "master", userID)
+		codeRes, err := managementComponent.SendSmsCode(ctx, "master", userID)
 
 		assert.Nil(t, err)
 		assert.Equal(t, "1234", codeRes)
 	}
-	// Send new enrolment code but have error when storing the event in the DB
+	// Send new sms code but have error when storing the event in the DB
 	{
 		var code = "1234"
-		mockKeycloakClient.EXPECT().SendNewEnrolmentCode(accessToken, realmName, userID).Return(kc.SmsCodeRepresentation{Code: &code}, nil).Times(1)
+		mockKeycloakClient.EXPECT().SendSmsCode(accessToken, realmName, userID).Return(kc.SmsCodeRepresentation{Code: &code}, nil).Times(1)
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
@@ -2382,18 +2382,18 @@ func TestSendNewEnrolmentCode(t *testing.T) {
 		m := map[string]interface{}{"event_name": "SMS_CHALLENGE", database.CtEventRealmName: realmName, database.CtEventUserID: userID}
 		eventJSON, _ := json.Marshal(m)
 		mockLogger.EXPECT().Error(gomock.Any(), "err", "error", "event", string(eventJSON))
-		codeRes, err := managementComponent.SendNewEnrolmentCode(ctx, "master", userID)
+		codeRes, err := managementComponent.SendSmsCode(ctx, "master", userID)
 
 		assert.Nil(t, err)
 		assert.Equal(t, "1234", codeRes)
 	}
 	// Error
 	{
-		mockKeycloakClient.EXPECT().SendNewEnrolmentCode(accessToken, realmName, userID).Return(kc.SmsCodeRepresentation{}, fmt.Errorf("Invalid input")).Times(1)
+		mockKeycloakClient.EXPECT().SendSmsCode(accessToken, realmName, userID).Return(kc.SmsCodeRepresentation{}, fmt.Errorf("Invalid input")).Times(1)
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		mockLogger.EXPECT().Warn(gomock.Any(), "err", "Invalid input")
-		_, err := managementComponent.SendNewEnrolmentCode(ctx, "master", userID)
+		_, err := managementComponent.SendSmsCode(ctx, "master", userID)
 
 		assert.NotNil(t, err)
 	}
