@@ -44,6 +44,7 @@ type KeycloakClient interface {
 	ExecuteActionsEmail(accessToken string, realmName string, userID string, actions []string, paramKV ...string) error
 	SendNewEnrolmentCode(accessToken string, realmName string, userID string) (kc.SmsCodeRepresentation, error)
 	CreateRecoveryCode(accessToken string, realmName string, userID string) (kc.RecoveryCodeRepresentation, error)
+	CreateActivationCode(accessToken string, realmName string, userID string) (kc.ActivationCodeRepresentation, error)
 	SendReminderEmail(accessToken string, realmName string, userID string, paramKV ...string) error
 	GetRoles(accessToken string, realmName string) ([]kc.RoleRepresentation, error)
 	GetRole(accessToken string, realmName string, roleID string) (kc.RoleRepresentation, error)
@@ -109,6 +110,7 @@ type Component interface {
 	SendReminderEmail(ctx context.Context, realmName string, userID string, paramKV ...string) error
 	ResetSmsCounter(ctx context.Context, realmName string, userID string) error
 	CreateRecoveryCode(ctx context.Context, realmName string, userID string) (string, error)
+	CreateActivationCode(ctx context.Context, realmName string, userID string) (string, error)
 	GetCredentialsForUser(ctx context.Context, realmName string, userID string) ([]api.CredentialRepresentation, error)
 	DeleteCredentialsForUser(ctx context.Context, realmName string, userID string, credentialID string) error
 	ResetCredentialFailuresForUser(ctx context.Context, realmName string, userID string, credentialID string) error
@@ -928,6 +930,22 @@ func (c *component) CreateRecoveryCode(ctx context.Context, realmName, userID st
 	c.reportEvent(ctx, "CREATE_RECOVERY_CODE", database.CtEventRealmName, realmName, database.CtEventUserID, userID)
 
 	return *recoveryCodeKc.Code, err
+}
+
+func (c *component) CreateActivationCode(ctx context.Context, realmName, userID string) (string, error) {
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+
+	activationCodeKc, err := c.keycloakClient.CreateActivationCode(accessToken, realmName, userID)
+
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return "", err
+	}
+
+	// store the API call into the DB
+	c.reportEvent(ctx, "CREATE_ACTIVATION_CODE", database.CtEventRealmName, realmName, database.CtEventUserID, userID)
+
+	return *activationCodeKc.Code, err
 }
 
 func (c *component) GetCredentialsForUser(ctx context.Context, realmName string, userID string) ([]api.CredentialRepresentation, error) {
