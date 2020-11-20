@@ -123,7 +123,6 @@ const (
 	cfgTechnicalClientID        = "technical-client-id"
 	cfgRecaptchaURL             = "recaptcha-url"
 	cfgRecaptchaSecret          = "recaptcha-secret"
-	cfgSsePublicURL             = "sse-public-url"
 	cfgDbAesGcmKey              = "db-aesgcm-key"
 	cfgDbAesGcmTagSize          = "db-aesgcm-tag-size"
 	cfgArchiveRwDbParams        = "db-archive-rw"
@@ -584,7 +583,7 @@ func main() {
 
 		var keycloakComponent management.Component
 		{
-			keycloakComponent = management.NewComponent(keycloakClient, usersDBModule, eventsDBModule, configDBModule, onboardingModule, trustIDGroups, managementLogger)
+			keycloakComponent = management.NewComponent(keycloakClient, usersDBModule, eventsDBModule, configDBModule, onboardingModule, trustIDGroups, registerRealm, managementLogger)
 			keycloakComponent = management.MakeAuthorizationManagementComponentMW(log.With(managementLogger, "mw", "endpoint"), authorizationManager)(keycloakComponent)
 		}
 

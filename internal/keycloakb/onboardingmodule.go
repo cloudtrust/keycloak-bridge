@@ -5,9 +5,14 @@ import (
 	"crypto/rand"
 	b64 "encoding/base64"
 	"encoding/json"
+	"math/big"
+	"net/http"
 	"net/url"
+	"regexp"
+	"strings"
 	"time"
 
+	errorhandler "github.com/cloudtrust/common-service/errors"
 	"github.com/cloudtrust/common-service/log"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	kc "github.com/cloudtrust/keycloak-client"
@@ -31,15 +36,19 @@ type onboardingModule struct {
 	logger         log.Logger
 }
 
+// OnboardingKeycloakClient interface
 type OnboardingKeycloakClient interface {
+	CreateUser(accessToken string, realmName string, targetRealmName string, user kc.UserRepresentation) (string, error)
 	ExecuteActionsEmail(accessToken string, realmName string, userID string, actions []string, paramKV ...string) error
 }
 
+//OnboardingModule interface
 type OnboardingModule interface {
 	GenerateAuthToken() (TrustIDAuthToken, error)
 	OnboardingAlreadyCompleted(kc.UserRepresentation) (bool, error)
 	SendOnboardingEmail(ctx context.Context, accessToken string, realmName string, userID string,
 		username string, autoLoginToken TrustIDAuthToken, onboardingClientID string, onboardingRedirectURI string) error
+	CreateUser(ctx context.Context, accessToken, realmName, targetRealmName string, kcUser *kc.UserRepresentation) (string, error)
 }
 
 // NewOnboardingModule creates an onboarding module
@@ -101,4 +110,51 @@ func (om *onboardingModule) SendOnboardingEmail(ctx context.Context, accessToken
 	}
 
 	return nil
+}
+
+func (om *onboardingModule) generateUsername(chars []rune, length int) string {
+	var b strings.Builder
+
+	for j := 0; j < length; j++ {
+		nBig, _ := rand.Int(rand.Reader, big.NewInt(int64(len(chars))))
+		index := int(nBig.Int64())
+		b.WriteRune(chars[index])
+	}
+	return b.String()
+}
+
+func (om *onboardingModule) CreateUser(ctx context.Context, accessToken, realmName, targetRealmName string, kcUser *kc.UserRepresentation) (string, error) {
+	var chars = []rune("0123456789")
+	var locationURL string
+	var username string
+	var err error
+
+	for i := 0; i < 10; i++ {
+		username = om.generateUsername(chars, 8)
+		kcUser.Username = &username
+
+		locationURL, err = om.keycloakClient.CreateUser(accessToken, realmName, targetRealmName, *kcUser)
+
+		// Create success: just have to get the userID and exit this loop
+		if err == nil {
+			var re = regexp.MustCompile(`(^.*/users/)`)
+			var userID = re.ReplaceAllString(locationURL, "")
+			kcUser.ID = &userID
+			return locationURL, nil
+		}
+		kcUser.Username = nil
+
+		switch e := err.(type) {
+		case errorhandler.Error:
+			if e.Status == http.StatusConflict && e.Message == "keycloak.existing.username" {
+				// Username already exists
+				continue
+			}
+		}
+		om.logger.Warn(ctx, "msg", "Failed to create user through Keycloak API", "err", err.Error())
+		return "", err
+	}
+
+	om.logger.Warn(ctx, "msg", "Can't generate unused username after multiple attempts")
+	return "", errorhandler.CreateInternalServerError("username.generation")
 }

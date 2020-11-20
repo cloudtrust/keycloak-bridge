@@ -2,12 +2,7 @@ package register
 
 import (
 	"context"
-	"crypto/rand"
 	"errors"
-	"math/big"
-	"net/http"
-	"regexp"
-	"strings"
 
 	"github.com/cloudtrust/keycloak-client/toolbox"
 
@@ -45,6 +40,7 @@ type OnboardingModule interface {
 	OnboardingAlreadyCompleted(kc.UserRepresentation) (bool, error)
 	SendOnboardingEmail(ctx context.Context, accessToken string, realmName string, userID string,
 		username string, autoLoginToken keycloakb.TrustIDAuthToken, onboardingClientID string, onboardingRedirectURI string) error
+	CreateUser(ctx context.Context, accessToken, realmName, targetRealmName string, kcUser *kc.UserRepresentation) (string, error)
 }
 
 // Component is the register component interface.
@@ -76,7 +72,7 @@ type component struct {
 	usersDBModule    keycloakb.UsersDetailsDBModule
 	configDBModule   ConfigurationDBModule
 	eventsDBModule   database.EventsDBModule
-	onboardingModule keycloakb.OnboardingModule
+	onboardingModule OnboardingModule
 	logger           internal.Logger
 }
 
@@ -194,7 +190,7 @@ func (c *component) createUser(ctx context.Context, accessToken string, realmNam
 	// Set authToken for auto login at the end of onboarding process
 	kcUser.SetAttributeString(constants.AttrbTrustIDAuthToken, autoLoginToken.ToJSON())
 
-	userID, username, err := c.createKeycloakUser(ctx, accessToken, realmName, kcUser)
+	_, err = c.onboardingModule.CreateUser(ctx, accessToken, realmName, realmName, &kcUser)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Failed to update user through Keycloak API", "err", err.Error())
 		return "", "", err
@@ -202,7 +198,7 @@ func (c *component) createUser(ctx context.Context, accessToken string, realmNam
 
 	// Store user details in database
 	err = c.usersDBModule.StoreOrUpdateUserDetails(ctx, realmName, dto.DBUser{
-		UserID:               &userID,
+		UserID:               kcUser.ID,
 		BirthLocation:        user.BirthLocation,
 		Nationality:          user.Nationality,
 		IDDocumentType:       user.IDDocumentType,
@@ -216,42 +212,7 @@ func (c *component) createUser(ctx context.Context, accessToken string, realmNam
 		return "", "", err
 	}
 
-	return userID, username, nil
-}
-
-func (c *component) createKeycloakUser(ctx context.Context, accessToken string, realmName string, kcUser kc.UserRepresentation) (string, string, error) {
-	var chars = []rune("0123456789")
-	var userID string
-	var username string
-	var err error
-
-	for i := 0; i < 10; i++ {
-		username = c.generateUsername(chars, 8)
-		kcUser.Username = &username
-
-		userID, err = c.keycloakClient.CreateUser(accessToken, realmName, realmName, kcUser)
-
-		// Create success: just have to get the userID and exit this loop
-		if err == nil {
-			var re = regexp.MustCompile(`(^.*/users/)`)
-			userID = re.ReplaceAllString(userID, "")
-			return userID, username, nil
-		}
-
-		switch e := err.(type) {
-		case errorhandler.Error:
-			if e.Status == http.StatusConflict && e.Message == "keycloak.existing.username" {
-				// Username already exists
-				continue
-			}
-		}
-		c.logger.Warn(ctx, "msg", "Failed to create user through Keycloak API", "err", err.Error())
-		return "", "", err
-	}
-
-	c.logger.Warn(ctx, "msg", "Can't generate unused username after multiple attempts")
-	return "", "", errorhandler.CreateInternalServerError("username.generation")
-
+	return *kcUser.ID, *kcUser.Username, nil
 }
 
 func (c *component) getUserByEmail(ctx context.Context, accessToken string, realmName string, email string) (*kc.UserRepresentation, error) {
@@ -293,17 +254,6 @@ func (c *component) reportEvent(ctx context.Context, apiCall string, values ...s
 		//store in the logs also the event that failed to be stored in the DB
 		internal.LogUnrecordedEvent(ctx, c.logger, apiCall, errEvent.Error(), values...)
 	}
-}
-
-func (c *component) generateUsername(chars []rune, length int) string {
-	var b strings.Builder
-
-	for j := 0; j < length; j++ {
-		nBig, _ := rand.Int(rand.Reader, big.NewInt(int64(len(chars))))
-		index := int(nBig.Int64())
-		b.WriteRune(chars[index])
-	}
-	return b.String()
 }
 
 func (c *component) convertGroupNamesToGroupIDs(accessToken string, realmName string, groupNames []string) ([]string, error) {
