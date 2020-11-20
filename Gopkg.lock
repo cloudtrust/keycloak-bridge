@@ -18,6 +18,7 @@
   version = "2020.09.22"
 
 [[projects]]
+  branch = "new-flow"
   digest = "1:f807f3074f31f37e6165ab1ebffdc6124adbac6d742317fe3d29f9d60b8aa3a8"
   name = "github.com/cloudtrust/common-service"
   packages = [
@@ -39,11 +40,10 @@
   ]
   pruneopts = "UT"
   revision = "f81e61739fc11a0f14b47e32a098e04a38dba3c8"
-  version = "v2.2.5"
 
 [[projects]]
-  branch = "ct-2854"
-  digest = "1:b1c2e236de836c0b6f3559a32daa012cba5bc0592523f48dadfb1ab287ca6af2"
+  branch = "new-flow"
+  digest = "1:d7402faa951b378280269a9008000e488597cde0db3221c22794f7bd4a6c7c41"
   name = "github.com/cloudtrust/keycloak-client"
   packages = [
     ".",
@@ -51,7 +51,7 @@
     "toolbox",
   ]
   pruneopts = "UT"
-  revision = "cd55d5985b2b20ba6d211287c0f47e0b2dee7d41"
+  revision = "6427bfee07a012682b43172545efdd9cd0243d4f"
 
 [[projects]]
   digest = "1:910c5b111ca13127693df80a59be2c952ad97313626116c0c9895e7b588f2a29"
@@ -385,7 +385,7 @@
     "pbkdf2",
   ]
   pruneopts = "UT"
-  revision = "0c6587e931a935f573efb6988c8470cd8c0a58de"
+  revision = "c1f2f97bffc9c53fc40a1a28a5b460094c0050d9"
 
 [[projects]]
   branch = "master"
@@ -413,14 +413,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:464e63d528295644cab298e007fb5866a1f5f81e4e3437ea2389ca10ae039c23"
+  digest = "1:35460768f6f04c010d656662bb0941d73c6141fb68fa2c0952a74b7dbcbc0f78"
   name = "golang.org/x/sys"
   packages = [
     "internal/unsafeheader",
     "unix",
   ]
   pruneopts = "UT"
-  revision = "5cba982894dd4e8879e3ef0a0c308ceff39f6154"
+  revision = "f84b799fce68db3cb46a8f6f819c1e56377181df"
 
 [[projects]]
   digest = "1:a45009ae1e0da0b589cd5da9f30770041573e61f2f79fb3e86aa3790d5c495c4"
