@@ -53,6 +53,7 @@ var (
 	MGMTSendReminderEmail                   = newAction("MGMT_SendReminderEmail", security.ScopeGroup)
 	MGMTResetSmsCounter                     = newAction("MGMT_ResetSmsCounter", security.ScopeGroup)
 	MGMTCreateRecoveryCode                  = newAction("MGMT_CreateRecoveryCode", security.ScopeGroup)
+	MGMTCreateActivationCode                = newAction("MGMT_CreateActivationCode", security.ScopeGroup)
 	MGMTGetCredentialsForUser               = newAction("MGMT_GetCredentialsForUser", security.ScopeGroup)
 	MGMTDeleteCredentialsForUser            = newAction("MGMT_DeleteCredentialsForUser", security.ScopeGroup)
 	MGMTResetCredentialFailuresForUser      = newAction("MGMT_ResetCredentialFailuresForUser", security.ScopeGroup)
@@ -405,6 +406,17 @@ func (c *authorizationComponentMW) CreateRecoveryCode(ctx context.Context, realm
 	}
 
 	return c.next.CreateRecoveryCode(ctx, realmName, userID)
+}
+
+func (c *authorizationComponentMW) CreateActivationCode(ctx context.Context, realmName string, userID string) (string, error) {
+	var action = MGMTCreateActivationCode.String()
+	var targetRealm = realmName
+
+	if err := c.authManager.CheckAuthorizationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
+		return "", err
+	}
+
+	return c.next.CreateActivationCode(ctx, realmName, userID)
 }
 
 func (c *authorizationComponentMW) ExecuteActionsEmail(ctx context.Context, realmName string, userID string, actions []api.RequiredAction, paramKV ...string) error {

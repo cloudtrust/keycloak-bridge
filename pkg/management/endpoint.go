@@ -48,6 +48,7 @@ type Endpoints struct {
 	SendReminderEmail              endpoint.Endpoint
 	ResetSmsCounter                endpoint.Endpoint
 	CreateRecoveryCode             endpoint.Endpoint
+	CreateActivationCode           endpoint.Endpoint
 	GetCredentialsForUser          endpoint.Endpoint
 	DeleteCredentialsForUser       endpoint.Endpoint
 	ResetCredentialFailuresForUser endpoint.Endpoint
@@ -449,6 +450,15 @@ func MakeCreateRecoveryCodeEndpoint(component Component) cs.Endpoint {
 		var m = req.(map[string]string)
 
 		return component.CreateRecoveryCode(ctx, m[prmRealm], m[prmUserID])
+	}
+}
+
+// MakeCreateActivationCodeEndpoint creates an endpoint for MakeCreateActivationCode
+func MakeCreateActivationCodeEndpoint(component Component) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+
+		return component.CreateActivationCode(ctx, m[prmRealm], m[prmUserID])
 	}
 }
 

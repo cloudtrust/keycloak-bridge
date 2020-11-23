@@ -961,6 +961,31 @@ paths:
                 type: string
         409:
           description: recovery code already set
+  /realms/{realm}/users/{userID}/activation-code:
+    post:
+      tags:
+      - Credentials
+      summary: Create or replace an activation code for the user
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
+      responses:
+        201:
+          description: successful operation
+          content:
+            text/plain:
+              schema:
+                type: string
   /realms/{realm}/roles:
     get:
       tags:
