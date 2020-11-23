@@ -158,9 +158,11 @@ type RealmCustomConfiguration struct {
 	ShowPasswordTab                     *bool     `json:"show_password_tab"`
 	ShowProfileTab                      *bool     `json:"show_profile_tab"`
 	ShowAccountDeletionButton           *bool     `json:"show_account_deletion_button"`
-	RegisterExecuteActions              *[]string `json:"register_execute_actions"`
 	RedirectCancelledRegistrationURL    *string   `json:"redirect_cancelled_registration_url"`
 	RedirectSuccessfulRegistrationURL   *string   `json:"redirect_successful_registration_url"`
+	OnboardingRedirectURI               *string   `json:"onboarding_redirect_uri,omitempty"`
+	OnboardingClientID                  *string   `json:"onboarding_client_id,omitempty"`
+	SelfRegisterGroupNames              *[]string `json:"self_register_group_names,omitempty"`
 	BarcodeType                         *string   `json:"barcode_type"`
 }
 
@@ -181,9 +183,10 @@ type BackOfficeConfiguration map[string]map[string][]string
 
 // RealmAdminConfiguration struct
 type RealmAdminConfiguration struct {
-	Mode            *string                   `json:"mode"`
-	AvailableChecks map[string]bool           `json:"available-checks"`
-	Accreditations  []RealmAdminAccreditation `json:"accreditations"`
+	Mode                *string                   `json:"mode"`
+	AvailableChecks     map[string]bool           `json:"available-checks"`
+	Accreditations      []RealmAdminAccreditation `json:"accreditations"`
+	SelfRegisterEnabled *bool                     `json:"self_register_enabled"`
 }
 
 // RealmAdminAccreditation struct
@@ -452,27 +455,35 @@ func ConvertToKCFedID(fedID FederatedIdentityRepresentation) kc.FederatedIdentit
 func CreateDefaultRealmAdminConfiguration() RealmAdminConfiguration {
 	var mode = "corporate"
 	var checks = make(map[string]bool)
+	var falsePtr = false
 	for _, key := range configuration.AvailableCheckKeys {
 		checks[key] = false
 	}
-	return RealmAdminConfiguration{Mode: &mode, AvailableChecks: checks, Accreditations: make([]RealmAdminAccreditation, 0)}
+	return RealmAdminConfiguration{
+		Mode:                &mode,
+		AvailableChecks:     checks,
+		Accreditations:      make([]RealmAdminAccreditation, 0),
+		SelfRegisterEnabled: &falsePtr,
+	}
 }
 
 // ConvertRealmAdminConfigurationFromDBStruct converts a RealmAdminConfiguration from DB struct to API struct
 func ConvertRealmAdminConfigurationFromDBStruct(conf configuration.RealmAdminConfiguration) RealmAdminConfiguration {
 	return RealmAdminConfiguration{
-		Mode:            conf.Mode,
-		AvailableChecks: conf.AvailableChecks,
-		Accreditations:  ConvertRealmAccreditationsFromDBStruct(conf.Accreditations),
+		Mode:                conf.Mode,
+		AvailableChecks:     conf.AvailableChecks,
+		Accreditations:      ConvertRealmAccreditationsFromDBStruct(conf.Accreditations),
+		SelfRegisterEnabled: conf.SelfRegisterEnabled,
 	}
 }
 
 // ConvertToDBStruct converts a realm admin configuration into its database version
 func (rac RealmAdminConfiguration) ConvertToDBStruct() configuration.RealmAdminConfiguration {
 	return configuration.RealmAdminConfiguration{
-		Mode:            rac.Mode,
-		AvailableChecks: rac.AvailableChecks,
-		Accreditations:  rac.ConvertRealmAccreditationsToDBStruct(),
+		Mode:                rac.Mode,
+		AvailableChecks:     rac.AvailableChecks,
+		Accreditations:      rac.ConvertRealmAccreditationsToDBStruct(),
+		SelfRegisterEnabled: rac.SelfRegisterEnabled,
 	}
 }
 
@@ -597,6 +608,8 @@ func (config RealmCustomConfiguration) Validate() error {
 		ValidateParameterRegExp(constants.DefaultRedirectURI, config.DefaultRedirectURI, constants.RegExpRedirectURI, false).
 		ValidateParameterRegExp(constants.RedirectCancelledRegistrationURL, config.RedirectCancelledRegistrationURL, constants.RegExpRedirectURI, false).
 		ValidateParameterRegExp(constants.RedirectSuccessfulRegistrationURL, config.RedirectSuccessfulRegistrationURL, constants.RegExpRedirectURI, false).
+		ValidateParameterRegExp(constants.OnboardingRedirectURI, config.OnboardingRedirectURI, constants.RegExpRedirectURI, false).
+		ValidateParameterRegExp(constants.OnboardingClientID, config.OnboardingClientID, constants.RegExpClientID, false).
 		ValidateParameterIn(constants.BarcodeType, config.BarcodeType, allowedBarcodeType, false).
 		Status()
 }

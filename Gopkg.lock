@@ -19,7 +19,7 @@
 
 [[projects]]
   branch = "new-flow"
-  digest = "1:f807f3074f31f37e6165ab1ebffdc6124adbac6d742317fe3d29f9d60b8aa3a8"
+  digest = "1:fb6ba397da161085e84241ed21c5fe02fbd0257561c5c091654e0ad8835dca06"
   name = "github.com/cloudtrust/common-service"
   packages = [
     ".",
@@ -39,11 +39,11 @@
     "validation",
   ]
   pruneopts = "UT"
-  revision = "f81e61739fc11a0f14b47e32a098e04a38dba3c8"
+  revision = "a4360319a0e9c09862338ca7300ff3aea8a23baa"
 
 [[projects]]
   branch = "new-flow"
-  digest = "1:d7402faa951b378280269a9008000e488597cde0db3221c22794f7bd4a6c7c41"
+  digest = "1:5408a93d0cf63c576949cdd4ce7846159d8d2f974a6ccdaa99fb94edfe6295e2"
   name = "github.com/cloudtrust/keycloak-client"
   packages = [
     ".",
@@ -51,7 +51,7 @@
     "toolbox",
   ]
   pruneopts = "UT"
-  revision = "6427bfee07a012682b43172545efdd9cd0243d4f"
+  revision = "7d2b9005dd960c1b4d15457dc18114df7516ca03"
 
 [[projects]]
   digest = "1:910c5b111ca13127693df80a59be2c952ad97313626116c0c9895e7b588f2a29"
@@ -203,12 +203,12 @@
   version = "v1.8.4"
 
 [[projects]]
-  digest = "1:aff0e9185b5df855488a42e064cb479e994636d3cefa47d053495123d086add4"
+  digest = "1:4bba0efb9a537243bc62a0f816d75a068ea45816824e36706e20fb507b986a9c"
   name = "github.com/mitchellh/mapstructure"
   packages = ["."]
   pruneopts = "UT"
-  revision = "9e1e4717f8567d7ead72d070d064ad17d444a67e"
-  version = "v1.3.3"
+  revision = "95075d6e1a88d608e5258a054d7f0de9401f255e"
+  version = "v1.4.0"
 
 [[projects]]
   digest = "1:fe2538db8d9ee15bf6777c74dfd9be3d8e29b07843bc009d8c8d65de8d60f116"
@@ -385,11 +385,7 @@
     "pbkdf2",
   ]
   pruneopts = "UT"
-<<<<<<< HEAD
   revision = "c8d3bf9c5392d5f66747f112cd55055d7a530b19"
-=======
-  revision = "c1f2f97bffc9c53fc40a1a28a5b460094c0050d9"
->>>>>>> [CLOUDTRUST-2854] Add ActivationCode support
 
 [[projects]]
   branch = "master"
@@ -417,14 +413,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:35460768f6f04c010d656662bb0941d73c6141fb68fa2c0952a74b7dbcbc0f78"
+  digest = "1:6da049257f916c4ed4ccbc631bdbbe24fbff2be13f2d63401bd8edf74167b0df"
   name = "golang.org/x/sys"
   packages = [
     "internal/unsafeheader",
     "unix",
   ]
   pruneopts = "UT"
-  revision = "f84b799fce68db3cb46a8f6f819c1e56377181df"
+  revision = "77190671981848ff71219ecfff38636c9add3b79"
 
 [[projects]]
   digest = "1:a45009ae1e0da0b589cd5da9f30770041573e61f2f79fb3e86aa3790d5c495c4"
@@ -554,12 +550,12 @@
   version = "v2.5.1"
 
 [[projects]]
-  digest = "1:d7f1bd887dc650737a421b872ca883059580e9f8314d601f88025df4f4802dce"
+  digest = "1:5054a1f394226de9e6ddc47b0ba77e35092a4112f4a1cd9cb94aba1f5bdc3ec6"
   name = "gopkg.in/yaml.v2"
   packages = ["."]
   pruneopts = "UT"
-  revision = "0b1645d91e851e735d3e23330303ce81f70adbe3"
-  version = "v2.3.0"
+  revision = "7649d4548cb53a614db133b2a8ac1f31859dda8c"
+  version = "v2.4.0"
 
 [[projects]]
   branch = "v3"
