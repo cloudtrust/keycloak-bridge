@@ -18,6 +18,7 @@
   version = "2020.09.22"
 
 [[projects]]
+  branch = "new-flow"
   digest = "1:f807f3074f31f37e6165ab1ebffdc6124adbac6d742317fe3d29f9d60b8aa3a8"
   name = "github.com/cloudtrust/common-service"
   packages = [
@@ -39,10 +40,10 @@
   ]
   pruneopts = "UT"
   revision = "f81e61739fc11a0f14b47e32a098e04a38dba3c8"
-  version = "v2.2.5"
 
 [[projects]]
-  digest = "1:cd268db008908bcdb025ee8b7044ed5dc581df41363af83aa398f8e340e744b5"
+  branch = "new-flow"
+  digest = "1:d7402faa951b378280269a9008000e488597cde0db3221c22794f7bd4a6c7c41"
   name = "github.com/cloudtrust/keycloak-client"
   packages = [
     ".",
@@ -50,8 +51,7 @@
     "toolbox",
   ]
   pruneopts = "UT"
-  revision = "f77cf5f8365c7f618c7c0f7a1813a84d700eafcf"
-  version = "2.2.2"
+  revision = "6427bfee07a012682b43172545efdd9cd0243d4f"
 
 [[projects]]
   digest = "1:910c5b111ca13127693df80a59be2c952ad97313626116c0c9895e7b588f2a29"
@@ -385,7 +385,11 @@
     "pbkdf2",
   ]
   pruneopts = "UT"
+<<<<<<< HEAD
   revision = "c8d3bf9c5392d5f66747f112cd55055d7a530b19"
+=======
+  revision = "c1f2f97bffc9c53fc40a1a28a5b460094c0050d9"
+>>>>>>> [CLOUDTRUST-2854] Add ActivationCode support
 
 [[projects]]
   branch = "master"
