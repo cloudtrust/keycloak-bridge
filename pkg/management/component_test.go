@@ -2173,8 +2173,7 @@ func TestRecoveryCode(t *testing.T) {
 	var username = "username"
 	var code = "123456"
 
-	// RecoveryCode
-	{
+	t.Run("RecoveryCode", func(t *testing.T) {
 		var kcCodeRep = kc.RecoveryCodeRepresentation{
 			Code: &code,
 		}
@@ -2191,10 +2190,9 @@ func TestRecoveryCode(t *testing.T) {
 
 		assert.Nil(t, err)
 		assert.Equal(t, code, recoveryCode)
-	}
+	})
 
-	// RecoveryCode already exists
-	{
+	t.Run("RecoveryCode already exists", func(t *testing.T) {
 		var err409 = kc.HTTPError{
 			HTTPStatus: 409,
 			Message:    "Conflict",
@@ -2211,10 +2209,9 @@ func TestRecoveryCode(t *testing.T) {
 		_, err := managementComponent.CreateRecoveryCode(ctx, "master", userID)
 
 		assert.NotNil(t, err)
-	}
+	})
 
-	// Error
-	{
+	t.Run("Error", func(t *testing.T) {
 		var kcCodeRep = kc.RecoveryCodeRepresentation{}
 		mockKeycloakClient.EXPECT().CreateRecoveryCode(accessToken, realmName, userID).Return(kcCodeRep, fmt.Errorf("Error")).Times(1)
 
@@ -2226,8 +2223,59 @@ func TestRecoveryCode(t *testing.T) {
 		_, err := managementComponent.CreateRecoveryCode(ctx, "master", userID)
 
 		assert.NotNil(t, err)
-	}
+	})
+}
 
+func TestActivationCode(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
+	var mockUsersDetailsDBModule = mock.NewUsersDetailsDBModule(mockCtrl)
+	var mockEventDBModule = mock.NewEventDBModule(mockCtrl)
+	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
+	var mockLogger = mock.NewLogger(mockCtrl)
+	var allowedTrustIDGroups = []string{"grp1", "grp2"}
+
+	var managementComponent = NewComponent(mockKeycloakClient, mockUsersDetailsDBModule, mockEventDBModule, mockConfigurationDBModule, allowedTrustIDGroups, mockLogger)
+
+	var accessToken = "TOKEN=="
+	var realmName = "master"
+	var userID = "41dbf4a8-32a9-4000-8c17-edc854c31231"
+	var username = "username"
+	var code = "123456"
+
+	t.Run("ActivationCode", func(t *testing.T) {
+		var kcCodeRep = kc.ActivationCodeRepresentation{
+			Code: &code,
+		}
+
+		mockKeycloakClient.EXPECT().CreateActivationCode(accessToken, realmName, userID).Return(kcCodeRep, nil).Times(1)
+
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
+		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
+
+		mockEventDBModule.EXPECT().ReportEvent(ctx, "CREATE_ACTIVATION_CODE", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
+
+		activationCode, err := managementComponent.CreateActivationCode(ctx, "master", userID)
+
+		assert.Nil(t, err)
+		assert.Equal(t, code, activationCode)
+	})
+
+	t.Run("Error", func(t *testing.T) {
+		var kcCodeRep = kc.ActivationCodeRepresentation{}
+		mockKeycloakClient.EXPECT().CreateActivationCode(accessToken, realmName, userID).Return(kcCodeRep, fmt.Errorf("Error")).Times(1)
+
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
+		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
+
+		mockLogger.EXPECT().Warn(gomock.Any(), "err", "Error")
+		_, err := managementComponent.CreateActivationCode(ctx, "master", userID)
+
+		assert.NotNil(t, err)
+	})
 }
 
 func TestExecuteActionsEmail(t *testing.T) {

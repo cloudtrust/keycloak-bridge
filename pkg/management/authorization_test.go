@@ -198,6 +198,9 @@ func TestDeny(t *testing.T) {
 		_, err = authorizationMW.CreateRecoveryCode(ctx, realmName, userID)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
+		_, err = authorizationMW.CreateActivationCode(ctx, realmName, userID)
+		assert.Equal(t, security.ForbiddenError{}, err)
+
 		_, err = authorizationMW.GetCredentialsForUser(ctx, realmName, userID)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
@@ -476,6 +479,11 @@ func TestAllowed(t *testing.T) {
 
 		mockManagementComponent.EXPECT().CreateRecoveryCode(ctx, realmName, userID).Return("123456", nil).Times(1)
 		code, err := authorizationMW.CreateRecoveryCode(ctx, realmName, userID)
+		assert.Nil(t, err)
+		assert.NotNil(t, code)
+
+		mockManagementComponent.EXPECT().CreateActivationCode(ctx, realmName, userID).Return("123456", nil).Times(1)
+		code, err = authorizationMW.CreateActivationCode(ctx, realmName, userID)
 		assert.Nil(t, err)
 		assert.NotNil(t, code)
 

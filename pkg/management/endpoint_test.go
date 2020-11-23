@@ -853,13 +853,11 @@ func TestResetSmsCounterEndpoint(t *testing.T) {
 
 }
 
-func TestRecoveryCodeEndpoint(t *testing.T) {
+func TestCodeEndpoints(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 
 	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
-
-	var e = MakeCreateRecoveryCodeEndpoint(mockManagementComponent)
 
 	var realm = "master"
 	var userID = "123-456-789"
@@ -867,12 +865,23 @@ func TestRecoveryCodeEndpoint(t *testing.T) {
 	var req = make(map[string]string)
 	req[prmRealm] = realm
 	req[prmUserID] = userID
+	var responseCode = "123456"
 
-	mockManagementComponent.EXPECT().CreateRecoveryCode(ctx, realm, userID).Return("123456", nil).Times(1)
-	var res, err = e(ctx, req)
-	assert.Nil(t, err)
-	assert.Equal(t, "123456", res)
+	t.Run("RecoveryCode", func(t *testing.T) {
+		var e = MakeCreateRecoveryCodeEndpoint(mockManagementComponent)
+		mockManagementComponent.EXPECT().CreateRecoveryCode(ctx, realm, userID).Return(responseCode, nil).Times(1)
+		var res, err = e(ctx, req)
+		assert.Nil(t, err)
+		assert.Equal(t, responseCode, res)
+	})
 
+	t.Run("ActivationCode", func(t *testing.T) {
+		var e = MakeCreateActivationCodeEndpoint(mockManagementComponent)
+		mockManagementComponent.EXPECT().CreateActivationCode(ctx, realm, userID).Return(responseCode, nil).Times(1)
+		var res, err = e(ctx, req)
+		assert.Nil(t, err)
+		assert.Equal(t, responseCode, res)
+	})
 }
 
 func TestGetCredentialsForUserEndpoint(t *testing.T) {
