@@ -81,10 +81,9 @@ const (
 )
 
 var (
-	allowedGender       = map[string]bool{"M": true, "F": true}
-	allowedDocumentType = map[string]bool{"ID_CARD": true, "PASSPORT": true, "RESIDENCE_PERMIT": true}
-	allowedCheckType    = map[string]bool{"IDENTITY_CHECK": true}
-	allowedStatus       = map[string]bool{
+	allowedGender    = map[string]bool{"M": true, "F": true}
+	allowedCheckType = map[string]bool{"IDENTITY_CHECK": true}
+	allowedStatus    = map[string]bool{
 		"SUCCESS":                   true,
 		"SUCCESS_DATA_CHANGED":      true,
 		"FRAUD_SUSPICION_CONFIRMED": true,
@@ -193,7 +192,7 @@ func (u *UserRepresentation) Validate() error {
 		ValidateParameterPhoneNumber(prmUserPhoneNumber, u.PhoneNumber, false).
 		ValidateParameterRegExp(prmUserBirthLocation, u.BirthLocation, regExpBirthLocation, false).
 		ValidateParameterRegExp(prmUserNationality, u.Nationality, regExpNationality, false).
-		ValidateParameterIn(prmUserIDDocumentType, u.IDDocumentType, allowedDocumentType, false).
+		ValidateParameterIn(prmUserIDDocumentType, u.IDDocumentType, constants.AllowedDocumentTypes, false).
 		ValidateParameterRegExp(prmUserIDDocumentNumber, u.IDDocumentNumber, regExpIDDocumentNumber, false).
 		ValidateParameterRegExp(prmUserIDDocumentCountry, u.IDDocumentCountry, regExpIDDocumentCountry, false).
 		Status()

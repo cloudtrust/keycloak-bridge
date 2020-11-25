@@ -79,10 +79,6 @@ const (
 	dateLayout = "02.01.2006"
 )
 
-var (
-	allowedDocumentType = map[string]bool{"ID_CARD": true, "PASSPORT": true, "RESIDENCE_PERMIT": true}
-)
-
 // UserFromJSON creates a User using its json representation
 func UserFromJSON(jsonRep string) (UserRepresentation, error) {
 	var user UserRepresentation
@@ -208,7 +204,7 @@ func (u *UserRepresentation) Validate() error {
 		ValidateParameterDate(prmUserBirthDate, u.BirthDate, dateLayout, true).
 		ValidateParameterRegExp(prmUserBirthLocation, u.BirthLocation, regExpBirthLocation, true).
 		ValidateParameterRegExp(prmUserNationality, u.Nationality, regExpNationality, true).
-		ValidateParameterIn(prmUserIDDocumentType, u.IDDocumentType, allowedDocumentType, true).
+		ValidateParameterIn(prmUserIDDocumentType, u.IDDocumentType, constants.AllowedDocumentTypes, true).
 		ValidateParameterRegExp(prmUserIDDocumentNumber, u.IDDocumentNumber, regExpIDDocumentNumber, true).
 		ValidateParameterDate(prmUserIDDocumentExpiration, u.IDDocumentExpiration, dateLayout, true).
 		ValidateParameterRegExp(prmUserIDDocumentCountry, u.IDDocumentCountry, regExpIDDocumentCountry, true).

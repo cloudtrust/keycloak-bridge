@@ -541,8 +541,13 @@ func (user UserRepresentation) Validate() error {
 		ValidateParameterRegExp(constants.Label, user.Label, constants.RegExpLabel, false).
 		ValidateParameterRegExp(constants.Gender, user.Gender, constants.RegExpGender, false).
 		ValidateParameterDateMultipleLayout(constants.Birthdate, user.BirthDate, constants.SupportedDateLayouts, false).
+		ValidateParameterRegExp(constants.BirthLocation, user.BirthLocation, constants.RegExpNameSpecialChars, false).
 		ValidateParameterRegExp(constants.Nationality, user.Nationality, constants.RegExpCountryCode, false).
 		ValidateParameterRegExp(constants.Locale, user.Locale, constants.RegExpLocale, false).
+		ValidateParameterIn(constants.IDDocumentType, user.IDDocumentType, constants.AllowedDocumentTypes, false).
+		ValidateParameterRegExp(constants.IDDocumentNumber, user.IDDocumentNumber, constants.RegExpIDDocumentNumber, false).
+		ValidateParameterLength(constants.IDDocumentNumber, user.IDDocumentNumber, 1, 50, false).
+		ValidateParameterDateMultipleLayout(constants.IDDocumentExpiration, user.IDDocumentExpiration, constants.SupportedDateLayouts, false).
 		ValidateParameterRegExp(constants.IDDocumentCountry, user.IDDocumentCountry, constants.RegExpCountryCode, false)
 
 	if user.Groups != nil {

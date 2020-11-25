@@ -171,6 +171,15 @@ func (user AccountRepresentation) Validate() error {
 		ValidateParameterRegExp(msg.Lastname, user.LastName, RegExpLastName, false).
 		ValidateParameterRegExp(msg.PhoneNumber, user.PhoneNumber, RegExpPhoneNumber, false).
 		ValidateParameterRegExp(msg.Locale, user.Locale, RegExpLocale, false).
+		ValidateParameterRegExp(msg.Gender, user.Gender, constants.RegExpGender, false).
+		ValidateParameterDateMultipleLayout(msg.Birthdate, user.BirthDate, constants.SupportedDateLayouts, false).
+		ValidateParameterRegExp(msg.BirthLocation, user.BirthLocation, constants.RegExpNameSpecialChars, false).
+		ValidateParameterRegExp(msg.Nationality, user.Nationality, constants.RegExpCountryCode, false).
+		ValidateParameterIn(msg.IDDocumentType, user.IDDocumentType, constants.AllowedDocumentTypes, false).
+		ValidateParameterRegExp(msg.IDDocumentNumber, user.IDDocumentNumber, constants.RegExpIDDocumentNumber, false).
+		ValidateParameterLength(msg.IDDocumentNumber, user.IDDocumentNumber, 1, 50, false).
+		ValidateParameterDateMultipleLayout(msg.IDDocumentExpiration, user.IDDocumentExpiration, constants.SupportedDateLayouts, false).
+		ValidateParameterRegExp(msg.IDDocumentCountry, user.IDDocumentCountry, constants.RegExpCountryCode, false).
 		Status()
 }
 

@@ -66,10 +66,6 @@ const (
 	regExpLocale            = `^\w{2}(-\w{2})?$`
 )
 
-var (
-	allowedDocumentType = map[string]bool{"ID_CARD": true, "PASSPORT": true, "RESIDENCE_PERMIT": true}
-)
-
 // UserFromJSON creates a User using its json representation
 func UserFromJSON(jsonRep string) (UserRepresentation, error) {
 	var user UserRepresentation
@@ -123,7 +119,7 @@ func (u *UserRepresentation) Validate(allFieldsMandatory bool) error {
 		ValidateParameterDateMultipleLayout(prmUserBirthDate, u.BirthDate, constants.SupportedDateLayouts, allFieldsMandatory).
 		ValidateParameterRegExp(prmUserBirthLocation, u.BirthLocation, regExpBirthLocation, allFieldsMandatory).
 		ValidateParameterRegExp(prmUserNationality, u.Nationality, regExpNationality, allFieldsMandatory).
-		ValidateParameterIn(prmUserIDDocumentType, u.IDDocumentType, allowedDocumentType, allFieldsMandatory).
+		ValidateParameterIn(prmUserIDDocumentType, u.IDDocumentType, constants.AllowedDocumentTypes, allFieldsMandatory).
 		ValidateParameterRegExp(prmUserIDDocumentNumber, u.IDDocumentNumber, regExpIDDocumentNumber, allFieldsMandatory).
 		ValidateParameterLength(prmUserIDDocumentNumber, u.IDDocumentNumber, 1, 50, allFieldsMandatory).
 		ValidateParameterDateMultipleLayout(prmUserIDDocumentExpiration, u.IDDocumentExpiration, constants.SupportedDateLayouts, allFieldsMandatory).
