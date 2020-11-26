@@ -23,9 +23,11 @@ type UserRepresentation struct {
 	PhoneNumberVerified  *bool      `json:"phoneNumberVerified,omitempty"`
 	BirthDate            *time.Time `json:"birthDate,omitempty"`
 	BirthLocation        *string    `json:"birthLocation,omitempty"`
+	Nationality          *string    `json:"nationality,omitempty"`
 	IDDocumentType       *string    `json:"idDocumentType,omitempty"`
 	IDDocumentNumber     *string    `json:"idDocumentNumber,omitempty"`
 	IDDocumentExpiration *time.Time `json:"idDocumentExpiration,omitempty"`
+	IDDocumentCountry    *string    `json:"idDocumentCountry,omitempty"`
 }
 
 // CheckRepresentation struct
@@ -42,15 +44,17 @@ type CheckRepresentation struct {
 
 // Parameter references
 const (
-	prmUserID               = "user_id"
-	prmUserGender           = "user_gender"
-	prmUserFirstName        = "user_firstName"
-	prmUserLastName         = "user_lastName"
-	prmUserEmail            = "user_emailAddress"
-	prmUserPhoneNumber      = "user_phoneNumber"
-	prmUserBirthLocation    = "user_birthLocation"
-	prmUserIDDocumentType   = "user_idDocType"
-	prmUserIDDocumentNumber = "user_idDocNumber"
+	prmUserID                = "user_id"
+	prmUserGender            = "user_gender"
+	prmUserFirstName         = "user_firstName"
+	prmUserLastName          = "user_lastName"
+	prmUserEmail             = "user_emailAddress"
+	prmUserPhoneNumber       = "user_phoneNumber"
+	prmUserBirthLocation     = "user_birthLocation"
+	prmUserNationality       = "user_nationality"
+	prmUserIDDocumentType    = "user_idDocType"
+	prmUserIDDocumentNumber  = "user_idDocNumber"
+	prmUserIDDocumentCountry = "user_idDocCountry"
 
 	prmCheckOperator  = "check_operator"
 	prmCheckDatetime  = "check_datetime"
@@ -65,8 +69,10 @@ const (
 	regExpLastName      = constants.RegExpNameSpecialChars
 	regExpEmail         = constants.RegExpEmail
 	regExpBirthLocation = constants.RegExpNameSpecialChars
+	regExpNationality   = constants.RegExpCountryCode
 	// Multiple values with digits and letters separated by a single separator (space, dash, dot)
-	regExpIDDocumentNumber = constants.RegExpIDDocumentNumber
+	regExpIDDocumentNumber  = constants.RegExpIDDocumentNumber
+	regExpIDDocumentCountry = constants.RegExpCountryCode
 
 	regExpAlphaNum255 = `[a-zA-Z0-9_-]{1,255}`
 	regExpOperator    = regExpAlphaNum255
@@ -75,10 +81,9 @@ const (
 )
 
 var (
-	allowedGender       = map[string]bool{"M": true, "F": true}
-	allowedDocumentType = map[string]bool{"ID_CARD": true, "PASSPORT": true, "RESIDENCE_PERMIT": true}
-	allowedCheckType    = map[string]bool{"IDENTITY_CHECK": true}
-	allowedStatus       = map[string]bool{
+	allowedGender    = map[string]bool{"M": true, "F": true}
+	allowedCheckType = map[string]bool{"IDENTITY_CHECK": true}
+	allowedStatus    = map[string]bool{
 		"SUCCESS":                   true,
 		"SUCCESS_DATA_CHANGED":      true,
 		"FRAUD_SUSPICION_CONFIRMED": true,
@@ -186,8 +191,10 @@ func (u *UserRepresentation) Validate() error {
 		ValidateParameterRegExp(prmUserEmail, u.Email, regExpEmail, false).
 		ValidateParameterPhoneNumber(prmUserPhoneNumber, u.PhoneNumber, false).
 		ValidateParameterRegExp(prmUserBirthLocation, u.BirthLocation, regExpBirthLocation, false).
-		ValidateParameterIn(prmUserIDDocumentType, u.IDDocumentType, allowedDocumentType, false).
+		ValidateParameterRegExp(prmUserNationality, u.Nationality, regExpNationality, false).
+		ValidateParameterIn(prmUserIDDocumentType, u.IDDocumentType, constants.AllowedDocumentTypes, false).
 		ValidateParameterRegExp(prmUserIDDocumentNumber, u.IDDocumentNumber, regExpIDDocumentNumber, false).
+		ValidateParameterRegExp(prmUserIDDocumentCountry, u.IDDocumentCountry, regExpIDDocumentCountry, false).
 		Status()
 }
 
@@ -199,9 +206,11 @@ func (u *UserRepresentation) HasUpdateOfAccreditationDependantInformationDB(form
 		expiry = &converted
 	}
 	return keycloakb.IsUpdated(u.BirthLocation, formerUserInfo.BirthLocation,
+		u.Nationality, formerUserInfo.Nationality,
 		u.IDDocumentType, formerUserInfo.IDDocumentType,
 		u.IDDocumentNumber, formerUserInfo.IDDocumentNumber,
-		expiry, formerUserInfo.IDDocumentExpiration)
+		expiry, formerUserInfo.IDDocumentExpiration,
+		u.IDDocumentCountry, formerUserInfo.IDDocumentCountry)
 }
 
 // HasUpdateOfAccreditationDependantInformationKC checks user data contains an update of accreditation-dependant information

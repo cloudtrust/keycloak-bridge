@@ -18,7 +18,7 @@
   version = "2020.09.22"
 
 [[projects]]
-  digest = "1:3955c381411715f6afe8a75d8a06ddca539805d9007d2ba6310b7bbd7aaac4e5"
+  digest = "1:f807f3074f31f37e6165ab1ebffdc6124adbac6d742317fe3d29f9d60b8aa3a8"
   name = "github.com/cloudtrust/common-service"
   packages = [
     ".",
@@ -38,8 +38,8 @@
     "validation",
   ]
   pruneopts = "UT"
-  revision = "aff8ca00d4492ff31a45b1dcefd52741b710e36b"
-  version = "2.2.4"
+  revision = "f81e61739fc11a0f14b47e32a098e04a38dba3c8"
+  version = "v2.2.5"
 
 [[projects]]
   digest = "1:cd268db008908bcdb025ee8b7044ed5dc581df41363af83aa398f8e340e744b5"
@@ -385,11 +385,11 @@
     "pbkdf2",
   ]
   pruneopts = "UT"
-  revision = "9e8e0b390897c84cad53ebe9ed2d1d331a5394d9"
+  revision = "c8d3bf9c5392d5f66747f112cd55055d7a530b19"
 
 [[projects]]
   branch = "master"
-  digest = "1:30b26c6efd473e5c3f1aa5a5818678cc00335deb45588525cc98549d5cf0ac23"
+  digest = "1:9bfbda71a867ae2a3450635a5782493cd6c7daf0fcb08241bac9d4301e79e6b5"
   name = "golang.org/x/net"
   packages = [
     "context",
@@ -398,7 +398,7 @@
     "publicsuffix",
   ]
   pruneopts = "UT"
-  revision = "f5854403a9740e74b2e9e725e6cd7c8a57711905"
+  revision = "69a78807bb2bb6d1599c68698c6b009505012083"
 
 [[projects]]
   branch = "master"
@@ -409,21 +409,21 @@
     "internal",
   ]
   pruneopts = "UT"
-  revision = "5d25da1a8d43b66f2898c444f899c7bcfd6a407e"
+  revision = "9fd604954f58d391cab0f7f49affb0a6aa864086"
 
 [[projects]]
   branch = "master"
-  digest = "1:178adb4fd56b97a2dd6ecc5fd38a5f3070ad5465ddb231568816a33545ac4b63"
+  digest = "1:35460768f6f04c010d656662bb0941d73c6141fb68fa2c0952a74b7dbcbc0f78"
   name = "golang.org/x/sys"
   packages = [
     "internal/unsafeheader",
     "unix",
   ]
   pruneopts = "UT"
-  revision = "6e5568b54d1aaee5899c0083c5776f88b8c5b907"
+  revision = "f84b799fce68db3cb46a8f6f819c1e56377181df"
 
 [[projects]]
-  digest = "1:fa940333c48808b0d86ef21f412ffcfd0e5084a82f13905c028a404803b1908f"
+  digest = "1:a45009ae1e0da0b589cd5da9f30770041573e61f2f79fb3e86aa3790d5c495c4"
   name = "golang.org/x/text"
   packages = [
     "collate",
@@ -444,8 +444,8 @@
     "unicode/rangetable",
   ]
   pruneopts = "UT"
-  revision = "23ae387dee1f90d29a23c0e87ee0b46038fbed0e"
-  version = "v0.3.3"
+  revision = "22f1617af38ed4cd65b3b96e02bab267e560155c"
+  version = "v0.3.4"
 
 [[projects]]
   branch = "master"

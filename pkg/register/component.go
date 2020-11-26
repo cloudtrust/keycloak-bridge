@@ -227,9 +227,11 @@ func (c *component) storeUser(ctx context.Context, accessToken string, targetRea
 	err = c.usersDBModule.StoreOrUpdateUserDetails(ctx, targetRealmName, dto.DBUser{
 		UserID:               &userID,
 		BirthLocation:        user.BirthLocation,
+		Nationality:          user.Nationality,
 		IDDocumentType:       user.IDDocumentType,
 		IDDocumentNumber:     user.IDDocumentNumber,
 		IDDocumentExpiration: user.IDDocumentExpiration,
+		IDDocumentCountry:    user.IDDocumentCountry,
 	})
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Can't store user details in database", "err", err.Error())

@@ -23,9 +23,11 @@ func createValidUser() UserRepresentation {
 		phoneNumber     = "00 33 686 550011"
 		birthDate       = time.Now()
 		birthLocation   = "Bermuda"
+		nationality     = "DE"
 		idDocType       = "PASSPORT"
 		idDocNumber     = "123456789"
 		idDocExpiration = time.Now()
+		idDocCountry    = "CH"
 	)
 
 	return UserRepresentation{
@@ -39,9 +41,11 @@ func createValidUser() UserRepresentation {
 		PhoneNumberVerified:  &bFalse,
 		BirthDate:            &birthDate,
 		BirthLocation:        &birthLocation,
+		Nationality:          &nationality,
 		IDDocumentType:       &idDocType,
 		IDDocumentNumber:     &idDocNumber,
 		IDDocumentExpiration: &idDocExpiration,
+		IDDocumentCountry:    &idDocCountry,
 	}
 }
 
@@ -145,9 +149,11 @@ func TestImportFromKeycloak(t *testing.T) {
 	var dateLayout = constants.SupportedDateLayouts[0]
 	var user = createValidUser()
 	user.BirthLocation = nil
+	user.Nationality = nil
 	user.IDDocumentType = nil
 	user.IDDocumentNumber = nil
 	user.IDDocumentExpiration = nil
+	user.IDDocumentCountry = nil
 
 	var kcUser kc.UserRepresentation
 	user.ExportToKeycloak(&kcUser)
@@ -173,7 +179,10 @@ func TestUserValidate(t *testing.T) {
 	})
 
 	t.Run("Invalid users", func(t *testing.T) {
-		var users = []UserRepresentation{user, user, user, user, user, user, user, user}
+		var users []UserRepresentation
+		for i := 0; i < 10; i++ {
+			users = append(users, createValidUser())
+		}
 		// invalid values
 		users[0].Gender = &invalid
 		users[1].FirstName = &invalid
@@ -181,8 +190,10 @@ func TestUserValidate(t *testing.T) {
 		users[3].Email = &invalid
 		users[4].PhoneNumber = &invalid
 		users[5].BirthLocation = &invalid
-		users[6].IDDocumentType = &invalid
-		users[7].IDDocumentNumber = &invalid
+		users[6].Nationality = &invalid
+		users[7].IDDocumentType = &invalid
+		users[8].IDDocumentNumber = &invalid
+		users[9].IDDocumentCountry = &invalid
 
 		for idx, aUser := range users {
 			assert.NotNil(t, aUser.Validate(), "User is expected to be invalid. Test #%d failed", idx)
@@ -212,6 +223,15 @@ func TestHasUpdateOfAccreditationDependantInformationDB(t *testing.T) {
 		user.IDDocumentExpiration = &expiry
 		assert.False(t, user.HasUpdateOfAccreditationDependantInformationDB(dbUser))
 	})
+	t.Run("Nationality", func(t *testing.T) {
+		var nationality = "TYPE1"
+		user.Nationality = ptr("OTHER-NATIONALITY")
+		dbUser.Nationality = &nationality
+		assert.True(t, user.HasUpdateOfAccreditationDependantInformationDB(dbUser))
+
+		user.Nationality = &nationality
+		assert.False(t, user.HasUpdateOfAccreditationDependantInformationDB(dbUser))
+	})
 	t.Run("Document type update", func(t *testing.T) {
 		var documentType = "TYPE1"
 		user.IDDocumentType = ptr("OTHER-TYPE")
@@ -228,6 +248,15 @@ func TestHasUpdateOfAccreditationDependantInformationDB(t *testing.T) {
 		assert.True(t, user.HasUpdateOfAccreditationDependantInformationDB(dbUser))
 
 		user.IDDocumentNumber = &documentNumber
+		assert.False(t, user.HasUpdateOfAccreditationDependantInformationDB(dbUser))
+	})
+	t.Run("Document country update", func(t *testing.T) {
+		var documentCountry = "DE"
+		user.IDDocumentCountry = ptr("CH")
+		dbUser.IDDocumentCountry = &documentCountry
+		assert.True(t, user.HasUpdateOfAccreditationDependantInformationDB(dbUser))
+
+		user.IDDocumentCountry = &documentCountry
 		assert.False(t, user.HasUpdateOfAccreditationDependantInformationDB(dbUser))
 	})
 	t.Run("Birth location update", func(t *testing.T) {

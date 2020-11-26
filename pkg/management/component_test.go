@@ -476,9 +476,11 @@ func TestCreateUser(t *testing.T) {
 		var roles = []string{"445-4545-751515"}
 
 		var birthLocation = "Rolle"
+		var nationality = "CH"
 		var idDocumentType = "Card ID"
 		var idDocumentNumber = "1234-4567-VD-3"
 		var idDocumentExpiration = "23.12.2019"
+		var idDocumentCountry = "IT"
 
 		mockKeycloakClient.EXPECT().CreateUser(accessToken, realmName, targetRealmName, gomock.Any()).DoAndReturn(
 			func(accessToken, realmName, targetRealmName string, kcUserRep kc.UserRepresentation) (string, error) {
@@ -506,9 +508,11 @@ func TestCreateUser(t *testing.T) {
 			func(ctx context.Context, targetRealmName string, user dto.DBUser) {
 				assert.Equal(t, userID, *user.UserID)
 				assert.Equal(t, birthLocation, *user.BirthLocation)
+				assert.Equal(t, nationality, *user.Nationality)
 				assert.Equal(t, idDocumentType, *user.IDDocumentType)
 				assert.Equal(t, idDocumentNumber, *user.IDDocumentNumber)
 				assert.Equal(t, idDocumentExpiration, *user.IDDocumentExpiration)
+				assert.Equal(t, idDocumentCountry, *user.IDDocumentCountry)
 			}).Return(nil).Times(1)
 
 		mockEventDBModule.EXPECT().Store(ctx, gomock.Any()).Return(nil).AnyTimes()
@@ -531,9 +535,11 @@ func TestCreateUser(t *testing.T) {
 			TrustIDGroups:        &trustIDGroups,
 			Roles:                &roles,
 			BirthLocation:        &birthLocation,
+			Nationality:          &nationality,
 			IDDocumentType:       &idDocumentType,
 			IDDocumentNumber:     &idDocumentNumber,
 			IDDocumentExpiration: &idDocumentExpiration,
+			IDDocumentCountry:    &idDocumentCountry,
 		}
 		mockEventDBModule.EXPECT().ReportEvent(ctx, "API_ACCOUNT_CREATION", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
 		location, err := managementComponent.CreateUser(ctx, targetRealmName, userRep)
@@ -689,6 +695,7 @@ func TestGetUser(t *testing.T) {
 		var label = "Label"
 		var gender = "M"
 		var birthDate = "01/01/1988"
+		var nationality = "AU"
 		var createdTimestamp = time.Now().UTC().Unix()
 		var locale = "it"
 		var trustIDGroups = []string{"grp1", "grp2"}
@@ -696,6 +703,7 @@ func TestGetUser(t *testing.T) {
 		var idDocumentType = "Card ID"
 		var idDocumentNumber = "1234-4567-VD-3"
 		var idDocumentExpiration = "23.12.2019"
+		var idDocumentCountry = "MX"
 
 		var attributes = make(kc.Attributes)
 		attributes.SetString(constants.AttrbPhoneNumber, phoneNumber)
@@ -727,9 +735,11 @@ func TestGetUser(t *testing.T) {
 		mockUsersDetailsDBModule.EXPECT().GetUserDetails(ctx, realmName, id).Return(dto.DBUser{
 			UserID:               &id,
 			BirthLocation:        &birthLocation,
+			Nationality:          &nationality,
 			IDDocumentExpiration: &idDocumentExpiration,
 			IDDocumentNumber:     &idDocumentNumber,
 			IDDocumentType:       &idDocumentType,
+			IDDocumentCountry:    &idDocumentCountry,
 		}, nil).Times(1)
 
 		mockEventDBModule.EXPECT().ReportEvent(ctx, "GET_DETAILS", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
@@ -752,9 +762,11 @@ func TestGetUser(t *testing.T) {
 		assert.Equal(t, locale, *apiUserRep.Locale)
 		assert.Equal(t, trustIDGroups, *apiUserRep.TrustIDGroups)
 		assert.Equal(t, birthLocation, *apiUserRep.BirthLocation)
+		assert.Equal(t, nationality, *apiUserRep.Nationality)
 		assert.Equal(t, idDocumentExpiration, *apiUserRep.IDDocumentExpiration)
 		assert.Equal(t, idDocumentNumber, *apiUserRep.IDDocumentNumber)
 		assert.Equal(t, idDocumentType, *apiUserRep.IDDocumentType)
+		assert.Equal(t, idDocumentCountry, *apiUserRep.IDDocumentCountry)
 	})
 
 	t.Run("Get user with succces with empty user info", func(t *testing.T) {
@@ -823,16 +835,20 @@ func TestGetUser(t *testing.T) {
 		assert.Equal(t, locale, *apiUserRep.Locale)
 		assert.Equal(t, trustIDGroups, *apiUserRep.TrustIDGroups)
 		assert.Nil(t, apiUserRep.BirthLocation)
+		assert.Nil(t, apiUserRep.Nationality)
 		assert.Nil(t, apiUserRep.IDDocumentExpiration)
 		assert.Nil(t, apiUserRep.IDDocumentNumber)
 		assert.Nil(t, apiUserRep.IDDocumentType)
+		assert.Nil(t, apiUserRep.IDDocumentCountry)
 	})
 
 	t.Run("Get user with succces but with error when storing the event in the DB", func(t *testing.T) {
 		var birthLocation = "Rolle"
+		var nationality = "CH"
 		var idDocumentType = "Card ID"
 		var idDocumentNumber = "1234-4567-VD-3"
 		var idDocumentExpiration = "23.12.2019"
+		var idDocumentCountry = "BE"
 		var kcUserRep = kc.UserRepresentation{
 			ID:       &id,
 			Username: &username,
@@ -846,9 +862,11 @@ func TestGetUser(t *testing.T) {
 		mockUsersDetailsDBModule.EXPECT().GetUserDetails(ctx, realmName, id).Return(dto.DBUser{
 			UserID:               &id,
 			BirthLocation:        &birthLocation,
+			Nationality:          &nationality,
 			IDDocumentExpiration: &idDocumentExpiration,
 			IDDocumentNumber:     &idDocumentNumber,
 			IDDocumentType:       &idDocumentType,
+			IDDocumentCountry:    &idDocumentCountry,
 		}, nil).Times(1)
 
 		mockEventDBModule.EXPECT().ReportEvent(ctx, "GET_DETAILS", "back-office", database.CtEventRealmName, realmName, database.CtEventUserID, id, database.CtEventUsername, username).Return(errors.New("error")).Times(1)
@@ -920,9 +938,11 @@ func TestUpdateUser(t *testing.T) {
 	var birthDate = "01/01/1988"
 	var locale = "de"
 	var birthLocation = "Rolle"
+	var nationality = "CH"
 	var idDocumentType = "Card ID"
 	var idDocumentNumber = "1234-4567-VD-3"
 	var idDocumentExpiration = "23.12.2019"
+	var idDocumentCountry = "CH"
 	var createdTimestamp = time.Now().UTC().Unix()
 
 	var attributes = make(kc.Attributes)
@@ -948,9 +968,11 @@ func TestUpdateUser(t *testing.T) {
 	var dbUserRep = dto.DBUser{
 		UserID:               &id,
 		BirthLocation:        &birthLocation,
+		Nationality:          &nationality,
 		IDDocumentType:       &idDocumentType,
 		IDDocumentNumber:     &idDocumentNumber,
 		IDDocumentExpiration: &idDocumentExpiration,
+		IDDocumentCountry:    &idDocumentCountry,
 	}
 
 	var userRep = api.UserRepresentation{
@@ -1029,8 +1051,8 @@ func TestUpdateUser(t *testing.T) {
 			PhoneNumberVerified:  &phoneNumberVerified,
 			Label:                &label,
 			Gender:               &gender,
-			BirthDate:            &birthDate,
 			Locale:               &locale,
+			BirthDate:            &birthDate,
 			BirthLocation:        &birthLocation,
 			IDDocumentExpiration: &newIDDocumentExpiration,
 		}
@@ -1039,9 +1061,11 @@ func TestUpdateUser(t *testing.T) {
 			func(ctx context.Context, realm string, user dto.DBUser) error {
 				assert.Equal(t, id, *user.UserID)
 				assert.Equal(t, birthLocation, *user.BirthLocation)
+				assert.Equal(t, nationality, *user.Nationality)
 				assert.Equal(t, idDocumentType, *user.IDDocumentType)
 				assert.Equal(t, idDocumentNumber, *user.IDDocumentNumber)
 				assert.Equal(t, newIDDocumentExpiration, *user.IDDocumentExpiration)
+				assert.Equal(t, idDocumentCountry, *user.IDDocumentCountry)
 				return nil
 			}).Times(1)
 
@@ -1049,19 +1073,25 @@ func TestUpdateUser(t *testing.T) {
 		assert.Nil(t, err)
 
 		newBirthLocation := "21.12.1988"
+		newNationality := "NO"
 		newIDDocumentType := "Permit"
 		newIDDocumentNumber := "123456frs"
+		newIDDocumentCountry := "PT"
 		userAPI.BirthLocation = &newBirthLocation
+		userAPI.Nationality = &newNationality
 		userAPI.IDDocumentType = &newIDDocumentType
 		userAPI.IDDocumentNumber = &newIDDocumentNumber
+		userAPI.IDDocumentCountry = &newIDDocumentCountry
 
 		mockUsersDetailsDBModule.EXPECT().StoreOrUpdateUserDetails(ctx, realmName, gomock.Any()).DoAndReturn(
 			func(ctx context.Context, realm string, user dto.DBUser) error {
 				assert.Equal(t, id, *user.UserID)
 				assert.Equal(t, newBirthLocation, *user.BirthLocation)
+				assert.Equal(t, newNationality, *user.Nationality)
 				assert.Equal(t, newIDDocumentType, *user.IDDocumentType)
 				assert.Equal(t, newIDDocumentNumber, *user.IDDocumentNumber)
 				assert.Equal(t, newIDDocumentExpiration, *user.IDDocumentExpiration)
+				assert.Equal(t, newIDDocumentCountry, *user.IDDocumentCountry)
 				return nil
 			}).Times(1)
 

@@ -26,9 +26,11 @@ func createValidUser() apiregister.UserRepresentation {
 		phoneNumber   = "00 33 686 550011"
 		birthDate     = "31.03.2001"
 		birthLocation = "Montreux"
+		nationality   = "CH"
 		docType       = "ID_CARD"
 		docNumber     = "MEL123789654ABC"
 		docExp        = "28.02.2050"
+		docCountry    = "AT"
 		locale        = "fr"
 	)
 
@@ -40,9 +42,11 @@ func createValidUser() apiregister.UserRepresentation {
 		PhoneNumber:          &phoneNumber,
 		BirthDate:            &birthDate,
 		BirthLocation:        &birthLocation,
+		Nationality:          &nationality,
 		IDDocumentType:       &docType,
 		IDDocumentNumber:     &docNumber,
 		IDDocumentExpiration: &docExp,
+		IDDocumentCountry:    &docCountry,
 		Locale:               &locale,
 	}
 }

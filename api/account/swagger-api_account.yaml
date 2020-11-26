@@ -232,6 +232,9 @@ components:
         birthLocation:
           type: string
           description: only returned by /account
+        nationality:
+          type: string
+          description: ISO 3166 Alpha-2 country code
         idDocumentType:
           type: string
           enum: [ID_CARD, PASSPORT, RESIDENCE_PERMIT]
@@ -242,6 +245,9 @@ components:
         idDocumentExpiration:
           type: string
           description: only returned by /account
+        idDocumentCountry:
+          type: string
+          description: ISO 3166 Alpha-2 country code
         locale:
           type: string
         accreditations:

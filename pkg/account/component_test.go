@@ -150,10 +150,12 @@ func TestUpdateAccount(t *testing.T) {
 	var gender = "M"
 	var birthDate = "01/01/1988"
 	var birthLocation = "Antananarivo"
+	var nationality = "FR"
 	var locale = "de"
 	var idDocType = "PASSPORT"
 	var idDocNumber = "ABC123-DEF456"
 	var idDocExpiration = "01.01.2050"
+	var idDocCountry = "CH"
 	var createdTimestamp = time.Now().UTC().Unix()
 	var anError = errors.New("any error")
 
@@ -179,9 +181,11 @@ func TestUpdateAccount(t *testing.T) {
 	var dbUser = dto.DBUser{
 		UserID:               &userID,
 		BirthLocation:        &birthLocation,
+		Nationality:          &nationality,
 		IDDocumentType:       &idDocType,
 		IDDocumentNumber:     &idDocNumber,
 		IDDocumentExpiration: &idDocExpiration,
+		IDDocumentCountry:    &idDocCountry,
 	}
 
 	var userRep = api.AccountRepresentation{
@@ -477,22 +481,28 @@ func TestGetUser(t *testing.T) {
 		assert.Equal(t, phoneNumber, *apiUserRep.PhoneNumber)
 		assert.Equal(t, birthDate, *apiUserRep.BirthDate)
 		assert.Nil(t, apiUserRep.BirthLocation)
+		assert.Nil(t, apiUserRep.Nationality)
 		assert.Nil(t, apiUserRep.IDDocumentType)
 		assert.Nil(t, apiUserRep.IDDocumentNumber)
 		assert.Nil(t, apiUserRep.IDDocumentExpiration)
+		assert.Nil(t, apiUserRep.IDDocumentCountry)
 	})
 
 	t.Run("Get user with succces", func(t *testing.T) {
 		var birthLocation = "Luzern"
+		var nationality = "CH"
 		var docType = "PASSPORT"
 		var docID = "PASS123456789"
 		var docExp = "31.12.2029"
+		var docCountry = "CH"
 		mockKeycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kcUserRep, nil).Times(1)
 		mockUsersDetailsDBModule.EXPECT().GetUserDetails(ctx, realmName, userID).Return(dto.DBUser{
 			BirthLocation:        &birthLocation,
+			Nationality:          &nationality,
 			IDDocumentType:       &docType,
 			IDDocumentNumber:     &docID,
 			IDDocumentExpiration: &docExp,
+			IDDocumentCountry:    &docCountry,
 		}, nil)
 		mockEventDBModule.EXPECT().ReportEvent(ctx, "GET_DETAILS", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
@@ -507,9 +517,11 @@ func TestGetUser(t *testing.T) {
 		assert.Equal(t, phoneNumber, *apiUserRep.PhoneNumber)
 		assert.Equal(t, birthDate, *apiUserRep.BirthDate)
 		assert.Equal(t, birthLocation, *apiUserRep.BirthLocation)
+		assert.Equal(t, nationality, *apiUserRep.Nationality)
 		assert.Equal(t, docType, *apiUserRep.IDDocumentType)
 		assert.Equal(t, docID, *apiUserRep.IDDocumentNumber)
 		assert.Equal(t, docExp, *apiUserRep.IDDocumentExpiration)
+		assert.Equal(t, docCountry, *apiUserRep.IDDocumentCountry)
 	})
 }
 

@@ -310,18 +310,22 @@ func (c *component) CreateUser(ctx context.Context, realmName string, user api.U
 	userID := string(reg.Find([]byte(locationURL)))
 
 	var userInfoToPersist = user.BirthLocation != nil
+	userInfoToPersist = userInfoToPersist || user.Nationality != nil
 	userInfoToPersist = userInfoToPersist || user.IDDocumentType != nil
 	userInfoToPersist = userInfoToPersist || user.IDDocumentNumber != nil
 	userInfoToPersist = userInfoToPersist || user.IDDocumentExpiration != nil
+	userInfoToPersist = userInfoToPersist || user.IDDocumentCountry != nil
 
 	if userInfoToPersist {
 		// Store user in database
 		err = c.usersDBModule.StoreOrUpdateUserDetails(ctx, realmName, dto.DBUser{
 			UserID:               &userID,
 			BirthLocation:        user.BirthLocation,
+			Nationality:          user.Nationality,
 			IDDocumentType:       user.IDDocumentType,
 			IDDocumentNumber:     user.IDDocumentNumber,
 			IDDocumentExpiration: user.IDDocumentExpiration,
+			IDDocumentCountry:    user.IDDocumentCountry,
 		})
 		if err != nil {
 			c.logger.Warn(ctx, "msg", "Can't store user details in database", "err", err.Error())
@@ -383,9 +387,11 @@ func (c *component) GetUser(ctx context.Context, realmName, userID string) (api.
 	}
 
 	userRep.BirthLocation = dbUser.BirthLocation
+	userRep.Nationality = dbUser.Nationality
 	userRep.IDDocumentType = dbUser.IDDocumentType
 	userRep.IDDocumentNumber = dbUser.IDDocumentNumber
 	userRep.IDDocumentExpiration = dbUser.IDDocumentExpiration
+	userRep.IDDocumentCountry = dbUser.IDDocumentCountry
 
 	//store the API call into the DB
 	c.reportEvent(ctx, "GET_DETAILS", database.CtEventRealmName, realmName, database.CtEventUserID, userID, database.CtEventUsername, username)
@@ -462,15 +468,21 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 
 	// Update in DB user for extra infos
 	// Store user in database
-	var userInfosUpdated = keycloakb.IsUpdated(user.BirthLocation, oldDbUser.BirthLocation)
-	userInfosUpdated = userInfosUpdated || keycloakb.IsUpdated(user.IDDocumentType, oldDbUser.IDDocumentType)
-	userInfosUpdated = userInfosUpdated || keycloakb.IsUpdated(user.IDDocumentNumber, oldDbUser.IDDocumentNumber)
-	userInfosUpdated = userInfosUpdated || keycloakb.IsUpdated(user.IDDocumentExpiration, oldDbUser.IDDocumentExpiration)
+	var userInfosUpdated = keycloakb.IsUpdated(user.BirthLocation, oldDbUser.BirthLocation) ||
+		keycloakb.IsUpdated(user.Nationality, oldDbUser.Nationality) ||
+		keycloakb.IsUpdated(user.IDDocumentType, oldDbUser.IDDocumentType) ||
+		keycloakb.IsUpdated(user.IDDocumentNumber, oldDbUser.IDDocumentNumber) ||
+		keycloakb.IsUpdated(user.IDDocumentExpiration, oldDbUser.IDDocumentExpiration) ||
+		keycloakb.IsUpdated(user.IDDocumentCountry, oldDbUser.IDDocumentCountry)
 
 	if userInfosUpdated {
 
 		if keycloakb.IsUpdated(user.BirthLocation, oldDbUser.BirthLocation) {
 			oldDbUser.BirthLocation = user.BirthLocation
+		}
+
+		if keycloakb.IsUpdated(user.Nationality, oldDbUser.Nationality) {
+			oldDbUser.Nationality = user.Nationality
 		}
 
 		if keycloakb.IsUpdated(user.IDDocumentType, oldDbUser.IDDocumentType) {
@@ -483,6 +495,10 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 
 		if keycloakb.IsUpdated(user.IDDocumentExpiration, oldDbUser.IDDocumentExpiration) {
 			oldDbUser.IDDocumentExpiration = user.IDDocumentExpiration
+		}
+
+		if keycloakb.IsUpdated(user.IDDocumentCountry, oldDbUser.IDDocumentCountry) {
+			oldDbUser.IDDocumentCountry = user.IDDocumentCountry
 		}
 
 		err = c.usersDBModule.StoreOrUpdateUserDetails(ctx, realmName, oldDbUser)

@@ -104,6 +104,9 @@ components:
           description: format is DD.MM.YYYY
         birthLocation:
           type: string
+        nationality:
+          type: string
+          description: ISO 3166 Alpha-2 country code
         idDocumentType:
           type: string
           enum: [ID_CARD, PASSPORT, RESIDENCE_PERMIT]
@@ -111,6 +114,9 @@ components:
           type: string
         idDocumentExpiration:
           type: string
+        idDocumentCountry:
+          type: string
+          description: ISO 3166 Alpha-2 country code
     Check:
       type: object
       properties:

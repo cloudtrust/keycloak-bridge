@@ -136,9 +136,11 @@ func (c *component) getUser(ctx context.Context, userID string, kcUser kc.UserRe
 
 	var res = apikyc.UserRepresentation{
 		BirthLocation:        dbUser.BirthLocation,
+		Nationality:          dbUser.Nationality,
 		IDDocumentType:       dbUser.IDDocumentType,
 		IDDocumentNumber:     dbUser.IDDocumentNumber,
 		IDDocumentExpiration: dbUser.IDDocumentExpiration,
+		IDDocumentCountry:    dbUser.IDDocumentCountry,
 	}
 	res.ImportFromKeycloak(ctx, &kcUser, c.logger)
 
@@ -198,11 +200,7 @@ func (c *component) validateUser(ctx context.Context, accessToken string, realmN
 
 	var now = time.Now()
 
-	dbUser.BirthLocation = user.BirthLocation
-	dbUser.IDDocumentType = user.IDDocumentType
-	dbUser.IDDocumentNumber = user.IDDocumentNumber
-	dbUser.IDDocumentExpiration = user.IDDocumentExpiration
-
+	user.ExportToDBUser(&dbUser)
 	user.ExportToKeycloak(&kcUser)
 	err = c.keycloakClient.UpdateUser(accessToken, realmName, userID, kcUser)
 	if err != nil {

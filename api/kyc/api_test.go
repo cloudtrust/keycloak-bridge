@@ -26,6 +26,7 @@ func createValidUser() UserRepresentation {
 		phoneNumber     = "00 33 686 550011"
 		birthDate       = "29.02.2020"
 		birthLocation   = "Bermuda"
+		country         = "CH"
 		idDocType       = "PASSPORT"
 		idDocNumber     = "123456789"
 		idDocExpiration = "23.02.2039"
@@ -46,9 +47,11 @@ func createValidUser() UserRepresentation {
 		PhoneNumberVerified:  &bFalse,
 		BirthDate:            &birthDate,
 		BirthLocation:        &birthLocation,
+		Nationality:          &country,
 		IDDocumentType:       &idDocType,
 		IDDocumentNumber:     &idDocNumber,
 		IDDocumentExpiration: &idDocExpiration,
+		IDDocumentCountry:    &country,
 		Locale:               &locale,
 		Accreditations:       &creds,
 	}
@@ -178,7 +181,7 @@ func TestValidateUserRepresentation(t *testing.T) {
 
 	t.Run("Invalid users", func(t *testing.T) {
 		var users []UserRepresentation
-		for i := 0; i < 20; i++ {
+		for i := 0; i < 24; i++ {
 			users = append(users, user)
 		}
 		// invalid values
@@ -189,20 +192,24 @@ func TestValidateUserRepresentation(t *testing.T) {
 		users[4].PhoneNumber = &empty
 		users[5].BirthDate = &invalidDate
 		users[6].BirthLocation = &empty
-		users[7].IDDocumentType = &empty
-		users[8].IDDocumentNumber = &empty
-		users[9].IDDocumentExpiration = &invalidDate
+		users[7].Nationality = &empty
+		users[8].IDDocumentType = &empty
+		users[9].IDDocumentNumber = &empty
+		users[10].IDDocumentExpiration = &invalidDate
+		users[11].IDDocumentCountry = &empty
 		// mandatory parameters
-		users[10].Gender = nil
-		users[11].FirstName = nil
-		users[12].LastName = nil
-		users[13].Email = nil
-		users[14].PhoneNumber = nil
-		users[15].BirthDate = nil
-		users[16].BirthLocation = nil
-		users[17].IDDocumentType = nil
-		users[18].IDDocumentNumber = nil
-		users[19].IDDocumentExpiration = nil
+		users[12].Gender = nil
+		users[13].FirstName = nil
+		users[14].LastName = nil
+		users[15].Email = nil
+		users[16].PhoneNumber = nil
+		users[17].BirthDate = nil
+		users[18].BirthLocation = nil
+		users[19].Nationality = nil
+		users[20].IDDocumentType = nil
+		users[21].IDDocumentNumber = nil
+		users[22].IDDocumentExpiration = nil
+		users[23].IDDocumentCountry = nil
 
 		for idx, aUser := range users {
 			assert.NotNil(t, aUser.Validate(), "User is expected to be invalid. Test #%d failed with user %s", idx, aUser.UserToJSON())

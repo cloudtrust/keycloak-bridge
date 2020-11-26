@@ -25,9 +25,11 @@ type UserRepresentation struct {
 	PhoneNumber          *string `json:"phoneNumber,omitempty"`
 	BirthDate            *string `json:"birthDate,omitempty"`
 	BirthLocation        *string `json:"birthLocation,omitempty"`
+	Nationality          *string `json:"nationality,omitempty"`
 	IDDocumentType       *string `json:"idDocumentType,omitempty"`
 	IDDocumentNumber     *string `json:"idDocumentNumber,omitempty"`
 	IDDocumentExpiration *string `json:"idDocumentExpiration,omitempty"`
+	IDDocumentCountry    *string `json:"idDocumentCountry,omitempty"`
 	Locale               *string `json:"locale,omitempty"`
 }
 
@@ -46,22 +48,22 @@ const (
 	prmUserPhoneNumber          = "user_phoneNumber"
 	prmUserBirthDate            = "user_birthDate"
 	prmUserBirthLocation        = "user_birthLocation"
+	prmUserNationality          = "user_nationality"
 	prmUserIDDocumentType       = "user_idDocType"
 	prmUserIDDocumentNumber     = "user_idDocNumber"
 	prmUserIDDocumentExpiration = "user_idDocExpiration"
+	prmUserIDDocumentCountry    = "user_idDocCountry"
 	prmUserLocale               = "user_locale"
 
-	regExpGender           = constants.RegExpGender
-	regExpFirstName        = constants.RegExpNameSpecialChars
-	regExpLastName         = constants.RegExpNameSpecialChars
-	regExpEmail            = `^.+\@.+\..+$`
-	regExpBirthLocation    = constants.RegExpNameSpecialChars
-	regExpIDDocumentNumber = constants.RegExpIDDocumentNumber
-	regExpLocale           = `^\w{2}(-\w{2})?$`
-)
-
-var (
-	allowedDocumentType = map[string]bool{"ID_CARD": true, "PASSPORT": true, "RESIDENCE_PERMIT": true}
+	regExpGender            = constants.RegExpGender
+	regExpFirstName         = constants.RegExpNameSpecialChars
+	regExpLastName          = constants.RegExpNameSpecialChars
+	regExpEmail             = `^.+\@.+\..+$`
+	regExpBirthLocation     = constants.RegExpNameSpecialChars
+	regExpNationality       = constants.RegExpCountryCode
+	regExpIDDocumentNumber  = constants.RegExpIDDocumentNumber
+	regExpIDDocumentCountry = constants.RegExpCountryCode
+	regExpLocale            = `^\w{2}(-\w{2})?$`
 )
 
 // UserFromJSON creates a User using its json representation
@@ -116,10 +118,12 @@ func (u *UserRepresentation) Validate(allFieldsMandatory bool) error {
 		ValidateParameterPhoneNumber(prmUserPhoneNumber, u.PhoneNumber, allFieldsMandatory).
 		ValidateParameterDateMultipleLayout(prmUserBirthDate, u.BirthDate, constants.SupportedDateLayouts, allFieldsMandatory).
 		ValidateParameterRegExp(prmUserBirthLocation, u.BirthLocation, regExpBirthLocation, allFieldsMandatory).
-		ValidateParameterIn(prmUserIDDocumentType, u.IDDocumentType, allowedDocumentType, allFieldsMandatory).
+		ValidateParameterRegExp(prmUserNationality, u.Nationality, regExpNationality, allFieldsMandatory).
+		ValidateParameterIn(prmUserIDDocumentType, u.IDDocumentType, constants.AllowedDocumentTypes, allFieldsMandatory).
 		ValidateParameterRegExp(prmUserIDDocumentNumber, u.IDDocumentNumber, regExpIDDocumentNumber, allFieldsMandatory).
 		ValidateParameterLength(prmUserIDDocumentNumber, u.IDDocumentNumber, 1, 50, allFieldsMandatory).
 		ValidateParameterDateMultipleLayout(prmUserIDDocumentExpiration, u.IDDocumentExpiration, constants.SupportedDateLayouts, allFieldsMandatory).
+		ValidateParameterRegExp(prmUserIDDocumentCountry, u.IDDocumentCountry, regExpIDDocumentCountry, allFieldsMandatory).
 		ValidateParameterRegExp(prmUserLocale, u.Locale, regExpLocale, true).
 		Status()
 }

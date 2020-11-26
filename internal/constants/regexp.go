@@ -23,6 +23,7 @@ const (
 	RegExpGender           = `^[MFU]$`
 	RegExpBirthDate        = `^(\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01]))$`
 	RegExpLocale           = `^[a-z]{2}$`
+	RegExpCountryCode      = `^\w{2}$`
 	RegExpIDDocumentNumber = `^([\w\d]+([\. -][\w\d]+)*){1,50}$`
 
 	// Password
@@ -40,4 +41,9 @@ const (
 	RegExpLifespan  = `^[0-9]{1,10}$`
 	RegExpGroupIds  = `^([a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12})(,[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}){0,20}$`
 	RegExpNumber    = `^\d+$`
+)
+
+var (
+	// AllowedDocumentTypes are the valid document type for identification
+	AllowedDocumentTypes = map[string]bool{"ID_CARD": true, "PASSPORT": true, "RESIDENCE_PERMIT": true}
 )

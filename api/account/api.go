@@ -23,9 +23,11 @@ type AccountRepresentation struct {
 	PhoneNumberVerified  *bool                          `json:"phoneNumberVerified,omitempty"`
 	BirthDate            *string                        `json:"birthDate,omitempty"`
 	BirthLocation        *string                        `json:"birthLocation,omitempty"`
+	Nationality          *string                        `json:"nationality,omitempty"`
 	IDDocumentType       *string                        `json:"idDocumentType,omitempty"`
 	IDDocumentNumber     *string                        `json:"idDocumentNumber,omitempty"`
 	IDDocumentExpiration *string                        `json:"idDocumentExpiration,omitempty"`
+	IDDocumentCountry    *string                        `json:"idDocumentCountry,omitempty"`
 	Locale               *string                        `json:"locale,omitempty"`
 	Accreditations       *[]AccreditationRepresentation `json:"accreditations,omitempty"`
 }
@@ -169,6 +171,15 @@ func (user AccountRepresentation) Validate() error {
 		ValidateParameterRegExp(msg.Lastname, user.LastName, RegExpLastName, false).
 		ValidateParameterRegExp(msg.PhoneNumber, user.PhoneNumber, RegExpPhoneNumber, false).
 		ValidateParameterRegExp(msg.Locale, user.Locale, RegExpLocale, false).
+		ValidateParameterRegExp(msg.Gender, user.Gender, constants.RegExpGender, false).
+		ValidateParameterDateMultipleLayout(msg.Birthdate, user.BirthDate, constants.SupportedDateLayouts, false).
+		ValidateParameterRegExp(msg.BirthLocation, user.BirthLocation, constants.RegExpNameSpecialChars, false).
+		ValidateParameterRegExp(msg.Nationality, user.Nationality, constants.RegExpCountryCode, false).
+		ValidateParameterIn(msg.IDDocumentType, user.IDDocumentType, constants.AllowedDocumentTypes, false).
+		ValidateParameterRegExp(msg.IDDocumentNumber, user.IDDocumentNumber, constants.RegExpIDDocumentNumber, false).
+		ValidateParameterLength(msg.IDDocumentNumber, user.IDDocumentNumber, 1, 50, false).
+		ValidateParameterDateMultipleLayout(msg.IDDocumentExpiration, user.IDDocumentExpiration, constants.SupportedDateLayouts, false).
+		ValidateParameterRegExp(msg.IDDocumentCountry, user.IDDocumentCountry, constants.RegExpCountryCode, false).
 		Status()
 }
 
@@ -192,19 +203,19 @@ func (credential CredentialRepresentation) Validate() error {
 
 // Regular expressions for parameters validation
 const (
-	RegExpID         = `^[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}$`
-	RegExpIDNullable = `^([a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12})|(null)$`
+	RegExpID         = constants.RegExpID
+	RegExpIDNullable = `^([a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12})$|^(null)$`
 	RegExpLabel      = `^.{0,255}$`
 	RegExpType       = `^[a-zA-Z0-9-_]{1,128}$`
-	RegExpRealmName  = `^[a-zA-Z0-9_-]{1,36}$`
+	RegExpRealmName  = constants.RegExpRealmName
 
 	// Password
-	RegExpPassword = `^.{1,255}$`
+	RegExpPassword = constants.RegExpPassword
 	// User
-	RegExpUsername    = `^[a-zA-Z0-9-_.]{1,128}$`
-	RegExpEmail       = `^.+\@.+\..+`
-	RegExpFirstName   = `^.{1,128}$`
-	RegExpLastName    = `^.{1,128}$`
-	RegExpPhoneNumber = `^\+[1-9]\d{1,14}$`
+	RegExpUsername    = constants.RegExpUsername
+	RegExpEmail       = constants.RegExpEmail
+	RegExpFirstName   = constants.RegExpFirstName
+	RegExpLastName    = constants.RegExpLastName
+	RegExpPhoneNumber = constants.RegExpPhoneNumber
 	RegExpLocale      = `^\w{2}(-\w{2})?$`
 )
