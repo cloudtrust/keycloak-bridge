@@ -371,7 +371,34 @@ paths:
           content:
             application/json:
               schema:
+                $ref: '#/components/schemas/DeprecatedUserStatus'
+  /realms/{realm}/users/status:
+    get:
+      tags:
+      - Users
+      summary: Returns current status of user
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: email
+        in: query
+        schema:
+          type: string
+        required: true
+        allowEmptyValue: false
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
                 $ref: '#/components/schemas/UserStatus'
+        404:
+          description: user not found
   /realms/{realm}/users/{userID}/roles:
     get:
       tags:
@@ -1555,6 +1582,21 @@ components:
         comment:
           type: string
     UserStatus:
+      type: object
+      properties:
+        email:
+          type: string
+        enabled:
+          type: boolean
+        emailVerified:
+          type: boolean
+        phoneNumberVerified:
+          type: boolean
+        onboardingCompleted:
+          type: boolean
+        numberOfCredentials:
+          type: integer
+    DeprecatedUserStatus:
       type: object
       properties:
         enabled:

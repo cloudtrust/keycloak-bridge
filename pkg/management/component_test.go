@@ -27,6 +27,39 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+type componentMocks struct {
+	keycloakClient        *mock.KeycloakClient
+	usersDetailsDBModule  *mock.UsersDetailsDBModule
+	eventDBModule         *mock.EventDBModule
+	configurationDBModule *mock.ConfigurationDBModule
+	onboardingModule      *mock.OnboardingModule
+	logger                *mock.Logger
+}
+
+func createMocks(mockCtrl *gomock.Controller) componentMocks {
+	return componentMocks{
+		keycloakClient:        mock.NewKeycloakClient(mockCtrl),
+		usersDetailsDBModule:  mock.NewUsersDetailsDBModule(mockCtrl),
+		eventDBModule:         mock.NewEventDBModule(mockCtrl),
+		configurationDBModule: mock.NewConfigurationDBModule(mockCtrl),
+		onboardingModule:      mock.NewOnboardingModule(mockCtrl),
+		logger:                mock.NewLogger(mockCtrl),
+	}
+}
+
+func createComponent(mocks componentMocks) Component {
+	var allowedTrustIDGroups = []string{"grp1", "grp2"}
+	return NewComponent(mocks.keycloakClient, mocks.usersDetailsDBModule, mocks.eventDBModule, mocks.configurationDBModule, mocks.onboardingModule, allowedTrustIDGroups, mocks.logger)
+}
+
+func ptrString(value string) *string {
+	return &value
+}
+
+func ptrBool(value bool) *bool {
+	return &value
+}
+
 func TestGetActions(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -1535,17 +1568,15 @@ func TestGetUserAccountStatus(t *testing.T) {
 	var realmName = "aRealm"
 	var userID = "789-789-456"
 
-	// GetUser returns an error
-	{
+	t.Run("GetUser returns an error", func(t *testing.T) {
 		var userRep kc.UserRepresentation
 		mockKeycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(userRep, fmt.Errorf("Unexpected error")).Times(1)
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		_, err := managementComponent.GetUserAccountStatus(ctx, realmName, userID)
 		assert.NotNil(t, err)
-	}
+	})
 
-	// GetUser returns a non-enabled user
-	{
+	t.Run("GetUser returns a non-enabled user", func(t *testing.T) {
 		var userRep kc.UserRepresentation
 		enabled := false
 		userRep.Enabled = &enabled
@@ -1554,10 +1585,9 @@ func TestGetUserAccountStatus(t *testing.T) {
 		status, err := managementComponent.GetUserAccountStatus(ctx, realmName, userID)
 		assert.Nil(t, err)
 		assert.False(t, status["enabled"])
-	}
+	})
 
-	// GetUser returns an enabled user but GetCredentialsForUser fails
-	{
+	t.Run("GetUser returns an enabled user but GetCredentialsForUser fails", func(t *testing.T) {
 		var userRep kc.UserRepresentation
 		enabled := true
 		userRep.Enabled = &enabled
@@ -1567,10 +1597,9 @@ func TestGetUserAccountStatus(t *testing.T) {
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmReq)
 		_, err := managementComponent.GetUserAccountStatus(ctx, realmName, userID)
 		assert.NotNil(t, err)
-	}
+	})
 
-	// GetUser returns an enabled user but GetCredentialsForUser have no credential
-	{
+	t.Run("GetUser returns an enabled user but GetCredentialsForUser have no credential", func(t *testing.T) {
 		var userRep kc.UserRepresentation
 		enabled := true
 		userRep.Enabled = &enabled
@@ -1581,10 +1610,9 @@ func TestGetUserAccountStatus(t *testing.T) {
 		status, err := managementComponent.GetUserAccountStatus(ctx, realmName, userID)
 		assert.Nil(t, err)
 		assert.False(t, status["enabled"])
-	}
+	})
 
-	// GetUser returns an enabled user and GetCredentialsForUser have credentials
-	{
+	t.Run("GetUser returns an enabled user and GetCredentialsForUser have credentials", func(t *testing.T) {
 		var userRep kc.UserRepresentation
 		var creds1, creds2 kc.CredentialRepresentation
 		enabled := true
@@ -1596,7 +1624,110 @@ func TestGetUserAccountStatus(t *testing.T) {
 		status, err := managementComponent.GetUserAccountStatus(ctx, realmName, userID)
 		assert.Nil(t, err)
 		assert.True(t, status["enabled"])
+	})
+}
+
+func TestGetUserAccountStatusByEmail(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mocks = createMocks(mockCtrl)
+	var managementComponent = createComponent(mocks)
+
+	var accessToken = "TOKEN=="
+	var realmReq = "master"
+	var realmName = "aRealm"
+	var userID = "1234-abcd-5678"
+	var email = "user@domain.ch"
+	var anyError = errors.New("any error")
+	var searchedUser = kc.UserRepresentation{
+		ID:      &userID,
+		Email:   &email,
+		Enabled: ptrBool(true),
+		Attributes: &kc.Attributes{
+			constants.AttrbPhoneNumberVerified: []string{"true"},
+			constants.AttrbOnboardingCompleted: []string{"true"},
+		},
 	}
+	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+	ctx = context.WithValue(ctx, cs.CtContextRealm, realmReq)
+
+	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
+
+	t.Run("GetUser returns an error", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetUsers(accessToken, realmReq, realmName, "email", email).Return(kc.UsersPageRepresentation{}, anyError)
+
+		_, err := managementComponent.GetUserAccountStatusByEmail(ctx, realmName, email)
+
+		assert.Equal(t, anyError, err)
+	})
+	t.Run("No user found", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetUsers(accessToken, realmReq, realmName, "email", email).Return(kc.UsersPageRepresentation{}, nil)
+
+		_, err := managementComponent.GetUserAccountStatusByEmail(ctx, realmName, email)
+
+		assert.NotNil(t, err)
+	})
+	t.Run("Found users does not match exactly the given email", func(t *testing.T) {
+		var users = []kc.UserRepresentation{kc.UserRepresentation{}, kc.UserRepresentation{}, kc.UserRepresentation{}}
+		var count = len(users)
+		users[0].Email = nil
+		users[1].Email = ptrString("a" + email)
+		users[2].Email = ptrString("b" + email)
+		mocks.keycloakClient.EXPECT().GetUsers(accessToken, realmReq, realmName, "email", email).Return(kc.UsersPageRepresentation{
+			Count: &count,
+			Users: users,
+		}, nil)
+
+		_, err := managementComponent.GetUserAccountStatusByEmail(ctx, realmName, email)
+
+		assert.NotNil(t, err)
+	})
+	t.Run("Found too many users", func(t *testing.T) {
+		var user1 = kc.UserRepresentation{Email: &email}
+		var users = []kc.UserRepresentation{user1, user1, user1}
+		var count = len(users)
+		mocks.keycloakClient.EXPECT().GetUsers(accessToken, realmReq, realmName, "email", email).Return(kc.UsersPageRepresentation{
+			Count: &count,
+			Users: users,
+		}, nil)
+
+		_, err := managementComponent.GetUserAccountStatusByEmail(ctx, realmName, email)
+
+		assert.NotNil(t, err)
+	})
+
+	var users = []kc.UserRepresentation{searchedUser, searchedUser, searchedUser}
+	var count = len(users)
+	users[1].Email = nil
+	users[2].Email = ptrString("c" + email)
+	mocks.keycloakClient.EXPECT().GetUsers(accessToken, realmReq, realmName, "email", email).Return(kc.UsersPageRepresentation{
+		Count: &count,
+		Users: users,
+	}, nil).AnyTimes()
+
+	t.Run("GetCredentials fails", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetCredentials(gomock.Any(), realmName, userID).Return(nil, anyError)
+
+		_, err := managementComponent.GetUserAccountStatusByEmail(ctx, realmName, email)
+
+		assert.NotNil(t, err)
+	})
+
+	t.Run("Success", func(t *testing.T) {
+		var anyCredential = kc.CredentialRepresentation{}
+		mocks.keycloakClient.EXPECT().GetCredentials(gomock.Any(), realmName, userID).Return([]kc.CredentialRepresentation{anyCredential, anyCredential}, nil)
+		mocks.onboardingModule.EXPECT().OnboardingAlreadyCompleted(gomock.Any()).Return(true, nil)
+
+		res, err := managementComponent.GetUserAccountStatusByEmail(ctx, realmName, email)
+
+		assert.Nil(t, err)
+		assert.Equal(t, email, *res.Email)
+		assert.True(t, *res.Enabled)
+		assert.True(t, *res.PhoneNumberVerified)
+		assert.True(t, *res.OnboardingCompleted)
+		assert.Equal(t, 2, *res.NumberOfCredentials)
+	})
 }
 
 func TestGetClientRolesForUser(t *testing.T) {
@@ -2489,7 +2620,7 @@ func TestSendOnboardingEmail(t *testing.T) {
 		}, nil).Times(1)
 
 		var attributes = make(kc.Attributes)
-		attributes.SetString(constants.AttrOnboardingCompleted, "wrong")
+		attributes.SetString(constants.AttrbOnboardingCompleted, "wrong")
 		mockKeycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(kc.UserRepresentation{
 			ID:         &userID,
 			Username:   &username,
@@ -2508,7 +2639,7 @@ func TestSendOnboardingEmail(t *testing.T) {
 		}, nil).Times(1)
 
 		var attributes = make(kc.Attributes)
-		attributes.SetBool(constants.AttrOnboardingCompleted, true)
+		attributes.SetBool(constants.AttrbOnboardingCompleted, true)
 		mockKeycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(kc.UserRepresentation{
 			ID:         &userID,
 			Username:   &username,

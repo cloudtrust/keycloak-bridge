@@ -102,6 +102,7 @@ type Component interface {
 	CreateUser(ctx context.Context, realmName string, user api.UserRepresentation) (string, error)
 	GetUserChecks(ctx context.Context, realmName, userID string) ([]api.UserCheck, error)
 	GetUserAccountStatus(ctx context.Context, realmName, userID string) (map[string]bool, error)
+	GetUserAccountStatusByEmail(ctx context.Context, realmName, email string) (api.UserStatus, error)
 	GetRolesOfUser(ctx context.Context, realmName, userID string) ([]api.RoleRepresentation, error)
 	GetGroupsOfUser(ctx context.Context, realmName, userID string) ([]api.GroupRepresentation, error)
 	AddGroupToUser(ctx context.Context, realmName, userID string, groupID string) error
@@ -633,6 +634,67 @@ func (c *component) GetUserAccountStatus(ctx context.Context, realmName, userID 
 	creds, err := c.GetCredentialsForUser(ctx, realmName, userID)
 	res["enabled"] = len(creds) > 1
 	return res, err
+}
+
+func (c *component) getUniqueUserByEmail(ctx context.Context, realmName, email string) (kc.UserRepresentation, error) {
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+	var ctxRealm = ctx.Value(cs.CtContextRealm).(string)
+
+	var users, err = c.keycloakClient.GetUsers(accessToken, ctxRealm, realmName, "email", email)
+	if err != nil {
+		c.logger.Warn(ctx, "err", "Can't get user by email", "realm", realmName)
+		return kc.UserRepresentation{}, err
+	}
+	// Only search in first page
+	var exactMatch []kc.UserRepresentation
+	if users.Count != nil {
+		for _, user := range users.Users {
+			if user.Email != nil && email == *user.Email {
+				exactMatch = append(exactMatch, user)
+			}
+		}
+	}
+
+	if len(exactMatch) == 0 {
+		return kc.UserRepresentation{}, errorhandler.CreateNotFoundError(prmQryEmail)
+	}
+
+	if len(exactMatch) > 1 {
+		c.logger.Warn(ctx, "err", "Too many users found by email", "realm", realmName)
+		return kc.UserRepresentation{}, errorhandler.CreateInternalServerError("tooManyRows")
+	}
+
+	return exactMatch[0], nil
+}
+
+// GetUserAccountStatusByEmail gets the user onboarding status based on the email
+func (c *component) GetUserAccountStatusByEmail(ctx context.Context, realmName, email string) (api.UserStatus, error) {
+	var user, err = c.getUniqueUserByEmail(ctx, realmName, email)
+
+	if err != nil {
+		return api.UserStatus{}, err
+	}
+
+	var numberOfCredentials *int
+	if creds, err := c.GetCredentialsForUser(ctx, realmName, *user.ID); err == nil {
+		var number = len(creds)
+		numberOfCredentials = &number
+	} else {
+		c.logger.Warn(ctx, "err", "Can't get user credentials", "realm", realmName, "id", user.ID)
+		return api.UserStatus{}, err
+	}
+
+	var phoneNumberVerified, _ = user.GetAttributeBool(constants.AttrbPhoneNumberVerified)
+	var onboardingCompleted, _ = c.onboardingModule.OnboardingAlreadyCompleted(user)
+
+	return api.UserStatus{
+		Email:               user.Email,
+		Enabled:             user.Enabled,
+		EmailVerified:       user.EmailVerified,
+		PhoneNumberVerified: phoneNumberVerified,
+		OnboardingCompleted: &onboardingCompleted,
+		NumberOfCredentials: numberOfCredentials,
+	}, nil
 }
 
 func (c *component) GetRolesOfUser(ctx context.Context, realmName, userID string) ([]api.RoleRepresentation, error) {

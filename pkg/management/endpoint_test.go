@@ -415,6 +415,30 @@ func TestGetUserAccountStatusEndpoint(t *testing.T) {
 	}
 }
 
+func TestMakeGetUserAccountStatusByEmailEndpoint(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
+
+	var e = MakeGetUserAccountStatusByEmailEndpoint(mockManagementComponent)
+	var ctx = context.Background()
+	var realm = "one-realm"
+	var email = "email@domain.ch"
+
+	t.Run("MakeGetUserAccountStatusByEmailEndpoint-Missing user email", func(t *testing.T) {
+		var req = map[string]string{"realm": realm}
+		var _, err = e(ctx, req)
+		assert.NotNil(t, err)
+	})
+	t.Run("MakeGetUserAccountStatusByEmailEndpoint-success", func(t *testing.T) {
+		var req = map[string]string{prmRealm: realm, prmQryEmail: email}
+		mockManagementComponent.EXPECT().GetUserAccountStatusByEmail(ctx, realm, email).Return(api.UserStatus{}, nil)
+		var _, err = e(ctx, req)
+		assert.Nil(t, err)
+	})
+}
+
 func TestGetRolesOfUserEndpoint(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
