@@ -32,6 +32,12 @@ type UsersDetailsDBModule interface {
 	StoreOrUpdateUserDetails(ctx context.Context, realm string, user dto.DBUser) error
 	GetUserDetails(ctx context.Context, realm string, userID string) (dto.DBUser, error)
 	CreateCheck(ctx context.Context, realm string, userID string, check dto.DBCheck) error
+	GetChecks(ctx context.Context, realm string, userID string) ([]dto.DBCheck, error)
+}
+
+// ArchiveDBModule is the interface from the archive module
+type ArchiveDBModule interface {
+	StoreUserDetails(ctx context.Context, realm string, user dto.ArchiveUserRepresentation) error
 }
 
 // EventsDBModule is the interface of the audit events module
@@ -55,18 +61,20 @@ type component struct {
 	socialRealmName string
 	keycloakClient  KeycloakClient
 	usersDBModule   UsersDetailsDBModule
+	archiveDBModule ArchiveDBModule
 	eventsDBModule  database.EventsDBModule
 	accredsModule   keycloakb.AccreditationsModule
 	logger          internal.Logger
 }
 
 // NewComponent returns the management component.
-func NewComponent(tokenProvider toolbox.OidcTokenProvider, socialRealmName string, keycloakClient KeycloakClient, usersDBModule UsersDetailsDBModule, eventsDBModule EventsDBModule, accredsModule keycloakb.AccreditationsModule, logger internal.Logger) Component {
+func NewComponent(tokenProvider toolbox.OidcTokenProvider, socialRealmName string, keycloakClient KeycloakClient, usersDBModule UsersDetailsDBModule, archiveDBModule ArchiveDBModule, eventsDBModule EventsDBModule, accredsModule keycloakb.AccreditationsModule, logger internal.Logger) Component {
 	return &component{
 		tokenProvider:   tokenProvider,
 		socialRealmName: socialRealmName,
 		keycloakClient:  keycloakClient,
 		usersDBModule:   usersDBModule,
+		archiveDBModule: archiveDBModule,
 		eventsDBModule:  eventsDBModule,
 		accredsModule:   accredsModule,
 		logger:          logger,
@@ -233,6 +241,17 @@ func (c *component) validateUser(ctx context.Context, accessToken string, realmN
 
 	// store the API call into the DB
 	c.reportEvent(ctx, "VALIDATE_USER", database.CtEventRealmName, realmName, database.CtEventUserID, userID, database.CtEventUsername, *user.Username)
+
+	var archiveUser = dto.ToArchiveUserRepresentation(kcUser)
+	archiveUser.SetDetails(dbUser)
+	if archiveUser.Checks, err = c.usersDBModule.GetChecks(ctx, realmName, userID); err != nil {
+		c.logger.Warn(ctx, "msg", "Could not get user checks from database", "err", err.Error(), "realm", realmName, "user", userID)
+	}
+
+	err = c.archiveDBModule.StoreUserDetails(ctx, realmName, archiveUser)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Failed to archive user details", "err", err.Error())
+	}
 
 	return nil
 }

@@ -19,13 +19,9 @@ func TestGetActions(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
-	var mockUsersDB = mock.NewUsersDetailsDBModule(mockCtrl)
-	var mockEventsDB = mock.NewEventsDBModule(mockCtrl)
-	var mockAccreditations = mock.NewAccreditationsModule(mockCtrl)
 	var mockTokenProvider = mock.NewOidcTokenProvider(mockCtrl)
 
-	var component = NewComponent(mockTokenProvider, "realm", mockKeycloakClient, mockUsersDB, mockEventsDB, mockAccreditations, log.NewNopLogger())
+	var component = NewComponent(mockTokenProvider, "realm", nil, nil, nil, nil, nil, log.NewNopLogger())
 
 	t.Run("GetActions", func(t *testing.T) {
 		var res, err = component.GetActions(context.TODO())
@@ -69,7 +65,7 @@ func TestGetUserByUsernameInSocialRealmComponent(t *testing.T) {
 	var kcGroupSearch = []kc.GroupRepresentation{kcGroup1, kcGroup2}
 	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
-	var component = NewComponent(mockTokenProvider, realm, mockKeycloakClient, mockUsersDB, mockEventsDB, mockAccreditations, log.NewNopLogger())
+	var component = NewComponent(mockTokenProvider, realm, mockKeycloakClient, mockUsersDB, nil, mockEventsDB, mockAccreditations, log.NewNopLogger())
 
 	t.Run("Failed to retrieve OIDC token", func(t *testing.T) {
 		var oidcError = errors.New("oidc error")
@@ -145,7 +141,7 @@ func TestGetUserInSocialRealmComponent(t *testing.T) {
 	}
 	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
-	var component = NewComponent(mockTokenProvider, realm, mockKeycloakClient, mockUsersDB, mockEventsDB, mockAccreditations, log.NewNopLogger())
+	var component = NewComponent(mockTokenProvider, realm, mockKeycloakClient, mockUsersDB, nil, mockEventsDB, mockAccreditations, log.NewNopLogger())
 
 	t.Run("Failed to retrieve OIDC token", func(t *testing.T) {
 		var oidcError = errors.New("oidc error")
@@ -202,6 +198,7 @@ func TestValidateUserInSocialRealm(t *testing.T) {
 
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 	var mockUsersDB = mock.NewUsersDetailsDBModule(mockCtrl)
+	var mockArchiveDB = mock.NewArchiveDBModule(mockCtrl)
 	var mockEventsDB = mock.NewEventsDBModule(mockCtrl)
 	var mockAccreditations = mock.NewAccreditationsModule(mockCtrl)
 	var mockTokenProvider = mock.NewOidcTokenProvider(mockCtrl)
@@ -215,7 +212,7 @@ func TestValidateUserInSocialRealm(t *testing.T) {
 	var ctx = context.TODO()
 	var dbUser = dto.DBUser{UserID: &userID}
 
-	var component = NewComponent(mockTokenProvider, targetRealm, mockKeycloakClient, mockUsersDB, mockEventsDB, mockAccreditations, log.NewNopLogger())
+	var component = NewComponent(mockTokenProvider, targetRealm, mockKeycloakClient, mockUsersDB, mockArchiveDB, mockEventsDB, mockAccreditations, log.NewNopLogger())
 
 	ctx = context.WithValue(ctx, cs.CtContextUsername, "operator")
 
@@ -305,6 +302,8 @@ func TestValidateUserInSocialRealm(t *testing.T) {
 		mockUsersDB.EXPECT().StoreOrUpdateUserDetails(ctx, targetRealm, gomock.Any()).Return(nil)
 		mockUsersDB.EXPECT().CreateCheck(ctx, targetRealm, userID, gomock.Any()).Return(nil)
 		mockEventsDB.EXPECT().ReportEvent(gomock.Any(), "VALIDATE_USER", "back-office", gomock.Any())
+		mockUsersDB.EXPECT().GetChecks(gomock.Any(), targetRealm, userID).Return([]dto.DBCheck{}, errors.New("any error"))
+		mockArchiveDB.EXPECT().StoreUserDetails(gomock.Any(), targetRealm, gomock.Any()).Return(errors.New("any error"))
 
 		var err = component.ValidateUserInSocialRealm(ctx, userID, validUser)
 		assert.Nil(t, err)
@@ -318,6 +317,8 @@ func TestValidateUserInSocialRealm(t *testing.T) {
 		mockUsersDB.EXPECT().StoreOrUpdateUserDetails(ctx, targetRealm, gomock.Any()).Return(nil)
 		mockUsersDB.EXPECT().CreateCheck(ctx, targetRealm, userID, gomock.Any()).Return(nil)
 		mockEventsDB.EXPECT().ReportEvent(gomock.Any(), "VALIDATE_USER", "back-office", gomock.Any()).Return(errors.New("report fails"))
+		mockUsersDB.EXPECT().GetChecks(gomock.Any(), targetRealm, userID).Return([]dto.DBCheck{}, nil)
+		mockArchiveDB.EXPECT().StoreUserDetails(gomock.Any(), targetRealm, gomock.Any()).Return(nil)
 
 		var err = component.ValidateUserInSocialRealm(ctx, userID, validUser)
 		assert.Nil(t, err)
@@ -330,6 +331,7 @@ func TestValidateUser(t *testing.T) {
 
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 	var mockUsersDB = mock.NewUsersDetailsDBModule(mockCtrl)
+	var mockArchiveDB = mock.NewArchiveDBModule(mockCtrl)
 	var mockEventsDB = mock.NewEventsDBModule(mockCtrl)
 	var mockAccreditations = mock.NewAccreditationsModule(mockCtrl)
 	var mockTokenProvider = mock.NewOidcTokenProvider(mockCtrl)
@@ -343,7 +345,7 @@ func TestValidateUser(t *testing.T) {
 	var ctx = context.TODO()
 	var dbUser = dto.DBUser{UserID: &userID}
 
-	var component = NewComponent(mockTokenProvider, targetRealm, mockKeycloakClient, mockUsersDB, mockEventsDB, mockAccreditations, log.NewNopLogger())
+	var component = NewComponent(mockTokenProvider, targetRealm, mockKeycloakClient, mockUsersDB, mockArchiveDB, mockEventsDB, mockAccreditations, log.NewNopLogger())
 
 	ctx = context.WithValue(ctx, cs.CtContextAccessToken, accessToken)
 	ctx = context.WithValue(ctx, cs.CtContextUsername, "operator")
@@ -354,6 +356,8 @@ func TestValidateUser(t *testing.T) {
 	mockUsersDB.EXPECT().StoreOrUpdateUserDetails(ctx, targetRealm, gomock.Any()).Return(nil)
 	mockUsersDB.EXPECT().CreateCheck(ctx, targetRealm, userID, gomock.Any()).Return(nil)
 	mockEventsDB.EXPECT().ReportEvent(gomock.Any(), "VALIDATE_USER", "back-office", gomock.Any())
+	mockUsersDB.EXPECT().GetChecks(gomock.Any(), targetRealm, userID).Return([]dto.DBCheck{}, nil)
+	mockArchiveDB.EXPECT().StoreUserDetails(gomock.Any(), targetRealm, gomock.Any()).Return(nil)
 
 	var err = component.ValidateUser(ctx, targetRealm, userID, validUser)
 	assert.Nil(t, err)

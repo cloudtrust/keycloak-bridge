@@ -66,7 +66,7 @@ func TestGetUserComponent(t *testing.T) {
 
 	var ctx = context.Background()
 
-	var component = NewComponent(mockKeycloakClient, mockTokenProvider, mockUsersDB, mockEventsDB, mockAccreditations, log.NewNopLogger())
+	var component = NewComponent(mockKeycloakClient, mockTokenProvider, mockUsersDB, nil, mockEventsDB, mockAccreditations, log.NewNopLogger())
 
 	t.Run("Fails to retrieve token for technical user", func(t *testing.T) {
 		var kcError = errors.New("kc error")
@@ -132,6 +132,7 @@ func TestUpdateUser(t *testing.T) {
 
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 	var mockUsersDB = mock.NewUsersDetailsDBModule(mockCtrl)
+	var mockArchiveUsersDB = mock.NewArchiveDBModule(mockCtrl)
 	var mockEventsDB = mock.NewEventsDBModule(mockCtrl)
 	var mockTokenProvider = mock.NewTokenProvider(mockCtrl)
 	var mockAccreditations = mock.NewAccreditationsModule(mockCtrl)
@@ -141,7 +142,7 @@ func TestUpdateUser(t *testing.T) {
 	var accessToken = "abcdef"
 	var ctx = context.TODO()
 
-	var component = NewComponent(mockKeycloakClient, mockTokenProvider, mockUsersDB, mockEventsDB, mockAccreditations, log.NewNopLogger())
+	var component = NewComponent(mockKeycloakClient, mockTokenProvider, mockUsersDB, mockArchiveUsersDB, mockEventsDB, mockAccreditations, log.NewNopLogger())
 
 	t.Run("Fails to retrieve token for technical user", func(t *testing.T) {
 		var user = api.UserRepresentation{
@@ -219,10 +220,12 @@ func TestUpdateUser(t *testing.T) {
 		}
 		var e = errors.New("error")
 		mockEventsDB.EXPECT().ReportEvent(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(e)
+		mockArchiveUsersDB.EXPECT().StoreUserDetails(ctx, targetRealm, gomock.Any()).Return(nil)
 		var err = component.UpdateUser(ctx, targetRealm, userID, user)
 		assert.Nil(t, err)
 	})
 	mockEventsDB.EXPECT().ReportEvent(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+	mockArchiveUsersDB.EXPECT().StoreUserDetails(ctx, targetRealm, gomock.Any()).Return(nil)
 
 	t.Run("Successful update", func(t *testing.T) {
 		var user = api.UserRepresentation{
@@ -240,6 +243,7 @@ func TestCreateCheck(t *testing.T) {
 
 	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
 	var mockUsersDB = mock.NewUsersDetailsDBModule(mockCtrl)
+	var mockArchiveUsersDB = mock.NewArchiveDBModule(mockCtrl)
 	var mockEventsDB = mock.NewEventsDBModule(mockCtrl)
 	var mockTokenProvider = mock.NewTokenProvider(mockCtrl)
 	var mockAccreditations = mock.NewAccreditationsModule(mockCtrl)
@@ -255,7 +259,7 @@ func TestCreateCheck(t *testing.T) {
 		Status:   ptr("status"),
 	}
 
-	var component = NewComponent(mockKeycloakClient, mockTokenProvider, mockUsersDB, mockEventsDB, mockAccreditations, log.NewNopLogger())
+	var component = NewComponent(mockKeycloakClient, mockTokenProvider, mockUsersDB, mockArchiveUsersDB, mockEventsDB, mockAccreditations, log.NewNopLogger())
 
 	t.Run("Fails to store check in DB", func(t *testing.T) {
 		var dbError = errors.New("db error")
@@ -287,6 +291,10 @@ func TestCreateCheck(t *testing.T) {
 		mockEventsDB.EXPECT().ReportEvent(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(),
 			gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(),
 			gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+		mockTokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
+		mockKeycloakClient.EXPECT().GetUser(accessToken, targetRealm, userID).Return(kc.UserRepresentation{}, nil)
+		mockUsersDB.EXPECT().GetUserDetails(ctx, targetRealm, userID).Return(dto.DBUser{}, nil)
+		mockArchiveUsersDB.EXPECT().StoreUserDetails(ctx, targetRealm, gomock.Any()).Return(nil)
 		var err = component.CreateCheck(ctx, targetRealm, userID, check)
 		assert.Nil(t, err)
 	})
@@ -297,6 +305,9 @@ func TestCreateCheck(t *testing.T) {
 		mockTokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
 		mockAccreditations.EXPECT().GetUserAndPrepareAccreditations(ctx, accessToken, targetRealm, userID, keycloakb.CredsIDNow).Return(kcUser, 1, nil)
 		mockKeycloakClient.EXPECT().UpdateUser(accessToken, targetRealm, userID, kcUser).Return(errors.New("KC fails"))
+		mockKeycloakClient.EXPECT().GetUser(accessToken, targetRealm, userID).Return(kc.UserRepresentation{}, nil)
+		mockUsersDB.EXPECT().GetUserDetails(ctx, targetRealm, userID).Return(dto.DBUser{}, nil)
+		mockArchiveUsersDB.EXPECT().StoreUserDetails(ctx, targetRealm, gomock.Any()).Return(nil)
 		var err = component.CreateCheck(ctx, targetRealm, userID, check)
 		assert.NotNil(t, err)
 	})
@@ -317,4 +328,98 @@ func TestCreateCheck(t *testing.T) {
 
 func ptr(value string) *string {
 	return &value
+}
+
+func TestValidationContext(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockKeycloakClient = mock.NewKeycloakClient(mockCtrl)
+	var mockUsersDB = mock.NewUsersDetailsDBModule(mockCtrl)
+	var mockArchiveUsersDB = mock.NewArchiveDBModule(mockCtrl)
+	var mockTokenProvider = mock.NewTokenProvider(mockCtrl)
+	var mockAccreditations = mock.NewAccreditationsModule(mockCtrl)
+	var component = &component{
+		keycloakClient:  mockKeycloakClient,
+		usersDBModule:   mockUsersDB,
+		archiveDBModule: mockArchiveUsersDB,
+		tokenProvider:   mockTokenProvider,
+		accredsModule:   mockAccreditations,
+		logger:          log.NewNopLogger(),
+	}
+
+	var validationCtx = &validationContext{
+		ctx:       context.TODO(),
+		realmName: "my-realm",
+		userID:    "abcd-4567",
+		kcUser:    &kc.UserRepresentation{},
+	}
+	var accessToken = "abcd1234.efgh.5678ijkl"
+	var anyError = errors.New("Any error")
+
+	t.Run("updateKeycloakUser", func(t *testing.T) {
+		t.Run("Fails to get access token", func(t *testing.T) {
+			mockTokenProvider.EXPECT().ProvideToken(validationCtx.ctx).Return("", anyError)
+			var err = component.updateKeycloakUser(validationCtx)
+			assert.Equal(t, anyError, err)
+		})
+		t.Run("Fails to update user", func(t *testing.T) {
+			mockTokenProvider.EXPECT().ProvideToken(validationCtx.ctx).Return(accessToken, nil)
+			mockKeycloakClient.EXPECT().UpdateUser(accessToken, validationCtx.realmName, validationCtx.userID, gomock.Any()).Return(anyError)
+			var err = component.updateKeycloakUser(validationCtx)
+			assert.NotNil(t, err)
+		})
+		t.Run("Success", func(t *testing.T) {
+			// already got an access token : won't retry
+			mockKeycloakClient.EXPECT().UpdateUser(accessToken, validationCtx.realmName, validationCtx.userID, gomock.Any()).Return(nil)
+			var err = component.updateKeycloakUser(validationCtx)
+			assert.Nil(t, err)
+		})
+	})
+
+	t.Run("getUserWithAccreditations", func(t *testing.T) {
+		validationCtx.accessToken = nil
+		validationCtx.kcUser = nil
+		t.Run("Fails to get access token", func(t *testing.T) {
+			mockTokenProvider.EXPECT().ProvideToken(validationCtx.ctx).Return("", anyError)
+			var _, err = component.getUserWithAccreditations(validationCtx)
+			assert.Equal(t, anyError, err)
+		})
+		t.Run("Fails to get user/accreditations", func(t *testing.T) {
+			mockTokenProvider.EXPECT().ProvideToken(validationCtx.ctx).Return(accessToken, nil)
+			mockAccreditations.EXPECT().GetUserAndPrepareAccreditations(validationCtx.ctx, accessToken, validationCtx.realmName,
+				validationCtx.userID, gomock.Any()).Return(kc.UserRepresentation{}, 0, anyError)
+			var _, err = component.getUserWithAccreditations(validationCtx)
+			assert.Equal(t, anyError, err)
+		})
+		t.Run("Success", func(t *testing.T) {
+			// already got an access token : won't retry
+			mockAccreditations.EXPECT().GetUserAndPrepareAccreditations(validationCtx.ctx, accessToken, validationCtx.realmName,
+				validationCtx.userID, gomock.Any()).Return(kc.UserRepresentation{}, 0, nil)
+			var _, err = component.getUserWithAccreditations(validationCtx)
+			assert.Nil(t, err)
+		})
+	})
+
+	t.Run("Archive user", func(t *testing.T) {
+		validationCtx.accessToken = &accessToken
+		validationCtx.kcUser = nil
+		validationCtx.dbUser = nil
+		t.Run("get user from keycloak fails", func(t *testing.T) {
+			mockKeycloakClient.EXPECT().GetUser(accessToken, validationCtx.realmName, validationCtx.userID).Return(kc.UserRepresentation{}, anyError)
+			component.archiveUser(validationCtx)
+		})
+		mockKeycloakClient.EXPECT().GetUser(accessToken, validationCtx.realmName, validationCtx.userID).Return(kc.UserRepresentation{}, nil).AnyTimes()
+
+		t.Run("get user from DB fails", func(t *testing.T) {
+			mockUsersDB.EXPECT().GetUserDetails(validationCtx.ctx, validationCtx.realmName, validationCtx.userID).Return(dto.DBUser{}, anyError)
+			component.archiveUser(validationCtx)
+		})
+		mockUsersDB.EXPECT().GetUserDetails(validationCtx.ctx, validationCtx.realmName, validationCtx.userID).Return(dto.DBUser{}, nil).AnyTimes()
+
+		t.Run("success", func(t *testing.T) {
+			mockArchiveUsersDB.EXPECT().StoreUserDetails(validationCtx.ctx, validationCtx.realmName, gomock.Any())
+			component.archiveUser(validationCtx)
+		})
+	})
 }

@@ -51,6 +51,8 @@ validation-basic-auth-token: "idnowsuperpasswordverylongandstrong"
 db-aesgcm-key: oYP5DhsaW8dLtBt89i9cvXqz+zQTJBHWdFejLWLN/28=
 db-aesgcm-tag-size: 16 
 
+db-archive-aesgcm-key: qz+BLWLNzQTJoYP5DhsaW8dLtBt89i9cvXHWdFej/28=
+db-archive-aesgcm-tag-size: 16
 
 ## trustID groups allowed to be set
 trustid-groups: 
@@ -138,6 +140,21 @@ db-users-rw-conn-max-lifetime: 10
 db-users-rw-migration: false
 db-users-rw-migration-version: 0.1
 db-users-rw-connection-check: false
+
+# DB archive RO
+db-archive-ro-enabled: true
+db-archive-ro-host-port: 172.17.0.2:3306
+db-archive-ro-username: bridge
+db-archive-ro-password: bridge-password
+db-archive-ro-database: users_history
+db-archive-ro-protocol: tcp
+db-archive-ro-parameters: time_zone='%2B00:00'
+db-archive-ro-max-open-conns: 10
+db-archive-ro-max-idle-conns: 2
+db-archive-ro-conn-max-lifetime: 10
+db-archive-ro-migration: false
+db-archive-ro-migration-version: 0.1
+db-archive-ro-connection-check: false
 
 # Rate limiting in requests/second.
 rate-validation: 1000
