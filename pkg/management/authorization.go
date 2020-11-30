@@ -38,6 +38,7 @@ var (
 	MGMTCreateUser                          = newAction("MGMT_CreateUser", security.ScopeGroup)
 	MGMTGetUserChecks                       = newAction("MGMT_GetUserChecks", security.ScopeGroup)
 	MGMTGetUserAccountStatus                = newAction("MGMT_GetUserAccountStatus", security.ScopeGroup)
+	MGMTGetUserAccountStatusByEmail         = newAction("MGMT_GetUserAccountStatusByEmail", security.ScopeRealm)
 	MGMTGetRolesOfUser                      = newAction("MGMT_GetRolesOfUser", security.ScopeGroup)
 	MGMTGetGroupsOfUser                     = newAction("MGMT_GetGroupsOfUser", security.ScopeGroup)
 	MGMTSetGroupsToUser                     = newAction("MGMT_SetGroupsToUser", security.ScopeGroup)
@@ -276,6 +277,17 @@ func (c *authorizationComponentMW) GetUserAccountStatus(ctx context.Context, rea
 	}
 
 	return c.next.GetUserAccountStatus(ctx, realmName, userID)
+}
+
+func (c *authorizationComponentMW) GetUserAccountStatusByEmail(ctx context.Context, realmName, email string) (api.UserStatus, error) {
+	var action = MGMTGetUserAccountStatusByEmail.String()
+	var targetRealm = realmName
+
+	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
+		return api.UserStatus{}, err
+	}
+
+	return c.next.GetUserAccountStatusByEmail(ctx, realmName, email)
 }
 
 func (c *authorizationComponentMW) GetRolesOfUser(ctx context.Context, realmName, userID string) ([]api.RoleRepresentation, error) {

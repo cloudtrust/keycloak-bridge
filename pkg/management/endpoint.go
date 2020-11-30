@@ -23,24 +23,25 @@ type Endpoints struct {
 	GetClients         endpoint.Endpoint
 	GetRequiredActions endpoint.Endpoint
 
-	DeleteUser                endpoint.Endpoint
-	GetUser                   endpoint.Endpoint
-	UpdateUser                endpoint.Endpoint
-	LockUser                  endpoint.Endpoint
-	UnlockUser                endpoint.Endpoint
-	GetUsers                  endpoint.Endpoint
-	CreateUser                endpoint.Endpoint
-	GetRolesOfUser            endpoint.Endpoint
-	GetGroupsOfUser           endpoint.Endpoint
-	AddGroupToUser            endpoint.Endpoint
-	DeleteGroupForUser        endpoint.Endpoint
-	GetAvailableTrustIDGroups endpoint.Endpoint
-	GetTrustIDGroupsOfUser    endpoint.Endpoint
-	SetTrustIDGroupsToUser    endpoint.Endpoint
-	GetUserChecks             endpoint.Endpoint
-	GetUserAccountStatus      endpoint.Endpoint
-	GetClientRoleForUser      endpoint.Endpoint
-	AddClientRoleToUser       endpoint.Endpoint
+	DeleteUser                  endpoint.Endpoint
+	GetUser                     endpoint.Endpoint
+	UpdateUser                  endpoint.Endpoint
+	LockUser                    endpoint.Endpoint
+	UnlockUser                  endpoint.Endpoint
+	GetUsers                    endpoint.Endpoint
+	CreateUser                  endpoint.Endpoint
+	GetRolesOfUser              endpoint.Endpoint
+	GetGroupsOfUser             endpoint.Endpoint
+	AddGroupToUser              endpoint.Endpoint
+	DeleteGroupForUser          endpoint.Endpoint
+	GetAvailableTrustIDGroups   endpoint.Endpoint
+	GetTrustIDGroupsOfUser      endpoint.Endpoint
+	SetTrustIDGroupsToUser      endpoint.Endpoint
+	GetUserChecks               endpoint.Endpoint
+	GetUserAccountStatus        endpoint.Endpoint
+	GetUserAccountStatusByEmail endpoint.Endpoint
+	GetClientRoleForUser        endpoint.Endpoint
+	AddClientRoleToUser         endpoint.Endpoint
 
 	ResetPassword                  endpoint.Endpoint
 	ExecuteActionsEmail            endpoint.Endpoint
@@ -322,6 +323,20 @@ func MakeGetUserAccountStatusEndpoint(component Component) cs.Endpoint {
 		var m = req.(map[string]string)
 
 		return component.GetUserAccountStatus(ctx, m[prmRealm], m[prmUserID])
+	}
+}
+
+// MakeGetUserAccountStatusByEmailEndpoint creates an endpoint for GetUserAccountStatusByEmail
+func MakeGetUserAccountStatusByEmailEndpoint(component Component) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+		var email = m[prmQryEmail]
+
+		if email == "" {
+			return nil, errorhandler.CreateBadRequestError(msg.MsgErrMissingParam + "." + prmQryEmail)
+		}
+
+		return component.GetUserAccountStatusByEmail(ctx, m[prmRealm], email)
 	}
 }
 
