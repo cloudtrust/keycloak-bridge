@@ -37,6 +37,7 @@ func TestDeny(t *testing.T) {
 	var roleID = "456-852-785"
 	var credentialID = "741-865-741"
 	var userUsername = "toto"
+	var email = "toto@domain.ch"
 
 	var roleName = "role"
 
@@ -151,6 +152,9 @@ func TestDeny(t *testing.T) {
 		assert.Equal(t, security.ForbiddenError{}, err)
 
 		_, err = authorizationMW.GetUserAccountStatus(ctx, realmName, userID)
+		assert.Equal(t, security.ForbiddenError{}, err)
+
+		_, err = authorizationMW.GetUserAccountStatusByEmail(ctx, realmName, email)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
 		_, err = authorizationMW.GetRolesOfUser(ctx, realmName, userID)
@@ -292,6 +296,7 @@ func TestAllowed(t *testing.T) {
 	var roleID = "456-852-785"
 	var credentialID = "7845-785-1545"
 	var userUsername = "toto"
+	var email = "toto@domain.ch"
 
 	var roleName = "role"
 	var toe = "toe"
@@ -432,6 +437,10 @@ func TestAllowed(t *testing.T) {
 
 		mockManagementComponent.EXPECT().GetUserAccountStatus(ctx, realmName, userID).Return(map[string]bool{"enabled": true}, nil).Times(1)
 		_, err = authorizationMW.GetUserAccountStatus(ctx, realmName, userID)
+		assert.Nil(t, err)
+
+		mockManagementComponent.EXPECT().GetUserAccountStatusByEmail(ctx, realmName, email).Return(api.UserStatus{}, nil).Times(1)
+		_, err = authorizationMW.GetUserAccountStatusByEmail(ctx, realmName, email)
 		assert.Nil(t, err)
 
 		mockManagementComponent.EXPECT().GetRolesOfUser(ctx, realmName, userID).Return([]api.RoleRepresentation{}, nil).Times(1)

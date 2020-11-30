@@ -65,7 +65,7 @@ func TestOnboardingAlreadyCompleted(t *testing.T) {
 
 	t.Run("OnboardingCompleted attribute with invalid value", func(t *testing.T) {
 		var attributes = make(kc.Attributes)
-		attributes.SetString(constants.AttrOnboardingCompleted, "wrong")
+		attributes.SetString(constants.AttrbOnboardingCompleted, "wrong")
 		var kcUser = kc.UserRepresentation{
 			Attributes: &attributes,
 		}
@@ -77,7 +77,7 @@ func TestOnboardingAlreadyCompleted(t *testing.T) {
 
 	t.Run("OnboardingCompleted is true", func(t *testing.T) {
 		var attributes = make(kc.Attributes)
-		attributes.SetBool(constants.AttrOnboardingCompleted, true)
+		attributes.SetBool(constants.AttrbOnboardingCompleted, true)
 		var kcUser = kc.UserRepresentation{
 			Attributes: &attributes,
 		}
@@ -89,7 +89,7 @@ func TestOnboardingAlreadyCompleted(t *testing.T) {
 
 	t.Run("OnboardingCompleted is false", func(t *testing.T) {
 		var attributes = make(kc.Attributes)
-		attributes.SetBool(constants.AttrOnboardingCompleted, false)
+		attributes.SetBool(constants.AttrbOnboardingCompleted, false)
 		var kcUser = kc.UserRepresentation{
 			Attributes: &attributes,
 		}

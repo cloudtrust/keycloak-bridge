@@ -67,7 +67,7 @@ func (om *onboardingModule) GenerateAuthToken() (TrustIDAuthToken, error) {
 
 // OnboardingAlreadyCompleted checks if the onboarding process has already been performed
 func (om *onboardingModule) OnboardingAlreadyCompleted(kcUser kc.UserRepresentation) (bool, error) {
-	onboardingCompleted, err := kcUser.GetAttributeBool(constants.AttrOnboardingCompleted)
+	onboardingCompleted, err := kcUser.GetAttributeBool(constants.AttrbOnboardingCompleted)
 	if err != nil {
 		return false, err
 	}

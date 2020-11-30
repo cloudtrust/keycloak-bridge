@@ -166,6 +166,16 @@ type RealmCustomConfiguration struct {
 	BarcodeType                         *string   `json:"barcode_type"`
 }
 
+// UserStatus struct
+type UserStatus struct {
+	Email               *string `json:"email,omitempty"`
+	Enabled             *bool   `json:"enabled,omitempty"`
+	EmailVerified       *bool   `json:"emailVerified,omitempty"`
+	PhoneNumberVerified *bool   `json:"phoneNumberVerified,omitempty"`
+	OnboardingCompleted *bool   `json:"onboardingCompleted,omitempty"`
+	NumberOfCredentials *int    `json:"numberOfCredentials,omitempty"`
+}
+
 // BackOffice configuration keys
 const (
 	BOConfKeyCustomers = "customers"
