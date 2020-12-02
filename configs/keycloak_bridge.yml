@@ -141,20 +141,20 @@ db-users-rw-migration: false
 db-users-rw-migration-version: 0.1
 db-users-rw-connection-check: false
 
-# DB archive RO
-db-archive-ro-enabled: true
-db-archive-ro-host-port: 172.17.0.2:3306
-db-archive-ro-username: bridge
-db-archive-ro-password: bridge-password
-db-archive-ro-database: users_history
-db-archive-ro-protocol: tcp
-db-archive-ro-parameters: time_zone='%2B00:00'
-db-archive-ro-max-open-conns: 10
-db-archive-ro-max-idle-conns: 2
-db-archive-ro-conn-max-lifetime: 10
-db-archive-ro-migration: false
-db-archive-ro-migration-version: 0.1
-db-archive-ro-connection-check: false
+# DB archive RW
+db-archive-rw-enabled: true
+db-archive-rw-host-port: 172.17.0.2:3306
+db-archive-rw-username: bridge
+db-archive-rw-password: bridge-password
+db-archive-rw-database: users_history
+db-archive-rw-protocol: tcp
+db-archive-rw-parameters: time_zone='%2B00:00'
+db-archive-rw-max-open-conns: 10
+db-archive-rw-max-idle-conns: 2
+db-archive-rw-conn-max-lifetime: 10
+db-archive-rw-migration: false
+db-archive-rw-migration-version: 0.1
+db-archive-rw-connection-check: false
 
 # Rate limiting in requests/second.
 rate-validation: 1000
