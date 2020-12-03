@@ -794,18 +794,15 @@ paths:
           type: string
       responses:
         200:
-          description: "Onboarding email sent"
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  code:
-                    type: string
+          description: Onboarding email sent
         400:
-          description: "Invalid input"
+          description: Invalid input
+        401:
+          description: Not authenticated
         403:
-          description: "No permission to call this operation"
+          description: No permission to call this operation
+        409:
+          description: Endpoint not configured
   /realms/{realm}/users/{userID}/send-reminder-email:
     post:
       tags:

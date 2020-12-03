@@ -1608,7 +1608,6 @@ func (c *component) CreateClientRole(ctx context.Context, realmName, clientID st
 // Retrieve the configuration from the database
 func (c *component) GetRealmCustomConfiguration(ctx context.Context, realmName string) (api.RealmCustomConfiguration, error) {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
-	var falseBool = false
 
 	// get the realm config from Keycloak
 	realmConfig, err := c.keycloakClient.GetRealm(accessToken, realmName)
@@ -1624,48 +1623,14 @@ func (c *component) GetRealmCustomConfiguration(ctx context.Context, realmName s
 		switch e := errors.Cause(err).(type) {
 		case errorhandler.Error:
 			c.logger.Warn(ctx, "message", e.Error())
-			return api.RealmCustomConfiguration{
-				DefaultClientID:                     nil,
-				DefaultRedirectURI:                  nil,
-				APISelfAuthenticatorDeletionEnabled: &falseBool,
-				APISelfPasswordChangeEnabled:        &falseBool,
-				APISelfAccountEditingEnabled:        &falseBool,
-				APISelfAccountDeletionEnabled:       &falseBool,
-				ShowAuthenticatorsTab:               &falseBool,
-				ShowPasswordTab:                     &falseBool,
-				ShowProfileTab:                      &falseBool,
-				ShowAccountDeletionButton:           &falseBool,
-				RedirectCancelledRegistrationURL:    nil,
-				RedirectSuccessfulRegistrationURL:   nil,
-				OnboardingRedirectURI:               nil,
-				OnboardingClientID:                  nil,
-				SelfRegisterGroupNames:              nil,
-				BarcodeType:                         nil,
-			}, nil
+			return api.CreateDefaultRealmCustomConfiguration(), nil
 		default:
 			c.logger.Error(ctx, "err", e.Error())
 			return api.RealmCustomConfiguration{}, err
 		}
 	}
 
-	return api.RealmCustomConfiguration{
-		DefaultClientID:                     config.DefaultClientID,
-		DefaultRedirectURI:                  config.DefaultRedirectURI,
-		APISelfAuthenticatorDeletionEnabled: config.APISelfAuthenticatorDeletionEnabled,
-		APISelfPasswordChangeEnabled:        config.APISelfPasswordChangeEnabled,
-		APISelfAccountEditingEnabled:        config.APISelfAccountEditingEnabled,
-		APISelfAccountDeletionEnabled:       config.APISelfAccountDeletionEnabled,
-		ShowAuthenticatorsTab:               config.ShowAuthenticatorsTab,
-		ShowPasswordTab:                     config.ShowPasswordTab,
-		ShowProfileTab:                      config.ShowProfileTab,
-		ShowAccountDeletionButton:           config.ShowAccountDeletionButton,
-		RedirectCancelledRegistrationURL:    config.RedirectCancelledRegistrationURL,
-		RedirectSuccessfulRegistrationURL:   config.RedirectSuccessfulRegistrationURL,
-		OnboardingRedirectURI:               config.OnboardingRedirectURI,
-		OnboardingClientID:                  config.OnboardingClientID,
-		SelfRegisterGroupNames:              config.SelfRegisterGroupNames,
-		BarcodeType:                         config.BarcodeType,
-	}, nil
+	return api.ConvertRealmCustomConfigurationFromDBStruct(config), nil
 }
 
 // Update the configuration in the database; verify that the content of the configuration is coherent with Keycloak configuration
