@@ -81,6 +81,7 @@ type OnboardingModule interface {
 	OnboardingAlreadyCompleted(kc.UserRepresentation) (bool, error)
 	SendOnboardingEmail(ctx context.Context, accessToken string, realmName string, userID string,
 		username string, autoLoginToken keycloakb.TrustIDAuthToken, onboardingClientID string, onboardingRedirectURI string) error
+	CreateUser(ctx context.Context, accessToken, realmName, targetRealmName string, kcUser *kc.UserRepresentation) (string, error)
 }
 
 // Component is the management component interface.
@@ -156,12 +157,13 @@ type component struct {
 	configDBModule          keycloakb.ConfigurationDBModule
 	onboardingModule        OnboardingModule
 	authorizedTrustIDGroups map[string]bool
+	socialRealmName         string
 	logger                  keycloakb.Logger
 }
 
 // NewComponent returns the management component.
 func NewComponent(keycloakClient KeycloakClient, usersDBModule UsersDetailsDBModule, eventDBModule database.EventsDBModule,
-	configDBModule keycloakb.ConfigurationDBModule, onboardingModule OnboardingModule, authorizedTrustIDGroups []string, logger keycloakb.Logger) Component {
+	configDBModule keycloakb.ConfigurationDBModule, onboardingModule OnboardingModule, authorizedTrustIDGroups []string, socialRealmName string, logger keycloakb.Logger) Component {
 
 	var authzedTrustIDGroups = make(map[string]bool)
 	for _, grp := range authorizedTrustIDGroups {
@@ -175,6 +177,7 @@ func NewComponent(keycloakClient KeycloakClient, usersDBModule UsersDetailsDBMod
 		configDBModule:          configDBModule,
 		onboardingModule:        onboardingModule,
 		authorizedTrustIDGroups: authzedTrustIDGroups,
+		socialRealmName:         socialRealmName,
 		logger:                  logger,
 	}
 }
@@ -303,12 +306,18 @@ func (c *component) CreateUser(ctx context.Context, realmName string, user api.U
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 	var ctxRealm = ctx.Value(cs.CtContextRealm).(string)
 
-	var userRep kc.UserRepresentation
+	var userRep = api.ConvertToKCUser(user)
 
-	userRep = api.ConvertToKCUser(user)
-
-	// Store user in KC
-	locationURL, err := c.keycloakClient.CreateUser(accessToken, ctxRealm, realmName, userRep)
+	var locationURL string
+	var err error
+	if realmName == c.socialRealmName {
+		// Ignore username and create a random one
+		userRep.Username = nil
+		locationURL, err = c.onboardingModule.CreateUser(ctx, accessToken, ctxRealm, realmName, &userRep)
+	} else {
+		// Store user in KC
+		locationURL, err = c.keycloakClient.CreateUser(accessToken, ctxRealm, realmName, userRep)
+	}
 	if err != nil {
 		c.logger.Warn(ctx, "err", err.Error())
 		return "", err
@@ -437,6 +446,11 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 	if err != nil {
 		// Log warning already performed in GetUser
 		return err
+	}
+
+	if realmName == c.socialRealmName {
+		// Self register enabled: we can't update the username
+		user.Username = oldUserKc.Username
 	}
 
 	// when the email changes, set the EmailVerified to false

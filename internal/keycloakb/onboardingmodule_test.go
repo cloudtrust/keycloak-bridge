@@ -3,9 +3,12 @@ package keycloakb
 import (
 	"context"
 	"errors"
+	"net/http"
 	"net/url"
+	"regexp"
 	"testing"
 
+	errorhandler "github.com/cloudtrust/common-service/errors"
 	"github.com/cloudtrust/common-service/log"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/mock"
@@ -142,5 +145,50 @@ func TestSendOnboardingEmail(t *testing.T) {
 
 		assert.Nil(t, err)
 	})
+}
 
+func TestCreateUser(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockKeycloakClient = mock.NewOnboardingKeycloakClient(mockCtrl)
+
+	var keycloakURL = "http://keycloak.url"
+	var realm = "cloudtrust"
+	var targetRealm = "client"
+	var ctx = context.Background()
+	var accessToken = "__TOKEN__"
+	var kcUser = kc.UserRepresentation{}
+
+	var onboarding = NewOnboardingModule(mockKeycloakClient, keycloakURL, log.NewNopLogger())
+
+	t.Run("Can't generate username", func(t *testing.T) {
+		var errExistingUsername = errorhandler.Error{
+			Status:  http.StatusConflict,
+			Message: "keycloak.existing.username",
+		}
+
+		mockKeycloakClient.EXPECT().CreateUser(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("", errExistingUsername).Times(10)
+		var _, err = onboarding.CreateUser(ctx, accessToken, realm, targetRealm, &kcUser)
+		assert.NotNil(t, err)
+		assert.Contains(t, err.Error(), "username.generation")
+	})
+	t.Run("User creation fails", func(t *testing.T) {
+		mockKeycloakClient.EXPECT().CreateUser(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("", errors.New("any error"))
+		var _, err = onboarding.CreateUser(ctx, accessToken, realm, targetRealm, &kcUser)
+		assert.NotNil(t, err)
+	})
+	t.Run("Success", func(t *testing.T) {
+		var userID = "12345678-abcd-9876"
+		var location = "http://location/users/" + userID
+		kcUser.Username = nil
+
+		mockKeycloakClient.EXPECT().CreateUser(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(location, nil)
+
+		var resPath, err = onboarding.CreateUser(ctx, accessToken, realm, targetRealm, &kcUser)
+		assert.Nil(t, err)
+		var matched, errRegexp = regexp.Match(`^\d{8}$`, []byte(*kcUser.Username))
+		assert.True(t, matched && errRegexp == nil)
+		assert.Contains(t, resPath, *kcUser.ID)
+	})
 }

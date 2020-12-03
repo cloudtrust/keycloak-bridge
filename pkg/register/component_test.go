@@ -250,7 +250,7 @@ func TestRegisterUser(t *testing.T) {
 		assert.NotNil(t, err)
 	})
 
-	t.Run("Failed to convert  all groupNames", func(t *testing.T) {
+	t.Run("Failed to convert all groupNames", func(t *testing.T) {
 		mockTokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil).Times(1)
 
 		mockConfigDB.EXPECT().GetConfigurations(ctx, targetRealmName).Return(realmConf, realmAdminConf, nil).Times(1)
@@ -280,8 +280,8 @@ func TestRegisterUser(t *testing.T) {
 		mockUsersDB.EXPECT().DeleteUserDetails(ctx, targetRealmName, kcID).Return(nil).Times(1)
 		mockOnboardingModule.EXPECT().GenerateAuthToken().Return(autoLoginToken, nil).Times(1)
 		mockKeycloakClient.EXPECT().GetGroups(accessToken, targetRealmName).Return(groups, nil).Times(1)
-		mockKeycloakClient.EXPECT().CreateUser(accessToken, targetRealmName, targetRealmName, gomock.Any()).DoAndReturn(
-			func(accessToken string, realmName string, realmNameBis string, kcUser kc.UserRepresentation) (string, error) {
+		mockOnboardingModule.EXPECT().CreateUser(ctx, accessToken, targetRealmName, targetRealmName, gomock.Any()).DoAndReturn(
+			func(_, _, _, _ interface{}, kcUser *kc.UserRepresentation) (string, error) {
 				assert.NotNil(t, kcUser.Attributes)
 				assert.Equal(t, autoLoginToken.ToJSON(), *kcUser.Attributes.GetString(constants.AttrbTrustIDAuthToken))
 				return "", errors.New("unexpected error")
@@ -290,6 +290,16 @@ func TestRegisterUser(t *testing.T) {
 		var _, err = component.RegisterUser(ctx, targetRealmName, customerRealmName, user)
 		assert.NotNil(t, err)
 	})
+
+	mockOnboardingModule.EXPECT().CreateUser(ctx, accessToken, targetRealmName, targetRealmName, gomock.Any()).DoAndReturn(
+		func(_, _, _, _ interface{}, kcUser *kc.UserRepresentation) (string, error) {
+			assert.NotNil(t, kcUser.Attributes)
+			assert.Equal(t, autoLoginToken.ToJSON(), *kcUser.Attributes.GetString(constants.AttrbTrustIDAuthToken))
+			var generatedUsername = "78564513"
+			kcUser.ID = &kcID
+			kcUser.Username = &generatedUsername
+			return "http://server/path/to/generated/resource/" + kcID, nil
+		}).AnyTimes()
 
 	t.Run("Failed to store user details", func(t *testing.T) {
 		mockTokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil).Times(1)
@@ -301,12 +311,6 @@ func TestRegisterUser(t *testing.T) {
 		mockUsersDB.EXPECT().DeleteUserDetails(ctx, targetRealmName, kcID).Return(nil).Times(1)
 		mockOnboardingModule.EXPECT().GenerateAuthToken().Return(autoLoginToken, nil).Times(1)
 		mockKeycloakClient.EXPECT().GetGroups(accessToken, targetRealmName).Return(groups, nil).Times(1)
-		mockKeycloakClient.EXPECT().CreateUser(accessToken, targetRealmName, targetRealmName, gomock.Any()).DoAndReturn(
-			func(accessToken string, realmName string, realmNameBis string, kcUser kc.UserRepresentation) (string, error) {
-				assert.NotNil(t, kcUser.Attributes)
-				assert.Equal(t, autoLoginToken.ToJSON(), *kcUser.Attributes.GetString(constants.AttrbTrustIDAuthToken))
-				return kcID, nil
-			}).Times(1)
 		mockUsersDB.EXPECT().StoreOrUpdateUserDetails(ctx, targetRealmName, gomock.Any()).Return(errors.New("unexpected error")).Times(1)
 
 		var _, err = component.RegisterUser(ctx, targetRealmName, customerRealmName, user)
@@ -323,12 +327,6 @@ func TestRegisterUser(t *testing.T) {
 		mockUsersDB.EXPECT().DeleteUserDetails(ctx, targetRealmName, kcID).Return(nil).Times(1)
 		mockOnboardingModule.EXPECT().GenerateAuthToken().Return(autoLoginToken, nil).Times(1)
 		mockKeycloakClient.EXPECT().GetGroups(accessToken, targetRealmName).Return(groups, nil).Times(1)
-		mockKeycloakClient.EXPECT().CreateUser(accessToken, targetRealmName, targetRealmName, gomock.Any()).DoAndReturn(
-			func(accessToken string, realmName string, realmNameBis string, kcUser kc.UserRepresentation) (string, error) {
-				assert.NotNil(t, kcUser.Attributes)
-				assert.Equal(t, autoLoginToken.ToJSON(), *kcUser.Attributes.GetString(constants.AttrbTrustIDAuthToken))
-				return kcID, nil
-			}).Times(1)
 		mockUsersDB.EXPECT().StoreOrUpdateUserDetails(ctx, targetRealmName, gomock.Any()).Return(nil).Times(1)
 
 		var onboardingRedirectURI = onboardingURI + "?customerRealm=" + customerRealmName
@@ -349,12 +347,6 @@ func TestRegisterUser(t *testing.T) {
 		mockUsersDB.EXPECT().DeleteUserDetails(ctx, targetRealmName, kcID).Return(nil).Times(1)
 		mockOnboardingModule.EXPECT().GenerateAuthToken().Return(autoLoginToken, nil).Times(1)
 		mockKeycloakClient.EXPECT().GetGroups(accessToken, targetRealmName).Return(groups, nil).Times(1)
-		mockKeycloakClient.EXPECT().CreateUser(accessToken, targetRealmName, targetRealmName, gomock.Any()).DoAndReturn(
-			func(accessToken string, realmName string, realmNameBis string, kcUser kc.UserRepresentation) (string, error) {
-				assert.NotNil(t, kcUser.Attributes)
-				assert.Equal(t, autoLoginToken.ToJSON(), *kcUser.Attributes.GetString(constants.AttrbTrustIDAuthToken))
-				return kcID, nil
-			}).Times(1)
 		mockUsersDB.EXPECT().StoreOrUpdateUserDetails(ctx, targetRealmName, gomock.Any()).Return(nil).Times(1)
 
 		var onboardingRedirectURI = onboardingURI + "?customerRealm=" + customerRealmName
@@ -375,12 +367,6 @@ func TestRegisterUser(t *testing.T) {
 		mockKeycloakClient.EXPECT().GetUsers(accessToken, targetRealmName, targetRealmName, "email", email).Return(reqEmptyResult, nil).Times(1)
 		mockOnboardingModule.EXPECT().GenerateAuthToken().Return(autoLoginToken, nil).Times(1)
 		mockKeycloakClient.EXPECT().GetGroups(accessToken, targetRealmName).Return(groups, nil).Times(1)
-		mockKeycloakClient.EXPECT().CreateUser(accessToken, targetRealmName, targetRealmName, gomock.Any()).DoAndReturn(
-			func(accessToken string, realmName string, realmNameBis string, kcUser kc.UserRepresentation) (string, error) {
-				assert.NotNil(t, kcUser.Attributes)
-				assert.Equal(t, autoLoginToken.ToJSON(), *kcUser.Attributes.GetString(constants.AttrbTrustIDAuthToken))
-				return kcID, nil
-			}).Times(1)
 		mockUsersDB.EXPECT().StoreOrUpdateUserDetails(ctx, targetRealmName, gomock.Any()).Return(nil).Times(1)
 
 		mockEventsDB.EXPECT().ReportEvent(ctx, "REGISTER_USER", "back-office", database.CtEventRealmName, targetRealmName,
