@@ -1343,6 +1343,9 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 	v.BindEnv(cfgDbAesGcmKey, "CT_BRIDGE_DB_AES_KEY")
 	censoredParameters[cfgDbAesGcmKey] = true
 
+	v.BindEnv(cfgDbArchiveAesGcmKey, "CT_BRIDGE_DB_ARCHIVE_AES_KEY")
+	censoredParameters[cfgDbArchiveAesGcmKey] = true
+
 	// Load and log config.
 	v.SetConfigFile(v.GetString(cfgConfigFile))
 	var err = v.ReadInConfig()

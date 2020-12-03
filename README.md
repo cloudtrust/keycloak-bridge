@@ -79,6 +79,8 @@ CT_BRIDGE_DB_ARCHIVE_RW_PASSWORD | db-archive-rw-password
 CT_BRIDGE_INFLUX_USERNAME | influx-username
 CT_BRIDGE_INFLUX_PASSWORD | influx-password
 CT_BRIDGE_SENTRY_DSN | sentry-dsn
+CT_BRIDGE_DB_AES_KEY | db-aesgcm-key
+CT_BRIDGE_DB_ARCHIVE_AES_KEY | db-archive-aesgcm-key
 
 ## Usage
 
