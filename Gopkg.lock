@@ -42,8 +42,8 @@
   revision = "a4360319a0e9c09862338ca7300ff3aea8a23baa"
 
 [[projects]]
-  branch = "new-flow"
-  digest = "1:5408a93d0cf63c576949cdd4ce7846159d8d2f974a6ccdaa99fb94edfe6295e2"
+  branch = "SCPR-32-com-client"
+  digest = "1:a9ad784f0734f8a7ad5231fdc5a168a14c90f605d7d50c8643feb4a3da776692"
   name = "github.com/cloudtrust/keycloak-client"
   packages = [
     ".",
@@ -51,7 +51,7 @@
     "toolbox",
   ]
   pruneopts = "UT"
-  revision = "7d2b9005dd960c1b4d15457dc18114df7516ca03"
+  revision = "42961900862ae72e3c3d55553d55faf1752c7b6f"
 
 [[projects]]
   digest = "1:910c5b111ca13127693df80a59be2c952ad97313626116c0c9895e7b588f2a29"
@@ -183,7 +183,7 @@
   version = "v1.8.3"
 
 [[projects]]
-  digest = "1:d27eedd7296593e6ea74aed67aa0d04d97305c860209b0d4996a8aa2eac7fd0b"
+  digest = "1:62f794e53445d22aa4d1709a9123053b9bf7c3284571b5b807f80d57e1648844"
   name = "github.com/lib/pq"
   packages = [
     ".",
@@ -191,8 +191,8 @@
     "scram",
   ]
   pruneopts = "UT"
-  revision = "e7751f584844fbf92a5a18b13a0af1c855e34460"
-  version = "v1.8.0"
+  revision = "4604d39ddc9f62e2ca152114c73aec99b77a3468"
+  version = "v1.9.0"
 
 [[projects]]
   digest = "1:85a45ff41e6b733d430b653236191d131b707a05e9751f53b469f2c0bb222f01"
@@ -211,12 +211,12 @@
   version = "v1.4.0"
 
 [[projects]]
-  digest = "1:fe2538db8d9ee15bf6777c74dfd9be3d8e29b07843bc009d8c8d65de8d60f116"
+  digest = "1:ad22074a9493a27b11ae6d9250c1555c72427d578163a8da3c60ec55702a95ec"
   name = "github.com/nyaruka/phonenumbers"
   packages = ["."]
   pruneopts = "UT"
-  revision = "a5776ac9657d930a5f974ef2b5c91e6847bc7b36"
-  version = "v1.0.59"
+  revision = "5cebec5f23b923a5ffab981e9b1922fa650497b1"
+  version = "v1.0.60"
 
 [[projects]]
   digest = "1:86fbd18c1942728ab9cebc391bfe31266a27e2d2a0cf05c3bce8fc605e5f44c2"
@@ -385,7 +385,7 @@
     "pbkdf2",
   ]
   pruneopts = "UT"
-  revision = "c8d3bf9c5392d5f66747f112cd55055d7a530b19"
+  revision = "be400aefbc4c83e9aab51e82b8d4b12760653b47"
 
 [[projects]]
   branch = "master"
@@ -398,7 +398,7 @@
     "publicsuffix",
   ]
   pruneopts = "UT"
-  revision = "69a78807bb2bb6d1599c68698c6b009505012083"
+  revision = "c7110b5ffcbb9f2ac4de9fbd2600e37d42473a9a"
 
 [[projects]]
   branch = "master"
@@ -409,18 +409,18 @@
     "internal",
   ]
   pruneopts = "UT"
-  revision = "9fd604954f58d391cab0f7f49affb0a6aa864086"
+  revision = "0b49973bad195855a6a62fc57db590cc1bfe0771"
 
 [[projects]]
   branch = "master"
-  digest = "1:6da049257f916c4ed4ccbc631bdbbe24fbff2be13f2d63401bd8edf74167b0df"
+  digest = "1:3d30e8dfc6be82e30cbea6cf40099b9d8d6511c57b04a6066dc29c205c0ebf0f"
   name = "golang.org/x/sys"
   packages = [
     "internal/unsafeheader",
     "unix",
   ]
   pruneopts = "UT"
-  revision = "77190671981848ff71219ecfff38636c9add3b79"
+  revision = "69691e467435176bd304e7a1897a5b21b5719b0c"
 
 [[projects]]
   digest = "1:a45009ae1e0da0b589cd5da9f30770041573e61f2f79fb3e86aa3790d5c495c4"

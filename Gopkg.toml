@@ -33,7 +33,7 @@
 [[constraint]]
   name = "github.com/cloudtrust/keycloak-client"
   #version = "2.2.2"
-  branch = "new-flow"
+  branch = "SCPR-32-com-client"
 
 [[constraint]]
   name = "github.com/go-kit/kit"
