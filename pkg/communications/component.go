@@ -17,6 +17,8 @@ type KeycloakCommunicationsClient interface {
 
 // Component interface exposes methods used by the bridge API
 type Component interface {
+	GetActions(ctx context.Context) ([]api.ActionRepresentation, error)
+
 	SendEmail(ctx context.Context, realmName string, emailRep api.EmailRepresentation) error
 	SendSMS(ctx context.Context, realmName string, smsRep api.SMSRepresentation) error
 }
@@ -32,6 +34,23 @@ func NewComponent(keycloakCommunicationsClient KeycloakCommunicationsClient, log
 		keycloakCommunicationsClient: keycloakCommunicationsClient,
 		logger:                       logger,
 	}
+}
+
+// GetActions gets the actions of this component
+func (c *component) GetActions(ctx context.Context) ([]api.ActionRepresentation, error) {
+	var apiActions = []api.ActionRepresentation{}
+
+	for _, action := range actions {
+		var name = action.Name
+		var scope = string(action.Scope)
+
+		apiActions = append(apiActions, api.ActionRepresentation{
+			Name:  &name,
+			Scope: &scope,
+		})
+	}
+
+	return apiActions, nil
 }
 
 func (c *component) SendEmail(ctx context.Context, realmName string, emailRep api.EmailRepresentation) error {

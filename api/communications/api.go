@@ -31,6 +31,12 @@ const (
 	regExpAttachmentContentType = `.+` // TODO
 )
 
+// ActionRepresentation struct
+type ActionRepresentation struct {
+	Name  *string `json:"name"`
+	Scope *string `json:"scope"`
+}
+
 // EmailRepresentation struct
 type EmailRepresentation struct {
 	Recipient   *string                      `json:"recipient,omitempty"`
