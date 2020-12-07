@@ -4,7 +4,31 @@ import (
 	"encoding/json"
 	"strings"
 
+	"github.com/cloudtrust/common-service/validation"
+	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	kc "github.com/cloudtrust/keycloak-client"
+)
+
+const (
+	prmEmailRecipient             = "email_recipient"
+	prmEmailTheming               = "email_theming"
+	prmEmailThemingSubjectKey     = "email_theming_subject_key"
+	prmEmailThemingSubjectParams  = "email_theming_subject_params"
+	prmEmailThemingTemplate       = "email_theming_template"
+	prmEmailThemingTemplateParams = "email_theming_template_params"
+	prmEmailThemingLocale         = "email_theming_template_locale"
+	prmEmailAttachmentFilename    = "email_attachment_filename"
+	prmEmailAttachmentContentType = "email_attachment_content_type"
+	prmEmailAttachmentContent     = "email_attachment_content"
+
+	prmSMSMSISDN        = "sms_msisdn"
+	prmSMSTheming       = "sms_theming"
+	prmSMSThemingLocale = "sms_theming_locale"
+
+	regExpEmail                 = `^.+\@.+\..+$`
+	regExpThemingSubjectKey     = `.+` // TODO
+	regExpLocale                = constants.RegExpLocale
+	regExpAttachmentContentType = `.+` // TODO
 )
 
 // EmailRepresentation struct
@@ -163,4 +187,23 @@ func SMSFromJSON(jsonRep string) (SMSRepresentation, error) {
 func (r *SMSRepresentation) SMSToJSON() string {
 	var bytes, _ = json.Marshal(r)
 	return string(bytes)
+}
+
+// Validate checks the validity of the given email
+func (r *EmailRepresentation) Validate() error {
+	return validation.NewParameterValidator().
+		ValidateParameterRegExp(prmEmailRecipient, r.Recipient, regExpEmail, true).
+		ValidateParameterNotNil(prmEmailTheming, r.Theming).
+		ValidateParameterRegExp(prmEmailThemingSubjectKey, r.Theming.SubjectKey, regExpThemingSubjectKey, true).
+		ValidateParameterRegExp(prmEmailThemingLocale, r.Theming.Locale, regExpLocale, false).
+		Status()
+}
+
+// Validate checks the validity of the given sms
+func (r *SMSRepresentation) Validate() error {
+	return validation.NewParameterValidator().
+		ValidateParameterPhoneNumber(prmSMSMSISDN, r.MSISDN, true).
+		ValidateParameterNotNil(prmSMSTheming, r.Theming).
+		ValidateParameterRegExp(prmSMSThemingLocale, r.Theming.Locale, regExpLocale, false).
+		Status()
 }
