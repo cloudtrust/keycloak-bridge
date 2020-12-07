@@ -256,14 +256,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:604771a90cea7bc841c917d594b24784c67c7688249f22d913ce49d8f152856b"
+  digest = "1:5bdde99ca2782becbad47136e14da499875554e0215829b56a69a45ae2536c9f"
   name = "github.com/pquerna/cachecontrol"
   packages = [
     ".",
     "cacheobject",
   ]
   pruneopts = "UT"
-  revision = "858c6e7e6b7e879f681b8ced4da529d4b2918ab6"
+  revision = "ac21108117ac345f5739431ee1e9a5fd7f82ae1c"
 
 [[projects]]
   digest = "1:c5dfe46811af7e2eff7c11fc84b6c841520338613c056f659f262d5a4fb42fa8"
@@ -420,7 +420,7 @@
     "unix",
   ]
   pruneopts = "UT"
-  revision = "69691e467435176bd304e7a1897a5b21b5719b0c"
+  revision = "ed752295db8857b3a7f36c3f57e38509cadff471"
 
 [[projects]]
   digest = "1:a45009ae1e0da0b589cd5da9f30770041573e61f2f79fb3e86aa3790d5c495c4"
