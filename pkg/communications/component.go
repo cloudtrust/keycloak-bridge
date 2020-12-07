@@ -17,7 +17,7 @@ type KeycloakCommunicationsClient interface {
 
 // Component interface exposes methods used by the bridge API
 type Component interface {
-	SendEmail(ctx context.Context, reqRealmName string, realmName string, emailRep api.EmailRepresentation) error
+	SendEmail(ctx context.Context, realmName string, emailRep api.EmailRepresentation) error
 	SendSMS(ctx context.Context, realmName string, smsRep api.SMSRepresentation) error
 }
 
@@ -34,12 +34,13 @@ func NewComponent(keycloakCommunicationsClient KeycloakCommunicationsClient, log
 	}
 }
 
-func (c *component) SendEmail(ctx context.Context, reqRealmName string, realmName string, emailRep api.EmailRepresentation) error {
+func (c *component) SendEmail(ctx context.Context, realmName string, emailRep api.EmailRepresentation) error {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+	var ctxRealm = ctx.Value(cs.CtContextRealm).(string)
 
 	var kcEmailRep = kc.EmailRepresentation{}
 	emailRep.ExportToKeycloak(&kcEmailRep)
-	err := c.keycloakCommunicationsClient.SendEmail(accessToken, reqRealmName, realmName, kcEmailRep)
+	err := c.keycloakCommunicationsClient.SendEmail(accessToken, ctxRealm, realmName, kcEmailRep)
 	if err != nil {
 		c.logger.Warn(ctx, "err", err.Error())
 		return err
