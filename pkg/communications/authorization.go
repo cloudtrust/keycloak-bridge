@@ -40,8 +40,8 @@ func GetActions() []security.Action {
 	return actions
 }
 
-// MakeAuthorizationManagementComponentMW checks authorization and return an error if the action is not allowed.
-func MakeAuthorizationManagementComponentMW(logger log.Logger, authorizationManager security.AuthorizationManager) func(Component) Component {
+// MakeAuthorizationCommunicationsComponentMW checks authorization and return an error if the action is not allowed.
+func MakeAuthorizationCommunicationsComponentMW(logger log.Logger, authorizationManager security.AuthorizationManager) func(Component) Component {
 	return func(next Component) Component {
 		return &authorizationComponentMW{
 			authManager: authorizationManager,
