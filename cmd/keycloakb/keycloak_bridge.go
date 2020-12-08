@@ -31,6 +31,7 @@ import (
 	"github.com/cloudtrust/common-service/tracking"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/cloudtrust/keycloak-bridge/pkg/account"
+	"github.com/cloudtrust/keycloak-bridge/pkg/communications"
 	"github.com/cloudtrust/keycloak-bridge/pkg/events"
 	"github.com/cloudtrust/keycloak-bridge/pkg/export"
 	"github.com/cloudtrust/keycloak-bridge/pkg/kyc"
@@ -1472,6 +1473,16 @@ func configurePublicRegisterHandler(ComponentName string, ComponentID string, id
 		var handler http.Handler
 		handler = register.MakeRegisterHandler(endpoint, logger)
 		handler = middleware.MakeHTTPCorrelationIDMW(idGenerator, tracer, logger, ComponentName, ComponentID)(handler)
+		return handler
+	}
+}
+
+func configureCommunicationsHandler(ComponentName string, ComponentID string, idGenerator idgenerator.IDGenerator, keycloakClient *keycloakapi.Client, audienceRequired string, tracer tracing.OpentracingClient, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {
+	return func(endpoint endpoint.Endpoint) http.Handler {
+		var handler http.Handler
+		handler = communications.MakeCommunicationsHandler(endpoint, logger)
+		handler = middleware.MakeHTTPCorrelationIDMW(idGenerator, tracer, logger, ComponentName, ComponentID)(handler)
+		handler = middleware.MakeHTTPOIDCTokenValidationMW(keycloakClient, audienceRequired, logger)(handler)
 		return handler
 	}
 }
