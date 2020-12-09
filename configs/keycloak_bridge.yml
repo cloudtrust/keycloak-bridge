@@ -158,6 +158,7 @@ db-archive-rw-connection-check: false
 
 # Rate limiting in requests/second.
 rate-validation: 1000
+rate-communications: 1000
 rate-account: 1000
 rate-management: 1000
 rate-statistics: 1000

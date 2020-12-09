@@ -1,0 +1,101 @@
+package communications
+
+import (
+	"context"
+	"testing"
+
+	cs "github.com/cloudtrust/common-service"
+	"github.com/cloudtrust/common-service/configuration"
+	"github.com/cloudtrust/common-service/log"
+	"github.com/cloudtrust/common-service/security"
+	"github.com/cloudtrust/keycloak-bridge/pkg/communications/mock"
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
+)
+
+func TestGetActionsString(t *testing.T) {
+	assert.Len(t, GetActions(), len(actions))
+}
+
+func TestDeny(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockLogger = log.NewNopLogger()
+	var mockCommunicationsComponent = mock.NewComponent(mockCtrl)
+	var mockKeycloakClient = mock.NewKcClientAuth(mockCtrl)
+
+	var mockAuthorizationDBReader = mock.NewAuthorizationDBReader(mockCtrl)
+	mockAuthorizationDBReader.EXPECT().GetAuthorizations(gomock.Any()).Return([]configuration.Authorization{}, nil)
+
+	var accessToken = "TOKEN=="
+	var groups = []string{"toe"}
+	var realmName = "realm"
+
+	{
+		var authorizations, err = security.NewAuthorizationManager(mockAuthorizationDBReader, mockKeycloakClient, mockLogger)
+		assert.Nil(t, err)
+
+		var authorizationMW = MakeAuthorizationCommunicationsComponentMW(mockLogger, authorizations)(mockCommunicationsComponent)
+
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx = context.WithValue(ctx, cs.CtContextGroups, groups)
+		ctx = context.WithValue(ctx, cs.CtContextRealm, "master")
+
+		err = authorizationMW.SendEmail(ctx, realmName, emailForTest)
+		assert.Equal(t, security.ForbiddenError{}, err)
+
+		err = authorizationMW.SendSMS(ctx, realmName, smsForTest)
+		assert.Equal(t, security.ForbiddenError{}, err)
+	}
+}
+
+func TestAllow(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockLogger = log.NewNopLogger()
+	var mockCommunicationsComponent = mock.NewComponent(mockCtrl)
+	var mockKeycloakClient = mock.NewKcClientAuth(mockCtrl)
+
+	var mockAuthorizationDBReader = mock.NewAuthorizationDBReader(mockCtrl)
+
+	var accessToken = "TOKEN=="
+	var groups = []string{"toe"}
+	var realmName = "master"
+	var toe = "toe"
+	var any = "*"
+
+	var authorizations = []configuration.Authorization{}
+	for _, action := range actions {
+		var action = string(action.Name)
+		authorizations = append(authorizations, configuration.Authorization{
+			RealmID:         &realmName,
+			GroupName:       &toe,
+			Action:          &action,
+			TargetRealmID:   &any,
+			TargetGroupName: &any,
+		})
+	}
+
+	mockAuthorizationDBReader.EXPECT().GetAuthorizations(gomock.Any()).Return(authorizations, nil)
+
+	{
+		var authorizationManager, err = security.NewAuthorizationManager(mockAuthorizationDBReader, mockKeycloakClient, mockLogger)
+		assert.Nil(t, err)
+
+		var authorizationMW = MakeAuthorizationCommunicationsComponentMW(mockLogger, authorizationManager)(mockCommunicationsComponent)
+
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx = context.WithValue(ctx, cs.CtContextGroups, groups)
+		ctx = context.WithValue(ctx, cs.CtContextRealm, "master")
+
+		mockCommunicationsComponent.EXPECT().SendEmail(ctx, realmName, emailForTest).Return(nil).Times(1)
+		err = authorizationMW.SendEmail(ctx, realmName, emailForTest)
+		assert.Nil(t, err)
+
+		mockCommunicationsComponent.EXPECT().SendSMS(ctx, realmName, smsForTest).Return(nil).Times(1)
+		err = authorizationMW.SendSMS(ctx, realmName, smsForTest)
+		assert.Nil(t, err)
+	}
+}

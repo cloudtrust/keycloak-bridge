@@ -31,6 +31,7 @@ import (
 	"github.com/cloudtrust/common-service/tracking"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/cloudtrust/keycloak-bridge/pkg/account"
+	"github.com/cloudtrust/keycloak-bridge/pkg/communications"
 	"github.com/cloudtrust/keycloak-bridge/pkg/events"
 	"github.com/cloudtrust/keycloak-bridge/pkg/export"
 	"github.com/cloudtrust/keycloak-bridge/pkg/kyc"
@@ -70,14 +71,15 @@ const (
 	defaultPublishingIP = "0.0.0.0"
 	pathHealthCheck     = "/health/check"
 
-	RateKeyAccount    = iota
-	RateKeyEvents     = iota
-	RateKeyKYC        = iota
-	RateKeyManagement = iota
-	RateKeyMobile     = iota
-	RateKeyRegister   = iota
-	RateKeyStatistics = iota
-	RateKeyValidation = iota
+	RateKeyAccount        = iota
+	RateKeyEvents         = iota
+	RateKeyKYC            = iota
+	RateKeyManagement     = iota
+	RateKeyMobile         = iota
+	RateKeyRegister       = iota
+	RateKeyStatistics     = iota
+	RateKeyValidation     = iota
+	RateKeyCommunications = iota
 
 	cfgConfigFile               = "config-file"
 	cfgHTTPAddrInternal         = "internal-http-host-port"
@@ -100,6 +102,7 @@ const (
 	cfgConfigRoDbParams         = "db-config-ro"
 	cfgUsersRwDbParams          = "db-users-rw"
 	cfgRateKeyValidation        = "rate-validation"
+	cfgRateKeyCommunications    = "rate-communications"
 	cfgRateKeyAccount           = "rate-account"
 	cfgRateKeyMobile            = "rate-mobile"
 	cfgRateKeyManagement        = "rate-management"
@@ -210,14 +213,15 @@ func main() {
 
 		// Rate limiting
 		rateLimit = map[RateKey]int{
-			RateKeyValidation: c.GetInt(cfgRateKeyValidation),
-			RateKeyAccount:    c.GetInt(cfgRateKeyAccount),
-			RateKeyMobile:     c.GetInt(cfgRateKeyMobile),
-			RateKeyManagement: c.GetInt(cfgRateKeyManagement),
-			RateKeyStatistics: c.GetInt(cfgRateKeyStatistics),
-			RateKeyEvents:     c.GetInt(cfgRateKeyEvents),
-			RateKeyRegister:   c.GetInt(cfgRateKeyRegister),
-			RateKeyKYC:        c.GetInt(cfgRateKeyKYC),
+			RateKeyValidation:     c.GetInt(cfgRateKeyValidation),
+			RateKeyCommunications: c.GetInt(cfgRateKeyCommunications),
+			RateKeyAccount:        c.GetInt(cfgRateKeyAccount),
+			RateKeyMobile:         c.GetInt(cfgRateKeyMobile),
+			RateKeyManagement:     c.GetInt(cfgRateKeyManagement),
+			RateKeyStatistics:     c.GetInt(cfgRateKeyStatistics),
+			RateKeyEvents:         c.GetInt(cfgRateKeyEvents),
+			RateKeyRegister:       c.GetInt(cfgRateKeyRegister),
+			RateKeyKYC:            c.GetInt(cfgRateKeyKYC),
 		}
 
 		corsOptions = cors.Options{
@@ -518,6 +522,21 @@ func main() {
 		}
 	}
 
+	// Communications service.
+	var communicationsEndpoints communications.Endpoints
+	{
+		var communicationsLogger = log.With(logger, "svc", "communications")
+
+		communicationsComponent := communications.NewComponent(keycloakClient, communicationsLogger)
+
+		var rateLimitCommunications = rateLimit[RateKeyCommunications]
+		communicationsEndpoints = communications.Endpoints{
+			GetActions: prepareEndpoint(communications.MakeGetActionsEndpoint(communicationsComponent), "get_actions", influxMetrics, communicationsLogger, tracer, rateLimitCommunications),
+			SendEmail:  prepareEndpoint(communications.MakeSendEmailEndpoint(communicationsComponent), "send_email", influxMetrics, communicationsLogger, tracer, rateLimitCommunications),
+			SendSMS:    prepareEndpoint(communications.MakeSendSMSEndpoint(communicationsComponent), "send_sms", influxMetrics, communicationsLogger, tracer, rateLimitCommunications),
+		}
+	}
+
 	// Statistics service.
 	var statisticsEndpoints statistics.Endpoints
 	{
@@ -800,7 +819,7 @@ func main() {
 
 	errorhandler.SetEmitter(keycloakb.ComponentName)
 
-	// HTTP Internal Call Server (Export & Validation API).
+	// HTTP Internal Call Server (Export, Communications & Validation API).
 	go func() {
 		var logger = log.With(logger, "transport", "http")
 		logger.Info(ctx, "addr", httpAddrInternal)
@@ -825,6 +844,17 @@ func main() {
 		validationSubroute.Path("/realms/{realm}/users/{userID}").Methods("GET").Handler(getUserHandler)
 		validationSubroute.Path("/realms/{realm}/users/{userID}").Methods("PUT").Handler(updateUserHandler)
 		validationSubroute.Path("/realms/{realm}/users/{userID}/checks").Methods("POST").Handler(createCheckHandler)
+
+		// Communications
+		var getCommunicationsActionsHandler = configureCommunicationsHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(communicationsEndpoints.GetActions)
+		var sendMailHandler = configureCommunicationsHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(communicationsEndpoints.SendEmail)
+		var sendSMSHandler = configureCommunicationsHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(communicationsEndpoints.SendSMS)
+
+		var communicationsSubroute = route.PathPrefix("/communications").Subrouter()
+
+		communicationsSubroute.Path("/actions").Methods("GET").Handler(getCommunicationsActionsHandler)
+		communicationsSubroute.Path("/realms/{realm}/send-mail").Methods("POST").Handler(sendMailHandler)
+		communicationsSubroute.Path("/realms/{realm}/send-sms").Methods("POST").Handler(sendSMSHandler)
 
 		// Debug.
 		if pprofRouteEnabled {
@@ -1265,6 +1295,7 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 
 	// Rate limiting (in requests/second)
 	v.SetDefault(cfgRateKeyValidation, 1000)
+	v.SetDefault(cfgRateKeyCommunications, 1000)
 	v.SetDefault(cfgRateKeyAccount, 1000)
 	v.SetDefault(cfgRateKeyMobile, 1000)
 	v.SetDefault(cfgRateKeyManagement, 1000)
@@ -1472,6 +1503,16 @@ func configurePublicRegisterHandler(ComponentName string, ComponentID string, id
 		var handler http.Handler
 		handler = register.MakeRegisterHandler(endpoint, logger)
 		handler = middleware.MakeHTTPCorrelationIDMW(idGenerator, tracer, logger, ComponentName, ComponentID)(handler)
+		return handler
+	}
+}
+
+func configureCommunicationsHandler(ComponentName string, ComponentID string, idGenerator idgenerator.IDGenerator, keycloakClient *keycloakapi.Client, audienceRequired string, tracer tracing.OpentracingClient, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {
+	return func(endpoint endpoint.Endpoint) http.Handler {
+		var handler http.Handler
+		handler = communications.MakeCommunicationsHandler(endpoint, logger)
+		handler = middleware.MakeHTTPCorrelationIDMW(idGenerator, tracer, logger, ComponentName, ComponentID)(handler)
+		handler = middleware.MakeHTTPOIDCTokenValidationMW(keycloakClient, audienceRequired, logger)(handler)
 		return handler
 	}
 }
