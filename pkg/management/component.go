@@ -10,6 +10,7 @@ import (
 	"github.com/cloudtrust/common-service/configuration"
 	"github.com/cloudtrust/common-service/database"
 	errorhandler "github.com/cloudtrust/common-service/errors"
+	"github.com/cloudtrust/common-service/security"
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
@@ -1554,6 +1555,20 @@ func (c *component) GetActions(ctx context.Context) ([]api.ActionRepresentation,
 			Scope: &scope,
 		})
 	}
+	// The communications API is published internally only.
+	// To be able to configure the rights from the BO we add them here.
+	var sendMailName = "COM_SendEmail"
+	var sendMailScope = string(security.ScopeRealm)
+	var sendSMSName = "COM_SendSMS"
+	var sendSMSScope = string(security.ScopeRealm)
+	apiActions = append(apiActions, api.ActionRepresentation{
+		Name:  &sendMailName,
+		Scope: &sendMailScope,
+	})
+	apiActions = append(apiActions, api.ActionRepresentation{
+		Name:  &sendSMSName,
+		Scope: &sendSMSScope,
+	})
 
 	return apiActions, nil
 }

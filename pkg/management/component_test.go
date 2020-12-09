@@ -81,7 +81,9 @@ func TestGetActions(t *testing.T) {
 	res, err := managementComponent.GetActions(ctx)
 
 	assert.Nil(t, err)
-	assert.Equal(t, len(actions), len(res))
+	// We add 2 here, as we added the two actions from the communications stack into the GetActions methods of the component.
+	// We did this to be able to configure those actions through the Backoffice.
+	assert.Equal(t, len(actions)+2, len(res))
 }
 
 func TestGetRealms(t *testing.T) {
