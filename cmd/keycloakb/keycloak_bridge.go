@@ -531,8 +531,9 @@ func main() {
 
 		var rateLimitCommunications = rateLimit[RateKeyCommunications]
 		communicationsEndpoints = communications.Endpoints{
-			SendEmail: prepareEndpoint(communications.MakeSendEmailEndpoint(communicationsComponent), "send_email", influxMetrics, communicationsLogger, tracer, rateLimitCommunications),
-			SendSMS:   prepareEndpoint(communications.MakeSendSMSEndpoint(communicationsComponent), "send_sms", influxMetrics, communicationsLogger, tracer, rateLimitCommunications),
+			GetActions: prepareEndpoint(communications.MakeGetActionsEndpoint(communicationsComponent), "get_actions", influxMetrics, communicationsLogger, tracer, rateLimitCommunications),
+			SendEmail:  prepareEndpoint(communications.MakeSendEmailEndpoint(communicationsComponent), "send_email", influxMetrics, communicationsLogger, tracer, rateLimitCommunications),
+			SendSMS:    prepareEndpoint(communications.MakeSendSMSEndpoint(communicationsComponent), "send_sms", influxMetrics, communicationsLogger, tracer, rateLimitCommunications),
 		}
 	}
 
@@ -846,13 +847,15 @@ func main() {
 
 		// Communications
 		// TODO: Check if audienceRequired ("account") is correct
+		var getCommunicationsActionsHandler = configureCommunicationsHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(communicationsEndpoints.GetActions)
 		var sendMailHandler = configureCommunicationsHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(communicationsEndpoints.SendEmail)
 		var sendSMSHandler = configureCommunicationsHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(communicationsEndpoints.SendSMS)
 
 		var communicationsSubroute = route.PathPrefix("/communications").Subrouter()
 
-		communicationsSubroute.Path("realms/{realm}/send-mail").Methods("POST").Handler(sendMailHandler)
-		communicationsSubroute.Path("realms/{realm}/send-sms").Methods("POST").Handler(sendSMSHandler)
+		communicationsSubroute.Path("/actions").Methods("GET").Handler(getCommunicationsActionsHandler)
+		communicationsSubroute.Path("/realms/{realm}/send-mail").Methods("POST").Handler(sendMailHandler)
+		communicationsSubroute.Path("/realms/{realm}/send-sms").Methods("POST").Handler(sendSMSHandler)
 
 		// Debug.
 		if pprofRouteEnabled {
