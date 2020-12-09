@@ -42,8 +42,8 @@
   revision = "a4360319a0e9c09862338ca7300ff3aea8a23baa"
 
 [[projects]]
-  branch = "SCPR-32-com-client"
-  digest = "1:a9ad784f0734f8a7ad5231fdc5a168a14c90f605d7d50c8643feb4a3da776692"
+  branch = "new-flow"
+  digest = "1:5408a93d0cf63c576949cdd4ce7846159d8d2f974a6ccdaa99fb94edfe6295e2"
   name = "github.com/cloudtrust/keycloak-client"
   packages = [
     ".",
@@ -51,7 +51,7 @@
     "toolbox",
   ]
   pruneopts = "UT"
-  revision = "42961900862ae72e3c3d55553d55faf1752c7b6f"
+  revision = "7d2b9005dd960c1b4d15457dc18114df7516ca03"
 
 [[projects]]
   digest = "1:910c5b111ca13127693df80a59be2c952ad97313626116c0c9895e7b588f2a29"
