@@ -74,7 +74,7 @@ func TestExportEmailToKeycloakImportEmailFromKeycloak(t *testing.T) {
 	kcRep = ExportEmailToKeycloak(&emailForTestNilAttachments)
 	email = ImportEmailFromKeycloak(kcRep)
 
-	assert.Equal(t, emailForTestNilAttachments, email)
+	assert.Equal(t, emailForTestNilAttachments, *email)
 }
 
 var (
