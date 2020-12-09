@@ -23,9 +23,9 @@ func newAction(as string, scope security.Scope) security.Action {
 
 // Creates constants for API method names
 var (
-	COMGetActions = newAction("COM_GetActions", security.ScopeGlobal)
-	COMSendEmail  = newAction("COM_SendEmail", security.ScopeGlobal)
-	COMSendSMS    = newAction("COM_SendSMS", security.ScopeGlobal)
+	COMGetActions = newAction("COM_GetActions", security.ScopeRealm)
+	COMSendEmail  = newAction("COM_SendEmail", security.ScopeRealm)
+	COMSendSMS    = newAction("COM_SendSMS", security.ScopeRealm)
 )
 
 // Tracking middleware at component level.

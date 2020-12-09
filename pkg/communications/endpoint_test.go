@@ -12,6 +12,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const (
+	reqScheme = "scheme"
+)
+
 func TestGetActionsEndpoint(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -39,8 +43,7 @@ func TestSendEmailEndpoint(t *testing.T) {
 	var realm = "master"
 	var ctx = context.Background()
 
-	// No error
-	{
+	t.Run("No Error", func(t *testing.T) {
 		var req = make(map[string]string)
 		req[reqScheme] = "https"
 		req[reqHost] = "elca.ch"
@@ -52,18 +55,16 @@ func TestSendEmailEndpoint(t *testing.T) {
 		mockCommunicationsComponent.EXPECT().SendEmail(ctx, realm, emailForTest).Return(nil).Times(1)
 		var _, err = e(ctx, req)
 		assert.Nil(t, err)
-	}
+	})
 
-	// Error - Cannot unmarshall
-	{
+	t.Run("Error - Cannot unmarshall", func(t *testing.T) {
 		var req = make(map[string]string)
 		req[reqBody] = string("JSON")
 		_, err := e(ctx, req)
 		assert.NotNil(t, err)
-	}
+	})
 
-	// Error - Keycloak client error
-	{
+	t.Run("Error - Keycloak client error", func(t *testing.T) {
 		var req = make(map[string]string)
 		req[reqScheme] = "https"
 		req[reqHost] = "elca.ch"
@@ -74,7 +75,7 @@ func TestSendEmailEndpoint(t *testing.T) {
 		mockCommunicationsComponent.EXPECT().SendEmail(ctx, realm, emailForTest).Return(fmt.Errorf("Error")).Times(1)
 		_, err := e(ctx, req)
 		assert.NotNil(t, err)
-	}
+	})
 }
 
 func TestSendSMSEndpoint(t *testing.T) {
@@ -88,8 +89,7 @@ func TestSendSMSEndpoint(t *testing.T) {
 	var realm = "master"
 	var ctx = context.Background()
 
-	// No error
-	{
+	t.Run("No Error", func(t *testing.T) {
 		var req = make(map[string]string)
 		req[reqScheme] = "https"
 		req[reqHost] = "elca.ch"
@@ -101,18 +101,16 @@ func TestSendSMSEndpoint(t *testing.T) {
 		mockCommunicationsComponent.EXPECT().SendSMS(ctx, realm, smsForTest).Return(nil).Times(1)
 		var _, err = e(ctx, req)
 		assert.Nil(t, err)
-	}
+	})
 
-	// Error - Cannot unmarshall
-	{
+	t.Run("Error - Cannot unmarshall", func(t *testing.T) {
 		var req = make(map[string]string)
 		req[reqBody] = string("JSON")
 		_, err := e(ctx, req)
 		assert.NotNil(t, err)
-	}
+	})
 
-	// Error - Keycloak client error
-	{
+	t.Run("Error - Keycloak client error", func(t *testing.T) {
 		var req = make(map[string]string)
 		req[reqScheme] = "https"
 		req[reqHost] = "elca.ch"
@@ -123,5 +121,5 @@ func TestSendSMSEndpoint(t *testing.T) {
 		mockCommunicationsComponent.EXPECT().SendSMS(ctx, realm, smsForTest).Return(fmt.Errorf("Error")).Times(1)
 		_, err := e(ctx, req)
 		assert.NotNil(t, err)
-	}
+	})
 }

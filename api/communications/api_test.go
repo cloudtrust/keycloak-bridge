@@ -3,7 +3,6 @@ package apicommunications
 import (
 	"testing"
 
-	kc "github.com/cloudtrust/keycloak-client"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -66,18 +65,14 @@ func TestJSONEmail(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
-func TestExportToKeycloakImportFromKeycloakEmail(t *testing.T) {
-	kcRep := kc.EmailRepresentation{}
-	emailForTest.ExportToKeycloak(&kcRep)
-	email := EmailRepresentation{}
-	email.ImportFromKeycloak(&kcRep)
+func TestExportEmailToKeycloakImportEmailFromKeycloak(t *testing.T) {
+	kcRep := ExportEmailToKeycloak(&emailForTest)
+	email := ImportEmailFromKeycloak(kcRep)
 
-	assert.Equal(t, emailForTest, email)
+	assert.Equal(t, emailForTest, *email)
 
-	kcRep = kc.EmailRepresentation{}
-	emailForTestNilAttachments.ExportToKeycloak(&kcRep)
-	email = EmailRepresentation{}
-	email.ImportFromKeycloak(&kcRep)
+	kcRep = ExportEmailToKeycloak(&emailForTestNilAttachments)
+	email = ImportEmailFromKeycloak(kcRep)
 
 	assert.Equal(t, emailForTestNilAttachments, email)
 }
@@ -113,18 +108,14 @@ func TestJSONSMS(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
-func TestExportToKeycloakImportFromKeycloakSMS(t *testing.T) {
-	kcRep := kc.SMSRepresentation{}
-	smsForTest.ExportToKeycloak(&kcRep)
-	sms := SMSRepresentation{}
-	sms.ImportFromKeycloak(&kcRep)
+func TestExportSMSToKeycloakImportSMSFromKeycloak(t *testing.T) {
+	kcRep := ExportSMSToKeycloak(&smsForTest)
+	sms := ImportSMSFromKeycloak(kcRep)
 
-	assert.Equal(t, smsForTest, sms)
+	assert.Equal(t, smsForTest, *sms)
 
-	kcRep = kc.SMSRepresentation{}
-	smsForTestNilTheming.ExportToKeycloak(&kcRep)
-	sms = SMSRepresentation{}
-	sms.ImportFromKeycloak(&kcRep)
+	kcRep = ExportSMSToKeycloak(&smsForTestNilTheming)
+	sms = ImportSMSFromKeycloak(kcRep)
 
-	assert.Equal(t, smsForTestNilTheming, sms)
+	assert.Equal(t, smsForTestNilTheming, *sms)
 }

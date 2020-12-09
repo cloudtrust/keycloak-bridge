@@ -13,10 +13,9 @@ import (
 )
 
 const (
-	reqScheme = "scheme"
-	reqHost   = "host"
-	reqBody   = "body"
-	prmRealm  = "realm"
+	reqHost  = "host"
+	reqBody  = "body"
+	prmRealm = "realm"
 )
 
 // MakeCommunicationsHandler make an HTTP handler for a Communications endpoint.

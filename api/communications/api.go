@@ -2,7 +2,6 @@ package apicommunications
 
 import (
 	"encoding/json"
-	"strings"
 
 	"github.com/cloudtrust/common-service/validation"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
@@ -25,10 +24,10 @@ const (
 	prmSMSTheming       = "sms_theming"
 	prmSMSThemingLocale = "sms_theming_locale"
 
-	regExpEmail                 = `^.+\@.+\..+$`
-	regExpThemingSubjectKey     = `.+` // TODO in a later release
+	regExpEmail                 = constants.RegExpEmail
+	regExpThemingSubjectKey     = constants.RegExpDescription
 	regExpLocale                = constants.RegExpLocale
-	regExpAttachmentContentType = `.+` // TODO in a later release
+	regExpAttachmentContentType = constants.RegExpDescription
 )
 
 // ActionRepresentation struct
@@ -60,12 +59,12 @@ type AttachementRepresentation struct {
 	Content     *string `json:"content,omitempty"`
 }
 
-// ExportToKeycloak exports the email representation into a Keycloak email representation
-func (r *EmailRepresentation) ExportToKeycloak(kcRep *kc.EmailRepresentation) {
-	// We set everything to nil to be safe
-	kcRep.Recipient = nil
-	kcRep.Theming = nil
-	kcRep.Attachments = nil
+// ExportEmailToKeycloak exports the email representation into a Keycloak email representation
+func ExportEmailToKeycloak(r *EmailRepresentation) *kc.EmailRepresentation {
+	var kcRep kc.EmailRepresentation
+	if r == nil {
+		return nil
+	}
 	if r.Recipient != nil {
 		kcRep.Recipient = r.Recipient
 	}
@@ -88,14 +87,15 @@ func (r *EmailRepresentation) ExportToKeycloak(kcRep *kc.EmailRepresentation) {
 			*kcRep.Attachments = append(*kcRep.Attachments, tmp)
 		}
 	}
+	return &kcRep
 }
 
-// ImportFromKeycloak imports the email representation from a Keycloak email representation
-func (r *EmailRepresentation) ImportFromKeycloak(kcRep *kc.EmailRepresentation) {
-	// We set everything to nil to be safe
-	r.Recipient = nil
-	r.Theming = nil
-	r.Attachments = nil
+// ImportEmailFromKeycloak imports the email representation from a Keycloak email representation
+func ImportEmailFromKeycloak(kcRep *kc.EmailRepresentation) *EmailRepresentation {
+	var r EmailRepresentation
+	if kcRep == nil {
+		return nil
+	}
 	if kcRep.Recipient != nil {
 		r.Recipient = kcRep.Recipient
 	}
@@ -118,14 +118,13 @@ func (r *EmailRepresentation) ImportFromKeycloak(kcRep *kc.EmailRepresentation) 
 			*r.Attachments = append(*r.Attachments, tmp)
 		}
 	}
+	return &r
 }
 
 // EmailFromJSON creates an email using its json representation
 func EmailFromJSON(jsonRep string) (EmailRepresentation, error) {
 	var email EmailRepresentation
-	dec := json.NewDecoder(strings.NewReader(jsonRep))
-	dec.DisallowUnknownFields()
-	err := dec.Decode(&email)
+	err := json.Unmarshal([]byte(jsonRep), &email)
 	return email, err
 }
 
@@ -148,11 +147,12 @@ type SMSThemingRepresentation struct {
 	Locale            *string   `json:"locale,omitempty"`
 }
 
-// ExportToKeycloak exports the SMS representation into a Keycloak SMS representation
-func (r *SMSRepresentation) ExportToKeycloak(kcRep *kc.SMSRepresentation) {
-	// We set everything to nil to be safe
-	kcRep.MSISDN = nil
-	kcRep.Theming = nil
+// ExportSMSToKeycloak exports the SMS representation into a Keycloak SMS representation
+func ExportSMSToKeycloak(r *SMSRepresentation) *kc.SMSRepresentation {
+	var kcRep kc.SMSRepresentation
+	if r == nil {
+		return nil
+	}
 	if r.MSISDN != nil {
 		kcRep.MSISDN = r.MSISDN
 	}
@@ -162,11 +162,15 @@ func (r *SMSRepresentation) ExportToKeycloak(kcRep *kc.SMSRepresentation) {
 		kcRep.Theming.MessageParameters = r.Theming.MessageParameters
 		kcRep.Theming.Locale = r.Theming.Locale
 	}
+	return &kcRep
 }
 
-// ImportFromKeycloak exports the SMS representation into a Keycloak SMS representation
-func (r *SMSRepresentation) ImportFromKeycloak(kcRep *kc.SMSRepresentation) {
-	// We set everything to nil to be safe
+// ImportSMSFromKeycloak exports the SMS representation into a Keycloak SMS representation
+func ImportSMSFromKeycloak(kcRep *kc.SMSRepresentation) *SMSRepresentation {
+	var r SMSRepresentation
+	if kcRep == nil {
+		return nil
+	}
 	r.MSISDN = nil
 	r.Theming = nil
 	if kcRep.MSISDN != nil {
@@ -178,14 +182,13 @@ func (r *SMSRepresentation) ImportFromKeycloak(kcRep *kc.SMSRepresentation) {
 		r.Theming.MessageParameters = kcRep.Theming.MessageParameters
 		r.Theming.Locale = kcRep.Theming.Locale
 	}
+	return &r
 }
 
 // SMSFromJSON creates an sms using its json representation
 func SMSFromJSON(jsonRep string) (SMSRepresentation, error) {
 	var sms SMSRepresentation
-	dec := json.NewDecoder(strings.NewReader(jsonRep))
-	dec.DisallowUnknownFields()
-	err := dec.Decode(&sms)
+	err := json.Unmarshal([]byte(jsonRep), &sms)
 	return sms, err
 }
 

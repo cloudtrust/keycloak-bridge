@@ -57,9 +57,8 @@ func (c *component) SendEmail(ctx context.Context, realmName string, emailRep ap
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 	var ctxRealm = ctx.Value(cs.CtContextRealm).(string)
 
-	var kcEmailRep = kc.EmailRepresentation{}
-	emailRep.ExportToKeycloak(&kcEmailRep)
-	err := c.keycloakCommunicationsClient.SendEmail(accessToken, ctxRealm, realmName, kcEmailRep)
+	var kcEmailRep = api.ExportEmailToKeycloak(&emailRep)
+	err := c.keycloakCommunicationsClient.SendEmail(accessToken, ctxRealm, realmName, *kcEmailRep)
 	if err != nil {
 		c.logger.Warn(ctx, "err", err.Error())
 		return err
@@ -70,9 +69,8 @@ func (c *component) SendEmail(ctx context.Context, realmName string, emailRep ap
 func (c *component) SendSMS(ctx context.Context, realmName string, smsRep api.SMSRepresentation) error {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 
-	var kcSmsRep = kc.SMSRepresentation{}
-	smsRep.ExportToKeycloak(&kcSmsRep)
-	err := c.keycloakCommunicationsClient.SendSMS(accessToken, realmName, kcSmsRep)
+	var kcSmsRep = api.ExportSMSToKeycloak(&smsRep)
+	err := c.keycloakCommunicationsClient.SendSMS(accessToken, realmName, *kcSmsRep)
 	if err != nil {
 		c.logger.Warn(ctx, "err", err.Error())
 		return err
