@@ -43,7 +43,7 @@
 
 [[projects]]
   branch = "new-flow"
-  digest = "1:5408a93d0cf63c576949cdd4ce7846159d8d2f974a6ccdaa99fb94edfe6295e2"
+  digest = "1:a9ad784f0734f8a7ad5231fdc5a168a14c90f605d7d50c8643feb4a3da776692"
   name = "github.com/cloudtrust/keycloak-client"
   packages = [
     ".",
@@ -51,7 +51,7 @@
     "toolbox",
   ]
   pruneopts = "UT"
-  revision = "7d2b9005dd960c1b4d15457dc18114df7516ca03"
+  revision = "5b5193e6beaf770867eb11fabd4e6405133294bc"
 
 [[projects]]
   digest = "1:910c5b111ca13127693df80a59be2c952ad97313626116c0c9895e7b588f2a29"
@@ -274,15 +274,15 @@
   version = "v1.7.0"
 
 [[projects]]
-  digest = "1:5bc51628f10ee2e983badf7e302531fd87db15badfb675389450b8765cb3149f"
+  digest = "1:e76b197a689daae40d3b3597319b3b66e29c94eccda6461b1c97e2524cf3630b"
   name = "github.com/spf13/afero"
   packages = [
     ".",
     "mem",
   ]
   pruneopts = "UT"
-  revision = "efa411e911857ed4705ed931b474891a88f71a73"
-  version = "v1.4.1"
+  revision = "32b5faae5bd7fe285255e818818f7971e9279c1a"
+  version = "v1.5.1"
 
 [[projects]]
   digest = "1:ff4cd55a3666b6ea3a876c9e133bfb54d6c812e725409a773f2c94a0b3a92f4f"
@@ -385,7 +385,7 @@
     "pbkdf2",
   ]
   pruneopts = "UT"
-  revision = "be400aefbc4c83e9aab51e82b8d4b12760653b47"
+  revision = "5f87f3452ae96c4850ab9af7783f2517b643061b"
 
 [[projects]]
   branch = "master"
@@ -398,18 +398,18 @@
     "publicsuffix",
   ]
   pruneopts = "UT"
-  revision = "c7110b5ffcbb9f2ac4de9fbd2600e37d42473a9a"
+  revision = "ac852fbbde11df194bfd5004603c7c8e117901f2"
 
 [[projects]]
   branch = "master"
-  digest = "1:ae9e9f76ae913e3139f6de5c3afca2d139b2be2642246ddffcaa81845f9000d5"
+  digest = "1:7056bda3c3bf85de3edd84044c19644d011620de1686e7fdd358e0b20c7d0e68"
   name = "golang.org/x/oauth2"
   packages = [
     ".",
     "internal",
   ]
   pruneopts = "UT"
-  revision = "0b49973bad195855a6a62fc57db590cc1bfe0771"
+  revision = "08078c50e5b5244ec123a6b69facdbc13b21a548"
 
 [[projects]]
   branch = "master"
@@ -420,7 +420,7 @@
     "unix",
   ]
   pruneopts = "UT"
-  revision = "ed752295db8857b3a7f36c3f57e38509cadff471"
+  revision = "d4d67f95c62d573f21c7627795af8a6c2ab475a5"
 
 [[projects]]
   digest = "1:a45009ae1e0da0b589cd5da9f30770041573e61f2f79fb3e86aa3790d5c495c4"
@@ -453,7 +453,7 @@
   name = "golang.org/x/time"
   packages = ["rate"]
   pruneopts = "UT"
-  revision = "3af7569d3a1e776fc2a3c1cec133b43105ea9c2e"
+  revision = "7e3f01d253248a0a5694eb5b7376dfea18b6397e"
 
 [[projects]]
   digest = "1:15bbb120d95283019f8891f2762fab3e735075b2cf9b378497277d2fe6c4abca"
