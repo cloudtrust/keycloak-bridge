@@ -26,9 +26,9 @@ const (
 	prmSMSThemingLocale = "sms_theming_locale"
 
 	regExpEmail                 = `^.+\@.+\..+$`
-	regExpThemingSubjectKey     = `.+` // TODO
+	regExpThemingSubjectKey     = `.+` // TODO in a later release
 	regExpLocale                = constants.RegExpLocale
-	regExpAttachmentContentType = `.+` // TODO
+	regExpAttachmentContentType = `.+` // TODO in a later release
 )
 
 // ActionRepresentation struct
