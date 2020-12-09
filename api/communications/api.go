@@ -171,8 +171,6 @@ func ImportSMSFromKeycloak(kcRep *kc.SMSRepresentation) *SMSRepresentation {
 	if kcRep == nil {
 		return nil
 	}
-	r.MSISDN = nil
-	r.Theming = nil
 	if kcRep.MSISDN != nil {
 		r.MSISDN = kcRep.MSISDN
 	}
