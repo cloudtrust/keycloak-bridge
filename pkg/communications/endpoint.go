@@ -13,8 +13,9 @@ import (
 
 // Endpoints wraps a service behind a set of endpoints.
 type Endpoints struct {
-	SendEmail endpoint.Endpoint
-	SendSMS   endpoint.Endpoint
+	GetActions endpoint.Endpoint
+	SendEmail  endpoint.Endpoint
+	SendSMS    endpoint.Endpoint
 }
 
 // MakeGetActionsEndpoint creates an endpoint for GetActions
