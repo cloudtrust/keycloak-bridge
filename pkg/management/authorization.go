@@ -38,6 +38,7 @@ var (
 	MGMTCreateUser                          = newAction("MGMT_CreateUser", security.ScopeGroup)
 	MGMTGetUserChecks                       = newAction("MGMT_GetUserChecks", security.ScopeGroup)
 	MGMTGetUserAccountStatus                = newAction("MGMT_GetUserAccountStatus", security.ScopeGroup)
+	MGMTGetUserAccountStatusByEmail         = newAction("MGMT_GetUserAccountStatusByEmail", security.ScopeRealm)
 	MGMTGetRolesOfUser                      = newAction("MGMT_GetRolesOfUser", security.ScopeGroup)
 	MGMTGetGroupsOfUser                     = newAction("MGMT_GetGroupsOfUser", security.ScopeGroup)
 	MGMTSetGroupsToUser                     = newAction("MGMT_SetGroupsToUser", security.ScopeGroup)
@@ -49,10 +50,12 @@ var (
 	MGMTAddClientRolesToUser                = newAction("MGMT_AddClientRolesToUser", security.ScopeGroup)
 	MGMTResetPassword                       = newAction("MGMT_ResetPassword", security.ScopeGroup)
 	MGMTExecuteActionsEmail                 = newAction("MGMT_ExecuteActionsEmail", security.ScopeGroup)
-	MGMTSendNewEnrolmentCode                = newAction("MGMT_SendNewEnrolmentCode", security.ScopeGroup)
+	MGMTSendSmsCode                         = newAction("MGMT_SendSmsCode", security.ScopeGroup)
+	MGMTSendOnboardingEmail                 = newAction("MGMT_SendOnboardingEmail", security.ScopeGroup)
 	MGMTSendReminderEmail                   = newAction("MGMT_SendReminderEmail", security.ScopeGroup)
 	MGMTResetSmsCounter                     = newAction("MGMT_ResetSmsCounter", security.ScopeGroup)
 	MGMTCreateRecoveryCode                  = newAction("MGMT_CreateRecoveryCode", security.ScopeGroup)
+	MGMTCreateActivationCode                = newAction("MGMT_CreateActivationCode", security.ScopeGroup)
 	MGMTGetCredentialsForUser               = newAction("MGMT_GetCredentialsForUser", security.ScopeGroup)
 	MGMTDeleteCredentialsForUser            = newAction("MGMT_DeleteCredentialsForUser", security.ScopeGroup)
 	MGMTResetCredentialFailuresForUser      = newAction("MGMT_ResetCredentialFailuresForUser", security.ScopeGroup)
@@ -276,6 +279,17 @@ func (c *authorizationComponentMW) GetUserAccountStatus(ctx context.Context, rea
 	return c.next.GetUserAccountStatus(ctx, realmName, userID)
 }
 
+func (c *authorizationComponentMW) GetUserAccountStatusByEmail(ctx context.Context, realmName, email string) (api.UserStatus, error) {
+	var action = MGMTGetUserAccountStatusByEmail.String()
+	var targetRealm = realmName
+
+	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
+		return api.UserStatus{}, err
+	}
+
+	return c.next.GetUserAccountStatusByEmail(ctx, realmName, email)
+}
+
 func (c *authorizationComponentMW) GetRolesOfUser(ctx context.Context, realmName, userID string) ([]api.RoleRepresentation, error) {
 	var action = MGMTGetRolesOfUser.String()
 	var targetRealm = realmName
@@ -407,6 +421,17 @@ func (c *authorizationComponentMW) CreateRecoveryCode(ctx context.Context, realm
 	return c.next.CreateRecoveryCode(ctx, realmName, userID)
 }
 
+func (c *authorizationComponentMW) CreateActivationCode(ctx context.Context, realmName string, userID string) (string, error) {
+	var action = MGMTCreateActivationCode.String()
+	var targetRealm = realmName
+
+	if err := c.authManager.CheckAuthorizationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
+		return "", err
+	}
+
+	return c.next.CreateActivationCode(ctx, realmName, userID)
+}
+
 func (c *authorizationComponentMW) ExecuteActionsEmail(ctx context.Context, realmName string, userID string, actions []api.RequiredAction, paramKV ...string) error {
 	var action = MGMTExecuteActionsEmail.String()
 	var targetRealm = realmName
@@ -418,15 +443,26 @@ func (c *authorizationComponentMW) ExecuteActionsEmail(ctx context.Context, real
 	return c.next.ExecuteActionsEmail(ctx, realmName, userID, actions, paramKV...)
 }
 
-func (c *authorizationComponentMW) SendNewEnrolmentCode(ctx context.Context, realmName string, userID string) (string, error) {
-	var action = MGMTSendNewEnrolmentCode.String()
+func (c *authorizationComponentMW) SendSmsCode(ctx context.Context, realmName string, userID string) (string, error) {
+	var action = MGMTSendSmsCode.String()
 	var targetRealm = realmName
 
 	if err := c.authManager.CheckAuthorizationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
 		return "", err
 	}
 
-	return c.next.SendNewEnrolmentCode(ctx, realmName, userID)
+	return c.next.SendSmsCode(ctx, realmName, userID)
+}
+
+func (c *authorizationComponentMW) SendOnboardingEmail(ctx context.Context, realmName string, userID string) error {
+	var action = MGMTSendOnboardingEmail.String()
+	var targetRealm = realmName
+
+	if err := c.authManager.CheckAuthorizationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
+		return err
+	}
+
+	return c.next.SendOnboardingEmail(ctx, realmName, userID)
 }
 
 func (c *authorizationComponentMW) SendReminderEmail(ctx context.Context, realmName string, userID string, paramKV ...string) error {

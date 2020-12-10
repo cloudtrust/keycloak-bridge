@@ -23,31 +23,34 @@ type Endpoints struct {
 	GetClients         endpoint.Endpoint
 	GetRequiredActions endpoint.Endpoint
 
-	DeleteUser                endpoint.Endpoint
-	GetUser                   endpoint.Endpoint
-	UpdateUser                endpoint.Endpoint
-	LockUser                  endpoint.Endpoint
-	UnlockUser                endpoint.Endpoint
-	GetUsers                  endpoint.Endpoint
-	CreateUser                endpoint.Endpoint
-	GetRolesOfUser            endpoint.Endpoint
-	GetGroupsOfUser           endpoint.Endpoint
-	AddGroupToUser            endpoint.Endpoint
-	DeleteGroupForUser        endpoint.Endpoint
-	GetAvailableTrustIDGroups endpoint.Endpoint
-	GetTrustIDGroupsOfUser    endpoint.Endpoint
-	SetTrustIDGroupsToUser    endpoint.Endpoint
-	GetUserChecks             endpoint.Endpoint
-	GetUserAccountStatus      endpoint.Endpoint
-	GetClientRoleForUser      endpoint.Endpoint
-	AddClientRoleToUser       endpoint.Endpoint
+	DeleteUser                  endpoint.Endpoint
+	GetUser                     endpoint.Endpoint
+	UpdateUser                  endpoint.Endpoint
+	LockUser                    endpoint.Endpoint
+	UnlockUser                  endpoint.Endpoint
+	GetUsers                    endpoint.Endpoint
+	CreateUser                  endpoint.Endpoint
+	GetRolesOfUser              endpoint.Endpoint
+	GetGroupsOfUser             endpoint.Endpoint
+	AddGroupToUser              endpoint.Endpoint
+	DeleteGroupForUser          endpoint.Endpoint
+	GetAvailableTrustIDGroups   endpoint.Endpoint
+	GetTrustIDGroupsOfUser      endpoint.Endpoint
+	SetTrustIDGroupsToUser      endpoint.Endpoint
+	GetUserChecks               endpoint.Endpoint
+	GetUserAccountStatus        endpoint.Endpoint
+	GetUserAccountStatusByEmail endpoint.Endpoint
+	GetClientRoleForUser        endpoint.Endpoint
+	AddClientRoleToUser         endpoint.Endpoint
 
 	ResetPassword                  endpoint.Endpoint
 	ExecuteActionsEmail            endpoint.Endpoint
-	SendNewEnrolmentCode           endpoint.Endpoint
+	SendSmsCode                    endpoint.Endpoint
+	SendOnboardingEmail            endpoint.Endpoint
 	SendReminderEmail              endpoint.Endpoint
 	ResetSmsCounter                endpoint.Endpoint
 	CreateRecoveryCode             endpoint.Endpoint
+	CreateActivationCode           endpoint.Endpoint
 	GetCredentialsForUser          endpoint.Endpoint
 	DeleteCredentialsForUser       endpoint.Endpoint
 	ResetCredentialFailuresForUser endpoint.Endpoint
@@ -323,6 +326,20 @@ func MakeGetUserAccountStatusEndpoint(component Component) cs.Endpoint {
 	}
 }
 
+// MakeGetUserAccountStatusByEmailEndpoint creates an endpoint for GetUserAccountStatusByEmail
+func MakeGetUserAccountStatusByEmailEndpoint(component Component) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+		var email = m[prmQryEmail]
+
+		if email == "" {
+			return nil, errorhandler.CreateBadRequestError(msg.MsgErrMissingParam + "." + prmQryEmail)
+		}
+
+		return component.GetUserAccountStatusByEmail(ctx, m[prmRealm], email)
+	}
+}
+
 // MakeGetClientRolesForUserEndpoint creates an endpoint for GetClientRolesForUser
 func MakeGetClientRolesForUserEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
@@ -408,13 +425,22 @@ func MakeExecuteActionsEmailEndpoint(component Component) cs.Endpoint {
 	}
 }
 
-// MakeSendNewEnrolmentCodeEndpoint creates an endpoint for SendNewEnrolmentCode
-func MakeSendNewEnrolmentCodeEndpoint(component Component) cs.Endpoint {
+// MakeSendSmsCodeEndpoint creates an endpoint for SendSmsCode
+func MakeSendSmsCodeEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		code, err := component.SendNewEnrolmentCode(ctx, m[prmRealm], m[prmUserID])
+		code, err := component.SendSmsCode(ctx, m[prmRealm], m[prmUserID])
 		return map[string]string{"code": code}, err
+	}
+}
+
+// MakeSendOnboardingEmailEndpoint creates an endpoint for SendOnboardingEmail
+func MakeSendOnboardingEmailEndpoint(component Component) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+
+		return nil, component.SendOnboardingEmail(ctx, m[prmRealm], m[prmUserID])
 	}
 }
 
@@ -449,6 +475,15 @@ func MakeCreateRecoveryCodeEndpoint(component Component) cs.Endpoint {
 		var m = req.(map[string]string)
 
 		return component.CreateRecoveryCode(ctx, m[prmRealm], m[prmUserID])
+	}
+}
+
+// MakeCreateActivationCodeEndpoint creates an endpoint for MakeCreateActivationCode
+func MakeCreateActivationCodeEndpoint(component Component) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+
+		return component.CreateActivationCode(ctx, m[prmRealm], m[prmUserID])
 	}
 }
 

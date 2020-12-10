@@ -338,16 +338,63 @@ func TestFederatedIdentityRepresentation(t *testing.T) {
 	})
 }
 
+func TestConvertRealmCustomConfiguration(t *testing.T) {
+	t.Run("Empty struct", func(t *testing.T) {
+		var res = CreateDefaultRealmCustomConfiguration()
+		assert.Nil(t, res.DefaultClientID)
+		assert.Nil(t, res.DefaultRedirectURI)
+		assert.False(t, *res.APISelfAuthenticatorDeletionEnabled)
+		assert.False(t, *res.APISelfPasswordChangeEnabled)
+		assert.False(t, *res.APISelfAccountEditingEnabled)
+		assert.False(t, *res.APISelfAccountDeletionEnabled)
+		assert.False(t, *res.ShowAuthenticatorsTab)
+		assert.False(t, *res.ShowPasswordTab)
+		assert.False(t, *res.ShowProfileTab)
+		assert.False(t, *res.ShowAccountDeletionButton)
+		assert.Nil(t, res.RedirectCancelledRegistrationURL)
+		assert.Nil(t, res.RedirectSuccessfulRegistrationURL)
+		assert.Nil(t, res.OnboardingRedirectURI)
+		assert.Nil(t, res.OnboardingClientID)
+		assert.Len(t, *res.SelfRegisterGroupNames, 0)
+		assert.Nil(t, res.BarcodeType)
+	})
+	t.Run("Non empty struct", func(t *testing.T) {
+		var bTrue = true
+		var groups = []string{"grp1", "grp2"}
+		var config = configuration.RealmConfiguration{
+			DefaultClientID:                   ptr("account"),
+			DefaultRedirectURI:                ptr("redirect-uri"),
+			APISelfAccountEditingEnabled:      &bTrue,
+			RedirectCancelledRegistrationURL:  ptr("cancelled"),
+			RedirectSuccessfulRegistrationURL: ptr("successful"),
+			OnboardingRedirectURI:             ptr("onboarding"),
+			OnboardingClientID:                ptr("client"),
+			SelfRegisterGroupNames:            &groups,
+			BarcodeType:                       ptr("barcodetype"),
+		}
+		var res = ConvertRealmCustomConfigurationFromDBStruct(config)
+		assert.Equal(t, config.DefaultClientID, res.DefaultClientID)
+		assert.Equal(t, config.DefaultRedirectURI, res.DefaultRedirectURI)
+		assert.True(t, *res.APISelfAccountEditingEnabled)
+		assert.Equal(t, config.RedirectCancelledRegistrationURL, res.RedirectCancelledRegistrationURL)
+		assert.Equal(t, config.RedirectSuccessfulRegistrationURL, res.RedirectSuccessfulRegistrationURL)
+		assert.Equal(t, config.OnboardingRedirectURI, res.OnboardingRedirectURI)
+		assert.Equal(t, config.OnboardingClientID, res.OnboardingClientID)
+		assert.Len(t, *res.SelfRegisterGroupNames, len(groups))
+		assert.Equal(t, config.BarcodeType, res.BarcodeType)
+	})
+}
+
 func TestConvertRealmAdminConfiguration(t *testing.T) {
 	t.Run("Empty struct", func(t *testing.T) {
 		var config = configuration.RealmAdminConfiguration{}
 		var res = ConvertRealmAdminConfigurationFromDBStruct(config)
-		assert.Nil(t, res.Mode)
+		assert.Equal(t, "corporate", *res.Mode)
 		assert.Len(t, res.AvailableChecks, 0)
 		assert.Len(t, res.Accreditations, 0)
-		assert.Equal(t, config, res.ConvertToDBStruct())
+		assert.False(t, *res.SelfRegisterEnabled)
 	})
-	t.Run("Empty struct", func(t *testing.T) {
+	t.Run("Non-empty values", func(t *testing.T) {
 		var mode = "mode"
 		var typeValue = "type"
 		var condition = "condition"
@@ -357,10 +404,12 @@ func TestConvertRealmAdminConfiguration(t *testing.T) {
 			Condition: &condition,
 			Validity:  &validity,
 		}
+		var selfRegisterEnabled = true
 		var config = configuration.RealmAdminConfiguration{
-			Mode:            &mode,
-			AvailableChecks: map[string]bool{"true": true, "false": false},
-			Accreditations:  []configuration.RealmAdminAccreditation{accred},
+			Mode:                &mode,
+			AvailableChecks:     map[string]bool{"true": true, "false": false},
+			Accreditations:      []configuration.RealmAdminAccreditation{accred},
+			SelfRegisterEnabled: &selfRegisterEnabled,
 		}
 		var res = ConvertRealmAdminConfigurationFromDBStruct(config)
 		assert.Equal(t, mode, *res.Mode)
@@ -372,6 +421,7 @@ func TestConvertRealmAdminConfiguration(t *testing.T) {
 		assert.Equal(t, condition, *res.Accreditations[0].Condition)
 		assert.Equal(t, validity, *res.Accreditations[0].Validity)
 		assert.Equal(t, config, res.ConvertToDBStruct())
+		assert.True(t, *res.SelfRegisterEnabled)
 	})
 }
 

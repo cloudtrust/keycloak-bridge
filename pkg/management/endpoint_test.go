@@ -415,6 +415,30 @@ func TestGetUserAccountStatusEndpoint(t *testing.T) {
 	}
 }
 
+func TestMakeGetUserAccountStatusByEmailEndpoint(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
+
+	var e = MakeGetUserAccountStatusByEmailEndpoint(mockManagementComponent)
+	var ctx = context.Background()
+	var realm = "one-realm"
+	var email = "email@domain.ch"
+
+	t.Run("MakeGetUserAccountStatusByEmailEndpoint-Missing user email", func(t *testing.T) {
+		var req = map[string]string{"realm": realm}
+		var _, err = e(ctx, req)
+		assert.NotNil(t, err)
+	})
+	t.Run("MakeGetUserAccountStatusByEmailEndpoint-success", func(t *testing.T) {
+		var req = map[string]string{prmRealm: realm, prmQryEmail: email}
+		mockManagementComponent.EXPECT().GetUserAccountStatusByEmail(ctx, realm, email).Return(api.UserStatus{}, nil)
+		var _, err = e(ctx, req)
+		assert.Nil(t, err)
+	})
+}
+
 func TestGetRolesOfUserEndpoint(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -764,13 +788,13 @@ func TestExecuteActionsEmailEndpoint(t *testing.T) {
 	}
 }
 
-func TestSendNewEnrolmentCodeEndpoint(t *testing.T) {
+func TestSendSmsCodeEndpoint(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 
 	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
 
-	var e = MakeSendNewEnrolmentCodeEndpoint(mockManagementComponent)
+	var e = MakeSendSmsCodeEndpoint(mockManagementComponent)
 
 	var realm = "master"
 	var userID = "123-456-789"
@@ -779,10 +803,32 @@ func TestSendNewEnrolmentCodeEndpoint(t *testing.T) {
 	req[prmRealm] = realm
 	req[prmUserID] = userID
 
-	mockManagementComponent.EXPECT().SendNewEnrolmentCode(ctx, realm, userID).Return("1234", nil).Times(1)
+	mockManagementComponent.EXPECT().SendSmsCode(ctx, realm, userID).Return("1234", nil).Times(1)
 	var res, err = e(ctx, req)
 	assert.Nil(t, err)
 	assert.Equal(t, map[string]string{"code": "1234"}, res)
+
+}
+
+func TestSendOnboardingEmailEndpoint(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
+
+	var e = MakeSendOnboardingEmailEndpoint(mockManagementComponent)
+
+	var realm = "master"
+	var userID = "123-456-789"
+	var ctx = context.Background()
+	var req = make(map[string]string)
+	req[prmRealm] = realm
+	req[prmUserID] = userID
+
+	mockManagementComponent.EXPECT().SendOnboardingEmail(ctx, realm, userID).Return(nil).Times(1)
+	var res, err = e(ctx, req)
+	assert.Nil(t, err)
+	assert.Nil(t, res)
 
 }
 
@@ -853,13 +899,11 @@ func TestResetSmsCounterEndpoint(t *testing.T) {
 
 }
 
-func TestRecoveryCodeEndpoint(t *testing.T) {
+func TestCodeEndpoints(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 
 	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
-
-	var e = MakeCreateRecoveryCodeEndpoint(mockManagementComponent)
 
 	var realm = "master"
 	var userID = "123-456-789"
@@ -867,12 +911,23 @@ func TestRecoveryCodeEndpoint(t *testing.T) {
 	var req = make(map[string]string)
 	req[prmRealm] = realm
 	req[prmUserID] = userID
+	var responseCode = "123456"
 
-	mockManagementComponent.EXPECT().CreateRecoveryCode(ctx, realm, userID).Return("123456", nil).Times(1)
-	var res, err = e(ctx, req)
-	assert.Nil(t, err)
-	assert.Equal(t, "123456", res)
+	t.Run("RecoveryCode", func(t *testing.T) {
+		var e = MakeCreateRecoveryCodeEndpoint(mockManagementComponent)
+		mockManagementComponent.EXPECT().CreateRecoveryCode(ctx, realm, userID).Return(responseCode, nil).Times(1)
+		var res, err = e(ctx, req)
+		assert.Nil(t, err)
+		assert.Equal(t, responseCode, res)
+	})
 
+	t.Run("ActivationCode", func(t *testing.T) {
+		var e = MakeCreateActivationCodeEndpoint(mockManagementComponent)
+		mockManagementComponent.EXPECT().CreateActivationCode(ctx, realm, userID).Return(responseCode, nil).Times(1)
+		var res, err = e(ctx, req)
+		assert.Nil(t, err)
+		assert.Equal(t, responseCode, res)
+	})
 }
 
 func TestGetCredentialsForUserEndpoint(t *testing.T) {

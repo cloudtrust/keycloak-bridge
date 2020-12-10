@@ -23,4 +23,5 @@ const (
 	AttrbSmsAttempts         = kc.AttributeKey("smsAttempts")
 	AttrbTrustIDAuthToken    = kc.AttributeKey("trustIDAuthToken")
 	AttrbTrustIDGroups       = kc.AttributeKey("trustIDGroups")
+	AttrbOnboardingCompleted = kc.AttributeKey("onboardingCompleted")
 )

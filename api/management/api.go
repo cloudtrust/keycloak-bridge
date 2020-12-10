@@ -158,10 +158,22 @@ type RealmCustomConfiguration struct {
 	ShowPasswordTab                     *bool     `json:"show_password_tab"`
 	ShowProfileTab                      *bool     `json:"show_profile_tab"`
 	ShowAccountDeletionButton           *bool     `json:"show_account_deletion_button"`
-	RegisterExecuteActions              *[]string `json:"register_execute_actions"`
 	RedirectCancelledRegistrationURL    *string   `json:"redirect_cancelled_registration_url"`
 	RedirectSuccessfulRegistrationURL   *string   `json:"redirect_successful_registration_url"`
+	OnboardingRedirectURI               *string   `json:"onboarding_redirect_uri"`
+	OnboardingClientID                  *string   `json:"onboarding_client_id"`
+	SelfRegisterGroupNames              *[]string `json:"self_register_group_names"`
 	BarcodeType                         *string   `json:"barcode_type"`
+}
+
+// UserStatus struct
+type UserStatus struct {
+	Email               *string `json:"email,omitempty"`
+	Enabled             *bool   `json:"enabled,omitempty"`
+	EmailVerified       *bool   `json:"emailVerified,omitempty"`
+	PhoneNumberVerified *bool   `json:"phoneNumberVerified,omitempty"`
+	OnboardingCompleted *bool   `json:"onboardingCompleted,omitempty"`
+	NumberOfCredentials *int    `json:"numberOfCredentials,omitempty"`
 }
 
 // BackOffice configuration keys
@@ -181,9 +193,10 @@ type BackOfficeConfiguration map[string]map[string][]string
 
 // RealmAdminConfiguration struct
 type RealmAdminConfiguration struct {
-	Mode            *string                   `json:"mode"`
-	AvailableChecks map[string]bool           `json:"available-checks"`
-	Accreditations  []RealmAdminAccreditation `json:"accreditations"`
+	Mode                *string                   `json:"mode"`
+	AvailableChecks     map[string]bool           `json:"available-checks"`
+	Accreditations      []RealmAdminAccreditation `json:"accreditations"`
+	SelfRegisterEnabled *bool                     `json:"self_register_enabled"`
 }
 
 // RealmAdminAccreditation struct
@@ -201,6 +214,27 @@ type FederatedIdentityRepresentation struct {
 
 // RequiredAction type
 type RequiredAction string
+
+func defaultString(actual *string, defaultValue string) *string {
+	if actual == nil {
+		return &defaultValue
+	}
+	return actual
+}
+
+func defaultBool(actual *bool, defaultValue bool) *bool {
+	if actual == nil {
+		return &defaultValue
+	}
+	return actual
+}
+
+func defaultStringArray(actual *[]string, defaultValue []string) *[]string {
+	if actual == nil {
+		return &defaultValue
+	}
+	return actual
+}
 
 // ConvertCredential creates an API credential from a KC credential
 func ConvertCredential(credKc *kc.CredentialRepresentation) CredentialRepresentation {
@@ -448,31 +482,60 @@ func ConvertToKCFedID(fedID FederatedIdentityRepresentation) kc.FederatedIdentit
 	return kcFedID
 }
 
+// CreateDefaultRealmCustomConfiguration creates a default custom configuration
+func CreateDefaultRealmCustomConfiguration() RealmCustomConfiguration {
+	return ConvertRealmCustomConfigurationFromDBStruct(configuration.RealmConfiguration{})
+}
+
+// ConvertRealmCustomConfigurationFromDBStruct converts a RealmCustomConfiguration from DB struct to API struct
+func ConvertRealmCustomConfigurationFromDBStruct(config configuration.RealmConfiguration) RealmCustomConfiguration {
+	var emptyArray = []string{}
+	return RealmCustomConfiguration{
+		DefaultClientID:                     config.DefaultClientID,
+		DefaultRedirectURI:                  config.DefaultRedirectURI,
+		APISelfAuthenticatorDeletionEnabled: defaultBool(config.APISelfAuthenticatorDeletionEnabled, false),
+		APISelfPasswordChangeEnabled:        defaultBool(config.APISelfPasswordChangeEnabled, false),
+		APISelfAccountEditingEnabled:        defaultBool(config.APISelfAccountEditingEnabled, false),
+		APISelfAccountDeletionEnabled:       defaultBool(config.APISelfAccountDeletionEnabled, false),
+		ShowAuthenticatorsTab:               defaultBool(config.ShowAuthenticatorsTab, false),
+		ShowPasswordTab:                     defaultBool(config.ShowPasswordTab, false),
+		ShowProfileTab:                      defaultBool(config.ShowProfileTab, false),
+		ShowAccountDeletionButton:           defaultBool(config.ShowAccountDeletionButton, false),
+		RedirectCancelledRegistrationURL:    config.RedirectCancelledRegistrationURL,
+		RedirectSuccessfulRegistrationURL:   config.RedirectSuccessfulRegistrationURL,
+		OnboardingRedirectURI:               config.OnboardingRedirectURI,
+		OnboardingClientID:                  config.OnboardingClientID,
+		SelfRegisterGroupNames:              defaultStringArray(config.SelfRegisterGroupNames, emptyArray),
+		BarcodeType:                         config.BarcodeType,
+	}
+}
+
 // CreateDefaultRealmAdminConfiguration creates a default admin configuration
 func CreateDefaultRealmAdminConfiguration() RealmAdminConfiguration {
-	var mode = "corporate"
-	var checks = make(map[string]bool)
-	for _, key := range configuration.AvailableCheckKeys {
-		checks[key] = false
-	}
-	return RealmAdminConfiguration{Mode: &mode, AvailableChecks: checks, Accreditations: make([]RealmAdminAccreditation, 0)}
+	return ConvertRealmAdminConfigurationFromDBStruct(configuration.RealmAdminConfiguration{})
 }
 
 // ConvertRealmAdminConfigurationFromDBStruct converts a RealmAdminConfiguration from DB struct to API struct
 func ConvertRealmAdminConfigurationFromDBStruct(conf configuration.RealmAdminConfiguration) RealmAdminConfiguration {
+	var checks = conf.AvailableChecks
+	if checks == nil {
+		checks = make(map[string]bool)
+	}
 	return RealmAdminConfiguration{
-		Mode:            conf.Mode,
-		AvailableChecks: conf.AvailableChecks,
-		Accreditations:  ConvertRealmAccreditationsFromDBStruct(conf.Accreditations),
+		Mode:                defaultString(conf.Mode, "corporate"),
+		AvailableChecks:     checks,
+		Accreditations:      ConvertRealmAccreditationsFromDBStruct(conf.Accreditations),
+		SelfRegisterEnabled: defaultBool(conf.SelfRegisterEnabled, false),
 	}
 }
 
 // ConvertToDBStruct converts a realm admin configuration into its database version
 func (rac RealmAdminConfiguration) ConvertToDBStruct() configuration.RealmAdminConfiguration {
 	return configuration.RealmAdminConfiguration{
-		Mode:            rac.Mode,
-		AvailableChecks: rac.AvailableChecks,
-		Accreditations:  rac.ConvertRealmAccreditationsToDBStruct(),
+		Mode:                rac.Mode,
+		AvailableChecks:     rac.AvailableChecks,
+		Accreditations:      rac.ConvertRealmAccreditationsToDBStruct(),
+		SelfRegisterEnabled: rac.SelfRegisterEnabled,
 	}
 }
 
@@ -597,6 +660,8 @@ func (config RealmCustomConfiguration) Validate() error {
 		ValidateParameterRegExp(constants.DefaultRedirectURI, config.DefaultRedirectURI, constants.RegExpRedirectURI, false).
 		ValidateParameterRegExp(constants.RedirectCancelledRegistrationURL, config.RedirectCancelledRegistrationURL, constants.RegExpRedirectURI, false).
 		ValidateParameterRegExp(constants.RedirectSuccessfulRegistrationURL, config.RedirectSuccessfulRegistrationURL, constants.RegExpRedirectURI, false).
+		ValidateParameterRegExp(constants.OnboardingRedirectURI, config.OnboardingRedirectURI, constants.RegExpRedirectURI, false).
+		ValidateParameterRegExp(constants.OnboardingClientID, config.OnboardingClientID, constants.RegExpClientID, false).
 		ValidateParameterIn(constants.BarcodeType, config.BarcodeType, allowedBarcodeType, false).
 		Status()
 }

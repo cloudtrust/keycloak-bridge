@@ -37,6 +37,7 @@ func TestDeny(t *testing.T) {
 	var roleID = "456-852-785"
 	var credentialID = "741-865-741"
 	var userUsername = "toto"
+	var email = "toto@domain.ch"
 
 	var roleName = "role"
 
@@ -153,6 +154,9 @@ func TestDeny(t *testing.T) {
 		_, err = authorizationMW.GetUserAccountStatus(ctx, realmName, userID)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
+		_, err = authorizationMW.GetUserAccountStatusByEmail(ctx, realmName, email)
+		assert.Equal(t, security.ForbiddenError{}, err)
+
 		_, err = authorizationMW.GetRolesOfUser(ctx, realmName, userID)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
@@ -186,7 +190,10 @@ func TestDeny(t *testing.T) {
 		err = authorizationMW.ExecuteActionsEmail(ctx, realmName, userID, []api.RequiredAction{})
 		assert.Equal(t, security.ForbiddenError{}, err)
 
-		_, err = authorizationMW.SendNewEnrolmentCode(ctx, realmName, userID)
+		_, err = authorizationMW.SendSmsCode(ctx, realmName, userID)
+		assert.Equal(t, security.ForbiddenError{}, err)
+
+		err = authorizationMW.SendOnboardingEmail(ctx, realmName, userID)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
 		err = authorizationMW.SendReminderEmail(ctx, realmName, userID)
@@ -196,6 +203,9 @@ func TestDeny(t *testing.T) {
 		assert.Equal(t, security.ForbiddenError{}, err)
 
 		_, err = authorizationMW.CreateRecoveryCode(ctx, realmName, userID)
+		assert.Equal(t, security.ForbiddenError{}, err)
+
+		_, err = authorizationMW.CreateActivationCode(ctx, realmName, userID)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
 		_, err = authorizationMW.GetCredentialsForUser(ctx, realmName, userID)
@@ -286,6 +296,7 @@ func TestAllowed(t *testing.T) {
 	var roleID = "456-852-785"
 	var credentialID = "7845-785-1545"
 	var userUsername = "toto"
+	var email = "toto@domain.ch"
 
 	var roleName = "role"
 	var toe = "toe"
@@ -428,6 +439,10 @@ func TestAllowed(t *testing.T) {
 		_, err = authorizationMW.GetUserAccountStatus(ctx, realmName, userID)
 		assert.Nil(t, err)
 
+		mockManagementComponent.EXPECT().GetUserAccountStatusByEmail(ctx, realmName, email).Return(api.UserStatus{}, nil).Times(1)
+		_, err = authorizationMW.GetUserAccountStatusByEmail(ctx, realmName, email)
+		assert.Nil(t, err)
+
 		mockManagementComponent.EXPECT().GetRolesOfUser(ctx, realmName, userID).Return([]api.RoleRepresentation{}, nil).Times(1)
 		_, err = authorizationMW.GetRolesOfUser(ctx, realmName, userID)
 		assert.Nil(t, err)
@@ -462,8 +477,12 @@ func TestAllowed(t *testing.T) {
 		err = authorizationMW.ExecuteActionsEmail(ctx, realmName, userID, []api.RequiredAction{})
 		assert.Nil(t, err)
 
-		mockManagementComponent.EXPECT().SendNewEnrolmentCode(ctx, realmName, userID).Return("1234", nil).Times(1)
-		_, err = authorizationMW.SendNewEnrolmentCode(ctx, realmName, userID)
+		mockManagementComponent.EXPECT().SendSmsCode(ctx, realmName, userID).Return("1234", nil).Times(1)
+		_, err = authorizationMW.SendSmsCode(ctx, realmName, userID)
+		assert.Nil(t, err)
+
+		mockManagementComponent.EXPECT().SendOnboardingEmail(ctx, realmName, userID).Return(nil).Times(1)
+		err = authorizationMW.SendOnboardingEmail(ctx, realmName, userID)
 		assert.Nil(t, err)
 
 		mockManagementComponent.EXPECT().SendReminderEmail(ctx, realmName, userID).Return(nil).Times(1)
@@ -476,6 +495,11 @@ func TestAllowed(t *testing.T) {
 
 		mockManagementComponent.EXPECT().CreateRecoveryCode(ctx, realmName, userID).Return("123456", nil).Times(1)
 		code, err := authorizationMW.CreateRecoveryCode(ctx, realmName, userID)
+		assert.Nil(t, err)
+		assert.NotNil(t, code)
+
+		mockManagementComponent.EXPECT().CreateActivationCode(ctx, realmName, userID).Return("123456", nil).Times(1)
+		code, err = authorizationMW.CreateActivationCode(ctx, realmName, userID)
 		assert.Nil(t, err)
 		assert.NotNil(t, code)
 

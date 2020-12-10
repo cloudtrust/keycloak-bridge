@@ -371,7 +371,34 @@ paths:
           content:
             application/json:
               schema:
+                $ref: '#/components/schemas/DeprecatedUserStatus'
+  /realms/{realm}/users/status:
+    get:
+      tags:
+      - Users
+      summary: Returns current status of user
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: email
+        in: query
+        schema:
+          type: string
+        required: true
+        allowEmptyValue: false
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
                 $ref: '#/components/schemas/UserStatus'
+        404:
+          description: user not found
   /realms/{realm}/users/{userID}/roles:
     get:
       tags:
@@ -713,12 +740,12 @@ paths:
       responses:
         200:
           description: successful operation
-  /realms/{realm}/users/{userID}/send-new-enrolment-code:
+  /realms/{realm}/users/{userID}/send-sms-code:
     post:
       tags:
       - Users
       summary: >
-        Send a new enrolment code for a particular userID.
+        Send an sms code to a user and returns the value to the requester. This can be used by support to ensure the person claiming for something really owns the mobile as a proof of its identity.
       parameters:
       - name: realm
         in: path
@@ -735,10 +762,47 @@ paths:
       responses:
         200:
           description: "Code correctly sent by SMS"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
         400:
           description: "Invalid input"
         403:
           description: "No permission to call this operation"
+  /realms/{realm}/users/{userID}/send-onboarding-email:
+    post:
+      tags:
+      - Users
+      summary: >
+        Send an onboarding email to the user. He will receives an email to start the onboarding process. At the end of the process, he will be authenticated.
+      parameters:
+      - name: realm
+        in: path
+        description: Realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: Onboarding email sent
+        400:
+          description: Invalid input
+        401:
+          description: Not authenticated
+        403:
+          description: No permission to call this operation
+        409:
+          description: Endpoint not configured
   /realms/{realm}/users/{userID}/send-reminder-email:
     post:
       tags:
@@ -961,6 +1025,31 @@ paths:
                 type: string
         409:
           description: recovery code already set
+  /realms/{realm}/users/{userID}/activation-code:
+    post:
+      tags:
+      - Credentials
+      summary: Create or replace an activation code for the user
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
+      responses:
+        201:
+          description: successful operation
+          content:
+            text/plain:
+              schema:
+                type: string
   /realms/{realm}/roles:
     get:
       tags:
@@ -1492,6 +1581,21 @@ components:
     UserStatus:
       type: object
       properties:
+        email:
+          type: string
+        enabled:
+          type: boolean
+        emailVerified:
+          type: boolean
+        phoneNumberVerified:
+          type: boolean
+        onboardingCompleted:
+          type: boolean
+        numberOfCredentials:
+          type: integer
+    DeprecatedUserStatus:
+      type: object
+      properties:
         enabled:
           type: boolean
     Client:
@@ -1607,6 +1711,14 @@ components:
           type: string
         redirect_successful_registration_url:
           type: string
+        onboarding_redirect_uri:
+          type: string
+        onboarding_client_id:
+          type: string
+        self_register_group_names:
+          type: array
+          items:
+            type: string
         barcode_type:
           type: string
           enum: [CODE128]
@@ -1630,6 +1742,8 @@ components:
                 type: string
               condition:
                 type: string
+        self_register_enabled:
+          type: boolean
     BackOfficeConfiguration:
       type: object
       additionalProperties:
