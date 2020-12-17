@@ -153,6 +153,12 @@ paths:
         required: true
         schema:
           type: string
+      - name: generateUsername
+        in: query
+        description: tells if a username should be generated
+        required: false
+        schema:
+          type: boolean
       requestBody:
         content:
           application/json:

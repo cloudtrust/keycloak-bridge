@@ -101,7 +101,7 @@ type Component interface {
 	LockUser(ctx context.Context, realmName, userID string) error
 	UnlockUser(ctx context.Context, realmName, userID string) error
 	GetUsers(ctx context.Context, realmName string, groupIDs []string, paramKV ...string) (api.UsersPageRepresentation, error)
-	CreateUser(ctx context.Context, realmName string, user api.UserRepresentation) (string, error)
+	CreateUser(ctx context.Context, realmName string, user api.UserRepresentation, generateUsername bool) (string, error)
 	GetUserChecks(ctx context.Context, realmName, userID string) ([]api.UserCheck, error)
 	GetUserAccountStatus(ctx context.Context, realmName, userID string) (map[string]bool, error)
 	GetUserAccountStatusByEmail(ctx context.Context, realmName, email string) (api.UserStatus, error)
@@ -303,7 +303,7 @@ func (c *component) GetRequiredActions(ctx context.Context, realmName string) ([
 	return requiredActionsRep, nil
 }
 
-func (c *component) CreateUser(ctx context.Context, realmName string, user api.UserRepresentation) (string, error) {
+func (c *component) CreateUser(ctx context.Context, realmName string, user api.UserRepresentation, generateUsername bool) (string, error) {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 	var ctxRealm = ctx.Value(cs.CtContextRealm).(string)
 
@@ -311,7 +311,7 @@ func (c *component) CreateUser(ctx context.Context, realmName string, user api.U
 
 	var locationURL string
 	var err error
-	if realmName == c.socialRealmName {
+	if realmName == c.socialRealmName || generateUsername {
 		// Ignore username and create a random one
 		userRep.Username = nil
 		locationURL, err = c.onboardingModule.CreateUser(ctx, accessToken, ctxRealm, realmName, &userRep)

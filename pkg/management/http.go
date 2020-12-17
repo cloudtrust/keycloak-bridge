@@ -42,6 +42,7 @@ const (
 	prmQryFirst       = "first"
 	prmQryMax         = "max"
 	prmQryGroupName   = "groupName"
+	prmQryGenUsername = "generateUsername"
 )
 
 // MakeManagementHandler make an HTTP handler for a Management endpoint.
@@ -78,6 +79,7 @@ func decodeManagementRequest(ctx context.Context, req *http.Request) (interface{
 		prmQryFirst:       api.RegExpNumber,
 		prmQryMax:         api.RegExpNumber,
 		prmQryGroupName:   api.RegExpName,
+		prmQryGenUsername: msg.RegExpBool,
 	}
 
 	return commonhttp.DecodeRequest(ctx, req, pathParams, queryParams)
