@@ -77,7 +77,7 @@ func TestHTTPManagementHandler(t *testing.T) {
 		}
 		userJSON, _ := json.Marshal(user)
 
-		mockComponent.EXPECT().CreateUser(gomock.Any(), "master", user).Return("https://elca.com/auth/admin/realms/master/users/12456", nil).Times(1)
+		mockComponent.EXPECT().CreateUser(gomock.Any(), "master", user, false).Return("https://elca.com/auth/admin/realms/master/users/12456", nil).Times(1)
 
 		var body = strings.NewReader(string(userJSON))
 		res, err := http.Post(ts.URL+"/realms/master/users", "application/json", body)
@@ -136,9 +136,8 @@ func TestHTTPErrorHandler(t *testing.T) {
 	}
 	userJSON, _ := json.Marshal(user)
 
-	// Internal server error.
-	{
-		mockComponent.EXPECT().CreateUser(gomock.Any(), "master", user).Return("", fmt.Errorf("Unexpected Error")).Times(1)
+	t.Run("Internal server error", func(t *testing.T) {
+		mockComponent.EXPECT().CreateUser(gomock.Any(), "master", user, false).Return("", fmt.Errorf("Unexpected Error")).Times(1)
 
 		var body = strings.NewReader(string(userJSON))
 		res, err := http.Post(ts.URL+"/realms/master/users", "application/json", body)
@@ -146,70 +145,62 @@ func TestHTTPErrorHandler(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Equal(t, http.StatusInternalServerError, res.StatusCode)
 		assert.Equal(t, http.NoBody, res.Body)
-	}
+	})
 
-	// Forbidden error.
-	{
-		mockComponent.EXPECT().CreateUser(gomock.Any(), "master", user).Return("", security.ForbiddenError{}).Times(1)
+	t.Run("Forbidden error", func(t *testing.T) {
+		mockComponent.EXPECT().CreateUser(gomock.Any(), "master", user, false).Return("", security.ForbiddenError{}).Times(1)
 
 		var body = strings.NewReader(string(userJSON))
 		res, err := http.Post(ts.URL+"/realms/master/users", "application/json", body)
 
 		assert.Nil(t, err)
 		assert.Equal(t, http.StatusForbidden, res.StatusCode)
+	})
 
-	}
-
-	// Bad request.
-	{
+	t.Run("Bad request", func(t *testing.T) {
 		var body = strings.NewReader("?/%&asd==")
 		res, err := http.Post(ts.URL+"/realms/master/users", "application/json", body)
 
 		assert.Nil(t, err)
 		assert.Equal(t, http.StatusBadRequest, res.StatusCode)
+	})
 
-	}
-
-	// Bad request, invalid path param
-	{
+	t.Run("Bad request, invalid path param", func(t *testing.T) {
 		var body = strings.NewReader("?/%&asd==")
 		res, err := http.Post(ts.URL+"/realms/master!!/users", "application/json", body)
 
 		assert.Nil(t, err)
 		assert.Equal(t, http.StatusBadRequest, res.StatusCode)
-	}
+	})
 
-	// Bad request, invalid query param
-	{
+	t.Run("Bad request, invalid query param", func(t *testing.T) {
 		var body = strings.NewReader("?/%&asd==")
 		res, err := http.Post(ts.URL+"/realms/master/users?email=tito!", "application/json", body)
 
 		assert.Nil(t, err)
 		assert.Equal(t, http.StatusBadRequest, res.StatusCode)
-	}
+	})
 
-	// Keycloak Error
-	{
+	t.Run("Keycloak Error", func(t *testing.T) {
 		var kcError = kc_client.HTTPError{
 			HTTPStatus: 404,
 			Message:    "Not found",
 		}
-		mockComponent.EXPECT().CreateUser(gomock.Any(), "master", user).Return("", kcError).Times(1)
+		mockComponent.EXPECT().CreateUser(gomock.Any(), "master", user, false).Return("", kcError).Times(1)
 
 		var body = strings.NewReader(string(userJSON))
 		res, err := http.Post(ts.URL+"/realms/master/users", "application/json", body)
 
 		assert.Nil(t, err)
 		assert.Equal(t, http.StatusNotFound, res.StatusCode)
-	}
+	})
 
-	// HTTPResponse Error
-	{
+	t.Run("HTTPResponse Error", func(t *testing.T) {
 		var kcError = commonhttp.Error{
 			Status:  401,
 			Message: "Unauthorized",
 		}
-		mockComponent.EXPECT().CreateUser(gomock.Any(), "master", user).Return("", kcError).Times(1)
+		mockComponent.EXPECT().CreateUser(gomock.Any(), "master", user, false).Return("", kcError).Times(1)
 
 		var body = strings.NewReader(string(userJSON))
 		res, err := http.Post(ts.URL+"/realms/master/users", "application/json", body)
@@ -217,7 +208,7 @@ func TestHTTPErrorHandler(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Equal(t, http.StatusUnauthorized, res.StatusCode)
 		assert.NotEqual(t, http.NoBody, res.Body)
-	}
+	})
 }
 
 func TestHTTPXForwardHeaderHandler(t *testing.T) {
@@ -249,7 +240,7 @@ func TestHTTPXForwardHeaderHandler(t *testing.T) {
 		}
 		userJSON, _ := json.Marshal(user)
 
-		mockComponent.EXPECT().CreateUser(gomock.Any(), "master", user).Return("https://elca.com/auth/admin/realms/master/users/12456", nil).Times(1)
+		mockComponent.EXPECT().CreateUser(gomock.Any(), "master", user, false).Return("https://elca.com/auth/admin/realms/master/users/12456", nil).Times(1)
 
 		var body = strings.NewReader(string(userJSON))
 

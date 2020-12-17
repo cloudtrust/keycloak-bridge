@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 	"testing"
 
 	"github.com/cloudtrust/common-service/log"
@@ -138,8 +139,7 @@ func TestCreateUserEndpoint(t *testing.T) {
 	var ctx = context.Background()
 	var groups = []string{"f467ed7c-0a1d-4eee-9bb8-669c6f89c0ee"}
 
-	// No error
-	{
+	t.Run("No error", func(t *testing.T) {
 		var req = make(map[string]string)
 		req[reqScheme] = "https"
 		req[reqHost] = "elca.ch"
@@ -148,24 +148,22 @@ func TestCreateUserEndpoint(t *testing.T) {
 		userJSON, _ := json.Marshal(api.UserRepresentation{Groups: &groups})
 		req[reqBody] = string(userJSON)
 
-		mockManagementComponent.EXPECT().CreateUser(ctx, realm, api.UserRepresentation{Groups: &groups}).Return(location, nil).Times(1)
+		mockManagementComponent.EXPECT().CreateUser(ctx, realm, api.UserRepresentation{Groups: &groups}, false).Return(location, nil).Times(1)
 		res, err := e(ctx, req)
 		assert.Nil(t, err)
 
 		locationHeader := res.(LocationHeader)
 		assert.Equal(t, "https://elca.ch/management/master/users/123456", locationHeader.URL)
-	}
+	})
 
-	// Error - Cannot unmarshall
-	{
+	t.Run("Error - Cannot unmarshall", func(t *testing.T) {
 		var req = make(map[string]string)
 		req[reqBody] = string("JSON")
 		_, err := e(ctx, req)
 		assert.NotNil(t, err)
-	}
+	})
 
-	// Error - Keycloak client error
-	{
+	t.Run("Error - Keycloak client error", func(t *testing.T) {
 		var req = make(map[string]string)
 		req[reqScheme] = "https"
 		req[reqHost] = "elca.ch"
@@ -173,10 +171,10 @@ func TestCreateUserEndpoint(t *testing.T) {
 		userJSON, _ := json.Marshal(api.UserRepresentation{Groups: &groups})
 		req[reqBody] = string(userJSON)
 
-		mockManagementComponent.EXPECT().CreateUser(ctx, realm, gomock.Any()).Return("", fmt.Errorf("Error")).Times(1)
+		mockManagementComponent.EXPECT().CreateUser(ctx, realm, gomock.Any(), false).Return("", fmt.Errorf("Error")).Times(1)
 		_, err := e(ctx, req)
 		assert.NotNil(t, err)
-	}
+	})
 }
 
 func TestDeleteUserEndpoint(t *testing.T) {
@@ -866,7 +864,7 @@ func TestSendReminderEmailEndpoint(t *testing.T) {
 		req[prmUserID] = userID
 		req[prmQryClientID] = "123789"
 		req[prmQryRedirectURI] = "http://redirect.com"
-		req[prmQryLifespan] = string(lifespan)
+		req[prmQryLifespan] = strconv.Itoa(lifespan)
 		req["toto"] = "tutu" // Check this param is not transmitted
 
 		mockManagementComponent.EXPECT().SendReminderEmail(ctx, realm, userID, prmQryClientID, req[prmQryClientID], prmQryRedirectURI, req[prmQryRedirectURI], prmQryLifespan, req[prmQryLifespan]).Return(nil).Times(1)

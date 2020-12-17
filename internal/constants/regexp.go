@@ -8,6 +8,7 @@ const (
 	RegExpID          = `^[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}$`
 	RegExpName        = `^[a-zA-Z0-9-_]{1,128}$`
 	RegExpDescription = regExpLen255
+	RegExpBool        = `^([Tt][Rr][Uu][Ee])|([Ff][Aa][Ll][Ss][Ee])$`
 
 	// Client
 	RegExpClientID = `^[a-zA-Z0-9-_.]{1,255}$`
