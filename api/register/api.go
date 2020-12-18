@@ -35,9 +35,10 @@ type UserRepresentation struct {
 
 // ConfigurationRepresentation representation
 type ConfigurationRepresentation struct {
-	RedirectCancelledRegistrationURL *string `json:"redirect_cancelled_registration_url,omitempty"`
-	Mode                             *string `json:"mode,omitempty"`
-	Theme                            *string `json:"theme,omitempty"`
+	RedirectCancelledRegistrationURL *string   `json:"redirect_cancelled_registration_url,omitempty"`
+	Mode                             *string   `json:"mode,omitempty"`
+	Theme                            *string   `json:"theme,omitempty"`
+	SupportedLocales                 *[]string `json:"supportedLocales,omitempty"`
 }
 
 // Parameter references

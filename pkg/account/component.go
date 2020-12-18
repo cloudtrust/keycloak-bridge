@@ -48,6 +48,11 @@ type KeycloakAccountClient interface {
 	SendEmail(accessToken, realmName, template, subject string, recipient *string, attributes map[string]string) error
 }
 
+// KeycloakTechnicalClient interface exposes methods called by a technical account
+type KeycloakTechnicalClient interface {
+	GetRealm(ctx context.Context, realmName string) (kc.RealmRepresentation, error)
+}
+
 // Component interface exposes methods used by the bridge API
 type Component interface {
 	UpdatePassword(ctx context.Context, currentPassword, newPassword, confirmPassword string) error
@@ -73,6 +78,7 @@ type UsersDetailsDBModule interface {
 // Component is the management component.
 type component struct {
 	keycloakAccountClient KeycloakAccountClient
+	keycloakTechClient    KeycloakTechnicalClient
 	eventDBModule         database.EventsDBModule
 	configDBModule        keycloakb.ConfigurationDBModule
 	usersDBModule         UsersDetailsDBModule
@@ -80,9 +86,10 @@ type component struct {
 }
 
 // NewComponent returns the self-service component.
-func NewComponent(keycloakAccountClient KeycloakAccountClient, eventDBModule database.EventsDBModule, configDBModule keycloakb.ConfigurationDBModule, usersDBModule UsersDetailsDBModule, logger internal.Logger) Component {
+func NewComponent(keycloakAccountClient KeycloakAccountClient, keycloakTechClient KeycloakTechnicalClient, eventDBModule database.EventsDBModule, configDBModule keycloakb.ConfigurationDBModule, usersDBModule UsersDetailsDBModule, logger internal.Logger) Component {
 	return &component{
 		keycloakAccountClient: keycloakAccountClient,
+		keycloakTechClient:    keycloakTechClient,
 		eventDBModule:         eventDBModule,
 		configDBModule:        configDBModule,
 		usersDBModule:         usersDBModule,
@@ -469,6 +476,17 @@ func (c *component) GetConfiguration(ctx context.Context, realmIDOverride string
 		return api.Configuration{}, err
 	}
 
+	var realmConf kc.RealmRepresentation
+	if realmConf, err = c.keycloakTechClient.GetRealm(ctx, currentRealm); err != nil {
+		c.logger.Warn(ctx, "msg", "Can't get Keycloak realm configuration", "err", err.Error(), "realm", currentRealm)
+		return api.Configuration{}, err
+	}
+
+	var supportedLocales *[]string
+	if realmConf.InternationalizationEnabled != nil && *realmConf.InternationalizationEnabled {
+		supportedLocales = realmConf.SupportedLocales
+	}
+
 	var apiConfig = api.Configuration{
 		EditingEnabled:                    config.APISelfAccountEditingEnabled,
 		ShowAuthenticatorsTab:             config.ShowAuthenticatorsTab,
@@ -479,6 +497,7 @@ func (c *component) GetConfiguration(ctx context.Context, realmIDOverride string
 		BarcodeType:                       config.BarcodeType,
 		AvailableChecks:                   adminConfig.AvailableChecks,
 		Theme:                             adminConfig.Theme,
+		SupportedLocales:                  supportedLocales,
 	}
 
 	if realmIDOverride != "" {
