@@ -197,6 +197,7 @@ type RealmAdminConfiguration struct {
 	AvailableChecks     map[string]bool           `json:"available-checks"`
 	Accreditations      []RealmAdminAccreditation `json:"accreditations"`
 	SelfRegisterEnabled *bool                     `json:"self_register_enabled"`
+	Theme               *string                   `json:"theme"`
 }
 
 // RealmAdminAccreditation struct
@@ -526,6 +527,7 @@ func ConvertRealmAdminConfigurationFromDBStruct(conf configuration.RealmAdminCon
 		AvailableChecks:     checks,
 		Accreditations:      ConvertRealmAccreditationsFromDBStruct(conf.Accreditations),
 		SelfRegisterEnabled: defaultBool(conf.SelfRegisterEnabled, false),
+		Theme:               conf.Theme,
 	}
 }
 
@@ -536,6 +538,7 @@ func (rac RealmAdminConfiguration) ConvertToDBStruct() configuration.RealmAdminC
 		AvailableChecks:     rac.AvailableChecks,
 		Accreditations:      rac.ConvertRealmAccreditationsToDBStruct(),
 		SelfRegisterEnabled: rac.SelfRegisterEnabled,
+		Theme:               rac.Theme,
 	}
 }
 
@@ -671,6 +674,7 @@ func (rac RealmAdminConfiguration) Validate() error {
 	return validation.NewParameterValidator().
 		ValidateParameterIn("mode", rac.Mode, allowedAdminConfMode, true).
 		ValidateParameterFunc(rac.validateAvailableChecks).
+		ValidateParameterRegExp("theme", rac.Theme, constants.RegExpTheme, false).
 		Status()
 }
 

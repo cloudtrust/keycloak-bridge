@@ -1750,6 +1750,8 @@ components:
                 type: string
         self_register_enabled:
           type: boolean
+        theme:
+          type: string
     BackOfficeConfiguration:
       type: object
       additionalProperties:

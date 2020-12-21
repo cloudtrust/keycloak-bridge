@@ -393,6 +393,7 @@ func TestConvertRealmAdminConfiguration(t *testing.T) {
 		assert.Len(t, res.AvailableChecks, 0)
 		assert.Len(t, res.Accreditations, 0)
 		assert.False(t, *res.SelfRegisterEnabled)
+		assert.Nil(t, res.Theme)
 	})
 	t.Run("Non-empty values", func(t *testing.T) {
 		var mode = "mode"
@@ -410,6 +411,7 @@ func TestConvertRealmAdminConfiguration(t *testing.T) {
 			AvailableChecks:     map[string]bool{"true": true, "false": false},
 			Accreditations:      []configuration.RealmAdminAccreditation{accred},
 			SelfRegisterEnabled: &selfRegisterEnabled,
+			Theme:               ptr("trustid"),
 		}
 		var res = ConvertRealmAdminConfigurationFromDBStruct(config)
 		assert.Equal(t, mode, *res.Mode)
@@ -422,6 +424,7 @@ func TestConvertRealmAdminConfiguration(t *testing.T) {
 		assert.Equal(t, validity, *res.Accreditations[0].Validity)
 		assert.Equal(t, config, res.ConvertToDBStruct())
 		assert.True(t, *res.SelfRegisterEnabled)
+		assert.Equal(t, config.Theme, res.Theme)
 	})
 }
 
@@ -574,6 +577,7 @@ func createValidRealmAdminConfiguration() RealmAdminConfiguration {
 		Mode:            ptr("trustID"),
 		AvailableChecks: map[string]bool{"IDNow": false, "physical-check": true},
 		Accreditations:  []RealmAdminAccreditation{accred},
+		Theme:           ptr("my-theme"),
 	}
 }
 
@@ -617,6 +621,11 @@ func TestValidateRealmAdminConfiguration(t *testing.T) {
 		var realmAdminConf = createValidRealmAdminConfiguration()
 		var invalid = "invalid-key"
 		realmAdminConf.Accreditations[0].Condition = &invalid
+		assert.NotNil(t, realmAdminConf.Validate())
+	})
+	t.Run("Invalid theme", func(t *testing.T) {
+		var realmAdminConf = createValidRealmAdminConfiguration()
+		realmAdminConf.Theme = ptr("")
 		assert.NotNil(t, realmAdminConf.Validate())
 	})
 }

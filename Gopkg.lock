@@ -18,7 +18,7 @@
   version = "2020.09.22"
 
 [[projects]]
-  digest = "1:fb6ba397da161085e84241ed21c5fe02fbd0257561c5c091654e0ad8835dca06"
+  digest = "1:a3b4e19a628706d89f003b11f4c1378b145f77f830f9f1a783be1a7caf54d1e4"
   name = "github.com/cloudtrust/common-service"
   packages = [
     ".",
@@ -38,11 +38,11 @@
     "validation",
   ]
   pruneopts = "UT"
-  revision = "b54d0cf9445b6eae7c7bee5611b3ca0ec81adc75"
-  version = "v2.3.0"
+  revision = "db4f491ff49f4e51a8a7ca7b3dcc4feea2b2b84d"
+  version = "v2.3.1"
 
 [[projects]]
-  digest = "1:1f2001c024c709e6266c38123dc28f04cd80337ae657237ae7742e1bdda35425"
+  digest = "1:11ce7c81281e8d48ec04ef349792edeac0d57f93e3c0ca84ddd74b0d7c9597dd"
   name = "github.com/cloudtrust/keycloak-client"
   packages = [
     ".",
@@ -50,8 +50,8 @@
     "toolbox",
   ]
   pruneopts = "UT"
-  revision = "e259774583b8a32cea2d8b9b466488767c202f41"
-  version = "v2.3.0"
+  revision = "e06e1ec0bf5ec8ed2873936f0431aa06ef5e7123"
+  version = "v2.3.1"
 
 [[projects]]
   digest = "1:910c5b111ca13127693df80a59be2c952ad97313626116c0c9895e7b588f2a29"
@@ -385,11 +385,11 @@
     "pbkdf2",
   ]
   pruneopts = "UT"
-  revision = "5f87f3452ae96c4850ab9af7783f2517b643061b"
+  revision = "eec23a3978adcfd26c29f4153eaa3e3d9b2cc53a"
 
 [[projects]]
   branch = "master"
-  digest = "1:9bfbda71a867ae2a3450635a5782493cd6c7daf0fcb08241bac9d4301e79e6b5"
+  digest = "1:e955db69541e70f145ef8d5dfdb2c9602d235f58ddc971cb8158494bf5ebb74d"
   name = "golang.org/x/net"
   packages = [
     "context",
@@ -398,7 +398,7 @@
     "publicsuffix",
   ]
   pruneopts = "UT"
-  revision = "ac852fbbde11df194bfd5004603c7c8e117901f2"
+  revision = "6772e930b67bb09bf22262c7378e7d2f67cf59d1"
 
 [[projects]]
   branch = "master"
@@ -413,14 +413,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:3d30e8dfc6be82e30cbea6cf40099b9d8d6511c57b04a6066dc29c205c0ebf0f"
+  digest = "1:9b8a5de3937cc4b3669bba3bf8a3241411fe6b014aee0520772832b7b6a6ed6a"
   name = "golang.org/x/sys"
   packages = [
     "internal/unsafeheader",
     "unix",
   ]
   pruneopts = "UT"
-  revision = "d4d67f95c62d573f21c7627795af8a6c2ab475a5"
+  revision = "6f8348627aad09edda3e4ad5f9174f334bc27cd8"
 
 [[projects]]
   digest = "1:a45009ae1e0da0b589cd5da9f30770041573e61f2f79fb3e86aa3790d5c495c4"
