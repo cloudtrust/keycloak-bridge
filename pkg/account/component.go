@@ -476,8 +476,9 @@ func (c *component) GetConfiguration(ctx context.Context, realmIDOverride string
 		ShowPasswordTab:                   config.ShowPasswordTab,
 		ShowProfileTab:                    config.ShowProfileTab,
 		RedirectSuccessfulRegistrationURL: config.RedirectSuccessfulRegistrationURL,
-		AvailableChecks:                   adminConfig.AvailableChecks,
 		BarcodeType:                       config.BarcodeType,
+		AvailableChecks:                   adminConfig.AvailableChecks,
+		Theme:                             adminConfig.Theme,
 	}
 
 	if realmIDOverride != "" {

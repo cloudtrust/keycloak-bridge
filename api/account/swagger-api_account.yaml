@@ -287,6 +287,8 @@ components:
         barcode_type:
           type: string
           enum: [CODE128]
+        theme:
+          type: string
   securitySchemes:
     openId:
       type: openIdConnect

@@ -61,6 +61,7 @@ type Configuration struct {
 	RedirectSuccessfulRegistrationURL *string         `json:"redirect_successful_registration_url"`
 	AvailableChecks                   map[string]bool `json:"available-checks"`
 	BarcodeType                       *string         `json:"barcode_type"`
+	Theme                             *string         `json:"theme"`
 }
 
 // UpdatePasswordBody is the definition of the expected body content of UpdatePassword method
