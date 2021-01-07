@@ -12,8 +12,8 @@ import (
 	cs "github.com/cloudtrust/common-service"
 	"github.com/cloudtrust/common-service/configuration"
 	"github.com/cloudtrust/common-service/database"
-	commonhttp "github.com/cloudtrust/common-service/errors"
 	errorhandler "github.com/cloudtrust/common-service/errors"
+	csjson "github.com/cloudtrust/common-service/json"
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
@@ -916,7 +916,7 @@ func TestGetUser(t *testing.T) {
 	})
 }
 
-func createUpdateUser() api.UserRepresentation {
+func createUpdateUser() api.UpdatableUserRepresentation {
 	var username = "username"
 	var email = "toto@elca.ch"
 	var emailVerified = true
@@ -929,13 +929,13 @@ func createUpdateUser() api.UserRepresentation {
 	var birthDate = "01/01/1988"
 	var locale = "de"
 
-	return api.UserRepresentation{
+	return api.UpdatableUserRepresentation{
 		Username:            &username,
-		Email:               &email,
+		Email:               csjson.StringToOptional(email),
 		EmailVerified:       &emailVerified,
 		FirstName:           &firstName,
 		LastName:            &lastName,
-		PhoneNumber:         &phoneNumber,
+		PhoneNumber:         csjson.StringToOptional(phoneNumber),
 		PhoneNumberVerified: &phoneNumberVerified,
 		Label:               &label,
 		Gender:              &gender,
@@ -967,7 +967,7 @@ func TestUpdateUser(t *testing.T) {
 	var userRep = createUpdateUser()
 
 	var attributes = make(kc.Attributes)
-	attributes.SetString(constants.AttrbPhoneNumber, *userRep.PhoneNumber)
+	attributes.SetString(constants.AttrbPhoneNumber, *userRep.PhoneNumber.Value)
 	attributes.SetString(constants.AttrbLabel, *userRep.Label)
 	attributes.SetString(constants.AttrbGender, *userRep.Gender)
 	attributes.SetString(constants.AttrbBirthDate, *userRep.BirthDate)
@@ -977,7 +977,7 @@ func TestUpdateUser(t *testing.T) {
 	var kcUserRep = kc.UserRepresentation{
 		ID:               &id,
 		Username:         userRep.Username,
-		Email:            userRep.Email,
+		Email:            userRep.Email.Value,
 		Enabled:          &enabled,
 		EmailVerified:    userRep.EmailVerified,
 		FirstName:        userRep.FirstName,
@@ -1027,11 +1027,11 @@ func TestUpdateUser(t *testing.T) {
 		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, realmName, id, gomock.Any()).DoAndReturn(
 			func(accessToken, realmName, id string, kcUserRep kc.UserRepresentation) error {
 				assert.Equal(t, *userRep.Username, *kcUserRep.Username)
-				assert.Equal(t, *userRep.Email, *kcUserRep.Email)
+				assert.Equal(t, *userRep.Email.Value, *kcUserRep.Email)
 				assert.Equal(t, *userRep.EmailVerified, *kcUserRep.EmailVerified)
 				assert.Equal(t, *userRep.FirstName, *kcUserRep.FirstName)
 				assert.Equal(t, *userRep.LastName, *kcUserRep.LastName)
-				assert.Equal(t, *userRep.PhoneNumber, *kcUserRep.GetAttributeString(constants.AttrbPhoneNumber))
+				assert.Equal(t, *userRep.PhoneNumber.Value, *kcUserRep.GetAttributeString(constants.AttrbPhoneNumber))
 				verified, _ := kcUserRep.GetAttributeBool(constants.AttrbPhoneNumberVerified)
 				assert.Equal(t, *userRep.PhoneNumberVerified, *verified)
 				assert.Equal(t, *userRep.Label, *kcUserRep.GetAttributeString(constants.AttrbLabel))
@@ -1053,11 +1053,11 @@ func TestUpdateUser(t *testing.T) {
 		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, realmName, id, gomock.Any()).DoAndReturn(
 			func(accessToken, realmName, id string, kcUserRep kc.UserRepresentation) error {
 				assert.Equal(t, *userRep.Username, *kcUserRep.Username)
-				assert.Equal(t, *userRep.Email, *kcUserRep.Email)
+				assert.Equal(t, *userRep.Email.Value, *kcUserRep.Email)
 				assert.Equal(t, *userRep.EmailVerified, *kcUserRep.EmailVerified)
 				assert.Equal(t, *userRep.FirstName, *kcUserRep.FirstName)
 				assert.Equal(t, *userRep.LastName, *kcUserRep.LastName)
-				assert.Equal(t, *userRep.PhoneNumber, *kcUserRep.GetAttributeString(constants.AttrbPhoneNumber))
+				assert.Equal(t, *userRep.PhoneNumber.Value, *kcUserRep.GetAttributeString(constants.AttrbPhoneNumber))
 				verified, _ := kcUserRep.GetAttributeBool(constants.AttrbPhoneNumberVerified)
 				assert.Equal(t, *userRep.PhoneNumberVerified, *verified)
 				assert.Equal(t, *userRep.Label, *kcUserRep.GetAttributeString(constants.AttrbLabel))
@@ -1121,12 +1121,12 @@ func TestUpdateUser(t *testing.T) {
 		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, realmName, id, gomock.Any()).DoAndReturn(
 			func(accessToken, realmName, id string, kcUserRep kc.UserRepresentation) error {
 				assert.Equal(t, *userRep.Username, *kcUserRep.Username)
-				assert.Equal(t, *userRep.Email, *kcUserRep.Email)
+				assert.Equal(t, *userRep.Email.Value, *kcUserRep.Email)
 				assert.Equal(t, enabled, *kcUserRep.Enabled)
 				assert.Equal(t, *userRep.EmailVerified, *kcUserRep.EmailVerified)
 				assert.Equal(t, *userRep.FirstName, *kcUserRep.FirstName)
 				assert.Equal(t, *userRep.LastName, *kcUserRep.LastName)
-				assert.Equal(t, *userRep.PhoneNumber, *kcUserRep.GetAttributeString(constants.AttrbPhoneNumber))
+				assert.Equal(t, *userRep.PhoneNumber.Value, *kcUserRep.GetAttributeString(constants.AttrbPhoneNumber))
 				verified, _ := kcUserRep.GetAttributeBool(constants.AttrbPhoneNumberVerified)
 				assert.Equal(t, *userRep.PhoneNumberVerified, *verified)
 				assert.Equal(t, *userRep.Label, *kcUserRep.GetAttributeString(constants.AttrbLabel))
@@ -1174,12 +1174,35 @@ func TestUpdateUser(t *testing.T) {
 		mocks.usersDetailsDBModule.EXPECT().GetUserDetails(ctx, realmName, id).Return(dbUserRep, nil)
 		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, realmName, id, gomock.Any()).DoAndReturn(
 			func(accessToken, realmName, id string, kcUserRep kc.UserRepresentation) error {
-				assert.Equal(t, *userRep.Email, *kcUserRep.Email)
+				assert.Equal(t, *userRep.Email.Value, *kcUserRep.Email)
 				assert.Equal(t, false, *kcUserRep.EmailVerified)
 				return nil
 			})
 
 		err := managementComponent.UpdateUser(ctx, "master", id, userRep)
+
+		assert.Nil(t, err)
+	})
+
+	t.Run("Update by removing the email address", func(t *testing.T) {
+		var oldEmail = "toti@elca.ch"
+		var oldkcUserRep = kc.UserRepresentation{
+			ID:            &id,
+			Email:         &oldEmail,
+			EmailVerified: userRep.EmailVerified,
+		}
+		var withoutEmailUser = userRep
+		withoutEmailUser.Email = csjson.OptionalString{Defined: true, Value: nil}
+		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, id).Return(oldkcUserRep, nil)
+		mocks.usersDetailsDBModule.EXPECT().GetUserDetails(ctx, realmName, id).Return(dbUserRep, nil)
+		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, realmName, id, gomock.Any()).DoAndReturn(
+			func(accessToken, realmName, id string, kcUserRep kc.UserRepresentation) error {
+				assert.Equal(t, "", *kcUserRep.Email)
+				assert.Equal(t, false, *kcUserRep.EmailVerified)
+				return nil
+			})
+
+		err := managementComponent.UpdateUser(ctx, "master", id, withoutEmailUser)
 
 		assert.Nil(t, err)
 	})
@@ -1198,7 +1221,7 @@ func TestUpdateUser(t *testing.T) {
 		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, realmName, id, gomock.Any()).DoAndReturn(
 			func(accessToken, realmName, id string, kcUserRep kc.UserRepresentation) error {
 				verified, _ := kcUserRep.GetAttributeBool(constants.AttrbPhoneNumberVerified)
-				assert.Equal(t, *userRep.PhoneNumber, *kcUserRep.GetAttributeString(constants.AttrbPhoneNumber))
+				assert.Equal(t, *userRep.PhoneNumber.Value, *kcUserRep.GetAttributeString(constants.AttrbPhoneNumber))
 				assert.Equal(t, false, *verified)
 				return nil
 			})
@@ -1208,8 +1231,35 @@ func TestUpdateUser(t *testing.T) {
 		assert.Nil(t, err)
 	})
 
+	t.Run("Update by removing the phone number", func(t *testing.T) {
+		var oldNumber = "+41789467"
+		var oldAttributes = make(kc.Attributes)
+		oldAttributes.SetString(constants.AttrbPhoneNumber, oldNumber)
+		oldAttributes.SetBool(constants.AttrbPhoneNumberVerified, *userRep.PhoneNumberVerified)
+		var oldkcUserRep2 = kc.UserRepresentation{
+			ID:         &id,
+			Attributes: &oldAttributes,
+		}
+		var withoutPhoneNumberUser = userRep
+		withoutPhoneNumberUser.PhoneNumber = csjson.OptionalString{Defined: true, Value: nil}
+		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, id).Return(oldkcUserRep2, nil)
+		mocks.usersDetailsDBModule.EXPECT().GetUserDetails(ctx, realmName, id).Return(dbUserRep, nil)
+		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, realmName, id, gomock.Any()).DoAndReturn(
+			func(accessToken, realmName, id string, kcUserRep kc.UserRepresentation) error {
+				_, ok := (*kcUserRep.Attributes)[constants.AttrbPhoneNumber]
+				assert.False(t, ok)
+				_, ok = (*kcUserRep.Attributes)[constants.AttrbPhoneNumberVerified]
+				assert.False(t, ok)
+				return nil
+			})
+
+		err := managementComponent.UpdateUser(ctx, "master", id, withoutPhoneNumberUser)
+
+		assert.Nil(t, err)
+	})
+
 	t.Run("Update without attributes", func(t *testing.T) {
-		var userRepWithoutAttr = api.UserRepresentation{
+		var userRepWithoutAttr = api.UpdatableUserRepresentation{
 			Username:  userRep.Username,
 			Email:     userRep.Email,
 			FirstName: userRep.FirstName,
@@ -1248,7 +1298,7 @@ func TestUpdateUser(t *testing.T) {
 			Enabled:  &enabled,
 		}
 
-		var userRep = api.UserRepresentation{
+		var userRep = api.UpdatableUserRepresentation{
 			Username: userRep.Username,
 			Enabled:  &enabled,
 		}
@@ -1276,7 +1326,7 @@ func TestUpdateUser(t *testing.T) {
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		mocks.logger.EXPECT().Warn(ctx, "err", "Unexpected error")
-		err := managementComponent.UpdateUser(ctx, "master", id, api.UserRepresentation{})
+		err := managementComponent.UpdateUser(ctx, "master", id, api.UpdatableUserRepresentation{})
 
 		assert.NotNil(t, err)
 	})
@@ -1288,7 +1338,7 @@ func TestUpdateUser(t *testing.T) {
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		mocks.usersDetailsDBModule.EXPECT().GetUserDetails(ctx, realmName, id).Return(dto.DBUser{}, fmt.Errorf("SQL Error"))
 
-		err := managementComponent.UpdateUser(ctx, "master", id, api.UserRepresentation{})
+		err := managementComponent.UpdateUser(ctx, "master", id, api.UpdatableUserRepresentation{})
 
 		assert.NotNil(t, err)
 	})
@@ -1305,7 +1355,7 @@ func TestUpdateUser(t *testing.T) {
 		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, realmName, id, gomock.Any()).Return(fmt.Errorf("Unexpected error"))
 		mocks.logger.EXPECT().Warn(gomock.Any(), "err", "Unexpected error")
 
-		err := managementComponent.UpdateUser(ctx, "master", id, api.UserRepresentation{})
+		err := managementComponent.UpdateUser(ctx, "master", id, api.UpdatableUserRepresentation{})
 
 		assert.NotNil(t, err)
 	})
@@ -1324,7 +1374,7 @@ func TestUpdateUser(t *testing.T) {
 		mocks.logger.EXPECT().Warn(gomock.Any(), "msg", "Can't store user details in database", "err", "SQL error")
 
 		var newIDDocumentType = "Visa"
-		err := managementComponent.UpdateUser(ctx, realmName, id, api.UserRepresentation{
+		err := managementComponent.UpdateUser(ctx, realmName, id, api.UpdatableUserRepresentation{
 			IDDocumentExpiration: &newIDDocumentType,
 		})
 
@@ -4207,8 +4257,8 @@ func TestUpdateRealmCustomConfiguration(t *testing.T) {
 		err := managementComponent.UpdateRealmCustomConfiguration(ctx, realmID, configInit)
 
 		assert.NotNil(t, err)
-		assert.IsType(t, commonhttp.Error{}, err)
-		e := err.(commonhttp.Error)
+		assert.IsType(t, errorhandler.Error{}, err)
+		e := err.(errorhandler.Error)
 		assert.Equal(t, 400, e.Status)
 	})
 
@@ -4225,8 +4275,8 @@ func TestUpdateRealmCustomConfiguration(t *testing.T) {
 		err := managementComponent.UpdateRealmCustomConfiguration(ctx, realmID, configInit)
 
 		assert.NotNil(t, err)
-		assert.IsType(t, commonhttp.Error{}, err)
-		e := err.(commonhttp.Error)
+		assert.IsType(t, errorhandler.Error{}, err)
+		e := err.(errorhandler.Error)
 		assert.Equal(t, 400, e.Status)
 	})
 
@@ -4243,8 +4293,8 @@ func TestUpdateRealmCustomConfiguration(t *testing.T) {
 		err := managementComponent.UpdateRealmCustomConfiguration(ctx, realmID, configInit)
 
 		assert.NotNil(t, err)
-		assert.IsType(t, commonhttp.Error{}, err)
-		e := err.(commonhttp.Error)
+		assert.IsType(t, errorhandler.Error{}, err)
+		e := err.(errorhandler.Error)
 		assert.Equal(t, 400, e.Status)
 	})
 

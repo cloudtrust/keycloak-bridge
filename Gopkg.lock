@@ -18,7 +18,7 @@
   version = "2020.09.22"
 
 [[projects]]
-  digest = "1:a3b4e19a628706d89f003b11f4c1378b145f77f830f9f1a783be1a7caf54d1e4"
+  digest = "1:a38335e9e060140a567cc82671604d07e9106d910a3e352c563e8e8fbaa3a402"
   name = "github.com/cloudtrust/common-service"
   packages = [
     ".",
@@ -29,6 +29,7 @@
     "healthcheck",
     "http",
     "idgenerator",
+    "json",
     "log",
     "metrics",
     "middleware",
@@ -577,6 +578,7 @@
     "github.com/cloudtrust/common-service/healthcheck",
     "github.com/cloudtrust/common-service/http",
     "github.com/cloudtrust/common-service/idgenerator",
+    "github.com/cloudtrust/common-service/json",
     "github.com/cloudtrust/common-service/log",
     "github.com/cloudtrust/common-service/metrics",
     "github.com/cloudtrust/common-service/middleware",

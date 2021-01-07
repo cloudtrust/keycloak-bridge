@@ -97,7 +97,7 @@ type Component interface {
 
 	DeleteUser(ctx context.Context, realmName, userID string) error
 	GetUser(ctx context.Context, realmName, userID string) (api.UserRepresentation, error)
-	UpdateUser(ctx context.Context, realmName, userID string, user api.UserRepresentation) error
+	UpdateUser(ctx context.Context, realmName, userID string, user api.UpdatableUserRepresentation) error
 	LockUser(ctx context.Context, realmName, userID string) error
 	UnlockUser(ctx context.Context, realmName, userID string) error
 	GetUsers(ctx context.Context, realmName string, groupIDs []string, paramKV ...string) (api.UsersPageRepresentation, error)
@@ -430,9 +430,10 @@ func (c *component) isUpdated(newValue, oldValue *string) bool {
 	return newValue != nil && *oldValue != *newValue
 }
 
-func (c *component) UpdateUser(ctx context.Context, realmName, userID string, user api.UserRepresentation) error {
+func (c *component) UpdateUser(ctx context.Context, realmName, userID string, user api.UpdatableUserRepresentation) error {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 	var userRep kc.UserRepresentation
+	var removeAttributes []kc.AttributeKey
 
 	// get the "old" user representation
 	oldUserKc, err := c.keycloakClient.GetUser(accessToken, realmName, userID)
@@ -455,15 +456,18 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 	}
 
 	// when the email changes, set the EmailVerified to false
-	if c.isUpdated(user.Email, oldUserKc.Email) {
+	if user.Email.Defined && (user.Email.Value == nil || c.isUpdated(user.Email.Value, oldUserKc.Email)) {
 		var verified = false
 		user.EmailVerified = &verified
 	}
 
 	// when the phone number changes, set the PhoneNumberVerified to false
-	if c.isUpdated(user.PhoneNumber, oldUserKc.GetAttributeString(constants.AttrbPhoneNumber)) {
+	if user.PhoneNumber.Defined && (user.PhoneNumber.Value == nil || c.isUpdated(user.PhoneNumber.Value, oldUserKc.GetAttributeString(constants.AttrbPhoneNumber))) {
 		var verified = false
 		user.PhoneNumberVerified = &verified
+		if user.PhoneNumber.Value == nil {
+			removeAttributes = append(removeAttributes, constants.AttrbPhoneNumber, constants.AttrbPhoneNumberVerified)
+		}
 	}
 
 	var revokeAccreditations = keycloakb.IsUpdated(user.FirstName, oldUserKc.FirstName,
@@ -472,12 +476,15 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 		user.BirthDate, oldUserKc.GetAttributeString(constants.AttrbBirthDate),
 	)
 
-	userRep = api.ConvertToKCUser(user)
+	userRep = api.ConvertUpdatableToKCUser(user)
 
 	// Merge the attributes coming from the old user representation and the updated user representation in order not to lose anything
 	var mergedAttributes = make(kc.Attributes)
 	mergedAttributes.Merge(oldUserKc.Attributes)
 	mergedAttributes.Merge(userRep.Attributes)
+	for _, key := range removeAttributes {
+		delete(mergedAttributes, key)
+	}
 
 	userRep.Attributes = &mergedAttributes
 	if revokeAccreditations {

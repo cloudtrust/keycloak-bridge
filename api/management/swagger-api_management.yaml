@@ -269,7 +269,9 @@ paths:
     put:
       tags:
       - Users
-      summary: Update an existing user.
+      summary: >
+        Update an existing user.
+        By default, missing or null fields make existing values be unmodified except if specified on the description of the User object.
       parameters:
       - name: realm
         in: path
@@ -1498,11 +1500,13 @@ components:
           type: string
         email:
           type: string
+          description: When updating, explicitly set email to null to remove this value. To keep it untouched, don't provide the field.
         emailVerified:
           type: boolean
           default: false
         phoneNumber:
           type: string
+          description: When updating, explicitly set phone number to null to remove this value. To keep it untouched, don't provide the field.
         phoneNumberVerified:
           type: boolean
           default: false

@@ -63,6 +63,11 @@ func TestDeny(t *testing.T) {
 		Username: &userUsername,
 		Groups:   &groupIDs,
 	}
+	var updatableUser = api.UpdatableUserRepresentation{
+		ID:       &userID,
+		Username: &userUsername,
+		Groups:   &groupIDs,
+	}
 
 	var role = api.RoleRepresentation{
 		ID:   &roleID,
@@ -131,7 +136,7 @@ func TestDeny(t *testing.T) {
 		_, err = authorizationMW.GetUser(ctx, realmName, userID)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
-		err = authorizationMW.UpdateUser(ctx, realmName, userID, user)
+		err = authorizationMW.UpdateUser(ctx, realmName, userID, updatableUser)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
 		err = authorizationMW.LockUser(ctx, realmName, userID)
@@ -140,11 +145,11 @@ func TestDeny(t *testing.T) {
 		err = authorizationMW.UnlockUser(ctx, realmName, userID)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
-		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), gomock.Any(), realmName, groupID).Return(groupName, nil).Times(1)
+		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), gomock.Any(), realmName, groupID).Return(groupName, nil)
 		_, err = authorizationMW.GetUsers(ctx, realmName, groupIDs)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
-		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), gomock.Any(), realmName, groupID).Return(groupName, nil).Times(1)
+		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), gomock.Any(), realmName, groupID).Return(groupName, nil)
 		_, err = authorizationMW.CreateUser(ctx, realmName, user, false)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
@@ -235,15 +240,15 @@ func TestDeny(t *testing.T) {
 		_, err = authorizationMW.CreateGroup(ctx, realmName, group)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
-		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), gomock.Any(), realmName, groupID).Return(groupName, nil).Times(1)
+		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), gomock.Any(), realmName, groupID).Return(groupName, nil)
 		err = authorizationMW.DeleteGroup(ctx, realmName, groupID)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
-		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), gomock.Any(), realmName, groupID).Return(groupName, nil).Times(1)
+		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), gomock.Any(), realmName, groupID).Return(groupName, nil)
 		_, err = authorizationMW.GetAuthorizations(ctx, realmName, groupID)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
-		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), gomock.Any(), realmName, groupID).Return(groupName, nil).Times(1)
+		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), gomock.Any(), realmName, groupID).Return(groupName, nil)
 		err = authorizationMW.UpdateAuthorizations(ctx, realmName, groupID, authz)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
@@ -321,6 +326,11 @@ func TestAllowed(t *testing.T) {
 		Username: &userUsername,
 		Groups:   &groupIDs,
 	}
+	var updatableUser = api.UpdatableUserRepresentation{
+		ID:       &userID,
+		Username: &userUsername,
+		Groups:   &groupIDs,
+	}
 
 	var role = api.RoleRepresentation{
 		ID:   &roleID,
@@ -377,232 +387,232 @@ func TestAllowed(t *testing.T) {
 		ctx = context.WithValue(ctx, cs.CtContextGroups, groups)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, "master")
 
-		mockManagementComponent.EXPECT().GetActions(ctx).Return([]api.ActionRepresentation{}, nil).Times(1)
+		mockManagementComponent.EXPECT().GetActions(ctx).Return([]api.ActionRepresentation{}, nil)
 		_, err = authorizationMW.GetActions(ctx)
 		assert.Nil(t, err)
 
-		mockManagementComponent.EXPECT().GetRealms(ctx).Return([]api.RealmRepresentation{}, nil).Times(1)
+		mockManagementComponent.EXPECT().GetRealms(ctx).Return([]api.RealmRepresentation{}, nil)
 		_, err = authorizationMW.GetRealms(ctx)
 		assert.Nil(t, err)
 
-		mockManagementComponent.EXPECT().GetRealm(ctx, realmName).Return(api.RealmRepresentation{}, nil).Times(1)
+		mockManagementComponent.EXPECT().GetRealm(ctx, realmName).Return(api.RealmRepresentation{}, nil)
 		_, err = authorizationMW.GetRealm(ctx, realmName)
 		assert.Nil(t, err)
 
-		mockManagementComponent.EXPECT().GetClient(ctx, realmName, clientID).Return(api.ClientRepresentation{}, nil).Times(1)
+		mockManagementComponent.EXPECT().GetClient(ctx, realmName, clientID).Return(api.ClientRepresentation{}, nil)
 		_, err = authorizationMW.GetClient(ctx, realmName, clientID)
 		assert.Nil(t, err)
 
-		mockManagementComponent.EXPECT().GetClients(ctx, realmName).Return([]api.ClientRepresentation{}, nil).Times(1)
+		mockManagementComponent.EXPECT().GetClients(ctx, realmName).Return([]api.ClientRepresentation{}, nil)
 		_, err = authorizationMW.GetClients(ctx, realmName)
 		assert.Nil(t, err)
 
-		mockManagementComponent.EXPECT().GetRequiredActions(ctx, realmName).Return([]api.RequiredActionRepresentation{}, nil).Times(1)
+		mockManagementComponent.EXPECT().GetRequiredActions(ctx, realmName).Return([]api.RequiredActionRepresentation{}, nil)
 		_, err = authorizationMW.GetRequiredActions(ctx, realmName)
 		assert.Nil(t, err)
 
-		mockManagementComponent.EXPECT().DeleteUser(ctx, realmName, userID).Return(nil).Times(1)
+		mockManagementComponent.EXPECT().DeleteUser(ctx, realmName, userID).Return(nil)
 		err = authorizationMW.DeleteUser(ctx, realmName, userID)
 		assert.Nil(t, err)
 
-		mockManagementComponent.EXPECT().GetUser(ctx, realmName, userID).Return(api.UserRepresentation{}, nil).Times(1)
+		mockManagementComponent.EXPECT().GetUser(ctx, realmName, userID).Return(api.UserRepresentation{}, nil)
 		_, err = authorizationMW.GetUser(ctx, realmName, userID)
 		assert.Nil(t, err)
 
-		mockManagementComponent.EXPECT().UpdateUser(ctx, realmName, userID, user).Return(nil).Times(1)
-		err = authorizationMW.UpdateUser(ctx, realmName, userID, user)
+		mockManagementComponent.EXPECT().UpdateUser(ctx, realmName, userID, updatableUser).Return(nil)
+		err = authorizationMW.UpdateUser(ctx, realmName, userID, updatableUser)
 		assert.Nil(t, err)
 
-		mockManagementComponent.EXPECT().LockUser(ctx, realmName, userID).Return(nil).Times(1)
+		mockManagementComponent.EXPECT().LockUser(ctx, realmName, userID).Return(nil)
 		err = authorizationMW.LockUser(ctx, realmName, userID)
 		assert.Nil(t, err)
 
-		mockManagementComponent.EXPECT().UnlockUser(ctx, realmName, userID).Return(nil).Times(1)
+		mockManagementComponent.EXPECT().UnlockUser(ctx, realmName, userID).Return(nil)
 		err = authorizationMW.UnlockUser(ctx, realmName, userID)
 		assert.Nil(t, err)
 
-		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), gomock.Any(), realmName, groupID).Return(groupName, nil).Times(1)
-		mockManagementComponent.EXPECT().GetUsers(ctx, realmName, groupIDs).Return(api.UsersPageRepresentation{}, nil).Times(1)
+		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), gomock.Any(), realmName, groupID).Return(groupName, nil)
+		mockManagementComponent.EXPECT().GetUsers(ctx, realmName, groupIDs).Return(api.UsersPageRepresentation{}, nil)
 		_, err = authorizationMW.GetUsers(ctx, realmName, groupIDs)
 		assert.Nil(t, err)
 
-		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), gomock.Any(), realmName, groupID).Return(groupName, nil).Times(1)
-		mockManagementComponent.EXPECT().CreateUser(ctx, realmName, user, true).Return("", nil).Times(1)
+		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), gomock.Any(), realmName, groupID).Return(groupName, nil)
+		mockManagementComponent.EXPECT().CreateUser(ctx, realmName, user, true).Return("", nil)
 		_, err = authorizationMW.CreateUser(ctx, realmName, user, true)
 		assert.Nil(t, err)
 
-		mockManagementComponent.EXPECT().GetUserChecks(ctx, realmName, userID).Return([]api.UserCheck{}, nil).Times(1)
+		mockManagementComponent.EXPECT().GetUserChecks(ctx, realmName, userID).Return([]api.UserCheck{}, nil)
 		_, err = authorizationMW.GetUserChecks(ctx, realmName, userID)
 		assert.Nil(t, err)
 
-		mockManagementComponent.EXPECT().GetUserAccountStatus(ctx, realmName, userID).Return(map[string]bool{"enabled": true}, nil).Times(1)
+		mockManagementComponent.EXPECT().GetUserAccountStatus(ctx, realmName, userID).Return(map[string]bool{"enabled": true}, nil)
 		_, err = authorizationMW.GetUserAccountStatus(ctx, realmName, userID)
 		assert.Nil(t, err)
 
-		mockManagementComponent.EXPECT().GetUserAccountStatusByEmail(ctx, realmName, email).Return(api.UserStatus{}, nil).Times(1)
+		mockManagementComponent.EXPECT().GetUserAccountStatusByEmail(ctx, realmName, email).Return(api.UserStatus{}, nil)
 		_, err = authorizationMW.GetUserAccountStatusByEmail(ctx, realmName, email)
 		assert.Nil(t, err)
 
-		mockManagementComponent.EXPECT().GetRolesOfUser(ctx, realmName, userID).Return([]api.RoleRepresentation{}, nil).Times(1)
+		mockManagementComponent.EXPECT().GetRolesOfUser(ctx, realmName, userID).Return([]api.RoleRepresentation{}, nil)
 		_, err = authorizationMW.GetRolesOfUser(ctx, realmName, userID)
 		assert.Nil(t, err)
 
-		mockManagementComponent.EXPECT().GetGroupsOfUser(ctx, realmName, userID).Return([]api.GroupRepresentation{}, nil).Times(1)
+		mockManagementComponent.EXPECT().GetGroupsOfUser(ctx, realmName, userID).Return([]api.GroupRepresentation{}, nil)
 		_, err = authorizationMW.GetGroupsOfUser(ctx, realmName, userID)
 		assert.Nil(t, err)
 
-		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), gomock.Any(), realmName, groupID).Return(groupName, nil).Times(1)
-		mockManagementComponent.EXPECT().AddGroupToUser(ctx, realmName, userID, groupID).Return(nil).Times(1)
+		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), gomock.Any(), realmName, groupID).Return(groupName, nil)
+		mockManagementComponent.EXPECT().AddGroupToUser(ctx, realmName, userID, groupID).Return(nil)
 		err = authorizationMW.AddGroupToUser(ctx, realmName, userID, groupID)
 		assert.Nil(t, err)
 
-		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), gomock.Any(), realmName, groupID).Return(groupName, nil).Times(1)
-		mockManagementComponent.EXPECT().DeleteGroupForUser(ctx, realmName, userID, groupID).Return(nil).Times(1)
+		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), gomock.Any(), realmName, groupID).Return(groupName, nil)
+		mockManagementComponent.EXPECT().DeleteGroupForUser(ctx, realmName, userID, groupID).Return(nil)
 		err = authorizationMW.DeleteGroupForUser(ctx, realmName, userID, groupID)
 		assert.Nil(t, err)
 
-		mockManagementComponent.EXPECT().GetClientRolesForUser(ctx, realmName, userID, clientID).Return([]api.RoleRepresentation{}, nil).Times(1)
+		mockManagementComponent.EXPECT().GetClientRolesForUser(ctx, realmName, userID, clientID).Return([]api.RoleRepresentation{}, nil)
 		_, err = authorizationMW.GetClientRolesForUser(ctx, realmName, userID, clientID)
 		assert.Nil(t, err)
 
-		mockManagementComponent.EXPECT().AddClientRolesToUser(ctx, realmName, userID, clientID, roles).Return(nil).Times(1)
+		mockManagementComponent.EXPECT().AddClientRolesToUser(ctx, realmName, userID, clientID, roles).Return(nil)
 		err = authorizationMW.AddClientRolesToUser(ctx, realmName, userID, clientID, roles)
 		assert.Nil(t, err)
 
-		mockManagementComponent.EXPECT().ResetPassword(ctx, realmName, userID, password).Return("", nil).Times(1)
+		mockManagementComponent.EXPECT().ResetPassword(ctx, realmName, userID, password).Return("", nil)
 		_, err = authorizationMW.ResetPassword(ctx, realmName, userID, password)
 		assert.Nil(t, err)
 
-		mockManagementComponent.EXPECT().ExecuteActionsEmail(ctx, realmName, userID, []api.RequiredAction{}).Return(nil).Times(1)
+		mockManagementComponent.EXPECT().ExecuteActionsEmail(ctx, realmName, userID, []api.RequiredAction{}).Return(nil)
 		err = authorizationMW.ExecuteActionsEmail(ctx, realmName, userID, []api.RequiredAction{})
 		assert.Nil(t, err)
 
-		mockManagementComponent.EXPECT().SendSmsCode(ctx, realmName, userID).Return("1234", nil).Times(1)
+		mockManagementComponent.EXPECT().SendSmsCode(ctx, realmName, userID).Return("1234", nil)
 		_, err = authorizationMW.SendSmsCode(ctx, realmName, userID)
 		assert.Nil(t, err)
 
-		mockManagementComponent.EXPECT().SendOnboardingEmail(ctx, realmName, userID).Return(nil).Times(1)
+		mockManagementComponent.EXPECT().SendOnboardingEmail(ctx, realmName, userID).Return(nil)
 		err = authorizationMW.SendOnboardingEmail(ctx, realmName, userID)
 		assert.Nil(t, err)
 
-		mockManagementComponent.EXPECT().SendReminderEmail(ctx, realmName, userID).Return(nil).Times(1)
+		mockManagementComponent.EXPECT().SendReminderEmail(ctx, realmName, userID).Return(nil)
 		err = authorizationMW.SendReminderEmail(ctx, realmName, userID)
 		assert.Nil(t, err)
 
-		mockManagementComponent.EXPECT().ResetSmsCounter(ctx, realmName, userID).Return(nil).Times(1)
+		mockManagementComponent.EXPECT().ResetSmsCounter(ctx, realmName, userID).Return(nil)
 		err = authorizationMW.ResetSmsCounter(ctx, realmName, userID)
 		assert.Nil(t, err)
 
-		mockManagementComponent.EXPECT().CreateRecoveryCode(ctx, realmName, userID).Return("123456", nil).Times(1)
+		mockManagementComponent.EXPECT().CreateRecoveryCode(ctx, realmName, userID).Return("123456", nil)
 		code, err := authorizationMW.CreateRecoveryCode(ctx, realmName, userID)
 		assert.Nil(t, err)
 		assert.NotNil(t, code)
 
-		mockManagementComponent.EXPECT().CreateActivationCode(ctx, realmName, userID).Return("123456", nil).Times(1)
+		mockManagementComponent.EXPECT().CreateActivationCode(ctx, realmName, userID).Return("123456", nil)
 		code, err = authorizationMW.CreateActivationCode(ctx, realmName, userID)
 		assert.Nil(t, err)
 		assert.NotNil(t, code)
 
-		mockManagementComponent.EXPECT().GetCredentialsForUser(ctx, realmName, userID).Return([]api.CredentialRepresentation{}, nil).Times(1)
+		mockManagementComponent.EXPECT().GetCredentialsForUser(ctx, realmName, userID).Return([]api.CredentialRepresentation{}, nil)
 		_, err = authorizationMW.GetCredentialsForUser(ctx, realmName, userID)
 		assert.Nil(t, err)
 
-		mockManagementComponent.EXPECT().DeleteCredentialsForUser(ctx, realmName, userID, credentialID).Return(nil).Times(1)
+		mockManagementComponent.EXPECT().DeleteCredentialsForUser(ctx, realmName, userID, credentialID).Return(nil)
 		err = authorizationMW.DeleteCredentialsForUser(ctx, realmName, userID, credentialID)
 		assert.Nil(t, err)
 
-		mockManagementComponent.EXPECT().ResetCredentialFailuresForUser(ctx, realmName, userID, credentialID).Return(nil).Times(1)
+		mockManagementComponent.EXPECT().ResetCredentialFailuresForUser(ctx, realmName, userID, credentialID).Return(nil)
 		err = authorizationMW.ResetCredentialFailuresForUser(ctx, realmName, userID, credentialID)
 		assert.Nil(t, err)
 
-		mockManagementComponent.EXPECT().ClearUserLoginFailures(ctx, realmName, userID).Return(nil).Times(1)
+		mockManagementComponent.EXPECT().ClearUserLoginFailures(ctx, realmName, userID).Return(nil)
 		err = authorizationMW.ClearUserLoginFailures(ctx, realmName, userID)
 		assert.Nil(t, err)
 
-		mockManagementComponent.EXPECT().GetAttackDetectionStatus(ctx, realmName, userID).Return(api.AttackDetectionStatusRepresentation{}, nil).Times(1)
+		mockManagementComponent.EXPECT().GetAttackDetectionStatus(ctx, realmName, userID).Return(api.AttackDetectionStatusRepresentation{}, nil)
 		_, err = authorizationMW.GetAttackDetectionStatus(ctx, realmName, userID)
 		assert.Nil(t, err)
 
-		mockManagementComponent.EXPECT().GetRoles(ctx, realmName).Return([]api.RoleRepresentation{}, nil).Times(1)
+		mockManagementComponent.EXPECT().GetRoles(ctx, realmName).Return([]api.RoleRepresentation{}, nil)
 		_, err = authorizationMW.GetRoles(ctx, realmName)
 		assert.Nil(t, err)
 
-		mockManagementComponent.EXPECT().GetRole(ctx, realmName, roleID).Return(api.RoleRepresentation{}, nil).Times(1)
+		mockManagementComponent.EXPECT().GetRole(ctx, realmName, roleID).Return(api.RoleRepresentation{}, nil)
 		_, err = authorizationMW.GetRole(ctx, realmName, roleID)
 		assert.Nil(t, err)
 
-		mockManagementComponent.EXPECT().GetGroups(ctx, realmName).Return([]api.GroupRepresentation{}, nil).Times(1)
+		mockManagementComponent.EXPECT().GetGroups(ctx, realmName).Return([]api.GroupRepresentation{}, nil)
 		_, err = authorizationMW.GetGroups(ctx, realmName)
 		assert.Nil(t, err)
 
-		mockManagementComponent.EXPECT().GetAvailableTrustIDGroups(ctx, realmName).Return(nil, nil).Times(1)
+		mockManagementComponent.EXPECT().GetAvailableTrustIDGroups(ctx, realmName).Return(nil, nil)
 		_, err = authorizationMW.GetAvailableTrustIDGroups(ctx, realmName)
 		assert.Nil(t, err)
 
-		mockManagementComponent.EXPECT().GetTrustIDGroupsOfUser(ctx, realmName, userID).Return(nil, nil).Times(1)
+		mockManagementComponent.EXPECT().GetTrustIDGroupsOfUser(ctx, realmName, userID).Return(nil, nil)
 		_, err = authorizationMW.GetTrustIDGroupsOfUser(ctx, realmName, userID)
 		assert.Nil(t, err)
 
-		mockManagementComponent.EXPECT().SetTrustIDGroupsToUser(ctx, realmName, userID, grpNames).Return(nil).Times(1)
+		mockManagementComponent.EXPECT().SetTrustIDGroupsToUser(ctx, realmName, userID, grpNames).Return(nil)
 		err = authorizationMW.SetTrustIDGroupsToUser(ctx, realmName, userID, grpNames)
 		assert.Nil(t, err)
 
-		mockManagementComponent.EXPECT().CreateGroup(ctx, realmName, group).Return("", nil).Times(1)
+		mockManagementComponent.EXPECT().CreateGroup(ctx, realmName, group).Return("", nil)
 		_, err = authorizationMW.CreateGroup(ctx, realmName, group)
 		assert.Nil(t, err)
 
-		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), gomock.Any(), realmName, groupID).Return(groupName, nil).Times(1)
-		mockManagementComponent.EXPECT().DeleteGroup(ctx, realmName, groupID).Return(nil).Times(1)
+		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), gomock.Any(), realmName, groupID).Return(groupName, nil)
+		mockManagementComponent.EXPECT().DeleteGroup(ctx, realmName, groupID).Return(nil)
 		err = authorizationMW.DeleteGroup(ctx, realmName, groupID)
 		assert.Nil(t, err)
 
-		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), gomock.Any(), realmName, groupID).Return(groupName, nil).Times(1)
-		mockManagementComponent.EXPECT().GetAuthorizations(ctx, realmName, groupID).Return(api.AuthorizationsRepresentation{}, nil).Times(1)
+		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), gomock.Any(), realmName, groupID).Return(groupName, nil)
+		mockManagementComponent.EXPECT().GetAuthorizations(ctx, realmName, groupID).Return(api.AuthorizationsRepresentation{}, nil)
 		_, err = authorizationMW.GetAuthorizations(ctx, realmName, groupID)
 		assert.Nil(t, err)
 
-		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), gomock.Any(), realmName, groupID).Return(groupName, nil).Times(1)
-		mockManagementComponent.EXPECT().UpdateAuthorizations(ctx, realmName, groupID, authz).Return(nil).Times(1)
+		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), gomock.Any(), realmName, groupID).Return(groupName, nil)
+		mockManagementComponent.EXPECT().UpdateAuthorizations(ctx, realmName, groupID, authz).Return(nil)
 		err = authorizationMW.UpdateAuthorizations(ctx, realmName, groupID, authz)
 		assert.Nil(t, err)
 
-		mockManagementComponent.EXPECT().GetClientRoles(ctx, realmName, clientID).Return([]api.RoleRepresentation{}, nil).Times(1)
+		mockManagementComponent.EXPECT().GetClientRoles(ctx, realmName, clientID).Return([]api.RoleRepresentation{}, nil)
 		_, err = authorizationMW.GetClientRoles(ctx, realmName, clientID)
 		assert.Nil(t, err)
 
-		mockManagementComponent.EXPECT().CreateClientRole(ctx, realmName, clientID, role).Return("", nil).Times(1)
+		mockManagementComponent.EXPECT().CreateClientRole(ctx, realmName, clientID, role).Return("", nil)
 		_, err = authorizationMW.CreateClientRole(ctx, realmName, clientID, role)
 		assert.Nil(t, err)
 
-		mockManagementComponent.EXPECT().GetRealmCustomConfiguration(ctx, realmName).Return(customConfig, nil).Times(1)
+		mockManagementComponent.EXPECT().GetRealmCustomConfiguration(ctx, realmName).Return(customConfig, nil)
 		_, err = authorizationMW.GetRealmCustomConfiguration(ctx, realmName)
 		assert.Nil(t, err)
 
-		mockManagementComponent.EXPECT().UpdateRealmCustomConfiguration(ctx, realmName, customConfig).Return(nil).Times(1)
+		mockManagementComponent.EXPECT().UpdateRealmCustomConfiguration(ctx, realmName, customConfig).Return(nil)
 		err = authorizationMW.UpdateRealmCustomConfiguration(ctx, realmName, customConfig)
 		assert.Nil(t, err)
 
-		mockManagementComponent.EXPECT().GetRealmAdminConfiguration(ctx, realmName).Return(adminConfig, nil).Times(1)
+		mockManagementComponent.EXPECT().GetRealmAdminConfiguration(ctx, realmName).Return(adminConfig, nil)
 		_, err = authorizationMW.GetRealmAdminConfiguration(ctx, realmName)
 		assert.Nil(t, err)
 
-		mockManagementComponent.EXPECT().UpdateRealmAdminConfiguration(ctx, realmName, adminConfig).Return(nil).Times(1)
+		mockManagementComponent.EXPECT().UpdateRealmAdminConfiguration(ctx, realmName, adminConfig).Return(nil)
 		err = authorizationMW.UpdateRealmAdminConfiguration(ctx, realmName, adminConfig)
 		assert.Nil(t, err)
 
-		mockManagementComponent.EXPECT().GetRealmBackOfficeConfiguration(ctx, realmName, groupID).Return(config, nil).Times(1)
+		mockManagementComponent.EXPECT().GetRealmBackOfficeConfiguration(ctx, realmName, groupID).Return(config, nil)
 		_, err = authorizationMW.GetRealmBackOfficeConfiguration(ctx, realmName, groupID)
 		assert.Nil(t, err)
 
-		mockManagementComponent.EXPECT().UpdateRealmBackOfficeConfiguration(ctx, realmName, groupID, config).Return(nil).Times(1)
+		mockManagementComponent.EXPECT().UpdateRealmBackOfficeConfiguration(ctx, realmName, groupID, config).Return(nil)
 		err = authorizationMW.UpdateRealmBackOfficeConfiguration(ctx, realmName, groupID, config)
 		assert.Nil(t, err)
 
-		mockManagementComponent.EXPECT().GetUserRealmBackOfficeConfiguration(ctx, realmName).Return(config, nil).Times(1)
+		mockManagementComponent.EXPECT().GetUserRealmBackOfficeConfiguration(ctx, realmName).Return(config, nil)
 		_, err = authorizationMW.GetUserRealmBackOfficeConfiguration(ctx, realmName)
 		assert.Nil(t, err)
 
-		mockManagementComponent.EXPECT().LinkShadowUser(ctx, realmName, userID, provider, fedID).Return(nil).Times(1)
+		mockManagementComponent.EXPECT().LinkShadowUser(ctx, realmName, userID, provider, fedID).Return(nil)
 		err = authorizationMW.LinkShadowUser(ctx, realmName, userID, provider, fedID)
 		assert.Nil(t, err)
 	}
