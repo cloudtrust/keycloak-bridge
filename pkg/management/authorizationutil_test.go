@@ -26,8 +26,7 @@ func TestValidate(t *testing.T) {
 
 	var authorizations []configuration.Authorization
 
-	// Invalid targetRealm
-	{
+	t.Run("Invalid targetRealm", func(t *testing.T) {
 		authorizations = []configuration.Authorization{
 			configuration.Authorization{
 				RealmID:       &realmName,
@@ -39,10 +38,9 @@ func TestValidate(t *testing.T) {
 
 		err := Validate(authorizations, allowedTargetRealmsAndGroupNames)
 		assert.NotNil(t, err)
-	}
+	})
 
-	// Invalid targetGroupName
-	{
+	t.Run("Invalid targetGroupName", func(t *testing.T) {
 		authorizations = []configuration.Authorization{
 			configuration.Authorization{
 				RealmID:         &realmName,
@@ -55,10 +53,9 @@ func TestValidate(t *testing.T) {
 
 		err := Validate(authorizations, allowedTargetRealmsAndGroupNames)
 		assert.NotNil(t, err)
-	}
+	})
 
-	// Incompatible rules due to * in targetRealm
-	{
+	t.Run("Incompatible rules due to * in targetRealm", func(t *testing.T) {
 		authorizations = []configuration.Authorization{
 			configuration.Authorization{
 				RealmID:       &realmName,
@@ -76,10 +73,9 @@ func TestValidate(t *testing.T) {
 
 		err := Validate(authorizations, allowedTargetRealmsAndGroupNames)
 		assert.NotNil(t, err)
-	}
+	})
 
-	// Incompatible rules due to * in targetGroupName
-	{
+	t.Run("Incompatible rules due to * in targetGroupName", func(t *testing.T) {
 		authorizations = []configuration.Authorization{
 			configuration.Authorization{
 				RealmID:         &realmName,
@@ -99,10 +95,9 @@ func TestValidate(t *testing.T) {
 
 		err := Validate(authorizations, allowedTargetRealmsAndGroupNames)
 		assert.NotNil(t, err)
-	}
+	})
 
-	// Valid set of authorizations
-	{
+	t.Run("Valid set of authorizations", func(t *testing.T) {
 		authorizations = []configuration.Authorization{
 			configuration.Authorization{
 				RealmID:         &realmName,
@@ -122,5 +117,5 @@ func TestValidate(t *testing.T) {
 
 		err := Validate(authorizations, allowedTargetRealmsAndGroupNames)
 		assert.Nil(t, err)
-	}
+	})
 }
