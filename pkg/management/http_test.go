@@ -41,8 +41,7 @@ func TestHTTPManagementHandler(t *testing.T) {
 	ts := httptest.NewServer(r)
 	defer ts.Close()
 
-	// Get - 200 with JSON body returned
-	{
+	t.Run("Get - 200 with JSON body returned", func(t *testing.T) {
 		var id = "1234-456"
 		var realm = "master"
 
@@ -62,10 +61,9 @@ func TestHTTPManagementHandler(t *testing.T) {
 		buf := new(bytes.Buffer)
 		buf.ReadFrom(res.Body)
 		assert.Equal(t, string(realmJSON), buf.String())
-	}
+	})
 
-	// Post - 201 with Location header
-	{
+	t.Run("Post - 201 with Location header", func(t *testing.T) {
 		var username = "toto"
 		var email = "toto@elca.ch"
 		var groups = []string{"f467ed7c-0a1d-4eee-9bb8-669c6f89c0ee"}
@@ -87,10 +85,9 @@ func TestHTTPManagementHandler(t *testing.T) {
 		assert.Equal(t, http.NoBody, res.Body)
 		valid, _ := regexp.MatchString("http://127.0.0.1:[0-9]{0,5}/management/realms/master/users/12456", res.Header.Get("Location"))
 		assert.True(t, valid)
-	}
+	})
 
-	// Get - 200 without body content
-	{
+	t.Run("Get - 200 without body content", func(t *testing.T) {
 		var password = "P@ssw0rd"
 
 		var passwordRep = api.PasswordRepresentation{
@@ -106,8 +103,7 @@ func TestHTTPManagementHandler(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Equal(t, http.StatusOK, res.StatusCode)
 		assert.Equal(t, http.NoBody, res.Body)
-	}
-
+	})
 }
 
 func TestHTTPErrorHandler(t *testing.T) {

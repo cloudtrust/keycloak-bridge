@@ -156,7 +156,7 @@ func createValidUser() apikyc.UserRepresentation {
 		firstName     = "Marc"
 		lastName      = "El-Bichoun"
 		email         = "marcel.bichon@elca.ch"
-		phoneNumber   = "00 33 686 550011"
+		phoneNumber   = "+33686550011"
 		birthDate     = "31.03.2001"
 		birthLocation = "Montreux"
 		nationality   = "CH"

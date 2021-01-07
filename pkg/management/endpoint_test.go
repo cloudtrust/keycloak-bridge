@@ -227,8 +227,7 @@ func TestUpdateUserEndpoint(t *testing.T) {
 
 	var e = MakeUpdateUserEndpoint(mockManagementComponent)
 
-	// No error
-	{
+	t.Run("No error", func(t *testing.T) {
 		var realm = "master"
 		var userID = "1234-452-4578"
 		var ctx = context.Background()
@@ -242,10 +241,9 @@ func TestUpdateUserEndpoint(t *testing.T) {
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Nil(t, res)
-	}
+	})
 
-	// Error - JSON unmarshalling error
-	{
+	t.Run("Error - JSON unmarshalling error", func(t *testing.T) {
 		var realm = "master"
 		var userID = "1234-452-4578"
 		var ctx = context.Background()
@@ -257,7 +255,7 @@ func TestUpdateUserEndpoint(t *testing.T) {
 		var res, err = e(ctx, req)
 		assert.NotNil(t, err)
 		assert.Nil(t, res)
-	}
+	})
 }
 
 func TestLockUserEndpoints(t *testing.T) {
@@ -315,8 +313,7 @@ func TestGetUsersEndpoint(t *testing.T) {
 
 	var e = MakeGetUsersEndpoint(mockManagementComponent)
 
-	// No error - Without param
-	{
+	t.Run("No error - Without param", func(t *testing.T) {
 		var realm = "master"
 		var groupID1 = "123-784dsf-sdf567"
 		var groupID2 = "789-741-753"
@@ -330,10 +327,9 @@ func TestGetUsersEndpoint(t *testing.T) {
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.NotNil(t, res)
-	}
+	})
 
-	// No error - With params
-	{
+	t.Run("No error - With params", func(t *testing.T) {
 		var realm = "master"
 		var ctx = context.Background()
 		var req = make(map[string]string)
@@ -350,10 +346,9 @@ func TestGetUsersEndpoint(t *testing.T) {
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.NotNil(t, res)
-	}
+	})
 
-	// Missing mandatory parameter group
-	{
+	t.Run("Missing mandatory parameter group", func(t *testing.T) {
 		var realm = "master"
 		var ctx = context.Background()
 		var req = make(map[string]string)
@@ -362,7 +357,7 @@ func TestGetUsersEndpoint(t *testing.T) {
 		var res, err = e(ctx, req)
 		assert.NotNil(t, err)
 		assert.Nil(t, res)
-	}
+	})
 }
 
 func TestMakeGetUserChecksEndpoint(t *testing.T) {
@@ -373,8 +368,7 @@ func TestMakeGetUserChecksEndpoint(t *testing.T) {
 
 	var e = MakeGetUserChecksEndpoint(mockManagementComponent)
 
-	// No error - Without param
-	{
+	t.Run("No error - Without param", func(t *testing.T) {
 		var realm = "master"
 		var userID = "123-456-789"
 		var ctx = context.Background()
@@ -384,7 +378,7 @@ func TestMakeGetUserChecksEndpoint(t *testing.T) {
 		mockManagementComponent.EXPECT().GetUserChecks(ctx, realm, userID).Return(m, nil).Times(1)
 		var _, err = e(ctx, req)
 		assert.Nil(t, err)
-	}
+	})
 }
 
 func TestGetUserAccountStatusEndpoint(t *testing.T) {
@@ -395,8 +389,7 @@ func TestGetUserAccountStatusEndpoint(t *testing.T) {
 
 	var e = MakeGetUserAccountStatusEndpoint(mockManagementComponent)
 
-	// No error - Without param
-	{
+	t.Run("No error - Without param", func(t *testing.T) {
 		var realm = "master"
 		var userID = "123-456-789"
 		var ctx = context.Background()
@@ -410,7 +403,7 @@ func TestGetUserAccountStatusEndpoint(t *testing.T) {
 		mockManagementComponent.EXPECT().GetUserAccountStatus(ctx, realm, userID).Return(m, nil).Times(1)
 		var _, err = e(ctx, req)
 		assert.Nil(t, err)
-	}
+	})
 }
 
 func TestMakeGetUserAccountStatusByEmailEndpoint(t *testing.T) {
@@ -642,16 +635,16 @@ func TestAddClientRolesToUserEndpoint(t *testing.T) {
 
 	var e = MakeAddClientRolesToUserEndpoint(mockManagementComponent)
 
-	// No error
-	{
-		var realm = "master"
-		var userID = "123-123-456"
-		var clientID = "456-789-741"
-		var ctx = context.Background()
-		var req = make(map[string]string)
-		req[prmRealm] = realm
-		req[prmUserID] = userID
-		req[prmClientID] = clientID
+	var realm = "master"
+	var userID = "123-123-456"
+	var clientID = "456-789-741"
+	var ctx = context.Background()
+	var req = make(map[string]string)
+	req[prmRealm] = realm
+	req[prmUserID] = userID
+	req[prmClientID] = clientID
+
+	t.Run("No error", func(t *testing.T) {
 		roleJSON, _ := json.Marshal([]api.RoleRepresentation{})
 		req[reqBody] = string(roleJSON)
 
@@ -659,24 +652,15 @@ func TestAddClientRolesToUserEndpoint(t *testing.T) {
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Nil(t, res)
-	}
+	})
 
-	// Error - Unmarshalling error
-	{
-		var realm = "master"
-		var userID = "123-123-456"
-		var clientID = "456-789-741"
-		var ctx = context.Background()
-		var req = make(map[string]string)
-		req[prmRealm] = realm
-		req[prmUserID] = userID
-		req[prmClientID] = clientID
+	t.Run("Error - Unmarshalling error", func(t *testing.T) {
 		req[reqBody] = string("roleJSON")
 
 		var res, err = e(ctx, req)
 		assert.NotNil(t, err)
 		assert.Nil(t, res)
-	}
+	})
 }
 
 func TestResetPasswordEndpoint(t *testing.T) {
@@ -687,14 +671,14 @@ func TestResetPasswordEndpoint(t *testing.T) {
 
 	var e = MakeResetPasswordEndpoint(mockManagementComponent)
 
-	// No error
-	{
-		var realm = "master"
-		var userID = "123-123-456"
-		var ctx = context.Background()
-		var req = make(map[string]string)
-		req[prmRealm] = realm
-		req[prmUserID] = userID
+	var realm = "master"
+	var userID = "123-123-456"
+	var ctx = context.Background()
+	var req = make(map[string]string)
+	req[prmRealm] = realm
+	req[prmUserID] = userID
+
+	t.Run("No error", func(t *testing.T) {
 		passwordJSON, _ := json.Marshal(api.PasswordRepresentation{})
 		req[reqBody] = string(passwordJSON)
 
@@ -702,22 +686,15 @@ func TestResetPasswordEndpoint(t *testing.T) {
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Nil(t, res)
-	}
+	})
 
-	// Error - Unmarshalling error
-	{
-		var realm = "master"
-		var userID = "123-123-456"
-		var ctx = context.Background()
-		var req = make(map[string]string)
-		req[prmRealm] = realm
-		req[prmUserID] = userID
+	t.Run("Error - Unmarshalling error", func(t *testing.T) {
 		req[reqBody] = string("passwordJSON")
 
 		var res, err = e(ctx, req)
 		assert.NotNil(t, err)
 		assert.Nil(t, res)
-	}
+	})
 }
 
 func TestExecuteActionsEmailEndpoint(t *testing.T) {
@@ -728,15 +705,15 @@ func TestExecuteActionsEmailEndpoint(t *testing.T) {
 
 	var e = MakeExecuteActionsEmailEndpoint(mockManagementComponent)
 
-	// No error - Without param
-	{
-		var realm = "master"
-		var userID = "123-456-789"
-		var actions = []api.RequiredAction{"action1", "action2"}
-		var ctx = context.Background()
-		var req = make(map[string]string)
-		req[prmRealm] = realm
-		req[prmUserID] = userID
+	var realm = "master"
+	var userID = "123-456-789"
+	var actions = []api.RequiredAction{"action1", "action2"}
+	var ctx = context.Background()
+	var req = make(map[string]string)
+	req[prmRealm] = realm
+	req[prmUserID] = userID
+
+	t.Run("No error - Without param", func(t *testing.T) {
 		actionsJSON, _ := json.Marshal(actions)
 		req[reqBody] = string(actionsJSON)
 
@@ -744,17 +721,9 @@ func TestExecuteActionsEmailEndpoint(t *testing.T) {
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Nil(t, res)
-	}
+	})
 
-	// No error - With params
-	{
-		var realm = "master"
-		var userID = "123-456-789"
-		var actions = []api.RequiredAction{"action1", "action2"}
-		var ctx = context.Background()
-		var req = make(map[string]string)
-		req[prmRealm] = realm
-		req[prmUserID] = userID
+	t.Run("No error - With params", func(t *testing.T) {
 		req[prmQryClientID] = "123789"
 		req[prmQryRedirectURI] = "http://redirect.com"
 		req["toto"] = "tutu" // Check this param is not transmitted
@@ -765,17 +734,9 @@ func TestExecuteActionsEmailEndpoint(t *testing.T) {
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Nil(t, res)
-	}
+	})
 
-	// Error - Unmarshalling error
-	{
-
-		var realm = "master"
-		var userID = "123-456-789"
-		var ctx = context.Background()
-		var req = make(map[string]string)
-		req[prmRealm] = realm
-		req[prmUserID] = userID
+	t.Run("Error - Unmarshalling error", func(t *testing.T) {
 		req[prmQryClientID] = "123789"
 		req[prmQryRedirectURI] = "http://redirect.com"
 		req[reqBody] = string("actions")
@@ -783,7 +744,7 @@ func TestExecuteActionsEmailEndpoint(t *testing.T) {
 		var res, err = e(ctx, req)
 		assert.NotNil(t, err)
 		assert.Nil(t, res)
-	}
+	})
 }
 
 func TestSendSmsCodeEndpoint(t *testing.T) {
@@ -838,33 +799,24 @@ func TestSendReminderEmailEndpoint(t *testing.T) {
 
 	var e = MakeSendReminderEmailEndpoint(mockManagementComponent)
 
-	// No error - Without param
-	{
-		var realm = "master"
-		var userID = "123-456-789"
-		var ctx = context.Background()
-		var req = make(map[string]string)
-		req[prmRealm] = realm
-		req[prmUserID] = userID
+	var realm = "master"
+	var userID = "123-456-789"
+	var ctx = context.Background()
+	var req = make(map[string]string)
+	req[prmRealm] = realm
+	req[prmUserID] = userID
 
+	t.Run("No error - Without param", func(t *testing.T) {
 		mockManagementComponent.EXPECT().SendReminderEmail(ctx, realm, userID).Return(nil).Times(1)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Nil(t, res)
-	}
+	})
 
-	// No error - With params
-	{
-		var realm = "master"
-		var userID = "123-456-789"
-		var ctx = context.Background()
-		var req = make(map[string]string)
-		var lifespan = 3600
-		req[prmRealm] = realm
-		req[prmUserID] = userID
+	t.Run("No error - With params", func(t *testing.T) {
 		req[prmQryClientID] = "123789"
 		req[prmQryRedirectURI] = "http://redirect.com"
-		req[prmQryLifespan] = strconv.Itoa(lifespan)
+		req[prmQryLifespan] = strconv.Itoa(3600)
 		req["toto"] = "tutu" // Check this param is not transmitted
 
 		mockManagementComponent.EXPECT().SendReminderEmail(ctx, realm, userID, prmQryClientID, req[prmQryClientID], prmQryRedirectURI, req[prmQryRedirectURI], prmQryLifespan, req[prmQryLifespan]).Return(nil).Times(1)
@@ -872,7 +824,7 @@ func TestSendReminderEmailEndpoint(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Nil(t, res)
 		// the mock does not except to be called with req["toto"]; as the test passes it means that e has filtered out req["tutu"] and it is not transmitted to SendReminderEmail
-	}
+	})
 }
 
 func TestResetSmsCounterEndpoint(t *testing.T) {
@@ -1116,8 +1068,7 @@ func TestCreateGroupEndpoint(t *testing.T) {
 
 	var name = "name"
 
-	// No error
-	{
+	t.Run("No error", func(t *testing.T) {
 		var req = make(map[string]string)
 		req[reqScheme] = "https"
 		req[reqHost] = "elca.ch"
@@ -1132,18 +1083,16 @@ func TestCreateGroupEndpoint(t *testing.T) {
 
 		locationHeader := res.(LocationHeader)
 		assert.Equal(t, "https://elca.ch/management/master/groups/123456", locationHeader.URL)
-	}
+	})
 
-	// Error - Cannot unmarshall
-	{
+	t.Run("Error - Cannot unmarshall", func(t *testing.T) {
 		var req = make(map[string]string)
 		req[reqBody] = string("JSON")
 		_, err := e(ctx, req)
 		assert.NotNil(t, err)
-	}
+	})
 
-	// Error - Keycloak client error
-	{
+	t.Run("Error - Keycloak client error", func(t *testing.T) {
 		var req = make(map[string]string)
 		req[reqScheme] = "https"
 		req[reqHost] = "elca.ch"
@@ -1154,7 +1103,7 @@ func TestCreateGroupEndpoint(t *testing.T) {
 		mockManagementComponent.EXPECT().CreateGroup(ctx, realm, gomock.Any()).Return("", fmt.Errorf("Error")).Times(1)
 		_, err := e(ctx, req)
 		assert.NotNil(t, err)
-	}
+	})
 }
 
 func TestDeleteGroupEndpoint(t *testing.T) {
@@ -1234,39 +1183,30 @@ func TestUpdateAuthorizationsEndpoint(t *testing.T) {
 
 	var e = MakeUpdateAuthorizationsEndpoint(mockManagementComponent)
 
-	// No error
-	{
-		var realmName = "master"
-		var groupID = "123456"
-		var authorizationsJSON = "{\"matrix\":{}}"
-		var ctx = context.Background()
-		var req = make(map[string]string)
-		req[prmRealm] = realmName
-		req[prmGroupID] = groupID
-		req[reqBody] = authorizationsJSON
+	var realmName = "master"
+	var groupID = "123456"
+	var ctx = context.Background()
+	var req = make(map[string]string)
+	req[prmRealm] = realmName
+	req[prmGroupID] = groupID
+
+	t.Run("No error", func(t *testing.T) {
+		req[reqBody] = `{"matrix":{}}`
 
 		mockManagementComponent.EXPECT().UpdateAuthorizations(ctx, realmName, groupID, gomock.Any()).Return(nil).Times(1)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Nil(t, res)
-	}
+	})
 
-	// JSON error
-	{
-		var realmName = "master"
-		var groupID = "123456"
-		var configJSON = "{\"DefaultClientId\":\"clientId\", \"DefaultRedirectUri\":\"http://cloudtrust.io\""
-		var ctx = context.Background()
-		var req = make(map[string]string)
-		req[prmRealm] = realmName
-		req[prmGroupID] = groupID
-		req[reqBody] = configJSON
+	t.Run("JSON error", func(t *testing.T) {
+		req[reqBody] = `{"DefaultClientId":"clientId", "DefaultRedirectUri":"http://cloudtrust.io"`
 
 		mockManagementComponent.EXPECT().UpdateAuthorizations(ctx, realmName, groupID, gomock.Any()).Return(nil).Times(0)
 		var res, err = e(ctx, req)
 		assert.NotNil(t, err)
 		assert.Nil(t, res)
-	}
+	})
 }
 
 func TestCreateClientRoleEndpoint(t *testing.T) {
@@ -1281,8 +1221,7 @@ func TestCreateClientRoleEndpoint(t *testing.T) {
 	var realm = "master"
 	var clientID = "123456"
 
-	// No error
-	{
+	t.Run("No error", func(t *testing.T) {
 		var req = make(map[string]string)
 		req[reqScheme] = "https"
 		req[reqHost] = "elca.ch"
@@ -1296,18 +1235,16 @@ func TestCreateClientRoleEndpoint(t *testing.T) {
 		assert.Nil(t, err)
 		locationHeader := res.(LocationHeader)
 		assert.Equal(t, "https://elca.ch/management/master/role/123456", locationHeader.URL)
-	}
+	})
 
-	// Error - Cannot unmarshall
-	{
+	t.Run("Error - Cannot unmarshall", func(t *testing.T) {
 		var req = make(map[string]string)
 		req[reqBody] = string("JSON")
 		_, err := e(ctx, req)
 		assert.NotNil(t, err)
-	}
+	})
 
-	// Error - Keycloak client error
-	{
+	t.Run("Error - Keycloak client error", func(t *testing.T) {
 		var req = make(map[string]string)
 		req[reqScheme] = "https"
 		req[reqHost] = "elca.ch"
@@ -1319,7 +1256,7 @@ func TestCreateClientRoleEndpoint(t *testing.T) {
 		mockManagementComponent.EXPECT().CreateClientRole(ctx, realm, clientID, gomock.Any()).Return("", fmt.Errorf("Error")).Times(1)
 		_, err := e(ctx, req)
 		assert.NotNil(t, err)
-	}
+	})
 }
 
 func TestConfigurationEndpoints(t *testing.T) {
