@@ -691,11 +691,16 @@ func main() {
 			configDBModule = keycloakb.MakeConfigurationDBModuleInstrumentingMW(influxMetrics.NewHistogram("configDB_module"))(configDBModule)
 		}
 
+		var kcTechClient keycloakb.KeycloakTechnicalClient
+		{
+			kcTechClient = keycloakb.NewKeycloakTechnicalClient(technicalTokenProvider, keycloakClient, accountLogger)
+		}
+
 		// module for storing and retrieving details of the self-registered users
 		var usersDBModule = keycloakb.NewUsersDetailsDBModule(usersRwDBConn, aesEncryption, accountLogger)
 
 		// new module for account service
-		accountComponent := account.NewComponent(keycloakClient.AccountClient(), eventsDBModule, configDBModule, usersDBModule, accountLogger)
+		accountComponent := account.NewComponent(keycloakClient.AccountClient(), kcTechClient, eventsDBModule, configDBModule, usersDBModule, accountLogger)
 		accountComponent = account.MakeAuthorizationAccountComponentMW(log.With(accountLogger, "mw", "endpoint"), configDBModule)(accountComponent)
 
 		var rateLimitAccount = rateLimit[RateKeyAccount]

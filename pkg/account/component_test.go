@@ -24,24 +24,26 @@ import (
 )
 
 type componentMock struct {
-	keycloakAccountClient *mock.KeycloakAccountClient
-	eventDBModule         *mock.EventsDBModule
-	configurationDBModule *mock.ConfigurationDBModule
-	usersDetailsDBModule  *mock.UsersDetailsDBModule
-	logger                *mock.Logger
+	keycloakAccountClient   *mock.KeycloakAccountClient
+	keycloakTechnicalClient *mock.KeycloakTechnicalClient
+	eventDBModule           *mock.EventsDBModule
+	configurationDBModule   *mock.ConfigurationDBModule
+	usersDetailsDBModule    *mock.UsersDetailsDBModule
 }
 
 func createComponentMocks(mockCtrl *gomock.Controller) *componentMock {
 	return &componentMock{
-		keycloakAccountClient: mock.NewKeycloakAccountClient(mockCtrl),
-		eventDBModule:         mock.NewEventsDBModule(mockCtrl),
-		configurationDBModule: mock.NewConfigurationDBModule(mockCtrl),
-		usersDetailsDBModule:  mock.NewUsersDetailsDBModule(mockCtrl),
+		keycloakAccountClient:   mock.NewKeycloakAccountClient(mockCtrl),
+		keycloakTechnicalClient: mock.NewKeycloakTechnicalClient(mockCtrl),
+		eventDBModule:           mock.NewEventsDBModule(mockCtrl),
+		configurationDBModule:   mock.NewConfigurationDBModule(mockCtrl),
+		usersDetailsDBModule:    mock.NewUsersDetailsDBModule(mockCtrl),
 	}
 }
 
 func (m *componentMock) createComponent() Component {
-	return NewComponent(m.keycloakAccountClient, m.eventDBModule, m.configurationDBModule, m.usersDetailsDBModule, log.NewNopLogger())
+	return NewComponent(m.keycloakAccountClient, m.keycloakTechnicalClient, m.eventDBModule,
+		m.configurationDBModule, m.usersDetailsDBModule, log.NewNopLogger())
 }
 
 func TestUpdatePassword(t *testing.T) {
@@ -80,8 +82,8 @@ func TestUpdatePassword(t *testing.T) {
 		oldPasswd := "prev10u5"
 		newPasswd := "a p@55w0rd"
 		confirmPasswd := "a p@55w0rd"
-		mocks.keycloakAccountClient.EXPECT().UpdatePassword(accessToken, realm, oldPasswd, newPasswd, confirmPasswd).Return("", nil).Times(1)
-		mocks.eventDBModule.EXPECT().ReportEvent(gomock.Any(), "PASSWORD_RESET", "self-service", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
+		mocks.keycloakAccountClient.EXPECT().UpdatePassword(accessToken, realm, oldPasswd, newPasswd, confirmPasswd).Return("", nil)
+		mocks.eventDBModule.EXPECT().ReportEvent(gomock.Any(), "PASSWORD_RESET", "self-service", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 		mocks.keycloakAccountClient.EXPECT().SendEmail(accessToken, realm, emailTemplateUpdatedPassword, emailSubjectUpdatedPassword, nil, gomock.Any()).Return(nil)
 		mocks.eventDBModule.EXPECT().ReportEvent(gomock.Any(), "UPDATED_PWD_EMAIL_SENT", "self-service", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
@@ -110,20 +112,20 @@ func TestUpdatePasswordWrongPwd(t *testing.T) {
 	ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 
 	t.Run("Error test case 1", func(t *testing.T) {
-		mocks.keycloakAccountClient.EXPECT().UpdatePassword(accessToken, realm, oldPasswd, newPasswd, newPasswd).Return("", fmt.Errorf("invalidPasswordExistingMessage")).Times(1)
+		mocks.keycloakAccountClient.EXPECT().UpdatePassword(accessToken, realm, oldPasswd, newPasswd, newPasswd).Return("", errors.New("invalidPasswordExistingMessage"))
 
 		assert.NotNil(t, component.UpdatePassword(ctx, oldPasswd, newPasswd, newPasswd))
 	})
 
 	t.Run("Error test case 2", func(t *testing.T) {
-		mocks.keycloakAccountClient.EXPECT().UpdatePassword(accessToken, realm, oldPasswd, newPasswd, newPasswd).Return("", fmt.Errorf("invalid")).Times(1)
+		mocks.keycloakAccountClient.EXPECT().UpdatePassword(accessToken, realm, oldPasswd, newPasswd, newPasswd).Return("", errors.New("invalid"))
 
 		assert.NotNil(t, component.UpdatePassword(ctx, oldPasswd, newPasswd, newPasswd))
 	})
 
 	t.Run("Password reset succeeded but storing the event failed", func(t *testing.T) {
-		mocks.keycloakAccountClient.EXPECT().UpdatePassword(accessToken, realm, oldPasswd, newPasswd, newPasswd).Return("", nil).Times(1)
-		mocks.eventDBModule.EXPECT().ReportEvent(gomock.Any(), "PASSWORD_RESET", "self-service", database.CtEventRealmName, realm, database.CtEventUserID, userID, database.CtEventUsername, username).Return(errors.New("error")).Times(1)
+		mocks.keycloakAccountClient.EXPECT().UpdatePassword(accessToken, realm, oldPasswd, newPasswd, newPasswd).Return("", nil)
+		mocks.eventDBModule.EXPECT().ReportEvent(gomock.Any(), "PASSWORD_RESET", "self-service", database.CtEventRealmName, realm, database.CtEventUserID, userID, database.CtEventUsername, username).Return(errors.New("error"))
 		mocks.keycloakAccountClient.EXPECT().SendEmail(accessToken, realm, emailTemplateUpdatedPassword, emailSubjectUpdatedPassword, nil, gomock.Any()).Return(errors.New(""))
 
 		assert.Nil(t, component.UpdatePassword(ctx, oldPasswd, newPasswd, newPasswd))
@@ -217,7 +219,7 @@ func TestUpdateAccount(t *testing.T) {
 
 	t.Run("Update account with succces", func(t *testing.T) {
 		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "UPDATE_ACCOUNT", "self-service", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kcUserRep, nil).Times(1)
+		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kcUserRep, nil)
 		mocks.keycloakAccountClient.EXPECT().UpdateAccount(accessToken, realmName, gomock.Any()).DoAndReturn(
 			func(accessToken, realmName string, kcUserRep kc.UserRepresentation) error {
 				assert.Equal(t, username, *kcUserRep.Username)
@@ -226,7 +228,7 @@ func TestUpdateAccount(t *testing.T) {
 				assert.Equal(t, lastName, *kcUserRep.LastName)
 				assert.Equal(t, phoneNumber, *kcUserRep.GetAttributeString(constants.AttrbPhoneNumber))
 				return nil
-			}).Times(1)
+			})
 		mocks.usersDetailsDBModule.EXPECT().GetUserDetails(ctx, realmName, userID).Return(dbUser, nil)
 		mocks.usersDetailsDBModule.EXPECT().StoreOrUpdateUserDetails(ctx, realmName, gomock.Any()).Return(nil)
 
@@ -236,7 +238,7 @@ func TestUpdateAccount(t *testing.T) {
 	})
 	t.Run("Keycloak update succces - DB get user fails", func(t *testing.T) {
 		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "UPDATE_ACCOUNT", "self-service", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kcUserRep, nil).Times(1)
+		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kcUserRep, nil)
 		mocks.usersDetailsDBModule.EXPECT().GetUserDetails(ctx, realmName, userID).Return(dto.DBUser{}, errors.New("db error"))
 
 		err := accountComponent.UpdateAccount(ctx, userRep)
@@ -245,8 +247,8 @@ func TestUpdateAccount(t *testing.T) {
 	})
 	t.Run("Keycloak update succces - DB update fails", func(t *testing.T) {
 		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "UPDATE_ACCOUNT", "self-service", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kcUserRep, nil).Times(1)
-		mocks.keycloakAccountClient.EXPECT().UpdateAccount(accessToken, realmName, gomock.Any()).Return(nil).Times(1)
+		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kcUserRep, nil)
+		mocks.keycloakAccountClient.EXPECT().UpdateAccount(accessToken, realmName, gomock.Any()).Return(nil)
 		mocks.usersDetailsDBModule.EXPECT().GetUserDetails(ctx, realmName, userID).Return(dto.DBUser{
 			UserID: &userID,
 		}, nil)
@@ -265,16 +267,16 @@ func TestUpdateAccount(t *testing.T) {
 			Email:         &oldEmail,
 			EmailVerified: &emailVerified,
 		}
-		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(oldkcUserRep, nil).Times(1)
+		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(oldkcUserRep, nil)
 		mocks.keycloakAccountClient.EXPECT().UpdateAccount(accessToken, realmName, gomock.Any()).DoAndReturn(
 			func(accessToken, realmName string, kcUserRep kc.UserRepresentation) error {
 				assert.Equal(t, email, *kcUserRep.Email)
 				assert.Equal(t, false, *kcUserRep.EmailVerified)
 				return nil
-			}).Times(1)
-		mocks.keycloakAccountClient.EXPECT().ExecuteActionsEmail(accessToken, realmName, []string{ActionVerifyEmail}).Return(nil).Times(1)
+			})
+		mocks.keycloakAccountClient.EXPECT().ExecuteActionsEmail(accessToken, realmName, []string{ActionVerifyEmail}).Return(nil)
 		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "ACTION_EMAIL", "self-service", database.CtEventRealmName, realmName,
-			database.CtEventUserID, userID, database.CtEventAdditionalInfo, gomock.Any()).Return(nil).Times(1)
+			database.CtEventUserID, userID, database.CtEventAdditionalInfo, gomock.Any()).Return(nil)
 		mocks.usersDetailsDBModule.EXPECT().GetUserDetails(ctx, realmName, userID).Return(dto.DBUser{
 			UserID: &userID,
 		}, nil)
@@ -309,17 +311,17 @@ func TestUpdateAccount(t *testing.T) {
 
 	t.Run("Update by changing the phone number", func(t *testing.T) {
 		userRep.Email = nil
-		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(oldkcUserRep2, nil).Times(1)
+		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(oldkcUserRep2, nil)
 		mocks.keycloakAccountClient.EXPECT().UpdateAccount(accessToken, realmName, gomock.Any()).DoAndReturn(
 			func(accessToken, realmName string, kcUserRep kc.UserRepresentation) error {
 				verified, _ := kcUserRep.GetAttributeBool(constants.AttrbPhoneNumberVerified)
 				assert.Equal(t, phoneNumber, *kcUserRep.GetAttributeString(constants.AttrbPhoneNumber))
 				assert.Equal(t, false, *verified)
 				return nil
-			}).Times(1)
-		mocks.keycloakAccountClient.EXPECT().ExecuteActionsEmail(accessToken, realmName, []string{ActionVerifyPhoneNumber}).Return(nil).Times(1)
+			})
+		mocks.keycloakAccountClient.EXPECT().ExecuteActionsEmail(accessToken, realmName, []string{ActionVerifyPhoneNumber}).Return(nil)
 		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "ACTION_EMAIL", "self-service", database.CtEventRealmName, realmName,
-			database.CtEventUserID, userID, database.CtEventAdditionalInfo, gomock.Any()).Return(nil).Times(1)
+			database.CtEventUserID, userID, database.CtEventAdditionalInfo, gomock.Any()).Return(nil)
 		mocks.usersDetailsDBModule.EXPECT().GetUserDetails(ctx, realmName, userID).Return(dto.DBUser{
 			UserID: &userID,
 		}, nil)
@@ -360,14 +362,14 @@ func TestUpdateAccount(t *testing.T) {
 			LastName:  &lastName,
 		}
 
-		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(oldkcUserRep2, nil).Times(1)
+		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(oldkcUserRep2, nil)
 		mocks.keycloakAccountClient.EXPECT().UpdateAccount(accessToken, realmName, gomock.Any()).DoAndReturn(
 			func(accessToken, realmName string, kcUserRep kc.UserRepresentation) error {
 				verified, _ := kcUserRep.GetAttributeBool(constants.AttrbPhoneNumberVerified)
 				assert.Equal(t, oldNumber, *kcUserRep.GetAttributeString(constants.AttrbPhoneNumber))
 				assert.Equal(t, true, *verified)
 				return nil
-			}).Times(1)
+			})
 		mocks.usersDetailsDBModule.EXPECT().GetUserDetails(ctx, realmName, userID).Return(dto.DBUser{
 			UserID: &userID,
 		}, nil)
@@ -379,7 +381,7 @@ func TestUpdateAccount(t *testing.T) {
 	})
 
 	t.Run("Error - get user", func(t *testing.T) {
-		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kc.UserRepresentation{}, fmt.Errorf("Unexpected error")).Times(1)
+		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kc.UserRepresentation{}, fmt.Errorf("Unexpected error"))
 
 		err := accountComponent.UpdateAccount(ctx, api.AccountRepresentation{})
 
@@ -394,7 +396,7 @@ func TestUpdateAccount(t *testing.T) {
 		mocks.usersDetailsDBModule.EXPECT().GetUserDetails(ctx, realmName, userID).Return(dto.DBUser{
 			UserID: &userID,
 		}, nil)
-		mocks.keycloakAccountClient.EXPECT().UpdateAccount(accessToken, realmName, gomock.Any()).Return(fmt.Errorf("Unexpected error")).Times(1)
+		mocks.keycloakAccountClient.EXPECT().UpdateAccount(accessToken, realmName, gomock.Any()).Return(fmt.Errorf("Unexpected error"))
 
 		err := accountComponent.UpdateAccount(ctx, api.AccountRepresentation{})
 
@@ -413,6 +415,7 @@ func TestGetUser(t *testing.T) {
 	var realmName = "master"
 	var username = "username"
 	var userID = "1234-7454-4516"
+	var anyError = errors.New("any error")
 
 	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 	ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
@@ -420,7 +423,7 @@ func TestGetUser(t *testing.T) {
 	ctx = context.WithValue(ctx, cs.CtContextUserID, userID)
 
 	t.Run("Call to Keycloak fails", func(t *testing.T) {
-		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kc.UserRepresentation{}, fmt.Errorf("Unexpected error"))
+		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kc.UserRepresentation{}, anyError)
 		_, err := accountComponent.GetAccount(ctx)
 
 		assert.NotNil(t, err)
@@ -468,7 +471,7 @@ func TestGetUser(t *testing.T) {
 	}
 
 	t.Run("Get user with succces", func(t *testing.T) {
-		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kcUserRep, nil).Times(1)
+		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kcUserRep, nil)
 		mocks.usersDetailsDBModule.EXPECT().GetUserDetails(ctx, realmName, userID).Return(dto.DBUser{
 			UserID: &userID,
 		}, nil)
@@ -499,7 +502,7 @@ func TestGetUser(t *testing.T) {
 		var docID = "PASS123456789"
 		var docExp = "31.12.2029"
 		var docCountry = "CH"
-		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kcUserRep, nil).Times(1)
+		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kcUserRep, nil)
 		mocks.usersDetailsDBModule.EXPECT().GetUserDetails(ctx, realmName, userID).Return(dto.DBUser{
 			BirthLocation:        &birthLocation,
 			Nationality:          &nationality,
@@ -539,13 +542,14 @@ func TestDeleteUser(t *testing.T) {
 	var accessToken = "TOKEN=="
 	var realmName = "master"
 	var username = "username"
+	var anyError = errors.New("any error")
 
 	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 	ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 	ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 
 	t.Run("Delete user with succces", func(t *testing.T) {
-		mocks.keycloakAccountClient.EXPECT().DeleteAccount(accessToken, realmName).Return(nil).Times(1)
+		mocks.keycloakAccountClient.EXPECT().DeleteAccount(accessToken, realmName).Return(nil)
 		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "SELF_DELETE_ACCOUNT", "self-service", gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
 		err := accountComponent.DeleteAccount(ctx)
@@ -554,7 +558,7 @@ func TestDeleteUser(t *testing.T) {
 	})
 
 	t.Run("Delete user fails", func(t *testing.T) {
-		mocks.keycloakAccountClient.EXPECT().DeleteAccount(accessToken, realmName).Return(fmt.Errorf("Unexpected error")).Times(1)
+		mocks.keycloakAccountClient.EXPECT().DeleteAccount(accessToken, realmName).Return(anyError)
 		err := accountComponent.DeleteAccount(ctx)
 
 		assert.NotNil(t, err)
@@ -571,6 +575,7 @@ func TestGetCredentials(t *testing.T) {
 	var accessToken = "TOKEN=="
 	var currentRealm = "master"
 	var currentUserID = "1234-789"
+	var anyError = errors.New("any error")
 
 	t.Run("Get credentials with succces", func(t *testing.T) {
 		var id = "1245"
@@ -582,7 +587,7 @@ func TestGetCredentials(t *testing.T) {
 		var kcCredsRep []kc.CredentialRepresentation
 		kcCredsRep = append(kcCredsRep, kcCredRep)
 
-		mocks.keycloakAccountClient.EXPECT().GetCredentials(accessToken, currentRealm).Return(kcCredsRep, nil).Times(1)
+		mocks.keycloakAccountClient.EXPECT().GetCredentials(accessToken, currentRealm).Return(kcCredsRep, nil)
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, currentRealm)
@@ -602,7 +607,7 @@ func TestGetCredentials(t *testing.T) {
 	})
 
 	t.Run("Error", func(t *testing.T) {
-		mocks.keycloakAccountClient.EXPECT().GetCredentials(accessToken, currentRealm).Return([]kc.CredentialRepresentation{}, fmt.Errorf("Unexpected error")).Times(1)
+		mocks.keycloakAccountClient.EXPECT().GetCredentials(accessToken, currentRealm).Return([]kc.CredentialRepresentation{}, anyError)
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, currentRealm)
@@ -624,11 +629,12 @@ func TestGetCredentialRegistrators(t *testing.T) {
 	var accessToken = "TOKEN=="
 	var currentRealm = "master"
 	var currentUserID = "1234-789"
+	var anyError = errors.New("any error")
 
 	t.Run("Get credential types with succces", func(t *testing.T) {
 		var credTypes = []string{"paper", "push"}
 
-		mocks.keycloakAccountClient.EXPECT().GetCredentialRegistrators(accessToken, currentRealm).Return(credTypes, nil).Times(1)
+		mocks.keycloakAccountClient.EXPECT().GetCredentialRegistrators(accessToken, currentRealm).Return(credTypes, nil)
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, currentRealm)
@@ -641,7 +647,7 @@ func TestGetCredentialRegistrators(t *testing.T) {
 	})
 
 	t.Run("Error", func(t *testing.T) {
-		mocks.keycloakAccountClient.EXPECT().GetCredentialRegistrators(accessToken, currentRealm).Return([]string{}, fmt.Errorf("Unexpected error")).Times(1)
+		mocks.keycloakAccountClient.EXPECT().GetCredentialRegistrators(accessToken, currentRealm).Return([]string{}, anyError)
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, currentRealm)
@@ -668,29 +674,29 @@ func TestUpdateLabelCredential(t *testing.T) {
 	ctx = context.WithValue(ctx, cs.CtContextRealm, realm)
 	ctx = context.WithValue(ctx, cs.CtContextUserID, userID)
 	ctx = context.WithValue(ctx, cs.CtContextUsername, username)
+	var anyError = errors.New("any error")
 
 	credentialID := "78945-845"
 	label := "cred label"
 
-	{
-		mocks.keycloakAccountClient.EXPECT().UpdateLabelCredential(accessToken, realm, credentialID, label).Return(nil).Times(1)
-		mocks.eventDBModule.EXPECT().ReportEvent(gomock.Any(), "SELF_UPDATE_CREDENTIAL", "self-service", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
+	t.Run("Success", func(t *testing.T) {
+		mocks.keycloakAccountClient.EXPECT().UpdateLabelCredential(accessToken, realm, credentialID, label).Return(nil)
+		mocks.eventDBModule.EXPECT().ReportEvent(gomock.Any(), "SELF_UPDATE_CREDENTIAL", "self-service", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
 		err := component.UpdateLabelCredential(ctx, credentialID, label)
 
 		assert.Nil(t, err)
-	}
+	})
 
-	{
-		mocks.keycloakAccountClient.EXPECT().UpdateLabelCredential(accessToken, realm, credentialID, label).Return(fmt.Errorf("Unexpected error")).Times(1)
+	t.Run("Error", func(t *testing.T) {
+		mocks.keycloakAccountClient.EXPECT().UpdateLabelCredential(accessToken, realm, credentialID, label).Return(anyError)
 		err := component.UpdateLabelCredential(ctx, credentialID, label)
 
 		assert.NotNil(t, err)
-	}
+	})
 }
 
 func TestDeleteCredential(t *testing.T) {
-
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 
@@ -705,23 +711,24 @@ func TestDeleteCredential(t *testing.T) {
 	ctx = context.WithValue(ctx, cs.CtContextRealm, realm)
 	ctx = context.WithValue(ctx, cs.CtContextUserID, userID)
 	ctx = context.WithValue(ctx, cs.CtContextUsername, username)
+	var anyError = errors.New("any error")
 
 	credentialID := "78945-845"
-	{
-		mocks.keycloakAccountClient.EXPECT().DeleteCredential(accessToken, realm, credentialID).Return(nil).Times(1)
-		mocks.eventDBModule.EXPECT().ReportEvent(gomock.Any(), "SELF_DELETE_CREDENTIAL", "self-service", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
+	t.Run("Success", func(t *testing.T) {
+		mocks.keycloakAccountClient.EXPECT().DeleteCredential(accessToken, realm, credentialID).Return(nil)
+		mocks.eventDBModule.EXPECT().ReportEvent(gomock.Any(), "SELF_DELETE_CREDENTIAL", "self-service", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
 		err := component.DeleteCredential(ctx, credentialID)
 
 		assert.Nil(t, err)
-	}
+	})
 
-	{
-		mocks.keycloakAccountClient.EXPECT().DeleteCredential(accessToken, realm, credentialID).Return(fmt.Errorf("Unexpected error")).Times(1)
+	t.Run("Error", func(t *testing.T) {
+		mocks.keycloakAccountClient.EXPECT().DeleteCredential(accessToken, realm, credentialID).Return(anyError)
 		err := component.DeleteCredential(ctx, credentialID)
 
 		assert.NotNil(t, err)
-	}
+	})
 }
 
 func TestMoveCredential(t *testing.T) {
@@ -739,12 +746,13 @@ func TestMoveCredential(t *testing.T) {
 	ctx = context.WithValue(ctx, cs.CtContextRealm, realm)
 	ctx = context.WithValue(ctx, cs.CtContextUserID, userID)
 	ctx = context.WithValue(ctx, cs.CtContextUsername, username)
+	var anyError = errors.New("any error")
 
 	credentialID := "78945-845"
 	previousCredentialID := "6589-7841"
 	{
-		mocks.keycloakAccountClient.EXPECT().MoveAfter(accessToken, realm, credentialID, previousCredentialID).Return(nil).Times(1)
-		mocks.eventDBModule.EXPECT().ReportEvent(gomock.Any(), "SELF_MOVE_CREDENTIAL", "self-service", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
+		mocks.keycloakAccountClient.EXPECT().MoveAfter(accessToken, realm, credentialID, previousCredentialID).Return(nil)
+		mocks.eventDBModule.EXPECT().ReportEvent(gomock.Any(), "SELF_MOVE_CREDENTIAL", "self-service", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
 		err := component.MoveCredential(ctx, credentialID, previousCredentialID)
 
@@ -752,8 +760,8 @@ func TestMoveCredential(t *testing.T) {
 	}
 
 	{
-		mocks.keycloakAccountClient.EXPECT().MoveToFirst(accessToken, realm, credentialID).Return(nil).Times(1)
-		mocks.eventDBModule.EXPECT().ReportEvent(gomock.Any(), "SELF_MOVE_CREDENTIAL", "self-service", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Times(1)
+		mocks.keycloakAccountClient.EXPECT().MoveToFirst(accessToken, realm, credentialID).Return(nil)
+		mocks.eventDBModule.EXPECT().ReportEvent(gomock.Any(), "SELF_MOVE_CREDENTIAL", "self-service", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
 		err := component.MoveCredential(ctx, credentialID, "null")
 
@@ -761,14 +769,14 @@ func TestMoveCredential(t *testing.T) {
 	}
 
 	{
-		mocks.keycloakAccountClient.EXPECT().MoveAfter(accessToken, realm, credentialID, previousCredentialID).Return(fmt.Errorf("Unexpected error")).Times(1)
+		mocks.keycloakAccountClient.EXPECT().MoveAfter(accessToken, realm, credentialID, previousCredentialID).Return(fmt.Errorf("Unexpected error"))
 		err := component.MoveCredential(ctx, credentialID, previousCredentialID)
 
 		assert.NotNil(t, err)
 	}
 
 	{
-		mocks.keycloakAccountClient.EXPECT().MoveToFirst(accessToken, realm, credentialID).Return(fmt.Errorf("Unexpected error")).Times(1)
+		mocks.keycloakAccountClient.EXPECT().MoveToFirst(accessToken, realm, credentialID).Return(anyError)
 		err := component.MoveCredential(ctx, credentialID, "null")
 
 		assert.NotNil(t, err)
@@ -801,14 +809,17 @@ func TestGetConfiguration(t *testing.T) {
 		ShowProfileTab:                      &trueBool,
 	}
 	var adminConfig configuration.RealmAdminConfiguration
+	var supportedLocales = []string{"fr", "en", "es"}
+	var realmConfig = kc.RealmRepresentation{InternationalizationEnabled: &trueBool, SupportedLocales: &supportedLocales}
+	var anyError = errors.New("any error")
+	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+	ctx = context.WithValue(ctx, cs.CtContextRealm, currentRealm)
+	ctx = context.WithValue(ctx, cs.CtContextUserID, currentUserID)
 
 	t.Run("Get configuration with succces", func(t *testing.T) {
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
-		ctx = context.WithValue(ctx, cs.CtContextRealm, currentRealm)
-		ctx = context.WithValue(ctx, cs.CtContextUserID, currentUserID)
-
-		mocks.configurationDBModule.EXPECT().GetConfiguration(ctx, currentRealm).Return(config, nil).Times(1)
-		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, currentRealm).Return(adminConfig, nil).Times(1)
+		mocks.configurationDBModule.EXPECT().GetConfiguration(ctx, currentRealm).Return(config, nil)
+		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, currentRealm).Return(adminConfig, nil)
+		mocks.keycloakTechnicalClient.EXPECT().GetRealm(ctx, currentRealm).Return(realmConfig, nil)
 
 		resConfig, err := component.GetConfiguration(ctx, "")
 
@@ -823,15 +834,12 @@ func TestGetConfiguration(t *testing.T) {
 		var overrideRealm = "customerRealm"
 		var successURL = "https://success.io"
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
-		ctx = context.WithValue(ctx, cs.CtContextRealm, currentRealm)
-		ctx = context.WithValue(ctx, cs.CtContextUserID, currentUserID)
-
-		mocks.configurationDBModule.EXPECT().GetConfiguration(ctx, currentRealm).Return(config, nil).Times(1)
-		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, currentRealm).Return(adminConfig, nil).Times(1)
+		mocks.configurationDBModule.EXPECT().GetConfiguration(ctx, currentRealm).Return(config, nil)
+		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, currentRealm).Return(adminConfig, nil)
 		mocks.configurationDBModule.EXPECT().GetConfiguration(ctx, overrideRealm).Return(configuration.RealmConfiguration{
 			RedirectSuccessfulRegistrationURL: &successURL,
-		}, nil).Times(1)
+		}, nil)
+		mocks.keycloakTechnicalClient.EXPECT().GetRealm(ctx, currentRealm).Return(realmConfig, nil)
 
 		resConfig, err := component.GetConfiguration(ctx, overrideRealm)
 
@@ -844,23 +852,24 @@ func TestGetConfiguration(t *testing.T) {
 	})
 
 	t.Run("Error on GetConfiguration", func(t *testing.T) {
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
-		ctx = context.WithValue(ctx, cs.CtContextRealm, currentRealm)
-		ctx = context.WithValue(ctx, cs.CtContextUserID, currentUserID)
-
-		mocks.configurationDBModule.EXPECT().GetConfiguration(ctx, currentRealm).Return(configuration.RealmConfiguration{}, fmt.Errorf("Unexpected error")).Times(1)
+		mocks.configurationDBModule.EXPECT().GetConfiguration(ctx, currentRealm).Return(configuration.RealmConfiguration{}, anyError)
 
 		_, err := component.GetConfiguration(ctx, "")
 
 		assert.NotNil(t, err)
 	})
 	t.Run("Error on GetAdminConfiguration", func(t *testing.T) {
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
-		ctx = context.WithValue(ctx, cs.CtContextRealm, currentRealm)
-		ctx = context.WithValue(ctx, cs.CtContextUserID, currentUserID)
+		mocks.configurationDBModule.EXPECT().GetConfiguration(ctx, currentRealm).Return(configuration.RealmConfiguration{}, nil)
+		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, currentRealm).Return(configuration.RealmAdminConfiguration{}, anyError)
 
-		mocks.configurationDBModule.EXPECT().GetConfiguration(ctx, currentRealm).Return(configuration.RealmConfiguration{}, nil).Times(1)
-		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, currentRealm).Return(configuration.RealmAdminConfiguration{}, fmt.Errorf("Unexpected error")).Times(1)
+		_, err := component.GetConfiguration(ctx, "")
+
+		assert.NotNil(t, err)
+	})
+	t.Run("Error on GetRealm", func(t *testing.T) {
+		mocks.configurationDBModule.EXPECT().GetConfiguration(ctx, currentRealm).Return(config, nil)
+		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, currentRealm).Return(adminConfig, nil)
+		mocks.keycloakTechnicalClient.EXPECT().GetRealm(ctx, currentRealm).Return(realmConfig, anyError)
 
 		_, err := component.GetConfiguration(ctx, "")
 

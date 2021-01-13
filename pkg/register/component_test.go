@@ -65,8 +65,8 @@ type componentMocks struct {
 	onboardingModule *mock.OnboardingModule
 }
 
-func createMocks(mockCtrl *gomock.Controller) componentMocks {
-	return componentMocks{
+func createMocks(mockCtrl *gomock.Controller) *componentMocks {
+	return &componentMocks{
 		keycloakClient:   mock.NewKeycloakClient(mockCtrl),
 		tokenProvider:    mock.NewOidcTokenProvider(mockCtrl),
 		configDB:         mock.NewConfigurationDBModule(mockCtrl),
@@ -76,7 +76,7 @@ func createMocks(mockCtrl *gomock.Controller) componentMocks {
 	}
 }
 
-func createComponent(mocks componentMocks) *component {
+func (mocks *componentMocks) createComponent() *component {
 	var keycloakURL = "https://idp.trustid.ch"
 	return NewComponent(keycloakURL, mocks.keycloakClient, mocks.tokenProvider, mocks.usersDB, mocks.configDB, mocks.eventsDB,
 		mocks.onboardingModule, log.NewNopLogger()).(*component)
@@ -87,7 +87,7 @@ func TestRegisterUser(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mocks = createMocks(mockCtrl)
-	var component = createComponent(mocks)
+	var component = mocks.createComponent()
 
 	var ctx = context.TODO()
 	var targetRealmName = "trustid"
@@ -427,25 +427,96 @@ func TestRegisterUser(t *testing.T) {
 
 }
 
-func TestGetConfiguration(t *testing.T) {
+func TestGetSupportedLocales(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 
 	var mocks = createMocks(mockCtrl)
-	var component = createComponent(mocks)
+	var component = mocks.createComponent()
+
+	var ctx = context.TODO()
+	var realm = "test"
+	var accessToken = "acce-ssto-ken!"
+	var supportedLocales = []string{"fr", "en"}
+	var realmConfig = kc.RealmRepresentation{
+		SupportedLocales: &supportedLocales,
+	}
+	var anyError = errors.New("any error")
+
+	t.Run("Can't get access token", func(t *testing.T) {
+		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return("", anyError)
+		var _, err = component.getSupportedLocales(ctx, realm)
+		assert.Equal(t, anyError, err)
+	})
+	t.Run("Can't get response from KC", func(t *testing.T) {
+		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
+		mocks.keycloakClient.EXPECT().GetRealm(accessToken, realm).Return(kc.RealmRepresentation{}, anyError)
+		var _, err = component.getSupportedLocales(ctx, realm)
+		assert.Equal(t, anyError, err)
+	})
+	t.Run("Internationalization disabled (nil)", func(t *testing.T) {
+		realmConfig.InternationalizationEnabled = nil
+		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
+		mocks.keycloakClient.EXPECT().GetRealm(accessToken, realm).Return(realmConfig, nil)
+		var res, err = component.getSupportedLocales(ctx, realm)
+		assert.Nil(t, err)
+		assert.Nil(t, res)
+	})
+	t.Run("Internationalization disabled (false)", func(t *testing.T) {
+		var bFalse = false
+		realmConfig.InternationalizationEnabled = &bFalse
+		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
+		mocks.keycloakClient.EXPECT().GetRealm(accessToken, realm).Return(realmConfig, nil)
+		var res, err = component.getSupportedLocales(ctx, realm)
+		assert.Nil(t, err)
+		assert.Nil(t, res)
+	})
+	t.Run("Internationalization enabled", func(t *testing.T) {
+		var bTrue = true
+		realmConfig.InternationalizationEnabled = &bTrue
+		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
+		mocks.keycloakClient.EXPECT().GetRealm(accessToken, realm).Return(realmConfig, nil)
+		var res, err = component.getSupportedLocales(ctx, realm)
+		assert.Nil(t, err)
+		assert.Len(t, *res, 2)
+	})
+}
+
+func TestGetConfiguration(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
 
 	var ctx = context.TODO()
 	var confRealm = "test"
+	var accessToken = "acce-ssto-ken!"
+	var bTrue = true
+	var supportedLocales = []string{"fr", "en"}
+	var realmConfig = kc.RealmRepresentation{
+		InternationalizationEnabled: &bTrue,
+		SupportedLocales:            &supportedLocales,
+	}
+	var anyError = errors.New("any error")
 
-	t.Run("Retrieve configuration successfully", func(t *testing.T) {
-		mocks.configDB.EXPECT().GetConfigurations(gomock.Any(), gomock.Any()).Return(configuration.RealmConfiguration{}, configuration.RealmAdminConfiguration{}, nil)
-		var _, err = component.GetConfiguration(ctx, confRealm)
-		assert.Nil(t, err)
-	})
+	var mocks = createMocks(mockCtrl)
+	var component = mocks.createComponent()
 
-	t.Run("Retrieve configuration in DB fails", func(t *testing.T) {
+	t.Run("Get configuration from DB fails", func(t *testing.T) {
 		mocks.configDB.EXPECT().GetConfigurations(gomock.Any(), gomock.Any()).Return(configuration.RealmConfiguration{}, configuration.RealmAdminConfiguration{}, errors.New("GetConfiguration fails"))
 		var _, err = component.GetConfiguration(ctx, confRealm)
 		assert.NotNil(t, err)
+	})
+	t.Run("Get realm configuration from KC fails", func(t *testing.T) {
+		mocks.configDB.EXPECT().GetConfigurations(gomock.Any(), gomock.Any()).Return(configuration.RealmConfiguration{}, configuration.RealmAdminConfiguration{}, nil)
+		mocks.tokenProvider.EXPECT().ProvideToken(gomock.Any()).Return(accessToken, anyError)
+		var _, err = component.GetConfiguration(ctx, confRealm)
+		assert.Equal(t, anyError, err)
+	})
+
+	t.Run("Retrieve configuration successfully", func(t *testing.T) {
+		mocks.configDB.EXPECT().GetConfigurations(gomock.Any(), gomock.Any()).Return(configuration.RealmConfiguration{}, configuration.RealmAdminConfiguration{}, nil)
+		mocks.tokenProvider.EXPECT().ProvideToken(gomock.Any()).Return(accessToken, nil)
+		mocks.keycloakClient.EXPECT().GetRealm(accessToken, confRealm).Return(realmConfig, nil)
+		var _, err = component.GetConfiguration(ctx, confRealm)
+		assert.Nil(t, err)
 	})
 }

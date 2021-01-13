@@ -62,6 +62,7 @@ type Configuration struct {
 	AvailableChecks                   map[string]bool `json:"available-checks"`
 	BarcodeType                       *string         `json:"barcode_type"`
 	Theme                             *string         `json:"theme"`
+	SupportedLocales                  *[]string       `json:"supportedLocales,omitempty"`
 }
 
 // UpdatePasswordBody is the definition of the expected body content of UpdatePassword method

@@ -77,6 +77,27 @@ type component struct {
 	logger           internal.Logger
 }
 
+func (c *component) getSupportedLocales(ctx context.Context, realmName string) (*[]string, error) {
+	var accessToken string
+	var err error
+
+	// Get an OIDC token to be able to request Keycloak
+	if accessToken, err = c.tokenProvider.ProvideToken(ctx); err != nil {
+		c.logger.Warn(ctx, "msg", "Can't get OIDC token", "err", err.Error())
+		return nil, err
+	}
+
+	var realmConf kc.RealmRepresentation
+	if realmConf, err = c.keycloakClient.GetRealm(accessToken, realmName); err != nil {
+		c.logger.Warn(ctx, "msg", "Can't get realm configuration", "err", err.Error(), "realm", realmName)
+		return nil, err
+	}
+	if realmConf.InternationalizationEnabled != nil && *realmConf.InternationalizationEnabled {
+		return realmConf.SupportedLocales, nil
+	}
+	return nil, nil
+}
+
 func (c *component) GetConfiguration(ctx context.Context, realmName string) (apiregister.ConfigurationRepresentation, error) {
 	// Get Realm configuration from database
 	var realmConf, realmAdminConf, err = c.configDBModule.GetConfigurations(ctx, realmName)
@@ -85,10 +106,16 @@ func (c *component) GetConfiguration(ctx context.Context, realmName string) (api
 		return apiregister.ConfigurationRepresentation{}, err
 	}
 
+	var supportedLocales *[]string
+	if supportedLocales, err = c.getSupportedLocales(ctx, realmName); err != nil {
+		return apiregister.ConfigurationRepresentation{}, err
+	}
+
 	return apiregister.ConfigurationRepresentation{
 		RedirectCancelledRegistrationURL: realmConf.RedirectCancelledRegistrationURL,
 		Mode:                             realmAdminConf.Mode,
 		Theme:                            realmAdminConf.Theme,
+		SupportedLocales:                 supportedLocales,
 	}, nil
 }
 

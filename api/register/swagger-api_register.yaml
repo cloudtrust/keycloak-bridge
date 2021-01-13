@@ -136,6 +136,10 @@ components:
           description: is the register API used for corporate or social mode
         theme:
           type: string
+        supportedLocales:
+          type: array
+          items:
+            type: string
   securitySchemes:
     BasicAuth:
       type: http
