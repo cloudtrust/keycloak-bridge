@@ -10,6 +10,7 @@ import (
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 
 	"github.com/cloudtrust/common-service/configuration"
+	csjson "github.com/cloudtrust/common-service/json"
 	"github.com/cloudtrust/common-service/log"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	kc "github.com/cloudtrust/keycloak-client"
@@ -190,6 +191,48 @@ func TestConvertToKCUser(t *testing.T) {
 	var locale = "it"
 	user.Locale = &locale
 	assert.Equal(t, locale, (*ConvertToKCUser(user).Attributes)[constants.AttrbLocale][0])
+
+}
+
+func TestConvertUpdatableToKCUser(t *testing.T) {
+	var user UpdatableUserRepresentation
+
+	assert.Nil(t, ConvertUpdatableToKCUser(user).Attributes)
+
+	// Email
+	var email = "gerard@manjoue.ch"
+	user.Email = csjson.StringToOptional(email)
+	assert.Equal(t, email, *ConvertUpdatableToKCUser(user).Email)
+
+	// Phone number
+	var phoneNumber = "+4122555555"
+	user.PhoneNumber = csjson.StringToOptional(phoneNumber)
+	assert.Equal(t, phoneNumber, (*ConvertUpdatableToKCUser(user).Attributes)[constants.AttrbPhoneNumber][0])
+
+	// Label
+	var label = "a label"
+	user.Label = &label
+	assert.Equal(t, label, (*ConvertUpdatableToKCUser(user).Attributes)[constants.AttrbLabel][0])
+
+	// Gender
+	var gender = "a gender"
+	user.Gender = &gender
+	assert.Equal(t, gender, (*ConvertUpdatableToKCUser(user).Attributes)[constants.AttrbGender][0])
+
+	// Birthdate
+	var date = "25/12/0"
+	user.BirthDate = &date
+	assert.Equal(t, date, (*ConvertUpdatableToKCUser(user).Attributes)[constants.AttrbBirthDate][0])
+
+	// PhoneNumberVerified
+	var verified = true
+	user.PhoneNumberVerified = &verified
+	assert.Equal(t, "true", (*ConvertUpdatableToKCUser(user).Attributes)[constants.AttrbPhoneNumberVerified][0])
+
+	// Locale
+	var locale = "it"
+	user.Locale = &locale
+	assert.Equal(t, locale, (*ConvertUpdatableToKCUser(user).Attributes)[constants.AttrbLocale][0])
 
 }
 
@@ -492,6 +535,39 @@ func TestValidateUserRepresentation(t *testing.T) {
 	}
 }
 
+func TestValidateUpdatableUserRepresentation(t *testing.T) {
+	{
+		user := createValidUpdatableUserRepresentation()
+		assert.Nil(t, user.Validate())
+	}
+
+	groups := []string{"f467ed7c", "7767ed7c-0a1d-4eee-9bb8-669c6f89c007"}
+	roles := []string{"abcded7", "7767ed7c-0a1d-4eee-9bb8-669c6f898888"}
+	empty := ""
+
+	var users []UpdatableUserRepresentation
+	for i := 0; i < 12; i++ {
+		users = append(users, createValidUpdatableUserRepresentation())
+	}
+
+	users[0].ID = ptr("#12345")
+	users[1].Username = ptr("username!")
+	users[2].Email.Value = ptr("usernamcompany.com")
+	users[3].PhoneNumber.Value = ptr("415174234")
+	users[4].Label = ptr("")
+	users[5].Gender = ptr("Male")
+	users[6].BirthDate = ptr("1990-13-28")
+	users[7].Groups = &groups
+	users[8].Roles = &roles
+	users[9].Locale = ptr("english")
+	users[10].FirstName = &empty
+	users[11].LastName = &empty
+
+	for idx, user := range users {
+		assert.NotNil(t, user.Validate(), "Check is expected to be invalid. Test #%d failed", idx)
+	}
+}
+
 func TestValidateRoleRepresentation(t *testing.T) {
 	{
 		role := createValidRoleRepresentation()
@@ -677,6 +753,32 @@ func createValidUserRepresentation() UserRepresentation {
 	user.Enabled = &boolTrue
 	user.EmailVerified = &boolTrue
 	user.PhoneNumber = ptr("+415174234")
+	user.PhoneNumberVerified = &boolTrue
+	user.FirstName = ptr("Firstname")
+	user.LastName = ptr("Lastname")
+	user.Label = ptr("label")
+	user.Gender = ptr("F")
+	user.BirthDate = ptr("1990-12-28")
+	user.Groups = &groups
+	user.Roles = &roles
+	user.Locale = ptr("en")
+
+	return user
+}
+
+func createValidUpdatableUserRepresentation() UpdatableUserRepresentation {
+	var groups = []string{"f467ed7c-0a1d-4eee-9bb8-669c6f89c0ee", "7767ed7c-0a1d-4eee-9bb8-669c6f89c007"}
+	var roles = []string{"abcded7c-0a1d-4eee-9bb8-669c6f89c0ee", "7767ed7c-0a1d-4eee-9bb8-669c6f898888"}
+
+	boolTrue := true
+
+	var user = UpdatableUserRepresentation{}
+	user.ID = ptr("f467ed7c-0a1d-4eee-9bb8-669c6f89c0ee")
+	user.Username = ptr("username")
+	user.Email = csjson.StringToOptional("username@company.com")
+	user.Enabled = &boolTrue
+	user.EmailVerified = &boolTrue
+	user.PhoneNumber = csjson.StringToOptional("+415174234")
 	user.PhoneNumberVerified = &boolTrue
 	user.FirstName = ptr("Firstname")
 	user.LastName = ptr("Lastname")

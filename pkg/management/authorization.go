@@ -198,7 +198,7 @@ func (c *authorizationComponentMW) GetUser(ctx context.Context, realmName, userI
 	return c.next.GetUser(ctx, realmName, userID)
 }
 
-func (c *authorizationComponentMW) UpdateUser(ctx context.Context, realmName, userID string, user api.UserRepresentation) error {
+func (c *authorizationComponentMW) UpdateUser(ctx context.Context, realmName, userID string, user api.UpdatableUserRepresentation) error {
 	var action = MGMTUpdateUser.String()
 	var targetRealm = realmName
 

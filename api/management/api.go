@@ -8,6 +8,7 @@ import (
 
 	"github.com/cloudtrust/common-service/configuration"
 	errorhandler "github.com/cloudtrust/common-service/errors"
+	csjson "github.com/cloudtrust/common-service/json"
 	"github.com/cloudtrust/common-service/validation"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
@@ -25,6 +26,36 @@ type UserRepresentation struct {
 	Email                *string                        `json:"email,omitempty"`
 	EmailVerified        *bool                          `json:"emailVerified,omitempty"`
 	PhoneNumber          *string                        `json:"phoneNumber,omitempty"`
+	PhoneNumberVerified  *bool                          `json:"phoneNumberVerified,omitempty"`
+	BirthDate            *string                        `json:"birthDate,omitempty"`
+	BirthLocation        *string                        `json:"birthLocation,omitempty"`
+	Nationality          *string                        `json:"nationality,omitempty"`
+	IDDocumentType       *string                        `json:"idDocumentType,omitempty"`
+	IDDocumentNumber     *string                        `json:"idDocumentNumber,omitempty"`
+	IDDocumentExpiration *string                        `json:"idDocumentExpiration,omitempty"`
+	IDDocumentCountry    *string                        `json:"idDocumentCountry,omitempty"`
+	Groups               *[]string                      `json:"groups,omitempty"`
+	TrustIDGroups        *[]string                      `json:"trustIdGroups,omitempty"`
+	Roles                *[]string                      `json:"roles,omitempty"`
+	Locale               *string                        `json:"locale,omitempty"`
+	SmsSent              *int                           `json:"smsSent,omitempty"`
+	SmsAttempts          *int                           `json:"smsAttempts,omitempty"`
+	Enabled              *bool                          `json:"enabled,omitempty"`
+	Label                *string                        `json:"label,omitempty"`
+	Accreditations       *[]AccreditationRepresentation `json:"accreditations,omitempty"`
+	CreatedTimestamp     *int64                         `json:"createdTimestamp,omitempty"`
+}
+
+// UpdatableUserRepresentation struct
+type UpdatableUserRepresentation struct {
+	ID                   *string                        `json:"id,omitempty"`
+	Username             *string                        `json:"username,omitempty"`
+	Gender               *string                        `json:"gender,omitempty"`
+	FirstName            *string                        `json:"firstName,omitempty"`
+	LastName             *string                        `json:"lastName,omitempty"`
+	Email                csjson.OptionalString          `json:"email,omitempty"`
+	EmailVerified        *bool                          `json:"emailVerified,omitempty"`
+	PhoneNumber          csjson.OptionalString          `json:"phoneNumber,omitempty"`
 	PhoneNumberVerified  *bool                          `json:"phoneNumberVerified,omitempty"`
 	BirthDate            *string                        `json:"birthDate,omitempty"`
 	BirthLocation        *string                        `json:"birthLocation,omitempty"`
@@ -374,6 +405,40 @@ func ConvertToKCUser(user UserRepresentation) kc.UserRepresentation {
 	return userRep
 }
 
+// ConvertUpdatableToKCUser creates a KC user representation from an API user
+func ConvertUpdatableToKCUser(user UpdatableUserRepresentation) kc.UserRepresentation {
+	var userRep kc.UserRepresentation
+
+	userRep.Username = user.Username
+	if user.Email.Defined {
+		// empty string to remove an email
+		userRep.Email = user.Email.ToValue("")
+	}
+	userRep.Enabled = user.Enabled
+	userRep.EmailVerified = user.EmailVerified
+	userRep.FirstName = user.FirstName
+	userRep.LastName = user.LastName
+	userRep.Groups = user.Groups
+	userRep.RealmRoles = user.Roles
+
+	var attributes = make(kc.Attributes)
+
+	if user.PhoneNumber.Defined {
+		attributes.SetStringWhenNotNil(constants.AttrbPhoneNumber, user.PhoneNumber.Value)
+	}
+	attributes.SetBoolWhenNotNil(constants.AttrbPhoneNumberVerified, user.PhoneNumberVerified)
+	attributes.SetStringWhenNotNil(constants.AttrbLabel, user.Label)
+	attributes.SetStringWhenNotNil(constants.AttrbGender, user.Gender)
+	attributes.SetDateWhenNotNil(constants.AttrbBirthDate, user.BirthDate, constants.SupportedDateLayouts)
+	attributes.SetStringWhenNotNil(constants.AttrbLocale, user.Locale)
+
+	if len(attributes) > 0 {
+		userRep.Attributes = &attributes
+	}
+
+	return userRep
+}
+
 // ConvertToKCGroup creates a KC group representation from an API group
 func ConvertToKCGroup(group GroupRepresentation) kc.GroupRepresentation {
 	return kc.GroupRepresentation{
@@ -616,6 +681,46 @@ func (user UserRepresentation) Validate() error {
 		ValidateParameterDateMultipleLayout(constants.IDDocumentExpiration, user.IDDocumentExpiration, constants.SupportedDateLayouts, false).
 		ValidateParameterRegExp(constants.IDDocumentCountry, user.IDDocumentCountry, constants.RegExpCountryCode, false)
 
+	if user.Groups != nil {
+		for _, groupID := range *(user.Groups) {
+			v = v.ValidateParameterRegExp(constants.GroupID, &groupID, constants.RegExpID, true)
+		}
+	}
+
+	if user.Roles != nil {
+		for _, roleID := range *(user.Roles) {
+			v = v.ValidateParameterRegExp(constants.RoleID, &roleID, constants.RegExpID, true)
+		}
+	}
+
+	return v.Status()
+}
+
+// Validate is a validator for UpdatableUserRepresentation
+func (user UpdatableUserRepresentation) Validate() error {
+	var v = validation.NewParameterValidator().
+		ValidateParameterRegExp(constants.UserID, user.ID, constants.RegExpID, false).
+		ValidateParameterRegExp(constants.Username, user.Username, constants.RegExpUsername, false).
+		ValidateParameterRegExp(constants.Firstname, user.FirstName, constants.RegExpFirstName, false).
+		ValidateParameterRegExp(constants.Lastname, user.LastName, constants.RegExpLastName, false).
+		ValidateParameterRegExp(constants.Label, user.Label, constants.RegExpLabel, false).
+		ValidateParameterRegExp(constants.Gender, user.Gender, constants.RegExpGender, false).
+		ValidateParameterDateMultipleLayout(constants.Birthdate, user.BirthDate, constants.SupportedDateLayouts, false).
+		ValidateParameterRegExp(constants.BirthLocation, user.BirthLocation, constants.RegExpNameSpecialChars, false).
+		ValidateParameterRegExp(constants.Nationality, user.Nationality, constants.RegExpCountryCode, false).
+		ValidateParameterRegExp(constants.Locale, user.Locale, constants.RegExpLocale, false).
+		ValidateParameterIn(constants.IDDocumentType, user.IDDocumentType, constants.AllowedDocumentTypes, false).
+		ValidateParameterRegExp(constants.IDDocumentNumber, user.IDDocumentNumber, constants.RegExpIDDocumentNumber, false).
+		ValidateParameterLength(constants.IDDocumentNumber, user.IDDocumentNumber, 1, 50, false).
+		ValidateParameterDateMultipleLayout(constants.IDDocumentExpiration, user.IDDocumentExpiration, constants.SupportedDateLayouts, false).
+		ValidateParameterRegExp(constants.IDDocumentCountry, user.IDDocumentCountry, constants.RegExpCountryCode, false)
+
+	if user.Email.Defined && user.Email.Value != nil {
+		v = v.ValidateParameterRegExp(constants.Email, user.Email.Value, constants.RegExpEmail, false)
+	}
+	if user.PhoneNumber.Defined && user.PhoneNumber.Value != nil {
+		v = v.ValidateParameterRegExp(constants.PhoneNumber, user.PhoneNumber.Value, constants.RegExpPhoneNumber, false)
+	}
 	if user.Groups != nil {
 		for _, groupID := range *(user.Groups) {
 			v = v.ValidateParameterRegExp(constants.GroupID, &groupID, constants.RegExpID, true)
