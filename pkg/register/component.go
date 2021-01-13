@@ -20,6 +20,7 @@ import (
 
 // KeycloakClient are methods from keycloak-client used by this component
 type KeycloakClient interface {
+	GetRealm(accessToken string, realmName string) (kc.RealmRepresentation, error)
 	CreateUser(accessToken string, realmName string, targetRealmName string, user kc.UserRepresentation) (string, error)
 	UpdateUser(accessToken string, realmName, userID string, user kc.UserRepresentation) error
 	DeleteUser(accessToken string, realmName, userID string) error
@@ -116,10 +117,8 @@ func (c *component) RegisterUser(ctx context.Context, targetRealmName string, cu
 		return "", errorhandler.CreateEndpointNotEnabled(constants.MsgErrNotConfigured)
 	}
 
-	// Search user by email
-	kcUser, err := c.getUserByEmail(ctx, accessToken, targetRealmName, *user.Email)
+	kcUser, err := c.getUserByEmailIfDuplicateNotAllowed(ctx, accessToken, targetRealmName, *user.Email)
 	if err != nil {
-		c.logger.Info(ctx, "msg", "Can't check if user already exist in database", "err", err.Error())
 		return "", err
 	}
 
@@ -215,7 +214,18 @@ func (c *component) createUser(ctx context.Context, accessToken string, realmNam
 	return *kcUser.ID, *kcUser.Username, nil
 }
 
-func (c *component) getUserByEmail(ctx context.Context, accessToken string, realmName string, email string) (*kc.UserRepresentation, error) {
+func (c *component) getUserByEmailIfDuplicateNotAllowed(ctx context.Context, accessToken string, realmName string, email string) (*kc.UserRepresentation, error) {
+	var kcRealm, err = c.keycloakClient.GetRealm(accessToken, realmName)
+	if err != nil {
+		c.logger.Info(ctx, "msg", "Can't get realm from Keycloak", "err", err.Error(), "realm", realmName)
+		return nil, err
+	}
+
+	if kcRealm.DuplicateEmailsAllowed != nil && *kcRealm.DuplicateEmailsAllowed {
+		// Duplicate email is allowed in the realm... don't need to check if email is already in use
+		return nil, nil
+	}
+
 	kcUsers, err := c.keycloakClient.GetUsers(accessToken, realmName, realmName, "email", email)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Can't get user from keycloak", "err", err.Error())
