@@ -134,6 +134,8 @@ components:
         mode:
           type: string
           description: is the register API used for corporate or social mode
+        theme:
+          type: string
   securitySchemes:
     BasicAuth:
       type: http
