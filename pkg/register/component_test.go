@@ -376,7 +376,7 @@ func TestRegisterUser(t *testing.T) {
 
 		var onboardingRedirectURI = onboardingURI + "?customerRealm=" + customerRealmName
 		mocks.onboardingModule.EXPECT().SendOnboardingEmail(ctx, accessToken, targetRealmName, kcID,
-			gomock.Any(), autoLoginToken, clientID, onboardingRedirectURI).Return(errors.New("unexpected error"))
+			gomock.Any(), autoLoginToken, clientID, onboardingRedirectURI, false).Return(errors.New("unexpected error"))
 
 		var _, err = component.RegisterUser(ctx, targetRealmName, customerRealmName, user)
 		assert.NotNil(t, err)
@@ -396,7 +396,7 @@ func TestRegisterUser(t *testing.T) {
 
 		var onboardingRedirectURI = onboardingURI + "?customerRealm=" + customerRealmName
 		mocks.onboardingModule.EXPECT().SendOnboardingEmail(ctx, accessToken, targetRealmName, kcID,
-			gomock.Any(), autoLoginToken, clientID, onboardingRedirectURI).Return(nil)
+			gomock.Any(), autoLoginToken, clientID, onboardingRedirectURI, false).Return(nil)
 
 		mocks.eventsDB.EXPECT().ReportEvent(ctx, "REGISTER_USER", "back-office", database.CtEventRealmName, targetRealmName,
 			database.CtEventUserID, kcID, database.CtEventUsername, gomock.Any()).Return(nil)
@@ -419,7 +419,7 @@ func TestRegisterUser(t *testing.T) {
 
 		var onboardingRedirectURI = onboardingURI + "?customerRealm=" + customerRealmName
 		mocks.onboardingModule.EXPECT().SendOnboardingEmail(ctx, accessToken, targetRealmName, kcID,
-			gomock.Any(), autoLoginToken, clientID, onboardingRedirectURI).Return(nil)
+			gomock.Any(), autoLoginToken, clientID, onboardingRedirectURI, false).Return(nil)
 
 		var _, err = component.RegisterUser(ctx, targetRealmName, customerRealmName, user)
 		assert.Nil(t, err)

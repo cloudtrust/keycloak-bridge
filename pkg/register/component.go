@@ -40,7 +40,7 @@ type OnboardingModule interface {
 	GenerateAuthToken() (keycloakb.TrustIDAuthToken, error)
 	OnboardingAlreadyCompleted(kc.UserRepresentation) (bool, error)
 	SendOnboardingEmail(ctx context.Context, accessToken string, realmName string, userID string,
-		username string, autoLoginToken keycloakb.TrustIDAuthToken, onboardingClientID string, onboardingRedirectURI string) error
+		username string, autoLoginToken keycloakb.TrustIDAuthToken, onboardingClientID string, onboardingRedirectURI string, reminder bool) error
 	CreateUser(ctx context.Context, accessToken, realmName, targetRealmName string, kcUser *kc.UserRepresentation) (string, error)
 }
 
@@ -192,7 +192,7 @@ func (c *component) RegisterUser(ctx context.Context, targetRealmName string, cu
 	}
 
 	err = c.onboardingModule.SendOnboardingEmail(ctx, accessToken, targetRealmName, userID,
-		username, autoLoginToken, *realmConf.OnboardingClientID, onboardingRedirectURI)
+		username, autoLoginToken, *realmConf.OnboardingClientID, onboardingRedirectURI, false)
 	if err != nil {
 		return "", err
 	}

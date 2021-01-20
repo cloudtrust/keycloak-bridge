@@ -46,8 +46,8 @@ type OnboardingKeycloakClient interface {
 type OnboardingModule interface {
 	GenerateAuthToken() (TrustIDAuthToken, error)
 	OnboardingAlreadyCompleted(kc.UserRepresentation) (bool, error)
-	SendOnboardingEmail(ctx context.Context, accessToken string, realmName string, userID string,
-		username string, autoLoginToken TrustIDAuthToken, onboardingClientID string, onboardingRedirectURI string) error
+	SendOnboardingEmail(ctx context.Context, accessToken string, realmName string, userID string, username string,
+		autoLoginToken TrustIDAuthToken, onboardingClientID string, onboardingRedirectURI string, reminder bool) error
 	CreateUser(ctx context.Context, accessToken, realmName, targetRealmName string, kcUser *kc.UserRepresentation) (string, error)
 }
 
@@ -85,7 +85,7 @@ func (om *onboardingModule) OnboardingAlreadyCompleted(kcUser kc.UserRepresentat
 }
 
 func (om *onboardingModule) SendOnboardingEmail(ctx context.Context, accessToken string, realmName string, userID string,
-	username string, autoLoginToken TrustIDAuthToken, onboardingClientID string, onboardingRedirectURI string) error {
+	username string, autoLoginToken TrustIDAuthToken, onboardingClientID string, onboardingRedirectURI string, reminder bool) error {
 
 	redirectURL, err := url.Parse(om.keycloakURL + "/auth/realms/" + realmName + "/protocol/openid-connect/auth")
 	if err != nil {
@@ -103,7 +103,11 @@ func (om *onboardingModule) SendOnboardingEmail(ctx context.Context, accessToken
 
 	redirectURL.RawQuery = parameters.Encode()
 
-	err = om.keycloakClient.ExecuteActionsEmail(accessToken, realmName, userID, []string{"VERIFY_EMAIL"}, "client_id", onboardingClientID, "redirect_uri", redirectURL.String())
+	var actions = []string{"VERIFY_EMAIL"}
+	if reminder {
+		actions = []string{"VERIFY_EMAIL", "reminder-action"}
+	}
+	err = om.keycloakClient.ExecuteActionsEmail(accessToken, realmName, userID, actions, "client_id", onboardingClientID, "redirect_uri", redirectURL.String())
 	if err != nil {
 		om.logger.Warn(ctx, "msg", "ExecuteActionsEmail failed", "err", err.Error())
 		return err

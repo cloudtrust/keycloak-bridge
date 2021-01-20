@@ -800,6 +800,11 @@ paths:
         required: true
         schema:
           type: string
+      - name: reminder
+        in: query
+        required: false
+        schema:
+          type: boolean
       responses:
         200:
           description: Onboarding email sent

@@ -444,8 +444,12 @@ func MakeSendSmsCodeEndpoint(component Component) cs.Endpoint {
 func MakeSendOnboardingEmailEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
+		var reminder = false
+		if value, ok := m[prmQryReminder]; ok {
+			reminder = strings.ToLower(value) == "true"
+		}
 
-		return nil, component.SendOnboardingEmail(ctx, m[prmRealm], m[prmUserID])
+		return nil, component.SendOnboardingEmail(ctx, m[prmRealm], m[prmUserID], reminder)
 	}
 }
 
