@@ -793,15 +793,17 @@ func main() {
 		// module for archiving users
 		var archiveDBModule = keycloakb.NewArchiveDBModule(archiveRwDBConn, archiveAesEncryption, kycLogger)
 
+		// config
+		var configurationReaderDBModule = configuration.NewConfigurationReaderDBModule(configurationRoDBConn, kycLogger)
+
 		// accreditations module
 		var accredsModule keycloakb.AccreditationsModule
 		{
-			var configurationReaderDBModule = configuration.NewConfigurationReaderDBModule(configurationRoDBConn, kycLogger)
 			accredsModule = keycloakb.NewAccreditationsModule(keycloakClient, configurationReaderDBModule, kycLogger)
 		}
 
 		// new module for KYC service
-		kycComponent := kyc.NewComponent(technicalTokenProvider, registerRealm, keycloakClient, usersDBModule, archiveDBModule, eventsDBModule, accredsModule, kycLogger)
+		kycComponent := kyc.NewComponent(technicalTokenProvider, registerRealm, keycloakClient, usersDBModule, archiveDBModule, configurationReaderDBModule, eventsDBModule, accredsModule, kycLogger)
 		kycComponent = kyc.MakeAuthorizationRegisterComponentMW(registerRealm, authorizationManager, endpointPhysicalCheckAvailabilityChecker, log.With(kycLogger, "mw", "endpoint"))(kycComponent)
 
 		var rateLimitKyc = rateLimit[RateKeyKYC]
@@ -816,9 +818,9 @@ func main() {
 
 	// Export configuration
 	var exportModule = export.NewModule(keycloakClient, logger)
-	var cfgStorageModue = export.NewConfigStorageModule(eventsDBConn)
+	var cfgStorageModule = export.NewConfigStorageModule(eventsDBConn)
 
-	var exportComponent = export.NewComponent(keycloakb.ComponentName, keycloakb.Version, logger, exportModule, cfgStorageModue)
+	var exportComponent = export.NewComponent(keycloakb.ComponentName, keycloakb.Version, logger, exportModule, cfgStorageModule)
 	var exportEndpoint = export.MakeExportEndpoint(exportComponent)
 	var exportSaveAndExportEndpoint = export.MakeStoreAndExportEndpoint(exportComponent)
 

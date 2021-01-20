@@ -18,7 +18,7 @@
   version = "2020.09.22"
 
 [[projects]]
-  digest = "1:a38335e9e060140a567cc82671604d07e9106d910a3e352c563e8e8fbaa3a402"
+  digest = "1:615178aa3bec77072f3b537b643efddee0378241f65d17c0c389130264a1a42d"
   name = "github.com/cloudtrust/common-service"
   packages = [
     ".",
@@ -39,11 +39,11 @@
     "validation",
   ]
   pruneopts = "UT"
-  revision = "0da35eaf6d16a949088ce7f68ac7ae43a3015847"
-  version = "v2.3.2"
+  revision = "aba70a4bc1c79340b74fc21c45a2976d3d9d67ae"
+  version = "v2.3.3"
 
 [[projects]]
-  digest = "1:7f1b39bd47e939ff0236811176bdbde0b4b176c77da3b41335c1fe7ffc5a0eb1"
+  digest = "1:e528a8b9640bd866d1b45647149781f073de44b816bec9a96e60537dd4001fcc"
   name = "github.com/cloudtrust/keycloak-client"
   packages = [
     ".",
@@ -51,8 +51,8 @@
     "toolbox",
   ]
   pruneopts = "UT"
-  revision = "e8eb0b8e95926793a6fb71a3214c61d0b0b41783"
-  version = "v2.3.2"
+  revision = "86c27ab48d6142211959b66d09686c4dbfcd9add"
+  version = "v2.3.3"
 
 [[projects]]
   digest = "1:910c5b111ca13127693df80a59be2c952ad97313626116c0c9895e7b588f2a29"
@@ -212,12 +212,12 @@
   version = "v1.4.1"
 
 [[projects]]
-  digest = "1:ad22074a9493a27b11ae6d9250c1555c72427d578163a8da3c60ec55702a95ec"
+  digest = "1:bb54c4810fdcbbd8e2bebf8fa0dffaebcff0b6d7be9ad75b19a6b71f4f9b1f81"
   name = "github.com/nyaruka/phonenumbers"
   packages = ["."]
   pruneopts = "UT"
-  revision = "5cebec5f23b923a5ffab981e9b1922fa650497b1"
-  version = "v1.0.60"
+  revision = "7144e2356d0595264ed6fa9a220c30d5c9dbe5ee"
+  version = "v1.0.61"
 
 [[projects]]
   digest = "1:86fbd18c1942728ab9cebc391bfe31266a27e2d2a0cf05c3bce8fc605e5f44c2"
@@ -399,7 +399,7 @@
     "publicsuffix",
   ]
   pruneopts = "UT"
-  revision = "6772e930b67bb09bf22262c7378e7d2f67cf59d1"
+  revision = "5f4716e94777e714bc2fb3e3a44599cb40817aac"
 
 [[projects]]
   branch = "master"
@@ -410,18 +410,18 @@
     "internal",
   ]
   pruneopts = "UT"
-  revision = "01de73cf58bdca33ccc181d1bd6d63ebcf21ccca"
+  revision = "d3ed898aa8a312e7e3290a8ac5a123149de68011"
 
 [[projects]]
   branch = "master"
-  digest = "1:b25738f88d091ff5af31ed3735122a2cb07ec07adca0785b226fe0e86019e40f"
+  digest = "1:cc16b8d9edce3c401e6e9c03e99a82c9747f10691c9a3c0d8bd31fa4a61d4230"
   name = "golang.org/x/sys"
   packages = [
     "internal/unsafeheader",
     "unix",
   ]
   pruneopts = "UT"
-  revision = "eaf3bda374d2a980e9df5f177688797b217716b9"
+  revision = "04d7465088b8adeccf882a9ae1e0423323c7bd9d"
 
 [[projects]]
   digest = "1:33168e887aff0e3eae823593f38433f28928104925e54a6252937e6e3939f904"

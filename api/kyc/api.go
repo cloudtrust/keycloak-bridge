@@ -199,8 +199,6 @@ func (u *UserRepresentation) Validate() error {
 		ValidateParameterRegExp(prmUserGender, u.Gender, regExpGender, true).
 		ValidateParameterRegExp(prmUserFirstName, u.FirstName, regExpFirstName, true).
 		ValidateParameterRegExp(prmUserLastName, u.LastName, regExpLastName, true).
-		ValidateParameterRegExp(prmUserEmail, u.Email, regExpEmail, true).
-		ValidateParameterPhoneNumber(prmUserPhoneNumber, u.PhoneNumber, true).
 		ValidateParameterDate(prmUserBirthDate, u.BirthDate, dateLayout, true).
 		ValidateParameterRegExp(prmUserBirthLocation, u.BirthLocation, regExpBirthLocation, false).
 		ValidateParameterRegExp(prmUserNationality, u.Nationality, regExpNationality, false).
