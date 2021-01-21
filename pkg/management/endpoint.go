@@ -449,7 +449,12 @@ func MakeSendOnboardingEmailEndpoint(component Component) cs.Endpoint {
 			reminder = strings.ToLower(value) == "true"
 		}
 
-		return nil, component.SendOnboardingEmail(ctx, m[prmRealm], m[prmUserID], reminder)
+		var customerRealmName = m[prmRealm]
+		if value, ok := m[prmQryRealm]; ok && value != "" {
+			customerRealmName = value
+		}
+
+		return nil, component.SendOnboardingEmail(ctx, m[prmRealm], m[prmUserID], customerRealmName, reminder)
 	}
 }
 

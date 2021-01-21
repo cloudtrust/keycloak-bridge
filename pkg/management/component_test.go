@@ -2497,6 +2497,7 @@ func TestSendOnboardingEmail(t *testing.T) {
 	}
 	var accessToken = "TOKEN=="
 	var realmName = "master"
+	var customerRealmName = "customer"
 	var userID = "1245-7854-8963"
 	var username = "username"
 	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
@@ -2505,34 +2506,34 @@ func TestSendOnboardingEmail(t *testing.T) {
 	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
 
 	t.Run("Fails to retrieve realm configuration", func(t *testing.T) {
-		mocks.configurationDBModule.EXPECT().GetConfiguration(ctx, realmName).Return(configuration.RealmConfiguration{}, errors.New("unexpected error"))
+		mocks.configurationDBModule.EXPECT().GetConfiguration(ctx, customerRealmName).Return(configuration.RealmConfiguration{}, errors.New("unexpected error"))
 
-		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, false)
+		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, customerRealmName, false)
 		assert.NotNil(t, err)
 	})
 
 	t.Run("Configuration is missing", func(t *testing.T) {
-		mocks.configurationDBModule.EXPECT().GetConfiguration(ctx, realmName).Return(configuration.RealmConfiguration{
+		mocks.configurationDBModule.EXPECT().GetConfiguration(ctx, customerRealmName).Return(configuration.RealmConfiguration{
 			OnboardingRedirectURI: &onboardingRedirectURI,
 		}, nil)
 
-		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, false)
+		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, customerRealmName, false)
 		assert.NotNil(t, err)
 	})
 
 	t.Run("Fails to retrieve user in KC", func(t *testing.T) {
-		mocks.configurationDBModule.EXPECT().GetConfiguration(ctx, realmName).Return(configuration.RealmConfiguration{
+		mocks.configurationDBModule.EXPECT().GetConfiguration(ctx, customerRealmName).Return(configuration.RealmConfiguration{
 			OnboardingRedirectURI: &onboardingRedirectURI,
 			OnboardingClientID:    &onboardingClientID,
 		}, nil)
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(kc.UserRepresentation{}, errors.New("unexpected error"))
 
-		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, false)
+		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, customerRealmName, false)
 		assert.NotNil(t, err)
 	})
 
 	t.Run("User with invalid onboardingCOmpleted attribute", func(t *testing.T) {
-		mocks.configurationDBModule.EXPECT().GetConfiguration(ctx, realmName).Return(configuration.RealmConfiguration{
+		mocks.configurationDBModule.EXPECT().GetConfiguration(ctx, customerRealmName).Return(configuration.RealmConfiguration{
 			OnboardingRedirectURI: &onboardingRedirectURI,
 			OnboardingClientID:    &onboardingClientID,
 		}, nil)
@@ -2546,12 +2547,12 @@ func TestSendOnboardingEmail(t *testing.T) {
 		}, nil)
 		mocks.onboardingModule.EXPECT().OnboardingAlreadyCompleted(gomock.Any()).Return(false, errors.New("unexpected error"))
 
-		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, false)
+		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, customerRealmName, false)
 		assert.NotNil(t, err)
 	})
 
 	t.Run("User already onboarded", func(t *testing.T) {
-		mocks.configurationDBModule.EXPECT().GetConfiguration(ctx, realmName).Return(configuration.RealmConfiguration{
+		mocks.configurationDBModule.EXPECT().GetConfiguration(ctx, customerRealmName).Return(configuration.RealmConfiguration{
 			OnboardingRedirectURI: &onboardingRedirectURI,
 			OnboardingClientID:    &onboardingClientID,
 		}, nil)
@@ -2565,12 +2566,12 @@ func TestSendOnboardingEmail(t *testing.T) {
 		}, nil)
 		mocks.onboardingModule.EXPECT().OnboardingAlreadyCompleted(gomock.Any()).Return(true, nil)
 
-		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, false)
+		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, customerRealmName, false)
 		assert.NotNil(t, err)
 	})
 
 	t.Run("Failure to generate auto login token", func(t *testing.T) {
-		mocks.configurationDBModule.EXPECT().GetConfiguration(ctx, realmName).Return(configuration.RealmConfiguration{
+		mocks.configurationDBModule.EXPECT().GetConfiguration(ctx, customerRealmName).Return(configuration.RealmConfiguration{
 			OnboardingRedirectURI: &onboardingRedirectURI,
 			OnboardingClientID:    &onboardingClientID,
 		}, nil)
@@ -2583,12 +2584,12 @@ func TestSendOnboardingEmail(t *testing.T) {
 		mocks.onboardingModule.EXPECT().OnboardingAlreadyCompleted(gomock.Any()).Return(false, nil)
 		mocks.onboardingModule.EXPECT().GenerateAuthToken().Return(keycloakb.TrustIDAuthToken{}, errors.New("unexpected error"))
 
-		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, false)
+		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, customerRealmName, false)
 		assert.NotNil(t, err)
 	})
 
 	t.Run("Failure to persists auto login token", func(t *testing.T) {
-		mocks.configurationDBModule.EXPECT().GetConfiguration(ctx, realmName).Return(configuration.RealmConfiguration{
+		mocks.configurationDBModule.EXPECT().GetConfiguration(ctx, customerRealmName).Return(configuration.RealmConfiguration{
 			OnboardingRedirectURI: &onboardingRedirectURI,
 			OnboardingClientID:    &onboardingClientID,
 		}, nil)
@@ -2610,12 +2611,12 @@ func TestSendOnboardingEmail(t *testing.T) {
 				return errors.New("unexpected error")
 			})
 
-		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, false)
+		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, customerRealmName, false)
 		assert.NotNil(t, err)
 	})
 
 	t.Run("Failure to send mail", func(t *testing.T) {
-		mocks.configurationDBModule.EXPECT().GetConfiguration(ctx, realmName).Return(configuration.RealmConfiguration{
+		mocks.configurationDBModule.EXPECT().GetConfiguration(ctx, customerRealmName).Return(configuration.RealmConfiguration{
 			OnboardingRedirectURI: &onboardingRedirectURI,
 			OnboardingClientID:    &onboardingClientID,
 		}, nil)
@@ -2638,9 +2639,9 @@ func TestSendOnboardingEmail(t *testing.T) {
 			})
 
 		mocks.onboardingModule.EXPECT().SendOnboardingEmail(ctx, accessToken, realmName, userID, username,
-			autoLoginToken, onboardingClientID, onboardingRedirectURI, true).Return(errors.New("unexpected error"))
+			autoLoginToken, onboardingClientID, onboardingRedirectURI+"?customerRealm="+customerRealmName, true).Return(errors.New("unexpected error"))
 
-		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, true)
+		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, customerRealmName, true)
 		assert.NotNil(t, err)
 	})
 
@@ -2671,7 +2672,7 @@ func TestSendOnboardingEmail(t *testing.T) {
 
 		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "EMAIL_ONBOARDING_SENT", "back-office", database.CtEventRealmName, realmName, database.CtEventUserID, userID).Return(nil)
 
-		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, false)
+		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, realmName, false)
 		assert.Nil(t, err)
 	})
 

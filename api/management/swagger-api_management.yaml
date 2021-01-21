@@ -805,6 +805,12 @@ paths:
         required: false
         schema:
           type: boolean
+      - name: customerRealm
+        in: query
+        description: Customer realm name
+        required: false
+        schema:
+          type: string
       responses:
         200:
           description: Onboarding email sent

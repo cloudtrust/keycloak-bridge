@@ -30,6 +30,7 @@ func TestDeny(t *testing.T) {
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
+	var customerRealm = "customer"
 	var groups = []string{"toe"}
 
 	var userID = "123-456-789"
@@ -198,7 +199,7 @@ func TestDeny(t *testing.T) {
 		_, err = authorizationMW.SendSmsCode(ctx, realmName, userID)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
-		err = authorizationMW.SendOnboardingEmail(ctx, realmName, userID, false)
+		err = authorizationMW.SendOnboardingEmail(ctx, realmName, userID, customerRealm, false)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
 		err = authorizationMW.SendReminderEmail(ctx, realmName, userID)
@@ -294,6 +295,7 @@ func TestAllowed(t *testing.T) {
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
+	var customerRealm = "customer"
 	var groups = []string{"toe"}
 
 	var userID = "123-456-789"
@@ -491,8 +493,8 @@ func TestAllowed(t *testing.T) {
 		_, err = authorizationMW.SendSmsCode(ctx, realmName, userID)
 		assert.Nil(t, err)
 
-		mockManagementComponent.EXPECT().SendOnboardingEmail(ctx, realmName, userID, false).Return(nil)
-		err = authorizationMW.SendOnboardingEmail(ctx, realmName, userID, false)
+		mockManagementComponent.EXPECT().SendOnboardingEmail(ctx, realmName, userID, customerRealm, false).Return(nil)
+		err = authorizationMW.SendOnboardingEmail(ctx, realmName, userID, customerRealm, false)
 		assert.Nil(t, err)
 
 		mockManagementComponent.EXPECT().SendReminderEmail(ctx, realmName, userID).Return(nil)
