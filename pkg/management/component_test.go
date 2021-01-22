@@ -2507,7 +2507,7 @@ func TestSendOnboardingEmail(t *testing.T) {
 	t.Run("Fails to retrieve realm configuration", func(t *testing.T) {
 		mocks.configurationDBModule.EXPECT().GetConfiguration(ctx, realmName).Return(configuration.RealmConfiguration{}, errors.New("unexpected error"))
 
-		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID)
+		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, false)
 		assert.NotNil(t, err)
 	})
 
@@ -2516,7 +2516,7 @@ func TestSendOnboardingEmail(t *testing.T) {
 			OnboardingRedirectURI: &onboardingRedirectURI,
 		}, nil)
 
-		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID)
+		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, false)
 		assert.NotNil(t, err)
 	})
 
@@ -2527,7 +2527,7 @@ func TestSendOnboardingEmail(t *testing.T) {
 		}, nil)
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(kc.UserRepresentation{}, errors.New("unexpected error"))
 
-		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID)
+		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, false)
 		assert.NotNil(t, err)
 	})
 
@@ -2546,7 +2546,7 @@ func TestSendOnboardingEmail(t *testing.T) {
 		}, nil)
 		mocks.onboardingModule.EXPECT().OnboardingAlreadyCompleted(gomock.Any()).Return(false, errors.New("unexpected error"))
 
-		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID)
+		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, false)
 		assert.NotNil(t, err)
 	})
 
@@ -2565,7 +2565,7 @@ func TestSendOnboardingEmail(t *testing.T) {
 		}, nil)
 		mocks.onboardingModule.EXPECT().OnboardingAlreadyCompleted(gomock.Any()).Return(true, nil)
 
-		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID)
+		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, false)
 		assert.NotNil(t, err)
 	})
 
@@ -2583,7 +2583,7 @@ func TestSendOnboardingEmail(t *testing.T) {
 		mocks.onboardingModule.EXPECT().OnboardingAlreadyCompleted(gomock.Any()).Return(false, nil)
 		mocks.onboardingModule.EXPECT().GenerateAuthToken().Return(keycloakb.TrustIDAuthToken{}, errors.New("unexpected error"))
 
-		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID)
+		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, false)
 		assert.NotNil(t, err)
 	})
 
@@ -2610,7 +2610,7 @@ func TestSendOnboardingEmail(t *testing.T) {
 				return errors.New("unexpected error")
 			})
 
-		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID)
+		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, false)
 		assert.NotNil(t, err)
 	})
 
@@ -2638,9 +2638,9 @@ func TestSendOnboardingEmail(t *testing.T) {
 			})
 
 		mocks.onboardingModule.EXPECT().SendOnboardingEmail(ctx, accessToken, realmName, userID, username,
-			autoLoginToken, onboardingClientID, onboardingRedirectURI).Return(errors.New("unexpected error"))
+			autoLoginToken, onboardingClientID, onboardingRedirectURI, true).Return(errors.New("unexpected error"))
 
-		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID)
+		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, true)
 		assert.NotNil(t, err)
 	})
 
@@ -2667,11 +2667,11 @@ func TestSendOnboardingEmail(t *testing.T) {
 				return nil
 			})
 
-		mocks.onboardingModule.EXPECT().SendOnboardingEmail(ctx, accessToken, realmName, userID, username, autoLoginToken, onboardingClientID, onboardingRedirectURI).Return(nil)
+		mocks.onboardingModule.EXPECT().SendOnboardingEmail(ctx, accessToken, realmName, userID, username, autoLoginToken, onboardingClientID, onboardingRedirectURI, false).Return(nil)
 
 		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "EMAIL_ONBOARDING_SENT", "back-office", database.CtEventRealmName, realmName, database.CtEventUserID, userID).Return(nil)
 
-		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID)
+		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, false)
 		assert.Nil(t, err)
 	})
 

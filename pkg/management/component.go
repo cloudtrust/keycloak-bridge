@@ -80,8 +80,8 @@ type UsersDetailsDBModule interface {
 type OnboardingModule interface {
 	GenerateAuthToken() (keycloakb.TrustIDAuthToken, error)
 	OnboardingAlreadyCompleted(kc.UserRepresentation) (bool, error)
-	SendOnboardingEmail(ctx context.Context, accessToken string, realmName string, userID string,
-		username string, autoLoginToken keycloakb.TrustIDAuthToken, onboardingClientID string, onboardingRedirectURI string) error
+	SendOnboardingEmail(ctx context.Context, accessToken string, realmName string, userID string, username string,
+		autoLoginToken keycloakb.TrustIDAuthToken, onboardingClientID string, onboardingRedirectURI string, reminder bool) error
 	CreateUser(ctx context.Context, accessToken, realmName, targetRealmName string, kcUser *kc.UserRepresentation) (string, error)
 }
 
@@ -118,7 +118,7 @@ type Component interface {
 	ResetPassword(ctx context.Context, realmName string, userID string, password api.PasswordRepresentation) (string, error)
 	ExecuteActionsEmail(ctx context.Context, realmName string, userID string, actions []api.RequiredAction, paramKV ...string) error
 	SendSmsCode(ctx context.Context, realmName string, userID string) (string, error)
-	SendOnboardingEmail(ctx context.Context, realmName string, userID string) error
+	SendOnboardingEmail(ctx context.Context, realmName string, userID string, reminder bool) error
 	SendReminderEmail(ctx context.Context, realmName string, userID string, paramKV ...string) error
 	ResetSmsCounter(ctx context.Context, realmName string, userID string) error
 	CreateRecoveryCode(ctx context.Context, realmName string, userID string) (string, error)
@@ -987,7 +987,7 @@ func (c *component) SendSmsCode(ctx context.Context, realmName string, userID st
 	return *smsCodeKc.Code, err
 }
 
-func (c *component) SendOnboardingEmail(ctx context.Context, realmName string, userID string) error {
+func (c *component) SendOnboardingEmail(ctx context.Context, realmName string, userID string, reminder bool) error {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 
 	// Get Realm configuration from database
@@ -1037,7 +1037,7 @@ func (c *component) SendOnboardingEmail(ctx context.Context, realmName string, u
 
 	// Send email
 	err = c.onboardingModule.SendOnboardingEmail(ctx, accessToken, realmName, userID,
-		*kcUser.Username, autoLoginToken, *realmConf.OnboardingClientID, *realmConf.OnboardingRedirectURI)
+		*kcUser.Username, autoLoginToken, *realmConf.OnboardingClientID, *realmConf.OnboardingRedirectURI, reminder)
 	if err != nil {
 		return err
 	}

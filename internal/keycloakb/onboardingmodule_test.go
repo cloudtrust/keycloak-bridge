@@ -121,10 +121,17 @@ func TestSendOnboardingEmail(t *testing.T) {
 	var onboardingModule = NewOnboardingModule(mockKeycloakClient, keycloakURL, mockLogger)
 	var autoLoginToken, _ = onboardingModule.GenerateAuthToken()
 
-	t.Run("Failed to perform ExecuteActionEmail", func(t *testing.T) {
+	t.Run("Failed to perform ExecuteActionEmail without reminder", func(t *testing.T) {
 		mockKeycloakClient.EXPECT().ExecuteActionsEmail(accessToken, realmName, userID, []string{"VERIFY_EMAIL"},
 			"client_id", onboardingClientID, "redirect_uri", gomock.Any()).Return(errors.New("unexpected error")).Times(1)
-		err := onboardingModule.SendOnboardingEmail(ctx, accessToken, realmName, userID, username, autoLoginToken, onboardingClientID, onboardingRedirectURI)
+		err := onboardingModule.SendOnboardingEmail(ctx, accessToken, realmName, userID, username, autoLoginToken, onboardingClientID, onboardingRedirectURI, false)
+
+		assert.NotNil(t, err)
+	})
+	t.Run("Failed to perform ExecuteActionEmail with reminder", func(t *testing.T) {
+		mockKeycloakClient.EXPECT().ExecuteActionsEmail(accessToken, realmName, userID, []string{"VERIFY_EMAIL", "reminder-action"},
+			"client_id", onboardingClientID, "redirect_uri", gomock.Any()).Return(errors.New("unexpected error")).Times(1)
+		err := onboardingModule.SendOnboardingEmail(ctx, accessToken, realmName, userID, username, autoLoginToken, onboardingClientID, onboardingRedirectURI, true)
 
 		assert.NotNil(t, err)
 	})
@@ -141,7 +148,7 @@ func TestSendOnboardingEmail(t *testing.T) {
 				assert.Equal(t, expectedFullURI, redirectrURI)
 				return nil
 			}).Times(1)
-		err := onboardingModule.SendOnboardingEmail(ctx, accessToken, realmName, userID, username, autoLoginToken, onboardingClientID, onboardingRedirectURI)
+		err := onboardingModule.SendOnboardingEmail(ctx, accessToken, realmName, userID, username, autoLoginToken, onboardingClientID, onboardingRedirectURI, false)
 
 		assert.Nil(t, err)
 	})
