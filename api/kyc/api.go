@@ -202,12 +202,12 @@ func (u *UserRepresentation) Validate() error {
 		ValidateParameterRegExp(prmUserEmail, u.Email, regExpEmail, true).
 		ValidateParameterPhoneNumber(prmUserPhoneNumber, u.PhoneNumber, true).
 		ValidateParameterDate(prmUserBirthDate, u.BirthDate, dateLayout, true).
-		ValidateParameterRegExp(prmUserBirthLocation, u.BirthLocation, regExpBirthLocation, true).
-		ValidateParameterRegExp(prmUserNationality, u.Nationality, regExpNationality, true).
-		ValidateParameterIn(prmUserIDDocumentType, u.IDDocumentType, constants.AllowedDocumentTypes, true).
+		ValidateParameterRegExp(prmUserBirthLocation, u.BirthLocation, regExpBirthLocation, false).
+		ValidateParameterRegExp(prmUserNationality, u.Nationality, regExpNationality, false).
+		ValidateParameterIn(prmUserIDDocumentType, u.IDDocumentType, constants.AllowedDocumentTypes, false).
 		ValidateParameterRegExp(prmUserIDDocumentNumber, u.IDDocumentNumber, regExpIDDocumentNumber, true).
-		ValidateParameterDate(prmUserIDDocumentExpiration, u.IDDocumentExpiration, dateLayout, true).
-		ValidateParameterRegExp(prmUserIDDocumentCountry, u.IDDocumentCountry, regExpIDDocumentCountry, true).
+		ValidateParameterDate(prmUserIDDocumentExpiration, u.IDDocumentExpiration, dateLayout, false).
+		ValidateParameterRegExp(prmUserIDDocumentCountry, u.IDDocumentCountry, regExpIDDocumentCountry, false).
 		ValidateParameterRegExp(prmUserLocale, u.Locale, regExpLocale, false).
 		Status()
 }
