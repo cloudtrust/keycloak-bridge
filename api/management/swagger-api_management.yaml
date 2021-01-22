@@ -1748,7 +1748,7 @@ components:
       properties:
         mode:
           type: string
-        available-checks:
+        available_checks:
           type: object
           additionalProperties:
             type: boolean
@@ -1767,6 +1767,9 @@ components:
           type: boolean
         theme:
           type: string
+        need_verified_contact:
+          type: boolean
+          description: if true, email and phone number have to be verified to allow validation of the account in KYC
     BackOfficeConfiguration:
       type: object
       additionalProperties:

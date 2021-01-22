@@ -225,10 +225,11 @@ type BackOfficeConfiguration map[string]map[string][]string
 // RealmAdminConfiguration struct
 type RealmAdminConfiguration struct {
 	Mode                *string                   `json:"mode"`
-	AvailableChecks     map[string]bool           `json:"available-checks"`
+	AvailableChecks     map[string]bool           `json:"available_checks"`
 	Accreditations      []RealmAdminAccreditation `json:"accreditations"`
 	SelfRegisterEnabled *bool                     `json:"self_register_enabled"`
 	Theme               *string                   `json:"theme"`
+	NeedVerifiedContact *bool                     `json:"need_verified_contact"`
 }
 
 // RealmAdminAccreditation struct
@@ -593,6 +594,7 @@ func ConvertRealmAdminConfigurationFromDBStruct(conf configuration.RealmAdminCon
 		Accreditations:      ConvertRealmAccreditationsFromDBStruct(conf.Accreditations),
 		SelfRegisterEnabled: defaultBool(conf.SelfRegisterEnabled, false),
 		Theme:               conf.Theme,
+		NeedVerifiedContact: defaultBool(conf.NeedVerifiedContact, true),
 	}
 }
 
@@ -604,6 +606,7 @@ func (rac RealmAdminConfiguration) ConvertToDBStruct() configuration.RealmAdminC
 		Accreditations:      rac.ConvertRealmAccreditationsToDBStruct(),
 		SelfRegisterEnabled: rac.SelfRegisterEnabled,
 		Theme:               rac.Theme,
+		NeedVerifiedContact: rac.NeedVerifiedContact,
 	}
 }
 

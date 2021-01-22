@@ -40,6 +40,11 @@ type ArchiveDBModule interface {
 	StoreUserDetails(ctx context.Context, realm string, user dto.ArchiveUserRepresentation) error
 }
 
+// ConfigDBModule is the interface from the configuration DB module
+type ConfigDBModule interface {
+	GetAdminConfiguration(ctx context.Context, realmID string) (configuration.RealmAdminConfiguration, error)
+}
+
 // EventsDBModule is the interface of the audit events module
 type EventsDBModule interface {
 	Store(context.Context, map[string]string) error
@@ -62,19 +67,21 @@ type component struct {
 	keycloakClient  KeycloakClient
 	usersDBModule   UsersDetailsDBModule
 	archiveDBModule ArchiveDBModule
+	configDBModule  ConfigDBModule
 	eventsDBModule  database.EventsDBModule
 	accredsModule   keycloakb.AccreditationsModule
 	logger          internal.Logger
 }
 
 // NewComponent returns the management component.
-func NewComponent(tokenProvider toolbox.OidcTokenProvider, socialRealmName string, keycloakClient KeycloakClient, usersDBModule UsersDetailsDBModule, archiveDBModule ArchiveDBModule, eventsDBModule EventsDBModule, accredsModule keycloakb.AccreditationsModule, logger internal.Logger) Component {
+func NewComponent(tokenProvider toolbox.OidcTokenProvider, socialRealmName string, keycloakClient KeycloakClient, usersDBModule UsersDetailsDBModule, archiveDBModule ArchiveDBModule, configDBModule ConfigDBModule, eventsDBModule EventsDBModule, accredsModule keycloakb.AccreditationsModule, logger internal.Logger) Component {
 	return &component{
 		tokenProvider:   tokenProvider,
 		socialRealmName: socialRealmName,
 		keycloakClient:  keycloakClient,
 		usersDBModule:   usersDBModule,
 		archiveDBModule: archiveDBModule,
+		configDBModule:  configDBModule,
 		eventsDBModule:  eventsDBModule,
 		accredsModule:   accredsModule,
 		logger:          logger,
@@ -190,13 +197,9 @@ func (c *component) validateUser(ctx context.Context, accessToken string, realmN
 	user.PhoneNumberVerified = nil
 	user.Username = kcUser.Username
 
-	if kcUser.EmailVerified == nil || !*kcUser.EmailVerified {
-		c.logger.Warn(ctx, "msg", "Can't validate user with unverified email", "uid", userID)
-		return errorhandler.CreateBadRequestError(constants.MsgErrUnverified + "." + constants.Email)
-	}
-	if verified, verifiedErr := kcUser.GetAttributeBool(constants.AttrbPhoneNumberVerified); verifiedErr != nil || verified == nil || !*verified {
-		c.logger.Warn(ctx, "msg", "Can't validate user with unverified phone number", "uid", userID)
-		return errorhandler.CreateBadRequestError(constants.MsgErrUnverified + "." + constants.PhoneNumber)
+	err = c.ensureContactVerified(ctx, realmName, kcUser)
+	if err != nil {
+		return err
 	}
 
 	// Gets user from database
@@ -254,6 +257,34 @@ func (c *component) validateUser(ctx context.Context, accessToken string, realmN
 	}
 
 	return nil
+}
+
+func (c *component) ensureContactVerified(ctx context.Context, realmName string, kcUser kc.UserRepresentation) error {
+	var emailVerifiedMissing = kcUser.EmailVerified == nil || !*kcUser.EmailVerified
+	var phoneNumberVerifiedMissing = false
+	if verified, verifiedErr := kcUser.GetAttributeBool(constants.AttrbPhoneNumberVerified); verifiedErr != nil || verified == nil || !*verified {
+		phoneNumberVerifiedMissing = true
+	}
+
+	if !emailVerifiedMissing && !phoneNumberVerifiedMissing {
+		// Avoid to access database if not necessary
+		return nil
+	}
+
+	if config, err := c.configDBModule.GetAdminConfiguration(ctx, realmName); err != nil {
+		c.logger.Warn(ctx, "msg", "Can't get admin configuration", "realm", realmName, "err", err.Error())
+		return err
+	} else if config.NeedVerifiedContact != nil && !*config.NeedVerifiedContact {
+		return nil
+	}
+
+	if emailVerifiedMissing {
+		c.logger.Warn(ctx, "msg", "Can't validate user with unverified email", "uid", *kcUser.ID)
+		return errorhandler.CreateBadRequestError(constants.MsgErrUnverified + "." + constants.Email)
+	}
+
+	c.logger.Warn(ctx, "msg", "Can't validate user with unverified phone number", "uid", *kcUser.ID)
+	return errorhandler.CreateBadRequestError(constants.MsgErrUnverified + "." + constants.PhoneNumber)
 }
 
 func (c *component) getGroupByName(accessToken, realmName, groupName string) (kc.GroupRepresentation, error) {
