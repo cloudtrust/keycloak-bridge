@@ -778,28 +778,37 @@ func TestSendOnboardingEmailEndpoint(t *testing.T) {
 	var e = MakeSendOnboardingEmailEndpoint(mockManagementComponent)
 
 	var realm = "master"
+	var customerRealm = "customer"
 	var userID = "123-456-789"
 	var ctx = context.Background()
 	var req = make(map[string]string)
 	req[prmRealm] = realm
 	req[prmUserID] = userID
 
-	t.Run("Without reminder parameter", func(t *testing.T) {
-		mockManagementComponent.EXPECT().SendOnboardingEmail(ctx, realm, userID, false)
+	t.Run("Without reminder or customerRealm parameter", func(t *testing.T) {
+		mockManagementComponent.EXPECT().SendOnboardingEmail(ctx, realm, userID, realm, false)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Nil(t, res)
 	})
 	t.Run("Reminder is false", func(t *testing.T) {
 		req[prmQryReminder] = "FALse"
-		mockManagementComponent.EXPECT().SendOnboardingEmail(ctx, realm, userID, false)
+		mockManagementComponent.EXPECT().SendOnboardingEmail(ctx, realm, userID, realm, false)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Nil(t, res)
 	})
 	t.Run("Reminder is true", func(t *testing.T) {
 		req[prmQryReminder] = "TruE"
-		mockManagementComponent.EXPECT().SendOnboardingEmail(ctx, realm, userID, true)
+		mockManagementComponent.EXPECT().SendOnboardingEmail(ctx, realm, userID, realm, true)
+		var res, err = e(ctx, req)
+		assert.Nil(t, err)
+		assert.Nil(t, res)
+	})
+	t.Run("CustomerRealm is set", func(t *testing.T) {
+		req[prmQryReminder] = "false"
+		req[prmQryRealm] = customerRealm
+		mockManagementComponent.EXPECT().SendOnboardingEmail(ctx, realm, userID, customerRealm, false).Return(nil)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Nil(t, res)

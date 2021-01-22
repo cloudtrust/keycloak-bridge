@@ -118,7 +118,7 @@ type Component interface {
 	ResetPassword(ctx context.Context, realmName string, userID string, password api.PasswordRepresentation) (string, error)
 	ExecuteActionsEmail(ctx context.Context, realmName string, userID string, actions []api.RequiredAction, paramKV ...string) error
 	SendSmsCode(ctx context.Context, realmName string, userID string) (string, error)
-	SendOnboardingEmail(ctx context.Context, realmName string, userID string, reminder bool) error
+	SendOnboardingEmail(ctx context.Context, realmName string, userID string, customerRealm string, reminder bool) error
 	SendReminderEmail(ctx context.Context, realmName string, userID string, paramKV ...string) error
 	ResetSmsCounter(ctx context.Context, realmName string, userID string) error
 	CreateRecoveryCode(ctx context.Context, realmName string, userID string) (string, error)
@@ -987,11 +987,11 @@ func (c *component) SendSmsCode(ctx context.Context, realmName string, userID st
 	return *smsCodeKc.Code, err
 }
 
-func (c *component) SendOnboardingEmail(ctx context.Context, realmName string, userID string, reminder bool) error {
+func (c *component) SendOnboardingEmail(ctx context.Context, realmName string, userID string, customerRealm string, reminder bool) error {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 
 	// Get Realm configuration from database
-	realmConf, err := c.configDBModule.GetConfiguration(ctx, realmName)
+	realmConf, err := c.configDBModule.GetConfiguration(ctx, customerRealm)
 	if err != nil {
 		c.logger.Info(ctx, "msg", "Can't get realm configuration from database", "err", err.Error())
 		return err
@@ -1035,9 +1035,14 @@ func (c *component) SendOnboardingEmail(ctx context.Context, realmName string, u
 		return err
 	}
 
+	var onboardingRedirectURI = *realmConf.OnboardingRedirectURI
+	if realmName != customerRealm {
+		onboardingRedirectURI += "?customerRealm=" + customerRealm
+	}
+
 	// Send email
 	err = c.onboardingModule.SendOnboardingEmail(ctx, accessToken, realmName, userID,
-		*kcUser.Username, autoLoginToken, *realmConf.OnboardingClientID, *realmConf.OnboardingRedirectURI, reminder)
+		*kcUser.Username, autoLoginToken, *realmConf.OnboardingClientID, onboardingRedirectURI, reminder)
 	if err != nil {
 		return err
 	}
