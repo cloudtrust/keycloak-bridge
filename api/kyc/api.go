@@ -54,8 +54,6 @@ const (
 	prmUserGender               = "user_gender"
 	prmUserFirstName            = "user_firstName"
 	prmUserLastName             = "user_lastName"
-	prmUserEmail                = "user_emailAddress"
-	prmUserPhoneNumber          = "user_phoneNumber"
 	prmUserBirthDate            = "user_birthDate"
 	prmUserBirthLocation        = "user_birthLocation"
 	prmUserNationality          = "user_nationality"
@@ -68,7 +66,6 @@ const (
 	regExpNames             = `^([\wàáâäçèéêëìíîïñòóôöùúûüß]+([ '-][\wàáâäçèéêëìíîïñòóôöùúûüß]+)*){1,50}$`
 	regExpFirstName         = regExpNames
 	regExpLastName          = regExpNames
-	regExpEmail             = `^.+\@.+\..+$`
 	regExpBirthLocation     = regExpNames
 	regExpNationality       = constants.RegExpCountryCode
 	regExpIDDocumentNumber  = constants.RegExpIDDocumentNumber

@@ -92,6 +92,9 @@ const (
 							ORDER BY audit_time DESC
 							LIMIT ?;
 				`
+
+	sqlWordWhere = "WHERE"
+	sqlWordAnd   = "AND"
 )
 
 var (
@@ -106,7 +109,7 @@ var (
 )
 
 func newSelectAuditEventsParameters(m map[string]string) (selectAuditEventsParameters, error) {
-	var res = selectAuditEventsParameters{word: "WHERE"}
+	var res = selectAuditEventsParameters{word: sqlWordWhere}
 	for bridgeName, sqlName := range auditEventsBridgeToSQLParameters {
 		if strings.HasPrefix(sqlName, "-") {
 			res.addSQLStringExclude(m, bridgeName, sqlName[1:])
@@ -124,7 +127,7 @@ func (sp *selectAuditEventsParameters) addSQLString(m map[string]string, mapEntr
 	if value, ok := m[mapEntryName]; ok {
 		sp.clause = fmt.Sprintf("%s %s %s = ?", sp.clause, sp.word, sqlFieldName)
 		sp.sqlParams = append(sp.sqlParams, value)
-		sp.word = "AND"
+		sp.word = sqlWordAnd
 	}
 }
 
@@ -133,7 +136,7 @@ func (sp *selectAuditEventsParameters) addSQLStringExclude(m map[string]string, 
 		for _, value := range strings.Split(multipleValues, ",") {
 			sp.clause = fmt.Sprintf("%s %s %s <> ?", sp.clause, sp.word, sqlFieldName)
 			sp.sqlParams = append(sp.sqlParams, value)
-			sp.word = "AND"
+			sp.word = sqlWordAnd
 		}
 	}
 }
@@ -155,7 +158,7 @@ func (sp *selectAuditEventsParameters) addSQLDateRange(m map[string]string, date
 	} else {
 		return
 	}
-	sp.word = "AND"
+	sp.word = sqlWordAnd
 }
 
 func (sp *selectAuditEventsParameters) addLimit(m map[string]string, minLabel string, minValue int, maxLabel string, maxValue int) {

@@ -46,7 +46,6 @@ func TestSendEmailEndpoint(t *testing.T) {
 	t.Run("No Error", func(t *testing.T) {
 		var req = make(map[string]string)
 		req[reqScheme] = "https"
-		req[reqHost] = "elca.ch"
 		req[prmRealm] = realm
 
 		emailJSON, _ := json.Marshal(emailForTest)
@@ -67,7 +66,6 @@ func TestSendEmailEndpoint(t *testing.T) {
 	t.Run("Error - Keycloak client error", func(t *testing.T) {
 		var req = make(map[string]string)
 		req[reqScheme] = "https"
-		req[reqHost] = "elca.ch"
 		req[prmRealm] = realm
 		emailJSON, _ := json.Marshal(emailForTest)
 		req[reqBody] = string(emailJSON)
@@ -92,7 +90,6 @@ func TestSendSMSEndpoint(t *testing.T) {
 	t.Run("No Error", func(t *testing.T) {
 		var req = make(map[string]string)
 		req[reqScheme] = "https"
-		req[reqHost] = "elca.ch"
 		req[prmRealm] = realm
 
 		smsJSON, _ := json.Marshal(smsForTest)
@@ -113,7 +110,6 @@ func TestSendSMSEndpoint(t *testing.T) {
 	t.Run("Error - Keycloak client error", func(t *testing.T) {
 		var req = make(map[string]string)
 		req[reqScheme] = "https"
-		req[reqHost] = "elca.ch"
 		req[prmRealm] = realm
 		smsJSON, _ := json.Marshal(smsForTest)
 		req[reqBody] = string(smsJSON)

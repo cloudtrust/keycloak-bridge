@@ -9,25 +9,18 @@ import (
 )
 
 const (
-	prmEmailRecipient             = "email_recipient"
-	prmEmailTheming               = "email_theming"
-	prmEmailThemingSubjectKey     = "email_theming_subject_key"
-	prmEmailThemingSubjectParams  = "email_theming_subject_params"
-	prmEmailThemingTemplate       = "email_theming_template"
-	prmEmailThemingTemplateParams = "email_theming_template_params"
-	prmEmailThemingLocale         = "email_theming_template_locale"
-	prmEmailAttachmentFilename    = "email_attachment_filename"
-	prmEmailAttachmentContentType = "email_attachment_content_type"
-	prmEmailAttachmentContent     = "email_attachment_content"
+	prmEmailRecipient         = "email_recipient"
+	prmEmailTheming           = "email_theming"
+	prmEmailThemingSubjectKey = "email_theming_subject_key"
+	prmEmailThemingLocale     = "email_theming_template_locale"
 
 	prmSMSMSISDN        = "sms_msisdn"
 	prmSMSTheming       = "sms_theming"
 	prmSMSThemingLocale = "sms_theming_locale"
 
-	regExpEmail                 = constants.RegExpEmail
-	regExpThemingSubjectKey     = constants.RegExpDescription
-	regExpLocale                = constants.RegExpLocale
-	regExpAttachmentContentType = constants.RegExpDescription
+	regExpEmail             = constants.RegExpEmail
+	regExpThemingSubjectKey = constants.RegExpDescription
+	regExpLocale            = constants.RegExpLocale
 )
 
 // ActionRepresentation struct
