@@ -159,7 +159,7 @@ func (c *component) UpdateUser(ctx context.Context, realmName string, userID str
 		c.reportEvent(ctx, "VALIDATION_UPDATE_USER", database.CtEventRealmName, realmName, database.CtEventUserID, userID)
 
 		// archive user
-		c.archiveUser(validationCtx)
+		c.archiveUser(validationCtx, nil)
 	}
 
 	return nil
@@ -296,7 +296,7 @@ func (c *component) CreateCheck(ctx context.Context, realmName string, userID st
 	c.reportEvent(ctx, "VALIDATION_STORE_CHECK", database.CtEventRealmName, realmName,
 		database.CtEventUserID, userID, "operator", *check.Operator, "status", *check.Status)
 
-	c.archiveUser(validationCtx)
+	c.archiveUser(validationCtx, []dto.DBCheck{dbCheck})
 
 	return nil
 }
@@ -388,7 +388,7 @@ func (c *component) getUserWithAccreditations(v *validationContext) (*kc.UserRep
 	return v.kcUser, nil
 }
 
-func (c *component) archiveUser(v *validationContext) {
+func (c *component) archiveUser(v *validationContext, checks []dto.DBCheck) {
 	var kcUser, err = c.getKeycloakUserCtx(v)
 	if err != nil {
 		return
@@ -401,5 +401,6 @@ func (c *component) archiveUser(v *validationContext) {
 
 	var archiveUser = dto.ToArchiveUserRepresentation(*kcUser)
 	archiveUser.SetDetails(*dbUser)
+	archiveUser.Checks = checks
 	c.archiveDBModule.StoreUserDetails(v.ctx, v.realmName, archiveUser)
 }

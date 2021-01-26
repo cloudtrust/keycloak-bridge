@@ -179,5 +179,6 @@ func createValidUser() apikyc.UserRepresentation {
 		IDDocumentNumber:     &docNumber,
 		IDDocumentExpiration: &docExp,
 		IDDocumentCountry:    &docCountry,
+		Attachments:          nil,
 	}
 }
