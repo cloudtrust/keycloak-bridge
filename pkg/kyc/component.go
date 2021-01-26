@@ -197,7 +197,7 @@ func (c *component) validateUser(ctx context.Context, accessToken string, realmN
 	user.PhoneNumberVerified = nil
 	user.Username = kcUser.Username
 
-	err = c.ensureContactVerified(ctx, realmName, kcUser)
+	err = c.ensureContactVerified(ctx, kcUser)
 	if err != nil {
 		return err
 	}
@@ -259,7 +259,7 @@ func (c *component) validateUser(ctx context.Context, accessToken string, realmN
 	return nil
 }
 
-func (c *component) ensureContactVerified(ctx context.Context, realmName string, kcUser kc.UserRepresentation) error {
+func (c *component) ensureContactVerified(ctx context.Context, kcUser kc.UserRepresentation) error {
 	var emailVerifiedMissing = kcUser.EmailVerified == nil || !*kcUser.EmailVerified
 	var phoneNumberVerifiedMissing = false
 	if verified, verifiedErr := kcUser.GetAttributeBool(constants.AttrbPhoneNumberVerified); verifiedErr != nil || verified == nil || !*verified {
@@ -271,6 +271,7 @@ func (c *component) ensureContactVerified(ctx context.Context, realmName string,
 		return nil
 	}
 
+	var realmName = ctx.Value(cs.CtContextRealm).(string)
 	if config, err := c.configDBModule.GetAdminConfiguration(ctx, realmName); err != nil {
 		c.logger.Warn(ctx, "msg", "Can't get admin configuration", "realm", realmName, "err", err.Error())
 		return err

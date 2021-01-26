@@ -219,7 +219,7 @@ func TestValidateUserInSocialRealm(t *testing.T) {
 	var username = "user_name"
 	var kcUser = createUser(userID, username, true, true)
 	var accessToken = "abcdef"
-	var ctx = context.TODO()
+	var ctx = context.WithValue(context.TODO(), cs.CtContextRealm, targetRealm)
 	var dbUser = dto.DBUser{UserID: &userID}
 
 	var mocks = createComponentMocks(mockCtrl)
@@ -381,7 +381,7 @@ func TestEnsureContactVerified(t *testing.T) {
 	var bTrue = true
 	var verifNotNeeded = configuration.RealmAdminConfiguration{NeedVerifiedContact: &bFalse}
 	var verifNeeded = configuration.RealmAdminConfiguration{NeedVerifiedContact: &bTrue}
-	var ctx = context.TODO()
+	var ctx = context.WithValue(context.TODO(), cs.CtContextRealm, targetRealm)
 	var anyError = errors.New("any error")
 
 	var mocks = createComponentMocks(mockCtrl)
@@ -389,32 +389,32 @@ func TestEnsureContactVerified(t *testing.T) {
 
 	t.Run("Email and phone number are both verified", func(t *testing.T) {
 		var kcUser = createUser(userID, username, true, true)
-		var err = component.ensureContactVerified(ctx, targetRealm, kcUser)
+		var err = component.ensureContactVerified(ctx, kcUser)
 		assert.Nil(t, err)
 	})
 	t.Run("Can't get admin configuration", func(t *testing.T) {
 		var kcUser = createUser(userID, username, true, false)
 		mocks.configDB.EXPECT().GetAdminConfiguration(ctx, targetRealm).Return(configuration.RealmAdminConfiguration{}, anyError)
-		var err = component.ensureContactVerified(ctx, targetRealm, kcUser)
+		var err = component.ensureContactVerified(ctx, kcUser)
 		assert.Equal(t, anyError, err)
 	})
 	t.Run("Email and phone number verifications are not needed", func(t *testing.T) {
 		var kcUser = createUser(userID, username, false, false)
 		mocks.configDB.EXPECT().GetAdminConfiguration(ctx, targetRealm).Return(verifNotNeeded, nil)
-		var err = component.ensureContactVerified(ctx, targetRealm, kcUser)
+		var err = component.ensureContactVerified(ctx, kcUser)
 		assert.Nil(t, err)
 	})
 	t.Run("Email not verified", func(t *testing.T) {
 		var kcUser = createUser(userID, username, false, true)
 		mocks.configDB.EXPECT().GetAdminConfiguration(ctx, targetRealm).Return(verifNeeded, nil)
-		var err = component.ensureContactVerified(ctx, targetRealm, kcUser)
+		var err = component.ensureContactVerified(ctx, kcUser)
 		assert.NotNil(t, err)
 		assert.Contains(t, err.Error(), constants.Email)
 	})
 	t.Run("Phone number not verified", func(t *testing.T) {
 		var kcUser = createUser(userID, username, true, false)
 		mocks.configDB.EXPECT().GetAdminConfiguration(ctx, targetRealm).Return(verifNeeded, nil)
-		var err = component.ensureContactVerified(ctx, targetRealm, kcUser)
+		var err = component.ensureContactVerified(ctx, kcUser)
 		assert.NotNil(t, err)
 		assert.Contains(t, err.Error(), constants.PhoneNumber)
 	})
