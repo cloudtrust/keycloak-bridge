@@ -4,12 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/cloudtrust/common-service/database/sqltypes"
-	errorhandler "github.com/cloudtrust/common-service/errors"
 
 	api "github.com/cloudtrust/keycloak-bridge/api/events"
 	api_stat "github.com/cloudtrust/keycloak-bridge/api/statistics"
@@ -41,34 +42,20 @@ func NewEventsDBModule(db sqltypes.CloudtrustDB) EventsDBModule {
 }
 
 type selectAuditEventsParameters struct {
-	origin      interface{}
-	realm       interface{}
-	userID      interface{}
-	ctEventType interface{}
-	dateFrom    interface{}
-	dateTo      interface{}
-	first       interface{}
-	max         interface{}
-	exclude     interface{}
+	clause    string
+	word      string
+	sqlParams []interface{}
+	limitMin  interface{}
+	limitMax  interface{}
 }
 
 const (
-	whereAuditEvents = `
-	WHERE (? IS NULL OR origin = ?)
-	AND (? IS NULL OR realm_name = ?)
-	AND (? IS NULL OR user_id = ?)
-	AND (? IS NULL OR ct_event_type = ?)
-	AND unix_timestamp(audit_time) between IFNULL(?, unix_timestamp(audit_time)) and IFNULL(?, unix_timestamp(audit_time))
-	AND (? IS NULL OR ct_event_type <> ?)
-	`
+	sqlDateFormat = "2006-01-02 15:04:05"
 
 	selectAuditEventsStmt = `SELECT audit_id, unix_timestamp(audit_time), origin, realm_name, agent_user_id, agent_username, agent_realm_name,
 	                            user_id, username, ct_event_type, kc_event_type, kc_operation_type, client_id, additional_info
-		FROM audit ` + whereAuditEvents + `
-		ORDER BY audit_time DESC
-		LIMIT ?, ?;
-		`
-	selectCountAuditEventsStmt        = `SELECT count(1) FROM audit ` + whereAuditEvents
+		FROM audit `
+	selectCountAuditEventsStmt        = `SELECT count(1) FROM audit `
 	selectLastConnectionTimeStmt      = `SELECT ifnull(unix_timestamp(max(audit_time)), 0) FROM audit WHERE realm_name=? AND ct_event_type='LOGON_OK'`
 	selectAuditSummaryOriginStmt      = `SELECT distinct origin FROM audit;`
 	selectAuditSummaryCtEventTypeStmt = `SELECT distinct ct_event_type FROM audit;`
@@ -107,23 +94,96 @@ const (
 				`
 )
 
-func createAuditEventsParametersFromMap(m map[string]string) (selectAuditEventsParameters, error) {
-	res := selectAuditEventsParameters{
-		origin:      getSQLParam(m, "origin", nil),
-		realm:       getSQLParam(m, "realm", nil),
-		userID:      getSQLParam(m, "userID", nil),
-		ctEventType: getSQLParam(m, "ctEventType", nil),
-		dateFrom:    getSQLParam(m, "dateFrom", nil),
-		dateTo:      getSQLParam(m, "dateTo", nil),
-		first:       getSQLParam(m, "first", 0),
-		max:         getSQLParam(m, "max", 500),
-		exclude:     getSQLParam(m, "exclude", nil),
+var (
+	// Associate bridge parameter name to its matching SQL column name
+	auditEventsBridgeToSQLParameters = map[string]string{
+		"origin":      "origin",
+		"realm":       "realm_name",
+		"userID":      "user_id",
+		"ctEventType": "ct_event_type",
+		"exclude":     "-ct_event_type",
 	}
-	if res.exclude != nil && strings.Contains(res.exclude.(string), ",") {
-		// Multiple values are not supported yet
-		return res, errorhandler.CreateInvalidQueryParameterError(msg.Exclude)
+)
+
+func newSelectAuditEventsParameters(m map[string]string) (selectAuditEventsParameters, error) {
+	var res = selectAuditEventsParameters{word: "WHERE"}
+	for bridgeName, sqlName := range auditEventsBridgeToSQLParameters {
+		if strings.HasPrefix(sqlName, "-") {
+			res.addSQLStringExclude(m, bridgeName, sqlName[1:])
+		} else {
+			res.addSQLString(m, bridgeName, sqlName)
+		}
 	}
+	res.addSQLDateRange(m, "dateFrom", "dateTo", "audit_time")
+	res.addLimit(m, "first", 0, "max", 500)
+
 	return res, nil
+}
+
+func (sp *selectAuditEventsParameters) addSQLString(m map[string]string, mapEntryName string, sqlFieldName string) {
+	if value, ok := m[mapEntryName]; ok {
+		sp.clause = fmt.Sprintf("%s %s %s = ?", sp.clause, sp.word, sqlFieldName)
+		sp.sqlParams = append(sp.sqlParams, value)
+		sp.word = "AND"
+	}
+}
+
+func (sp *selectAuditEventsParameters) addSQLStringExclude(m map[string]string, mapEntryName string, sqlFieldName string) {
+	if multipleValues, ok := m[mapEntryName]; ok {
+		for _, value := range strings.Split(multipleValues, ",") {
+			sp.clause = fmt.Sprintf("%s %s %s <> ?", sp.clause, sp.word, sqlFieldName)
+			sp.sqlParams = append(sp.sqlParams, value)
+			sp.word = "AND"
+		}
+	}
+}
+
+func (sp *selectAuditEventsParameters) addSQLDateRange(m map[string]string, dateFromName, dateToName, sqlFieldName string) {
+	var valueFrom, hasFrom = m[dateFromName]
+	var valueTo, hasTo = m[dateToName]
+	if hasFrom {
+		if hasTo {
+			sp.clause = fmt.Sprintf("%s %s %s BETWEEN ? AND ?", sp.clause, sp.word, sqlFieldName)
+			sp.sqlParams = append(sp.sqlParams, toTime(valueFrom), toTime(valueTo))
+		} else {
+			sp.clause = fmt.Sprintf("%s %s %s >= ?", sp.clause, sp.word, sqlFieldName)
+			sp.sqlParams = append(sp.sqlParams, toTime(valueFrom))
+		}
+	} else if hasTo {
+		sp.clause = fmt.Sprintf("%s %s %s <= ?", sp.clause, sp.word, sqlFieldName)
+		sp.sqlParams = append(sp.sqlParams, toTime(valueTo))
+	} else {
+		return
+	}
+	sp.word = "AND"
+}
+
+func (sp *selectAuditEventsParameters) addLimit(m map[string]string, minLabel string, minValue int, maxLabel string, maxValue int) {
+	sp.limitMin = minValue
+	sp.limitMax = maxValue
+
+	if value, ok := m[minLabel]; ok {
+		sp.limitMin = value
+	}
+	if value, ok := m[maxLabel]; ok {
+		sp.limitMax = value
+	}
+}
+
+func (sp *selectAuditEventsParameters) queryCount(db sqltypes.CloudtrustDB) sqltypes.SQLRow {
+	return db.QueryRow(selectCountAuditEventsStmt+sp.clause, sp.sqlParams...)
+}
+
+func (sp *selectAuditEventsParameters) queryRows(db sqltypes.CloudtrustDB) (sqltypes.SQLRows, error) {
+	var allParams = append(sp.sqlParams, sp.limitMin, sp.limitMax)
+	return db.Query(selectAuditEventsStmt+sp.clause+` ORDER BY audit_time DESC LIMIT ?, ?`, allParams...)
+}
+
+func toTime(unixTimestamp string) string {
+	if ts, err := strconv.ParseInt(unixTimestamp, 10, 64); err == nil {
+		return time.Unix(ts, 0).UTC().Format(sqlDateFormat)
+	}
+	return unixTimestamp
 }
 
 func createStats(size int, firstValue, minValue, maxValue int, descending bool) [][]int64 {
@@ -179,20 +239,14 @@ func (cm *eventsDBModule) executeConnectionsQuery(stats [][]int64, query string,
 
 // GetEvents gets the count of events matching some criterias (dateFrom, dateTo, realm, ...)
 func (cm *eventsDBModule) GetEventsCount(_ context.Context, m map[string]string) (int, error) {
-	params, err := createAuditEventsParametersFromMap(m)
+	filter, err := newSelectAuditEventsParameters(m)
 	if err != nil {
 		return 0, err
 	}
 
+	row := filter.queryCount(cm.db)
+
 	var count int
-	row := cm.db.QueryRow(selectCountAuditEventsStmt,
-		params.origin, params.origin,
-		params.realm, params.realm,
-		params.userID, params.userID,
-		params.ctEventType, params.ctEventType,
-		params.dateFrom,
-		params.dateTo,
-		params.exclude, params.exclude)
 	err = row.Scan(&count)
 	if err != nil {
 		return 0, err
@@ -203,21 +257,12 @@ func (cm *eventsDBModule) GetEventsCount(_ context.Context, m map[string]string)
 // GetEvents gets the events matching some criterias (dateFrom, dateTo, realm, ...)
 func (cm *eventsDBModule) GetEvents(_ context.Context, m map[string]string) ([]api.AuditRepresentation, error) {
 	var res = []api.AuditRepresentation{}
-	params, errParams := createAuditEventsParametersFromMap(m)
+	filter, errParams := newSelectAuditEventsParameters(m)
 	if errParams != nil {
 		return nil, errParams
 	}
 
-	rows, err := cm.db.Query(selectAuditEventsStmt,
-		params.origin, params.origin,
-		params.realm, params.realm,
-		params.userID, params.userID,
-		params.ctEventType, params.ctEventType,
-		params.dateFrom,
-		params.dateTo,
-		params.exclude, params.exclude,
-		params.first,
-		params.max)
+	rows, err := filter.queryRows(cm.db)
 	if err != nil {
 		return res, err
 	}
@@ -333,13 +378,6 @@ func (cm *eventsDBModule) GetLastConnections(_ context.Context, realmName string
 	}
 
 	return res, err
-}
-
-func getSQLParam(m map[string]string, name string, defaultValue interface{}) interface{} {
-	if value, ok := m[name]; ok {
-		return value
-	}
-	return defaultValue
 }
 
 func (cm *eventsDBModule) queryStringArray(request string) ([]string, error) {
