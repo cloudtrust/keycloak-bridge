@@ -37,6 +37,9 @@ components:
               expired:
                 type: boolean
                 description: true if the expiry date has passed
+              revoked:
+                type: boolean
+                description: true if the accreditation has been revoked
         checks:
           type: array
           items:

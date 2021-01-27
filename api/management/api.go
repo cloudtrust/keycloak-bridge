@@ -91,6 +91,7 @@ type UserCheck struct {
 type AccreditationRepresentation struct {
 	Type       *string `json:"type"`
 	ExpiryDate *string `json:"expiryDate"`
+	Revoked    *bool   `json:"revoked,omitempty"`
 	Expired    *bool   `json:"expired,omitempty"`
 }
 
@@ -344,10 +345,14 @@ func ConvertToAPIUser(ctx context.Context, userKc kc.UserRepresentation, logger 
 	}
 	if values := userKc.GetAttribute(constants.AttrbAccreditations); len(values) > 0 {
 		var accreds []AccreditationRepresentation
+		var bFalse = false
 		for _, accredJSON := range values {
 			var accred AccreditationRepresentation
 			if json.Unmarshal([]byte(accredJSON), &accred) == nil {
 				accred.Expired = keycloakb.IsDateInThePast(accred.ExpiryDate)
+				if accred.Revoked == nil {
+					accred.Revoked = &bFalse
+				}
 				accreds = append(accreds, accred)
 			} else {
 				logger.Warn(ctx, "msg", "Can't unmarshall JSON", "json", accredJSON)

@@ -470,7 +470,16 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 		}
 	}
 
-	var revokeAccreditations = keycloakb.IsUpdated(user.FirstName, oldUserKc.FirstName,
+	// Update in DB user for extra infos
+	// Store user in database
+	var userInfosUpdated = keycloakb.IsUpdated(user.BirthLocation, oldDbUser.BirthLocation,
+		user.Nationality, oldDbUser.Nationality,
+		user.IDDocumentType, oldDbUser.IDDocumentType,
+		user.IDDocumentNumber, oldDbUser.IDDocumentNumber,
+		user.IDDocumentExpiration, oldDbUser.IDDocumentExpiration,
+		user.IDDocumentCountry, oldDbUser.IDDocumentCountry)
+
+	var revokeAccreditations = userInfosUpdated || keycloakb.IsUpdated(user.FirstName, oldUserKc.FirstName,
 		user.LastName, oldUserKc.LastName,
 		user.Gender, oldUserKc.GetAttributeString(constants.AttrbGender),
 		user.BirthDate, oldUserKc.GetAttributeString(constants.AttrbBirthDate),
@@ -502,17 +511,7 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 		c.reportLockEvent(ctx, realmName, userID, user.Username, *user.Enabled)
 	}
 
-	// Update in DB user for extra infos
-	// Store user in database
-	var userInfosUpdated = keycloakb.IsUpdated(user.BirthLocation, oldDbUser.BirthLocation) ||
-		keycloakb.IsUpdated(user.Nationality, oldDbUser.Nationality) ||
-		keycloakb.IsUpdated(user.IDDocumentType, oldDbUser.IDDocumentType) ||
-		keycloakb.IsUpdated(user.IDDocumentNumber, oldDbUser.IDDocumentNumber) ||
-		keycloakb.IsUpdated(user.IDDocumentExpiration, oldDbUser.IDDocumentExpiration) ||
-		keycloakb.IsUpdated(user.IDDocumentCountry, oldDbUser.IDDocumentCountry)
-
 	if userInfosUpdated {
-
 		if keycloakb.IsUpdated(user.BirthLocation, oldDbUser.BirthLocation) {
 			oldDbUser.BirthLocation = user.BirthLocation
 		}

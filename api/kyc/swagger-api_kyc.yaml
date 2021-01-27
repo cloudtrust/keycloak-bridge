@@ -220,6 +220,9 @@ components:
               expired:
                 type: bool
                 description: true if the expiry date has passed
+              revoked:
+                type: bool
+                description: true if the accreditation has been revoked
         attachments:
           type: array
           description: Used only by validateUser and currently limited to one attachment.

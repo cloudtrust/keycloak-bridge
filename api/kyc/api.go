@@ -48,6 +48,7 @@ type AccreditationRepresentation struct {
 	Type       *string `json:"type"`
 	ExpiryDate *string `json:"expiryDate"`
 	Expired    *bool   `json:"expired,omitempty"`
+	Revoked    *bool   `json:"revoked,omitempty"`
 }
 
 // AttachmentRepresentation is a representation of an attached file
@@ -181,10 +182,14 @@ func (u *UserRepresentation) ImportFromKeycloak(ctx context.Context, kcUser *kc.
 	}
 	if values := kcUser.GetAttribute(constants.AttrbAccreditations); len(values) > 0 {
 		var accreds []AccreditationRepresentation
+		var bFalse = false
 		for _, accredJSON := range values {
 			var accred AccreditationRepresentation
 			if json.Unmarshal([]byte(accredJSON), &accred) == nil {
 				accred.Expired = keycloakb.IsDateInThePast(accred.ExpiryDate)
+				if accred.Revoked == nil {
+					accred.Revoked = &bFalse
+				}
 				accreds = append(accreds, accred)
 			} else {
 				logger.Warn(ctx, "msg", "Can't unmarshall JSON", "json", accredJSON)
