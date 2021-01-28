@@ -29,6 +29,7 @@ var (
 	KYCGetUserByUsernameInSocialRealm = newAction("KYC_GetUserByUsernameInSocialRealm", security.ScopeRealm)
 	KYCValidateUserInSocialRealm      = newAction("KYC_ValidateUserInSocialRealm", security.ScopeRealm)
 	KYCValidateUser                   = newAction("KYC_ValidateUser", security.ScopeGroup)
+	KYCSendSmsCodeInSocialRealm       = newAction("KYC_SendSmsCodeInSocialRealm", security.ScopeRealm)
 )
 
 type authorizationComponentMW struct {
@@ -129,4 +130,15 @@ func (c *authorizationComponentMW) ValidateUser(ctx context.Context, realmName s
 	}
 
 	return c.next.ValidateUser(ctx, realmName, userID, user)
+}
+
+func (c *authorizationComponentMW) SendSmsCodeInSocialRealm(ctx context.Context, userID string) (string, error) {
+	var action = KYCSendSmsCodeInSocialRealm.String()
+	var targetRealm = ctx.Value(cs.CtContextRealm).(string)
+
+	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
+		return "", err
+	}
+
+	return c.next.SendSmsCodeInSocialRealm(ctx, userID)
 }
