@@ -42,7 +42,7 @@ type KeycloakClient interface {
 	AddClientRolesToUserRoleMapping(accessToken string, realmName, userID, clientID string, roles []kc.RoleRepresentation) error
 	GetRealmLevelRoleMappings(accessToken string, realmName, userID string) ([]kc.RoleRepresentation, error)
 	ResetPassword(accessToken string, realmName string, userID string, cred kc.CredentialRepresentation) error
-	ExecuteActionsEmail(accessToken string, realmName string, userID string, actions []string, paramKV ...string) error
+	ExecuteActionsEmail(accessToken string, reqRealmName string, targetRealmName string, userID string, actions []string, paramKV ...string) error
 	SendSmsCode(accessToken string, realmName string, userID string) (kc.SmsCodeRepresentation, error)
 	CreateRecoveryCode(accessToken string, realmName string, userID string) (kc.RecoveryCodeRepresentation, error)
 	CreateActivationCode(accessToken string, realmName string, userID string) (kc.ActivationCodeRepresentation, error)
@@ -81,7 +81,7 @@ type OnboardingModule interface {
 	GenerateAuthToken() (keycloakb.TrustIDAuthToken, error)
 	OnboardingAlreadyCompleted(kc.UserRepresentation) (bool, error)
 	SendOnboardingEmail(ctx context.Context, accessToken string, realmName string, userID string, username string,
-		autoLoginToken keycloakb.TrustIDAuthToken, onboardingClientID string, onboardingRedirectURI string, reminder bool) error
+		autoLoginToken keycloakb.TrustIDAuthToken, onboardingClientID string, onboardingRedirectURI string, themeRealmName string, reminder bool) error
 	CreateUser(ctx context.Context, accessToken, realmName, targetRealmName string, kcUser *kc.UserRepresentation) (string, error)
 }
 
@@ -961,7 +961,7 @@ func (c *component) ExecuteActionsEmail(ctx context.Context, realmName string, u
 	additionalInfo := database.CreateAdditionalInfo(values...)
 	c.reportEvent(ctx, "ACTION_EMAIL", database.CtEventRealmName, realmName, database.CtEventUserID, userID, database.CtEventAdditionalInfo, additionalInfo)
 
-	err := c.keycloakClient.ExecuteActionsEmail(accessToken, realmName, userID, actions, paramKV...)
+	err := c.keycloakClient.ExecuteActionsEmail(accessToken, realmName, realmName, userID, actions, paramKV...)
 
 	if err != nil {
 		c.logger.Warn(ctx, "err", err.Error())
@@ -1041,7 +1041,7 @@ func (c *component) SendOnboardingEmail(ctx context.Context, realmName string, u
 
 	// Send email
 	err = c.onboardingModule.SendOnboardingEmail(ctx, accessToken, realmName, userID,
-		*kcUser.Username, autoLoginToken, *realmConf.OnboardingClientID, onboardingRedirectURI, reminder)
+		*kcUser.Username, autoLoginToken, *realmConf.OnboardingClientID, onboardingRedirectURI, customerRealm, reminder)
 	if err != nil {
 		return err
 	}
