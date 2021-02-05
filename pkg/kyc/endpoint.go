@@ -17,6 +17,7 @@ type Endpoints struct {
 	GetUserByUsernameInSocialRealm endpoint.Endpoint
 	ValidateUserInSocialRealm      endpoint.Endpoint
 	ValidateUser                   endpoint.Endpoint
+	SendSMSCodeInSocialRealm       endpoint.Endpoint
 }
 
 // MakeGetActionsEndpoint creates an endpoint for GetActions
@@ -75,5 +76,15 @@ func MakeValidateUserEndpoint(component Component) cs.Endpoint {
 		}
 
 		return nil, component.ValidateUser(ctx, m[prmRealm], m[prmUserID], user)
+	}
+}
+
+// MakeSendSmsCodeInSocialRealmEndpoint creates an endpoint for SendSmsCodeInSocialRealm
+func MakeSendSmsCodeInSocialRealmEndpoint(component Component) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+
+		code, err := component.SendSmsCodeInSocialRealm(ctx, m[prmUserID])
+		return map[string]string{"code": code}, err
 	}
 }

@@ -182,3 +182,21 @@ func createValidUser() apikyc.UserRepresentation {
 		Attachments:          nil,
 	}
 }
+
+func TestMakeSendSmsCodeInSocialRealmEndpoint(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var userID = "123-456-789"
+	var ctx = context.Background()
+	var req = make(map[string]string)
+	req[prmUserID] = userID
+
+	var mockKYCComponent = mock.NewComponent(mockCtrl)
+
+	mockKYCComponent.EXPECT().SendSmsCodeInSocialRealm(ctx, userID).Return("1234", nil)
+
+	var res, err = MakeSendSmsCodeInSocialRealmEndpoint(mockKYCComponent)(ctx, req)
+	assert.Nil(t, err)
+	assert.Equal(t, map[string]string{"code": "1234"}, res)
+}

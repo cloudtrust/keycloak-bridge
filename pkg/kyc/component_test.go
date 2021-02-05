@@ -3,10 +3,12 @@ package kyc
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 
 	cs "github.com/cloudtrust/common-service"
 	"github.com/cloudtrust/common-service/configuration"
+	"github.com/cloudtrust/common-service/database"
 	log "github.com/cloudtrust/common-service/log"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
@@ -417,5 +419,55 @@ func TestEnsureContactVerified(t *testing.T) {
 		var err = component.ensureContactVerified(ctx, kcUser)
 		assert.NotNil(t, err)
 		assert.Contains(t, err.Error(), constants.PhoneNumber)
+	})
+}
+
+func TestSendSmsCodeInSocialRealm(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var targetRealm = "cloudtrust"
+	var mocks = createComponentMocks(mockCtrl)
+	var component = mocks.NewComponent(targetRealm)
+
+	var accessToken = "TOKEN=="
+	var userID = "1245-7854-8963"
+	var ctx = context.TODO()
+
+	t.Run("Can't get access token", func(t *testing.T) {
+		var tokenError = errors.New("token error")
+		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return("", tokenError)
+
+		_, err := component.SendSmsCodeInSocialRealm(ctx, userID)
+		assert.Equal(t, tokenError, err)
+	})
+	mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil).AnyTimes()
+
+	t.Run("Send new sms code", func(t *testing.T) {
+		var code = "1234"
+		mocks.keycloakClient.EXPECT().SendSmsCode(accessToken, component.socialRealmName, userID).Return(kc.SmsCodeRepresentation{Code: &code}, nil)
+		mocks.eventsDB.EXPECT().ReportEvent(ctx, "SMS_CHALLENGE", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+
+		codeRes, err := component.SendSmsCodeInSocialRealm(ctx, userID)
+
+		assert.Nil(t, err)
+		assert.Equal(t, "1234", codeRes)
+	})
+	t.Run("Send new sms code but have error when storing the event in the DB", func(t *testing.T) {
+		var code = "1234"
+		mocks.keycloakClient.EXPECT().SendSmsCode(accessToken, component.socialRealmName, userID).Return(kc.SmsCodeRepresentation{Code: &code}, nil)
+
+		mocks.eventsDB.EXPECT().ReportEvent(ctx, "SMS_CHALLENGE", "back-office", database.CtEventRealmName, component.socialRealmName, database.CtEventUserID, userID).Return(errors.New("error"))
+		codeRes, err := component.SendSmsCodeInSocialRealm(ctx, userID)
+
+		assert.Nil(t, err)
+		assert.Equal(t, "1234", codeRes)
+	})
+	t.Run("Error", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().SendSmsCode(accessToken, component.socialRealmName, userID).Return(kc.SmsCodeRepresentation{}, fmt.Errorf("Invalid input"))
+
+		_, err := component.SendSmsCodeInSocialRealm(ctx, userID)
+
+		assert.NotNil(t, err)
 	})
 }

@@ -25,6 +25,7 @@ type KeycloakClient interface {
 	GetUser(accessToken string, realmName, userID string) (kc.UserRepresentation, error)
 	GetUsers(accessToken string, reqRealmName, targetRealmName string, paramKV ...string) (kc.UsersPageRepresentation, error)
 	GetGroups(accessToken string, realmName string) ([]kc.GroupRepresentation, error)
+	SendSmsCode(accessToken string, realmName string, userID string) (kc.SmsCodeRepresentation, error)
 }
 
 // UsersDetailsDBModule is the interface from the users module
@@ -58,6 +59,7 @@ type Component interface {
 	GetUserByUsernameInSocialRealm(ctx context.Context, username string) (apikyc.UserRepresentation, error)
 	ValidateUserInSocialRealm(ctx context.Context, userID string, user apikyc.UserRepresentation) error
 	ValidateUser(ctx context.Context, realm string, userID string, user apikyc.UserRepresentation) error
+	SendSmsCodeInSocialRealm(ctx context.Context, userID string) (string, error)
 }
 
 // Component is the management component.
@@ -331,4 +333,27 @@ func (c *component) reportEvent(ctx context.Context, apiCall string, values ...s
 
 func ptr(value string) *string {
 	return &value
+}
+
+func (c *component) SendSmsCodeInSocialRealm(ctx context.Context, userID string) (string, error) {
+	var accessToken, err = c.tokenProvider.ProvideToken(ctx)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Can't get OIDC token", "err", err.Error())
+		return "", err
+	}
+
+	return c.sendSmsCode(ctx, accessToken, c.socialRealmName, userID)
+}
+
+func (c *component) sendSmsCode(ctx context.Context, accessToken string, realm string, userID string) (string, error) {
+	smsCodeKc, err := c.keycloakClient.SendSmsCode(accessToken, realm, userID)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return "", err
+	}
+
+	// store the API call into the DB
+	c.reportEvent(ctx, "SMS_CHALLENGE", database.CtEventRealmName, realm, database.CtEventUserID, userID)
+
+	return *smsCodeKc.Code, err
 }

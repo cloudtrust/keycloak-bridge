@@ -813,6 +813,7 @@ func main() {
 			GetUserByUsernameInSocialRealm: prepareEndpoint(kyc.MakeGetUserByUsernameInSocialRealmEndpoint(kycComponent), "get_user_by_usernamein_social_realm", influxMetrics, kycLogger, tracer, rateLimitKyc),
 			ValidateUserInSocialRealm:      prepareEndpoint(kyc.MakeValidateUserInSocialRealmEndpoint(kycComponent), "validate_userin_social_realm", influxMetrics, kycLogger, tracer, rateLimitKyc),
 			ValidateUser:                   prepareEndpoint(kyc.MakeValidateUserEndpoint(kycComponent), "validate_user", influxMetrics, kycLogger, tracer, rateLimitKyc),
+			SendSMSCodeInSocialRealm:       prepareEndpoint(kyc.MakeSendSmsCodeInSocialRealmEndpoint(kycComponent), "send_sms_code_in_social_realm", influxMetrics, kycLogger, tracer, rateLimitKyc),
 		}
 	}
 
@@ -1082,12 +1083,14 @@ func main() {
 		var kycGetUserByUsernameInSocialRealmHandler = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, endpointPhysicalCheckAvailabilityChecker, true, logger)(kycEndpoints.GetUserByUsernameInSocialRealm)
 		var kycValidateUserInSocialRealmHandler = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, endpointPhysicalCheckAvailabilityChecker, true, logger)(kycEndpoints.ValidateUserInSocialRealm)
 		var kycValidateUserHandler = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, endpointPhysicalCheckAvailabilityChecker, false, logger)(kycEndpoints.ValidateUser)
+		var kycSendSMSCodeHandlerInSocialRealm = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, endpointPhysicalCheckAvailabilityChecker, false, logger)(kycEndpoints.SendSMSCodeInSocialRealm)
 
 		// KYC methods
 		route.Path("/kyc/actions").Methods("GET").Handler(kycGetActionsHandler)
 		route.Path("/kyc/social/users").Methods("GET").Handler(kycGetUserByUsernameInSocialRealmHandler)
 		route.Path("/kyc/social/users/{userID}").Methods("GET").Handler(kycGetUserInSocialRealmHandler)
 		route.Path("/kyc/social/users/{userID}").Methods("PUT").Handler(kycValidateUserInSocialRealmHandler)
+		route.Path("/kyc/social/users/{userID}/send-sms-code").Methods("POST").Handler(kycSendSMSCodeHandlerInSocialRealm)
 		route.Path("/kyc/realms/{realm}/users/{userID}").Methods("PUT").Handler(kycValidateUserHandler)
 
 		var handler http.Handler = route
