@@ -61,8 +61,8 @@ func TestConvertToAPIAccount(t *testing.T) {
 		assert.Equal(t, "fr", *user.Locale)
 		assert.True(t, *user.PhoneNumberVerified)
 		assert.Len(t, *user.Accreditations, 2)
-		assert.Nil(t, (*user.Accreditations)[0].Revoked)
-		assert.Nil(t, (*user.Accreditations)[1].Revoked)
+		assert.False(t, *(*user.Accreditations)[0].Revoked)
+		assert.False(t, *(*user.Accreditations)[1].Revoked)
 		assert.False(t, *(*user.Accreditations)[1].Expired)
 	})
 
@@ -77,9 +77,10 @@ func TestConvertToAPIAccount(t *testing.T) {
 		attributes.Set(constants.AttrbAccreditations, []string{`{"type":"one","expiryDate":"05.04.2020"}`, `{"type":"two","expiryDate":"05.03.2039", "revoked": true}`})
 		var user = ConvertToAPIAccount(ctx, kcUser, logger)
 		assert.Len(t, *user.Accreditations, 2)
-		assert.Nil(t, (*user.Accreditations)[0].Revoked)
-		assert.Nil(t, (*user.Accreditations)[1].Revoked)
-		assert.True(t, *(*user.Accreditations)[1].Expired)
+		assert.False(t, *(*user.Accreditations)[0].Revoked)
+		assert.True(t, *(*user.Accreditations)[0].Expired)
+		assert.True(t, *(*user.Accreditations)[1].Revoked)
+		assert.False(t, *(*user.Accreditations)[1].Expired)
 	})
 
 	t.Run("Accreditations are invalid", func(t *testing.T) {

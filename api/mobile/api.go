@@ -22,6 +22,7 @@ type AccreditationRepresentation struct {
 	Type       *string `json:"type"`
 	ExpiryDate *string `json:"expiryDate"`
 	Expired    *bool   `json:"expired,omitempty"`
+	Revoked    *bool   `json:"revoked,omitempty"`
 }
 
 // CheckRepresentation is a representation of a check
@@ -39,10 +40,14 @@ func (u *UserInformationRepresentation) SetAccreditations(ctx context.Context, a
 	}
 
 	var accreds []AccreditationRepresentation
+	var bFalse = false
 	for _, accredJSON := range attrAccreditations {
 		var accred AccreditationRepresentation
 		if json.Unmarshal([]byte(accredJSON), &accred) == nil {
 			accred.Expired = keycloakb.IsDateInThePast(accred.ExpiryDate)
+			if accred.Revoked == nil {
+				accred.Revoked = &bFalse
+			}
 			accreds = append(accreds, accred)
 		} else {
 			logger.Warn(ctx, "msg", "Can't unmarshall JSON", "json", accredJSON)

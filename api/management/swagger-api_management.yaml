@@ -1578,6 +1578,9 @@ components:
               expired:
                 type: boolean
                 description: true if the expiry date has passed
+              revoked:
+                type: boolean
+                description: true if the accreditation has been revoked for any reason (example. personal information updated after accreditation)
         createdTimestamp:
           type: integer
           format: int64
