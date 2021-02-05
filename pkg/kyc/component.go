@@ -228,14 +228,20 @@ func (c *component) validateUser(ctx context.Context, accessToken string, realmN
 
 	// Store check in database
 	var validation = dto.DBCheck{
-		Operator: &operatorName,
-		DateTime: &now,
-		Status:   ptr("VERIFIED"),
-		Type:     ptr("IDENTITY_CHECK"),
-		Nature:   ptr("PHYSICAL_CHECK"),
-		Comment:  user.Comment,
+		Operator:  &operatorName,
+		DateTime:  &now,
+		Status:    ptr("VERIFIED"),
+		Type:      ptr("IDENTITY_CHECK"),
+		Nature:    ptr("PHYSICAL_CHECK"),
+		Comment:   user.Comment,
+		ProofType: nil,
+		ProofData: nil,
 	}
 
+	if user.Attachments != nil && len(*user.Attachments) > 0 {
+		validation.ProofType = (*user.Attachments)[0].ContentType
+		validation.ProofData = (*user.Attachments)[0].Content
+	}
 	err = c.usersDBModule.CreateCheck(ctx, realmName, userID, validation)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Can't store validation check in database", "err", err.Error())

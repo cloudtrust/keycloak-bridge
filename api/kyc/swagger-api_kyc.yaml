@@ -220,6 +220,24 @@ components:
               expired:
                 type: bool
                 description: true if the expiry date has passed
+        attachments:
+          type: array
+          description: Used only by validateUser and currently limited to one attachment.
+          items:
+            $ref: '#/components/schemas/Attachment'
+    Attachment:
+      type: object
+      required: [content]
+      properties:
+        filename:
+          type: string
+        contentType:
+          type: string
+          description: when missing, content type is evaluated using file extension
+        content:
+          type: string
+          format: byte
+          description: file size should be smaller than 5 Mo
   securitySchemes:
     openId:
       type: openIdConnect

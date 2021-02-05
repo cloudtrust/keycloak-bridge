@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/cloudtrust/keycloak-bridge/internal/dto"
-
+	cerrors "github.com/cloudtrust/common-service/errors"
 	"github.com/cloudtrust/common-service/validation"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
+	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	kc "github.com/cloudtrust/keycloak-client"
 )
@@ -40,6 +40,7 @@ type UserRepresentation struct {
 	Locale               *string                        `json:"locale,omitempty"`
 	Comment              *string                        `json:"comment,omitempty"`
 	Accreditations       *[]AccreditationRepresentation `json:"accreditations,omitempty"`
+	Attachments          *[]AttachmentRepresentation    `json:"attachments,omitempty"`
 }
 
 // AccreditationRepresentation is a representation of accreditations
@@ -49,13 +50,18 @@ type AccreditationRepresentation struct {
 	Expired    *bool   `json:"expired,omitempty"`
 }
 
+// AttachmentRepresentation is a representation of an attached file
+type AttachmentRepresentation struct {
+	Filename    *string `json:"filename,omitempty"`
+	ContentType *string `json:"contentType,omitempty"`
+	Content     *[]byte `json:"content,omitempty"`
+}
+
 // Parameter references
 const (
 	prmUserGender               = "user_gender"
 	prmUserFirstName            = "user_firstName"
 	prmUserLastName             = "user_lastName"
-	prmUserEmail                = "user_emailAddress"
-	prmUserPhoneNumber          = "user_phoneNumber"
 	prmUserBirthDate            = "user_birthDate"
 	prmUserBirthLocation        = "user_birthLocation"
 	prmUserNationality          = "user_nationality"
@@ -64,20 +70,31 @@ const (
 	prmUserIDDocumentExpiration = "user_idDocExpiration"
 	prmUserIDDocumentCountry    = "user_idDocCountry"
 	prmUserLocale               = "user_locale"
+	prmAttachments              = "attachments"
+	prmFilename                 = "attachmentFilename"
+	prmContentType              = "attachmentContentType"
+	prmContent                  = "attachmentContent"
 
 	regExpNames             = `^([\wàáâäçèéêëìíîïñòóôöùúûüß]+([ '-][\wàáâäçèéêëìíîïñòóôöùúûüß]+)*){1,50}$`
 	regExpFirstName         = regExpNames
 	regExpLastName          = regExpNames
-	regExpEmail             = `^.+\@.+\..+$`
 	regExpBirthLocation     = regExpNames
 	regExpNationality       = constants.RegExpCountryCode
 	regExpIDDocumentNumber  = constants.RegExpIDDocumentNumber
 	regExpIDDocumentCountry = constants.RegExpCountryCode
 	regExpGender            = constants.RegExpGender
 	regExpLocale            = constants.RegExpLocale
+	regExpMimeType          = `^[a-z]+/[\w\d\.+]+$`
 
-	dateLayout = "02.01.2006"
+	minAttachmentSize = 100
+	maxAttachmentSize = 5 * 1024 * 1024
 )
+
+var knownContentTypes = map[string]string{
+	"jpg":  "image/jpeg",
+	"jpeg": "image/jpeg",
+	"pdf":  "application/pdf",
+}
 
 // UserFromJSON creates a User using its json representation
 func UserFromJSON(jsonRep string) (UserRepresentation, error) {
@@ -199,13 +216,74 @@ func (u *UserRepresentation) Validate() error {
 		ValidateParameterRegExp(prmUserGender, u.Gender, regExpGender, true).
 		ValidateParameterRegExp(prmUserFirstName, u.FirstName, regExpFirstName, true).
 		ValidateParameterRegExp(prmUserLastName, u.LastName, regExpLastName, true).
-		ValidateParameterDate(prmUserBirthDate, u.BirthDate, dateLayout, true).
+		ValidateParameterDate(prmUserBirthDate, u.BirthDate, constants.SupportedDateLayouts[0], true).
 		ValidateParameterRegExp(prmUserBirthLocation, u.BirthLocation, regExpBirthLocation, false).
 		ValidateParameterRegExp(prmUserNationality, u.Nationality, regExpNationality, false).
 		ValidateParameterIn(prmUserIDDocumentType, u.IDDocumentType, constants.AllowedDocumentTypes, false).
 		ValidateParameterRegExp(prmUserIDDocumentNumber, u.IDDocumentNumber, regExpIDDocumentNumber, true).
-		ValidateParameterDate(prmUserIDDocumentExpiration, u.IDDocumentExpiration, dateLayout, false).
+		ValidateParameterDate(prmUserIDDocumentExpiration, u.IDDocumentExpiration, constants.SupportedDateLayouts[0], false).
 		ValidateParameterRegExp(prmUserIDDocumentCountry, u.IDDocumentCountry, regExpIDDocumentCountry, false).
 		ValidateParameterRegExp(prmUserLocale, u.Locale, regExpLocale, false).
+		ValidateParameterFunc(func() error {
+			var nbAttachments = 0
+			if u.Attachments != nil {
+				nbAttachments = len(*u.Attachments)
+			}
+			if nbAttachments == 0 {
+				return nil
+			}
+			if nbAttachments != 1 {
+				return cerrors.CreateBadRequestError(cerrors.MsgErrInvalidParam + "." + prmAttachments)
+			}
+			for _, attachment := range *u.Attachments {
+				if err := attachment.Validate(); err != nil {
+					return err
+				}
+			}
+			return nil
+		}).
 		Status()
+}
+
+// Validate an AttachmentRepresentation
+func (a *AttachmentRepresentation) Validate() error {
+	var err = validation.NewParameterValidator().
+		ValidateParameterRegExp(prmContentType, a.ContentType, regExpMimeType, false).
+		ValidateParameterNotNil(prmContent, a.Content).
+		Status()
+	if err != nil {
+		return err
+	}
+	if a.ContentType == nil {
+		if a.Filename == nil {
+			return cerrors.CreateMissingParameterError(prmContentType)
+		}
+		a.ContentType = evaluateContentType(*a.Filename)
+		if a.ContentType == nil {
+			return cerrors.CreateBadRequestError(cerrors.MsgErrInvalidParam + "." + prmFilename)
+		}
+	} else if !isKnownContentType(*a.ContentType) {
+		return cerrors.CreateBadRequestError(cerrors.MsgErrInvalidParam + "." + prmContentType)
+	}
+	if len(*a.Content) < minAttachmentSize || len(*a.Content) > maxAttachmentSize {
+		return cerrors.CreateBadRequestError(cerrors.MsgErrInvalidParam + "." + prmContent)
+	}
+	return nil
+}
+
+func evaluateContentType(filename string) *string {
+	var fileSplits = strings.Split(filename, ".")
+	if contentType, ok := knownContentTypes[fileSplits[len(fileSplits)-1]]; ok {
+		return &contentType
+	}
+	return nil
+}
+
+func isKnownContentType(contentType string) bool {
+	for _, mimeType := range knownContentTypes {
+		if mimeType == contentType {
+			return true
+		}
+	}
+	return false
 }

@@ -13,7 +13,6 @@ import (
 )
 
 const (
-	reqHost  = "host"
 	reqBody  = "body"
 	prmRealm = "realm"
 )

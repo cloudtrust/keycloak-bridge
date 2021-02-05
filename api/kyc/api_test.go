@@ -2,6 +2,7 @@ package apikyc
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/cloudtrust/common-service/log"
@@ -34,6 +35,7 @@ func createValidUser() UserRepresentation {
 		accred1         = AccreditationRepresentation{Type: ptr("short"), ExpiryDate: ptr("31.12.2024")}
 		accred2         = AccreditationRepresentation{Type: ptr("long"), ExpiryDate: ptr("31.12.2039")}
 		creds           = []AccreditationRepresentation{accred1, accred2}
+		attachments     = []AttachmentRepresentation{createValidAttachment()}
 	)
 
 	return UserRepresentation{
@@ -54,7 +56,16 @@ func createValidUser() UserRepresentation {
 		IDDocumentCountry:    &country,
 		Locale:               &locale,
 		Accreditations:       &creds,
+		Attachments:          &attachments,
 	}
+}
+
+func createValidAttachment() AttachmentRepresentation {
+	var (
+		contentBase  = "basicvalueofsomecharacters"
+		contentBytes = []byte(contentBase + contentBase + contentBase + contentBase)
+	)
+	return AttachmentRepresentation{Filename: ptr("filename.pdf"), ContentType: ptr("application/pdf"), Content: &contentBytes}
 }
 
 func createValidKeycloakUser() kc.UserRepresentation {
@@ -171,39 +182,90 @@ func TestImportFromKeycloak(t *testing.T) {
 func TestValidateUserRepresentation(t *testing.T) {
 	var (
 		empty       = ""
-		user        = createValidUser()
 		invalidDate = "29.02.2019"
 	)
 
-	t.Run("Valid users", func(t *testing.T) {
+	t.Run("Valid users with an attachment", func(t *testing.T) {
+		var user = createValidUser()
 		assert.Nil(t, user.Validate(), "User is expected to be valid")
 	})
+	t.Run("Valid users without attachment", func(t *testing.T) {
+		var user = createValidUser()
+		user.Attachments = nil
+		assert.Nil(t, user.Validate(), "User is expected to be valid")
+	})
+	var users []UserRepresentation
+	for i := 0; i < 17; i++ {
+		users = append(users, createValidUser())
+	}
+	// invalid values
+	users[0].Gender = &empty
+	users[1].FirstName = &empty
+	users[2].LastName = &empty
+	users[3].BirthDate = &invalidDate
+	users[4].BirthLocation = &empty
+	users[5].Nationality = &empty
+	users[6].IDDocumentType = &empty
+	users[7].IDDocumentNumber = &empty
+	users[8].IDDocumentExpiration = &invalidDate
+	users[9].IDDocumentCountry = &empty
+	// mandatory parameters
+	users[10].Gender = nil
+	users[11].FirstName = nil
+	users[12].LastName = nil
+	users[13].BirthDate = nil
+	users[14].IDDocumentNumber = nil
+	var newAttachments = append(*users[15].Attachments, AttachmentRepresentation{})
+	users[15].Attachments = &newAttachments
+	var oneByte = []byte{0}
+	(*users[16].Attachments)[0].Content = &oneByte
 
-	t.Run("Invalid users", func(t *testing.T) {
-		var users []UserRepresentation
-		for i := 0; i < 15; i++ {
-			users = append(users, user)
-		}
-		// invalid values
-		users[0].Gender = &empty
-		users[1].FirstName = &empty
-		users[2].LastName = &empty
-		users[3].BirthDate = &invalidDate
-		users[4].BirthLocation = &empty
-		users[5].Nationality = &empty
-		users[6].IDDocumentType = &empty
-		users[7].IDDocumentNumber = &empty
-		users[8].IDDocumentExpiration = &invalidDate
-		users[9].IDDocumentCountry = &empty
-		// mandatory parameters
-		users[10].Gender = nil
-		users[11].FirstName = nil
-		users[12].LastName = nil
-		users[13].BirthDate = nil
-		users[14].IDDocumentNumber = nil
+	for idx, aUser := range users {
+		t.Run(fmt.Sprintf("Invalid users %d", idx), func(t *testing.T) {
+			assert.NotNil(t, aUser.Validate(), "User is expected to be invalid with user %s", aUser.UserToJSON())
+		})
+	}
+}
 
-		for idx, aUser := range users {
-			assert.NotNil(t, aUser.Validate(), "User is expected to be invalid. Test #%d failed with user %s", idx, aUser.UserToJSON())
-		}
+func TestValidateAttachment(t *testing.T) {
+	t.Run("Valid attachment", func(t *testing.T) {
+		var attachment = createValidAttachment()
+		assert.Nil(t, attachment.Validate())
+	})
+	t.Run("Successful evaluation of content type", func(t *testing.T) {
+		var attachment = createValidAttachment()
+		attachment.Filename = ptr("image.jpg")
+		attachment.ContentType = nil
+		assert.Nil(t, attachment.Validate())
+		assert.Equal(t, "image/jpeg", *attachment.ContentType)
+	})
+	t.Run("Missing both filename and content type", func(t *testing.T) {
+		var attachment = createValidAttachment()
+		attachment.Filename = nil
+		attachment.ContentType = nil
+		assert.NotNil(t, attachment.Validate())
+	})
+	t.Run("Invalid content type", func(t *testing.T) {
+		var attachment = createValidAttachment()
+		attachment.ContentType = ptr("not-a-valid-content-type")
+		assert.NotNil(t, attachment.Validate())
+	})
+	t.Run("Can't find known content type from filename", func(t *testing.T) {
+		var attachment = createValidAttachment()
+		attachment.Filename = ptr("image.gif")
+		attachment.ContentType = nil
+		assert.NotNil(t, attachment.Validate())
+	})
+	t.Run("Unsupported content type", func(t *testing.T) {
+		var attachment = createValidAttachment()
+		attachment.Filename = nil
+		attachment.ContentType = ptr("text/plain")
+		assert.NotNil(t, attachment.Validate())
+	})
+	t.Run("Invalid content length", func(t *testing.T) {
+		var attachment = createValidAttachment()
+		var bytes = []byte{1, 2, 3}
+		attachment.Content = &bytes
+		assert.NotNil(t, attachment.Validate())
 	})
 }
