@@ -2397,7 +2397,7 @@ func TestExecuteActionsEmail(t *testing.T) {
 	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
 
 	t.Run("Send email actions", func(t *testing.T) {
-		mocks.keycloakClient.EXPECT().ExecuteActionsEmail(accessToken, realmName, userID, actions, key1, value1, key2, value2).Return(nil)
+		mocks.keycloakClient.EXPECT().ExecuteActionsEmail(accessToken, realmName, realmName, userID, actions, key1, value1, key2, value2).Return(nil)
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "INIT_PASSWORD", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
@@ -2408,7 +2408,7 @@ func TestExecuteActionsEmail(t *testing.T) {
 		assert.Nil(t, err)
 	})
 	t.Run("Error", func(t *testing.T) {
-		mocks.keycloakClient.EXPECT().ExecuteActionsEmail(accessToken, realmName, userID, actions).Return(fmt.Errorf("Invalid input"))
+		mocks.keycloakClient.EXPECT().ExecuteActionsEmail(accessToken, realmName, realmName, userID, actions).Return(fmt.Errorf("Invalid input"))
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "ACTION_EMAIL", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
@@ -2421,7 +2421,7 @@ func TestExecuteActionsEmail(t *testing.T) {
 	t.Run("Send email actions, but not sms-password-set", func(t *testing.T) {
 		var actions2 = []string{"action1", "action2"}
 		var reqActions2 = []api.RequiredAction{"action1", "action2"}
-		mocks.keycloakClient.EXPECT().ExecuteActionsEmail(accessToken, realmName, userID, actions2, key1, value1, key2, value2).Return(nil)
+		mocks.keycloakClient.EXPECT().ExecuteActionsEmail(accessToken, realmName, realmName, userID, actions2, key1, value1, key2, value2).Return(nil)
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "ACTION_EMAIL", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
@@ -2639,7 +2639,7 @@ func TestSendOnboardingEmail(t *testing.T) {
 			})
 
 		mocks.onboardingModule.EXPECT().SendOnboardingEmail(ctx, accessToken, realmName, userID, username,
-			autoLoginToken, onboardingClientID, onboardingRedirectURI+"?customerRealm="+customerRealmName, true).Return(errors.New("unexpected error"))
+			autoLoginToken, onboardingClientID, onboardingRedirectURI+"?customerRealm="+customerRealmName, customerRealmName, true).Return(errors.New("unexpected error"))
 
 		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, customerRealmName, true)
 		assert.NotNil(t, err)
@@ -2668,7 +2668,7 @@ func TestSendOnboardingEmail(t *testing.T) {
 				return nil
 			})
 
-		mocks.onboardingModule.EXPECT().SendOnboardingEmail(ctx, accessToken, realmName, userID, username, autoLoginToken, onboardingClientID, onboardingRedirectURI, false).Return(nil)
+		mocks.onboardingModule.EXPECT().SendOnboardingEmail(ctx, accessToken, realmName, userID, username, autoLoginToken, onboardingClientID, onboardingRedirectURI, gomock.Any(), false).Return(nil)
 
 		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "EMAIL_ONBOARDING_SENT", "back-office", database.CtEventRealmName, realmName, database.CtEventUserID, userID).Return(nil)
 

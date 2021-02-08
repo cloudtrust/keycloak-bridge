@@ -26,7 +26,6 @@ type KeycloakClient interface {
 	DeleteUser(accessToken string, realmName, userID string) error
 	GetUsers(accessToken string, reqRealmName, targetRealmName string, paramKV ...string) (kc.UsersPageRepresentation, error)
 	GetGroups(accessToken string, realmName string) ([]kc.GroupRepresentation, error)
-	ExecuteActionsEmail(accessToken string, realmName string, userID string, actions []string, paramKV ...string) error
 }
 
 // ConfigurationDBModule is the interface of the configuration module.
@@ -39,8 +38,8 @@ type ConfigurationDBModule interface {
 type OnboardingModule interface {
 	GenerateAuthToken() (keycloakb.TrustIDAuthToken, error)
 	OnboardingAlreadyCompleted(kc.UserRepresentation) (bool, error)
-	SendOnboardingEmail(ctx context.Context, accessToken string, realmName string, userID string,
-		username string, autoLoginToken keycloakb.TrustIDAuthToken, onboardingClientID string, onboardingRedirectURI string, reminder bool) error
+	SendOnboardingEmail(ctx context.Context, accessToken string, realmName string, userID string, username string,
+		autoLoginToken keycloakb.TrustIDAuthToken, onboardingClientID string, onboardingRedirectURI string, themeRealmName string, reminder bool) error
 	CreateUser(ctx context.Context, accessToken, realmName, targetRealmName string, kcUser *kc.UserRepresentation) (string, error)
 }
 
@@ -191,8 +190,8 @@ func (c *component) RegisterUser(ctx context.Context, targetRealmName string, cu
 		onboardingRedirectURI += "?customerRealm=" + customerRealmName
 	}
 
-	err = c.onboardingModule.SendOnboardingEmail(ctx, accessToken, targetRealmName, userID,
-		username, autoLoginToken, *realmConf.OnboardingClientID, onboardingRedirectURI, false)
+	err = c.onboardingModule.SendOnboardingEmail(ctx, accessToken, targetRealmName, userID, username,
+		autoLoginToken, *realmConf.OnboardingClientID, onboardingRedirectURI, customerRealmName, false)
 	if err != nil {
 		return "", err
 	}

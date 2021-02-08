@@ -39,7 +39,7 @@ type onboardingModule struct {
 // OnboardingKeycloakClient interface
 type OnboardingKeycloakClient interface {
 	CreateUser(accessToken string, realmName string, targetRealmName string, user kc.UserRepresentation) (string, error)
-	ExecuteActionsEmail(accessToken string, realmName string, userID string, actions []string, paramKV ...string) error
+	ExecuteActionsEmail(accessToken string, reqRealmName string, targetRealmName string, userID string, actions []string, paramKV ...string) error
 }
 
 //OnboardingModule interface
@@ -47,7 +47,7 @@ type OnboardingModule interface {
 	GenerateAuthToken() (TrustIDAuthToken, error)
 	OnboardingAlreadyCompleted(kc.UserRepresentation) (bool, error)
 	SendOnboardingEmail(ctx context.Context, accessToken string, realmName string, userID string, username string,
-		autoLoginToken TrustIDAuthToken, onboardingClientID string, onboardingRedirectURI string, reminder bool) error
+		autoLoginToken TrustIDAuthToken, onboardingClientID string, onboardingRedirectURI string, themeRealmName string, reminder bool) error
 	CreateUser(ctx context.Context, accessToken, realmName, targetRealmName string, kcUser *kc.UserRepresentation) (string, error)
 }
 
@@ -84,8 +84,8 @@ func (om *onboardingModule) OnboardingAlreadyCompleted(kcUser kc.UserRepresentat
 	return onboardingCompleted != nil && *onboardingCompleted, nil
 }
 
-func (om *onboardingModule) SendOnboardingEmail(ctx context.Context, accessToken string, realmName string, userID string,
-	username string, autoLoginToken TrustIDAuthToken, onboardingClientID string, onboardingRedirectURI string, reminder bool) error {
+func (om *onboardingModule) SendOnboardingEmail(ctx context.Context, accessToken string, realmName string, userID string, username string,
+	autoLoginToken TrustIDAuthToken, onboardingClientID string, onboardingRedirectURI string, themeRealmName string, reminder bool) error {
 
 	redirectURL, err := url.Parse(om.keycloakURL + "/auth/realms/" + realmName + "/protocol/openid-connect/auth")
 	if err != nil {
@@ -107,7 +107,8 @@ func (om *onboardingModule) SendOnboardingEmail(ctx context.Context, accessToken
 	if reminder {
 		actions = []string{"VERIFY_EMAIL", "reminder-action"}
 	}
-	err = om.keycloakClient.ExecuteActionsEmail(accessToken, realmName, userID, actions, "client_id", onboardingClientID, "redirect_uri", redirectURL.String())
+	var additionalParams = []string{"client_id", onboardingClientID, "redirect_uri", redirectURL.String(), "themeRealm", themeRealmName}
+	err = om.keycloakClient.ExecuteActionsEmail(accessToken, realmName, realmName, userID, actions, additionalParams...)
 	if err != nil {
 		om.logger.Warn(ctx, "msg", "ExecuteActionsEmail failed", "err", err.Error())
 		return err
