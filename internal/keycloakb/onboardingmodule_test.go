@@ -123,14 +123,14 @@ func TestSendOnboardingEmail(t *testing.T) {
 	var autoLoginToken, _ = onboardingModule.GenerateAuthToken()
 
 	t.Run("Failed to perform ExecuteActionEmail without reminder", func(t *testing.T) {
-		mockKeycloakClient.EXPECT().ExecuteActionsEmail(accessToken, realmName, realmName, userID, []string{"VERIFY_EMAIL"},
+		mockKeycloakClient.EXPECT().ExecuteActionsEmail(accessToken, realmName, realmName, userID, []string{"VERIFY_EMAIL", "onboarding-action"},
 			"client_id", onboardingClientID, "redirect_uri", gomock.Any(), "themeRealm", themeRealmName).Return(errors.New("unexpected error"))
 		err := onboardingModule.SendOnboardingEmail(ctx, accessToken, realmName, userID, username, autoLoginToken, onboardingClientID, onboardingRedirectURI, themeRealmName, false)
 
 		assert.NotNil(t, err)
 	})
 	t.Run("Failed to perform ExecuteActionEmail with reminder", func(t *testing.T) {
-		mockKeycloakClient.EXPECT().ExecuteActionsEmail(accessToken, realmName, realmName, userID, []string{"VERIFY_EMAIL", "reminder-action"},
+		mockKeycloakClient.EXPECT().ExecuteActionsEmail(accessToken, realmName, realmName, userID, []string{"VERIFY_EMAIL", "onboarding-action", "reminder-action"},
 			"client_id", onboardingClientID, "redirect_uri", gomock.Any(), "themeRealm", themeRealmName).Return(errors.New("unexpected error"))
 		err := onboardingModule.SendOnboardingEmail(ctx, accessToken, realmName, userID, username, autoLoginToken, onboardingClientID, onboardingRedirectURI, themeRealmName, true)
 
@@ -141,7 +141,7 @@ func TestSendOnboardingEmail(t *testing.T) {
 		var embeddedURI = url.QueryEscape(onboardingRedirectURI)
 		var token = url.QueryEscape(autoLoginToken.Token)
 		var expectedFullURI = "http://keycloak.url/auth/realms/" + realmName + "/protocol/openid-connect/auth?client_id=" + onboardingClientID + "&login_hint=" + username + "&redirect_uri=" + embeddedURI + "&response_type=code&scope=openid&trustid_auth_token=" + token
-		mockKeycloakClient.EXPECT().ExecuteActionsEmail(accessToken, realmName, realmName, userID, []string{"VERIFY_EMAIL"},
+		mockKeycloakClient.EXPECT().ExecuteActionsEmail(accessToken, realmName, realmName, userID, []string{"VERIFY_EMAIL", "onboarding-action"},
 			"client_id", onboardingClientID, "redirect_uri", gomock.Any(), "themeRealm", themeRealmName).DoAndReturn(
 			func(_, _, _, _ string, _ []string, _, _, _ string, redirectURI string, _, _ interface{}) error {
 				_, err := url.Parse(redirectURI)
