@@ -103,9 +103,9 @@ func (om *onboardingModule) SendOnboardingEmail(ctx context.Context, accessToken
 
 	redirectURL.RawQuery = parameters.Encode()
 
-	var actions = []string{"VERIFY_EMAIL"}
+	var actions = []string{"VERIFY_EMAIL", "onboarding-action"}
 	if reminder {
-		actions = []string{"VERIFY_EMAIL", "reminder-action"}
+		actions = []string{"VERIFY_EMAIL", "onboarding-action", "reminder-action"}
 	}
 	var additionalParams = []string{"client_id", onboardingClientID, "redirect_uri", redirectURL.String(), "themeRealm", themeRealmName}
 	err = om.keycloakClient.ExecuteActionsEmail(accessToken, realmName, realmName, userID, actions, additionalParams...)
