@@ -450,6 +450,7 @@ func TestConvertRealmAdminConfiguration(t *testing.T) {
 		}
 		var selfRegisterEnabled = true
 		var needVerifiedContact = false
+		var consentRequired = true
 		var config = configuration.RealmAdminConfiguration{
 			Mode:                &mode,
 			AvailableChecks:     map[string]bool{"true": true, "false": false},
@@ -457,6 +458,7 @@ func TestConvertRealmAdminConfiguration(t *testing.T) {
 			SelfRegisterEnabled: &selfRegisterEnabled,
 			Theme:               ptr("trustid"),
 			NeedVerifiedContact: &needVerifiedContact,
+			ConsentRequired:     &consentRequired,
 		}
 		var res = ConvertRealmAdminConfigurationFromDBStruct(config)
 		assert.Equal(t, mode, *res.Mode)
@@ -471,6 +473,7 @@ func TestConvertRealmAdminConfiguration(t *testing.T) {
 		assert.True(t, *res.SelfRegisterEnabled)
 		assert.Equal(t, config.Theme, res.Theme)
 		assert.False(t, *res.NeedVerifiedContact)
+		assert.True(t, *res.ConsentRequired)
 	})
 }
 
