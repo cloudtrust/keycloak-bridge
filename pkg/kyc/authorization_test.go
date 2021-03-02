@@ -30,6 +30,7 @@ func TestMakeAuthorizationRegisterComponentMW(t *testing.T) {
 	var user = apikyc.UserRepresentation{}
 	var userID = "user4673"
 	var username = "username"
+	var consentCode *string
 	var expectedErr = errors.New("")
 
 	var component = MakeAuthorizationRegisterComponentMW(realm, mockAuthManager, mockAvailabilityChecker, logger.NewNopLogger())(mockComponent)
@@ -52,14 +53,14 @@ func TestMakeAuthorizationRegisterComponentMW(t *testing.T) {
 	t.Run("GetUserInSocialRealm", func(t *testing.T) {
 		t.Run("not authorized", func(t *testing.T) {
 			mockAuthManager.EXPECT().CheckAuthorizationOnTargetRealm(ctx, KYCGetUserInSocialRealm.String(), realm).Return(expectedErr)
-			var _, err = component.GetUserInSocialRealm(ctx, userID)
+			var _, err = component.GetUserInSocialRealm(ctx, userID, consentCode)
 			assert.Equal(t, expectedErr, err)
 		})
 
 		t.Run("authorized", func(t *testing.T) {
 			mockAuthManager.EXPECT().CheckAuthorizationOnTargetRealm(ctx, KYCGetUserInSocialRealm.String(), realm).Return(nil)
-			mockComponent.EXPECT().GetUserInSocialRealm(ctx, userID).Return(apikyc.UserRepresentation{}, expectedErr)
-			var _, err = component.GetUserInSocialRealm(ctx, userID)
+			mockComponent.EXPECT().GetUserInSocialRealm(ctx, userID, consentCode).Return(apikyc.UserRepresentation{}, expectedErr)
+			var _, err = component.GetUserInSocialRealm(ctx, userID, consentCode)
 			assert.Equal(t, expectedErr, err)
 		})
 	})
@@ -83,14 +84,14 @@ func TestMakeAuthorizationRegisterComponentMW(t *testing.T) {
 	t.Run("ValidateUserInSocialRealm", func(t *testing.T) {
 		t.Run("not authorized", func(t *testing.T) {
 			mockAuthManager.EXPECT().CheckAuthorizationOnTargetRealm(ctx, KYCValidateUserInSocialRealm.String(), realm).Return(expectedErr)
-			var err = component.ValidateUserInSocialRealm(ctx, userID, user)
+			var err = component.ValidateUserInSocialRealm(ctx, userID, user, consentCode)
 			assert.Equal(t, expectedErr, err)
 		})
 
 		t.Run("authorized", func(t *testing.T) {
 			mockAuthManager.EXPECT().CheckAuthorizationOnTargetRealm(ctx, KYCValidateUserInSocialRealm.String(), realm).Return(nil)
-			mockComponent.EXPECT().ValidateUserInSocialRealm(ctx, userID, user).Return(expectedErr)
-			var err = component.ValidateUserInSocialRealm(ctx, userID, user)
+			mockComponent.EXPECT().ValidateUserInSocialRealm(ctx, userID, user, consentCode).Return(expectedErr)
+			var err = component.ValidateUserInSocialRealm(ctx, userID, user, consentCode)
 			assert.Equal(t, expectedErr, err)
 		})
 	})
@@ -113,6 +114,20 @@ func TestMakeAuthorizationRegisterComponentMW(t *testing.T) {
 			mockAuthManager.EXPECT().CheckAuthorizationOnTargetUser(ctx, KYCValidateUser.String(), realm, userID).Return(nil)
 			mockComponent.EXPECT().ValidateUser(ctx, realm, userID, user).Return(expectedErr)
 			var err = component.ValidateUser(ctx, realm, userID, user)
+			assert.Equal(t, expectedErr, err)
+		})
+	})
+
+	t.Run("SendSmsConsentCodeInSocialRealm", func(t *testing.T) {
+		t.Run("not authorized", func(t *testing.T) {
+			mockAuthManager.EXPECT().CheckAuthorizationOnTargetRealm(ctx, KYCSendSmsConsentCodeInSocialRealm.String(), realm).Return(expectedErr)
+			var err = component.SendSmsConsentCodeInSocialRealm(ctx, userID)
+			assert.Equal(t, expectedErr, err)
+		})
+		t.Run("authorized", func(t *testing.T) {
+			mockAuthManager.EXPECT().CheckAuthorizationOnTargetRealm(ctx, KYCSendSmsConsentCodeInSocialRealm.String(), realm).Return(nil)
+			mockComponent.EXPECT().SendSmsConsentCodeInSocialRealm(ctx, userID).Return(expectedErr)
+			var err = component.SendSmsConsentCodeInSocialRealm(ctx, userID)
 			assert.Equal(t, expectedErr, err)
 		})
 	})

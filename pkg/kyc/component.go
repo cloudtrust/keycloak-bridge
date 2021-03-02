@@ -2,10 +2,14 @@ package kyc
 
 import (
 	"context"
+	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/cloudtrust/common-service/configuration"
+	"github.com/cloudtrust/common-service/validation"
 	"github.com/cloudtrust/keycloak-client"
+	kc "github.com/cloudtrust/keycloak-client"
 	"github.com/cloudtrust/keycloak-client/toolbox"
 
 	cs "github.com/cloudtrust/common-service"
@@ -16,7 +20,6 @@ import (
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	internal "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
-	kc "github.com/cloudtrust/keycloak-client"
 )
 
 // KeycloakClient are methods from keycloak-client used by this component
@@ -26,6 +29,8 @@ type KeycloakClient interface {
 	GetUsers(accessToken string, reqRealmName, targetRealmName string, paramKV ...string) (kc.UsersPageRepresentation, error)
 	GetGroups(accessToken string, realmName string) ([]kc.GroupRepresentation, error)
 	SendSmsCode(accessToken string, realmName string, userID string) (kc.SmsCodeRepresentation, error)
+	SendConsentCodeSMS(accessToken string, realmName string, userID string) error
+	CheckConsentCodeSMS(accessToken string, realmName string, userID string, consentCode string) error
 }
 
 // UsersDetailsDBModule is the interface from the users module
@@ -55,10 +60,11 @@ type EventsDBModule interface {
 // Component is the register component interface.
 type Component interface {
 	GetActions(ctx context.Context) ([]apikyc.ActionRepresentation, error)
-	GetUserInSocialRealm(ctx context.Context, userID string) (apikyc.UserRepresentation, error)
+	GetUserInSocialRealm(ctx context.Context, userID string, consentCode *string) (apikyc.UserRepresentation, error)
 	GetUserByUsernameInSocialRealm(ctx context.Context, username string) (apikyc.UserRepresentation, error)
-	ValidateUserInSocialRealm(ctx context.Context, userID string, user apikyc.UserRepresentation) error
+	ValidateUserInSocialRealm(ctx context.Context, userID string, user apikyc.UserRepresentation, consentCode *string) error
 	ValidateUser(ctx context.Context, realm string, userID string, user apikyc.UserRepresentation) error
+	SendSmsConsentCodeInSocialRealm(ctx context.Context, userID string) error
 	SendSmsCodeInSocialRealm(ctx context.Context, userID string) (string, error)
 }
 
@@ -125,13 +131,69 @@ func (c *component) GetUserByUsernameInSocialRealm(ctx context.Context, username
 		return apikyc.UserRepresentation{}, err
 	}
 	keycloakb.ConvertLegacyAttribute(&kcUser)
-	return c.getUser(ctx, *kcUser.ID, kcUser)
+
+	var res apikyc.UserRepresentation
+	res, err = c.getUser(ctx, *kcUser.ID, kcUser)
+	if err != nil {
+		return apikyc.UserRepresentation{}, err
+	}
+	// At this point, we shall not provide too many information
+	res = apikyc.UserRepresentation{
+		ID:          res.ID,
+		Username:    res.Username,
+		FirstName:   res.FirstName,
+		LastName:    res.LastName,
+		PhoneNumber: res.PhoneNumber,
+	}
+	if res.PhoneNumber != nil {
+		var phoneNumber = validation.ObfuscatePhoneNumber(*res.PhoneNumber)
+		res.PhoneNumber = &phoneNumber
+	}
+	return res, nil
 }
 
-func (c *component) GetUserInSocialRealm(ctx context.Context, userID string) (apikyc.UserRepresentation, error) {
+func (c *component) createConsentError(errorType string) error {
+	return errorhandler.Error{
+		Status:  430,
+		Message: fmt.Sprintf("%s.%s.consent", errorhandler.GetEmitter(), errorType),
+	}
+}
+
+func (c *component) checkUserConsent(ctx context.Context, accessToken string, realm string, userID string, consentCode *string) error {
+	var rac, err = c.configDBModule.GetAdminConfiguration(ctx, realm)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Can't get realm admin configuration", "realm", realm, "err", err.Error())
+		return err
+	}
+
+	if rac.ConsentRequired != nil && *rac.ConsentRequired {
+		// Consent is required
+		if consentCode == nil {
+			return c.createConsentError(errorhandler.MsgErrMissingParam)
+		}
+		if err = c.keycloakClient.CheckConsentCodeSMS(accessToken, realm, userID, *consentCode); err != nil {
+			switch e := err.(type) {
+			case kc.HTTPError:
+				if e.HTTPStatus == http.StatusForbidden {
+					return c.createConsentError(errorhandler.MsgErrInvalidQueryParam)
+				}
+			}
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (c *component) GetUserInSocialRealm(ctx context.Context, userID string, consentCode *string) (apikyc.UserRepresentation, error) {
 	accessToken, err := c.tokenProvider.ProvideToken(ctx)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Can't get OIDC token", "err", err.Error())
+		return apikyc.UserRepresentation{}, err
+	}
+
+	err = c.checkUserConsent(ctx, accessToken, c.socialRealmName, userID, consentCode)
+	if err != nil {
 		return apikyc.UserRepresentation{}, err
 	}
 
@@ -166,20 +228,25 @@ func (c *component) getUser(ctx context.Context, userID string, kcUser kc.UserRe
 
 func (c *component) ValidateUser(ctx context.Context, realmName string, userID string, user apikyc.UserRepresentation) error {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
-	return c.validateUser(ctx, accessToken, realmName, userID, user)
+	return c.validateUser(ctx, accessToken, realmName, userID, user, nil)
 }
 
-func (c *component) ValidateUserInSocialRealm(ctx context.Context, userID string, user apikyc.UserRepresentation) error {
+func (c *component) ValidateUserInSocialRealm(ctx context.Context, userID string, user apikyc.UserRepresentation, consentCode *string) error {
 	accessToken, err := c.tokenProvider.ProvideToken(ctx)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Can't get OIDC token", "err", err.Error())
 		return err
 	}
 
-	return c.validateUser(ctx, accessToken, c.socialRealmName, userID, user)
+	err = c.checkUserConsent(ctx, accessToken, c.socialRealmName, userID, consentCode)
+	if err != nil {
+		return err
+	}
+
+	return c.validateUser(ctx, accessToken, c.socialRealmName, userID, user, consentCode)
 }
 
-func (c *component) validateUser(ctx context.Context, accessToken string, realmName string, userID string, user apikyc.UserRepresentation) error {
+func (c *component) validateUser(ctx context.Context, accessToken string, realmName string, userID string, user apikyc.UserRepresentation, consentCode *string) error {
 	var operatorName = ctx.Value(cs.CtContextUsername).(string)
 
 	// Gets user from Keycloak
@@ -333,6 +400,25 @@ func (c *component) reportEvent(ctx context.Context, apiCall string, values ...s
 
 func ptr(value string) *string {
 	return &value
+}
+
+func (c *component) SendSmsConsentCodeInSocialRealm(ctx context.Context, userID string) error {
+	var accessToken, err = c.tokenProvider.ProvideToken(ctx)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Can't get OIDC token", "err", err.Error())
+		return err
+	}
+
+	err = c.keycloakClient.SendConsentCodeSMS(accessToken, c.socialRealmName, userID)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Can't send consent SMS", "err", err.Error())
+		return err
+	}
+
+	// store the API call into the DB
+	c.reportEvent(ctx, "SMS_CONSENT", database.CtEventRealmName, c.socialRealmName, database.CtEventUserID, userID)
+
+	return nil
 }
 
 func (c *component) SendSmsCodeInSocialRealm(ctx context.Context, userID string) (string, error) {

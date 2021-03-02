@@ -231,6 +231,7 @@ type RealmAdminConfiguration struct {
 	SelfRegisterEnabled *bool                     `json:"self_register_enabled"`
 	Theme               *string                   `json:"theme"`
 	NeedVerifiedContact *bool                     `json:"need_verified_contact"`
+	ConsentRequired     *bool                     `json:"consent_required"`
 }
 
 // RealmAdminAccreditation struct
@@ -600,6 +601,7 @@ func ConvertRealmAdminConfigurationFromDBStruct(conf configuration.RealmAdminCon
 		SelfRegisterEnabled: defaultBool(conf.SelfRegisterEnabled, false),
 		Theme:               conf.Theme,
 		NeedVerifiedContact: defaultBool(conf.NeedVerifiedContact, true),
+		ConsentRequired:     defaultBool(conf.ConsentRequired, false),
 	}
 }
 
@@ -612,6 +614,7 @@ func (rac RealmAdminConfiguration) ConvertToDBStruct() configuration.RealmAdminC
 		SelfRegisterEnabled: rac.SelfRegisterEnabled,
 		Theme:               rac.Theme,
 		NeedVerifiedContact: rac.NeedVerifiedContact,
+		ConsentRequired:     rac.ConsentRequired,
 	}
 }
 

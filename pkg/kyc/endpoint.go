@@ -12,12 +12,13 @@ import (
 
 // Endpoints for self service
 type Endpoints struct {
-	GetActions                     endpoint.Endpoint
-	GetUserInSocialRealm           endpoint.Endpoint
-	GetUserByUsernameInSocialRealm endpoint.Endpoint
-	ValidateUserInSocialRealm      endpoint.Endpoint
-	ValidateUser                   endpoint.Endpoint
-	SendSMSCodeInSocialRealm       endpoint.Endpoint
+	GetActions                      endpoint.Endpoint
+	GetUserInSocialRealm            endpoint.Endpoint
+	GetUserByUsernameInSocialRealm  endpoint.Endpoint
+	ValidateUserInSocialRealm       endpoint.Endpoint
+	ValidateUser                    endpoint.Endpoint
+	SendSMSConsentCodeInSocialRealm endpoint.Endpoint
+	SendSMSCodeInSocialRealm        endpoint.Endpoint
 }
 
 // MakeGetActionsEndpoint creates an endpoint for GetActions
@@ -41,7 +42,13 @@ func MakeGetUserByUsernameInSocialRealmEndpoint(component Component) cs.Endpoint
 func MakeGetUserInSocialRealmEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
-		return component.GetUserInSocialRealm(ctx, m[prmUserID])
+		var consentCode *string
+
+		if value, ok := m[prmConsent]; ok {
+			consentCode = &value
+		}
+
+		return component.GetUserInSocialRealm(ctx, m[prmUserID], consentCode)
 	}
 }
 
@@ -58,7 +65,12 @@ func MakeValidateUserInSocialRealmEndpoint(component Component) cs.Endpoint {
 			return nil, err
 		}
 
-		return nil, component.ValidateUserInSocialRealm(ctx, m[prmUserID], user)
+		var consentCode *string
+		if value, ok := m[prmConsent]; ok {
+			consentCode = &value
+		}
+
+		return nil, component.ValidateUserInSocialRealm(ctx, m[prmUserID], user, consentCode)
 	}
 }
 
@@ -76,6 +88,15 @@ func MakeValidateUserEndpoint(component Component) cs.Endpoint {
 		}
 
 		return nil, component.ValidateUser(ctx, m[prmRealm], m[prmUserID], user)
+	}
+}
+
+// MakeSendSmsConsentCodeInSocialRealmEndpoint creates an endpoint for SendSmsConsentCodeInSocialRealm
+func MakeSendSmsConsentCodeInSocialRealmEndpoint(component Component) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+
+		return nil, component.SendSmsConsentCodeInSocialRealm(ctx, m[prmUserID])
 	}
 }
 

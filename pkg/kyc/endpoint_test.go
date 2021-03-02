@@ -41,17 +41,24 @@ func TestMakeGetUserEndpoint(t *testing.T) {
 	mockKYCComponent := mock.NewComponent(mockCtrl)
 
 	var userID = "user1234"
+	var consentCode = "123456"
 	var m = map[string]string{prmUserID: userID}
+	var paramsWithConsentCode = map[string]string{prmUserID: userID, prmConsent: consentCode}
 	var expectedError = errors.New("get-user")
 
-	t.Run("GetUserInSocialRealm - success case", func(t *testing.T) {
-		mockKYCComponent.EXPECT().GetUserInSocialRealm(gomock.Any(), userID).Return(apikyc.UserRepresentation{}, nil)
+	t.Run("GetUserInSocialRealm - success case without consent code", func(t *testing.T) {
+		mockKYCComponent.EXPECT().GetUserInSocialRealm(gomock.Any(), userID, nil).Return(apikyc.UserRepresentation{}, nil)
 		_, err := MakeGetUserInSocialRealmEndpoint(mockKYCComponent)(context.Background(), m)
+		assert.Nil(t, err)
+	})
+	t.Run("GetUserInSocialRealm - success case with consent code", func(t *testing.T) {
+		mockKYCComponent.EXPECT().GetUserInSocialRealm(gomock.Any(), userID, &consentCode).Return(apikyc.UserRepresentation{}, nil)
+		_, err := MakeGetUserInSocialRealmEndpoint(mockKYCComponent)(context.Background(), paramsWithConsentCode)
 		assert.Nil(t, err)
 	})
 
 	t.Run("GetUserInSocialRealm - failure case", func(t *testing.T) {
-		mockKYCComponent.EXPECT().GetUserInSocialRealm(gomock.Any(), userID).Return(apikyc.UserRepresentation{}, expectedError)
+		mockKYCComponent.EXPECT().GetUserInSocialRealm(gomock.Any(), userID, nil).Return(apikyc.UserRepresentation{}, expectedError)
 		_, err := MakeGetUserInSocialRealmEndpoint(mockKYCComponent)(context.Background(), m)
 		assert.Equal(t, expectedError, err)
 	})
@@ -87,15 +94,23 @@ func TestMakeValidateUserInSocialRealmEndpoint(t *testing.T) {
 	mockKYCComponent := mock.NewComponent(mockCtrl)
 
 	var userID = "ux467913"
+	var consentCode = "987654"
 	var user = createValidUser()
 	var m = map[string]string{}
 
-	t.Run("ValidateUserInSocialRealm - success case", func(t *testing.T) {
+	t.Run("ValidateUserInSocialRealm - success case without consent code", func(t *testing.T) {
 		var bytes, _ = json.Marshal(user)
 		m[reqBody] = string(bytes)
 		m[prmUserID] = userID
-		mockKYCComponent.EXPECT().ValidateUserInSocialRealm(gomock.Any(), userID, user).Return(nil).Times(1)
+		mockKYCComponent.EXPECT().ValidateUserInSocialRealm(gomock.Any(), userID, user, nil).Return(nil)
 		_, err := MakeValidateUserInSocialRealmEndpoint(mockKYCComponent)(context.Background(), m)
+		assert.Nil(t, err)
+	})
+	t.Run("ValidateUserInSocialRealm - success case with", func(t *testing.T) {
+		var bytes, _ = json.Marshal(user)
+		var params = map[string]string{reqBody: string(bytes), prmUserID: userID, prmConsent: consentCode}
+		mockKYCComponent.EXPECT().ValidateUserInSocialRealm(gomock.Any(), userID, user, &consentCode).Return(nil)
+		_, err := MakeValidateUserInSocialRealmEndpoint(mockKYCComponent)(context.Background(), params)
 		assert.Nil(t, err)
 	})
 
@@ -130,7 +145,7 @@ func TestMakeValidateUserEndpoint(t *testing.T) {
 		m[reqBody] = string(bytes)
 		m[prmUserID] = userID
 		m[prmRealm] = realmName
-		mockKYCComponent.EXPECT().ValidateUser(gomock.Any(), realmName, userID, user).Return(nil).Times(1)
+		mockKYCComponent.EXPECT().ValidateUser(gomock.Any(), realmName, userID, user).Return(nil)
 		_, err := MakeValidateUserEndpoint(mockKYCComponent)(context.Background(), m)
 		assert.Nil(t, err)
 	})
@@ -148,6 +163,20 @@ func TestMakeValidateUserEndpoint(t *testing.T) {
 		_, err := MakeValidateUserEndpoint(mockKYCComponent)(context.Background(), m)
 		assert.NotNil(t, err)
 	})
+}
+
+func TestMakeSendSmsConsentCodeInSocialRealmEndpoint(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	mockKYCComponent := mock.NewComponent(mockCtrl)
+
+	var userID = "ux467913"
+	var m = map[string]string{prmUserID: userID}
+
+	mockKYCComponent.EXPECT().SendSmsConsentCodeInSocialRealm(gomock.Any(), userID).Return(nil)
+	_, err := MakeSendSmsConsentCodeInSocialRealmEndpoint(mockKYCComponent)(context.Background(), m)
+	assert.Nil(t, err)
 }
 
 func createValidUser() apikyc.UserRepresentation {

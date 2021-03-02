@@ -22,12 +22,13 @@ const (
 	prmRealm       = "realm"
 	prmUserID      = "userID"
 	prmQryUserName = "username"
+	prmConsent     = "consent"
 )
 
 // MakeKYCHandler make an HTTP handler for the KYC endpoint.
 func MakeKYCHandler(e endpoint.Endpoint, logger log.Logger) *http_transport.Server {
 	pathParams := map[string]string{prmRealm: RegExpRealmName, prmUserID: RegExpUserID}
-	queryParams := map[string]string{prmQryUserName: RegExpUserName}
+	queryParams := map[string]string{prmQryUserName: RegExpUserName, prmConsent: constants.RegExpNumber}
 
 	return http_transport.NewServer(e,
 		func(ctx context.Context, req *http.Request) (interface{}, error) {

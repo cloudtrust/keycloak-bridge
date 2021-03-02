@@ -64,6 +64,12 @@ paths:
         required: true
         schema:
           type: string
+      - name: consent
+        in: query
+        description: consent code received by SMS on the end-user mobile phone
+        required: false
+        schema:
+          type: string
       responses:
         200:
           description: Successful operation
@@ -73,6 +79,8 @@ paths:
                 $ref: '#/components/schemas/User'
         403:
           description: No permission to call this operation
+        430:
+          description: Missing or invalid consent code 
     put:
       tags:
       - KYC
@@ -86,6 +94,12 @@ paths:
         in: path
         description: user id
         required: true
+        schema:
+          type: string
+      - name: consent
+        in: query
+        description: consent code received by SMS on the end-user mobile phone
+        required: false
         schema:
           type: string
       requestBody:
@@ -104,6 +118,35 @@ paths:
           description: Invalid information provided
         403:
           description: No permission to call this operation
+        430:
+          description: Missing or invalid consent code 
+  /kyc/social/users/{userId}/send-consent-code:
+    post:
+      tags:
+      - KYC
+      summary: >
+        Send a consent code by sms to a user. The end-user will have to tell this code to the RO/PEO to allow him to access his/her personal information.
+      parameters:
+      - name: userId
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: Code correctly sent by SMS
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+        400:
+          description: "Invalid input"
+        403:
+          description: "No permission to call this operation"
   /kyc/social/users/{userId}/send-sms-code:
     post:
       tags:

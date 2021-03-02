@@ -24,12 +24,13 @@ func newAction(as string, scope security.Scope) security.Action {
 
 // Creates constants for API method names
 var (
-	KYCGetActions                     = newAction("KYC_GetActions", security.ScopeGlobal)
-	KYCGetUserInSocialRealm           = newAction("KYC_GetUserInSocialRealm", security.ScopeRealm)
-	KYCGetUserByUsernameInSocialRealm = newAction("KYC_GetUserByUsernameInSocialRealm", security.ScopeRealm)
-	KYCValidateUserInSocialRealm      = newAction("KYC_ValidateUserInSocialRealm", security.ScopeRealm)
-	KYCValidateUser                   = newAction("KYC_ValidateUser", security.ScopeGroup)
-	KYCSendSmsCodeInSocialRealm       = newAction("KYC_SendSmsCodeInSocialRealm", security.ScopeRealm)
+	KYCGetActions                      = newAction("KYC_GetActions", security.ScopeGlobal)
+	KYCGetUserInSocialRealm            = newAction("KYC_GetUserInSocialRealm", security.ScopeRealm)
+	KYCGetUserByUsernameInSocialRealm  = newAction("KYC_GetUserByUsernameInSocialRealm", security.ScopeRealm)
+	KYCValidateUserInSocialRealm       = newAction("KYC_ValidateUserInSocialRealm", security.ScopeRealm)
+	KYCValidateUser                    = newAction("KYC_ValidateUser", security.ScopeGroup)
+	KYCSendSmsConsentCodeInSocialRealm = newAction("KYC_SendSmsConsentCodeInSocialRealm", security.ScopeRealm)
+	KYCSendSmsCodeInSocialRealm        = newAction("KYC_SendSmsCodeInSocialRealm", security.ScopeRealm)
 )
 
 type authorizationComponentMW struct {
@@ -87,7 +88,7 @@ func (c *authorizationComponentMW) GetUserByUsernameInSocialRealm(ctx context.Co
 	return c.next.GetUserByUsernameInSocialRealm(ctx, username)
 }
 
-func (c *authorizationComponentMW) GetUserInSocialRealm(ctx context.Context, userID string) (apikyc.UserRepresentation, error) {
+func (c *authorizationComponentMW) GetUserInSocialRealm(ctx context.Context, userID string, consentCode *string) (apikyc.UserRepresentation, error) {
 	var action = KYCGetUserInSocialRealm.String()
 
 	// For this method, there is no target realm provided
@@ -98,10 +99,10 @@ func (c *authorizationComponentMW) GetUserInSocialRealm(ctx context.Context, use
 		return apikyc.UserRepresentation{}, err
 	}
 
-	return c.next.GetUserInSocialRealm(ctx, userID)
+	return c.next.GetUserInSocialRealm(ctx, userID, consentCode)
 }
 
-func (c *authorizationComponentMW) ValidateUserInSocialRealm(ctx context.Context, userID string, user apikyc.UserRepresentation) error {
+func (c *authorizationComponentMW) ValidateUserInSocialRealm(ctx context.Context, userID string, user apikyc.UserRepresentation, consentCode *string) error {
 	var action = KYCValidateUserInSocialRealm.String()
 
 	// For this method, there is no target realm provided
@@ -112,7 +113,7 @@ func (c *authorizationComponentMW) ValidateUserInSocialRealm(ctx context.Context
 		return err
 	}
 
-	return c.next.ValidateUserInSocialRealm(ctx, userID, user)
+	return c.next.ValidateUserInSocialRealm(ctx, userID, user, consentCode)
 }
 
 func (c *authorizationComponentMW) ValidateUser(ctx context.Context, realmName string, userID string, user apikyc.UserRepresentation) error {
@@ -130,6 +131,17 @@ func (c *authorizationComponentMW) ValidateUser(ctx context.Context, realmName s
 	}
 
 	return c.next.ValidateUser(ctx, realmName, userID, user)
+}
+
+func (c *authorizationComponentMW) SendSmsConsentCodeInSocialRealm(ctx context.Context, userID string) error {
+	var action = KYCSendSmsConsentCodeInSocialRealm.String()
+	var targetRealm = ctx.Value(cs.CtContextRealm).(string)
+
+	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
+		return err
+	}
+
+	return c.next.SendSmsConsentCodeInSocialRealm(ctx, userID)
 }
 
 func (c *authorizationComponentMW) SendSmsCodeInSocialRealm(ctx context.Context, userID string) (string, error) {

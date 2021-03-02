@@ -1768,6 +1768,8 @@ components:
                 type: string
         self_register_enabled:
           type: boolean
+        consent_required:
+          type: boolean
         theme:
           type: string
         need_verified_contact:
