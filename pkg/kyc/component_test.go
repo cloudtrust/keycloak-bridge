@@ -497,7 +497,7 @@ func TestSendSmsConsentCodeInSocialRealm(t *testing.T) {
 
 	var accessToken = "TOKEN=="
 	var userID = "1245-7854-8963"
-	var ctx = context.TODO()
+	var ctx = context.WithValue(context.TODO(), cs.CtContextRealm, targetRealm)
 	var anyError = errors.New("any error")
 
 	t.Run("Can't get access token", func(t *testing.T) {
@@ -507,6 +507,19 @@ func TestSendSmsConsentCodeInSocialRealm(t *testing.T) {
 		assert.Equal(t, anyError, err)
 	})
 	mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil).AnyTimes()
+
+	t.Run("Can't get realm admin configuration", func(t *testing.T) {
+		mocks.configDB.EXPECT().GetAdminConfiguration(gomock.Any(), targetRealm).Return(configuration.RealmAdminConfiguration{}, anyError)
+		err := component.SendSmsConsentCodeInSocialRealm(ctx, userID)
+		assert.Equal(t, anyError, err)
+	})
+
+	t.Run("Consent is not enabled", func(t *testing.T) {
+		mocks.configDB.EXPECT().GetAdminConfiguration(gomock.Any(), targetRealm).Return(configuration.RealmAdminConfiguration{}, nil)
+		err := component.SendSmsConsentCodeInSocialRealm(ctx, userID)
+		assert.NotNil(t, err)
+	})
+	mocks.configDB.EXPECT().GetAdminConfiguration(gomock.Any(), targetRealm).Return(configuration.RealmAdminConfiguration{ConsentRequired: ptrBool(true)}, nil).AnyTimes()
 
 	t.Run("Keycloak call fails", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().SendConsentCodeSMS(accessToken, component.socialRealmName, userID).Return(anyError)
