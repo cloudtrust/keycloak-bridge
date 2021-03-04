@@ -171,6 +171,13 @@ func isUpdated(newValue *string, oldValue *string) bool {
 	return newValue != nil && (oldValue == nil || *newValue != *oldValue)
 }
 
+func defaultString(value1, value2 *string) *string {
+	if value1 != nil {
+		return value1
+	}
+	return value2
+}
+
 func (c *component) UpdateAccount(ctx context.Context, user api.AccountRepresentation) error {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 	var realm = ctx.Value(cs.CtContextRealm).(string)
@@ -234,6 +241,9 @@ func (c *component) UpdateAccount(ctx context.Context, user api.AccountRepresent
 
 	userRep = api.ConvertToKCUser(user)
 
+	userRep.FirstName = defaultString(userRep.FirstName, oldUserKc.FirstName)
+	userRep.LastName = defaultString(userRep.LastName, oldUserKc.LastName)
+	userRep.Email = defaultString(userRep.Email, oldUserKc.Email)
 	if emailVerified != nil {
 		userRep.EmailVerified = emailVerified
 	}
