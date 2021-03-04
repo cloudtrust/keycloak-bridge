@@ -59,43 +59,44 @@ func TestCheckUserConsent(t *testing.T) {
 	var accessToken = "==access--token=="
 	var userID = "user-iden-tif-ier"
 	var consentCode = "123456"
-	var ctx = context.TODO()
+	var realm = "consent-realm"
+	var ctx = context.WithValue(context.TODO(), cs.CtContextRealm, realm)
 
 	t.Run("Load realm admin config fails", func(t *testing.T) {
 		var anyError = errors.New("any error")
-		mocks.configDB.EXPECT().GetAdminConfiguration(ctx, component.socialRealmName).Return(configuration.RealmAdminConfiguration{}, anyError)
-		var err = component.checkUserConsent(ctx, accessToken, component.socialRealmName, userID, &consentCode)
+		mocks.configDB.EXPECT().GetAdminConfiguration(ctx, realm).Return(configuration.RealmAdminConfiguration{}, anyError)
+		var err = component.checkUserConsent(ctx, accessToken, userID, &consentCode)
 		assert.NotNil(t, err)
 	})
 	t.Run("Consent not required", func(t *testing.T) {
-		mocks.configDB.EXPECT().GetAdminConfiguration(ctx, component.socialRealmName).Return(configuration.RealmAdminConfiguration{ConsentRequired: ptrBool(false)}, nil)
-		var err = component.checkUserConsent(ctx, accessToken, component.socialRealmName, userID, &consentCode)
+		mocks.configDB.EXPECT().GetAdminConfiguration(ctx, realm).Return(configuration.RealmAdminConfiguration{ConsentRequired: ptrBool(false)}, nil)
+		var err = component.checkUserConsent(ctx, accessToken, userID, &consentCode)
 		assert.Nil(t, err)
 	})
 
-	mocks.configDB.EXPECT().GetAdminConfiguration(ctx, component.socialRealmName).Return(configuration.RealmAdminConfiguration{ConsentRequired: ptrBool(true)}, nil).AnyTimes()
+	mocks.configDB.EXPECT().GetAdminConfiguration(ctx, realm).Return(configuration.RealmAdminConfiguration{ConsentRequired: ptrBool(true)}, nil).AnyTimes()
 
 	t.Run("Consent required but not provided", func(t *testing.T) {
-		var err = component.checkUserConsent(ctx, accessToken, component.socialRealmName, userID, nil)
+		var err = component.checkUserConsent(ctx, accessToken, userID, nil)
 		assert.NotNil(t, err)
 		assert.Equal(t, 430, err.(errorhandler.Error).Status)
 	})
 	t.Run("Consent required but keycloak call fails", func(t *testing.T) {
-		mocks.keycloakClient.EXPECT().CheckConsentCodeSMS(accessToken, component.socialRealmName, userID, consentCode).Return(errors.New("any error"))
-		var err = component.checkUserConsent(ctx, accessToken, component.socialRealmName, userID, &consentCode)
+		mocks.keycloakClient.EXPECT().CheckConsentCodeSMS(accessToken, realm, userID, consentCode).Return(errors.New("any error"))
+		var err = component.checkUserConsent(ctx, accessToken, userID, &consentCode)
 		assert.NotNil(t, err)
 		assert.Panics(t, func() { var _ = err.(errorhandler.Error) })
 	})
 	t.Run("Consent required but provided code is invalid", func(t *testing.T) {
-		mocks.keycloakClient.EXPECT().CheckConsentCodeSMS(accessToken, component.socialRealmName, userID, consentCode).Return(kc.HTTPError{HTTPStatus: 403})
-		var err = component.checkUserConsent(ctx, accessToken, component.socialRealmName, userID, &consentCode)
+		mocks.keycloakClient.EXPECT().CheckConsentCodeSMS(accessToken, realm, userID, consentCode).Return(kc.HTTPError{HTTPStatus: 403})
+		var err = component.checkUserConsent(ctx, accessToken, userID, &consentCode)
 		assert.NotNil(t, err)
 		assert.IsType(t, errorhandler.Error{}, err)
 		assert.Equal(t, 430, err.(errorhandler.Error).Status)
 	})
 	t.Run("Consent required and provided code is valid", func(t *testing.T) {
-		mocks.keycloakClient.EXPECT().CheckConsentCodeSMS(accessToken, component.socialRealmName, userID, consentCode).Return(nil)
-		var err = component.checkUserConsent(ctx, accessToken, component.socialRealmName, userID, &consentCode)
+		mocks.keycloakClient.EXPECT().CheckConsentCodeSMS(accessToken, realm, userID, consentCode).Return(nil)
+		var err = component.checkUserConsent(ctx, accessToken, userID, &consentCode)
 		assert.Nil(t, err)
 	})
 }
@@ -219,9 +220,11 @@ func TestGetUserInSocialRealmComponent(t *testing.T) {
 		ID:       &userID,
 		Username: &username,
 	}
+	var consentRealm = "consent-realm"
 	var anyError = errors.New("any error")
 	var realmAdminConfig = configuration.RealmAdminConfiguration{ConsentRequired: ptrBool(false)}
 	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+	ctx = context.WithValue(ctx, cs.CtContextRealm, consentRealm)
 
 	var mocks = createComponentMocks(mockCtrl)
 	var component = mocks.NewComponent(realm)
@@ -235,11 +238,11 @@ func TestGetUserInSocialRealmComponent(t *testing.T) {
 	mocks.tokenProvider.EXPECT().ProvideToken(gomock.Any()).Return(accessToken, nil).AnyTimes()
 
 	t.Run("Consent fails", func(t *testing.T) {
-		mocks.configDB.EXPECT().GetAdminConfiguration(context.TODO(), component.socialRealmName).Return(configuration.RealmAdminConfiguration{}, anyError)
-		var _, err = component.GetUserInSocialRealm(context.TODO(), userID, nil)
+		mocks.configDB.EXPECT().GetAdminConfiguration(ctx, consentRealm).Return(configuration.RealmAdminConfiguration{}, anyError)
+		var _, err = component.GetUserInSocialRealm(ctx, userID, nil)
 		assert.NotNil(t, err)
 	})
-	mocks.configDB.EXPECT().GetAdminConfiguration(gomock.Any(), component.socialRealmName).Return(realmAdminConfig, nil).AnyTimes()
+	mocks.configDB.EXPECT().GetAdminConfiguration(ctx, consentRealm).Return(realmAdminConfig, nil).AnyTimes()
 
 	t.Run("GetUserInSocialRealm from Keycloak fails", func(t *testing.T) {
 		var kcError = errors.New("kc error")

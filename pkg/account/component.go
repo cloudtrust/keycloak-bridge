@@ -210,7 +210,8 @@ func (c *component) UpdateAccount(ctx context.Context, user api.AccountRepresent
 
 	// profileUpdated: Add here all fields which are not accreditation-dependant...
 	// phone number is not added here as there is already an email sent for phone number verification
-	var profileUpdated = revokeAccreditations || keycloakb.IsUpdated(user.Locale, oldUserKc.GetAttributeString(constants.AttrbLocale))
+	// (currently no other field)
+	var profileUpdated = revokeAccreditations
 	var prevEmail *string
 
 	// when the email changes, set the EmailVerified to false

@@ -159,7 +159,8 @@ func (c *component) createConsentError(errorType string) error {
 	}
 }
 
-func (c *component) checkUserConsent(ctx context.Context, accessToken string, realm string, userID string, consentCode *string) error {
+func (c *component) checkUserConsent(ctx context.Context, accessToken string, userID string, consentCode *string) error {
+	var realm = ctx.Value(cs.CtContextRealm).(string)
 	var rac, err = c.configDBModule.GetAdminConfiguration(ctx, realm)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Can't get realm admin configuration", "realm", realm, "err", err.Error())
@@ -192,7 +193,7 @@ func (c *component) GetUserInSocialRealm(ctx context.Context, userID string, con
 		return apikyc.UserRepresentation{}, err
 	}
 
-	err = c.checkUserConsent(ctx, accessToken, c.socialRealmName, userID, consentCode)
+	err = c.checkUserConsent(ctx, accessToken, userID, consentCode)
 	if err != nil {
 		return apikyc.UserRepresentation{}, err
 	}
@@ -238,7 +239,7 @@ func (c *component) ValidateUserInSocialRealm(ctx context.Context, userID string
 		return err
 	}
 
-	err = c.checkUserConsent(ctx, accessToken, c.socialRealmName, userID, consentCode)
+	err = c.checkUserConsent(ctx, accessToken, userID, consentCode)
 	if err != nil {
 		return err
 	}
