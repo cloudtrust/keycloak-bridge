@@ -82,20 +82,20 @@ func TestCheckUserConsent(t *testing.T) {
 		assert.Equal(t, 430, err.(errorhandler.Error).Status)
 	})
 	t.Run("Consent required but keycloak call fails", func(t *testing.T) {
-		mocks.keycloakClient.EXPECT().CheckConsentCodeSMS(accessToken, realm, userID, consentCode).Return(errors.New("any error"))
+		mocks.keycloakClient.EXPECT().CheckConsentCodeSMS(accessToken, component.socialRealmName, userID, consentCode).Return(errors.New("any error"))
 		var err = component.checkUserConsent(ctx, accessToken, userID, &consentCode)
 		assert.NotNil(t, err)
 		assert.Panics(t, func() { var _ = err.(errorhandler.Error) })
 	})
 	t.Run("Consent required but provided code is invalid", func(t *testing.T) {
-		mocks.keycloakClient.EXPECT().CheckConsentCodeSMS(accessToken, realm, userID, consentCode).Return(kc.ClientDetailedError{HTTPStatus: 430})
+		mocks.keycloakClient.EXPECT().CheckConsentCodeSMS(accessToken, component.socialRealmName, userID, consentCode).Return(kc.ClientDetailedError{HTTPStatus: 430})
 		var err = component.checkUserConsent(ctx, accessToken, userID, &consentCode)
 		assert.NotNil(t, err)
 		assert.IsType(t, errorhandler.Error{}, err)
 		assert.Equal(t, 430, err.(errorhandler.Error).Status)
 	})
 	t.Run("Consent required and provided code is valid", func(t *testing.T) {
-		mocks.keycloakClient.EXPECT().CheckConsentCodeSMS(accessToken, realm, userID, consentCode).Return(nil)
+		mocks.keycloakClient.EXPECT().CheckConsentCodeSMS(accessToken, component.socialRealmName, userID, consentCode).Return(nil)
 		var err = component.checkUserConsent(ctx, accessToken, userID, &consentCode)
 		assert.Nil(t, err)
 	})
