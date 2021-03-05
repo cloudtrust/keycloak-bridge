@@ -147,6 +147,8 @@ paths:
           description: "Invalid input"
         403:
           description: "No permission to call this operation"
+        409:
+          description: Consent feature is not enabled for the realm of the JWT token
   /kyc/social/users/{userId}/send-sms-code:
     post:
       tags:

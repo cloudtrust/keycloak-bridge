@@ -410,6 +410,15 @@ func (c *component) SendSmsConsentCodeInSocialRealm(ctx context.Context, userID 
 		return err
 	}
 
+	var realm = ctx.Value(cs.CtContextRealm).(string)
+	if rac, err := c.configDBModule.GetAdminConfiguration(ctx, realm); err != nil {
+		c.logger.Warn(ctx, "msg", "Can't get realm admin configuration", "realm", realm, "err", err.Error())
+		return err
+	} else if rac.ConsentRequired == nil || !*rac.ConsentRequired {
+		c.logger.Warn(ctx, "msg", "Consent feature is not activated for this realm", "realm", realm)
+		return errorhandler.CreateEndpointNotEnabled("consent")
+	}
+
 	err = c.keycloakClient.SendConsentCodeSMS(accessToken, c.socialRealmName, userID)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Can't send consent SMS", "err", err.Error())

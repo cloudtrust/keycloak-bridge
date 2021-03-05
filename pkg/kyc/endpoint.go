@@ -44,7 +44,7 @@ func MakeGetUserInSocialRealmEndpoint(component Component) cs.Endpoint {
 		var m = req.(map[string]string)
 		var consentCode *string
 
-		if value, ok := m[prmConsent]; ok {
+		if value, ok := m[prmQryConsent]; ok {
 			consentCode = &value
 		}
 
@@ -66,7 +66,7 @@ func MakeValidateUserInSocialRealmEndpoint(component Component) cs.Endpoint {
 		}
 
 		var consentCode *string
-		if value, ok := m[prmConsent]; ok {
+		if value, ok := m[prmQryConsent]; ok {
 			consentCode = &value
 		}
 

@@ -43,7 +43,7 @@ func TestMakeGetUserEndpoint(t *testing.T) {
 	var userID = "user1234"
 	var consentCode = "123456"
 	var m = map[string]string{prmUserID: userID}
-	var paramsWithConsentCode = map[string]string{prmUserID: userID, prmConsent: consentCode}
+	var paramsWithConsentCode = map[string]string{prmUserID: userID, prmQryConsent: consentCode}
 	var expectedError = errors.New("get-user")
 
 	t.Run("GetUserInSocialRealm - success case without consent code", func(t *testing.T) {
@@ -108,7 +108,7 @@ func TestMakeValidateUserInSocialRealmEndpoint(t *testing.T) {
 	})
 	t.Run("ValidateUserInSocialRealm - success case with", func(t *testing.T) {
 		var bytes, _ = json.Marshal(user)
-		var params = map[string]string{reqBody: string(bytes), prmUserID: userID, prmConsent: consentCode}
+		var params = map[string]string{reqBody: string(bytes), prmUserID: userID, prmQryConsent: consentCode}
 		mockKYCComponent.EXPECT().ValidateUserInSocialRealm(gomock.Any(), userID, user, &consentCode).Return(nil)
 		_, err := MakeValidateUserInSocialRealmEndpoint(mockKYCComponent)(context.Background(), params)
 		assert.Nil(t, err)
