@@ -171,7 +171,7 @@ func (c *component) checkUserConsent(ctx context.Context, accessToken string, us
 		if consentCode == nil {
 			return c.createConsentError(errorhandler.MsgErrMissingParam)
 		}
-		if err = c.keycloakClient.CheckConsentCodeSMS(accessToken, realm, userID, *consentCode); err != nil {
+		if err = c.keycloakClient.CheckConsentCodeSMS(accessToken, c.socialRealmName, userID, *consentCode); err != nil {
 			switch e := err.(type) {
 			case kc.ClientDetailedError:
 				if e.HTTPStatus == 430 {
