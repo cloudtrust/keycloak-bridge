@@ -3,7 +3,6 @@ package kyc
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"time"
 
 	"github.com/cloudtrust/common-service/configuration"
@@ -174,8 +173,8 @@ func (c *component) checkUserConsent(ctx context.Context, accessToken string, us
 		}
 		if err = c.keycloakClient.CheckConsentCodeSMS(accessToken, realm, userID, *consentCode); err != nil {
 			switch e := err.(type) {
-			case kc.HTTPError:
-				if e.HTTPStatus == http.StatusForbidden {
+			case kc.ClientDetailedError:
+				if e.HTTPStatus == 430 {
 					return c.createConsentError(errorhandler.MsgErrInvalidQueryParam)
 				}
 			}
