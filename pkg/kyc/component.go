@@ -138,11 +138,13 @@ func (c *component) GetUserByUsernameInSocialRealm(ctx context.Context, username
 	}
 	// At this point, we shall not provide too many information
 	res = apikyc.UserRepresentation{
-		ID:          res.ID,
-		Username:    res.Username,
-		FirstName:   res.FirstName,
-		LastName:    res.LastName,
-		PhoneNumber: res.PhoneNumber,
+		ID:                  res.ID,
+		Username:            res.Username,
+		FirstName:           res.FirstName,
+		LastName:            res.LastName,
+		EmailVerified:       res.EmailVerified,
+		PhoneNumber:         res.PhoneNumber,
+		PhoneNumberVerified: res.PhoneNumberVerified,
 	}
 	if res.PhoneNumber != nil {
 		var phoneNumber = validation.ObfuscatePhoneNumber(*res.PhoneNumber)
