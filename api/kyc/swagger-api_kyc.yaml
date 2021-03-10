@@ -43,7 +43,7 @@ paths:
           type: string
       responses:
         200:
-          description: Returns the found user with fields id, username, firstName, lastName, emailVerified, phoneNumber, phoneNumberVerified only
+          description: Returns the found user with fields id, username, firstName, lastName, emailVerified, phoneNumber, phoneNumberVerified and accreditations only
           content:
             application/json:
               schema:

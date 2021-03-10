@@ -145,6 +145,7 @@ func (c *component) GetUserByUsernameInSocialRealm(ctx context.Context, username
 		EmailVerified:       res.EmailVerified,
 		PhoneNumber:         res.PhoneNumber,
 		PhoneNumberVerified: res.PhoneNumberVerified,
+		Accreditations:      res.Accreditations,
 	}
 	if res.PhoneNumber != nil {
 		var phoneNumber = validation.ObfuscatePhoneNumber(*res.PhoneNumber)
