@@ -3,32 +3,18 @@ package keycloakb
 import (
 	"context"
 	"crypto/rand"
-	b64 "encoding/base64"
-	"encoding/json"
 	"math/big"
 	"net/http"
 	"net/url"
 	"regexp"
+	"strconv"
 	"strings"
-	"time"
 
 	errorhandler "github.com/cloudtrust/common-service/errors"
 	"github.com/cloudtrust/common-service/log"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	kc "github.com/cloudtrust/keycloak-client"
 )
-
-// TrustIDAuthToken struct
-type TrustIDAuthToken struct {
-	Token     string `json:"token"`
-	CreatedAt int64  `json:"created_at"`
-}
-
-// ToJSON converts TrustIDAuthToken to its JSON representation
-func (t TrustIDAuthToken) ToJSON() string {
-	var authBytes, _ = json.Marshal(t)
-	return string(authBytes)
-}
 
 type onboardingModule struct {
 	keycloakClient OnboardingKeycloakClient
@@ -44,10 +30,9 @@ type OnboardingKeycloakClient interface {
 
 //OnboardingModule interface
 type OnboardingModule interface {
-	GenerateAuthToken() (TrustIDAuthToken, error)
 	OnboardingAlreadyCompleted(kc.UserRepresentation) (bool, error)
 	SendOnboardingEmail(ctx context.Context, accessToken string, realmName string, userID string, username string,
-		autoLoginToken TrustIDAuthToken, onboardingClientID string, onboardingRedirectURI string, themeRealmName string, reminder bool) error
+		onboardingClientID string, onboardingRedirectURI string, themeRealmName string, reminder bool, lifespan *int) error
 	CreateUser(ctx context.Context, accessToken, realmName, targetRealmName string, kcUser *kc.UserRepresentation) (string, error)
 }
 
@@ -58,20 +43,6 @@ func NewOnboardingModule(keycloakClient OnboardingKeycloakClient, keycloakURL st
 		keycloakURL:    keycloakURL,
 		logger:         logger,
 	}
-}
-
-// GenerateAuthToken generates a random AUTO_LOGIN_TOKEN, used to perform auto login at the end of the onboarding process
-func (om *onboardingModule) GenerateAuthToken() (TrustIDAuthToken, error) {
-	var bToken = make([]byte, 32)
-	_, err := rand.Read(bToken)
-	if err != nil {
-		return TrustIDAuthToken{}, err
-	}
-
-	return TrustIDAuthToken{
-		Token:     b64.StdEncoding.EncodeToString(bToken),
-		CreatedAt: time.Now().Unix(),
-	}, nil
 }
 
 // OnboardingAlreadyCompleted checks if the onboarding process has already been performed
@@ -85,7 +56,7 @@ func (om *onboardingModule) OnboardingAlreadyCompleted(kcUser kc.UserRepresentat
 }
 
 func (om *onboardingModule) SendOnboardingEmail(ctx context.Context, accessToken string, realmName string, userID string, username string,
-	autoLoginToken TrustIDAuthToken, onboardingClientID string, onboardingRedirectURI string, themeRealmName string, reminder bool) error {
+	onboardingClientID string, onboardingRedirectURI string, themeRealmName string, reminder bool, lifespan *int) error {
 
 	redirectURL, err := url.Parse(om.keycloakURL + "/auth/realms/" + realmName + "/protocol/openid-connect/auth")
 	if err != nil {
@@ -97,17 +68,19 @@ func (om *onboardingModule) SendOnboardingEmail(ctx context.Context, accessToken
 	parameters.Add("client_id", onboardingClientID)
 	parameters.Add("scope", "openid")
 	parameters.Add("response_type", "code")
-	parameters.Add("trustid_auth_token", autoLoginToken.Token)
 	parameters.Add("redirect_uri", onboardingRedirectURI)
 	parameters.Add("login_hint", username)
 
 	redirectURL.RawQuery = parameters.Encode()
 
-	var actions = []string{"VERIFY_EMAIL", "onboarding-action"}
+	var actions = []string{"VERIFY_EMAIL", "set-onboarding-token", "onboarding-action"}
 	if reminder {
-		actions = []string{"VERIFY_EMAIL", "onboarding-action", "reminder-action"}
+		actions = append(actions, "reminder-action")
 	}
 	var additionalParams = []string{"client_id", onboardingClientID, "redirect_uri", redirectURL.String(), "themeRealm", themeRealmName}
+	if (lifespan!=nil) {
+		additionalParams = append(additionalParams, "lifespan", strconv.Itoa(*lifespan))
+	}
 	err = om.keycloakClient.ExecuteActionsEmail(accessToken, realmName, realmName, userID, actions, additionalParams...)
 	if err != nil {
 		om.logger.Warn(ctx, "msg", "ExecuteActionsEmail failed", "err", err.Error())

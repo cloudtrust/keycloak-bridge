@@ -17,7 +17,6 @@ import (
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
-	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/cloudtrust/keycloak-client"
 
 	"github.com/cloudtrust/keycloak-bridge/pkg/management/mock"
@@ -2491,10 +2490,6 @@ func TestSendOnboardingEmail(t *testing.T) {
 
 	var onboardingRedirectURI = "http://successURL"
 	var onboardingClientID = "onboardingid"
-	var autoLoginToken = keycloakb.TrustIDAuthToken{
-		Token:     "titi",
-		CreatedAt: 1234,
-	}
 	var accessToken = "TOKEN=="
 	var realmName = "master"
 	var customerRealmName = "customer"
@@ -2570,51 +2565,6 @@ func TestSendOnboardingEmail(t *testing.T) {
 		assert.NotNil(t, err)
 	})
 
-	t.Run("Failure to generate auto login token", func(t *testing.T) {
-		mocks.configurationDBModule.EXPECT().GetConfiguration(ctx, customerRealmName).Return(configuration.RealmConfiguration{
-			OnboardingRedirectURI: &onboardingRedirectURI,
-			OnboardingClientID:    &onboardingClientID,
-		}, nil)
-
-		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(kc.UserRepresentation{
-			ID:       &userID,
-			Username: &username,
-		}, nil)
-
-		mocks.onboardingModule.EXPECT().OnboardingAlreadyCompleted(gomock.Any()).Return(false, nil)
-		mocks.onboardingModule.EXPECT().GenerateAuthToken().Return(keycloakb.TrustIDAuthToken{}, errors.New("unexpected error"))
-
-		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, customerRealmName, false)
-		assert.NotNil(t, err)
-	})
-
-	t.Run("Failure to persists auto login token", func(t *testing.T) {
-		mocks.configurationDBModule.EXPECT().GetConfiguration(ctx, customerRealmName).Return(configuration.RealmConfiguration{
-			OnboardingRedirectURI: &onboardingRedirectURI,
-			OnboardingClientID:    &onboardingClientID,
-		}, nil)
-
-		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(kc.UserRepresentation{
-			ID:       &userID,
-			Username: &username,
-		}, nil)
-
-		mocks.onboardingModule.EXPECT().OnboardingAlreadyCompleted(gomock.Any()).Return(false, nil)
-
-		mocks.onboardingModule.EXPECT().GenerateAuthToken().Return(autoLoginToken, nil)
-
-		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, realmName, userID, gomock.Any()).DoAndReturn(
-			func(accessToken, realmName, userID string, user kc.UserRepresentation) error {
-				assert.Equal(t, userID, *user.ID)
-				assert.NotNil(t, *user.Attributes)
-				assert.NotNil(t, *user.Attributes.GetString(constants.AttrbTrustIDAuthToken))
-				return errors.New("unexpected error")
-			})
-
-		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, customerRealmName, false)
-		assert.NotNil(t, err)
-	})
-
 	t.Run("Failure to send mail", func(t *testing.T) {
 		mocks.configurationDBModule.EXPECT().GetConfiguration(ctx, customerRealmName).Return(configuration.RealmConfiguration{
 			OnboardingRedirectURI: &onboardingRedirectURI,
@@ -2628,18 +2578,8 @@ func TestSendOnboardingEmail(t *testing.T) {
 
 		mocks.onboardingModule.EXPECT().OnboardingAlreadyCompleted(gomock.Any()).Return(false, nil)
 
-		mocks.onboardingModule.EXPECT().GenerateAuthToken().Return(autoLoginToken, nil)
-
-		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, realmName, userID, gomock.Any()).DoAndReturn(
-			func(accessToken, realmName, userID string, user kc.UserRepresentation) error {
-				assert.Equal(t, userID, *user.ID)
-				assert.NotNil(t, *user.Attributes)
-				assert.NotNil(t, *user.Attributes.GetString(constants.AttrbTrustIDAuthToken))
-				return nil
-			})
-
 		mocks.onboardingModule.EXPECT().SendOnboardingEmail(ctx, accessToken, realmName, userID, username,
-			autoLoginToken, onboardingClientID, onboardingRedirectURI+"?customerRealm="+customerRealmName, customerRealmName, true).Return(errors.New("unexpected error"))
+			onboardingClientID, onboardingRedirectURI+"?customerRealm="+customerRealmName, customerRealmName, true, nil).Return(errors.New("unexpected error"))
 
 		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, customerRealmName, true)
 		assert.NotNil(t, err)
@@ -2658,17 +2598,7 @@ func TestSendOnboardingEmail(t *testing.T) {
 
 		mocks.onboardingModule.EXPECT().OnboardingAlreadyCompleted(gomock.Any()).Return(false, nil)
 
-		mocks.onboardingModule.EXPECT().GenerateAuthToken().Return(autoLoginToken, nil)
-
-		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, realmName, userID, gomock.Any()).DoAndReturn(
-			func(accessToken, realmName, userID string, user kc.UserRepresentation) error {
-				assert.Equal(t, userID, *user.ID)
-				assert.NotNil(t, *user.Attributes)
-				assert.NotNil(t, *user.Attributes.GetString(constants.AttrbTrustIDAuthToken))
-				return nil
-			})
-
-		mocks.onboardingModule.EXPECT().SendOnboardingEmail(ctx, accessToken, realmName, userID, username, autoLoginToken, onboardingClientID, onboardingRedirectURI, gomock.Any(), false).Return(nil)
+		mocks.onboardingModule.EXPECT().SendOnboardingEmail(ctx, accessToken, realmName, userID, username, onboardingClientID, onboardingRedirectURI, gomock.Any(), false, nil).Return(nil)
 
 		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "EMAIL_ONBOARDING_SENT", "back-office", database.CtEventRealmName, realmName, database.CtEventUserID, userID).Return(nil)
 

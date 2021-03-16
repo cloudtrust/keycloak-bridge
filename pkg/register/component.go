@@ -36,10 +36,9 @@ type ConfigurationDBModule interface {
 
 // OnboardingModule is the interface for the onboarding process
 type OnboardingModule interface {
-	GenerateAuthToken() (keycloakb.TrustIDAuthToken, error)
 	OnboardingAlreadyCompleted(kc.UserRepresentation) (bool, error)
 	SendOnboardingEmail(ctx context.Context, accessToken string, realmName string, userID string, username string,
-		autoLoginToken keycloakb.TrustIDAuthToken, onboardingClientID string, onboardingRedirectURI string, themeRealmName string, reminder bool) error
+		onboardingClientID string, onboardingRedirectURI string, themeRealmName string, reminder bool, lifespan *int) error
 	CreateUser(ctx context.Context, accessToken, realmName, targetRealmName string, kcUser *kc.UserRepresentation) (string, error)
 }
 
@@ -170,15 +169,8 @@ func (c *component) RegisterUser(ctx context.Context, targetRealmName string, cu
 
 	}
 
-	// Generate trustIDAuthToken
-	autoLoginToken, err := c.onboardingModule.GenerateAuthToken()
-	if err != nil {
-		c.logger.Warn(ctx, "msg", "Can't generate trustIDAuthToken", "err", err.Error())
-		return "", err
-	}
-
 	// Create new user
-	userID, username, err := c.createUser(ctx, accessToken, targetRealmName, user, *realmConf.SelfRegisterGroupNames, autoLoginToken)
+	userID, username, err := c.createUser(ctx, accessToken, targetRealmName, user, *realmConf.SelfRegisterGroupNames)
 	if err != nil {
 		return "", err
 	}
@@ -190,8 +182,9 @@ func (c *component) RegisterUser(ctx context.Context, targetRealmName string, cu
 		onboardingRedirectURI += "?customerRealm=" + customerRealmName
 	}
 
+	var lifespan = 3600 // 1 hour
 	err = c.onboardingModule.SendOnboardingEmail(ctx, accessToken, targetRealmName, userID, username,
-		autoLoginToken, *realmConf.OnboardingClientID, onboardingRedirectURI, customerRealmName, false)
+		*realmConf.OnboardingClientID, onboardingRedirectURI, customerRealmName, false, &lifespan)
 	if err != nil {
 		return "", err
 	}
@@ -202,7 +195,7 @@ func (c *component) RegisterUser(ctx context.Context, targetRealmName string, cu
 	return username, nil
 }
 
-func (c *component) createUser(ctx context.Context, accessToken string, realmName string, user apiregister.UserRepresentation, groupNames []string, autoLoginToken keycloakb.TrustIDAuthToken) (string, string, error) {
+func (c *component) createUser(ctx context.Context, accessToken string, realmName string, user apiregister.UserRepresentation, groupNames []string) (string, string, error) {
 	var kcUser = user.ConvertToKeycloak()
 
 	// Set groups
@@ -212,9 +205,6 @@ func (c *component) createUser(ctx context.Context, accessToken string, realmNam
 		return "", "", err
 	}
 	kcUser.Groups = &groupIDs
-
-	// Set authToken for auto login at the end of onboarding process
-	kcUser.SetAttributeString(constants.AttrbTrustIDAuthToken, autoLoginToken.ToJSON())
 
 	_, err = c.onboardingModule.CreateUser(ctx, accessToken, realmName, realmName, &kcUser)
 	if err != nil {

@@ -78,10 +78,9 @@ type UsersDetailsDBModule interface {
 
 // OnboardingModule is the interface for the onboarding process
 type OnboardingModule interface {
-	GenerateAuthToken() (keycloakb.TrustIDAuthToken, error)
 	OnboardingAlreadyCompleted(kc.UserRepresentation) (bool, error)
 	SendOnboardingEmail(ctx context.Context, accessToken string, realmName string, userID string, username string,
-		autoLoginToken keycloakb.TrustIDAuthToken, onboardingClientID string, onboardingRedirectURI string, themeRealmName string, reminder bool) error
+		onboardingClientID string, onboardingRedirectURI string, themeRealmName string, reminder bool, lifespan *int) error
 	CreateUser(ctx context.Context, accessToken, realmName, targetRealmName string, kcUser *kc.UserRepresentation) (string, error)
 }
 
@@ -1019,21 +1018,6 @@ func (c *component) SendOnboardingEmail(ctx context.Context, realmName string, u
 		return errorhandler.CreateBadRequestError(constants.MsgErrAlreadyOnboardedUser)
 	}
 
-	// Generate trustIDAuthToken
-	autoLoginToken, err := c.onboardingModule.GenerateAuthToken()
-	if err != nil {
-		c.logger.Warn(ctx, "msg", "Can't generate trustIDAuthToken", "err", err.Error())
-		return err
-	}
-
-	// Set authToken for auto login at the end of onboarding process
-	kcUser.SetAttributeString(constants.AttrbTrustIDAuthToken, autoLoginToken.ToJSON())
-	err = c.keycloakClient.UpdateUser(accessToken, realmName, userID, kcUser)
-	if err != nil {
-		c.logger.Warn(ctx, "msg", "Failed to update user through Keycloak API", "err", err.Error())
-		return err
-	}
-
 	var onboardingRedirectURI = *realmConf.OnboardingRedirectURI
 	if realmName != customerRealm {
 		onboardingRedirectURI += "?customerRealm=" + customerRealm
@@ -1041,7 +1025,7 @@ func (c *component) SendOnboardingEmail(ctx context.Context, realmName string, u
 
 	// Send email
 	err = c.onboardingModule.SendOnboardingEmail(ctx, accessToken, realmName, userID,
-		*kcUser.Username, autoLoginToken, *realmConf.OnboardingClientID, onboardingRedirectURI, customerRealm, reminder)
+		*kcUser.Username, *realmConf.OnboardingClientID, onboardingRedirectURI, customerRealm, reminder, nil)
 	if err != nil {
 		return err
 	}
