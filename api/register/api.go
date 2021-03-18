@@ -40,6 +40,7 @@ type ConfigurationRepresentation struct {
 	Mode                             *string   `json:"mode,omitempty"`
 	Theme                            *string   `json:"theme,omitempty"`
 	SupportedLocales                 *[]string `json:"supportedLocales,omitempty"`
+	SelfRegisterEnabled              *bool     `json:"selfRegisterEnabled,omitempty"`
 }
 
 // Parameter references
