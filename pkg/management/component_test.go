@@ -1653,14 +1653,14 @@ func TestGetUserAccountStatusByEmail(t *testing.T) {
 	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
 
 	t.Run("GetUser returns an error", func(t *testing.T) {
-		mocks.keycloakClient.EXPECT().GetUsers(accessToken, realmReq, realmName, "email", email).Return(kc.UsersPageRepresentation{}, anyError)
+		mocks.keycloakClient.EXPECT().GetUsers(accessToken, realmReq, realmName, "email", "="+email).Return(kc.UsersPageRepresentation{}, anyError)
 
 		_, err := managementComponent.GetUserAccountStatusByEmail(ctx, realmName, email)
 
 		assert.Equal(t, anyError, err)
 	})
 	t.Run("No user found", func(t *testing.T) {
-		mocks.keycloakClient.EXPECT().GetUsers(accessToken, realmReq, realmName, "email", email).Return(kc.UsersPageRepresentation{}, nil)
+		mocks.keycloakClient.EXPECT().GetUsers(accessToken, realmReq, realmName, "email", "="+email).Return(kc.UsersPageRepresentation{}, nil)
 
 		_, err := managementComponent.GetUserAccountStatusByEmail(ctx, realmName, email)
 
@@ -1672,7 +1672,7 @@ func TestGetUserAccountStatusByEmail(t *testing.T) {
 		users[0].Email = nil
 		users[1].Email = ptrString("a" + email)
 		users[2].Email = ptrString("b" + email)
-		mocks.keycloakClient.EXPECT().GetUsers(accessToken, realmReq, realmName, "email", email).Return(kc.UsersPageRepresentation{
+		mocks.keycloakClient.EXPECT().GetUsers(accessToken, realmReq, realmName, "email", "="+email).Return(kc.UsersPageRepresentation{
 			Count: &count,
 			Users: users,
 		}, nil)
@@ -1685,7 +1685,7 @@ func TestGetUserAccountStatusByEmail(t *testing.T) {
 		var user1 = kc.UserRepresentation{Email: &email}
 		var users = []kc.UserRepresentation{user1, user1, user1}
 		var count = len(users)
-		mocks.keycloakClient.EXPECT().GetUsers(accessToken, realmReq, realmName, "email", email).Return(kc.UsersPageRepresentation{
+		mocks.keycloakClient.EXPECT().GetUsers(accessToken, realmReq, realmName, "email", "="+email).Return(kc.UsersPageRepresentation{
 			Count: &count,
 			Users: users,
 		}, nil)
@@ -1695,11 +1695,9 @@ func TestGetUserAccountStatusByEmail(t *testing.T) {
 		assert.NotNil(t, err)
 	})
 
-	var users = []kc.UserRepresentation{searchedUser, searchedUser, searchedUser}
+	var users = []kc.UserRepresentation{searchedUser}
 	var count = len(users)
-	users[1].Email = nil
-	users[2].Email = ptrString("c" + email)
-	mocks.keycloakClient.EXPECT().GetUsers(accessToken, realmReq, realmName, "email", email).Return(kc.UsersPageRepresentation{
+	mocks.keycloakClient.EXPECT().GetUsers(accessToken, realmReq, realmName, "email", "="+email).Return(kc.UsersPageRepresentation{
 		Count: &count,
 		Users: users,
 	}, nil).AnyTimes()

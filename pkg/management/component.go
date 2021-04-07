@@ -660,31 +660,22 @@ func (c *component) getUniqueUserByEmail(ctx context.Context, realmName, email s
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 	var ctxRealm = ctx.Value(cs.CtContextRealm).(string)
 
-	var users, err = c.keycloakClient.GetUsers(accessToken, ctxRealm, realmName, "email", email)
+	var users, err = c.keycloakClient.GetUsers(accessToken, ctxRealm, realmName, "email", "="+email)
 	if err != nil {
 		c.logger.Warn(ctx, "err", "Can't get user by email", "realm", realmName)
 		return kc.UserRepresentation{}, err
 	}
 	// Only search in first page
-	var exactMatch []kc.UserRepresentation
-	if users.Count != nil {
-		for _, user := range users.Users {
-			if user.Email != nil && email == *user.Email {
-				exactMatch = append(exactMatch, user)
-			}
-		}
-	}
-
-	if len(exactMatch) == 0 {
+	if len(users.Users) == 0 {
 		return kc.UserRepresentation{}, errorhandler.CreateNotFoundError(prmQryEmail)
 	}
 
-	if len(exactMatch) > 1 {
+	if len(users.Users) > 1 {
 		c.logger.Warn(ctx, "err", "Too many users found by email", "realm", realmName)
 		return kc.UserRepresentation{}, errorhandler.CreateInternalServerError("tooManyRows")
 	}
 
-	return exactMatch[0], nil
+	return users.Users[0], nil
 }
 
 // GetUserAccountStatusByEmail gets the user onboarding status based on the email
