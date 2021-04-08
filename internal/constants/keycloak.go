@@ -25,4 +25,5 @@ const (
 	AttrbTrustIDAuthToken    = kc.AttributeKey("trustIDAuthToken")
 	AttrbTrustIDGroups       = kc.AttributeKey("trustIDGroups")
 	AttrbOnboardingCompleted = kc.AttributeKey("onboardingCompleted")
+	AttrbNameID              = kc.AttributeKey("saml.persistent.name.id.for.*")
 )

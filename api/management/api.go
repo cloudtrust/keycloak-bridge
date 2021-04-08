@@ -44,6 +44,7 @@ type UserRepresentation struct {
 	Enabled              *bool                          `json:"enabled,omitempty"`
 	Label                *string                        `json:"label,omitempty"`
 	Accreditations       *[]AccreditationRepresentation `json:"accreditations,omitempty"`
+	NameID               *string                        `json:"nameId,omitempty"`
 	CreatedTimestamp     *int64                         `json:"createdTimestamp,omitempty"`
 }
 
@@ -335,6 +336,7 @@ func ConvertToAPIUser(ctx context.Context, userKc kc.UserRepresentation, logger 
 	userRep.BirthDate = userKc.GetAttributeDate(constants.AttrbBirthDate, constants.SupportedDateLayouts)
 	userRep.Locale = userKc.GetAttributeString(constants.AttrbLocale)
 	userRep.BusinessID = userKc.GetAttributeString(constants.AttrbBusinessID)
+	userRep.NameID = userKc.GetAttributeString(constants.AttrbNameID)
 
 	if value, err := userKc.GetAttributeBool(constants.AttrbPhoneNumberVerified); err == nil && value != nil {
 		userRep.PhoneNumberVerified = value

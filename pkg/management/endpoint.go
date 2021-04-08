@@ -148,8 +148,13 @@ func MakeCreateUserEndpoint(component Component, logger keycloakb.Logger) cs.End
 			generateUsername = strings.ToLower(prmGenerateUsername) == "true"
 		}
 
+		var generateNameID = false
+		if prmGenerateNameID, ok := m[prmQryGenNameID]; ok {
+			generateNameID = strings.ToLower(prmGenerateNameID) == "true"
+		}
+
 		var keycloakLocation string
-		keycloakLocation, err = component.CreateUser(ctx, m[prmRealm], user, generateUsername)
+		keycloakLocation, err = component.CreateUser(ctx, m[prmRealm], user, generateUsername, generateNameID)
 
 		if err != nil {
 			return nil, err

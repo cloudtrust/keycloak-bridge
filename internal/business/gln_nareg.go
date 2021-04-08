@@ -18,8 +18,7 @@ import (
 )
 
 const (
-	naRegPreloadParams = `ButtonStartSearch=Chercher&PersonLastName=&PersonFirstName=&CodeDiplomaProfession=&CodeDiplomaDiplomaType=&DiplomaSrkRegisterId=&PersonGlnNumber=##GLN##&CodeLicenceCanton=&CodeSearchLicenceStatus=&AddressStreet=&AddressZip=&AddressPlace=&X-Requested-With=XMLHttpRequest`
-	naRegReqParams     = `sort=PersonLastName-asc~PersonFirstName-asc&page=1&pageSize=10&group=&filter=`
+	naRegReqParams = `sort=PersonLastName-asc~PersonFirstName-asc&page=1&pageSize=10&group=&filter=`
 )
 
 type naRegResult struct {
