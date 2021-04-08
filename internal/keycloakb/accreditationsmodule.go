@@ -122,7 +122,7 @@ func (am *accredsModule) GetUserAndPrepareAccreditations(ctx context.Context, ac
 	}
 
 	// Evaluate accreditations to be created
-	var newAccreds []string
+	var newAccreds map[string]string
 	newAccreds, err = am.evaluateAccreditations(ctx, rac.Accreditations, condition)
 	if err != nil {
 		am.logger.Warn(ctx, "msg", "Can't evaluate accreditations", "err", err.Error())
@@ -136,26 +136,47 @@ func (am *accredsModule) GetUserAndPrepareAccreditations(ctx context.Context, ac
 		return kcUser, 0, err
 	}
 
-	if len(newAccreds) == 0 {
+	var added = len(newAccreds)
+	if added == 0 {
 		return kcUser, 0, errorhandler.CreateInternalServerError("noConfiguredAccreditations")
 	}
 
-	// Update attributes in kcUser
-	var added = 0
-	var kcAccreds = kcUser.GetAttribute(constants.AttrbAccreditations)
-	for _, newAccred := range newAccreds {
-		if !validation.IsStringInSlice(kcAccreds, newAccred) {
-			kcAccreds = append(kcAccreds, newAccred)
-			added++
-		}
+	var mergedAccreds = am.evaluateCurrentAccreditations(kcUser.GetAttribute(constants.AttrbAccreditations), newAccreds)
+
+	// Merge all attributes
+	for _, accValue := range newAccreds {
+		mergedAccreds = append(mergedAccreds, accValue)
 	}
-	kcUser.SetAttribute(constants.AttrbAccreditations, kcAccreds)
+
+	kcUser.SetAttribute(constants.AttrbAccreditations, mergedAccreds)
 
 	return kcUser, added, nil
 }
 
-func (am *accredsModule) evaluateAccreditations(ctx context.Context, accreds []configuration.RealmAdminAccreditation, condition string) ([]string, error) {
-	var newAccreds []string
+func (am *accredsModule) evaluateCurrentAccreditations(accredsAttributes []string, newAccreds map[string]string) []string {
+	var accreds []string
+	var bTrue = true
+	for _, accredJSON := range accredsAttributes {
+		var accreditation AccreditationRepresentation
+		// If accreditation can be unmarshalled
+		if err := json.Unmarshal([]byte(accredJSON), &accreditation); err==nil {
+			// If new accreditation is being created for the same type and it is not yet revoked
+			if _, ok := newAccreds[*accreditation.Type]; ok && (accreditation.Revoked==nil || !*accreditation.Revoked) {
+				// If existing accreditation is not yet expired
+				if expiryDate, err := time.Parse(constants.SupportedDateLayouts[0], *accreditation.ExpiryDate); err!=nil || expiryDate.After(time.Now()) {
+					accreditation.Revoked = &bTrue
+					bytes, _ := json.Marshal(accreditation)
+					accredJSON = string(bytes)
+				}
+			}
+		}
+		accreds = append(accreds, accredJSON)
+	}
+	return accreds
+}
+
+func (am *accredsModule) evaluateAccreditations(ctx context.Context, accreds []configuration.RealmAdminAccreditation, condition string) (map[string]string, error) {
+	var newAccreds = make(map[string]string)
 	for _, modelAccred := range accreds {
 		if modelAccred.Condition == nil || *modelAccred.Condition == condition {
 			var expiry, err = am.convertDurationToDate(ctx, *modelAccred.Validity)
@@ -166,7 +187,7 @@ func (am *accredsModule) evaluateAccreditations(ctx context.Context, accreds []c
 				Type:       modelAccred.Type,
 				ExpiryDate: expiry,
 			})
-			newAccreds = append(newAccreds, string(newAccreditationJSON))
+			newAccreds[*modelAccred.Type] = string(newAccreditationJSON)
 		}
 	}
 	return newAccreds, nil
