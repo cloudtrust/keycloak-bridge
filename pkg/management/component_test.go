@@ -2841,111 +2841,46 @@ func TestDeleteCredentialsForUser(t *testing.T) {
 	var realmReq = "master"
 	var realmName = "master"
 	var userID = "1245-7854-8963"
-	var credential = "987-654-321"
-	var pwdID = "51389847-08f4-4a0f-9f9c-694554e626f2"
-	var pwd = "password"
-	var credKcPwd = kc.CredentialRepresentation{
-		ID:   &pwdID,
-		Type: &pwd,
-	}
-	var otpID = "51389847-08f4-4a0f-9f9c-694554e626f3"
-	var totp = "totp"
-	var credKcOtp = kc.CredentialRepresentation{
-		ID:   &otpID,
-		Type: &totp,
-	}
-	var typeCred = "otp-push"
+	var credMfa1 = kc.CredentialRepresentation{ID: ptr("cred-mfa-1"), Type: ptr("any-mfa")}
+	var credMfa2 = kc.CredentialRepresentation{ID: ptr("cred-mfa-2"), Type: ptr("any-mfa")}
+	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+	ctx = context.WithValue(ctx, cs.CtContextRealm, realmReq)
 
-	t.Run("Delete credentials for user", func(t *testing.T) {
-		mocks.keycloakClient.EXPECT().GetCredentials(accessToken, realmName, userID).Return([]kc.CredentialRepresentation{
-			{
-				ID:   &credential,
-				Type: &typeCred,
-			},
-		}, nil)
-		mocks.keycloakClient.EXPECT().DeleteCredential(accessToken, realmName, userID, credential).Return(nil)
+	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
+	mocks.logger.EXPECT().Error(gomock.Any(), gomock.Any()).AnyTimes()
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
-		ctx = context.WithValue(ctx, cs.CtContextRealm, realmReq)
+	t.Run("Success", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetCredentials(accessToken, realmName, userID).Return([]kc.CredentialRepresentation{credMfa1, credMfa2}, nil)
+		mocks.keycloakClient.EXPECT().DeleteCredential(accessToken, realmName, userID, *credMfa1.ID).Return(nil)
 
 		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "2ND_FACTOR_REMOVED", "back-office", database.CtEventRealmName, realmName, database.CtEventUserID, userID)
 
-		err := managementComponent.DeleteCredentialsForUser(ctx, realmName, userID, credential)
+		err := managementComponent.DeleteCredentialsForUser(ctx, realmName, userID, *credMfa1.ID)
 
 		assert.Nil(t, err)
 	})
 
-	t.Run("Delete credentials for user - error at obtaining the list of credentials", func(t *testing.T) {
+	t.Run("GetCredentials fails", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetCredentials(accessToken, realmName, userID).Return([]kc.CredentialRepresentation{}, errors.New("error"))
-		mocks.logger.EXPECT().Warn(gomock.Any(), "msg", "Could not obtain list of credentials", "err", "error")
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
-		ctx = context.WithValue(ctx, cs.CtContextRealm, realmReq)
-
-		err := managementComponent.DeleteCredentialsForUser(ctx, realmName, userID, credential)
+		err := managementComponent.DeleteCredentialsForUser(ctx, realmName, userID, *credMfa1.ID)
 		assert.NotNil(t, err)
 	})
 
-	t.Run("Delete credentials for user - try to delete credential of another user", func(t *testing.T) {
-		mocks.keycloakClient.EXPECT().GetCredentials(accessToken, realmName, userID).Return([]kc.CredentialRepresentation{}, nil)
+	t.Run("Error at deleting the credential", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetCredentials(accessToken, realmName, userID).Return([]kc.CredentialRepresentation{credMfa1, credMfa2}, nil)
+		mocks.keycloakClient.EXPECT().DeleteCredential(accessToken, realmName, userID, *credMfa1.ID).Return(errors.New("error"))
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
-		ctx = context.WithValue(ctx, cs.CtContextRealm, realmReq)
-
-		mocks.logger.EXPECT().Warn(ctx, "msg", "Try to delete credential of another user", "credId", credential, "userId", userID)
-
-		err := managementComponent.DeleteCredentialsForUser(ctx, realmName, userID, credential)
+		err := managementComponent.DeleteCredentialsForUser(ctx, realmName, userID, *credMfa1.ID)
 		assert.NotNil(t, err)
 	})
 
-	t.Run("Delete credentials for user - error at deleting the credential", func(t *testing.T) {
-		mocks.keycloakClient.EXPECT().GetCredentials(accessToken, realmName, userID).Return([]kc.CredentialRepresentation{
-			{
-				ID:   &credential,
-				Type: &typeCred,
-			},
-		}, nil)
-		mocks.keycloakClient.EXPECT().DeleteCredential(accessToken, realmName, userID, credential).Return(errors.New("error"))
-		mocks.logger.EXPECT().Warn(gomock.Any(), "err", "error")
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
-		ctx = context.WithValue(ctx, cs.CtContextRealm, realmReq)
-
-		err := managementComponent.DeleteCredentialsForUser(ctx, realmName, userID, credential)
-		assert.NotNil(t, err)
-	})
-
-	t.Run("Delete credentials for user", func(t *testing.T) {
-		var credsKc []kc.CredentialRepresentation
-		credsKc = append(credsKc, credKcPwd)
-		credsKc = append(credsKc, credKcOtp)
-
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
-		ctx = context.WithValue(ctx, cs.CtContextRealm, realmReq)
-
-		mocks.keycloakClient.EXPECT().GetCredentials(accessToken, realmName, userID).Return(credsKc, nil)
-		mocks.keycloakClient.EXPECT().DeleteCredential(accessToken, realmName, userID, otpID).Return(nil)
-		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "2ND_FACTOR_REMOVED", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
-
-		err := managementComponent.DeleteCredentialsForUser(ctx, realmName, userID, otpID)
-
-		assert.Nil(t, err)
-	})
-
-	t.Run("Delete credentials for user - error at storing the event", func(t *testing.T) {
-		var credsKc []kc.CredentialRepresentation
-		credsKc = append(credsKc, credKcPwd)
-		credsKc = append(credsKc, credKcOtp)
-
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
-		ctx = context.WithValue(ctx, cs.CtContextRealm, realmReq)
-
-		mocks.keycloakClient.EXPECT().GetCredentials(accessToken, realmName, userID).Return(credsKc, nil)
-		mocks.keycloakClient.EXPECT().DeleteCredential(accessToken, realmName, userID, otpID).Return(nil)
+	t.Run("Error at storing the event", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetCredentials(accessToken, realmName, userID).Return([]kc.CredentialRepresentation{credMfa1, credMfa2}, nil)
+		mocks.keycloakClient.EXPECT().DeleteCredential(accessToken, realmName, userID, *credMfa1.ID).Return(nil)
 		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "2ND_FACTOR_REMOVED", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(errors.New("error"))
-		m := map[string]interface{}{"event_name": "2ND_FACTOR_REMOVED", database.CtEventRealmName: realmName, database.CtEventUserID: userID}
-		eventJSON, _ := json.Marshal(m)
-		mocks.logger.EXPECT().Error(gomock.Any(), "err", "error", "event", string(eventJSON))
-		err := managementComponent.DeleteCredentialsForUser(ctx, realmName, userID, otpID)
+
+		err := managementComponent.DeleteCredentialsForUser(ctx, realmName, userID, *credMfa1.ID)
 
 		assert.Nil(t, err)
 	})

@@ -12,3 +12,7 @@ package management
 //go:generate mockgen -destination=./mock/usersdbmodule.go -package=mock -mock_names=UsersDetailsDBModule=UsersDetailsDBModule github.com/cloudtrust/keycloak-bridge/pkg/management UsersDetailsDBModule
 //go:generate mockgen -destination=./mock/onboardingmodule.go -package=mock -mock_names=OnboardingModule=OnboardingModule github.com/cloudtrust/keycloak-bridge/pkg/management OnboardingModule
 //go:generate mockgen -destination=./mock/glnverifier.go -package=mock -mock_names=GlnVerifier=GlnVerifier github.com/cloudtrust/keycloak-bridge/pkg/management GlnVerifier
+
+func ptr(value string) *string {
+	return &value
+}

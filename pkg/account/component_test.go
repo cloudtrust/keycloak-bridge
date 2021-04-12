@@ -48,6 +48,10 @@ func (m *componentMock) createComponent() *component {
 		m.configurationDBModule, m.usersDetailsDBModule, m.glnVerifier, log.NewNopLogger()).(*component)
 }
 
+func ptr(value string) *string {
+	return &value
+}
+
 func TestUpdatePassword(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -792,13 +796,26 @@ func TestDeleteCredential(t *testing.T) {
 	realm := "sample realm"
 	userID := "123-456-789"
 	username := "username"
+	credentialID := "78945-845"
 	ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 	ctx = context.WithValue(ctx, cs.CtContextRealm, realm)
 	ctx = context.WithValue(ctx, cs.CtContextUserID, userID)
 	ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 	var anyError = errors.New("any error")
 
-	credentialID := "78945-845"
+	var passwordCred = kc.CredentialRepresentation{ID: ptr("cred-11111"), Type: ptr("password")}
+	var removingMFA = kc.CredentialRepresentation{ID: &credentialID, Type: ptr("mfa")}
+	var anotherMFA = kc.CredentialRepresentation{ID: ptr("cred-22222"), Type: ptr("mfa")}
+
+	t.Run("CheckRemovableMFA fails", func(t *testing.T) {
+		mocks.keycloakAccountClient.EXPECT().GetCredentials(accessToken, realm).Return(nil, anyError)
+		err := component.DeleteCredential(ctx, credentialID)
+		assert.NotNil(t, err)
+	})
+
+	var credentials = []kc.CredentialRepresentation{passwordCred, removingMFA, anotherMFA}
+	mocks.keycloakAccountClient.EXPECT().GetCredentials(accessToken, realm).Return(credentials, nil).AnyTimes()
+
 	t.Run("Success", func(t *testing.T) {
 		mocks.keycloakAccountClient.EXPECT().DeleteCredential(accessToken, realm, credentialID).Return(nil)
 		mocks.eventDBModule.EXPECT().ReportEvent(gomock.Any(), "SELF_DELETE_CREDENTIAL", "self-service", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())

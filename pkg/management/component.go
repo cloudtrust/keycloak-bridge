@@ -1170,25 +1170,12 @@ func (c *component) GetCredentialsForUser(ctx context.Context, realmName string,
 func (c *component) DeleteCredentialsForUser(ctx context.Context, realmName string, userID string, credentialID string) error {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 
-	// get the list of credentails of the user
-	credsKc, err := c.keycloakClient.GetCredentials(accessToken, realmName, userID)
+	// Check that credential is removable
+	var err = keycloakb.CheckRemovableMFA(ctx, credentialID, func() ([]kc.CredentialRepresentation, error) {
+		return c.keycloakClient.GetCredentials(accessToken, realmName, userID)
+	}, c.logger)
 	if err != nil {
-		c.logger.Warn(ctx, "msg", "Could not obtain list of credentials", "err", err.Error())
 		return err
-	}
-
-	// Ensure the credential is owned by user
-	var ownedByUser = false
-	for _, credKc := range credsKc {
-		if *credKc.ID == credentialID {
-			ownedByUser = true
-			break
-		}
-	}
-
-	if !ownedByUser {
-		c.logger.Warn(ctx, "msg", "Try to delete credential of another user", "credId", credentialID, "userId", userID)
-		return errorhandler.CreateNotFoundError(constants.MsgErrInvalidParam + "." + constants.CredentialID)
 	}
 
 	err = c.keycloakClient.DeleteCredential(accessToken, realmName, userID, credentialID)
@@ -1197,13 +1184,8 @@ func (c *component) DeleteCredentialsForUser(ctx context.Context, realmName stri
 		return err
 	}
 
-	// if a credential other than the password was deleted, record the event 2ND_FACTOR_REMOVED in the audit DB
-	for _, credKc := range credsKc {
-		if *credKc.ID == credentialID && *credKc.Type != "password" {
-			c.reportEvent(ctx, "2ND_FACTOR_REMOVED", database.CtEventRealmName, realmName, database.CtEventUserID, userID)
-			break
-		}
-	}
+	// Call to CheckRemovableMFA ensures credential is a MFA: record the event 2ND_FACTOR_REMOVED in the audit DB
+	c.reportEvent(ctx, "2ND_FACTOR_REMOVED", database.CtEventRealmName, realmName, database.CtEventUserID, userID)
 
 	return err
 }
