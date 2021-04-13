@@ -84,6 +84,11 @@ type OnboardingModule interface {
 	CreateUser(ctx context.Context, accessToken, realmName, targetRealmName string, kcUser *kc.UserRepresentation) (string, error)
 }
 
+// GlnVerifier interface allows to check validity of a GLN
+type GlnVerifier interface {
+	ValidateGLN(firstName, lastName, gln string) error
+}
+
 // Component is the management component interface.
 type Component interface {
 	GetActions(ctx context.Context) ([]api.ActionRepresentation, error)
@@ -158,12 +163,14 @@ type component struct {
 	onboardingModule        OnboardingModule
 	authorizedTrustIDGroups map[string]bool
 	socialRealmName         string
+	glnVerifier             GlnVerifier
 	logger                  keycloakb.Logger
 }
 
 // NewComponent returns the management component.
 func NewComponent(keycloakClient KeycloakClient, usersDBModule UsersDetailsDBModule, eventDBModule database.EventsDBModule,
-	configDBModule keycloakb.ConfigurationDBModule, onboardingModule OnboardingModule, authorizedTrustIDGroups []string, socialRealmName string, logger keycloakb.Logger) Component {
+	configDBModule keycloakb.ConfigurationDBModule, onboardingModule OnboardingModule, authorizedTrustIDGroups []string, socialRealmName string,
+	glnVerifier GlnVerifier, logger keycloakb.Logger) Component {
 
 	var authzedTrustIDGroups = make(map[string]bool)
 	for _, grp := range authorizedTrustIDGroups {
@@ -178,6 +185,7 @@ func NewComponent(keycloakClient KeycloakClient, usersDBModule UsersDetailsDBMod
 		onboardingModule:        onboardingModule,
 		authorizedTrustIDGroups: authzedTrustIDGroups,
 		socialRealmName:         socialRealmName,
+		glnVerifier:             glnVerifier,
 		logger:                  logger,
 	}
 }
@@ -308,6 +316,10 @@ func (c *component) CreateUser(ctx context.Context, realmName string, user api.U
 
 	var userRep = api.ConvertToKCUser(user)
 
+	if glnErr := c.checkGLN(ctx, true, user.BusinessID, &userRep); glnErr != nil {
+		return "", glnErr
+	}
+
 	var locationURL string
 	var err error
 	if realmName == c.socialRealmName || generateUsername {
@@ -360,6 +372,26 @@ func (c *component) CreateUser(ctx context.Context, realmName string, user api.U
 	c.reportEvent(ctx, "API_ACCOUNT_CREATION", database.CtEventRealmName, realmName, database.CtEventUserID, userID, database.CtEventUsername, username)
 
 	return locationURL, nil
+}
+
+func (c *component) checkGLN(ctx context.Context, businessIDThere bool, businessID *string, kcUser *kc.UserRepresentation) error {
+	var realm = ctx.Value(cs.CtContextRealm).(string)
+
+	if adminConfig, err := c.configDBModule.GetAdminConfiguration(ctx, realm); err != nil {
+		c.logger.Warn(ctx, "msg", "Can't get realm admin configuration", "realm", realm, "err", err.Error())
+		return err
+	} else if adminConfig.ShowGlnEditing == nil || !*adminConfig.ShowGlnEditing {
+		// No GLN expected
+		kcUser.RemoveAttribute(constants.AttrbBusinessID)
+	} else if businessIDThere {
+		// GLN enabled for this realm
+		if businessID == nil {
+			kcUser.RemoveAttribute(constants.AttrbBusinessID)
+		} else {
+			return c.glnVerifier.ValidateGLN(*kcUser.FirstName, *kcUser.LastName, *businessID)
+		}
+	}
+	return nil
 }
 
 func (c *component) DeleteUser(ctx context.Context, realmName, userID string) error {
@@ -477,9 +509,18 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 		user.IDDocumentNumber, oldDbUser.IDDocumentNumber,
 		user.IDDocumentExpiration, oldDbUser.IDDocumentExpiration,
 		user.IDDocumentCountry, oldDbUser.IDDocumentCountry)
-
-	var revokeAccreditations = userInfosUpdated || keycloakb.IsUpdated(user.FirstName, oldUserKc.FirstName,
+	var oldGlnValue = oldUserKc.GetAttributeString(constants.AttrbBusinessID)
+	// Check if GLN validity should be re-evaluated
+	var glnUpdated = keycloakb.IsUpdated(user.FirstName, oldUserKc.FirstName,
 		user.LastName, oldUserKc.LastName,
+		user.BusinessID.Value, oldGlnValue,
+	)
+	if oldGlnValue != nil && user.BusinessID.Defined && user.BusinessID.Value == nil {
+		glnUpdated = true
+		removeAttributes = append(removeAttributes, constants.AttrbBusinessID)
+	}
+
+	var revokeAccreditations = userInfosUpdated || glnUpdated || keycloakb.IsUpdated(
 		user.Gender, oldUserKc.GetAttributeString(constants.AttrbGender),
 		user.BirthDate, oldUserKc.GetAttributeString(constants.AttrbBirthDate),
 	)
@@ -497,6 +538,12 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 	userRep.Attributes = &mergedAttributes
 	if revokeAccreditations {
 		keycloakb.RevokeAccreditations(&userRep)
+	}
+
+	if glnUpdated {
+		if glnErr := c.checkGLN(ctx, user.BusinessID.Defined, user.BusinessID.Value, &userRep); glnErr != nil {
+			return glnErr
+		}
 	}
 
 	// Update in KC
@@ -634,10 +681,7 @@ func (c *component) GetUserChecks(ctx context.Context, realmName, userID string)
 // GetUserAccountStatus gets the user status : user should be enabled in Keycloak and have multifactor activated
 func (c *component) GetUserAccountStatus(ctx context.Context, realmName, userID string) (map[string]bool, error) {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
-	var res map[string]bool
-
-	res = make(map[string]bool)
-	res["enabled"] = false
+	var res = map[string]bool{"enabled": false}
 
 	userKc, err := c.keycloakClient.GetUser(accessToken, realmName, userID)
 	// Here, we don't call keycloakb.ConvertLegacyAttribute as attributes are not used
@@ -785,9 +829,7 @@ func (c *component) GetTrustIDGroupsOfUser(ctx context.Context, realmName, userI
 	}
 	var groups = make([]string, 0)
 	for _, grp := range currentUser.GetAttribute(constants.AttrbTrustIDGroups) {
-		if strings.HasPrefix(grp, "/") {
-			grp = grp[1:]
-		}
+		grp = strings.TrimPrefix(grp, "/")
 		groups = append(groups, grp)
 	}
 
@@ -1293,8 +1335,7 @@ func (c *component) GetGroups(ctx context.Context, realmName string) ([]api.Grou
 func (c *component) CreateGroup(ctx context.Context, realmName string, group api.GroupRepresentation) (string, error) {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 
-	var groupRep kc.GroupRepresentation
-	groupRep = api.ConvertToKCGroup(group)
+	var groupRep = api.ConvertToKCGroup(group)
 
 	locationURL, err := c.keycloakClient.CreateGroup(accessToken, realmName, groupRep)
 	if err != nil {
@@ -1879,8 +1920,7 @@ func (c *component) findString(groups []string, searchGroup string) bool {
 func (c *component) LinkShadowUser(ctx context.Context, realmName string, userID string, provider string, fedID api.FederatedIdentityRepresentation) error {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 
-	var fedIDKC kc.FederatedIdentityRepresentation
-	fedIDKC = api.ConvertToKCFedID(fedID)
+	var fedIDKC = api.ConvertToKCFedID(fedID)
 
 	err := c.keycloakClient.LinkShadowUser(accessToken, realmName, userID, provider, fedIDKC)
 

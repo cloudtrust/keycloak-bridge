@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cloudtrust/common-service/configuration"
 	log "github.com/cloudtrust/common-service/log"
-	apikyc "github.com/cloudtrust/keycloak-bridge/api/kyc"
 	api "github.com/cloudtrust/keycloak-bridge/api/validation"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
@@ -18,38 +18,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func createValidUser() apikyc.UserRepresentation {
-	var (
-		gender        = "M"
-		firstName     = "Marc"
-		lastName      = "El-Bichoun"
-		email         = "marcel.bichon@elca.ch"
-		phoneNumber   = "00 33 686 550011"
-		birthDate     = "31.03.2001"
-		birthLocation = "Montreux"
-		nationality   = "CH"
-		docType       = "ID_CARD"
-		docNumber     = "MEL123789654ABC"
-		docExp        = "28.02.2050"
-		docCountry    = "IL"
-	)
-
-	return apikyc.UserRepresentation{
-		Gender:               &gender,
-		FirstName:            &firstName,
-		LastName:             &lastName,
-		Email:                &email,
-		PhoneNumber:          &phoneNumber,
-		BirthDate:            &birthDate,
-		BirthLocation:        &birthLocation,
-		Nationality:          &nationality,
-		IDDocumentType:       &docType,
-		IDDocumentNumber:     &docNumber,
-		IDDocumentExpiration: &docExp,
-		IDDocumentCountry:    &docCountry,
-	}
-}
-
 type componentMocks struct {
 	keycloakClient *mock.KeycloakClient
 	usersDB        *mock.UsersDetailsDBModule
@@ -57,6 +25,7 @@ type componentMocks struct {
 	eventsDB       *mock.EventsDBModule
 	tokenProvider  *mock.TokenProvider
 	accreditations *mock.AccreditationsModule
+	configDB       *mock.ConfigurationDBModule
 }
 
 func createComponentMocks(mockCtrl *gomock.Controller) componentMocks {
@@ -67,11 +36,12 @@ func createComponentMocks(mockCtrl *gomock.Controller) componentMocks {
 		eventsDB:       mock.NewEventsDBModule(mockCtrl),
 		tokenProvider:  mock.NewTokenProvider(mockCtrl),
 		accreditations: mock.NewAccreditationsModule(mockCtrl),
+		configDB:       mock.NewConfigurationDBModule(mockCtrl),
 	}
 }
 
 func (m *componentMocks) createComponent() *component {
-	return NewComponent(m.keycloakClient, m.tokenProvider, m.usersDB, m.archiveDB, m.eventsDB, m.accreditations, log.NewNopLogger()).(*component)
+	return NewComponent(m.keycloakClient, m.tokenProvider, m.usersDB, m.archiveDB, m.eventsDB, m.accreditations, m.configDB, log.NewNopLogger()).(*component)
 }
 
 func TestGetUserComponent(t *testing.T) {
@@ -81,7 +51,7 @@ func TestGetUserComponent(t *testing.T) {
 	var accessToken = "abcd-1234"
 	var realm = "my-realm"
 	var userID = ""
-
+	var anyError = errors.New("an error")
 	var ctx = context.Background()
 
 	var mocks = createComponentMocks(mockCtrl)
@@ -101,6 +71,24 @@ func TestGetUserComponent(t *testing.T) {
 		var _, err = component.GetUser(ctx, realm, userID)
 		assert.NotNil(t, err)
 	})
+
+	t.Run("GetAdminConfiguration fails", func(t *testing.T) {
+		mocks.tokenProvider.EXPECT().ProvideToken(gomock.Any()).Return(accessToken, nil)
+		mocks.keycloakClient.EXPECT().GetUser(accessToken, realm, userID).Return(kc.UserRepresentation{}, nil)
+		mocks.configDB.EXPECT().GetAdminConfiguration(ctx, realm).Return(configuration.RealmAdminConfiguration{}, anyError)
+		var _, err = component.GetUser(ctx, realm, userID)
+		assert.NotNil(t, err)
+	})
+
+	t.Run("Missing GLN", func(t *testing.T) {
+		var bTrue = true
+		mocks.tokenProvider.EXPECT().ProvideToken(gomock.Any()).Return(accessToken, nil)
+		mocks.keycloakClient.EXPECT().GetUser(accessToken, realm, userID).Return(kc.UserRepresentation{}, nil)
+		mocks.configDB.EXPECT().GetAdminConfiguration(ctx, realm).Return(configuration.RealmAdminConfiguration{ShowGlnEditing: &bTrue}, nil)
+		var _, err = component.GetUser(ctx, realm, userID)
+		assert.NotNil(t, err)
+	})
+	mocks.configDB.EXPECT().GetAdminConfiguration(ctx, realm).Return(configuration.RealmAdminConfiguration{}, nil).AnyTimes()
 
 	t.Run("GetUser from DB fails", func(t *testing.T) {
 		mocks.tokenProvider.EXPECT().ProvideToken(gomock.Any()).Return(accessToken, nil)

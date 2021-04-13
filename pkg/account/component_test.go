@@ -11,8 +11,8 @@ import (
 	cs "github.com/cloudtrust/common-service"
 	"github.com/cloudtrust/common-service/configuration"
 	"github.com/cloudtrust/common-service/database"
+	csjson "github.com/cloudtrust/common-service/json"
 	"github.com/cloudtrust/common-service/log"
-	account_api "github.com/cloudtrust/keycloak-bridge/api/account"
 	api "github.com/cloudtrust/keycloak-bridge/api/account"
 	"github.com/cloudtrust/keycloak-bridge/pkg/account/mock"
 	kc "github.com/cloudtrust/keycloak-client"
@@ -29,6 +29,7 @@ type componentMock struct {
 	eventDBModule           *mock.EventsDBModule
 	configurationDBModule   *mock.ConfigurationDBModule
 	usersDetailsDBModule    *mock.UsersDetailsDBModule
+	glnVerifier             *mock.GlnVerifier
 }
 
 func createComponentMocks(mockCtrl *gomock.Controller) *componentMock {
@@ -38,12 +39,13 @@ func createComponentMocks(mockCtrl *gomock.Controller) *componentMock {
 		eventDBModule:           mock.NewEventsDBModule(mockCtrl),
 		configurationDBModule:   mock.NewConfigurationDBModule(mockCtrl),
 		usersDetailsDBModule:    mock.NewUsersDetailsDBModule(mockCtrl),
+		glnVerifier:             mock.NewGlnVerifier(mockCtrl),
 	}
 }
 
-func (m *componentMock) createComponent() Component {
+func (m *componentMock) createComponent() *component {
 	return NewComponent(m.keycloakAccountClient, m.keycloakTechnicalClient, m.eventDBModule,
-		m.configurationDBModule, m.usersDetailsDBModule, log.NewNopLogger())
+		m.configurationDBModule, m.usersDetailsDBModule, m.glnVerifier, log.NewNopLogger()).(*component)
 }
 
 func TestUpdatePassword(t *testing.T) {
@@ -166,6 +168,7 @@ func TestUpdateAccount(t *testing.T) {
 	var idDocNumber = "ABC123-DEF456"
 	var idDocExpiration = "01.01.2050"
 	var idDocCountry = "CH"
+	var bFalse = false
 	var createdTimestamp = time.Now().UTC().Unix()
 	var anError = errors.New("any error")
 
@@ -198,7 +201,7 @@ func TestUpdateAccount(t *testing.T) {
 		IDDocumentCountry:    &idDocCountry,
 	}
 
-	var userRep = api.AccountRepresentation{
+	var userRep = api.UpdatableAccountRepresentation{
 		Username:    &username,
 		Email:       &email,
 		FirstName:   &firstName,
@@ -216,6 +219,17 @@ func TestUpdateAccount(t *testing.T) {
 
 		assert.Equal(t, anError, err)
 	})
+
+	t.Run("GetAdminConfiguration fails", func(t *testing.T) {
+		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kcUserRep, nil)
+		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, realmName).Return(configuration.RealmAdminConfiguration{}, anError)
+		mocks.usersDetailsDBModule.EXPECT().GetUserDetails(ctx, realmName, userID).Return(dbUser, nil)
+
+		err := accountComponent.UpdateAccount(ctx, userRep)
+
+		assert.NotNil(t, err)
+	})
+	mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, realmName).Return(configuration.RealmAdminConfiguration{ShowGlnEditing: &bFalse}, nil).AnyTimes()
 
 	t.Run("Update account with succces", func(t *testing.T) {
 		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "UPDATE_ACCOUNT", "self-service", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
@@ -354,12 +368,13 @@ func TestUpdateAccount(t *testing.T) {
 		assert.Equal(t, anError, err)
 	})
 
-	t.Run("Update without attributes", func(t *testing.T) {
-		var userRepWithoutAttr = api.AccountRepresentation{
-			Username:  &username,
-			Email:     &email,
-			FirstName: &firstName,
-			LastName:  &lastName,
+	t.Run("Update without attributes - remove businessID", func(t *testing.T) {
+		var userRepWithoutAttr = api.UpdatableAccountRepresentation{
+			Username:   &username,
+			Email:      &email,
+			FirstName:  &firstName,
+			LastName:   &lastName,
+			BusinessID: csjson.OptionalString{Defined: true, Value: nil},
 		}
 
 		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(oldkcUserRep2, nil)
@@ -368,6 +383,7 @@ func TestUpdateAccount(t *testing.T) {
 				verified, _ := kcUserRep.GetAttributeBool(constants.AttrbPhoneNumberVerified)
 				assert.Equal(t, oldNumber, *kcUserRep.GetAttributeString(constants.AttrbPhoneNumber))
 				assert.Equal(t, true, *verified)
+				assert.Nil(t, kcUserRep.GetAttributeString(constants.AttrbBusinessID))
 				return nil
 			})
 		mocks.usersDetailsDBModule.EXPECT().GetUserDetails(ctx, realmName, userID).Return(dto.DBUser{
@@ -383,7 +399,7 @@ func TestUpdateAccount(t *testing.T) {
 	t.Run("Error - get user", func(t *testing.T) {
 		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kc.UserRepresentation{}, fmt.Errorf("Unexpected error"))
 
-		err := accountComponent.UpdateAccount(ctx, api.AccountRepresentation{})
+		err := accountComponent.UpdateAccount(ctx, api.UpdatableAccountRepresentation{})
 
 		assert.NotNil(t, err)
 	})
@@ -398,9 +414,78 @@ func TestUpdateAccount(t *testing.T) {
 		}, nil)
 		mocks.keycloakAccountClient.EXPECT().UpdateAccount(accessToken, realmName, gomock.Any()).Return(fmt.Errorf("Unexpected error"))
 
-		err := accountComponent.UpdateAccount(ctx, api.AccountRepresentation{})
+		err := accountComponent.UpdateAccount(ctx, api.UpdatableAccountRepresentation{})
 
 		assert.NotNil(t, err)
+	})
+}
+
+func TestCheckGLN(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mocks = createComponentMocks(mockCtrl)
+	var accountComponent = mocks.createComponent()
+
+	var realmName = "my-realm"
+	var gln = "123456789"
+	var firstName = "first"
+	var lastName = "last"
+	var newGLN = csjson.OptionalString{Defined: true, Value: &gln}
+	var removeGLN = csjson.OptionalString{Defined: true, Value: nil}
+	var noGLNChange = csjson.OptionalString{Defined: false}
+	var kcUser = kc.UserRepresentation{FirstName: &firstName, LastName: &lastName}
+	var anyError = errors.New("any error")
+	var ctx = context.WithValue(context.TODO(), cs.CtContextRealm, realmName)
+
+	t.Run("GetRealmAdminConfiguration fails", func(t *testing.T) {
+		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, realmName).Return(configuration.RealmAdminConfiguration{}, anyError)
+
+		var err = accountComponent.checkGLN(ctx, newGLN, &kcUser)
+		assert.NotNil(t, err)
+	})
+	t.Run("GLN feature not activated", func(t *testing.T) {
+		kcUser.SetAttributeString(constants.AttrbBusinessID, gln)
+
+		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, realmName).Return(configuration.RealmAdminConfiguration{}, nil)
+
+		var err = accountComponent.checkGLN(ctx, newGLN, &kcUser)
+		assert.Nil(t, err)
+		assert.Nil(t, kcUser.GetAttributeString(constants.AttrbBusinessID))
+	})
+
+	var bTrue = true
+	var confWithGLN = configuration.RealmAdminConfiguration{ShowGlnEditing: &bTrue}
+	mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, realmName).Return(confWithGLN, nil).AnyTimes()
+
+	t.Run("Removing GLN", func(t *testing.T) {
+		kcUser.SetAttributeString(constants.AttrbBusinessID, gln)
+
+		var err = accountComponent.checkGLN(ctx, removeGLN, &kcUser)
+		assert.Nil(t, err)
+		assert.Nil(t, kcUser.GetAttributeString(constants.AttrbBusinessID))
+	})
+	t.Run("Using invalid GLN", func(t *testing.T) {
+		kcUser.SetAttributeString(constants.AttrbBusinessID, gln)
+
+		mocks.glnVerifier.EXPECT().ValidateGLN(firstName, lastName, gln).Return(anyError)
+
+		var err = accountComponent.checkGLN(ctx, newGLN, &kcUser)
+		assert.NotNil(t, err)
+	})
+	t.Run("Using valid GLN", func(t *testing.T) {
+		kcUser.SetAttributeString(constants.AttrbBusinessID, gln)
+
+		mocks.glnVerifier.EXPECT().ValidateGLN(firstName, lastName, gln).Return(nil)
+
+		var err = accountComponent.checkGLN(ctx, newGLN, &kcUser)
+		assert.Nil(t, err)
+	})
+	t.Run("No change asked for GLN field", func(t *testing.T) {
+		kcUser.SetAttributeString(constants.AttrbBusinessID, gln)
+
+		var err = accountComponent.checkGLN(ctx, noGLNChange, &kcUser)
+		assert.Nil(t, err)
 	})
 }
 
@@ -595,11 +680,11 @@ func TestGetCredentials(t *testing.T) {
 
 		apiCredsRep, err := component.GetCredentials(ctx)
 
-		var expectedAPICredRep = account_api.CredentialRepresentation{
+		var expectedAPICredRep = api.CredentialRepresentation{
 			ID: &id,
 		}
 
-		var expectedAPICredsRep []account_api.CredentialRepresentation
+		var expectedAPICredsRep []api.CredentialRepresentation
 		expectedAPICredsRep = append(expectedAPICredsRep, expectedAPICredRep)
 
 		assert.Nil(t, err)

@@ -31,6 +31,7 @@ type UserRepresentation struct {
 	IDDocumentExpiration *string `json:"idDocumentExpiration,omitempty"`
 	IDDocumentCountry    *string `json:"idDocumentCountry,omitempty"`
 	Locale               *string `json:"locale,omitempty"`
+	BusinessID           *string `json:"businessId,omitempty"`
 }
 
 // ConfigurationRepresentation representation
@@ -98,6 +99,7 @@ func (u *UserRepresentation) ConvertToKeycloak() kc.UserRepresentation {
 	}
 	attributes.SetDateWhenNotNil(constants.AttrbBirthDate, u.BirthDate, constants.SupportedDateLayouts)
 	attributes.SetStringWhenNotNil(constants.AttrbLocale, u.Locale)
+	attributes.SetStringWhenNotNil(constants.AttrbBusinessID, u.BusinessID)
 
 	return kc.UserRepresentation{
 		Username:      u.Username,

@@ -130,7 +130,7 @@ func (c *authorizationComponentMW) GetAccount(ctx context.Context) (api.AccountR
 	return c.next.GetAccount(ctx)
 }
 
-func (c *authorizationComponentMW) UpdateAccount(ctx context.Context, account api.AccountRepresentation) error {
+func (c *authorizationComponentMW) UpdateAccount(ctx context.Context, account api.UpdatableAccountRepresentation) error {
 	var action = UpdateAccount
 	var currentRealm = ctx.Value(cs.CtContextRealm).(string)
 

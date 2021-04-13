@@ -133,7 +133,7 @@ func TestMakeUpdateAccountEndpoint(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	mockAccountComponent := mock.NewComponent(mockCtrl)
-	mockAccountComponent.EXPECT().UpdateAccount(gomock.Any(), account_api.AccountRepresentation{}).Return(nil).Times(1)
+	mockAccountComponent.EXPECT().UpdateAccount(gomock.Any(), account_api.UpdatableAccountRepresentation{}).Return(nil).Times(1)
 	{
 		m := map[string]string{}
 		m[ReqBody] = "{ \"userLabel\": \"label\"}"

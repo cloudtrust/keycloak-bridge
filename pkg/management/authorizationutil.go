@@ -20,13 +20,13 @@ func Validate(authorizations []configuration.Authorization, allowedTargetRealmsA
 		for realmID, v := range u {
 			// Check if * as targetRealm, there is no other targetRealm rule
 			if realmID == "*" && len(u) != 1 {
-				return errors.New("If '*' is used as targetRealm, no other rules for this action are allowed")
+				return errors.New("if '*' is used as targetRealm, no other rules for this action are allowed")
 			}
 
 			// Check if * as targetGroupName, there is no other targetGroupName rule
 			for targetGroup := range v {
 				if targetGroup == "*" && len(v) != 1 {
-					return errors.New("If '*' is used as targetGroupName, no other rules are allowed")
+					return errors.New("if '*' is used as targetGroupName, no other rules are allowed")
 				}
 			}
 		}
@@ -40,14 +40,14 @@ func checkTarget(authorizations []configuration.Authorization, allowedTargetReal
 		// Check TargetRealm
 		if auth.TargetRealmID != nil {
 			if _, ok := allowedTargetRealmsAndGroupNames[*auth.TargetRealmID]; !ok {
-				return errors.New("Invalid target realm")
+				return errors.New("invalid target realm")
 			}
 		}
 
 		// Check TargetGroupName
 		if auth.TargetGroupName != nil {
 			if _, ok := allowedTargetRealmsAndGroupNames[*auth.TargetRealmID][*auth.TargetGroupName]; !ok {
-				return errors.New("Invalid target group")
+				return errors.New("invalid target group")
 			}
 		}
 	}

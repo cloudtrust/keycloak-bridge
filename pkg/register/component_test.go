@@ -33,6 +33,7 @@ func createValidUser() apiregister.UserRepresentation {
 		docExp        = "28.02.2050"
 		docCountry    = "AT"
 		locale        = "fr"
+		gln           = "123456789"
 	)
 
 	return apiregister.UserRepresentation{
@@ -49,11 +50,8 @@ func createValidUser() apiregister.UserRepresentation {
 		IDDocumentExpiration: &docExp,
 		IDDocumentCountry:    &docCountry,
 		Locale:               &locale,
+		BusinessID:           &gln,
 	}
-}
-
-func ptrString(value string) *string {
-	return &value
 }
 
 type componentMocks struct {
@@ -62,6 +60,7 @@ type componentMocks struct {
 	configDB         *mock.ConfigurationDBModule
 	usersDB          *mock.UsersDetailsDBModule
 	eventsDB         *mock.EventsDBModule
+	glnVerifier      *mock.GlnVerifier
 	onboardingModule *mock.OnboardingModule
 }
 
@@ -72,6 +71,7 @@ func createMocks(mockCtrl *gomock.Controller) *componentMocks {
 		configDB:         mock.NewConfigurationDBModule(mockCtrl),
 		usersDB:          mock.NewUsersDetailsDBModule(mockCtrl),
 		eventsDB:         mock.NewEventsDBModule(mockCtrl),
+		glnVerifier:      mock.NewGlnVerifier(mockCtrl),
 		onboardingModule: mock.NewOnboardingModule(mockCtrl),
 	}
 }
@@ -79,7 +79,7 @@ func createMocks(mockCtrl *gomock.Controller) *componentMocks {
 func (mocks *componentMocks) createComponent() *component {
 	var keycloakURL = "https://idp.trustid.ch"
 	return NewComponent(keycloakURL, mocks.keycloakClient, mocks.tokenProvider, mocks.usersDB, mocks.configDB, mocks.eventsDB,
-		mocks.onboardingModule, log.NewNopLogger()).(*component)
+		mocks.onboardingModule, mocks.glnVerifier, log.NewNopLogger()).(*component)
 }
 
 func TestRegisterUser(t *testing.T) {
@@ -101,7 +101,7 @@ func TestRegisterUser(t *testing.T) {
 	var kcID = "98784-48764-5565"
 	var reqResult = kc.UsersPageRepresentation{
 		Count: &count1,
-		Users: []kc.UserRepresentation{kc.UserRepresentation{
+		Users: []kc.UserRepresentation{{
 			Username: &kcUsername,
 			Email:    &email,
 			ID:       &kcID,
@@ -119,11 +119,11 @@ func TestRegisterUser(t *testing.T) {
 	var groupID2 = "84457-4155164-45455"
 	var groupName2 = "group2"
 	var groups = []kc.GroupRepresentation{
-		kc.GroupRepresentation{
+		{
 			ID:   &groupID1,
 			Name: &groupName1,
 		},
-		kc.GroupRepresentation{
+		{
 			ID:   &groupID2,
 			Name: &groupName2,
 		},
@@ -138,6 +138,7 @@ func TestRegisterUser(t *testing.T) {
 	var truePtr = true
 	var realmAdminConf = configuration.RealmAdminConfiguration{
 		SelfRegisterEnabled: &truePtr,
+		ShowGlnEditing:      &truePtr,
 	}
 	var anyError = errors.New("any error")
 
@@ -149,10 +150,9 @@ func TestRegisterUser(t *testing.T) {
 		var _, err = component.RegisterUser(ctx, targetRealmName, customerRealmName, user)
 		assert.NotNil(t, err)
 	})
+	mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil).AnyTimes()
 
 	t.Run("Failed to retrieve realm configuration", func(t *testing.T) {
-		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
-
 		mocks.configDB.EXPECT().GetConfigurations(ctx, targetRealmName).Return(configuration.RealmConfiguration{}, configuration.RealmAdminConfiguration{}, errors.New("unexpected error"))
 
 		var _, err = component.RegisterUser(ctx, targetRealmName, customerRealmName, user)
@@ -160,8 +160,6 @@ func TestRegisterUser(t *testing.T) {
 	})
 
 	t.Run("Feature is not enabled", func(t *testing.T) {
-		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
-
 		mocks.configDB.EXPECT().GetConfigurations(ctx, targetRealmName).Return(configuration.RealmConfiguration{}, configuration.RealmAdminConfiguration{}, nil)
 
 		var _, err = component.RegisterUser(ctx, targetRealmName, customerRealmName, user)
@@ -170,19 +168,22 @@ func TestRegisterUser(t *testing.T) {
 	})
 
 	t.Run("Feature not configured", func(t *testing.T) {
-		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
-
 		mocks.configDB.EXPECT().GetConfigurations(ctx, targetRealmName).Return(configuration.RealmConfiguration{}, realmAdminConf, nil)
 
 		var _, err = component.RegisterUser(ctx, targetRealmName, customerRealmName, user)
 		assert.NotNil(t, err)
 		assert.Equal(t, "409 "+keycloakb.ComponentName+".disabledEndpoint."+constants.MsgErrNotConfigured, err.Error())
 	})
+	mocks.configDB.EXPECT().GetConfigurations(ctx, targetRealmName).Return(realmConf, realmAdminConf, nil).AnyTimes()
 
-	t.Run("Failed to get realm configuration from Keycloak", func(t *testing.T) {
-		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
+	t.Run("GLN verification failed", func(t *testing.T) {
+		mocks.glnVerifier.EXPECT().ValidateGLN(*user.FirstName, *user.LastName, *user.BusinessID).Return(anyError)
+		var _, err = component.RegisterUser(ctx, targetRealmName, customerRealmName, user)
+		assert.Equal(t, anyError, err)
+	})
+	mocks.glnVerifier.EXPECT().ValidateGLN(*user.FirstName, *user.LastName, *user.BusinessID).Return(nil).AnyTimes()
 
-		mocks.configDB.EXPECT().GetConfigurations(ctx, targetRealmName).Return(realmConf, realmAdminConf, nil)
+	t.Run("Failed to get realm from Keycloak", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetRealm(accessToken, targetRealmName).Return(kc.RealmRepresentation{}, anyError)
 
 		var _, err = component.RegisterUser(ctx, targetRealmName, customerRealmName, user)
@@ -193,9 +194,6 @@ func TestRegisterUser(t *testing.T) {
 	mocks.keycloakClient.EXPECT().GetRealm(accessToken, targetRealmName).Return(kc.RealmRepresentation{DuplicateEmailsAllowed: &bFalse}, nil).AnyTimes()
 
 	t.Run("Failed to search user by email", func(t *testing.T) {
-		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
-
-		mocks.configDB.EXPECT().GetConfigurations(ctx, targetRealmName).Return(realmConf, realmAdminConf, nil)
 		mocks.keycloakClient.EXPECT().GetUsers(accessToken, targetRealmName, targetRealmName, "email", email).Return(kc.UsersPageRepresentation{}, anyError)
 
 		var _, err = component.RegisterUser(ctx, targetRealmName, customerRealmName, user)
@@ -203,9 +201,6 @@ func TestRegisterUser(t *testing.T) {
 	})
 
 	t.Run("Failed to check if user is already onboarded", func(t *testing.T) {
-		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
-
-		mocks.configDB.EXPECT().GetConfigurations(ctx, targetRealmName).Return(realmConf, realmAdminConf, nil)
 		mocks.keycloakClient.EXPECT().GetUsers(accessToken, targetRealmName, targetRealmName, "email", email).Return(reqResult, nil)
 		mocks.onboardingModule.EXPECT().OnboardingAlreadyCompleted(gomock.Any()).Return(false, errors.New("unexpected error"))
 
@@ -214,9 +209,6 @@ func TestRegisterUser(t *testing.T) {
 	})
 
 	t.Run("Failure due to already onboarded user", func(t *testing.T) {
-		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
-
-		mocks.configDB.EXPECT().GetConfigurations(ctx, targetRealmName).Return(realmConf, realmAdminConf, nil)
 		mocks.keycloakClient.EXPECT().GetUsers(accessToken, targetRealmName, targetRealmName, "email", email).Return(reqResult, nil)
 		mocks.onboardingModule.EXPECT().OnboardingAlreadyCompleted(gomock.Any()).Return(true, nil)
 
@@ -226,9 +218,6 @@ func TestRegisterUser(t *testing.T) {
 	})
 
 	t.Run("Failure to delete user with requested email address in KC", func(t *testing.T) {
-		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
-
-		mocks.configDB.EXPECT().GetConfigurations(ctx, targetRealmName).Return(realmConf, realmAdminConf, nil)
 		mocks.keycloakClient.EXPECT().GetUsers(accessToken, targetRealmName, targetRealmName, "email", email).Return(reqResult, nil)
 		mocks.onboardingModule.EXPECT().OnboardingAlreadyCompleted(gomock.Any()).Return(false, nil)
 		mocks.keycloakClient.EXPECT().DeleteUser(accessToken, targetRealmName, kcID).Return(errors.New("unexpected error"))
@@ -238,9 +227,6 @@ func TestRegisterUser(t *testing.T) {
 	})
 
 	t.Run("Failure to delete user details with requested email address in DB", func(t *testing.T) {
-		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
-
-		mocks.configDB.EXPECT().GetConfigurations(ctx, targetRealmName).Return(realmConf, realmAdminConf, nil)
 		mocks.keycloakClient.EXPECT().GetUsers(accessToken, targetRealmName, targetRealmName, "email", email).Return(reqResult, nil)
 		mocks.onboardingModule.EXPECT().OnboardingAlreadyCompleted(gomock.Any()).Return(false, nil)
 		mocks.keycloakClient.EXPECT().DeleteUser(accessToken, targetRealmName, kcID).Return(nil)
@@ -251,9 +237,6 @@ func TestRegisterUser(t *testing.T) {
 	})
 
 	t.Run("Failed to retrieve groups in KC", func(t *testing.T) {
-		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
-
-		mocks.configDB.EXPECT().GetConfigurations(ctx, targetRealmName).Return(realmConf, realmAdminConf, nil)
 		mocks.keycloakClient.EXPECT().GetUsers(accessToken, targetRealmName, targetRealmName, "email", email).Return(reqResult, nil)
 		mocks.onboardingModule.EXPECT().OnboardingAlreadyCompleted(gomock.Any()).Return(false, nil)
 		mocks.keycloakClient.EXPECT().DeleteUser(accessToken, targetRealmName, kcID).Return(nil)
@@ -265,15 +248,12 @@ func TestRegisterUser(t *testing.T) {
 	})
 
 	t.Run("Failed to convert all groupNames", func(t *testing.T) {
-		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
-
-		mocks.configDB.EXPECT().GetConfigurations(ctx, targetRealmName).Return(realmConf, realmAdminConf, nil)
 		mocks.keycloakClient.EXPECT().GetUsers(accessToken, targetRealmName, targetRealmName, "email", email).Return(reqResult, nil)
 		mocks.onboardingModule.EXPECT().OnboardingAlreadyCompleted(gomock.Any()).Return(false, nil)
 		mocks.keycloakClient.EXPECT().DeleteUser(accessToken, targetRealmName, kcID).Return(nil)
 		mocks.usersDB.EXPECT().DeleteUserDetails(ctx, targetRealmName, kcID).Return(nil)
 		mocks.keycloakClient.EXPECT().GetGroups(accessToken, targetRealmName).Return([]kc.GroupRepresentation{
-			kc.GroupRepresentation{
+			{
 				Name: &groupName1,
 				ID:   &groupID1,
 			},
@@ -284,9 +264,6 @@ func TestRegisterUser(t *testing.T) {
 	})
 
 	t.Run("Failed to create new user", func(t *testing.T) {
-		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
-
-		mocks.configDB.EXPECT().GetConfigurations(ctx, targetRealmName).Return(realmConf, realmAdminConf, nil)
 		mocks.keycloakClient.EXPECT().GetUsers(accessToken, targetRealmName, targetRealmName, "email", email).Return(reqResult, nil)
 		mocks.onboardingModule.EXPECT().OnboardingAlreadyCompleted(gomock.Any()).Return(false, nil)
 		mocks.keycloakClient.EXPECT().DeleteUser(accessToken, targetRealmName, kcID).Return(nil)
@@ -312,9 +289,6 @@ func TestRegisterUser(t *testing.T) {
 		}).AnyTimes()
 
 	t.Run("Failed to store user details", func(t *testing.T) {
-		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
-
-		mocks.configDB.EXPECT().GetConfigurations(ctx, targetRealmName).Return(realmConf, realmAdminConf, nil)
 		mocks.keycloakClient.EXPECT().GetUsers(accessToken, targetRealmName, targetRealmName, "email", email).Return(reqResult, nil)
 		mocks.onboardingModule.EXPECT().OnboardingAlreadyCompleted(gomock.Any()).Return(false, nil)
 		mocks.keycloakClient.EXPECT().DeleteUser(accessToken, targetRealmName, kcID).Return(nil)
@@ -327,9 +301,6 @@ func TestRegisterUser(t *testing.T) {
 	})
 
 	t.Run("Failed to send onboarding email", func(t *testing.T) {
-		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
-
-		mocks.configDB.EXPECT().GetConfigurations(ctx, targetRealmName).Return(realmConf, realmAdminConf, nil)
 		mocks.keycloakClient.EXPECT().GetUsers(accessToken, targetRealmName, targetRealmName, "email", email).Return(reqResult, nil)
 		mocks.onboardingModule.EXPECT().OnboardingAlreadyCompleted(gomock.Any()).Return(false, nil)
 		mocks.keycloakClient.EXPECT().DeleteUser(accessToken, targetRealmName, kcID).Return(nil)
@@ -346,9 +317,6 @@ func TestRegisterUser(t *testing.T) {
 	})
 
 	t.Run("Success - Email address already used by user not already onboarded", func(t *testing.T) {
-		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
-
-		mocks.configDB.EXPECT().GetConfigurations(ctx, targetRealmName).Return(realmConf, realmAdminConf, nil)
 		mocks.keycloakClient.EXPECT().GetUsers(accessToken, targetRealmName, targetRealmName, "email", email).Return(reqResult, nil)
 		mocks.onboardingModule.EXPECT().OnboardingAlreadyCompleted(gomock.Any()).Return(false, nil)
 		mocks.keycloakClient.EXPECT().DeleteUser(accessToken, targetRealmName, kcID).Return(nil)
@@ -368,9 +336,6 @@ func TestRegisterUser(t *testing.T) {
 	})
 
 	t.Run("Success - Email address not used", func(t *testing.T) {
-		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
-
-		mocks.configDB.EXPECT().GetConfigurations(ctx, targetRealmName).Return(realmConf, realmAdminConf, nil)
 		mocks.keycloakClient.EXPECT().GetUsers(accessToken, targetRealmName, targetRealmName, "email", email).Return(reqEmptyResult, nil)
 		mocks.keycloakClient.EXPECT().GetGroups(accessToken, targetRealmName).Return(groups, nil)
 		mocks.usersDB.EXPECT().StoreOrUpdateUserDetails(ctx, targetRealmName, gomock.Any()).Return(nil)

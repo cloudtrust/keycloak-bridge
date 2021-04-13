@@ -4,13 +4,13 @@ import (
 	"context"
 	"time"
 
+	"github.com/cloudtrust/common-service/configuration"
 	"github.com/cloudtrust/common-service/database"
 	errorhandler "github.com/cloudtrust/common-service/errors"
 	api "github.com/cloudtrust/keycloak-bridge/api/validation"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
-	internal "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	kc "github.com/cloudtrust/keycloak-client"
 	"github.com/cloudtrust/keycloak-client/toolbox"
 )
@@ -49,6 +49,11 @@ type EventsDBModule interface {
 	ReportEvent(ctx context.Context, apiCall string, origin string, values ...string) error
 }
 
+// ConfigurationDBModule is the interface of the configuration module.
+type ConfigurationDBModule interface {
+	GetAdminConfiguration(context.Context, string) (configuration.RealmAdminConfiguration, error)
+}
+
 // Component is the register component interface.
 type Component interface {
 	GetUser(ctx context.Context, realmName string, userID string) (api.UserRepresentation, error)
@@ -64,11 +69,12 @@ type component struct {
 	archiveDBModule ArchiveDBModule
 	eventsDBModule  database.EventsDBModule
 	accredsModule   keycloakb.AccreditationsModule
-	logger          internal.Logger
+	configDBModule  ConfigurationDBModule
+	logger          keycloakb.Logger
 }
 
 // NewComponent returns the management component.
-func NewComponent(keycloakClient KeycloakClient, tokenProvider TokenProvider, usersDBModule UsersDetailsDBModule, archiveDBModule ArchiveDBModule, eventsDBModule database.EventsDBModule, accredsModule keycloakb.AccreditationsModule, logger internal.Logger) Component {
+func NewComponent(keycloakClient KeycloakClient, tokenProvider TokenProvider, usersDBModule UsersDetailsDBModule, archiveDBModule ArchiveDBModule, eventsDBModule database.EventsDBModule, accredsModule keycloakb.AccreditationsModule, configDBModule ConfigurationDBModule, logger keycloakb.Logger) Component {
 	return &component{
 		keycloakClient:  keycloakClient,
 		tokenProvider:   tokenProvider,
@@ -76,6 +82,7 @@ func NewComponent(keycloakClient KeycloakClient, tokenProvider TokenProvider, us
 		archiveDBModule: archiveDBModule,
 		eventsDBModule:  eventsDBModule,
 		accredsModule:   accredsModule,
+		configDBModule:  configDBModule,
 		logger:          logger,
 	}
 }
@@ -101,6 +108,14 @@ func (c *component) GetUser(ctx context.Context, realmName string, userID string
 		return api.UserRepresentation{}, err
 	}
 	keycloakb.ConvertLegacyAttribute(&kcUser)
+
+	if adminConfiguration, err := c.configDBModule.GetAdminConfiguration(ctx, realmName); err != nil {
+		return api.UserRepresentation{}, err
+	} else if adminConfiguration.ShowGlnEditing != nil && *adminConfiguration.ShowGlnEditing {
+		if gln := kcUser.GetAttributeString(constants.AttrbBusinessID); gln == nil {
+			return api.UserRepresentation{}, errorhandler.CreateBadRequestError("missing.gln")
+		}
+	}
 
 	var dbUser dto.DBUser
 	dbUser, err = c.usersDBModule.GetUserDetails(ctx, realmName, userID)
@@ -228,11 +243,7 @@ func needKcProcessing(user api.UserRepresentation) bool {
 		}
 	}
 
-	if user.BirthDate != nil {
-		return true
-	}
-
-	return false
+	return user.BirthDate != nil
 }
 
 func needDBProcessing(user api.UserRepresentation) bool {
@@ -250,11 +261,7 @@ func needDBProcessing(user api.UserRepresentation) bool {
 		}
 	}
 
-	if user.IDDocumentExpiration != nil {
-		return true
-	}
-
-	return false
+	return user.IDDocumentExpiration != nil
 }
 
 func (c *component) CreateCheck(ctx context.Context, realmName string, userID string, check api.CheckRepresentation) error {
@@ -305,7 +312,7 @@ func (c *component) reportEvent(ctx context.Context, apiCall string, values ...s
 	errEvent := c.eventsDBModule.ReportEvent(ctx, apiCall, "back-office", values...)
 	if errEvent != nil {
 		//store in the logs also the event that failed to be stored in the DB
-		internal.LogUnrecordedEvent(ctx, c.logger, apiCall, errEvent.Error(), values...)
+		keycloakb.LogUnrecordedEvent(ctx, c.logger, apiCall, errEvent.Error(), values...)
 	}
 }
 

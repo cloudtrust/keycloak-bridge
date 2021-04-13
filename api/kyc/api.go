@@ -38,6 +38,7 @@ type UserRepresentation struct {
 	IDDocumentExpiration *string                        `json:"idDocumentExpiration,omitempty"`
 	IDDocumentCountry    *string                        `json:"idDocumentCountry,omitempty"`
 	Locale               *string                        `json:"locale,omitempty"`
+	BusinessID           *string                        `json:"businessId,omitempty"`
 	Comment              *string                        `json:"comment,omitempty"`
 	Accreditations       *[]AccreditationRepresentation `json:"accreditations,omitempty"`
 	Attachments          *[]AttachmentRepresentation    `json:"attachments,omitempty"`
@@ -71,6 +72,7 @@ const (
 	prmUserIDDocumentExpiration = "user_idDocExpiration"
 	prmUserIDDocumentCountry    = "user_idDocCountry"
 	prmUserLocale               = "user_locale"
+	prmUserBusinessID           = "user_businessId"
 	prmAttachments              = "attachments"
 	prmFilename                 = "attachmentFilename"
 	prmContentType              = "attachmentContentType"
@@ -85,6 +87,7 @@ const (
 	regExpIDDocumentCountry = constants.RegExpCountryCode
 	regExpGender            = constants.RegExpGender
 	regExpLocale            = constants.RegExpLocale
+	regExpBusinessID        = constants.RegExpBusinessID
 	regExpMimeType          = `^[a-z]+/[\w\d\.+]+$`
 
 	minAttachmentSize = 100
@@ -141,6 +144,7 @@ func (u *UserRepresentation) ExportToKeycloak(kcUser *kc.UserRepresentation) {
 	}
 	attributes.SetDateWhenNotNil(constants.AttrbBirthDate, u.BirthDate, constants.SupportedDateLayouts)
 	attributes.SetStringWhenNotNil(constants.Locale, u.Locale)
+	attributes.SetStringWhenNotNil(constants.AttrbBusinessID, u.BusinessID)
 
 	if u.Username != nil {
 		kcUser.Username = u.Username
@@ -167,6 +171,7 @@ func (u *UserRepresentation) ImportFromKeycloak(ctx context.Context, kcUser *kc.
 	var birthdate = u.BirthDate
 	var accreditations = u.Accreditations
 	var locale = u.Locale
+	var businessID = u.BusinessID
 
 	if value := kcUser.GetAttributeString(constants.AttrbPhoneNumber); value != nil {
 		phoneNumber = value
@@ -200,6 +205,9 @@ func (u *UserRepresentation) ImportFromKeycloak(ctx context.Context, kcUser *kc.
 	if value := kcUser.GetAttributeString(constants.AttrbLocale); value != nil {
 		locale = value
 	}
+	if value := kcUser.GetAttributeString(constants.AttrbBusinessID); value != nil {
+		businessID = value
+	}
 
 	u.ID = kcUser.ID
 	u.Username = kcUser.Username
@@ -213,6 +221,7 @@ func (u *UserRepresentation) ImportFromKeycloak(ctx context.Context, kcUser *kc.
 	u.BirthDate = birthdate
 	u.Accreditations = accreditations
 	u.Locale = locale
+	u.BusinessID = businessID
 }
 
 // Validate checks the validity of the given User
@@ -229,6 +238,7 @@ func (u *UserRepresentation) Validate() error {
 		ValidateParameterDate(prmUserIDDocumentExpiration, u.IDDocumentExpiration, constants.SupportedDateLayouts[0], false).
 		ValidateParameterRegExp(prmUserIDDocumentCountry, u.IDDocumentCountry, regExpIDDocumentCountry, false).
 		ValidateParameterRegExp(prmUserLocale, u.Locale, regExpLocale, false).
+		ValidateParameterRegExp(prmUserBusinessID, u.BusinessID, regExpBusinessID, false).
 		ValidateParameterFunc(func() error {
 			var nbAttachments = 0
 			if u.Attachments != nil {

@@ -24,6 +24,7 @@ const (
 	RegExpGender           = `^[MFU]$`
 	RegExpBirthDate        = `^(\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01]))$`
 	RegExpLocale           = `^[a-z]{2}$`
+	RegExpBusinessID       = regExpLen255
 	RegExpCountryCode      = `^\w{2}$`
 	RegExpIDDocumentNumber = `^([\w\d]+([\. -][\w\d]+)*){1,50}$`
 

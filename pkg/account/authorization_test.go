@@ -126,7 +126,7 @@ func TestDeny(t *testing.T) {
 		assert.Equal(t, security.ForbiddenError{}, err)
 	})
 	t.Run("UpdateAccount - Edition deactivated", func(t *testing.T) {
-		err = authorizationMW.UpdateAccount(ctx, api.AccountRepresentation{})
+		err = authorizationMW.UpdateAccount(ctx, api.UpdatableAccountRepresentation{})
 		assert.Equal(t, security.ForbiddenError{}, err)
 	})
 	t.Run("DeleteAccount not allowed", func(t *testing.T) {
@@ -177,8 +177,8 @@ func TestAllowed(t *testing.T) {
 		err = authorizationMW.DeleteCredential(ctx, credentialID)
 		assert.Nil(t, err)
 
-		mockAccountComponent.EXPECT().UpdateAccount(ctx, api.AccountRepresentation{}).Return(nil).Times(1)
-		err = authorizationMW.UpdateAccount(ctx, api.AccountRepresentation{})
+		mockAccountComponent.EXPECT().UpdateAccount(ctx, api.UpdatableAccountRepresentation{}).Return(nil).Times(1)
+		err = authorizationMW.UpdateAccount(ctx, api.UpdatableAccountRepresentation{})
 		assert.Nil(t, err)
 
 		mockAccountComponent.EXPECT().DeleteAccount(ctx).Return(nil).Times(1)
@@ -220,7 +220,7 @@ func TestError(t *testing.T) {
 		err = authorizationMW.DeleteCredential(ctx, credentialID)
 		assert.NotNil(t, err)
 
-		err = authorizationMW.UpdateAccount(ctx, api.AccountRepresentation{})
+		err = authorizationMW.UpdateAccount(ctx, api.UpdatableAccountRepresentation{})
 		assert.NotNil(t, err)
 
 		err = authorizationMW.DeleteAccount(ctx)

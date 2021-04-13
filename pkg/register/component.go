@@ -14,7 +14,6 @@ import (
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
-	internal "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	kc "github.com/cloudtrust/keycloak-client"
 )
 
@@ -42,6 +41,11 @@ type OnboardingModule interface {
 	CreateUser(ctx context.Context, accessToken, realmName, targetRealmName string, kcUser *kc.UserRepresentation) (string, error)
 }
 
+// GlnVerifier interface allows to check validity of a GLN
+type GlnVerifier interface {
+	ValidateGLN(firstName, lastName, gln string) error
+}
+
 // Component is the register component interface.
 type Component interface {
 	RegisterUser(ctx context.Context, targetRealmName string, customerRealmName string, user apiregister.UserRepresentation) (string, error)
@@ -50,7 +54,7 @@ type Component interface {
 
 // NewComponent returns component.
 func NewComponent(keycloakURL string, keycloakClient KeycloakClient, tokenProvider toolbox.OidcTokenProvider, usersDBModule keycloakb.UsersDetailsDBModule,
-	configDBModule ConfigurationDBModule, eventsDBModule database.EventsDBModule, onboardingModule OnboardingModule, logger internal.Logger) Component {
+	configDBModule ConfigurationDBModule, eventsDBModule database.EventsDBModule, onboardingModule OnboardingModule, glnVerifier GlnVerifier, logger keycloakb.Logger) Component {
 	return &component{
 		keycloakURL:      keycloakURL,
 		keycloakClient:   keycloakClient,
@@ -59,6 +63,7 @@ func NewComponent(keycloakURL string, keycloakClient KeycloakClient, tokenProvid
 		configDBModule:   configDBModule,
 		eventsDBModule:   eventsDBModule,
 		onboardingModule: onboardingModule,
+		glnVerifier:      glnVerifier,
 		logger:           logger,
 	}
 }
@@ -72,7 +77,8 @@ type component struct {
 	configDBModule   ConfigurationDBModule
 	eventsDBModule   database.EventsDBModule
 	onboardingModule OnboardingModule
-	logger           internal.Logger
+	glnVerifier      GlnVerifier
+	logger           keycloakb.Logger
 }
 
 func (c *component) getSupportedLocales(ctx context.Context, realmName string) (*[]string, error) {
@@ -141,6 +147,14 @@ func (c *component) RegisterUser(ctx context.Context, targetRealmName string, cu
 		(realmConf.OnboardingRedirectURI == nil || *realmConf.OnboardingRedirectURI == "") ||
 		(realmConf.OnboardingClientID == nil || *realmConf.OnboardingClientID == "") {
 		return "", errorhandler.CreateEndpointNotEnabled(constants.MsgErrNotConfigured)
+	}
+
+	if realmAdminConf.ShowGlnEditing != nil && *realmAdminConf.ShowGlnEditing {
+		if glnErr := c.glnVerifier.ValidateGLN(*user.FirstName, *user.LastName, *user.BusinessID); glnErr != nil {
+			return "", glnErr
+		}
+	} else {
+		user.BusinessID = nil
 	}
 
 	kcUser, err := c.getUserByEmailIfDuplicateNotAllowed(ctx, accessToken, targetRealmName, *user.Email)
@@ -279,7 +293,7 @@ func (c *component) reportEvent(ctx context.Context, apiCall string, values ...s
 	errEvent := c.eventsDBModule.ReportEvent(ctx, apiCall, "back-office", values...)
 	if errEvent != nil {
 		//store in the logs also the event that failed to be stored in the DB
-		internal.LogUnrecordedEvent(ctx, c.logger, apiCall, errEvent.Error(), values...)
+		keycloakb.LogUnrecordedEvent(ctx, c.logger, apiCall, errEvent.Error(), values...)
 	}
 }
 
@@ -299,7 +313,7 @@ func (c *component) convertGroupNamesToGroupIDs(accessToken string, realmName st
 	}
 
 	if len(res) != len(groupNames) {
-		return nil, errors.New("At least one group name could not be found")
+		return nil, errors.New("at least one group name could not be found")
 	}
 	return res, nil
 }

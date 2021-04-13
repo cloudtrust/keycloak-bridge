@@ -137,7 +137,7 @@ func TestConvertToAPIUsersPage(t *testing.T) {
 
 	t.Run("With content", func(t *testing.T) {
 		var count = 10
-		var input = kc.UsersPageRepresentation{Count: &count, Users: []kc.UserRepresentation{kc.UserRepresentation{}, kc.UserRepresentation{}}}
+		var input = kc.UsersPageRepresentation{Count: &count, Users: []kc.UserRepresentation{{}, {}}}
 		var output = ConvertToAPIUsersPage(ctx, input, logger)
 		assert.Equal(t, count, *output.Count)
 		assert.Equal(t, len(input.Users), len(output.Users))
@@ -234,6 +234,10 @@ func TestConvertUpdatableToKCUser(t *testing.T) {
 	user.Locale = &locale
 	assert.Equal(t, locale, (*ConvertUpdatableToKCUser(user).Attributes)[constants.AttrbLocale][0])
 
+	// Business ID
+	var businessID = "123456789"
+	user.BusinessID = csjson.StringToOptional(businessID)
+	assert.Equal(t, businessID, *ConvertUpdatableToKCUser(user).Attributes.GetString(constants.AttrbBusinessID))
 }
 
 func TestConvertToKCGroup(t *testing.T) {
@@ -436,6 +440,7 @@ func TestConvertRealmAdminConfiguration(t *testing.T) {
 		assert.Len(t, res.AvailableChecks, 0)
 		assert.Len(t, res.Accreditations, 0)
 		assert.False(t, *res.SelfRegisterEnabled)
+		assert.False(t, *res.ShowGlnEditing)
 		assert.Nil(t, res.Theme)
 	})
 	t.Run("Non-empty values", func(t *testing.T) {
@@ -451,6 +456,7 @@ func TestConvertRealmAdminConfiguration(t *testing.T) {
 		var selfRegisterEnabled = true
 		var needVerifiedContact = false
 		var consentRequired = true
+		var showGlnEditing = true
 		var config = configuration.RealmAdminConfiguration{
 			Mode:                &mode,
 			AvailableChecks:     map[string]bool{"true": true, "false": false},
@@ -459,6 +465,7 @@ func TestConvertRealmAdminConfiguration(t *testing.T) {
 			Theme:               ptr("trustid"),
 			NeedVerifiedContact: &needVerifiedContact,
 			ConsentRequired:     &consentRequired,
+			ShowGlnEditing:      &showGlnEditing,
 		}
 		var res = ConvertRealmAdminConfigurationFromDBStruct(config)
 		assert.Equal(t, mode, *res.Mode)
@@ -474,6 +481,14 @@ func TestConvertRealmAdminConfiguration(t *testing.T) {
 		assert.Equal(t, config.Theme, res.Theme)
 		assert.False(t, *res.NeedVerifiedContact)
 		assert.True(t, *res.ConsentRequired)
+		assert.True(t, *res.ShowGlnEditing)
+	})
+}
+
+func TestConvertRealmAccreditationsToDBStruct(t *testing.T) {
+	t.Run("No accreditations", func(t *testing.T) {
+		var rac = RealmAdminConfiguration{}
+		assert.Nil(t, rac.ConvertRealmAccreditationsToDBStruct())
 	})
 }
 

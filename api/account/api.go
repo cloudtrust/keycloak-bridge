@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 
+	csjson "github.com/cloudtrust/common-service/json"
 	"github.com/cloudtrust/common-service/validation"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
-	msg "github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	kc "github.com/cloudtrust/keycloak-client"
 )
@@ -29,6 +29,29 @@ type AccountRepresentation struct {
 	IDDocumentExpiration *string                        `json:"idDocumentExpiration,omitempty"`
 	IDDocumentCountry    *string                        `json:"idDocumentCountry,omitempty"`
 	Locale               *string                        `json:"locale,omitempty"`
+	BusinessID           *string                        `json:"businessId,omitempty"`
+	Accreditations       *[]AccreditationRepresentation `json:"accreditations,omitempty"`
+}
+
+// UpdatableAccountRepresentation struct
+type UpdatableAccountRepresentation struct {
+	Gender               *string                        `json:"gender,omitempty"`
+	FirstName            *string                        `json:"firstName,omitempty"`
+	LastName             *string                        `json:"lastName,omitempty"`
+	Username             *string                        `json:"username,omitempty"`
+	Email                *string                        `json:"email,omitempty"`
+	EmailVerified        *bool                          `json:"emailVerified,omitempty"`
+	PhoneNumber          *string                        `json:"phoneNumber,omitempty"`
+	PhoneNumberVerified  *bool                          `json:"phoneNumberVerified,omitempty"`
+	BirthDate            *string                        `json:"birthDate,omitempty"`
+	BirthLocation        *string                        `json:"birthLocation,omitempty"`
+	Nationality          *string                        `json:"nationality,omitempty"`
+	IDDocumentType       *string                        `json:"idDocumentType,omitempty"`
+	IDDocumentNumber     *string                        `json:"idDocumentNumber,omitempty"`
+	IDDocumentExpiration *string                        `json:"idDocumentExpiration,omitempty"`
+	IDDocumentCountry    *string                        `json:"idDocumentCountry,omitempty"`
+	Locale               *string                        `json:"locale,omitempty"`
+	BusinessID           csjson.OptionalString          `json:"businessId,omitempty"`
 	Accreditations       *[]AccreditationRepresentation `json:"accreditations,omitempty"`
 }
 
@@ -63,6 +86,7 @@ type Configuration struct {
 	BarcodeType                       *string         `json:"barcode_type"`
 	Theme                             *string         `json:"theme"`
 	SupportedLocales                  *[]string       `json:"supportedLocales,omitempty"`
+	ShowGlnEditing                    *bool           `json:"show_gln_editing,omitempty"`
 }
 
 // UpdatePasswordBody is the definition of the expected body content of UpdatePassword method
@@ -118,6 +142,9 @@ func ConvertToAPIAccount(ctx context.Context, userKc kc.UserRepresentation, logg
 	if values := userKc.GetAttribute(constants.AttrbAccreditations); len(values) > 0 {
 		userRep.Accreditations = convertToAccreditations(ctx, values, logger)
 	}
+	if value := userKc.GetAttributeString(constants.AttrbBusinessID); value != nil {
+		userRep.BusinessID = value
+	}
 
 	return userRep
 }
@@ -141,7 +168,7 @@ func convertToAccreditations(ctx context.Context, values []string, logger keyclo
 }
 
 // ConvertToKCUser creates a KC user representation from an API user
-func ConvertToKCUser(user AccountRepresentation) kc.UserRepresentation {
+func ConvertToKCUser(user UpdatableAccountRepresentation) kc.UserRepresentation {
 	var userRep kc.UserRepresentation
 
 	userRep.Username = user.Username
@@ -152,6 +179,9 @@ func ConvertToKCUser(user AccountRepresentation) kc.UserRepresentation {
 	var attributes = make(kc.Attributes)
 	attributes.SetStringWhenNotNil(constants.AttrbPhoneNumber, user.PhoneNumber)
 	attributes.SetStringWhenNotNil(constants.AttrbLocale, user.Locale)
+	if user.BusinessID.Defined && user.BusinessID.Value != nil {
+		attributes.SetStringWhenNotNil(constants.AttrbBusinessID, user.BusinessID.Value)
+	}
 
 	if len(attributes) > 0 {
 		userRep.Attributes = &attributes
@@ -165,39 +195,62 @@ func ConvertToKCUser(user AccountRepresentation) kc.UserRepresentation {
 // Validate is a validator for AccountRepresentation
 func (user AccountRepresentation) Validate() error {
 	return validation.NewParameterValidator().
-		ValidateParameterRegExp(msg.Username, user.Username, RegExpUsername, false).
-		ValidateParameterRegExp(msg.Email, user.Email, RegExpEmail, false).
-		ValidateParameterRegExp(msg.Firstname, user.FirstName, RegExpFirstName, false).
-		ValidateParameterRegExp(msg.Lastname, user.LastName, RegExpLastName, false).
-		ValidateParameterRegExp(msg.PhoneNumber, user.PhoneNumber, RegExpPhoneNumber, false).
-		ValidateParameterRegExp(msg.Locale, user.Locale, RegExpLocale, false).
-		ValidateParameterRegExp(msg.Gender, user.Gender, constants.RegExpGender, false).
-		ValidateParameterDateMultipleLayout(msg.Birthdate, user.BirthDate, constants.SupportedDateLayouts, false).
-		ValidateParameterRegExp(msg.BirthLocation, user.BirthLocation, constants.RegExpNameSpecialChars, false).
-		ValidateParameterRegExp(msg.Nationality, user.Nationality, constants.RegExpCountryCode, false).
-		ValidateParameterIn(msg.IDDocumentType, user.IDDocumentType, constants.AllowedDocumentTypes, false).
-		ValidateParameterRegExp(msg.IDDocumentNumber, user.IDDocumentNumber, constants.RegExpIDDocumentNumber, false).
-		ValidateParameterLength(msg.IDDocumentNumber, user.IDDocumentNumber, 1, 50, false).
-		ValidateParameterDateMultipleLayout(msg.IDDocumentExpiration, user.IDDocumentExpiration, constants.SupportedDateLayouts, false).
-		ValidateParameterRegExp(msg.IDDocumentCountry, user.IDDocumentCountry, constants.RegExpCountryCode, false).
+		ValidateParameterRegExp(constants.Username, user.Username, RegExpUsername, false).
+		ValidateParameterRegExp(constants.Email, user.Email, RegExpEmail, false).
+		ValidateParameterRegExp(constants.Firstname, user.FirstName, RegExpFirstName, false).
+		ValidateParameterRegExp(constants.Lastname, user.LastName, RegExpLastName, false).
+		ValidateParameterRegExp(constants.PhoneNumber, user.PhoneNumber, RegExpPhoneNumber, false).
+		ValidateParameterRegExp(constants.Locale, user.Locale, RegExpLocale, false).
+		ValidateParameterRegExp(constants.BusinessID, user.BusinessID, constants.RegExpBusinessID, false).
+		ValidateParameterRegExp(constants.Gender, user.Gender, constants.RegExpGender, false).
+		ValidateParameterDateMultipleLayout(constants.Birthdate, user.BirthDate, constants.SupportedDateLayouts, false).
+		ValidateParameterRegExp(constants.BirthLocation, user.BirthLocation, constants.RegExpNameSpecialChars, false).
+		ValidateParameterRegExp(constants.Nationality, user.Nationality, constants.RegExpCountryCode, false).
+		ValidateParameterIn(constants.IDDocumentType, user.IDDocumentType, constants.AllowedDocumentTypes, false).
+		ValidateParameterRegExp(constants.IDDocumentNumber, user.IDDocumentNumber, constants.RegExpIDDocumentNumber, false).
+		ValidateParameterLength(constants.IDDocumentNumber, user.IDDocumentNumber, 1, 50, false).
+		ValidateParameterDateMultipleLayout(constants.IDDocumentExpiration, user.IDDocumentExpiration, constants.SupportedDateLayouts, false).
+		ValidateParameterRegExp(constants.IDDocumentCountry, user.IDDocumentCountry, constants.RegExpCountryCode, false).
+		Status()
+}
+
+// Validate is a validator for UpdatableAccountRepresentation
+func (user UpdatableAccountRepresentation) Validate() error {
+	return validation.NewParameterValidator().
+		ValidateParameterRegExp(constants.Username, user.Username, RegExpUsername, false).
+		ValidateParameterRegExp(constants.Email, user.Email, RegExpEmail, false).
+		ValidateParameterRegExp(constants.Firstname, user.FirstName, RegExpFirstName, false).
+		ValidateParameterRegExp(constants.Lastname, user.LastName, RegExpLastName, false).
+		ValidateParameterRegExp(constants.PhoneNumber, user.PhoneNumber, RegExpPhoneNumber, false).
+		ValidateParameterRegExp(constants.Locale, user.Locale, RegExpLocale, false).
+		ValidateParameterRegExp(constants.BusinessID, user.BusinessID.Value, constants.RegExpBusinessID, false).
+		ValidateParameterRegExp(constants.Gender, user.Gender, constants.RegExpGender, false).
+		ValidateParameterDateMultipleLayout(constants.Birthdate, user.BirthDate, constants.SupportedDateLayouts, false).
+		ValidateParameterRegExp(constants.BirthLocation, user.BirthLocation, constants.RegExpNameSpecialChars, false).
+		ValidateParameterRegExp(constants.Nationality, user.Nationality, constants.RegExpCountryCode, false).
+		ValidateParameterIn(constants.IDDocumentType, user.IDDocumentType, constants.AllowedDocumentTypes, false).
+		ValidateParameterRegExp(constants.IDDocumentNumber, user.IDDocumentNumber, constants.RegExpIDDocumentNumber, false).
+		ValidateParameterLength(constants.IDDocumentNumber, user.IDDocumentNumber, 1, 50, false).
+		ValidateParameterDateMultipleLayout(constants.IDDocumentExpiration, user.IDDocumentExpiration, constants.SupportedDateLayouts, false).
+		ValidateParameterRegExp(constants.IDDocumentCountry, user.IDDocumentCountry, constants.RegExpCountryCode, false).
 		Status()
 }
 
 // Validate is a validator for UpdatePasswordBody
 func (updatePwd UpdatePasswordBody) Validate() error {
 	return validation.NewParameterValidator().
-		ValidateParameterRegExp(msg.CurrentPassword, &updatePwd.CurrentPassword, RegExpPassword, true).
-		ValidateParameterRegExp(msg.NewPassword, &updatePwd.NewPassword, RegExpPassword, true).
-		ValidateParameterRegExp(msg.ConfirmPassword, &updatePwd.ConfirmPassword, RegExpPassword, true).
+		ValidateParameterRegExp(constants.CurrentPassword, &updatePwd.CurrentPassword, RegExpPassword, true).
+		ValidateParameterRegExp(constants.NewPassword, &updatePwd.NewPassword, RegExpPassword, true).
+		ValidateParameterRegExp(constants.ConfirmPassword, &updatePwd.ConfirmPassword, RegExpPassword, true).
 		Status()
 }
 
 // Validate is a validator for CredentialRepresentation
 func (credential CredentialRepresentation) Validate() error {
 	return validation.NewParameterValidator().
-		ValidateParameterRegExp(msg.ID, credential.ID, RegExpID, false).
-		ValidateParameterRegExp(msg.Type, credential.Type, RegExpType, false).
-		ValidateParameterRegExp(msg.Label, credential.UserLabel, RegExpLabel, false).
+		ValidateParameterRegExp(constants.ID, credential.ID, RegExpID, false).
+		ValidateParameterRegExp(constants.Type, credential.Type, RegExpType, false).
+		ValidateParameterRegExp(constants.Label, credential.UserLabel, RegExpLabel, false).
 		Status()
 }
 

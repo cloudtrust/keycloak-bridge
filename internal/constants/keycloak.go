@@ -14,6 +14,7 @@ var (
 const (
 	AttrbAccreditations      = kc.AttributeKey("accreditations")
 	AttrbBirthDate           = kc.AttributeKey("ENC_birthDate")
+	AttrbBusinessID          = kc.AttributeKey("businessID")
 	AttrbGender              = kc.AttributeKey("ENC_gender")
 	AttrbLabel               = kc.AttributeKey("label")
 	AttrbLocale              = kc.AttributeKey("locale")

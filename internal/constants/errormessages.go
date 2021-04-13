@@ -44,6 +44,7 @@ const (
 	Gender                            = "gender"
 	Birthdate                         = "birthdate"
 	BirthLocation                     = "birthLocation"
+	BusinessID                        = "businessID"
 	GroupID                           = "groupId"
 	GroupName                         = "groupName"
 	Name                              = "name"

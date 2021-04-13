@@ -28,7 +28,7 @@ func TestValidate(t *testing.T) {
 
 	t.Run("Invalid targetRealm", func(t *testing.T) {
 		authorizations = []configuration.Authorization{
-			configuration.Authorization{
+			{
 				RealmID:       &realmName,
 				GroupName:     &groupName1,
 				Action:        &action2,
@@ -42,7 +42,7 @@ func TestValidate(t *testing.T) {
 
 	t.Run("Invalid targetGroupName", func(t *testing.T) {
 		authorizations = []configuration.Authorization{
-			configuration.Authorization{
+			{
 				RealmID:         &realmName,
 				GroupName:       &groupName1,
 				Action:          &action2,
@@ -57,13 +57,13 @@ func TestValidate(t *testing.T) {
 
 	t.Run("Incompatible rules due to * in targetRealm", func(t *testing.T) {
 		authorizations = []configuration.Authorization{
-			configuration.Authorization{
+			{
 				RealmID:       &realmName,
 				GroupName:     &groupName1,
 				Action:        &action2,
 				TargetRealmID: &star,
 			},
-			configuration.Authorization{
+			{
 				RealmID:       &realmName,
 				GroupName:     &groupName1,
 				Action:        &action2,
@@ -77,14 +77,14 @@ func TestValidate(t *testing.T) {
 
 	t.Run("Incompatible rules due to * in targetGroupName", func(t *testing.T) {
 		authorizations = []configuration.Authorization{
-			configuration.Authorization{
+			{
 				RealmID:         &realmName,
 				GroupName:       &groupName1,
 				Action:          &action2,
 				TargetRealmID:   &realmName,
 				TargetGroupName: &star,
 			},
-			configuration.Authorization{
+			{
 				RealmID:         &realmName,
 				GroupName:       &groupName1,
 				Action:          &action2,
@@ -99,14 +99,14 @@ func TestValidate(t *testing.T) {
 
 	t.Run("Valid set of authorizations", func(t *testing.T) {
 		authorizations = []configuration.Authorization{
-			configuration.Authorization{
+			{
 				RealmID:         &realmName,
 				GroupName:       &groupName1,
 				Action:          &action2,
 				TargetRealmID:   &realmName,
 				TargetGroupName: &star,
 			},
-			configuration.Authorization{
+			{
 				RealmID:         &realmName,
 				GroupName:       &groupName1,
 				Action:          &action1,

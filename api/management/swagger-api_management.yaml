@@ -1554,6 +1554,9 @@ components:
         locale:
           type: string
           default: "en"
+        businessId:
+          type: string
+          description: Business identifier (can be GLN)
         smsSent:
           type: integer
         smsAttempts:
@@ -1775,6 +1778,8 @@ components:
         need_verified_contact:
           type: boolean
           description: if true, email and phone number have to be verified to allow validation of the account in KYC
+        show_gln_editing:
+          type: boolean
     BackOfficeConfiguration:
       type: object
       additionalProperties:
