@@ -6,7 +6,12 @@ import (
 	errorhandler "github.com/cloudtrust/common-service/errors"
 )
 
-type GlnDetails struct {
+type GlnSearchResult struct {
+	Persons []GlnPerson
+	Error   error
+}
+
+type GlnPerson struct {
 	Active     *bool
 	Number     *string
 	FirstName  *string
@@ -16,15 +21,15 @@ type GlnDetails struct {
 	City       *string
 	Country    *string
 	Profession *string
-	Error      error
 }
 
 var (
-	ErrGLNNoDecision = errors.New("nodecision")
+	ErrGLNNotFound     = errors.New("not-found")
+	ErrGLNDoesNotMatch = errorhandler.CreateBadRequestError("glnDoesNotMatch")
 )
 
 type GlnLookupProvider interface {
-	Lookup(gln string) GlnDetails
+	Lookup(gln string) GlnSearchResult
 }
 
 type GlnVerifier interface {
@@ -42,16 +47,12 @@ func NewGlnVerifier(providers ...GlnLookupProvider) GlnVerifier {
 }
 
 func (v *glnVerifier) ValidateGLN(firstName, lastName, gln string) error {
-	if gln == "7601000001726" {
-		// Hard coded value for development
-		return nil
-	}
 	var size = len(v.providers)
 	if size == 0 {
 		return errorhandler.CreateInternalServerError("noGLNLookupProvided")
 	}
 
-	resultsChan := make(chan GlnDetails)
+	resultsChan := make(chan GlnSearchResult, size)
 	defer close(resultsChan)
 
 	for _, provider := range v.providers {
@@ -59,21 +60,24 @@ func (v *glnVerifier) ValidateGLN(firstName, lastName, gln string) error {
 			resultsChan <- glnLookup.Lookup(gln)
 		}(provider)
 	}
+	var defaultError = ErrGLNNotFound
 	for i := 0; i < size; i++ {
 		var details = <-resultsChan
 		if details.Error == nil {
-			if v.compare(details, firstName, lastName, gln) {
-				return nil
+			for _, person := range details.Persons {
+				if v.compare(person, firstName, lastName, gln) {
+					return nil
+				}
 			}
-			return errorhandler.CreateBadRequestError("glnDoesNotMatch")
+			return ErrGLNDoesNotMatch
+		} else if details.Error != ErrGLNNotFound {
+			defaultError = details.Error
 		}
 	}
-	return errorhandler.CreateBadRequestError("invalidParameter.gln")
+	return defaultError
 }
 
-func (v *glnVerifier) compare(glnDetails GlnDetails, firstName, lastName, gln string) bool {
-	if glnDetails.Number == nil || glnDetails.FirstName == nil || glnDetails.LastName == nil {
-		return false
-	}
-	return gln == *glnDetails.Number && firstName == *glnDetails.FirstName && lastName == *glnDetails.LastName
+func (v *glnVerifier) compare(glnPerson GlnPerson, firstName, lastName, gln string) bool {
+	return glnPerson.Number != nil && glnPerson.FirstName != nil && glnPerson.LastName != nil &&
+		gln == *glnPerson.Number && firstName == *glnPerson.FirstName && lastName == *glnPerson.LastName
 }
