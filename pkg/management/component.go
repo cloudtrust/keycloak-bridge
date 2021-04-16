@@ -316,7 +316,7 @@ func (c *component) CreateUser(ctx context.Context, realmName string, user api.U
 
 	var userRep = api.ConvertToKCUser(user)
 
-	if glnErr := c.checkGLN(ctx, true, user.BusinessID, &userRep); glnErr != nil {
+	if glnErr := c.checkGLN(ctx, realmName, true, user.BusinessID, &userRep); glnErr != nil {
 		return "", glnErr
 	}
 
@@ -374,9 +374,7 @@ func (c *component) CreateUser(ctx context.Context, realmName string, user api.U
 	return locationURL, nil
 }
 
-func (c *component) checkGLN(ctx context.Context, businessIDThere bool, businessID *string, kcUser *kc.UserRepresentation) error {
-	var realm = ctx.Value(cs.CtContextRealm).(string)
-
+func (c *component) checkGLN(ctx context.Context, realm string, businessIDThere bool, businessID *string, kcUser *kc.UserRepresentation) error {
 	if adminConfig, err := c.configDBModule.GetAdminConfiguration(ctx, realm); err != nil {
 		c.logger.Warn(ctx, "msg", "Can't get realm admin configuration", "realm", realm, "err", err.Error())
 		return err
@@ -541,7 +539,7 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 	}
 
 	if glnUpdated {
-		if glnErr := c.checkGLN(ctx, user.BusinessID.Defined, user.BusinessID.Value, &userRep); glnErr != nil {
+		if glnErr := c.checkGLN(ctx, realmName, user.BusinessID.Defined, user.BusinessID.Value, &userRep); glnErr != nil {
 			return glnErr
 		}
 	}

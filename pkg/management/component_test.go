@@ -425,7 +425,7 @@ func TestCreateUser(t *testing.T) {
 	t.Run("Invalid GLN provided", func(t *testing.T) {
 		var businessID = "123456789"
 
-		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, realmName).Return(configuration.RealmAdminConfiguration{}, anyError)
+		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, socialRealmName).Return(configuration.RealmAdminConfiguration{}, anyError)
 		mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any())
 
 		_, err := managementComponent.CreateUser(ctx, socialRealmName, api.UserRepresentation{BusinessID: &businessID}, false)
@@ -640,7 +640,7 @@ func TestCheckGLN(t *testing.T) {
 	t.Run("GetRealmAdminConfiguration fails", func(t *testing.T) {
 		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, realmName).Return(configuration.RealmAdminConfiguration{}, anyError)
 
-		var err = managementComponent.checkGLN(ctx, true, &gln, &kcUser)
+		var err = managementComponent.checkGLN(ctx, realmName, true, &gln, &kcUser)
 		assert.NotNil(t, err)
 	})
 	t.Run("GLN feature not activated", func(t *testing.T) {
@@ -648,7 +648,7 @@ func TestCheckGLN(t *testing.T) {
 
 		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, realmName).Return(configuration.RealmAdminConfiguration{}, nil)
 
-		var err = managementComponent.checkGLN(ctx, true, &gln, &kcUser)
+		var err = managementComponent.checkGLN(ctx, realmName, true, &gln, &kcUser)
 		assert.Nil(t, err)
 		assert.Nil(t, kcUser.GetAttributeString(constants.AttrbBusinessID))
 	})
@@ -660,7 +660,7 @@ func TestCheckGLN(t *testing.T) {
 	t.Run("Removing GLN", func(t *testing.T) {
 		kcUser.SetAttributeString(constants.AttrbBusinessID, gln)
 
-		var err = managementComponent.checkGLN(ctx, true, nil, &kcUser)
+		var err = managementComponent.checkGLN(ctx, realmName, true, nil, &kcUser)
 		assert.Nil(t, err)
 		assert.Nil(t, kcUser.GetAttributeString(constants.AttrbBusinessID))
 	})
@@ -669,7 +669,7 @@ func TestCheckGLN(t *testing.T) {
 
 		mocks.glnVerifier.EXPECT().ValidateGLN(firstName, lastName, gln).Return(anyError)
 
-		var err = managementComponent.checkGLN(ctx, true, &gln, &kcUser)
+		var err = managementComponent.checkGLN(ctx, realmName, true, &gln, &kcUser)
 		assert.NotNil(t, err)
 	})
 	t.Run("Using valid GLN", func(t *testing.T) {
@@ -677,13 +677,13 @@ func TestCheckGLN(t *testing.T) {
 
 		mocks.glnVerifier.EXPECT().ValidateGLN(firstName, lastName, gln).Return(nil)
 
-		var err = managementComponent.checkGLN(ctx, true, &gln, &kcUser)
+		var err = managementComponent.checkGLN(ctx, realmName, true, &gln, &kcUser)
 		assert.Nil(t, err)
 	})
 	t.Run("No change asked for GLN field", func(t *testing.T) {
 		kcUser.SetAttributeString(constants.AttrbBusinessID, gln)
 
-		var err = managementComponent.checkGLN(ctx, false, nil, &kcUser)
+		var err = managementComponent.checkGLN(ctx, realmName, false, nil, &kcUser)
 		assert.Nil(t, err)
 	})
 }
