@@ -211,10 +211,15 @@ func (c *component) UpdateAccount(ctx context.Context, user api.UpdatableAccount
 	var actions []string
 
 	// Check if GLN validity should be re-evaluated
-	var glnUpdated = keycloakb.IsUpdated(user.FirstName, oldUserKc.FirstName,
-		user.LastName, oldUserKc.LastName,
-		user.BusinessID.Value, oldUserKc.GetAttributeString(constants.AttrbBusinessID),
-	)
+	var glnUpdated = keycloakb.IsUpdated(user.FirstName, oldUserKc.FirstName, user.LastName, oldUserKc.LastName)
+	if !glnUpdated && user.BusinessID.Defined {
+		if user.BusinessID.Value == nil {
+			glnUpdated = oldUserKc.GetAttributeString(constants.AttrbBusinessID) != nil
+		} else {
+			var oldGLN = oldUserKc.GetAttributeString(constants.AttrbBusinessID)
+			glnUpdated = oldGLN == nil || *user.BusinessID.Value != *oldGLN
+		}
+	}
 	var revokeAccreditations = glnUpdated || keycloakb.IsUpdated(user.Gender, oldUserKc.GetAttributeString(constants.AttrbGender),
 		user.BirthDate, oldUserKc.GetAttributeString(constants.AttrbBirthDate),
 		user.BirthLocation, oldUser.BirthLocation,
