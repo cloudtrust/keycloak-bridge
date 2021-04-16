@@ -21,6 +21,7 @@ import (
 func TestGetUser(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
+
 	mockKeycloakClient := mock.NewKeycloakClient(mockCtrl)
 	mockConfigurationDBModule := mock.NewConfigurationDBModule(mockCtrl)
 	mockTokenProvider := mock.NewTokenProvider(mockCtrl)
@@ -69,22 +70,46 @@ func TestGetUser(t *testing.T) {
 		assert.Equal(t, dbError, err)
 	})
 
-	t.Run("Success", func(t *testing.T) {
+	t.Run("Success-No problem with GLN", func(t *testing.T) {
 		var attrbs = make(kc.Attributes)
 		attrbs.Set(constants.AttrbAccreditations, []string{"{}", "{}"})
 
-		var checks = []dto.DBCheck{dto.DBCheck{}, dto.DBCheck{}}
-
-		var availableChecks = map[string]bool{"one": true, "two": true}
+		var checks = []dto.DBCheck{{}, {}}
+		var availableChecks = map[string]bool{"physical": true, "idnow": true}
+		var adminConf = configuration.RealmAdminConfiguration{AvailableChecks: availableChecks}
 
 		mockTokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
 		mockKeycloakClient.EXPECT().GetUser(accessToken, realm, userID).Return(kc.UserRepresentation{Attributes: &attrbs}, nil)
 		mockUsersDetailsDBModule.EXPECT().GetChecks(ctx, realm, userID).Return(checks, nil)
-		mockConfigurationDBModule.EXPECT().GetAdminConfiguration(ctx, realm).Return(configuration.RealmAdminConfiguration{AvailableChecks: availableChecks}, nil)
+		mockConfigurationDBModule.EXPECT().GetAdminConfiguration(ctx, realm).Return(adminConf, nil)
+
 		var userInfo, err = component.GetUserInformation(ctx)
 		assert.Nil(t, err)
 		assert.Len(t, *userInfo.Accreditations, 2)
 		assert.Len(t, *userInfo.Checks, len(checks))
 		assert.Len(t, *userInfo.Actions, len(availableChecks))
+	})
+
+	t.Run("Success-Missing GLN", func(t *testing.T) {
+		var attrbs = make(kc.Attributes)
+		attrbs.Set(constants.AttrbAccreditations, []string{"{}", "{}"})
+
+		var checks = []dto.DBCheck{{}, {}}
+		var availableChecks = map[string]bool{"physical": true, "idnow": true}
+		var adminConf = configuration.RealmAdminConfiguration{AvailableChecks: availableChecks}
+		var bTrue = true
+		adminConf.ShowGlnEditing = &bTrue
+		var expectedActionsCount = len(availableChecks) - 1
+
+		mockTokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
+		mockKeycloakClient.EXPECT().GetUser(accessToken, realm, userID).Return(kc.UserRepresentation{Attributes: &attrbs}, nil)
+		mockUsersDetailsDBModule.EXPECT().GetChecks(ctx, realm, userID).Return(checks, nil)
+		mockConfigurationDBModule.EXPECT().GetAdminConfiguration(ctx, realm).Return(adminConf, nil)
+
+		var userInfo, err = component.GetUserInformation(ctx)
+		assert.Nil(t, err)
+		assert.Len(t, *userInfo.Accreditations, 2)
+		assert.Len(t, *userInfo.Checks, len(checks))
+		assert.Len(t, *userInfo.Actions, expectedActionsCount)
 	})
 }

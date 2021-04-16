@@ -250,6 +250,9 @@ components:
           description: ISO 3166 Alpha-2 country code
         locale:
           type: string
+        businessId:
+          type: string
+          description: Business identifier (can be GLN)
         accreditations:
           type: array
           description: only returned by /account
@@ -296,6 +299,8 @@ components:
           type: array
           items:
             type: string
+        show_gln_editing:
+          type: boolean
   securitySchemes:
     openId:
       type: openIdConnect

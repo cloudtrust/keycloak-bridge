@@ -29,6 +29,7 @@ import (
 	"github.com/cloudtrust/common-service/security"
 	"github.com/cloudtrust/common-service/tracing"
 	"github.com/cloudtrust/common-service/tracking"
+	"github.com/cloudtrust/keycloak-bridge/internal/business"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/cloudtrust/keycloak-bridge/pkg/account"
 	"github.com/cloudtrust/keycloak-bridge/pkg/communications"
@@ -491,6 +492,10 @@ func main() {
 		}
 	}
 
+	// GLN verifier
+	var glnRefDataLookup = business.NewRefDataLookup(logger)
+	var glnVerifier = business.NewGlnVerifier(glnRefDataLookup)
+
 	// Validation service.
 	var validationEndpoints validation.Endpoints
 	{
@@ -505,6 +510,11 @@ func main() {
 		// module for archiving users
 		var archiveDBModule = keycloakb.NewArchiveDBModule(archiveRwDBConn, archiveAesEncryption, validationLogger)
 
+		var configurationReaderDBModule *configuration.ConfigurationReaderDBModule
+		{
+			configurationReaderDBModule = configuration.NewConfigurationReaderDBModule(configurationRoDBConn, validationLogger, authActions)
+		}
+
 		// accreditations module
 		var accredsModule keycloakb.AccreditationsModule
 		{
@@ -512,7 +522,7 @@ func main() {
 			accredsModule = keycloakb.NewAccreditationsModule(keycloakClient, configurationReaderDBModule, validationLogger)
 		}
 
-		validationComponent := validation.NewComponent(keycloakClient, technicalTokenProvider, usersDBModule, archiveDBModule, eventsDBModule, accredsModule, validationLogger)
+		validationComponent := validation.NewComponent(keycloakClient, technicalTokenProvider, usersDBModule, archiveDBModule, eventsDBModule, accredsModule, configurationReaderDBModule, validationLogger)
 
 		var rateLimitValidation = rateLimit[RateKeyValidation]
 		validationEndpoints = validation.Endpoints{
@@ -602,7 +612,7 @@ func main() {
 
 		var keycloakComponent management.Component
 		{
-			keycloakComponent = management.NewComponent(keycloakClient, usersDBModule, eventsDBModule, configDBModule, onboardingModule, trustIDGroups, registerRealm, managementLogger)
+			keycloakComponent = management.NewComponent(keycloakClient, usersDBModule, eventsDBModule, configDBModule, onboardingModule, trustIDGroups, registerRealm, glnVerifier, managementLogger)
 			keycloakComponent = management.MakeAuthorizationManagementComponentMW(log.With(managementLogger, "mw", "endpoint"), authorizationManager)(keycloakComponent)
 		}
 
@@ -700,7 +710,7 @@ func main() {
 		var usersDBModule = keycloakb.NewUsersDetailsDBModule(usersRwDBConn, aesEncryption, accountLogger)
 
 		// new module for account service
-		accountComponent := account.NewComponent(keycloakClient.AccountClient(), kcTechClient, eventsDBModule, configDBModule, usersDBModule, accountLogger)
+		accountComponent := account.NewComponent(keycloakClient.AccountClient(), kcTechClient, eventsDBModule, configDBModule, usersDBModule, glnVerifier, accountLogger)
 		accountComponent = account.MakeAuthorizationAccountComponentMW(log.With(accountLogger, "mw", "endpoint"), configDBModule)(accountComponent)
 
 		var rateLimitAccount = rateLimit[RateKeyAccount]
@@ -762,7 +772,7 @@ func main() {
 		// module for onboarding process
 		var onboardingModule = keycloakb.NewOnboardingModule(keycloakClient, keycloakPublicURL, registerLogger)
 
-		registerComponent := register.NewComponent(keycloakPublicURL, keycloakClient, technicalTokenProvider, usersDBModule, configDBModule, eventsDBModule, onboardingModule, registerLogger)
+		registerComponent := register.NewComponent(keycloakPublicURL, keycloakClient, technicalTokenProvider, usersDBModule, configDBModule, eventsDBModule, onboardingModule, glnVerifier, registerLogger)
 		registerComponent = register.MakeAuthorizationRegisterComponentMW(log.With(registerLogger, "mw", "endpoint"))(registerComponent)
 
 		var rateLimitRegister = rateLimit[RateKeyRegister]
@@ -803,7 +813,7 @@ func main() {
 		}
 
 		// new module for KYC service
-		kycComponent := kyc.NewComponent(technicalTokenProvider, registerRealm, keycloakClient, usersDBModule, archiveDBModule, configurationReaderDBModule, eventsDBModule, accredsModule, kycLogger)
+		kycComponent := kyc.NewComponent(technicalTokenProvider, registerRealm, keycloakClient, usersDBModule, archiveDBModule, configurationReaderDBModule, eventsDBModule, accredsModule, glnVerifier, kycLogger)
 		kycComponent = kyc.MakeAuthorizationRegisterComponentMW(registerRealm, authorizationManager, endpointPhysicalCheckAvailabilityChecker, log.With(kycLogger, "mw", "endpoint"))(kycComponent)
 
 		var rateLimitKyc = rateLimit[RateKeyKYC]

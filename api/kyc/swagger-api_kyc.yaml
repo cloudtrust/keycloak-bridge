@@ -274,6 +274,9 @@ components:
           description: ISO 3166 Alpha-2 country code
         locale:
           type: string
+        businessId:
+          type: string
+          description: Business identifier (can be GLN)
         comment:
           type: string
           description: Used only by validateUser

@@ -38,6 +38,7 @@ type UserRepresentation struct {
 	TrustIDGroups        *[]string                      `json:"trustIdGroups,omitempty"`
 	Roles                *[]string                      `json:"roles,omitempty"`
 	Locale               *string                        `json:"locale,omitempty"`
+	BusinessID           *string                        `json:"businessId,omitempty"`
 	SmsSent              *int                           `json:"smsSent,omitempty"`
 	SmsAttempts          *int                           `json:"smsAttempts,omitempty"`
 	Enabled              *bool                          `json:"enabled,omitempty"`
@@ -68,6 +69,7 @@ type UpdatableUserRepresentation struct {
 	TrustIDGroups        *[]string                      `json:"trustIdGroups,omitempty"`
 	Roles                *[]string                      `json:"roles,omitempty"`
 	Locale               *string                        `json:"locale,omitempty"`
+	BusinessID           csjson.OptionalString          `json:"businessId,omitempty"`
 	SmsSent              *int                           `json:"smsSent,omitempty"`
 	SmsAttempts          *int                           `json:"smsAttempts,omitempty"`
 	Enabled              *bool                          `json:"enabled,omitempty"`
@@ -232,6 +234,7 @@ type RealmAdminConfiguration struct {
 	Theme               *string                   `json:"theme"`
 	NeedVerifiedContact *bool                     `json:"need_verified_contact"`
 	ConsentRequired     *bool                     `json:"consent_required"`
+	ShowGlnEditing      *bool                     `json:"show_gln_editing"`
 }
 
 // RealmAdminAccreditation struct
@@ -331,6 +334,7 @@ func ConvertToAPIUser(ctx context.Context, userKc kc.UserRepresentation, logger 
 	userRep.Gender = userKc.GetAttributeString(constants.AttrbGender)
 	userRep.BirthDate = userKc.GetAttributeDate(constants.AttrbBirthDate, constants.SupportedDateLayouts)
 	userRep.Locale = userKc.GetAttributeString(constants.AttrbLocale)
+	userRep.BusinessID = userKc.GetAttributeString(constants.AttrbBusinessID)
 
 	if value, err := userKc.GetAttributeBool(constants.AttrbPhoneNumberVerified); err == nil && value != nil {
 		userRep.PhoneNumberVerified = value
@@ -404,6 +408,7 @@ func ConvertToKCUser(user UserRepresentation) kc.UserRepresentation {
 	attributes.SetStringWhenNotNil(constants.AttrbGender, user.Gender)
 	attributes.SetDateWhenNotNil(constants.AttrbBirthDate, user.BirthDate, constants.SupportedDateLayouts)
 	attributes.SetStringWhenNotNil(constants.AttrbLocale, user.Locale)
+	attributes.SetStringWhenNotNil(constants.AttrbBusinessID, user.BusinessID)
 
 	if len(attributes) > 0 {
 		userRep.Attributes = &attributes
@@ -438,6 +443,9 @@ func ConvertUpdatableToKCUser(user UpdatableUserRepresentation) kc.UserRepresent
 	attributes.SetStringWhenNotNil(constants.AttrbGender, user.Gender)
 	attributes.SetDateWhenNotNil(constants.AttrbBirthDate, user.BirthDate, constants.SupportedDateLayouts)
 	attributes.SetStringWhenNotNil(constants.AttrbLocale, user.Locale)
+	if user.BusinessID.Defined {
+		attributes.SetStringWhenNotNil(constants.AttrbBusinessID, user.BusinessID.Value)
+	}
 
 	if len(attributes) > 0 {
 		userRep.Attributes = &attributes
@@ -602,6 +610,7 @@ func ConvertRealmAdminConfigurationFromDBStruct(conf configuration.RealmAdminCon
 		Theme:               conf.Theme,
 		NeedVerifiedContact: defaultBool(conf.NeedVerifiedContact, true),
 		ConsentRequired:     defaultBool(conf.ConsentRequired, false),
+		ShowGlnEditing:      defaultBool(conf.ShowGlnEditing, false),
 	}
 }
 
@@ -615,6 +624,7 @@ func (rac RealmAdminConfiguration) ConvertToDBStruct() configuration.RealmAdminC
 		Theme:               rac.Theme,
 		NeedVerifiedContact: rac.NeedVerifiedContact,
 		ConsentRequired:     rac.ConsentRequired,
+		ShowGlnEditing:      rac.ShowGlnEditing,
 	}
 }
 
@@ -686,6 +696,7 @@ func (user UserRepresentation) Validate() error {
 		ValidateParameterRegExp(constants.BirthLocation, user.BirthLocation, constants.RegExpNameSpecialChars, false).
 		ValidateParameterRegExp(constants.Nationality, user.Nationality, constants.RegExpCountryCode, false).
 		ValidateParameterRegExp(constants.Locale, user.Locale, constants.RegExpLocale, false).
+		ValidateParameterRegExp(constants.BusinessID, user.BusinessID, constants.RegExpBusinessID, false).
 		ValidateParameterIn(constants.IDDocumentType, user.IDDocumentType, constants.AllowedDocumentTypes, false).
 		ValidateParameterRegExp(constants.IDDocumentNumber, user.IDDocumentNumber, constants.RegExpIDDocumentNumber, false).
 		ValidateParameterLength(constants.IDDocumentNumber, user.IDDocumentNumber, 1, 50, false).
@@ -720,6 +731,7 @@ func (user UpdatableUserRepresentation) Validate() error {
 		ValidateParameterRegExp(constants.BirthLocation, user.BirthLocation, constants.RegExpNameSpecialChars, false).
 		ValidateParameterRegExp(constants.Nationality, user.Nationality, constants.RegExpCountryCode, false).
 		ValidateParameterRegExp(constants.Locale, user.Locale, constants.RegExpLocale, false).
+		ValidateParameterRegExp(constants.BusinessID, user.BusinessID.Value, constants.RegExpBusinessID, false).
 		ValidateParameterIn(constants.IDDocumentType, user.IDDocumentType, constants.AllowedDocumentTypes, false).
 		ValidateParameterRegExp(constants.IDDocumentNumber, user.IDDocumentNumber, constants.RegExpIDDocumentNumber, false).
 		ValidateParameterLength(constants.IDDocumentNumber, user.IDDocumentNumber, 1, 50, false).

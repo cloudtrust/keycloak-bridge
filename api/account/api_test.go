@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	csjson "github.com/cloudtrust/common-service/json"
 	"github.com/cloudtrust/common-service/log"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 
@@ -50,6 +51,7 @@ func TestConvertToAPIAccount(t *testing.T) {
 		constants.AttrbLocale:              []string{"fr"},
 		constants.AttrbPhoneNumberVerified: []string{"true"},
 		constants.AttrbAccreditations:      []string{`{"type":"one","expiryDate":"05.04.2020"}`, `{"type":"two","expiryDate":"05.03.2022"}`},
+		constants.AttrbBusinessID:          []string{"123456789"},
 	}
 
 	t.Run("Check attributes are copied", func(t *testing.T) {
@@ -64,6 +66,7 @@ func TestConvertToAPIAccount(t *testing.T) {
 		assert.False(t, *(*user.Accreditations)[0].Revoked)
 		assert.False(t, *(*user.Accreditations)[1].Revoked)
 		assert.False(t, *(*user.Accreditations)[1].Expired)
+		assert.Equal(t, "123456789", *user.BusinessID)
 	})
 
 	t.Run("PhoneNumberVerified is invalid", func(t *testing.T) {
@@ -91,15 +94,18 @@ func TestConvertToAPIAccount(t *testing.T) {
 }
 
 func TestConvertToKCUser(t *testing.T) {
-	var apiUser = AccountRepresentation{}
+	var apiUser = UpdatableAccountRepresentation{}
 	assert.Nil(t, ConvertToKCUser(apiUser).Attributes)
 
 	var phoneNumber = "+41221234567"
 	var locale = "fr"
-	apiUser = AccountRepresentation{PhoneNumber: &phoneNumber, Locale: &locale}
+	var businessID = "123456789"
+	var business = csjson.OptionalString{Defined: true, Value: &businessID}
+	apiUser = UpdatableAccountRepresentation{PhoneNumber: &phoneNumber, Locale: &locale, BusinessID: business}
 	var kcUser = ConvertToKCUser(apiUser)
 	assert.Equal(t, phoneNumber, *kcUser.GetAttributeString(constants.AttrbPhoneNumber))
 	assert.Equal(t, locale, *kcUser.GetAttributeString(constants.AttrbLocale))
+	assert.Equal(t, businessID, *kcUser.GetAttributeString(constants.AttrbBusinessID))
 }
 
 func TestValidateAccountRepresentation(t *testing.T) {
@@ -111,6 +117,31 @@ func TestValidateAccountRepresentation(t *testing.T) {
 
 	for i := 0; i < 6; i++ {
 		accounts = append(accounts, createValidAccountRepresentation())
+	}
+
+	assert.Nil(t, accounts[0].Validate())
+
+	accounts[0].Username = &invalidName
+	accounts[1].FirstName = &invalidName
+	accounts[2].LastName = &invalidName
+	accounts[3].Email = &invalidEmail
+	accounts[4].PhoneNumber = &invalidPhone
+	accounts[5].Locale = &invalidLocale
+
+	for _, account := range accounts {
+		assert.NotNil(t, account.Validate())
+	}
+}
+
+func TestValidateUpdatableAccountRepresentation(t *testing.T) {
+	var invalidName = ""
+	var invalidEmail = "bobby-at-mail.com"
+	var invalidPhone = "+412212345AB"
+	var invalidLocale = "fr-123"
+	var accounts []UpdatableAccountRepresentation
+
+	for i := 0; i < 6; i++ {
+		accounts = append(accounts, createValidUpdatableAccountRepresentation())
 	}
 
 	assert.Nil(t, accounts[0].Validate())
@@ -192,6 +223,22 @@ func createValidAccountRepresentation() AccountRepresentation {
 	var validLocale = "fr"
 
 	return AccountRepresentation{
+		Username:    &validName,
+		FirstName:   &validName,
+		LastName:    &validName,
+		Email:       &validEmail,
+		PhoneNumber: &validPhone,
+		Locale:      &validLocale,
+	}
+}
+
+func createValidUpdatableAccountRepresentation() UpdatableAccountRepresentation {
+	var validName = "Bobby"
+	var validEmail = "bobby@mail.com"
+	var validPhone = "+41221234567"
+	var validLocale = "fr"
+
+	return UpdatableAccountRepresentation{
 		Username:    &validName,
 		FirstName:   &validName,
 		LastName:    &validName,

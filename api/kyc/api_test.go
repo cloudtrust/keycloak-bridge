@@ -7,6 +7,7 @@ import (
 
 	"github.com/cloudtrust/common-service/log"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
+	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 
 	kc "github.com/cloudtrust/keycloak-client"
 	"github.com/stretchr/testify/assert"
@@ -32,6 +33,7 @@ func createValidUser() UserRepresentation {
 		idDocNumber     = "123456789"
 		idDocExpiration = "23.02.2039"
 		locale          = "fr"
+		businessID      = "123456789"
 		accred1         = AccreditationRepresentation{Type: ptr("short"), ExpiryDate: ptr("31.12.2024")}
 		accred2         = AccreditationRepresentation{Type: ptr("long"), ExpiryDate: ptr("31.12.2039")}
 		creds           = []AccreditationRepresentation{accred1, accred2}
@@ -55,6 +57,7 @@ func createValidUser() UserRepresentation {
 		IDDocumentExpiration: &idDocExpiration,
 		IDDocumentCountry:    &country,
 		Locale:               &locale,
+		BusinessID:           &businessID,
 		Accreditations:       &creds,
 		Attachments:          &attachments,
 	}
@@ -81,6 +84,7 @@ func createValidKeycloakUser() kc.UserRepresentation {
 			constants.AttrbBirthDate:           []string{"29.02.2020"},
 			constants.AttrbAccreditations:      []string{`{"type":"one","expiryDate":"05.04.2020"}`, `{"type":"two","expiryDate":"05.03.2022"}`},
 			constants.AttrbLocale:              []string{"de"},
+			constants.AttrbBusinessID:          []string{"123456789"},
 		}
 	)
 
@@ -105,6 +109,21 @@ func TestJSON(t *testing.T) {
 	assert.NotNil(t, err)
 	_, err = UserFromJSON(`{gender="M", unknownField=5}`)
 	assert.NotNil(t, err)
+}
+
+func TestExportToDBUser(t *testing.T) {
+	var user = createValidUser()
+	var dbUser = dto.DBUser{}
+
+	user.ExportToDBUser(&dbUser)
+
+	assert.Equal(t, user.BirthLocation, dbUser.BirthLocation)
+	assert.Equal(t, user.IDDocumentCountry, dbUser.IDDocumentCountry)
+	assert.Equal(t, user.IDDocumentExpiration, dbUser.IDDocumentExpiration)
+	assert.Equal(t, user.IDDocumentNumber, dbUser.IDDocumentNumber)
+	assert.Equal(t, user.IDDocumentType, dbUser.IDDocumentType)
+	assert.Equal(t, user.Nationality, dbUser.Nationality)
+	assert.Equal(t, user.ID, dbUser.UserID)
 }
 
 func TestExportToKeycloak(t *testing.T) {
@@ -195,7 +214,7 @@ func TestValidateUserRepresentation(t *testing.T) {
 		assert.Nil(t, user.Validate(), "User is expected to be valid")
 	})
 	var users []UserRepresentation
-	for i := 0; i < 17; i++ {
+	for i := 0; i < 18; i++ {
 		users = append(users, createValidUser())
 	}
 	// invalid values
@@ -209,16 +228,17 @@ func TestValidateUserRepresentation(t *testing.T) {
 	users[7].IDDocumentNumber = &empty
 	users[8].IDDocumentExpiration = &invalidDate
 	users[9].IDDocumentCountry = &empty
+	users[10].BusinessID = &empty
 	// mandatory parameters
-	users[10].Gender = nil
-	users[11].FirstName = nil
-	users[12].LastName = nil
-	users[13].BirthDate = nil
-	users[14].IDDocumentNumber = nil
+	users[11].Gender = nil
+	users[12].FirstName = nil
+	users[13].LastName = nil
+	users[14].BirthDate = nil
+	users[15].IDDocumentNumber = nil
 	var newAttachments = append(*users[15].Attachments, AttachmentRepresentation{})
-	users[15].Attachments = &newAttachments
+	users[16].Attachments = &newAttachments
 	var oneByte = []byte{0}
-	(*users[16].Attachments)[0].Content = &oneByte
+	(*users[17].Attachments)[0].Content = &oneByte
 
 	for idx, aUser := range users {
 		t.Run(fmt.Sprintf("Invalid users %d", idx), func(t *testing.T) {

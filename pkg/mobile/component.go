@@ -8,7 +8,6 @@ import (
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
-	internal "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	kc "github.com/cloudtrust/keycloak-client"
 )
 
@@ -38,11 +37,11 @@ type component struct {
 	configDBModule keycloakb.ConfigurationDBModule
 	usersDBModule  UsersDetailsDBModule
 	tokenProvider  TokenProvider
-	logger         internal.Logger
+	logger         keycloakb.Logger
 }
 
 // NewComponent returns the self-service component.
-func NewComponent(keycloakClient KeycloakClient, configDBModule keycloakb.ConfigurationDBModule, usersDBModule UsersDetailsDBModule, tokenProvider TokenProvider, logger internal.Logger) Component {
+func NewComponent(keycloakClient KeycloakClient, configDBModule keycloakb.ConfigurationDBModule, usersDBModule UsersDetailsDBModule, tokenProvider TokenProvider, logger keycloakb.Logger) Component {
 	return &component{
 		keycloakClient: keycloakClient,
 		configDBModule: configDBModule,
@@ -56,6 +55,7 @@ func (c *component) GetUserInformation(ctx context.Context) (api.UserInformation
 	var realm = ctx.Value(cs.CtContextRealm).(string)
 	var userID = ctx.Value(cs.CtContextUserID).(string)
 	var userInfo api.UserInformationRepresentation
+	var gln *string
 
 	// Get an OIDC token to be able to request Keycloak
 	var accessToken string
@@ -68,6 +68,7 @@ func (c *component) GetUserInformation(ctx context.Context) (api.UserInformation
 	if userKc, err := c.keycloakClient.GetUser(accessToken, realm, userID); err == nil {
 		keycloakb.ConvertLegacyAttribute(&userKc)
 		userInfo.SetAccreditations(ctx, userKc.GetAttribute(constants.AttrbAccreditations), c.logger)
+		gln = userKc.GetAttributeString(constants.AttrbBusinessID)
 	} else {
 		c.logger.Warn(ctx, "err", err.Error())
 		return api.UserInformationRepresentation{}, err
@@ -81,7 +82,11 @@ func (c *component) GetUserInformation(ctx context.Context) (api.UserInformation
 	}
 
 	if realmAdminConfig, err := c.configDBModule.GetAdminConfiguration(ctx, realm); err == nil {
-		userInfo.SetActions(realmAdminConfig.AvailableChecks)
+		var availableChecks = realmAdminConfig.AvailableChecks
+		if gln == nil && realmAdminConfig.ShowGlnEditing != nil && *realmAdminConfig.ShowGlnEditing {
+			delete(availableChecks, "idnow")
+		}
+		userInfo.SetActions(availableChecks)
 	} else {
 		c.logger.Warn(ctx, "err", err.Error())
 		return api.UserInformationRepresentation{}, err

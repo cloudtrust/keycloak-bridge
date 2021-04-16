@@ -17,7 +17,6 @@ import (
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
-	"github.com/cloudtrust/keycloak-client"
 
 	"github.com/cloudtrust/keycloak-bridge/pkg/management/mock"
 	kc "github.com/cloudtrust/keycloak-client"
@@ -32,6 +31,7 @@ type componentMocks struct {
 	configurationDBModule *mock.ConfigurationDBModule
 	onboardingModule      *mock.OnboardingModule
 	transaction           *mock.Transaction
+	glnVerifier           *mock.GlnVerifier
 	logger                *mock.Logger
 }
 
@@ -43,6 +43,7 @@ func createMocks(mockCtrl *gomock.Controller) componentMocks {
 		configurationDBModule: mock.NewConfigurationDBModule(mockCtrl),
 		onboardingModule:      mock.NewOnboardingModule(mockCtrl),
 		transaction:           mock.NewTransaction(mockCtrl),
+		glnVerifier:           mock.NewGlnVerifier(mockCtrl),
 		logger:                mock.NewLogger(mockCtrl),
 	}
 }
@@ -55,9 +56,9 @@ const (
 	socialRealmName = "social"
 )
 
-func createComponent(mocks componentMocks) Component {
+func createComponent(mocks componentMocks) *component {
 	return NewComponent(mocks.keycloakClient, mocks.usersDetailsDBModule, mocks.eventDBModule, mocks.configurationDBModule, mocks.onboardingModule,
-		allowedTrustIDGroups, socialRealmName, mocks.logger)
+		allowedTrustIDGroups, socialRealmName, mocks.glnVerifier, mocks.logger).(*component)
 }
 
 func ptrString(value string) *string {
@@ -421,6 +422,18 @@ func TestCreateUser(t *testing.T) {
 	ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 	ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 
+	t.Run("Invalid GLN provided", func(t *testing.T) {
+		var businessID = "123456789"
+
+		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, realmName).Return(configuration.RealmAdminConfiguration{}, anyError)
+		mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any())
+
+		_, err := managementComponent.CreateUser(ctx, socialRealmName, api.UserRepresentation{BusinessID: &businessID}, false)
+
+		assert.Equal(t, anyError, err)
+	})
+	mocks.configurationDBModule.EXPECT().GetAdminConfiguration(gomock.Any(), gomock.Any()).Return(configuration.RealmAdminConfiguration{}, nil).AnyTimes()
+
 	t.Run("Create user with username generation", func(t *testing.T) {
 		mocks.onboardingModule.EXPECT().CreateUser(ctx, accessToken, realmName, socialRealmName, gomock.Any()).Return("", anyError)
 		mocks.logger.EXPECT().Warn(ctx, "err", gomock.Any())
@@ -604,6 +617,74 @@ func TestCreateUser(t *testing.T) {
 
 		assert.NotNil(t, err)
 		assert.Equal(t, "", location)
+	})
+}
+
+func TestCheckGLN(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mocks = createMocks(mockCtrl)
+	var managementComponent = createComponent(mocks)
+
+	var realmName = "my-realm"
+	var gln = "123456789"
+	var firstName = "first"
+	var lastName = "last"
+	var kcUser = kc.UserRepresentation{FirstName: &firstName, LastName: &lastName}
+	var anyError = errors.New("any error")
+	var ctx = context.WithValue(context.TODO(), cs.CtContextRealm, realmName)
+
+	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
+
+	t.Run("GetRealmAdminConfiguration fails", func(t *testing.T) {
+		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, realmName).Return(configuration.RealmAdminConfiguration{}, anyError)
+
+		var err = managementComponent.checkGLN(ctx, true, &gln, &kcUser)
+		assert.NotNil(t, err)
+	})
+	t.Run("GLN feature not activated", func(t *testing.T) {
+		kcUser.SetAttributeString(constants.AttrbBusinessID, gln)
+
+		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, realmName).Return(configuration.RealmAdminConfiguration{}, nil)
+
+		var err = managementComponent.checkGLN(ctx, true, &gln, &kcUser)
+		assert.Nil(t, err)
+		assert.Nil(t, kcUser.GetAttributeString(constants.AttrbBusinessID))
+	})
+
+	var bTrue = true
+	var confWithGLN = configuration.RealmAdminConfiguration{ShowGlnEditing: &bTrue}
+	mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, realmName).Return(confWithGLN, nil).AnyTimes()
+
+	t.Run("Removing GLN", func(t *testing.T) {
+		kcUser.SetAttributeString(constants.AttrbBusinessID, gln)
+
+		var err = managementComponent.checkGLN(ctx, true, nil, &kcUser)
+		assert.Nil(t, err)
+		assert.Nil(t, kcUser.GetAttributeString(constants.AttrbBusinessID))
+	})
+	t.Run("Using invalid GLN", func(t *testing.T) {
+		kcUser.SetAttributeString(constants.AttrbBusinessID, gln)
+
+		mocks.glnVerifier.EXPECT().ValidateGLN(firstName, lastName, gln).Return(anyError)
+
+		var err = managementComponent.checkGLN(ctx, true, &gln, &kcUser)
+		assert.NotNil(t, err)
+	})
+	t.Run("Using valid GLN", func(t *testing.T) {
+		kcUser.SetAttributeString(constants.AttrbBusinessID, gln)
+
+		mocks.glnVerifier.EXPECT().ValidateGLN(firstName, lastName, gln).Return(nil)
+
+		var err = managementComponent.checkGLN(ctx, true, &gln, &kcUser)
+		assert.Nil(t, err)
+	})
+	t.Run("No change asked for GLN field", func(t *testing.T) {
+		kcUser.SetAttributeString(constants.AttrbBusinessID, gln)
+
+		var err = managementComponent.checkGLN(ctx, false, nil, &kcUser)
+		assert.Nil(t, err)
 	})
 }
 
@@ -1667,7 +1748,7 @@ func TestGetUserAccountStatusByEmail(t *testing.T) {
 		assert.NotNil(t, err)
 	})
 	t.Run("Found users does not match exactly the given email", func(t *testing.T) {
-		var users = []kc.UserRepresentation{kc.UserRepresentation{}, kc.UserRepresentation{}, kc.UserRepresentation{}}
+		var users = []kc.UserRepresentation{{}, {}, {}}
 		var count = len(users)
 		users[0].Email = nil
 		users[1].Email = ptrString("a" + email)
@@ -2018,7 +2099,7 @@ func TestGetTrustIDGroupsOfUser(t *testing.T) {
 	var accessToken = "TOKEN=="
 	var realmName = "master"
 	var userID = "789-789-456"
-	var attrbs = keycloak.Attributes{constants.AttrbTrustIDGroups: groups}
+	var attrbs = kc.Attributes{constants.AttrbTrustIDGroups: groups}
 	var ctx = context.WithValue(context.TODO(), cs.CtContextAccessToken, accessToken)
 
 	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
@@ -2776,7 +2857,7 @@ func TestDeleteCredentialsForUser(t *testing.T) {
 
 	t.Run("Delete credentials for user", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetCredentials(accessToken, realmName, userID).Return([]kc.CredentialRepresentation{
-			kc.CredentialRepresentation{
+			{
 				ID:   &credential,
 				Type: &typeCred,
 			},
@@ -2818,7 +2899,7 @@ func TestDeleteCredentialsForUser(t *testing.T) {
 
 	t.Run("Delete credentials for user - error at deleting the credential", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetCredentials(accessToken, realmName, userID).Return([]kc.CredentialRepresentation{
-			kc.CredentialRepresentation{
+			{
 				ID:   &credential,
 				Type: &typeCred,
 			},
@@ -2900,9 +2981,7 @@ func TestUnlockCredentialForUser(t *testing.T) {
 	})
 
 	var foundCredType = "ctpapercard"
-	var credentials = []kc.CredentialRepresentation{
-		kc.CredentialRepresentation{ID: &credentialID, Type: &foundCredType},
-	}
+	var credentials = []kc.CredentialRepresentation{{ID: &credentialID, Type: &foundCredType}}
 	mocks.keycloakClient.EXPECT().GetCredentials(accessToken, realmName, userID).Return(credentials, nil).AnyTimes()
 
 	t.Run("Detect credential type-Credential found", func(t *testing.T) {
@@ -3348,7 +3427,7 @@ func TestGetAuthorizations(t *testing.T) {
 
 	t.Run("Get authorizations with succces", func(t *testing.T) {
 		var configurationAuthz = []configuration.Authorization{
-			configuration.Authorization{
+			{
 				RealmID:   &realmName,
 				GroupName: &groupName,
 				Action:    &action,

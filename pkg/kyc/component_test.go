@@ -27,6 +27,7 @@ type componentMocks struct {
 	configDB       *mock.ConfigDBModule
 	eventsDB       *mock.EventsDBModule
 	accreditations *mock.AccreditationsModule
+	glnVerifier    *mock.GlnVerifier
 }
 
 func ptrBool(value bool) *bool {
@@ -42,12 +43,13 @@ func createComponentMocks(mockCtrl *gomock.Controller) *componentMocks {
 		configDB:       mock.NewConfigDBModule(mockCtrl),
 		eventsDB:       mock.NewEventsDBModule(mockCtrl),
 		accreditations: mock.NewAccreditationsModule(mockCtrl),
+		glnVerifier:    mock.NewGlnVerifier(mockCtrl),
 	}
 }
 
 func (m *componentMocks) NewComponent(realm string) *component {
 	return NewComponent(m.tokenProvider, realm, m.keycloakClient, m.usersDB, m.archiveDB, m.configDB,
-		m.eventsDB, m.accreditations, log.NewNopLogger()).(*component)
+		m.eventsDB, m.accreditations, m.glnVerifier, log.NewNopLogger()).(*component)
 }
 
 func TestCheckUserConsent(t *testing.T) {
@@ -425,6 +427,7 @@ func TestValidateUser(t *testing.T) {
 	ctx = context.WithValue(ctx, cs.CtContextUsername, "operator")
 
 	mocks.accreditations.EXPECT().GetUserAndPrepareAccreditations(ctx, accessToken, targetRealm, userID, configuration.CheckKeyPhysical).Return(kcUser, 0, nil)
+	mocks.configDB.EXPECT().GetAdminConfiguration(ctx, targetRealm).Return(configuration.RealmAdminConfiguration{}, nil)
 	mocks.usersDB.EXPECT().GetUserDetails(ctx, targetRealm, userID).Return(dbUser, nil)
 	mocks.keycloakClient.EXPECT().UpdateUser(accessToken, targetRealm, userID, gomock.Any()).Return(nil)
 	mocks.usersDB.EXPECT().StoreOrUpdateUserDetails(ctx, targetRealm, gomock.Any()).Return(nil)

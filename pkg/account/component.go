@@ -11,11 +11,11 @@ import (
 	cs "github.com/cloudtrust/common-service"
 	"github.com/cloudtrust/common-service/database"
 	errorhandler "github.com/cloudtrust/common-service/errors"
+	csjson "github.com/cloudtrust/common-service/json"
 	api "github.com/cloudtrust/keycloak-bridge/api/account"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
-	internal "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	kc "github.com/cloudtrust/keycloak-client"
 )
 
@@ -53,6 +53,11 @@ type KeycloakTechnicalClient interface {
 	GetRealm(ctx context.Context, realmName string) (kc.RealmRepresentation, error)
 }
 
+// GlnVerifier interface allows to check validity of a GLN
+type GlnVerifier interface {
+	ValidateGLN(firstName, lastName, gln string) error
+}
+
 // Component interface exposes methods used by the bridge API
 type Component interface {
 	UpdatePassword(ctx context.Context, currentPassword, newPassword, confirmPassword string) error
@@ -62,7 +67,7 @@ type Component interface {
 	DeleteCredential(ctx context.Context, credentialID string) error
 	MoveCredential(ctx context.Context, credentialID string, previousCredentialID string) error
 	GetAccount(ctx context.Context) (api.AccountRepresentation, error)
-	UpdateAccount(context.Context, api.AccountRepresentation) error
+	UpdateAccount(context.Context, api.UpdatableAccountRepresentation) error
 	DeleteAccount(context.Context) error
 	GetConfiguration(context.Context, string) (api.Configuration, error)
 	SendVerifyEmail(ctx context.Context) error
@@ -82,17 +87,19 @@ type component struct {
 	eventDBModule         database.EventsDBModule
 	configDBModule        keycloakb.ConfigurationDBModule
 	usersDBModule         UsersDetailsDBModule
-	logger                internal.Logger
+	glnVerifier           GlnVerifier
+	logger                keycloakb.Logger
 }
 
 // NewComponent returns the self-service component.
-func NewComponent(keycloakAccountClient KeycloakAccountClient, keycloakTechClient KeycloakTechnicalClient, eventDBModule database.EventsDBModule, configDBModule keycloakb.ConfigurationDBModule, usersDBModule UsersDetailsDBModule, logger internal.Logger) Component {
+func NewComponent(keycloakAccountClient KeycloakAccountClient, keycloakTechClient KeycloakTechnicalClient, eventDBModule database.EventsDBModule, configDBModule keycloakb.ConfigurationDBModule, usersDBModule UsersDetailsDBModule, glnVerifier GlnVerifier, logger keycloakb.Logger) Component {
 	return &component{
 		keycloakAccountClient: keycloakAccountClient,
 		keycloakTechClient:    keycloakTechClient,
 		eventDBModule:         eventDBModule,
 		configDBModule:        configDBModule,
 		usersDBModule:         usersDBModule,
+		glnVerifier:           glnVerifier,
 		logger:                logger,
 	}
 }
@@ -101,7 +108,7 @@ func (c *component) reportEvent(ctx context.Context, apiCall string, values ...s
 	errEvent := c.eventDBModule.ReportEvent(ctx, apiCall, "self-service", values...)
 	if errEvent != nil {
 		//store in the logs also the event that failed to be stored in the DB
-		internal.LogUnrecordedEvent(ctx, c.logger, apiCall, errEvent.Error(), values...)
+		keycloakb.LogUnrecordedEvent(ctx, c.logger, apiCall, errEvent.Error(), values...)
 	}
 }
 
@@ -114,7 +121,7 @@ func (c *component) UpdatePassword(ctx context.Context, currentPassword, newPass
 	if currentPassword == newPassword || newPassword != confirmPassword {
 		return errorhandler.Error{
 			Status:  http.StatusBadRequest,
-			Message: internal.ComponentName + "." + "invalidValues",
+			Message: keycloakb.ComponentName + "." + "invalidValues",
 		}
 	}
 
@@ -178,7 +185,7 @@ func defaultString(value1, value2 *string) *string {
 	return value2
 }
 
-func (c *component) UpdateAccount(ctx context.Context, user api.AccountRepresentation) error {
+func (c *component) UpdateAccount(ctx context.Context, user api.UpdatableAccountRepresentation) error {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 	var realm = ctx.Value(cs.CtContextRealm).(string)
 	var userID = ctx.Value(cs.CtContextUserID).(string)
@@ -203,9 +210,12 @@ func (c *component) UpdateAccount(ctx context.Context, user api.AccountRepresent
 	var emailVerified, phoneNumberVerified *bool
 	var actions []string
 
-	var revokeAccreditations = keycloakb.IsUpdated(user.FirstName, oldUserKc.FirstName,
+	// Check if GLN validity should be re-evaluated
+	var glnUpdated = keycloakb.IsUpdated(user.FirstName, oldUserKc.FirstName,
 		user.LastName, oldUserKc.LastName,
-		user.Gender, oldUserKc.GetAttributeString(constants.AttrbGender),
+		user.BusinessID.Value, oldUserKc.GetAttributeString(constants.AttrbBusinessID),
+	)
+	var revokeAccreditations = glnUpdated || keycloakb.IsUpdated(user.Gender, oldUserKc.GetAttributeString(constants.AttrbGender),
 		user.BirthDate, oldUserKc.GetAttributeString(constants.AttrbBirthDate),
 		user.BirthLocation, oldUser.BirthLocation,
 		user.Nationality, oldUser.Nationality,
@@ -255,12 +265,22 @@ func (c *component) UpdateAccount(ctx context.Context, user api.AccountRepresent
 	mergedAttributes.SetStringWhenNotNil(constants.AttrbGender, user.Gender)
 	mergedAttributes.SetDateWhenNotNil(constants.AttrbBirthDate, user.BirthDate, constants.SupportedDateLayouts)
 	mergedAttributes.SetStringWhenNotNil(constants.AttrbLocale, user.Locale)
+	mergedAttributes.SetStringWhenNotNil(constants.AttrbBusinessID, user.BusinessID.Value)
+	if user.BusinessID.Defined && user.BusinessID.Value == nil {
+		mergedAttributes.Remove(constants.AttrbBusinessID)
+	}
 
 	userRep.Attributes = &mergedAttributes
 	if revokeAccreditations {
 		keycloakb.RevokeAccreditations(&userRep)
 	}
 
+	// GLN check
+	if err = c.checkGLN(ctx, user.BusinessID, &userRep); err != nil {
+		return err
+	}
+
+	// Update keycloak account
 	err = c.keycloakAccountClient.UpdateAccount(accessToken, realm, userRep)
 	if err != nil {
 		c.logger.Warn(ctx, "err", err.Error())
@@ -279,7 +299,7 @@ func (c *component) UpdateAccount(ctx context.Context, user api.AccountRepresent
 		}
 	}
 
-	var dbUser = c.mergeUser(userID, user, oldUser)
+	var dbUser = c.mergeUserFromUpdatable(userID, user, oldUser)
 
 	err = c.usersDBModule.StoreOrUpdateUserDetails(ctx, realm, dbUser)
 	if err != nil {
@@ -296,6 +316,26 @@ func (c *component) UpdateAccount(ctx context.Context, user api.AccountRepresent
 	}
 
 	return err
+}
+
+func (c *component) checkGLN(ctx context.Context, businessID csjson.OptionalString, kcUser *kc.UserRepresentation) error {
+	var realm = ctx.Value(cs.CtContextRealm).(string)
+
+	if adminConfig, err := c.configDBModule.GetAdminConfiguration(ctx, realm); err != nil {
+		c.logger.Warn(ctx, "msg", "Can't get realm admin configuration", "realm", realm, "err", err.Error())
+		return err
+	} else if adminConfig.ShowGlnEditing == nil || !*adminConfig.ShowGlnEditing {
+		// No GLN expected
+		kcUser.RemoveAttribute(constants.AttrbBusinessID)
+	} else if businessID.Defined {
+		// GLN enabled for this realm
+		if businessID.Value == nil {
+			kcUser.RemoveAttribute(constants.AttrbBusinessID)
+		} else {
+			return c.glnVerifier.ValidateGLN(*kcUser.FirstName, *kcUser.LastName, *businessID.Value)
+		}
+	}
+	return nil
 }
 
 func (c *component) sendEmail(ctx context.Context, template, subject string, recipient *string, attributes map[string]string) error {
@@ -317,6 +357,17 @@ func (c *component) duplicateAttributes(srcAttributes *kc.Attributes) kc.Attribu
 		}
 	}
 	return copiedAttributes
+}
+
+func (c *component) mergeUserFromUpdatable(userID string, user api.UpdatableAccountRepresentation, oldUser dto.DBUser) dto.DBUser {
+	return c.mergeUser(userID, api.AccountRepresentation{
+		BirthLocation:        user.BirthLocation,
+		Nationality:          user.Nationality,
+		IDDocumentType:       user.IDDocumentType,
+		IDDocumentNumber:     user.IDDocumentNumber,
+		IDDocumentExpiration: user.IDDocumentExpiration,
+		IDDocumentCountry:    user.IDDocumentCountry,
+	}, oldUser)
 }
 
 func (c *component) mergeUser(userID string, user api.AccountRepresentation, oldUser dto.DBUser) dto.DBUser {
@@ -465,7 +516,7 @@ func (c *component) MoveCredential(ctx context.Context, credentialID string, pre
 		return err
 	}
 
-	additionalInfos, err := json.Marshal(map[string]string{PrmCredentialID: credentialID, PrmPrevCredentialID: previousCredentialID})
+	additionalInfos, _ := json.Marshal(map[string]string{PrmCredentialID: credentialID, PrmPrevCredentialID: previousCredentialID})
 
 	//store the API call into the DB
 	c.reportEvent(ctx, "SELF_MOVE_CREDENTIAL", database.CtEventRealmName, currentRealm, database.CtEventUserID, userID, database.CtEventUsername, username, database.CtEventAdditionalInfo, string(additionalInfos))
@@ -509,6 +560,7 @@ func (c *component) GetConfiguration(ctx context.Context, realmIDOverride string
 		AvailableChecks:                   adminConfig.AvailableChecks,
 		Theme:                             adminConfig.Theme,
 		SupportedLocales:                  supportedLocales,
+		ShowGlnEditing:                    adminConfig.ShowGlnEditing,
 	}
 
 	if realmIDOverride != "" {

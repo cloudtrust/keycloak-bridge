@@ -120,7 +120,7 @@ func MakeGetAccountEndpoint(component Component) cs.Endpoint {
 func MakeUpdateAccountEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
-		var body api.AccountRepresentation
+		var body api.UpdatableAccountRepresentation
 
 		err := json.Unmarshal([]byte(m[ReqBody]), &body)
 		if err != nil {

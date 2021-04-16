@@ -7,7 +7,6 @@ import (
 
 	"github.com/cloudtrust/common-service/configuration"
 	"github.com/cloudtrust/common-service/validation"
-	"github.com/cloudtrust/keycloak-client"
 	kc "github.com/cloudtrust/keycloak-client"
 	"github.com/cloudtrust/keycloak-client/toolbox"
 
@@ -18,7 +17,6 @@ import (
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
-	internal "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 )
 
 // KeycloakClient are methods from keycloak-client used by this component
@@ -56,6 +54,11 @@ type EventsDBModule interface {
 	ReportEvent(ctx context.Context, apiCall string, origin string, values ...string) error
 }
 
+// GlnVerifier interface allows to check validity of a GLN
+type GlnVerifier interface {
+	ValidateGLN(firstName, lastName, gln string) error
+}
+
 // Component is the register component interface.
 type Component interface {
 	GetActions(ctx context.Context) ([]apikyc.ActionRepresentation, error)
@@ -77,11 +80,12 @@ type component struct {
 	configDBModule  ConfigDBModule
 	eventsDBModule  database.EventsDBModule
 	accredsModule   keycloakb.AccreditationsModule
-	logger          internal.Logger
+	glnVerifier     GlnVerifier
+	logger          keycloakb.Logger
 }
 
 // NewComponent returns the management component.
-func NewComponent(tokenProvider toolbox.OidcTokenProvider, socialRealmName string, keycloakClient KeycloakClient, usersDBModule UsersDetailsDBModule, archiveDBModule ArchiveDBModule, configDBModule ConfigDBModule, eventsDBModule EventsDBModule, accredsModule keycloakb.AccreditationsModule, logger internal.Logger) Component {
+func NewComponent(tokenProvider toolbox.OidcTokenProvider, socialRealmName string, keycloakClient KeycloakClient, usersDBModule UsersDetailsDBModule, archiveDBModule ArchiveDBModule, configDBModule ConfigDBModule, eventsDBModule EventsDBModule, accredsModule keycloakb.AccreditationsModule, glnVerifier GlnVerifier, logger keycloakb.Logger) Component {
 	return &component{
 		tokenProvider:   tokenProvider,
 		socialRealmName: socialRealmName,
@@ -91,6 +95,7 @@ func NewComponent(tokenProvider toolbox.OidcTokenProvider, socialRealmName strin
 		configDBModule:  configDBModule,
 		eventsDBModule:  eventsDBModule,
 		accredsModule:   accredsModule,
+		glnVerifier:     glnVerifier,
 		logger:          logger,
 	}
 }
@@ -123,7 +128,7 @@ func (c *component) GetUserByUsernameInSocialRealm(ctx context.Context, username
 		return apikyc.UserRepresentation{}, err
 	}
 
-	var kcUser keycloak.UserRepresentation
+	var kcUser kc.UserRepresentation
 	kcUser, err = c.getUserByUsername(accessToken, c.socialRealmName, c.socialRealmName, username, *group.ID)
 	if err != nil {
 		c.logger.Info(ctx, "msg", "GetUser: can't find user in Keycloak", "err", err.Error())
@@ -261,6 +266,17 @@ func (c *component) validateUser(ctx context.Context, accessToken string, realmN
 	}
 	keycloakb.ConvertLegacyAttribute(&kcUser)
 
+	// GLN check
+	var realmAdminConfig configuration.RealmAdminConfiguration
+	realmAdminConfig, err = c.configDBModule.GetAdminConfiguration(ctx, realmName)
+	if err != nil {
+		return err
+	}
+	var needGln = realmAdminConfig.ShowGlnEditing != nil && *realmAdminConfig.ShowGlnEditing
+	if !needGln {
+		user.BusinessID = nil
+	}
+
 	// Some parameters might not be updated by operator
 	user.ID = &userID
 	user.Email = nil
@@ -281,10 +297,21 @@ func (c *component) validateUser(ctx context.Context, accessToken string, realmN
 		return err
 	}
 
-	var now = time.Now()
-
 	user.ExportToDBUser(&dbUser)
 	user.ExportToKeycloak(&kcUser)
+
+	if needGln {
+		if kcUser.GetAttributeString(constants.AttrbBusinessID) == nil {
+			return errorhandler.CreateBadRequestError("missing.gln")
+		} else if user.BusinessID != nil {
+			// GLN required and business ID is trying to be updated
+			if glnErr := c.glnVerifier.ValidateGLN(*kcUser.FirstName, *kcUser.LastName, *user.BusinessID); glnErr != nil {
+				return glnErr
+			}
+		}
+	}
+
+	var now = time.Now()
 	err = c.keycloakClient.UpdateUser(accessToken, realmName, userID, kcUser)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Failed to update user through Keycloak API", "err", err.Error())
@@ -397,7 +424,7 @@ func (c *component) reportEvent(ctx context.Context, apiCall string, values ...s
 	errEvent := c.eventsDBModule.ReportEvent(ctx, apiCall, "back-office", values...)
 	if errEvent != nil {
 		//store in the logs also the event that failed to be stored in the DB
-		internal.LogUnrecordedEvent(ctx, c.logger, apiCall, errEvent.Error(), values...)
+		keycloakb.LogUnrecordedEvent(ctx, c.logger, apiCall, errEvent.Error(), values...)
 	}
 }
 
