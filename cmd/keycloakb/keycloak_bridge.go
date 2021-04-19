@@ -132,6 +132,18 @@ const (
 	cfgArchiveRwDbParams        = "db-archive-rw"
 	cfgDbArchiveAesGcmKey       = "db-archive-aesgcm-key"
 	cfgDbArchiveAesGcmTagSize   = "db-archive-aesgcm-tag-size"
+	cfgGlnRefDataEnabled        = "gln-refdata-enabled"
+	cfgGlnRefDataURI            = "gln-refdata-uri"
+	cfgGlnRefDataTimeout        = "gln-refdata-timeout"
+	cfgGlnNaRegEnabled          = "gln-nareg-enabled"
+	cfgGlnNaRegURI              = "gln-nareg-uri"
+	cfgGlnNaRegTimeout          = "gln-nareg-timeout"
+	cfgGlnPsyRegEnabled         = "gln-psyreg-enabled"
+	cfgGlnPsyRegURI             = "gln-psyreg-uri"
+	cfgGlnPsyRegTimeout         = "gln-psyreg-timeout"
+	cfgGlnMedRegEnabled         = "gln-medreg-enabled"
+	cfgGlnMedRegURI             = "gln-medreg-uri"
+	cfgGlnMedRegTimeout         = "gln-medreg-timeout"
 )
 
 func init() {
@@ -249,6 +261,20 @@ func main() {
 		technicalUsername = c.GetString(cfgTechnicalUsername)
 		technicalPassword = c.GetString(cfgTechnicalPassword)
 		technicalClientID = c.GetString(cfgTechnicalClientID)
+
+		// GLN
+		glnRefDataEnabled = c.GetBool(cfgGlnRefDataEnabled)
+		glnRefDataURI     = c.GetString(cfgGlnRefDataURI)
+		glnRefDataTimeout = c.GetDuration(cfgGlnRefDataTimeout)
+		glnNaRegEnabled   = c.GetBool(cfgGlnNaRegEnabled)
+		glnNaRegURI       = c.GetString(cfgGlnNaRegURI)
+		glnNaRegTimeout   = c.GetDuration(cfgGlnNaRegTimeout)
+		glnMedRegEnabled  = c.GetBool(cfgGlnMedRegEnabled)
+		glnMedRegURI      = c.GetString(cfgGlnMedRegURI)
+		glnMedRegTimeout  = c.GetDuration(cfgGlnMedRegTimeout)
+		glnPsyRegEnabled  = c.GetBool(cfgGlnPsyRegEnabled)
+		glnPsyRegURI      = c.GetString(cfgGlnPsyRegURI)
+		glnPsyRegTimeout  = c.GetDuration(cfgGlnPsyRegTimeout)
 	)
 
 	// Unique ID generator
@@ -493,8 +519,42 @@ func main() {
 	}
 
 	// GLN verifier
-	var glnRefDataLookup = business.NewRefDataLookup(logger)
-	var glnVerifier = business.NewGlnVerifier(glnRefDataLookup)
+	var glnLookupProviders []business.GlnLookupProvider
+	{
+		if glnRefDataEnabled {
+			if glnRefDataLookup, err := business.NewRefDataLookup(glnRefDataURI, glnRefDataTimeout, logger); err != nil {
+				logger.Error(ctx, "msg", "can't initialize GLN RefData lookup", "err", err.Error())
+				return
+			} else {
+				glnLookupProviders = append(glnLookupProviders, glnRefDataLookup)
+			}
+		}
+		if glnMedRegEnabled {
+			if glnMedRegLookup, err := business.NewMedRegOmLookup(glnMedRegURI, glnMedRegTimeout, logger); err != nil {
+				logger.Error(ctx, "msg", "can't initialize GLN MedReg lookup", "err", err.Error())
+				return
+			} else {
+				glnLookupProviders = append(glnLookupProviders, glnMedRegLookup)
+			}
+		}
+		if glnNaRegEnabled {
+			if glnNaRegLookup, err := business.NewNaRegLookup(glnNaRegURI, glnNaRegTimeout, logger); err != nil {
+				logger.Error(ctx, "msg", "can't initialize GLN NaReg lookup", "err", err.Error())
+				return
+			} else {
+				glnLookupProviders = append(glnLookupProviders, glnNaRegLookup)
+			}
+		}
+		if glnPsyRegEnabled {
+			if glnPsyRegLookup, err := business.NewPsyRegLookup(glnPsyRegURI, glnPsyRegTimeout, logger); err != nil {
+				logger.Error(ctx, "msg", "can't initialize GLN PsyReg lookup", "err", err.Error())
+				return
+			} else {
+				glnLookupProviders = append(glnLookupProviders, glnPsyRegLookup)
+			}
+		}
+	}
+	var glnVerifier = business.NewGlnVerifier(glnLookupProviders...)
 
 	// Validation service.
 	var validationEndpoints validation.Endpoints
@@ -1367,6 +1427,20 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 	v.SetDefault(cfgTechnicalUsername, "")
 	v.SetDefault(cfgTechnicalPassword, "")
 	v.SetDefault(cfgTechnicalClientID, "admin-cli")
+
+	// GLN
+	v.SetDefault(cfgGlnRefDataEnabled, true)
+	v.SetDefault(cfgGlnRefDataURI, "https://refdatabase.refdata.ch")
+	v.SetDefault(cfgGlnRefDataTimeout, "10s")
+	v.SetDefault(cfgGlnNaRegEnabled, false)
+	v.SetDefault(cfgGlnNaRegURI, "https://www.nareg.ch")
+	v.SetDefault(cfgGlnNaRegTimeout, "10s")
+	v.SetDefault(cfgGlnPsyRegEnabled, false)
+	v.SetDefault(cfgGlnPsyRegURI, "https://ws.psyreg.bag.admin.ch")
+	v.SetDefault(cfgGlnPsyRegTimeout, "10s")
+	v.SetDefault(cfgGlnMedRegEnabled, false)
+	v.SetDefault(cfgGlnMedRegURI, "https://www.medregom.admin.ch")
+	v.SetDefault(cfgGlnMedRegTimeout, "10s")
 
 	// First level of override.
 	pflag.String(cfgConfigFile, v.GetString(cfgConfigFile), "The configuration file path can be relative or absolute.")

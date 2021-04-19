@@ -209,3 +209,17 @@ technical-realm: master
 technical-username: technical
 technical-password: technicalsuperpasswordverylongandstrong
 technical-client-id: admin-cli
+
+# GLN
+gln-refdata-enabled: true
+gln-refdata-uri: https://refdatabase.refdata.ch
+gln-refdata-timeout: 10s
+gln-medreg-enabled: false
+gln-medreg-uri: https://www.medregom.admin.ch
+gln-medreg-timeout: 10s
+gln-nareg-enabled: false
+gln-nareg-uri: https://www.nareg.ch
+gln-nareg-timeout: 10s
+gln-psyreg-enabled: false
+gln-psyreg-uri: https://ws.psyreg.bag.admin.ch
+gln-psyreg-timeout: 10s

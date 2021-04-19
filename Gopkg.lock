@@ -43,6 +43,14 @@
   version = "v2.3.5"
 
 [[projects]]
+  digest = "1:b97043105152c9715fd9255303222b1133fb37efd2d7186378bcfa7324ef4190"
+  name = "github.com/cloudtrust/httpclient"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "52270ac9807715aa1eec024c56363a7dc75d5f20"
+  version = "v1.0.2"
+
+[[projects]]
   digest = "1:580872858354dfeddbebabccbba2dc120f9b074a2d9f8b53410627a4bfc0381a"
   name = "github.com/cloudtrust/keycloak-client"
   packages = [
@@ -334,7 +342,7 @@
   version = "v1.2.0"
 
 [[projects]]
-  digest = "1:a4ce817d57150d5a0e88e8eea7bb6b95436bdc4c6423d6d16a4cebfbc36649ce"
+  digest = "1:a3760dea318b611271ecd4668ee1d758093202157239308097152f9999d0cb0f"
   name = "github.com/uber/jaeger-client-go"
   packages = [
     ".",
@@ -357,8 +365,8 @@
     "utils",
   ]
   pruneopts = "UT"
-  revision = "121ee6fb26fd9617fc30d0d95569a39c30ca3b76"
-  version = "v2.25.0"
+  revision = "b63eeee6330b83c4240a56ed808f9ea4b42359b6"
+  version = "v2.26.0"
 
 [[projects]]
   digest = "1:d7b6fd08442b8d26882fae2c859a0d63962d72a533476a217d46743ed30cb803"
@@ -587,6 +595,7 @@
     "github.com/cloudtrust/common-service/tracing",
     "github.com/cloudtrust/common-service/tracking",
     "github.com/cloudtrust/common-service/validation",
+    "github.com/cloudtrust/httpclient",
     "github.com/cloudtrust/keycloak-client",
     "github.com/cloudtrust/keycloak-client/api",
     "github.com/cloudtrust/keycloak-client/toolbox",
@@ -606,6 +615,11 @@
     "github.com/spf13/viper",
     "github.com/stretchr/testify/assert",
     "golang.org/x/time/rate",
+    "gopkg.in/h2non/gentleman.v2/plugin",
+    "gopkg.in/h2non/gentleman.v2/plugins/body",
+    "gopkg.in/h2non/gentleman.v2/plugins/headers",
+    "gopkg.in/h2non/gentleman.v2/plugins/query",
+    "gopkg.in/h2non/gentleman.v2/plugins/url",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1
