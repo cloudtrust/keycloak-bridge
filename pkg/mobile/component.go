@@ -84,7 +84,7 @@ func (c *component) GetUserInformation(ctx context.Context) (api.UserInformation
 	if realmAdminConfig, err := c.configDBModule.GetAdminConfiguration(ctx, realm); err == nil {
 		var availableChecks = realmAdminConfig.AvailableChecks
 		if gln == nil && realmAdminConfig.ShowGlnEditing != nil && *realmAdminConfig.ShowGlnEditing {
-			delete(availableChecks, "idnow")
+			delete(availableChecks, "IDNow")
 		}
 		userInfo.SetActions(availableChecks)
 	} else {
