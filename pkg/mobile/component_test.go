@@ -95,7 +95,7 @@ func TestGetUser(t *testing.T) {
 		attrbs.Set(constants.AttrbAccreditations, []string{"{}", "{}"})
 
 		var checks = []dto.DBCheck{{}, {}}
-		var availableChecks = map[string]bool{"physical": true, "idnow": true}
+		var availableChecks = map[string]bool{"physical": true, "IDNow": true}
 		var adminConf = configuration.RealmAdminConfiguration{AvailableChecks: availableChecks}
 		var bTrue = true
 		adminConf.ShowGlnEditing = &bTrue
