@@ -212,7 +212,7 @@ technical-client-id: admin-cli
 
 # GLN
 gln-refdata-enabled: true
-gln-refdata-uri: https://refdatabase.refdata.ch
+gln-refdata-uri: https://refdatabase.refdata.ch/Service/Partner.asmx
 gln-refdata-timeout: 10s
 gln-medreg-enabled: false
 gln-medreg-uri: https://www.medregom.admin.ch
