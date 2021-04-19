@@ -334,6 +334,8 @@ func main() {
 		}
 	}
 
+	errorhandler.SetEmitter(keycloakb.ComponentName)
+
 	// Security - AES encryption mechanism for users PII
 	aesEncryption, err := security.NewAesGcmEncrypterFromBase64(c.GetString(cfgDbAesGcmKey), c.GetInt(cfgDbAesGcmTagSize))
 	if err != nil {
@@ -895,8 +897,6 @@ func main() {
 	var exportComponent = export.NewComponent(keycloakb.ComponentName, keycloakb.Version, logger, exportModule, cfgStorageModule)
 	var exportEndpoint = export.MakeExportEndpoint(exportComponent)
 	var exportSaveAndExportEndpoint = export.MakeStoreAndExportEndpoint(exportComponent)
-
-	errorhandler.SetEmitter(keycloakb.ComponentName)
 
 	// HTTP Internal Call Server (Export, Communications & Validation API).
 	go func() {
