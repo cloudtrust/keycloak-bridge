@@ -1,8 +1,6 @@
 package business
 
 import (
-	"errors"
-
 	errorhandler "github.com/cloudtrust/common-service/errors"
 )
 
@@ -24,8 +22,8 @@ type GlnPerson struct {
 }
 
 var (
-	ErrGLNNotFound     = errors.New("not-found")
-	ErrGLNDoesNotMatch = errorhandler.CreateBadRequestError("glnDoesNotMatch")
+	ErrGLNNotFound     error
+	ErrGLNDoesNotMatch error
 )
 
 type GlnLookupProvider interface {
@@ -40,7 +38,15 @@ type glnVerifier struct {
 	providers []GlnLookupProvider
 }
 
+func initGln() {
+	if ErrGLNNotFound == nil {
+		ErrGLNNotFound = errorhandler.CreateBadRequestError("glnNotFound")
+		ErrGLNDoesNotMatch = errorhandler.CreateBadRequestError("glnDoesNotMatch")
+	}
+}
+
 func NewGlnVerifier(providers ...GlnLookupProvider) GlnVerifier {
+	initGln()
 	return &glnVerifier{
 		providers: providers,
 	}
@@ -60,7 +66,7 @@ func (v *glnVerifier) ValidateGLN(firstName, lastName, gln string) error {
 			resultsChan <- glnLookup.Lookup(gln)
 		}(provider)
 	}
-	var defaultError = ErrGLNNotFound
+	var defaultError error = ErrGLNNotFound
 	for i := 0; i < size; i++ {
 		var details = <-resultsChan
 		if details.Error == nil {
