@@ -1430,7 +1430,7 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 
 	// GLN
 	v.SetDefault(cfgGlnRefDataEnabled, true)
-	v.SetDefault(cfgGlnRefDataURI, "https://refdatabase.refdata.ch")
+	v.SetDefault(cfgGlnRefDataURI, "https://refdatabase.refdata.ch/Service/Partner.asmx")
 	v.SetDefault(cfgGlnRefDataTimeout, "10s")
 	v.SetDefault(cfgGlnNaRegEnabled, false)
 	v.SetDefault(cfgGlnNaRegURI, "https://www.nareg.ch")
