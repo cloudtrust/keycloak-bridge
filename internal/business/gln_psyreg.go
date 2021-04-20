@@ -17,25 +17,25 @@ import (
 	gurl "gopkg.in/h2non/gentleman.v2/plugins/url"
 )
 
-type PsyRegResponse struct {
+type psyRegResponse struct {
 	Count             *int           `json:"personenCount"`
 	MaxResultExceeded *bool          `json:"maxResultExceeded"`
-	Persons           []PsyRegPerson `json:"personen"`
+	Persons           []psyRegPerson `json:"personen"`
 }
 
-type PsyRegPerson struct {
+type psyRegPerson struct {
 	ID               *int             `json:"personId"`
 	FirstName        *string          `json:"vorname"`
 	LastName         *string          `json:"name"`
 	ProfessionID     *int             `json:"berufsbezeichnungId"`
 	Languages        []int            `json:"sprachIds"`
-	Locations        []PsyRegLocation `json:"plzOrtCollection"`
+	Locations        []psyRegLocation `json:"plzOrtCollection"`
 	CantonID         *int             `json:"kantonId"`
 	ApprovalStatusID *int             `json:"bewilligungsstatusId"`
 	TooLongName      interface{}      `json:"isMeldungNeunzigTageDienstleisterCurrentYear"`
 }
 
-type PsyRegLocation struct {
+type psyRegLocation struct {
 	ZipCode *string `json:"plz"`
 	City    *string `json:"ort"`
 }
@@ -72,14 +72,14 @@ func NewPsyRegLookup(baseURL string, httpTimeout time.Duration, logger keycloakb
 }
 
 func (l *psyReg) Lookup(gln string) GlnSearchResult {
-	if details, err := l.request(gln); err != nil {
+	var details, err = l.request(gln)
+	if err != nil {
 		return GlnSearchResult{Error: err}
-	} else {
-		return l.jsonToDetails(gln, details)
 	}
+	return l.jsonToDetails(gln, details)
 }
 
-func (l *psyReg) request(gln string) (PsyRegResponse, error) {
+func (l *psyReg) request(gln string) (psyRegResponse, error) {
 	var bodyValue = strings.ReplaceAll(psyRegReqParams, "##GLN##", gln)
 	var plugins []plugin.Plugin
 	plugins = append(plugins,
@@ -91,16 +91,16 @@ func (l *psyReg) request(gln string) (PsyRegResponse, error) {
 		headers.Set("Referer", l.referer),
 		body.String(bodyValue),
 	)
-	var response PsyRegResponse
-	if _, err := l.client.Post(&response, plugins...); err != nil {
+	var response psyRegResponse
+	var _, err = l.client.Post(&response, plugins...)
+	if err != nil {
 		l.logger.Warn(context.Background(), "msg", "Can't get response from psyReg", "err", err.Error(), "gln", gln)
-		return PsyRegResponse{}, errors.Wrap(err, keycloak.MsgErrCannotObtain+"."+keycloak.Response)
-	} else {
-		return response, nil
+		return psyRegResponse{}, errors.Wrap(err, keycloak.MsgErrCannotObtain+"."+keycloak.Response)
 	}
+	return response, nil
 }
 
-func (l *psyReg) jsonToDetails(gln string, response PsyRegResponse) GlnSearchResult {
+func (l *psyReg) jsonToDetails(gln string, response psyRegResponse) GlnSearchResult {
 	if *response.Count == 0 {
 		return GlnSearchResult{Error: ErrGLNNotFound}
 	}

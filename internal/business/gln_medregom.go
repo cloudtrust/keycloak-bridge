@@ -17,6 +17,7 @@ import (
 	gurl "gopkg.in/h2non/gentleman.v2/plugins/url"
 )
 
+// MedRegResponse struct
 type MedRegResponse struct {
 	EmptyRowData   interface{}    `json:"emptyrowdata"`
 	Rows           []MedRegPerson `json:"rows"`
@@ -24,6 +25,7 @@ type MedRegResponse struct {
 	AdditionalInfo interface{}    `json:"additionalInfo"`
 }
 
+// MedRegPerson struct
 type MedRegPerson struct {
 	ID         *int     `json:"Id"`
 	FirstName  *string  `json:"FirstName"`
@@ -65,11 +67,11 @@ func NewMedRegOmLookup(baseURL string, httpTimeout time.Duration, logger keycloa
 }
 
 func (l *medRegOm) Lookup(gln string) GlnSearchResult {
-	if html, err := l.request(gln); err != nil {
+	var resp, err = l.request(gln)
+	if err != nil {
 		return GlnSearchResult{Error: err}
-	} else {
-		return l.jsonToDetails(gln, html)
 	}
+	return l.responseToDetails(gln, resp)
 }
 
 func (l *medRegOm) request(gln string) (MedRegResponse, error) {
@@ -83,15 +85,15 @@ func (l *medRegOm) request(gln string) (MedRegResponse, error) {
 		headers.Set("Referer", l.referer),
 		body.String(bodyValue))
 	var response MedRegResponse
-	if _, err := l.client.Post(&response, plugins...); err != nil {
+	var _, err = l.client.Post(&response, plugins...)
+	if err != nil {
 		l.logger.Warn(context.Background(), "msg", "Can't get response from medReg", "err", err.Error(), "gln", gln)
 		return MedRegResponse{}, errors.Wrap(err, keycloak.MsgErrCannotObtain+"."+keycloak.Response)
-	} else {
-		return response, nil
 	}
+	return response, nil
 }
 
-func (l *medRegOm) jsonToDetails(gln string, response MedRegResponse) GlnSearchResult {
+func (l *medRegOm) responseToDetails(gln string, response MedRegResponse) GlnSearchResult {
 	if len(response.Rows) == 0 {
 		return GlnSearchResult{Error: ErrGLNNotFound}
 	}

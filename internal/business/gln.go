@@ -4,11 +4,14 @@ import (
 	errorhandler "github.com/cloudtrust/common-service/errors"
 )
 
+// GlnSearchResult is the result of a GLN lookup.
+// It includes effective result field and an error field in order to be passed through a channel in a single operation
 type GlnSearchResult struct {
 	Persons []GlnPerson
 	Error   error
 }
 
+// GlnPerson describes a person found by his/her GLN number
 type GlnPerson struct {
 	Active     *bool
 	Number     *string
@@ -21,15 +24,20 @@ type GlnPerson struct {
 	Profession *string
 }
 
+// Error constants
 var (
-	ErrGLNNotFound     error
-	ErrGLNDoesNotMatch error
+	ErrGLNNotFound         error
+	ErrGLNDoesNotMatch     error
+	ErrGLNCantParse        error
+	ErrGLNNoLookupProvider error
 )
 
+// GlnLookupProvider interface
 type GlnLookupProvider interface {
 	Lookup(gln string) GlnSearchResult
 }
 
+// GlnVerifier interface
 type GlnVerifier interface {
 	ValidateGLN(firstName, lastName, gln string) error
 }
@@ -42,9 +50,12 @@ func initGln() {
 	if ErrGLNNotFound == nil {
 		ErrGLNNotFound = errorhandler.CreateBadRequestError("glnNotFound")
 		ErrGLNDoesNotMatch = errorhandler.CreateBadRequestError("glnDoesNotMatch")
+		ErrGLNCantParse = errorhandler.CreateInternalServerError("glnCantParseXML")
+		ErrGLNNoLookupProvider = errorhandler.CreateInternalServerError("glnNoLookupProvided")
 	}
 }
 
+// NewGlnVerifier creates a GLN verifier using given GLN lookup providers
 func NewGlnVerifier(providers ...GlnLookupProvider) GlnVerifier {
 	initGln()
 	return &glnVerifier{
@@ -55,7 +66,7 @@ func NewGlnVerifier(providers ...GlnLookupProvider) GlnVerifier {
 func (v *glnVerifier) ValidateGLN(firstName, lastName, gln string) error {
 	var size = len(v.providers)
 	if size == 0 {
-		return errorhandler.CreateInternalServerError("noGLNLookupProvided")
+		return ErrGLNNoLookupProvider
 	}
 
 	resultsChan := make(chan GlnSearchResult, size)
@@ -66,7 +77,7 @@ func (v *glnVerifier) ValidateGLN(firstName, lastName, gln string) error {
 			resultsChan <- glnLookup.Lookup(gln)
 		}(provider)
 	}
-	var defaultError error = ErrGLNNotFound
+	var defaultError = ErrGLNNotFound
 	for i := 0; i < size; i++ {
 		var details = <-resultsChan
 		if details.Error == nil {

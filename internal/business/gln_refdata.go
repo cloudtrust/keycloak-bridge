@@ -9,7 +9,6 @@ import (
 	"time"
 	"unicode/utf8"
 
-	errorhandler "github.com/cloudtrust/common-service/errors"
 	"github.com/cloudtrust/httpclient"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/cloudtrust/keycloak-client"
@@ -34,7 +33,7 @@ var (
 	`, " \r\n\t")
 )
 
-type SoapPartnerResponse struct {
+type soapPartnerResponse struct {
 	XMLName xml.Name    `xml:"http://schemas.xmlsoap.org/soap/envelope/ Envelope"`
 	XSI     *string     `xml:"xmlns:xsi,attr"`
 	XSD     *string     `xml:"xmlns:xsd,attr"`
@@ -48,12 +47,12 @@ type SoapPartnerResponse struct {
 				OkError   *string `xml:"OK_ERROR"`
 				NbrRecord *int    `xml:"NBR_RECORD"`
 			} `xml:"RESULT"`
-			Items []SoapItem `xml:"ITEM"`
+			Items []soapItem `xml:"ITEM"`
 		} `xml:"PARTNER"`
 	} `xml:"Body"`
 }
 
-type SoapItem struct {
+type soapItem struct {
 	Date        *string `xml:"DT,attr"`
 	Namespace   *string `xml:"xmlns,attr"`
 	PartnerType *string `xml:"PTYPE,omitempty"`
@@ -101,11 +100,11 @@ func NewRefDataLookup(baseURL string, httpTimeout time.Duration, logger keycloak
 }
 
 func (l *glnRefData) Lookup(gln string) GlnSearchResult {
-	if bytes, err := l.request(gln); err != nil {
+	var bytes, err = l.request(gln)
+	if err != nil {
 		return GlnSearchResult{Error: err}
-	} else {
-		return l.xmlToDetails(gln, bytes)
 	}
+	return l.xmlToDetails(gln, bytes)
 }
 
 func (l *glnRefData) request(gln string) ([]byte, error) {
@@ -119,22 +118,22 @@ func (l *glnRefData) request(gln string) ([]byte, error) {
 	)
 
 	var response []byte
-	if _, err := l.client.Post(&response, plugins...); err != nil {
+	var _, err = l.client.Post(&response, plugins...)
+	if err != nil {
 		l.logger.Warn(context.Background(), "msg", "Can't get response from refData", "err", err.Error(), "gln", gln)
 		return nil, errors.Wrap(err, keycloak.MsgErrCannotObtain+"."+keycloak.Response)
-	} else {
-		return response, nil
 	}
+	return response, nil
 }
 
 func (l *glnRefData) xmlToDetails(gln string, xmlContent []byte) GlnSearchResult {
-	var response SoapPartnerResponse
+	var response soapPartnerResponse
 	if err := xml.Unmarshal(xmlContent, &response); err != nil {
-		return GlnSearchResult{Error: errorhandler.CreateInternalServerError("gln.cantParseXML")}
+		return GlnSearchResult{Error: ErrGLNCantParse}
 	}
 	if response.Body.Partner.Result.OkError == nil || *response.Body.Partner.Result.OkError != "OK" {
-		l.logger.Warn(context.Background(), "msg", "Failed to request GLN through refdata", "gln", gln)
-		return GlnSearchResult{Error: errorhandler.CreateInternalServerError("gln.requestError")}
+		l.logger.Info(context.Background(), "msg", "Failed to request GLN through refdata", "gln", gln)
+		return GlnSearchResult{Error: ErrGLNNotFound}
 	}
 	if response.Body.Partner.Result.NbrRecord == nil || *response.Body.Partner.Result.NbrRecord == 0 {
 		return GlnSearchResult{Error: ErrGLNNotFound}
