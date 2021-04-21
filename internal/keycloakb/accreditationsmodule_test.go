@@ -87,7 +87,7 @@ func TestRevokeAccreditation(t *testing.T) {
 	})
 }
 
-func TestAccreditationsModule(t *testing.T) {
+func TestGetUserAndPrepareAccreditations(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 
