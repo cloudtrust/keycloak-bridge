@@ -143,6 +143,9 @@ components:
           type: array
           items:
             type: string
+        selfRegisterEnabled:
+          type: boolean
+          description: true if self register is enabled for the specified realm
   securitySchemes:
     BasicAuth:
       type: http
