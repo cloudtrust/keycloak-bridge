@@ -1,54 +1,60 @@
 package business
 
 import (
-	"net/http"
-	"net/http/httptest"
 	"testing"
 	"time"
 
 	"github.com/cloudtrust/common-service/log"
-	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
 )
 
 const (
-	psyRegResponse = `
+	psyRegValidResponse = `
 	{"personenCount":1,"maxResultExceeded":false,"personen":[{"personId":508,"vorname":"Marc","name":"El Bichon","berufsbezeichnungId":54002,"sprachIds":[13001],"plzOrtCollection":[{"plz":"1207","ort":"Genève"}],"kantonId":11025,"bewilligungsstatusId":53001,"isMeldungNeunzigTageDienstleisterCurrentYear":false}]}
 	`
-	psyRegActiveNumbers = `WyI3NjAxMDA3NTY0OTI3IiwiNzYwMTAwNzU2NDkyNyIsIjc2MDEwMDc0OTgyMjIiLCI3NjAxMDAzOTEzNTgzIiwiNzYwMTAwNzU2NjkzOCIsIjc2MDEwMDM5NjU0NDUiXQ==`
+	psyRegNotFoundResponse = `{"personenCount":0}`
+	psyRegActiveNumbers    = `WyI3NjAxMDA3NTY0OTI3IiwiNzYwMTAwNzU2NDkyNyIsIjc2MDEwMDc0OTgyMjIiLCI3NjAxMDAzOTEzNTgzIiwiNzYwMTAwNzU2NjkzOCIsIjc2MDEwMDM5NjU0NDUiXQ==`
 )
 
-type psyRegWebServer struct {
-}
+func TestPsyRegSimulatedLookup(t *testing.T) {
+	t.Run("Invalid URL", func(t *testing.T) {
+		var _, err = NewPsyRegLookup("\n", time.Millisecond, nil)
+		assert.NotNil(t, err)
+	})
+	t.Run("Request fails", func(t *testing.T) {
+		var rdl, err = NewPsyRegLookup("http://localhost/", time.Millisecond*500, log.NewNopLogger())
+		assert.Nil(t, err)
 
-func (*psyRegWebServer) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
-	var result = psyRegResponse
-	writer.Header().Add("Content-Type", "application/json")
-	writer.WriteHeader(http.StatusOK)
-	writer.Write([]byte(result))
-}
+		var details = rdl.Lookup("123456789")
+		assert.NotNil(t, details.Error)
+	})
+	t.Run("Valid result", func(t *testing.T) {
+		inWebServer("application/json", map[string]string{"/api/personen/search": psyRegValidResponse}, func(URL string) {
+			var rdl, err = NewPsyRegLookup(URL, time.Second*10, log.NewNopLogger())
+			assert.Nil(t, err)
 
-func TestPsyRegLookup(t *testing.T) {
-	var handler psyRegWebServer
-	r := mux.NewRouter()
-	r.Handle("/api/personen/search", &handler)
+			var details = rdl.Lookup("123456789")
+			assert.Nil(t, details.Error)
+			assert.Equal(t, "Marc", *details.Persons[0].FirstName)
+			assert.Equal(t, "El Bichon", *details.Persons[0].LastName)
+			assert.Equal(t, "1207", *details.Persons[0].ZipCode)
+			assert.Equal(t, "Genève", *details.Persons[0].City)
+		})
+	})
+	t.Run("Not found result", func(t *testing.T) {
+		inWebServer("application/json", map[string]string{"/api/personen/search": psyRegNotFoundResponse}, func(URL string) {
+			var rdl, err = NewPsyRegLookup(URL, time.Second*10, log.NewNopLogger())
+			assert.Nil(t, err)
 
-	ts := httptest.NewServer(r)
-	defer ts.Close()
-
-	var rdl, err = NewPsyRegLookup(ts.URL, time.Second*10, log.NewNopLogger())
-
-	assert.Nil(t, err)
-
-	var details = rdl.Lookup("123456789")
-	assert.Nil(t, details.Error)
-	assert.Equal(t, "Marc", *details.Persons[0].FirstName)
-	assert.Equal(t, "El Bichon", *details.Persons[0].LastName)
-	assert.Equal(t, "1207", *details.Persons[0].ZipCode)
-	assert.Equal(t, "Genève", *details.Persons[0].City)
+			var details = rdl.Lookup("123456789")
+			assert.Equal(t, ErrGLNNotFound, details.Error)
+		})
+	})
 }
 
 func TestPsyRegRealParameters(t *testing.T) {
+	t.Skip()
+
 	var rdl, err = NewPsyRegLookup("https://ws.psyreg.bag.admin.ch", time.Second*10, log.NewNopLogger())
 	assert.Nil(t, err)
 

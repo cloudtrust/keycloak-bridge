@@ -22,19 +22,19 @@ const (
 	naRegReqParams     = `sort=PersonLastName-asc~PersonFirstName-asc&page=1&pageSize=10&group=&filter=`
 )
 
-type NaRegResult struct {
-	Data             []NaRegData `json:"Data"`
+type naRegResult struct {
+	Data             []naRegData `json:"Data"`
 	Total            *int        `json:"Total"`
 	AggregateResults interface{} `json:"AggregateResults"`
 	Errors           interface{} `json:"Errors"`
 }
 
-type NaRegData struct {
-	Addresses                             []NaRegAddress `json:"Addresses"`
+type naRegData struct {
+	Addresses                             []naRegAddress `json:"Addresses"`
 	PersonLastName                        *string        `json:"PersonLastName"`
 	PersonIsAnonymized                    *bool          `json:"PersonIsAnonymized"`
 	PersonID                              *int           `json:"PersonId"`
-	DuplicatePersonId                     interface{}    `json:"DuplicatePersonId"`
+	DuplicatePersonID                     interface{}    `json:"DuplicatePersonId"`
 	DuplicateMode                         *bool          `json:"DuplicateMode"`
 	PersonGlnNumber                       *string        `json:"PersonGlnNumber"`
 	PersonFirstName                       *string        `json:"PersonFirstName"`
@@ -43,7 +43,7 @@ type NaRegData struct {
 	CodeTranslationDiplomaProfessionLabel *string        `json:"CodeTranslationDiplomaProfessionLabel"`
 	CodePersonSexID                       *int           `json:"CodePersonSexId"`
 	CodeLicenceStatusID                   interface{}    `json:"CodeLicenceStatusId"`
-	CodeLicenceProfessionId               interface{}    `json:"CodeLicenceProfessionId"`
+	CodeLicenceProfessionID               interface{}    `json:"CodeLicenceProfessionId"`
 	CodeLicenceLicenceTypeID              interface{}    `json:"CodeLicenceLicenceTypeId"`
 	CodeLicenceCantonID                   *int           `json:"CodeLicenceCantonId"`
 	CodeDiplomaProfessionID               *int           `json:"CodeDiplomaProfessionId"`
@@ -53,7 +53,7 @@ type NaRegData struct {
 	AddressID                             interface{}    `json:"AddressId"`
 }
 
-type NaRegAddress struct {
+type naRegAddress struct {
 	ID     *int    `json:"Id"`
 	Street *string `json:"Street"`
 	Zip    *string `json:"Zip"`
@@ -83,14 +83,14 @@ func NewNaRegLookup(baseURL string, httpTimeout time.Duration, logger keycloakb.
 }
 
 func (l *naReg) Lookup(gln string) GlnSearchResult {
-	if result, err := l.request(gln); err != nil {
+	var result, err = l.request(gln)
+	if err != nil {
 		return GlnSearchResult{Error: err}
-	} else {
-		return l.jsonToDetails(gln, result)
 	}
+	return l.jsonToDetails(gln, result)
 }
 
-func (l *naReg) request(gln string) (NaRegResult, error) {
+func (l *naReg) request(gln string) (naRegResult, error) {
 	var plugins []plugin.Plugin
 	plugins = append(plugins,
 		gurl.Path(l.formPath),
@@ -101,16 +101,16 @@ func (l *naReg) request(gln string) (NaRegResult, error) {
 		headers.Set("Origin", l.origin),
 		headers.Set("Referer", l.referer),
 		body.String(naRegReqParams))
-	var response NaRegResult
-	if _, err := l.client.Post(&response, plugins...); err != nil {
+	var response naRegResult
+	var _, err = l.client.Post(&response, plugins...)
+	if err != nil {
 		l.logger.Warn(context.Background(), "msg", "Can't get response from naReg", "err", err.Error(), "gln", gln)
-		return NaRegResult{}, errors.Wrap(err, keycloak.MsgErrCannotObtain+"."+keycloak.Response)
-	} else {
-		return response, nil
+		return naRegResult{}, errors.Wrap(err, keycloak.MsgErrCannotObtain+"."+keycloak.Response)
 	}
+	return response, nil
 }
 
-func (l *naReg) jsonToDetails(gln string, response NaRegResult) GlnSearchResult {
+func (l *naReg) jsonToDetails(gln string, response naRegResult) GlnSearchResult {
 	if len(response.Data) == 0 {
 		return GlnSearchResult{Error: ErrGLNNotFound}
 	}
