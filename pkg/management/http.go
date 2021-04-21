@@ -43,6 +43,7 @@ const (
 	prmQryMax         = "max"
 	prmQryGroupName   = "groupName"
 	prmQryGenUsername = "generateUsername"
+	prmQryGenNameID   = "generateNameID"
 	prmQryRealm       = "customerRealm"
 	prmQryReminder    = "reminder"
 )
@@ -82,6 +83,7 @@ func decodeManagementRequest(ctx context.Context, req *http.Request) (interface{
 		prmQryMax:         api.RegExpNumber,
 		prmQryGroupName:   api.RegExpName,
 		prmQryGenUsername: msg.RegExpBool,
+		prmQryGenNameID:   msg.RegExpBool,
 		prmQryRealm:       api.RegExpRealmName,
 		prmQryReminder:    msg.RegExpBool,
 	}

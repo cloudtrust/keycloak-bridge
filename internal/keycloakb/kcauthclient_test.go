@@ -52,8 +52,8 @@ func TestGetGroupNamesOfUserSuccess(t *testing.T) {
 	testKeycloakAuthClient(t, func(t *testing.T, mockKeycloak *mock.KeycloakClient, authClient security.KeycloakClient) {
 		var groupname = "name of group"
 		var groups = []kc.GroupRepresentation{
-			kc.GroupRepresentation{Name: nil},
-			kc.GroupRepresentation{Name: &groupname},
+			{Name: nil},
+			{Name: &groupname},
 		}
 		mockKeycloak.EXPECT().GetGroupsOfUser(accessToken, realm, user).Return(groups, nil).Times(1)
 		res, err := authClient.GetGroupNamesOfUser(context.TODO(), accessToken, realm, user)

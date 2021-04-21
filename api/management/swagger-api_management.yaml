@@ -159,6 +159,12 @@ paths:
         required: false
         schema:
           type: boolean
+      - name: generateNameID
+        in: query
+        description: tells if a NameID should be generated
+        required: false
+        schema:
+          type: boolean
       requestBody:
         content:
           application/json:
@@ -1584,6 +1590,9 @@ components:
               revoked:
                 type: boolean
                 description: true if the accreditation has been revoked for any reason (example. personal information updated after accreditation)
+        nameId:
+          type: string
+          description: Used only by getUser
         createdTimestamp:
           type: integer
           format: int64

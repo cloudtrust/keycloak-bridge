@@ -428,7 +428,7 @@ func TestCreateUser(t *testing.T) {
 		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, socialRealmName).Return(configuration.RealmAdminConfiguration{}, anyError)
 		mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any())
 
-		_, err := managementComponent.CreateUser(ctx, socialRealmName, api.UserRepresentation{BusinessID: &businessID}, false)
+		_, err := managementComponent.CreateUser(ctx, socialRealmName, api.UserRepresentation{BusinessID: &businessID}, false, false)
 
 		assert.Equal(t, anyError, err)
 	})
@@ -438,7 +438,7 @@ func TestCreateUser(t *testing.T) {
 		mocks.onboardingModule.EXPECT().CreateUser(ctx, accessToken, realmName, socialRealmName, gomock.Any()).Return("", anyError)
 		mocks.logger.EXPECT().Warn(ctx, "err", gomock.Any())
 
-		_, err := managementComponent.CreateUser(ctx, socialRealmName, api.UserRepresentation{}, false)
+		_, err := managementComponent.CreateUser(ctx, socialRealmName, api.UserRepresentation{}, false, false)
 
 		assert.Equal(t, anyError, err)
 	})
@@ -455,7 +455,7 @@ func TestCreateUser(t *testing.T) {
 			Username: &username,
 		}
 
-		location, err := managementComponent.CreateUser(ctx, targetRealmName, userRep, false)
+		location, err := managementComponent.CreateUser(ctx, targetRealmName, userRep, false, false)
 
 		assert.Nil(t, err)
 		assert.Equal(t, locationURL, location)
@@ -481,7 +481,7 @@ func TestCreateUser(t *testing.T) {
 			Username: &username,
 		}
 
-		location, err := managementComponent.CreateUser(ctx, realmName, userRep, false)
+		location, err := managementComponent.CreateUser(ctx, realmName, userRep, false, false)
 
 		assert.Nil(t, err)
 		assert.Equal(t, locationURL, location)
@@ -526,6 +526,7 @@ func TestCreateUser(t *testing.T) {
 				assert.Equal(t, gender, *kcUserRep.GetAttributeString(constants.AttrbGender))
 				assert.Equal(t, birthDate, *kcUserRep.GetAttributeString(constants.AttrbBirthDate))
 				assert.Equal(t, locale, *kcUserRep.GetAttributeString(constants.AttrbLocale))
+				assert.NotNil(t, kcUserRep.GetAttributeString(constants.AttrbNameID))
 				return locationURL, nil
 			})
 
@@ -571,7 +572,7 @@ func TestCreateUser(t *testing.T) {
 			IDDocumentCountry:    &idDocumentCountry,
 		}
 		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "API_ACCOUNT_CREATION", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
-		location, err := managementComponent.CreateUser(ctx, targetRealmName, userRep, false)
+		location, err := managementComponent.CreateUser(ctx, targetRealmName, userRep, false, true)
 
 		assert.Nil(t, err)
 		assert.Equal(t, locationURL, location)
@@ -588,7 +589,7 @@ func TestCreateUser(t *testing.T) {
 		var userRep = api.UserRepresentation{}
 		mocks.logger.EXPECT().Warn(ctx, "err", "Invalid input")
 
-		location, err := managementComponent.CreateUser(ctx, targetRealmName, userRep, false)
+		location, err := managementComponent.CreateUser(ctx, targetRealmName, userRep, false, false)
 
 		assert.NotNil(t, err)
 		assert.Equal(t, "", location)
@@ -613,7 +614,7 @@ func TestCreateUser(t *testing.T) {
 		}
 		mocks.logger.EXPECT().Warn(ctx, "msg", "Can't store user details in database", "err", "SQL error")
 
-		location, err := managementComponent.CreateUser(ctx, targetRealmName, userRep, false)
+		location, err := managementComponent.CreateUser(ctx, targetRealmName, userRep, false, false)
 
 		assert.NotNil(t, err)
 		assert.Equal(t, "", location)

@@ -153,6 +153,14 @@
   version = "v1.5.2"
 
 [[projects]]
+  digest = "1:dfa0a7a6b64b2ac99259c4e79cc403470a4fa359c41029e0b8be4f419b0a0e5b"
+  name = "github.com/google/uuid"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "bfb86fa49a73e4194d93bea18d7acfe3694438ce"
+  version = "v1.2.0"
+
+[[projects]]
   digest = "1:6078383dbb7405bfa3ce16957f37564e3b716afa29b6eb45ffdb6674624d1e0d"
   name = "github.com/gorilla/mux"
   packages = ["."]
@@ -606,6 +614,7 @@
     "github.com/go-kit/kit/transport/http",
     "github.com/go-sql-driver/mysql",
     "github.com/golang/mock/gomock",
+    "github.com/google/uuid",
     "github.com/gorilla/mux",
     "github.com/lib/pq",
     "github.com/pkg/errors",

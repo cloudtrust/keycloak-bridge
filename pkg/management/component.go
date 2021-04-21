@@ -3,6 +3,7 @@ package management
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"regexp"
 	"strings"
 
@@ -16,6 +17,7 @@ import (
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	kc "github.com/cloudtrust/keycloak-client"
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 )
 
@@ -105,7 +107,7 @@ type Component interface {
 	LockUser(ctx context.Context, realmName, userID string) error
 	UnlockUser(ctx context.Context, realmName, userID string) error
 	GetUsers(ctx context.Context, realmName string, groupIDs []string, paramKV ...string) (api.UsersPageRepresentation, error)
-	CreateUser(ctx context.Context, realmName string, user api.UserRepresentation, generateUsername bool) (string, error)
+	CreateUser(ctx context.Context, realmName string, user api.UserRepresentation, generateUsername bool, generateNameID bool) (string, error)
 	GetUserChecks(ctx context.Context, realmName, userID string) ([]api.UserCheck, error)
 	GetUserAccountStatus(ctx context.Context, realmName, userID string) (map[string]bool, error)
 	GetUserAccountStatusByEmail(ctx context.Context, realmName, email string) (api.UserStatus, error)
@@ -310,11 +312,20 @@ func (c *component) GetRequiredActions(ctx context.Context, realmName string) ([
 	return requiredActionsRep, nil
 }
 
-func (c *component) CreateUser(ctx context.Context, realmName string, user api.UserRepresentation, generateUsername bool) (string, error) {
+func (c *component) CreateUser(ctx context.Context, realmName string, user api.UserRepresentation, generateUsername bool, generateNameID bool) (string, error) {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 	var ctxRealm = ctx.Value(cs.CtContextRealm).(string)
 
 	var userRep = api.ConvertToKCUser(user)
+	if generateNameID {
+		var oneUUID, errUUID = uuid.NewUUID()
+		if errUUID != nil {
+			c.logger.Warn(ctx, "msg", "Can't generate UUID", "err", errUUID.Error())
+			return "", errUUID
+		}
+		var nameID = fmt.Sprintf("G-%s", oneUUID.String())
+		userRep.SetAttributeString(constants.AttrbNameID, nameID)
+	}
 
 	if glnErr := c.checkGLN(ctx, realmName, true, user.BusinessID, &userRep); glnErr != nil {
 		return "", glnErr
