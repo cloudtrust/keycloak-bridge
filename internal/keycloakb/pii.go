@@ -2,7 +2,6 @@ package keycloakb
 
 import (
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
-	"github.com/cloudtrust/keycloak-client"
 	kc "github.com/cloudtrust/keycloak-client"
 )
 
@@ -18,7 +17,7 @@ var (
 )
 
 // ConvertLegacyAttribute ensure that PII are located in the well named attributes
-func ConvertLegacyAttribute(user *keycloak.UserRepresentation) {
+func ConvertLegacyAttribute(user *kc.UserRepresentation) {
 	for attrbSecure, attrbLegacy := range piiAttributes {
 		if value := user.GetAttributeString(attrbSecure); value == nil {
 			if value = user.GetAttributeString(attrbLegacy); value != nil {
