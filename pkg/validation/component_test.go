@@ -284,8 +284,7 @@ func TestCreateCheck(t *testing.T) {
 		check.Status = ptr("FRAUD_SUSPICION_CONFIRMED")
 		mocks.usersDB.EXPECT().CreateCheck(ctx, targetRealm, userID, gomock.Any()).Return(nil)
 		mocks.eventsDB.EXPECT().ReportEvent(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(),
-			gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(),
-			gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+			gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, targetRealm, userID).Return(kc.UserRepresentation{}, nil)
 		mocks.usersDB.EXPECT().GetUserDetails(ctx, targetRealm, userID).Return(dto.DBUser{}, nil)
@@ -314,8 +313,7 @@ func TestCreateCheck(t *testing.T) {
 		mocks.accreditations.EXPECT().GetUserAndPrepareAccreditations(ctx, accessToken, targetRealm, userID, keycloakb.CredsIDNow).Return(kcUser, 1, nil)
 		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, targetRealm, userID, kcUser).Return(nil)
 		mocks.eventsDB.EXPECT().ReportEvent(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(),
-			gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(),
-			gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+			gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 		var err = component.CreateCheck(ctx, targetRealm, userID, check)
 		assert.Nil(t, err)
 	})
