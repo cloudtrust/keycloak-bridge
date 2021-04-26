@@ -129,6 +129,11 @@ func TestConvertToAPIUser(t *testing.T) {
 		kcUser.SetAttribute("accreditations", []string{`{"type":"one","expiryDate":"05.04.2020"}`, `{"type":"two","expiryDate":"05.03.2022"}`, `{`})
 		assert.Len(t, *ConvertToAPIUser(ctx, kcUser, logger).Accreditations, 2)
 	})
+	t.Run("Onboarding completed", func(t *testing.T) {
+		assert.Nil(t, ConvertToAPIUser(ctx, kcUser, logger).OnboardingCompleted)
+		kcUser.SetAttributeBool("onboardingCompleted", true)
+		assert.True(t, *ConvertToAPIUser(ctx, kcUser, logger).OnboardingCompleted)
+	})
 }
 
 func TestConvertToAPIUsersPage(t *testing.T) {
