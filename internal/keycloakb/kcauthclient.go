@@ -35,7 +35,7 @@ func NewKeycloakAuthClient(client KeycloakClient, logger Logger) security.Keyclo
 func (k *kcAuthClient) GetGroupNamesOfUser(ctx context.Context, accessToken string, realmName, userID string) ([]string, error) {
 	grps, err := k.keycloak.GetGroupsOfUser(accessToken, realmName, userID)
 	if err != nil {
-		k.logger.Warn(ctx, "err", err.Error())
+		k.logger.Warn(ctx, "msg", "Can't get group names of user", "err", err.Error(), "realm", realmName, "user", userID)
 		return nil, err
 	}
 
@@ -55,7 +55,7 @@ func (k *kcAuthClient) GetGroupNamesOfUser(ctx context.Context, accessToken stri
 func (k *kcAuthClient) GetGroupName(ctx context.Context, accessToken string, realmName, groupID string) (string, error) {
 	grp, err := k.keycloak.GetGroup(accessToken, realmName, groupID)
 	if err != nil {
-		k.logger.Warn(ctx, "err", err.Error())
+		k.logger.Warn(ctx, "msg", "Can't get group name", "err", err.Error(), "realm", realmName, "group", groupID)
 		return "", err
 	}
 
