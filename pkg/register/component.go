@@ -120,7 +120,7 @@ func (c *component) GetConfiguration(ctx context.Context, realmName string) (api
 		Mode:                             realmAdminConf.Mode,
 		Theme:                            realmAdminConf.Theme,
 		SupportedLocales:                 supportedLocales,
-		SelfRegisterEnabled: 	          realmAdminConf.SelfRegisterEnabled,
+		SelfRegisterEnabled:              realmAdminConf.SelfRegisterEnabled,
 	}, nil
 }
 
@@ -150,7 +150,7 @@ func (c *component) RegisterUser(ctx context.Context, targetRealmName string, cu
 		return "", errorhandler.CreateEndpointNotEnabled(constants.MsgErrNotConfigured)
 	}
 
-	if realmAdminConf.ShowGlnEditing != nil && *realmAdminConf.ShowGlnEditing {
+	if realmAdminConf.ShowGlnEditing != nil && *realmAdminConf.ShowGlnEditing && user.BusinessID != nil {
 		if glnErr := c.glnVerifier.ValidateGLN(*user.FirstName, *user.LastName, *user.BusinessID); glnErr != nil {
 			return "", glnErr
 		}
@@ -174,6 +174,10 @@ func (c *component) RegisterUser(ctx context.Context, targetRealmName string, cu
 		// Error if user is already onboarded
 		if alreadyOnboarded {
 			return "", errorhandler.CreateBadRequestError(constants.MsgErrAlreadyOnboardedUser)
+		}
+
+		if attrb := kcUser.GetAttributeString(constants.AttrbSource); attrb == nil || *attrb != "register" {
+			return "", errorhandler.CreateBadRequestError(constants.MsgErrCantRegister)
 		}
 
 		// Else delete this not fully onboarded user to be able to perform a fully new onboarding
@@ -212,6 +216,7 @@ func (c *component) RegisterUser(ctx context.Context, targetRealmName string, cu
 
 func (c *component) createUser(ctx context.Context, accessToken string, realmName string, user apiregister.UserRepresentation, groupNames []string) (string, string, error) {
 	var kcUser = user.ConvertToKeycloak()
+	kcUser.SetAttributeString(constants.AttrbSource, "register")
 
 	// Set groups
 	groupIDs, err := c.convertGroupNamesToGroupIDs(accessToken, realmName, groupNames)
