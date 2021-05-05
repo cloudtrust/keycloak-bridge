@@ -51,6 +51,7 @@ type KeycloakAccountClient interface {
 // KeycloakTechnicalClient interface exposes methods called by a technical account
 type KeycloakTechnicalClient interface {
 	GetRealm(ctx context.Context, realmName string) (kc.RealmRepresentation, error)
+	LogoutAllSessions(ctx context.Context, realmName string, userID string) error
 }
 
 // GlnVerifier interface allows to check validity of a GLN
@@ -127,7 +128,7 @@ func (c *component) UpdatePassword(ctx context.Context, currentPassword, newPass
 
 	_, err := c.keycloakAccountClient.UpdatePassword(accessToken, realm, currentPassword, newPassword, confirmPassword)
 	if err != nil {
-		c.logger.Warn(ctx, "err", err.Error())
+		c.logger.Warn(ctx, "msg", "Can't update password", "err", err.Error())
 		return err
 	}
 
@@ -139,6 +140,10 @@ func (c *component) UpdatePassword(ctx context.Context, currentPassword, newPass
 
 	//store the API call into the DB
 	c.reportEvent(ctx, "PASSWORD_RESET", database.CtEventRealmName, realm, database.CtEventUserID, userID, database.CtEventUsername, username)
+
+	if err = c.keycloakTechClient.LogoutAllSessions(ctx, realm, userID); err != nil {
+		c.logger.Warn(ctx, "msg", "User updated his/her password but logout of sessions failed", "err", err.Error(), "realm", realm, "user", userID)
+	}
 
 	return nil
 }
@@ -152,14 +157,14 @@ func (c *component) GetAccount(ctx context.Context) (api.AccountRepresentation, 
 	userKc, err := c.keycloakAccountClient.GetAccount(accessToken, realm)
 
 	if err != nil {
-		c.logger.Warn(ctx, "err", err.Error())
+		c.logger.Warn(ctx, "msg", "Can't get account", "err", err.Error())
 		return userRep, err
 	}
 	keycloakb.ConvertLegacyAttribute(&userKc)
 
 	dbUser, err := c.usersDBModule.GetUserDetails(ctx, realm, userID)
 	if err != nil {
-		c.logger.Warn(ctx, "err", err.Error())
+		c.logger.Warn(ctx, "msg", "Can't get user details", "err", err.Error())
 		return userRep, err
 	}
 
@@ -195,7 +200,7 @@ func (c *component) UpdateAccount(ctx context.Context, user api.UpdatableAccount
 	// get the "old" user representation from Keycloak
 	oldUserKc, err := c.keycloakAccountClient.GetAccount(accessToken, realm)
 	if err != nil {
-		c.logger.Warn(ctx, "err", err.Error())
+		c.logger.Warn(ctx, "msg", "Can't get account", "err", err.Error())
 		return err
 	}
 	keycloakb.ConvertLegacyAttribute(&oldUserKc)
@@ -203,7 +208,7 @@ func (c *component) UpdateAccount(ctx context.Context, user api.UpdatableAccount
 	// get the "old" user from DB
 	oldUser, err := c.usersDBModule.GetUserDetails(ctx, realm, userID)
 	if err != nil {
-		c.logger.Warn(ctx, "err", err.Error())
+		c.logger.Warn(ctx, "msg", "Can't get user details", "err", err.Error())
 		return err
 	}
 
@@ -288,7 +293,7 @@ func (c *component) UpdateAccount(ctx context.Context, user api.UpdatableAccount
 	// Update keycloak account
 	err = c.keycloakAccountClient.UpdateAccount(accessToken, realm, userRep)
 	if err != nil {
-		c.logger.Warn(ctx, "err", err.Error())
+		c.logger.Warn(ctx, "msg", "Can't update account", "err", err.Error())
 		return err
 	}
 
@@ -299,7 +304,7 @@ func (c *component) UpdateAccount(ctx context.Context, user api.UpdatableAccount
 		err = c.executeActions(ctx, actions)
 		// Error occured but account is updated and event reported... should we return an error here ?
 		if err != nil {
-			c.logger.Warn(ctx, "err", err.Error())
+			c.logger.Warn(ctx, "msg", "Can't execute actions", "err", err.Error())
 			return err
 		}
 	}
@@ -308,7 +313,7 @@ func (c *component) UpdateAccount(ctx context.Context, user api.UpdatableAccount
 
 	err = c.usersDBModule.StoreOrUpdateUserDetails(ctx, realm, dbUser)
 	if err != nil {
-		c.logger.Warn(ctx, "err", err.Error())
+		c.logger.Warn(ctx, "msg", "Can't update user details", "err", err.Error())
 		return err
 	}
 
@@ -416,7 +421,7 @@ func (c *component) DeleteAccount(ctx context.Context) error {
 	err := c.keycloakAccountClient.DeleteAccount(accessToken, realm)
 
 	if err != nil {
-		c.logger.Warn(ctx, "err", err.Error())
+		c.logger.Warn(ctx, "msg", "Can't delete account", "err", err.Error())
 		return err
 	}
 
@@ -433,7 +438,7 @@ func (c *component) GetCredentials(ctx context.Context) ([]api.CredentialReprese
 	credentialsKc, err := c.keycloakAccountClient.GetCredentials(accessToken, currentRealm)
 
 	if err != nil {
-		c.logger.Warn(ctx, "err", err.Error())
+		c.logger.Warn(ctx, "msg", "Can't get credentials", "err", err.Error())
 		return nil, err
 	}
 
@@ -453,7 +458,7 @@ func (c *component) GetCredentialRegistrators(ctx context.Context) ([]string, er
 	credentialTypes, err := c.keycloakAccountClient.GetCredentialRegistrators(accessToken, currentRealm)
 
 	if err != nil {
-		c.logger.Warn(ctx, "err", err.Error())
+		c.logger.Warn(ctx, "msg", "Can't get credential registrators", "err", err.Error())
 		return nil, err
 	}
 
@@ -469,7 +474,7 @@ func (c *component) UpdateLabelCredential(ctx context.Context, credentialID stri
 	err := c.keycloakAccountClient.UpdateLabelCredential(accessToken, currentRealm, credentialID, label)
 
 	if err != nil {
-		c.logger.Warn(ctx, "err", err.Error())
+		c.logger.Warn(ctx, "msg", "Can't update credential label", "err", err.Error())
 		return err
 	}
 
@@ -496,10 +501,8 @@ func (c *component) DeleteCredential(ctx context.Context, credentialID string) e
 		return err
 	}
 
-	err := c.keycloakAccountClient.DeleteCredential(accessToken, currentRealm, credentialID)
-
-	if err != nil {
-		c.logger.Warn(ctx, "err", err.Error())
+	if err := c.keycloakAccountClient.DeleteCredential(accessToken, currentRealm, credentialID); err != nil {
+		c.logger.Warn(ctx, "msg", "Can't delete credential", "err", err.Error())
 		return err
 	}
 
@@ -525,7 +528,7 @@ func (c *component) MoveCredential(ctx context.Context, credentialID string, pre
 	}
 
 	if err != nil {
-		c.logger.Warn(ctx, "err", err.Error())
+		c.logger.Warn(ctx, "msg", "Can't move credential", "err", err.Error())
 		return err
 	}
 
@@ -604,7 +607,7 @@ func (c *component) executeActions(ctx context.Context, actions []string) error 
 	var err = c.keycloakAccountClient.ExecuteActionsEmail(accessToken, currentRealm, actions)
 
 	if err != nil {
-		c.logger.Warn(ctx, "err", err.Error())
+		c.logger.Warn(ctx, "msg", "Can't execute actions email", "err", err.Error())
 		return err
 	}
 

@@ -10,12 +10,12 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:43f75a87077db1adcec941cf562c78435a7703024fe991d6b2420b26d5c83f14"
+  digest = "1:83e6c5598ada17937cccac65bd958911d4207622b998b573824a54c3309f6cde"
   name = "github.com/certifi/gocertifi"
   packages = ["."]
   pruneopts = "UT"
-  revision = "2c3bb06c6054e133430498817d26ac003d08f020"
-  version = "2020.09.22"
+  revision = "83314bf6d27c99d871fe836cd823f6da424d5149"
+  version = "2021.04.29"
 
 [[projects]]
   digest = "1:4e292001e5087f92bb0deb4f14c26d2c5e823bbf97abf9a87d1533790034f144"
@@ -51,7 +51,7 @@
   version = "v1.0.2"
 
 [[projects]]
-  digest = "1:580872858354dfeddbebabccbba2dc120f9b074a2d9f8b53410627a4bfc0381a"
+  digest = "1:8ff6947eaf5b0ad2a67147e5532aa8594fbb6a8b8a4da66c6fcb48b3e78a4631"
   name = "github.com/cloudtrust/keycloak-client"
   packages = [
     ".",
@@ -59,8 +59,8 @@
     "toolbox",
   ]
   pruneopts = "UT"
-  revision = "6fbfbe6848ac31099fe1c37546f85821c8ee3ceb"
-  version = "v2.3.8"
+  revision = "09b5275639184070d279805c294de10005847a83"
+  version = "2.3.9"
 
 [[projects]]
   digest = "1:910c5b111ca13127693df80a59be2c952ad97313626116c0c9895e7b588f2a29"
@@ -196,11 +196,11 @@
     "pkg/escape",
   ]
   pruneopts = "UT"
-  revision = "bc8ec4384eed25436d31045f974bf39f3310fa3c"
-  version = "v1.8.4"
+  revision = "3d16c6318cf5c9938a53d6089cf0a71cf1c600df"
+  version = "v1.8.5"
 
 [[projects]]
-  digest = "1:6ba33f676b07a9af41146dc8350a1505e3749e7363581e8f94c9e11608720a2b"
+  digest = "1:c4a7e9f8fb3fc5f70c5a330109abae477b49d2d8c7691f5e387ef96168e56a4d"
   name = "github.com/lib/pq"
   packages = [
     ".",
@@ -208,8 +208,8 @@
     "scram",
   ]
   pruneopts = "UT"
-  revision = "072e83d238c297c71cab11154695af301010031e"
-  version = "v1.10.0"
+  revision = "caa87158f59995a15e2057d80d586391f51333f2"
+  version = "v1.10.1"
 
 [[projects]]
   digest = "1:03d538738f78db8960b276c8cc1b90f53809290831a8daea2ceeaeccccbc585a"
@@ -350,7 +350,7 @@
   version = "v1.2.0"
 
 [[projects]]
-  digest = "1:a3760dea318b611271ecd4668ee1d758093202157239308097152f9999d0cb0f"
+  digest = "1:8c8fbfb7df93aefc582f476b2eaf6f548f67e68e507d424e02c55701b6302fc7"
   name = "github.com/uber/jaeger-client-go"
   packages = [
     ".",
@@ -373,8 +373,8 @@
     "utils",
   ]
   pruneopts = "UT"
-  revision = "b63eeee6330b83c4240a56ed808f9ea4b42359b6"
-  version = "v2.26.0"
+  revision = "049c226d206a6d9e1c0d47c93991275d0698ee9e"
+  version = "v2.28.0"
 
 [[projects]]
   digest = "1:d7b6fd08442b8d26882fae2c859a0d63962d72a533476a217d46743ed30cb803"
@@ -402,11 +402,11 @@
     "pbkdf2",
   ]
   pruneopts = "UT"
-  revision = "4f45737414dc36c02b62c3adac99418bd1fa70db"
+  revision = "e9a32991a82ef02a1e74f495dcc0785239782bfe"
 
 [[projects]]
   branch = "master"
-  digest = "1:ce1726ac3d56d1c4b8964f482bb1ba1af29f9e6cec05b555bdd72c4602581933"
+  digest = "1:fb56af3d31a10edad3067b488ec26f86bfed2459ae67b2608a613416e1d9f6e5"
   name = "golang.org/x/net"
   packages = [
     "context",
@@ -415,7 +415,7 @@
     "publicsuffix",
   ]
   pruneopts = "UT"
-  revision = "e915ea6b2b7d7f3955e2d6d432eaebd7cf5921e7"
+  revision = "0287a6fb4125c2b83c66560a2677a4ee69a13903"
 
 [[projects]]
   branch = "master"
@@ -426,18 +426,18 @@
     "internal",
   ]
   pruneopts = "UT"
-  revision = "5e61552d6c78ccf28c6977693409db7f86c17379"
+  revision = "81ed05c6b58c5509b83ac75450e38d97242e7168"
 
 [[projects]]
   branch = "master"
-  digest = "1:eb98260aa2b1cbfea27b53c1c1c7e79418c03f84ab7a05059d1079c05594a8b9"
+  digest = "1:c8ccd02640d94ea3e3f44a1f9e8cbe5c6fcbe95d60c8dfc41df666801a8bebc7"
   name = "golang.org/x/sys"
   packages = [
     "internal/unsafeheader",
     "unix",
   ]
   pruneopts = "UT"
-  revision = "66c3f260301cac915959651293c11c8207d331e8"
+  revision = "0981d6026fa6241c75c6949829b5bd7a2574ad55"
 
 [[projects]]
   digest = "1:d343bfab7897dd73ee9bf8172d1fc83d935b7512067856ed596aaf57a9345f3c"

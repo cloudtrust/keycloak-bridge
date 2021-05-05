@@ -13,7 +13,7 @@ var notMFATypes = map[string]bool{"password": true, "password-history": true}
 func CheckRemovableMFA(ctx context.Context, credentialID string, getCredentials func() ([]kc.CredentialRepresentation, error), logger Logger) error {
 	credentialsKc, err := getCredentials()
 	if err != nil {
-		logger.Warn(ctx, "err", err.Error())
+		logger.Warn(ctx, "msg", "Can't get credentials", "err", err.Error())
 		return err
 	}
 	var found bool

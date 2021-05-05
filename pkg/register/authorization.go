@@ -35,13 +35,13 @@ func MakeHTTPRecaptchaValidationMW(recaptchaURL string, recaptchaSecret string, 
 			var ctx = context.TODO()
 
 			if recaptchaToken == "" {
-				logger.Info(ctx, "Authorization Error", "Missing Authorization header")
+				logger.Info(ctx, "msg", "Missing Authorization header")
 				httpErrorHandler(ctx, http.StatusForbidden, errors.New(errorhandler.MsgErrMissingParam+"."+errorhandler.AuthHeader), w)
 				return
 			}
 
 			if match, _ := regexp.MatchString(regexpRecaptchaToken, recaptchaToken); !match {
-				logger.Info(ctx, "Authorization Error", "Invalid recaptcha token")
+				logger.Info(ctx, "msg", "Invalid recaptcha token")
 				httpErrorHandler(ctx, http.StatusForbidden, errors.New(errorhandler.MsgErrMissingParam+"."+errorhandler.BasicToken), w)
 				return
 			}

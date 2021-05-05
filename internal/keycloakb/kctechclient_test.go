@@ -13,14 +13,14 @@ import (
 
 type keycloakTechnicalClientMocks struct {
 	tokenProvider *mock.OidcTokenProvider
-	kcClient      *mock.KeycloakClient
+	kcClient      *mock.KeycloakForTechnicalClient
 	logger        *mock.Logger
 }
 
 func createKcTechnicalClientMocks(ctrl *gomock.Controller) *keycloakTechnicalClientMocks {
 	return &keycloakTechnicalClientMocks{
 		tokenProvider: mock.NewOidcTokenProvider(ctrl),
-		kcClient:      mock.NewKeycloakClient(ctrl),
+		kcClient:      mock.NewKeycloakForTechnicalClient(ctrl),
 		logger:        mock.NewLogger(ctrl),
 	}
 }
@@ -53,6 +53,35 @@ func TestGetRealm(t *testing.T) {
 		mocks.kcClient.EXPECT().GetRealm(accessToken, realm).Return(kc.RealmRepresentation{}, nil)
 
 		var _, err = kcTechClient.GetRealm(ctx, realm)
+		assert.Nil(t, err)
+	})
+}
+
+func TestLogoutAllSessions(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mocks = createKcTechnicalClientMocks(mockCtrl)
+	var kcTechClient = createKcTechnicalClient(mocks)
+
+	var accessToken = "access-token"
+	var anyError = errors.New("any error")
+	var userID = "user-id"
+	var ctx = context.TODO()
+
+	mocks.logger.EXPECT().Error(gomock.Any(), gomock.Any()).AnyTimes()
+
+	t.Run("Token provider fails", func(t *testing.T) {
+		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return("", anyError)
+
+		var err = kcTechClient.LogoutAllSessions(ctx, realm, userID)
+		assert.Equal(t, anyError, err)
+	})
+	t.Run("Success", func(t *testing.T) {
+		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
+		mocks.kcClient.EXPECT().LogoutAllSessions(accessToken, realm, userID).Return(nil)
+
+		var err = kcTechClient.LogoutAllSessions(ctx, realm, userID)
 		assert.Nil(t, err)
 	})
 }

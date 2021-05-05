@@ -85,6 +85,7 @@ func TestUpdatePassword(t *testing.T) {
 	})
 
 	t.Run("Update password: success", func(t *testing.T) {
+		anyError := errors.New("any error")
 		oldPasswd := "prev10u5"
 		newPasswd := "a p@55w0rd"
 		confirmPasswd := "a p@55w0rd"
@@ -92,6 +93,7 @@ func TestUpdatePassword(t *testing.T) {
 		mocks.eventDBModule.EXPECT().ReportEvent(gomock.Any(), "PASSWORD_RESET", "self-service", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 		mocks.keycloakAccountClient.EXPECT().SendEmail(accessToken, realm, emailTemplateUpdatedPassword, emailSubjectUpdatedPassword, nil, gomock.Any()).Return(nil)
 		mocks.eventDBModule.EXPECT().ReportEvent(gomock.Any(), "UPDATED_PWD_EMAIL_SENT", "self-service", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+		mocks.keycloakTechnicalClient.EXPECT().LogoutAllSessions(gomock.Any(), realm, userID).Return(anyError)
 
 		err := component.UpdatePassword(ctx, oldPasswd, newPasswd, confirmPasswd)
 
@@ -133,6 +135,7 @@ func TestUpdatePasswordWrongPwd(t *testing.T) {
 		mocks.keycloakAccountClient.EXPECT().UpdatePassword(accessToken, realm, oldPasswd, newPasswd, newPasswd).Return("", nil)
 		mocks.eventDBModule.EXPECT().ReportEvent(gomock.Any(), "PASSWORD_RESET", "self-service", database.CtEventRealmName, realm, database.CtEventUserID, userID, database.CtEventUsername, username).Return(errors.New("error"))
 		mocks.keycloakAccountClient.EXPECT().SendEmail(accessToken, realm, emailTemplateUpdatedPassword, emailSubjectUpdatedPassword, nil, gomock.Any()).Return(errors.New(""))
+		mocks.keycloakTechnicalClient.EXPECT().LogoutAllSessions(gomock.Any(), realm, userID)
 
 		assert.Nil(t, component.UpdatePassword(ctx, oldPasswd, newPasswd, newPasswd))
 	})
