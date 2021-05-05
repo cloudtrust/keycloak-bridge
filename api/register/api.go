@@ -58,6 +58,7 @@ const (
 	prmUserIDDocumentExpiration = "user_idDocExpiration"
 	prmUserIDDocumentCountry    = "user_idDocCountry"
 	prmUserLocale               = "user_locale"
+	prmUserBusinessID           = "user_businessId"
 
 	regExpGender            = constants.RegExpGender
 	regExpFirstName         = constants.RegExpNameSpecialChars
@@ -130,5 +131,6 @@ func (u *UserRepresentation) Validate(allFieldsMandatory bool) error {
 		ValidateParameterDateMultipleLayout(prmUserIDDocumentExpiration, u.IDDocumentExpiration, constants.SupportedDateLayouts, allFieldsMandatory).
 		ValidateParameterRegExp(prmUserIDDocumentCountry, u.IDDocumentCountry, regExpIDDocumentCountry, allFieldsMandatory).
 		ValidateParameterRegExp(prmUserLocale, u.Locale, regExpLocale, true).
+		ValidateParameterRegExp(prmUserBusinessID, u.BusinessID, constants.RegExpBusinessID, false).
 		Status()
 }
