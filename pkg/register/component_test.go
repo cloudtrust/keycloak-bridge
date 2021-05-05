@@ -217,6 +217,17 @@ func TestRegisterUser(t *testing.T) {
 		assert.Equal(t, "400 "+keycloakb.ComponentName+"."+constants.MsgErrAlreadyOnboardedUser, err.Error())
 	})
 
+	t.Run("Can't re-register user created by a third party", func(t *testing.T) {
+		reqResult.Users[0].SetAttributeString(constants.AttrbSource, "third-party")
+		mocks.keycloakClient.EXPECT().GetUsers(accessToken, targetRealmName, targetRealmName, "email", email).Return(reqResult, nil)
+		mocks.onboardingModule.EXPECT().OnboardingAlreadyCompleted(gomock.Any()).Return(false, nil)
+
+		var _, err = component.RegisterUser(ctx, targetRealmName, customerRealmName, user)
+		assert.NotNil(t, err)
+		assert.Equal(t, "400 "+keycloakb.ComponentName+"."+constants.MsgErrCantRegister, err.Error())
+	})
+	reqResult.Users[0].SetAttributeString(constants.AttrbSource, "register")
+
 	t.Run("Failure to delete user with requested email address in KC", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetUsers(accessToken, targetRealmName, targetRealmName, "email", email).Return(reqResult, nil)
 		mocks.onboardingModule.EXPECT().OnboardingAlreadyCompleted(gomock.Any()).Return(false, nil)

@@ -22,6 +22,7 @@ const (
 	AttrbPhoneNumberVerified = kc.AttributeKey("phoneNumberVerified")
 	AttrbSmsSent             = kc.AttributeKey("smsSent")
 	AttrbSmsAttempts         = kc.AttributeKey("smsAttempts")
+	AttrbSource              = kc.AttributeKey("src")
 	AttrbTrustIDAuthToken    = kc.AttributeKey("trustIDAuthToken")
 	AttrbTrustIDGroups       = kc.AttributeKey("trustIDGroups")
 	AttrbOnboardingCompleted = kc.AttributeKey("onboardingCompleted")

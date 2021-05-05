@@ -13,6 +13,7 @@ const (
 	MsgErrCannotSaveConfigInDB = "cannotSaveConfigInDB"
 	MsgErrCannotUpdate         = "cannotUpdate"
 	MsgErrAlreadyOnboardedUser = "alreadyOnboardedUser"
+	MsgErrCantRegister         = "cantRegister"
 	MsgErrUnknown              = "unknowError"
 	MsgErrNotConfigured        = "notConfigured"
 	MsgErrUnverified           = "unverifiedFlag"

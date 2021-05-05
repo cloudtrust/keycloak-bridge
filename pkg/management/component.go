@@ -317,6 +317,8 @@ func (c *component) CreateUser(ctx context.Context, realmName string, user api.U
 	var ctxRealm = ctx.Value(cs.CtContextRealm).(string)
 
 	var userRep = api.ConvertToKCUser(user)
+	userRep.SetAttributeString(constants.AttrbSource, "api")
+
 	if generateNameID {
 		var oneUUID, errUUID = uuid.NewUUID()
 		if errUUID != nil {

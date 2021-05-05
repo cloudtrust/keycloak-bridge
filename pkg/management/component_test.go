@@ -443,9 +443,12 @@ func TestCreateUser(t *testing.T) {
 		assert.Equal(t, anyError, err)
 	})
 
+	var attrbs = make(kc.Attributes)
+	attrbs[constants.AttrbSource] = []string{"api"}
 	t.Run("Create with minimum properties", func(t *testing.T) {
 		var kcUserRep = kc.UserRepresentation{
-			Username: &username,
+			Username:   &username,
+			Attributes: &attrbs,
 		}
 
 		mocks.keycloakClient.EXPECT().CreateUser(accessToken, realmName, targetRealmName, kcUserRep).Return(locationURL, nil)
@@ -463,7 +466,8 @@ func TestCreateUser(t *testing.T) {
 
 	t.Run("Create with minimum properties and having error when storing the event", func(t *testing.T) {
 		var kcUserRep = kc.UserRepresentation{
-			Username: &username,
+			Username:   &username,
+			Attributes: &attrbs,
 		}
 
 		mocks.keycloakClient.EXPECT().CreateUser(accessToken, realmName, realmName, kcUserRep).Return(locationURL, nil)
@@ -579,7 +583,9 @@ func TestCreateUser(t *testing.T) {
 	})
 
 	t.Run("Error from KC client", func(t *testing.T) {
-		var kcUserRep = kc.UserRepresentation{}
+		var kcUserRep = kc.UserRepresentation{
+			Attributes: &attrbs,
+		}
 
 		mocks.keycloakClient.EXPECT().CreateUser(accessToken, realmName, targetRealmName, kcUserRep).Return("", fmt.Errorf("Invalid input"))
 
