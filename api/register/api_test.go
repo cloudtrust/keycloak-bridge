@@ -80,7 +80,7 @@ func TestValidateUserRepresentation(t *testing.T) {
 
 	t.Run("Invalid users", func(t *testing.T) {
 		var users []UserRepresentation
-		for i := 0; i < 24; i++ {
+		for i := 0; i < 25; i++ {
 			users = append(users, createValidUser())
 		}
 		// invalid values
@@ -97,18 +97,19 @@ func TestValidateUserRepresentation(t *testing.T) {
 		users[10].IDDocumentExpiration = &invalidDate
 		users[11].IDDocumentCountry = &invalidCountry
 		users[12].Locale = &invalidLocale
+		users[13].BusinessID = &empty
 		// mandatory parameters
-		users[13].Gender = nil
-		users[14].FirstName = nil
-		users[15].LastName = nil
-		users[16].Email = nil
-		users[17].PhoneNumber = nil
-		users[18].BirthDate = nil
-		users[19].BirthLocation = nil
-		users[20].IDDocumentType = nil
-		users[21].IDDocumentNumber = nil
-		users[22].IDDocumentExpiration = nil
-		users[23].Locale = nil
+		users[14].Gender = nil
+		users[15].FirstName = nil
+		users[16].LastName = nil
+		users[17].Email = nil
+		users[18].PhoneNumber = nil
+		users[19].BirthDate = nil
+		users[20].BirthLocation = nil
+		users[21].IDDocumentType = nil
+		users[22].IDDocumentNumber = nil
+		users[23].IDDocumentExpiration = nil
+		users[24].Locale = nil
 
 		for idx, aUser := range users {
 			assert.NotNil(t, aUser.Validate(true), "User is expected to be invalid. Test #%d failed with user %s", idx, aUser.UserToJSON())
