@@ -280,7 +280,10 @@ func (c *component) CreateCheck(ctx context.Context, realmName string, userID st
 		return err
 	}
 
+	var eventType = "VALIDATION_STORE_CHECK_INVALID"
 	if check.IsIdentificationSuccessful() {
+		eventType = "VALIDATION_STORE_CHECK_SUCCESS"
+
 		accessToken, err = c.getAccessToken(validationCtx)
 		if err != nil {
 			c.logger.Warn(ctx, "msg", "CreateCheck: can't get accessToken for technical user", "err", err.Error())
@@ -300,8 +303,7 @@ func (c *component) CreateCheck(ctx context.Context, realmName string, userID st
 	}
 
 	// Event
-	c.reportEvent(ctx, "VALIDATION_STORE_CHECK", database.CtEventRealmName, realmName,
-		database.CtEventUserID, userID, "operator", *check.Operator, "status", *check.Status)
+	c.reportEvent(ctx, eventType, database.CtEventRealmName, realmName, database.CtEventUserID, userID, "operator", *check.Operator)
 
 	c.archiveUser(validationCtx, []dto.DBCheck{dbCheck})
 

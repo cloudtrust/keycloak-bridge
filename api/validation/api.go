@@ -87,8 +87,6 @@ var (
 		"SUCCESS":                   true,
 		"SUCCESS_DATA_CHANGED":      true,
 		"FRAUD_SUSPICION_CONFIRMED": true,
-		"REVIEW_PENDING":            true,
-		"FRAUD_SUSPICION_PENDING":   true,
 	}
 	successStatus = map[string]bool{
 		"SUCCESS":              true,
