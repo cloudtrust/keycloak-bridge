@@ -1593,6 +1593,9 @@ components:
         nameId:
           type: string
           description: Used only by getUser
+        onboardingCompleted:
+          type: boolean
+          description: Used only by getUser. Tells if onboarding is completed
         createdTimestamp:
           type: integer
           format: int64
