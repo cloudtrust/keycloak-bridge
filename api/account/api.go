@@ -195,16 +195,16 @@ func ConvertToKCUser(user UpdatableAccountRepresentation) kc.UserRepresentation 
 // Validate is a validator for AccountRepresentation
 func (user AccountRepresentation) Validate() error {
 	return validation.NewParameterValidator().
-		ValidateParameterRegExp(constants.Username, user.Username, RegExpUsername, false).
-		ValidateParameterRegExp(constants.Email, user.Email, RegExpEmail, false).
-		ValidateParameterRegExp(constants.Firstname, user.FirstName, RegExpFirstName, false).
-		ValidateParameterRegExp(constants.Lastname, user.LastName, RegExpLastName, false).
-		ValidateParameterRegExp(constants.PhoneNumber, user.PhoneNumber, RegExpPhoneNumber, false).
-		ValidateParameterRegExp(constants.Locale, user.Locale, RegExpLocale, false).
+		ValidateParameterRegExp(constants.Username, user.Username, constants.RegExpUsername, false).
+		ValidateParameterRegExp(constants.Email, user.Email, constants.RegExpEmail, false).
+		ValidateParameterRegExp(constants.Firstname, user.FirstName, constants.RegExpFirstName, false).
+		ValidateParameterRegExp(constants.Lastname, user.LastName, constants.RegExpLastName, false).
+		ValidateParameterRegExp(constants.PhoneNumber, user.PhoneNumber, constants.RegExpPhoneNumber, false).
+		ValidateParameterRegExp(constants.Locale, user.Locale, constants.RegExpLocale, false).
 		ValidateParameterRegExp(constants.BusinessID, user.BusinessID, constants.RegExpBusinessID, false).
 		ValidateParameterRegExp(constants.Gender, user.Gender, constants.RegExpGender, false).
 		ValidateParameterDateMultipleLayout(constants.Birthdate, user.BirthDate, constants.SupportedDateLayouts, false).
-		ValidateParameterRegExp(constants.BirthLocation, user.BirthLocation, constants.RegExpNameSpecialChars, false).
+		ValidateParameterRegExp(constants.BirthLocation, user.BirthLocation, constants.RegExpBirthLocation, false).
 		ValidateParameterRegExp(constants.Nationality, user.Nationality, constants.RegExpCountryCode, false).
 		ValidateParameterIn(constants.IDDocumentType, user.IDDocumentType, constants.AllowedDocumentTypes, false).
 		ValidateParameterRegExp(constants.IDDocumentNumber, user.IDDocumentNumber, constants.RegExpIDDocumentNumber, false).
@@ -217,16 +217,16 @@ func (user AccountRepresentation) Validate() error {
 // Validate is a validator for UpdatableAccountRepresentation
 func (user UpdatableAccountRepresentation) Validate() error {
 	return validation.NewParameterValidator().
-		ValidateParameterRegExp(constants.Username, user.Username, RegExpUsername, false).
-		ValidateParameterRegExp(constants.Email, user.Email, RegExpEmail, false).
-		ValidateParameterRegExp(constants.Firstname, user.FirstName, RegExpFirstName, false).
-		ValidateParameterRegExp(constants.Lastname, user.LastName, RegExpLastName, false).
-		ValidateParameterRegExp(constants.PhoneNumber, user.PhoneNumber, RegExpPhoneNumber, false).
-		ValidateParameterRegExp(constants.Locale, user.Locale, RegExpLocale, false).
+		ValidateParameterRegExp(constants.Username, user.Username, constants.RegExpUsername, false).
+		ValidateParameterRegExp(constants.Email, user.Email, constants.RegExpEmail, false).
+		ValidateParameterRegExp(constants.Firstname, user.FirstName, constants.RegExpFirstName, false).
+		ValidateParameterRegExp(constants.Lastname, user.LastName, constants.RegExpLastName, false).
+		ValidateParameterRegExp(constants.PhoneNumber, user.PhoneNumber, constants.RegExpPhoneNumber, false).
+		ValidateParameterRegExp(constants.Locale, user.Locale, constants.RegExpLocale, false).
 		ValidateParameterRegExp(constants.BusinessID, user.BusinessID.Value, constants.RegExpBusinessID, false).
 		ValidateParameterRegExp(constants.Gender, user.Gender, constants.RegExpGender, false).
 		ValidateParameterDateMultipleLayout(constants.Birthdate, user.BirthDate, constants.SupportedDateLayouts, false).
-		ValidateParameterRegExp(constants.BirthLocation, user.BirthLocation, constants.RegExpNameSpecialChars, false).
+		ValidateParameterRegExp(constants.BirthLocation, user.BirthLocation, constants.RegExpBirthLocation, false).
 		ValidateParameterRegExp(constants.Nationality, user.Nationality, constants.RegExpCountryCode, false).
 		ValidateParameterIn(constants.IDDocumentType, user.IDDocumentType, constants.AllowedDocumentTypes, false).
 		ValidateParameterRegExp(constants.IDDocumentNumber, user.IDDocumentNumber, constants.RegExpIDDocumentNumber, false).
@@ -239,16 +239,16 @@ func (user UpdatableAccountRepresentation) Validate() error {
 // Validate is a validator for UpdatePasswordBody
 func (updatePwd UpdatePasswordBody) Validate() error {
 	return validation.NewParameterValidator().
-		ValidateParameterRegExp(constants.CurrentPassword, &updatePwd.CurrentPassword, RegExpPassword, true).
-		ValidateParameterRegExp(constants.NewPassword, &updatePwd.NewPassword, RegExpPassword, true).
-		ValidateParameterRegExp(constants.ConfirmPassword, &updatePwd.ConfirmPassword, RegExpPassword, true).
+		ValidateParameterRegExp(constants.CurrentPassword, &updatePwd.CurrentPassword, constants.RegExpPassword, true).
+		ValidateParameterRegExp(constants.NewPassword, &updatePwd.NewPassword, constants.RegExpPassword, true).
+		ValidateParameterRegExp(constants.ConfirmPassword, &updatePwd.ConfirmPassword, constants.RegExpPassword, true).
 		Status()
 }
 
 // Validate is a validator for CredentialRepresentation
 func (credential CredentialRepresentation) Validate() error {
 	return validation.NewParameterValidator().
-		ValidateParameterRegExp(constants.ID, credential.ID, RegExpID, false).
+		ValidateParameterRegExp(constants.ID, credential.ID, constants.RegExpID, false).
 		ValidateParameterRegExp(constants.Type, credential.Type, RegExpType, false).
 		ValidateParameterRegExp(constants.Label, credential.UserLabel, RegExpLabel, false).
 		Status()
@@ -256,19 +256,7 @@ func (credential CredentialRepresentation) Validate() error {
 
 // Regular expressions for parameters validation
 const (
-	RegExpID         = constants.RegExpID
 	RegExpIDNullable = `^([a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12})$|^(null)$`
 	RegExpLabel      = `^.{0,255}$`
 	RegExpType       = `^[a-zA-Z0-9-_]{1,128}$`
-	RegExpRealmName  = constants.RegExpRealmName
-
-	// Password
-	RegExpPassword = constants.RegExpPassword
-	// User
-	RegExpUsername    = constants.RegExpUsername
-	RegExpEmail       = constants.RegExpEmail
-	RegExpFirstName   = constants.RegExpFirstName
-	RegExpLastName    = constants.RegExpLastName
-	RegExpPhoneNumber = constants.RegExpPhoneNumber
-	RegExpLocale      = `^\w{2}(-\w{2})?$`
 )

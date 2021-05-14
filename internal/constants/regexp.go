@@ -14,19 +14,21 @@ const (
 	RegExpClientID = `^[a-zA-Z0-9-_.]{1,255}$`
 
 	// User
-	RegExpUsername         = `^[a-zA-Z0-9-_.]{1,128}$`
-	RegExpEmail            = `^.+\@.+\..+$`
-	RegExpNameSpecialChars = `^([\wàáâäçèéêëìíîïñòóôöùúûüß][\wàáâäçèéêëìíîïñòóôöùúûüß \.'-]{0,49})$`
-	RegExpFirstName        = regExpLen128
-	RegExpLastName         = regExpLen128
-	RegExpPhoneNumber      = `^\+[1-9]\d{1,14}$`
-	RegExpLabel            = regExpLen255
-	RegExpGender           = `^[MFU]$`
-	RegExpBirthDate        = `^(\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01]))$`
-	RegExpLocale           = `^[a-z]{2}$`
-	RegExpBusinessID       = regExpLen255
-	RegExpCountryCode      = `^\w{2}$`
-	RegExpIDDocumentNumber = `^([\w\d]+([\. -][\w\d]+)*){1,50}$`
+	RegExpUsername            = `^[a-zA-Z0-9-_.]{1,128}$`
+	RegExpEmail               = `^.+\@.+\..+$`
+	RegExpNameSpecialChars    = `^([\wàáâäçèéêëìíîïñòóôöùúûüß][\wàáâäçèéêëìíîïñòóôöùúûüß \.'-]{0,49})$`
+	RegExpNameSpecialChars128 = `^([\wàáâäçèéêëìíîïñòóôöùúûüß][\wàáâäçèéêëìíîïñòóôöùúûüß \.'-]{0,127})$`
+	RegExpFirstName           = RegExpNameSpecialChars128
+	RegExpLastName            = RegExpNameSpecialChars128
+	RegExpPhoneNumber         = `^\+[1-9]\d{1,14}$`
+	RegExpLabel               = regExpLen255
+	RegExpGender              = `^[MFU]$`
+	RegExpBirthDate           = `^(\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01]))$`
+	RegExpBirthLocation       = RegExpNameSpecialChars
+	RegExpLocale              = `^[a-z]{2}$`
+	RegExpBusinessID          = regExpLen255
+	RegExpCountryCode         = `^\w{2}$`
+	RegExpIDDocumentNumber    = `^([\w\d]+([\. -][\w\d]+)*){1,50}$`
 
 	// Password
 	RegExpPassword = regExpLen255

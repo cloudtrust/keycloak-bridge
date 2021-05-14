@@ -6,7 +6,7 @@ import (
 
 	commonhttp "github.com/cloudtrust/common-service/http"
 	"github.com/cloudtrust/common-service/log"
-	api "github.com/cloudtrust/keycloak-bridge/api/validation"
+	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/go-kit/kit/endpoint"
 	http_transport "github.com/go-kit/kit/transport/http"
 )
@@ -31,8 +31,8 @@ func MakeValidationHandler(e endpoint.Endpoint, logger log.Logger) *http_transpo
 // decodeEventsRequest gets the HTTP parameters and body content
 func decodeManagementRequest(ctx context.Context, req *http.Request) (interface{}, error) {
 	var pathParams = map[string]string{
-		PrmRealm:  api.RegExpRealmName,
-		PrmUserID: api.RegExpID,
+		PrmRealm:  constants.RegExpRealmName,
+		PrmUserID: constants.RegExpID,
 	}
 
 	var queryParams = map[string]string{}

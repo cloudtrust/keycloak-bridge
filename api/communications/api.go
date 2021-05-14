@@ -18,9 +18,7 @@ const (
 	prmSMSTheming       = "sms_theming"
 	prmSMSThemingLocale = "sms_theming_locale"
 
-	regExpEmail             = constants.RegExpEmail
 	regExpThemingSubjectKey = constants.RegExpDescription
-	regExpLocale            = constants.RegExpLocale
 )
 
 // ActionRepresentation struct
@@ -192,10 +190,10 @@ func (r *SMSRepresentation) SMSToJSON() string {
 // Validate checks the validity of the given email
 func (r *EmailRepresentation) Validate() error {
 	return validation.NewParameterValidator().
-		ValidateParameterRegExp(prmEmailRecipient, r.Recipient, regExpEmail, true).
+		ValidateParameterRegExp(prmEmailRecipient, r.Recipient, constants.RegExpEmail, true).
 		ValidateParameterNotNil(prmEmailTheming, r.Theming).
 		ValidateParameterRegExp(prmEmailThemingSubjectKey, r.Theming.SubjectKey, regExpThemingSubjectKey, true).
-		ValidateParameterRegExp(prmEmailThemingLocale, r.Theming.Locale, regExpLocale, false).
+		ValidateParameterRegExp(prmEmailThemingLocale, r.Theming.Locale, constants.RegExpLocale, false).
 		Status()
 }
 
@@ -204,6 +202,6 @@ func (r *SMSRepresentation) Validate() error {
 	return validation.NewParameterValidator().
 		ValidateParameterPhoneNumber(prmSMSMSISDN, r.MSISDN, true).
 		ValidateParameterNotNil(prmSMSTheming, r.Theming).
-		ValidateParameterRegExp(prmSMSThemingLocale, r.Theming.Locale, regExpLocale, false).
+		ValidateParameterRegExp(prmSMSThemingLocale, r.Theming.Locale, constants.RegExpLocale, false).
 		Status()
 }

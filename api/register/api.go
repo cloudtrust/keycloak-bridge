@@ -59,16 +59,6 @@ const (
 	prmUserIDDocumentCountry    = "user_idDocCountry"
 	prmUserLocale               = "user_locale"
 	prmUserBusinessID           = "user_businessId"
-
-	regExpGender            = constants.RegExpGender
-	regExpFirstName         = constants.RegExpNameSpecialChars
-	regExpLastName          = constants.RegExpNameSpecialChars
-	regExpEmail             = `^.+\@.+\..+$`
-	regExpBirthLocation     = constants.RegExpNameSpecialChars
-	regExpNationality       = constants.RegExpCountryCode
-	regExpIDDocumentNumber  = constants.RegExpIDDocumentNumber
-	regExpIDDocumentCountry = constants.RegExpCountryCode
-	regExpLocale            = `^\w{2}(-\w{2})?$`
 )
 
 // UserFromJSON creates a User using its json representation
@@ -117,20 +107,20 @@ func (u *UserRepresentation) ConvertToKeycloak() kc.UserRepresentation {
 // Validate checks the validity of the given User
 func (u *UserRepresentation) Validate(allFieldsMandatory bool) error {
 	return validation.NewParameterValidator().
-		ValidateParameterRegExp(prmUserGender, u.Gender, regExpGender, allFieldsMandatory).
-		ValidateParameterRegExp(prmUserFirstName, u.FirstName, regExpFirstName, true).
-		ValidateParameterRegExp(prmUserLastName, u.LastName, regExpLastName, true).
-		ValidateParameterRegExp(prmUserEmail, u.Email, regExpEmail, true).
+		ValidateParameterRegExp(prmUserGender, u.Gender, constants.RegExpGender, allFieldsMandatory).
+		ValidateParameterRegExp(prmUserFirstName, u.FirstName, constants.RegExpFirstName, true).
+		ValidateParameterRegExp(prmUserLastName, u.LastName, constants.RegExpLastName, true).
+		ValidateParameterRegExp(prmUserEmail, u.Email, constants.RegExpEmail, true).
 		ValidateParameterPhoneNumber(prmUserPhoneNumber, u.PhoneNumber, allFieldsMandatory).
 		ValidateParameterDateMultipleLayout(prmUserBirthDate, u.BirthDate, constants.SupportedDateLayouts, allFieldsMandatory).
-		ValidateParameterRegExp(prmUserBirthLocation, u.BirthLocation, regExpBirthLocation, allFieldsMandatory).
-		ValidateParameterRegExp(prmUserNationality, u.Nationality, regExpNationality, allFieldsMandatory).
+		ValidateParameterRegExp(prmUserBirthLocation, u.BirthLocation, constants.RegExpBirthLocation, allFieldsMandatory).
+		ValidateParameterRegExp(prmUserNationality, u.Nationality, constants.RegExpCountryCode, allFieldsMandatory).
 		ValidateParameterIn(prmUserIDDocumentType, u.IDDocumentType, constants.AllowedDocumentTypes, allFieldsMandatory).
-		ValidateParameterRegExp(prmUserIDDocumentNumber, u.IDDocumentNumber, regExpIDDocumentNumber, allFieldsMandatory).
+		ValidateParameterRegExp(prmUserIDDocumentNumber, u.IDDocumentNumber, constants.RegExpIDDocumentNumber, allFieldsMandatory).
 		ValidateParameterLength(prmUserIDDocumentNumber, u.IDDocumentNumber, 1, 50, allFieldsMandatory).
 		ValidateParameterDateMultipleLayout(prmUserIDDocumentExpiration, u.IDDocumentExpiration, constants.SupportedDateLayouts, allFieldsMandatory).
-		ValidateParameterRegExp(prmUserIDDocumentCountry, u.IDDocumentCountry, regExpIDDocumentCountry, allFieldsMandatory).
-		ValidateParameterRegExp(prmUserLocale, u.Locale, regExpLocale, true).
+		ValidateParameterRegExp(prmUserIDDocumentCountry, u.IDDocumentCountry, constants.RegExpCountryCode, allFieldsMandatory).
+		ValidateParameterRegExp(prmUserLocale, u.Locale, constants.RegExpLocale, true).
 		ValidateParameterRegExp(prmUserBusinessID, u.BusinessID, constants.RegExpBusinessID, false).
 		Status()
 }
