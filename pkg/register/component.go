@@ -176,7 +176,7 @@ func (c *component) RegisterUser(ctx context.Context, targetRealmName string, cu
 			return "", errorhandler.CreateBadRequestError(constants.MsgErrAlreadyOnboardedUser)
 		}
 
-		if attrb := kcUser.GetAttributeString(constants.AttrbSource); attrb == nil || *attrb != "register" {
+		if attrb := kcUser.GetAttributeString(constants.AttrbSource); attrb != nil && *attrb != "register" {
 			return "", errorhandler.CreateBadRequestError(constants.MsgErrCantRegister)
 		}
 
