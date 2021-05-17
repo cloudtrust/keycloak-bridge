@@ -3,6 +3,7 @@ package keycloakb
 import (
 	"context"
 	"errors"
+	"sort"
 	"testing"
 	"time"
 
@@ -153,6 +154,7 @@ func TestGetUserAndPrepareAccreditations(t *testing.T) {
 		var accreds = kcUser.GetAttribute(constants.AttrbAccreditations)
 		assert.Equal(t, 3, count)
 		assert.Len(t, accreds, 3)
+		sort.Strings(accreds)
 		assert.Contains(t, accreds[0], "SHADOW1")
 		assert.Contains(t, accreds[1], "SHADOW3")
 		assert.Contains(t, accreds[2], "SHADOW5")

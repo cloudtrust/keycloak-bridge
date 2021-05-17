@@ -54,6 +54,7 @@ func TestGln(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 
+	var anError = errors.New("an error")
 	var gln = "111111111"
 	var mockProviders = []GlnLookupProvider{newMockLookup(1, time.Millisecond*100, nil), newMockLookup(2, time.Millisecond*10, nil),
 		newMockLookup(3, time.Millisecond*10, nil)}
@@ -80,11 +81,19 @@ func TestGln(t *testing.T) {
 		assert.Nil(t, err)
 	})
 
-	var anError = errors.New("an error")
-	mockProviders = []GlnLookupProvider{newMockLookup(1, time.Millisecond, anError), newMockLookup(1, time.Millisecond*10, nil)}
-	glnVerifier = NewGlnVerifier(mockProviders...)
 	t.Run("Lookup provider fails", func(t *testing.T) {
+		mockProviders = []GlnLookupProvider{newMockLookup(1, time.Millisecond, anError), newMockLookup(1, time.Millisecond*10, nil)}
+		glnVerifier = NewGlnVerifier(mockProviders...)
 		var err = glnVerifier.ValidateGLN("Tom", "Tom", "123456789")
 		assert.Equal(t, anError, err)
+	})
+	t.Run("Positive response comes much faster than other responses", func(t *testing.T) {
+		mockProviders = []GlnLookupProvider{newMockLookup(1, time.Millisecond*100, anError), newMockLookup(1, time.Millisecond, nil)}
+		mockProviders[1].(*mockLookup).Add(gln)
+		glnVerifier = NewGlnVerifier(mockProviders...)
+		var err = glnVerifier.ValidateGLN("Tom", "Thomaser", gln)
+		assert.Nil(t, err)
+		// ensure there is no panic
+		time.Sleep(time.Second)
 	})
 }

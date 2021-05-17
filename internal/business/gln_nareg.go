@@ -67,6 +67,7 @@ type naReg struct {
 	logger   keycloakb.Logger
 }
 
+// NewNaRegLookup creates a GLN lookup provider using nareg website
 func NewNaRegLookup(baseURL string, httpTimeout time.Duration, logger keycloakb.Logger) (GlnLookupProvider, error) {
 	var client, err = httpclient.New(baseURL, httpTimeout)
 	if err != nil {

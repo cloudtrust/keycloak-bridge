@@ -74,7 +74,13 @@ func (v *glnVerifier) ValidateGLN(firstName, lastName, gln string) error {
 
 	for _, provider := range v.providers {
 		go func(glnLookup GlnLookupProvider) {
-			resultsChan <- glnLookup.Lookup(gln)
+			var result = glnLookup.Lookup(gln)
+			select {
+			case <-resultsChan:
+				return
+			default:
+				resultsChan <- result
+			}
 		}(provider)
 	}
 	var defaultError = ErrGLNNotFound
