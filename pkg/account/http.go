@@ -7,6 +7,7 @@ import (
 	commonhttp "github.com/cloudtrust/common-service/http"
 	"github.com/cloudtrust/common-service/log"
 	account_api "github.com/cloudtrust/keycloak-bridge/api/account"
+	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/go-kit/kit/endpoint"
 	http_transport "github.com/go-kit/kit/transport/http"
 )
@@ -33,12 +34,12 @@ func MakeAccountHandler(e endpoint.Endpoint, logger log.Logger) *http_transport.
 // decodeEventsRequest gets the HTTP parameters and body content
 func decodeAccountRequest(ctx context.Context, req *http.Request) (interface{}, error) {
 	var pathParams = map[string]string{
-		PrmCredentialID:     account_api.RegExpID,
+		PrmCredentialID:     constants.RegExpID,
 		PrmPrevCredentialID: account_api.RegExpIDNullable,
 	}
 
 	var queryParams = map[string]string{
-		PrmQryRealmID: account_api.RegExpRealmName,
+		PrmQryRealmID: constants.RegExpRealmName,
 	}
 
 	return commonhttp.DecodeRequest(ctx, req, pathParams, queryParams)

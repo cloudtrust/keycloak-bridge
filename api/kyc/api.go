@@ -78,17 +78,7 @@ const (
 	prmContentType              = "attachmentContentType"
 	prmContent                  = "attachmentContent"
 
-	regExpNames             = `^([\wàáâäçèéêëìíîïñòóôöùúûüß]+([ '-][\wàáâäçèéêëìíîïñòóôöùúûüß]+)*){1,50}$`
-	regExpFirstName         = regExpNames
-	regExpLastName          = regExpNames
-	regExpBirthLocation     = regExpNames
-	regExpNationality       = constants.RegExpCountryCode
-	regExpIDDocumentNumber  = constants.RegExpIDDocumentNumber
-	regExpIDDocumentCountry = constants.RegExpCountryCode
-	regExpGender            = constants.RegExpGender
-	regExpLocale            = constants.RegExpLocale
-	regExpBusinessID        = constants.RegExpBusinessID
-	regExpMimeType          = `^[a-z]+/[\w\d\.+]+$`
+	regExpMimeType = `^[a-z]+/[\w\d\.+]+$`
 
 	minAttachmentSize = 100
 	maxAttachmentSize = 5 * 1024 * 1024
@@ -227,18 +217,18 @@ func (u *UserRepresentation) ImportFromKeycloak(ctx context.Context, kcUser *kc.
 // Validate checks the validity of the given User
 func (u *UserRepresentation) Validate() error {
 	return validation.NewParameterValidator().
-		ValidateParameterRegExp(prmUserGender, u.Gender, regExpGender, true).
-		ValidateParameterRegExp(prmUserFirstName, u.FirstName, regExpFirstName, true).
-		ValidateParameterRegExp(prmUserLastName, u.LastName, regExpLastName, true).
+		ValidateParameterRegExp(prmUserGender, u.Gender, constants.RegExpGender, true).
+		ValidateParameterRegExp(prmUserFirstName, u.FirstName, constants.RegExpFirstName, true).
+		ValidateParameterRegExp(prmUserLastName, u.LastName, constants.RegExpLastName, true).
 		ValidateParameterDate(prmUserBirthDate, u.BirthDate, constants.SupportedDateLayouts[0], true).
-		ValidateParameterRegExp(prmUserBirthLocation, u.BirthLocation, regExpBirthLocation, false).
-		ValidateParameterRegExp(prmUserNationality, u.Nationality, regExpNationality, false).
+		ValidateParameterRegExp(prmUserBirthLocation, u.BirthLocation, constants.RegExpBirthLocation, false).
+		ValidateParameterRegExp(prmUserNationality, u.Nationality, constants.RegExpCountryCode, false).
 		ValidateParameterIn(prmUserIDDocumentType, u.IDDocumentType, constants.AllowedDocumentTypes, false).
-		ValidateParameterRegExp(prmUserIDDocumentNumber, u.IDDocumentNumber, regExpIDDocumentNumber, true).
+		ValidateParameterRegExp(prmUserIDDocumentNumber, u.IDDocumentNumber, constants.RegExpIDDocumentNumber, true).
 		ValidateParameterDate(prmUserIDDocumentExpiration, u.IDDocumentExpiration, constants.SupportedDateLayouts[0], false).
-		ValidateParameterRegExp(prmUserIDDocumentCountry, u.IDDocumentCountry, regExpIDDocumentCountry, false).
-		ValidateParameterRegExp(prmUserLocale, u.Locale, regExpLocale, false).
-		ValidateParameterRegExp(prmUserBusinessID, u.BusinessID, regExpBusinessID, false).
+		ValidateParameterRegExp(prmUserIDDocumentCountry, u.IDDocumentCountry, constants.RegExpCountryCode, false).
+		ValidateParameterRegExp(prmUserLocale, u.Locale, constants.RegExpLocale, false).
+		ValidateParameterRegExp(prmUserBusinessID, u.BusinessID, constants.RegExpBusinessID, false).
 		ValidateParameterFunc(func() error {
 			var nbAttachments = 0
 			if u.Attachments != nil {

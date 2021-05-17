@@ -6,8 +6,7 @@ import (
 
 	commonhttp "github.com/cloudtrust/common-service/http"
 	"github.com/cloudtrust/common-service/log"
-	api "github.com/cloudtrust/keycloak-bridge/api/management"
-	msg "github.com/cloudtrust/keycloak-bridge/internal/constants"
+	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	kc_client "github.com/cloudtrust/keycloak-client"
 	"github.com/go-kit/kit/endpoint"
@@ -60,32 +59,32 @@ func MakeManagementHandler(e endpoint.Endpoint, logger log.Logger) *http_transpo
 // decodeEventsRequest gets the HTTP parameters and body content
 func decodeManagementRequest(ctx context.Context, req *http.Request) (interface{}, error) {
 	var pathParams = map[string]string{
-		prmRealm:        api.RegExpRealmName,
-		prmUserID:       api.RegExpID,
-		prmClientID:     api.RegExpClientID,
-		prmRoleID:       api.RegExpID,
-		prmGroupID:      api.RegExpID,
-		prmCredentialID: api.RegExpID,
-		prmProvider:     api.RegExpName,
+		prmRealm:        constants.RegExpRealmName,
+		prmUserID:       constants.RegExpID,
+		prmClientID:     constants.RegExpClientID,
+		prmRoleID:       constants.RegExpID,
+		prmGroupID:      constants.RegExpID,
+		prmCredentialID: constants.RegExpID,
+		prmProvider:     constants.RegExpName,
 	}
 
 	var queryParams = map[string]string{
-		prmQryEmail:       api.RegExpEmail,
-		prmQryFirstName:   api.RegExpFirstName,
-		prmQryLastName:    api.RegExpLastName,
-		prmQryUserName:    api.RegExpUsername,
-		prmQrySearch:      api.RegExpSearch,
-		prmQryClientID:    api.RegExpClientID,
-		prmQryRedirectURI: api.RegExpRedirectURI,
-		prmQryLifespan:    api.RegExpLifespan,
-		prmQryGroupIDs:    api.RegExpGroupIds,
-		prmQryFirst:       api.RegExpNumber,
-		prmQryMax:         api.RegExpNumber,
-		prmQryGroupName:   api.RegExpName,
-		prmQryGenUsername: msg.RegExpBool,
-		prmQryGenNameID:   msg.RegExpBool,
-		prmQryRealm:       api.RegExpRealmName,
-		prmQryReminder:    msg.RegExpBool,
+		prmQryEmail:       constants.RegExpEmail,
+		prmQryFirstName:   constants.RegExpFirstName,
+		prmQryLastName:    constants.RegExpLastName,
+		prmQryUserName:    constants.RegExpUsername,
+		prmQrySearch:      constants.RegExpSearch,
+		prmQryClientID:    constants.RegExpClientID,
+		prmQryRedirectURI: constants.RegExpRedirectURI,
+		prmQryLifespan:    constants.RegExpLifespan,
+		prmQryGroupIDs:    constants.RegExpGroupIds,
+		prmQryFirst:       constants.RegExpNumber,
+		prmQryMax:         constants.RegExpNumber,
+		prmQryGroupName:   constants.RegExpName,
+		prmQryGenUsername: constants.RegExpBool,
+		prmQryGenNameID:   constants.RegExpBool,
+		prmQryRealm:       constants.RegExpRealmName,
+		prmQryReminder:    constants.RegExpBool,
 	}
 
 	return commonhttp.DecodeRequest(ctx, req, pathParams, queryParams)
@@ -110,7 +109,7 @@ func managementErrorHandler(logger log.Logger) func(context.Context, error, http
 		switch e := errors.Cause(err).(type) {
 		case kc_client.HTTPError:
 			w.WriteHeader(e.HTTPStatus)
-			w.Write([]byte(keycloakb.ComponentName + "." + msg.MsgErrUnknown))
+			w.Write([]byte(keycloakb.ComponentName + "." + constants.MsgErrUnknown))
 		default:
 			defaultHandler(ctx, err, w)
 

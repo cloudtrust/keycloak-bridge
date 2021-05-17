@@ -697,7 +697,7 @@ func (user UserRepresentation) Validate() error {
 		ValidateParameterRegExp(constants.Label, user.Label, constants.RegExpLabel, false).
 		ValidateParameterRegExp(constants.Gender, user.Gender, constants.RegExpGender, false).
 		ValidateParameterDateMultipleLayout(constants.Birthdate, user.BirthDate, constants.SupportedDateLayouts, false).
-		ValidateParameterRegExp(constants.BirthLocation, user.BirthLocation, constants.RegExpNameSpecialChars, false).
+		ValidateParameterRegExp(constants.BirthLocation, user.BirthLocation, constants.RegExpBirthLocation, false).
 		ValidateParameterRegExp(constants.Nationality, user.Nationality, constants.RegExpCountryCode, false).
 		ValidateParameterRegExp(constants.Locale, user.Locale, constants.RegExpLocale, false).
 		ValidateParameterRegExp(constants.BusinessID, user.BusinessID, constants.RegExpBusinessID, false).
@@ -732,7 +732,7 @@ func (user UpdatableUserRepresentation) Validate() error {
 		ValidateParameterRegExp(constants.Label, user.Label, constants.RegExpLabel, false).
 		ValidateParameterRegExp(constants.Gender, user.Gender, constants.RegExpGender, false).
 		ValidateParameterDateMultipleLayout(constants.Birthdate, user.BirthDate, constants.SupportedDateLayouts, false).
-		ValidateParameterRegExp(constants.BirthLocation, user.BirthLocation, constants.RegExpNameSpecialChars, false).
+		ValidateParameterRegExp(constants.BirthLocation, user.BirthLocation, constants.RegExpBirthLocation, false).
 		ValidateParameterRegExp(constants.Nationality, user.Nationality, constants.RegExpCountryCode, false).
 		ValidateParameterRegExp(constants.Locale, user.Locale, constants.RegExpLocale, false).
 		ValidateParameterRegExp(constants.BusinessID, user.BusinessID.Value, constants.RegExpBusinessID, false).
@@ -899,39 +899,3 @@ func ConvertToAPIUserChecks(checks []dto.DBCheck) []UserCheck {
 	}
 	return res
 }
-
-// Regular expressions for parameters validation
-const (
-	RegExpID          = constants.RegExpID
-	RegExpName        = constants.RegExpName
-	RegExpDescription = constants.RegExpDescription
-
-	// Client
-	RegExpClientID = constants.RegExpClientID
-
-	// User
-	RegExpUsername    = constants.RegExpUsername
-	RegExpEmail       = constants.RegExpEmail
-	RegExpFirstName   = constants.RegExpFirstName
-	RegExpLastName    = constants.RegExpLastName
-	RegExpPhoneNumber = constants.RegExpPhoneNumber
-	RegExpLabel       = constants.RegExpLabel
-	RegExpGender      = constants.RegExpGender
-	RegExpLocale      = constants.RegExpLocale
-
-	// Password
-	RegExpPassword = constants.RegExpPassword
-
-	// RealmCustomConfiguration
-	RegExpRedirectURI = constants.RegExpRedirectURI
-
-	// RequiredAction
-	RegExpRequiredAction = constants.RegExpRequiredAction
-
-	// Others
-	RegExpRealmName = constants.RegExpRealmName
-	RegExpSearch    = constants.RegExpSearch
-	RegExpLifespan  = constants.RegExpLifespan
-	RegExpGroupIds  = constants.RegExpGroupIds
-	RegExpNumber    = constants.RegExpNumber
-)

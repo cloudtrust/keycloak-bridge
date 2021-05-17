@@ -63,17 +63,6 @@ const (
 	prmCheckNature    = "check_nature"
 	prmCheckProofType = "check_proof_type"
 
-	RegExpRealmName     = constants.RegExpRealmName
-	RegExpID            = constants.RegExpID
-	regExpFirstName     = constants.RegExpNameSpecialChars
-	regExpLastName      = constants.RegExpNameSpecialChars
-	regExpEmail         = constants.RegExpEmail
-	regExpBirthLocation = constants.RegExpNameSpecialChars
-	regExpNationality   = constants.RegExpCountryCode
-	// Multiple values with digits and letters separated by a single separator (space, dash, dot)
-	regExpIDDocumentNumber  = constants.RegExpIDDocumentNumber
-	regExpIDDocumentCountry = constants.RegExpCountryCode
-
 	regExpAlphaNum255 = `[a-zA-Z0-9_-]{1,255}`
 	regExpOperator    = regExpAlphaNum255
 	regExpNature      = regExpAlphaNum255
@@ -182,17 +171,17 @@ func (u *UserRepresentation) ImportFromKeycloak(kcUser kc.UserRepresentation) {
 // Validate checks the validity of the given User
 func (u *UserRepresentation) Validate() error {
 	return validation.NewParameterValidator().
-		ValidateParameterRegExp(prmUserID, u.ID, RegExpID, false).
+		ValidateParameterRegExp(prmUserID, u.ID, constants.RegExpID, false).
 		ValidateParameterIn(prmUserGender, u.Gender, allowedGender, false).
-		ValidateParameterRegExp(prmUserFirstName, u.FirstName, regExpFirstName, false).
-		ValidateParameterRegExp(prmUserLastName, u.LastName, regExpLastName, false).
-		ValidateParameterRegExp(prmUserEmail, u.Email, regExpEmail, false).
+		ValidateParameterRegExp(prmUserFirstName, u.FirstName, constants.RegExpFirstName, false).
+		ValidateParameterRegExp(prmUserLastName, u.LastName, constants.RegExpLastName, false).
+		ValidateParameterRegExp(prmUserEmail, u.Email, constants.RegExpEmail, false).
 		ValidateParameterPhoneNumber(prmUserPhoneNumber, u.PhoneNumber, false).
-		ValidateParameterRegExp(prmUserBirthLocation, u.BirthLocation, regExpBirthLocation, false).
-		ValidateParameterRegExp(prmUserNationality, u.Nationality, regExpNationality, false).
+		ValidateParameterRegExp(prmUserBirthLocation, u.BirthLocation, constants.RegExpBirthLocation, false).
+		ValidateParameterRegExp(prmUserNationality, u.Nationality, constants.RegExpCountryCode, false).
 		ValidateParameterIn(prmUserIDDocumentType, u.IDDocumentType, constants.AllowedDocumentTypes, false).
-		ValidateParameterRegExp(prmUserIDDocumentNumber, u.IDDocumentNumber, regExpIDDocumentNumber, false).
-		ValidateParameterRegExp(prmUserIDDocumentCountry, u.IDDocumentCountry, regExpIDDocumentCountry, false).
+		ValidateParameterRegExp(prmUserIDDocumentNumber, u.IDDocumentNumber, constants.RegExpIDDocumentNumber, false).
+		ValidateParameterRegExp(prmUserIDDocumentCountry, u.IDDocumentCountry, constants.RegExpCountryCode, false).
 		Status()
 }
 
@@ -227,7 +216,7 @@ func (u *UserRepresentation) HasUpdateOfAccreditationDependantInformationKC(form
 // Validate checks the validity of the given check
 func (c *CheckRepresentation) Validate() error {
 	return validation.NewParameterValidator().
-		ValidateParameterRegExp(prmUserID, c.UserID, RegExpID, true).
+		ValidateParameterRegExp(prmUserID, c.UserID, constants.RegExpID, true).
 		ValidateParameterRegExp(prmCheckOperator, c.Operator, regExpOperator, true).
 		ValidateParameterNotNil(prmCheckDatetime, c.DateTime).
 		ValidateParameterIn(prmCheckStatus, c.Status, allowedStatus, true).
