@@ -80,6 +80,13 @@ type Endpoints struct {
 	LinkShadowUser endpoint.Endpoint
 }
 
+func isParameterTrue(mapParams map[string]string, paramName string) bool {
+	if value, ok := mapParams[paramName]; ok {
+		return strings.ToLower(value) == "true"
+	}
+	return false
+}
+
 // MakeGetRealmsEndpoint makes the Realms endpoint to retrieve all available realms.
 func MakeGetRealmsEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, _ interface{}) (interface{}, error) {
@@ -143,15 +150,8 @@ func MakeCreateUserEndpoint(component Component, logger keycloakb.Logger) cs.End
 			return nil, errorhandler.CreateMissingParameterError(msg.Groups)
 		}
 
-		var generateUsername = false
-		if prmGenerateUsername, ok := m[prmQryGenUsername]; ok {
-			generateUsername = strings.ToLower(prmGenerateUsername) == "true"
-		}
-
-		var generateNameID = false
-		if prmGenerateNameID, ok := m[prmQryGenNameID]; ok {
-			generateNameID = strings.ToLower(prmGenerateNameID) == "true"
-		}
+		var generateUsername = isParameterTrue(m, prmQryGenUsername)
+		var generateNameID = isParameterTrue(m, prmQryGenNameID)
 
 		var keycloakLocation string
 		keycloakLocation, err = component.CreateUser(ctx, m[prmRealm], user, generateUsername, generateNameID)
@@ -449,10 +449,7 @@ func MakeSendSmsCodeEndpoint(component Component) cs.Endpoint {
 func MakeSendOnboardingEmailEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
-		var reminder = false
-		if value, ok := m[prmQryReminder]; ok {
-			reminder = strings.ToLower(value) == "true"
-		}
+		var reminder = isParameterTrue(m, prmQryReminder)
 
 		var customerRealmName = m[prmRealm]
 		if value, ok := m[prmQryRealm]; ok && value != "" {
