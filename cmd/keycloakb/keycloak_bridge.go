@@ -524,36 +524,36 @@ func main() {
 	var glnLookupProviders []business.GlnLookupProvider
 	{
 		if glnRefDataEnabled {
-			if glnRefDataLookup, err := business.NewRefDataLookup(glnRefDataURI, glnRefDataTimeout, logger); err != nil {
+			glnRefDataLookup, err := business.NewRefDataLookup(glnRefDataURI, glnRefDataTimeout, logger)
+			if err != nil {
 				logger.Error(ctx, "msg", "can't initialize GLN RefData lookup", "err", err.Error())
 				return
-			} else {
-				glnLookupProviders = append(glnLookupProviders, glnRefDataLookup)
 			}
+			glnLookupProviders = append(glnLookupProviders, glnRefDataLookup)
 		}
 		if glnMedRegEnabled {
-			if glnMedRegLookup, err := business.NewMedRegOmLookup(glnMedRegURI, glnMedRegTimeout, logger); err != nil {
+			glnMedRegLookup, err := business.NewMedRegOmLookup(glnMedRegURI, glnMedRegTimeout, logger)
+			if err != nil {
 				logger.Error(ctx, "msg", "can't initialize GLN MedReg lookup", "err", err.Error())
 				return
-			} else {
-				glnLookupProviders = append(glnLookupProviders, glnMedRegLookup)
 			}
+			glnLookupProviders = append(glnLookupProviders, glnMedRegLookup)
 		}
 		if glnNaRegEnabled {
-			if glnNaRegLookup, err := business.NewNaRegLookup(glnNaRegURI, glnNaRegTimeout, logger); err != nil {
+			glnNaRegLookup, err := business.NewNaRegLookup(glnNaRegURI, glnNaRegTimeout, logger)
+			if err != nil {
 				logger.Error(ctx, "msg", "can't initialize GLN NaReg lookup", "err", err.Error())
 				return
-			} else {
-				glnLookupProviders = append(glnLookupProviders, glnNaRegLookup)
 			}
+			glnLookupProviders = append(glnLookupProviders, glnNaRegLookup)
 		}
 		if glnPsyRegEnabled {
-			if glnPsyRegLookup, err := business.NewPsyRegLookup(glnPsyRegURI, glnPsyRegTimeout, logger); err != nil {
+			glnPsyRegLookup, err := business.NewPsyRegLookup(glnPsyRegURI, glnPsyRegTimeout, logger)
+			if err != nil {
 				logger.Error(ctx, "msg", "can't initialize GLN PsyReg lookup", "err", err.Error())
 				return
-			} else {
-				glnLookupProviders = append(glnLookupProviders, glnPsyRegLookup)
 			}
+			glnLookupProviders = append(glnLookupProviders, glnPsyRegLookup)
 		}
 	}
 	var glnVerifier = business.NewGlnVerifier(glnLookupProviders...)
