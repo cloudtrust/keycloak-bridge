@@ -62,7 +62,10 @@ trustid-groups:
 
 # Keycloak configs
 keycloak-api-uri: http://localhost:8080
-keycloak-oidc-uri: http://localhost:8080 http://127.0.0.1:8080
+keycloak-oidc-uri-map:
+  default: http://localhost:8080
+  trustid: http://idp.trustid.ch:8080
+  cloudtrust: http://idp.cloudtrust.io:8080
 keycloak-timeout: 5s
 
 # DB Audit RW

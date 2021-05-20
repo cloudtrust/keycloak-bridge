@@ -12,7 +12,6 @@ import (
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	kc "github.com/cloudtrust/keycloak-client"
-	"github.com/cloudtrust/keycloak-client/toolbox"
 )
 
 var (
@@ -64,7 +63,7 @@ type Component interface {
 // Component is the management component.
 type component struct {
 	keycloakClient  KeycloakClient
-	tokenProvider   toolbox.OidcTokenProvider
+	tokenProvider   TokenProvider
 	usersDBModule   UsersDetailsDBModule
 	archiveDBModule ArchiveDBModule
 	eventsDBModule  database.EventsDBModule

@@ -27,11 +27,11 @@
 
 [[constraint]]
   name = "github.com/cloudtrust/common-service"
-  version = "2.3.5"
+  version = "2.4.0"
 
 [[constraint]]
   name = "github.com/cloudtrust/keycloak-client"
-  version = "2.3.9"
+  version = "2.4.0"
 
 [[constraint]]
   name = "github.com/cloudtrust/httpclient"
@@ -59,7 +59,7 @@
 
 [[constraint]]
   name = "github.com/pkg/errors"
-  version = "0.8.1"
+  version = "0.9.0"
 
 [[constraint]]
   name = "github.com/rs/cors"

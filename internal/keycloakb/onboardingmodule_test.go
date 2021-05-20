@@ -23,9 +23,7 @@ func TestOnboardingAlreadyCompleted(t *testing.T) {
 	var mockKeycloakClient = mock.NewOnboardingKeycloakClient(mockCtrl)
 	var mockLogger = log.NewNopLogger()
 
-	var keycloakURL = "http://keycloak.url"
-
-	var onboardingModule = NewOnboardingModule(mockKeycloakClient, keycloakURL, mockLogger)
+	var onboardingModule = NewOnboardingModule(mockKeycloakClient, nil, mockLogger)
 
 	t.Run("No attributes", func(t *testing.T) {
 		var kcUser = kc.UserRepresentation{}
@@ -88,9 +86,10 @@ func TestSendOnboardingEmail(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 	var mockKeycloakClient = mock.NewOnboardingKeycloakClient(mockCtrl)
+	var mockKeycloakURIProvider = mock.NewKeycloakURIProvider(mockCtrl)
 	var mockLogger = log.NewNopLogger()
 
-	var keycloakURL = "http://keycloak.url"
+	var keycloakBaseURI = "http://keycloak.url"
 	var realmName = "realmName"
 	var themeRealmName = "themeRealmName"
 	var accessToken = "ACCESS_TOKEN"
@@ -102,7 +101,9 @@ func TestSendOnboardingEmail(t *testing.T) {
 	var expectedActionsWithReminder = []string{"VERIFY_EMAIL", "set-onboarding-token", "onboarding-action", "reminder-action"}
 	var ctx = context.TODO()
 
-	var onboardingModule = NewOnboardingModule(mockKeycloakClient, keycloakURL, mockLogger)
+	var onboardingModule = NewOnboardingModule(mockKeycloakClient, mockKeycloakURIProvider, mockLogger)
+
+	mockKeycloakURIProvider.EXPECT().GetBaseURI(realmName).Return(keycloakBaseURI).AnyTimes()
 
 	t.Run("Failed to perform ExecuteActionEmail without reminder", func(t *testing.T) {
 		mockKeycloakClient.EXPECT().ExecuteActionsEmail(accessToken, realmName, realmName, userID, expectedActionsNoReminder,
@@ -143,14 +144,13 @@ func TestCreateUser(t *testing.T) {
 
 	var mockKeycloakClient = mock.NewOnboardingKeycloakClient(mockCtrl)
 
-	var keycloakURL = "http://keycloak.url"
 	var realm = "cloudtrust"
 	var targetRealm = "client"
 	var ctx = context.Background()
 	var accessToken = "__TOKEN__"
 	var kcUser = kc.UserRepresentation{}
 
-	var onboarding = NewOnboardingModule(mockKeycloakClient, keycloakURL, log.NewNopLogger())
+	var onboarding = NewOnboardingModule(mockKeycloakClient, nil, log.NewNopLogger())
 
 	t.Run("Can't generate username", func(t *testing.T) {
 		var errExistingUsername = errorhandler.Error{
