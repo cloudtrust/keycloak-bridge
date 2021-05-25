@@ -132,6 +132,7 @@ const (
 	cfgArchiveRwDbParams        = "db-archive-rw"
 	cfgDbArchiveAesGcmKey       = "db-archive-aesgcm-key"
 	cfgDbArchiveAesGcmTagSize   = "db-archive-aesgcm-tag-size"
+	cfgMaxLifeSpan              = "max-lifespan"
 	cfgGlnRefDataEnabled        = "gln-refdata-enabled"
 	cfgGlnRefDataURI            = "gln-refdata-uri"
 	cfgGlnRefDataTimeout        = "gln-refdata-timeout"
@@ -261,6 +262,9 @@ func main() {
 		technicalUsername = c.GetString(cfgTechnicalUsername)
 		technicalPassword = c.GetString(cfgTechnicalPassword)
 		technicalClientID = c.GetString(cfgTechnicalClientID)
+
+		// Max lifespan (maximum active duration of sent links by email)
+		maxLifeSpan = int(c.GetDuration(cfgMaxLifeSpan) / time.Second)
 
 		// GLN
 		glnRefDataEnabled = c.GetBool(cfgGlnRefDataEnabled)
@@ -723,7 +727,7 @@ func main() {
 
 			ResetPassword:                  prepareEndpointWithoutLogging(management.MakeResetPasswordEndpoint(keycloakComponent), "reset_password_endpoint", influxMetrics, tracer, rateLimitMgmt),
 			ExecuteActionsEmail:            prepareEndpoint(management.MakeExecuteActionsEmailEndpoint(keycloakComponent), "execute_actions_email_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
-			SendOnboardingEmail:            prepareEndpoint(management.MakeSendOnboardingEmailEndpoint(keycloakComponent), "send_onboarding_email_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			SendOnboardingEmail:            prepareEndpoint(management.MakeSendOnboardingEmailEndpoint(keycloakComponent, maxLifeSpan), "send_onboarding_email_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 			SendReminderEmail:              prepareEndpoint(management.MakeSendReminderEmailEndpoint(keycloakComponent), "send_reminder_email_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 			SendSmsCode:                    prepareEndpoint(management.MakeSendSmsCodeEndpoint(keycloakComponent), "send_sms_code_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 			ResetSmsCounter:                prepareEndpoint(management.MakeResetSmsCounterEndpoint(keycloakComponent), "reset_sms_counter_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
@@ -1427,6 +1431,9 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 	v.SetDefault(cfgTechnicalUsername, "")
 	v.SetDefault(cfgTechnicalPassword, "")
 	v.SetDefault(cfgTechnicalClientID, "admin-cli")
+
+	// Max lifespan
+	v.SetDefault(cfgMaxLifeSpan, "168h")
 
 	// GLN
 	v.SetDefault(cfgGlnRefDataEnabled, true)

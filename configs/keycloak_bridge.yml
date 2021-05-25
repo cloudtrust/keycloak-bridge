@@ -210,6 +210,9 @@ technical-username: technical
 technical-password: technicalsuperpasswordverylongandstrong
 technical-client-id: admin-cli
 
+# Maximum lifespan allowed when sending email
+max-lifespan: 168h
+
 # GLN
 gln-refdata-enabled: true
 gln-refdata-uri: https://refdatabase.refdata.ch/Service/Partner.asmx

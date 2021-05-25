@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 
 	cs "github.com/cloudtrust/common-service"
@@ -446,7 +447,7 @@ func MakeSendSmsCodeEndpoint(component Component) cs.Endpoint {
 }
 
 // MakeSendOnboardingEmailEndpoint creates an endpoint for SendOnboardingEmail
-func MakeSendOnboardingEmailEndpoint(component Component) cs.Endpoint {
+func MakeSendOnboardingEmailEndpoint(component Component, maxLifeSpan int) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 		var reminder = isParameterTrue(m, prmQryReminder)
@@ -456,7 +457,19 @@ func MakeSendOnboardingEmailEndpoint(component Component) cs.Endpoint {
 			customerRealmName = value
 		}
 
-		return nil, component.SendOnboardingEmail(ctx, m[prmRealm], m[prmUserID], customerRealmName, reminder)
+		var lifespan *int
+		if value, ok := m[prmQryLifespan]; ok {
+			if iValue, err := strconv.Atoi(value); err == nil {
+				if iValue > maxLifeSpan {
+					return nil, errorhandler.CreateInvalidQueryParameterError(prmQryLifespan)
+				}
+				lifespan = &iValue
+			} else {
+				return nil, errorhandler.CreateInvalidQueryParameterError(prmQryLifespan)
+			}
+		}
+
+		return nil, component.SendOnboardingEmail(ctx, m[prmRealm], m[prmUserID], customerRealmName, reminder, lifespan)
 	}
 }
 

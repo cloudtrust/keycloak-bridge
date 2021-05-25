@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/cloudtrust/common-service/log"
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
@@ -773,7 +774,8 @@ func TestSendOnboardingEmailEndpoint(t *testing.T) {
 
 	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
 
-	var e = MakeSendOnboardingEmailEndpoint(mockManagementComponent)
+	var lifespan = int(100 * time.Hour)
+	var e = MakeSendOnboardingEmailEndpoint(mockManagementComponent, lifespan)
 
 	var realm = "master"
 	var customerRealm = "customer"
@@ -784,29 +786,47 @@ func TestSendOnboardingEmailEndpoint(t *testing.T) {
 	req[prmUserID] = userID
 
 	t.Run("Without reminder or customerRealm parameter", func(t *testing.T) {
-		mockManagementComponent.EXPECT().SendOnboardingEmail(ctx, realm, userID, realm, false)
+		mockManagementComponent.EXPECT().SendOnboardingEmail(ctx, realm, userID, realm, false, nil)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Nil(t, res)
 	})
 	t.Run("Reminder is false", func(t *testing.T) {
 		req[prmQryReminder] = "FALse"
-		mockManagementComponent.EXPECT().SendOnboardingEmail(ctx, realm, userID, realm, false)
+		mockManagementComponent.EXPECT().SendOnboardingEmail(ctx, realm, userID, realm, false, nil)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Nil(t, res)
 	})
 	t.Run("Reminder is true", func(t *testing.T) {
 		req[prmQryReminder] = "TruE"
-		mockManagementComponent.EXPECT().SendOnboardingEmail(ctx, realm, userID, realm, true)
+		mockManagementComponent.EXPECT().SendOnboardingEmail(ctx, realm, userID, realm, true, nil)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Nil(t, res)
 	})
-	t.Run("CustomerRealm is set", func(t *testing.T) {
+	t.Run("Reminder is valid, lifespan not used", func(t *testing.T) {
 		req[prmQryReminder] = "false"
 		req[prmQryRealm] = customerRealm
-		mockManagementComponent.EXPECT().SendOnboardingEmail(ctx, realm, userID, customerRealm, false).Return(nil)
+		mockManagementComponent.EXPECT().SendOnboardingEmail(ctx, realm, userID, customerRealm, false, nil).Return(nil)
+		var res, err = e(ctx, req)
+		assert.Nil(t, err)
+		assert.Nil(t, res)
+	})
+	t.Run("Invalid lifespan submitted", func(t *testing.T) {
+		req[prmQryLifespan] = "not-a-number"
+		var _, err = e(ctx, req)
+		assert.NotNil(t, err)
+	})
+	t.Run("Too high lifespan submitted", func(t *testing.T) {
+		req[prmQryLifespan] = strconv.Itoa(int(500 * time.Hour))
+		var _, err = e(ctx, req)
+		assert.NotNil(t, err)
+	})
+	t.Run("Valid lifespan submitted", func(t *testing.T) {
+		var lifespan = int(3 * 24 * time.Hour / time.Second)
+		req[prmQryLifespan] = strconv.Itoa(lifespan)
+		mockManagementComponent.EXPECT().SendOnboardingEmail(ctx, realm, userID, customerRealm, false, &lifespan).Return(nil)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Nil(t, res)
