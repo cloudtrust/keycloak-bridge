@@ -20,6 +20,7 @@ const (
 	RegExpNameSpecialChars128 = `^([\wàáâäçèéêëìíîïñòóôöùúûüß][\wàáâäçèéêëìíîïñòóôöùúûüß \.'-]{0,127})$`
 	RegExpFirstName           = RegExpNameSpecialChars128
 	RegExpLastName            = RegExpNameSpecialChars128
+	RegExpLastNameSearch      = `^[=%]?([\wàáâäçèéêëìíîïñòóôöùúûüß][\wàáâäçèéêëìíîïñòóôöùúûüß \.'-]{0,127}[%]?)$`
 	RegExpPhoneNumber         = `^\+[1-9]\d{1,14}$`
 	RegExpLabel               = regExpLen255
 	RegExpGender              = `^[MFU]$`
