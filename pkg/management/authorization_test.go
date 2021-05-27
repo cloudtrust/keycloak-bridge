@@ -199,7 +199,7 @@ func TestDeny(t *testing.T) {
 		_, err = authorizationMW.SendSmsCode(ctx, realmName, userID)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
-		err = authorizationMW.SendOnboardingEmail(ctx, realmName, userID, customerRealm, false)
+		err = authorizationMW.SendOnboardingEmail(ctx, realmName, userID, customerRealm, false, nil)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
 		err = authorizationMW.SendReminderEmail(ctx, realmName, userID)
@@ -493,8 +493,8 @@ func TestAllowed(t *testing.T) {
 		_, err = authorizationMW.SendSmsCode(ctx, realmName, userID)
 		assert.Nil(t, err)
 
-		mockManagementComponent.EXPECT().SendOnboardingEmail(ctx, realmName, userID, customerRealm, false).Return(nil)
-		err = authorizationMW.SendOnboardingEmail(ctx, realmName, userID, customerRealm, false)
+		mockManagementComponent.EXPECT().SendOnboardingEmail(ctx, realmName, userID, customerRealm, false, nil).Return(nil)
+		err = authorizationMW.SendOnboardingEmail(ctx, realmName, userID, customerRealm, false, nil)
 		assert.Nil(t, err)
 
 		mockManagementComponent.EXPECT().SendReminderEmail(ctx, realmName, userID).Return(nil)

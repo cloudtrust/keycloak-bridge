@@ -806,6 +806,12 @@ paths:
         required: true
         schema:
           type: string
+      - name: lifespan
+        in: query
+        description: validity duration of the link sent in the mail in seconds. If value exceeds the configured max life span, you can get a HTTP status 400.
+        required: false
+        schema:
+          type: integer
       - name: reminder
         in: query
         required: false
