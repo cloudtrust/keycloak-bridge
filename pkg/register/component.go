@@ -53,10 +53,9 @@ type Component interface {
 }
 
 // NewComponent returns component.
-func NewComponent(keycloakURL string, keycloakClient KeycloakClient, tokenProvider toolbox.OidcTokenProvider, usersDBModule keycloakb.UsersDetailsDBModule,
+func NewComponent(keycloakClient KeycloakClient, tokenProvider toolbox.OidcTokenProvider, usersDBModule keycloakb.UsersDetailsDBModule,
 	configDBModule ConfigurationDBModule, eventsDBModule database.EventsDBModule, onboardingModule OnboardingModule, glnVerifier GlnVerifier, logger keycloakb.Logger) Component {
 	return &component{
-		keycloakURL:      keycloakURL,
 		keycloakClient:   keycloakClient,
 		tokenProvider:    tokenProvider,
 		usersDBModule:    usersDBModule,
@@ -70,7 +69,6 @@ func NewComponent(keycloakURL string, keycloakClient KeycloakClient, tokenProvid
 
 // Component is the management component.
 type component struct {
-	keycloakURL      string
 	keycloakClient   KeycloakClient
 	tokenProvider    toolbox.OidcTokenProvider
 	usersDBModule    keycloakb.UsersDetailsDBModule
@@ -127,7 +125,7 @@ func (c *component) GetConfiguration(ctx context.Context, realmName string) (api
 func (c *component) RegisterUser(ctx context.Context, targetRealmName string, customerRealmName string, user apiregister.UserRepresentation) (string, error) {
 	// Get an OIDC token to be able to request Keycloak
 	var accessToken string
-	accessToken, err := c.tokenProvider.ProvideToken(ctx)
+	accessToken, err := c.tokenProvider.ProvideTokenForRealm(ctx, targetRealmName)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Can't get OIDC token", "err", err.Error())
 		return "", err

@@ -3,6 +3,7 @@ package keycloakb
 import (
 	"context"
 	"crypto/rand"
+	"fmt"
 	"math/big"
 	"net/http"
 	"net/url"
@@ -16,10 +17,14 @@ import (
 	kc "github.com/cloudtrust/keycloak-client"
 )
 
+type KeycloakURIProvider interface {
+	GetBaseURI(realm string) string
+}
+
 type onboardingModule struct {
-	keycloakClient OnboardingKeycloakClient
-	keycloakURL    string
-	logger         log.Logger
+	keycloakClient      OnboardingKeycloakClient
+	keycloakURIProvider KeycloakURIProvider
+	logger              log.Logger
 }
 
 // OnboardingKeycloakClient interface
@@ -37,11 +42,11 @@ type OnboardingModule interface {
 }
 
 // NewOnboardingModule creates an onboarding module
-func NewOnboardingModule(keycloakClient OnboardingKeycloakClient, keycloakURL string, logger log.Logger) OnboardingModule {
+func NewOnboardingModule(keycloakClient OnboardingKeycloakClient, keycloakURIProvider KeycloakURIProvider, logger log.Logger) OnboardingModule {
 	return &onboardingModule{
-		keycloakClient: keycloakClient,
-		keycloakURL:    keycloakURL,
-		logger:         logger,
+		keycloakClient:      keycloakClient,
+		keycloakURIProvider: keycloakURIProvider,
+		logger:              logger,
 	}
 }
 
@@ -57,8 +62,8 @@ func (om *onboardingModule) OnboardingAlreadyCompleted(kcUser kc.UserRepresentat
 
 func (om *onboardingModule) SendOnboardingEmail(ctx context.Context, accessToken string, realmName string, userID string, username string,
 	onboardingClientID string, onboardingRedirectURI string, themeRealmName string, reminder bool, lifespan *int) error {
-
-	redirectURL, err := url.Parse(om.keycloakURL + "/auth/realms/" + realmName + "/protocol/openid-connect/auth")
+	var kcURL = fmt.Sprintf("%s/auth/realms/%s/protocol/openid-connect/auth", om.keycloakURIProvider.GetBaseURI(realmName), realmName)
+	redirectURL, err := url.Parse(kcURL)
 	if err != nil {
 		om.logger.Warn(ctx, "msg", "Can't parse keycloak URL", "err", err.Error())
 		return err
@@ -78,7 +83,7 @@ func (om *onboardingModule) SendOnboardingEmail(ctx context.Context, accessToken
 		actions = append(actions, "reminder-action")
 	}
 	var additionalParams = []string{"client_id", onboardingClientID, "redirect_uri", redirectURL.String(), "themeRealm", themeRealmName}
-	if (lifespan!=nil) {
+	if lifespan != nil {
 		additionalParams = append(additionalParams, "lifespan", strconv.Itoa(*lifespan))
 	}
 	err = om.keycloakClient.ExecuteActionsEmail(accessToken, realmName, realmName, userID, actions, additionalParams...)

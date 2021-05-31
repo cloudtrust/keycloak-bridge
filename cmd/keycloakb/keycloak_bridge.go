@@ -14,13 +14,12 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/cloudtrust/common-service/configuration"
-	"github.com/cloudtrust/common-service/database/sqltypes"
-	"github.com/cloudtrust/common-service/healthcheck"
-
 	cs "github.com/cloudtrust/common-service"
+	"github.com/cloudtrust/common-service/configuration"
 	"github.com/cloudtrust/common-service/database"
+	"github.com/cloudtrust/common-service/database/sqltypes"
 	errorhandler "github.com/cloudtrust/common-service/errors"
+	"github.com/cloudtrust/common-service/healthcheck"
 	commonhttp "github.com/cloudtrust/common-service/http"
 	"github.com/cloudtrust/common-service/idgenerator"
 	"github.com/cloudtrust/common-service/log"
@@ -88,7 +87,7 @@ const (
 	cfgHTTPAddrAccount          = "account-http-host-port"
 	cfgHTTPAddrRegister         = "register-http-host-port"
 	cfgHTTPAddrMobile           = "mobile-http-host-port"
-	cfgAddrTokenProvider        = "keycloak-oidc-uri"
+	cfgAddrTokenProviderMap     = "keycloak-oidc-uri-map"
 	cfgAddrAPI                  = "keycloak-api-uri"
 	cfgTimeout                  = "keycloak-timeout"
 	cfgAudienceRequired         = "audience-required"
@@ -145,6 +144,8 @@ const (
 	cfgGlnMedRegEnabled         = "gln-medreg-enabled"
 	cfgGlnMedRegURI             = "gln-medreg-uri"
 	cfgGlnMedRegTimeout         = "gln-medreg-timeout"
+
+	tokenProviderDefaultKey = "default"
 )
 
 func init() {
@@ -195,13 +196,6 @@ func main() {
 		httpAddrAccount    = c.GetString(cfgHTTPAddrAccount)
 		httpAddrRegister   = c.GetString(cfgHTTPAddrRegister)
 		httpAddrMobile     = c.GetString(cfgHTTPAddrMobile)
-
-		// Keycloak
-		keycloakConfig = keycloak.Config{
-			AddrTokenProvider: c.GetString(cfgAddrTokenProvider),
-			AddrAPI:           c.GetString(cfgAddrAPI),
-			Timeout:           c.GetDuration(cfgTimeout),
-		}
 
 		// Enabled units
 		pprofRouteEnabled = c.GetBool(cfgPprofRouteEnabled)
@@ -355,6 +349,23 @@ func main() {
 	// Security - allowed trustID groups
 	var trustIDGroups = c.GetStringSlice(cfgTrustIDGroups)
 
+	// Keycloak
+	var tokenProviderMap = c.GetStringMapString(cfgAddrTokenProviderMap)
+	var uriProvider keycloak.KeycloakURIProvider
+	{
+		uriProvider, err = toolbox.NewKeycloakURIProvider(tokenProviderMap, tokenProviderDefaultKey)
+		if err != nil {
+			logger.Error(ctx, "msg", "can't create Keycloak URI provider", "err", err)
+			return
+		}
+	}
+	var keycloakConfig = keycloak.Config{
+		AddrTokenProvider: uriProvider.GetAllBaseURIs(),
+		URIProvider:       uriProvider,
+		AddrAPI:           c.GetString(cfgAddrAPI),
+		Timeout:           c.GetDuration(cfgTimeout),
+	}
+
 	// Keycloak client.
 	var keycloakClient *keycloakapi.Client
 	{
@@ -375,13 +386,6 @@ func main() {
 
 	// Keycloak adaptor for common-service library
 	commonKcAdaptor := keycloakb.NewKeycloakAuthClient(keycloakClient, logger)
-
-	// Public Keycloak URL
-	var keycloakPublicURL string
-	{
-		urls := strings.Split(keycloakConfig.AddrTokenProvider, " ")
-		keycloakPublicURL = urls[0]
-	}
 
 	var sentryClient tracking.SentryTracking
 	{
@@ -484,9 +488,11 @@ func main() {
 	var technicalTokenProvider toolbox.OidcTokenProvider
 	{
 		technicalTokenProvider = toolbox.NewOidcTokenProvider(keycloakConfig, technicalRealm, technicalUsername, technicalPassword, technicalClientID, logger)
-		var _, err = technicalTokenProvider.ProvideToken(context.Background())
-		if err != nil {
-			logger.Warn(context.Background(), "msg", "OIDC token provider validation failed for technical user", "err", err.Error())
+		for realm := range tokenProviderMap {
+			var _, err = technicalTokenProvider.ProvideTokenForRealm(context.Background(), realm)
+			if err != nil {
+				logger.Warn(context.Background(), "msg", "OIDC token provider validation failed for technical user", "err", err.Error(), "realm", realm)
+			}
 		}
 	}
 
@@ -674,7 +680,7 @@ func main() {
 		var usersDBModule = keycloakb.NewUsersDetailsDBModule(usersRwDBConn, aesEncryption, managementLogger)
 
 		// module for onboarding process
-		var onboardingModule = keycloakb.NewOnboardingModule(keycloakClient, keycloakPublicURL, logger)
+		var onboardingModule = keycloakb.NewOnboardingModule(keycloakClient, keycloakConfig.URIProvider, logger)
 
 		var keycloakComponent management.Component
 		{
@@ -836,9 +842,9 @@ func main() {
 		var usersDBModule = keycloakb.NewUsersDetailsDBModule(usersRwDBConn, aesEncryption, registerLogger)
 
 		// module for onboarding process
-		var onboardingModule = keycloakb.NewOnboardingModule(keycloakClient, keycloakPublicURL, registerLogger)
+		var onboardingModule = keycloakb.NewOnboardingModule(keycloakClient, keycloakConfig.URIProvider, registerLogger)
 
-		registerComponent := register.NewComponent(keycloakPublicURL, keycloakClient, technicalTokenProvider, usersDBModule, configDBModule, eventsDBModule, onboardingModule, glnVerifier, registerLogger)
+		registerComponent := register.NewComponent(keycloakClient, technicalTokenProvider, usersDBModule, configDBModule, eventsDBModule, onboardingModule, glnVerifier, registerLogger)
 		registerComponent = register.MakeAuthorizationRegisterComponentMW(log.With(registerLogger, "mw", "endpoint"))(registerComponent)
 
 		var rateLimitRegister = rateLimit[RateKeyRegister]
@@ -965,7 +971,7 @@ func main() {
 		var route = mux.NewRouter()
 
 		// Version.
-		route.Handle("/", http.HandlerFunc(commonhttp.MakeVersionHandler(keycloakb.ComponentName, ComponentID, keycloakb.Version, Environment, GitCommit)))
+		route.Handle("/", commonhttp.MakeVersionHandler(keycloakb.ComponentName, ComponentID, keycloakb.Version, Environment, GitCommit))
 		route.Handle(pathHealthCheck, healthChecker.MakeHandler())
 
 		// Rights
@@ -1191,7 +1197,7 @@ func main() {
 		var route = mux.NewRouter()
 
 		// Version.
-		route.Handle("/", http.HandlerFunc(commonhttp.MakeVersionHandler(keycloakb.ComponentName, ComponentID, keycloakb.Version, Environment, GitCommit)))
+		route.Handle("/", commonhttp.MakeVersionHandler(keycloakb.ComponentName, ComponentID, keycloakb.Version, Environment, GitCommit))
 		route.Handle(pathHealthCheck, healthChecker.MakeHandler())
 
 		// Account
@@ -1244,7 +1250,7 @@ func main() {
 		var route = mux.NewRouter()
 
 		// Version.
-		route.Handle("/", http.HandlerFunc(commonhttp.MakeVersionHandler(keycloakb.ComponentName, ComponentID, keycloakb.Version, Environment, GitCommit)))
+		route.Handle("/", commonhttp.MakeVersionHandler(keycloakb.ComponentName, ComponentID, keycloakb.Version, Environment, GitCommit))
 		route.Handle(pathHealthCheck, healthChecker.MakeHandler())
 
 		// Mobile
@@ -1272,7 +1278,7 @@ func main() {
 		var route = mux.NewRouter()
 
 		// Version.
-		route.Handle("/", http.HandlerFunc(commonhttp.MakeVersionHandler(keycloakb.ComponentName, ComponentID, keycloakb.Version, Environment, GitCommit)))
+		route.Handle("/", commonhttp.MakeVersionHandler(keycloakb.ComponentName, ComponentID, keycloakb.Version, Environment, GitCommit))
 		route.Handle(pathHealthCheck, healthChecker.MakeHandler())
 
 		// Configuration
@@ -1358,7 +1364,7 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 
 	// Keycloak default.
 	v.SetDefault(cfgAddrAPI, "http://127.0.0.1:8080")
-	v.SetDefault(cfgAddrTokenProvider, "http://127.0.0.1:8080 http://localhost:8080")
+	v.SetDefault(cfgAddrTokenProviderMap, map[string]string{"default": "http://127.0.0.1:8080", "_local": "http://localhost:8080"})
 	v.SetDefault(cfgTimeout, "5s")
 
 	// Storage events in DB (read/write)

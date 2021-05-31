@@ -77,8 +77,7 @@ func createMocks(mockCtrl *gomock.Controller) *componentMocks {
 }
 
 func (mocks *componentMocks) createComponent() *component {
-	var keycloakURL = "https://idp.trustid.ch"
-	return NewComponent(keycloakURL, mocks.keycloakClient, mocks.tokenProvider, mocks.usersDB, mocks.configDB, mocks.eventsDB,
+	return NewComponent(mocks.keycloakClient, mocks.tokenProvider, mocks.usersDB, mocks.configDB, mocks.eventsDB,
 		mocks.onboardingModule, mocks.glnVerifier, log.NewNopLogger()).(*component)
 }
 
@@ -145,12 +144,12 @@ func TestRegisterUser(t *testing.T) {
 	errorhandler.SetEmitter(keycloakb.ComponentName)
 
 	t.Run("Failed to retrieve token", func(t *testing.T) {
-		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return("", errors.New("unexpected error"))
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, gomock.Any()).Return("", errors.New("unexpected error"))
 
 		var _, err = component.RegisterUser(ctx, targetRealmName, customerRealmName, user)
 		assert.NotNil(t, err)
 	})
-	mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil).AnyTimes()
+	mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, gomock.Any()).Return(accessToken, nil).AnyTimes()
 
 	t.Run("Failed to retrieve realm configuration", func(t *testing.T) {
 		mocks.configDB.EXPECT().GetConfigurations(ctx, targetRealmName).Return(configuration.RealmConfiguration{}, configuration.RealmAdminConfiguration{}, errors.New("unexpected error"))
