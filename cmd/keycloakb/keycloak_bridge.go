@@ -293,7 +293,7 @@ func main() {
 		level, err = log.ConvertToLevel(logLevel)
 
 		if err != nil {
-			logger.Error(ctx, "error", err)
+			logger.Error(ctx, "err", err)
 			return
 		}
 
@@ -337,12 +337,12 @@ func main() {
 	// Security - AES encryption mechanism for users PII
 	aesEncryption, err := security.NewAesGcmEncrypterFromBase64(c.GetString(cfgDbAesGcmKey), c.GetInt(cfgDbAesGcmTagSize))
 	if err != nil {
-		logger.Error(ctx, "msg", "could not create AES-GCM encrypting tool instance (users)", "error", err)
+		logger.Error(ctx, "msg", "could not create AES-GCM encrypting tool instance (users)", "err", err)
 		return
 	}
 	archiveAesEncryption, err := security.NewAesGcmEncrypterFromBase64(c.GetString(cfgDbArchiveAesGcmKey), c.GetInt(cfgDbArchiveAesGcmTagSize))
 	if err != nil {
-		logger.Error(ctx, "msg", "could not create AES-GCM encrypting tool instance (archive)", "error", err)
+		logger.Error(ctx, "msg", "could not create AES-GCM encrypting tool instance (archive)", "err", err)
 		return
 	}
 
@@ -373,7 +373,7 @@ func main() {
 		keycloakClient, err = keycloakapi.New(keycloakConfig)
 
 		if err != nil {
-			logger.Error(ctx, "msg", "could not create Keycloak client", "error", err)
+			logger.Error(ctx, "msg", "could not create Keycloak client", "err", err)
 			return
 		}
 	}
@@ -393,7 +393,7 @@ func main() {
 		var err error
 		sentryClient, err = tracking.NewSentry(c, "sentry")
 		if err != nil {
-			logger.Error(ctx, "msg", "could not create Sentry client", "error", err)
+			logger.Error(ctx, "msg", "could not create Sentry client", "err", err)
 			return
 		}
 		defer sentryClient.Close()
@@ -404,7 +404,7 @@ func main() {
 		var err error
 		influxMetrics, err = metrics.NewMetrics(c, "influx", logger)
 		if err != nil {
-			logger.Error(ctx, "msg", "could not create Influx client", "error", err)
+			logger.Error(ctx, "msg", "could not create Influx client", "err", err)
 			return
 		}
 		defer influxMetrics.Close()
@@ -418,7 +418,7 @@ func main() {
 
 		tracer, err = tracing.CreateJaegerClient(c, "jaeger", keycloakb.ComponentName)
 		if err != nil {
-			logger.Error(ctx, "msg", "could not create Jaeger tracer", "error", err)
+			logger.Error(ctx, "msg", "could not create Jaeger tracer", "err", err)
 			return
 		}
 		defer tracer.Close()
@@ -429,7 +429,7 @@ func main() {
 		var err error
 		eventsDBConn, err = database.NewReconnectableCloudtrustDB(auditRwDbParams)
 		if err != nil {
-			logger.Error(ctx, "msg", "could not create R/W DB connection for audit events", "error", err)
+			logger.Error(ctx, "msg", "could not create R/W DB connection for audit events", "err", err)
 			return
 		}
 	}
@@ -439,7 +439,7 @@ func main() {
 		var err error
 		eventsRODBConn, err = database.NewReconnectableCloudtrustDB(auditRoDbParams)
 		if err != nil {
-			logger.Error(ctx, "msg", "could not create RO DB connection for audit events", "error", err)
+			logger.Error(ctx, "msg", "could not create RO DB connection for audit events", "err", err)
 			return
 		}
 	}
@@ -449,7 +449,7 @@ func main() {
 		var err error
 		configurationRwDBConn, err = database.NewReconnectableCloudtrustDB(configRwDbParams)
 		if err != nil {
-			logger.Error(ctx, "msg", "could not create DB connection for configuration storage (RW)", "error", err)
+			logger.Error(ctx, "msg", "could not create DB connection for configuration storage (RW)", "err", err)
 			return
 		}
 	}
@@ -459,7 +459,7 @@ func main() {
 		var err error
 		configurationRoDBConn, err = database.NewReconnectableCloudtrustDB(configRoDbParams)
 		if err != nil {
-			logger.Error(ctx, "msg", "could not create DB connection for configuration storage (RO)", "error", err)
+			logger.Error(ctx, "msg", "could not create DB connection for configuration storage (RO)", "err", err)
 			return
 		}
 	}
@@ -469,7 +469,7 @@ func main() {
 		var err error
 		usersRwDBConn, err = database.NewReconnectableCloudtrustDB(usersRwDbParams)
 		if err != nil {
-			logger.Error(ctx, "msg", "could not create DB connection for users (RW)", "error", err)
+			logger.Error(ctx, "msg", "could not create DB connection for users (RW)", "err", err)
 			return
 		}
 	}
@@ -479,7 +479,7 @@ func main() {
 		var err error
 		archiveRwDBConn, err = database.NewReconnectableCloudtrustDB(archiveRwDbParams)
 		if err != nil {
-			logger.Error(ctx, "msg", "could not create DB connection for archive (RW)", "error", err)
+			logger.Error(ctx, "msg", "could not create DB connection for archive (RW)", "err", err)
 			return
 		}
 	}
@@ -526,7 +526,7 @@ func main() {
 		authorizationManager, err = security.NewAuthorizationManager(configurationReaderDBModule, commonKcAdaptor, authorizationLogger)
 
 		if err != nil {
-			logger.Error(ctx, "msg", "could not load authorizations", "error", err)
+			logger.Error(ctx, "msg", "could not load authorizations", "err", err)
 			return
 		}
 	}
@@ -1318,7 +1318,7 @@ func main() {
 	}()
 
 	logger.Info(ctx, "msg", "Started")
-	logger.Error(ctx, "error", <-errc)
+	logger.Error(ctx, "err", <-errc)
 }
 
 func config(ctx context.Context, logger log.Logger) *viper.Viper {
@@ -1495,7 +1495,7 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 	v.SetConfigFile(v.GetString(cfgConfigFile))
 	var err = v.ReadInConfig()
 	if err != nil {
-		logger.Error(ctx, "error", err)
+		logger.Error(ctx, "err", err)
 	}
 
 	// If the host/port is not set, we consider the components deactivated.

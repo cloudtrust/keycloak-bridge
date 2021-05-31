@@ -122,7 +122,7 @@ func (c *configurationDBModule) GetBackOfficeConfiguration(ctx context.Context, 
 
 	var rows, err = c.db.Query(sqlRequest, args...)
 	if err != nil {
-		c.logger.Warn(ctx, "msg", "Can't get back-office configuration", "error", err.Error(), "realmID", realmID, "groups", strings.Join(groupNames, ","))
+		c.logger.Warn(ctx, "msg", "Can't get back-office configuration", "err", err.Error(), "realmID", realmID, "groups", strings.Join(groupNames, ","))
 		return nil, err
 	}
 	defer rows.Close()
@@ -132,7 +132,7 @@ func (c *configurationDBModule) GetBackOfficeConfiguration(ctx context.Context, 
 		var targetRealmID, targetType, targetGroupName string
 		err = rows.Scan(&targetRealmID, &targetType, &targetGroupName)
 		if err != nil {
-			c.logger.Warn(ctx, "msg", "Can't get row from back-office configuration", "error", err.Error(), "realmID", realmID, "groups", strings.Join(groupNames, ","))
+			c.logger.Warn(ctx, "msg", "Can't get row from back-office configuration", "err", err.Error(), "realmID", realmID, "groups", strings.Join(groupNames, ","))
 			return nil, err
 		}
 		if _, ok := res[targetRealmID]; !ok {
@@ -151,7 +151,7 @@ func (c *configurationDBModule) GetBackOfficeConfiguration(ctx context.Context, 
 func (c *configurationDBModule) DeleteBackOfficeConfiguration(ctx context.Context, realmID, groupName, targetRealmID string, targetType *string, targetGroupName *string) error {
 	var _, err = c.db.Exec(deleteBOConfigStmt, realmID, groupName, targetRealmID, targetType, targetType, targetGroupName, targetGroupName)
 	if err != nil {
-		c.logger.Warn(ctx, "msg", "Can't delete back-office configuration", "error", err.Error(), "realmName", realmID, "group", groupName,
+		c.logger.Warn(ctx, "msg", "Can't delete back-office configuration", "err", err.Error(), "realmName", realmID, "group", groupName,
 			"targetRealmName", targetRealmID, "targetType", targetType, "group", targetGroupName)
 		return err
 	}
@@ -162,7 +162,7 @@ func (c *configurationDBModule) InsertBackOfficeConfiguration(ctx context.Contex
 	for _, targetGroupName := range targetGroupNames {
 		var _, err = c.db.Exec(insertBOConfigStmt, realmID, groupName, targetRealmID, targetType, targetGroupName)
 		if err != nil {
-			c.logger.Warn(ctx, "msg", "Can't insert into back-office configuration", "error", err.Error(), "realmID", realmID, "groupName", groupName,
+			c.logger.Warn(ctx, "msg", "Can't insert into back-office configuration", "err", err.Error(), "realmID", realmID, "groupName", groupName,
 				"targetRealmName", targetRealmID, "targetType", targetType, "group", targetGroupName)
 			return err
 		}
@@ -174,7 +174,7 @@ func (c *configurationDBModule) GetAuthorizations(ctx context.Context, realmID s
 	// Get Authorizations from DB
 	rows, err := c.db.Query(selectAuthzStmt, realmID, groupName)
 	if err != nil {
-		c.logger.Warn(ctx, "msg", "Can't get authorizations", "error", err.Error(), "realmID", realmID, "groupName", groupName)
+		c.logger.Warn(ctx, "msg", "Can't get authorizations", "err", err.Error(), "realmID", realmID, "groupName", groupName)
 		return nil, err
 	}
 	defer rows.Close()
@@ -184,7 +184,7 @@ func (c *configurationDBModule) GetAuthorizations(ctx context.Context, realmID s
 	for rows.Next() {
 		authz, err = c.scanAuthorization(rows)
 		if err != nil {
-			c.logger.Warn(ctx, "msg", "Can't get authorizations. Scan failed", "error", err.Error(), "realmID", realmID, "groupName", groupName)
+			c.logger.Warn(ctx, "msg", "Can't get authorizations. Scan failed", "err", err.Error(), "realmID", realmID, "groupName", groupName)
 			return nil, err
 		}
 		res = append(res, authz)

@@ -61,7 +61,7 @@ func (c *authorizationComponentMW) UpdatePassword(ctx context.Context, currentPa
 		infos, _ := json.Marshal(map[string]string{
 			infosCurrentRealm: currentRealm,
 		})
-		c.logger.Error(ctx, "Error", "Configuration not found", "infos", string(infos))
+		c.logger.Error(ctx, "err", "Configuration not found", "infos", string(infos))
 		return err
 	}
 
@@ -70,7 +70,7 @@ func (c *authorizationComponentMW) UpdatePassword(ctx context.Context, currentPa
 			infosAction:       action,
 			infosCurrentRealm: currentRealm,
 		})
-		c.logger.Debug(ctx, "ForbiddenError", "Password change disabled", "infos", string(infos))
+		c.logger.Debug(ctx, "err", "Forbidden: password change disabled", "infos", string(infos))
 		return security.ForbiddenError{}
 	}
 
@@ -109,7 +109,7 @@ func (c *authorizationComponentMW) DeleteCredential(ctx context.Context, credent
 		infos, _ := json.Marshal(map[string]string{
 			infosCurrentRealm: currentRealm,
 		})
-		c.logger.Error(ctx, "Error", "Configuration not found", "infos", string(infos))
+		c.logger.Error(ctx, "err", "Configuration not found", "infos", string(infos))
 		return err
 	}
 
@@ -118,7 +118,7 @@ func (c *authorizationComponentMW) DeleteCredential(ctx context.Context, credent
 			infosAction:       action,
 			infosCurrentRealm: currentRealm,
 		})
-		c.logger.Debug(ctx, "ForbiddenError", "Authenticator deletion disabled", "infos", string(infos))
+		c.logger.Debug(ctx, "err", "Forbidden: authenticator deletion disabled", "infos", string(infos))
 		return security.ForbiddenError{}
 	}
 
@@ -141,7 +141,7 @@ func (c *authorizationComponentMW) UpdateAccount(ctx context.Context, account ap
 		infos, _ := json.Marshal(map[string]string{
 			infosCurrentRealm: currentRealm,
 		})
-		c.logger.Error(ctx, "Error", "Configuration not found", "infos", string(infos))
+		c.logger.Error(ctx, "err", "Configuration not found", "infos", string(infos))
 		return err
 	}
 
@@ -150,7 +150,7 @@ func (c *authorizationComponentMW) UpdateAccount(ctx context.Context, account ap
 			infosAction:       action,
 			infosCurrentRealm: currentRealm,
 		})
-		c.logger.Debug(ctx, "ForbiddenError", "Account edition disabled", "infos", string(infos))
+		c.logger.Debug(ctx, "err", "Forbidden: account edition disabled", "infos", string(infos))
 		return security.ForbiddenError{}
 	}
 
@@ -168,7 +168,7 @@ func (c *authorizationComponentMW) DeleteAccount(ctx context.Context) error {
 		infos, _ := json.Marshal(map[string]string{
 			infosCurrentRealm: currentRealm,
 		})
-		c.logger.Error(ctx, "Error", "Configuration not found", "infos", string(infos))
+		c.logger.Error(ctx, "err", "Configuration not found", "infos", string(infos))
 		return err
 	}
 
@@ -177,7 +177,7 @@ func (c *authorizationComponentMW) DeleteAccount(ctx context.Context) error {
 			infosAction:       action,
 			infosCurrentRealm: currentRealm,
 		})
-		c.logger.Debug(ctx, "ForbiddenError", "Account deletion disabled", "infos", string(infos))
+		c.logger.Debug(ctx, "err", "Forbidden: account deletion disabled", "infos", string(infos))
 		return security.ForbiddenError{}
 	}
 	return c.next.DeleteAccount(ctx)

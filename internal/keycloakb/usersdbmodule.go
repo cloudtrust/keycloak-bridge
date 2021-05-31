@@ -83,7 +83,7 @@ func (c *usersDBModule) StoreOrUpdateUserDetails(ctx context.Context, realm stri
 	// encrypt the JSON containing the details on the user
 	encryptedData, err := c.cipher.Encrypt(userJSON, []byte(*user.UserID))
 	if err != nil {
-		c.logger.Warn(ctx, "msg", "Can't encrypt the user details", "error", err.Error(), "realmID", realm, "userID", &user.UserID)
+		c.logger.Warn(ctx, "msg", "Can't encrypt the user details", "err", err.Error(), "realmID", realm, "userID", &user.UserID)
 		return err
 	}
 
@@ -109,7 +109,7 @@ func (c *usersDBModule) GetUserDetails(ctx context.Context, realm string, userID
 		//decrypt the user details & unmarshal
 		detailsJSON, err := c.cipher.Decrypt(encryptedDetails, []byte(userID))
 		if err != nil {
-			c.logger.Warn(ctx, "msg", "Can't decrypt the user details", "error", err.Error(), "realmID", realm, "userID", userID)
+			c.logger.Warn(ctx, "msg", "Can't decrypt the user details", "err", err.Error(), "realmID", realm, "userID", userID)
 			return dto.DBUser{}, err
 		}
 		err = json.Unmarshal(detailsJSON, &details)
@@ -131,7 +131,7 @@ func (c *usersDBModule) CreateCheck(ctx context.Context, realm string, userID st
 		// encrypt the proof data & protect integrity of userID associated to the proof data
 		encryptedData, err := c.cipher.Encrypt(*check.ProofData, []byte(userID))
 		if err != nil {
-			c.logger.Warn(ctx, "msg", "Can't encrypt the proof data", "error", err.Error(), "realmID", realm, "userID", userID)
+			c.logger.Warn(ctx, "msg", "Can't encrypt the proof data", "err", err.Error(), "realmID", realm, "userID", userID)
 			return err
 		}
 		proofData = &encryptedData
@@ -173,7 +173,7 @@ func (c *usersDBModule) GetChecks(ctx context.Context, realm string, userID stri
 			//decrypt the proof data of the user
 			proofData, err = c.cipher.Decrypt(encryptedProofData, []byte(userID))
 			if err != nil {
-				c.logger.Warn(ctx, "msg", "Can't decrypt the proof data", "error", err.Error(), "realmID", realm, "userID", userID)
+				c.logger.Warn(ctx, "msg", "Can't decrypt the proof data", "err", err.Error(), "realmID", realm, "userID", userID)
 				return nil, err
 			}
 		}
