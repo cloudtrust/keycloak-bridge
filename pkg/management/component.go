@@ -564,7 +564,7 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 	}
 
 	//store the API call into the DB in case where user.Enable is present
-	if user.Enabled != nil {
+	if user.Enabled != nil && (oldUserKc.Enabled == nil || *user.Enabled != *oldUserKc.Enabled) {
 		c.reportLockEvent(ctx, realmName, userID, user.Username, *user.Enabled)
 	}
 
