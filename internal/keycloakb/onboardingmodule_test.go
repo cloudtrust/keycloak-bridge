@@ -126,10 +126,11 @@ func TestSendOnboardingEmail(t *testing.T) {
 		var expectedFullURI = "http://keycloak.url/auth/realms/" + realmName + "/protocol/openid-connect/auth?client_id=" + onboardingClientID + "&login_hint=" + username + "&redirect_uri=" + embeddedURI + "&response_type=code&scope=openid"
 		mockKeycloakClient.EXPECT().ExecuteActionsEmail(accessToken, realmName, realmName, userID, expectedActionsNoReminder,
 			"client_id", onboardingClientID, "redirect_uri", gomock.Any(), "themeRealm", themeRealmName, "lifespan", "5400").DoAndReturn(
-			func(_, _, _, _ string, _ []string, _, _, _ string, redirectURI string, _, _, _, _ interface{}) error {
-				_, err := url.Parse(redirectURI)
+			func(_, _, _, _ string, _ []string, params ...string) error {
+				// params: _, _, _ string, redirectURI string, _, _, _, _ interface{}
+				_, err := url.Parse(params[3])
 				assert.Nil(t, err)
-				assert.Equal(t, expectedFullURI, redirectURI)
+				assert.Equal(t, expectedFullURI, params[3])
 				return nil
 			})
 		err := onboardingModule.SendOnboardingEmail(ctx, accessToken, realmName, userID, username, onboardingClientID, onboardingRedirectURI, themeRealmName, false, &lifespan)

@@ -52,6 +52,7 @@ import (
 	"github.com/rs/cors"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+	"golang.org/x/time/rate"
 )
 
 var (
@@ -72,14 +73,15 @@ const (
 	pathHealthCheck     = "/health/check"
 
 	RateKeyAccount        = iota
+	RateKeyCommunications = iota
 	RateKeyEvents         = iota
 	RateKeyKYC            = iota
 	RateKeyManagement     = iota
 	RateKeyMobile         = iota
+	RateKeyMonitoring     = iota
 	RateKeyRegister       = iota
 	RateKeyStatistics     = iota
 	RateKeyValidation     = iota
-	RateKeyCommunications = iota
 
 	cfgConfigFile               = "config-file"
 	cfgHTTPAddrInternal         = "internal-http-host-port"
@@ -87,6 +89,7 @@ const (
 	cfgHTTPAddrAccount          = "account-http-host-port"
 	cfgHTTPAddrRegister         = "register-http-host-port"
 	cfgHTTPAddrMobile           = "mobile-http-host-port"
+	cfgHTTPAddrMonitoring       = "monitoring-http-host-port"
 	cfgAddrTokenProviderMap     = "keycloak-oidc-uri-map"
 	cfgAddrAPI                  = "keycloak-api-uri"
 	cfgTimeout                  = "keycloak-timeout"
@@ -105,6 +108,7 @@ const (
 	cfgRateKeyCommunications    = "rate-communications"
 	cfgRateKeyAccount           = "rate-account"
 	cfgRateKeyMobile            = "rate-mobile"
+	cfgRateKeyMonitoring        = "rate-monitoring"
 	cfgRateKeyManagement        = "rate-management"
 	cfgRateKeyStatistics        = "rate-statistics"
 	cfgRateKeyEvents            = "rate-events"
@@ -196,6 +200,7 @@ func main() {
 		httpAddrAccount    = c.GetString(cfgHTTPAddrAccount)
 		httpAddrRegister   = c.GetString(cfgHTTPAddrRegister)
 		httpAddrMobile     = c.GetString(cfgHTTPAddrMobile)
+		httpAddrMonitoring = c.GetString(cfgHTTPAddrMonitoring)
 
 		// Enabled units
 		pprofRouteEnabled = c.GetBool(cfgPprofRouteEnabled)
@@ -225,6 +230,7 @@ func main() {
 			RateKeyCommunications: c.GetInt(cfgRateKeyCommunications),
 			RateKeyAccount:        c.GetInt(cfgRateKeyAccount),
 			RateKeyMobile:         c.GetInt(cfgRateKeyMobile),
+			RateKeyMonitoring:     c.GetInt(cfgRateKeyMonitoring),
 			RateKeyManagement:     c.GetInt(cfgRateKeyManagement),
 			RateKeyStatistics:     c.GetInt(cfgRateKeyStatistics),
 			RateKeyEvents:         c.GetInt(cfgRateKeyEvents),
@@ -910,16 +916,26 @@ func main() {
 	var exportEndpoint = export.MakeExportEndpoint(exportComponent)
 	var exportSaveAndExportEndpoint = export.MakeStoreAndExportEndpoint(exportComponent)
 
+	// HTTP Monitoring (For monitoring probes, ...).
+	go func() {
+		var logger = log.With(logger, "transport", "http")
+		logger.Info(ctx, "addr", httpAddrMonitoring)
+
+		var route = mux.NewRouter()
+		var limiter = rate.NewLimiter(rate.Every(time.Second), rateLimit[RateKeyMonitoring])
+
+		route.Handle("/", commonhttp.MakeVersionHandler(keycloakb.ComponentName, ComponentID, keycloakb.Version, Environment, GitCommit))
+		route.Handle(pathHealthCheck, healthChecker.MakeHandler(limiter))
+
+		errc <- http.ListenAndServe(httpAddrMonitoring, route)
+	}()
+
 	// HTTP Internal Call Server (Export, Communications & Validation API).
 	go func() {
 		var logger = log.With(logger, "transport", "http")
 		logger.Info(ctx, "addr", httpAddrInternal)
 
 		var route = mux.NewRouter()
-
-		// Version.
-		route.Handle("/", commonhttp.MakeVersionHandler(keycloakb.ComponentName, ComponentID, keycloakb.Version, Environment, GitCommit))
-		route.Handle(pathHealthCheck, healthChecker.MakeHandler())
 
 		// Export.
 		route.Handle("/export", export.MakeHTTPExportHandler(exportEndpoint)).Methods("GET")
@@ -973,10 +989,6 @@ func main() {
 		logger.Info(ctx, "addr", httpAddrManagement)
 
 		var route = mux.NewRouter()
-
-		// Version.
-		route.Handle("/", commonhttp.MakeVersionHandler(keycloakb.ComponentName, ComponentID, keycloakb.Version, Environment, GitCommit))
-		route.Handle(pathHealthCheck, healthChecker.MakeHandler())
 
 		// Rights
 		var rightsHandler = configureRightsHandler(keycloakb.ComponentName, ComponentID, idGenerator, authorizationManager, keycloakClient, audienceRequired, tracer, logger)
@@ -1200,10 +1212,6 @@ func main() {
 
 		var route = mux.NewRouter()
 
-		// Version.
-		route.Handle("/", commonhttp.MakeVersionHandler(keycloakb.ComponentName, ComponentID, keycloakb.Version, Environment, GitCommit))
-		route.Handle(pathHealthCheck, healthChecker.MakeHandler())
-
 		// Account
 		var updatePasswordHandler = configureAccountHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(accountEndpoints.UpdatePassword)
 		var getCredentialsHandler = configureAccountHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(accountEndpoints.GetCredentials)
@@ -1253,10 +1261,6 @@ func main() {
 
 		var route = mux.NewRouter()
 
-		// Version.
-		route.Handle("/", commonhttp.MakeVersionHandler(keycloakb.ComponentName, ComponentID, keycloakb.Version, Environment, GitCommit))
-		route.Handle(pathHealthCheck, healthChecker.MakeHandler())
-
 		// Mobile
 		var getUserInfoHandler = configureMobileHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, mobileAudienceRequired, tracer, logger)(mobileEndpoints.GetUserInformation)
 
@@ -1280,10 +1284,6 @@ func main() {
 		logger.Info(ctx, "addr", httpAddrRegister)
 
 		var route = mux.NewRouter()
-
-		// Version.
-		route.Handle("/", commonhttp.MakeVersionHandler(keycloakb.ComponentName, ComponentID, keycloakb.Version, Environment, GitCommit))
-		route.Handle(pathHealthCheck, healthChecker.MakeHandler())
 
 		// Configuration
 		var getConfigurationHandler = configurePublicRegisterHandler(keycloakb.ComponentName, ComponentID, idGenerator, tracer, logger)(registerEndpoints.GetConfiguration)
@@ -1341,6 +1341,7 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 	v.SetDefault(cfgHTTPAddrAccount, defaultPublishingIP+":8866")
 	v.SetDefault(cfgHTTPAddrRegister, defaultPublishingIP+":8855")
 	v.SetDefault(cfgHTTPAddrMobile, defaultPublishingIP+":8844")
+	v.SetDefault(cfgHTTPAddrMonitoring, defaultPublishingIP+":8899")
 
 	// Security - Audience check
 	v.SetDefault(cfgAudienceRequired, "")
@@ -1395,6 +1396,7 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 	v.SetDefault(cfgRateKeyCommunications, 1000)
 	v.SetDefault(cfgRateKeyAccount, 1000)
 	v.SetDefault(cfgRateKeyMobile, 1000)
+	v.SetDefault(cfgRateKeyMonitoring, 1000)
 	v.SetDefault(cfgRateKeyManagement, 1000)
 	v.SetDefault(cfgRateKeyStatistics, 1000)
 	v.SetDefault(cfgRateKeyEvents, 1000)

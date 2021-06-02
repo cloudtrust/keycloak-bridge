@@ -150,8 +150,9 @@ func TestGetUserInformation(t *testing.T) {
 		gomock.InOrder(
 			mockDB.EXPECT().Query(gomock.Any(), realm, userID).Return(mockSQLRows, nil),
 			mockSQLRows.EXPECT().Next().Return(true),
-			mockSQLRows.EXPECT().Scan(gomock.Any()).DoAndReturn(func(_, _, _, _, _, _, _, _, _ interface{}, proofData *[]byte, _ interface{}) error {
-				*proofData = []byte("ABC")
+			mockSQLRows.EXPECT().Scan(gomock.Any()).DoAndReturn(func(params ...interface{}) error {
+				// _, _, _, _, _, _, _, _, _ interface{}, proofData *[]byte, _ interface{}
+				*(params[9].(*[]byte)) = []byte("ABC")
 				return nil
 			}),
 			mockCrypter.EXPECT().Decrypt(gomock.Any(), gomock.Any()).Return(nil, unexpectedError),
@@ -167,10 +168,9 @@ func TestGetUserInformation(t *testing.T) {
 		gomock.InOrder(
 			mockDB.EXPECT().Query(gomock.Any(), realm, userID).Return(mockSQLRows, nil),
 			mockSQLRows.EXPECT().Next().Return(true),
-			mockSQLRows.EXPECT().Scan(gomock.Any()).DoAndReturn(func(checkID *int64, realm *string, userID *string, operator *sql.NullString,
-				datetime *sql.NullString, status *sql.NullString, checkType *sql.NullString, nature *sql.NullString, proofType *sql.NullString,
-				proofData *[]byte, comment *sql.NullString) error {
-				*nature = sql.NullString{Valid: true, String: natureValue}
+			mockSQLRows.EXPECT().Scan(gomock.Any()).DoAndReturn(func(params ...interface{}) error {
+				// checkID, realm, userID, operator, datetime, status, checkType, nature (*sql.NullString), proofType, proofData, comment
+				*(params[7].(*sql.NullString)) = sql.NullString{Valid: true, String: natureValue}
 				return nil
 			}),
 			mockSQLRows.EXPECT().Next().Return(false),
@@ -189,11 +189,10 @@ func TestGetUserInformation(t *testing.T) {
 		gomock.InOrder(
 			mockDB.EXPECT().Query(gomock.Any(), realm, userID).Return(mockSQLRows, nil),
 			mockSQLRows.EXPECT().Next().Return(true),
-			mockSQLRows.EXPECT().Scan(gomock.Any()).DoAndReturn(func(checkID *int64, realm *string, userID *string, operator *sql.NullString,
-				datetime *sql.NullString, status *sql.NullString, checkType *sql.NullString, nature *sql.NullString, proofType *sql.NullString,
-				proofData *[]byte, comment *sql.NullString) error {
-				*nature = sql.NullString{Valid: true, String: natureValue}
-				*proofData = []byte("ABC")
+			mockSQLRows.EXPECT().Scan(gomock.Any()).DoAndReturn(func(params ...interface{}) error {
+				// checkID, realm, userID, operator, datetime, status, checkType, nature (*sql.NullString), proofType, proofData, comment
+				*(params[7].(*sql.NullString)) = sql.NullString{Valid: true, String: natureValue}
+				*(params[9].(*[]byte)) = []byte("ABC")
 				return nil
 			}),
 			mockCrypter.EXPECT().Decrypt(gomock.Any(), gomock.Any()).Return(nil, nil),
