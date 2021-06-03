@@ -86,6 +86,10 @@ func (ec *component) GetStatistics(ctx context.Context, realmName string) (api.S
 	if err == nil {
 		res.TotalConnections.LastYear, err = ec.db.GetTotalConnectionsCount(ctx, realmName, "1 YEAR")
 	}
+	if err == nil {
+		var eventsParams = map[string]string{"realm": realmName, "ctEventType": "VALIDATION_STORE_CHECK_SUCCESS"}
+		res.VideoIdentifications, err = ec.db.GetEventsCount(ctx, eventsParams)
+	}
 
 	return res, err
 }

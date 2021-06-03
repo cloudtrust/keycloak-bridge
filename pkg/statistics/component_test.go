@@ -43,12 +43,14 @@ func TestGetStatistics(t *testing.T) {
 	})
 
 	t.Run("success", func(t *testing.T) {
+		var videoIdentSearch = map[string]string{"realm": realm, "ctEventType": "VALIDATION_STORE_CHECK_SUCCESS"}
 		mockDBModule.EXPECT().GetLastConnection(gomock.Any(), realm).Return(expected.LastConnection, nil).Times(1)
 		mockDBModule.EXPECT().GetTotalConnectionsCount(gomock.Any(), realm, "12 HOUR").Return(expected.TotalConnections.LastTwelveHours, nil).Times(1)
 		mockDBModule.EXPECT().GetTotalConnectionsCount(gomock.Any(), realm, "1 DAY").Return(expected.TotalConnections.LastDay, nil).Times(1)
 		mockDBModule.EXPECT().GetTotalConnectionsCount(gomock.Any(), realm, "1 WEEK").Return(expected.TotalConnections.LastWeek, nil).Times(1)
 		mockDBModule.EXPECT().GetTotalConnectionsCount(gomock.Any(), realm, "1 MONTH").Return(expected.TotalConnections.LastMonth, nil).Times(1)
 		mockDBModule.EXPECT().GetTotalConnectionsCount(gomock.Any(), realm, "1 YEAR").Return(expected.TotalConnections.LastYear, nil).Times(1)
+		mockDBModule.EXPECT().GetEventsCount(gomock.Any(), videoIdentSearch)
 		res, err := component.GetStatistics(context.TODO(), realm)
 		assert.Nil(t, err)
 		assert.Equal(t, expected, res)
