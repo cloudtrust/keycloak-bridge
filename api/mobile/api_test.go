@@ -48,7 +48,7 @@ func TestSetChecks(t *testing.T) {
 
 	t.Run("With checks", func(t *testing.T) {
 		var oneDate = time.Now()
-		var checks = []dto.DBCheck{dto.DBCheck{DateTime: nil}, dto.DBCheck{DateTime: &oneDate}, dto.DBCheck{DateTime: &oneDate}}
+		var checks = []dto.DBCheck{{DateTime: nil}, {DateTime: &oneDate}, {DateTime: &oneDate}}
 		userInfo.SetChecks(checks)
 		assert.Len(t, *userInfo.Checks, len(checks))
 	})
