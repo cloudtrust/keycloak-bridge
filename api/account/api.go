@@ -30,6 +30,7 @@ type AccountRepresentation struct {
 	IDDocumentCountry    *string                        `json:"idDocumentCountry,omitempty"`
 	Locale               *string                        `json:"locale,omitempty"`
 	BusinessID           *string                        `json:"businessId,omitempty"`
+	PendingChecks        *[]string                      `json:"pendingChecks,omitempty"`
 	Accreditations       *[]AccreditationRepresentation `json:"accreditations,omitempty"`
 }
 
@@ -138,6 +139,9 @@ func ConvertToAPIAccount(ctx context.Context, userKc kc.UserRepresentation, logg
 	}
 	if value := userKc.GetAttributeString(constants.AttrbLocale); value != nil {
 		userRep.Locale = value
+	}
+	if value := userKc.GetAttributeString(constants.AttrbPendingChecks); value != nil {
+		userRep.PendingChecks = keycloakb.GetPendingChecks(value)
 	}
 	if values := userKc.GetAttribute(constants.AttrbAccreditations); len(values) > 0 {
 		userRep.Accreditations = convertToAccreditations(ctx, values, logger)

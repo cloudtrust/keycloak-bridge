@@ -9,6 +9,7 @@ import (
 	"github.com/cloudtrust/common-service/configuration"
 	log "github.com/cloudtrust/common-service/log"
 	api "github.com/cloudtrust/keycloak-bridge/api/validation"
+	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/cloudtrust/keycloak-bridge/pkg/validation/mock"
@@ -251,6 +252,7 @@ func TestCreateCheck(t *testing.T) {
 		Operator: ptr("operator"),
 		DateTime: &datetime,
 		Status:   ptr("status"),
+		Nature:   ptr("nature"),
 	}
 
 	var mocks = createComponentMocks(mockCtrl)
@@ -289,6 +291,7 @@ func TestCreateCheck(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, targetRealm, userID).Return(kc.UserRepresentation{}, nil)
 		mocks.usersDB.EXPECT().GetUserDetails(ctx, targetRealm, userID).Return(dto.DBUser{}, nil)
 		mocks.archiveDB.EXPECT().StoreUserDetails(ctx, targetRealm, gomock.Any()).Return(nil)
+		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, targetRealm, userID, gomock.Any()).Return(nil)
 		var err = component.CreateCheck(ctx, targetRealm, userID, check)
 		assert.Nil(t, err)
 	})
@@ -299,7 +302,6 @@ func TestCreateCheck(t *testing.T) {
 		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
 		mocks.accreditations.EXPECT().GetUserAndPrepareAccreditations(ctx, accessToken, targetRealm, userID, keycloakb.CredsIDNow).Return(kcUser, 1, nil)
 		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, targetRealm, userID, kcUser).Return(errors.New("KC fails"))
-		mocks.keycloakClient.EXPECT().GetUser(accessToken, targetRealm, userID).Return(kc.UserRepresentation{}, nil)
 		mocks.usersDB.EXPECT().GetUserDetails(ctx, targetRealm, userID).Return(dto.DBUser{}, nil)
 		mocks.archiveDB.EXPECT().StoreUserDetails(ctx, targetRealm, gomock.Any()).Return(nil)
 		var err = component.CreateCheck(ctx, targetRealm, userID, check)
@@ -319,8 +321,29 @@ func TestCreateCheck(t *testing.T) {
 	})
 }
 
-func ptr(value string) *string {
-	return &value
+func TestClearPendingChecks(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mocks = createComponentMocks(mockCtrl)
+	var component = mocks.createComponent()
+
+	t.Run("Currently no pending check", func(t *testing.T) {
+		var attrbs = kc.Attributes{constants.AttrbPendingChecks: []string{"{"}}
+		var ctx = validationContext{
+			kcUser: &kc.UserRepresentation{Attributes: &attrbs},
+		}
+		component.clearPendingChecks(&ctx, "check")
+		assert.Nil(t, ctx.kcUser.GetAttributeString(constants.AttrbPendingChecks))
+	})
+	t.Run("Invalid JSON value in attribute", func(t *testing.T) {
+		var attrbs = kc.Attributes{constants.AttrbPendingChecks: []string{"{"}}
+		var ctx = validationContext{
+			kcUser: &kc.UserRepresentation{Attributes: &attrbs},
+		}
+		component.clearPendingChecks(&ctx, "check")
+		assert.Nil(t, ctx.kcUser.GetAttributeString(constants.AttrbPendingChecks))
+	})
 }
 
 func TestValidationContext(t *testing.T) {

@@ -1578,6 +1578,11 @@ components:
           default: true
         label:
           type: string
+        pendingChecks:
+          type: array
+          description: Used only by getUser
+          items:
+            type: string
         accreditations:
           type: array
           description: Used only by getUser

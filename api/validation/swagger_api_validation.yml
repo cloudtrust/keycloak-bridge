@@ -81,6 +81,32 @@ paths:
       responses:
         201:
           description: successful operation
+  /validation/realms/{realm}/users/{userID}/checks/pending:
+    post:
+      tags:
+        - Check
+      summary: Create a pending validation check
+      parameters:
+      - name: realm
+        in: path
+        description: Realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: userID of user checked
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PendingChecks'
+      responses:
+        201:
+          description: successful operation
 components:
   schemas:
     User:
@@ -138,6 +164,12 @@ components:
           type: string
         nature:
           type: string
+    PendingChecks:
+      type: object
+      properties:
+        nature:
+          type: string
+          enum: [IDNOW_CHECK]
   securitySchemes:
     basicAuth:
       type: http

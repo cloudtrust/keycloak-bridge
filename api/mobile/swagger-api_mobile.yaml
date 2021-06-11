@@ -58,6 +58,10 @@ components:
           type: array
           items:
             type: string
+        pendingActions:
+          type: array
+          items:
+            type: string
   securitySchemes:
     openId:
       type: openIdConnect

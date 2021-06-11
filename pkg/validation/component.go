@@ -58,6 +58,7 @@ type Component interface {
 	GetUser(ctx context.Context, realmName string, userID string) (api.UserRepresentation, error)
 	UpdateUser(ctx context.Context, realmName string, userID string, user api.UserRepresentation) error
 	CreateCheck(ctx context.Context, realmName string, userID string, check api.CheckRepresentation) error
+	CreatePendingChecks(ctx context.Context, realmName string, userID string, pendingChecks api.PendingChecksRepresentation) error
 }
 
 // Component is the management component.
@@ -294,11 +295,18 @@ func (c *component) CreateCheck(ctx context.Context, realmName string, userID st
 		if err != nil {
 			return err
 		}
-
-		err = c.keycloakClient.UpdateUser(accessToken, realmName, userID, kcUser)
+		validationCtx.kcUser = &kcUser
+	} else {
+		_, err = c.getKeycloakUserCtx(validationCtx)
 		if err != nil {
 			return err
 		}
+	}
+
+	c.clearPendingChecks(validationCtx, *check.Nature)
+	err = c.keycloakClient.UpdateUser(*validationCtx.accessToken, realmName, userID, *validationCtx.kcUser)
+	if err != nil {
+		return err
 	}
 
 	// Event
@@ -307,6 +315,52 @@ func (c *component) CreateCheck(ctx context.Context, realmName string, userID st
 	c.archiveUser(validationCtx, []dto.DBCheck{dbCheck})
 
 	return nil
+}
+
+func (c *component) clearPendingChecks(validationCtx *validationContext, nature string) {
+	var err error
+	var strPendingChecks = validationCtx.kcUser.GetAttributeString(constants.AttrbPendingChecks)
+	strPendingChecks, err = keycloakb.RemovePendingCheck(strPendingChecks, nature)
+	if err != nil {
+		if err == keycloakb.ErrCantUnmarshalPendingCheck {
+			c.logger.Warn(validationCtx.ctx, "msg", "Ignoring unmarshal error for pendingChecks attribute")
+		} else {
+			c.logger.Warn(validationCtx.ctx, "msg", "Failed to process pending checks")
+		}
+	}
+	if strPendingChecks == nil {
+		validationCtx.kcUser.RemoveAttribute(constants.AttrbPendingChecks)
+	} else {
+		validationCtx.kcUser.SetAttributeString(constants.AttrbPendingChecks, *strPendingChecks)
+	}
+}
+
+func (c *component) CreatePendingChecks(ctx context.Context, realmName string, userID string, pendingChecks api.PendingChecksRepresentation) error {
+	var validationCtx = &validationContext{
+		ctx:       ctx,
+		realmName: realmName,
+		userID:    userID,
+	}
+	var kcUser, err = c.getKeycloakUserCtx(validationCtx)
+	if err != nil {
+		// error already logged
+		return err
+	}
+	var strPendingChecks = kcUser.GetAttributeString(constants.AttrbPendingChecks)
+	strPendingChecks, err = keycloakb.AddPendingCheck(strPendingChecks, *pendingChecks.Nature)
+	if err != nil {
+		if err == keycloakb.ErrCantUnmarshalPendingCheck {
+			c.logger.Warn(ctx, "msg", "Ignoring unmarshal error for pendingChecks attribute", "attrb", *strPendingChecks)
+		} else {
+			c.logger.Warn(ctx, "msg", "Failed to process pending checks")
+			return err
+		}
+	}
+	validationCtx.kcUser.SetAttributeString(constants.AttrbPendingChecks, *strPendingChecks)
+	if err = c.updateKeycloakUser(validationCtx); err != nil {
+		c.logger.Warn(ctx, "msg", "Can't update user", "err", err.Error())
+	}
+	return err
 }
 
 func (c *component) reportEvent(ctx context.Context, apiCall string, values ...string) {

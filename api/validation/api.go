@@ -42,6 +42,11 @@ type CheckRepresentation struct {
 	ProofType *string    `json:"proofType,omitempty"`
 }
 
+// PendingChecksRepresentation struct {
+type PendingChecksRepresentation struct {
+	Nature *string `json:"nature,omitempty"`
+}
+
 // Parameter references
 const (
 	prmUserID                = "user_id"
@@ -229,4 +234,11 @@ func (c *CheckRepresentation) Validate() error {
 // IsIdentificationSuccessful tells whether a check is success or not
 func (c *CheckRepresentation) IsIdentificationSuccessful() bool {
 	return c.Status != nil && successStatus[*c.Status]
+}
+
+// Validate checks the validity of the given pending check
+func (cp *PendingChecksRepresentation) Validate() error {
+	return validation.NewParameterValidator().
+		ValidateParameterRegExp(prmCheckNature, cp.Nature, regExpNature, true).
+		Status()
 }
