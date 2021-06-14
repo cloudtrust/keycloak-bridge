@@ -13,9 +13,10 @@ import (
 
 // Endpoints for self service
 type Endpoints struct {
-	GetUser     endpoint.Endpoint
-	UpdateUser  endpoint.Endpoint
-	CreateCheck endpoint.Endpoint
+	GetUser             endpoint.Endpoint
+	UpdateUser          endpoint.Endpoint
+	CreateCheck         endpoint.Endpoint
+	CreatePendingChecks endpoint.Endpoint
 }
 
 // MakeGetUserEndpoint endpoint creation
@@ -64,5 +65,25 @@ func MakeCreateCheckEndpoint(component Component) cs.Endpoint {
 		}
 
 		return nil, component.CreateCheck(ctx, m[PrmRealm], m[PrmUserID], check)
+	}
+}
+
+// MakeCreatePendingChecksEndpoint endpoint creation
+func MakeCreatePendingChecksEndpoint(component Component) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+		var err error
+
+		var pendingChecks api.PendingChecksRepresentation
+
+		if err = json.Unmarshal([]byte(m[ReqBody]), &pendingChecks); err != nil {
+			return nil, errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Body)
+		}
+
+		if err = pendingChecks.Validate(); err != nil {
+			return nil, err
+		}
+
+		return nil, component.CreatePendingChecks(ctx, m[PrmRealm], m[PrmUserID], pendingChecks)
 	}
 }

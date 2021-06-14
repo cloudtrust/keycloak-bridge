@@ -43,6 +43,7 @@ type UserRepresentation struct {
 	SmsAttempts          *int                           `json:"smsAttempts,omitempty"`
 	Enabled              *bool                          `json:"enabled,omitempty"`
 	Label                *string                        `json:"label,omitempty"`
+	PendingChecks        *[]string                      `json:"pendingChecks,omitempty"`
 	Accreditations       *[]AccreditationRepresentation `json:"accreditations,omitempty"`
 	NameID               *string                        `json:"nameId,omitempty"`
 	OnboardingCompleted  *bool                          `json:"onboardingCompleted,omitempty"`
@@ -76,6 +77,7 @@ type UpdatableUserRepresentation struct {
 	SmsAttempts          *int                           `json:"smsAttempts,omitempty"`
 	Enabled              *bool                          `json:"enabled,omitempty"`
 	Label                *string                        `json:"label,omitempty"`
+	PendingChecks        *[]string                      `json:"pendingChecks,omitempty"`
 	Accreditations       *[]AccreditationRepresentation `json:"accreditations,omitempty"`
 	CreatedTimestamp     *int64                         `json:"createdTimestamp,omitempty"`
 }
@@ -351,6 +353,9 @@ func ConvertToAPIUser(ctx context.Context, userKc kc.UserRepresentation, logger 
 	}
 	if value := userKc.GetAttribute(constants.AttrbTrustIDGroups); value != nil {
 		userRep.TrustIDGroups = &value
+	}
+	if value := userKc.GetAttributeString(constants.AttrbPendingChecks); value != nil {
+		userRep.PendingChecks = keycloakb.GetPendingChecks(value)
 	}
 	if values := userKc.GetAttribute(constants.AttrbAccreditations); len(values) > 0 {
 		var accreds []AccreditationRepresentation

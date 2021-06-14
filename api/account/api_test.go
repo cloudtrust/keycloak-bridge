@@ -50,6 +50,7 @@ func TestConvertToAPIAccount(t *testing.T) {
 		constants.AttrbBirthDate:           []string{"15.02.1920"},
 		constants.AttrbLocale:              []string{"fr"},
 		constants.AttrbPhoneNumberVerified: []string{"true"},
+		constants.AttrbPendingChecks:       []string{`{"check-3": 123456789}`},
 		constants.AttrbAccreditations:      []string{`{"type":"one","expiryDate":"05.04.2020"}`, `{"type":"two","expiryDate":"05.03.2022"}`},
 		constants.AttrbBusinessID:          []string{"123456789"},
 	}
@@ -62,6 +63,8 @@ func TestConvertToAPIAccount(t *testing.T) {
 		assert.Equal(t, "15.02.1920", *user.BirthDate)
 		assert.Equal(t, "fr", *user.Locale)
 		assert.True(t, *user.PhoneNumberVerified)
+		assert.Len(t, *user.PendingChecks, 1)
+		assert.Equal(t, "check-3", (*user.PendingChecks)[0])
 		assert.Len(t, *user.Accreditations, 2)
 		assert.False(t, *(*user.Accreditations)[0].Revoked)
 		assert.False(t, *(*user.Accreditations)[1].Revoked)

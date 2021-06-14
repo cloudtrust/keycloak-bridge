@@ -1,6 +1,7 @@
 package apivalidation
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -93,6 +94,16 @@ func createValidCheck() CheckRepresentation {
 		Nature:    &nature,
 		ProofType: &proofType,
 		ProofData: &proofData,
+	}
+}
+
+func createValidPendingChecks() PendingChecksRepresentation {
+	var (
+		nature = "PHYSICAL"
+	)
+
+	return PendingChecksRepresentation{
+		Nature: &nature,
 	}
 }
 
@@ -370,4 +381,28 @@ func TestIsIdentificationSuccessful(t *testing.T) {
 		check.Status = &success
 		assert.True(t, check.IsIdentificationSuccessful())
 	})
+}
+
+func TestPendingChecksValidate(t *testing.T) {
+	var (
+		invalid = ""
+	)
+
+	t.Run("Valid use case", func(t *testing.T) {
+		var check = createValidPendingChecks()
+		assert.Nil(t, check.Validate(), "PendingChecks is expected to be valid")
+	})
+
+	var pendingChecks []PendingChecksRepresentation
+	for i := 0; i < 2; i++ {
+		pendingChecks = append(pendingChecks, createValidPendingChecks())
+	}
+	pendingChecks[0].Nature = nil
+	pendingChecks[1].Nature = &invalid
+
+	for idx, aCheck := range pendingChecks {
+		t.Run(fmt.Sprintf("Invalid PendingChecks #%d", idx), func(t *testing.T) {
+			assert.NotNil(t, aCheck.Validate())
+		})
+	}
 }

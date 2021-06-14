@@ -271,6 +271,11 @@ components:
               revoked:
                 type: boolean
                 description: true if the accreditation has been revoked
+        pendingChecks:
+          type: array
+          description: Used only by getUser
+          items:
+            type: string
     Configuration:
       type: object
       properties:
