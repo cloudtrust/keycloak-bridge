@@ -17,13 +17,12 @@ func TestNoRestrictions(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mockLogger = log.NewNopLogger()
-	var mockConfigurationDBModule = mock.NewConfigurationDBModule(mockCtrl)
 	var mockMobileComponent = mock.NewComponent(mockCtrl)
 
 	var ctx = context.TODO()
 
 	t.Run("GetUserInformation", func(t *testing.T) {
-		var authorizationMW = MakeAuthorizationMobileComponentMW(mockLogger, mockConfigurationDBModule)(mockMobileComponent)
+		var authorizationMW = MakeAuthorizationMobileComponentMW(mockLogger)(mockMobileComponent)
 		mockMobileComponent.EXPECT().GetUserInformation(ctx).Return(api.UserInformationRepresentation{}, nil)
 		_, err := authorizationMW.GetUserInformation(ctx)
 		assert.Nil(t, err)

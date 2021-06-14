@@ -11,6 +11,16 @@ import (
 	kc "github.com/cloudtrust/keycloak-client"
 )
 
+const (
+	actionIDNow         = "IDNow"
+	idNowInitActionName = "IDN_Init"
+)
+
+// AppendIDNowActions is used to let the bridge load IDNow rights for IDNow actions (IDN_Init)
+func AppendIDNowActions(authActions []string) []string {
+	return append(authActions, idNowInitActionName)
+}
+
 // KeycloakClient interface exposes methods we need to call to send requests to Keycloak API
 type KeycloakClient interface {
 	GetUser(accessToken string, realmName, userID string) (kc.UserRepresentation, error)
@@ -31,22 +41,29 @@ type TokenProvider interface {
 	ProvideToken(ctx context.Context) (string, error)
 }
 
+// AuthorizationManager is the interface to check authorizations of a user
+type AuthorizationManager interface {
+	CheckAuthorizationOnTargetUser(ctx context.Context, action, targetRealm, userID string) error
+}
+
 // Component is the management component
 type component struct {
 	keycloakClient KeycloakClient
 	configDBModule keycloakb.ConfigurationDBModule
 	usersDBModule  UsersDetailsDBModule
 	tokenProvider  TokenProvider
+	authManager    AuthorizationManager
 	logger         keycloakb.Logger
 }
 
 // NewComponent returns the self-service component.
-func NewComponent(keycloakClient KeycloakClient, configDBModule keycloakb.ConfigurationDBModule, usersDBModule UsersDetailsDBModule, tokenProvider TokenProvider, logger keycloakb.Logger) Component {
+func NewComponent(keycloakClient KeycloakClient, configDBModule keycloakb.ConfigurationDBModule, usersDBModule UsersDetailsDBModule, tokenProvider TokenProvider, authManager AuthorizationManager, logger keycloakb.Logger) Component {
 	return &component{
 		keycloakClient: keycloakClient,
 		configDBModule: configDBModule,
 		usersDBModule:  usersDBModule,
 		tokenProvider:  tokenProvider,
+		authManager:    authManager,
 		logger:         logger,
 	}
 }
@@ -84,7 +101,11 @@ func (c *component) GetUserInformation(ctx context.Context) (api.UserInformation
 	if realmAdminConfig, err := c.configDBModule.GetAdminConfiguration(ctx, realm); err == nil {
 		var availableChecks = realmAdminConfig.AvailableChecks
 		if gln == nil && realmAdminConfig.ShowGlnEditing != nil && *realmAdminConfig.ShowGlnEditing {
-			delete(availableChecks, "IDNow")
+			delete(availableChecks, actionIDNow)
+		}
+		if !c.isIDNowAvailableForUser(ctx) {
+			c.logger.Debug(ctx, "msg", "User is not allowed to access video identification", "id", ctx.Value(cs.CtContextUserID))
+			delete(availableChecks, actionIDNow)
 		}
 		userInfo.SetActions(availableChecks)
 	} else {
@@ -93,4 +114,10 @@ func (c *component) GetUserInformation(ctx context.Context) (api.UserInformation
 	}
 
 	return userInfo, nil
+}
+
+func (c *component) isIDNowAvailableForUser(ctx context.Context) bool {
+	var realm = ctx.Value(cs.CtContextRealm).(string)
+	var userID = ctx.Value(cs.CtContextUserID).(string)
+	return c.authManager.CheckAuthorizationOnTargetUser(ctx, idNowInitActionName, realm, userID) == nil
 }

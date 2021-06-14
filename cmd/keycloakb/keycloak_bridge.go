@@ -510,6 +510,7 @@ func main() {
 
 	// Actions allowed in Authorization Manager
 	var authActions = security.AppendActionNames(nil, events.GetActions(), kyc.GetActions(), management.GetActions(), statistics.GetActions())
+	authActions = mobile.AppendIDNowActions(authActions)
 
 	// Authorization Manager
 	var authorizationManager security.AuthorizationManager
@@ -818,8 +819,8 @@ func main() {
 		var usersDBModule = keycloakb.NewUsersDetailsDBModule(usersRwDBConn, aesEncryption, mobileLogger)
 
 		// new module for mobile service
-		mobileComponent := mobile.NewComponent(keycloakClient, configDBModule, usersDBModule, technicalTokenProvider, mobileLogger)
-		mobileComponent = mobile.MakeAuthorizationMobileComponentMW(log.With(mobileLogger, "mw", "endpoint"), configDBModule)(mobileComponent)
+		mobileComponent := mobile.NewComponent(keycloakClient, configDBModule, usersDBModule, technicalTokenProvider, authorizationManager, mobileLogger)
+		mobileComponent = mobile.MakeAuthorizationMobileComponentMW(log.With(mobileLogger, "mw", "endpoint"))(mobileComponent)
 
 		var rateLimitMobile = rateLimit[RateKeyMobile]
 		mobileEndpoints = mobile.Endpoints{
