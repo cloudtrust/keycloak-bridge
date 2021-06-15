@@ -72,17 +72,13 @@ const (
 	regExpOperator    = regExpAlphaNum255
 	regExpNature      = regExpAlphaNum255
 	regExpProofType   = regExpAlphaNum255
+	regExpStatus      = regExpAlphaNum255
 )
 
 var (
 	allowedGender    = map[string]bool{"M": true, "F": true}
 	allowedCheckType = map[string]bool{"IDENTITY_CHECK": true}
-	allowedStatus    = map[string]bool{
-		"SUCCESS":                   true,
-		"SUCCESS_DATA_CHANGED":      true,
-		"FRAUD_SUSPICION_CONFIRMED": true,
-	}
-	successStatus = map[string]bool{
+	successStatus    = map[string]bool{
 		"SUCCESS":              true,
 		"SUCCESS_DATA_CHANGED": true,
 	}
@@ -224,7 +220,7 @@ func (c *CheckRepresentation) Validate() error {
 		ValidateParameterRegExp(prmUserID, c.UserID, constants.RegExpID, true).
 		ValidateParameterRegExp(prmCheckOperator, c.Operator, regExpOperator, true).
 		ValidateParameterNotNil(prmCheckDatetime, c.DateTime).
-		ValidateParameterIn(prmCheckStatus, c.Status, allowedStatus, true).
+		ValidateParameterRegExp(prmCheckStatus, c.Status, regExpStatus, true).
 		ValidateParameterIn(prmCheckType, c.Type, allowedCheckType, true).
 		ValidateParameterRegExp(prmCheckNature, c.Nature, regExpNature, true).
 		ValidateParameterRegExp(prmCheckProofType, c.ProofType, regExpProofType, true).
