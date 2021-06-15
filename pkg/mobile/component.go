@@ -109,8 +109,13 @@ func (c *component) GetUserInformation(ctx context.Context) (api.UserInformation
 			c.logger.Debug(ctx, "msg", "User is not allowed to access video identification", "id", ctx.Value(cs.CtContextUserID))
 			delete(availableChecks, actionIDNow)
 		}
-		userInfo.SetActions(availableChecks)
 		userInfo.PendingActions = keycloakb.GetPendingChecks(pendingChecks)
+		if userInfo.PendingActions != nil && len(availableChecks) > 0 {
+			for _, action := range *userInfo.PendingActions {
+				delete(availableChecks, action)
+			}
+		}
+		userInfo.SetActions(availableChecks)
 	} else {
 		c.logger.Warn(ctx, "err", err.Error())
 		return api.UserInformationRepresentation{}, err

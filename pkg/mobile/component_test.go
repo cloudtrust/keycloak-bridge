@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
+	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 
 	"github.com/cloudtrust/common-service/configuration"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
@@ -97,7 +98,9 @@ func TestGetUser(t *testing.T) {
 
 	// No consider there is already 2 existing accreditations
 	var attrbs = make(kc.Attributes)
+	var pendings, _ = keycloakb.AddPendingCheck(nil, "check-2")
 	attrbs.Set(constants.AttrbAccreditations, []string{"{}", "{}"})
+	attrbs.SetString(constants.AttrbPendingChecks, *pendings)
 	mocks.keycloakClient.EXPECT().GetUser(accessToken, realm, userID).Return(kc.UserRepresentation{Attributes: &attrbs}, nil).AnyTimes()
 
 	t.Run("Success-No problem with GLN", func(t *testing.T) {
@@ -169,5 +172,24 @@ func TestGetUser(t *testing.T) {
 		assert.Len(t, *userInfo.Accreditations, 2)
 		assert.Len(t, *userInfo.Checks, len(checks))
 		assert.Len(t, *userInfo.Actions, expectedActionsCount)
+	})
+
+	t.Run("Success-action is pending", func(t *testing.T) {
+		var checks = []dto.DBCheck{{}, {}}
+		var bFalse = false
+		var availableChecks = map[string]bool{"check-2": true, "check-3": true}
+		var adminConf = configuration.RealmAdminConfiguration{AvailableChecks: availableChecks, ShowGlnEditing: &bFalse}
+
+		mocks.usersDetailsDB.EXPECT().GetChecks(ctx, realm, userID).Return(checks, nil)
+		mocks.configDBModule.EXPECT().GetAdminConfiguration(ctx, realm).Return(adminConf, nil)
+		mocks.authManager.EXPECT().CheckAuthorizationOnTargetUser(ctx, idNowInitActionName, realm, userID).Return(nil)
+
+		var userInfo, err = component.GetUserInformation(ctx)
+		assert.Nil(t, err)
+		assert.Len(t, *userInfo.Checks, len(checks))
+		assert.Len(t, *userInfo.Actions, 1)
+		assert.Len(t, *userInfo.PendingActions, 1)
+		assert.Equal(t, "check-3", (*userInfo.Actions)[0])
+		assert.Equal(t, "check-2", (*userInfo.PendingActions)[0])
 	})
 }
