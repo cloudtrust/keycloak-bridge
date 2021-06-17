@@ -23,18 +23,18 @@ type ActionRepresentation struct {
 
 // StatisticsRepresentation elements returned by GetStatistics
 type StatisticsRepresentation struct {
-	LastConnection       int64                               `json:"lastConnection,omitempty"`
-	TotalConnections     StatisticsConnectionsRepresentation `json:"totalConnections,omitempty"`
-	VideoIdentifications int                                 `json:"videoIdentifications,omitempty"`
+	LastConnection       int64                               `json:"lastConnection"`
+	TotalConnections     StatisticsConnectionsRepresentation `json:"totalConnections"`
+	VideoIdentifications int                                 `json:"videoIdentifications"`
 }
 
 // StatisticsConnectionsRepresentation are elements used in StatisticsRepresentation
 type StatisticsConnectionsRepresentation struct {
-	LastTwelveHours int64 `json:"lastTwelveHours,omitempty"`
-	LastDay         int64 `json:"lastDay,omitempty"`
-	LastWeek        int64 `json:"lastWeek,omitempty"`
-	LastMonth       int64 `json:"lastMonth,omitempty"`
-	LastYear        int64 `json:"lastYear,omitempty"`
+	LastTwelveHours int64 `json:"lastTwelveHours"`
+	LastDay         int64 `json:"lastDay"`
+	LastWeek        int64 `json:"lastWeek"`
+	LastMonth       int64 `json:"lastMonth"`
+	LastYear        int64 `json:"lastYear"`
 }
 
 // StatisticsUsersRepresentation elements returned by GetStatisticsUsers
