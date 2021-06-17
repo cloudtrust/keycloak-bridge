@@ -110,7 +110,7 @@ func TestGetUser(t *testing.T) {
 
 		mocks.usersDetailsDB.EXPECT().GetChecks(ctx, realm, userID).Return(checks, nil)
 		mocks.configDBModule.EXPECT().GetAdminConfiguration(ctx, realm).Return(adminConf, nil)
-		mocks.authManager.EXPECT().CheckAuthorizationOnTargetUser(ctx, idNowInitActionName, realm, userID).Return(nil)
+		mocks.authManager.EXPECT().CheckAuthorizationOnTargetUser(gomock.Any(), idNowInitActionName, realm, userID).Return(nil)
 
 		var userInfo, err = component.GetUserInformation(ctx)
 		assert.Nil(t, err)
@@ -129,7 +129,7 @@ func TestGetUser(t *testing.T) {
 
 		mocks.usersDetailsDB.EXPECT().GetChecks(ctx, realm, userID).Return(checks, nil)
 		mocks.configDBModule.EXPECT().GetAdminConfiguration(ctx, realm).Return(adminConf, nil)
-		mocks.authManager.EXPECT().CheckAuthorizationOnTargetUser(ctx, idNowInitActionName, realm, userID).Return(nil)
+		mocks.authManager.EXPECT().CheckAuthorizationOnTargetUser(gomock.Any(), idNowInitActionName, realm, userID).Return(nil)
 
 		var userInfo, err = component.GetUserInformation(ctx)
 		assert.Nil(t, err)
@@ -147,7 +147,7 @@ func TestGetUser(t *testing.T) {
 
 		mocks.usersDetailsDB.EXPECT().GetChecks(ctx, realm, userID).Return(checks, nil)
 		mocks.configDBModule.EXPECT().GetAdminConfiguration(ctx, realm).Return(adminConf, nil)
-		mocks.authManager.EXPECT().CheckAuthorizationOnTargetUser(ctx, idNowInitActionName, realm, userID).Return(errors.New("any error"))
+		mocks.authManager.EXPECT().CheckAuthorizationOnTargetUser(gomock.Any(), idNowInitActionName, realm, userID).Return(errors.New("any error"))
 
 		var userInfo, err = component.GetUserInformation(ctx)
 		assert.Nil(t, err)
@@ -165,7 +165,7 @@ func TestGetUser(t *testing.T) {
 
 		mocks.usersDetailsDB.EXPECT().GetChecks(ctx, realm, userID).Return(checks, nil)
 		mocks.configDBModule.EXPECT().GetAdminConfiguration(ctx, realm).Return(adminConf, nil)
-		mocks.authManager.EXPECT().CheckAuthorizationOnTargetUser(ctx, idNowInitActionName, realm, userID).Return(nil)
+		mocks.authManager.EXPECT().CheckAuthorizationOnTargetUser(gomock.Any(), idNowInitActionName, realm, userID).Return(nil)
 
 		var userInfo, err = component.GetUserInformation(ctx)
 		assert.Nil(t, err)
@@ -182,7 +182,7 @@ func TestGetUser(t *testing.T) {
 
 		mocks.usersDetailsDB.EXPECT().GetChecks(ctx, realm, userID).Return(checks, nil)
 		mocks.configDBModule.EXPECT().GetAdminConfiguration(ctx, realm).Return(adminConf, nil)
-		mocks.authManager.EXPECT().CheckAuthorizationOnTargetUser(ctx, idNowInitActionName, realm, userID).Return(nil)
+		mocks.authManager.EXPECT().CheckAuthorizationOnTargetUser(gomock.Any(), idNowInitActionName, realm, userID).Return(nil)
 
 		var userInfo, err = component.GetUserInformation(ctx)
 		assert.Nil(t, err)

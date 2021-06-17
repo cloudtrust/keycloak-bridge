@@ -76,14 +76,14 @@ func (c *component) GetUserInformation(ctx context.Context) (api.UserInformation
 	var pendingChecks *string
 
 	// Get an OIDC token to be able to request Keycloak
-	var accessToken string
-	accessToken, err := c.tokenProvider.ProvideToken(ctx)
+	var techAccessToken string
+	techAccessToken, err := c.tokenProvider.ProvideToken(ctx)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Can't get OIDC token", "err", err.Error())
 		return api.UserInformationRepresentation{}, err
 	}
 
-	if userKc, err := c.keycloakClient.GetUser(accessToken, realm, userID); err == nil {
+	if userKc, err := c.keycloakClient.GetUser(techAccessToken, realm, userID); err == nil {
 		keycloakb.ConvertLegacyAttribute(&userKc)
 		userInfo.SetAccreditations(ctx, userKc.GetAttribute(constants.AttrbAccreditations), c.logger)
 		gln = userKc.GetAttributeString(constants.AttrbBusinessID)
@@ -105,7 +105,8 @@ func (c *component) GetUserInformation(ctx context.Context) (api.UserInformation
 		if gln == nil && realmAdminConfig.ShowGlnEditing != nil && *realmAdminConfig.ShowGlnEditing {
 			delete(availableChecks, actionIDNow)
 		}
-		if !c.isIDNowAvailableForUser(ctx) {
+		// User can't execute GetGroupNamesOfUser... use a technical account
+		if !c.isIDNowAvailableForUser(ctx, techAccessToken) {
 			c.logger.Debug(ctx, "msg", "User is not allowed to access video identification", "id", ctx.Value(cs.CtContextUserID))
 			delete(availableChecks, actionIDNow)
 		}
@@ -124,8 +125,10 @@ func (c *component) GetUserInformation(ctx context.Context) (api.UserInformation
 	return userInfo, nil
 }
 
-func (c *component) isIDNowAvailableForUser(ctx context.Context) bool {
+func (c *component) isIDNowAvailableForUser(ctx context.Context, technicalUserAccessToken string) bool {
 	var realm = ctx.Value(cs.CtContextRealm).(string)
 	var userID = ctx.Value(cs.CtContextUserID).(string)
-	return c.authManager.CheckAuthorizationOnTargetUser(ctx, idNowInitActionName, realm, userID) == nil
+	var technicalUserContext = context.WithValue(ctx, cs.CtContextAccessToken, technicalUserAccessToken)
+
+	return c.authManager.CheckAuthorizationOnTargetUser(technicalUserContext, idNowInitActionName, realm, userID) == nil
 }
