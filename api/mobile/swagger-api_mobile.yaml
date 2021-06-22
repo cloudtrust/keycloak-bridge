@@ -23,6 +23,9 @@ components:
     UserInfo:
       type: object
       properties:
+        realmDisplayName:
+          type: string
+          description: display name of the realm
         accreditations:
           type: array
           items:

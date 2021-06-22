@@ -12,10 +12,11 @@ import (
 
 // UserInformationRepresentation struct
 type UserInformationRepresentation struct {
-	Accreditations *[]AccreditationRepresentation `json:"accreditations,omitempty"`
-	Checks         *[]CheckRepresentation         `json:"checks,omitempty"`
-	Actions        *[]string                      `json:"actions,omitempty"`
-	PendingActions *[]string                      `json:"pendingActions,omitempty"`
+	RealmDisplayName *string                        `json:"realmDisplayName,omitempty"`
+	Accreditations   *[]AccreditationRepresentation `json:"accreditations,omitempty"`
+	Checks           *[]CheckRepresentation         `json:"checks,omitempty"`
+	Actions          *[]string                      `json:"actions,omitempty"`
+	PendingActions   *[]string                      `json:"pendingActions,omitempty"`
 }
 
 // AccreditationRepresentation is a representation of an accreditation

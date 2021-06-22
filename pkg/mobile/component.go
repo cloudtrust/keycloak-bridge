@@ -35,6 +35,15 @@ func toActionNames(checkNames *[]string) *[]string {
 	return &res
 }
 
+func chooseNotEmpty(values ...*string) *string {
+	for _, value := range values {
+		if value != nil && *value != "" {
+			return value
+		}
+	}
+	return nil
+}
+
 // AppendIDNowActions is used to let the bridge load IDNow rights for IDNow actions (IDN_Init)
 func AppendIDNowActions(authActions []string) []string {
 	return append(authActions, idNowInitActionName)
@@ -42,6 +51,7 @@ func AppendIDNowActions(authActions []string) []string {
 
 // KeycloakClient interface exposes methods we need to call to send requests to Keycloak API
 type KeycloakClient interface {
+	GetRealm(accessToken string, realmName string) (kc.RealmRepresentation, error)
 	GetUser(accessToken string, realmName, userID string) (kc.UserRepresentation, error)
 }
 
@@ -99,6 +109,13 @@ func (c *component) GetUserInformation(ctx context.Context) (api.UserInformation
 	techAccessToken, err := c.tokenProvider.ProvideToken(ctx)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Can't get OIDC token", "err", err.Error())
+		return api.UserInformationRepresentation{}, err
+	}
+
+	if realmKc, err := c.keycloakClient.GetRealm(techAccessToken, realm); err == nil {
+		userInfo.RealmDisplayName = chooseNotEmpty(realmKc.DisplayName, &realm)
+	} else {
+		c.logger.Warn(ctx, "err", err.Error())
 		return api.UserInformationRepresentation{}, err
 	}
 

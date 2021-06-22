@@ -6,6 +6,7 @@ import (
 	"time"
 )
 
+// PendingChecks interface
 type PendingChecks interface {
 	AddPendingCheck(nature string)
 	RemovePendingCheck(nature string)
@@ -17,10 +18,12 @@ type pendingChecks struct {
 	checks map[string]int64
 }
 
+// Exportable values
 var (
 	ErrCantUnmarshalPendingCheck = errors.New("can't unmarshal pending check value")
 )
 
+// AddPendingCheck adds a pending check
 func AddPendingCheck(value *string, nature string) (*string, error) {
 	var pc, err = NewPendingChecks(value)
 	if err != nil && err != ErrCantUnmarshalPendingCheck {
@@ -30,6 +33,7 @@ func AddPendingCheck(value *string, nature string) (*string, error) {
 	return pc.ToAttribute(), err
 }
 
+// RemovePendingCheck removes a pending check
 func RemovePendingCheck(value *string, nature string) (*string, error) {
 	var pc, err = NewPendingChecks(value)
 	if err != nil && err != ErrCantUnmarshalPendingCheck {
@@ -39,6 +43,7 @@ func RemovePendingCheck(value *string, nature string) (*string, error) {
 	return pc.ToAttribute(), err
 }
 
+// GetPendingChecks get pending checks
 func GetPendingChecks(value *string) *[]string {
 	var pc, err = NewPendingChecks(value)
 	if err != nil && err != ErrCantUnmarshalPendingCheck {
@@ -47,6 +52,7 @@ func GetPendingChecks(value *string) *[]string {
 	return pc.ToCheckNames()
 }
 
+// NewPendingChecks creates a PendingChecks value
 func NewPendingChecks(value *string) (PendingChecks, error) {
 	var checks map[string]int64
 	var err error
@@ -83,7 +89,7 @@ func (pc *pendingChecks) ToAttribute() *string {
 
 func (pc *pendingChecks) ToCheckNames() *[]string {
 	var res []string
-	for check, _ := range pc.checks {
+	for check := range pc.checks {
 		res = append(res, check)
 	}
 	if len(res) == 0 {

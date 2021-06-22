@@ -17,6 +17,7 @@ import (
 	kc "github.com/cloudtrust/keycloak-client"
 )
 
+// KeycloakURIProvider interface
 type KeycloakURIProvider interface {
 	GetBaseURI(realm string) string
 }
