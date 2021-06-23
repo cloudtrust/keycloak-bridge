@@ -16,6 +16,25 @@ const (
 	idNowInitActionName = "IDN_Init"
 )
 
+var mapCheckToAction = map[string]string{
+	"IDNOW_CHECK": actionIDNow,
+}
+
+func toActionNames(checkNames *[]string) *[]string {
+	if checkNames == nil {
+		return nil
+	}
+	var res []string
+	for _, checkName := range *checkNames {
+		if action, ok := mapCheckToAction[checkName]; ok {
+			res = append(res, action)
+		} else {
+			res = append(res, checkName)
+		}
+	}
+	return &res
+}
+
 // AppendIDNowActions is used to let the bridge load IDNow rights for IDNow actions (IDN_Init)
 func AppendIDNowActions(authActions []string) []string {
 	return append(authActions, idNowInitActionName)
@@ -110,7 +129,8 @@ func (c *component) GetUserInformation(ctx context.Context) (api.UserInformation
 			c.logger.Debug(ctx, "msg", "User is not allowed to access video identification", "id", ctx.Value(cs.CtContextUserID))
 			delete(availableChecks, actionIDNow)
 		}
-		userInfo.PendingActions = keycloakb.GetPendingChecks(pendingChecks)
+		var pendingCheckNames = keycloakb.GetPendingChecks(pendingChecks)
+		userInfo.PendingActions = toActionNames(pendingCheckNames)
 		if userInfo.PendingActions != nil && len(availableChecks) > 0 {
 			for _, action := range *userInfo.PendingActions {
 				delete(availableChecks, action)
