@@ -1657,7 +1657,7 @@ func (c *component) GetRealmCustomConfiguration(ctx context.Context, realmName s
 	if err != nil {
 		switch e := errors.Cause(err).(type) {
 		case errorhandler.Error:
-			c.logger.Warn(ctx, "message", e.Error())
+			c.logger.Warn(ctx, "msg", e.Error())
 			return api.CreateDefaultRealmCustomConfiguration(), nil
 		default:
 			c.logger.Error(ctx, "err", e.Error())
