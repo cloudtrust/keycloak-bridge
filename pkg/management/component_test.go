@@ -1042,6 +1042,7 @@ func TestUpdateUser(t *testing.T) {
 	var realmName = "master"
 	var id = "41dbf4a8-32a9-4000-8c17-edc854c31231"
 	var enabled = true
+	var disabled = false
 
 	var birthLocation = "Rolle"
 	var nationality = "CH"
@@ -1201,15 +1202,15 @@ func TestUpdateUser(t *testing.T) {
 	})
 
 	t.Run("Update by locking the user", func(t *testing.T) {
+		kcUserRep.Enabled = &enabled
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, id).Return(kcUserRep, nil)
 		mocks.usersDetailsDBModule.EXPECT().GetUserDetails(ctx, realmName, id).Return(dbUserRep, nil)
 
-		enabled = false
 		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, realmName, id, gomock.Any()).DoAndReturn(
 			func(accessToken, realmName, id string, kcUserRep kc.UserRepresentation) error {
 				assert.Equal(t, *userRep.Username, *kcUserRep.Username)
 				assert.Equal(t, *userRep.Email.Value, *kcUserRep.Email)
-				assert.Equal(t, enabled, *kcUserRep.Enabled)
+				assert.Equal(t, disabled, *kcUserRep.Enabled)
 				assert.Equal(t, *userRep.EmailVerified, *kcUserRep.EmailVerified)
 				assert.Equal(t, *userRep.FirstName, *kcUserRep.FirstName)
 				assert.Equal(t, *userRep.LastName, *kcUserRep.LastName)
@@ -1224,7 +1225,7 @@ func TestUpdateUser(t *testing.T) {
 			})
 
 		var userRepLocked = createUpdateUser()
-		userRepLocked.Enabled = &enabled
+		userRepLocked.Enabled = &disabled
 
 		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "LOCK_ACCOUNT", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 
@@ -1234,10 +1235,10 @@ func TestUpdateUser(t *testing.T) {
 	})
 
 	t.Run("Update to unlock the user", func(t *testing.T) {
+		kcUserRep.Enabled = &disabled
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, id).Return(kcUserRep, nil)
 		mocks.usersDetailsDBModule.EXPECT().GetUserDetails(ctx, realmName, id).Return(dbUserRep, nil)
 
-		enabled = true
 		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, realmName, id, gomock.Any()).Return(nil)
 
 		var userRepLocked = createUpdateUser()
@@ -1378,11 +1379,10 @@ func TestUpdateUser(t *testing.T) {
 	})
 
 	t.Run("Update user with succces but with error when storing the event in the DB", func(t *testing.T) {
-		enabled = true
 		var kcUserRep = kc.UserRepresentation{
 			ID:       &id,
 			Username: userRep.Username,
-			Enabled:  &enabled,
+			Enabled:  &disabled,
 		}
 
 		var userRep = api.UpdatableUserRepresentation{
