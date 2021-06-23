@@ -7,6 +7,7 @@ management-http-host-port: 0.0.0.0:8877
 account-http-host-port: 0.0.0.0:8866
 register-http-host-port: 0.0.0.0:8855
 mobile-http-host-port: 0.0.0.0:8844
+monitoring-http-host-port: 0.0.0.0:8899
 
 # Log level
 #   - error: log only error log level
@@ -169,6 +170,7 @@ rate-events: 1000
 rate-register: 1000
 rate-kyc: 1000
 rate-mobile: 1000
+rate-monitoring: 1000
 
 # Influx DB configs
 influx: false

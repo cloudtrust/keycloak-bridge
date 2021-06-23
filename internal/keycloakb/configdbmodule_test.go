@@ -54,9 +54,10 @@ func TestGetConfigurations(t *testing.T) {
 
 	t.Run("No error", func(t *testing.T) {
 		mockDB.EXPECT().QueryRow(gomock.Any(), realmID).Return(mockSQLRow)
-		mockSQLRow.EXPECT().Scan(gomock.Any(), gomock.Any()).DoAndReturn(func(ptrConfJSON *string, ptrAdminConfJSON *string) error {
-			*ptrConfJSON = toJSONString(expectedRealmConf)
-			*ptrAdminConfJSON = toJSONString(expectedRealmAdminConf)
+		mockSQLRow.EXPECT().Scan(gomock.Any(), gomock.Any()).DoAndReturn(func(params ...interface{}) error {
+			// ptrConfJSON *string, ptrAdminConfJSON *string
+			*(params[0].(*string)) = toJSONString(expectedRealmConf)
+			*(params[1].(*string)) = toJSONString(expectedRealmAdminConf)
 			return nil
 		})
 		realmConf, realmAdminConf, err := configDBModule.GetConfigurations(context.TODO(), realmID)
@@ -213,17 +214,19 @@ func TestBackOfficeConfiguration(t *testing.T) {
 		gomock.InOrder(
 			mockDB.EXPECT().Query(gomock.Any(), gomock.Any()).Return(mockSQLRows, nil),
 			mockSQLRows.EXPECT().Next().Return(true),
-			mockSQLRows.EXPECT().Scan(gomock.Any()).DoAndReturn(func(confType *string, realm *string, group *string) error {
-				*confType = "a"
-				*realm = "b"
-				*group = "c"
+			mockSQLRows.EXPECT().Scan(gomock.Any()).DoAndReturn(func(params ...interface{}) error {
+				// confType *string, realm *string, group *string
+				*(params[0].(*string)) = "a"
+				*(params[1].(*string)) = "b"
+				*(params[2].(*string)) = "c"
 				return nil
 			}),
 			mockSQLRows.EXPECT().Next().Return(true),
-			mockSQLRows.EXPECT().Scan(gomock.Any()).DoAndReturn(func(confType *string, realm *string, group *string) error {
-				*confType = "a"
-				*realm = "b"
-				*group = "d"
+			mockSQLRows.EXPECT().Scan(gomock.Any()).DoAndReturn(func(params ...interface{}) error {
+				// confType *string, realm *string, group *string
+				*(params[0].(*string)) = "a"
+				*(params[1].(*string)) = "b"
+				*(params[2].(*string)) = "d"
 				return nil
 			}),
 			mockSQLRows.EXPECT().Next().Return(false),

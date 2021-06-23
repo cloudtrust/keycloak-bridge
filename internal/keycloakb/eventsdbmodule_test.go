@@ -28,7 +28,7 @@ func TestSelectAuditEventsParameters(t *testing.T) {
 		var origin = "origan"
 		filter, err := newSelectAuditEventsParameters(map[string]string{"origin": origin})
 		assert.Nil(t, err)
-		mockDB.EXPECT().Query(gomock.Any(), origin, 0, 500).DoAndReturn(func(query string, _, _, _ interface{}) (sqltypes.SQLRows, error) {
+		mockDB.EXPECT().Query(gomock.Any(), origin, 0, 500).DoAndReturn(func(query string, _ ...interface{}) (sqltypes.SQLRows, error) {
 			assert.Contains(t, query, " WHERE origin")
 			assert.NotContains(t, query, " AND ")
 			return nil, anyError
@@ -40,7 +40,7 @@ func TestSelectAuditEventsParameters(t *testing.T) {
 		var exclude = "excluded"
 		filter, err := newSelectAuditEventsParameters(map[string]string{"exclude": exclude})
 		assert.Nil(t, err)
-		mockDB.EXPECT().QueryRow(gomock.Any(), exclude).DoAndReturn(func(query string, _ interface{}) sqltypes.SQLRow {
+		mockDB.EXPECT().QueryRow(gomock.Any(), exclude).DoAndReturn(func(query string, _ ...interface{}) sqltypes.SQLRow {
 			assert.Contains(t, query, " WHERE ct_event_type <>")
 			assert.NotContains(t, query, " AND ")
 			return mockRow
@@ -53,7 +53,7 @@ func TestSelectAuditEventsParameters(t *testing.T) {
 		var max = "20"
 		filter, err := newSelectAuditEventsParameters(map[string]string{"first": first, "max": max})
 		assert.Nil(t, err)
-		mockDB.EXPECT().Query(gomock.Any(), first, max).DoAndReturn(func(query string, _, _ interface{}) (sqltypes.SQLRows, error) {
+		mockDB.EXPECT().Query(gomock.Any(), first, max).DoAndReturn(func(query string, _ ...interface{}) (sqltypes.SQLRows, error) {
 			assert.NotContains(t, query, "WHERE ")
 			assert.NotContains(t, query, " AND ")
 			assert.Contains(t, query, "LIMIT ?, ?")
@@ -93,7 +93,7 @@ func TestSelectAuditEventsParameters(t *testing.T) {
 	t.Run("Date from", func(t *testing.T) {
 		filter, err := newSelectAuditEventsParameters(map[string]string{"dateFrom": strDate1})
 		assert.Nil(t, err)
-		mockDB.EXPECT().Query(gomock.Any(), fromDate, 0, 500).DoAndReturn(func(query string, _, _, _ interface{}) (sqltypes.SQLRows, error) {
+		mockDB.EXPECT().Query(gomock.Any(), fromDate, 0, 500).DoAndReturn(func(query string, _ ...interface{}) (sqltypes.SQLRows, error) {
 			assert.NotContains(t, query, "BETWEEN")
 			assert.NotContains(t, query, "<=")
 			assert.Contains(t, query, ">=")
@@ -105,7 +105,7 @@ func TestSelectAuditEventsParameters(t *testing.T) {
 	t.Run("Date to", func(t *testing.T) {
 		filter, err := newSelectAuditEventsParameters(map[string]string{"dateTo": strDate2})
 		assert.Nil(t, err)
-		mockDB.EXPECT().Query(gomock.Any(), toDate, 0, 500).DoAndReturn(func(query string, _, _, _ interface{}) (sqltypes.SQLRows, error) {
+		mockDB.EXPECT().Query(gomock.Any(), toDate, 0, 500).DoAndReturn(func(query string, _ ...interface{}) (sqltypes.SQLRows, error) {
 			assert.NotContains(t, query, "BETWEEN")
 			assert.Contains(t, query, "<=")
 			assert.NotContains(t, query, ">=")
@@ -117,7 +117,7 @@ func TestSelectAuditEventsParameters(t *testing.T) {
 	t.Run("Date range", func(t *testing.T) {
 		filter, err := newSelectAuditEventsParameters(map[string]string{"dateFrom": strDate1, "dateTo": strDate2})
 		assert.Nil(t, err)
-		mockDB.EXPECT().Query(gomock.Any(), fromDate, toDate, 0, 500).DoAndReturn(func(query string, _, _, _, _ interface{}) (sqltypes.SQLRows, error) {
+		mockDB.EXPECT().Query(gomock.Any(), fromDate, toDate, 0, 500).DoAndReturn(func(query string, _ ...interface{}) (sqltypes.SQLRows, error) {
 			assert.Contains(t, query, "BETWEEN")
 			assert.NotContains(t, query, "<=")
 			assert.NotContains(t, query, ">=")
