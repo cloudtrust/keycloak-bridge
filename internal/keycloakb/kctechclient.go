@@ -13,6 +13,7 @@ type KeycloakTechnicalClient interface {
 	LogoutAllSessions(ctx context.Context, realmName, userID string) error
 }
 
+// KeycloakForTechnicalClient interface
 type KeycloakForTechnicalClient interface {
 	GetRealm(accessToken string, realmName string) (kc.RealmRepresentation, error)
 	LogoutAllSessions(accessToken string, realmName, userID string) error

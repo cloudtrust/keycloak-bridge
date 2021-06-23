@@ -57,6 +57,23 @@ func TestToActionNames(t *testing.T) {
 	})
 }
 
+func TestChooseNotEmpty(t *testing.T) {
+	var empty = ""
+	var values = []*string{nil, &empty, nil, &empty}
+
+	t.Run("All nil or empty", func(t *testing.T) {
+		assert.Nil(t, chooseNotEmpty(values...))
+	})
+
+	var one = "one"
+	var two = "two"
+	var three = "3"
+	values = append(values, &one, &two, &three)
+	t.Run("At least one non empty value", func(t *testing.T) {
+		assert.Equal(t, &one, chooseNotEmpty(values...))
+	})
+}
+
 func TestAppendIDNowActions(t *testing.T) {
 	var res = AppendIDNowActions(nil)
 	assert.Len(t, res, 1)
@@ -72,7 +89,9 @@ func TestGetUser(t *testing.T) {
 
 	var accessToken = "the-access-token"
 	var realm = "the-realm"
+	var displayName = "The Realm Name"
 	var userID = "the-user-id"
+	var anyError = errors.New("any error")
 	var ctx = context.WithValue(context.TODO(), cs.CtContextRealm, realm)
 	ctx = context.WithValue(ctx, cs.CtContextUserID, userID)
 
@@ -85,6 +104,15 @@ func TestGetUser(t *testing.T) {
 
 	// Now, token provider will always be successful
 	mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil).AnyTimes()
+
+	t.Run("Can't get realm from keycloak", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetRealm(accessToken, realm).Return(kc.RealmRepresentation{}, anyError)
+		var _, err = component.GetUserInformation(ctx)
+		assert.Equal(t, anyError, err)
+	})
+
+	// Now, keycloakClient.GetRealm() will always be successful
+	mocks.keycloakClient.EXPECT().GetRealm(accessToken, realm).Return(kc.RealmRepresentation{DisplayName: &displayName}, nil).AnyTimes()
 
 	t.Run("Can't get user from keycloak", func(t *testing.T) {
 		var kcError = errors.New("keycloak error")
