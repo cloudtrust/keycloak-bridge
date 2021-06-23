@@ -43,6 +43,20 @@ func (cm *componentMocks) newComponent() Component {
 	return NewComponent(cm.keycloakClient, cm.configDBModule, cm.usersDetailsDB, cm.tokenProvider, cm.authManager, cm.logger)
 }
 
+func TestToActionNames(t *testing.T) {
+	t.Run("Nil", func(t *testing.T) {
+		assert.Nil(t, toActionNames(nil))
+	})
+	t.Run("Input contains two values, one need to be converted", func(t *testing.T) {
+		var input = []string{"IDNOW_CHECK", "unconvertable"}
+		var values = toActionNames(&input)
+		assert.NotNil(t, values)
+		assert.Len(t, *values, 2)
+		assert.Contains(t, *values, actionIDNow)
+		assert.Contains(t, *values, input[1])
+	})
+}
+
 func TestAppendIDNowActions(t *testing.T) {
 	var res = AppendIDNowActions(nil)
 	assert.Len(t, res, 1)
