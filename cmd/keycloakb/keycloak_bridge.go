@@ -605,10 +605,11 @@ func main() {
 
 		var rateLimitValidation = rateLimit[RateKeyValidation]
 		validationEndpoints = validation.Endpoints{
-			GetUser:             prepareEndpoint(validation.MakeGetUserEndpoint(validationComponent), "get_user", influxMetrics, validationLogger, tracer, rateLimitValidation),
-			UpdateUser:          prepareEndpoint(validation.MakeUpdateUserEndpoint(validationComponent), "update_user", influxMetrics, validationLogger, tracer, rateLimitValidation),
-			CreateCheck:         prepareEndpoint(validation.MakeCreateCheckEndpoint(validationComponent), "create_check", influxMetrics, validationLogger, tracer, rateLimitValidation),
-			CreatePendingChecks: prepareEndpoint(validation.MakeCreatePendingChecksEndpoint(validationComponent), "create_check_pending", influxMetrics, validationLogger, tracer, rateLimitValidation),
+			GetUser:            prepareEndpoint(validation.MakeGetUserEndpoint(validationComponent), "get_user", influxMetrics, validationLogger, tracer, rateLimitValidation),
+			UpdateUser:         prepareEndpoint(validation.MakeUpdateUserEndpoint(validationComponent), "update_user", influxMetrics, validationLogger, tracer, rateLimitValidation),
+			CreateCheck:        prepareEndpoint(validation.MakeCreateCheckEndpoint(validationComponent), "create_check", influxMetrics, validationLogger, tracer, rateLimitValidation),
+			CreatePendingCheck: prepareEndpoint(validation.MakeCreatePendingCheckEndpoint(validationComponent), "create_check_pending", influxMetrics, validationLogger, tracer, rateLimitValidation),
+			DeletePendingCheck: prepareEndpoint(validation.MakeDeletePendingCheckEndpoint(validationComponent), "delete_check_pending", influxMetrics, validationLogger, tracer, rateLimitValidation),
 		}
 	}
 
@@ -945,14 +946,16 @@ func main() {
 		var getUserHandler = configureValidationHandler(keycloakb.ComponentName, ComponentID, idGenerator, validationExpectedAuthToken, tracer, logger)(validationEndpoints.GetUser)
 		var updateUserHandler = configureValidationHandler(keycloakb.ComponentName, ComponentID, idGenerator, validationExpectedAuthToken, tracer, logger)(validationEndpoints.UpdateUser)
 		var createCheckHandler = configureValidationHandler(keycloakb.ComponentName, ComponentID, idGenerator, validationExpectedAuthToken, tracer, logger)(validationEndpoints.CreateCheck)
-		var createPendingChecksHandler = configureValidationHandler(keycloakb.ComponentName, ComponentID, idGenerator, validationExpectedAuthToken, tracer, logger)(validationEndpoints.CreatePendingChecks)
+		var createPendingCheckHandler = configureValidationHandler(keycloakb.ComponentName, ComponentID, idGenerator, validationExpectedAuthToken, tracer, logger)(validationEndpoints.CreatePendingCheck)
+		var deletePendingCheckHandler = configureValidationHandler(keycloakb.ComponentName, ComponentID, idGenerator, validationExpectedAuthToken, tracer, logger)(validationEndpoints.DeletePendingCheck)
 
 		var validationSubroute = route.PathPrefix("/validation").Subrouter()
 
 		validationSubroute.Path("/realms/{realm}/users/{userID}").Methods("GET").Handler(getUserHandler)
 		validationSubroute.Path("/realms/{realm}/users/{userID}").Methods("PUT").Handler(updateUserHandler)
 		validationSubroute.Path("/realms/{realm}/users/{userID}/checks").Methods("POST").Handler(createCheckHandler)
-		validationSubroute.Path("/realms/{realm}/users/{userID}/checks/pending").Methods("POST").Handler(createPendingChecksHandler)
+		validationSubroute.Path("/realms/{realm}/users/{userID}/checks/pending").Methods("POST").Handler(createPendingCheckHandler)
+		validationSubroute.Path("/realms/{realm}/users/{userID}/checks/pending/{pendingCheck}").Methods("DELETE").Handler(deletePendingCheckHandler)
 
 		// Communications
 		var getCommunicationsActionsHandler = configureCommunicationsHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(communicationsEndpoints.GetActions)

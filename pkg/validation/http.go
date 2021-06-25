@@ -13,10 +13,11 @@ import (
 
 // Parameter names
 const (
-	ReqBody = "body"
+	reqBody = "body"
 
-	PrmRealm  = "realm"
-	PrmUserID = "userID"
+	prmRealm        = "realm"
+	prmUserID       = "userID"
+	prmPendingCheck = "pendingCheck"
 )
 
 // MakeValidationHandler make an HTTP handler for a Validation endpoint.
@@ -31,8 +32,9 @@ func MakeValidationHandler(e endpoint.Endpoint, logger log.Logger) *http_transpo
 // decodeEventsRequest gets the HTTP parameters and body content
 func decodeManagementRequest(ctx context.Context, req *http.Request) (interface{}, error) {
 	var pathParams = map[string]string{
-		PrmRealm:  constants.RegExpRealmName,
-		PrmUserID: constants.RegExpID,
+		prmRealm:        constants.RegExpRealmName,
+		prmUserID:       constants.RegExpID,
+		prmPendingCheck: constants.RegExpName,
 	}
 
 	var queryParams = map[string]string{}

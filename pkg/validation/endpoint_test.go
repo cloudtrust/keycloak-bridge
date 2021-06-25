@@ -24,8 +24,8 @@ func TestGetUserEndpoint(t *testing.T) {
 	var realm = "realm"
 	var ctx = context.Background()
 	var req = make(map[string]string)
-	req[PrmRealm] = realm
-	req[PrmUserID] = userID
+	req[prmRealm] = realm
+	req[prmUserID] = userID
 
 	mockComponent.EXPECT().GetUser(ctx, realm, userID).Return(api.UserRepresentation{}, nil).Times(1)
 	var res, err = e(ctx, req)
@@ -46,7 +46,7 @@ func TestUpdateUserEndpoint(t *testing.T) {
 
 	t.Run("No error", func(t *testing.T) {
 		userJSON, _ := json.Marshal(api.UserRepresentation{})
-		var req = map[string]string{PrmRealm: realm, PrmUserID: userID, ReqBody: string(userJSON)}
+		var req = map[string]string{prmRealm: realm, prmUserID: userID, reqBody: string(userJSON)}
 
 		mockComponent.EXPECT().UpdateUser(ctx, realm, userID, gomock.Any()).Return(nil).Times(1)
 		var res, err = e(ctx, req)
@@ -56,7 +56,7 @@ func TestUpdateUserEndpoint(t *testing.T) {
 
 	t.Run("Invalid input", func(t *testing.T) {
 		userJSON, _ := json.Marshal(api.UserRepresentation{Gender: ptr("unknown")})
-		var req = map[string]string{PrmRealm: realm, PrmUserID: userID, ReqBody: string(userJSON)}
+		var req = map[string]string{prmRealm: realm, prmUserID: userID, reqBody: string(userJSON)}
 
 		var res, err = e(ctx, req)
 		assert.NotNil(t, err)
@@ -64,7 +64,7 @@ func TestUpdateUserEndpoint(t *testing.T) {
 	})
 
 	t.Run("Error - JSON unmarshalling error", func(t *testing.T) {
-		var req = map[string]string{PrmRealm: realm, PrmUserID: userID, ReqBody: string("userJSON")}
+		var req = map[string]string{prmRealm: realm, prmUserID: userID, reqBody: string("userJSON")}
 
 		var res, err = e(ctx, req)
 		assert.NotNil(t, err)
@@ -102,9 +102,9 @@ func TestCreateCheckEndpoint(t *testing.T) {
 			ProofData: &proofData,
 		})
 		var req = map[string]string{
-			PrmRealm:  realm,
-			PrmUserID: userID,
-			ReqBody:   string(checkJSON),
+			prmRealm:  realm,
+			prmUserID: userID,
+			reqBody:   string(checkJSON),
 		}
 
 		mockComponent.EXPECT().CreateCheck(ctx, realm, userID, gomock.Any()).Return(nil).Times(1)
@@ -115,9 +115,9 @@ func TestCreateCheckEndpoint(t *testing.T) {
 	t.Run("Invalid input", func(t *testing.T) {
 		checkJSON, _ := json.Marshal(api.CheckRepresentation{})
 		var req = map[string]string{
-			PrmRealm:  realm,
-			PrmUserID: userID,
-			ReqBody:   string(checkJSON),
+			prmRealm:  realm,
+			prmUserID: userID,
+			reqBody:   string(checkJSON),
 		}
 
 		var _, err = e(ctx, req)
@@ -126,10 +126,56 @@ func TestCreateCheckEndpoint(t *testing.T) {
 
 	t.Run("Error - JSON unmarshalling error", func(t *testing.T) {
 		var req = make(map[string]string)
-		req[PrmUserID] = userID
-		req[ReqBody] = string("userJSON")
+		req[prmUserID] = userID
+		req[reqBody] = string("userJSON")
 
 		var _, err = e(ctx, req)
 		assert.NotNil(t, err)
 	})
+}
+
+func TestMakeCreatePendingCheckEndpoint(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockComponent = mock.NewComponent(mockCtrl)
+	var e = MakeCreatePendingCheckEndpoint(mockComponent)
+	var realm = "the-realm"
+	var userID = "user-id"
+	var req = map[string]string{prmRealm: realm, prmUserID: userID}
+	var ctx = context.TODO()
+
+	t.Run("Invalid JSON", func(t *testing.T) {
+		req[reqBody] = "{{"
+		var _, err = e(ctx, req)
+		assert.NotNil(t, err)
+	})
+	t.Run("Invalid parameters in body", func(t *testing.T) {
+		req[reqBody] = `{"nature":null}`
+		var _, err = e(ctx, req)
+		assert.NotNil(t, err)
+	})
+	t.Run("Valid request", func(t *testing.T) {
+		req[reqBody] = `{"nature":"check"}`
+		mockComponent.EXPECT().CreatePendingCheck(ctx, realm, userID, gomock.Any()).Return(nil)
+		var _, err = e(ctx, req)
+		assert.Nil(t, err)
+	})
+}
+
+func TestMakeDeletePendingCheckEndpoint(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockComponent = mock.NewComponent(mockCtrl)
+	var e = MakeDeletePendingCheckEndpoint(mockComponent)
+	var realm = "the-realm"
+	var userID = "user-id"
+	var pendingCheck = "pending-check"
+	var req = map[string]string{prmRealm: realm, prmUserID: userID, prmPendingCheck: pendingCheck}
+	var ctx = context.TODO()
+
+	mockComponent.EXPECT().DeletePendingCheck(ctx, realm, userID, pendingCheck)
+	var _, err = e(ctx, req)
+	assert.Nil(t, err)
 }
