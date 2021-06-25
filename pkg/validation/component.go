@@ -58,7 +58,8 @@ type Component interface {
 	GetUser(ctx context.Context, realmName string, userID string) (api.UserRepresentation, error)
 	UpdateUser(ctx context.Context, realmName string, userID string, user api.UserRepresentation) error
 	CreateCheck(ctx context.Context, realmName string, userID string, check api.CheckRepresentation) error
-	CreatePendingChecks(ctx context.Context, realmName string, userID string, pendingChecks api.PendingChecksRepresentation) error
+	CreatePendingCheck(ctx context.Context, realmName string, userID string, pendingChecks api.PendingChecksRepresentation) error
+	DeletePendingCheck(ctx context.Context, realmName string, userID string, pendingCheck string) error
 }
 
 // Component is the management component.
@@ -335,7 +336,7 @@ func (c *component) clearPendingChecks(validationCtx *validationContext, nature 
 	}
 }
 
-func (c *component) CreatePendingChecks(ctx context.Context, realmName string, userID string, pendingChecks api.PendingChecksRepresentation) error {
+func (c *component) CreatePendingCheck(ctx context.Context, realmName string, userID string, pendingChecks api.PendingChecksRepresentation) error {
 	var validationCtx = &validationContext{
 		ctx:       ctx,
 		realmName: realmName,
@@ -357,6 +358,38 @@ func (c *component) CreatePendingChecks(ctx context.Context, realmName string, u
 		}
 	}
 	validationCtx.kcUser.SetAttributeString(constants.AttrbPendingChecks, *strPendingChecks)
+	if err = c.updateKeycloakUser(validationCtx); err != nil {
+		c.logger.Warn(ctx, "msg", "Can't update user", "err", err.Error())
+	}
+	return err
+}
+
+func (c *component) DeletePendingCheck(ctx context.Context, realmName string, userID string, pendingCheck string) error {
+	var validationCtx = &validationContext{
+		ctx:       ctx,
+		realmName: realmName,
+		userID:    userID,
+	}
+	var kcUser, err = c.getKeycloakUserCtx(validationCtx)
+	if err != nil {
+		// error already logged
+		return err
+	}
+	var strPendingChecks = kcUser.GetAttributeString(constants.AttrbPendingChecks)
+	strPendingChecks, err = keycloakb.RemovePendingCheck(strPendingChecks, pendingCheck)
+	if err != nil {
+		if err == keycloakb.ErrCantUnmarshalPendingCheck {
+			c.logger.Warn(ctx, "msg", "Ignoring unmarshal error for pendingChecks attribute")
+		} else {
+			c.logger.Warn(ctx, "msg", "Failed to process pending checks")
+			return err
+		}
+	}
+	if strPendingChecks == nil {
+		validationCtx.kcUser.RemoveAttribute(constants.AttrbPendingChecks)
+	} else {
+		validationCtx.kcUser.SetAttributeString(constants.AttrbPendingChecks, *strPendingChecks)
+	}
 	if err = c.updateKeycloakUser(validationCtx); err != nil {
 		c.logger.Warn(ctx, "msg", "Can't update user", "err", err.Error())
 	}

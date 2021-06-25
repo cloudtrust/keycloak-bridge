@@ -13,10 +13,11 @@ import (
 
 // Endpoints for self service
 type Endpoints struct {
-	GetUser             endpoint.Endpoint
-	UpdateUser          endpoint.Endpoint
-	CreateCheck         endpoint.Endpoint
-	CreatePendingChecks endpoint.Endpoint
+	GetUser            endpoint.Endpoint
+	UpdateUser         endpoint.Endpoint
+	CreateCheck        endpoint.Endpoint
+	CreatePendingCheck endpoint.Endpoint
+	DeletePendingCheck endpoint.Endpoint
 }
 
 // MakeGetUserEndpoint endpoint creation
@@ -24,7 +25,7 @@ func MakeGetUserEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return component.GetUser(ctx, m[PrmRealm], m[PrmUserID])
+		return component.GetUser(ctx, m[prmRealm], m[prmUserID])
 	}
 }
 
@@ -36,7 +37,7 @@ func MakeUpdateUserEndpoint(component Component) cs.Endpoint {
 
 		var user api.UserRepresentation
 
-		if err = json.Unmarshal([]byte(m[ReqBody]), &user); err != nil {
+		if err = json.Unmarshal([]byte(m[reqBody]), &user); err != nil {
 			return nil, errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Body)
 		}
 
@@ -44,7 +45,7 @@ func MakeUpdateUserEndpoint(component Component) cs.Endpoint {
 			return nil, err
 		}
 
-		return nil, component.UpdateUser(ctx, m[PrmRealm], m[PrmUserID], user)
+		return nil, component.UpdateUser(ctx, m[prmRealm], m[prmUserID], user)
 	}
 }
 
@@ -56,7 +57,7 @@ func MakeCreateCheckEndpoint(component Component) cs.Endpoint {
 
 		var check api.CheckRepresentation
 
-		if err = json.Unmarshal([]byte(m[ReqBody]), &check); err != nil {
+		if err = json.Unmarshal([]byte(m[reqBody]), &check); err != nil {
 			return nil, errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Body)
 		}
 
@@ -64,19 +65,19 @@ func MakeCreateCheckEndpoint(component Component) cs.Endpoint {
 			return nil, err
 		}
 
-		return nil, component.CreateCheck(ctx, m[PrmRealm], m[PrmUserID], check)
+		return nil, component.CreateCheck(ctx, m[prmRealm], m[prmUserID], check)
 	}
 }
 
-// MakeCreatePendingChecksEndpoint endpoint creation
-func MakeCreatePendingChecksEndpoint(component Component) cs.Endpoint {
+// MakeCreatePendingCheckEndpoint endpoint creation
+func MakeCreatePendingCheckEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 		var err error
 
 		var pendingChecks api.PendingChecksRepresentation
 
-		if err = json.Unmarshal([]byte(m[ReqBody]), &pendingChecks); err != nil {
+		if err = json.Unmarshal([]byte(m[reqBody]), &pendingChecks); err != nil {
 			return nil, errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Body)
 		}
 
@@ -84,6 +85,15 @@ func MakeCreatePendingChecksEndpoint(component Component) cs.Endpoint {
 			return nil, err
 		}
 
-		return nil, component.CreatePendingChecks(ctx, m[PrmRealm], m[PrmUserID], pendingChecks)
+		return nil, component.CreatePendingCheck(ctx, m[prmRealm], m[prmUserID], pendingChecks)
+	}
+}
+
+// MakeDeletePendingCheckEndpoint endpoint creation
+func MakeDeletePendingCheckEndpoint(component Component) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+
+		return nil, component.DeletePendingCheck(ctx, m[prmRealm], m[prmUserID], m[prmPendingCheck])
 	}
 }
