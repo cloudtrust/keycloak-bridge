@@ -428,3 +428,89 @@ func TestValidationContext(t *testing.T) {
 		})
 	})
 }
+
+func TestCreatePendingCheck(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mocks = createComponentMocks(mockCtrl)
+	var component = mocks.createComponent()
+
+	var (
+		ctx           = context.TODO()
+		realm         = "my-realm"
+		userID        = "abcd-4567"
+		nature        = "pending-check"
+		pendingChecks = api.PendingChecksRepresentation{Nature: &nature}
+		accessToken   = "abcd1234.efgh.5678ijkl"
+		anyError      = errors.New("Any error")
+		user          = kc.UserRepresentation{ID: &userID, Attributes: nil}
+	)
+
+	t.Run("getKeycloakUserCtx fails", func(t *testing.T) {
+		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return("", anyError)
+		var err = component.CreatePendingCheck(ctx, realm, userID, pendingChecks)
+		assert.Equal(t, anyError, err)
+	})
+	mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil).AnyTimes()
+
+	t.Run("Invalid current attribute", func(t *testing.T) {
+		user.SetAttributeString(constants.AttrbPendingChecks, "not a json : {x")
+		mocks.keycloakClient.EXPECT().GetUser(accessToken, realm, userID).Return(user, nil)
+		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, realm, userID, gomock.Any()).DoAndReturn(func(_, _, _ string, updUser kc.UserRepresentation) error {
+			assert.Len(t, *updUser.Attributes, 1)
+			assert.Contains(t, *updUser.GetAttributeString(constants.AttrbPendingChecks), nature)
+			return nil
+		})
+		var err = component.CreatePendingCheck(ctx, realm, userID, pendingChecks)
+		assert.Nil(t, err)
+	})
+}
+
+func TestDeletePendingCheck(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mocks = createComponentMocks(mockCtrl)
+	var component = mocks.createComponent()
+
+	var (
+		ctx         = context.TODO()
+		realm       = "my-realm"
+		userID      = "abcd-4567"
+		nature      = "pending-check"
+		accessToken = "abcd1234.efgh.5678ijkl"
+		anyError    = errors.New("Any error")
+		user        = kc.UserRepresentation{ID: &userID, Attributes: nil}
+	)
+
+	t.Run("getKeycloakUserCtx fails", func(t *testing.T) {
+		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return("", anyError)
+		var err = component.DeletePendingCheck(ctx, realm, userID, nature)
+		assert.Equal(t, anyError, err)
+	})
+	mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil).AnyTimes()
+
+	t.Run("Invalid current attribute", func(t *testing.T) {
+		user.SetAttributeString(constants.AttrbPendingChecks, "not a json : {x")
+		mocks.keycloakClient.EXPECT().GetUser(accessToken, realm, userID).Return(user, nil)
+		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, realm, userID, gomock.Any()).DoAndReturn(func(_, _, _ string, updUser kc.UserRepresentation) error {
+			assert.True(t, updUser.Attributes == nil || len(*updUser.Attributes) == 0)
+			return nil
+		})
+		var err = component.DeletePendingCheck(ctx, realm, userID, nature)
+		assert.Nil(t, err)
+	})
+	t.Run("Success", func(t *testing.T) {
+		user.SetAttributeString(constants.AttrbPendingChecks, `{"pending-check": 123456789, "other-check": 123456789}`)
+		mocks.keycloakClient.EXPECT().GetUser(accessToken, realm, userID).Return(user, nil)
+		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, realm, userID, gomock.Any()).DoAndReturn(func(_, _, _ string, updUser kc.UserRepresentation) error {
+			assert.Len(t, *updUser.Attributes, 1)
+			assert.NotContains(t, *updUser.GetAttributeString(constants.AttrbPendingChecks), nature)
+			assert.Contains(t, *updUser.GetAttributeString(constants.AttrbPendingChecks), "other-check")
+			return nil
+		})
+		var err = component.DeletePendingCheck(ctx, realm, userID, nature)
+		assert.Nil(t, err)
+	})
+}
