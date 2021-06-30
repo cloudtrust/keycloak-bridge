@@ -16,16 +16,16 @@ const (
 	// User
 	RegExpUsername            = `^[a-zA-Z0-9-_.]{1,128}$`
 	RegExpEmail               = `^.+\@.+\..+$`
-	RegExpNameSpecialChars    = `^([\wàáâäçèéêëìíîïñòóôöùúûüßÀÁÂÄÇÈÉÊËÌÍÎÏÑÒÓÔÖÙÚÛÜÆæŒœ][\wàáâäçèéêëìíîïñòóôöùúûüßÀÁÂÄÇÈÉÊËÌÍÎÏÑÒÓÔÖÙÚÛÜÆæŒœ /\\\.'-]{0,49})$`
-	RegExpNameSpecialChars128 = `^([\wàáâäçèéêëìíîïñòóôöùúûüßÀÁÂÄÇÈÉÊËÌÍÎÏÑÒÓÔÖÙÚÛÜÆæŒœ][\wàáâäçèéêëìíîïñòóôöùúûüßÀÁÂÄÇÈÉÊËÌÍÎÏÑÒÓÔÖÙÚÛÜÆæŒœ /\\\.'-]{0,127})$`
+	RegExpNameSpecialChars    = `^([\p{Lu}\p{Ll}][\p{Lu}\p{Ll} /\\\.'-]{0,49})$`
+	RegExpNameSpecialChars128 = `^([\p{Lu}\p{Ll}][\p{Lu}\p{Ll} /\\\.'-]{0,127})$`
 	RegExpFirstName           = RegExpNameSpecialChars128
 	RegExpLastName            = RegExpNameSpecialChars128
-	RegExpLastNameSearch      = `^[=%]?([\wàáâäçèéêëìíîïñòóôöùúûüßÀÁÂÄÇÈÉÊËÌÍÎÏÑÒÓÔÖÙÚÛÜÆæŒœ][\wàáâäçèéêëìíîïñòóôöùúûüßÀÁÂÄÇÈÉÊËÌÍÎÏÑÒÓÔÖÙÚÛÜÆæŒœ /\\\.'-]{0,127}[%]?)$`
+	RegExpLastNameSearch      = `^[=%]?([\p{Lu}\p{Ll}][\p{Lu}\p{Ll} /\\\.'-]{0,127}[%]?)$`
 	RegExpPhoneNumber         = `^\+[1-9]\d{1,14}$`
 	RegExpLabel               = regExpLen255
 	RegExpGender              = `^[MFU]$`
 	RegExpBirthDate           = `^(\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01]))$`
-	RegExpBirthLocation       = `^([\wàáâäçèéêëìíîïñòóôöùúûüßÀÁÂÄÇÈÉÊËÌÍÎÏÑÒÓÔÖÙÚÛÜÆæŒœ][\wàáâäçèéêëìíîïñòóôöùúûüßÀÁÂÄÇÈÉÊËÌÍÎÏÑÒÓÔÖÙÚÛÜÆæŒœ ()/\\\.'-]{0,49})$`
+	RegExpBirthLocation       = `^([\p{Lu}\p{Ll}][\p{Lu}\p{Ll}\d ()/\\\.'-]{0,49})$`
 	RegExpLocale              = `^[a-z]{2}$`
 	RegExpBusinessID          = regExpLen255
 	RegExpCountryCode         = `^\w{2}$`
