@@ -13,11 +13,11 @@ import (
 
 // Parameter names
 const (
-	PrmRealm = "realm"
+	prmRealm = "realm"
 
-	PrmQryUnit = "unit"
-	PrmQryMax = "max"
-	PrmQryTimeshift = "timeshift"
+	prmQryUnit      = "unit"
+	prmQryMax       = "max"
+	prmQryTimeshift = "timeshift"
 )
 
 // MakeStatisticsHandler make an HTTP handler for a Statistics endpoint.
@@ -32,13 +32,13 @@ func MakeStatisticsHandler(e endpoint.Endpoint, logger log.Logger) *http_transpo
 // decodeEventsRequest gets the HTTP parameters and body content
 func decodeEventsRequest(ctx context.Context, req *http.Request) (interface{}, error) {
 	var pathParams = map[string]string{
-		PrmRealm: "^[a-zA-Z0-9_-]{1,36}$",
+		prmRealm: "^[a-zA-Z0-9_-]{1,36}$",
 	}
 
 	var queryParams = map[string]string{
-		PrmQryUnit:      stat_api.RegExpPeriod,
-		PrmQryMax:       stat_api.RegExpNumber,
-		PrmQryTimeshift: stat_api.RegExpTimeshift,
+		prmQryUnit:      stat_api.RegExpPeriod,
+		prmQryMax:       stat_api.RegExpNumber,
+		prmQryTimeshift: stat_api.RegExpTimeshift,
 	}
 
 	return commonhttp.DecodeRequest(ctx, req, pathParams, queryParams)

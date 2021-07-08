@@ -42,6 +42,25 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Statistics'
+  /statistics/realms/{realm}/identifications:
+    get:
+      tags:
+      - Statistics
+      summary: Get the identification statistics for a realm
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdentificationStatistics'
   /statistics/realms/{realm}/users:
     get:
       tags:
@@ -165,6 +184,9 @@ components:
               type: number
             lastYear:
               type: number
+    IdentificationStatistics:
+      type: object
+      properties:
         videoIdentifications:
           type: number
     StatisticsUsers:

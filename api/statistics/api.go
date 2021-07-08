@@ -23,9 +23,13 @@ type ActionRepresentation struct {
 
 // StatisticsRepresentation elements returned by GetStatistics
 type StatisticsRepresentation struct {
-	LastConnection       int64                               `json:"lastConnection"`
-	TotalConnections     StatisticsConnectionsRepresentation `json:"totalConnections"`
-	VideoIdentifications int                                 `json:"videoIdentifications"`
+	LastConnection   int64                               `json:"lastConnection"`
+	TotalConnections StatisticsConnectionsRepresentation `json:"totalConnections"`
+}
+
+// IdentificationStatisticsRepresentation elements returned by GetStatistics
+type IdentificationStatisticsRepresentation struct {
+	VideoIdentifications int `json:"videoIdentifications"`
 }
 
 // StatisticsConnectionsRepresentation are elements used in StatisticsRepresentation

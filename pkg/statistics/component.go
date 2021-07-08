@@ -18,6 +18,7 @@ import (
 type Component interface {
 	GetActions(context.Context) ([]api.ActionRepresentation, error)
 	GetStatistics(context.Context, string) (api.StatisticsRepresentation, error)
+	GetStatisticsIdentifications(context.Context, string) (api.IdentificationStatisticsRepresentation, error)
 	GetStatisticsUsers(context.Context, string) (api.StatisticsUsersRepresentation, error)
 	GetStatisticsAuthenticators(context.Context, string) (map[string]int64, error)
 	GetStatisticsAuthentications(context.Context, string, string, *string) ([][]int64, error)
@@ -86,10 +87,17 @@ func (ec *component) GetStatistics(ctx context.Context, realmName string) (api.S
 	if err == nil {
 		res.TotalConnections.LastYear, err = ec.db.GetTotalConnectionsCount(ctx, realmName, "1 YEAR")
 	}
-	if err == nil {
-		var eventsParams = map[string]string{"realm": realmName, "ctEventType": "VALIDATION_STORE_CHECK_SUCCESS"}
-		res.VideoIdentifications, err = ec.db.GetEventsCount(ctx, eventsParams)
-	}
+
+	return res, err
+}
+
+// Grabs identification statistics
+func (ec *component) GetStatisticsIdentifications(ctx context.Context, realmName string) (api.IdentificationStatisticsRepresentation, error) {
+	var res api.IdentificationStatisticsRepresentation
+	var err error
+
+	var eventsParams = map[string]string{"realm": realmName, "ctEventType": "VALIDATION_STORE_CHECK_SUCCESS"}
+	res.VideoIdentifications, err = ec.db.GetEventsCount(ctx, eventsParams)
 
 	return res, err
 }
@@ -182,7 +190,7 @@ func (ec *component) GetMigrationReport(ctx context.Context, realmName string) (
 	var ctxRealm = ctx.Value(cs.CtContextRealm).(string)
 
 	var paramKV = []string{}
-	paramKV = append(paramKV, PrmQryMax, "0") //All
+	paramKV = append(paramKV, prmQryMax, "0") //All
 
 	usersKc, err := ec.keycloakClient.GetUsers(accessToken, ctxRealm, realmName, paramKV...)
 

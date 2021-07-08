@@ -69,7 +69,7 @@ func testAuthorization(t *testing.T, authz []configuration.Authorization, tester
 	ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 
 	mp := make(map[string]string)
-	mp[PrmRealm] = realmName
+	mp[prmRealm] = realmName
 	mp["userID"] = userID
 
 	mockKeycloakClient.EXPECT().GetGroupNamesOfUser(ctx, accessToken, realmName, userID).Return([]string{groupName}, nil).AnyTimes()
@@ -79,7 +79,7 @@ func testAuthorization(t *testing.T, authz []configuration.Authorization, tester
 
 func TestGetActionsAllow(t *testing.T) {
 	testAuthorization(t, WithAuthorization(), func(auth Component, mockComponent *mock.Component, ctx context.Context, mp map[string]string) {
-		mockComponent.EXPECT().GetActions(ctx).Return([]api.ActionRepresentation{}, nil).Times(1)
+		mockComponent.EXPECT().GetActions(ctx).Return([]api.ActionRepresentation{}, nil)
 		_, err := auth.GetActions(ctx)
 		assert.Nil(t, err)
 	})
@@ -87,39 +87,56 @@ func TestGetActionsAllow(t *testing.T) {
 
 func TestGetStatisticsAllow(t *testing.T) {
 	testAuthorization(t, WithAuthorization(), func(auth Component, mockComponent *mock.Component, ctx context.Context, mp map[string]string) {
-		mockComponent.EXPECT().GetStatistics(ctx, mp[PrmRealm]).Return(api.StatisticsRepresentation{}, nil).Times(1)
-		_, err := auth.GetStatistics(ctx, mp[PrmRealm])
+		mockComponent.EXPECT().GetStatistics(ctx, mp[prmRealm]).Return(api.StatisticsRepresentation{}, nil)
+		_, err := auth.GetStatistics(ctx, mp[prmRealm])
 		assert.Nil(t, err)
 	})
 }
+
+func TestGetStatisticsIdentificationsAllow(t *testing.T) {
+	testAuthorization(t, WithAuthorization(), func(auth Component, mockComponent *mock.Component, ctx context.Context, mp map[string]string) {
+		mockComponent.EXPECT().GetStatisticsIdentifications(ctx, mp[prmRealm]).Return(api.IdentificationStatisticsRepresentation{}, nil)
+		_, err := auth.GetStatisticsIdentifications(ctx, mp[prmRealm])
+		assert.Nil(t, err)
+	})
+}
+
 func TestGetStatisticsUsersAllow(t *testing.T) {
 	testAuthorization(t, WithAuthorization(), func(auth Component, mockComponent *mock.Component, ctx context.Context, mp map[string]string) {
-		mockComponent.EXPECT().GetStatisticsUsers(ctx, mp[PrmRealm]).Return(api.StatisticsUsersRepresentation{}, nil).Times(1)
-		_, err := auth.GetStatisticsUsers(ctx, mp[PrmRealm])
+		mockComponent.EXPECT().GetStatisticsUsers(ctx, mp[prmRealm]).Return(api.StatisticsUsersRepresentation{}, nil)
+		_, err := auth.GetStatisticsUsers(ctx, mp[prmRealm])
 		assert.Nil(t, err)
 	})
 }
 
 func TestGetStatisticsAuthenticatorsAllow(t *testing.T) {
 	testAuthorization(t, WithAuthorization(), func(auth Component, mockComponent *mock.Component, ctx context.Context, mp map[string]string) {
-		mockComponent.EXPECT().GetStatisticsAuthenticators(ctx, mp[PrmRealm]).Return(map[string]int64{}, nil).Times(1)
-		_, err := auth.GetStatisticsAuthenticators(ctx, mp[PrmRealm])
+		mockComponent.EXPECT().GetStatisticsAuthenticators(ctx, mp[prmRealm]).Return(map[string]int64{}, nil)
+		_, err := auth.GetStatisticsAuthenticators(ctx, mp[prmRealm])
 		assert.Nil(t, err)
 	})
 }
 
 func TestGetStatisticsAuthenticationsAllow(t *testing.T) {
 	testAuthorization(t, WithAuthorization(), func(auth Component, mockComponent *mock.Component, ctx context.Context, mp map[string]string) {
-		mockComponent.EXPECT().GetStatisticsAuthentications(ctx, mp[PrmRealm], mp[PrmQryUnit], nil).Return([][]int64{}, nil).Times(1)
-		_, err := auth.GetStatisticsAuthentications(ctx, mp[PrmRealm], mp[PrmQryUnit], nil)
+		mockComponent.EXPECT().GetStatisticsAuthentications(ctx, mp[prmRealm], mp[prmQryUnit], nil).Return([][]int64{}, nil)
+		_, err := auth.GetStatisticsAuthentications(ctx, mp[prmRealm], mp[prmQryUnit], nil)
 		assert.Nil(t, err)
 	})
 }
 
 func TestGetStatisticsAuthenticationsLogAllow(t *testing.T) {
 	testAuthorization(t, WithAuthorization(), func(auth Component, mockComponent *mock.Component, ctx context.Context, mp map[string]string) {
-		mockComponent.EXPECT().GetStatisticsAuthenticationsLog(ctx, mp[PrmRealm], mp[PrmQryMax]).Return([]api.StatisticsConnectionRepresentation{}, nil).Times(1)
-		_, err := auth.GetStatisticsAuthenticationsLog(ctx, mp[PrmRealm], mp[PrmQryMax])
+		mockComponent.EXPECT().GetStatisticsAuthenticationsLog(ctx, mp[prmRealm], mp[prmQryMax]).Return([]api.StatisticsConnectionRepresentation{}, nil)
+		_, err := auth.GetStatisticsAuthenticationsLog(ctx, mp[prmRealm], mp[prmQryMax])
+		assert.Nil(t, err)
+	})
+}
+
+func TestGetMigrationReportAllow(t *testing.T) {
+	testAuthorization(t, WithAuthorization(), func(auth Component, mockComponent *mock.Component, ctx context.Context, mp map[string]string) {
+		mockComponent.EXPECT().GetMigrationReport(ctx, mp[prmRealm]).Return(map[string]bool{}, nil)
+		_, err := auth.GetMigrationReport(ctx, mp[prmRealm])
 		assert.Nil(t, err)
 	})
 }
@@ -133,35 +150,49 @@ func TestGetActionsDeny(t *testing.T) {
 
 func TestGetStatisticsDeny(t *testing.T) {
 	testAuthorization(t, WithoutAuthorization, func(auth Component, mockComponent *mock.Component, ctx context.Context, mp map[string]string) {
-		_, err := auth.GetStatistics(ctx, mp[PrmRealm])
+		_, err := auth.GetStatistics(ctx, mp[prmRealm])
+		assert.Equal(t, security.ForbiddenError{}, err)
+	})
+}
+
+func TestGetStatisticsIdentificationsDeny(t *testing.T) {
+	testAuthorization(t, WithoutAuthorization, func(auth Component, mockComponent *mock.Component, ctx context.Context, mp map[string]string) {
+		_, err := auth.GetStatisticsIdentifications(ctx, mp[prmRealm])
 		assert.Equal(t, security.ForbiddenError{}, err)
 	})
 }
 
 func TestGetStatisticsUsersDeny(t *testing.T) {
 	testAuthorization(t, WithoutAuthorization, func(auth Component, mockComponent *mock.Component, ctx context.Context, mp map[string]string) {
-		_, err := auth.GetStatisticsUsers(ctx, mp[PrmRealm])
+		_, err := auth.GetStatisticsUsers(ctx, mp[prmRealm])
 		assert.Equal(t, security.ForbiddenError{}, err)
 	})
 }
 
 func TestGetStatisticsAuthenticationsDeny(t *testing.T) {
 	testAuthorization(t, WithoutAuthorization, func(auth Component, mockComponent *mock.Component, ctx context.Context, mp map[string]string) {
-		_, err := auth.GetStatisticsAuthentications(ctx, mp[PrmRealm], mp[PrmQryUnit], nil)
+		_, err := auth.GetStatisticsAuthentications(ctx, mp[prmRealm], mp[prmQryUnit], nil)
 		assert.Equal(t, security.ForbiddenError{}, err)
 	})
 }
 
 func TestGetStatisticsAuthenticationsLogDeny(t *testing.T) {
 	testAuthorization(t, WithoutAuthorization, func(auth Component, mockComponent *mock.Component, ctx context.Context, mp map[string]string) {
-		_, err := auth.GetStatisticsAuthenticationsLog(ctx, mp[PrmRealm], mp[PrmQryMax])
+		_, err := auth.GetStatisticsAuthenticationsLog(ctx, mp[prmRealm], mp[prmQryMax])
 		assert.Equal(t, security.ForbiddenError{}, err)
 	})
 }
 
 func TestGetStatisticsAuthenticatorsDeny(t *testing.T) {
 	testAuthorization(t, WithoutAuthorization, func(auth Component, mockComponent *mock.Component, ctx context.Context, mp map[string]string) {
-		_, err := auth.GetStatisticsAuthenticators(ctx, mp[PrmRealm])
+		_, err := auth.GetStatisticsAuthenticators(ctx, mp[prmRealm])
+		assert.Equal(t, security.ForbiddenError{}, err)
+	})
+}
+
+func TestGetMigrationReportDeny(t *testing.T) {
+	testAuthorization(t, WithoutAuthorization, func(auth Component, mockComponent *mock.Component, ctx context.Context, mp map[string]string) {
+		_, err := auth.GetMigrationReport(ctx, mp[prmRealm])
 		assert.Equal(t, security.ForbiddenError{}, err)
 	})
 }
