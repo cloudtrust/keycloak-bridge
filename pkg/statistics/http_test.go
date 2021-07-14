@@ -32,7 +32,7 @@ func TestHTTPStatisticsHandler(t *testing.T) {
 	// Get - 200 with JSON body returned
 	{
 		var params = make(map[string]string)
-		params[PrmRealm] = "master"
+		params[prmRealm] = "master"
 
 		var stats = api.StatisticsRepresentation{}
 		statsJSON, _ := json.MarshalIndent(stats, "", " ")

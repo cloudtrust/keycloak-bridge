@@ -25,6 +25,7 @@ func newAction(as string, scope security.Scope) security.Action {
 var (
 	STGetActions                      = newAction("ST_GetActions", security.ScopeGlobal)
 	STGetStatistics                   = newAction("ST_GetStatistics", security.ScopeRealm)
+	STGetStatisticsIdentifications    = newAction("ST_GetStatisticsIdentifications", security.ScopeRealm)
 	STGetStatisticsUsers              = newAction("ST_GetStatisticsUsers", security.ScopeRealm)
 	STGetStatisticsAuthenticators     = newAction("ST_GetStatisticsAuthenticators", security.ScopeRealm)
 	STGetStatisticsAuthentications    = newAction("ST_GetStatisticsAuthentications", security.ScopeRealm)
@@ -77,6 +78,16 @@ func (c *authorizationComponentMW) GetStatistics(ctx context.Context, realm stri
 	}
 
 	return c.next.GetStatistics(ctx, realm)
+}
+
+func (c *authorizationComponentMW) GetStatisticsIdentifications(ctx context.Context, realm string) (api.IdentificationStatisticsRepresentation, error) {
+	var action = STGetStatisticsIdentifications.String()
+
+	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, realm); err != nil {
+		return api.IdentificationStatisticsRepresentation{}, err
+	}
+
+	return c.next.GetStatisticsIdentifications(ctx, realm)
 }
 
 func (c *authorizationComponentMW) GetStatisticsUsers(ctx context.Context, realm string) (api.StatisticsUsersRepresentation, error) {

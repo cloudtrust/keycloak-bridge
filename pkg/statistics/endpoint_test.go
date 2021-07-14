@@ -20,7 +20,7 @@ func TestMakeGetActionsEndpoint(t *testing.T) {
 
 	var ctx = context.Background()
 
-	mockComponent.EXPECT().GetActions(ctx).Return([]api.ActionRepresentation{}, nil).Times(1)
+	mockComponent.EXPECT().GetActions(ctx).Return([]api.ActionRepresentation{}, nil)
 	var res, err = e(ctx, nil)
 	assert.Nil(t, err)
 	assert.NotNil(t, res)
@@ -36,9 +36,27 @@ func TestMakeGetStatisticsEndpoint(t *testing.T) {
 
 	var ctx = context.Background()
 	var req = make(map[string]string)
-	req[PrmRealm] = PrmRealm
+	req[prmRealm] = prmRealm
 
-	mockComponent.EXPECT().GetStatistics(ctx, PrmRealm).Return(api.StatisticsRepresentation{}, nil).Times(1)
+	mockComponent.EXPECT().GetStatistics(ctx, prmRealm).Return(api.StatisticsRepresentation{}, nil)
+	var res, err = e(ctx, req)
+	assert.Nil(t, err)
+	assert.NotNil(t, res)
+}
+
+func TestMakeGetStatisticsIdentificationsEndpoint(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockComponent = mock.NewComponent(mockCtrl)
+
+	var e = MakeGetStatisticsIdentificationsEndpoint(mockComponent)
+
+	var ctx = context.Background()
+	var req = make(map[string]string)
+	req[prmRealm] = prmRealm
+
+	mockComponent.EXPECT().GetStatisticsIdentifications(ctx, prmRealm).Return(api.IdentificationStatisticsRepresentation{}, nil)
 	var res, err = e(ctx, req)
 	assert.Nil(t, err)
 	assert.NotNil(t, res)
@@ -54,9 +72,9 @@ func TestMakeGetStatisticsUsersEndpoint(t *testing.T) {
 
 	var ctx = context.Background()
 	var req = make(map[string]string)
-	req[PrmRealm] = "realm"
+	req[prmRealm] = "realm"
 
-	mockComponent.EXPECT().GetStatisticsUsers(ctx, "realm").Return(api.StatisticsUsersRepresentation{}, nil).Times(1)
+	mockComponent.EXPECT().GetStatisticsUsers(ctx, "realm").Return(api.StatisticsUsersRepresentation{}, nil)
 	var res, err = e(ctx, req)
 	assert.Nil(t, err)
 	assert.NotNil(t, res)
@@ -72,9 +90,9 @@ func TestMakeGetStatisticsAuthenticatorsEndpoint(t *testing.T) {
 
 	var ctx = context.Background()
 	var req = make(map[string]string)
-	req[PrmRealm] = "realm"
+	req[prmRealm] = "realm"
 
-	mockComponent.EXPECT().GetStatisticsAuthenticators(ctx, "realm").Return(map[string]int64{}, nil).Times(1)
+	mockComponent.EXPECT().GetStatisticsAuthenticators(ctx, "realm").Return(map[string]int64{}, nil)
 	var res, err = e(ctx, req)
 	assert.Nil(t, err)
 	assert.NotNil(t, res)
@@ -90,10 +108,10 @@ func TestMakeGetStatisticsAuthenticationsEndpoint(t *testing.T) {
 
 	var ctx = context.Background()
 	var req = make(map[string]string)
-	req[PrmRealm] = "realm"
-	req[PrmQryUnit] = "hours"
+	req[prmRealm] = "realm"
+	req[prmQryUnit] = "hours"
 
-	mockComponent.EXPECT().GetStatisticsAuthentications(ctx, PrmRealm, "hours", nil).Return([][]int64{}, nil).Times(1)
+	mockComponent.EXPECT().GetStatisticsAuthentications(ctx, prmRealm, "hours", nil).Return([][]int64{}, nil)
 	var res, err = e(ctx, req)
 	assert.Nil(t, err)
 	assert.NotNil(t, res)
@@ -109,10 +127,10 @@ func TestMakeGetStatisticsAuthenticationsLogEndpoint(t *testing.T) {
 
 	var ctx = context.Background()
 	var req = make(map[string]string)
-	req[PrmRealm] = PrmRealm
-	req[PrmQryMax] = "6"
+	req[prmRealm] = prmRealm
+	req[prmQryMax] = "6"
 
-	mockComponent.EXPECT().GetStatisticsAuthenticationsLog(ctx, "realm", "6").Return([]api.StatisticsConnectionRepresentation{}, nil).Times(1)
+	mockComponent.EXPECT().GetStatisticsAuthenticationsLog(ctx, "realm", "6").Return([]api.StatisticsConnectionRepresentation{}, nil)
 	var res, err = e(ctx, req)
 	assert.Nil(t, err)
 	assert.NotNil(t, res)
