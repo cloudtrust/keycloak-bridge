@@ -1794,7 +1794,9 @@ components:
                 type: string
         self_register_enabled:
           type: boolean
-        consent_required:
+        consent_required_social:
+          type: boolean
+        consent_required_corporate:
           type: boolean
         theme:
           type: string

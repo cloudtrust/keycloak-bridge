@@ -176,7 +176,72 @@ paths:
           description: "Invalid input"
         403:
           description: "No permission to call this operation"
+  /kyc/realms/{realm}/users:
+    get:
+      tags:
+      - KYC
+      summary: Gets a user (search by username)
+      security:
+        - openId: []
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: username
+        in: query
+        description: name of the user to be retrieved
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: Returns the found user with fields id, username, firstName, lastName, emailVerified, phoneNumber, phoneNumberVerified and accreditations only
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        403:
+          description: No permission to call this operation
   /kyc/realms/{realm}/users/{userId}:
+    get:
+      tags:
+      - KYC
+      summary: Gets a user
+      security:
+        - openId: []
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userId
+        in: path
+        description: user id
+        required: true
+        schema:
+          type: string
+      - name: consent
+        in: query
+        description: consent code received by SMS on the end-user mobile phone
+        required: false
+        schema:
+          type: string
+      responses:
+        200:
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        403:
+          description: No permission to call this operation
+        430:
+          description: Missing or invalid consent code 
     put:
       tags:
       - KYC
@@ -199,6 +264,12 @@ paths:
         required: true
         schema:
           type: string
+      - name: consent
+        in: query
+        description: consent code received by SMS on the end-user mobile phone
+        required: false
+        schema:
+          type: string
       requestBody:
         content:
           application/json:
@@ -215,6 +286,76 @@ paths:
           description: Invalid information provided
         403:
           description: No permission to call this operation
+        430:
+          description: Missing or invalid consent code 
+  /kyc/realms/{realm}/users/{userId}/send-consent-code:
+    post:
+      tags:
+      - KYC
+      summary: >
+        Send a consent code by sms to a user. The end-user will have to tell this code to the RO/PEO to allow him to access his/her personal information.
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userId
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: Code correctly sent by SMS
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+        400:
+          description: "Invalid input"
+        403:
+          description: "No permission to call this operation"
+        409:
+          description: Consent feature is not enabled for the realm of the JWT token
+  /kyc/realms/{realm}/users/{userId}/send-sms-code:
+    post:
+      tags:
+      - KYC
+      summary: >
+        Send an sms code to a user and returns the value to the requester. This can be used by RO/PEO to ensure the person claiming for something really owns the mobile as a proof of its identity.
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userId
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: Code correctly sent by SMS
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+        400:
+          description: "Invalid input"
+        403:
+          description: "No permission to call this operation"
 components:
   schemas:
     Actions:

@@ -15,10 +15,14 @@ type Endpoints struct {
 	GetActions                      endpoint.Endpoint
 	GetUserInSocialRealm            endpoint.Endpoint
 	GetUserByUsernameInSocialRealm  endpoint.Endpoint
+	GetUser                         endpoint.Endpoint
+	GetUserByUsername               endpoint.Endpoint
 	ValidateUserInSocialRealm       endpoint.Endpoint
 	ValidateUser                    endpoint.Endpoint
 	SendSMSConsentCodeInSocialRealm endpoint.Endpoint
+	SendSMSConsentCode              endpoint.Endpoint
 	SendSMSCodeInSocialRealm        endpoint.Endpoint
+	SendSMSCode                     endpoint.Endpoint
 }
 
 // MakeGetActionsEndpoint creates an endpoint for GetActions
@@ -38,6 +42,17 @@ func MakeGetUserByUsernameInSocialRealmEndpoint(component Component) cs.Endpoint
 	}
 }
 
+// MakeGetUserByUsernameEndpoint endpoint creation
+func MakeGetUserByUsernameEndpoint(component Component) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+		var realm = m[prmRealm]
+		var user = m[prmQryUserName]
+
+		return component.GetUserByUsername(ctx, realm, user)
+	}
+}
+
 // MakeGetUserInSocialRealmEndpoint endpoint creation
 func MakeGetUserInSocialRealmEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
@@ -49,6 +64,20 @@ func MakeGetUserInSocialRealmEndpoint(component Component) cs.Endpoint {
 		}
 
 		return component.GetUserInSocialRealm(ctx, m[prmUserID], consentCode)
+	}
+}
+
+// MakeGetUserEndpoint endpoint creation
+func MakeGetUserEndpoint(component Component) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+		var consentCode *string
+
+		if value, ok := m[prmQryConsent]; ok {
+			consentCode = &value
+		}
+
+		return component.GetUser(ctx, m[prmRealm], m[prmUserID], consentCode)
 	}
 }
 
@@ -87,7 +116,12 @@ func MakeValidateUserEndpoint(component Component) cs.Endpoint {
 			return nil, err
 		}
 
-		return nil, component.ValidateUser(ctx, m[prmRealm], m[prmUserID], user)
+		var consentCode *string
+		if value, ok := m[prmQryConsent]; ok {
+			consentCode = &value
+		}
+
+		return nil, component.ValidateUser(ctx, m[prmRealm], m[prmUserID], user, consentCode)
 	}
 }
 
@@ -100,12 +134,31 @@ func MakeSendSmsConsentCodeInSocialRealmEndpoint(component Component) cs.Endpoin
 	}
 }
 
+// MakeSendSmsConsentCodeEndpoint creates an endpoint for SendSmsConsentCode
+func MakeSendSmsConsentCodeEndpoint(component Component) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+
+		return nil, component.SendSmsConsentCode(ctx, m[prmRealm], m[prmUserID])
+	}
+}
+
 // MakeSendSmsCodeInSocialRealmEndpoint creates an endpoint for SendSmsCodeInSocialRealm
 func MakeSendSmsCodeInSocialRealmEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
 		code, err := component.SendSmsCodeInSocialRealm(ctx, m[prmUserID])
+		return map[string]string{"code": code}, err
+	}
+}
+
+// MakeSendSmsCodeEndpoint creates an endpoint for SendSmsCode
+func MakeSendSmsCodeEndpoint(component Component) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+
+		code, err := component.SendSmsCode(ctx, m[prmRealm], m[prmUserID])
 		return map[string]string{"code": code}, err
 	}
 }
