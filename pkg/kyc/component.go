@@ -64,10 +64,14 @@ type Component interface {
 	GetActions(ctx context.Context) ([]apikyc.ActionRepresentation, error)
 	GetUserInSocialRealm(ctx context.Context, userID string, consentCode *string) (apikyc.UserRepresentation, error)
 	GetUserByUsernameInSocialRealm(ctx context.Context, username string) (apikyc.UserRepresentation, error)
+	GetUser(ctx context.Context, realmName string, userID string, consentCode *string) (apikyc.UserRepresentation, error)
+	GetUserByUsername(ctx context.Context, realmName string, username string) (apikyc.UserRepresentation, error)
 	ValidateUserInSocialRealm(ctx context.Context, userID string, user apikyc.UserRepresentation, consentCode *string) error
-	ValidateUser(ctx context.Context, realm string, userID string, user apikyc.UserRepresentation) error
+	ValidateUser(ctx context.Context, realm string, userID string, user apikyc.UserRepresentation, consentCode *string) error
 	SendSmsConsentCodeInSocialRealm(ctx context.Context, userID string) error
+	SendSmsConsentCode(ctx context.Context, realmName string, userID string) error
 	SendSmsCodeInSocialRealm(ctx context.Context, userID string) (string, error)
+	SendSmsCode(ctx context.Context, realmName string, userID string) (string, error)
 }
 
 // Component is the management component.
@@ -83,6 +87,10 @@ type component struct {
 	glnVerifier     GlnVerifier
 	logger          keycloakb.Logger
 }
+
+const (
+	targetUserGroup = "end_user"
+)
 
 // NewComponent returns the management component.
 func NewComponent(tokenProvider toolbox.OidcTokenProvider, socialRealmName string, keycloakClient KeycloakClient, usersDBModule UsersDetailsDBModule, archiveDBModule ArchiveDBModule, configDBModule ConfigDBModule, eventsDBModule EventsDBModule, accredsModule keycloakb.AccreditationsModule, glnVerifier GlnVerifier, logger keycloakb.Logger) Component {
@@ -123,13 +131,22 @@ func (c *component) GetUserByUsernameInSocialRealm(ctx context.Context, username
 		return apikyc.UserRepresentation{}, err
 	}
 
-	group, err := c.getGroupByName(accessToken, c.socialRealmName, "end_user")
+	return c.getUserByUsernameGeneric(ctx, accessToken, c.socialRealmName, username)
+}
+
+func (c *component) GetUserByUsername(ctx context.Context, realmName string, username string) (apikyc.UserRepresentation, error) {
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+	return c.getUserByUsernameGeneric(ctx, accessToken, realmName, username)
+}
+
+func (c *component) getUserByUsernameGeneric(ctx context.Context, accessToken string, realmName string, username string) (apikyc.UserRepresentation, error) {
+	group, err := c.getGroupByName(accessToken, realmName, targetUserGroup)
 	if err != nil {
 		return apikyc.UserRepresentation{}, err
 	}
 
 	var kcUser kc.UserRepresentation
-	kcUser, err = c.getUserByUsername(accessToken, c.socialRealmName, c.socialRealmName, username, *group.ID)
+	kcUser, err = c.getUserByUsername(accessToken, realmName, realmName, username, *group.ID)
 	if err != nil {
 		c.logger.Info(ctx, "msg", "GetUser: can't find user in Keycloak", "err", err.Error())
 		return apikyc.UserRepresentation{}, err
@@ -166,7 +183,7 @@ func (c *component) createConsentError(errorType string) error {
 	}
 }
 
-func (c *component) checkUserConsent(ctx context.Context, accessToken string, userID string, consentCode *string) error {
+func (c *component) checkUserConsent(ctx context.Context, accessToken string, userID string, social bool, consentCode *string) error {
 	var realm = ctx.Value(cs.CtContextRealm).(string)
 	var rac, err = c.configDBModule.GetAdminConfiguration(ctx, realm)
 	if err != nil {
@@ -174,7 +191,7 @@ func (c *component) checkUserConsent(ctx context.Context, accessToken string, us
 		return err
 	}
 
-	if rac.ConsentRequired != nil && *rac.ConsentRequired {
+	if c.consentRequired(rac, social) {
 		// Consent is required
 		if consentCode == nil {
 			return c.createConsentError(errorhandler.MsgErrMissingParam)
@@ -193,19 +210,34 @@ func (c *component) checkUserConsent(ctx context.Context, accessToken string, us
 	return nil
 }
 
+func (c *component) consentRequired(rac configuration.RealmAdminConfiguration, social bool) bool {
+	if social {
+		return rac.ConsentRequiredSocial != nil && *rac.ConsentRequiredSocial
+	}
+	return rac.ConsentRequiredCorporate != nil && *rac.ConsentRequiredCorporate
+}
+
 func (c *component) GetUserInSocialRealm(ctx context.Context, userID string, consentCode *string) (apikyc.UserRepresentation, error) {
 	accessToken, err := c.tokenProvider.ProvideToken(ctx)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Can't get OIDC token", "err", err.Error())
 		return apikyc.UserRepresentation{}, err
 	}
+	return c.getUserGeneric(ctx, accessToken, c.socialRealmName, userID, true, consentCode)
+}
 
-	err = c.checkUserConsent(ctx, accessToken, userID, consentCode)
+func (c *component) GetUser(ctx context.Context, realmName string, userID string, consentCode *string) (apikyc.UserRepresentation, error) {
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+	return c.getUserGeneric(ctx, accessToken, realmName, userID, false, consentCode)
+}
+
+func (c *component) getUserGeneric(ctx context.Context, accessToken string, realmName string, userID string, social bool, consentCode *string) (apikyc.UserRepresentation, error) {
+	err := c.checkUserConsent(ctx, accessToken, userID, social, consentCode)
 	if err != nil {
 		return apikyc.UserRepresentation{}, err
 	}
 
-	kcUser, err := c.keycloakClient.GetUser(accessToken, c.socialRealmName, userID)
+	kcUser, err := c.keycloakClient.GetUser(accessToken, realmName, userID)
 	if err != nil {
 		c.logger.Info(ctx, "msg", "GetUser: can't find user in Keycloak", "err", err.Error())
 		return apikyc.UserRepresentation{}, errorhandler.CreateInternalServerError("keycloak")
@@ -234,9 +266,9 @@ func (c *component) getUser(ctx context.Context, userID string, kcUser kc.UserRe
 	return res, nil
 }
 
-func (c *component) ValidateUser(ctx context.Context, realmName string, userID string, user apikyc.UserRepresentation) error {
+func (c *component) ValidateUser(ctx context.Context, realmName string, userID string, user apikyc.UserRepresentation, consentCode *string) error {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
-	return c.validateUser(ctx, accessToken, realmName, userID, user, nil)
+	return c.validateUser(ctx, accessToken, realmName, userID, user, false, consentCode)
 }
 
 func (c *component) ValidateUserInSocialRealm(ctx context.Context, userID string, user apikyc.UserRepresentation, consentCode *string) error {
@@ -246,20 +278,20 @@ func (c *component) ValidateUserInSocialRealm(ctx context.Context, userID string
 		return err
 	}
 
-	err = c.checkUserConsent(ctx, accessToken, userID, consentCode)
+	return c.validateUser(ctx, accessToken, c.socialRealmName, userID, user, true, consentCode)
+}
+
+func (c *component) validateUser(ctx context.Context, accessToken string, realmName string, userID string, user apikyc.UserRepresentation, social bool, consentCode *string) error {
+	var operatorName = ctx.Value(cs.CtContextUsername).(string)
+
+	var err = c.checkUserConsent(ctx, accessToken, userID, social, consentCode)
 	if err != nil {
 		return err
 	}
 
-	return c.validateUser(ctx, accessToken, c.socialRealmName, userID, user, consentCode)
-}
-
-func (c *component) validateUser(ctx context.Context, accessToken string, realmName string, userID string, user apikyc.UserRepresentation, consentCode *string) error {
-	var operatorName = ctx.Value(cs.CtContextUsername).(string)
-
 	// Gets user from Keycloak
 	var kcUser kc.UserRepresentation
-	kcUser, _, err := c.accredsModule.GetUserAndPrepareAccreditations(ctx, accessToken, realmName, userID, configuration.CheckKeyPhysical)
+	kcUser, _, err = c.accredsModule.GetUserAndPrepareAccreditations(ctx, accessToken, realmName, userID, configuration.CheckKeyPhysical)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Can't get user/accreditations", "err", err.Error())
 		return err
@@ -438,17 +470,25 @@ func (c *component) SendSmsConsentCodeInSocialRealm(ctx context.Context, userID 
 		c.logger.Warn(ctx, "msg", "Can't get OIDC token", "err", err.Error())
 		return err
 	}
+	return c.sendSmsConsentCodeGeneric(ctx, accessToken, c.socialRealmName, userID, true)
+}
 
+func (c *component) SendSmsConsentCode(ctx context.Context, realmName string, userID string) error {
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+	return c.sendSmsConsentCodeGeneric(ctx, accessToken, realmName, userID, false)
+}
+
+func (c *component) sendSmsConsentCodeGeneric(ctx context.Context, accessToken string, realmName string, userID string, social bool) error {
 	var realm = ctx.Value(cs.CtContextRealm).(string)
 	if rac, err := c.configDBModule.GetAdminConfiguration(ctx, realm); err != nil {
 		c.logger.Warn(ctx, "msg", "Can't get realm admin configuration", "realm", realm, "err", err.Error())
 		return err
-	} else if rac.ConsentRequired == nil || !*rac.ConsentRequired {
+	} else if !c.consentRequired(rac, social) {
 		c.logger.Warn(ctx, "msg", "Consent feature is not activated for this realm", "realm", realm)
 		return errorhandler.CreateEndpointNotEnabled("consent")
 	}
 
-	err = c.keycloakClient.SendConsentCodeSMS(accessToken, c.socialRealmName, userID)
+	var err = c.keycloakClient.SendConsentCodeSMS(accessToken, c.socialRealmName, userID)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Can't send consent SMS", "err", err.Error())
 		return err
@@ -467,10 +507,15 @@ func (c *component) SendSmsCodeInSocialRealm(ctx context.Context, userID string)
 		return "", err
 	}
 
-	return c.sendSmsCode(ctx, accessToken, c.socialRealmName, userID)
+	return c.sendSmsCodeGeneric(ctx, accessToken, c.socialRealmName, userID)
 }
 
-func (c *component) sendSmsCode(ctx context.Context, accessToken string, realm string, userID string) (string, error) {
+func (c *component) SendSmsCode(ctx context.Context, realmName string, userID string) (string, error) {
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+	return c.sendSmsCodeGeneric(ctx, accessToken, realmName, userID)
+}
+
+func (c *component) sendSmsCodeGeneric(ctx context.Context, accessToken string, realm string, userID string) (string, error) {
 	smsCodeKc, err := c.keycloakClient.SendSmsCode(accessToken, realm, userID)
 	if err != nil {
 		c.logger.Warn(ctx, "err", err.Error())
