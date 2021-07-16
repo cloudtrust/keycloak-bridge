@@ -902,11 +902,15 @@ func main() {
 		kycEndpoints = kyc.Endpoints{
 			GetActions:                      prepareEndpoint(kyc.MakeGetActionsEndpoint(kycComponent), "register_get_actions", influxMetrics, kycLogger, tracer, rateLimitKyc),
 			GetUserInSocialRealm:            prepareEndpoint(kyc.MakeGetUserInSocialRealmEndpoint(kycComponent), "get_user_in_social_realm", influxMetrics, kycLogger, tracer, rateLimitKyc),
-			GetUserByUsernameInSocialRealm:  prepareEndpoint(kyc.MakeGetUserByUsernameInSocialRealmEndpoint(kycComponent), "get_user_by_usernamein_social_realm", influxMetrics, kycLogger, tracer, rateLimitKyc),
-			ValidateUserInSocialRealm:       prepareEndpoint(kyc.MakeValidateUserInSocialRealmEndpoint(kycComponent), "validate_userin_social_realm", influxMetrics, kycLogger, tracer, rateLimitKyc),
-			ValidateUser:                    prepareEndpoint(kyc.MakeValidateUserEndpoint(kycComponent), "validate_user", influxMetrics, kycLogger, tracer, rateLimitKyc),
+			GetUserByUsernameInSocialRealm:  prepareEndpoint(kyc.MakeGetUserByUsernameInSocialRealmEndpoint(kycComponent), "get_user_by_username_in_social_realm", influxMetrics, kycLogger, tracer, rateLimitKyc),
+			ValidateUserInSocialRealm:       prepareEndpoint(kyc.MakeValidateUserInSocialRealmEndpoint(kycComponent), "validate_user_in_social_realm", influxMetrics, kycLogger, tracer, rateLimitKyc),
 			SendSMSConsentCodeInSocialRealm: prepareEndpoint(kyc.MakeSendSmsConsentCodeInSocialRealmEndpoint(kycComponent), "send_sms_consent_code_in_social_realm", influxMetrics, kycLogger, tracer, rateLimitKyc),
 			SendSMSCodeInSocialRealm:        prepareEndpoint(kyc.MakeSendSmsCodeInSocialRealmEndpoint(kycComponent), "send_sms_code_in_social_realm", influxMetrics, kycLogger, tracer, rateLimitKyc),
+			GetUser:                         prepareEndpoint(kyc.MakeGetUserEndpoint(kycComponent), "get_user", influxMetrics, kycLogger, tracer, rateLimitKyc),
+			GetUserByUsername:               prepareEndpoint(kyc.MakeGetUserByUsernameEndpoint(kycComponent), "get_user_by_username", influxMetrics, kycLogger, tracer, rateLimitKyc),
+			ValidateUser:                    prepareEndpoint(kyc.MakeValidateUserEndpoint(kycComponent), "validate_user", influxMetrics, kycLogger, tracer, rateLimitKyc),
+			SendSMSConsentCode:              prepareEndpoint(kyc.MakeSendSmsConsentCodeEndpoint(kycComponent), "send_sms_consent_code", influxMetrics, kycLogger, tracer, rateLimitKyc),
+			SendSMSCode:                     prepareEndpoint(kyc.MakeSendSmsCodeEndpoint(kycComponent), "send_sms_code", influxMetrics, kycLogger, tracer, rateLimitKyc),
 		}
 	}
 
@@ -1185,18 +1189,26 @@ func main() {
 		var kycGetUserInSocialRealmHandler = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, endpointPhysicalCheckAvailabilityChecker, true, logger)(kycEndpoints.GetUserInSocialRealm)
 		var kycGetUserByUsernameInSocialRealmHandler = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, endpointPhysicalCheckAvailabilityChecker, true, logger)(kycEndpoints.GetUserByUsernameInSocialRealm)
 		var kycValidateUserInSocialRealmHandler = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, endpointPhysicalCheckAvailabilityChecker, true, logger)(kycEndpoints.ValidateUserInSocialRealm)
+		var kycSendSMSConsentCodeInSocialRealmHandler = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, endpointPhysicalCheckAvailabilityChecker, false, logger)(kycEndpoints.SendSMSConsentCodeInSocialRealm)
+		var kycSendSMSCodeInSocialRealmHandler = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, endpointPhysicalCheckAvailabilityChecker, false, logger)(kycEndpoints.SendSMSCodeInSocialRealm)
+		var kycGetUserHandler = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, endpointPhysicalCheckAvailabilityChecker, true, logger)(kycEndpoints.GetUser)
+		var kycGetUserByUsernameHandler = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, endpointPhysicalCheckAvailabilityChecker, true, logger)(kycEndpoints.GetUserByUsername)
 		var kycValidateUserHandler = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, endpointPhysicalCheckAvailabilityChecker, false, logger)(kycEndpoints.ValidateUser)
-		var kycSendSMSConsentCodeHandlerInSocialRealm = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, endpointPhysicalCheckAvailabilityChecker, false, logger)(kycEndpoints.SendSMSConsentCodeInSocialRealm)
-		var kycSendSMSCodeHandlerInSocialRealm = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, endpointPhysicalCheckAvailabilityChecker, false, logger)(kycEndpoints.SendSMSCodeInSocialRealm)
+		var kycSendSMSConsentCodeHandler = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, endpointPhysicalCheckAvailabilityChecker, false, logger)(kycEndpoints.SendSMSConsentCode)
+		var kycSendSMSCodeHandler = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, endpointPhysicalCheckAvailabilityChecker, false, logger)(kycEndpoints.SendSMSCode)
 
 		// KYC methods
 		route.Path("/kyc/actions").Methods("GET").Handler(kycGetActionsHandler)
 		route.Path("/kyc/social/users").Methods("GET").Handler(kycGetUserByUsernameInSocialRealmHandler)
 		route.Path("/kyc/social/users/{userID}").Methods("GET").Handler(kycGetUserInSocialRealmHandler)
 		route.Path("/kyc/social/users/{userID}").Methods("PUT").Handler(kycValidateUserInSocialRealmHandler)
-		route.Path("/kyc/social/users/{userID}/send-consent-code").Methods("POST").Handler(kycSendSMSConsentCodeHandlerInSocialRealm)
-		route.Path("/kyc/social/users/{userID}/send-sms-code").Methods("POST").Handler(kycSendSMSCodeHandlerInSocialRealm)
+		route.Path("/kyc/social/users/{userID}/send-consent-code").Methods("POST").Handler(kycSendSMSConsentCodeInSocialRealmHandler)
+		route.Path("/kyc/social/users/{userID}/send-sms-code").Methods("POST").Handler(kycSendSMSCodeInSocialRealmHandler)
+		route.Path("/kyc/realms/{realm}/users").Methods("GET").Handler(kycGetUserByUsernameHandler)
+		route.Path("/kyc/realms/{realm}/users/{userID}").Methods("GET").Handler(kycGetUserHandler)
 		route.Path("/kyc/realms/{realm}/users/{userID}").Methods("PUT").Handler(kycValidateUserHandler)
+		route.Path("/kyc/realms/{realm}/users/{userID}/send-consent-code").Methods("POST").Handler(kycSendSMSConsentCodeHandler)
+		route.Path("/kyc/realms/{realm}/users/{userID}/send-sms-code").Methods("POST").Handler(kycSendSMSCodeHandler)
 
 		var handler http.Handler = route
 

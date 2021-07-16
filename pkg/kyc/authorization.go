@@ -26,11 +26,15 @@ func newAction(as string, scope security.Scope) security.Action {
 var (
 	KYCGetActions                      = newAction("KYC_GetActions", security.ScopeGlobal)
 	KYCGetUserInSocialRealm            = newAction("KYC_GetUserInSocialRealm", security.ScopeRealm)
+	KYCGetUser                         = newAction("KYC_GetUser", security.ScopeGroup)
 	KYCGetUserByUsernameInSocialRealm  = newAction("KYC_GetUserByUsernameInSocialRealm", security.ScopeRealm)
+	KYCGetUserByUsername               = newAction("KYC_GetUserByUsername", security.ScopeGroup)
 	KYCValidateUserInSocialRealm       = newAction("KYC_ValidateUserInSocialRealm", security.ScopeRealm)
 	KYCValidateUser                    = newAction("KYC_ValidateUser", security.ScopeGroup)
 	KYCSendSmsConsentCodeInSocialRealm = newAction("KYC_SendSmsConsentCodeInSocialRealm", security.ScopeRealm)
+	KYCSendSmsConsentCode              = newAction("KYC_SendSmsConsentCode", security.ScopeGroup)
 	KYCSendSmsCodeInSocialRealm        = newAction("KYC_SendSmsCodeInSocialRealm", security.ScopeRealm)
+	KYCSendSmsCode                     = newAction("KYC_SendSmsCode", security.ScopeGroup)
 )
 
 type authorizationComponentMW struct {
@@ -88,6 +92,28 @@ func (c *authorizationComponentMW) GetUserByUsernameInSocialRealm(ctx context.Co
 	return c.next.GetUserByUsernameInSocialRealm(ctx, username)
 }
 
+func (c *authorizationComponentMW) GetUserByUsername(ctx context.Context, realmName string, username string) (apikyc.UserRepresentation, error) {
+	var res apikyc.UserRepresentation
+	var _, err = c.availabilityChecker.CheckAvailabilityForRealm(ctx, realmName, c.logger)
+	if err != nil {
+		return res, err
+	}
+
+	// First call component
+	res, err = c.next.GetUserByUsername(ctx, realmName, username)
+	if err != nil {
+		return res, err
+	}
+
+	// Check authorization according to the found user
+	var action = KYCGetUserByUsername.String()
+	if err = c.authManager.CheckAuthorizationOnTargetUser(ctx, action, realmName, *res.ID); err != nil {
+		return apikyc.UserRepresentation{}, err
+	}
+
+	return res, nil
+}
+
 func (c *authorizationComponentMW) GetUserInSocialRealm(ctx context.Context, userID string, consentCode *string) (apikyc.UserRepresentation, error) {
 	var action = KYCGetUserInSocialRealm.String()
 
@@ -100,6 +126,21 @@ func (c *authorizationComponentMW) GetUserInSocialRealm(ctx context.Context, use
 	}
 
 	return c.next.GetUserInSocialRealm(ctx, userID, consentCode)
+}
+
+func (c *authorizationComponentMW) GetUser(ctx context.Context, realmName string, userID string, consentCode *string) (apikyc.UserRepresentation, error) {
+	var err error
+	ctx, err = c.availabilityChecker.CheckAvailabilityForRealm(ctx, realmName, c.logger)
+	if err != nil {
+		return apikyc.UserRepresentation{}, err
+	}
+
+	var action = KYCGetUser.String()
+	if err = c.authManager.CheckAuthorizationOnTargetUser(ctx, action, realmName, userID); err != nil {
+		return apikyc.UserRepresentation{}, err
+	}
+
+	return c.next.GetUser(ctx, realmName, userID, consentCode)
 }
 
 func (c *authorizationComponentMW) ValidateUserInSocialRealm(ctx context.Context, userID string, user apikyc.UserRepresentation, consentCode *string) error {
@@ -116,7 +157,7 @@ func (c *authorizationComponentMW) ValidateUserInSocialRealm(ctx context.Context
 	return c.next.ValidateUserInSocialRealm(ctx, userID, user, consentCode)
 }
 
-func (c *authorizationComponentMW) ValidateUser(ctx context.Context, realmName string, userID string, user apikyc.UserRepresentation) error {
+func (c *authorizationComponentMW) ValidateUser(ctx context.Context, realmName string, userID string, user apikyc.UserRepresentation, consentCode *string) error {
 	var err error
 	ctx, err = c.availabilityChecker.CheckAvailabilityForRealm(ctx, realmName, c.logger)
 	if err != nil {
@@ -130,7 +171,7 @@ func (c *authorizationComponentMW) ValidateUser(ctx context.Context, realmName s
 		return err
 	}
 
-	return c.next.ValidateUser(ctx, realmName, userID, user)
+	return c.next.ValidateUser(ctx, realmName, userID, user, consentCode)
 }
 
 func (c *authorizationComponentMW) SendSmsConsentCodeInSocialRealm(ctx context.Context, userID string) error {
@@ -144,6 +185,21 @@ func (c *authorizationComponentMW) SendSmsConsentCodeInSocialRealm(ctx context.C
 	return c.next.SendSmsConsentCodeInSocialRealm(ctx, userID)
 }
 
+func (c *authorizationComponentMW) SendSmsConsentCode(ctx context.Context, realmName string, userID string) error {
+	var err error
+	ctx, err = c.availabilityChecker.CheckAvailabilityForRealm(ctx, realmName, c.logger)
+	if err != nil {
+		return err
+	}
+
+	var action = KYCSendSmsConsentCode.String()
+	if err = c.authManager.CheckAuthorizationOnTargetUser(ctx, action, realmName, userID); err != nil {
+		return err
+	}
+
+	return c.next.SendSmsConsentCode(ctx, realmName, userID)
+}
+
 func (c *authorizationComponentMW) SendSmsCodeInSocialRealm(ctx context.Context, userID string) (string, error) {
 	var action = KYCSendSmsCodeInSocialRealm.String()
 	var targetRealm = ctx.Value(cs.CtContextRealm).(string)
@@ -153,4 +209,19 @@ func (c *authorizationComponentMW) SendSmsCodeInSocialRealm(ctx context.Context,
 	}
 
 	return c.next.SendSmsCodeInSocialRealm(ctx, userID)
+}
+
+func (c *authorizationComponentMW) SendSmsCode(ctx context.Context, realmName string, userID string) (string, error) {
+	var err error
+	ctx, err = c.availabilityChecker.CheckAvailabilityForRealm(ctx, realmName, c.logger)
+	if err != nil {
+		return "", err
+	}
+
+	var action = KYCSendSmsCode.String()
+	if err = c.authManager.CheckAuthorizationOnTargetUser(ctx, action, realmName, userID); err != nil {
+		return "", err
+	}
+
+	return c.next.SendSmsCode(ctx, realmName, userID)
 }

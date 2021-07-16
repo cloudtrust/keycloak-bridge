@@ -64,6 +64,26 @@ func TestMakeAuthorizationRegisterComponentMW(t *testing.T) {
 			assert.Equal(t, expectedErr, err)
 		})
 	})
+	t.Run("GetUser", func(t *testing.T) {
+		t.Run("not configured", func(t *testing.T) {
+			mockAvailabilityChecker.EXPECT().CheckAvailabilityForRealm(ctx, realm, gomock.Any()).Return(ctx, expectedErr)
+			var _, err = component.GetUser(ctx, realm, userID, consentCode)
+			assert.Equal(t, expectedErr, err)
+		})
+		t.Run("not authorized", func(t *testing.T) {
+			mockAvailabilityChecker.EXPECT().CheckAvailabilityForRealm(ctx, realm, gomock.Any()).Return(ctx, nil)
+			mockAuthManager.EXPECT().CheckAuthorizationOnTargetUser(ctx, KYCGetUser.String(), realm, userID).Return(expectedErr)
+			var _, err = component.GetUser(ctx, realm, userID, consentCode)
+			assert.Equal(t, expectedErr, err)
+		})
+		t.Run("authorized", func(t *testing.T) {
+			mockAvailabilityChecker.EXPECT().CheckAvailabilityForRealm(ctx, realm, gomock.Any()).Return(ctx, nil)
+			mockAuthManager.EXPECT().CheckAuthorizationOnTargetUser(ctx, KYCGetUser.String(), realm, userID).Return(nil)
+			mockComponent.EXPECT().GetUser(ctx, realm, userID, consentCode).Return(apikyc.UserRepresentation{}, expectedErr)
+			var _, err = component.GetUser(ctx, realm, userID, consentCode)
+			assert.Equal(t, expectedErr, err)
+		})
+	})
 
 	t.Run("GetUserByUsernameInSocialRealm", func(t *testing.T) {
 		t.Run("not authorized", func(t *testing.T) {
@@ -78,6 +98,33 @@ func TestMakeAuthorizationRegisterComponentMW(t *testing.T) {
 			mockComponent.EXPECT().GetUserByUsernameInSocialRealm(ctx, username).Return(apikyc.UserRepresentation{}, expectedErr)
 			var _, err = component.GetUserByUsernameInSocialRealm(ctx, username)
 			assert.Equal(t, expectedErr, err)
+		})
+	})
+	t.Run("GetUserByUsername", func(t *testing.T) {
+		t.Run("not configured", func(t *testing.T) {
+			mockAvailabilityChecker.EXPECT().CheckAvailabilityForRealm(ctx, realm, gomock.Any()).Return(ctx, expectedErr)
+			var _, err = component.GetUserByUsername(ctx, realm, username)
+			assert.Equal(t, expectedErr, err)
+		})
+		t.Run("component fails", func(t *testing.T) {
+			mockAvailabilityChecker.EXPECT().CheckAvailabilityForRealm(ctx, realm, gomock.Any()).Return(ctx, nil)
+			mockComponent.EXPECT().GetUserByUsername(ctx, realm, username).Return(apikyc.UserRepresentation{}, expectedErr)
+			var _, err = component.GetUserByUsername(ctx, realm, username)
+			assert.Equal(t, expectedErr, err)
+		})
+		t.Run("not authorized", func(t *testing.T) {
+			mockAvailabilityChecker.EXPECT().CheckAvailabilityForRealm(ctx, realm, gomock.Any()).Return(ctx, nil)
+			mockComponent.EXPECT().GetUserByUsername(ctx, realm, username).Return(apikyc.UserRepresentation{ID: &userID}, nil)
+			mockAuthManager.EXPECT().CheckAuthorizationOnTargetUser(ctx, KYCGetUserByUsername.String(), realm, userID).Return(expectedErr)
+			var _, err = component.GetUserByUsername(ctx, realm, username)
+			assert.Equal(t, expectedErr, err)
+		})
+		t.Run("authorized", func(t *testing.T) {
+			mockAvailabilityChecker.EXPECT().CheckAvailabilityForRealm(ctx, realm, gomock.Any()).Return(ctx, nil)
+			mockComponent.EXPECT().GetUserByUsername(ctx, realm, username).Return(apikyc.UserRepresentation{ID: &userID}, nil)
+			mockAuthManager.EXPECT().CheckAuthorizationOnTargetUser(ctx, KYCGetUserByUsername.String(), realm, userID).Return(nil)
+			var _, err = component.GetUserByUsername(ctx, realm, username)
+			assert.Nil(t, err)
 		})
 	})
 
@@ -99,21 +146,20 @@ func TestMakeAuthorizationRegisterComponentMW(t *testing.T) {
 	t.Run("ValidateUser", func(t *testing.T) {
 		t.Run("endpoint not enabled for this realm", func(t *testing.T) {
 			mockAvailabilityChecker.EXPECT().CheckAvailabilityForRealm(ctx, realm, gomock.Any()).Return(ctx, expectedErr)
-			var err = component.ValidateUser(ctx, realm, userID, user)
+			var err = component.ValidateUser(ctx, realm, userID, user, consentCode)
 			assert.Equal(t, expectedErr, err)
 		})
-		mockAvailabilityChecker.EXPECT().CheckAvailabilityForRealm(ctx, realm, gomock.Any()).Return(ctx, nil).AnyTimes()
-
 		t.Run("not authorized", func(t *testing.T) {
+			mockAvailabilityChecker.EXPECT().CheckAvailabilityForRealm(ctx, realm, gomock.Any()).Return(ctx, nil)
 			mockAuthManager.EXPECT().CheckAuthorizationOnTargetUser(ctx, KYCValidateUser.String(), realm, userID).Return(expectedErr)
-			var err = component.ValidateUser(ctx, realm, userID, user)
+			var err = component.ValidateUser(ctx, realm, userID, user, consentCode)
 			assert.Equal(t, expectedErr, err)
 		})
-
 		t.Run("authorized", func(t *testing.T) {
+			mockAvailabilityChecker.EXPECT().CheckAvailabilityForRealm(ctx, realm, gomock.Any()).Return(ctx, nil)
 			mockAuthManager.EXPECT().CheckAuthorizationOnTargetUser(ctx, KYCValidateUser.String(), realm, userID).Return(nil)
-			mockComponent.EXPECT().ValidateUser(ctx, realm, userID, user).Return(expectedErr)
-			var err = component.ValidateUser(ctx, realm, userID, user)
+			mockComponent.EXPECT().ValidateUser(ctx, realm, userID, user, consentCode).Return(expectedErr)
+			var err = component.ValidateUser(ctx, realm, userID, user, consentCode)
 			assert.Equal(t, expectedErr, err)
 		})
 	})
@@ -131,6 +177,26 @@ func TestMakeAuthorizationRegisterComponentMW(t *testing.T) {
 			assert.Equal(t, expectedErr, err)
 		})
 	})
+	t.Run("SendSmsConsentCode", func(t *testing.T) {
+		t.Run("not configured", func(t *testing.T) {
+			mockAvailabilityChecker.EXPECT().CheckAvailabilityForRealm(ctx, realm, gomock.Any()).Return(ctx, expectedErr)
+			var err = component.SendSmsConsentCode(ctx, realm, userID)
+			assert.Equal(t, expectedErr, err)
+		})
+		t.Run("not authorized", func(t *testing.T) {
+			mockAvailabilityChecker.EXPECT().CheckAvailabilityForRealm(ctx, realm, gomock.Any()).Return(ctx, nil)
+			mockAuthManager.EXPECT().CheckAuthorizationOnTargetUser(ctx, KYCSendSmsConsentCode.String(), realm, userID).Return(expectedErr)
+			var err = component.SendSmsConsentCode(ctx, realm, userID)
+			assert.Equal(t, expectedErr, err)
+		})
+		t.Run("authorized", func(t *testing.T) {
+			mockAvailabilityChecker.EXPECT().CheckAvailabilityForRealm(ctx, realm, gomock.Any()).Return(ctx, nil)
+			mockAuthManager.EXPECT().CheckAuthorizationOnTargetUser(ctx, KYCSendSmsConsentCode.String(), realm, userID).Return(nil)
+			mockComponent.EXPECT().SendSmsConsentCode(ctx, realm, userID).Return(expectedErr)
+			var err = component.SendSmsConsentCode(ctx, realm, userID)
+			assert.Equal(t, expectedErr, err)
+		})
+	})
 
 	t.Run("SendSmsCodeInSocialRealm", func(t *testing.T) {
 		t.Run("not authorized", func(t *testing.T) {
@@ -142,6 +208,26 @@ func TestMakeAuthorizationRegisterComponentMW(t *testing.T) {
 			mockAuthManager.EXPECT().CheckAuthorizationOnTargetRealm(ctx, KYCSendSmsCodeInSocialRealm.String(), realm).Return(nil)
 			mockComponent.EXPECT().SendSmsCodeInSocialRealm(ctx, userID).Return("", expectedErr)
 			var _, err = component.SendSmsCodeInSocialRealm(ctx, userID)
+			assert.Equal(t, expectedErr, err)
+		})
+	})
+	t.Run("SendSmsCode", func(t *testing.T) {
+		t.Run("not configured", func(t *testing.T) {
+			mockAvailabilityChecker.EXPECT().CheckAvailabilityForRealm(ctx, realm, gomock.Any()).Return(ctx, expectedErr)
+			var _, err = component.SendSmsCode(ctx, realm, userID)
+			assert.Equal(t, expectedErr, err)
+		})
+		t.Run("not authorized", func(t *testing.T) {
+			mockAvailabilityChecker.EXPECT().CheckAvailabilityForRealm(ctx, realm, gomock.Any()).Return(ctx, nil)
+			mockAuthManager.EXPECT().CheckAuthorizationOnTargetUser(ctx, KYCSendSmsCode.String(), realm, userID).Return(expectedErr)
+			var _, err = component.SendSmsCode(ctx, realm, userID)
+			assert.Equal(t, expectedErr, err)
+		})
+		t.Run("authorized", func(t *testing.T) {
+			mockAvailabilityChecker.EXPECT().CheckAvailabilityForRealm(ctx, realm, gomock.Any()).Return(ctx, nil)
+			mockAuthManager.EXPECT().CheckAuthorizationOnTargetUser(ctx, KYCSendSmsCode.String(), realm, userID).Return(nil)
+			mockComponent.EXPECT().SendSmsCode(ctx, realm, userID).Return("", expectedErr)
+			var _, err = component.SendSmsCode(ctx, realm, userID)
 			assert.Equal(t, expectedErr, err)
 		})
 	})

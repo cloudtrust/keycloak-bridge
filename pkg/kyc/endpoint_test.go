@@ -46,21 +46,35 @@ func TestMakeGetUserEndpoint(t *testing.T) {
 	var paramsWithConsentCode = map[string]string{prmUserID: userID, prmQryConsent: consentCode}
 	var expectedError = errors.New("get-user")
 
-	t.Run("GetUserInSocialRealm - success case without consent code", func(t *testing.T) {
+	t.Run("Social - success case without consent code", func(t *testing.T) {
 		mockKYCComponent.EXPECT().GetUserInSocialRealm(gomock.Any(), userID, nil).Return(apikyc.UserRepresentation{}, nil)
 		_, err := MakeGetUserInSocialRealmEndpoint(mockKYCComponent)(context.Background(), m)
 		assert.Nil(t, err)
 	})
-	t.Run("GetUserInSocialRealm - success case with consent code", func(t *testing.T) {
+	t.Run("Social - success case with consent code", func(t *testing.T) {
 		mockKYCComponent.EXPECT().GetUserInSocialRealm(gomock.Any(), userID, &consentCode).Return(apikyc.UserRepresentation{}, nil)
 		_, err := MakeGetUserInSocialRealmEndpoint(mockKYCComponent)(context.Background(), paramsWithConsentCode)
 		assert.Nil(t, err)
 	})
-
-	t.Run("GetUserInSocialRealm - failure case", func(t *testing.T) {
+	t.Run("Social - failure case", func(t *testing.T) {
 		mockKYCComponent.EXPECT().GetUserInSocialRealm(gomock.Any(), userID, nil).Return(apikyc.UserRepresentation{}, expectedError)
 		_, err := MakeGetUserInSocialRealmEndpoint(mockKYCComponent)(context.Background(), m)
 		assert.Equal(t, expectedError, err)
+	})
+
+	var realm = "my-realm"
+
+	t.Run("Corporate - success case without consent code", func(t *testing.T) {
+		m[prmRealm] = realm
+		mockKYCComponent.EXPECT().GetUser(gomock.Any(), realm, userID, nil).Return(apikyc.UserRepresentation{}, nil)
+		_, err := MakeGetUserEndpoint(mockKYCComponent)(context.Background(), m)
+		assert.Nil(t, err)
+	})
+	t.Run("Corporate - success case with consent code", func(t *testing.T) {
+		paramsWithConsentCode[prmRealm] = realm
+		mockKYCComponent.EXPECT().GetUser(gomock.Any(), realm, userID, &consentCode).Return(apikyc.UserRepresentation{}, nil)
+		_, err := MakeGetUserEndpoint(mockKYCComponent)(context.Background(), paramsWithConsentCode)
+		assert.Nil(t, err)
 	})
 }
 
@@ -74,15 +88,28 @@ func TestMakeGetUserByUsernameEndpoint(t *testing.T) {
 	var m = map[string]string{prmQryUserName: username}
 	var expectedError = errors.New("get-user")
 
-	t.Run("GetUserByUsernameInSocialRealm - success case", func(t *testing.T) {
+	t.Run("Social - success case", func(t *testing.T) {
 		mockKYCComponent.EXPECT().GetUserByUsernameInSocialRealm(gomock.Any(), username).Return(apikyc.UserRepresentation{}, nil)
 		_, err := MakeGetUserByUsernameInSocialRealmEndpoint(mockKYCComponent)(context.Background(), m)
 		assert.Nil(t, err)
 	})
-
-	t.Run("GetUserByUsernameInSocialRealm - failure case", func(t *testing.T) {
+	t.Run("Social - failure case", func(t *testing.T) {
 		mockKYCComponent.EXPECT().GetUserByUsernameInSocialRealm(gomock.Any(), username).Return(apikyc.UserRepresentation{}, expectedError)
 		_, err := MakeGetUserByUsernameInSocialRealmEndpoint(mockKYCComponent)(context.Background(), m)
+		assert.Equal(t, expectedError, err)
+	})
+
+	var realm = "my-realm"
+	m[prmRealm] = realm
+
+	t.Run("Corporate - success case", func(t *testing.T) {
+		mockKYCComponent.EXPECT().GetUserByUsername(gomock.Any(), realm, username).Return(apikyc.UserRepresentation{}, nil)
+		_, err := MakeGetUserByUsernameEndpoint(mockKYCComponent)(context.Background(), m)
+		assert.Nil(t, err)
+	})
+	t.Run("Corporate - failure case", func(t *testing.T) {
+		mockKYCComponent.EXPECT().GetUserByUsername(gomock.Any(), realm, username).Return(apikyc.UserRepresentation{}, expectedError)
+		_, err := MakeGetUserByUsernameEndpoint(mockKYCComponent)(context.Background(), m)
 		assert.Equal(t, expectedError, err)
 	})
 }
@@ -145,7 +172,7 @@ func TestMakeValidateUserEndpoint(t *testing.T) {
 		m[reqBody] = string(bytes)
 		m[prmUserID] = userID
 		m[prmRealm] = realmName
-		mockKYCComponent.EXPECT().ValidateUser(gomock.Any(), realmName, userID, user).Return(nil)
+		mockKYCComponent.EXPECT().ValidateUser(gomock.Any(), realmName, userID, user, nil).Return(nil)
 		_, err := MakeValidateUserEndpoint(mockKYCComponent)(context.Background(), m)
 		assert.Nil(t, err)
 	})
@@ -165,7 +192,7 @@ func TestMakeValidateUserEndpoint(t *testing.T) {
 	})
 }
 
-func TestMakeSendSmsConsentCodeInSocialRealmEndpoint(t *testing.T) {
+func TestMakeSendSmsConsentCodeEndpoint(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
@@ -174,9 +201,18 @@ func TestMakeSendSmsConsentCodeInSocialRealmEndpoint(t *testing.T) {
 	var userID = "ux467913"
 	var m = map[string]string{prmUserID: userID}
 
-	mockKYCComponent.EXPECT().SendSmsConsentCodeInSocialRealm(gomock.Any(), userID).Return(nil)
-	_, err := MakeSendSmsConsentCodeInSocialRealmEndpoint(mockKYCComponent)(context.Background(), m)
-	assert.Nil(t, err)
+	t.Run("Social", func(t *testing.T) {
+		mockKYCComponent.EXPECT().SendSmsConsentCodeInSocialRealm(gomock.Any(), userID).Return(nil)
+		_, err := MakeSendSmsConsentCodeInSocialRealmEndpoint(mockKYCComponent)(context.Background(), m)
+		assert.Nil(t, err)
+	})
+	t.Run("Corporate", func(t *testing.T) {
+		var realm = "my-realm"
+		m[prmRealm] = realm
+		mockKYCComponent.EXPECT().SendSmsConsentCode(gomock.Any(), realm, userID).Return(nil)
+		_, err := MakeSendSmsConsentCodeEndpoint(mockKYCComponent)(context.Background(), m)
+		assert.Nil(t, err)
+	})
 }
 
 func createValidUser() apikyc.UserRepresentation {
@@ -212,7 +248,7 @@ func createValidUser() apikyc.UserRepresentation {
 	}
 }
 
-func TestMakeSendSmsCodeInSocialRealmEndpoint(t *testing.T) {
+func TestMakeSendSmsCodeEndpoint(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 
@@ -223,9 +259,20 @@ func TestMakeSendSmsCodeInSocialRealmEndpoint(t *testing.T) {
 
 	var mockKYCComponent = mock.NewComponent(mockCtrl)
 
-	mockKYCComponent.EXPECT().SendSmsCodeInSocialRealm(ctx, userID).Return("1234", nil)
+	t.Run("Social", func(t *testing.T) {
+		mockKYCComponent.EXPECT().SendSmsCodeInSocialRealm(ctx, userID).Return("1234", nil)
 
-	var res, err = MakeSendSmsCodeInSocialRealmEndpoint(mockKYCComponent)(ctx, req)
-	assert.Nil(t, err)
-	assert.Equal(t, map[string]string{"code": "1234"}, res)
+		var res, err = MakeSendSmsCodeInSocialRealmEndpoint(mockKYCComponent)(ctx, req)
+		assert.Nil(t, err)
+		assert.Equal(t, map[string]string{"code": "1234"}, res)
+	})
+	t.Run("Corporate", func(t *testing.T) {
+		var realm = "my-realm"
+		req[prmRealm] = realm
+		mockKYCComponent.EXPECT().SendSmsCode(ctx, realm, userID).Return("1234", nil)
+
+		var res, err = MakeSendSmsCodeEndpoint(mockKYCComponent)(ctx, req)
+		assert.Nil(t, err)
+		assert.Equal(t, map[string]string{"code": "1234"}, res)
+	})
 }
