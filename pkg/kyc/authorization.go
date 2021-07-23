@@ -4,6 +4,7 @@ import (
 	"context"
 
 	cs "github.com/cloudtrust/common-service"
+	errorhandler "github.com/cloudtrust/common-service/errors"
 	"github.com/cloudtrust/common-service/log"
 	"github.com/cloudtrust/common-service/middleware"
 	"github.com/cloudtrust/common-service/security"
@@ -108,7 +109,7 @@ func (c *authorizationComponentMW) GetUserByUsername(ctx context.Context, realmN
 	// Check authorization according to the found user
 	var action = KYCGetUserByUsername.String()
 	if err = c.authManager.CheckAuthorizationOnTargetUser(ctx, action, realmName, *res.ID); err != nil {
-		return apikyc.UserRepresentation{}, err
+		return apikyc.UserRepresentation{}, errorhandler.CreateNotFoundError("user")
 	}
 
 	return res, nil

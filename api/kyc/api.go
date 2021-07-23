@@ -37,6 +37,7 @@ type UserRepresentation struct {
 	IDDocumentNumber     *string                        `json:"idDocumentNumber,omitempty"`
 	IDDocumentExpiration *string                        `json:"idDocumentExpiration,omitempty"`
 	IDDocumentCountry    *string                        `json:"idDocumentCountry,omitempty"`
+	Groups               *[]string                      `json:"groups,omitempty"`
 	Locale               *string                        `json:"locale,omitempty"`
 	BusinessID           *string                        `json:"businessId,omitempty"`
 	Comment              *string                        `json:"comment,omitempty"`

@@ -26,6 +26,7 @@ type KeycloakClient interface {
 	GetUser(accessToken string, realmName, userID string) (kc.UserRepresentation, error)
 	GetUsers(accessToken string, reqRealmName, targetRealmName string, paramKV ...string) (kc.UsersPageRepresentation, error)
 	GetGroups(accessToken string, realmName string) ([]kc.GroupRepresentation, error)
+	GetGroupsOfUser(accessToken string, realmName, userID string) ([]kc.GroupRepresentation, error)
 	SendSmsCode(accessToken string, realmName string, userID string) (kc.SmsCodeRepresentation, error)
 	SendConsentCodeSMS(accessToken string, realmName string, userID string) error
 	CheckConsentCodeSMS(accessToken string, realmName string, userID string, consentCode string) error
@@ -145,7 +146,25 @@ func (c *component) GetUserByUsernameInSocialRealm(ctx context.Context, username
 func (c *component) GetUserByUsername(ctx context.Context, realmName string, username string) (apikyc.UserRepresentation, error) {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 	// Corporate version does not specify a group ID: groups will be checked when returning result to authorization layer
-	return c.getUserByUsernameGeneric(ctx, accessToken, realmName, username, nil)
+	var user, err = c.getUserByUsernameGeneric(ctx, accessToken, realmName, username, nil)
+	if err != nil {
+		return user, err
+	}
+
+	var groups []kc.GroupRepresentation
+	groups, err = c.keycloakClient.GetGroupsOfUser(accessToken, realmName, *user.ID)
+	if err != nil {
+		return user, err
+	}
+	if len(groups) > 0 {
+		var userGroups []string
+		for _, group := range groups {
+			userGroups = append(userGroups, *group.Name)
+		}
+		user.Groups = &userGroups
+	}
+
+	return user, err
 }
 
 func (c *component) getUserByUsernameGeneric(ctx context.Context, accessToken string, realmName string, username string, groupID *string) (apikyc.UserRepresentation, error) {

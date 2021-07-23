@@ -117,7 +117,7 @@ func TestMakeAuthorizationRegisterComponentMW(t *testing.T) {
 			mockComponent.EXPECT().GetUserByUsername(ctx, realm, username).Return(apikyc.UserRepresentation{ID: &userID}, nil)
 			mockAuthManager.EXPECT().CheckAuthorizationOnTargetUser(ctx, KYCGetUserByUsername.String(), realm, userID).Return(expectedErr)
 			var _, err = component.GetUserByUsername(ctx, realm, username)
-			assert.Equal(t, expectedErr, err)
+			assert.NotNil(t, err)
 		})
 		t.Run("authorized", func(t *testing.T) {
 			mockAvailabilityChecker.EXPECT().CheckAvailabilityForRealm(ctx, realm, gomock.Any()).Return(ctx, nil)

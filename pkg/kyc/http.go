@@ -13,7 +13,7 @@ import (
 
 // Regular expressions and parameters
 const (
-	RegExpUserName  = constants.RegExpUsername
+	RegExpUserName  = constants.RegExpSearch
 	RegExpUserID    = constants.RegExpID
 	RegExpRealmName = constants.RegExpRealmName
 
