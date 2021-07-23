@@ -413,6 +413,11 @@ components:
         idDocumentCountry:
           type: string
           description: ISO 3166 Alpha-2 country code
+        groups:
+          type: array
+          items:
+            type: string
+          description: Only used by GetUserByUsername (corporate)
         locale:
           type: string
         businessId:

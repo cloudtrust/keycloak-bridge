@@ -219,6 +219,7 @@ func TestGetUserByUsername(t *testing.T) {
 			UserID:        &userID,
 			BirthLocation: ptr("Lausanne"),
 		}, nil)
+		mocks.keycloakClient.EXPECT().GetGroupsOfUser(accessToken, realm, userID).Return([]kc.GroupRepresentation{kcGroup1}, nil)
 		var user, err = component.GetUserByUsername(ctx, realm, username)
 		assert.Nil(t, err)
 		assert.NotNil(t, user)
