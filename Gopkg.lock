@@ -18,7 +18,7 @@
   version = "2021.04.29"
 
 [[projects]]
-  digest = "1:5e4c0d991ef0524f39513cec68c99968916b26fee75b5b8d693d828298528eb6"
+  digest = "1:b7766375648889d2c9e2cfd8294684b7e23e28fab766e7a218db758c04cdc337"
   name = "github.com/cloudtrust/common-service"
   packages = [
     ".",
@@ -39,8 +39,8 @@
     "validation",
   ]
   pruneopts = "UT"
-  revision = "ccf22f260339816deeeb5edfeb7ef9d878d06163"
-  version = "2.4.2"
+  revision = "483d36e3aa2ecc4815b68b6daab9d3ddf73d48dd"
+  version = "2.4.3"
 
 [[projects]]
   digest = "1:e92f9e5be186a715611558b5f2dfc3cf588d601f6472d70b2765ea2317ef301b"
@@ -51,7 +51,7 @@
   version = "v1.0.3"
 
 [[projects]]
-  digest = "1:b96ac851ab9754873c77f6396d3e16c1c6881a56f0ee00348d7e7a97ae03af26"
+  digest = "1:f8a288ed42deee857ca931d69c04e7c67e250932b9f5962903cded874bf9aeae"
   name = "github.com/cloudtrust/keycloak-client"
   packages = [
     ".",
@@ -59,8 +59,8 @@
     "toolbox",
   ]
   pruneopts = "UT"
-  revision = "f1dbbef59c4455799bfb2d8e4c2582c3bad09ffa"
-  version = "2.4.1"
+  revision = "3ac1d28a50b7fc358781050a1e692111bc5e37aa"
+  version = "2.4.2"
 
 [[projects]]
   digest = "1:910c5b111ca13127693df80a59be2c952ad97313626116c0c9895e7b588f2a29"
@@ -153,12 +153,12 @@
   version = "v1.5.2"
 
 [[projects]]
-  digest = "1:dfa0a7a6b64b2ac99259c4e79cc403470a4fa359c41029e0b8be4f419b0a0e5b"
+  digest = "1:bbba45b09b3b502dc39afb36c3e9f89b9c2832b1f6d673277c97eade8875e462"
   name = "github.com/google/uuid"
   packages = ["."]
   pruneopts = "UT"
-  revision = "bfb86fa49a73e4194d93bea18d7acfe3694438ce"
-  version = "v1.2.0"
+  revision = "44b5fee7c49cf3bcdf723f106b36d56ef13ccc88"
+  version = "v1.3.0"
 
 [[projects]]
   digest = "1:6078383dbb7405bfa3ce16957f37564e3b716afa29b6eb45ffdb6674624d1e0d"
@@ -188,7 +188,7 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:4266ec3ac6640641216b8cebd938586b02fc4296ea14737f612a543b0ddab9a6"
+  digest = "1:e41b3801811d55a56b480ddb3fa17d013075f8c5c190cdfbe4e53e8c051fa5d8"
   name = "github.com/influxdata/influxdb"
   packages = [
     "client/v2",
@@ -196,8 +196,8 @@
     "pkg/escape",
   ]
   pruneopts = "UT"
-  revision = "260876c83480a95711b9c1950d95d6cbfc3e8393"
-  version = "v1.9.2"
+  revision = "8bd4a61198a21bfbc9e5fb607d21b46dc00dcfe2"
+  version = "v1.9.3"
 
 [[projects]]
   digest = "1:1a1915157e0aec5d117a09914c139735bf8ea0c0cd58b5796c9c88597b6d1741"
@@ -283,12 +283,12 @@
   version = "v0.1.0"
 
 [[projects]]
-  digest = "1:c5dfe46811af7e2eff7c11fc84b6c841520338613c056f659f262d5a4fb42fa8"
+  digest = "1:77f0836045cdf43a3372c64cdd2f9c007e3681eb7ad2a1f53699499254c76000"
   name = "github.com/rs/cors"
   packages = ["."]
   pruneopts = "UT"
-  revision = "db0fe48135e83b5812a5a31be0eea66984b1b521"
-  version = "v1.7.0"
+  revision = "64821dda5aedeb954fb2caf787f7a1030085ab34"
+  version = "v1.8.0"
 
 [[projects]]
   digest = "1:9892d658619bf7f315a58e16a11abfe4aa26cca56d45441e8cc2bb25d4641b89"
@@ -326,12 +326,12 @@
   version = "v1.0.5"
 
 [[projects]]
-  digest = "1:4ed6c38b1b51894aee54db16cb5fb4eda5d18678330ed92e47f0c87e6d6c0eb0"
+  digest = "1:16cf87f69e56e51607d032a5362fca2de08cdf58aab5bfd08eddeb96151b4181"
   name = "github.com/spf13/viper"
   packages = ["."]
   pruneopts = "UT"
-  revision = "faa8ba0c53e004728577632c8d1eb540e6676369"
-  version = "v1.8.0"
+  revision = "bd038658992ae06c6ccf069a5b4bebe432602d0f"
+  version = "v1.8.1"
 
 [[projects]]
   digest = "1:edb231f4f062fe87e1cc93351e1ee06d4cebf553d1f85f9f3b9b4903df42df20"
@@ -385,12 +385,12 @@
   version = "v2.4.1"
 
 [[projects]]
-  digest = "1:0f1607d4a579fa31397a4cd45a15906220e20270137071d079418134e61dad68"
+  digest = "1:4306d6fbe32c56aa4808c78118ab2dd03c5b52f471fea11b23377f4e2bc4f48a"
   name = "go.uber.org/atomic"
   packages = ["."]
   pruneopts = "UT"
-  revision = "0c8e1ec21d9540a9a6b0faea5d750a74a3e002d1"
-  version = "v1.8.0"
+  revision = "3504dfaa1fa414923b1c8693f45d2f6931daf229"
+  version = "v1.9.0"
 
 [[projects]]
   branch = "master"
@@ -402,7 +402,7 @@
     "pbkdf2",
   ]
   pruneopts = "UT"
-  revision = "5ff15b29337e062d850872081bcd9f4d784f4c25"
+  revision = "a769d52b0f97a420f3dcafc17f8b3384217859a2"
 
 [[projects]]
   branch = "master"
@@ -415,7 +415,7 @@
     "publicsuffix",
   ]
   pruneopts = "UT"
-  revision = "04defd469f4e290175cd2fb95a0e5f235f9bf173"
+  revision = "853a461950ffd0dac439017081f0f3bd9242bb17"
 
 [[projects]]
   branch = "master"
@@ -426,18 +426,18 @@
     "internal",
   ]
   pruneopts = "UT"
-  revision = "a8dc77f794b698f200a57b3bbd77da000f86124e"
+  revision = "a41e5a7819143202e8d21fb9ac9c659fbd501fb3"
 
 [[projects]]
   branch = "master"
-  digest = "1:4aab21c43ef88117633c86c5aee43e7ba8ae7f8b2d12ca7d91b89b7fc0d2b437"
+  digest = "1:b3f1f29803b6cdf4882610bb4c74df41900e9c8b4b37b7d0231e25539275001c"
   name = "golang.org/x/sys"
   packages = [
     "internal/unsafeheader",
     "unix",
   ]
   pruneopts = "UT"
-  revision = "59db8d763f22395595c26ee1cae0886b57141b3a"
+  revision = "0f9fa26af87c481a6877a4ca1330699ba9a30673"
 
 [[projects]]
   digest = "1:d343bfab7897dd73ee9bf8172d1fc83d935b7512067856ed596aaf57a9345f3c"
@@ -489,7 +489,7 @@
   version = "v1.6.7"
 
 [[projects]]
-  digest = "1:bc8a58ba53d55c6c60aba097ba2981a37cf074c8c19e852763529dbc0ae0eb05"
+  digest = "1:91dddce5adec4faf06a99a6d12bfce2b91da56d009e88a69a6e328a861f19ac7"
   name = "google.golang.org/protobuf"
   packages = [
     "encoding/prototext",
@@ -521,8 +521,8 @@
     "types/descriptorpb",
   ]
   pruneopts = "UT"
-  revision = "f2d1f6cbe10b90d22296ea09a7217081c2798009"
-  version = "v1.26.0"
+  revision = "b92717ecb630d4a4824b372bf98c729d87311a4d"
+  version = "v1.27.1"
 
 [[projects]]
   digest = "1:e957094a53f7233fbf0847e9789ea6b0e41287eaf5179888503c82c3aecabaf7"

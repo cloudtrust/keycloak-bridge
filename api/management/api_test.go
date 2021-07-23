@@ -465,17 +465,19 @@ func TestConvertRealmAdminConfiguration(t *testing.T) {
 		}
 		var selfRegisterEnabled = true
 		var needVerifiedContact = false
-		var consentRequired = true
+		var consentRequiredSocial = true
+		var consentRequiredCorporate = false
 		var showGlnEditing = true
 		var config = configuration.RealmAdminConfiguration{
-			Mode:                &mode,
-			AvailableChecks:     map[string]bool{"true": true, "false": false},
-			Accreditations:      []configuration.RealmAdminAccreditation{accred},
-			SelfRegisterEnabled: &selfRegisterEnabled,
-			Theme:               ptr("trustid"),
-			NeedVerifiedContact: &needVerifiedContact,
-			ConsentRequired:     &consentRequired,
-			ShowGlnEditing:      &showGlnEditing,
+			Mode:                     &mode,
+			AvailableChecks:          map[string]bool{"true": true, "false": false},
+			Accreditations:           []configuration.RealmAdminAccreditation{accred},
+			SelfRegisterEnabled:      &selfRegisterEnabled,
+			Theme:                    ptr("trustid"),
+			NeedVerifiedContact:      &needVerifiedContact,
+			ConsentRequiredSocial:    &consentRequiredSocial,
+			ConsentRequiredCorporate: &consentRequiredCorporate,
+			ShowGlnEditing:           &showGlnEditing,
 		}
 		var res = ConvertRealmAdminConfigurationFromDBStruct(config)
 		assert.Equal(t, mode, *res.Mode)
@@ -490,7 +492,7 @@ func TestConvertRealmAdminConfiguration(t *testing.T) {
 		assert.True(t, *res.SelfRegisterEnabled)
 		assert.Equal(t, config.Theme, res.Theme)
 		assert.False(t, *res.NeedVerifiedContact)
-		assert.True(t, *res.ConsentRequired)
+		assert.True(t, *res.ConsentRequiredSocial)
 		assert.True(t, *res.ShowGlnEditing)
 	})
 }
