@@ -254,7 +254,7 @@ func TestValidateAttachment(t *testing.T) {
 	})
 	t.Run("Successful evaluation of content type", func(t *testing.T) {
 		var attachment = createValidAttachment()
-		attachment.Filename = ptr("image.jpg")
+		attachment.Filename = ptr("image.JPG")
 		attachment.ContentType = nil
 		assert.Nil(t, attachment.Validate())
 		assert.Equal(t, "image/jpeg", *attachment.ContentType)

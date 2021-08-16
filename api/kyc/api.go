@@ -278,7 +278,7 @@ func (a *AttachmentRepresentation) Validate() error {
 }
 
 func evaluateContentType(filename string) *string {
-	var fileSplits = strings.Split(filename, ".")
+	var fileSplits = strings.Split(strings.ToLower(filename), ".")
 	if contentType, ok := knownContentTypes[fileSplits[len(fileSplits)-1]]; ok {
 		return &contentType
 	}
