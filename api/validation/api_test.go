@@ -23,7 +23,7 @@ func createValidUser() UserRepresentation {
 		email           = "marcel.bichon@elca.ch"
 		phoneNumber     = "00 33 686 550011"
 		birthDate       = time.Now()
-		birthLocation   = "Bermuda"
+		birthLocation   = "Bermuda, CH"
 		nationality     = "DE"
 		idDocType       = "PASSPORT"
 		idDocNumber     = "123456789"
