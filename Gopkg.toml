@@ -31,7 +31,7 @@
 
 [[constraint]]
   name = "github.com/cloudtrust/keycloak-client"
-  version = "2.4.2"
+  version = "2.4.3"
 
 [[constraint]]
   name = "github.com/cloudtrust/httpclient"

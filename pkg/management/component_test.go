@@ -1998,6 +1998,112 @@ func TestGetRolesOfUser(t *testing.T) {
 	})
 }
 
+func TestAddRoleOfUser(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mocks = createMocks(mockCtrl)
+	var managementComponent = createComponent(mocks)
+
+	var accessToken = "TOKEN=="
+	var realmName = "master"
+	var userID = "789-789-456"
+	var roleID1 = "rol-rol-rol-111"
+	var roleID2 = "rol-rol-rol-222"
+	var anyError = errors.New("any error")
+	var knownRoles = []kc.RoleRepresentation{{ID: &roleID1}, {ID: &roleID2}}
+	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+
+	mocks.logger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
+
+	t.Run("Can't get realm roles", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetRoles(accessToken, realmName).Return(nil, anyError)
+
+		err := managementComponent.AddRoleToUser(ctx, realmName, userID, roleID1)
+
+		assert.Equal(t, anyError, err)
+	})
+
+	t.Run("Role does not exists", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetRoles(accessToken, realmName).Return(knownRoles, nil)
+
+		err := managementComponent.AddRoleToUser(ctx, realmName, userID, "not-a-role")
+
+		assert.NotNil(t, err)
+	})
+
+	t.Run("Keycloak fails to update roles", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetRoles(accessToken, realmName).Return(knownRoles, nil)
+		mocks.keycloakClient.EXPECT().AddRealmLevelRoleMappings(accessToken, realmName, userID, gomock.Any()).Return(anyError)
+
+		err := managementComponent.AddRoleToUser(ctx, realmName, userID, roleID1)
+
+		assert.Equal(t, anyError, err)
+	})
+
+	t.Run("Success", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetRoles(accessToken, realmName).Return(knownRoles, nil)
+		mocks.keycloakClient.EXPECT().AddRealmLevelRoleMappings(accessToken, realmName, userID, gomock.Any()).Return(nil)
+
+		err := managementComponent.AddRoleToUser(ctx, realmName, userID, roleID1)
+
+		assert.Nil(t, err)
+	})
+}
+
+func TestDeleteRoleForUser(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mocks = createMocks(mockCtrl)
+	var managementComponent = createComponent(mocks)
+
+	var accessToken = "TOKEN=="
+	var realmName = "master"
+	var userID = "789-789-456"
+	var roleID1 = "rol-rol-rol-111"
+	var roleID2 = "rol-rol-rol-222"
+	var anyError = errors.New("any error")
+	var knownRoles = []kc.RoleRepresentation{{ID: &roleID1}, {ID: &roleID2}}
+	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+
+	mocks.logger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
+
+	t.Run("Can't get user roles", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetRealmLevelRoleMappings(accessToken, realmName, userID).Return(nil, anyError)
+
+		err := managementComponent.DeleteRoleForUser(ctx, realmName, userID, roleID1)
+
+		assert.Equal(t, anyError, err)
+	})
+
+	t.Run("Role is not owned by user", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetRealmLevelRoleMappings(accessToken, realmName, userID).Return(knownRoles, nil)
+
+		err := managementComponent.DeleteRoleForUser(ctx, realmName, userID, "not-a-owned-role")
+
+		assert.NotNil(t, err)
+	})
+
+	t.Run("Keycloak fails to update roles", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetRealmLevelRoleMappings(accessToken, realmName, userID).Return(knownRoles, nil)
+		mocks.keycloakClient.EXPECT().DeleteRealmLevelRoleMappings(accessToken, realmName, userID, gomock.Any()).Return(anyError)
+
+		err := managementComponent.DeleteRoleForUser(ctx, realmName, userID, roleID1)
+
+		assert.Equal(t, anyError, err)
+	})
+
+	t.Run("Success", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetRealmLevelRoleMappings(accessToken, realmName, userID).Return(knownRoles, nil)
+		mocks.keycloakClient.EXPECT().DeleteRealmLevelRoleMappings(accessToken, realmName, userID, gomock.Any()).Return(nil)
+
+		err := managementComponent.DeleteRoleForUser(ctx, realmName, userID, roleID1)
+
+		assert.Nil(t, err)
+	})
+}
+
 func TestGetGroupsOfUser(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()

@@ -40,6 +40,8 @@ var (
 	MGMTGetUserAccountStatus                = newAction("MGMT_GetUserAccountStatus", security.ScopeGroup)
 	MGMTGetUserAccountStatusByEmail         = newAction("MGMT_GetUserAccountStatusByEmail", security.ScopeRealm)
 	MGMTGetRolesOfUser                      = newAction("MGMT_GetRolesOfUser", security.ScopeGroup)
+	MGMTAddRoleToUser                       = newAction("MGMT_AddRoleToUser", security.ScopeGroup)
+	MGMTDeleteRoleForUser                   = newAction("MGMT_DeleteRoleForUser", security.ScopeGroup)
 	MGMTGetGroupsOfUser                     = newAction("MGMT_GetGroupsOfUser", security.ScopeGroup)
 	MGMTSetGroupsToUser                     = newAction("MGMT_SetGroupsToUser", security.ScopeGroup)
 	MGMTAssignableGroupsToUser              = newAction("MGMT_AssignableGroupsToUser", security.ScopeGroup)
@@ -299,6 +301,28 @@ func (c *authorizationComponentMW) GetRolesOfUser(ctx context.Context, realmName
 	}
 
 	return c.next.GetRolesOfUser(ctx, realmName, userID)
+}
+
+func (c *authorizationComponentMW) AddRoleToUser(ctx context.Context, realmName, userID string, roleID string) error {
+	var action = MGMTAddRoleToUser.String()
+	var targetRealm = realmName
+
+	if err := c.authManager.CheckAuthorizationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
+		return err
+	}
+
+	return c.next.AddRoleToUser(ctx, realmName, userID, roleID)
+}
+
+func (c *authorizationComponentMW) DeleteRoleForUser(ctx context.Context, realmName, userID string, roleID string) error {
+	var action = MGMTDeleteRoleForUser.String()
+	var targetRealm = realmName
+
+	if err := c.authManager.CheckAuthorizationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
+		return err
+	}
+
+	return c.next.DeleteRoleForUser(ctx, realmName, userID, roleID)
 }
 
 func (c *authorizationComponentMW) GetGroupsOfUser(ctx context.Context, realmName, userID string) ([]api.GroupRepresentation, error) {
