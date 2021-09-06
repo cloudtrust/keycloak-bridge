@@ -261,7 +261,8 @@ func (c *component) getUserByEmailIfDuplicateNotAllowed(ctx context.Context, acc
 		return nil, nil
 	}
 
-	kcUsers, err := c.keycloakClient.GetUsers(accessToken, realmName, realmName, "email", email)
+	// Add '=' at beginning of the email address to ensure that GetUsers retrieves an account with the exact provided email address
+	kcUsers, err := c.keycloakClient.GetUsers(accessToken, realmName, realmName, "email", "="+email)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Can't get user from keycloak", "err", err.Error())
 		return nil, err
