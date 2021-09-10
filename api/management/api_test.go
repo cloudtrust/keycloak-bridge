@@ -447,7 +447,7 @@ func TestConvertRealmAdminConfiguration(t *testing.T) {
 		var config = configuration.RealmAdminConfiguration{}
 		var res = ConvertRealmAdminConfigurationFromDBStruct(config)
 		assert.Equal(t, "corporate", *res.Mode)
-		assert.Len(t, res.AvailableChecks, 0)
+		assert.Len(t, res.AvailableChecks, 2)
 		assert.Len(t, res.Accreditations, 0)
 		assert.False(t, *res.SelfRegisterEnabled)
 		assert.False(t, *res.ShowGlnEditing)
