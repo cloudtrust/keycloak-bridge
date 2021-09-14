@@ -144,6 +144,7 @@ type Component interface {
 	DeleteGroup(ctx context.Context, realmName string, groupID string) error
 	GetAuthorizations(ctx context.Context, realmName string, groupID string) (api.AuthorizationsRepresentation, error)
 	UpdateAuthorizations(ctx context.Context, realmName string, groupID string, group api.AuthorizationsRepresentation) error
+	PutAuthorization(ctx context.Context, realmName string, groupID string, group api.AuthorizationsRepresentation) error
 
 	GetRealmCustomConfiguration(ctx context.Context, realmName string) (api.RealmCustomConfiguration, error)
 	UpdateRealmCustomConfiguration(ctx context.Context, realmID string, customConfig api.RealmCustomConfiguration) error
@@ -1446,6 +1447,60 @@ func (c *component) UpdateAuthorizations(ctx context.Context, realmName string, 
 	}
 
 	c.reportEvent(ctx, "API_AUTHORIZATIONS_UPDATE", database.CtEventRealmName, realmName, database.CtEventGroupName, groupName)
+
+	return nil
+}
+
+func (c *component) PutAuthorization(ctx context.Context, realmName string, groupID string, auth api.AuthorizationsRepresentation) error {
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+
+	group, err := c.keycloakClient.GetGroup(accessToken, realmName, groupID)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return err
+	}
+
+	var groupName = *group.Name
+
+	authorizations := api.ConvertToDBAuthorizations(realmName, groupName, auth)
+
+	if err = c.checkAllowedTargetRealmsAndGroupNames(ctx, realmName, authorizations); err != nil {
+		return err
+	}
+
+	// Assign KC roles to groups
+	if err = c.assignKCRolesToGroups(accessToken, realmName, groupID, authorizations); err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return err
+	}
+
+	// Persists the new authorizations in DB
+	{
+		tx, err := c.configDBModule.NewTransaction(ctx)
+		if err != nil {
+			c.logger.Warn(ctx, "err", err.Error())
+			return err
+		}
+		defer tx.Close()
+
+		for _, authorisation := range authorizations {
+			err = c.configDBModule.CreateAuthorization(ctx, authorisation)
+			if err != nil {
+				c.logger.Warn(ctx, "err", err.Error())
+				return err
+			}
+		}
+
+		err = tx.Commit()
+		if err != nil {
+			c.logger.Warn(ctx, "err", err.Error())
+			return err
+		}
+	}
+
+	c.logger.Error(ctx, "HELLLLLOOOO", groupName)
+
+	c.reportEvent(ctx, "API_AUTHORIZATIONS_PUT", database.CtEventRealmName, realmName, database.CtEventGroupName, groupName)
 
 	return nil
 }
