@@ -1300,6 +1300,121 @@ paths:
       responses:
         200:
           description: successful operation
+  /realms/{realm}/groups/{groupID}/target-realms/{targetRealm}/target-groups/{targetGroupID}/actions/{action}/authorization:
+    get:
+      tags:
+      - Groups
+      summary: Get an authorization of the group on a specific action on a target group
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: groupID
+        in: path
+        description: group id
+        required: true
+        schema:
+          type: string
+      - name: targetRealm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: targetGroupID
+        in: path
+        description: target group id
+        required: true
+        schema:
+          type: string
+      - name: action
+        in: path
+        description: action
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                  $ref: '#/components/schemas/AuthorizationResponse'
+        400:
+          description: invalid information provided
+    delete:
+      tags:
+      - Groups
+      summary: Delete an authorization of the group on a specific action on a target group
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: groupID
+        in: path
+        description: group id
+        required: true
+        schema:
+          type: string
+      - name: targetRealm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: targetGroupID
+        in: path
+        description: target group id
+        required: true
+        schema:
+          type: string
+      - name: action
+        in: path
+        description: action
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation
+        400:
+          description: invalid information provided
+
+  /realms/{realm}/groups/{groupID}/authorization:
+    put:
+      tags:
+      - Groups
+      summary: Add an authorization to the group with a partial matrix
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: groupID
+        in: path
+        description: group id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Authorizations'    
+      responses:
+        200:
+          description: successful operation
+        400:
+          description: invalid information provided
+    
   /realms/{realm}/configuration:
     get:
       tags:
@@ -1701,6 +1816,11 @@ components:
       properties:
         matrix:
           type: object
+    AuthorizationResponse:
+      type: object
+      properties:
+        authorized: 
+          type: boolean
     Password:
       type: object
       properties:
