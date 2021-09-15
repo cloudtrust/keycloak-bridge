@@ -21,13 +21,16 @@ const (
 	reqScheme = "scheme"
 	reqHost   = "host"
 
-	prmRealm        = "realm"
-	prmUserID       = "userID"
-	prmClientID     = "clientID"
-	prmRoleID       = "roleID"
-	prmGroupID      = "groupID"
-	prmCredentialID = "credentialID"
-	prmProvider     = "provider"
+	prmRealm         = "realm"
+	prmUserID        = "userID"
+	prmClientID      = "clientID"
+	prmRoleID        = "roleID"
+	prmGroupID       = "groupID"
+	prmCredentialID  = "credentialID"
+	prmProvider      = "provider"
+	prmTargetRealm   = "targetRealm"
+	prmTargetGroupID = "targetGroupID"
+	prmAction        = "action"
 
 	prmQryEmail       = "email"
 	prmQryFirstName   = "firstName"
@@ -59,13 +62,16 @@ func MakeManagementHandler(e endpoint.Endpoint, logger log.Logger) *http_transpo
 // decodeEventsRequest gets the HTTP parameters and body content
 func decodeManagementRequest(ctx context.Context, req *http.Request) (interface{}, error) {
 	var pathParams = map[string]string{
-		prmRealm:        constants.RegExpRealmName,
-		prmUserID:       constants.RegExpID,
-		prmClientID:     constants.RegExpClientID,
-		prmRoleID:       constants.RegExpID,
-		prmGroupID:      constants.RegExpID,
-		prmCredentialID: constants.RegExpID,
-		prmProvider:     constants.RegExpName,
+		prmRealm:         constants.RegExpRealmName,
+		prmUserID:        constants.RegExpID,
+		prmClientID:      constants.RegExpClientID,
+		prmRoleID:        constants.RegExpID,
+		prmGroupID:       constants.RegExpID,
+		prmCredentialID:  constants.RegExpID,
+		prmProvider:      constants.RegExpName,
+		prmTargetRealm:   constants.RegExpRealmName,
+		prmTargetGroupID: constants.RegExpID,
+		prmAction:        constants.RegExpName,
 	}
 
 	var queryParams = map[string]string{

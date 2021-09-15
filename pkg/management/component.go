@@ -145,6 +145,7 @@ type Component interface {
 	GetAuthorizations(ctx context.Context, realmName string, groupID string) (api.AuthorizationsRepresentation, error)
 	UpdateAuthorizations(ctx context.Context, realmName string, groupID string, group api.AuthorizationsRepresentation) error
 	PutAuthorization(ctx context.Context, realmName string, groupID string, group api.AuthorizationsRepresentation) error
+	GetAuthorization(ctx context.Context, realmName string, groupID string, targetRealm string, targetGroupID string, actionReq string) (api.AuthorizationMessage, error)
 
 	GetRealmCustomConfiguration(ctx context.Context, realmName string) (api.RealmCustomConfiguration, error)
 	UpdateRealmCustomConfiguration(ctx context.Context, realmID string, customConfig api.RealmCustomConfiguration) error
@@ -1498,11 +1499,36 @@ func (c *component) PutAuthorization(ctx context.Context, realmName string, grou
 		}
 	}
 
-	c.logger.Error(ctx, "HELLLLLOOOO", groupName)
-
 	c.reportEvent(ctx, "API_AUTHORIZATIONS_PUT", database.CtEventRealmName, realmName, database.CtEventGroupName, groupName)
 
 	return nil
+}
+
+func (c *component) GetAuthorization(ctx context.Context, realmName string, groupID string, targetRealm string, targetGroupID string, actionReq string) (api.AuthorizationMessage, error) {
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+
+	group, err := c.keycloakClient.GetGroup(accessToken, realmName, groupID)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return api.AuthorizationMessage{}, err
+	}
+
+	targetgroup, err := c.keycloakClient.GetGroup(accessToken, realmName, groupID)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return api.AuthorizationMessage{}, err
+	}
+
+	_, err = c.configDBModule.GetAuthorization(ctx, realmName, *group.Name, targetRealm, *targetgroup.Name, actionReq)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return api.AuthorizationMessage{Authorized: false}, nil
+		}
+		c.logger.Warn(ctx, "err", err.Error())
+		return api.AuthorizationMessage{Authorized: false}, err
+	}
+
+	return api.AuthorizationMessage{Authorized: true}, nil
 }
 
 func (c *component) checkAllowedTargetRealmsAndGroupNames(ctx context.Context, realmName string, authorizations []configuration.Authorization) error {

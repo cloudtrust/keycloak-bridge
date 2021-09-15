@@ -736,6 +736,7 @@ func main() {
 			GetAuthorizations:    prepareEndpoint(management.MakeGetAuthorizationsEndpoint(keycloakComponent), "get_authorizations_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 			UpdateAuthorizations: prepareEndpoint(management.MakeUpdateAuthorizationsEndpoint(keycloakComponent), "update_authorizations_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 			PutAuthorization:     prepareEndpoint(management.MakePutAuthorizationEndpoint(keycloakComponent), "put_authorization_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			GetAuthorization:     prepareEndpoint(management.MakeGetAuthorizationEndpoint(keycloakComponent), "get_authorization_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 
 			GetClientRoles:       prepareEndpoint(management.MakeGetClientRolesEndpoint(keycloakComponent), "get_client_roles_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 			CreateClientRole:     prepareEndpoint(management.MakeCreateClientRoleEndpoint(keycloakComponent, managementLogger), "create_client_role_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
@@ -1076,6 +1077,7 @@ func main() {
 		var getAuthorizationsHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetAuthorizations)
 		var updateAuthorizationsHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.UpdateAuthorizations)
 		var putAuthorizationHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.PutAuthorization)
+		var getAuthorizationHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetAuthorization)
 		var getManagementActionsHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetActions)
 
 		var resetPasswordHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.ResetPassword)
@@ -1173,6 +1175,7 @@ func main() {
 		managementSubroute.Path("/realms/{realm}/groups/{groupID}/authorizations").Methods("GET").Handler(getAuthorizationsHandler)
 		managementSubroute.Path("/realms/{realm}/groups/{groupID}/authorizations").Methods("PUT").Handler(updateAuthorizationsHandler)
 		managementSubroute.Path("/realms/{realm}/groups/{groupID}/authorization").Methods("PUT").Handler(putAuthorizationHandler)
+		managementSubroute.Path("/realms/{realm}/groups/{groupID}/target-realms/{targetRealm}/target-groups/{targetGroupID}/actions/{action}/authorization").Methods("GET").Handler(getAuthorizationHandler)
 
 		// custom configuration per realm
 		managementSubroute.Path("/realms/{realm}/configuration").Methods("GET").Handler(getRealmCustomConfigurationHandler)

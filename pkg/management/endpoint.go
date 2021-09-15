@@ -69,6 +69,7 @@ type Endpoints struct {
 	GetAuthorizations    endpoint.Endpoint
 	UpdateAuthorizations endpoint.Endpoint
 	PutAuthorization     endpoint.Endpoint
+	GetAuthorization     endpoint.Endpoint
 	GetActions           endpoint.Endpoint
 
 	GetRealmCustomConfiguration         endpoint.Endpoint
@@ -712,6 +713,14 @@ func MakePutAuthorizationEndpoint(component Component) cs.Endpoint {
 		}
 
 		return nil, component.PutAuthorization(ctx, m[prmRealm], m[prmGroupID], authorizations)
+	}
+}
+
+func MakeGetAuthorizationEndpoint(component Component) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+
+		return component.GetAuthorization(ctx, m[prmRealm], m[prmGroupID], m[prmTargetRealm], m[prmTargetGroupID], m[prmAction])
 	}
 }
 

@@ -1819,7 +1819,7 @@ components:
     AuthorizationResponse:
       type: object
       properties:
-        authorized: 
+        Authorized: 
           type: boolean
     Password:
       type: object

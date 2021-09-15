@@ -34,6 +34,7 @@ type ConfigurationDBModule interface {
 	DeleteBackOfficeConfiguration(context.Context, string, string, string, *string, *string) error
 	InsertBackOfficeConfiguration(context.Context, string, string, string, string, []string) error
 	GetAuthorizations(context context.Context, realmID string, groupName string) ([]configuration.Authorization, error)
+	GetAuthorization(context context.Context, realmID string, groupName string, targetRealm string, targetGroupName string, actionReq string) (configuration.Authorization, error)
 	CreateAuthorization(context context.Context, authz configuration.Authorization) error
 	DeleteAuthorizations(context context.Context, realmID string, groupName string) error
 	DeleteAllAuthorizationsWithGroup(context context.Context, realmName, groupName string) error
@@ -125,6 +126,13 @@ func (m *configDBModuleInstrumentingMW) GetAuthorizations(ctx context.Context, r
 		m.h.With(KeyCorrelationID, ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
 	}(time.Now())
 	return m.next.GetAuthorizations(ctx, realmID, groupID)
+}
+
+func (m *configDBModuleInstrumentingMW) GetAuthorization(context context.Context, realmID string, groupName string, targetRealm string, targetGroupName string, actionReq string) (configuration.Authorization, error) {
+	defer func(begin time.Time) {
+		m.h.With(KeyCorrelationID, context.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
+	}(time.Now())
+	return m.next.GetAuthorization(context, realmID, groupName, targetRealm, targetGroupName, actionReq)
 }
 
 // configDBModuleInstrumentingMW implements Module.
