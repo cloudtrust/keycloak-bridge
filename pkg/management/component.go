@@ -1491,10 +1491,24 @@ func (c *component) PutAuthorization(ctx context.Context, realmName string, grou
 		defer tx.Close()
 
 		for _, authorisation := range authorizations {
-			err = c.configDBModule.CreateAuthorization(ctx, authorisation)
+			parent, children, err := c.getAuthorizationDependencies(ctx, authorisation)
 			if err != nil {
 				c.logger.Warn(ctx, "err", err.Error())
 				return err
+			}
+			for _, child := range children {
+				err = c.configDBModule.DeleteAuthorization(ctx, *child.RealmID, *child.GroupName, *child.TargetRealmID, *child.TargetGroupName, *child.Action)
+				if err != nil {
+					c.logger.Warn(ctx, "err", err.Error())
+					return err
+				}
+			}
+			if parent.Action == nil {
+				err = c.configDBModule.CreateAuthorization(ctx, authorisation)
+				if err != nil {
+					c.logger.Warn(ctx, "err", err.Error())
+					return err
+				}
 			}
 		}
 
@@ -1574,6 +1588,34 @@ func (c *component) DeleteAuthorization(ctx context.Context, realmName string, g
 	c.reportEvent(ctx, "API_AUTHORIZATION_DELETE", database.CtEventRealmName, realmName, database.CtEventGroupName, groupID, targetRealm, targetGroupID, actionReq)
 
 	return nil
+}
+
+func (c *component) getAuthorizationDependencies(ctx context.Context, authorization configuration.Authorization) (configuration.Authorization, []configuration.Authorization, error) {
+	parent := configuration.Authorization{}
+	children := make([]configuration.Authorization, 0)
+	authorizations, err := c.configDBModule.GetAuthorizationsForAction(ctx, *authorization.RealmID, *authorization.GroupName, *authorization.Action)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return parent, children, nil
+		}
+		c.logger.Warn(ctx, "err", err.Error())
+		return parent, children, err
+	}
+
+	for _, authz := range authorizations {
+		if (*authorization.TargetRealmID != "*") &&
+			((*authz.TargetRealmID == "*") ||
+				(*authz.TargetRealmID == "/" && *authorization.TargetRealmID != "master") ||
+				(*authz.TargetRealmID == *authorization.TargetRealmID && *authz.TargetGroupName == "*")) {
+			parent = authz
+		} else if (*authorization.TargetRealmID == "*") ||
+			(*authorization.TargetRealmID == "/" && *authz.TargetRealmID != "master") ||
+			(*authorization.TargetRealmID == *authz.RealmID && *authorization.TargetGroupName == "*") {
+			children = append(children, authz)
+		}
+	}
+
+	return parent, children, nil
 }
 
 func (c *component) checkAllowedTargetRealmsAndGroupNames(ctx context.Context, realmName string, authorizations []configuration.Authorization) error {

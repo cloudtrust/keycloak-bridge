@@ -49,6 +49,14 @@ const (
 		  AND target_realm_id = ? 
 		  AND target_group_name = ?;
 	`
+	selectAuthzActionStmt = `
+		SELECT
+			realm_id, group_name, action, target_realm_id, target_group_name
+		FROM authorizations 
+		WHERE realm_id = ? 
+		  AND group_name = ? 
+		  AND action = ?;
+	`
 	createAuthzStmt = `INSERT INTO authorizations (realm_id, group_name, action, target_realm_id, target_group_name) 
 		VALUES (?, ?, ?, ?, ?);`
 	deleteAuthzStmt             = `DELETE FROM authorizations WHERE realm_id = ? AND group_name = ?;`
@@ -216,6 +224,29 @@ func (c *configurationDBModule) GetAuthorization(ctx context.Context, realmID st
 	}
 
 	return authz, nil
+}
+
+func (c *configurationDBModule) GetAuthorizationsForAction(context context.Context, realmID string, groupName string, actionReq string) ([]configuration.Authorization, error) {
+	// Get Authorizations from DB
+	rows, err := c.db.Query(selectAuthzActionStmt, realmID, groupName, actionReq)
+	if err != nil {
+		c.logger.Warn(context, "msg", "Can't get authorizations", "err", err.Error(), "realmID", realmID, "groupName", groupName, "action", actionReq)
+		return nil, err
+	}
+	defer rows.Close()
+
+	var authz configuration.Authorization
+	var res = make([]configuration.Authorization, 0)
+	for rows.Next() {
+		authz, err = c.scanAuthorization(rows)
+		if err != nil {
+			c.logger.Warn(context, "msg", "Can't get authorizations. Scan failed", "err", err.Error(), "realmID", realmID, "groupName", groupName, "action", actionReq)
+			return nil, err
+		}
+		res = append(res, authz)
+	}
+
+	return res, nil
 }
 
 func (c *configurationDBModule) CreateAuthorization(context context.Context, auth configuration.Authorization) error {
