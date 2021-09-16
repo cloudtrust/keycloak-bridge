@@ -1533,15 +1533,34 @@ func (c *component) GetAuthorization(ctx context.Context, realmName string, grou
 		return api.AuthorizationMessage{}, err
 	}
 
-	targetgroup, err := c.keycloakClient.GetGroup(accessToken, realmName, groupID)
-	if err != nil {
-		c.logger.Warn(ctx, "err", err.Error())
-		return api.AuthorizationMessage{}, err
+	targetGroupName := targetGroupID
+	if targetGroupName != "*" {
+		targetGroup, err := c.keycloakClient.GetGroup(accessToken, realmName, targetGroupID)
+		if err != nil {
+			c.logger.Warn(ctx, "err", err.Error())
+			return api.AuthorizationMessage{}, err
+		}
+		targetGroupName = *targetGroup.Name
 	}
 
-	_, err = c.configDBModule.GetAuthorization(ctx, realmName, *group.Name, targetRealm, *targetgroup.Name, actionReq)
+	_, err = c.configDBModule.GetAuthorization(ctx, realmName, *group.Name, targetRealm, targetGroupName, actionReq)
 	if err != nil {
 		if err == sql.ErrNoRows {
+			authz := configuration.Authorization{
+				RealmID:         &realmName,
+				GroupName:       group.Name,
+				Action:          &actionReq,
+				TargetRealmID:   &targetRealm,
+				TargetGroupName: &targetGroupName,
+			}
+			parent, _, err := c.getAuthorizationDependencies(ctx, authz)
+			if err != nil {
+				c.logger.Warn(ctx, "err", err.Error())
+				return api.AuthorizationMessage{Authorized: false}, err
+			}
+			if parent.Action != nil {
+				return api.AuthorizationMessage{Authorized: true}, nil
+			}
 			return api.AuthorizationMessage{Authorized: false}, nil
 		}
 		c.logger.Warn(ctx, "err", err.Error())
@@ -1562,12 +1581,12 @@ func (c *component) DeleteAuthorization(ctx context.Context, realmName string, g
 
 	targetGroupName := targetGroupID
 	if targetGroupID != "*" {
-		targetgroup, err := c.keycloakClient.GetGroup(accessToken, targetRealm, targetGroupID)
+		targetGroup, err := c.keycloakClient.GetGroup(accessToken, targetRealm, targetGroupID)
 		if err != nil {
 			c.logger.Warn(ctx, "err", err.Error())
 			return err
 		}
-		targetGroupName = *targetgroup.Name
+		targetGroupName = *targetGroup.Name
 	}
 
 	// Too naïve version
