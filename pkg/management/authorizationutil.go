@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/cloudtrust/common-service/configuration"
+	"github.com/cloudtrust/common-service/security"
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
 )
 
@@ -52,4 +53,42 @@ func checkTarget(authorizations []configuration.Authorization, allowedTargetReal
 		}
 	}
 	return nil
+}
+
+func ValidateScope(authorizations []configuration.Authorization) error {
+	for _, authz := range authorizations {
+		scope, err := getScope(authz)
+		if err != nil {
+			return err
+		}
+
+		if authz.TargetRealmID == nil {
+			return errors.New("missing target realm")
+		}
+
+		switch scope {
+		case security.ScopeGlobal:
+			if *authz.TargetRealmID != "*" || authz.TargetGroupName != nil {
+				return errors.New("invalid global scope")
+			}
+		case security.ScopeRealm:
+			if authz.TargetGroupName == nil || *authz.TargetGroupName != "*" {
+				return errors.New("invalid realm scope")
+			}
+		case security.ScopeGroup:
+			if authz.TargetGroupName == nil {
+				return errors.New("invalid group scope")
+			}
+		}
+	}
+	return nil
+}
+
+func getScope(authz configuration.Authorization) (security.Scope, error) {
+	for _, action := range GetActions() {
+		if *authz.Action == action.String() {
+			return action.Scope, nil
+		}
+	}
+	return "", errors.New("invalid action")
 }

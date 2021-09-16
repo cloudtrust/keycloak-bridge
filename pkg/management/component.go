@@ -1470,6 +1470,11 @@ func (c *component) PutAuthorization(ctx context.Context, realmName string, grou
 		return err
 	}
 
+	if err = ValidateScope(authorizations); err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return errorhandler.CreateBadRequestError(constants.MsgErrInvalidParam + "." + constants.Authorization)
+	}
+
 	// Assign KC roles to groups
 	if err = c.assignKCRolesToGroups(accessToken, realmName, groupID, authorizations); err != nil {
 		c.logger.Warn(ctx, "err", err.Error())
