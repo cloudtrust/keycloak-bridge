@@ -53,6 +53,8 @@ const (
 		VALUES (?, ?, ?, ?, ?);`
 	deleteAuthzStmt             = `DELETE FROM authorizations WHERE realm_id = ? AND group_name = ?;`
 	deleteAllAuthzWithGroupStmt = `DELETE FROM authorizations WHERE (realm_id = ? AND group_name = ?) OR (target_realm_id = ? AND target_group_name = ?);`
+	deleteSingleAuthzStmt       = `DELETE FROM authorizations WHERE realm_id = ? AND group_name = ? AND action = ? AND target_realm_id = ? AND target_group_name = ?;`
+	deleteSingleGlobalAuthzStmt = `DELETE FROM authorizations WHERE realm_id = ? AND group_name = ? AND action = ? AND target_realm_id = ? AND target_group_name is NULL;`
 )
 
 // Scanner used to get data from SQL cursors
@@ -224,6 +226,17 @@ func (c *configurationDBModule) CreateAuthorization(context context.Context, aut
 
 func (c *configurationDBModule) DeleteAuthorizations(context context.Context, realmID string, groupName string) error {
 	_, err := c.db.Exec(deleteAuthzStmt, realmID, groupName)
+	return err
+}
+
+func (c *configurationDBModule) DeleteAuthorization(context context.Context, realmID string, groupName string, targetRealm string, targetGroupName string, actionReq string) error {
+	var err error
+	if targetGroupName == "" {
+		_, err = c.db.Exec(deleteSingleGlobalAuthzStmt, realmID, groupName, actionReq, targetRealm)
+	} else {
+		_, err = c.db.Exec(deleteSingleAuthzStmt, realmID, groupName, actionReq, targetRealm, targetGroupName)
+	}
+
 	return err
 }
 

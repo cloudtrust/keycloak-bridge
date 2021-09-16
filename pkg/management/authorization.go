@@ -70,6 +70,7 @@ var (
 	MGMTUpdateAuthorizations                = newAction("MGMT_UpdateAuthorizations", security.ScopeGroup)
 	MGMTPutAuthorization                    = newAction("MGMT_PutAuthorization", security.ScopeGroup)
 	MGMTGetAuthorization                    = newAction("MGMT_GetAuthorization", security.ScopeGroup)
+	MGMTDeleteAuthorization                 = newAction("MGMT_DeleteAuthorization", security.ScopeGroup)
 	MGMTGetClientRoles                      = newAction("MGMT_GetClientRoles", security.ScopeRealm)
 	MGMTCreateClientRole                    = newAction("MGMT_CreateClientRole", security.ScopeRealm)
 	MGMTGetRealmCustomConfiguration         = newAction("MGMT_GetRealmCustomConfiguration", security.ScopeRealm)
@@ -637,6 +638,16 @@ func (c *authorizationComponentMW) GetAuthorization(ctx context.Context, realmNa
 	}
 
 	return c.next.GetAuthorization(ctx, realmName, groupID, targetRealm, targetGroupID, actionReq)
+}
+
+func (c *authorizationComponentMW) DeleteAuthorization(ctx context.Context, realmName string, groupID string, targetRealm string, targetGroupID string, actionReq string) error {
+	var action = MGMTDeleteAuthorization.String()
+
+	if err := c.authManager.CheckAuthorizationOnTargetGroupID(ctx, action, realmName, groupID); err != nil {
+		return err
+	}
+
+	return c.next.DeleteAuthorization(ctx, realmName, groupID, targetRealm, targetGroupID, actionReq)
 }
 
 func (c *authorizationComponentMW) GetClientRoles(ctx context.Context, realmName, idClient string) ([]api.RoleRepresentation, error) {

@@ -146,6 +146,7 @@ type Component interface {
 	UpdateAuthorizations(ctx context.Context, realmName string, groupID string, group api.AuthorizationsRepresentation) error
 	PutAuthorization(ctx context.Context, realmName string, groupID string, group api.AuthorizationsRepresentation) error
 	GetAuthorization(ctx context.Context, realmName string, groupID string, targetRealm string, targetGroupID string, actionReq string) (api.AuthorizationMessage, error)
+	DeleteAuthorization(ctx context.Context, realmName string, groupID string, targetRealm string, targetGroupID string, actionReq string) error
 
 	GetRealmCustomConfiguration(ctx context.Context, realmName string) (api.RealmCustomConfiguration, error)
 	UpdateRealmCustomConfiguration(ctx context.Context, realmID string, customConfig api.RealmCustomConfiguration) error
@@ -1529,6 +1530,45 @@ func (c *component) GetAuthorization(ctx context.Context, realmName string, grou
 	}
 
 	return api.AuthorizationMessage{Authorized: true}, nil
+}
+
+func (c *component) DeleteAuthorization(ctx context.Context, realmName string, groupID string, targetRealm string, targetGroupID string, actionReq string) error {
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+
+	group, err := c.keycloakClient.GetGroup(accessToken, realmName, groupID)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return err
+	}
+
+	targetGroupName := targetGroupID
+	if targetGroupID != "*" {
+		targetgroup, err := c.keycloakClient.GetGroup(accessToken, targetRealm, targetGroupID)
+		if err != nil {
+			c.logger.Warn(ctx, "err", err.Error())
+			return err
+		}
+		targetGroupName = *targetgroup.Name
+	}
+
+	// Too naïve version
+	if targetRealm == "*" {
+		err = c.configDBModule.DeleteAuthorization(ctx, realmName, *group.Name, targetRealm, "", actionReq)
+		if err != nil {
+			c.logger.Warn(ctx, "err", err.Error())
+			return err
+		}
+	} else {
+		err = c.configDBModule.DeleteAuthorization(ctx, realmName, *group.Name, targetRealm, targetGroupName, actionReq)
+		if err != nil {
+			c.logger.Warn(ctx, "err", err.Error())
+			return err
+		}
+	}
+
+	c.reportEvent(ctx, "API_AUTHORIZATION_DELETE", database.CtEventRealmName, realmName, database.CtEventGroupName, groupID, targetRealm, targetGroupID, actionReq)
+
+	return nil
 }
 
 func (c *component) checkAllowedTargetRealmsAndGroupNames(ctx context.Context, realmName string, authorizations []configuration.Authorization) error {

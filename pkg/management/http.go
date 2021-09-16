@@ -69,8 +69,8 @@ func decodeManagementRequest(ctx context.Context, req *http.Request) (interface{
 		prmGroupID:       constants.RegExpID,
 		prmCredentialID:  constants.RegExpID,
 		prmProvider:      constants.RegExpName,
-		prmTargetRealm:   constants.RegExpRealmName,
-		prmTargetGroupID: constants.RegExpID,
+		prmTargetRealm:   constants.RegExpRealmNameAuth,
+		prmTargetGroupID: constants.RegExpGroupIDAuth,
 		prmAction:        constants.RegExpName,
 	}
 
