@@ -1251,6 +1251,101 @@ func TestUpdateAuthorizationsEndpoint(t *testing.T) {
 	})
 }
 
+func TestPutAuthorizationEndpoint(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
+
+	var e = MakePutAuthorizationEndpoint(mockManagementComponent)
+
+	var realmName = "master"
+	var groupID = "123456"
+
+	var ctx = context.Background()
+	var req = make(map[string]string)
+	req[prmRealm] = realmName
+	req[prmGroupID] = groupID
+
+	t.Run("No error", func(t *testing.T) {
+		req[reqBody] = `{"matrix":{}}`
+		mockManagementComponent.EXPECT().PutAuthorization(ctx, realmName, groupID, gomock.Any()).Return(nil).Times(1)
+
+		var res, err = e(ctx, req)
+		assert.Nil(t, err)
+		assert.Nil(t, res)
+	})
+
+	t.Run("JSON error", func(t *testing.T) {
+		req[reqBody] = `{"matrix":{}`
+		mockManagementComponent.EXPECT().PutAuthorization(ctx, realmName, groupID, gomock.Any()).Return(nil).Times(0)
+
+		var res, err = e(ctx, req)
+		assert.NotNil(t, err)
+		assert.Nil(t, res)
+	})
+}
+
+func TestGetAuthorizationEndpoint(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
+
+	var e = MakeGetAuthorizationEndpoint(mockManagementComponent)
+
+	var realmName = "master"
+	var groupID = "123456"
+	var targetRealmName = "master"
+	var targetGroupID = "456789"
+	var action = "TestAction"
+	var ctx = context.Background()
+	var req = make(map[string]string)
+	req[prmRealm] = realmName
+	req[prmGroupID] = groupID
+	req[prmTargetRealm] = targetRealmName
+	req[prmTargetGroupID] = targetGroupID
+	req[prmAction] = action
+
+	t.Run("No error", func(t *testing.T) {
+		mockManagementComponent.EXPECT().GetAuthorization(ctx, realmName, groupID, targetRealmName, targetGroupID, action).Return(api.AuthorizationMessage{}, nil).Times(1)
+
+		var res, err = e(ctx, req)
+		assert.Nil(t, err)
+		assert.Equal(t, api.AuthorizationMessage{}, res)
+	})
+}
+
+func TestDeleteAuthorizationEndpoint(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
+
+	var e = MakeDeleteAuthorizationEndpoint(mockManagementComponent)
+
+	var realmName = "master"
+	var groupID = "123456"
+	var targetRealmName = "master"
+	var targetGroupID = "456789"
+	var action = "TestAction"
+	var ctx = context.Background()
+	var req = make(map[string]string)
+	req[prmRealm] = realmName
+	req[prmGroupID] = groupID
+	req[prmTargetRealm] = targetRealmName
+	req[prmTargetGroupID] = targetGroupID
+	req[prmAction] = action
+
+	t.Run("No error", func(t *testing.T) {
+		mockManagementComponent.EXPECT().DeleteAuthorization(ctx, realmName, groupID, targetRealmName, targetGroupID, action).Return(nil).Times(1)
+
+		var res, err = e(ctx, req)
+		assert.Nil(t, err)
+		assert.Nil(t, res)
+	})
+}
+
 func TestCreateClientRoleEndpoint(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()

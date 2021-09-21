@@ -33,6 +33,7 @@ func TestComponentInstrumentingMW(t *testing.T) {
 	var groupNames = []string{"group1", "group2", "group3"}
 	var groupName = groupNames[0]
 	var confType = "customers"
+	var action = "TestAction"
 	var adminConfig = configuration.RealmAdminConfiguration{}
 
 	t.Run("Get configurations", func(t *testing.T) {
@@ -140,6 +141,49 @@ func TestComponentInstrumentingMW(t *testing.T) {
 		mockComponent.EXPECT().InsertBackOfficeConfiguration(context.Background(), realmID, groupName, confType, realmID, groupNames).Return(nil)
 		assert.Panics(t, func() {
 			m.InsertBackOfficeConfiguration(context.Background(), realmID, groupName, confType, realmID, groupNames)
+		})
+	})
+
+	t.Run("Get Authorization with correlation ID", func(t *testing.T) {
+		mockComponent.EXPECT().GetAuthorization(ctx, realmID, groupNames[0], realmID, groupNames[1], action).Return(configuration.Authorization{}, nil)
+		mockHistogram.EXPECT().With("correlation_id", corrID).Return(mockHistogram).Times(1)
+		mockHistogram.EXPECT().Observe(gomock.Any()).Return().Times(1)
+		m.GetAuthorization(ctx, realmID, groupNames[0], realmID, groupNames[1], action)
+	})
+
+	t.Run("Get Authorization without correlation ID", func(t *testing.T) {
+		mockComponent.EXPECT().GetAuthorization(context.Background(), realmID, groupNames[0], realmID, groupNames[1], action).Return(configuration.Authorization{}, nil).Times(1)
+		var f = func() {
+			m.GetAuthorization(context.Background(), realmID, groupNames[0], realmID, groupNames[1], action)
+		}
+		assert.Panics(t, f)
+	})
+
+	t.Run("Get Authorization for action with correlation ID", func(t *testing.T) {
+		mockComponent.EXPECT().GetAuthorizationsForAction(ctx, realmID, groupNames[0], action).Return([]configuration.Authorization{}, nil)
+		mockHistogram.EXPECT().With("correlation_id", corrID).Return(mockHistogram).Times(1)
+		mockHistogram.EXPECT().Observe(gomock.Any()).Return().Times(1)
+		m.GetAuthorizationsForAction(ctx, realmID, groupNames[0], action)
+	})
+
+	t.Run("Get Authorization for action without correlation ID", func(t *testing.T) {
+		mockComponent.EXPECT().GetAuthorizationsForAction(context.Background(), realmID, groupNames[0], action).Return([]configuration.Authorization{}, nil).Times(1)
+		var f = func() {
+			m.GetAuthorizationsForAction(context.Background(), realmID, groupNames[0], action)
+		}
+		assert.Panics(t, f)
+	})
+
+	t.Run("Delete Authorization", func(t *testing.T) {
+		mockComponent.EXPECT().DeleteAuthorization(ctx, realmID, groupNames[0], realmID, groupNames[1], action).Return(nil)
+		mockHistogram.EXPECT().With("correlation_id", corrID).Return(mockHistogram).Times(1)
+		mockHistogram.EXPECT().Observe(gomock.Any()).Return().Times(1)
+		m.DeleteAuthorization(ctx, realmID, groupNames[0], realmID, groupNames[1], action)
+	})
+	t.Run("Delete Authorization without correlation ID", func(t *testing.T) {
+		mockComponent.EXPECT().DeleteAuthorization(context.Background(), realmID, groupNames[0], realmID, groupNames[1], action).Return(nil)
+		assert.Panics(t, func() {
+			m.DeleteAuthorization(context.Background(), realmID, groupNames[0], realmID, groupNames[1], action)
 		})
 	})
 }

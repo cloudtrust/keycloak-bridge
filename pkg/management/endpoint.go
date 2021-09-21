@@ -702,6 +702,7 @@ func MakeUpdateAuthorizationsEndpoint(component Component) cs.Endpoint {
 	}
 }
 
+// MakePutAuthorizationEndpoint creates an endpoint for PutAuthorization
 func MakePutAuthorizationEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
@@ -717,6 +718,7 @@ func MakePutAuthorizationEndpoint(component Component) cs.Endpoint {
 	}
 }
 
+// MakeGetAuthorizationEndpoint creates an endpoint for GetAuthorization
 func MakeGetAuthorizationEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
@@ -725,6 +727,7 @@ func MakeGetAuthorizationEndpoint(component Component) cs.Endpoint {
 	}
 }
 
+// MakeDeleteAuthorizationEndpoint creates an endpoint for DeleteAuthorizationEndpoint
 func MakeDeleteAuthorizationEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)

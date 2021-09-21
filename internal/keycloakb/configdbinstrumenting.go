@@ -130,6 +130,7 @@ func (m *configDBModuleInstrumentingMW) GetAuthorizations(ctx context.Context, r
 	return m.next.GetAuthorizations(ctx, realmID, groupID)
 }
 
+// configDBModuleInstrumentingMW implements Module.
 func (m *configDBModuleInstrumentingMW) GetAuthorization(context context.Context, realmID string, groupName string, targetRealm string, targetGroupName string, actionReq string) (configuration.Authorization, error) {
 	defer func(begin time.Time) {
 		m.h.With(KeyCorrelationID, context.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
@@ -137,6 +138,7 @@ func (m *configDBModuleInstrumentingMW) GetAuthorization(context context.Context
 	return m.next.GetAuthorization(context, realmID, groupName, targetRealm, targetGroupName, actionReq)
 }
 
+// configDBModuleInstrumentingMW implements Module.
 func (m *configDBModuleInstrumentingMW) GetAuthorizationsForAction(context context.Context, realmID string, groupName string, actionReq string) ([]configuration.Authorization, error) {
 	defer func(begin time.Time) {
 		m.h.With(KeyCorrelationID, context.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
@@ -160,6 +162,7 @@ func (m *configDBModuleInstrumentingMW) DeleteAuthorizations(ctx context.Context
 	return m.next.DeleteAuthorizations(ctx, realmID, groupID)
 }
 
+// configDBModuleInstrumentingMW implements Module.
 func (m *configDBModuleInstrumentingMW) DeleteAuthorization(context context.Context, realmID string, groupName string, targetRealm string, targetGroupName string, actionReq string) error {
 	defer func(begin time.Time) {
 		m.h.With(KeyCorrelationID, context.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())

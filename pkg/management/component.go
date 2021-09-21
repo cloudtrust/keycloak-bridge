@@ -1496,6 +1496,7 @@ func (c *component) PutAuthorization(ctx context.Context, realmName string, grou
 				c.logger.Warn(ctx, "err", err.Error())
 				return err
 			}
+			// Deletes authorizations (children) that are covered by the new authorization
 			for _, child := range children {
 				err = c.configDBModule.DeleteAuthorization(ctx, *child.RealmID, *child.GroupName, *child.TargetRealmID, *child.TargetGroupName, *child.Action)
 				if err != nil {
@@ -1503,6 +1504,7 @@ func (c *component) PutAuthorization(ctx context.Context, realmName string, grou
 					return err
 				}
 			}
+			// Creates the authorization only if the authorization is not already covered by a higher authorization (parent)
 			if parent.Action == nil {
 				err = c.configDBModule.CreateAuthorization(ctx, authorisation)
 				if err != nil {
@@ -1545,6 +1547,7 @@ func (c *component) GetAuthorization(ctx context.Context, realmName string, grou
 
 	_, err = c.configDBModule.GetAuthorization(ctx, realmName, *group.Name, targetRealm, targetGroupName, actionReq)
 	if err != nil {
+		// if no authorization is found, look for higher authorizations covering the authorization requested
 		if err == sql.ErrNoRows {
 			authz := configuration.Authorization{
 				RealmID:         &realmName,
@@ -1616,12 +1619,14 @@ func (c *component) DeleteAuthorization(ctx context.Context, realmName string, g
 		}
 		defer tx.Close()
 
+		// simple case : no higher authorization is covering the authorization to delete
 		if parent.Action == nil {
 			err = c.configDBModule.DeleteAuthorization(ctx, realmName, *group.Name, targetRealm, targetGroupName, actionReq)
 			if err != nil {
 				c.logger.Warn(ctx, "err", err.Error())
 				return err
 			}
+			// In case, there are lower authorization to delete
 			for _, child := range children {
 				err = c.configDBModule.DeleteAuthorization(ctx, *child.RealmID, *child.GroupName, *child.TargetRealmID, *child.TargetGroupName, *child.Action)
 				if err != nil {
@@ -1630,8 +1635,10 @@ func (c *component) DeleteAuthorization(ctx context.Context, realmName string, g
 				}
 			}
 		} else {
+			// A higher authorization cover the authorization to delete
 			var realms []string
 			if *parent.TargetRealmID == "*" {
+				// if the authorization needs to be deleted for all realms
 				realmRep, err := c.keycloakClient.GetRealms(accessToken)
 				if err != nil {
 					c.logger.Warn(ctx, "err", err.Error())
@@ -1646,6 +1653,7 @@ func (c *component) DeleteAuthorization(ctx context.Context, realmName string, g
 
 			for _, realm := range realms {
 				if realm == targetRealm && targetGroupName != "*" {
+					// Creates a group authorization for each groups that are still authorized
 					groups, err := c.keycloakClient.GetGroups(accessToken, realm)
 					if err != nil {
 						c.logger.Warn(ctx, "err", err.Error())
@@ -1668,6 +1676,7 @@ func (c *component) DeleteAuthorization(ctx context.Context, realmName string, g
 						}
 					}
 				} else if realm != targetRealm {
+					// Create realm level authorization for other realms
 					all := "*"
 					err = c.configDBModule.CreateAuthorization(ctx, configuration.Authorization{
 						RealmID:         parent.RealmID,
@@ -1702,6 +1711,7 @@ func (c *component) DeleteAuthorization(ctx context.Context, realmName string, g
 	return nil
 }
 
+// Returns parents and children authorization for a specific authorization
 func (c *component) getAuthorizationDependencies(ctx context.Context, authorization configuration.Authorization) (configuration.Authorization, []configuration.Authorization, error) {
 	parent := configuration.Authorization{}
 	children := make([]configuration.Authorization, 0)
@@ -1710,7 +1720,7 @@ func (c *component) getAuthorizationDependencies(ctx context.Context, authorizat
 		if err == sql.ErrNoRows {
 			return parent, children, nil
 		}
-		c.logger.Warn(ctx, "err", err.Error())
+
 		return parent, children, err
 	}
 
@@ -1720,7 +1730,7 @@ func (c *component) getAuthorizationDependencies(ctx context.Context, authorizat
 				(*authz.TargetRealmID == "/" && *authorization.TargetRealmID != "master") ||
 				(*authz.TargetRealmID == *authorization.TargetRealmID && *authz.TargetGroupName == "*")) {
 			parent = authz
-		} else if (*authorization.TargetRealmID == "*") ||
+		} else if (*authorization.TargetRealmID == "*" && *authz.TargetGroupName != "*") ||
 			(*authorization.TargetRealmID == "/" && *authz.TargetRealmID != "master") ||
 			(*authorization.TargetRealmID == *authz.RealmID && *authorization.TargetGroupName == "*") {
 			children = append(children, authz)
