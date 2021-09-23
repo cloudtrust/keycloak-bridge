@@ -4030,7 +4030,7 @@ func TestPutAuthorization(t *testing.T) {
 		err := managementComponent.PutAuthorization(ctx, realmName, groupID, api.ConvertToAPIAuthorizations(authorizations))
 
 		assert.NotNil(t, err)
-		assert.Equal(t, "400 .invalidParameter.authorization", err.Error())
+		assert.Equal(t, "400 .invalidParameter.authorization.scope", err.Error())
 	})
 
 	t.Run("Error assign KC roles to group", func(t *testing.T) {
@@ -4470,7 +4470,7 @@ func TestDeleteAuthorization(t *testing.T) {
 		err := managementComponent.DeleteAuthorization(ctx, realmName, groupID, targetRealmName, star, "MGMT_GetActions")
 
 		assert.NotNil(t, err)
-		assert.Equal(t, "400 .invalidParameter.authorization", err.Error())
+		assert.Equal(t, "400 .invalidParameter.authorization.scope", err.Error())
 	})
 
 	t.Run("Delete authorization - get Group 2 error", func(t *testing.T) {

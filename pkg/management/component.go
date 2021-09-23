@@ -1472,7 +1472,7 @@ func (c *component) PutAuthorization(ctx context.Context, realmName string, grou
 
 	if err = validateScopes(authorizations); err != nil {
 		c.logger.Warn(ctx, "err", err.Error())
-		return errorhandler.CreateBadRequestError(constants.MsgErrInvalidParam + "." + constants.Authorization)
+		return err
 	}
 
 	// Assign KC roles to groups
@@ -1592,7 +1592,7 @@ func (c *component) DeleteAuthorization(ctx context.Context, realmName string, g
 
 	if err = validateScopes([]configuration.Authorization{authz}); err != nil {
 		c.logger.Warn(ctx, "err", err.Error())
-		return errorhandler.CreateBadRequestError(constants.MsgErrInvalidParam + "." + constants.Authorization)
+		return err
 	}
 
 	targetGroupName := targetGroupID

@@ -4,8 +4,10 @@ import (
 	"errors"
 
 	"github.com/cloudtrust/common-service/configuration"
+	errorhandler "github.com/cloudtrust/common-service/errors"
 	"github.com/cloudtrust/common-service/security"
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
+	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 )
 
 // Validate the content of the provided array. Returns an error if any issue is detected
@@ -64,21 +66,22 @@ func validateScopes(authorizations []configuration.Authorization) error {
 		}
 
 		if authz.TargetRealmID == nil {
-			return errors.New("missing target realm")
+			return errorhandler.CreateBadRequestError(constants.MsgErrMissingParam + "." + constants.Authorization + ".targetRealm")
 		}
 
+		var scopeErr = errorhandler.CreateBadRequestError(constants.MsgErrInvalidParam + "." + constants.Authorization + ".scope")
 		switch scope {
 		case security.ScopeGlobal:
 			if *authz.TargetRealmID != "*" || authz.TargetGroupName != nil {
-				return errors.New("invalid global scope")
+				return scopeErr
 			}
 		case security.ScopeRealm:
 			if authz.TargetGroupName == nil || *authz.TargetGroupName != "*" {
-				return errors.New("invalid realm scope")
+				return scopeErr
 			}
 		case security.ScopeGroup:
 			if authz.TargetGroupName == nil {
-				return errors.New("invalid group scope")
+				return scopeErr
 			}
 		}
 	}
@@ -91,5 +94,5 @@ func getScope(authz configuration.Authorization) (security.Scope, error) {
 			return action.Scope, nil
 		}
 	}
-	return "", errors.New("invalid action")
+	return "", errorhandler.CreateBadRequestError(constants.MsgErrInvalidParam + "." + constants.Authorization + ".action")
 }

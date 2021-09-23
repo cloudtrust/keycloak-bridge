@@ -206,7 +206,7 @@ func TestValidateScope(t *testing.T) {
 		}
 		err := validateScopes(authorizations)
 		assert.NotNil(t, err)
-		assert.Equal(t, "invalid global scope", err.Error())
+		assert.Equal(t, "400 .invalidParameter.authorization.scope", err.Error())
 
 		authorizations = []configuration.Authorization{
 			{
@@ -219,7 +219,7 @@ func TestValidateScope(t *testing.T) {
 		}
 		err = validateScopes(authorizations)
 		assert.NotNil(t, err)
-		assert.Equal(t, "invalid global scope", err.Error())
+		assert.Equal(t, "400 .invalidParameter.authorization.scope", err.Error())
 
 		authorizations = []configuration.Authorization{
 			{
@@ -232,7 +232,7 @@ func TestValidateScope(t *testing.T) {
 		}
 		err = validateScopes(authorizations)
 		assert.NotNil(t, err)
-		assert.Equal(t, "invalid global scope", err.Error())
+		assert.Equal(t, "400 .invalidParameter.authorization.scope", err.Error())
 	})
 
 	t.Run("Invalid realm scope", func(t *testing.T) {
@@ -247,7 +247,7 @@ func TestValidateScope(t *testing.T) {
 		}
 		err := validateScopes(authorizations)
 		assert.NotNil(t, err)
-		assert.Equal(t, "invalid realm scope", err.Error())
+		assert.Equal(t, "400 .invalidParameter.authorization.scope", err.Error())
 
 		authorizations = []configuration.Authorization{
 			{
@@ -260,7 +260,7 @@ func TestValidateScope(t *testing.T) {
 		}
 		err = validateScopes(authorizations)
 		assert.NotNil(t, err)
-		assert.Equal(t, "invalid realm scope", err.Error())
+		assert.Equal(t, "400 .invalidParameter.authorization.scope", err.Error())
 	})
 
 	t.Run("Invalid group scope", func(t *testing.T) {
@@ -275,7 +275,7 @@ func TestValidateScope(t *testing.T) {
 		}
 		err := validateScopes(authorizations)
 		assert.NotNil(t, err)
-		assert.Equal(t, "invalid group scope", err.Error())
+		assert.Equal(t, "400 .invalidParameter.authorization.scope", err.Error())
 	})
 
 	t.Run("Invalid action", func(t *testing.T) {
@@ -291,7 +291,7 @@ func TestValidateScope(t *testing.T) {
 		}
 		err := validateScopes(authorizations)
 		assert.NotNil(t, err)
-		assert.Equal(t, "invalid action", err.Error())
+		assert.Equal(t, "400 .invalidParameter.authorization.action", err.Error())
 	})
 
 	t.Run("Missing target realm", func(t *testing.T) {
@@ -306,6 +306,6 @@ func TestValidateScope(t *testing.T) {
 		}
 		err := validateScopes(authorizations)
 		assert.NotNil(t, err)
-		assert.Equal(t, "missing target realm", err.Error())
+		assert.Equal(t, "400 .missingParameter.authorization.targetRealm", err.Error())
 	})
 }
