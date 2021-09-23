@@ -141,7 +141,7 @@ func TestValidateScope(t *testing.T) {
 				TargetGroupName: nil,
 			},
 		}
-		err := ValidateScope(authorizations)
+		err := validateScopes(authorizations)
 		assert.Nil(t, err)
 	})
 
@@ -162,7 +162,7 @@ func TestValidateScope(t *testing.T) {
 				TargetGroupName: &star,
 			},
 		}
-		err := ValidateScope(authorizations)
+		err := validateScopes(authorizations)
 		assert.Nil(t, err)
 	})
 
@@ -190,7 +190,7 @@ func TestValidateScope(t *testing.T) {
 				TargetGroupName: &groupName1,
 			},
 		}
-		err := ValidateScope(authorizations)
+		err := validateScopes(authorizations)
 		assert.Nil(t, err)
 	})
 
@@ -204,7 +204,7 @@ func TestValidateScope(t *testing.T) {
 				TargetGroupName: &star,
 			},
 		}
-		err := ValidateScope(authorizations)
+		err := validateScopes(authorizations)
 		assert.NotNil(t, err)
 		assert.Equal(t, "invalid global scope", err.Error())
 
@@ -217,7 +217,7 @@ func TestValidateScope(t *testing.T) {
 				TargetGroupName: &star,
 			},
 		}
-		err = ValidateScope(authorizations)
+		err = validateScopes(authorizations)
 		assert.NotNil(t, err)
 		assert.Equal(t, "invalid global scope", err.Error())
 
@@ -230,7 +230,7 @@ func TestValidateScope(t *testing.T) {
 				TargetGroupName: &groupName1,
 			},
 		}
-		err = ValidateScope(authorizations)
+		err = validateScopes(authorizations)
 		assert.NotNil(t, err)
 		assert.Equal(t, "invalid global scope", err.Error())
 	})
@@ -245,7 +245,7 @@ func TestValidateScope(t *testing.T) {
 				TargetGroupName: &groupName1,
 			},
 		}
-		err := ValidateScope(authorizations)
+		err := validateScopes(authorizations)
 		assert.NotNil(t, err)
 		assert.Equal(t, "invalid realm scope", err.Error())
 
@@ -258,7 +258,7 @@ func TestValidateScope(t *testing.T) {
 				TargetGroupName: nil,
 			},
 		}
-		err = ValidateScope(authorizations)
+		err = validateScopes(authorizations)
 		assert.NotNil(t, err)
 		assert.Equal(t, "invalid realm scope", err.Error())
 	})
@@ -273,7 +273,7 @@ func TestValidateScope(t *testing.T) {
 				TargetGroupName: nil,
 			},
 		}
-		err := ValidateScope(authorizations)
+		err := validateScopes(authorizations)
 		assert.NotNil(t, err)
 		assert.Equal(t, "invalid group scope", err.Error())
 	})
@@ -289,7 +289,7 @@ func TestValidateScope(t *testing.T) {
 				TargetGroupName: nil,
 			},
 		}
-		err := ValidateScope(authorizations)
+		err := validateScopes(authorizations)
 		assert.NotNil(t, err)
 		assert.Equal(t, "invalid action", err.Error())
 	})
@@ -304,7 +304,7 @@ func TestValidateScope(t *testing.T) {
 				TargetGroupName: nil,
 			},
 		}
-		err := ValidateScope(authorizations)
+		err := validateScopes(authorizations)
 		assert.NotNil(t, err)
 		assert.Equal(t, "missing target realm", err.Error())
 	})

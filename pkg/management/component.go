@@ -1470,7 +1470,7 @@ func (c *component) PutAuthorization(ctx context.Context, realmName string, grou
 		return err
 	}
 
-	if err = ValidateScope(authorizations); err != nil {
+	if err = validateScopes(authorizations); err != nil {
 		c.logger.Warn(ctx, "err", err.Error())
 		return errorhandler.CreateBadRequestError(constants.MsgErrInvalidParam + "." + constants.Authorization)
 	}
@@ -1590,7 +1590,7 @@ func (c *component) DeleteAuthorization(ctx context.Context, realmName string, g
 		TargetGroupName: &targetGroupID,
 	}
 
-	if err = ValidateScope([]configuration.Authorization{authz}); err != nil {
+	if err = validateScopes([]configuration.Authorization{authz}); err != nil {
 		c.logger.Warn(ctx, "err", err.Error())
 		return errorhandler.CreateBadRequestError(constants.MsgErrInvalidParam + "." + constants.Authorization)
 	}

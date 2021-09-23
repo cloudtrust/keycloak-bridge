@@ -56,7 +56,7 @@ func checkTarget(authorizations []configuration.Authorization, allowedTargetReal
 }
 
 // Validate the scope of each authorization in the array. Returns an error if an authorization is not valid
-func ValidateScope(authorizations []configuration.Authorization) error {
+func validateScopes(authorizations []configuration.Authorization) error {
 	for _, authz := range authorizations {
 		scope, err := getScope(authz)
 		if err != nil {
