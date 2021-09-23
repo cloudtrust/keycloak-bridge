@@ -16,6 +16,19 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestNoContentResponse(t *testing.T) {
+	t.Run("Error case", func(t *testing.T) {
+		var anError = errors.New("any error")
+		var _, err = noContentResponse(anError)
+		assert.Equal(t, anError, err)
+	})
+	t.Run("No error", func(t *testing.T) {
+		var res, err = noContentResponse(nil)
+		assert.Nil(t, err)
+		assert.NotNil(t, res)
+	})
+}
+
 func TestGetActionsEndpoint(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -429,28 +442,53 @@ func TestMakeGetUserAccountStatusByEmailEndpoint(t *testing.T) {
 	})
 }
 
-func TestGetRolesOfUserEndpoint(t *testing.T) {
+func TestUserRoleEndpoints(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 
 	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
 
-	var e = MakeGetRolesOfUserEndpoint(mockManagementComponent)
+	var realm = "master"
+	var userID = "123-123-456"
+	var roleID = "rrr-ooo-lll-eee"
+	var ctx = context.Background()
+	var req = make(map[string]string)
+	req[prmRealm] = realm
+	req[prmUserID] = userID
 
-	// No error
-	{
-		var realm = "master"
-		var userID = "123-123-456"
-		var ctx = context.Background()
-		var req = make(map[string]string)
-		req[prmRealm] = realm
-		req[prmUserID] = userID
+	t.Run("MakeGetRolesOfUserEndpoint", func(t *testing.T) {
+		var e = MakeGetRolesOfUserEndpoint(mockManagementComponent)
 
-		mockManagementComponent.EXPECT().GetRolesOfUser(ctx, realm, userID).Return([]api.RoleRepresentation{}, nil).Times(1)
-		var res, err = e(ctx, req)
-		assert.Nil(t, err)
-		assert.NotNil(t, res)
-	}
+		t.Run("No error", func(t *testing.T) {
+			mockManagementComponent.EXPECT().GetRolesOfUser(ctx, realm, userID).Return([]api.RoleRepresentation{}, nil).Times(1)
+			var res, err = e(ctx, req)
+			assert.Nil(t, err)
+			assert.NotNil(t, res)
+		})
+	})
+
+	req[prmRoleID] = roleID
+
+	t.Run("MakeAddRoleToUserEndpoint", func(t *testing.T) {
+		var e = MakeAddRoleToUserEndpoint(mockManagementComponent)
+
+		t.Run("No error", func(t *testing.T) {
+			mockManagementComponent.EXPECT().AddRoleToUser(ctx, realm, userID, roleID).Return(nil)
+			var resp, err = e(ctx, req)
+			assert.Nil(t, err)
+			assert.Equal(t, respNoContent, resp)
+		})
+	})
+	t.Run("MakeDeleteRoleForUserEndpoint", func(t *testing.T) {
+		var e = MakeDeleteRoleForUserEndpoint(mockManagementComponent)
+
+		t.Run("No error", func(t *testing.T) {
+			mockManagementComponent.EXPECT().DeleteRoleForUser(ctx, realm, userID, roleID).Return(nil)
+			var resp, err = e(ctx, req)
+			assert.Nil(t, err)
+			assert.Equal(t, respNoContent, resp)
+		})
+	})
 }
 
 func TestGetGroupsOfUserEndpoint(t *testing.T) {

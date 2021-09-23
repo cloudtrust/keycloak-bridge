@@ -4,12 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"regexp"
 	"strconv"
 	"strings"
 
 	cs "github.com/cloudtrust/common-service"
 	errorhandler "github.com/cloudtrust/common-service/errors"
+	commonhttp "github.com/cloudtrust/common-service/http"
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
 	msg "github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
@@ -32,6 +34,8 @@ type Endpoints struct {
 	GetUsers                    endpoint.Endpoint
 	CreateUser                  endpoint.Endpoint
 	GetRolesOfUser              endpoint.Endpoint
+	AddRoleToUser               endpoint.Endpoint
+	DeleteRoleForUser           endpoint.Endpoint
 	GetGroupsOfUser             endpoint.Endpoint
 	AddGroupToUser              endpoint.Endpoint
 	DeleteGroupForUser          endpoint.Endpoint
@@ -79,6 +83,17 @@ type Endpoints struct {
 	GetUserRealmBackOfficeConfiguration endpoint.Endpoint
 
 	LinkShadowUser endpoint.Endpoint
+}
+
+var (
+	respNoContent = commonhttp.GenericResponse{StatusCode: http.StatusNoContent}
+)
+
+func noContentResponse(err error) (interface{}, error) {
+	if err != nil {
+		return nil, err
+	}
+	return respNoContent, nil
 }
 
 func isParameterTrue(mapParams map[string]string, paramName string) bool {
@@ -256,6 +271,24 @@ func MakeGetRolesOfUserEndpoint(component Component) cs.Endpoint {
 		var m = req.(map[string]string)
 
 		return component.GetRolesOfUser(ctx, m[prmRealm], m[prmUserID])
+	}
+}
+
+// MakeAddRoleToUserEndpoint creates an endpoint for AddRoleToUser
+func MakeAddRoleToUserEndpoint(component Component) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+
+		return noContentResponse(component.AddRoleToUser(ctx, m[prmRealm], m[prmUserID], m[prmRoleID]))
+	}
+}
+
+// MakeDeleteRoleForUserEndpoint creates an endpoint for AddRoleToUser
+func MakeDeleteRoleForUserEndpoint(component Component) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+
+		return noContentResponse(component.DeleteRoleForUser(ctx, m[prmRealm], m[prmUserID], m[prmRoleID]))
 	}
 }
 

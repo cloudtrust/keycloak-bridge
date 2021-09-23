@@ -43,6 +43,8 @@ type KeycloakClient interface {
 	GetClientRoleMappings(accessToken string, realmName, userID, clientID string) ([]kc.RoleRepresentation, error)
 	AddClientRolesToUserRoleMapping(accessToken string, realmName, userID, clientID string, roles []kc.RoleRepresentation) error
 	GetRealmLevelRoleMappings(accessToken string, realmName, userID string) ([]kc.RoleRepresentation, error)
+	AddRealmLevelRoleMappings(accessToken string, realmName, userID string, roles []kc.RoleRepresentation) error
+	DeleteRealmLevelRoleMappings(accessToken string, realmName, userID string, roles []kc.RoleRepresentation) error
 	ResetPassword(accessToken string, realmName string, userID string, cred kc.CredentialRepresentation) error
 	ExecuteActionsEmail(accessToken string, reqRealmName string, targetRealmName string, userID string, actions []string, paramKV ...string) error
 	SendSmsCode(accessToken string, realmName string, userID string) (kc.SmsCodeRepresentation, error)
@@ -112,6 +114,8 @@ type Component interface {
 	GetUserAccountStatus(ctx context.Context, realmName, userID string) (map[string]bool, error)
 	GetUserAccountStatusByEmail(ctx context.Context, realmName, email string) (api.UserStatus, error)
 	GetRolesOfUser(ctx context.Context, realmName, userID string) ([]api.RoleRepresentation, error)
+	AddRoleToUser(ctx context.Context, realmName, userID string, roleID string) error
+	DeleteRoleForUser(ctx context.Context, realmName, userID string, roleID string) error
 	GetGroupsOfUser(ctx context.Context, realmName, userID string) ([]api.GroupRepresentation, error)
 	AddGroupToUser(ctx context.Context, realmName, userID string, groupID string) error
 	DeleteGroupForUser(ctx context.Context, realmName, userID string, groupID string) error
@@ -787,6 +791,76 @@ func (c *component) GetRolesOfUser(ctx context.Context, realmName, userID string
 	}
 
 	return rolesRep, nil
+}
+
+func (c *component) rolesToMap(roles []kc.RoleRepresentation) map[string]kc.RoleRepresentation {
+	var res = make(map[string]kc.RoleRepresentation)
+	for _, role := range roles {
+		res[*role.ID] = role
+	}
+	return res
+}
+
+func (c *component) getRolesAsMap(ctx context.Context, realmName string) (map[string]kc.RoleRepresentation, error) {
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+	var roles, err = c.keycloakClient.GetRoles(accessToken, realmName)
+	if err != nil {
+		c.logger.Info(ctx, "msg", "Failed to get realm role mappings", "realm", realmName, "user")
+		return nil, err
+	}
+	return c.rolesToMap(roles), nil
+}
+
+func (c *component) getUserRolesAsMap(ctx context.Context, realmName, userID string) (map[string]kc.RoleRepresentation, error) {
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+	var roles, err = c.keycloakClient.GetRealmLevelRoleMappings(accessToken, realmName, userID)
+	if err != nil {
+		c.logger.Info(ctx, "msg", "Failed to get user roles", "realm", realmName, "user")
+		return nil, err
+	}
+	return c.rolesToMap(roles), nil
+}
+
+func (c *component) AddRoleToUser(ctx context.Context, realmName, userID, roleID string) error {
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+	var rolesMap, err = c.getRolesAsMap(ctx, realmName)
+	if err != nil {
+		return err
+	}
+	var roles []kc.RoleRepresentation
+	if role, ok := rolesMap[roleID]; ok {
+		roles = append(roles, role)
+	}
+	if len(roles) == 0 {
+		c.logger.Info(ctx, "msg", "Unknown role", "realm", realmName, "user", userID, "role", roleID)
+		return errorhandler.CreateBadRequestError("role")
+	}
+	err = c.keycloakClient.AddRealmLevelRoleMappings(accessToken, realmName, userID, roles)
+	if err != nil {
+		c.logger.Info(ctx, "msg", "Failed to add user roles", "user", userID, "role", roleID)
+	}
+	return err
+}
+
+func (c *component) DeleteRoleForUser(ctx context.Context, realmName, userID, roleID string) error {
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+	var rolesMap, err = c.getUserRolesAsMap(ctx, realmName, userID)
+	if err != nil {
+		return err
+	}
+	var roles []kc.RoleRepresentation
+	if role, ok := rolesMap[roleID]; ok {
+		roles = append(roles, role)
+	}
+	if len(roles) == 0 {
+		c.logger.Info(ctx, "msg", "Unknown role", "realm", realmName, "user", userID, "role", roleID)
+		return errorhandler.CreateBadRequestError("role")
+	}
+	err = c.keycloakClient.DeleteRealmLevelRoleMappings(accessToken, realmName, userID, roles)
+	if err != nil {
+		c.logger.Info(ctx, "msg", "Failed to delete user roles", "user", userID, "role", roleID)
+	}
+	return err
 }
 
 func (c *component) GetGroupsOfUser(ctx context.Context, realmName, userID string) ([]api.GroupRepresentation, error) {
