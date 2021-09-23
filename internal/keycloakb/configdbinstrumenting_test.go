@@ -145,14 +145,14 @@ func TestComponentInstrumentingMW(t *testing.T) {
 	})
 
 	t.Run("Get Authorization with correlation ID", func(t *testing.T) {
-		mockComponent.EXPECT().GetAuthorization(ctx, realmID, groupNames[0], realmID, groupNames[1], action).Return(configuration.Authorization{}, nil)
+		mockComponent.EXPECT().GetAuthorization(ctx, realmID, groupNames[0], realmID, groupNames[1], action).Return(nil)
 		mockHistogram.EXPECT().With("correlation_id", corrID).Return(mockHistogram).Times(1)
 		mockHistogram.EXPECT().Observe(gomock.Any()).Return().Times(1)
 		m.GetAuthorization(ctx, realmID, groupNames[0], realmID, groupNames[1], action)
 	})
 
 	t.Run("Get Authorization without correlation ID", func(t *testing.T) {
-		mockComponent.EXPECT().GetAuthorization(context.Background(), realmID, groupNames[0], realmID, groupNames[1], action).Return(configuration.Authorization{}, nil).Times(1)
+		mockComponent.EXPECT().GetAuthorization(context.Background(), realmID, groupNames[0], realmID, groupNames[1], action).Return(nil).Times(1)
 		var f = func() {
 			m.GetAuthorization(context.Background(), realmID, groupNames[0], realmID, groupNames[1], action)
 		}

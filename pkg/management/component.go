@@ -1545,7 +1545,7 @@ func (c *component) GetAuthorization(ctx context.Context, realmName string, grou
 		targetGroupName = *targetGroup.Name
 	}
 
-	_, err = c.configDBModule.GetAuthorization(ctx, realmName, *group.Name, targetRealm, targetGroupName, actionReq)
+	err = c.configDBModule.GetAuthorization(ctx, realmName, *group.Name, targetRealm, targetGroupName, actionReq)
 	if err != nil {
 		// if no authorization is found, look for higher authorizations covering the authorization requested
 		if err == sql.ErrNoRows {

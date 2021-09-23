@@ -41,7 +41,7 @@ const (
 	selectAuthzStmt       = `SELECT realm_id, group_name, action, target_realm_id, target_group_name FROM authorizations WHERE realm_id = ? AND group_name = ?;`
 	selectSingleAuthzStmt = `
 		SELECT
-			realm_id, group_name, action, target_realm_id, target_group_name
+			1
 		FROM authorizations 
 		WHERE realm_id = ? 
 		  AND group_name = ? 
@@ -212,17 +212,18 @@ func (c *configurationDBModule) GetAuthorizations(ctx context.Context, realmID s
 	return res, nil
 }
 
-func (c *configurationDBModule) GetAuthorization(ctx context.Context, realmID string, groupName string, targetRealm string, targetGroupName string, actionReq string) (configuration.Authorization, error) {
+func (c *configurationDBModule) GetAuthorization(ctx context.Context, realmID string, groupName string, targetRealm string, targetGroupName string, actionReq string) error {
 	// Get Authorization from DB
 	row := c.db.QueryRow(selectSingleAuthzStmt, realmID, groupName, actionReq, targetRealm, targetGroupName)
 
-	authz, err := c.scanAuthorization(row)
+	var exists int
+	err := row.Scan(&exists)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Can't get authorization. Scan failed", "err", err.Error(), "realmID", realmID, "groupName", groupName, "targetRealm", targetRealm, "targetGroupName", targetGroupName, "action", actionReq)
-		return configuration.Authorization{}, err
+		return err
 	}
 
-	return authz, nil
+	return nil
 }
 
 func (c *configurationDBModule) GetAuthorizationsForAction(context context.Context, realmID string, groupName string, actionReq string) ([]configuration.Authorization, error) {
