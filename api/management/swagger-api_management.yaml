@@ -1343,8 +1343,8 @@ paths:
             application/json:
               schema:
                   $ref: '#/components/schemas/AuthorizationResponse'
-        400:
-          description: invalid information provided
+        404:
+          description: Not found
     delete:
       tags:
       - Groups
