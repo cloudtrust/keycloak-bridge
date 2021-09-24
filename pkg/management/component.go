@@ -1625,7 +1625,7 @@ func (c *component) DeleteAuthorization(ctx context.Context, realmName string, g
 		targetGroupName = ""
 	}
 
-	if err = validateScopes([]configuration.Authorization{authz}); err != nil {
+	if err = validateScope(authz); err != nil {
 		c.logger.Warn(ctx, "err", err.Error())
 		return err
 	}

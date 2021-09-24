@@ -58,31 +58,39 @@ func checkTarget(authorizations []configuration.Authorization, allowedTargetReal
 }
 
 // Validate the scope of each authorization in the array. Returns an error if an authorization is not valid
+func validateScope(authorization configuration.Authorization) error {
+	scope, err := getScope(authorization)
+	if err != nil {
+		return err
+	}
+
+	if authorization.TargetRealmID == nil {
+		return errorhandler.CreateBadRequestError(constants.MsgErrMissingParam + "." + constants.Authorization + ".targetRealm")
+	}
+
+	var scopeErr = errorhandler.CreateBadRequestError(constants.MsgErrInvalidParam + "." + constants.Authorization + ".scope")
+	switch scope {
+	case security.ScopeGlobal:
+		if *authorization.TargetRealmID != "*" || authorization.TargetGroupName != nil {
+			return scopeErr
+		}
+	case security.ScopeRealm:
+		if authorization.TargetGroupName == nil || *authorization.TargetGroupName != "*" {
+			return scopeErr
+		}
+	case security.ScopeGroup:
+		if authorization.TargetGroupName == nil {
+			return scopeErr
+		}
+	}
+
+	return nil
+}
+
 func validateScopes(authorizations []configuration.Authorization) error {
 	for _, authz := range authorizations {
-		scope, err := getScope(authz)
-		if err != nil {
+		if err := validateScope(authz); err != nil {
 			return err
-		}
-
-		if authz.TargetRealmID == nil {
-			return errorhandler.CreateBadRequestError(constants.MsgErrMissingParam + "." + constants.Authorization + ".targetRealm")
-		}
-
-		var scopeErr = errorhandler.CreateBadRequestError(constants.MsgErrInvalidParam + "." + constants.Authorization + ".scope")
-		switch scope {
-		case security.ScopeGlobal:
-			if *authz.TargetRealmID != "*" || authz.TargetGroupName != nil {
-				return scopeErr
-			}
-		case security.ScopeRealm:
-			if authz.TargetGroupName == nil || *authz.TargetGroupName != "*" {
-				return scopeErr
-			}
-		case security.ScopeGroup:
-			if authz.TargetGroupName == nil {
-				return scopeErr
-			}
 		}
 	}
 	return nil
