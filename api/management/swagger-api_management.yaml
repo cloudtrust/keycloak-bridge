@@ -1344,7 +1344,7 @@ paths:
               schema:
                   $ref: '#/components/schemas/AuthorizationResponse'
         404:
-          description: Not found
+          description: not found
     delete:
       tags:
       - Groups
