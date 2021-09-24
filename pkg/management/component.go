@@ -144,7 +144,7 @@ type Component interface {
 	DeleteGroup(ctx context.Context, realmName string, groupID string) error
 	GetAuthorizations(ctx context.Context, realmName string, groupID string) (api.AuthorizationsRepresentation, error)
 	UpdateAuthorizations(ctx context.Context, realmName string, groupID string, group api.AuthorizationsRepresentation) error
-	PutAuthorization(ctx context.Context, realmName string, groupID string, group api.AuthorizationsRepresentation) error
+	AddAuthorization(ctx context.Context, realmName string, groupID string, group api.AuthorizationsRepresentation) error
 	GetAuthorization(ctx context.Context, realmName string, groupID string, targetRealm string, targetGroupID string, actionReq string) (api.AuthorizationMessage, error)
 	DeleteAuthorization(ctx context.Context, realmName string, groupID string, targetRealm string, targetGroupID string, actionReq string) error
 
@@ -1453,7 +1453,7 @@ func (c *component) UpdateAuthorizations(ctx context.Context, realmName string, 
 	return nil
 }
 
-func (c *component) PutAuthorization(ctx context.Context, realmName string, groupID string, auth api.AuthorizationsRepresentation) error {
+func (c *component) AddAuthorization(ctx context.Context, realmName string, groupID string, auth api.AuthorizationsRepresentation) error {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 
 	group, err := c.keycloakClient.GetGroup(accessToken, realmName, groupID)
@@ -1535,9 +1535,16 @@ func (c *component) GetAuthorization(ctx context.Context, realmName string, grou
 		return api.AuthorizationMessage{}, err
 	}
 
+	targetRealmName := targetRealm
+	if targetRealmName == "" {
+		targetRealmName = "*"
+	}
+
 	targetGroupName := targetGroupID
-	if targetGroupName != "*" {
-		targetGroup, err := c.keycloakClient.GetGroup(accessToken, realmName, targetGroupID)
+	if targetGroupName == "" {
+		targetGroupName = "*"
+	} else if targetGroupName != "*" {
+		targetGroup, err := c.keycloakClient.GetGroup(accessToken, targetRealmName, targetGroupName)
 		if err != nil {
 			c.logger.Warn(ctx, "err", err.Error())
 			return api.AuthorizationMessage{}, err
@@ -1545,7 +1552,7 @@ func (c *component) GetAuthorization(ctx context.Context, realmName string, grou
 		targetGroupName = *targetGroup.Name
 	}
 
-	err = c.configDBModule.GetAuthorization(ctx, realmName, *group.Name, targetRealm, targetGroupName, actionReq)
+	err = c.configDBModule.GetAuthorization(ctx, realmName, *group.Name, targetRealmName, targetGroupName, actionReq)
 	if err != nil {
 		// if no authorization is found, look for higher authorizations covering the authorization requested
 		if err == sql.ErrNoRows {
@@ -1553,7 +1560,7 @@ func (c *component) GetAuthorization(ctx context.Context, realmName string, grou
 				RealmID:         &realmName,
 				GroupName:       group.Name,
 				Action:          &actionReq,
-				TargetRealmID:   &targetRealm,
+				TargetRealmID:   &targetRealmName,
 				TargetGroupName: &targetGroupName,
 			}
 			parent, _, err := c.getAuthorizationDependencies(ctx, authz)
@@ -1582,27 +1589,45 @@ func (c *component) DeleteAuthorization(ctx context.Context, realmName string, g
 		return err
 	}
 
-	authz := configuration.Authorization{
-		RealmID:         &realmName,
-		GroupName:       group.Name,
-		Action:          &actionReq,
-		TargetRealmID:   &targetRealm,
-		TargetGroupName: &targetGroupID,
-	}
-
-	if err = validateScopes([]configuration.Authorization{authz}); err != nil {
-		c.logger.Warn(ctx, "err", err.Error())
-		return err
+	targetRealmName := targetRealm
+	if targetRealmName == "" {
+		targetRealmName = "*"
 	}
 
 	targetGroupName := targetGroupID
-	if targetGroupID != "*" {
-		targetGroup, err := c.keycloakClient.GetGroup(accessToken, targetRealm, targetGroupID)
+	if targetGroupName == "" {
+		targetGroupName = "*"
+	} else if targetGroupName != "*" {
+		targetGroup, err := c.keycloakClient.GetGroup(accessToken, targetRealmName, targetGroupName)
 		if err != nil {
 			c.logger.Warn(ctx, "err", err.Error())
 			return err
 		}
 		targetGroupName = *targetGroup.Name
+	}
+
+	authz := configuration.Authorization{
+		RealmID:         &realmName,
+		GroupName:       group.Name,
+		Action:          &actionReq,
+		TargetRealmID:   &targetRealmName,
+		TargetGroupName: &targetGroupName,
+	}
+
+	scope, err := getScope(authz)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return err
+	}
+
+	if scope == security.ScopeGlobal {
+		authz.TargetGroupName = nil
+		targetGroupName = ""
+	}
+
+	if err = validateScopes([]configuration.Authorization{authz}); err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return err
 	}
 
 	parent, children, err := c.getAuthorizationDependencies(ctx, authz)
@@ -1621,7 +1646,11 @@ func (c *component) DeleteAuthorization(ctx context.Context, realmName string, g
 
 		// simple case : no higher authorization is covering the authorization to delete
 		if parent.Action == nil {
-			err = c.configDBModule.DeleteAuthorization(ctx, realmName, *group.Name, targetRealm, targetGroupName, actionReq)
+			if targetGroupName == "" {
+				err = c.configDBModule.DeleteGlobalAuthorization(ctx, realmName, *group.Name, targetRealmName, actionReq)
+			} else {
+				err = c.configDBModule.DeleteAuthorization(ctx, realmName, *group.Name, targetRealmName, targetGroupName, actionReq)
+			}
 			if err != nil {
 				c.logger.Warn(ctx, "err", err.Error())
 				return err
@@ -1652,7 +1681,7 @@ func (c *component) DeleteAuthorization(ctx context.Context, realmName string, g
 			}
 
 			for _, realm := range realms {
-				if realm == targetRealm && targetGroupName != "*" {
+				if realm == targetRealmName && targetGroupName != "*" {
 					// Creates a group authorization for each groups that are still authorized
 					groups, err := c.keycloakClient.GetGroups(accessToken, realm)
 					if err != nil {
@@ -1725,14 +1754,16 @@ func (c *component) getAuthorizationDependencies(ctx context.Context, authorizat
 	}
 
 	for _, authz := range authorizations {
-		if (*authorization.TargetRealmID != "*") &&
-			((*authz.TargetRealmID == "*") ||
-				(*authz.TargetRealmID == "/" && *authorization.TargetRealmID != "master") ||
-				(*authz.TargetRealmID == *authorization.TargetRealmID && *authz.TargetGroupName == "*")) {
+		if ((*authorization.TargetRealmID == "*") && (authorization.TargetGroupName != nil) && (*authz.TargetRealmID == "*") && (authz.TargetGroupName == nil)) ||
+			((*authorization.TargetRealmID != "*") &&
+				((*authz.TargetRealmID == "*") ||
+					(*authz.TargetRealmID == "/" && *authorization.TargetRealmID != "master") ||
+					(*authz.TargetRealmID == *authorization.TargetRealmID && *authz.TargetGroupName == "*"))) {
 			parent = authz
-		} else if (*authorization.TargetRealmID == "*" && *authz.TargetGroupName != "*") ||
-			(*authorization.TargetRealmID == "/" && *authz.TargetRealmID != "master") ||
-			(*authorization.TargetRealmID == *authz.RealmID && *authorization.TargetGroupName == "*") {
+		} else if (authorization.TargetGroupName != nil) &&
+			((*authorization.TargetRealmID == "*" && (*authz.TargetGroupName != "*" || (*authz.TargetRealmID != "*" && *authz.TargetGroupName == "*"))) ||
+				(*authorization.TargetRealmID == "/" && *authz.TargetRealmID != "master") ||
+				(*authorization.TargetRealmID == *authz.TargetRealmID && *authorization.TargetGroupName == "*" && *authz.TargetGroupName != "*")) {
 			children = append(children, authz)
 		}
 	}

@@ -1251,13 +1251,13 @@ func TestUpdateAuthorizationsEndpoint(t *testing.T) {
 	})
 }
 
-func TestPutAuthorizationEndpoint(t *testing.T) {
+func TestAddAuthorizationEndpoint(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 
 	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
 
-	var e = MakePutAuthorizationEndpoint(mockManagementComponent)
+	var e = MakeAddAuthorizationEndpoint(mockManagementComponent)
 
 	var realmName = "master"
 	var groupID = "123456"
@@ -1269,7 +1269,7 @@ func TestPutAuthorizationEndpoint(t *testing.T) {
 
 	t.Run("No error", func(t *testing.T) {
 		req[reqBody] = `{"matrix":{}}`
-		mockManagementComponent.EXPECT().PutAuthorization(ctx, realmName, groupID, gomock.Any()).Return(nil).Times(1)
+		mockManagementComponent.EXPECT().AddAuthorization(ctx, realmName, groupID, gomock.Any()).Return(nil).Times(1)
 
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
@@ -1278,7 +1278,7 @@ func TestPutAuthorizationEndpoint(t *testing.T) {
 
 	t.Run("JSON error", func(t *testing.T) {
 		req[reqBody] = `{"matrix":{}`
-		mockManagementComponent.EXPECT().PutAuthorization(ctx, realmName, groupID, gomock.Any()).Return(nil).Times(0)
+		mockManagementComponent.EXPECT().AddAuthorization(ctx, realmName, groupID, gomock.Any()).Return(nil).Times(0)
 
 		var res, err = e(ctx, req)
 		assert.NotNil(t, err)
@@ -1303,8 +1303,8 @@ func TestGetAuthorizationEndpoint(t *testing.T) {
 	var req = make(map[string]string)
 	req[prmRealm] = realmName
 	req[prmGroupID] = groupID
-	req[prmTargetRealm] = targetRealmName
-	req[prmTargetGroupID] = targetGroupID
+	req[prmQryTargetRealm] = targetRealmName
+	req[prmQryTargetGroupID] = targetGroupID
 	req[prmAction] = action
 
 	t.Run("No error", func(t *testing.T) {
@@ -1333,8 +1333,8 @@ func TestDeleteAuthorizationEndpoint(t *testing.T) {
 	var req = make(map[string]string)
 	req[prmRealm] = realmName
 	req[prmGroupID] = groupID
-	req[prmTargetRealm] = targetRealmName
-	req[prmTargetGroupID] = targetGroupID
+	req[prmQryTargetRealm] = targetRealmName
+	req[prmQryTargetGroupID] = targetGroupID
 	req[prmAction] = action
 
 	t.Run("No error", func(t *testing.T) {

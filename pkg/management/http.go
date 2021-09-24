@@ -21,33 +21,33 @@ const (
 	reqScheme = "scheme"
 	reqHost   = "host"
 
-	prmRealm         = "realm"
-	prmUserID        = "userID"
-	prmClientID      = "clientID"
-	prmRoleID        = "roleID"
-	prmGroupID       = "groupID"
-	prmCredentialID  = "credentialID"
-	prmProvider      = "provider"
-	prmTargetRealm   = "targetRealm"
-	prmTargetGroupID = "targetGroupID"
-	prmAction        = "action"
+	prmRealm        = "realm"
+	prmUserID       = "userID"
+	prmClientID     = "clientID"
+	prmRoleID       = "roleID"
+	prmGroupID      = "groupID"
+	prmCredentialID = "credentialID"
+	prmProvider     = "provider"
+	prmAction       = "action"
 
-	prmQryEmail       = "email"
-	prmQryFirstName   = "firstName"
-	prmQryLastName    = "lastName"
-	prmQryUserName    = "username"
-	prmQrySearch      = "search"
-	prmQryClientID    = "client_id"
-	prmQryRedirectURI = "redirect_uri"
-	prmQryLifespan    = "lifespan"
-	prmQryGroupIDs    = "groupIds"
-	prmQryFirst       = "first"
-	prmQryMax         = "max"
-	prmQryGroupName   = "groupName"
-	prmQryGenUsername = "generateUsername"
-	prmQryGenNameID   = "generateNameID"
-	prmQryRealm       = "customerRealm"
-	prmQryReminder    = "reminder"
+	prmQryEmail         = "email"
+	prmQryFirstName     = "firstName"
+	prmQryLastName      = "lastName"
+	prmQryUserName      = "username"
+	prmQrySearch        = "search"
+	prmQryClientID      = "client_id"
+	prmQryRedirectURI   = "redirect_uri"
+	prmQryLifespan      = "lifespan"
+	prmQryGroupIDs      = "groupIds"
+	prmQryFirst         = "first"
+	prmQryMax           = "max"
+	prmQryGroupName     = "groupName"
+	prmQryGenUsername   = "generateUsername"
+	prmQryGenNameID     = "generateNameID"
+	prmQryRealm         = "customerRealm"
+	prmQryReminder      = "reminder"
+	prmQryTargetRealm   = "targetRealm"
+	prmQryTargetGroupID = "targetGroupID"
 )
 
 // MakeManagementHandler make an HTTP handler for a Management endpoint.
@@ -62,35 +62,35 @@ func MakeManagementHandler(e endpoint.Endpoint, logger log.Logger) *http_transpo
 // decodeEventsRequest gets the HTTP parameters and body content
 func decodeManagementRequest(ctx context.Context, req *http.Request) (interface{}, error) {
 	var pathParams = map[string]string{
-		prmRealm:         constants.RegExpRealmName,
-		prmUserID:        constants.RegExpID,
-		prmClientID:      constants.RegExpClientID,
-		prmRoleID:        constants.RegExpID,
-		prmGroupID:       constants.RegExpID,
-		prmCredentialID:  constants.RegExpID,
-		prmProvider:      constants.RegExpName,
-		prmTargetRealm:   constants.RegExpRealmNameAuth,
-		prmTargetGroupID: constants.RegExpGroupIDAuth,
-		prmAction:        constants.RegExpName,
+		prmRealm:        constants.RegExpRealmName,
+		prmUserID:       constants.RegExpID,
+		prmClientID:     constants.RegExpClientID,
+		prmRoleID:       constants.RegExpID,
+		prmGroupID:      constants.RegExpID,
+		prmCredentialID: constants.RegExpID,
+		prmProvider:     constants.RegExpName,
+		prmAction:       constants.RegExpName,
 	}
 
 	var queryParams = map[string]string{
-		prmQryEmail:       constants.RegExpEmail,
-		prmQryFirstName:   constants.RegExpFirstName,
-		prmQryLastName:    constants.RegExpLastNameSearch,
-		prmQryUserName:    constants.RegExpUsername,
-		prmQrySearch:      constants.RegExpSearch,
-		prmQryClientID:    constants.RegExpClientID,
-		prmQryRedirectURI: constants.RegExpRedirectURI,
-		prmQryLifespan:    constants.RegExpLifespan,
-		prmQryGroupIDs:    constants.RegExpGroupIds,
-		prmQryFirst:       constants.RegExpNumber,
-		prmQryMax:         constants.RegExpNumber,
-		prmQryGroupName:   constants.RegExpName,
-		prmQryGenUsername: constants.RegExpBool,
-		prmQryGenNameID:   constants.RegExpBool,
-		prmQryRealm:       constants.RegExpRealmName,
-		prmQryReminder:    constants.RegExpBool,
+		prmQryEmail:         constants.RegExpEmail,
+		prmQryFirstName:     constants.RegExpFirstName,
+		prmQryLastName:      constants.RegExpLastNameSearch,
+		prmQryUserName:      constants.RegExpUsername,
+		prmQrySearch:        constants.RegExpSearch,
+		prmQryClientID:      constants.RegExpClientID,
+		prmQryRedirectURI:   constants.RegExpRedirectURI,
+		prmQryLifespan:      constants.RegExpLifespan,
+		prmQryGroupIDs:      constants.RegExpGroupIds,
+		prmQryFirst:         constants.RegExpNumber,
+		prmQryMax:           constants.RegExpNumber,
+		prmQryGroupName:     constants.RegExpName,
+		prmQryGenUsername:   constants.RegExpBool,
+		prmQryGenNameID:     constants.RegExpBool,
+		prmQryRealm:         constants.RegExpRealmName,
+		prmQryReminder:      constants.RegExpBool,
+		prmQryTargetRealm:   constants.RegExpRealmName,
+		prmQryTargetGroupID: constants.RegExpID,
 	}
 
 	return commonhttp.DecodeRequest(ctx, req, pathParams, queryParams)

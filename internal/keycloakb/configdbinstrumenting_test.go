@@ -186,4 +186,16 @@ func TestComponentInstrumentingMW(t *testing.T) {
 			m.DeleteAuthorization(context.Background(), realmID, groupNames[0], realmID, groupNames[1], action)
 		})
 	})
+	t.Run("Delete global Authorization", func(t *testing.T) {
+		mockComponent.EXPECT().DeleteGlobalAuthorization(ctx, realmID, groupNames[0], realmID, action).Return(nil)
+		mockHistogram.EXPECT().With("correlation_id", corrID).Return(mockHistogram).Times(1)
+		mockHistogram.EXPECT().Observe(gomock.Any()).Return().Times(1)
+		m.DeleteGlobalAuthorization(ctx, realmID, groupNames[0], realmID, action)
+	})
+	t.Run("Delete global Authorization without correlation ID", func(t *testing.T) {
+		mockComponent.EXPECT().DeleteGlobalAuthorization(context.Background(), realmID, groupNames[0], realmID, action).Return(nil)
+		assert.Panics(t, func() {
+			m.DeleteGlobalAuthorization(context.Background(), realmID, groupNames[0], realmID, action)
+		})
+	})
 }

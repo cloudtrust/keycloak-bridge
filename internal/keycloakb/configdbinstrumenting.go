@@ -39,6 +39,7 @@ type ConfigurationDBModule interface {
 	CreateAuthorization(context context.Context, authz configuration.Authorization) error
 	DeleteAuthorizations(context context.Context, realmID string, groupName string) error
 	DeleteAuthorization(context context.Context, realmID string, groupName string, targetRealm string, targetGroupName string, actionReq string) error
+	DeleteGlobalAuthorization(context context.Context, realmID string, groupName string, targetRealm string, actionReq string) error
 	DeleteAllAuthorizationsWithGroup(context context.Context, realmName, groupName string) error
 }
 
@@ -168,6 +169,14 @@ func (m *configDBModuleInstrumentingMW) DeleteAuthorization(context context.Cont
 		m.h.With(KeyCorrelationID, context.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
 	}(time.Now())
 	return m.next.DeleteAuthorization(context, realmID, groupName, targetRealm, targetGroupName, actionReq)
+}
+
+// configDBModuleInstrumentingMW implements Module.
+func (m *configDBModuleInstrumentingMW) DeleteGlobalAuthorization(context context.Context, realmID string, groupName string, targetRealm string, actionReq string) error {
+	defer func(begin time.Time) {
+		m.h.With(KeyCorrelationID, context.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
+	}(time.Now())
+	return m.next.DeleteGlobalAuthorization(context, realmID, groupName, targetRealm, actionReq)
 }
 
 // configDBModuleInstrumentingMW implements Module.

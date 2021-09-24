@@ -62,6 +62,7 @@ const (
 	deleteAuthzStmt             = `DELETE FROM authorizations WHERE realm_id = ? AND group_name = ?;`
 	deleteAllAuthzWithGroupStmt = `DELETE FROM authorizations WHERE (realm_id = ? AND group_name = ?) OR (target_realm_id = ? AND target_group_name = ?);`
 	deleteSingleAuthzStmt       = `DELETE FROM authorizations WHERE realm_id = ? AND group_name = ? AND action = ? AND target_realm_id = ? AND target_group_name = ?;`
+	deleteGlobalAuthzStmt       = `DELETE FROM authorizations WHERE realm_id = ? AND group_name = ? AND action = ? AND target_realm_id = ? AND target_group_name IS NULL;`
 )
 
 // Scanner used to get data from SQL cursors
@@ -262,6 +263,12 @@ func (c *configurationDBModule) DeleteAuthorizations(context context.Context, re
 
 func (c *configurationDBModule) DeleteAuthorization(context context.Context, realmID string, groupName string, targetRealm string, targetGroupName string, actionReq string) error {
 	_, err := c.db.Exec(deleteSingleAuthzStmt, realmID, groupName, actionReq, targetRealm, targetGroupName)
+
+	return err
+}
+
+func (c *configurationDBModule) DeleteGlobalAuthorization(context context.Context, realmID string, groupName string, targetRealm string, actionReq string) error {
+	_, err := c.db.Exec(deleteGlobalAuthzStmt, realmID, groupName, actionReq, targetRealm)
 
 	return err
 }

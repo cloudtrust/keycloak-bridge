@@ -1300,7 +1300,7 @@ paths:
       responses:
         200:
           description: successful operation
-  /realms/{realm}/groups/{groupID}/target-realms/{targetRealm}/target-groups/{targetGroupID}/actions/{action}/authorization:
+  /realms/{realm}/groups/{groupID}/actions/{action}/authorizations:
     get:
       tags:
       - Groups
@@ -1318,22 +1318,22 @@ paths:
         required: true
         schema:
           type: string
-      - name: targetRealm
-        in: path
-        description: realm name (not id!)
-        required: true
-        schema:
-          type: string
-      - name: targetGroupID
-        in: path
-        description: target group id
-        required: true
-        schema:
-          type: string
       - name: action
         in: path
         description: action
         required: true
+        schema:
+          type: string
+      - name: targetRealm
+        in: query
+        description: realm name (not id!)
+        required: false
+        schema:
+          type: string
+      - name: targetGroupID
+        in: query
+        description: target group id
+        required: false
         schema:
           type: string
       responses:
@@ -1343,6 +1343,8 @@ paths:
             application/json:
               schema:
                   $ref: '#/components/schemas/AuthorizationResponse'
+        400:
+          description: invalid information provided
         404:
           description: not found
     delete:
@@ -1362,31 +1364,30 @@ paths:
         required: true
         schema:
           type: string
-      - name: targetRealm
-        in: path
-        description: realm name (not id!)
-        required: true
-        schema:
-          type: string
-      - name: targetGroupID
-        in: path
-        description: target group id
-        required: true
-        schema:
-          type: string
       - name: action
         in: path
         description: action
         required: true
         schema:
           type: string
+      - name: targetRealm
+        in: query
+        description: realm name (not id!)
+        required: false
+        schema:
+          type: string
+      - name: targetGroupID
+        in: query
+        description: target group id
+        required: false
+        schema:
+          type: string
+      
       responses:
         200:
           description: successful operation
         400:
           description: invalid information provided
-
-  /realms/{realm}/groups/{groupID}/authorization:
     put:
       tags:
       - Groups
@@ -1401,6 +1402,12 @@ paths:
       - name: groupID
         in: path
         description: group id
+        required: true
+        schema:
+          type: string
+      - name: action
+        in: path
+        description: action
         required: true
         schema:
           type: string

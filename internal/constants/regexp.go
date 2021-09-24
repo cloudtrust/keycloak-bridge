@@ -41,9 +41,6 @@ const (
 	// RequiredAction
 	RegExpRequiredAction = `^[a-zA-Z0-9-_]{1,255}$`
 
-	RegExpGroupIDAuth   = `^\*|[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}$`
-	RegExpRealmNameAuth = `^\*|[a-zA-Z0-9_-]{1,36}$`
-
 	// Others
 	RegExpRealmName = `^[a-zA-Z0-9_-]{1,36}$`
 	RegExpSearch    = regExpLen128

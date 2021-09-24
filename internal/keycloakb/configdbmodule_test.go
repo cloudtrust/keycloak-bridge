@@ -365,4 +365,16 @@ func TestAuthorization(t *testing.T) {
 		var err = configDBModule.DeleteAuthorization(ctx, realmID, groupName, targetRealmID, targetGroupName, action)
 		assert.Nil(t, err)
 	})
+
+	t.Run("DELETE global -Fails", func(t *testing.T) {
+		mockDB.EXPECT().Exec(gomock.Any(), realmID, groupName, action, targetRealmID).Return(nil, expectedError)
+		var err = configDBModule.DeleteGlobalAuthorization(ctx, realmID, groupName, targetRealmID, action)
+		assert.Equal(t, expectedError, err)
+	})
+
+	t.Run("DELETE global -Success", func(t *testing.T) {
+		mockDB.EXPECT().Exec(gomock.Any(), realmID, groupName, action, targetRealmID).Return(nil, nil)
+		var err = configDBModule.DeleteGlobalAuthorization(ctx, realmID, groupName, targetRealmID, action)
+		assert.Nil(t, err)
+	})
 }

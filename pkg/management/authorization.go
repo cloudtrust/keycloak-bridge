@@ -68,7 +68,7 @@ var (
 	MGMTDeleteGroup                         = newAction("MGMT_DeleteGroup", security.ScopeGroup)
 	MGMTGetAuthorizations                   = newAction("MGMT_GetAuthorizations", security.ScopeGroup)
 	MGMTUpdateAuthorizations                = newAction("MGMT_UpdateAuthorizations", security.ScopeGroup)
-	MGMTPutAuthorization                    = newAction("MGMT_PutAuthorization", security.ScopeGroup)
+	MGMTAddAuthorization                    = newAction("MGMT_AddAuthorization", security.ScopeGroup)
 	MGMTGetAuthorization                    = newAction("MGMT_GetAuthorization", security.ScopeGroup)
 	MGMTDeleteAuthorization                 = newAction("MGMT_DeleteAuthorization", security.ScopeGroup)
 	MGMTGetClientRoles                      = newAction("MGMT_GetClientRoles", security.ScopeRealm)
@@ -620,14 +620,14 @@ func (c *authorizationComponentMW) UpdateAuthorizations(ctx context.Context, rea
 	return c.next.UpdateAuthorizations(ctx, realmName, groupID, group)
 }
 
-func (c *authorizationComponentMW) PutAuthorization(ctx context.Context, realmName string, groupID string, group api.AuthorizationsRepresentation) error {
-	var action = MGMTPutAuthorization.String()
+func (c *authorizationComponentMW) AddAuthorization(ctx context.Context, realmName string, groupID string, group api.AuthorizationsRepresentation) error {
+	var action = MGMTAddAuthorization.String()
 
 	if err := c.authManager.CheckAuthorizationOnTargetGroupID(ctx, action, realmName, groupID); err != nil {
 		return err
 	}
 
-	return c.next.PutAuthorization(ctx, realmName, groupID, group)
+	return c.next.AddAuthorization(ctx, realmName, groupID, group)
 }
 
 func (c *authorizationComponentMW) GetAuthorization(ctx context.Context, realmName string, groupID string, targetRealm string, targetGroupID string, actionReq string) (api.AuthorizationMessage, error) {
