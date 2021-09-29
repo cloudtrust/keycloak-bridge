@@ -165,6 +165,7 @@ rate-validation: 1000
 rate-communications: 1000
 rate-account: 1000
 rate-management: 1000
+rate-management-status: 3
 rate-statistics: 1000
 rate-events: 1000
 rate-register: 1000

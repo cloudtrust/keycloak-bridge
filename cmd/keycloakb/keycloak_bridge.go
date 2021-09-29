@@ -72,16 +72,17 @@ const (
 	defaultPublishingIP = "0.0.0.0"
 	pathHealthCheck     = "/health/check"
 
-	RateKeyAccount        = iota
-	RateKeyCommunications = iota
-	RateKeyEvents         = iota
-	RateKeyKYC            = iota
-	RateKeyManagement     = iota
-	RateKeyMobile         = iota
-	RateKeyMonitoring     = iota
-	RateKeyRegister       = iota
-	RateKeyStatistics     = iota
-	RateKeyValidation     = iota
+	RateKeyAccount          = iota
+	RateKeyCommunications   = iota
+	RateKeyEvents           = iota
+	RateKeyKYC              = iota
+	RateKeyManagement       = iota
+	RateKeyManagementStatus = iota
+	RateKeyMobile           = iota
+	RateKeyMonitoring       = iota
+	RateKeyRegister         = iota
+	RateKeyStatistics       = iota
+	RateKeyValidation       = iota
 
 	cfgConfigFile               = "config-file"
 	cfgHTTPAddrInternal         = "internal-http-host-port"
@@ -110,6 +111,7 @@ const (
 	cfgRateKeyMobile            = "rate-mobile"
 	cfgRateKeyMonitoring        = "rate-monitoring"
 	cfgRateKeyManagement        = "rate-management"
+	cfgRateKeyManagementStatus  = "rate-management-status"
 	cfgRateKeyStatistics        = "rate-statistics"
 	cfgRateKeyEvents            = "rate-events"
 	cfgRateKeyRegister          = "rate-register"
@@ -226,16 +228,17 @@ func main() {
 
 		// Rate limiting
 		rateLimit = map[RateKey]int{
-			RateKeyValidation:     c.GetInt(cfgRateKeyValidation),
-			RateKeyCommunications: c.GetInt(cfgRateKeyCommunications),
-			RateKeyAccount:        c.GetInt(cfgRateKeyAccount),
-			RateKeyMobile:         c.GetInt(cfgRateKeyMobile),
-			RateKeyMonitoring:     c.GetInt(cfgRateKeyMonitoring),
-			RateKeyManagement:     c.GetInt(cfgRateKeyManagement),
-			RateKeyStatistics:     c.GetInt(cfgRateKeyStatistics),
-			RateKeyEvents:         c.GetInt(cfgRateKeyEvents),
-			RateKeyRegister:       c.GetInt(cfgRateKeyRegister),
-			RateKeyKYC:            c.GetInt(cfgRateKeyKYC),
+			RateKeyValidation:       c.GetInt(cfgRateKeyValidation),
+			RateKeyCommunications:   c.GetInt(cfgRateKeyCommunications),
+			RateKeyAccount:          c.GetInt(cfgRateKeyAccount),
+			RateKeyMobile:           c.GetInt(cfgRateKeyMobile),
+			RateKeyMonitoring:       c.GetInt(cfgRateKeyMonitoring),
+			RateKeyManagement:       c.GetInt(cfgRateKeyManagement),
+			RateKeyManagementStatus: c.GetInt(cfgRateKeyManagementStatus),
+			RateKeyStatistics:       c.GetInt(cfgRateKeyStatistics),
+			RateKeyEvents:           c.GetInt(cfgRateKeyEvents),
+			RateKeyRegister:         c.GetInt(cfgRateKeyRegister),
+			RateKeyKYC:              c.GetInt(cfgRateKeyKYC),
 		}
 
 		corsOptions = cors.Options{
@@ -699,6 +702,7 @@ func main() {
 		}
 
 		var rateLimitMgmt = rateLimit[RateKeyManagement]
+		var rateLimitMgmtStatus = rateLimit[RateKeyManagementStatus]
 		managementEndpoints = management.Endpoints{
 			GetActions: prepareEndpoint(management.MakeGetActionsEndpoint(keycloakComponent), "get_actions_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 
@@ -717,7 +721,7 @@ func main() {
 			DeleteUser:                  prepareEndpoint(management.MakeDeleteUserEndpoint(keycloakComponent), "delete_user_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 			GetUsers:                    prepareEndpoint(management.MakeGetUsersEndpoint(keycloakComponent), "get_users_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 			GetUserChecks:               prepareEndpoint(management.MakeGetUserChecksEndpoint(keycloakComponent), "get_user_checks", influxMetrics, managementLogger, tracer, rateLimitMgmt),
-			GetUserAccountStatus:        prepareEndpoint(management.MakeGetUserAccountStatusEndpoint(keycloakComponent), "get_user_accountstatus", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			GetUserAccountStatus:        prepareEndpoint(management.MakeGetUserAccountStatusEndpoint(keycloakComponent), "get_user_accountstatus", influxMetrics, managementLogger, tracer, rateLimitMgmtStatus),
 			GetUserAccountStatusByEmail: prepareEndpoint(management.MakeGetUserAccountStatusByEmailEndpoint(keycloakComponent), "get_user_accountstatus_by_email", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 			GetGroupsOfUser:             prepareEndpoint(management.MakeGetGroupsOfUserEndpoint(keycloakComponent), "get_user_groups", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 			AddGroupToUser:              prepareEndpoint(management.MakeAddGroupToUserEndpoint(keycloakComponent), "add_user_group", influxMetrics, managementLogger, tracer, rateLimitMgmt),
@@ -1422,6 +1426,7 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 	v.SetDefault(cfgRateKeyMobile, 1000)
 	v.SetDefault(cfgRateKeyMonitoring, 1000)
 	v.SetDefault(cfgRateKeyManagement, 1000)
+	v.SetDefault(cfgRateKeyManagementStatus, 3)
 	v.SetDefault(cfgRateKeyStatistics, 1000)
 	v.SetDefault(cfgRateKeyEvents, 1000)
 	v.SetDefault(cfgRateKeyRegister, 1000)
