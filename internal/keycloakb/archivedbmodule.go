@@ -12,8 +12,8 @@ import (
 
 const (
 	storeUserArchiveStmt = `
-	  INSERT users (realm_name, user_id, timestamp, details)
-	  VALUES (?, ?, UTC_TIMESTAMP, ?)
+	  INSERT users (realm_name, user_id, timestamp, details, key_id)
+	  VALUES (?, ?, UTC_TIMESTAMP, ?, ?)
 	`
 )
 
@@ -51,7 +51,8 @@ func (a *archiveDBModule) StoreUserDetails(ctx context.Context, realm string, us
 		return err
 	}
 
+	keyId := a.cipher.GetCurrentKeyID()
 	// update value in DB
-	_, err = a.db.Exec(storeUserArchiveStmt, realm, user.ID, encryptedData)
+	_, err = a.db.Exec(storeUserArchiveStmt, realm, user.ID, encryptedData, keyId)
 	return err
 }
