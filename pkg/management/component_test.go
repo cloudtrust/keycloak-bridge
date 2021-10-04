@@ -3789,20 +3789,11 @@ func TestUpdateAuthorizations(t *testing.T) {
 	var managementComponent = createComponent(mocks)
 
 	var accessToken = "TOKEN=="
-	var currentRealmName = "master"
 	var realmName = "customer1"
 	var targetRealmName = "DEP"
-	var ID = "00000-32a9-4000-8c17-edc854c31231"
 	var groupID = "41dbf4a8-32a9-4000-8c17-edc854c31231"
 	var groupName = "groupName"
-	var ID1 = "111111-32a9-4000-8c17-edc854c31231"
-	var ID2 = "222222-32a9-4000-8c17-edc854c31231"
-	var ID3 = "333333-32a9-4000-8c17-edc854c31231"
-	var ID4 = "444444-32a9-4000-8c17-edc854c31231"
-	var ID5 = "555555-32a9-4000-8c17-edc854c31231"
 	var username = "username"
-	var clientID = "realm-management"
-	var clientID2 = "backofficeid"
 
 	var realm = kc.RealmRepresentation{
 		ID:    &targetRealmName,
@@ -3816,317 +3807,108 @@ func TestUpdateAuthorizations(t *testing.T) {
 	}
 	var groups = []kc.GroupRepresentation{group}
 
-	var client = kc.ClientRepresentation{
-		ID:       &ID,
-		ClientID: &clientID,
-	}
-	var client2 = kc.ClientRepresentation{
-		ID:       &ID2,
-		ClientID: &clientID2,
-	}
-	var clients = []kc.ClientRepresentation{client, client2}
-
-	var roleName = []string{"manage-users", "view-clients", "view-realm", "view-users", "other"}
-	var roleManageUser = kc.RoleRepresentation{
-		ID:   &ID1,
-		Name: &roleName[0],
-	}
-	var roleViewClients = kc.RoleRepresentation{
-		ID:   &ID2,
-		Name: &roleName[1],
-	}
-	var roleViewRealm = kc.RoleRepresentation{
-		ID:   &ID3,
-		Name: &roleName[2],
-	}
-	var roleViewUsers = kc.RoleRepresentation{
-		ID:   &ID4,
-		Name: &roleName[3],
-	}
-	var roleOther = kc.RoleRepresentation{
-		ID:   &ID5,
-		Name: &roleName[4],
+	var action = "MGMT_action"
+	var matrix = map[string]map[string]map[string]struct{}{
+		action: {},
 	}
 
-	t.Run("Update authorizations with succces (MGMT_action so KC roles needed)", func(t *testing.T) {
-		var action = "MGMT_action"
-		var matrix = map[string]map[string]map[string]struct{}{
-			action: {},
-		}
+	var apiAuthorizations = api.AuthorizationsRepresentation{
+		Matrix: &matrix,
+	}
 
-		var apiAuthorizations = api.AuthorizationsRepresentation{
-			Matrix: &matrix,
-		}
+	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+	ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
+	ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 
-		var rolesAvailable = []kc.RoleRepresentation{
-			roleManageUser,
-			roleViewClients,
-			roleViewRealm,
-			roleViewUsers,
-		}
-		var rolesCurrent = []kc.RoleRepresentation{
-			roleOther,
-		}
-
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
-		ctx = context.WithValue(ctx, cs.CtContextRealm, currentRealmName)
-		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
-
-		mocks.keycloakClient.EXPECT().GetGroup(accessToken, targetRealmName, groupID).Return(group, nil)
-		mocks.keycloakClient.EXPECT().GetRealms(accessToken).Return(realms, nil)
-		mocks.keycloakClient.EXPECT().GetGroups(accessToken, targetRealmName).Return(groups, nil)
-		mocks.keycloakClient.EXPECT().GetClients(accessToken, targetRealmName).Return(clients, nil)
-		mocks.keycloakClient.EXPECT().GetAvailableGroupClientRoles(accessToken, targetRealmName, groupID, ID).Return(rolesAvailable, nil)
-		mocks.keycloakClient.EXPECT().GetGroupClientRoles(accessToken, targetRealmName, groupID, ID).Return(rolesCurrent, nil)
-		mocks.keycloakClient.EXPECT().AssignClientRole(accessToken, targetRealmName, groupID, ID, gomock.Any()).Return(nil)
-
-		mocks.configurationDBModule.EXPECT().NewTransaction(ctx).Return(mocks.transaction, nil)
-		mocks.configurationDBModule.EXPECT().DeleteAuthorizations(ctx, targetRealmName, groupName).Return(nil)
-		mocks.configurationDBModule.EXPECT().CreateAuthorization(ctx, gomock.Any()).Return(nil)
-		mocks.transaction.EXPECT().Close()
-		mocks.transaction.EXPECT().Commit()
-
-		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "API_AUTHORIZATIONS_UPDATE", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
-
-		err := managementComponent.UpdateAuthorizations(ctx, targetRealmName, groupID, apiAuthorizations)
-		assert.Nil(t, err)
-	})
-
-	t.Run("Update authorizations with succces (action so no KC roles needed)", func(t *testing.T) {
-		var action = "action"
-		var matrix = map[string]map[string]map[string]struct{}{
-			action: {},
-		}
-
-		var apiAuthorizations = api.AuthorizationsRepresentation{
-			Matrix: &matrix,
-		}
-
-		var rolesCurrent = []kc.RoleRepresentation{
-			roleManageUser,
-			roleViewClients,
-			roleViewRealm,
-			roleViewUsers,
-			roleOther,
-		}
-		var rolesAvailable = []kc.RoleRepresentation{}
-
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
-		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
-		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
-
-		mocks.keycloakClient.EXPECT().GetGroup(accessToken, targetRealmName, groupID).Return(group, nil)
-		mocks.keycloakClient.EXPECT().GetRealms(accessToken).Return(realms, nil)
-		mocks.keycloakClient.EXPECT().GetGroups(accessToken, targetRealmName).Return(groups, nil)
-		mocks.keycloakClient.EXPECT().GetClients(accessToken, targetRealmName).Return(clients, nil)
-		mocks.keycloakClient.EXPECT().GetAvailableGroupClientRoles(accessToken, targetRealmName, groupID, ID).Return(rolesAvailable, nil)
-		mocks.keycloakClient.EXPECT().GetGroupClientRoles(accessToken, targetRealmName, groupID, ID).Return(rolesCurrent, nil)
-		mocks.keycloakClient.EXPECT().RemoveClientRole(accessToken, targetRealmName, groupID, ID, gomock.Any()).Return(nil)
-
-		mocks.configurationDBModule.EXPECT().NewTransaction(ctx).Return(mocks.transaction, nil)
-		mocks.configurationDBModule.EXPECT().DeleteAuthorizations(ctx, targetRealmName, groupName).Return(nil)
-		mocks.configurationDBModule.EXPECT().CreateAuthorization(ctx, gomock.Any()).Return(nil)
-		mocks.transaction.EXPECT().Close()
-		mocks.transaction.EXPECT().Commit()
-
-		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "API_AUTHORIZATIONS_UPDATE", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
-
-		err := managementComponent.UpdateAuthorizations(ctx, targetRealmName, groupID, apiAuthorizations)
-
-		assert.Nil(t, err)
-	})
-
-	t.Run("Errors", func(t *testing.T) {
-		var action = "MGMT_action"
-		var matrix = map[string]map[string]map[string]struct{}{
-			action: {},
-		}
-
-		var apiAuthorizations = api.AuthorizationsRepresentation{
-			Matrix: &matrix,
-		}
-
-		var rolesAvailable = []kc.RoleRepresentation{
-			roleManageUser,
-			roleViewClients,
-			roleViewRealm,
-			roleViewUsers,
-		}
-		var rolesCurrent = []kc.RoleRepresentation{
-			roleOther,
-		}
-
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
-		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
-		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
-
+	t.Run("Call to Keycloak.GetGroup fails", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetGroup(accessToken, targetRealmName, groupID).Return(kc.GroupRepresentation{}, errors.New("Error"))
 		mocks.logger.EXPECT().Warn(ctx, "err", "Error")
 		err := managementComponent.UpdateAuthorizations(ctx, targetRealmName, groupID, apiAuthorizations)
 		assert.NotNil(t, err)
+	})
 
+	t.Run("Call to Keycloak GetRealm fails", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetGroup(accessToken, targetRealmName, groupID).Return(group, nil)
 		mocks.keycloakClient.EXPECT().GetRealms(accessToken).Return([]kc.RealmRepresentation{}, fmt.Errorf("Unexpected error"))
 		mocks.logger.EXPECT().Warn(ctx, "err", "Unexpected error")
-		err = managementComponent.UpdateAuthorizations(ctx, targetRealmName, groupID, apiAuthorizations)
+		err := managementComponent.UpdateAuthorizations(ctx, targetRealmName, groupID, apiAuthorizations)
 		assert.NotNil(t, err)
+	})
 
+	t.Run("Call to Keycloak GetGroups fails", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetGroup(accessToken, targetRealmName, groupID).Return(group, nil)
 		mocks.keycloakClient.EXPECT().GetRealms(accessToken).Return(realms, nil)
 		mocks.keycloakClient.EXPECT().GetGroups(accessToken, targetRealmName).Return([]kc.GroupRepresentation{}, fmt.Errorf("Unexpected error"))
 		mocks.logger.EXPECT().Warn(ctx, "err", "Unexpected error")
-		err = managementComponent.UpdateAuthorizations(ctx, targetRealmName, groupID, apiAuthorizations)
+		err := managementComponent.UpdateAuthorizations(ctx, targetRealmName, groupID, apiAuthorizations)
 		assert.NotNil(t, err)
+	})
 
+	t.Run("Persists in DB: fails to create transaction", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetGroup(accessToken, targetRealmName, groupID).Return(group, nil)
 		mocks.keycloakClient.EXPECT().GetRealms(accessToken).Return(realms, nil)
 		mocks.keycloakClient.EXPECT().GetGroups(accessToken, targetRealmName).Return(groups, nil)
-		mocks.keycloakClient.EXPECT().GetClients(accessToken, targetRealmName).Return([]kc.ClientRepresentation{}, fmt.Errorf("Unexpected error"))
-		mocks.logger.EXPECT().Warn(ctx, "err", "Unexpected error")
-		err = managementComponent.UpdateAuthorizations(ctx, targetRealmName, groupID, apiAuthorizations)
-		assert.NotNil(t, err)
-
-		mocks.keycloakClient.EXPECT().GetGroup(accessToken, targetRealmName, groupID).Return(group, nil)
-		mocks.keycloakClient.EXPECT().GetRealms(accessToken).Return(realms, nil)
-		mocks.keycloakClient.EXPECT().GetGroups(accessToken, targetRealmName).Return(groups, nil)
-		mocks.keycloakClient.EXPECT().GetClients(accessToken, targetRealmName).Return(clients, nil)
-		mocks.keycloakClient.EXPECT().GetAvailableGroupClientRoles(accessToken, targetRealmName, groupID, ID).Return([]kc.RoleRepresentation{}, fmt.Errorf("Unexpected error"))
-		mocks.logger.EXPECT().Warn(ctx, "err", "Unexpected error")
-		err = managementComponent.UpdateAuthorizations(ctx, targetRealmName, groupID, apiAuthorizations)
-		assert.NotNil(t, err)
-
-		mocks.keycloakClient.EXPECT().GetGroup(accessToken, targetRealmName, groupID).Return(group, nil)
-		mocks.keycloakClient.EXPECT().GetRealms(accessToken).Return(realms, nil)
-		mocks.keycloakClient.EXPECT().GetGroups(accessToken, targetRealmName).Return(groups, nil)
-		mocks.keycloakClient.EXPECT().GetClients(accessToken, targetRealmName).Return(clients, nil)
-		mocks.keycloakClient.EXPECT().GetAvailableGroupClientRoles(accessToken, targetRealmName, groupID, ID).Return(rolesAvailable, nil)
-		mocks.keycloakClient.EXPECT().GetGroupClientRoles(accessToken, targetRealmName, groupID, ID).Return([]kc.RoleRepresentation{}, fmt.Errorf("Unexpected error"))
-		mocks.logger.EXPECT().Warn(ctx, "err", "Unexpected error")
-		err = managementComponent.UpdateAuthorizations(ctx, targetRealmName, groupID, apiAuthorizations)
-		assert.NotNil(t, err)
-
-		mocks.keycloakClient.EXPECT().GetGroup(accessToken, targetRealmName, groupID).Return(group, nil)
-		mocks.keycloakClient.EXPECT().GetRealms(accessToken).Return(realms, nil)
-		mocks.keycloakClient.EXPECT().GetGroups(accessToken, targetRealmName).Return(groups, nil)
-		mocks.keycloakClient.EXPECT().GetClients(accessToken, targetRealmName).Return(clients, nil)
-		mocks.keycloakClient.EXPECT().GetAvailableGroupClientRoles(accessToken, targetRealmName, groupID, ID).Return(rolesAvailable, nil)
-		mocks.keycloakClient.EXPECT().GetGroupClientRoles(accessToken, targetRealmName, groupID, ID).Return(rolesCurrent, nil)
-		mocks.keycloakClient.EXPECT().AssignClientRole(accessToken, targetRealmName, groupID, ID, gomock.Any()).Return(fmt.Errorf("Unexpected error"))
-		mocks.logger.EXPECT().Warn(ctx, "err", "Unexpected error")
-		err = managementComponent.UpdateAuthorizations(ctx, targetRealmName, groupID, apiAuthorizations)
-		assert.NotNil(t, err)
-
-		mocks.keycloakClient.EXPECT().GetGroup(accessToken, targetRealmName, groupID).Return(group, nil)
-		mocks.keycloakClient.EXPECT().GetRealms(accessToken).Return(realms, nil)
-		mocks.keycloakClient.EXPECT().GetGroups(accessToken, targetRealmName).Return(groups, nil)
-		mocks.keycloakClient.EXPECT().GetClients(accessToken, targetRealmName).Return(clients, nil)
-		mocks.keycloakClient.EXPECT().GetAvailableGroupClientRoles(accessToken, targetRealmName, groupID, ID).Return(rolesAvailable, nil)
-		mocks.keycloakClient.EXPECT().GetGroupClientRoles(accessToken, targetRealmName, groupID, ID).Return(rolesCurrent, nil)
-		mocks.keycloakClient.EXPECT().AssignClientRole(accessToken, targetRealmName, groupID, ID, gomock.Any()).Return(nil)
 		mocks.configurationDBModule.EXPECT().NewTransaction(ctx).Return(nil, fmt.Errorf("Unexpected error"))
 		mocks.logger.EXPECT().Warn(ctx, "err", "Unexpected error")
-		err = managementComponent.UpdateAuthorizations(ctx, targetRealmName, groupID, apiAuthorizations)
+		err := managementComponent.UpdateAuthorizations(ctx, targetRealmName, groupID, apiAuthorizations)
 		assert.NotNil(t, err)
+	})
 
+	t.Run("Persists in DB: fails to delete existing authorizations", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetGroup(accessToken, targetRealmName, groupID).Return(group, nil)
 		mocks.keycloakClient.EXPECT().GetRealms(accessToken).Return(realms, nil)
 		mocks.keycloakClient.EXPECT().GetGroups(accessToken, targetRealmName).Return(groups, nil)
-		mocks.keycloakClient.EXPECT().GetClients(accessToken, targetRealmName).Return(clients, nil)
-		mocks.keycloakClient.EXPECT().GetAvailableGroupClientRoles(accessToken, targetRealmName, groupID, ID).Return(rolesAvailable, nil)
-		mocks.keycloakClient.EXPECT().GetGroupClientRoles(accessToken, targetRealmName, groupID, ID).Return(rolesCurrent, nil)
-		mocks.keycloakClient.EXPECT().AssignClientRole(accessToken, targetRealmName, groupID, ID, gomock.Any()).Return(nil)
 		mocks.configurationDBModule.EXPECT().NewTransaction(ctx).Return(mocks.transaction, nil)
 		mocks.transaction.EXPECT().Close()
 		mocks.configurationDBModule.EXPECT().DeleteAuthorizations(ctx, targetRealmName, groupName).Return(fmt.Errorf("Unexpected error"))
 		mocks.logger.EXPECT().Warn(ctx, "err", "Unexpected error")
-		err = managementComponent.UpdateAuthorizations(ctx, targetRealmName, groupID, apiAuthorizations)
+		err := managementComponent.UpdateAuthorizations(ctx, targetRealmName, groupID, apiAuthorizations)
 		assert.NotNil(t, err)
+	})
 
+	t.Run("Persists in DB: fails to create new authorizations", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetGroup(accessToken, targetRealmName, groupID).Return(group, nil)
 		mocks.keycloakClient.EXPECT().GetRealms(accessToken).Return(realms, nil)
 		mocks.keycloakClient.EXPECT().GetGroups(accessToken, targetRealmName).Return(groups, nil)
-		mocks.keycloakClient.EXPECT().GetClients(accessToken, targetRealmName).Return(clients, nil)
-		mocks.keycloakClient.EXPECT().GetAvailableGroupClientRoles(accessToken, targetRealmName, groupID, ID).Return(rolesAvailable, nil)
-		mocks.keycloakClient.EXPECT().GetGroupClientRoles(accessToken, targetRealmName, groupID, ID).Return(rolesCurrent, nil)
-		mocks.keycloakClient.EXPECT().AssignClientRole(accessToken, targetRealmName, groupID, ID, gomock.Any()).Return(nil)
 		mocks.configurationDBModule.EXPECT().NewTransaction(ctx).Return(mocks.transaction, nil)
 		mocks.transaction.EXPECT().Close()
 		mocks.configurationDBModule.EXPECT().DeleteAuthorizations(ctx, targetRealmName, groupName).Return(nil)
 		mocks.configurationDBModule.EXPECT().CreateAuthorization(ctx, gomock.Any()).Return(fmt.Errorf("Unexpected error"))
 		mocks.logger.EXPECT().Warn(ctx, "err", "Unexpected error")
-		err = managementComponent.UpdateAuthorizations(ctx, targetRealmName, groupID, apiAuthorizations)
+		err := managementComponent.UpdateAuthorizations(ctx, targetRealmName, groupID, apiAuthorizations)
 		assert.NotNil(t, err)
+	})
 
+	t.Run("Persists in DB: fails to commit transaction", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetGroup(accessToken, targetRealmName, groupID).Return(group, nil)
 		mocks.keycloakClient.EXPECT().GetRealms(accessToken).Return(realms, nil)
 		mocks.keycloakClient.EXPECT().GetGroups(accessToken, targetRealmName).Return(groups, nil)
-		mocks.keycloakClient.EXPECT().GetClients(accessToken, targetRealmName).Return(clients, nil)
-		mocks.keycloakClient.EXPECT().GetAvailableGroupClientRoles(accessToken, targetRealmName, groupID, ID).Return(rolesAvailable, nil)
-		mocks.keycloakClient.EXPECT().GetGroupClientRoles(accessToken, targetRealmName, groupID, ID).Return(rolesCurrent, nil)
-		mocks.keycloakClient.EXPECT().AssignClientRole(accessToken, targetRealmName, groupID, ID, gomock.Any()).Return(nil)
 		mocks.configurationDBModule.EXPECT().NewTransaction(ctx).Return(mocks.transaction, nil)
 		mocks.configurationDBModule.EXPECT().DeleteAuthorizations(ctx, targetRealmName, groupName).Return(nil)
 		mocks.configurationDBModule.EXPECT().CreateAuthorization(ctx, gomock.Any()).Return(nil)
 		mocks.transaction.EXPECT().Close()
 		mocks.transaction.EXPECT().Commit().Return(fmt.Errorf("Unexpected error"))
 		mocks.logger.EXPECT().Warn(ctx, "err", "Unexpected error")
-		err = managementComponent.UpdateAuthorizations(ctx, targetRealmName, groupID, apiAuthorizations)
+		err := managementComponent.UpdateAuthorizations(ctx, targetRealmName, groupID, apiAuthorizations)
 		assert.NotNil(t, err)
+	})
 
+	t.Run("Success", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetGroup(accessToken, targetRealmName, groupID).Return(group, nil)
 		mocks.keycloakClient.EXPECT().GetRealms(accessToken).Return(realms, nil)
 		mocks.keycloakClient.EXPECT().GetGroups(accessToken, targetRealmName).Return(groups, nil)
-		mocks.keycloakClient.EXPECT().GetClients(accessToken, targetRealmName).Return(clients, nil)
-		mocks.keycloakClient.EXPECT().GetAvailableGroupClientRoles(accessToken, targetRealmName, groupID, ID).Return(rolesAvailable, nil)
-		mocks.keycloakClient.EXPECT().GetGroupClientRoles(accessToken, targetRealmName, groupID, ID).Return(rolesCurrent, nil)
-		mocks.keycloakClient.EXPECT().AssignClientRole(accessToken, targetRealmName, groupID, ID, gomock.Any()).Return(nil)
 		mocks.configurationDBModule.EXPECT().NewTransaction(ctx).Return(mocks.transaction, nil)
 		mocks.configurationDBModule.EXPECT().DeleteAuthorizations(ctx, targetRealmName, groupName).Return(nil)
 		mocks.configurationDBModule.EXPECT().CreateAuthorization(ctx, gomock.Any()).Return(nil)
 		mocks.transaction.EXPECT().Close()
 		mocks.transaction.EXPECT().Commit()
-
 		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "API_AUTHORIZATIONS_UPDATE", "back-office", database.CtEventRealmName, targetRealmName, database.CtEventGroupName, groupName).Return(errors.New("error"))
 		m := map[string]interface{}{"event_name": "API_AUTHORIZATIONS_UPDATE", database.CtEventRealmName: targetRealmName, database.CtEventGroupName: groupName}
 		eventJSON, _ := json.Marshal(m)
 		mocks.logger.EXPECT().Error(ctx, "err", "error", "event", string(eventJSON))
-		err = managementComponent.UpdateAuthorizations(ctx, targetRealmName, groupID, apiAuthorizations)
-		assert.Nil(t, err)
-	})
 
-	t.Run("YAT (yet another test)", func(t *testing.T) {
-		var action = "action"
-		var matrix = map[string]map[string]map[string]struct{}{
-			action: {},
-		}
-
-		var apiAuthorizations = api.AuthorizationsRepresentation{
-			Matrix: &matrix,
-		}
-
-		var rolesCurrent = []kc.RoleRepresentation{
-			roleManageUser,
-			roleViewClients,
-			roleViewRealm,
-			roleViewUsers,
-			roleOther,
-		}
-		var rolesAvailable = []kc.RoleRepresentation{}
-
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
-		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
-		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
-
-		mocks.keycloakClient.EXPECT().GetGroup(accessToken, targetRealmName, groupID).Return(group, nil)
-		mocks.keycloakClient.EXPECT().GetRealms(accessToken).Return(realms, nil)
-		mocks.keycloakClient.EXPECT().GetGroups(accessToken, targetRealmName).Return(groups, nil)
-		mocks.keycloakClient.EXPECT().GetClients(accessToken, targetRealmName).Return(clients, nil)
-		mocks.keycloakClient.EXPECT().GetAvailableGroupClientRoles(accessToken, targetRealmName, groupID, ID).Return(rolesAvailable, nil)
-		mocks.keycloakClient.EXPECT().GetGroupClientRoles(accessToken, targetRealmName, groupID, ID).Return(rolesCurrent, nil)
-		mocks.keycloakClient.EXPECT().RemoveClientRole(accessToken, targetRealmName, groupID, ID, gomock.Any()).Return(fmt.Errorf("Unexpected error"))
-		mocks.logger.EXPECT().Warn(ctx, "err", "Unexpected error")
 		err := managementComponent.UpdateAuthorizations(ctx, targetRealmName, groupID, apiAuthorizations)
-		assert.NotNil(t, err)
+		assert.Nil(t, err)
 	})
 
 	t.Run("Authorizations provided not valid", func(t *testing.T) {
@@ -4177,7 +3959,6 @@ func TestUpdateAuthorizationsWithAny(t *testing.T) {
 		Name: &groupName,
 	}
 	var groups = []kc.GroupRepresentation{}
-	var clients = []kc.ClientRepresentation{}
 
 	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 	ctx = context.WithValue(ctx, cs.CtContextRealm, currentRealmName)
@@ -4232,7 +4013,6 @@ func TestUpdateAuthorizationsWithAny(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetGroup(accessToken, targetMasterRealmName, groupID).Return(group, nil)
 		mocks.keycloakClient.EXPECT().GetRealms(accessToken).Return(realms, nil)
 		mocks.keycloakClient.EXPECT().GetGroups(accessToken, targetMasterRealmName).Return(groups, nil)
-		mocks.keycloakClient.EXPECT().GetClients(accessToken, targetMasterRealmName).Return(clients, nil)
 
 		mocks.configurationDBModule.EXPECT().NewTransaction(ctx).Return(mocks.transaction, nil)
 		mocks.configurationDBModule.EXPECT().DeleteAuthorizations(ctx, targetMasterRealmName, groupName).Return(nil)

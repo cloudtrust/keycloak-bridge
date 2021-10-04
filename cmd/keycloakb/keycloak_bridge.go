@@ -976,7 +976,7 @@ func main() {
 	// HTTP Internal Call Server (Export, Communications & Validation API).
 	go func() {
 		var logger = log.With(logger, "transport", "http")
-		logger.Info(ctx, "addr", httpAddrInternal)
+		logger.Info(ctx, "addr", httpAddrInternal, "interface", "export-and-communication")
 
 		var route = mux.NewRouter()
 
@@ -1034,7 +1034,7 @@ func main() {
 	// HTTP Management Server (Backoffice API).
 	go func() {
 		var logger = log.With(logger, "transport", "http")
-		logger.Info(ctx, "addr", httpAddrManagement)
+		logger.Info(ctx, "addr", httpAddrManagement, "interface", "management")
 
 		var route = mux.NewRouter()
 
@@ -1281,7 +1281,7 @@ func main() {
 	// HTTP Self-service Server (Account API).
 	go func() {
 		var logger = log.With(logger, "transport", "http")
-		logger.Info(ctx, "addr", httpAddrAccount)
+		logger.Info(ctx, "addr", httpAddrAccount, "interface", "self-service")
 
 		var route = mux.NewRouter()
 
@@ -1330,7 +1330,7 @@ func main() {
 	// HTTP Mobile self-service Server (Mobile API).
 	go func() {
 		var logger = log.With(logger, "transport", "http")
-		logger.Info(ctx, "addr", httpAddrMobile)
+		logger.Info(ctx, "addr", httpAddrMobile, "interface", "mobile")
 
 		var route = mux.NewRouter()
 
@@ -1354,7 +1354,7 @@ func main() {
 	// HTTP register Server (Register API).
 	go func() {
 		var logger = log.With(logger, "transport", "http")
-		logger.Info(ctx, "addr", httpAddrRegister)
+		logger.Info(ctx, "addr", httpAddrRegister, "interface", "register")
 
 		var route = mux.NewRouter()
 

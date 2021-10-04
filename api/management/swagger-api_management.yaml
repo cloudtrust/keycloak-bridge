@@ -1756,6 +1756,7 @@ components:
       properties:
         enabled:
           type: boolean
+          description: user is enabled when he is enabled in Keycloak AND has at least 2 credentials (1 password + second factor)
     Client:
       type: object
       properties:
