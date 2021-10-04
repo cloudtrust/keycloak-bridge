@@ -3,6 +3,7 @@ package register
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/cloudtrust/keycloak-client/toolbox"
 
@@ -25,6 +26,7 @@ type KeycloakClient interface {
 	DeleteUser(accessToken string, realmName, userID string) error
 	GetUsers(accessToken string, reqRealmName, targetRealmName string, paramKV ...string) (kc.UsersPageRepresentation, error)
 	GetGroups(accessToken string, realmName string) ([]kc.GroupRepresentation, error)
+	SendEmail(accessToken string, reqRealmName string, realmName string, emailRep kc.EmailRepresentation) error
 }
 
 // ConfigurationDBModule is the interface of the configuration module.
@@ -48,7 +50,7 @@ type GlnVerifier interface {
 
 // Component is the register component interface.
 type Component interface {
-	RegisterUser(ctx context.Context, targetRealmName string, customerRealmName string, user apiregister.UserRepresentation) (string, error)
+	RegisterUser(ctx context.Context, targetRealmName string, customerRealmName string, user apiregister.UserRepresentation) error
 	GetConfiguration(ctx context.Context, realmName string) (apiregister.ConfigurationRepresentation, error)
 }
 
@@ -122,35 +124,35 @@ func (c *component) GetConfiguration(ctx context.Context, realmName string) (api
 	}, nil
 }
 
-func (c *component) RegisterUser(ctx context.Context, targetRealmName string, customerRealmName string, user apiregister.UserRepresentation) (string, error) {
+func (c *component) RegisterUser(ctx context.Context, targetRealmName string, customerRealmName string, user apiregister.UserRepresentation) error {
 	// Get an OIDC token to be able to request Keycloak
 	var accessToken string
 	accessToken, err := c.tokenProvider.ProvideTokenForRealm(ctx, targetRealmName)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Can't get OIDC token", "err", err.Error())
-		return "", err
+		return err
 	}
 
 	// Get Realm configuration from database
 	realmConf, realmAdminConf, err := c.configDBModule.GetConfigurations(ctx, targetRealmName)
 	if err != nil {
 		c.logger.Info(ctx, "msg", "Can't get realm configuration from database", "err", err.Error())
-		return "", err
+		return err
 	}
 
 	if realmAdminConf.SelfRegisterEnabled == nil || !*realmAdminConf.SelfRegisterEnabled {
-		return "", errorhandler.CreateEndpointNotEnabled("selfRegister")
+		return errorhandler.CreateEndpointNotEnabled("selfRegister")
 	}
 
 	if (realmConf.SelfRegisterGroupNames == nil || len(*realmConf.SelfRegisterGroupNames) == 0) ||
 		(realmConf.OnboardingRedirectURI == nil || *realmConf.OnboardingRedirectURI == "") ||
 		(realmConf.OnboardingClientID == nil || *realmConf.OnboardingClientID == "") {
-		return "", errorhandler.CreateEndpointNotEnabled(constants.MsgErrNotConfigured)
+		return errorhandler.CreateEndpointNotEnabled(constants.MsgErrNotConfigured)
 	}
 
 	if realmAdminConf.ShowGlnEditing != nil && *realmAdminConf.ShowGlnEditing && user.BusinessID != nil {
 		if glnErr := c.glnVerifier.ValidateGLN(*user.FirstName, *user.LastName, *user.BusinessID); glnErr != nil {
-			return "", glnErr
+			return glnErr
 		}
 	} else {
 		user.BusinessID = nil
@@ -158,7 +160,7 @@ func (c *component) RegisterUser(ctx context.Context, targetRealmName string, cu
 
 	kcUser, err := c.getUserByEmailIfDuplicateNotAllowed(ctx, accessToken, targetRealmName, *user.Email)
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	// If user already exists...
@@ -166,30 +168,33 @@ func (c *component) RegisterUser(ctx context.Context, targetRealmName string, cu
 		alreadyOnboarded, err := c.onboardingModule.OnboardingAlreadyCompleted(*kcUser)
 		if err != nil {
 			c.logger.Warn(ctx, "msg", "Invalid OnboardingCompleted attribute for user", "userID", kcUser.ID, "err", err.Error())
-			return "", err
+			return err
 		}
 
 		// Error if user is already onboarded
 		if alreadyOnboarded {
-			return "", errorhandler.CreateBadRequestError(constants.MsgErrAlreadyOnboardedUser)
+			user.Username = kcUser.Username
+			return c.sendAlreadyExistsEmail(ctx, accessToken, targetRealmName, customerRealmName, user, *kcUser.CreatedTimestamp,
+				"register-already-onboarded.ftl")
 		}
 
 		if attrb := kcUser.GetAttributeString(constants.AttrbSource); attrb != nil && *attrb != "register" {
-			return "", errorhandler.CreateBadRequestError(constants.MsgErrCantRegister)
+			user.Username = kcUser.Username
+			return c.sendAlreadyExistsEmail(ctx, accessToken, targetRealmName, customerRealmName, user, *kcUser.CreatedTimestamp,
+				"register-thirdparty-created.ftl", "src", *attrb)
 		}
 
 		// Else delete this not fully onboarded user to be able to perform a fully new onboarding
 		err = c.deleteUser(ctx, accessToken, targetRealmName, *kcUser.ID)
 		if err != nil {
-			return "", err
+			return err
 		}
-
 	}
 
 	// Create new user
 	userID, username, err := c.createUser(ctx, accessToken, targetRealmName, user, *realmConf.SelfRegisterGroupNames)
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	// Send email
@@ -203,13 +208,40 @@ func (c *component) RegisterUser(ctx context.Context, targetRealmName string, cu
 	err = c.onboardingModule.SendOnboardingEmail(ctx, accessToken, targetRealmName, userID, username,
 		*realmConf.OnboardingClientID, onboardingRedirectURI, customerRealmName, false, &lifespan)
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	// store the API call into the DB
 	c.reportEvent(ctx, "REGISTER_USER", database.CtEventRealmName, targetRealmName, database.CtEventUserID, userID, database.CtEventUsername, username)
 
-	return username, nil
+	return nil
+}
+
+func (c *component) sendAlreadyExistsEmail(ctx context.Context, accessToken string, reqRealmName string, realmName string,
+	user apiregister.UserRepresentation, creationTimestamp int64, templateName string, paramKV ...string) error {
+	var cantRegisterSubjectKey = "cantRegisterSubject"
+	var params = make(map[string]string)
+
+	for i := 0; i+1 < len(paramKV); i += 2 {
+		params[paramKV[i]] = paramKV[i+1]
+	}
+
+	// Add creation date
+	var creation = time.Unix(creationTimestamp, 0)
+	params["creationDate"] = creation.Format("02.01.2006")
+	params["creationHour"] = creation.Format("15:04:05")
+
+	c.logger.Info(ctx, "msg", "User is trying to register again", "user", *user.Username)
+	return c.keycloakClient.SendEmail(accessToken, reqRealmName, realmName, kc.EmailRepresentation{
+		Recipient: user.Email,
+		Theming: &kc.EmailThemingRepresentation{
+			SubjectKey:         &cantRegisterSubjectKey,
+			SubjectParameters:  &[]string{},
+			Template:           &templateName,
+			TemplateParameters: &params,
+			Locale:             user.Locale,
+		},
+	})
 }
 
 func (c *component) createUser(ctx context.Context, accessToken string, realmName string, user apiregister.UserRepresentation, groupNames []string) (string, string, error) {

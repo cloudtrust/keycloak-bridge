@@ -29,12 +29,8 @@ paths:
             schema:
               $ref: '#/components/schemas/User'
       responses:
-        200:
-          description: Successful operation. Returns the generated username
-          content:
-            application/json:
-              schema:
-                type: string
+        204:
+          description: Successful operation
         400:
           description: Invalid information provided
         403:
@@ -59,12 +55,8 @@ paths:
             schema:
               $ref: '#/components/schemas/User'
       responses:
-        200:
-          description: Successful operation. Returns the generated username
-          content:
-            application/json:
-              schema:
-                type: string
+        204:
+          description: Successful operation
         400:
           description: Invalid information provided
         403:
