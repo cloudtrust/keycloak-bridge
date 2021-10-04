@@ -611,6 +611,8 @@ func ConvertRealmAdminConfigurationFromDBStruct(conf configuration.RealmAdminCon
 	var checks = conf.AvailableChecks
 	if checks == nil {
 		checks = make(map[string]bool)
+		checks[configuration.CheckKeyIDNow] = false
+		checks[configuration.CheckKeyPhysical] = false
 	}
 	return RealmAdminConfiguration{
 		Mode:                     defaultString(conf.Mode, "corporate"),
