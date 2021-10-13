@@ -227,7 +227,7 @@ func (c *component) sendAlreadyExistsEmail(ctx context.Context, accessToken stri
 	}
 
 	// Add creation date
-	var creation = time.Unix(creationTimestamp, 0)
+	var creation = time.Unix(creationTimestamp/1000, 0)
 	params["creationDate"] = creation.Format("02.01.2006")
 	params["creationHour"] = creation.Format("15:04:05")
 

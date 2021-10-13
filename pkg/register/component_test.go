@@ -460,3 +460,30 @@ func TestGetConfiguration(t *testing.T) {
 		assert.Nil(t, err)
 	})
 }
+
+func TestSendAlreadyExistsEmail(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mocks = createMocks(mockCtrl)
+	var component = mocks.createComponent()
+
+	var ctx = context.TODO()
+	var accessToken = "123456789-123456-4567897654"
+	var reqRealmName = "requester"
+	var realmName = "social"
+	var user = createValidUser()
+	var creationTimestamp int64 = 1631013255392
+	var templateName = "template.ftl"
+	var username = "12345678"
+	user.Username = &username
+
+	mocks.keycloakClient.EXPECT().SendEmail(accessToken, reqRealmName, realmName, gomock.Any()).DoAndReturn(func(_, _, _ interface{}, mailInfo kc.EmailRepresentation) error {
+		assert.Equal(t, templateName, *mailInfo.Theming.Template)
+		assert.Equal(t, "07.09.2021", (*mailInfo.Theming.TemplateParameters)["creationDate"])
+		assert.Equal(t, "13:14:15", (*mailInfo.Theming.TemplateParameters)["creationHour"])
+		return nil
+	})
+	var err = component.sendAlreadyExistsEmail(ctx, accessToken, reqRealmName, realmName, user, creationTimestamp, templateName)
+	assert.Nil(t, err)
+}
