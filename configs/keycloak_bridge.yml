@@ -21,7 +21,15 @@ access-logs: true
 
 # CORS
 cors-allowed-origins:
-  - "http://localhost"
+  - "http://backoffice.local:8080"
+  - "http://selfservice.local:8080"
+  - "http://register.local:8080"
+  - "http://indirect-sp-login.local:8080"
+  - "http://localhost:4200" # backoffice
+  - "http://localhost:4400" # self-service
+  - "http://localhost:4600" # register
+  - "http://localhost:4700" # signer
+  - "http://localhost:4800" # support
 cors-allowed-methods:
   - "GET"
   - "POST"
@@ -49,10 +57,10 @@ mobile-audience-required: "mobile"
 validation-basic-auth-token: "idnowsuperpasswordverylongandstrong"
 
 # DB encryption key
-db-aesgcm-key: oYP5DhsaW8dLtBt89i9cvXqz+zQTJBHWdFejLWLN/28=
+db-aesgcm-key: '[{"kid":"KBA_1","value":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB="}]'
 db-aesgcm-tag-size: 16 
 
-db-archive-aesgcm-key: qz+BLWLNzQTJoYP5DhsaW8dLtBt89i9cvXHWdFej/28=
+db-archive-aesgcm-key: '[{"kid":"KBB_1","value":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="}]'
 db-archive-aesgcm-tag-size: 16
 
 ## trustID groups allowed to be set
@@ -62,19 +70,17 @@ trustid-groups:
   - "end_user"
 
 # Keycloak configs
-keycloak-api-uri: http://localhost:8080
+keycloak-api-uri: http://keycloak.internal.local:8080
 keycloak-oidc-uri-map:
-  default: http://localhost:8080
-  trustid: http://idp.trustid.ch:8080
-  cloudtrust: http://idp.cloudtrust.io:8080
+  default: http://keycloak.local:8080
 keycloak-timeout: 5s
 
 # DB Audit RW
 # db-audit-rw-enabled was previously named events-db
 db-audit-rw-enabled: false
-db-audit-rw-host-port: 127.0.0.1:3306
-db-audit-rw-username: bridge
-db-audit-rw-password: bridge-password
+db-audit-rw-host-port: host.docker.internal:3306
+db-audit-rw-username: audit_writer
+db-audit-rw-password: password-to-be-defined
 db-audit-rw-database: audit
 db-audit-rw-protocol: tcp
 db-audit-rw-parameters: time_zone='%2B00:00'
@@ -87,9 +93,9 @@ db-audit-rw-connection-check: false
 
 # DB Audit RO
 db-audit-ro-enabled: true
-db-audit-ro-host-port: 127.0.0.1:3306
-db-audit-ro-username: bridge
-db-audit-ro-password: bridge-password
+db-audit-ro-host-port: host.docker.internal:3306
+db-audit-ro-username: audit_reader
+db-audit-ro-password: password2-to-be-defined
 db-audit-ro-database: audit
 db-audit-ro-protocol: tcp
 db-audit-ro-parameters: time_zone='%2B00:00'
@@ -102,7 +108,7 @@ db-audit-ro-connection-check: false
 
 # DB Configuration RW
 db-config-rw-enabled: true
-db-config-rw-host-port: 127.0.0.1:3306
+db-config-rw-host-port: host.docker.internal:3306
 db-config-rw-username: bridge
 db-config-rw-password: bridge-password
 db-config-rw-database: cloudtrust
@@ -117,7 +123,7 @@ db-config-rw-connection-check: true
 
 # DB Configuration RO
 db-config-ro-enabled: true
-db-config-ro-host-port: 127.0.0.1:3306
+db-config-ro-host-port: host.docker.internal:3306
 db-config-ro-username: bridge
 db-config-ro-password: bridge-password
 db-config-ro-database: cloudtrust
@@ -132,7 +138,7 @@ db-config-ro-connection-check: true
 
 # DB Users RW
 db-users-rw-enabled: true
-db-users-rw-host-port: 127.0.0.1:3306
+db-users-rw-host-port: host.docker.internal:3306
 db-users-rw-username: bridge
 db-users-rw-password: bridge-password
 db-users-rw-database: users
@@ -147,10 +153,10 @@ db-users-rw-connection-check: false
 
 # DB archive RW
 db-archive-rw-enabled: true
-db-archive-rw-host-port: 172.17.0.2:3306
-db-archive-rw-username: bridge
-db-archive-rw-password: bridge-password
-db-archive-rw-database: users_history
+db-archive-rw-host-port: host.docker.internal:3306
+db-archive-rw-username: user_writer
+db-archive-rw-password: password-to-be-defined
+db-archive-rw-database: archive
 db-archive-rw-protocol: tcp
 db-archive-rw-parameters: time_zone='%2B00:00'
 db-archive-rw-max-open-conns: 10
@@ -165,13 +171,12 @@ rate-validation: 1000
 rate-communications: 1000
 rate-account: 1000
 rate-management: 1000
-rate-management-status: 3
+rate-management-status: 2
 rate-statistics: 1000
 rate-events: 1000
 rate-register: 1000
 rate-kyc: 1000
 rate-mobile: 1000
-rate-monitoring: 1000
 
 # Influx DB configs
 influx: false
@@ -213,11 +218,8 @@ recaptcha-secret: 6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe # Public test account
 # Technical user
 technical-realm: master
 technical-username: technical
-technical-password: technicalsuperpasswordverylongandstrong
+technical-password: P@ssw0rd
 technical-client-id: admin-cli
-
-# Maximum lifespan allowed when sending email
-max-lifespan: 168h
 
 # GLN
 gln-refdata-enabled: true

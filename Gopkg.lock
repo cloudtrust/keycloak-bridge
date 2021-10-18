@@ -18,7 +18,7 @@
   version = "2021.04.29"
 
 [[projects]]
-  digest = "1:b7766375648889d2c9e2cfd8294684b7e23e28fab766e7a218db758c04cdc337"
+  digest = "1:58c09d5fde29e6c70cfd96909b6190ada115a3ecd35fb6b238864a06f1d28070"
   name = "github.com/cloudtrust/common-service"
   packages = [
     ".",
@@ -39,16 +39,16 @@
     "validation",
   ]
   pruneopts = "UT"
-  revision = "483d36e3aa2ecc4815b68b6daab9d3ddf73d48dd"
-  version = "2.4.3"
+  revision = "85ac017acf51e11933e8e4cb945260ab01f397cc"
+  version = "v2.5.0"
 
 [[projects]]
-  digest = "1:e92f9e5be186a715611558b5f2dfc3cf588d601f6472d70b2765ea2317ef301b"
+  digest = "1:a30e7f08466a15b8439a7321a5480a9c2b10d4efe11aac043e606b544c9cc08f"
   name = "github.com/cloudtrust/httpclient"
   packages = ["."]
   pruneopts = "UT"
-  revision = "dd8822f95a08ad15f088ea54b3c2e3187ba2538d"
-  version = "v1.0.3"
+  revision = "985a5237b40e8f619a16b421008a57539c05751e"
+  version = "v1.0.4"
 
 [[projects]]
   digest = "1:d8338b7445c543f4d193f176152c9f8a03cd83e6ef0e3fa8546e715f09b1dbd2"
@@ -196,8 +196,8 @@
     "pkg/escape",
   ]
   pruneopts = "UT"
-  revision = "daa4bc46727286ed3317d7076c9fb35cbb6a24ec"
-  version = "v1.9.4"
+  revision = "10c242c19b46d0ed91478439d8716eddb2eca1e0"
+  version = "v1.9.5"
 
 [[projects]]
   digest = "1:634dc6e58c6c8c3d8d0204ecd14d9f88efa2cea3276ee96082c1483a991cdef8"
@@ -228,12 +228,12 @@
   version = "v1.4.2"
 
 [[projects]]
-  digest = "1:4702c0dde5b8de05fc2e2514365ff897ccac9e8342c9948bc752df1337ab65f3"
+  digest = "1:e9d664a49134148a411435a2f2a4ff19a97f7562d33ddb2b3d7efd0108766e9e"
   name = "github.com/nyaruka/phonenumbers"
   packages = ["."]
   pruneopts = "UT"
-  revision = "071a364abb398c530a9f192ea1348216bbde6647"
-  version = "v1.0.71"
+  revision = "079bbfe0dffc23890b89db8f76d8c391ee64f967"
+  version = "v1.0.72"
 
 [[projects]]
   digest = "1:86fbd18c1942728ab9cebc391bfe31266a27e2d2a0cf05c3bce8fc605e5f44c2"
@@ -422,7 +422,7 @@
     "publicsuffix",
   ]
   pruneopts = "UT"
-  revision = "978cfadd31cf6299758dbb5165d451ce91989f1a"
+  revision = "caeb26a5c8c0e54ed2051235be4c86faa48b176f"
 
 [[projects]]
   branch = "master"
@@ -433,18 +433,18 @@
     "internal",
   ]
   pruneopts = "UT"
-  revision = "2bc19b11175fd0ae72c59c53fa45eff3f93d6a46"
+  revision = "6b3c2da341f1ae337c2ca717bfb1cfef01aeed9b"
 
 [[projects]]
   branch = "master"
-  digest = "1:11ae3bd52aa5b93fa0b848dfd1bdda5563335c114aa084c012e11fc8a1018afa"
+  digest = "1:d9a16e4f793074d6225256927f130b6571d61dc80f1df8097fd1e89a0e26fae9"
   name = "golang.org/x/sys"
   packages = [
     "internal/unsafeheader",
     "unix",
   ]
   pruneopts = "UT"
-  revision = "b8560ed6a9b77af8184c4903361a19cc76708613"
+  revision = "d3039528d8ac77ce0bb04ffba446619b12674a8b"
 
 [[projects]]
   digest = "1:c9f99de7a59710d6160060a62e92e3c2899174af0b60cc8f4188eb98a5a0d1e6"
