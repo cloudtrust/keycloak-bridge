@@ -879,7 +879,7 @@ func (requiredAction RequiredAction) Validate() error {
 func (fedID FederatedIdentityRepresentation) Validate() error {
 	return validation.NewParameterValidator().
 		ValidateParameterRegExp(constants.UserID, fedID.UserID, constants.RegExpID, true).
-		ValidateParameterRegExp(constants.Username, fedID.Username, constants.RegExpUsername, true).
+		ValidateParameterRegExp(constants.Username, fedID.Username, constants.RegExpFederatedUsername, true).
 		Status()
 }
 
