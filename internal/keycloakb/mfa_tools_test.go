@@ -32,11 +32,11 @@ func TestCheckRemovableMFA(t *testing.T) {
 		}, logger)
 		assert.NotNil(t, err)
 	})
-	t.Run("Last MFA is not removable", func(t *testing.T) {
+	t.Run("Last MFA is removable", func(t *testing.T) {
 		var err = CheckRemovableMFA(ctx, myMFACredentialID, func() ([]kc.CredentialRepresentation, error) {
 			return []kc.CredentialRepresentation{credMyMFA, credPassword}, nil
 		}, logger)
-		assert.NotNil(t, err)
+		assert.Nil(t, err)
 	})
 	t.Run("Is removable", func(t *testing.T) {
 		var err = CheckRemovableMFA(ctx, myMFACredentialID, func() ([]kc.CredentialRepresentation, error) {
