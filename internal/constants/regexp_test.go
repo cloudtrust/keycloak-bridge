@@ -19,6 +19,7 @@ func TestRegex(t *testing.T) {
 	assert.True(t, matches(RegExpBirthLocation, "Lausanne"))
 	assert.True(t, matches(RegExpBirthLocation, "Lausanne VD"))
 	assert.True(t, matches(RegExpBirthLocation, "Lausanne/VD"))
+	assert.True(t, matches(RegExpBirthLocation, "ABRANTES * SANTAREM"))
 	assert.True(t, matches(RegExpBirthLocation, "Vully-les-lacs (c'est ou)"))
 	assert.True(t, matches(RegExpBirthLocation, "MUN.BURUREŞTI SEC. 1"))
 	assert.False(t, matches(RegExpBirthLocation, "Lausanne#VD"))
