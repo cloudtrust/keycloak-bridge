@@ -212,7 +212,7 @@ func (c *component) updateUserDatabase(ctx context.Context, realmName, userID st
 func (c *component) updateUserKeycloak(validationCtx *validationContext, user api.UserRepresentation, revokeAccreds bool) error {
 	var shouldRevokeAccreditations = revokeAccreds
 
-	var kcUser, err = c.getKeycloakUserCtx(validationCtx)
+	var kcUser, err = c.loadKeycloakUserCtx(validationCtx)
 	if err != nil {
 		return err
 	}
@@ -298,7 +298,7 @@ func (c *component) CreateCheck(ctx context.Context, realmName string, userID st
 		}
 		validationCtx.kcUser = &kcUser
 	} else {
-		_, err = c.getKeycloakUserCtx(validationCtx)
+		_, err = c.loadKeycloakUserCtx(validationCtx)
 		if err != nil {
 			return err
 		}
@@ -342,7 +342,7 @@ func (c *component) CreatePendingCheck(ctx context.Context, realmName string, us
 		realmName: realmName,
 		userID:    userID,
 	}
-	var kcUser, err = c.getKeycloakUserCtx(validationCtx)
+	var kcUser, err = c.loadKeycloakUserCtx(validationCtx)
 	if err != nil {
 		// error already logged
 		return err
@@ -370,26 +370,12 @@ func (c *component) DeletePendingCheck(ctx context.Context, realmName string, us
 		realmName: realmName,
 		userID:    userID,
 	}
-	var kcUser, err = c.getKeycloakUserCtx(validationCtx)
+	var _, err = c.loadKeycloakUserCtx(validationCtx)
 	if err != nil {
 		// error already logged
 		return err
 	}
-	var strPendingChecks = kcUser.GetAttributeString(constants.AttrbPendingChecks)
-	strPendingChecks, err = keycloakb.RemovePendingCheck(strPendingChecks, pendingCheck)
-	if err != nil {
-		if err == keycloakb.ErrCantUnmarshalPendingCheck {
-			c.logger.Warn(ctx, "msg", "Ignoring unmarshal error for pendingChecks attribute")
-		} else {
-			c.logger.Warn(ctx, "msg", "Failed to process pending checks")
-			return err
-		}
-	}
-	if strPendingChecks == nil {
-		validationCtx.kcUser.RemoveAttribute(constants.AttrbPendingChecks)
-	} else {
-		validationCtx.kcUser.SetAttributeString(constants.AttrbPendingChecks, *strPendingChecks)
-	}
+	c.clearPendingChecks(validationCtx, pendingCheck)
 	if err = c.updateKeycloakUser(validationCtx); err != nil {
 		c.logger.Warn(ctx, "msg", "Can't update user", "err", err.Error())
 	}
@@ -425,7 +411,7 @@ func (c *component) getAccessToken(v *validationContext) (string, error) {
 	return *v.accessToken, nil
 }
 
-func (c *component) getKeycloakUserCtx(v *validationContext) (*kc.UserRepresentation, error) {
+func (c *component) loadKeycloakUserCtx(v *validationContext) (*kc.UserRepresentation, error) {
 	if v.kcUser == nil {
 		var accessToken, err = c.getAccessToken(v)
 		if err != nil {
@@ -484,7 +470,7 @@ func (c *component) getUserWithAccreditations(v *validationContext) (*kc.UserRep
 }
 
 func (c *component) archiveUser(v *validationContext, checks []dto.DBCheck) {
-	var kcUser, err = c.getKeycloakUserCtx(v)
+	var kcUser, err = c.loadKeycloakUserCtx(v)
 	if err != nil {
 		return
 	}
