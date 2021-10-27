@@ -497,7 +497,7 @@ func (c *component) DeleteCredential(ctx context.Context, credentialID string) e
 		return c.keycloakAccountClient.GetCredentials(accessToken, currentRealm)
 	}
 
-	if err := keycloakb.CheckRemovableMFA(ctx, credentialID, fnGetCredentials, c.logger); err != nil {
+	if err := keycloakb.CheckRemovableMFA(ctx, credentialID, false, fnGetCredentials, c.logger); err != nil {
 		return err
 	}
 
