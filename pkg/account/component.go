@@ -216,7 +216,7 @@ func (c *component) UpdateAccount(ctx context.Context, user api.UpdatableAccount
 	var actions []string
 
 	var namesUpdated = keycloakb.IsUpdated(user.FirstName, oldUserKc.FirstName, user.LastName, oldUserKc.LastName)
-	var revokeAccreditations = namesUpdated || c.isGLNUpdated(oldUserKc, user.BusinessID) || keycloakb.IsUpdated(user.Gender, oldUserKc.GetAttributeString(constants.AttrbGender),
+	var revokeAccreditations = namesUpdated || c.isGLNUpdated(user.BusinessID, oldUserKc) || keycloakb.IsUpdated(user.Gender, oldUserKc.GetAttributeString(constants.AttrbGender),
 		user.BirthDate, oldUserKc.GetAttributeString(constants.AttrbBirthDate),
 		user.BirthLocation, oldUser.BirthLocation,
 		user.Nationality, oldUser.Nationality,
@@ -339,7 +339,7 @@ func (c *component) checkGLN(ctx context.Context, businessID csjson.OptionalStri
 	return nil
 }
 
-func (c *component) isGLNUpdated(oldUserKc kc.UserRepresentation, businessID csjson.OptionalString) bool {
+func (c *component) isGLNUpdated(businessID csjson.OptionalString, oldUserKc kc.UserRepresentation) bool {
 	if businessID.Defined {
 		if businessID.Value == nil {
 			return oldUserKc.GetAttributeString(constants.AttrbBusinessID) != nil
