@@ -1247,7 +1247,7 @@ func (c *component) DeleteCredentialsForUser(ctx context.Context, realmName stri
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 
 	// Check that credential is removable
-	var err = keycloakb.CheckRemovableMFA(ctx, credentialID, func() ([]kc.CredentialRepresentation, error) {
+	var err = keycloakb.CheckRemovableMFA(ctx, credentialID, true, func() ([]kc.CredentialRepresentation, error) {
 		return c.keycloakClient.GetCredentials(accessToken, realmName, userID)
 	}, c.logger)
 	if err != nil {

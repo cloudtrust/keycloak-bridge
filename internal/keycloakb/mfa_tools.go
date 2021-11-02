@@ -9,8 +9,8 @@ import (
 
 var notMFATypes = map[string]bool{"password": true, "password-history": true}
 
-// CheckRemovableMFA checks if a given credential is removable (owned by user and not the last MFA)
-func CheckRemovableMFA(ctx context.Context, credentialID string, getCredentials func() ([]kc.CredentialRepresentation, error), logger Logger) error {
+// CheckRemovableMFA checks if a given credential is removable (owned by user and not the password credential)
+func CheckRemovableMFA(ctx context.Context, credentialID string, lastMFARemovable bool, getCredentials func() ([]kc.CredentialRepresentation, error), logger Logger) error {
 	credentialsKc, err := getCredentials()
 	if err != nil {
 		logger.Warn(ctx, "msg", "Can't get credentials", "err", err.Error())
@@ -34,7 +34,7 @@ func CheckRemovableMFA(ctx context.Context, credentialID string, getCredentials 
 		logger.Info(ctx, "msg", "Can't remove unknown credential")
 		return errorhandler.CreateNotFoundError("credential")
 	}
-	if foundRemainingMFA {
+	if lastMFARemovable || foundRemainingMFA {
 		return nil
 	}
 	logger.Info(ctx, "msg", "Not enough MFA registered: can't remove any credential")

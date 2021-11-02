@@ -23,29 +23,35 @@ func TestCheckRemovableMFA(t *testing.T) {
 	var credOtherMFA = kc.CredentialRepresentation{ID: &otherMFACredentialID, Type: ptr("any_mfa")}
 
 	t.Run("Can't get credentials", func(t *testing.T) {
-		var err = CheckRemovableMFA(ctx, myMFACredentialID, func() ([]kc.CredentialRepresentation, error) { return nil, anyError }, logger)
+		var err = CheckRemovableMFA(ctx, myMFACredentialID, false, func() ([]kc.CredentialRepresentation, error) { return nil, anyError }, logger)
 		assert.NotNil(t, err)
 	})
 	t.Run("Provided credential ID refers to a password", func(t *testing.T) {
-		var err = CheckRemovableMFA(ctx, passwordCredentialID, func() ([]kc.CredentialRepresentation, error) {
+		var err = CheckRemovableMFA(ctx, passwordCredentialID, false, func() ([]kc.CredentialRepresentation, error) {
 			return []kc.CredentialRepresentation{credMyMFA, credPassword, credOtherMFA}, nil
 		}, logger)
 		assert.NotNil(t, err)
 	})
 	t.Run("Last MFA is not removable", func(t *testing.T) {
-		var err = CheckRemovableMFA(ctx, myMFACredentialID, func() ([]kc.CredentialRepresentation, error) {
+		var err = CheckRemovableMFA(ctx, myMFACredentialID, false, func() ([]kc.CredentialRepresentation, error) {
 			return []kc.CredentialRepresentation{credMyMFA, credPassword}, nil
 		}, logger)
 		assert.NotNil(t, err)
 	})
+	t.Run("Last MFA is removable", func(t *testing.T) {
+		var err = CheckRemovableMFA(ctx, myMFACredentialID, true, func() ([]kc.CredentialRepresentation, error) {
+			return []kc.CredentialRepresentation{credMyMFA, credPassword}, nil
+		}, logger)
+		assert.Nil(t, err)
+	})
 	t.Run("Is removable", func(t *testing.T) {
-		var err = CheckRemovableMFA(ctx, myMFACredentialID, func() ([]kc.CredentialRepresentation, error) {
+		var err = CheckRemovableMFA(ctx, myMFACredentialID, false, func() ([]kc.CredentialRepresentation, error) {
 			return []kc.CredentialRepresentation{credMyMFA, credPassword, credOtherMFA}, nil
 		}, logger)
 		assert.Nil(t, err)
 	})
 	t.Run("Unknown credential ID", func(t *testing.T) {
-		var err = CheckRemovableMFA(ctx, "unknown-credential-id", func() ([]kc.CredentialRepresentation, error) {
+		var err = CheckRemovableMFA(ctx, "unknown-credential-id", false, func() ([]kc.CredentialRepresentation, error) {
 			return []kc.CredentialRepresentation{credMyMFA, credPassword, credOtherMFA}, nil
 		}, logger)
 		assert.NotNil(t, err)
