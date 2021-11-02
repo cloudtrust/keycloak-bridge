@@ -14,7 +14,8 @@ const (
 	RegExpClientID = `^[a-zA-Z0-9-_.]{1,255}$`
 
 	// User
-	RegExpUsername            = `^[a-zA-Z0-9-_.]{1,128}$`
+	RegExpUsername            = `^[a-z0-9-_.]{1,128}$`
+	RegExpFederatedUsername   = `^[a-zA-Z0-9-_.]{1,128}$`
 	RegExpEmail               = `^.+\@.+\..+$`
 	RegExpNameSpecialChars    = `^([\p{Lu}\p{Ll}][\p{Lu}\p{Ll} /\\\.'-]{0,49})$`
 	RegExpNameSpecialChars128 = `^([\p{Lu}\p{Ll}][\p{Lu}\p{Ll} /\\\.'-]{0,127})$`
