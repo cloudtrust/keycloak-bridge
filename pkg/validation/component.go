@@ -298,6 +298,12 @@ func (c *component) CreateCheck(ctx context.Context, realmName string, userID st
 		}
 		validationCtx.kcUser = &kcUser
 	} else {
+		if check.IsIdentificationAborted() {
+			eventType = "VALIDATION_STORE_CHECK_ABORTED"
+		} else if check.IsIdentificationCanceled() {
+			eventType = "VALIDATION_STORE_CHECK_CANCELED"
+		}
+
 		_, err = c.loadKeycloakUserCtx(validationCtx)
 		if err != nil {
 			return err
@@ -311,7 +317,7 @@ func (c *component) CreateCheck(ctx context.Context, realmName string, userID st
 	}
 
 	// Event
-	c.reportEvent(ctx, eventType, database.CtEventRealmName, realmName, database.CtEventUserID, userID, "operator", *check.Operator)
+	c.reportEvent(ctx, eventType, database.CtEventRealmName, realmName, database.CtEventUserID, userID, "operator", *check.Operator, "status", *check.Status)
 
 	c.archiveUser(validationCtx, []dto.DBCheck{dbCheck})
 

@@ -73,6 +73,9 @@ const (
 	regExpNature      = regExpAlphaNum255
 	regExpProofType   = regExpAlphaNum255
 	regExpStatus      = regExpAlphaNum255
+
+	canceledStatus = "CANCELED"
+	abortedStatus  = "ABORTED"
 )
 
 var (
@@ -230,6 +233,16 @@ func (c *CheckRepresentation) Validate() error {
 // IsIdentificationSuccessful tells whether a check is success or not
 func (c *CheckRepresentation) IsIdentificationSuccessful() bool {
 	return c.Status != nil && successStatus[*c.Status]
+}
+
+// IsIdentificationCanceled checks if the identification was canceled
+func (c *CheckRepresentation) IsIdentificationCanceled() bool {
+	return c.Status != nil && *c.Status == canceledStatus
+}
+
+// IsIdentificationAborted checks if the identification was aborted
+func (c *CheckRepresentation) IsIdentificationAborted() bool {
+	return c.Status != nil && *c.Status == abortedStatus
 }
 
 // Validate checks the validity of the given pending check
