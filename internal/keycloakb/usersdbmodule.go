@@ -129,7 +129,6 @@ func (c *usersDBModule) CreateCheck(ctx context.Context, realm string, userID st
 	var proofData *[]byte
 	var err error
 
-	var keyId string
 	if check.ProofData != nil {
 		// encrypt the proof data & protect integrity of userID associated to the proof data
 		encryptedData, err := c.cipher.Encrypt(*check.ProofData, []byte(userID))
@@ -137,12 +136,11 @@ func (c *usersDBModule) CreateCheck(ctx context.Context, realm string, userID st
 			c.logger.Warn(ctx, "msg", "Can't encrypt the proof data", "err", err.Error(), "realmID", realm, "userID", userID)
 			return err
 		}
-		keyIdR := c.cipher.GetCurrentKeyID()
 		proofData = &encryptedData
-		keyId = keyIdR
 	}
 
 	// insert check in DB
+	keyId := c.cipher.GetCurrentKeyID()
 	_, err = c.db.Exec(createCheckStmt, realm, userID, check.Operator,
 		check.DateTime, check.Status, check.Type, check.Nature,
 		check.ProofType, proofData, check.Comment, keyId)
