@@ -395,6 +395,42 @@ func TestIsIdentificationSuccessful(t *testing.T) {
 	})
 }
 
+func TestIsIdentificationCanceled(t *testing.T) {
+	var check CheckRepresentation
+	t.Run("Status is nil", func(t *testing.T) {
+		check.Status = nil
+		assert.False(t, check.IsIdentificationCanceled())
+	})
+	t.Run("Status is not a known canceled value", func(t *testing.T) {
+		var unknown = "unknown"
+		check.Status = &unknown
+		assert.False(t, check.IsIdentificationCanceled())
+	})
+	t.Run("Status is a canceled value", func(t *testing.T) {
+		var canceled = "CANCELED"
+		check.Status = &canceled
+		assert.True(t, check.IsIdentificationCanceled())
+	})
+}
+
+func TestIsIdentificationAborted(t *testing.T) {
+	var check CheckRepresentation
+	t.Run("Status is nil", func(t *testing.T) {
+		check.Status = nil
+		assert.False(t, check.IsIdentificationAborted())
+	})
+	t.Run("Status is not a known aborted value", func(t *testing.T) {
+		var unknown = "unknown"
+		check.Status = &unknown
+		assert.False(t, check.IsIdentificationAborted())
+	})
+	t.Run("Status is a canceled value", func(t *testing.T) {
+		var aborted = "ABORTED"
+		check.Status = &aborted
+		assert.True(t, check.IsIdentificationAborted())
+	})
+}
+
 func TestPendingChecksValidate(t *testing.T) {
 	var (
 		invalid = ""

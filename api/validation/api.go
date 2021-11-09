@@ -232,6 +232,16 @@ func (c *CheckRepresentation) IsIdentificationSuccessful() bool {
 	return c.Status != nil && successStatus[*c.Status]
 }
 
+// IsIdentificationCanceled checks if the identification was canceled
+func (c *CheckRepresentation) IsIdentificationCanceled() bool {
+	return c.Status != nil && *c.Status == "CANCELED"
+}
+
+// IsIdentificationAborted checks if the identification was aborted
+func (c *CheckRepresentation) IsIdentificationAborted() bool {
+	return c.Status != nil && *c.Status == "ABORTED"
+}
+
 // Validate checks the validity of the given pending check
 func (cp *PendingChecksRepresentation) Validate() error {
 	return validation.NewParameterValidator().
