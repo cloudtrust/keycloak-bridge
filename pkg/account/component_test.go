@@ -427,6 +427,112 @@ func TestUpdateAccount(t *testing.T) {
 	})
 }
 
+func TestUpdateAccountRevokeAccreditation(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mocks = createComponentMocks(mockCtrl)
+	var accountComponent = mocks.createComponent()
+
+	accessToken := "access token"
+	realmName := "master"
+	userID := "123-456-789"
+	username := "username"
+	ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+	ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
+	ctx = context.WithValue(ctx, cs.CtContextUserID, userID)
+	ctx = context.WithValue(ctx, cs.CtContextUsername, username)
+
+	var id = "1234-7454-4516"
+	var email = "toto@elca.ch"
+	var enabled = true
+	var emailVerified = true
+	var firstName = "Titi"
+	var lastName = "Tutu"
+	var phoneNumber = "+41789456"
+	var phoneNumberVerified = true
+	var label = "Label"
+	var gender = "M"
+	var birthDate = "01/01/1988"
+	var birthLocation = "Antananarivo"
+	var nationality = "FR"
+	var locale = "de"
+	var idDocType = "PASSPORT"
+	var idDocNumber = "ABC123-DEF456"
+	var idDocExpiration = "01.01.2050"
+	var idDocCountry = "CH"
+	var bFalse = false
+	var createdTimestamp = time.Now().UTC().Unix()
+
+	var attributes = make(kc.Attributes)
+	attributes.SetString(constants.AttrbPhoneNumber, phoneNumber)
+	attributes.SetString(constants.AttrbLabel, label)
+	attributes.SetString(constants.AttrbGender, gender)
+	attributes.SetString(constants.AttrbBirthDate, birthDate)
+	attributes.SetBool(constants.AttrbPhoneNumberVerified, phoneNumberVerified)
+	attributes.SetString(constants.AttrbLocale, locale)
+
+	var kcUserRep = kc.UserRepresentation{
+		ID:               &id,
+		Username:         &username,
+		Email:            &email,
+		Enabled:          &enabled,
+		EmailVerified:    &emailVerified,
+		FirstName:        &firstName,
+		LastName:         &lastName,
+		Attributes:       &attributes,
+		CreatedTimestamp: &createdTimestamp,
+	}
+	var accred = []string{`{"type":"ONE", "expiryDate":"01.01.2025"}`}
+	var revokedAccred = `{"type":"ONE","expiryDate":"01.01.2025","revoked":true}`
+	kcUserRep.SetAttribute(constants.AttrbAccreditations, accred)
+
+	var dbUser = dto.DBUser{
+		UserID:               &userID,
+		BirthLocation:        &birthLocation,
+		Nationality:          &nationality,
+		IDDocumentType:       &idDocType,
+		IDDocumentNumber:     &idDocNumber,
+		IDDocumentExpiration: &idDocExpiration,
+		IDDocumentCountry:    &idDocCountry,
+	}
+
+	t.Run("Update account with succces - revoke accreditation", func(t *testing.T) {
+		var otherLastName = "Toto"
+		var userRepUpdate = api.UpdatableAccountRepresentation{
+			Username:    &username,
+			Email:       &email,
+			FirstName:   &firstName,
+			LastName:    &otherLastName,
+			Gender:      &gender,
+			PhoneNumber: &phoneNumber,
+			BirthDate:   &birthDate,
+			Locale:      &locale,
+		}
+
+		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kcUserRep, nil).Times(1)
+		mocks.usersDetailsDBModule.EXPECT().GetUserDetails(ctx, realmName, userID).Return(dbUser, nil).Times(1)
+		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, realmName).Return(configuration.RealmAdminConfiguration{ShowGlnEditing: &bFalse}, nil).Times(1)
+		mocks.keycloakAccountClient.EXPECT().UpdateAccount(accessToken, realmName, gomock.Any()).DoAndReturn(
+			func(accessToken, realmName string, kcUserRep kc.UserRepresentation) error {
+				assert.Equal(t, username, *kcUserRep.Username)
+				assert.Equal(t, email, *kcUserRep.Email)
+				assert.Equal(t, firstName, *kcUserRep.FirstName)
+				assert.Equal(t, otherLastName, *kcUserRep.LastName)
+				assert.Equal(t, phoneNumber, *kcUserRep.GetAttributeString(constants.AttrbPhoneNumber))
+				assert.Equal(t, revokedAccred, kcUserRep.GetAttribute(constants.AttrbAccreditations)[0])
+				return nil
+			}).Times(1)
+		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "UPDATE_ACCOUNT", "self-service", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).Times(1)
+		mocks.usersDetailsDBModule.EXPECT().StoreOrUpdateUserDetails(ctx, realmName, gomock.Any()).Return(nil)
+		mocks.keycloakAccountClient.EXPECT().SendEmail(accessToken, realmName, gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "PROFILE_CHANGED_EMAIL_SENT", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+
+		err := accountComponent.UpdateAccount(ctx, userRepUpdate)
+		assert.Nil(t, err)
+	})
+}
+
 func TestCheckGLN(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
