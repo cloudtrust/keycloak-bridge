@@ -215,17 +215,8 @@ func (c *component) UpdateAccount(ctx context.Context, user api.UpdatableAccount
 	var emailVerified, phoneNumberVerified *bool
 	var actions []string
 
-	// Check if GLN validity should be re-evaluated
-	var glnUpdated = keycloakb.IsUpdated(user.FirstName, oldUserKc.FirstName, user.LastName, oldUserKc.LastName)
-	if !glnUpdated && user.BusinessID.Defined {
-		if user.BusinessID.Value == nil {
-			glnUpdated = oldUserKc.GetAttributeString(constants.AttrbBusinessID) != nil
-		} else {
-			var oldGLN = oldUserKc.GetAttributeString(constants.AttrbBusinessID)
-			glnUpdated = oldGLN == nil || *user.BusinessID.Value != *oldGLN
-		}
-	}
-	var revokeAccreditations = glnUpdated || keycloakb.IsUpdated(user.Gender, oldUserKc.GetAttributeString(constants.AttrbGender),
+	var namesUpdated = keycloakb.IsUpdated(user.FirstName, oldUserKc.FirstName, user.LastName, oldUserKc.LastName)
+	var revokeAccreditations = namesUpdated || c.isGLNUpdated(user.BusinessID, oldUserKc) || keycloakb.IsUpdated(user.Gender, oldUserKc.GetAttributeString(constants.AttrbGender),
 		user.BirthDate, oldUserKc.GetAttributeString(constants.AttrbBirthDate),
 		user.BirthLocation, oldUser.BirthLocation,
 		user.Nationality, oldUser.Nationality,
@@ -346,6 +337,18 @@ func (c *component) checkGLN(ctx context.Context, businessID csjson.OptionalStri
 		}
 	}
 	return nil
+}
+
+func (c *component) isGLNUpdated(businessID csjson.OptionalString, oldUserKc kc.UserRepresentation) bool {
+	if businessID.Defined {
+		if businessID.Value == nil {
+			return oldUserKc.GetAttributeString(constants.AttrbBusinessID) != nil
+		} else {
+			var oldGLN = oldUserKc.GetAttributeString(constants.AttrbBusinessID)
+			return oldGLN == nil || *businessID.Value != *oldGLN
+		}
+	}
+	return false
 }
 
 func (c *component) sendEmail(ctx context.Context, template, subject string, recipient *string, attributes map[string]string) error {
