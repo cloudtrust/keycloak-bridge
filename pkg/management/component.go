@@ -109,7 +109,7 @@ type Component interface {
 	LockUser(ctx context.Context, realmName, userID string) error
 	UnlockUser(ctx context.Context, realmName, userID string) error
 	GetUsers(ctx context.Context, realmName string, groupIDs []string, paramKV ...string) (api.UsersPageRepresentation, error)
-	CreateUser(ctx context.Context, realmName string, user api.UserRepresentation, generateUsername bool, generateNameID bool) (string, error)
+	CreateUser(ctx context.Context, realmName string, user api.UserRepresentation, generateUsername bool, generateNameID bool, termsOfUse bool) (string, error)
 	GetUserChecks(ctx context.Context, realmName, userID string) ([]api.UserCheck, error)
 	GetUserAccountStatus(ctx context.Context, realmName, userID string) (map[string]bool, error)
 	GetUserAccountStatusByEmail(ctx context.Context, realmName, email string) (api.UserStatus, error)
@@ -316,12 +316,21 @@ func (c *component) GetRequiredActions(ctx context.Context, realmName string) ([
 	return requiredActionsRep, nil
 }
 
-func (c *component) CreateUser(ctx context.Context, realmName string, user api.UserRepresentation, generateUsername bool, generateNameID bool) (string, error) {
+func (c *component) CreateUser(ctx context.Context, realmName string, user api.UserRepresentation, generateUsername bool, generateNameID bool, termsOfUse bool) (string, error) {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 	var ctxRealm = ctx.Value(cs.CtContextRealm).(string)
 
 	var userRep = api.ConvertToKCUser(user)
 	userRep.SetAttributeString(constants.AttrbSource, "api")
+
+	if termsOfUse {
+		var reqActions []string
+		if userRep.RequiredActions != nil {
+			reqActions = *userRep.RequiredActions
+		}
+		reqActions = append(reqActions, "ct-terms-of-use")
+		userRep.RequiredActions = &reqActions
+	}
 
 	if generateNameID {
 		var oneUUID, errUUID = uuid.NewUUID()
@@ -1655,6 +1664,8 @@ func (c *component) GetActions(ctx context.Context) ([]api.ActionRepresentation,
 	var sendMailScope = string(security.ScopeRealm)
 	var sendSMSName = "COM_SendSMS"
 	var sendSMSScope = string(security.ScopeRealm)
+	var deleteDeniedToUUsersName = "TSK_DeleteDeniedToUUsers"
+	var deleteDeniedToUUsersScope = string(security.ScopeGlobal)
 	apiActions = append(apiActions, api.ActionRepresentation{
 		Name:  &sendMailName,
 		Scope: &sendMailScope,
@@ -1662,6 +1673,10 @@ func (c *component) GetActions(ctx context.Context) ([]api.ActionRepresentation,
 	apiActions = append(apiActions, api.ActionRepresentation{
 		Name:  &sendSMSName,
 		Scope: &sendSMSScope,
+	})
+	apiActions = append(apiActions, api.ActionRepresentation{
+		Name:  &deleteDeniedToUUsersName,
+		Scope: &deleteDeniedToUUsersScope,
 	})
 
 	return apiActions, nil

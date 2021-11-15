@@ -162,7 +162,7 @@ func TestCreateUserEndpoint(t *testing.T) {
 		userJSON, _ := json.Marshal(api.UserRepresentation{Groups: &groups})
 		req[reqBody] = string(userJSON)
 
-		mockManagementComponent.EXPECT().CreateUser(ctx, realm, api.UserRepresentation{Groups: &groups}, false, false).Return(location, nil).Times(1)
+		mockManagementComponent.EXPECT().CreateUser(ctx, realm, api.UserRepresentation{Groups: &groups}, false, false, false).Return(location, nil).Times(1)
 		res, err := e(ctx, req)
 		assert.Nil(t, err)
 
@@ -185,7 +185,7 @@ func TestCreateUserEndpoint(t *testing.T) {
 		userJSON, _ := json.Marshal(api.UserRepresentation{Groups: &groups})
 		req[reqBody] = string(userJSON)
 
-		mockManagementComponent.EXPECT().CreateUser(ctx, realm, gomock.Any(), false, false).Return("", fmt.Errorf("Error")).Times(1)
+		mockManagementComponent.EXPECT().CreateUser(ctx, realm, gomock.Any(), false, false, false).Return("", fmt.Errorf("Error")).Times(1)
 		_, err := e(ctx, req)
 		assert.NotNil(t, err)
 	})

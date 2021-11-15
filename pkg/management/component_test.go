@@ -82,9 +82,9 @@ func TestGetActions(t *testing.T) {
 	res, err := managementComponent.GetActions(ctx)
 
 	assert.Nil(t, err)
-	// We add 2 here, as we added the two actions from the communications stack into the GetActions methods of the component.
+	// We add 3 here, as we added the three actions from the communications & tasks stacks into the GetActions methods of the component.
 	// We did this to be able to configure those actions through the Backoffice.
-	assert.Equal(t, len(actions)+2, len(res))
+	assert.Equal(t, len(actions)+3, len(res))
 }
 
 func TestGetRealms(t *testing.T) {
@@ -428,17 +428,37 @@ func TestCreateUser(t *testing.T) {
 		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, socialRealmName).Return(configuration.RealmAdminConfiguration{}, anyError)
 		mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any())
 
-		_, err := managementComponent.CreateUser(ctx, socialRealmName, api.UserRepresentation{BusinessID: &businessID}, false, false)
+		_, err := managementComponent.CreateUser(ctx, socialRealmName, api.UserRepresentation{BusinessID: &businessID}, false, false, false)
 
 		assert.Equal(t, anyError, err)
 	})
 	mocks.configurationDBModule.EXPECT().GetAdminConfiguration(gomock.Any(), gomock.Any()).Return(configuration.RealmAdminConfiguration{}, nil).AnyTimes()
 
-	t.Run("Create user with username generation", func(t *testing.T) {
-		mocks.onboardingModule.EXPECT().CreateUser(ctx, accessToken, realmName, socialRealmName, gomock.Any()).Return("", anyError)
+	t.Run("Create user with username generation, don't need terms of use", func(t *testing.T) {
+		mocks.onboardingModule.EXPECT().CreateUser(ctx, accessToken, realmName, socialRealmName, gomock.Any()).
+			DoAndReturn(func(_, _, _, _ interface{}, user *kc.UserRepresentation) (string, error) {
+				assert.NotNil(t, user)
+				assert.Nil(t, user.RequiredActions)
+				return "", anyError
+			})
 		mocks.logger.EXPECT().Warn(ctx, "err", gomock.Any())
 
-		_, err := managementComponent.CreateUser(ctx, socialRealmName, api.UserRepresentation{}, false, false)
+		_, err := managementComponent.CreateUser(ctx, socialRealmName, api.UserRepresentation{}, false, false, false)
+
+		assert.Equal(t, anyError, err)
+	})
+	t.Run("Create user with username generation, need terms of use", func(t *testing.T) {
+		mocks.onboardingModule.EXPECT().CreateUser(ctx, accessToken, realmName, socialRealmName, gomock.Any()).
+			DoAndReturn(func(_, _, _, _ interface{}, user *kc.UserRepresentation) (string, error) {
+				assert.NotNil(t, user)
+				assert.NotNil(t, user.RequiredActions)
+				assert.Len(t, *user.RequiredActions, 1)
+				assert.Equal(t, (*user.RequiredActions)[0], "ct-terms-of-use")
+				return "", anyError
+			})
+		mocks.logger.EXPECT().Warn(ctx, "err", gomock.Any())
+
+		_, err := managementComponent.CreateUser(ctx, socialRealmName, api.UserRepresentation{}, false, false, true)
 
 		assert.Equal(t, anyError, err)
 	})
@@ -458,7 +478,7 @@ func TestCreateUser(t *testing.T) {
 			Username: &username,
 		}
 
-		location, err := managementComponent.CreateUser(ctx, targetRealmName, userRep, false, false)
+		location, err := managementComponent.CreateUser(ctx, targetRealmName, userRep, false, false, false)
 
 		assert.Nil(t, err)
 		assert.Equal(t, locationURL, location)
@@ -485,7 +505,7 @@ func TestCreateUser(t *testing.T) {
 			Username: &username,
 		}
 
-		location, err := managementComponent.CreateUser(ctx, realmName, userRep, false, false)
+		location, err := managementComponent.CreateUser(ctx, realmName, userRep, false, false, false)
 
 		assert.Nil(t, err)
 		assert.Equal(t, locationURL, location)
@@ -576,7 +596,7 @@ func TestCreateUser(t *testing.T) {
 			IDDocumentCountry:    &idDocumentCountry,
 		}
 		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "API_ACCOUNT_CREATION", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
-		location, err := managementComponent.CreateUser(ctx, targetRealmName, userRep, false, true)
+		location, err := managementComponent.CreateUser(ctx, targetRealmName, userRep, false, true, false)
 
 		assert.Nil(t, err)
 		assert.Equal(t, locationURL, location)
@@ -595,7 +615,7 @@ func TestCreateUser(t *testing.T) {
 		var userRep = api.UserRepresentation{}
 		mocks.logger.EXPECT().Warn(ctx, "err", "Invalid input")
 
-		location, err := managementComponent.CreateUser(ctx, targetRealmName, userRep, false, false)
+		location, err := managementComponent.CreateUser(ctx, targetRealmName, userRep, false, false, false)
 
 		assert.NotNil(t, err)
 		assert.Equal(t, "", location)
@@ -620,7 +640,7 @@ func TestCreateUser(t *testing.T) {
 		}
 		mocks.logger.EXPECT().Warn(ctx, "msg", "Can't store user details in database", "err", "SQL error")
 
-		location, err := managementComponent.CreateUser(ctx, targetRealmName, userRep, false, false)
+		location, err := managementComponent.CreateUser(ctx, targetRealmName, userRep, false, false, false)
 
 		assert.NotNil(t, err)
 		assert.Equal(t, "", location)

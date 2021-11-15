@@ -39,6 +39,7 @@ import (
 	mobile "github.com/cloudtrust/keycloak-bridge/pkg/mobile"
 	"github.com/cloudtrust/keycloak-bridge/pkg/register"
 	"github.com/cloudtrust/keycloak-bridge/pkg/statistics"
+	"github.com/cloudtrust/keycloak-bridge/pkg/tasks"
 	"github.com/cloudtrust/keycloak-bridge/pkg/validation"
 	keycloak "github.com/cloudtrust/keycloak-client"
 	keycloakapi "github.com/cloudtrust/keycloak-client/api"
@@ -82,6 +83,7 @@ const (
 	RateKeyMonitoring       = iota
 	RateKeyRegister         = iota
 	RateKeyStatistics       = iota
+	RateKeyTasks            = iota
 	RateKeyValidation       = iota
 
 	cfgConfigFile               = "config-file"
@@ -115,6 +117,7 @@ const (
 	cfgRateKeyStatistics        = "rate-statistics"
 	cfgRateKeyEvents            = "rate-events"
 	cfgRateKeyRegister          = "rate-register"
+	cfgRateKeyTasks             = "rate-tasks"
 	cfgRateKeyKYC               = "rate-kyc"
 	cfgAllowedOrigins           = "cors-allowed-origins"
 	cfgAllowedMethods           = "cors-allowed-methods"
@@ -238,6 +241,7 @@ func main() {
 			RateKeyStatistics:       c.GetInt(cfgRateKeyStatistics),
 			RateKeyEvents:           c.GetInt(cfgRateKeyEvents),
 			RateKeyRegister:         c.GetInt(cfgRateKeyRegister),
+			RateKeyTasks:            c.GetInt(cfgRateKeyTasks),
 			RateKeyKYC:              c.GetInt(cfgRateKeyKYC),
 		}
 
@@ -518,7 +522,7 @@ func main() {
 	healthChecker.AddHTTPEndpoint("Keycloak", keycloakConfig.AddrAPI, httpTimeout, 200, healthCheckCacheDuration)
 
 	// Actions allowed in Authorization Manager
-	var authActions = security.AppendActionNames(nil, events.GetActions(), kyc.GetActions(), management.GetActions(), statistics.GetActions())
+	var authActions = security.AppendActionNames(nil, events.GetActions(), kyc.GetActions(), management.GetActions(), statistics.GetActions(), tasks.GetActions())
 	authActions = mobile.AppendIDNowActions(authActions)
 
 	// Authorization Manager
@@ -622,12 +626,32 @@ func main() {
 		var communicationsLogger = log.With(logger, "svc", "communications")
 
 		communicationsComponent := communications.NewComponent(keycloakClient, communicationsLogger)
+		// MakeAuthorizationCommunicationsComponentMW not called !!??
 
 		var rateLimitCommunications = rateLimit[RateKeyCommunications]
 		communicationsEndpoints = communications.Endpoints{
-			GetActions: prepareEndpoint(communications.MakeGetActionsEndpoint(communicationsComponent), "get_actions", influxMetrics, communicationsLogger, tracer, rateLimitCommunications),
-			SendEmail:  prepareEndpoint(communications.MakeSendEmailEndpoint(communicationsComponent), "send_email", influxMetrics, communicationsLogger, tracer, rateLimitCommunications),
-			SendSMS:    prepareEndpoint(communications.MakeSendSMSEndpoint(communicationsComponent), "send_sms", influxMetrics, communicationsLogger, tracer, rateLimitCommunications),
+			SendEmail: prepareEndpoint(communications.MakeSendEmailEndpoint(communicationsComponent), "send_email", influxMetrics, communicationsLogger, tracer, rateLimitCommunications),
+			SendSMS:   prepareEndpoint(communications.MakeSendSMSEndpoint(communicationsComponent), "send_sms", influxMetrics, communicationsLogger, tracer, rateLimitCommunications),
+		}
+	}
+
+	// Tasks service.
+	var tasksEndpoints tasks.Endpoints
+	{
+		var tasksLogger = log.With(logger, "svc", "tasks")
+
+		// module for storing and retrieving details of the users
+		var usersDBModule = keycloakb.NewUsersDetailsDBModule(usersRwDBConn, aesEncryption, tasksLogger)
+
+		// module to store validation events API calls
+		eventsDBModule := database.NewEventsDBModule(eventsDBConn)
+
+		tasksComponent := tasks.NewComponent(keycloakClient, usersDBModule, eventsDBModule, tasksLogger)
+		tasksComponent = tasks.MakeAuthorizationManagementComponentMW(log.With(tasksLogger, "mw", "endpoint"), authorizationManager)(tasksComponent)
+
+		var rateLimitTasks = rateLimit[RateKeyTasks]
+		tasksEndpoints = tasks.Endpoints{
+			DeleteDeniedToUUsers: prepareEndpoint(tasks.MakeDeleteDeniedTermsOfUseUsersEndpoint(tasksComponent), "del_denied_tou_users", influxMetrics, tasksLogger, tracer, rateLimitTasks),
 		}
 	}
 
@@ -969,15 +993,18 @@ func main() {
 		validationSubroute.Path("/realms/{realm}/users/{userID}/checks/pending/{pendingCheck}").Methods("DELETE").Handler(deletePendingCheckHandler)
 
 		// Communications
-		var getCommunicationsActionsHandler = configureCommunicationsHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(communicationsEndpoints.GetActions)
 		var sendMailHandler = configureCommunicationsHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(communicationsEndpoints.SendEmail)
 		var sendSMSHandler = configureCommunicationsHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(communicationsEndpoints.SendSMS)
 
 		var communicationsSubroute = route.PathPrefix("/communications").Subrouter()
 
-		communicationsSubroute.Path("/actions").Methods("GET").Handler(getCommunicationsActionsHandler)
 		communicationsSubroute.Path("/realms/{realm}/send-mail").Methods("POST").Handler(sendMailHandler)
 		communicationsSubroute.Path("/realms/{realm}/send-sms").Methods("POST").Handler(sendSMSHandler)
+
+		// Tasks
+		var deniedToUUsersHandler = configureTasksHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(tasksEndpoints.DeleteDeniedToUUsers)
+
+		route.PathPrefix("/tasks/denied-terms-of-use-users").Methods("DELETE").Handler(deniedToUUsersHandler)
 
 		// Debug.
 		if pprofRouteEnabled {
@@ -1430,6 +1457,7 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 	v.SetDefault(cfgRateKeyStatistics, 1000)
 	v.SetDefault(cfgRateKeyEvents, 1000)
 	v.SetDefault(cfgRateKeyRegister, 1000)
+	v.SetDefault(cfgRateKeyTasks, 10)
 	v.SetDefault(cfgRateKeyKYC, 1000)
 
 	// Influx DB client default.
@@ -1656,6 +1684,16 @@ func configureCommunicationsHandler(ComponentName string, ComponentID string, id
 	return func(endpoint endpoint.Endpoint) http.Handler {
 		var handler http.Handler
 		handler = communications.MakeCommunicationsHandler(endpoint, logger)
+		handler = middleware.MakeHTTPCorrelationIDMW(idGenerator, tracer, logger, ComponentName, ComponentID)(handler)
+		handler = middleware.MakeHTTPOIDCTokenValidationMW(keycloakClient, audienceRequired, logger)(handler)
+		return handler
+	}
+}
+
+func configureTasksHandler(ComponentName string, ComponentID string, idGenerator idgenerator.IDGenerator, keycloakClient *keycloakapi.Client, audienceRequired string, tracer tracing.OpentracingClient, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {
+	return func(endpoint endpoint.Endpoint) http.Handler {
+		var handler http.Handler
+		handler = tasks.MakeTasksHandler(endpoint, logger)
 		handler = middleware.MakeHTTPCorrelationIDMW(idGenerator, tracer, logger, ComponentName, ComponentID)(handler)
 		handler = middleware.MakeHTTPOIDCTokenValidationMW(keycloakClient, audienceRequired, logger)(handler)
 		return handler
