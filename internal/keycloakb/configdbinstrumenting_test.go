@@ -145,16 +145,16 @@ func TestComponentInstrumentingMW(t *testing.T) {
 	})
 
 	t.Run("Get Authorization with correlation ID", func(t *testing.T) {
-		mockComponent.EXPECT().GetAuthorization(ctx, realmID, groupNames[0], realmID, groupNames[1], action).Return(nil)
+		mockComponent.EXPECT().AuthorizationExists(ctx, realmID, groupNames[0], realmID, groupNames[1], action).Return(true, nil)
 		mockHistogram.EXPECT().With("correlation_id", corrID).Return(mockHistogram).Times(1)
 		mockHistogram.EXPECT().Observe(gomock.Any()).Return().Times(1)
-		m.GetAuthorization(ctx, realmID, groupNames[0], realmID, groupNames[1], action)
+		m.AuthorizationExists(ctx, realmID, groupNames[0], realmID, groupNames[1], action)
 	})
 
 	t.Run("Get Authorization without correlation ID", func(t *testing.T) {
-		mockComponent.EXPECT().GetAuthorization(context.Background(), realmID, groupNames[0], realmID, groupNames[1], action).Return(nil).Times(1)
+		mockComponent.EXPECT().AuthorizationExists(context.Background(), realmID, groupNames[0], realmID, groupNames[1], action).Return(true, nil).Times(1)
 		var f = func() {
-			m.GetAuthorization(context.Background(), realmID, groupNames[0], realmID, groupNames[1], action)
+			m.AuthorizationExists(context.Background(), realmID, groupNames[0], realmID, groupNames[1], action)
 		}
 		assert.Panics(t, f)
 	})

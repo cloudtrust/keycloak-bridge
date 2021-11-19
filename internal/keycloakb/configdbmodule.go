@@ -213,18 +213,19 @@ func (c *configurationDBModule) GetAuthorizations(ctx context.Context, realmID s
 	return res, nil
 }
 
-func (c *configurationDBModule) GetAuthorization(ctx context.Context, realmID string, groupName string, targetRealm string, targetGroupName string, actionReq string) error {
+func (c *configurationDBModule) AuthorizationExists(ctx context.Context, realmID string, groupName string, targetRealm string, targetGroupName string, actionReq string) (bool, error) {
 	// Get Authorization from DB
 	row := c.db.QueryRow(selectSingleAuthzStmt, realmID, groupName, actionReq, targetRealm, targetGroupName)
 
 	var exists int
 	err := row.Scan(&exists)
-	if err != nil {
-		c.logger.Warn(ctx, "msg", "Can't get authorization. Scan failed", "err", err.Error(), "realmID", realmID, "groupName", groupName, "targetRealm", targetRealm, "targetGroupName", targetGroupName, "action", actionReq)
-		return err
+	if err == sql.ErrNoRows {
+		return false, nil
+	} else if err != nil {
+		return false, err
 	}
 
-	return nil
+	return true, nil
 }
 
 func (c *configurationDBModule) GetAuthorizationsForAction(context context.Context, realmID string, groupName string, actionReq string) ([]configuration.Authorization, error) {

@@ -1551,11 +1551,14 @@ func (c *component) GetAuthorization(ctx context.Context, realmName string, grou
 		}
 		targetGroupName = *targetGroup.Name
 	}
-
-	err = c.configDBModule.GetAuthorization(ctx, realmName, *group.Name, targetRealmName, targetGroupName, actionReq)
+	res, err := c.configDBModule.AuthorizationExists(ctx, realmName, *group.Name, targetRealmName, targetGroupName, actionReq)
 	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return api.AuthorizationMessage{Authorized: false}, err
+	}
+	if !res {
 		// if no authorization is found, look for higher authorizations covering the authorization requested
-		if err == sql.ErrNoRows {
+		if err == nil {
 			authz := configuration.Authorization{
 				RealmID:         &realmName,
 				GroupName:       group.Name,
@@ -1573,8 +1576,6 @@ func (c *component) GetAuthorization(ctx context.Context, realmName string, grou
 			}
 			return api.AuthorizationMessage{Authorized: false}, nil
 		}
-		c.logger.Warn(ctx, "err", err.Error())
-		return api.AuthorizationMessage{Authorized: false}, err
 	}
 
 	return api.AuthorizationMessage{Authorized: true}, nil

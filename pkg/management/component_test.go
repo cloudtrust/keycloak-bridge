@@ -4190,7 +4190,7 @@ func TestGetAuthorization(t *testing.T) {
 	t.Run("Get assigned authorization with succces - authorized", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil)
 		mocks.keycloakClient.EXPECT().GetGroup(accessToken, targetRealmName, targetGroupId).Return(targetGroup, nil)
-		mocks.configurationDBModule.EXPECT().GetAuthorization(ctx, realmName, groupName, targetRealmName, targetGroupName, action).Return(nil)
+		mocks.configurationDBModule.EXPECT().AuthorizationExists(ctx, realmName, groupName, targetRealmName, targetGroupName, action).Return(true, nil)
 
 		authzMsg, err := managementComponent.GetAuthorization(ctx, realmName, groupID, targetRealmName, targetGroupId, action)
 
@@ -4201,7 +4201,7 @@ func TestGetAuthorization(t *testing.T) {
 	t.Run("Get assigned global authorization with succces - authorized", func(t *testing.T) {
 		var globalAction = "GlobalAction"
 		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil)
-		mocks.configurationDBModule.EXPECT().GetAuthorization(ctx, realmName, groupName, star, star, globalAction).Return(nil)
+		mocks.configurationDBModule.EXPECT().AuthorizationExists(ctx, realmName, groupName, star, star, globalAction).Return(true, nil)
 
 		authzMsg, err := managementComponent.GetAuthorization(ctx, realmName, groupID, "", "", globalAction)
 
@@ -4212,7 +4212,7 @@ func TestGetAuthorization(t *testing.T) {
 	t.Run("Get assigned realm authorization with succces - authorized", func(t *testing.T) {
 		var realmAction = "GlobalAction"
 		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil)
-		mocks.configurationDBModule.EXPECT().GetAuthorization(ctx, realmName, groupName, targetRealmName, star, realmAction).Return(nil)
+		mocks.configurationDBModule.EXPECT().AuthorizationExists(ctx, realmName, groupName, targetRealmName, star, realmAction).Return(true, nil)
 
 		authzMsg, err := managementComponent.GetAuthorization(ctx, realmName, groupID, targetRealmName, "", realmAction)
 
@@ -4223,7 +4223,7 @@ func TestGetAuthorization(t *testing.T) {
 	t.Run("Get authorization with succces - unauthorized", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil)
 		mocks.keycloakClient.EXPECT().GetGroup(accessToken, targetRealmName, targetGroupId).Return(targetGroup, nil)
-		mocks.configurationDBModule.EXPECT().GetAuthorization(ctx, realmName, groupName, targetRealmName, targetGroupName, action).Return(sql.ErrNoRows)
+		mocks.configurationDBModule.EXPECT().AuthorizationExists(ctx, realmName, groupName, targetRealmName, targetGroupName, action).Return(false, nil)
 		mocks.configurationDBModule.EXPECT().GetAuthorizationsForAction(ctx, realmName, groupName, action).Return([]configuration.Authorization{}, sql.ErrNoRows)
 
 		authzMsg, err := managementComponent.GetAuthorization(ctx, realmName, groupID, targetRealmName, targetGroupId, action)
@@ -4235,7 +4235,7 @@ func TestGetAuthorization(t *testing.T) {
 	t.Run("Get authorization by parent with succces", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil)
 		mocks.keycloakClient.EXPECT().GetGroup(accessToken, targetRealmName, targetGroupId).Return(targetGroup, nil)
-		mocks.configurationDBModule.EXPECT().GetAuthorization(ctx, realmName, groupName, targetRealmName, targetGroupName, action).Return(sql.ErrNoRows)
+		mocks.configurationDBModule.EXPECT().AuthorizationExists(ctx, realmName, groupName, targetRealmName, targetGroupName, action).Return(false, nil)
 		mocks.configurationDBModule.EXPECT().GetAuthorizationsForAction(ctx, realmName, groupName, action).Return([]configuration.Authorization{parent}, nil)
 
 		authzMsg, err := managementComponent.GetAuthorization(ctx, realmName, groupID, targetRealmName, targetGroupId, action)
@@ -4246,7 +4246,7 @@ func TestGetAuthorization(t *testing.T) {
 
 	t.Run("Get authorization by child - unauthorized", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil)
-		mocks.configurationDBModule.EXPECT().GetAuthorization(ctx, realmName, groupName, star, star, action).Return(sql.ErrNoRows)
+		mocks.configurationDBModule.EXPECT().AuthorizationExists(ctx, realmName, groupName, star, star, action).Return(false, nil)
 		mocks.configurationDBModule.EXPECT().GetAuthorizationsForAction(ctx, realmName, groupName, action).Return([]configuration.Authorization{child}, nil)
 
 		authzMsg, err := managementComponent.GetAuthorization(ctx, realmName, groupID, "", "", action)
@@ -4275,7 +4275,7 @@ func TestGetAuthorization(t *testing.T) {
 	t.Run("Get authorization - DB step 1 error", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil)
 		mocks.keycloakClient.EXPECT().GetGroup(accessToken, targetRealmName, targetGroupId).Return(targetGroup, nil)
-		mocks.configurationDBModule.EXPECT().GetAuthorization(ctx, realmName, groupName, targetRealmName, targetGroupName, action).Return(expectedErr)
+		mocks.configurationDBModule.EXPECT().AuthorizationExists(ctx, realmName, groupName, targetRealmName, targetGroupName, action).Return(false, expectedErr)
 		mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any())
 
 		authzMsg, err := managementComponent.GetAuthorization(ctx, realmName, groupID, targetRealmName, targetGroupId, action)
@@ -4287,7 +4287,7 @@ func TestGetAuthorization(t *testing.T) {
 	t.Run("Get authorization - DB step 2 error", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil)
 		mocks.keycloakClient.EXPECT().GetGroup(accessToken, targetRealmName, targetGroupId).Return(targetGroup, nil)
-		mocks.configurationDBModule.EXPECT().GetAuthorization(ctx, realmName, groupName, targetRealmName, targetGroupName, action).Return(sql.ErrNoRows)
+		mocks.configurationDBModule.EXPECT().AuthorizationExists(ctx, realmName, groupName, targetRealmName, targetGroupName, action).Return(false, nil)
 		mocks.configurationDBModule.EXPECT().GetAuthorizationsForAction(ctx, realmName, groupName, action).Return([]configuration.Authorization{}, expectedErr)
 		mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any())
 
