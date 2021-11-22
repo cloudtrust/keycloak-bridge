@@ -51,7 +51,7 @@
   version = "v1.0.4"
 
 [[projects]]
-  digest = "1:d8338b7445c543f4d193f176152c9f8a03cd83e6ef0e3fa8546e715f09b1dbd2"
+  digest = "1:30d47cfd808c082859c0a80c27873e3d9dac4fdd2da9a767c8ce5e615de94e36"
   name = "github.com/cloudtrust/keycloak-client"
   packages = [
     ".",
@@ -59,8 +59,8 @@
     "toolbox",
   ]
   pruneopts = "UT"
-  revision = "a107ed4d56e20ac607449edf24c2c7c3530a59f0"
-  version = "v2.4.3"
+  revision = "9305681863ac504fb2006b6efa5d3e2d27c56813"
+  version = "v2.4.4"
 
 [[projects]]
   digest = "1:910c5b111ca13127693df80a59be2c952ad97313626116c0c9895e7b588f2a29"
@@ -200,7 +200,7 @@
   version = "v1.9.5"
 
 [[projects]]
-  digest = "1:634dc6e58c6c8c3d8d0204ecd14d9f88efa2cea3276ee96082c1483a991cdef8"
+  digest = "1:ae2c8e5ed4d1214012590dfe88b8ff3ec6b541848b98cfe85bcd55e561e5963c"
   name = "github.com/lib/pq"
   packages = [
     ".",
@@ -208,8 +208,8 @@
     "scram",
   ]
   pruneopts = "UT"
-  revision = "756b4d73db86a374aecc8bb20f134f8c4dc81a49"
-  version = "v1.10.3"
+  revision = "8446d16b8935fdf2b5c0fe333538ac395e3e1e4b"
+  version = "v1.10.4"
 
 [[projects]]
   digest = "1:03d538738f78db8960b276c8cc1b90f53809290831a8daea2ceeaeccccbc585a"
@@ -228,12 +228,12 @@
   version = "v1.4.2"
 
 [[projects]]
-  digest = "1:e9d664a49134148a411435a2f2a4ff19a97f7562d33ddb2b3d7efd0108766e9e"
+  digest = "1:108248129edeca60da47f3ef6c638bf075eb66f616ed66e7d8373dea1722c070"
   name = "github.com/nyaruka/phonenumbers"
   packages = ["."]
   pruneopts = "UT"
-  revision = "079bbfe0dffc23890b89db8f76d8c391ee64f967"
-  version = "v1.0.72"
+  revision = "b4d8961def2e5317064619bef19ecfb679dc80ee"
+  version = "v1.0.73"
 
 [[projects]]
   digest = "1:86fbd18c1942728ab9cebc391bfe31266a27e2d2a0cf05c3bce8fc605e5f44c2"
@@ -409,11 +409,11 @@
     "pbkdf2",
   ]
   pruneopts = "UT"
-  revision = "089bfa5675191fd96a44247682f76ebca03d7916"
+  revision = "ae814b36b87190c757eede9bc2d32ed77df88551"
 
 [[projects]]
   branch = "master"
-  digest = "1:fb56af3d31a10edad3067b488ec26f86bfed2459ae67b2608a613416e1d9f6e5"
+  digest = "1:b1efde61f9a5456660ea04203d2c6a3af653ee8cd557508cb00162c7694d430c"
   name = "golang.org/x/net"
   packages = [
     "context",
@@ -422,7 +422,7 @@
     "publicsuffix",
   ]
   pruneopts = "UT"
-  revision = "d418f374d30933c6c7db22cf349625c295a5afaa"
+  revision = "6a13c67c3ce400be1b91076053a994c2d1ebf01b"
 
 [[projects]]
   branch = "master"
@@ -433,26 +433,27 @@
     "internal",
   ]
   pruneopts = "UT"
-  revision = "6b3c2da341f1ae337c2ca717bfb1cfef01aeed9b"
+  revision = "d3ed0bb246c8d3c75b63937d9a5eecff9c74d7fe"
 
 [[projects]]
   branch = "master"
-  digest = "1:08341fc50450299ee6532519e1e6a0e3c12e869a5612c8e1dfb22a489c7df6e8"
+  digest = "1:076ff19c9166681b96d03f1779230798eab069063e01a562f05b88f98fc2d5b1"
   name = "golang.org/x/sys"
   packages = [
     "internal/unsafeheader",
     "unix",
   ]
   pruneopts = "UT"
-  revision = "d6a326fbbf70813f3ee5d3282c44664092a39fb1"
+  revision = "dee7805ff2e13b1c4206de89b1c06e95ab66ae0d"
 
 [[projects]]
-  digest = "1:c9f99de7a59710d6160060a62e92e3c2899174af0b60cc8f4188eb98a5a0d1e6"
+  digest = "1:00992690b5324cec5dff66b46afd8ddf4f0738a6d9cdf372cdb8356137321b1d"
   name = "golang.org/x/text"
   packages = [
     "collate",
     "collate/build",
     "internal/colltab",
+    "internal/format",
     "internal/gen",
     "internal/language",
     "internal/language/compact",
@@ -460,6 +461,7 @@
     "internal/triegen",
     "internal/ucd",
     "language",
+    "language/display",
     "secure/bidirule",
     "transform",
     "unicode/bidi",
@@ -473,14 +475,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:2d1ac98818624b5d4ca0b6c47fb7a3afd988c7d0ef7cfd13942176a450748b3b"
+  digest = "1:b1a2a223530c5c097c78f8a0a026eae2296d91052fa8acd98e1de38a0ac8c0c2"
   name = "golang.org/x/time"
   packages = ["rate"]
   pruneopts = "UT"
-  revision = "1f47c861a9ac5a6e7645609f91b895398ff31642"
+  revision = "f0f3c7e86c11ca8f8b99d970e28445dda0b41195"
 
 [[projects]]
-  digest = "1:15bbb120d95283019f8891f2762fab3e735075b2cf9b378497277d2fe6c4abca"
+  digest = "1:3887cabe574045f7c25a702ebae1f67d00f8e16c95fcf2cfc7b11fd2a8182325"
   name = "google.golang.org/appengine"
   packages = [
     "internal",
@@ -492,8 +494,8 @@
     "urlfetch",
   ]
   pruneopts = "UT"
-  revision = "5d1c1d03f8703c2e81478d9a30e9afa2d3e4bd8a"
-  version = "v1.6.7"
+  revision = "ab4e2d305cf26ae7721eabf654d8f74e0dc7dfe6"
+  version = "v2.0.1"
 
 [[projects]]
   digest = "1:91dddce5adec4faf06a99a6d12bfce2b91da56d009e88a69a6e328a861f19ac7"
@@ -555,12 +557,12 @@
   version = "v2.0.5"
 
 [[projects]]
-  digest = "1:42fdc4327bab71c897722ab83568b43be68cfdd253c776e8c4b972f6c3bcd520"
+  digest = "1:f3d4205c2f5eab57470d847a07ea03357c1346e1c5b8d77899f00cdbba8d440f"
   name = "gopkg.in/ini.v1"
   packages = ["."]
   pruneopts = "UT"
-  revision = "14e9811b1643cf01ea36277e44dffef4f119fa31"
-  version = "v1.63.2"
+  revision = "c2f10d6ccf07729be3c12110b465a01620b4b530"
+  version = "v1.64.0"
 
 [[projects]]
   digest = "1:059cd8cf6325197d99cf8b4047879fdf41782667a3c97062b8eb952afaa6ee53"

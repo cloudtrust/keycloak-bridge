@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"testing"
 
-	api "github.com/cloudtrust/keycloak-bridge/api/communications"
 	"github.com/cloudtrust/keycloak-bridge/pkg/communications/mock"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -15,22 +14,6 @@ import (
 const (
 	reqScheme = "scheme"
 )
-
-func TestGetActionsEndpoint(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
-	defer mockCtrl.Finish()
-
-	var mockCommunicationsComponent = mock.NewComponent(mockCtrl)
-
-	var e = MakeGetActionsEndpoint(mockCommunicationsComponent)
-
-	var ctx = context.Background()
-
-	mockCommunicationsComponent.EXPECT().GetActions(ctx).Return([]api.ActionRepresentation{}, nil).Times(1)
-	var res, err = e(ctx, nil)
-	assert.Nil(t, err)
-	assert.NotNil(t, res)
-}
 
 func TestSendEmailEndpoint(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)

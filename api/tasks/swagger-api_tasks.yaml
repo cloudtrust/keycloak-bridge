@@ -1,0 +1,22 @@
+openapi: 3.0.1
+info:
+  title: Swagger Cloudtrust Management
+  description: 'Tasks API for Cloudtrust.'
+  version: 1.0.0
+servers:
+- url: http://localhost:8888
+tags:
+- name: Tasks
+  description: Tasks management
+paths:
+  /tasks/denied-terms-of-use-users:
+    delete:
+      tags:
+      - Tasks
+      summary: Remove users who did not accept terms of use in a reasonable delay
+      responses:
+        204:
+          description: successful operation
+security:
+  - openId:
+    - todo

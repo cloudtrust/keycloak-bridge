@@ -165,6 +165,12 @@ paths:
         required: false
         schema:
           type: boolean
+      - name: termsOfUse
+        in: query
+        description: tells if a terms of use are required (default: false)
+        required: false
+        schema:
+          type: boolean
       requestBody:
         content:
           application/json:

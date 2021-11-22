@@ -139,22 +139,6 @@ func createComponent(mocks componentMocks) Component {
 	return NewComponent(mocks.keycloakCommunicationsClient, mocks.logger)
 }
 
-func TestGetActions(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
-	defer mockCtrl.Finish()
-
-	var mocks = createMocks(mockCtrl)
-	var managementComponent = createComponent(mocks)
-
-	var accessToken = "TOKEN=="
-	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
-
-	res, err := managementComponent.GetActions(ctx)
-
-	assert.Nil(t, err)
-	assert.Equal(t, len(actions), len(res))
-}
-
 func TestSendEmail(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()

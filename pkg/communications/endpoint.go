@@ -18,13 +18,6 @@ type Endpoints struct {
 	SendSMS    endpoint.Endpoint
 }
 
-// MakeGetActionsEndpoint creates an endpoint for GetActions
-func MakeGetActionsEndpoint(component Component) cs.Endpoint {
-	return func(ctx context.Context, _ interface{}) (interface{}, error) {
-		return component.GetActions(ctx)
-	}
-}
-
 // MakeSendEmailEndpoint makes the SendEmail Endpoint
 func MakeSendEmailEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {

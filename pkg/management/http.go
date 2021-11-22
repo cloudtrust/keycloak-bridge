@@ -43,6 +43,7 @@ const (
 	prmQryGroupName   = "groupName"
 	prmQryGenUsername = "generateUsername"
 	prmQryGenNameID   = "generateNameID"
+	prmQryTermsOfUse  = "termsOfUse"
 	prmQryRealm       = "customerRealm"
 	prmQryReminder    = "reminder"
 )
@@ -83,6 +84,7 @@ func decodeManagementRequest(ctx context.Context, req *http.Request) (interface{
 		prmQryGroupName:   constants.RegExpName,
 		prmQryGenUsername: constants.RegExpBool,
 		prmQryGenNameID:   constants.RegExpBool,
+		prmQryTermsOfUse:  constants.RegExpBool,
 		prmQryRealm:       constants.RegExpRealmName,
 		prmQryReminder:    constants.RegExpBool,
 	}
