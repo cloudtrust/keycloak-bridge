@@ -23,3 +23,6 @@ configs/DEV/*
 **/mock
 .idea/
 __debug_bin
+
+# Activate vendoring
+!vendor/modules.txt
