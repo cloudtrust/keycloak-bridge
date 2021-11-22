@@ -651,7 +651,7 @@ func main() {
 
 		var rateLimitTasks = rateLimit[RateKeyTasks]
 		tasksEndpoints = tasks.Endpoints{
-			DeleteDeniedToUUsers: prepareEndpoint(tasks.MakeDeleteDeniedTermsOfUseUsersEndpoint(tasksComponent), "del_denied_tou_users", influxMetrics, tasksLogger, tracer, rateLimitTasks),
+			DeleteDeniedToUUsers: prepareEndpoint(tasks.MakeDeleteUsersWithExpiredTermsOfUseAcceptanceEndpoint(tasksComponent), "del_denied_tou_users", influxMetrics, tasksLogger, tracer, rateLimitTasks),
 		}
 	}
 

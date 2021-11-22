@@ -26,8 +26,8 @@ func noContentResponse(err error) (interface{}, error) {
 	return respNoContent, nil
 }
 
-// MakeDeleteDeniedTermsOfUseUsersEndpoint creates an endpoint for DeleteDeniedTermsOfUseUsers
-func MakeDeleteDeniedTermsOfUseUsersEndpoint(component Component) cs.Endpoint {
+// MakeDeleteUsersWithExpiredTermsOfUseAcceptanceEndpoint creates an endpoint for DeleteUsersWithExpiredTermsOfUseAcceptance
+func MakeDeleteUsersWithExpiredTermsOfUseAcceptanceEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, _ interface{}) (interface{}, error) {
 		return noContentResponse(component.CleanUpAccordingToExpiredTermsOfUseAcceptance(ctx))
 	}

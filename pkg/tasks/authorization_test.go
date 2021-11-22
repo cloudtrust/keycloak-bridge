@@ -43,7 +43,7 @@ func TestAuthorizations(t *testing.T) {
 		var authorizations, _ = security.NewAuthorizationManager(mockAuthorizationDBReader, mockSecKeycloakClient, mockLogger)
 		var authorizationMW = MakeAuthorizationManagementComponentMW(mockLogger, authorizations)(mockTasksComponent)
 
-		t.Run("DeleteDeniedTermsOfUseUsers", func(t *testing.T) {
+		t.Run("DeleteUsersWithExpiredTermsOfUseAcceptance", func(t *testing.T) {
 			var err = authorizationMW.CleanUpAccordingToExpiredTermsOfUseAcceptance(ctx)
 			assert.Equal(t, security.ForbiddenError{}, err)
 		})
