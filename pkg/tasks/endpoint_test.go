@@ -12,12 +12,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestMakeDeleteDeniedTermsOfUseUsersEndpoint(t *testing.T) {
+func TestMakeDeleteUsersWithExpiredTermsOfUseAcceptanceEndpoint(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 
 	var mockTasksComponent = mock.NewComponent(mockCtrl)
-	var endpoint = MakeDeleteDeniedTermsOfUseUsersEndpoint(mockTasksComponent)
+	var endpoint = MakeDeleteUsersWithExpiredTermsOfUseAcceptanceEndpoint(mockTasksComponent)
 
 	var ctx = context.TODO()
 	var request interface{}
