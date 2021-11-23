@@ -4,7 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"net/url"
 	"regexp"
+	"strconv"
 	"strings"
 
 	cs "github.com/cloudtrust/common-service"
@@ -129,6 +131,9 @@ type Component interface {
 	ExecuteActionsEmail(ctx context.Context, realmName string, userID string, actions []api.RequiredAction, paramKV ...string) error
 	SendSmsCode(ctx context.Context, realmName string, userID string) (string, error)
 	SendOnboardingEmail(ctx context.Context, realmName string, userID string, customerRealm string, reminder bool, lifespan *int) error
+	/* REMOVE_THIS_3901 : start */
+	SendMigrationEmail(ctx context.Context, realmName string, userID string, customerRealm string, reminder bool, lifespan *int) error
+	/* REMOVE_THIS_3901 : end */
 	SendReminderEmail(ctx context.Context, realmName string, userID string, paramKV ...string) error
 	ResetSmsCounter(ctx context.Context, realmName string, userID string) error
 	CreateRecoveryCode(ctx context.Context, realmName string, userID string) (string, error)
@@ -163,6 +168,7 @@ type Component interface {
 // Component is the management component.
 type component struct {
 	keycloakClient          KeycloakClient
+	kcURIProvider           KeycloakURIProvider /* REMOVE_THIS_3901 */
 	usersDBModule           UsersDetailsDBModule
 	eventDBModule           database.EventsDBModule
 	configDBModule          keycloakb.ConfigurationDBModule
@@ -174,9 +180,10 @@ type component struct {
 }
 
 // NewComponent returns the management component.
-func NewComponent(keycloakClient KeycloakClient, usersDBModule UsersDetailsDBModule, eventDBModule database.EventsDBModule,
+func NewComponent(keycloakClient KeycloakClient, kcURIProvider kc.KeycloakURIProvider, usersDBModule UsersDetailsDBModule, eventDBModule database.EventsDBModule,
 	configDBModule keycloakb.ConfigurationDBModule, onboardingModule OnboardingModule, authorizedTrustIDGroups []string, socialRealmName string,
 	glnVerifier GlnVerifier, logger keycloakb.Logger) Component {
+	/* REMOVE_THIS_3901 : remove second provided parameter */
 
 	var authzedTrustIDGroups = make(map[string]bool)
 	for _, grp := range authorizedTrustIDGroups {
@@ -185,6 +192,7 @@ func NewComponent(keycloakClient KeycloakClient, usersDBModule UsersDetailsDBMod
 
 	return &component{
 		keycloakClient:          keycloakClient,
+		kcURIProvider:           kcURIProvider, /* REMOVE_THIS_3901 */
 		usersDBModule:           usersDBModule,
 		eventDBModule:           eventDBModule,
 		configDBModule:          configDBModule,
@@ -1162,6 +1170,84 @@ func (c *component) SendOnboardingEmail(ctx context.Context, realmName string, u
 
 	return nil
 }
+
+/* REMOVE_THIS_3901 : start */
+// KeycloakURIProvider interface
+type KeycloakURIProvider interface {
+	GetBaseURI(realm string) string
+}
+
+func (c *component) SendMigrationEmail(ctx context.Context, realmName string, userID string, customerRealm string, reminder bool, lifespan *int) error {
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+
+	// Retieve user
+	kcUser, err := c.keycloakClient.GetUser(accessToken, realmName, userID)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Can't retrieve user", "userID", userID, "err", err.Error())
+		return err
+	}
+
+	// Ensure user is not already onboarded
+	alreadyOnboarded, err := c.onboardingModule.OnboardingAlreadyCompleted(kcUser)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Invalid OnboardingCompleted attribute for user", "userID", kcUser.ID, "err", err.Error())
+		return err
+	}
+
+	if alreadyOnboarded {
+		return errorhandler.CreateBadRequestError(constants.MsgErrAlreadyOnboardedUser)
+	}
+
+	// Send email
+	var migrationOnboardingClientID = "migration-abilis"
+	err = c.sendMigrationEmail(ctx, accessToken, realmName, userID,
+		*kcUser.Username, migrationOnboardingClientID, customerRealm, reminder, lifespan)
+	if err != nil {
+		return err
+	}
+
+	// store the API call into the DB
+	c.reportEvent(ctx, "EMAIL_MIGRATION_SENT", database.CtEventRealmName, realmName, database.CtEventUserID, userID)
+
+	return nil
+}
+
+func (c *component) sendMigrationEmail(ctx context.Context, accessToken string, realmName string, userID string, username string,
+	onboardingClientID string, themeRealmName string, reminder bool, lifespan *int) error {
+	var kcURL = fmt.Sprintf("%s/auth/realms/%s/protocol/openid-connect/auth", c.kcURIProvider.GetBaseURI(realmName), realmName)
+	redirectURL, err := url.Parse(kcURL)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Can't parse keycloak URL", "err", err.Error())
+		return err
+	}
+
+	var parameters = url.Values{}
+	parameters.Add("client_id", onboardingClientID)
+	parameters.Add("scope", "openid")
+	parameters.Add("response_type", "code")
+	parameters.Add("redirect_uri", "https://my.trustid.ch/")
+	parameters.Add("login_hint", username)
+
+	redirectURL.RawQuery = parameters.Encode()
+
+	var actions = []string{"VERIFY_EMAIL", "set-onboarding-token", "migration-action"}
+	if reminder {
+		actions = append(actions, "reminder-action")
+	}
+	var additionalParams = []string{"client_id", onboardingClientID, "redirect_uri", redirectURL.String(), "themeRealm", themeRealmName}
+	if lifespan != nil {
+		additionalParams = append(additionalParams, "lifespan", strconv.Itoa(*lifespan))
+	}
+	err = c.keycloakClient.ExecuteActionsEmail(accessToken, realmName, realmName, userID, actions, additionalParams...)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "ExecuteActionsEmail failed", "err", err.Error())
+		return err
+	}
+
+	return nil
+}
+
+/* REMOVE_THIS_3901 : end */
 
 func (c *component) SendReminderEmail(ctx context.Context, realmName string, userID string, paramKV ...string) error {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)

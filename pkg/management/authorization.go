@@ -489,6 +489,21 @@ func (c *authorizationComponentMW) SendOnboardingEmail(ctx context.Context, real
 	return c.next.SendOnboardingEmail(ctx, realmName, userID, customerRealm, reminder, lifespan)
 }
 
+/* REMOVE_THIS_3901 : start */
+func (c *authorizationComponentMW) SendMigrationEmail(ctx context.Context, realmName string, userID string, customerRealm string, reminder bool, lifespan *int) error {
+	// let's use SendOnboardingEmail action
+	var action = MGMTSendOnboardingEmail.String()
+	var targetRealm = realmName
+
+	if err := c.authManager.CheckAuthorizationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
+		return err
+	}
+
+	return c.next.SendMigrationEmail(ctx, realmName, userID, customerRealm, reminder, lifespan)
+}
+
+/* REMOVE_THIS_3901 : end */
+
 func (c *authorizationComponentMW) SendReminderEmail(ctx context.Context, realmName string, userID string, paramKV ...string) error {
 	var action = MGMTSendReminderEmail.String()
 	var targetRealm = realmName
