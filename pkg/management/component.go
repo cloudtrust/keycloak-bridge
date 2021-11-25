@@ -53,6 +53,8 @@ type KeycloakClient interface {
 	SendReminderEmail(accessToken string, realmName string, userID string, paramKV ...string) error
 	GetRoles(accessToken string, realmName string) ([]kc.RoleRepresentation, error)
 	GetRole(accessToken string, realmName string, roleID string) (kc.RoleRepresentation, error)
+	CreateRole(accessToken string, realmName string, role kc.RoleRepresentation) (string, error)
+	DeleteRole(accessToken string, realmName string, roleID string) error
 	GetGroups(accessToken string, realmName string) ([]kc.GroupRepresentation, error)
 	GetClientRoles(accessToken string, realmName, idClient string) ([]kc.RoleRepresentation, error)
 	CreateClientRole(accessToken string, realmName, clientID string, role kc.RoleRepresentation) (string, error)
@@ -140,6 +142,8 @@ type Component interface {
 	GetAttackDetectionStatus(ctx context.Context, realmName, userID string) (api.AttackDetectionStatusRepresentation, error)
 	GetRoles(ctx context.Context, realmName string) ([]api.RoleRepresentation, error)
 	GetRole(ctx context.Context, realmName string, roleID string) (api.RoleRepresentation, error)
+	CreateRole(ctx context.Context, realmName string, role api.RoleRepresentation) (string, error)
+	DeleteRole(ctx context.Context, realmName string, roleID string) error
 	GetClientRoles(ctx context.Context, realmName, idClient string) ([]api.RoleRepresentation, error)
 	CreateClientRole(ctx context.Context, realmName, clientID string, role api.RoleRepresentation) (string, error)
 
@@ -1384,6 +1388,50 @@ func (c *component) GetRole(ctx context.Context, realmName string, roleID string
 	roleRep.Description = roleKc.Description
 
 	return roleRep, nil
+}
+
+func (c *component) CreateRole(ctx context.Context, realmName string, role api.RoleRepresentation) (string, error) {
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+
+	var roleRep = api.ConvertToKCRole(role)
+
+	locationURL, err := c.keycloakClient.CreateRole(accessToken, realmName, roleRep)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return "", err
+	}
+
+	//retrieve the role ID
+	reg := regexp.MustCompile(`[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}`)
+	roleID := string(reg.Find([]byte(locationURL)))
+
+	//store the API call into the DB
+	c.reportEvent(ctx, "API_ROLE_CREATION", database.CtEventRealmName, realmName, database.CtEventRoleID, roleID, database.CtEventRoleName, *role.Name)
+
+	return locationURL, nil
+}
+
+func (c *component) DeleteRole(ctx context.Context, realmName string, roleID string) error {
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+
+	role, err := c.keycloakClient.GetRole(accessToken, realmName, roleID)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return err
+	}
+
+	var roleName = *role.Name
+
+	err = c.keycloakClient.DeleteRole(accessToken, realmName, roleID)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return err
+	}
+
+	//store the API call into the DB
+	c.reportEvent(ctx, "API_ROLE_DELETION", database.CtEventRealmName, realmName, database.CtEventRoleName, roleName)
+
+	return nil
 }
 
 func (c *component) GetGroups(ctx context.Context, realmName string) ([]api.GroupRepresentation, error) {

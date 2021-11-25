@@ -163,6 +163,8 @@ github.com/clbanning/x2j v0.0.0-20191024224557-825249438eec/go.mod h1:jMjuTZXRI4
 github.com/client9/misspell v0.3.4/go.mod h1:qj6jICC3Q7zFZvVWo7KLAzC3yx5G7kyvSDkc90ppPyw=
 github.com/cloudtrust/common-service v1.2.6-0.20211110103624-faf08bf0ed05 h1:Enzm34NWdxOo5ut7k12BYS2l+ahTaqM03AAPF51bhpM=
 github.com/cloudtrust/common-service v1.2.6-0.20211110103624-faf08bf0ed05/go.mod h1:QI1WKCnr39+GmQKGlpYs3QRhFQ7Nmeo7kekC+ZJP0kg=
+github.com/cloudtrust/common-service v1.2.6-0.20211125171259-4b28d4420e64 h1:E9c3qYfZOdwfr4DO5/j45xqa/cCtYMsbg+KmdLuYhAA=
+github.com/cloudtrust/common-service v1.2.6-0.20211125171259-4b28d4420e64/go.mod h1:QI1WKCnr39+GmQKGlpYs3QRhFQ7Nmeo7kekC+ZJP0kg=
 github.com/cloudtrust/common-service v2.5.0+incompatible/go.mod h1:xvzyeNyD7L0x0xHn4Uqbpx/q9Z4tUT3gicALOAN40X4=
 github.com/cloudtrust/httpclient v1.0.4/go.mod h1:rPEVkKlXgtX8ehpzeAYtQbEF3iD+fl7tHdHch9v21UE=
 github.com/cloudtrust/httpclient v1.0.5-0.20211112142708-1160ef94141a h1:5FwUfhIywUvqLriR4VvOiunjD+lVM/rSDbADyOvFi5Y=
@@ -171,6 +173,10 @@ github.com/cloudtrust/keycloak-client v1.3.2-0.20211112132414-b974de6a892e h1:v+
 github.com/cloudtrust/keycloak-client v1.3.2-0.20211112132414-b974de6a892e/go.mod h1:AeLZ4xnrBOxdBaFb/JcPcfZmJ7FiczkdRpHSJF5NzpA=
 github.com/cloudtrust/keycloak-client v1.3.2-0.20211119145053-743d2b2c08dc h1:vRBloWvSbHPuPwIcfVCsl6YoDsUiW9OhWO0oXghacDc=
 github.com/cloudtrust/keycloak-client v1.3.2-0.20211119145053-743d2b2c08dc/go.mod h1:AeLZ4xnrBOxdBaFb/JcPcfZmJ7FiczkdRpHSJF5NzpA=
+github.com/cloudtrust/keycloak-client v1.3.2-0.20211125160745-165c04950ad5 h1:HJe1Cz0rJLCWq8yaGFULRmRBi8zbhegIera+ziLQrBg=
+github.com/cloudtrust/keycloak-client v1.3.2-0.20211125160745-165c04950ad5/go.mod h1:AeLZ4xnrBOxdBaFb/JcPcfZmJ7FiczkdRpHSJF5NzpA=
+github.com/cloudtrust/keycloak-client v1.3.2-0.20211125170427-bb3b9f3a1227 h1:tDqUK3BCrjZQ8lCn1L4jgEcOREcIPgGeS1whDrZyJkA=
+github.com/cloudtrust/keycloak-client v1.3.2-0.20211125170427-bb3b9f3a1227/go.mod h1:AeLZ4xnrBOxdBaFb/JcPcfZmJ7FiczkdRpHSJF5NzpA=
 github.com/cloudtrust/keycloak-client v2.4.3+incompatible/go.mod h1:EZjvVOjfjY1n8UNIB2FlNDYqT2kzTPNXarlDfIRg53o=
 github.com/cncf/udpa/go v0.0.0-20191209042840-269d4d468f6f/go.mod h1:M8M6+tZqaGXZJjfX53e64911xZQV5JYwmTeXPW+k8Sc=
 github.com/cncf/udpa/go v0.0.0-20200629203442-efcf912fb354/go.mod h1:WmhPx2Nbnhtbo57+VJT5O0JRkEi1Wbu0z5j0R8u5Hbk=

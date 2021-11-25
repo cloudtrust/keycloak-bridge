@@ -21,9 +21,9 @@ require (
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
 	github.com/certifi/gocertifi v0.0.0-20210429200110-83314bf6d27c // indirect
 	github.com/clbanning/x2j v0.0.0-20191024224557-825249438eec // indirect
-	github.com/cloudtrust/common-service v1.2.6-0.20211110103624-faf08bf0ed05
+	github.com/cloudtrust/common-service v1.2.6-0.20211125171259-4b28d4420e64
 	github.com/cloudtrust/httpclient v1.0.5-0.20211112142708-1160ef94141a
-	github.com/cloudtrust/keycloak-client v1.3.2-0.20211119145053-743d2b2c08dc
+	github.com/cloudtrust/keycloak-client v1.3.2-0.20211125170427-bb3b9f3a1227
 	github.com/codahale/hdrhistogram v0.0.0-20161010025455-3a0bb77429bd // indirect
 	github.com/coreos/go-oidc v2.2.1+incompatible // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect

@@ -757,8 +757,10 @@ func main() {
 			AddRoleToUser:               prepareEndpoint(management.MakeAddRoleToUserEndpoint(keycloakComponent), "add_user_role", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 			DeleteRoleForUser:           prepareEndpoint(management.MakeDeleteRoleForUserEndpoint(keycloakComponent), "delete_user_role", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 
-			GetRoles: prepareEndpoint(management.MakeGetRolesEndpoint(keycloakComponent), "get_roles_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
-			GetRole:  prepareEndpoint(management.MakeGetRoleEndpoint(keycloakComponent), "get_role_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			GetRoles:   prepareEndpoint(management.MakeGetRolesEndpoint(keycloakComponent), "get_roles_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			GetRole:    prepareEndpoint(management.MakeGetRoleEndpoint(keycloakComponent), "get_role_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			CreateRole: prepareEndpoint(management.MakeCreateRoleEndpoint(keycloakComponent, managementLogger), "create_role_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			DeleteRole: prepareEndpoint(management.MakeDeleteRoleEndpoint(keycloakComponent), "delete_role_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 
 			GetGroups:            prepareEndpoint(management.MakeGetGroupsEndpoint(keycloakComponent), "get_groups_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 			CreateGroup:          prepareEndpoint(management.MakeCreateGroupEndpoint(keycloakComponent, managementLogger), "create_group_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
@@ -1101,6 +1103,8 @@ func main() {
 
 		var getRolesHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetRoles)
 		var getRoleHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetRole)
+		var createRoleHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.CreateRole)
+		var deleteRoleHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.DeleteRole)
 		var getClientRolesHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetClientRoles)
 		var createClientRolesHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.CreateClientRole)
 
@@ -1198,6 +1202,8 @@ func main() {
 		// roles
 		managementSubroute.Path("/realms/{realm}/roles").Methods("GET").Handler(getRolesHandler)
 		managementSubroute.Path("/realms/{realm}/roles-by-id/{roleID}").Methods("GET").Handler(getRoleHandler)
+		managementSubroute.Path("/realms/{realm}/roles").Methods("POST").Handler(createRoleHandler)
+		managementSubroute.Path("/realms/{realm}/roles/{roleID}").Methods("DELETE").Handler(deleteRoleHandler)
 		managementSubroute.Path("/realms/{realm}/clients/{clientID}/roles").Methods("GET").Handler(getClientRolesHandler)
 		managementSubroute.Path("/realms/{realm}/clients/{clientID}/roles").Methods("POST").Handler(createClientRolesHandler)
 

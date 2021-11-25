@@ -464,6 +464,22 @@ func ConvertUpdatableToKCUser(user UpdatableUserRepresentation) kc.UserRepresent
 	return userRep
 }
 
+func ConvertToKCRole(role RoleRepresentation) kc.RoleRepresentation {
+	attributes := map[string][]string{
+		"BUSINESS_ROLE_FLAG": {"true"},
+	}
+
+	return kc.RoleRepresentation{
+		ClientRole:  role.ClientRole,
+		Composite:   role.Composite,
+		ContainerID: role.ContainerID,
+		Description: role.Description,
+		ID:          role.ID,
+		Name:        role.Name,
+		Attributes:  &attributes,
+	}
+}
+
 // ConvertToKCGroup creates a KC group representation from an API group
 func ConvertToKCGroup(group GroupRepresentation) kc.GroupRepresentation {
 	return kc.GroupRepresentation{
