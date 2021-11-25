@@ -57,7 +57,8 @@ const (
 )
 
 func createComponent(mocks componentMocks) *component {
-	return NewComponent(mocks.keycloakClient, mocks.usersDetailsDBModule, mocks.eventDBModule, mocks.configurationDBModule, mocks.onboardingModule,
+	/* REMOVE_THIS_3901 : remove second parameter (nil) */
+	return NewComponent(mocks.keycloakClient, nil, mocks.usersDetailsDBModule, mocks.eventDBModule, mocks.configurationDBModule, mocks.onboardingModule,
 		allowedTrustIDGroups, socialRealmName, mocks.glnVerifier, mocks.logger).(*component)
 }
 
