@@ -57,10 +57,10 @@ mobile-audience-required: "mobile"
 validation-basic-auth-token: "idnowsuperpasswordverylongandstrong"
 
 # DB encryption key
-db-aesgcm-key: '[{"kid":"KBA_1","value":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB="}]'
+db-aesgcm-key: '[{"kid":"usr_dev_1","value":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="}]'
 db-aesgcm-tag-size: 16 
 
-db-archive-aesgcm-key: '[{"kid":"KBB_1","value":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="}]'
+db-archive-aesgcm-key: '[{"kid":"ar_dev_1","value":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="}]'
 db-archive-aesgcm-tag-size: 16
 
 ## trustID groups allowed to be set
@@ -175,7 +175,6 @@ rate-management-status: 2
 rate-statistics: 1000
 rate-events: 1000
 rate-register: 1000
-rate-tasks: 10
 rate-kyc: 1000
 rate-mobile: 1000
 
