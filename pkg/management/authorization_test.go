@@ -241,6 +241,12 @@ func TestDeny(t *testing.T) {
 		_, err = authorizationMW.GetRole(ctx, realmName, roleID)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
+		_, err = authorizationMW.CreateRole(ctx, realmName, role)
+		assert.Equal(t, security.ForbiddenError{}, err)
+
+		err = authorizationMW.DeleteRole(ctx, realmName, roleID)
+		assert.Equal(t, security.ForbiddenError{}, err)
+
 		_, err = authorizationMW.GetGroups(ctx, realmName)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
@@ -555,6 +561,14 @@ func TestAllowed(t *testing.T) {
 
 		mockManagementComponent.EXPECT().GetRole(ctx, realmName, roleID).Return(api.RoleRepresentation{}, nil)
 		_, err = authorizationMW.GetRole(ctx, realmName, roleID)
+		assert.Nil(t, err)
+
+		mockManagementComponent.EXPECT().CreateRole(ctx, realmName, role).Return("", nil)
+		_, err = authorizationMW.CreateRole(ctx, realmName, role)
+		assert.Nil(t, err)
+
+		mockManagementComponent.EXPECT().DeleteRole(ctx, realmName, roleID).Return(nil)
+		err = authorizationMW.DeleteRole(ctx, realmName, roleID)
 		assert.Nil(t, err)
 
 		mockManagementComponent.EXPECT().GetGroups(ctx, realmName).Return([]api.GroupRepresentation{}, nil)

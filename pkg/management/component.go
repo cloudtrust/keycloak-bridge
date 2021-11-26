@@ -792,7 +792,7 @@ func (c *component) GetRolesOfUser(ctx context.Context, realmName, userID string
 	}
 	userRoles, err := c.getRolesWithAttributes(accessToken, realmName, rolesKc)
 	if err != nil {
-		c.logger.Info(ctx, "msg", "Failed to get user roles", "realm", realmName, "user")
+		c.logger.Warn(ctx, "msg", "Failed to get user roles", "realm", realmName, "user")
 		return nil, err
 	}
 

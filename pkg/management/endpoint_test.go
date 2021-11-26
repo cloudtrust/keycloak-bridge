@@ -1112,6 +1112,79 @@ func TestGetRoleEndpoint(t *testing.T) {
 	}
 }
 
+func TestCreateRoleEndpoint(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
+
+	var e = MakeCreateRoleEndpoint(mockManagementComponent, log.NewNopLogger())
+
+	var realm = "master"
+	var location = "https://location.url/auth/admin/master/roles/123456"
+	var ctx = context.Background()
+
+	var name = "name"
+
+	t.Run("No error", func(t *testing.T) {
+		var req = make(map[string]string)
+		req[reqScheme] = "https"
+		req[reqHost] = "elca.ch"
+		req[prmRealm] = realm
+
+		groupJSON, _ := json.Marshal(api.GroupRepresentation{Name: &name})
+		req[reqBody] = string(groupJSON)
+
+		mockManagementComponent.EXPECT().CreateRole(ctx, realm, api.RoleRepresentation{Name: &name}).Return(location, nil).Times(1)
+		res, err := e(ctx, req)
+		assert.Nil(t, err)
+
+		locationHeader := res.(LocationHeader)
+		assert.Equal(t, "https://elca.ch/management/master/roles/123456", locationHeader.URL)
+	})
+
+	t.Run("Error - Cannot unmarshall", func(t *testing.T) {
+		var req = make(map[string]string)
+		req[reqBody] = string("JSON")
+		_, err := e(ctx, req)
+		assert.NotNil(t, err)
+	})
+
+	t.Run("Error - Keycloak client error", func(t *testing.T) {
+		var req = make(map[string]string)
+		req[reqScheme] = "https"
+		req[reqHost] = "elca.ch"
+		req[prmRealm] = realm
+		groupJSON, _ := json.Marshal(api.GroupRepresentation{Name: &name})
+		req[reqBody] = string(groupJSON)
+
+		mockManagementComponent.EXPECT().CreateRole(ctx, realm, gomock.Any()).Return("", fmt.Errorf("Error")).Times(1)
+		_, err := e(ctx, req)
+		assert.NotNil(t, err)
+	})
+}
+
+func TestDeleteRoleEndpoint(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
+
+	var e = MakeDeleteRoleEndpoint(mockManagementComponent)
+
+	var realm = "master"
+	var roleID = "1234-452-4578"
+	var ctx = context.Background()
+	var req = make(map[string]string)
+	req[prmRealm] = realm
+	req[prmRoleID] = roleID
+
+	mockManagementComponent.EXPECT().DeleteRole(ctx, realm, roleID).Return(nil).Times(1)
+	var res, err = e(ctx, req)
+	assert.Nil(t, err)
+	assert.Nil(t, res)
+}
+
 func TestGetGroupsEndpoint(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()

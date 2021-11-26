@@ -250,6 +250,31 @@ func TestConvertUpdatableToKCUser(t *testing.T) {
 	assert.Equal(t, businessID, *ConvertUpdatableToKCUser(user).Attributes.GetString(constants.AttrbBusinessID))
 }
 
+func TestConvertToKCRole(t *testing.T) {
+	f := false
+	containerID := "container-id"
+	description := "description"
+	id := "dfjlkfd-1224324"
+	name := "name"
+	apiRole := RoleRepresentation{
+		ClientRole:  &f,
+		Composite:   &f,
+		ContainerID: &containerID,
+		Description: &description,
+		ID:          &id,
+		Name:        &name,
+	}
+
+	kcRole := ConvertToKCRole(apiRole)
+
+	assert.Equal(t, f, *kcRole.ClientRole)
+	assert.Equal(t, f, *kcRole.Composite)
+	assert.Equal(t, containerID, *kcRole.ContainerID)
+	assert.Equal(t, id, *kcRole.ID)
+	assert.Equal(t, name, *kcRole.Name)
+	assert.Equal(t, map[string][]string{"BUSINESS_ROLE_FLAG": {"true"}}, *kcRole.Attributes)
+}
+
 func TestConvertToKCGroup(t *testing.T) {
 	var group GroupRepresentation
 
