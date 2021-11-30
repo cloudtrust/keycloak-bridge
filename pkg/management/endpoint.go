@@ -654,7 +654,7 @@ func MakeDeleteRoleEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return nil, component.DeleteRole(ctx, m[prmRealm], m[prmRoleID])
+		return noContentResponse(component.DeleteRole(ctx, m[prmRealm], m[prmRoleID]))
 	}
 }
 

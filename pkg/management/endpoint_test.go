@@ -1182,7 +1182,7 @@ func TestDeleteRoleEndpoint(t *testing.T) {
 	mockManagementComponent.EXPECT().DeleteRole(ctx, realm, roleID).Return(nil).Times(1)
 	var res, err = e(ctx, req)
 	assert.Nil(t, err)
-	assert.Nil(t, res)
+	assert.Equal(t, respNoContent, res)
 }
 
 func TestGetGroupsEndpoint(t *testing.T) {
