@@ -250,6 +250,30 @@ func TestConvertUpdatableToKCUser(t *testing.T) {
 	assert.Equal(t, businessID, *ConvertUpdatableToKCUser(user).Attributes.GetString(constants.AttrbBusinessID))
 }
 
+func TestConvertAPICRole(t *testing.T) {
+	f := false
+	containerID := "container-id"
+	description := "description"
+	id := "dfjlkfd-1224324"
+	name := "name"
+	kcRole := kc.RoleRepresentation{
+		ClientRole:  &f,
+		Composite:   &f,
+		ContainerID: &containerID,
+		Description: &description,
+		ID:          &id,
+		Name:        &name,
+	}
+
+	apiRole := ConvertToAPIRole(kcRole)
+
+	assert.Equal(t, f, *apiRole.ClientRole)
+	assert.Equal(t, f, *apiRole.Composite)
+	assert.Equal(t, containerID, *apiRole.ContainerID)
+	assert.Equal(t, id, *apiRole.ID)
+	assert.Equal(t, name, *apiRole.Name)
+}
+
 func TestConvertToKCRole(t *testing.T) {
 	f := false
 	containerID := "container-id"

@@ -799,15 +799,7 @@ func (c *component) GetRolesOfUser(ctx context.Context, realmName, userID string
 	var rolesRep = []api.RoleRepresentation{}
 	for _, roleKc := range userRoles {
 		if c.isBusinessRole(roleKc) {
-			var roleRep api.RoleRepresentation
-			roleRep.ID = roleKc.ID
-			roleRep.Name = roleKc.Name
-			roleRep.Composite = roleKc.Composite
-			roleRep.ClientRole = roleKc.ClientRole
-			roleRep.ContainerID = roleKc.ContainerID
-			roleRep.Description = roleKc.Description
-
-			rolesRep = append(rolesRep, roleRep)
+			rolesRep = append(rolesRep, api.ConvertToAPIRole(roleKc))
 		}
 	}
 
@@ -1384,15 +1376,7 @@ func (c *component) GetRoles(ctx context.Context, realmName string) ([]api.RoleR
 	var rolesRep = []api.RoleRepresentation{}
 	for _, roleKc := range rolesKc {
 		if c.isBusinessRole(roleKc) {
-			var roleRep api.RoleRepresentation
-			roleRep.ID = roleKc.ID
-			roleRep.Name = roleKc.Name
-			roleRep.Composite = roleKc.Composite
-			roleRep.ClientRole = roleKc.ClientRole
-			roleRep.ContainerID = roleKc.ContainerID
-			roleRep.Description = roleKc.Description
-
-			rolesRep = append(rolesRep, roleRep)
+			rolesRep = append(rolesRep, api.ConvertToAPIRole(roleKc))
 		}
 	}
 

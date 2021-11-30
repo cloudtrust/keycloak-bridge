@@ -464,6 +464,17 @@ func ConvertUpdatableToKCUser(user UpdatableUserRepresentation) kc.UserRepresent
 	return userRep
 }
 
+func ConvertToAPIRole(role kc.RoleRepresentation) RoleRepresentation {
+	var roleRep RoleRepresentation
+	roleRep.ID = role.ID
+	roleRep.Name = role.Name
+	roleRep.Composite = role.Composite
+	roleRep.ClientRole = role.ClientRole
+	roleRep.ContainerID = role.ContainerID
+	roleRep.Description = role.Description
+	return roleRep
+}
+
 func ConvertToKCRole(role RoleRepresentation) kc.RoleRepresentation {
 	attributes := map[string][]string{
 		"BUSINESS_ROLE_FLAG": {"true"},

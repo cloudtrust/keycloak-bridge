@@ -167,7 +167,7 @@ paths:
           type: boolean
       - name: termsOfUse
         in: query
-        description: tells if a terms of use are required (default false)
+        description: tells if terms of use are required (default false)
         required: false
         schema:
           type: boolean
