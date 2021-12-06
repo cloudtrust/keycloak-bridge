@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/mock"
-	kc "github.com/cloudtrust/keycloak-client"
+	kc "github.com/cloudtrust/keycloak-client/v2"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )

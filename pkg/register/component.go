@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/cloudtrust/keycloak-client/toolbox"
+	"github.com/cloudtrust/keycloak-client/v2/toolbox"
 
 	"github.com/cloudtrust/common-service/configuration"
 	"github.com/cloudtrust/common-service/database"
@@ -15,7 +15,7 @@ import (
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
-	kc "github.com/cloudtrust/keycloak-client"
+	kc "github.com/cloudtrust/keycloak-client/v2"
 )
 
 // KeycloakClient are methods from keycloak-client used by this component

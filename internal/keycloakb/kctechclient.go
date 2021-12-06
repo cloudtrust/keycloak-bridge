@@ -3,8 +3,8 @@ package keycloakb
 import (
 	"context"
 
-	kc "github.com/cloudtrust/keycloak-client"
-	"github.com/cloudtrust/keycloak-client/toolbox"
+	kc "github.com/cloudtrust/keycloak-client/v2"
+	"github.com/cloudtrust/keycloak-client/v2/toolbox"
 )
 
 // KeycloakTechnicalClient are methods from keycloak-client called by a technical account

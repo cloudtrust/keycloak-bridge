@@ -57,11 +57,11 @@ github.com/cloudtrust/common-service/validation
 # github.com/cloudtrust/httpclient v1.0.5-0.20211112142708-1160ef94141a
 ## explicit
 github.com/cloudtrust/httpclient
-# github.com/cloudtrust/keycloak-client v1.3.2-0.20211125170427-bb3b9f3a1227
+# github.com/cloudtrust/keycloak-client/v2 v2.5.1
 ## explicit
-github.com/cloudtrust/keycloak-client
-github.com/cloudtrust/keycloak-client/api
-github.com/cloudtrust/keycloak-client/toolbox
+github.com/cloudtrust/keycloak-client/v2
+github.com/cloudtrust/keycloak-client/v2/api
+github.com/cloudtrust/keycloak-client/v2/toolbox
 # github.com/codahale/hdrhistogram v0.0.0-20161010025455-3a0bb77429bd
 ## explicit
 # github.com/coreos/go-oidc v2.2.1+incompatible

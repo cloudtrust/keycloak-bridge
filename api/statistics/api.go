@@ -4,7 +4,7 @@ import (
 	"database/sql"
 
 	api_events "github.com/cloudtrust/keycloak-bridge/api/events"
-	kc "github.com/cloudtrust/keycloak-client"
+	kc "github.com/cloudtrust/keycloak-client/v2"
 )
 
 // RegExp for parameters of statistics API

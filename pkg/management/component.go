@@ -16,13 +16,14 @@ import (
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
-	kc "github.com/cloudtrust/keycloak-client"
+	kc "github.com/cloudtrust/keycloak-client/v2"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 )
 
 const (
 	initPasswordAction = "sms-password-set"
+	businessRoleFlag   = "BUSINESS_ROLE_FLAG"
 )
 
 // KeycloakClient are methods from keycloak-client used by this component
@@ -1385,7 +1386,7 @@ func (c *component) GetRoles(ctx context.Context, realmName string) ([]api.RoleR
 
 func (c *component) isBusinessRole(role kc.RoleRepresentation) bool {
 	if role.Attributes != nil {
-		flag, ok := (*role.Attributes)["BUSINESS_ROLE_FLAG"]
+		flag, ok := (*role.Attributes)[businessRoleFlag]
 		return ok && len(flag) == 1 && flag[0] == "true"
 	}
 	return false
@@ -1421,6 +1422,11 @@ func (c *component) CreateRole(ctx context.Context, realmName string, role api.R
 
 	var roleRep = api.ConvertToKCRole(role)
 
+	attributes := map[string][]string{
+		businessRoleFlag: {"true"},
+	}
+	roleRep.Attributes = &attributes
+
 	locationURL, err := c.keycloakClient.CreateRole(accessToken, realmName, roleRep)
 	if err != nil {
 		c.logger.Warn(ctx, "err", err.Error())
@@ -1446,7 +1452,9 @@ func (c *component) DeleteRole(ctx context.Context, realmName string, roleID str
 		return err
 	}
 
-	var roleName = *role.Name
+	if !c.isBusinessRole(role) {
+		return errorhandler.CreateNotFoundError(prmRoleID)
+	}
 
 	err = c.keycloakClient.DeleteRole(accessToken, realmName, roleID)
 	if err != nil {
@@ -1454,6 +1462,7 @@ func (c *component) DeleteRole(ctx context.Context, realmName string, roleID str
 		return err
 	}
 
+	var roleName = *role.Name
 	//store the API call into the DB
 	c.reportEvent(ctx, "API_ROLE_DELETION", database.CtEventRealmName, realmName, database.CtEventRoleName, roleName)
 

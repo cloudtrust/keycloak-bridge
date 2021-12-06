@@ -19,7 +19,7 @@ import (
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 
 	"github.com/cloudtrust/keycloak-bridge/pkg/management/mock"
-	kc "github.com/cloudtrust/keycloak-client"
+	kc "github.com/cloudtrust/keycloak-client/v2"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
@@ -3418,9 +3418,14 @@ func TestDeleteRole(t *testing.T) {
 	var realmName = "master"
 	var username = "username"
 
+	attributes := map[string][]string{
+		"BUSINESS_ROLE_FLAG": {"true"},
+	}
+
 	var role = kc.RoleRepresentation{
-		ID:   &roleID,
-		Name: &roleName,
+		ID:         &roleID,
+		Name:       &roleName,
+		Attributes: &attributes,
 	}
 
 	t.Run("Delete role with success", func(t *testing.T) {

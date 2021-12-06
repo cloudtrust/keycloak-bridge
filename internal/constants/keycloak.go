@@ -1,7 +1,7 @@
 package constants
 
 import (
-	kc "github.com/cloudtrust/keycloak-client"
+	kc "github.com/cloudtrust/keycloak-client/v2"
 )
 
 // Date layout management: first date layout is the one used to format dates in Keycloak.

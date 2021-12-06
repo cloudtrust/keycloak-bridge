@@ -8,7 +8,7 @@ import (
 	"github.com/cloudtrust/common-service/database"
 	"github.com/cloudtrust/common-service/log"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
-	"github.com/cloudtrust/keycloak-client"
+	"github.com/cloudtrust/keycloak-client/v2"
 )
 
 // Component interface exposes methods used by the bridge API

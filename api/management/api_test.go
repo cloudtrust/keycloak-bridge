@@ -13,7 +13,7 @@ import (
 	csjson "github.com/cloudtrust/common-service/json"
 	"github.com/cloudtrust/common-service/log"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
-	kc "github.com/cloudtrust/keycloak-client"
+	kc "github.com/cloudtrust/keycloak-client/v2"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -250,7 +250,7 @@ func TestConvertUpdatableToKCUser(t *testing.T) {
 	assert.Equal(t, businessID, *ConvertUpdatableToKCUser(user).Attributes.GetString(constants.AttrbBusinessID))
 }
 
-func TestConvertAPICRole(t *testing.T) {
+func TestConvertAPIRole(t *testing.T) {
 	f := false
 	containerID := "container-id"
 	description := "description"
@@ -296,7 +296,6 @@ func TestConvertToKCRole(t *testing.T) {
 	assert.Equal(t, containerID, *kcRole.ContainerID)
 	assert.Equal(t, id, *kcRole.ID)
 	assert.Equal(t, name, *kcRole.Name)
-	assert.Equal(t, map[string][]string{"BUSINESS_ROLE_FLAG": {"true"}}, *kcRole.Attributes)
 }
 
 func TestConvertToKCGroup(t *testing.T) {

@@ -12,7 +12,7 @@ import (
 	"github.com/cloudtrust/common-service/validation"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
-	kc "github.com/cloudtrust/keycloak-client"
+	kc "github.com/cloudtrust/keycloak-client/v2"
 	"github.com/spf13/cast"
 )
 
@@ -476,10 +476,6 @@ func ConvertToAPIRole(role kc.RoleRepresentation) RoleRepresentation {
 }
 
 func ConvertToKCRole(role RoleRepresentation) kc.RoleRepresentation {
-	attributes := map[string][]string{
-		"BUSINESS_ROLE_FLAG": {"true"},
-	}
-
 	return kc.RoleRepresentation{
 		ClientRole:  role.ClientRole,
 		Composite:   role.Composite,
@@ -487,7 +483,6 @@ func ConvertToKCRole(role RoleRepresentation) kc.RoleRepresentation {
 		Description: role.Description,
 		ID:          role.ID,
 		Name:        role.Name,
-		Attributes:  &attributes,
 	}
 }
 

@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"testing"
 
-	kc "github.com/cloudtrust/keycloak-client"
+	kc "github.com/cloudtrust/keycloak-client/v2"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 
-	internal "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	msg "github.com/cloudtrust/keycloak-bridge/internal/constants"
-	keycloak "github.com/cloudtrust/keycloak-client"
+	internal "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
+	keycloak "github.com/cloudtrust/keycloak-client/v2"
 	"github.com/pkg/errors"
 )
 

@@ -5,7 +5,7 @@ import (
 
 	"github.com/cloudtrust/common-service/validation"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
-	kc "github.com/cloudtrust/keycloak-client"
+	kc "github.com/cloudtrust/keycloak-client/v2"
 )
 
 const (

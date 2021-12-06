@@ -5,7 +5,7 @@ import (
 
 	"github.com/cloudtrust/common-service/middleware"
 	"github.com/cloudtrust/common-service/security"
-	kc "github.com/cloudtrust/keycloak-client"
+	kc "github.com/cloudtrust/keycloak-client/v2"
 )
 
 // KeycloakClient are methods from keycloak-client used by authorization manager

@@ -9,7 +9,7 @@ import (
 	"github.com/cloudtrust/common-service/log"
 	api "github.com/cloudtrust/keycloak-bridge/api/statistics"
 	"github.com/cloudtrust/keycloak-bridge/pkg/statistics/mock"
-	kc "github.com/cloudtrust/keycloak-client"
+	kc "github.com/cloudtrust/keycloak-client/v2"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
