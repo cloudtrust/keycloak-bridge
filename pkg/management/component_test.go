@@ -19,7 +19,7 @@ import (
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 
 	"github.com/cloudtrust/keycloak-bridge/pkg/management/mock"
-	kc "github.com/cloudtrust/keycloak-client"
+	kc "github.com/cloudtrust/keycloak-client/v2"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
@@ -1989,10 +1989,23 @@ func TestGetRolesOfUser(t *testing.T) {
 			Description: &description,
 		}
 
+		var kcRoleRepWithAttributes = kc.RoleRepresentation{
+			ID:          &id,
+			Name:        &name,
+			ClientRole:  &clientRole,
+			Composite:   &composite,
+			ContainerID: &containerID,
+			Description: &description,
+			Attributes: &map[string][]string{
+				"BUSINESS_ROLE_FLAG": {"true"},
+			},
+		}
+
 		var kcRolesRep []kc.RoleRepresentation
 		kcRolesRep = append(kcRolesRep, kcRoleRep)
 
 		mocks.keycloakClient.EXPECT().GetRealmLevelRoleMappings(accessToken, realmName, userID).Return(kcRolesRep, nil)
+		mocks.keycloakClient.EXPECT().GetRole(accessToken, realmName, *kcRoleRep.ID).Return(kcRoleRepWithAttributes, nil)
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
@@ -2006,6 +2019,32 @@ func TestGetRolesOfUser(t *testing.T) {
 		assert.Equal(t, composite, *apiRoleRep.Composite)
 		assert.Equal(t, containerID, *apiRoleRep.ContainerID)
 		assert.Equal(t, description, *apiRoleRep.Description)
+	})
+	t.Run("GetNonBusinessRole", func(t *testing.T) {
+		var id = "1234-7454-4516"
+		var kcRoleRep = kc.RoleRepresentation{ID: &id}
+		mocks.keycloakClient.EXPECT().GetRealmLevelRoleMappings(accessToken, realmName, userID).Return([]kc.RoleRepresentation{kcRoleRep}, nil)
+		mocks.keycloakClient.EXPECT().GetRole(accessToken, realmName, *kcRoleRep.ID).Return(kcRoleRep, nil)
+
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+
+		res, err := managementComponent.GetRolesOfUser(ctx, "master", userID)
+
+		assert.Nil(t, err)
+		assert.Equal(t, []api.RoleRepresentation{}, res)
+	})
+
+	t.Run("Error GetRole", func(t *testing.T) {
+		var id = "1234-7454-4516"
+		var kcRoleRep = kc.RoleRepresentation{ID: &id}
+		mocks.keycloakClient.EXPECT().GetRealmLevelRoleMappings(accessToken, realmName, userID).Return([]kc.RoleRepresentation{kcRoleRep}, nil)
+		mocks.keycloakClient.EXPECT().GetRole(accessToken, realmName, *kcRoleRep.ID).Return(kcRoleRep, fmt.Errorf("Unexpected error"))
+
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+
+		_, err := managementComponent.GetRolesOfUser(ctx, "master", userID)
+
+		assert.NotNil(t, err)
 	})
 
 	t.Run("Error", func(t *testing.T) {
@@ -2032,13 +2071,13 @@ func TestAddRoleOfUser(t *testing.T) {
 	var roleID1 = "rol-rol-rol-111"
 	var roleID2 = "rol-rol-rol-222"
 	var anyError = errors.New("any error")
-	var knownRoles = []kc.RoleRepresentation{{ID: &roleID1}, {ID: &roleID2}}
+	var knownRoles = []kc.RoleRepresentation{{ID: &roleID1, Attributes: &map[string][]string{"BUSINESS_ROLE_FLAG": {"true"}}}, {ID: &roleID2}}
 	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 	mocks.logger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
 
 	t.Run("Can't get realm roles", func(t *testing.T) {
-		mocks.keycloakClient.EXPECT().GetRoles(accessToken, realmName).Return(nil, anyError)
+		mocks.keycloakClient.EXPECT().GetRolesWithAttributes(accessToken, realmName).Return(nil, anyError)
 
 		err := managementComponent.AddRoleToUser(ctx, realmName, userID, roleID1)
 
@@ -2046,7 +2085,7 @@ func TestAddRoleOfUser(t *testing.T) {
 	})
 
 	t.Run("Role does not exists", func(t *testing.T) {
-		mocks.keycloakClient.EXPECT().GetRoles(accessToken, realmName).Return(knownRoles, nil)
+		mocks.keycloakClient.EXPECT().GetRolesWithAttributes(accessToken, realmName).Return(knownRoles, nil)
 
 		err := managementComponent.AddRoleToUser(ctx, realmName, userID, "not-a-role")
 
@@ -2054,7 +2093,7 @@ func TestAddRoleOfUser(t *testing.T) {
 	})
 
 	t.Run("Keycloak fails to update roles", func(t *testing.T) {
-		mocks.keycloakClient.EXPECT().GetRoles(accessToken, realmName).Return(knownRoles, nil)
+		mocks.keycloakClient.EXPECT().GetRolesWithAttributes(accessToken, realmName).Return(knownRoles, nil)
 		mocks.keycloakClient.EXPECT().AddRealmLevelRoleMappings(accessToken, realmName, userID, gomock.Any()).Return(anyError)
 
 		err := managementComponent.AddRoleToUser(ctx, realmName, userID, roleID1)
@@ -2062,8 +2101,16 @@ func TestAddRoleOfUser(t *testing.T) {
 		assert.Equal(t, anyError, err)
 	})
 
+	t.Run("Add non business role", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetRolesWithAttributes(accessToken, realmName).Return(knownRoles, nil)
+
+		err := managementComponent.AddRoleToUser(ctx, realmName, userID, roleID2)
+
+		assert.NotNil(t, err)
+	})
+
 	t.Run("Success", func(t *testing.T) {
-		mocks.keycloakClient.EXPECT().GetRoles(accessToken, realmName).Return(knownRoles, nil)
+		mocks.keycloakClient.EXPECT().GetRolesWithAttributes(accessToken, realmName).Return(knownRoles, nil)
 		mocks.keycloakClient.EXPECT().AddRealmLevelRoleMappings(accessToken, realmName, userID, gomock.Any()).Return(nil)
 
 		err := managementComponent.AddRoleToUser(ctx, realmName, userID, roleID1)
@@ -2084,8 +2131,11 @@ func TestDeleteRoleForUser(t *testing.T) {
 	var userID = "789-789-456"
 	var roleID1 = "rol-rol-rol-111"
 	var roleID2 = "rol-rol-rol-222"
+	var notOwnedRoleID = "not-a-owned-role"
 	var anyError = errors.New("any error")
-	var knownRoles = []kc.RoleRepresentation{{ID: &roleID1}, {ID: &roleID2}}
+	var role1 = kc.RoleRepresentation{ID: &roleID1, Attributes: &map[string][]string{"BUSINESS_ROLE_FLAG": {"true"}}}
+	var role2 = kc.RoleRepresentation{ID: &roleID2}
+	var knownRoles = []kc.RoleRepresentation{role1, role2}
 	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 	mocks.logger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
@@ -2100,14 +2150,17 @@ func TestDeleteRoleForUser(t *testing.T) {
 
 	t.Run("Role is not owned by user", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetRealmLevelRoleMappings(accessToken, realmName, userID).Return(knownRoles, nil)
-
-		err := managementComponent.DeleteRoleForUser(ctx, realmName, userID, "not-a-owned-role")
+		mocks.keycloakClient.EXPECT().GetRole(accessToken, realmName, roleID1).Return(role1, nil).Times(1)
+		mocks.keycloakClient.EXPECT().GetRole(accessToken, realmName, roleID2).Return(role2, nil).Times(1)
+		err := managementComponent.DeleteRoleForUser(ctx, realmName, userID, notOwnedRoleID)
 
 		assert.NotNil(t, err)
 	})
 
 	t.Run("Keycloak fails to update roles", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetRealmLevelRoleMappings(accessToken, realmName, userID).Return(knownRoles, nil)
+		mocks.keycloakClient.EXPECT().GetRole(accessToken, realmName, roleID1).Return(role1, nil).Times(1)
+		mocks.keycloakClient.EXPECT().GetRole(accessToken, realmName, roleID2).Return(role2, nil).Times(1)
 		mocks.keycloakClient.EXPECT().DeleteRealmLevelRoleMappings(accessToken, realmName, userID, gomock.Any()).Return(anyError)
 
 		err := managementComponent.DeleteRoleForUser(ctx, realmName, userID, roleID1)
@@ -2115,8 +2168,20 @@ func TestDeleteRoleForUser(t *testing.T) {
 		assert.Equal(t, anyError, err)
 	})
 
+	t.Run("Delete Not Business role", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetRealmLevelRoleMappings(accessToken, realmName, userID).Return(knownRoles, nil)
+		mocks.keycloakClient.EXPECT().GetRole(accessToken, realmName, roleID1).Return(role1, nil).Times(1)
+		mocks.keycloakClient.EXPECT().GetRole(accessToken, realmName, roleID2).Return(role2, nil).Times(1)
+
+		err := managementComponent.DeleteRoleForUser(ctx, realmName, userID, roleID2)
+
+		assert.NotNil(t, err)
+	})
+
 	t.Run("Success", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetRealmLevelRoleMappings(accessToken, realmName, userID).Return(knownRoles, nil)
+		mocks.keycloakClient.EXPECT().GetRole(accessToken, realmName, roleID1).Return(role1, nil).Times(1)
+		mocks.keycloakClient.EXPECT().GetRole(accessToken, realmName, roleID2).Return(role2, nil).Times(1)
 		mocks.keycloakClient.EXPECT().DeleteRealmLevelRoleMappings(accessToken, realmName, userID, gomock.Any()).Return(nil)
 
 		err := managementComponent.DeleteRoleForUser(ctx, realmName, userID, roleID1)
@@ -3137,12 +3202,15 @@ func TestGetRoles(t *testing.T) {
 			Composite:   &composite,
 			ContainerID: &containerID,
 			Description: &description,
+			Attributes: &map[string][]string{
+				"BUSINESS_ROLE_FLAG": {"true"},
+			},
 		}
 
 		var kcRolesRep []kc.RoleRepresentation
 		kcRolesRep = append(kcRolesRep, kcRoleRep)
 
-		mocks.keycloakClient.EXPECT().GetRoles(accessToken, realmName).Return(kcRolesRep, nil)
+		mocks.keycloakClient.EXPECT().GetRolesWithAttributes(accessToken, realmName).Return(kcRolesRep, nil)
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
@@ -3158,8 +3226,21 @@ func TestGetRoles(t *testing.T) {
 		assert.Equal(t, description, *apiRoleRep.Description)
 	})
 
+	t.Run("NonBusinessRole are not returned", func(t *testing.T) {
+		var id = "1234-7454-4516"
+		var kcRoleRep = kc.RoleRepresentation{ID: &id}
+		mocks.keycloakClient.EXPECT().GetRolesWithAttributes(accessToken, realmName).Return([]kc.RoleRepresentation{kcRoleRep}, nil)
+
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+
+		apiRolesRep, err := managementComponent.GetRoles(ctx, "master")
+
+		assert.Nil(t, err)
+		assert.Equal(t, []api.RoleRepresentation{}, apiRolesRep)
+	})
+
 	t.Run("Error", func(t *testing.T) {
-		mocks.keycloakClient.EXPECT().GetRoles(accessToken, realmName).Return([]kc.RoleRepresentation{}, fmt.Errorf("Unexpected error"))
+		mocks.keycloakClient.EXPECT().GetRolesWithAttributes(accessToken, realmName).Return([]kc.RoleRepresentation{}, fmt.Errorf("Unexpected error"))
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
@@ -3196,6 +3277,9 @@ func TestGetRole(t *testing.T) {
 			Composite:   &composite,
 			ContainerID: &containerID,
 			Description: &description,
+			Attributes: &map[string][]string{
+				"BUSINESS_ROLE_FLAG": {"true"},
+			},
 		}
 
 		mocks.keycloakClient.EXPECT().GetRole(accessToken, realmName, id).Return(kcRoleRep, nil)
@@ -3213,6 +3297,18 @@ func TestGetRole(t *testing.T) {
 		assert.Equal(t, description, *apiRoleRep.Description)
 	})
 
+	t.Run("NonBusinessRole is not returned", func(t *testing.T) {
+		var id = "1234-7454-4516"
+		var kcRoleRep = kc.RoleRepresentation{ID: &id}
+		mocks.keycloakClient.EXPECT().GetRole(accessToken, realmName, id).Return(kcRoleRep, nil)
+
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+
+		_, err := managementComponent.GetRole(ctx, "master", id)
+
+		assert.NotNil(t, err)
+	})
+
 	t.Run("Error", func(t *testing.T) {
 		var id = "1234-7454-4516"
 		mocks.keycloakClient.EXPECT().GetRole(accessToken, realmName, id).Return(kc.RoleRepresentation{}, fmt.Errorf("Unexpected error"))
@@ -3221,6 +3317,163 @@ func TestGetRole(t *testing.T) {
 
 		_, err := managementComponent.GetRole(ctx, "master", id)
 
+		assert.NotNil(t, err)
+	})
+}
+
+func TestCreateRole(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mocks = createMocks(mockCtrl)
+	var managementComponent = createComponent(mocks)
+
+	var accessToken = "TOKEN=="
+	var username = "username"
+	var name = "test"
+	var realmName = "master"
+	var roleID = "41dbf4a8-32a9-4000-8c17-edc854c31231"
+	var locationURL = "http://toto.com/realms/" + roleID
+
+	t.Run("Create", func(t *testing.T) {
+		var kcRoleRep = kc.RoleRepresentation{
+			Name:       &name,
+			Attributes: &map[string][]string{"BUSINESS_ROLE_FLAG": {"true"}},
+		}
+
+		mocks.keycloakClient.EXPECT().CreateRole(accessToken, realmName, kcRoleRep).Return(locationURL, nil)
+
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
+		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
+
+		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "API_ROLE_CREATION", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+
+		var roleRep = api.RoleRepresentation{
+			Name: &name,
+		}
+
+		location, err := managementComponent.CreateRole(ctx, realmName, roleRep)
+
+		assert.Nil(t, err)
+		assert.Equal(t, locationURL, location)
+	})
+
+	t.Run("Create with having error when storing the event", func(t *testing.T) {
+		var kcRoleRep = kc.RoleRepresentation{
+			Name:       &name,
+			Attributes: &map[string][]string{"BUSINESS_ROLE_FLAG": {"true"}},
+		}
+
+		mocks.keycloakClient.EXPECT().CreateRole(accessToken, realmName, kcRoleRep).Return(locationURL, nil)
+
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
+		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
+
+		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "API_ROLE_CREATION", "back-office", database.CtEventRealmName, realmName, database.CtEventRoleID, roleID, database.CtEventRoleName, name).Return(errors.New("error"))
+		m := map[string]interface{}{"event_name": "API_ROLE_CREATION", database.CtEventRealmName: realmName, database.CtEventRoleID: roleID, database.CtEventRoleName: name}
+		eventJSON, _ := json.Marshal(m)
+		mocks.logger.EXPECT().Error(ctx, "err", "error", "event", string(eventJSON))
+
+		var roleRep = api.RoleRepresentation{
+			Name: &name,
+		}
+
+		location, err := managementComponent.CreateRole(ctx, realmName, roleRep)
+
+		assert.Nil(t, err)
+		assert.Equal(t, locationURL, location)
+	})
+
+	t.Run("Error from KC client", func(t *testing.T) {
+		var kcRoleRep = kc.RoleRepresentation{
+			Attributes: &map[string][]string{"BUSINESS_ROLE_FLAG": {"true"}},
+		}
+
+		mocks.keycloakClient.EXPECT().CreateRole(accessToken, realmName, kcRoleRep).Return("", fmt.Errorf("Invalid input"))
+
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
+
+		var roleRep = api.RoleRepresentation{}
+		mocks.logger.EXPECT().Warn(ctx, "err", "Invalid input")
+
+		location, err := managementComponent.CreateRole(ctx, realmName, roleRep)
+
+		assert.NotNil(t, err)
+		assert.Equal(t, "", location)
+	})
+}
+
+func TestDeleteRole(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mocks = createMocks(mockCtrl)
+	var managementComponent = createComponent(mocks)
+
+	var accessToken = "TOKEN=="
+	var roleID = "41dbf4a8-32a9-4000-8c17-edc854c31231"
+	var roleName = "roleName"
+	var realmName = "master"
+	var username = "username"
+
+	attributes := map[string][]string{
+		"BUSINESS_ROLE_FLAG": {"true"},
+	}
+
+	var role = kc.RoleRepresentation{
+		ID:         &roleID,
+		Name:       &roleName,
+		Attributes: &attributes,
+	}
+
+	t.Run("Delete role with success", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetRole(accessToken, realmName, roleID).Return(role, nil)
+		mocks.keycloakClient.EXPECT().DeleteRole(accessToken, realmName, roleID).Return(nil)
+
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
+		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
+
+		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "API_ROLE_DELETION", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+
+		err := managementComponent.DeleteRole(ctx, realmName, roleID)
+
+		assert.Nil(t, err)
+	})
+
+	t.Run("Delete role with success but having an error when storing the event in the DB", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetRole(accessToken, realmName, roleID).Return(role, nil)
+		mocks.keycloakClient.EXPECT().DeleteRole(accessToken, realmName, roleID).Return(nil)
+
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
+		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
+
+		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "API_ROLE_DELETION", "back-office", database.CtEventRealmName, realmName, database.CtEventRoleName, roleName).Return(errors.New("error"))
+		m := map[string]interface{}{"event_name": "API_ROLE_DELETION", database.CtEventRealmName: realmName, database.CtEventRoleName: roleName}
+		eventJSON, _ := json.Marshal(m)
+		mocks.logger.EXPECT().Error(ctx, "err", "error", "event", string(eventJSON))
+		err := managementComponent.DeleteRole(ctx, realmName, roleID)
+
+		assert.Nil(t, err)
+	})
+
+	t.Run("Error from KC client", func(t *testing.T) {
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		mocks.logger.EXPECT().Warn(ctx, "err", "Error")
+		mocks.keycloakClient.EXPECT().GetRole(accessToken, realmName, roleID).Return(kc.RoleRepresentation{}, errors.New("Error"))
+
+		err := managementComponent.DeleteRole(ctx, realmName, roleID)
+		assert.NotNil(t, err)
+
+		mocks.keycloakClient.EXPECT().GetRole(accessToken, realmName, roleID).Return(role, nil)
+		mocks.keycloakClient.EXPECT().DeleteRole(accessToken, realmName, roleID).Return(fmt.Errorf("Invalid input"))
+		mocks.logger.EXPECT().Warn(ctx, "err", "Invalid input")
+
+		err = managementComponent.DeleteRole(ctx, realmName, roleID)
 		assert.NotNil(t, err)
 	})
 }

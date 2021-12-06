@@ -11,7 +11,7 @@ import (
 
 	"github.com/cloudtrust/httpclient"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
-	"github.com/cloudtrust/keycloak-client"
+	"github.com/cloudtrust/keycloak-client/v2"
 	"github.com/pkg/errors"
 	"gopkg.in/h2non/gentleman.v2/plugin"
 	"gopkg.in/h2non/gentleman.v2/plugins/body"

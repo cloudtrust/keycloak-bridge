@@ -4,7 +4,7 @@ import (
 	"context"
 
 	errorhandler "github.com/cloudtrust/common-service/errors"
-	kc "github.com/cloudtrust/keycloak-client"
+	kc "github.com/cloudtrust/keycloak-client/v2"
 )
 
 var notMFATypes = map[string]bool{"password": true, "password-history": true}

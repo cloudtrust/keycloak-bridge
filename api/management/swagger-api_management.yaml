@@ -1,7 +1,7 @@
 openapi: 3.0.1
 info:
   title: Swagger Cloudtrust Management
-  description: 'Mangement API for Cloudtrust'
+  description: 'Management API for Cloudtrust'
   version: 1.0.0
 servers:
 - url: http://localhost:8888/management
@@ -167,7 +167,7 @@ paths:
           type: boolean
       - name: termsOfUse
         in: query
-        description: tells if a terms of use are required (default: false)
+        description: tells if terms of use are required (default false)
         required: false
         schema:
           type: boolean
@@ -1165,6 +1165,51 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Role'
+    post:
+      tags:
+      - Roles
+      summary: Create a new role into the realm
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Role'
+      responses:
+        201:
+          description: successful operation
+          headers:
+            Location:
+              schema:
+                type: string
+              description: URL of the new resource.
+  /realms/{realm}/roles/{roleID}:
+    delete:
+      tags:
+      - Roles
+      summary: Delete the role
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: roleID
+        in: path
+        description: role id
+        required: true
+        schema:
+          type: string
+      responses:
+        204:
+          description: successful operation
   /realms/{realm}/roles-by-id/{roleID}:
     get:
       tags:

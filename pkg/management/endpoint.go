@@ -68,6 +68,8 @@ type Endpoints struct {
 
 	GetRoles         endpoint.Endpoint
 	GetRole          endpoint.Endpoint
+	CreateRole       endpoint.Endpoint
+	DeleteRole       endpoint.Endpoint
 	GetClientRoles   endpoint.Endpoint
 	CreateClientRole endpoint.Endpoint
 
@@ -644,6 +646,49 @@ func MakeGetRoleEndpoint(component Component) cs.Endpoint {
 		var m = req.(map[string]string)
 
 		return component.GetRole(ctx, m[prmRealm], m[prmRoleID])
+	}
+}
+
+// MakeCreateRoleEndpoint makes the endpoint to create a role.
+func MakeCreateRoleEndpoint(component Component, logger keycloakb.Logger) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+		var err error
+
+		var role api.RoleRepresentation
+
+		if err = json.Unmarshal([]byte(m[reqBody]), &role); err != nil {
+			return nil, errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Body)
+		}
+
+		if err = role.Validate(); err != nil {
+			return nil, err
+		}
+
+		var keycloakLocation string
+		keycloakLocation, err = component.CreateRole(ctx, m[prmRealm], role)
+
+		if err != nil {
+			return nil, err
+		}
+
+		url, err := convertLocationURL(keycloakLocation, m[reqScheme], m[reqHost])
+		if err != nil {
+			logger.Warn(ctx, "msg", "Invalid location", "location", keycloakLocation, "err", err.Error())
+		}
+
+		return LocationHeader{
+			URL: url,
+		}, nil
+	}
+}
+
+// MakeDeleteRoleEndpoint creates an endpoint for DeleteRole
+func MakeDeleteRoleEndpoint(component Component) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+
+		return noContentResponse(component.DeleteRole(ctx, m[prmRealm], m[prmRoleID]))
 	}
 }
 

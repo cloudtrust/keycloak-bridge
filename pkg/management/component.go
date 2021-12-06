@@ -18,13 +18,14 @@ import (
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
-	kc "github.com/cloudtrust/keycloak-client"
+	kc "github.com/cloudtrust/keycloak-client/v2"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 )
 
 const (
 	initPasswordAction = "sms-password-set"
+	businessRoleFlag   = "BUSINESS_ROLE_FLAG"
 )
 
 // KeycloakClient are methods from keycloak-client used by this component
@@ -54,7 +55,10 @@ type KeycloakClient interface {
 	CreateActivationCode(accessToken string, realmName string, userID string) (kc.ActivationCodeRepresentation, error)
 	SendReminderEmail(accessToken string, realmName string, userID string, paramKV ...string) error
 	GetRoles(accessToken string, realmName string) ([]kc.RoleRepresentation, error)
+	GetRolesWithAttributes(accessToken string, realmName string) ([]kc.RoleRepresentation, error)
 	GetRole(accessToken string, realmName string, roleID string) (kc.RoleRepresentation, error)
+	CreateRole(accessToken string, realmName string, role kc.RoleRepresentation) (string, error)
+	DeleteRole(accessToken string, realmName string, roleID string) error
 	GetGroups(accessToken string, realmName string) ([]kc.GroupRepresentation, error)
 	GetClientRoles(accessToken string, realmName, idClient string) ([]kc.RoleRepresentation, error)
 	CreateClientRole(accessToken string, realmName, clientID string, role kc.RoleRepresentation) (string, error)
@@ -145,6 +149,8 @@ type Component interface {
 	GetAttackDetectionStatus(ctx context.Context, realmName, userID string) (api.AttackDetectionStatusRepresentation, error)
 	GetRoles(ctx context.Context, realmName string) ([]api.RoleRepresentation, error)
 	GetRole(ctx context.Context, realmName string, roleID string) (api.RoleRepresentation, error)
+	CreateRole(ctx context.Context, realmName string, role api.RoleRepresentation) (string, error)
+	DeleteRole(ctx context.Context, realmName string, roleID string) error
 	GetClientRoles(ctx context.Context, realmName, idClient string) ([]api.RoleRepresentation, error)
 	CreateClientRole(ctx context.Context, realmName, clientID string, role api.RoleRepresentation) (string, error)
 
@@ -793,18 +799,17 @@ func (c *component) GetRolesOfUser(ctx context.Context, realmName, userID string
 		c.logger.Warn(ctx, "err", err.Error())
 		return nil, err
 	}
+	userRoles, err := c.getRolesWithAttributes(accessToken, realmName, rolesKc)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Failed to get user roles", "realm", realmName, "user")
+		return nil, err
+	}
 
 	var rolesRep = []api.RoleRepresentation{}
-	for _, roleKc := range rolesKc {
-		var roleRep api.RoleRepresentation
-		roleRep.ID = roleKc.ID
-		roleRep.Name = roleKc.Name
-		roleRep.Composite = roleKc.Composite
-		roleRep.ClientRole = roleKc.ClientRole
-		roleRep.ContainerID = roleKc.ContainerID
-		roleRep.Description = roleKc.Description
-
-		rolesRep = append(rolesRep, roleRep)
+	for _, roleKc := range userRoles {
+		if c.isBusinessRole(roleKc) {
+			rolesRep = append(rolesRep, api.ConvertToAPIRole(roleKc))
+		}
 	}
 
 	return rolesRep, nil
@@ -813,14 +818,16 @@ func (c *component) GetRolesOfUser(ctx context.Context, realmName, userID string
 func (c *component) rolesToMap(roles []kc.RoleRepresentation) map[string]kc.RoleRepresentation {
 	var res = make(map[string]kc.RoleRepresentation)
 	for _, role := range roles {
-		res[*role.ID] = role
+		if c.isBusinessRole(role) {
+			res[*role.ID] = role
+		}
 	}
 	return res
 }
 
 func (c *component) getRolesAsMap(ctx context.Context, realmName string) (map[string]kc.RoleRepresentation, error) {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
-	var roles, err = c.keycloakClient.GetRoles(accessToken, realmName)
+	var roles, err = c.keycloakClient.GetRolesWithAttributes(accessToken, realmName)
 	if err != nil {
 		c.logger.Info(ctx, "msg", "Failed to get realm role mappings", "realm", realmName, "user")
 		return nil, err
@@ -835,7 +842,25 @@ func (c *component) getUserRolesAsMap(ctx context.Context, realmName, userID str
 		c.logger.Info(ctx, "msg", "Failed to get user roles", "realm", realmName, "user")
 		return nil, err
 	}
-	return c.rolesToMap(roles), nil
+	userRoles, err := c.getRolesWithAttributes(accessToken, realmName, roles)
+	if err != nil {
+		c.logger.Info(ctx, "msg", "Failed to get user roles", "realm", realmName, "user")
+		return nil, err
+	}
+
+	return c.rolesToMap(userRoles), nil
+}
+
+func (c *component) getRolesWithAttributes(accessToken string, realmName string, roles []kc.RoleRepresentation) ([]kc.RoleRepresentation, error) {
+	var userRoles []kc.RoleRepresentation
+	for _, role := range roles {
+		userRole, err := c.keycloakClient.GetRole(accessToken, realmName, *role.ID)
+		if err != nil {
+			return []kc.RoleRepresentation{}, err
+		}
+		userRoles = append(userRoles, userRole)
+	}
+	return userRoles, nil
 }
 
 func (c *component) AddRoleToUser(ctx context.Context, realmName, userID, roleID string) error {
@@ -1428,7 +1453,7 @@ func (c *component) GetAttackDetectionStatus(ctx context.Context, realmName, use
 func (c *component) GetRoles(ctx context.Context, realmName string) ([]api.RoleRepresentation, error) {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 
-	rolesKc, err := c.keycloakClient.GetRoles(accessToken, realmName)
+	rolesKc, err := c.keycloakClient.GetRolesWithAttributes(accessToken, realmName)
 
 	if err != nil {
 		c.logger.Warn(ctx, "err", err.Error())
@@ -1437,18 +1462,20 @@ func (c *component) GetRoles(ctx context.Context, realmName string) ([]api.RoleR
 
 	var rolesRep = []api.RoleRepresentation{}
 	for _, roleKc := range rolesKc {
-		var roleRep api.RoleRepresentation
-		roleRep.ID = roleKc.ID
-		roleRep.Name = roleKc.Name
-		roleRep.Composite = roleKc.Composite
-		roleRep.ClientRole = roleKc.ClientRole
-		roleRep.ContainerID = roleKc.ContainerID
-		roleRep.Description = roleKc.Description
-
-		rolesRep = append(rolesRep, roleRep)
+		if c.isBusinessRole(roleKc) {
+			rolesRep = append(rolesRep, api.ConvertToAPIRole(roleKc))
+		}
 	}
 
 	return rolesRep, nil
+}
+
+func (c *component) isBusinessRole(role kc.RoleRepresentation) bool {
+	if role.Attributes != nil {
+		flag, ok := (*role.Attributes)[businessRoleFlag]
+		return ok && len(flag) == 1 && flag[0] == "true"
+	}
+	return false
 }
 
 func (c *component) GetRole(ctx context.Context, realmName string, roleID string) (api.RoleRepresentation, error) {
@@ -1462,6 +1489,10 @@ func (c *component) GetRole(ctx context.Context, realmName string, roleID string
 		return api.RoleRepresentation{}, err
 	}
 
+	if !c.isBusinessRole(roleKc) {
+		return api.RoleRepresentation{}, errorhandler.CreateNotFoundError(prmRoleID)
+	}
+
 	roleRep.ID = roleKc.ID
 	roleRep.Name = roleKc.Name
 	roleRep.Composite = roleKc.Composite
@@ -1470,6 +1501,58 @@ func (c *component) GetRole(ctx context.Context, realmName string, roleID string
 	roleRep.Description = roleKc.Description
 
 	return roleRep, nil
+}
+
+func (c *component) CreateRole(ctx context.Context, realmName string, role api.RoleRepresentation) (string, error) {
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+
+	var roleRep = api.ConvertToKCRole(role)
+
+	attributes := map[string][]string{
+		businessRoleFlag: {"true"},
+	}
+	roleRep.Attributes = &attributes
+
+	locationURL, err := c.keycloakClient.CreateRole(accessToken, realmName, roleRep)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return "", err
+	}
+
+	//retrieve the role ID
+	reg := regexp.MustCompile(`[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}`)
+	roleID := string(reg.Find([]byte(locationURL)))
+
+	//store the API call into the DB
+	c.reportEvent(ctx, "API_ROLE_CREATION", database.CtEventRealmName, realmName, database.CtEventRoleID, roleID, database.CtEventRoleName, *role.Name)
+
+	return locationURL, nil
+}
+
+func (c *component) DeleteRole(ctx context.Context, realmName string, roleID string) error {
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+
+	role, err := c.keycloakClient.GetRole(accessToken, realmName, roleID)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return err
+	}
+
+	if !c.isBusinessRole(role) {
+		return errorhandler.CreateNotFoundError(prmRoleID)
+	}
+
+	err = c.keycloakClient.DeleteRole(accessToken, realmName, roleID)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return err
+	}
+
+	var roleName = *role.Name
+	//store the API call into the DB
+	c.reportEvent(ctx, "API_ROLE_DELETION", database.CtEventRealmName, realmName, database.CtEventRoleName, roleName)
+
+	return nil
 }
 
 func (c *component) GetGroups(ctx context.Context, realmName string) ([]api.GroupRepresentation, error) {

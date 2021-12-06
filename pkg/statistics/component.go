@@ -11,7 +11,7 @@ import (
 	api "github.com/cloudtrust/keycloak-bridge/api/statistics"
 	msg "github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
-	kc "github.com/cloudtrust/keycloak-client"
+	kc "github.com/cloudtrust/keycloak-client/v2"
 )
 
 // Component is the interface of the events component.

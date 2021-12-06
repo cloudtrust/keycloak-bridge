@@ -10,7 +10,7 @@ import (
 	errorhandler "github.com/cloudtrust/common-service/errors"
 	"github.com/cloudtrust/common-service/validation"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
-	kc "github.com/cloudtrust/keycloak-client"
+	kc "github.com/cloudtrust/keycloak-client/v2"
 )
 
 var (
@@ -159,11 +159,11 @@ func (am *accredsModule) evaluateCurrentAccreditations(accredsAttributes []strin
 	for _, accredJSON := range accredsAttributes {
 		var accreditation AccreditationRepresentation
 		// If accreditation can be unmarshalled
-		if err := json.Unmarshal([]byte(accredJSON), &accreditation); err==nil {
+		if err := json.Unmarshal([]byte(accredJSON), &accreditation); err == nil {
 			// If new accreditation is being created for the same type and it is not yet revoked
-			if _, ok := newAccreds[*accreditation.Type]; ok && (accreditation.Revoked==nil || !*accreditation.Revoked) {
+			if _, ok := newAccreds[*accreditation.Type]; ok && (accreditation.Revoked == nil || !*accreditation.Revoked) {
 				// If existing accreditation is not yet expired
-				if expiryDate, err := time.Parse(constants.SupportedDateLayouts[0], *accreditation.ExpiryDate); err!=nil || expiryDate.After(time.Now()) {
+				if expiryDate, err := time.Parse(constants.SupportedDateLayouts[0], *accreditation.ExpiryDate); err != nil || expiryDate.After(time.Now()) {
 					accreditation.Revoked = &bTrue
 					bytes, _ := json.Marshal(accreditation)
 					accredJSON = string(bytes)

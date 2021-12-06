@@ -8,7 +8,7 @@ import (
 	"github.com/cloudtrust/common-service/log"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
-	kc_client "github.com/cloudtrust/keycloak-client"
+	kc_client "github.com/cloudtrust/keycloak-client/v2"
 	"github.com/go-kit/kit/endpoint"
 	http_transport "github.com/go-kit/kit/transport/http"
 

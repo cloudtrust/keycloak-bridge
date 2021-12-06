@@ -12,7 +12,7 @@ import (
 	"github.com/cloudtrust/common-service/validation"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
-	kc "github.com/cloudtrust/keycloak-client"
+	kc "github.com/cloudtrust/keycloak-client/v2"
 	"github.com/spf13/cast"
 )
 
@@ -462,6 +462,28 @@ func ConvertUpdatableToKCUser(user UpdatableUserRepresentation) kc.UserRepresent
 	}
 
 	return userRep
+}
+
+func ConvertToAPIRole(role kc.RoleRepresentation) RoleRepresentation {
+	var roleRep RoleRepresentation
+	roleRep.ID = role.ID
+	roleRep.Name = role.Name
+	roleRep.Composite = role.Composite
+	roleRep.ClientRole = role.ClientRole
+	roleRep.ContainerID = role.ContainerID
+	roleRep.Description = role.Description
+	return roleRep
+}
+
+func ConvertToKCRole(role RoleRepresentation) kc.RoleRepresentation {
+	return kc.RoleRepresentation{
+		ClientRole:  role.ClientRole,
+		Composite:   role.Composite,
+		ContainerID: role.ContainerID,
+		Description: role.Description,
+		ID:          role.ID,
+		Name:        role.Name,
+	}
 }
 
 // ConvertToKCGroup creates a KC group representation from an API group

@@ -65,6 +65,8 @@ var (
 	MGMTGetAttackDetectionStatus            = newAction("MGMT_GetAttackDetectionStatus", security.ScopeGroup)
 	MGMTGetRoles                            = newAction("MGMT_GetRoles", security.ScopeRealm)
 	MGMTGetRole                             = newAction("MGMT_GetRole", security.ScopeRealm)
+	MGMTCreateRole                          = newAction("MGMT_CreateRole", security.ScopeRealm)
+	MGMTDeleteRole                          = newAction("MGMT_DeleteRole", security.ScopeRealm)
 	MGMTGetGroups                           = newAction("MGMT_GetGroups", security.ScopeRealm)
 	MGMTCreateGroup                         = newAction("MGMT_CreateGroup", security.ScopeRealm)
 	MGMTDeleteGroup                         = newAction("MGMT_DeleteGroup", security.ScopeGroup)
@@ -601,6 +603,28 @@ func (c *authorizationComponentMW) GetRole(ctx context.Context, realmName string
 	}
 
 	return c.next.GetRole(ctx, realmName, roleID)
+}
+
+func (c *authorizationComponentMW) CreateRole(ctx context.Context, realmName string, role api.RoleRepresentation) (string, error) {
+	var action = MGMTCreateRole.String()
+	var targetRealm = realmName
+
+	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
+		return "", err
+	}
+
+	return c.next.CreateRole(ctx, realmName, role)
+}
+
+func (c *authorizationComponentMW) DeleteRole(ctx context.Context, realmName string, roleID string) error {
+	var action = MGMTDeleteRole.String()
+	var targetRealm = realmName
+
+	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
+		return err
+	}
+
+	return c.next.DeleteRole(ctx, realmName, roleID)
 }
 
 func (c *authorizationComponentMW) GetGroups(ctx context.Context, realmName string) ([]api.GroupRepresentation, error) {

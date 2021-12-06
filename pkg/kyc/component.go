@@ -8,8 +8,8 @@ import (
 
 	"github.com/cloudtrust/common-service/configuration"
 	"github.com/cloudtrust/common-service/validation"
-	kc "github.com/cloudtrust/keycloak-client"
-	"github.com/cloudtrust/keycloak-client/toolbox"
+	kc "github.com/cloudtrust/keycloak-client/v2"
+	"github.com/cloudtrust/keycloak-client/v2/toolbox"
 
 	cs "github.com/cloudtrust/common-service"
 	"github.com/cloudtrust/common-service/database"
