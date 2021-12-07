@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cloudtrust/common-service/database/sqltypes"
-	errorhandler "github.com/cloudtrust/common-service/errors"
+	"github.com/cloudtrust/common-service/v2/database/sqltypes"
+	errorhandler "github.com/cloudtrust/common-service/v2/errors"
 	api "github.com/cloudtrust/keycloak-bridge/api/events"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/mock"
 	"github.com/golang/mock/gomock"

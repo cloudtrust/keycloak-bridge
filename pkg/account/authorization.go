@@ -4,12 +4,12 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/cloudtrust/common-service/configuration"
+	"github.com/cloudtrust/common-service/v2/configuration"
 
-	cs "github.com/cloudtrust/common-service"
-	"github.com/cloudtrust/common-service/security"
+	cs "github.com/cloudtrust/common-service/v2"
+	"github.com/cloudtrust/common-service/v2/security"
 
-	"github.com/cloudtrust/common-service/log"
+	"github.com/cloudtrust/common-service/v2/log"
 	api "github.com/cloudtrust/keycloak-bridge/api/account"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 )

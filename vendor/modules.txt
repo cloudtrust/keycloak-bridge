@@ -38,22 +38,25 @@ github.com/certifi/gocertifi
 ## explicit
 # github.com/cloudtrust/common-service v1.2.6-0.20211125171259-4b28d4420e64
 ## explicit
-github.com/cloudtrust/common-service
-github.com/cloudtrust/common-service/configuration
-github.com/cloudtrust/common-service/database
-github.com/cloudtrust/common-service/database/sqltypes
 github.com/cloudtrust/common-service/errors
-github.com/cloudtrust/common-service/healthcheck
-github.com/cloudtrust/common-service/http
-github.com/cloudtrust/common-service/idgenerator
-github.com/cloudtrust/common-service/json
-github.com/cloudtrust/common-service/log
-github.com/cloudtrust/common-service/metrics
-github.com/cloudtrust/common-service/middleware
-github.com/cloudtrust/common-service/security
-github.com/cloudtrust/common-service/tracing
-github.com/cloudtrust/common-service/tracking
-github.com/cloudtrust/common-service/validation
+# github.com/cloudtrust/common-service/v2 v2.5.2
+## explicit
+github.com/cloudtrust/common-service/v2
+github.com/cloudtrust/common-service/v2/configuration
+github.com/cloudtrust/common-service/v2/database
+github.com/cloudtrust/common-service/v2/database/sqltypes
+github.com/cloudtrust/common-service/v2/errors
+github.com/cloudtrust/common-service/v2/healthcheck
+github.com/cloudtrust/common-service/v2/http
+github.com/cloudtrust/common-service/v2/idgenerator
+github.com/cloudtrust/common-service/v2/json
+github.com/cloudtrust/common-service/v2/log
+github.com/cloudtrust/common-service/v2/metrics
+github.com/cloudtrust/common-service/v2/middleware
+github.com/cloudtrust/common-service/v2/security
+github.com/cloudtrust/common-service/v2/tracing
+github.com/cloudtrust/common-service/v2/tracking
+github.com/cloudtrust/common-service/v2/validation
 # github.com/cloudtrust/httpclient v1.0.5-0.20211112142708-1160ef94141a
 ## explicit
 github.com/cloudtrust/httpclient

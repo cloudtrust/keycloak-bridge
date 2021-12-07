@@ -3,7 +3,7 @@ package management
 import (
 	"testing"
 
-	"github.com/cloudtrust/common-service/configuration"
+	"github.com/cloudtrust/common-service/v2/configuration"
 	"github.com/stretchr/testify/assert"
 )
 

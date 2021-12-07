@@ -7,10 +7,10 @@ import (
 
 	"github.com/cloudtrust/keycloak-client/v2/toolbox"
 
-	"github.com/cloudtrust/common-service/configuration"
-	"github.com/cloudtrust/common-service/database"
-	errorhandler "github.com/cloudtrust/common-service/errors"
-	"github.com/cloudtrust/common-service/validation"
+	"github.com/cloudtrust/common-service/v2/configuration"
+	"github.com/cloudtrust/common-service/v2/database"
+	errorhandler "github.com/cloudtrust/common-service/v2/errors"
+	"github.com/cloudtrust/common-service/v2/validation"
 	apiregister "github.com/cloudtrust/keycloak-bridge/api/register"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"

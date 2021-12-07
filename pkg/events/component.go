@@ -3,8 +3,8 @@ package events
 import (
 	"context"
 
-	"github.com/cloudtrust/common-service/database"
-	errorhandler "github.com/cloudtrust/common-service/errors"
+	"github.com/cloudtrust/common-service/v2/database"
+	errorhandler "github.com/cloudtrust/common-service/v2/errors"
 	api "github.com/cloudtrust/keycloak-bridge/api/events"
 	msg "github.com/cloudtrust/keycloak-bridge/internal/constants"
 	app "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"

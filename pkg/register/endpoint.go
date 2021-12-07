@@ -4,9 +4,9 @@ import (
 	"context"
 	"net/http"
 
-	cs "github.com/cloudtrust/common-service"
-	commonerrors "github.com/cloudtrust/common-service/errors"
-	commonhttp "github.com/cloudtrust/common-service/http"
+	cs "github.com/cloudtrust/common-service/v2"
+	commonerrors "github.com/cloudtrust/common-service/v2/errors"
+	commonhttp "github.com/cloudtrust/common-service/v2/http"
 	apiregister "github.com/cloudtrust/keycloak-bridge/api/register"
 	msg "github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/go-kit/kit/endpoint"

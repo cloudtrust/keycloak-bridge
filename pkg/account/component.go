@@ -6,12 +6,12 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/cloudtrust/common-service/configuration"
+	"github.com/cloudtrust/common-service/v2/configuration"
 
-	cs "github.com/cloudtrust/common-service"
-	"github.com/cloudtrust/common-service/database"
-	errorhandler "github.com/cloudtrust/common-service/errors"
-	csjson "github.com/cloudtrust/common-service/json"
+	cs "github.com/cloudtrust/common-service/v2"
+	"github.com/cloudtrust/common-service/v2/database"
+	errorhandler "github.com/cloudtrust/common-service/v2/errors"
+	csjson "github.com/cloudtrust/common-service/v2/json"
 	api "github.com/cloudtrust/keycloak-bridge/api/account"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"

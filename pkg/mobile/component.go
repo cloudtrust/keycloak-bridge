@@ -3,7 +3,7 @@ package mobilepkg
 import (
 	"context"
 
-	cs "github.com/cloudtrust/common-service"
+	cs "github.com/cloudtrust/common-service/v2"
 	api "github.com/cloudtrust/keycloak-bridge/api/mobile"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"

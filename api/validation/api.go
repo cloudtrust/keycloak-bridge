@@ -3,7 +3,7 @@ package apivalidation
 import (
 	"time"
 
-	"github.com/cloudtrust/common-service/validation"
+	"github.com/cloudtrust/common-service/v2/validation"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"

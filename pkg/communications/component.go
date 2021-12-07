@@ -3,7 +3,7 @@ package communications
 import (
 	"context"
 
-	cs "github.com/cloudtrust/common-service"
+	cs "github.com/cloudtrust/common-service/v2"
 	api "github.com/cloudtrust/keycloak-bridge/api/communications"
 	internal "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	kc "github.com/cloudtrust/keycloak-client/v2"

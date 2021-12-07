@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"time"
 
-	errorhandler "github.com/cloudtrust/common-service/errors"
+	errorhandler "github.com/cloudtrust/common-service/v2/errors"
 	stats_api "github.com/cloudtrust/keycloak-bridge/api/statistics"
 	msg "github.com/cloudtrust/keycloak-bridge/internal/constants"
 )

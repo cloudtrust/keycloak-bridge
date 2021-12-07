@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/cloudtrust/common-service/log"
+	"github.com/cloudtrust/common-service/v2/log"
 	api "github.com/cloudtrust/keycloak-bridge/api/statistics"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/cloudtrust/keycloak-bridge/pkg/statistics/mock"

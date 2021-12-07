@@ -4,11 +4,11 @@ import (
 	"context"
 	"testing"
 
-	"github.com/cloudtrust/common-service/configuration"
+	"github.com/cloudtrust/common-service/v2/configuration"
 
-	cs "github.com/cloudtrust/common-service"
-	"github.com/cloudtrust/common-service/log"
-	"github.com/cloudtrust/common-service/security"
+	cs "github.com/cloudtrust/common-service/v2"
+	"github.com/cloudtrust/common-service/v2/log"
+	"github.com/cloudtrust/common-service/v2/security"
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
 	"github.com/cloudtrust/keycloak-bridge/pkg/management/mock"
 	"github.com/golang/mock/gomock"

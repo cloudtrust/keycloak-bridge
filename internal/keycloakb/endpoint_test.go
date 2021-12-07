@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	cs "github.com/cloudtrust/common-service"
+	cs "github.com/cloudtrust/common-service/v2"
 	"github.com/stretchr/testify/assert"
 )
 

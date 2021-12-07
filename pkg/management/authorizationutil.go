@@ -3,7 +3,7 @@ package management
 import (
 	"errors"
 
-	"github.com/cloudtrust/common-service/configuration"
+	"github.com/cloudtrust/common-service/v2/configuration"
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
 )
 

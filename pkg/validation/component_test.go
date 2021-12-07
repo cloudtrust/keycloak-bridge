@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cloudtrust/common-service/configuration"
-	log "github.com/cloudtrust/common-service/log"
+	"github.com/cloudtrust/common-service/v2/configuration"
+	log "github.com/cloudtrust/common-service/v2/log"
 	api "github.com/cloudtrust/keycloak-bridge/api/validation"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"

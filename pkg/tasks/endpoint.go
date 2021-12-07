@@ -4,8 +4,8 @@ import (
 	"context"
 	"net/http"
 
-	cs "github.com/cloudtrust/common-service"
-	commonhttp "github.com/cloudtrust/common-service/http"
+	cs "github.com/cloudtrust/common-service/v2"
+	commonhttp "github.com/cloudtrust/common-service/v2/http"
 	"github.com/go-kit/kit/endpoint"
 )
 

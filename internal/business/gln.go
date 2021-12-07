@@ -1,7 +1,7 @@
 package business
 
 import (
-	errorhandler "github.com/cloudtrust/common-service/errors"
+	errorhandler "github.com/cloudtrust/common-service/v2/errors"
 )
 
 // GlnSearchResult is the result of a GLN lookup.

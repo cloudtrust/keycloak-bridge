@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"strings"
 
-	cerrors "github.com/cloudtrust/common-service/errors"
-	"github.com/cloudtrust/common-service/validation"
+	cerrors "github.com/cloudtrust/common-service/v2/errors"
+	"github.com/cloudtrust/common-service/v2/validation"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"

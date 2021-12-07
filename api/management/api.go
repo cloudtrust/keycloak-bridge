@@ -6,10 +6,10 @@ import (
 
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 
-	"github.com/cloudtrust/common-service/configuration"
-	errorhandler "github.com/cloudtrust/common-service/errors"
-	csjson "github.com/cloudtrust/common-service/json"
-	"github.com/cloudtrust/common-service/validation"
+	"github.com/cloudtrust/common-service/v2/configuration"
+	errorhandler "github.com/cloudtrust/common-service/v2/errors"
+	csjson "github.com/cloudtrust/common-service/v2/json"
+	"github.com/cloudtrust/common-service/v2/validation"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	kc "github.com/cloudtrust/keycloak-client/v2"

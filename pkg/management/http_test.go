@@ -10,9 +10,9 @@ import (
 	"strings"
 	"testing"
 
-	commonhttp "github.com/cloudtrust/common-service/errors"
-	"github.com/cloudtrust/common-service/log"
-	"github.com/cloudtrust/common-service/security"
+	commonhttp "github.com/cloudtrust/common-service/v2/errors"
+	"github.com/cloudtrust/common-service/v2/log"
+	"github.com/cloudtrust/common-service/v2/security"
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/cloudtrust/keycloak-bridge/pkg/management/mock"

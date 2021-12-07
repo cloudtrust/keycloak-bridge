@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 
-	cs "github.com/cloudtrust/common-service"
-	errrorhandler "github.com/cloudtrust/common-service/errors"
+	cs "github.com/cloudtrust/common-service/v2"
+	errrorhandler "github.com/cloudtrust/common-service/v2/errors"
 	api "github.com/cloudtrust/keycloak-bridge/api/communications"
 	msg "github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/go-kit/kit/endpoint"

@@ -11,8 +11,8 @@ import (
 	"regexp"
 	"strings"
 
-	errorhandler "github.com/cloudtrust/common-service/errors"
-	"github.com/cloudtrust/common-service/log"
+	errorhandler "github.com/cloudtrust/common-service/v2/errors"
+	"github.com/cloudtrust/common-service/v2/log"
 	apiregister "github.com/cloudtrust/keycloak-bridge/api/register"
 )
 

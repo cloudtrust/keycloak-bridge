@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cloudtrust/common-service/log"
+	"github.com/cloudtrust/common-service/v2/log"
 	"github.com/stretchr/testify/assert"
 )
 
