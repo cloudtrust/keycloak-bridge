@@ -3,7 +3,7 @@ package keycloakb
 import (
 	"context"
 
-	errorhandler "github.com/cloudtrust/common-service/errors"
+	errorhandler "github.com/cloudtrust/common-service/v2/errors"
 	kc "github.com/cloudtrust/keycloak-client/v2"
 )
 

@@ -3,8 +3,8 @@ package keycloakb
 import (
 	"context"
 
-	"github.com/cloudtrust/common-service/middleware"
-	"github.com/cloudtrust/common-service/security"
+	"github.com/cloudtrust/common-service/v2/middleware"
+	"github.com/cloudtrust/common-service/v2/security"
 	kc "github.com/cloudtrust/keycloak-client/v2"
 )
 

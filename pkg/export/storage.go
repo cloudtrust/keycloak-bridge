@@ -3,7 +3,7 @@ package export
 import (
 	"database/sql"
 
-	"github.com/cloudtrust/common-service/database/sqltypes"
+	"github.com/cloudtrust/common-service/v2/database/sqltypes"
 	msg "github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/pkg/errors"
 )

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	cs "github.com/cloudtrust/common-service"
+	cs "github.com/cloudtrust/common-service/v2"
 	api "github.com/cloudtrust/keycloak-bridge/api/communications"
 	"github.com/cloudtrust/keycloak-bridge/pkg/communications/mock"
 	kc "github.com/cloudtrust/keycloak-client/v2"

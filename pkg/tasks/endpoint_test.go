@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"testing"
 
-	commonhttp "github.com/cloudtrust/common-service/http"
+	commonhttp "github.com/cloudtrust/common-service/v2/http"
 	"github.com/cloudtrust/keycloak-bridge/pkg/tasks/mock"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"

@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cloudtrust/common-service/database/sqltypes"
+	"github.com/cloudtrust/common-service/v2/database/sqltypes"
 
 	api "github.com/cloudtrust/keycloak-bridge/api/events"
 	api_stat "github.com/cloudtrust/keycloak-bridge/api/statistics"

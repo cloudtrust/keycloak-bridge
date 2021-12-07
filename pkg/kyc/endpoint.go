@@ -3,8 +3,8 @@ package kyc
 import (
 	"context"
 
-	cs "github.com/cloudtrust/common-service"
-	commonerrors "github.com/cloudtrust/common-service/errors"
+	cs "github.com/cloudtrust/common-service/v2"
+	commonerrors "github.com/cloudtrust/common-service/v2/errors"
 	apikyc "github.com/cloudtrust/keycloak-bridge/api/kyc"
 	msg "github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/go-kit/kit/endpoint"

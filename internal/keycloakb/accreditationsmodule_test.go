@@ -9,10 +9,10 @@ import (
 
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 
-	"github.com/cloudtrust/common-service/configuration"
-	errorhandler "github.com/cloudtrust/common-service/errors"
-	"github.com/cloudtrust/common-service/log"
-	"github.com/cloudtrust/common-service/validation"
+	"github.com/cloudtrust/common-service/v2/configuration"
+	errorhandler "github.com/cloudtrust/common-service/v2/errors"
+	"github.com/cloudtrust/common-service/v2/log"
+	"github.com/cloudtrust/common-service/v2/validation"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/mock"
 	kc "github.com/cloudtrust/keycloak-client/v2"
 	"github.com/golang/mock/gomock"

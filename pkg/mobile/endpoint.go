@@ -3,7 +3,7 @@ package mobilepkg
 import (
 	"context"
 
-	cs "github.com/cloudtrust/common-service"
+	cs "github.com/cloudtrust/common-service/v2"
 	"github.com/go-kit/kit/endpoint"
 )
 

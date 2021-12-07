@@ -9,8 +9,8 @@ import (
 
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 
-	cs "github.com/cloudtrust/common-service"
-	"github.com/cloudtrust/common-service/configuration"
+	cs "github.com/cloudtrust/common-service/v2"
+	"github.com/cloudtrust/common-service/v2/configuration"
 
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/mock"
 

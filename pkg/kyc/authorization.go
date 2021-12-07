@@ -3,11 +3,11 @@ package kyc
 import (
 	"context"
 
-	cs "github.com/cloudtrust/common-service"
-	errorhandler "github.com/cloudtrust/common-service/errors"
-	"github.com/cloudtrust/common-service/log"
-	"github.com/cloudtrust/common-service/middleware"
-	"github.com/cloudtrust/common-service/security"
+	cs "github.com/cloudtrust/common-service/v2"
+	errorhandler "github.com/cloudtrust/common-service/v2/errors"
+	"github.com/cloudtrust/common-service/v2/log"
+	"github.com/cloudtrust/common-service/v2/middleware"
+	"github.com/cloudtrust/common-service/v2/security"
 	apikyc "github.com/cloudtrust/keycloak-bridge/api/kyc"
 )
 

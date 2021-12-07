@@ -6,7 +6,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/cloudtrust/common-service/database"
+	"github.com/cloudtrust/common-service/v2/database"
 	api "github.com/cloudtrust/keycloak-bridge/api/events"
 	"github.com/cloudtrust/keycloak-bridge/pkg/events/mock"
 	"github.com/golang/mock/gomock"

@@ -4,10 +4,10 @@ import (
 	"context"
 	"time"
 
-	cs "github.com/cloudtrust/common-service"
-	"github.com/cloudtrust/common-service/configuration"
-	"github.com/cloudtrust/common-service/database/sqltypes"
-	cm "github.com/cloudtrust/common-service/metrics"
+	cs "github.com/cloudtrust/common-service/v2"
+	"github.com/cloudtrust/common-service/v2/configuration"
+	"github.com/cloudtrust/common-service/v2/database/sqltypes"
+	cm "github.com/cloudtrust/common-service/v2/metrics"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 )
 

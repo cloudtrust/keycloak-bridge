@@ -9,7 +9,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/cloudtrust/common-service/log"
+	"github.com/cloudtrust/common-service/v2/log"
 	api "github.com/cloudtrust/keycloak-bridge/api/register"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"

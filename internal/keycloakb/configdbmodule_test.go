@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/cloudtrust/common-service/configuration"
-	"github.com/cloudtrust/common-service/log"
+	"github.com/cloudtrust/common-service/v2/configuration"
+	"github.com/cloudtrust/common-service/v2/log"
 
 	msg "github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/mock"

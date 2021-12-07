@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	logger "github.com/cloudtrust/common-service/log"
+	logger "github.com/cloudtrust/common-service/v2/log"
 	apiregister "github.com/cloudtrust/keycloak-bridge/api/register"
 	"github.com/cloudtrust/keycloak-bridge/pkg/register/mock"
 	"github.com/golang/mock/gomock"

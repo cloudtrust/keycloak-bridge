@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	cs "github.com/cloudtrust/common-service"
+	cs "github.com/cloudtrust/common-service/v2"
 	"github.com/go-kit/kit/endpoint"
 	"github.com/go-kit/kit/ratelimit"
 	"golang.org/x/time/rate"

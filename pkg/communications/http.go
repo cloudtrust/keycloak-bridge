@@ -6,8 +6,8 @@ import (
 
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 
-	commonhttp "github.com/cloudtrust/common-service/http"
-	"github.com/cloudtrust/common-service/log"
+	commonhttp "github.com/cloudtrust/common-service/v2/http"
+	"github.com/cloudtrust/common-service/v2/log"
 	"github.com/go-kit/kit/endpoint"
 	http_transport "github.com/go-kit/kit/transport/http"
 )

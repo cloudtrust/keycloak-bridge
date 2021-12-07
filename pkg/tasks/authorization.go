@@ -3,9 +3,9 @@ package tasks
 import (
 	"context"
 
-	cs "github.com/cloudtrust/common-service"
-	"github.com/cloudtrust/common-service/log"
-	"github.com/cloudtrust/common-service/security"
+	cs "github.com/cloudtrust/common-service/v2"
+	"github.com/cloudtrust/common-service/v2/log"
+	"github.com/cloudtrust/common-service/v2/security"
 )
 
 var actions []security.Action

@@ -5,8 +5,8 @@ import (
 	"errors"
 	"testing"
 
-	cs "github.com/cloudtrust/common-service"
-	"github.com/cloudtrust/common-service/log"
+	cs "github.com/cloudtrust/common-service/v2"
+	"github.com/cloudtrust/common-service/v2/log"
 	"github.com/cloudtrust/keycloak-bridge/pkg/tasks/mock"
 	"github.com/cloudtrust/keycloak-client/v2"
 	"github.com/golang/mock/gomock"

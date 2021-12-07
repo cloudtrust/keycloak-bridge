@@ -9,9 +9,9 @@ import (
 	"strconv"
 	"strings"
 
-	cs "github.com/cloudtrust/common-service"
-	errorhandler "github.com/cloudtrust/common-service/errors"
-	commonhttp "github.com/cloudtrust/common-service/http"
+	cs "github.com/cloudtrust/common-service/v2"
+	errorhandler "github.com/cloudtrust/common-service/v2/errors"
+	commonhttp "github.com/cloudtrust/common-service/v2/http"
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
 	msg "github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"

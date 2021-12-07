@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/cloudtrust/common-service/database/sqltypes"
-	"github.com/cloudtrust/common-service/log"
-	"github.com/cloudtrust/common-service/security"
+	"github.com/cloudtrust/common-service/v2/database/sqltypes"
+	"github.com/cloudtrust/common-service/v2/log"
+	"github.com/cloudtrust/common-service/v2/security"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 )
 
