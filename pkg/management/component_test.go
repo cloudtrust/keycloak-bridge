@@ -2,6 +2,7 @@ package management
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -4245,6 +4246,868 @@ func TestUpdateAuthorizationsWithAny(t *testing.T) {
 		err := managementComponent.UpdateAuthorizations(ctx, targetMasterRealmName, groupID, apiAuthorizations)
 
 		assert.Nil(t, err)
+	})
+}
+
+func TestPutAuthorization(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mocks = createMocks(mockCtrl)
+	var managementComponent = createComponent(mocks)
+
+	var accessToken = "TOKEN=="
+	var realmName = "master"
+	var targetRealmName = "DEP"
+	var groupID = "41dbf4a8-32a9-4000-8c17-edc854c31231"
+	var groupName = "groupName"
+	var targetGroupName = "targetGroup"
+	var targetGroupId = "124352"
+	var action = "MGMT_DeleteUser"
+	var username = "username"
+	var star = "*"
+
+	var expectedErr = errors.New("test error")
+
+	var group = kc.GroupRepresentation{
+		ID:   &groupID,
+		Name: &groupName,
+	}
+	var groups = []kc.GroupRepresentation{
+		{
+			ID:   &targetGroupId,
+			Name: &targetGroupName,
+		},
+	}
+
+	var realm = kc.RealmRepresentation{
+		ID:    &targetRealmName,
+		Realm: &targetRealmName,
+	}
+	var realms = []kc.RealmRepresentation{realm}
+
+	var clients = []kc.ClientRepresentation{}
+
+	var matrix = map[string]map[string]map[string]struct{}{
+		action: {targetRealmName: {targetGroupName: {}}},
+	}
+	apiAuthz := api.AuthorizationsRepresentation{Matrix: &matrix}
+	dbAuth := configuration.Authorization{
+		RealmID:         &realmName,
+		GroupName:       &groupName,
+		Action:          &action,
+		TargetRealmID:   &targetRealmName,
+		TargetGroupName: &targetGroupName,
+	}
+	var parent = configuration.Authorization{
+		RealmID:         &realmName,
+		GroupName:       group.Name,
+		Action:          &action,
+		TargetRealmID:   &star,
+		TargetGroupName: &star,
+	}
+
+	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+	ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
+	ctx = context.WithValue(ctx, cs.CtContextUsername, username)
+
+	t.Run("Put authorization with success", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil)
+		mocks.keycloakClient.EXPECT().GetRealms(accessToken).Return(realms, nil)
+		mocks.keycloakClient.EXPECT().GetGroups(accessToken, targetRealmName).Return(groups, nil)
+		mocks.keycloakClient.EXPECT().GetClients(accessToken, realmName).Return(clients, nil)
+
+		mocks.configurationDBModule.EXPECT().NewTransaction(ctx).Return(mocks.transaction, nil)
+		mocks.configurationDBModule.EXPECT().GetAuthorizationsForAction(ctx, realmName, groupName, action).Return([]configuration.Authorization{}, sql.ErrNoRows)
+		mocks.configurationDBModule.EXPECT().CreateAuthorization(ctx, dbAuth).Return(nil)
+		mocks.transaction.EXPECT().Commit().Return(nil)
+		mocks.transaction.EXPECT().Close()
+
+		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "API_AUTHORIZATIONS_PUT", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+
+		err := managementComponent.AddAuthorization(ctx, realmName, groupID, apiAuthz)
+
+		assert.Nil(t, err)
+	})
+
+	t.Run("Put authorization already defined by a parent", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil)
+		mocks.keycloakClient.EXPECT().GetRealms(accessToken).Return(realms, nil)
+		mocks.keycloakClient.EXPECT().GetGroups(accessToken, targetRealmName).Return(groups, nil)
+		mocks.keycloakClient.EXPECT().GetClients(accessToken, realmName).Return(clients, nil)
+
+		mocks.configurationDBModule.EXPECT().NewTransaction(ctx).Return(mocks.transaction, nil)
+		mocks.configurationDBModule.EXPECT().GetAuthorizationsForAction(ctx, realmName, groupName, action).Return([]configuration.Authorization{parent}, nil)
+		mocks.transaction.EXPECT().Commit().Return(nil)
+		mocks.transaction.EXPECT().Close()
+
+		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "API_AUTHORIZATIONS_PUT", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+
+		err := managementComponent.AddAuthorization(ctx, realmName, groupID, apiAuthz)
+
+		assert.Nil(t, err)
+	})
+
+	t.Run("Put authorization already defined by a parent -> need to delete children", func(t *testing.T) {
+		child := dbAuth
+		putAuth := api.ConvertToAPIAuthorizations([]configuration.Authorization{parent})
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil)
+		mocks.keycloakClient.EXPECT().GetRealms(accessToken).Return(realms, nil)
+		mocks.keycloakClient.EXPECT().GetGroups(accessToken, targetRealmName).Return(groups, nil)
+		mocks.keycloakClient.EXPECT().GetClients(accessToken, realmName).Return(clients, nil)
+
+		mocks.configurationDBModule.EXPECT().NewTransaction(ctx).Return(mocks.transaction, nil)
+		mocks.configurationDBModule.EXPECT().GetAuthorizationsForAction(ctx, realmName, groupName, action).Return([]configuration.Authorization{child}, nil)
+		mocks.configurationDBModule.EXPECT().DeleteAuthorization(ctx, *child.RealmID, *child.GroupName, *child.TargetRealmID, *child.TargetGroupName, *child.Action)
+		mocks.configurationDBModule.EXPECT().CreateAuthorization(ctx, parent)
+		mocks.transaction.EXPECT().Commit().Return(nil)
+		mocks.transaction.EXPECT().Close()
+
+		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "API_AUTHORIZATIONS_PUT", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+
+		err := managementComponent.AddAuthorization(ctx, realmName, groupID, putAuth)
+
+		assert.Nil(t, err)
+	})
+
+	t.Run("Error GetGroup", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, expectedErr)
+
+		mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any())
+
+		err := managementComponent.AddAuthorization(ctx, realmName, groupID, apiAuthz)
+
+		assert.Equal(t, expectedErr, err)
+	})
+
+	t.Run("Error checkAllowedTargetRealmsAndGroupNames", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil)
+		mocks.keycloakClient.EXPECT().GetRealms(accessToken).Return(realms, expectedErr)
+
+		mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any())
+
+		err := managementComponent.AddAuthorization(ctx, realmName, groupID, apiAuthz)
+
+		assert.Equal(t, expectedErr, err)
+	})
+
+	t.Run("Error Validate scope", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil)
+		mocks.keycloakClient.EXPECT().GetRealms(accessToken).Return(realms, nil)
+		mocks.keycloakClient.EXPECT().GetGroups(accessToken, targetRealmName).Return(groups, nil)
+
+		mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any())
+		var global = "MGMT_GetActions"
+		authorizations := []configuration.Authorization{
+			{
+				RealmID:         &realmName,
+				GroupName:       group.Name,
+				Action:          &global,
+				TargetRealmID:   &targetRealmName,
+				TargetGroupName: &star,
+			},
+		}
+		err := managementComponent.AddAuthorization(ctx, realmName, groupID, api.ConvertToAPIAuthorizations(authorizations))
+
+		assert.NotNil(t, err)
+		assert.Equal(t, "400 .invalidParameter.authorization.scope", err.Error())
+	})
+
+	t.Run("Error assign KC roles to group", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil)
+		mocks.keycloakClient.EXPECT().GetRealms(accessToken).Return(realms, nil)
+		mocks.keycloakClient.EXPECT().GetGroups(accessToken, targetRealmName).Return(groups, nil)
+		mocks.keycloakClient.EXPECT().GetClients(accessToken, realmName).Return(clients, expectedErr)
+
+		mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any())
+
+		err := managementComponent.AddAuthorization(ctx, realmName, groupID, apiAuthz)
+
+		assert.Equal(t, expectedErr, err)
+	})
+
+	t.Run("Error New Transaction", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil)
+		mocks.keycloakClient.EXPECT().GetRealms(accessToken).Return(realms, nil)
+		mocks.keycloakClient.EXPECT().GetGroups(accessToken, targetRealmName).Return(groups, nil)
+		mocks.keycloakClient.EXPECT().GetClients(accessToken, realmName).Return(clients, nil)
+
+		mocks.configurationDBModule.EXPECT().NewTransaction(ctx).Return(mocks.transaction, expectedErr)
+		mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any())
+
+		err := managementComponent.AddAuthorization(ctx, realmName, groupID, apiAuthz)
+
+		assert.Equal(t, expectedErr, err)
+	})
+
+	t.Run("Error - getAuthorizationDependencies", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil)
+		mocks.keycloakClient.EXPECT().GetRealms(accessToken).Return(realms, nil)
+		mocks.keycloakClient.EXPECT().GetGroups(accessToken, targetRealmName).Return(groups, nil)
+		mocks.keycloakClient.EXPECT().GetClients(accessToken, realmName).Return(clients, nil)
+
+		mocks.configurationDBModule.EXPECT().NewTransaction(ctx).Return(mocks.transaction, nil)
+		mocks.configurationDBModule.EXPECT().GetAuthorizationsForAction(ctx, realmName, groupName, action).Return([]configuration.Authorization{}, expectedErr)
+		mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any())
+		mocks.transaction.EXPECT().Close()
+
+		err := managementComponent.AddAuthorization(ctx, realmName, groupID, apiAuthz)
+
+		assert.Equal(t, expectedErr, err)
+	})
+
+	t.Run("Error - Delete children", func(t *testing.T) {
+		child := dbAuth
+		putAuth := api.ConvertToAPIAuthorizations([]configuration.Authorization{parent})
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil)
+		mocks.keycloakClient.EXPECT().GetRealms(accessToken).Return(realms, nil)
+		mocks.keycloakClient.EXPECT().GetGroups(accessToken, targetRealmName).Return(groups, nil)
+		mocks.keycloakClient.EXPECT().GetClients(accessToken, realmName).Return(clients, nil)
+
+		mocks.configurationDBModule.EXPECT().NewTransaction(ctx).Return(mocks.transaction, nil)
+		mocks.configurationDBModule.EXPECT().GetAuthorizationsForAction(ctx, realmName, groupName, action).Return([]configuration.Authorization{child}, nil)
+		mocks.configurationDBModule.EXPECT().DeleteAuthorization(ctx, *child.RealmID, *child.GroupName, *child.TargetRealmID, *child.TargetGroupName, *child.Action).Return(expectedErr)
+		mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any())
+		mocks.transaction.EXPECT().Close()
+
+		err := managementComponent.AddAuthorization(ctx, realmName, groupID, putAuth)
+
+		assert.Equal(t, expectedErr, err)
+	})
+
+	t.Run("ERROR - createAuthorization", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil)
+		mocks.keycloakClient.EXPECT().GetRealms(accessToken).Return(realms, nil)
+		mocks.keycloakClient.EXPECT().GetGroups(accessToken, targetRealmName).Return(groups, nil)
+		mocks.keycloakClient.EXPECT().GetClients(accessToken, realmName).Return(clients, nil)
+
+		mocks.configurationDBModule.EXPECT().NewTransaction(ctx).Return(mocks.transaction, nil)
+		mocks.configurationDBModule.EXPECT().GetAuthorizationsForAction(ctx, realmName, groupName, action).Return([]configuration.Authorization{}, sql.ErrNoRows)
+		mocks.configurationDBModule.EXPECT().CreateAuthorization(ctx, dbAuth).Return(expectedErr)
+		mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any())
+		mocks.transaction.EXPECT().Close()
+
+		err := managementComponent.AddAuthorization(ctx, realmName, groupID, apiAuthz)
+
+		assert.Equal(t, expectedErr, err)
+	})
+
+	t.Run("ERROR - Commit", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil)
+		mocks.keycloakClient.EXPECT().GetRealms(accessToken).Return(realms, nil)
+		mocks.keycloakClient.EXPECT().GetGroups(accessToken, targetRealmName).Return(groups, nil)
+		mocks.keycloakClient.EXPECT().GetClients(accessToken, realmName).Return(clients, nil)
+
+		mocks.configurationDBModule.EXPECT().NewTransaction(ctx).Return(mocks.transaction, nil)
+		mocks.configurationDBModule.EXPECT().GetAuthorizationsForAction(ctx, realmName, groupName, action).Return([]configuration.Authorization{}, sql.ErrNoRows)
+		mocks.configurationDBModule.EXPECT().CreateAuthorization(ctx, dbAuth).Return(nil)
+		mocks.transaction.EXPECT().Commit().Return(expectedErr)
+		mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any())
+		mocks.transaction.EXPECT().Close()
+
+		err := managementComponent.AddAuthorization(ctx, realmName, groupID, apiAuthz)
+
+		assert.Equal(t, expectedErr, err)
+	})
+}
+
+func TestGetAuthorization(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mocks = createMocks(mockCtrl)
+	var managementComponent = createComponent(mocks)
+
+	var accessToken = "TOKEN=="
+	var realmName = "master"
+	var targetRealmName = "DEP"
+	var groupID = "41dbf4a8-32a9-4000-8c17-edc854c31231"
+	var groupName = "groupName"
+	var targetGroupName = "targetGroup"
+	var targetGroupId = "124352"
+	var action = "ActionTest"
+	var username = "username"
+	var star = "*"
+
+	var expectedErr = errors.New("test error")
+
+	var group = kc.GroupRepresentation{
+		ID:   &groupID,
+		Name: &groupName,
+	}
+
+	var targetGroup = kc.GroupRepresentation{
+		ID:   &targetGroupId,
+		Name: &targetGroupName,
+	}
+
+	var parent = configuration.Authorization{
+		RealmID:         &realmName,
+		GroupName:       group.Name,
+		Action:          &action,
+		TargetRealmID:   &star,
+		TargetGroupName: &star,
+	}
+	var child = configuration.Authorization{
+		RealmID:         &realmName,
+		GroupName:       group.Name,
+		Action:          &action,
+		TargetRealmID:   &targetRealmName,
+		TargetGroupName: &targetGroupName,
+	}
+
+	var extpectedAuthzNegativeMsg = api.AuthorizationMessage{
+		Authorized: false,
+	}
+	var extpectedAuthzPositiveMsg = api.AuthorizationMessage{
+		Authorized: true,
+	}
+
+	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+	ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
+	ctx = context.WithValue(ctx, cs.CtContextUsername, username)
+
+	t.Run("Get assigned authorization with succces - authorized", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil)
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, targetRealmName, targetGroupId).Return(targetGroup, nil)
+		mocks.configurationDBModule.EXPECT().AuthorizationExists(ctx, realmName, groupName, targetRealmName, targetGroupName, action).Return(true, nil)
+
+		authzMsg, err := managementComponent.GetAuthorization(ctx, realmName, groupID, targetRealmName, targetGroupId, action)
+
+		assert.Nil(t, err)
+		assert.Equal(t, extpectedAuthzPositiveMsg, authzMsg)
+	})
+
+	t.Run("Get assigned global authorization with succces - authorized", func(t *testing.T) {
+		var globalAction = "GlobalAction"
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil)
+		mocks.configurationDBModule.EXPECT().AuthorizationExists(ctx, realmName, groupName, star, star, globalAction).Return(true, nil)
+
+		authzMsg, err := managementComponent.GetAuthorization(ctx, realmName, groupID, "", "", globalAction)
+
+		assert.Nil(t, err)
+		assert.Equal(t, extpectedAuthzPositiveMsg, authzMsg)
+	})
+
+	t.Run("Get assigned realm authorization with succces - authorized", func(t *testing.T) {
+		var realmAction = "GlobalAction"
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil)
+		mocks.configurationDBModule.EXPECT().AuthorizationExists(ctx, realmName, groupName, targetRealmName, star, realmAction).Return(true, nil)
+
+		authzMsg, err := managementComponent.GetAuthorization(ctx, realmName, groupID, targetRealmName, "", realmAction)
+
+		assert.Nil(t, err)
+		assert.Equal(t, extpectedAuthzPositiveMsg, authzMsg)
+	})
+
+	t.Run("Get authorization with succces - unauthorized", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil)
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, targetRealmName, targetGroupId).Return(targetGroup, nil)
+		mocks.configurationDBModule.EXPECT().AuthorizationExists(ctx, realmName, groupName, targetRealmName, targetGroupName, action).Return(false, nil)
+		mocks.configurationDBModule.EXPECT().GetAuthorizationsForAction(ctx, realmName, groupName, action).Return([]configuration.Authorization{}, sql.ErrNoRows)
+
+		authzMsg, err := managementComponent.GetAuthorization(ctx, realmName, groupID, targetRealmName, targetGroupId, action)
+
+		assert.Nil(t, err)
+		assert.Equal(t, extpectedAuthzNegativeMsg, authzMsg)
+	})
+
+	t.Run("Get authorization by parent with succces", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil)
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, targetRealmName, targetGroupId).Return(targetGroup, nil)
+		mocks.configurationDBModule.EXPECT().AuthorizationExists(ctx, realmName, groupName, targetRealmName, targetGroupName, action).Return(false, nil)
+		mocks.configurationDBModule.EXPECT().GetAuthorizationsForAction(ctx, realmName, groupName, action).Return([]configuration.Authorization{parent}, nil)
+
+		authzMsg, err := managementComponent.GetAuthorization(ctx, realmName, groupID, targetRealmName, targetGroupId, action)
+
+		assert.Nil(t, err)
+		assert.Equal(t, extpectedAuthzPositiveMsg, authzMsg)
+	})
+
+	t.Run("Get authorization by child - unauthorized", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil)
+		mocks.configurationDBModule.EXPECT().AuthorizationExists(ctx, realmName, groupName, star, star, action).Return(false, nil)
+		mocks.configurationDBModule.EXPECT().GetAuthorizationsForAction(ctx, realmName, groupName, action).Return([]configuration.Authorization{child}, nil)
+
+		authzMsg, err := managementComponent.GetAuthorization(ctx, realmName, groupID, "", "", action)
+
+		assert.Nil(t, err)
+		assert.Equal(t, extpectedAuthzNegativeMsg, authzMsg)
+	})
+
+	t.Run("Get authorization - group resolution failure", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, expectedErr)
+		mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any())
+		authzMsg, err := managementComponent.GetAuthorization(ctx, realmName, groupID, targetRealmName, targetGroupId, action)
+		assert.Equal(t, expectedErr, err)
+		assert.Equal(t, extpectedAuthzNegativeMsg, authzMsg)
+	})
+
+	t.Run("Get authorization - target group resolution failure", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil)
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, targetRealmName, targetGroupId).Return(targetGroup, expectedErr)
+		mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any())
+		authzMsg, err := managementComponent.GetAuthorization(ctx, realmName, groupID, targetRealmName, targetGroupId, action)
+		assert.Equal(t, expectedErr, err)
+		assert.Equal(t, extpectedAuthzNegativeMsg, authzMsg)
+	})
+
+	t.Run("Get authorization - DB step 1 error", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil)
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, targetRealmName, targetGroupId).Return(targetGroup, nil)
+		mocks.configurationDBModule.EXPECT().AuthorizationExists(ctx, realmName, groupName, targetRealmName, targetGroupName, action).Return(false, expectedErr)
+		mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any())
+
+		authzMsg, err := managementComponent.GetAuthorization(ctx, realmName, groupID, targetRealmName, targetGroupId, action)
+
+		assert.Equal(t, expectedErr, err)
+		assert.Equal(t, extpectedAuthzNegativeMsg, authzMsg)
+	})
+
+	t.Run("Get authorization - DB step 2 error", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil)
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, targetRealmName, targetGroupId).Return(targetGroup, nil)
+		mocks.configurationDBModule.EXPECT().AuthorizationExists(ctx, realmName, groupName, targetRealmName, targetGroupName, action).Return(false, nil)
+		mocks.configurationDBModule.EXPECT().GetAuthorizationsForAction(ctx, realmName, groupName, action).Return([]configuration.Authorization{}, expectedErr)
+		mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any())
+
+		authzMsg, err := managementComponent.GetAuthorization(ctx, realmName, groupID, targetRealmName, targetGroupId, action)
+
+		assert.Equal(t, expectedErr, err)
+		assert.Equal(t, extpectedAuthzNegativeMsg, authzMsg)
+	})
+}
+
+func TestDeleteAuthorization(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mocks = createMocks(mockCtrl)
+	var managementComponent = createComponent(mocks)
+
+	var accessToken = "TOKEN=="
+	var realmName = "master"
+	var targetRealmName = "DEP"
+	var anotherRealmName = "test"
+	var groupID = "41dbf4a8-32a9-4000-8c17-edc854c31231"
+	var groupName = "groupName"
+	var targetGroupName = "targetGroup"
+	var targetGroupId = "124352"
+	var anotherTargetGroupName = "test group"
+	var anotherTargetGroupId = "1247468352"
+	var action = "MGMT_DeleteUser"
+	var username = "username"
+	var star = "*"
+
+	var expectedErr = errors.New("test error")
+
+	var group = kc.GroupRepresentation{
+		ID:   &groupID,
+		Name: &groupName,
+	}
+	var targetGroup = kc.GroupRepresentation{
+		ID:   &targetGroupId,
+		Name: &targetGroupName,
+	}
+	var anotherGroup = kc.GroupRepresentation{
+		ID:   &anotherTargetGroupName,
+		Name: &anotherTargetGroupId,
+	}
+
+	var groups = []kc.GroupRepresentation{
+		targetGroup, anotherGroup,
+	}
+
+	var realm = kc.RealmRepresentation{
+		ID:    &targetRealmName,
+		Realm: &targetRealmName,
+	}
+
+	var anotherRealm = kc.RealmRepresentation{
+		ID:    &anotherRealmName,
+		Realm: &anotherRealmName,
+	}
+
+	var realms = []kc.RealmRepresentation{realm}
+
+	dbAuth := configuration.Authorization{
+		RealmID:         &realmName,
+		GroupName:       &groupName,
+		Action:          &action,
+		TargetRealmID:   &targetRealmName,
+		TargetGroupName: &targetGroupName,
+	}
+	var parent = configuration.Authorization{
+		RealmID:         &realmName,
+		GroupName:       group.Name,
+		Action:          &action,
+		TargetRealmID:   &star,
+		TargetGroupName: &star,
+	}
+
+	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+	ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
+	ctx = context.WithValue(ctx, cs.CtContextUsername, username)
+
+	t.Run("Delete authorization, no parent, no child - SUCCESS", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil)
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, targetRealmName, targetGroupId).Return(targetGroup, nil)
+		mocks.configurationDBModule.EXPECT().GetAuthorizationsForAction(ctx, realmName, groupName, action).Return([]configuration.Authorization{}, sql.ErrNoRows)
+
+		mocks.configurationDBModule.EXPECT().NewTransaction(ctx).Return(mocks.transaction, nil)
+		mocks.configurationDBModule.EXPECT().DeleteAuthorization(ctx, realmName, groupName, targetRealmName, targetGroupName, action)
+		mocks.transaction.EXPECT().Commit().Return(nil)
+		mocks.transaction.EXPECT().Close()
+
+		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "API_AUTHORIZATION_DELETE", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+
+		err := managementComponent.DeleteAuthorization(ctx, realmName, groupID, targetRealmName, targetGroupId, action)
+
+		assert.Nil(t, err)
+	})
+
+	t.Run("Delete global authorization, no parent, no child - SUCCESS", func(t *testing.T) {
+		var globalAction = "MGMT_GetActions"
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil)
+		mocks.configurationDBModule.EXPECT().GetAuthorizationsForAction(ctx, realmName, groupName, globalAction).Return([]configuration.Authorization{}, sql.ErrNoRows)
+
+		mocks.configurationDBModule.EXPECT().NewTransaction(ctx).Return(mocks.transaction, nil)
+		mocks.configurationDBModule.EXPECT().DeleteGlobalAuthorization(ctx, realmName, groupName, star, globalAction)
+		mocks.transaction.EXPECT().Commit().Return(nil)
+		mocks.transaction.EXPECT().Close()
+
+		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "API_AUTHORIZATION_DELETE", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+
+		err := managementComponent.DeleteAuthorization(ctx, realmName, groupID, "", "", globalAction)
+
+		assert.Nil(t, err)
+	})
+
+	t.Run("Delete child from realm - SUCCESS", func(t *testing.T) {
+		child := dbAuth
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil)
+		mocks.configurationDBModule.EXPECT().GetAuthorizationsForAction(ctx, realmName, groupName, action).Return([]configuration.Authorization{child}, nil)
+
+		mocks.configurationDBModule.EXPECT().NewTransaction(ctx).Return(mocks.transaction, nil)
+		mocks.configurationDBModule.EXPECT().DeleteAuthorization(ctx, realmName, groupName, targetRealmName, star, action)
+		mocks.configurationDBModule.EXPECT().DeleteAuthorization(ctx, realmName, groupName, *child.TargetRealmID, *child.TargetGroupName, *child.Action)
+		mocks.transaction.EXPECT().Commit().Return(nil)
+		mocks.transaction.EXPECT().Close()
+
+		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "API_AUTHORIZATION_DELETE", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+
+		err := managementComponent.DeleteAuthorization(ctx, realmName, groupID, targetRealmName, "", action)
+
+		assert.Nil(t, err)
+	})
+
+	t.Run("Delete realm child - SUCCESS", func(t *testing.T) {
+		child := configuration.Authorization{
+			RealmID:         &realmName,
+			GroupName:       &groupName,
+			Action:          &action,
+			TargetRealmID:   &targetRealmName,
+			TargetGroupName: &star,
+		}
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil)
+		mocks.configurationDBModule.EXPECT().GetAuthorizationsForAction(ctx, realmName, groupName, action).Return([]configuration.Authorization{child}, nil)
+
+		mocks.configurationDBModule.EXPECT().NewTransaction(ctx).Return(mocks.transaction, nil)
+		mocks.configurationDBModule.EXPECT().DeleteAuthorization(ctx, realmName, groupName, star, star, action)
+		mocks.configurationDBModule.EXPECT().DeleteAuthorization(ctx, realmName, groupName, *child.TargetRealmID, *child.TargetGroupName, *child.Action)
+		mocks.transaction.EXPECT().Commit().Return(nil)
+		mocks.transaction.EXPECT().Close()
+
+		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "API_AUTHORIZATION_DELETE", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+
+		err := managementComponent.DeleteAuthorization(ctx, realmName, groupID, "", "", action)
+
+		assert.Nil(t, err)
+	})
+
+	t.Run("Delete authorization, no parent, child - SUCCESS", func(t *testing.T) {
+		child := dbAuth
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil)
+		mocks.configurationDBModule.EXPECT().GetAuthorizationsForAction(ctx, realmName, groupName, action).Return([]configuration.Authorization{parent, child}, nil)
+
+		mocks.configurationDBModule.EXPECT().NewTransaction(ctx).Return(mocks.transaction, nil)
+		mocks.configurationDBModule.EXPECT().DeleteAuthorization(ctx, realmName, groupName, star, star, action)
+		mocks.configurationDBModule.EXPECT().DeleteAuthorization(ctx, *child.RealmID, *child.GroupName, *child.TargetRealmID, *child.TargetGroupName, *child.Action)
+		mocks.transaction.EXPECT().Commit().Return(nil)
+		mocks.transaction.EXPECT().Close()
+
+		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "API_AUTHORIZATION_DELETE", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+
+		err := managementComponent.DeleteAuthorization(ctx, realmName, groupID, "", "", action)
+
+		assert.Nil(t, err)
+	})
+
+	t.Run("Delete authorization, parent, no child - SUCCESS", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil)
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, targetRealmName, targetGroupId).Return(targetGroup, nil)
+		mocks.configurationDBModule.EXPECT().GetAuthorizationsForAction(ctx, realmName, groupName, action).Return([]configuration.Authorization{parent, dbAuth}, nil)
+
+		mocks.configurationDBModule.EXPECT().NewTransaction(ctx).Return(mocks.transaction, nil)
+		mocks.keycloakClient.EXPECT().GetRealms(accessToken).Return(realms, nil)
+		mocks.keycloakClient.EXPECT().GetGroups(accessToken, targetRealmName).Return(groups, nil)
+		mocks.configurationDBModule.EXPECT().CreateAuthorization(ctx, gomock.Any())
+		mocks.configurationDBModule.EXPECT().DeleteAuthorization(ctx, realmName, groupName, star, star, action)
+
+		mocks.transaction.EXPECT().Commit().Return(nil)
+		mocks.transaction.EXPECT().Close()
+
+		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "API_AUTHORIZATION_DELETE", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+
+		err := managementComponent.DeleteAuthorization(ctx, realmName, groupID, targetRealmName, targetGroupId, action)
+
+		assert.Nil(t, err)
+	})
+
+	t.Run("Delete authorization, parent, no child more realms - SUCCESS", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil)
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, targetRealmName, targetGroupId).Return(targetGroup, nil)
+		mocks.configurationDBModule.EXPECT().GetAuthorizationsForAction(ctx, realmName, groupName, action).Return([]configuration.Authorization{parent, dbAuth}, nil)
+
+		mocks.configurationDBModule.EXPECT().NewTransaction(ctx).Return(mocks.transaction, nil)
+		mocks.keycloakClient.EXPECT().GetRealms(accessToken).Return(append(realms, anotherRealm), nil)
+		mocks.keycloakClient.EXPECT().GetGroups(accessToken, targetRealmName).Return(groups, nil)
+		mocks.configurationDBModule.EXPECT().CreateAuthorization(ctx, gomock.Any())
+		mocks.configurationDBModule.EXPECT().CreateAuthorization(ctx, gomock.Any())
+		mocks.configurationDBModule.EXPECT().DeleteAuthorization(ctx, realmName, groupName, star, star, action)
+
+		mocks.transaction.EXPECT().Commit().Return(nil)
+		mocks.transaction.EXPECT().Close()
+
+		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "API_AUTHORIZATION_DELETE", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+
+		err := managementComponent.DeleteAuthorization(ctx, realmName, groupID, targetRealmName, targetGroupId, action)
+
+		assert.Nil(t, err)
+	})
+
+	t.Run("Delete authorization, parent group level, no child more realms - SUCCESS", func(t *testing.T) {
+		var parentGroupLevel = configuration.Authorization{
+			RealmID:         &realmName,
+			GroupName:       group.Name,
+			Action:          &action,
+			TargetRealmID:   &targetRealmName,
+			TargetGroupName: &star,
+		}
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil)
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, targetRealmName, targetGroupId).Return(targetGroup, nil)
+		mocks.configurationDBModule.EXPECT().GetAuthorizationsForAction(ctx, realmName, groupName, action).Return([]configuration.Authorization{parentGroupLevel, dbAuth}, nil)
+
+		mocks.configurationDBModule.EXPECT().NewTransaction(ctx).Return(mocks.transaction, nil)
+		mocks.keycloakClient.EXPECT().GetGroups(accessToken, targetRealmName).Return(groups, nil)
+		mocks.configurationDBModule.EXPECT().CreateAuthorization(ctx, gomock.Any())
+		mocks.configurationDBModule.EXPECT().DeleteAuthorization(ctx, realmName, groupName, targetRealmName, star, action)
+
+		mocks.transaction.EXPECT().Commit().Return(nil)
+		mocks.transaction.EXPECT().Close()
+
+		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "API_AUTHORIZATION_DELETE", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+
+		err := managementComponent.DeleteAuthorization(ctx, realmName, groupID, targetRealmName, targetGroupId, action)
+
+		assert.Nil(t, err)
+	})
+
+	t.Run("Delete authorization - get Group error", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, expectedErr)
+
+		mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any())
+
+		err := managementComponent.DeleteAuthorization(ctx, realmName, groupID, "", "", action)
+
+		assert.Equal(t, expectedErr, err)
+	})
+
+	t.Run("Delete authorization - get scope error", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil)
+
+		mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any())
+
+		err := managementComponent.DeleteAuthorization(ctx, realmName, groupID, "", "", "FakeAction")
+
+		assert.NotNil(t, err)
+		assert.Equal(t, "400 .invalidParameter.authorization.action", err.Error())
+	})
+
+	t.Run("Delete authorization - validate scope", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil)
+
+		mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any())
+
+		err := managementComponent.DeleteAuthorization(ctx, realmName, groupID, targetRealmName, star, "MGMT_GetActions")
+
+		assert.NotNil(t, err)
+		assert.Equal(t, "400 .invalidParameter.authorization.scope", err.Error())
+	})
+
+	t.Run("Delete authorization - get Group 2 error", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil)
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, targetRealmName, targetGroupId).Return(targetGroup, expectedErr)
+		mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any())
+
+		err := managementComponent.DeleteAuthorization(ctx, realmName, groupID, targetRealmName, targetGroupId, action)
+
+		assert.Equal(t, expectedErr, err)
+	})
+
+	t.Run("Delete authorization - getAuthorizationDependencies error", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil)
+		mocks.configurationDBModule.EXPECT().GetAuthorizationsForAction(ctx, realmName, groupName, action).Return([]configuration.Authorization{}, expectedErr)
+
+		mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any())
+
+		err := managementComponent.DeleteAuthorization(ctx, realmName, groupID, "", "", action)
+
+		assert.Equal(t, expectedErr, err)
+	})
+
+	t.Run("Delete authorization, no parent, child - New transaction error", func(t *testing.T) {
+		child := dbAuth
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil)
+		mocks.configurationDBModule.EXPECT().GetAuthorizationsForAction(ctx, realmName, groupName, action).Return([]configuration.Authorization{parent, child}, nil)
+
+		mocks.configurationDBModule.EXPECT().NewTransaction(ctx).Return(mocks.transaction, expectedErr)
+		mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any())
+		mocks.transaction.EXPECT().Close()
+
+		err := managementComponent.DeleteAuthorization(ctx, realmName, groupID, "", "", action)
+
+		assert.Equal(t, expectedErr, err)
+	})
+
+	t.Run("Delete authorization, no parent, child - delete error 1", func(t *testing.T) {
+		child := dbAuth
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil)
+		mocks.configurationDBModule.EXPECT().GetAuthorizationsForAction(ctx, realmName, groupName, action).Return([]configuration.Authorization{parent, child}, nil)
+
+		mocks.configurationDBModule.EXPECT().NewTransaction(ctx).Return(mocks.transaction, nil)
+		mocks.configurationDBModule.EXPECT().DeleteAuthorization(ctx, realmName, groupName, star, star, action).Return(expectedErr)
+		mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any())
+		mocks.transaction.EXPECT().Close()
+
+		err := managementComponent.DeleteAuthorization(ctx, realmName, groupID, "", "", action)
+
+		assert.Equal(t, expectedErr, err)
+	})
+
+	t.Run("Delete authorization, no parent, child - delete error 2", func(t *testing.T) {
+		child := dbAuth
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil)
+		mocks.configurationDBModule.EXPECT().GetAuthorizationsForAction(ctx, realmName, groupName, action).Return([]configuration.Authorization{parent, child}, nil)
+
+		mocks.configurationDBModule.EXPECT().NewTransaction(ctx).Return(mocks.transaction, nil)
+		mocks.configurationDBModule.EXPECT().DeleteAuthorization(ctx, realmName, groupName, star, star, action)
+		mocks.configurationDBModule.EXPECT().DeleteAuthorization(ctx, realmName, groupName, *child.TargetRealmID, *child.TargetGroupName, *child.Action).Return(expectedErr)
+		mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any())
+		mocks.transaction.EXPECT().Close()
+
+		err := managementComponent.DeleteAuthorization(ctx, realmName, groupID, "", "", action)
+
+		assert.Equal(t, expectedErr, err)
+	})
+
+	t.Run("Delete authorization, parent, no child - get realms error", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil)
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, targetRealmName, targetGroupId).Return(targetGroup, nil)
+		mocks.configurationDBModule.EXPECT().GetAuthorizationsForAction(ctx, realmName, groupName, action).Return([]configuration.Authorization{parent, dbAuth}, nil)
+
+		mocks.configurationDBModule.EXPECT().NewTransaction(ctx).Return(mocks.transaction, nil)
+		mocks.keycloakClient.EXPECT().GetRealms(accessToken).Return(realms, expectedErr)
+		mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any())
+		mocks.transaction.EXPECT().Close()
+
+		err := managementComponent.DeleteAuthorization(ctx, realmName, groupID, targetRealmName, targetGroupId, action)
+
+		assert.Equal(t, expectedErr, err)
+	})
+
+	t.Run("Delete authorization, parent, no child - get group error", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil)
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, targetRealmName, targetGroupId).Return(targetGroup, nil)
+		mocks.configurationDBModule.EXPECT().GetAuthorizationsForAction(ctx, realmName, groupName, action).Return([]configuration.Authorization{parent, dbAuth}, nil)
+
+		mocks.configurationDBModule.EXPECT().NewTransaction(ctx).Return(mocks.transaction, nil)
+		mocks.keycloakClient.EXPECT().GetRealms(accessToken).Return(realms, nil)
+		mocks.keycloakClient.EXPECT().GetGroups(accessToken, targetRealmName).Return(groups, expectedErr)
+		mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any())
+		mocks.transaction.EXPECT().Close()
+
+		err := managementComponent.DeleteAuthorization(ctx, realmName, groupID, targetRealmName, targetGroupId, action)
+
+		assert.Equal(t, expectedErr, err)
+	})
+
+	t.Run("Delete authorization, parent, no child - create auth error", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil)
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, targetRealmName, targetGroupId).Return(targetGroup, nil)
+		mocks.configurationDBModule.EXPECT().GetAuthorizationsForAction(ctx, realmName, groupName, action).Return([]configuration.Authorization{parent, dbAuth}, nil)
+
+		mocks.configurationDBModule.EXPECT().NewTransaction(ctx).Return(mocks.transaction, nil)
+		mocks.keycloakClient.EXPECT().GetRealms(accessToken).Return(realms, nil)
+		mocks.keycloakClient.EXPECT().GetGroups(accessToken, targetRealmName).Return(groups, nil)
+		mocks.configurationDBModule.EXPECT().CreateAuthorization(ctx, gomock.Any()).Return(expectedErr)
+		mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any())
+		mocks.transaction.EXPECT().Close()
+
+		err := managementComponent.DeleteAuthorization(ctx, realmName, groupID, targetRealmName, targetGroupId, action)
+
+		assert.Equal(t, expectedErr, err)
+	})
+
+	t.Run("Delete authorization, parent, no child more realms - create auth error", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil)
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, targetRealmName, targetGroupId).Return(targetGroup, nil)
+		mocks.configurationDBModule.EXPECT().GetAuthorizationsForAction(ctx, realmName, groupName, action).Return([]configuration.Authorization{parent, dbAuth}, nil)
+
+		mocks.configurationDBModule.EXPECT().NewTransaction(ctx).Return(mocks.transaction, nil)
+		mocks.keycloakClient.EXPECT().GetRealms(accessToken).Return(append(realms, anotherRealm), nil)
+		mocks.keycloakClient.EXPECT().GetGroups(accessToken, targetRealmName).Return(groups, nil)
+		mocks.configurationDBModule.EXPECT().CreateAuthorization(ctx, gomock.Any())
+		mocks.configurationDBModule.EXPECT().CreateAuthorization(ctx, gomock.Any()).Return(expectedErr)
+		mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any())
+		mocks.transaction.EXPECT().Close()
+
+		err := managementComponent.DeleteAuthorization(ctx, realmName, groupID, targetRealmName, targetGroupId, action)
+
+		assert.Equal(t, expectedErr, err)
+	})
+
+	t.Run("Delete authorization, delete error 3", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil)
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, targetRealmName, targetGroupId).Return(targetGroup, nil)
+		mocks.configurationDBModule.EXPECT().GetAuthorizationsForAction(ctx, realmName, groupName, action).Return([]configuration.Authorization{parent, dbAuth}, nil)
+
+		mocks.configurationDBModule.EXPECT().NewTransaction(ctx).Return(mocks.transaction, nil)
+		mocks.keycloakClient.EXPECT().GetRealms(accessToken).Return(realms, nil)
+		mocks.keycloakClient.EXPECT().GetGroups(accessToken, targetRealmName).Return(groups, nil)
+		mocks.configurationDBModule.EXPECT().CreateAuthorization(ctx, gomock.Any())
+		mocks.configurationDBModule.EXPECT().DeleteAuthorization(ctx, realmName, groupName, star, star, action).Return(expectedErr)
+		mocks.transaction.EXPECT().Close()
+		mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any())
+
+		err := managementComponent.DeleteAuthorization(ctx, realmName, groupID, targetRealmName, targetGroupId, action)
+
+		assert.Equal(t, expectedErr, err)
+	})
+
+	t.Run("Delete authorization, commit error", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil)
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, targetRealmName, targetGroupId).Return(targetGroup, nil)
+		mocks.configurationDBModule.EXPECT().GetAuthorizationsForAction(ctx, realmName, groupName, action).Return([]configuration.Authorization{}, sql.ErrNoRows)
+
+		mocks.configurationDBModule.EXPECT().NewTransaction(ctx).Return(mocks.transaction, nil)
+		mocks.configurationDBModule.EXPECT().DeleteAuthorization(ctx, realmName, groupName, targetRealmName, targetGroupName, action)
+		mocks.transaction.EXPECT().Commit().Return(expectedErr)
+		mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any())
+
+		err := managementComponent.DeleteAuthorization(ctx, realmName, groupID, targetRealmName, targetGroupId, action)
+
+		assert.Equal(t, expectedErr, err)
 	})
 }
 

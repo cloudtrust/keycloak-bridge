@@ -173,6 +173,10 @@ type AuthorizationsRepresentation struct {
 	Matrix *map[string]map[string]map[string]struct{} `json:"matrix"`
 }
 
+type AuthorizationMessage struct {
+	Authorized bool
+}
+
 // ActionRepresentation struct
 type ActionRepresentation struct {
 	Name  *string `json:"name"`

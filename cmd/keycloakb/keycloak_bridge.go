@@ -768,6 +768,9 @@ func main() {
 			DeleteGroup:          prepareEndpoint(management.MakeDeleteGroupEndpoint(keycloakComponent), "delete_group_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 			GetAuthorizations:    prepareEndpoint(management.MakeGetAuthorizationsEndpoint(keycloakComponent), "get_authorizations_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 			UpdateAuthorizations: prepareEndpoint(management.MakeUpdateAuthorizationsEndpoint(keycloakComponent), "update_authorizations_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			AddAuthorization:     prepareEndpoint(management.MakeAddAuthorizationEndpoint(keycloakComponent), "add_authorization_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			GetAuthorization:     prepareEndpoint(management.MakeGetAuthorizationEndpoint(keycloakComponent), "get_authorization_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			DeleteAuthorization:  prepareEndpoint(management.MakeDeleteAuthorizationEndpoint(keycloakComponent), "delete_authorization_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 
 			GetClientRoles:       prepareEndpoint(management.MakeGetClientRolesEndpoint(keycloakComponent), "get_client_roles_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 			CreateClientRole:     prepareEndpoint(management.MakeCreateClientRoleEndpoint(keycloakComponent, managementLogger), "create_client_role_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
@@ -1118,6 +1121,9 @@ func main() {
 		var deleteGroupHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.DeleteGroup)
 		var getAuthorizationsHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetAuthorizations)
 		var updateAuthorizationsHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.UpdateAuthorizations)
+		var addAuthorizationHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.AddAuthorization)
+		var getAuthorizationHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetAuthorization)
+		var deleteAuthorizationHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.DeleteAuthorization)
 		var getManagementActionsHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetActions)
 
 		var resetPasswordHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.ResetPassword)
@@ -1225,6 +1231,9 @@ func main() {
 		managementSubroute.Path("/realms/{realm}/groups/{groupID}").Methods("DELETE").Handler(deleteGroupHandler)
 		managementSubroute.Path("/realms/{realm}/groups/{groupID}/authorizations").Methods("GET").Handler(getAuthorizationsHandler)
 		managementSubroute.Path("/realms/{realm}/groups/{groupID}/authorizations").Methods("PUT").Handler(updateAuthorizationsHandler)
+		managementSubroute.Path("/realms/{realm}/groups/{groupID}/actions/{action}/authorizations").Methods("PUT").Handler(addAuthorizationHandler)
+		managementSubroute.Path("/realms/{realm}/groups/{groupID}/actions/{action}/authorizations").Methods("GET").Handler(getAuthorizationHandler)
+		managementSubroute.Path("/realms/{realm}/groups/{groupID}/actions/{action}/authorizations").Methods("DELETE").Handler(deleteAuthorizationHandler)
 
 		// custom configuration per realm
 		managementSubroute.Path("/realms/{realm}/configuration").Methods("GET").Handler(getRealmCustomConfigurationHandler)

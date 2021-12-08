@@ -78,6 +78,9 @@ type Endpoints struct {
 	DeleteGroup          endpoint.Endpoint
 	GetAuthorizations    endpoint.Endpoint
 	UpdateAuthorizations endpoint.Endpoint
+	AddAuthorization     endpoint.Endpoint
+	GetAuthorization     endpoint.Endpoint
+	DeleteAuthorization  endpoint.Endpoint
 	GetActions           endpoint.Endpoint
 
 	GetRealmCustomConfiguration         endpoint.Endpoint
@@ -809,6 +812,40 @@ func MakeUpdateAuthorizationsEndpoint(component Component) cs.Endpoint {
 		}
 
 		return nil, component.UpdateAuthorizations(ctx, m[prmRealm], m[prmGroupID], authorizations)
+	}
+}
+
+// MakePutAuthorizationEndpoint creates an endpoint for PutAuthorization
+func MakeAddAuthorizationEndpoint(component Component) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+		var err error
+
+		var authorizations api.AuthorizationsRepresentation
+
+		if err = json.Unmarshal([]byte(m[reqBody]), &authorizations); err != nil {
+			return nil, errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Body)
+		}
+
+		return nil, component.AddAuthorization(ctx, m[prmRealm], m[prmGroupID], authorizations)
+	}
+}
+
+// MakeGetAuthorizationEndpoint creates an endpoint for GetAuthorization
+func MakeGetAuthorizationEndpoint(component Component) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+
+		return component.GetAuthorization(ctx, m[prmRealm], m[prmGroupID], m[prmQryTargetRealm], m[prmQryTargetGroupID], m[prmAction])
+	}
+}
+
+// MakeDeleteAuthorizationEndpoint creates an endpoint for DeleteAuthorizationEndpoint
+func MakeDeleteAuthorizationEndpoint(component Component) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+
+		return nil, component.DeleteAuthorization(ctx, m[prmRealm], m[prmGroupID], m[prmQryTargetRealm], m[prmQryTargetGroupID], m[prmAction])
 	}
 }
 
