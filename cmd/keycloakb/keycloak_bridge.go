@@ -722,7 +722,7 @@ func main() {
 		var keycloakComponent management.Component
 		{
 			/* REMOVE_THIS_3901 : remove second parameter */
-			keycloakComponent = management.NewComponent(keycloakClient, keycloakConfig.URIProvider, usersDBModule, eventsDBModule, configDBModule, onboardingModule, trustIDGroups, registerRealm, glnVerifier, managementLogger)
+			keycloakComponent = management.NewComponent(keycloakClient, keycloakConfig.URIProvider, usersDBModule, eventsDBModule, configDBModule, onboardingModule, authorizationManager, trustIDGroups, registerRealm, glnVerifier, managementLogger)
 			keycloakComponent = management.MakeAuthorizationManagementComponentMW(log.With(managementLogger, "mw", "endpoint"), authorizationManager)(keycloakComponent)
 		}
 

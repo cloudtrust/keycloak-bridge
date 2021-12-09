@@ -38,7 +38,7 @@ github.com/certifi/gocertifi
 ## explicit
 # github.com/cloudtrust/common-service v1.2.6-0.20211110103624-faf08bf0ed05
 github.com/cloudtrust/common-service/errors
-# github.com/cloudtrust/common-service/v2 v2.5.2
+# github.com/cloudtrust/common-service/v2 v2.5.3-0.20211209095354-0125f4bc4c77
 ## explicit
 github.com/cloudtrust/common-service/v2
 github.com/cloudtrust/common-service/v2/configuration

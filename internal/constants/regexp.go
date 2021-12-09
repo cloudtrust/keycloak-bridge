@@ -42,11 +42,13 @@ const (
 	RegExpRequiredAction = `^[a-zA-Z0-9-_]{1,255}$`
 
 	// Others
-	RegExpRealmName = `^[a-zA-Z0-9_-]{1,36}$`
-	RegExpSearch    = regExpLen128
-	RegExpLifespan  = `^[0-9]{1,10}$`
-	RegExpGroupIds  = `^([a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12})(,[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}){0,20}$`
-	RegExpNumber    = `^\d+$`
+	RegExpRealmName       = `^[a-zA-Z0-9_-]{1,36}$`
+	RegExpTargetRealmName = `^([a-zA-Z0-9_-]{1,36}|\*){1}$`
+	RegExpTargetGroupID   = `^([a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}|\*){1}$`
+	RegExpSearch          = regExpLen128
+	RegExpLifespan        = `^[0-9]{1,10}$`
+	RegExpGroupIds        = `^([a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12})(,[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}){0,20}$`
+	RegExpNumber          = `^\d+$`
 )
 
 var (

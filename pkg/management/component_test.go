@@ -15,6 +15,7 @@ import (
 	"github.com/cloudtrust/common-service/v2/database"
 	errorhandler "github.com/cloudtrust/common-service/v2/errors"
 	csjson "github.com/cloudtrust/common-service/v2/json"
+	"github.com/cloudtrust/common-service/v2/security"
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
@@ -31,6 +32,7 @@ type componentMocks struct {
 	eventDBModule         *mock.EventDBModule
 	configurationDBModule *mock.ConfigurationDBModule
 	onboardingModule      *mock.OnboardingModule
+	authChecker           *mock.AuthorizationManager
 	transaction           *mock.Transaction
 	glnVerifier           *mock.GlnVerifier
 	logger                *mock.Logger
@@ -43,6 +45,7 @@ func createMocks(mockCtrl *gomock.Controller) componentMocks {
 		eventDBModule:         mock.NewEventDBModule(mockCtrl),
 		configurationDBModule: mock.NewConfigurationDBModule(mockCtrl),
 		onboardingModule:      mock.NewOnboardingModule(mockCtrl),
+		authChecker:           mock.NewAuthorizationManager(mockCtrl),
 		transaction:           mock.NewTransaction(mockCtrl),
 		glnVerifier:           mock.NewGlnVerifier(mockCtrl),
 		logger:                mock.NewLogger(mockCtrl),
@@ -59,7 +62,7 @@ const (
 
 func createComponent(mocks componentMocks) *component {
 	/* REMOVE_THIS_3901 : remove second parameter (nil) */
-	return NewComponent(mocks.keycloakClient, nil, mocks.usersDetailsDBModule, mocks.eventDBModule, mocks.configurationDBModule, mocks.onboardingModule,
+	return NewComponent(mocks.keycloakClient, nil, mocks.usersDetailsDBModule, mocks.eventDBModule, mocks.configurationDBModule, mocks.onboardingModule, mocks.authChecker,
 		allowedTrustIDGroups, socialRealmName, mocks.glnVerifier, mocks.logger).(*component)
 }
 
@@ -4525,7 +4528,9 @@ func TestGetAuthorization(t *testing.T) {
 	var groupName = "groupName"
 	var targetGroupName = "targetGroup"
 	var targetGroupId = "124352"
-	var action = "ActionTest"
+	var action = "MGMT_DeleteUser"
+	var globalAction = "MGMT_GetActions"
+	var realmAction = "MGMT_GetRealm"
 	var username = "username"
 	var star = "*"
 
@@ -4541,7 +4546,7 @@ func TestGetAuthorization(t *testing.T) {
 		Name: &targetGroupName,
 	}
 
-	var parent = configuration.Authorization{
+	/*var parent = configuration.Authorization{
 		RealmID:         &realmName,
 		GroupName:       group.Name,
 		Action:          &action,
@@ -4555,7 +4560,7 @@ func TestGetAuthorization(t *testing.T) {
 		TargetRealmID:   &targetRealmName,
 		TargetGroupName: &targetGroupName,
 	}
-
+	*/
 	var extpectedAuthzNegativeMsg = api.AuthorizationMessage{
 		Authorized: false,
 	}
@@ -4568,10 +4573,9 @@ func TestGetAuthorization(t *testing.T) {
 	ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 
 	t.Run("Get assigned authorization with succces - authorized", func(t *testing.T) {
-		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil)
-		mocks.keycloakClient.EXPECT().GetGroup(accessToken, targetRealmName, targetGroupId).Return(targetGroup, nil)
-		mocks.configurationDBModule.EXPECT().AuthorizationExists(ctx, realmName, groupName, targetRealmName, targetGroupName, action).Return(true, nil)
-
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil).Times(1)
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, targetRealmName, targetGroupId).Return(targetGroup, nil).Times(1)
+		mocks.authChecker.EXPECT().CheckAuthorizationForGroupsOnTargetGroup(realmName, []string{groupName}, action, targetRealmName, targetGroupName).Return(nil).Times(1)
 		authzMsg, err := managementComponent.GetAuthorization(ctx, realmName, groupID, targetRealmName, targetGroupId, action)
 
 		assert.Nil(t, err)
@@ -4579,101 +4583,68 @@ func TestGetAuthorization(t *testing.T) {
 	})
 
 	t.Run("Get assigned global authorization with succces - authorized", func(t *testing.T) {
-		var globalAction = "GlobalAction"
-		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil)
-		mocks.configurationDBModule.EXPECT().AuthorizationExists(ctx, realmName, groupName, star, star, globalAction).Return(true, nil)
 
-		authzMsg, err := managementComponent.GetAuthorization(ctx, realmName, groupID, "", "", globalAction)
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil).Times(1)
+		mocks.authChecker.EXPECT().CheckAuthorizationForGroupsOnTargetRealm(realmName, []string{groupName}, globalAction, star).Return(nil).Times(1)
+
+		authzMsg, err := managementComponent.GetAuthorization(ctx, realmName, groupID, "*", "", globalAction)
 
 		assert.Nil(t, err)
 		assert.Equal(t, extpectedAuthzPositiveMsg, authzMsg)
 	})
 
 	t.Run("Get assigned realm authorization with succces - authorized", func(t *testing.T) {
-		var realmAction = "GlobalAction"
-		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil)
-		mocks.configurationDBModule.EXPECT().AuthorizationExists(ctx, realmName, groupName, targetRealmName, star, realmAction).Return(true, nil)
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil).Times(1)
+		mocks.authChecker.EXPECT().CheckAuthorizationForGroupsOnTargetRealm(realmName, []string{groupName}, realmAction, targetRealmName).Return(nil).Times(1)
 
-		authzMsg, err := managementComponent.GetAuthorization(ctx, realmName, groupID, targetRealmName, "", realmAction)
+		authzMsg, err := managementComponent.GetAuthorization(ctx, realmName, groupID, targetRealmName, "*", realmAction)
 
 		assert.Nil(t, err)
 		assert.Equal(t, extpectedAuthzPositiveMsg, authzMsg)
 	})
 
 	t.Run("Get authorization with succces - unauthorized", func(t *testing.T) {
-		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil)
-		mocks.keycloakClient.EXPECT().GetGroup(accessToken, targetRealmName, targetGroupId).Return(targetGroup, nil)
-		mocks.configurationDBModule.EXPECT().AuthorizationExists(ctx, realmName, groupName, targetRealmName, targetGroupName, action).Return(false, nil)
-		mocks.configurationDBModule.EXPECT().GetAuthorizationsForAction(ctx, realmName, groupName, action).Return([]configuration.Authorization{}, sql.ErrNoRows)
-
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil).Times(1)
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, targetRealmName, targetGroupId).Return(targetGroup, nil).Times(1)
+		mocks.authChecker.EXPECT().CheckAuthorizationForGroupsOnTargetGroup(realmName, []string{groupName}, action, targetRealmName, targetGroupName).Return(security.ForbiddenError{}).Times(1)
 		authzMsg, err := managementComponent.GetAuthorization(ctx, realmName, groupID, targetRealmName, targetGroupId, action)
 
-		assert.Nil(t, err)
-		assert.Equal(t, extpectedAuthzNegativeMsg, authzMsg)
-	})
-
-	t.Run("Get authorization by parent with succces", func(t *testing.T) {
-		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil)
-		mocks.keycloakClient.EXPECT().GetGroup(accessToken, targetRealmName, targetGroupId).Return(targetGroup, nil)
-		mocks.configurationDBModule.EXPECT().AuthorizationExists(ctx, realmName, groupName, targetRealmName, targetGroupName, action).Return(false, nil)
-		mocks.configurationDBModule.EXPECT().GetAuthorizationsForAction(ctx, realmName, groupName, action).Return([]configuration.Authorization{parent}, nil)
-
-		authzMsg, err := managementComponent.GetAuthorization(ctx, realmName, groupID, targetRealmName, targetGroupId, action)
-
-		assert.Nil(t, err)
-		assert.Equal(t, extpectedAuthzPositiveMsg, authzMsg)
-	})
-
-	t.Run("Get authorization by child - unauthorized", func(t *testing.T) {
-		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil)
-		mocks.configurationDBModule.EXPECT().AuthorizationExists(ctx, realmName, groupName, star, star, action).Return(false, nil)
-		mocks.configurationDBModule.EXPECT().GetAuthorizationsForAction(ctx, realmName, groupName, action).Return([]configuration.Authorization{child}, nil)
-
-		authzMsg, err := managementComponent.GetAuthorization(ctx, realmName, groupID, "", "", action)
-
-		assert.Nil(t, err)
+		assert.NotNil(t, err)
 		assert.Equal(t, extpectedAuthzNegativeMsg, authzMsg)
 	})
 
 	t.Run("Get authorization - group resolution failure", func(t *testing.T) {
-		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, expectedErr)
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, expectedErr).Times(1)
 		mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any())
 		authzMsg, err := managementComponent.GetAuthorization(ctx, realmName, groupID, targetRealmName, targetGroupId, action)
 		assert.Equal(t, expectedErr, err)
+		assert.Equal(t, extpectedAuthzNegativeMsg, authzMsg)
+	})
+
+	t.Run("Get authorization - getScope failure", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil).Times(1)
+		authzMsg, err := managementComponent.GetAuthorization(ctx, realmName, groupID, targetRealmName, targetGroupId, "UnknownAction")
+		assert.NotNil(t, err)
+		assert.Equal(t, "400 ."+constants.MsgErrInvalidParam+"."+constants.Authorization+".action", err.Error())
 		assert.Equal(t, extpectedAuthzNegativeMsg, authzMsg)
 	})
 
 	t.Run("Get authorization - target group resolution failure", func(t *testing.T) {
-		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil)
-		mocks.keycloakClient.EXPECT().GetGroup(accessToken, targetRealmName, targetGroupId).Return(targetGroup, expectedErr)
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil).Times(1)
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, targetRealmName, targetGroupId).Return(group, expectedErr).Times(1)
 		mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any())
 		authzMsg, err := managementComponent.GetAuthorization(ctx, realmName, groupID, targetRealmName, targetGroupId, action)
 		assert.Equal(t, expectedErr, err)
 		assert.Equal(t, extpectedAuthzNegativeMsg, authzMsg)
 	})
 
-	t.Run("Get authorization - DB step 1 error", func(t *testing.T) {
-		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil)
-		mocks.keycloakClient.EXPECT().GetGroup(accessToken, targetRealmName, targetGroupId).Return(targetGroup, nil)
-		mocks.configurationDBModule.EXPECT().AuthorizationExists(ctx, realmName, groupName, targetRealmName, targetGroupName, action).Return(false, expectedErr)
-		mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any())
+	t.Run("Get authorization - invalid", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil).Times(1)
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, targetRealmName, targetGroupId).Return(targetGroup, nil).Times(1)
+		authzMsg, err := managementComponent.GetAuthorization(ctx, realmName, groupID, targetRealmName, targetGroupId, globalAction)
 
-		authzMsg, err := managementComponent.GetAuthorization(ctx, realmName, groupID, targetRealmName, targetGroupId, action)
-
-		assert.Equal(t, expectedErr, err)
-		assert.Equal(t, extpectedAuthzNegativeMsg, authzMsg)
-	})
-
-	t.Run("Get authorization - DB step 2 error", func(t *testing.T) {
-		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil)
-		mocks.keycloakClient.EXPECT().GetGroup(accessToken, targetRealmName, targetGroupId).Return(targetGroup, nil)
-		mocks.configurationDBModule.EXPECT().AuthorizationExists(ctx, realmName, groupName, targetRealmName, targetGroupName, action).Return(false, nil)
-		mocks.configurationDBModule.EXPECT().GetAuthorizationsForAction(ctx, realmName, groupName, action).Return([]configuration.Authorization{}, expectedErr)
-		mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any())
-
-		authzMsg, err := managementComponent.GetAuthorization(ctx, realmName, groupID, targetRealmName, targetGroupId, action)
-
-		assert.Equal(t, expectedErr, err)
+		assert.NotNil(t, err)
+		assert.Equal(t, "400 ."+constants.MsgErrInvalidParam+"."+constants.Authorization+".scope", err.Error())
 		assert.Equal(t, extpectedAuthzNegativeMsg, authzMsg)
 	})
 }

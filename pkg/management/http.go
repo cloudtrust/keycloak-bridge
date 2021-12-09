@@ -91,8 +91,8 @@ func decodeManagementRequest(ctx context.Context, req *http.Request) (interface{
 		prmQryTermsOfUse:    constants.RegExpBool,
 		prmQryRealm:         constants.RegExpRealmName,
 		prmQryReminder:      constants.RegExpBool,
-		prmQryTargetRealm:   constants.RegExpRealmName,
-		prmQryTargetGroupID: constants.RegExpID,
+		prmQryTargetRealm:   constants.RegExpTargetRealmName,
+		prmQryTargetGroupID: constants.RegExpTargetGroupID,
 	}
 
 	return commonhttp.DecodeRequest(ctx, req, pathParams, queryParams)

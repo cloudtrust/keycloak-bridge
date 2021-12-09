@@ -99,6 +99,11 @@ type GlnVerifier interface {
 	ValidateGLN(firstName, lastName, gln string) error
 }
 
+type AuthorizationChecker interface {
+	CheckAuthorizationForGroupsOnTargetRealm(realm string, groups []string, action, targetRealm string) error
+	CheckAuthorizationForGroupsOnTargetGroup(realm string, groups []string, action, targetRealm, targetGroup string) error
+}
+
 // Component is the management component interface.
 type Component interface {
 	GetActions(ctx context.Context) ([]api.ActionRepresentation, error)
@@ -182,6 +187,7 @@ type component struct {
 	eventDBModule           database.EventsDBModule
 	configDBModule          keycloakb.ConfigurationDBModule
 	onboardingModule        OnboardingModule
+	authChecker             AuthorizationChecker
 	authorizedTrustIDGroups map[string]bool
 	socialRealmName         string
 	glnVerifier             GlnVerifier
@@ -190,7 +196,7 @@ type component struct {
 
 // NewComponent returns the management component.
 func NewComponent(keycloakClient KeycloakClient, kcURIProvider kc.KeycloakURIProvider, usersDBModule UsersDetailsDBModule, eventDBModule database.EventsDBModule,
-	configDBModule keycloakb.ConfigurationDBModule, onboardingModule OnboardingModule, authorizedTrustIDGroups []string, socialRealmName string,
+	configDBModule keycloakb.ConfigurationDBModule, onboardingModule OnboardingModule, authChecker AuthorizationChecker, authorizedTrustIDGroups []string, socialRealmName string,
 	glnVerifier GlnVerifier, logger keycloakb.Logger) Component {
 	/* REMOVE_THIS_3901 : remove second provided parameter */
 
@@ -206,6 +212,7 @@ func NewComponent(keycloakClient KeycloakClient, kcURIProvider kc.KeycloakURIPro
 		eventDBModule:           eventDBModule,
 		configDBModule:          configDBModule,
 		onboardingModule:        onboardingModule,
+		authChecker:             authChecker,
 		authorizedTrustIDGroups: authzedTrustIDGroups,
 		socialRealmName:         socialRealmName,
 		glnVerifier:             glnVerifier,
@@ -1787,49 +1794,45 @@ func (c *component) GetAuthorization(ctx context.Context, realmName string, grou
 		return api.AuthorizationMessage{}, err
 	}
 
-	targetRealmName := targetRealm
-	if targetRealmName == "" {
-		targetRealmName = "*"
+	authz := configuration.Authorization{
+		RealmID:       &realmName,
+		GroupName:     group.Name,
+		Action:        &actionReq,
+		TargetRealmID: &targetRealm,
 	}
 
-	targetGroupName := targetGroupID
-	if targetGroupName == "" {
-		targetGroupName = "*"
-	} else if targetGroupName != "*" {
-		targetGroup, err := c.keycloakClient.GetGroup(accessToken, targetRealmName, targetGroupName)
+	scope, err := getScope(authz)
+	if err != nil {
+		return api.AuthorizationMessage{}, err
+	}
+
+	if targetGroupID == "" && scope == security.ScopeGlobal {
+		authz.TargetGroupName = nil
+	} else if targetGroupID != "" && targetGroupID != "*" {
+		targetGroup, err := c.keycloakClient.GetGroup(accessToken, *authz.TargetRealmID, targetGroupID)
 		if err != nil {
 			c.logger.Warn(ctx, "err", err.Error())
 			return api.AuthorizationMessage{}, err
 		}
-		targetGroupName = *targetGroup.Name
-	}
-	res, err := c.configDBModule.AuthorizationExists(ctx, realmName, *group.Name, targetRealmName, targetGroupName, actionReq)
-	if err != nil {
-		c.logger.Warn(ctx, "err", err.Error())
-		return api.AuthorizationMessage{Authorized: false}, err
-	}
-	if !res {
-		// if no authorization is found, look for higher authorizations covering the authorization requested
-		if err == nil {
-			authz := configuration.Authorization{
-				RealmID:         &realmName,
-				GroupName:       group.Name,
-				Action:          &actionReq,
-				TargetRealmID:   &targetRealmName,
-				TargetGroupName: &targetGroupName,
-			}
-			parent, _, err := c.getAuthorizationDependencies(ctx, authz)
-			if err != nil {
-				c.logger.Warn(ctx, "err", err.Error())
-				return api.AuthorizationMessage{Authorized: false}, err
-			}
-			if parent.Action != nil {
-				return api.AuthorizationMessage{Authorized: true}, nil
-			}
-			return api.AuthorizationMessage{Authorized: false}, nil
-		}
+		authz.TargetGroupName = targetGroup.Name
+	} else {
+		authz.TargetGroupName = &targetGroupID
 	}
 
+	err = validateScope(authz)
+	if err != nil {
+		return api.AuthorizationMessage{}, err
+	}
+
+	if scope == security.ScopeGroup {
+		err = c.authChecker.CheckAuthorizationForGroupsOnTargetGroup(*authz.RealmID, []string{*authz.GroupName}, *authz.Action, *authz.TargetRealmID, *authz.TargetGroupName)
+	} else {
+		err = c.authChecker.CheckAuthorizationForGroupsOnTargetRealm(*authz.RealmID, []string{*authz.GroupName}, *authz.Action, *authz.TargetRealmID)
+	}
+
+	if err != nil {
+		return api.AuthorizationMessage{Authorized: false}, err
+	}
 	return api.AuthorizationMessage{Authorized: true}, nil
 }
 
