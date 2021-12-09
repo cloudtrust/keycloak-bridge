@@ -1794,32 +1794,32 @@ func (c *component) GetAuthorization(ctx context.Context, realmName string, grou
 		return api.AuthorizationMessage{}, err
 	}
 
-	authz := configuration.Authorization{
-		RealmID:       &realmName,
-		GroupName:     group.Name,
-		Action:        &actionReq,
-		TargetRealmID: &targetRealm,
-	}
-
-	scope, err := getScope(authz)
-	if err != nil {
-		return api.AuthorizationMessage{}, err
-	}
-
-	if targetGroupID == "" && scope == security.ScopeGlobal {
-		authz.TargetGroupName = nil
-	} else if targetGroupID != "" && targetGroupID != "*" {
-		targetGroup, err := c.keycloakClient.GetGroup(accessToken, *authz.TargetRealmID, targetGroupID)
+	targetGroupName := &targetGroupID
+	if *targetGroupName == "" {
+		targetGroupName = nil
+	} else if *targetGroupName != "*" {
+		targetGroup, err := c.keycloakClient.GetGroup(accessToken, targetRealm, targetGroupID)
 		if err != nil {
 			c.logger.Warn(ctx, "err", err.Error())
 			return api.AuthorizationMessage{}, err
 		}
-		authz.TargetGroupName = targetGroup.Name
-	} else {
-		authz.TargetGroupName = &targetGroupID
+		targetGroupName = targetGroup.Name
+	}
+
+	authz := configuration.Authorization{
+		RealmID:         &realmName,
+		GroupName:       group.Name,
+		Action:          &actionReq,
+		TargetRealmID:   &targetRealm,
+		TargetGroupName: targetGroupName,
 	}
 
 	err = validateScope(authz)
+	if err != nil {
+		return api.AuthorizationMessage{}, err
+	}
+
+	scope, err := getScope(authz)
 	if err != nil {
 		return api.AuthorizationMessage{}, err
 	}
@@ -1831,7 +1831,7 @@ func (c *component) GetAuthorization(ctx context.Context, realmName string, grou
 	}
 
 	if err != nil {
-		return api.AuthorizationMessage{Authorized: false}, err
+		return api.AuthorizationMessage{Authorized: false}, nil
 	}
 	return api.AuthorizationMessage{Authorized: true}, nil
 }

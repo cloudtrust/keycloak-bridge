@@ -4546,21 +4546,6 @@ func TestGetAuthorization(t *testing.T) {
 		Name: &targetGroupName,
 	}
 
-	/*var parent = configuration.Authorization{
-		RealmID:         &realmName,
-		GroupName:       group.Name,
-		Action:          &action,
-		TargetRealmID:   &star,
-		TargetGroupName: &star,
-	}
-	var child = configuration.Authorization{
-		RealmID:         &realmName,
-		GroupName:       group.Name,
-		Action:          &action,
-		TargetRealmID:   &targetRealmName,
-		TargetGroupName: &targetGroupName,
-	}
-	*/
 	var extpectedAuthzNegativeMsg = api.AuthorizationMessage{
 		Authorized: false,
 	}
@@ -4609,7 +4594,7 @@ func TestGetAuthorization(t *testing.T) {
 		mocks.authChecker.EXPECT().CheckAuthorizationForGroupsOnTargetGroup(realmName, []string{groupName}, action, targetRealmName, targetGroupName).Return(security.ForbiddenError{}).Times(1)
 		authzMsg, err := managementComponent.GetAuthorization(ctx, realmName, groupID, targetRealmName, targetGroupId, action)
 
-		assert.NotNil(t, err)
+		assert.Nil(t, err)
 		assert.Equal(t, extpectedAuthzNegativeMsg, authzMsg)
 	})
 
@@ -4623,6 +4608,7 @@ func TestGetAuthorization(t *testing.T) {
 
 	t.Run("Get authorization - getScope failure", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil).Times(1)
+		mocks.keycloakClient.EXPECT().GetGroup(accessToken, targetRealmName, targetGroupId).Return(targetGroup, nil).Times(1)
 		authzMsg, err := managementComponent.GetAuthorization(ctx, realmName, groupID, targetRealmName, targetGroupId, "UnknownAction")
 		assert.NotNil(t, err)
 		assert.Equal(t, "400 ."+constants.MsgErrInvalidParam+"."+constants.Authorization+".action", err.Error())
