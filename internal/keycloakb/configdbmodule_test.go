@@ -288,24 +288,32 @@ func TestAuthorization(t *testing.T) {
 	}
 
 	t.Run("Get-SQL query fails", func(t *testing.T) {
-		mockDB.EXPECT().QueryRow(gomock.Any(), realmID, groupName, action, targetRealmID, targetGroupName).Return(mockSQLRow)
+		mockDB.EXPECT().QueryRow(gomock.Any(), realmID, groupName, action, targetRealmID, gomock.Any()).Return(mockSQLRow)
 		mockSQLRow.EXPECT().Scan(gomock.Any()).Return(sqlError)
-		var res, err = configDBModule.AuthorizationExists(ctx, realmID, groupName, targetRealmID, targetGroupName, action)
+		var res, err = configDBModule.AuthorizationExists(ctx, realmID, groupName, targetRealmID, &targetGroupName, action)
 		assert.False(t, res)
 		assert.NotNil(t, err)
 	})
 	t.Run("Get-SQL query returns no row", func(t *testing.T) {
-		mockDB.EXPECT().QueryRow(gomock.Any(), realmID, groupName, action, targetRealmID, targetGroupName).Return(mockSQLRow)
+		mockDB.EXPECT().QueryRow(gomock.Any(), realmID, groupName, action, targetRealmID, gomock.Any()).Return(mockSQLRow)
 		mockSQLRow.EXPECT().Scan(gomock.Any()).Return(sql.ErrNoRows)
-		var res, err = configDBModule.AuthorizationExists(ctx, realmID, groupName, targetRealmID, targetGroupName, action)
+		var res, err = configDBModule.AuthorizationExists(ctx, realmID, groupName, targetRealmID, &targetGroupName, action)
 		assert.False(t, res)
 		assert.Nil(t, err)
 	})
 
 	t.Run("Get-SQL query succeeds", func(t *testing.T) {
-		mockDB.EXPECT().QueryRow(gomock.Any(), realmID, groupName, action, targetRealmID, targetGroupName).Return(mockSQLRow)
+		mockDB.EXPECT().QueryRow(gomock.Any(), realmID, groupName, action, targetRealmID, gomock.Any()).Return(mockSQLRow)
 		mockSQLRow.EXPECT().Scan(gomock.Any()).Return(nil)
-		var res, err = configDBModule.AuthorizationExists(ctx, realmID, groupName, targetRealmID, targetGroupName, action)
+		var res, err = configDBModule.AuthorizationExists(ctx, realmID, groupName, targetRealmID, &targetGroupName, action)
+		assert.True(t, res)
+		assert.Nil(t, err)
+	})
+
+	t.Run("Get-SQL query succeeds", func(t *testing.T) {
+		mockDB.EXPECT().QueryRow(gomock.Any(), realmID, groupName, action, targetRealmID).Return(mockSQLRow)
+		mockSQLRow.EXPECT().Scan(gomock.Any()).Return(nil)
+		var res, err = configDBModule.AuthorizationExists(ctx, realmID, groupName, targetRealmID, nil, action)
 		assert.True(t, res)
 		assert.Nil(t, err)
 	})
@@ -358,26 +366,44 @@ func TestAuthorization(t *testing.T) {
 	})
 
 	t.Run("DELETE-Fails", func(t *testing.T) {
-		mockDB.EXPECT().Exec(gomock.Any(), realmID, groupName, action, targetRealmID, targetGroupName).Return(nil, expectedError)
-		var err = configDBModule.DeleteAuthorization(ctx, realmID, groupName, targetRealmID, targetGroupName, action)
+		mockDB.EXPECT().Exec(gomock.Any(), realmID, groupName, action, targetRealmID, gomock.Any()).Return(nil, expectedError)
+		var err = configDBModule.DeleteAuthorization(ctx, realmID, groupName, targetRealmID, &targetGroupName, action)
 		assert.Equal(t, expectedError, err)
 	})
 
 	t.Run("DELETE-Success", func(t *testing.T) {
-		mockDB.EXPECT().Exec(gomock.Any(), realmID, groupName, action, targetRealmID, targetGroupName).Return(nil, nil)
-		var err = configDBModule.DeleteAuthorization(ctx, realmID, groupName, targetRealmID, targetGroupName, action)
+		mockDB.EXPECT().Exec(gomock.Any(), realmID, groupName, action, targetRealmID, gomock.Any()).Return(nil, nil)
+		var err = configDBModule.DeleteAuthorization(ctx, realmID, groupName, targetRealmID, &targetGroupName, action)
 		assert.Nil(t, err)
 	})
 
-	t.Run("DELETE global -Fails", func(t *testing.T) {
-		mockDB.EXPECT().Exec(gomock.Any(), realmID, groupName, action, targetRealmID).Return(nil, expectedError)
-		var err = configDBModule.DeleteGlobalAuthorization(ctx, realmID, groupName, targetRealmID, action)
+	t.Run("DELETE-Success", func(t *testing.T) {
+		mockDB.EXPECT().Exec(gomock.Any(), realmID, groupName, action, targetRealmID).Return(nil, nil)
+		var err = configDBModule.DeleteAuthorization(ctx, realmID, groupName, targetRealmID, nil, action)
+		assert.Nil(t, err)
+	})
+
+	t.Run("Clean every realms-Fails", func(t *testing.T) {
+		mockDB.EXPECT().Exec(gomock.Any(), realmID, groupName, action).Return(nil, expectedError)
+		var err = configDBModule.CleanAuthorizationsActionForEveryRealms(ctx, realmID, groupName, action)
 		assert.Equal(t, expectedError, err)
 	})
 
-	t.Run("DELETE global -Success", func(t *testing.T) {
+	t.Run("Clean every realms-Success", func(t *testing.T) {
+		mockDB.EXPECT().Exec(gomock.Any(), realmID, groupName, action).Return(nil, nil)
+		var err = configDBModule.CleanAuthorizationsActionForEveryRealms(ctx, realmID, groupName, action)
+		assert.Nil(t, err)
+	})
+
+	t.Run("Clean realm-Fails", func(t *testing.T) {
+		mockDB.EXPECT().Exec(gomock.Any(), realmID, groupName, action, targetRealmID).Return(nil, expectedError)
+		var err = configDBModule.CleanAuthorizationsActionForRealm(ctx, realmID, groupName, targetRealmID, action)
+		assert.Equal(t, expectedError, err)
+	})
+
+	t.Run("Clean realm-Success", func(t *testing.T) {
 		mockDB.EXPECT().Exec(gomock.Any(), realmID, groupName, action, targetRealmID).Return(nil, nil)
-		var err = configDBModule.DeleteGlobalAuthorization(ctx, realmID, groupName, targetRealmID, action)
+		var err = configDBModule.CleanAuthorizationsActionForRealm(ctx, realmID, groupName, targetRealmID, action)
 		assert.Nil(t, err)
 	})
 }

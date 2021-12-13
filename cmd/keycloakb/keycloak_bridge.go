@@ -721,8 +721,26 @@ func main() {
 
 		var keycloakComponent management.Component
 		{
+			// Authorization Checker
+			var authorizationChecker management.AuthorizationChecker
+			{
+				var authorizationLogger = log.With(logger, "svc", "authorization")
+
+				var configurationReaderDBModule *configuration.ConfigurationReaderDBModule
+				{
+					configurationReaderDBModule = configuration.NewConfigurationReaderDBModule(configurationRoDBConn, authorizationLogger, authActions)
+				}
+
+				var err error
+				authorizationChecker, err = security.NewAuthorizationManager(configurationReaderDBModule, commonKcAdaptor, authorizationLogger)
+
+				if err != nil {
+					logger.Error(ctx, "msg", "could not load authorizations", "err", err)
+					return
+				}
+			}
 			/* REMOVE_THIS_3901 : remove second parameter */
-			keycloakComponent = management.NewComponent(keycloakClient, keycloakConfig.URIProvider, usersDBModule, eventsDBModule, configDBModule, onboardingModule, authorizationManager, trustIDGroups, registerRealm, glnVerifier, managementLogger)
+			keycloakComponent = management.NewComponent(keycloakClient, keycloakConfig.URIProvider, usersDBModule, eventsDBModule, configDBModule, onboardingModule, authorizationChecker, trustIDGroups, registerRealm, glnVerifier, managementLogger)
 			keycloakComponent = management.MakeAuthorizationManagementComponentMW(log.With(managementLogger, "mw", "endpoint"), authorizationManager)(keycloakComponent)
 		}
 
