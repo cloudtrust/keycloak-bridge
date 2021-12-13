@@ -265,7 +265,6 @@ func TestAuthorization(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mockDB = mock.NewCloudtrustDB(mockCtrl)
-	var mockSQLRows = mock.NewSQLRows(mockCtrl)
 	var mockSQLRow = mock.NewSQLRow(mockCtrl)
 	var mockLogger = log.NewNopLogger()
 
@@ -278,14 +277,6 @@ func TestAuthorization(t *testing.T) {
 	var targetGroupName = "the-group"
 	var action = "ActionTest"
 	var ctx = context.TODO()
-
-	expectedAuthz := configuration.Authorization{
-		RealmID:         &realmID,
-		GroupName:       &groupName,
-		Action:          &action,
-		TargetRealmID:   &targetRealmID,
-		TargetGroupName: &targetGroupName,
-	}
 
 	t.Run("Get-SQL query fails", func(t *testing.T) {
 		mockDB.EXPECT().QueryRow(gomock.Any(), realmID, groupName, action, targetRealmID, gomock.Any()).Return(mockSQLRow)
@@ -316,53 +307,6 @@ func TestAuthorization(t *testing.T) {
 		var res, err = configDBModule.AuthorizationExists(ctx, realmID, groupName, targetRealmID, nil, action)
 		assert.True(t, res)
 		assert.Nil(t, err)
-	})
-
-	t.Run("Get-SQL authorization for action query fails", func(t *testing.T) {
-		mockDB.EXPECT().Query(gomock.Any(), realmID, groupName, action).Return(mockSQLRows, sqlError)
-		var _, err = configDBModule.GetAuthorizationsForAction(ctx, realmID, groupName, action)
-		assert.Equal(t, sqlError, err)
-	})
-	t.Run("Get-SQL authorization for action query returns no row", func(t *testing.T) {
-		mockDB.EXPECT().Query(gomock.Any(), realmID, groupName, action).Return(mockSQLRows, sql.ErrNoRows)
-		var _, err = configDBModule.GetAuthorizationsForAction(ctx, realmID, groupName, action)
-		assert.NotNil(t, err)
-	})
-
-	t.Run("Get-SQL authorization for action scan fail", func(t *testing.T) {
-		mockDB.EXPECT().Query(gomock.Any(), realmID, groupName, action).Return(mockSQLRows, nil)
-		mockSQLRows.EXPECT().Next().Return(true)
-		mockSQLRows.EXPECT().Scan(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(sqlError)
-		mockSQLRows.EXPECT().Close().Return(nil)
-
-		var _, err = configDBModule.GetAuthorizationsForAction(ctx, realmID, groupName, action)
-		assert.Equal(t, sqlError, err)
-	})
-
-	t.Run("Get-SQL authorization for action query returns authorization", func(t *testing.T) {
-		mockDB.EXPECT().Query(gomock.Any(), realmID, groupName, action).Return(mockSQLRows, nil)
-		mockSQLRows.EXPECT().Next().Return(true)
-		mockSQLRows.EXPECT().Scan(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
-			func(params ...interface{}) error {
-				*(params[0].(*string)) = realmID
-				*(params[1].(*string)) = groupName
-				*(params[2].(*string)) = action
-				*(params[3].(*sql.NullString)) = sql.NullString{String: targetRealmID, Valid: true}
-				*(params[4].(*sql.NullString)) = sql.NullString{String: targetGroupName, Valid: true}
-
-				return nil
-			})
-		mockSQLRows.EXPECT().Next().Return(false)
-		mockSQLRows.EXPECT().Close().Return(nil)
-
-		var authz, err = configDBModule.GetAuthorizationsForAction(ctx, realmID, groupName, action)
-		assert.Nil(t, err)
-		assert.Len(t, authz, 1)
-		assert.Equal(t, *expectedAuthz.RealmID, *authz[0].RealmID)
-		assert.Equal(t, *expectedAuthz.GroupName, *authz[0].GroupName)
-		assert.Equal(t, *expectedAuthz.Action, *authz[0].Action)
-		assert.Equal(t, *expectedAuthz.TargetRealmID, *authz[0].TargetRealmID)
-		assert.Equal(t, *expectedAuthz.TargetGroupName, *authz[0].TargetGroupName)
 	})
 
 	t.Run("DELETE-Fails", func(t *testing.T) {

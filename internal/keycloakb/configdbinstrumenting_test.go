@@ -159,21 +159,6 @@ func TestComponentInstrumentingMW(t *testing.T) {
 		assert.Panics(t, f)
 	})
 
-	t.Run("Get Authorization for action with correlation ID", func(t *testing.T) {
-		mockComponent.EXPECT().GetAuthorizationsForAction(ctx, realmID, groupNames[0], action).Return([]configuration.Authorization{}, nil)
-		mockHistogram.EXPECT().With("correlation_id", corrID).Return(mockHistogram).Times(1)
-		mockHistogram.EXPECT().Observe(gomock.Any()).Return().Times(1)
-		m.GetAuthorizationsForAction(ctx, realmID, groupNames[0], action)
-	})
-
-	t.Run("Get Authorization for action without correlation ID", func(t *testing.T) {
-		mockComponent.EXPECT().GetAuthorizationsForAction(context.Background(), realmID, groupNames[0], action).Return([]configuration.Authorization{}, nil).Times(1)
-		var f = func() {
-			m.GetAuthorizationsForAction(context.Background(), realmID, groupNames[0], action)
-		}
-		assert.Panics(t, f)
-	})
-
 	t.Run("Delete Authorization", func(t *testing.T) {
 		mockComponent.EXPECT().DeleteAuthorization(ctx, realmID, groupNames[0], realmID, gomock.Any(), action).Return(nil)
 		mockHistogram.EXPECT().With("correlation_id", corrID).Return(mockHistogram).Times(1)

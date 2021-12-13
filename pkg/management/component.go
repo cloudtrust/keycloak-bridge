@@ -1899,37 +1899,6 @@ func (c *component) DeleteAuthorization(ctx context.Context, realmName string, g
 	return nil
 }
 
-// Returns parents and children authorization for a specific authorization
-func (c *component) getAuthorizationDependencies(ctx context.Context, authorization configuration.Authorization) (configuration.Authorization, []configuration.Authorization, error) {
-	parent := configuration.Authorization{}
-	children := make([]configuration.Authorization, 0)
-	authorizations, err := c.configDBModule.GetAuthorizationsForAction(ctx, *authorization.RealmID, *authorization.GroupName, *authorization.Action)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return parent, children, nil
-		}
-
-		return parent, children, err
-	}
-
-	for _, authz := range authorizations {
-		if ((*authorization.TargetRealmID == "*") && (authorization.TargetGroupName != nil) && (*authz.TargetRealmID == "*") && (authz.TargetGroupName == nil)) ||
-			((*authorization.TargetRealmID != "*") &&
-				((*authz.TargetRealmID == "*") ||
-					(*authz.TargetRealmID == "/" && *authorization.TargetRealmID != "master") ||
-					(*authz.TargetRealmID == *authorization.TargetRealmID && *authz.TargetGroupName == "*"))) {
-			parent = authz
-		} else if (authorization.TargetGroupName != nil) &&
-			((*authorization.TargetRealmID == "*" && (*authz.TargetGroupName != "*" || (*authz.TargetRealmID != "*" && *authz.TargetGroupName == "*"))) ||
-				(*authorization.TargetRealmID == "/" && *authz.TargetRealmID != "master") ||
-				(*authorization.TargetRealmID == *authz.TargetRealmID && *authorization.TargetGroupName == "*" && *authz.TargetGroupName != "*")) {
-			children = append(children, authz)
-		}
-	}
-
-	return parent, children, nil
-}
-
 func (c *component) checkAllowedTargetRealmsAndGroupNames(ctx context.Context, realmName string, authorizations []configuration.Authorization) error {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 

@@ -245,29 +245,6 @@ func (c *configurationDBModule) AuthorizationExists(ctx context.Context, realmID
 	return true, nil
 }
 
-func (c *configurationDBModule) GetAuthorizationsForAction(context context.Context, realmID string, groupName string, actionReq string) ([]configuration.Authorization, error) {
-	// Get Authorizations from DB
-	rows, err := c.db.Query(selectAuthzActionStmt, realmID, groupName, actionReq)
-	if err != nil {
-		c.logger.Warn(context, "msg", "Can't get authorizations", "err", err.Error(), "realmID", realmID, "groupName", groupName, "action", actionReq)
-		return nil, err
-	}
-	defer rows.Close()
-
-	var authz configuration.Authorization
-	var res = make([]configuration.Authorization, 0)
-	for rows.Next() {
-		authz, err = c.scanAuthorization(rows)
-		if err != nil {
-			c.logger.Warn(context, "msg", "Can't get authorizations. Scan failed", "err", err.Error(), "realmID", realmID, "groupName", groupName, "action", actionReq)
-			return nil, err
-		}
-		res = append(res, authz)
-	}
-
-	return res, nil
-}
-
 func (c *configurationDBModule) CreateAuthorization(context context.Context, auth configuration.Authorization) error {
 	_, err := c.db.Exec(createAuthzStmt, nullableString(auth.RealmID), nullableString(auth.GroupName),
 		nullableString(auth.Action), nullableString(auth.TargetRealmID), nullableString(auth.TargetGroupName))
