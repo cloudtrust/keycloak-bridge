@@ -1,7 +1,7 @@
 openapi: 3.0.1
 info:
   title: Swagger Cloudtrust Management
-  description: 'Mangement API for Cloudtrust'
+  description: 'Management API for Cloudtrust'
   version: 1.0.0
 servers:
 - url: http://localhost:8888/management
@@ -162,6 +162,12 @@ paths:
       - name: generateNameID
         in: query
         description: tells if a NameID should be generated
+        required: false
+        schema:
+          type: boolean
+      - name: termsOfUse
+        in: query
+        description: tells if terms of use are required (default false)
         required: false
         schema:
           type: boolean
@@ -440,6 +446,63 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Role'
+  /realms/{realm}/users/{userID}/roles/{roleID}:
+    post:
+      tags:
+      - Users
+      summary: Add role to user
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
+      - name: roleID
+        in: path
+        description: Role id
+        required: true
+        schema:
+          type: string
+      responses:
+        204:
+          description: successful operation
+        400:
+          description: role not found
+    delete:
+      tags:
+      - Users
+      summary: Remove role for user
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
+      - name: roleID
+        in: path
+        description: Role id
+        required: true
+        schema:
+          type: string
+      responses:
+        204:
+          description: successful operation
+        404:
+          description: role not found or not owned by user
   /realms/{realm}/users/{userID}/groups:
     get:
       tags:
@@ -1102,6 +1165,51 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Role'
+    post:
+      tags:
+      - Roles
+      summary: Create a new role into the realm
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Role'
+      responses:
+        201:
+          description: successful operation
+          headers:
+            Location:
+              schema:
+                type: string
+              description: URL of the new resource.
+  /realms/{realm}/roles/{roleID}:
+    delete:
+      tags:
+      - Roles
+      summary: Delete the role
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: roleID
+        in: path
+        description: role id
+        required: true
+        schema:
+          type: string
+      responses:
+        204:
+          description: successful operation
   /realms/{realm}/roles-by-id/{roleID}:
     get:
       tags:
