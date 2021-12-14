@@ -57,7 +57,7 @@ github.com/cloudtrust/common-service/v2/validation
 # github.com/cloudtrust/httpclient v1.0.5-0.20211112142708-1160ef94141a
 ## explicit
 github.com/cloudtrust/httpclient
-# github.com/cloudtrust/keycloak-client/v2 v2.5.1-0.20211214095128-1d1e870858f2
+# github.com/cloudtrust/keycloak-client/v2 v2.5.2
 ## explicit
 github.com/cloudtrust/keycloak-client/v2
 github.com/cloudtrust/keycloak-client/v2/api
