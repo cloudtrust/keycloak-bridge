@@ -218,7 +218,7 @@ func (u *UserRepresentation) HasUpdateOfAccreditationDependantInformationKC(form
 func (c *CheckRepresentation) Validate() error {
 	return validation.NewParameterValidator().
 		ValidateParameterRegExp(prmUserID, c.UserID, constants.RegExpID, true).
-		ValidateParameterRegExp(prmCheckOperator, c.Operator, regExpOperator, true).
+		ValidateParameterRegExp(prmCheckOperator, c.Operator, regExpOperator, c.IsIdentificationSuccessful()).
 		ValidateParameterNotNil(prmCheckDatetime, c.DateTime).
 		ValidateParameterRegExp(prmCheckStatus, c.Status, regExpStatus, true).
 		ValidateParameterIn(prmCheckType, c.Type, allowedCheckType, true).
