@@ -16,94 +16,69 @@ import (
 func createValidUser() UserRepresentation {
 	var (
 		bFalse          = false
-		username        = "46791834"
-		gender          = "M"
-		firstName       = "Marc"
-		lastName        = "El-Bichoun"
-		email           = "marcel.bichon@elca.ch"
-		phoneNumber     = "00 33 686 550011"
 		birthDate       = time.Now()
-		birthLocation   = "Bermuda, CH"
-		nationality     = "DE"
-		idDocType       = "PASSPORT"
-		idDocNumber     = "123456789"
 		idDocExpiration = time.Now()
-		idDocCountry    = "CH"
 	)
 
 	return UserRepresentation{
-		Username:             &username,
-		Gender:               &gender,
-		FirstName:            &firstName,
-		LastName:             &lastName,
-		Email:                &email,
+		Username:             ptr("46791834"),
+		Gender:               ptr("M"),
+		FirstName:            ptr("Marc"),
+		LastName:             ptr("El-Bichoun"),
+		Email:                ptr("marcel.bichon@elca.ch"),
 		EmailVerified:        &bFalse,
-		PhoneNumber:          &phoneNumber,
+		PhoneNumber:          ptr("00 33 686 550011"),
 		PhoneNumberVerified:  &bFalse,
 		BirthDate:            &birthDate,
-		BirthLocation:        &birthLocation,
-		Nationality:          &nationality,
-		IDDocumentType:       &idDocType,
-		IDDocumentNumber:     &idDocNumber,
+		BirthLocation:        ptr("Bermuda, CH"),
+		Nationality:          ptr("DE"),
+		IDDocumentType:       ptr("PASSPORT"),
+		IDDocumentNumber:     ptr("123456789"),
 		IDDocumentExpiration: &idDocExpiration,
-		IDDocumentCountry:    &idDocCountry,
+		IDDocumentCountry:    ptr("CH"),
 	}
 }
 
 func createValidKeycloakUser() kc.UserRepresentation {
 	var (
-		bTrue      = true
-		firstName  = "Marc"
-		lastName   = "El-Bichoun"
-		email      = "marcel.bichon@elca.ch"
-		attributes = kc.Attributes{
+		bTrue = true
+	)
+
+	return kc.UserRepresentation{
+		Attributes: &kc.Attributes{
 			constants.AttrbGender:              []string{"M"},
 			constants.AttrbPhoneNumber:         []string{"00 33 686 550011"},
 			constants.AttrbPhoneNumberVerified: []string{"true"},
 			constants.AttrbBirthDate:           []string{"29.02.2020"},
-		}
-	)
-
-	return kc.UserRepresentation{
-		Attributes:    &attributes,
-		FirstName:     &firstName,
-		LastName:      &lastName,
-		Email:         &email,
+		},
+		FirstName:     ptr("Marc"),
+		LastName:      ptr("El-Bichoun"),
+		Email:         ptr("marcel.bichon@elca.ch"),
 		EmailVerified: &bTrue,
 	}
 }
 
 func createValidCheck() CheckRepresentation {
 	var (
-		userID    = "12345678-5824-5555-5656-123456789654"
-		operator  = "operator"
 		datetime  = time.Now()
-		status    = "SUCCESS"
-		typeCheck = "IDENTITY_CHECK"
-		nature    = "PHYSICAL"
-		proofType = "ZIP"
 		proofData = []byte("data")
 	)
 
 	return CheckRepresentation{
-		UserID:    &userID,
-		Operator:  &operator,
+		UserID:    ptr("12345678-5824-5555-5656-123456789654"),
+		Operator:  ptr("operator"),
 		DateTime:  &datetime,
-		Status:    &status,
-		Type:      &typeCheck,
-		Nature:    &nature,
-		ProofType: &proofType,
+		Status:    ptr("SUCCESS"),
+		Type:      ptr("IDENTITY_CHECK"),
+		Nature:    ptr("PHYSICAL"),
+		ProofType: ptr("ZIP"),
 		ProofData: &proofData,
 	}
 }
 
 func createValidPendingChecks() PendingChecksRepresentation {
-	var (
-		nature = "PHYSICAL"
-	)
-
 	return PendingChecksRepresentation{
-		Nature: &nature,
+		Nature: ptr("PHYSICAL"),
 	}
 }
 
@@ -346,17 +321,22 @@ func TestHasUpdateOfAccreditationDependantInformationKC(t *testing.T) {
 }
 
 func TestCheckValidate(t *testing.T) {
-	var (
-		invalid = ""
-		check   = createValidCheck()
-	)
+	var check = createValidCheck()
+	t.Run("Valid check with all fields filled", func(t *testing.T) {
+		assert.Nil(t, check.Validate(), "Check is expected to be valid")
+	})
 
-	t.Run("Valid checks", func(t *testing.T) {
+	t.Run("Valid check w/o operator", func(t *testing.T) {
+		var check = createValidCheck()
+		check.Operator = nil // Operator can be omitted if check is not a success status
+		check.Status = ptr("ABORTED")
 		assert.Nil(t, check.Validate(), "Check is expected to be valid")
 	})
 
 	t.Run("Invalid checks", func(t *testing.T) {
 		var checks = []CheckRepresentation{check, check, check, check, check, check, check, check, check, check, check}
+		var invalid = ""
+
 		// invalid values
 		checks[0].Operator = &invalid
 		checks[1].Status = &invalid
