@@ -274,6 +274,12 @@ func (c *component) CreateCheck(ctx context.Context, realmName string, userID st
 	var accessToken string
 	var err error
 
+	if check.Operator == nil {
+		// If no operator provided, explicitly tells it
+		var operator = "none"
+		check.Operator = &operator
+	}
+
 	dbCheck := check.ConvertToDBCheck()
 	err = c.usersDBModule.CreateCheck(ctx, realmName, userID, dbCheck)
 	if err != nil {
