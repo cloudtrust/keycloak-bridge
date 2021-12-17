@@ -337,6 +337,7 @@ func TestCreateCheck(t *testing.T) {
 	})
 	t.Run("Aborted", func(t *testing.T) {
 		check.Status = ptr("ABORTED")
+		check.Operator = nil
 		check.ProofData = nil
 		mocks.usersDB.EXPECT().CreateCheck(ctx, targetRealm, userID, gomock.Any()).Return(nil)
 		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
