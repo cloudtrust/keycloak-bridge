@@ -38,11 +38,43 @@ const (
 		  AND (? IS NULL OR target_type=?)
 		  AND (? IS NULL OR target_group_name=?)
 	`
-	selectAuthzStmt = `SELECT realm_id, group_name, action, target_realm_id, target_group_name FROM authorizations WHERE realm_id = ? AND group_name = ?;`
+	selectAuthzStmt       = `SELECT realm_id, group_name, action, target_realm_id, target_group_name FROM authorizations WHERE realm_id = ? AND group_name = ?;`
+	selectSingleAuthzStmt = `
+		SELECT
+			1
+		FROM authorizations 
+		WHERE realm_id = ? 
+		  AND group_name = ? 
+		  AND action = ? 
+		  AND target_realm_id = ? 
+		  AND target_group_name = ?;
+	`
+	selectSingleGlobalAuthzStmt = `
+		SELECT
+			1
+		FROM authorizations 
+		WHERE realm_id = ? 
+		  AND group_name = ? 
+		  AND action = ? 
+		  AND target_realm_id = ? 
+		  AND target_group_name IS NULL;
+	`
+	selectAuthzActionStmt = `
+		SELECT
+			realm_id, group_name, action, target_realm_id, target_group_name
+		FROM authorizations 
+		WHERE realm_id = ? 
+		  AND group_name = ? 
+		  AND action = ?;
+	`
 	createAuthzStmt = `INSERT INTO authorizations (realm_id, group_name, action, target_realm_id, target_group_name) 
 		VALUES (?, ?, ?, ?, ?);`
 	deleteAuthzStmt             = `DELETE FROM authorizations WHERE realm_id = ? AND group_name = ?;`
 	deleteAllAuthzWithGroupStmt = `DELETE FROM authorizations WHERE (realm_id = ? AND group_name = ?) OR (target_realm_id = ? AND target_group_name = ?);`
+	deleteSingleAuthzStmt       = `DELETE FROM authorizations WHERE realm_id = ? AND group_name = ? AND action = ? AND target_realm_id = ? AND target_group_name = ?;`
+	deleteGlobalAuthzStmt       = `DELETE FROM authorizations WHERE realm_id = ? AND group_name = ? AND action = ? AND target_realm_id = ? AND target_group_name IS NULL;`
+	deleteAuthzEveryRealmsStmt  = `DELETE FROM authorizations WHERE realm_id = ? AND group_name = ? AND action = ?;`
+	deleteAuthzRealmStmt        = `DELETE FROM authorizations WHERE realm_id = ? AND group_name = ? AND action = ? AND target_realm_id = ?;`
 )
 
 // Scanner used to get data from SQL cursors
@@ -193,6 +225,26 @@ func (c *configurationDBModule) GetAuthorizations(ctx context.Context, realmID s
 	return res, nil
 }
 
+func (c *configurationDBModule) AuthorizationExists(ctx context.Context, realmID string, groupName string, targetRealm string, targetGroupName *string, actionReq string) (bool, error) {
+	var row sqltypes.SQLRow
+	// Get Authorization from DB
+	if targetGroupName != nil {
+		row = c.db.QueryRow(selectSingleAuthzStmt, realmID, groupName, actionReq, targetRealm, targetGroupName)
+	} else {
+		row = c.db.QueryRow(selectSingleGlobalAuthzStmt, realmID, groupName, actionReq, targetRealm)
+	}
+
+	var exists int
+	err := row.Scan(&exists)
+	if err == sql.ErrNoRows {
+		return false, nil
+	} else if err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
 func (c *configurationDBModule) CreateAuthorization(context context.Context, auth configuration.Authorization) error {
 	_, err := c.db.Exec(createAuthzStmt, nullableString(auth.RealmID), nullableString(auth.GroupName),
 		nullableString(auth.Action), nullableString(auth.TargetRealmID), nullableString(auth.TargetGroupName))
@@ -204,8 +256,29 @@ func (c *configurationDBModule) DeleteAuthorizations(context context.Context, re
 	return err
 }
 
+func (c *configurationDBModule) DeleteAuthorization(context context.Context, realmID string, groupName string, targetRealm string, targetGroupName *string, actionReq string) error {
+	var err error
+	if targetGroupName != nil {
+		_, err = c.db.Exec(deleteSingleAuthzStmt, realmID, groupName, actionReq, targetRealm, targetGroupName)
+	} else {
+		_, err = c.db.Exec(deleteGlobalAuthzStmt, realmID, groupName, actionReq, targetRealm)
+	}
+
+	return err
+}
+
 func (c *configurationDBModule) DeleteAllAuthorizationsWithGroup(context context.Context, realmID, groupName string) error {
 	_, err := c.db.Exec(deleteAllAuthzWithGroupStmt, realmID, groupName, realmID, groupName)
+	return err
+}
+
+func (c *configurationDBModule) CleanAuthorizationsActionForEveryRealms(context context.Context, realmID string, groupName string, actionReq string) error {
+	_, err := c.db.Exec(deleteAuthzEveryRealmsStmt, realmID, groupName, actionReq)
+	return err
+}
+
+func (c *configurationDBModule) CleanAuthorizationsActionForRealm(context context.Context, realmID string, groupName string, targetRealm string, actionReq string) error {
+	_, err := c.db.Exec(deleteAuthzRealmStmt, realmID, groupName, actionReq, targetRealm)
 	return err
 }
 

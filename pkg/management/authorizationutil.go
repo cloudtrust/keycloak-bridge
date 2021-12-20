@@ -4,7 +4,10 @@ import (
 	"errors"
 
 	"github.com/cloudtrust/common-service/v2/configuration"
+	errorhandler "github.com/cloudtrust/common-service/v2/errors"
+	"github.com/cloudtrust/common-service/v2/security"
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
+	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 )
 
 // Validate the content of the provided array. Returns an error if any issue is detected
@@ -52,4 +55,52 @@ func checkTarget(authorizations []configuration.Authorization, allowedTargetReal
 		}
 	}
 	return nil
+}
+
+// Validate the scope of each authorization in the array. Returns an error if an authorization is not valid
+func validateScope(authorization configuration.Authorization) error {
+	scope, err := getScope(authorization)
+	if err != nil {
+		return err
+	}
+
+	if authorization.TargetRealmID == nil {
+		return errorhandler.CreateBadRequestError(constants.MsgErrMissingParam + "." + constants.Authorization + ".targetRealm")
+	}
+
+	var scopeErr = errorhandler.CreateBadRequestError(constants.MsgErrInvalidParam + "." + constants.Authorization + ".scope")
+	switch scope {
+	case security.ScopeGlobal:
+		if *authorization.TargetRealmID != "*" || authorization.TargetGroupName != nil {
+			return scopeErr
+		}
+	case security.ScopeRealm:
+		if authorization.TargetGroupName == nil || *authorization.TargetGroupName != "*" {
+			return scopeErr
+		}
+	case security.ScopeGroup:
+		if authorization.TargetGroupName == nil {
+			return scopeErr
+		}
+	}
+
+	return nil
+}
+
+func validateScopes(authorizations []configuration.Authorization) error {
+	for _, authz := range authorizations {
+		if err := validateScope(authz); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func getScope(authz configuration.Authorization) (security.Scope, error) {
+	for _, action := range GetActions() {
+		if *authz.Action == action.String() {
+			return action.Scope, nil
+		}
+	}
+	return "", errorhandler.CreateBadRequestError(constants.MsgErrInvalidParam + "." + constants.Authorization + ".action")
 }

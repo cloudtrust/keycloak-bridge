@@ -99,6 +99,12 @@ type GlnVerifier interface {
 	ValidateGLN(firstName, lastName, gln string) error
 }
 
+type AuthorizationChecker interface {
+	CheckAuthorizationForGroupsOnTargetRealm(realm string, groups []string, action, targetRealm string) error
+	CheckAuthorizationForGroupsOnTargetGroup(realm string, groups []string, action, targetRealm, targetGroup string) error
+	ReloadAuthorizations(ctx context.Context) error
+}
+
 // Component is the management component interface.
 type Component interface {
 	GetActions(ctx context.Context) ([]api.ActionRepresentation, error)
@@ -159,6 +165,9 @@ type Component interface {
 	DeleteGroup(ctx context.Context, realmName string, groupID string) error
 	GetAuthorizations(ctx context.Context, realmName string, groupID string) (api.AuthorizationsRepresentation, error)
 	UpdateAuthorizations(ctx context.Context, realmName string, groupID string, group api.AuthorizationsRepresentation) error
+	AddAuthorization(ctx context.Context, realmName string, groupID string, group api.AuthorizationsRepresentation) error
+	GetAuthorization(ctx context.Context, realmName string, groupID string, targetRealm string, targetGroupID string, actionReq string) (api.AuthorizationMessage, error)
+	DeleteAuthorization(ctx context.Context, realmName string, groupID string, targetRealm string, targetGroupID string, actionReq string) error
 
 	GetRealmCustomConfiguration(ctx context.Context, realmName string) (api.RealmCustomConfiguration, error)
 	UpdateRealmCustomConfiguration(ctx context.Context, realmID string, customConfig api.RealmCustomConfiguration) error
@@ -179,6 +188,7 @@ type component struct {
 	eventDBModule           database.EventsDBModule
 	configDBModule          keycloakb.ConfigurationDBModule
 	onboardingModule        OnboardingModule
+	authChecker             AuthorizationChecker
 	authorizedTrustIDGroups map[string]bool
 	socialRealmName         string
 	glnVerifier             GlnVerifier
@@ -187,7 +197,7 @@ type component struct {
 
 // NewComponent returns the management component.
 func NewComponent(keycloakClient KeycloakClient, kcURIProvider kc.KeycloakURIProvider, usersDBModule UsersDetailsDBModule, eventDBModule database.EventsDBModule,
-	configDBModule keycloakb.ConfigurationDBModule, onboardingModule OnboardingModule, authorizedTrustIDGroups []string, socialRealmName string,
+	configDBModule keycloakb.ConfigurationDBModule, onboardingModule OnboardingModule, authChecker AuthorizationChecker, authorizedTrustIDGroups []string, socialRealmName string,
 	glnVerifier GlnVerifier, logger keycloakb.Logger) Component {
 	/* REMOVE_THIS_3901 : remove second provided parameter */
 
@@ -203,6 +213,7 @@ func NewComponent(keycloakClient KeycloakClient, kcURIProvider kc.KeycloakURIPro
 		eventDBModule:           eventDBModule,
 		configDBModule:          configDBModule,
 		onboardingModule:        onboardingModule,
+		authChecker:             authChecker,
 		authorizedTrustIDGroups: authzedTrustIDGroups,
 		socialRealmName:         socialRealmName,
 		glnVerifier:             glnVerifier,
@@ -1692,6 +1703,206 @@ func (c *component) UpdateAuthorizations(ctx context.Context, realmName string, 
 	}
 
 	c.reportEvent(ctx, "API_AUTHORIZATIONS_UPDATE", database.CtEventRealmName, realmName, database.CtEventGroupName, groupName)
+
+	return nil
+}
+
+func (c *component) AddAuthorization(ctx context.Context, realmName string, groupID string, authz api.AuthorizationsRepresentation) error {
+	// This method needs to reload the authorizations matrix to synch the matrix cache with the DB
+	// If not, it will not be compatible with potential previous call to AddAuthorization or DeleteAuthorization.
+	err := c.authChecker.ReloadAuthorizations(ctx)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return err
+	}
+
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+	group, err := c.keycloakClient.GetGroup(accessToken, realmName, groupID)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return err
+	}
+	var groupName = *group.Name
+
+	authorizations := api.ConvertToDBAuthorizations(realmName, groupName, authz)
+
+	if err = c.checkAllowedTargetRealmsAndGroupNames(ctx, realmName, authorizations); err != nil {
+		return err
+	}
+
+	if err = validateScopes(authorizations); err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return err
+	}
+
+	// Persists the new authorizations in DB
+	{
+		tx, err := c.configDBModule.NewTransaction(ctx)
+		if err != nil {
+			c.logger.Warn(ctx, "err", err.Error())
+			return err
+		}
+		defer tx.Close()
+
+		for _, authz := range authorizations {
+			scope, err := getScope(authz)
+			if err != nil {
+				c.logger.Warn(ctx, "err", err.Error())
+				return err
+			}
+
+			var exists error
+			if scope == security.ScopeGroup {
+				exists = c.authChecker.CheckAuthorizationForGroupsOnTargetGroup(*authz.RealmID, []string{*authz.GroupName}, *authz.Action, *authz.TargetRealmID, *authz.TargetGroupName)
+			} else {
+				exists = c.authChecker.CheckAuthorizationForGroupsOnTargetRealm(*authz.RealmID, []string{*authz.GroupName}, *authz.Action, *authz.TargetRealmID)
+			}
+
+			// If the authorization does not exist yet
+			if exists != nil {
+				// Cleaning. Remove the authorizations that are included in the new one.
+				if *authz.TargetRealmID == "*" {
+					err = c.configDBModule.CleanAuthorizationsActionForEveryRealms(ctx, *authz.RealmID, *authz.GroupName, *authz.Action)
+				} else if *authz.TargetGroupName == "*" {
+					err = c.configDBModule.CleanAuthorizationsActionForRealm(ctx, *authz.RealmID, *authz.GroupName, *authz.TargetRealmID, *authz.Action)
+				}
+				if err != nil {
+					c.logger.Warn(ctx, "err", err.Error())
+					return err
+				}
+
+				//Creation of the authorization
+				err = c.configDBModule.CreateAuthorization(ctx, authz)
+				if err != nil {
+					c.logger.Warn(ctx, "err", err.Error())
+					return err
+				}
+			}
+		}
+
+		err = tx.Commit()
+		if err != nil {
+			c.logger.Warn(ctx, "err", err.Error())
+			return err
+		}
+	}
+
+	c.reportEvent(ctx, "API_AUTHORIZATIONS_PUT", database.CtEventRealmName, realmName, database.CtEventGroupName, groupName)
+
+	return nil
+}
+
+func (c *component) parseTargetGroupName(accessToken string, targetRealm string, targetGroupID string) (*string, error) {
+	var targetGroupName *string
+	if targetGroupID == "*" {
+		targetGroupName = &targetGroupID
+	} else if targetGroupID != "" {
+		targetGroup, err := c.keycloakClient.GetGroup(accessToken, targetRealm, targetGroupID)
+		if err != nil {
+			return nil, err
+		}
+		targetGroupName = targetGroup.Name
+	}
+	return targetGroupName, nil
+}
+
+func (c *component) GetAuthorization(ctx context.Context, realmName string, groupID string, targetRealm string, targetGroupID string, actionReq string) (api.AuthorizationMessage, error) {
+	// This method needs to reload the authorizations matrix to synch the matrix cache with the DB
+	// If not, it will not be compatible with potential previous call to AddAuthorization or DeleteAuthorization.
+	err := c.authChecker.ReloadAuthorizations(ctx)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return api.AuthorizationMessage{}, err
+	}
+
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+	group, err := c.keycloakClient.GetGroup(accessToken, realmName, groupID)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return api.AuthorizationMessage{}, err
+	}
+
+	targetGroupName, err := c.parseTargetGroupName(accessToken, targetRealm, targetGroupID)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return api.AuthorizationMessage{}, err
+	}
+
+	authz := configuration.Authorization{
+		RealmID:         &realmName,
+		GroupName:       group.Name,
+		Action:          &actionReq,
+		TargetRealmID:   &targetRealm,
+		TargetGroupName: targetGroupName,
+	}
+
+	err = validateScope(authz)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return api.AuthorizationMessage{}, err
+	}
+
+	scope, err := getScope(authz)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return api.AuthorizationMessage{}, err
+	}
+
+	if scope == security.ScopeGroup {
+		err = c.authChecker.CheckAuthorizationForGroupsOnTargetGroup(*authz.RealmID, []string{*authz.GroupName}, *authz.Action, *authz.TargetRealmID, *authz.TargetGroupName)
+	} else {
+		err = c.authChecker.CheckAuthorizationForGroupsOnTargetRealm(*authz.RealmID, []string{*authz.GroupName}, *authz.Action, *authz.TargetRealmID)
+	}
+
+	if err != nil {
+		return api.AuthorizationMessage{Authorized: false}, nil
+	}
+	return api.AuthorizationMessage{Authorized: true}, nil
+}
+
+func (c *component) DeleteAuthorization(ctx context.Context, realmName string, groupID string, targetRealm string, targetGroupID string, actionReq string) error {
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+
+	group, err := c.keycloakClient.GetGroup(accessToken, realmName, groupID)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return err
+	}
+
+	targetGroupName, err := c.parseTargetGroupName(accessToken, targetRealm, targetGroupID)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return err
+	}
+
+	authz := configuration.Authorization{
+		RealmID:         &realmName,
+		GroupName:       group.Name,
+		Action:          &actionReq,
+		TargetRealmID:   &targetRealm,
+		TargetGroupName: targetGroupName,
+	}
+
+	err = validateScope(authz)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return err
+	}
+
+	exists, err := c.configDBModule.AuthorizationExists(ctx, *authz.RealmID, *authz.GroupName, *authz.TargetRealmID, authz.TargetGroupName, *authz.Action)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return err
+	}
+	if exists {
+		err = c.configDBModule.DeleteAuthorization(ctx, *authz.RealmID, *authz.GroupName, *authz.TargetRealmID, authz.TargetGroupName, *authz.Action)
+		if err != nil {
+			c.logger.Warn(ctx, "err", err.Error())
+			return err
+		}
+
+		c.reportEvent(ctx, "API_AUTHORIZATION_DELETE", database.CtEventRealmName, realmName, database.CtEventGroupName, groupID, targetRealm, targetGroupID, actionReq)
+	}
 
 	return nil
 }

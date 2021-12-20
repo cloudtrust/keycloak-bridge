@@ -119,3 +119,193 @@ func TestValidate(t *testing.T) {
 		assert.Nil(t, err)
 	})
 }
+
+func TestValidateScope(t *testing.T) {
+	var realmName = "DEP"
+	var groupName1 = "groupName1"
+	var star = "*"
+
+	var actionGlobal = "MGMT_GetActions"
+	var actionRealm = "MGMT_GetRealm"
+	var actionGroup = "MGMT_DeleteUser"
+
+	var authorizations []configuration.Authorization
+
+	t.Run("Valid global scope", func(t *testing.T) {
+		authorizations = []configuration.Authorization{
+			{
+				RealmID:         &realmName,
+				GroupName:       &groupName1,
+				Action:          &actionGlobal,
+				TargetRealmID:   &star,
+				TargetGroupName: nil,
+			},
+		}
+		err := validateScopes(authorizations)
+		assert.Nil(t, err)
+	})
+
+	t.Run("Valid realm scope", func(t *testing.T) {
+		authorizations = []configuration.Authorization{
+			{
+				RealmID:         &realmName,
+				GroupName:       &groupName1,
+				Action:          &actionRealm,
+				TargetRealmID:   &star,
+				TargetGroupName: &star,
+			},
+			{
+				RealmID:         &realmName,
+				GroupName:       &groupName1,
+				Action:          &actionRealm,
+				TargetRealmID:   &realmName,
+				TargetGroupName: &star,
+			},
+		}
+		err := validateScopes(authorizations)
+		assert.Nil(t, err)
+	})
+
+	t.Run("Valid group scope", func(t *testing.T) {
+		authorizations = []configuration.Authorization{
+			{
+				RealmID:         &realmName,
+				GroupName:       &groupName1,
+				Action:          &actionGroup,
+				TargetRealmID:   &star,
+				TargetGroupName: &star,
+			},
+			{
+				RealmID:         &realmName,
+				GroupName:       &groupName1,
+				Action:          &actionGroup,
+				TargetRealmID:   &realmName,
+				TargetGroupName: &star,
+			},
+			{
+				RealmID:         &realmName,
+				GroupName:       &groupName1,
+				Action:          &actionGroup,
+				TargetRealmID:   &realmName,
+				TargetGroupName: &groupName1,
+			},
+		}
+		err := validateScopes(authorizations)
+		assert.Nil(t, err)
+	})
+
+	t.Run("Invalid global scope", func(t *testing.T) {
+		authorizations = []configuration.Authorization{
+			{
+				RealmID:         &realmName,
+				GroupName:       &groupName1,
+				Action:          &actionGlobal,
+				TargetRealmID:   &star,
+				TargetGroupName: &star,
+			},
+		}
+		err := validateScopes(authorizations)
+		assert.NotNil(t, err)
+		assert.Equal(t, "400 .invalidParameter.authorization.scope", err.Error())
+
+		authorizations = []configuration.Authorization{
+			{
+				RealmID:         &realmName,
+				GroupName:       &groupName1,
+				Action:          &actionGlobal,
+				TargetRealmID:   &realmName,
+				TargetGroupName: &star,
+			},
+		}
+		err = validateScopes(authorizations)
+		assert.NotNil(t, err)
+		assert.Equal(t, "400 .invalidParameter.authorization.scope", err.Error())
+
+		authorizations = []configuration.Authorization{
+			{
+				RealmID:         &realmName,
+				GroupName:       &groupName1,
+				Action:          &actionGlobal,
+				TargetRealmID:   &realmName,
+				TargetGroupName: &groupName1,
+			},
+		}
+		err = validateScopes(authorizations)
+		assert.NotNil(t, err)
+		assert.Equal(t, "400 .invalidParameter.authorization.scope", err.Error())
+	})
+
+	t.Run("Invalid realm scope", func(t *testing.T) {
+		authorizations = []configuration.Authorization{
+			{
+				RealmID:         &realmName,
+				GroupName:       &groupName1,
+				Action:          &actionRealm,
+				TargetRealmID:   &realmName,
+				TargetGroupName: &groupName1,
+			},
+		}
+		err := validateScopes(authorizations)
+		assert.NotNil(t, err)
+		assert.Equal(t, "400 .invalidParameter.authorization.scope", err.Error())
+
+		authorizations = []configuration.Authorization{
+			{
+				RealmID:         &realmName,
+				GroupName:       &groupName1,
+				Action:          &actionRealm,
+				TargetRealmID:   &realmName,
+				TargetGroupName: nil,
+			},
+		}
+		err = validateScopes(authorizations)
+		assert.NotNil(t, err)
+		assert.Equal(t, "400 .invalidParameter.authorization.scope", err.Error())
+	})
+
+	t.Run("Invalid group scope", func(t *testing.T) {
+		authorizations = []configuration.Authorization{
+			{
+				RealmID:         &realmName,
+				GroupName:       &groupName1,
+				Action:          &actionGroup,
+				TargetRealmID:   &star,
+				TargetGroupName: nil,
+			},
+		}
+		err := validateScopes(authorizations)
+		assert.NotNil(t, err)
+		assert.Equal(t, "400 .invalidParameter.authorization.scope", err.Error())
+	})
+
+	t.Run("Invalid action", func(t *testing.T) {
+		invalidAction := "TestActionInvalid"
+		authorizations = []configuration.Authorization{
+			{
+				RealmID:         &realmName,
+				GroupName:       &groupName1,
+				Action:          &invalidAction,
+				TargetRealmID:   &star,
+				TargetGroupName: nil,
+			},
+		}
+		err := validateScopes(authorizations)
+		assert.NotNil(t, err)
+		assert.Equal(t, "400 .invalidParameter.authorization.action", err.Error())
+	})
+
+	t.Run("Missing target realm", func(t *testing.T) {
+		authorizations = []configuration.Authorization{
+			{
+				RealmID:         &realmName,
+				GroupName:       &groupName1,
+				Action:          &actionGlobal,
+				TargetRealmID:   nil,
+				TargetGroupName: nil,
+			},
+		}
+		err := validateScopes(authorizations)
+		assert.NotNil(t, err)
+		assert.Equal(t, "400 .missingParameter.authorization.targetRealm", err.Error())
+	})
+}

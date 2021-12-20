@@ -12,6 +12,7 @@ package management
 //go:generate mockgen --build_flags=--mod=mod -destination=./mock/usersdbmodule.go -package=mock -mock_names=UsersDetailsDBModule=UsersDetailsDBModule github.com/cloudtrust/keycloak-bridge/pkg/management UsersDetailsDBModule
 //go:generate mockgen --build_flags=--mod=mod -destination=./mock/onboardingmodule.go -package=mock -mock_names=OnboardingModule=OnboardingModule github.com/cloudtrust/keycloak-bridge/pkg/management OnboardingModule
 //go:generate mockgen --build_flags=--mod=mod -destination=./mock/glnverifier.go -package=mock -mock_names=GlnVerifier=GlnVerifier github.com/cloudtrust/keycloak-bridge/pkg/management GlnVerifier
+//go:generate mockgen --build_flags=--mod=mod -destination=./mock/authorizationmanager.go -package=mock -mock_names=AuthorizationManager=AuthorizationManager github.com/cloudtrust/common-service/v2/security AuthorizationManager
 
 func ptr(value string) *string {
 	return &value

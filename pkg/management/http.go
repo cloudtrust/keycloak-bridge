@@ -28,24 +28,27 @@ const (
 	prmGroupID      = "groupID"
 	prmCredentialID = "credentialID"
 	prmProvider     = "provider"
+	prmAction       = "action"
 
-	prmQryEmail       = "email"
-	prmQryFirstName   = "firstName"
-	prmQryLastName    = "lastName"
-	prmQryUserName    = "username"
-	prmQrySearch      = "search"
-	prmQryClientID    = "client_id"
-	prmQryRedirectURI = "redirect_uri"
-	prmQryLifespan    = "lifespan"
-	prmQryGroupIDs    = "groupIds"
-	prmQryFirst       = "first"
-	prmQryMax         = "max"
-	prmQryGroupName   = "groupName"
-	prmQryGenUsername = "generateUsername"
-	prmQryGenNameID   = "generateNameID"
-	prmQryTermsOfUse  = "termsOfUse"
-	prmQryRealm       = "customerRealm"
-	prmQryReminder    = "reminder"
+	prmQryEmail         = "email"
+	prmQryFirstName     = "firstName"
+	prmQryLastName      = "lastName"
+	prmQryUserName      = "username"
+	prmQrySearch        = "search"
+	prmQryClientID      = "client_id"
+	prmQryRedirectURI   = "redirect_uri"
+	prmQryLifespan      = "lifespan"
+	prmQryGroupIDs      = "groupIds"
+	prmQryFirst         = "first"
+	prmQryMax           = "max"
+	prmQryGroupName     = "groupName"
+	prmQryGenUsername   = "generateUsername"
+	prmQryGenNameID     = "generateNameID"
+	prmQryTermsOfUse    = "termsOfUse"
+	prmQryRealm         = "customerRealm"
+	prmQryReminder      = "reminder"
+	prmQryTargetRealm   = "targetRealm"
+	prmQryTargetGroupID = "targetGroupID"
 )
 
 // MakeManagementHandler make an HTTP handler for a Management endpoint.
@@ -67,26 +70,29 @@ func decodeManagementRequest(ctx context.Context, req *http.Request) (interface{
 		prmGroupID:      constants.RegExpID,
 		prmCredentialID: constants.RegExpID,
 		prmProvider:     constants.RegExpName,
+		prmAction:       constants.RegExpName,
 	}
 
 	var queryParams = map[string]string{
-		prmQryEmail:       constants.RegExpEmail,
-		prmQryFirstName:   constants.RegExpFirstName,
-		prmQryLastName:    constants.RegExpLastNameSearch,
-		prmQryUserName:    constants.RegExpUsername,
-		prmQrySearch:      constants.RegExpSearch,
-		prmQryClientID:    constants.RegExpClientID,
-		prmQryRedirectURI: constants.RegExpRedirectURI,
-		prmQryLifespan:    constants.RegExpLifespan,
-		prmQryGroupIDs:    constants.RegExpGroupIds,
-		prmQryFirst:       constants.RegExpNumber,
-		prmQryMax:         constants.RegExpNumber,
-		prmQryGroupName:   constants.RegExpName,
-		prmQryGenUsername: constants.RegExpBool,
-		prmQryGenNameID:   constants.RegExpBool,
-		prmQryTermsOfUse:  constants.RegExpBool,
-		prmQryRealm:       constants.RegExpRealmName,
-		prmQryReminder:    constants.RegExpBool,
+		prmQryEmail:         constants.RegExpEmail,
+		prmQryFirstName:     constants.RegExpFirstName,
+		prmQryLastName:      constants.RegExpLastNameSearch,
+		prmQryUserName:      constants.RegExpUsername,
+		prmQrySearch:        constants.RegExpSearch,
+		prmQryClientID:      constants.RegExpClientID,
+		prmQryRedirectURI:   constants.RegExpRedirectURI,
+		prmQryLifespan:      constants.RegExpLifespan,
+		prmQryGroupIDs:      constants.RegExpGroupIds,
+		prmQryFirst:         constants.RegExpNumber,
+		prmQryMax:           constants.RegExpNumber,
+		prmQryGroupName:     constants.RegExpName,
+		prmQryGenUsername:   constants.RegExpBool,
+		prmQryGenNameID:     constants.RegExpBool,
+		prmQryTermsOfUse:    constants.RegExpBool,
+		prmQryRealm:         constants.RegExpRealmName,
+		prmQryReminder:      constants.RegExpBool,
+		prmQryTargetRealm:   constants.RegExpTargetRealmName,
+		prmQryTargetGroupID: constants.RegExpTargetGroupID,
 	}
 
 	return commonhttp.DecodeRequest(ctx, req, pathParams, queryParams)
