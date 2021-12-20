@@ -36,7 +36,7 @@ github.com/VividCortex/gohistogram
 github.com/certifi/gocertifi
 # github.com/clbanning/x2j v0.0.0-20191024224557-825249438eec
 ## explicit
-# github.com/cloudtrust/common-service/v2 v2.5.3-0.20211209095354-0125f4bc4c77
+# github.com/cloudtrust/common-service/v2 v2.5.3
 ## explicit
 github.com/cloudtrust/common-service/v2
 github.com/cloudtrust/common-service/v2/configuration
