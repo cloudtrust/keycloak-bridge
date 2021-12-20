@@ -1661,12 +1661,6 @@ func (c *component) UpdateAuthorizations(ctx context.Context, realmName string, 
 		return err
 	}
 
-	// Assign KC roles to groups
-	if err = c.assignKCRolesToGroups(accessToken, realmName, groupID, authorizations); err != nil {
-		c.logger.Warn(ctx, "err", err.Error())
-		return err
-	}
-
 	// Persists the new authorizations in DB
 	{
 		tx, err := c.configDBModule.NewTransaction(ctx)
@@ -1748,71 +1742,6 @@ func (c *component) checkAllowedTargetRealmsAndGroupNames(ctx context.Context, r
 		}
 	}
 	return nil
-}
-
-func (c *component) processRoles(roles []kc.RoleRepresentation, accessToken, realmName, groupID, clientID string, roleMgmtFunc func(string, string, string, string, []kc.RoleRepresentation) error) error {
-	var rolesToProcess []kc.RoleRepresentation
-	for _, role := range roles {
-		if stringInSlice(*role.Name, []string{"manage-users", "view-clients", "view-realm", "view-users"}) {
-			rolesToProcess = append(rolesToProcess, role)
-		}
-	}
-
-	if len(rolesToProcess) != 0 {
-		if err := roleMgmtFunc(accessToken, realmName, groupID, clientID, rolesToProcess); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (c *component) assignKCRolesToGroups(accessToken, realmName, groupID string, authorizations []configuration.Authorization) error {
-	// TODO Would be good to provide only KC roles which are really needed.
-	// For simplicity, we provides "manage-users", "view-clients", "view-realms", "view-users" to all groups which have at least one Management Action
-	// We also do it for each realms available.
-	var kcRolesNeeded = c.hasAtLeastOneManagementAction(authorizations)
-
-	// Check if roles are assigned
-	clients, err := c.keycloakClient.GetClients(accessToken, realmName)
-	if err != nil {
-		return err
-	}
-
-	for _, client := range clients {
-		// filter clients, only keep realm-management and the ones ending with -realm
-		if *client.ClientID != "realm-management" && !strings.HasSuffix(*client.ClientID, "-realm") {
-			continue
-		}
-
-		availableRoles, err := c.keycloakClient.GetAvailableGroupClientRoles(accessToken, realmName, groupID, *client.ID)
-		if err != nil {
-			return err
-		}
-
-		currentRoles, err := c.keycloakClient.GetGroupClientRoles(accessToken, realmName, groupID, *client.ID)
-		if err != nil {
-			return err
-		}
-
-		if kcRolesNeeded {
-			err = c.processRoles(availableRoles, accessToken, realmName, groupID, *client.ID, c.keycloakClient.AssignClientRole)
-		} else {
-			err = c.processRoles(currentRoles, accessToken, realmName, groupID, *client.ID, c.keycloakClient.RemoveClientRole)
-		}
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (c *component) hasAtLeastOneManagementAction(authorizations []configuration.Authorization) bool {
-	for _, authz := range authorizations {
-		if authz.Action != nil && strings.HasPrefix(*authz.Action, "MGMT_") {
-			return true
-		}
-	}
-	return false
 }
 
 func (c *component) GetActions(ctx context.Context) ([]api.ActionRepresentation, error) {
