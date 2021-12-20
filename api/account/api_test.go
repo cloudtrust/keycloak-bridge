@@ -220,13 +220,14 @@ func TestValidateCredentialRepresentation(t *testing.T) {
 }
 
 func createValidAccountRepresentation() AccountRepresentation {
+	var validUserName = "bobby"
 	var validName = "Bobby"
 	var validEmail = "bobby@mail.com"
 	var validPhone = "+41221234567"
 	var validLocale = "fr"
 
 	return AccountRepresentation{
-		Username:    &validName,
+		Username:    &validUserName,
 		FirstName:   &validName,
 		LastName:    &validName,
 		Email:       &validEmail,
@@ -236,13 +237,14 @@ func createValidAccountRepresentation() AccountRepresentation {
 }
 
 func createValidUpdatableAccountRepresentation() UpdatableAccountRepresentation {
+	var validUserName = "bobby"
 	var validName = "Bobby"
 	var validEmail = "bobby@mail.com"
 	var validPhone = "+41221234567"
 	var validLocale = "fr"
 
 	return UpdatableAccountRepresentation{
-		Username:    &validName,
+		Username:    &validUserName,
 		FirstName:   &validName,
 		LastName:    &validName,
 		Email:       &validEmail,
