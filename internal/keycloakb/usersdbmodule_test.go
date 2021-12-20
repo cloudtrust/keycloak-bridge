@@ -25,7 +25,7 @@ func TestStoreOrUpdateUserDetails(t *testing.T) {
 	var userID = "123789"
 	t.Run("Update succesful", func(t *testing.T) {
 
-		mockDB.EXPECT().Exec(gomock.Any(), "realmId", &userID, gomock.Any(), keyId, gomock.Any()).Return(nil, nil).Times(1)
+		mockDB.EXPECT().Exec(gomock.Any(), "realmId", &userID, gomock.Any(), keyId, gomock.Any(), keyId).Return(nil, nil).Times(1)
 		var configDBModule = NewUsersDetailsDBModule(mockDB, mockCrypter, log.NewNopLogger())
 		mockCrypter.EXPECT().Encrypt(gomock.Any(), gomock.Any()).Return(encryptedContent, nil).Times(1)
 		mockCrypter.EXPECT().GetCurrentKeyID().Return(keyId).Times(1)
@@ -41,7 +41,7 @@ func TestStoreOrUpdateUserDetails(t *testing.T) {
 	})
 	t.Run("Update user: DB error", func(t *testing.T) {
 		var unexpectedError = errors.New("error")
-		mockDB.EXPECT().Exec(gomock.Any(), "realmId", &userID, gomock.Any(), keyId, gomock.Any()).Return(nil, unexpectedError).Times(1)
+		mockDB.EXPECT().Exec(gomock.Any(), "realmId", &userID, gomock.Any(), keyId, gomock.Any(), keyId).Return(nil, unexpectedError).Times(1)
 		var configDBModule = NewUsersDetailsDBModule(mockDB, mockCrypter, log.NewNopLogger())
 		mockCrypter.EXPECT().Encrypt(gomock.Any(), gomock.Any()).Return(encryptedContent, nil).Times(1)
 		mockCrypter.EXPECT().GetCurrentKeyID().Return(keyId).Times(1)

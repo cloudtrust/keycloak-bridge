@@ -17,7 +17,7 @@ import (
 const (
 	updateUserDetailsStmt = `INSERT INTO user_details (realm_id, user_id, details, key_id)
 	  VALUES (?, ?, ?, ?) 
-	  ON DUPLICATE KEY UPDATE details=?;`
+	  ON DUPLICATE KEY UPDATE details=?, key_id=?;`
 	selectUserDetailsStmt = `
 	  SELECT details, key_id
 	  FROM user_details
@@ -89,7 +89,7 @@ func (c *usersDBModule) StoreOrUpdateUserDetails(ctx context.Context, realm stri
 
 	keyId := c.cipher.GetCurrentKeyID()
 	// update value in DB
-	_, err = c.db.Exec(updateUserDetailsStmt, realm, user.UserID, encryptedData, keyId, encryptedData)
+	_, err = c.db.Exec(updateUserDetailsStmt, realm, user.UserID, encryptedData, keyId, encryptedData, keyId)
 	return err
 }
 
