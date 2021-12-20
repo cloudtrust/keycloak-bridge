@@ -1714,6 +1714,8 @@ func (c *component) UpdateAuthorizations(ctx context.Context, realmName string, 
 }
 
 func (c *component) AddAuthorization(ctx context.Context, realmName string, groupID string, authz api.AuthorizationsRepresentation) error {
+	// This method needs to reload the authorizations matrix to synch the matrix cache with the DB
+	// If not, it will not be compatible with potential previous call to AddAuthorization or DeleteAuthorization.
 	err := c.authChecker.ReloadAuthorizations(ctx)
 	if err != nil {
 		c.logger.Warn(ctx, "err", err.Error())
@@ -1749,7 +1751,11 @@ func (c *component) AddAuthorization(ctx context.Context, realmName string, grou
 		defer tx.Close()
 
 		for _, authz := range authorizations {
-			scope, _ := getScope(authz)
+			scope, err := getScope(authz)
+			if err != nil {
+				c.logger.Warn(ctx, "err", err.Error())
+				return err
+			}
 
 			var exists error
 			if scope == security.ScopeGroup {
@@ -1760,7 +1766,7 @@ func (c *component) AddAuthorization(ctx context.Context, realmName string, grou
 
 			// If the authorization does not exist yet
 			if exists != nil {
-				// clean children
+				// Cleaning. Remove the authorizations that are included in the new one.
 				if *authz.TargetRealmID == "*" {
 					err = c.configDBModule.CleanAuthorizationsActionForEveryRealms(ctx, *authz.RealmID, *authz.GroupName, *authz.Action)
 				} else if *authz.TargetGroupName == "*" {
@@ -1792,7 +1798,23 @@ func (c *component) AddAuthorization(ctx context.Context, realmName string, grou
 	return nil
 }
 
+func (c *component) parseTargetGroupName(accessToken string, targetRealm string, targetGroupID string) (*string, error) {
+	var targetGroupName *string
+	if targetGroupID == "*" {
+		targetGroupName = &targetGroupID
+	} else if targetGroupID != "" {
+		targetGroup, err := c.keycloakClient.GetGroup(accessToken, targetRealm, targetGroupID)
+		if err != nil {
+			return nil, err
+		}
+		targetGroupName = targetGroup.Name
+	}
+	return targetGroupName, nil
+}
+
 func (c *component) GetAuthorization(ctx context.Context, realmName string, groupID string, targetRealm string, targetGroupID string, actionReq string) (api.AuthorizationMessage, error) {
+	// This method needs to reload the authorizations matrix to synch the matrix cache with the DB
+	// If not, it will not be compatible with potential previous call to AddAuthorization or DeleteAuthorization.
 	err := c.authChecker.ReloadAuthorizations(ctx)
 	if err != nil {
 		c.logger.Warn(ctx, "err", err.Error())
@@ -1806,16 +1828,10 @@ func (c *component) GetAuthorization(ctx context.Context, realmName string, grou
 		return api.AuthorizationMessage{}, err
 	}
 
-	targetGroupName := &targetGroupID
-	if *targetGroupName == "" {
-		targetGroupName = nil
-	} else if *targetGroupName != "*" {
-		targetGroup, err := c.keycloakClient.GetGroup(accessToken, targetRealm, targetGroupID)
-		if err != nil {
-			c.logger.Warn(ctx, "err", err.Error())
-			return api.AuthorizationMessage{}, err
-		}
-		targetGroupName = targetGroup.Name
+	targetGroupName, err := c.parseTargetGroupName(accessToken, targetRealm, targetGroupID)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return api.AuthorizationMessage{}, err
 	}
 
 	authz := configuration.Authorization{
@@ -1832,7 +1848,11 @@ func (c *component) GetAuthorization(ctx context.Context, realmName string, grou
 		return api.AuthorizationMessage{}, err
 	}
 
-	scope, _ := getScope(authz)
+	scope, err := getScope(authz)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return api.AuthorizationMessage{}, err
+	}
 
 	if scope == security.ScopeGroup {
 		err = c.authChecker.CheckAuthorizationForGroupsOnTargetGroup(*authz.RealmID, []string{*authz.GroupName}, *authz.Action, *authz.TargetRealmID, *authz.TargetGroupName)
@@ -1855,16 +1875,10 @@ func (c *component) DeleteAuthorization(ctx context.Context, realmName string, g
 		return err
 	}
 
-	targetGroupName := &targetGroupID
-	if *targetGroupName == "" {
-		targetGroupName = nil
-	} else if *targetGroupName != "*" {
-		targetGroup, err := c.keycloakClient.GetGroup(accessToken, targetRealm, targetGroupID)
-		if err != nil {
-			c.logger.Warn(ctx, "err", err.Error())
-			return err
-		}
-		targetGroupName = targetGroup.Name
+	targetGroupName, err := c.parseTargetGroupName(accessToken, targetRealm, targetGroupID)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return err
 	}
 
 	authz := configuration.Authorization{
