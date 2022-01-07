@@ -28,6 +28,7 @@ import (
 	"github.com/cloudtrust/common-service/v2/security"
 	"github.com/cloudtrust/common-service/v2/tracing"
 	"github.com/cloudtrust/common-service/v2/tracking"
+	"github.com/cloudtrust/httpclient"
 	"github.com/cloudtrust/keycloak-bridge/internal/business"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/cloudtrust/keycloak-bridge/pkg/account"
@@ -96,6 +97,8 @@ const (
 	cfgAddrTokenProviderMap     = "keycloak-oidc-uri-map"
 	cfgAddrAPI                  = "keycloak-api-uri"
 	cfgTimeout                  = "keycloak-timeout"
+	cfgAddrAccounting           = "accounting-api-uri"
+	cfgAccountingTimeout        = "accounting-timeout"
 	cfgAudienceRequired         = "audience-required"
 	cfgMobileAudienceRequired   = "mobile-audience-required"
 	cfgValidationBasicAuthToken = "validation-basic-auth-token"
@@ -885,8 +888,18 @@ func main() {
 		// module for storing and retrieving details of the self-registered users
 		var usersDBModule = keycloakb.NewUsersDetailsDBModule(usersRwDBConn, aesEncryption, mobileLogger)
 
+		var httpClient, err = httpclient.NewBearerAuthClient(c.GetString(cfgAddrAccounting), c.GetDuration(cfgAccountingTimeout), func() (string, error) {
+			return technicalTokenProvider.ProvideToken(context.TODO())
+		})
+		if err != nil {
+			logger.Error(ctx, "msg", "could not initialize accounting client", "err", err)
+			return
+		}
+
+		var accountingClient = keycloakb.MakeAccountingClient(httpClient)
+
 		// new module for mobile service
-		mobileComponent := mobile.NewComponent(keycloakClient, configDBModule, usersDBModule, technicalTokenProvider, authorizationManager, mobileLogger)
+		mobileComponent := mobile.NewComponent(keycloakClient, configDBModule, usersDBModule, technicalTokenProvider, authorizationManager, accountingClient, mobileLogger)
 		mobileComponent = mobile.MakeAuthorizationMobileComponentMW(log.With(mobileLogger, "mw", "endpoint"))(mobileComponent)
 
 		var rateLimitMobile = rateLimit[RateKeyMobile]
@@ -1471,6 +1484,10 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 	v.SetDefault(cfgAddrAPI, "http://127.0.0.1:8080")
 	v.SetDefault(cfgAddrTokenProviderMap, map[string]string{"default": "http://127.0.0.1:8080", "_local": "http://localhost:8080"})
 	v.SetDefault(cfgTimeout, "5s")
+
+	// Accounting default.
+	v.SetDefault(cfgAddrAccounting, "http://0.0.0.0:8889")
+	v.SetDefault(cfgAccountingTimeout, "5s")
 
 	// Storage events in DB (read/write)
 	database.ConfigureDbDefault(v, cfgAuditRwDbParams, "CT_BRIDGE_DB_AUDIT_RW_USERNAME", "CT_BRIDGE_DB_AUDIT_RW_PASSWORD")

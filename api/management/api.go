@@ -235,15 +235,18 @@ type BackOfficeConfiguration map[string]map[string][]string
 
 // RealmAdminConfiguration struct
 type RealmAdminConfiguration struct {
-	Mode                     *string                   `json:"mode"`
-	AvailableChecks          map[string]bool           `json:"available_checks"`
-	Accreditations           []RealmAdminAccreditation `json:"accreditations"`
-	SelfRegisterEnabled      *bool                     `json:"self_register_enabled"`
-	Theme                    *string                   `json:"theme"`
-	NeedVerifiedContact      *bool                     `json:"need_verified_contact"`
-	ConsentRequiredSocial    *bool                     `json:"consent_required_social"`
-	ConsentRequiredCorporate *bool                     `json:"consent_required_corporate"`
-	ShowGlnEditing           *bool                     `json:"show_gln_editing"`
+	Mode                                  *string                   `json:"mode"`
+	AvailableChecks                       map[string]bool           `json:"available_checks"`
+	Accreditations                        []RealmAdminAccreditation `json:"accreditations"`
+	SelfRegisterEnabled                   *bool                     `json:"self_register_enabled"`
+	Theme                                 *string                   `json:"theme"`
+	NeedVerifiedContact                   *bool                     `json:"need_verified_contact"`
+	ConsentRequiredSocial                 *bool                     `json:"consent_required_social"`
+	ConsentRequiredCorporate              *bool                     `json:"consent_required_corporate"`
+	ShowGlnEditing                        *bool                     `json:"show_gln_editing"`
+	VoucherEnabled                        *bool                     `json:"voucher_enabled"`
+	VideoIdentificationAccountingEnabled  *bool                     `json:"video_identification_accounting_enabled"`
+	VideoIdentificationPrepaymentRequired *bool                     `json:"video_identification_prepayment_required"`
 }
 
 // RealmAdminAccreditation struct
@@ -641,30 +644,36 @@ func ConvertRealmAdminConfigurationFromDBStruct(conf configuration.RealmAdminCon
 		checks[configuration.CheckKeyPhysical] = false
 	}
 	return RealmAdminConfiguration{
-		Mode:                     defaultString(conf.Mode, "corporate"),
-		AvailableChecks:          checks,
-		Accreditations:           ConvertRealmAccreditationsFromDBStruct(conf.Accreditations),
-		SelfRegisterEnabled:      defaultBool(conf.SelfRegisterEnabled, false),
-		Theme:                    conf.Theme,
-		NeedVerifiedContact:      defaultBool(conf.NeedVerifiedContact, true),
-		ConsentRequiredSocial:    defaultBool(conf.ConsentRequiredSocial, false),
-		ConsentRequiredCorporate: defaultBool(conf.ConsentRequiredCorporate, false),
-		ShowGlnEditing:           defaultBool(conf.ShowGlnEditing, false),
+		Mode:                                  defaultString(conf.Mode, "corporate"),
+		AvailableChecks:                       checks,
+		Accreditations:                        ConvertRealmAccreditationsFromDBStruct(conf.Accreditations),
+		SelfRegisterEnabled:                   defaultBool(conf.SelfRegisterEnabled, false),
+		Theme:                                 conf.Theme,
+		NeedVerifiedContact:                   defaultBool(conf.NeedVerifiedContact, true),
+		ConsentRequiredSocial:                 defaultBool(conf.ConsentRequiredSocial, false),
+		ConsentRequiredCorporate:              defaultBool(conf.ConsentRequiredCorporate, false),
+		ShowGlnEditing:                        defaultBool(conf.ShowGlnEditing, false),
+		VoucherEnabled:                        defaultBool(conf.VoucherEnabled, false),
+		VideoIdentificationAccountingEnabled:  defaultBool(conf.VideoIdentificationAccountingEnabled, false),
+		VideoIdentificationPrepaymentRequired: defaultBool(conf.VideoIdentificationPrepaymentRequired, false),
 	}
 }
 
 // ConvertToDBStruct converts a realm admin configuration into its database version
 func (rac RealmAdminConfiguration) ConvertToDBStruct() configuration.RealmAdminConfiguration {
 	return configuration.RealmAdminConfiguration{
-		Mode:                     rac.Mode,
-		AvailableChecks:          rac.AvailableChecks,
-		Accreditations:           rac.ConvertRealmAccreditationsToDBStruct(),
-		SelfRegisterEnabled:      rac.SelfRegisterEnabled,
-		Theme:                    rac.Theme,
-		NeedVerifiedContact:      rac.NeedVerifiedContact,
-		ConsentRequiredSocial:    rac.ConsentRequiredSocial,
-		ConsentRequiredCorporate: rac.ConsentRequiredCorporate,
-		ShowGlnEditing:           rac.ShowGlnEditing,
+		Mode:                                  rac.Mode,
+		AvailableChecks:                       rac.AvailableChecks,
+		Accreditations:                        rac.ConvertRealmAccreditationsToDBStruct(),
+		SelfRegisterEnabled:                   rac.SelfRegisterEnabled,
+		Theme:                                 rac.Theme,
+		NeedVerifiedContact:                   rac.NeedVerifiedContact,
+		ConsentRequiredSocial:                 rac.ConsentRequiredSocial,
+		ConsentRequiredCorporate:              rac.ConsentRequiredCorporate,
+		ShowGlnEditing:                        rac.ShowGlnEditing,
+		VoucherEnabled:                        rac.VoucherEnabled,
+		VideoIdentificationAccountingEnabled:  rac.VideoIdentificationAccountingEnabled,
+		VideoIdentificationPrepaymentRequired: rac.VideoIdentificationPrepaymentRequired,
 	}
 }
 
