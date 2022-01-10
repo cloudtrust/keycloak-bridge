@@ -25,7 +25,7 @@ func TestGetBalance(t *testing.T) {
 	var userID = "394b0730-628f-11ec-9211-0242ac120005"
 	var service = "VIDEO_IDENTIFICATION"
 	var correlationID = "TestCorrelationID"
-	var expectedBalance = float32(10)
+	var expectedBalance = float64(10)
 
 	ctx = context.WithValue(ctx, cs.CtContextCorrelationID, correlationID)
 
@@ -43,8 +43,7 @@ func TestGetBalance(t *testing.T) {
 	t.Run("FAILURE", func(t *testing.T) {
 		mockHttpClient.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(expectedError).Times(1)
 
-		balance, err := accountingClient.GetBalance(ctx, realmName, userID, service)
+		_, err := accountingClient.GetBalance(ctx, realmName, userID, service)
 		assert.NotNil(t, err)
-		assert.Equal(t, float32(0), balance)
 	})
 }

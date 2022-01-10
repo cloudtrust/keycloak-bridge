@@ -76,7 +76,7 @@ type AuthorizationManager interface {
 }
 
 type AccountingClient interface {
-	GetBalance(ctx context.Context, realmName string, userID string, service string) (float32, error)
+	GetBalance(ctx context.Context, realmName string, userID string, service string) (float64, error)
 }
 
 // Component is the management component
@@ -154,7 +154,7 @@ func (c *component) GetUserInformation(ctx context.Context) (api.UserInformation
 		}
 
 		// if vouchers are required to proceed to a video identification, check that the balance is bigger than 1
-		if realmAdminConfig.VideoIdentificationAccountingEnabled != nil && realmAdminConfig.VideoIdentificationPrepaymentRequired != nil &&
+		if _, ok := availableChecks[actionIDNow]; ok && realmAdminConfig.VideoIdentificationAccountingEnabled != nil && realmAdminConfig.VideoIdentificationPrepaymentRequired != nil &&
 			*realmAdminConfig.VideoIdentificationAccountingEnabled && *realmAdminConfig.VideoIdentificationPrepaymentRequired {
 			balance, err := c.accountingClient.GetBalance(ctx, realm, userID, "VIDEO_IDENTIFICATION")
 			if err != nil || balance < 1 {
