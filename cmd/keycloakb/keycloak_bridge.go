@@ -29,6 +29,7 @@ import (
 	"github.com/cloudtrust/common-service/v2/tracing"
 	"github.com/cloudtrust/common-service/v2/tracking"
 	"github.com/cloudtrust/keycloak-bridge/internal/business"
+	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/cloudtrust/keycloak-bridge/pkg/account"
 	"github.com/cloudtrust/keycloak-bridge/pkg/communications"
@@ -153,6 +154,7 @@ const (
 	cfgGlnMedRegEnabled         = "gln-medreg-enabled"
 	cfgGlnMedRegURI             = "gln-medreg-uri"
 	cfgGlnMedRegTimeout         = "gln-medreg-timeout"
+	cfgValidationRules          = "validation-rules"
 
 	tokenProviderDefaultKey = "default"
 )
@@ -287,6 +289,9 @@ func main() {
 		glnPsyRegURI      = c.GetString(cfgGlnPsyRegURI)
 		glnPsyRegTimeout  = c.GetDuration(cfgGlnPsyRegTimeout)
 	)
+
+	// Override some validation rules (IDnow, ...)
+	constants.InitializeRegexOverride(c.GetStringMapString(cfgValidationRules))
 
 	// Unique ID generator
 	var idGenerator = idgenerator.New(keycloakb.ComponentName, ComponentID)
@@ -1562,6 +1567,9 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 	v.SetDefault(cfgGlnMedRegEnabled, false)
 	v.SetDefault(cfgGlnMedRegURI, "https://www.medregom.admin.ch")
 	v.SetDefault(cfgGlnMedRegTimeout, "10s")
+
+	// Validation rules
+	v.SetDefault(cfgValidationRules, map[string]string{})
 
 	// First level of override.
 	pflag.String(cfgConfigFile, v.GetString(cfgConfigFile), "The configuration file path can be relative or absolute.")

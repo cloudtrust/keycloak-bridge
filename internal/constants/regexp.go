@@ -17,20 +17,15 @@ const (
 	RegExpUsername            = `^[a-z0-9-_.]{1,128}$`
 	RegExpFederatedUsername   = `^[a-zA-Z0-9-_.]{1,128}$`
 	RegExpEmail               = `^.+\@.+\..+$`
-	RegExpNameSpecialChars    = `^([\p{Lu}\p{Ll}][\p{Lu}\p{Ll} /\\\.'-]{0,49})$`
-	RegExpNameSpecialChars128 = `^([\p{Lu}\p{Ll}][\p{Lu}\p{Ll} /\\\.'-]{0,127})$`
-	RegExpFirstName           = RegExpNameSpecialChars128
-	RegExpLastName            = RegExpNameSpecialChars128
+	RegExpNameSpecialChars    = `^([\p{Lu}\p{Ll}][\p{Lu}\p{Ll} /\\\.',-]{0,49})$`
+	RegExpNameSpecialChars128 = `^([\p{Lu}\p{Ll}][\p{Lu}\p{Ll} /\\\.',-]{0,127})$`
 	RegExpLastNameSearch      = `^[=%]?([\p{Lu}\p{Ll}][\p{Lu}\p{Ll} /\\\.'-]{0,127}[%]?)$`
 	RegExpPhoneNumber         = `^\+[1-9]\d{1,14}$`
 	RegExpLabel               = regExpLen255
 	RegExpGender              = `^[MFU]$`
 	RegExpBirthDate           = `^(\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01]))$`
-	RegExpBirthLocation       = `^([\p{Lu}\p{Ll}][\p{Lu}\p{Ll}\d ()/\\\.\*,'-]{0,49})$`
 	RegExpLocale              = `^[a-z]{2}$`
 	RegExpBusinessID          = regExpLen255
-	RegExpCountryCode         = `^\w{2}$`
-	RegExpIDDocumentNumber    = `^([\w\d]+([\. -][\w\d]+)*){1,50}$`
 
 	// Password
 	RegExpPassword = regExpLen255
@@ -53,6 +48,30 @@ const (
 )
 
 var (
+	// Overridable user details regex
+	RegExpFirstName        = RegExpNameSpecialChars128
+	RegExpLastName         = RegExpNameSpecialChars128
+	RegExpCountryCode      = `^\w{2}$`
+	RegExpBirthLocation    = `^([\p{Lu}\p{Ll}][\p{Lu}\p{Ll}\d ()/\\\.\*,'-]{0,49})$`
+	RegExpIDDocumentNumber = `^([\w\d]+([\. -][\w\d]+)*){1,50}$`
+
 	// AllowedDocumentTypes are the valid document type for identification
 	AllowedDocumentTypes = map[string]bool{"ID_CARD": true, "PASSPORT": true, "RESIDENCE_PERMIT": true}
 )
+
+func InitializeRegexOverride(validationRules map[string]string) {
+	for key, value := range validationRules {
+		switch key {
+		case "first-name":
+			RegExpFirstName = value
+		case "last-name":
+			RegExpLastName = value
+		case "country-code":
+			RegExpCountryCode = value
+		case "birth-location":
+			RegExpBirthLocation = value
+		case "id-doc-number":
+			RegExpIDDocumentNumber = value
+		}
+	}
+}
