@@ -158,6 +158,7 @@ func (c *component) GetUserInformation(ctx context.Context) (api.UserInformation
 			*realmAdminConfig.VideoIdentificationAccountingEnabled && *realmAdminConfig.VideoIdentificationPrepaymentRequired {
 			balance, err := c.accountingClient.GetBalance(ctx, realm, userID, "VIDEO_IDENTIFICATION")
 			if err != nil || balance < 1 {
+				c.logger.Debug(ctx, "msg", "User is not allowed to access video identification", "id", ctx.Value(cs.CtContextUserID))
 				delete(availableChecks, actionIDNow)
 			}
 		}
