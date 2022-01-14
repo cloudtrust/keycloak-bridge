@@ -177,6 +177,10 @@ github.com/cloudtrust/common-service/v2 v2.5.3-0.20211209095354-0125f4bc4c77 h1:
 github.com/cloudtrust/common-service/v2 v2.5.3-0.20211209095354-0125f4bc4c77/go.mod h1:Sz9LRqh5FIYedrIP7G7E5Fcu9H5xzZKNwdz4I3EXORg=
 github.com/cloudtrust/common-service/v2 v2.5.3 h1:3tj+lBW/nz+6Up0KQ4b+pxzK8B3JViFWlhqlox+C2u4=
 github.com/cloudtrust/common-service/v2 v2.5.3/go.mod h1:Sz9LRqh5FIYedrIP7G7E5Fcu9H5xzZKNwdz4I3EXORg=
+github.com/cloudtrust/common-service/v2 v2.5.4-0.20220106122234-14f92683fe74 h1:SC4ABw/36p+45mNHlg/PaFY5f/7uU4ty2oauWLosvkw=
+github.com/cloudtrust/common-service/v2 v2.5.4-0.20220106122234-14f92683fe74/go.mod h1:Sz9LRqh5FIYedrIP7G7E5Fcu9H5xzZKNwdz4I3EXORg=
+github.com/cloudtrust/common-service/v2 v2.5.4 h1:8zIwasiMjpxv1OO9iG/K/ThHnnbwtgyTwGCHc7yMWvU=
+github.com/cloudtrust/common-service/v2 v2.5.4/go.mod h1:Sz9LRqh5FIYedrIP7G7E5Fcu9H5xzZKNwdz4I3EXORg=
 github.com/cloudtrust/httpclient v1.0.4 h1:5IciSDsnOZutcW4f1W1qXsztMBiyRAFdz6VPIVgtRQc=
 github.com/cloudtrust/httpclient v1.0.4/go.mod h1:rPEVkKlXgtX8ehpzeAYtQbEF3iD+fl7tHdHch9v21UE=
 github.com/cloudtrust/httpclient v1.0.5-0.20211112142708-1160ef94141a h1:5FwUfhIywUvqLriR4VvOiunjD+lVM/rSDbADyOvFi5Y=

@@ -500,6 +500,9 @@ func TestConvertRealmAdminConfiguration(t *testing.T) {
 		assert.False(t, *res.SelfRegisterEnabled)
 		assert.False(t, *res.ShowGlnEditing)
 		assert.Nil(t, res.Theme)
+		assert.False(t, *res.VoucherEnabled)
+		assert.False(t, *res.VideoIdentificationAccountingEnabled)
+		assert.False(t, *res.VideoIdentificationPrepaymentRequired)
 	})
 	t.Run("Non-empty values", func(t *testing.T) {
 		var mode = "mode"
@@ -516,16 +519,22 @@ func TestConvertRealmAdminConfiguration(t *testing.T) {
 		var consentRequiredSocial = true
 		var consentRequiredCorporate = false
 		var showGlnEditing = true
+		var voucherEnabled = true
+		var videoIdentificationAccountingEnabled = true
+		var videoIdentificationPrepaymentRequired = true
 		var config = configuration.RealmAdminConfiguration{
-			Mode:                     &mode,
-			AvailableChecks:          map[string]bool{"true": true, "false": false},
-			Accreditations:           []configuration.RealmAdminAccreditation{accred},
-			SelfRegisterEnabled:      &selfRegisterEnabled,
-			Theme:                    ptr("trustid"),
-			NeedVerifiedContact:      &needVerifiedContact,
-			ConsentRequiredSocial:    &consentRequiredSocial,
-			ConsentRequiredCorporate: &consentRequiredCorporate,
-			ShowGlnEditing:           &showGlnEditing,
+			Mode:                                  &mode,
+			AvailableChecks:                       map[string]bool{"true": true, "false": false},
+			Accreditations:                        []configuration.RealmAdminAccreditation{accred},
+			SelfRegisterEnabled:                   &selfRegisterEnabled,
+			Theme:                                 ptr("trustid"),
+			NeedVerifiedContact:                   &needVerifiedContact,
+			ConsentRequiredSocial:                 &consentRequiredSocial,
+			ConsentRequiredCorporate:              &consentRequiredCorporate,
+			ShowGlnEditing:                        &showGlnEditing,
+			VoucherEnabled:                        &voucherEnabled,
+			VideoIdentificationAccountingEnabled:  &videoIdentificationAccountingEnabled,
+			VideoIdentificationPrepaymentRequired: &videoIdentificationPrepaymentRequired,
 		}
 		var res = ConvertRealmAdminConfigurationFromDBStruct(config)
 		assert.Equal(t, mode, *res.Mode)
@@ -542,6 +551,9 @@ func TestConvertRealmAdminConfiguration(t *testing.T) {
 		assert.False(t, *res.NeedVerifiedContact)
 		assert.True(t, *res.ConsentRequiredSocial)
 		assert.True(t, *res.ShowGlnEditing)
+		assert.True(t, *res.VoucherEnabled)
+		assert.True(t, *res.VideoIdentificationAccountingEnabled)
+		assert.True(t, *res.VideoIdentificationPrepaymentRequired)
 	})
 }
 

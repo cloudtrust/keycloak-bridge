@@ -9,3 +9,4 @@ import _ "github.com/golang/mock/mockgen/model"
 //go:generate mockgen --build_flags=--mod=mod -destination=./mock/security.go -package=mock -mock_names=EncrypterDecrypter=EncrypterDecrypter github.com/cloudtrust/common-service/v2/security EncrypterDecrypter
 //go:generate mockgen --build_flags=--mod=mod -destination=./mock/onboarding.go -package=mock -mock_names=OnboardingKeycloakClient=OnboardingKeycloakClient,KeycloakURIProvider=KeycloakURIProvider github.com/cloudtrust/keycloak-bridge/internal/keycloakb OnboardingKeycloakClient,KeycloakURIProvider
 //go:generate mockgen --build_flags=--mod=mod -destination=./mock/toolbox.go -package=mock -mock_names=OidcTokenProvider=OidcTokenProvider github.com/cloudtrust/keycloak-client/v2/toolbox OidcTokenProvider
+//go:generate mockgen --build_flags=--mod=mod -destination=./mock/httpclient.go -package=mock -mock_names=HttpClient=HttpClient github.com/cloudtrust/keycloak-bridge/internal/keycloakb HttpClient

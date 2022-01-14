@@ -569,17 +569,20 @@ func (c *component) GetConfiguration(ctx context.Context, realmIDOverride string
 	}
 
 	var apiConfig = api.Configuration{
-		EditingEnabled:                    config.APISelfAccountEditingEnabled,
-		ShowAuthenticatorsTab:             config.ShowAuthenticatorsTab,
-		ShowAccountDeletionButton:         config.ShowAccountDeletionButton,
-		ShowPasswordTab:                   config.ShowPasswordTab,
-		ShowProfileTab:                    config.ShowProfileTab,
-		RedirectSuccessfulRegistrationURL: config.RedirectSuccessfulRegistrationURL,
-		BarcodeType:                       config.BarcodeType,
-		AvailableChecks:                   adminConfig.AvailableChecks,
-		Theme:                             adminConfig.Theme,
-		SupportedLocales:                  supportedLocales,
-		ShowGlnEditing:                    adminConfig.ShowGlnEditing,
+		EditingEnabled:                        config.APISelfAccountEditingEnabled,
+		ShowAuthenticatorsTab:                 config.ShowAuthenticatorsTab,
+		ShowAccountDeletionButton:             config.ShowAccountDeletionButton,
+		ShowPasswordTab:                       config.ShowPasswordTab,
+		ShowProfileTab:                        config.ShowProfileTab,
+		RedirectSuccessfulRegistrationURL:     config.RedirectSuccessfulRegistrationURL,
+		BarcodeType:                           config.BarcodeType,
+		AvailableChecks:                       adminConfig.AvailableChecks,
+		Theme:                                 adminConfig.Theme,
+		SupportedLocales:                      supportedLocales,
+		ShowGlnEditing:                        adminConfig.ShowGlnEditing,
+		VoucherEnabled:                        adminConfig.VoucherEnabled,
+		VideoIdentificationAccountingEnabled:  adminConfig.VideoIdentificationAccountingEnabled,
+		VideoIdentificationPrepaymentRequired: adminConfig.VideoIdentificationPrepaymentRequired,
 	}
 
 	if realmIDOverride != "" {

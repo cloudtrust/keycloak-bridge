@@ -77,17 +77,20 @@ type CredentialRepresentation struct {
 
 // Configuration struct
 type Configuration struct {
-	EditingEnabled                    *bool           `json:"editing_enabled"`
-	ShowAuthenticatorsTab             *bool           `json:"show_authenticators_tab"`
-	ShowPasswordTab                   *bool           `json:"show_password_tab"`
-	ShowProfileTab                    *bool           `json:"show_profile_tab"`
-	ShowAccountDeletionButton         *bool           `json:"show_account_deletion_button"`
-	RedirectSuccessfulRegistrationURL *string         `json:"redirect_successful_registration_url"`
-	AvailableChecks                   map[string]bool `json:"available-checks"`
-	BarcodeType                       *string         `json:"barcode_type"`
-	Theme                             *string         `json:"theme"`
-	SupportedLocales                  *[]string       `json:"supportedLocales,omitempty"`
-	ShowGlnEditing                    *bool           `json:"show_gln_editing,omitempty"`
+	EditingEnabled                        *bool           `json:"editing_enabled"`
+	ShowAuthenticatorsTab                 *bool           `json:"show_authenticators_tab"`
+	ShowPasswordTab                       *bool           `json:"show_password_tab"`
+	ShowProfileTab                        *bool           `json:"show_profile_tab"`
+	ShowAccountDeletionButton             *bool           `json:"show_account_deletion_button"`
+	RedirectSuccessfulRegistrationURL     *string         `json:"redirect_successful_registration_url"`
+	AvailableChecks                       map[string]bool `json:"available-checks"`
+	BarcodeType                           *string         `json:"barcode_type"`
+	Theme                                 *string         `json:"theme"`
+	SupportedLocales                      *[]string       `json:"supportedLocales,omitempty"`
+	ShowGlnEditing                        *bool           `json:"show_gln_editing,omitempty"`
+	VoucherEnabled                        *bool           `json:"voucher_enabled"`
+	VideoIdentificationAccountingEnabled  *bool           `json:"video_identification_accounting_enabled"`
+	VideoIdentificationPrepaymentRequired *bool           `json:"video_identification_prepayment_required"`
 }
 
 // UpdatePasswordBody is the definition of the expected body content of UpdatePassword method

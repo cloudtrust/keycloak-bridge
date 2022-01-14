@@ -75,6 +75,10 @@ keycloak-oidc-uri-map:
   default: http://keycloak.local:8080
 keycloak-timeout: 5s
 
+#Accounting configs
+accounting-api-uri: http://0.0.0.0:8889
+accounting-timeout: 5s
+
 # DB Audit RW
 # db-audit-rw-enabled was previously named events-db
 db-audit-rw-enabled: false

@@ -75,25 +75,31 @@ type AuthorizationManager interface {
 	CheckAuthorizationOnTargetUser(ctx context.Context, action, targetRealm, userID string) error
 }
 
+type AccountingClient interface {
+	GetBalance(ctx context.Context, realmName string, userID string, service string) (float64, error)
+}
+
 // Component is the management component
 type component struct {
-	keycloakClient KeycloakClient
-	configDBModule keycloakb.ConfigurationDBModule
-	usersDBModule  UsersDetailsDBModule
-	tokenProvider  TokenProvider
-	authManager    AuthorizationManager
-	logger         keycloakb.Logger
+	keycloakClient   KeycloakClient
+	configDBModule   keycloakb.ConfigurationDBModule
+	usersDBModule    UsersDetailsDBModule
+	tokenProvider    TokenProvider
+	authManager      AuthorizationManager
+	accountingClient AccountingClient
+	logger           keycloakb.Logger
 }
 
 // NewComponent returns the self-service component.
-func NewComponent(keycloakClient KeycloakClient, configDBModule keycloakb.ConfigurationDBModule, usersDBModule UsersDetailsDBModule, tokenProvider TokenProvider, authManager AuthorizationManager, logger keycloakb.Logger) Component {
+func NewComponent(keycloakClient KeycloakClient, configDBModule keycloakb.ConfigurationDBModule, usersDBModule UsersDetailsDBModule, tokenProvider TokenProvider, authManager AuthorizationManager, accountingClient AccountingClient, logger keycloakb.Logger) Component {
 	return &component{
-		keycloakClient: keycloakClient,
-		configDBModule: configDBModule,
-		usersDBModule:  usersDBModule,
-		tokenProvider:  tokenProvider,
-		authManager:    authManager,
-		logger:         logger,
+		keycloakClient:   keycloakClient,
+		configDBModule:   configDBModule,
+		usersDBModule:    usersDBModule,
+		tokenProvider:    tokenProvider,
+		authManager:      authManager,
+		accountingClient: accountingClient,
+		logger:           logger,
 	}
 }
 
@@ -146,6 +152,17 @@ func (c *component) GetUserInformation(ctx context.Context) (api.UserInformation
 			c.logger.Debug(ctx, "msg", "User is not allowed to access video identification", "id", ctx.Value(cs.CtContextUserID))
 			delete(availableChecks, actionIDNow)
 		}
+
+		// if vouchers are required to proceed to a video identification, check that the balance is bigger than 1
+		if _, ok := availableChecks[actionIDNow]; ok && realmAdminConfig.VideoIdentificationAccountingEnabled != nil && realmAdminConfig.VideoIdentificationPrepaymentRequired != nil &&
+			*realmAdminConfig.VideoIdentificationAccountingEnabled && *realmAdminConfig.VideoIdentificationPrepaymentRequired {
+			balance, err := c.accountingClient.GetBalance(ctx, realm, userID, "VIDEO_IDENTIFICATION")
+			if err != nil || balance < 1 {
+				c.logger.Debug(ctx, "msg", "User is not allowed to access video identification", "id", ctx.Value(cs.CtContextUserID))
+				delete(availableChecks, actionIDNow)
+			}
+		}
+
 		var pendingCheckNames = keycloakb.GetPendingChecks(pendingChecks)
 		userInfo.PendingActions = toActionNames(pendingCheckNames)
 		if userInfo.PendingActions != nil && len(availableChecks) > 0 {

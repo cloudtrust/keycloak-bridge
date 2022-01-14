@@ -20,27 +20,29 @@ import (
 )
 
 type componentMocks struct {
-	keycloakClient *mock.KeycloakClient
-	configDBModule *mock.ConfigurationDBModule
-	tokenProvider  *mock.TokenProvider
-	usersDetailsDB *mock.UsersDetailsDBModule
-	authManager    *mock.AuthorizationManager
-	logger         log.Logger
+	keycloakClient   *mock.KeycloakClient
+	configDBModule   *mock.ConfigurationDBModule
+	tokenProvider    *mock.TokenProvider
+	usersDetailsDB   *mock.UsersDetailsDBModule
+	authManager      *mock.AuthorizationManager
+	accountingClient *mock.AccountingClient
+	logger           log.Logger
 }
 
 func newComponentMocks(mockCtrl *gomock.Controller) *componentMocks {
 	return &componentMocks{
-		keycloakClient: mock.NewKeycloakClient(mockCtrl),
-		configDBModule: mock.NewConfigurationDBModule(mockCtrl),
-		tokenProvider:  mock.NewTokenProvider(mockCtrl),
-		usersDetailsDB: mock.NewUsersDetailsDBModule(mockCtrl),
-		authManager:    mock.NewAuthorizationManager(mockCtrl),
-		logger:         log.NewNopLogger(),
+		keycloakClient:   mock.NewKeycloakClient(mockCtrl),
+		configDBModule:   mock.NewConfigurationDBModule(mockCtrl),
+		tokenProvider:    mock.NewTokenProvider(mockCtrl),
+		usersDetailsDB:   mock.NewUsersDetailsDBModule(mockCtrl),
+		authManager:      mock.NewAuthorizationManager(mockCtrl),
+		accountingClient: mock.NewAccountingClient(mockCtrl),
+		logger:           log.NewNopLogger(),
 	}
 }
 
 func (cm *componentMocks) newComponent() Component {
-	return NewComponent(cm.keycloakClient, cm.configDBModule, cm.usersDetailsDB, cm.tokenProvider, cm.authManager, cm.logger)
+	return NewComponent(cm.keycloakClient, cm.configDBModule, cm.usersDetailsDB, cm.tokenProvider, cm.authManager, cm.accountingClient, cm.logger)
 }
 
 func TestToActionNames(t *testing.T) {
@@ -148,7 +150,8 @@ func TestGetUser(t *testing.T) {
 	t.Run("Success-No problem with GLN", func(t *testing.T) {
 		var checks = []dto.DBCheck{{}, {}}
 		var availableChecks = map[string]bool{"physical": true, "idnow": true}
-		var adminConf = configuration.RealmAdminConfiguration{AvailableChecks: availableChecks}
+		var bFalse = false
+		var adminConf = configuration.RealmAdminConfiguration{AvailableChecks: availableChecks, VideoIdentificationAccountingEnabled: &bFalse, VideoIdentificationPrepaymentRequired: &bFalse}
 
 		mocks.usersDetailsDB.EXPECT().GetChecks(ctx, realm, userID).Return(checks, nil)
 		mocks.configDBModule.EXPECT().GetAdminConfiguration(ctx, realm).Return(adminConf, nil)
@@ -163,8 +166,9 @@ func TestGetUser(t *testing.T) {
 
 	t.Run("Success-Missing GLN", func(t *testing.T) {
 		var checks = []dto.DBCheck{{}, {}}
+		var bFalse = false
 		var availableChecks = map[string]bool{"physical": true, "IDNow": true}
-		var adminConf = configuration.RealmAdminConfiguration{AvailableChecks: availableChecks}
+		var adminConf = configuration.RealmAdminConfiguration{AvailableChecks: availableChecks, VideoIdentificationAccountingEnabled: &bFalse, VideoIdentificationPrepaymentRequired: &bFalse}
 		var bTrue = true
 		adminConf.ShowGlnEditing = &bTrue
 		var expectedActionsCount = len(availableChecks) - 1
@@ -184,7 +188,7 @@ func TestGetUser(t *testing.T) {
 		var checks = []dto.DBCheck{{}, {}}
 		var bFalse = false
 		var availableChecks = map[string]bool{"physical": true, "IDNow": true}
-		var adminConf = configuration.RealmAdminConfiguration{AvailableChecks: availableChecks, ShowGlnEditing: &bFalse}
+		var adminConf = configuration.RealmAdminConfiguration{AvailableChecks: availableChecks, ShowGlnEditing: &bFalse, VideoIdentificationAccountingEnabled: &bFalse, VideoIdentificationPrepaymentRequired: &bFalse}
 		var expectedActionsCount = len(availableChecks) - 1
 
 		mocks.usersDetailsDB.EXPECT().GetChecks(ctx, realm, userID).Return(checks, nil)
@@ -202,7 +206,7 @@ func TestGetUser(t *testing.T) {
 		var checks = []dto.DBCheck{{}, {}}
 		var bFalse = false
 		var availableChecks = map[string]bool{"physical": true, "IDNow": true}
-		var adminConf = configuration.RealmAdminConfiguration{AvailableChecks: availableChecks, ShowGlnEditing: &bFalse}
+		var adminConf = configuration.RealmAdminConfiguration{AvailableChecks: availableChecks, ShowGlnEditing: &bFalse, VideoIdentificationAccountingEnabled: &bFalse, VideoIdentificationPrepaymentRequired: &bFalse}
 		var expectedActionsCount = len(availableChecks)
 
 		mocks.usersDetailsDB.EXPECT().GetChecks(ctx, realm, userID).Return(checks, nil)
@@ -220,7 +224,7 @@ func TestGetUser(t *testing.T) {
 		var checks = []dto.DBCheck{{}, {}}
 		var bFalse = false
 		var availableChecks = map[string]bool{"check-2": true, "check-3": true}
-		var adminConf = configuration.RealmAdminConfiguration{AvailableChecks: availableChecks, ShowGlnEditing: &bFalse}
+		var adminConf = configuration.RealmAdminConfiguration{AvailableChecks: availableChecks, ShowGlnEditing: &bFalse, VideoIdentificationAccountingEnabled: &bFalse, VideoIdentificationPrepaymentRequired: &bFalse}
 
 		mocks.usersDetailsDB.EXPECT().GetChecks(ctx, realm, userID).Return(checks, nil)
 		mocks.configDBModule.EXPECT().GetAdminConfiguration(ctx, realm).Return(adminConf, nil)
@@ -233,5 +237,41 @@ func TestGetUser(t *testing.T) {
 		assert.Len(t, *userInfo.PendingActions, 1)
 		assert.Equal(t, "check-3", (*userInfo.Actions)[0])
 		assert.Equal(t, "check-2", (*userInfo.PendingActions)[0])
+	})
+
+	t.Run("Success-Voucher enabled for video", func(t *testing.T) {
+		var checks = []dto.DBCheck{{}, {}}
+		var availableChecks = map[string]bool{"physical": true, "IDNow": true}
+		var bTrue = true
+		var adminConf = configuration.RealmAdminConfiguration{AvailableChecks: availableChecks, VideoIdentificationAccountingEnabled: &bTrue, VideoIdentificationPrepaymentRequired: &bTrue}
+
+		mocks.usersDetailsDB.EXPECT().GetChecks(ctx, realm, userID).Return(checks, nil)
+		mocks.configDBModule.EXPECT().GetAdminConfiguration(ctx, realm).Return(adminConf, nil)
+		mocks.authManager.EXPECT().CheckAuthorizationOnTargetUser(gomock.Any(), idNowInitActionName, realm, userID).Return(nil)
+		mocks.accountingClient.EXPECT().GetBalance(ctx, realm, userID, "VIDEO_IDENTIFICATION").Return(float64(10), nil).Times(1)
+
+		var userInfo, err = component.GetUserInformation(ctx)
+		assert.Nil(t, err)
+		assert.Len(t, *userInfo.Accreditations, 2)
+		assert.Len(t, *userInfo.Checks, 2)
+		assert.Len(t, *userInfo.Actions, 2)
+	})
+
+	t.Run("Success-Voucher enabled for video, not enough balance", func(t *testing.T) {
+		var checks = []dto.DBCheck{{}, {}}
+		var availableChecks = map[string]bool{"physical": true, "IDNow": true}
+		var bTrue = true
+		var adminConf = configuration.RealmAdminConfiguration{AvailableChecks: availableChecks, VideoIdentificationAccountingEnabled: &bTrue, VideoIdentificationPrepaymentRequired: &bTrue}
+
+		mocks.usersDetailsDB.EXPECT().GetChecks(ctx, realm, userID).Return(checks, nil)
+		mocks.configDBModule.EXPECT().GetAdminConfiguration(ctx, realm).Return(adminConf, nil)
+		mocks.authManager.EXPECT().CheckAuthorizationOnTargetUser(gomock.Any(), idNowInitActionName, realm, userID).Return(nil)
+		mocks.accountingClient.EXPECT().GetBalance(ctx, realm, userID, "VIDEO_IDENTIFICATION").Return(float64(0), nil).Times(1)
+
+		var userInfo, err = component.GetUserInformation(ctx)
+		assert.Nil(t, err)
+		assert.Len(t, *userInfo.Accreditations, 2)
+		assert.Len(t, *userInfo.Checks, 2)
+		assert.Len(t, *userInfo.Actions, 1)
 	})
 }
