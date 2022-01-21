@@ -36,6 +36,7 @@ var (
 	MGMTUnlockUser                          = newAction("MGMT_UnlockUser", security.ScopeGroup)
 	MGMTGetUsers                            = newAction("MGMT_GetUsers", security.ScopeGroup)
 	MGMTCreateUser                          = newAction("MGMT_CreateUser", security.ScopeGroup)
+	MGMTCreateUserInSocialRealm             = newAction("MGMT_CreateUserInSocialRealm", security.ScopeGroup)
 	MGMTGetUserChecks                       = newAction("MGMT_GetUserChecks", security.ScopeGroup)
 	MGMTGetUserAccountStatus                = newAction("MGMT_GetUserAccountStatus", security.ScopeGroup)
 	MGMTGetUserAccountStatusByEmail         = newAction("MGMT_GetUserAccountStatusByEmail", security.ScopeRealm)
@@ -54,6 +55,7 @@ var (
 	MGMTExecuteActionsEmail                 = newAction("MGMT_ExecuteActionsEmail", security.ScopeGroup)
 	MGMTSendSmsCode                         = newAction("MGMT_SendSmsCode", security.ScopeGroup)
 	MGMTSendOnboardingEmail                 = newAction("MGMT_SendOnboardingEmail", security.ScopeGroup)
+	MGMTSendOnboardingEmailInSocialRealm    = newAction("MGMT_SendOnboardingEmailInSocialRealm", security.ScopeGroup)
 	MGMTSendReminderEmail                   = newAction("MGMT_SendReminderEmail", security.ScopeGroup)
 	MGMTResetSmsCounter                     = newAction("MGMT_ResetSmsCounter", security.ScopeGroup)
 	MGMTCreateRecoveryCode                  = newAction("MGMT_CreateRecoveryCode", security.ScopeGroup)
@@ -262,6 +264,20 @@ func (c *authorizationComponentMW) CreateUser(ctx context.Context, realmName str
 	}
 
 	return c.next.CreateUser(ctx, realmName, user, generateUsername, generateNameID, termsOfUse)
+}
+
+func (c *authorizationComponentMW) CreateUserInSocialRealm(ctx context.Context, user api.UserRepresentation, generateNameID bool) (string, error) {
+	var action = MGMTCreateUserInSocialRealm.String()
+
+	// For this method, there is no target realm provided
+	// as parameter, so we pick the current realm of the user.
+	var targetRealm = ctx.Value(cs.CtContextRealm).(string)
+
+	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
+		return "", err
+	}
+
+	return c.next.CreateUserInSocialRealm(ctx, user, generateNameID)
 }
 
 func (c *authorizationComponentMW) GetUserChecks(ctx context.Context, realmName, userID string) ([]api.UserCheck, error) {
@@ -492,6 +508,20 @@ func (c *authorizationComponentMW) SendOnboardingEmail(ctx context.Context, real
 	}
 
 	return c.next.SendOnboardingEmail(ctx, realmName, userID, customerRealm, reminder, lifespan)
+}
+
+func (c *authorizationComponentMW) SendOnboardingEmailInSocialRealm(ctx context.Context, userID string, customerRealm string, reminder bool, lifespan *int) error {
+	var action = MGMTSendOnboardingEmailInSocialRealm.String()
+
+	// For this method, there is no target realm provided
+	// as parameter, so we pick the current realm of the user.
+	var targetRealm = ctx.Value(cs.CtContextRealm).(string)
+
+	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
+		return err
+	}
+
+	return c.next.SendOnboardingEmailInSocialRealm(ctx, userID, customerRealm, reminder, lifespan)
 }
 
 /* REMOVE_THIS_3901 : start */

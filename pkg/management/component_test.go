@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"strconv"
 	"testing"
 	"time"
@@ -32,19 +33,21 @@ type componentMocks struct {
 	configurationDBModule *mock.ConfigurationDBModule
 	onboardingModule      *mock.OnboardingModule
 	authChecker           *mock.AuthorizationManager
+	tokenProvider         *mock.OidcTokenProvider
 	transaction           *mock.Transaction
 	glnVerifier           *mock.GlnVerifier
 	logger                *mock.Logger
 }
 
-func createMocks(mockCtrl *gomock.Controller) componentMocks {
-	return componentMocks{
+func createMocks(mockCtrl *gomock.Controller) *componentMocks {
+	return &componentMocks{
 		keycloakClient:        mock.NewKeycloakClient(mockCtrl),
 		usersDetailsDBModule:  mock.NewUsersDetailsDBModule(mockCtrl),
 		eventDBModule:         mock.NewEventDBModule(mockCtrl),
 		configurationDBModule: mock.NewConfigurationDBModule(mockCtrl),
 		onboardingModule:      mock.NewOnboardingModule(mockCtrl),
 		authChecker:           mock.NewAuthorizationManager(mockCtrl),
+		tokenProvider:         mock.NewOidcTokenProvider(mockCtrl),
 		transaction:           mock.NewTransaction(mockCtrl),
 		glnVerifier:           mock.NewGlnVerifier(mockCtrl),
 		logger:                mock.NewLogger(mockCtrl),
@@ -59,10 +62,10 @@ const (
 	socialRealmName = "social"
 )
 
-func createComponent(mocks componentMocks) *component {
+func (m *componentMocks) createComponent() *component {
 	/* REMOVE_THIS_3901 : remove second parameter (nil) */
-	return NewComponent(mocks.keycloakClient, nil, mocks.usersDetailsDBModule, mocks.eventDBModule, mocks.configurationDBModule, mocks.onboardingModule, mocks.authChecker,
-		allowedTrustIDGroups, socialRealmName, mocks.glnVerifier, mocks.logger).(*component)
+	return NewComponent(m.keycloakClient, nil, m.usersDetailsDBModule, m.eventDBModule, m.configurationDBModule, m.onboardingModule,
+		m.authChecker, m.tokenProvider, allowedTrustIDGroups, socialRealmName, m.glnVerifier, m.logger).(*component)
 }
 
 func ptrString(value string) *string {
@@ -78,7 +81,7 @@ func TestGetActions(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mocks = createMocks(mockCtrl)
-	var managementComponent = createComponent(mocks)
+	var managementComponent = mocks.createComponent()
 
 	var accessToken = "TOKEN=="
 	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
@@ -96,7 +99,7 @@ func TestGetRealms(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mocks = createMocks(mockCtrl)
-	var managementComponent = createComponent(mocks)
+	var managementComponent = mocks.createComponent()
 
 	var accessToken = "TOKEN=="
 
@@ -157,7 +160,7 @@ func TestGetRealm(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mocks = createMocks(mockCtrl)
-	var managementComponent = createComponent(mocks)
+	var managementComponent = mocks.createComponent()
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -218,7 +221,7 @@ func TestGetClient(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mocks = createMocks(mockCtrl)
-	var managementComponent = createComponent(mocks)
+	var managementComponent = mocks.createComponent()
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -283,7 +286,7 @@ func TestGetClients(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mocks = createMocks(mockCtrl)
-	var managementComponent = createComponent(mocks)
+	var managementComponent = mocks.createComponent()
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -348,7 +351,7 @@ func TestGetRequiredActions(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mocks = createMocks(mockCtrl)
-	var managementComponent = createComponent(mocks)
+	var managementComponent = mocks.createComponent()
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -413,7 +416,7 @@ func TestCreateUser(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mocks = createMocks(mockCtrl)
-	var managementComponent = createComponent(mocks)
+	var managementComponent = mocks.createComponent()
 
 	var accessToken = "TOKEN=="
 	var username = "test"
@@ -651,12 +654,55 @@ func TestCreateUser(t *testing.T) {
 	})
 }
 
+func TestCreateUserInSocialRealm(t *testing.T) {
+	// Only test branches not reached by TestCreateUserInSocialRealm
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mocks = createMocks(mockCtrl)
+	var managementComponent = mocks.createComponent()
+
+	var accessToken = "TOKEN=="
+	var username = "test"
+	var realmName = "my-realm"
+	var email = "user@domain.com"
+	var anyError = errors.New("any error")
+	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+	ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
+	ctx = context.WithValue(ctx, cs.CtContextUsername, username)
+	var userRep = api.UserRepresentation{
+		Email: &email,
+	}
+	mocks.logger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
+	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
+	mocks.configurationDBModule.EXPECT().GetAdminConfiguration(gomock.Any(), managementComponent.socialRealmName).Return(configuration.RealmAdminConfiguration{}, nil).AnyTimes()
+
+	t.Run("Can't get JWT token", func(t *testing.T) {
+		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return("", anyError)
+
+		_, err := managementComponent.CreateUserInSocialRealm(ctx, userRep, false)
+		assert.Equal(t, anyError, err)
+	})
+	t.Run("Process already existing user cases calls handler", func(t *testing.T) {
+		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
+		mocks.onboardingModule.EXPECT().ProcessAlreadyExistingUserCases(ctx, accessToken, managementComponent.socialRealmName, email, realmName, gomock.Any()).Return(anyError)
+		_, err := managementComponent.CreateUserInSocialRealm(ctx, userRep, false)
+		assert.Equal(t, anyError, err)
+	})
+	t.Run("onAlreadyExistsUser", func(t *testing.T) {
+		var err = managementComponent.onAlreadyExistsUser("", 0, ptr(""))
+		assert.IsType(t, errorhandler.Error{}, err)
+		var errWithDetails = err.(errorhandler.Error)
+		assert.Equal(t, http.StatusConflict, errWithDetails.Status)
+	})
+}
+
 func TestCheckGLN(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 
 	var mocks = createMocks(mockCtrl)
-	var managementComponent = createComponent(mocks)
+	var managementComponent = mocks.createComponent()
 
 	var realmName = "my-realm"
 	var gln = "123456789"
@@ -724,7 +770,7 @@ func TestDeleteUser(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mocks = createMocks(mockCtrl)
-	var managementComponent = createComponent(mocks)
+	var managementComponent = mocks.createComponent()
 
 	var accessToken = "TOKEN=="
 	var userID = "41dbf4a8-32a9-4000-8c17-edc854c31231"
@@ -795,7 +841,7 @@ func TestGetUser(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mocks = createMocks(mockCtrl)
-	var managementComponent = createComponent(mocks)
+	var managementComponent = mocks.createComponent()
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -1060,7 +1106,7 @@ func TestUpdateUser(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mocks = createMocks(mockCtrl)
-	var managementComponent = createComponent(mocks)
+	var managementComponent = mocks.createComponent()
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -1498,7 +1544,7 @@ func TestLockUnlockUser(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mocks = createMocks(mockCtrl)
-	var managementComponent = createComponent(mocks)
+	var managementComponent = mocks.createComponent()
 
 	var accessToken = "TOKEN=="
 	var realmName = "myrealm"
@@ -1548,7 +1594,7 @@ func TestGetUsers(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mocks = createMocks(mockCtrl)
-	var managementComponent = createComponent(mocks)
+	var managementComponent = mocks.createComponent()
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -1636,7 +1682,7 @@ func TestGetUserChecks(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mocks = createMocks(mockCtrl)
-	var managementComponent = createComponent(mocks)
+	var managementComponent = mocks.createComponent()
 
 	var accessToken = "TOKEN=="
 	var realmName = "aRealm"
@@ -1669,7 +1715,7 @@ func TestGetUserAccountStatus(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mocks = createMocks(mockCtrl)
-	var managementComponent = createComponent(mocks)
+	var managementComponent = mocks.createComponent()
 
 	var accessToken = "TOKEN=="
 	var realmReq = "master"
@@ -1742,7 +1788,7 @@ func TestGetUserAccountStatusByEmail(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mocks = createMocks(mockCtrl)
-	var managementComponent = createComponent(mocks)
+	var managementComponent = mocks.createComponent()
 
 	var accessToken = "TOKEN=="
 	var realmReq = "master"
@@ -1843,7 +1889,7 @@ func TestGetClientRolesForUser(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mocks = createMocks(mockCtrl)
-	var managementComponent = createComponent(mocks)
+	var managementComponent = mocks.createComponent()
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -1904,7 +1950,7 @@ func TestAddClientRolesToUser(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mocks = createMocks(mockCtrl)
-	var managementComponent = createComponent(mocks)
+	var managementComponent = mocks.createComponent()
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -1967,7 +2013,7 @@ func TestGetRolesOfUser(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mocks = createMocks(mockCtrl)
-	var managementComponent = createComponent(mocks)
+	var managementComponent = mocks.createComponent()
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -2066,7 +2112,7 @@ func TestAddRoleOfUser(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mocks = createMocks(mockCtrl)
-	var managementComponent = createComponent(mocks)
+	var managementComponent = mocks.createComponent()
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -2127,7 +2173,7 @@ func TestDeleteRoleForUser(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mocks = createMocks(mockCtrl)
-	var managementComponent = createComponent(mocks)
+	var managementComponent = mocks.createComponent()
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -2198,7 +2244,7 @@ func TestGetGroupsOfUser(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mocks = createMocks(mockCtrl)
-	var managementComponent = createComponent(mocks)
+	var managementComponent = mocks.createComponent()
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -2246,7 +2292,7 @@ func TestSetGroupsToUser(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mocks = createMocks(mockCtrl)
-	var managementComponent = createComponent(mocks)
+	var managementComponent = mocks.createComponent()
 
 	var accessToken = "a-valid-access-token"
 	var realmName = "my-realm"
@@ -2281,7 +2327,7 @@ func TestGetAvailableTrustIDGroups(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mocks = createMocks(mockCtrl)
-	var component = createComponent(mocks)
+	var component = mocks.createComponent()
 
 	var realmName = "master"
 
@@ -2295,7 +2341,7 @@ func TestGetTrustIDGroupsOfUser(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mocks = createMocks(mockCtrl)
-	var component = createComponent(mocks)
+	var component = mocks.createComponent()
 
 	var groups = []string{"some", "/groups"}
 	var accessToken = "TOKEN=="
@@ -2331,7 +2377,7 @@ func TestSetTrustIDGroupsToUser(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mocks = createMocks(mockCtrl)
-	var managementComponent = createComponent(mocks)
+	var managementComponent = mocks.createComponent()
 
 	var accessToken = "TOKEN=="
 
@@ -2414,7 +2460,7 @@ func TestResetPassword(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mocks = createMocks(mockCtrl)
-	var managementComponent = createComponent(mocks)
+	var managementComponent = mocks.createComponent()
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -2549,7 +2595,7 @@ func TestRecoveryCode(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mocks = createMocks(mockCtrl)
-	var managementComponent = createComponent(mocks)
+	var managementComponent = mocks.createComponent()
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -2615,7 +2661,7 @@ func TestActivationCode(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mocks = createMocks(mockCtrl)
-	var managementComponent = createComponent(mocks)
+	var managementComponent = mocks.createComponent()
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -2662,7 +2708,7 @@ func TestExecuteActionsEmail(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mocks = createMocks(mockCtrl)
-	var managementComponent = createComponent(mocks)
+	var managementComponent = mocks.createComponent()
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -2717,7 +2763,7 @@ func TestSendSmsCode(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mocks = createMocks(mockCtrl)
-	var managementComponent = createComponent(mocks)
+	var managementComponent = mocks.createComponent()
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -2767,7 +2813,7 @@ func TestSendOnboardingEmail(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mocks = createMocks(mockCtrl)
-	var managementComponent = createComponent(mocks)
+	var managementComponent = mocks.createComponent()
 
 	var onboardingRedirectURI = "http://successURL"
 	var onboardingClientID = "onboardingid"
@@ -2776,15 +2822,26 @@ func TestSendOnboardingEmail(t *testing.T) {
 	var customerRealmName = "customer"
 	var userID = "1245-7854-8963"
 	var username = "username"
-	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+	var ctx = context.Background()
+	ctx = context.WithValue(ctx, cs.CtContextAccessToken, accessToken)
+	ctx = context.WithValue(ctx, cs.CtContextRealm, customerRealmName)
+	var anyError = errors.New("unexpected error")
 
 	mocks.logger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
 	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
 
-	t.Run("Fails to retrieve realm configuration", func(t *testing.T) {
-		mocks.configurationDBModule.EXPECT().GetConfiguration(ctx, customerRealmName).Return(configuration.RealmConfiguration{}, errors.New("unexpected error"))
+	t.Run("InSocialRealm-Can't get oidc token", func(t *testing.T) {
+		mocks.tokenProvider.EXPECT().ProvideToken(gomock.Any()).Return("", anyError)
 
-		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, customerRealmName, false, nil)
+		err := managementComponent.SendOnboardingEmailInSocialRealm(ctx, userID, realmName, false, nil)
+		assert.NotNil(t, err)
+	})
+
+	t.Run("InSocialRealm-Fails to retrieve realm configuration", func(t *testing.T) {
+		mocks.tokenProvider.EXPECT().ProvideToken(gomock.Any()).Return(accessToken, nil)
+		mocks.configurationDBModule.EXPECT().GetConfiguration(ctx, customerRealmName).Return(configuration.RealmConfiguration{}, anyError)
+
+		err := managementComponent.SendOnboardingEmailInSocialRealm(ctx, userID, customerRealmName, false, nil)
 		assert.NotNil(t, err)
 	})
 
@@ -2803,7 +2860,7 @@ func TestSendOnboardingEmail(t *testing.T) {
 	}, nil).AnyTimes()
 
 	t.Run("Fails to retrieve user in KC", func(t *testing.T) {
-		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(kc.UserRepresentation{}, errors.New("unexpected error"))
+		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(kc.UserRepresentation{}, anyError)
 
 		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, customerRealmName, false, nil)
 		assert.NotNil(t, err)
@@ -2817,7 +2874,7 @@ func TestSendOnboardingEmail(t *testing.T) {
 			Username:   &username,
 			Attributes: &attributes,
 		}, nil)
-		mocks.onboardingModule.EXPECT().OnboardingAlreadyCompleted(gomock.Any()).Return(false, errors.New("unexpected error"))
+		mocks.onboardingModule.EXPECT().OnboardingAlreadyCompleted(gomock.Any()).Return(false, anyError)
 
 		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, customerRealmName, false, nil)
 		assert.NotNil(t, err)
@@ -2846,7 +2903,7 @@ func TestSendOnboardingEmail(t *testing.T) {
 		mocks.onboardingModule.EXPECT().OnboardingAlreadyCompleted(gomock.Any()).Return(false, nil)
 
 		mocks.onboardingModule.EXPECT().SendOnboardingEmail(ctx, accessToken, realmName, userID, username,
-			onboardingClientID, onboardingRedirectURI+"?customerRealm="+customerRealmName, customerRealmName, true, nil).Return(errors.New("unexpected error"))
+			onboardingClientID, onboardingRedirectURI+"?customerRealm="+customerRealmName, customerRealmName, true, nil).Return(anyError)
 
 		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, customerRealmName, true, nil)
 		assert.NotNil(t, err)
@@ -2876,7 +2933,7 @@ func TestSendReminderEmail(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mocks = createMocks(mockCtrl)
-	var managementComponent = createComponent(mocks)
+	var managementComponent = mocks.createComponent()
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -2917,7 +2974,7 @@ func TestResetSmsCounter(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mocks = createMocks(mockCtrl)
-	var managementComponent = createComponent(mocks)
+	var managementComponent = mocks.createComponent()
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -2994,7 +3051,7 @@ func TestGetCredentialsForUser(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mocks = createMocks(mockCtrl)
-	var managementComponent = createComponent(mocks)
+	var managementComponent = mocks.createComponent()
 
 	var accessToken = "TOKEN=="
 	var realmReq = "master"
@@ -3018,7 +3075,7 @@ func TestDeleteCredentialsForUser(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mocks = createMocks(mockCtrl)
-	var managementComponent = createComponent(mocks)
+	var managementComponent = mocks.createComponent()
 
 	var accessToken = "TOKEN=="
 	var realmReq = "master"
@@ -3074,7 +3131,7 @@ func TestUnlockCredentialForUser(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mocks = createMocks(mockCtrl)
-	var managementComponent = createComponent(mocks)
+	var managementComponent = mocks.createComponent()
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -3124,7 +3181,7 @@ func TestClearUserLoginFailures(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mocks = createMocks(mockCtrl)
-	var component = createComponent(mocks)
+	var component = mocks.createComponent()
 
 	var accessToken = "TOKEN=="
 	var realm = "master"
@@ -3152,7 +3209,7 @@ func TestGetAttackDetectionStatus(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mocks = createMocks(mockCtrl)
-	var component = createComponent(mocks)
+	var component = mocks.createComponent()
 
 	var accessToken = "TOKEN=="
 	var realm = "master"
@@ -3183,7 +3240,7 @@ func TestGetRoles(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mocks = createMocks(mockCtrl)
-	var managementComponent = createComponent(mocks)
+	var managementComponent = mocks.createComponent()
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -3258,7 +3315,7 @@ func TestGetRole(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mocks = createMocks(mockCtrl)
-	var managementComponent = createComponent(mocks)
+	var managementComponent = mocks.createComponent()
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -3329,7 +3386,7 @@ func TestCreateRole(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mocks = createMocks(mockCtrl)
-	var managementComponent = createComponent(mocks)
+	var managementComponent = mocks.createComponent()
 
 	var accessToken = "TOKEN=="
 	var username = "username"
@@ -3414,7 +3471,7 @@ func TestDeleteRole(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mocks = createMocks(mockCtrl)
-	var managementComponent = createComponent(mocks)
+	var managementComponent = mocks.createComponent()
 
 	var accessToken = "TOKEN=="
 	var roleID = "41dbf4a8-32a9-4000-8c17-edc854c31231"
@@ -3486,7 +3543,7 @@ func TestGetGroups(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mocks = createMocks(mockCtrl)
-	var managementComponent = createComponent(mocks)
+	var managementComponent = mocks.createComponent()
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -3549,7 +3606,7 @@ func TestCreateGroup(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mocks = createMocks(mockCtrl)
-	var managementComponent = createComponent(mocks)
+	var managementComponent = mocks.createComponent()
 
 	var accessToken = "TOKEN=="
 	var username = "username"
@@ -3631,7 +3688,7 @@ func TestDeleteGroup(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mocks = createMocks(mockCtrl)
-	var managementComponent = createComponent(mocks)
+	var managementComponent = mocks.createComponent()
 
 	var accessToken = "TOKEN=="
 	var groupID = "41dbf4a8-32a9-4000-8c17-edc854c31231"
@@ -3717,7 +3774,7 @@ func TestGetAuthorizations(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mocks = createMocks(mockCtrl)
-	var managementComponent = createComponent(mocks)
+	var managementComponent = mocks.createComponent()
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -3789,7 +3846,7 @@ func TestUpdateAuthorizations(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mocks = createMocks(mockCtrl)
-	var managementComponent = createComponent(mocks)
+	var managementComponent = mocks.createComponent()
 
 	var accessToken = "TOKEN=="
 	var realmName = "customer1"
@@ -3947,7 +4004,7 @@ func TestUpdateAuthorizationsWithAny(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mocks = createMocks(mockCtrl)
-	var managementComponent = createComponent(mocks)
+	var managementComponent = mocks.createComponent()
 
 	var accessToken = "TOKEN=="
 	var currentRealmName = "master"
@@ -4036,7 +4093,7 @@ func TestAddAuthorization(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mocks = createMocks(mockCtrl)
-	var managementComponent = createComponent(mocks)
+	var managementComponent = mocks.createComponent()
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -4288,7 +4345,7 @@ func TestGetAuthorization(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mocks = createMocks(mockCtrl)
-	var managementComponent = createComponent(mocks)
+	var managementComponent = mocks.createComponent()
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -4426,7 +4483,7 @@ func TestDeleteAuthorization(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mocks = createMocks(mockCtrl)
-	var managementComponent = createComponent(mocks)
+	var managementComponent = mocks.createComponent()
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -4563,7 +4620,7 @@ func TestGetClientRoles(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mocks = createMocks(mockCtrl)
-	var managementComponent = createComponent(mocks)
+	var managementComponent = mocks.createComponent()
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -4623,7 +4680,7 @@ func TestCreateClientRole(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mocks = createMocks(mockCtrl)
-	var managementComponent = createComponent(mocks)
+	var managementComponent = mocks.createComponent()
 
 	var accessToken = "TOKEN=="
 	var realmName = "master"
@@ -4685,7 +4742,7 @@ func TestGetRealmCustomConfiguration(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mocks = createMocks(mockCtrl)
-	var managementComponent = createComponent(mocks)
+	var managementComponent = mocks.createComponent()
 
 	var accessToken = "TOKEN=="
 	var realmID = "master_id"
@@ -4810,7 +4867,7 @@ func TestUpdateRealmCustomConfiguration(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mocks = createMocks(mockCtrl)
-	var managementComponent = createComponent(mocks)
+	var managementComponent = mocks.createComponent()
 
 	var accessToken = "TOKEN=="
 	var realmID = "master_id"
@@ -4941,7 +4998,7 @@ func TestGetRealmAdminConfiguration(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mocks = createMocks(mockCtrl)
-	var component = createComponent(mocks)
+	var component = mocks.createComponent()
 
 	var realmName = "myrealm"
 	var realmID = "1234-5678"
@@ -4978,7 +5035,7 @@ func TestUpdateRealmAdminConfiguration(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mocks = createMocks(mockCtrl)
-	var component = createComponent(mocks)
+	var component = mocks.createComponent()
 
 	var realmName = "myrealm"
 	var realmID = "1234-5678"
@@ -5019,7 +5076,7 @@ func TestRealmBackOfficeConfiguration(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mocks = createMocks(mockCtrl)
-	var component = createComponent(mocks)
+	var component = mocks.createComponent()
 
 	var realmID = "master_id"
 	var groupName = "the.group"
@@ -5117,7 +5174,7 @@ func TestLinkShadowUser(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mocks = createMocks(mockCtrl)
-	var managementComponent = createComponent(mocks)
+	var managementComponent = mocks.createComponent()
 
 	var accessToken = "TOKEN=="
 	var username = "test"

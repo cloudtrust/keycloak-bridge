@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	cs "github.com/cloudtrust/common-service/v2"
 	"github.com/cloudtrust/common-service/v2/log"
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
 	"github.com/cloudtrust/keycloak-bridge/pkg/management/mock"
@@ -177,6 +178,21 @@ func TestCreateUserEndpoint(t *testing.T) {
 		assert.NotNil(t, err)
 	})
 
+	t.Run("Error - Invalid body", func(t *testing.T) {
+		var req = make(map[string]string)
+		req[reqBody] = string(`{"email":""}`)
+		_, err := e(ctx, req)
+		assert.NotNil(t, err)
+	})
+
+	t.Run("Error - Missing groups", func(t *testing.T) {
+		var req = make(map[string]string)
+		userJSON, _ := json.Marshal(api.UserRepresentation{Groups: nil})
+		req[reqBody] = string(userJSON)
+		_, err := e(ctx, req)
+		assert.NotNil(t, err)
+	})
+
 	t.Run("Error - Keycloak client error", func(t *testing.T) {
 		var req = make(map[string]string)
 		req[reqScheme] = "https"
@@ -188,6 +204,104 @@ func TestCreateUserEndpoint(t *testing.T) {
 		mockManagementComponent.EXPECT().CreateUser(ctx, realm, gomock.Any(), false, false, false).Return("", fmt.Errorf("Error")).Times(1)
 		_, err := e(ctx, req)
 		assert.NotNil(t, err)
+	})
+
+	t.Run("Unparsable location", func(t *testing.T) {
+		var req = make(map[string]string)
+		req[reqScheme] = "https"
+		req[reqHost] = "elca.ch"
+		req[prmRealm] = realm
+		userJSON, _ := json.Marshal(api.UserRepresentation{Groups: &groups})
+		req[reqBody] = string(userJSON)
+
+		mockManagementComponent.EXPECT().CreateUser(ctx, realm, api.UserRepresentation{Groups: &groups}, false, false, false).Return("/unrecognized/location", nil)
+		res, err := e(ctx, req)
+		assert.Nil(t, err)
+		assert.IsType(t, LocationHeader{}, res)
+		var hdr = res.(LocationHeader)
+		assert.Equal(t, invalidLocation, hdr.URL)
+	})
+}
+
+func TestCreateUserInSocialRealmEndpoint(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
+
+	var e = MakeCreateUserInSocialRealmEndpoint(mockManagementComponent, log.NewNopLogger())
+
+	var realm = "master"
+	var location = "https://location.url/auth/admin/master/users/123456"
+	var ctx = context.Background()
+	var groups = []string{"f467ed7c-0a1d-4eee-9bb8-669c6f89c0ee"}
+
+	t.Run("No error", func(t *testing.T) {
+		var req = make(map[string]string)
+		req[reqScheme] = "https"
+		req[reqHost] = "elca.ch"
+		req[prmRealm] = realm
+
+		userJSON, _ := json.Marshal(api.UserRepresentation{Groups: &groups})
+		req[reqBody] = string(userJSON)
+
+		mockManagementComponent.EXPECT().CreateUserInSocialRealm(ctx, api.UserRepresentation{Groups: &groups}, false).Return(location, nil)
+		res, err := e(ctx, req)
+		assert.Nil(t, err)
+
+		locationHeader := res.(LocationHeader)
+		assert.Equal(t, "https://elca.ch/management/master/users/123456", locationHeader.URL)
+	})
+
+	t.Run("Error - Cannot unmarshall", func(t *testing.T) {
+		var req = make(map[string]string)
+		req[reqBody] = string("JSON")
+		_, err := e(ctx, req)
+		assert.NotNil(t, err)
+	})
+
+	t.Run("Error - Invalid body", func(t *testing.T) {
+		var req = make(map[string]string)
+		req[reqBody] = string(`{"email":""}`)
+		_, err := e(ctx, req)
+		assert.NotNil(t, err)
+	})
+
+	t.Run("Error - Missing groups", func(t *testing.T) {
+		var req = make(map[string]string)
+		userJSON, _ := json.Marshal(api.UserRepresentation{Groups: nil})
+		req[reqBody] = string(userJSON)
+		_, err := e(ctx, req)
+		assert.NotNil(t, err)
+	})
+
+	t.Run("Error - Keycloak client error", func(t *testing.T) {
+		var req = make(map[string]string)
+		req[reqScheme] = "https"
+		req[reqHost] = "elca.ch"
+		req[prmRealm] = realm
+		userJSON, _ := json.Marshal(api.UserRepresentation{Groups: &groups})
+		req[reqBody] = string(userJSON)
+
+		mockManagementComponent.EXPECT().CreateUserInSocialRealm(ctx, gomock.Any(), false).Return("", fmt.Errorf("Error"))
+		_, err := e(ctx, req)
+		assert.NotNil(t, err)
+	})
+
+	t.Run("Unparsable location", func(t *testing.T) {
+		var req = make(map[string]string)
+		req[reqScheme] = "https"
+		req[reqHost] = "elca.ch"
+		req[prmRealm] = realm
+		userJSON, _ := json.Marshal(api.UserRepresentation{Groups: &groups})
+		req[reqBody] = string(userJSON)
+
+		mockManagementComponent.EXPECT().CreateUserInSocialRealm(ctx, api.UserRepresentation{Groups: &groups}, false).Return("/unrecognized/location", nil)
+		res, err := e(ctx, req)
+		assert.Nil(t, err)
+		assert.IsType(t, LocationHeader{}, res)
+		var hdr = res.(LocationHeader)
+		assert.Equal(t, invalidLocation, hdr.URL)
 	})
 }
 
@@ -865,6 +979,73 @@ func TestSendOnboardingEmailEndpoint(t *testing.T) {
 		var lifespan = int(3 * 24 * time.Hour / time.Second)
 		req[prmQryLifespan] = strconv.Itoa(lifespan)
 		mockManagementComponent.EXPECT().SendOnboardingEmail(ctx, realm, userID, customerRealm, false, &lifespan).Return(nil)
+		var res, err = e(ctx, req)
+		assert.Nil(t, err)
+		assert.Nil(t, res)
+	})
+}
+
+func TestSendOnboardingEmailInSocialRealmEndpoint(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
+
+	var lifespan = int(100 * time.Hour)
+	var e = MakeSendOnboardingEmailInSocialRealmEndpoint(mockManagementComponent, lifespan)
+
+	var realm = "master"
+	var customerRealm = "customer"
+	var ctxRealm = "context-realm"
+	var userID = "123-456-789"
+	var ctx = context.Background()
+	ctx = context.WithValue(ctx, cs.CtContextRealm, ctxRealm)
+	var req = make(map[string]string)
+	req[prmRealm] = realm
+	req[prmUserID] = userID
+
+	t.Run("Without reminder or customerRealm parameter", func(t *testing.T) {
+		mockManagementComponent.EXPECT().SendOnboardingEmailInSocialRealm(ctx, userID, ctxRealm, false, nil)
+		var res, err = e(ctx, req)
+		assert.Nil(t, err)
+		assert.Nil(t, res)
+	})
+	t.Run("Reminder is false", func(t *testing.T) {
+		req[prmQryReminder] = "FALse"
+		mockManagementComponent.EXPECT().SendOnboardingEmailInSocialRealm(ctx, userID, ctxRealm, false, nil)
+		var res, err = e(ctx, req)
+		assert.Nil(t, err)
+		assert.Nil(t, res)
+	})
+	t.Run("Reminder is true", func(t *testing.T) {
+		req[prmQryReminder] = "TruE"
+		mockManagementComponent.EXPECT().SendOnboardingEmailInSocialRealm(ctx, userID, ctxRealm, true, nil)
+		var res, err = e(ctx, req)
+		assert.Nil(t, err)
+		assert.Nil(t, res)
+	})
+	t.Run("Reminder is valid, lifespan not used", func(t *testing.T) {
+		req[prmQryReminder] = "false"
+		req[prmQryRealm] = customerRealm
+		mockManagementComponent.EXPECT().SendOnboardingEmailInSocialRealm(ctx, userID, customerRealm, false, nil).Return(nil)
+		var res, err = e(ctx, req)
+		assert.Nil(t, err)
+		assert.Nil(t, res)
+	})
+	t.Run("Invalid lifespan submitted", func(t *testing.T) {
+		req[prmQryLifespan] = "not-a-number"
+		var _, err = e(ctx, req)
+		assert.NotNil(t, err)
+	})
+	t.Run("Too high lifespan submitted", func(t *testing.T) {
+		req[prmQryLifespan] = strconv.Itoa(int(500 * time.Hour))
+		var _, err = e(ctx, req)
+		assert.NotNil(t, err)
+	})
+	t.Run("Valid lifespan submitted", func(t *testing.T) {
+		var lifespan = int(3 * 24 * time.Hour / time.Second)
+		req[prmQryLifespan] = strconv.Itoa(lifespan)
+		mockManagementComponent.EXPECT().SendOnboardingEmailInSocialRealm(ctx, userID, customerRealm, false, &lifespan).Return(nil)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Nil(t, res)

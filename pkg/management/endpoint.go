@@ -33,6 +33,7 @@ type Endpoints struct {
 	UnlockUser                  endpoint.Endpoint
 	GetUsers                    endpoint.Endpoint
 	CreateUser                  endpoint.Endpoint
+	CreateUserInSocialRealm     endpoint.Endpoint
 	GetRolesOfUser              endpoint.Endpoint
 	AddRoleToUser               endpoint.Endpoint
 	DeleteRoleForUser           endpoint.Endpoint
@@ -48,19 +49,20 @@ type Endpoints struct {
 	GetClientRoleForUser        endpoint.Endpoint
 	AddClientRoleToUser         endpoint.Endpoint
 
-	ResetPassword                  endpoint.Endpoint
-	ExecuteActionsEmail            endpoint.Endpoint
-	SendSmsCode                    endpoint.Endpoint
-	SendOnboardingEmail            endpoint.Endpoint
-	SendReminderEmail              endpoint.Endpoint
-	ResetSmsCounter                endpoint.Endpoint
-	CreateRecoveryCode             endpoint.Endpoint
-	CreateActivationCode           endpoint.Endpoint
-	GetCredentialsForUser          endpoint.Endpoint
-	DeleteCredentialsForUser       endpoint.Endpoint
-	ResetCredentialFailuresForUser endpoint.Endpoint
-	ClearUserLoginFailures         endpoint.Endpoint
-	GetAttackDetectionStatus       endpoint.Endpoint
+	ResetPassword                    endpoint.Endpoint
+	ExecuteActionsEmail              endpoint.Endpoint
+	SendSmsCode                      endpoint.Endpoint
+	SendOnboardingEmail              endpoint.Endpoint
+	SendOnboardingEmailInSocialRealm endpoint.Endpoint
+	SendReminderEmail                endpoint.Endpoint
+	ResetSmsCounter                  endpoint.Endpoint
+	CreateRecoveryCode               endpoint.Endpoint
+	CreateActivationCode             endpoint.Endpoint
+	GetCredentialsForUser            endpoint.Endpoint
+	DeleteCredentialsForUser         endpoint.Endpoint
+	ResetCredentialFailuresForUser   endpoint.Endpoint
+	ClearUserLoginFailures           endpoint.Endpoint
+	GetAttackDetectionStatus         endpoint.Endpoint
 
 	/* REMOVE_THIS_3901 : start */
 	SendMigrationEmail endpoint.Endpoint
@@ -93,6 +95,10 @@ type Endpoints struct {
 
 	LinkShadowUser endpoint.Endpoint
 }
+
+const (
+	invalidLocation = "InvalidLocation"
+)
 
 var (
 	respNoContent = commonhttp.GenericResponse{StatusCode: http.StatusNoContent}
@@ -181,6 +187,46 @@ func MakeCreateUserEndpoint(component Component, logger keycloakb.Logger) cs.End
 
 		var keycloakLocation string
 		keycloakLocation, err = component.CreateUser(ctx, m[prmRealm], user, generateUsername, generateNameID, termsOfUse)
+
+		if err != nil {
+			return nil, err
+		}
+
+		url, err := convertLocationURL(keycloakLocation, m[reqScheme], m[reqHost])
+		if err != nil {
+			logger.Warn(ctx, "msg", "Invalid location", "location", keycloakLocation, "err", err.Error())
+		}
+
+		return LocationHeader{
+			URL: url,
+		}, nil
+	}
+}
+
+// MakeCreateUserInSocialRealmEndpoint makes the endpoint to create a user in the social realm.
+func MakeCreateUserInSocialRealmEndpoint(component Component, logger keycloakb.Logger) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+		var err error
+
+		var user api.UserRepresentation
+
+		if err = json.Unmarshal([]byte(m[reqBody]), &user); err != nil {
+			return nil, errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Body)
+		}
+
+		if err = user.Validate(); err != nil {
+			return nil, err
+		}
+
+		if user.Groups == nil || len(*user.Groups) == 0 {
+			return nil, errorhandler.CreateMissingParameterError(msg.Groups)
+		}
+
+		var generateNameID = isParameterTrue(m, prmQryGenNameID)
+
+		var keycloakLocation string
+		keycloakLocation, err = component.CreateUserInSocialRealm(ctx, user, generateNameID)
 
 		if err != nil {
 			return nil, err
@@ -513,6 +559,33 @@ func MakeSendOnboardingEmailEndpoint(component Component, maxLifeSpan int) cs.En
 		}
 
 		return nil, component.SendOnboardingEmail(ctx, m[prmRealm], m[prmUserID], customerRealmName, reminder, lifespan)
+	}
+}
+
+// MakeSendOnboardingEmailInSocialRealmEndpoint creates an endpoint for SendOnboardingEmailInSocialRealm
+func MakeSendOnboardingEmailInSocialRealmEndpoint(component Component, maxLifeSpan int) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+		var reminder = isParameterTrue(m, prmQryReminder)
+
+		var customerRealmName = ctx.Value(cs.CtContextRealm).(string)
+		if value, ok := m[prmQryRealm]; ok && value != "" {
+			customerRealmName = value
+		}
+
+		var lifespan *int
+		if value, ok := m[prmQryLifespan]; ok {
+			if iValue, err := strconv.Atoi(value); err == nil {
+				if iValue > maxLifeSpan {
+					return nil, errorhandler.CreateInvalidQueryParameterError(prmQryLifespan)
+				}
+				lifespan = &iValue
+			} else {
+				return nil, errorhandler.CreateInvalidQueryParameterError(prmQryLifespan)
+			}
+		}
+
+		return nil, component.SendOnboardingEmailInSocialRealm(ctx, m[prmUserID], customerRealmName, reminder, lifespan)
 	}
 }
 
@@ -1002,7 +1075,7 @@ func convertLocationURL(originalURL string, scheme string, host string) (string,
 	var splitURL = delimiter.Split(originalURL, 2)
 
 	if len(splitURL) != 2 {
-		return "InvalidLocation", ConvertLocationError{
+		return invalidLocation, ConvertLocationError{
 			Location: originalURL,
 		}
 	}

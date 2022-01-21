@@ -19,6 +19,10 @@ func TestGetActionsString(t *testing.T) {
 	assert.Len(t, GetActions(), len(actions))
 }
 
+func ignoreFirst(_ interface{}, err error) error {
+	return err
+}
+
 func TestDeny(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -116,199 +120,79 @@ func TestDeny(t *testing.T) {
 		ctx = context.WithValue(ctx, cs.CtContextGroups, groups)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, "master")
 
-		_, err = authorizationMW.GetActions(ctx)
-		assert.Equal(t, security.ForbiddenError{}, err)
+		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), gomock.Any(), realmName, groupID).Return(groupName, nil).AnyTimes()
 
-		_, err = authorizationMW.GetRealms(ctx)
-		assert.Equal(t, security.ForbiddenError{}, err)
-
-		_, err = authorizationMW.GetRealm(ctx, realmName)
-		assert.Equal(t, security.ForbiddenError{}, err)
-
-		_, err = authorizationMW.GetClient(ctx, realmName, clientID)
-		assert.Equal(t, security.ForbiddenError{}, err)
-
-		_, err = authorizationMW.GetClients(ctx, realmName)
-		assert.Equal(t, security.ForbiddenError{}, err)
-
-		_, err = authorizationMW.GetRequiredActions(ctx, realmName)
-		assert.Equal(t, security.ForbiddenError{}, err)
-
-		err = authorizationMW.DeleteUser(ctx, realmName, userID)
-		assert.Equal(t, security.ForbiddenError{}, err)
-
-		_, err = authorizationMW.GetUser(ctx, realmName, userID)
-		assert.Equal(t, security.ForbiddenError{}, err)
-
-		err = authorizationMW.UpdateUser(ctx, realmName, userID, updatableUser)
-		assert.Equal(t, security.ForbiddenError{}, err)
-
-		err = authorizationMW.LockUser(ctx, realmName, userID)
-		assert.Equal(t, security.ForbiddenError{}, err)
-
-		err = authorizationMW.UnlockUser(ctx, realmName, userID)
-		assert.Equal(t, security.ForbiddenError{}, err)
-
-		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), gomock.Any(), realmName, groupID).Return(groupName, nil)
-		_, err = authorizationMW.GetUsers(ctx, realmName, groupIDs)
-		assert.Equal(t, security.ForbiddenError{}, err)
-
-		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), gomock.Any(), realmName, groupID).Return(groupName, nil)
-		_, err = authorizationMW.CreateUser(ctx, realmName, user, false, false, false)
-		assert.Equal(t, security.ForbiddenError{}, err)
-
-		_, err = authorizationMW.GetUserChecks(ctx, realmName, userID)
-		assert.Equal(t, security.ForbiddenError{}, err)
-
-		_, err = authorizationMW.GetUserAccountStatus(ctx, realmName, userID)
-		assert.Equal(t, security.ForbiddenError{}, err)
-
-		_, err = authorizationMW.GetUserAccountStatusByEmail(ctx, realmName, email)
-		assert.Equal(t, security.ForbiddenError{}, err)
-
-		_, err = authorizationMW.GetRolesOfUser(ctx, realmName, userID)
-		assert.Equal(t, security.ForbiddenError{}, err)
-
-		err = authorizationMW.AddRoleToUser(ctx, realmName, userID, roleID)
-		assert.Equal(t, security.ForbiddenError{}, err)
-
-		err = authorizationMW.DeleteRoleForUser(ctx, realmName, userID, roleID)
-		assert.Equal(t, security.ForbiddenError{}, err)
-
-		_, err = authorizationMW.GetGroupsOfUser(ctx, realmName, userID)
-		assert.Equal(t, security.ForbiddenError{}, err)
-
-		err = authorizationMW.AddGroupToUser(ctx, realmName, userID, groupID)
-		assert.Equal(t, security.ForbiddenError{}, err)
-
-		err = authorizationMW.DeleteGroupForUser(ctx, realmName, userID, groupID)
-		assert.Equal(t, security.ForbiddenError{}, err)
-
-		_, err = authorizationMW.GetAvailableTrustIDGroups(ctx, realmName)
-		assert.Equal(t, security.ForbiddenError{}, err)
-
-		_, err = authorizationMW.GetTrustIDGroupsOfUser(ctx, realmName, userID)
-		assert.Equal(t, security.ForbiddenError{}, err)
-
-		err = authorizationMW.SetTrustIDGroupsToUser(ctx, realmName, userID, grpNames)
-		assert.Equal(t, security.ForbiddenError{}, err)
-
-		_, err = authorizationMW.GetClientRolesForUser(ctx, realmName, userID, clientID)
-		assert.Equal(t, security.ForbiddenError{}, err)
-
-		err = authorizationMW.AddClientRolesToUser(ctx, realmName, userID, clientID, roles)
-		assert.Equal(t, security.ForbiddenError{}, err)
-
-		_, err = authorizationMW.ResetPassword(ctx, realmName, userID, password)
-		assert.Equal(t, security.ForbiddenError{}, err)
-
-		err = authorizationMW.ExecuteActionsEmail(ctx, realmName, userID, []api.RequiredAction{})
-		assert.Equal(t, security.ForbiddenError{}, err)
-
-		_, err = authorizationMW.SendSmsCode(ctx, realmName, userID)
-		assert.Equal(t, security.ForbiddenError{}, err)
-
-		err = authorizationMW.SendOnboardingEmail(ctx, realmName, userID, customerRealm, false, nil)
-		assert.Equal(t, security.ForbiddenError{}, err)
-
-		err = authorizationMW.SendReminderEmail(ctx, realmName, userID)
-		assert.Equal(t, security.ForbiddenError{}, err)
-
-		err = authorizationMW.ResetSmsCounter(ctx, realmName, userID)
-		assert.Equal(t, security.ForbiddenError{}, err)
-
-		_, err = authorizationMW.CreateRecoveryCode(ctx, realmName, userID)
-		assert.Equal(t, security.ForbiddenError{}, err)
-
-		_, err = authorizationMW.CreateActivationCode(ctx, realmName, userID)
-		assert.Equal(t, security.ForbiddenError{}, err)
-
-		_, err = authorizationMW.GetCredentialsForUser(ctx, realmName, userID)
-		assert.Equal(t, security.ForbiddenError{}, err)
-
-		err = authorizationMW.DeleteCredentialsForUser(ctx, realmName, userID, credentialID)
-		assert.Equal(t, security.ForbiddenError{}, err)
-
-		err = authorizationMW.ResetCredentialFailuresForUser(ctx, realmName, userID, credentialID)
-		assert.Equal(t, security.ForbiddenError{}, err)
-
-		err = authorizationMW.ClearUserLoginFailures(ctx, realmName, userID)
-		assert.Equal(t, security.ForbiddenError{}, err)
-
-		_, err = authorizationMW.GetAttackDetectionStatus(ctx, realmName, userID)
-		assert.Equal(t, security.ForbiddenError{}, err)
-
-		_, err = authorizationMW.GetRoles(ctx, realmName)
-		assert.Equal(t, security.ForbiddenError{}, err)
-
-		_, err = authorizationMW.GetRole(ctx, realmName, roleID)
-		assert.Equal(t, security.ForbiddenError{}, err)
-
-		_, err = authorizationMW.CreateRole(ctx, realmName, role)
-		assert.Equal(t, security.ForbiddenError{}, err)
-
-		err = authorizationMW.DeleteRole(ctx, realmName, roleID)
-		assert.Equal(t, security.ForbiddenError{}, err)
-
-		_, err = authorizationMW.GetGroups(ctx, realmName)
-		assert.Equal(t, security.ForbiddenError{}, err)
-
-		_, err = authorizationMW.CreateGroup(ctx, realmName, group)
-		assert.Equal(t, security.ForbiddenError{}, err)
-
-		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), gomock.Any(), realmName, groupID).Return(groupName, nil)
-		err = authorizationMW.DeleteGroup(ctx, realmName, groupID)
-		assert.Equal(t, security.ForbiddenError{}, err)
-
-		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), gomock.Any(), realmName, groupID).Return(groupName, nil)
-		_, err = authorizationMW.GetAuthorizations(ctx, realmName, groupID)
-		assert.Equal(t, security.ForbiddenError{}, err)
-
-		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), gomock.Any(), realmName, groupID).Return(groupName, nil)
-		err = authorizationMW.UpdateAuthorizations(ctx, realmName, groupID, authz)
-		assert.Equal(t, security.ForbiddenError{}, err)
-
-		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), gomock.Any(), realmName, groupID).Return(groupName, nil)
-		err = authorizationMW.AddAuthorization(ctx, realmName, groupID, authz)
-		assert.Equal(t, security.ForbiddenError{}, err)
-
-		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), gomock.Any(), realmName, groupID).Return(groupName, nil)
-		_, err = authorizationMW.GetAuthorization(ctx, realmName, groupID, targetRealm, targetGroupId, action)
-		assert.Equal(t, security.ForbiddenError{}, err)
-
-		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), gomock.Any(), realmName, groupID).Return(groupName, nil)
-		err = authorizationMW.DeleteAuthorization(ctx, realmName, groupID, targetRealm, targetGroupId, action)
-		assert.Equal(t, security.ForbiddenError{}, err)
-
-		_, err = authorizationMW.GetClientRoles(ctx, realmName, clientID)
-		assert.Equal(t, security.ForbiddenError{}, err)
-
-		_, err = authorizationMW.CreateClientRole(ctx, realmName, clientID, role)
-		assert.Equal(t, security.ForbiddenError{}, err)
-
-		_, err = authorizationMW.GetRealmCustomConfiguration(ctx, realmName)
-		assert.Equal(t, security.ForbiddenError{}, err)
-
-		err = authorizationMW.UpdateRealmCustomConfiguration(ctx, realmName, customConfig)
-		assert.Equal(t, security.ForbiddenError{}, err)
-
-		_, err = authorizationMW.GetRealmAdminConfiguration(ctx, realmName)
-		assert.Equal(t, security.ForbiddenError{}, err)
-
-		err = authorizationMW.UpdateRealmAdminConfiguration(ctx, realmName, adminConfig)
-		assert.Equal(t, security.ForbiddenError{}, err)
-
-		_, err = authorizationMW.GetRealmBackOfficeConfiguration(ctx, realmName, groupID)
-		assert.Equal(t, security.ForbiddenError{}, err)
-
-		err = authorizationMW.UpdateRealmBackOfficeConfiguration(ctx, realmName, groupID, boConfig)
-		assert.Equal(t, security.ForbiddenError{}, err)
-
-		_, err = authorizationMW.GetUserRealmBackOfficeConfiguration(ctx, realmName)
-		assert.Equal(t, security.ForbiddenError{}, err)
-
-		err = authorizationMW.LinkShadowUser(ctx, realmName, userID, provider, fedID)
-		assert.Equal(t, security.ForbiddenError{}, err)
+		var tests = map[string]error{
+			"GetActions":                          ignoreFirst(authorizationMW.GetActions(ctx)),
+			"GetRealms":                           ignoreFirst(authorizationMW.GetRealms(ctx)),
+			"GetRealm":                            ignoreFirst(authorizationMW.GetRealm(ctx, realmName)),
+			"GetClient":                           ignoreFirst(authorizationMW.GetClient(ctx, realmName, clientID)),
+			"GetClients":                          ignoreFirst(authorizationMW.GetClients(ctx, realmName)),
+			"GetRequiredActions":                  ignoreFirst(authorizationMW.GetRequiredActions(ctx, realmName)),
+			"DeleteUser":                          authorizationMW.DeleteUser(ctx, realmName, userID),
+			"GetUser":                             ignoreFirst(authorizationMW.GetUser(ctx, realmName, userID)),
+			"UpdateUser":                          authorizationMW.UpdateUser(ctx, realmName, userID, updatableUser),
+			"LockUser":                            authorizationMW.LockUser(ctx, realmName, userID),
+			"UnlockUser":                          authorizationMW.UnlockUser(ctx, realmName, userID),
+			"GetUsers":                            ignoreFirst(authorizationMW.GetUsers(ctx, realmName, groupIDs)),
+			"CreateUser":                          ignoreFirst(authorizationMW.CreateUser(ctx, realmName, user, false, false, false)),
+			"CreateUserInSocialRealm":             ignoreFirst(authorizationMW.CreateUserInSocialRealm(ctx, user, false)),
+			"GetUserChecks":                       ignoreFirst(authorizationMW.GetUserChecks(ctx, realmName, userID)),
+			"GetUserAccountStatus":                ignoreFirst(authorizationMW.GetUserAccountStatus(ctx, realmName, userID)),
+			"GetUserAccountStatusByEmail":         ignoreFirst(authorizationMW.GetUserAccountStatusByEmail(ctx, realmName, email)),
+			"GetRolesOfUser":                      ignoreFirst(authorizationMW.GetRolesOfUser(ctx, realmName, userID)),
+			"AddRoleToUser":                       authorizationMW.AddRoleToUser(ctx, realmName, userID, roleID),
+			"DeleteRoleForUser":                   authorizationMW.DeleteRoleForUser(ctx, realmName, userID, roleID),
+			"GetGroupsOfUser":                     ignoreFirst(authorizationMW.GetGroupsOfUser(ctx, realmName, userID)),
+			"AddGroupToUser":                      authorizationMW.AddGroupToUser(ctx, realmName, userID, groupID),
+			"DeleteGroupForUser":                  authorizationMW.DeleteGroupForUser(ctx, realmName, userID, groupID),
+			"GetAvailableTrustIDGroups":           ignoreFirst(authorizationMW.GetAvailableTrustIDGroups(ctx, realmName)),
+			"GetTrustIDGroupsOfUser":              ignoreFirst(authorizationMW.GetTrustIDGroupsOfUser(ctx, realmName, userID)),
+			"SetTrustIDGroupsToUser":              authorizationMW.SetTrustIDGroupsToUser(ctx, realmName, userID, grpNames),
+			"GetClientRolesForUser":               ignoreFirst(authorizationMW.GetClientRolesForUser(ctx, realmName, userID, clientID)),
+			"AddClientRolesToUser":                authorizationMW.AddClientRolesToUser(ctx, realmName, userID, clientID, roles),
+			"ResetPassword":                       ignoreFirst(authorizationMW.ResetPassword(ctx, realmName, userID, password)),
+			"ExecuteActionsEmail":                 authorizationMW.ExecuteActionsEmail(ctx, realmName, userID, []api.RequiredAction{}),
+			"SendSmsCode":                         ignoreFirst(authorizationMW.SendSmsCode(ctx, realmName, userID)),
+			"SendOnboardingEmail":                 authorizationMW.SendOnboardingEmail(ctx, realmName, userID, customerRealm, false, nil),
+			"SendOnboardingEmailInSocialRealm":    authorizationMW.SendOnboardingEmailInSocialRealm(ctx, userID, customerRealm, false, nil),
+			"SendReminderEmail":                   authorizationMW.SendReminderEmail(ctx, realmName, userID),
+			"ResetSmsCounter":                     authorizationMW.ResetSmsCounter(ctx, realmName, userID),
+			"CreateRecoveryCode":                  ignoreFirst(authorizationMW.CreateRecoveryCode(ctx, realmName, userID)),
+			"CreateActivationCode":                ignoreFirst(authorizationMW.CreateActivationCode(ctx, realmName, userID)),
+			"GetCredentialsForUser":               ignoreFirst(authorizationMW.GetCredentialsForUser(ctx, realmName, userID)),
+			"DeleteCredentialsForUser":            authorizationMW.DeleteCredentialsForUser(ctx, realmName, userID, credentialID),
+			"ResetCredentialFailuresForUser":      authorizationMW.ResetCredentialFailuresForUser(ctx, realmName, userID, credentialID),
+			"ClearUserLoginFailures":              authorizationMW.ClearUserLoginFailures(ctx, realmName, userID),
+			"GetAttackDetectionStatus":            ignoreFirst(authorizationMW.GetAttackDetectionStatus(ctx, realmName, userID)),
+			"GetRoles":                            ignoreFirst(authorizationMW.GetRoles(ctx, realmName)),
+			"GetRole":                             ignoreFirst(authorizationMW.GetRole(ctx, realmName, roleID)),
+			"CreateRole":                          ignoreFirst(authorizationMW.CreateRole(ctx, realmName, role)),
+			"DeleteRole":                          authorizationMW.DeleteRole(ctx, realmName, roleID),
+			"GetGroups":                           ignoreFirst(authorizationMW.GetGroups(ctx, realmName)),
+			"CreateGroup":                         ignoreFirst(authorizationMW.CreateGroup(ctx, realmName, group)),
+			"DeleteGroup":                         authorizationMW.DeleteGroup(ctx, realmName, groupID),
+			"GetAuthorizations":                   ignoreFirst(authorizationMW.GetAuthorizations(ctx, realmName, groupID)),
+			"UpdateAuthorizations":                authorizationMW.UpdateAuthorizations(ctx, realmName, groupID, authz),
+			"AddAuthorization":                    authorizationMW.AddAuthorization(ctx, realmName, groupID, authz),
+			"GetAuthorization":                    ignoreFirst(authorizationMW.GetAuthorization(ctx, realmName, groupID, targetRealm, targetGroupId, action)),
+			"DeleteAuthorization":                 authorizationMW.DeleteAuthorization(ctx, realmName, groupID, targetRealm, targetGroupId, action),
+			"GetClientRoles":                      ignoreFirst(authorizationMW.GetClientRoles(ctx, realmName, clientID)),
+			"CreateClientRole":                    ignoreFirst(authorizationMW.CreateClientRole(ctx, realmName, clientID, role)),
+			"GetRealmCustomConfiguration":         ignoreFirst(authorizationMW.GetRealmCustomConfiguration(ctx, realmName)),
+			"UpdateRealmCustomConfiguration":      authorizationMW.UpdateRealmCustomConfiguration(ctx, realmName, customConfig),
+			"GetRealmAdminConfiguration":          ignoreFirst(authorizationMW.GetRealmAdminConfiguration(ctx, realmName)),
+			"UpdateRealmAdminConfiguration":       authorizationMW.UpdateRealmAdminConfiguration(ctx, realmName, adminConfig),
+			"GetRealmBackOfficeConfiguration":     ignoreFirst(authorizationMW.GetRealmBackOfficeConfiguration(ctx, realmName, groupID)),
+			"UpdateRealmBackOfficeConfiguration":  authorizationMW.UpdateRealmBackOfficeConfiguration(ctx, realmName, groupID, boConfig),
+			"GetUserRealmBackOfficeConfiguration": ignoreFirst(authorizationMW.GetUserRealmBackOfficeConfiguration(ctx, realmName)),
+			"LinkShadowUser":                      authorizationMW.LinkShadowUser(ctx, realmName, userID, provider, fedID),
+		}
+		for testName, testResult := range tests {
+			t.Run(testName, func(t *testing.T) {
+				assert.Equal(t, security.ForbiddenError{}, testResult)
+			})
+		}
 	}
 }
 
@@ -473,6 +357,10 @@ func TestAllowed(t *testing.T) {
 		_, err = authorizationMW.CreateUser(ctx, realmName, user, true, false, false)
 		assert.Nil(t, err)
 
+		mockManagementComponent.EXPECT().CreateUserInSocialRealm(ctx, user, false).Return("", nil)
+		_, err = authorizationMW.CreateUserInSocialRealm(ctx, user, false)
+		assert.Nil(t, err)
+
 		mockManagementComponent.EXPECT().GetUserChecks(ctx, realmName, userID).Return([]api.UserCheck{}, nil)
 		_, err = authorizationMW.GetUserChecks(ctx, realmName, userID)
 		assert.Nil(t, err)
@@ -533,6 +421,10 @@ func TestAllowed(t *testing.T) {
 
 		mockManagementComponent.EXPECT().SendOnboardingEmail(ctx, realmName, userID, customerRealm, false, nil).Return(nil)
 		err = authorizationMW.SendOnboardingEmail(ctx, realmName, userID, customerRealm, false, nil)
+		assert.Nil(t, err)
+
+		mockManagementComponent.EXPECT().SendOnboardingEmailInSocialRealm(ctx, userID, customerRealm, false, nil).Return(nil)
+		err = authorizationMW.SendOnboardingEmailInSocialRealm(ctx, userID, customerRealm, false, nil)
 		assert.Nil(t, err)
 
 		mockManagementComponent.EXPECT().SendReminderEmail(ctx, realmName, userID).Return(nil)
