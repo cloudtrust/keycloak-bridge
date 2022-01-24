@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"net/http"
 	"net/url"
 	"regexp"
 	"strconv"
@@ -19,6 +20,7 @@ import (
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	kc "github.com/cloudtrust/keycloak-client/v2"
+	"github.com/cloudtrust/keycloak-client/v2/toolbox"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
 )
@@ -92,6 +94,7 @@ type OnboardingModule interface {
 	SendOnboardingEmail(ctx context.Context, accessToken string, realmName string, userID string, username string,
 		onboardingClientID string, onboardingRedirectURI string, themeRealmName string, reminder bool, lifespan *int) error
 	CreateUser(ctx context.Context, accessToken, realmName, targetRealmName string, kcUser *kc.UserRepresentation) (string, error)
+	ProcessAlreadyExistingUserCases(ctx context.Context, accessToken string, targetRealmName string, userEmail string, requestingSource string, handler func(username string, createdTimestamp int64, thirdParty *string) error) error
 }
 
 // GlnVerifier interface allows to check validity of a GLN
@@ -122,6 +125,7 @@ type Component interface {
 	UnlockUser(ctx context.Context, realmName, userID string) error
 	GetUsers(ctx context.Context, realmName string, groupIDs []string, paramKV ...string) (api.UsersPageRepresentation, error)
 	CreateUser(ctx context.Context, realmName string, user api.UserRepresentation, generateUsername bool, generateNameID bool, termsOfUse bool) (string, error)
+	CreateUserInSocialRealm(ctx context.Context, user api.UserRepresentation, generateNameID bool) (string, error)
 	GetUserChecks(ctx context.Context, realmName, userID string) ([]api.UserCheck, error)
 	GetUserAccountStatus(ctx context.Context, realmName, userID string) (map[string]bool, error)
 	GetUserAccountStatusByEmail(ctx context.Context, realmName, email string) (api.UserStatus, error)
@@ -141,6 +145,7 @@ type Component interface {
 	ExecuteActionsEmail(ctx context.Context, realmName string, userID string, actions []api.RequiredAction, paramKV ...string) error
 	SendSmsCode(ctx context.Context, realmName string, userID string) (string, error)
 	SendOnboardingEmail(ctx context.Context, realmName string, userID string, customerRealm string, reminder bool, lifespan *int) error
+	SendOnboardingEmailInSocialRealm(ctx context.Context, userID string, customerRealm string, reminder bool, lifespan *int) error
 	/* REMOVE_THIS_3901 : start */
 	SendMigrationEmail(ctx context.Context, realmName string, userID string, customerRealm string, reminder bool, lifespan *int) error
 	/* REMOVE_THIS_3901 : end */
@@ -189,6 +194,7 @@ type component struct {
 	configDBModule          keycloakb.ConfigurationDBModule
 	onboardingModule        OnboardingModule
 	authChecker             AuthorizationChecker
+	tokenProvider           toolbox.OidcTokenProvider
 	authorizedTrustIDGroups map[string]bool
 	socialRealmName         string
 	glnVerifier             GlnVerifier
@@ -197,8 +203,8 @@ type component struct {
 
 // NewComponent returns the management component.
 func NewComponent(keycloakClient KeycloakClient, kcURIProvider kc.KeycloakURIProvider, usersDBModule UsersDetailsDBModule, eventDBModule database.EventsDBModule,
-	configDBModule keycloakb.ConfigurationDBModule, onboardingModule OnboardingModule, authChecker AuthorizationChecker, authorizedTrustIDGroups []string, socialRealmName string,
-	glnVerifier GlnVerifier, logger keycloakb.Logger) Component {
+	configDBModule keycloakb.ConfigurationDBModule, onboardingModule OnboardingModule, authChecker AuthorizationChecker, tokenProvider toolbox.OidcTokenProvider,
+	authorizedTrustIDGroups []string, socialRealmName string, glnVerifier GlnVerifier, logger keycloakb.Logger) Component {
 	/* REMOVE_THIS_3901 : remove second provided parameter */
 
 	var authzedTrustIDGroups = make(map[string]bool)
@@ -214,6 +220,7 @@ func NewComponent(keycloakClient KeycloakClient, kcURIProvider kc.KeycloakURIPro
 		configDBModule:          configDBModule,
 		onboardingModule:        onboardingModule,
 		authChecker:             authChecker,
+		tokenProvider:           tokenProvider,
 		authorizedTrustIDGroups: authzedTrustIDGroups,
 		socialRealmName:         socialRealmName,
 		glnVerifier:             glnVerifier,
@@ -344,9 +351,25 @@ func (c *component) GetRequiredActions(ctx context.Context, realmName string) ([
 func (c *component) CreateUser(ctx context.Context, realmName string, user api.UserRepresentation, generateUsername bool, generateNameID bool, termsOfUse bool) (string, error) {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 	var ctxRealm = ctx.Value(cs.CtContextRealm).(string)
+	return c.genericCreateUser(ctx, accessToken, ctxRealm, realmName, "api", user, generateUsername, generateNameID, termsOfUse, false)
+}
 
+func (c *component) CreateUserInSocialRealm(ctx context.Context, user api.UserRepresentation, generateNameID bool) (string, error) {
+	var accessToken, err = c.tokenProvider.ProvideToken(ctx)
+	if err != nil {
+		c.logger.Info(ctx, "msg", "Fails to get OIDC token from keycloak", "err", err.Error())
+		return "", err
+	}
+
+	var ctxRealm = ctx.Value(cs.CtContextRealm).(string)
+	var realmName = c.socialRealmName
+	return c.genericCreateUser(ctx, accessToken, ctxRealm, realmName, ctxRealm, user, true, generateNameID, true, true)
+}
+
+func (c *component) genericCreateUser(ctx context.Context, accessToken string, customerRealmName string, targetRealmName string, source string,
+	user api.UserRepresentation, generateUsername bool, generateNameID bool, termsOfUse bool, useOnboardingCheckForExistingUser bool) (string, error) {
 	var userRep = api.ConvertToKCUser(user)
-	userRep.SetAttributeString(constants.AttrbSource, "api")
+	userRep.SetAttributeString(constants.AttrbSource, source)
 
 	if termsOfUse {
 		var reqActions []string
@@ -367,19 +390,26 @@ func (c *component) CreateUser(ctx context.Context, realmName string, user api.U
 		userRep.SetAttributeString(constants.AttrbNameID, nameID)
 	}
 
-	if glnErr := c.checkGLN(ctx, realmName, true, user.BusinessID, &userRep); glnErr != nil {
+	if glnErr := c.checkGLN(ctx, targetRealmName, true, user.BusinessID, &userRep); glnErr != nil {
 		return "", glnErr
 	}
 
 	var locationURL string
 	var err error
-	if realmName == c.socialRealmName || generateUsername {
+	if targetRealmName == c.socialRealmName || generateUsername {
+		if useOnboardingCheckForExistingUser {
+			err = c.onboardingModule.ProcessAlreadyExistingUserCases(ctx, accessToken, targetRealmName, *user.Email, customerRealmName, c.onAlreadyExistsUser)
+			if err != nil {
+				c.logger.Warn(ctx, "msg", "Can't process already existing user cases", "err", err.Error())
+				return "", err
+			}
+		}
 		// Ignore username and create a random one
 		userRep.Username = nil
-		locationURL, err = c.onboardingModule.CreateUser(ctx, accessToken, ctxRealm, realmName, &userRep)
+		locationURL, err = c.onboardingModule.CreateUser(ctx, accessToken, customerRealmName, targetRealmName, &userRep)
 	} else {
 		// Store user in KC
-		locationURL, err = c.keycloakClient.CreateUser(accessToken, ctxRealm, realmName, userRep)
+		locationURL, err = c.keycloakClient.CreateUser(accessToken, customerRealmName, targetRealmName, userRep)
 	}
 	if err != nil {
 		c.logger.Warn(ctx, "err", err.Error())
@@ -404,7 +434,7 @@ func (c *component) CreateUser(ctx context.Context, realmName string, user api.U
 
 	if userInfoToPersist {
 		// Store user in database
-		err = c.usersDBModule.StoreOrUpdateUserDetails(ctx, realmName, dto.DBUser{
+		err = c.usersDBModule.StoreOrUpdateUserDetails(ctx, targetRealmName, dto.DBUser{
 			UserID:               &userID,
 			BirthLocation:        user.BirthLocation,
 			Nationality:          user.Nationality,
@@ -420,9 +450,18 @@ func (c *component) CreateUser(ctx context.Context, realmName string, user api.U
 	}
 
 	//store the API call into the DB
-	c.reportEvent(ctx, "API_ACCOUNT_CREATION", database.CtEventRealmName, realmName, database.CtEventUserID, userID, database.CtEventUsername, username)
+	c.reportEvent(ctx, "API_ACCOUNT_CREATION", database.CtEventRealmName, targetRealmName, database.CtEventUserID, userID, database.CtEventUsername, username)
 
 	return locationURL, nil
+}
+
+// this function is called by onboardingModule.ProcessAlreadyExistingUserCases when an account already exists for a given email
+// register interface sends an email to the user... In management, we only return an error
+func (c *component) onAlreadyExistsUser(_ string, _ int64, _ *string) error {
+	return errorhandler.Error{
+		Status:  http.StatusConflict,
+		Message: "keycloak.existing.username",
+	}
 }
 
 func (c *component) checkGLN(ctx context.Context, realm string, businessIDThere bool, businessID *string, kcUser *kc.UserRepresentation) error {
@@ -1158,7 +1197,20 @@ func (c *component) SendSmsCode(ctx context.Context, realmName string, userID st
 
 func (c *component) SendOnboardingEmail(ctx context.Context, realmName string, userID string, customerRealm string, reminder bool, lifespan *int) error {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+	return c.genericSendOnboardingEmail(ctx, accessToken, realmName, userID, customerRealm, reminder, lifespan)
+}
 
+func (c *component) SendOnboardingEmailInSocialRealm(ctx context.Context, userID string, customerRealm string, reminder bool, lifespan *int) error {
+	var accessToken, err = c.tokenProvider.ProvideToken(ctx)
+	if err != nil {
+		c.logger.Info(ctx, "msg", "Fails to get OIDC token from keycloak", "err", err.Error())
+		return err
+	}
+
+	return c.genericSendOnboardingEmail(ctx, accessToken, c.socialRealmName, userID, customerRealm, reminder, lifespan)
+}
+
+func (c *component) genericSendOnboardingEmail(ctx context.Context, accessToken string, realmName string, userID string, customerRealm string, reminder bool, lifespan *int) error {
 	// Get Realm configuration from database
 	realmConf, err := c.configDBModule.GetConfiguration(ctx, customerRealm)
 	if err != nil {
@@ -1171,7 +1223,7 @@ func (c *component) SendOnboardingEmail(ctx context.Context, realmName string, u
 		return errorhandler.CreateEndpointNotEnabled(constants.MsgErrNotConfigured)
 	}
 
-	// Retieve user
+	// Retrieve user
 	kcUser, err := c.keycloakClient.GetUser(accessToken, realmName, userID)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Can't retrieve user", "userID", userID, "err", err.Error())
@@ -2320,13 +2372,4 @@ func (c *component) LinkShadowUser(ctx context.Context, realmName string, userID
 		return err
 	}
 	return nil
-}
-
-func stringInSlice(a string, list []string) bool {
-	for _, b := range list {
-		if b == a {
-			return true
-		}
-	}
-	return false
 }

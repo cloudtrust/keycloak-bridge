@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	errorhandler "github.com/cloudtrust/common-service/v2/errors"
 	"github.com/cloudtrust/common-service/v2/log"
@@ -25,13 +26,24 @@ type KeycloakURIProvider interface {
 type onboardingModule struct {
 	keycloakClient      OnboardingKeycloakClient
 	keycloakURIProvider KeycloakURIProvider
+	usersDBModule       UsersDBModule
+	replaceAccountDelay time.Duration
 	logger              log.Logger
 }
 
 // OnboardingKeycloakClient interface
 type OnboardingKeycloakClient interface {
+	GetRealm(accessToken string, realmName string) (kc.RealmRepresentation, error)
+	GetUsers(accessToken string, reqRealmName, targetRealmName string, paramKV ...string) (kc.UsersPageRepresentation, error)
 	CreateUser(accessToken string, realmName string, targetRealmName string, user kc.UserRepresentation) (string, error)
+	DeleteUser(accessToken string, realmName, userID string) error
 	ExecuteActionsEmail(accessToken string, reqRealmName string, targetRealmName string, userID string, actions []string, paramKV ...string) error
+	SendEmail(accessToken string, reqRealmName string, realmName string, emailRep kc.EmailRepresentation) error
+}
+
+// UsersDBModule interface
+type UsersDBModule interface {
+	DeleteUserDetails(ctx context.Context, realm string, userID string) error
 }
 
 //OnboardingModule interface
@@ -40,13 +52,16 @@ type OnboardingModule interface {
 	SendOnboardingEmail(ctx context.Context, accessToken string, realmName string, userID string, username string,
 		onboardingClientID string, onboardingRedirectURI string, themeRealmName string, reminder bool, lifespan *int) error
 	CreateUser(ctx context.Context, accessToken, realmName, targetRealmName string, kcUser *kc.UserRepresentation) (string, error)
+	ProcessAlreadyExistingUserCases(ctx context.Context, accessToken string, targetRealmName string, userEmail string, requestingSource string, handler func(username string, createdTimestamp int64, thirdParty *string) error) error
 }
 
 // NewOnboardingModule creates an onboarding module
-func NewOnboardingModule(keycloakClient OnboardingKeycloakClient, keycloakURIProvider KeycloakURIProvider, logger log.Logger) OnboardingModule {
+func NewOnboardingModule(keycloakClient OnboardingKeycloakClient, keycloakURIProvider KeycloakURIProvider, usersDBModule UsersDBModule, replaceAccountDelay time.Duration, logger log.Logger) OnboardingModule {
 	return &onboardingModule{
 		keycloakClient:      keycloakClient,
 		keycloakURIProvider: keycloakURIProvider,
+		usersDBModule:       usersDBModule,
+		replaceAccountDelay: replaceAccountDelay,
 		logger:              logger,
 	}
 }
@@ -141,4 +156,97 @@ func (om *onboardingModule) CreateUser(ctx context.Context, accessToken, realmNa
 
 	om.logger.Warn(ctx, "msg", "Can't generate unused username after multiple attempts")
 	return "", errorhandler.CreateInternalServerError("username.generation")
+}
+
+func (om *onboardingModule) ProcessAlreadyExistingUserCases(ctx context.Context, accessToken string, targetRealmName string, userEmail string,
+	requestingSource string, handler func(username string, createdTimestamp int64, thirdParty *string) error) error {
+	kcUser, err := om.getUserByEmailIfDuplicateNotAllowed(ctx, accessToken, targetRealmName, userEmail)
+	if err != nil {
+		return err
+	}
+
+	// If user already exists...
+	if kcUser != nil {
+		alreadyOnboarded, err := om.OnboardingAlreadyCompleted(*kcUser)
+		if err != nil {
+			om.logger.Warn(ctx, "msg", "Invalid OnboardingCompleted attribute for user", "userID", kcUser.ID, "err", err.Error())
+			return err
+		}
+
+		// Error if user is already onboarded
+		if alreadyOnboarded {
+			return handler(*kcUser.Username, *kcUser.CreatedTimestamp, nil)
+		}
+
+		if attrb := kcUser.GetAttributeString(constants.AttrbSource); !om.canReplaceAccount(*kcUser.CreatedTimestamp, attrb, requestingSource) {
+			return handler(*kcUser.Username, *kcUser.CreatedTimestamp, attrb)
+		}
+
+		// Else delete this not fully onboarded user to be able to perform a fully new onboarding
+		err = om.deleteUser(ctx, accessToken, targetRealmName, *kcUser.ID)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (om *onboardingModule) canReplaceAccount(createdTimestamp int64, attrb *string, requestingSource string) bool {
+	// check delay
+	var expirationTime = time.Unix(createdTimestamp, 0).Add(om.replaceAccountDelay)
+	if expirationTime.Before(time.Now()) {
+		// Account is not fully onboarded but is old enough to be inconditionaly replaced
+		return true
+	}
+	// check source
+	if attrb != nil && *attrb != "register" && *attrb != requestingSource {
+		// Account can't be replaced if it was created by a source which is not register nor the realm of the requester
+		return false
+	}
+	return true
+}
+
+func (om *onboardingModule) deleteUser(ctx context.Context, accessToken string, realmName string, userID string) error {
+	err := om.keycloakClient.DeleteUser(accessToken, realmName, userID)
+	if err != nil {
+		om.logger.Warn(ctx, "msg", "Failed to delete user", "userID", userID, "err", err.Error())
+		return err
+	}
+
+	err = om.usersDBModule.DeleteUserDetails(ctx, realmName, userID)
+	if err != nil {
+		om.logger.Warn(ctx, "msg", "Failed to delete user infos", "userID", userID, "err", err.Error())
+		return err
+	}
+
+	return nil
+}
+
+func (om *onboardingModule) getUserByEmailIfDuplicateNotAllowed(ctx context.Context, accessToken string, realmName string, email string) (*kc.UserRepresentation, error) {
+	var kcRealm, err = om.keycloakClient.GetRealm(accessToken, realmName)
+	if err != nil {
+		om.logger.Info(ctx, "msg", "Can't get realm from Keycloak", "err", err.Error(), "realm", realmName)
+		return nil, err
+	}
+
+	if kcRealm.DuplicateEmailsAllowed != nil && *kcRealm.DuplicateEmailsAllowed {
+		// Duplicate email is allowed in the realm... don't need to check if email is already in use
+		return nil, nil
+	}
+
+	// Add '=' at beginning of the email address to ensure that GetUsers retrieves an account with the exact provided email address
+	kcUsers, err := om.keycloakClient.GetUsers(accessToken, realmName, realmName, "email", "="+email)
+	if err != nil {
+		om.logger.Warn(ctx, "msg", "Can't get user from keycloak", "err", err.Error())
+		return nil, err
+	}
+
+	if kcUsers.Count == nil || *kcUsers.Count == 0 {
+		return nil, nil
+	}
+
+	kcUser := kcUsers.Users[0]
+	ConvertLegacyAttribute(&kcUser)
+
+	return &kcUser, nil
 }

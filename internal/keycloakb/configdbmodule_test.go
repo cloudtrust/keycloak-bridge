@@ -29,10 +29,6 @@ func TestConfigurationDBModule(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func ptr(value string) *string {
-	return &value
-}
-
 func toJSONString(value interface{}) string {
 	var jsonConfBytes, _ = json.Marshal(value)
 	return string(jsonConfBytes)

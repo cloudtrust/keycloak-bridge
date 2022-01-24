@@ -1713,6 +1713,75 @@ paths:
       responses:
         200:
           description: successful operation  
+  /social/users:
+    post:
+      tags:
+      - Users
+      summary: >
+        Create a new user in the social realm
+        Username must be unique.
+        Role and Groups can be assigned thanks to their ID.
+      parameters:
+      - name: generateNameID
+        in: query
+        description: tells if a NameID should be generated
+        required: false
+        schema:
+          type: boolean
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        201:
+          description: successful operation
+          headers:
+            Location:
+              schema:
+                type: string
+              description: URL of the new resource.
+  /social/users/{userID}/send-onboarding-email:
+    post:
+      tags:
+      - Users
+      summary: >
+        Send an onboarding email to the user. He will receives an email to start the onboarding process. At the end of the process, he will be authenticated.
+      parameters:
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
+      - name: lifespan
+        in: query
+        description: validity duration of the link sent in the mail in seconds. If value exceeds the configured max life span, you can get a HTTP status 400.
+        required: false
+        schema:
+          type: integer
+      - name: reminder
+        in: query
+        required: false
+        schema:
+          type: boolean
+      - name: customerRealm
+        in: query
+        description: Customer realm name
+        required: false
+        schema:
+          type: string
+      responses:
+        200:
+          description: Onboarding email sent
+        400:
+          description: Invalid input
+        401:
+          description: Not authenticated
+        403:
+          description: No permission to call this operation
+        409:
+          description: Endpoint not configured
 components:
   schemas:
     Actions:

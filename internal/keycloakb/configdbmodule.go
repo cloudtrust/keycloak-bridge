@@ -59,14 +59,6 @@ const (
 		  AND target_realm_id = ? 
 		  AND target_group_name IS NULL;
 	`
-	selectAuthzActionStmt = `
-		SELECT
-			realm_id, group_name, action, target_realm_id, target_group_name
-		FROM authorizations 
-		WHERE realm_id = ? 
-		  AND group_name = ? 
-		  AND action = ?;
-	`
 	createAuthzStmt = `INSERT INTO authorizations (realm_id, group_name, action, target_realm_id, target_group_name) 
 		VALUES (?, ?, ?, ?, ?);`
 	deleteAuthzStmt             = `DELETE FROM authorizations WHERE realm_id = ? AND group_name = ?;`
