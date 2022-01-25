@@ -203,10 +203,17 @@ func (c *component) sendAlreadyExistsEmail(ctx context.Context, accessToken stri
 	}
 
 	// Add creation date
-	var switzerlandLocation, _ = time.LoadLocation("Europe/Zurich")
-	var creation = time.Unix(creationTimestamp/1000, 0).In(switzerlandLocation)
-	params["creationDate"] = creation.Format("02.01.2006")
-	params["creationHour"] = creation.Format("15:04:05")
+	var creation = time.Unix(creationTimestamp/1000, 0)
+	switzerlandLocation, err := time.LoadLocation("Europe/Zurich")
+	if err != nil {
+		creation = creation.UTC()
+		params["creationDate"] = creation.Format("02.01.2006")
+		params["creationHour"] = creation.Format("15:04:05") + " UTC"
+	} else {
+		creation = creation.In(switzerlandLocation)
+		params["creationDate"] = creation.Format("02.01.2006")
+		params["creationHour"] = creation.Format("15:04:05")
+	}
 
 	c.logger.Info(ctx, "msg", "User is trying to register again", "user", username)
 	return c.keycloakClient.SendEmail(accessToken, reqRealmName, realmName, kc.EmailRepresentation{
