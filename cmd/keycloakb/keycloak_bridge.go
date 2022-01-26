@@ -530,6 +530,7 @@ func main() {
 	healthChecker.AddDatabase("Users R/W", usersRwDBConn, healthCheckCacheDuration)
 	healthChecker.AddDatabase("Archive RO", archiveRwDBConn, healthCheckCacheDuration)
 	healthChecker.AddHTTPEndpoint("Keycloak", keycloakConfig.AddrAPI, httpTimeout, 200, healthCheckCacheDuration)
+	healthChecker.AddHTTPEndpoint("Accounting", c.GetString(cfgAddrAccounting), httpTimeout, 200, healthCheckCacheDuration)
 
 	// Actions allowed in Authorization Manager
 	var authActions = security.AppendActionNames(nil, events.GetActions(), kyc.GetActions(), management.GetActions(), statistics.GetActions(), tasks.GetActions())
