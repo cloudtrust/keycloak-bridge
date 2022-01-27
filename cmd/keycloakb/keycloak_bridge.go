@@ -530,7 +530,6 @@ func main() {
 	healthChecker.AddDatabase("Users R/W", usersRwDBConn, healthCheckCacheDuration)
 	healthChecker.AddDatabase("Archive RO", archiveRwDBConn, healthCheckCacheDuration)
 	healthChecker.AddHTTPEndpoint("Keycloak", keycloakConfig.AddrAPI, httpTimeout, 200, healthCheckCacheDuration)
-	healthChecker.AddHTTPEndpoint("Accounting", c.GetString(cfgAddrAccounting), httpTimeout, 200, healthCheckCacheDuration)
 
 	// Actions allowed in Authorization Manager
 	var authActions = security.AppendActionNames(nil, events.GetActions(), kyc.GetActions(), management.GetActions(), statistics.GetActions(), tasks.GetActions())
@@ -1501,7 +1500,7 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 	v.SetDefault(cfgTimeout, "5s")
 
 	// Accounting default.
-	v.SetDefault(cfgAddrAccounting, "http://0.0.0.0:8889")
+	v.SetDefault(cfgAddrAccounting, "http://0.0.0.0:8940")
 	v.SetDefault(cfgAccountingTimeout, "5s")
 
 	// Storage events in DB (read/write)
