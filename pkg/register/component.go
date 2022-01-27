@@ -53,6 +53,10 @@ type Component interface {
 	GetConfiguration(ctx context.Context, realmName string) (apiregister.ConfigurationRepresentation, error)
 }
 
+var (
+	errAccountAlreadyExists = errors.New("")
+)
+
 // NewComponent returns component.
 func NewComponent(keycloakClient KeycloakClient, tokenProvider toolbox.OidcTokenProvider, usersDBModule keycloakb.UsersDetailsDBModule,
 	configDBModule ConfigurationDBModule, eventsDBModule database.EventsDBModule, onboardingModule OnboardingModule, glnVerifier GlnVerifier, logger keycloakb.Logger) Component {
@@ -158,11 +162,20 @@ func (c *component) RegisterUser(ctx context.Context, targetRealmName string, cu
 	}
 
 	err = c.onboardingModule.ProcessAlreadyExistingUserCases(ctx, accessToken, targetRealmName, *user.Email, "register", func(username string, createdTimestamp int64, thirdParty *string) error {
+		var err error
 		if thirdParty == nil {
-			return c.sendAlreadyExistsEmail(ctx, accessToken, targetRealmName, customerRealmName, user, username, createdTimestamp, "register-already-onboarded.ftl")
+			err = c.sendAlreadyExistsEmail(ctx, accessToken, targetRealmName, customerRealmName, user, username, createdTimestamp, "register-already-onboarded.ftl")
+		} else {
+			err = c.sendAlreadyExistsEmail(ctx, accessToken, targetRealmName, customerRealmName, user, username, createdTimestamp, "register-thirdparty-created.ftl", "src", *thirdParty)
 		}
-		return c.sendAlreadyExistsEmail(ctx, accessToken, targetRealmName, customerRealmName, user, username, createdTimestamp, "register-thirdparty-created.ftl", "src", *thirdParty)
+		if err != nil {
+			return err
+		}
+		return errAccountAlreadyExists
 	})
+	if err == errAccountAlreadyExists {
+		return nil
+	}
 	if err != nil {
 		return err
 	}
