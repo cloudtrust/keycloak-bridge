@@ -49,9 +49,10 @@ type accredsModule struct {
 
 // AccreditationRepresentation is a representation of accreditations
 type AccreditationRepresentation struct {
-	Type       *string `json:"type,omitempty"`
-	ExpiryDate *string `json:"expiryDate,omitempty"`
-	Revoked    *bool   `json:"revoked,omitempty"`
+	Type           *string `json:"type,omitempty"`
+	CreationMillis *int64  `json:"creationMillis,omitempty"`
+	ExpiryDate     *string `json:"expiryDate,omitempty"`
+	Revoked        *bool   `json:"revoked,omitempty"`
 }
 
 // IsUpdated checks if there are changes in provided values.
@@ -183,9 +184,11 @@ func (am *accredsModule) evaluateAccreditations(ctx context.Context, accreds []c
 			if err != nil {
 				return nil, err
 			}
+			creationMillis := time.Now().UnixNano() / int64(time.Millisecond)
 			var newAccreditationJSON, _ = json.Marshal(AccreditationRepresentation{
-				Type:       modelAccred.Type,
-				ExpiryDate: expiry,
+				Type:           modelAccred.Type,
+				ExpiryDate:     expiry,
+				CreationMillis: &creationMillis,
 			})
 			newAccreds[*modelAccred.Type] = string(newAccreditationJSON)
 		}
