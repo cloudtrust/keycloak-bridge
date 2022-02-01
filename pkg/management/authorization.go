@@ -53,6 +53,7 @@ var (
 	MGMTAddClientRolesToUser                = newAction("MGMT_AddClientRolesToUser", security.ScopeGroup)
 	MGMTResetPassword                       = newAction("MGMT_ResetPassword", security.ScopeGroup)
 	MGMTExecuteActionsEmail                 = newAction("MGMT_ExecuteActionsEmail", security.ScopeGroup)
+	MGMTRevokeAccreditations                = newAction("ACCR_RevokeAccreditations", security.ScopeGroup)
 	MGMTSendSmsCode                         = newAction("MGMT_SendSmsCode", security.ScopeGroup)
 	MGMTSendOnboardingEmail                 = newAction("MGMT_SendOnboardingEmail", security.ScopeGroup)
 	MGMTSendOnboardingEmailInSocialRealm    = newAction("MGMT_SendOnboardingEmailInSocialRealm", security.ScopeRealm)
@@ -487,6 +488,17 @@ func (c *authorizationComponentMW) ExecuteActionsEmail(ctx context.Context, real
 	}
 
 	return c.next.ExecuteActionsEmail(ctx, realmName, userID, actions, paramKV...)
+}
+
+func (c *authorizationComponentMW) RevokeAccreditations(ctx context.Context, realmName string, userID string) error {
+	var action = MGMTRevokeAccreditations.String()
+	var targetRealm = realmName
+
+	if err := c.authManager.CheckAuthorizationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
+		return err
+	}
+
+	return c.next.RevokeAccreditations(ctx, realmName, userID)
 }
 
 func (c *authorizationComponentMW) SendSmsCode(ctx context.Context, realmName string, userID string) (string, error) {

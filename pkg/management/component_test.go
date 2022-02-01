@@ -2758,6 +2758,70 @@ func TestExecuteActionsEmail(t *testing.T) {
 	})
 }
 
+func TestRevokeAccreditations(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mocks = createMocks(mockCtrl)
+	var component = mocks.createComponent()
+
+	var accessToken = "my-access-token"
+	var realmName = "my-realm"
+	var userID = "my-user-id"
+	var kcUser = kc.UserRepresentation{
+		ID: &userID,
+	}
+	var anyError = errors.New("any error")
+	var ctx = context.TODO()
+	ctx = context.WithValue(ctx, cs.CtContextAccessToken, accessToken)
+
+	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
+
+	t.Run("Can't get keycloak user", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(kc.UserRepresentation{}, anyError)
+		var err = component.RevokeAccreditations(ctx, realmName, userID)
+		assert.Equal(t, anyError, err)
+	})
+	t.Run("User has no accreditation", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(kcUser, nil)
+		var err = component.RevokeAccreditations(ctx, realmName, userID)
+		assert.NotNil(t, err)
+		assert.IsType(t, errorhandler.Error{}, err)
+		assert.Equal(t, http.StatusNotFound, err.(errorhandler.Error).Status)
+	})
+	t.Run("User has no active accreditation", func(t *testing.T) {
+		var attrbs = kc.Attributes{
+			constants.AttrbAccreditations: []string{`{"type":"DEP","expiryDate":"31.12.2059","creationMillis":1643700000000,"revoked":true}`},
+		}
+		kcUser.Attributes = &attrbs
+		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(kcUser, nil)
+		var err = component.RevokeAccreditations(ctx, realmName, userID)
+		assert.NotNil(t, err)
+		assert.IsType(t, errorhandler.Error{}, err)
+		assert.Equal(t, http.StatusNotFound, err.(errorhandler.Error).Status)
+	})
+	t.Run("Fails to update keycloak user", func(t *testing.T) {
+		var attrbs = kc.Attributes{
+			constants.AttrbAccreditations: []string{`{"type":"DEP","expiryDate":"31.12.2059","creationMillis":1643700000000}`},
+		}
+		kcUser.Attributes = &attrbs
+		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(kcUser, nil)
+		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, realmName, userID, gomock.Any()).Return(anyError)
+		var err = component.RevokeAccreditations(ctx, realmName, userID)
+		assert.Equal(t, anyError, err)
+	})
+	t.Run("Success", func(t *testing.T) {
+		var attrbs = kc.Attributes{
+			constants.AttrbAccreditations: []string{`{"type":"DEP","expiryDate":"31.12.2059","creationMillis":1643700000000}`},
+		}
+		kcUser.Attributes = &attrbs
+		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(kcUser, nil)
+		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, realmName, userID, gomock.Any()).Return(nil)
+		var err = component.RevokeAccreditations(ctx, realmName, userID)
+		assert.Nil(t, err)
+	})
+}
+
 func TestSendSmsCode(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
