@@ -200,6 +200,7 @@ type RealmCustomConfiguration struct {
 	ShowPasswordTab                     *bool     `json:"show_password_tab"`
 	ShowProfileTab                      *bool     `json:"show_profile_tab"`
 	ShowAccountDeletionButton           *bool     `json:"show_account_deletion_button"`
+	SelfServiceDefaultTab               *string   `json:"self_service_default_tab"`
 	RedirectCancelledRegistrationURL    *string   `json:"redirect_cancelled_registration_url"`
 	RedirectSuccessfulRegistrationURL   *string   `json:"redirect_successful_registration_url"`
 	OnboardingRedirectURI               *string   `json:"onboarding_redirect_uri"`
@@ -222,6 +223,8 @@ type UserStatus struct {
 const (
 	BOConfKeyCustomers = "customers"
 	BOConfKeyTeams     = "teams"
+
+	regExpSseTabName = `^[a-z]+(-[a-z]+)*$`
 )
 
 var (
@@ -621,6 +624,7 @@ func ConvertRealmCustomConfigurationFromDBStruct(config configuration.RealmConfi
 		ShowPasswordTab:                     defaultBool(config.ShowPasswordTab, false),
 		ShowProfileTab:                      defaultBool(config.ShowProfileTab, false),
 		ShowAccountDeletionButton:           defaultBool(config.ShowAccountDeletionButton, false),
+		SelfServiceDefaultTab:               config.SelfServiceDefaultTab,
 		RedirectCancelledRegistrationURL:    config.RedirectCancelledRegistrationURL,
 		RedirectSuccessfulRegistrationURL:   config.RedirectSuccessfulRegistrationURL,
 		OnboardingRedirectURI:               config.OnboardingRedirectURI,
@@ -838,6 +842,8 @@ func (config RealmCustomConfiguration) Validate() error {
 	return validation.NewParameterValidator().
 		ValidateParameterRegExp(constants.DefaultClientID, config.DefaultClientID, constants.RegExpClientID, false).
 		ValidateParameterRegExp(constants.DefaultRedirectURI, config.DefaultRedirectURI, constants.RegExpRedirectURI, false).
+		ValidateParameterRegExp(constants.SelfServiceDefaultTab, config.SelfServiceDefaultTab, regExpSseTabName, false).
+		ValidateParameterLength(constants.SelfServiceDefaultTab, config.SelfServiceDefaultTab, 1, 20, false).
 		ValidateParameterRegExp(constants.RedirectCancelledRegistrationURL, config.RedirectCancelledRegistrationURL, constants.RegExpRedirectURI, false).
 		ValidateParameterRegExp(constants.RedirectSuccessfulRegistrationURL, config.RedirectSuccessfulRegistrationURL, constants.RegExpRedirectURI, false).
 		ValidateParameterRegExp(constants.OnboardingRedirectURI, config.OnboardingRedirectURI, constants.RegExpRedirectURI, false).

@@ -3,6 +3,7 @@ package apimanagement
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -456,6 +457,7 @@ func TestConvertRealmCustomConfiguration(t *testing.T) {
 		assert.False(t, *res.ShowPasswordTab)
 		assert.False(t, *res.ShowProfileTab)
 		assert.False(t, *res.ShowAccountDeletionButton)
+		assert.Nil(t, res.SelfServiceDefaultTab)
 		assert.Nil(t, res.RedirectCancelledRegistrationURL)
 		assert.Nil(t, res.RedirectSuccessfulRegistrationURL)
 		assert.Nil(t, res.OnboardingRedirectURI)
@@ -716,24 +718,28 @@ func TestValidatePasswordRepresentation(t *testing.T) {
 }
 
 func TestValidateRealmCustomConfiguration(t *testing.T) {
-	{
+	t.Run("Valid configuration", func(t *testing.T) {
 		config := createValidRealmCustomConfiguration()
 		assert.Nil(t, config.Validate())
-	}
-
-	defaultClientID := "something$invalid"
-	defaultRedirectURI := "ht//tp://company.com"
+	})
 
 	var configs []RealmCustomConfiguration
-	for i := 0; i < 2; i++ {
+	for i := 0; i < 7; i++ {
 		configs = append(configs, createValidRealmCustomConfiguration())
 	}
 
-	configs[0].DefaultClientID = &defaultClientID
-	configs[1].DefaultRedirectURI = &defaultRedirectURI
+	configs[0].DefaultClientID = ptr("something$invalid")
+	configs[1].DefaultRedirectURI = ptr("ht//tp://company.com")
+	configs[2].SelfServiceDefaultTab = ptr("")                      // Can't be empty
+	configs[3].SelfServiceDefaultTab = ptr("-abc-def")              // No heading dash
+	configs[4].SelfServiceDefaultTab = ptr("abc--def")              // Two dash in a row
+	configs[5].SelfServiceDefaultTab = ptr("abc-def-")              // No final dash
+	configs[6].SelfServiceDefaultTab = ptr("abcdefghijabcdefghijx") // Too long
 
-	for _, config := range configs {
-		assert.NotNil(t, config.Validate())
+	for idx, config := range configs {
+		t.Run(fmt.Sprintf("Invalid case #%d", idx+1), func(t *testing.T) {
+			assert.NotNil(t, config.Validate())
+		})
 	}
 }
 

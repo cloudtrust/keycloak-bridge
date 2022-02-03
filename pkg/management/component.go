@@ -2160,6 +2160,7 @@ func (c *component) UpdateRealmCustomConfiguration(ctx context.Context, realmNam
 		ShowPasswordTab:                     customConfig.ShowPasswordTab,
 		ShowProfileTab:                      customConfig.ShowProfileTab,
 		ShowAccountDeletionButton:           customConfig.ShowAccountDeletionButton,
+		SelfServiceDefaultTab:               customConfig.SelfServiceDefaultTab,
 		RedirectCancelledRegistrationURL:    customConfig.RedirectCancelledRegistrationURL,
 		RedirectSuccessfulRegistrationURL:   customConfig.RedirectSuccessfulRegistrationURL,
 		OnboardingRedirectURI:               customConfig.OnboardingRedirectURI,
