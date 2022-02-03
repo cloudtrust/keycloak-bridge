@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/cloudtrust/common-service/v2 v2.5.6
 	github.com/cloudtrust/httpclient v1.0.7
-	github.com/cloudtrust/keycloak-client/v2 v2.5.3
+	github.com/cloudtrust/keycloak-client/v2 v2.5.4
 	github.com/go-kit/kit v0.12.0
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/golang/mock v1.6.0

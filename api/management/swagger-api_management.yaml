@@ -1190,6 +1190,31 @@ paths:
                 type: string
               description: URL of the new resource.
   /realms/{realm}/roles/{roleID}:
+    put:
+      tags:
+      - Roles
+      summary: Update a role
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: roleID
+        in: path
+        description: role id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Role'
+      responses:
+        204:
+          description: successful operation
     delete:
       tags:
       - Roles

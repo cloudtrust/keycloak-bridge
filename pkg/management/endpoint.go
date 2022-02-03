@@ -71,6 +71,7 @@ type Endpoints struct {
 	GetRoles         endpoint.Endpoint
 	GetRole          endpoint.Endpoint
 	CreateRole       endpoint.Endpoint
+	UpdateRole       endpoint.Endpoint
 	DeleteRole       endpoint.Endpoint
 	GetClientRoles   endpoint.Endpoint
 	CreateClientRole endpoint.Endpoint
@@ -339,7 +340,7 @@ func MakeAddRoleToUserEndpoint(component Component) cs.Endpoint {
 	}
 }
 
-// MakeDeleteRoleForUserEndpoint creates an endpoint for AddRoleToUser
+// MakeDeleteRoleForUserEndpoint creates an endpoint for DeleteRoleForUser
 func MakeDeleteRoleForUserEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
@@ -756,6 +757,24 @@ func MakeCreateRoleEndpoint(component Component, logger keycloakb.Logger) cs.End
 		return LocationHeader{
 			URL: url,
 		}, nil
+	}
+}
+
+// MakeUpdateRoleEndpoint creates an endpoint for UpdateRole
+func MakeUpdateRoleEndpoint(component Component) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+
+		var role api.RoleRepresentation
+		if err := json.Unmarshal([]byte(m[reqBody]), &role); err != nil {
+			return nil, errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Body)
+		}
+
+		if err := role.Validate(); err != nil {
+			return nil, err
+		}
+
+		return noContentResponse(component.UpdateRole(ctx, m[prmRealm], m[prmRoleID], role))
 	}
 }
 

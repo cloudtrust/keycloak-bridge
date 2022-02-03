@@ -3466,6 +3466,61 @@ func TestCreateRole(t *testing.T) {
 	})
 }
 
+func TestUpdateRole(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mocks = createMocks(mockCtrl)
+	var component = mocks.createComponent()
+
+	var accessToken = "TOKEN=="
+	var roleID = "41dbf4a8-32a9-4000-8c17-edc854c31231"
+	var roleName = "roleName"
+	var realmName = "master"
+	var username = "username"
+	var attributes = map[string][]string{
+		"BUSINESS_ROLE_FLAG": {"true"},
+	}
+
+	var role = kc.RoleRepresentation{
+		ID:         &roleID,
+		Name:       &roleName,
+		Attributes: &attributes,
+	}
+	var inputRole = api.RoleRepresentation{Name: &roleName}
+	var anyError = errors.New("any error")
+	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+	ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
+	ctx = context.WithValue(ctx, cs.CtContextUsername, username)
+
+	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
+
+	t.Run("Get role from keycloak fails", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetRole(accessToken, realmName, roleID).Return(role, anyError)
+
+		err := component.UpdateRole(ctx, realmName, roleID, inputRole)
+
+		assert.Equal(t, anyError, err)
+	})
+	t.Run("Update role fails in Keycloak", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetRole(accessToken, realmName, roleID).Return(role, nil)
+		mocks.keycloakClient.EXPECT().UpdateRole(accessToken, realmName, roleID, gomock.Any()).Return(anyError)
+
+		err := component.UpdateRole(ctx, realmName, roleID, inputRole)
+
+		assert.Equal(t, anyError, err)
+	})
+	t.Run("Success", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetRole(accessToken, realmName, roleID).Return(role, nil)
+		mocks.keycloakClient.EXPECT().UpdateRole(accessToken, realmName, roleID, gomock.Any()).Return(nil)
+		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "API_ROLE_UPDATE", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+
+		err := component.UpdateRole(ctx, realmName, roleID, inputRole)
+
+		assert.Nil(t, err)
+	})
+}
+
 func TestDeleteRole(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()

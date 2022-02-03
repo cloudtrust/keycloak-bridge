@@ -168,6 +168,7 @@ func TestDeny(t *testing.T) {
 			"GetRoles":                            ignoreFirst(authorizationMW.GetRoles(ctx, realmName)),
 			"GetRole":                             ignoreFirst(authorizationMW.GetRole(ctx, realmName, roleID)),
 			"CreateRole":                          ignoreFirst(authorizationMW.CreateRole(ctx, realmName, role)),
+			"UpdateRole":                          authorizationMW.UpdateRole(ctx, realmName, roleID, role),
 			"DeleteRole":                          authorizationMW.DeleteRole(ctx, realmName, roleID),
 			"GetGroups":                           ignoreFirst(authorizationMW.GetGroups(ctx, realmName)),
 			"CreateGroup":                         ignoreFirst(authorizationMW.CreateGroup(ctx, realmName, group)),
@@ -475,6 +476,10 @@ func TestAllowed(t *testing.T) {
 
 		mockManagementComponent.EXPECT().CreateRole(ctx, realmName, role).Return("", nil)
 		_, err = authorizationMW.CreateRole(ctx, realmName, role)
+		assert.Nil(t, err)
+
+		mockManagementComponent.EXPECT().UpdateRole(ctx, realmName, roleID, role).Return(nil)
+		err = authorizationMW.UpdateRole(ctx, realmName, roleID, role)
 		assert.Nil(t, err)
 
 		mockManagementComponent.EXPECT().DeleteRole(ctx, realmName, roleID).Return(nil)
