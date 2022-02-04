@@ -56,6 +56,7 @@ const (
 	ContainerID                       = "containerId"
 	DefaultClientID                   = "defaultClientId"
 	DefaultRedirectURI                = "defaultRedirectURI"
+	SelfServiceDefaultTab             = "selfServiceDefaultTab"
 	RedirectCancelledRegistrationURL  = "redirectCancelledRegistrationURL"
 	RedirectSuccessfulRegistrationURL = "redirectSuccessfulRegistrationURL"
 	OnboardingRedirectURI             = "onboardingRedirectURI"

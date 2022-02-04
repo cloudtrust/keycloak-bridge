@@ -289,6 +289,8 @@ components:
           type: boolean
         show_account_deletion_button:
           type: boolean
+        self_service_default_tab:
+          type: string
         redirect_successful_registration_url:
           type: string
         available-checks:

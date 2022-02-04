@@ -574,6 +574,7 @@ func (c *component) GetConfiguration(ctx context.Context, realmIDOverride string
 		ShowAccountDeletionButton:             config.ShowAccountDeletionButton,
 		ShowPasswordTab:                       config.ShowPasswordTab,
 		ShowProfileTab:                        config.ShowProfileTab,
+		SelfServiceDefaultTab:                 config.SelfServiceDefaultTab,
 		RedirectSuccessfulRegistrationURL:     config.RedirectSuccessfulRegistrationURL,
 		BarcodeType:                           config.BarcodeType,
 		AvailableChecks:                       adminConfig.AvailableChecks,
