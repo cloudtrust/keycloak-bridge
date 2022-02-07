@@ -69,30 +69,37 @@ func IsUpdated(values ...*string) bool {
 }
 
 // RevokeAccreditations revokes active accreditations of the given user
-func RevokeAccreditations(kcUser *kc.UserRepresentation) {
+func RevokeAccreditations(kcUser *kc.UserRepresentation) bool {
 	var kcAccreds = kcUser.GetAttribute(constants.AttrbAccreditations)
 	if len(kcAccreds) == 0 {
-		return
+		return false
 	}
+	var res = false
 	var newAccreds []string
 	for _, accred := range kcAccreds {
-		newAccreds = append(newAccreds, revoke(accred))
+		var revokedAccred, updated = revoke(accred)
+		if updated {
+			res = true
+		}
+		newAccreds = append(newAccreds, revokedAccred)
 	}
 	kcUser.SetAttribute(constants.AttrbAccreditations, newAccreds)
+	return res
 }
 
-func revoke(accredJSON string) string {
+func revoke(accredJSON string) (string, bool) {
 	var accred AccreditationRepresentation
-	if err := json.Unmarshal([]byte(accredJSON), &accred); err == nil {
+	var updated = false
+	if err := json.Unmarshal([]byte(accredJSON), &accred); err == nil && (accred.Revoked == nil || !*accred.Revoked) {
 		var today = time.Now()
 		if expiry, err := time.Parse(dateLayout, *accred.ExpiryDate); err == nil && today.Before(expiry) {
-			var bTrue = true
-			accred.Revoked = &bTrue
+			updated = true
+			accred.Revoked = &updated
 			var bytes, _ = json.Marshal(accred)
 			accredJSON = string(bytes)
 		}
 	}
-	return accredJSON
+	return accredJSON, updated
 }
 
 // NewAccreditationsModule creates an accreditations module

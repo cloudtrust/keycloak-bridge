@@ -223,7 +223,7 @@ func (c *component) updateUserKeycloak(validationCtx *validationContext, user ap
 
 	user.ExportToKeycloak(kcUser)
 	if shouldRevokeAccreditations {
-		keycloakb.RevokeAccreditations(kcUser)
+		_ = keycloakb.RevokeAccreditations(kcUser)
 	}
 
 	return c.updateKeycloakUser(validationCtx)

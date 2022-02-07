@@ -51,6 +51,7 @@ type Endpoints struct {
 
 	ResetPassword                    endpoint.Endpoint
 	ExecuteActionsEmail              endpoint.Endpoint
+	RevokeAccreditations             endpoint.Endpoint
 	SendSmsCode                      endpoint.Endpoint
 	SendOnboardingEmail              endpoint.Endpoint
 	SendOnboardingEmailInSocialRealm endpoint.Endpoint
@@ -523,6 +524,15 @@ func MakeExecuteActionsEmailEndpoint(component Component) cs.Endpoint {
 		}
 
 		return nil, component.ExecuteActionsEmail(ctx, m[prmRealm], m[prmUserID], actions, paramKV...)
+	}
+}
+
+// MakeRevokeAccreditationsEndpoint
+func MakeRevokeAccreditationsEndpoint(component Component) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+
+		return noContentResponse(component.RevokeAccreditations(ctx, m[prmRealm], m[prmUserID]))
 	}
 }
 

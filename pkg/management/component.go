@@ -103,6 +103,7 @@ type GlnVerifier interface {
 	ValidateGLN(firstName, lastName, gln string) error
 }
 
+// AuthorizationChecker interface
 type AuthorizationChecker interface {
 	CheckAuthorizationForGroupsOnTargetRealm(realm string, groups []string, action, targetRealm string) error
 	CheckAuthorizationForGroupsOnTargetGroup(realm string, groups []string, action, targetRealm, targetGroup string) error
@@ -144,6 +145,7 @@ type Component interface {
 
 	ResetPassword(ctx context.Context, realmName string, userID string, password api.PasswordRepresentation) (string, error)
 	ExecuteActionsEmail(ctx context.Context, realmName string, userID string, actions []api.RequiredAction, paramKV ...string) error
+	RevokeAccreditations(ctx context.Context, realmName string, userID string) error
 	SendSmsCode(ctx context.Context, realmName string, userID string) (string, error)
 	SendOnboardingEmail(ctx context.Context, realmName string, userID string, customerRealm string, reminder bool, lifespan *int) error
 	SendOnboardingEmailInSocialRealm(ctx context.Context, userID string, customerRealm string, reminder bool, lifespan *int) error
@@ -627,7 +629,7 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 
 	userRep.Attributes = &mergedAttributes
 	if revokeAccreditations {
-		keycloakb.RevokeAccreditations(&userRep)
+		_ = keycloakb.RevokeAccreditations(&userRep)
 	}
 
 	if glnUpdated {
@@ -1176,6 +1178,27 @@ func (c *component) ExecuteActionsEmail(ctx context.Context, realmName string, u
 
 	if err != nil {
 		c.logger.Warn(ctx, "err", err.Error())
+	}
+
+	return err
+}
+
+func (c *component) RevokeAccreditations(ctx context.Context, realmName string, userID string) error {
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+
+	var kcUser, err = c.keycloakClient.GetUser(accessToken, realmName, userID)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Can't get user from keycloak", "err", err.Error())
+		return err
+	}
+	keycloakb.ConvertLegacyAttribute(&kcUser)
+	if !keycloakb.RevokeAccreditations(&kcUser) {
+		return errorhandler.CreateNotFoundError("accreditations")
+	}
+
+	err = c.keycloakClient.UpdateUser(accessToken, realmName, userID, kcUser)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Failed to updated keycloak user", "err", err.Error())
 	}
 
 	return err

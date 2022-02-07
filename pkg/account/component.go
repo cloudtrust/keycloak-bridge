@@ -273,7 +273,7 @@ func (c *component) UpdateAccount(ctx context.Context, user api.UpdatableAccount
 
 	userRep.Attributes = &mergedAttributes
 	if revokeAccreditations {
-		keycloakb.RevokeAccreditations(&userRep)
+		_ = keycloakb.RevokeAccreditations(&userRep)
 	}
 
 	// GLN check

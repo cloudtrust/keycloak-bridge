@@ -810,6 +810,7 @@ func main() {
 
 			ResetPassword:                    prepareEndpointWithoutLogging(management.MakeResetPasswordEndpoint(keycloakComponent), "reset_password_endpoint", influxMetrics, tracer, rateLimitMgmt),
 			ExecuteActionsEmail:              prepareEndpoint(management.MakeExecuteActionsEmailEndpoint(keycloakComponent), "execute_actions_email_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			RevokeAccreditations:             prepareEndpoint(management.MakeRevokeAccreditationsEndpoint(keycloakComponent), "revoke_accreditations_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 			SendOnboardingEmail:              prepareEndpoint(management.MakeSendOnboardingEmailEndpoint(keycloakComponent, maxLifeSpan), "send_onboarding_email_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 			SendOnboardingEmailInSocialRealm: prepareEndpoint(management.MakeSendOnboardingEmailInSocialRealmEndpoint(keycloakComponent, maxLifeSpan), "send_onboarding_email_in_social_realm_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 			SendReminderEmail:                prepareEndpoint(management.MakeSendReminderEmailEndpoint(keycloakComponent), "send_reminder_email_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
@@ -1172,6 +1173,7 @@ func main() {
 
 		var resetPasswordHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.ResetPassword)
 		var executeActionsEmailHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.ExecuteActionsEmail)
+		var revokeAccreditationsHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.RevokeAccreditations)
 		var sendSmsCodeHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.SendSmsCode)
 		var sendOnboardingEmailHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.SendOnboardingEmail)
 		var sendOnboardingEmailInSocialRealmHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.SendOnboardingEmailInSocialRealm)
@@ -1295,6 +1297,9 @@ func main() {
 
 		// brokering - shadow users
 		managementSubroute.Path("/realms/{realm}/users/{userID}/federated-identity/{provider}").Methods("POST").Handler(linkShadowUserHandler)
+
+		// Accreditations
+		route.Path("/accreditations/realms/{realm}/users/{userID}/revoke-accreditations").Methods("PUT").Handler(revokeAccreditationsHandler)
 
 		// KYC handlers
 		var kycGetActionsHandler = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, endpointPhysicalCheckAvailabilityChecker, false, logger)(kycEndpoints.GetActions)

@@ -817,6 +817,31 @@ paths:
       responses:
         200:
           description: successful operation
+  /realms/{realm}/users/{userID}/revoke-accreditations:
+    put:
+      tags:
+      - Users
+      summary: >
+        Revoke accreditations.
+        NOTE: method is placed in /accreditations/realms/{realm}/users/{userID}/revoke-accreditations (not in /management)
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
+      responses:
+        204:
+          description: accreditations have been revoked
+        404:
+          description: nothing to revoke
   /realms/{realm}/users/{userID}/send-sms-code:
     post:
       tags:
