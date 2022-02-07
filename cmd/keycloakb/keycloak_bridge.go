@@ -1270,6 +1270,7 @@ func main() {
 		managementSubroute.Path("/realms/{realm}/roles").Methods("GET").Handler(getRolesHandler)
 		managementSubroute.Path("/realms/{realm}/roles-by-id/{roleID}").Methods("GET").Handler(getRoleHandler)
 		managementSubroute.Path("/realms/{realm}/roles").Methods("POST").Handler(createRoleHandler)
+		managementSubroute.Path("/realms/{realm}/roles/{roleID}").Methods("GET").Handler(getRoleHandler)
 		managementSubroute.Path("/realms/{realm}/roles/{roleID}").Methods("PUT").Handler(updateRoleHandler)
 		managementSubroute.Path("/realms/{realm}/roles/{roleID}").Methods("DELETE").Handler(deleteRoleHandler)
 		managementSubroute.Path("/realms/{realm}/clients/{clientID}/roles").Methods("GET").Handler(getClientRolesHandler)
