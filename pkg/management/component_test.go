@@ -2897,7 +2897,7 @@ func TestSendOnboardingEmail(t *testing.T) {
 	t.Run("InSocialRealm-Can't get oidc token", func(t *testing.T) {
 		mocks.tokenProvider.EXPECT().ProvideToken(gomock.Any()).Return("", anyError)
 
-		err := managementComponent.SendOnboardingEmailInSocialRealm(ctx, userID, realmName, false, nil)
+		err := managementComponent.SendOnboardingEmailInSocialRealm(ctx, userID, realmName, false)
 		assert.NotNil(t, err)
 	})
 
@@ -2905,7 +2905,7 @@ func TestSendOnboardingEmail(t *testing.T) {
 		mocks.tokenProvider.EXPECT().ProvideToken(gomock.Any()).Return(accessToken, nil)
 		mocks.configurationDBModule.EXPECT().GetConfiguration(ctx, customerRealmName).Return(configuration.RealmConfiguration{}, anyError)
 
-		err := managementComponent.SendOnboardingEmailInSocialRealm(ctx, userID, customerRealmName, false, nil)
+		err := managementComponent.SendOnboardingEmailInSocialRealm(ctx, userID, customerRealmName, false)
 		assert.NotNil(t, err)
 	})
 
@@ -2914,7 +2914,7 @@ func TestSendOnboardingEmail(t *testing.T) {
 			OnboardingRedirectURI: &onboardingRedirectURI,
 		}, nil)
 
-		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, customerRealmName, false, nil)
+		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, customerRealmName, false)
 		assert.NotNil(t, err)
 	})
 
@@ -2926,7 +2926,7 @@ func TestSendOnboardingEmail(t *testing.T) {
 	t.Run("Fails to retrieve user in KC", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(kc.UserRepresentation{}, anyError)
 
-		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, customerRealmName, false, nil)
+		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, customerRealmName, false)
 		assert.NotNil(t, err)
 	})
 
@@ -2940,7 +2940,7 @@ func TestSendOnboardingEmail(t *testing.T) {
 		}, nil)
 		mocks.onboardingModule.EXPECT().OnboardingAlreadyCompleted(gomock.Any()).Return(false, anyError)
 
-		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, customerRealmName, false, nil)
+		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, customerRealmName, false)
 		assert.NotNil(t, err)
 	})
 
@@ -2954,7 +2954,7 @@ func TestSendOnboardingEmail(t *testing.T) {
 		}, nil)
 		mocks.onboardingModule.EXPECT().OnboardingAlreadyCompleted(gomock.Any()).Return(true, nil)
 
-		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, customerRealmName, false, nil)
+		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, customerRealmName, false)
 		assert.NotNil(t, err)
 	})
 
@@ -2967,9 +2967,9 @@ func TestSendOnboardingEmail(t *testing.T) {
 		mocks.onboardingModule.EXPECT().OnboardingAlreadyCompleted(gomock.Any()).Return(false, nil)
 
 		mocks.onboardingModule.EXPECT().SendOnboardingEmail(ctx, accessToken, realmName, userID, username,
-			onboardingClientID, onboardingRedirectURI+"?customerRealm="+customerRealmName, customerRealmName, true, nil).Return(anyError)
+			onboardingClientID, onboardingRedirectURI+"?customerRealm="+customerRealmName, customerRealmName, true).Return(anyError)
 
-		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, customerRealmName, true, nil)
+		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, customerRealmName, true)
 		assert.NotNil(t, err)
 	})
 
@@ -2984,10 +2984,10 @@ func TestSendOnboardingEmail(t *testing.T) {
 			Username: &username,
 		}, nil)
 		mocks.onboardingModule.EXPECT().OnboardingAlreadyCompleted(gomock.Any()).Return(false, nil)
-		mocks.onboardingModule.EXPECT().SendOnboardingEmail(ctx, accessToken, realmName, userID, username, onboardingClientID, onboardingRedirectURI, gomock.Any(), false, nil).Return(nil)
+		mocks.onboardingModule.EXPECT().SendOnboardingEmail(ctx, accessToken, realmName, userID, username, onboardingClientID, onboardingRedirectURI, gomock.Any(), false).Return(nil)
 		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "EMAIL_ONBOARDING_SENT", "back-office", database.CtEventRealmName, realmName, database.CtEventUserID, userID).Return(nil)
 
-		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, realmName, false, nil)
+		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, realmName, false)
 		assert.Nil(t, err)
 	})
 }

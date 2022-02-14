@@ -49,6 +49,11 @@ const (
 	prmQryReminder      = "reminder"
 	prmQryTargetRealm   = "targetRealm"
 	prmQryTargetGroupID = "targetGroupID"
+	prmQryCustom1       = "custom1"
+	prmQryCustom2       = "custom2"
+	prmQryCustom3       = "custom3"
+	prmQryCustom4       = "custom4"
+	prmQryCustom5       = "custom5"
 )
 
 // MakeManagementHandler make an HTTP handler for a Management endpoint.
@@ -93,6 +98,11 @@ func decodeManagementRequest(ctx context.Context, req *http.Request) (interface{
 		prmQryReminder:      constants.RegExpBool,
 		prmQryTargetRealm:   constants.RegExpTargetRealmName,
 		prmQryTargetGroupID: constants.RegExpTargetGroupID,
+		prmQryCustom1:       constants.RegExpCustomValue,
+		prmQryCustom2:       constants.RegExpCustomValue,
+		prmQryCustom3:       constants.RegExpCustomValue,
+		prmQryCustom4:       constants.RegExpCustomValue,
+		prmQryCustom5:       constants.RegExpCustomValue,
 	}
 
 	return commonhttp.DecodeRequest(ctx, req, pathParams, queryParams)

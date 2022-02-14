@@ -48,6 +48,8 @@ const (
 	RegExpNumber          = `^\d+$`
 	RegExpContainerID     = regExpLen255
 	RegExpRoleDescription = regExpLen255OrEmpty
+
+	RegExpCustomValue = `^[A-Za-z\d_-]{0,50}$`
 )
 
 var (

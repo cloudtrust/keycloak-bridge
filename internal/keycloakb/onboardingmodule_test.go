@@ -116,24 +116,24 @@ func TestSendOnboardingEmail(t *testing.T) {
 	t.Run("Failed to perform ExecuteActionEmail without reminder", func(t *testing.T) {
 		mockKeycloakClient.EXPECT().ExecuteActionsEmail(accessToken, realmName, realmName, userID, expectedActionsNoReminder,
 			"client_id", onboardingClientID, "redirect_uri", gomock.Any(), "themeRealm", themeRealmName).Return(errors.New("unexpected error"))
-		err := onboardingModule.SendOnboardingEmail(ctx, accessToken, realmName, userID, username, onboardingClientID, onboardingRedirectURI, themeRealmName, false, nil)
+		err := onboardingModule.SendOnboardingEmail(ctx, accessToken, realmName, userID, username, onboardingClientID, onboardingRedirectURI, themeRealmName, false)
 
 		assert.NotNil(t, err)
 	})
 	t.Run("Failed to perform ExecuteActionEmail with reminder", func(t *testing.T) {
 		mockKeycloakClient.EXPECT().ExecuteActionsEmail(accessToken, realmName, realmName, userID, expectedActionsWithReminder,
 			"client_id", onboardingClientID, "redirect_uri", gomock.Any(), "themeRealm", themeRealmName).Return(errors.New("unexpected error"))
-		err := onboardingModule.SendOnboardingEmail(ctx, accessToken, realmName, userID, username, onboardingClientID, onboardingRedirectURI, themeRealmName, true, nil)
+		err := onboardingModule.SendOnboardingEmail(ctx, accessToken, realmName, userID, username, onboardingClientID, onboardingRedirectURI, themeRealmName, true)
 
 		assert.NotNil(t, err)
 	})
 
 	t.Run("Success", func(t *testing.T) {
-		var lifespan = 5400
+		var paramKV = []string{"customX", "valueX"}
 		var embeddedURI = url.QueryEscape(onboardingRedirectURI)
 		var expectedFullURI = "http://keycloak.url/auth/realms/" + realmName + "/protocol/openid-connect/auth?client_id=" + onboardingClientID + "&login_hint=" + username + "&redirect_uri=" + embeddedURI + "&response_type=code&scope=openid"
 		mockKeycloakClient.EXPECT().ExecuteActionsEmail(accessToken, realmName, realmName, userID, expectedActionsNoReminder,
-			"client_id", onboardingClientID, "redirect_uri", gomock.Any(), "themeRealm", themeRealmName, "lifespan", "5400").DoAndReturn(
+			"client_id", onboardingClientID, "redirect_uri", gomock.Any(), "themeRealm", themeRealmName, "customX", "valueX").DoAndReturn(
 			func(_, _, _, _ string, _ []string, params ...string) error {
 				// params: _, _, _ string, redirectURI string, _, _, _, _ interface{}
 				_, err := url.Parse(params[3])
@@ -141,7 +141,7 @@ func TestSendOnboardingEmail(t *testing.T) {
 				assert.Equal(t, expectedFullURI, params[3])
 				return nil
 			})
-		err := onboardingModule.SendOnboardingEmail(ctx, accessToken, realmName, userID, username, onboardingClientID, onboardingRedirectURI, themeRealmName, false, &lifespan)
+		err := onboardingModule.SendOnboardingEmail(ctx, accessToken, realmName, userID, username, onboardingClientID, onboardingRedirectURI, themeRealmName, false, paramKV...)
 
 		assert.Nil(t, err)
 	})

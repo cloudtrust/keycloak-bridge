@@ -154,8 +154,8 @@ func TestDeny(t *testing.T) {
 			"ResetPassword":                       ignoreFirst(authorizationMW.ResetPassword(ctx, realmName, userID, password)),
 			"ExecuteActionsEmail":                 authorizationMW.ExecuteActionsEmail(ctx, realmName, userID, []api.RequiredAction{}),
 			"SendSmsCode":                         ignoreFirst(authorizationMW.SendSmsCode(ctx, realmName, userID)),
-			"SendOnboardingEmail":                 authorizationMW.SendOnboardingEmail(ctx, realmName, userID, customerRealm, false, nil),
-			"SendOnboardingEmailInSocialRealm":    authorizationMW.SendOnboardingEmailInSocialRealm(ctx, userID, customerRealm, false, nil),
+			"SendOnboardingEmail":                 authorizationMW.SendOnboardingEmail(ctx, realmName, userID, customerRealm, false),
+			"SendOnboardingEmailInSocialRealm":    authorizationMW.SendOnboardingEmailInSocialRealm(ctx, userID, customerRealm, false),
 			"SendReminderEmail":                   authorizationMW.SendReminderEmail(ctx, realmName, userID),
 			"ResetSmsCounter":                     authorizationMW.ResetSmsCounter(ctx, realmName, userID),
 			"CreateRecoveryCode":                  ignoreFirst(authorizationMW.CreateRecoveryCode(ctx, realmName, userID)),
@@ -420,12 +420,12 @@ func TestAllowed(t *testing.T) {
 		_, err = authorizationMW.SendSmsCode(ctx, realmName, userID)
 		assert.Nil(t, err)
 
-		mockManagementComponent.EXPECT().SendOnboardingEmail(ctx, realmName, userID, customerRealm, false, nil).Return(nil)
-		err = authorizationMW.SendOnboardingEmail(ctx, realmName, userID, customerRealm, false, nil)
+		mockManagementComponent.EXPECT().SendOnboardingEmail(ctx, realmName, userID, customerRealm, false).Return(nil)
+		err = authorizationMW.SendOnboardingEmail(ctx, realmName, userID, customerRealm, false)
 		assert.Nil(t, err)
 
-		mockManagementComponent.EXPECT().SendOnboardingEmailInSocialRealm(ctx, userID, customerRealm, false, nil).Return(nil)
-		err = authorizationMW.SendOnboardingEmailInSocialRealm(ctx, userID, customerRealm, false, nil)
+		mockManagementComponent.EXPECT().SendOnboardingEmailInSocialRealm(ctx, userID, customerRealm, false).Return(nil)
+		err = authorizationMW.SendOnboardingEmailInSocialRealm(ctx, userID, customerRealm, false)
 		assert.Nil(t, err)
 
 		mockManagementComponent.EXPECT().SendReminderEmail(ctx, realmName, userID).Return(nil)

@@ -92,8 +92,8 @@ type UsersDetailsDBModule interface {
 // OnboardingModule is the interface for the onboarding process
 type OnboardingModule interface {
 	OnboardingAlreadyCompleted(kc.UserRepresentation) (bool, error)
-	SendOnboardingEmail(ctx context.Context, accessToken string, realmName string, userID string, username string,
-		onboardingClientID string, onboardingRedirectURI string, themeRealmName string, reminder bool, lifespan *int) error
+	SendOnboardingEmail(ctx context.Context, accessToken string, realmName string, userID string, username string, onboardingClientID string,
+		onboardingRedirectURI string, themeRealmName string, reminder bool, paramKV ...string) error
 	CreateUser(ctx context.Context, accessToken, realmName, targetRealmName string, kcUser *kc.UserRepresentation) (string, error)
 	ProcessAlreadyExistingUserCases(ctx context.Context, accessToken string, targetRealmName string, userEmail string, requestingSource string, handler func(username string, createdTimestamp int64, thirdParty *string) error) error
 }
@@ -147,8 +147,8 @@ type Component interface {
 	ExecuteActionsEmail(ctx context.Context, realmName string, userID string, actions []api.RequiredAction, paramKV ...string) error
 	RevokeAccreditations(ctx context.Context, realmName string, userID string) error
 	SendSmsCode(ctx context.Context, realmName string, userID string) (string, error)
-	SendOnboardingEmail(ctx context.Context, realmName string, userID string, customerRealm string, reminder bool, lifespan *int) error
-	SendOnboardingEmailInSocialRealm(ctx context.Context, userID string, customerRealm string, reminder bool, lifespan *int) error
+	SendOnboardingEmail(ctx context.Context, realmName string, userID string, customerRealm string, reminder bool, paramKV ...string) error
+	SendOnboardingEmailInSocialRealm(ctx context.Context, userID string, customerRealm string, reminder bool, paramKV ...string) error
 	/* REMOVE_THIS_3901 : start */
 	SendMigrationEmail(ctx context.Context, realmName string, userID string, customerRealm string, reminder bool, lifespan *int) error
 	/* REMOVE_THIS_3901 : end */
@@ -1220,22 +1220,22 @@ func (c *component) SendSmsCode(ctx context.Context, realmName string, userID st
 	return *smsCodeKc.Code, err
 }
 
-func (c *component) SendOnboardingEmail(ctx context.Context, realmName string, userID string, customerRealm string, reminder bool, lifespan *int) error {
+func (c *component) SendOnboardingEmail(ctx context.Context, realmName string, userID string, customerRealm string, reminder bool, paramKV ...string) error {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
-	return c.genericSendOnboardingEmail(ctx, accessToken, realmName, userID, customerRealm, reminder, lifespan)
+	return c.genericSendOnboardingEmail(ctx, accessToken, realmName, userID, customerRealm, reminder, paramKV...)
 }
 
-func (c *component) SendOnboardingEmailInSocialRealm(ctx context.Context, userID string, customerRealm string, reminder bool, lifespan *int) error {
+func (c *component) SendOnboardingEmailInSocialRealm(ctx context.Context, userID string, customerRealm string, reminder bool, paramKV ...string) error {
 	var accessToken, err = c.tokenProvider.ProvideToken(ctx)
 	if err != nil {
 		c.logger.Info(ctx, "msg", "Fails to get OIDC token from keycloak", "err", err.Error())
 		return err
 	}
 
-	return c.genericSendOnboardingEmail(ctx, accessToken, c.socialRealmName, userID, customerRealm, reminder, lifespan)
+	return c.genericSendOnboardingEmail(ctx, accessToken, c.socialRealmName, userID, customerRealm, reminder, paramKV...)
 }
 
-func (c *component) genericSendOnboardingEmail(ctx context.Context, accessToken string, realmName string, userID string, customerRealm string, reminder bool, lifespan *int) error {
+func (c *component) genericSendOnboardingEmail(ctx context.Context, accessToken string, realmName string, userID string, customerRealm string, reminder bool, paramKV ...string) error {
 	// Get Realm configuration from database
 	realmConf, err := c.configDBModule.GetConfiguration(ctx, customerRealm)
 	if err != nil {
@@ -1273,7 +1273,7 @@ func (c *component) genericSendOnboardingEmail(ctx context.Context, accessToken 
 
 	// Send email
 	err = c.onboardingModule.SendOnboardingEmail(ctx, accessToken, realmName, userID,
-		*kcUser.Username, *realmConf.OnboardingClientID, onboardingRedirectURI, customerRealm, reminder, lifespan)
+		*kcUser.Username, *realmConf.OnboardingClientID, onboardingRedirectURI, customerRealm, reminder, paramKV...)
 	if err != nil {
 		return err
 	}

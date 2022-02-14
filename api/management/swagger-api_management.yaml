@@ -807,6 +807,26 @@ paths:
         schema:
           type: string
         allowEmptyValue: true
+      - name: custom1
+        in: query
+        schema:
+          type: string
+      - name: custom2
+        in: query
+        schema:
+          type: string
+      - name: custom3
+        in: query
+        schema:
+          type: string
+      - name: custom4
+        in: query
+        schema:
+          type: string
+      - name: custom5
+        in: query
+        schema:
+          type: string
       requestBody:
         content:
           application/json:
@@ -909,6 +929,26 @@ paths:
         in: query
         description: Customer realm name
         required: false
+        schema:
+          type: string
+      - name: custom1
+        in: query
+        schema:
+          type: string
+      - name: custom2
+        in: query
+        schema:
+          type: string
+      - name: custom3
+        in: query
+        schema:
+          type: string
+      - name: custom4
+        in: query
+        schema:
+          type: string
+      - name: custom5
+        in: query
         schema:
           type: string
       responses:
@@ -1843,6 +1883,26 @@ paths:
         in: query
         description: Customer realm name
         required: false
+        schema:
+          type: string
+      - name: custom1
+        in: query
+        schema:
+          type: string
+      - name: custom2
+        in: query
+        schema:
+          type: string
+      - name: custom3
+        in: query
+        schema:
+          type: string
+      - name: custom4
+        in: query
+        schema:
+          type: string
+      - name: custom5
+        in: query
         schema:
           type: string
       responses:
