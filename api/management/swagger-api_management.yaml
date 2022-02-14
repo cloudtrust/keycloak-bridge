@@ -1215,6 +1215,30 @@ paths:
                 type: string
               description: URL of the new resource.
   /realms/{realm}/roles/{roleID}:
+    get:
+      tags:
+      - Roles
+      summary: Get a specific role
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: roleID
+        in: path
+        description: id of role
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
     put:
       tags:
       - Roles
@@ -1264,7 +1288,7 @@ paths:
     get:
       tags:
       - Roles
-      summary: Get a specific role
+      summary: DEPRECATED. Use GET /realms/{realm}/roles/{roleID}
       parameters:
       - name: realm
         in: path
