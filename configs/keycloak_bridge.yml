@@ -179,6 +179,7 @@ rate-management-status: 2
 rate-statistics: 1000
 rate-events: 1000
 rate-register: 1000
+rate-support: 10
 rate-tasks: 10
 rate-kyc: 1000
 rate-mobile: 1000

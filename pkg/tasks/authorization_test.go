@@ -41,7 +41,7 @@ func TestAuthorizations(t *testing.T) {
 		mockAuthorizationDBReader.EXPECT().GetAuthorizations(gomock.Any()).Return([]configuration.Authorization{}, nil)
 
 		var authorizations, _ = security.NewAuthorizationManager(mockAuthorizationDBReader, mockSecKeycloakClient, mockLogger)
-		var authorizationMW = MakeAuthorizationManagementComponentMW(mockLogger, authorizations)(mockTasksComponent)
+		var authorizationMW = MakeAuthorizationTasksComponentMW(mockLogger, authorizations)(mockTasksComponent)
 
 		t.Run("DeleteUsersWithExpiredTermsOfUseAcceptance", func(t *testing.T) {
 			var err = authorizationMW.CleanUpAccordingToExpiredTermsOfUseAcceptance(ctx)
@@ -66,7 +66,7 @@ func TestAuthorizations(t *testing.T) {
 		mockAuthorizationDBReader.EXPECT().GetAuthorizations(gomock.Any()).Return(allowAuthz, nil)
 
 		var authorizations, _ = security.NewAuthorizationManager(mockAuthorizationDBReader, mockSecKeycloakClient, mockLogger)
-		var authorizationMW = MakeAuthorizationManagementComponentMW(mockLogger, authorizations)(mockTasksComponent)
+		var authorizationMW = MakeAuthorizationTasksComponentMW(mockLogger, authorizations)(mockTasksComponent)
 
 		t.Run("Delete", func(t *testing.T) {
 			mockTasksComponent.EXPECT().CleanUpAccordingToExpiredTermsOfUseAcceptance(ctx).Return(nil)
