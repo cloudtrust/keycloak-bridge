@@ -45,6 +45,7 @@ const (
 	RegExpLifespan        = `^[0-9]{1,10}$`
 	RegExpGroupIds        = `^([a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12})(,[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}){0,20}$`
 	RegExpNumber          = `^\d+$`
+	RegExpContainerID     = regExpLen255
 )
 
 var (

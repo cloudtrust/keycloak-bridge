@@ -677,7 +677,7 @@ func TestValidateRoleRepresentation(t *testing.T) {
 	roles[0].ID = ptr("f467ed7c")
 	roles[1].Name = ptr("name *")
 	roles[2].Description = ptr("")
-	roles[3].ContainerID = ptr("12345678")
+	roles[3].ContainerID = ptr("")
 
 	for _, role := range roles {
 		assert.NotNil(t, role.Validate())
