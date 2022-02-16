@@ -817,7 +817,7 @@ func (role RoleRepresentation) Validate() error {
 	return validation.NewParameterValidator().
 		ValidateParameterRegExp(constants.RoleID, role.ID, constants.RegExpID, false).
 		ValidateParameterRegExp(constants.Name, role.Name, constants.RegExpName, false).
-		ValidateParameterRegExp(constants.Description, role.Description, constants.RegExpDescription, false).
+		ValidateParameterRegExp(constants.Description, role.Description, constants.RegExpRoleDescription, false).
 		ValidateParameterRegExp(constants.ContainerID, role.ContainerID, constants.RegExpContainerID, false).
 		Status()
 }
