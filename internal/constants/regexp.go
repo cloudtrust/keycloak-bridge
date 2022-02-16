@@ -2,8 +2,9 @@ package constants
 
 // Regular expressions for parameters validation
 const (
-	regExpLen255 = `^.{1,255}$`
-	regExpLen128 = `^.{1,128}$`
+	regExpLen255OrEmpty = `^.{0,255}$`
+	regExpLen255        = `^.{1,255}$`
+	regExpLen128        = `^.{1,128}$`
 
 	RegExpID          = `^[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}$`
 	RegExpName        = `^[a-zA-Z0-9-_]{1,128}$`
@@ -46,6 +47,7 @@ const (
 	RegExpGroupIds        = `^([a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12})(,[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}){0,20}$`
 	RegExpNumber          = `^\d+$`
 	RegExpContainerID     = regExpLen255
+	RegExpRoleDescription = regExpLen255OrEmpty
 )
 
 var (

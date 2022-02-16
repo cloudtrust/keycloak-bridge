@@ -674,9 +674,12 @@ func TestValidateRoleRepresentation(t *testing.T) {
 		roles = append(roles, createValidRoleRepresentation())
 	}
 
+	var sixtyTwoCharsLong = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	var tooLongDescription = strings.Join([]string{sixtyTwoCharsLong, sixtyTwoCharsLong, sixtyTwoCharsLong, sixtyTwoCharsLong, sixtyTwoCharsLong}, "")
+
 	roles[0].ID = ptr("f467ed7c")
 	roles[1].Name = ptr("name *")
-	roles[2].Description = ptr("")
+	roles[2].Description = &tooLongDescription
 	roles[3].ContainerID = ptr("")
 
 	for _, role := range roles {
