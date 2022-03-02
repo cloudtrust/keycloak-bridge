@@ -577,3 +577,79 @@ func TestAllowed(t *testing.T) {
 		assert.Nil(t, err)
 	}
 }
+
+func TestGetGroupsOutput(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+	var mockLogger = log.NewNopLogger()
+	var mockKeycloakClient = mock.NewKcClientAuth(mockCtrl)
+	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
+	var mockAuthorizationDBReader = mock.NewAuthorizationDBReader(mockCtrl)
+
+	var accessToken = "TOKEN=="
+	var realm = "TestRealm"
+	var group = "TestGroup"
+	var includedGroup = "IncludedGroup"
+	var notIncludedGroup = "NotIncludedGroup"
+	var all = "*"
+	var groups = []api.GroupRepresentation{
+		{
+			Name: &group,
+		}, {
+			Name: &includedGroup,
+		},
+	}
+
+	var authorizations = []configuration.Authorization{
+		{
+			RealmID:         &realm,
+			GroupName:       &group,
+			Action:          &MGMTGetGroups.Name,
+			TargetRealmID:   &realm,
+			TargetGroupName: &all,
+		},
+		{
+			RealmID:         &realm,
+			GroupName:       &group,
+			Action:          &MGMTIncludedInGetGroups.Name,
+			TargetRealmID:   &realm,
+			TargetGroupName: &group,
+		},
+		{
+			RealmID:         &realm,
+			GroupName:       &group,
+			Action:          &MGMTIncludedInGetGroups.Name,
+			TargetRealmID:   &realm,
+			TargetGroupName: &includedGroup,
+		},
+	}
+
+	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+	ctx = context.WithValue(ctx, cs.CtContextGroups, []string{group})
+	ctx = context.WithValue(ctx, cs.CtContextRealm, realm)
+
+	t.Run("No filtering needed", func(t *testing.T) {
+		mockAuthorizationDBReader.EXPECT().GetAuthorizations(gomock.Any()).Return(authorizations, nil)
+		mockManagementComponent.EXPECT().GetGroups(ctx, realm).Return(groups, nil)
+
+		var authorizationManager, _ = security.NewAuthorizationManager(mockAuthorizationDBReader, mockKeycloakClient, mockLogger)
+		var authorizationMW = MakeAuthorizationManagementComponentMW(mockLogger, authorizationManager)(mockManagementComponent)
+
+		result, err := authorizationMW.GetGroups(ctx, realm)
+		assert.Nil(t, err)
+		assert.Len(t, result, 2)
+	})
+
+	t.Run("Filtering needed", func(t *testing.T) {
+		groups = append(groups, api.GroupRepresentation{Name: &notIncludedGroup})
+		mockAuthorizationDBReader.EXPECT().GetAuthorizations(gomock.Any()).Return(authorizations, nil)
+		mockManagementComponent.EXPECT().GetGroups(ctx, realm).Return(groups, nil)
+
+		var authorizationManager, _ = security.NewAuthorizationManager(mockAuthorizationDBReader, mockKeycloakClient, mockLogger)
+		var authorizationMW = MakeAuthorizationManagementComponentMW(mockLogger, authorizationManager)(mockManagementComponent)
+
+		result, err := authorizationMW.GetGroups(ctx, realm)
+		assert.Nil(t, err)
+		assert.Len(t, result, 2)
+	})
+}
