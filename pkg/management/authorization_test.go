@@ -588,44 +588,44 @@ func TestGetGroupsOutput(t *testing.T) {
 
 	var accessToken = "TOKEN=="
 	var realm = "TestRealm"
-	var group = "TestGroup"
-	var includedGroup = "IncludedGroup"
+	var includedGroup1 = "IncludedGroup1"
+	var includedGroup2 = "IncludedGroup2"
 	var notIncludedGroup = "NotIncludedGroup"
 	var all = "*"
 	var groups = []api.GroupRepresentation{
 		{
-			Name: &group,
+			Name: &includedGroup1,
 		}, {
-			Name: &includedGroup,
+			Name: &includedGroup2,
 		},
 	}
 
 	var authorizations = []configuration.Authorization{
 		{
 			RealmID:         &realm,
-			GroupName:       &group,
+			GroupName:       &includedGroup1,
 			Action:          &MGMTGetGroups.Name,
 			TargetRealmID:   &realm,
 			TargetGroupName: &all,
 		},
 		{
 			RealmID:         &realm,
-			GroupName:       &group,
+			GroupName:       &includedGroup1,
 			Action:          &MGMTIncludedInGetGroups.Name,
 			TargetRealmID:   &realm,
-			TargetGroupName: &group,
+			TargetGroupName: &includedGroup1,
 		},
 		{
 			RealmID:         &realm,
-			GroupName:       &group,
+			GroupName:       &includedGroup1,
 			Action:          &MGMTIncludedInGetGroups.Name,
 			TargetRealmID:   &realm,
-			TargetGroupName: &includedGroup,
+			TargetGroupName: &includedGroup2,
 		},
 	}
 
 	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
-	ctx = context.WithValue(ctx, cs.CtContextGroups, []string{group})
+	ctx = context.WithValue(ctx, cs.CtContextGroups, []string{includedGroup1})
 	ctx = context.WithValue(ctx, cs.CtContextRealm, realm)
 
 	t.Run("No filtering needed", func(t *testing.T) {
