@@ -578,6 +578,7 @@ func (c *component) GetConfiguration(ctx context.Context, realmIDOverride string
 		RedirectSuccessfulRegistrationURL:     config.RedirectSuccessfulRegistrationURL,
 		BarcodeType:                           config.BarcodeType,
 		AvailableChecks:                       adminConfig.AvailableChecks,
+		AvailableAccreditationsTypes:          c.extractAccreditationsTypes(adminConfig.Accreditations),
 		Theme:                                 adminConfig.Theme,
 		SupportedLocales:                      supportedLocales,
 		ShowGlnEditing:                        adminConfig.ShowGlnEditing,
@@ -597,6 +598,18 @@ func (c *component) GetConfiguration(ctx context.Context, realmIDOverride string
 	}
 
 	return apiConfig, nil
+}
+
+func (c *component) extractAccreditationsTypes(accreditations []configuration.RealmAdminAccreditation) *[]string {
+	accreditationsTypesSet := make(map[string]struct{})
+	accreditationsTypes := []string{}
+	for _, accreditation := range accreditations {
+		if _, ok := accreditationsTypesSet[*accreditation.Type]; !ok {
+			accreditationsTypesSet[*accreditation.Type] = struct{}{}
+			accreditationsTypes = append(accreditationsTypes, *accreditation.Type)
+		}
+	}
+	return &accreditationsTypes
 }
 
 func (c *component) SendVerifyEmail(ctx context.Context) error {

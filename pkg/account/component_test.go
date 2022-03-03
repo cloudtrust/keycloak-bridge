@@ -1088,6 +1088,37 @@ func TestGetConfiguration(t *testing.T) {
 	})
 }
 
+func TestExtractAccreditationsTypes(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	mocks := createComponentMocks(mockCtrl)
+	component := mocks.createComponent()
+
+	types := []string{"type1", "type2", "type3"}
+
+	accreditations := []configuration.RealmAdminAccreditation{
+		{
+			Type: &types[0],
+		},
+		{
+			Type: &types[0],
+		},
+		{
+			Type: &types[1],
+		},
+		{
+			Type: &types[2],
+		},
+	}
+
+	result := component.extractAccreditationsTypes(accreditations)
+
+	assert.NotNil(t, result)
+	assert.Len(t, *result, 3)
+	assert.Equal(t, types, *result)
+}
+
 func TestSendVerify(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
