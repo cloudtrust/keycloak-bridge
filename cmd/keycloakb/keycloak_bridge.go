@@ -41,14 +41,16 @@ import (
 	mobile "github.com/cloudtrust/keycloak-bridge/pkg/mobile"
 	"github.com/cloudtrust/keycloak-bridge/pkg/register"
 	"github.com/cloudtrust/keycloak-bridge/pkg/statistics"
+	"github.com/cloudtrust/keycloak-bridge/pkg/support"
 	"github.com/cloudtrust/keycloak-bridge/pkg/tasks"
 	"github.com/cloudtrust/keycloak-bridge/pkg/validation"
 	keycloak "github.com/cloudtrust/keycloak-client/v2"
 	keycloakapi "github.com/cloudtrust/keycloak-client/v2/api"
 	"github.com/cloudtrust/keycloak-client/v2/toolbox"
 	"github.com/go-kit/kit/endpoint"
-	kit_log "github.com/go-kit/kit/log"
-	kit_level "github.com/go-kit/kit/log/level"
+	http_transport "github.com/go-kit/kit/transport/http"
+	kit_log "github.com/go-kit/log"
+	kit_level "github.com/go-kit/log/level"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
@@ -85,6 +87,7 @@ const (
 	RateKeyMonitoring       = iota
 	RateKeyRegister         = iota
 	RateKeyStatistics       = iota
+	RateKeySupport          = iota
 	RateKeyTasks            = iota
 	RateKeyValidation       = iota
 
@@ -121,6 +124,7 @@ const (
 	cfgRateKeyStatistics        = "rate-statistics"
 	cfgRateKeyEvents            = "rate-events"
 	cfgRateKeyRegister          = "rate-register"
+	cfgRateKeySupport           = "rate-support"
 	cfgRateKeyTasks             = "rate-tasks"
 	cfgRateKeyKYC               = "rate-kyc"
 	cfgAllowedOrigins           = "cors-allowed-origins"
@@ -247,6 +251,7 @@ func main() {
 			RateKeyStatistics:       c.GetInt(cfgRateKeyStatistics),
 			RateKeyEvents:           c.GetInt(cfgRateKeyEvents),
 			RateKeyRegister:         c.GetInt(cfgRateKeyRegister),
+			RateKeySupport:          c.GetInt(cfgRateKeySupport),
 			RateKeyTasks:            c.GetInt(cfgRateKeyTasks),
 			RateKeyKYC:              c.GetInt(cfgRateKeyKYC),
 		}
@@ -657,11 +662,24 @@ func main() {
 		eventsDBModule := database.NewEventsDBModule(eventsDBConn)
 
 		tasksComponent := tasks.NewComponent(keycloakClient, usersDBModule, eventsDBModule, tasksLogger)
-		tasksComponent = tasks.MakeAuthorizationManagementComponentMW(log.With(tasksLogger, "mw", "endpoint"), authorizationManager)(tasksComponent)
+		tasksComponent = tasks.MakeAuthorizationTasksComponentMW(log.With(tasksLogger, "mw", "endpoint"), authorizationManager)(tasksComponent)
 
 		var rateLimitTasks = rateLimit[RateKeyTasks]
 		tasksEndpoints = tasks.Endpoints{
 			DeleteDeniedToUUsers: prepareEndpoint(tasks.MakeDeleteUsersWithExpiredTermsOfUseAcceptanceEndpoint(tasksComponent), "del_denied_tou_users", influxMetrics, tasksLogger, tracer, rateLimitTasks),
+		}
+	}
+
+	// Support service.
+	var supportEndpoints support.Endpoints
+	{
+		var supportLogger = log.With(logger, "svc", "support")
+
+		supportComponent := support.NewComponent(keycloakClient, supportLogger)
+
+		var rateLimitSupport = rateLimit[RateKeySupport]
+		supportEndpoints = support.Endpoints{
+			GetSupportInformation: prepareEndpoint(support.MakeGetSupportInformationEndpoint(supportComponent), "get_email_information", influxMetrics, supportLogger, tracer, rateLimitSupport),
 		}
 	}
 
@@ -1019,7 +1037,7 @@ func main() {
 		errc <- http.ListenAndServe(httpAddrMonitoring, route)
 	}()
 
-	// HTTP Internal Call Server (Export, Communications & Validation API).
+	// HTTP Internal Call Server (Export, Communications, Support, Tasks & Validation API).
 	go func() {
 		var logger = log.With(logger, "transport", "http")
 		logger.Info(ctx, "addr", httpAddrInternal, "interface", "export-and-communication")
@@ -1030,7 +1048,7 @@ func main() {
 		route.Handle("/export", export.MakeHTTPExportHandler(exportEndpoint)).Methods("GET")
 		route.Handle("/export", export.MakeHTTPExportHandler(exportSaveAndExportEndpoint)).Methods("POST")
 
-		// Validation
+		// Validation (basic auth)
 		var getUserHandler = configureValidationHandler(keycloakb.ComponentName, ComponentID, idGenerator, validationExpectedAuthToken, tracer, logger)(validationEndpoints.GetUser)
 		var updateUserHandler = configureValidationHandler(keycloakb.ComponentName, ComponentID, idGenerator, validationExpectedAuthToken, tracer, logger)(validationEndpoints.UpdateUser)
 		var createCheckHandler = configureValidationHandler(keycloakb.ComponentName, ComponentID, idGenerator, validationExpectedAuthToken, tracer, logger)(validationEndpoints.CreateCheck)
@@ -1045,17 +1063,22 @@ func main() {
 		validationSubroute.Path("/realms/{realm}/users/{userID}/checks/pending").Methods("POST").Handler(createPendingCheckHandler)
 		validationSubroute.Path("/realms/{realm}/users/{userID}/checks/pending/{pendingCheck}").Methods("DELETE").Handler(deletePendingCheckHandler)
 
-		// Communications
-		var sendMailHandler = configureCommunicationsHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(communicationsEndpoints.SendEmail)
-		var sendSMSHandler = configureCommunicationsHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(communicationsEndpoints.SendSMS)
+		// Communications (bearer auth)
+		var sendMailHandler = configureHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, communications.MakeCommunicationsHandler, logger)(communicationsEndpoints.SendEmail)
+		var sendSMSHandler = configureHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, communications.MakeCommunicationsHandler, logger)(communicationsEndpoints.SendSMS)
 
 		var communicationsSubroute = route.PathPrefix("/communications").Subrouter()
 
 		communicationsSubroute.Path("/realms/{realm}/send-mail").Methods("POST").Handler(sendMailHandler)
 		communicationsSubroute.Path("/realms/{realm}/send-sms").Methods("POST").Handler(sendSMSHandler)
 
-		// Tasks
-		var deniedToUUsersHandler = configureTasksHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(tasksEndpoints.DeleteDeniedToUUsers)
+		// Support (bearer auth)
+		var getSupportInfosHandler = configureHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, support.MakeSupportHandler, logger)(supportEndpoints.GetSupportInformation)
+
+		route.PathPrefix("/support/accounts").Methods("GET").Handler(getSupportInfosHandler)
+
+		// Tasks (bearer auth)
+		var deniedToUUsersHandler = configureHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, tasks.MakeTasksHandler, logger)(tasksEndpoints.DeleteDeniedToUUsers)
 
 		route.PathPrefix("/tasks/denied-terms-of-use-users").Methods("DELETE").Handler(deniedToUUsersHandler)
 
@@ -1089,14 +1112,16 @@ func main() {
 		route.Path("/rights").Methods("GET").Handler(rightsHandler)
 
 		// Statistics
-		var getStatisticsActionsHandler = configureStatisticsHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(statisticsEndpoints.GetActions)
-		var getStatisticsHandler = configureStatisticsHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(statisticsEndpoints.GetStatistics)
-		var getStatisticsIdentificationsHandler = configureStatisticsHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(statisticsEndpoints.GetStatisticsIdentifications)
-		var getStatisticsUsersHandler = configureStatisticsHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(statisticsEndpoints.GetStatisticsUsers)
-		var getStatisticsAuthenticatorsHandler = configureStatisticsHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(statisticsEndpoints.GetStatisticsAuthenticators)
-		var getStatisticsAuthenticationsHandler = configureStatisticsHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(statisticsEndpoints.GetStatisticsAuthentications)
-		var getStatisticsAuthenticationsLogHandler = configureStatisticsHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(statisticsEndpoints.GetStatisticsAuthenticationsLog)
-		var getMigrationReportHandler = configureStatisticsHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(statisticsEndpoints.GetMigrationReport)
+		var configureStatisticsHandler = configureHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, statistics.MakeStatisticsHandler, logger)
+
+		var getStatisticsActionsHandler = configureStatisticsHandler(statisticsEndpoints.GetActions)
+		var getStatisticsHandler = configureStatisticsHandler(statisticsEndpoints.GetStatistics)
+		var getStatisticsIdentificationsHandler = configureStatisticsHandler(statisticsEndpoints.GetStatisticsIdentifications)
+		var getStatisticsUsersHandler = configureStatisticsHandler(statisticsEndpoints.GetStatisticsUsers)
+		var getStatisticsAuthenticatorsHandler = configureStatisticsHandler(statisticsEndpoints.GetStatisticsAuthenticators)
+		var getStatisticsAuthenticationsHandler = configureStatisticsHandler(statisticsEndpoints.GetStatisticsAuthentications)
+		var getStatisticsAuthenticationsLogHandler = configureStatisticsHandler(statisticsEndpoints.GetStatisticsAuthenticationsLog)
+		var getMigrationReportHandler = configureStatisticsHandler(statisticsEndpoints.GetMigrationReport)
 
 		route.Path("/statistics/actions").Methods("GET").Handler(getStatisticsActionsHandler)
 		route.Path("/statistics/realms/{realm}").Methods("GET").Handler(getStatisticsHandler)
@@ -1108,10 +1133,12 @@ func main() {
 		route.Path("/statistics/realms/{realm}/migration").Methods("GET").Handler(getMigrationReportHandler)
 
 		// Events
-		var getEventsActionsHandler = configureEventsHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(eventsEndpoints.GetActions)
-		var getEventsHandler = configureEventsHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(eventsEndpoints.GetEvents)
-		var getEventsSummaryHandler = configureEventsHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(eventsEndpoints.GetEventsSummary)
-		var getUserEventsHandler = configureEventsHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(eventsEndpoints.GetUserEvents)
+		var configureEventsHandler = configureHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, events.MakeEventsHandler, logger)
+
+		var getEventsActionsHandler = configureEventsHandler(eventsEndpoints.GetActions)
+		var getEventsHandler = configureEventsHandler(eventsEndpoints.GetEvents)
+		var getEventsSummaryHandler = configureEventsHandler(eventsEndpoints.GetEventsSummary)
+		var getUserEventsHandler = configureEventsHandler(eventsEndpoints.GetUserEvents)
 
 		route.Path("/events").Methods("GET").Handler(getEventsHandler)
 		route.Path("/events/actions").Methods("GET").Handler(getEventsActionsHandler)
@@ -1121,87 +1148,89 @@ func main() {
 		// Management
 		var managementSubroute = route.PathPrefix("/management").Subrouter()
 
-		var getRealmsHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetRealms)
-		var getRealmHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetRealm)
+		var configureManagementHandler = configureHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, management.MakeManagementHandler, logger)
 
-		var getClientsHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetClients)
-		var getClientHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetClient)
+		var getRealmsHandler = configureManagementHandler(managementEndpoints.GetRealms)
+		var getRealmHandler = configureManagementHandler(managementEndpoints.GetRealm)
 
-		var getRequiredActionsHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetRequiredActions)
+		var getClientsHandler = configureManagementHandler(managementEndpoints.GetClients)
+		var getClientHandler = configureManagementHandler(managementEndpoints.GetClient)
 
-		var createUserHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.CreateUser)
-		var createUserInSocialRealmHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.CreateUserInSocialRealm)
-		var getUserHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetUser)
-		var updateUserHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.UpdateUser)
-		var lockUserHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.LockUser)
-		var unlockUserHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.UnlockUser)
-		var deleteUserHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.DeleteUser)
-		var getUsersHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetUsers)
-		var getRolesForUserHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetRolesOfUser)
-		var addRoleToUser = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.AddRoleToUser)
-		var deleteRoleForUser = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.DeleteRoleForUser)
-		var getGroupsForUserHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetGroupsOfUser)
-		var addGroupToUserHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.AddGroupToUser)
-		var deleteGroupForUserHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.DeleteGroupForUser)
-		var getUserChecksHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetUserChecks)
-		var getUserAccountStatusHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetUserAccountStatus)
-		var getUserAccountStatusByEmailHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetUserAccountStatusByEmail)
-		var getAvailableTrustIDGroupsHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetAvailableTrustIDGroups)
-		var getTrustIDGroupsOfUserHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetTrustIDGroupsOfUser)
-		var setTrustIDGroupsToUserHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.SetTrustIDGroupsToUser)
+		var getRequiredActionsHandler = configureManagementHandler(managementEndpoints.GetRequiredActions)
 
-		var getClientRoleForUserHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetClientRoleForUser)
-		var addClientRoleToUserHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.AddClientRoleToUser)
+		var createUserHandler = configureManagementHandler(managementEndpoints.CreateUser)
+		var createUserInSocialRealmHandler = configureManagementHandler(managementEndpoints.CreateUserInSocialRealm)
+		var getUserHandler = configureManagementHandler(managementEndpoints.GetUser)
+		var updateUserHandler = configureManagementHandler(managementEndpoints.UpdateUser)
+		var lockUserHandler = configureManagementHandler(managementEndpoints.LockUser)
+		var unlockUserHandler = configureManagementHandler(managementEndpoints.UnlockUser)
+		var deleteUserHandler = configureManagementHandler(managementEndpoints.DeleteUser)
+		var getUsersHandler = configureManagementHandler(managementEndpoints.GetUsers)
+		var getRolesForUserHandler = configureManagementHandler(managementEndpoints.GetRolesOfUser)
+		var addRoleToUser = configureManagementHandler(managementEndpoints.AddRoleToUser)
+		var deleteRoleForUser = configureManagementHandler(managementEndpoints.DeleteRoleForUser)
+		var getGroupsForUserHandler = configureManagementHandler(managementEndpoints.GetGroupsOfUser)
+		var addGroupToUserHandler = configureManagementHandler(managementEndpoints.AddGroupToUser)
+		var deleteGroupForUserHandler = configureManagementHandler(managementEndpoints.DeleteGroupForUser)
+		var getUserChecksHandler = configureManagementHandler(managementEndpoints.GetUserChecks)
+		var getUserAccountStatusHandler = configureManagementHandler(managementEndpoints.GetUserAccountStatus)
+		var getUserAccountStatusByEmailHandler = configureManagementHandler(managementEndpoints.GetUserAccountStatusByEmail)
+		var getAvailableTrustIDGroupsHandler = configureManagementHandler(managementEndpoints.GetAvailableTrustIDGroups)
+		var getTrustIDGroupsOfUserHandler = configureManagementHandler(managementEndpoints.GetTrustIDGroupsOfUser)
+		var setTrustIDGroupsToUserHandler = configureManagementHandler(managementEndpoints.SetTrustIDGroupsToUser)
 
-		var getRolesHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetRoles)
-		var getRoleHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetRole)
-		var createRoleHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.CreateRole)
-		var updateRoleHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.UpdateRole)
-		var deleteRoleHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.DeleteRole)
-		var getClientRolesHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetClientRoles)
-		var createClientRolesHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.CreateClientRole)
+		var getClientRoleForUserHandler = configureManagementHandler(managementEndpoints.GetClientRoleForUser)
+		var addClientRoleToUserHandler = configureManagementHandler(managementEndpoints.AddClientRoleToUser)
 
-		var getGroupsHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetGroups)
-		var createGroupHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.CreateGroup)
-		var deleteGroupHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.DeleteGroup)
-		var getAuthorizationsHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetAuthorizations)
-		var updateAuthorizationsHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.UpdateAuthorizations)
-		var addAuthorizationHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.AddAuthorization)
-		var getAuthorizationHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetAuthorization)
-		var deleteAuthorizationHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.DeleteAuthorization)
-		var getManagementActionsHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetActions)
+		var getRolesHandler = configureManagementHandler(managementEndpoints.GetRoles)
+		var getRoleHandler = configureManagementHandler(managementEndpoints.GetRole)
+		var createRoleHandler = configureManagementHandler(managementEndpoints.CreateRole)
+		var updateRoleHandler = configureManagementHandler(managementEndpoints.UpdateRole)
+		var deleteRoleHandler = configureManagementHandler(managementEndpoints.DeleteRole)
+		var getClientRolesHandler = configureManagementHandler(managementEndpoints.GetClientRoles)
+		var createClientRolesHandler = configureManagementHandler(managementEndpoints.CreateClientRole)
 
-		var resetPasswordHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.ResetPassword)
-		var executeActionsEmailHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.ExecuteActionsEmail)
-		var revokeAccreditationsHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.RevokeAccreditations)
-		var sendSmsCodeHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.SendSmsCode)
-		var sendOnboardingEmailHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.SendOnboardingEmail)
-		var sendOnboardingEmailInSocialRealmHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.SendOnboardingEmailInSocialRealm)
-		var sendReminderEmailHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.SendReminderEmail)
-		var resetSmsCounterHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.ResetSmsCounter)
-		var createRecoveryCodeHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.CreateRecoveryCode)
-		var createActivationCodeHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.CreateActivationCode)
+		var getGroupsHandler = configureManagementHandler(managementEndpoints.GetGroups)
+		var createGroupHandler = configureManagementHandler(managementEndpoints.CreateGroup)
+		var deleteGroupHandler = configureManagementHandler(managementEndpoints.DeleteGroup)
+		var getAuthorizationsHandler = configureManagementHandler(managementEndpoints.GetAuthorizations)
+		var updateAuthorizationsHandler = configureManagementHandler(managementEndpoints.UpdateAuthorizations)
+		var addAuthorizationHandler = configureManagementHandler(managementEndpoints.AddAuthorization)
+		var getAuthorizationHandler = configureManagementHandler(managementEndpoints.GetAuthorization)
+		var deleteAuthorizationHandler = configureManagementHandler(managementEndpoints.DeleteAuthorization)
+		var getManagementActionsHandler = configureManagementHandler(managementEndpoints.GetActions)
+
+		var resetPasswordHandler = configureManagementHandler(managementEndpoints.ResetPassword)
+		var executeActionsEmailHandler = configureManagementHandler(managementEndpoints.ExecuteActionsEmail)
+		var revokeAccreditationsHandler = configureManagementHandler(managementEndpoints.RevokeAccreditations)
+		var sendSmsCodeHandler = configureManagementHandler(managementEndpoints.SendSmsCode)
+		var sendOnboardingEmailHandler = configureManagementHandler(managementEndpoints.SendOnboardingEmail)
+		var sendOnboardingEmailInSocialRealmHandler = configureManagementHandler(managementEndpoints.SendOnboardingEmailInSocialRealm)
+		var sendReminderEmailHandler = configureManagementHandler(managementEndpoints.SendReminderEmail)
+		var resetSmsCounterHandler = configureManagementHandler(managementEndpoints.ResetSmsCounter)
+		var createRecoveryCodeHandler = configureManagementHandler(managementEndpoints.CreateRecoveryCode)
+		var createActivationCodeHandler = configureManagementHandler(managementEndpoints.CreateActivationCode)
 
 		/* REMOVE_THIS_3901 : start */
-		var sendMigrationEmail = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.SendMigrationEmail)
+		var sendMigrationEmail = configureManagementHandler(managementEndpoints.SendMigrationEmail)
 		/* REMOVE_THIS_3901 : end */
 
-		var getCredentialsForUserHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetCredentialsForUser)
-		var deleteCredentialsForUserHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.DeleteCredentialsForUser)
-		var resetCredentialFailuresForUserHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.ResetCredentialFailuresForUser)
-		var clearUserLoginFailuresHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.ClearUserLoginFailures)
-		var getAttackDetectionStatusHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetAttackDetectionStatus)
+		var getCredentialsForUserHandler = configureManagementHandler(managementEndpoints.GetCredentialsForUser)
+		var deleteCredentialsForUserHandler = configureManagementHandler(managementEndpoints.DeleteCredentialsForUser)
+		var resetCredentialFailuresForUserHandler = configureManagementHandler(managementEndpoints.ResetCredentialFailuresForUser)
+		var clearUserLoginFailuresHandler = configureManagementHandler(managementEndpoints.ClearUserLoginFailures)
+		var getAttackDetectionStatusHandler = configureManagementHandler(managementEndpoints.GetAttackDetectionStatus)
 
-		var getRealmCustomConfigurationHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetRealmCustomConfiguration)
-		var updateRealmCustomConfigurationHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.UpdateRealmCustomConfiguration)
-		var getRealmAdminConfigurationHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetRealmAdminConfiguration)
-		var updateRealmAdminConfigurationHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.UpdateRealmAdminConfiguration)
+		var getRealmCustomConfigurationHandler = configureManagementHandler(managementEndpoints.GetRealmCustomConfiguration)
+		var updateRealmCustomConfigurationHandler = configureManagementHandler(managementEndpoints.UpdateRealmCustomConfiguration)
+		var getRealmAdminConfigurationHandler = configureManagementHandler(managementEndpoints.GetRealmAdminConfiguration)
+		var updateRealmAdminConfigurationHandler = configureManagementHandler(managementEndpoints.UpdateRealmAdminConfiguration)
 
-		var getRealmBackOfficeConfigurationHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetRealmBackOfficeConfiguration)
-		var updateRealmBackOfficeConfigurationHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.UpdateRealmBackOfficeConfiguration)
-		var getUserRealmBackOfficeConfigurationHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.GetUserRealmBackOfficeConfiguration)
+		var getRealmBackOfficeConfigurationHandler = configureManagementHandler(managementEndpoints.GetRealmBackOfficeConfiguration)
+		var updateRealmBackOfficeConfigurationHandler = configureManagementHandler(managementEndpoints.UpdateRealmBackOfficeConfiguration)
+		var getUserRealmBackOfficeConfigurationHandler = configureManagementHandler(managementEndpoints.GetUserRealmBackOfficeConfiguration)
 
-		var linkShadowUserHandler = configureManagementHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(managementEndpoints.LinkShadowUser)
+		var linkShadowUserHandler = configureManagementHandler(managementEndpoints.LinkShadowUser)
 
 		// actions
 		managementSubroute.Path("/actions").Methods("GET").Handler(getManagementActionsHandler)
@@ -1349,18 +1378,20 @@ func main() {
 		var route = mux.NewRouter()
 
 		// Account
-		var updatePasswordHandler = configureAccountHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(accountEndpoints.UpdatePassword)
-		var getCredentialsHandler = configureAccountHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(accountEndpoints.GetCredentials)
-		var getCredentialRegistratorsHandler = configureAccountHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(accountEndpoints.GetCredentialRegistrators)
-		var deleteCredentialHandler = configureAccountHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(accountEndpoints.DeleteCredential)
-		var updateLabelCredentialHandler = configureAccountHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(accountEndpoints.UpdateLabelCredential)
-		var moveCredentialHandler = configureAccountHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(accountEndpoints.MoveCredential)
-		var getAccountHandler = configureAccountHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(accountEndpoints.GetAccount)
-		var updateAccountHandler = configureAccountHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(accountEndpoints.UpdateAccount)
-		var deleteAccountHandler = configureAccountHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(accountEndpoints.DeleteAccount)
-		var getConfigurationHandler = configureAccountHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(accountEndpoints.GetConfiguration)
-		var sendVerifyEmailHandler = configureAccountHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(accountEndpoints.SendVerifyEmail)
-		var sendVerifyPhoneNumberHandler = configureAccountHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, logger)(accountEndpoints.SendVerifyPhoneNumber)
+		var configureAccountHandler = configureHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, account.MakeAccountHandler, logger)
+
+		var updatePasswordHandler = configureAccountHandler(accountEndpoints.UpdatePassword)
+		var getCredentialsHandler = configureAccountHandler(accountEndpoints.GetCredentials)
+		var getCredentialRegistratorsHandler = configureAccountHandler(accountEndpoints.GetCredentialRegistrators)
+		var deleteCredentialHandler = configureAccountHandler(accountEndpoints.DeleteCredential)
+		var updateLabelCredentialHandler = configureAccountHandler(accountEndpoints.UpdateLabelCredential)
+		var moveCredentialHandler = configureAccountHandler(accountEndpoints.MoveCredential)
+		var getAccountHandler = configureAccountHandler(accountEndpoints.GetAccount)
+		var updateAccountHandler = configureAccountHandler(accountEndpoints.UpdateAccount)
+		var deleteAccountHandler = configureAccountHandler(accountEndpoints.DeleteAccount)
+		var getConfigurationHandler = configureAccountHandler(accountEndpoints.GetConfiguration)
+		var sendVerifyEmailHandler = configureAccountHandler(accountEndpoints.SendVerifyEmail)
+		var sendVerifyPhoneNumberHandler = configureAccountHandler(accountEndpoints.SendVerifyPhoneNumber)
 
 		route.Path("/account").Methods("GET").Handler(getAccountHandler)
 		route.Path("/account").Methods("POST").Handler(updateAccountHandler)
@@ -1398,7 +1429,7 @@ func main() {
 		var route = mux.NewRouter()
 
 		// Mobile
-		var getUserInfoHandler = configureMobileHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, mobileAudienceRequired, tracer, logger)(mobileEndpoints.GetUserInformation)
+		var getUserInfoHandler = configureHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, mobileAudienceRequired, tracer, mobile.MakeMobileHandler, logger)(mobileEndpoints.GetUserInformation)
 
 		route.Path("/mobile/userinfo").Methods("GET").Handler(getUserInfoHandler)
 
@@ -1543,6 +1574,7 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 	v.SetDefault(cfgRateKeyEvents, 1000)
 	v.SetDefault(cfgRateKeyRegister, 1000)
 	v.SetDefault(cfgRateKeyTasks, 10)
+	v.SetDefault(cfgRateKeySupport, 10)
 	v.SetDefault(cfgRateKeyKYC, 1000)
 
 	// Influx DB client default.
@@ -1667,42 +1699,24 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 	return v
 }
 
-func configureEventsHandler(ComponentName string, ComponentID string, idGenerator idgenerator.IDGenerator, keycloakClient *keycloakapi.Client, audienceRequired string, tracer tracing.OpentracingClient, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {
+// configureHandler is a generic configuration handler with support of correlationID and OIDC validation
+func configureHandler(ComponentName string, ComponentID string, idGenerator idgenerator.IDGenerator, keycloakClient *keycloakapi.Client, audienceRequired string, tracer tracing.OpentracingClient, baseHandler func(_ endpoint.Endpoint, _ log.Logger) *http_transport.Server, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {
 	return func(endpoint endpoint.Endpoint) http.Handler {
 		var handler http.Handler
-		handler = events.MakeEventsHandler(endpoint, logger)
+		handler = baseHandler(endpoint, logger)
 		handler = middleware.MakeHTTPCorrelationIDMW(idGenerator, tracer, logger, ComponentName, ComponentID)(handler)
 		handler = middleware.MakeHTTPOIDCTokenValidationMW(keycloakClient, audienceRequired, logger)(handler)
 		return handler
 	}
 }
 
-func configureStatisticsHandler(ComponentName string, ComponentID string, idGenerator idgenerator.IDGenerator, keycloakClient *keycloakapi.Client, audienceRequired string, tracer tracing.OpentracingClient, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {
-	return func(endpoint endpoint.Endpoint) http.Handler {
-		var handler http.Handler
-		handler = statistics.MakeStatisticsHandler(endpoint, logger)
-		handler = middleware.MakeHTTPCorrelationIDMW(idGenerator, tracer, logger, ComponentName, ComponentID)(handler)
-		handler = middleware.MakeHTTPOIDCTokenValidationMW(keycloakClient, audienceRequired, logger)(handler)
-		return handler
-	}
-}
-
+// configureValidationHandler uses a basic authentication
 func configureValidationHandler(ComponentName string, ComponentID string, idGenerator idgenerator.IDGenerator, expectedToken string, tracer tracing.OpentracingClient, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {
 	return func(endpoint endpoint.Endpoint) http.Handler {
 		var handler http.Handler
 		handler = validation.MakeValidationHandler(endpoint, logger)
 		handler = middleware.MakeHTTPCorrelationIDMW(idGenerator, tracer, logger, ComponentName, ComponentID)(handler)
 		handler = middleware.MakeHTTPBasicAuthenticationMW(expectedToken, logger)(handler)
-		return handler
-	}
-}
-
-func configureManagementHandler(ComponentName string, ComponentID string, idGenerator idgenerator.IDGenerator, keycloakClient *keycloakapi.Client, audienceRequired string, tracer tracing.OpentracingClient, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {
-	return func(endpoint endpoint.Endpoint) http.Handler {
-		var handler http.Handler
-		handler = management.MakeManagementHandler(endpoint, logger)
-		handler = middleware.MakeHTTPCorrelationIDMW(idGenerator, tracer, logger, ComponentName, ComponentID)(handler)
-		handler = middleware.MakeHTTPOIDCTokenValidationMW(keycloakClient, audienceRequired, logger)(handler)
 		return handler
 	}
 }
@@ -1715,26 +1729,7 @@ func configureRightsHandler(ComponentName string, ComponentID string, idGenerato
 	return handler
 }
 
-func configureAccountHandler(ComponentName string, ComponentID string, idGenerator idgenerator.IDGenerator, keycloakClient *keycloakapi.Client, audienceRequired string, tracer tracing.OpentracingClient, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {
-	return func(endpoint endpoint.Endpoint) http.Handler {
-		var handler http.Handler
-		handler = account.MakeAccountHandler(endpoint, logger)
-		handler = middleware.MakeHTTPCorrelationIDMW(idGenerator, tracer, logger, ComponentName, ComponentID)(handler)
-		handler = middleware.MakeHTTPOIDCTokenValidationMW(keycloakClient, audienceRequired, logger)(handler)
-		return handler
-	}
-}
-
-func configureMobileHandler(ComponentName string, ComponentID string, idGenerator idgenerator.IDGenerator, keycloakClient *keycloakapi.Client, audienceRequired string, tracer tracing.OpentracingClient, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {
-	return func(endpoint endpoint.Endpoint) http.Handler {
-		var handler http.Handler
-		handler = mobile.MakeMobileHandler(endpoint, logger)
-		handler = middleware.MakeHTTPCorrelationIDMW(idGenerator, tracer, logger, ComponentName, ComponentID)(handler)
-		handler = middleware.MakeHTTPOIDCTokenValidationMW(keycloakClient, audienceRequired, logger)(handler)
-		return handler
-	}
-}
-
+// configureKYCHandler pre-checks the realm to allow access only for configured ones
 func configureKYCHandler(ComponentName string, ComponentID string, idGenerator idgenerator.IDGenerator, keycloakClient *keycloakapi.Client,
 	audienceRequired string, tracer tracing.OpentracingClient, availabilityChecker middleware.EndpointAvailabilityChecker,
 	verifyAvailableChecks bool, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {
@@ -1750,6 +1745,7 @@ func configureKYCHandler(ComponentName string, ComponentID string, idGenerator i
 	}
 }
 
+// configureRegisterHandler uses a RECAPTCHA validation
 func configureRegisterHandler(ComponentName string, ComponentID string, idGenerator idgenerator.IDGenerator, recaptchaURL, recaptchaSecret string, tracer tracing.OpentracingClient, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {
 	return func(endpoint endpoint.Endpoint) http.Handler {
 		var handler http.Handler
@@ -1760,31 +1756,12 @@ func configureRegisterHandler(ComponentName string, ComponentID string, idGenera
 	}
 }
 
+// configurePublicRegisterHandler is a public handler. No authorization is checked here
 func configurePublicRegisterHandler(ComponentName string, ComponentID string, idGenerator idgenerator.IDGenerator, tracer tracing.OpentracingClient, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {
 	return func(endpoint endpoint.Endpoint) http.Handler {
 		var handler http.Handler
 		handler = register.MakeRegisterHandler(endpoint, logger)
 		handler = middleware.MakeHTTPCorrelationIDMW(idGenerator, tracer, logger, ComponentName, ComponentID)(handler)
-		return handler
-	}
-}
-
-func configureCommunicationsHandler(ComponentName string, ComponentID string, idGenerator idgenerator.IDGenerator, keycloakClient *keycloakapi.Client, audienceRequired string, tracer tracing.OpentracingClient, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {
-	return func(endpoint endpoint.Endpoint) http.Handler {
-		var handler http.Handler
-		handler = communications.MakeCommunicationsHandler(endpoint, logger)
-		handler = middleware.MakeHTTPCorrelationIDMW(idGenerator, tracer, logger, ComponentName, ComponentID)(handler)
-		handler = middleware.MakeHTTPOIDCTokenValidationMW(keycloakClient, audienceRequired, logger)(handler)
-		return handler
-	}
-}
-
-func configureTasksHandler(ComponentName string, ComponentID string, idGenerator idgenerator.IDGenerator, keycloakClient *keycloakapi.Client, audienceRequired string, tracer tracing.OpentracingClient, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {
-	return func(endpoint endpoint.Endpoint) http.Handler {
-		var handler http.Handler
-		handler = tasks.MakeTasksHandler(endpoint, logger)
-		handler = middleware.MakeHTTPCorrelationIDMW(idGenerator, tracer, logger, ComponentName, ComponentID)(handler)
-		handler = middleware.MakeHTTPOIDCTokenValidationMW(keycloakClient, audienceRequired, logger)(handler)
 		return handler
 	}
 }

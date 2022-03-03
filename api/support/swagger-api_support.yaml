@@ -1,0 +1,44 @@
+openapi: 3.0.1
+info:
+  title: Swagger Cloudtrust Management
+  description: 'Tasks API for Cloudtrust.'
+  version: 1.0.0
+servers:
+- url: http://localhost:8888
+tags:
+- name: Support
+  description: Support helpers
+paths:
+  /support/accounts:
+    get:
+      tags:
+      - Support
+      summary: Get account information according to a given email
+      parameters:
+      - name: email
+        in: query
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EmailInfo'
+components:
+  schemas:
+    EmailInfo:
+      type: object
+      properties:
+        realm:
+          type: string
+        creationDate:
+          type: int
+          description: creation date in seconds since epoch
+security:
+  - openId:
+    - todo

@@ -2073,26 +2073,19 @@ func (c *component) GetActions(ctx context.Context) ([]api.ActionRepresentation,
 			Scope: &scope,
 		})
 	}
-	// The communications API is published internally only.
+	// The communications API and some tasks are published internally only.
 	// To be able to configure the rights from the BO we add them here.
-	var sendMailName = "COM_SendEmail"
-	var sendMailScope = string(security.ScopeRealm)
-	var sendSMSName = "COM_SendSMS"
-	var sendSMSScope = string(security.ScopeRealm)
-	var deleteDeniedToUUsersName = "TSK_DeleteDeniedToUUsers"
-	var deleteDeniedToUUsersScope = string(security.ScopeGlobal)
-	apiActions = append(apiActions, api.ActionRepresentation{
-		Name:  &sendMailName,
-		Scope: &sendMailScope,
-	})
-	apiActions = append(apiActions, api.ActionRepresentation{
-		Name:  &sendSMSName,
-		Scope: &sendSMSScope,
-	})
-	apiActions = append(apiActions, api.ActionRepresentation{
-		Name:  &deleteDeniedToUUsersName,
-		Scope: &deleteDeniedToUUsersScope,
-	})
+	var additionalRights = map[string]string{
+		"COM_SendEmail":            string(security.ScopeRealm),
+		"COM_SendSMS":              string(security.ScopeRealm),
+		"TSK_DeleteDeniedToUUsers": string(security.ScopeGlobal),
+	}
+	for key, value := range additionalRights {
+		apiActions = append(apiActions, api.ActionRepresentation{
+			Name:  &key,
+			Scope: &value,
+		})
+	}
 
 	return apiActions, nil
 }
