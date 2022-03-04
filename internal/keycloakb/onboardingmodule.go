@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
@@ -50,7 +49,7 @@ type UsersDBModule interface {
 type OnboardingModule interface {
 	OnboardingAlreadyCompleted(kc.UserRepresentation) (bool, error)
 	SendOnboardingEmail(ctx context.Context, accessToken string, realmName string, userID string, username string,
-		onboardingClientID string, onboardingRedirectURI string, themeRealmName string, reminder bool, lifespan *int) error
+		onboardingClientID string, onboardingRedirectURI string, themeRealmName string, reminder bool, paramKV ...string) error
 	CreateUser(ctx context.Context, accessToken, realmName, targetRealmName string, kcUser *kc.UserRepresentation) (string, error)
 	ProcessAlreadyExistingUserCases(ctx context.Context, accessToken string, targetRealmName string, userEmail string, requestingSource string, handler func(username string, createdTimestamp int64, thirdParty *string) error) error
 }
@@ -77,7 +76,7 @@ func (om *onboardingModule) OnboardingAlreadyCompleted(kcUser kc.UserRepresentat
 }
 
 func (om *onboardingModule) SendOnboardingEmail(ctx context.Context, accessToken string, realmName string, userID string, username string,
-	onboardingClientID string, onboardingRedirectURI string, themeRealmName string, reminder bool, lifespan *int) error {
+	onboardingClientID string, onboardingRedirectURI string, themeRealmName string, reminder bool, paramKV ...string) error {
 	var kcURL = fmt.Sprintf("%s/auth/realms/%s/protocol/openid-connect/auth", om.keycloakURIProvider.GetBaseURI(realmName), realmName)
 	redirectURL, err := url.Parse(kcURL)
 	if err != nil {
@@ -99,12 +98,10 @@ func (om *onboardingModule) SendOnboardingEmail(ctx context.Context, accessToken
 		actions = append(actions, "reminder-action")
 	}
 	var additionalParams = []string{"client_id", onboardingClientID, "redirect_uri", redirectURL.String(), "themeRealm", themeRealmName}
-	if lifespan != nil {
-		additionalParams = append(additionalParams, "lifespan", strconv.Itoa(*lifespan))
-	}
+	additionalParams = append(additionalParams, paramKV...)
 	err = om.keycloakClient.ExecuteActionsEmail(accessToken, realmName, realmName, userID, actions, additionalParams...)
 	if err != nil {
-		om.logger.Warn(ctx, "msg", "ExecuteActionsEmail failed", "err", err.Error())
+		om.logger.Warn(ctx, "msg", "SendOnboardingEmail failed", "err", err.Error())
 		return err
 	}
 

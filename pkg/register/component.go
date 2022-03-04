@@ -36,8 +36,8 @@ type ExistingUserHandler func(username string, createdTimestamp int64, thirdPart
 
 // OnboardingModule is the interface for the onboarding process
 type OnboardingModule interface {
-	SendOnboardingEmail(ctx context.Context, accessToken string, realmName string, userID string, username string,
-		onboardingClientID string, onboardingRedirectURI string, themeRealmName string, reminder bool, lifespan *int) error
+	SendOnboardingEmail(ctx context.Context, accessToken string, realmName string, userID string, username string, onboardingClientID string,
+		onboardingRedirectURI string, themeRealmName string, reminder bool, paramKV ...string) error
 	CreateUser(ctx context.Context, accessToken, realmName, targetRealmName string, kcUser *kc.UserRepresentation) (string, error)
 	ProcessAlreadyExistingUserCases(ctx context.Context, accessToken string, targetRealmName string, userEmail string, requestingSource string, handler func(username string, createdTimestamp int64, thirdParty *string) error) error
 }
@@ -193,9 +193,9 @@ func (c *component) RegisterUser(ctx context.Context, targetRealmName string, cu
 		onboardingRedirectURI += "?customerRealm=" + customerRealmName
 	}
 
-	var lifespan = 3600 // 1 hour
+	var paramKV = []string{"lifespan", "3600"} // 1 hour
 	err = c.onboardingModule.SendOnboardingEmail(ctx, accessToken, targetRealmName, userID, username,
-		*realmConf.OnboardingClientID, onboardingRedirectURI, customerRealmName, false, &lifespan)
+		*realmConf.OnboardingClientID, onboardingRedirectURI, customerRealmName, false, paramKV...)
 	if err != nil {
 		return err
 	}

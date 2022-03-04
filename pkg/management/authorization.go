@@ -256,7 +256,8 @@ func (c *authorizationComponentMW) GetUsers(ctx context.Context, realmName strin
 	return c.next.GetUsers(ctx, realmName, groupIDs, paramKV...)
 }
 
-func (c *authorizationComponentMW) CreateUser(ctx context.Context, realmName string, user api.UserRepresentation, generateUsername bool, generateNameID bool, termsOfUse bool) (string, error) {
+func (c *authorizationComponentMW) CreateUser(ctx context.Context, realmName string, user api.UserRepresentation, generateUsername bool,
+	generateNameID bool, termsOfUse bool) (string, error) {
 	var action = MGMTCreateUser.String()
 	var targetRealm = realmName
 
@@ -513,7 +514,7 @@ func (c *authorizationComponentMW) SendSmsCode(ctx context.Context, realmName st
 	return c.next.SendSmsCode(ctx, realmName, userID)
 }
 
-func (c *authorizationComponentMW) SendOnboardingEmail(ctx context.Context, realmName string, userID string, customerRealm string, reminder bool, lifespan *int) error {
+func (c *authorizationComponentMW) SendOnboardingEmail(ctx context.Context, realmName string, userID string, customerRealm string, reminder bool, paramKV ...string) error {
 	var action = MGMTSendOnboardingEmail.String()
 	var targetRealm = realmName
 
@@ -521,10 +522,10 @@ func (c *authorizationComponentMW) SendOnboardingEmail(ctx context.Context, real
 		return err
 	}
 
-	return c.next.SendOnboardingEmail(ctx, realmName, userID, customerRealm, reminder, lifespan)
+	return c.next.SendOnboardingEmail(ctx, realmName, userID, customerRealm, reminder, paramKV...)
 }
 
-func (c *authorizationComponentMW) SendOnboardingEmailInSocialRealm(ctx context.Context, userID string, customerRealm string, reminder bool, lifespan *int) error {
+func (c *authorizationComponentMW) SendOnboardingEmailInSocialRealm(ctx context.Context, userID string, customerRealm string, reminder bool, paramKV ...string) error {
 	var action = MGMTSendOnboardingEmailInSocialRealm.String()
 
 	// For this method, there is no target realm provided
@@ -535,7 +536,7 @@ func (c *authorizationComponentMW) SendOnboardingEmailInSocialRealm(ctx context.
 		return err
 	}
 
-	return c.next.SendOnboardingEmailInSocialRealm(ctx, userID, customerRealm, reminder, lifespan)
+	return c.next.SendOnboardingEmailInSocialRealm(ctx, userID, customerRealm, reminder, paramKV...)
 }
 
 /* REMOVE_THIS_3901 : start */

@@ -503,10 +503,10 @@ func MakeExecuteActionsEmailEndpoint(component Component) cs.Endpoint {
 		var m = req.(map[string]string)
 		var err error
 
-		var paramKV []string
+		var paramKV = getCustomValues(m)
 		for _, key := range []string{prmQryClientID, prmQryRedirectURI, prmQryLifespan} {
-			if m[key] != "" {
-				paramKV = append(paramKV, key, m[key])
+			if value, ok := m[key]; ok {
+				paramKV = append(paramKV, key, value)
 			}
 		}
 
@@ -557,19 +557,16 @@ func MakeSendOnboardingEmailEndpoint(component Component, maxLifeSpan int) cs.En
 			customerRealmName = value
 		}
 
-		var lifespan *int
-		if value, ok := m[prmQryLifespan]; ok {
-			if iValue, err := strconv.Atoi(value); err == nil {
-				if iValue > maxLifeSpan {
-					return nil, errorhandler.CreateInvalidQueryParameterError(prmQryLifespan)
-				}
-				lifespan = &iValue
-			} else {
-				return nil, errorhandler.CreateInvalidQueryParameterError(prmQryLifespan)
-			}
+		// Custom parameters
+		var paramKV = getCustomValues(m)
+		// Lifespan parameter
+		if value, err := getLifespanValue(m, maxLifeSpan); err != nil {
+			return nil, err
+		} else if value != nil {
+			paramKV = append(paramKV, "lifespan", *value)
 		}
 
-		return nil, component.SendOnboardingEmail(ctx, m[prmRealm], m[prmUserID], customerRealmName, reminder, lifespan)
+		return nil, component.SendOnboardingEmail(ctx, m[prmRealm], m[prmUserID], customerRealmName, reminder, paramKV...)
 	}
 }
 
@@ -584,20 +581,42 @@ func MakeSendOnboardingEmailInSocialRealmEndpoint(component Component, maxLifeSp
 			customerRealmName = value
 		}
 
-		var lifespan *int
-		if value, ok := m[prmQryLifespan]; ok {
-			if iValue, err := strconv.Atoi(value); err == nil {
-				if iValue > maxLifeSpan {
-					return nil, errorhandler.CreateInvalidQueryParameterError(prmQryLifespan)
-				}
-				lifespan = &iValue
-			} else {
-				return nil, errorhandler.CreateInvalidQueryParameterError(prmQryLifespan)
-			}
+		// Custom parameters
+		var paramKV = getCustomValues(m)
+		// Lifespan parameter
+		if value, err := getLifespanValue(m, maxLifeSpan); err != nil {
+			return nil, err
+		} else if value != nil {
+			paramKV = append(paramKV, "lifespan", *value)
 		}
 
-		return nil, component.SendOnboardingEmailInSocialRealm(ctx, m[prmUserID], customerRealmName, reminder, lifespan)
+		return nil, component.SendOnboardingEmailInSocialRealm(ctx, m[prmUserID], customerRealmName, reminder, paramKV...)
 	}
+}
+
+func getLifespanValue(queryParameters map[string]string, maxLifeSpan int) (*string, error) {
+	if value, ok := queryParameters[prmQryLifespan]; ok {
+		if iValue, err := strconv.Atoi(value); err == nil {
+			if iValue > maxLifeSpan {
+				return nil, errorhandler.CreateInvalidQueryParameterError(prmQryLifespan)
+			}
+			return &value, nil
+		} else {
+			return nil, errorhandler.CreateInvalidQueryParameterError(prmQryLifespan)
+		}
+	}
+	return nil, nil
+}
+
+func getCustomValues(queryParameters map[string]string) []string {
+	var paramKV []string
+	for i := 1; i <= 5; i++ {
+		var key = fmt.Sprintf("custom%d", i)
+		if value, ok := queryParameters[key]; ok {
+			paramKV = append(paramKV, key, value)
+		}
+	}
+	return paramKV
 }
 
 /* REMOVE_THIS_3901 : start */

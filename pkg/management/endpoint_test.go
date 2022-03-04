@@ -938,21 +938,21 @@ func TestSendOnboardingEmailEndpoint(t *testing.T) {
 	req[prmUserID] = userID
 
 	t.Run("Without reminder or customerRealm parameter", func(t *testing.T) {
-		mockManagementComponent.EXPECT().SendOnboardingEmail(ctx, realm, userID, realm, false, nil)
+		mockManagementComponent.EXPECT().SendOnboardingEmail(ctx, realm, userID, realm, false, gomock.Any()).Return(nil)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Nil(t, res)
 	})
 	t.Run("Reminder is false", func(t *testing.T) {
 		req[prmQryReminder] = "FALse"
-		mockManagementComponent.EXPECT().SendOnboardingEmail(ctx, realm, userID, realm, false, nil)
+		mockManagementComponent.EXPECT().SendOnboardingEmail(ctx, realm, userID, realm, false, gomock.Any()).Return(nil)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Nil(t, res)
 	})
 	t.Run("Reminder is true", func(t *testing.T) {
 		req[prmQryReminder] = "TruE"
-		mockManagementComponent.EXPECT().SendOnboardingEmail(ctx, realm, userID, realm, true, nil)
+		mockManagementComponent.EXPECT().SendOnboardingEmail(ctx, realm, userID, realm, true, gomock.Any()).Return(nil)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Nil(t, res)
@@ -960,7 +960,7 @@ func TestSendOnboardingEmailEndpoint(t *testing.T) {
 	t.Run("Reminder is valid, lifespan not used", func(t *testing.T) {
 		req[prmQryReminder] = "false"
 		req[prmQryRealm] = customerRealm
-		mockManagementComponent.EXPECT().SendOnboardingEmail(ctx, realm, userID, customerRealm, false, nil).Return(nil)
+		mockManagementComponent.EXPECT().SendOnboardingEmail(ctx, realm, userID, customerRealm, false, gomock.Any()).Return(nil)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Nil(t, res)
@@ -976,9 +976,20 @@ func TestSendOnboardingEmailEndpoint(t *testing.T) {
 		assert.NotNil(t, err)
 	})
 	t.Run("Valid lifespan submitted", func(t *testing.T) {
-		var lifespan = int(3 * 24 * time.Hour / time.Second)
-		req[prmQryLifespan] = strconv.Itoa(lifespan)
-		mockManagementComponent.EXPECT().SendOnboardingEmail(ctx, realm, userID, customerRealm, false, &lifespan).Return(nil)
+		var lifespan = strconv.Itoa(int(3 * 24 * time.Hour / time.Second))
+		req[prmQryLifespan] = lifespan
+		var expectedParamKV = []string{prmQryLifespan, lifespan}
+		mockManagementComponent.EXPECT().SendOnboardingEmail(ctx, realm, userID, customerRealm, false, expectedParamKV).Return(nil)
+		var res, err = e(ctx, req)
+		assert.Nil(t, err)
+		assert.Nil(t, res)
+	})
+	t.Run("Valid custom parameters", func(t *testing.T) {
+		delete(req, prmQryLifespan)
+		req[prmQryCustom1] = "value1"
+		req[prmQryCustom4] = "value4"
+		var expectedParamKV = []string{prmQryCustom1, "value1", prmQryCustom4, "value4"}
+		mockManagementComponent.EXPECT().SendOnboardingEmail(ctx, realm, userID, customerRealm, false, expectedParamKV).Return(nil)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Nil(t, res)
@@ -1005,21 +1016,21 @@ func TestSendOnboardingEmailInSocialRealmEndpoint(t *testing.T) {
 	req[prmUserID] = userID
 
 	t.Run("Without reminder or customerRealm parameter", func(t *testing.T) {
-		mockManagementComponent.EXPECT().SendOnboardingEmailInSocialRealm(ctx, userID, ctxRealm, false, nil)
+		mockManagementComponent.EXPECT().SendOnboardingEmailInSocialRealm(ctx, userID, ctxRealm, false, gomock.Any()).Return(nil)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Nil(t, res)
 	})
 	t.Run("Reminder is false", func(t *testing.T) {
 		req[prmQryReminder] = "FALse"
-		mockManagementComponent.EXPECT().SendOnboardingEmailInSocialRealm(ctx, userID, ctxRealm, false, nil)
+		mockManagementComponent.EXPECT().SendOnboardingEmailInSocialRealm(ctx, userID, ctxRealm, false, gomock.Any()).Return(nil)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Nil(t, res)
 	})
 	t.Run("Reminder is true", func(t *testing.T) {
 		req[prmQryReminder] = "TruE"
-		mockManagementComponent.EXPECT().SendOnboardingEmailInSocialRealm(ctx, userID, ctxRealm, true, nil)
+		mockManagementComponent.EXPECT().SendOnboardingEmailInSocialRealm(ctx, userID, ctxRealm, true, gomock.Any()).Return(nil)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Nil(t, res)
@@ -1027,7 +1038,7 @@ func TestSendOnboardingEmailInSocialRealmEndpoint(t *testing.T) {
 	t.Run("Reminder is valid, lifespan not used", func(t *testing.T) {
 		req[prmQryReminder] = "false"
 		req[prmQryRealm] = customerRealm
-		mockManagementComponent.EXPECT().SendOnboardingEmailInSocialRealm(ctx, userID, customerRealm, false, nil).Return(nil)
+		mockManagementComponent.EXPECT().SendOnboardingEmailInSocialRealm(ctx, userID, customerRealm, false, gomock.Any()).Return(nil)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Nil(t, res)
@@ -1043,9 +1054,10 @@ func TestSendOnboardingEmailInSocialRealmEndpoint(t *testing.T) {
 		assert.NotNil(t, err)
 	})
 	t.Run("Valid lifespan submitted", func(t *testing.T) {
-		var lifespan = int(3 * 24 * time.Hour / time.Second)
-		req[prmQryLifespan] = strconv.Itoa(lifespan)
-		mockManagementComponent.EXPECT().SendOnboardingEmailInSocialRealm(ctx, userID, customerRealm, false, &lifespan).Return(nil)
+		var lifespan = strconv.Itoa(int(3 * 24 * time.Hour / time.Second))
+		req[prmQryLifespan] = lifespan
+		var expectedParamKV = []string{prmQryLifespan, lifespan}
+		mockManagementComponent.EXPECT().SendOnboardingEmailInSocialRealm(ctx, userID, customerRealm, false, expectedParamKV).Return(nil)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Nil(t, res)
