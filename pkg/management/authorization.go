@@ -72,6 +72,7 @@ var (
 	MGMTUpdateRole                          = newAction("MGMT_UpdateRole", security.ScopeRealm)
 	MGMTDeleteRole                          = newAction("MGMT_DeleteRole", security.ScopeRealm)
 	MGMTGetGroups                           = newAction("MGMT_GetGroups", security.ScopeRealm)
+	MGMTIncludedInGetGroups                 = newAction("MGMT_IncludedInGetGroups", security.ScopeGroup)
 	MGMTCreateGroup                         = newAction("MGMT_CreateGroup", security.ScopeRealm)
 	MGMTDeleteGroup                         = newAction("MGMT_DeleteGroup", security.ScopeGroup)
 	MGMTGetAuthorizations                   = newAction("MGMT_GetAuthorizations", security.ScopeGroup)
@@ -692,7 +693,19 @@ func (c *authorizationComponentMW) GetGroups(ctx context.Context, realmName stri
 		return nil, err
 	}
 
-	return c.next.GetGroups(ctx, realmName)
+	groups, err := c.next.GetGroups(ctx, realmName)
+	if err != nil {
+		return nil, err
+	}
+
+	filteredGroups := []api.GroupRepresentation{}
+	for _, group := range groups {
+		if c.authManager.CheckAuthorizationOnTargetGroup(ctx, MGMTIncludedInGetGroups.String(), realmName, *group.Name) == nil {
+			filteredGroups = append(filteredGroups, group)
+		}
+	}
+
+	return filteredGroups, nil
 }
 
 func (c *authorizationComponentMW) CreateGroup(ctx context.Context, realmName string, group api.GroupRepresentation) (string, error) {
