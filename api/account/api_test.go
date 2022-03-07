@@ -51,7 +51,7 @@ func TestConvertToAPIAccount(t *testing.T) {
 		constants.AttrbLocale:              []string{"fr"},
 		constants.AttrbPhoneNumberVerified: []string{"true"},
 		constants.AttrbPendingChecks:       []string{`{"check-3": 123456789}`},
-		constants.AttrbAccreditations:      []string{`{"type":"one","expiryDate":"05.04.2020"}`, `{"type":"two","expiryDate":"05.03.2022"}`},
+		constants.AttrbAccreditations:      []string{`{"type":"one","expiryDate":"05.04.2020"}`, `{"type":"two","expiryDate":"05.03.2032"}`},
 		constants.AttrbBusinessID:          []string{"123456789"},
 	}
 
