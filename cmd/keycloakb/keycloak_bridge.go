@@ -163,6 +163,7 @@ const (
 	cfgGlnMedRegURI             = "gln-medreg-uri"
 	cfgGlnMedRegTimeout         = "gln-medreg-timeout"
 	cfgValidationRules          = "validation-rules"
+	cfgOnboardingRealmOverrides = "onboarding-realm-overrides"
 
 	tokenProviderDefaultKey = "default"
 )
@@ -298,6 +299,9 @@ func main() {
 		glnPsyRegEnabled  = c.GetBool(cfgGlnPsyRegEnabled)
 		glnPsyRegURI      = c.GetString(cfgGlnPsyRegURI)
 		glnPsyRegTimeout  = c.GetDuration(cfgGlnPsyRegTimeout)
+
+		// Onboarding realm overrides
+		onboardingRealmOverrides = c.GetStringMapString(cfgOnboardingRealmOverrides)
 	)
 
 	// Override some validation rules (IDnow, ...)
@@ -745,7 +749,7 @@ func main() {
 		var usersDBModule = keycloakb.NewUsersDetailsDBModule(usersRwDBConn, aesEncryption, managementLogger)
 
 		// module for onboarding process
-		var onboardingModule = keycloakb.NewOnboardingModule(keycloakClient, keycloakConfig.URIProvider, usersDBModule, registerInactiveLockDuration, logger)
+		var onboardingModule = keycloakb.NewOnboardingModule(keycloakClient, keycloakConfig.URIProvider, usersDBModule, registerInactiveLockDuration, onboardingRealmOverrides, logger)
 
 		var keycloakComponent management.Component
 		{
@@ -953,7 +957,7 @@ func main() {
 		var usersDBModule = keycloakb.NewUsersDetailsDBModule(usersRwDBConn, aesEncryption, registerLogger)
 
 		// module for onboarding process
-		var onboardingModule = keycloakb.NewOnboardingModule(keycloakClient, keycloakConfig.URIProvider, usersDBModule, registerInactiveLockDuration, registerLogger)
+		var onboardingModule = keycloakb.NewOnboardingModule(keycloakClient, keycloakConfig.URIProvider, usersDBModule, registerInactiveLockDuration, onboardingRealmOverrides, registerLogger)
 
 		registerComponent := register.NewComponent(keycloakClient, technicalTokenProvider, usersDBModule, configDBModule, eventsDBModule, onboardingModule, glnVerifier, registerLogger)
 		registerComponent = register.MakeAuthorizationRegisterComponentMW(log.With(registerLogger, "mw", "endpoint"))(registerComponent)
@@ -1638,6 +1642,9 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 
 	// Validation rules
 	v.SetDefault(cfgValidationRules, map[string]string{})
+
+	// Onboarding realm overrides
+	v.SetDefault(cfgOnboardingRealmOverrides, map[string]string{})
 
 	// First level of override.
 	pflag.String(cfgConfigFile, v.GetString(cfgConfigFile), "The configuration file path can be relative or absolute.")
