@@ -248,3 +248,7 @@ gln-psyreg-timeout: 10s
 #  country-code: ^.+$
 #  birth-location: ^.+$
 #  id-doc-number: ^.+$
+
+onboarding-realm-overrides:
+  realmName-hp: realmName
+  realmName-institution: realmName

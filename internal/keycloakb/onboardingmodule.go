@@ -27,6 +27,7 @@ type onboardingModule struct {
 	keycloakURIProvider KeycloakURIProvider
 	usersDBModule       UsersDBModule
 	replaceAccountDelay time.Duration
+	mapRealmNames       map[string]string
 	logger              log.Logger
 }
 
@@ -55,12 +56,13 @@ type OnboardingModule interface {
 }
 
 // NewOnboardingModule creates an onboarding module
-func NewOnboardingModule(keycloakClient OnboardingKeycloakClient, keycloakURIProvider KeycloakURIProvider, usersDBModule UsersDBModule, replaceAccountDelay time.Duration, logger log.Logger) OnboardingModule {
+func NewOnboardingModule(keycloakClient OnboardingKeycloakClient, keycloakURIProvider KeycloakURIProvider, usersDBModule UsersDBModule, replaceAccountDelay time.Duration, mapRealmNames map[string]string, logger log.Logger) OnboardingModule {
 	return &onboardingModule{
 		keycloakClient:      keycloakClient,
 		keycloakURIProvider: keycloakURIProvider,
 		usersDBModule:       usersDBModule,
 		replaceAccountDelay: replaceAccountDelay,
+		mapRealmNames:       mapRealmNames,
 		logger:              logger,
 	}
 }
@@ -196,11 +198,18 @@ func (om *onboardingModule) canReplaceAccount(createdTimestamp int64, attrb *str
 		return true
 	}
 	// check source
-	if attrb != nil && *attrb != "register" && *attrb != requestingSource {
+	if attrb != nil && *attrb != "register" && om.overrideRealmName(*attrb) != om.overrideRealmName(requestingSource) {
 		// Account can't be replaced if it was created by a source which is not register nor the realm of the requester
 		return false
 	}
 	return true
+}
+
+func (om *onboardingModule) overrideRealmName(realm string) string {
+	if override, ok := om.mapRealmNames[realm]; ok {
+		return override
+	}
+	return realm
 }
 
 func (om *onboardingModule) deleteUser(ctx context.Context, accessToken string, realmName string, userID string) error {
