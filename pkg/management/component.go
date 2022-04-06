@@ -2081,9 +2081,10 @@ func (c *component) GetActions(ctx context.Context) ([]api.ActionRepresentation,
 		"TSK_DeleteDeniedToUUsers": string(security.ScopeGlobal),
 	}
 	for key, value := range additionalRights {
+		name, scope := key, value
 		apiActions = append(apiActions, api.ActionRepresentation{
-			Name:  &key,
-			Scope: &value,
+			Name:  &name,
+			Scope: &scope,
 		})
 	}
 

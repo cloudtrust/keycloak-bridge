@@ -92,6 +92,12 @@ func TestGetActions(t *testing.T) {
 	// We add 3 here, as we added the three actions from the communications & tasks stacks into the GetActions methods of the component.
 	// We did this to be able to configure those actions through the Backoffice.
 	assert.Equal(t, len(actions)+3, len(res))
+	v, s := "COM_SendEmail", string(security.ScopeRealm)
+	assert.Contains(t, res, api.ActionRepresentation{Name: &v, Scope: &s})
+	v, s = "COM_SendSMS", string(security.ScopeRealm)
+	assert.Contains(t, res, api.ActionRepresentation{Name: &v, Scope: &s})
+	v, s = "TSK_DeleteDeniedToUUsers", string(security.ScopeGlobal)
+	assert.Contains(t, res, api.ActionRepresentation{Name: &v, Scope: &s})
 }
 
 func TestGetRealms(t *testing.T) {
