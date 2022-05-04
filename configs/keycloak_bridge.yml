@@ -213,6 +213,8 @@ pprof-route-enabled: true
 # Liveness probe
 livenessprobe-http-timeout: 900
 livenessprobe-cache-duration: 500
+healthcheck-endpoints:
+  Keycloak: http://keycloak.internal.local:8080
 
 # Register API parameters
 # removed register-techuser-username, register-techuser-password and register-techuser-client-id

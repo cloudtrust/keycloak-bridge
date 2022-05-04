@@ -459,7 +459,7 @@ func main() {
 	var eventsDBConn sqltypes.CloudtrustDB
 	{
 		var err error
-		eventsDBConn, err = database.NewReconnectableCloudtrustDB(auditRwDbParams)
+		eventsDBConn, err = database.NewReconnectableCloudtrustDB(auditRwDbParams, toDbLogger(logger, auditRwDbParams))
 		if err != nil {
 			logger.Error(ctx, "msg", "could not create R/W DB connection for audit events", "err", err)
 			return
@@ -469,7 +469,7 @@ func main() {
 	var eventsRODBConn sqltypes.CloudtrustDB
 	{
 		var err error
-		eventsRODBConn, err = database.NewReconnectableCloudtrustDB(auditRoDbParams)
+		eventsRODBConn, err = database.NewReconnectableCloudtrustDB(auditRoDbParams, toDbLogger(logger, auditRoDbParams))
 		if err != nil {
 			logger.Error(ctx, "msg", "could not create RO DB connection for audit events", "err", err)
 			return
@@ -479,7 +479,7 @@ func main() {
 	var configurationRwDBConn sqltypes.CloudtrustDB
 	{
 		var err error
-		configurationRwDBConn, err = database.NewReconnectableCloudtrustDB(configRwDbParams)
+		configurationRwDBConn, err = database.NewReconnectableCloudtrustDB(configRwDbParams, toDbLogger(logger, configRwDbParams))
 		if err != nil {
 			logger.Error(ctx, "msg", "could not create DB connection for configuration storage (RW)", "err", err)
 			return
@@ -489,7 +489,7 @@ func main() {
 	var configurationRoDBConn sqltypes.CloudtrustDB
 	{
 		var err error
-		configurationRoDBConn, err = database.NewReconnectableCloudtrustDB(configRoDbParams)
+		configurationRoDBConn, err = database.NewReconnectableCloudtrustDB(configRoDbParams, toDbLogger(logger, configRoDbParams))
 		if err != nil {
 			logger.Error(ctx, "msg", "could not create DB connection for configuration storage (RO)", "err", err)
 			return
@@ -499,7 +499,7 @@ func main() {
 	var usersRwDBConn sqltypes.CloudtrustDB
 	{
 		var err error
-		usersRwDBConn, err = database.NewReconnectableCloudtrustDB(usersRwDbParams)
+		usersRwDBConn, err = database.NewReconnectableCloudtrustDB(usersRwDbParams, toDbLogger(logger, usersRwDbParams))
 		if err != nil {
 			logger.Error(ctx, "msg", "could not create DB connection for users (RW)", "err", err)
 			return
@@ -509,7 +509,7 @@ func main() {
 	var archiveRwDBConn sqltypes.CloudtrustDB
 	{
 		var err error
-		archiveRwDBConn, err = database.NewReconnectableCloudtrustDB(archiveRwDbParams)
+		archiveRwDBConn, err = database.NewReconnectableCloudtrustDB(archiveRwDbParams, toDbLogger(logger, archiveRwDbParams))
 		if err != nil {
 			logger.Error(ctx, "msg", "could not create DB connection for archive (RW)", "err", err)
 			return
@@ -538,7 +538,7 @@ func main() {
 	healthChecker.AddDatabase("Config RO", configurationRoDBConn, healthCheckCacheDuration)
 	healthChecker.AddDatabase("Users R/W", usersRwDBConn, healthCheckCacheDuration)
 	healthChecker.AddDatabase("Archive RO", archiveRwDBConn, healthCheckCacheDuration)
-	healthChecker.AddHTTPEndpoint("Keycloak", keycloakConfig.AddrAPI, httpTimeout, 200, healthCheckCacheDuration)
+	healthChecker.AddHTTPEndpoints(c.GetStringMapString("healthcheck-endpoints"), httpTimeout, 200, healthCheckCacheDuration)
 
 	// Actions allowed in Authorization Manager
 	var authActions = security.AppendActionNames(nil, events.GetActions(), kyc.GetActions(), management.GetActions(), statistics.GetActions(), tasks.GetActions())
@@ -1704,6 +1704,10 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 		}
 	}
 	return v
+}
+
+func toDbLogger(logger log.Logger, config *database.DbConfig) log.Logger {
+	return log.With(logger, "unit", "db", "db-name", config.Database)
 }
 
 // configureHandler is a generic configuration handler with support of correlationID and OIDC validation
