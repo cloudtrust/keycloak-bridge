@@ -48,6 +48,7 @@ type Endpoints struct {
 	GetUserAccountStatusByEmail endpoint.Endpoint
 	GetClientRoleForUser        endpoint.Endpoint
 	AddClientRoleToUser         endpoint.Endpoint
+	DeleteClientRoleFromUser    endpoint.Endpoint
 
 	ResetPassword                    endpoint.Endpoint
 	ExecuteActionsEmail              endpoint.Endpoint
@@ -96,6 +97,8 @@ type Endpoints struct {
 	GetUserRealmBackOfficeConfiguration endpoint.Endpoint
 
 	LinkShadowUser endpoint.Endpoint
+
+	GetIdentityProviders endpoint.Endpoint
 }
 
 const (
@@ -470,6 +473,15 @@ func MakeAddClientRolesToUserEndpoint(component Component) cs.Endpoint {
 		}
 
 		return nil, component.AddClientRolesToUser(ctx, m[prmRealm], m[prmUserID], m[prmClientID], roles)
+	}
+}
+
+// MakeDeleteClientRolesFromUserEndpoint creates an endpoint for DeleteClientRolesFromUser
+func MakeDeleteClientRolesFromUserEndpoint(component Component) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+
+		return nil, component.DeleteClientRolesFromUser(ctx, m[prmRealm], m[prmUserID], m[prmClientID], m[prmRoleID], m[prmQryRoleName])
 	}
 }
 
@@ -1100,6 +1112,15 @@ func MakeLinkShadowUserEndpoint(component Component) cs.Endpoint {
 		}
 
 		return nil, nil
+	}
+}
+
+// MakeGetUserRealmBackOfficeConfigurationEndpoint creates an endpoint for GetUserRealmBackOfficeConfiguration
+func MakeGetIdentityProvidersEndpoint(component Component) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+
+		return component.GetIdentityProviders(ctx, m[prmRealm])
 	}
 }
 

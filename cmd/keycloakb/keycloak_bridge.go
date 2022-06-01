@@ -825,10 +825,11 @@ func main() {
 			GetAuthorization:     prepareEndpoint(management.MakeGetAuthorizationEndpoint(keycloakComponent), "get_authorization_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 			DeleteAuthorization:  prepareEndpoint(management.MakeDeleteAuthorizationEndpoint(keycloakComponent), "delete_authorization_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 
-			GetClientRoles:       prepareEndpoint(management.MakeGetClientRolesEndpoint(keycloakComponent), "get_client_roles_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
-			CreateClientRole:     prepareEndpoint(management.MakeCreateClientRoleEndpoint(keycloakComponent, managementLogger), "create_client_role_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
-			GetClientRoleForUser: prepareEndpoint(management.MakeGetClientRolesForUserEndpoint(keycloakComponent), "get_client_roles_for_user_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
-			AddClientRoleToUser:  prepareEndpoint(management.MakeAddClientRolesToUserEndpoint(keycloakComponent), "get_client_roles_for_user_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			GetClientRoles:           prepareEndpoint(management.MakeGetClientRolesEndpoint(keycloakComponent), "get_client_roles_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			CreateClientRole:         prepareEndpoint(management.MakeCreateClientRoleEndpoint(keycloakComponent, managementLogger), "create_client_role_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			GetClientRoleForUser:     prepareEndpoint(management.MakeGetClientRolesForUserEndpoint(keycloakComponent), "get_client_roles_for_user_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			AddClientRoleToUser:      prepareEndpoint(management.MakeAddClientRolesToUserEndpoint(keycloakComponent), "get_client_roles_for_user_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			DeleteClientRoleFromUser: prepareEndpoint(management.MakeDeleteClientRolesFromUserEndpoint(keycloakComponent), "delete_client_roles_from_user_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 
 			ResetPassword:                    prepareEndpointWithoutLogging(management.MakeResetPasswordEndpoint(keycloakComponent), "reset_password_endpoint", influxMetrics, tracer, rateLimitMgmt),
 			ExecuteActionsEmail:              prepareEndpoint(management.MakeExecuteActionsEmailEndpoint(keycloakComponent), "execute_actions_email_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
@@ -859,7 +860,8 @@ func main() {
 			UpdateRealmBackOfficeConfiguration:  prepareEndpoint(management.MakeUpdateRealmBackOfficeConfigurationEndpoint(keycloakComponent), "update_realm_back_office_config_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 			GetUserRealmBackOfficeConfiguration: prepareEndpoint(management.MakeGetUserRealmBackOfficeConfigurationEndpoint(keycloakComponent), "get_user_realm_back_office_config_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 
-			LinkShadowUser: prepareEndpoint(management.MakeLinkShadowUserEndpoint(keycloakComponent), "link_shadow_user_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			LinkShadowUser:       prepareEndpoint(management.MakeLinkShadowUserEndpoint(keycloakComponent), "link_shadow_user_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			GetIdentityProviders: prepareEndpoint(management.MakeGetIdentityProvidersEndpoint(keycloakComponent), "get_identiy_providers_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 		}
 	}
 
@@ -1185,6 +1187,7 @@ func main() {
 
 		var getClientRoleForUserHandler = configureManagementHandler(managementEndpoints.GetClientRoleForUser)
 		var addClientRoleToUserHandler = configureManagementHandler(managementEndpoints.AddClientRoleToUser)
+		var deleteClientRoleFromUserHandler = configureManagementHandler(managementEndpoints.DeleteClientRoleFromUser)
 
 		var getRolesHandler = configureManagementHandler(managementEndpoints.GetRoles)
 		var getRoleHandler = configureManagementHandler(managementEndpoints.GetRole)
@@ -1236,6 +1239,8 @@ func main() {
 
 		var linkShadowUserHandler = configureManagementHandler(managementEndpoints.LinkShadowUser)
 
+		var getIdentityProvidersHandler = configureManagementHandler(managementEndpoints.GetIdentityProviders)
+
 		// actions
 		managementSubroute.Path("/actions").Methods("GET").Handler(getManagementActionsHandler)
 
@@ -1277,6 +1282,7 @@ func main() {
 		// role mappings
 		managementSubroute.Path("/realms/{realm}/users/{userID}/role-mappings/clients/{clientID}").Methods("GET").Handler(getClientRoleForUserHandler)
 		managementSubroute.Path("/realms/{realm}/users/{userID}/role-mappings/clients/{clientID}").Methods("POST").Handler(addClientRoleToUserHandler)
+		managementSubroute.Path("/realms/{realm}/users/{userID}/role-mappings/clients/{clientID}/roles/{roleID}").Methods("DELETE").Handler(deleteClientRoleFromUserHandler)
 
 		managementSubroute.Path("/realms/{realm}/users/{userID}/reset-password").Methods("PUT").Handler(resetPasswordHandler)
 		managementSubroute.Path("/realms/{realm}/users/{userID}/execute-actions-email").Methods("PUT").Handler(executeActionsEmailHandler)
@@ -1331,6 +1337,8 @@ func main() {
 
 		// brokering - shadow users
 		managementSubroute.Path("/realms/{realm}/users/{userID}/federated-identity/{provider}").Methods("POST").Handler(linkShadowUserHandler)
+
+		managementSubroute.Path("/realms/{realm}/identity-providers").Methods("GET").Handler(getIdentityProvidersHandler)
 
 		// Accreditations
 		route.Path("/accreditations/realms/{realm}/users/{userID}/revoke-accreditations").Methods("PUT").Handler(revokeAccreditationsHandler)

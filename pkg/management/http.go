@@ -42,6 +42,7 @@ const (
 	prmQryFirst         = "first"
 	prmQryMax           = "max"
 	prmQryGroupName     = "groupName"
+	prmQryRoleName      = "roleName"
 	prmQryGenUsername   = "generateUsername"
 	prmQryGenNameID     = "generateNameID"
 	prmQryTermsOfUse    = "termsOfUse"
@@ -91,6 +92,7 @@ func decodeManagementRequest(ctx context.Context, req *http.Request) (interface{
 		prmQryFirst:         constants.RegExpNumber,
 		prmQryMax:           constants.RegExpNumber,
 		prmQryGroupName:     constants.RegExpName,
+		prmQryRoleName:      constants.RegExpName,
 		prmQryGenUsername:   constants.RegExpBool,
 		prmQryGenNameID:     constants.RegExpBool,
 		prmQryTermsOfUse:    constants.RegExpBool,

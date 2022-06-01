@@ -265,6 +265,22 @@ type FederatedIdentityRepresentation struct {
 	Username *string `json:"username,omitempty"`
 }
 
+type IdentityProviderRepresentation struct {
+	AddReadTokenRoleOnCreate  *bool                   `json:"addReadTokenRoleOnCreate,omitempty"`
+	Alias                     *string                 `json:"alias,omitempty"`
+	AuthenticateByDefault     *bool                   `json:"authenticateByDefault,omitempty"`
+	Config                    *map[string]interface{} `json:"config,omitempty"`
+	DisplayName               *string                 `json:"displayName,omitempty"`
+	Enabled                   *bool                   `json:"enabled,omitempty"`
+	FirstBrokerLoginFlowAlias *string                 `json:"firstBrokerLoginFlowAlias,omitempty"`
+	InternalID                *string                 `json:"internalId,omitempty"`
+	LinkOnly                  *bool                   `json:"linkOnly,omitempty"`
+	PostBrokerLoginFlowAlias  *string                 `json:"postBrokerLoginFlowAlias,omitempty"`
+	ProviderID                *string                 `json:"providerId,omitempty"`
+	StoreToken                *bool                   `json:"storeToken,omitempty"`
+	TrustEmail                *bool                   `json:"trustEmail,omitempty"`
+}
+
 // RequiredAction type
 type RequiredAction string
 
@@ -603,6 +619,27 @@ func ConvertToKCFedID(fedID FederatedIdentityRepresentation) kc.FederatedIdentit
 	kcFedID.UserName = fedID.Username
 
 	return kcFedID
+}
+
+// ConvertToAPIIdentityProvider creates an API IdentityProviderRepresentation from a KC IdentityProviderRepresentation
+func ConvertToAPIIdentityProvider(idp kc.IdentityProviderRepresentation) IdentityProviderRepresentation {
+	var apiIDP IdentityProviderRepresentation
+
+	apiIDP.AddReadTokenRoleOnCreate = idp.AddReadTokenRoleOnCreate
+	apiIDP.Alias = idp.Alias
+	apiIDP.AuthenticateByDefault = idp.AuthenticateByDefault
+	apiIDP.Config = idp.Config
+	apiIDP.DisplayName = idp.DisplayName
+	apiIDP.Enabled = idp.Enabled
+	apiIDP.FirstBrokerLoginFlowAlias = idp.FirstBrokerLoginFlowAlias
+	apiIDP.InternalID = idp.InternalID
+	apiIDP.LinkOnly = idp.LinkOnly
+	apiIDP.PostBrokerLoginFlowAlias = idp.PostBrokerLoginFlowAlias
+	apiIDP.ProviderID = idp.ProviderID
+	apiIDP.StoreToken = idp.StoreToken
+	apiIDP.TrustEmail = idp.TrustEmail
+
+	return apiIDP
 }
 
 // CreateDefaultRealmCustomConfiguration creates a default custom configuration

@@ -21,6 +21,9 @@ import (
 func ptr(value string) *string {
 	return &value
 }
+func boolPtr(value bool) *bool {
+	return &value
+}
 
 func TestConvertCredential(t *testing.T) {
 	var credKc kc.CredentialRepresentation
@@ -442,6 +445,37 @@ func TestFederatedIdentityRepresentation(t *testing.T) {
 		fir.UserID = &uid
 		assert.Nil(t, fir.Validate())
 	})
+}
+
+func TestConvertToAPIIdentityProvider(t *testing.T) {
+	kcIdp := kc.IdentityProviderRepresentation{
+		AddReadTokenRoleOnCreate:  boolPtr(false),
+		Alias:                     ptr("testIDP"),
+		AuthenticateByDefault:     boolPtr(false),
+		Config:                    &map[string]interface{}{},
+		DisplayName:               ptr("TEST"),
+		Enabled:                   boolPtr(false),
+		FirstBrokerLoginFlowAlias: ptr("first broker login"),
+		InternalID:                ptr("0da3e7b1-6a99-4f73-92aa-86be96f4c2c5"),
+		LinkOnly:                  boolPtr(false),
+		PostBrokerLoginFlowAlias:  ptr("post broker login"),
+		ProviderID:                ptr("oidc"),
+		StoreToken:                boolPtr(false),
+		TrustEmail:                boolPtr(false),
+	}
+	res := ConvertToAPIIdentityProvider(kcIdp)
+	assert.Equal(t, kcIdp.AddReadTokenRoleOnCreate, res.AddReadTokenRoleOnCreate)
+	assert.Equal(t, kcIdp.Alias, res.Alias)
+	assert.Equal(t, kcIdp.AuthenticateByDefault, res.AuthenticateByDefault)
+	assert.Equal(t, kcIdp.Config, res.Config)
+	assert.Equal(t, kcIdp.DisplayName, res.DisplayName)
+	assert.Equal(t, kcIdp.Enabled, res.Enabled)
+	assert.Equal(t, kcIdp.InternalID, res.InternalID)
+	assert.Equal(t, kcIdp.LinkOnly, res.LinkOnly)
+	assert.Equal(t, kcIdp.PostBrokerLoginFlowAlias, res.PostBrokerLoginFlowAlias)
+	assert.Equal(t, kcIdp.ProviderID, res.ProviderID)
+	assert.Equal(t, kcIdp.StoreToken, res.StoreToken)
+	assert.Equal(t, kcIdp.TrustEmail, res.TrustEmail)
 }
 
 func TestConvertRealmCustomConfiguration(t *testing.T) {

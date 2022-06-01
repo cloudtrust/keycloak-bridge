@@ -2014,6 +2014,43 @@ func TestAddClientRolesToUser(t *testing.T) {
 	})
 }
 
+func TestDeleteClientRolesFromUser(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mocks = createMocks(mockCtrl)
+	var managementComponent = mocks.createComponent()
+
+	var accessToken = "TOKEN=="
+	var realmName = "master"
+	var userID = "789-789-456"
+	var clientID = "456-789-147"
+
+	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
+
+	t.Run("Delete role with succces", func(t *testing.T) {
+		var id = "1234-7454-4516"
+		var name = "client name"
+
+		mocks.keycloakClient.EXPECT().DeleteClientRolesFromUserRoleMapping(accessToken, realmName, userID, clientID, gomock.Any()).Return(nil)
+
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		err := managementComponent.DeleteClientRolesFromUser(ctx, realmName, userID, clientID, id, name)
+
+		assert.Nil(t, err)
+	})
+
+	t.Run("Error", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().DeleteClientRolesFromUserRoleMapping(accessToken, realmName, userID, clientID, gomock.Any()).Return(fmt.Errorf("Unexpected error"))
+
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+
+		err := managementComponent.DeleteClientRolesFromUser(ctx, "master", userID, clientID, "", "")
+
+		assert.NotNil(t, err)
+	})
+}
+
 func TestGetRolesOfUser(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -5337,6 +5374,48 @@ func TestLinkShadowUser(t *testing.T) {
 		mocks.logger.EXPECT().Warn(ctx, "err", "error")
 		err := managementComponent.LinkShadowUser(ctx, realmName, userID, provider, fedID)
 
+		assert.NotNil(t, err)
+	})
+}
+
+func TestGetIdentityProviders(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mocks = createMocks(mockCtrl)
+	var managementComponent = mocks.createComponent()
+
+	var accessToken = "TOKEN=="
+	var realmName = "test"
+
+	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+
+	t.Run("Get identity providers success", func(t *testing.T) {
+		kcIdp := kc.IdentityProviderRepresentation{
+			AddReadTokenRoleOnCreate:  ptrBool(false),
+			Alias:                     ptr("testIDP"),
+			AuthenticateByDefault:     ptrBool(false),
+			Config:                    &map[string]interface{}{},
+			DisplayName:               ptr("TEST"),
+			Enabled:                   ptrBool(false),
+			FirstBrokerLoginFlowAlias: ptr("first broker login"),
+			InternalID:                ptr("0da3e7b1-6a99-4f73-92aa-86be96f4c2c5"),
+			LinkOnly:                  ptrBool(false),
+			PostBrokerLoginFlowAlias:  ptr("post broker login"),
+			ProviderID:                ptr("oidc"),
+			StoreToken:                ptrBool(false),
+			TrustEmail:                ptrBool(false),
+		}
+		mocks.keycloakClient.EXPECT().GetIdps(accessToken, realmName).Return([]kc.IdentityProviderRepresentation{kcIdp}, nil)
+
+		res, err := managementComponent.GetIdentityProviders(ctx, realmName)
+		assert.Nil(t, err)
+		assert.Len(t, res, 1)
+	})
+	t.Run("Get identity providers error", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetIdps(accessToken, realmName).Return([]kc.IdentityProviderRepresentation{}, fmt.Errorf("error"))
+
+		_, err := managementComponent.GetIdentityProviders(ctx, realmName)
 		assert.NotNil(t, err)
 	})
 }
