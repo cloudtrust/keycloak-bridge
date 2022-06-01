@@ -51,6 +51,7 @@ var (
 	MGMTSetTrustIDGroups                    = newAction("MGMT_SetTrustIDGroups", security.ScopeGroup)
 	MGMTGetClientRolesForUser               = newAction("MGMT_GetClientRolesForUser", security.ScopeGroup)
 	MGMTAddClientRolesToUser                = newAction("MGMT_AddClientRolesToUser", security.ScopeGroup)
+	MGMTDeleteClientRolesFromUser           = newAction("MGMT_DeleteClientRolesFromUser", security.ScopeGroup)
 	MGMTResetPassword                       = newAction("MGMT_ResetPassword", security.ScopeGroup)
 	MGMTExecuteActionsEmail                 = newAction("MGMT_ExecuteActionsEmail", security.ScopeGroup)
 	MGMTRevokeAccreditations                = newAction("ACCR_RevokeAccreditations", security.ScopeGroup)
@@ -90,6 +91,7 @@ var (
 	MGMTUpdateRealmBackOfficeConfiguration  = newAction("MGMT_UpdateRealmBackOfficeConfiguration", security.ScopeGroup)
 	MGMTGetUserRealmBackOfficeConfiguration = newAction("MGMT_GetUserRealmBackOfficeConfiguration", security.ScopeRealm)
 	MGMTLinkShadowUser                      = newAction("MGMT_LinkShadowUser", security.ScopeRealm)
+	MGMTGetIdentityProviders                = newAction("MGMT_GetIdentityProviders", security.ScopeRealm)
 )
 
 // Tracking middleware at component level.
@@ -446,6 +448,17 @@ func (c *authorizationComponentMW) AddClientRolesToUser(ctx context.Context, rea
 	}
 
 	return c.next.AddClientRolesToUser(ctx, realmName, userID, clientID, roles)
+}
+
+func (c *authorizationComponentMW) DeleteClientRolesFromUser(ctx context.Context, realmName, userID, clientID string, roleID string, roleName string) error {
+	var action = MGMTDeleteClientRolesFromUser.String()
+	var targetRealm = realmName
+
+	if err := c.authManager.CheckAuthorizationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
+		return err
+	}
+
+	return c.next.DeleteClientRolesFromUser(ctx, realmName, userID, clientID, roleID, roleName)
 }
 
 func (c *authorizationComponentMW) ResetPassword(ctx context.Context, realmName string, userID string, password api.PasswordRepresentation) (string, error) {
@@ -888,4 +901,14 @@ func (c *authorizationComponentMW) LinkShadowUser(ctx context.Context, realmName
 	}
 
 	return c.next.LinkShadowUser(ctx, realmName, userID, provider, fedID)
+}
+
+func (c *authorizationComponentMW) GetIdentityProviders(ctx context.Context, realmName string) ([]api.IdentityProviderRepresentation, error) {
+	var action = MGMTGetIdentityProviders.String()
+	var targetRealm = realmName
+	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
+		return []api.IdentityProviderRepresentation{}, err
+	}
+
+	return c.next.GetIdentityProviders(ctx, realmName)
 }

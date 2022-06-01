@@ -735,6 +735,46 @@ paths:
       responses:
         200:
           description: successful operation
+  /realms/{realm}/users/{userID}/role-mappings/clients/{clientID}/roles/{roleID}:
+    delete:
+      tags:
+      - Users
+      summary: Delete client-level roles from the user
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
+      - name: clientID
+        in: path
+        description: Client id
+        required: true
+        schema:
+          type: string
+      - name: roleID
+        in: path
+        description: role ID
+        required: true
+        schema:
+          type: string
+      - name: roleName
+        in: query
+        description: name of the role
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation
+      
   /realms/{realm}/users/{userID}/reset-password:
     put:
       tags:
@@ -1827,6 +1867,27 @@ paths:
       responses:
         200:
           description: successful operation  
+  /realms/{realm}/identity-providers:
+    get:
+      tags:
+      - Brokering
+      summary: Get the list of all IDPs in the realm
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: Login provider id
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/IdentityProvider'
   /social/users:
     post:
       tags:
@@ -2279,7 +2340,36 @@ components:
         userID:
           type: string
         username:
-          type: string      
+          type: string   
+    IdentityProvider:
+      type: object
+      properties:
+          AddReadTokenRoleOnCreate: 
+            type: boolean
+          Alias: 
+            type: string
+          AuthenticateByDefault: 
+            type: boolean
+          Config:
+            type: object
+          DisplayName:
+            type: string
+          Enabled:
+            type: boolean
+          FirstBrokerLoginFlowAlias:
+            type: string
+          InternalID:
+            type: string
+          LinkOnly:
+            type: boolean
+          PostBrokerLoginFlowAlias:
+            type: string
+          ProviderID:
+            type: string
+          StoreToken:
+            type: boolean
+          TrustEmail:
+            type: boolean
   securitySchemes:
     openId:
       type: openIdConnect

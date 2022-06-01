@@ -151,6 +151,7 @@ func TestDeny(t *testing.T) {
 			"SetTrustIDGroupsToUser":              authorizationMW.SetTrustIDGroupsToUser(ctx, realmName, userID, grpNames),
 			"GetClientRolesForUser":               ignoreFirst(authorizationMW.GetClientRolesForUser(ctx, realmName, userID, clientID)),
 			"AddClientRolesToUser":                authorizationMW.AddClientRolesToUser(ctx, realmName, userID, clientID, roles),
+			"DeleteClientRolesFromUser":           authorizationMW.DeleteClientRolesFromUser(ctx, realmName, userID, clientID, roleID, roleName),
 			"ResetPassword":                       ignoreFirst(authorizationMW.ResetPassword(ctx, realmName, userID, password)),
 			"ExecuteActionsEmail":                 authorizationMW.ExecuteActionsEmail(ctx, realmName, userID, []api.RequiredAction{}),
 			"SendSmsCode":                         ignoreFirst(authorizationMW.SendSmsCode(ctx, realmName, userID)),
@@ -188,6 +189,7 @@ func TestDeny(t *testing.T) {
 			"UpdateRealmBackOfficeConfiguration":  authorizationMW.UpdateRealmBackOfficeConfiguration(ctx, realmName, groupID, boConfig),
 			"GetUserRealmBackOfficeConfiguration": ignoreFirst(authorizationMW.GetUserRealmBackOfficeConfiguration(ctx, realmName)),
 			"LinkShadowUser":                      authorizationMW.LinkShadowUser(ctx, realmName, userID, provider, fedID),
+			"GetIdentityProviders":                ignoreFirst(authorizationMW.GetIdentityProviders(ctx, realmName)),
 		}
 		for testName, testResult := range tests {
 			t.Run(testName, func(t *testing.T) {
@@ -279,6 +281,9 @@ func TestAllowed(t *testing.T) {
 		UserID:   &userID,
 		Username: &userUsername,
 	}
+
+	var idp = api.IdentityProviderRepresentation{}
+	var idps = []api.IdentityProviderRepresentation{idp}
 
 	var authorizations = []configuration.Authorization{}
 	for _, action := range actions {
@@ -406,6 +411,10 @@ func TestAllowed(t *testing.T) {
 
 		mockManagementComponent.EXPECT().AddClientRolesToUser(ctx, realmName, userID, clientID, roles).Return(nil)
 		err = authorizationMW.AddClientRolesToUser(ctx, realmName, userID, clientID, roles)
+		assert.Nil(t, err)
+
+		mockManagementComponent.EXPECT().DeleteClientRolesFromUser(ctx, realmName, userID, clientID, roleID, roleName).Return(nil)
+		err = authorizationMW.DeleteClientRolesFromUser(ctx, realmName, userID, clientID, roleID, roleName)
 		assert.Nil(t, err)
 
 		mockManagementComponent.EXPECT().ResetPassword(ctx, realmName, userID, password).Return("", nil)
@@ -574,6 +583,10 @@ func TestAllowed(t *testing.T) {
 
 		mockManagementComponent.EXPECT().LinkShadowUser(ctx, realmName, userID, provider, fedID).Return(nil)
 		err = authorizationMW.LinkShadowUser(ctx, realmName, userID, provider, fedID)
+		assert.Nil(t, err)
+
+		mockManagementComponent.EXPECT().GetIdentityProviders(ctx, realmName).Return(idps, nil)
+		_, err = authorizationMW.GetIdentityProviders(ctx, realmName)
 		assert.Nil(t, err)
 	}
 }

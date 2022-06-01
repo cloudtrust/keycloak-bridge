@@ -814,6 +814,36 @@ func TestAddClientRolesToUserEndpoint(t *testing.T) {
 	})
 }
 
+func TestDeleteClientRolesFromUserEndpoint(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
+
+	var e = MakeDeleteClientRolesFromUserEndpoint(mockManagementComponent)
+
+	var realm = "master"
+	var userID = "123-123-456"
+	var clientID = "456-789-741"
+	var roleID = "470cd9b2-d4a2-422a-97d0-7baa7c3ce494"
+	var roleName = "testName"
+
+	var ctx = context.Background()
+	var req = make(map[string]string)
+	req[prmRealm] = realm
+	req[prmUserID] = userID
+	req[prmClientID] = clientID
+	req[prmRoleID] = roleID
+	req[prmQryRoleName] = roleName
+
+	t.Run("No error", func(t *testing.T) {
+		mockManagementComponent.EXPECT().DeleteClientRolesFromUser(ctx, realm, userID, clientID, roleID, roleName).Return(nil).Times(1)
+		var res, err = e(ctx, req)
+		assert.Nil(t, err)
+		assert.Nil(t, res)
+	})
+}
+
 func TestResetPasswordEndpoint(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -1890,6 +1920,25 @@ func TestLinkShadowUserEndpoint(t *testing.T) {
 		_, err := e(ctx, req)
 		assert.NotNil(t, err)
 	})
+}
+
+func TestGetIdentityProvidersEndpoint(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
+
+	var e = MakeGetIdentityProvidersEndpoint(mockManagementComponent)
+
+	var realm = "master"
+	var ctx = context.Background()
+
+	var req = make(map[string]string)
+	req[prmRealm] = realm
+
+	mockManagementComponent.EXPECT().GetIdentityProviders(ctx, realm).Return([]api.IdentityProviderRepresentation{}, nil)
+	_, err := e(ctx, req)
+	assert.Nil(t, err)
 }
 
 func TestConvertLocationUrl(t *testing.T) {

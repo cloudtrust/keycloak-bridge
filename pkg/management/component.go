@@ -47,6 +47,7 @@ type KeycloakClient interface {
 	CreateUser(accessToken string, realmName string, targetRealmName string, user kc.UserRepresentation) (string, error)
 	GetClientRoleMappings(accessToken string, realmName, userID, clientID string) ([]kc.RoleRepresentation, error)
 	AddClientRolesToUserRoleMapping(accessToken string, realmName, userID, clientID string, roles []kc.RoleRepresentation) error
+	DeleteClientRolesFromUserRoleMapping(accessToken string, realmName, userID, clientID string, roles []kc.RoleRepresentation) error
 	GetRealmLevelRoleMappings(accessToken string, realmName, userID string) ([]kc.RoleRepresentation, error)
 	AddRealmLevelRoleMappings(accessToken string, realmName, userID string, roles []kc.RoleRepresentation) error
 	DeleteRealmLevelRoleMappings(accessToken string, realmName, userID string, roles []kc.RoleRepresentation) error
@@ -79,6 +80,7 @@ type KeycloakClient interface {
 	LinkShadowUser(accessToken string, realmName string, userID string, provider string, fedID kc.FederatedIdentityRepresentation) error
 	ClearUserLoginFailures(accessToken string, realmName, userID string) error
 	GetAttackDetectionStatus(accessToken string, realmName, userID string) (map[string]interface{}, error)
+	GetIdps(accessToken string, realmName string) ([]kc.IdentityProviderRepresentation, error)
 }
 
 // UsersDetailsDBModule is the interface from the users module
@@ -142,6 +144,7 @@ type Component interface {
 	SetTrustIDGroupsToUser(ctx context.Context, realmName, userID string, groupNames []string) error
 	GetClientRolesForUser(ctx context.Context, realmName, userID, clientID string) ([]api.RoleRepresentation, error)
 	AddClientRolesToUser(ctx context.Context, realmName, userID, clientID string, roles []api.RoleRepresentation) error
+	DeleteClientRolesFromUser(ctx context.Context, realmName, userID, clientID string, roleID string, roleName string) error
 
 	ResetPassword(ctx context.Context, realmName string, userID string, password api.PasswordRepresentation) (string, error)
 	ExecuteActionsEmail(ctx context.Context, realmName string, userID string, actions []api.RequiredAction, paramKV ...string) error
@@ -187,6 +190,8 @@ type Component interface {
 	GetUserRealmBackOfficeConfiguration(ctx context.Context, realmID string) (api.BackOfficeConfiguration, error)
 
 	LinkShadowUser(ctx context.Context, realmName string, userID string, provider string, fedID api.FederatedIdentityRepresentation) error
+
+	GetIdentityProviders(ctx context.Context, realmName string) ([]api.IdentityProviderRepresentation, error)
 }
 
 // Component is the management component.
@@ -1086,18 +1091,27 @@ func (c *component) AddClientRolesToUser(ctx context.Context, realmName, userID,
 
 	var rolesRep = []kc.RoleRepresentation{}
 	for _, role := range roles {
-		var roleRep kc.RoleRepresentation
-		roleRep.ID = role.ID
-		roleRep.Name = role.Name
-		roleRep.Composite = role.Composite
-		roleRep.ClientRole = role.ClientRole
-		roleRep.ContainerID = role.ContainerID
-		roleRep.Description = role.Description
-
-		rolesRep = append(rolesRep, roleRep)
+		rolesRep = append(rolesRep, api.ConvertToKCRole(role))
 	}
 
 	err := c.keycloakClient.AddClientRolesToUserRoleMapping(accessToken, realmName, userID, clientID, rolesRep)
+
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+	}
+
+	return err
+}
+
+func (c *component) DeleteClientRolesFromUser(ctx context.Context, realmName, userID, clientID string, roleID string, roleName string) error {
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+
+	role := kc.RoleRepresentation{
+		ID:   &roleID,
+		Name: &roleName,
+	}
+
+	err := c.keycloakClient.DeleteClientRolesFromUserRoleMapping(accessToken, realmName, userID, clientID, []kc.RoleRepresentation{role})
 
 	if err != nil {
 		c.logger.Warn(ctx, "err", err.Error())
@@ -2421,4 +2435,20 @@ func (c *component) LinkShadowUser(ctx context.Context, realmName string, userID
 		return err
 	}
 	return nil
+}
+
+func (c *component) GetIdentityProviders(ctx context.Context, realmName string) ([]api.IdentityProviderRepresentation, error) {
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+
+	idps, err := c.keycloakClient.GetIdps(accessToken, realmName)
+	if err != nil {
+		return []api.IdentityProviderRepresentation{}, err
+	}
+
+	var apiIdps []api.IdentityProviderRepresentation
+	for _, idp := range idps {
+		apiIdps = append(apiIdps, api.ConvertToAPIIdentityProvider(idp))
+	}
+
+	return apiIdps, nil
 }
