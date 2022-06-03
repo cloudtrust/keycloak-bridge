@@ -171,6 +171,7 @@ type Component interface {
 	DeleteRole(ctx context.Context, realmName string, roleID string) error
 	GetClientRoles(ctx context.Context, realmName, idClient string) ([]api.RoleRepresentation, error)
 	CreateClientRole(ctx context.Context, realmName, clientID string, role api.RoleRepresentation) (string, error)
+	DeleteClientRole(ctx context.Context, realmName, clientID string, roleID string) error
 
 	GetGroups(ctx context.Context, realmName string) ([]api.GroupRepresentation, error)
 	CreateGroup(ctx context.Context, realmName string, group api.GroupRepresentation) (string, error)
@@ -2150,6 +2151,24 @@ func (c *component) CreateClientRole(ctx context.Context, realmName, clientID st
 	}
 
 	return locationURL, nil
+}
+
+func (c *component) DeleteClientRole(ctx context.Context, realmName, clientID string, roleID string) error {
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+
+	role, err := c.keycloakClient.GetRole(accessToken, realmName, roleID)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return errorhandler.CreateNotFoundError("Role")
+	}
+
+	if role.ClientRole == nil || role.ContainerID == nil || !*role.ClientRole || *role.ContainerID != clientID {
+		err := errorhandler.CreateNotFoundError("Role")
+		c.logger.Warn(ctx, err, err.Error())
+		return err
+	}
+
+	return c.keycloakClient.DeleteRole(accessToken, realmName, roleID)
 }
 
 // Retrieve the configuration from the database

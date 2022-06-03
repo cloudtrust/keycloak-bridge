@@ -1730,6 +1730,29 @@ func TestCreateClientRoleEndpoint(t *testing.T) {
 	})
 }
 
+func TestDeleteClientRoleEndpoint(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
+
+	var e = MakeDeleteClientRoleEndpoint(mockManagementComponent)
+
+	var realm = "test"
+	var clientID = "65461-4568"
+	var roleID = "1234-452-4578"
+	var ctx = context.Background()
+	var req = make(map[string]string)
+	req[prmRealm] = realm
+	req[prmClientID] = clientID
+	req[prmRoleID] = roleID
+
+	mockManagementComponent.EXPECT().DeleteClientRole(ctx, realm, clientID, roleID).Return(nil)
+	var res, err = e(ctx, req)
+	assert.Nil(t, err)
+	assert.Equal(t, respNoContent, res)
+}
+
 func TestConfigurationEndpoints(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
