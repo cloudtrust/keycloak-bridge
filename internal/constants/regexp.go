@@ -6,17 +6,18 @@ const (
 	regExpLen255        = `^.{1,255}$`
 	regExpLen128        = `^.{1,128}$`
 
-	RegExpID          = `^[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}$`
-	RegExpName        = `^[a-zA-Z0-9-_]{1,128}$`
-	RegExpDescription = regExpLen255
-	RegExpBool        = `^([Tt][Rr][Uu][Ee])|([Ff][Aa][Ll][Ss][Ee])$`
+	RegExpID              = `^[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}$`
+	RegExpFederatedUserID = regExpLen128
+	RegExpName            = `^[a-zA-Z0-9-_]{1,128}$`
+	RegExpDescription     = regExpLen255
+	RegExpBool            = `^([Tt][Rr][Uu][Ee])|([Ff][Aa][Ll][Ss][Ee])$`
 
 	// Client
 	RegExpClientID = `^[a-zA-Z0-9-_.]{1,255}$`
 
 	// User
 	RegExpUsername            = `^[a-z0-9-_.]{1,128}$`
-	RegExpFederatedUsername   = `^[a-zA-Z0-9-_.]{1,128}$`
+	RegExpFederatedUsername   = regExpLen128
 	RegExpEmail               = `^.+\@.+\..+$`
 	RegExpNameSpecialChars    = `^([\p{Lu}\p{Ll}][\p{Lu}\p{Ll} /\\\.',-]{0,49})$`
 	RegExpNameSpecialChars128 = `^([\p{Lu}\p{Ll}][\p{Lu}\p{Ll} /\\\.',-]{0,127})$`
