@@ -437,13 +437,18 @@ func TestFederatedIdentityRepresentation(t *testing.T) {
 		assert.Equal(t, username, *res.UserName)
 	})
 
-	t.Run("Validate - fails", func(t *testing.T) {
-		assert.NotNil(t, fir.Validate())
+	t.Run("Validate - success", func(t *testing.T) {
+		assert.Nil(t, fir.Validate())
 	})
 	t.Run("Validate - success", func(t *testing.T) {
 		var uid = "abcdefgh-1234-1234-1234-1234abcd5678"
 		fir.UserID = &uid
 		assert.Nil(t, fir.Validate())
+	})
+	t.Run("Validate - user with email success", func(t *testing.T) {
+		email := "toto@test.com"
+		fedId := FederatedIdentityRepresentation{UserID: &email, Username: &email}
+		assert.Nil(t, fedId.Validate())
 	})
 }
 
@@ -860,7 +865,7 @@ func TestValidateRequiredAction(t *testing.T) {
 func TestValidateFederatedIdentityRepresentation(t *testing.T) {
 	var userID = "abcd1234-abcd-1234-efgh-abcd1234efgh"
 	var username = "abcdef"
-	var invalid = "invalid"
+	var invalid = "uaflztdlunsfvfpcvadfvbmjatejsfpdvqvlnurpfgfkhzlzidrsigcloltqqrbxxdwuarxeorzxbxutzzieyqhzvpkjfiwuelxhwfkdxokqdqkorpwrhdhnfuryabzi2"
 	var fi FederatedIdentityRepresentation
 
 	fi.UserID = &userID

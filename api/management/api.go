@@ -956,7 +956,7 @@ func (requiredAction RequiredAction) Validate() error {
 // Validate is a validator for FederatedIdentityRepresentation
 func (fedID FederatedIdentityRepresentation) Validate() error {
 	return validation.NewParameterValidator().
-		ValidateParameterRegExp(constants.UserID, fedID.UserID, constants.RegExpID, true).
+		ValidateParameterRegExp(constants.UserID, fedID.UserID, constants.RegExpFederatedUserID, true).
 		ValidateParameterRegExp(constants.Username, fedID.Username, constants.RegExpFederatedUsername, true).
 		Status()
 }
