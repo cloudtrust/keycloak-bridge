@@ -2159,11 +2159,11 @@ func (c *component) DeleteClientRole(ctx context.Context, realmName, clientID st
 	role, err := c.keycloakClient.GetRole(accessToken, realmName, roleID)
 	if err != nil {
 		c.logger.Warn(ctx, "err", err.Error())
-		return errorhandler.CreateNotFoundError("Role")
+		return errorhandler.CreateNotFoundError("role")
 	}
 
 	if role.ClientRole == nil || role.ContainerID == nil || !*role.ClientRole || *role.ContainerID != clientID {
-		err := errorhandler.CreateNotFoundError("Role")
+		err := errorhandler.CreateNotFoundError("role")
 		c.logger.Warn(ctx, err, err.Error())
 		return err
 	}
