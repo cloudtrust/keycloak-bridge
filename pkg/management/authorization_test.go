@@ -181,6 +181,7 @@ func TestDeny(t *testing.T) {
 			"DeleteAuthorization":                 authorizationMW.DeleteAuthorization(ctx, realmName, groupID, targetRealm, targetGroupId, action),
 			"GetClientRoles":                      ignoreFirst(authorizationMW.GetClientRoles(ctx, realmName, clientID)),
 			"CreateClientRole":                    ignoreFirst(authorizationMW.CreateClientRole(ctx, realmName, clientID, role)),
+			"DeleteClientRole":                    authorizationMW.DeleteClientRole(ctx, realmName, clientID, roleID),
 			"GetRealmCustomConfiguration":         ignoreFirst(authorizationMW.GetRealmCustomConfiguration(ctx, realmName)),
 			"UpdateRealmCustomConfiguration":      authorizationMW.UpdateRealmCustomConfiguration(ctx, realmName, customConfig),
 			"GetRealmAdminConfiguration":          ignoreFirst(authorizationMW.GetRealmAdminConfiguration(ctx, realmName)),
@@ -551,6 +552,10 @@ func TestAllowed(t *testing.T) {
 
 		mockManagementComponent.EXPECT().CreateClientRole(ctx, realmName, clientID, role).Return("", nil)
 		_, err = authorizationMW.CreateClientRole(ctx, realmName, clientID, role)
+		assert.Nil(t, err)
+
+		mockManagementComponent.EXPECT().DeleteClientRole(ctx, realmName, clientID, roleID).Return(nil)
+		err = authorizationMW.DeleteClientRole(ctx, realmName, clientID, roleID)
 		assert.Nil(t, err)
 
 		mockManagementComponent.EXPECT().GetRealmCustomConfiguration(ctx, realmName).Return(customConfig, nil)

@@ -827,6 +827,7 @@ func main() {
 
 			GetClientRoles:           prepareEndpoint(management.MakeGetClientRolesEndpoint(keycloakComponent), "get_client_roles_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 			CreateClientRole:         prepareEndpoint(management.MakeCreateClientRoleEndpoint(keycloakComponent, managementLogger), "create_client_role_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			DeleteClientRole:         prepareEndpoint(management.MakeDeleteClientRoleEndpoint(keycloakComponent), "delete_client_role_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 			GetClientRoleForUser:     prepareEndpoint(management.MakeGetClientRolesForUserEndpoint(keycloakComponent), "get_client_roles_for_user_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 			AddClientRoleToUser:      prepareEndpoint(management.MakeAddClientRolesToUserEndpoint(keycloakComponent), "get_client_roles_for_user_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 			DeleteClientRoleFromUser: prepareEndpoint(management.MakeDeleteClientRolesFromUserEndpoint(keycloakComponent), "delete_client_roles_from_user_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
@@ -1196,6 +1197,7 @@ func main() {
 		var deleteRoleHandler = configureManagementHandler(managementEndpoints.DeleteRole)
 		var getClientRolesHandler = configureManagementHandler(managementEndpoints.GetClientRoles)
 		var createClientRolesHandler = configureManagementHandler(managementEndpoints.CreateClientRole)
+		var deleteClientRolesHandler = configureManagementHandler(managementEndpoints.DeleteClientRole)
 
 		var getGroupsHandler = configureManagementHandler(managementEndpoints.GetGroups)
 		var createGroupHandler = configureManagementHandler(managementEndpoints.CreateGroup)
@@ -1314,6 +1316,7 @@ func main() {
 		managementSubroute.Path("/realms/{realm}/roles/{roleID}").Methods("DELETE").Handler(deleteRoleHandler)
 		managementSubroute.Path("/realms/{realm}/clients/{clientID}/roles").Methods("GET").Handler(getClientRolesHandler)
 		managementSubroute.Path("/realms/{realm}/clients/{clientID}/roles").Methods("POST").Handler(createClientRolesHandler)
+		managementSubroute.Path("/realms/{realm}/clients/{clientID}/roles/{roleID}").Methods("DELETE").Handler(deleteClientRolesHandler)
 
 		// groups
 		managementSubroute.Path("/realms/{realm}/groups").Methods("GET").Handler(getGroupsHandler)

@@ -1446,6 +1446,35 @@ paths:
               schema:
                 type: string
               description: URL of the new resource.
+  /realms/{realm}/clients/{clientID}/roles/{roleID}:
+    delete:
+      tags:
+      - Roles
+      summary: Delete a client role
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: clientID
+        in: path
+        description: id of client (not client-id)
+        required: true
+        schema:
+          type: string
+      - name: roleID
+        in: path
+        description: id of the role
+        required: true
+        schema:
+          type: string
+      responses:
+        204:
+          description: successful operation
+        404:
+          description: Not found
   /realms/{realm}/groups:
     get:
       tags:

@@ -4899,6 +4899,89 @@ func TestCreateClientRole(t *testing.T) {
 	})
 }
 
+func TestDeleteClientRole(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mocks = createMocks(mockCtrl)
+	var managementComponent = mocks.createComponent()
+
+	var accessToken = "TOKEN=="
+	var realmName = "test"
+	var clientID = "456-789-147"
+	var roleID = "123-456-789"
+
+	var role = kc.RoleRepresentation{
+		ID:          ptrString("1234-7454-4516"),
+		Name:        ptrString("name"),
+		ClientRole:  ptrBool(true),
+		Composite:   ptrBool(false),
+		ContainerID: ptrString("456-789-147"),
+		Description: ptrString("description role"),
+	}
+
+	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+
+	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
+
+	t.Run("SUCCESS", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetRole(accessToken, realmName, roleID).Return(role, nil)
+		mocks.keycloakClient.EXPECT().DeleteRole(accessToken, realmName, roleID).Return(nil)
+
+		err := managementComponent.DeleteClientRole(ctx, realmName, clientID, roleID)
+		assert.Nil(t, err)
+	})
+
+	t.Run("Get role failed", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetRole(accessToken, realmName, roleID).Return(kc.RoleRepresentation{}, fmt.Errorf("Unexpected error"))
+
+		err := managementComponent.DeleteClientRole(ctx, realmName, clientID, roleID)
+		assert.NotNil(t, err)
+	})
+
+	t.Run("Delete role failed", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetRole(accessToken, realmName, roleID).Return(role, nil)
+		mocks.keycloakClient.EXPECT().DeleteRole(accessToken, realmName, roleID).Return(fmt.Errorf("Unexpected error"))
+
+		err := managementComponent.DeleteClientRole(ctx, realmName, clientID, roleID)
+		assert.NotNil(t, err)
+	})
+
+	t.Run("Delete not a client role", func(t *testing.T) {
+		var role = kc.RoleRepresentation{
+			ID:          ptrString("1234-7454-4516"),
+			Name:        ptrString("name"),
+			ClientRole:  ptrBool(false),
+			Composite:   ptrBool(false),
+			ContainerID: ptrString(""),
+			Description: ptrString("description role"),
+		}
+
+		mocks.keycloakClient.EXPECT().GetRole(accessToken, realmName, roleID).Return(role, nil)
+
+		err := managementComponent.DeleteClientRole(ctx, realmName, clientID, roleID)
+		assert.NotNil(t, err)
+		assert.Equal(t, errorhandler.CreateNotFoundError("role"), err)
+	})
+
+	t.Run("Delete clientID != containerID", func(t *testing.T) {
+		var role = kc.RoleRepresentation{
+			ID:          ptrString("1234-7454-4516"),
+			Name:        ptrString("name"),
+			ClientRole:  ptrBool(true),
+			Composite:   ptrBool(false),
+			ContainerID: ptrString("otherCLIENT"),
+			Description: ptrString("description role"),
+		}
+
+		mocks.keycloakClient.EXPECT().GetRole(accessToken, realmName, roleID).Return(role, nil)
+
+		err := managementComponent.DeleteClientRole(ctx, realmName, clientID, roleID)
+		assert.NotNil(t, err)
+		assert.Equal(t, errorhandler.CreateNotFoundError("role"), err)
+	})
+}
+
 func TestGetRealmCustomConfiguration(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()

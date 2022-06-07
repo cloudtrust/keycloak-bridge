@@ -77,6 +77,7 @@ type Endpoints struct {
 	DeleteRole       endpoint.Endpoint
 	GetClientRoles   endpoint.Endpoint
 	CreateClientRole endpoint.Endpoint
+	DeleteClientRole endpoint.Endpoint
 
 	GetGroups            endpoint.Endpoint
 	CreateGroup          endpoint.Endpoint
@@ -868,6 +869,15 @@ func MakeCreateClientRoleEndpoint(component Component, logger keycloakb.Logger) 
 		return LocationHeader{
 			URL: url,
 		}, nil
+	}
+}
+
+// MakeDeleteClientRoleEndpoint creates an endpoint for DeleteClientRole
+func MakeDeleteClientRoleEndpoint(component Component) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+
+		return noContentResponse(component.DeleteClientRole(ctx, m[prmRealm], m[prmClientID], m[prmRoleID]))
 	}
 }
 

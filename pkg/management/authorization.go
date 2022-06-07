@@ -83,6 +83,7 @@ var (
 	MGMTDeleteAuthorization                 = newAction("MGMT_DeleteAuthorization", security.ScopeGroup)
 	MGMTGetClientRoles                      = newAction("MGMT_GetClientRoles", security.ScopeRealm)
 	MGMTCreateClientRole                    = newAction("MGMT_CreateClientRole", security.ScopeRealm)
+	MGMTDeleteClientRole                    = newAction("MGMT_DeleteClientRole", security.ScopeRealm)
 	MGMTGetRealmCustomConfiguration         = newAction("MGMT_GetRealmCustomConfiguration", security.ScopeRealm)
 	MGMTUpdateRealmCustomConfiguration      = newAction("MGMT_UpdateRealmCustomConfiguration", security.ScopeRealm)
 	MGMTGetRealmAdminConfiguration          = newAction("MGMT_GetRealmAdminConfiguration", security.ScopeRealm)
@@ -814,6 +815,17 @@ func (c *authorizationComponentMW) CreateClientRole(ctx context.Context, realmNa
 	}
 
 	return c.next.CreateClientRole(ctx, realmName, clientID, role)
+}
+
+func (c *authorizationComponentMW) DeleteClientRole(ctx context.Context, realmName, clientID string, roleID string) error {
+	var action = MGMTDeleteClientRole.String()
+	var targetRealm = realmName
+
+	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
+		return err
+	}
+
+	return c.next.DeleteClientRole(ctx, realmName, clientID, roleID)
 }
 
 func (c *authorizationComponentMW) GetRealmCustomConfiguration(ctx context.Context, realmName string) (api.RealmCustomConfiguration, error) {
