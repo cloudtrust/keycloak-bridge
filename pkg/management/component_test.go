@@ -4961,7 +4961,7 @@ func TestDeleteClientRole(t *testing.T) {
 
 		err := managementComponent.DeleteClientRole(ctx, realmName, clientID, roleID)
 		assert.NotNil(t, err)
-		assert.Equal(t, errorhandler.CreateNotFoundError("Role"), err)
+		assert.Equal(t, errorhandler.CreateNotFoundError("role"), err)
 	})
 
 	t.Run("Delete clientID != containerID", func(t *testing.T) {
@@ -4978,7 +4978,7 @@ func TestDeleteClientRole(t *testing.T) {
 
 		err := managementComponent.DeleteClientRole(ctx, realmName, clientID, roleID)
 		assert.NotNil(t, err)
-		assert.Equal(t, errorhandler.CreateNotFoundError("Role"), err)
+		assert.Equal(t, errorhandler.CreateNotFoundError("role"), err)
 	})
 }
 
