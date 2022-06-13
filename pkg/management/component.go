@@ -2464,7 +2464,7 @@ func (c *component) GetIdentityProviders(ctx context.Context, realmName string) 
 		return []api.IdentityProviderRepresentation{}, err
 	}
 
-	var apiIdps []api.IdentityProviderRepresentation
+	var apiIdps = make([]api.IdentityProviderRepresentation, 0)
 	for _, idp := range idps {
 		apiIdps = append(apiIdps, api.ConvertToAPIIdentityProvider(idp))
 	}

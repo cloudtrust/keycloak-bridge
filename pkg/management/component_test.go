@@ -5495,8 +5495,18 @@ func TestGetIdentityProviders(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Len(t, res, 1)
 	})
+	t.Run("Get identity providers success-empty result", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetIdps(accessToken, realmName).Return(nil, nil)
+
+		res, err := managementComponent.GetIdentityProviders(ctx, realmName)
+		assert.Nil(t, err)
+		assert.NotNil(t, res)
+		assert.Len(t, res, 0)
+		var bytes, _ = json.Marshal(res)
+		assert.Equal(t, "[]", string(bytes))
+	})
 	t.Run("Get identity providers error", func(t *testing.T) {
-		mocks.keycloakClient.EXPECT().GetIdps(accessToken, realmName).Return([]kc.IdentityProviderRepresentation{}, fmt.Errorf("error"))
+		mocks.keycloakClient.EXPECT().GetIdps(accessToken, realmName).Return([]kc.IdentityProviderRepresentation{}, errors.New("error"))
 
 		_, err := managementComponent.GetIdentityProviders(ctx, realmName)
 		assert.NotNil(t, err)
