@@ -593,17 +593,22 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 	}
 
 	// when the email changes, set the EmailVerified to false
-	if user.Email.Defined && (user.Email.Value == nil || c.isUpdated(user.Email.Value, oldUserKc.Email)) {
-		var verified = false
-		user.EmailVerified = &verified
+	if user.Email.Defined {
+		if user.Email.Value == nil {
+			var verified = false
+			user.EmailVerified = &verified
+			removeAttributes = append(removeAttributes, constants.AttrbEmailToValidate)
+		} else if c.isUpdated(user.Email.Value, oldUserKc.Email) {
+			oldUserKc.SetAttributeString(constants.AttrbEmailToValidate, *user.Email.Value)
+		}
 	}
 
 	// when the phone number changes, set the PhoneNumberVerified to false
-	if user.PhoneNumber.Defined && (user.PhoneNumber.Value == nil || c.isUpdated(user.PhoneNumber.Value, oldUserKc.GetAttributeString(constants.AttrbPhoneNumber))) {
-		var verified = false
-		user.PhoneNumberVerified = &verified
+	if user.PhoneNumber.Defined {
 		if user.PhoneNumber.Value == nil {
-			removeAttributes = append(removeAttributes, constants.AttrbPhoneNumber, constants.AttrbPhoneNumberVerified)
+			removeAttributes = append(removeAttributes, constants.AttrbPhoneNumber, constants.AttrbPhoneNumberVerified, constants.AttrbPhoneNumberToValidate)
+		} else if c.isUpdated(user.PhoneNumber.Value, oldUserKc.GetAttributeString(constants.AttrbPhoneNumber)) {
+			oldUserKc.SetAttributeString(constants.AttrbPhoneNumberToValidate, *user.PhoneNumber.Value)
 		}
 	}
 
@@ -632,6 +637,10 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 	)
 
 	userRep = api.ConvertUpdatableToKCUser(user)
+	if user.Email.Value != nil {
+		// Keep previous email value. Update is managed with emailToValidate
+		userRep.Email = oldUserKc.Email
+	}
 
 	// Merge the attributes coming from the old user representation and the updated user representation in order not to lose anything
 	var mergedAttributes = make(kc.Attributes)
@@ -1366,7 +1375,7 @@ func (c *component) sendMigrationEmail(ctx context.Context, accessToken string, 
 
 	redirectURL.RawQuery = parameters.Encode()
 
-	var actions = []string{"VERIFY_EMAIL", "set-onboarding-token", "migration-action"}
+	var actions = []string{"ct-verify-email", "set-onboarding-token", "migration-action"}
 	if reminder {
 		actions = append(actions, "reminder-action")
 	}

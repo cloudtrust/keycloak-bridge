@@ -13,25 +13,27 @@ import (
 
 // AccountRepresentation struct
 type AccountRepresentation struct {
-	Gender               *string                        `json:"gender,omitempty"`
-	FirstName            *string                        `json:"firstName,omitempty"`
-	LastName             *string                        `json:"lastName,omitempty"`
-	Username             *string                        `json:"username,omitempty"`
-	Email                *string                        `json:"email,omitempty"`
-	EmailVerified        *bool                          `json:"emailVerified,omitempty"`
-	PhoneNumber          *string                        `json:"phoneNumber,omitempty"`
-	PhoneNumberVerified  *bool                          `json:"phoneNumberVerified,omitempty"`
-	BirthDate            *string                        `json:"birthDate,omitempty"`
-	BirthLocation        *string                        `json:"birthLocation,omitempty"`
-	Nationality          *string                        `json:"nationality,omitempty"`
-	IDDocumentType       *string                        `json:"idDocumentType,omitempty"`
-	IDDocumentNumber     *string                        `json:"idDocumentNumber,omitempty"`
-	IDDocumentExpiration *string                        `json:"idDocumentExpiration,omitempty"`
-	IDDocumentCountry    *string                        `json:"idDocumentCountry,omitempty"`
-	Locale               *string                        `json:"locale,omitempty"`
-	BusinessID           *string                        `json:"businessId,omitempty"`
-	PendingChecks        *[]string                      `json:"pendingChecks,omitempty"`
-	Accreditations       *[]AccreditationRepresentation `json:"accreditations,omitempty"`
+	Gender                *string                        `json:"gender,omitempty"`
+	FirstName             *string                        `json:"firstName,omitempty"`
+	LastName              *string                        `json:"lastName,omitempty"`
+	Username              *string                        `json:"username,omitempty"`
+	Email                 *string                        `json:"email,omitempty"`
+	EmailVerified         *bool                          `json:"emailVerified,omitempty"`
+	EmailToValidate       *string                        `json:"emailToValidate,omitempty"`
+	PhoneNumber           *string                        `json:"phoneNumber,omitempty"`
+	PhoneNumberVerified   *bool                          `json:"phoneNumberVerified,omitempty"`
+	PhoneNumberToValidate *string                        `json:"phoneNumberToValidate,omitempty"`
+	BirthDate             *string                        `json:"birthDate,omitempty"`
+	BirthLocation         *string                        `json:"birthLocation,omitempty"`
+	Nationality           *string                        `json:"nationality,omitempty"`
+	IDDocumentType        *string                        `json:"idDocumentType,omitempty"`
+	IDDocumentNumber      *string                        `json:"idDocumentNumber,omitempty"`
+	IDDocumentExpiration  *string                        `json:"idDocumentExpiration,omitempty"`
+	IDDocumentCountry     *string                        `json:"idDocumentCountry,omitempty"`
+	Locale                *string                        `json:"locale,omitempty"`
+	BusinessID            *string                        `json:"businessId,omitempty"`
+	PendingChecks         *[]string                      `json:"pendingChecks,omitempty"`
+	Accreditations        *[]AccreditationRepresentation `json:"accreditations,omitempty"`
 }
 
 // UpdatableAccountRepresentation struct
@@ -127,29 +129,23 @@ func ConvertToAPIAccount(ctx context.Context, userKc kc.UserRepresentation, logg
 	userRep.Username = userKc.Username
 	userRep.Email = userKc.Email
 	userRep.EmailVerified = userKc.EmailVerified
+	userRep.EmailToValidate = userKc.GetAttributeString(constants.AttrbEmailToValidate)
 	userRep.FirstName = userKc.FirstName
 	userRep.LastName = userKc.LastName
+	userRep.PhoneNumber = userKc.GetAttributeString(constants.AttrbPhoneNumber)
+	userRep.PhoneNumberToValidate = userKc.GetAttributeString(constants.AttrbPhoneNumberToValidate)
+	userRep.Gender = userKc.GetAttributeString(constants.AttrbGender)
+	userRep.Locale = userKc.GetAttributeString(constants.AttrbLocale)
+	userRep.BusinessID = userKc.GetAttributeString(constants.AttrbBusinessID)
 
-	if value := userKc.GetAttributeString(constants.AttrbPhoneNumber); value != nil {
-		userRep.PhoneNumber = value
-	}
 	if verified, err := userKc.GetAttributeBool(constants.AttrbPhoneNumberVerified); err == nil && verified != nil {
 		userRep.PhoneNumberVerified = verified
-	}
-	if value := userKc.GetAttributeString(constants.AttrbGender); value != nil {
-		userRep.Gender = value
 	}
 	if value := userKc.GetAttributeDate(constants.AttrbBirthDate, constants.SupportedDateLayouts); value != nil {
 		userRep.BirthDate = value
 	}
-	if value := userKc.GetAttributeString(constants.AttrbLocale); value != nil {
-		userRep.Locale = value
-	}
 	if values := userKc.GetAttribute(constants.AttrbAccreditations); len(values) > 0 {
 		userRep.Accreditations = convertToAccreditations(ctx, values, logger)
-	}
-	if value := userKc.GetAttributeString(constants.AttrbBusinessID); value != nil {
-		userRep.BusinessID = value
 	}
 
 	return userRep
