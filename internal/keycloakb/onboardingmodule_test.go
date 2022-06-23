@@ -3,6 +3,7 @@ package keycloakb
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -164,6 +165,42 @@ func TestSendOnboardingEmail(t *testing.T) {
 		err := onboardingModule.SendOnboardingEmail(ctx, accessToken, realmName, userID, username, onboardingClientID, onboardingRedirectURI, themeRealmName, false, paramKV...)
 
 		assert.Nil(t, err)
+	})
+}
+
+func TestComputeRedirectURI(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mocks = createOnboardingMocks(mockCtrl)
+	var onboarding = mocks.createOnboardingModule()
+
+	var keycloakBaseURI = "http://keycloak.url"
+	var realmName = "realmName"
+	var accessToken = "ACCESS_TOKEN"
+	var userID = "135-15641-546"
+	var username = "username"
+	var onboardingClientID = "onboardingid"
+	var onboardingRedirectURI = "http://redirect.test/test/example"
+	var onboardingRedirectURIEncoded = "http%3A%2F%2Fredirect.test%2Ftest%2Fexample"
+	var trustIDAuthToken = "plktqQ+H9sENTTyYv+9jQ4BwSCEF2agtohyrSZWSo3o="
+	var trustIDAuthTokenEncoded = "plktqQ%2BH9sENTTyYv%2B9jQ4BwSCEF2agtohyrSZWSo3o%3D"
+	var ctx = context.TODO()
+
+	mocks.keycloakURIProvider.EXPECT().GetBaseURI(realmName).Return(keycloakBaseURI).AnyTimes()
+
+	t.Run("Failed get trustIDAuthToken", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetTrustIDAuthToken(accessToken, realmName, userID).Return("", errors.New("unexpected error"))
+		_, err := onboarding.ComputeRedirectURI(ctx, accessToken, realmName, userID, username, onboardingClientID, onboardingRedirectURI)
+		assert.NotNil(t, err)
+	})
+
+	t.Run("Success", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetTrustIDAuthToken(accessToken, realmName, userID).Return(trustIDAuthToken, nil)
+		uri, err := onboarding.ComputeRedirectURI(ctx, accessToken, realmName, userID, username, onboardingClientID, onboardingRedirectURI)
+		assert.Nil(t, err)
+		expectedURI := fmt.Sprintf("%s/auth/realms/%s/protocol/openid-connect/auth?client_id=%s&login_hint=%s&redirect_uri=%s&response_type=code&scope=openid&trustid_auth_token=%s", keycloakBaseURI, realmName, onboardingClientID, username, onboardingRedirectURIEncoded, trustIDAuthTokenEncoded)
+		assert.Equal(t, expectedURI, uri)
 	})
 }
 

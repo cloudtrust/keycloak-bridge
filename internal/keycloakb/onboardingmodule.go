@@ -39,6 +39,7 @@ type OnboardingKeycloakClient interface {
 	DeleteUser(accessToken string, realmName, userID string) error
 	ExecuteActionsEmail(accessToken string, reqRealmName string, targetRealmName string, userID string, actions []string, paramKV ...string) error
 	SendEmail(accessToken string, reqRealmName string, realmName string, emailRep kc.EmailRepresentation) error
+	GetTrustIDAuthToken(accessToken string, realmName string, userID string) (string, error)
 }
 
 // UsersDBModule interface
@@ -53,6 +54,8 @@ type OnboardingModule interface {
 		onboardingClientID string, onboardingRedirectURI string, themeRealmName string, reminder bool, paramKV ...string) error
 	CreateUser(ctx context.Context, accessToken, realmName, targetRealmName string, kcUser *kc.UserRepresentation) (string, error)
 	ProcessAlreadyExistingUserCases(ctx context.Context, accessToken string, targetRealmName string, userEmail string, requestingSource string, handler func(username string, createdTimestamp int64, thirdParty *string) error) error
+	ComputeRedirectURI(ctx context.Context, accessToken string, realmName string, userID string, username string,
+		onboardingClientID string, onboardingRedirectURI string) (string, error)
 }
 
 // NewOnboardingModule creates an onboarding module
@@ -108,6 +111,33 @@ func (om *onboardingModule) SendOnboardingEmail(ctx context.Context, accessToken
 	}
 
 	return nil
+}
+
+func (om *onboardingModule) ComputeRedirectURI(ctx context.Context, accessToken string, realmName string, userID string, username string,
+	onboardingClientID string, onboardingRedirectURI string) (string, error) {
+	var kcURL = fmt.Sprintf("%s/auth/realms/%s/protocol/openid-connect/auth", om.keycloakURIProvider.GetBaseURI(realmName), realmName)
+	redirectURL, err := url.Parse(kcURL)
+	if err != nil {
+		om.logger.Warn(ctx, "msg", "Can't parse keycloak URL", "err", err.Error())
+		return "", err
+	}
+
+	trustIDAuthToken, err := om.keycloakClient.GetTrustIDAuthToken(accessToken, realmName, userID)
+	if err != nil {
+		om.logger.Warn(ctx, "msg", "Failed to generate a trustIDAuthToken", "err", err.Error())
+		return "", err
+	}
+
+	var parameters = url.Values{}
+	parameters.Add("client_id", onboardingClientID)
+	parameters.Add("scope", "openid")
+	parameters.Add("response_type", "code")
+	parameters.Add("redirect_uri", onboardingRedirectURI)
+	parameters.Add("login_hint", username)
+	parameters.Add("trustid_auth_token", trustIDAuthToken)
+
+	redirectURL.RawQuery = parameters.Encode()
+	return redirectURL.String(), nil
 }
 
 func (om *onboardingModule) generateUsername(chars []rune, length int) string {

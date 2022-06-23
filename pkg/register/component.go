@@ -40,6 +40,8 @@ type OnboardingModule interface {
 		onboardingRedirectURI string, themeRealmName string, reminder bool, paramKV ...string) error
 	CreateUser(ctx context.Context, accessToken, realmName, targetRealmName string, kcUser *kc.UserRepresentation) (string, error)
 	ProcessAlreadyExistingUserCases(ctx context.Context, accessToken string, targetRealmName string, userEmail string, requestingSource string, handler func(username string, createdTimestamp int64, thirdParty *string) error) error
+	ComputeRedirectURI(ctx context.Context, accessToken string, realmName string, userID string, username string,
+		onboardingClientID string, onboardingRedirectURI string) (string, error)
 }
 
 // GlnVerifier interface allows to check validity of a GLN
@@ -49,7 +51,7 @@ type GlnVerifier interface {
 
 // Component is the register component interface.
 type Component interface {
-	RegisterUser(ctx context.Context, targetRealmName string, customerRealmName string, user apiregister.UserRepresentation) error
+	RegisterUser(ctx context.Context, targetRealmName string, customerRealmName string, user apiregister.UserRepresentation, redirect bool) (string, error)
 	GetConfiguration(ctx context.Context, realmName string) (apiregister.ConfigurationRepresentation, error)
 }
 
@@ -127,35 +129,35 @@ func (c *component) GetConfiguration(ctx context.Context, realmName string) (api
 	}, nil
 }
 
-func (c *component) RegisterUser(ctx context.Context, targetRealmName string, customerRealmName string, user apiregister.UserRepresentation) error {
+func (c *component) RegisterUser(ctx context.Context, targetRealmName string, customerRealmName string, user apiregister.UserRepresentation, redirect bool) (string, error) {
 	// Get an OIDC token to be able to request Keycloak
 	var accessToken string
 	accessToken, err := c.tokenProvider.ProvideTokenForRealm(ctx, targetRealmName)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Can't get OIDC token", "err", err.Error())
-		return err
+		return "", err
 	}
 
 	// Get Realm configuration from database
 	realmConf, realmAdminConf, err := c.configDBModule.GetConfigurations(ctx, targetRealmName)
 	if err != nil {
 		c.logger.Info(ctx, "msg", "Can't get realm configuration from database", "err", err.Error())
-		return err
+		return "", err
 	}
 
 	if realmAdminConf.SelfRegisterEnabled == nil || !*realmAdminConf.SelfRegisterEnabled {
-		return errorhandler.CreateEndpointNotEnabled("selfRegister")
+		return "", errorhandler.CreateEndpointNotEnabled("selfRegister")
 	}
 
 	if (realmConf.SelfRegisterGroupNames == nil || len(*realmConf.SelfRegisterGroupNames) == 0) ||
 		(realmConf.OnboardingRedirectURI == nil || *realmConf.OnboardingRedirectURI == "") ||
 		(realmConf.OnboardingClientID == nil || *realmConf.OnboardingClientID == "") {
-		return errorhandler.CreateEndpointNotEnabled(constants.MsgErrNotConfigured)
+		return "", errorhandler.CreateEndpointNotEnabled(constants.MsgErrNotConfigured)
 	}
 
 	if realmAdminConf.ShowGlnEditing != nil && *realmAdminConf.ShowGlnEditing && user.BusinessID != nil {
 		if glnErr := c.glnVerifier.ValidateGLN(*user.FirstName, *user.LastName, *user.BusinessID); glnErr != nil {
-			return glnErr
+			return "", glnErr
 		}
 	} else {
 		user.BusinessID = nil
@@ -174,36 +176,42 @@ func (c *component) RegisterUser(ctx context.Context, targetRealmName string, cu
 		return errAccountAlreadyExists
 	})
 	if err == errAccountAlreadyExists {
-		return nil
+		return "", nil
 	}
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	// Create new user
 	userID, username, err := c.createUser(ctx, accessToken, targetRealmName, user, *realmConf.SelfRegisterGroupNames)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	// Send email
 	var onboardingRedirectURI = *realmConf.OnboardingRedirectURI
 
 	if targetRealmName != customerRealmName {
 		onboardingRedirectURI += "?customerRealm=" + customerRealmName
 	}
 
-	var paramKV = []string{"lifespan", "3600"} // 1 hour
-	err = c.onboardingModule.SendOnboardingEmail(ctx, accessToken, targetRealmName, userID, username,
-		*realmConf.OnboardingClientID, onboardingRedirectURI, customerRealmName, false, paramKV...)
+	redirectURL := ""
+	if redirect {
+		redirectURL, err = c.onboardingModule.ComputeRedirectURI(ctx, accessToken, targetRealmName, userID, username, *realmConf.OnboardingClientID, onboardingRedirectURI)
+	} else {
+		// Send email
+		var paramKV = []string{"lifespan", "3600"} // 1 hour
+		err = c.onboardingModule.SendOnboardingEmail(ctx, accessToken, targetRealmName, userID, username,
+			*realmConf.OnboardingClientID, onboardingRedirectURI, customerRealmName, false, paramKV...)
+	}
+
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	// store the API call into the DB
 	c.reportEvent(ctx, "REGISTER_USER", database.CtEventRealmName, targetRealmName, database.CtEventUserID, userID, database.CtEventUsername, username)
 
-	return nil
+	return redirectURL, nil
 }
 
 func (c *component) sendAlreadyExistsEmail(ctx context.Context, accessToken string, reqRealmName string, realmName string,
