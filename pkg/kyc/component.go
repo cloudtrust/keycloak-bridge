@@ -2,6 +2,7 @@ package kyc
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -74,6 +75,8 @@ type Component interface {
 	SendSmsConsentCode(ctx context.Context, realmName string, userID string) error
 	SendSmsCodeInSocialRealm(ctx context.Context, userID string) (string, error)
 	SendSmsCode(ctx context.Context, realmName string, userID string) (string, error)
+
+	ValidateUserBasicID(ctx context.Context, userID string, user apikyc.UserRepresentation) error /***TO BE REMOVED WHEN MUlTI-ACCREDITATION WILL BE IMPLEMENTED***/
 }
 
 // Component is the management component.
@@ -303,6 +306,163 @@ func (c *component) ValidateUserInSocialRealm(ctx context.Context, userID string
 	var confRealm = ctx.Value(cs.CtContextRealm).(string)
 	return c.validateUser(ctx, accessToken, confRealm, c.socialRealmName, userID, user, consentCode)
 }
+
+/********************* (BEGIN) Temporary basic identity (TO BE REMOVED WHEN MUlTI-ACCREDITATION WILL BE IMPLEMENTED) *********************/
+func (c *component) ValidateUserBasicID(ctx context.Context, userID string, user apikyc.UserRepresentation) error {
+	accessToken, err := c.tokenProvider.ProvideToken(ctx)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Can't get OIDC token", "err", err.Error())
+		return err
+	}
+
+	var confRealm = ctx.Value(cs.CtContextRealm).(string)
+	return c.validateUserBasicID(ctx, accessToken, confRealm, c.socialRealmName, userID, user)
+}
+
+func (c *component) validateUserBasicID(ctx context.Context, accessToken string, confRealm string, targetRealm string, userID string, user apikyc.UserRepresentation) error {
+	var operatorName = ctx.Value(cs.CtContextUsername).(string)
+
+	// Get the user from Keycloak
+	kcUser, err := c.keycloakClient.GetUser(accessToken, targetRealm, userID)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "CreateAccreditations: can't get Keycloak user", "err", err.Error(), "realm", targetRealm, "user", userID)
+		return err
+	}
+
+	//Creation of the new accreditation HARDCODED
+	newAccreds := map[string]string{}
+	typeAccred := "basic-check"
+	validityAccred := "150y"
+	expiry, err := c.convertDurationToDate(ctx, validityAccred)
+	if err != nil {
+		return err
+	}
+	creationMillis := time.Now().UnixNano() / int64(time.Millisecond)
+	var newAccreditationJSON, _ = json.Marshal(keycloakb.AccreditationRepresentation{
+		Type:           &typeAccred,
+		ExpiryDate:     expiry,
+		CreationMillis: &creationMillis,
+	})
+	newAccreds[typeAccred] = string(newAccreditationJSON)
+
+	var mergedAccreds = evaluateCurrentAccreditations(kcUser.GetAttribute(constants.AttrbAccreditations), newAccreds)
+
+	// Merge all attributes
+	for _, accValue := range newAccreds {
+		mergedAccreds = append(mergedAccreds, accValue)
+	}
+	kcUser.SetAttribute(constants.AttrbAccreditations, mergedAccreds)
+
+	keycloakb.ConvertLegacyAttribute(&kcUser)
+
+	// Some parameters might not be updated by operator
+	user.ID = &userID
+	user.Email = nil
+	user.PhoneNumber = nil
+	user.EmailVerified = nil
+	user.PhoneNumberVerified = nil
+	user.Username = kcUser.Username
+
+	// Gets user from database
+	dbUser, err := c.usersDBModule.GetUserDetails(ctx, targetRealm, userID)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Failed to get user from database", "err", err.Error())
+		return err
+	}
+
+	user.ExportToDBUser(&dbUser)
+	user.ExportToKeycloak(&kcUser)
+
+	var now = time.Now()
+	err = c.keycloakClient.UpdateUser(accessToken, targetRealm, userID, kcUser)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Failed to update user through Keycloak API", "err", err.Error())
+		return err
+	}
+
+	// Store user in database
+	err = c.usersDBModule.StoreOrUpdateUserDetails(ctx, targetRealm, dbUser)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Can't store user details in database", "err", err.Error())
+		return err
+	}
+
+	// Store check in database
+	var validation = dto.DBCheck{
+		Operator:  &operatorName,
+		DateTime:  &now,
+		Status:    ptr("VERIFIED"),
+		Type:      ptr("IDENTITY_CHECK"),
+		Nature:    ptr("BASIC_CHECK"),
+		Comment:   user.Comment,
+		ProofType: nil,
+		ProofData: nil,
+	}
+
+	if user.Attachments != nil && len(*user.Attachments) > 0 {
+		validation.ProofType = (*user.Attachments)[0].ContentType
+		validation.ProofData = (*user.Attachments)[0].Content
+	}
+	err = c.usersDBModule.CreateCheck(ctx, targetRealm, userID, validation)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Can't store validation check in database", "err", err.Error())
+		return err
+	}
+
+	// store the API call into the DB
+	c.reportEvent(ctx, "BASIC_VALIDATE_USER", database.CtEventRealmName, targetRealm, database.CtEventUserID, userID, database.CtEventUsername, *user.Username)
+
+	var archiveUser = dto.ToArchiveUserRepresentation(kcUser)
+	archiveUser.SetDetails(dbUser)
+	if archiveUser.Checks, err = c.usersDBModule.GetChecks(ctx, targetRealm, userID); err != nil {
+		c.logger.Warn(ctx, "msg", "Could not get user checks from database", "err", err.Error(), "realm", targetRealm, "user", userID)
+	}
+
+	err = c.archiveDBModule.StoreUserDetails(ctx, targetRealm, archiveUser)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Failed to archive user details", "err", err.Error())
+	}
+
+	return nil
+}
+
+// temporary COPY PASTE from accreditationsmodule.go
+func (c *component) convertDurationToDate(ctx context.Context, validity string) (*string, error) {
+	var expiryDate, err = validation.AddLargeDurationE(time.Now(), validity)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "convertDurationToDate: can't convert duration", "duration", validity, "err", err.Error())
+		return nil, errorhandler.CreateInternalServerError("duration-convertion")
+	}
+
+	var res = expiryDate.Format(constants.SupportedDateLayouts[0])
+
+	return &res, nil
+}
+
+// temporary COPY PASTE from accreditationsmodule.go
+func evaluateCurrentAccreditations(accredsAttributes []string, newAccreds map[string]string) []string {
+	var accreds []string
+	var bTrue = true
+	for _, accredJSON := range accredsAttributes {
+		var accreditation keycloakb.AccreditationRepresentation
+		// If accreditation can be unmarshalled
+		if err := json.Unmarshal([]byte(accredJSON), &accreditation); err == nil {
+			// If new accreditation is being created for the same type and it is not yet revoked
+			if _, ok := newAccreds[*accreditation.Type]; ok && (accreditation.Revoked == nil || !*accreditation.Revoked) {
+				// If existing accreditation is not yet expired
+				if expiryDate, err := time.Parse(constants.SupportedDateLayouts[0], *accreditation.ExpiryDate); err != nil || expiryDate.After(time.Now()) {
+					accreditation.Revoked = &bTrue
+					bytes, _ := json.Marshal(accreditation)
+					accredJSON = string(bytes)
+				}
+			}
+		}
+		accreds = append(accreds, accredJSON)
+	}
+	return accreds
+}
+
+/********************* (END) Temporary basic identity (TO BE REMOVED WHEN MUlTI-ACCREDITATION WILL BE IMPLEMENTED) *********************/
 
 func (c *component) validateUser(ctx context.Context, accessToken string, confRealm string, targetRealm string, userID string, user apikyc.UserRepresentation, consentCode *string) error {
 	var operatorName = ctx.Value(cs.CtContextUsername).(string)

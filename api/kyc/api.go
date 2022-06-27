@@ -216,16 +216,16 @@ func (u *UserRepresentation) ImportFromKeycloak(ctx context.Context, kcUser *kc.
 }
 
 // Validate checks the validity of the given User
-func (u *UserRepresentation) Validate() error {
+func (u *UserRepresentation) Validate(everythingOptional bool) error {
 	return validation.NewParameterValidator().
-		ValidateParameterRegExp(prmUserGender, u.Gender, constants.RegExpGender, true).
-		ValidateParameterRegExp(prmUserFirstName, u.FirstName, constants.RegExpFirstName, true).
-		ValidateParameterRegExp(prmUserLastName, u.LastName, constants.RegExpLastName, true).
-		ValidateParameterDate(prmUserBirthDate, u.BirthDate, constants.SupportedDateLayouts[0], true).
+		ValidateParameterRegExp(prmUserGender, u.Gender, constants.RegExpGender, true && !everythingOptional).
+		ValidateParameterRegExp(prmUserFirstName, u.FirstName, constants.RegExpFirstName, true && !everythingOptional).
+		ValidateParameterRegExp(prmUserLastName, u.LastName, constants.RegExpLastName, true && !everythingOptional).
+		ValidateParameterDate(prmUserBirthDate, u.BirthDate, constants.SupportedDateLayouts[0], true && !everythingOptional).
 		ValidateParameterRegExp(prmUserBirthLocation, u.BirthLocation, constants.RegExpBirthLocation, false).
 		ValidateParameterRegExp(prmUserNationality, u.Nationality, constants.RegExpCountryCode, false).
 		ValidateParameterIn(prmUserIDDocumentType, u.IDDocumentType, constants.AllowedDocumentTypes, false).
-		ValidateParameterRegExp(prmUserIDDocumentNumber, u.IDDocumentNumber, constants.RegExpIDDocumentNumber, true).
+		ValidateParameterRegExp(prmUserIDDocumentNumber, u.IDDocumentNumber, constants.RegExpIDDocumentNumber, true && !everythingOptional).
 		ValidateParameterDate(prmUserIDDocumentExpiration, u.IDDocumentExpiration, constants.SupportedDateLayouts[0], false).
 		ValidateParameterRegExp(prmUserIDDocumentCountry, u.IDDocumentCountry, constants.RegExpCountryCode, false).
 		ValidateParameterRegExp(prmUserLocale, u.Locale, constants.RegExpLocale, false).

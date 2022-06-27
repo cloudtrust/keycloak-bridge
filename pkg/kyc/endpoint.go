@@ -23,6 +23,8 @@ type Endpoints struct {
 	SendSMSConsentCode              endpoint.Endpoint
 	SendSMSCodeInSocialRealm        endpoint.Endpoint
 	SendSMSCode                     endpoint.Endpoint
+
+	ValidateUserBasic endpoint.Endpoint /***TO BE REMOVED WHEN MUlTI-ACCREDITATION WILL BE IMPLEMENTED***/
 }
 
 // MakeGetActionsEndpoint creates an endpoint for GetActions
@@ -90,7 +92,7 @@ func MakeValidateUserInSocialRealmEndpoint(component Component) cs.Endpoint {
 			return nil, commonerrors.CreateBadRequestError(commonerrors.MsgErrInvalidParam + "." + msg.BodyContent)
 		}
 
-		if err := user.Validate(); err != nil {
+		if err := user.Validate(false); err != nil {
 			return nil, err
 		}
 
@@ -103,6 +105,25 @@ func MakeValidateUserInSocialRealmEndpoint(component Component) cs.Endpoint {
 	}
 }
 
+/********************* (BEGIN) Temporary basic identity (TO BE REMOVED WHEN MUlTI-ACCREDITATION WILL BE IMPLEMENTED) *********************/
+func MakeValidateUserBasicIDEndpoint(component Component) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+		var user, err = apikyc.UserFromJSON(m[reqBody])
+		if err != nil {
+			return nil, commonerrors.CreateBadRequestError(commonerrors.MsgErrInvalidParam + "." + msg.BodyContent)
+		}
+
+		if err := user.Validate(true); err != nil {
+			return nil, err
+		}
+
+		return nil, component.ValidateUserBasicID(ctx, m[prmUserID], user)
+	}
+}
+
+/********************* (END) Temporary basic identity (TO BE REMOVED WHEN MUlTI-ACCREDITATION WILL BE IMPLEMENTED) *********************/
+
 // MakeValidateUserEndpoint endpoint creation
 func MakeValidateUserEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
@@ -112,7 +133,7 @@ func MakeValidateUserEndpoint(component Component) cs.Endpoint {
 			return nil, commonerrors.CreateBadRequestError(commonerrors.MsgErrInvalidParam + "." + msg.BodyContent)
 		}
 
-		if err := user.Validate(); err != nil {
+		if err := user.Validate(false); err != nil {
 			return nil, err
 		}
 

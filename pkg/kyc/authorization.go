@@ -36,6 +36,8 @@ var (
 	KYCSendSmsConsentCode              = newAction("KYC_SendSmsConsentCode", security.ScopeGroup)
 	KYCSendSmsCodeInSocialRealm        = newAction("KYC_SendSmsCodeInSocialRealm", security.ScopeRealm)
 	KYCSendSmsCode                     = newAction("KYC_SendSmsCode", security.ScopeGroup)
+
+	kycValidateUserBasicID = newAction("KYC_ValidateUserBasicID", security.ScopeRealm) /***TO BE REMOVED WHEN MUlTI-ACCREDITATION WILL BE IMPLEMENTED***/ /***TO BE REMOVED WHEN MUlTI-ACCREDITATION WILL BE IMPLEMENTED***/
 )
 
 type authorizationComponentMW struct {
@@ -174,6 +176,23 @@ func (c *authorizationComponentMW) ValidateUser(ctx context.Context, realmName s
 
 	return c.next.ValidateUser(ctx, realmName, userID, user, consentCode)
 }
+
+/********************* (BEGIN) Temporary basic identity (TO BE REMOVED WHEN MUlTI-ACCREDITATION WILL BE IMPLEMENTED) *********************/
+func (c *authorizationComponentMW) ValidateUserBasicID(ctx context.Context, userID string, user apikyc.UserRepresentation) error {
+	var action = kycValidateUserBasicID.String()
+
+	// For this method, there is no target realm provided
+	// as parameter, so we pick the current realm of the user.
+	var targetRealm = ctx.Value(cs.CtContextRealm).(string)
+
+	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
+		return err
+	}
+
+	return c.next.ValidateUserBasicID(ctx, userID, user)
+}
+
+/********************* (END) Temporary basic identity (TO BE REMOVED WHEN MUlTI-ACCREDITATION WILL BE IMPLEMENTED) *********************/
 
 func (c *authorizationComponentMW) SendSmsConsentCodeInSocialRealm(ctx context.Context, userID string) error {
 	var action = KYCSendSmsConsentCodeInSocialRealm.String()
