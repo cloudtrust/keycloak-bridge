@@ -24,7 +24,7 @@ type Endpoints struct {
 	SendSMSCodeInSocialRealm        endpoint.Endpoint
 	SendSMSCode                     endpoint.Endpoint
 
-	ValidateUserBasic endpoint.Endpoint /***TO BE REMOVED WHEN MUlTI-ACCREDITATION WILL BE IMPLEMENTED***/
+	ValidateUserBasic endpoint.Endpoint /***TO BE REMOVED WHEN MULTI-ACCREDITATION WILL BE IMPLEMENTED***/
 }
 
 // MakeGetActionsEndpoint creates an endpoint for GetActions
@@ -105,7 +105,7 @@ func MakeValidateUserInSocialRealmEndpoint(component Component) cs.Endpoint {
 	}
 }
 
-/********************* (BEGIN) Temporary basic identity (TO BE REMOVED WHEN MUlTI-ACCREDITATION WILL BE IMPLEMENTED) *********************/
+/********************* (BEGIN) Temporary basic identity (TO BE REMOVED WHEN MULTI-ACCREDITATION WILL BE IMPLEMENTED) *********************/
 func MakeValidateUserBasicIDEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
@@ -122,7 +122,7 @@ func MakeValidateUserBasicIDEndpoint(component Component) cs.Endpoint {
 	}
 }
 
-/********************* (END) Temporary basic identity (TO BE REMOVED WHEN MUlTI-ACCREDITATION WILL BE IMPLEMENTED) *********************/
+/********************* (END) Temporary basic identity (TO BE REMOVED WHEN MULTI-ACCREDITATION WILL BE IMPLEMENTED) *********************/
 
 // MakeValidateUserEndpoint endpoint creation
 func MakeValidateUserEndpoint(component Component) cs.Endpoint {

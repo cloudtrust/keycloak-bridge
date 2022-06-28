@@ -76,7 +76,7 @@ type Component interface {
 	SendSmsCodeInSocialRealm(ctx context.Context, userID string) (string, error)
 	SendSmsCode(ctx context.Context, realmName string, userID string) (string, error)
 
-	ValidateUserBasicID(ctx context.Context, userID string, user apikyc.UserRepresentation) error /***TO BE REMOVED WHEN MUlTI-ACCREDITATION WILL BE IMPLEMENTED***/
+	ValidateUserBasicID(ctx context.Context, userID string, user apikyc.UserRepresentation) error /***TO BE REMOVED WHEN MULTI-ACCREDITATION WILL BE IMPLEMENTED***/
 }
 
 // Component is the management component.
@@ -307,7 +307,7 @@ func (c *component) ValidateUserInSocialRealm(ctx context.Context, userID string
 	return c.validateUser(ctx, accessToken, confRealm, c.socialRealmName, userID, user, consentCode)
 }
 
-/********************* (BEGIN) Temporary basic identity (TO BE REMOVED WHEN MUlTI-ACCREDITATION WILL BE IMPLEMENTED) *********************/
+/********************* (BEGIN) Temporary basic identity (TO BE REMOVED WHEN MULTI-ACCREDITATION WILL BE IMPLEMENTED) *********************/
 func (c *component) ValidateUserBasicID(ctx context.Context, userID string, user apikyc.UserRepresentation) error {
 	accessToken, err := c.tokenProvider.ProvideToken(ctx)
 	if err != nil {
@@ -462,7 +462,7 @@ func evaluateCurrentAccreditations(accredsAttributes []string, newAccreds map[st
 	return accreds
 }
 
-/********************* (END) Temporary basic identity (TO BE REMOVED WHEN MUlTI-ACCREDITATION WILL BE IMPLEMENTED) *********************/
+/********************* (END) Temporary basic identity (TO BE REMOVED WHEN MULTI-ACCREDITATION WILL BE IMPLEMENTED) *********************/
 
 func (c *component) validateUser(ctx context.Context, accessToken string, confRealm string, targetRealm string, userID string, user apikyc.UserRepresentation, consentCode *string) error {
 	var operatorName = ctx.Value(cs.CtContextUsername).(string)

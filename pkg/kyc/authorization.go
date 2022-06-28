@@ -37,7 +37,7 @@ var (
 	KYCSendSmsCodeInSocialRealm        = newAction("KYC_SendSmsCodeInSocialRealm", security.ScopeRealm)
 	KYCSendSmsCode                     = newAction("KYC_SendSmsCode", security.ScopeGroup)
 
-	kycValidateUserBasicID = newAction("KYC_ValidateUserBasicID", security.ScopeRealm) /***TO BE REMOVED WHEN MUlTI-ACCREDITATION WILL BE IMPLEMENTED***/ /***TO BE REMOVED WHEN MUlTI-ACCREDITATION WILL BE IMPLEMENTED***/
+	kycValidateUserBasicID = newAction("KYC_ValidateUserBasicID", security.ScopeRealm) /***TO BE REMOVED WHEN MULTI-ACCREDITATION WILL BE IMPLEMENTED***/ /***TO BE REMOVED WHEN MULTI-ACCREDITATION WILL BE IMPLEMENTED***/
 )
 
 type authorizationComponentMW struct {
@@ -177,7 +177,7 @@ func (c *authorizationComponentMW) ValidateUser(ctx context.Context, realmName s
 	return c.next.ValidateUser(ctx, realmName, userID, user, consentCode)
 }
 
-/********************* (BEGIN) Temporary basic identity (TO BE REMOVED WHEN MUlTI-ACCREDITATION WILL BE IMPLEMENTED) *********************/
+/********************* (BEGIN) Temporary basic identity (TO BE REMOVED WHEN MULTI-ACCREDITATION WILL BE IMPLEMENTED) *********************/
 func (c *authorizationComponentMW) ValidateUserBasicID(ctx context.Context, userID string, user apikyc.UserRepresentation) error {
 	var action = kycValidateUserBasicID.String()
 
@@ -192,7 +192,7 @@ func (c *authorizationComponentMW) ValidateUserBasicID(ctx context.Context, user
 	return c.next.ValidateUserBasicID(ctx, userID, user)
 }
 
-/********************* (END) Temporary basic identity (TO BE REMOVED WHEN MUlTI-ACCREDITATION WILL BE IMPLEMENTED) *********************/
+/********************* (END) Temporary basic identity (TO BE REMOVED WHEN MULTI-ACCREDITATION WILL BE IMPLEMENTED) *********************/
 
 func (c *authorizationComponentMW) SendSmsConsentCodeInSocialRealm(ctx context.Context, userID string) error {
 	var action = KYCSendSmsConsentCodeInSocialRealm.String()

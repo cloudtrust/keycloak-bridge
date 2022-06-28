@@ -248,6 +248,10 @@ func TestValidateUserRepresentation(t *testing.T) {
 	for idx, aUser := range users {
 		t.Run(fmt.Sprintf("Invalid users %d", idx), func(t *testing.T) {
 			assert.NotNil(t, aUser.Validate(false), "User is expected to be invalid with user %s", aUser.UserToJSON())
+			// if invalidity is not by ommiting a mandatory field we test that the validation works even in all Optional mode
+			if idx < 11 && idx > 15 {
+				assert.NotNil(t, aUser.Validate(true))
+			}
 		})
 	}
 }

@@ -125,7 +125,7 @@ paths:
       tags:
       - KYC
       summary: >
-        Temporary endpoint (TO BE REMOVED WHEN MUlTI-ACCREDITATION WILL BE IMPLEMENTED)
+        Temporary endpoint (TO BE REMOVED WHEN MULTI-ACCREDITATION WILL BE IMPLEMENTED)
         Updates a user after basic identification.
         User id parameter is mandatory in the path of the URL. The username value in the request body will be overriden by the username from Keycloak.
       security:
