@@ -14,7 +14,7 @@ paths:
   /validation/realms/{realm}/users/{userID}:
     get:
       tags:
-      - Check
+      - UserData
       summary: Get user data information
       parameters:
       - name: realm
@@ -41,10 +41,22 @@ paths:
       - UserData
       summary: Updates user data information
       parameters:
+      - name: realm
+        in: path
+        description: Realm name (not id!)
+        required: true
+        schema:
+          type: string
       - name: userID
         in: path
         description: userID of user to update
         required: true
+        schema:
+          type: string
+      - name: txnID
+        in: query
+        description: transaction ID (linked in events)
+        required: false
         schema:
           type: string
       requestBody:
@@ -71,6 +83,12 @@ paths:
         in: path
         description: userID of user checked
         required: true
+        schema:
+          type: string
+      - name: txnID
+        in: query
+        description: transaction ID (linked in events)
+        required: false
         schema:
           type: string
       requestBody:

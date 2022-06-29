@@ -42,13 +42,24 @@ func TestUpdateUserEndpoint(t *testing.T) {
 	var e = MakeUpdateUserEndpoint(mockComponent)
 	var userID = "1234-452-4578"
 	var realm = "realm"
+	var transactionID = "transaactionID"
 	var ctx = context.Background()
 
 	t.Run("No error", func(t *testing.T) {
 		userJSON, _ := json.Marshal(api.UserRepresentation{})
+		var req = map[string]string{prmRealm: realm, prmUserID: userID, prmTxnID: transactionID, reqBody: string(userJSON)}
+
+		mockComponent.EXPECT().UpdateUser(ctx, realm, userID, gomock.Any(), transactionID).Return(nil).Times(1)
+		var res, err = e(ctx, req)
+		assert.Nil(t, err)
+		assert.Nil(t, res)
+	})
+
+	t.Run("No error, no txnID", func(t *testing.T) {
+		userJSON, _ := json.Marshal(api.UserRepresentation{})
 		var req = map[string]string{prmRealm: realm, prmUserID: userID, reqBody: string(userJSON)}
 
-		mockComponent.EXPECT().UpdateUser(ctx, realm, userID, gomock.Any()).Return(nil).Times(1)
+		mockComponent.EXPECT().UpdateUser(ctx, realm, userID, gomock.Any(), "txnID not available").Return(nil).Times(1)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Nil(t, res)
@@ -107,7 +118,7 @@ func TestCreateCheckEndpoint(t *testing.T) {
 			reqBody:   string(checkJSON),
 		}
 
-		mockComponent.EXPECT().CreateCheck(ctx, realm, userID, gomock.Any()).Return(nil).Times(1)
+		mockComponent.EXPECT().CreateCheck(ctx, realm, userID, gomock.Any(), gomock.Any()).Return(nil).Times(1)
 		var _, err = e(ctx, req)
 		assert.Nil(t, err)
 	})

@@ -45,7 +45,12 @@ func MakeUpdateUserEndpoint(component Component) cs.Endpoint {
 			return nil, err
 		}
 
-		return nil, component.UpdateUser(ctx, m[prmRealm], m[prmUserID], user)
+		txnID, ok := m[prmTxnID]
+		if !ok {
+			txnID = "txnID not available"
+		}
+
+		return nil, component.UpdateUser(ctx, m[prmRealm], m[prmUserID], user, txnID)
 	}
 }
 
@@ -65,7 +70,12 @@ func MakeCreateCheckEndpoint(component Component) cs.Endpoint {
 			return nil, err
 		}
 
-		return nil, component.CreateCheck(ctx, m[prmRealm], m[prmUserID], check)
+		txnID, ok := m[prmTxnID]
+		if !ok {
+			txnID = "txnID not available"
+		}
+
+		return nil, component.CreateCheck(ctx, m[prmRealm], m[prmUserID], check, txnID)
 	}
 }
 
