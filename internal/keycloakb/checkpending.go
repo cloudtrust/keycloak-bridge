@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"time"
+
+	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 )
 
 // PendingChecks interface
@@ -22,6 +24,19 @@ type pendingChecks struct {
 var (
 	ErrCantUnmarshalPendingCheck = errors.New("can't unmarshal pending check value")
 )
+
+func ConvertFromDBChecks(dbChecks []dto.DBCheck) PendingChecks {
+	checks := map[string]int64{}
+	for _, pendingCheck := range dbChecks {
+		if pendingCheck.Nature != nil && pendingCheck.Status != nil && *pendingCheck.Status == "PENDING" {
+			checks[*pendingCheck.Nature] = pendingCheck.DateTime.UTC().Unix()
+		}
+	}
+
+	return &pendingChecks{
+		checks: checks,
+	}
+}
 
 // AddPendingCheck adds a pending check
 func AddPendingCheck(value *string, nature string) (*string, error) {

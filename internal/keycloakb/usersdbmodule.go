@@ -24,13 +24,23 @@ const (
 	  WHERE realm_id=?
 		AND user_id=?;`
 	deleteUserDetailsStmt = `DELETE FROM user_details WHERE realm_id=? AND user_id=?;`
-	createCheckStmt       = `INSERT INTO checks (realm_id, user_id, operator, datetime, status, type, nature, proof_type, proof_data, comment, key_id)
-	  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);`
+	createCheckStmt       = `INSERT INTO checks (realm_id, user_id, operator, datetime, status, type, nature, proof_type, proof_data, comment, key_id, txn_id)
+	  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) 
+	  ON DUPLICATE KEY UPDATE realm_id=?, user_id=?, operator=?, datetime=?, status=?, type=?, nature=?, proof_type=?, proof_data=?, comment=?, key_id=?, txn_id=?;`
+	createPendingCheckStmt = `INSERT INTO checks (realm_id, user_id, operator, datetime, status, type, nature, proof_type, proof_data, comment, key_id, txn_id)
+	  VALUES (?, ?, ?, ?, 'PENDING', ?, ?, ?, ?, ?, ?, ?)`
 	selectCheckStmt = `
-	  SELECT check_id, realm_id, user_id, operator, unix_timestamp(datetime), status, type, nature, proof_type, proof_data, comment, key_id
+	  SELECT check_id, realm_id, user_id, operator, unix_timestamp(datetime), status, type, nature, proof_type, proof_data, comment, key_id, txn_id
 	  FROM checks
 	  WHERE realm_id=?
 		AND user_id=?
+	  ORDER BY datetime DESC;`
+	selectPendingCheckStmt = `
+	  SELECT check_id, realm_id, user_id, operator, unix_timestamp(datetime), status, type, nature, proof_type, proof_data, comment, key_id, txn_id
+	  FROM checks
+	  WHERE realm_id=?
+		AND user_id=?
+		AND status='PENDING'
 	  ORDER BY datetime DESC;`
 )
 
@@ -40,7 +50,9 @@ type UsersDetailsDBModule interface {
 	GetUserDetails(ctx context.Context, realm string, userID string) (dto.DBUser, error)
 	DeleteUserDetails(ctx context.Context, realm string, userID string) error
 	CreateCheck(ctx context.Context, realm string, userID string, check dto.DBCheck) error
+	CreatePendingCheck(ctx context.Context, realm string, userID string, check dto.DBCheck) error
 	GetChecks(ctx context.Context, realm string, userID string) ([]dto.DBCheck, error)
+	GetPendingChecks(ctx context.Context, realm string, userID string) ([]dto.DBCheck, error)
 }
 
 type usersDBModule struct {
@@ -143,7 +155,32 @@ func (c *usersDBModule) CreateCheck(ctx context.Context, realm string, userID st
 	keyId := c.cipher.GetCurrentKeyID()
 	_, err = c.db.Exec(createCheckStmt, realm, userID, check.Operator,
 		check.DateTime, check.Status, check.Type, check.Nature,
-		check.ProofType, proofData, check.Comment, keyId)
+		check.ProofType, proofData, check.Comment, keyId, check.TxnID,
+		realm, userID, check.Operator, check.DateTime, check.Status, check.Type,
+		check.Nature, check.ProofType, proofData, check.Comment, keyId, check.TxnID)
+
+	return err
+}
+
+func (c *usersDBModule) CreatePendingCheck(ctx context.Context, realm string, userID string, check dto.DBCheck) error {
+	var proofData *[]byte
+	var err error
+
+	if check.ProofData != nil {
+		// encrypt the proof data & protect integrity of userID associated to the proof data
+		encryptedData, err := c.cipher.Encrypt(*check.ProofData, []byte(userID))
+		if err != nil {
+			c.logger.Warn(ctx, "msg", "Can't encrypt the proof data", "err", err.Error(), "realmID", realm, "userID", userID)
+			return err
+		}
+		proofData = &encryptedData
+	}
+
+	// insert check in DB
+	keyId := c.cipher.GetCurrentKeyID()
+	_, err = c.db.Exec(createPendingCheckStmt, realm, userID, check.Operator,
+		check.DateTime, check.Type, check.Nature,
+		check.ProofType, proofData, check.Comment, keyId, check.TxnID)
 
 	return err
 }
@@ -159,14 +196,33 @@ func (c *usersDBModule) GetChecks(ctx context.Context, realm string, userID stri
 	}
 	defer rows.Close()
 
+	return c.scanChecks(ctx, rows)
+}
+
+func (c *usersDBModule) GetPendingChecks(ctx context.Context, realm string, userID string) ([]dto.DBCheck, error) {
+	var rows, err = c.db.Query(selectPendingCheckStmt, realm, userID)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+	defer rows.Close()
+
+	return c.scanChecks(ctx, rows)
+}
+
+func (c *usersDBModule) scanChecks(ctx context.Context, rows sqltypes.SQLRows) ([]dto.DBCheck, error) {
 	var result []dto.DBCheck
 	var checkID int64
-	var operator, datetime, status, checkType, nature, proofType, comment sql.NullString
+	var operator, datetime, status, checkType, nature, proofType, comment, txnID sql.NullString
 	var encryptedProofData []byte
-	var keyId string
+	var realm, userID, keyId string
+	var err error
 
 	for rows.Next() {
-		err = rows.Scan(&checkID, &realm, &userID, &operator, &datetime, &status, &checkType, &nature, &proofType, &encryptedProofData, &comment, &keyId)
+		err = rows.Scan(&checkID, &realm, &userID, &operator, &datetime, &status, &checkType, &nature, &proofType, &encryptedProofData, &comment, &keyId, &txnID)
 		if err != nil {
 			return nil, err
 		}
@@ -191,6 +247,7 @@ func (c *usersDBModule) GetChecks(ctx context.Context, realm string, userID stri
 			ProofData: &proofData,
 			ProofType: nullStringToPtr(proofType),
 			Comment:   nullStringToPtr(comment),
+			TxnID:     nullStringToPtr(txnID),
 		})
 	}
 

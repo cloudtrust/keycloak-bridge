@@ -89,6 +89,7 @@ type UsersDetailsDBModule interface {
 	GetUserDetails(ctx context.Context, realm string, userID string) (dto.DBUser, error)
 	DeleteUserDetails(ctx context.Context, realm string, userID string) error
 	GetChecks(ctx context.Context, realm string, userID string) ([]dto.DBCheck, error)
+	GetPendingChecks(ctx context.Context, realm string, userID string) ([]dto.DBCheck, error)
 }
 
 // OnboardingModule is the interface for the onboarding process
@@ -539,12 +540,19 @@ func (c *component) GetUser(ctx context.Context, realmName, userID string) (api.
 		return api.UserRepresentation{}, err
 	}
 
+	pendingChecks, err := c.usersDBModule.GetPendingChecks(ctx, realmName, userID)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Can't get pending checks", "err", err.Error())
+		return userRep, err
+	}
+
 	userRep.BirthLocation = dbUser.BirthLocation
 	userRep.Nationality = dbUser.Nationality
 	userRep.IDDocumentType = dbUser.IDDocumentType
 	userRep.IDDocumentNumber = dbUser.IDDocumentNumber
 	userRep.IDDocumentExpiration = dbUser.IDDocumentExpiration
 	userRep.IDDocumentCountry = dbUser.IDDocumentCountry
+	userRep.PendingChecks = keycloakb.ConvertFromDBChecks(pendingChecks).ToCheckNames()
 
 	//store the API call into the DB
 	c.reportEvent(ctx, "GET_DETAILS", database.CtEventRealmName, realmName, database.CtEventUserID, userID, database.CtEventUsername, username)

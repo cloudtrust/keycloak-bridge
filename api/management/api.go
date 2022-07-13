@@ -381,9 +381,6 @@ func ConvertToAPIUser(ctx context.Context, userKc kc.UserRepresentation, logger 
 	if value := userKc.GetAttribute(constants.AttrbTrustIDGroups); value != nil {
 		userRep.TrustIDGroups = &value
 	}
-	if value := userKc.GetAttributeString(constants.AttrbPendingChecks); value != nil {
-		userRep.PendingChecks = keycloakb.GetPendingChecks(value)
-	}
 	if values := userKc.GetAttribute(constants.AttrbAccreditations); len(values) > 0 {
 		var accreds []AccreditationRepresentation
 		var bFalse = false

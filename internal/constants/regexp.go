@@ -52,6 +52,7 @@ const (
 	RegExpTxnID           = regExpLen128
 
 	RegExpCustomValue = `^[A-Za-z\d_-]{0,50}$`
+	RegExpTxnID       = regExpLen255
 )
 
 var (

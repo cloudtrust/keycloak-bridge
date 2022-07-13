@@ -635,7 +635,6 @@ func main() {
 			UpdateUser:         prepareEndpoint(validation.MakeUpdateUserEndpoint(validationComponent), "update_user", influxMetrics, validationLogger, tracer, rateLimitValidation),
 			CreateCheck:        prepareEndpoint(validation.MakeCreateCheckEndpoint(validationComponent), "create_check", influxMetrics, validationLogger, tracer, rateLimitValidation),
 			CreatePendingCheck: prepareEndpoint(validation.MakeCreatePendingCheckEndpoint(validationComponent), "create_check_pending", influxMetrics, validationLogger, tracer, rateLimitValidation),
-			DeletePendingCheck: prepareEndpoint(validation.MakeDeletePendingCheckEndpoint(validationComponent), "delete_check_pending", influxMetrics, validationLogger, tracer, rateLimitValidation),
 		}
 	}
 
@@ -1062,7 +1061,6 @@ func main() {
 		var updateUserHandler = configureValidationHandler(keycloakb.ComponentName, ComponentID, idGenerator, validationExpectedAuthToken, tracer, logger)(validationEndpoints.UpdateUser)
 		var createCheckHandler = configureValidationHandler(keycloakb.ComponentName, ComponentID, idGenerator, validationExpectedAuthToken, tracer, logger)(validationEndpoints.CreateCheck)
 		var createPendingCheckHandler = configureValidationHandler(keycloakb.ComponentName, ComponentID, idGenerator, validationExpectedAuthToken, tracer, logger)(validationEndpoints.CreatePendingCheck)
-		var deletePendingCheckHandler = configureValidationHandler(keycloakb.ComponentName, ComponentID, idGenerator, validationExpectedAuthToken, tracer, logger)(validationEndpoints.DeletePendingCheck)
 
 		var validationSubroute = route.PathPrefix("/validation").Subrouter()
 
@@ -1070,7 +1068,6 @@ func main() {
 		validationSubroute.Path("/realms/{realm}/users/{userID}").Methods("PUT").Handler(updateUserHandler)
 		validationSubroute.Path("/realms/{realm}/users/{userID}/checks").Methods("POST").Handler(createCheckHandler)
 		validationSubroute.Path("/realms/{realm}/users/{userID}/checks/pending").Methods("POST").Handler(createPendingCheckHandler)
-		validationSubroute.Path("/realms/{realm}/users/{userID}/checks/pending/{pendingCheck}").Methods("DELETE").Handler(deletePendingCheckHandler)
 
 		// Communications (bearer auth)
 		var sendMailHandler = configureHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, communications.MakeCommunicationsHandler, logger)(communicationsEndpoints.SendEmail)

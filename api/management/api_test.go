@@ -128,11 +128,6 @@ func TestConvertToAPIUser(t *testing.T) {
 		m.SetString(constants.AttrbTrustIDGroups, "en")
 		assert.NotNil(t, *ConvertToAPIUser(ctx, kcUser, logger).TrustIDGroups)
 	})
-	t.Run("PendingChecks", func(t *testing.T) {
-		assert.Nil(t, ConvertToAPIUser(ctx, kcUser, logger).PendingChecks)
-		kcUser.SetAttribute(constants.AttrbPendingChecks, []string{`{"check-33": 123456789}`})
-		assert.Len(t, *ConvertToAPIUser(ctx, kcUser, logger).PendingChecks, 1)
-	})
 	t.Run("Accreditations", func(t *testing.T) {
 		assert.Nil(t, ConvertToAPIUser(ctx, kcUser, logger).Accreditations)
 		kcUser.SetAttribute("accreditations", []string{`{"type":"one", "creationMillis":1643380967867, "expiryDate":"05.04.2020"}`, `{"type":"two", "creationMillis":1643380967867, "expiryDate":"05.03.2022"}`, `{`})

@@ -121,35 +121,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PendingChecks'
-      responses:
-        201:
-          description: successful operation
-  /validation/realms/{realm}/users/{userID}/checks/pending/{pendingCheck}:
-    delete:
-      tags:
-        - Check
-      summary: Delete a pending validation check
-      parameters:
-      - name: realm
-        in: path
-        description: Realm name (not id!)
-        required: true
-        schema:
-          type: string
-      - name: userID
-        in: path
-        description: userID of user checked
-        required: true
-        schema:
-          type: string
-      - name: pendingCheck
-        in: path
-        description: nature of the pending check to be removed
-        required: true
-        schema:
-          type: string
-          enum: [IDNOW_CHECK]
+              $ref: '#/components/schemas/Check'
       responses:
         201:
           description: successful operation
@@ -210,12 +182,8 @@ components:
           type: string
         nature:
           type: string
-    PendingChecks:
-      type: object
-      properties:
-        nature:
+        txnId:
           type: string
-          enum: [IDNOW_CHECK]
   securitySchemes:
     basicAuth:
       type: http

@@ -150,43 +150,59 @@ func TestMakeCreatePendingCheckEndpoint(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	var mockComponent = mock.NewComponent(mockCtrl)
-	var e = MakeCreatePendingCheckEndpoint(mockComponent)
-	var realm = "the-realm"
-	var userID = "user-id"
-	var req = map[string]string{prmRealm: realm, prmUserID: userID}
-	var ctx = context.TODO()
 
-	t.Run("Invalid JSON", func(t *testing.T) {
-		req[reqBody] = "{{"
-		var _, err = e(ctx, req)
-		assert.NotNil(t, err)
-	})
-	t.Run("Invalid parameters in body", func(t *testing.T) {
-		req[reqBody] = `{"nature":null}`
-		var _, err = e(ctx, req)
-		assert.NotNil(t, err)
-	})
-	t.Run("Valid request", func(t *testing.T) {
-		req[reqBody] = `{"nature":"check"}`
-		mockComponent.EXPECT().CreatePendingCheck(ctx, realm, userID, gomock.Any()).Return(nil)
+	var e = MakeCreatePendingCheckEndpoint(mockComponent)
+	var ctx = context.Background()
+	var userID = "12345678-5824-5555-5656-123456789654"
+	var realm = "realm"
+	var operator = "operator"
+	var datetime = time.Now()
+	var status = "SUCCESS"
+	var typeCheck = "IDENTITY_CHECK"
+	var nature = "PHYSICAL"
+	var proofType = "ZIP"
+	var proofData = []byte("data")
+
+	t.Run("No error", func(t *testing.T) {
+		checkJSON, _ := json.Marshal(api.CheckRepresentation{
+			UserID:    &userID,
+			Operator:  &operator,
+			DateTime:  &datetime,
+			Status:    &status,
+			Type:      &typeCheck,
+			Nature:    &nature,
+			ProofType: &proofType,
+			ProofData: &proofData,
+		})
+		var req = map[string]string{
+			prmRealm:  realm,
+			prmUserID: userID,
+			reqBody:   string(checkJSON),
+		}
+
+		mockComponent.EXPECT().CreatePendingCheck(ctx, realm, userID, gomock.Any()).Return(nil).Times(1)
 		var _, err = e(ctx, req)
 		assert.Nil(t, err)
 	})
-}
 
-func TestMakeDeletePendingCheckEndpoint(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
-	defer mockCtrl.Finish()
+	t.Run("Invalid input", func(t *testing.T) {
+		checkJSON, _ := json.Marshal(api.CheckRepresentation{})
+		var req = map[string]string{
+			prmRealm:  realm,
+			prmUserID: userID,
+			reqBody:   string(checkJSON),
+		}
 
-	var mockComponent = mock.NewComponent(mockCtrl)
-	var e = MakeDeletePendingCheckEndpoint(mockComponent)
-	var realm = "the-realm"
-	var userID = "user-id"
-	var pendingCheck = "pending-check"
-	var req = map[string]string{prmRealm: realm, prmUserID: userID, prmPendingCheck: pendingCheck}
-	var ctx = context.TODO()
+		var _, err = e(ctx, req)
+		assert.NotNil(t, err)
+	})
 
-	mockComponent.EXPECT().DeletePendingCheck(ctx, realm, userID, pendingCheck)
-	var _, err = e(ctx, req)
-	assert.Nil(t, err)
+	t.Run("Error - JSON unmarshalling error", func(t *testing.T) {
+		var req = make(map[string]string)
+		req[prmUserID] = userID
+		req[reqBody] = string("userJSON")
+
+		var _, err = e(ctx, req)
+		assert.NotNil(t, err)
+	})
 }

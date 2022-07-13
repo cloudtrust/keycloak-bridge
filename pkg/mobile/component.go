@@ -63,6 +63,7 @@ type Component interface {
 // UsersDetailsDBModule is the minimum required interface to access the users database
 type UsersDetailsDBModule interface {
 	GetChecks(ctx context.Context, realm string, userID string) ([]dto.DBCheck, error)
+	GetPendingChecks(ctx context.Context, realm string, userID string) ([]dto.DBCheck, error)
 }
 
 // TokenProvider is the interface to retrieve accessToken to access KC
@@ -129,7 +130,6 @@ func (c *component) GetUserInformation(ctx context.Context) (api.UserInformation
 		keycloakb.ConvertLegacyAttribute(&userKc)
 		userInfo.SetAccreditations(ctx, userKc.GetAttribute(constants.AttrbAccreditations), c.logger)
 		gln = userKc.GetAttributeString(constants.AttrbBusinessID)
-		pendingChecks = userKc.GetAttributeString(constants.AttrbPendingChecks)
 	} else {
 		c.logger.Warn(ctx, "err", err.Error())
 		return api.UserInformationRepresentation{}, err
@@ -137,6 +137,13 @@ func (c *component) GetUserInformation(ctx context.Context) (api.UserInformation
 
 	if dbChecks, err := c.usersDBModule.GetChecks(ctx, realm, userID); err == nil {
 		userInfo.SetChecks(dbChecks)
+	} else {
+		c.logger.Warn(ctx, "err", err.Error())
+		return api.UserInformationRepresentation{}, err
+	}
+
+	if dbPendingChecks, err := c.usersDBModule.GetPendingChecks(ctx, realm, userID); err == nil {
+		pendingChecks = keycloakb.ConvertFromDBChecks(dbPendingChecks).ToAttribute()
 	} else {
 		c.logger.Warn(ctx, "err", err.Error())
 		return api.UserInformationRepresentation{}, err

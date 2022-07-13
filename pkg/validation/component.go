@@ -35,6 +35,7 @@ type UsersDetailsDBModule interface {
 	StoreOrUpdateUserDetails(ctx context.Context, realm string, user dto.DBUser) error
 	GetUserDetails(ctx context.Context, realm string, userID string) (dto.DBUser, error)
 	CreateCheck(ctx context.Context, realm string, userID string, check dto.DBCheck) error
+	CreatePendingCheck(ctx context.Context, realm string, userID string, check dto.DBCheck) error
 }
 
 // ArchiveDBModule is the interface from the archive module
@@ -56,10 +57,9 @@ type ConfigurationDBModule interface {
 // Component is the register component interface.
 type Component interface {
 	GetUser(ctx context.Context, realmName string, userID string) (api.UserRepresentation, error)
-	UpdateUser(ctx context.Context, realmName string, userID string, user api.UserRepresentation, txnID *string) error
-	CreateCheck(ctx context.Context, realmName string, userID string, check api.CheckRepresentation, txnID *string) error
-	CreatePendingCheck(ctx context.Context, realmName string, userID string, pendingChecks api.PendingChecksRepresentation) error
-	DeletePendingCheck(ctx context.Context, realmName string, userID string, pendingCheck string) error
+	UpdateUser(ctx context.Context, realmName string, userID string, user api.UserRepresentation) error
+	CreateCheck(ctx context.Context, realmName string, userID string, check api.CheckRepresentation) error
+	CreatePendingCheck(ctx context.Context, realmName string, userID string, pendingChecks api.CheckRepresentation) error
 }
 
 // Component is the management component.
@@ -320,7 +320,6 @@ func (c *component) CreateCheck(ctx context.Context, realmName string, userID st
 		}
 	}
 
-	c.clearPendingChecks(validationCtx, *check.Nature)
 	err = c.keycloakClient.UpdateUser(*validationCtx.accessToken, realmName, userID, *validationCtx.kcUser)
 	if err != nil {
 		return err
@@ -338,68 +337,8 @@ func (c *component) CreateCheck(ctx context.Context, realmName string, userID st
 	return nil
 }
 
-func (c *component) clearPendingChecks(validationCtx *validationContext, nature string) {
-	var err error
-	var strPendingChecks = validationCtx.kcUser.GetAttributeString(constants.AttrbPendingChecks)
-	strPendingChecks, err = keycloakb.RemovePendingCheck(strPendingChecks, nature)
-	if err != nil {
-		if err == keycloakb.ErrCantUnmarshalPendingCheck {
-			c.logger.Warn(validationCtx.ctx, "msg", "Ignoring unmarshal error for pendingChecks attribute")
-		} else {
-			c.logger.Warn(validationCtx.ctx, "msg", "Failed to process pending checks")
-		}
-	}
-	if strPendingChecks == nil {
-		validationCtx.kcUser.RemoveAttribute(constants.AttrbPendingChecks)
-	} else {
-		validationCtx.kcUser.SetAttributeString(constants.AttrbPendingChecks, *strPendingChecks)
-	}
-}
-
-func (c *component) CreatePendingCheck(ctx context.Context, realmName string, userID string, pendingChecks api.PendingChecksRepresentation) error {
-	var validationCtx = &validationContext{
-		ctx:       ctx,
-		realmName: realmName,
-		userID:    userID,
-	}
-	var kcUser, err = c.loadKeycloakUserCtx(validationCtx)
-	if err != nil {
-		// error already logged
-		return err
-	}
-	var strPendingChecks = kcUser.GetAttributeString(constants.AttrbPendingChecks)
-	strPendingChecks, err = keycloakb.AddPendingCheck(strPendingChecks, *pendingChecks.Nature)
-	if err != nil {
-		if err == keycloakb.ErrCantUnmarshalPendingCheck {
-			c.logger.Warn(ctx, "msg", "Ignoring unmarshal error for pendingChecks attribute", "attrb", *strPendingChecks)
-		} else {
-			c.logger.Warn(ctx, "msg", "Failed to process pending checks")
-			return err
-		}
-	}
-	validationCtx.kcUser.SetAttributeString(constants.AttrbPendingChecks, *strPendingChecks)
-	if err = c.updateKeycloakUser(validationCtx); err != nil {
-		c.logger.Warn(ctx, "msg", "Can't update user", "err", err.Error())
-	}
-	return err
-}
-
-func (c *component) DeletePendingCheck(ctx context.Context, realmName string, userID string, pendingCheck string) error {
-	var validationCtx = &validationContext{
-		ctx:       ctx,
-		realmName: realmName,
-		userID:    userID,
-	}
-	var _, err = c.loadKeycloakUserCtx(validationCtx)
-	if err != nil {
-		// error already logged
-		return err
-	}
-	c.clearPendingChecks(validationCtx, pendingCheck)
-	if err = c.updateKeycloakUser(validationCtx); err != nil {
-		c.logger.Warn(ctx, "msg", "Can't update user", "err", err.Error())
-	}
-	return err
+func (c *component) CreatePendingCheck(ctx context.Context, realmName string, userID string, pendingChecks api.CheckRepresentation) error {
+	return c.usersDBModule.CreatePendingCheck(ctx, realmName, userID, pendingChecks.ConvertToDBCheck())
 }
 
 func (c *component) reportEvent(ctx context.Context, apiCall string, values ...string) {
