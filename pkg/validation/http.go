@@ -17,6 +17,7 @@ const (
 
 	prmRealm        = "realm"
 	prmUserID       = "userID"
+	prmTxnID        = "txnID"
 	prmPendingCheck = "pendingCheck"
 )
 
@@ -37,7 +38,9 @@ func decodeManagementRequest(ctx context.Context, req *http.Request) (interface{
 		prmPendingCheck: constants.RegExpName,
 	}
 
-	var queryParams = map[string]string{}
+	var queryParams = map[string]string{
+		prmTxnID: constants.RegExpTxnID,
+	}
 
 	return commonhttp.DecodeRequest(ctx, req, pathParams, queryParams)
 }

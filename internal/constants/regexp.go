@@ -49,6 +49,7 @@ const (
 	RegExpNumber          = `^\d+$`
 	RegExpContainerID     = regExpLen255
 	RegExpRoleDescription = regExpLen255OrEmpty
+	RegExpTxnID           = regExpLen128
 
 	RegExpCustomValue = `^[A-Za-z\d_-]{0,50}$`
 )
