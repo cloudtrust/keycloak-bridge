@@ -39,7 +39,7 @@ type OnboardingKeycloakClient interface {
 	DeleteUser(accessToken string, realmName, userID string) error
 	ExecuteActionsEmail(accessToken string, reqRealmName string, targetRealmName string, userID string, actions []string, paramKV ...string) error
 	SendEmail(accessToken string, reqRealmName string, realmName string, emailRep kc.EmailRepresentation) error
-	GetTrustIDAuthToken(accessToken string, realmName string, userID string) (string, error)
+	GenerateTrustIDAuthToken(accessToken string, reqRealmName string, realmName string, userID string) (string, error)
 }
 
 // UsersDBModule interface
@@ -122,7 +122,7 @@ func (om *onboardingModule) ComputeRedirectURI(ctx context.Context, accessToken 
 		return "", err
 	}
 
-	trustIDAuthToken, err := om.keycloakClient.GetTrustIDAuthToken(accessToken, realmName, userID)
+	trustIDAuthToken, err := om.keycloakClient.GenerateTrustIDAuthToken(accessToken, realmName, realmName, userID)
 	if err != nil {
 		om.logger.Warn(ctx, "msg", "Failed to generate a trustIDAuthToken", "err", err.Error())
 		return "", err

@@ -190,13 +190,13 @@ func TestComputeRedirectURI(t *testing.T) {
 	mocks.keycloakURIProvider.EXPECT().GetBaseURI(realmName).Return(keycloakBaseURI).AnyTimes()
 
 	t.Run("Failed get trustIDAuthToken", func(t *testing.T) {
-		mocks.keycloakClient.EXPECT().GetTrustIDAuthToken(accessToken, realmName, userID).Return("", errors.New("unexpected error"))
+		mocks.keycloakClient.EXPECT().GenerateTrustIDAuthToken(accessToken, realmName, realmName, userID).Return("", errors.New("unexpected error"))
 		_, err := onboarding.ComputeRedirectURI(ctx, accessToken, realmName, userID, username, onboardingClientID, onboardingRedirectURI)
 		assert.NotNil(t, err)
 	})
 
 	t.Run("Success", func(t *testing.T) {
-		mocks.keycloakClient.EXPECT().GetTrustIDAuthToken(accessToken, realmName, userID).Return(trustIDAuthToken, nil)
+		mocks.keycloakClient.EXPECT().GenerateTrustIDAuthToken(accessToken, realmName, realmName, userID).Return(trustIDAuthToken, nil)
 		uri, err := onboarding.ComputeRedirectURI(ctx, accessToken, realmName, userID, username, onboardingClientID, onboardingRedirectURI)
 		assert.Nil(t, err)
 		expectedURI := fmt.Sprintf("%s/auth/realms/%s/protocol/openid-connect/auth?client_id=%s&login_hint=%s&redirect_uri=%s&response_type=code&scope=openid&trustid_auth_token=%s", keycloakBaseURI, realmName, onboardingClientID, username, onboardingRedirectURIEncoded, trustIDAuthTokenEncoded)
