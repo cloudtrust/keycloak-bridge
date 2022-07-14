@@ -56,8 +56,8 @@ type ConfigurationDBModule interface {
 // Component is the register component interface.
 type Component interface {
 	GetUser(ctx context.Context, realmName string, userID string) (api.UserRepresentation, error)
-	UpdateUser(ctx context.Context, realmName string, userID string, user api.UserRepresentation, txnID string) error
-	CreateCheck(ctx context.Context, realmName string, userID string, check api.CheckRepresentation, txnID string) error
+	UpdateUser(ctx context.Context, realmName string, userID string, user api.UserRepresentation, txnID *string) error
+	CreateCheck(ctx context.Context, realmName string, userID string, check api.CheckRepresentation, txnID *string) error
 	CreatePendingCheck(ctx context.Context, realmName string, userID string, pendingChecks api.PendingChecksRepresentation) error
 	DeletePendingCheck(ctx context.Context, realmName string, userID string, pendingCheck string) error
 }
@@ -144,7 +144,7 @@ func (c *component) GetUser(ctx context.Context, realmName string, userID string
 	return res, nil
 }
 
-func (c *component) UpdateUser(ctx context.Context, realmName string, userID string, user api.UserRepresentation, txnID string) error {
+func (c *component) UpdateUser(ctx context.Context, realmName string, userID string, user api.UserRepresentation, txnID *string) error {
 	var validationCtx = &validationContext{
 		ctx:       ctx,
 		realmName: realmName,
@@ -172,7 +172,11 @@ func (c *component) UpdateUser(ctx context.Context, realmName string, userID str
 
 	if kcUpdate || dbUpdate {
 		// store the API call into the DB
-		c.reportEvent(ctx, "VALIDATION_UPDATE_USER", database.CtEventRealmName, realmName, database.CtEventUserID, userID, "txn_id", txnID)
+		if txnID != nil {
+			c.reportEvent(ctx, "VALIDATION_UPDATE_USER", database.CtEventRealmName, realmName, database.CtEventUserID, userID, "txn_id", *txnID)
+		} else {
+			c.reportEvent(ctx, "VALIDATION_UPDATE_USER", database.CtEventRealmName, realmName, database.CtEventUserID, userID)
+		}
 
 		// archive user
 		c.archiveUser(validationCtx, nil)
@@ -265,7 +269,7 @@ func needDBProcessing(user api.UserRepresentation) bool {
 	return user.IDDocumentExpiration != nil
 }
 
-func (c *component) CreateCheck(ctx context.Context, realmName string, userID string, check api.CheckRepresentation, txnID string) error {
+func (c *component) CreateCheck(ctx context.Context, realmName string, userID string, check api.CheckRepresentation, txnID *string) error {
 	var validationCtx = &validationContext{
 		ctx:       ctx,
 		realmName: realmName,
@@ -323,7 +327,11 @@ func (c *component) CreateCheck(ctx context.Context, realmName string, userID st
 	}
 
 	// Event
-	c.reportEvent(ctx, eventType, database.CtEventRealmName, realmName, database.CtEventUserID, userID, "operator", *check.Operator, "status", *check.Status, "txn_id", txnID)
+	if txnID != nil {
+		c.reportEvent(ctx, eventType, database.CtEventRealmName, realmName, database.CtEventUserID, userID, "operator", *check.Operator, "status", *check.Status, "txn_id", *txnID)
+	} else {
+		c.reportEvent(ctx, eventType, database.CtEventRealmName, realmName, database.CtEventUserID, userID, "operator", *check.Operator, "status", *check.Status)
+	}
 
 	c.archiveUser(validationCtx, []dto.DBCheck{dbCheck})
 
