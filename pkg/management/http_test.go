@@ -207,7 +207,7 @@ func TestHTTPErrorHandler(t *testing.T) {
 	})
 }
 
-func TestHTTPXForwardHeaderHandler(t *testing.T) {
+func TestHTTPForwardHeaderHandler(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 	var mockComponent = mock.NewManagementComponent(mockCtrl)
@@ -241,7 +241,7 @@ func TestHTTPXForwardHeaderHandler(t *testing.T) {
 		var body = strings.NewReader(string(userJSON))
 
 		req, _ := http.NewRequest("POST", ts.URL+"/realms/master/users", body)
-		req.Header.Set("X-Forwarded-Proto", "https")
+		req.Header.Set("Forwarded", "for=192.0.2.60;proto=https;by=203.0.113.43")
 		req.Host = "toto.com"
 		res, err := client.Do(req)
 
