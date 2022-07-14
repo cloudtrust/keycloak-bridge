@@ -57,8 +57,8 @@ type ConfigurationDBModule interface {
 // Component is the register component interface.
 type Component interface {
 	GetUser(ctx context.Context, realmName string, userID string) (api.UserRepresentation, error)
-	UpdateUser(ctx context.Context, realmName string, userID string, user api.UserRepresentation) error
-	CreateCheck(ctx context.Context, realmName string, userID string, check api.CheckRepresentation) error
+	UpdateUser(ctx context.Context, realmName string, userID string, user api.UserRepresentation, txnID *string) error
+	CreateCheck(ctx context.Context, realmName string, userID string, check api.CheckRepresentation, txnID *string) error
 	CreatePendingCheck(ctx context.Context, realmName string, userID string, pendingChecks api.CheckRepresentation) error
 }
 
