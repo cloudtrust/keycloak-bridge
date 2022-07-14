@@ -55,7 +55,7 @@ func TestMakeRegisterUserEndpoint(t *testing.T) {
 		var socialRealm = "realm-123456"
 		m[prmRealm] = realm
 		m[reqBody] = string(bytes)
-		mockRegisterComponent.EXPECT().RegisterUser(gomock.Any(), socialRealm, realm, user).Return(nil).Times(1)
+		mockRegisterComponent.EXPECT().RegisterUser(gomock.Any(), socialRealm, realm, user, false).Return("", nil).Times(1)
 		_, err := MakeRegisterUserEndpoint(mockRegisterComponent, socialRealm)(context.Background(), m)
 		assert.Nil(t, err)
 	})
@@ -77,8 +77,19 @@ func TestMakeRegisterUserEndpoint(t *testing.T) {
 		m[prmCorpRealm] = socialRealm
 		var bytes, _ = json.Marshal(user)
 		m[reqBody] = string(bytes)
-		mockRegisterComponent.EXPECT().RegisterUser(gomock.Any(), socialRealm, socialRealm, user).Return(nil).Times(1)
+		mockRegisterComponent.EXPECT().RegisterUser(gomock.Any(), socialRealm, socialRealm, user, false).Return("", nil).Times(1)
 		_, err := MakeRegisterCorpUserEndpoint(mockRegisterComponent)(context.Background(), m)
+		assert.Nil(t, err)
+	})
+
+	t.Run("Register in redirect mode", func(t *testing.T) {
+		var bytes, _ = json.Marshal(user)
+		var socialRealm = "realm-123456"
+		m[prmRealm] = realm
+		m[reqBody] = string(bytes)
+		m[prmRedirect] = "true"
+		mockRegisterComponent.EXPECT().RegisterUser(gomock.Any(), socialRealm, realm, user, true).Return("", nil).Times(1)
+		_, err := MakeRegisterUserEndpoint(mockRegisterComponent, socialRealm)(context.Background(), m)
 		assert.Nil(t, err)
 	})
 }
