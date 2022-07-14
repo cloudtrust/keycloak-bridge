@@ -37,7 +37,7 @@ pipeline {
 
               go generate ./...
               go mod vendor
-              
+
               ./scripts/build.sh --version "${params.VERSION}" --env "\$(uname -o)-\$(uname -m)"
 
               go test -coverprofile=coverage.out -json ./... | tee report.json
@@ -48,7 +48,7 @@ pipeline {
               go list -deps ./... | nancy -no-color || true
 
               JAVA_TOOL_OPTIONS="" sonar-scanner \
-                -Dsonar.host.url=https://sonarqube-cloudtrust-cicd.apps.caas.west.ch.elca-cloud.com \
+                -Dsonar.host.url=https://sonarqube-cloudtrust-cicd.apps.okd-pp.west.ch.elca-cloud.com \
                 -Dsonar.login="${USER}" \
                 -Dsonar.password="${PASS}" \
                 -Dsonar.sourceEncoding=UTF-8 \
