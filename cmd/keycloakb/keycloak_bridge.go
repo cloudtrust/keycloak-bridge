@@ -1019,6 +1019,8 @@ func main() {
 			ValidateUser:                    prepareEndpoint(kyc.MakeValidateUserEndpoint(kycComponent), "validate_user", influxMetrics, kycLogger, tracer, rateLimitKyc),
 			SendSMSConsentCode:              prepareEndpoint(kyc.MakeSendSmsConsentCodeEndpoint(kycComponent), "send_sms_consent_code", influxMetrics, kycLogger, tracer, rateLimitKyc),
 			SendSMSCode:                     prepareEndpoint(kyc.MakeSendSmsCodeEndpoint(kycComponent), "send_sms_code", influxMetrics, kycLogger, tracer, rateLimitKyc),
+
+			ValidateUserBasic: prepareEndpoint(kyc.MakeValidateUserBasicIDEndpoint(kycComponent), "basic_validate_user", influxMetrics, kycLogger, tracer, rateLimitKyc), /***TO BE REMOVED WHEN MULTI-ACCREDITATION WILL BE IMPLEMENTED***/
 		}
 	}
 
@@ -1371,6 +1373,11 @@ func main() {
 		route.Path("/kyc/realms/{realm}/users/{userID}").Methods("PUT").Handler(kycValidateUserHandler)
 		route.Path("/kyc/realms/{realm}/users/{userID}/send-consent-code").Methods("POST").Handler(kycSendSMSConsentCodeHandler)
 		route.Path("/kyc/realms/{realm}/users/{userID}/send-sms-code").Methods("POST").Handler(kycSendSMSCodeHandler)
+
+		/********************* (BEGIN) Temporary basic identity (TO BE REMOVED WHEN MULTI-ACCREDITATION WILL BE IMPLEMENTED) *********************/
+		var kycValidateUserBasicIDHandler = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, endpointPhysicalCheckAvailabilityChecker, false, logger)(kycEndpoints.ValidateUserBasic)
+		route.Path("/kyc/social/users/{userID}/checks/basic").Methods("PUT").Handler(kycValidateUserBasicIDHandler)
+		/********************* (END) Temporary basic identity (TO BE REMOVED WHEN MULTI-ACCREDITATION WILL BE IMPLEMENTED) *********************/
 
 		var handler http.Handler = route
 

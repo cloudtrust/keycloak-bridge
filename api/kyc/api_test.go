@@ -206,13 +206,18 @@ func TestValidateUserRepresentation(t *testing.T) {
 
 	t.Run("Valid users with an attachment", func(t *testing.T) {
 		var user = createValidUser()
-		assert.Nil(t, user.Validate(), "User is expected to be valid")
+		assert.Nil(t, user.Validate(false), "User is expected to be valid")
 	})
 	t.Run("Valid users without attachment", func(t *testing.T) {
 		var user = createValidUser()
 		user.Attachments = nil
-		assert.Nil(t, user.Validate(), "User is expected to be valid")
+		assert.Nil(t, user.Validate(false), "User is expected to be valid")
 	})
+	t.Run("Valid users everything optional", func(t *testing.T) {
+		var user UserRepresentation
+		assert.Nil(t, user.Validate(true))
+	})
+
 	var users []UserRepresentation
 	for i := 0; i < 18; i++ {
 		users = append(users, createValidUser())
@@ -242,7 +247,11 @@ func TestValidateUserRepresentation(t *testing.T) {
 
 	for idx, aUser := range users {
 		t.Run(fmt.Sprintf("Invalid users %d", idx), func(t *testing.T) {
-			assert.NotNil(t, aUser.Validate(), "User is expected to be invalid with user %s", aUser.UserToJSON())
+			assert.NotNil(t, aUser.Validate(false), "User is expected to be invalid with user %s", aUser.UserToJSON())
+			// if invalidity is not by ommiting a mandatory field we test that the validation works even in all Optional mode
+			if idx < 11 && idx > 15 {
+				assert.NotNil(t, aUser.Validate(true))
+			}
 		})
 	}
 }
