@@ -1,7 +1,6 @@
 package apivalidation
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
@@ -73,12 +72,6 @@ func createValidCheck() CheckRepresentation {
 		Nature:    ptr("PHYSICAL"),
 		ProofType: ptr("ZIP"),
 		ProofData: &proofData,
-	}
-}
-
-func createValidPendingChecks() PendingChecksRepresentation {
-	return PendingChecksRepresentation{
-		Nature: ptr("PHYSICAL"),
 	}
 }
 
@@ -409,28 +402,4 @@ func TestIsIdentificationAborted(t *testing.T) {
 		check.Status = &aborted
 		assert.True(t, check.IsIdentificationAborted())
 	})
-}
-
-func TestPendingChecksValidate(t *testing.T) {
-	var (
-		invalid = ""
-	)
-
-	t.Run("Valid use case", func(t *testing.T) {
-		var check = createValidPendingChecks()
-		assert.Nil(t, check.Validate(), "PendingChecks is expected to be valid")
-	})
-
-	var pendingChecks []PendingChecksRepresentation
-	for i := 0; i < 2; i++ {
-		pendingChecks = append(pendingChecks, createValidPendingChecks())
-	}
-	pendingChecks[0].Nature = nil
-	pendingChecks[1].Nature = &invalid
-
-	for idx, aCheck := range pendingChecks {
-		t.Run(fmt.Sprintf("Invalid PendingChecks #%d", idx), func(t *testing.T) {
-			assert.NotNil(t, aCheck.Validate())
-		})
-	}
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
@@ -135,6 +136,7 @@ func TestGetUser(t *testing.T) {
 		var dbError = errors.New("config DB error")
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realm, userID).Return(kc.UserRepresentation{}, nil)
 		mocks.usersDetailsDB.EXPECT().GetChecks(ctx, realm, userID).Return([]dto.DBCheck{}, nil)
+		mocks.usersDetailsDB.EXPECT().GetPendingChecks(ctx, realm, userID).Return([]dto.DBCheck{}, nil)
 		mocks.configDBModule.EXPECT().GetAdminConfiguration(ctx, realm).Return(configuration.RealmAdminConfiguration{}, dbError)
 		var _, err = component.GetUserInformation(ctx)
 		assert.Equal(t, dbError, err)
@@ -154,6 +156,7 @@ func TestGetUser(t *testing.T) {
 		var adminConf = configuration.RealmAdminConfiguration{AvailableChecks: availableChecks, VideoIdentificationAccountingEnabled: &bFalse, VideoIdentificationPrepaymentRequired: &bFalse}
 
 		mocks.usersDetailsDB.EXPECT().GetChecks(ctx, realm, userID).Return(checks, nil)
+		mocks.usersDetailsDB.EXPECT().GetPendingChecks(ctx, realm, userID).Return([]dto.DBCheck{}, nil)
 		mocks.configDBModule.EXPECT().GetAdminConfiguration(ctx, realm).Return(adminConf, nil)
 		mocks.authManager.EXPECT().CheckAuthorizationOnTargetUser(gomock.Any(), idNowInitActionName, realm, userID).Return(nil)
 
@@ -174,6 +177,7 @@ func TestGetUser(t *testing.T) {
 		var expectedActionsCount = len(availableChecks) - 1
 
 		mocks.usersDetailsDB.EXPECT().GetChecks(ctx, realm, userID).Return(checks, nil)
+		mocks.usersDetailsDB.EXPECT().GetPendingChecks(ctx, realm, userID).Return([]dto.DBCheck{}, nil)
 		mocks.configDBModule.EXPECT().GetAdminConfiguration(ctx, realm).Return(adminConf, nil)
 		mocks.authManager.EXPECT().CheckAuthorizationOnTargetUser(gomock.Any(), idNowInitActionName, realm, userID).Return(nil)
 
@@ -192,6 +196,7 @@ func TestGetUser(t *testing.T) {
 		var expectedActionsCount = len(availableChecks) - 1
 
 		mocks.usersDetailsDB.EXPECT().GetChecks(ctx, realm, userID).Return(checks, nil)
+		mocks.usersDetailsDB.EXPECT().GetPendingChecks(ctx, realm, userID).Return([]dto.DBCheck{}, nil)
 		mocks.configDBModule.EXPECT().GetAdminConfiguration(ctx, realm).Return(adminConf, nil)
 		mocks.authManager.EXPECT().CheckAuthorizationOnTargetUser(gomock.Any(), idNowInitActionName, realm, userID).Return(errors.New("any error"))
 
@@ -210,6 +215,7 @@ func TestGetUser(t *testing.T) {
 		var expectedActionsCount = len(availableChecks)
 
 		mocks.usersDetailsDB.EXPECT().GetChecks(ctx, realm, userID).Return(checks, nil)
+		mocks.usersDetailsDB.EXPECT().GetPendingChecks(ctx, realm, userID).Return([]dto.DBCheck{}, nil)
 		mocks.configDBModule.EXPECT().GetAdminConfiguration(ctx, realm).Return(adminConf, nil)
 		mocks.authManager.EXPECT().CheckAuthorizationOnTargetUser(gomock.Any(), idNowInitActionName, realm, userID).Return(nil)
 
@@ -227,6 +233,10 @@ func TestGetUser(t *testing.T) {
 		var adminConf = configuration.RealmAdminConfiguration{AvailableChecks: availableChecks, ShowGlnEditing: &bFalse, VideoIdentificationAccountingEnabled: &bFalse, VideoIdentificationPrepaymentRequired: &bFalse}
 
 		mocks.usersDetailsDB.EXPECT().GetChecks(ctx, realm, userID).Return(checks, nil)
+		pendingAction := "check-2"
+		pending := "PENDING"
+		now := time.Now().UTC()
+		mocks.usersDetailsDB.EXPECT().GetPendingChecks(ctx, realm, userID).Return([]dto.DBCheck{{Nature: &pendingAction, Status: &pending, DateTime: &now}}, nil)
 		mocks.configDBModule.EXPECT().GetAdminConfiguration(ctx, realm).Return(adminConf, nil)
 		mocks.authManager.EXPECT().CheckAuthorizationOnTargetUser(gomock.Any(), idNowInitActionName, realm, userID).Return(nil)
 
@@ -246,6 +256,7 @@ func TestGetUser(t *testing.T) {
 		var adminConf = configuration.RealmAdminConfiguration{AvailableChecks: availableChecks, VideoIdentificationAccountingEnabled: &bTrue, VideoIdentificationPrepaymentRequired: &bTrue}
 
 		mocks.usersDetailsDB.EXPECT().GetChecks(ctx, realm, userID).Return(checks, nil)
+		mocks.usersDetailsDB.EXPECT().GetPendingChecks(ctx, realm, userID).Return([]dto.DBCheck{}, nil)
 		mocks.configDBModule.EXPECT().GetAdminConfiguration(ctx, realm).Return(adminConf, nil)
 		mocks.authManager.EXPECT().CheckAuthorizationOnTargetUser(gomock.Any(), idNowInitActionName, realm, userID).Return(nil)
 		mocks.accountingClient.EXPECT().GetBalance(ctx, realm, userID, "VIDEO_IDENTIFICATION").Return(float64(10), nil).Times(1)
@@ -264,6 +275,7 @@ func TestGetUser(t *testing.T) {
 		var adminConf = configuration.RealmAdminConfiguration{AvailableChecks: availableChecks, VideoIdentificationAccountingEnabled: &bTrue, VideoIdentificationPrepaymentRequired: &bTrue}
 
 		mocks.usersDetailsDB.EXPECT().GetChecks(ctx, realm, userID).Return(checks, nil)
+		mocks.usersDetailsDB.EXPECT().GetPendingChecks(ctx, realm, userID).Return([]dto.DBCheck{}, nil)
 		mocks.configDBModule.EXPECT().GetAdminConfiguration(ctx, realm).Return(adminConf, nil)
 		mocks.authManager.EXPECT().CheckAuthorizationOnTargetUser(gomock.Any(), idNowInitActionName, realm, userID).Return(nil)
 		mocks.accountingClient.EXPECT().GetBalance(ctx, realm, userID, "VIDEO_IDENTIFICATION").Return(float64(0), nil).Times(1)

@@ -25,4 +25,5 @@ type DBCheck struct {
 	ProofData *[]byte
 	ProofType *string
 	Comment   *string
+	TxnID     *string
 }

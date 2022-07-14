@@ -79,6 +79,7 @@ type Component interface {
 type UsersDetailsDBModule interface {
 	StoreOrUpdateUserDetails(ctx context.Context, realm string, user dto.DBUser) error
 	GetUserDetails(ctx context.Context, realm string, userID string) (dto.DBUser, error)
+	GetPendingChecks(ctx context.Context, realm string, userID string) ([]dto.DBCheck, error)
 }
 
 // Component is the management component.
@@ -168,6 +169,12 @@ func (c *component) GetAccount(ctx context.Context) (api.AccountRepresentation, 
 		return userRep, err
 	}
 
+	pendingChecks, err := c.usersDBModule.GetPendingChecks(ctx, realm, userID)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Can't get pending checks", "err", err.Error())
+		return userRep, err
+	}
+
 	userRep = api.ConvertToAPIAccount(ctx, userKc, c.logger)
 	userRep.BirthLocation = dbUser.BirthLocation
 	userRep.Nationality = dbUser.Nationality
@@ -175,6 +182,7 @@ func (c *component) GetAccount(ctx context.Context) (api.AccountRepresentation, 
 	userRep.IDDocumentNumber = dbUser.IDDocumentNumber
 	userRep.IDDocumentExpiration = dbUser.IDDocumentExpiration
 	userRep.IDDocumentCountry = dbUser.IDDocumentCountry
+	userRep.PendingChecks = keycloakb.ConvertFromDBChecks(pendingChecks).ToCheckNames()
 
 	return userRep, nil
 }

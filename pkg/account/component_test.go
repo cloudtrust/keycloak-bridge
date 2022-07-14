@@ -636,6 +636,16 @@ func TestGetUser(t *testing.T) {
 		assert.Equal(t, dbError, err)
 	})
 
+	t.Run("Retrieve checks fails", func(t *testing.T) {
+		var dbError = errors.New("db error")
+		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kc.UserRepresentation{}, nil)
+		mocks.usersDetailsDBModule.EXPECT().GetUserDetails(ctx, realmName, userID).Return(dto.DBUser{}, nil)
+		mocks.usersDetailsDBModule.EXPECT().GetPendingChecks(ctx, realmName, userID).Return([]dto.DBCheck{}, dbError)
+		_, err := accountComponent.GetAccount(ctx)
+
+		assert.Equal(t, dbError, err)
+	})
+
 	var email = "toto@elca.ch"
 	var enabled = true
 	var emailVerified = true
@@ -646,7 +656,8 @@ func TestGetUser(t *testing.T) {
 	var label = "Label"
 	var gender = "M"
 	var birthDate = "01/01/1988"
-	var createdTimestamp = time.Now().UTC().Unix()
+	var now = time.Now().UTC()
+	var createdTimestamp = now.Unix()
 	var locale = "it"
 
 	var attributes = make(kc.Attributes)
@@ -674,6 +685,11 @@ func TestGetUser(t *testing.T) {
 			UserID: &userID,
 		}, nil)
 		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "GET_DETAILS", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+		mocks.usersDetailsDBModule.EXPECT().GetPendingChecks(ctx, realmName, userID).Return([]dto.DBCheck{{
+			Nature:   ptr("nature"),
+			Status:   ptr("PENDING"),
+			DateTime: &now,
+		}}, nil)
 
 		apiUserRep, err := accountComponent.GetAccount(ctx)
 
@@ -709,6 +725,11 @@ func TestGetUser(t *testing.T) {
 			IDDocumentExpiration: &docExp,
 			IDDocumentCountry:    &docCountry,
 		}, nil)
+		mocks.usersDetailsDBModule.EXPECT().GetPendingChecks(ctx, realmName, userID).Return([]dto.DBCheck{{
+			Nature:   ptr("nature"),
+			Status:   ptr("PENDING"),
+			DateTime: &now,
+		}}, nil)
 		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "GET_DETAILS", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 
 		apiUserRep, err := accountComponent.GetAccount(ctx)

@@ -40,11 +40,7 @@ type CheckRepresentation struct {
 	Nature    *string    `json:"nature,omitempty"`
 	ProofData *[]byte    `json:"proofData,omitempty"`
 	ProofType *string    `json:"proofType,omitempty"`
-}
-
-// PendingChecksRepresentation struct {
-type PendingChecksRepresentation struct {
-	Nature *string `json:"nature,omitempty"`
+	TxnID     *string    `json:"txnId,omitempty"`
 }
 
 // Parameter references
@@ -67,6 +63,7 @@ const (
 	prmCheckType      = "check_type"
 	prmCheckNature    = "check_nature"
 	prmCheckProofType = "check_proof_type"
+	prmCheckTxnID     = "check_txn_id"
 
 	regExpAlphaNum255 = `[a-zA-Z0-9_-]{1,255}`
 	regExpOperator    = regExpAlphaNum255
@@ -95,6 +92,7 @@ func (c *CheckRepresentation) ConvertToDBCheck() dto.DBCheck {
 	check.Nature = c.Nature
 	check.ProofType = c.ProofType
 	check.ProofData = c.ProofData
+	check.TxnID = c.TxnID
 
 	return check
 }
@@ -224,6 +222,7 @@ func (c *CheckRepresentation) Validate() error {
 		ValidateParameterIn(prmCheckType, c.Type, allowedCheckType, true).
 		ValidateParameterRegExp(prmCheckNature, c.Nature, regExpNature, true).
 		ValidateParameterRegExp(prmCheckProofType, c.ProofType, regExpProofType, true).
+		ValidateParameterRegExp(prmCheckTxnID, c.TxnID, constants.RegExpTxnID, false).
 		Status()
 }
 
@@ -240,11 +239,4 @@ func (c *CheckRepresentation) IsIdentificationCanceled() bool {
 // IsIdentificationAborted checks if the identification was aborted
 func (c *CheckRepresentation) IsIdentificationAborted() bool {
 	return c.Status != nil && *c.Status == "ABORTED"
-}
-
-// Validate checks the validity of the given pending check
-func (cp *PendingChecksRepresentation) Validate() error {
-	return validation.NewParameterValidator().
-		ValidateParameterRegExp(prmCheckNature, cp.Nature, regExpNature, true).
-		Status()
 }

@@ -866,7 +866,8 @@ func TestGetUser(t *testing.T) {
 		var gender = "M"
 		var birthDate = "01/01/1988"
 		var nationality = "AU"
-		var createdTimestamp = time.Now().UTC().Unix()
+		var now = time.Now().UTC()
+		var createdTimestamp = now.Unix()
 		var locale = "it"
 		var trustIDGroups = []string{"grp1", "grp2"}
 		var birthLocation = "Rolle"
@@ -912,6 +913,12 @@ func TestGetUser(t *testing.T) {
 			IDDocumentCountry:    &idDocumentCountry,
 		}, nil)
 
+		mocks.usersDetailsDBModule.EXPECT().GetPendingChecks(ctx, realmName, id).Return([]dto.DBCheck{{
+			Nature:   ptr("nature"),
+			Status:   ptr("PENDING"),
+			DateTime: &now,
+		}}, nil)
+
 		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "GET_DETAILS", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 
 		apiUserRep, err := managementComponent.GetUser(ctx, "master", id)
@@ -950,7 +957,8 @@ func TestGetUser(t *testing.T) {
 		var label = "Label"
 		var gender = "M"
 		var birthDate = "01/01/1988"
-		var createdTimestamp = time.Now().UTC().Unix()
+		var now = time.Now().UTC()
+		var createdTimestamp = now.Unix()
 		var locale = "it"
 		var trustIDGroups = []string{"grp1", "grp2"}
 
@@ -984,6 +992,11 @@ func TestGetUser(t *testing.T) {
 		mocks.usersDetailsDBModule.EXPECT().GetUserDetails(ctx, realmName, id).Return(dto.DBUser{
 			UserID: &id,
 		}, nil)
+		mocks.usersDetailsDBModule.EXPECT().GetPendingChecks(ctx, realmName, id).Return([]dto.DBCheck{{
+			Nature:   ptr("nature"),
+			Status:   ptr("PENDING"),
+			DateTime: &now,
+		}}, nil)
 
 		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "GET_DETAILS", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 
@@ -1018,6 +1031,7 @@ func TestGetUser(t *testing.T) {
 		var idDocumentType = "Card ID"
 		var idDocumentNumber = "1234-4567-VD-3"
 		var idDocumentExpiration = "23.12.2019"
+		var now = time.Now().UTC()
 		var idDocumentCountry = "BE"
 		var kcUserRep = kc.UserRepresentation{
 			ID:       &id,
@@ -1038,6 +1052,11 @@ func TestGetUser(t *testing.T) {
 			IDDocumentType:       &idDocumentType,
 			IDDocumentCountry:    &idDocumentCountry,
 		}, nil)
+		mocks.usersDetailsDBModule.EXPECT().GetPendingChecks(ctx, realmName, id).Return([]dto.DBCheck{{
+			Nature:   ptr("nature"),
+			Status:   ptr("PENDING"),
+			DateTime: &now,
+		}}, nil)
 
 		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "GET_DETAILS", "back-office", database.CtEventRealmName, realmName, database.CtEventUserID, id, database.CtEventUsername, username).Return(errors.New("error"))
 		m := map[string]interface{}{"event_name": "GET_DETAILS", database.CtEventRealmName: realmName, database.CtEventUserID: id, database.CtEventUsername: username}
@@ -1060,6 +1079,24 @@ func TestGetUser(t *testing.T) {
 
 		mocks.usersDetailsDBModule.EXPECT().GetUserDetails(ctx, realmName, id).Return(dto.DBUser{}, fmt.Errorf("SQL Error"))
 		mocks.logger.EXPECT().Warn(ctx, "err", "SQL Error")
+
+		_, err := managementComponent.GetUser(ctx, "master", id)
+
+		assert.NotNil(t, err)
+	})
+
+	t.Run("Retrieve checks fails", func(t *testing.T) {
+		var kcUserRep = kc.UserRepresentation{
+			ID:       &id,
+			Username: &username,
+		}
+		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, id).Return(kcUserRep, nil)
+
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+
+		mocks.usersDetailsDBModule.EXPECT().GetUserDetails(ctx, realmName, id).Return(dto.DBUser{}, nil)
+		mocks.usersDetailsDBModule.EXPECT().GetPendingChecks(ctx, realmName, id).Return([]dto.DBCheck{}, fmt.Errorf("SQL Error"))
+		mocks.logger.EXPECT().Warn(ctx, "msg", "Can't get pending checks", "err", "SQL Error")
 
 		_, err := managementComponent.GetUser(ctx, "master", id)
 
