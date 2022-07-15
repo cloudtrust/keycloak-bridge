@@ -51,8 +51,8 @@ func (a *archiveDBModule) StoreUserDetails(ctx context.Context, realm string, us
 		return err
 	}
 
-	keyId := a.cipher.GetCurrentKeyID()
+	keyID := a.cipher.GetCurrentKeyID()
 	// update value in DB
-	_, err = a.db.Exec(storeUserArchiveStmt, realm, user.ID, encryptedData, keyId)
+	_, err = a.db.Exec(storeUserArchiveStmt, realm, user.ID, encryptedData, keyID)
 	return err
 }

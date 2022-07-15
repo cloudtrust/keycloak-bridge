@@ -76,6 +76,7 @@ type AuthorizationManager interface {
 	CheckAuthorizationOnTargetUser(ctx context.Context, action, targetRealm, userID string) error
 }
 
+// AccountingClient interface
 type AccountingClient interface {
 	GetBalance(ctx context.Context, realmName string, userID string, service string) (float64, error)
 }

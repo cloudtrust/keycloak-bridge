@@ -99,19 +99,19 @@ func (c *usersDBModule) StoreOrUpdateUserDetails(ctx context.Context, realm stri
 		return err
 	}
 
-	keyId := c.cipher.GetCurrentKeyID()
+	keyID := c.cipher.GetCurrentKeyID()
 	// update value in DB
-	_, err = c.db.Exec(updateUserDetailsStmt, realm, user.UserID, encryptedData, keyId, encryptedData, keyId)
+	_, err = c.db.Exec(updateUserDetailsStmt, realm, user.UserID, encryptedData, keyID, encryptedData, keyID)
 	return err
 }
 
 func (c *usersDBModule) GetUserDetails(ctx context.Context, realm string, userID string) (dto.DBUser, error) {
 	var encryptedDetails []byte
-	var keyId string
+	var keyID string
 	var details = dto.DBUser{}
 	row := c.db.QueryRow(selectUserDetailsStmt, realm, userID)
 
-	switch err := row.Scan(&encryptedDetails, &keyId); err {
+	switch err := row.Scan(&encryptedDetails, &keyID); err {
 	case sql.ErrNoRows:
 		return dto.DBUser{
 			UserID: &userID,
@@ -121,7 +121,7 @@ func (c *usersDBModule) GetUserDetails(ctx context.Context, realm string, userID
 			return dto.DBUser{}, err
 		}
 		//decrypt the user details & unmarshal
-		detailsJSON, err := c.cipher.Decrypt(encryptedDetails, keyId, []byte(userID))
+		detailsJSON, err := c.cipher.Decrypt(encryptedDetails, keyID, []byte(userID))
 		if err != nil {
 			c.logger.Warn(ctx, "msg", "Can't decrypt the user details", "err", err.Error(), "realmID", realm, "userID", userID)
 			return dto.DBUser{}, err
@@ -152,12 +152,12 @@ func (c *usersDBModule) CreateCheck(ctx context.Context, realm string, userID st
 	}
 
 	// insert check in DB
-	keyId := c.cipher.GetCurrentKeyID()
+	keyID := c.cipher.GetCurrentKeyID()
 	_, err = c.db.Exec(createCheckStmt, realm, userID, check.Operator,
 		check.DateTime, check.Status, check.Type, check.Nature,
-		check.ProofType, proofData, check.Comment, keyId, check.TxnID,
+		check.ProofType, proofData, check.Comment, keyID, check.TxnID,
 		realm, userID, check.Operator, check.DateTime, check.Status, check.Type,
-		check.Nature, check.ProofType, proofData, check.Comment, keyId, check.TxnID)
+		check.Nature, check.ProofType, proofData, check.Comment, keyID, check.TxnID)
 
 	return err
 }
@@ -177,10 +177,10 @@ func (c *usersDBModule) CreatePendingCheck(ctx context.Context, realm string, us
 	}
 
 	// insert check in DB
-	keyId := c.cipher.GetCurrentKeyID()
+	keyID := c.cipher.GetCurrentKeyID()
 	_, err = c.db.Exec(createPendingCheckStmt, realm, userID, check.Operator,
 		check.DateTime, check.Type, check.Nature,
-		check.ProofType, proofData, check.Comment, keyId, check.TxnID)
+		check.ProofType, proofData, check.Comment, keyID, check.TxnID)
 
 	return err
 }
@@ -218,11 +218,11 @@ func (c *usersDBModule) scanChecks(ctx context.Context, rows sqltypes.SQLRows) (
 	var checkID int64
 	var operator, datetime, status, checkType, nature, proofType, comment, txnID sql.NullString
 	var encryptedProofData []byte
-	var realm, userID, keyId string
+	var realm, userID, keyID string
 	var err error
 
 	for rows.Next() {
-		err = rows.Scan(&checkID, &realm, &userID, &operator, &datetime, &status, &checkType, &nature, &proofType, &encryptedProofData, &comment, &keyId, &txnID)
+		err = rows.Scan(&checkID, &realm, &userID, &operator, &datetime, &status, &checkType, &nature, &proofType, &encryptedProofData, &comment, &keyID, &txnID)
 		if err != nil {
 			return nil, err
 		}
@@ -231,7 +231,7 @@ func (c *usersDBModule) scanChecks(ctx context.Context, rows sqltypes.SQLRows) (
 
 		if len(encryptedProofData) != 0 {
 			//decrypt the proof data of the user
-			proofData, err = c.cipher.Decrypt(encryptedProofData, keyId, []byte(userID))
+			proofData, err = c.cipher.Decrypt(encryptedProofData, keyID, []byte(userID))
 			if err != nil {
 				c.logger.Warn(ctx, "msg", "Can't decrypt the proof data", "err", err.Error(), "realmID", realm, "userID", userID)
 				return nil, err

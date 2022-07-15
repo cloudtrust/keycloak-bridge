@@ -6,6 +6,7 @@ const (
 	regExpLen255        = `^.{1,255}$`
 	regExpLen128        = `^.{1,128}$`
 
+	// Common regex
 	RegExpID              = `^[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}$`
 	RegExpFederatedUserID = regExpLen128
 	RegExpName            = `^[a-zA-Z0-9-_]{1,128}$`
@@ -66,6 +67,7 @@ var (
 	AllowedDocumentTypes = map[string]bool{"ID_CARD": true, "PASSPORT": true, "RESIDENCE_PERMIT": true}
 )
 
+// InitializeRegexOverride lets some regex be overriden
 func InitializeRegexOverride(validationRules map[string]string) {
 	for key, value := range validationRules {
 		switch key {

@@ -25,6 +25,7 @@ var (
 	ErrCantUnmarshalPendingCheck = errors.New("can't unmarshal pending check value")
 )
 
+// ConvertFromDBChecks converts a check coming from database
 func ConvertFromDBChecks(dbChecks []dto.DBCheck) PendingChecks {
 	checks := map[string]int64{}
 	for _, pendingCheck := range dbChecks {

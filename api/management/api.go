@@ -175,6 +175,7 @@ type AuthorizationsRepresentation struct {
 	Matrix *map[string]map[string]map[string]struct{} `json:"matrix"`
 }
 
+// AuthorizationMessage struct
 type AuthorizationMessage struct {
 	Authorized bool
 }
@@ -267,6 +268,7 @@ type FederatedIdentityRepresentation struct {
 	Username *string `json:"username,omitempty"`
 }
 
+// IdentityProviderRepresentation struct
 type IdentityProviderRepresentation struct {
 	AddReadTokenRoleOnCreate  *bool                   `json:"addReadTokenRoleOnCreate,omitempty"`
 	Alias                     *string                 `json:"alias,omitempty"`
@@ -493,6 +495,7 @@ func ConvertUpdatableToKCUser(user UpdatableUserRepresentation) kc.UserRepresent
 	return userRep
 }
 
+// ConvertToAPIRole converts a role
 func ConvertToAPIRole(role kc.RoleRepresentation) RoleRepresentation {
 	var roleRep RoleRepresentation
 	roleRep.ID = role.ID
@@ -504,6 +507,7 @@ func ConvertToAPIRole(role kc.RoleRepresentation) RoleRepresentation {
 	return roleRep
 }
 
+// ConvertToKCRole converts a role
 func ConvertToKCRole(role RoleRepresentation) kc.RoleRepresentation {
 	return kc.RoleRepresentation{
 		ClientRole:  role.ClientRole,

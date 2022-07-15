@@ -444,8 +444,8 @@ func TestFederatedIdentityRepresentation(t *testing.T) {
 	})
 	t.Run("Validate - user with email success", func(t *testing.T) {
 		email := "toto@test.com"
-		fedId := FederatedIdentityRepresentation{UserID: &email, Username: &email}
-		assert.Nil(t, fedId.Validate())
+		fedID := FederatedIdentityRepresentation{UserID: &email, Username: &email}
+		assert.Nil(t, fedID.Validate())
 	})
 }
 

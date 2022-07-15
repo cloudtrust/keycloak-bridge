@@ -10,6 +10,7 @@ type EmailInfo struct {
 	CreationDate *int64  `json:"creationDate,omitempty"`
 }
 
+// ConvertToEmailInfo converts an email information
 func ConvertToEmailInfo(input []kc.EmailInfoRepresentation) []EmailInfo {
 	var res []EmailInfo
 	for _, nfo := range input {

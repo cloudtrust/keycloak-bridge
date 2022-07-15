@@ -20,15 +20,15 @@ func TestStoreOrUpdateUserDetails(t *testing.T) {
 	var mockDB = mock.NewCloudtrustDB(mockCtrl)
 	var mockCrypter = mock.NewEncrypterDecrypter(mockCtrl)
 	var encryptedContent = []byte("enc_content")
-	var keyId = "KBA_1"
+	var keyID = "KBA_1"
 
 	var userID = "123789"
 	t.Run("Update succesful", func(t *testing.T) {
 
-		mockDB.EXPECT().Exec(gomock.Any(), "realmId", &userID, gomock.Any(), keyId, gomock.Any(), keyId).Return(nil, nil).Times(1)
+		mockDB.EXPECT().Exec(gomock.Any(), "realmId", &userID, gomock.Any(), keyID, gomock.Any(), keyID).Return(nil, nil).Times(1)
 		var configDBModule = NewUsersDetailsDBModule(mockDB, mockCrypter, log.NewNopLogger())
 		mockCrypter.EXPECT().Encrypt(gomock.Any(), gomock.Any()).Return(encryptedContent, nil).Times(1)
-		mockCrypter.EXPECT().GetCurrentKeyID().Return(keyId).Times(1)
+		mockCrypter.EXPECT().GetCurrentKeyID().Return(keyID).Times(1)
 		var err = configDBModule.StoreOrUpdateUserDetails(context.Background(), "realmId", dto.DBUser{UserID: &userID})
 		assert.Nil(t, err)
 	})
@@ -41,10 +41,10 @@ func TestStoreOrUpdateUserDetails(t *testing.T) {
 	})
 	t.Run("Update user: DB error", func(t *testing.T) {
 		var unexpectedError = errors.New("error")
-		mockDB.EXPECT().Exec(gomock.Any(), "realmId", &userID, gomock.Any(), keyId, gomock.Any(), keyId).Return(nil, unexpectedError).Times(1)
+		mockDB.EXPECT().Exec(gomock.Any(), "realmId", &userID, gomock.Any(), keyID, gomock.Any(), keyID).Return(nil, unexpectedError).Times(1)
 		var configDBModule = NewUsersDetailsDBModule(mockDB, mockCrypter, log.NewNopLogger())
 		mockCrypter.EXPECT().Encrypt(gomock.Any(), gomock.Any()).Return(encryptedContent, nil).Times(1)
-		mockCrypter.EXPECT().GetCurrentKeyID().Return(keyId).Times(1)
+		mockCrypter.EXPECT().GetCurrentKeyID().Return(keyID).Times(1)
 		var err = configDBModule.StoreOrUpdateUserDetails(context.Background(), "realmId", dto.DBUser{UserID: &userID})
 		assert.Equal(t, unexpectedError, err)
 	})
@@ -222,7 +222,7 @@ func TestCreateCheck(t *testing.T) {
 	var realm = "realm"
 	var proofData = []byte(base64.StdEncoding.EncodeToString([]byte("some proof")))
 	var encryptedContent = []byte("enc_content")
-	var keyId = "KBA_1"
+	var keyID = "KBA_1"
 
 	t.Run("Create check successful", func(t *testing.T) {
 		mockDB.EXPECT().Exec(createCheckStmt, realm, userID, gomock.Any(), gomock.Any(),
@@ -231,7 +231,7 @@ func TestCreateCheck(t *testing.T) {
 			gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil).Times(1)
 		var configDBModule = NewUsersDetailsDBModule(mockDB, mockCrypter, log.NewNopLogger())
 		mockCrypter.EXPECT().Encrypt(gomock.Any(), gomock.Any()).Return(encryptedContent, nil).Times(1)
-		mockCrypter.EXPECT().GetCurrentKeyID().Return(keyId).Times(1)
+		mockCrypter.EXPECT().GetCurrentKeyID().Return(keyID).Times(1)
 		var err = configDBModule.CreateCheck(context.Background(), realm, userID, dto.DBCheck{ProofData: &proofData})
 		assert.Nil(t, err)
 	})
@@ -250,7 +250,7 @@ func TestCreateCheck(t *testing.T) {
 			gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, unexpectedError).Times(1)
 		var configDBModule = NewUsersDetailsDBModule(mockDB, mockCrypter, log.NewNopLogger())
 		mockCrypter.EXPECT().Encrypt(gomock.Any(), gomock.Any()).Return(encryptedContent, nil).Times(1)
-		mockCrypter.EXPECT().GetCurrentKeyID().Return(keyId).Times(1)
+		mockCrypter.EXPECT().GetCurrentKeyID().Return(keyID).Times(1)
 		var err = configDBModule.CreateCheck(context.Background(), realm, userID, dto.DBCheck{ProofData: &proofData})
 		assert.Equal(t, unexpectedError, err)
 	})
@@ -266,14 +266,14 @@ func TestCreatePendingCheck(t *testing.T) {
 	var realm = "realm"
 	var proofData = []byte(base64.StdEncoding.EncodeToString([]byte("some proof")))
 	var encryptedContent = []byte("enc_content")
-	var keyId = "KBA_1"
+	var keyID = "KBA_1"
 
 	t.Run("Create check successful", func(t *testing.T) {
 		mockDB.EXPECT().Exec(createPendingCheckStmt, realm, userID, gomock.Any(), gomock.Any(),
 			gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, nil).Times(1)
 		var configDBModule = NewUsersDetailsDBModule(mockDB, mockCrypter, log.NewNopLogger())
 		mockCrypter.EXPECT().Encrypt(gomock.Any(), gomock.Any()).Return(encryptedContent, nil).Times(1)
-		mockCrypter.EXPECT().GetCurrentKeyID().Return(keyId).Times(1)
+		mockCrypter.EXPECT().GetCurrentKeyID().Return(keyID).Times(1)
 		var err = configDBModule.CreatePendingCheck(context.Background(), realm, userID, dto.DBCheck{ProofData: &proofData})
 		assert.Nil(t, err)
 	})
@@ -290,7 +290,7 @@ func TestCreatePendingCheck(t *testing.T) {
 			gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil, unexpectedError).Times(1)
 		var configDBModule = NewUsersDetailsDBModule(mockDB, mockCrypter, log.NewNopLogger())
 		mockCrypter.EXPECT().Encrypt(gomock.Any(), gomock.Any()).Return(encryptedContent, nil).Times(1)
-		mockCrypter.EXPECT().GetCurrentKeyID().Return(keyId).Times(1)
+		mockCrypter.EXPECT().GetCurrentKeyID().Return(keyID).Times(1)
 		var err = configDBModule.CreatePendingCheck(context.Background(), realm, userID, dto.DBCheck{ProofData: &proofData})
 		assert.Equal(t, unexpectedError, err)
 	})

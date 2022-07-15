@@ -342,10 +342,9 @@ func (c *component) isGLNUpdated(businessID csjson.OptionalString, oldUserKc kc.
 	if businessID.Defined {
 		if businessID.Value == nil {
 			return oldUserKc.GetAttributeString(constants.AttrbBusinessID) != nil
-		} else {
-			var oldGLN = oldUserKc.GetAttributeString(constants.AttrbBusinessID)
-			return oldGLN == nil || *businessID.Value != *oldGLN
 		}
+		var oldGLN = oldUserKc.GetAttributeString(constants.AttrbBusinessID)
+		return oldGLN == nil || *businessID.Value != *oldGLN
 	}
 	return false
 }

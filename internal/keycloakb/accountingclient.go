@@ -19,25 +19,29 @@ const (
 	hdrCorrID    = "X-Correlation-ID"
 )
 
-type AccountingClient struct {
-	httpClient HttpClient
+// AccountingClient struct
+type accountingClient struct {
+	httpClient HTTPClient
 }
 
-type HttpClient interface {
+// HTTPClient interface
+type HTTPClient interface {
 	Get(data interface{}, plugins ...plugin.Plugin) error
 }
 
+// AccountingBalance struct
 type AccountingBalance struct {
 	Balance *float64 `json:"balance"`
 }
 
-func MakeAccountingClient(httpClient HttpClient) *AccountingClient {
-	return &AccountingClient{
+// MakeAccountingClient creates the accounting client
+func MakeAccountingClient(httpClient HTTPClient) *accountingClient {
+	return &accountingClient{
 		httpClient: httpClient,
 	}
 }
 
-func (c *AccountingClient) GetBalance(ctx context.Context, realmName string, userID string, service string) (float64, error) {
+func (c *accountingClient) GetBalance(ctx context.Context, realmName string, userID string, service string) (float64, error) {
 	var correlationID = ctx.Value(cs.CtContextCorrelationID).(string)
 	var res AccountingBalance
 	err := c.httpClient.Get(&res, url.Path(getBalancePath), url.Param(prmRealmName, realmName), url.Param(prmUserID, userID), query.Add(prmService, service), headers.Set(hdrCorrID, correlationID))

@@ -48,7 +48,7 @@ func TestDeny(t *testing.T) {
 	var roleName = "role"
 
 	var groupID = "123-789-454"
-	var targetGroupId = "123-789-454"
+	var targetGroupID = "123-789-454"
 	var groupIDs = []string{groupID}
 	var groupName = "titi"
 	var grpNames = []string{"grp1", "grp2"}
@@ -177,8 +177,8 @@ func TestDeny(t *testing.T) {
 			"GetAuthorizations":                   ignoreFirst(authorizationMW.GetAuthorizations(ctx, realmName, groupID)),
 			"UpdateAuthorizations":                authorizationMW.UpdateAuthorizations(ctx, realmName, groupID, authz),
 			"AddAuthorization":                    authorizationMW.AddAuthorization(ctx, realmName, groupID, authz),
-			"GetAuthorization":                    ignoreFirst(authorizationMW.GetAuthorization(ctx, realmName, groupID, targetRealm, targetGroupId, action)),
-			"DeleteAuthorization":                 authorizationMW.DeleteAuthorization(ctx, realmName, groupID, targetRealm, targetGroupId, action),
+			"GetAuthorization":                    ignoreFirst(authorizationMW.GetAuthorization(ctx, realmName, groupID, targetRealm, targetGroupID, action)),
+			"DeleteAuthorization":                 authorizationMW.DeleteAuthorization(ctx, realmName, groupID, targetRealm, targetGroupID, action),
 			"GetClientRoles":                      ignoreFirst(authorizationMW.GetClientRoles(ctx, realmName, clientID)),
 			"CreateClientRole":                    ignoreFirst(authorizationMW.CreateClientRole(ctx, realmName, clientID, role)),
 			"DeleteClientRole":                    authorizationMW.DeleteClientRole(ctx, realmName, clientID, roleID),
@@ -226,7 +226,7 @@ func TestAllowed(t *testing.T) {
 	var any = "*"
 
 	var groupID = "123-789-454"
-	var targetGroupId = "123-789-454"
+	var targetGroupID = "123-789-454"
 	var groupIDs = []string{groupID}
 	var groupName = "titi"
 	var grpNames = []string{"grp1", "grp2"}
@@ -537,13 +537,13 @@ func TestAllowed(t *testing.T) {
 		assert.Nil(t, err)
 
 		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), gomock.Any(), realmName, groupID).Return(groupName, nil)
-		mockManagementComponent.EXPECT().GetAuthorization(ctx, realmName, groupID, targetRealm, targetGroupId, action).Return(api.AuthorizationMessage{}, nil)
-		_, err = authorizationMW.GetAuthorization(ctx, realmName, groupID, targetRealm, targetGroupId, action)
+		mockManagementComponent.EXPECT().GetAuthorization(ctx, realmName, groupID, targetRealm, targetGroupID, action).Return(api.AuthorizationMessage{}, nil)
+		_, err = authorizationMW.GetAuthorization(ctx, realmName, groupID, targetRealm, targetGroupID, action)
 		assert.Nil(t, err)
 
 		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), gomock.Any(), realmName, groupID).Return(groupName, nil)
-		mockManagementComponent.EXPECT().DeleteAuthorization(ctx, realmName, groupID, targetRealm, targetGroupId, action).Return(nil)
-		err = authorizationMW.DeleteAuthorization(ctx, realmName, groupID, targetRealm, targetGroupId, action)
+		mockManagementComponent.EXPECT().DeleteAuthorization(ctx, realmName, groupID, targetRealm, targetGroupID, action).Return(nil)
+		err = authorizationMW.DeleteAuthorization(ctx, realmName, groupID, targetRealm, targetGroupID, action)
 		assert.Nil(t, err)
 
 		mockManagementComponent.EXPECT().GetClientRoles(ctx, realmName, clientID).Return([]api.RoleRepresentation{}, nil)
