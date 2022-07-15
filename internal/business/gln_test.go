@@ -39,6 +39,15 @@ func (m *mockLookup) Add(gln string) {
 	}
 }
 
+func (m *mockLookup) AddPerson(gln string, firstName *string, lastName *string) {
+	m.glnList[gln] = GlnSearchResult{
+		Persons: []GlnPerson{
+			{Number: ptr(gln), FirstName: firstName, LastName: lastName},
+		},
+		Error: nil,
+	}
+}
+
 func (m *mockLookup) Lookup(gln string) GlnSearchResult {
 	time.Sleep(m.delay)
 	if m.err != nil {
@@ -60,6 +69,11 @@ func TestGln(t *testing.T) {
 		newMockLookup(3, time.Millisecond*10, nil)}
 	mockProviders[0].(*mockLookup).Add(gln)
 
+	var glnNilFirstName = "888888888"
+	var glnNilLastName = "333333333"
+	mockProviders[0].(*mockLookup).AddPerson(glnNilFirstName, nil, ptr("NameRandom1"))
+	mockProviders[0].(*mockLookup).AddPerson(glnNilLastName, ptr("NameRandom2"), nil)
+
 	var glnVerifier = NewGlnVerifier()
 	t.Run("No GLN Lookup", func(t *testing.T) {
 		var err = glnVerifier.ValidateGLN("Tom", "Tom", "123456789")
@@ -78,6 +92,16 @@ func TestGln(t *testing.T) {
 	})
 	t.Run("Matching GLN", func(t *testing.T) {
 		var err = glnVerifier.ValidateGLN("Nana", "Dubouchon", gln)
+		assert.Nil(t, err)
+	})
+
+	t.Run("Matching GLN, firstname nil", func(t *testing.T) {
+		var err = glnVerifier.ValidateGLN("", "NameRandom1", glnNilFirstName)
+		assert.Nil(t, err)
+	})
+
+	t.Run("Matching GLN, lastname nil", func(t *testing.T) {
+		var err = glnVerifier.ValidateGLN("NameRandom2", "", glnNilLastName)
 		assert.Nil(t, err)
 	})
 
