@@ -882,7 +882,7 @@ func main() {
 
 		var kcTechClient keycloakb.KeycloakTechnicalClient
 		{
-			kcTechClient = keycloakb.NewKeycloakTechnicalClient(technicalTokenProvider, keycloakClient, accountLogger)
+			kcTechClient = keycloakb.NewKeycloakTechnicalClient(technicalTokenProvider, technicalRealm, keycloakClient, accountLogger)
 		}
 
 		// module for storing and retrieving details of the self-registered users

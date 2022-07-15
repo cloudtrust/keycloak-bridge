@@ -540,7 +540,7 @@ func MakeExecuteActionsEmailEndpoint(component Component) cs.Endpoint {
 	}
 }
 
-// MakeRevokeAccreditationsEndpoint
+// MakeRevokeAccreditationsEndpoint creates an endpoint for RevokeAccreditations
 func MakeRevokeAccreditationsEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
@@ -614,9 +614,8 @@ func getLifespanValue(queryParameters map[string]string, maxLifeSpan int) (*stri
 				return nil, errorhandler.CreateInvalidQueryParameterError(prmQryLifespan)
 			}
 			return &value, nil
-		} else {
-			return nil, errorhandler.CreateInvalidQueryParameterError(prmQryLifespan)
 		}
+		return nil, errorhandler.CreateInvalidQueryParameterError(prmQryLifespan)
 	}
 	return nil, nil
 }
@@ -958,7 +957,7 @@ func MakeUpdateAuthorizationsEndpoint(component Component) cs.Endpoint {
 	}
 }
 
-// MakePutAuthorizationEndpoint creates an endpoint for PutAuthorization
+// MakeAddAuthorizationEndpoint creates an endpoint for AddAuthorization
 func MakeAddAuthorizationEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
@@ -1125,7 +1124,7 @@ func MakeLinkShadowUserEndpoint(component Component) cs.Endpoint {
 	}
 }
 
-// MakeGetUserRealmBackOfficeConfigurationEndpoint creates an endpoint for GetUserRealmBackOfficeConfiguration
+// MakeGetIdentityProvidersEndpoint creates an endpoint for GetIdentityProviders
 func MakeGetIdentityProvidersEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)

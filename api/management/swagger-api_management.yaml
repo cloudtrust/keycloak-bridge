@@ -2050,12 +2050,18 @@ components:
         emailVerified:
           type: boolean
           default: false
+        emailToValidate:
+          type: string
+          description: Read only. Email requested to be the email of the user but not yet validated
         phoneNumber:
           type: string
           description: When updating, explicitly set phone number to null to remove this value. To keep it untouched, don't provide the field.
         phoneNumberVerified:
           type: boolean
           default: false
+        phoneNumberToValidate:
+          type: string
+          description: Read only. Phone number requested to be the phone number of the user but not yet validated
         birthDate:
           type: string
           description: format is DD.MM.YYYY

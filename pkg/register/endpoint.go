@@ -68,9 +68,8 @@ func registerUser(ctx context.Context, component Component, corpRealm string, re
 			StatusCode: http.StatusFound,
 			Headers:    map[string]string{"Location": redirectURL},
 		}, nil
-	} else {
-		return respNoContent, nil
 	}
+	return respNoContent, nil
 }
 
 // MakeGetConfigurationEndpoint endpoint creation

@@ -208,45 +208,47 @@ func TestConvertUpdatableToKCUser(t *testing.T) {
 
 	assert.Nil(t, ConvertUpdatableToKCUser(user).Attributes)
 
-	// Email
-	var email = "gerard@manjoue.ch"
-	user.Email = csjson.StringToOptional(email)
-	assert.Equal(t, email, *ConvertUpdatableToKCUser(user).Email)
+	t.Run("Email", func(t *testing.T) {
+		var email = "gerard@manjoue.ch"
+		user.Email = csjson.StringToOptional(email)
+		assert.Equal(t, email, *ConvertUpdatableToKCUser(user).Email)
+	})
 
-	// Phone number
-	var phoneNumber = "+4122555555"
-	user.PhoneNumber = csjson.StringToOptional(phoneNumber)
-	assert.Equal(t, phoneNumber, (*ConvertUpdatableToKCUser(user).Attributes)[constants.AttrbPhoneNumber][0])
+	t.Run("Label", func(t *testing.T) {
+		var label = "a label"
+		user.Label = &label
+		assert.Equal(t, label, (*ConvertUpdatableToKCUser(user).Attributes)[constants.AttrbLabel][0])
+	})
 
-	// Label
-	var label = "a label"
-	user.Label = &label
-	assert.Equal(t, label, (*ConvertUpdatableToKCUser(user).Attributes)[constants.AttrbLabel][0])
+	t.Run("Gender", func(t *testing.T) {
+		var gender = "a gender"
+		user.Gender = &gender
+		assert.Equal(t, gender, (*ConvertUpdatableToKCUser(user).Attributes)[constants.AttrbGender][0])
+	})
 
-	// Gender
-	var gender = "a gender"
-	user.Gender = &gender
-	assert.Equal(t, gender, (*ConvertUpdatableToKCUser(user).Attributes)[constants.AttrbGender][0])
+	t.Run("Birthdate", func(t *testing.T) {
+		var date = "25/12/0"
+		user.BirthDate = &date
+		assert.Equal(t, date, (*ConvertUpdatableToKCUser(user).Attributes)[constants.AttrbBirthDate][0])
+	})
 
-	// Birthdate
-	var date = "25/12/0"
-	user.BirthDate = &date
-	assert.Equal(t, date, (*ConvertUpdatableToKCUser(user).Attributes)[constants.AttrbBirthDate][0])
+	t.Run("PhoneNumberVerified", func(t *testing.T) {
+		var verified = true
+		user.PhoneNumberVerified = &verified
+		assert.Equal(t, "true", (*ConvertUpdatableToKCUser(user).Attributes)[constants.AttrbPhoneNumberVerified][0])
+	})
 
-	// PhoneNumberVerified
-	var verified = true
-	user.PhoneNumberVerified = &verified
-	assert.Equal(t, "true", (*ConvertUpdatableToKCUser(user).Attributes)[constants.AttrbPhoneNumberVerified][0])
+	t.Run("Locale", func(t *testing.T) {
+		var locale = "it"
+		user.Locale = &locale
+		assert.Equal(t, locale, (*ConvertUpdatableToKCUser(user).Attributes)[constants.AttrbLocale][0])
+	})
 
-	// Locale
-	var locale = "it"
-	user.Locale = &locale
-	assert.Equal(t, locale, (*ConvertUpdatableToKCUser(user).Attributes)[constants.AttrbLocale][0])
-
-	// Business ID
-	var businessID = "123456789"
-	user.BusinessID = csjson.StringToOptional(businessID)
-	assert.Equal(t, businessID, *ConvertUpdatableToKCUser(user).Attributes.GetString(constants.AttrbBusinessID))
+	t.Run("Business ID", func(t *testing.T) {
+		var businessID = "123456789"
+		user.BusinessID = csjson.StringToOptional(businessID)
+		assert.Equal(t, businessID, *ConvertUpdatableToKCUser(user).Attributes.GetString(constants.AttrbBusinessID))
+	})
 }
 
 func TestConvertAPIRole(t *testing.T) {
@@ -442,8 +444,8 @@ func TestFederatedIdentityRepresentation(t *testing.T) {
 	})
 	t.Run("Validate - user with email success", func(t *testing.T) {
 		email := "toto@test.com"
-		fedId := FederatedIdentityRepresentation{UserID: &email, Username: &email}
-		assert.Nil(t, fedId.Validate())
+		fedID := FederatedIdentityRepresentation{UserID: &email, Username: &email}
+		assert.Nil(t, fedID.Validate())
 	})
 }
 

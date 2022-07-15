@@ -106,6 +106,7 @@ func MakeValidateUserInSocialRealmEndpoint(component Component) cs.Endpoint {
 }
 
 /********************* (BEGIN) Temporary basic identity (TO BE REMOVED WHEN MULTI-ACCREDITATION WILL BE IMPLEMENTED) *********************/
+// MakeValidateUserBasicIDEndpoint creates an endpoint for ValidateUserBasicID
 func MakeValidateUserBasicIDEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)

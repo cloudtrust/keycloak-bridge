@@ -21,7 +21,7 @@ import (
 
 // Constants
 const (
-	ActionVerifyEmail       = "VERIFY_EMAIL"
+	ActionVerifyEmail       = "ct-verify-email"
 	ActionVerifyPhoneNumber = "mobilephone-validation"
 
 	emailTemplateUpdatedPassword = "notif-password-change.ftl"
@@ -51,6 +51,7 @@ type KeycloakAccountClient interface {
 // KeycloakTechnicalClient interface exposes methods called by a technical account
 type KeycloakTechnicalClient interface {
 	GetRealm(ctx context.Context, realmName string) (kc.RealmRepresentation, error)
+	GetUsers(ctx context.Context, targetRealmName string, paramKV ...string) (kc.UsersPageRepresentation, error)
 	LogoutAllSessions(ctx context.Context, realmName string, userID string) error
 }
 
@@ -220,7 +221,6 @@ func (c *component) UpdateAccount(ctx context.Context, user api.UpdatableAccount
 		return err
 	}
 
-	var emailVerified, phoneNumberVerified *bool
 	var actions []string
 
 	var namesUpdated = keycloakb.IsUpdated(user.FirstName, oldUserKc.FirstName, user.LastName, oldUserKc.LastName)
@@ -238,23 +238,18 @@ func (c *component) UpdateAccount(ctx context.Context, user api.UpdatableAccount
 	// phone number is not added here as there is already an email sent for phone number verification
 	// (currently no other field)
 	var profileUpdated = revokeAccreditations
-	var prevEmail *string
 
-	// when the email changes, set the EmailVerified to false
+	// manage email change
+	var prevEmail *string
 	if isUpdated(user.Email, oldUserKc.Email) {
-		var verified = false
-		emailVerified = &verified
-		if oldUserKc.Email != nil && len(*oldUserKc.Email) > 0 {
-			prevEmail = oldUserKc.Email
-		}
+		prevEmail = oldUserKc.Email
+		oldUserKc.SetAttributeString(constants.AttrbEmailToValidate, *user.Email)
 		actions = append(actions, ActionVerifyEmail)
 	}
 
-	// when the phone number changes, set the PhoneNumberVerified to false
+	// manage phone number change
 	if isUpdated(user.PhoneNumber, oldUserKc.GetAttributeString(constants.AttrbPhoneNumber)) {
-		var verified = false
-		phoneNumberVerified = &verified
-		profileUpdated = true
+		oldUserKc.SetAttributeString(constants.AttrbPhoneNumberToValidate, *user.PhoneNumber)
 		actions = append(actions, ActionVerifyPhoneNumber)
 	}
 
@@ -262,15 +257,11 @@ func (c *component) UpdateAccount(ctx context.Context, user api.UpdatableAccount
 
 	userRep.FirstName = defaultString(userRep.FirstName, oldUserKc.FirstName)
 	userRep.LastName = defaultString(userRep.LastName, oldUserKc.LastName)
-	userRep.Email = defaultString(userRep.Email, oldUserKc.Email)
-	if emailVerified != nil {
-		userRep.EmailVerified = emailVerified
-	}
+	userRep.Email = oldUserKc.Email // Don't touch email
+	userRep.EmailVerified = oldUserKc.EmailVerified
 
 	// Merge the attributes coming from the old user representation and the updated user representation in order not to lose anything
 	var mergedAttributes = c.duplicateAttributes(oldUserKc.Attributes)
-	mergedAttributes.SetStringWhenNotNil(constants.AttrbPhoneNumber, user.PhoneNumber)
-	mergedAttributes.SetBoolWhenNotNil(constants.AttrbPhoneNumberVerified, phoneNumberVerified)
 	mergedAttributes.SetStringWhenNotNil(constants.AttrbGender, user.Gender)
 	mergedAttributes.SetDateWhenNotNil(constants.AttrbBirthDate, user.BirthDate, constants.SupportedDateLayouts)
 	mergedAttributes.SetStringWhenNotNil(constants.AttrbLocale, user.Locale)
@@ -351,10 +342,9 @@ func (c *component) isGLNUpdated(businessID csjson.OptionalString, oldUserKc kc.
 	if businessID.Defined {
 		if businessID.Value == nil {
 			return oldUserKc.GetAttributeString(constants.AttrbBusinessID) != nil
-		} else {
-			var oldGLN = oldUserKc.GetAttributeString(constants.AttrbBusinessID)
-			return oldGLN == nil || *businessID.Value != *oldGLN
 		}
+		var oldGLN = oldUserKc.GetAttributeString(constants.AttrbBusinessID)
+		return oldGLN == nil || *businessID.Value != *oldGLN
 	}
 	return false
 }

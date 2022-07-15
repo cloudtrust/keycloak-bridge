@@ -18,36 +18,38 @@ import (
 
 // UserRepresentation struct
 type UserRepresentation struct {
-	ID                   *string                        `json:"id,omitempty"`
-	Username             *string                        `json:"username,omitempty"`
-	Gender               *string                        `json:"gender,omitempty"`
-	FirstName            *string                        `json:"firstName,omitempty"`
-	LastName             *string                        `json:"lastName,omitempty"`
-	Email                *string                        `json:"email,omitempty"`
-	EmailVerified        *bool                          `json:"emailVerified,omitempty"`
-	PhoneNumber          *string                        `json:"phoneNumber,omitempty"`
-	PhoneNumberVerified  *bool                          `json:"phoneNumberVerified,omitempty"`
-	BirthDate            *string                        `json:"birthDate,omitempty"`
-	BirthLocation        *string                        `json:"birthLocation,omitempty"`
-	Nationality          *string                        `json:"nationality,omitempty"`
-	IDDocumentType       *string                        `json:"idDocumentType,omitempty"`
-	IDDocumentNumber     *string                        `json:"idDocumentNumber,omitempty"`
-	IDDocumentExpiration *string                        `json:"idDocumentExpiration,omitempty"`
-	IDDocumentCountry    *string                        `json:"idDocumentCountry,omitempty"`
-	Groups               *[]string                      `json:"groups,omitempty"`
-	TrustIDGroups        *[]string                      `json:"trustIdGroups,omitempty"`
-	Roles                *[]string                      `json:"roles,omitempty"`
-	Locale               *string                        `json:"locale,omitempty"`
-	BusinessID           *string                        `json:"businessId,omitempty"`
-	SmsSent              *int                           `json:"smsSent,omitempty"`
-	SmsAttempts          *int                           `json:"smsAttempts,omitempty"`
-	Enabled              *bool                          `json:"enabled,omitempty"`
-	Label                *string                        `json:"label,omitempty"`
-	PendingChecks        *[]string                      `json:"pendingChecks,omitempty"`
-	Accreditations       *[]AccreditationRepresentation `json:"accreditations,omitempty"`
-	NameID               *string                        `json:"nameId,omitempty"`
-	OnboardingCompleted  *bool                          `json:"onboardingCompleted,omitempty"`
-	CreatedTimestamp     *int64                         `json:"createdTimestamp,omitempty"`
+	ID                    *string                        `json:"id,omitempty"`
+	Username              *string                        `json:"username,omitempty"`
+	Gender                *string                        `json:"gender,omitempty"`
+	FirstName             *string                        `json:"firstName,omitempty"`
+	LastName              *string                        `json:"lastName,omitempty"`
+	Email                 *string                        `json:"email,omitempty"`
+	EmailVerified         *bool                          `json:"emailVerified,omitempty"`
+	EmailToValidate       *string                        `json:"emailToValidate,omitempty"`
+	PhoneNumber           *string                        `json:"phoneNumber,omitempty"`
+	PhoneNumberVerified   *bool                          `json:"phoneNumberVerified,omitempty"`
+	PhoneNumberToValidate *string                        `json:"phoneNumberToValidate,omitempty"`
+	BirthDate             *string                        `json:"birthDate,omitempty"`
+	BirthLocation         *string                        `json:"birthLocation,omitempty"`
+	Nationality           *string                        `json:"nationality,omitempty"`
+	IDDocumentType        *string                        `json:"idDocumentType,omitempty"`
+	IDDocumentNumber      *string                        `json:"idDocumentNumber,omitempty"`
+	IDDocumentExpiration  *string                        `json:"idDocumentExpiration,omitempty"`
+	IDDocumentCountry     *string                        `json:"idDocumentCountry,omitempty"`
+	Groups                *[]string                      `json:"groups,omitempty"`
+	TrustIDGroups         *[]string                      `json:"trustIdGroups,omitempty"`
+	Roles                 *[]string                      `json:"roles,omitempty"`
+	Locale                *string                        `json:"locale,omitempty"`
+	BusinessID            *string                        `json:"businessId,omitempty"`
+	SmsSent               *int                           `json:"smsSent,omitempty"`
+	SmsAttempts           *int                           `json:"smsAttempts,omitempty"`
+	Enabled               *bool                          `json:"enabled,omitempty"`
+	Label                 *string                        `json:"label,omitempty"`
+	PendingChecks         *[]string                      `json:"pendingChecks,omitempty"`
+	Accreditations        *[]AccreditationRepresentation `json:"accreditations,omitempty"`
+	NameID                *string                        `json:"nameId,omitempty"`
+	OnboardingCompleted   *bool                          `json:"onboardingCompleted,omitempty"`
+	CreatedTimestamp      *int64                         `json:"createdTimestamp,omitempty"`
 }
 
 // UpdatableUserRepresentation struct
@@ -173,6 +175,7 @@ type AuthorizationsRepresentation struct {
 	Matrix *map[string]map[string]map[string]struct{} `json:"matrix"`
 }
 
+// AuthorizationMessage struct
 type AuthorizationMessage struct {
 	Authorized bool
 }
@@ -265,6 +268,7 @@ type FederatedIdentityRepresentation struct {
 	Username *string `json:"username,omitempty"`
 }
 
+// IdentityProviderRepresentation struct
 type IdentityProviderRepresentation struct {
 	AddReadTokenRoleOnCreate  *bool                   `json:"addReadTokenRoleOnCreate,omitempty"`
 	Alias                     *string                 `json:"alias,omitempty"`
@@ -354,13 +358,15 @@ func ConvertToAPIUser(ctx context.Context, userKc kc.UserRepresentation, logger 
 
 	userRep.ID = userKc.ID
 	userRep.Username = userKc.Username
-	userRep.Email = userKc.Email
 	userRep.Enabled = userKc.Enabled
+	userRep.Email = userKc.Email
+	userRep.EmailToValidate = userKc.GetAttributeString(constants.AttrbEmailToValidate)
 	userRep.EmailVerified = userKc.EmailVerified
 	userRep.FirstName = userKc.FirstName
 	userRep.LastName = userKc.LastName
 	userRep.CreatedTimestamp = userKc.CreatedTimestamp
 	userRep.PhoneNumber = userKc.GetAttributeString(constants.AttrbPhoneNumber)
+	userRep.PhoneNumberToValidate = userKc.GetAttributeString(constants.AttrbPhoneNumberToValidate)
 	userRep.Label = userKc.GetAttributeString(constants.AttrbLabel)
 	userRep.Gender = userKc.GetAttributeString(constants.AttrbGender)
 	userRep.BirthDate = userKc.GetAttributeDate(constants.AttrbBirthDate, constants.SupportedDateLayouts)
@@ -468,9 +474,11 @@ func ConvertUpdatableToKCUser(user UpdatableUserRepresentation) kc.UserRepresent
 
 	var attributes = make(kc.Attributes)
 
+	/* We don't directly update the phone number: it will be set in phoneNumberToValidate only if different from previous value
 	if user.PhoneNumber.Defined {
 		attributes.SetStringWhenNotNil(constants.AttrbPhoneNumber, user.PhoneNumber.Value)
 	}
+	*/
 	attributes.SetBoolWhenNotNil(constants.AttrbPhoneNumberVerified, user.PhoneNumberVerified)
 	attributes.SetStringWhenNotNil(constants.AttrbLabel, user.Label)
 	attributes.SetStringWhenNotNil(constants.AttrbGender, user.Gender)
@@ -487,6 +495,7 @@ func ConvertUpdatableToKCUser(user UpdatableUserRepresentation) kc.UserRepresent
 	return userRep
 }
 
+// ConvertToAPIRole converts a role
 func ConvertToAPIRole(role kc.RoleRepresentation) RoleRepresentation {
 	var roleRep RoleRepresentation
 	roleRep.ID = role.ID
@@ -498,6 +507,7 @@ func ConvertToAPIRole(role kc.RoleRepresentation) RoleRepresentation {
 	return roleRep
 }
 
+// ConvertToKCRole converts a role
 func ConvertToKCRole(role RoleRepresentation) kc.RoleRepresentation {
 	return kc.RoleRepresentation{
 		ClientRole:  role.ClientRole,

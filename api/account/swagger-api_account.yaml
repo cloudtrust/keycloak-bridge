@@ -214,6 +214,9 @@ components:
         emailVerified:
           type: boolean
           description: only returned by /account
+        emailToValidate:
+          type: string
+          description: Read only. Email requested to be the email of the user but not yet validated
         gender:
           type: string
           description: only returned by /account
@@ -226,6 +229,9 @@ components:
         phoneNumberVerified:
           type: boolean
           description: only returned by /account
+        phoneNumberToValidate:
+          type: string
+          description: Read only. Phone number requested to be the phone number of the user but not yet validated
         birthDate:
           type: string
           description: only returned by /account. format is DD.MM.YYYY

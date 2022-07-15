@@ -157,7 +157,7 @@ func TestUpdateAccount(t *testing.T) {
 	ctx = context.WithValue(ctx, cs.CtContextUserID, userID)
 	ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 
-	var id = "1234-7454-4516"
+	var id = userID
 	var email = "toto@elca.ch"
 	var enabled = true
 	var emailVerified = true
@@ -218,6 +218,8 @@ func TestUpdateAccount(t *testing.T) {
 		BirthDate:   &birthDate,
 		Locale:      &locale,
 	}
+	var one = 1
+	var searchedUsers = kc.UsersPageRepresentation{Count: &one, Users: []kc.UserRepresentation{kcUserRep}}
 
 	t.Run("GetAccount fails", func(t *testing.T) {
 		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kcUserRep, anError)
@@ -289,18 +291,20 @@ func TestUpdateAccount(t *testing.T) {
 			EmailVerified: &emailVerified,
 		}
 		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(oldkcUserRep, nil)
+		mocks.usersDetailsDBModule.EXPECT().GetUserDetails(ctx, realmName, userID).Return(dto.DBUser{
+			UserID: &userID,
+		}, nil)
 		mocks.keycloakAccountClient.EXPECT().UpdateAccount(accessToken, realmName, gomock.Any()).DoAndReturn(
 			func(accessToken, realmName string, kcUserRep kc.UserRepresentation) error {
-				assert.Equal(t, email, *kcUserRep.Email)
-				assert.Equal(t, false, *kcUserRep.EmailVerified)
+				// Email has not been updated...
+				assert.NotEqual(t, email, *kcUserRep.Email)
+				// ... but it was added to emailToValidate
+				assert.Equal(t, email, *kcUserRep.GetAttributeString(constants.AttrbEmailToValidate))
 				return nil
 			})
 		mocks.keycloakAccountClient.EXPECT().ExecuteActionsEmail(accessToken, realmName, []string{ActionVerifyEmail}).Return(nil)
 		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "ACTION_EMAIL", "self-service", database.CtEventRealmName, realmName,
 			database.CtEventUserID, userID, database.CtEventAdditionalInfo, gomock.Any()).Return(nil)
-		mocks.usersDetailsDBModule.EXPECT().GetUserDetails(ctx, realmName, userID).Return(dto.DBUser{
-			UserID: &userID,
-		}, nil)
 		mocks.usersDetailsDBModule.EXPECT().StoreOrUpdateUserDetails(ctx, realmName, gomock.Any()).Return(nil)
 		// Mail updated
 		mocks.keycloakAccountClient.EXPECT().SendEmail(accessToken, realmName, emailTemplateUpdatedEmail, emailSubjectUpdatedEmail, &oldEmail, gomock.Any()).Return(nil)
@@ -316,6 +320,8 @@ func TestUpdateAccount(t *testing.T) {
 		assert.Nil(t, err)
 		userRep.PhoneNumber = &phoneNumber
 	})
+
+	mocks.keycloakTechnicalClient.EXPECT().GetUsers(ctx, realmName, "email", "="+email).Return(searchedUsers, nil).AnyTimes()
 
 	// Profile update
 	mocks.keycloakAccountClient.EXPECT().SendEmail(accessToken, realmName, emailTemplateUpdatedProfile, emailSubjectUpdatedProfile, nil, gomock.Any()).Return(anError).AnyTimes()
@@ -335,9 +341,10 @@ func TestUpdateAccount(t *testing.T) {
 		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(oldkcUserRep2, nil)
 		mocks.keycloakAccountClient.EXPECT().UpdateAccount(accessToken, realmName, gomock.Any()).DoAndReturn(
 			func(accessToken, realmName string, kcUserRep kc.UserRepresentation) error {
-				verified, _ := kcUserRep.GetAttributeBool(constants.AttrbPhoneNumberVerified)
-				assert.Equal(t, phoneNumber, *kcUserRep.GetAttributeString(constants.AttrbPhoneNumber))
-				assert.Equal(t, false, *verified)
+				// Phone number has not been updated...
+				assert.NotEqual(t, phoneNumber, *kcUserRep.GetAttributeString(constants.AttrbPhoneNumber))
+				// ... but phone number has been written in "to validate" attribute
+				assert.Equal(t, phoneNumber, *kcUserRep.GetAttributeString(constants.AttrbPhoneNumberToValidate))
 				return nil
 			})
 		mocks.keycloakAccountClient.EXPECT().ExecuteActionsEmail(accessToken, realmName, []string{ActionVerifyPhoneNumber}).Return(nil)
@@ -360,9 +367,10 @@ func TestUpdateAccount(t *testing.T) {
 		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(oldkcUserRep2, nil)
 		mocks.keycloakAccountClient.EXPECT().UpdateAccount(accessToken, realmName, gomock.Any()).DoAndReturn(
 			func(accessToken, realmName string, kcUserRep kc.UserRepresentation) error {
-				verified, _ := kcUserRep.GetAttributeBool(constants.AttrbPhoneNumberVerified)
-				assert.Equal(t, phoneNumber, *kcUserRep.GetAttributeString(constants.AttrbPhoneNumber))
-				assert.Equal(t, false, *verified)
+				// Phone number has not been updated...
+				assert.NotEqual(t, phoneNumber, *kcUserRep.GetAttributeString(constants.AttrbPhoneNumber))
+				// ... but phone number has been written in "to validate" attribute
+				assert.Equal(t, phoneNumber, *kcUserRep.GetAttributeString(constants.AttrbPhoneNumberToValidate))
 				return nil
 			})
 		mocks.keycloakAccountClient.EXPECT().ExecuteActionsEmail(accessToken, realmName, []string{ActionVerifyPhoneNumber}).Return(anError)

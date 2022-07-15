@@ -26,7 +26,7 @@ func createKcTechnicalClientMocks(ctrl *gomock.Controller) *keycloakTechnicalCli
 }
 
 func createKcTechnicalClient(mocks *keycloakTechnicalClientMocks) *kcTechnicalClient {
-	return NewKeycloakTechnicalClient(mocks.tokenProvider, mocks.kcClient, mocks.logger).(*kcTechnicalClient)
+	return NewKeycloakTechnicalClient(mocks.tokenProvider, "tkrealm", mocks.kcClient, mocks.logger).(*kcTechnicalClient)
 }
 
 func TestGetRealm(t *testing.T) {
@@ -53,6 +53,35 @@ func TestGetRealm(t *testing.T) {
 		mocks.kcClient.EXPECT().GetRealm(accessToken, realm).Return(kc.RealmRepresentation{}, nil)
 
 		var _, err = kcTechClient.GetRealm(ctx, realm)
+		assert.Nil(t, err)
+	})
+}
+
+func TestGetUsers(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mocks = createKcTechnicalClientMocks(mockCtrl)
+	var kcTechClient = createKcTechnicalClient(mocks)
+
+	var targetRealm = "target"
+	var accessToken = "access-token"
+	var anyError = errors.New("any error")
+	var ctx = context.TODO()
+
+	mocks.logger.EXPECT().Error(gomock.Any(), gomock.Any()).AnyTimes()
+
+	t.Run("Token provider fails", func(t *testing.T) {
+		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return("", anyError)
+
+		var _, err = kcTechClient.GetUsers(ctx, targetRealm)
+		assert.Equal(t, anyError, err)
+	})
+	t.Run("Success", func(t *testing.T) {
+		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
+		mocks.kcClient.EXPECT().GetUsers(accessToken, kcTechClient.tokenRealm, targetRealm).Return(kc.UsersPageRepresentation{}, nil)
+
+		var _, err = kcTechClient.GetUsers(ctx, targetRealm)
 		assert.Nil(t, err)
 	})
 }
