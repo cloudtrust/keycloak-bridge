@@ -34,6 +34,7 @@ const (
 
 	// RealmCustomConfiguration/RealmAdminConfiguration
 	RegExpRedirectURI = `^\w+:(\/?\/?)[^\s]+$`
+	RegExpBackURL     = `^(\w+:(\/?\/?)[^\s]+)|\*$`
 	RegExpTheme       = RegExpName
 
 	// RequiredAction
