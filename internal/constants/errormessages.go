@@ -81,5 +81,5 @@ const (
 	Timeshift                         = "timeshift"
 	IdentityProvider                  = "identityProvider"
 	TrustIDGroupName                  = "trustIDGroupName"
-	BackURL                           = "backURL"
+	AllowedBackURL                    = "allowedBackURL"
 )

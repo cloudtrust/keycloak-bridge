@@ -33,9 +33,9 @@ const (
 	RegExpPassword = regExpLen255
 
 	// RealmCustomConfiguration/RealmAdminConfiguration
-	RegExpRedirectURI = `^\w+:(\/?\/?)[^\s]+$`
-	RegExpBackURL     = `^(\w+:(\/?\/?)[^\s]+)|\*$`
-	RegExpTheme       = RegExpName
+	RegExpRedirectURI    = `^\w+:(\/?\/?)[^\s]+$`
+	RegExpAllowedBackURL = `^(\w+:(\/?\/?)[^\s]+)|\*$`
+	RegExpTheme          = RegExpName
 
 	// RequiredAction
 	RegExpRequiredAction = `^[a-zA-Z0-9-_]{1,255}$`
