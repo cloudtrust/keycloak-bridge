@@ -806,12 +806,12 @@ func (user UserRepresentation) Validate() error {
 }
 
 // Validate is a validator for UpdatableUserRepresentation
-func (user UpdatableUserRepresentation) Validate() error {
+func (user UpdatableUserRepresentation) Validate(isStandard bool) error {
 	var v = validation.NewParameterValidator().
 		ValidateParameterRegExp(constants.UserID, user.ID, constants.RegExpID, false).
 		ValidateParameterRegExp(constants.Username, user.Username, constants.RegExpUsername, false).
-		ValidateParameterRegExp(constants.Firstname, user.FirstName, constants.RegExpFirstName, false).
-		ValidateParameterRegExp(constants.Lastname, user.LastName, constants.RegExpLastName, false).
+		ValidateParameterRegExp(constants.Firstname, user.FirstName, selectRegExp(constants.RegExpFirstName, constants.RegExpCorporateFirstName, isStandard), false).
+		ValidateParameterRegExp(constants.Lastname, user.LastName, selectRegExp(constants.RegExpLastName, constants.RegExpCorporateLastName, isStandard), false).
 		ValidateParameterRegExp(constants.Label, user.Label, constants.RegExpLabel, false).
 		ValidateParameterRegExp(constants.Gender, user.Gender, constants.RegExpGender, false).
 		ValidateParameterDateMultipleLayout(constants.Birthdate, user.BirthDate, constants.SupportedDateLayouts, false).
@@ -844,6 +844,14 @@ func (user UpdatableUserRepresentation) Validate() error {
 	}
 
 	return v.Status()
+}
+
+// TO CLEAN WHEN WE WILL HAVE ATTRIBUTE MANAGEMENT
+func selectRegExp(standardRegExp string, corporateRegexp string, isStandard bool) string {
+	if isStandard {
+		return standardRegExp
+	}
+	return corporateRegexp
 }
 
 // Validate is a validator for RoleRepresentation

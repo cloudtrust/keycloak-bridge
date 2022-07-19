@@ -52,6 +52,10 @@ const (
 
 	RegExpCustomValue = `^[A-Za-z\d_-]{0,50}$`
 	RegExpTxnID       = regExpLen255
+
+	//Corporate Regex TO CLEAN WHEN WE WILL HAVE ATTRIBUTE MANAGEMENT
+	RegExpCorporateFirstName = regExpLen128
+	RegExpCorporateLastName  = regExpLen128
 )
 
 var (

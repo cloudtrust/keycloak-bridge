@@ -278,7 +278,7 @@ func MakeUpdateUserEndpoint(component Component) cs.Endpoint {
 			return nil, errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + msg.Body)
 		}
 
-		if err := user.Validate(); err != nil {
+		if err := user.Validate(m[prmRealm] == "trustid"); err != nil { // TO CLEAN WHEN WE WILL HAVE ATTRIBUTE MANAGEMENT
 			return nil, err
 		}
 
