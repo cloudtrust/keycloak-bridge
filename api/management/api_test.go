@@ -672,7 +672,7 @@ func TestValidateUserRepresentation(t *testing.T) {
 func TestValidateUpdatableUserRepresentation(t *testing.T) {
 	{
 		user := createValidUpdatableUserRepresentation()
-		assert.Nil(t, user.Validate())
+		assert.Nil(t, user.Validate(true))
 	}
 
 	groups := []string{"f467ed7c", "7767ed7c-0a1d-4eee-9bb8-669c6f89c007"}
@@ -698,7 +698,7 @@ func TestValidateUpdatableUserRepresentation(t *testing.T) {
 	users[11].LastName = &empty
 
 	for idx, user := range users {
-		assert.NotNil(t, user.Validate(), "Check is expected to be invalid. Test #%d failed", idx)
+		assert.NotNil(t, user.Validate(true), "Check is expected to be invalid. Test #%d failed", idx)
 	}
 }
 

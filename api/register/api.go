@@ -108,8 +108,8 @@ func (u *UserRepresentation) ConvertToKeycloak() kc.UserRepresentation {
 func (u *UserRepresentation) Validate(allFieldsMandatory bool) error {
 	return validation.NewParameterValidator().
 		ValidateParameterRegExp(prmUserGender, u.Gender, constants.RegExpGender, allFieldsMandatory).
-		ValidateParameterRegExp(prmUserFirstName, u.FirstName, constants.RegExpFirstName, true).
-		ValidateParameterRegExp(prmUserLastName, u.LastName, constants.RegExpLastName, true).
+		ValidateParameterRegExp(prmUserFirstName, u.FirstName, selectRegExp(constants.RegExpFirstName, constants.RegExpCorporateFirstName, allFieldsMandatory), true).
+		ValidateParameterRegExp(prmUserLastName, u.LastName, selectRegExp(constants.RegExpLastName, constants.RegExpCorporateLastName, allFieldsMandatory), true).
 		ValidateParameterRegExp(prmUserEmail, u.Email, constants.RegExpEmail, true).
 		ValidateParameterPhoneNumber(prmUserPhoneNumber, u.PhoneNumber, allFieldsMandatory).
 		ValidateParameterDateMultipleLayout(prmUserBirthDate, u.BirthDate, constants.SupportedDateLayouts, allFieldsMandatory).
@@ -123,4 +123,12 @@ func (u *UserRepresentation) Validate(allFieldsMandatory bool) error {
 		ValidateParameterRegExp(prmUserLocale, u.Locale, constants.RegExpLocale, true).
 		ValidateParameterRegExp(prmUserBusinessID, u.BusinessID, constants.RegExpBusinessID, false).
 		Status()
+}
+
+// TO CLEAN WHEN WE WILL HAVE ATTRIBUTE MANAGEMENT
+func selectRegExp(standardRegExp string, corporateRegexp string, isStandard bool) string {
+	if isStandard {
+		return standardRegExp
+	}
+	return corporateRegexp
 }
