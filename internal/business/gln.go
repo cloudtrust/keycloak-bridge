@@ -101,6 +101,7 @@ func (v *glnVerifier) ValidateGLN(firstName, lastName, gln string) error {
 }
 
 func (v *glnVerifier) compare(glnPerson GlnPerson, firstName, lastName, gln string) bool {
-	return glnPerson.Number != nil && glnPerson.FirstName != nil && glnPerson.LastName != nil &&
-		gln == *glnPerson.Number && firstName == *glnPerson.FirstName && lastName == *glnPerson.LastName
+	return glnPerson.Number != nil && gln == *glnPerson.Number &&
+		((glnPerson.FirstName != nil && firstName == *glnPerson.FirstName) || (glnPerson.FirstName == nil && firstName == "")) &&
+		((glnPerson.LastName != nil && lastName == *glnPerson.LastName) || (glnPerson.LastName == nil && lastName == ""))
 }
