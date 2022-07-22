@@ -2326,6 +2326,8 @@ components:
         barcode_type:
           type: string
           enum: [CODE128]
+        allowed_back_url:
+          type: string
     AdminConfiguration:
       type: object
       properties:

@@ -210,6 +210,7 @@ type RealmCustomConfiguration struct {
 	OnboardingClientID                  *string   `json:"onboarding_client_id"`
 	SelfRegisterGroupNames              *[]string `json:"self_register_group_names"`
 	BarcodeType                         *string   `json:"barcode_type"`
+	AllowedBackURL                      *string   `json:"allowed_back_url,omitempty"`
 }
 
 // UserStatus struct
@@ -675,6 +676,7 @@ func ConvertRealmCustomConfigurationFromDBStruct(config configuration.RealmConfi
 		OnboardingClientID:                  config.OnboardingClientID,
 		SelfRegisterGroupNames:              defaultStringArray(config.SelfRegisterGroupNames, emptyArray),
 		BarcodeType:                         config.BarcodeType,
+		AllowedBackURL:                      config.AllowedBackURL,
 	}
 }
 
@@ -892,6 +894,7 @@ func (config RealmCustomConfiguration) Validate() error {
 		ValidateParameterRegExp(constants.RedirectSuccessfulRegistrationURL, config.RedirectSuccessfulRegistrationURL, constants.RegExpRedirectURI, false).
 		ValidateParameterRegExp(constants.OnboardingRedirectURI, config.OnboardingRedirectURI, constants.RegExpRedirectURI, false).
 		ValidateParameterRegExp(constants.OnboardingClientID, config.OnboardingClientID, constants.RegExpClientID, false).
+		ValidateParameterRegExp(constants.AllowedBackURL, config.AllowedBackURL, constants.RegExpAllowedBackURL, false).
 		ValidateParameterIn(constants.BarcodeType, config.BarcodeType, allowedBarcodeType, false).
 		Status()
 }

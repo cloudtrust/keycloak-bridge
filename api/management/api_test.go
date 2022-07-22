@@ -500,6 +500,7 @@ func TestConvertRealmCustomConfiguration(t *testing.T) {
 		assert.Nil(t, res.OnboardingClientID)
 		assert.Len(t, *res.SelfRegisterGroupNames, 0)
 		assert.Nil(t, res.BarcodeType)
+		assert.Nil(t, res.AllowedBackURL)
 	})
 	t.Run("Non empty struct", func(t *testing.T) {
 		var bTrue = true
@@ -514,6 +515,7 @@ func TestConvertRealmCustomConfiguration(t *testing.T) {
 			OnboardingClientID:                ptr("client"),
 			SelfRegisterGroupNames:            &groups,
 			BarcodeType:                       ptr("barcodetype"),
+			AllowedBackURL:                    ptr("back-url"),
 		}
 		var res = ConvertRealmCustomConfigurationFromDBStruct(config)
 		assert.Equal(t, config.DefaultClientID, res.DefaultClientID)
@@ -525,6 +527,7 @@ func TestConvertRealmCustomConfiguration(t *testing.T) {
 		assert.Equal(t, config.OnboardingClientID, res.OnboardingClientID)
 		assert.Len(t, *res.SelfRegisterGroupNames, len(groups))
 		assert.Equal(t, config.BarcodeType, res.BarcodeType)
+		assert.Equal(t, *config.AllowedBackURL, *res.AllowedBackURL)
 	})
 }
 
@@ -763,7 +766,7 @@ func TestValidateRealmCustomConfiguration(t *testing.T) {
 	})
 
 	var configs []RealmCustomConfiguration
-	for i := 0; i < 7; i++ {
+	for i := 0; i < 8; i++ {
 		configs = append(configs, createValidRealmCustomConfiguration())
 	}
 
@@ -774,6 +777,7 @@ func TestValidateRealmCustomConfiguration(t *testing.T) {
 	configs[4].SelfServiceDefaultTab = ptr("abc--def")              // Two dash in a row
 	configs[5].SelfServiceDefaultTab = ptr("abc-def-")              // No final dash
 	configs[6].SelfServiceDefaultTab = ptr("abcdefghijabcdefghijx") // Too long
+	configs[7].AllowedBackURL = ptr("ht//tp://company.com")
 
 	for idx, config := range configs {
 		t.Run(fmt.Sprintf("Invalid case #%d", idx+1), func(t *testing.T) {
@@ -966,10 +970,12 @@ func createValidPasswordRepresentation() PasswordRepresentation {
 func createValidRealmCustomConfiguration() RealmCustomConfiguration {
 	defaultClientID := "backofficeid"
 	defaultRedirectURI := "http://company.com"
+	AllowedBackURL := "*"
 
 	return RealmCustomConfiguration{
 		DefaultClientID:    &defaultClientID,
 		DefaultRedirectURI: &defaultRedirectURI,
+		AllowedBackURL:     &AllowedBackURL,
 	}
 }
 
