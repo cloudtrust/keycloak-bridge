@@ -64,10 +64,7 @@ func registerUser(ctx context.Context, component Component, corpRealm string, re
 	}
 
 	if redirect {
-		return commonhttp.GenericResponse{
-			StatusCode: http.StatusFound,
-			Headers:    map[string]string{"Location": redirectURL},
-		}, nil
+		return redirectURL, nil
 	}
 	return respNoContent, nil
 }
