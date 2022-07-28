@@ -180,6 +180,9 @@ func (c *component) RegisterUser(ctx context.Context, targetRealmName string, cu
 	} else {
 		kcUser, err = c.registerUser(ctx, accessToken, targetRealmName, customerRealmName, user, realmConf, onboardingRedirectURI)
 	}
+	if err == errAccountAlreadyExists {
+		return "", nil
+	}
 	if err != nil {
 		return "", err
 	}
@@ -203,9 +206,6 @@ func (c *component) registerUser(ctx context.Context, accessToken string, target
 		}
 		return errAccountAlreadyExists
 	})
-	if err == errAccountAlreadyExists {
-		return kc.UserRepresentation{}, nil
-	}
 	if err != nil {
 		return kc.UserRepresentation{}, err
 	}
