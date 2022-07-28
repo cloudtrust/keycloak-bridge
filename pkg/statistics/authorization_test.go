@@ -14,10 +14,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGetActionsString(t *testing.T) {
-	assert.Len(t, GetActions(), len(actions))
-}
-
 var (
 	WithoutAuthorization = []configuration.Authorization{}
 )
@@ -28,7 +24,7 @@ func WithAuthorization() []configuration.Authorization {
 	var any = "*"
 
 	var authorizations = []configuration.Authorization{}
-	for _, action := range actions {
+	for _, action := range security.Actions.GetActionsForAPIs(security.BridgeService, security.StatisticAPI) {
 		var action = string(action.Name)
 		authorizations = append(authorizations, configuration.Authorization{
 			RealmID:         &realmName,

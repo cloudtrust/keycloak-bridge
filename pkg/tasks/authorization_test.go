@@ -13,10 +13,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGetActionsAuth(t *testing.T) {
-	assert.Equal(t, actions, GetActions())
-}
-
 func TestAuthorizations(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -52,7 +48,7 @@ func TestAuthorizations(t *testing.T) {
 	// ALLOW authorization tests
 	t.Run("Allow", func(t *testing.T) {
 		var allowAuthz = []configuration.Authorization{}
-		for _, action := range actions {
+		for _, action := range security.Actions.GetActionsForAPIs(security.BridgeService, security.TaskAPI) {
 			var action = string(action.Name)
 			allowAuthz = append(allowAuthz, configuration.Authorization{
 				RealmID:         &realmName,

@@ -8,34 +8,11 @@ import (
 	api "github.com/cloudtrust/keycloak-bridge/api/communications"
 )
 
-var actions []security.Action
-
-func newAction(as string, scope security.Scope) security.Action {
-	a := security.Action{
-		Name:  as,
-		Scope: scope,
-	}
-
-	actions = append(actions, a)
-	return a
-}
-
-// Creates constants for API method names
-var (
-	COMSendEmail = newAction("COM_SendEmail", security.ScopeRealm)
-	COMSendSMS   = newAction("COM_SendSMS", security.ScopeRealm)
-)
-
 // Tracking middleware at component level.
 type authorizationComponentMW struct {
 	authManager security.AuthorizationManager
 	logger      log.Logger
 	next        Component
-}
-
-// GetActions returns available actions
-func GetActions() []security.Action {
-	return actions
 }
 
 // MakeAuthorizationCommunicationsComponentMW checks authorization and return an error if the action is not allowed.
@@ -50,7 +27,7 @@ func MakeAuthorizationCommunicationsComponentMW(logger log.Logger, authorization
 }
 
 func (c *authorizationComponentMW) SendEmail(ctx context.Context, realmName string, emailRep api.EmailRepresentation) error {
-	var action = COMSendEmail.String()
+	var action = security.COMSendEmail.String()
 	var targetRealm = realmName
 
 	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
@@ -61,7 +38,7 @@ func (c *authorizationComponentMW) SendEmail(ctx context.Context, realmName stri
 }
 
 func (c *authorizationComponentMW) SendSMS(ctx context.Context, realmName string, smsRep api.SMSRepresentation) error {
-	var action = COMSendEmail.String()
+	var action = security.COMSendSMS.String()
 	var targetRealm = realmName
 
 	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {

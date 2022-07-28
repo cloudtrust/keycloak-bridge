@@ -97,7 +97,7 @@ func validateScopes(authorizations []configuration.Authorization) error {
 }
 
 func getScope(authz configuration.Authorization) (security.Scope, error) {
-	for _, action := range GetActions() {
+	for _, action := range security.Actions.GetAllActions() {
 		if *authz.Action == action.String() {
 			return action.Scope, nil
 		}

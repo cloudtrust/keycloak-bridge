@@ -5,6 +5,7 @@ import (
 
 	"github.com/cloudtrust/common-service/v2/database"
 	errorhandler "github.com/cloudtrust/common-service/v2/errors"
+	"github.com/cloudtrust/common-service/v2/security"
 	api "github.com/cloudtrust/keycloak-bridge/api/events"
 	msg "github.com/cloudtrust/keycloak-bridge/internal/constants"
 	app "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
@@ -46,7 +47,7 @@ func (ec *component) reportEvent(ctx context.Context, apiCall string, values ...
 func (ec *component) GetActions(ctx context.Context) ([]api.ActionRepresentation, error) {
 	var apiActions = []api.ActionRepresentation{}
 
-	for _, action := range actions {
+	for _, action := range security.Actions.GetActionsForAPIs(security.BridgeService, security.EventsAPI) {
 		var name = action.Name
 		var scope = string(action.Scope)
 

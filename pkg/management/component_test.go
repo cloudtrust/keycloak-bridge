@@ -91,7 +91,7 @@ func TestGetActions(t *testing.T) {
 	assert.Nil(t, err)
 	// We add 3 here, as we added the three actions from the communications & tasks stacks into the GetActions methods of the component.
 	// We did this to be able to configure those actions through the Backoffice.
-	assert.Equal(t, len(actions)+3, len(res))
+	assert.Equal(t, len(security.Actions.GetActionsForAPIs(security.BridgeService, security.ManagementAPI))+3, len(res))
 	v, s := "COM_SendEmail", string(security.ScopeRealm)
 	assert.Contains(t, res, api.ActionRepresentation{Name: &v, Scope: &s})
 	v, s = "COM_SendSMS", string(security.ScopeRealm)

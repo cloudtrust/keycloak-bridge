@@ -2096,24 +2096,12 @@ func (c *component) checkAllowedTargetRealmsAndGroupNames(ctx context.Context, r
 func (c *component) GetActions(ctx context.Context) ([]api.ActionRepresentation, error) {
 	var apiActions = []api.ActionRepresentation{}
 
-	for _, action := range actions {
+	// The communications API and some tasks are published internally only.
+	// To be able to configure the rights from the BO we add them here.
+	for _, action := range security.Actions.GetActionsForAPIs(security.BridgeService, security.ManagementAPI, security.CommunicationAPI, security.TaskAPI) {
 		var name = action.Name
 		var scope = string(action.Scope)
 
-		apiActions = append(apiActions, api.ActionRepresentation{
-			Name:  &name,
-			Scope: &scope,
-		})
-	}
-	// The communications API and some tasks are published internally only.
-	// To be able to configure the rights from the BO we add them here.
-	var additionalRights = map[string]string{
-		"COM_SendEmail":            string(security.ScopeRealm),
-		"COM_SendSMS":              string(security.ScopeRealm),
-		"TSK_DeleteDeniedToUUsers": string(security.ScopeGlobal),
-	}
-	for key, value := range additionalRights {
-		name, scope := key, value
 		apiActions = append(apiActions, api.ActionRepresentation{
 			Name:  &name,
 			Scope: &scope,

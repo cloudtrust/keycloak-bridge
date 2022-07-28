@@ -541,7 +541,7 @@ func main() {
 	healthChecker.AddHTTPEndpoints(c.GetStringMapString("healthcheck-endpoints"), httpTimeout, 200, healthCheckCacheDuration)
 
 	// Actions allowed in Authorization Manager
-	var authActions = security.AppendActionNames(nil, events.GetActions(), kyc.GetActions(), management.GetActions(), statistics.GetActions(), tasks.GetActions())
+	var authActions = security.Actions.GetActionNamesForService(security.BridgeService)
 	authActions = mobile.AppendIDNowActions(authActions)
 
 	// Authorization Manager

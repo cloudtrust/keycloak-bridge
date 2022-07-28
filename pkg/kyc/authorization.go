@@ -11,46 +11,12 @@ import (
 	apikyc "github.com/cloudtrust/keycloak-bridge/api/kyc"
 )
 
-var actions []security.Action
-
-func newAction(as string, scope security.Scope) security.Action {
-	a := security.Action{
-		Name:  as,
-		Scope: scope,
-	}
-
-	actions = append(actions, a)
-	return a
-}
-
-// Creates constants for API method names
-var (
-	KYCGetActions                      = newAction("KYC_GetActions", security.ScopeGlobal)
-	KYCGetUserInSocialRealm            = newAction("KYC_GetUserInSocialRealm", security.ScopeRealm)
-	KYCGetUser                         = newAction("KYC_GetUser", security.ScopeGroup)
-	KYCGetUserByUsernameInSocialRealm  = newAction("KYC_GetUserByUsernameInSocialRealm", security.ScopeRealm)
-	KYCGetUserByUsername               = newAction("KYC_GetUserByUsername", security.ScopeGroup)
-	KYCValidateUserInSocialRealm       = newAction("KYC_ValidateUserInSocialRealm", security.ScopeRealm)
-	KYCValidateUser                    = newAction("KYC_ValidateUser", security.ScopeGroup)
-	KYCSendSmsConsentCodeInSocialRealm = newAction("KYC_SendSmsConsentCodeInSocialRealm", security.ScopeRealm)
-	KYCSendSmsConsentCode              = newAction("KYC_SendSmsConsentCode", security.ScopeGroup)
-	KYCSendSmsCodeInSocialRealm        = newAction("KYC_SendSmsCodeInSocialRealm", security.ScopeRealm)
-	KYCSendSmsCode                     = newAction("KYC_SendSmsCode", security.ScopeGroup)
-
-	kycValidateUserBasicID = newAction("KYC_ValidateUserBasicID", security.ScopeRealm) /***TO BE REMOVED WHEN MULTI-ACCREDITATION WILL BE IMPLEMENTED***/ /***TO BE REMOVED WHEN MULTI-ACCREDITATION WILL BE IMPLEMENTED***/
-)
-
 type authorizationComponentMW struct {
 	realmName           string
 	authManager         security.AuthorizationManager
 	availabilityChecker middleware.EndpointAvailabilityChecker
 	logger              log.Logger
 	next                Component
-}
-
-// GetActions returns available actions
-func GetActions() []security.Action {
-	return actions
 }
 
 // MakeAuthorizationRegisterComponentMW checks authorization and return an error if the action is not allowed.
@@ -68,7 +34,7 @@ func MakeAuthorizationRegisterComponentMW(realmName string, authorizationManager
 
 // authorizationComponentMW implements Component.
 func (c *authorizationComponentMW) GetActions(ctx context.Context) ([]apikyc.ActionRepresentation, error) {
-	var action = KYCGetActions.String()
+	var action = security.KYCGetActions.String()
 
 	// For this method, there is no target realm provided
 	// as parameter, so we pick the current realm of the user.
@@ -82,7 +48,7 @@ func (c *authorizationComponentMW) GetActions(ctx context.Context) ([]apikyc.Act
 }
 
 func (c *authorizationComponentMW) GetUserByUsernameInSocialRealm(ctx context.Context, username string) (apikyc.UserRepresentation, error) {
-	var action = KYCGetUserByUsernameInSocialRealm.String()
+	var action = security.KYCGetUserByUsernameInSocialRealm.String()
 
 	// For this method, there is no target realm provided
 	// as parameter, so we pick the current realm of the user.
@@ -109,7 +75,7 @@ func (c *authorizationComponentMW) GetUserByUsername(ctx context.Context, realmN
 	}
 
 	// Check authorization according to the found user
-	var action = KYCGetUserByUsername.String()
+	var action = security.KYCGetUserByUsername.String()
 	if err = c.authManager.CheckAuthorizationOnTargetUser(ctx, action, realmName, *res.ID); err != nil {
 		return apikyc.UserRepresentation{}, errorhandler.CreateNotFoundError("user")
 	}
@@ -118,7 +84,7 @@ func (c *authorizationComponentMW) GetUserByUsername(ctx context.Context, realmN
 }
 
 func (c *authorizationComponentMW) GetUserInSocialRealm(ctx context.Context, userID string, consentCode *string) (apikyc.UserRepresentation, error) {
-	var action = KYCGetUserInSocialRealm.String()
+	var action = security.KYCGetUserInSocialRealm.String()
 
 	// For this method, there is no target realm provided
 	// as parameter, so we pick the current realm of the user.
@@ -138,7 +104,7 @@ func (c *authorizationComponentMW) GetUser(ctx context.Context, realmName string
 		return apikyc.UserRepresentation{}, err
 	}
 
-	var action = KYCGetUser.String()
+	var action = security.KYCGetUser.String()
 	if err = c.authManager.CheckAuthorizationOnTargetUser(ctx, action, realmName, userID); err != nil {
 		return apikyc.UserRepresentation{}, err
 	}
@@ -147,7 +113,7 @@ func (c *authorizationComponentMW) GetUser(ctx context.Context, realmName string
 }
 
 func (c *authorizationComponentMW) ValidateUserInSocialRealm(ctx context.Context, userID string, user apikyc.UserRepresentation, consentCode *string) error {
-	var action = KYCValidateUserInSocialRealm.String()
+	var action = security.KYCValidateUserInSocialRealm.String()
 
 	// For this method, there is no target realm provided
 	// as parameter, so we pick the current realm of the user.
@@ -167,7 +133,7 @@ func (c *authorizationComponentMW) ValidateUser(ctx context.Context, realmName s
 		return err
 	}
 
-	var action = KYCValidateUser.String()
+	var action = security.KYCValidateUser.String()
 	var targetRealm = realmName
 
 	if err = c.authManager.CheckAuthorizationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
@@ -179,7 +145,7 @@ func (c *authorizationComponentMW) ValidateUser(ctx context.Context, realmName s
 
 /********************* (BEGIN) Temporary basic identity (TO BE REMOVED WHEN MULTI-ACCREDITATION WILL BE IMPLEMENTED) *********************/
 func (c *authorizationComponentMW) ValidateUserBasicID(ctx context.Context, userID string, user apikyc.UserRepresentation) error {
-	var action = kycValidateUserBasicID.String()
+	var action = security.KYCValidateUserBasicID.String()
 
 	// For this method, there is no target realm provided
 	// as parameter, so we pick the current realm of the user.
@@ -195,7 +161,7 @@ func (c *authorizationComponentMW) ValidateUserBasicID(ctx context.Context, user
 /********************* (END) Temporary basic identity (TO BE REMOVED WHEN MULTI-ACCREDITATION WILL BE IMPLEMENTED) *********************/
 
 func (c *authorizationComponentMW) SendSmsConsentCodeInSocialRealm(ctx context.Context, userID string) error {
-	var action = KYCSendSmsConsentCodeInSocialRealm.String()
+	var action = security.KYCSendSmsConsentCodeInSocialRealm.String()
 	var targetRealm = ctx.Value(cs.CtContextRealm).(string)
 
 	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
@@ -212,7 +178,7 @@ func (c *authorizationComponentMW) SendSmsConsentCode(ctx context.Context, realm
 		return err
 	}
 
-	var action = KYCSendSmsConsentCode.String()
+	var action = security.KYCSendSmsConsentCode.String()
 	if err = c.authManager.CheckAuthorizationOnTargetUser(ctx, action, realmName, userID); err != nil {
 		return err
 	}
@@ -221,7 +187,7 @@ func (c *authorizationComponentMW) SendSmsConsentCode(ctx context.Context, realm
 }
 
 func (c *authorizationComponentMW) SendSmsCodeInSocialRealm(ctx context.Context, userID string) (string, error) {
-	var action = KYCSendSmsCodeInSocialRealm.String()
+	var action = security.KYCSendSmsCodeInSocialRealm.String()
 	var targetRealm = ctx.Value(cs.CtContextRealm).(string)
 
 	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
@@ -238,7 +204,7 @@ func (c *authorizationComponentMW) SendSmsCode(ctx context.Context, realmName st
 		return "", err
 	}
 
-	var action = KYCSendSmsCode.String()
+	var action = security.KYCSendSmsCode.String()
 	if err = c.authManager.CheckAuthorizationOnTargetUser(ctx, action, realmName, userID); err != nil {
 		return "", err
 	}

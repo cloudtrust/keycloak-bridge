@@ -13,10 +13,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGetActionsString(t *testing.T) {
-	assert.Len(t, GetActions(), len(actions))
-}
-
 func TestDeny(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -67,7 +63,7 @@ func TestAllow(t *testing.T) {
 	var any = "*"
 
 	var authorizations = []configuration.Authorization{}
-	for _, action := range actions {
+	for _, action := range security.Actions.GetActionsForAPIs(security.BridgeService, security.CommunicationAPI) {
 		var action = string(action.Name)
 		authorizations = append(authorizations, configuration.Authorization{
 			RealmID:         &realmName,

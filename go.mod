@@ -3,7 +3,7 @@ module github.com/cloudtrust/keycloak-bridge
 go 1.17
 
 require (
-	github.com/cloudtrust/common-service/v2 v2.5.11
+	github.com/cloudtrust/common-service/v2 v2.5.12-0.20220727162724-5d9f4f5a3fc3
 	github.com/cloudtrust/httpclient v1.0.7
 	github.com/cloudtrust/keycloak-client/v2 v2.5.7
 	github.com/go-kit/kit v0.12.0

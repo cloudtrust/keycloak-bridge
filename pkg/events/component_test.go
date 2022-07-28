@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/cloudtrust/common-service/v2/database"
+	"github.com/cloudtrust/common-service/v2/security"
 	api "github.com/cloudtrust/keycloak-bridge/api/events"
 	"github.com/cloudtrust/keycloak-bridge/pkg/events/mock"
 	"github.com/golang/mock/gomock"
@@ -47,7 +48,7 @@ func TestGetActions(t *testing.T) {
 
 		// Check result
 		assert.Nil(t, err)
-		assert.Equal(t, len(actions), len(res))
+		assert.Equal(t, len(security.Actions.GetActionsForAPIs(security.BridgeService, security.EventsAPI)), len(res))
 	})
 }
 

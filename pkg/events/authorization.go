@@ -9,26 +9,6 @@ import (
 	api "github.com/cloudtrust/keycloak-bridge/api/events"
 )
 
-var actions []security.Action
-
-func newAction(as string, scope security.Scope) security.Action {
-	a := security.Action{
-		Name:  as,
-		Scope: scope,
-	}
-
-	actions = append(actions, a)
-	return a
-}
-
-// Actions used for authorization module
-var (
-	EVGetActions       = newAction("EV_GetActions", security.ScopeGlobal)
-	EVGetEvents        = newAction("EV_GetEvents", security.ScopeRealm)
-	EVGetEventsSummary = newAction("EV_GetEventsSummary", security.ScopeRealm)
-	EVGetUserEvents    = newAction("EV_GetUserEvents", security.ScopeGroup)
-)
-
 // Tracking middleware at component level.
 type authorizationComponentMW struct {
 	authManager security.AuthorizationManager
@@ -47,13 +27,8 @@ func MakeAuthorizationManagementComponentMW(logger log.Logger, authorizationMana
 	}
 }
 
-// GetActions returns available actions
-func GetActions() []security.Action {
-	return actions
-}
-
 func (c *authorizationComponentMW) GetActions(ctx context.Context) ([]api.ActionRepresentation, error) {
-	var action = EVGetActions.String()
+	var action = security.EVGetActions.String()
 
 	// For this method, there is no target realm provided
 	// as parameter, so we pick the current realm of the user.
@@ -67,7 +42,7 @@ func (c *authorizationComponentMW) GetActions(ctx context.Context) ([]api.Action
 }
 
 func (c *authorizationComponentMW) GetEvents(ctx context.Context, m map[string]string) (api.AuditEventsRepresentation, error) {
-	var action = EVGetEvents.String()
+	var action = security.EVGetEvents.String()
 	var realmToken = ctx.Value(cs.CtContextRealm).(string)
 	var targetRealm, ok = m[prmPathRealm]
 
@@ -90,7 +65,7 @@ func (c *authorizationComponentMW) GetEvents(ctx context.Context, m map[string]s
 }
 
 func (c *authorizationComponentMW) GetEventsSummary(ctx context.Context) (api.EventSummaryRepresentation, error) {
-	var action = EVGetEventsSummary.String()
+	var action = security.EVGetEventsSummary.String()
 	var targetRealm = ctx.Value(cs.CtContextRealm).(string)
 
 	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
@@ -101,7 +76,7 @@ func (c *authorizationComponentMW) GetEventsSummary(ctx context.Context) (api.Ev
 }
 
 func (c *authorizationComponentMW) GetUserEvents(ctx context.Context, m map[string]string) (api.AuditEventsRepresentation, error) {
-	var action = EVGetUserEvents.String()
+	var action = security.EVGetUserEvents.String()
 	var targetRealm = m[prmPathRealm] // Get the realm provided as parameter in path
 	var targetUser = m["userID"]      // Get the user provided as parameter in path
 
