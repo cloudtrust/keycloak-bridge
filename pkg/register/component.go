@@ -211,8 +211,8 @@ func (c *component) registerUser(ctx context.Context, accessToken string, target
 	}
 
 	// Create new user
-	var kcUser = user.ConvertToKeycloak()
-	kcUser, err = c.createUser(ctx, accessToken, targetRealmName, kcUser, user, *realmConf.SelfRegisterGroupNames)
+
+	kcUser, err := c.createUser(ctx, accessToken, targetRealmName, user, *realmConf.SelfRegisterGroupNames, false)
 	if err != nil {
 		return kc.UserRepresentation{}, err
 	}
@@ -224,12 +224,8 @@ func (c *component) registerUser(ctx context.Context, accessToken string, target
 }
 
 func (c *component) registerUserRedirectMode(ctx context.Context, accessToken string, targetRealmName string, customerRealmName string, user apiregister.UserRepresentation, realmConf configuration.RealmConfiguration, onboardingRedirectURI string) (kc.UserRepresentation, error) {
-	var kcUser = user.ConvertToKeycloak()
-	kcUser.SetAttributeString(constants.AttrbEmailToValidate, *kcUser.Email)
-	kcUser.Email = nil
-
 	// Create new user
-	kcUser, err := c.createUser(ctx, accessToken, targetRealmName, kcUser, user, *realmConf.SelfRegisterGroupNames)
+	kcUser, err := c.createUser(ctx, accessToken, targetRealmName, user, *realmConf.SelfRegisterGroupNames, true)
 	if err != nil {
 		return kc.UserRepresentation{}, err
 	}
@@ -272,8 +268,14 @@ func (c *component) sendAlreadyExistsEmail(ctx context.Context, accessToken stri
 	})
 }
 
-func (c *component) createUser(ctx context.Context, accessToken string, realmName string, kcUser kc.UserRepresentation, user apiregister.UserRepresentation, groupNames []string) (kc.UserRepresentation, error) {
+func (c *component) createUser(ctx context.Context, accessToken string, realmName string, user apiregister.UserRepresentation, groupNames []string, needEmailToValidate bool) (kc.UserRepresentation, error) {
+	var kcUser = user.ConvertToKeycloak()
 	kcUser.SetAttributeString(constants.AttrbSource, "register")
+
+	if needEmailToValidate {
+		kcUser.SetAttributeString(constants.AttrbEmailToValidate, *kcUser.Email)
+		kcUser.Email = nil
+	}
 
 	// Set groups
 	groupIDs, err := c.convertGroupNamesToGroupIDs(accessToken, realmName, groupNames)
