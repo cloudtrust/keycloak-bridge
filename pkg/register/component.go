@@ -163,7 +163,38 @@ func (c *component) RegisterUser(ctx context.Context, targetRealmName string, cu
 		user.BusinessID = nil
 	}
 
-	err = c.onboardingModule.ProcessAlreadyExistingUserCases(ctx, accessToken, targetRealmName, *user.Email, "register", func(username string, createdTimestamp int64, thirdParty *string) error {
+	var onboardingRedirectURI = *realmConf.OnboardingRedirectURI
+
+	if targetRealmName != customerRealmName {
+		onboardingRedirectURI += "?customerRealm=" + customerRealmName
+	}
+
+	var redirectURL string
+	var kcUser kc.UserRepresentation
+	if redirect {
+		kcUser, err = c.registerUserRedirectMode(ctx, accessToken, targetRealmName, customerRealmName, user, realmConf, onboardingRedirectURI)
+		if err != nil {
+			return "", err
+		}
+		redirectURL, err = c.onboardingModule.ComputeRedirectURI(ctx, accessToken, targetRealmName, *kcUser.ID, *kcUser.Username, *realmConf.OnboardingClientID, onboardingRedirectURI)
+	} else {
+		kcUser, err = c.registerUser(ctx, accessToken, targetRealmName, customerRealmName, user, realmConf, onboardingRedirectURI)
+	}
+	if err == errAccountAlreadyExists {
+		return "", nil
+	}
+	if err != nil {
+		return "", err
+	}
+
+	// store the API call into the DB
+	c.reportEvent(ctx, "REGISTER_USER", database.CtEventRealmName, targetRealmName, database.CtEventUserID, *kcUser.ID, database.CtEventUsername, *kcUser.Username)
+
+	return redirectURL, nil
+}
+
+func (c *component) registerUser(ctx context.Context, accessToken string, targetRealmName string, customerRealmName string, user apiregister.UserRepresentation, realmConf configuration.RealmConfiguration, onboardingRedirectURI string) (kc.UserRepresentation, error) {
+	err := c.onboardingModule.ProcessAlreadyExistingUserCases(ctx, accessToken, targetRealmName, *user.Email, "register", func(username string, createdTimestamp int64, thirdParty *string) error {
 		var err error
 		if thirdParty == nil {
 			err = c.sendAlreadyExistsEmail(ctx, accessToken, targetRealmName, customerRealmName, user, username, createdTimestamp, "register-already-onboarded.ftl")
@@ -175,43 +206,31 @@ func (c *component) RegisterUser(ctx context.Context, targetRealmName string, cu
 		}
 		return errAccountAlreadyExists
 	})
-	if err == errAccountAlreadyExists {
-		return "", nil
-	}
 	if err != nil {
-		return "", err
+		return kc.UserRepresentation{}, err
 	}
 
 	// Create new user
-	userID, username, err := c.createUser(ctx, accessToken, targetRealmName, user, *realmConf.SelfRegisterGroupNames)
+
+	kcUser, err := c.createUser(ctx, accessToken, targetRealmName, user, *realmConf.SelfRegisterGroupNames, false)
 	if err != nil {
-		return "", err
+		return kc.UserRepresentation{}, err
 	}
 
-	var onboardingRedirectURI = *realmConf.OnboardingRedirectURI
+	// Send email
+	var paramKV = []string{"lifespan", "3600"} // 1 hour
+	return kcUser, c.onboardingModule.SendOnboardingEmail(ctx, accessToken, targetRealmName, *kcUser.ID, *kcUser.Username,
+		*realmConf.OnboardingClientID, onboardingRedirectURI, customerRealmName, false, paramKV...)
+}
 
-	if targetRealmName != customerRealmName {
-		onboardingRedirectURI += "?customerRealm=" + customerRealmName
-	}
-
-	redirectURL := ""
-	if redirect {
-		redirectURL, err = c.onboardingModule.ComputeRedirectURI(ctx, accessToken, targetRealmName, userID, username, *realmConf.OnboardingClientID, onboardingRedirectURI)
-	} else {
-		// Send email
-		var paramKV = []string{"lifespan", "3600"} // 1 hour
-		err = c.onboardingModule.SendOnboardingEmail(ctx, accessToken, targetRealmName, userID, username,
-			*realmConf.OnboardingClientID, onboardingRedirectURI, customerRealmName, false, paramKV...)
-	}
-
+func (c *component) registerUserRedirectMode(ctx context.Context, accessToken string, targetRealmName string, customerRealmName string, user apiregister.UserRepresentation, realmConf configuration.RealmConfiguration, onboardingRedirectURI string) (kc.UserRepresentation, error) {
+	// Create new user
+	kcUser, err := c.createUser(ctx, accessToken, targetRealmName, user, *realmConf.SelfRegisterGroupNames, true)
 	if err != nil {
-		return "", err
+		return kc.UserRepresentation{}, err
 	}
 
-	// store the API call into the DB
-	c.reportEvent(ctx, "REGISTER_USER", database.CtEventRealmName, targetRealmName, database.CtEventUserID, userID, database.CtEventUsername, username)
-
-	return redirectURL, nil
+	return kcUser, err
 }
 
 func (c *component) sendAlreadyExistsEmail(ctx context.Context, accessToken string, reqRealmName string, realmName string,
@@ -249,22 +268,27 @@ func (c *component) sendAlreadyExistsEmail(ctx context.Context, accessToken stri
 	})
 }
 
-func (c *component) createUser(ctx context.Context, accessToken string, realmName string, user apiregister.UserRepresentation, groupNames []string) (string, string, error) {
+func (c *component) createUser(ctx context.Context, accessToken string, realmName string, user apiregister.UserRepresentation, groupNames []string, needEmailToValidate bool) (kc.UserRepresentation, error) {
 	var kcUser = user.ConvertToKeycloak()
 	kcUser.SetAttributeString(constants.AttrbSource, "register")
+
+	if needEmailToValidate {
+		kcUser.SetAttributeString(constants.AttrbEmailToValidate, *kcUser.Email)
+		kcUser.Email = nil
+	}
 
 	// Set groups
 	groupIDs, err := c.convertGroupNamesToGroupIDs(accessToken, realmName, groupNames)
 	if err != nil {
 		c.logger.Error(ctx, "msg", "Failed to convert groupNames to groupIDs", "err", err.Error())
-		return "", "", err
+		return kc.UserRepresentation{}, err
 	}
 	kcUser.Groups = &groupIDs
 
 	_, err = c.onboardingModule.CreateUser(ctx, accessToken, realmName, realmName, &kcUser)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Failed to update user through Keycloak API", "err", err.Error())
-		return "", "", err
+		return kc.UserRepresentation{}, err
 	}
 
 	// Store user details in database
@@ -280,10 +304,10 @@ func (c *component) createUser(ctx context.Context, accessToken string, realmNam
 
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Can't store user details in database", "err", err.Error())
-		return "", "", err
+		return kc.UserRepresentation{}, err
 	}
 
-	return *kcUser.ID, *kcUser.Username, nil
+	return kcUser, nil
 }
 
 func (c *component) reportEvent(ctx context.Context, apiCall string, values ...string) {
