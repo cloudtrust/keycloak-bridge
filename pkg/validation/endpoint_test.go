@@ -83,68 +83,6 @@ func TestUpdateUserEndpoint(t *testing.T) {
 	})
 }
 
-func TestCreateCheckEndpoint(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
-	defer mockCtrl.Finish()
-
-	var mockComponent = mock.NewComponent(mockCtrl)
-
-	var e = MakeCreateCheckEndpoint(mockComponent)
-	var ctx = context.Background()
-	var userID = "12345678-5824-5555-5656-123456789654"
-	var realm = "realm"
-	var operator = "operator"
-	var datetime = time.Now()
-	var status = "SUCCESS"
-	var typeCheck = "IDENTITY_CHECK"
-	var nature = "PHYSICAL"
-	var proofType = "ZIP"
-	var proofData = []byte("data")
-
-	t.Run("No error", func(t *testing.T) {
-		checkJSON, _ := json.Marshal(api.CheckRepresentation{
-			UserID:    &userID,
-			Operator:  &operator,
-			DateTime:  &datetime,
-			Status:    &status,
-			Type:      &typeCheck,
-			Nature:    &nature,
-			ProofType: &proofType,
-			ProofData: &proofData,
-		})
-		var req = map[string]string{
-			prmRealm:  realm,
-			prmUserID: userID,
-			reqBody:   string(checkJSON),
-		}
-
-		mockComponent.EXPECT().CreateCheck(ctx, realm, userID, gomock.Any(), gomock.Any()).Return(nil).Times(1)
-		var _, err = e(ctx, req)
-		assert.Nil(t, err)
-	})
-
-	t.Run("Invalid input", func(t *testing.T) {
-		checkJSON, _ := json.Marshal(api.CheckRepresentation{})
-		var req = map[string]string{
-			prmRealm:  realm,
-			prmUserID: userID,
-			reqBody:   string(checkJSON),
-		}
-
-		var _, err = e(ctx, req)
-		assert.NotNil(t, err)
-	})
-
-	t.Run("Error - JSON unmarshalling error", func(t *testing.T) {
-		var req = make(map[string]string)
-		req[prmUserID] = userID
-		req[reqBody] = string("userJSON")
-
-		var _, err = e(ctx, req)
-		assert.NotNil(t, err)
-	})
-}
-
 func TestMakeCreatePendingCheckEndpoint(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()

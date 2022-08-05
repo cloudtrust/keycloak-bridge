@@ -67,6 +67,34 @@ paths:
       responses:
         200:
           description: successful operation
+  /validation/realms/{realm}/users/{userID}/accreditations:
+    post:
+      tags:
+      - UserData
+      summary: Adds an accreditation
+      parameters:
+      - name: realm
+        in: path
+        description: Realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: userID of user to update
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/Accreditation'
+      responses:
+        200:
+          description: successful operation
   /validation/realms/{realm}/users/{userID}/checks:
     post:
       tags:
@@ -127,6 +155,14 @@ paths:
           description: successful operation
 components:
   schemas:
+    Accreditation:
+      type: object
+      properties:
+        name:
+          type: string
+        validity:
+          type: string
+          description: format is DD.MM.YYYY
     User:
       type: object
       required: [gender, firstName, lastName, emailAddress, phoneNumber]

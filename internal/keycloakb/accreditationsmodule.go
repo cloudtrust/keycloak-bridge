@@ -1,14 +1,11 @@
 package keycloakb
 
 import (
-	"context"
 	"encoding/json"
-	"strings"
 	"time"
 
 	"github.com/cloudtrust/common-service/v2/configuration"
-	errorhandler "github.com/cloudtrust/common-service/v2/errors"
-	"github.com/cloudtrust/common-service/v2/validation"
+	"github.com/cloudtrust/common-service/v2/fields"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	kc "github.com/cloudtrust/keycloak-client/v2"
 )
@@ -24,11 +21,6 @@ const (
 	CredsPhysical = configuration.CheckKeyPhysical
 )
 
-// AccreditationsModule interface
-type AccreditationsModule interface {
-	GetUserAndPrepareAccreditations(ctx context.Context, accessToken, realmName, userID, condition string) (kc.UserRepresentation, int, error)
-}
-
 // AccredsKeycloakClient is the minimum Keycloak client interface for accreditations
 type AccredsKeycloakClient interface {
 	UpdateUser(accessToken string, realmName, userID string, user kc.UserRepresentation) error
@@ -38,7 +30,7 @@ type AccredsKeycloakClient interface {
 
 // AdminConfigurationDBModule interface
 type AdminConfigurationDBModule interface {
-	GetAdminConfiguration(context.Context, string) (configuration.RealmAdminConfiguration, error)
+	//GetAdminConfiguration(context.Context, string) (configuration.RealmAdminConfiguration, error)
 }
 
 type accredsModule struct {
@@ -55,162 +47,139 @@ type AccreditationRepresentation struct {
 	Revoked        *bool   `json:"revoked,omitempty"`
 }
 
-// IsUpdated checks if there are changes in provided values.
-// These values are provided by pair: first one is the new value (or nil if no update is expected) and the second one is the former value
-func IsUpdated(values ...*string) bool {
-	for i := 0; i < len(values)-1; i += 2 {
-		var newValue = values[i]
-		var formerValue = values[i+1]
-		if newValue != nil && (formerValue == nil || !strings.EqualFold(*newValue, *formerValue)) {
+// RevokeAccreditations revokes active accreditations of the given user
+func RevokeAccreditations(kcUser *kc.UserRepresentation) bool {
+	var kcAccreds = kcUser.GetFieldValues(fields.Accreditations)
+	if len(kcAccreds) > 0 {
+		var accredProcessor, _ = NewAccreditationsProcessor(kcAccreds)
+		if accredProcessor.RevokeAll() {
+			kcUser.SetFieldValues(fields.Accreditations, accredProcessor.ToKeycloak())
 			return true
 		}
 	}
 	return false
 }
 
-// RevokeAccreditations revokes active accreditations of the given user
-func RevokeAccreditations(kcUser *kc.UserRepresentation) bool {
-	var kcAccreds = kcUser.GetAttribute(constants.AttrbAccreditations)
-	if len(kcAccreds) == 0 {
-		return false
+// AccreditationsProcessor interface
+type AccreditationsProcessor interface {
+	HasActiveAccreditations() bool
+	AddAccreditation(name string, validity string)
+	RevokeAll() bool
+	RevokeTypes(accreditationsTypes []string) bool
+	ToKeycloak() []string
+}
+
+type accredsProcessor struct {
+	accreditations map[string][]AccreditationRepresentation
+}
+
+func NewAccreditationsProcessor(accreditations []string) (AccreditationsProcessor, error) {
+	var res = accredsProcessor{accreditations: make(map[string][]AccreditationRepresentation)}
+	var bestEffortError error
+
+	for _, accred := range accreditations {
+		var newAccred AccreditationRepresentation
+		if err := json.Unmarshal([]byte(accred), &newAccred); err != nil {
+			// Will return an error but try to go on processing. User will decide if he wants to process accreditations anyway or not
+			bestEffortError = err
+			continue
+		}
+		if slice, ok := res.accreditations[*newAccred.Type]; ok {
+			slice = append(slice, newAccred)
+			res.accreditations[*newAccred.Type] = slice
+		} else {
+			res.accreditations[*newAccred.Type] = []AccreditationRepresentation{newAccred}
+		}
 	}
+
+	return &res, bestEffortError
+}
+
+func (ap *accredsProcessor) HasActiveAccreditations() bool {
+	for _, slice := range ap.accreditations {
+		for _, oldAccred := range slice {
+			if ap.isActive(oldAccred) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func (ap *accredsProcessor) AddAccreditation(name string, validity string) {
+	var creationMillis = time.Now().UnixNano() / int64(time.Millisecond)
+	var newAccred = AccreditationRepresentation{
+		Type:           &name,
+		CreationMillis: &creationMillis,
+		ExpiryDate:     &validity,
+	}
+	var newAccredSlice []AccreditationRepresentation
+	var bTrue = true
+	if slice, ok := ap.accreditations[name]; ok {
+		for _, oldAccred := range slice {
+			if ap.isActive(oldAccred) {
+				oldAccred.Revoked = &bTrue
+			}
+			newAccredSlice = append(newAccredSlice, oldAccred)
+		}
+	}
+	ap.accreditations[name] = append(newAccredSlice, newAccred)
+}
+
+func (ap *accredsProcessor) RevokeAll() bool {
 	var res = false
-	var newAccreds []string
-	for _, accred := range kcAccreds {
-		var revokedAccred, updated = revoke(accred)
-		if updated {
+	for k := range ap.accreditations {
+		if ap.RevokeType(k) {
 			res = true
 		}
-		newAccreds = append(newAccreds, revokedAccred)
 	}
-	kcUser.SetAttribute(constants.AttrbAccreditations, newAccreds)
 	return res
 }
 
-func revoke(accredJSON string) (string, bool) {
-	var accred AccreditationRepresentation
-	var updated = false
-	if err := json.Unmarshal([]byte(accredJSON), &accred); err == nil && (accred.Revoked == nil || !*accred.Revoked) {
+func (ap *accredsProcessor) RevokeType(accreditationsType string) bool {
+	var res = false
+	if slice, ok := ap.accreditations[accreditationsType]; ok {
+		var newSlice []AccreditationRepresentation
+		var bTrue = true
+		for _, accred := range slice {
+			if ap.isActive(accred) {
+				accred.Revoked = &bTrue
+				res = true
+			}
+			newSlice = append(newSlice, accred)
+		}
+		ap.accreditations[accreditationsType] = newSlice
+	}
+	return res
+}
+
+func (ap *accredsProcessor) RevokeTypes(accreditationsTypes []string) bool {
+	var res = false
+	for _, accredType := range accreditationsTypes {
+		if ap.RevokeType(accredType) {
+			res = true
+		}
+	}
+	return res
+}
+
+func (ap *accredsProcessor) isActive(accred AccreditationRepresentation) bool {
+	if accred.Revoked == nil || !*accred.Revoked {
 		var today = time.Now()
 		if expiry, err := time.Parse(dateLayout, *accred.ExpiryDate); err == nil && today.Before(expiry) {
-			updated = true
-			accred.Revoked = &updated
+			return true
+		}
+	}
+	return false
+}
+
+func (ap *accredsProcessor) ToKeycloak() []string {
+	var res []string
+	for _, accredSlice := range ap.accreditations {
+		for _, accred := range accredSlice {
 			var bytes, _ = json.Marshal(accred)
-			accredJSON = string(bytes)
+			res = append(res, string(bytes))
 		}
 	}
-	return accredJSON, updated
-}
-
-// NewAccreditationsModule creates an accreditations module
-func NewAccreditationsModule(keycloakClient AccredsKeycloakClient, confDBModule AdminConfigurationDBModule, logger Logger) AccreditationsModule {
-	return &accredsModule{
-		keycloakClient: keycloakClient,
-		confDBModule:   confDBModule,
-		logger:         logger,
-	}
-}
-
-func (am *accredsModule) GetUserAndPrepareAccreditations(ctx context.Context, accessToken, realmName, userID, condition string) (kc.UserRepresentation, int, error) {
-	var kcUser kc.UserRepresentation
-
-	// Gets the realm
-	var realm, err = am.keycloakClient.GetRealm(accessToken, realmName)
-	if err != nil {
-		am.logger.Warn(ctx, "msg", "getKeycloakRealm: can't get realm from KC", "err", err.Error())
-		return kcUser, 0, errorhandler.CreateInternalServerError("keycloak")
-	}
-
-	// Retrieve admin configuration from configuration DB
-	var rac configuration.RealmAdminConfiguration
-	rac, err = am.confDBModule.GetAdminConfiguration(ctx, *realm.ID)
-	if err != nil {
-		am.logger.Warn(ctx, "msg", "CreateAccreditations: can't get admin configuration", "err", err.Error())
-		return kcUser, 0, errorhandler.CreateInternalServerError("keycloak")
-	}
-
-	// Evaluate accreditations to be created
-	var newAccreds map[string]string
-	newAccreds, err = am.evaluateAccreditations(ctx, rac.Accreditations, condition)
-	if err != nil {
-		am.logger.Warn(ctx, "msg", "Can't evaluate accreditations", "err", err.Error())
-		return kcUser, 0, err
-	}
-
-	// Get the user from Keycloak
-	kcUser, err = am.keycloakClient.GetUser(accessToken, realmName, userID)
-	if err != nil {
-		am.logger.Warn(ctx, "msg", "CreateAccreditations: can't get Keycloak user", "err", err.Error(), "realm", realmName, "user", userID)
-		return kcUser, 0, err
-	}
-
-	var added = len(newAccreds)
-	if added == 0 {
-		return kcUser, 0, errorhandler.CreateInternalServerError("noConfiguredAccreditations")
-	}
-
-	var mergedAccreds = am.evaluateCurrentAccreditations(kcUser.GetAttribute(constants.AttrbAccreditations), newAccreds)
-
-	// Merge all attributes
-	for _, accValue := range newAccreds {
-		mergedAccreds = append(mergedAccreds, accValue)
-	}
-
-	kcUser.SetAttribute(constants.AttrbAccreditations, mergedAccreds)
-
-	return kcUser, added, nil
-}
-
-func (am *accredsModule) evaluateCurrentAccreditations(accredsAttributes []string, newAccreds map[string]string) []string {
-	var accreds []string
-	var bTrue = true
-	for _, accredJSON := range accredsAttributes {
-		var accreditation AccreditationRepresentation
-		// If accreditation can be unmarshalled
-		if err := json.Unmarshal([]byte(accredJSON), &accreditation); err == nil {
-			// If new accreditation is being created for the same type and it is not yet revoked
-			if _, ok := newAccreds[*accreditation.Type]; ok && (accreditation.Revoked == nil || !*accreditation.Revoked) {
-				// If existing accreditation is not yet expired
-				if expiryDate, err := time.Parse(constants.SupportedDateLayouts[0], *accreditation.ExpiryDate); err != nil || expiryDate.After(time.Now()) {
-					accreditation.Revoked = &bTrue
-					bytes, _ := json.Marshal(accreditation)
-					accredJSON = string(bytes)
-				}
-			}
-		}
-		accreds = append(accreds, accredJSON)
-	}
-	return accreds
-}
-
-func (am *accredsModule) evaluateAccreditations(ctx context.Context, accreds []configuration.RealmAdminAccreditation, condition string) (map[string]string, error) {
-	var newAccreds = make(map[string]string)
-	for _, modelAccred := range accreds {
-		if modelAccred.Condition == nil || *modelAccred.Condition == condition {
-			var expiry, err = am.convertDurationToDate(ctx, *modelAccred.Validity)
-			if err != nil {
-				return nil, err
-			}
-			creationMillis := time.Now().UnixNano() / int64(time.Millisecond)
-			var newAccreditationJSON, _ = json.Marshal(AccreditationRepresentation{
-				Type:           modelAccred.Type,
-				ExpiryDate:     expiry,
-				CreationMillis: &creationMillis,
-			})
-			newAccreds[*modelAccred.Type] = string(newAccreditationJSON)
-		}
-	}
-	return newAccreds, nil
-}
-
-func (am *accredsModule) convertDurationToDate(ctx context.Context, validity string) (*string, error) {
-	var expiryDate, err = validation.AddLargeDurationE(time.Now(), validity)
-	if err != nil {
-		am.logger.Warn(ctx, "msg", "convertDurationToDate: can't convert duration", "duration", validity, "err", err.Error())
-		return nil, errorhandler.CreateInternalServerError("duration-convertion")
-	}
-
-	var res = expiryDate.Format(dateLayout)
-
-	return &res, nil
+	return res
 }

@@ -3,12 +3,18 @@ package apivalidation
 import (
 	"time"
 
+	"github.com/cloudtrust/common-service/v2/fields"
 	"github.com/cloudtrust/common-service/v2/validation"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
-	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	kc "github.com/cloudtrust/keycloak-client/v2"
 )
+
+// AccreditationRepresentation struct
+type AccreditationRepresentation struct {
+	Name     *string `json:"name,omitempty"`
+	Validity *string `json:"validity,omitempty"`
+}
 
 // UserRepresentation struct
 type UserRepresentation struct {
@@ -45,6 +51,9 @@ type CheckRepresentation struct {
 
 // Parameter references
 const (
+	prmAccreditationName     = "accred_name"
+	prmAccreditationValidity = "accred_validity"
+
 	prmUserID                = "user_id"
 	prmUserGender            = "user_gender"
 	prmUserFirstName         = "user_firstName"
@@ -80,6 +89,15 @@ var (
 		"SUCCESS_DATA_CHANGED": true,
 	}
 )
+
+// Validate validates an accreditation representation
+func (a *AccreditationRepresentation) Validate() error {
+	var laterThanToday = time.Now().Add(24 * time.Hour)
+	return validation.NewParameterValidator().
+		ValidateParameterRegExp(prmAccreditationName, a.Name, regExpAlphaNum255, true).
+		ValidateParameterDateAfterMultipleLayout(prmAccreditationValidity, a.Validity, constants.SupportedDateLayouts, laterThanToday, true).
+		Status()
+}
 
 // ConvertToDBCheck creates a DBCheck
 func (c *CheckRepresentation) ConvertToDBCheck() dto.DBCheck {
@@ -184,32 +202,44 @@ func (u *UserRepresentation) Validate() error {
 		Status()
 }
 
-// HasUpdateOfAccreditationDependantInformationDB checks user data contains an update of accreditation-dependant information
-func (u *UserRepresentation) HasUpdateOfAccreditationDependantInformationDB(formerUserInfo dto.DBUser) bool {
+// HasDBChanges checks if user data contains changes
+func (u *UserRepresentation) HasDBChanges(fc fields.FieldsComparator, formerUserInfo dto.DBUser) bool {
 	var expiry *string
 	if u.IDDocumentExpiration != nil {
 		var converted = u.IDDocumentExpiration.Format(constants.SupportedDateLayouts[0])
 		expiry = &converted
 	}
-	return keycloakb.IsUpdated(u.BirthLocation, formerUserInfo.BirthLocation,
-		u.Nationality, formerUserInfo.Nationality,
-		u.IDDocumentType, formerUserInfo.IDDocumentType,
-		u.IDDocumentNumber, formerUserInfo.IDDocumentNumber,
-		expiry, formerUserInfo.IDDocumentExpiration,
-		u.IDDocumentCountry, formerUserInfo.IDDocumentCountry)
+
+	var initSize = len(fc.UpdatedFields())
+	fc.
+		CompareValues(fields.BirthLocation, u.BirthLocation, formerUserInfo.BirthLocation).
+		CompareValues(fields.Nationality, u.Nationality, formerUserInfo.Nationality).
+		CompareValues(fields.IDDocumentType, u.IDDocumentType, formerUserInfo.IDDocumentType).
+		CompareValues(fields.IDDocumentNumber, u.IDDocumentNumber, formerUserInfo.IDDocumentNumber).
+		CompareValues(fields.IDDocumentExpiration, expiry, formerUserInfo.IDDocumentExpiration).
+		CompareValues(fields.IDDocumentCountry, u.IDDocumentCountry, formerUserInfo.IDDocumentCountry)
+
+	return len(fc.UpdatedFields()) > initSize
 }
 
-// HasUpdateOfAccreditationDependantInformationKC checks user data contains an update of accreditation-dependant information
-func (u *UserRepresentation) HasUpdateOfAccreditationDependantInformationKC(formerUserInfo *kc.UserRepresentation) bool {
+// HasKCChanges checks if user data contains changes
+func (u *UserRepresentation) HasKCChanges(fc fields.FieldsComparator, formerUserInfo *kc.UserRepresentation) bool {
 	var birthDate *string
 	if u.BirthDate != nil {
 		var converted = u.BirthDate.Format(constants.SupportedDateLayouts[0])
 		birthDate = &converted
 	}
-	return keycloakb.IsUpdated(u.FirstName, formerUserInfo.FirstName,
-		u.LastName, formerUserInfo.LastName,
-		u.Gender, formerUserInfo.GetAttributeString(constants.AttrbGender),
-		birthDate, formerUserInfo.GetAttributeString(constants.AttrbBirthDate))
+
+	var initSize = len(fc.UpdatedFields())
+	fc.
+		CompareValues(fields.FirstName, u.FirstName, formerUserInfo.FirstName).
+		CompareValues(fields.LastName, u.LastName, formerUserInfo.LastName).
+		CaseSensitive(false).
+		CompareValueAndFunction(fields.Gender, u.Gender, formerUserInfo.GetFieldValues).
+		CaseSensitive(true).
+		CompareValueAndFunction(fields.BirthDate, birthDate, formerUserInfo.GetFieldValues)
+
+	return len(fc.UpdatedFields()) > initSize
 }
 
 // Validate checks the validity of the given check

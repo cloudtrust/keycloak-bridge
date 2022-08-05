@@ -27,6 +27,7 @@ type accountingClient struct {
 // HTTPClient interface
 type HTTPClient interface {
 	Get(data interface{}, plugins ...plugin.Plugin) error
+	Post(data interface{}, plugins ...plugin.Plugin) (string, error)
 }
 
 // AccountingBalance struct

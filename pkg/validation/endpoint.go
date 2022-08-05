@@ -13,10 +13,11 @@ import (
 
 // Endpoints for self service
 type Endpoints struct {
-	GetUser            endpoint.Endpoint
-	UpdateUser         endpoint.Endpoint
-	CreateCheck        endpoint.Endpoint
-	CreatePendingCheck endpoint.Endpoint
+	GetUser                  endpoint.Endpoint
+	UpdateUser               endpoint.Endpoint
+	UpdateUserAccreditations endpoint.Endpoint
+	CreateCheck              endpoint.Endpoint
+	CreatePendingCheck       endpoint.Endpoint
 }
 
 // MakeGetUserEndpoint endpoint creation
@@ -53,28 +54,25 @@ func MakeUpdateUserEndpoint(component Component) cs.Endpoint {
 	}
 }
 
-// MakeCreateCheckEndpoint endpoint creation
-func MakeCreateCheckEndpoint(component Component) cs.Endpoint {
+// MakeUpdateUserAccreditationsEndpoint endpoint creation
+func MakeUpdateUserAccreditationsEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 		var err error
 
-		var check api.CheckRepresentation
+		var accreds []api.AccreditationRepresentation
 
-		if err = json.Unmarshal([]byte(m[reqBody]), &check); err != nil {
+		if err = json.Unmarshal([]byte(m[reqBody]), &accreds); err != nil {
 			return nil, errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Body)
 		}
 
-		if err = check.Validate(); err != nil {
-			return nil, err
+		for _, accred := range accreds {
+			if err = accred.Validate(); err != nil {
+				return nil, err
+			}
 		}
 
-		txnID, ok := m[prmTxnID]
-		if !ok {
-			return nil, component.CreateCheck(ctx, m[prmRealm], m[prmUserID], check, nil)
-		}
-
-		return nil, component.CreateCheck(ctx, m[prmRealm], m[prmUserID], check, &txnID)
+		return nil, component.UpdateUserAccreditations(ctx, m[prmRealm], m[prmUserID], accreds)
 	}
 }
 

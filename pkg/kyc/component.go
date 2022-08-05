@@ -81,16 +81,16 @@ type Component interface {
 
 // Component is the management component.
 type component struct {
-	tokenProvider   toolbox.OidcTokenProvider
-	socialRealmName string
-	keycloakClient  KeycloakClient
-	usersDBModule   UsersDetailsDBModule
-	archiveDBModule ArchiveDBModule
-	configDBModule  ConfigDBModule
-	eventsDBModule  database.EventsDBModule
-	accredsModule   keycloakb.AccreditationsModule
-	glnVerifier     GlnVerifier
-	logger          keycloakb.Logger
+	tokenProvider        toolbox.OidcTokenProvider
+	socialRealmName      string
+	keycloakClient       KeycloakClient
+	usersDBModule        UsersDetailsDBModule
+	archiveDBModule      ArchiveDBModule
+	configDBModule       ConfigDBModule
+	eventsDBModule       database.EventsDBModule
+	accredsServiceClient keycloakb.AccreditationsServiceClient
+	glnVerifier          GlnVerifier
+	logger               keycloakb.Logger
 }
 
 const (
@@ -98,18 +98,18 @@ const (
 )
 
 // NewComponent returns the management component.
-func NewComponent(tokenProvider toolbox.OidcTokenProvider, socialRealmName string, keycloakClient KeycloakClient, usersDBModule UsersDetailsDBModule, archiveDBModule ArchiveDBModule, configDBModule ConfigDBModule, eventsDBModule EventsDBModule, accredsModule keycloakb.AccreditationsModule, glnVerifier GlnVerifier, logger keycloakb.Logger) Component {
+func NewComponent(tokenProvider toolbox.OidcTokenProvider, socialRealmName string, keycloakClient KeycloakClient, usersDBModule UsersDetailsDBModule, archiveDBModule ArchiveDBModule, configDBModule ConfigDBModule, eventsDBModule EventsDBModule, accredsServiceClient keycloakb.AccreditationsServiceClient, glnVerifier GlnVerifier, logger keycloakb.Logger) Component {
 	return &component{
-		tokenProvider:   tokenProvider,
-		socialRealmName: socialRealmName,
-		keycloakClient:  keycloakClient,
-		usersDBModule:   usersDBModule,
-		archiveDBModule: archiveDBModule,
-		configDBModule:  configDBModule,
-		eventsDBModule:  eventsDBModule,
-		accredsModule:   accredsModule,
-		glnVerifier:     glnVerifier,
-		logger:          logger,
+		tokenProvider:        tokenProvider,
+		socialRealmName:      socialRealmName,
+		keycloakClient:       keycloakClient,
+		usersDBModule:        usersDBModule,
+		archiveDBModule:      archiveDBModule,
+		configDBModule:       configDBModule,
+		eventsDBModule:       eventsDBModule,
+		accredsServiceClient: accredsServiceClient,
+		glnVerifier:          glnVerifier,
+		logger:               logger,
 	}
 }
 
@@ -474,7 +474,7 @@ func (c *component) validateUser(ctx context.Context, accessToken string, confRe
 
 	// Gets user from Keycloak
 	var kcUser kc.UserRepresentation
-	kcUser, _, err = c.accredsModule.GetUserAndPrepareAccreditations(ctx, accessToken, targetRealm, userID, configuration.CheckKeyPhysical)
+	kcUser, err = c.keycloakClient.GetUser(accessToken, targetRealm, userID)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Can't get user/accreditations", "err", err.Error())
 		return err
@@ -556,9 +556,9 @@ func (c *component) validateUser(ctx context.Context, accessToken string, confRe
 		validation.ProofType = (*user.Attachments)[0].ContentType
 		validation.ProofData = (*user.Attachments)[0].Content
 	}
-	err = c.usersDBModule.CreateCheck(ctx, targetRealm, userID, validation)
+	err = c.accredsServiceClient.UpdateCheck(ctx, targetRealm, userID, validation)
 	if err != nil {
-		c.logger.Warn(ctx, "msg", "Can't store validation check in database", "err", err.Error())
+		c.logger.Warn(ctx, "msg", "Request to accreditations service to create a check failed", "err", err.Error())
 		return err
 	}
 

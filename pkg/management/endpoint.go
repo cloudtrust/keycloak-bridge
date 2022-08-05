@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"regexp"
 	"strconv"
 	"strings"
@@ -105,17 +104,6 @@ type Endpoints struct {
 const (
 	invalidLocation = "InvalidLocation"
 )
-
-var (
-	respNoContent = commonhttp.GenericResponse{StatusCode: http.StatusNoContent}
-)
-
-func noContentResponse(err error) (interface{}, error) {
-	if err != nil {
-		return nil, err
-	}
-	return respNoContent, nil
-}
 
 func isParameterTrue(mapParams map[string]string, paramName string) bool {
 	if value, ok := mapParams[paramName]; ok {
@@ -341,7 +329,7 @@ func MakeAddRoleToUserEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return noContentResponse(component.AddRoleToUser(ctx, m[prmRealm], m[prmUserID], m[prmRoleID]))
+		return commonhttp.StatusNoContent{}, component.AddRoleToUser(ctx, m[prmRealm], m[prmUserID], m[prmRoleID])
 	}
 }
 
@@ -350,7 +338,7 @@ func MakeDeleteRoleForUserEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return noContentResponse(component.DeleteRoleForUser(ctx, m[prmRealm], m[prmUserID], m[prmRoleID]))
+		return commonhttp.StatusNoContent{}, component.DeleteRoleForUser(ctx, m[prmRealm], m[prmUserID], m[prmRoleID])
 	}
 }
 
@@ -545,7 +533,7 @@ func MakeRevokeAccreditationsEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return noContentResponse(component.RevokeAccreditations(ctx, m[prmRealm], m[prmUserID]))
+		return commonhttp.StatusNoContent{}, component.RevokeAccreditations(ctx, m[prmRealm], m[prmUserID])
 	}
 }
 
@@ -815,7 +803,7 @@ func MakeUpdateRoleEndpoint(component Component) cs.Endpoint {
 			return nil, err
 		}
 
-		return noContentResponse(component.UpdateRole(ctx, m[prmRealm], m[prmRoleID], role))
+		return commonhttp.StatusNoContent{}, component.UpdateRole(ctx, m[prmRealm], m[prmRoleID], role)
 	}
 }
 
@@ -824,7 +812,7 @@ func MakeDeleteRoleEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return noContentResponse(component.DeleteRole(ctx, m[prmRealm], m[prmRoleID]))
+		return commonhttp.StatusNoContent{}, component.DeleteRole(ctx, m[prmRealm], m[prmRoleID])
 	}
 }
 
@@ -876,7 +864,7 @@ func MakeDeleteClientRoleEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return noContentResponse(component.DeleteClientRole(ctx, m[prmRealm], m[prmClientID], m[prmRoleID]))
+		return commonhttp.StatusNoContent{}, component.DeleteClientRole(ctx, m[prmRealm], m[prmClientID], m[prmRoleID])
 	}
 }
 

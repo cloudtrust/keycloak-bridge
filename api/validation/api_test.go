@@ -1,9 +1,11 @@
 package apivalidation
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
+	"github.com/cloudtrust/common-service/v2/fields"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
@@ -11,6 +13,13 @@ import (
 	kc "github.com/cloudtrust/keycloak-client/v2"
 	"github.com/stretchr/testify/assert"
 )
+
+func createValidAccreditation() AccreditationRepresentation {
+	return AccreditationRepresentation{
+		Name:     ptr("EPR"),
+		Validity: ptr("31.12.2035"),
+	}
+}
 
 func createValidUser() UserRepresentation {
 	var (
@@ -72,6 +81,28 @@ func createValidCheck() CheckRepresentation {
 		Nature:    ptr("PHYSICAL"),
 		ProofType: ptr("ZIP"),
 		ProofData: &proofData,
+	}
+}
+
+func TestValidateAccreditation(t *testing.T) {
+	t.Run("Success case", func(t *testing.T) {
+		var accred = createValidAccreditation()
+		assert.Nil(t, accred.Validate())
+	})
+
+	var accreds []AccreditationRepresentation
+	for i := 0; i < 4; i++ {
+		accreds = append(accreds, createValidAccreditation())
+	}
+	accreds[0].Name = nil
+	accreds[1].Name = ptr("")
+	accreds[2].Validity = nil
+	accreds[3].Validity = ptr("not a validity")
+
+	for idx, accred := range accreds {
+		t.Run(fmt.Sprintf("Failure test #%d", idx+1), func(t *testing.T) {
+			assert.NotNil(t, accred.Validate())
+		})
 	}
 }
 
@@ -196,120 +227,120 @@ func ptr(v string) *string {
 	return &v
 }
 
-func TestHasUpdateOfAccreditationDependantInformationDB(t *testing.T) {
+func TestHasDBChanges(t *testing.T) {
 	var user UserRepresentation
 	var dbUser dto.DBUser
 
 	t.Run("Nothing to update", func(t *testing.T) {
-		assert.False(t, user.HasUpdateOfAccreditationDependantInformationDB(dbUser))
+		assert.False(t, user.HasDBChanges(fields.NewFieldsComparator(), dbUser))
 	})
 	t.Run("Expiry date update", func(t *testing.T) {
 		var expiryTxt = "15.06.2018"
 		var expiry, _ = time.Parse(constants.SupportedDateLayouts[0], "29.12.2019")
 		user.IDDocumentExpiration = &expiry
 		dbUser.IDDocumentExpiration = &expiryTxt
-		assert.True(t, user.HasUpdateOfAccreditationDependantInformationDB(dbUser))
+		assert.True(t, user.HasDBChanges(fields.NewFieldsComparator(), dbUser))
 
 		expiry, _ = time.Parse(constants.SupportedDateLayouts[0], expiryTxt)
 		user.IDDocumentExpiration = &expiry
-		assert.False(t, user.HasUpdateOfAccreditationDependantInformationDB(dbUser))
+		assert.False(t, user.HasDBChanges(fields.NewFieldsComparator(), dbUser))
 	})
 	t.Run("Nationality", func(t *testing.T) {
 		var nationality = "TYPE1"
 		user.Nationality = ptr("OTHER-NATIONALITY")
 		dbUser.Nationality = &nationality
-		assert.True(t, user.HasUpdateOfAccreditationDependantInformationDB(dbUser))
+		assert.True(t, user.HasDBChanges(fields.NewFieldsComparator(), dbUser))
 
 		user.Nationality = &nationality
-		assert.False(t, user.HasUpdateOfAccreditationDependantInformationDB(dbUser))
+		assert.False(t, user.HasDBChanges(fields.NewFieldsComparator(), dbUser))
 	})
 	t.Run("Document type update", func(t *testing.T) {
 		var documentType = "TYPE1"
 		user.IDDocumentType = ptr("OTHER-TYPE")
 		dbUser.IDDocumentType = &documentType
-		assert.True(t, user.HasUpdateOfAccreditationDependantInformationDB(dbUser))
+		assert.True(t, user.HasDBChanges(fields.NewFieldsComparator(), dbUser))
 
 		user.IDDocumentType = &documentType
-		assert.False(t, user.HasUpdateOfAccreditationDependantInformationDB(dbUser))
+		assert.False(t, user.HasDBChanges(fields.NewFieldsComparator(), dbUser))
 	})
 	t.Run("Document number update", func(t *testing.T) {
 		var documentNumber = "1234567890"
 		user.IDDocumentNumber = ptr("OTHER-NUMBER")
 		dbUser.IDDocumentNumber = &documentNumber
-		assert.True(t, user.HasUpdateOfAccreditationDependantInformationDB(dbUser))
+		assert.True(t, user.HasDBChanges(fields.NewFieldsComparator(), dbUser))
 
 		user.IDDocumentNumber = &documentNumber
-		assert.False(t, user.HasUpdateOfAccreditationDependantInformationDB(dbUser))
+		assert.False(t, user.HasDBChanges(fields.NewFieldsComparator(), dbUser))
 	})
 	t.Run("Document country update", func(t *testing.T) {
 		var documentCountry = "DE"
 		user.IDDocumentCountry = ptr("CH")
 		dbUser.IDDocumentCountry = &documentCountry
-		assert.True(t, user.HasUpdateOfAccreditationDependantInformationDB(dbUser))
+		assert.True(t, user.HasDBChanges(fields.NewFieldsComparator(), dbUser))
 
 		user.IDDocumentCountry = &documentCountry
-		assert.False(t, user.HasUpdateOfAccreditationDependantInformationDB(dbUser))
+		assert.False(t, user.HasDBChanges(fields.NewFieldsComparator(), dbUser))
 	})
 	t.Run("Birth location update", func(t *testing.T) {
 		var birthLocation = "Where"
 		user.BirthLocation = ptr("Here !")
 		dbUser.BirthLocation = &birthLocation
-		assert.True(t, user.HasUpdateOfAccreditationDependantInformationDB(dbUser))
+		assert.True(t, user.HasDBChanges(fields.NewFieldsComparator(), dbUser))
 
 		user.BirthLocation = &birthLocation
-		assert.False(t, user.HasUpdateOfAccreditationDependantInformationDB(dbUser))
+		assert.False(t, user.HasDBChanges(fields.NewFieldsComparator(), dbUser))
 	})
 }
 
-func TestHasUpdateOfAccreditationDependantInformationKC(t *testing.T) {
+func TestHasKCChanges(t *testing.T) {
 	var user UserRepresentation
 	var kcUser kc.UserRepresentation
 
 	t.Run("Nothing to update", func(t *testing.T) {
-		assert.False(t, user.HasUpdateOfAccreditationDependantInformationKC(&kcUser))
+		assert.False(t, user.HasKCChanges(fields.NewFieldsComparator(), &kcUser))
 	})
 	t.Run("Birth date update", func(t *testing.T) {
 		var birthDateTxt = "15.06.2018"
 		var birthDate, _ = time.Parse(constants.SupportedDateLayouts[0], "29.12.2019")
 		user.BirthDate = &birthDate
 		kcUser.SetAttributeString(constants.AttrbBirthDate, birthDateTxt)
-		assert.True(t, user.HasUpdateOfAccreditationDependantInformationKC(&kcUser))
+		assert.True(t, user.HasKCChanges(fields.NewFieldsComparator(), &kcUser))
 
 		birthDate, _ = time.Parse(constants.SupportedDateLayouts[0], birthDateTxt)
 		user.BirthDate = &birthDate
-		assert.False(t, user.HasUpdateOfAccreditationDependantInformationKC(&kcUser))
+		assert.False(t, user.HasKCChanges(fields.NewFieldsComparator(), &kcUser))
 	})
 	t.Run("First name update", func(t *testing.T) {
 		var name = "THE NAME"
 		user.FirstName = ptr("OTHER NAME")
 		kcUser.FirstName = &name
-		assert.True(t, user.HasUpdateOfAccreditationDependantInformationKC(&kcUser))
+		assert.True(t, user.HasKCChanges(fields.NewFieldsComparator(), &kcUser))
 
 		user.FirstName = &name
-		assert.False(t, user.HasUpdateOfAccreditationDependantInformationKC(&kcUser))
+		assert.False(t, user.HasKCChanges(fields.NewFieldsComparator(), &kcUser))
 	})
 	t.Run("Last name update", func(t *testing.T) {
 		var name = "THE NAME"
 		user.LastName = ptr("OTHER NAME")
 		kcUser.LastName = &name
-		assert.True(t, user.HasUpdateOfAccreditationDependantInformationKC(&kcUser))
+		assert.True(t, user.HasKCChanges(fields.NewFieldsComparator(), &kcUser))
 
 		user.LastName = &name
-		assert.False(t, user.HasUpdateOfAccreditationDependantInformationKC(&kcUser))
+		assert.False(t, user.HasKCChanges(fields.NewFieldsComparator(), &kcUser))
 	})
 	t.Run("Gender update", func(t *testing.T) {
 		var gender = "M"
 		user.Gender = ptr("F")
 		kcUser.SetAttributeString(constants.AttrbGender, gender)
-		assert.True(t, user.HasUpdateOfAccreditationDependantInformationKC(&kcUser))
+		assert.True(t, user.HasKCChanges(fields.NewFieldsComparator(), &kcUser))
 
 		user.Gender = ptr("m")
-		assert.False(t, user.HasUpdateOfAccreditationDependantInformationKC(&kcUser))
+		assert.False(t, user.HasKCChanges(fields.NewFieldsComparator(), &kcUser))
 	})
 	t.Run("Other fields does not matter", func(t *testing.T) {
 		user.Email = ptr("any@mail.me")
 		kcUser.Email = ptr("any.other@mail.me")
-		assert.False(t, user.HasUpdateOfAccreditationDependantInformationKC(&kcUser))
+		assert.False(t, user.HasKCChanges(fields.NewFieldsComparator(), &kcUser))
 	})
 }
 

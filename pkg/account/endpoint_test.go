@@ -17,20 +17,21 @@ func TestMakeUpdatePasswordEndpoint(t *testing.T) {
 	mockAccountComponent := mock.NewComponent(mockCtrl)
 	mockAccountComponent.EXPECT().UpdatePassword(gomock.Any(), "password", "password2", "password2").Return(nil).Times(1)
 
-	m := map[string]string{}
-
-	{
-		m[ReqBody] = "{ \"currentPassword\":\"password\", \"newPassword\":\"password2\", \"confirmPassword\":\"password2\"}"
+	t.Run("Success", func(t *testing.T) {
+		var m = map[string]string{ReqBody: `{"currentPassword":"password", "newPassword":"password2", "confirmPassword":"password2"}`}
 		_, err := MakeUpdatePasswordEndpoint(mockAccountComponent)(context.Background(), m)
 		assert.Nil(t, err)
-	}
-
-	{
-		m[ReqBody] = "{"
+	})
+	t.Run("Invalid JSON in body", func(t *testing.T) {
+		var m = map[string]string{ReqBody: `{`}
 		_, err := MakeUpdatePasswordEndpoint(mockAccountComponent)(context.Background(), m)
 		assert.NotNil(t, err)
-	}
-
+	})
+	t.Run("Invalid parameter in body", func(t *testing.T) {
+		var m = map[string]string{ReqBody: `{"currentPassword":"", "newPassword":"password2", "confirmPassword":"password2"}`}
+		_, err := MakeUpdatePasswordEndpoint(mockAccountComponent)(context.Background(), m)
+		assert.NotNil(t, err)
+	})
 }
 
 func TestMakeGetCredentialsEndpoint(t *testing.T) {
@@ -64,27 +65,26 @@ func TestMakeUpdateLabelCredentialEndpoint(t *testing.T) {
 	mockAccountComponent := mock.NewComponent(mockCtrl)
 	mockAccountComponent.EXPECT().UpdateLabelCredential(gomock.Any(), "id", "label").Return(nil).Times(1)
 
-	m := map[string]string{}
-
-	{
-		m[ReqBody] = "{ \"userLabel\": \"label\"}"
-		m[PrmCredentialID] = "id"
+	t.Run("Success", func(t *testing.T) {
+		var m = map[string]string{ReqBody: `{"userLabel":"label"}`, PrmCredentialID: `id`}
 		_, err := MakeUpdateLabelCredentialEndpoint(mockAccountComponent)(context.Background(), m)
 		assert.Nil(t, err)
-	}
-
-	{
-		m[ReqBody] = "{"
+	})
+	t.Run("Invalid JSON in body", func(t *testing.T) {
+		var m = map[string]string{ReqBody: `{`}
 		_, err := MakeUpdateLabelCredentialEndpoint(mockAccountComponent)(context.Background(), m)
 		assert.NotNil(t, err)
-	}
-	{
-		m[ReqBody] = "{ \"phoneNumber\": \"label\"}"
-		m[PrmCredentialID] = "id"
+	})
+	t.Run("Invalid ID", func(t *testing.T) {
+		var m = map[string]string{ReqBody: `{"id":"invalid"}`, PrmCredentialID: `id`}
 		_, err := MakeUpdateLabelCredentialEndpoint(mockAccountComponent)(context.Background(), m)
 		assert.NotNil(t, err)
-	}
-
+	})
+	t.Run("Missing user label", func(t *testing.T) {
+		var m = map[string]string{ReqBody: `{"phoneNumber":"label"}`, PrmCredentialID: `id`}
+		_, err := MakeUpdateLabelCredentialEndpoint(mockAccountComponent)(context.Background(), m)
+		assert.NotNil(t, err)
+	})
 }
 
 func TestMakeDeleteCredentialEndpoint(t *testing.T) {
