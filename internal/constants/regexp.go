@@ -56,7 +56,8 @@ const (
 	RegExpTxnID       = regExpLen255
 
 	//Corporate Regex TO CLEAN WHEN WE WILL HAVE ATTRIBUTE MANAGEMENT
-	RegExpCorporateFirstName = regExpLen128
+	regExpLen128OrEmpty      = `^.{0,128}$`
+	RegExpCorporateFirstName = regExpLen128OrEmpty
 	RegExpCorporateLastName  = regExpLen128
 )
 
