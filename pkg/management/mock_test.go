@@ -1,6 +1,6 @@
 package management
 
-//go:generate mockgen --build_flags=--mod=mod -destination=./mock/dbmodule.go -package=mock -mock_names=ConfigurationDBModule=ConfigurationDBModule,AccreditationsServiceClient=AccreditationsServiceClient github.com/cloudtrust/keycloak-bridge/internal/keycloakb ConfigurationDBModule,AccreditationsServiceClient
+//go:generate mockgen --build_flags=--mod=mod -destination=./mock/dbmodule.go -package=mock -mock_names=ConfigurationDBModule=ConfigurationDBModule,AccreditationsEvaluator=AccreditationsEvaluator github.com/cloudtrust/keycloak-bridge/internal/keycloakb ConfigurationDBModule,AccreditationsEvaluator
 //go:generate mockgen --build_flags=--mod=mod -destination=./mock/management.go -package=mock -mock_names=Component=ManagementComponent,KeycloakClient=KeycloakClient,UsersDetailsDBModule=UsersDetailsDBModule,OnboardingModule=OnboardingModule,GlnVerifier=GlnVerifier github.com/cloudtrust/keycloak-bridge/pkg/management Component,KeycloakClient,UsersDetailsDBModule,OnboardingModule,GlnVerifier
 //go:generate mockgen --build_flags=--mod=mod -destination=./mock/eventdbmodule.go -package=mock -mock_names=EventsDBModule=EventDBModule github.com/cloudtrust/common-service/v2/database EventsDBModule
 //go:generate mockgen --build_flags=--mod=mod -destination=./mock/database.go -package=mock -mock_names=Transaction=Transaction github.com/cloudtrust/common-service/v2/database/sqltypes Transaction

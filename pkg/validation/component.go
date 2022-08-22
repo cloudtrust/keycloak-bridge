@@ -12,6 +12,7 @@ import (
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
+	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/accreditationsclient"
 	kc "github.com/cloudtrust/keycloak-client/v2"
 )
 
@@ -24,6 +25,7 @@ type KeycloakClient interface {
 	UpdateUser(accessToken string, realmName, userID string, user kc.UserRepresentation) error
 	GetUser(accessToken string, realmName, userID string) (kc.UserRepresentation, error)
 	GetRealm(accessToken string, realmName string) (kc.RealmRepresentation, error)
+	GetGroupsOfUser(accessToken string, realmName, userID string) ([]kc.GroupRepresentation, error)
 }
 
 // TokenProvider is the interface to retrieve accessToken to access KC
@@ -36,7 +38,7 @@ type UsersDetailsDBModule interface {
 	StoreOrUpdateUserDetails(ctx context.Context, realm string, user dto.DBUser) error
 	GetUserDetails(ctx context.Context, realm string, userID string) (dto.DBUser, error)
 	CreateCheck(ctx context.Context, realm string, userID string, check dto.DBCheck) error
-	CreatePendingCheck(ctx context.Context, realm string, userID string, check dto.DBCheck) error
+	//CreatePendingCheck(ctx context.Context, realm string, userID string, check dto.DBCheck) error
 }
 
 // ArchiveDBModule is the interface from the archive module
@@ -57,7 +59,7 @@ type ConfigurationDBModule interface {
 
 // AccreditationsServiceClient interface
 type AccreditationsServiceClient interface {
-	UpdateNotify(ctx context.Context, realmName string, userID string, accredsRequest keycloakb.AccredsNotifyRepresentation) ([]string, error)
+	NotifyUpdate(ctx context.Context, updateNotifyRequest accreditationsclient.UpdateNotificationRepresentation) ([]string, error)
 }
 
 // Component is the register component interface.
@@ -65,7 +67,7 @@ type Component interface {
 	GetUser(ctx context.Context, realmName string, userID string) (api.UserRepresentation, error)
 	UpdateUser(ctx context.Context, realmName string, userID string, user api.UserRepresentation, txnID *string) error
 	UpdateUserAccreditations(ctx context.Context, realmName string, userID string, userAccreds []api.AccreditationRepresentation) error
-	CreatePendingCheck(ctx context.Context, realmName string, userID string, pendingChecks api.CheckRepresentation) error
+	GetGroupsOfUser(ctx context.Context, realmName, userID string) ([]api.GroupRepresentation, error)
 }
 
 // Component is the management component.
@@ -207,8 +209,9 @@ func (c *component) UpdateUserAccreditations(ctx context.Context, realmName stri
 
 	var accreditations keycloakb.AccreditationsProcessor
 	accreditations, err = keycloakb.NewAccreditationsProcessor(kcUser.GetFieldValues(fields.Accreditations))
+	creationDate := time.Now().UTC()
 	for _, userAccred := range userAccreds {
-		accreditations.AddAccreditation(*userAccred.Name, *userAccred.Validity)
+		accreditations.AddAccreditation(creationDate, *userAccred.Name, *userAccred.Validity)
 	}
 
 	kcUser.SetFieldValues(fields.Accreditations, accreditations.ToKeycloak())
@@ -259,8 +262,12 @@ func (c *component) updateUserKeycloak(validationCtx *validationContext, user ap
 	var ap, _ = keycloakb.NewAccreditationsProcessor(currAccreds)
 	// Shall we revoke some accreditations (if some active accreditation exists)
 	if fc.IsAnyFieldUpdated() && len(currAccreds) > 0 && ap.HasActiveAccreditations() {
-		var notifyUpdate = keycloakb.AccredsNotifyRepresentation{UpdatedFields: fc.UpdatedFields()}
-		if revokeAccreds, err := c.accredsService.UpdateNotify(validationCtx.ctx, validationCtx.realmName, validationCtx.userID, notifyUpdate); err != nil {
+		var notifyUpdate = accreditationsclient.UpdateNotificationRepresentation{
+			UserID:        &validationCtx.userID,
+			RealmName:     &validationCtx.realmName,
+			UpdatedFields: fc.UpdatedFields(),
+		}
+		if revokeAccreds, err := c.accredsService.NotifyUpdate(validationCtx.ctx, notifyUpdate); err != nil {
 			c.logger.Warn(validationCtx.ctx, "msg", "Could not notify accreds service of updated fields", "uid", validationCtx.userID, "fields", notifyUpdate.UpdatedFields)
 			return err
 		} else {
@@ -317,10 +324,6 @@ func (c *component) getAccessToken(v *validationContext) (string, error) {
 		}
 	}
 	return *v.accessToken, nil
-}
-
-func (c *component) CreatePendingCheck(ctx context.Context, realmName string, userID string, pendingChecks api.CheckRepresentation) error {
-	return c.usersDBModule.CreatePendingCheck(ctx, realmName, userID, pendingChecks.ConvertToDBCheck())
 }
 
 func (c *component) reportEvent(ctx context.Context, apiCall string, values ...string) {
@@ -397,4 +400,30 @@ func (c *component) archiveUser(v *validationContext, checks []dto.DBCheck) {
 	archiveUser.SetDetails(*dbUser)
 	archiveUser.Checks = checks
 	c.archiveDBModule.StoreUserDetails(v.ctx, v.realmName, archiveUser)
+}
+
+func (c *component) GetGroupsOfUser(ctx context.Context, realmName, userID string) ([]api.GroupRepresentation, error) {
+	var accessToken, err = c.tokenProvider.ProvideToken(ctx)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Can't get accessToken for technical user", "err", err.Error())
+		return nil, err
+	}
+
+	groupsKc, err := c.keycloakClient.GetGroupsOfUser(accessToken, realmName, userID)
+
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return nil, err
+	}
+
+	var groupsRep = []api.GroupRepresentation{}
+	for _, groupKc := range groupsKc {
+		var groupRep api.GroupRepresentation
+		groupRep.ID = groupKc.ID
+		groupRep.Name = groupKc.Name
+
+		groupsRep = append(groupsRep, groupRep)
+	}
+
+	return groupsRep, nil
 }

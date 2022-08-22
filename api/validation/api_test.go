@@ -17,7 +17,7 @@ import (
 func createValidAccreditation() AccreditationRepresentation {
 	return AccreditationRepresentation{
 		Name:     ptr("EPR"),
-		Validity: ptr("31.12.2035"),
+		Validity: ptr("4y"),
 	}
 }
 

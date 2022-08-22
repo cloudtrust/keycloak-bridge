@@ -1,12 +1,18 @@
 package keycloakb
 
 import (
+	"context"
+	"errors"
+	"fmt"
 	"strings"
 	"testing"
-
-	"github.com/cloudtrust/keycloak-bridge/internal/constants"
+	"time"
 
 	"github.com/cloudtrust/common-service/v2/configuration"
+	"github.com/cloudtrust/common-service/v2/fields"
+	"github.com/cloudtrust/common-service/v2/log"
+	"github.com/cloudtrust/keycloak-bridge/internal/constants"
+	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/mock"
 	kc "github.com/cloudtrust/keycloak-client/v2"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -36,6 +42,42 @@ func createRealmAdminConfig(condition string) configuration.RealmAdminConfigurat
 		createRealmAdminCred("SHADOW5", duration3, condition),
 	}
 	return configuration.RealmAdminConfiguration{Accreditations: accreds}
+}
+
+func TestHasActiveAccreditations(t *testing.T) {
+	t.Run("only active accreditations", func(t *testing.T) {
+		var accreds = []string{`{"type":"ONE","expiryDate":"01.01.2040"}`,
+			`{"type":"TWO","expiryDate":"01.01.2036"}`,
+			`{"type":"THREE","expiryDate":"01.01.2050"}`,
+		}
+		var ap, _ = NewAccreditationsProcessor(accreds)
+		assert.True(t, ap.HasActiveAccreditations())
+	})
+	t.Run("active & non-active accreditations", func(t *testing.T) {
+		var accreds = []string{`{"type":"ONE","expiryDate":"01.01.2015"}`,
+			`{"type":"TWO","expiryDate":"01.01.2036"}`,
+			`{"type":"THREE","expiryDate":"01.01.2025","revoked":"true"}`,
+		}
+		var ap, _ = NewAccreditationsProcessor(accreds)
+		assert.True(t, ap.HasActiveAccreditations())
+	})
+	t.Run("only revoked accreditation", func(t *testing.T) {
+		var accreds = []string{`{"type":"ONE","expiryDate":"01.01.2015","revoked":"true"}`,
+			`{"type":"TWO","expiryDate":"01.01.2036","revoked":"true"}`,
+		}
+		var ap, _ = NewAccreditationsProcessor(accreds)
+		assert.False(t, ap.HasActiveAccreditations())
+	})
+	t.Run("only expired accreditation", func(t *testing.T) {
+		var accreds = []string{`{"type":"ONE","expiryDate":"01.01.2015"}`}
+		var ap, _ = NewAccreditationsProcessor(accreds)
+		assert.False(t, ap.HasActiveAccreditations())
+	})
+	t.Run("no accreditation", func(t *testing.T) {
+		var accreds = []string{}
+		var ap, _ = NewAccreditationsProcessor(accreds)
+		assert.False(t, ap.HasActiveAccreditations())
+	})
 }
 
 func TestRevokeAccreditations(t *testing.T) {
@@ -109,32 +151,86 @@ func TestRevokeTypes(t *testing.T) {
 func TestAddAccreditation(t *testing.T) {
 	var ap, _ = NewAccreditationsProcessor(nil)
 
-	t.Run("Add first accreditation", func(t *testing.T) {
-		ap.AddAccreditation("AAA", "01.01.2031")
-		var res = ap.ToKeycloak()
-		assert.Len(t, res, 1)
+	//Add first accreditation
+	creationDate, _ := time.Parse("2006-Jan-02", "2027-Jan-01")
+	fmt.Println(creationDate)
+	ap.AddAccreditation(creationDate, "AAA", "4y")
+	var res = ap.ToKeycloak()
+	assert.Len(t, res, 1)
 
-		assert.Contains(t, res[0], `"AAA"`)
-		assert.Contains(t, res[0], `"01.01.2031"`)
-		assert.NotContains(t, res[0], `"revoked"`)
+	assert.Contains(t, res[0], `"AAA"`)
+	assert.Contains(t, res[0], `"01.01.2031"`)
+	assert.NotContains(t, res[0], `"revoked"`)
+
+	//Add second accreditation, same type
+	creationDate, _ = time.Parse("2006-Jan-02", "2025-Jan-01")
+	ap.AddAccreditation(creationDate, "AAA", "7y")
+	res = ap.ToKeycloak()
+	assert.Len(t, res, 2)
+
+	// First accreditation became revoked
+	assert.Contains(t, res[0], `"AAA"`)
+	assert.Contains(t, res[0], `"01.01.2031"`)
+	assert.Contains(t, res[0], `"revoked"`)
+
+	assert.Contains(t, res[1], `"AAA"`)
+	assert.Contains(t, res[1], `"01.01.2032"`)
+	assert.NotContains(t, res[1], `"revoked"`)
+
+	// Add third accreditation, new type
+	creationDate, _ = time.Parse("2006-Jan-02", "2028-Apr-17")
+	ap.AddAccreditation(creationDate, "BBB", "5y")
+	res = ap.ToKeycloak()
+	assert.Len(t, res, 3)
+	assert.Contains(t, res[2], `"BBB"`)
+	assert.Contains(t, res[2], `"17.04.2033"`)
+	assert.NotContains(t, res[2], `"revoked"`)
+}
+
+func TestEvaluateAccreditations(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	mockAccreditationsClient := mock.NewAccreditationsServiceClient(mockCtrl)
+
+	realmName := "testRealm"
+	userID := "testUserID"
+	accreds := []string{`{"type":"ONE","expiryDate":"01.01.2040"}`,
+		`{"type":"TWO","expiryDate":"01.01.2036"}`,
+		`{"type":"THREE","expiryDate":"01.01.2050"}`,
+	}
+	expectedError := errors.New("Test error")
+	ctx := context.Background()
+
+	var fieldsComparator = fields.NewFieldsComparator().
+		CompareValueAndFunctionForUpdate(fields.FirstName, ptr("new firstname"), func(f fields.Field) []string {
+			return []string{"old firstname"}
+		}).
+		CompareValueAndFunctionForUpdate(fields.LastName, ptr("new lastname"), func(f fields.Field) []string {
+			return []string{"old lastname"}
+		})
+
+	evaluator := NewAccreditationsEvaluator(mockAccreditationsClient, log.NewNopLogger())
+
+	t.Run("failure", func(t *testing.T) {
+		mockAccreditationsClient.EXPECT().NotifyUpdate(ctx, gomock.Any()).Return([]string{"ONE"}, expectedError)
+
+		_, err := evaluator.EvaluateAccreditations(ctx, realmName, userID, fieldsComparator, accreds)
+		assert.NotNil(t, err)
 	})
-	t.Run("Add second accreditation, same type", func(t *testing.T) {
-		ap.AddAccreditation("AAA", "01.01.2032")
-		var res = ap.ToKeycloak()
-		assert.Len(t, res, 2)
 
-		// First accreditation became revoked
-		assert.Contains(t, res[0], `"AAA"`)
-		assert.Contains(t, res[0], `"01.01.2031"`)
-		assert.Contains(t, res[0], `"revoked"`)
+	t.Run("Success", func(t *testing.T) {
+		mockAccreditationsClient.EXPECT().NotifyUpdate(ctx, gomock.Any()).Return([]string{"ONE"}, nil)
 
-		assert.Contains(t, res[1], `"AAA"`)
-		assert.Contains(t, res[1], `"01.01.2032"`)
-		assert.NotContains(t, res[1], `"revoked"`)
-	})
-	t.Run("Add third accreditation, new type", func(t *testing.T) {
-		ap.AddAccreditation("BBB", "01.01.2033")
-		var res = ap.ToKeycloak()
+		res, err := evaluator.EvaluateAccreditations(ctx, realmName, userID, fieldsComparator, accreds)
+		assert.Nil(t, err)
 		assert.Len(t, res, 3)
+		for _, accreditation := range res {
+			if strings.Contains(accreditation, `"type":"ONE"`) {
+				assert.Contains(t, accreditation, `"revoked":true`)
+			} else {
+				assert.NotContains(t, accreditation, `"revoked":true`)
+			}
+		}
 	})
 }

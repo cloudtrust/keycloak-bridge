@@ -17,7 +17,8 @@ type Endpoints struct {
 	UpdateUser               endpoint.Endpoint
 	UpdateUserAccreditations endpoint.Endpoint
 	CreateCheck              endpoint.Endpoint
-	CreatePendingCheck       endpoint.Endpoint
+	GetGroupsOfUser          endpoint.Endpoint
+	//CreatePendingCheck       endpoint.Endpoint
 }
 
 // MakeGetUserEndpoint endpoint creation
@@ -76,22 +77,11 @@ func MakeUpdateUserAccreditationsEndpoint(component Component) cs.Endpoint {
 	}
 }
 
-// MakeCreatePendingCheckEndpoint endpoint creation
-func MakeCreatePendingCheckEndpoint(component Component) cs.Endpoint {
+// MakeGetGroupsOfUserEndpoint creates an endpoint for GetGroupsOfUser
+func MakeGetGroupsOfUserEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
-		var err error
 
-		var check api.CheckRepresentation
-
-		if err = json.Unmarshal([]byte(m[reqBody]), &check); err != nil {
-			return nil, errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Body)
-		}
-
-		if err = check.Validate(); err != nil {
-			return nil, err
-		}
-
-		return nil, component.CreatePendingCheck(ctx, m[prmRealm], m[prmUserID], check)
+		return component.GetGroupsOfUser(ctx, m[prmRealm], m[prmUserID])
 	}
 }

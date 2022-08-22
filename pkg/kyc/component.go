@@ -19,6 +19,8 @@ import (
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
+	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/accreditationsclient"
+	"github.com/google/uuid"
 )
 
 // KeycloakClient are methods from keycloak-client used by this component
@@ -62,6 +64,10 @@ type GlnVerifier interface {
 	ValidateGLN(firstName, lastName, gln string) error
 }
 
+type AccreditationsServiceClient interface {
+	NotifyCheck(ctx context.Context, check accreditationsclient.CheckRepresentation) error
+}
+
 // Component is the register component interface.
 type Component interface {
 	GetActions(ctx context.Context) ([]apikyc.ActionRepresentation, error)
@@ -87,8 +93,8 @@ type component struct {
 	usersDBModule        UsersDetailsDBModule
 	archiveDBModule      ArchiveDBModule
 	configDBModule       ConfigDBModule
-	eventsDBModule       database.EventsDBModule
-	accredsServiceClient keycloakb.AccreditationsServiceClient
+	eventsDBModule       EventsDBModule
+	accredsServiceClient AccreditationsServiceClient
 	glnVerifier          GlnVerifier
 	logger               keycloakb.Logger
 }
@@ -98,7 +104,7 @@ const (
 )
 
 // NewComponent returns the management component.
-func NewComponent(tokenProvider toolbox.OidcTokenProvider, socialRealmName string, keycloakClient KeycloakClient, usersDBModule UsersDetailsDBModule, archiveDBModule ArchiveDBModule, configDBModule ConfigDBModule, eventsDBModule EventsDBModule, accredsServiceClient keycloakb.AccreditationsServiceClient, glnVerifier GlnVerifier, logger keycloakb.Logger) Component {
+func NewComponent(tokenProvider toolbox.OidcTokenProvider, socialRealmName string, keycloakClient KeycloakClient, usersDBModule UsersDetailsDBModule, archiveDBModule ArchiveDBModule, configDBModule ConfigDBModule, eventsDBModule EventsDBModule, accredsServiceClient AccreditationsServiceClient, glnVerifier GlnVerifier, logger keycloakb.Logger) Component {
 	return &component{
 		tokenProvider:        tokenProvider,
 		socialRealmName:      socialRealmName,
@@ -540,8 +546,11 @@ func (c *component) validateUser(ctx context.Context, accessToken string, confRe
 		return err
 	}
 
-	// Store check in database
-	var validation = dto.DBCheck{
+	// Notify the new check to accreditation service
+	txnID := uuid.New().String()
+	check := accreditationsclient.CheckRepresentation{
+		UserID:    &userID,
+		RealmName: &targetRealm,
 		Operator:  &operatorName,
 		DateTime:  &now,
 		Status:    ptr("VERIFIED"),
@@ -550,13 +559,15 @@ func (c *component) validateUser(ctx context.Context, accessToken string, confRe
 		Comment:   user.Comment,
 		ProofType: nil,
 		ProofData: nil,
+		TxnID:     &txnID,
 	}
 
 	if user.Attachments != nil && len(*user.Attachments) > 0 {
-		validation.ProofType = (*user.Attachments)[0].ContentType
-		validation.ProofData = (*user.Attachments)[0].Content
+		check.ProofType = (*user.Attachments)[0].ContentType
+		check.ProofData = (*user.Attachments)[0].Content
 	}
-	err = c.accredsServiceClient.UpdateCheck(ctx, targetRealm, userID, validation)
+
+	err = c.accredsServiceClient.NotifyCheck(ctx, check)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Request to accreditations service to create a check failed", "err", err.Error())
 		return err
@@ -567,7 +578,7 @@ func (c *component) validateUser(ctx context.Context, accessToken string, confRe
 
 	var archiveUser = dto.ToArchiveUserRepresentation(kcUser)
 	archiveUser.SetDetails(dbUser)
-	if archiveUser.Checks, err = c.usersDBModule.GetChecks(ctx, targetRealm, userID); err != nil {
+	if archiveUser.Checks, err = c.usersDBModule.GetChecks(ctx, targetRealm, userID); err != nil { // TO BE REMOVED ??????????????
 		c.logger.Warn(ctx, "msg", "Could not get user checks from database", "err", err.Error(), "realm", targetRealm, "user", userID)
 	}
 

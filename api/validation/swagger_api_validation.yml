@@ -8,8 +8,6 @@ servers:
 tags:
 - name: UserData
   description: User data information
-- name: Check
-  description: Validation checks
 paths:
   /validation/realms/{realm}/users/{userID}:
     get:
@@ -95,64 +93,33 @@ paths:
       responses:
         200:
           description: successful operation
-  /validation/realms/{realm}/users/{userID}/checks:
-    post:
+  /validation/realms/{realm}/users/{userID}/groups:
+    get:
       tags:
-        - Check
-      summary: Create validation check
+      - UserData
+      summary: Get groups of user
       parameters:
       - name: realm
         in: path
-        description: Realm name (not id!)
+        description: realm name (not id!)
         required: true
         schema:
           type: string
       - name: userID
         in: path
-        description: userID of user checked
+        description: User id
         required: true
         schema:
           type: string
-      - name: txnID
-        in: query
-        description: transaction ID (linked in events)
-        required: false
-        schema:
-          type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Check'
       responses:
-        201:
+        200:
           description: successful operation
-  /validation/realms/{realm}/users/{userID}/checks/pending:
-    post:
-      tags:
-        - Check
-      summary: Create a pending validation check
-      parameters:
-      - name: realm
-        in: path
-        description: Realm name (not id!)
-        required: true
-        schema:
-          type: string
-      - name: userID
-        in: path
-        description: userID of user checked
-        required: true
-        schema:
-          type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Check'
-      responses:
-        201:
-          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Group'
 components:
   schemas:
     Accreditation:
@@ -219,6 +186,13 @@ components:
         nature:
           type: string
         txnId:
+          type: string
+    Group:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
           type: string
   securitySchemes:
     basicAuth:

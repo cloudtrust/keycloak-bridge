@@ -1,12 +1,15 @@
 package keycloakb
 
 import (
+	"context"
 	"encoding/json"
 	"time"
 
 	"github.com/cloudtrust/common-service/v2/configuration"
 	"github.com/cloudtrust/common-service/v2/fields"
+	"github.com/cloudtrust/common-service/v2/validation"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
+	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/accreditationsclient"
 	kc "github.com/cloudtrust/keycloak-client/v2"
 )
 
@@ -63,7 +66,7 @@ func RevokeAccreditations(kcUser *kc.UserRepresentation) bool {
 // AccreditationsProcessor interface
 type AccreditationsProcessor interface {
 	HasActiveAccreditations() bool
-	AddAccreditation(name string, validity string)
+	AddAccreditation(creationDate time.Time, name string, validity string)
 	RevokeAll() bool
 	RevokeTypes(accreditationsTypes []string) bool
 	ToKeycloak() []string
@@ -106,12 +109,14 @@ func (ap *accredsProcessor) HasActiveAccreditations() bool {
 	return false
 }
 
-func (ap *accredsProcessor) AddAccreditation(name string, validity string) {
-	var creationMillis = time.Now().UnixNano() / int64(time.Millisecond)
+func (ap *accredsProcessor) AddAccreditation(creationDate time.Time, name string, validity string) {
+	creationMillis := creationDate.UnixNano() / int64(time.Millisecond)
+	expiryDate := validation.AddLargeDuration(creationDate, validity).UTC().Format(dateLayout)
+
 	var newAccred = AccreditationRepresentation{
 		Type:           &name,
 		CreationMillis: &creationMillis,
-		ExpiryDate:     &validity,
+		ExpiryDate:     &expiryDate,
 	}
 	var newAccredSlice []AccreditationRepresentation
 	var bTrue = true
@@ -182,4 +187,37 @@ func (ap *accredsProcessor) ToKeycloak() []string {
 		}
 	}
 	return res
+}
+
+// AccreditationsEvaluator interface
+type AccreditationsEvaluator interface {
+	EvaluateAccreditations(ctx context.Context, realmName string, userID string, fieldsComparator fields.FieldsComparator, currentAccreds []string) ([]string, error)
+}
+
+type accreditationsEvaluator struct {
+	accredsSvcClient accreditationsclient.AccreditationsServiceClient
+	logger           Logger
+}
+
+func NewAccreditationsEvaluator(accredsSvcClient accreditationsclient.AccreditationsServiceClient, logger Logger) AccreditationsEvaluator {
+	return &accreditationsEvaluator{
+		accredsSvcClient: accredsSvcClient,
+		logger:           logger,
+	}
+}
+
+func (ae *accreditationsEvaluator) EvaluateAccreditations(ctx context.Context, realmName string, userID string, fieldsComparator fields.FieldsComparator, currentAccreds []string) ([]string, error) {
+	var updateRequest = accreditationsclient.UpdateNotificationRepresentation{
+		UserID:        &userID,
+		RealmName:     &realmName,
+		UpdatedFields: fieldsComparator.UpdatedFields(),
+	}
+	var revokeAccreds, err = ae.accredsSvcClient.NotifyUpdate(ctx, updateRequest)
+	if err != nil {
+		ae.logger.Warn(ctx, "msg", "Failed to notify accreditation service", "err", err.Error())
+		return nil, err
+	}
+	var ap, _ = NewAccreditationsProcessor(currentAccreds)
+	ap.RevokeTypes(revokeAccreds)
+	return ap.ToKeycloak(), nil
 }

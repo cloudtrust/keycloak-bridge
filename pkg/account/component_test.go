@@ -30,7 +30,7 @@ type componentMock struct {
 	configurationDBModule   *mock.ConfigurationDBModule
 	usersDetailsDBModule    *mock.UsersDetailsDBModule
 	glnVerifier             *mock.GlnVerifier
-	accredsService          *mock.AccreditationsServiceClient
+	accreditationEvaluator  *mock.AccreditationsEvaluator
 }
 
 func createComponentMocks(mockCtrl *gomock.Controller) *componentMock {
@@ -41,13 +41,13 @@ func createComponentMocks(mockCtrl *gomock.Controller) *componentMock {
 		configurationDBModule:   mock.NewConfigurationDBModule(mockCtrl),
 		usersDetailsDBModule:    mock.NewUsersDetailsDBModule(mockCtrl),
 		glnVerifier:             mock.NewGlnVerifier(mockCtrl),
-		accredsService:          mock.NewAccreditationsServiceClient(mockCtrl),
+		accreditationEvaluator:  mock.NewAccreditationsEvaluator(mockCtrl),
 	}
 }
 
 func (m *componentMock) createComponent() *component {
 	return NewComponent(m.keycloakAccountClient, m.keycloakTechnicalClient, m.eventDBModule,
-		m.configurationDBModule, m.usersDetailsDBModule, m.glnVerifier, m.accredsService, log.NewNopLogger()).(*component)
+		m.configurationDBModule, m.usersDetailsDBModule, m.glnVerifier, m.accreditationEvaluator, log.NewNopLogger()).(*component)
 }
 
 func ptr(value string) *string {
@@ -235,13 +235,13 @@ func TestUpdateAccount(t *testing.T) {
 	t.Run("Call to accreditations service fails", func(t *testing.T) {
 		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kcUserRep, nil)
 		mocks.usersDetailsDBModule.EXPECT().GetUserDetails(ctx, realmName, userID).Return(dbUser, nil)
-		mocks.accredsService.EXPECT().UpdateNotify(ctx, realmName, userID, gomock.Any()).Return(nil, anError)
+		mocks.accreditationEvaluator.EXPECT().EvaluateAccreditations(ctx, realmName, userID, gomock.Any(), gomock.Any()).Return(nil, anError)
 
 		err := accountComponent.UpdateAccount(ctx, userRep)
 
 		assert.Equal(t, anError, err)
 	})
-	mocks.accredsService.EXPECT().UpdateNotify(ctx, realmName, userID, gomock.Any()).Return(nil, nil).AnyTimes()
+	mocks.accreditationEvaluator.EXPECT().EvaluateAccreditations(ctx, realmName, userID, gomock.Any(), gomock.Any()).Return(nil, nil).AnyTimes()
 
 	t.Run("GetAdminConfiguration fails", func(t *testing.T) {
 		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kcUserRep, nil)
@@ -536,7 +536,7 @@ func TestUpdateAccountRevokeAccreditation(t *testing.T) {
 
 		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kcUserRep, nil)
 		mocks.usersDetailsDBModule.EXPECT().GetUserDetails(ctx, realmName, userID).Return(dbUser, nil)
-		mocks.accredsService.EXPECT().UpdateNotify(ctx, realmName, userID, gomock.Any()).Return(revokedAccred, nil)
+		mocks.accreditationEvaluator.EXPECT().EvaluateAccreditations(ctx, realmName, userID, gomock.Any(), gomock.Any()).Return(revokedAccred, nil)
 		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, realmName).Return(configuration.RealmAdminConfiguration{ShowGlnEditing: &bFalse}, nil)
 		mocks.keycloakAccountClient.EXPECT().UpdateAccount(accessToken, realmName, gomock.Any()).DoAndReturn(
 			func(accessToken, realmName string, kcUserRep kc.UserRepresentation) error {

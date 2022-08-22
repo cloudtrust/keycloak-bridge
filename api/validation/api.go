@@ -49,6 +49,12 @@ type CheckRepresentation struct {
 	TxnID     *string    `json:"txnId,omitempty"`
 }
 
+// GroupRepresentation struct
+type GroupRepresentation struct {
+	ID   *string `json:"id,omitempty"`
+	Name *string `json:"name,omitempty"`
+}
+
 // Parameter references
 const (
 	prmAccreditationName     = "accred_name"
@@ -92,10 +98,9 @@ var (
 
 // Validate validates an accreditation representation
 func (a *AccreditationRepresentation) Validate() error {
-	var laterThanToday = time.Now().Add(24 * time.Hour)
 	return validation.NewParameterValidator().
 		ValidateParameterRegExp(prmAccreditationName, a.Name, regExpAlphaNum255, true).
-		ValidateParameterDateAfterMultipleLayout(prmAccreditationValidity, a.Validity, constants.SupportedDateLayouts, laterThanToday, true).
+		ValidateParameterLargeDuration(prmAccreditationValidity, a.Validity, true).
 		Status()
 }
 

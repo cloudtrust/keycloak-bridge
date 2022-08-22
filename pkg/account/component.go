@@ -61,9 +61,9 @@ type GlnVerifier interface {
 	ValidateGLN(firstName, lastName, gln string) error
 }
 
-// AccreditationsServiceClient interface
-type AccreditationsServiceClient interface {
-	UpdateNotify(ctx context.Context, realmName string, userID string, accredsRequest keycloakb.AccredsNotifyRepresentation) ([]string, error)
+// AccreditationsEvaluator interface
+type AccreditationsEvaluator interface {
+	EvaluateAccreditations(ctx context.Context, realmName string, userID string, fieldsComparator fields.FieldsComparator, currentAccreds []string) ([]string, error)
 }
 
 // Component interface exposes methods used by the bridge API
@@ -91,27 +91,27 @@ type UsersDetailsDBModule interface {
 
 // Component is the management component.
 type component struct {
-	keycloakAccountClient KeycloakAccountClient
-	keycloakTechClient    KeycloakTechnicalClient
-	eventDBModule         database.EventsDBModule
-	configDBModule        keycloakb.ConfigurationDBModule
-	usersDBModule         UsersDetailsDBModule
-	glnVerifier           GlnVerifier
-	accredsSvcClient      AccreditationsServiceClient
-	logger                keycloakb.Logger
+	keycloakAccountClient  KeycloakAccountClient
+	keycloakTechClient     KeycloakTechnicalClient
+	eventDBModule          database.EventsDBModule
+	configDBModule         keycloakb.ConfigurationDBModule
+	usersDBModule          UsersDetailsDBModule
+	glnVerifier            GlnVerifier
+	accreditationEvaluator AccreditationsEvaluator
+	logger                 keycloakb.Logger
 }
 
 // NewComponent returns the self-service component.
-func NewComponent(keycloakAccountClient KeycloakAccountClient, keycloakTechClient KeycloakTechnicalClient, eventDBModule database.EventsDBModule, configDBModule keycloakb.ConfigurationDBModule, usersDBModule UsersDetailsDBModule, glnVerifier GlnVerifier, accredsSvcClient AccreditationsServiceClient, logger keycloakb.Logger) Component {
+func NewComponent(keycloakAccountClient KeycloakAccountClient, keycloakTechClient KeycloakTechnicalClient, eventDBModule database.EventsDBModule, configDBModule keycloakb.ConfigurationDBModule, usersDBModule UsersDetailsDBModule, glnVerifier GlnVerifier, accreditationEvaluator AccreditationsEvaluator, logger keycloakb.Logger) Component {
 	return &component{
-		keycloakAccountClient: keycloakAccountClient,
-		keycloakTechClient:    keycloakTechClient,
-		eventDBModule:         eventDBModule,
-		configDBModule:        configDBModule,
-		usersDBModule:         usersDBModule,
-		glnVerifier:           glnVerifier,
-		accredsSvcClient:      accredsSvcClient,
-		logger:                logger,
+		keycloakAccountClient:  keycloakAccountClient,
+		keycloakTechClient:     keycloakTechClient,
+		eventDBModule:          eventDBModule,
+		configDBModule:         configDBModule,
+		usersDBModule:          usersDBModule,
+		glnVerifier:            glnVerifier,
+		accreditationEvaluator: accreditationEvaluator,
+		logger:                 logger,
 	}
 }
 
@@ -243,7 +243,7 @@ func (c *component) UpdateAccount(ctx context.Context, user api.UpdatableAccount
 		CompareValueAndFunctionForUpdate(fields.IDDocumentCountry, user.IDDocumentCountry, oldUser.GetFieldValues)
 
 	var newAccreditations []string
-	newAccreditations, err = c.evaluateAccreditations(ctx, realm, userID, fieldsComparator, oldUserKc.GetFieldValues(fields.Accreditations))
+	newAccreditations, err = c.accreditationEvaluator.EvaluateAccreditations(ctx, realm, userID, fieldsComparator, oldUserKc.GetFieldValues(fields.Accreditations))
 	if err != nil {
 		// Message already logged
 		return err
@@ -331,18 +331,6 @@ func (c *component) UpdateAccount(ctx context.Context, user api.UpdatableAccount
 	}
 
 	return err
-}
-
-func (c *component) evaluateAccreditations(ctx context.Context, realmName string, userID string, fieldsComparator fields.FieldsComparator, currentAccreds []string) ([]string, error) {
-	var accredsRequest = keycloakb.AccredsNotifyRepresentation{UpdatedFields: fieldsComparator.UpdatedFields()}
-	var revokeAccreds, err = c.accredsSvcClient.UpdateNotify(ctx, realmName, userID, accredsRequest)
-	if err != nil {
-		c.logger.Warn(ctx, "msg", "Failed to notify accreditation service", "err", err.Error())
-		return nil, err
-	}
-	var ap, _ = keycloakb.NewAccreditationsProcessor(currentAccreds)
-	ap.RevokeTypes(revokeAccreds)
-	return ap.ToKeycloak(), nil
 }
 
 func (c *component) checkGLN(ctx context.Context, businessID csjson.OptionalString, kcUser *kc.UserRepresentation) error {

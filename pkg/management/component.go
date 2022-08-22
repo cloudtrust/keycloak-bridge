@@ -114,6 +114,11 @@ type AuthorizationChecker interface {
 	ReloadAuthorizations(ctx context.Context) error
 }
 
+// AccreditationsEvaluator interface
+type AccreditationsEvaluator interface {
+	EvaluateAccreditations(ctx context.Context, realmName string, userID string, fieldsComparator fields.FieldsComparator, currentAccreds []string) ([]string, error)
+}
+
 // Component is the management component interface.
 type Component interface {
 	GetActions(ctx context.Context) ([]api.ActionRepresentation, error)
@@ -210,13 +215,13 @@ type component struct {
 	authorizedTrustIDGroups map[string]bool
 	socialRealmName         string
 	glnVerifier             GlnVerifier
-	accredsSvcClient        keycloakb.AccreditationsServiceClient
+	accreditationEvaluator  AccreditationsEvaluator
 	logger                  keycloakb.Logger
 }
 
 // NewComponent returns the management component.
 func NewComponent(keycloakClient KeycloakClient, kcURIProvider kc.KeycloakURIProvider, usersDBModule UsersDetailsDBModule, eventDBModule database.EventsDBModule,
-	configDBModule keycloakb.ConfigurationDBModule, onboardingModule OnboardingModule, accredsSvcClient keycloakb.AccreditationsServiceClient, authChecker AuthorizationChecker, tokenProvider toolbox.OidcTokenProvider,
+	configDBModule keycloakb.ConfigurationDBModule, onboardingModule OnboardingModule, accreditationEvaluator AccreditationsEvaluator, authChecker AuthorizationChecker, tokenProvider toolbox.OidcTokenProvider,
 	authorizedTrustIDGroups []string, socialRealmName string, glnVerifier GlnVerifier, logger keycloakb.Logger) Component {
 	/* REMOVE_THIS_3901 : remove second provided parameter */
 
@@ -236,7 +241,7 @@ func NewComponent(keycloakClient KeycloakClient, kcURIProvider kc.KeycloakURIPro
 		tokenProvider:           tokenProvider,
 		authorizedTrustIDGroups: authzedTrustIDGroups,
 		socialRealmName:         socialRealmName,
-		accredsSvcClient:        accredsSvcClient,
+		accreditationEvaluator:  accreditationEvaluator,
 		glnVerifier:             glnVerifier,
 		logger:                  logger,
 	}
@@ -636,7 +641,7 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 	}
 
 	var newAccreditations []string
-	newAccreditations, err = c.evaluateAccreditations(ctx, realmName, userID, fieldsComparator, oldUserKc.GetFieldValues(fields.Accreditations))
+	newAccreditations, err = c.accreditationEvaluator.EvaluateAccreditations(ctx, realmName, userID, fieldsComparator, oldUserKc.GetFieldValues(fields.Accreditations))
 	if err != nil {
 		return err
 	}
@@ -710,18 +715,6 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 	}
 
 	return nil
-}
-
-func (c *component) evaluateAccreditations(ctx context.Context, realmName string, userID string, fieldsComparator fields.FieldsComparator, currentAccreds []string) ([]string, error) {
-	var accredsRequest = keycloakb.AccredsNotifyRepresentation{UpdatedFields: fieldsComparator.UpdatedFields()}
-	var revokeAccreds, err = c.accredsSvcClient.UpdateNotify(ctx, realmName, userID, accredsRequest)
-	if err != nil {
-		c.logger.Warn(ctx, "msg", "Failed to notify accreditation service", "err", err.Error())
-		return nil, err
-	}
-	var ap, _ = keycloakb.NewAccreditationsProcessor(currentAccreds)
-	ap.RevokeTypes(revokeAccreds)
-	return ap.ToKeycloak(), nil
 }
 
 func (c *component) reportLockEvent(ctx context.Context, realmName, userID string, username *string, enabled bool) {

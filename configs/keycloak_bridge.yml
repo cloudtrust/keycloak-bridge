@@ -79,9 +79,12 @@ keycloak-timeout: 5s
 accounting-api-uri: http://0.0.0.0:8940
 accounting-timeout: 5s
 
+accreditations-api-uri: http://localhost:9023
+accreditations-api-timeout: 5s
+
 # DB Audit RW
 # db-audit-rw-enabled was previously named events-db
-db-audit-rw-enabled: false
+db-audit-rw-enabled: true
 db-audit-rw-host-port: host.docker.internal:3306
 db-audit-rw-username: audit_writer
 db-audit-rw-password: password-to-be-defined

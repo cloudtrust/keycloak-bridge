@@ -32,6 +32,7 @@ import (
 	"github.com/cloudtrust/keycloak-bridge/internal/business"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
+	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/accreditationsclient"
 	"github.com/cloudtrust/keycloak-bridge/pkg/account"
 	"github.com/cloudtrust/keycloak-bridge/pkg/communications"
 	"github.com/cloudtrust/keycloak-bridge/pkg/events"
@@ -164,7 +165,7 @@ const (
 	cfgGlnMedRegTimeout         = "gln-medreg-timeout"
 	cfgValidationRules          = "validation-rules"
 	cfgOnboardingRealmOverrides = "onboarding-realm-overrides"
-	cfgAddrAccreditations       = "accreditations-addr"
+	cfgAddrAccreditations       = "accreditations-api-uri"
 	cfgAccreditationsTimeout    = "accreditations-timeout"
 
 	tokenProviderDefaultKey = "default"
@@ -603,7 +604,7 @@ func main() {
 	}
 	var glnVerifier = business.NewGlnVerifier(glnLookupProviders...)
 
-	var accreditationsService keycloakb.AccreditationsServiceClient
+	var accreditationsService accreditationsclient.AccreditationsServiceClient
 	{
 		var httpClient, err = httpclient.NewBearerAuthClient(c.GetString(cfgAddrAccreditations), c.GetDuration(cfgAccreditationsTimeout), func() (string, error) {
 			return technicalTokenProvider.ProvideToken(context.TODO())
@@ -613,7 +614,7 @@ func main() {
 			return
 		}
 		// Accreditations service
-		accreditationsService = keycloakb.MakeAccreditationsServiceClient(httpClient)
+		accreditationsService = accreditationsclient.MakeAccreditationsServiceClient(httpClient)
 	}
 
 	// Validation service.
@@ -639,8 +640,7 @@ func main() {
 			GetUser:                  prepareEndpoint(validation.MakeGetUserEndpoint(validationComponent), "get_user", influxMetrics, validationLogger, tracer, rateLimitValidation),
 			UpdateUser:               prepareEndpoint(validation.MakeUpdateUserEndpoint(validationComponent), "update_user", influxMetrics, validationLogger, tracer, rateLimitValidation),
 			UpdateUserAccreditations: prepareEndpoint(validation.MakeUpdateUserAccreditationsEndpoint(validationComponent), "update_user_accreditations", influxMetrics, validationLogger, tracer, rateLimitValidation),
-			//CreateCheck:              prepareEndpoint(validation.MakeCreateCheckEndpoint(validationComponent), "create_check", influxMetrics, validationLogger, tracer, rateLimitValidation),
-			CreatePendingCheck: prepareEndpoint(validation.MakeCreatePendingCheckEndpoint(validationComponent), "create_check_pending", influxMetrics, validationLogger, tracer, rateLimitValidation),
+			GetGroupsOfUser:          prepareEndpoint(validation.MakeGetGroupsOfUserEndpoint(validationComponent), "get_user_groups", influxMetrics, validationLogger, tracer, rateLimitValidation),
 		}
 	}
 
@@ -776,9 +776,10 @@ func main() {
 					return
 				}
 			}
+			var accreditationsEvaluator = keycloakb.NewAccreditationsEvaluator(accreditationsService, managementLogger)
 			/* REMOVE_THIS_3901 : remove second parameter */
 			keycloakComponent = management.NewComponent(keycloakClient, keycloakConfig.URIProvider, usersDBModule, eventsDBModule, configDBModule,
-				onboardingModule, accreditationsService, authorizationChecker, technicalTokenProvider, trustIDGroups, registerRealm, glnVerifier, managementLogger)
+				onboardingModule, accreditationsEvaluator, authorizationChecker, technicalTokenProvider, trustIDGroups, registerRealm, glnVerifier, managementLogger)
 			keycloakComponent = management.MakeAuthorizationManagementComponentMW(log.With(managementLogger, "mw", "endpoint"), authorizationManager)(keycloakComponent)
 		}
 
@@ -893,9 +894,10 @@ func main() {
 
 		// module for storing and retrieving details of the self-registered users
 		var usersDBModule = keycloakb.NewUsersDetailsDBModule(usersRwDBConn, aesEncryption, accountLogger)
+		var accreditationsEvaluator = keycloakb.NewAccreditationsEvaluator(accreditationsService, accountLogger)
 
 		// new module for account service
-		accountComponent := account.NewComponent(keycloakClient.AccountClient(), kcTechClient, eventsDBModule, configDBModule, usersDBModule, glnVerifier, accreditationsService, accountLogger)
+		accountComponent := account.NewComponent(keycloakClient.AccountClient(), kcTechClient, eventsDBModule, configDBModule, usersDBModule, glnVerifier, accreditationsEvaluator, accountLogger)
 		accountComponent = account.MakeAuthorizationAccountComponentMW(log.With(accountLogger, "mw", "endpoint"), configDBModule)(accountComponent)
 
 		var rateLimitAccount = rateLimit[RateKeyAccount]
@@ -1060,16 +1062,18 @@ func main() {
 		var getUserHandler = configureValidationHandler(keycloakb.ComponentName, ComponentID, idGenerator, validationExpectedAuthToken, tracer, logger)(validationEndpoints.GetUser)
 		var updateUserHandler = configureValidationHandler(keycloakb.ComponentName, ComponentID, idGenerator, validationExpectedAuthToken, tracer, logger)(validationEndpoints.UpdateUser)
 		var updateUserAccreditationsHandler = configureValidationHandler(keycloakb.ComponentName, ComponentID, idGenerator, validationExpectedAuthToken, tracer, logger)(validationEndpoints.UpdateUserAccreditations)
+		var getGroupsForUserHandler = configureValidationHandler(keycloakb.ComponentName, ComponentID, idGenerator, validationExpectedAuthToken, tracer, logger)(validationEndpoints.GetGroupsOfUser)
 		//var createCheckHandler = configureValidationHandler(keycloakb.ComponentName, ComponentID, idGenerator, validationExpectedAuthToken, tracer, logger)(validationEndpoints.CreateCheck)
-		var createPendingCheckHandler = configureValidationHandler(keycloakb.ComponentName, ComponentID, idGenerator, validationExpectedAuthToken, tracer, logger)(validationEndpoints.CreatePendingCheck)
+		//var createPendingCheckHandler = configureValidationHandler(keycloakb.ComponentName, ComponentID, idGenerator, validationExpectedAuthToken, tracer, logger)(validationEndpoints.CreatePendingCheck)
 
 		var validationSubroute = route.PathPrefix("/validation").Subrouter()
 
 		validationSubroute.Path("/realms/{realm}/users/{userID}").Methods("GET").Handler(getUserHandler)
 		validationSubroute.Path("/realms/{realm}/users/{userID}").Methods("PUT").Handler(updateUserHandler)
 		validationSubroute.Path("/realms/{realm}/users/{userID}/accreditations").Methods("PUT").Handler(updateUserAccreditationsHandler)
+		validationSubroute.Path("/realms/{realm}/users/{userID}/groups").Methods("GET").Handler(getGroupsForUserHandler)
 		//validationSubroute.Path("/realms/{realm}/users/{userID}/checks").Methods("POST").Handler(createCheckHandler)
-		validationSubroute.Path("/realms/{realm}/users/{userID}/checks/pending").Methods("POST").Handler(createPendingCheckHandler)
+		//validationSubroute.Path("/realms/{realm}/users/{userID}/checks/pending").Methods("POST").Handler(createPendingCheckHandler)
 
 		// Communications (bearer auth)
 		var sendMailHandler = configureHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, communications.MakeCommunicationsHandler, logger)(communicationsEndpoints.SendEmail)
