@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/cloudtrust/keycloak-bridge/internal/dto"
+	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/accreditationsclient"
 )
 
 // PendingChecks interface
@@ -25,8 +25,8 @@ var (
 	ErrCantUnmarshalPendingCheck = errors.New("can't unmarshal pending check value")
 )
 
-// ConvertFromDBChecks converts a check coming from database
-func ConvertFromDBChecks(dbChecks []dto.DBCheck) PendingChecks {
+// ConvertFromDBChecks converts a check coming from accreditation service
+func ConvertFromAccreditationChecks(dbChecks []accreditationsclient.CheckRepresentation) PendingChecks {
 	checks := map[string]int64{}
 	for _, pendingCheck := range dbChecks {
 		if pendingCheck.Nature != nil && pendingCheck.Status != nil && *pendingCheck.Status == "PENDING" {

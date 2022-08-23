@@ -104,22 +104,6 @@ func (a *AccreditationRepresentation) Validate() error {
 		Status()
 }
 
-// ConvertToDBCheck creates a DBCheck
-func (c *CheckRepresentation) ConvertToDBCheck() dto.DBCheck {
-	var check = dto.DBCheck{}
-	check.Operator = c.Operator
-	datetime := *c.DateTime
-	check.DateTime = &datetime
-	check.Status = c.Status
-	check.Type = c.Type
-	check.Nature = c.Nature
-	check.ProofType = c.ProofType
-	check.ProofData = c.ProofData
-	check.TxnID = c.TxnID
-
-	return check
-}
-
 // ExportToKeycloak exports user details into a Keycloak UserRepresentation
 func (u *UserRepresentation) ExportToKeycloak(kcUser *kc.UserRepresentation) {
 	var bFalse = false

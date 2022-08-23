@@ -106,18 +106,6 @@ func TestValidateAccreditation(t *testing.T) {
 	}
 }
 
-func TestConvertToDBCheck(t *testing.T) {
-	var check = createValidCheck()
-	var dbCheck = check.ConvertToDBCheck()
-	assert.Equal(t, *check.Operator, *dbCheck.Operator)
-	assert.Equal(t, *check.DateTime, *dbCheck.DateTime)
-	assert.Equal(t, *check.Status, *dbCheck.Status)
-	assert.Equal(t, *check.Type, *dbCheck.Type)
-	assert.Equal(t, *check.Nature, *dbCheck.Nature)
-	assert.Equal(t, *check.ProofType, *dbCheck.ProofType)
-	assert.Equal(t, *check.ProofData, *dbCheck.ProofData)
-}
-
 func TestExportToKeycloak(t *testing.T) {
 	t.Run("Empty user from Keycloak", func(t *testing.T) {
 		var user = createValidUser()

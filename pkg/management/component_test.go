@@ -20,6 +20,7 @@ import (
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
+	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/accreditationsclient"
 
 	"github.com/cloudtrust/keycloak-bridge/pkg/management/mock"
 	kc "github.com/cloudtrust/keycloak-client/v2"
@@ -39,6 +40,7 @@ type componentMocks struct {
 	transaction            *mock.Transaction
 	glnVerifier            *mock.GlnVerifier
 	logger                 *mock.Logger
+	accreditationsClient   *mock.AccreditationsServiceClient
 }
 
 func createMocks(mockCtrl *gomock.Controller) *componentMocks {
@@ -54,6 +56,7 @@ func createMocks(mockCtrl *gomock.Controller) *componentMocks {
 		transaction:            mock.NewTransaction(mockCtrl),
 		glnVerifier:            mock.NewGlnVerifier(mockCtrl),
 		logger:                 mock.NewLogger(mockCtrl),
+		accreditationsClient:   mock.NewAccreditationsServiceClient(mockCtrl),
 	}
 }
 
@@ -68,7 +71,7 @@ const (
 func (m *componentMocks) createComponent() *component {
 	/* REMOVE_THIS_3901 : remove second parameter (nil) */
 	return NewComponent(m.keycloakClient, nil, m.usersDetailsDBModule, m.eventDBModule, m.configurationDBModule, m.onboardingModule,
-		m.accreditationEvaluator, m.authChecker, m.tokenProvider, allowedTrustIDGroups, socialRealmName, m.glnVerifier, m.logger).(*component)
+		m.accreditationEvaluator, m.authChecker, m.tokenProvider, m.accreditationsClient, allowedTrustIDGroups, socialRealmName, m.glnVerifier, m.logger).(*component)
 }
 
 func ptrString(value string) *string {
@@ -916,7 +919,7 @@ func TestGetUser(t *testing.T) {
 			IDDocumentCountry:    &idDocumentCountry,
 		}, nil)
 
-		mocks.usersDetailsDBModule.EXPECT().GetPendingChecks(ctx, realmName, id).Return([]dto.DBCheck{{
+		mocks.accreditationsClient.EXPECT().GetPendingChecks(ctx, realmName, id).Return([]accreditationsclient.CheckRepresentation{{
 			Nature:   ptr("nature"),
 			Status:   ptr("PENDING"),
 			DateTime: &now,
@@ -995,7 +998,7 @@ func TestGetUser(t *testing.T) {
 		mocks.usersDetailsDBModule.EXPECT().GetUserDetails(ctx, realmName, id).Return(dto.DBUser{
 			UserID: &id,
 		}, nil)
-		mocks.usersDetailsDBModule.EXPECT().GetPendingChecks(ctx, realmName, id).Return([]dto.DBCheck{{
+		mocks.accreditationsClient.EXPECT().GetPendingChecks(ctx, realmName, id).Return([]accreditationsclient.CheckRepresentation{{
 			Nature:   ptr("nature"),
 			Status:   ptr("PENDING"),
 			DateTime: &now,
@@ -1055,7 +1058,7 @@ func TestGetUser(t *testing.T) {
 			IDDocumentType:       &idDocumentType,
 			IDDocumentCountry:    &idDocumentCountry,
 		}, nil)
-		mocks.usersDetailsDBModule.EXPECT().GetPendingChecks(ctx, realmName, id).Return([]dto.DBCheck{{
+		mocks.accreditationsClient.EXPECT().GetPendingChecks(ctx, realmName, id).Return([]accreditationsclient.CheckRepresentation{{
 			Nature:   ptr("nature"),
 			Status:   ptr("PENDING"),
 			DateTime: &now,
@@ -1098,7 +1101,7 @@ func TestGetUser(t *testing.T) {
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		mocks.usersDetailsDBModule.EXPECT().GetUserDetails(ctx, realmName, id).Return(dto.DBUser{}, nil)
-		mocks.usersDetailsDBModule.EXPECT().GetPendingChecks(ctx, realmName, id).Return([]dto.DBCheck{}, fmt.Errorf("SQL Error"))
+		mocks.accreditationsClient.EXPECT().GetPendingChecks(ctx, realmName, id).Return([]accreditationsclient.CheckRepresentation{}, fmt.Errorf("SQL Error"))
 		mocks.logger.EXPECT().Warn(ctx, "msg", "Can't get pending checks", "err", "SQL Error")
 
 		_, err := managementComponent.GetUser(ctx, "master", id)
@@ -1767,17 +1770,17 @@ func TestGetUserChecks(t *testing.T) {
 	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
 
 	t.Run("GetChecks returns an error", func(t *testing.T) {
-		mocks.usersDetailsDBModule.EXPECT().GetChecks(ctx, realmName, userID).Return(nil, errors.New("db error"))
+		mocks.accreditationsClient.EXPECT().GetChecks(ctx, realmName, userID).Return(nil, errors.New("db error"))
 		_, err := managementComponent.GetUserChecks(ctx, realmName, userID)
 		assert.NotNil(t, err)
 	})
 	t.Run("GetChecks returns a check", func(t *testing.T) {
 		var operator = "The Operator"
-		var dbCheck = dto.DBCheck{
+		var dbCheck = accreditationsclient.CheckRepresentation{
 			Operator: &operator,
 		}
-		var dbChecks = []dto.DBCheck{dbCheck, dbCheck}
-		mocks.usersDetailsDBModule.EXPECT().GetChecks(ctx, realmName, userID).Return(dbChecks, nil)
+		var dbChecks = []accreditationsclient.CheckRepresentation{dbCheck, dbCheck}
+		mocks.accreditationsClient.EXPECT().GetChecks(ctx, realmName, userID).Return(dbChecks, nil)
 		res, err := managementComponent.GetUserChecks(ctx, realmName, userID)
 		assert.Nil(t, err)
 		assert.Len(t, res, len(dbChecks))

@@ -1,8 +1,6 @@
 package dto
 
 import (
-	"time"
-
 	"github.com/cloudtrust/common-service/v2/fields"
 )
 
@@ -15,19 +13,6 @@ type DBUser struct {
 	IDDocumentNumber     *string `json:"id_document_num,omitempty"`
 	IDDocumentExpiration *string `json:"id_document_exp,omitempty"`
 	IDDocumentCountry    *string `json:"id_document_country,omitempty"`
-}
-
-// DBCheck struct
-type DBCheck struct {
-	Operator  *string
-	DateTime  *time.Time
-	Status    *string
-	Type      *string
-	Nature    *string
-	ProofData *[]byte
-	ProofType *string
-	Comment   *string
-	TxnID     *string
 }
 
 func toFieldValue(value *string) []string {

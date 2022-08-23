@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cloudtrust/keycloak-bridge/internal/dto"
+	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/accreditationsclient"
 
 	"github.com/cloudtrust/common-service/v2/log"
 	"github.com/stretchr/testify/assert"
@@ -42,13 +42,13 @@ func TestSetChecks(t *testing.T) {
 	})
 
 	t.Run("Empty checks", func(t *testing.T) {
-		userInfo.SetChecks([]dto.DBCheck{})
+		userInfo.SetChecks([]accreditationsclient.CheckRepresentation{})
 		assert.Nil(t, userInfo.Checks)
 	})
 
 	t.Run("With checks", func(t *testing.T) {
 		var oneDate = time.Now()
-		var checks = []dto.DBCheck{{DateTime: nil}, {DateTime: &oneDate}, {DateTime: &oneDate}}
+		var checks = []accreditationsclient.CheckRepresentation{{DateTime: nil}, {DateTime: &oneDate}, {DateTime: &oneDate}}
 		userInfo.SetChecks(checks)
 		assert.Len(t, *userInfo.Checks, len(checks))
 	})

@@ -20,6 +20,7 @@ import (
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
+	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/accreditationsclient"
 	kc "github.com/cloudtrust/keycloak-client/v2"
 	"github.com/cloudtrust/keycloak-client/v2/toolbox"
 	"github.com/google/uuid"
@@ -89,8 +90,11 @@ type UsersDetailsDBModule interface {
 	StoreOrUpdateUserDetails(ctx context.Context, realm string, user dto.DBUser) error
 	GetUserDetails(ctx context.Context, realm string, userID string) (dto.DBUser, error)
 	DeleteUserDetails(ctx context.Context, realm string, userID string) error
-	GetChecks(ctx context.Context, realm string, userID string) ([]dto.DBCheck, error)
-	GetPendingChecks(ctx context.Context, realm string, userID string) ([]dto.DBCheck, error)
+}
+
+type AccreditationsServiceClient interface {
+	GetChecks(ctx context.Context, realm string, userID string) ([]accreditationsclient.CheckRepresentation, error)
+	GetPendingChecks(ctx context.Context, realm string, userID string) ([]accreditationsclient.CheckRepresentation, error)
 }
 
 // OnboardingModule is the interface for the onboarding process
@@ -216,13 +220,14 @@ type component struct {
 	socialRealmName         string
 	glnVerifier             GlnVerifier
 	accreditationEvaluator  AccreditationsEvaluator
+	accreditationsClient    AccreditationsServiceClient
 	logger                  keycloakb.Logger
 }
 
 // NewComponent returns the management component.
 func NewComponent(keycloakClient KeycloakClient, kcURIProvider kc.KeycloakURIProvider, usersDBModule UsersDetailsDBModule, eventDBModule database.EventsDBModule,
 	configDBModule keycloakb.ConfigurationDBModule, onboardingModule OnboardingModule, accreditationEvaluator AccreditationsEvaluator, authChecker AuthorizationChecker, tokenProvider toolbox.OidcTokenProvider,
-	authorizedTrustIDGroups []string, socialRealmName string, glnVerifier GlnVerifier, logger keycloakb.Logger) Component {
+	accreditationsClient AccreditationsServiceClient, authorizedTrustIDGroups []string, socialRealmName string, glnVerifier GlnVerifier, logger keycloakb.Logger) Component {
 	/* REMOVE_THIS_3901 : remove second provided parameter */
 
 	var authzedTrustIDGroups = make(map[string]bool)
@@ -242,6 +247,7 @@ func NewComponent(keycloakClient KeycloakClient, kcURIProvider kc.KeycloakURIPro
 		authorizedTrustIDGroups: authzedTrustIDGroups,
 		socialRealmName:         socialRealmName,
 		accreditationEvaluator:  accreditationEvaluator,
+		accreditationsClient:    accreditationsClient,
 		glnVerifier:             glnVerifier,
 		logger:                  logger,
 	}
@@ -548,7 +554,7 @@ func (c *component) GetUser(ctx context.Context, realmName, userID string) (api.
 		return api.UserRepresentation{}, err
 	}
 
-	pendingChecks, err := c.usersDBModule.GetPendingChecks(ctx, realmName, userID)
+	pendingChecks, err := c.accreditationsClient.GetPendingChecks(ctx, realmName, userID)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Can't get pending checks", "err", err.Error())
 		return userRep, err
@@ -560,7 +566,7 @@ func (c *component) GetUser(ctx context.Context, realmName, userID string) (api.
 	userRep.IDDocumentNumber = dbUser.IDDocumentNumber
 	userRep.IDDocumentExpiration = dbUser.IDDocumentExpiration
 	userRep.IDDocumentCountry = dbUser.IDDocumentCountry
-	userRep.PendingChecks = keycloakb.ConvertFromDBChecks(pendingChecks).ToCheckNames()
+	userRep.PendingChecks = keycloakb.ConvertFromAccreditationChecks(pendingChecks).ToCheckNames()
 
 	//store the API call into the DB
 	c.reportEvent(ctx, "GET_DETAILS", database.CtEventRealmName, realmName, database.CtEventUserID, userID, database.CtEventUsername, username)
@@ -795,7 +801,7 @@ func (c *component) GetUsers(ctx context.Context, realmName string, groupIDs []s
 
 func (c *component) GetUserChecks(ctx context.Context, realmName, userID string) ([]api.UserCheck, error) {
 	// We can assume userID is valid as it is used to check authorizations...
-	var checks, err = c.usersDBModule.GetChecks(ctx, realmName, userID)
+	var checks, err = c.accreditationsClient.GetChecks(ctx, realmName, userID)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Can't get user checks", "err", err.Error(), "realm", realmName, "user", userID)
 		return nil, err

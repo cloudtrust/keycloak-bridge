@@ -64,3 +64,61 @@ func TestNotifyUpdate(t *testing.T) {
 		assert.NotNil(t, err)
 	})
 }
+
+func TestGetChecks(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	mockHTTPClient := mock.NewHTTPClient(mockCtrl)
+	accreditationsClient := MakeAccreditationsServiceClient(mockHTTPClient)
+	var ctx = context.Background()
+	var expectedError = errors.New("Test error")
+	var correlationID = "TestCorrelationID"
+	var realm = "testRealm"
+	var userID = "userID"
+
+	ctx = context.WithValue(ctx, cs.CtContextCorrelationID, correlationID)
+
+	t.Run("SUCCESS", func(t *testing.T) {
+		mockHTTPClient.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+
+		_, err := accreditationsClient.GetChecks(ctx, realm, userID)
+		assert.Nil(t, err)
+	})
+
+	t.Run("FAILURE", func(t *testing.T) {
+		mockHTTPClient.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(expectedError)
+
+		_, err := accreditationsClient.GetChecks(ctx, realm, userID)
+		assert.NotNil(t, err)
+	})
+}
+
+func TestGetPendingChecks(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	mockHTTPClient := mock.NewHTTPClient(mockCtrl)
+	accreditationsClient := MakeAccreditationsServiceClient(mockHTTPClient)
+	var ctx = context.Background()
+	var expectedError = errors.New("Test error")
+	var correlationID = "TestCorrelationID"
+	var realm = "testRealm"
+	var userID = "userID"
+
+	ctx = context.WithValue(ctx, cs.CtContextCorrelationID, correlationID)
+
+	t.Run("SUCCESS", func(t *testing.T) {
+		mockHTTPClient.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+
+		_, err := accreditationsClient.GetPendingChecks(ctx, realm, userID)
+		assert.Nil(t, err)
+	})
+
+	t.Run("FAILURE", func(t *testing.T) {
+		mockHTTPClient.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(expectedError)
+
+		_, err := accreditationsClient.GetPendingChecks(ctx, realm, userID)
+		assert.NotNil(t, err)
+	})
+}

@@ -169,22 +169,15 @@ func TestAddAccreditation(t *testing.T) {
 	assert.Len(t, res, 2)
 
 	// First accreditation became revoked
-	assert.Contains(t, res[0], `"AAA"`)
-	assert.Contains(t, res[0], `"01.01.2031"`)
-	assert.Contains(t, res[0], `"revoked"`)
-
-	assert.Contains(t, res[1], `"AAA"`)
-	assert.Contains(t, res[1], `"01.01.2032"`)
-	assert.NotContains(t, res[1], `"revoked"`)
+	assert.Contains(t, res, `{"type":"AAA","creationMillis":1798761600000,"expiryDate":"01.01.2031","revoked":true}`)
+	assert.Contains(t, res, `{"type":"AAA","creationMillis":1735689600000,"expiryDate":"01.01.2032"}`)
 
 	// Add third accreditation, new type
 	creationDate, _ = time.Parse("2006-Jan-02", "2028-Apr-17")
 	ap.AddAccreditation(creationDate, "BBB", "5y")
 	res = ap.ToKeycloak()
 	assert.Len(t, res, 3)
-	assert.Contains(t, res[2], `"BBB"`)
-	assert.Contains(t, res[2], `"17.04.2033"`)
-	assert.NotContains(t, res[2], `"revoked"`)
+	assert.Contains(t, res, `{"type":"BBB","creationMillis":1839542400000,"expiryDate":"17.04.2033"}`)
 }
 
 func TestEvaluateAccreditations(t *testing.T) {

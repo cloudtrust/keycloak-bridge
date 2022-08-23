@@ -17,6 +17,7 @@ import (
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
+	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/accreditationsclient"
 	kc "github.com/cloudtrust/keycloak-client/v2"
 )
 
@@ -86,7 +87,11 @@ type Component interface {
 type UsersDetailsDBModule interface {
 	StoreOrUpdateUserDetails(ctx context.Context, realm string, user dto.DBUser) error
 	GetUserDetails(ctx context.Context, realm string, userID string) (dto.DBUser, error)
-	GetPendingChecks(ctx context.Context, realm string, userID string) ([]dto.DBCheck, error)
+}
+
+type AccreditationsServiceClient interface {
+	GetChecks(ctx context.Context, realm string, userID string) ([]accreditationsclient.CheckRepresentation, error)
+	GetPendingChecks(ctx context.Context, realm string, userID string) ([]accreditationsclient.CheckRepresentation, error)
 }
 
 // Component is the management component.
@@ -98,11 +103,14 @@ type component struct {
 	usersDBModule          UsersDetailsDBModule
 	glnVerifier            GlnVerifier
 	accreditationEvaluator AccreditationsEvaluator
+	accreditationsClient   AccreditationsServiceClient
 	logger                 keycloakb.Logger
 }
 
 // NewComponent returns the self-service component.
-func NewComponent(keycloakAccountClient KeycloakAccountClient, keycloakTechClient KeycloakTechnicalClient, eventDBModule database.EventsDBModule, configDBModule keycloakb.ConfigurationDBModule, usersDBModule UsersDetailsDBModule, glnVerifier GlnVerifier, accreditationEvaluator AccreditationsEvaluator, logger keycloakb.Logger) Component {
+func NewComponent(keycloakAccountClient KeycloakAccountClient, keycloakTechClient KeycloakTechnicalClient, eventDBModule database.EventsDBModule,
+	configDBModule keycloakb.ConfigurationDBModule, usersDBModule UsersDetailsDBModule, glnVerifier GlnVerifier, accreditationEvaluator AccreditationsEvaluator,
+	accreditationsClient AccreditationsServiceClient, logger keycloakb.Logger) Component {
 	return &component{
 		keycloakAccountClient:  keycloakAccountClient,
 		keycloakTechClient:     keycloakTechClient,
@@ -111,6 +119,7 @@ func NewComponent(keycloakAccountClient KeycloakAccountClient, keycloakTechClien
 		usersDBModule:          usersDBModule,
 		glnVerifier:            glnVerifier,
 		accreditationEvaluator: accreditationEvaluator,
+		accreditationsClient:   accreditationsClient,
 		logger:                 logger,
 	}
 }
@@ -178,7 +187,7 @@ func (c *component) GetAccount(ctx context.Context) (api.AccountRepresentation, 
 		return userRep, err
 	}
 
-	pendingChecks, err := c.usersDBModule.GetPendingChecks(ctx, realm, userID)
+	pendingChecks, err := c.accreditationsClient.GetPendingChecks(ctx, realm, userID)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Can't get pending checks", "err", err.Error())
 		return userRep, err
@@ -191,7 +200,7 @@ func (c *component) GetAccount(ctx context.Context) (api.AccountRepresentation, 
 	userRep.IDDocumentNumber = dbUser.IDDocumentNumber
 	userRep.IDDocumentExpiration = dbUser.IDDocumentExpiration
 	userRep.IDDocumentCountry = dbUser.IDDocumentCountry
-	userRep.PendingChecks = keycloakb.ConvertFromDBChecks(pendingChecks).ToCheckNames()
+	userRep.PendingChecks = keycloakb.ConvertFromAccreditationChecks(pendingChecks).ToCheckNames()
 
 	return userRep, nil
 }

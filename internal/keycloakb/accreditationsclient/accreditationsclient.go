@@ -15,6 +15,8 @@ import (
 type AccreditationsServiceClient interface {
 	NotifyCheck(ctx context.Context, check CheckRepresentation) error
 	NotifyUpdate(ctx context.Context, updateNotifyRequest UpdateNotificationRepresentation) ([]string, error)
+	GetChecks(ctx context.Context, realm string, userID string) ([]CheckRepresentation, error)
+	GetPendingChecks(ctx context.Context, realm string, userID string) ([]CheckRepresentation, error)
 }
 
 // UpdateNotificationRepresentation struct
@@ -41,6 +43,7 @@ type CheckRepresentation struct {
 
 // HTTPClient interface
 type HTTPClient interface {
+	Get(data interface{}, plugins ...plugin.Plugin) error
 	Post(data interface{}, plugins ...plugin.Plugin) (string, error)
 	Put(plugins ...plugin.Plugin) error
 }
@@ -50,11 +53,15 @@ type accreditationsClient struct {
 }
 
 const (
-	apiPath          = `/internal/backend`
-	updateCheckPath  = apiPath + `/notify-check`
-	updateNotifyPath = apiPath + `/notify-update`
+	apiPath              = `/internal/backend`
+	updateCheckPath      = apiPath + `/notify-check`
+	updateNotifyPath     = apiPath + `/notify-update`
+	getChecksPath        = apiPath + `/realms/:realm/users/:userID/checks`
+	getPendingChecksPath = apiPath + `/realms/:realm/users/:userID/pending-checks`
 
-	hdrCorrID = "X-Correlation-ID"
+	hdrCorrID    = "X-Correlation-ID"
+	prmRealmName = "realm"
+	prmUserID    = "userID"
 )
 
 // MakeAccreditationsServiceClient creates the accreditations service client
@@ -74,6 +81,22 @@ func (ac *accreditationsClient) NotifyCheck(ctx context.Context, check CheckRepr
 func (ac *accreditationsClient) NotifyUpdate(ctx context.Context, updateNotifyRequest UpdateNotificationRepresentation) ([]string, error) {
 	var correlationID = ctx.Value(cs.CtContextCorrelationID).(string)
 	var res []string
-	var _, err = ac.httpClient.Post(&res, url.Path(updateNotifyPath), headers.Set(hdrCorrID, correlationID), body.JSON(updateNotifyRequest))
+	_, err := ac.httpClient.Post(&res, url.Path(updateNotifyPath), headers.Set(hdrCorrID, correlationID), body.JSON(updateNotifyRequest))
 	return res, err
+}
+
+func (ac *accreditationsClient) GetChecks(ctx context.Context, realm string, userID string) ([]CheckRepresentation, error) {
+	var correlationID = ctx.Value(cs.CtContextCorrelationID).(string)
+
+	var checks []CheckRepresentation
+	err := ac.httpClient.Get(&checks, url.Path(getChecksPath), url.Param(prmRealmName, realm), url.Param(prmUserID, userID), headers.Set(hdrCorrID, correlationID))
+	return checks, err
+}
+
+func (ac *accreditationsClient) GetPendingChecks(ctx context.Context, realm string, userID string) ([]CheckRepresentation, error) {
+	var correlationID = ctx.Value(cs.CtContextCorrelationID).(string)
+
+	var checks []CheckRepresentation
+	err := ac.httpClient.Get(&checks, url.Path(getPendingChecksPath), url.Param(prmRealmName, realm), url.Param(prmUserID, userID), headers.Set(hdrCorrID, correlationID))
+	return checks, err
 }

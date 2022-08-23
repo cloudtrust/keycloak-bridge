@@ -21,6 +21,7 @@ import (
 
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
+	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/accreditationsclient"
 )
 
 type componentMock struct {
@@ -31,6 +32,7 @@ type componentMock struct {
 	usersDetailsDBModule    *mock.UsersDetailsDBModule
 	glnVerifier             *mock.GlnVerifier
 	accreditationEvaluator  *mock.AccreditationsEvaluator
+	accreditationsClient    *mock.AccreditationsServiceClient
 }
 
 func createComponentMocks(mockCtrl *gomock.Controller) *componentMock {
@@ -42,12 +44,13 @@ func createComponentMocks(mockCtrl *gomock.Controller) *componentMock {
 		usersDetailsDBModule:    mock.NewUsersDetailsDBModule(mockCtrl),
 		glnVerifier:             mock.NewGlnVerifier(mockCtrl),
 		accreditationEvaluator:  mock.NewAccreditationsEvaluator(mockCtrl),
+		accreditationsClient:    mock.NewAccreditationsServiceClient(mockCtrl),
 	}
 }
 
 func (m *componentMock) createComponent() *component {
 	return NewComponent(m.keycloakAccountClient, m.keycloakTechnicalClient, m.eventDBModule,
-		m.configurationDBModule, m.usersDetailsDBModule, m.glnVerifier, m.accreditationEvaluator, log.NewNopLogger()).(*component)
+		m.configurationDBModule, m.usersDetailsDBModule, m.glnVerifier, m.accreditationEvaluator, m.accreditationsClient, log.NewNopLogger()).(*component)
 }
 
 func ptr(value string) *string {
@@ -665,7 +668,7 @@ func TestGetUser(t *testing.T) {
 		var dbError = errors.New("db error")
 		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kc.UserRepresentation{}, nil)
 		mocks.usersDetailsDBModule.EXPECT().GetUserDetails(ctx, realmName, userID).Return(dto.DBUser{}, nil)
-		mocks.usersDetailsDBModule.EXPECT().GetPendingChecks(ctx, realmName, userID).Return([]dto.DBCheck{}, dbError)
+		mocks.accreditationsClient.EXPECT().GetPendingChecks(ctx, realmName, userID).Return([]accreditationsclient.CheckRepresentation{}, dbError)
 		_, err := accountComponent.GetAccount(ctx)
 
 		assert.Equal(t, dbError, err)
@@ -710,7 +713,7 @@ func TestGetUser(t *testing.T) {
 			UserID: &userID,
 		}, nil)
 		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "GET_DETAILS", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-		mocks.usersDetailsDBModule.EXPECT().GetPendingChecks(ctx, realmName, userID).Return([]dto.DBCheck{{
+		mocks.accreditationsClient.EXPECT().GetPendingChecks(ctx, realmName, userID).Return([]accreditationsclient.CheckRepresentation{{
 			Nature:   ptr("nature"),
 			Status:   ptr("PENDING"),
 			DateTime: &now,
@@ -750,7 +753,7 @@ func TestGetUser(t *testing.T) {
 			IDDocumentExpiration: &docExp,
 			IDDocumentCountry:    &docCountry,
 		}, nil)
-		mocks.usersDetailsDBModule.EXPECT().GetPendingChecks(ctx, realmName, userID).Return([]dto.DBCheck{{
+		mocks.accreditationsClient.EXPECT().GetPendingChecks(ctx, realmName, userID).Return([]accreditationsclient.CheckRepresentation{{
 			Nature:   ptr("nature"),
 			Status:   ptr("PENDING"),
 			DateTime: &now,

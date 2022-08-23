@@ -6,8 +6,8 @@ import (
 	cs "github.com/cloudtrust/common-service/v2"
 	api "github.com/cloudtrust/keycloak-bridge/api/mobile"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
-	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
+	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/accreditationsclient"
 	kc "github.com/cloudtrust/keycloak-client/v2"
 )
 
@@ -60,10 +60,9 @@ type Component interface {
 	GetUserInformation(ctx context.Context) (api.UserInformationRepresentation, error)
 }
 
-// UsersDetailsDBModule is the minimum required interface to access the users database
-type UsersDetailsDBModule interface {
-	GetChecks(ctx context.Context, realm string, userID string) ([]dto.DBCheck, error)
-	GetPendingChecks(ctx context.Context, realm string, userID string) ([]dto.DBCheck, error)
+type AccreditationsServiceClient interface {
+	GetChecks(ctx context.Context, realm string, userID string) ([]accreditationsclient.CheckRepresentation, error)
+	GetPendingChecks(ctx context.Context, realm string, userID string) ([]accreditationsclient.CheckRepresentation, error)
 }
 
 // TokenProvider is the interface to retrieve accessToken to access KC
@@ -83,25 +82,25 @@ type AccountingClient interface {
 
 // Component is the management component
 type component struct {
-	keycloakClient   KeycloakClient
-	configDBModule   keycloakb.ConfigurationDBModule
-	usersDBModule    UsersDetailsDBModule
-	tokenProvider    TokenProvider
-	authManager      AuthorizationManager
-	accountingClient AccountingClient
-	logger           keycloakb.Logger
+	keycloakClient       KeycloakClient
+	configDBModule       keycloakb.ConfigurationDBModule
+	accreditationsClient AccreditationsServiceClient
+	tokenProvider        TokenProvider
+	authManager          AuthorizationManager
+	accountingClient     AccountingClient
+	logger               keycloakb.Logger
 }
 
 // NewComponent returns the self-service component.
-func NewComponent(keycloakClient KeycloakClient, configDBModule keycloakb.ConfigurationDBModule, usersDBModule UsersDetailsDBModule, tokenProvider TokenProvider, authManager AuthorizationManager, accountingClient AccountingClient, logger keycloakb.Logger) Component {
+func NewComponent(keycloakClient KeycloakClient, configDBModule keycloakb.ConfigurationDBModule, accreditationsClient AccreditationsServiceClient, tokenProvider TokenProvider, authManager AuthorizationManager, accountingClient AccountingClient, logger keycloakb.Logger) Component {
 	return &component{
-		keycloakClient:   keycloakClient,
-		configDBModule:   configDBModule,
-		usersDBModule:    usersDBModule,
-		tokenProvider:    tokenProvider,
-		authManager:      authManager,
-		accountingClient: accountingClient,
-		logger:           logger,
+		keycloakClient:       keycloakClient,
+		configDBModule:       configDBModule,
+		accreditationsClient: accreditationsClient,
+		tokenProvider:        tokenProvider,
+		authManager:          authManager,
+		accountingClient:     accountingClient,
+		logger:               logger,
 	}
 }
 
@@ -136,15 +135,15 @@ func (c *component) GetUserInformation(ctx context.Context) (api.UserInformation
 		return api.UserInformationRepresentation{}, err
 	}
 
-	if dbChecks, err := c.usersDBModule.GetChecks(ctx, realm, userID); err == nil {
-		userInfo.SetChecks(dbChecks)
+	if accreditationsChecks, err := c.accreditationsClient.GetChecks(ctx, realm, userID); err == nil {
+		userInfo.SetChecks(accreditationsChecks)
 	} else {
 		c.logger.Warn(ctx, "err", err.Error())
 		return api.UserInformationRepresentation{}, err
 	}
 
-	if dbPendingChecks, err := c.usersDBModule.GetPendingChecks(ctx, realm, userID); err == nil {
-		pendingChecks = keycloakb.ConvertFromDBChecks(dbPendingChecks).ToAttribute()
+	if dbPendingChecks, err := c.accreditationsClient.GetPendingChecks(ctx, realm, userID); err == nil {
+		pendingChecks = keycloakb.ConvertFromAccreditationChecks(dbPendingChecks).ToAttribute()
 	} else {
 		c.logger.Warn(ctx, "err", err.Error())
 		return api.UserInformationRepresentation{}, err
