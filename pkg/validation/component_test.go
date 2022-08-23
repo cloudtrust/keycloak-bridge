@@ -385,19 +385,19 @@ func TestValidationContext(t *testing.T) {
 		validationCtx.dbUser = nil
 		t.Run("get user from keycloak fails", func(t *testing.T) {
 			mocks.keycloakClient.EXPECT().GetUser(accessToken, validationCtx.realmName, validationCtx.userID).Return(kc.UserRepresentation{}, anyError)
-			component.archiveUser(validationCtx, nil)
+			component.archiveUser(validationCtx)
 		})
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, validationCtx.realmName, validationCtx.userID).Return(kc.UserRepresentation{}, nil).AnyTimes()
 
 		t.Run("get user from DB fails", func(t *testing.T) {
 			mocks.usersDB.EXPECT().GetUserDetails(validationCtx.ctx, validationCtx.realmName, validationCtx.userID).Return(dto.DBUser{}, anyError)
-			component.archiveUser(validationCtx, nil)
+			component.archiveUser(validationCtx)
 		})
 		mocks.usersDB.EXPECT().GetUserDetails(validationCtx.ctx, validationCtx.realmName, validationCtx.userID).Return(dto.DBUser{}, nil).AnyTimes()
 
 		t.Run("success", func(t *testing.T) {
 			mocks.archiveDB.EXPECT().StoreUserDetails(validationCtx.ctx, validationCtx.realmName, gomock.Any())
-			component.archiveUser(validationCtx, []dto.DBCheck{})
+			component.archiveUser(validationCtx)
 		})
 	})
 }

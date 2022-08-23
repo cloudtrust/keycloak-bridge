@@ -2,7 +2,6 @@ package kyc
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -39,8 +38,6 @@ type KeycloakClient interface {
 type UsersDetailsDBModule interface {
 	StoreOrUpdateUserDetails(ctx context.Context, realm string, user dto.DBUser) error
 	GetUserDetails(ctx context.Context, realm string, userID string) (dto.DBUser, error)
-	CreateCheck(ctx context.Context, realm string, userID string, check dto.DBCheck) error
-	GetChecks(ctx context.Context, realm string, userID string) ([]dto.DBCheck, error)
 }
 
 // ArchiveDBModule is the interface from the archive module
@@ -335,30 +332,6 @@ func (c *component) validateUserBasicID(ctx context.Context, accessToken string,
 		return err
 	}
 
-	//Creation of the new accreditation HARDCODED
-	newAccreds := map[string]string{}
-	typeAccred := "basic-check"
-	validityAccred := "150y"
-	expiry, err := c.convertDurationToDate(ctx, validityAccred)
-	if err != nil {
-		return err
-	}
-	creationMillis := time.Now().UnixNano() / int64(time.Millisecond)
-	var newAccreditationJSON, _ = json.Marshal(keycloakb.AccreditationRepresentation{
-		Type:           &typeAccred,
-		ExpiryDate:     expiry,
-		CreationMillis: &creationMillis,
-	})
-	newAccreds[typeAccred] = string(newAccreditationJSON)
-
-	var mergedAccreds = evaluateCurrentAccreditations(kcUser.GetAttribute(constants.AttrbAccreditations), newAccreds)
-
-	// Merge all attributes
-	for _, accValue := range newAccreds {
-		mergedAccreds = append(mergedAccreds, accValue)
-	}
-	kcUser.SetAttribute(constants.AttrbAccreditations, mergedAccreds)
-
 	keycloakb.ConvertLegacyAttribute(&kcUser)
 
 	// Some parameters might not be updated by operator
@@ -393,8 +366,11 @@ func (c *component) validateUserBasicID(ctx context.Context, accessToken string,
 		return err
 	}
 
-	// Store check in database
-	var validation = dto.DBCheck{
+	// Notify the new check to accreditation service
+	txnID := uuid.New().String()
+	check := accreditationsclient.CheckRepresentation{
+		UserID:    &userID,
+		RealmName: &targetRealm,
 		Operator:  &operatorName,
 		DateTime:  &now,
 		Status:    ptr("VERIFIED"),
@@ -403,26 +379,24 @@ func (c *component) validateUserBasicID(ctx context.Context, accessToken string,
 		Comment:   user.Comment,
 		ProofType: nil,
 		ProofData: nil,
+		TxnID:     &txnID,
 	}
 
 	if user.Attachments != nil && len(*user.Attachments) > 0 {
-		validation.ProofType = (*user.Attachments)[0].ContentType
-		validation.ProofData = (*user.Attachments)[0].Content
+		check.ProofType = (*user.Attachments)[0].ContentType
+		check.ProofData = (*user.Attachments)[0].Content
 	}
-	err = c.usersDBModule.CreateCheck(ctx, targetRealm, userID, validation)
+	err = c.accredsServiceClient.NotifyCheck(ctx, check)
 	if err != nil {
-		c.logger.Warn(ctx, "msg", "Can't store validation check in database", "err", err.Error())
+		c.logger.Warn(ctx, "msg", "Request to accreditations service to create a check failed", "err", err.Error())
 		return err
 	}
 
 	// store the API call into the DB
-	c.reportEvent(ctx, "BASIC_VALIDATE_USER", database.CtEventRealmName, targetRealm, database.CtEventUserID, userID, database.CtEventUsername, *user.Username)
+	c.reportEvent(ctx, "BASIC_VALIDATE_USER", database.CtEventRealmName, targetRealm, database.CtEventUserID, userID, database.CtEventUsername, *user.Username, "txn_id", *check.TxnID)
 
 	var archiveUser = dto.ToArchiveUserRepresentation(kcUser)
 	archiveUser.SetDetails(dbUser)
-	if archiveUser.Checks, err = c.usersDBModule.GetChecks(ctx, targetRealm, userID); err != nil {
-		c.logger.Warn(ctx, "msg", "Could not get user checks from database", "err", err.Error(), "realm", targetRealm, "user", userID)
-	}
 
 	err = c.archiveDBModule.StoreUserDetails(ctx, targetRealm, archiveUser)
 	if err != nil {
@@ -430,42 +404,6 @@ func (c *component) validateUserBasicID(ctx context.Context, accessToken string,
 	}
 
 	return nil
-}
-
-// temporary COPY PASTE from accreditationsmodule.go
-func (c *component) convertDurationToDate(ctx context.Context, validity string) (*string, error) {
-	var expiryDate, err = validation.AddLargeDurationE(time.Now(), validity)
-	if err != nil {
-		c.logger.Warn(ctx, "msg", "convertDurationToDate: can't convert duration", "duration", validity, "err", err.Error())
-		return nil, errorhandler.CreateInternalServerError("duration-convertion")
-	}
-
-	var res = expiryDate.Format(constants.SupportedDateLayouts[0])
-
-	return &res, nil
-}
-
-// temporary COPY PASTE from accreditationsmodule.go
-func evaluateCurrentAccreditations(accredsAttributes []string, newAccreds map[string]string) []string {
-	var accreds []string
-	var bTrue = true
-	for _, accredJSON := range accredsAttributes {
-		var accreditation keycloakb.AccreditationRepresentation
-		// If accreditation can be unmarshalled
-		if err := json.Unmarshal([]byte(accredJSON), &accreditation); err == nil {
-			// If new accreditation is being created for the same type and it is not yet revoked
-			if _, ok := newAccreds[*accreditation.Type]; ok && (accreditation.Revoked == nil || !*accreditation.Revoked) {
-				// If existing accreditation is not yet expired
-				if expiryDate, err := time.Parse(constants.SupportedDateLayouts[0], *accreditation.ExpiryDate); err != nil || expiryDate.After(time.Now()) {
-					accreditation.Revoked = &bTrue
-					bytes, _ := json.Marshal(accreditation)
-					accredJSON = string(bytes)
-				}
-			}
-		}
-		accreds = append(accreds, accredJSON)
-	}
-	return accreds
 }
 
 /********************* (END) Temporary basic identity (TO BE REMOVED WHEN MULTI-ACCREDITATION WILL BE IMPLEMENTED) *********************/
@@ -574,13 +512,10 @@ func (c *component) validateUser(ctx context.Context, accessToken string, confRe
 	}
 
 	// store the API call into the DB
-	c.reportEvent(ctx, "VALIDATE_USER", database.CtEventRealmName, targetRealm, database.CtEventUserID, userID, database.CtEventUsername, *user.Username)
+	c.reportEvent(ctx, "VALIDATE_USER", database.CtEventRealmName, targetRealm, database.CtEventUserID, userID, database.CtEventUsername, *user.Username, "txn_id", *check.TxnID)
 
 	var archiveUser = dto.ToArchiveUserRepresentation(kcUser)
 	archiveUser.SetDetails(dbUser)
-	if archiveUser.Checks, err = c.usersDBModule.GetChecks(ctx, targetRealm, userID); err != nil { // TO BE REMOVED ??????????????
-		c.logger.Warn(ctx, "msg", "Could not get user checks from database", "err", err.Error(), "realm", targetRealm, "user", userID)
-	}
 
 	err = c.archiveDBModule.StoreUserDetails(ctx, targetRealm, archiveUser)
 	if err != nil {

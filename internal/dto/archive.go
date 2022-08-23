@@ -28,7 +28,6 @@ type ArchiveUserRepresentation struct {
 	Locale               *string                              `json:"locale,omitempty"`
 	Comment              *string                              `json:"comment,omitempty"`
 	Accreditations       []ArchiveAccreditationRepresentation `json:"accreditations,omitempty"`
-	Checks               []DBCheck                            `json:"checks,omitempty"`
 }
 
 // ArchiveAccreditationRepresentation is a representation of accreditations

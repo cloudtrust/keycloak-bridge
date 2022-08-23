@@ -37,8 +37,6 @@ type TokenProvider interface {
 type UsersDetailsDBModule interface {
 	StoreOrUpdateUserDetails(ctx context.Context, realm string, user dto.DBUser) error
 	GetUserDetails(ctx context.Context, realm string, userID string) (dto.DBUser, error)
-	CreateCheck(ctx context.Context, realm string, userID string, check dto.DBCheck) error
-	//CreatePendingCheck(ctx context.Context, realm string, userID string, check dto.DBCheck) error
 }
 
 // ArchiveDBModule is the interface from the archive module
@@ -187,7 +185,7 @@ func (c *component) UpdateUser(ctx context.Context, realmName string, userID str
 		}
 
 		// archive user
-		c.archiveUser(validationCtx, nil)
+		c.archiveUser(validationCtx)
 	}
 
 	return nil
@@ -385,7 +383,7 @@ func (c *component) getDbUser(v *validationContext) (*dto.DBUser, error) {
 	return v.dbUser, nil
 }
 
-func (c *component) archiveUser(v *validationContext, checks []dto.DBCheck) {
+func (c *component) archiveUser(v *validationContext) {
 	var kcUser, err = c.loadKeycloakUserCtx(v)
 	if err != nil {
 		return
@@ -398,7 +396,6 @@ func (c *component) archiveUser(v *validationContext, checks []dto.DBCheck) {
 
 	var archiveUser = dto.ToArchiveUserRepresentation(*kcUser)
 	archiveUser.SetDetails(*dbUser)
-	archiveUser.Checks = checks
 	c.archiveDBModule.StoreUserDetails(v.ctx, v.realmName, archiveUser)
 }
 
