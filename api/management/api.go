@@ -210,7 +210,7 @@ type RealmCustomConfiguration struct {
 	OnboardingClientID                  *string   `json:"onboarding_client_id"`
 	SelfRegisterGroupNames              *[]string `json:"self_register_group_names"`
 	BarcodeType                         *string   `json:"barcode_type"`
-	AllowedBackURL                      *string   `json:"allowed_back_url,omitempty"`
+	AllowedBackURL                      *string   `json:"allowed_back_url"`
 }
 
 // UserStatus struct
