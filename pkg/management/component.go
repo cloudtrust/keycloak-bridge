@@ -79,6 +79,7 @@ type KeycloakClient interface {
 	UpdateLabelCredential(accessToken string, realmName string, userID string, credentialID string, label string) error
 	DeleteCredential(accessToken string, realmName string, userID string, credentialID string) error
 	ResetPapercardFailures(accessToken string, realmName string, userID string, credentialID string) error
+	GetFederatedIdentities(accessToken string, realmName string, userID string) ([]kc.FederatedIdentityRepresentation, error)
 	LinkShadowUser(accessToken string, realmName string, userID string, provider string, fedID kc.FederatedIdentityRepresentation) error
 	ClearUserLoginFailures(accessToken string, realmName, userID string) error
 	GetAttackDetectionStatus(accessToken string, realmName, userID string) (map[string]interface{}, error)
@@ -197,6 +198,7 @@ type Component interface {
 	UpdateRealmBackOfficeConfiguration(ctx context.Context, realmID string, groupName string, config api.BackOfficeConfiguration) error
 	GetUserRealmBackOfficeConfiguration(ctx context.Context, realmID string) (api.BackOfficeConfiguration, error)
 
+	GetFederatedIdentities(ctx context.Context, realmName string, userID string) ([]api.FederatedIdentityRepresentation, error)
 	LinkShadowUser(ctx context.Context, realmName string, userID string, provider string, fedID api.FederatedIdentityRepresentation) error
 
 	GetIdentityProviders(ctx context.Context, realmName string) ([]api.IdentityProviderRepresentation, error)
@@ -2466,6 +2468,28 @@ func (c *component) findString(groups []string, searchGroup string) bool {
 	return false
 }
 
+func (c *component) GetFederatedIdentities(ctx context.Context, realmName string, userID string) ([]api.FederatedIdentityRepresentation, error) {
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+	var kcFedIds, err = c.keycloakClient.GetFederatedIdentities(accessToken, realmName, userID)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Can't get federated identities", "err", err.Error())
+		return nil, err
+	}
+	if len(kcFedIds) == 0 {
+		// Don't return a nil slice but a 0-size array
+		return []api.FederatedIdentityRepresentation{}, nil
+	}
+	var res []api.FederatedIdentityRepresentation
+	for _, kcFedId := range kcFedIds {
+		res = append(res, api.FederatedIdentityRepresentation{
+			UserID:           kcFedId.UserID,
+			Username:         kcFedId.UserName,
+			IdentityProvider: kcFedId.IdentityProvider,
+		})
+	}
+	return res, nil
+}
+
 func (c *component) LinkShadowUser(ctx context.Context, realmName string, userID string, provider string, fedID api.FederatedIdentityRepresentation) error {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 
@@ -2474,7 +2498,7 @@ func (c *component) LinkShadowUser(ctx context.Context, realmName string, userID
 	err := c.keycloakClient.LinkShadowUser(accessToken, realmName, userID, provider, fedIDKC)
 
 	if err != nil {
-		c.logger.Warn(ctx, "err", err.Error())
+		c.logger.Warn(ctx, "msg", "Can't link shadow user", "err", err.Error())
 		return err
 	}
 	return nil

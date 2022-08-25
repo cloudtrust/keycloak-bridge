@@ -96,7 +96,8 @@ type Endpoints struct {
 	UpdateRealmBackOfficeConfiguration  endpoint.Endpoint
 	GetUserRealmBackOfficeConfiguration endpoint.Endpoint
 
-	LinkShadowUser endpoint.Endpoint
+	GetFederatedIdentities endpoint.Endpoint
+	LinkShadowUser         endpoint.Endpoint
 
 	GetIdentityProviders endpoint.Endpoint
 }
@@ -1083,6 +1084,14 @@ func MakeGetUserRealmBackOfficeConfigurationEndpoint(component Component) cs.End
 		var m = req.(map[string]string)
 
 		return component.GetUserRealmBackOfficeConfiguration(ctx, m[prmRealm])
+	}
+}
+
+// MakeGetFederatedIdentitiesEndpoint makes the endpoint to get federated identities.
+func MakeGetFederatedIdentitiesEndpoint(component Component) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+		return component.GetFederatedIdentities(ctx, m[prmRealm], m[prmUserID])
 	}
 }
 

@@ -264,8 +264,9 @@ type RealmAdminAccreditation struct {
 
 // FederatedIdentityRepresentation struct
 type FederatedIdentityRepresentation struct {
-	UserID   *string `json:"userID,omitempty"`
-	Username *string `json:"username,omitempty"`
+	UserID           *string `json:"userID,omitempty"`
+	Username         *string `json:"username,omitempty"`
+	IdentityProvider *string `json:"identityProvider,omitempty"`
 }
 
 // IdentityProviderRepresentation struct

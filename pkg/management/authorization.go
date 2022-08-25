@@ -814,6 +814,16 @@ func (c *authorizationComponentMW) GetUserRealmBackOfficeConfiguration(ctx conte
 	return c.next.GetUserRealmBackOfficeConfiguration(ctx, realmName)
 }
 
+func (c *authorizationComponentMW) GetFederatedIdentities(ctx context.Context, realmName string, userID string) ([]api.FederatedIdentityRepresentation, error) {
+	var action = security.MGMTGetFederatedIdentities.String()
+	var targetRealm = realmName
+	if err := c.authManager.CheckAuthorizationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
+		return nil, err
+	}
+
+	return c.next.GetFederatedIdentities(ctx, realmName, userID)
+}
+
 func (c *authorizationComponentMW) LinkShadowUser(ctx context.Context, realmName string, userID string, provider string, fedID api.FederatedIdentityRepresentation) error {
 	var action = security.MGMTLinkShadowUser.String()
 	var targetRealm = realmName
