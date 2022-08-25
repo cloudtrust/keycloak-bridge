@@ -583,6 +583,7 @@ func (c *component) GetConfiguration(ctx context.Context, realmIDOverride string
 		VoucherEnabled:                        adminConfig.VoucherEnabled,
 		VideoIdentificationAccountingEnabled:  adminConfig.VideoIdentificationAccountingEnabled,
 		VideoIdentificationPrepaymentRequired: adminConfig.VideoIdentificationPrepaymentRequired,
+		AllowedBackURL:                        config.AllowedBackURL,
 	}
 
 	if realmIDOverride != "" {

@@ -95,6 +95,7 @@ type Configuration struct {
 	VoucherEnabled                        *bool           `json:"voucher_enabled"`
 	VideoIdentificationAccountingEnabled  *bool           `json:"video_identification_accounting_enabled"`
 	VideoIdentificationPrepaymentRequired *bool           `json:"video_identification_prepayment_required"`
+	AllowedBackURL                        *string         `json:"allowed_back_url"`
 }
 
 // UpdatePasswordBody is the definition of the expected body content of UpdatePassword method
