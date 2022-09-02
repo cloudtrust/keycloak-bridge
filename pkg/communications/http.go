@@ -13,8 +13,9 @@ import (
 )
 
 const (
-	reqBody  = "body"
-	prmRealm = "realm"
+	reqBody   = "body"
+	prmRealm  = "realm"
+	prmUserID = "userID"
 )
 
 // MakeCommunicationsHandler make an HTTP handler for a Communications endpoint.
@@ -29,7 +30,8 @@ func MakeCommunicationsHandler(e endpoint.Endpoint, logger log.Logger) *http_tra
 // decodeCommunicationsRequest gets the HTTP parameters and body content
 func decodeCommunicationsRequest(ctx context.Context, req *http.Request) (interface{}, error) {
 	var pathParams = map[string]string{
-		prmRealm: constants.RegExpRealmName,
+		prmRealm:  constants.RegExpRealmName,
+		prmUserID: constants.RegExpID,
 	}
 
 	var queryParams = map[string]string{}

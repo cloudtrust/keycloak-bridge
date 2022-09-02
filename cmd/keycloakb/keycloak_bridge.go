@@ -654,8 +654,9 @@ func main() {
 
 		var rateLimitCommunications = rateLimit[RateKeyCommunications]
 		communicationsEndpoints = communications.Endpoints{
-			SendEmail: prepareEndpoint(communications.MakeSendEmailEndpoint(communicationsComponent), "send_email", influxMetrics, communicationsLogger, tracer, rateLimitCommunications),
-			SendSMS:   prepareEndpoint(communications.MakeSendSMSEndpoint(communicationsComponent), "send_sms", influxMetrics, communicationsLogger, tracer, rateLimitCommunications),
+			SendEmail:       prepareEndpoint(communications.MakeSendEmailEndpoint(communicationsComponent), "send_email", influxMetrics, communicationsLogger, tracer, rateLimitCommunications),
+			SendEmailToUser: prepareEndpoint(communications.MakeSendEmailToUserEndpoint(communicationsComponent), "send_email_user", influxMetrics, communicationsLogger, tracer, rateLimitCommunications),
+			SendSMS:         prepareEndpoint(communications.MakeSendSMSEndpoint(communicationsComponent), "send_sms", influxMetrics, communicationsLogger, tracer, rateLimitCommunications),
 		}
 	}
 
@@ -1068,11 +1069,13 @@ func main() {
 
 		// Communications (bearer auth)
 		var sendMailHandler = configureHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, communications.MakeCommunicationsHandler, logger)(communicationsEndpoints.SendEmail)
+		var sendMailToUserHandler = configureHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, communications.MakeCommunicationsHandler, logger)(communicationsEndpoints.SendEmailToUser)
 		var sendSMSHandler = configureHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, communications.MakeCommunicationsHandler, logger)(communicationsEndpoints.SendSMS)
 
 		var communicationsSubroute = route.PathPrefix("/communications").Subrouter()
 
 		communicationsSubroute.Path("/realms/{realm}/send-mail").Methods("POST").Handler(sendMailHandler)
+		communicationsSubroute.Path("/realms/{realm}/users/{userID}/send-email").Methods("POST").Handler(sendMailToUserHandler)
 		communicationsSubroute.Path("/realms/{realm}/send-sms").Methods("POST").Handler(sendSMSHandler)
 
 		// Support (bearer auth)

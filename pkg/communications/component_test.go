@@ -175,6 +175,43 @@ func TestSendEmail(t *testing.T) {
 
 }
 
+func TestSendEmailToUser(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockKeycloakCommunicationsClient = mock.NewKeycloakCommunicationsClient(mockCtrl)
+	var mockLogger = mock.NewLogger(mockCtrl)
+
+	var communicationsComponent = NewComponent(mockKeycloakCommunicationsClient, mockLogger)
+
+	var accessToken = "TOKEN=="
+	var reqRealm = "reqRealm"
+	var userID = "testerID"
+
+	{
+		mockKeycloakCommunicationsClient.EXPECT().SendEmailToUser(accessToken, "reqRealm", "targetRealm", userID, emailForTestKC).Return(nil).Times(1)
+
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx = context.WithValue(ctx, cs.CtContextRealm, reqRealm)
+
+		err := communicationsComponent.SendEmailToUser(ctx, "targetRealm", userID, emailForTest)
+		assert.Nil(t, err)
+	}
+
+	{
+		mockKeycloakCommunicationsClient.EXPECT().SendEmailToUser(accessToken, "reqRealm", "targetRealm", userID, emailForTestKC).Return(fmt.Errorf("Unexpected error")).Times(1)
+
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx = context.WithValue(ctx, cs.CtContextRealm, reqRealm)
+
+		mockLogger.EXPECT().Warn(ctx, "err", "Unexpected error")
+
+		err := communicationsComponent.SendEmailToUser(ctx, "targetRealm", userID, emailForTest)
+		assert.NotNil(t, err)
+	}
+
+}
+
 func TestSendSMS(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()

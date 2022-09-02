@@ -42,7 +42,7 @@ func TestHTTPCommunicationsHandler(t *testing.T) {
 		res, err := http.Post(ts.URL+"/communications/realms/example/send-mail", "application/json", body)
 
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusOK, res.StatusCode)
+		assert.Equal(t, http.StatusNoContent, res.StatusCode)
 	}
 
 	{

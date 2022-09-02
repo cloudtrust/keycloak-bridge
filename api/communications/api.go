@@ -41,6 +41,7 @@ type EmailThemingRepresentation struct {
 	Template           *string            `json:"template,omitempty"`
 	TemplateParameters *map[string]string `json:"templateParameters,omitempty"`
 	Locale             *string            `json:"locale,omitempty"`
+	ThemeRealmName     *string            `json:"themeRealmName,omitempty"`
 }
 
 // AttachementRepresentation struct
@@ -66,6 +67,7 @@ func ExportEmailToKeycloak(r *EmailRepresentation) *kc.EmailRepresentation {
 		kcRep.Theming.Template = r.Theming.Template
 		kcRep.Theming.TemplateParameters = r.Theming.TemplateParameters
 		kcRep.Theming.Locale = r.Theming.Locale
+		kcRep.Theming.ThemeRealmName = r.Theming.ThemeRealmName
 	}
 	if r.Attachments != nil {
 		kcRep.Attachments = &[]kc.AttachementRepresentation{}
@@ -97,6 +99,7 @@ func ImportEmailFromKeycloak(kcRep *kc.EmailRepresentation) *EmailRepresentation
 		r.Theming.Template = kcRep.Theming.Template
 		r.Theming.TemplateParameters = kcRep.Theming.TemplateParameters
 		r.Theming.Locale = kcRep.Theming.Locale
+		r.Theming.ThemeRealmName = kcRep.Theming.ThemeRealmName
 	}
 	if kcRep.Attachments != nil {
 		r.Attachments = &[]AttachementRepresentation{}
@@ -188,9 +191,9 @@ func (r *SMSRepresentation) SMSToJSON() string {
 }
 
 // Validate checks the validity of the given email
-func (r *EmailRepresentation) Validate() error {
+func (r *EmailRepresentation) Validate(recipientRequired bool) error {
 	return validation.NewParameterValidator().
-		ValidateParameterRegExp(prmEmailRecipient, r.Recipient, constants.RegExpEmail, true).
+		ValidateParameterRegExp(prmEmailRecipient, r.Recipient, constants.RegExpEmail, recipientRequired).
 		ValidateParameterNotNil(prmEmailTheming, r.Theming).
 		ValidateParameterRegExp(prmEmailThemingSubjectKey, r.Theming.SubjectKey, regExpThemingSubjectKey, true).
 		ValidateParameterRegExp(prmEmailThemingLocale, r.Theming.Locale, constants.RegExpLocale, false).
