@@ -15,6 +15,7 @@ import (
 	cs "github.com/cloudtrust/common-service/v2"
 	"github.com/cloudtrust/common-service/v2/database"
 	errorhandler "github.com/cloudtrust/common-service/v2/errors"
+	"github.com/cloudtrust/common-service/v2/security"
 	apikyc "github.com/cloudtrust/keycloak-bridge/api/kyc"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
@@ -116,7 +117,7 @@ func NewComponent(tokenProvider toolbox.OidcTokenProvider, socialRealmName strin
 func (c *component) GetActions(ctx context.Context) ([]apikyc.ActionRepresentation, error) {
 	var apiActions = []apikyc.ActionRepresentation{}
 
-	for _, action := range actions {
+	for _, action := range security.Actions.GetActionsForAPIs(security.BridgeService, security.KycAPI) {
 		var name = action.Name
 		var scope = string(action.Scope)
 

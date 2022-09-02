@@ -15,10 +15,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGetActionsString(t *testing.T) {
-	assert.Len(t, GetActions(), len(actions))
-}
-
 func ignoreFirst(_ interface{}, err error) error {
 	return err
 }
@@ -287,7 +283,7 @@ func TestAllowed(t *testing.T) {
 	var idps = []api.IdentityProviderRepresentation{idp}
 
 	var authorizations = []configuration.Authorization{}
-	for _, action := range actions {
+	for _, action := range security.Actions.GetActionsForAPIs(security.BridgeService, security.ManagementAPI) {
 		var action = string(action.Name)
 		authorizations = append(authorizations, configuration.Authorization{
 			RealmID:         &realmName,
@@ -622,21 +618,21 @@ func TestGetGroupsOutput(t *testing.T) {
 		{
 			RealmID:         &realm,
 			GroupName:       &includedGroup1,
-			Action:          &MGMTGetGroups.Name,
+			Action:          &security.MGMTGetGroups.Name,
 			TargetRealmID:   &realm,
 			TargetGroupName: &all,
 		},
 		{
 			RealmID:         &realm,
 			GroupName:       &includedGroup1,
-			Action:          &MGMTIncludedInGetGroups.Name,
+			Action:          &security.MGMTIncludedInGetGroups.Name,
 			TargetRealmID:   &realm,
 			TargetGroupName: &includedGroup1,
 		},
 		{
 			RealmID:         &realm,
 			GroupName:       &includedGroup1,
-			Action:          &MGMTIncludedInGetGroups.Name,
+			Action:          &security.MGMTIncludedInGetGroups.Name,
 			TargetRealmID:   &realm,
 			TargetGroupName: &includedGroup2,
 		},

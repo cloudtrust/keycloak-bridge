@@ -8,6 +8,7 @@ import (
 	cs "github.com/cloudtrust/common-service/v2"
 	errorhandler "github.com/cloudtrust/common-service/v2/errors"
 	"github.com/cloudtrust/common-service/v2/log"
+	"github.com/cloudtrust/common-service/v2/security"
 	api "github.com/cloudtrust/keycloak-bridge/api/statistics"
 	msg "github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
@@ -52,7 +53,7 @@ func NewComponent(db keycloakb.EventsDBModule, keycloakClient KeycloakClient, lo
 func (ec *component) GetActions(ctx context.Context) ([]api.ActionRepresentation, error) {
 	var apiActions = []api.ActionRepresentation{}
 
-	for _, action := range actions {
+	for _, action := range security.Actions.GetActionsForAPIs(security.BridgeService, security.StatisticAPI) {
 		var name = action.Name
 		var scope = string(action.Scope)
 

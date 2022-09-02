@@ -7,6 +7,7 @@ import (
 
 	cs "github.com/cloudtrust/common-service/v2"
 	"github.com/cloudtrust/common-service/v2/log"
+	"github.com/cloudtrust/common-service/v2/security"
 	api "github.com/cloudtrust/keycloak-bridge/api/statistics"
 	"github.com/cloudtrust/keycloak-bridge/pkg/statistics/mock"
 	kc "github.com/cloudtrust/keycloak-client/v2"
@@ -267,5 +268,5 @@ func TestGetActions(t *testing.T) {
 	res, err := component.GetActions(ctx)
 
 	assert.Nil(t, err)
-	assert.Equal(t, len(actions), len(res))
+	assert.Equal(t, len(security.Actions.GetActionsForAPIs(security.BridgeService, security.StatisticAPI)), len(res))
 }
