@@ -4,14 +4,13 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/cloudtrust/keycloak-bridge/internal/dto"
-
 	"github.com/cloudtrust/common-service/v2/configuration"
 	errorhandler "github.com/cloudtrust/common-service/v2/errors"
 	csjson "github.com/cloudtrust/common-service/v2/json"
 	"github.com/cloudtrust/common-service/v2/validation"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
+	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/accreditationsclient"
 	kc "github.com/cloudtrust/keycloak-client/v2"
 	"github.com/spf13/cast"
 )
@@ -979,8 +978,8 @@ func (fedID FederatedIdentityRepresentation) Validate() error {
 		Status()
 }
 
-// ConvertToAPIUserChecks converts user checks from DB struct to API struct
-func ConvertToAPIUserChecks(checks []dto.DBCheck) []UserCheck {
+// ConvertToAPIUserChecks converts user checks from accreditation service struct to API struct
+func ConvertToAPIUserChecks(checks []accreditationsclient.CheckRepresentation) []UserCheck {
 	if len(checks) == 0 {
 		return make([]UserCheck, 0)
 	}

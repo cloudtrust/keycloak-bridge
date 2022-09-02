@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"testing"
-	"time"
 
 	api "github.com/cloudtrust/keycloak-bridge/api/validation"
 	"github.com/cloudtrust/keycloak-bridge/pkg/validation/mock"
@@ -83,126 +82,76 @@ func TestUpdateUserEndpoint(t *testing.T) {
 	})
 }
 
-func TestCreateCheckEndpoint(t *testing.T) {
+func TestUpdateUserAccreditationEndpoint(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 
 	var mockComponent = mock.NewComponent(mockCtrl)
 
-	var e = MakeCreateCheckEndpoint(mockComponent)
-	var ctx = context.Background()
-	var userID = "12345678-5824-5555-5656-123456789654"
+	var e = MakeUpdateUserAccreditationsEndpoint(mockComponent)
+	var userID = "1234-452-4578"
 	var realm = "realm"
-	var operator = "operator"
-	var datetime = time.Now()
-	var status = "SUCCESS"
-	var typeCheck = "IDENTITY_CHECK"
-	var nature = "PHYSICAL"
-	var proofType = "ZIP"
-	var proofData = []byte("data")
+	var ctx = context.Background()
 
 	t.Run("No error", func(t *testing.T) {
-		checkJSON, _ := json.Marshal(api.CheckRepresentation{
-			UserID:    &userID,
-			Operator:  &operator,
-			DateTime:  &datetime,
-			Status:    &status,
-			Type:      &typeCheck,
-			Nature:    &nature,
-			ProofType: &proofType,
-			ProofData: &proofData,
-		})
-		var req = map[string]string{
-			prmRealm:  realm,
-			prmUserID: userID,
-			reqBody:   string(checkJSON),
+		accreditations := []api.AccreditationRepresentation{
+			{
+				Name:     ptr("test"),
+				Validity: ptr("4y"),
+			},
 		}
+		accreditationsJSON, _ := json.Marshal(accreditations)
+		var req = map[string]string{prmRealm: realm, prmUserID: userID, reqBody: string(accreditationsJSON)}
 
-		mockComponent.EXPECT().CreateCheck(ctx, realm, userID, gomock.Any(), gomock.Any()).Return(nil).Times(1)
-		var _, err = e(ctx, req)
+		mockComponent.EXPECT().UpdateUserAccreditations(ctx, realm, userID, accreditations).Return(nil).Times(1)
+		var res, err = e(ctx, req)
 		assert.Nil(t, err)
+		assert.Nil(t, res)
 	})
 
 	t.Run("Invalid input", func(t *testing.T) {
-		checkJSON, _ := json.Marshal(api.CheckRepresentation{})
-		var req = map[string]string{
-			prmRealm:  realm,
-			prmUserID: userID,
-			reqBody:   string(checkJSON),
-		}
+		accreditationsJSON, _ := json.Marshal([]api.AccreditationRepresentation{
+			{
+				Name:     ptr("test"),
+				Validity: ptr("4"),
+			},
+		})
+		var req = map[string]string{prmRealm: realm, prmUserID: userID, reqBody: string(accreditationsJSON)}
 
-		var _, err = e(ctx, req)
+		var res, err = e(ctx, req)
 		assert.NotNil(t, err)
+		assert.Nil(t, res)
 	})
 
 	t.Run("Error - JSON unmarshalling error", func(t *testing.T) {
-		var req = make(map[string]string)
-		req[prmUserID] = userID
-		req[reqBody] = string("userJSON")
+		var req = map[string]string{prmRealm: realm, prmUserID: userID, reqBody: string("errorJSON")}
 
-		var _, err = e(ctx, req)
+		var res, err = e(ctx, req)
 		assert.NotNil(t, err)
+		assert.Nil(t, res)
 	})
 }
 
-func TestMakeCreatePendingCheckEndpoint(t *testing.T) {
+func TestGetGroupsOfUserEndpoint(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 
 	var mockComponent = mock.NewComponent(mockCtrl)
 
-	var e = MakeCreatePendingCheckEndpoint(mockComponent)
-	var ctx = context.Background()
-	var userID = "12345678-5824-5555-5656-123456789654"
-	var realm = "realm"
-	var operator = "operator"
-	var datetime = time.Now()
-	var status = "SUCCESS"
-	var typeCheck = "IDENTITY_CHECK"
-	var nature = "PHYSICAL"
-	var proofType = "ZIP"
-	var proofData = []byte("data")
+	var e = MakeGetGroupsOfUserEndpoint(mockComponent)
 
-	t.Run("No error", func(t *testing.T) {
-		checkJSON, _ := json.Marshal(api.CheckRepresentation{
-			UserID:    &userID,
-			Operator:  &operator,
-			DateTime:  &datetime,
-			Status:    &status,
-			Type:      &typeCheck,
-			Nature:    &nature,
-			ProofType: &proofType,
-			ProofData: &proofData,
-		})
-		var req = map[string]string{
-			prmRealm:  realm,
-			prmUserID: userID,
-			reqBody:   string(checkJSON),
-		}
-
-		mockComponent.EXPECT().CreatePendingCheck(ctx, realm, userID, gomock.Any()).Return(nil).Times(1)
-		var _, err = e(ctx, req)
-		assert.Nil(t, err)
-	})
-
-	t.Run("Invalid input", func(t *testing.T) {
-		checkJSON, _ := json.Marshal(api.CheckRepresentation{})
-		var req = map[string]string{
-			prmRealm:  realm,
-			prmUserID: userID,
-			reqBody:   string(checkJSON),
-		}
-
-		var _, err = e(ctx, req)
-		assert.NotNil(t, err)
-	})
-
-	t.Run("Error - JSON unmarshalling error", func(t *testing.T) {
+	// No error
+	{
+		var realm = "master"
+		var userID = "123-123-456"
+		var ctx = context.Background()
 		var req = make(map[string]string)
+		req[prmRealm] = realm
 		req[prmUserID] = userID
-		req[reqBody] = string("userJSON")
 
-		var _, err = e(ctx, req)
-		assert.NotNil(t, err)
-	})
+		mockComponent.EXPECT().GetGroupsOfUser(ctx, realm, userID).Return([]api.GroupRepresentation{}, nil).Times(1)
+		var res, err = e(ctx, req)
+		assert.Nil(t, err)
+		assert.NotNil(t, res)
+	}
 }

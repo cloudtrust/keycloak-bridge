@@ -3,12 +3,18 @@ package apivalidation
 import (
 	"time"
 
+	"github.com/cloudtrust/common-service/v2/fields"
 	"github.com/cloudtrust/common-service/v2/validation"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
-	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	kc "github.com/cloudtrust/keycloak-client/v2"
 )
+
+// AccreditationRepresentation struct
+type AccreditationRepresentation struct {
+	Name     *string `json:"name,omitempty"`
+	Validity *string `json:"validity,omitempty"`
+}
 
 // UserRepresentation struct
 type UserRepresentation struct {
@@ -43,8 +49,17 @@ type CheckRepresentation struct {
 	TxnID     *string    `json:"txnId,omitempty"`
 }
 
+// GroupRepresentation struct
+type GroupRepresentation struct {
+	ID   *string `json:"id,omitempty"`
+	Name *string `json:"name,omitempty"`
+}
+
 // Parameter references
 const (
+	prmAccreditationName     = "accred_name"
+	prmAccreditationValidity = "accred_validity"
+
 	prmUserID                = "user_id"
 	prmUserGender            = "user_gender"
 	prmUserFirstName         = "user_firstName"
@@ -81,20 +96,12 @@ var (
 	}
 )
 
-// ConvertToDBCheck creates a DBCheck
-func (c *CheckRepresentation) ConvertToDBCheck() dto.DBCheck {
-	var check = dto.DBCheck{}
-	check.Operator = c.Operator
-	datetime := *c.DateTime
-	check.DateTime = &datetime
-	check.Status = c.Status
-	check.Type = c.Type
-	check.Nature = c.Nature
-	check.ProofType = c.ProofType
-	check.ProofData = c.ProofData
-	check.TxnID = c.TxnID
-
-	return check
+// Validate validates an accreditation representation
+func (a *AccreditationRepresentation) Validate() error {
+	return validation.NewParameterValidator().
+		ValidateParameterRegExp(prmAccreditationName, a.Name, regExpAlphaNum255, true).
+		ValidateParameterLargeDuration(prmAccreditationValidity, a.Validity, true).
+		Status()
 }
 
 // ExportToKeycloak exports user details into a Keycloak UserRepresentation
@@ -184,32 +191,38 @@ func (u *UserRepresentation) Validate() error {
 		Status()
 }
 
-// HasUpdateOfAccreditationDependantInformationDB checks user data contains an update of accreditation-dependant information
-func (u *UserRepresentation) HasUpdateOfAccreditationDependantInformationDB(formerUserInfo dto.DBUser) bool {
+// UpdateFieldsComparatorWithDBFields update the field comparator with fields stored in DB
+func (u *UserRepresentation) UpdateFieldsComparatorWithDBFields(fc fields.FieldsComparator, formerUserInfo dto.DBUser) fields.FieldsComparator {
 	var expiry *string
 	if u.IDDocumentExpiration != nil {
 		var converted = u.IDDocumentExpiration.Format(constants.SupportedDateLayouts[0])
 		expiry = &converted
 	}
-	return keycloakb.IsUpdated(u.BirthLocation, formerUserInfo.BirthLocation,
-		u.Nationality, formerUserInfo.Nationality,
-		u.IDDocumentType, formerUserInfo.IDDocumentType,
-		u.IDDocumentNumber, formerUserInfo.IDDocumentNumber,
-		expiry, formerUserInfo.IDDocumentExpiration,
-		u.IDDocumentCountry, formerUserInfo.IDDocumentCountry)
+
+	return fc.
+		CompareValues(fields.BirthLocation, u.BirthLocation, formerUserInfo.BirthLocation).
+		CompareValues(fields.Nationality, u.Nationality, formerUserInfo.Nationality).
+		CompareValues(fields.IDDocumentType, u.IDDocumentType, formerUserInfo.IDDocumentType).
+		CompareValues(fields.IDDocumentNumber, u.IDDocumentNumber, formerUserInfo.IDDocumentNumber).
+		CompareValues(fields.IDDocumentExpiration, expiry, formerUserInfo.IDDocumentExpiration).
+		CompareValues(fields.IDDocumentCountry, u.IDDocumentCountry, formerUserInfo.IDDocumentCountry)
 }
 
-// HasUpdateOfAccreditationDependantInformationKC checks user data contains an update of accreditation-dependant information
-func (u *UserRepresentation) HasUpdateOfAccreditationDependantInformationKC(formerUserInfo *kc.UserRepresentation) bool {
+// UpdateFieldsComparatorWithKCFields update the field comparator with fields stored in KC
+func (u *UserRepresentation) UpdateFieldsComparatorWithKCFields(fc fields.FieldsComparator, formerUserInfo *kc.UserRepresentation) fields.FieldsComparator {
 	var birthDate *string
 	if u.BirthDate != nil {
 		var converted = u.BirthDate.Format(constants.SupportedDateLayouts[0])
 		birthDate = &converted
 	}
-	return keycloakb.IsUpdated(u.FirstName, formerUserInfo.FirstName,
-		u.LastName, formerUserInfo.LastName,
-		u.Gender, formerUserInfo.GetAttributeString(constants.AttrbGender),
-		birthDate, formerUserInfo.GetAttributeString(constants.AttrbBirthDate))
+
+	return fc.
+		CompareValues(fields.FirstName, u.FirstName, formerUserInfo.FirstName).
+		CompareValues(fields.LastName, u.LastName, formerUserInfo.LastName).
+		CaseSensitive(false).
+		CompareValueAndFunction(fields.Gender, u.Gender, formerUserInfo.GetFieldValues).
+		CaseSensitive(true).
+		CompareValueAndFunction(fields.BirthDate, birthDate, formerUserInfo.GetFieldValues)
 }
 
 // Validate checks the validity of the given check

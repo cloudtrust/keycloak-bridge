@@ -1,6 +1,7 @@
 package constants
 
 import (
+	"github.com/cloudtrust/common-service/v2/fields"
 	kc "github.com/cloudtrust/keycloak-client/v2"
 )
 
@@ -11,23 +12,23 @@ var (
 )
 
 // Attribute keys definition
-const (
-	AttrbAccreditations        = kc.AttributeKey("accreditations")
-	AttrbBirthDate             = kc.AttributeKey("ENC_birthDate")
-	AttrbBusinessID            = kc.AttributeKey("businessID")
-	AttrbPendingChecks         = kc.AttributeKey("pendingChecks")
-	AttrbGender                = kc.AttributeKey("ENC_gender")
-	AttrbLabel                 = kc.AttributeKey("label")
-	AttrbLocale                = kc.AttributeKey("locale")
-	AttrbNameID                = kc.AttributeKey("saml.persistent.name.id.for.*")
-	AttrbOnboardingCompleted   = kc.AttributeKey("onboardingCompleted")
-	AttrbPhoneNumber           = kc.AttributeKey("phoneNumber")
-	AttrbPhoneNumberVerified   = kc.AttributeKey("phoneNumberVerified")
-	AttrbPhoneNumberToValidate = kc.AttributeKey("phoneNumberToValidate")
-	AttrbEmailToValidate       = kc.AttributeKey("emailToValidate")
-	AttrbSmsSent               = kc.AttributeKey("smsSent")
-	AttrbSmsAttempts           = kc.AttributeKey("smsAttempts")
-	AttrbSource                = kc.AttributeKey("src")
-	AttrbTrustIDAuthToken      = kc.AttributeKey("trustIDAuthToken")
-	AttrbTrustIDGroups         = kc.AttributeKey("trustIDGroups")
+var (
+	AttrbAccreditations        = kc.AttributeKey(fields.Accreditations.AttributeName())
+	AttrbBirthDate             = kc.AttributeKey(fields.BirthDate.AttributeName())
+	AttrbBusinessID            = kc.AttributeKey(fields.BusinessID.AttributeName())
+	AttrbPendingChecks         = kc.AttributeKey(fields.PendingChecks.AttributeName())
+	AttrbGender                = kc.AttributeKey(fields.Gender.AttributeName())
+	AttrbLabel                 = kc.AttributeKey(fields.Label.AttributeName())
+	AttrbLocale                = kc.AttributeKey(fields.Locale.AttributeName())
+	AttrbNameID                = kc.AttributeKey(fields.NameID.AttributeName())
+	AttrbOnboardingCompleted   = kc.AttributeKey(fields.OnboardingCompleted.AttributeName())
+	AttrbPhoneNumber           = kc.AttributeKey(fields.PhoneNumber.AttributeName())
+	AttrbPhoneNumberVerified   = kc.AttributeKey(fields.PhoneNumberVerified.AttributeName())
+	AttrbPhoneNumberToValidate = kc.AttributeKey(fields.PhoneNumberToValidate.AttributeName())
+	AttrbEmailToValidate       = kc.AttributeKey(fields.EmailToValidate.AttributeName())
+	AttrbSmsSent               = kc.AttributeKey(fields.SmsSent.AttributeName())
+	AttrbSmsAttempts           = kc.AttributeKey(fields.SmsAttempts.AttributeName())
+	AttrbSource                = kc.AttributeKey(fields.Source.AttributeName())
+	AttrbTrustIDAuthToken      = kc.AttributeKey(fields.TrustIDAuthToken.AttributeName())
+	AttrbTrustIDGroups         = kc.AttributeKey(fields.TrustIDGroups.AttributeName())
 )

@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
-	"github.com/cloudtrust/keycloak-bridge/internal/dto"
+	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/accreditationsclient"
 
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 )
@@ -59,14 +59,14 @@ func (u *UserInformationRepresentation) SetAccreditations(ctx context.Context, a
 }
 
 // SetChecks sets the user checks
-func (u *UserInformationRepresentation) SetChecks(dbChecks []dto.DBCheck) {
-	if len(dbChecks) == 0 {
+func (u *UserInformationRepresentation) SetChecks(accreditationsChecks []accreditationsclient.CheckRepresentation) {
+	if len(accreditationsChecks) == 0 {
 		u.Checks = nil
 		return
 	}
 
 	var checks []CheckRepresentation
-	for _, check := range dbChecks {
+	for _, check := range accreditationsChecks {
 		var convertedCheck = CheckRepresentation{
 			Nature: check.Nature,
 			Type:   check.Type,

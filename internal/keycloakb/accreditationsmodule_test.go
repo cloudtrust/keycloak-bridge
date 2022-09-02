@@ -1,19 +1,13 @@
 package keycloakb
 
 import (
-	"context"
-	"errors"
-	"sort"
+	"fmt"
+	"strings"
 	"testing"
 	"time"
 
-	"github.com/cloudtrust/keycloak-bridge/internal/constants"
-
 	"github.com/cloudtrust/common-service/v2/configuration"
-	errorhandler "github.com/cloudtrust/common-service/v2/errors"
-	"github.com/cloudtrust/common-service/v2/log"
-	"github.com/cloudtrust/common-service/v2/validation"
-	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/mock"
+	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	kc "github.com/cloudtrust/keycloak-client/v2"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -45,19 +39,40 @@ func createRealmAdminConfig(condition string) configuration.RealmAdminConfigurat
 	return configuration.RealmAdminConfiguration{Accreditations: accreds}
 }
 
-func TestIsUpdated(t *testing.T) {
-	var empty = ""
-	var formerValue = "former"
-	var formerValueUppercased = "FORMER"
-	var newValue = "new"
-
-	assert.False(t, IsUpdated(nil, nil))
-	assert.False(t, IsUpdated(nil, nil, nil, &empty))
-	assert.False(t, IsUpdated(nil, nil, nil, &empty, nil, &formerValue))
-	assert.False(t, IsUpdated(&formerValue, &formerValue))
-	assert.False(t, IsUpdated(&formerValueUppercased, &formerValue))
-	assert.True(t, IsUpdated(&newValue, nil))
-	assert.True(t, IsUpdated(&newValue, &formerValue))
+func TestHasActiveAccreditations(t *testing.T) {
+	t.Run("only active accreditations", func(t *testing.T) {
+		var accreds = []string{`{"type":"ONE","expiryDate":"01.01.2040"}`,
+			`{"type":"TWO","expiryDate":"01.01.2036"}`,
+			`{"type":"THREE","expiryDate":"01.01.2050"}`,
+		}
+		var ap, _ = NewAccreditationsProcessor(accreds)
+		assert.True(t, ap.HasActiveAccreditations())
+	})
+	t.Run("active & non-active accreditations", func(t *testing.T) {
+		var accreds = []string{`{"type":"ONE","expiryDate":"01.01.2015"}`,
+			`{"type":"TWO","expiryDate":"01.01.2036"}`,
+			`{"type":"THREE","expiryDate":"01.01.2025","revoked":"true"}`,
+		}
+		var ap, _ = NewAccreditationsProcessor(accreds)
+		assert.True(t, ap.HasActiveAccreditations())
+	})
+	t.Run("only revoked accreditation", func(t *testing.T) {
+		var accreds = []string{`{"type":"ONE","expiryDate":"01.01.2015","revoked":"true"}`,
+			`{"type":"TWO","expiryDate":"01.01.2036","revoked":"true"}`,
+		}
+		var ap, _ = NewAccreditationsProcessor(accreds)
+		assert.False(t, ap.HasActiveAccreditations())
+	})
+	t.Run("only expired accreditation", func(t *testing.T) {
+		var accreds = []string{`{"type":"ONE","expiryDate":"01.01.2015"}`}
+		var ap, _ = NewAccreditationsProcessor(accreds)
+		assert.False(t, ap.HasActiveAccreditations())
+	})
+	t.Run("no accreditation", func(t *testing.T) {
+		var accreds = []string{}
+		var ap, _ = NewAccreditationsProcessor(accreds)
+		assert.False(t, ap.HasActiveAccreditations())
+	})
 }
 
 func TestRevokeAccreditations(t *testing.T) {
@@ -79,9 +94,10 @@ func TestRevokeAccreditations(t *testing.T) {
 		assert.False(t, updated)
 	})
 	t.Run("Revoke one accreditation", func(t *testing.T) {
-		var accreds = []string{`{"type":"ONE", "expiryDate":"01.01.2015"}`,
-			`{"type":"TWO", "expiryDate":"01.01.2016"}`,
-			`{"type":"THREE", "expiryDate":"01.01.2025"}`}
+		var accreds = []string{`{"type":"ONE","expiryDate":"01.01.2015"}`,
+			`{"type":"TWO","expiryDate":"01.01.2016"}`,
+			`{"type":"THREE","expiryDate":"01.01.2025"}`,
+			`{"type":"THREE","expiryDate":"01.01.2032"}`}
 		user.SetAttribute(constants.AttrbAccreditations, accreds)
 		var updated = RevokeAccreditations(&user)
 		assert.Equal(t, accreds[0], user.GetAttribute(constants.AttrbAccreditations)[0])
@@ -91,78 +107,70 @@ func TestRevokeAccreditations(t *testing.T) {
 	})
 }
 
-func TestGetUserAndPrepareAccreditations(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
-	defer mockCtrl.Finish()
+func TestRevokeTypes(t *testing.T) {
+	var accreds = []string{`{"type":"ONE","expiryDate":"01.01.2015"}`,
+		`{"type":"TWO","expiryDate":"01.01.2036"}`,
+		`{"type":"THREE","expiryDate":"01.01.2025"}`,
+	}
+	var ap, _ = NewAccreditationsProcessor(accreds)
+	t.Run("Revoke 2 types", func(t *testing.T) {
+		ap.RevokeTypes([]string{"THREE", "ONE"})
+		var res = ap.ToKeycloak()
+		assert.Len(t, res, len(accreds))
 
-	var mockKeycloak = mock.NewAccredsKeycloakClient(mockCtrl)
-	var mockConfDB = mock.NewConfigurationDBModule(mockCtrl)
-	var logger = log.NewNopLogger()
+		for _, accredJSON := range res {
+			// ONE is already expired... should not be explicitly revoked
+			if strings.Contains(accredJSON, "THREE") {
+				assert.Contains(t, accredJSON, `"revoked":true`)
+			} else {
+				assert.NotContains(t, accredJSON, `"revoked":true`)
+			}
+		}
+	})
+	t.Run("Revoke TWO", func(t *testing.T) {
+		ap.RevokeTypes([]string{"TWO"})
+		var res = ap.ToKeycloak()
+		assert.Len(t, res, len(accreds))
 
-	var accredsModule = NewAccreditationsModule(mockKeycloak, mockConfDB, logger)
+		for _, accredJSON := range res {
+			// ONE is already expired... should not be explicitly revoked
+			if strings.Contains(accredJSON, "ONE") {
+				assert.NotContains(t, accredJSON, `"revoked":true`)
+			} else {
+				assert.Contains(t, accredJSON, `"revoked":true`)
+			}
+		}
+	})
+}
 
-	var ctx = context.TODO()
-	var accessToken = "access-token"
-	var realmName = "realm-name"
-	var realmID = "the-realm-id"
-	var userID = "the-user-id"
-	var anyError = errors.New("I don't know")
-	var condition = "physical"
-	var otherCondition = "other"
-	var kcRealm = kc.RealmRepresentation{ID: &realmID}
-	var kcUser = kc.UserRepresentation{ID: &userID}
+func TestAddAccreditation(t *testing.T) {
+	var ap, _ = NewAccreditationsProcessor(nil)
 
-	t.Run("Keycloak.GetRealm fails", func(t *testing.T) {
-		mockKeycloak.EXPECT().GetRealm(accessToken, realmName).Return(kc.RealmRepresentation{}, anyError)
-		var _, _, err = accredsModule.GetUserAndPrepareAccreditations(ctx, accessToken, realmName, userID, condition)
-		assert.NotNil(t, err)
-	})
-	t.Run("Database.GetAdminConfiguration fails", func(t *testing.T) {
-		mockKeycloak.EXPECT().GetRealm(accessToken, realmName).Return(kcRealm, nil)
-		mockConfDB.EXPECT().GetAdminConfiguration(ctx, realmID).Return(configuration.RealmAdminConfiguration{}, anyError)
-		var _, _, err = accredsModule.GetUserAndPrepareAccreditations(ctx, accessToken, realmName, userID, condition)
-		assert.NotNil(t, err)
-	})
-	t.Run("No condition matches", func(t *testing.T) {
-		mockKeycloak.EXPECT().GetRealm(accessToken, realmName).Return(kcRealm, nil)
-		mockConfDB.EXPECT().GetAdminConfiguration(ctx, realmID).Return(createRealmAdminConfig(otherCondition), nil)
-		mockKeycloak.EXPECT().GetUser(accessToken, realmName, userID).Return(kc.UserRepresentation{}, nil)
-		var _, _, err = accredsModule.GetUserAndPrepareAccreditations(ctx, accessToken, realmName, userID, condition)
-		assert.IsType(t, errorhandler.Error{}, err)
-		assert.Equal(t, 500, err.(errorhandler.Error).Status)
-	})
-	t.Run("Invalid accreditation validity duration", func(t *testing.T) {
-		var credsConf = createRealmAdminConfig(condition)
-		var invalidDuration = "??"
-		credsConf.Accreditations[0].Validity = &invalidDuration
-		mockKeycloak.EXPECT().GetRealm(accessToken, realmName).Return(kcRealm, nil)
-		mockConfDB.EXPECT().GetAdminConfiguration(ctx, realmID).Return(credsConf, nil)
-		var _, _, err = accredsModule.GetUserAndPrepareAccreditations(ctx, accessToken, realmName, userID, condition)
-		assert.NotNil(t, err)
-	})
-	t.Run("Keycloak.GetUser fails", func(t *testing.T) {
-		mockKeycloak.EXPECT().GetRealm(accessToken, realmName).Return(kcRealm, nil)
-		mockConfDB.EXPECT().GetAdminConfiguration(ctx, realmID).Return(createRealmAdminConfig(condition), nil)
-		mockKeycloak.EXPECT().GetUser(accessToken, realmName, userID).Return(kc.UserRepresentation{}, anyError)
-		var _, _, err = accredsModule.GetUserAndPrepareAccreditations(ctx, accessToken, realmName, userID, condition)
-		assert.NotNil(t, err)
-	})
-	t.Run("Accreditations creation is successful", func(t *testing.T) {
-		kcUser.Attributes = nil
-		mockKeycloak.EXPECT().GetRealm(accessToken, realmName).Return(kcRealm, nil)
-		mockConfDB.EXPECT().GetAdminConfiguration(ctx, realmID).Return(createRealmAdminConfig(condition), nil)
-		mockKeycloak.EXPECT().GetUser(accessToken, realmName, userID).Return(kcUser, nil)
-		var kcUser, count, err = accredsModule.GetUserAndPrepareAccreditations(ctx, accessToken, realmName, userID, condition)
-		assert.Nil(t, err)
-		var accreds = kcUser.GetAttribute(constants.AttrbAccreditations)
-		assert.Equal(t, 3, count)
-		assert.Len(t, accreds, 3)
-		sort.Strings(accreds)
-		assert.Contains(t, accreds[0], "SHADOW1")
-		assert.Contains(t, accreds[1], "SHADOW3")
-		assert.Contains(t, accreds[2], "SHADOW5")
-		assert.Contains(t, accreds[0], validation.AddLargeDuration(time.Now(), duration1).Format(dateLayout))
-		assert.Contains(t, accreds[1], validation.AddLargeDuration(time.Now(), duration2).Format(dateLayout))
-		assert.Contains(t, accreds[2], validation.AddLargeDuration(time.Now(), duration3).Format(dateLayout))
-	})
+	//Add first accreditation
+	creationDate, _ := time.Parse("2006-Jan-02", "2027-Jan-01")
+	fmt.Println(creationDate)
+	ap.AddAccreditation(creationDate, "AAA", "4y")
+	var res = ap.ToKeycloak()
+	assert.Len(t, res, 1)
+
+	assert.Contains(t, res[0], `"AAA"`)
+	assert.Contains(t, res[0], `"01.01.2031"`)
+	assert.NotContains(t, res[0], `"revoked"`)
+
+	//Add second accreditation, same type
+	creationDate, _ = time.Parse("2006-Jan-02", "2025-Jan-01")
+	ap.AddAccreditation(creationDate, "AAA", "7y")
+	res = ap.ToKeycloak()
+	assert.Len(t, res, 2)
+
+	// First accreditation became revoked
+	assert.Contains(t, res, `{"type":"AAA","creationMillis":1798761600000,"expiryDate":"01.01.2031","revoked":true}`)
+	assert.Contains(t, res, `{"type":"AAA","creationMillis":1735689600000,"expiryDate":"01.01.2032"}`)
+
+	// Add third accreditation, new type
+	creationDate, _ = time.Parse("2006-Jan-02", "2028-Apr-17")
+	ap.AddAccreditation(creationDate, "BBB", "5y")
+	res = ap.ToKeycloak()
+	assert.Len(t, res, 3)
+	assert.Contains(t, res, `{"type":"BBB","creationMillis":1839542400000,"expiryDate":"17.04.2033"}`)
 }

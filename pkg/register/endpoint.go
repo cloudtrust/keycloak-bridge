@@ -2,7 +2,6 @@ package register
 
 import (
 	"context"
-	"net/http"
 	"strings"
 
 	cs "github.com/cloudtrust/common-service/v2"
@@ -19,10 +18,6 @@ type Endpoints struct {
 	RegisterCorpUser endpoint.Endpoint
 	GetConfiguration endpoint.Endpoint
 }
-
-var (
-	respNoContent = commonhttp.GenericResponse{StatusCode: http.StatusNoContent}
-)
 
 // MakeRegisterUserEndpoint endpoint creation
 func MakeRegisterUserEndpoint(component Component, socialRealm string) cs.Endpoint {
@@ -66,7 +61,7 @@ func registerUser(ctx context.Context, component Component, corpRealm string, re
 	if redirect {
 		return redirectURL, nil
 	}
-	return respNoContent, nil
+	return commonhttp.StatusNoContent{}, nil
 }
 
 // MakeGetConfigurationEndpoint endpoint creation

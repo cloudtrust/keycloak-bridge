@@ -3,7 +3,6 @@ package tasks
 import (
 	"context"
 	"errors"
-	"net/http"
 	"testing"
 
 	commonhttp "github.com/cloudtrust/common-service/v2/http"
@@ -33,6 +32,6 @@ func TestMakeDeleteUsersWithExpiredTermsOfUseAcceptanceEndpoint(t *testing.T) {
 		var res, err = endpoint(ctx, request)
 		assert.Nil(t, err)
 		assert.NotNil(t, res)
-		assert.Equal(t, http.StatusNoContent, res.(commonhttp.GenericResponse).StatusCode)
+		assert.Equal(t, commonhttp.StatusNoContent{}, res)
 	})
 }
