@@ -11,11 +11,13 @@ import (
 	cs "github.com/cloudtrust/common-service/v2"
 	"github.com/cloudtrust/common-service/v2/database"
 	errorhandler "github.com/cloudtrust/common-service/v2/errors"
+	"github.com/cloudtrust/common-service/v2/fields"
 	csjson "github.com/cloudtrust/common-service/v2/json"
 	api "github.com/cloudtrust/keycloak-bridge/api/account"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
+	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/accreditationsclient"
 	kc "github.com/cloudtrust/keycloak-client/v2"
 )
 
@@ -80,7 +82,12 @@ type Component interface {
 type UsersDetailsDBModule interface {
 	StoreOrUpdateUserDetails(ctx context.Context, realm string, user dto.DBUser) error
 	GetUserDetails(ctx context.Context, realm string, userID string) (dto.DBUser, error)
-	GetPendingChecks(ctx context.Context, realm string, userID string) ([]dto.DBCheck, error)
+}
+
+type AccreditationsServiceClient interface {
+	GetChecks(ctx context.Context, realm string, userID string) ([]accreditationsclient.CheckRepresentation, error)
+	GetPendingChecks(ctx context.Context, realm string, userID string) ([]accreditationsclient.CheckRepresentation, error)
+	NotifyUpdate(ctx context.Context, updateNotifyRequest accreditationsclient.UpdateNotificationRepresentation) ([]string, error)
 }
 
 // Component is the management component.
@@ -91,11 +98,13 @@ type component struct {
 	configDBModule        keycloakb.ConfigurationDBModule
 	usersDBModule         UsersDetailsDBModule
 	glnVerifier           GlnVerifier
+	accreditationsClient  AccreditationsServiceClient
 	logger                keycloakb.Logger
 }
 
 // NewComponent returns the self-service component.
-func NewComponent(keycloakAccountClient KeycloakAccountClient, keycloakTechClient KeycloakTechnicalClient, eventDBModule database.EventsDBModule, configDBModule keycloakb.ConfigurationDBModule, usersDBModule UsersDetailsDBModule, glnVerifier GlnVerifier, logger keycloakb.Logger) Component {
+func NewComponent(keycloakAccountClient KeycloakAccountClient, keycloakTechClient KeycloakTechnicalClient, eventDBModule database.EventsDBModule,
+	configDBModule keycloakb.ConfigurationDBModule, usersDBModule UsersDetailsDBModule, glnVerifier GlnVerifier, accreditationsClient AccreditationsServiceClient, logger keycloakb.Logger) Component {
 	return &component{
 		keycloakAccountClient: keycloakAccountClient,
 		keycloakTechClient:    keycloakTechClient,
@@ -103,6 +112,7 @@ func NewComponent(keycloakAccountClient KeycloakAccountClient, keycloakTechClien
 		configDBModule:        configDBModule,
 		usersDBModule:         usersDBModule,
 		glnVerifier:           glnVerifier,
+		accreditationsClient:  accreditationsClient,
 		logger:                logger,
 	}
 }
@@ -170,7 +180,7 @@ func (c *component) GetAccount(ctx context.Context) (api.AccountRepresentation, 
 		return userRep, err
 	}
 
-	pendingChecks, err := c.usersDBModule.GetPendingChecks(ctx, realm, userID)
+	pendingChecks, err := c.accreditationsClient.GetPendingChecks(ctx, realm, userID)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Can't get pending checks", "err", err.Error())
 		return userRep, err
@@ -183,13 +193,9 @@ func (c *component) GetAccount(ctx context.Context) (api.AccountRepresentation, 
 	userRep.IDDocumentNumber = dbUser.IDDocumentNumber
 	userRep.IDDocumentExpiration = dbUser.IDDocumentExpiration
 	userRep.IDDocumentCountry = dbUser.IDDocumentCountry
-	userRep.PendingChecks = keycloakb.ConvertFromDBChecks(pendingChecks).ToCheckNames()
+	userRep.PendingChecks = keycloakb.ConvertFromAccreditationChecks(pendingChecks).ToCheckNames()
 
 	return userRep, nil
-}
-
-func isUpdated(newValue *string, oldValue *string) bool {
-	return newValue != nil && (oldValue == nil || *newValue != *oldValue)
 }
 
 func defaultString(value1, value2 *string) *string {
@@ -223,32 +229,51 @@ func (c *component) UpdateAccount(ctx context.Context, user api.UpdatableAccount
 
 	var actions []string
 
-	var namesUpdated = keycloakb.IsUpdated(user.FirstName, oldUserKc.FirstName, user.LastName, oldUserKc.LastName)
-	var revokeAccreditations = namesUpdated || c.isGLNUpdated(user.BusinessID, oldUserKc) || keycloakb.IsUpdated(user.Gender, oldUserKc.GetAttributeString(constants.AttrbGender),
-		user.BirthDate, oldUserKc.GetAttributeString(constants.AttrbBirthDate),
-		user.BirthLocation, oldUser.BirthLocation,
-		user.Nationality, oldUser.Nationality,
-		user.IDDocumentType, oldUser.IDDocumentType,
-		user.IDDocumentNumber, oldUser.IDDocumentNumber,
-		user.IDDocumentExpiration, oldUser.IDDocumentExpiration,
-		user.IDDocumentCountry, oldUser.IDDocumentCountry,
-	)
+	var fieldsComparator = fields.NewFieldsComparator().
+		CompareValueAndFunctionForUpdate(fields.Email, user.Email, oldUserKc.GetFieldValues).
+		CompareValueAndFunctionForUpdate(fields.FirstName, user.FirstName, oldUserKc.GetFieldValues).
+		CompareValueAndFunctionForUpdate(fields.LastName, user.LastName, oldUserKc.GetFieldValues).
+		CompareOptionalAndFunction(fields.BusinessID, user.BusinessID, oldUserKc.GetFieldValues).
+		CompareValueAndFunctionForUpdate(fields.Gender, user.Gender, oldUserKc.GetFieldValues).
+		CompareValueAndFunctionForUpdate(fields.PhoneNumber, user.PhoneNumber, oldUserKc.GetFieldValues).
+		CompareValueAndFunctionForUpdate(fields.BirthDate, user.BirthDate, oldUserKc.GetFieldValues).
+		CompareValueAndFunctionForUpdate(fields.BirthLocation, user.BirthLocation, oldUser.GetFieldValues).
+		CompareValueAndFunctionForUpdate(fields.Nationality, user.Nationality, oldUser.GetFieldValues).
+		CompareValueAndFunctionForUpdate(fields.IDDocumentType, user.IDDocumentType, oldUser.GetFieldValues).
+		CompareValueAndFunctionForUpdate(fields.IDDocumentNumber, user.IDDocumentNumber, oldUser.GetFieldValues).
+		CompareValueAndFunctionForUpdate(fields.IDDocumentExpiration, user.IDDocumentExpiration, oldUser.GetFieldValues).
+		CompareValueAndFunctionForUpdate(fields.IDDocumentCountry, user.IDDocumentCountry, oldUser.GetFieldValues)
 
-	// profileUpdated: Add here all fields which are not accreditation-dependant...
-	// phone number is not added here as there is already an email sent for phone number verification
-	// (currently no other field)
-	var profileUpdated = revokeAccreditations
+	var updateRequest = accreditationsclient.UpdateNotificationRepresentation{
+		UserID:        &userID,
+		RealmName:     &realm,
+		UpdatedFields: fieldsComparator.UpdatedFields(),
+	}
+	revokeAccreds, err := c.accreditationsClient.NotifyUpdate(ctx, updateRequest)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Failed to notify accreditation service", "err", err.Error())
+		return err
+	}
+	var ap, _ = keycloakb.NewAccreditationsProcessor(oldUserKc.GetFieldValues(fields.Accreditations))
+	ap.RevokeTypes(revokeAccreds)
+	newAccreditations := ap.ToKeycloak()
+
+	oldUserKc.SetFieldValues(fields.Accreditations, newAccreditations)
+
+	// profileChangesCount count the change in the profile without taking the email into account
+	var profileChangesCount = len(fieldsComparator.UpdatedFields())
 
 	// manage email change
 	var prevEmail *string
-	if isUpdated(user.Email, oldUserKc.Email) {
+	if fieldsComparator.IsFieldUpdated(fields.Email) {
 		prevEmail = oldUserKc.Email
 		oldUserKc.SetAttributeString(constants.AttrbEmailToValidate, *user.Email)
 		actions = append(actions, ActionVerifyEmail)
+		profileChangesCount--
 	}
 
 	// manage phone number change
-	if isUpdated(user.PhoneNumber, oldUserKc.GetAttributeString(constants.AttrbPhoneNumber)) {
+	if fieldsComparator.IsFieldUpdated(fields.PhoneNumber) {
 		oldUserKc.SetAttributeString(constants.AttrbPhoneNumberToValidate, *user.PhoneNumber)
 		actions = append(actions, ActionVerifyPhoneNumber)
 	}
@@ -271,8 +296,8 @@ func (c *component) UpdateAccount(ctx context.Context, user api.UpdatableAccount
 	}
 
 	userRep.Attributes = &mergedAttributes
-	if revokeAccreditations {
-		_ = keycloakb.RevokeAccreditations(&userRep)
+	if len(newAccreditations) > 0 {
+		userRep.SetFieldValues(fields.Accreditations, newAccreditations)
 	}
 
 	// GLN check
@@ -311,7 +336,7 @@ func (c *component) UpdateAccount(ctx context.Context, user api.UpdatableAccount
 	if prevEmail != nil && c.sendEmail(ctx, emailTemplateUpdatedEmail, emailSubjectUpdatedEmail, prevEmail, attributes) == nil {
 		c.reportEvent(ctx, "EMAIL_CHANGED_EMAIL_SENT", database.CtEventRealmName, realm, database.CtEventUserID, userID, database.CtEventUsername, username)
 	}
-	if profileUpdated && c.sendEmail(ctx, emailTemplateUpdatedProfile, emailSubjectUpdatedProfile, nil, attributes) == nil {
+	if profileChangesCount > 0 && c.sendEmail(ctx, emailTemplateUpdatedProfile, emailSubjectUpdatedProfile, nil, attributes) == nil {
 		c.reportEvent(ctx, "PROFILE_CHANGED_EMAIL_SENT", database.CtEventRealmName, realm, database.CtEventUserID, userID, database.CtEventUsername, username)
 	}
 
@@ -336,17 +361,6 @@ func (c *component) checkGLN(ctx context.Context, businessID csjson.OptionalStri
 		}
 	}
 	return nil
-}
-
-func (c *component) isGLNUpdated(businessID csjson.OptionalString, oldUserKc kc.UserRepresentation) bool {
-	if businessID.Defined {
-		if businessID.Value == nil {
-			return oldUserKc.GetAttributeString(constants.AttrbBusinessID) != nil
-		}
-		var oldGLN = oldUserKc.GetAttributeString(constants.AttrbBusinessID)
-		return oldGLN == nil || *businessID.Value != *oldGLN
-	}
-	return false
 }
 
 func (c *component) sendEmail(ctx context.Context, template, subject string, recipient *string, attributes map[string]string) error {

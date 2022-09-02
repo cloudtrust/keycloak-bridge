@@ -1,9 +1,11 @@
 package apivalidation
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
+	"github.com/cloudtrust/common-service/v2/fields"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
@@ -11,6 +13,13 @@ import (
 	kc "github.com/cloudtrust/keycloak-client/v2"
 	"github.com/stretchr/testify/assert"
 )
+
+func createValidAccreditation() AccreditationRepresentation {
+	return AccreditationRepresentation{
+		Name:     ptr("EPR"),
+		Validity: ptr("4y"),
+	}
+}
 
 func createValidUser() UserRepresentation {
 	var (
@@ -75,16 +84,26 @@ func createValidCheck() CheckRepresentation {
 	}
 }
 
-func TestConvertToDBCheck(t *testing.T) {
-	var check = createValidCheck()
-	var dbCheck = check.ConvertToDBCheck()
-	assert.Equal(t, *check.Operator, *dbCheck.Operator)
-	assert.Equal(t, *check.DateTime, *dbCheck.DateTime)
-	assert.Equal(t, *check.Status, *dbCheck.Status)
-	assert.Equal(t, *check.Type, *dbCheck.Type)
-	assert.Equal(t, *check.Nature, *dbCheck.Nature)
-	assert.Equal(t, *check.ProofType, *dbCheck.ProofType)
-	assert.Equal(t, *check.ProofData, *dbCheck.ProofData)
+func TestValidateAccreditation(t *testing.T) {
+	t.Run("Success case", func(t *testing.T) {
+		var accred = createValidAccreditation()
+		assert.Nil(t, accred.Validate())
+	})
+
+	var accreds []AccreditationRepresentation
+	for i := 0; i < 4; i++ {
+		accreds = append(accreds, createValidAccreditation())
+	}
+	accreds[0].Name = nil
+	accreds[1].Name = ptr("")
+	accreds[2].Validity = nil
+	accreds[3].Validity = ptr("not a validity")
+
+	for idx, accred := range accreds {
+		t.Run(fmt.Sprintf("Failure test #%d", idx+1), func(t *testing.T) {
+			assert.NotNil(t, accred.Validate())
+		})
+	}
 }
 
 func TestExportToKeycloak(t *testing.T) {
@@ -196,120 +215,143 @@ func ptr(v string) *string {
 	return &v
 }
 
-func TestHasUpdateOfAccreditationDependantInformationDB(t *testing.T) {
+func TestUpdateFieldsComparatorWithDBFields(t *testing.T) {
 	var user UserRepresentation
 	var dbUser dto.DBUser
 
 	t.Run("Nothing to update", func(t *testing.T) {
-		assert.False(t, user.HasUpdateOfAccreditationDependantInformationDB(dbUser))
+		fc := user.UpdateFieldsComparatorWithDBFields(fields.NewFieldsComparator(), dbUser)
+		assert.False(t, fc.IsAnyFieldUpdated())
 	})
 	t.Run("Expiry date update", func(t *testing.T) {
 		var expiryTxt = "15.06.2018"
 		var expiry, _ = time.Parse(constants.SupportedDateLayouts[0], "29.12.2019")
 		user.IDDocumentExpiration = &expiry
 		dbUser.IDDocumentExpiration = &expiryTxt
-		assert.True(t, user.HasUpdateOfAccreditationDependantInformationDB(dbUser))
+		fc := user.UpdateFieldsComparatorWithDBFields(fields.NewFieldsComparator(), dbUser)
+		assert.True(t, fc.IsAnyFieldUpdated())
 
 		expiry, _ = time.Parse(constants.SupportedDateLayouts[0], expiryTxt)
 		user.IDDocumentExpiration = &expiry
-		assert.False(t, user.HasUpdateOfAccreditationDependantInformationDB(dbUser))
+		fc = user.UpdateFieldsComparatorWithDBFields(fields.NewFieldsComparator(), dbUser)
+		assert.False(t, fc.IsAnyFieldUpdated())
 	})
 	t.Run("Nationality", func(t *testing.T) {
 		var nationality = "TYPE1"
 		user.Nationality = ptr("OTHER-NATIONALITY")
 		dbUser.Nationality = &nationality
-		assert.True(t, user.HasUpdateOfAccreditationDependantInformationDB(dbUser))
+		fc := user.UpdateFieldsComparatorWithDBFields(fields.NewFieldsComparator(), dbUser)
+		assert.True(t, fc.IsAnyFieldUpdated())
 
 		user.Nationality = &nationality
-		assert.False(t, user.HasUpdateOfAccreditationDependantInformationDB(dbUser))
+		fc = user.UpdateFieldsComparatorWithDBFields(fields.NewFieldsComparator(), dbUser)
+		assert.False(t, fc.IsAnyFieldUpdated())
 	})
 	t.Run("Document type update", func(t *testing.T) {
 		var documentType = "TYPE1"
 		user.IDDocumentType = ptr("OTHER-TYPE")
 		dbUser.IDDocumentType = &documentType
-		assert.True(t, user.HasUpdateOfAccreditationDependantInformationDB(dbUser))
+		fc := user.UpdateFieldsComparatorWithDBFields(fields.NewFieldsComparator(), dbUser)
+		assert.True(t, fc.IsAnyFieldUpdated())
 
 		user.IDDocumentType = &documentType
-		assert.False(t, user.HasUpdateOfAccreditationDependantInformationDB(dbUser))
+		fc = user.UpdateFieldsComparatorWithDBFields(fields.NewFieldsComparator(), dbUser)
+		assert.False(t, fc.IsAnyFieldUpdated())
 	})
 	t.Run("Document number update", func(t *testing.T) {
 		var documentNumber = "1234567890"
 		user.IDDocumentNumber = ptr("OTHER-NUMBER")
 		dbUser.IDDocumentNumber = &documentNumber
-		assert.True(t, user.HasUpdateOfAccreditationDependantInformationDB(dbUser))
+		fc := user.UpdateFieldsComparatorWithDBFields(fields.NewFieldsComparator(), dbUser)
+		assert.True(t, fc.IsAnyFieldUpdated())
 
 		user.IDDocumentNumber = &documentNumber
-		assert.False(t, user.HasUpdateOfAccreditationDependantInformationDB(dbUser))
+		fc = user.UpdateFieldsComparatorWithDBFields(fields.NewFieldsComparator(), dbUser)
+		assert.False(t, fc.IsAnyFieldUpdated())
 	})
 	t.Run("Document country update", func(t *testing.T) {
 		var documentCountry = "DE"
 		user.IDDocumentCountry = ptr("CH")
 		dbUser.IDDocumentCountry = &documentCountry
-		assert.True(t, user.HasUpdateOfAccreditationDependantInformationDB(dbUser))
+		fc := user.UpdateFieldsComparatorWithDBFields(fields.NewFieldsComparator(), dbUser)
+		assert.True(t, fc.IsAnyFieldUpdated())
 
 		user.IDDocumentCountry = &documentCountry
-		assert.False(t, user.HasUpdateOfAccreditationDependantInformationDB(dbUser))
+		fc = user.UpdateFieldsComparatorWithDBFields(fields.NewFieldsComparator(), dbUser)
+		assert.False(t, fc.IsAnyFieldUpdated())
 	})
 	t.Run("Birth location update", func(t *testing.T) {
 		var birthLocation = "Where"
 		user.BirthLocation = ptr("Here !")
 		dbUser.BirthLocation = &birthLocation
-		assert.True(t, user.HasUpdateOfAccreditationDependantInformationDB(dbUser))
+		fc := user.UpdateFieldsComparatorWithDBFields(fields.NewFieldsComparator(), dbUser)
+		assert.True(t, fc.IsAnyFieldUpdated())
 
 		user.BirthLocation = &birthLocation
-		assert.False(t, user.HasUpdateOfAccreditationDependantInformationDB(dbUser))
+		fc = user.UpdateFieldsComparatorWithDBFields(fields.NewFieldsComparator(), dbUser)
+		assert.False(t, fc.IsAnyFieldUpdated())
 	})
 }
 
-func TestHasUpdateOfAccreditationDependantInformationKC(t *testing.T) {
+func TestHasKCChanges(t *testing.T) {
 	var user UserRepresentation
 	var kcUser kc.UserRepresentation
 
 	t.Run("Nothing to update", func(t *testing.T) {
-		assert.False(t, user.HasUpdateOfAccreditationDependantInformationKC(&kcUser))
+		fc := user.UpdateFieldsComparatorWithKCFields(fields.NewFieldsComparator(), &kcUser)
+		assert.False(t, fc.IsAnyFieldUpdated())
 	})
 	t.Run("Birth date update", func(t *testing.T) {
 		var birthDateTxt = "15.06.2018"
 		var birthDate, _ = time.Parse(constants.SupportedDateLayouts[0], "29.12.2019")
 		user.BirthDate = &birthDate
 		kcUser.SetAttributeString(constants.AttrbBirthDate, birthDateTxt)
-		assert.True(t, user.HasUpdateOfAccreditationDependantInformationKC(&kcUser))
+		fc := user.UpdateFieldsComparatorWithKCFields(fields.NewFieldsComparator(), &kcUser)
+		assert.True(t, fc.IsAnyFieldUpdated())
 
 		birthDate, _ = time.Parse(constants.SupportedDateLayouts[0], birthDateTxt)
 		user.BirthDate = &birthDate
-		assert.False(t, user.HasUpdateOfAccreditationDependantInformationKC(&kcUser))
+		fc = user.UpdateFieldsComparatorWithKCFields(fields.NewFieldsComparator(), &kcUser)
+		assert.False(t, fc.IsAnyFieldUpdated())
 	})
 	t.Run("First name update", func(t *testing.T) {
 		var name = "THE NAME"
 		user.FirstName = ptr("OTHER NAME")
 		kcUser.FirstName = &name
-		assert.True(t, user.HasUpdateOfAccreditationDependantInformationKC(&kcUser))
+		fc := user.UpdateFieldsComparatorWithKCFields(fields.NewFieldsComparator(), &kcUser)
+		assert.True(t, fc.IsAnyFieldUpdated())
 
 		user.FirstName = &name
-		assert.False(t, user.HasUpdateOfAccreditationDependantInformationKC(&kcUser))
+		fc = user.UpdateFieldsComparatorWithKCFields(fields.NewFieldsComparator(), &kcUser)
+		assert.False(t, fc.IsAnyFieldUpdated())
 	})
 	t.Run("Last name update", func(t *testing.T) {
 		var name = "THE NAME"
 		user.LastName = ptr("OTHER NAME")
 		kcUser.LastName = &name
-		assert.True(t, user.HasUpdateOfAccreditationDependantInformationKC(&kcUser))
+		fc := user.UpdateFieldsComparatorWithKCFields(fields.NewFieldsComparator(), &kcUser)
+		assert.True(t, fc.IsAnyFieldUpdated())
 
 		user.LastName = &name
-		assert.False(t, user.HasUpdateOfAccreditationDependantInformationKC(&kcUser))
+		fc = user.UpdateFieldsComparatorWithKCFields(fields.NewFieldsComparator(), &kcUser)
+		assert.False(t, fc.IsAnyFieldUpdated())
 	})
 	t.Run("Gender update", func(t *testing.T) {
 		var gender = "M"
 		user.Gender = ptr("F")
 		kcUser.SetAttributeString(constants.AttrbGender, gender)
-		assert.True(t, user.HasUpdateOfAccreditationDependantInformationKC(&kcUser))
+		fc := user.UpdateFieldsComparatorWithKCFields(fields.NewFieldsComparator(), &kcUser)
+		assert.True(t, fc.IsAnyFieldUpdated())
 
 		user.Gender = ptr("m")
-		assert.False(t, user.HasUpdateOfAccreditationDependantInformationKC(&kcUser))
+		fc = user.UpdateFieldsComparatorWithKCFields(fields.NewFieldsComparator(), &kcUser)
+		assert.False(t, fc.IsAnyFieldUpdated())
 	})
 	t.Run("Other fields does not matter", func(t *testing.T) {
 		user.Email = ptr("any@mail.me")
 		kcUser.Email = ptr("any.other@mail.me")
-		assert.False(t, user.HasUpdateOfAccreditationDependantInformationKC(&kcUser))
+		fc := user.UpdateFieldsComparatorWithKCFields(fields.NewFieldsComparator(), &kcUser)
+		assert.False(t, fc.IsAnyFieldUpdated())
 	})
 }
 

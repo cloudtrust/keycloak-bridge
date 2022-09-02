@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cloudtrust/keycloak-bridge/internal/dto"
+	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/accreditationsclient"
 
 	"github.com/cloudtrust/common-service/v2/configuration"
 	csjson "github.com/cloudtrust/common-service/v2/json"
@@ -984,9 +984,9 @@ func createValidRequiredAction() RequiredAction {
 }
 
 func TestConvertToAPIUserChecks(t *testing.T) {
-	assert.Len(t, ConvertToAPIUserChecks([]dto.DBCheck{}), 0)
+	assert.Len(t, ConvertToAPIUserChecks([]accreditationsclient.CheckRepresentation{}), 0)
 
-	var check = dto.DBCheck{
+	var check = accreditationsclient.CheckRepresentation{
 		Operator:  ptr("operator"),
 		DateTime:  nil,
 		Status:    ptr("status"),
@@ -995,14 +995,14 @@ func TestConvertToAPIUserChecks(t *testing.T) {
 		ProofType: ptr("ZIP"),
 		Comment:   ptr("comment"),
 	}
-	var checks = []dto.DBCheck{check, check, check}
+	var checks = []accreditationsclient.CheckRepresentation{check, check, check}
 	var converted = ConvertToAPIUserChecks(checks)
 	assert.Len(t, converted, len(checks))
 
 	var checkDate = "29.12.2019"
 	var date, _ = time.Parse(constants.SupportedDateLayouts[0], checkDate)
 	check.DateTime = &date
-	checks = []dto.DBCheck{check, check}
+	checks = []accreditationsclient.CheckRepresentation{check, check}
 	converted = ConvertToAPIUserChecks(checks)
 	assert.Len(t, converted, len(checks))
 	assert.Equal(t, checkDate, *converted[0].CheckDate)

@@ -10,25 +10,13 @@ import (
 	"time"
 
 	cs "github.com/cloudtrust/common-service/v2"
+	commonhttp "github.com/cloudtrust/common-service/v2/http"
 	"github.com/cloudtrust/common-service/v2/log"
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
 	"github.com/cloudtrust/keycloak-bridge/pkg/management/mock"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
-
-func TestNoContentResponse(t *testing.T) {
-	t.Run("Error case", func(t *testing.T) {
-		var anError = errors.New("any error")
-		var _, err = noContentResponse(anError)
-		assert.Equal(t, anError, err)
-	})
-	t.Run("No error", func(t *testing.T) {
-		var res, err = noContentResponse(nil)
-		assert.Nil(t, err)
-		assert.NotNil(t, res)
-	})
-}
 
 func TestGetActionsEndpoint(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
@@ -590,7 +578,7 @@ func TestUserRoleEndpoints(t *testing.T) {
 			mockManagementComponent.EXPECT().AddRoleToUser(ctx, realm, userID, roleID).Return(nil)
 			var resp, err = e(ctx, req)
 			assert.Nil(t, err)
-			assert.Equal(t, respNoContent, resp)
+			assert.Equal(t, commonhttp.StatusNoContent{}, resp)
 		})
 	})
 	t.Run("MakeDeleteRoleForUserEndpoint", func(t *testing.T) {
@@ -600,7 +588,7 @@ func TestUserRoleEndpoints(t *testing.T) {
 			mockManagementComponent.EXPECT().DeleteRoleForUser(ctx, realm, userID, roleID).Return(nil)
 			var resp, err = e(ctx, req)
 			assert.Nil(t, err)
-			assert.Equal(t, respNoContent, resp)
+			assert.Equal(t, commonhttp.StatusNoContent{}, resp)
 		})
 	})
 }
@@ -1405,7 +1393,7 @@ func TestDeleteRoleEndpoint(t *testing.T) {
 	mockManagementComponent.EXPECT().DeleteRole(ctx, realm, roleID).Return(nil).Times(1)
 	var res, err = e(ctx, req)
 	assert.Nil(t, err)
-	assert.Equal(t, respNoContent, res)
+	assert.Equal(t, commonhttp.StatusNoContent{}, res)
 }
 
 func TestGetGroupsEndpoint(t *testing.T) {
@@ -1750,7 +1738,7 @@ func TestDeleteClientRoleEndpoint(t *testing.T) {
 	mockManagementComponent.EXPECT().DeleteClientRole(ctx, realm, clientID, roleID).Return(nil)
 	var res, err = e(ctx, req)
 	assert.Nil(t, err)
-	assert.Equal(t, respNoContent, res)
+	assert.Equal(t, commonhttp.StatusNoContent{}, res)
 }
 
 func TestConfigurationEndpoints(t *testing.T) {
