@@ -37,6 +37,17 @@ func (c *authorizationComponentMW) SendEmail(ctx context.Context, realmName stri
 	return c.next.SendEmail(ctx, realmName, emailRep)
 }
 
+func (c *authorizationComponentMW) SendEmailToUser(ctx context.Context, realmName string, userID string, emailRep api.EmailRepresentation) error {
+	var action = security.COMSendEmail.String()
+	var targetRealm = realmName
+
+	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
+		return err
+	}
+
+	return c.next.SendEmailToUser(ctx, realmName, userID, emailRep)
+}
+
 func (c *authorizationComponentMW) SendSMS(ctx context.Context, realmName string, smsRep api.SMSRepresentation) error {
 	var action = security.COMSendSMS.String()
 	var targetRealm = realmName

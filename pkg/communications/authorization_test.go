@@ -27,6 +27,7 @@ func TestDeny(t *testing.T) {
 	var accessToken = "TOKEN=="
 	var groups = []string{"toe"}
 	var realmName = "realm"
+	var userID = "testerID"
 
 	{
 		var authorizations, err = security.NewAuthorizationManager(mockAuthorizationDBReader, mockKeycloakClient, mockLogger)
@@ -39,6 +40,9 @@ func TestDeny(t *testing.T) {
 		ctx = context.WithValue(ctx, cs.CtContextRealm, "master")
 
 		err = authorizationMW.SendEmail(ctx, realmName, emailForTest)
+		assert.Equal(t, security.ForbiddenError{}, err)
+
+		err = authorizationMW.SendEmailToUser(ctx, realmName, userID, emailForTest)
 		assert.Equal(t, security.ForbiddenError{}, err)
 
 		err = authorizationMW.SendSMS(ctx, realmName, smsForTest)
@@ -61,6 +65,7 @@ func TestAllow(t *testing.T) {
 	var realmName = "master"
 	var toe = "toe"
 	var any = "*"
+	var userID = "testerID"
 
 	var authorizations = []configuration.Authorization{}
 	for _, action := range security.Actions.GetActionsForAPIs(security.BridgeService, security.CommunicationAPI) {
@@ -88,6 +93,10 @@ func TestAllow(t *testing.T) {
 
 		mockCommunicationsComponent.EXPECT().SendEmail(ctx, realmName, emailForTest).Return(nil).Times(1)
 		err = authorizationMW.SendEmail(ctx, realmName, emailForTest)
+		assert.Nil(t, err)
+
+		mockCommunicationsComponent.EXPECT().SendEmailToUser(ctx, realmName, userID, emailForTest).Return(nil).Times(1)
+		err = authorizationMW.SendEmailToUser(ctx, realmName, userID, emailForTest)
 		assert.Nil(t, err)
 
 		mockCommunicationsComponent.EXPECT().SendSMS(ctx, realmName, smsForTest).Return(nil).Times(1)
