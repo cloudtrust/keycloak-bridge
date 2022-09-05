@@ -1888,6 +1888,28 @@ func TestUpdateRealmAdminConfigurationEndpoint(t *testing.T) {
 	})
 }
 
+func TestGetFederatedIdentitiesEndpoint(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
+
+	var e = MakeGetFederatedIdentitiesEndpoint(mockManagementComponent)
+
+	var realm = "realm-name"
+	var userID = "user-id"
+	var ctx = context.Background()
+
+	var req = map[string]string{
+		prmRealm:  realm,
+		prmUserID: userID,
+	}
+
+	mockManagementComponent.EXPECT().GetFederatedIdentities(ctx, realm, userID).Return([]api.FederatedIdentityRepresentation{}, nil)
+	_, err := e(ctx, req)
+	assert.Nil(t, err)
+}
+
 func TestLinkShadowUserEndpoint(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()

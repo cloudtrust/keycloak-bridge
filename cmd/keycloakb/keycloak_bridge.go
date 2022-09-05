@@ -867,8 +867,9 @@ func main() {
 			UpdateRealmBackOfficeConfiguration:  prepareEndpoint(management.MakeUpdateRealmBackOfficeConfigurationEndpoint(keycloakComponent), "update_realm_back_office_config_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 			GetUserRealmBackOfficeConfiguration: prepareEndpoint(management.MakeGetUserRealmBackOfficeConfigurationEndpoint(keycloakComponent), "get_user_realm_back_office_config_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 
-			LinkShadowUser:       prepareEndpoint(management.MakeLinkShadowUserEndpoint(keycloakComponent), "link_shadow_user_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
-			GetIdentityProviders: prepareEndpoint(management.MakeGetIdentityProvidersEndpoint(keycloakComponent), "get_identiy_providers_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			GetFederatedIdentities: prepareEndpoint(management.MakeGetFederatedIdentitiesEndpoint(keycloakComponent), "get_federated_identities_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			LinkShadowUser:         prepareEndpoint(management.MakeLinkShadowUserEndpoint(keycloakComponent), "link_shadow_user_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			GetIdentityProviders:   prepareEndpoint(management.MakeGetIdentityProvidersEndpoint(keycloakComponent), "get_identiy_providers_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 		}
 	}
 
@@ -1238,6 +1239,7 @@ func main() {
 		var updateRealmBackOfficeConfigurationHandler = configureManagementHandler(managementEndpoints.UpdateRealmBackOfficeConfiguration)
 		var getUserRealmBackOfficeConfigurationHandler = configureManagementHandler(managementEndpoints.GetUserRealmBackOfficeConfiguration)
 
+		var getFederatedIdentitiesHandler = configureManagementHandler(managementEndpoints.GetFederatedIdentities)
 		var linkShadowUserHandler = configureManagementHandler(managementEndpoints.LinkShadowUser)
 
 		var getIdentityProvidersHandler = configureManagementHandler(managementEndpoints.GetIdentityProviders)
@@ -1338,6 +1340,7 @@ func main() {
 		managementSubroute.Path("/realms/{realm}/backoffice-configuration").Methods("GET").Handler(getUserRealmBackOfficeConfigurationHandler)
 
 		// brokering - shadow users
+		managementSubroute.Path("/realms/{realm}/users/{userID}/federated-identity").Methods("GET").Handler(getFederatedIdentitiesHandler)
 		managementSubroute.Path("/realms/{realm}/users/{userID}/federated-identity/{provider}").Methods("POST").Handler(linkShadowUserHandler)
 
 		managementSubroute.Path("/realms/{realm}/identity-providers").Methods("GET").Handler(getIdentityProvidersHandler)

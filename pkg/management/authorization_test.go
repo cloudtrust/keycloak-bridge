@@ -185,6 +185,7 @@ func TestDeny(t *testing.T) {
 			"GetRealmBackOfficeConfiguration":     ignoreFirst(authorizationMW.GetRealmBackOfficeConfiguration(ctx, realmName, groupID)),
 			"UpdateRealmBackOfficeConfiguration":  authorizationMW.UpdateRealmBackOfficeConfiguration(ctx, realmName, groupID, boConfig),
 			"GetUserRealmBackOfficeConfiguration": ignoreFirst(authorizationMW.GetUserRealmBackOfficeConfiguration(ctx, realmName)),
+			"GetFederatedIdentities":              ignoreFirst(authorizationMW.GetFederatedIdentities(ctx, realmName, userID)),
 			"LinkShadowUser":                      authorizationMW.LinkShadowUser(ctx, realmName, userID, provider, fedID),
 			"GetIdentityProviders":                ignoreFirst(authorizationMW.GetIdentityProviders(ctx, realmName)),
 		}
@@ -580,6 +581,10 @@ func TestAllowed(t *testing.T) {
 
 		mockManagementComponent.EXPECT().GetUserRealmBackOfficeConfiguration(ctx, realmName).Return(config, nil)
 		_, err = authorizationMW.GetUserRealmBackOfficeConfiguration(ctx, realmName)
+		assert.Nil(t, err)
+
+		mockManagementComponent.EXPECT().GetFederatedIdentities(ctx, realmName, userID).Return(nil, nil)
+		_, err = authorizationMW.GetFederatedIdentities(ctx, realmName, userID)
 		assert.Nil(t, err)
 
 		mockManagementComponent.EXPECT().LinkShadowUser(ctx, realmName, userID, provider, fedID).Return(nil)

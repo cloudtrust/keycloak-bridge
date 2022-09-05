@@ -5484,6 +5484,47 @@ func TestRealmBackOfficeConfiguration(t *testing.T) {
 	})
 }
 
+func TestGetFederatedIdentities(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mocks = createMocks(mockCtrl)
+	var managementComponent = mocks.createComponent()
+
+	var accessToken = "TOKEN=="
+	var realmName = "master"
+	var userID = "41dbf4a8-32a9-4000-8c17-edc854c31231"
+	var username = "username"
+	var idpName = "idpName"
+	var ctx = context.WithValue(context.TODO(), cs.CtContextAccessToken, accessToken)
+
+	t.Run("Call to keycloak fails", func(t *testing.T) {
+		var anyError = errors.New("any error")
+		mocks.logger.EXPECT().Warn(ctx, gomock.Any())
+		mocks.keycloakClient.EXPECT().GetFederatedIdentities(accessToken, realmName, userID).Return(nil, anyError)
+		var _, err = managementComponent.GetFederatedIdentities(ctx, realmName, userID)
+		assert.Equal(t, anyError, err)
+	})
+	t.Run("Success - Result is empty", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetFederatedIdentities(accessToken, realmName, userID).Return([]kc.FederatedIdentityRepresentation{}, nil)
+		var res, err = managementComponent.GetFederatedIdentities(ctx, realmName, userID)
+		assert.Nil(t, err)
+		assert.NotNil(t, res)
+		assert.Len(t, res, 0)
+	})
+	t.Run("Success - Result is not empty", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetFederatedIdentities(accessToken, realmName, userID).Return([]kc.FederatedIdentityRepresentation{
+			{UserID: &userID, UserName: &username, IdentityProvider: &idpName},
+		}, nil)
+		var res, err = managementComponent.GetFederatedIdentities(ctx, realmName, userID)
+		assert.Nil(t, err)
+		assert.Len(t, res, 1)
+		assert.Equal(t, userID, *res[0].UserID)
+		assert.Equal(t, username, *res[0].Username)
+		assert.Equal(t, idpName, *res[0].IdentityProvider)
+	})
+}
+
 func TestLinkShadowUser(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -5524,7 +5565,7 @@ func TestLinkShadowUser(t *testing.T) {
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 
-		mocks.logger.EXPECT().Warn(ctx, "err", "error")
+		mocks.logger.EXPECT().Warn(ctx, gomock.Any())
 		err := managementComponent.LinkShadowUser(ctx, realmName, userID, provider, fedID)
 
 		assert.NotNil(t, err)
