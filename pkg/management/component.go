@@ -28,6 +28,9 @@ import (
 const (
 	initPasswordAction = "sms-password-set"
 	businessRoleFlag   = "BUSINESS_ROLE_FLAG"
+
+	actionVerifyEmail       = "ct-verify-email"
+	actionVerifyPhoneNumber = "mobilephone-validation"
 )
 
 // KeycloakClient are methods from keycloak-client used by this component
@@ -592,6 +595,8 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 		user.Username = oldUserKc.Username
 	}
 
+	var actions []api.RequiredAction
+
 	// when the email changes, set the EmailVerified to false
 	if user.Email.Defined {
 		if user.Email.Value == nil {
@@ -600,6 +605,7 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 			removeAttributes = append(removeAttributes, constants.AttrbEmailToValidate)
 		} else if c.isUpdated(user.Email.Value, oldUserKc.Email) {
 			oldUserKc.SetAttributeString(constants.AttrbEmailToValidate, *user.Email.Value)
+			actions = append(actions, actionVerifyEmail)
 		}
 	}
 
@@ -609,6 +615,7 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 			removeAttributes = append(removeAttributes, constants.AttrbPhoneNumber, constants.AttrbPhoneNumberVerified, constants.AttrbPhoneNumberToValidate)
 		} else if c.isUpdated(user.PhoneNumber.Value, oldUserKc.GetAttributeString(constants.AttrbPhoneNumber)) {
 			oldUserKc.SetAttributeString(constants.AttrbPhoneNumberToValidate, *user.PhoneNumber.Value)
+			actions = append(actions, actionVerifyPhoneNumber)
 		}
 	}
 
@@ -701,6 +708,13 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 		if err != nil {
 			c.logger.Warn(ctx, "msg", "Can't store user details in database", "err", err.Error())
 			return err
+		}
+	}
+
+	if len(actions) > 0 {
+		var err = c.ExecuteActionsEmail(ctx, realmName, userID, actions)
+		if err != nil {
+			c.logger.Warn(ctx, "msg", "Can't execute actions", "err", err.Error(), "actions", actions)
 		}
 	}
 
