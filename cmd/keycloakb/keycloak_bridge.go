@@ -167,6 +167,7 @@ const (
 	cfgOnboardingRealmOverrides = "onboarding-realm-overrides"
 	cfgAddrAccreditations       = "accreditations-api-uri"
 	cfgAccreditationsTimeout    = "accreditations-timeout"
+	cfgContextKeys              = "context-keys"
 
 	tokenProviderDefaultKey = "default"
 )
@@ -966,7 +967,14 @@ func main() {
 		// module for onboarding process
 		var onboardingModule = keycloakb.NewOnboardingModule(keycloakClient, keycloakConfig.URIProvider, usersDBModule, registerInactiveLockDuration, onboardingRealmOverrides, registerLogger)
 
-		registerComponent := register.NewComponent(keycloakClient, technicalTokenProvider, usersDBModule, configDBModule, eventsDBModule, onboardingModule, glnVerifier, registerLogger)
+		// context keys
+		contextKeyManager, err := keycloakb.MakeContextKeyManager(c.Get(cfgContextKeys))
+		if err != nil {
+			logger.Error(ctx, "msg", "Could not initialize context key manager", "err", err)
+			return
+		}
+
+		registerComponent := register.NewComponent(keycloakClient, technicalTokenProvider, usersDBModule, configDBModule, eventsDBModule, onboardingModule, glnVerifier, contextKeyManager, registerLogger)
 		registerComponent = register.MakeAuthorizationRegisterComponentMW(log.With(registerLogger, "mw", "endpoint"))(registerComponent)
 
 		var rateLimitRegister = rateLimit[RateKeyRegister]

@@ -61,6 +61,7 @@ type componentMocks struct {
 	usersDB          *mock.UsersDetailsDBModule
 	eventsDB         *mock.EventsDBModule
 	glnVerifier      *mock.GlnVerifier
+	contextKeyMgr    *mock.ContextKeyManager
 	onboardingModule *mock.OnboardingModule
 }
 
@@ -72,13 +73,14 @@ func createMocks(mockCtrl *gomock.Controller) *componentMocks {
 		usersDB:          mock.NewUsersDetailsDBModule(mockCtrl),
 		eventsDB:         mock.NewEventsDBModule(mockCtrl),
 		glnVerifier:      mock.NewGlnVerifier(mockCtrl),
+		contextKeyMgr:    mock.NewContextKeyManager(mockCtrl),
 		onboardingModule: mock.NewOnboardingModule(mockCtrl),
 	}
 }
 
 func (mocks *componentMocks) createComponent() *component {
 	return NewComponent(mocks.keycloakClient, mocks.tokenProvider, mocks.usersDB, mocks.configDB, mocks.eventsDB,
-		mocks.onboardingModule, mocks.glnVerifier, log.NewNopLogger()).(*component)
+		mocks.onboardingModule, mocks.glnVerifier, mocks.contextKeyMgr, log.NewNopLogger()).(*component)
 }
 
 func TestRegisterUser(t *testing.T) {
@@ -118,19 +120,31 @@ func TestRegisterUser(t *testing.T) {
 		OnboardingClientID:     &clientID,
 		OnboardingRedirectURI:  &onboardingURI,
 	}
-	var truePtr = true
 	var realmAdminConf = configuration.RealmAdminConfiguration{
-		SelfRegisterEnabled: &truePtr,
-		ShowGlnEditing:      &truePtr,
+		SelfRegisterEnabled: ptrBool(true),
+		ShowGlnEditing:      ptrBool(true),
 	}
 	var anyError = errors.New("any error")
 
 	errorhandler.SetEmitter(keycloakb.ComponentName)
 
+	var contextKeyNeutral = "key0"
+	var contextKeyRedirect = "key1"
+	var contextKeyInvalid = "invalid"
+	mocks.contextKeyMgr.EXPECT().GetOverride(customerRealmName, contextKeyNeutral).Return(keycloakb.ContextKeyParameters{
+		ID:    ptr(contextKeyRedirect),
+		Realm: &customerRealmName,
+	}, true).AnyTimes()
+	mocks.contextKeyMgr.EXPECT().GetOverride(customerRealmName, contextKeyRedirect).Return(keycloakb.ContextKeyParameters{
+		ID:           ptr(contextKeyRedirect),
+		Realm:        &customerRealmName,
+		RedirectMode: ptrBool(true),
+	}, true).AnyTimes()
+
 	t.Run("Failed to retrieve token", func(t *testing.T) {
 		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, gomock.Any()).Return("", errors.New("unexpected error"))
 
-		_, err := component.RegisterUser(ctx, targetRealmName, customerRealmName, user, false)
+		_, err := component.RegisterUser(ctx, targetRealmName, customerRealmName, user, nil)
 		assert.NotNil(t, err)
 	})
 	mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, gomock.Any()).Return(accessToken, nil).AnyTimes()
@@ -138,14 +152,22 @@ func TestRegisterUser(t *testing.T) {
 	t.Run("Failed to retrieve realm configuration", func(t *testing.T) {
 		mocks.configDB.EXPECT().GetConfigurations(ctx, targetRealmName).Return(configuration.RealmConfiguration{}, configuration.RealmAdminConfiguration{}, errors.New("unexpected error"))
 
-		_, err := component.RegisterUser(ctx, targetRealmName, customerRealmName, user, false)
+		_, err := component.RegisterUser(ctx, targetRealmName, customerRealmName, user, &contextKeyNeutral)
+		assert.NotNil(t, err)
+	})
+
+	t.Run("Bad context key", func(t *testing.T) {
+		mocks.configDB.EXPECT().GetConfigurations(ctx, targetRealmName).Return(configuration.RealmConfiguration{}, realmAdminConf, nil)
+		mocks.contextKeyMgr.EXPECT().GetOverride(customerRealmName, contextKeyInvalid).Return(keycloakb.ContextKeyParameters{}, false)
+
+		_, err := component.RegisterUser(ctx, targetRealmName, customerRealmName, user, &contextKeyInvalid)
 		assert.NotNil(t, err)
 	})
 
 	t.Run("Feature is not enabled", func(t *testing.T) {
 		mocks.configDB.EXPECT().GetConfigurations(ctx, targetRealmName).Return(configuration.RealmConfiguration{}, configuration.RealmAdminConfiguration{}, nil)
 
-		_, err := component.RegisterUser(ctx, targetRealmName, customerRealmName, user, false)
+		_, err := component.RegisterUser(ctx, targetRealmName, customerRealmName, user, nil)
 		assert.NotNil(t, err)
 		assert.Equal(t, "409 "+keycloakb.ComponentName+".disabledEndpoint.selfRegister", err.Error())
 	})
@@ -153,7 +175,7 @@ func TestRegisterUser(t *testing.T) {
 	t.Run("Feature not configured", func(t *testing.T) {
 		mocks.configDB.EXPECT().GetConfigurations(ctx, targetRealmName).Return(configuration.RealmConfiguration{}, realmAdminConf, nil)
 
-		_, err := component.RegisterUser(ctx, targetRealmName, customerRealmName, user, false)
+		_, err := component.RegisterUser(ctx, targetRealmName, customerRealmName, user, nil)
 		assert.NotNil(t, err)
 		assert.Equal(t, "409 "+keycloakb.ComponentName+".disabledEndpoint."+constants.MsgErrNotConfigured, err.Error())
 	})
@@ -161,7 +183,7 @@ func TestRegisterUser(t *testing.T) {
 
 	t.Run("GLN verification failed", func(t *testing.T) {
 		mocks.glnVerifier.EXPECT().ValidateGLN(*user.FirstName, *user.LastName, *user.BusinessID).Return(anyError)
-		_, err := component.RegisterUser(ctx, targetRealmName, customerRealmName, user, false)
+		_, err := component.RegisterUser(ctx, targetRealmName, customerRealmName, user, &contextKeyNeutral)
 		assert.Equal(t, anyError, err)
 	})
 	mocks.glnVerifier.EXPECT().ValidateGLN(*user.FirstName, *user.LastName, *user.BusinessID).Return(nil).AnyTimes()
@@ -169,7 +191,7 @@ func TestRegisterUser(t *testing.T) {
 	t.Run("Failed to process already existing user", func(t *testing.T) {
 		mocks.onboardingModule.EXPECT().ProcessAlreadyExistingUserCases(gomock.Any(), accessToken, targetRealmName, *user.Email, "register", gomock.Any()).Return(anyError)
 
-		_, err := component.RegisterUser(ctx, targetRealmName, customerRealmName, user, false)
+		_, err := component.RegisterUser(ctx, targetRealmName, customerRealmName, user, nil)
 		assert.NotNil(t, err)
 	})
 
@@ -183,7 +205,7 @@ func TestRegisterUser(t *testing.T) {
 			})
 		mocks.keycloakClient.EXPECT().SendEmail(accessToken, targetRealmName, customerRealmName, gomock.Any()).Return(anyError)
 
-		_, err := component.RegisterUser(ctx, targetRealmName, customerRealmName, user, false)
+		_, err := component.RegisterUser(ctx, targetRealmName, customerRealmName, user, nil)
 		assert.NotNil(t, err)
 	})
 
@@ -196,7 +218,7 @@ func TestRegisterUser(t *testing.T) {
 			})
 		mocks.keycloakClient.EXPECT().SendEmail(accessToken, targetRealmName, customerRealmName, gomock.Any()).Return(anyError)
 
-		_, err := component.RegisterUser(ctx, targetRealmName, customerRealmName, user, false)
+		_, err := component.RegisterUser(ctx, targetRealmName, customerRealmName, user, nil)
 		assert.NotNil(t, err)
 	})
 	mocks.onboardingModule.EXPECT().ProcessAlreadyExistingUserCases(gomock.Any(), accessToken, targetRealmName, *user.Email, "register", gomock.Any()).Return(nil).AnyTimes()
@@ -204,7 +226,7 @@ func TestRegisterUser(t *testing.T) {
 	t.Run("Failed to retrieve groups in KC", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetGroups(accessToken, targetRealmName).Return(nil, errors.New("unexpected error"))
 
-		_, err := component.RegisterUser(ctx, targetRealmName, customerRealmName, user, false)
+		_, err := component.RegisterUser(ctx, targetRealmName, customerRealmName, user, nil)
 		assert.NotNil(t, err)
 	})
 
@@ -216,7 +238,7 @@ func TestRegisterUser(t *testing.T) {
 			},
 		}, nil)
 
-		_, err := component.RegisterUser(ctx, targetRealmName, customerRealmName, user, false)
+		_, err := component.RegisterUser(ctx, targetRealmName, customerRealmName, user, nil)
 		assert.NotNil(t, err)
 	})
 
@@ -228,7 +250,7 @@ func TestRegisterUser(t *testing.T) {
 				return "", errors.New("unexpected error")
 			})
 
-		_, err := component.RegisterUser(ctx, targetRealmName, customerRealmName, user, false)
+		_, err := component.RegisterUser(ctx, targetRealmName, customerRealmName, user, nil)
 		assert.NotNil(t, err)
 	})
 
@@ -245,7 +267,7 @@ func TestRegisterUser(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetGroups(accessToken, targetRealmName).Return(groups, nil)
 		mocks.usersDB.EXPECT().StoreOrUpdateUserDetails(ctx, targetRealmName, gomock.Any()).Return(errors.New("unexpected error"))
 
-		_, err := component.RegisterUser(ctx, targetRealmName, customerRealmName, user, false)
+		_, err := component.RegisterUser(ctx, targetRealmName, customerRealmName, user, nil)
 		assert.NotNil(t, err)
 	})
 
@@ -257,7 +279,7 @@ func TestRegisterUser(t *testing.T) {
 		mocks.onboardingModule.EXPECT().SendOnboardingEmail(ctx, accessToken, targetRealmName, kcID,
 			gomock.Any(), clientID, onboardingRedirectURI, customerRealmName, false, gomock.Any()).Return(errors.New("unexpected error"))
 
-		_, err := component.RegisterUser(ctx, targetRealmName, customerRealmName, user, false)
+		_, err := component.RegisterUser(ctx, targetRealmName, customerRealmName, user, nil)
 		assert.NotNil(t, err)
 	})
 
@@ -272,7 +294,7 @@ func TestRegisterUser(t *testing.T) {
 		mocks.eventsDB.EXPECT().ReportEvent(ctx, "REGISTER_USER", "back-office", database.CtEventRealmName, targetRealmName,
 			database.CtEventUserID, kcID, database.CtEventUsername, gomock.Any()).Return(nil)
 
-		_, err := component.RegisterUser(ctx, targetRealmName, customerRealmName, user, false)
+		_, err := component.RegisterUser(ctx, targetRealmName, customerRealmName, user, nil)
 		assert.Nil(t, err)
 	})
 
@@ -288,7 +310,7 @@ func TestRegisterUser(t *testing.T) {
 		mocks.eventsDB.EXPECT().ReportEvent(ctx, "REGISTER_USER", "back-office", database.CtEventRealmName, targetRealmName,
 			database.CtEventUserID, kcID, database.CtEventUsername, gomock.Any()).Return(nil)
 
-		url, err := component.RegisterUser(ctx, targetRealmName, customerRealmName, user, true)
+		url, err := component.RegisterUser(ctx, targetRealmName, customerRealmName, user, &contextKeyRedirect)
 		assert.Nil(t, err)
 		assert.Equal(t, expectedURL, url)
 	})

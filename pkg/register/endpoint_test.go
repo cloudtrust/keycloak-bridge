@@ -11,10 +11,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func ptr(value string) *string {
-	return &value
-}
-
 func TestMakeRegisterUserEndpoint(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -55,7 +51,7 @@ func TestMakeRegisterUserEndpoint(t *testing.T) {
 		var socialRealm = "realm-123456"
 		m[prmRealm] = realm
 		m[reqBody] = string(bytes)
-		mockRegisterComponent.EXPECT().RegisterUser(gomock.Any(), socialRealm, realm, user, false).Return("", nil).Times(1)
+		mockRegisterComponent.EXPECT().RegisterUser(gomock.Any(), socialRealm, realm, user, nil).Return("", nil)
 		_, err := MakeRegisterUserEndpoint(mockRegisterComponent, socialRealm)(context.Background(), m)
 		assert.Nil(t, err)
 	})
@@ -77,18 +73,19 @@ func TestMakeRegisterUserEndpoint(t *testing.T) {
 		m[prmCorpRealm] = socialRealm
 		var bytes, _ = json.Marshal(user)
 		m[reqBody] = string(bytes)
-		mockRegisterComponent.EXPECT().RegisterUser(gomock.Any(), socialRealm, socialRealm, user, false).Return("", nil).Times(1)
+		mockRegisterComponent.EXPECT().RegisterUser(gomock.Any(), socialRealm, socialRealm, user, nil).Return("", nil)
 		_, err := MakeRegisterCorpUserEndpoint(mockRegisterComponent)(context.Background(), m)
 		assert.Nil(t, err)
 	})
 
-	t.Run("Register in redirect mode", func(t *testing.T) {
+	t.Run("Register with context key", func(t *testing.T) {
 		var bytes, _ = json.Marshal(user)
 		var socialRealm = "realm-123456"
+		var ctxKey = "context-key"
 		m[prmRealm] = realm
 		m[reqBody] = string(bytes)
-		m[prmRedirect] = "true"
-		mockRegisterComponent.EXPECT().RegisterUser(gomock.Any(), socialRealm, realm, user, true).Return("", nil).Times(1)
+		m[prmContextKey] = ctxKey
+		mockRegisterComponent.EXPECT().RegisterUser(gomock.Any(), socialRealm, realm, user, &ctxKey).Return("", nil)
 		_, err := MakeRegisterUserEndpoint(mockRegisterComponent, socialRealm)(context.Background(), m)
 		assert.Nil(t, err)
 	})
@@ -109,7 +106,7 @@ func TestMakeGetConfigurationEndpoint(t *testing.T) {
 	t.Run("Success", func(t *testing.T) {
 		var realm = "my-realm"
 		var m = map[string]string{prmRealm: realm}
-		mockRegisterComponent.EXPECT().GetConfiguration(gomock.Any(), realm).Return(apiregister.ConfigurationRepresentation{}, nil).Times(1)
+		mockRegisterComponent.EXPECT().GetConfiguration(gomock.Any(), realm).Return(apiregister.ConfigurationRepresentation{}, nil)
 		_, err := MakeGetConfigurationEndpoint(mockRegisterComponent)(context.Background(), m)
 		assert.Nil(t, err)
 	})

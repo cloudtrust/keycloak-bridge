@@ -23,6 +23,12 @@ paths:
         required: true
         schema:
           type: string
+      - name: context-key
+        in: query
+        description: context-key
+        required: false
+        schema:
+          type: string
       requestBody:
         content:
           application/json:
@@ -47,6 +53,12 @@ paths:
         in: path
         description: realm name (not id!)
         required: true
+        schema:
+          type: string
+      - name: context-key
+        in: query
+        description: context-key
+        required: false
         schema:
           type: string
       requestBody:
