@@ -15,17 +15,17 @@ import (
 const (
 	reqBody = "body"
 
-	prmCorpRealm = "corpRealm"
-	prmRealm     = "realm"
-	prmRedirect  = "redirect"
+	prmCorpRealm  = "corpRealm"
+	prmRealm      = "realm"
+	prmContextKey = "context-key"
 )
 
 // MakeRegisterHandler make an HTTP handler for the self-register endpoint.
 func MakeRegisterHandler(e endpoint.Endpoint, logger log.Logger) *http_transport.Server {
 	pathParams := map[string]string{prmCorpRealm: constants.RegExpRealmName}
 	queryParams := map[string]string{
-		prmRealm:    constants.RegExpRealmName,
-		prmRedirect: constants.RegExpBool,
+		prmRealm:      constants.RegExpRealmName,
+		prmContextKey: constants.RegExpID,
 	}
 
 	return http_transport.NewServer(e,

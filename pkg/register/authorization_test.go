@@ -16,9 +16,9 @@ import (
 )
 
 func configureMock(mockResponse *mock.ResponseWriter, statusCode int, header http.Header) {
-	mockResponse.EXPECT().WriteHeader(statusCode).Times(1)
-	mockResponse.EXPECT().Header().Return(header).Times(1)
-	mockResponse.EXPECT().Write(gomock.Any()).Times(1)
+	mockResponse.EXPECT().WriteHeader(statusCode)
+	mockResponse.EXPECT().Header().Return(header)
+	mockResponse.EXPECT().Write(gomock.Any())
 }
 
 func TestMakeHTTPRecaptchaValidationMW(t *testing.T) {
@@ -58,7 +58,7 @@ func TestMakeHTTPRecaptchaValidationMW(t *testing.T) {
 		req.Header.Set("Authorization", recaptchaSecret)
 		mockRecaptchaHandler.EXPECT().ServeHTTP(gomock.Any(), gomock.Any()).Do(func(w http.ResponseWriter, req *http.Request) {
 			w.WriteHeader(400)
-		}).Times(1)
+		})
 		configureMock(mockResponseWriter, http.StatusForbidden, req.Header)
 		authHandler.ServeHTTP(mockResponseWriter, &req)
 	})
@@ -89,7 +89,7 @@ func TestMakeHTTPRecaptchaValidationMW(t *testing.T) {
 			w.WriteHeader(200)
 			w.Write([]byte(`{"success":true}`))
 		})
-		mockHTTPHandler.EXPECT().ServeHTTP(gomock.Any(), gomock.Any()).Times(1)
+		mockHTTPHandler.EXPECT().ServeHTTP(gomock.Any(), gomock.Any())
 		authHandler.ServeHTTP(mockResponseWriter, &req)
 	})
 }
@@ -107,11 +107,11 @@ func TestMakeAuthorizationRegisterComponentMW(t *testing.T) {
 	var user = apiregister.UserRepresentation{}
 	var expectedErr = errors.New("")
 
-	mockComponent.EXPECT().RegisterUser(ctx, socialRealm, realm, user, false).Return("", expectedErr).Times(1)
-	_, err := component.RegisterUser(ctx, socialRealm, realm, user, false)
+	mockComponent.EXPECT().RegisterUser(ctx, socialRealm, realm, user, nil).Return("", expectedErr)
+	_, err := component.RegisterUser(ctx, socialRealm, realm, user, nil)
 	assert.Equal(t, expectedErr, err)
 
-	mockComponent.EXPECT().GetConfiguration(ctx, realm).Return(apiregister.ConfigurationRepresentation{}, expectedErr).Times(1)
+	mockComponent.EXPECT().GetConfiguration(ctx, realm).Return(apiregister.ConfigurationRepresentation{}, expectedErr)
 	_, err = component.GetConfiguration(ctx, realm)
 	assert.Equal(t, expectedErr, err)
 }

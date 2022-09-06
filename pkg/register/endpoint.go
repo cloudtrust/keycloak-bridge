@@ -2,7 +2,6 @@ package register
 
 import (
 	"context"
-	"strings"
 
 	cs "github.com/cloudtrust/common-service/v2"
 	commonerrors "github.com/cloudtrust/common-service/v2/errors"
@@ -28,7 +27,12 @@ func MakeRegisterUserEndpoint(component Component, socialRealm string) cs.Endpoi
 			return nil, commonerrors.CreateBadRequestError(commonerrors.MsgErrInvalidParam + "." + msg.Realm)
 		}
 
-		return registerUser(ctx, component, socialRealm, realm, m[reqBody], true, isParameterTrue(m, prmRedirect))
+		var contextKey *string
+		if value, ok := m[prmContextKey]; ok {
+			contextKey = &value
+		}
+
+		return registerUser(ctx, component, socialRealm, realm, m[reqBody], true, contextKey)
 	}
 }
 
@@ -38,11 +42,16 @@ func MakeRegisterCorpUserEndpoint(component Component) cs.Endpoint {
 		var m = req.(map[string]string)
 		var realm = m[prmCorpRealm]
 
-		return registerUser(ctx, component, realm, realm, m[reqBody], false, isParameterTrue(m, prmRedirect))
+		var contextKey *string
+		if value, ok := m[prmContextKey]; ok {
+			contextKey = &value
+		}
+
+		return registerUser(ctx, component, realm, realm, m[reqBody], false, contextKey)
 	}
 }
 
-func registerUser(ctx context.Context, component Component, corpRealm string, realm string, body string, isSocialRealm bool, redirect bool) (interface{}, error) {
+func registerUser(ctx context.Context, component Component, corpRealm string, realm string, body string, isSocialRealm bool, contextKey *string) (interface{}, error) {
 	var user, err = apiregister.UserFromJSON(body)
 	if err != nil {
 		return nil, commonerrors.CreateBadRequestError(commonerrors.MsgErrInvalidParam + "." + msg.BodyContent)
@@ -53,12 +62,12 @@ func registerUser(ctx context.Context, component Component, corpRealm string, re
 		return nil, err
 	}
 
-	redirectURL, err := component.RegisterUser(ctx, corpRealm, realm, user, redirect)
+	redirectURL, err := component.RegisterUser(ctx, corpRealm, realm, user, contextKey)
 	if err != nil {
 		return nil, err
 	}
 
-	if redirect {
+	if redirectURL != "" {
 		return redirectURL, nil
 	}
 	return commonhttp.StatusNoContent{}, nil
@@ -75,11 +84,4 @@ func MakeGetConfigurationEndpoint(component Component) cs.Endpoint {
 
 		return component.GetConfiguration(ctx, realm)
 	}
-}
-
-func isParameterTrue(mapParams map[string]string, paramName string) bool {
-	if value, ok := mapParams[paramName]; ok {
-		return strings.ToLower(value) == "true"
-	}
-	return false
 }

@@ -49,9 +49,14 @@ type GlnVerifier interface {
 	ValidateGLN(firstName, lastName, gln string) error
 }
 
+// ContextKeyManager interface
+type ContextKeyManager interface {
+	GetOverride(realm string, contextKey string) (keycloakb.ContextKeyParameters, bool)
+}
+
 // Component is the register component interface.
 type Component interface {
-	RegisterUser(ctx context.Context, targetRealmName string, customerRealmName string, user apiregister.UserRepresentation, redirect bool) (string, error)
+	RegisterUser(ctx context.Context, targetRealmName string, customerRealmName string, user apiregister.UserRepresentation, contextKey *string) (string, error)
 	GetConfiguration(ctx context.Context, realmName string) (apiregister.ConfigurationRepresentation, error)
 }
 
@@ -61,7 +66,8 @@ var (
 
 // NewComponent returns component.
 func NewComponent(keycloakClient KeycloakClient, tokenProvider toolbox.OidcTokenProvider, usersDBModule keycloakb.UsersDetailsDBModule,
-	configDBModule ConfigurationDBModule, eventsDBModule database.EventsDBModule, onboardingModule OnboardingModule, glnVerifier GlnVerifier, logger keycloakb.Logger) Component {
+	configDBModule ConfigurationDBModule, eventsDBModule database.EventsDBModule, onboardingModule OnboardingModule, glnVerifier GlnVerifier,
+	contextKeyManager ContextKeyManager, logger keycloakb.Logger) Component {
 	return &component{
 		keycloakClient:   keycloakClient,
 		tokenProvider:    tokenProvider,
@@ -70,6 +76,7 @@ func NewComponent(keycloakClient KeycloakClient, tokenProvider toolbox.OidcToken
 		eventsDBModule:   eventsDBModule,
 		onboardingModule: onboardingModule,
 		glnVerifier:      glnVerifier,
+		contextKeyMgr:    contextKeyManager,
 		logger:           logger,
 	}
 }
@@ -83,6 +90,7 @@ type component struct {
 	eventsDBModule   database.EventsDBModule
 	onboardingModule OnboardingModule
 	glnVerifier      GlnVerifier
+	contextKeyMgr    ContextKeyManager
 	logger           keycloakb.Logger
 }
 
@@ -129,7 +137,7 @@ func (c *component) GetConfiguration(ctx context.Context, realmName string) (api
 	}, nil
 }
 
-func (c *component) RegisterUser(ctx context.Context, targetRealmName string, customerRealmName string, user apiregister.UserRepresentation, redirect bool) (string, error) {
+func (c *component) RegisterUser(ctx context.Context, targetRealmName string, customerRealmName string, user apiregister.UserRepresentation, contextKey *string) (string, error) {
 	// Get an OIDC token to be able to request Keycloak
 	var accessToken string
 	accessToken, err := c.tokenProvider.ProvideTokenForRealm(ctx, targetRealmName)
@@ -143,6 +151,25 @@ func (c *component) RegisterUser(ctx context.Context, targetRealmName string, cu
 	if err != nil {
 		c.logger.Info(ctx, "msg", "Can't get realm configuration from database", "err", err.Error())
 		return "", err
+	}
+
+	var redirect = false
+	var ctxOverride keycloakb.ContextKeyParameters
+	if contextKey != nil {
+		var ok bool
+		if ctxOverride, ok = c.contextKeyMgr.GetOverride(customerRealmName, *contextKey); !ok {
+			c.logger.Info(ctx, "msg", "Invalid context key", "context-key", *contextKey)
+			return "", errorhandler.CreateBadRequestError(errorhandler.MsgErrInvalidParam + ".context-key")
+		}
+		if ctxOverride.OnboardingClientID != nil {
+			realmConf.OnboardingClientID = ctxOverride.OnboardingClientID
+		}
+		if ctxOverride.OnboardingRedirectURI != nil {
+			realmConf.OnboardingRedirectURI = ctxOverride.OnboardingRedirectURI
+		}
+		if ctxOverride.RedirectMode != nil {
+			redirect = *ctxOverride.RedirectMode
+		}
 	}
 
 	if realmAdminConf.SelfRegisterEnabled == nil || !*realmAdminConf.SelfRegisterEnabled {
