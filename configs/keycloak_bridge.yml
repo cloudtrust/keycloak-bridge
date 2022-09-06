@@ -263,4 +263,4 @@ context-keys:
   realm: trustid
   onboardingRedirectURI: http://localhost/
   onboardingClientID: onboarding
-  redirectMode: xxx
+  redirectMode: false
