@@ -1403,6 +1403,8 @@ func TestUpdateUser(t *testing.T) {
 				assert.Equal(t, *userRep.Email.Value, *kcUserRep.GetAttributeString("emailToValidate"))
 				return nil
 			})
+		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "ACTION_EMAIL", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+		mocks.keycloakClient.EXPECT().ExecuteActionsEmail(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
 		err := managementComponent.UpdateUser(ctx, "master", id, userRep)
 
@@ -1428,6 +1430,8 @@ func TestUpdateUser(t *testing.T) {
 				assert.Nil(t, kcUserRep.GetFieldValues(fields.Accreditations))
 				return nil
 			})
+		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "ACTION_EMAIL", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+		mocks.keycloakClient.EXPECT().ExecuteActionsEmail(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
 		err := managementComponent.UpdateUser(ctx, "master", id, withoutEmailUser)
 
@@ -1454,6 +1458,8 @@ func TestUpdateUser(t *testing.T) {
 				assert.Equal(t, true, *verified)
 				return nil
 			})
+		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "ACTION_EMAIL", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+		mocks.keycloakClient.EXPECT().ExecuteActionsEmail(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
 		err := managementComponent.UpdateUser(ctx, "master", id, userRep)
 
@@ -1482,6 +1488,8 @@ func TestUpdateUser(t *testing.T) {
 				assert.False(t, ok)
 				return nil
 			})
+		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "ACTION_EMAIL", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+		mocks.keycloakClient.EXPECT().ExecuteActionsEmail(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
 		err := managementComponent.UpdateUser(ctx, "master", id, withoutPhoneNumberUser)
 
@@ -1515,6 +1523,8 @@ func TestUpdateUser(t *testing.T) {
 				assert.Equal(t, true, *verified)
 				return nil
 			})
+		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "ACTION_EMAIL", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+		mocks.keycloakClient.EXPECT().ExecuteActionsEmail(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
 		err := managementComponent.UpdateUser(ctx, "master", id, userRepWithoutAttr)
 
