@@ -1,40 +1,30 @@
 package keycloakb
 
-import (
-	"encoding/json"
-)
-
 type ContextKeyParameters struct {
-	ID                    *string `json:"id"`
-	Realm                 *string `json:"realm"`
-	OnboardingRedirectURI *string `json:"onboardingRedirectURI,omitempty"`
-	OnboardingClientID    *string `json:"onboardingClientID,omitempty"`
-	RedirectMode          *bool   `json:"redirectMode,omitempty"`
+	ID                    *string `mapstructure:"id"`
+	Realm                 *string `mapstructure:"realm"`
+	OnboardingRedirectURI *string `mapstructure:"onboardingRedirectURI,omitempty"`
+	OnboardingClientID    *string `mapstructure:"onboardingClientID,omitempty"`
+	RedirectMode          *bool   `mapstructure:"redirectMode,omitempty"`
 }
 
 type ContextKeyManager struct {
 	contextKeys map[string]map[string]ContextKeyParameters
 }
 
-func MakeContextKeyManager(contextKeysConfig interface{}) (*ContextKeyManager, error) {
-	var contextKeys []ContextKeyParameters
-	mapContextKeys := map[string]map[string]ContextKeyParameters{}
-	jsonConfig, err := json.Marshal(contextKeysConfig)
+func MakeContextKeyManager(confProvider func(interface{}) error) (*ContextKeyManager, error) {
+	var ctxKeyConfig []ContextKeyParameters
+	var err = confProvider(&ctxKeyConfig)
 	if err != nil {
 		return nil, err
 	}
-	err = json.Unmarshal(jsonConfig, &contextKeys)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, contextKey := range contextKeys {
+	var mapContextKeys = map[string]map[string]ContextKeyParameters{}
+	for _, contextKey := range ctxKeyConfig {
 		if _, ok := mapContextKeys[*contextKey.Realm]; !ok {
 			mapContextKeys[*contextKey.Realm] = make(map[string]ContextKeyParameters)
 		}
 		mapContextKeys[*contextKey.Realm][*contextKey.ID] = contextKey
 	}
-
 	return &ContextKeyManager{
 		contextKeys: mapContextKeys,
 	}, nil

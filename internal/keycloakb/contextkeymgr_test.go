@@ -15,7 +15,10 @@ func TestGetOverride(t *testing.T) {
 		{ID: ptr(key1), Realm: ptr(realm1), OnboardingRedirectURI: ptr("http://localhost/")},
 		{ID: ptr(key2), Realm: ptr(realm2), OnboardingClientID: ptr("theclient")},
 	}
-	contextKeyManager, _ := MakeContextKeyManager(contextKeysConfig)
+	contextKeyManager, _ := MakeContextKeyManager(func(rawVal interface{}) error {
+		*(rawVal.(*[]ContextKeyParameters)) = contextKeysConfig
+		return nil
+	})
 
 	t.Run("Valid parameters", func(t *testing.T) {
 		res, ok := contextKeyManager.GetOverride(realm1, key1)
