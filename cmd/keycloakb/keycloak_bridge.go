@@ -968,7 +968,9 @@ func main() {
 		var onboardingModule = keycloakb.NewOnboardingModule(keycloakClient, keycloakConfig.URIProvider, usersDBModule, registerInactiveLockDuration, onboardingRealmOverrides, registerLogger)
 
 		// context keys
-		contextKeyManager, err := keycloakb.MakeContextKeyManager(c.Get(cfgContextKeys))
+		contextKeyManager, err := keycloakb.MakeContextKeyManager(func(config interface{}) error {
+			return c.UnmarshalKey(cfgContextKeys, config)
+		})
 		if err != nil {
 			logger.Error(ctx, "msg", "Could not initialize context key manager", "err", err)
 			return
