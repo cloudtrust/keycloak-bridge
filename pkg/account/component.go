@@ -84,6 +84,7 @@ type UsersDetailsDBModule interface {
 	GetUserDetails(ctx context.Context, realm string, userID string) (dto.DBUser, error)
 }
 
+// AccreditationsServiceClient interface
 type AccreditationsServiceClient interface {
 	GetChecks(ctx context.Context, realm string, userID string) ([]accreditationsclient.CheckRepresentation, error)
 	GetPendingChecks(ctx context.Context, realm string, userID string) ([]accreditationsclient.CheckRepresentation, error)

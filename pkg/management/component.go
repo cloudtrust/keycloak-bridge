@@ -96,6 +96,7 @@ type UsersDetailsDBModule interface {
 	DeleteUserDetails(ctx context.Context, realm string, userID string) error
 }
 
+// AccreditationsServiceClient interface
 type AccreditationsServiceClient interface {
 	GetChecks(ctx context.Context, realm string, userID string) ([]accreditationsclient.CheckRepresentation, error)
 	GetPendingChecks(ctx context.Context, realm string, userID string) ([]accreditationsclient.CheckRepresentation, error)
@@ -2494,11 +2495,11 @@ func (c *component) GetFederatedIdentities(ctx context.Context, realmName string
 		return []api.FederatedIdentityRepresentation{}, nil
 	}
 	var res []api.FederatedIdentityRepresentation
-	for _, kcFedId := range kcFedIds {
+	for _, kcFedID := range kcFedIds {
 		res = append(res, api.FederatedIdentityRepresentation{
-			UserID:           kcFedId.UserID,
-			Username:         kcFedId.UserName,
-			IdentityProvider: kcFedId.IdentityProvider,
+			UserID:           kcFedID.UserID,
+			Username:         kcFedID.UserName,
+			IdentityProvider: kcFedID.IdentityProvider,
 		})
 	}
 	return res, nil

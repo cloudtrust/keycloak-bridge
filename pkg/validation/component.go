@@ -277,13 +277,13 @@ func (c *component) notifyUpdate(validationCtx *validationContext, kcUser *kc.Us
 			RealmName:     &validationCtx.realmName,
 			UpdatedFields: fc.UpdatedFields(),
 		}
-		if revokeAccreds, err := c.accredsService.NotifyUpdate(validationCtx.ctx, notifyUpdate); err != nil {
+		revokeAccreds, err := c.accredsService.NotifyUpdate(validationCtx.ctx, notifyUpdate)
+		if err != nil {
 			c.logger.Warn(validationCtx.ctx, "msg", "Could not notify accreds service of updated fields", "uid", validationCtx.userID, "fields", notifyUpdate.UpdatedFields)
 			return err
-		} else {
-			ap.RevokeTypes(revokeAccreds)
-			validationCtx.kcUser.SetFieldValues(fields.Accreditations, ap.ToKeycloak())
 		}
+		ap.RevokeTypes(revokeAccreds)
+		validationCtx.kcUser.SetFieldValues(fields.Accreditations, ap.ToKeycloak())
 	}
 	return nil
 }

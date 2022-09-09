@@ -60,6 +60,7 @@ type Component interface {
 	GetUserInformation(ctx context.Context) (api.UserInformationRepresentation, error)
 }
 
+// AccreditationsServiceClient interface
 type AccreditationsServiceClient interface {
 	GetChecks(ctx context.Context, realm string, userID string) ([]accreditationsclient.CheckRepresentation, error)
 	GetPendingChecks(ctx context.Context, realm string, userID string) ([]accreditationsclient.CheckRepresentation, error)

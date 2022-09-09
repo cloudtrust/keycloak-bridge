@@ -61,8 +61,8 @@ const (
 	RegExpCorporateLastName  = regExpLen128
 )
 
+// Overridable user details regex and document types
 var (
-	// Overridable user details regex
 	RegExpFirstName        = RegExpNameSpecialChars128
 	RegExpLastName         = RegExpNameSpecialChars128
 	RegExpCountryCode      = `^\w{2}$`

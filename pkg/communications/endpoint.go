@@ -39,7 +39,7 @@ func MakeSendEmailEndpoint(component Component) cs.Endpoint {
 	}
 }
 
-// MakeSendEmailEndpoint makes the SendEmail Endpoint
+// MakeSendEmailToUserEndpoint makes the SendEmailToUser Endpoint
 func MakeSendEmailToUserEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
