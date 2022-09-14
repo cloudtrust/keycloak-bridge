@@ -151,7 +151,7 @@ func (c *authorizationComponentMW) ValidateUserBasicID(ctx context.Context, user
 	// as parameter, so we pick the current realm of the user.
 	var targetRealm = ctx.Value(cs.CtContextRealm).(string)
 
-	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
+	if err := c.authManager.CheckAuthorizationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
 		return err
 	}
 
