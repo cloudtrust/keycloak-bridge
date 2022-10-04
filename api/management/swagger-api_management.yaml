@@ -2296,6 +2296,7 @@ components:
           type: string
         createdDate:
           type: integer
+          format: int64
         config:
           type: object
           additionalProperties:

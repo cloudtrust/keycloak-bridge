@@ -198,6 +198,7 @@ components:
           type: string
         createdDate:
           type: integer
+          format: int64
         credentialData:
           type: object
         temporary:
