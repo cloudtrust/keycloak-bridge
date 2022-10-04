@@ -22,6 +22,7 @@ func toFieldValue(value *string) []string {
 	return nil
 }
 
+// GetFieldValues gets field values
 func (dbu *DBUser) GetFieldValues(field fields.Field) []string {
 	switch field {
 	case fields.BirthLocation:

@@ -1,5 +1,6 @@
 package keycloakb
 
+// ContextKeyParameters struct
 type ContextKeyParameters struct {
 	ID                    *string `mapstructure:"id"`
 	Realm                 *string `mapstructure:"realm"`
@@ -8,10 +9,12 @@ type ContextKeyParameters struct {
 	RedirectMode          *bool   `mapstructure:"redirectMode,omitempty"`
 }
 
+// ContextKeyManager struct
 type ContextKeyManager struct {
 	contextKeys map[string]map[string]ContextKeyParameters
 }
 
+// MakeContextKeyManager creates a context key manager
 func MakeContextKeyManager(confProvider func(interface{}) error) (*ContextKeyManager, error) {
 	var ctxKeyConfig []ContextKeyParameters
 	var err = confProvider(&ctxKeyConfig)
@@ -30,6 +33,7 @@ func MakeContextKeyManager(confProvider func(interface{}) error) (*ContextKeyMan
 	}, nil
 }
 
+// GetOverride gets override values for the pair realm/context key
 func (c *ContextKeyManager) GetOverride(realm string, contextKey string) (ContextKeyParameters, bool) {
 	if contextKeyPerRealm, ok := c.contextKeys[realm]; ok {
 		if res, ok := contextKeyPerRealm[contextKey]; ok {

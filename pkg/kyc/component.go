@@ -62,6 +62,7 @@ type GlnVerifier interface {
 	ValidateGLN(firstName, lastName, gln string) error
 }
 
+// AccreditationsServiceClient interface
 type AccreditationsServiceClient interface {
 	NotifyCheck(ctx context.Context, check accreditationsclient.CheckRepresentation) error
 }

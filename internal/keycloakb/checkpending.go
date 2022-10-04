@@ -25,7 +25,7 @@ var (
 	ErrCantUnmarshalPendingCheck = errors.New("can't unmarshal pending check value")
 )
 
-// ConvertFromDBChecks converts a check coming from accreditation service
+// ConvertFromAccreditationChecks converts a check coming from accreditation service
 func ConvertFromAccreditationChecks(dbChecks []accreditationsclient.CheckRepresentation) PendingChecks {
 	checks := map[string]int64{}
 	for _, pendingCheck := range dbChecks {

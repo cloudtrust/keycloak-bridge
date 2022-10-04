@@ -63,6 +63,7 @@ type accredsProcessor struct {
 	accreditations map[string][]AccreditationRepresentation
 }
 
+// NewAccreditationsProcessor creates an accreditations processor
 func NewAccreditationsProcessor(accreditations []string) (AccreditationsProcessor, error) {
 	var res = accredsProcessor{accreditations: make(map[string][]AccreditationRepresentation)}
 	var bestEffortError error
