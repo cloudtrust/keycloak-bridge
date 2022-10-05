@@ -501,7 +501,15 @@ func (c *component) checkGLN(ctx context.Context, realm string, businessIDThere 
 		if businessID == nil {
 			kcUser.RemoveAttribute(constants.AttrbBusinessID)
 		} else {
-			return c.glnVerifier.ValidateGLN(*kcUser.FirstName, *kcUser.LastName, *businessID)
+			var firsName, lastName string
+			if kcUser.FirstName != nil {
+				firsName = *kcUser.FirstName
+			}
+			if kcUser.LastName != nil {
+				lastName = *kcUser.LastName
+			}
+
+			return c.glnVerifier.ValidateGLN(firsName, lastName, *businessID)
 		}
 	}
 	return nil
