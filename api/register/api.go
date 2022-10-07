@@ -105,29 +105,29 @@ func (u *UserRepresentation) ConvertToKeycloak() kc.UserRepresentation {
 }
 
 // Validate checks the validity of the given User
-func (u *UserRepresentation) Validate(allFieldsMandatory bool) error {
+func (u *UserRepresentation) Validate(isSocialRealm bool) error {
 	return validation.NewParameterValidator().
-		ValidateParameterRegExp(prmUserGender, u.Gender, constants.RegExpGender, allFieldsMandatory).
-		ValidateParameterRegExp(prmUserFirstName, u.FirstName, selectRegExp(constants.RegExpFirstName, constants.RegExpCorporateFirstName, allFieldsMandatory), true).
-		ValidateParameterRegExp(prmUserLastName, u.LastName, selectRegExp(constants.RegExpLastName, constants.RegExpCorporateLastName, allFieldsMandatory), true).
+		ValidateParameterRegExp(prmUserGender, u.Gender, constants.RegExpGender, false).
+		ValidateParameterRegExp(prmUserFirstName, u.FirstName, selectRegExp(constants.RegExpFirstName, constants.RegExpCorporateFirstName, isSocialRealm), true).
+		ValidateParameterRegExp(prmUserLastName, u.LastName, selectRegExp(constants.RegExpLastName, constants.RegExpCorporateLastName, isSocialRealm), true).
 		ValidateParameterRegExp(prmUserEmail, u.Email, constants.RegExpEmail, true).
-		ValidateParameterPhoneNumber(prmUserPhoneNumber, u.PhoneNumber, allFieldsMandatory).
-		ValidateParameterDateMultipleLayout(prmUserBirthDate, u.BirthDate, constants.SupportedDateLayouts, allFieldsMandatory).
-		ValidateParameterRegExp(prmUserBirthLocation, u.BirthLocation, constants.RegExpBirthLocation, allFieldsMandatory).
-		ValidateParameterRegExp(prmUserNationality, u.Nationality, constants.RegExpCountryCode, allFieldsMandatory).
-		ValidateParameterIn(prmUserIDDocumentType, u.IDDocumentType, constants.AllowedDocumentTypes, allFieldsMandatory).
-		ValidateParameterRegExp(prmUserIDDocumentNumber, u.IDDocumentNumber, constants.RegExpIDDocumentNumber, allFieldsMandatory).
-		ValidateParameterLength(prmUserIDDocumentNumber, u.IDDocumentNumber, 1, 50, allFieldsMandatory).
-		ValidateParameterDateMultipleLayout(prmUserIDDocumentExpiration, u.IDDocumentExpiration, constants.SupportedDateLayouts, allFieldsMandatory).
-		ValidateParameterRegExp(prmUserIDDocumentCountry, u.IDDocumentCountry, constants.RegExpCountryCode, allFieldsMandatory).
+		ValidateParameterPhoneNumber(prmUserPhoneNumber, u.PhoneNumber, isSocialRealm).
+		ValidateParameterDateMultipleLayout(prmUserBirthDate, u.BirthDate, constants.SupportedDateLayouts, false).
+		ValidateParameterRegExp(prmUserBirthLocation, u.BirthLocation, constants.RegExpBirthLocation, false).
+		ValidateParameterRegExp(prmUserNationality, u.Nationality, constants.RegExpCountryCode, false).
+		ValidateParameterIn(prmUserIDDocumentType, u.IDDocumentType, constants.AllowedDocumentTypes, false).
+		ValidateParameterRegExp(prmUserIDDocumentNumber, u.IDDocumentNumber, constants.RegExpIDDocumentNumber, false).
+		ValidateParameterLength(prmUserIDDocumentNumber, u.IDDocumentNumber, 1, 50, false).
+		ValidateParameterDateMultipleLayout(prmUserIDDocumentExpiration, u.IDDocumentExpiration, constants.SupportedDateLayouts, false).
+		ValidateParameterRegExp(prmUserIDDocumentCountry, u.IDDocumentCountry, constants.RegExpCountryCode, false).
 		ValidateParameterRegExp(prmUserLocale, u.Locale, constants.RegExpLocale, true).
 		ValidateParameterRegExp(prmUserBusinessID, u.BusinessID, constants.RegExpBusinessID, false).
 		Status()
 }
 
 // TO CLEAN WHEN WE WILL HAVE ATTRIBUTE MANAGEMENT
-func selectRegExp(standardRegExp string, corporateRegexp string, isStandard bool) string {
-	if isStandard {
+func selectRegExp(standardRegExp string, corporateRegexp string, isSocialRealm bool) string {
+	if isSocialRealm {
 		return standardRegExp
 	}
 	return corporateRegexp
