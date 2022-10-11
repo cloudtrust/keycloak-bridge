@@ -634,7 +634,9 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 			removeAttributes = append(removeAttributes, constants.AttrbPhoneNumber, constants.AttrbPhoneNumberVerified, constants.AttrbPhoneNumberToValidate)
 		} else if fieldsComparator.IsAnyFieldUpdated(fields.PhoneNumber) {
 			oldUserKc.SetAttributeString(constants.AttrbPhoneNumberToValidate, *user.PhoneNumber.Value)
-			actions = append(actions, actionVerifyPhoneNumber)
+			if len(oldUserKc.GetFieldValues(fields.PhoneNumber)) > 0 {
+				actions = append(actions, actionVerifyPhoneNumber)
+			}
 		}
 	}
 

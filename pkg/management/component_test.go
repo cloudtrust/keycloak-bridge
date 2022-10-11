@@ -1430,8 +1430,7 @@ func TestUpdateUser(t *testing.T) {
 				assert.Nil(t, kcUserRep.GetFieldValues(fields.Accreditations))
 				return nil
 			})
-		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "ACTION_EMAIL", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
-		mocks.keycloakClient.EXPECT().ExecuteActionsEmail(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+		// No execute action email is sent for phoneNumber change as there is no current phoneNumber defined
 
 		err := managementComponent.UpdateUser(ctx, "master", id, withoutEmailUser)
 
