@@ -12,12 +12,16 @@ import (
 )
 
 const (
-	actionIDNow         = "IDNow"
-	idNowInitActionName = "IDN_Init"
+	actionIDNowVideoIdent = "IDNow"
+	actionIDNowAutoIdent  = "IDNowAutoIdent"
+
+	idNowInitAuth          = "IDN_Init"
+	idNowAutoIdentInitAuth = "IDN_AutoIdentInit"
 )
 
 var mapCheckToAction = map[string]string{
-	"IDNOW_CHECK": actionIDNow,
+	"IDNOW_CHECK":            actionIDNowVideoIdent,
+	"AUTO_IDENT_IDNOW_CHECK": actionIDNowAutoIdent,
 }
 
 func toActionNames(checkNames *[]string) *[]string {
@@ -46,7 +50,8 @@ func chooseNotEmpty(values ...*string) *string {
 
 // AppendIDNowActions is used to let the bridge load IDNow rights for IDNow actions (IDN_Init)
 func AppendIDNowActions(authActions []string) []string {
-	return append(authActions, idNowInitActionName)
+	authActions = append(authActions, idNowInitAuth)
+	return append(authActions, idNowAutoIdentInitAuth)
 }
 
 // KeycloakClient interface exposes methods we need to call to send requests to Keycloak API
@@ -153,21 +158,36 @@ func (c *component) GetUserInformation(ctx context.Context) (api.UserInformation
 	if realmAdminConfig, err := c.configDBModule.GetAdminConfiguration(ctx, realm); err == nil {
 		var availableChecks = realmAdminConfig.AvailableChecks
 		if gln == nil && realmAdminConfig.ShowGlnEditing != nil && *realmAdminConfig.ShowGlnEditing {
-			delete(availableChecks, actionIDNow)
+			delete(availableChecks, actionIDNowVideoIdent)
+			delete(availableChecks, actionIDNowAutoIdent)
 		}
 		// User can't execute GetGroupNamesOfUser... use a technical account
-		if !c.isIDNowAvailableForUser(ctx, techAccessToken) {
+		if !c.isIDNowVideoIdentAvailableForUser(ctx, techAccessToken) {
 			c.logger.Debug(ctx, "msg", "User is not allowed to access video identification", "id", ctx.Value(cs.CtContextUserID))
-			delete(availableChecks, actionIDNow)
+			delete(availableChecks, actionIDNowVideoIdent)
+		}
+		if !c.isIDNowAutoIdentAvailableForUser(ctx, techAccessToken) {
+			c.logger.Debug(ctx, "msg", "User is not allowed to access auto identification", "id", ctx.Value(cs.CtContextUserID))
+			delete(availableChecks, actionIDNowAutoIdent)
 		}
 
 		// if vouchers are required to proceed to a video identification, check that the balance is bigger than 1
-		if _, ok := availableChecks[actionIDNow]; ok && realmAdminConfig.VideoIdentificationAccountingEnabled != nil && realmAdminConfig.VideoIdentificationPrepaymentRequired != nil &&
+		if _, ok := availableChecks[actionIDNowVideoIdent]; ok && realmAdminConfig.VideoIdentificationAccountingEnabled != nil && realmAdminConfig.VideoIdentificationPrepaymentRequired != nil &&
 			*realmAdminConfig.VideoIdentificationAccountingEnabled && *realmAdminConfig.VideoIdentificationPrepaymentRequired {
 			balance, err := c.accountingClient.GetBalance(ctx, realm, userID, "VIDEO_IDENTIFICATION")
 			if err != nil || balance < 1 {
 				c.logger.Debug(ctx, "msg", "User is not allowed to access video identification", "id", ctx.Value(cs.CtContextUserID))
-				delete(availableChecks, actionIDNow)
+				delete(availableChecks, actionIDNowVideoIdent)
+			}
+		}
+
+		// if vouchers are required to proceed to an auto identification, check that the balance is bigger than 1
+		if _, ok := availableChecks[actionIDNowAutoIdent]; ok && realmAdminConfig.AutoIdentificationAccountingEnabled != nil && realmAdminConfig.AutoIdentificationPrepaymentRequired != nil &&
+			*realmAdminConfig.AutoIdentificationAccountingEnabled && *realmAdminConfig.AutoIdentificationPrepaymentRequired {
+			balance, err := c.accountingClient.GetBalance(ctx, realm, userID, "AUTO_IDENTIFICATION")
+			if err != nil || balance < 1 {
+				c.logger.Debug(ctx, "msg", "User is not allowed to access auto identification", "id", ctx.Value(cs.CtContextUserID))
+				delete(availableChecks, actionIDNowAutoIdent)
 			}
 		}
 
@@ -187,10 +207,18 @@ func (c *component) GetUserInformation(ctx context.Context) (api.UserInformation
 	return userInfo, nil
 }
 
-func (c *component) isIDNowAvailableForUser(ctx context.Context, technicalUserAccessToken string) bool {
+func (c *component) isIDNowVideoIdentAvailableForUser(ctx context.Context, technicalUserAccessToken string) bool {
 	var realm = ctx.Value(cs.CtContextRealm).(string)
 	var userID = ctx.Value(cs.CtContextUserID).(string)
 	var technicalUserContext = context.WithValue(ctx, cs.CtContextAccessToken, technicalUserAccessToken)
 
-	return c.authManager.CheckAuthorizationOnTargetUser(technicalUserContext, idNowInitActionName, realm, userID) == nil
+	return c.authManager.CheckAuthorizationOnTargetUser(technicalUserContext, idNowInitAuth, realm, userID) == nil
+}
+
+func (c *component) isIDNowAutoIdentAvailableForUser(ctx context.Context, technicalUserAccessToken string) bool {
+	var realm = ctx.Value(cs.CtContextRealm).(string)
+	var userID = ctx.Value(cs.CtContextUserID).(string)
+	var technicalUserContext = context.WithValue(ctx, cs.CtContextAccessToken, technicalUserAccessToken)
+
+	return c.authManager.CheckAuthorizationOnTargetUser(technicalUserContext, idNowAutoIdentInitAuth, realm, userID) == nil
 }

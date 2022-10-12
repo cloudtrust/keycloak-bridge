@@ -250,9 +250,12 @@ type RealmAdminConfiguration struct {
 	ConsentRequiredSocial                 *bool                     `json:"consent_required_social"`
 	ConsentRequiredCorporate              *bool                     `json:"consent_required_corporate"`
 	ShowGlnEditing                        *bool                     `json:"show_gln_editing"`
-	VoucherEnabled                        *bool                     `json:"voucher_enabled"`
+	VideoIdentificationVoucherEnabled     *bool                     `json:"video_identification_voucher_enabled"`
 	VideoIdentificationAccountingEnabled  *bool                     `json:"video_identification_accounting_enabled"`
 	VideoIdentificationPrepaymentRequired *bool                     `json:"video_identification_prepayment_required"`
+	AutoIdentificationVoucherEnabled      *bool                     `json:"auto_identification_voucher_enabled"`
+	AutoIdentificationAccountingEnabled   *bool                     `json:"auto_identification_accounting_enabled"`
+	AutoIdentificationPrepaymentRequired  *bool                     `json:"auto_identification_prepayment_required"`
 }
 
 // RealmAdminAccreditation struct
@@ -692,6 +695,7 @@ func ConvertRealmAdminConfigurationFromDBStruct(conf configuration.RealmAdminCon
 		checks = make(map[string]bool)
 		checks[configuration.CheckKeyIDNow] = false
 		checks[configuration.CheckKeyPhysical] = false
+		checks[configuration.CheckKeyIDNowAutoIdent] = false
 	}
 	return RealmAdminConfiguration{
 		Mode:                                  defaultString(conf.Mode, "corporate"),
@@ -703,9 +707,12 @@ func ConvertRealmAdminConfigurationFromDBStruct(conf configuration.RealmAdminCon
 		ConsentRequiredSocial:                 defaultBool(conf.ConsentRequiredSocial, false),
 		ConsentRequiredCorporate:              defaultBool(conf.ConsentRequiredCorporate, false),
 		ShowGlnEditing:                        defaultBool(conf.ShowGlnEditing, false),
-		VoucherEnabled:                        defaultBool(conf.VoucherEnabled, false),
+		VideoIdentificationVoucherEnabled:     defaultBool(conf.VideoIdentificationVoucherEnabled, false),
 		VideoIdentificationAccountingEnabled:  defaultBool(conf.VideoIdentificationAccountingEnabled, false),
 		VideoIdentificationPrepaymentRequired: defaultBool(conf.VideoIdentificationPrepaymentRequired, false),
+		AutoIdentificationVoucherEnabled:      defaultBool(conf.AutoIdentificationVoucherEnabled, false),
+		AutoIdentificationAccountingEnabled:   defaultBool(conf.AutoIdentificationAccountingEnabled, false),
+		AutoIdentificationPrepaymentRequired:  defaultBool(conf.AutoIdentificationPrepaymentRequired, false),
 	}
 }
 
@@ -721,9 +728,12 @@ func (rac RealmAdminConfiguration) ConvertToDBStruct() configuration.RealmAdminC
 		ConsentRequiredSocial:                 rac.ConsentRequiredSocial,
 		ConsentRequiredCorporate:              rac.ConsentRequiredCorporate,
 		ShowGlnEditing:                        rac.ShowGlnEditing,
-		VoucherEnabled:                        rac.VoucherEnabled,
+		VideoIdentificationVoucherEnabled:     rac.VideoIdentificationVoucherEnabled,
 		VideoIdentificationAccountingEnabled:  rac.VideoIdentificationAccountingEnabled,
 		VideoIdentificationPrepaymentRequired: rac.VideoIdentificationPrepaymentRequired,
+		AutoIdentificationVoucherEnabled:      rac.AutoIdentificationVoucherEnabled,
+		AutoIdentificationAccountingEnabled:   rac.AutoIdentificationAccountingEnabled,
+		AutoIdentificationPrepaymentRequired:  rac.AutoIdentificationPrepaymentRequired,
 	}
 }
 

@@ -92,9 +92,12 @@ type Configuration struct {
 	Theme                                 *string         `json:"theme"`
 	SupportedLocales                      *[]string       `json:"supportedLocales,omitempty"`
 	ShowGlnEditing                        *bool           `json:"show_gln_editing,omitempty"`
-	VoucherEnabled                        *bool           `json:"voucher_enabled"`
+	VideoIdentificationVoucherEnabled     *bool           `json:"video_identification_voucher_enabled"`
 	VideoIdentificationAccountingEnabled  *bool           `json:"video_identification_accounting_enabled"`
 	VideoIdentificationPrepaymentRequired *bool           `json:"video_identification_prepayment_required"`
+	AutoIdentificationVoucherEnabled      *bool           `json:"auto_identification_voucher_enabled"`
+	AutoIdentificationAccountingEnabled   *bool           `json:"auto_identification_accounting_enabled"`
+	AutoIdentificationPrepaymentRequired  *bool           `json:"auto_identification_prepayment_required"`
 	AllowedBackURL                        *string         `json:"allowed_back_url"`
 }
 
