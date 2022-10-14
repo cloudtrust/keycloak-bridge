@@ -241,21 +241,20 @@ type BackOfficeConfiguration map[string]map[string][]string
 
 // RealmAdminConfiguration struct
 type RealmAdminConfiguration struct {
-	Mode                                  *string                   `json:"mode"`
-	AvailableChecks                       map[string]bool           `json:"available_checks"`
-	Accreditations                        []RealmAdminAccreditation `json:"accreditations"`
-	SelfRegisterEnabled                   *bool                     `json:"self_register_enabled"`
-	Theme                                 *string                   `json:"theme"`
-	NeedVerifiedContact                   *bool                     `json:"need_verified_contact"`
-	ConsentRequiredSocial                 *bool                     `json:"consent_required_social"`
-	ConsentRequiredCorporate              *bool                     `json:"consent_required_corporate"`
-	ShowGlnEditing                        *bool                     `json:"show_gln_editing"`
-	VideoIdentificationVoucherEnabled     *bool                     `json:"video_identification_voucher_enabled"`
-	VideoIdentificationAccountingEnabled  *bool                     `json:"video_identification_accounting_enabled"`
-	VideoIdentificationPrepaymentRequired *bool                     `json:"video_identification_prepayment_required"`
-	AutoIdentificationVoucherEnabled      *bool                     `json:"auto_identification_voucher_enabled"`
-	AutoIdentificationAccountingEnabled   *bool                     `json:"auto_identification_accounting_enabled"`
-	AutoIdentificationPrepaymentRequired  *bool                     `json:"auto_identification_prepayment_required"`
+	Mode                                  *string         `json:"mode"`
+	AvailableChecks                       map[string]bool `json:"available_checks"`
+	SelfRegisterEnabled                   *bool           `json:"self_register_enabled"`
+	Theme                                 *string         `json:"theme"`
+	NeedVerifiedContact                   *bool           `json:"need_verified_contact"`
+	ConsentRequiredSocial                 *bool           `json:"consent_required_social"`
+	ConsentRequiredCorporate              *bool           `json:"consent_required_corporate"`
+	ShowGlnEditing                        *bool           `json:"show_gln_editing"`
+	VideoIdentificationVoucherEnabled     *bool           `json:"video_identification_voucher_enabled"`
+	VideoIdentificationAccountingEnabled  *bool           `json:"video_identification_accounting_enabled"`
+	VideoIdentificationPrepaymentRequired *bool           `json:"video_identification_prepayment_required"`
+	AutoIdentificationVoucherEnabled      *bool           `json:"auto_identification_voucher_enabled"`
+	AutoIdentificationAccountingEnabled   *bool           `json:"auto_identification_accounting_enabled"`
+	AutoIdentificationPrepaymentRequired  *bool           `json:"auto_identification_prepayment_required"`
 }
 
 // RealmAdminAccreditation struct
@@ -700,7 +699,6 @@ func ConvertRealmAdminConfigurationFromDBStruct(conf configuration.RealmAdminCon
 	return RealmAdminConfiguration{
 		Mode:                                  defaultString(conf.Mode, "corporate"),
 		AvailableChecks:                       checks,
-		Accreditations:                        ConvertRealmAccreditationsFromDBStruct(conf.Accreditations),
 		SelfRegisterEnabled:                   defaultBool(conf.SelfRegisterEnabled, false),
 		Theme:                                 conf.Theme,
 		NeedVerifiedContact:                   defaultBool(conf.NeedVerifiedContact, true),
@@ -721,7 +719,6 @@ func (rac RealmAdminConfiguration) ConvertToDBStruct() configuration.RealmAdminC
 	return configuration.RealmAdminConfiguration{
 		Mode:                                  rac.Mode,
 		AvailableChecks:                       rac.AvailableChecks,
-		Accreditations:                        rac.ConvertRealmAccreditationsToDBStruct(),
 		SelfRegisterEnabled:                   rac.SelfRegisterEnabled,
 		Theme:                                 rac.Theme,
 		NeedVerifiedContact:                   rac.NeedVerifiedContact,
@@ -735,38 +732,6 @@ func (rac RealmAdminConfiguration) ConvertToDBStruct() configuration.RealmAdminC
 		AutoIdentificationAccountingEnabled:   rac.AutoIdentificationAccountingEnabled,
 		AutoIdentificationPrepaymentRequired:  rac.AutoIdentificationPrepaymentRequired,
 	}
-}
-
-// ConvertRealmAccreditationsToDBStruct converts a slice of realm admin accreditation into its database version
-func (rac RealmAdminConfiguration) ConvertRealmAccreditationsToDBStruct() []configuration.RealmAdminAccreditation {
-	if len(rac.Accreditations) == 0 {
-		return nil
-	}
-	var res []configuration.RealmAdminAccreditation
-	for _, accred := range rac.Accreditations {
-		res = append(res, configuration.RealmAdminAccreditation{
-			Type:      accred.Type,
-			Validity:  accred.Validity,
-			Condition: accred.Condition,
-		})
-	}
-	return res
-}
-
-// ConvertRealmAccreditationsFromDBStruct converts an array of accreditation from DB struct to API struct
-func ConvertRealmAccreditationsFromDBStruct(accreds []configuration.RealmAdminAccreditation) []RealmAdminAccreditation {
-	if len(accreds) == 0 {
-		return make([]RealmAdminAccreditation, 0)
-	}
-	var res []RealmAdminAccreditation
-	for _, accred := range accreds {
-		res = append(res, RealmAdminAccreditation{
-			Type:      accred.Type,
-			Validity:  accred.Validity,
-			Condition: accred.Condition,
-		})
-	}
-	return res
 }
 
 // Validators
@@ -927,33 +892,12 @@ func (rac RealmAdminConfiguration) Validate() error {
 }
 
 func (rac RealmAdminConfiguration) validateAvailableChecks() error {
-	var accredConditions, err = rac.validateAccreditations()
-	if err != nil {
-		return err
-	}
-
-	for k, v := range rac.AvailableChecks {
+	for k := range rac.AvailableChecks {
 		if !validation.IsStringInSlice(configuration.AvailableCheckKeys, k) {
 			return errorhandler.CreateBadRequestError(constants.MsgErrInvalidParam + ".available-checks")
 		}
-		if _, ok := accredConditions[k]; v && !ok {
-			return errorhandler.CreateBadRequestError(constants.MsgErrMissingParam + ".accreditations." + k)
-		}
 	}
-
 	return nil
-}
-
-func (rac RealmAdminConfiguration) validateAccreditations() (map[string]bool, error) {
-	var accredConditions = make(map[string]bool)
-	for _, accred := range rac.Accreditations {
-		if err := accred.Validate(); err != nil {
-			return nil, err
-		}
-		accredConditions[*accred.Condition] = true
-	}
-
-	return accredConditions, nil
 }
 
 // Validate is a validator for RealmAdminAccreditation

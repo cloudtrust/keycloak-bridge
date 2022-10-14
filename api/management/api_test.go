@@ -537,7 +537,6 @@ func TestConvertRealmAdminConfiguration(t *testing.T) {
 		var res = ConvertRealmAdminConfigurationFromDBStruct(config)
 		assert.Equal(t, "corporate", *res.Mode)
 		assert.Len(t, res.AvailableChecks, 3)
-		assert.Len(t, res.Accreditations, 0)
 		assert.False(t, *res.SelfRegisterEnabled)
 		assert.False(t, *res.ShowGlnEditing)
 		assert.Nil(t, res.Theme)
@@ -550,14 +549,6 @@ func TestConvertRealmAdminConfiguration(t *testing.T) {
 	})
 	t.Run("Non-empty values", func(t *testing.T) {
 		var mode = "mode"
-		var typeValue = "type"
-		var condition = "condition"
-		var validity = "2y"
-		var accred = configuration.RealmAdminAccreditation{
-			Type:      &typeValue,
-			Condition: &condition,
-			Validity:  &validity,
-		}
 		var selfRegisterEnabled = true
 		var needVerifiedContact = false
 		var consentRequiredSocial = true
@@ -572,7 +563,6 @@ func TestConvertRealmAdminConfiguration(t *testing.T) {
 		var config = configuration.RealmAdminConfiguration{
 			Mode:                                  &mode,
 			AvailableChecks:                       map[string]bool{"true": true, "false": false},
-			Accreditations:                        []configuration.RealmAdminAccreditation{accred},
 			SelfRegisterEnabled:                   &selfRegisterEnabled,
 			Theme:                                 ptr("trustid"),
 			NeedVerifiedContact:                   &needVerifiedContact,
@@ -591,10 +581,6 @@ func TestConvertRealmAdminConfiguration(t *testing.T) {
 		assert.Len(t, res.AvailableChecks, 2)
 		assert.True(t, res.AvailableChecks["true"])
 		assert.False(t, res.AvailableChecks["false"])
-		assert.Len(t, res.Accreditations, 1)
-		assert.Equal(t, typeValue, *res.Accreditations[0].Type)
-		assert.Equal(t, condition, *res.Accreditations[0].Condition)
-		assert.Equal(t, validity, *res.Accreditations[0].Validity)
 		assert.Equal(t, config, res.ConvertToDBStruct())
 		assert.True(t, *res.SelfRegisterEnabled)
 		assert.Equal(t, config.Theme, res.Theme)
@@ -607,13 +593,6 @@ func TestConvertRealmAdminConfiguration(t *testing.T) {
 		assert.True(t, *res.AutoIdentificationVoucherEnabled)
 		assert.True(t, *res.AutoIdentificationAccountingEnabled)
 		assert.True(t, *res.AutoIdentificationPrepaymentRequired)
-	})
-}
-
-func TestConvertRealmAccreditationsToDBStruct(t *testing.T) {
-	t.Run("No accreditations", func(t *testing.T) {
-		var rac = RealmAdminConfiguration{}
-		assert.Nil(t, rac.ConvertRealmAccreditationsToDBStruct())
 	})
 }
 
@@ -799,14 +778,9 @@ func TestValidateRealmCustomConfiguration(t *testing.T) {
 }
 
 func createValidRealmAdminConfiguration() RealmAdminConfiguration {
-	var value = "value"
-	var validity = "2y4m"
-	var condition = "physical-check"
-	var accred = RealmAdminAccreditation{Type: &value, Validity: &validity, Condition: &condition}
 	return RealmAdminConfiguration{
 		Mode:            ptr("trustID"),
 		AvailableChecks: map[string]bool{"IDNow": false, "physical-check": true},
-		Accreditations:  []RealmAdminAccreditation{accred},
 		Theme:           ptr("my-theme"),
 	}
 }
@@ -834,23 +808,6 @@ func TestValidateRealmAdminConfiguration(t *testing.T) {
 	t.Run("Invalid available checks", func(t *testing.T) {
 		var realmAdminConf = createValidRealmAdminConfiguration()
 		realmAdminConf.AvailableChecks["invalid-key"] = false
-		assert.NotNil(t, realmAdminConf.Validate())
-	})
-	t.Run("Missing accreditation for enabled check", func(t *testing.T) {
-		var realmAdminConf = createValidRealmAdminConfiguration()
-		realmAdminConf.AvailableChecks["IDnow"] = true
-		assert.NotNil(t, realmAdminConf.Validate())
-	})
-	t.Run("Invalid accreditation validity", func(t *testing.T) {
-		var realmAdminConf = createValidRealmAdminConfiguration()
-		var invalid = "2y4"
-		realmAdminConf.Accreditations[0].Validity = &invalid
-		assert.NotNil(t, realmAdminConf.Validate())
-	})
-	t.Run("Invalid accreditation condition", func(t *testing.T) {
-		var realmAdminConf = createValidRealmAdminConfiguration()
-		var invalid = "invalid-key"
-		realmAdminConf.Accreditations[0].Condition = &invalid
 		assert.NotNil(t, realmAdminConf.Validate())
 	})
 	t.Run("Invalid theme", func(t *testing.T) {

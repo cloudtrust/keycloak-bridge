@@ -87,7 +87,6 @@ type Configuration struct {
 	SelfServiceDefaultTab                 *string         `json:"self_service_default_tab"`
 	RedirectSuccessfulRegistrationURL     *string         `json:"redirect_successful_registration_url"`
 	AvailableChecks                       map[string]bool `json:"available-checks"`
-	AvailableAccreditationsTypes          *[]string       `json:"available_accreditations_types"`
 	BarcodeType                           *string         `json:"barcode_type"`
 	Theme                                 *string         `json:"theme"`
 	SupportedLocales                      *[]string       `json:"supportedLocales,omitempty"`

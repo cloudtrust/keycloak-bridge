@@ -6,38 +6,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cloudtrust/common-service/v2/configuration"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	kc "github.com/cloudtrust/keycloak-client/v2"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 
-func createRealmAdminCred(typeValue, validity, condition string) configuration.RealmAdminAccreditation {
-	return configuration.RealmAdminAccreditation{
-		Type:      &typeValue,
-		Validity:  &validity,
-		Condition: &condition,
-	}
-}
-
 const (
 	duration1 = "2y"
 	duration2 = "1w"
 	duration3 = "6m"
 )
-
-func createRealmAdminConfig(condition string) configuration.RealmAdminConfiguration {
-	var otherCondition = "no-" + condition
-	var accreds = []configuration.RealmAdminAccreditation{
-		createRealmAdminCred("SHADOW1", duration1, condition),
-		createRealmAdminCred("SHADOW2", "1y", otherCondition),
-		createRealmAdminCred("SHADOW3", duration2, condition),
-		createRealmAdminCred("SHADOW4", "3y", otherCondition),
-		createRealmAdminCred("SHADOW5", duration3, condition),
-	}
-	return configuration.RealmAdminConfiguration{Accreditations: accreds}
-}
 
 func TestHasActiveAccreditations(t *testing.T) {
 	t.Run("only active accreditations", func(t *testing.T) {

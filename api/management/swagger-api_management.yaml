@@ -2365,17 +2365,6 @@ components:
           type: object
           additionalProperties:
             type: boolean
-        accreditations:
-          type: array
-          items:
-            type: object
-            properties:
-              type:
-                type: string
-              validity:
-                type: string
-              condition:
-                type: string
         self_register_enabled:
           type: boolean
         consent_required_social:
