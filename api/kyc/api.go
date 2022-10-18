@@ -81,8 +81,9 @@ const (
 
 	regExpMimeType = `^[a-z]+/[\w\d\.+]+$`
 
-	minAttachmentSize = 100
-	maxAttachmentSize = 5 * 1024 * 1024
+	maxNumberAttachments = 6
+	minAttachmentSize    = 100
+	maxAttachmentSize    = 5 * 1024 * 1024
 )
 
 var knownContentTypes = map[string]string{
@@ -238,7 +239,7 @@ func (u *UserRepresentation) Validate(everythingOptional bool) error {
 			if nbAttachments == 0 {
 				return nil
 			}
-			if nbAttachments != 1 {
+			if nbAttachments > maxNumberAttachments {
 				return cerrors.CreateBadRequestError(cerrors.MsgErrInvalidParam + "." + prmAttachments)
 			}
 			for _, attachment := range *u.Attachments {

@@ -1,6 +1,8 @@
 package kyc
 
 import (
+	"archive/zip"
+	"bytes"
 	"context"
 	"fmt"
 	"strings"
@@ -384,10 +386,19 @@ func (c *component) validateUserBasicID(ctx context.Context, accessToken string,
 		TxnID:     &txnID,
 	}
 
-	if user.Attachments != nil && len(*user.Attachments) > 0 {
+	if user.Attachments != nil && len(*user.Attachments) == 1 {
 		check.ProofType = (*user.Attachments)[0].ContentType
 		check.ProofData = (*user.Attachments)[0].Content
+	} else if user.Attachments != nil && len(*user.Attachments) > 1 {
+		zipAttachments, err := c.zipAttachments(*user.Attachments)
+		if err != nil {
+			c.logger.Warn(ctx, "msg", "Zip creation failed", "err", err.Error())
+			return err
+		}
+		check.ProofType = ptr("zip")
+		check.ProofData = &zipAttachments
 	}
+
 	err = c.accredsServiceClient.NotifyCheck(ctx, check)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Request to accreditations service to create a check failed", "err", err.Error())
@@ -502,9 +513,17 @@ func (c *component) validateUser(ctx context.Context, accessToken string, confRe
 		TxnID:     &txnID,
 	}
 
-	if user.Attachments != nil && len(*user.Attachments) > 0 {
+	if user.Attachments != nil && len(*user.Attachments) == 1 {
 		check.ProofType = (*user.Attachments)[0].ContentType
 		check.ProofData = (*user.Attachments)[0].Content
+	} else if user.Attachments != nil && len(*user.Attachments) > 1 {
+		zipAttachments, err := c.zipAttachments(*user.Attachments)
+		if err != nil {
+			c.logger.Warn(ctx, "msg", "Zip creation failed", "err", err.Error())
+			return err
+		}
+		check.ProofType = ptr("zip")
+		check.ProofData = &zipAttachments
 	}
 
 	err = c.accredsServiceClient.NotifyCheck(ctx, check)
@@ -662,4 +681,28 @@ func (c *component) sendSmsCodeGeneric(ctx context.Context, accessToken string, 
 	c.reportEvent(ctx, "SMS_CHALLENGE", database.CtEventRealmName, realm, database.CtEventUserID, userID)
 
 	return *smsCodeKc.Code, err
+}
+
+func (c *component) zipAttachments(attachments []apikyc.AttachmentRepresentation) ([]byte, error) {
+	buf := new(bytes.Buffer)
+
+	w := zip.NewWriter(buf)
+
+	for _, attachment := range attachments {
+		f, err := w.Create(*attachment.Filename)
+		if err != nil {
+			return nil, err
+		}
+		_, err = f.Write(*attachment.Content)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	err := w.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
 }
