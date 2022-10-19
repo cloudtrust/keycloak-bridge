@@ -595,9 +595,12 @@ func (c *component) GetConfiguration(ctx context.Context, realmIDOverride string
 		Theme:                                 adminConfig.Theme,
 		SupportedLocales:                      supportedLocales,
 		ShowGlnEditing:                        adminConfig.ShowGlnEditing,
-		VoucherEnabled:                        adminConfig.VoucherEnabled,
+		VideoIdentificationVoucherEnabled:     adminConfig.VideoIdentificationVoucherEnabled,
 		VideoIdentificationAccountingEnabled:  adminConfig.VideoIdentificationAccountingEnabled,
 		VideoIdentificationPrepaymentRequired: adminConfig.VideoIdentificationPrepaymentRequired,
+		AutoIdentificationVoucherEnabled:      adminConfig.AutoIdentificationVoucherEnabled,
+		AutoIdentificationAccountingEnabled:   adminConfig.AutoIdentificationAccountingEnabled,
+		AutoIdentificationPrepaymentRequired:  adminConfig.AutoIdentificationPrepaymentRequired,
 		AllowedBackURL:                        config.AllowedBackURL,
 	}
 

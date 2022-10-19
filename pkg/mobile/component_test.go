@@ -55,7 +55,7 @@ func TestToActionNames(t *testing.T) {
 		var values = toActionNames(&input)
 		assert.NotNil(t, values)
 		assert.Len(t, *values, 2)
-		assert.Contains(t, *values, actionIDNow)
+		assert.Contains(t, *values, actionIDNowVideoIdent)
 		assert.Contains(t, *values, input[1])
 	})
 }
@@ -79,8 +79,9 @@ func TestChooseNotEmpty(t *testing.T) {
 
 func TestAppendIDNowActions(t *testing.T) {
 	var res = AppendIDNowActions(nil)
-	assert.Len(t, res, 1)
-	assert.Equal(t, idNowInitActionName, res[0])
+	assert.Len(t, res, 2)
+	assert.Equal(t, idNowInitAuth, res[0])
+	assert.Equal(t, idNowAutoIdentInitAuth, res[1])
 }
 
 func TestGetUser(t *testing.T) {
@@ -158,7 +159,8 @@ func TestGetUser(t *testing.T) {
 		mocks.accreditationsClient.EXPECT().GetChecks(ctx, realm, userID).Return(checks, nil)
 		mocks.accreditationsClient.EXPECT().GetPendingChecks(ctx, realm, userID).Return([]accreditationsclient.CheckRepresentation{}, nil)
 		mocks.configDBModule.EXPECT().GetAdminConfiguration(ctx, realm).Return(adminConf, nil)
-		mocks.authManager.EXPECT().CheckAuthorizationOnTargetUser(gomock.Any(), idNowInitActionName, realm, userID).Return(nil)
+		mocks.authManager.EXPECT().CheckAuthorizationOnTargetUser(gomock.Any(), idNowInitAuth, realm, userID).Return(nil)
+		mocks.authManager.EXPECT().CheckAuthorizationOnTargetUser(gomock.Any(), idNowAutoIdentInitAuth, realm, userID).Return(nil)
 
 		var userInfo, err = component.GetUserInformation(ctx)
 		assert.Nil(t, err)
@@ -179,7 +181,8 @@ func TestGetUser(t *testing.T) {
 		mocks.accreditationsClient.EXPECT().GetChecks(ctx, realm, userID).Return(checks, nil)
 		mocks.accreditationsClient.EXPECT().GetPendingChecks(ctx, realm, userID).Return([]accreditationsclient.CheckRepresentation{}, nil)
 		mocks.configDBModule.EXPECT().GetAdminConfiguration(ctx, realm).Return(adminConf, nil)
-		mocks.authManager.EXPECT().CheckAuthorizationOnTargetUser(gomock.Any(), idNowInitActionName, realm, userID).Return(nil)
+		mocks.authManager.EXPECT().CheckAuthorizationOnTargetUser(gomock.Any(), idNowInitAuth, realm, userID).Return(nil)
+		mocks.authManager.EXPECT().CheckAuthorizationOnTargetUser(gomock.Any(), idNowAutoIdentInitAuth, realm, userID).Return(nil)
 
 		var userInfo, err = component.GetUserInformation(ctx)
 		assert.Nil(t, err)
@@ -198,7 +201,8 @@ func TestGetUser(t *testing.T) {
 		mocks.accreditationsClient.EXPECT().GetChecks(ctx, realm, userID).Return(checks, nil)
 		mocks.accreditationsClient.EXPECT().GetPendingChecks(ctx, realm, userID).Return([]accreditationsclient.CheckRepresentation{}, nil)
 		mocks.configDBModule.EXPECT().GetAdminConfiguration(ctx, realm).Return(adminConf, nil)
-		mocks.authManager.EXPECT().CheckAuthorizationOnTargetUser(gomock.Any(), idNowInitActionName, realm, userID).Return(errors.New("any error"))
+		mocks.authManager.EXPECT().CheckAuthorizationOnTargetUser(gomock.Any(), idNowInitAuth, realm, userID).Return(errors.New("any error"))
+		mocks.authManager.EXPECT().CheckAuthorizationOnTargetUser(gomock.Any(), idNowAutoIdentInitAuth, realm, userID).Return(errors.New("any error"))
 
 		var userInfo, err = component.GetUserInformation(ctx)
 		assert.Nil(t, err)
@@ -217,7 +221,8 @@ func TestGetUser(t *testing.T) {
 		mocks.accreditationsClient.EXPECT().GetChecks(ctx, realm, userID).Return(checks, nil)
 		mocks.accreditationsClient.EXPECT().GetPendingChecks(ctx, realm, userID).Return([]accreditationsclient.CheckRepresentation{}, nil)
 		mocks.configDBModule.EXPECT().GetAdminConfiguration(ctx, realm).Return(adminConf, nil)
-		mocks.authManager.EXPECT().CheckAuthorizationOnTargetUser(gomock.Any(), idNowInitActionName, realm, userID).Return(nil)
+		mocks.authManager.EXPECT().CheckAuthorizationOnTargetUser(gomock.Any(), idNowInitAuth, realm, userID).Return(nil)
+		mocks.authManager.EXPECT().CheckAuthorizationOnTargetUser(gomock.Any(), idNowAutoIdentInitAuth, realm, userID).Return(nil)
 
 		var userInfo, err = component.GetUserInformation(ctx)
 		assert.Nil(t, err)
@@ -238,7 +243,8 @@ func TestGetUser(t *testing.T) {
 		now := time.Now().UTC()
 		mocks.accreditationsClient.EXPECT().GetPendingChecks(ctx, realm, userID).Return([]accreditationsclient.CheckRepresentation{{Nature: &pendingAction, Status: &pending, DateTime: &now}}, nil)
 		mocks.configDBModule.EXPECT().GetAdminConfiguration(ctx, realm).Return(adminConf, nil)
-		mocks.authManager.EXPECT().CheckAuthorizationOnTargetUser(gomock.Any(), idNowInitActionName, realm, userID).Return(nil)
+		mocks.authManager.EXPECT().CheckAuthorizationOnTargetUser(gomock.Any(), idNowInitAuth, realm, userID).Return(nil)
+		mocks.authManager.EXPECT().CheckAuthorizationOnTargetUser(gomock.Any(), idNowAutoIdentInitAuth, realm, userID).Return(nil)
 
 		var userInfo, err = component.GetUserInformation(ctx)
 		assert.Nil(t, err)
@@ -258,7 +264,8 @@ func TestGetUser(t *testing.T) {
 		mocks.accreditationsClient.EXPECT().GetChecks(ctx, realm, userID).Return(checks, nil)
 		mocks.accreditationsClient.EXPECT().GetPendingChecks(ctx, realm, userID).Return([]accreditationsclient.CheckRepresentation{}, nil)
 		mocks.configDBModule.EXPECT().GetAdminConfiguration(ctx, realm).Return(adminConf, nil)
-		mocks.authManager.EXPECT().CheckAuthorizationOnTargetUser(gomock.Any(), idNowInitActionName, realm, userID).Return(nil)
+		mocks.authManager.EXPECT().CheckAuthorizationOnTargetUser(gomock.Any(), idNowInitAuth, realm, userID).Return(nil)
+		mocks.authManager.EXPECT().CheckAuthorizationOnTargetUser(gomock.Any(), idNowAutoIdentInitAuth, realm, userID).Return(nil)
 		mocks.accountingClient.EXPECT().GetBalance(ctx, realm, userID, "VIDEO_IDENTIFICATION").Return(float64(10), nil).Times(1)
 
 		var userInfo, err = component.GetUserInformation(ctx)
@@ -277,7 +284,8 @@ func TestGetUser(t *testing.T) {
 		mocks.accreditationsClient.EXPECT().GetChecks(ctx, realm, userID).Return(checks, nil)
 		mocks.accreditationsClient.EXPECT().GetPendingChecks(ctx, realm, userID).Return([]accreditationsclient.CheckRepresentation{}, nil)
 		mocks.configDBModule.EXPECT().GetAdminConfiguration(ctx, realm).Return(adminConf, nil)
-		mocks.authManager.EXPECT().CheckAuthorizationOnTargetUser(gomock.Any(), idNowInitActionName, realm, userID).Return(nil)
+		mocks.authManager.EXPECT().CheckAuthorizationOnTargetUser(gomock.Any(), idNowInitAuth, realm, userID).Return(nil)
+		mocks.authManager.EXPECT().CheckAuthorizationOnTargetUser(gomock.Any(), idNowAutoIdentInitAuth, realm, userID).Return(nil)
 		mocks.accountingClient.EXPECT().GetBalance(ctx, realm, userID, "VIDEO_IDENTIFICATION").Return(float64(0), nil).Times(1)
 
 		var userInfo, err = component.GetUserInformation(ctx)
