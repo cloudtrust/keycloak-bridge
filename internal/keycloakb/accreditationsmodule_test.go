@@ -79,14 +79,14 @@ func TestRevokeAccreditations(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var user = kc.UserRepresentation{}
-
 	t.Run("No existing accreditations", func(t *testing.T) {
+		var user = kc.UserRepresentation{}
 		var updated = RevokeAccreditations(&user)
 		assert.Len(t, user.GetAttribute(constants.AttrbAccreditations), 0)
 		assert.False(t, updated)
 	})
 	t.Run("Nothing changes", func(t *testing.T) {
+		var user = kc.UserRepresentation{}
 		var accreds = []string{"a", "b", `{"type":"ONE", "expiryDate":"01.01.2015", "creationMillis":123456789, "revoked":true}`}
 		user.SetAttribute(constants.AttrbAccreditations, accreds)
 		var updated = RevokeAccreditations(&user)
@@ -94,6 +94,7 @@ func TestRevokeAccreditations(t *testing.T) {
 		assert.False(t, updated)
 	})
 	t.Run("Revoke one accreditation", func(t *testing.T) {
+		var user = kc.UserRepresentation{}
 		var accreds = []string{`{"type":"ONE","expiryDate":"01.01.2015"}`,
 			`{"type":"TWO","expiryDate":"01.01.2016"}`,
 			`{"type":"THREE","expiryDate":"01.01.2025"}`,
