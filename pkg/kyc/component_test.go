@@ -1,6 +1,8 @@
 package kyc
 
 import (
+	"archive/zip"
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -11,6 +13,7 @@ import (
 	"github.com/cloudtrust/common-service/v2/database"
 	errorhandler "github.com/cloudtrust/common-service/v2/errors"
 	log "github.com/cloudtrust/common-service/v2/log"
+	apikyc "github.com/cloudtrust/keycloak-bridge/api/kyc"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 	"github.com/cloudtrust/keycloak-bridge/pkg/kyc/mock"
@@ -455,6 +458,42 @@ func TestValidateUser(t *testing.T) {
 		var err = component.ValidateUser(ctx, targetRealm, userID, validUser, nil)
 		assert.Nil(t, err)
 	})
+
+	t.Run("ValidateUser is successful with 1 attachment", func(t *testing.T) {
+		ctx = context.WithValue(ctx, cs.CtContextAccessToken, accessToken)
+		ctx = context.WithValue(ctx, cs.CtContextRealm, targetRealm)
+
+		mocks.keycloakClient.EXPECT().GetUser(accessToken, targetRealm, userID).Return(kcUser, nil)
+		mocks.usersDB.EXPECT().GetUserDetails(ctx, targetRealm, userID).Return(dbUser, nil)
+		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, targetRealm, userID, gomock.Any()).Return(nil)
+		mocks.usersDB.EXPECT().StoreOrUpdateUserDetails(ctx, targetRealm, gomock.Any()).Return(nil)
+		mocks.accreditations.EXPECT().NotifyCheck(ctx, gomock.Any()).Return(nil)
+		mocks.eventsDB.EXPECT().ReportEvent(gomock.Any(), "VALIDATE_USER", "back-office", gomock.Any())
+		mocks.archiveDB.EXPECT().StoreUserDetails(gomock.Any(), targetRealm, gomock.Any()).Return(nil)
+
+		validUserWithAttachment := createValidUser()
+		validUserWithAttachment.Attachments = &[]apikyc.AttachmentRepresentation{createValidAttachment()}
+		var err = component.ValidateUser(ctx, targetRealm, userID, validUserWithAttachment, nil)
+		assert.Nil(t, err)
+	})
+
+	t.Run("ValidateUser is successful with 2 attachments", func(t *testing.T) {
+		ctx = context.WithValue(ctx, cs.CtContextAccessToken, accessToken)
+		ctx = context.WithValue(ctx, cs.CtContextRealm, targetRealm)
+
+		mocks.keycloakClient.EXPECT().GetUser(accessToken, targetRealm, userID).Return(kcUser, nil)
+		mocks.usersDB.EXPECT().GetUserDetails(ctx, targetRealm, userID).Return(dbUser, nil)
+		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, targetRealm, userID, gomock.Any()).Return(nil)
+		mocks.usersDB.EXPECT().StoreOrUpdateUserDetails(ctx, targetRealm, gomock.Any()).Return(nil)
+		mocks.accreditations.EXPECT().NotifyCheck(ctx, gomock.Any()).Return(nil)
+		mocks.eventsDB.EXPECT().ReportEvent(gomock.Any(), "VALIDATE_USER", "back-office", gomock.Any())
+		mocks.archiveDB.EXPECT().StoreUserDetails(gomock.Any(), targetRealm, gomock.Any()).Return(nil)
+
+		validUserWithAttachment := createValidUser()
+		validUserWithAttachment.Attachments = &[]apikyc.AttachmentRepresentation{createValidAttachment(), createValidAttachment()}
+		var err = component.ValidateUser(ctx, targetRealm, userID, validUserWithAttachment, nil)
+		assert.Nil(t, err)
+	})
 }
 
 func TestEnsureContactVerified(t *testing.T) {
@@ -633,4 +672,35 @@ func TestSendSmsCode(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Equal(t, "1234", codeRes)
 	})
+}
+
+func createValidAttachment() apikyc.AttachmentRepresentation {
+	var (
+		contentBase  = "basicvalueofsomecharacters"
+		contentBytes = []byte(contentBase + contentBase + contentBase + contentBase)
+	)
+	return apikyc.AttachmentRepresentation{Filename: ptr("filename.pdf"), ContentType: ptr("application/pdf"), Content: &contentBytes}
+}
+
+func TestZipAttachments(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var targetRealm = "cloudtrust"
+	var mocks = createComponentMocks(mockCtrl)
+	var component = mocks.NewComponent(targetRealm)
+
+	var attachments = []apikyc.AttachmentRepresentation{createValidAttachment()}
+	zipBytes, err := component.zipAttachments(attachments)
+	assert.Nil(t, err)
+
+	buf := bytes.NewReader(zipBytes)
+	reader, _ := zip.NewReader(buf, buf.Size())
+	for i, f := range reader.File {
+		rc, _ := f.Open()
+
+		content := make([]byte, len(*attachments[i].Content))
+		rc.Read(content)
+		assert.Equal(t, *attachments[i].Content, content)
+	}
 }

@@ -213,6 +213,24 @@ func TestValidateUserRepresentation(t *testing.T) {
 		user.Attachments = nil
 		assert.Nil(t, user.Validate(false), "User is expected to be valid")
 	})
+	t.Run("Valid users with max attachments", func(t *testing.T) {
+		var user = createValidUser()
+		var attachment []AttachmentRepresentation
+		for i := 0; i < maxNumberAttachments; i++ {
+			attachment = append(attachment, createValidAttachment())
+		}
+		user.Attachments = &attachment
+		assert.Nil(t, user.Validate(false), "User is expected to be valid")
+	})
+	t.Run("Valid users with too many attachments", func(t *testing.T) {
+		var user = createValidUser()
+		var attachment []AttachmentRepresentation
+		for i := 0; i < maxNumberAttachments+1; i++ {
+			attachment = append(attachment, createValidAttachment())
+		}
+		user.Attachments = &attachment
+		assert.NotNil(t, user.Validate(false), "User is expected to be invalid")
+	})
 	t.Run("Valid users everything optional", func(t *testing.T) {
 		var user UserRepresentation
 		assert.Nil(t, user.Validate(true))
