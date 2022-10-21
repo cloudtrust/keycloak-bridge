@@ -101,10 +101,15 @@ func TestRevokeAccreditations(t *testing.T) {
 			`{"type":"THREE","expiryDate":"01.01.2032"}`}
 		user.SetAttribute(constants.AttrbAccreditations, accreds)
 		var updated = RevokeAccreditations(&user)
-		assert.Equal(t, accreds[0], user.GetAttribute(constants.AttrbAccreditations)[0])
-		assert.Equal(t, accreds[1], user.GetAttribute(constants.AttrbAccreditations)[1])
-		assert.NotEqual(t, accreds[2], user.GetAttribute(constants.AttrbAccreditations)[2])
 		assert.True(t, updated)
+		userAccreds := user.GetAttribute(constants.AttrbAccreditations)
+		for _, userAccred := range userAccreds {
+			if strings.Contains(userAccred, "THREE") {
+				assert.Contains(t, userAccred, `"revoked":true`)
+			} else {
+				assert.NotContains(t, userAccred, `"revoked":true`)
+			}
+		}
 	})
 }
 

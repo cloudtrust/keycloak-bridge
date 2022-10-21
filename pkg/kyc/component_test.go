@@ -458,6 +458,42 @@ func TestValidateUser(t *testing.T) {
 		var err = component.ValidateUser(ctx, targetRealm, userID, validUser, nil)
 		assert.Nil(t, err)
 	})
+
+	t.Run("ValidateUser is successful with 1 attachment", func(t *testing.T) {
+		ctx = context.WithValue(ctx, cs.CtContextAccessToken, accessToken)
+		ctx = context.WithValue(ctx, cs.CtContextRealm, targetRealm)
+
+		mocks.keycloakClient.EXPECT().GetUser(accessToken, targetRealm, userID).Return(kcUser, nil)
+		mocks.usersDB.EXPECT().GetUserDetails(ctx, targetRealm, userID).Return(dbUser, nil)
+		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, targetRealm, userID, gomock.Any()).Return(nil)
+		mocks.usersDB.EXPECT().StoreOrUpdateUserDetails(ctx, targetRealm, gomock.Any()).Return(nil)
+		mocks.accreditations.EXPECT().NotifyCheck(ctx, gomock.Any()).Return(nil)
+		mocks.eventsDB.EXPECT().ReportEvent(gomock.Any(), "VALIDATE_USER", "back-office", gomock.Any())
+		mocks.archiveDB.EXPECT().StoreUserDetails(gomock.Any(), targetRealm, gomock.Any()).Return(nil)
+
+		validUserWithAttachment := createValidUser()
+		validUserWithAttachment.Attachments = &[]apikyc.AttachmentRepresentation{createValidAttachment()}
+		var err = component.ValidateUser(ctx, targetRealm, userID, validUserWithAttachment, nil)
+		assert.Nil(t, err)
+	})
+
+	t.Run("ValidateUser is successful with 2 attachments", func(t *testing.T) {
+		ctx = context.WithValue(ctx, cs.CtContextAccessToken, accessToken)
+		ctx = context.WithValue(ctx, cs.CtContextRealm, targetRealm)
+
+		mocks.keycloakClient.EXPECT().GetUser(accessToken, targetRealm, userID).Return(kcUser, nil)
+		mocks.usersDB.EXPECT().GetUserDetails(ctx, targetRealm, userID).Return(dbUser, nil)
+		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, targetRealm, userID, gomock.Any()).Return(nil)
+		mocks.usersDB.EXPECT().StoreOrUpdateUserDetails(ctx, targetRealm, gomock.Any()).Return(nil)
+		mocks.accreditations.EXPECT().NotifyCheck(ctx, gomock.Any()).Return(nil)
+		mocks.eventsDB.EXPECT().ReportEvent(gomock.Any(), "VALIDATE_USER", "back-office", gomock.Any())
+		mocks.archiveDB.EXPECT().StoreUserDetails(gomock.Any(), targetRealm, gomock.Any()).Return(nil)
+
+		validUserWithAttachment := createValidUser()
+		validUserWithAttachment.Attachments = &[]apikyc.AttachmentRepresentation{createValidAttachment(), createValidAttachment()}
+		var err = component.ValidateUser(ctx, targetRealm, userID, validUserWithAttachment, nil)
+		assert.Nil(t, err)
+	})
 }
 
 func TestEnsureContactVerified(t *testing.T) {
