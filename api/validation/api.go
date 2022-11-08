@@ -27,6 +27,7 @@ type UserRepresentation struct {
 	EmailVerified        *bool      `json:"emailVerified,omitempty"`
 	PhoneNumber          *string    `json:"phoneNumber,omitempty"`
 	PhoneNumberVerified  *bool      `json:"phoneNumberVerified,omitempty"`
+	Locale               *string    `json:"locale,omitempty"`
 	BirthDate            *time.Time `json:"birthDate,omitempty"`
 	BirthLocation        *string    `json:"birthLocation,omitempty"`
 	Nationality          *string    `json:"nationality,omitempty"`
@@ -142,36 +143,30 @@ func (u *UserRepresentation) ExportToKeycloak(kcUser *kc.UserRepresentation) {
 
 // ImportFromKeycloak import details from Keycloak
 func (u *UserRepresentation) ImportFromKeycloak(kcUser kc.UserRepresentation) {
-	var phoneNumber = u.PhoneNumber
-	var phoneNumberVerified = u.PhoneNumberVerified
-	var gender = u.Gender
-	var birthdate = u.BirthDate
-
 	if kcUser.Attributes != nil {
 		if pn := kcUser.GetAttributeString(constants.AttrbPhoneNumber); pn != nil {
-			phoneNumber = pn
+			u.PhoneNumber = pn
 		}
 		if value, err := kcUser.GetAttributeBool(constants.AttrbPhoneNumberVerified); err == nil && value != nil {
-			phoneNumberVerified = value
+			u.PhoneNumberVerified = value
+		}
+		if value := kcUser.GetAttributeString(constants.AttrbLocale); value != nil {
+			u.Locale = value
 		}
 		if value := kcUser.GetAttributeString(constants.AttrbGender); value != nil {
-			gender = value
+			u.Gender = value
 		}
 		if value, err := kcUser.Attributes.GetTime(constants.AttrbBirthDate, constants.SupportedDateLayouts); err == nil && value != nil {
-			birthdate = value
+			u.BirthDate = value
 		}
 	}
 
 	u.ID = kcUser.ID
 	u.Username = kcUser.Username
-	u.Gender = gender
 	u.FirstName = kcUser.FirstName
 	u.LastName = kcUser.LastName
 	u.Email = kcUser.Email
 	u.EmailVerified = kcUser.EmailVerified
-	u.PhoneNumber = phoneNumber
-	u.PhoneNumberVerified = phoneNumberVerified
-	u.BirthDate = birthdate
 }
 
 // Validate checks the validity of the given User

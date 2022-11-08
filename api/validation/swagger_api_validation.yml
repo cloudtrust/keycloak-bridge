@@ -146,6 +146,9 @@ components:
           type: string
         phoneNumber:
           type: string
+        locale:
+          type: string
+          description: only filled in GET user
         birthDate:
           type: string
           description: format is DD.MM.YYYY
