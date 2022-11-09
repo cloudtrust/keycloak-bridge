@@ -41,6 +41,7 @@ type ArchiveAccreditationRepresentation struct {
 func ToArchiveUserRepresentation(user kc.UserRepresentation) ArchiveUserRepresentation {
 	var attrbs = user.Attributes
 	var gender, phoneNumber, birthDate, locale *string
+	var birthLocation, nationality, idDocumentType, idDocumentNumber, idDocumentExpiration, idDocumentCountry *string
 	var phoneNumberVerified *bool
 	var accreds []ArchiveAccreditationRepresentation
 
@@ -51,20 +52,32 @@ func ToArchiveUserRepresentation(user kc.UserRepresentation) ArchiveUserRepresen
 		birthDate = attrbs.GetString(constants.AttrbBirthDate)
 		locale = attrbs.GetString(constants.AttrbLocale)
 		accreds = stringToAccreditations(attrbs.Get(constants.AttrbAccreditations))
+		birthLocation = attrbs.GetString(constants.AttrbBirthLocation)
+		nationality = attrbs.GetString(constants.AttrbNationality)
+		idDocumentType = attrbs.GetString(constants.AttrbIDDocumentType)
+		idDocumentNumber = attrbs.GetString(constants.AttrbIDDocumentNumber)
+		idDocumentExpiration = attrbs.GetString(constants.AttrbIDDocumentExpiration)
+		idDocumentCountry = attrbs.GetString(constants.IDDocumentCountry)
 	}
 	return ArchiveUserRepresentation{
-		ID:                  user.ID,
-		Username:            user.Username,
-		Gender:              gender,
-		FirstName:           user.FirstName,
-		LastName:            user.LastName,
-		Email:               user.Email,
-		EmailVerified:       user.EmailVerified,
-		PhoneNumber:         phoneNumber,
-		PhoneNumberVerified: phoneNumberVerified,
-		BirthDate:           birthDate,
-		Locale:              locale,
-		Accreditations:      accreds,
+		ID:                   user.ID,
+		Username:             user.Username,
+		Gender:               gender,
+		FirstName:            user.FirstName,
+		LastName:             user.LastName,
+		Email:                user.Email,
+		EmailVerified:        user.EmailVerified,
+		PhoneNumber:          phoneNumber,
+		PhoneNumberVerified:  phoneNumberVerified,
+		BirthDate:            birthDate,
+		Locale:               locale,
+		Accreditations:       accreds,
+		BirthLocation:        birthLocation,
+		Nationality:          nationality,
+		IDDocumentType:       idDocumentType,
+		IDDocumentNumber:     idDocumentNumber,
+		IDDocumentExpiration: idDocumentExpiration,
+		IDDocumentCountry:    idDocumentCountry,
 	}
 }
 
@@ -80,14 +93,4 @@ func stringToAccreditations(values []string) []ArchiveAccreditationRepresentatio
 		}
 	}
 	return accreds
-}
-
-// SetDetails sets user details coming from database in the given ArchiveUserRepresentation
-func (u *ArchiveUserRepresentation) SetDetails(dbUser DBUser) {
-	u.BirthLocation = dbUser.BirthLocation
-	u.Nationality = dbUser.Nationality
-	u.IDDocumentType = dbUser.IDDocumentType
-	u.IDDocumentNumber = dbUser.IDDocumentNumber
-	u.IDDocumentExpiration = dbUser.IDDocumentExpiration
-	u.IDDocumentCountry = dbUser.IDDocumentCountry
 }

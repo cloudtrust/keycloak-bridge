@@ -30,7 +30,6 @@ import (
 
 type componentMocks struct {
 	keycloakClient        *mock.KeycloakClient
-	usersDetailsDBModule  *mock.UsersDetailsDBModule
 	eventDBModule         *mock.EventDBModule
 	configurationDBModule *mock.ConfigurationDBModule
 	onboardingModule      *mock.OnboardingModule
@@ -45,7 +44,6 @@ type componentMocks struct {
 func createMocks(mockCtrl *gomock.Controller) *componentMocks {
 	return &componentMocks{
 		keycloakClient:        mock.NewKeycloakClient(mockCtrl),
-		usersDetailsDBModule:  mock.NewUsersDetailsDBModule(mockCtrl),
 		eventDBModule:         mock.NewEventDBModule(mockCtrl),
 		configurationDBModule: mock.NewConfigurationDBModule(mockCtrl),
 		onboardingModule:      mock.NewOnboardingModule(mockCtrl),
@@ -68,7 +66,7 @@ const (
 
 func (m *componentMocks) createComponent() *component {
 	/* REMOVE_THIS_3901 : remove second parameter (nil) */
-	return NewComponent(m.keycloakClient, nil, m.usersDetailsDBModule, m.eventDBModule, m.configurationDBModule, m.onboardingModule, m.authChecker, m.tokenProvider, m.accreditationsClient, allowedTrustIDGroups, socialRealmName, m.glnVerifier, m.logger).(*component)
+	return NewComponent(m.keycloakClient, nil, m.eventDBModule, m.configurationDBModule, m.onboardingModule, m.authChecker, m.tokenProvider, m.accreditationsClient, allowedTrustIDGroups, socialRealmName, m.glnVerifier, m.logger).(*component)
 }
 
 func ptrString(value string) *string {
@@ -574,17 +572,6 @@ func TestCreateUser(t *testing.T) {
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 
-		mocks.usersDetailsDBModule.EXPECT().StoreOrUpdateUserDetails(ctx, targetRealmName, gomock.Any()).DoAndReturn(
-			func(ctx context.Context, targetRealmName string, user dto.DBUser) {
-				assert.Equal(t, userID, *user.UserID)
-				assert.Equal(t, birthLocation, *user.BirthLocation)
-				assert.Equal(t, nationality, *user.Nationality)
-				assert.Equal(t, idDocumentType, *user.IDDocumentType)
-				assert.Equal(t, idDocumentNumber, *user.IDDocumentNumber)
-				assert.Equal(t, idDocumentExpiration, *user.IDDocumentExpiration)
-				assert.Equal(t, idDocumentCountry, *user.IDDocumentCountry)
-			}).Return(nil)
-
 		mocks.eventDBModule.EXPECT().Store(ctx, gomock.Any()).Return(nil).AnyTimes()
 
 		var userRep = api.UserRepresentation{
@@ -630,31 +617,6 @@ func TestCreateUser(t *testing.T) {
 
 		var userRep = api.UserRepresentation{}
 		mocks.logger.EXPECT().Warn(ctx, "err", "Invalid input")
-
-		location, err := managementComponent.CreateUser(ctx, targetRealmName, userRep, false, false, false)
-
-		assert.NotNil(t, err)
-		assert.Equal(t, "", location)
-	})
-
-	t.Run("Error from DB users", func(t *testing.T) {
-		mocks.keycloakClient.EXPECT().CreateUser(accessToken, realmName, targetRealmName, gomock.Any()).DoAndReturn(
-			func(accessToken, realmName, targetRealmName string, kcUserRep kc.UserRepresentation) (string, error) {
-				return locationURL, nil
-			})
-
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
-		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
-
-		mocks.usersDetailsDBModule.EXPECT().StoreOrUpdateUserDetails(ctx, targetRealmName, gomock.Any()).Return(fmt.Errorf("SQL error"))
-
-		var birthLocation = "Rolle"
-		var userRep = api.UserRepresentation{
-			ID:            &userID,
-			Username:      &username,
-			BirthLocation: &birthLocation,
-		}
-		mocks.logger.EXPECT().Warn(ctx, "msg", "Can't store user details in database", "err", "SQL error")
 
 		location, err := managementComponent.CreateUser(ctx, targetRealmName, userRep, false, false, false)
 
@@ -793,8 +755,6 @@ func TestDeleteUser(t *testing.T) {
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 
-		mocks.usersDetailsDBModule.EXPECT().DeleteUserDetails(ctx, realmName, userID).Return(nil)
-
 		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "API_ACCOUNT_DELETION", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 
 		err := managementComponent.DeleteUser(ctx, "master", userID)
@@ -808,8 +768,6 @@ func TestDeleteUser(t *testing.T) {
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
-
-		mocks.usersDetailsDBModule.EXPECT().DeleteUserDetails(ctx, realmName, userID).Return(nil)
 
 		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "API_ACCOUNT_DELETION", "back-office", database.CtEventRealmName, realmName, database.CtEventUserID, userID).Return(errors.New("error"))
 		m := map[string]interface{}{"event_name": "API_ACCOUNT_DELETION", database.CtEventRealmName: realmName, database.CtEventUserID: userID}
@@ -825,19 +783,6 @@ func TestDeleteUser(t *testing.T) {
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		mocks.logger.EXPECT().Warn(ctx, "err", "Invalid input")
-
-		err := managementComponent.DeleteUser(ctx, "master", userID)
-
-		assert.NotNil(t, err)
-	})
-
-	t.Run("Error from DB users", func(t *testing.T) {
-		mocks.keycloakClient.EXPECT().DeleteUser(accessToken, realmName, userID).Return(nil)
-
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
-		mocks.usersDetailsDBModule.EXPECT().DeleteUserDetails(ctx, realmName, userID).Return(fmt.Errorf("SQL Error"))
-
-		mocks.logger.EXPECT().Warn(ctx, "err", "SQL Error")
 
 		err := managementComponent.DeleteUser(ctx, "master", userID)
 
@@ -887,6 +832,12 @@ func TestGetUser(t *testing.T) {
 		attributes.SetBool(constants.AttrbPhoneNumberVerified, phoneNumberVerified)
 		attributes.SetString(constants.AttrbLocale, locale)
 		attributes.Set(constants.AttrbTrustIDGroups, trustIDGroups)
+		attributes.SetString(constants.AttrbBirthLocation, birthLocation)
+		attributes.SetString(constants.AttrbNationality, nationality)
+		attributes.SetString(constants.AttrbIDDocumentType, idDocumentType)
+		attributes.SetString(constants.AttrbIDDocumentNumber, idDocumentNumber)
+		attributes.SetString(constants.AttrbIDDocumentExpiration, idDocumentExpiration)
+		attributes.SetString(constants.AttrbIDDocumentCountry, idDocumentCountry)
 
 		var kcUserRep = kc.UserRepresentation{
 			ID:               &id,
@@ -905,16 +856,6 @@ func TestGetUser(t *testing.T) {
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
-
-		mocks.usersDetailsDBModule.EXPECT().GetUserDetails(ctx, realmName, id).Return(dto.DBUser{
-			UserID:               &id,
-			BirthLocation:        &birthLocation,
-			Nationality:          &nationality,
-			IDDocumentExpiration: &idDocumentExpiration,
-			IDDocumentNumber:     &idDocumentNumber,
-			IDDocumentType:       &idDocumentType,
-			IDDocumentCountry:    &idDocumentCountry,
-		}, nil)
 
 		mocks.accreditationsClient.EXPECT().GetPendingChecks(ctx, realmName, id).Return([]accreditationsclient.CheckRepresentation{{
 			Nature:   ptr("nature"),
@@ -992,9 +933,6 @@ func TestGetUser(t *testing.T) {
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 
-		mocks.usersDetailsDBModule.EXPECT().GetUserDetails(ctx, realmName, id).Return(dto.DBUser{
-			UserID: &id,
-		}, nil)
 		mocks.accreditationsClient.EXPECT().GetPendingChecks(ctx, realmName, id).Return([]accreditationsclient.CheckRepresentation{{
 			Nature:   ptr("nature"),
 			Status:   ptr("PENDING"),
@@ -1029,13 +967,7 @@ func TestGetUser(t *testing.T) {
 	})
 
 	t.Run("Get user with succces but with error when storing the event in the DB", func(t *testing.T) {
-		var birthLocation = "Rolle"
-		var nationality = "CH"
-		var idDocumentType = "Card ID"
-		var idDocumentNumber = "1234-4567-VD-3"
-		var idDocumentExpiration = "23.12.2019"
 		var now = time.Now().UTC()
-		var idDocumentCountry = "BE"
 		var kcUserRep = kc.UserRepresentation{
 			ID:       &id,
 			Username: &username,
@@ -1046,15 +978,6 @@ func TestGetUser(t *testing.T) {
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 
-		mocks.usersDetailsDBModule.EXPECT().GetUserDetails(ctx, realmName, id).Return(dto.DBUser{
-			UserID:               &id,
-			BirthLocation:        &birthLocation,
-			Nationality:          &nationality,
-			IDDocumentExpiration: &idDocumentExpiration,
-			IDDocumentNumber:     &idDocumentNumber,
-			IDDocumentType:       &idDocumentType,
-			IDDocumentCountry:    &idDocumentCountry,
-		}, nil)
 		mocks.accreditationsClient.EXPECT().GetPendingChecks(ctx, realmName, id).Return([]accreditationsclient.CheckRepresentation{{
 			Nature:   ptr("nature"),
 			Status:   ptr("PENDING"),
@@ -1071,23 +994,6 @@ func TestGetUser(t *testing.T) {
 		assert.Equal(t, username, *apiUserRep.Username)
 	})
 
-	t.Run("Error with Users DB", func(t *testing.T) {
-		var kcUserRep = kc.UserRepresentation{
-			ID:       &id,
-			Username: &username,
-		}
-		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, id).Return(kcUserRep, nil)
-
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
-
-		mocks.usersDetailsDBModule.EXPECT().GetUserDetails(ctx, realmName, id).Return(dto.DBUser{}, fmt.Errorf("SQL Error"))
-		mocks.logger.EXPECT().Warn(ctx, "err", "SQL Error")
-
-		_, err := managementComponent.GetUser(ctx, "master", id)
-
-		assert.NotNil(t, err)
-	})
-
 	t.Run("Retrieve checks fails", func(t *testing.T) {
 		var kcUserRep = kc.UserRepresentation{
 			ID:       &id,
@@ -1097,7 +1003,6 @@ func TestGetUser(t *testing.T) {
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
-		mocks.usersDetailsDBModule.EXPECT().GetUserDetails(ctx, realmName, id).Return(dto.DBUser{}, nil)
 		mocks.accreditationsClient.EXPECT().GetPendingChecks(ctx, realmName, id).Return([]accreditationsclient.CheckRepresentation{}, fmt.Errorf("SQL Error"))
 		mocks.logger.EXPECT().Warn(ctx, "msg", "Can't get pending checks", "err", "SQL Error")
 
@@ -1179,6 +1084,12 @@ func TestUpdateUser(t *testing.T) {
 	attributes.SetString(constants.AttrbBirthDate, *userRep.BirthDate)
 	attributes.SetBool(constants.AttrbPhoneNumberVerified, *userRep.PhoneNumberVerified)
 	attributes.SetString(constants.AttrbLocale, *userRep.Locale)
+	attributes.SetString(constants.AttrbBirthLocation, birthLocation)
+	attributes.SetString(constants.AttrbNationality, nationality)
+	attributes.SetString(constants.AttrbIDDocumentType, idDocumentType)
+	attributes.SetString(constants.AttrbIDDocumentNumber, idDocumentNumber)
+	attributes.SetString(constants.AttrbIDDocumentExpiration, idDocumentExpiration)
+	attributes.SetString(constants.AttrbIDDocumentCountry, idDocumentCountry)
 
 	var kcUserRep = kc.UserRepresentation{
 		ID:               &id,
@@ -1190,16 +1101,6 @@ func TestUpdateUser(t *testing.T) {
 		LastName:         userRep.LastName,
 		Attributes:       &attributes,
 		CreatedTimestamp: &createdTimestamp,
-	}
-
-	var dbUserRep = dto.DBUser{
-		UserID:               &id,
-		BirthLocation:        &birthLocation,
-		Nationality:          &nationality,
-		IDDocumentType:       &idDocumentType,
-		IDDocumentNumber:     &idDocumentNumber,
-		IDDocumentExpiration: &idDocumentExpiration,
-		IDDocumentCountry:    &idDocumentCountry,
 	}
 
 	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
@@ -1214,7 +1115,6 @@ func TestUpdateUser(t *testing.T) {
 		userWithNewUsername.Username = &newUsername
 
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, socialRealmName, id).Return(kcUserRep, nil)
-		mocks.usersDetailsDBModule.EXPECT().GetUserDetails(ctx, socialRealmName, id).Return(dbUserRep, nil)
 		mocks.accreditationsClient.EXPECT().NotifyUpdate(ctx, gomock.Any()).Return(nil, anyError)
 		mocks.logger.EXPECT().Warn(ctx, gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
@@ -1229,7 +1129,6 @@ func TestUpdateUser(t *testing.T) {
 		userWithNewUsername.Username = &newUsername
 
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, socialRealmName, id).Return(kcUserRep, nil)
-		mocks.usersDetailsDBModule.EXPECT().GetUserDetails(ctx, socialRealmName, id).Return(dbUserRep, nil)
 		mocks.accreditationsClient.EXPECT().NotifyUpdate(ctx, gomock.Any()).Return(nil, nil)
 		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, socialRealmName, id, gomock.Any()).DoAndReturn(func(_, _, _ interface{}, updUser kc.UserRepresentation) error {
 			assert.NotEqual(t, userWithNewUsername.Username, updUser.Username)
@@ -1246,7 +1145,6 @@ func TestUpdateUser(t *testing.T) {
 
 	t.Run("Update user with succces (without user info update)", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, id).Return(kcUserRep, nil)
-		mocks.usersDetailsDBModule.EXPECT().GetUserDetails(ctx, realmName, id).Return(dbUserRep, nil)
 		mocks.accreditationsClient.EXPECT().NotifyUpdate(ctx, gomock.Any()).Return(nil, nil)
 		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, realmName, id, gomock.Any()).DoAndReturn(
 			func(accessToken, realmName, id string, kcUserRep kc.UserRepresentation) error {
@@ -1272,7 +1170,6 @@ func TestUpdateUser(t *testing.T) {
 
 	t.Run("Update user with succces (with user info update)", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, id).Return(kcUserRep, nil).Times(2)
-		mocks.usersDetailsDBModule.EXPECT().GetUserDetails(ctx, realmName, id).Return(dbUserRep, nil).Times(2)
 		mocks.accreditationsClient.EXPECT().NotifyUpdate(ctx, gomock.Any()).Return(nil, nil).Times(2)
 		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, realmName, id, gomock.Any()).DoAndReturn(
 			func(accessToken, realmName, id string, kcUserRep kc.UserRepresentation) error {
@@ -1295,18 +1192,6 @@ func TestUpdateUser(t *testing.T) {
 		var userAPI = createUpdateUser()
 		userAPI.IDDocumentExpiration = &newIDDocumentExpiration
 
-		mocks.usersDetailsDBModule.EXPECT().StoreOrUpdateUserDetails(ctx, realmName, gomock.Any()).DoAndReturn(
-			func(ctx context.Context, realm string, user dto.DBUser) error {
-				assert.Equal(t, id, *user.UserID)
-				assert.Equal(t, birthLocation, *user.BirthLocation)
-				assert.Equal(t, nationality, *user.Nationality)
-				assert.Equal(t, idDocumentType, *user.IDDocumentType)
-				assert.Equal(t, idDocumentNumber, *user.IDDocumentNumber)
-				assert.Equal(t, newIDDocumentExpiration, *user.IDDocumentExpiration)
-				assert.Equal(t, idDocumentCountry, *user.IDDocumentCountry)
-				return nil
-			})
-
 		err := managementComponent.UpdateUser(ctx, realmName, id, userAPI)
 		assert.Nil(t, err)
 
@@ -1321,18 +1206,6 @@ func TestUpdateUser(t *testing.T) {
 		userAPI.IDDocumentNumber = &newIDDocumentNumber
 		userAPI.IDDocumentCountry = &newIDDocumentCountry
 
-		mocks.usersDetailsDBModule.EXPECT().StoreOrUpdateUserDetails(ctx, realmName, gomock.Any()).DoAndReturn(
-			func(ctx context.Context, realm string, user dto.DBUser) error {
-				assert.Equal(t, id, *user.UserID)
-				assert.Equal(t, newBirthLocation, *user.BirthLocation)
-				assert.Equal(t, newNationality, *user.Nationality)
-				assert.Equal(t, newIDDocumentType, *user.IDDocumentType)
-				assert.Equal(t, newIDDocumentNumber, *user.IDDocumentNumber)
-				assert.Equal(t, newIDDocumentExpiration, *user.IDDocumentExpiration)
-				assert.Equal(t, newIDDocumentCountry, *user.IDDocumentCountry)
-				return nil
-			})
-
 		err = managementComponent.UpdateUser(ctx, realmName, id, userAPI)
 		assert.Nil(t, err)
 	})
@@ -1340,7 +1213,6 @@ func TestUpdateUser(t *testing.T) {
 	t.Run("Update by locking the user", func(t *testing.T) {
 		kcUserRep.Enabled = &enabled
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, id).Return(kcUserRep, nil)
-		mocks.usersDetailsDBModule.EXPECT().GetUserDetails(ctx, realmName, id).Return(dbUserRep, nil)
 		mocks.accreditationsClient.EXPECT().NotifyUpdate(ctx, gomock.Any()).Return(nil, nil)
 		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, realmName, id, gomock.Any()).DoAndReturn(
 			func(accessToken, realmName, id string, kcUserRep kc.UserRepresentation) error {
@@ -1373,7 +1245,6 @@ func TestUpdateUser(t *testing.T) {
 	t.Run("Update to unlock the user", func(t *testing.T) {
 		kcUserRep.Enabled = &disabled
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, id).Return(kcUserRep, nil)
-		mocks.usersDetailsDBModule.EXPECT().GetUserDetails(ctx, realmName, id).Return(dbUserRep, nil)
 		mocks.accreditationsClient.EXPECT().NotifyUpdate(ctx, gomock.Any()).Return(nil, nil)
 		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, realmName, id, gomock.Any()).Return(nil)
 
@@ -1395,7 +1266,6 @@ func TestUpdateUser(t *testing.T) {
 			EmailVerified: userRep.EmailVerified,
 		}
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, id).Return(oldkcUserRep, nil)
-		mocks.usersDetailsDBModule.EXPECT().GetUserDetails(ctx, realmName, id).Return(dbUserRep, nil)
 		mocks.accreditationsClient.EXPECT().NotifyUpdate(ctx, gomock.Any()).Return(nil, nil)
 		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, realmName, id, gomock.Any()).DoAndReturn(
 			func(accessToken, realmName, id string, kcUserRep kc.UserRepresentation) error {
@@ -1421,7 +1291,6 @@ func TestUpdateUser(t *testing.T) {
 		var withoutEmailUser = userRep
 		withoutEmailUser.Email = csjson.OptionalString{Defined: true, Value: nil}
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, id).Return(oldkcUserRep, nil)
-		mocks.usersDetailsDBModule.EXPECT().GetUserDetails(ctx, realmName, id).Return(dbUserRep, nil)
 		mocks.accreditationsClient.EXPECT().NotifyUpdate(ctx, gomock.Any()).Return(nil, nil)
 		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, realmName, id, gomock.Any()).DoAndReturn(
 			func(accessToken, realmName, id string, kcUserRep kc.UserRepresentation) error {
@@ -1447,7 +1316,6 @@ func TestUpdateUser(t *testing.T) {
 			Attributes: &oldAttributes,
 		}
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, id).Return(oldkcUserRep2, nil)
-		mocks.usersDetailsDBModule.EXPECT().GetUserDetails(ctx, realmName, id).Return(dbUserRep, nil)
 		mocks.accreditationsClient.EXPECT().NotifyUpdate(ctx, gomock.Any()).Return(nil, nil)
 		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, realmName, id, gomock.Any()).DoAndReturn(
 			func(accessToken, realmName, id string, kcUserRep kc.UserRepresentation) error {
@@ -1477,7 +1345,6 @@ func TestUpdateUser(t *testing.T) {
 		var withoutPhoneNumberUser = userRep
 		withoutPhoneNumberUser.PhoneNumber = csjson.OptionalString{Defined: true, Value: nil}
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, id).Return(oldkcUserRep2, nil)
-		mocks.usersDetailsDBModule.EXPECT().GetUserDetails(ctx, realmName, id).Return(dbUserRep, nil)
 		mocks.accreditationsClient.EXPECT().NotifyUpdate(ctx, gomock.Any()).Return(nil, nil)
 		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, realmName, id, gomock.Any()).DoAndReturn(
 			func(accessToken, realmName, id string, kcUserRep kc.UserRepresentation) error {
@@ -1513,7 +1380,6 @@ func TestUpdateUser(t *testing.T) {
 		}
 
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, id).Return(oldkcUserRep2, nil)
-		mocks.usersDetailsDBModule.EXPECT().GetUserDetails(ctx, realmName, id).Return(dbUserRep, nil)
 		mocks.accreditationsClient.EXPECT().NotifyUpdate(ctx, gomock.Any()).Return(nil, nil)
 		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, realmName, id, gomock.Any()).DoAndReturn(
 			func(accessToken, realmName, id string, kcUserRep kc.UserRepresentation) error {
@@ -1551,7 +1417,6 @@ func TestUpdateUser(t *testing.T) {
 		eventJSON, _ := json.Marshal(m)
 		mocks.logger.EXPECT().Error(ctx, "err", "error", "event", string(eventJSON))
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, id).Return(kcUserRep, nil)
-		mocks.usersDetailsDBModule.EXPECT().GetUserDetails(ctx, realmName, id).Return(dbUserRep, nil)
 		mocks.accreditationsClient.EXPECT().NotifyUpdate(ctx, gomock.Any()).Return(nil, nil)
 		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, realmName, id, gomock.Any()).Return(nil)
 
@@ -1571,18 +1436,6 @@ func TestUpdateUser(t *testing.T) {
 		assert.NotNil(t, err)
 	})
 
-	t.Run("Error - get user info from DB", func(t *testing.T) {
-		var id = "1234-79894-7594"
-		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, id).Return(kc.UserRepresentation{}, nil)
-
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
-		mocks.usersDetailsDBModule.EXPECT().GetUserDetails(ctx, realmName, id).Return(dto.DBUser{}, fmt.Errorf("SQL Error"))
-
-		err := managementComponent.UpdateUser(ctx, "master", id, api.UpdatableUserRepresentation{})
-
-		assert.NotNil(t, err)
-	})
-
 	t.Run("Error - update user KC", func(t *testing.T) {
 		var id = "1234-79894-7594"
 		var kcUserRep = kc.UserRepresentation{
@@ -1591,34 +1444,11 @@ func TestUpdateUser(t *testing.T) {
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, id).Return(kcUserRep, nil).AnyTimes()
-		mocks.usersDetailsDBModule.EXPECT().GetUserDetails(ctx, realmName, id).Return(dbUserRep, nil)
 		mocks.accreditationsClient.EXPECT().NotifyUpdate(ctx, gomock.Any()).Return(nil, nil)
 		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, realmName, id, gomock.Any()).Return(fmt.Errorf("Unexpected error"))
 		mocks.logger.EXPECT().Warn(gomock.Any(), "err", "Unexpected error")
 
 		err := managementComponent.UpdateUser(ctx, "master", id, api.UpdatableUserRepresentation{})
-
-		assert.NotNil(t, err)
-	})
-
-	t.Run("Error - update user info in DB", func(t *testing.T) {
-		var id = "1234-79894-7594"
-		var kcUserRep = kc.UserRepresentation{
-			ID: &id,
-		}
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
-
-		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, id).Return(kcUserRep, nil).AnyTimes()
-		mocks.usersDetailsDBModule.EXPECT().GetUserDetails(ctx, realmName, id).Return(dbUserRep, nil)
-		mocks.accreditationsClient.EXPECT().NotifyUpdate(ctx, gomock.Any()).Return(nil, nil)
-		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, realmName, id, gomock.Any()).Return(nil)
-		mocks.usersDetailsDBModule.EXPECT().StoreOrUpdateUserDetails(ctx, realmName, gomock.Any()).Return(fmt.Errorf("SQL error"))
-		mocks.logger.EXPECT().Warn(gomock.Any(), "msg", "Can't store user details in database", "err", "SQL error")
-
-		var newIDDocumentType = "Visa"
-		err := managementComponent.UpdateUser(ctx, realmName, id, api.UpdatableUserRepresentation{
-			IDDocumentExpiration: &newIDDocumentType,
-		})
 
 		assert.NotNil(t, err)
 	})

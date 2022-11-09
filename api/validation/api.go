@@ -6,7 +6,6 @@ import (
 	"github.com/cloudtrust/common-service/v2/fields"
 	"github.com/cloudtrust/common-service/v2/validation"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
-	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 	kc "github.com/cloudtrust/keycloak-client/v2"
 )
 
@@ -123,6 +122,12 @@ func (u *UserRepresentation) ExportToKeycloak(kcUser *kc.UserRepresentation) {
 		}
 	}
 	attributes.SetTimeWhenNotNil(constants.AttrbBirthDate, u.BirthDate, constants.SupportedDateLayouts[0])
+	attributes.SetStringWhenNotNil(constants.AttrbBirthLocation, u.BirthLocation)
+	attributes.SetStringWhenNotNil(constants.AttrbNationality, u.Nationality)
+	attributes.SetStringWhenNotNil(constants.AttrbIDDocumentType, u.IDDocumentType)
+	attributes.SetStringWhenNotNil(constants.AttrbIDDocumentNumber, u.IDDocumentNumber)
+	attributes.SetTimeWhenNotNil(constants.AttrbIDDocumentExpiration, u.IDDocumentExpiration, constants.SupportedDateLayouts[0])
+	attributes.SetStringWhenNotNil(constants.AttrbIDDocumentCountry, u.IDDocumentCountry)
 
 	if u.Username != nil {
 		kcUser.Username = u.Username
@@ -143,21 +148,24 @@ func (u *UserRepresentation) ExportToKeycloak(kcUser *kc.UserRepresentation) {
 
 // ImportFromKeycloak import details from Keycloak
 func (u *UserRepresentation) ImportFromKeycloak(kcUser kc.UserRepresentation) {
+	u.PhoneNumber = defaultIfNil(kcUser.GetAttributeString(constants.AttrbPhoneNumber), u.PhoneNumber)
+	u.Locale = defaultIfNil(kcUser.GetAttributeString(constants.AttrbLocale), u.Locale)
+	u.Gender = defaultIfNil(kcUser.GetAttributeString(constants.AttrbGender), u.Gender)
+	u.BirthLocation = defaultIfNil(kcUser.GetAttributeString(constants.AttrbBirthLocation), u.BirthLocation)
+	u.Nationality = defaultIfNil(kcUser.GetAttributeString(constants.AttrbNationality), u.Nationality)
+	u.IDDocumentType = defaultIfNil(kcUser.GetAttributeString(constants.AttrbIDDocumentType), u.IDDocumentType)
+	u.IDDocumentNumber = defaultIfNil(kcUser.GetAttributeString(constants.AttrbIDDocumentNumber), u.IDDocumentNumber)
+	u.IDDocumentCountry = defaultIfNil(kcUser.GetAttributeString(constants.AttrbIDDocumentCountry), u.IDDocumentCountry)
+
 	if kcUser.Attributes != nil {
-		if pn := kcUser.GetAttributeString(constants.AttrbPhoneNumber); pn != nil {
-			u.PhoneNumber = pn
-		}
 		if value, err := kcUser.GetAttributeBool(constants.AttrbPhoneNumberVerified); err == nil && value != nil {
 			u.PhoneNumberVerified = value
 		}
-		if value := kcUser.GetAttributeString(constants.AttrbLocale); value != nil {
-			u.Locale = value
-		}
-		if value := kcUser.GetAttributeString(constants.AttrbGender); value != nil {
-			u.Gender = value
-		}
-		if value, err := kcUser.Attributes.GetTime(constants.AttrbBirthDate, constants.SupportedDateLayouts); err == nil && value != nil {
+		if value, err := kcUser.GetAttributeTime(constants.AttrbBirthDate, constants.SupportedDateLayouts); err == nil && value != nil {
 			u.BirthDate = value
+		}
+		if value, err := kcUser.GetAttributeTime(constants.AttrbIDDocumentExpiration, constants.SupportedDateLayouts); err == nil && value != nil {
+			u.IDDocumentExpiration = value
 		}
 	}
 
@@ -167,6 +175,13 @@ func (u *UserRepresentation) ImportFromKeycloak(kcUser kc.UserRepresentation) {
 	u.LastName = kcUser.LastName
 	u.Email = kcUser.Email
 	u.EmailVerified = kcUser.EmailVerified
+}
+
+func defaultIfNil(value *string, defaultValue *string) *string {
+	if value != nil {
+		return value
+	}
+	return defaultValue
 }
 
 // Validate checks the validity of the given User
@@ -186,29 +201,17 @@ func (u *UserRepresentation) Validate() error {
 		Status()
 }
 
-// UpdateFieldsComparatorWithDBFields update the field comparator with fields stored in DB
-func (u *UserRepresentation) UpdateFieldsComparatorWithDBFields(fc fields.FieldsComparator, formerUserInfo dto.DBUser) fields.FieldsComparator {
-	var expiry *string
-	if u.IDDocumentExpiration != nil {
-		var converted = u.IDDocumentExpiration.Format(constants.SupportedDateLayouts[0])
-		expiry = &converted
-	}
-
-	return fc.
-		CompareValues(fields.BirthLocation, u.BirthLocation, formerUserInfo.BirthLocation).
-		CompareValues(fields.Nationality, u.Nationality, formerUserInfo.Nationality).
-		CompareValues(fields.IDDocumentType, u.IDDocumentType, formerUserInfo.IDDocumentType).
-		CompareValues(fields.IDDocumentNumber, u.IDDocumentNumber, formerUserInfo.IDDocumentNumber).
-		CompareValues(fields.IDDocumentExpiration, expiry, formerUserInfo.IDDocumentExpiration).
-		CompareValues(fields.IDDocumentCountry, u.IDDocumentCountry, formerUserInfo.IDDocumentCountry)
-}
-
 // UpdateFieldsComparatorWithKCFields update the field comparator with fields stored in KC
 func (u *UserRepresentation) UpdateFieldsComparatorWithKCFields(fc fields.FieldsComparator, formerUserInfo *kc.UserRepresentation) fields.FieldsComparator {
 	var birthDate *string
 	if u.BirthDate != nil {
 		var converted = u.BirthDate.Format(constants.SupportedDateLayouts[0])
 		birthDate = &converted
+	}
+	var expiry *string
+	if u.IDDocumentExpiration != nil {
+		var converted = u.IDDocumentExpiration.Format(constants.SupportedDateLayouts[0])
+		expiry = &converted
 	}
 
 	return fc.
@@ -217,7 +220,13 @@ func (u *UserRepresentation) UpdateFieldsComparatorWithKCFields(fc fields.Fields
 		CaseSensitive(false).
 		CompareValueAndFunction(fields.Gender, u.Gender, formerUserInfo.GetFieldValues).
 		CaseSensitive(true).
-		CompareValueAndFunction(fields.BirthDate, birthDate, formerUserInfo.GetFieldValues)
+		CompareValueAndFunction(fields.BirthDate, birthDate, formerUserInfo.GetFieldValues).
+		CompareValueAndFunction(fields.BirthLocation, u.BirthLocation, formerUserInfo.GetFieldValues).
+		CompareValueAndFunction(fields.Nationality, u.Nationality, formerUserInfo.GetFieldValues).
+		CompareValueAndFunction(fields.IDDocumentType, u.IDDocumentType, formerUserInfo.GetFieldValues).
+		CompareValueAndFunction(fields.IDDocumentNumber, u.IDDocumentNumber, formerUserInfo.GetFieldValues).
+		CompareValueAndFunction(fields.IDDocumentExpiration, expiry, formerUserInfo.GetFieldValues).
+		CompareValueAndFunction(fields.IDDocumentCountry, u.IDDocumentCountry, formerUserInfo.GetFieldValues)
 }
 
 // Validate checks the validity of the given check

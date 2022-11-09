@@ -2,7 +2,6 @@ package tasks
 
 import (
 	"context"
-	"database/sql"
 
 	cs "github.com/cloudtrust/common-service/v2"
 	"github.com/cloudtrust/common-service/v2/database"
@@ -22,24 +21,17 @@ type KeycloakClient interface {
 	GetExpiredTermsOfUseAcceptance(accessToken string) ([]keycloak.DeletableUserRepresentation, error)
 }
 
-// UsersDetailsDBModule is the interface from the users module
-type UsersDetailsDBModule interface {
-	DeleteUserDetails(ctx context.Context, realm string, userID string) error
-}
-
 type component struct {
 	keycloakClient KeycloakClient
-	usersDBModule  UsersDetailsDBModule
 	eventDBModule  database.EventsDBModule
 	logger         log.Logger
 }
 
 // NewComponent returns a component
-func NewComponent(keycloakClient KeycloakClient, usersDBModule UsersDetailsDBModule, eventDBModule database.EventsDBModule,
+func NewComponent(keycloakClient KeycloakClient, eventDBModule database.EventsDBModule,
 	logger log.Logger) Component {
 	return &component{
 		keycloakClient: keycloakClient,
-		usersDBModule:  usersDBModule,
 		eventDBModule:  eventDBModule,
 
 		logger: logger,
@@ -67,20 +59,14 @@ func (c *component) CleanUpAccordingToExpiredTermsOfUseAcceptance(ctx context.Co
 	var finalError error
 
 	for _, user := range users {
-		err = c.usersDBModule.DeleteUserDetails(ctx, user.RealmName, user.UserID)
-		if err != nil && err != sql.ErrNoRows {
-			c.logger.Warn(ctx, "msg", "Could not delete database user", "realm", user.RealmName, "usr", user.UserID, "err", err.Error())
+		err = c.keycloakClient.DeleteUser(accessToken, user.RealmName, user.UserID)
+		if err != nil {
+			c.logger.Warn(ctx, "msg", "Could not delete keycloak user", "realm", user.RealmName, "usr", user.UserID, "err", err.Error())
 			finalError = err
 		} else {
-			err = c.keycloakClient.DeleteUser(accessToken, user.RealmName, user.UserID)
-			if err != nil {
-				c.logger.Warn(ctx, "msg", "Could not delete keycloak user", "realm", user.RealmName, "usr", user.UserID, "err", err.Error())
-				finalError = err
-			} else {
-				c.logger.Info(ctx, "msg", "Removed user without terms and conditions acceptance", "realm", user.RealmName, "usr", user.UserID)
-				//store the API call into the DB
-				c.reportEvent(ctx, "API_ACCOUNT_DELETION", database.CtEventRealmName, user.RealmName, database.CtEventUserID, user.UserID)
-			}
+			c.logger.Info(ctx, "msg", "Removed user without terms and conditions acceptance", "realm", user.RealmName, "usr", user.UserID)
+			//store the API call into the DB
+			c.reportEvent(ctx, "API_ACCOUNT_DELETION", database.CtEventRealmName, user.RealmName, database.CtEventUserID, user.UserID)
 		}
 	}
 

@@ -13,7 +13,6 @@ import (
 	"github.com/cloudtrust/common-service/v2/validation"
 	apiregister "github.com/cloudtrust/keycloak-bridge/api/register"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
-	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	kc "github.com/cloudtrust/keycloak-client/v2"
 )
@@ -65,13 +64,12 @@ var (
 )
 
 // NewComponent returns component.
-func NewComponent(keycloakClient KeycloakClient, tokenProvider toolbox.OidcTokenProvider, usersDBModule keycloakb.UsersDetailsDBModule,
+func NewComponent(keycloakClient KeycloakClient, tokenProvider toolbox.OidcTokenProvider,
 	configDBModule ConfigurationDBModule, eventsDBModule database.EventsDBModule, onboardingModule OnboardingModule, glnVerifier GlnVerifier,
 	contextKeyManager ContextKeyManager, logger keycloakb.Logger) Component {
 	return &component{
 		keycloakClient:   keycloakClient,
 		tokenProvider:    tokenProvider,
-		usersDBModule:    usersDBModule,
 		configDBModule:   configDBModule,
 		eventsDBModule:   eventsDBModule,
 		onboardingModule: onboardingModule,
@@ -85,7 +83,6 @@ func NewComponent(keycloakClient KeycloakClient, tokenProvider toolbox.OidcToken
 type component struct {
 	keycloakClient   KeycloakClient
 	tokenProvider    toolbox.OidcTokenProvider
-	usersDBModule    keycloakb.UsersDetailsDBModule
 	configDBModule   ConfigurationDBModule
 	eventsDBModule   database.EventsDBModule
 	onboardingModule OnboardingModule
@@ -317,17 +314,6 @@ func (c *component) createUser(ctx context.Context, accessToken string, realmNam
 		c.logger.Warn(ctx, "msg", "Failed to update user through Keycloak API", "err", err.Error())
 		return kc.UserRepresentation{}, err
 	}
-
-	// Store user details in database
-	err = c.usersDBModule.StoreOrUpdateUserDetails(ctx, realmName, dto.DBUser{
-		UserID:               kcUser.ID,
-		BirthLocation:        user.BirthLocation,
-		Nationality:          user.Nationality,
-		IDDocumentType:       user.IDDocumentType,
-		IDDocumentNumber:     user.IDDocumentNumber,
-		IDDocumentExpiration: user.IDDocumentExpiration,
-		IDDocumentCountry:    user.IDDocumentCountry,
-	})
 
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Can't store user details in database", "err", err.Error())

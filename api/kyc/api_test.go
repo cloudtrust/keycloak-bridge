@@ -7,7 +7,6 @@ import (
 
 	"github.com/cloudtrust/common-service/v2/log"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
-	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 
 	kc "github.com/cloudtrust/keycloak-client/v2"
 	"github.com/stretchr/testify/assert"
@@ -111,21 +110,6 @@ func TestJSON(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
-func TestExportToDBUser(t *testing.T) {
-	var user = createValidUser()
-	var dbUser = dto.DBUser{}
-
-	user.ExportToDBUser(&dbUser)
-
-	assert.Equal(t, user.BirthLocation, dbUser.BirthLocation)
-	assert.Equal(t, user.IDDocumentCountry, dbUser.IDDocumentCountry)
-	assert.Equal(t, user.IDDocumentExpiration, dbUser.IDDocumentExpiration)
-	assert.Equal(t, user.IDDocumentNumber, dbUser.IDDocumentNumber)
-	assert.Equal(t, user.IDDocumentType, dbUser.IDDocumentType)
-	assert.Equal(t, user.Nationality, dbUser.Nationality)
-	assert.Equal(t, user.ID, dbUser.UserID)
-}
-
 func TestExportToKeycloak(t *testing.T) {
 	t.Run("Empty user from Keycloak", func(t *testing.T) {
 		var user = createValidUser()
@@ -138,6 +122,12 @@ func TestExportToKeycloak(t *testing.T) {
 		assert.Equal(t, user.Email, kcUser.Email)
 		assert.False(t, *kcUser.EmailVerified)
 		assert.True(t, *kcUser.Enabled)
+		assert.Equal(t, user.BirthLocation, kcUser.Attributes.GetString(constants.AttrbBirthLocation))
+		assert.Equal(t, user.IDDocumentCountry, kcUser.Attributes.GetString(constants.AttrbIDDocumentCountry))
+		assert.Equal(t, user.IDDocumentExpiration, kcUser.Attributes.GetString(constants.AttrbIDDocumentExpiration))
+		assert.Equal(t, user.IDDocumentNumber, kcUser.Attributes.GetString(constants.AttrbIDDocumentNumber))
+		assert.Equal(t, user.IDDocumentType, kcUser.Attributes.GetString(constants.AttrbIDDocumentType))
+		assert.Equal(t, user.Nationality, kcUser.Attributes.GetString(constants.AttrbNationality))
 	})
 
 	t.Run("Empty user from API", func(t *testing.T) {

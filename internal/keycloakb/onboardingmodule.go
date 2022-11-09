@@ -25,7 +25,6 @@ type KeycloakURIProvider interface {
 type onboardingModule struct {
 	keycloakClient      OnboardingKeycloakClient
 	keycloakURIProvider KeycloakURIProvider
-	usersDBModule       UsersDBModule
 	replaceAccountDelay time.Duration
 	mapRealmNames       map[string]string
 	logger              log.Logger
@@ -42,11 +41,6 @@ type OnboardingKeycloakClient interface {
 	GenerateTrustIDAuthToken(accessToken string, reqRealmName string, realmName string, userID string) (string, error)
 }
 
-// UsersDBModule interface
-type UsersDBModule interface {
-	DeleteUserDetails(ctx context.Context, realm string, userID string) error
-}
-
 //OnboardingModule interface
 type OnboardingModule interface {
 	OnboardingAlreadyCompleted(kc.UserRepresentation) (bool, error)
@@ -59,11 +53,10 @@ type OnboardingModule interface {
 }
 
 // NewOnboardingModule creates an onboarding module
-func NewOnboardingModule(keycloakClient OnboardingKeycloakClient, keycloakURIProvider KeycloakURIProvider, usersDBModule UsersDBModule, replaceAccountDelay time.Duration, mapRealmNames map[string]string, logger log.Logger) OnboardingModule {
+func NewOnboardingModule(keycloakClient OnboardingKeycloakClient, keycloakURIProvider KeycloakURIProvider, replaceAccountDelay time.Duration, mapRealmNames map[string]string, logger log.Logger) OnboardingModule {
 	return &onboardingModule{
 		keycloakClient:      keycloakClient,
 		keycloakURIProvider: keycloakURIProvider,
-		usersDBModule:       usersDBModule,
 		replaceAccountDelay: replaceAccountDelay,
 		mapRealmNames:       mapRealmNames,
 		logger:              logger,
@@ -212,10 +205,12 @@ func (om *onboardingModule) ProcessAlreadyExistingUserCases(ctx context.Context,
 		}
 
 		// Else delete this not fully onboarded user to be able to perform a fully new onboarding
-		err = om.deleteUser(ctx, accessToken, targetRealmName, *kcUser.ID)
+		err = om.keycloakClient.DeleteUser(accessToken, targetRealmName, *kcUser.ID)
 		if err != nil {
+			om.logger.Warn(ctx, "msg", "Failed to delete user", "userID", *kcUser.ID, "err", err.Error())
 			return err
 		}
+		return nil
 	}
 	return nil
 }
@@ -240,22 +235,6 @@ func (om *onboardingModule) overrideRealmName(realm string) string {
 		return override
 	}
 	return realm
-}
-
-func (om *onboardingModule) deleteUser(ctx context.Context, accessToken string, realmName string, userID string) error {
-	err := om.keycloakClient.DeleteUser(accessToken, realmName, userID)
-	if err != nil {
-		om.logger.Warn(ctx, "msg", "Failed to delete user", "userID", userID, "err", err.Error())
-		return err
-	}
-
-	err = om.usersDBModule.DeleteUserDetails(ctx, realmName, userID)
-	if err != nil {
-		om.logger.Warn(ctx, "msg", "Failed to delete user infos", "userID", userID, "err", err.Error())
-		return err
-	}
-
-	return nil
 }
 
 func (om *onboardingModule) getUserByEmailIfDuplicateNotAllowed(ctx context.Context, accessToken string, realmName string, email string) (*kc.UserRepresentation, error) {

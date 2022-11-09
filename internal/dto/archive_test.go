@@ -41,23 +41,3 @@ func TestToArchiveUserRepresentation(t *testing.T) {
 		assert.Len(t, user.Accreditations, 1)
 	})
 }
-
-func TestSetDetails(t *testing.T) {
-	var dbUser = DBUser{
-		BirthLocation:        ptr("Lausanne"),
-		Nationality:          ptr("CH"),
-		IDDocumentType:       ptr("PASSPORT"),
-		IDDocumentNumber:     ptr("1234567890123"),
-		IDDocumentExpiration: ptr("10.01.2030"),
-		IDDocumentCountry:    ptr("CH"),
-	}
-	var user ArchiveUserRepresentation
-
-	user.SetDetails(dbUser)
-	assert.Equal(t, dbUser.BirthLocation, user.BirthLocation)
-	assert.Equal(t, dbUser.Nationality, user.Nationality)
-	assert.Equal(t, dbUser.IDDocumentType, user.IDDocumentType)
-	assert.Equal(t, dbUser.IDDocumentNumber, user.IDDocumentNumber)
-	assert.Equal(t, dbUser.IDDocumentExpiration, user.IDDocumentExpiration)
-	assert.Equal(t, dbUser.IDDocumentCountry, user.IDDocumentCountry)
-}

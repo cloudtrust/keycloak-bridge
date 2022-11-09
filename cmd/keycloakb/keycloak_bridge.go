@@ -114,7 +114,6 @@ const (
 	cfgAuditRoDbParams          = "db-audit-ro"
 	cfgConfigRwDbParams         = "db-config-rw"
 	cfgConfigRoDbParams         = "db-config-ro"
-	cfgUsersRwDbParams          = "db-users-rw"
 	cfgRateKeyValidation        = "rate-validation"
 	cfgRateKeyCommunications    = "rate-communications"
 	cfgRateKeyAccount           = "rate-account"
@@ -145,8 +144,6 @@ const (
 	cfgTechnicalClientID        = "technical-client-id"
 	cfgRecaptchaURL             = "recaptcha-url"
 	cfgRecaptchaSecret          = "recaptcha-secret"
-	cfgDbAesGcmKey              = "db-aesgcm-key"
-	cfgDbAesGcmTagSize          = "db-aesgcm-tag-size"
 	cfgArchiveRwDbParams        = "db-archive-rw"
 	cfgDbArchiveAesGcmKey       = "db-archive-aesgcm-key"
 	cfgDbArchiveAesGcmTagSize   = "db-archive-aesgcm-tag-size"
@@ -237,9 +234,6 @@ func main() {
 		// DB for custom configuration
 		configRwDbParams = database.GetDbConfig(c, cfgConfigRwDbParams)
 		configRoDbParams = database.GetDbConfig(c, cfgConfigRoDbParams)
-
-		// DB for users
-		usersRwDbParams = database.GetDbConfig(c, cfgUsersRwDbParams)
 
 		// DB for archiving users
 		archiveRwDbParams = database.GetDbConfig(c, cfgArchiveRwDbParams)
@@ -371,11 +365,6 @@ func main() {
 	errorhandler.SetEmitter(keycloakb.ComponentName)
 
 	// Security - AES encryption mechanism for users PII
-	aesEncryption, err := security.NewAesGcmEncrypterFromBase64(c.GetString(cfgDbAesGcmKey), c.GetInt(cfgDbAesGcmTagSize))
-	if err != nil {
-		logger.Error(ctx, "msg", "could not create AES-GCM encrypting tool instance (users)", "err", err)
-		return
-	}
 	archiveAesEncryption, err := security.NewAesGcmEncrypterFromBase64(c.GetString(cfgDbArchiveAesGcmKey), c.GetInt(cfgDbArchiveAesGcmTagSize))
 	if err != nil {
 		logger.Error(ctx, "msg", "could not create AES-GCM encrypting tool instance (archive)", "err", err)
@@ -500,16 +489,6 @@ func main() {
 		}
 	}
 
-	var usersRwDBConn sqltypes.CloudtrustDB
-	{
-		var err error
-		usersRwDBConn, err = database.NewReconnectableCloudtrustDB(usersRwDbParams, toDbLogger(logger, usersRwDbParams))
-		if err != nil {
-			logger.Error(ctx, "msg", "could not create DB connection for users (RW)", "err", err)
-			return
-		}
-	}
-
 	var archiveRwDBConn sqltypes.CloudtrustDB
 	{
 		var err error
@@ -540,7 +519,6 @@ func main() {
 	healthChecker.AddDatabase("Audit RO", eventsRODBConn, healthCheckCacheDuration)
 	healthChecker.AddDatabase("Config R/W", configurationRwDBConn, healthCheckCacheDuration)
 	healthChecker.AddDatabase("Config RO", configurationRoDBConn, healthCheckCacheDuration)
-	healthChecker.AddDatabase("Users R/W", usersRwDBConn, healthCheckCacheDuration)
 	healthChecker.AddDatabase("Archive RO", archiveRwDBConn, healthCheckCacheDuration)
 	healthChecker.AddHTTPEndpoints(c.GetStringMapString("healthcheck-endpoints"), httpTimeout, 200, healthCheckCacheDuration)
 
@@ -626,15 +604,12 @@ func main() {
 		// module to store validation events API calls
 		eventsDBModule := database.NewEventsDBModule(eventsDBConn)
 
-		// module for storing and retrieving details of the users
-		var usersDBModule = keycloakb.NewUsersDetailsDBModule(usersRwDBConn, aesEncryption, validationLogger)
-
 		// module for archiving users
 		var archiveDBModule = keycloakb.NewArchiveDBModule(archiveRwDBConn, archiveAesEncryption, validationLogger)
 
 		var configurationReaderDBModule = configuration.NewConfigurationReaderDBModule(configurationRoDBConn, validationLogger, authActions)
 
-		validationComponent := validation.NewComponent(keycloakClient, technicalTokenProvider, usersDBModule, archiveDBModule, eventsDBModule, accreditationsService, configurationReaderDBModule, validationLogger)
+		validationComponent := validation.NewComponent(keycloakClient, technicalTokenProvider, archiveDBModule, eventsDBModule, accreditationsService, configurationReaderDBModule, validationLogger)
 
 		var rateLimitValidation = rateLimit[RateKeyValidation]
 		validationEndpoints = validation.Endpoints{
@@ -666,13 +641,10 @@ func main() {
 	{
 		var tasksLogger = log.With(logger, "svc", "tasks")
 
-		// module for storing and retrieving details of the users
-		var usersDBModule = keycloakb.NewUsersDetailsDBModule(usersRwDBConn, aesEncryption, tasksLogger)
-
 		// module to store validation events API calls
 		eventsDBModule := database.NewEventsDBModule(eventsDBConn)
 
-		tasksComponent := tasks.NewComponent(keycloakClient, usersDBModule, eventsDBModule, tasksLogger)
+		tasksComponent := tasks.NewComponent(keycloakClient, eventsDBModule, tasksLogger)
 		tasksComponent = tasks.MakeAuthorizationTasksComponentMW(log.With(tasksLogger, "mw", "endpoint"), authorizationManager)(tasksComponent)
 
 		var rateLimitTasks = rateLimit[RateKeyTasks]
@@ -752,11 +724,8 @@ func main() {
 		// module for storing and retrieving the custom configuration
 		var configDBModule = createConfigurationDBModule(configurationRwDBConn, influxMetrics, managementLogger)
 
-		// module for storing and retrieving details of the users
-		var usersDBModule = keycloakb.NewUsersDetailsDBModule(usersRwDBConn, aesEncryption, managementLogger)
-
 		// module for onboarding process
-		var onboardingModule = keycloakb.NewOnboardingModule(keycloakClient, keycloakConfig.URIProvider, usersDBModule, registerInactiveLockDuration, onboardingRealmOverrides, logger)
+		var onboardingModule = keycloakb.NewOnboardingModule(keycloakClient, keycloakConfig.URIProvider, registerInactiveLockDuration, onboardingRealmOverrides, logger)
 
 		var keycloakComponent management.Component
 		{
@@ -779,7 +748,7 @@ func main() {
 				}
 			}
 			/* REMOVE_THIS_3901 : remove second parameter */
-			keycloakComponent = management.NewComponent(keycloakClient, keycloakConfig.URIProvider, usersDBModule, eventsDBModule, configDBModule,
+			keycloakComponent = management.NewComponent(keycloakClient, keycloakConfig.URIProvider, eventsDBModule, configDBModule,
 				onboardingModule, authorizationChecker, technicalTokenProvider, accreditationsService, trustIDGroups, registerRealm, glnVerifier, managementLogger)
 			keycloakComponent = management.MakeAuthorizationManagementComponentMW(log.With(managementLogger, "mw", "endpoint"), authorizationManager)(keycloakComponent)
 		}
@@ -894,11 +863,8 @@ func main() {
 			kcTechClient = keycloakb.NewKeycloakTechnicalClient(technicalTokenProvider, technicalRealm, keycloakClient, accountLogger)
 		}
 
-		// module for storing and retrieving details of the self-registered users
-		var usersDBModule = keycloakb.NewUsersDetailsDBModule(usersRwDBConn, aesEncryption, accountLogger)
-
 		// new module for account service
-		accountComponent := account.NewComponent(keycloakClient.AccountClient(), kcTechClient, eventsDBModule, configDBModule, usersDBModule, glnVerifier, accreditationsService, accountLogger)
+		accountComponent := account.NewComponent(keycloakClient.AccountClient(), kcTechClient, eventsDBModule, configDBModule, glnVerifier, accreditationsService, accountLogger)
 		accountComponent = account.MakeAuthorizationAccountComponentMW(log.With(accountLogger, "mw", "endpoint"), configDBModule)(accountComponent)
 
 		var rateLimitAccount = rateLimit[RateKeyAccount]
@@ -961,11 +927,8 @@ func main() {
 		// module for storing and retrieving the custom configuration
 		var configDBModule = createConfigurationDBModule(configurationRwDBConn, influxMetrics, registerLogger)
 
-		// module for storing and retrieving details of the self-registered users
-		var usersDBModule = keycloakb.NewUsersDetailsDBModule(usersRwDBConn, aesEncryption, registerLogger)
-
 		// module for onboarding process
-		var onboardingModule = keycloakb.NewOnboardingModule(keycloakClient, keycloakConfig.URIProvider, usersDBModule, registerInactiveLockDuration, onboardingRealmOverrides, registerLogger)
+		var onboardingModule = keycloakb.NewOnboardingModule(keycloakClient, keycloakConfig.URIProvider, registerInactiveLockDuration, onboardingRealmOverrides, registerLogger)
 
 		// context keys
 		contextKeyManager, err := keycloakb.MakeContextKeyManager(func(config interface{}) error {
@@ -976,7 +939,7 @@ func main() {
 			return
 		}
 
-		registerComponent := register.NewComponent(keycloakClient, technicalTokenProvider, usersDBModule, configDBModule, eventsDBModule, onboardingModule, glnVerifier, contextKeyManager, registerLogger)
+		registerComponent := register.NewComponent(keycloakClient, technicalTokenProvider, configDBModule, eventsDBModule, onboardingModule, glnVerifier, contextKeyManager, registerLogger)
 		registerComponent = register.MakeAuthorizationRegisterComponentMW(log.With(registerLogger, "mw", "endpoint"))(registerComponent)
 
 		var rateLimitRegister = rateLimit[RateKeyRegister]
@@ -1001,9 +964,6 @@ func main() {
 		// Configure events db module
 		eventsDBModule := database.NewEventsDBModule(eventsDBConn)
 
-		// module for storing and retrieving details of the users
-		var usersDBModule = keycloakb.NewUsersDetailsDBModule(usersRwDBConn, aesEncryption, kycLogger)
-
 		// module for archiving users
 		var archiveDBModule = keycloakb.NewArchiveDBModule(archiveRwDBConn, archiveAesEncryption, kycLogger)
 
@@ -1011,7 +971,7 @@ func main() {
 		var configurationReaderDBModule = configuration.NewConfigurationReaderDBModule(configurationRoDBConn, kycLogger)
 
 		// new module for KYC service
-		kycComponent := kyc.NewComponent(technicalTokenProvider, registerRealm, keycloakClient, usersDBModule, archiveDBModule, configurationReaderDBModule, eventsDBModule, accreditationsService, glnVerifier, kycLogger)
+		kycComponent := kyc.NewComponent(technicalTokenProvider, registerRealm, keycloakClient, archiveDBModule, configurationReaderDBModule, eventsDBModule, accreditationsService, glnVerifier, kycLogger)
 		kycComponent = kyc.MakeAuthorizationRegisterComponentMW(registerRealm, authorizationManager, endpointPhysicalCheckAvailabilityChecker, log.With(kycLogger, "mw", "endpoint"))(kycComponent)
 
 		var rateLimitKyc = rateLimit[RateKeyKYC]
@@ -1553,8 +1513,6 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 	v.SetDefault(cfgValidationBasicAuthToken, "")
 
 	//Encryption key
-	v.SetDefault(cfgDbAesGcmTagSize, 16)
-	v.SetDefault(cfgDbAesGcmKey, "")
 	v.SetDefault(cfgDbArchiveAesGcmTagSize, 16)
 	v.SetDefault(cfgDbArchiveAesGcmKey, "")
 
@@ -1587,9 +1545,6 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 
 	//Storage custom configuration in DB (read only)
 	database.ConfigureDbDefault(v, cfgConfigRoDbParams, "CT_BRIDGE_DB_CONFIG_RO_USERNAME", "CT_BRIDGE_DB_CONFIG_RO_PASSWORD")
-
-	//Storage users in DB (read/write)
-	database.ConfigureDbDefault(v, cfgUsersRwDbParams, "CT_BRIDGE_DB_USERS_RW_USERNAME", "CT_BRIDGE_DB_USERS_RW_PASSWORD")
 
 	//Storage archive in DB (read only)
 	database.ConfigureDbDefault(v, cfgArchiveRwDbParams, "CT_BRIDGE_DB_ARCHIVE_RW_USERNAME", "CT_BRIDGE_DB_ARCHIVE_RW_PASSWORD")
@@ -1699,9 +1654,6 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 
 	v.BindEnv(cfgValidationBasicAuthToken, "CT_BRIDGE_VALIDATION_BASIC_AUTH")
 	censoredParameters[cfgValidationBasicAuthToken] = true
-
-	v.BindEnv(cfgDbAesGcmKey, "CT_BRIDGE_DB_AES_KEY")
-	censoredParameters[cfgDbAesGcmKey] = true
 
 	v.BindEnv(cfgDbArchiveAesGcmKey, "CT_BRIDGE_DB_ARCHIVE_AES_KEY")
 	censoredParameters[cfgDbArchiveAesGcmKey] = true

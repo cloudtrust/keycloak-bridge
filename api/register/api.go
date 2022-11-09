@@ -92,6 +92,12 @@ func (u *UserRepresentation) ConvertToKeycloak() kc.UserRepresentation {
 	attributes.SetDateWhenNotNil(constants.AttrbBirthDate, u.BirthDate, constants.SupportedDateLayouts)
 	attributes.SetStringWhenNotNil(constants.AttrbLocale, u.Locale)
 	attributes.SetStringWhenNotNil(constants.AttrbBusinessID, u.BusinessID)
+	attributes.SetStringWhenNotNil(constants.AttrbBirthLocation, u.BirthLocation)
+	attributes.SetStringWhenNotNil(constants.AttrbNationality, u.Nationality)
+	attributes.SetStringWhenNotNil(constants.AttrbIDDocumentType, u.IDDocumentType)
+	attributes.SetStringWhenNotNil(constants.AttrbIDDocumentNumber, u.IDDocumentNumber)
+	attributes.SetStringWhenNotNil(constants.AttrbIDDocumentExpiration, u.IDDocumentExpiration)
+	attributes.SetStringWhenNotNil(constants.AttrbIDDocumentCountry, u.IDDocumentCountry)
 
 	return kc.UserRepresentation{
 		Username:      u.Username,

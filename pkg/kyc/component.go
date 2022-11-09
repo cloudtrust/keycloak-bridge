@@ -37,12 +37,6 @@ type KeycloakClient interface {
 	CheckConsentCodeSMS(accessToken string, realmName string, userID string, consentCode string) error
 }
 
-// UsersDetailsDBModule is the interface from the users module
-type UsersDetailsDBModule interface {
-	StoreOrUpdateUserDetails(ctx context.Context, realm string, user dto.DBUser) error
-	GetUserDetails(ctx context.Context, realm string, userID string) (dto.DBUser, error)
-}
-
 // ArchiveDBModule is the interface from the archive module
 type ArchiveDBModule interface {
 	StoreUserDetails(ctx context.Context, realm string, user dto.ArchiveUserRepresentation) error
@@ -91,7 +85,6 @@ type component struct {
 	tokenProvider        toolbox.OidcTokenProvider
 	socialRealmName      string
 	keycloakClient       KeycloakClient
-	usersDBModule        UsersDetailsDBModule
 	archiveDBModule      ArchiveDBModule
 	configDBModule       ConfigDBModule
 	eventsDBModule       EventsDBModule
@@ -105,12 +98,11 @@ const (
 )
 
 // NewComponent returns the management component.
-func NewComponent(tokenProvider toolbox.OidcTokenProvider, socialRealmName string, keycloakClient KeycloakClient, usersDBModule UsersDetailsDBModule, archiveDBModule ArchiveDBModule, configDBModule ConfigDBModule, eventsDBModule EventsDBModule, accredsServiceClient AccreditationsServiceClient, glnVerifier GlnVerifier, logger keycloakb.Logger) Component {
+func NewComponent(tokenProvider toolbox.OidcTokenProvider, socialRealmName string, keycloakClient KeycloakClient, archiveDBModule ArchiveDBModule, configDBModule ConfigDBModule, eventsDBModule EventsDBModule, accredsServiceClient AccreditationsServiceClient, glnVerifier GlnVerifier, logger keycloakb.Logger) Component {
 	return &component{
 		tokenProvider:        tokenProvider,
 		socialRealmName:      socialRealmName,
 		keycloakClient:       keycloakClient,
-		usersDBModule:        usersDBModule,
 		archiveDBModule:      archiveDBModule,
 		configDBModule:       configDBModule,
 		eventsDBModule:       eventsDBModule,
@@ -186,10 +178,7 @@ func (c *component) getUserByUsernameGeneric(ctx context.Context, accessToken st
 	keycloakb.ConvertLegacyAttribute(&kcUser)
 
 	var res apikyc.UserRepresentation
-	res, err = c.getUser(ctx, realmName, *kcUser.ID, kcUser)
-	if err != nil {
-		return apikyc.UserRepresentation{}, err
-	}
+	res.ImportFromKeycloak(ctx, &kcUser, c.logger)
 	// At this point, we shall not provide too many information
 	res = apikyc.UserRepresentation{
 		ID:                  res.ID,
@@ -275,26 +264,8 @@ func (c *component) getUserGeneric(ctx context.Context, accessToken string, conf
 		return apikyc.UserRepresentation{}, errorhandler.CreateInternalServerError("keycloak")
 	}
 	keycloakb.ConvertLegacyAttribute(&kcUser)
-	return c.getUser(ctx, targetRealm, userID, kcUser)
-}
-
-func (c *component) getUser(ctx context.Context, realm string, userID string, kcUser kc.UserRepresentation) (apikyc.UserRepresentation, error) {
-	var dbUser, err = c.usersDBModule.GetUserDetails(ctx, realm, *kcUser.ID)
-	if err != nil {
-		c.logger.Info(ctx, "msg", "GetUser: can't find user in database")
-		return apikyc.UserRepresentation{}, err
-	}
-
-	var res = apikyc.UserRepresentation{
-		BirthLocation:        dbUser.BirthLocation,
-		Nationality:          dbUser.Nationality,
-		IDDocumentType:       dbUser.IDDocumentType,
-		IDDocumentNumber:     dbUser.IDDocumentNumber,
-		IDDocumentExpiration: dbUser.IDDocumentExpiration,
-		IDDocumentCountry:    dbUser.IDDocumentCountry,
-	}
+	var res apikyc.UserRepresentation
 	res.ImportFromKeycloak(ctx, &kcUser, c.logger)
-
 	return res, nil
 }
 
@@ -346,27 +317,12 @@ func (c *component) validateUserBasicID(ctx context.Context, accessToken string,
 	user.PhoneNumberVerified = nil
 	user.Username = kcUser.Username
 
-	// Gets user from database
-	dbUser, err := c.usersDBModule.GetUserDetails(ctx, targetRealm, userID)
-	if err != nil {
-		c.logger.Warn(ctx, "msg", "Failed to get user from database", "err", err.Error())
-		return err
-	}
-
-	user.ExportToDBUser(&dbUser)
 	user.ExportToKeycloak(&kcUser)
 
 	var now = time.Now()
 	err = c.keycloakClient.UpdateUser(accessToken, targetRealm, userID, kcUser)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Failed to update user through Keycloak API", "err", err.Error())
-		return err
-	}
-
-	// Store user in database
-	err = c.usersDBModule.StoreOrUpdateUserDetails(ctx, targetRealm, dbUser)
-	if err != nil {
-		c.logger.Warn(ctx, "msg", "Can't store user details in database", "err", err.Error())
 		return err
 	}
 
@@ -409,8 +365,6 @@ func (c *component) validateUserBasicID(ctx context.Context, accessToken string,
 	c.reportEvent(ctx, "BASIC_VALIDATE_USER", database.CtEventRealmName, targetRealm, database.CtEventUserID, userID, database.CtEventUsername, *user.Username, "txn_id", *check.TxnID)
 
 	var archiveUser = dto.ToArchiveUserRepresentation(kcUser)
-	archiveUser.SetDetails(dbUser)
-
 	err = c.archiveDBModule.StoreUserDetails(ctx, targetRealm, archiveUser)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Failed to archive user details", "err", err.Error())
@@ -462,14 +416,6 @@ func (c *component) validateUser(ctx context.Context, accessToken string, confRe
 		return err
 	}
 
-	// Gets user from database
-	dbUser, err := c.usersDBModule.GetUserDetails(ctx, targetRealm, userID)
-	if err != nil {
-		c.logger.Warn(ctx, "msg", "Failed to get user from database", "err", err.Error())
-		return err
-	}
-
-	user.ExportToDBUser(&dbUser)
 	user.ExportToKeycloak(&kcUser)
 
 	if needGln {
@@ -487,13 +433,6 @@ func (c *component) validateUser(ctx context.Context, accessToken string, confRe
 	err = c.keycloakClient.UpdateUser(accessToken, targetRealm, userID, kcUser)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Failed to update user through Keycloak API", "err", err.Error())
-		return err
-	}
-
-	// Store user in database
-	err = c.usersDBModule.StoreOrUpdateUserDetails(ctx, targetRealm, dbUser)
-	if err != nil {
-		c.logger.Warn(ctx, "msg", "Can't store user details in database", "err", err.Error())
 		return err
 	}
 
@@ -536,8 +475,6 @@ func (c *component) validateUser(ctx context.Context, accessToken string, confRe
 	c.reportEvent(ctx, "VALIDATE_USER", database.CtEventRealmName, targetRealm, database.CtEventUserID, userID, database.CtEventUsername, *user.Username, "txn_id", *check.TxnID)
 
 	var archiveUser = dto.ToArchiveUserRepresentation(kcUser)
-	archiveUser.SetDetails(dbUser)
-
 	err = c.archiveDBModule.StoreUserDetails(ctx, targetRealm, archiveUser)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Failed to archive user details", "err", err.Error())
