@@ -89,13 +89,6 @@ type KeycloakClient interface {
 	GetIdps(accessToken string, realmName string) ([]kc.IdentityProviderRepresentation, error)
 }
 
-// UsersDetailsDBModule is the interface from the users module
-type UsersDetailsDBModule interface {
-	StoreOrUpdateUserDetails(ctx context.Context, realm string, user dto.DBUser) error
-	GetUserDetails(ctx context.Context, realm string, userID string) (dto.DBUser, error)
-	DeleteUserDetails(ctx context.Context, realm string, userID string) error
-}
-
 // AccreditationsServiceClient interface
 type AccreditationsServiceClient interface {
 	GetChecks(ctx context.Context, realm string, userID string) ([]accreditationsclient.CheckRepresentation, error)
@@ -212,7 +205,6 @@ type Component interface {
 type component struct {
 	keycloakClient          KeycloakClient
 	kcURIProvider           KeycloakURIProvider /* REMOVE_THIS_3901 */
-	usersDBModule           UsersDetailsDBModule
 	eventDBModule           database.EventsDBModule
 	configDBModule          keycloakb.ConfigurationDBModule
 	onboardingModule        OnboardingModule
@@ -226,7 +218,7 @@ type component struct {
 }
 
 // NewComponent returns the management component.
-func NewComponent(keycloakClient KeycloakClient, kcURIProvider kc.KeycloakURIProvider, usersDBModule UsersDetailsDBModule, eventDBModule database.EventsDBModule,
+func NewComponent(keycloakClient KeycloakClient, kcURIProvider kc.KeycloakURIProvider, eventDBModule database.EventsDBModule,
 	configDBModule keycloakb.ConfigurationDBModule, onboardingModule OnboardingModule, authChecker AuthorizationChecker, tokenProvider toolbox.OidcTokenProvider,
 	accreditationsClient AccreditationsServiceClient, authorizedTrustIDGroups []string, socialRealmName string, glnVerifier GlnVerifier, logger keycloakb.Logger) Component {
 	/* REMOVE_THIS_3901 : remove second provided parameter */
@@ -239,7 +231,6 @@ func NewComponent(keycloakClient KeycloakClient, kcURIProvider kc.KeycloakURIPro
 	return &component{
 		keycloakClient:          keycloakClient,
 		kcURIProvider:           kcURIProvider, /* REMOVE_THIS_3901 */
-		usersDBModule:           usersDBModule,
 		eventDBModule:           eventDBModule,
 		configDBModule:          configDBModule,
 		onboardingModule:        onboardingModule,
@@ -450,30 +441,6 @@ func (c *component) genericCreateUser(ctx context.Context, accessToken string, c
 	reg := regexp.MustCompile(`[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}`)
 	userID := string(reg.Find([]byte(locationURL)))
 
-	var userInfoToPersist = user.BirthLocation != nil
-	userInfoToPersist = userInfoToPersist || user.Nationality != nil
-	userInfoToPersist = userInfoToPersist || user.IDDocumentType != nil
-	userInfoToPersist = userInfoToPersist || user.IDDocumentNumber != nil
-	userInfoToPersist = userInfoToPersist || user.IDDocumentExpiration != nil
-	userInfoToPersist = userInfoToPersist || user.IDDocumentCountry != nil
-
-	if userInfoToPersist {
-		// Store user in database
-		err = c.usersDBModule.StoreOrUpdateUserDetails(ctx, targetRealmName, dto.DBUser{
-			UserID:               &userID,
-			BirthLocation:        user.BirthLocation,
-			Nationality:          user.Nationality,
-			IDDocumentType:       user.IDDocumentType,
-			IDDocumentNumber:     user.IDDocumentNumber,
-			IDDocumentExpiration: user.IDDocumentExpiration,
-			IDDocumentCountry:    user.IDDocumentCountry,
-		})
-		if err != nil {
-			c.logger.Warn(ctx, "msg", "Can't store user details in database", "err", err.Error())
-			return "", err
-		}
-	}
-
 	//store the API call into the DB
 	c.reportEvent(ctx, "API_ACCOUNT_CREATION", database.CtEventRealmName, targetRealmName, database.CtEventUserID, userID, database.CtEventUsername, username)
 
@@ -524,12 +491,6 @@ func (c *component) DeleteUser(ctx context.Context, realmName, userID string) er
 		return err
 	}
 
-	err = c.usersDBModule.DeleteUserDetails(ctx, realmName, userID)
-	if err != nil {
-		c.logger.Warn(ctx, "err", err.Error())
-		return err
-	}
-
 	//store the API call into the DB
 	c.reportEvent(ctx, "API_ACCOUNT_DELETION", database.CtEventRealmName, realmName, database.CtEventUserID, userID)
 
@@ -555,25 +516,11 @@ func (c *component) GetUser(ctx context.Context, realmName, userID string) (api.
 		username = *userKc.Username
 	}
 
-	// Retrieve info from DB user
-	dbUser, err := c.usersDBModule.GetUserDetails(ctx, realmName, *userKc.ID)
-	if err != nil {
-		c.logger.Warn(ctx, "err", err.Error())
-		return api.UserRepresentation{}, err
-	}
-
 	pendingChecks, err := c.accreditationsClient.GetPendingChecks(ctx, realmName, userID)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Can't get pending checks", "err", err.Error())
 		return userRep, err
 	}
-
-	userRep.BirthLocation = dbUser.BirthLocation
-	userRep.Nationality = dbUser.Nationality
-	userRep.IDDocumentType = dbUser.IDDocumentType
-	userRep.IDDocumentNumber = dbUser.IDDocumentNumber
-	userRep.IDDocumentExpiration = dbUser.IDDocumentExpiration
-	userRep.IDDocumentCountry = dbUser.IDDocumentCountry
 	userRep.PendingChecks = keycloakb.ConvertFromAccreditationChecks(pendingChecks).ToCheckNames()
 
 	//store the API call into the DB
@@ -595,13 +542,6 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 	}
 	keycloakb.ConvertLegacyAttribute(&oldUserKc)
 
-	// get the "old" user infos from database
-	oldDbUser, err := c.usersDBModule.GetUserDetails(ctx, realmName, userID)
-	if err != nil {
-		// Log warning already performed in GetUser
-		return err
-	}
-
 	if realmName == c.socialRealmName {
 		// Self register enabled: we can't update the username
 		user.Username = oldUserKc.Username
@@ -615,12 +555,12 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 		CompareOptionalAndFunction(fields.BusinessID, user.BusinessID, oldUserKc.GetFieldValues).
 		CompareOptionalAndFunction(fields.PhoneNumber, user.PhoneNumber, oldUserKc.GetFieldValues).
 		CompareValueAndFunctionForUpdate(fields.BirthDate, user.BirthDate, oldUserKc.GetFieldValues).
-		CompareValueAndFunctionForUpdate(fields.BirthLocation, user.BirthLocation, oldDbUser.GetFieldValues).
-		CompareValueAndFunctionForUpdate(fields.Nationality, user.Nationality, oldDbUser.GetFieldValues).
-		CompareValueAndFunctionForUpdate(fields.IDDocumentType, user.IDDocumentType, oldDbUser.GetFieldValues).
-		CompareValueAndFunctionForUpdate(fields.IDDocumentNumber, user.IDDocumentNumber, oldDbUser.GetFieldValues).
-		CompareValueAndFunctionForUpdate(fields.IDDocumentExpiration, user.IDDocumentExpiration, oldDbUser.GetFieldValues).
-		CompareValueAndFunctionForUpdate(fields.IDDocumentCountry, user.IDDocumentCountry, oldDbUser.GetFieldValues)
+		CompareValueAndFunctionForUpdate(fields.BirthLocation, user.BirthLocation, oldUserKc.GetFieldValues).
+		CompareValueAndFunctionForUpdate(fields.Nationality, user.Nationality, oldUserKc.GetFieldValues).
+		CompareValueAndFunctionForUpdate(fields.IDDocumentType, user.IDDocumentType, oldUserKc.GetFieldValues).
+		CompareValueAndFunctionForUpdate(fields.IDDocumentNumber, user.IDDocumentNumber, oldUserKc.GetFieldValues).
+		CompareValueAndFunctionForUpdate(fields.IDDocumentExpiration, user.IDDocumentExpiration, oldUserKc.GetFieldValues).
+		CompareValueAndFunctionForUpdate(fields.IDDocumentCountry, user.IDDocumentCountry, oldUserKc.GetFieldValues)
 
 	var actions []api.RequiredAction
 
@@ -648,10 +588,6 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 		}
 	}
 
-	// Update in DB user for extra infos
-	// Store user in database
-	var userInfosUpdated = fieldsComparator.IsAnyFieldUpdated(fields.BirthLocation, fields.Nationality, fields.IDDocumentType,
-		fields.IDDocumentNumber, fields.IDDocumentExpiration, fields.IDDocumentCountry)
 	var oldGlnValue = oldUserKc.GetAttributeString(constants.AttrbBusinessID)
 	// Check if GLN validity should be re-evaluated
 	var glnUpdated = fieldsComparator.IsAnyFieldUpdated(fields.FirstName, fields.LastName, fields.BusinessID)
@@ -708,38 +644,6 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 	//store the API call into the DB in case where user.Enable is present
 	if user.Enabled != nil && (oldUserKc.Enabled == nil || *user.Enabled != *oldUserKc.Enabled) {
 		c.reportLockEvent(ctx, realmName, userID, user.Username, *user.Enabled)
-	}
-
-	if userInfosUpdated {
-		if fieldsComparator.IsFieldUpdated(fields.BirthLocation) {
-			oldDbUser.BirthLocation = user.BirthLocation
-		}
-
-		if fieldsComparator.IsFieldUpdated(fields.Nationality) {
-			oldDbUser.Nationality = user.Nationality
-		}
-
-		if fieldsComparator.IsFieldUpdated(fields.IDDocumentType) {
-			oldDbUser.IDDocumentType = user.IDDocumentType
-		}
-
-		if fieldsComparator.IsFieldUpdated(fields.IDDocumentNumber) {
-			oldDbUser.IDDocumentNumber = user.IDDocumentNumber
-		}
-
-		if fieldsComparator.IsFieldUpdated(fields.IDDocumentExpiration) {
-			oldDbUser.IDDocumentExpiration = user.IDDocumentExpiration
-		}
-
-		if fieldsComparator.IsFieldUpdated(fields.IDDocumentCountry) {
-			oldDbUser.IDDocumentCountry = user.IDDocumentCountry
-		}
-
-		err = c.usersDBModule.StoreOrUpdateUserDetails(ctx, realmName, oldDbUser)
-		if err != nil {
-			c.logger.Warn(ctx, "msg", "Can't store user details in database", "err", err.Error())
-			return err
-		}
 	}
 
 	if len(actions) > 0 {

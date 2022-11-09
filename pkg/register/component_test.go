@@ -58,7 +58,6 @@ type componentMocks struct {
 	keycloakClient   *mock.KeycloakClient
 	tokenProvider    *mock.OidcTokenProvider
 	configDB         *mock.ConfigurationDBModule
-	usersDB          *mock.UsersDetailsDBModule
 	eventsDB         *mock.EventsDBModule
 	glnVerifier      *mock.GlnVerifier
 	contextKeyMgr    *mock.ContextKeyManager
@@ -70,7 +69,6 @@ func createMocks(mockCtrl *gomock.Controller) *componentMocks {
 		keycloakClient:   mock.NewKeycloakClient(mockCtrl),
 		tokenProvider:    mock.NewOidcTokenProvider(mockCtrl),
 		configDB:         mock.NewConfigurationDBModule(mockCtrl),
-		usersDB:          mock.NewUsersDetailsDBModule(mockCtrl),
 		eventsDB:         mock.NewEventsDBModule(mockCtrl),
 		glnVerifier:      mock.NewGlnVerifier(mockCtrl),
 		contextKeyMgr:    mock.NewContextKeyManager(mockCtrl),
@@ -79,7 +77,7 @@ func createMocks(mockCtrl *gomock.Controller) *componentMocks {
 }
 
 func (mocks *componentMocks) createComponent() *component {
-	return NewComponent(mocks.keycloakClient, mocks.tokenProvider, mocks.usersDB, mocks.configDB, mocks.eventsDB,
+	return NewComponent(mocks.keycloakClient, mocks.tokenProvider, mocks.configDB, mocks.eventsDB,
 		mocks.onboardingModule, mocks.glnVerifier, mocks.contextKeyMgr, log.NewNopLogger()).(*component)
 }
 
@@ -263,17 +261,8 @@ func TestRegisterUser(t *testing.T) {
 			return "http://server/path/to/generated/resource/" + kcID, nil
 		}).AnyTimes()
 
-	t.Run("Failed to store user details", func(t *testing.T) {
-		mocks.keycloakClient.EXPECT().GetGroups(accessToken, targetRealmName).Return(groups, nil)
-		mocks.usersDB.EXPECT().StoreOrUpdateUserDetails(ctx, targetRealmName, gomock.Any()).Return(errors.New("unexpected error"))
-
-		_, err := component.RegisterUser(ctx, targetRealmName, customerRealmName, user, nil)
-		assert.NotNil(t, err)
-	})
-
 	t.Run("Failed to send onboarding email", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetGroups(accessToken, targetRealmName).Return(groups, nil)
-		mocks.usersDB.EXPECT().StoreOrUpdateUserDetails(ctx, targetRealmName, gomock.Any()).Return(nil)
 
 		var onboardingRedirectURI = onboardingURI + "?customerRealm=" + customerRealmName
 		mocks.onboardingModule.EXPECT().SendOnboardingEmail(ctx, accessToken, targetRealmName, kcID,
@@ -285,7 +274,6 @@ func TestRegisterUser(t *testing.T) {
 
 	t.Run("Success", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetGroups(accessToken, targetRealmName).Return(groups, nil)
-		mocks.usersDB.EXPECT().StoreOrUpdateUserDetails(ctx, targetRealmName, gomock.Any()).Return(nil)
 
 		var onboardingRedirectURI = onboardingURI + "?customerRealm=" + customerRealmName
 		mocks.onboardingModule.EXPECT().SendOnboardingEmail(ctx, accessToken, targetRealmName, kcID,
@@ -301,7 +289,6 @@ func TestRegisterUser(t *testing.T) {
 	t.Run("Success in redirect mode", func(t *testing.T) {
 		expectedURL := "an-url.com"
 		mocks.keycloakClient.EXPECT().GetGroups(accessToken, targetRealmName).Return(groups, nil)
-		mocks.usersDB.EXPECT().StoreOrUpdateUserDetails(ctx, targetRealmName, gomock.Any()).Return(nil)
 
 		var onboardingRedirectURI = onboardingURI + "?customerRealm=" + customerRealmName
 		mocks.onboardingModule.EXPECT().ComputeRedirectURI(ctx, accessToken, targetRealmName, kcID,

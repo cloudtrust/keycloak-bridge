@@ -8,7 +8,6 @@ import (
 	cerrors "github.com/cloudtrust/common-service/v2/errors"
 	"github.com/cloudtrust/common-service/v2/validation"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
-	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	kc "github.com/cloudtrust/keycloak-client/v2"
 )
@@ -107,16 +106,6 @@ func (u *UserRepresentation) UserToJSON() string {
 	return string(bytes)
 }
 
-// ExportToDBUser exports user details into a dto.DBUser
-func (u *UserRepresentation) ExportToDBUser(dbUser *dto.DBUser) {
-	dbUser.BirthLocation = u.BirthLocation
-	dbUser.Nationality = u.Nationality
-	dbUser.IDDocumentType = u.IDDocumentType
-	dbUser.IDDocumentNumber = u.IDDocumentNumber
-	dbUser.IDDocumentExpiration = u.IDDocumentExpiration
-	dbUser.IDDocumentCountry = u.IDDocumentCountry
-}
-
 // ExportToKeycloak exports user details into a Keycloak UserRepresentation
 func (u *UserRepresentation) ExportToKeycloak(kcUser *kc.UserRepresentation) {
 	var bFalse = false
@@ -137,6 +126,12 @@ func (u *UserRepresentation) ExportToKeycloak(kcUser *kc.UserRepresentation) {
 	attributes.SetDateWhenNotNil(constants.AttrbBirthDate, u.BirthDate, constants.SupportedDateLayouts)
 	attributes.SetStringWhenNotNil(constants.Locale, u.Locale)
 	attributes.SetStringWhenNotNil(constants.AttrbBusinessID, u.BusinessID)
+	attributes.SetStringWhenNotNil(constants.AttrbBirthLocation, u.BirthLocation)
+	attributes.SetStringWhenNotNil(constants.AttrbNationality, u.Nationality)
+	attributes.SetStringWhenNotNil(constants.AttrbIDDocumentType, u.IDDocumentType)
+	attributes.SetStringWhenNotNil(constants.AttrbIDDocumentNumber, u.IDDocumentNumber)
+	attributes.SetStringWhenNotNil(constants.AttrbIDDocumentExpiration, u.IDDocumentExpiration)
+	attributes.SetStringWhenNotNil(constants.AttrbIDDocumentCountry, u.IDDocumentCountry)
 
 	if u.Username != nil {
 		kcUser.Username = u.Username
@@ -157,25 +152,23 @@ func (u *UserRepresentation) ExportToKeycloak(kcUser *kc.UserRepresentation) {
 
 // ImportFromKeycloak import details from Keycloak
 func (u *UserRepresentation) ImportFromKeycloak(ctx context.Context, kcUser *kc.UserRepresentation, logger keycloakb.Logger) {
-	var phoneNumber = u.PhoneNumber
-	var phoneNumberVerified = u.PhoneNumberVerified
-	var gender = u.Gender
-	var birthdate = u.BirthDate
-	var accreditations = u.Accreditations
-	var locale = u.Locale
-	var businessID = u.BusinessID
+	var phoneNumber = defaultIfNil(kcUser.GetAttributeString(constants.AttrbPhoneNumber), u.PhoneNumber)
+	var gender = defaultIfNil(kcUser.GetAttributeString(constants.AttrbGender), u.Gender)
+	var birthdate = defaultIfNil(kcUser.GetAttributeString(constants.AttrbBirthDate), u.BirthDate)
+	var locale = defaultIfNil(kcUser.GetAttributeString(constants.AttrbLocale), u.Locale)
+	var businessID = defaultIfNil(kcUser.GetAttributeString(constants.AttrbBusinessID), u.BusinessID)
+	var birthLocation = defaultIfNil(kcUser.GetAttributeString(constants.AttrbBirthLocation), u.BirthLocation)
+	var nationality = defaultIfNil(kcUser.GetAttributeString(constants.AttrbNationality), u.Nationality)
+	var idDocumentType = defaultIfNil(kcUser.GetAttributeString(constants.AttrbIDDocumentType), u.IDDocumentType)
+	var idDocumentNumber = defaultIfNil(kcUser.GetAttributeString(constants.AttrbIDDocumentNumber), u.IDDocumentNumber)
+	var idDocumentExpiration = defaultIfNil(kcUser.GetAttributeString(constants.AttrbIDDocumentExpiration), u.IDDocumentExpiration)
+	var idDocumentCountry = defaultIfNil(kcUser.GetAttributeString(constants.AttrbIDDocumentCountry), u.IDDocumentCountry)
 
-	if value := kcUser.GetAttributeString(constants.AttrbPhoneNumber); value != nil {
-		phoneNumber = value
-	}
+	var accreditations = u.Accreditations
+	var phoneNumberVerified = u.PhoneNumberVerified
+
 	if value, err := kcUser.GetAttributeBool(constants.AttrbPhoneNumberVerified); err == nil && value != nil {
 		phoneNumberVerified = value
-	}
-	if value := kcUser.GetAttributeString(constants.AttrbGender); value != nil {
-		gender = value
-	}
-	if value := kcUser.GetAttributeDate(constants.AttrbBirthDate, constants.SupportedDateLayouts); value != nil {
-		birthdate = value
 	}
 	if values := kcUser.GetAttribute(constants.AttrbAccreditations); len(values) > 0 {
 		var accreds []AccreditationRepresentation
@@ -194,12 +187,6 @@ func (u *UserRepresentation) ImportFromKeycloak(ctx context.Context, kcUser *kc.
 		}
 		accreditations = &accreds
 	}
-	if value := kcUser.GetAttributeString(constants.AttrbLocale); value != nil {
-		locale = value
-	}
-	if value := kcUser.GetAttributeString(constants.AttrbBusinessID); value != nil {
-		businessID = value
-	}
 
 	u.ID = kcUser.ID
 	u.Username = kcUser.Username
@@ -214,6 +201,19 @@ func (u *UserRepresentation) ImportFromKeycloak(ctx context.Context, kcUser *kc.
 	u.Accreditations = accreditations
 	u.Locale = locale
 	u.BusinessID = businessID
+	u.BirthLocation = birthLocation
+	u.Nationality = nationality
+	u.IDDocumentType = idDocumentType
+	u.IDDocumentNumber = idDocumentNumber
+	u.IDDocumentExpiration = idDocumentExpiration
+	u.IDDocumentCountry = idDocumentCountry
+}
+
+func defaultIfNil(value *string, defaultValue *string) *string {
+	if value != nil {
+		return value
+	}
+	return defaultValue
 }
 
 // Validate checks the validity of the given User

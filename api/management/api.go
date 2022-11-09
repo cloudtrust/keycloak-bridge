@@ -377,6 +377,12 @@ func ConvertToAPIUser(ctx context.Context, userKc kc.UserRepresentation, logger 
 	userRep.BusinessID = userKc.GetAttributeString(constants.AttrbBusinessID)
 	userRep.NameID = userKc.GetAttributeString(constants.AttrbNameID)
 	userRep.OnboardingCompleted, _ = userKc.GetAttributeBool(constants.AttrbOnboardingCompleted)
+	userRep.BirthLocation = userKc.GetAttributeString(constants.AttrbBirthLocation)
+	userRep.Nationality = userKc.GetAttributeString(constants.AttrbNationality)
+	userRep.IDDocumentType = userKc.GetAttributeString(constants.AttrbIDDocumentType)
+	userRep.IDDocumentNumber = userKc.GetAttributeString(constants.AttrbIDDocumentNumber)
+	userRep.IDDocumentExpiration = userKc.GetAttributeString(constants.AttrbIDDocumentExpiration)
+	userRep.IDDocumentCountry = userKc.GetAttributeString(constants.AttrbIDDocumentCountry)
 
 	if value, err := userKc.GetAttributeBool(constants.AttrbPhoneNumberVerified); err == nil && value != nil {
 		userRep.PhoneNumberVerified = value
@@ -451,6 +457,12 @@ func ConvertToKCUser(user UserRepresentation) kc.UserRepresentation {
 	attributes.SetDateWhenNotNil(constants.AttrbBirthDate, user.BirthDate, constants.SupportedDateLayouts)
 	attributes.SetStringWhenNotNil(constants.AttrbLocale, user.Locale)
 	attributes.SetStringWhenNotNil(constants.AttrbBusinessID, user.BusinessID)
+	attributes.SetStringWhenNotNil(constants.AttrbBirthLocation, user.BirthLocation)
+	attributes.SetStringWhenNotNil(constants.AttrbNationality, user.Nationality)
+	attributes.SetStringWhenNotNil(constants.AttrbIDDocumentType, user.IDDocumentType)
+	attributes.SetStringWhenNotNil(constants.AttrbIDDocumentNumber, user.IDDocumentNumber)
+	attributes.SetStringWhenNotNil(constants.AttrbIDDocumentExpiration, user.IDDocumentExpiration)
+	attributes.SetStringWhenNotNil(constants.AttrbIDDocumentCountry, user.IDDocumentCountry)
 
 	if len(attributes) > 0 {
 		userRep.Attributes = &attributes
@@ -487,6 +499,12 @@ func ConvertUpdatableToKCUser(user UpdatableUserRepresentation) kc.UserRepresent
 	attributes.SetStringWhenNotNil(constants.AttrbGender, user.Gender)
 	attributes.SetDateWhenNotNil(constants.AttrbBirthDate, user.BirthDate, constants.SupportedDateLayouts)
 	attributes.SetStringWhenNotNil(constants.AttrbLocale, user.Locale)
+	attributes.SetStringWhenNotNil(constants.AttrbBirthLocation, user.BirthLocation)
+	attributes.SetStringWhenNotNil(constants.AttrbNationality, user.Nationality)
+	attributes.SetStringWhenNotNil(constants.AttrbIDDocumentType, user.IDDocumentType)
+	attributes.SetStringWhenNotNil(constants.AttrbIDDocumentNumber, user.IDDocumentNumber)
+	attributes.SetStringWhenNotNil(constants.AttrbIDDocumentExpiration, user.IDDocumentExpiration)
+	attributes.SetStringWhenNotNil(constants.AttrbIDDocumentCountry, user.IDDocumentCountry)
 	if user.BusinessID.Defined {
 		attributes.SetStringWhenNotNil(constants.AttrbBusinessID, user.BusinessID.Value)
 	}

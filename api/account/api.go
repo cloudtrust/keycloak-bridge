@@ -140,6 +140,12 @@ func ConvertToAPIAccount(ctx context.Context, userKc kc.UserRepresentation, logg
 	userRep.Gender = userKc.GetAttributeString(constants.AttrbGender)
 	userRep.Locale = userKc.GetAttributeString(constants.AttrbLocale)
 	userRep.BusinessID = userKc.GetAttributeString(constants.AttrbBusinessID)
+	userRep.BirthLocation = userKc.GetAttributeString(constants.AttrbBirthLocation)
+	userRep.Nationality = userKc.GetAttributeString(constants.AttrbNationality)
+	userRep.IDDocumentType = userKc.GetAttributeString(constants.AttrbIDDocumentType)
+	userRep.IDDocumentNumber = userKc.GetAttributeString(constants.AttrbIDDocumentNumber)
+	userRep.IDDocumentExpiration = userKc.GetAttributeString(constants.AttrbIDDocumentExpiration)
+	userRep.IDDocumentCountry = userKc.GetAttributeString(constants.AttrbIDDocumentCountry)
 
 	if verified, err := userKc.GetAttributeBool(constants.AttrbPhoneNumberVerified); err == nil && verified != nil {
 		userRep.PhoneNumberVerified = verified
@@ -187,6 +193,12 @@ func ConvertToKCUser(user UpdatableAccountRepresentation) kc.UserRepresentation 
 	if user.BusinessID.Defined && user.BusinessID.Value != nil {
 		attributes.SetStringWhenNotNil(constants.AttrbBusinessID, user.BusinessID.Value)
 	}
+	attributes.SetStringWhenNotNil(constants.AttrbBirthLocation, user.BirthLocation)
+	attributes.SetStringWhenNotNil(constants.AttrbNationality, user.Nationality)
+	attributes.SetStringWhenNotNil(constants.AttrbIDDocumentType, user.IDDocumentType)
+	attributes.SetStringWhenNotNil(constants.AttrbIDDocumentNumber, user.IDDocumentNumber)
+	attributes.SetStringWhenNotNil(constants.AttrbIDDocumentExpiration, user.IDDocumentExpiration)
+	attributes.SetStringWhenNotNil(constants.AttrbIDDocumentCountry, user.IDDocumentCountry)
 
 	if len(attributes) > 0 {
 		userRep.Attributes = &attributes

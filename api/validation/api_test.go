@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/cloudtrust/common-service/v2/fields"
-	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 
@@ -215,84 +214,6 @@ func ptr(v string) *string {
 	return &v
 }
 
-func TestUpdateFieldsComparatorWithDBFields(t *testing.T) {
-	var user UserRepresentation
-	var dbUser dto.DBUser
-
-	t.Run("Nothing to update", func(t *testing.T) {
-		fc := user.UpdateFieldsComparatorWithDBFields(fields.NewFieldsComparator(), dbUser)
-		assert.False(t, fc.IsAnyFieldUpdated())
-	})
-	t.Run("Expiry date update", func(t *testing.T) {
-		var expiryTxt = "15.06.2018"
-		var expiry, _ = time.Parse(constants.SupportedDateLayouts[0], "29.12.2019")
-		user.IDDocumentExpiration = &expiry
-		dbUser.IDDocumentExpiration = &expiryTxt
-		fc := user.UpdateFieldsComparatorWithDBFields(fields.NewFieldsComparator(), dbUser)
-		assert.True(t, fc.IsAnyFieldUpdated())
-
-		expiry, _ = time.Parse(constants.SupportedDateLayouts[0], expiryTxt)
-		user.IDDocumentExpiration = &expiry
-		fc = user.UpdateFieldsComparatorWithDBFields(fields.NewFieldsComparator(), dbUser)
-		assert.False(t, fc.IsAnyFieldUpdated())
-	})
-	t.Run("Nationality", func(t *testing.T) {
-		var nationality = "TYPE1"
-		user.Nationality = ptr("OTHER-NATIONALITY")
-		dbUser.Nationality = &nationality
-		fc := user.UpdateFieldsComparatorWithDBFields(fields.NewFieldsComparator(), dbUser)
-		assert.True(t, fc.IsAnyFieldUpdated())
-
-		user.Nationality = &nationality
-		fc = user.UpdateFieldsComparatorWithDBFields(fields.NewFieldsComparator(), dbUser)
-		assert.False(t, fc.IsAnyFieldUpdated())
-	})
-	t.Run("Document type update", func(t *testing.T) {
-		var documentType = "TYPE1"
-		user.IDDocumentType = ptr("OTHER-TYPE")
-		dbUser.IDDocumentType = &documentType
-		fc := user.UpdateFieldsComparatorWithDBFields(fields.NewFieldsComparator(), dbUser)
-		assert.True(t, fc.IsAnyFieldUpdated())
-
-		user.IDDocumentType = &documentType
-		fc = user.UpdateFieldsComparatorWithDBFields(fields.NewFieldsComparator(), dbUser)
-		assert.False(t, fc.IsAnyFieldUpdated())
-	})
-	t.Run("Document number update", func(t *testing.T) {
-		var documentNumber = "1234567890"
-		user.IDDocumentNumber = ptr("OTHER-NUMBER")
-		dbUser.IDDocumentNumber = &documentNumber
-		fc := user.UpdateFieldsComparatorWithDBFields(fields.NewFieldsComparator(), dbUser)
-		assert.True(t, fc.IsAnyFieldUpdated())
-
-		user.IDDocumentNumber = &documentNumber
-		fc = user.UpdateFieldsComparatorWithDBFields(fields.NewFieldsComparator(), dbUser)
-		assert.False(t, fc.IsAnyFieldUpdated())
-	})
-	t.Run("Document country update", func(t *testing.T) {
-		var documentCountry = "DE"
-		user.IDDocumentCountry = ptr("CH")
-		dbUser.IDDocumentCountry = &documentCountry
-		fc := user.UpdateFieldsComparatorWithDBFields(fields.NewFieldsComparator(), dbUser)
-		assert.True(t, fc.IsAnyFieldUpdated())
-
-		user.IDDocumentCountry = &documentCountry
-		fc = user.UpdateFieldsComparatorWithDBFields(fields.NewFieldsComparator(), dbUser)
-		assert.False(t, fc.IsAnyFieldUpdated())
-	})
-	t.Run("Birth location update", func(t *testing.T) {
-		var birthLocation = "Where"
-		user.BirthLocation = ptr("Here !")
-		dbUser.BirthLocation = &birthLocation
-		fc := user.UpdateFieldsComparatorWithDBFields(fields.NewFieldsComparator(), dbUser)
-		assert.True(t, fc.IsAnyFieldUpdated())
-
-		user.BirthLocation = &birthLocation
-		fc = user.UpdateFieldsComparatorWithDBFields(fields.NewFieldsComparator(), dbUser)
-		assert.False(t, fc.IsAnyFieldUpdated())
-	})
-}
-
 func TestHasKCChanges(t *testing.T) {
 	var user UserRepresentation
 	var kcUser kc.UserRepresentation
@@ -351,6 +272,75 @@ func TestHasKCChanges(t *testing.T) {
 		user.Email = ptr("any@mail.me")
 		kcUser.Email = ptr("any.other@mail.me")
 		fc := user.UpdateFieldsComparatorWithKCFields(fields.NewFieldsComparator(), &kcUser)
+		assert.False(t, fc.IsAnyFieldUpdated())
+	})
+
+	t.Run("Expiry date update", func(t *testing.T) {
+		var expiryTxt = "15.06.2018"
+		var expiry, _ = time.Parse(constants.SupportedDateLayouts[0], "29.12.2019")
+		user.IDDocumentExpiration = &expiry
+		kcUser.SetAttributeString(constants.AttrbIDDocumentExpiration, expiryTxt)
+		fc := user.UpdateFieldsComparatorWithKCFields(fields.NewFieldsComparator(), &kcUser)
+		assert.True(t, fc.IsAnyFieldUpdated())
+
+		expiry, _ = time.Parse(constants.SupportedDateLayouts[0], expiryTxt)
+		user.IDDocumentExpiration = &expiry
+		fc = user.UpdateFieldsComparatorWithKCFields(fields.NewFieldsComparator(), &kcUser)
+		assert.False(t, fc.IsAnyFieldUpdated())
+	})
+	t.Run("Nationality", func(t *testing.T) {
+		var nationality = "TYPE1"
+		user.Nationality = ptr("OTHER-NATIONALITY")
+		kcUser.SetAttributeString(constants.AttrbNationality, nationality)
+		fc := user.UpdateFieldsComparatorWithKCFields(fields.NewFieldsComparator(), &kcUser)
+		assert.True(t, fc.IsAnyFieldUpdated())
+
+		user.Nationality = &nationality
+		fc = user.UpdateFieldsComparatorWithKCFields(fields.NewFieldsComparator(), &kcUser)
+		assert.False(t, fc.IsAnyFieldUpdated())
+	})
+	t.Run("Document type update", func(t *testing.T) {
+		var documentType = "TYPE1"
+		user.IDDocumentType = ptr("OTHER-TYPE")
+		kcUser.SetAttributeString(constants.AttrbIDDocumentType, documentType)
+		fc := user.UpdateFieldsComparatorWithKCFields(fields.NewFieldsComparator(), &kcUser)
+		assert.True(t, fc.IsAnyFieldUpdated())
+
+		user.IDDocumentType = &documentType
+		fc = user.UpdateFieldsComparatorWithKCFields(fields.NewFieldsComparator(), &kcUser)
+		assert.False(t, fc.IsAnyFieldUpdated())
+	})
+	t.Run("Document number update", func(t *testing.T) {
+		var documentNumber = "1234567890"
+		user.IDDocumentNumber = ptr("OTHER-NUMBER")
+		kcUser.SetAttributeString(constants.AttrbIDDocumentNumber, documentNumber)
+		fc := user.UpdateFieldsComparatorWithKCFields(fields.NewFieldsComparator(), &kcUser)
+		assert.True(t, fc.IsAnyFieldUpdated())
+
+		user.IDDocumentNumber = &documentNumber
+		fc = user.UpdateFieldsComparatorWithKCFields(fields.NewFieldsComparator(), &kcUser)
+		assert.False(t, fc.IsAnyFieldUpdated())
+	})
+	t.Run("Document country update", func(t *testing.T) {
+		var documentCountry = "DE"
+		user.IDDocumentCountry = ptr("CH")
+		kcUser.SetAttributeString(constants.AttrbIDDocumentCountry, documentCountry)
+		fc := user.UpdateFieldsComparatorWithKCFields(fields.NewFieldsComparator(), &kcUser)
+		assert.True(t, fc.IsAnyFieldUpdated())
+
+		user.IDDocumentCountry = &documentCountry
+		fc = user.UpdateFieldsComparatorWithKCFields(fields.NewFieldsComparator(), &kcUser)
+		assert.False(t, fc.IsAnyFieldUpdated())
+	})
+	t.Run("Birth location update", func(t *testing.T) {
+		var birthLocation = "Where"
+		user.BirthLocation = ptr("Here !")
+		kcUser.SetAttributeString(constants.AttrbBirthLocation, birthLocation)
+		fc := user.UpdateFieldsComparatorWithKCFields(fields.NewFieldsComparator(), &kcUser)
+		assert.True(t, fc.IsAnyFieldUpdated())
+
+		user.BirthLocation = &birthLocation
+		fc = user.UpdateFieldsComparatorWithKCFields(fields.NewFieldsComparator(), &kcUser)
 		assert.False(t, fc.IsAnyFieldUpdated())
 	})
 }

@@ -1,7 +1,6 @@
 package register
 
 //go:generate mockgen --build_flags=--mod=mod -destination=./mock/register.go -package=mock -mock_names=Component=Component,KeycloakClient=KeycloakClient,ConfigurationDBModule=ConfigurationDBModule,GlnVerifier=GlnVerifier,ContextKeyManager=ContextKeyManager github.com/cloudtrust/keycloak-bridge/pkg/register Component,KeycloakClient,ConfigurationDBModule,GlnVerifier,ContextKeyManager
-//go:generate mockgen --build_flags=--mod=mod -destination=./mock/bridge.go -package=mock -mock_names=UsersDetailsDBModule=UsersDetailsDBModule github.com/cloudtrust/keycloak-bridge/internal/keycloakb UsersDetailsDBModule
 //go:generate mockgen --build_flags=--mod=mod -destination=./mock/keycloak.go -package=mock -mock_names=OidcTokenProvider=OidcTokenProvider github.com/cloudtrust/keycloak-client/v2/toolbox OidcTokenProvider
 //go:generate mockgen --build_flags=--mod=mod -destination=./mock/database.go -package=mock -mock_names=EventsDBModule=EventsDBModule github.com/cloudtrust/common-service/v2/database EventsDBModule
 //go:generate mockgen --build_flags=--mod=mod -destination=./mock/sqltypes.go -package=mock -mock_names=SQLRow=SQLRow,Transaction=Transaction github.com/cloudtrust/common-service/v2/database/sqltypes SQLRow,Transaction

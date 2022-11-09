@@ -32,21 +32,19 @@ var (
 
 type onboardingMocks struct {
 	keycloakClient      *mock.OnboardingKeycloakClient
-	usersDBModule       *mock.UsersDBModule
 	keycloakURIProvider *mock.KeycloakURIProvider
 }
 
 func createOnboardingMocks(mockCtrl *gomock.Controller) *onboardingMocks {
 	return &onboardingMocks{
 		keycloakClient:      mock.NewOnboardingKeycloakClient(mockCtrl),
-		usersDBModule:       mock.NewUsersDBModule(mockCtrl),
 		keycloakURIProvider: mock.NewKeycloakURIProvider(mockCtrl),
 	}
 }
 
 func (om *onboardingMocks) createOnboardingModule() *onboardingModule {
 	var mockLogger = log.NewNopLogger()
-	return NewOnboardingModule(om.keycloakClient, om.keycloakURIProvider, om.usersDBModule, duration, mapRealmsOverride, mockLogger).(*onboardingModule)
+	return NewOnboardingModule(om.keycloakClient, om.keycloakURIProvider, duration, mapRealmsOverride, mockLogger).(*onboardingModule)
 }
 
 func TestOnboardingAlreadyCompleted(t *testing.T) {
@@ -361,17 +359,9 @@ func TestProcessAlreadyExistingUserCases(t *testing.T) {
 		var err = onboarding.ProcessAlreadyExistingUserCases(ctx, accessToken, targetRealmName, userEmail, source, notSupposedToBeCalled)
 		assert.Equal(t, anyError, err)
 	})
-	mocks.keycloakClient.EXPECT().DeleteUser(accessToken, targetRealmName, userID).Return(nil).AnyTimes()
-
-	t.Run("User already exists-Cant remove DB user", func(t *testing.T) {
-		mocks.usersDBModule.EXPECT().DeleteUserDetails(ctx, targetRealmName, userID).Return(anyError)
-
-		var err = onboarding.ProcessAlreadyExistingUserCases(ctx, accessToken, targetRealmName, userEmail, source, notSupposedToBeCalled)
-		assert.Equal(t, anyError, err)
-	})
 
 	t.Run("User already exists-Successfully removed", func(t *testing.T) {
-		mocks.usersDBModule.EXPECT().DeleteUserDetails(ctx, targetRealmName, userID).Return(nil)
+		mocks.keycloakClient.EXPECT().DeleteUser(accessToken, targetRealmName, userID).Return(nil)
 
 		var err = onboarding.ProcessAlreadyExistingUserCases(ctx, accessToken, targetRealmName, userEmail, source, notSupposedToBeCalled)
 		assert.Nil(t, err)

@@ -57,9 +57,6 @@ mobile-audience-required: "mobile"
 validation-basic-auth-token: "idnowsuperpasswordverylongandstrong"
 
 # DB encryption key
-db-aesgcm-key: '[{"kid":"usr_dev_1","value":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="}]'
-db-aesgcm-tag-size: 16 
-
 db-archive-aesgcm-key: '[{"kid":"ar_dev_1","value":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="}]'
 db-archive-aesgcm-tag-size: 16
 
@@ -142,21 +139,6 @@ db-config-ro-conn-max-lifetime: 10
 db-config-ro-migration: false
 db-config-ro-migration-version: 0.1
 db-config-ro-connection-check: true
-
-# DB Users RW
-db-users-rw-enabled: true
-db-users-rw-host-port: host.docker.internal:3306
-db-users-rw-username: bridge
-db-users-rw-password: bridge-password
-db-users-rw-database: users
-db-users-rw-protocol: tcp
-db-users-rw-parameters: time_zone='%2B00:00'
-db-users-rw-max-open-conns: 10
-db-users-rw-max-idle-conns: 2
-db-users-rw-conn-max-lifetime: 10
-db-users-rw-migration: false
-db-users-rw-migration-version: 0.1
-db-users-rw-connection-check: false
 
 # DB archive RW
 db-archive-rw-enabled: true

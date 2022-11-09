@@ -15,7 +15,6 @@ import (
 	csjson "github.com/cloudtrust/common-service/v2/json"
 	api "github.com/cloudtrust/keycloak-bridge/api/account"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
-	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/accreditationsclient"
 	kc "github.com/cloudtrust/keycloak-client/v2"
@@ -78,12 +77,6 @@ type Component interface {
 	SendVerifyPhoneNumber(ctx context.Context) error
 }
 
-// UsersDetailsDBModule is the minimum required interface to access the users database
-type UsersDetailsDBModule interface {
-	StoreOrUpdateUserDetails(ctx context.Context, realm string, user dto.DBUser) error
-	GetUserDetails(ctx context.Context, realm string, userID string) (dto.DBUser, error)
-}
-
 // AccreditationsServiceClient interface
 type AccreditationsServiceClient interface {
 	GetChecks(ctx context.Context, realm string, userID string) ([]accreditationsclient.CheckRepresentation, error)
@@ -97,7 +90,6 @@ type component struct {
 	keycloakTechClient    KeycloakTechnicalClient
 	eventDBModule         database.EventsDBModule
 	configDBModule        keycloakb.ConfigurationDBModule
-	usersDBModule         UsersDetailsDBModule
 	glnVerifier           GlnVerifier
 	accreditationsClient  AccreditationsServiceClient
 	logger                keycloakb.Logger
@@ -105,13 +97,12 @@ type component struct {
 
 // NewComponent returns the self-service component.
 func NewComponent(keycloakAccountClient KeycloakAccountClient, keycloakTechClient KeycloakTechnicalClient, eventDBModule database.EventsDBModule,
-	configDBModule keycloakb.ConfigurationDBModule, usersDBModule UsersDetailsDBModule, glnVerifier GlnVerifier, accreditationsClient AccreditationsServiceClient, logger keycloakb.Logger) Component {
+	configDBModule keycloakb.ConfigurationDBModule, glnVerifier GlnVerifier, accreditationsClient AccreditationsServiceClient, logger keycloakb.Logger) Component {
 	return &component{
 		keycloakAccountClient: keycloakAccountClient,
 		keycloakTechClient:    keycloakTechClient,
 		eventDBModule:         eventDBModule,
 		configDBModule:        configDBModule,
-		usersDBModule:         usersDBModule,
 		glnVerifier:           glnVerifier,
 		accreditationsClient:  accreditationsClient,
 		logger:                logger,
@@ -175,12 +166,6 @@ func (c *component) GetAccount(ctx context.Context) (api.AccountRepresentation, 
 	}
 	keycloakb.ConvertLegacyAttribute(&userKc)
 
-	dbUser, err := c.usersDBModule.GetUserDetails(ctx, realm, userID)
-	if err != nil {
-		c.logger.Warn(ctx, "msg", "Can't get user details", "err", err.Error())
-		return userRep, err
-	}
-
 	pendingChecks, err := c.accreditationsClient.GetPendingChecks(ctx, realm, userID)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Can't get pending checks", "err", err.Error())
@@ -188,12 +173,6 @@ func (c *component) GetAccount(ctx context.Context) (api.AccountRepresentation, 
 	}
 
 	userRep = api.ConvertToAPIAccount(ctx, userKc, c.logger)
-	userRep.BirthLocation = dbUser.BirthLocation
-	userRep.Nationality = dbUser.Nationality
-	userRep.IDDocumentType = dbUser.IDDocumentType
-	userRep.IDDocumentNumber = dbUser.IDDocumentNumber
-	userRep.IDDocumentExpiration = dbUser.IDDocumentExpiration
-	userRep.IDDocumentCountry = dbUser.IDDocumentCountry
 	userRep.PendingChecks = keycloakb.ConvertFromAccreditationChecks(pendingChecks).ToCheckNames()
 
 	return userRep, nil
@@ -221,13 +200,6 @@ func (c *component) UpdateAccount(ctx context.Context, user api.UpdatableAccount
 	}
 	keycloakb.ConvertLegacyAttribute(&oldUserKc)
 
-	// get the "old" user from DB
-	oldUser, err := c.usersDBModule.GetUserDetails(ctx, realm, userID)
-	if err != nil {
-		c.logger.Warn(ctx, "msg", "Can't get user details", "err", err.Error())
-		return err
-	}
-
 	var actions []string
 
 	var fieldsComparator = fields.NewFieldsComparator().
@@ -238,12 +210,12 @@ func (c *component) UpdateAccount(ctx context.Context, user api.UpdatableAccount
 		CompareValueAndFunctionForUpdate(fields.Gender, user.Gender, oldUserKc.GetFieldValues).
 		CompareValueAndFunctionForUpdate(fields.PhoneNumber, user.PhoneNumber, oldUserKc.GetFieldValues).
 		CompareValueAndFunctionForUpdate(fields.BirthDate, user.BirthDate, oldUserKc.GetFieldValues).
-		CompareValueAndFunctionForUpdate(fields.BirthLocation, user.BirthLocation, oldUser.GetFieldValues).
-		CompareValueAndFunctionForUpdate(fields.Nationality, user.Nationality, oldUser.GetFieldValues).
-		CompareValueAndFunctionForUpdate(fields.IDDocumentType, user.IDDocumentType, oldUser.GetFieldValues).
-		CompareValueAndFunctionForUpdate(fields.IDDocumentNumber, user.IDDocumentNumber, oldUser.GetFieldValues).
-		CompareValueAndFunctionForUpdate(fields.IDDocumentExpiration, user.IDDocumentExpiration, oldUser.GetFieldValues).
-		CompareValueAndFunctionForUpdate(fields.IDDocumentCountry, user.IDDocumentCountry, oldUser.GetFieldValues)
+		CompareValueAndFunctionForUpdate(fields.BirthLocation, user.BirthLocation, oldUserKc.GetFieldValues).
+		CompareValueAndFunctionForUpdate(fields.Nationality, user.Nationality, oldUserKc.GetFieldValues).
+		CompareValueAndFunctionForUpdate(fields.IDDocumentType, user.IDDocumentType, oldUserKc.GetFieldValues).
+		CompareValueAndFunctionForUpdate(fields.IDDocumentNumber, user.IDDocumentNumber, oldUserKc.GetFieldValues).
+		CompareValueAndFunctionForUpdate(fields.IDDocumentExpiration, user.IDDocumentExpiration, oldUserKc.GetFieldValues).
+		CompareValueAndFunctionForUpdate(fields.IDDocumentCountry, user.IDDocumentCountry, oldUserKc.GetFieldValues)
 
 	var updateRequest = accreditationsclient.UpdateNotificationRepresentation{
 		UserID:        &userID,
@@ -295,6 +267,12 @@ func (c *component) UpdateAccount(ctx context.Context, user api.UpdatableAccount
 	if user.BusinessID.Defined && user.BusinessID.Value == nil {
 		mergedAttributes.Remove(constants.AttrbBusinessID)
 	}
+	mergedAttributes.SetStringWhenNotNil(constants.AttrbBirthLocation, user.BirthLocation)
+	mergedAttributes.SetStringWhenNotNil(constants.AttrbNationality, user.Nationality)
+	mergedAttributes.SetStringWhenNotNil(constants.AttrbIDDocumentType, user.IDDocumentType)
+	mergedAttributes.SetStringWhenNotNil(constants.AttrbIDDocumentNumber, user.IDDocumentNumber)
+	mergedAttributes.SetStringWhenNotNil(constants.AttrbIDDocumentExpiration, user.IDDocumentExpiration)
+	mergedAttributes.SetStringWhenNotNil(constants.AttrbIDDocumentCountry, user.IDDocumentCountry)
 
 	userRep.Attributes = &mergedAttributes
 	if len(newAccreditations) > 0 {
@@ -313,7 +291,7 @@ func (c *component) UpdateAccount(ctx context.Context, user api.UpdatableAccount
 		return err
 	}
 
-	// store the API call into the DB - As user is partially update, report event even if database update fails
+	// store the API call into the DB
 	c.reportEvent(ctx, "UPDATE_ACCOUNT", database.CtEventRealmName, realm, database.CtEventUserID, userID, database.CtEventUsername, username)
 
 	if len(actions) > 0 {
@@ -323,14 +301,6 @@ func (c *component) UpdateAccount(ctx context.Context, user api.UpdatableAccount
 			c.logger.Warn(ctx, "msg", "Can't execute actions", "err", err.Error())
 			return err
 		}
-	}
-
-	var dbUser = c.mergeUserFromUpdatable(userID, user, oldUser)
-
-	err = c.usersDBModule.StoreOrUpdateUserDetails(ctx, realm, dbUser)
-	if err != nil {
-		c.logger.Warn(ctx, "msg", "Can't update user details", "err", err.Error())
-		return err
 	}
 
 	var attributes = make(map[string]string)
@@ -383,51 +353,6 @@ func (c *component) duplicateAttributes(srcAttributes *kc.Attributes) kc.Attribu
 		}
 	}
 	return copiedAttributes
-}
-
-func (c *component) mergeUserFromUpdatable(userID string, user api.UpdatableAccountRepresentation, oldUser dto.DBUser) dto.DBUser {
-	return c.mergeUser(userID, api.AccountRepresentation{
-		BirthLocation:        user.BirthLocation,
-		Nationality:          user.Nationality,
-		IDDocumentType:       user.IDDocumentType,
-		IDDocumentNumber:     user.IDDocumentNumber,
-		IDDocumentExpiration: user.IDDocumentExpiration,
-		IDDocumentCountry:    user.IDDocumentCountry,
-	}, oldUser)
-}
-
-func (c *component) mergeUser(userID string, user api.AccountRepresentation, oldUser dto.DBUser) dto.DBUser {
-	var dbUser = dto.DBUser{
-		UserID:               &userID,
-		BirthLocation:        user.BirthLocation,
-		Nationality:          user.Nationality,
-		IDDocumentType:       user.IDDocumentType,
-		IDDocumentNumber:     user.IDDocumentNumber,
-		IDDocumentExpiration: user.IDDocumentExpiration,
-		IDDocumentCountry:    user.IDDocumentCountry,
-	}
-
-	// Keep old values when none was provided
-	if dbUser.BirthLocation == nil {
-		dbUser.BirthLocation = oldUser.BirthLocation
-	}
-	if dbUser.Nationality == nil {
-		dbUser.Nationality = oldUser.Nationality
-	}
-	if dbUser.IDDocumentType == nil {
-		dbUser.IDDocumentType = oldUser.IDDocumentType
-	}
-	if dbUser.IDDocumentNumber == nil {
-		dbUser.IDDocumentNumber = oldUser.IDDocumentNumber
-	}
-	if dbUser.IDDocumentExpiration == nil {
-		dbUser.IDDocumentExpiration = oldUser.IDDocumentExpiration
-	}
-	if dbUser.IDDocumentCountry == nil {
-		dbUser.IDDocumentCountry = oldUser.IDDocumentCountry
-	}
-
-	return dbUser
 }
 
 func (c *component) DeleteAccount(ctx context.Context) error {

@@ -72,14 +72,11 @@ CT_BRIDGE_DB_AUDIT_RO_USERNAME | db-audit-ro-username
 CT_BRIDGE_DB_AUDIT_RO_PASSWORD | db-audit-ro-password
 CT_BRIDGE_DB_CONFIG_USERNAME | db-config-username
 CT_BRIDGE_DB_CONFIG_PASSWORD | db-config-password
-CT_BRIDGE_DB_USERS_USERNAME | db-users-username
-CT_BRIDGE_DB_USERS_PASSWORD | db-users-password
 CT_BRIDGE_DB_ARCHIVE_RW_USERNAME | db-archive-rw-username
 CT_BRIDGE_DB_ARCHIVE_RW_PASSWORD | db-archive-rw-password
 CT_BRIDGE_INFLUX_USERNAME | influx-username
 CT_BRIDGE_INFLUX_PASSWORD | influx-password
 CT_BRIDGE_SENTRY_DSN | sentry-dsn
-CT_BRIDGE_DB_AES_KEY | db-aesgcm-key
 CT_BRIDGE_DB_ARCHIVE_AES_KEY | db-archive-aesgcm-key
 
 ## Usage
