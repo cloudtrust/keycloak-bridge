@@ -5,15 +5,19 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"strconv"
 	"testing"
 	"time"
 
 	cs "github.com/cloudtrust/common-service/v2"
+	errorhandler "github.com/cloudtrust/common-service/v2/errors"
 	commonhttp "github.com/cloudtrust/common-service/v2/http"
 	"github.com/cloudtrust/common-service/v2/log"
+	apicommon "github.com/cloudtrust/keycloak-bridge/api/common"
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
 	"github.com/cloudtrust/keycloak-bridge/pkg/management/mock"
+	kc "github.com/cloudtrust/keycloak-client/v2"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
@@ -28,7 +32,7 @@ func TestGetActionsEndpoint(t *testing.T) {
 
 	var ctx = context.Background()
 
-	mockManagementComponent.EXPECT().GetActions(ctx).Return([]api.ActionRepresentation{}, nil).Times(1)
+	mockManagementComponent.EXPECT().GetActions(ctx).Return([]api.ActionRepresentation{}, nil)
 	var res, err = e(ctx, nil)
 	assert.Nil(t, err)
 	assert.NotNil(t, res)
@@ -45,7 +49,7 @@ func TestGetRealmsEndpoint(t *testing.T) {
 	var ctx = context.Background()
 	var req = make(map[string]string)
 
-	mockManagementComponent.EXPECT().GetRealms(ctx).Return([]api.RealmRepresentation{}, nil).Times(1)
+	mockManagementComponent.EXPECT().GetRealms(ctx).Return([]api.RealmRepresentation{}, nil)
 	var res, err = e(ctx, req)
 	assert.Nil(t, err)
 	assert.NotNil(t, res)
@@ -64,7 +68,7 @@ func TestGetRealmEndpoint(t *testing.T) {
 	var req = make(map[string]string)
 	req[prmRealm] = realm
 
-	mockManagementComponent.EXPECT().GetRealm(ctx, realm).Return(api.RealmRepresentation{}, nil).Times(1)
+	mockManagementComponent.EXPECT().GetRealm(ctx, realm).Return(api.RealmRepresentation{}, nil)
 	var res, err = e(ctx, req)
 	assert.Nil(t, err)
 	assert.NotNil(t, res)
@@ -85,7 +89,7 @@ func TestGetClientEndpoint(t *testing.T) {
 	req[prmRealm] = realm
 	req[prmClientID] = clientID
 
-	mockManagementComponent.EXPECT().GetClient(ctx, realm, clientID).Return(api.ClientRepresentation{}, nil).Times(1)
+	mockManagementComponent.EXPECT().GetClient(ctx, realm, clientID).Return(api.ClientRepresentation{}, nil)
 	var res, err = e(ctx, req)
 	assert.Nil(t, err)
 	assert.NotNil(t, res)
@@ -104,7 +108,7 @@ func TestGetClientsEndpoint(t *testing.T) {
 	var req = make(map[string]string)
 	req[prmRealm] = realm
 
-	mockManagementComponent.EXPECT().GetClients(ctx, realm).Return([]api.ClientRepresentation{}, nil).Times(1)
+	mockManagementComponent.EXPECT().GetClients(ctx, realm).Return([]api.ClientRepresentation{}, nil)
 	var res, err = e(ctx, req)
 	assert.Nil(t, err)
 	assert.NotNil(t, res)
@@ -123,7 +127,7 @@ func TestGetRequiredActionsEndpoint(t *testing.T) {
 	var req = make(map[string]string)
 	req[prmRealm] = realm
 
-	mockManagementComponent.EXPECT().GetRequiredActions(ctx, realm).Return([]api.RequiredActionRepresentation{}, nil).Times(1)
+	mockManagementComponent.EXPECT().GetRequiredActions(ctx, realm).Return([]api.RequiredActionRepresentation{}, nil)
 	var res, err = e(ctx, req)
 	assert.Nil(t, err)
 	assert.NotNil(t, res)
@@ -133,25 +137,51 @@ func TestCreateUserEndpoint(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
+	var (
+		mockProfileCache        = mock.NewUserProfileCache(mockCtrl)
+		mockManagementComponent = mock.NewManagementComponent(mockCtrl)
 
-	var e = MakeCreateUserEndpoint(mockManagementComponent, log.NewNopLogger())
+		e = MakeCreateUserEndpoint(mockManagementComponent, mockProfileCache, log.NewNopLogger())
 
-	var realm = "master"
-	var location = "https://location.url/auth/admin/master/users/123456"
-	var ctx = context.Background()
-	var groups = []string{"f467ed7c-0a1d-4eee-9bb8-669c6f89c0ee"}
+		realm    = "master"
+		location = "https://location.url/auth/admin/master/users/123456"
+		ctx      = context.WithValue(context.TODO(), cs.CtContextRealm, realm)
+		groups   = []string{"f467ed7c-0a1d-4eee-9bb8-669c6f89c0ee"}
+		anyError = errors.New("any")
+	)
+
+	t.Run("GetRealmUserProfile fails", func(t *testing.T) {
+		var req = map[string]string{reqBody: "{}"}
+		mockProfileCache.EXPECT().GetRealmUserProfile(ctx, realm).Return(kc.UserProfileRepresentation{}, anyError)
+		_, err := e(ctx, req)
+		assert.NotNil(t, err)
+	})
+	mockProfileCache.EXPECT().GetRealmUserProfile(ctx, realm).Return(kc.UserProfileRepresentation{
+		Attributes: []kc.ProfileAttrbRepresentation{
+			{
+				Name: ptr("gender"),
+				Required: &kc.ProfileAttrbRequiredRepresentation{
+					Roles: []string{"admin"},
+				},
+				Validations: kc.ProfileAttrbValidationRepresentation{
+					"pattern": kc.ProfileAttrValidatorRepresentation{"pattern": `^[MF]$`},
+				},
+				Annotations: map[string]string{"bo": "true"},
+			},
+		},
+	}, nil).AnyTimes()
 
 	t.Run("No error", func(t *testing.T) {
-		var req = make(map[string]string)
-		req[reqScheme] = "https"
-		req[reqHost] = "elca.ch"
-		req[prmRealm] = realm
+		var user = api.UserRepresentation{Gender: ptr("M"), Groups: &groups}
+		userJSON, _ := json.Marshal(user)
+		var req = map[string]string{
+			reqScheme: "https",
+			reqHost:   "elca.ch",
+			prmRealm:  realm,
+			reqBody:   string(userJSON),
+		}
 
-		userJSON, _ := json.Marshal(api.UserRepresentation{Groups: &groups})
-		req[reqBody] = string(userJSON)
-
-		mockManagementComponent.EXPECT().CreateUser(ctx, realm, api.UserRepresentation{Groups: &groups}, false, false, false).Return(location, nil).Times(1)
+		mockManagementComponent.EXPECT().CreateUser(ctx, realm, user, false, false, false).Return(location, nil)
 		res, err := e(ctx, req)
 		assert.Nil(t, err)
 
@@ -167,8 +197,7 @@ func TestCreateUserEndpoint(t *testing.T) {
 	})
 
 	t.Run("Error - Invalid body", func(t *testing.T) {
-		var req = make(map[string]string)
-		req[reqBody] = string(`{"email":""}`)
+		var req = map[string]string{reqBody: `{}`}
 		_, err := e(ctx, req)
 		assert.NotNil(t, err)
 	})
@@ -189,7 +218,7 @@ func TestCreateUserEndpoint(t *testing.T) {
 		userJSON, _ := json.Marshal(api.UserRepresentation{Groups: &groups})
 		req[reqBody] = string(userJSON)
 
-		mockManagementComponent.EXPECT().CreateUser(ctx, realm, gomock.Any(), false, false, false).Return("", fmt.Errorf("Error")).Times(1)
+		mockManagementComponent.EXPECT().CreateUser(ctx, realm, gomock.Any(), false, false, false).Return("", fmt.Errorf("Error"))
 		_, err := e(ctx, req)
 		assert.NotNil(t, err)
 	})
@@ -215,25 +244,52 @@ func TestCreateUserInSocialRealmEndpoint(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
+	var (
+		mockProfileCache        = mock.NewUserProfileCache(mockCtrl)
+		mockManagementComponent = mock.NewManagementComponent(mockCtrl)
 
-	var e = MakeCreateUserInSocialRealmEndpoint(mockManagementComponent, log.NewNopLogger())
+		e = MakeCreateUserInSocialRealmEndpoint(mockManagementComponent, mockProfileCache, log.NewNopLogger())
 
-	var realm = "master"
-	var location = "https://location.url/auth/admin/master/users/123456"
-	var ctx = context.Background()
-	var groups = []string{"f467ed7c-0a1d-4eee-9bb8-669c6f89c0ee"}
+		realm    = "master"
+		location = "https://location.url/auth/admin/master/users/123456"
+		ctx      = context.WithValue(context.TODO(), cs.CtContextRealm, realm)
+		groups   = []string{"f467ed7c-0a1d-4eee-9bb8-669c6f89c0ee"}
+		anyError = errors.New("any")
+	)
+
+	t.Run("GetRealmUserProfile fails", func(t *testing.T) {
+		var req = map[string]string{reqBody: "{}"}
+		mockProfileCache.EXPECT().GetRealmUserProfile(ctx, realm).Return(kc.UserProfileRepresentation{}, anyError)
+		_, err := e(ctx, req)
+		assert.NotNil(t, err)
+	})
+	mockProfileCache.EXPECT().GetRealmUserProfile(ctx, realm).Return(kc.UserProfileRepresentation{
+		Attributes: []kc.ProfileAttrbRepresentation{
+			{
+				Name: ptr("gender"),
+				Required: &kc.ProfileAttrbRequiredRepresentation{
+					Roles: []string{"admin"},
+				},
+				Validations: kc.ProfileAttrbValidationRepresentation{
+					"pattern": kc.ProfileAttrValidatorRepresentation{"pattern": `^[MF]$`},
+				},
+				Annotations: map[string]string{"bo": "true"},
+			},
+		},
+	}, nil).AnyTimes()
 
 	t.Run("No error", func(t *testing.T) {
-		var req = make(map[string]string)
-		req[reqScheme] = "https"
-		req[reqHost] = "elca.ch"
-		req[prmRealm] = realm
+		var req = map[string]string{
+			reqScheme: "https",
+			reqHost:   "elca.ch",
+			prmRealm:  realm,
+		}
+		var user = api.UserRepresentation{Gender: ptr("M"), Groups: &groups}
 
-		userJSON, _ := json.Marshal(api.UserRepresentation{Groups: &groups})
+		userJSON, _ := json.Marshal(user)
 		req[reqBody] = string(userJSON)
 
-		mockManagementComponent.EXPECT().CreateUserInSocialRealm(ctx, api.UserRepresentation{Groups: &groups}, false).Return(location, nil)
+		mockManagementComponent.EXPECT().CreateUserInSocialRealm(ctx, user, false).Return(location, nil)
 		res, err := e(ctx, req)
 		assert.Nil(t, err)
 
@@ -242,15 +298,13 @@ func TestCreateUserInSocialRealmEndpoint(t *testing.T) {
 	})
 
 	t.Run("Error - Cannot unmarshall", func(t *testing.T) {
-		var req = make(map[string]string)
-		req[reqBody] = string("JSON")
+		var req = map[string]string{reqBody: "JSON"}
 		_, err := e(ctx, req)
 		assert.NotNil(t, err)
 	})
 
 	t.Run("Error - Invalid body", func(t *testing.T) {
-		var req = make(map[string]string)
-		req[reqBody] = string(`{"email":""}`)
+		var req = map[string]string{reqBody: `{"email":""}`}
 		_, err := e(ctx, req)
 		assert.NotNil(t, err)
 	})
@@ -308,7 +362,7 @@ func TestDeleteUserEndpoint(t *testing.T) {
 	req[prmRealm] = realm
 	req[prmUserID] = userID
 
-	mockManagementComponent.EXPECT().DeleteUser(ctx, realm, userID).Return(nil).Times(1)
+	mockManagementComponent.EXPECT().DeleteUser(ctx, realm, userID).Return(nil)
 	var res, err = e(ctx, req)
 	assert.Nil(t, err)
 	assert.Nil(t, res)
@@ -329,7 +383,7 @@ func TestGetUserEndpoint(t *testing.T) {
 	req[prmRealm] = realm
 	req[prmUserID] = userID
 
-	mockManagementComponent.EXPECT().GetUser(ctx, realm, userID).Return(api.UserRepresentation{}, nil).Times(1)
+	mockManagementComponent.EXPECT().GetUser(ctx, realm, userID).Return(api.UserRepresentation{}, nil)
 	var res, err = e(ctx, req)
 	assert.Nil(t, err)
 	assert.NotNil(t, res)
@@ -339,30 +393,54 @@ func TestUpdateUserEndpoint(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
+	var (
+		mockProfileCache        = mock.NewUserProfileCache(mockCtrl)
+		mockManagementComponent = mock.NewManagementComponent(mockCtrl)
 
-	var e = MakeUpdateUserEndpoint(mockManagementComponent)
+		e = MakeUpdateUserEndpoint(mockManagementComponent, mockProfileCache, log.NewNopLogger())
+
+		realm    = "the-realm"
+		userID   = "1234-452-4578"
+		theUser  = api.UserRepresentation{Gender: ptr("M")}
+		ctx      = context.WithValue(context.TODO(), cs.CtContextRealm, realm)
+		anyError = errors.New("any")
+	)
+
+	t.Run("GetRealmUserProfile fails", func(t *testing.T) {
+		var req = map[string]string{reqBody: "{}"}
+		mockProfileCache.EXPECT().GetRealmUserProfile(ctx, realm).Return(kc.UserProfileRepresentation{}, anyError)
+		_, err := e(ctx, req)
+		assert.NotNil(t, err)
+	})
+	mockProfileCache.EXPECT().GetRealmUserProfile(ctx, realm).Return(kc.UserProfileRepresentation{
+		Attributes: []kc.ProfileAttrbRepresentation{
+			{
+				Name: ptr("gender"),
+				Required: &kc.ProfileAttrbRequiredRepresentation{
+					Roles: []string{"admin"},
+				},
+				Validations: kc.ProfileAttrbValidationRepresentation{
+					"pattern": kc.ProfileAttrValidatorRepresentation{"pattern": `^[MF]$`},
+				},
+				Annotations: map[string]string{"bo": "true"},
+			},
+		},
+	}, nil).AnyTimes()
 
 	t.Run("No error", func(t *testing.T) {
-		var realm = "master"
-		var userID = "1234-452-4578"
-		var ctx = context.Background()
 		var req = make(map[string]string)
 		req[prmRealm] = realm
 		req[prmUserID] = userID
-		userJSON, _ := json.Marshal(api.UserRepresentation{})
+		userJSON, _ := json.Marshal(theUser)
 		req[reqBody] = string(userJSON)
 
-		mockManagementComponent.EXPECT().UpdateUser(ctx, realm, userID, gomock.Any()).Return(nil).Times(1)
+		mockManagementComponent.EXPECT().UpdateUser(ctx, realm, userID, gomock.Any()).Return(nil)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Nil(t, res)
 	})
 
 	t.Run("Error - JSON unmarshalling error", func(t *testing.T) {
-		var realm = "master"
-		var userID = "1234-452-4578"
-		var ctx = context.Background()
 		var req = make(map[string]string)
 		req[prmRealm] = realm
 		req[prmUserID] = userID
@@ -439,7 +517,7 @@ func TestGetUsersEndpoint(t *testing.T) {
 		req[prmRealm] = realm
 		req[prmQryGroupIDs] = groupIDs
 
-		mockManagementComponent.EXPECT().GetUsers(ctx, realm, []string{groupID1, groupID2}).Return(api.UsersPageRepresentation{}, nil).Times(1)
+		mockManagementComponent.EXPECT().GetUsers(ctx, realm, []string{groupID1, groupID2}).Return(api.UsersPageRepresentation{}, nil)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.NotNil(t, res)
@@ -458,7 +536,7 @@ func TestGetUsersEndpoint(t *testing.T) {
 		req["toto"] = "tutu" // Check this param is not transmitted
 		req[prmQryGroupIDs] = "123-784dsf-sdf567"
 
-		mockManagementComponent.EXPECT().GetUsers(ctx, realm, []string{req[prmQryGroupIDs]}, "email", req[prmQryEmail], "firstName", req[prmQryFirstName], "lastName", req[prmQryLastName], "username", req[prmQryUserName], "search", req[prmQrySearch]).Return(api.UsersPageRepresentation{}, nil).Times(1)
+		mockManagementComponent.EXPECT().GetUsers(ctx, realm, []string{req[prmQryGroupIDs]}, "email", req[prmQryEmail], "firstName", req[prmQryFirstName], "lastName", req[prmQryLastName], "username", req[prmQryUserName], "search", req[prmQrySearch]).Return(api.UsersPageRepresentation{}, nil)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.NotNil(t, res)
@@ -491,7 +569,7 @@ func TestMakeGetUserChecksEndpoint(t *testing.T) {
 		var req = map[string]string{prmRealm: realm, prmUserID: userID}
 		var m = []api.UserCheck{}
 
-		mockManagementComponent.EXPECT().GetUserChecks(ctx, realm, userID).Return(m, nil).Times(1)
+		mockManagementComponent.EXPECT().GetUserChecks(ctx, realm, userID).Return(m, nil)
 		var _, err = e(ctx, req)
 		assert.Nil(t, err)
 	})
@@ -514,7 +592,7 @@ func TestGetUserAccountStatusEndpoint(t *testing.T) {
 		req[prmUserID] = userID
 		var m = map[string]bool{"enabled": false}
 
-		mockManagementComponent.EXPECT().GetUserAccountStatus(ctx, realm, userID).Return(m, nil).Times(1)
+		mockManagementComponent.EXPECT().GetUserAccountStatus(ctx, realm, userID).Return(m, nil)
 		var _, err = e(ctx, req)
 		assert.Nil(t, err)
 	})
@@ -562,7 +640,7 @@ func TestUserRoleEndpoints(t *testing.T) {
 		var e = MakeGetRolesOfUserEndpoint(mockManagementComponent)
 
 		t.Run("No error", func(t *testing.T) {
-			mockManagementComponent.EXPECT().GetRolesOfUser(ctx, realm, userID).Return([]api.RoleRepresentation{}, nil).Times(1)
+			mockManagementComponent.EXPECT().GetRolesOfUser(ctx, realm, userID).Return([]api.RoleRepresentation{}, nil)
 			var res, err = e(ctx, req)
 			assert.Nil(t, err)
 			assert.NotNil(t, res)
@@ -610,7 +688,7 @@ func TestGetGroupsOfUserEndpoint(t *testing.T) {
 		req[prmRealm] = realm
 		req[prmUserID] = userID
 
-		mockManagementComponent.EXPECT().GetGroupsOfUser(ctx, realm, userID).Return([]api.GroupRepresentation{}, nil).Times(1)
+		mockManagementComponent.EXPECT().GetGroupsOfUser(ctx, realm, userID).Return([]api.GroupRepresentation{}, nil)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.NotNil(t, res)
@@ -634,14 +712,14 @@ func TestSetGroupsToUserEndpoint(t *testing.T) {
 
 	t.Run("AddGroup: No error", func(t *testing.T) {
 		var e = MakeAddGroupToUserEndpoint(mockManagementComponent)
-		mockManagementComponent.EXPECT().AddGroupToUser(ctx, realm, userID, groupID).Return(nil).Times(1)
+		mockManagementComponent.EXPECT().AddGroupToUser(ctx, realm, userID, groupID).Return(nil)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Nil(t, res)
 	})
 	t.Run("DeleteGroup: No error", func(t *testing.T) {
 		var e = MakeDeleteGroupForUserEndpoint(mockManagementComponent)
-		mockManagementComponent.EXPECT().DeleteGroupForUser(ctx, realm, userID, groupID).Return(nil).Times(1)
+		mockManagementComponent.EXPECT().DeleteGroupForUser(ctx, realm, userID, groupID).Return(nil)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Nil(t, res)
@@ -660,14 +738,14 @@ func TestGetAvailableTrustIDGroupsEndpoint(t *testing.T) {
 	var req = map[string]string{prmRealm: realm}
 
 	t.Run("No error", func(t *testing.T) {
-		mockManagementComponent.EXPECT().GetAvailableTrustIDGroups(ctx, realm).Return([]string{"grp1", "grp2"}, nil).Times(1)
+		mockManagementComponent.EXPECT().GetAvailableTrustIDGroups(ctx, realm).Return([]string{"grp1", "grp2"}, nil)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Len(t, res, 2)
 	})
 
 	t.Run("Bad input", func(t *testing.T) {
-		mockManagementComponent.EXPECT().GetAvailableTrustIDGroups(ctx, realm).Return(nil, errors.New("error")).Times(1)
+		mockManagementComponent.EXPECT().GetAvailableTrustIDGroups(ctx, realm).Return(nil, errors.New("error"))
 		var res, err = e(ctx, req)
 		assert.NotNil(t, err)
 		assert.Nil(t, res)
@@ -687,14 +765,14 @@ func TestGetTrustIDGroupsOfUserEndpoint(t *testing.T) {
 	var req = map[string]string{prmRealm: realm, prmUserID: userID}
 
 	t.Run("No error", func(t *testing.T) {
-		mockManagementComponent.EXPECT().GetTrustIDGroupsOfUser(ctx, realm, userID).Return([]string{"grp1", "grp2"}, nil).Times(1)
+		mockManagementComponent.EXPECT().GetTrustIDGroupsOfUser(ctx, realm, userID).Return([]string{"grp1", "grp2"}, nil)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Len(t, res, 2)
 	})
 
 	t.Run("Bad input", func(t *testing.T) {
-		mockManagementComponent.EXPECT().GetTrustIDGroupsOfUser(ctx, realm, userID).Return(nil, errors.New("error")).Times(1)
+		mockManagementComponent.EXPECT().GetTrustIDGroupsOfUser(ctx, realm, userID).Return(nil, errors.New("error"))
 		var res, err = e(ctx, req)
 		assert.NotNil(t, err)
 		assert.Nil(t, res)
@@ -719,7 +797,7 @@ func TestSetTrustIDGroupsToUserEndpoint(t *testing.T) {
 		body := []string{"grp1", "grp2"}
 		req[reqBody] = string("[\"grp1\", \"grp2\"]")
 
-		mockManagementComponent.EXPECT().SetTrustIDGroupsToUser(ctx, realm, userID, body).Return(nil).Times(1)
+		mockManagementComponent.EXPECT().SetTrustIDGroupsToUser(ctx, realm, userID, body).Return(nil)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Nil(t, res)
@@ -759,7 +837,7 @@ func TestGetClientRolesForUserEndpoint(t *testing.T) {
 		req[prmUserID] = userID
 		req[prmClientID] = clientID
 
-		mockManagementComponent.EXPECT().GetClientRolesForUser(ctx, realm, userID, clientID).Return([]api.RoleRepresentation{}, nil).Times(1)
+		mockManagementComponent.EXPECT().GetClientRolesForUser(ctx, realm, userID, clientID).Return([]api.RoleRepresentation{}, nil)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.NotNil(t, res)
@@ -787,7 +865,7 @@ func TestAddClientRolesToUserEndpoint(t *testing.T) {
 		roleJSON, _ := json.Marshal([]api.RoleRepresentation{})
 		req[reqBody] = string(roleJSON)
 
-		mockManagementComponent.EXPECT().AddClientRolesToUser(ctx, realm, userID, clientID, []api.RoleRepresentation{}).Return(nil).Times(1)
+		mockManagementComponent.EXPECT().AddClientRolesToUser(ctx, realm, userID, clientID, []api.RoleRepresentation{}).Return(nil)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Nil(t, res)
@@ -825,7 +903,7 @@ func TestDeleteClientRolesFromUserEndpoint(t *testing.T) {
 	req[prmQryRoleName] = roleName
 
 	t.Run("No error", func(t *testing.T) {
-		mockManagementComponent.EXPECT().DeleteClientRolesFromUser(ctx, realm, userID, clientID, roleID, roleName).Return(nil).Times(1)
+		mockManagementComponent.EXPECT().DeleteClientRolesFromUser(ctx, realm, userID, clientID, roleID, roleName).Return(nil)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Nil(t, res)
@@ -851,7 +929,7 @@ func TestResetPasswordEndpoint(t *testing.T) {
 		passwordJSON, _ := json.Marshal(api.PasswordRepresentation{})
 		req[reqBody] = string(passwordJSON)
 
-		mockManagementComponent.EXPECT().ResetPassword(ctx, realm, userID, api.PasswordRepresentation{}).Return("", nil).Times(1)
+		mockManagementComponent.EXPECT().ResetPassword(ctx, realm, userID, api.PasswordRepresentation{}).Return("", nil)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Nil(t, res)
@@ -886,7 +964,7 @@ func TestExecuteActionsEmailEndpoint(t *testing.T) {
 		actionsJSON, _ := json.Marshal(actions)
 		req[reqBody] = string(actionsJSON)
 
-		mockManagementComponent.EXPECT().ExecuteActionsEmail(ctx, realm, userID, actions).Return(nil).Times(1)
+		mockManagementComponent.EXPECT().ExecuteActionsEmail(ctx, realm, userID, actions).Return(nil)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Nil(t, res)
@@ -899,7 +977,7 @@ func TestExecuteActionsEmailEndpoint(t *testing.T) {
 		actionsJSON, _ := json.Marshal(actions)
 		req[reqBody] = string(actionsJSON)
 
-		mockManagementComponent.EXPECT().ExecuteActionsEmail(ctx, realm, userID, actions, prmQryClientID, req[prmQryClientID], prmQryRedirectURI, req[prmQryRedirectURI]).Return(nil).Times(1)
+		mockManagementComponent.EXPECT().ExecuteActionsEmail(ctx, realm, userID, actions, prmQryClientID, req[prmQryClientID], prmQryRedirectURI, req[prmQryRedirectURI]).Return(nil)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Nil(t, res)
@@ -914,6 +992,26 @@ func TestExecuteActionsEmailEndpoint(t *testing.T) {
 		assert.NotNil(t, err)
 		assert.Nil(t, res)
 	})
+}
+
+func TestMakeRevokeAccreditationsEndpoint(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
+
+	var e = MakeRevokeAccreditationsEndpoint(mockManagementComponent)
+
+	var realm = "master"
+	var userID = "123-456-789"
+	var ctx = context.Background()
+	var req = make(map[string]string)
+	req[prmRealm] = realm
+	req[prmUserID] = userID
+
+	mockManagementComponent.EXPECT().RevokeAccreditations(ctx, realm, userID).Return(errors.New("any error"))
+	var _, err = e(ctx, req)
+	assert.NotNil(t, err)
 }
 
 func TestSendSmsCodeEndpoint(t *testing.T) {
@@ -931,7 +1029,7 @@ func TestSendSmsCodeEndpoint(t *testing.T) {
 	req[prmRealm] = realm
 	req[prmUserID] = userID
 
-	mockManagementComponent.EXPECT().SendSmsCode(ctx, realm, userID).Return("1234", nil).Times(1)
+	mockManagementComponent.EXPECT().SendSmsCode(ctx, realm, userID).Return("1234", nil)
 	var res, err = e(ctx, req)
 	assert.Nil(t, err)
 	assert.Equal(t, map[string]string{"code": "1234"}, res)
@@ -1098,7 +1196,7 @@ func TestSendReminderEmailEndpoint(t *testing.T) {
 	req[prmUserID] = userID
 
 	t.Run("No error - Without param", func(t *testing.T) {
-		mockManagementComponent.EXPECT().SendReminderEmail(ctx, realm, userID).Return(nil).Times(1)
+		mockManagementComponent.EXPECT().SendReminderEmail(ctx, realm, userID).Return(nil)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Nil(t, res)
@@ -1110,7 +1208,7 @@ func TestSendReminderEmailEndpoint(t *testing.T) {
 		req[prmQryLifespan] = strconv.Itoa(3600)
 		req["toto"] = "tutu" // Check this param is not transmitted
 
-		mockManagementComponent.EXPECT().SendReminderEmail(ctx, realm, userID, prmQryClientID, req[prmQryClientID], prmQryRedirectURI, req[prmQryRedirectURI], prmQryLifespan, req[prmQryLifespan]).Return(nil).Times(1)
+		mockManagementComponent.EXPECT().SendReminderEmail(ctx, realm, userID, prmQryClientID, req[prmQryClientID], prmQryRedirectURI, req[prmQryRedirectURI], prmQryLifespan, req[prmQryLifespan]).Return(nil)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Nil(t, res)
@@ -1133,7 +1231,7 @@ func TestResetSmsCounterEndpoint(t *testing.T) {
 	req[prmRealm] = realm
 	req[prmUserID] = userID
 
-	mockManagementComponent.EXPECT().ResetSmsCounter(ctx, realm, userID).Return(nil).Times(1)
+	mockManagementComponent.EXPECT().ResetSmsCounter(ctx, realm, userID).Return(nil)
 	var res, err = e(ctx, req)
 	assert.Nil(t, err)
 	assert.Nil(t, res)
@@ -1156,7 +1254,7 @@ func TestCodeEndpoints(t *testing.T) {
 
 	t.Run("RecoveryCode", func(t *testing.T) {
 		var e = MakeCreateRecoveryCodeEndpoint(mockManagementComponent)
-		mockManagementComponent.EXPECT().CreateRecoveryCode(ctx, realm, userID).Return(responseCode, nil).Times(1)
+		mockManagementComponent.EXPECT().CreateRecoveryCode(ctx, realm, userID).Return(responseCode, nil)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Equal(t, responseCode, res)
@@ -1164,7 +1262,7 @@ func TestCodeEndpoints(t *testing.T) {
 
 	t.Run("ActivationCode", func(t *testing.T) {
 		var e = MakeCreateActivationCodeEndpoint(mockManagementComponent)
-		mockManagementComponent.EXPECT().CreateActivationCode(ctx, realm, userID).Return(responseCode, nil).Times(1)
+		mockManagementComponent.EXPECT().CreateActivationCode(ctx, realm, userID).Return(responseCode, nil)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Equal(t, responseCode, res)
@@ -1188,7 +1286,7 @@ func TestGetCredentialsForUserEndpoint(t *testing.T) {
 		req[prmRealm] = realm
 		req[prmUserID] = userID
 
-		mockManagementComponent.EXPECT().GetCredentialsForUser(ctx, realm, userID).Return([]api.CredentialRepresentation{}, nil).Times(1)
+		mockManagementComponent.EXPECT().GetCredentialsForUser(ctx, realm, userID).Return([]api.CredentialRepresentation{}, nil)
 		var _, err = e(ctx, req)
 		assert.Nil(t, err)
 	}
@@ -1213,7 +1311,7 @@ func TestDeleteCredentialsForUserEndpoint(t *testing.T) {
 		req[prmUserID] = userID
 		req[prmCredentialID] = credID
 
-		mockManagementComponent.EXPECT().DeleteCredentialsForUser(ctx, realm, userID, credID).Return(nil).Times(1)
+		mockManagementComponent.EXPECT().DeleteCredentialsForUser(ctx, realm, userID, credID).Return(nil)
 		var _, err = e(ctx, req)
 		assert.Nil(t, err)
 	}
@@ -1257,7 +1355,7 @@ func TestBruteForceEndpoints(t *testing.T) {
 		req[prmRealm] = realm
 		req[prmUserID] = userID
 
-		mockManagementComponent.EXPECT().ClearUserLoginFailures(ctx, realm, userID).Return(nil).Times(1)
+		mockManagementComponent.EXPECT().ClearUserLoginFailures(ctx, realm, userID).Return(nil)
 		var _, err = e(ctx, req)
 		assert.Nil(t, err)
 	})
@@ -1271,7 +1369,7 @@ func TestBruteForceEndpoints(t *testing.T) {
 		req[prmRealm] = realm
 		req[prmUserID] = userID
 
-		mockManagementComponent.EXPECT().GetAttackDetectionStatus(ctx, realm, userID).Return(api.AttackDetectionStatusRepresentation{}, nil).Times(1)
+		mockManagementComponent.EXPECT().GetAttackDetectionStatus(ctx, realm, userID).Return(api.AttackDetectionStatusRepresentation{}, nil)
 		var _, err = e(ctx, req)
 		assert.Nil(t, err)
 	})
@@ -1292,7 +1390,7 @@ func TestGetRolesEndpoint(t *testing.T) {
 		var req = make(map[string]string)
 		req[prmRealm] = realm
 
-		mockManagementComponent.EXPECT().GetRoles(ctx, realm).Return([]api.RoleRepresentation{}, nil).Times(1)
+		mockManagementComponent.EXPECT().GetRoles(ctx, realm).Return([]api.RoleRepresentation{}, nil)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.NotNil(t, res)
@@ -1316,7 +1414,7 @@ func TestGetRoleEndpoint(t *testing.T) {
 		req[prmRealm] = realm
 		req[prmRoleID] = roleID
 
-		mockManagementComponent.EXPECT().GetRole(ctx, realm, roleID).Return(api.RoleRepresentation{}, nil).Times(1)
+		mockManagementComponent.EXPECT().GetRole(ctx, realm, roleID).Return(api.RoleRepresentation{}, nil)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.NotNil(t, res)
@@ -1346,7 +1444,7 @@ func TestCreateRoleEndpoint(t *testing.T) {
 		groupJSON, _ := json.Marshal(api.GroupRepresentation{Name: &name})
 		req[reqBody] = string(groupJSON)
 
-		mockManagementComponent.EXPECT().CreateRole(ctx, realm, api.RoleRepresentation{Name: &name}).Return(location, nil).Times(1)
+		mockManagementComponent.EXPECT().CreateRole(ctx, realm, api.RoleRepresentation{Name: &name}).Return(location, nil)
 		res, err := e(ctx, req)
 		assert.Nil(t, err)
 
@@ -1369,9 +1467,43 @@ func TestCreateRoleEndpoint(t *testing.T) {
 		groupJSON, _ := json.Marshal(api.GroupRepresentation{Name: &name})
 		req[reqBody] = string(groupJSON)
 
-		mockManagementComponent.EXPECT().CreateRole(ctx, realm, gomock.Any()).Return("", fmt.Errorf("Error")).Times(1)
+		mockManagementComponent.EXPECT().CreateRole(ctx, realm, gomock.Any()).Return("", fmt.Errorf("Error"))
 		_, err := e(ctx, req)
 		assert.NotNil(t, err)
+	})
+}
+
+func TestMakeUpdateRoleEndpoint(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
+
+	var e = MakeUpdateRoleEndpoint(mockManagementComponent)
+
+	var realm = "master"
+	var roleID = "1234-452-4578"
+	var ctx = context.Background()
+	var req = make(map[string]string)
+	req[prmRealm] = realm
+	req[prmRoleID] = roleID
+
+	t.Run("Missing body", func(t *testing.T) {
+		var _, err = e(ctx, req)
+		assert.NotNil(t, err)
+		assert.Equal(t, http.StatusBadRequest, err.(errorhandler.Error).Status)
+	})
+	t.Run("Invalid body", func(t *testing.T) {
+		req[reqBody] = `{"id":"123"}`
+		var _, err = e(ctx, req)
+		assert.NotNil(t, err)
+		assert.Equal(t, http.StatusBadRequest, err.(errorhandler.Error).Status)
+	})
+	t.Run("Success", func(t *testing.T) {
+		req[reqBody] = `{}`
+		mockManagementComponent.EXPECT().UpdateRole(ctx, realm, roleID, gomock.Any()).Return(nil)
+		var _, err = e(ctx, req)
+		assert.Nil(t, err)
 	})
 }
 
@@ -1390,7 +1522,7 @@ func TestDeleteRoleEndpoint(t *testing.T) {
 	req[prmRealm] = realm
 	req[prmRoleID] = roleID
 
-	mockManagementComponent.EXPECT().DeleteRole(ctx, realm, roleID).Return(nil).Times(1)
+	mockManagementComponent.EXPECT().DeleteRole(ctx, realm, roleID).Return(nil)
 	var res, err = e(ctx, req)
 	assert.Nil(t, err)
 	assert.Equal(t, commonhttp.StatusNoContent{}, res)
@@ -1411,7 +1543,7 @@ func TestGetGroupsEndpoint(t *testing.T) {
 		var req = make(map[string]string)
 		req[prmRealm] = realm
 
-		mockManagementComponent.EXPECT().GetGroups(ctx, realm).Return([]api.GroupRepresentation{}, nil).Times(1)
+		mockManagementComponent.EXPECT().GetGroups(ctx, realm).Return([]api.GroupRepresentation{}, nil)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.NotNil(t, res)
@@ -1441,7 +1573,7 @@ func TestCreateGroupEndpoint(t *testing.T) {
 		groupJSON, _ := json.Marshal(api.GroupRepresentation{Name: &name})
 		req[reqBody] = string(groupJSON)
 
-		mockManagementComponent.EXPECT().CreateGroup(ctx, realm, api.GroupRepresentation{Name: &name}).Return(location, nil).Times(1)
+		mockManagementComponent.EXPECT().CreateGroup(ctx, realm, api.GroupRepresentation{Name: &name}).Return(location, nil)
 		res, err := e(ctx, req)
 		assert.Nil(t, err)
 
@@ -1464,7 +1596,7 @@ func TestCreateGroupEndpoint(t *testing.T) {
 		groupJSON, _ := json.Marshal(api.GroupRepresentation{Name: &name})
 		req[reqBody] = string(groupJSON)
 
-		mockManagementComponent.EXPECT().CreateGroup(ctx, realm, gomock.Any()).Return("", fmt.Errorf("Error")).Times(1)
+		mockManagementComponent.EXPECT().CreateGroup(ctx, realm, gomock.Any()).Return("", fmt.Errorf("Error"))
 		_, err := e(ctx, req)
 		assert.NotNil(t, err)
 	})
@@ -1485,7 +1617,7 @@ func TestDeleteGroupEndpoint(t *testing.T) {
 	req[prmRealm] = realm
 	req[prmGroupID] = groupID
 
-	mockManagementComponent.EXPECT().DeleteGroup(ctx, realm, groupID).Return(nil).Times(1)
+	mockManagementComponent.EXPECT().DeleteGroup(ctx, realm, groupID).Return(nil)
 	var res, err = e(ctx, req)
 	assert.Nil(t, err)
 	assert.Nil(t, res)
@@ -1508,7 +1640,7 @@ func TestGetAuthorizationsEndpoint(t *testing.T) {
 		req[prmRealm] = realm
 		req[prmGroupID] = groupID
 
-		mockManagementComponent.EXPECT().GetAuthorizations(ctx, realm, groupID).Return(api.AuthorizationsRepresentation{}, nil).Times(1)
+		mockManagementComponent.EXPECT().GetAuthorizations(ctx, realm, groupID).Return(api.AuthorizationsRepresentation{}, nil)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.NotNil(t, res)
@@ -1532,7 +1664,7 @@ func TestGetClientRolesEndpoint(t *testing.T) {
 		req[prmRealm] = realm
 		req[prmClientID] = clientID
 
-		mockManagementComponent.EXPECT().GetClientRoles(ctx, realm, clientID).Return([]api.RoleRepresentation{}, nil).Times(1)
+		mockManagementComponent.EXPECT().GetClientRoles(ctx, realm, clientID).Return([]api.RoleRepresentation{}, nil)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.NotNil(t, res)
@@ -1557,7 +1689,7 @@ func TestUpdateAuthorizationsEndpoint(t *testing.T) {
 	t.Run("No error", func(t *testing.T) {
 		req[reqBody] = `{"matrix":{}}`
 
-		mockManagementComponent.EXPECT().UpdateAuthorizations(ctx, realmName, groupID, gomock.Any()).Return(nil).Times(1)
+		mockManagementComponent.EXPECT().UpdateAuthorizations(ctx, realmName, groupID, gomock.Any()).Return(nil)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Nil(t, res)
@@ -1591,7 +1723,7 @@ func TestAddAuthorizationEndpoint(t *testing.T) {
 
 	t.Run("No error", func(t *testing.T) {
 		req[reqBody] = `{"matrix":{}}`
-		mockManagementComponent.EXPECT().AddAuthorization(ctx, realmName, groupID, gomock.Any()).Return(nil).Times(1)
+		mockManagementComponent.EXPECT().AddAuthorization(ctx, realmName, groupID, gomock.Any()).Return(nil)
 
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
@@ -1630,7 +1762,7 @@ func TestGetAuthorizationEndpoint(t *testing.T) {
 	req[prmAction] = action
 
 	t.Run("No error", func(t *testing.T) {
-		mockManagementComponent.EXPECT().GetAuthorization(ctx, realmName, groupID, targetRealmName, targetGroupID, action).Return(api.AuthorizationMessage{}, nil).Times(1)
+		mockManagementComponent.EXPECT().GetAuthorization(ctx, realmName, groupID, targetRealmName, targetGroupID, action).Return(api.AuthorizationMessage{}, nil)
 
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
@@ -1660,7 +1792,7 @@ func TestDeleteAuthorizationEndpoint(t *testing.T) {
 	req[prmAction] = action
 
 	t.Run("No error", func(t *testing.T) {
-		mockManagementComponent.EXPECT().DeleteAuthorization(ctx, realmName, groupID, targetRealmName, targetGroupID, action).Return(nil).Times(1)
+		mockManagementComponent.EXPECT().DeleteAuthorization(ctx, realmName, groupID, targetRealmName, targetGroupID, action).Return(nil)
 
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
@@ -1689,7 +1821,7 @@ func TestCreateClientRoleEndpoint(t *testing.T) {
 		roleJSON, _ := json.Marshal(api.RoleRepresentation{})
 		req[reqBody] = string(roleJSON)
 
-		mockManagementComponent.EXPECT().CreateClientRole(ctx, realm, clientID, api.RoleRepresentation{}).Return(location, nil).Times(1)
+		mockManagementComponent.EXPECT().CreateClientRole(ctx, realm, clientID, api.RoleRepresentation{}).Return(location, nil)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		locationHeader := res.(LocationHeader)
@@ -1712,7 +1844,7 @@ func TestCreateClientRoleEndpoint(t *testing.T) {
 		userJSON, _ := json.Marshal(api.RoleRepresentation{})
 		req[reqBody] = string(userJSON)
 
-		mockManagementComponent.EXPECT().CreateClientRole(ctx, realm, clientID, gomock.Any()).Return("", fmt.Errorf("Error")).Times(1)
+		mockManagementComponent.EXPECT().CreateClientRole(ctx, realm, clientID, gomock.Any()).Return("", fmt.Errorf("Error"))
 		_, err := e(ctx, req)
 		assert.NotNil(t, err)
 	})
@@ -1741,6 +1873,24 @@ func TestDeleteClientRoleEndpoint(t *testing.T) {
 	assert.Equal(t, commonhttp.StatusNoContent{}, res)
 }
 
+func TestMakeGetRealmUserProfileEndpoint(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
+	var e = MakeGetRealmUserProfileEndpoint(mockManagementComponent)
+
+	var realmName = "the-realm"
+	var ctx = context.Background()
+	var req = make(map[string]string)
+	req[prmRealm] = realmName
+
+	mockManagementComponent.EXPECT().GetRealmUserProfile(ctx, realmName).Return(apicommon.ProfileRepresentation{}, nil)
+	var res, err = e(ctx, req)
+	assert.Nil(t, err)
+	assert.NotNil(t, res)
+}
+
 func TestConfigurationEndpoints(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -1756,7 +1906,7 @@ func TestConfigurationEndpoints(t *testing.T) {
 		var req = map[string]string{prmRealm: realmName, prmClientID: clientID}
 		var e = MakeGetRealmCustomConfigurationEndpoint(mockManagementComponent)
 
-		mockManagementComponent.EXPECT().GetRealmCustomConfiguration(ctx, realmName).Return(api.RealmCustomConfiguration{}, nil).Times(1)
+		mockManagementComponent.EXPECT().GetRealmCustomConfiguration(ctx, realmName).Return(api.RealmCustomConfiguration{}, nil)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.NotNil(t, res)
@@ -1767,7 +1917,7 @@ func TestConfigurationEndpoints(t *testing.T) {
 		var req = map[string]string{prmRealm: realmName, prmClientID: clientID, reqBody: configJSON}
 		var e = MakeUpdateRealmCustomConfigurationEndpoint(mockManagementComponent)
 
-		mockManagementComponent.EXPECT().UpdateRealmCustomConfiguration(ctx, realmName, gomock.Any()).Return(nil).Times(1)
+		mockManagementComponent.EXPECT().UpdateRealmCustomConfiguration(ctx, realmName, gomock.Any()).Return(nil)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Nil(t, res)
@@ -1785,28 +1935,61 @@ func TestConfigurationEndpoints(t *testing.T) {
 	})
 
 	t.Run("MakeGetRealmBackOfficeConfigurationEndpoint", func(t *testing.T) {
-		var req = map[string]string{prmRealm: realmName, prmQryGroupName: groupName}
 		var expectedConf api.BackOfficeConfiguration
 		var expectedErr = errors.New("any error")
 		var e = MakeGetRealmBackOfficeConfigurationEndpoint(mockManagementComponent)
+		var req = map[string]string{prmRealm: realmName, prmQryGroupName: groupName}
 
-		mockManagementComponent.EXPECT().GetRealmBackOfficeConfiguration(ctx, realmName, groupName).Return(expectedConf, expectedErr).Times(1)
-		var res, err = e(ctx, req)
-		assert.Equal(t, expectedErr, err)
-		assert.Equal(t, expectedConf, res)
+		t.Run("Bad request", func(t *testing.T) {
+			req[prmQryGroupName] = ""
+			var _, err = e(ctx, req)
+			assert.Equal(t, http.StatusBadRequest, err.(errorhandler.Error).Status)
+		})
+		t.Run("Success", func(t *testing.T) {
+			req[prmQryGroupName] = groupName
+			mockManagementComponent.EXPECT().GetRealmBackOfficeConfiguration(ctx, realmName, groupName).Return(expectedConf, expectedErr)
+			var res, err = e(ctx, req)
+			assert.Equal(t, expectedErr, err)
+			assert.Equal(t, expectedConf, res)
+		})
 	})
 
 	t.Run("MakeUpdateRealmBackOfficeConfigurationEndpoint", func(t *testing.T) {
 		var config api.BackOfficeConfiguration
 		var configJSON, _ = json.Marshal(config)
-		var req = map[string]string{prmRealm: realmName, prmQryGroupName: groupName, reqBody: string(configJSON)}
+		var req = map[string]string{prmRealm: realmName, prmQryGroupName: groupName}
 		var expectedErr = errors.New("update error")
 		var e = MakeUpdateRealmBackOfficeConfigurationEndpoint(mockManagementComponent)
 
-		mockManagementComponent.EXPECT().UpdateRealmBackOfficeConfiguration(ctx, realmName, groupName, config).Return(expectedErr).Times(1)
+		t.Run("Body is not a JSON value", func(t *testing.T) {
+			req[reqBody] = `{]`
+			var _, err = e(ctx, req)
+			assert.Equal(t, http.StatusBadRequest, err.(errorhandler.Error).Status)
+		})
+		t.Run("Missing groupName", func(t *testing.T) {
+			req[reqBody] = string(configJSON)
+			req[prmQryGroupName] = ""
+			var _, err = e(ctx, req)
+			assert.Equal(t, http.StatusBadRequest, err.(errorhandler.Error).Status)
+		})
+		t.Run("Success", func(t *testing.T) {
+			req[prmQryGroupName] = groupName
+			mockManagementComponent.EXPECT().UpdateRealmBackOfficeConfiguration(ctx, realmName, groupName, config).Return(expectedErr)
+			var res, err = e(ctx, req)
+			assert.Equal(t, expectedErr, err)
+			assert.Nil(t, res)
+		})
+	})
+
+	t.Run("MakeGetUserRealmBackOfficeConfigurationEndpoint", func(t *testing.T) {
+		var e = MakeGetUserRealmBackOfficeConfigurationEndpoint(mockManagementComponent)
+		var expectedResult = api.BackOfficeConfiguration{}
+		var req = map[string]string{prmRealm: realmName}
+		var ctx = context.TODO()
+		mockManagementComponent.EXPECT().GetUserRealmBackOfficeConfiguration(ctx, realmName).Return(expectedResult, nil)
 		var res, err = e(ctx, req)
-		assert.Equal(t, expectedErr, err)
-		assert.Nil(t, res)
+		assert.Nil(t, err)
+		assert.Equal(t, expectedResult, res)
 	})
 }
 
@@ -1825,7 +2008,7 @@ func TestGetRealmAdminConfigurationEndpoint(t *testing.T) {
 		var req = make(map[string]string)
 		req[prmRealm] = realmName
 
-		mockManagementComponent.EXPECT().GetRealmAdminConfiguration(ctx, realmName).Return(adminConfig, nil).Times(1)
+		mockManagementComponent.EXPECT().GetRealmAdminConfiguration(ctx, realmName).Return(adminConfig, nil)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.NotNil(t, res)
@@ -1837,7 +2020,7 @@ func TestGetRealmAdminConfigurationEndpoint(t *testing.T) {
 		var req = make(map[string]string)
 		req[prmRealm] = realmName
 
-		mockManagementComponent.EXPECT().GetRealmAdminConfiguration(ctx, realmName).Return(adminConfig, expectedError).Times(1)
+		mockManagementComponent.EXPECT().GetRealmAdminConfiguration(ctx, realmName).Return(adminConfig, expectedError)
 		var _, err = e(ctx, req)
 		assert.Equal(t, expectedError, err)
 	})
@@ -1859,7 +2042,7 @@ func TestUpdateRealmAdminConfigurationEndpoint(t *testing.T) {
 		req[prmRealm] = realmName
 		req[reqBody] = configJSON
 
-		mockManagementComponent.EXPECT().UpdateRealmAdminConfiguration(ctx, realmName, gomock.Any()).Return(nil).Times(1)
+		mockManagementComponent.EXPECT().UpdateRealmAdminConfiguration(ctx, realmName, gomock.Any()).Return(nil)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Nil(t, res)
@@ -1934,7 +2117,7 @@ func TestLinkShadowUserEndpoint(t *testing.T) {
 
 	// No error
 	t.Run("Create shadow user successfully", func(t *testing.T) {
-		mockManagementComponent.EXPECT().LinkShadowUser(ctx, realm, userID, provider, api.FederatedIdentityRepresentation{Username: &username, UserID: &userID}).Return(nil).Times(1)
+		mockManagementComponent.EXPECT().LinkShadowUser(ctx, realm, userID, provider, api.FederatedIdentityRepresentation{Username: &username, UserID: &userID}).Return(nil)
 		_, err := e(ctx, req)
 		assert.Nil(t, err)
 	})
@@ -1949,7 +2132,7 @@ func TestLinkShadowUserEndpoint(t *testing.T) {
 	// Error - Keycloak client error
 	t.Run("Create shadow user - error at KC client", func(t *testing.T) {
 
-		mockManagementComponent.EXPECT().LinkShadowUser(ctx, realm, userID, provider, api.FederatedIdentityRepresentation{Username: &username, UserID: &userID}).Return(fmt.Errorf("error")).Times(1)
+		mockManagementComponent.EXPECT().LinkShadowUser(ctx, realm, userID, provider, api.FederatedIdentityRepresentation{Username: &username, UserID: &userID}).Return(fmt.Errorf("error"))
 		_, err := e(ctx, req)
 		assert.NotNil(t, err)
 	})

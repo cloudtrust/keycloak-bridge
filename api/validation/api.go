@@ -1,11 +1,14 @@
 package apivalidation
 
 import (
+	"context"
 	"time"
 
+	cs "github.com/cloudtrust/common-service/v2"
 	"github.com/cloudtrust/common-service/v2/fields"
 	"github.com/cloudtrust/common-service/v2/validation"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
+	"github.com/cloudtrust/keycloak-bridge/internal/profile"
 	kc "github.com/cloudtrust/keycloak-client/v2"
 )
 
@@ -34,19 +37,6 @@ type UserRepresentation struct {
 	IDDocumentNumber     *string    `json:"idDocumentNumber,omitempty"`
 	IDDocumentExpiration *time.Time `json:"idDocumentExpiration,omitempty"`
 	IDDocumentCountry    *string    `json:"idDocumentCountry,omitempty"`
-}
-
-// CheckRepresentation struct
-type CheckRepresentation struct {
-	UserID    *string    `json:"userId,omitempty"`
-	Operator  *string    `json:"operator,omitempty"`
-	DateTime  *time.Time `json:"datetime,omitempty"`
-	Status    *string    `json:"status,omitempty"`
-	Type      *string    `json:"type,omitempty"`
-	Nature    *string    `json:"nature,omitempty"`
-	ProofData *[]byte    `json:"proofData,omitempty"`
-	ProofType *string    `json:"proofType,omitempty"`
-	TxnID     *string    `json:"txnId,omitempty"`
 }
 
 // GroupRepresentation struct
@@ -184,20 +174,99 @@ func defaultIfNil(value *string, defaultValue *string) *string {
 	return defaultValue
 }
 
+// Validators
+
+// GetField is used to validate a user against a UserProfile
+func (u *UserRepresentation) GetField(field string) interface{} {
+	switch field {
+	case fields.Username.Key():
+		return profile.IfNotNil(u.Username)
+	case fields.Email.Key():
+		return profile.IfNotNil(u.Email)
+	case fields.FirstName.Key():
+		return profile.IfNotNil(u.FirstName)
+	case fields.LastName.Key():
+		return profile.IfNotNil(u.LastName)
+	case fields.Gender.AttributeName():
+		return profile.IfNotNil(u.Gender)
+	case fields.PhoneNumber.AttributeName():
+		return profile.IfNotNil(u.PhoneNumber)
+	case fields.BirthDate.AttributeName():
+		return profile.IfTimePtrNotNil(u.BirthDate)
+	case fields.BirthLocation.AttributeName():
+		return profile.IfNotNil(u.BirthLocation)
+	case fields.Nationality.AttributeName():
+		return profile.IfNotNil(u.Nationality)
+	case fields.IDDocumentType.AttributeName():
+		return profile.IfNotNil(u.IDDocumentType)
+	case fields.IDDocumentNumber.AttributeName():
+		return profile.IfNotNil(u.IDDocumentNumber)
+	case fields.IDDocumentCountry.AttributeName():
+		return profile.IfNotNil(u.IDDocumentCountry)
+	case fields.IDDocumentExpiration.AttributeName():
+		return profile.IfTimePtrNotNil(u.IDDocumentExpiration)
+	case fields.Locale.AttributeName():
+		return profile.IfNotNil(u.Locale)
+	default:
+		return nil
+	}
+}
+
+// SetField is used to validate a user against a UserProfile
+func (u *UserRepresentation) SetField(field string, value interface{}) {
+	switch field {
+	case fields.Username.Key():
+		u.Username = cs.ToStringPtr(value)
+		break
+	case fields.Email.Key():
+		u.Email = cs.ToStringPtr(value)
+		break
+	case fields.FirstName.Key():
+		u.FirstName = cs.ToStringPtr(value)
+		break
+	case fields.LastName.Key():
+		u.LastName = cs.ToStringPtr(value)
+		break
+	case fields.Gender.AttributeName():
+		u.Gender = cs.ToStringPtr(value)
+		break
+	case fields.PhoneNumber.AttributeName():
+		u.PhoneNumber = cs.ToStringPtr(value)
+		break
+	case fields.BirthDate.AttributeName():
+		u.BirthDate = cs.ToTimePtr(value)
+		break
+	case fields.BirthLocation.AttributeName():
+		u.BirthLocation = cs.ToStringPtr(value)
+		break
+	case fields.Nationality.AttributeName():
+		u.Nationality = cs.ToStringPtr(value)
+		break
+	case fields.IDDocumentType.AttributeName():
+		u.IDDocumentType = cs.ToStringPtr(value)
+		break
+	case fields.IDDocumentNumber.AttributeName():
+		u.IDDocumentNumber = cs.ToStringPtr(value)
+		break
+	case fields.IDDocumentCountry.AttributeName():
+		u.IDDocumentCountry = cs.ToStringPtr(value)
+		break
+	case fields.IDDocumentExpiration.AttributeName():
+		u.IDDocumentExpiration = cs.ToTimePtr(value)
+		break
+	case fields.Locale.AttributeName():
+		u.Locale = cs.ToStringPtr(value)
+		break
+	}
+}
+
 // Validate checks the validity of the given User
-func (u *UserRepresentation) Validate() error {
+func (u *UserRepresentation) Validate(ctx context.Context, upc profile.UserProfile, realm string) error {
 	return validation.NewParameterValidator().
 		ValidateParameterRegExp(prmUserID, u.ID, constants.RegExpID, false).
-		ValidateParameterIn(prmUserGender, u.Gender, allowedGender, false).
-		ValidateParameterRegExp(prmUserFirstName, u.FirstName, constants.RegExpFirstName, false).
-		ValidateParameterRegExp(prmUserLastName, u.LastName, constants.RegExpLastName, false).
-		ValidateParameterRegExp(prmUserEmail, u.Email, constants.RegExpEmail, false).
-		ValidateParameterPhoneNumber(prmUserPhoneNumber, u.PhoneNumber, false).
-		ValidateParameterRegExp(prmUserBirthLocation, u.BirthLocation, constants.RegExpBirthLocation, false).
-		ValidateParameterRegExp(prmUserNationality, u.Nationality, constants.RegExpCountryCode, false).
-		ValidateParameterIn(prmUserIDDocumentType, u.IDDocumentType, constants.AllowedDocumentTypes, false).
-		ValidateParameterRegExp(prmUserIDDocumentNumber, u.IDDocumentNumber, constants.RegExpIDDocumentNumber, false).
-		ValidateParameterRegExp(prmUserIDDocumentCountry, u.IDDocumentCountry, constants.RegExpCountryCode, false).
+		ValidateParameterFunc(func() error {
+			return profile.Validate(ctx, upc, realm, u, "validation", true)
+		}).
 		Status()
 }
 
@@ -227,33 +296,4 @@ func (u *UserRepresentation) UpdateFieldsComparatorWithKCFields(fc fields.Fields
 		CompareValueAndFunction(fields.IDDocumentNumber, u.IDDocumentNumber, formerUserInfo.GetFieldValues).
 		CompareValueAndFunction(fields.IDDocumentExpiration, expiry, formerUserInfo.GetFieldValues).
 		CompareValueAndFunction(fields.IDDocumentCountry, u.IDDocumentCountry, formerUserInfo.GetFieldValues)
-}
-
-// Validate checks the validity of the given check
-func (c *CheckRepresentation) Validate() error {
-	return validation.NewParameterValidator().
-		ValidateParameterRegExp(prmUserID, c.UserID, constants.RegExpID, true).
-		ValidateParameterRegExp(prmCheckOperator, c.Operator, regExpOperator, c.IsIdentificationSuccessful()).
-		ValidateParameterNotNil(prmCheckDatetime, c.DateTime).
-		ValidateParameterRegExp(prmCheckStatus, c.Status, regExpStatus, true).
-		ValidateParameterIn(prmCheckType, c.Type, allowedCheckType, true).
-		ValidateParameterRegExp(prmCheckNature, c.Nature, regExpNature, true).
-		ValidateParameterRegExp(prmCheckProofType, c.ProofType, regExpProofType, true).
-		ValidateParameterRegExp(prmCheckTxnID, c.TxnID, constants.RegExpTxnID, false).
-		Status()
-}
-
-// IsIdentificationSuccessful tells whether a check is success or not
-func (c *CheckRepresentation) IsIdentificationSuccessful() bool {
-	return c.Status != nil && successStatus[*c.Status]
-}
-
-// IsIdentificationCanceled checks if the identification was canceled
-func (c *CheckRepresentation) IsIdentificationCanceled() bool {
-	return c.Status != nil && *c.Status == "CANCELED"
-}
-
-// IsIdentificationAborted checks if the identification was aborted
-func (c *CheckRepresentation) IsIdentificationAborted() bool {
-	return c.Status != nil && *c.Status == "ABORTED"
 }

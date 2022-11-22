@@ -92,6 +92,7 @@ type Endpoints struct {
 	UpdateRealmCustomConfiguration      endpoint.Endpoint
 	GetRealmAdminConfiguration          endpoint.Endpoint
 	UpdateRealmAdminConfiguration       endpoint.Endpoint
+	GetRealmUserProfile                 endpoint.Endpoint
 	GetRealmBackOfficeConfiguration     endpoint.Endpoint
 	UpdateRealmBackOfficeConfiguration  endpoint.Endpoint
 	GetUserRealmBackOfficeConfiguration endpoint.Endpoint
@@ -104,6 +105,7 @@ type Endpoints struct {
 
 const (
 	invalidLocation = "InvalidLocation"
+	apiName         = "management"
 )
 
 func isParameterTrue(mapParams map[string]string, paramName string) bool {
@@ -157,7 +159,7 @@ func MakeGetRequiredActionsEndpoint(component Component) cs.Endpoint {
 }
 
 // MakeCreateUserEndpoint makes the endpoint to create a user.
-func MakeCreateUserEndpoint(component Component, logger keycloakb.Logger) cs.Endpoint {
+func MakeCreateUserEndpoint(component Component, profileCache UserProfileCache, logger keycloakb.Logger) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 		var err error
@@ -168,7 +170,11 @@ func MakeCreateUserEndpoint(component Component, logger keycloakb.Logger) cs.End
 			return nil, errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Body)
 		}
 
-		if err = user.Validate(); err != nil {
+		// Get the UserProfile
+		var realm = ctx.Value(cs.CtContextRealm).(string)
+		if err = user.Validate(ctx, profileCache, realm, true); err != nil {
+			// Validate input request
+			logger.Warn(ctx, "msg", "Invalid incoming data", "err", err.Error())
 			return nil, err
 		}
 
@@ -199,7 +205,7 @@ func MakeCreateUserEndpoint(component Component, logger keycloakb.Logger) cs.End
 }
 
 // MakeCreateUserInSocialRealmEndpoint makes the endpoint to create a user in the social realm.
-func MakeCreateUserInSocialRealmEndpoint(component Component, logger keycloakb.Logger) cs.Endpoint {
+func MakeCreateUserInSocialRealmEndpoint(component Component, profileCache UserProfileCache, logger keycloakb.Logger) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 		var err error
@@ -210,7 +216,11 @@ func MakeCreateUserInSocialRealmEndpoint(component Component, logger keycloakb.L
 			return nil, errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Body)
 		}
 
-		if err = user.Validate(); err != nil {
+		// Get the UserProfile
+		var realm = ctx.Value(cs.CtContextRealm).(string)
+		if err = user.Validate(ctx, profileCache, realm, true); err != nil {
+			// Validate input request
+			logger.Warn(ctx, "msg", "Invalid incoming data", "err", err.Error())
 			return nil, err
 		}
 
@@ -257,7 +267,7 @@ func MakeGetUserEndpoint(component Component) cs.Endpoint {
 }
 
 // MakeUpdateUserEndpoint creates an endpoint for UpdateUser
-func MakeUpdateUserEndpoint(component Component) cs.Endpoint {
+func MakeUpdateUserEndpoint(component Component, profileCache UserProfileCache, logger keycloakb.Logger) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
@@ -267,7 +277,11 @@ func MakeUpdateUserEndpoint(component Component) cs.Endpoint {
 			return nil, errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + msg.Body)
 		}
 
-		if err := user.Validate(m[prmRealm] == "trustid"); err != nil { // TO CLEAN WHEN WE WILL HAVE ATTRIBUTE MANAGEMENT
+		// Get the UserProfile
+		var realm = ctx.Value(cs.CtContextRealm).(string)
+		if err := user.Validate(ctx, profileCache, realm); err != nil {
+			// Validate input request
+			logger.Warn(ctx, "msg", "Invalid incoming data", "err", err.Error())
 			return nil, err
 		}
 
@@ -1045,6 +1059,14 @@ func MakeUpdateRealmAdminConfigurationEndpoint(component Component) cs.Endpoint 
 		}
 
 		return nil, component.UpdateRealmAdminConfiguration(ctx, m[prmRealm], adminConfig)
+	}
+}
+
+// MakeGetRealmUserProfileEndpoint creates an endpoint for GetRealmUserProfile
+func MakeGetRealmUserProfileEndpoint(component Component) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+		return component.GetRealmUserProfile(ctx, m[prmRealm])
 	}
 }
 

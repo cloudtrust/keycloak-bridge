@@ -24,6 +24,7 @@ import (
 type componentMocks struct {
 	tokenProvider  *mock.OidcTokenProvider
 	keycloakClient *mock.KeycloakClient
+	userProfile    *mock.UserProfileCache
 	archiveDB      *mock.ArchiveDBModule
 	configDB       *mock.ConfigDBModule
 	eventsDB       *mock.EventsDBModule
@@ -39,6 +40,7 @@ func createComponentMocks(mockCtrl *gomock.Controller) *componentMocks {
 	return &componentMocks{
 		tokenProvider:  mock.NewOidcTokenProvider(mockCtrl),
 		keycloakClient: mock.NewKeycloakClient(mockCtrl),
+		userProfile:    mock.NewUserProfileCache(mockCtrl),
 		archiveDB:      mock.NewArchiveDBModule(mockCtrl),
 		configDB:       mock.NewConfigDBModule(mockCtrl),
 		eventsDB:       mock.NewEventsDBModule(mockCtrl),
@@ -48,7 +50,7 @@ func createComponentMocks(mockCtrl *gomock.Controller) *componentMocks {
 }
 
 func (m *componentMocks) NewComponent(realm string) *component {
-	return NewComponent(m.tokenProvider, realm, m.keycloakClient, m.archiveDB, m.configDB,
+	return NewComponent(m.tokenProvider, realm, m.keycloakClient, m.userProfile, m.archiveDB, m.configDB,
 		m.eventsDB, m.accreditations, m.glnVerifier, log.NewNopLogger()).(*component)
 }
 
@@ -210,6 +212,30 @@ func TestGetUserByUsername(t *testing.T) {
 		assert.NotNil(t, user)
 		assert.Nil(t, user.BirthLocation)
 		assert.Equal(t, "+41********23", *user.PhoneNumber)
+	})
+}
+
+func TestGetUserProfile(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var (
+		realm = "my-realm"
+		ctx   = context.TODO()
+	)
+
+	var mocks = createComponentMocks(mockCtrl)
+	var component = mocks.NewComponent(realm)
+
+	t.Run("Error case", func(t *testing.T) {
+		mocks.userProfile.EXPECT().GetRealmUserProfile(ctx, component.socialRealmName).Return(kc.UserProfileRepresentation{}, errors.New("any error"))
+		var _, err = component.GetUserProfileInSocialRealm(ctx)
+		assert.NotNil(t, err)
+	})
+	t.Run("Success case", func(t *testing.T) {
+		mocks.userProfile.EXPECT().GetRealmUserProfile(ctx, component.socialRealmName).Return(kc.UserProfileRepresentation{}, nil)
+		var _, err = component.GetUserProfileInSocialRealm(ctx)
+		assert.Nil(t, err)
 	})
 }
 

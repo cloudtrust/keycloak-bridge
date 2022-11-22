@@ -1,7 +1,10 @@
 package apivalidation
 
 import (
+	"context"
+	"errors"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -12,6 +15,10 @@ import (
 	kc "github.com/cloudtrust/keycloak-client/v2"
 	"github.com/stretchr/testify/assert"
 )
+
+func ptr(v string) *string {
+	return &v
+}
 
 func createValidAccreditation() AccreditationRepresentation {
 	return AccreditationRepresentation{
@@ -62,24 +69,6 @@ func createValidKeycloakUser() kc.UserRepresentation {
 		LastName:      ptr("El-Bichoun"),
 		Email:         ptr("marcel.bichon@elca.ch"),
 		EmailVerified: &bTrue,
-	}
-}
-
-func createValidCheck() CheckRepresentation {
-	var (
-		datetime  = time.Now()
-		proofData = []byte("data")
-	)
-
-	return CheckRepresentation{
-		UserID:    ptr("12345678-5824-5555-5656-123456789654"),
-		Operator:  ptr("operator"),
-		DateTime:  &datetime,
-		Status:    ptr("SUCCESS"),
-		Type:      ptr("IDENTITY_CHECK"),
-		Nature:    ptr("PHYSICAL"),
-		ProofType: ptr("ZIP"),
-		ProofData: &proofData,
 	}
 }
 
@@ -177,41 +166,49 @@ func TestImportFromKeycloak(t *testing.T) {
 	assert.Equal(t, user, imported)
 }
 
+type mockUserProfile struct {
+	err error
+}
+
+func (m *mockUserProfile) GetRealmUserProfile(ctx context.Context, realmName string) (kc.UserProfileRepresentation, error) {
+	return kc.UserProfileRepresentation{}, m.err
+}
+
 func TestUserValidate(t *testing.T) {
 	var (
-		invalid = ""
-		user    = createValidUser()
+		user  = createValidUser()
+		realm = "the-realm"
+		ctx   = context.TODO()
 	)
 
-	t.Run("Valid users", func(t *testing.T) {
-		assert.Nil(t, user.Validate(), "User is expected to be valid")
+	t.Run("User is invalid", func(t *testing.T) {
+		assert.NotNil(t, user.Validate(ctx, &mockUserProfile{err: errors.New("")}, realm))
 	})
-
-	t.Run("Invalid users", func(t *testing.T) {
-		var users []UserRepresentation
-		for i := 0; i < 10; i++ {
-			users = append(users, createValidUser())
-		}
-		// invalid values
-		users[0].Gender = &invalid
-		users[1].FirstName = &invalid
-		users[2].LastName = &invalid
-		users[3].Email = &invalid
-		users[4].PhoneNumber = &invalid
-		users[5].BirthLocation = &invalid
-		users[6].Nationality = &invalid
-		users[7].IDDocumentType = &invalid
-		users[8].IDDocumentNumber = &invalid
-		users[9].IDDocumentCountry = &invalid
-
-		for idx, aUser := range users {
-			assert.NotNil(t, aUser.Validate(), "User is expected to be invalid. Test #%d failed", idx)
-		}
+	t.Run("User is valid", func(t *testing.T) {
+		assert.Nil(t, user.Validate(ctx, &mockUserProfile{}, realm))
 	})
 }
 
-func ptr(v string) *string {
-	return &v
+func TestGetSetField(t *testing.T) {
+	for _, field := range []string{
+		"username:12345678", "email:name@domain.ch", "firstName:firstname", "lastName:lastname", "ENC_gender:M", "phoneNumber:+41223145789",
+		"ENC_birthDate:12.11.2010", "ENC_birthLocation:chezouam", "ENC_nationality:ch", "ENC_idDocumentType:PASSPORT", "ENC_idDocumentNumber:123-456-789",
+		"ENC_idDocumentExpiration:01.01.2039", "ENC_idDocumentCountry:ch", "locale:fr",
+	} {
+		var parts = strings.Split(field, ":")
+		testGetSetField(t, parts[0], parts[1])
+	}
+	var user = UserRepresentation{}
+	assert.Nil(t, user.GetField("not-existing-field"))
+}
+
+func testGetSetField(t *testing.T, fieldName string, value interface{}) {
+	var user UserRepresentation
+	t.Run("Field "+fieldName, func(t *testing.T) {
+		assert.Nil(t, user.GetField(fieldName))
+		user.SetField(fieldName, value)
+		assert.NotNil(t, user.GetField(fieldName))
+	})
 }
 
 func TestHasKCChanges(t *testing.T) {
@@ -342,96 +339,5 @@ func TestHasKCChanges(t *testing.T) {
 		user.BirthLocation = &birthLocation
 		fc = user.UpdateFieldsComparatorWithKCFields(fields.NewFieldsComparator(), &kcUser)
 		assert.False(t, fc.IsAnyFieldUpdated())
-	})
-}
-
-func TestCheckValidate(t *testing.T) {
-	var check = createValidCheck()
-	t.Run("Valid check with all fields filled", func(t *testing.T) {
-		assert.Nil(t, check.Validate(), "Check is expected to be valid")
-	})
-
-	t.Run("Valid check w/o operator", func(t *testing.T) {
-		var check = createValidCheck()
-		check.Operator = nil // Operator can be omitted if check is not a success status
-		check.Status = ptr("ABORTED")
-		assert.Nil(t, check.Validate(), "Check is expected to be valid")
-	})
-
-	t.Run("Invalid checks", func(t *testing.T) {
-		var checks = []CheckRepresentation{check, check, check, check, check, check, check, check, check, check, check}
-		var invalid = ""
-
-		// invalid values
-		checks[0].Operator = &invalid
-		checks[1].Status = &invalid
-		checks[2].Type = &invalid
-		checks[3].Nature = &invalid
-		checks[4].ProofType = &invalid
-		// mandatory parameters
-		checks[5].Operator = nil
-		checks[6].DateTime = nil
-		checks[7].Status = nil
-		checks[8].Type = nil
-		checks[9].Nature = nil
-		checks[10].ProofType = nil
-
-		for idx, aCheck := range checks {
-			assert.NotNil(t, aCheck.Validate(), "Check is expected to be invalid. Test #%d failed", idx)
-		}
-	})
-}
-
-func TestIsIdentificationSuccessful(t *testing.T) {
-	var check CheckRepresentation
-	t.Run("Status is nil", func(t *testing.T) {
-		check.Status = nil
-		assert.False(t, check.IsIdentificationSuccessful())
-	})
-	t.Run("Status is not a known success value", func(t *testing.T) {
-		var unknown = "unknown"
-		check.Status = &unknown
-		assert.False(t, check.IsIdentificationSuccessful())
-	})
-	t.Run("Status is a success value", func(t *testing.T) {
-		var success = "SUCCESS"
-		check.Status = &success
-		assert.True(t, check.IsIdentificationSuccessful())
-	})
-}
-
-func TestIsIdentificationCanceled(t *testing.T) {
-	var check CheckRepresentation
-	t.Run("Status is nil", func(t *testing.T) {
-		check.Status = nil
-		assert.False(t, check.IsIdentificationCanceled())
-	})
-	t.Run("Status is not a known canceled value", func(t *testing.T) {
-		var unknown = "unknown"
-		check.Status = &unknown
-		assert.False(t, check.IsIdentificationCanceled())
-	})
-	t.Run("Status is a canceled value", func(t *testing.T) {
-		var canceled = "CANCELED"
-		check.Status = &canceled
-		assert.True(t, check.IsIdentificationCanceled())
-	})
-}
-
-func TestIsIdentificationAborted(t *testing.T) {
-	var check CheckRepresentation
-	t.Run("Status is nil", func(t *testing.T) {
-		check.Status = nil
-		assert.False(t, check.IsIdentificationAborted())
-	})
-	t.Run("Status is not a known aborted value", func(t *testing.T) {
-		var unknown = "unknown"
-		check.Status = &unknown
-		assert.False(t, check.IsIdentificationAborted())
-	})
-	t.Run("Status is a canceled value", func(t *testing.T) {
-		var aborted = "ABORTED"
-		check.Status = &aborted
-		assert.True(t, check.IsIdentificationAborted())
 	})
 }

@@ -143,36 +143,32 @@ func TestSendEmail(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mockKeycloakCommunicationsClient = mock.NewKeycloakCommunicationsClient(mockCtrl)
-	var mockLogger = mock.NewLogger(mockCtrl)
+	var (
+		mockKeycloakCommunicationsClient = mock.NewKeycloakCommunicationsClient(mockCtrl)
+		mockLogger                       = mock.NewLogger(mockCtrl)
 
-	var communicationsComponent = NewComponent(mockKeycloakCommunicationsClient, mockLogger)
+		communicationsComponent = NewComponent(mockKeycloakCommunicationsClient, mockLogger)
 
-	var accessToken = "TOKEN=="
-	var reqRealm = "reqRealm"
+		accessToken = "TOKEN=="
+		reqRealm    = "reqRealm"
+		ctx         = context.TODO()
+	)
+	ctx = context.WithValue(ctx, cs.CtContextAccessToken, accessToken)
+	ctx = context.WithValue(ctx, cs.CtContextRealm, reqRealm)
 
-	{
-		mockKeycloakCommunicationsClient.EXPECT().SendEmail(accessToken, "reqRealm", "targetRealm", emailForTestKC).Return(nil).Times(1)
-
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
-		ctx = context.WithValue(ctx, cs.CtContextRealm, reqRealm)
-
+	t.Run("Success", func(t *testing.T) {
+		mockKeycloakCommunicationsClient.EXPECT().SendEmail(accessToken, "reqRealm", "targetRealm", emailForTestKC).Return(nil)
 		err := communicationsComponent.SendEmail(ctx, "targetRealm", emailForTest)
 		assert.Nil(t, err)
-	}
+	})
 
-	{
-		mockKeycloakCommunicationsClient.EXPECT().SendEmail(accessToken, "reqRealm", "targetRealm", emailForTestKC).Return(fmt.Errorf("Unexpected error")).Times(1)
-
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
-		ctx = context.WithValue(ctx, cs.CtContextRealm, reqRealm)
-
+	t.Run("Failure", func(t *testing.T) {
+		mockKeycloakCommunicationsClient.EXPECT().SendEmail(accessToken, "reqRealm", "targetRealm", emailForTestKC).Return(fmt.Errorf("Unexpected error"))
 		mockLogger.EXPECT().Warn(ctx, "err", "Unexpected error")
 
 		err := communicationsComponent.SendEmail(ctx, "targetRealm", emailForTest)
 		assert.NotNil(t, err)
-	}
-
+	})
 }
 
 func TestSendEmailToUser(t *testing.T) {
@@ -189,7 +185,7 @@ func TestSendEmailToUser(t *testing.T) {
 	var userID = "testerID"
 
 	{
-		mockKeycloakCommunicationsClient.EXPECT().SendEmailToUser(accessToken, "reqRealm", "targetRealm", userID, emailForTestKC).Return(nil).Times(1)
+		mockKeycloakCommunicationsClient.EXPECT().SendEmailToUser(accessToken, "reqRealm", "targetRealm", userID, emailForTestKC).Return(nil)
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, reqRealm)
@@ -199,7 +195,7 @@ func TestSendEmailToUser(t *testing.T) {
 	}
 
 	{
-		mockKeycloakCommunicationsClient.EXPECT().SendEmailToUser(accessToken, "reqRealm", "targetRealm", userID, emailForTestKC).Return(fmt.Errorf("Unexpected error")).Times(1)
+		mockKeycloakCommunicationsClient.EXPECT().SendEmailToUser(accessToken, "reqRealm", "targetRealm", userID, emailForTestKC).Return(fmt.Errorf("Unexpected error"))
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, reqRealm)
@@ -225,7 +221,7 @@ func TestSendSMS(t *testing.T) {
 	var reqRealm = "reqRealm"
 
 	{
-		mockKeycloakCommunicationsClient.EXPECT().SendSMS(accessToken, "targetRealm", smsForTestKC).Return(nil).Times(1)
+		mockKeycloakCommunicationsClient.EXPECT().SendSMS(accessToken, "targetRealm", smsForTestKC).Return(nil)
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, reqRealm)
@@ -235,7 +231,7 @@ func TestSendSMS(t *testing.T) {
 	}
 
 	{
-		mockKeycloakCommunicationsClient.EXPECT().SendSMS(accessToken, "targetRealm", smsForTestKC).Return(fmt.Errorf("Unexpected error")).Times(1)
+		mockKeycloakCommunicationsClient.EXPECT().SendSMS(accessToken, "targetRealm", smsForTestKC).Return(fmt.Errorf("Unexpected error"))
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, reqRealm)

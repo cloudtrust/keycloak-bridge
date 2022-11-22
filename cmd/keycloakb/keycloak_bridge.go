@@ -30,9 +30,9 @@ import (
 	"github.com/cloudtrust/common-service/v2/tracking"
 	"github.com/cloudtrust/httpclient"
 	"github.com/cloudtrust/keycloak-bridge/internal/business"
-	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/accreditationsclient"
+	"github.com/cloudtrust/keycloak-bridge/internal/profile"
 	"github.com/cloudtrust/keycloak-bridge/pkg/account"
 	"github.com/cloudtrust/keycloak-bridge/pkg/communications"
 	"github.com/cloudtrust/keycloak-bridge/pkg/events"
@@ -302,9 +302,6 @@ func main() {
 		onboardingRealmOverrides = c.GetStringMapString(cfgOnboardingRealmOverrides)
 	)
 
-	// Override some validation rules (IDnow, ...)
-	constants.InitializeRegexOverride(c.GetStringMapString(cfgValidationRules))
-
 	// Unique ID generator
 	var idGenerator = idgenerator.New(keycloakb.ComponentName, ComponentID)
 
@@ -511,6 +508,9 @@ func main() {
 		}
 	}
 
+	// Users profile cache
+	profileCache := toolbox.NewUserProfileCache(keycloakClient, technicalTokenProvider, profile.DefaultProfile)
+
 	// Health check configuration
 	var healthChecker = healthcheck.NewHealthChecker(keycloakb.ComponentName, logger)
 	var healthCheckCacheDuration = c.GetDuration("livenessprobe-cache-duration") * time.Millisecond
@@ -614,7 +614,7 @@ func main() {
 		var rateLimitValidation = rateLimit[RateKeyValidation]
 		validationEndpoints = validation.Endpoints{
 			GetUser:                  prepareEndpoint(validation.MakeGetUserEndpoint(validationComponent), "get_user", influxMetrics, validationLogger, tracer, rateLimitValidation),
-			UpdateUser:               prepareEndpoint(validation.MakeUpdateUserEndpoint(validationComponent), "update_user", influxMetrics, validationLogger, tracer, rateLimitValidation),
+			UpdateUser:               prepareEndpoint(validation.MakeUpdateUserEndpoint(validationComponent, profileCache), "update_user", influxMetrics, validationLogger, tracer, rateLimitValidation),
 			UpdateUserAccreditations: prepareEndpoint(validation.MakeUpdateUserAccreditationsEndpoint(validationComponent), "update_user_accreditations", influxMetrics, validationLogger, tracer, rateLimitValidation),
 			GetGroupsOfUser:          prepareEndpoint(validation.MakeGetGroupsOfUserEndpoint(validationComponent), "get_user_groups", influxMetrics, validationLogger, tracer, rateLimitValidation),
 		}
@@ -645,7 +645,7 @@ func main() {
 		eventsDBModule := database.NewEventsDBModule(eventsDBConn)
 
 		tasksComponent := tasks.NewComponent(keycloakClient, eventsDBModule, tasksLogger)
-		tasksComponent = tasks.MakeAuthorizationTasksComponentMW(log.With(tasksLogger, "mw", "endpoint"), authorizationManager)(tasksComponent)
+		tasksComponent = tasks.MakeAuthorizationTasksComponentMW(log.With(tasksLogger, "mw", "authorization"), authorizationManager)(tasksComponent)
 
 		var rateLimitTasks = rateLimit[RateKeyTasks]
 		tasksEndpoints = tasks.Endpoints{
@@ -675,7 +675,7 @@ func main() {
 		eventsRODBModule := keycloakb.NewEventsDBModule(eventsRODBConn)
 
 		statisticsComponent := statistics.NewComponent(eventsRODBModule, keycloakClient, statisticsLogger)
-		statisticsComponent = statistics.MakeAuthorizationManagementComponentMW(log.With(statisticsLogger, "mw", "endpoint"), authorizationManager)(statisticsComponent)
+		statisticsComponent = statistics.MakeAuthorizationManagementComponentMW(log.With(statisticsLogger, "mw", "authorization"), authorizationManager)(statisticsComponent)
 
 		var rateLimitStatistics = rateLimit[RateKeyStatistics]
 		statisticsEndpoints = statistics.Endpoints{
@@ -702,7 +702,7 @@ func main() {
 		eventsRODBModule := keycloakb.NewEventsDBModule(eventsRODBConn)
 
 		eventsComponent := events.NewComponent(eventsRODBModule, eventsRWDBModule, eventsLogger)
-		eventsComponent = events.MakeAuthorizationManagementComponentMW(log.With(eventsLogger, "mw", "endpoint"), authorizationManager)(eventsComponent)
+		eventsComponent = events.MakeAuthorizationManagementComponentMW(log.With(eventsLogger, "mw", "authorization"), authorizationManager)(eventsComponent)
 
 		var rateLimitEvents = rateLimit[RateKeyEvents]
 		eventsEndpoints = events.Endpoints{
@@ -748,9 +748,9 @@ func main() {
 				}
 			}
 			/* REMOVE_THIS_3901 : remove second parameter */
-			keycloakComponent = management.NewComponent(keycloakClient, keycloakConfig.URIProvider, eventsDBModule, configDBModule,
+			keycloakComponent = management.NewComponent(keycloakClient, keycloakConfig.URIProvider, profileCache, eventsDBModule, configDBModule,
 				onboardingModule, authorizationChecker, technicalTokenProvider, accreditationsService, trustIDGroups, registerRealm, glnVerifier, managementLogger)
-			keycloakComponent = management.MakeAuthorizationManagementComponentMW(log.With(managementLogger, "mw", "endpoint"), authorizationManager)(keycloakComponent)
+			keycloakComponent = management.MakeAuthorizationManagementComponentMW(log.With(managementLogger, "mw", "authorization"), authorizationManager)(keycloakComponent)
 		}
 
 		var rateLimitMgmt = rateLimit[RateKeyManagement]
@@ -765,10 +765,10 @@ func main() {
 			GetClient:          prepareEndpoint(management.MakeGetClientEndpoint(keycloakComponent), "get_client_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 			GetRequiredActions: prepareEndpoint(management.MakeGetRequiredActionsEndpoint(keycloakComponent), "get_required-actions_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 
-			CreateUser:                  prepareEndpoint(management.MakeCreateUserEndpoint(keycloakComponent, managementLogger), "create_user_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
-			CreateUserInSocialRealm:     prepareEndpoint(management.MakeCreateUserInSocialRealmEndpoint(keycloakComponent, managementLogger), "create_user_in_social_realm_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			CreateUser:                  prepareEndpoint(management.MakeCreateUserEndpoint(keycloakComponent, profileCache, managementLogger), "create_user_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			CreateUserInSocialRealm:     prepareEndpoint(management.MakeCreateUserInSocialRealmEndpoint(keycloakComponent, profileCache, managementLogger), "create_user_in_social_realm_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 			GetUser:                     prepareEndpoint(management.MakeGetUserEndpoint(keycloakComponent), "get_user_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
-			UpdateUser:                  prepareEndpoint(management.MakeUpdateUserEndpoint(keycloakComponent), "update_user_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			UpdateUser:                  prepareEndpoint(management.MakeUpdateUserEndpoint(keycloakComponent, profileCache, managementLogger), "update_user_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 			LockUser:                    prepareEndpoint(management.MakeLockUserEndpoint(keycloakComponent), "lock_user_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 			UnlockUser:                  prepareEndpoint(management.MakeUnlockUserEndpoint(keycloakComponent), "unlock_user_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 			DeleteUser:                  prepareEndpoint(management.MakeDeleteUserEndpoint(keycloakComponent), "delete_user_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
@@ -832,6 +832,7 @@ func main() {
 			UpdateRealmCustomConfiguration: prepareEndpoint(management.MakeUpdateRealmCustomConfigurationEndpoint(keycloakComponent), "update_realm_custom_config_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 			GetRealmAdminConfiguration:     prepareEndpoint(management.MakeGetRealmAdminConfigurationEndpoint(keycloakComponent), "get_realm_admin_config_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 			UpdateRealmAdminConfiguration:  prepareEndpoint(management.MakeUpdateRealmAdminConfigurationEndpoint(keycloakComponent), "update_realm_admin_config_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
+			GetRealmUserProfile:            prepareEndpoint(management.MakeGetRealmUserProfileEndpoint(keycloakComponent), "get_realm_user_profile_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 
 			GetRealmBackOfficeConfiguration:     prepareEndpoint(management.MakeGetRealmBackOfficeConfigurationEndpoint(keycloakComponent), "get_realm_back_office_config_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
 			UpdateRealmBackOfficeConfiguration:  prepareEndpoint(management.MakeUpdateRealmBackOfficeConfigurationEndpoint(keycloakComponent), "update_realm_back_office_config_endpoint", influxMetrics, managementLogger, tracer, rateLimitMgmt),
@@ -863,14 +864,17 @@ func main() {
 			kcTechClient = keycloakb.NewKeycloakTechnicalClient(technicalTokenProvider, technicalRealm, keycloakClient, accountLogger)
 		}
 
+		var logAuthorization = log.With(accountLogger, "mw", "authorization")
+		var logEndpoint = log.With(accountLogger, "mw", "endpoint")
+
 		// new module for account service
-		accountComponent := account.NewComponent(keycloakClient.AccountClient(), kcTechClient, eventsDBModule, configDBModule, glnVerifier, accreditationsService, accountLogger)
-		accountComponent = account.MakeAuthorizationAccountComponentMW(log.With(accountLogger, "mw", "endpoint"), configDBModule)(accountComponent)
+		accountComponent := account.NewComponent(keycloakClient.AccountClient(), kcTechClient, profileCache, eventsDBModule, configDBModule, glnVerifier, accreditationsService, accountLogger)
+		accountComponent = account.MakeAuthorizationAccountComponentMW(logAuthorization, configDBModule)(accountComponent)
 
 		var rateLimitAccount = rateLimit[RateKeyAccount]
 		accountEndpoints = account.Endpoints{
 			GetAccount:                prepareEndpoint(account.MakeGetAccountEndpoint(accountComponent), "get_account", influxMetrics, accountLogger, tracer, rateLimitAccount),
-			UpdateAccount:             prepareEndpoint(account.MakeUpdateAccountEndpoint(accountComponent), "update_account", influxMetrics, accountLogger, tracer, rateLimitAccount),
+			UpdateAccount:             prepareEndpoint(account.MakeUpdateAccountEndpoint(accountComponent, profileCache, logEndpoint), "update_account", influxMetrics, accountLogger, tracer, rateLimitAccount),
 			DeleteAccount:             prepareEndpoint(account.MakeDeleteAccountEndpoint(accountComponent), "delete_account", influxMetrics, accountLogger, tracer, rateLimitAccount),
 			UpdatePassword:            prepareEndpointWithoutLogging(account.MakeUpdatePasswordEndpoint(accountComponent), "update_password", influxMetrics, tracer, rateLimitAccount),
 			GetCredentials:            prepareEndpoint(account.MakeGetCredentialsEndpoint(accountComponent), "get_credentials", influxMetrics, accountLogger, tracer, rateLimitAccount),
@@ -879,6 +883,7 @@ func main() {
 			UpdateLabelCredential:     prepareEndpoint(account.MakeUpdateLabelCredentialEndpoint(accountComponent), "update_label_credential", influxMetrics, accountLogger, tracer, rateLimitAccount),
 			MoveCredential:            prepareEndpoint(account.MakeMoveCredentialEndpoint(accountComponent), "move_credential", influxMetrics, accountLogger, tracer, rateLimitAccount),
 			GetConfiguration:          prepareEndpoint(account.MakeGetConfigurationEndpoint(accountComponent), "get_configuration", influxMetrics, accountLogger, tracer, rateLimitAccount),
+			GetProfile:                prepareEndpoint(account.MakeGetUserProfileEndpoint(accountComponent), "get_profile", influxMetrics, accountLogger, tracer, rateLimitAccount),
 			SendVerifyEmail:           prepareEndpoint(account.MakeSendVerifyEmailEndpoint(accountComponent), "send_verify_email", influxMetrics, accountLogger, tracer, rateLimitAccount),
 			SendVerifyPhoneNumber:     prepareEndpoint(account.MakeSendVerifyPhoneNumberEndpoint(accountComponent), "send_verify_phone_number", influxMetrics, accountLogger, tracer, rateLimitAccount),
 		}
@@ -908,7 +913,7 @@ func main() {
 
 		// new module for mobile service
 		mobileComponent := mobile.NewComponent(keycloakClient, configDBModule, accreditationsService, technicalTokenProvider, authorizationManager, accountingClient, mobileLogger)
-		mobileComponent = mobile.MakeAuthorizationMobileComponentMW(log.With(mobileLogger, "mw", "endpoint"))(mobileComponent)
+		mobileComponent = mobile.MakeAuthorizationMobileComponentMW(log.With(mobileLogger, "mw", "authorization"))(mobileComponent)
 
 		var rateLimitMobile = rateLimit[RateKeyMobile]
 		mobileEndpoints = mobile.Endpoints{
@@ -939,16 +944,17 @@ func main() {
 			return
 		}
 
-		registerComponent := register.NewComponent(keycloakClient, technicalTokenProvider, configDBModule, eventsDBModule, onboardingModule, glnVerifier, contextKeyManager, registerLogger)
-		registerComponent = register.MakeAuthorizationRegisterComponentMW(log.With(registerLogger, "mw", "endpoint"))(registerComponent)
+		registerComponent := register.NewComponent(keycloakClient, technicalTokenProvider, profileCache, configDBModule, eventsDBModule, onboardingModule, glnVerifier, contextKeyManager, registerLogger)
+		registerComponent = register.MakeAuthorizationRegisterComponentMW(log.With(registerLogger, "mw", "authorization"))(registerComponent)
 
 		var rateLimitRegister = rateLimit[RateKeyRegister]
 		registerEndpoints = register.Endpoints{
-			RegisterUser:     prepareEndpoint(register.MakeRegisterUserEndpoint(registerComponent, registerRealm), "register_user", influxMetrics, registerLogger, tracer, rateLimitRegister),
-			RegisterCorpUser: prepareEndpoint(register.MakeRegisterCorpUserEndpoint(registerComponent), "register_corp_user", influxMetrics, registerLogger, tracer, rateLimitRegister),
-			GetConfiguration: prepareEndpoint(register.MakeGetConfigurationEndpoint(registerComponent), "get_configuration", influxMetrics, registerLogger, tracer, rateLimitRegister),
+			RegisterUser:       prepareEndpoint(register.MakeRegisterUserEndpoint(registerComponent, registerRealm, profileCache, registerLogger), "register_user", influxMetrics, registerLogger, tracer, rateLimitRegister),
+			RegisterCorpUser:   prepareEndpoint(register.MakeRegisterCorpUserEndpoint(registerComponent, profileCache, registerLogger), "register_corp_user", influxMetrics, registerLogger, tracer, rateLimitRegister),
+			GetConfiguration:   prepareEndpoint(register.MakeGetConfigurationEndpoint(registerComponent), "get_configuration", influxMetrics, registerLogger, tracer, rateLimitRegister),
+			GetUserProfile:     prepareEndpoint(register.MakeGetUserProfileEndpoint(registerComponent, registerRealm), "get_user_profile", influxMetrics, registerLogger, tracer, rateLimitRegister),
+			GetCorpUserProfile: prepareEndpoint(register.MakeGetCorpUserProfileEndpoint(registerComponent), "get_corp_user_profile", influxMetrics, registerLogger, tracer, rateLimitRegister),
 		}
-
 	}
 
 	// Tools for endpoint middleware
@@ -971,24 +977,26 @@ func main() {
 		var configurationReaderDBModule = configuration.NewConfigurationReaderDBModule(configurationRoDBConn, kycLogger)
 
 		// new module for KYC service
-		kycComponent := kyc.NewComponent(technicalTokenProvider, registerRealm, keycloakClient, archiveDBModule, configurationReaderDBModule, eventsDBModule, accreditationsService, glnVerifier, kycLogger)
-		kycComponent = kyc.MakeAuthorizationRegisterComponentMW(registerRealm, authorizationManager, endpointPhysicalCheckAvailabilityChecker, log.With(kycLogger, "mw", "endpoint"))(kycComponent)
+		kycComponent := kyc.NewComponent(technicalTokenProvider, registerRealm, keycloakClient, profileCache, archiveDBModule, configurationReaderDBModule, eventsDBModule, accreditationsService, glnVerifier, kycLogger)
+		kycComponent = kyc.MakeAuthorizationRegisterComponentMW(registerRealm, authorizationManager, endpointPhysicalCheckAvailabilityChecker, log.With(kycLogger, "mw", "authorization"))(kycComponent)
 
 		var rateLimitKyc = rateLimit[RateKeyKYC]
 		kycEndpoints = kyc.Endpoints{
 			GetActions:                      prepareEndpoint(kyc.MakeGetActionsEndpoint(kycComponent), "register_get_actions", influxMetrics, kycLogger, tracer, rateLimitKyc),
 			GetUserInSocialRealm:            prepareEndpoint(kyc.MakeGetUserInSocialRealmEndpoint(kycComponent), "get_user_in_social_realm", influxMetrics, kycLogger, tracer, rateLimitKyc),
+			GetUserProfileInSocialRealm:     prepareEndpoint(kyc.MakeGetUserProfileInSocialRealmEndpoint(kycComponent), "get_user_profile_in_social_realm", influxMetrics, kycLogger, tracer, rateLimitKyc),
 			GetUserByUsernameInSocialRealm:  prepareEndpoint(kyc.MakeGetUserByUsernameInSocialRealmEndpoint(kycComponent), "get_user_by_username_in_social_realm", influxMetrics, kycLogger, tracer, rateLimitKyc),
-			ValidateUserInSocialRealm:       prepareEndpoint(kyc.MakeValidateUserInSocialRealmEndpoint(kycComponent), "validate_user_in_social_realm", influxMetrics, kycLogger, tracer, rateLimitKyc),
+			ValidateUserInSocialRealm:       prepareEndpoint(kyc.MakeValidateUserInSocialRealmEndpoint(kycComponent, profileCache, kycLogger), "validate_user_in_social_realm", influxMetrics, kycLogger, tracer, rateLimitKyc),
 			SendSMSConsentCodeInSocialRealm: prepareEndpoint(kyc.MakeSendSmsConsentCodeInSocialRealmEndpoint(kycComponent), "send_sms_consent_code_in_social_realm", influxMetrics, kycLogger, tracer, rateLimitKyc),
 			SendSMSCodeInSocialRealm:        prepareEndpoint(kyc.MakeSendSmsCodeInSocialRealmEndpoint(kycComponent), "send_sms_code_in_social_realm", influxMetrics, kycLogger, tracer, rateLimitKyc),
 			GetUser:                         prepareEndpoint(kyc.MakeGetUserEndpoint(kycComponent), "get_user", influxMetrics, kycLogger, tracer, rateLimitKyc),
+			GetUserProfile:                  prepareEndpoint(kyc.MakeGetUserProfileEndpoint(kycComponent), "get_user_profile", influxMetrics, kycLogger, tracer, rateLimitKyc),
 			GetUserByUsername:               prepareEndpoint(kyc.MakeGetUserByUsernameEndpoint(kycComponent), "get_user_by_username", influxMetrics, kycLogger, tracer, rateLimitKyc),
-			ValidateUser:                    prepareEndpoint(kyc.MakeValidateUserEndpoint(kycComponent), "validate_user", influxMetrics, kycLogger, tracer, rateLimitKyc),
+			ValidateUser:                    prepareEndpoint(kyc.MakeValidateUserEndpoint(kycComponent, profileCache, kycLogger), "validate_user", influxMetrics, kycLogger, tracer, rateLimitKyc),
 			SendSMSConsentCode:              prepareEndpoint(kyc.MakeSendSmsConsentCodeEndpoint(kycComponent), "send_sms_consent_code", influxMetrics, kycLogger, tracer, rateLimitKyc),
 			SendSMSCode:                     prepareEndpoint(kyc.MakeSendSmsCodeEndpoint(kycComponent), "send_sms_code", influxMetrics, kycLogger, tracer, rateLimitKyc),
 
-			ValidateUserBasic: prepareEndpoint(kyc.MakeValidateUserBasicIDEndpoint(kycComponent), "basic_validate_user", influxMetrics, kycLogger, tracer, rateLimitKyc), /***TO BE REMOVED WHEN MULTI-ACCREDITATION WILL BE IMPLEMENTED***/
+			ValidateUserBasic: prepareEndpoint(kyc.MakeValidateUserBasicIDEndpoint(kycComponent, profileCache, kycLogger), "basic_validate_user", influxMetrics, kycLogger, tracer, rateLimitKyc), /***TO BE REMOVED WHEN MULTI-ACCREDITATION WILL BE IMPLEMENTED***/
 		}
 	}
 
@@ -1205,6 +1213,8 @@ func main() {
 		var getRealmAdminConfigurationHandler = configureManagementHandler(managementEndpoints.GetRealmAdminConfiguration)
 		var updateRealmAdminConfigurationHandler = configureManagementHandler(managementEndpoints.UpdateRealmAdminConfiguration)
 
+		var getRealmUserProfileHandler = configureManagementHandler(managementEndpoints.GetRealmUserProfile)
+
 		var getRealmBackOfficeConfigurationHandler = configureManagementHandler(managementEndpoints.GetRealmBackOfficeConfiguration)
 		var updateRealmBackOfficeConfigurationHandler = configureManagementHandler(managementEndpoints.UpdateRealmBackOfficeConfiguration)
 		var getUserRealmBackOfficeConfigurationHandler = configureManagementHandler(managementEndpoints.GetUserRealmBackOfficeConfiguration)
@@ -1234,6 +1244,7 @@ func main() {
 		// users
 		managementSubroute.Path("/realms/{realm}/users").Methods("GET").Handler(getUsersHandler)
 		managementSubroute.Path("/realms/{realm}/users").Methods("POST").Handler(createUserHandler)
+		managementSubroute.Path("/realms/{realm}/users/profile").Methods("GET").Handler(getRealmUserProfileHandler)
 		managementSubroute.Path("/realms/{realm}/users/status").Methods("GET").Handler(getUserAccountStatusByEmailHandler)
 		managementSubroute.Path("/realms/{realm}/users/{userID}").Methods("GET").Handler(getUserHandler)
 		managementSubroute.Path("/realms/{realm}/users/{userID}").Methods("PUT").Handler(updateUserHandler)
@@ -1321,11 +1332,13 @@ func main() {
 		// KYC handlers
 		var kycGetActionsHandler = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, endpointPhysicalCheckAvailabilityChecker, false, logger)(kycEndpoints.GetActions)
 		var kycGetUserInSocialRealmHandler = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, endpointPhysicalCheckAvailabilityChecker, true, logger)(kycEndpoints.GetUserInSocialRealm)
+		var kycGetUserProfileInSocialRealmHandler = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, endpointPhysicalCheckAvailabilityChecker, true, logger)(kycEndpoints.GetUserProfileInSocialRealm)
 		var kycGetUserByUsernameInSocialRealmHandler = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, endpointPhysicalCheckAvailabilityChecker, true, logger)(kycEndpoints.GetUserByUsernameInSocialRealm)
 		var kycValidateUserInSocialRealmHandler = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, endpointPhysicalCheckAvailabilityChecker, true, logger)(kycEndpoints.ValidateUserInSocialRealm)
 		var kycSendSMSConsentCodeInSocialRealmHandler = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, endpointPhysicalCheckAvailabilityChecker, false, logger)(kycEndpoints.SendSMSConsentCodeInSocialRealm)
 		var kycSendSMSCodeInSocialRealmHandler = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, endpointPhysicalCheckAvailabilityChecker, false, logger)(kycEndpoints.SendSMSCodeInSocialRealm)
 		var kycGetUserHandler = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, endpointPhysicalCheckAvailabilityChecker, true, logger)(kycEndpoints.GetUser)
+		var kycGetUserProfileHandler = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, endpointPhysicalCheckAvailabilityChecker, true, logger)(kycEndpoints.GetUserProfile)
 		var kycGetUserByUsernameHandler = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, endpointPhysicalCheckAvailabilityChecker, true, logger)(kycEndpoints.GetUserByUsername)
 		var kycValidateUserHandler = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, endpointPhysicalCheckAvailabilityChecker, false, logger)(kycEndpoints.ValidateUser)
 		var kycSendSMSConsentCodeHandler = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, endpointPhysicalCheckAvailabilityChecker, false, logger)(kycEndpoints.SendSMSConsentCode)
@@ -1334,11 +1347,13 @@ func main() {
 		// KYC methods
 		route.Path("/kyc/actions").Methods("GET").Handler(kycGetActionsHandler)
 		route.Path("/kyc/social/users").Methods("GET").Handler(kycGetUserByUsernameInSocialRealmHandler)
+		route.Path("/kyc/social/users/profile").Methods("GET").Handler(kycGetUserProfileInSocialRealmHandler)
 		route.Path("/kyc/social/users/{userID}").Methods("GET").Handler(kycGetUserInSocialRealmHandler)
 		route.Path("/kyc/social/users/{userID}").Methods("PUT").Handler(kycValidateUserInSocialRealmHandler)
 		route.Path("/kyc/social/users/{userID}/send-consent-code").Methods("POST").Handler(kycSendSMSConsentCodeInSocialRealmHandler)
 		route.Path("/kyc/social/users/{userID}/send-sms-code").Methods("POST").Handler(kycSendSMSCodeInSocialRealmHandler)
 		route.Path("/kyc/realms/{realm}/users").Methods("GET").Handler(kycGetUserByUsernameHandler)
+		route.Path("/kyc/realms/{realm}/users/profile").Methods("GET").Handler(kycGetUserProfileHandler)
 		route.Path("/kyc/realms/{realm}/users/{userID}").Methods("GET").Handler(kycGetUserHandler)
 		route.Path("/kyc/realms/{realm}/users/{userID}").Methods("PUT").Handler(kycValidateUserHandler)
 		route.Path("/kyc/realms/{realm}/users/{userID}/send-consent-code").Methods("POST").Handler(kycSendSMSConsentCodeHandler)
@@ -1382,6 +1397,7 @@ func main() {
 		var updateAccountHandler = configureAccountHandler(accountEndpoints.UpdateAccount)
 		var deleteAccountHandler = configureAccountHandler(accountEndpoints.DeleteAccount)
 		var getConfigurationHandler = configureAccountHandler(accountEndpoints.GetConfiguration)
+		var getProfileHandler = configureAccountHandler(accountEndpoints.GetProfile)
 		var sendVerifyEmailHandler = configureAccountHandler(accountEndpoints.SendVerifyEmail)
 		var sendVerifyPhoneNumberHandler = configureAccountHandler(accountEndpoints.SendVerifyPhoneNumber)
 
@@ -1390,6 +1406,7 @@ func main() {
 		route.Path("/account").Methods("DELETE").Handler(deleteAccountHandler)
 
 		route.Path("/account/configuration").Methods("GET").Handler(getConfigurationHandler)
+		route.Path("/account/profile").Methods("GET").Handler(getProfileHandler)
 
 		route.Path("/account/credentials").Methods("GET").Handler(getCredentialsHandler)
 		route.Path("/account/credentials/password").Methods("POST").Handler(updatePasswordHandler)
@@ -1446,14 +1463,18 @@ func main() {
 
 		// Configuration
 		var getConfigurationHandler = configurePublicRegisterHandler(keycloakb.ComponentName, ComponentID, idGenerator, tracer, logger)(registerEndpoints.GetConfiguration)
+		var getUserProfileHandler = configurePublicRegisterHandler(keycloakb.ComponentName, ComponentID, idGenerator, tracer, logger)(registerEndpoints.GetUserProfile)
 
 		// Handler with recaptcha token
 		var registerUserHandler = configureRegisterHandler(keycloakb.ComponentName, ComponentID, idGenerator, recaptchaURL, recaptchaSecret, tracer, logger)(registerEndpoints.RegisterUser)
 		route.Path("/register/user").Methods("POST").Handler(registerUserHandler)
+		route.Path("/register/user/profile").Methods("GET").Handler(getUserProfileHandler)
 
 		// Handler with recaptcha token
 		var registerCorpUserHandler = configureRegisterHandler(keycloakb.ComponentName, ComponentID, idGenerator, recaptchaURL, recaptchaSecret, tracer, logger)(registerEndpoints.RegisterCorpUser)
+		var getCorpUserProfileHandler = configurePublicRegisterHandler(keycloakb.ComponentName, ComponentID, idGenerator, tracer, logger)(registerEndpoints.GetCorpUserProfile)
 		route.Path("/register/realms/{corpRealm}/user").Methods("POST").Handler(registerCorpUserHandler)
+		route.Path("/register/realms/{corpRealm}/user/profile").Methods("GET").Handler(getCorpUserProfileHandler)
 
 		route.Path("/register/config").Methods("GET").Handler(getConfigurationHandler)
 
@@ -1768,7 +1789,7 @@ func createConfigurationDBModule(configDBConn sqltypes.CloudtrustDB, influxMetri
 
 func prepareEndpoint(e cs.Endpoint, endpointName string, influxMetrics metrics.Metrics, logger log.Logger, tracer tracing.OpentracingClient, rateLimit int) endpoint.Endpoint {
 	e = middleware.MakeEndpointInstrumentingMW(influxMetrics, endpointName)(e)
-	e = middleware.MakeEndpointLoggingMW(log.With(logger, "mw", endpointName))(e)
+	e = middleware.MakeEndpointLoggingMW(log.With(logger, "mw", "request"))(e)
 	e = tracer.MakeEndpointTracingMW(endpointName)(e)
 	return keycloakb.LimitRate(e, rateLimit)
 }

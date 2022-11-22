@@ -228,14 +228,6 @@ gln-psyreg-enabled: false
 gln-psyreg-uri: https://ws.psyreg.bag.admin.ch
 gln-psyreg-timeout: 10s
 
-# Validation rules
-#validation-rules:
-#  first-name: ^.+$
-#  last-name: ^.+$
-#  country-code: ^.+$
-#  birth-location: ^.+$
-#  id-doc-number: ^.+$
-
 onboarding-realm-overrides:
   realmName-hp: realmName
   realmName-institution: realmName

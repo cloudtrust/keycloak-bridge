@@ -8,6 +8,7 @@ import (
 	cs "github.com/cloudtrust/common-service/v2"
 	logger "github.com/cloudtrust/common-service/v2/log"
 	"github.com/cloudtrust/common-service/v2/security"
+	apicommon "github.com/cloudtrust/keycloak-bridge/api/common"
 	apikyc "github.com/cloudtrust/keycloak-bridge/api/kyc"
 	"github.com/cloudtrust/keycloak-bridge/pkg/kyc/mock"
 	"github.com/golang/mock/gomock"
@@ -43,6 +44,36 @@ func TestMakeAuthorizationRegisterComponentMW(t *testing.T) {
 			mockAuthManager.EXPECT().CheckAuthorizationOnTargetRealm(ctx, security.KYCGetActions.String(), gomock.Any()).Return(nil)
 			mockComponent.EXPECT().GetActions(ctx).Return([]apikyc.ActionRepresentation{}, expectedErr)
 			var _, err = component.GetActions(ctx)
+			assert.Equal(t, expectedErr, err)
+		})
+	})
+
+	t.Run("GetUserProfile", func(t *testing.T) {
+		t.Run("not authorized", func(t *testing.T) {
+			mockAuthManager.EXPECT().CheckAuthorizationOnTargetRealm(ctx, security.KYCGetRealmUserProfile.String(), gomock.Any()).Return(expectedErr)
+			var _, err = component.GetUserProfile(ctx, realm)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("authorized", func(t *testing.T) {
+			mockAuthManager.EXPECT().CheckAuthorizationOnTargetRealm(ctx, security.KYCGetRealmUserProfile.String(), gomock.Any()).Return(nil)
+			mockComponent.EXPECT().GetUserProfile(ctx, realm).Return(apicommon.ProfileRepresentation{}, expectedErr)
+			var _, err = component.GetUserProfile(ctx, realm)
+			assert.Equal(t, expectedErr, err)
+		})
+	})
+
+	t.Run("GetUserProfile", func(t *testing.T) {
+		t.Run("not authorized", func(t *testing.T) {
+			mockAuthManager.EXPECT().CheckAuthorizationOnTargetRealm(ctx, security.KYCGetRealmUserProfileInSocialRealm.String(), gomock.Any()).Return(expectedErr)
+			var _, err = component.GetUserProfileInSocialRealm(ctx)
+			assert.Equal(t, expectedErr, err)
+		})
+
+		t.Run("authorized", func(t *testing.T) {
+			mockAuthManager.EXPECT().CheckAuthorizationOnTargetRealm(ctx, security.KYCGetRealmUserProfileInSocialRealm.String(), gomock.Any()).Return(nil)
+			mockComponent.EXPECT().GetUserProfileInSocialRealm(ctx).Return(apicommon.ProfileRepresentation{}, expectedErr)
+			var _, err = component.GetUserProfileInSocialRealm(ctx)
 			assert.Equal(t, expectedErr, err)
 		})
 	})

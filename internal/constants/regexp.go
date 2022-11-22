@@ -63,30 +63,6 @@ const (
 
 // Overridable user details regex and document types
 var (
-	RegExpFirstName        = RegExpNameSpecialChars128
-	RegExpLastName         = RegExpNameSpecialChars128
-	RegExpCountryCode      = `^\w{2}$`
-	RegExpBirthLocation    = `^([\p{Lu}\p{Ll}][\p{Lu}\p{Ll}\d ()/\\\.\*,'-]{0,49})$`
-	RegExpIDDocumentNumber = `^([\w\d]+([\. -][\w\d]+)*){1,50}$`
-
 	// AllowedDocumentTypes are the valid document type for identification
 	AllowedDocumentTypes = map[string]bool{"ID_CARD": true, "PASSPORT": true, "RESIDENCE_PERMIT": true}
 )
-
-// InitializeRegexOverride lets some regex be overriden
-func InitializeRegexOverride(validationRules map[string]string) {
-	for key, value := range validationRules {
-		switch key {
-		case "first-name":
-			RegExpFirstName = value
-		case "last-name":
-			RegExpLastName = value
-		case "country-code":
-			RegExpCountryCode = value
-		case "birth-location":
-			RegExpBirthLocation = value
-		case "id-doc-number":
-			RegExpIDDocumentNumber = value
-		}
-	}
-}

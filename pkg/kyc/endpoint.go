@@ -7,15 +7,22 @@ import (
 	commonerrors "github.com/cloudtrust/common-service/v2/errors"
 	apikyc "github.com/cloudtrust/keycloak-bridge/api/kyc"
 	msg "github.com/cloudtrust/keycloak-bridge/internal/constants"
+	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/go-kit/kit/endpoint"
+)
+
+var (
+	apiName = "management"
 )
 
 // Endpoints for self service
 type Endpoints struct {
 	GetActions                      endpoint.Endpoint
 	GetUserInSocialRealm            endpoint.Endpoint
+	GetUserProfileInSocialRealm     endpoint.Endpoint
 	GetUserByUsernameInSocialRealm  endpoint.Endpoint
 	GetUser                         endpoint.Endpoint
+	GetUserProfile                  endpoint.Endpoint
 	GetUserByUsername               endpoint.Endpoint
 	ValidateUserInSocialRealm       endpoint.Endpoint
 	ValidateUser                    endpoint.Endpoint
@@ -55,6 +62,22 @@ func MakeGetUserByUsernameEndpoint(component Component) cs.Endpoint {
 	}
 }
 
+// MakeGetUserProfileInSocialRealmEndpoint endpoint creation
+func MakeGetUserProfileInSocialRealmEndpoint(component Component) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		return component.GetUserProfileInSocialRealm(ctx)
+	}
+}
+
+// MakeGetUserProfileEndpoint endpoint creation
+func MakeGetUserProfileEndpoint(component Component) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+		var realm = m[prmRealm]
+		return component.GetUserProfile(ctx, realm)
+	}
+}
+
 // MakeGetUserInSocialRealmEndpoint endpoint creation
 func MakeGetUserInSocialRealmEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
@@ -84,7 +107,7 @@ func MakeGetUserEndpoint(component Component) cs.Endpoint {
 }
 
 // MakeValidateUserInSocialRealmEndpoint endpoint creation
-func MakeValidateUserInSocialRealmEndpoint(component Component) cs.Endpoint {
+func MakeValidateUserInSocialRealmEndpoint(component Component, profileCache UserProfileCache, logger keycloakb.Logger) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 		var user, err = apikyc.UserFromJSON(m[reqBody])
@@ -92,7 +115,9 @@ func MakeValidateUserInSocialRealmEndpoint(component Component) cs.Endpoint {
 			return nil, commonerrors.CreateBadRequestError(commonerrors.MsgErrInvalidParam + "." + msg.BodyContent)
 		}
 
-		if err := user.Validate(false); err != nil {
+		// Validate user
+		var realm = ctx.Value(cs.CtContextRealm).(string)
+		if err := user.Validate(ctx, profileCache, realm); err != nil {
 			return nil, err
 		}
 
@@ -107,7 +132,7 @@ func MakeValidateUserInSocialRealmEndpoint(component Component) cs.Endpoint {
 
 /********************* (BEGIN) Temporary basic identity (TO BE REMOVED WHEN MULTI-ACCREDITATION WILL BE IMPLEMENTED) *********************/
 // MakeValidateUserBasicIDEndpoint creates an endpoint for ValidateUserBasicID
-func MakeValidateUserBasicIDEndpoint(component Component) cs.Endpoint {
+func MakeValidateUserBasicIDEndpoint(component Component, profileCache UserProfileCache, logger keycloakb.Logger) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 		var user, err = apikyc.UserFromJSON(m[reqBody])
@@ -115,7 +140,9 @@ func MakeValidateUserBasicIDEndpoint(component Component) cs.Endpoint {
 			return nil, commonerrors.CreateBadRequestError(commonerrors.MsgErrInvalidParam + "." + msg.BodyContent)
 		}
 
-		if err := user.Validate(true); err != nil {
+		// Validate user
+		var realm = ctx.Value(cs.CtContextRealm).(string)
+		if err := user.Validate(ctx, profileCache, realm); err != nil {
 			return nil, err
 		}
 
@@ -126,7 +153,7 @@ func MakeValidateUserBasicIDEndpoint(component Component) cs.Endpoint {
 /********************* (END) Temporary basic identity (TO BE REMOVED WHEN MULTI-ACCREDITATION WILL BE IMPLEMENTED) *********************/
 
 // MakeValidateUserEndpoint endpoint creation
-func MakeValidateUserEndpoint(component Component) cs.Endpoint {
+func MakeValidateUserEndpoint(component Component, profileCache UserProfileCache, logger keycloakb.Logger) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 		var user, err = apikyc.UserFromJSON(m[reqBody])
@@ -134,7 +161,9 @@ func MakeValidateUserEndpoint(component Component) cs.Endpoint {
 			return nil, commonerrors.CreateBadRequestError(commonerrors.MsgErrInvalidParam + "." + msg.BodyContent)
 		}
 
-		if err := user.Validate(false); err != nil {
+		// Validate user
+		var realm = ctx.Value(cs.CtContextRealm).(string)
+		if err := user.Validate(ctx, profileCache, realm); err != nil {
 			return nil, err
 		}
 

@@ -10,6 +10,7 @@ import (
 	"github.com/cloudtrust/common-service/v2/log"
 	"github.com/cloudtrust/common-service/v2/security"
 	api "github.com/cloudtrust/keycloak-bridge/api/account"
+	apicommon "github.com/cloudtrust/keycloak-bridge/api/common"
 
 	"github.com/cloudtrust/keycloak-bridge/pkg/account/mock"
 	"github.com/golang/mock/gomock"
@@ -38,49 +39,55 @@ func TestNoRestrictions(t *testing.T) {
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 
 		t.Run("GetCredentials", func(t *testing.T) {
-			mockAccountComponent.EXPECT().GetCredentials(ctx).Return([]api.CredentialRepresentation{}, nil).Times(1)
+			mockAccountComponent.EXPECT().GetCredentials(ctx).Return([]api.CredentialRepresentation{}, nil)
 			_, err = authorizationMW.GetCredentials(ctx)
 			assert.Nil(t, err)
 		})
 
 		t.Run("GetCredentialRegistrators", func(t *testing.T) {
-			mockAccountComponent.EXPECT().GetCredentialRegistrators(ctx).Return([]string{}, nil).Times(1)
+			mockAccountComponent.EXPECT().GetCredentialRegistrators(ctx).Return([]string{}, nil)
 			_, err = authorizationMW.GetCredentialRegistrators(ctx)
 			assert.Nil(t, err)
 		})
 
 		t.Run("UpdateLabelCredential", func(t *testing.T) {
-			mockAccountComponent.EXPECT().UpdateLabelCredential(ctx, credentialID, "newLabel").Return(nil).Times(1)
+			mockAccountComponent.EXPECT().UpdateLabelCredential(ctx, credentialID, "newLabel").Return(nil)
 			err = authorizationMW.UpdateLabelCredential(ctx, credentialID, "newLabel")
 			assert.Nil(t, err)
 		})
 
 		t.Run("MoveCredential", func(t *testing.T) {
-			mockAccountComponent.EXPECT().MoveCredential(ctx, credentialID, credentialID).Return(nil).Times(1)
+			mockAccountComponent.EXPECT().MoveCredential(ctx, credentialID, credentialID).Return(nil)
 			err = authorizationMW.MoveCredential(ctx, credentialID, credentialID)
 			assert.Nil(t, err)
 		})
 
 		t.Run("GetAccount", func(t *testing.T) {
-			mockAccountComponent.EXPECT().GetAccount(ctx).Return(api.AccountRepresentation{}, nil).Times(1)
+			mockAccountComponent.EXPECT().GetAccount(ctx).Return(api.AccountRepresentation{}, nil)
 			_, err = authorizationMW.GetAccount(ctx)
 			assert.Nil(t, err)
 		})
 
 		t.Run("GetConfiguration", func(t *testing.T) {
-			mockAccountComponent.EXPECT().GetConfiguration(ctx, "").Return(api.Configuration{}, nil).Times(1)
+			mockAccountComponent.EXPECT().GetConfiguration(ctx, "").Return(api.Configuration{}, nil)
 			_, err = authorizationMW.GetConfiguration(ctx, "")
 			assert.Nil(t, err)
 		})
 
+		t.Run("GetProfile", func(t *testing.T) {
+			mockAccountComponent.EXPECT().GetUserProfile(ctx).Return(apicommon.ProfileRepresentation{}, nil)
+			_, err = authorizationMW.GetUserProfile(ctx)
+			assert.Nil(t, err)
+		})
+
 		t.Run("SendVerifyEmail", func(t *testing.T) {
-			mockAccountComponent.EXPECT().SendVerifyEmail(ctx).Return(nil).Times(1)
+			mockAccountComponent.EXPECT().SendVerifyEmail(ctx).Return(nil)
 			err = authorizationMW.SendVerifyEmail(ctx)
 			assert.Nil(t, err)
 		})
 
 		t.Run("SendVerifyPhoneNumber", func(t *testing.T) {
-			mockAccountComponent.EXPECT().SendVerifyPhoneNumber(ctx).Return(nil).Times(1)
+			mockAccountComponent.EXPECT().SendVerifyPhoneNumber(ctx).Return(nil)
 			err = authorizationMW.SendVerifyPhoneNumber(ctx)
 			assert.Nil(t, err)
 		})
@@ -169,19 +176,19 @@ func TestAllowed(t *testing.T) {
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 
-		mockAccountComponent.EXPECT().UpdatePassword(ctx, "currentPassword", "newPassword", "newPAssword").Return(nil).Times(1)
+		mockAccountComponent.EXPECT().UpdatePassword(ctx, "currentPassword", "newPassword", "newPAssword").Return(nil)
 		err = authorizationMW.UpdatePassword(ctx, "currentPassword", "newPassword", "newPAssword")
 		assert.Nil(t, err)
 
-		mockAccountComponent.EXPECT().DeleteCredential(ctx, credentialID).Return(nil).Times(1)
+		mockAccountComponent.EXPECT().DeleteCredential(ctx, credentialID).Return(nil)
 		err = authorizationMW.DeleteCredential(ctx, credentialID)
 		assert.Nil(t, err)
 
-		mockAccountComponent.EXPECT().UpdateAccount(ctx, api.UpdatableAccountRepresentation{}).Return(nil).Times(1)
+		mockAccountComponent.EXPECT().UpdateAccount(ctx, api.UpdatableAccountRepresentation{}).Return(nil)
 		err = authorizationMW.UpdateAccount(ctx, api.UpdatableAccountRepresentation{})
 		assert.Nil(t, err)
 
-		mockAccountComponent.EXPECT().DeleteAccount(ctx).Return(nil).Times(1)
+		mockAccountComponent.EXPECT().DeleteAccount(ctx).Return(nil)
 		err = authorizationMW.DeleteAccount(ctx)
 		assert.Nil(t, err)
 

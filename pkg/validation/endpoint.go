@@ -8,6 +8,7 @@ import (
 	errorhandler "github.com/cloudtrust/common-service/v2/errors"
 	api "github.com/cloudtrust/keycloak-bridge/api/validation"
 	msg "github.com/cloudtrust/keycloak-bridge/internal/constants"
+	kc "github.com/cloudtrust/keycloak-client/v2"
 	"github.com/go-kit/kit/endpoint"
 )
 
@@ -21,6 +22,11 @@ type Endpoints struct {
 	//CreatePendingCheck       endpoint.Endpoint
 }
 
+// UserProfileCache interface
+type UserProfileCache interface {
+	GetRealmUserProfile(ctx context.Context, realmName string) (kc.UserProfileRepresentation, error)
+}
+
 // MakeGetUserEndpoint endpoint creation
 func MakeGetUserEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
@@ -31,27 +37,27 @@ func MakeGetUserEndpoint(component Component) cs.Endpoint {
 }
 
 // MakeUpdateUserEndpoint endpoint creation
-func MakeUpdateUserEndpoint(component Component) cs.Endpoint {
+func MakeUpdateUserEndpoint(component Component, profileCache UserProfileCache) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
+		var realm = m[prmRealm]
 		var err error
 
 		var user api.UserRepresentation
-
 		if err = json.Unmarshal([]byte(m[reqBody]), &user); err != nil {
 			return nil, errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Body)
 		}
 
-		if err = user.Validate(); err != nil {
+		if err = user.Validate(ctx, profileCache, realm); err != nil {
 			return nil, err
 		}
 
 		txnID, ok := m[prmTxnID]
 		if !ok {
-			return nil, component.UpdateUser(ctx, m[prmRealm], m[prmUserID], user, nil)
+			return nil, component.UpdateUser(ctx, realm, m[prmUserID], user, nil)
 		}
 
-		return nil, component.UpdateUser(ctx, m[prmRealm], m[prmUserID], user, &txnID)
+		return nil, component.UpdateUser(ctx, realm, m[prmUserID], user, &txnID)
 	}
 }
 

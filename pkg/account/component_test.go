@@ -26,6 +26,7 @@ import (
 type componentMock struct {
 	keycloakAccountClient   *mock.KeycloakAccountClient
 	keycloakTechnicalClient *mock.KeycloakTechnicalClient
+	userProfileCache        *mock.UserProfileCache
 	eventDBModule           *mock.EventsDBModule
 	configurationDBModule   *mock.ConfigurationDBModule
 	glnVerifier             *mock.GlnVerifier
@@ -36,6 +37,7 @@ func createComponentMocks(mockCtrl *gomock.Controller) *componentMock {
 	return &componentMock{
 		keycloakAccountClient:   mock.NewKeycloakAccountClient(mockCtrl),
 		keycloakTechnicalClient: mock.NewKeycloakTechnicalClient(mockCtrl),
+		userProfileCache:        mock.NewUserProfileCache(mockCtrl),
 		eventDBModule:           mock.NewEventsDBModule(mockCtrl),
 		configurationDBModule:   mock.NewConfigurationDBModule(mockCtrl),
 		glnVerifier:             mock.NewGlnVerifier(mockCtrl),
@@ -44,7 +46,7 @@ func createComponentMocks(mockCtrl *gomock.Controller) *componentMock {
 }
 
 func (m *componentMock) createComponent() *component {
-	return NewComponent(m.keycloakAccountClient, m.keycloakTechnicalClient, m.eventDBModule,
+	return NewComponent(m.keycloakAccountClient, m.keycloakTechnicalClient, m.userProfileCache, m.eventDBModule,
 		m.configurationDBModule, m.glnVerifier, m.accreditationsClient, log.NewNopLogger()).(*component)
 }
 
@@ -1034,6 +1036,32 @@ func TestGetConfiguration(t *testing.T) {
 		_, err := component.GetConfiguration(ctx, "")
 
 		assert.NotNil(t, err)
+	})
+}
+
+func TestGetUserProfile(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mocks = createComponentMocks(mockCtrl)
+	var component = mocks.createComponent()
+
+	var currentRealm = "my-realm"
+	var accessToken = "access-token"
+	var anyError = errors.New("any error")
+	var ctx = context.TODO()
+	ctx = context.WithValue(ctx, cs.CtContextAccessToken, accessToken)
+	ctx = context.WithValue(ctx, cs.CtContextRealm, currentRealm)
+
+	t.Run("Cache fails", func(t *testing.T) {
+		mocks.userProfileCache.EXPECT().GetRealmUserProfile(ctx, currentRealm).Return(kc.UserProfileRepresentation{}, anyError)
+		var _, err = component.GetUserProfile(ctx)
+		assert.NotNil(t, err)
+	})
+	t.Run("Success", func(t *testing.T) {
+		mocks.userProfileCache.EXPECT().GetRealmUserProfile(ctx, currentRealm).Return(kc.UserProfileRepresentation{}, nil)
+		var _, err = component.GetUserProfile(ctx)
+		assert.Nil(t, err)
 	})
 }
 

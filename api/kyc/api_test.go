@@ -2,7 +2,8 @@ package apikyc
 
 import (
 	"context"
-	"fmt"
+	"errors"
+	"strings"
 	"testing"
 
 	"github.com/cloudtrust/common-service/v2/log"
@@ -188,20 +189,32 @@ func TestImportFromKeycloak(t *testing.T) {
 	assert.True(t, *imported.PhoneNumberVerified)
 }
 
-func TestValidateUserRepresentation(t *testing.T) {
-	var (
-		empty       = ""
-		invalidDate = "29.02.2019"
-	)
+type mockUserProfile struct {
+	err error
+}
 
+func (up *mockUserProfile) GetRealmUserProfile(ctx context.Context, realmName string) (kc.UserProfileRepresentation, error) {
+	return kc.UserProfileRepresentation{}, up.err
+}
+
+func TestValidateUserRepresentation(t *testing.T) {
+	var mup = &mockUserProfile{err: nil}
+	var realm = "the-realm"
+	var ctx = context.TODO()
+
+	t.Run("UserProfile fails", func(t *testing.T) {
+		var mupFails = &mockUserProfile{err: errors.New("any error")}
+		var user = createValidUser()
+		assert.NotNil(t, user.Validate(ctx, mupFails, realm), "User is expected to be valid")
+	})
 	t.Run("Valid users with an attachment", func(t *testing.T) {
 		var user = createValidUser()
-		assert.Nil(t, user.Validate(false), "User is expected to be valid")
+		assert.Nil(t, user.Validate(ctx, mup, realm), "User is expected to be valid")
 	})
 	t.Run("Valid users without attachment", func(t *testing.T) {
 		var user = createValidUser()
 		user.Attachments = nil
-		assert.Nil(t, user.Validate(false), "User is expected to be valid")
+		assert.Nil(t, user.Validate(ctx, mup, realm), "User is expected to be valid")
 	})
 	t.Run("Valid users with max attachments", func(t *testing.T) {
 		var user = createValidUser()
@@ -210,7 +223,7 @@ func TestValidateUserRepresentation(t *testing.T) {
 			attachment = append(attachment, createValidAttachment())
 		}
 		user.Attachments = &attachment
-		assert.Nil(t, user.Validate(false), "User is expected to be valid")
+		assert.Nil(t, user.Validate(ctx, mup, realm), "User is expected to be valid")
 	})
 	t.Run("Valid users with too many attachments", func(t *testing.T) {
 		var user = createValidUser()
@@ -219,49 +232,40 @@ func TestValidateUserRepresentation(t *testing.T) {
 			attachment = append(attachment, createValidAttachment())
 		}
 		user.Attachments = &attachment
-		assert.NotNil(t, user.Validate(false), "User is expected to be invalid")
+		assert.NotNil(t, user.Validate(ctx, mup, realm), "User is expected to be invalid")
 	})
 	t.Run("Valid users everything optional", func(t *testing.T) {
 		var user UserRepresentation
-		assert.Nil(t, user.Validate(true))
+		assert.Nil(t, user.Validate(ctx, mup, realm))
 	})
+	t.Run("User has invalid attachement", func(t *testing.T) {
+		var user UserRepresentation
+		var attachments = []AttachmentRepresentation{{}}
+		user.Attachments = &attachments
+		assert.NotNil(t, user.Validate(ctx, mup, realm))
+	})
+}
 
-	var users []UserRepresentation
-	for i := 0; i < 18; i++ {
-		users = append(users, createValidUser())
+func TestGetSetField(t *testing.T) {
+	for _, field := range []string{
+		"username:12345678", "email:name@domain.ch", "firstName:firstname", "lastName:lastname", "ENC_gender:M", "phoneNumber:+41223145789",
+		"ENC_birthDate:12.11.2010", "ENC_birthLocation:chezouam", "ENC_nationality:ch", "ENC_idDocumentType:PASSPORT", "ENC_idDocumentNumber:123-456-789",
+		"ENC_idDocumentExpiration:01.01.2039", "ENC_idDocumentCountry:ch", "locale:fr", "businessID:456789",
+	} {
+		var parts = strings.Split(field, ":")
+		testGetSetField(t, parts[0], parts[1])
 	}
-	// invalid values
-	users[0].Gender = &empty
-	users[1].FirstName = &empty
-	users[2].LastName = &empty
-	users[3].BirthDate = &invalidDate
-	users[4].BirthLocation = &empty
-	users[5].Nationality = &empty
-	users[6].IDDocumentType = &empty
-	users[7].IDDocumentNumber = &empty
-	users[8].IDDocumentExpiration = &invalidDate
-	users[9].IDDocumentCountry = &empty
-	users[10].BusinessID = &empty
-	// mandatory parameters
-	users[11].Gender = nil
-	users[12].FirstName = nil
-	users[13].LastName = nil
-	users[14].BirthDate = nil
-	users[15].IDDocumentNumber = nil
-	var newAttachments = append(*users[15].Attachments, AttachmentRepresentation{})
-	users[16].Attachments = &newAttachments
-	var oneByte = []byte{0}
-	(*users[17].Attachments)[0].Content = &oneByte
+	var user = UserRepresentation{}
+	assert.Nil(t, user.GetField("not-existing-field"))
+}
 
-	for idx, aUser := range users {
-		t.Run(fmt.Sprintf("Invalid users %d", idx), func(t *testing.T) {
-			assert.NotNil(t, aUser.Validate(false), "User is expected to be invalid with user %s", aUser.UserToJSON())
-			// if invalidity is not by ommiting a mandatory field we test that the validation works even in all Optional mode
-			if idx < 11 && idx > 15 {
-				assert.NotNil(t, aUser.Validate(true))
-			}
-		})
-	}
+func testGetSetField(t *testing.T, fieldName string, value interface{}) {
+	var user UserRepresentation
+	t.Run("Field "+fieldName, func(t *testing.T) {
+		assert.Nil(t, user.GetField(fieldName))
+		user.SetField(fieldName, value)
+		assert.Equal(t, value, *user.GetField(fieldName).(*string))
+	})
 }
 
 func TestValidateAttachment(t *testing.T) {

@@ -5,16 +5,16 @@ import (
 	"errors"
 	"time"
 
-	"github.com/cloudtrust/keycloak-client/v2/toolbox"
-
 	"github.com/cloudtrust/common-service/v2/configuration"
 	"github.com/cloudtrust/common-service/v2/database"
 	errorhandler "github.com/cloudtrust/common-service/v2/errors"
 	"github.com/cloudtrust/common-service/v2/validation"
+	apicommon "github.com/cloudtrust/keycloak-bridge/api/common"
 	apiregister "github.com/cloudtrust/keycloak-bridge/api/register"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	kc "github.com/cloudtrust/keycloak-client/v2"
+	"github.com/cloudtrust/keycloak-client/v2/toolbox"
 )
 
 // KeycloakClient are methods from keycloak-client used by this component
@@ -48,6 +48,11 @@ type GlnVerifier interface {
 	ValidateGLN(firstName, lastName, gln string) error
 }
 
+// UserProfileCache interface
+type UserProfileCache interface {
+	GetRealmUserProfile(ctx context.Context, realmName string) (kc.UserProfileRepresentation, error)
+}
+
 // ContextKeyManager interface
 type ContextKeyManager interface {
 	GetOverride(realm string, contextKey string) (keycloakb.ContextKeyParameters, bool)
@@ -57,6 +62,7 @@ type ContextKeyManager interface {
 type Component interface {
 	RegisterUser(ctx context.Context, targetRealmName string, customerRealmName string, user apiregister.UserRepresentation, contextKey *string) (string, error)
 	GetConfiguration(ctx context.Context, realmName string) (apiregister.ConfigurationRepresentation, error)
+	GetUserProfile(ctx context.Context, realmName string) (apicommon.ProfileRepresentation, error)
 }
 
 var (
@@ -64,12 +70,13 @@ var (
 )
 
 // NewComponent returns component.
-func NewComponent(keycloakClient KeycloakClient, tokenProvider toolbox.OidcTokenProvider,
+func NewComponent(keycloakClient KeycloakClient, tokenProvider toolbox.OidcTokenProvider, profileCache UserProfileCache,
 	configDBModule ConfigurationDBModule, eventsDBModule database.EventsDBModule, onboardingModule OnboardingModule, glnVerifier GlnVerifier,
 	contextKeyManager ContextKeyManager, logger keycloakb.Logger) Component {
 	return &component{
 		keycloakClient:   keycloakClient,
 		tokenProvider:    tokenProvider,
+		profileCache:     profileCache,
 		configDBModule:   configDBModule,
 		eventsDBModule:   eventsDBModule,
 		onboardingModule: onboardingModule,
@@ -83,6 +90,7 @@ func NewComponent(keycloakClient KeycloakClient, tokenProvider toolbox.OidcToken
 type component struct {
 	keycloakClient   KeycloakClient
 	tokenProvider    toolbox.OidcTokenProvider
+	profileCache     UserProfileCache
 	configDBModule   ConfigurationDBModule
 	eventsDBModule   database.EventsDBModule
 	onboardingModule OnboardingModule
@@ -132,6 +140,16 @@ func (c *component) GetConfiguration(ctx context.Context, realmName string) (api
 		SupportedLocales:                 supportedLocales,
 		SelfRegisterEnabled:              realmAdminConf.SelfRegisterEnabled,
 	}, nil
+}
+
+func (c *component) GetUserProfile(ctx context.Context, realmName string) (apicommon.ProfileRepresentation, error) {
+	var profile, err = c.profileCache.GetRealmUserProfile(ctx, realmName)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Can't get user profile", "err", err.Error())
+		return apicommon.ProfileRepresentation{}, err
+	}
+
+	return apicommon.ProfileToApi(profile, apiName), nil
 }
 
 func (c *component) RegisterUser(ctx context.Context, targetRealmName string, customerRealmName string, user apiregister.UserRepresentation, contextKey *string) (string, error) {

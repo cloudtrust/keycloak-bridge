@@ -2,253 +2,100 @@ package management
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
-	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
-	"regexp"
-	"strings"
 	"testing"
 
-	commonhttp "github.com/cloudtrust/common-service/v2/errors"
+	errorhandler "github.com/cloudtrust/common-service/v2/errors"
 	"github.com/cloudtrust/common-service/v2/log"
-	"github.com/cloudtrust/common-service/v2/security"
-	api "github.com/cloudtrust/keycloak-bridge/api/management"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
-	"github.com/cloudtrust/keycloak-bridge/pkg/management/mock"
 	kc_client "github.com/cloudtrust/keycloak-client/v2"
 	"github.com/golang/mock/gomock"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
 )
 
+func responseToString(input io.ReadCloser) string {
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(input)
+	return buf.String()
+}
+
+func responseToMap(input io.ReadCloser) map[string]string {
+	var bytes = []byte(responseToString(input))
+	var res map[string]string
+	_ = json.Unmarshal(bytes, &res)
+	return res
+}
+
 func TestHTTPManagementHandler(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
-	var mockComponent = mock.NewManagementComponent(mockCtrl)
-	var mockLogger = log.NewNopLogger()
 
-	var managementHandler = MakeManagementHandler(keycloakb.ToGoKitEndpoint(MakeGetRealmEndpoint(mockComponent)), mockLogger)
-	var managementHandler2 = MakeManagementHandler(keycloakb.ToGoKitEndpoint(MakeCreateUserEndpoint(mockComponent, mockLogger)), mockLogger)
-	var managementHandler3 = MakeManagementHandler(keycloakb.ToGoKitEndpoint(MakeResetPasswordEndpoint(mockComponent)), mockLogger)
+	var (
+		url      = "http://api.domain.ch/users/123456-7890-abcd-efghijkl"
+		endpoint = func(ctx context.Context, req interface{}) (interface{}, error) {
+			var m = req.(map[string]string)
+			if realm, ok := m["realm"]; ok {
+				if realm == "notfound" {
+					return nil, errorhandler.CreateNotFoundError("realm")
+				} else if realm == "kcclienterror" {
+					return nil, kc_client.HTTPError{
+						HTTPStatus: http.StatusBadGateway,
+						Message:    "kc_client error",
+					}
+				} else if realm == "create" {
+					return LocationHeader{
+						URL: url,
+					}, nil
+				}
+			}
+			return req, nil
+		}
+		managementHandler = MakeManagementHandler(keycloakb.ToGoKitEndpoint(endpoint), log.NewNopLogger())
+	)
 
 	r := mux.NewRouter()
-	r.Handle("/realms/{realm}", managementHandler)
-	r.Handle("/realms/{realm}?email={email}", managementHandler)
-	r.Handle("/realms/{realm}/users", managementHandler2)
-	r.Handle("/realms/{realm}/users/{userID}/reset-password", managementHandler3)
+	r.Path("/realms/{realm}").Methods("GET").Handler(managementHandler)
+	r.Path("/realms/{realm}").Methods("POST").Handler(managementHandler)
 
 	ts := httptest.NewServer(r)
 	defer ts.Close()
 
-	t.Run("Get - 200 with JSON body returned", func(t *testing.T) {
-		var id = "1234-456"
-		var realm = "master"
-
-		var realmRep = api.RealmRepresentation{
-			ID:    &id,
-			Realm: &realm,
-		}
-		realmJSON, _ := json.MarshalIndent(realmRep, "", " ")
-
-		mockComponent.EXPECT().GetRealm(gomock.Any(), "master").Return(realmRep, nil).Times(1)
-
-		res, err := http.Get(ts.URL + "/realms/master?email=toto@toto.com")
-
-		assert.Nil(t, err)
-		assert.Equal(t, http.StatusOK, res.StatusCode)
-
-		buf := new(bytes.Buffer)
-		buf.ReadFrom(res.Body)
-		assert.Equal(t, string(realmJSON), buf.String())
-	})
-
-	t.Run("Post - 201 with Location header", func(t *testing.T) {
-		var username = "toto"
-		var email = "toto@elca.ch"
-		var groups = []string{"f467ed7c-0a1d-4eee-9bb8-669c6f89c0ee"}
-
-		var user = api.UserRepresentation{
-			Username: &username,
-			Email:    &email,
-			Groups:   &groups,
-		}
-		userJSON, _ := json.Marshal(user)
-
-		mockComponent.EXPECT().CreateUser(gomock.Any(), "master", user, false, false, false).Return("https://elca.com/auth/admin/realms/master/users/12456", nil).Times(1)
-
-		var body = strings.NewReader(string(userJSON))
-		res, err := http.Post(ts.URL+"/realms/master/users", "application/json", body)
-
-		assert.Nil(t, err)
-		assert.Equal(t, http.StatusCreated, res.StatusCode)
-		assert.Equal(t, http.NoBody, res.Body)
-		valid, _ := regexp.MatchString("http://127.0.0.1:[0-9]{0,5}/management/realms/master/users/12456", res.Header.Get("Location"))
-		assert.True(t, valid)
-	})
-
-	t.Run("Get - 200 without body content", func(t *testing.T) {
-		var password = "P@ssw0rd"
-
-		var passwordRep = api.PasswordRepresentation{
-			Value: &password,
-		}
-		passwordJSON, _ := json.Marshal(passwordRep)
-
-		mockComponent.EXPECT().ResetPassword(gomock.Any(), "master", "f467ed7c-0a1d-4eee-9bb8-669c6f89c0ee", gomock.Any()).Return("", nil).Times(1)
-
-		var body = strings.NewReader(string(passwordJSON))
-		res, err := http.Post(ts.URL+"/realms/master/users/f467ed7c-0a1d-4eee-9bb8-669c6f89c0ee/reset-password", "application/json", body)
-
-		assert.Nil(t, err)
-		assert.Equal(t, http.StatusOK, res.StatusCode)
-		assert.Equal(t, http.NoBody, res.Body)
-	})
-}
-
-func TestHTTPErrorHandler(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
-	defer mockCtrl.Finish()
-	var mockComponent = mock.NewManagementComponent(mockCtrl)
-	var mockLogger = log.NewNopLogger()
-
-	var managementHandler = MakeManagementHandler(keycloakb.ToGoKitEndpoint(MakeCreateUserEndpoint(mockComponent, mockLogger)), mockLogger)
-
-	r := mux.NewRouter()
-	r.Handle("/realms/{realm}/users", managementHandler)
-	r.Handle("/realms/{realm}/users?email={email}", managementHandler)
-
-	ts := httptest.NewServer(r)
-	defer ts.Close()
-
-	var username = "toto"
-	var email = "toto@elca.ch"
-	var groups = []string{"f467ed7c-0a1d-4eee-9bb8-669c6f89c0ee"}
-
-	var user = api.UserRepresentation{
-		Username: &username,
-		Email:    &email,
-		Groups:   &groups,
-	}
-	userJSON, _ := json.Marshal(user)
-
-	t.Run("Internal server error", func(t *testing.T) {
-		mockComponent.EXPECT().CreateUser(gomock.Any(), "master", user, false, false, false).Return("", fmt.Errorf("Unexpected Error")).Times(1)
-
-		var body = strings.NewReader(string(userJSON))
-		res, err := http.Post(ts.URL+"/realms/master/users", "application/json", body)
-
-		assert.Nil(t, err)
-		assert.Equal(t, http.StatusInternalServerError, res.StatusCode)
-		assert.Equal(t, http.NoBody, res.Body)
-	})
-
-	t.Run("Forbidden error", func(t *testing.T) {
-		mockComponent.EXPECT().CreateUser(gomock.Any(), "master", user, false, false, false).Return("", security.ForbiddenError{}).Times(1)
-
-		var body = strings.NewReader(string(userJSON))
-		res, err := http.Post(ts.URL+"/realms/master/users", "application/json", body)
-
-		assert.Nil(t, err)
-		assert.Equal(t, http.StatusForbidden, res.StatusCode)
-	})
-
-	t.Run("Bad request", func(t *testing.T) {
-		var body = strings.NewReader("?/%&asd==")
-		res, err := http.Post(ts.URL+"/realms/master/users", "application/json", body)
-
-		assert.Nil(t, err)
-		assert.Equal(t, http.StatusBadRequest, res.StatusCode)
-	})
-
-	t.Run("Bad request, invalid path param", func(t *testing.T) {
-		var body = strings.NewReader("?/%&asd==")
-		res, err := http.Post(ts.URL+"/realms/master!!/users", "application/json", body)
-
-		assert.Nil(t, err)
-		assert.Equal(t, http.StatusBadRequest, res.StatusCode)
-	})
-
-	t.Run("Bad request, invalid query param", func(t *testing.T) {
-		var body = strings.NewReader("?/%&asd==")
-		res, err := http.Post(ts.URL+"/realms/master/users?email=tito!", "application/json", body)
-
-		assert.Nil(t, err)
-		assert.Equal(t, http.StatusBadRequest, res.StatusCode)
-	})
-
-	t.Run("Keycloak Error", func(t *testing.T) {
-		var kcError = kc_client.HTTPError{
-			HTTPStatus: 404,
-			Message:    "Not found",
-		}
-		mockComponent.EXPECT().CreateUser(gomock.Any(), "master", user, false, false, false).Return("", kcError).Times(1)
-
-		var body = strings.NewReader(string(userJSON))
-		res, err := http.Post(ts.URL+"/realms/master/users", "application/json", body)
-
+	t.Run("Not found", func(t *testing.T) {
+		res, err := http.Get(ts.URL + "/realms/notfound")
 		assert.Nil(t, err)
 		assert.Equal(t, http.StatusNotFound, res.StatusCode)
 	})
-
-	t.Run("HTTPResponse Error", func(t *testing.T) {
-		var kcError = commonhttp.Error{
-			Status:  401,
-			Message: "Unauthorized",
-		}
-		mockComponent.EXPECT().CreateUser(gomock.Any(), "master", user, false, false, false).Return("", kcError).Times(1)
-
-		var body = strings.NewReader(string(userJSON))
-		res, err := http.Post(ts.URL+"/realms/master/users", "application/json", body)
-
+	t.Run("Success with JSON response", func(t *testing.T) {
+		var email = "toto@toto.com"
+		res, err := http.Get(ts.URL + "/realms/master?email=" + email)
 		assert.Nil(t, err)
-		assert.Equal(t, http.StatusUnauthorized, res.StatusCode)
-		assert.NotEqual(t, http.NoBody, res.Body)
+		assert.Equal(t, http.StatusOK, res.StatusCode)
+
+		var resp = responseToMap(res.Body)
+		assert.Equal(t, email, resp["email"])
 	})
-}
+	t.Run("Invalid input parameter", func(t *testing.T) {
+		res, err := http.Get(ts.URL + "/realms/master?email=not_an_email")
+		assert.Nil(t, err)
+		assert.Equal(t, http.StatusBadRequest, res.StatusCode)
+	})
+	t.Run("kc_client test case", func(t *testing.T) {
+		res, err := http.Get(ts.URL + "/realms/kcclienterror")
+		assert.Nil(t, err)
+		assert.Equal(t, http.StatusBadGateway, res.StatusCode)
 
-func TestHTTPForwardHeaderHandler(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
-	defer mockCtrl.Finish()
-	var mockComponent = mock.NewManagementComponent(mockCtrl)
-	var mockLogger = log.NewNopLogger()
-
-	var managementHandler = MakeManagementHandler(keycloakb.ToGoKitEndpoint(MakeCreateUserEndpoint(mockComponent, mockLogger)), mockLogger)
-
-	r := mux.NewRouter()
-	r.Handle("/realms/{realm}/users", managementHandler)
-
-	ts := httptest.NewServer(r)
-	defer ts.Close()
-
-	client := &http.Client{}
-
-	// Check Host and X-Forward-Proto have impact on location returned
-	{
-		var username = "toto"
-		var email = "toto@elca.ch"
-		var groups = []string{"f467ed7c-0a1d-4eee-9bb8-669c6f89c0ee"}
-
-		var user = api.UserRepresentation{
-			Username: &username,
-			Email:    &email,
-			Groups:   &groups,
-		}
-		userJSON, _ := json.Marshal(user)
-
-		mockComponent.EXPECT().CreateUser(gomock.Any(), "master", user, false, false, false).Return("https://elca.com/auth/admin/realms/master/users/12456", nil).Times(1)
-
-		var body = strings.NewReader(string(userJSON))
-
-		req, _ := http.NewRequest("POST", ts.URL+"/realms/master/users", body)
-		req.Header.Set("Forwarded", "for=192.0.2.60;proto=https;by=203.0.113.43")
-		req.Host = "toto.com"
-		res, err := client.Do(req)
-
+		var resp = responseToString(res.Body)
+		assert.Equal(t, "keycloak-bridge.unknowError", resp)
+	})
+	t.Run("location test case", func(t *testing.T) {
+		res, err := http.Get(ts.URL + "/realms/create")
 		assert.Nil(t, err)
 		assert.Equal(t, http.StatusCreated, res.StatusCode)
-		assert.Equal(t, http.NoBody, res.Body)
-		valid, _ := regexp.MatchString("https://toto.com/management/realms/master/users/12456", res.Header.Get("Location"))
-		assert.True(t, valid)
-	}
+		assert.Equal(t, url, res.Header.Get("Location"))
+	})
 }

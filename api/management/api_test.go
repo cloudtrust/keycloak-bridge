@@ -627,70 +627,102 @@ func TestNewBackOfficeConfigurationFromJSON(t *testing.T) {
 	})
 }
 
+type mockUserProfile struct {
+	err error
+}
+
+func (mup *mockUserProfile) GetRealmUserProfile(ctx context.Context, realmName string) (kc.UserProfileRepresentation, error) {
+	return kc.UserProfileRepresentation{}, mup.err
+}
+
 func TestValidateUserRepresentation(t *testing.T) {
-	{
+	var (
+		ctx   = context.TODO()
+		realm = "the-realm"
+		mup   = &mockUserProfile{err: nil}
+	)
+
+	t.Run("Valid user", func(t *testing.T) {
 		user := createValidUserRepresentation()
-		assert.Nil(t, user.Validate())
+		assert.Nil(t, user.Validate(ctx, mup, realm, true))
+	})
+	t.Run("Invalid groups", func(t *testing.T) {
+		user := createValidUserRepresentation()
+		user.Groups = &[]string{"inval1d", "7767ed7c-0a1d-4eee-9bb8-669c6f89c007"}
+		assert.NotNil(t, user.Validate(ctx, mup, realm, true))
+	})
+	t.Run("Valid role", func(t *testing.T) {
+		user := createValidUserRepresentation()
+		user.Roles = &[]string{"inval1d", "7767ed7c-0a1d-4eee-9bb8-669c6f898888"}
+		assert.NotNil(t, user.Validate(ctx, mup, realm, true))
+	})
+}
+
+func TestGetSetUserField(t *testing.T) {
+	for _, field := range []string{
+		"username:12345678", "email:name@domain.ch", "firstName:firstname", "lastName:lastname", "ENC_gender:M", "phoneNumber:+41223145789",
+		"ENC_birthDate:12.11.2010", "ENC_birthLocation:chezouam", "ENC_nationality:ch", "ENC_idDocumentType:PASSPORT", "ENC_idDocumentNumber:123-456-789",
+		"ENC_idDocumentExpiration:01.01.2039", "ENC_idDocumentCountry:ch", "locale:fr", "businessID:456789",
+	} {
+		var parts = strings.Split(field, ":")
+		testGetSetUserField(t, parts[0], parts[1])
 	}
+	var user = UserRepresentation{}
+	assert.Nil(t, user.GetField("not-existing-field"))
+}
 
-	groups := []string{"f467ed7c", "7767ed7c-0a1d-4eee-9bb8-669c6f89c007"}
-	roles := []string{"abcded7", "7767ed7c-0a1d-4eee-9bb8-669c6f898888"}
-	empty := ""
-
-	var users []UserRepresentation
-	for i := 0; i < 12; i++ {
-		users = append(users, createValidUserRepresentation())
-	}
-
-	users[0].ID = ptr("#12345")
-	users[1].Username = ptr("username!")
-	users[2].Email = ptr("usernamcompany.com")
-	users[3].PhoneNumber = ptr("415174234")
-	users[4].Label = ptr("")
-	users[5].Gender = ptr("Male")
-	users[6].BirthDate = ptr("1990-13-28")
-	users[7].Groups = &groups
-	users[8].Roles = &roles
-	users[9].Locale = ptr("english")
-	users[10].FirstName = &empty
-	users[11].LastName = &empty
-
-	for idx, user := range users {
-		assert.NotNil(t, user.Validate(), "Check is expected to be invalid. Test #%d failed", idx)
-	}
+func testGetSetUserField(t *testing.T, fieldName string, value interface{}) {
+	var user UserRepresentation
+	t.Run("Field "+fieldName, func(t *testing.T) {
+		assert.Nil(t, user.GetField(fieldName))
+		user.SetField(fieldName, value)
+		assert.Equal(t, value, *user.GetField(fieldName).(*string))
+	})
 }
 
 func TestValidateUpdatableUserRepresentation(t *testing.T) {
-	{
+	var (
+		ctx   = context.TODO()
+		realm = "the-realm"
+		mup   = &mockUserProfile{err: nil}
+	)
+
+	t.Run("Valid user", func(t *testing.T) {
 		user := createValidUpdatableUserRepresentation()
-		assert.Nil(t, user.Validate(true))
+		assert.Nil(t, user.Validate(ctx, mup, realm))
+	})
+	t.Run("Invalid groups", func(t *testing.T) {
+		user := createValidUpdatableUserRepresentation()
+		user.Groups = &[]string{"inval1d", "7767ed7c-0a1d-4eee-9bb8-669c6f89c007"}
+		assert.NotNil(t, user.Validate(ctx, mup, realm))
+	})
+	t.Run("Valid role", func(t *testing.T) {
+		user := createValidUpdatableUserRepresentation()
+		user.Roles = &[]string{"inval1d", "7767ed7c-0a1d-4eee-9bb8-669c6f898888"}
+		assert.NotNil(t, user.Validate(ctx, mup, realm))
+	})
+}
+
+func TestGetSetUpdatableUserField(t *testing.T) {
+	for _, field := range []string{
+		"username:12345678", "email:name@domain.ch", "firstName:firstname", "lastName:lastname", "ENC_gender:M", "phoneNumber:+41223145789",
+		"ENC_birthDate:12.11.2010", "ENC_birthLocation:chezouam", "ENC_nationality:ch", "ENC_idDocumentType:PASSPORT", "ENC_idDocumentNumber:123-456-789",
+		"ENC_idDocumentExpiration:01.01.2039", "ENC_idDocumentCountry:ch", "locale:fr", "businessID:456789",
+	} {
+		var parts = strings.Split(field, ":")
+		testGetSetUpdatableUserField(t, parts[0], parts[1])
 	}
+	var user = UpdatableUserRepresentation{}
+	assert.Nil(t, user.GetField("not-existing-field"))
+}
 
-	groups := []string{"f467ed7c", "7767ed7c-0a1d-4eee-9bb8-669c6f89c007"}
-	roles := []string{"abcded7", "7767ed7c-0a1d-4eee-9bb8-669c6f898888"}
-	empty := ""
-
-	var users []UpdatableUserRepresentation
-	for i := 0; i < 12; i++ {
-		users = append(users, createValidUpdatableUserRepresentation())
-	}
-
-	users[0].ID = ptr("#12345")
-	users[1].Username = ptr("username!")
-	users[2].Email.Value = ptr("usernamcompany.com")
-	users[3].PhoneNumber.Value = ptr("415174234")
-	users[4].Label = ptr("")
-	users[5].Gender = ptr("Male")
-	users[6].BirthDate = ptr("1990-13-28")
-	users[7].Groups = &groups
-	users[8].Roles = &roles
-	users[9].Locale = ptr("english")
-	users[10].FirstName = &empty
-	users[11].LastName = &empty
-
-	for idx, user := range users {
-		assert.NotNil(t, user.Validate(true), "Check is expected to be invalid. Test #%d failed", idx)
-	}
+func testGetSetUpdatableUserField(t *testing.T, fieldName string, value interface{}) {
+	var user UpdatableUserRepresentation
+	t.Run("Field "+fieldName, func(t *testing.T) {
+		assert.Nil(t, user.GetField(fieldName))
+		user.SetField(fieldName, value)
+		assert.Equal(t, value, *user.GetField(fieldName).(*string))
+	})
 }
 
 func TestValidateRoleRepresentation(t *testing.T) {

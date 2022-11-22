@@ -8,6 +8,7 @@ import (
 	"github.com/cloudtrust/common-service/v2/log"
 	"github.com/cloudtrust/common-service/v2/middleware"
 	"github.com/cloudtrust/common-service/v2/security"
+	apicommon "github.com/cloudtrust/keycloak-bridge/api/common"
 	apikyc "github.com/cloudtrust/keycloak-bridge/api/kyc"
 )
 
@@ -45,6 +46,30 @@ func (c *authorizationComponentMW) GetActions(ctx context.Context) ([]apikyc.Act
 	}
 
 	return c.next.GetActions(ctx)
+}
+
+func (c *authorizationComponentMW) GetUserProfile(ctx context.Context, realmName string) (apicommon.ProfileRepresentation, error) {
+	var action = security.KYCGetRealmUserProfile.String()
+
+	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, realmName); err != nil {
+		return apicommon.ProfileRepresentation{}, err
+	}
+
+	return c.next.GetUserProfile(ctx, realmName)
+}
+
+func (c *authorizationComponentMW) GetUserProfileInSocialRealm(ctx context.Context) (apicommon.ProfileRepresentation, error) {
+	var action = security.KYCGetRealmUserProfileInSocialRealm.String()
+
+	// For this method, there is no target realm provided
+	// as parameter, so we pick the current realm of the user.
+	var targetRealm = ctx.Value(cs.CtContextRealm).(string)
+
+	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
+		return apicommon.ProfileRepresentation{}, err
+	}
+
+	return c.next.GetUserProfileInSocialRealm(ctx)
 }
 
 func (c *authorizationComponentMW) GetUserByUsernameInSocialRealm(ctx context.Context, username string) (apikyc.UserRepresentation, error) {
