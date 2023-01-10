@@ -1850,7 +1850,7 @@ func (c *component) AddAuthorization(ctx context.Context, realmName string, grou
 				// Cleaning. Remove the authorizations that are included in the new one.
 				if *authz.TargetRealmID == "*" {
 					err = c.configDBModule.CleanAuthorizationsActionForEveryRealms(ctx, *authz.RealmID, *authz.GroupName, *authz.Action)
-				} else if *authz.TargetGroupName == "*" {
+				} else if authz.TargetGroupName != nil && *authz.TargetGroupName == "*" {
 					err = c.configDBModule.CleanAuthorizationsActionForRealm(ctx, *authz.RealmID, *authz.GroupName, *authz.TargetRealmID, *authz.Action)
 				}
 				if err != nil {

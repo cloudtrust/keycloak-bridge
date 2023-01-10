@@ -71,7 +71,9 @@ func validateScope(authorization configuration.Authorization) error {
 	var scopeErr = errorhandler.CreateBadRequestError(constants.MsgErrInvalidParam + "." + constants.Authorization + ".scope")
 	switch scope {
 	case security.ScopeGlobal:
-		if *authorization.TargetRealmID != "*" || authorization.TargetGroupName != nil {
+		if (*authorization.RealmID != "master" && *authorization.RealmID != *authorization.TargetRealmID) ||
+			(*authorization.RealmID == "master" && *authorization.TargetRealmID != "*") ||
+			authorization.TargetGroupName != nil {
 			return scopeErr
 		}
 	case security.ScopeRealm:

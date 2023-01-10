@@ -121,6 +121,7 @@ func TestValidate(t *testing.T) {
 }
 
 func TestValidateScope(t *testing.T) {
+	var masterRealm = "master"
 	var realmName = "DEP"
 	var groupName1 = "groupName1"
 	var star = "*"
@@ -134,10 +135,17 @@ func TestValidateScope(t *testing.T) {
 	t.Run("Valid global scope", func(t *testing.T) {
 		authorizations = []configuration.Authorization{
 			{
-				RealmID:         &realmName,
+				RealmID:         &masterRealm,
 				GroupName:       &groupName1,
 				Action:          &actionGlobal,
 				TargetRealmID:   &star,
+				TargetGroupName: nil,
+			},
+			{
+				RealmID:         &realmName,
+				GroupName:       &groupName1,
+				Action:          &actionGlobal,
+				TargetRealmID:   &realmName,
 				TargetGroupName: nil,
 			},
 		}
@@ -228,6 +236,45 @@ func TestValidateScope(t *testing.T) {
 				Action:          &actionGlobal,
 				TargetRealmID:   &realmName,
 				TargetGroupName: &groupName1,
+			},
+		}
+		err = validateScopes(authorizations)
+		assert.NotNil(t, err)
+		assert.Equal(t, "400 .invalidParameter.authorization.scope", err.Error())
+
+		authorizations = []configuration.Authorization{
+			{
+				RealmID:         &realmName,
+				GroupName:       &groupName1,
+				Action:          &actionGlobal,
+				TargetRealmID:   &star,
+				TargetGroupName: nil,
+			},
+		}
+		err = validateScopes(authorizations)
+		assert.NotNil(t, err)
+		assert.Equal(t, "400 .invalidParameter.authorization.scope", err.Error())
+
+		authorizations = []configuration.Authorization{
+			{
+				RealmID:         &masterRealm,
+				GroupName:       &groupName1,
+				Action:          &actionGlobal,
+				TargetRealmID:   &masterRealm,
+				TargetGroupName: nil,
+			},
+		}
+		err = validateScopes(authorizations)
+		assert.NotNil(t, err)
+		assert.Equal(t, "400 .invalidParameter.authorization.scope", err.Error())
+
+		authorizations = []configuration.Authorization{
+			{
+				RealmID:         &masterRealm,
+				GroupName:       &groupName1,
+				Action:          &actionGlobal,
+				TargetRealmID:   &realmName,
+				TargetGroupName: nil,
 			},
 		}
 		err = validateScopes(authorizations)
