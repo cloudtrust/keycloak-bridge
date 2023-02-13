@@ -14,6 +14,7 @@ import (
 	"github.com/cloudtrust/common-service/v2/fields"
 	csjson "github.com/cloudtrust/common-service/v2/json"
 	api "github.com/cloudtrust/keycloak-bridge/api/account"
+	apicommon "github.com/cloudtrust/keycloak-bridge/api/common"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/accreditationsclient"
@@ -73,8 +74,14 @@ type Component interface {
 	UpdateAccount(context.Context, api.UpdatableAccountRepresentation) error
 	DeleteAccount(context.Context) error
 	GetConfiguration(context.Context, string) (api.Configuration, error)
+	GetUserProfile(context.Context) (apicommon.ProfileRepresentation, error)
 	SendVerifyEmail(ctx context.Context) error
 	SendVerifyPhoneNumber(ctx context.Context) error
+}
+
+// UserProfileCache interface
+type UserProfileCache interface {
+	GetRealmUserProfile(ctx context.Context, realmName string) (kc.UserProfileRepresentation, error)
 }
 
 // AccreditationsServiceClient interface
@@ -88,6 +95,7 @@ type AccreditationsServiceClient interface {
 type component struct {
 	keycloakAccountClient KeycloakAccountClient
 	keycloakTechClient    KeycloakTechnicalClient
+	profileCache          UserProfileCache
 	eventDBModule         database.EventsDBModule
 	configDBModule        keycloakb.ConfigurationDBModule
 	glnVerifier           GlnVerifier
@@ -96,11 +104,12 @@ type component struct {
 }
 
 // NewComponent returns the self-service component.
-func NewComponent(keycloakAccountClient KeycloakAccountClient, keycloakTechClient KeycloakTechnicalClient, eventDBModule database.EventsDBModule,
+func NewComponent(keycloakAccountClient KeycloakAccountClient, keycloakTechClient KeycloakTechnicalClient, profileCache UserProfileCache, eventDBModule database.EventsDBModule,
 	configDBModule keycloakb.ConfigurationDBModule, glnVerifier GlnVerifier, accreditationsClient AccreditationsServiceClient, logger keycloakb.Logger) Component {
 	return &component{
 		keycloakAccountClient: keycloakAccountClient,
 		keycloakTechClient:    keycloakTechClient,
+		profileCache:          profileCache,
 		eventDBModule:         eventDBModule,
 		configDBModule:        configDBModule,
 		glnVerifier:           glnVerifier,
@@ -283,7 +292,6 @@ func (c *component) UpdateAccount(ctx context.Context, user api.UpdatableAccount
 	if err = c.checkGLN(ctx, user.BusinessID, &userRep); err != nil {
 		return err
 	}
-
 	// Update keycloak account
 	err = c.keycloakAccountClient.UpdateAccount(accessToken, realm, userRep)
 	if err != nil {
@@ -539,6 +547,17 @@ func (c *component) GetConfiguration(ctx context.Context, realmIDOverride string
 	}
 
 	return apiConfig, nil
+}
+
+func (c *component) GetUserProfile(ctx context.Context) (apicommon.ProfileRepresentation, error) {
+	var currentRealm = ctx.Value(cs.CtContextRealm).(string)
+	var profile, err = c.profileCache.GetRealmUserProfile(ctx, currentRealm)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Can't get users profile", "err", err.Error())
+		return apicommon.ProfileRepresentation{}, err
+	}
+
+	return apicommon.ProfileToApi(profile, apiName), nil
 }
 
 func (c *component) SendVerifyEmail(ctx context.Context) error {

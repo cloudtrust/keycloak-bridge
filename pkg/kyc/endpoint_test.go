@@ -2,12 +2,15 @@ package kyc
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"testing"
 
+	cs "github.com/cloudtrust/common-service/v2"
+	"github.com/cloudtrust/common-service/v2/log"
+	apicommon "github.com/cloudtrust/keycloak-bridge/api/common"
 	apikyc "github.com/cloudtrust/keycloak-bridge/api/kyc"
 	"github.com/cloudtrust/keycloak-bridge/pkg/kyc/mock"
+	kc "github.com/cloudtrust/keycloak-client/v2"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
@@ -31,6 +34,42 @@ func TestMakeGetActionsEndpoint(t *testing.T) {
 		mockKYCComponent.EXPECT().GetActions(gomock.Any()).Return([]apikyc.ActionRepresentation{}, expectedError)
 		_, err := MakeGetActionsEndpoint(mockKYCComponent)(context.Background(), m)
 		assert.Equal(t, expectedError, err)
+	})
+}
+
+func TestGetRealmUserProfileEndpoint(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	mockKYCComponent := mock.NewComponent(mockCtrl)
+
+	var m = map[string]string{}
+	var expectedError = errors.New("get-actions")
+
+	t.Run("Corp", func(t *testing.T) {
+		t.Run("Success case", func(t *testing.T) {
+			mockKYCComponent.EXPECT().GetUserProfile(gomock.Any(), gomock.Any()).Return(apicommon.ProfileRepresentation{}, nil)
+			_, err := MakeGetUserProfileEndpoint(mockKYCComponent)(context.Background(), m)
+			assert.Nil(t, err)
+		})
+		t.Run("Failure case", func(t *testing.T) {
+			mockKYCComponent.EXPECT().GetUserProfile(gomock.Any(), gomock.Any()).Return(apicommon.ProfileRepresentation{}, expectedError)
+			_, err := MakeGetUserProfileEndpoint(mockKYCComponent)(context.Background(), m)
+			assert.Equal(t, expectedError, err)
+		})
+	})
+
+	t.Run("Social", func(t *testing.T) {
+		t.Run("Success case", func(t *testing.T) {
+			mockKYCComponent.EXPECT().GetUserProfileInSocialRealm(gomock.Any()).Return(apicommon.ProfileRepresentation{}, nil)
+			_, err := MakeGetUserProfileInSocialRealmEndpoint(mockKYCComponent)(context.Background(), m)
+			assert.Nil(t, err)
+		})
+		t.Run("Failure case", func(t *testing.T) {
+			mockKYCComponent.EXPECT().GetUserProfileInSocialRealm(gomock.Any()).Return(apicommon.ProfileRepresentation{}, expectedError)
+			_, err := MakeGetUserProfileInSocialRealmEndpoint(mockKYCComponent)(context.Background(), m)
+			assert.Equal(t, expectedError, err)
+		})
 	})
 }
 
@@ -118,41 +157,46 @@ func TestMakeValidateUserInSocialRealmEndpoint(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	mockKYCComponent := mock.NewComponent(mockCtrl)
+	var (
+		mockKYCComponent = mock.NewComponent(mockCtrl)
+		mockProfileCache = mock.NewUserProfileCache(mockCtrl)
+		logger           = log.NewNopLogger()
+		endpoint         = MakeValidateUserInSocialRealmEndpoint(mockKYCComponent, mockProfileCache, logger)
 
-	var userID = "ux467913"
-	var consentCode = "987654"
-	var user = createValidUser()
-	var m = map[string]string{}
+		userID      = "ux467913"
+		consentCode = "987654"
+		realm       = "the-realm"
+		m           = map[string]string{prmUserID: userID}
+		ctx         = context.WithValue(context.TODO(), cs.CtContextRealm, realm)
+		anyError    = errors.New("any")
+	)
 
-	t.Run("ValidateUserInSocialRealm - success case without consent code", func(t *testing.T) {
-		var bytes, _ = json.Marshal(user)
-		m[reqBody] = string(bytes)
-		m[prmUserID] = userID
-		mockKYCComponent.EXPECT().ValidateUserInSocialRealm(gomock.Any(), userID, user, nil).Return(nil)
-		_, err := MakeValidateUserInSocialRealmEndpoint(mockKYCComponent)(context.Background(), m)
+	t.Run("Input is not a JSON value", func(t *testing.T) {
+		m[reqBody] = "{"
+		_, err := endpoint(ctx, m)
+		assert.NotNil(t, err)
+	})
+	t.Run("GetRealmUserProfile fails", func(t *testing.T) {
+		m[reqBody] = `{}`
+		mockProfileCache.EXPECT().GetRealmUserProfile(ctx, realm).Return(kc.UserProfileRepresentation{}, anyError)
+		_, err := endpoint(ctx, m)
+		assert.NotNil(t, err)
+	})
+
+	mockProfileCache.EXPECT().GetRealmUserProfile(ctx, realm).Return(kc.UserProfileRepresentation{}, nil).AnyTimes()
+
+	t.Run("Success case without consent code", func(t *testing.T) {
+		m[reqBody] = `{}`
+		mockKYCComponent.EXPECT().ValidateUserInSocialRealm(gomock.Any(), userID, gomock.Any(), nil).Return(nil)
+		_, err := endpoint(ctx, m)
 		assert.Nil(t, err)
 	})
 	t.Run("ValidateUserInSocialRealm - success case with", func(t *testing.T) {
-		var bytes, _ = json.Marshal(user)
-		var params = map[string]string{reqBody: string(bytes), prmUserID: userID, prmQryConsent: consentCode}
-		mockKYCComponent.EXPECT().ValidateUserInSocialRealm(gomock.Any(), userID, user, &consentCode).Return(nil)
-		_, err := MakeValidateUserInSocialRealmEndpoint(mockKYCComponent)(context.Background(), params)
+		m[reqBody] = `{}`
+		m[prmQryConsent] = consentCode
+		mockKYCComponent.EXPECT().ValidateUserInSocialRealm(gomock.Any(), userID, gomock.Any(), &consentCode).Return(nil)
+		_, err := endpoint(ctx, m)
 		assert.Nil(t, err)
-	})
-
-	t.Run("ValidateUserInSocialRealm - failure case", func(t *testing.T) {
-		m[reqBody] = "{"
-		_, err := MakeValidateUserInSocialRealmEndpoint(mockKYCComponent)(context.Background(), m)
-		assert.NotNil(t, err)
-	})
-
-	t.Run("ValidateUserInSocialRealm - failure case - invalid user", func(t *testing.T) {
-		user.Gender = nil
-		var bytes, _ = json.Marshal(user)
-		m[reqBody] = string(bytes)
-		_, err := MakeValidateUserInSocialRealmEndpoint(mockKYCComponent)(context.Background(), m)
-		assert.NotNil(t, err)
 	})
 }
 
@@ -160,35 +204,43 @@ func TestMakeValidateUserEndpoint(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	mockKYCComponent := mock.NewComponent(mockCtrl)
+	var (
+		mockKYCComponent = mock.NewComponent(mockCtrl)
+		mockProfileCache = mock.NewUserProfileCache(mockCtrl)
+		logger           = log.NewNopLogger()
+		endpoint         = MakeValidateUserEndpoint(mockKYCComponent, mockProfileCache, logger)
 
-	var realmName = "corporateRealm"
-	var userID = "ux467913"
-	var user = createValidUser()
-	var m = map[string]string{}
-
-	t.Run("ValidateUser - success case", func(t *testing.T) {
-		var bytes, _ = json.Marshal(user)
-		m[reqBody] = string(bytes)
-		m[prmUserID] = userID
-		m[prmRealm] = realmName
-		mockKYCComponent.EXPECT().ValidateUser(gomock.Any(), realmName, userID, user, nil).Return(nil)
-		_, err := MakeValidateUserEndpoint(mockKYCComponent)(context.Background(), m)
-		assert.Nil(t, err)
-	})
+		realmName = "the-realm"
+		userID    = "ux467913"
+		m         = map[string]string{prmRealm: realmName, prmUserID: userID}
+		ctx       = context.WithValue(context.TODO(), cs.CtContextRealm, realmName)
+		anyError  = errors.New("any")
+	)
 
 	t.Run("ValidateUser - failure case", func(t *testing.T) {
 		m[reqBody] = "{"
-		_, err := MakeValidateUserEndpoint(mockKYCComponent)(context.Background(), m)
+		_, err := endpoint(ctx, m)
 		assert.NotNil(t, err)
 	})
-
-	t.Run("ValidateUser - failure case - invalid user", func(t *testing.T) {
-		user.Gender = nil
-		var bytes, _ = json.Marshal(user)
-		m[reqBody] = string(bytes)
-		_, err := MakeValidateUserEndpoint(mockKYCComponent)(context.Background(), m)
+	m[reqBody] = `{}`
+	t.Run("GetRealmUserProfile fails", func(t *testing.T) {
+		mockProfileCache.EXPECT().GetRealmUserProfile(ctx, realmName).Return(kc.UserProfileRepresentation{}, anyError)
+		_, err := endpoint(ctx, m)
 		assert.NotNil(t, err)
+	})
+	t.Run("Success without consent code", func(t *testing.T) {
+		mockProfileCache.EXPECT().GetRealmUserProfile(ctx, realmName).Return(kc.UserProfileRepresentation{}, nil)
+		mockKYCComponent.EXPECT().ValidateUser(gomock.Any(), realmName, userID, gomock.Any(), nil).Return(nil)
+		_, err := endpoint(ctx, m)
+		assert.Nil(t, err)
+	})
+	t.Run("Success with consent code", func(t *testing.T) {
+		var consent = "123456"
+		m[prmQryConsent] = consent
+		mockProfileCache.EXPECT().GetRealmUserProfile(ctx, realmName).Return(kc.UserProfileRepresentation{}, nil)
+		mockKYCComponent.EXPECT().ValidateUser(gomock.Any(), realmName, userID, gomock.Any(), &consent).Return(nil)
+		_, err := endpoint(ctx, m)
+		assert.Nil(t, err)
 	})
 }
 

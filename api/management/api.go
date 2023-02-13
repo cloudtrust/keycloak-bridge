@@ -4,13 +4,16 @@ import (
 	"context"
 	"encoding/json"
 
+	cs "github.com/cloudtrust/common-service/v2"
 	"github.com/cloudtrust/common-service/v2/configuration"
 	errorhandler "github.com/cloudtrust/common-service/v2/errors"
+	"github.com/cloudtrust/common-service/v2/fields"
 	csjson "github.com/cloudtrust/common-service/v2/json"
 	"github.com/cloudtrust/common-service/v2/validation"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/accreditationsclient"
+	"github.com/cloudtrust/keycloak-bridge/internal/profile"
 	kc "github.com/cloudtrust/keycloak-client/v2"
 	"github.com/spf13/cast"
 )
@@ -773,28 +776,101 @@ func NewBackOfficeConfigurationFromJSON(confJSON string) (BackOfficeConfiguratio
 	return boConf, validator.Status()
 }
 
-// Validate is a validator for UserRepresentation
-func (user UserRepresentation) Validate() error {
-	var v = validation.NewParameterValidator().
-		ValidateParameterRegExp(constants.UserID, user.ID, constants.RegExpID, false).
-		ValidateParameterRegExp(constants.Username, user.Username, constants.RegExpUsername, false).
-		ValidateParameterRegExp(constants.Email, user.Email, constants.RegExpEmail, false).
-		ValidateParameterRegExp(constants.Firstname, user.FirstName, constants.RegExpFirstName, false).
-		ValidateParameterRegExp(constants.Lastname, user.LastName, constants.RegExpLastName, false).
-		ValidateParameterRegExp(constants.PhoneNumber, user.PhoneNumber, constants.RegExpPhoneNumber, false).
-		ValidateParameterRegExp(constants.Label, user.Label, constants.RegExpLabel, false).
-		ValidateParameterRegExp(constants.Gender, user.Gender, constants.RegExpGender, false).
-		ValidateParameterDateMultipleLayout(constants.Birthdate, user.BirthDate, constants.SupportedDateLayouts, false).
-		ValidateParameterRegExp(constants.BirthLocation, user.BirthLocation, constants.RegExpBirthLocation, false).
-		ValidateParameterRegExp(constants.Nationality, user.Nationality, constants.RegExpCountryCode, false).
-		ValidateParameterRegExp(constants.Locale, user.Locale, constants.RegExpLocale, false).
-		ValidateParameterRegExp(constants.BusinessID, user.BusinessID, constants.RegExpBusinessID, false).
-		ValidateParameterIn(constants.IDDocumentType, user.IDDocumentType, constants.AllowedDocumentTypes, false).
-		ValidateParameterRegExp(constants.IDDocumentNumber, user.IDDocumentNumber, constants.RegExpIDDocumentNumber, false).
-		ValidateParameterLength(constants.IDDocumentNumber, user.IDDocumentNumber, 1, 50, false).
-		ValidateParameterDateMultipleLayout(constants.IDDocumentExpiration, user.IDDocumentExpiration, constants.SupportedDateLayouts, false).
-		ValidateParameterRegExp(constants.IDDocumentCountry, user.IDDocumentCountry, constants.RegExpCountryCode, false)
+// GetField is used to validate a user against a UserProfile
+func (user *UserRepresentation) GetField(field string) interface{} {
+	switch field {
+	case fields.Username.Key():
+		return profile.IfNotNil(user.Username)
+	case fields.Email.Key():
+		return profile.IfNotNil(user.Email)
+	case fields.FirstName.Key():
+		return profile.IfNotNil(user.FirstName)
+	case fields.LastName.Key():
+		return profile.IfNotNil(user.LastName)
+	case fields.Gender.AttributeName():
+		return profile.IfNotNil(user.Gender)
+	case fields.PhoneNumber.AttributeName():
+		return profile.IfNotNil(user.PhoneNumber)
+	case fields.BirthDate.AttributeName():
+		return profile.IfNotNil(user.BirthDate)
+	case fields.BirthLocation.AttributeName():
+		return profile.IfNotNil(user.BirthLocation)
+	case fields.Nationality.AttributeName():
+		return profile.IfNotNil(user.Nationality)
+	case fields.IDDocumentType.AttributeName():
+		return profile.IfNotNil(user.IDDocumentType)
+	case fields.IDDocumentNumber.AttributeName():
+		return profile.IfNotNil(user.IDDocumentNumber)
+	case fields.IDDocumentCountry.AttributeName():
+		return profile.IfNotNil(user.IDDocumentCountry)
+	case fields.IDDocumentExpiration.AttributeName():
+		return profile.IfNotNil(user.IDDocumentExpiration)
+	case fields.Locale.AttributeName():
+		return profile.IfNotNil(user.Locale)
+	case fields.BusinessID.AttributeName():
+		return profile.IfNotNil(user.BusinessID)
+	default:
+		return nil
+	}
+}
 
+// SetField is used to validate a user against a UserProfile
+func (user *UserRepresentation) SetField(field string, value interface{}) {
+	switch field {
+	case fields.Username.Key():
+		user.Username = cs.ToStringPtr(value)
+		break
+	case fields.Email.Key():
+		user.Email = cs.ToStringPtr(value)
+		break
+	case fields.FirstName.Key():
+		user.FirstName = cs.ToStringPtr(value)
+		break
+	case fields.LastName.Key():
+		user.LastName = cs.ToStringPtr(value)
+		break
+	case fields.Gender.AttributeName():
+		user.Gender = cs.ToStringPtr(value)
+		break
+	case fields.PhoneNumber.AttributeName():
+		user.PhoneNumber = cs.ToStringPtr(value)
+		break
+	case fields.BirthDate.AttributeName():
+		user.BirthDate = cs.ToStringPtr(value)
+		break
+	case fields.BirthLocation.AttributeName():
+		user.BirthLocation = cs.ToStringPtr(value)
+		break
+	case fields.Nationality.AttributeName():
+		user.Nationality = cs.ToStringPtr(value)
+		break
+	case fields.IDDocumentType.AttributeName():
+		user.IDDocumentType = cs.ToStringPtr(value)
+		break
+	case fields.IDDocumentNumber.AttributeName():
+		user.IDDocumentNumber = cs.ToStringPtr(value)
+		break
+	case fields.IDDocumentCountry.AttributeName():
+		user.IDDocumentCountry = cs.ToStringPtr(value)
+		break
+	case fields.IDDocumentExpiration.AttributeName():
+		user.IDDocumentExpiration = cs.ToStringPtr(value)
+		break
+	case fields.Locale.AttributeName():
+		user.Locale = cs.ToStringPtr(value)
+		break
+	case fields.BusinessID.AttributeName():
+		user.BusinessID = cs.ToStringPtr(value)
+		break
+	}
+}
+
+// Validate is a validator for UserRepresentation
+func (user UserRepresentation) Validate(ctx context.Context, upc profile.UserProfile, realm string, checkMandatory bool) error {
+	var v = validation.NewParameterValidator().
+		ValidateParameterFunc(func() error {
+			return profile.Validate(ctx, upc, realm, &user, "management", checkMandatory)
+		})
 	if user.Groups != nil {
 		for _, groupID := range *(user.Groups) {
 			v = v.ValidateParameterRegExp(constants.GroupID, &groupID, constants.RegExpID, true)
@@ -810,32 +886,127 @@ func (user UserRepresentation) Validate() error {
 	return v.Status()
 }
 
-// Validate is a validator for UpdatableUserRepresentation
-func (user UpdatableUserRepresentation) Validate(isStandard bool) error {
-	var v = validation.NewParameterValidator().
-		ValidateParameterRegExp(constants.UserID, user.ID, constants.RegExpID, false).
-		ValidateParameterRegExp(constants.Username, user.Username, constants.RegExpUsername, false).
-		ValidateParameterRegExp(constants.Firstname, user.FirstName, selectRegExp(constants.RegExpFirstName, constants.RegExpCorporateFirstName, isStandard), false).
-		ValidateParameterRegExp(constants.Lastname, user.LastName, selectRegExp(constants.RegExpLastName, constants.RegExpCorporateLastName, isStandard), false).
-		ValidateParameterRegExp(constants.Label, user.Label, constants.RegExpLabel, false).
-		ValidateParameterRegExp(constants.Gender, user.Gender, constants.RegExpGender, false).
-		ValidateParameterDateMultipleLayout(constants.Birthdate, user.BirthDate, constants.SupportedDateLayouts, false).
-		ValidateParameterRegExp(constants.BirthLocation, user.BirthLocation, constants.RegExpBirthLocation, false).
-		ValidateParameterRegExp(constants.Nationality, user.Nationality, constants.RegExpCountryCode, false).
-		ValidateParameterRegExp(constants.Locale, user.Locale, constants.RegExpLocale, false).
-		ValidateParameterRegExp(constants.BusinessID, user.BusinessID.Value, constants.RegExpBusinessID, false).
-		ValidateParameterIn(constants.IDDocumentType, user.IDDocumentType, constants.AllowedDocumentTypes, false).
-		ValidateParameterRegExp(constants.IDDocumentNumber, user.IDDocumentNumber, constants.RegExpIDDocumentNumber, false).
-		ValidateParameterLength(constants.IDDocumentNumber, user.IDDocumentNumber, 1, 50, false).
-		ValidateParameterDateMultipleLayout(constants.IDDocumentExpiration, user.IDDocumentExpiration, constants.SupportedDateLayouts, false).
-		ValidateParameterRegExp(constants.IDDocumentCountry, user.IDDocumentCountry, constants.RegExpCountryCode, false)
+// GetField is used to validate a user against a UserProfile
+func (user *UpdatableUserRepresentation) GetField(field string) interface{} {
+	switch field {
+	case fields.Username.Key():
+		return profile.IfNotNil(user.Username)
+	case fields.Email.Key():
+		return toOptionalStringPtr(user.Email)
+	case fields.FirstName.Key():
+		return profile.IfNotNil(user.FirstName)
+	case fields.LastName.Key():
+		return profile.IfNotNil(user.LastName)
+	case fields.Gender.AttributeName():
+		return profile.IfNotNil(user.Gender)
+	case fields.PhoneNumber.AttributeName():
+		return toOptionalStringPtr(user.PhoneNumber)
+	case fields.BirthDate.AttributeName():
+		return profile.IfNotNil(user.BirthDate)
+	case fields.BirthLocation.AttributeName():
+		return profile.IfNotNil(user.BirthLocation)
+	case fields.Nationality.AttributeName():
+		return profile.IfNotNil(user.Nationality)
+	case fields.IDDocumentType.AttributeName():
+		return profile.IfNotNil(user.IDDocumentType)
+	case fields.IDDocumentNumber.AttributeName():
+		return profile.IfNotNil(user.IDDocumentNumber)
+	case fields.IDDocumentCountry.AttributeName():
+		return profile.IfNotNil(user.IDDocumentCountry)
+	case fields.IDDocumentExpiration.AttributeName():
+		return profile.IfNotNil(user.IDDocumentExpiration)
+	case fields.Locale.AttributeName():
+		return profile.IfNotNil(user.Locale)
+	case fields.BusinessID.AttributeName():
+		return toOptionalStringPtr(user.BusinessID)
+	default:
+		return nil
+	}
+}
 
-	if user.Email.Defined && user.Email.Value != nil {
-		v = v.ValidateParameterRegExp(constants.Email, user.Email.Value, constants.RegExpEmail, false)
+func toOptionalStringPtr(opt csjson.OptionalString) interface{} {
+	if opt.Defined == false || opt.Value == nil {
+		return nil
 	}
-	if user.PhoneNumber.Defined && user.PhoneNumber.Value != nil {
-		v = v.ValidateParameterRegExp(constants.PhoneNumber, user.PhoneNumber.Value, constants.RegExpPhoneNumber, false)
+	return opt.Value
+}
+
+// SetField is used to validate a user against a UserProfile
+func (user *UpdatableUserRepresentation) SetField(field string, value interface{}) {
+	switch field {
+	case fields.Username.Key():
+		user.Username = cs.ToStringPtr(value)
+		break
+	case fields.Email.Key():
+		if value == nil {
+			user.Email.Defined = false
+			user.Email.Value = nil
+		} else {
+			user.Email.Defined = true
+			user.Email.Value = cs.ToStringPtr(value)
+		}
+		break
+	case fields.FirstName.Key():
+		user.FirstName = cs.ToStringPtr(value)
+		break
+	case fields.LastName.Key():
+		user.LastName = cs.ToStringPtr(value)
+		break
+	case fields.Gender.AttributeName():
+		user.Gender = cs.ToStringPtr(value)
+		break
+	case fields.PhoneNumber.AttributeName():
+		if value == nil {
+			user.PhoneNumber.Defined = false
+			user.PhoneNumber.Value = nil
+		} else {
+			user.PhoneNumber.Defined = true
+			user.PhoneNumber.Value = cs.ToStringPtr(value)
+		}
+		break
+	case fields.BirthDate.AttributeName():
+		user.BirthDate = cs.ToStringPtr(value)
+		break
+	case fields.BirthLocation.AttributeName():
+		user.BirthLocation = cs.ToStringPtr(value)
+		break
+	case fields.Nationality.AttributeName():
+		user.Nationality = cs.ToStringPtr(value)
+		break
+	case fields.IDDocumentType.AttributeName():
+		user.IDDocumentType = cs.ToStringPtr(value)
+		break
+	case fields.IDDocumentNumber.AttributeName():
+		user.IDDocumentNumber = cs.ToStringPtr(value)
+		break
+	case fields.IDDocumentCountry.AttributeName():
+		user.IDDocumentCountry = cs.ToStringPtr(value)
+		break
+	case fields.IDDocumentExpiration.AttributeName():
+		user.IDDocumentExpiration = cs.ToStringPtr(value)
+		break
+	case fields.Locale.AttributeName():
+		user.Locale = cs.ToStringPtr(value)
+		break
+	case fields.BusinessID.AttributeName():
+		if value == nil {
+			user.BusinessID.Defined = false
+			user.BusinessID.Value = nil
+		} else {
+			user.BusinessID.Defined = true
+			user.BusinessID.Value = cs.ToStringPtr(value)
+		}
+		break
 	}
+}
+
+// Validate is a validator for UpdatableUserRepresentation
+func (user UpdatableUserRepresentation) Validate(ctx context.Context, upc profile.UserProfile, realm string) error {
+	var v = validation.NewParameterValidator().
+		ValidateParameterFunc(func() error {
+			return profile.Validate(ctx, upc, realm, &user, "management", false)
+		})
+
 	if user.Groups != nil {
 		for _, groupID := range *(user.Groups) {
 			v = v.ValidateParameterRegExp(constants.GroupID, &groupID, constants.RegExpID, true)

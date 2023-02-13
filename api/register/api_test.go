@@ -1,6 +1,7 @@
 package apiregister
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -65,48 +66,24 @@ func TestConvertToKeycloak(t *testing.T) {
 	assert.True(t, *kcUser.Enabled)
 }
 
-func TestValidateUserRepresentation(t *testing.T) {
-	var (
-		empty          = ""
-		invalidDate    = "29.02.2019"
-		invalidLocale  = "x789"
-		invalidCountry = "xD67x"
-	)
+func TestGetSetUserField(t *testing.T) {
+	for _, field := range []string{
+		"username:12345678", "email:name@domain.ch", "firstName:firstname", "lastName:lastname", "ENC_gender:M", "phoneNumber:+41223145789",
+		"ENC_birthDate:12.11.2010", "ENC_birthLocation:chezouam", "ENC_nationality:ch", "ENC_idDocumentType:PASSPORT", "ENC_idDocumentNumber:123-456-789",
+		"ENC_idDocumentExpiration:01.01.2039", "ENC_idDocumentCountry:ch", "locale:fr", "businessID:456789",
+	} {
+		var parts = strings.Split(field, ":")
+		testGetSetUserField(t, parts[0], parts[1])
+	}
+	var user = UserRepresentation{}
+	assert.Nil(t, user.GetField("not-existing-field"))
+}
 
-	t.Run("Valid users", func(t *testing.T) {
-		var user = createValidUser()
-		assert.Nil(t, user.Validate(true), "User is expected to be valid")
-	})
-
-	t.Run("Invalid users", func(t *testing.T) {
-		var users []UserRepresentation
-		for i := 0; i < 19; i++ {
-			users = append(users, createValidUser())
-		}
-		// invalid values
-		users[0].Gender = &empty
-		users[1].FirstName = &empty
-		users[2].LastName = &empty
-		users[3].Email = &empty
-		users[4].PhoneNumber = &empty
-		users[5].BirthDate = &invalidDate
-		users[6].BirthLocation = &empty
-		users[7].Nationality = &empty
-		users[8].IDDocumentType = &empty
-		users[9].IDDocumentNumber = &empty
-		users[10].IDDocumentExpiration = &invalidDate
-		users[11].IDDocumentCountry = &invalidCountry
-		users[12].Locale = &invalidLocale
-		users[13].BusinessID = &empty
-		// mandatory parameters
-		users[14].FirstName = nil
-		users[15].LastName = nil
-		users[16].Email = nil
-		users[17].PhoneNumber = nil
-		users[18].Locale = nil
-
-		for idx, aUser := range users {
-			assert.NotNil(t, aUser.Validate(true), "User is expected to be invalid. Test #%d failed with user %s", idx, aUser.UserToJSON())
-		}
+func testGetSetUserField(t *testing.T, fieldName string, value interface{}) {
+	var user UserRepresentation
+	t.Run("Field "+fieldName, func(t *testing.T) {
+		assert.Nil(t, user.GetField(fieldName))
+		user.SetField(fieldName, value)
+		assert.Equal(t, value, *user.GetField(fieldName).(*string))
 	})
 }

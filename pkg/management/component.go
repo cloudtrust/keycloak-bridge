@@ -16,6 +16,7 @@ import (
 	errorhandler "github.com/cloudtrust/common-service/v2/errors"
 	"github.com/cloudtrust/common-service/v2/fields"
 	"github.com/cloudtrust/common-service/v2/security"
+	apicommon "github.com/cloudtrust/keycloak-bridge/api/common"
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
@@ -117,6 +118,11 @@ type AuthorizationChecker interface {
 	ReloadAuthorizations(ctx context.Context) error
 }
 
+// UserProfileCache interface
+type UserProfileCache interface {
+	GetRealmUserProfile(ctx context.Context, realmName string) (kc.UserProfileRepresentation, error)
+}
+
 // Component is the management component interface.
 type Component interface {
 	GetActions(ctx context.Context) ([]api.ActionRepresentation, error)
@@ -191,6 +197,7 @@ type Component interface {
 	UpdateRealmCustomConfiguration(ctx context.Context, realmID string, customConfig api.RealmCustomConfiguration) error
 	GetRealmAdminConfiguration(ctx context.Context, realmName string) (api.RealmAdminConfiguration, error)
 	UpdateRealmAdminConfiguration(ctx context.Context, realmID string, adminConfig api.RealmAdminConfiguration) error
+	GetRealmUserProfile(ctx context.Context, realmID string) (apicommon.ProfileRepresentation, error)
 	GetRealmBackOfficeConfiguration(ctx context.Context, realmID string, groupName string) (api.BackOfficeConfiguration, error)
 	UpdateRealmBackOfficeConfiguration(ctx context.Context, realmID string, groupName string, config api.BackOfficeConfiguration) error
 	GetUserRealmBackOfficeConfiguration(ctx context.Context, realmID string) (api.BackOfficeConfiguration, error)
@@ -205,6 +212,7 @@ type Component interface {
 type component struct {
 	keycloakClient          KeycloakClient
 	kcURIProvider           KeycloakURIProvider /* REMOVE_THIS_3901 */
+	profileCache            UserProfileCache
 	eventDBModule           database.EventsDBModule
 	configDBModule          keycloakb.ConfigurationDBModule
 	onboardingModule        OnboardingModule
@@ -218,7 +226,7 @@ type component struct {
 }
 
 // NewComponent returns the management component.
-func NewComponent(keycloakClient KeycloakClient, kcURIProvider kc.KeycloakURIProvider, eventDBModule database.EventsDBModule,
+func NewComponent(keycloakClient KeycloakClient, kcURIProvider kc.KeycloakURIProvider, profileCache UserProfileCache, eventDBModule database.EventsDBModule,
 	configDBModule keycloakb.ConfigurationDBModule, onboardingModule OnboardingModule, authChecker AuthorizationChecker, tokenProvider toolbox.OidcTokenProvider,
 	accreditationsClient AccreditationsServiceClient, authorizedTrustIDGroups []string, socialRealmName string, glnVerifier GlnVerifier, logger keycloakb.Logger) Component {
 	/* REMOVE_THIS_3901 : remove second provided parameter */
@@ -231,6 +239,7 @@ func NewComponent(keycloakClient KeycloakClient, kcURIProvider kc.KeycloakURIPro
 	return &component{
 		keycloakClient:          keycloakClient,
 		kcURIProvider:           kcURIProvider, /* REMOVE_THIS_3901 */
+		profileCache:            profileCache,
 		eventDBModule:           eventDBModule,
 		configDBModule:          configDBModule,
 		onboardingModule:        onboardingModule,
@@ -2288,8 +2297,18 @@ func (c *component) UpdateRealmAdminConfiguration(ctx context.Context, realmName
 	return nil
 }
 
-func (c *component) GetRealmBackOfficeConfiguration(ctx context.Context, realmID string, groupName string) (api.BackOfficeConfiguration, error) {
-	var dbResult, err = c.configDBModule.GetBackOfficeConfiguration(ctx, realmID, []string{groupName})
+func (c *component) GetRealmUserProfile(ctx context.Context, realmName string) (apicommon.ProfileRepresentation, error) {
+	var profile, err = c.profileCache.GetRealmUserProfile(ctx, realmName)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Can't get users profile", "err", err.Error())
+		return apicommon.ProfileRepresentation{}, err
+	}
+
+	return apicommon.ProfileToApi(profile, apiName), nil
+}
+
+func (c *component) GetRealmBackOfficeConfiguration(ctx context.Context, realmName string, groupName string) (api.BackOfficeConfiguration, error) {
+	var dbResult, err = c.configDBModule.GetBackOfficeConfiguration(ctx, realmName, []string{groupName})
 	if err != nil {
 		c.logger.Warn(ctx, "err", err.Error())
 		return nil, err

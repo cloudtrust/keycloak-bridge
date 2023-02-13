@@ -2,6 +2,8 @@ package apiaccount
 
 import (
 	"context"
+	"errors"
+	"strings"
 	"testing"
 
 	csjson "github.com/cloudtrust/common-service/v2/json"
@@ -108,54 +110,42 @@ func TestConvertToKCUser(t *testing.T) {
 	assert.Equal(t, businessID, *kcUser.GetAttributeString(constants.AttrbBusinessID))
 }
 
-func TestValidateAccountRepresentation(t *testing.T) {
-	var invalidName = ""
-	var invalidEmail = "bobby-at-mail.com"
-	var invalidPhone = "+412212345AB"
-	var invalidLocale = "fr-123"
-	var accounts []AccountRepresentation
-
-	for i := 0; i < 6; i++ {
-		accounts = append(accounts, createValidAccountRepresentation())
+func TestGetSetField(t *testing.T) {
+	for _, field := range []string{
+		"username:12345678", "email:name@domain.ch", "firstName:firstname", "lastName:lastname", "ENC_gender:M", "phoneNumber:+41223145789",
+		"ENC_birthDate:12.11.2010", "ENC_birthLocation:chezouam", "ENC_nationality:ch", "ENC_idDocumentType:PASSPORT", "ENC_idDocumentNumber:123-456-789",
+		"ENC_idDocumentExpiration:01.01.2039", "ENC_idDocumentCountry:ch", "locale:fr", "businessID:456789",
+	} {
+		var parts = strings.Split(field, ":")
+		testGetSetField(t, parts[0], parts[1])
 	}
+	var user = UpdatableAccountRepresentation{}
+	assert.Nil(t, user.GetField("not-existing-field"))
+}
 
-	assert.Nil(t, accounts[0].Validate())
+func testGetSetField(t *testing.T, fieldName string, value interface{}) {
+	var user UpdatableAccountRepresentation
+	t.Run("Field "+fieldName, func(t *testing.T) {
+		assert.Nil(t, user.GetField(fieldName))
+		user.SetField(fieldName, value)
+		assert.Equal(t, value, *user.GetField(fieldName).(*string))
+	})
+}
 
-	accounts[0].Username = &invalidName
-	accounts[1].FirstName = &invalidName
-	accounts[2].LastName = &invalidName
-	accounts[3].Email = &invalidEmail
-	accounts[4].PhoneNumber = &invalidPhone
-	accounts[5].Locale = &invalidLocale
+type mockUserProfile struct {
+}
 
-	for _, account := range accounts {
-		assert.NotNil(t, account.Validate())
-	}
+func (up *mockUserProfile) GetRealmUserProfile(ctx context.Context, realmName string) (kc.UserProfileRepresentation, error) {
+	return kc.UserProfileRepresentation{}, errors.New("any error")
 }
 
 func TestValidateUpdatableAccountRepresentation(t *testing.T) {
-	var invalidName = ""
-	var invalidEmail = "bobby-at-mail.com"
-	var invalidPhone = "+412212345AB"
-	var invalidLocale = "fr-123"
-	var accounts []UpdatableAccountRepresentation
+	var user = UpdatableAccountRepresentation{}
+	var realm = "the-realm"
+	var ctx = context.TODO()
 
-	for i := 0; i < 6; i++ {
-		accounts = append(accounts, createValidUpdatableAccountRepresentation())
-	}
-
-	assert.Nil(t, accounts[0].Validate())
-
-	accounts[0].Username = &invalidName
-	accounts[1].FirstName = &invalidName
-	accounts[2].LastName = &invalidName
-	accounts[3].Email = &invalidEmail
-	accounts[4].PhoneNumber = &invalidPhone
-	accounts[5].Locale = &invalidLocale
-
-	for _, account := range accounts {
-		assert.NotNil(t, account.Validate())
-	}
+	var mup = &mockUserProfile{}
+	assert.NotNil(t, user.Validate(ctx, mup, realm))
 }
 
 func TestValidateUpdatePasswordRepresentation(t *testing.T) {

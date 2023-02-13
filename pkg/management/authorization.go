@@ -6,6 +6,7 @@ import (
 	cs "github.com/cloudtrust/common-service/v2"
 	"github.com/cloudtrust/common-service/v2/log"
 	"github.com/cloudtrust/common-service/v2/security"
+	apicommon "github.com/cloudtrust/keycloak-bridge/api/common"
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
 )
 
@@ -779,6 +780,17 @@ func (c *authorizationComponentMW) UpdateRealmAdminConfiguration(ctx context.Con
 	}
 
 	return c.next.UpdateRealmAdminConfiguration(ctx, realmName, adminConfig)
+}
+
+func (c *authorizationComponentMW) GetRealmUserProfile(ctx context.Context, realmName string) (apicommon.ProfileRepresentation, error) {
+	var action = security.MGMTGetRealmUserProfile.String()
+	var targetRealm = realmName
+
+	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
+		return apicommon.ProfileRepresentation{}, err
+	}
+
+	return c.next.GetRealmUserProfile(ctx, realmName)
 }
 
 func (c *authorizationComponentMW) GetRealmBackOfficeConfiguration(ctx context.Context, realmName string, groupName string) (api.BackOfficeConfiguration, error) {

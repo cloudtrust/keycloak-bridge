@@ -1712,7 +1712,25 @@ paths:
           description: successful operation
         400:
           description: invalid information provided
-    
+  /realms/{realm}/profile:
+    get:
+      tags:
+      - Configuration
+      summary: Get the realm users profile
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
   /realms/{realm}/configuration:
     get:
       tags:
@@ -2427,6 +2445,65 @@ components:
             type: boolean
           TrustEmail:
             type: boolean
+    Profile:
+      type: object
+      properties:
+        attributes:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProfileAttribute'
+        groups:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProfileGroup'
+          description: groups are used to gather user attributes by themes
+    ProfileAttribute:
+      type: object
+      properties:
+        name:
+          type: string
+        displayName:
+          type: string
+        group:
+          type: string
+          description: name of a group defined in ProfileGroup
+        required:
+          type: boolean
+        validations:
+          $ref: '#/components/schemas/ProfileAttributeValidations'
+    ProfileAttributeValidations:
+      description: >
+        Here is a list of known validators :
+        email: no parameters
+        length: min/max (can be integer or string), trim-disabled (boolean as string)
+        integer: min/max (integer as string)
+        double: min/max (integer as string)
+        options: options (array of allowed values)
+        pattern: pattern (regex), error-message (string)
+        local-date: no parameters
+        uri: no parameters
+        username-prohibited-characters: error-message (string)
+        person-name-prohibited-characters: error-message (string)
+      type: object
+      additionalProperties:
+        $ref: '#/components/schemas/ProfileAttributeValidator'
+    ProfileAttributeValidator:
+      type: object
+      additionalProperties:
+        type: object
+    ProfileGroup:
+      type: object
+      properties:
+        name:
+          type: string
+        displayHeader:
+          type: string
+        displayDescription:
+          type: string
+        annotations:
+          type: object
+          additionalProperties:
+            type: string
   securitySchemes:
     openId:
       type: openIdConnect

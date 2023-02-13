@@ -1,11 +1,15 @@
 package apiregister
 
 import (
+	"context"
 	"encoding/json"
 	"strings"
 
+	cs "github.com/cloudtrust/common-service/v2"
+	"github.com/cloudtrust/common-service/v2/fields"
 	"github.com/cloudtrust/common-service/v2/validation"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
+	"github.com/cloudtrust/keycloak-bridge/internal/profile"
 	kc "github.com/cloudtrust/keycloak-client/v2"
 )
 
@@ -111,30 +115,99 @@ func (u *UserRepresentation) ConvertToKeycloak() kc.UserRepresentation {
 }
 
 // Validate checks the validity of the given User
-func (u *UserRepresentation) Validate(isSocialRealm bool) error {
+func (u *UserRepresentation) Validate(ctx context.Context, upc profile.UserProfile, realm string) error {
 	return validation.NewParameterValidator().
-		ValidateParameterRegExp(prmUserGender, u.Gender, constants.RegExpGender, false).
-		ValidateParameterRegExp(prmUserFirstName, u.FirstName, selectRegExp(constants.RegExpFirstName, constants.RegExpCorporateFirstName, isSocialRealm), true).
-		ValidateParameterRegExp(prmUserLastName, u.LastName, selectRegExp(constants.RegExpLastName, constants.RegExpCorporateLastName, isSocialRealm), true).
-		ValidateParameterRegExp(prmUserEmail, u.Email, constants.RegExpEmail, true).
-		ValidateParameterPhoneNumber(prmUserPhoneNumber, u.PhoneNumber, isSocialRealm).
-		ValidateParameterDateMultipleLayout(prmUserBirthDate, u.BirthDate, constants.SupportedDateLayouts, false).
-		ValidateParameterRegExp(prmUserBirthLocation, u.BirthLocation, constants.RegExpBirthLocation, false).
-		ValidateParameterRegExp(prmUserNationality, u.Nationality, constants.RegExpCountryCode, false).
-		ValidateParameterIn(prmUserIDDocumentType, u.IDDocumentType, constants.AllowedDocumentTypes, false).
-		ValidateParameterRegExp(prmUserIDDocumentNumber, u.IDDocumentNumber, constants.RegExpIDDocumentNumber, false).
-		ValidateParameterLength(prmUserIDDocumentNumber, u.IDDocumentNumber, 1, 50, false).
-		ValidateParameterDateMultipleLayout(prmUserIDDocumentExpiration, u.IDDocumentExpiration, constants.SupportedDateLayouts, false).
-		ValidateParameterRegExp(prmUserIDDocumentCountry, u.IDDocumentCountry, constants.RegExpCountryCode, false).
-		ValidateParameterRegExp(prmUserLocale, u.Locale, constants.RegExpLocale, true).
-		ValidateParameterRegExp(prmUserBusinessID, u.BusinessID, constants.RegExpBusinessID, false).
+		ValidateParameterFunc(func() error {
+			return profile.Validate(ctx, upc, realm, u, "register", true)
+		}).
 		Status()
 }
 
-// TO CLEAN WHEN WE WILL HAVE ATTRIBUTE MANAGEMENT
-func selectRegExp(standardRegExp string, corporateRegexp string, isSocialRealm bool) string {
-	if isSocialRealm {
-		return standardRegExp
+// GetField is used to validate a user against a UserProfile
+func (u *UserRepresentation) GetField(field string) interface{} {
+	switch field {
+	case fields.Username.Key():
+		return profile.IfNotNil(u.Username)
+	case fields.Email.Key():
+		return profile.IfNotNil(u.Email)
+	case fields.FirstName.Key():
+		return profile.IfNotNil(u.FirstName)
+	case fields.LastName.Key():
+		return profile.IfNotNil(u.LastName)
+	case fields.Gender.AttributeName():
+		return profile.IfNotNil(u.Gender)
+	case fields.PhoneNumber.AttributeName():
+		return profile.IfNotNil(u.PhoneNumber)
+	case fields.BirthDate.AttributeName():
+		return profile.IfNotNil(u.BirthDate)
+	case fields.BirthLocation.AttributeName():
+		return profile.IfNotNil(u.BirthLocation)
+	case fields.Nationality.AttributeName():
+		return profile.IfNotNil(u.Nationality)
+	case fields.IDDocumentType.AttributeName():
+		return profile.IfNotNil(u.IDDocumentType)
+	case fields.IDDocumentNumber.AttributeName():
+		return profile.IfNotNil(u.IDDocumentNumber)
+	case fields.IDDocumentCountry.AttributeName():
+		return profile.IfNotNil(u.IDDocumentCountry)
+	case fields.IDDocumentExpiration.AttributeName():
+		return profile.IfNotNil(u.IDDocumentExpiration)
+	case fields.Locale.AttributeName():
+		return profile.IfNotNil(u.Locale)
+	case fields.BusinessID.AttributeName():
+		return profile.IfNotNil(u.BusinessID)
+	default:
+		return nil
 	}
-	return corporateRegexp
+}
+
+// SetField is used to validate a user against a UserProfile
+func (user *UserRepresentation) SetField(field string, value interface{}) {
+	switch field {
+	case fields.Username.Key():
+		user.Username = cs.ToStringPtr(value)
+		break
+	case fields.Email.Key():
+		user.Email = cs.ToStringPtr(value)
+		break
+	case fields.FirstName.Key():
+		user.FirstName = cs.ToStringPtr(value)
+		break
+	case fields.LastName.Key():
+		user.LastName = cs.ToStringPtr(value)
+		break
+	case fields.Gender.AttributeName():
+		user.Gender = cs.ToStringPtr(value)
+		break
+	case fields.PhoneNumber.AttributeName():
+		user.PhoneNumber = cs.ToStringPtr(value)
+		break
+	case fields.BirthDate.AttributeName():
+		user.BirthDate = cs.ToStringPtr(value)
+		break
+	case fields.BirthLocation.AttributeName():
+		user.BirthLocation = cs.ToStringPtr(value)
+		break
+	case fields.Nationality.AttributeName():
+		user.Nationality = cs.ToStringPtr(value)
+		break
+	case fields.IDDocumentType.AttributeName():
+		user.IDDocumentType = cs.ToStringPtr(value)
+		break
+	case fields.IDDocumentNumber.AttributeName():
+		user.IDDocumentNumber = cs.ToStringPtr(value)
+		break
+	case fields.IDDocumentCountry.AttributeName():
+		user.IDDocumentCountry = cs.ToStringPtr(value)
+		break
+	case fields.IDDocumentExpiration.AttributeName():
+		user.IDDocumentExpiration = cs.ToStringPtr(value)
+		break
+	case fields.Locale.AttributeName():
+		user.Locale = cs.ToStringPtr(value)
+		break
+	case fields.BusinessID.AttributeName():
+		user.BusinessID = cs.ToStringPtr(value)
+		break
+	}
 }

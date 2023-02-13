@@ -13,6 +13,7 @@ import (
 
 	errorhandler "github.com/cloudtrust/common-service/v2/errors"
 	"github.com/cloudtrust/common-service/v2/log"
+	apicommon "github.com/cloudtrust/keycloak-bridge/api/common"
 	apiregister "github.com/cloudtrust/keycloak-bridge/api/register"
 )
 
@@ -115,4 +116,9 @@ func (c *authorizationComponentMW) RegisterUser(ctx context.Context, targetRealm
 // authorizationComponentMW implements Component.
 func (c *authorizationComponentMW) GetConfiguration(ctx context.Context, realmName string) (apiregister.ConfigurationRepresentation, error) {
 	return c.next.GetConfiguration(ctx, realmName)
+}
+
+// authorizationComponentMW implements Component.
+func (c *authorizationComponentMW) GetUserProfile(ctx context.Context, realmName string) (apicommon.ProfileRepresentation, error) {
+	return c.next.GetUserProfile(ctx, realmName)
 }

@@ -3,10 +3,12 @@ package validation
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"testing"
 
 	api "github.com/cloudtrust/keycloak-bridge/api/validation"
 	"github.com/cloudtrust/keycloak-bridge/pkg/validation/mock"
+	kc "github.com/cloudtrust/keycloak-client/v2"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
@@ -26,7 +28,7 @@ func TestGetUserEndpoint(t *testing.T) {
 	req[prmRealm] = realm
 	req[prmUserID] = userID
 
-	mockComponent.EXPECT().GetUser(ctx, realm, userID).Return(api.UserRepresentation{}, nil).Times(1)
+	mockComponent.EXPECT().GetUser(ctx, realm, userID).Return(api.UserRepresentation{}, nil)
 	var res, err = e(ctx, req)
 	assert.Nil(t, err)
 	assert.NotNil(t, res)
@@ -36,19 +38,23 @@ func TestUpdateUserEndpoint(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mockComponent = mock.NewComponent(mockCtrl)
+	var (
+		mockComponent    = mock.NewComponent(mockCtrl)
+		mockProfileCache = mock.NewUserProfileCache(mockCtrl)
 
-	var e = MakeUpdateUserEndpoint(mockComponent)
-	var userID = "1234-452-4578"
-	var realm = "realm"
-	var transactionID = "transactionID"
-	var ctx = context.Background()
+		e             = MakeUpdateUserEndpoint(mockComponent, mockProfileCache)
+		userID        = "1234-452-4578"
+		realm         = "realm"
+		transactionID = "transactionID"
+		ctx           = context.TODO()
+	)
 
 	t.Run("No error", func(t *testing.T) {
 		userJSON, _ := json.Marshal(api.UserRepresentation{})
 		var req = map[string]string{prmRealm: realm, prmUserID: userID, prmTxnID: transactionID, reqBody: string(userJSON)}
 
-		mockComponent.EXPECT().UpdateUser(ctx, realm, userID, gomock.Any(), &transactionID).Return(nil).Times(1)
+		mockProfileCache.EXPECT().GetRealmUserProfile(gomock.Any(), realm).Return(kc.UserProfileRepresentation{}, nil)
+		mockComponent.EXPECT().UpdateUser(ctx, realm, userID, gomock.Any(), &transactionID).Return(nil)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Nil(t, res)
@@ -58,7 +64,8 @@ func TestUpdateUserEndpoint(t *testing.T) {
 		userJSON, _ := json.Marshal(api.UserRepresentation{})
 		var req = map[string]string{prmRealm: realm, prmUserID: userID, reqBody: string(userJSON)}
 
-		mockComponent.EXPECT().UpdateUser(ctx, realm, userID, gomock.Any(), nil).Return(nil).Times(1)
+		mockProfileCache.EXPECT().GetRealmUserProfile(gomock.Any(), realm).Return(kc.UserProfileRepresentation{}, nil)
+		mockComponent.EXPECT().UpdateUser(ctx, realm, userID, gomock.Any(), nil).Return(nil)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Nil(t, res)
@@ -68,6 +75,7 @@ func TestUpdateUserEndpoint(t *testing.T) {
 		userJSON, _ := json.Marshal(api.UserRepresentation{Gender: ptr("unknown")})
 		var req = map[string]string{prmRealm: realm, prmUserID: userID, reqBody: string(userJSON)}
 
+		mockProfileCache.EXPECT().GetRealmUserProfile(gomock.Any(), realm).Return(kc.UserProfileRepresentation{}, errors.New(""))
 		var res, err = e(ctx, req)
 		assert.NotNil(t, err)
 		assert.Nil(t, res)
@@ -103,7 +111,7 @@ func TestUpdateUserAccreditationEndpoint(t *testing.T) {
 		accreditationsJSON, _ := json.Marshal(accreditations)
 		var req = map[string]string{prmRealm: realm, prmUserID: userID, reqBody: string(accreditationsJSON)}
 
-		mockComponent.EXPECT().UpdateUserAccreditations(ctx, realm, userID, accreditations).Return(nil).Times(1)
+		mockComponent.EXPECT().UpdateUserAccreditations(ctx, realm, userID, accreditations).Return(nil)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Nil(t, res)
@@ -149,7 +157,7 @@ func TestGetGroupsOfUserEndpoint(t *testing.T) {
 		req[prmRealm] = realm
 		req[prmUserID] = userID
 
-		mockComponent.EXPECT().GetGroupsOfUser(ctx, realm, userID).Return([]api.GroupRepresentation{}, nil).Times(1)
+		mockComponent.EXPECT().GetGroupsOfUser(ctx, realm, userID).Return([]api.GroupRepresentation{}, nil)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.NotNil(t, res)

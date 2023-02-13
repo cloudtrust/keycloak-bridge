@@ -8,7 +8,12 @@ import (
 	errrorhandler "github.com/cloudtrust/common-service/v2/errors"
 	api "github.com/cloudtrust/keycloak-bridge/api/account"
 	msg "github.com/cloudtrust/keycloak-bridge/internal/constants"
+	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/go-kit/kit/endpoint"
+)
+
+const (
+	apiName = "account"
 )
 
 // Endpoints wraps a service behind a set of endpoints.
@@ -23,6 +28,7 @@ type Endpoints struct {
 	UpdateAccount             endpoint.Endpoint
 	DeleteAccount             endpoint.Endpoint
 	GetConfiguration          endpoint.Endpoint
+	GetProfile                endpoint.Endpoint
 	SendVerifyEmail           endpoint.Endpoint
 	SendVerifyPhoneNumber     endpoint.Endpoint
 }
@@ -117,9 +123,10 @@ func MakeGetAccountEndpoint(component Component) cs.Endpoint {
 }
 
 // MakeUpdateAccountEndpoint makes the UpdateAccount endpoint to update connected user's own info.
-func MakeUpdateAccountEndpoint(component Component) cs.Endpoint {
+func MakeUpdateAccountEndpoint(component Component, profileCache UserProfileCache, logger keycloakb.Logger) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
+		var realm = ctx.Value(cs.CtContextRealm).(string)
 		var body api.UpdatableAccountRepresentation
 
 		err := json.Unmarshal([]byte(m[ReqBody]), &body)
@@ -127,7 +134,9 @@ func MakeUpdateAccountEndpoint(component Component) cs.Endpoint {
 			return nil, errrorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Body)
 		}
 
-		if err = body.Validate(); err != nil {
+		// Validate input request
+		if err = body.Validate(ctx, profileCache, realm); err != nil {
+			logger.Warn(ctx, "msg", "Can't validate input", "err", err.Error())
 			return nil, err
 		}
 
@@ -148,6 +157,13 @@ func MakeGetConfigurationEndpoint(component Component) cs.Endpoint {
 		var m = req.(map[string]string)
 
 		return component.GetConfiguration(ctx, m[PrmQryRealmID])
+	}
+}
+
+// MakeGetUserProfileEndpoint makes the GetProfile endpoint to get the profile configuration for selfservice application.
+func MakeGetUserProfileEndpoint(component Component) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		return component.GetUserProfile(ctx)
 	}
 }
 

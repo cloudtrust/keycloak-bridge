@@ -11,6 +11,7 @@ import (
 
 	"github.com/cloudtrust/common-service/v2/log"
 	api "github.com/cloudtrust/keycloak-bridge/api/account"
+	apicommon "github.com/cloudtrust/keycloak-bridge/api/common"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 )
 
@@ -184,8 +185,13 @@ func (c *authorizationComponentMW) DeleteAccount(ctx context.Context) error {
 }
 
 func (c *authorizationComponentMW) GetConfiguration(ctx context.Context, realmIDOverride string) (api.Configuration, error) {
-	//No restriction for this call
+	// No restriction for this call
 	return c.next.GetConfiguration(ctx, realmIDOverride)
+}
+
+func (c *authorizationComponentMW) GetUserProfile(ctx context.Context) (apicommon.ProfileRepresentation, error) {
+	// No restriction for this call
+	return c.next.GetUserProfile(ctx)
 }
 
 func (c *authorizationComponentMW) SendVerifyEmail(ctx context.Context) error {

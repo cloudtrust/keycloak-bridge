@@ -30,6 +30,7 @@ import (
 
 type componentMocks struct {
 	keycloakClient        *mock.KeycloakClient
+	profileCache          *mock.UserProfileCache
 	eventDBModule         *mock.EventDBModule
 	configurationDBModule *mock.ConfigurationDBModule
 	onboardingModule      *mock.OnboardingModule
@@ -44,6 +45,7 @@ type componentMocks struct {
 func createMocks(mockCtrl *gomock.Controller) *componentMocks {
 	return &componentMocks{
 		keycloakClient:        mock.NewKeycloakClient(mockCtrl),
+		profileCache:          mock.NewUserProfileCache(mockCtrl),
 		eventDBModule:         mock.NewEventDBModule(mockCtrl),
 		configurationDBModule: mock.NewConfigurationDBModule(mockCtrl),
 		onboardingModule:      mock.NewOnboardingModule(mockCtrl),
@@ -66,7 +68,8 @@ const (
 
 func (m *componentMocks) createComponent() *component {
 	/* REMOVE_THIS_3901 : remove second parameter (nil) */
-	return NewComponent(m.keycloakClient, nil, m.eventDBModule, m.configurationDBModule, m.onboardingModule, m.authChecker, m.tokenProvider, m.accreditationsClient, allowedTrustIDGroups, socialRealmName, m.glnVerifier, m.logger).(*component)
+	return NewComponent(m.keycloakClient, nil, m.profileCache, m.eventDBModule, m.configurationDBModule, m.onboardingModule, m.authChecker,
+		m.tokenProvider, m.accreditationsClient, allowedTrustIDGroups, socialRealmName, m.glnVerifier, m.logger).(*component)
 }
 
 func ptrString(value string) *string {

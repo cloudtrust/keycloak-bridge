@@ -6,25 +6,32 @@ import (
 	cs "github.com/cloudtrust/common-service/v2"
 	commonerrors "github.com/cloudtrust/common-service/v2/errors"
 	commonhttp "github.com/cloudtrust/common-service/v2/http"
+	"github.com/cloudtrust/common-service/v2/log"
 	apiregister "github.com/cloudtrust/keycloak-bridge/api/register"
 	msg "github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/go-kit/kit/endpoint"
 )
 
+const (
+	apiName = "register"
+)
+
 // Endpoints for self service
 type Endpoints struct {
-	RegisterUser     endpoint.Endpoint
-	RegisterCorpUser endpoint.Endpoint
-	GetConfiguration endpoint.Endpoint
+	RegisterUser       endpoint.Endpoint
+	RegisterCorpUser   endpoint.Endpoint
+	GetConfiguration   endpoint.Endpoint
+	GetUserProfile     endpoint.Endpoint
+	GetCorpUserProfile endpoint.Endpoint
 }
 
 // MakeRegisterUserEndpoint endpoint creation
-func MakeRegisterUserEndpoint(component Component, socialRealm string) cs.Endpoint {
+func MakeRegisterUserEndpoint(component Component, socialRealm string, profileCache UserProfileCache, logger log.Logger) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 		var realm = m[prmRealm]
 		if realm == "" {
-			return nil, commonerrors.CreateBadRequestError(commonerrors.MsgErrInvalidParam + "." + msg.Realm)
+			return "", commonerrors.CreateBadRequestError(commonerrors.MsgErrInvalidParam + "." + msg.Realm)
 		}
 
 		var contextKey *string
@@ -32,12 +39,12 @@ func MakeRegisterUserEndpoint(component Component, socialRealm string) cs.Endpoi
 			contextKey = &value
 		}
 
-		return registerUser(ctx, component, socialRealm, realm, m[reqBody], true, contextKey)
+		return registerUser(ctx, component, profileCache, logger, socialRealm, realm, m[reqBody], contextKey)
 	}
 }
 
 // MakeRegisterCorpUserEndpoint endpoint creation
-func MakeRegisterCorpUserEndpoint(component Component) cs.Endpoint {
+func MakeRegisterCorpUserEndpoint(component Component, profileCache UserProfileCache, logger log.Logger) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 		var realm = m[prmCorpRealm]
@@ -47,26 +54,25 @@ func MakeRegisterCorpUserEndpoint(component Component) cs.Endpoint {
 			contextKey = &value
 		}
 
-		return registerUser(ctx, component, realm, realm, m[reqBody], false, contextKey)
+		return registerUser(ctx, component, profileCache, logger, realm, realm, m[reqBody], contextKey)
 	}
 }
 
-func registerUser(ctx context.Context, component Component, corpRealm string, realm string, body string, isSocialRealm bool, contextKey *string) (interface{}, error) {
+func registerUser(ctx context.Context, component Component, profileCache UserProfileCache, logger log.Logger, corpRealm string, realm string, body string, contextKey *string) (interface{}, error) {
 	var user, err = apiregister.UserFromJSON(body)
 	if err != nil {
 		return nil, commonerrors.CreateBadRequestError(commonerrors.MsgErrInvalidParam + "." + msg.BodyContent)
 	}
 	// Validate input request
-	err = user.Validate(isSocialRealm)
-	if err != nil {
-		return nil, err
+	if err = user.Validate(ctx, profileCache, realm); err != nil {
+		logger.Warn(ctx, "msg", "Can't validate input", "err", err.Error())
+		return "", err
 	}
 
 	redirectURL, err := component.RegisterUser(ctx, corpRealm, realm, user, contextKey)
 	if err != nil {
 		return nil, err
 	}
-
 	if redirectURL != "" {
 		return redirectURL, nil
 	}
@@ -76,12 +82,22 @@ func registerUser(ctx context.Context, component Component, corpRealm string, re
 // MakeGetConfigurationEndpoint endpoint creation
 func MakeGetConfigurationEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
-		var m = req.(map[string]string)
-		var realm = m[prmRealm]
-		if realm == "" {
-			return nil, commonerrors.CreateBadRequestError(commonerrors.MsgErrInvalidParam + "." + msg.Realm)
-		}
-
+		var realm = req.(map[string]string)[prmRealm]
 		return component.GetConfiguration(ctx, realm)
+	}
+}
+
+// MakeGetUserProfileEndpoint endpoint creation
+func MakeGetUserProfileEndpoint(component Component, socialRealm string) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		return component.GetUserProfile(ctx, socialRealm)
+	}
+}
+
+// MakeGetCorpUserProfileEndpoint endpoint creation
+func MakeGetCorpUserProfileEndpoint(component Component) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var realm = req.(map[string]string)[prmRealm]
+		return component.GetUserProfile(ctx, realm)
 	}
 }

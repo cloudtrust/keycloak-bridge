@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	logger "github.com/cloudtrust/common-service/v2/log"
+	apicommon "github.com/cloudtrust/keycloak-bridge/api/common"
 	apiregister "github.com/cloudtrust/keycloak-bridge/api/register"
 	"github.com/cloudtrust/keycloak-bridge/pkg/register/mock"
 	"github.com/golang/mock/gomock"
@@ -107,11 +108,21 @@ func TestMakeAuthorizationRegisterComponentMW(t *testing.T) {
 	var user = apiregister.UserRepresentation{}
 	var expectedErr = errors.New("")
 
-	mockComponent.EXPECT().RegisterUser(ctx, socialRealm, realm, user, nil).Return("", expectedErr)
-	_, err := component.RegisterUser(ctx, socialRealm, realm, user, nil)
-	assert.Equal(t, expectedErr, err)
+	t.Run("RegisterUser", func(t *testing.T) {
+		mockComponent.EXPECT().RegisterUser(ctx, socialRealm, realm, user, nil).Return("", expectedErr)
+		_, err := component.RegisterUser(ctx, socialRealm, realm, user, nil)
+		assert.Equal(t, expectedErr, err)
+	})
 
-	mockComponent.EXPECT().GetConfiguration(ctx, realm).Return(apiregister.ConfigurationRepresentation{}, expectedErr)
-	_, err = component.GetConfiguration(ctx, realm)
-	assert.Equal(t, expectedErr, err)
+	t.Run("GetConfiguration", func(t *testing.T) {
+		mockComponent.EXPECT().GetConfiguration(ctx, realm).Return(apiregister.ConfigurationRepresentation{}, expectedErr)
+		_, err := component.GetConfiguration(ctx, realm)
+		assert.Equal(t, expectedErr, err)
+	})
+
+	t.Run("GetUserProfile", func(t *testing.T) {
+		mockComponent.EXPECT().GetUserProfile(ctx, realm).Return(apicommon.ProfileRepresentation{}, expectedErr)
+		_, err := component.GetUserProfile(ctx, realm)
+		assert.Equal(t, expectedErr, err)
+	})
 }

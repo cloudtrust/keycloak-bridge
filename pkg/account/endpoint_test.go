@@ -4,8 +4,12 @@ import (
 	"context"
 	"testing"
 
+	cs "github.com/cloudtrust/common-service/v2"
+	logger "github.com/cloudtrust/common-service/v2/log"
 	account_api "github.com/cloudtrust/keycloak-bridge/api/account"
+	apicommon "github.com/cloudtrust/keycloak-bridge/api/common"
 	"github.com/cloudtrust/keycloak-bridge/pkg/account/mock"
+	kc "github.com/cloudtrust/keycloak-client/v2"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
@@ -15,7 +19,7 @@ func TestMakeUpdatePasswordEndpoint(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	mockAccountComponent := mock.NewComponent(mockCtrl)
-	mockAccountComponent.EXPECT().UpdatePassword(gomock.Any(), "password", "password2", "password2").Return(nil).Times(1)
+	mockAccountComponent.EXPECT().UpdatePassword(gomock.Any(), "password", "password2", "password2").Return(nil)
 
 	t.Run("Success", func(t *testing.T) {
 		var m = map[string]string{ReqBody: `{"currentPassword":"password", "newPassword":"password2", "confirmPassword":"password2"}`}
@@ -39,7 +43,7 @@ func TestMakeGetCredentialsEndpoint(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	mockAccountComponent := mock.NewComponent(mockCtrl)
-	mockAccountComponent.EXPECT().GetCredentials(gomock.Any()).Return([]account_api.CredentialRepresentation{}, nil).Times(1)
+	mockAccountComponent.EXPECT().GetCredentials(gomock.Any()).Return([]account_api.CredentialRepresentation{}, nil)
 
 	m := map[string]string{}
 	_, err := MakeGetCredentialsEndpoint(mockAccountComponent)(context.Background(), m)
@@ -51,7 +55,7 @@ func TestMakeGetCredentialRegistratorsEndpoint(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	mockAccountComponent := mock.NewComponent(mockCtrl)
-	mockAccountComponent.EXPECT().GetCredentialRegistrators(gomock.Any()).Return([]string{}, nil).Times(1)
+	mockAccountComponent.EXPECT().GetCredentialRegistrators(gomock.Any()).Return([]string{}, nil)
 
 	m := map[string]string{}
 	_, err := MakeGetCredentialRegistratorsEndpoint(mockAccountComponent)(context.Background(), m)
@@ -63,7 +67,7 @@ func TestMakeUpdateLabelCredentialEndpoint(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	mockAccountComponent := mock.NewComponent(mockCtrl)
-	mockAccountComponent.EXPECT().UpdateLabelCredential(gomock.Any(), "id", "label").Return(nil).Times(1)
+	mockAccountComponent.EXPECT().UpdateLabelCredential(gomock.Any(), "id", "label").Return(nil)
 
 	t.Run("Success", func(t *testing.T) {
 		var m = map[string]string{ReqBody: `{"userLabel":"label"}`, PrmCredentialID: `id`}
@@ -92,7 +96,7 @@ func TestMakeDeleteCredentialEndpoint(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	mockAccountComponent := mock.NewComponent(mockCtrl)
-	mockAccountComponent.EXPECT().DeleteCredential(gomock.Any(), "id").Return(nil).Times(1)
+	mockAccountComponent.EXPECT().DeleteCredential(gomock.Any(), "id").Return(nil)
 
 	m := map[string]string{}
 
@@ -106,7 +110,7 @@ func TestMakeMoveCredentialEndpoint(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	mockAccountComponent := mock.NewComponent(mockCtrl)
-	mockAccountComponent.EXPECT().MoveCredential(gomock.Any(), "id1", "id2").Return(nil).Times(1)
+	mockAccountComponent.EXPECT().MoveCredential(gomock.Any(), "id1", "id2").Return(nil)
 
 	m := map[string]string{}
 
@@ -121,7 +125,7 @@ func TestMakeGetAccountEndpoint(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	mockAccountComponent := mock.NewComponent(mockCtrl)
-	mockAccountComponent.EXPECT().GetAccount(gomock.Any()).Return(account_api.AccountRepresentation{}, nil).Times(1)
+	mockAccountComponent.EXPECT().GetAccount(gomock.Any()).Return(account_api.AccountRepresentation{}, nil)
 
 	m := map[string]string{}
 	_, err := MakeGetAccountEndpoint(mockAccountComponent)(context.Background(), m)
@@ -132,27 +136,44 @@ func TestMakeUpdateAccountEndpoint(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	mockAccountComponent := mock.NewComponent(mockCtrl)
-	mockAccountComponent.EXPECT().UpdateAccount(gomock.Any(), account_api.UpdatableAccountRepresentation{}).Return(nil).Times(1)
-	{
-		m := map[string]string{}
-		m[ReqBody] = "{ \"userLabel\": \"label\"}"
-		_, err := MakeUpdateAccountEndpoint(mockAccountComponent)(context.Background(), m)
-		assert.Nil(t, err)
-	}
-	{
-		m := map[string]string{}
-		m[ReqBody] = "{"
-		_, err := MakeUpdateAccountEndpoint(mockAccountComponent)(context.Background(), m)
-		assert.NotNil(t, err)
-	}
-	{
-		m := map[string]string{}
-		m[ReqBody] = "{\"phoneNumber\": \"label\"}"
-		_, err := MakeUpdateAccountEndpoint(mockAccountComponent)(context.Background(), m)
-		assert.NotNil(t, err)
-	}
+	var (
+		mockProfileCache     = mock.NewUserProfileCache(mockCtrl)
+		mockAccountComponent = mock.NewComponent(mockCtrl)
+		endpoint             = MakeUpdateAccountEndpoint(mockAccountComponent, mockProfileCache, logger.NewNopLogger())
 
+		realm   = "the-realm"
+		ctx     = context.WithValue(context.TODO(), cs.CtContextRealm, realm)
+		profile = kc.UserProfileRepresentation{
+			Attributes: []kc.ProfileAttrbRepresentation{
+				{
+					Name:        ptr("phoneNumber"),
+					Annotations: map[string]string{apiName: "true"},
+					Validations: kc.ProfileAttrbValidationRepresentation{
+						"pattern": kc.ProfileAttrValidatorRepresentation{"pattern": `^\+\d+$`},
+					},
+				},
+			},
+		}
+	)
+
+	t.Run("Valid JSON body", func(t *testing.T) {
+		m := map[string]string{ReqBody: `{ "phoneNumber": "+41767815784"}`}
+		mockProfileCache.EXPECT().GetRealmUserProfile(ctx, realm).Return(profile, nil)
+		mockAccountComponent.EXPECT().UpdateAccount(gomock.Any(), gomock.Any()).Return(nil)
+		_, err := endpoint(ctx, m)
+		assert.Nil(t, err)
+	})
+	t.Run("Invalid JSON body", func(t *testing.T) {
+		m := map[string]string{ReqBody: "{"}
+		_, err := endpoint(ctx, m)
+		assert.NotNil(t, err)
+	})
+	t.Run("Invalid body content", func(t *testing.T) {
+		m := map[string]string{ReqBody: `{ "phoneNumber": "ABCD"}`}
+		mockProfileCache.EXPECT().GetRealmUserProfile(ctx, realm).Return(profile, nil)
+		_, err := endpoint(ctx, m)
+		assert.NotNil(t, err)
+	})
 }
 
 func TestSimpleEndpoints(t *testing.T) {
@@ -163,26 +184,31 @@ func TestSimpleEndpoints(t *testing.T) {
 	var m = map[string]string{}
 
 	t.Run("MakeDeleteAccountEndpoint", func(t *testing.T) {
-		mockAccountComponent.EXPECT().DeleteAccount(gomock.Any()).Return(nil).Times(1)
+		mockAccountComponent.EXPECT().DeleteAccount(gomock.Any()).Return(nil)
 
 		var _, err = MakeDeleteAccountEndpoint(mockAccountComponent)(context.Background(), m)
 		assert.Nil(t, err)
 	})
 
 	t.Run("MakeGetConfigurationEndpoint", func(t *testing.T) {
-		mockAccountComponent.EXPECT().GetConfiguration(gomock.Any(), gomock.Any()).Return(account_api.Configuration{}, nil).Times(1)
+		mockAccountComponent.EXPECT().GetConfiguration(gomock.Any(), gomock.Any()).Return(account_api.Configuration{}, nil)
 		_, err := MakeGetConfigurationEndpoint(mockAccountComponent)(context.Background(), m)
+		assert.Nil(t, err)
+	})
+	t.Run("MakeGetProfileEndpoint", func(t *testing.T) {
+		mockAccountComponent.EXPECT().GetUserProfile(gomock.Any()).Return(apicommon.ProfileRepresentation{}, nil)
+		_, err := MakeGetUserProfileEndpoint(mockAccountComponent)(context.Background(), m)
 		assert.Nil(t, err)
 	})
 
 	t.Run("MakeSendVerifyEmailEndpoint", func(t *testing.T) {
-		mockAccountComponent.EXPECT().SendVerifyEmail(gomock.Any()).Return(nil).Times(1)
+		mockAccountComponent.EXPECT().SendVerifyEmail(gomock.Any()).Return(nil)
 		_, err := MakeSendVerifyEmailEndpoint(mockAccountComponent)(context.Background(), m)
 		assert.Nil(t, err)
 	})
 
 	t.Run("MakeSendVerifyPhoneNumberEndpoint", func(t *testing.T) {
-		mockAccountComponent.EXPECT().SendVerifyPhoneNumber(gomock.Any()).Return(nil).Times(1)
+		mockAccountComponent.EXPECT().SendVerifyPhoneNumber(gomock.Any()).Return(nil)
 		_, err := MakeSendVerifyPhoneNumberEndpoint(mockAccountComponent)(context.Background(), m)
 		assert.Nil(t, err)
 	})

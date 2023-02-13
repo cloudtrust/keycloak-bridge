@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	cs "github.com/cloudtrust/common-service/v2"
 	"github.com/cloudtrust/common-service/v2/configuration"
 	"github.com/cloudtrust/common-service/v2/database"
 	errorhandler "github.com/cloudtrust/common-service/v2/errors"
@@ -57,6 +58,7 @@ func createValidUser() apiregister.UserRepresentation {
 type componentMocks struct {
 	keycloakClient   *mock.KeycloakClient
 	tokenProvider    *mock.OidcTokenProvider
+	profileCache     *mock.UserProfileCache
 	configDB         *mock.ConfigurationDBModule
 	eventsDB         *mock.EventsDBModule
 	glnVerifier      *mock.GlnVerifier
@@ -68,6 +70,7 @@ func createMocks(mockCtrl *gomock.Controller) *componentMocks {
 	return &componentMocks{
 		keycloakClient:   mock.NewKeycloakClient(mockCtrl),
 		tokenProvider:    mock.NewOidcTokenProvider(mockCtrl),
+		profileCache:     mock.NewUserProfileCache(mockCtrl),
 		configDB:         mock.NewConfigurationDBModule(mockCtrl),
 		eventsDB:         mock.NewEventsDBModule(mockCtrl),
 		glnVerifier:      mock.NewGlnVerifier(mockCtrl),
@@ -77,7 +80,7 @@ func createMocks(mockCtrl *gomock.Controller) *componentMocks {
 }
 
 func (mocks *componentMocks) createComponent() *component {
-	return NewComponent(mocks.keycloakClient, mocks.tokenProvider, mocks.configDB, mocks.eventsDB,
+	return NewComponent(mocks.keycloakClient, mocks.tokenProvider, mocks.profileCache, mocks.configDB, mocks.eventsDB,
 		mocks.onboardingModule, mocks.glnVerifier, mocks.contextKeyMgr, log.NewNopLogger()).(*component)
 }
 
@@ -393,6 +396,32 @@ func TestGetConfiguration(t *testing.T) {
 		mocks.tokenProvider.EXPECT().ProvideToken(gomock.Any()).Return(accessToken, nil)
 		mocks.keycloakClient.EXPECT().GetRealm(accessToken, confRealm).Return(realmConfig, nil)
 		var _, err = component.GetConfiguration(ctx, confRealm)
+		assert.Nil(t, err)
+	})
+}
+
+func TestGetUserProfile(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mocks = createMocks(mockCtrl)
+	var component = mocks.createComponent()
+
+	var currentRealm = "my-realm"
+	var accessToken = "access-token"
+	var anyError = errors.New("any error")
+	var ctx = context.TODO()
+	ctx = context.WithValue(ctx, cs.CtContextAccessToken, accessToken)
+	ctx = context.WithValue(ctx, cs.CtContextRealm, currentRealm)
+
+	t.Run("Cache fails", func(t *testing.T) {
+		mocks.profileCache.EXPECT().GetRealmUserProfile(ctx, currentRealm).Return(kc.UserProfileRepresentation{}, anyError)
+		var _, err = component.GetUserProfile(ctx, currentRealm)
+		assert.NotNil(t, err)
+	})
+	t.Run("Success", func(t *testing.T) {
+		mocks.profileCache.EXPECT().GetRealmUserProfile(ctx, currentRealm).Return(kc.UserProfileRepresentation{}, nil)
+		var _, err = component.GetUserProfile(ctx, currentRealm)
 		assert.Nil(t, err)
 	})
 }

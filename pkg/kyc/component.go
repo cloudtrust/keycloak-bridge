@@ -17,6 +17,7 @@ import (
 	"github.com/cloudtrust/common-service/v2/database"
 	errorhandler "github.com/cloudtrust/common-service/v2/errors"
 	"github.com/cloudtrust/common-service/v2/security"
+	apicommon "github.com/cloudtrust/keycloak-bridge/api/common"
 	apikyc "github.com/cloudtrust/keycloak-bridge/api/kyc"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
@@ -63,9 +64,16 @@ type AccreditationsServiceClient interface {
 	NotifyCheck(ctx context.Context, check accreditationsclient.CheckRepresentation) error
 }
 
+// UserProfileCache interface
+type UserProfileCache interface {
+	GetRealmUserProfile(ctx context.Context, realmName string) (kc.UserProfileRepresentation, error)
+}
+
 // Component is the register component interface.
 type Component interface {
 	GetActions(ctx context.Context) ([]apikyc.ActionRepresentation, error)
+	GetUserProfile(ctx context.Context, realmName string) (apicommon.ProfileRepresentation, error)
+	GetUserProfileInSocialRealm(ctx context.Context) (apicommon.ProfileRepresentation, error)
 	GetUserInSocialRealm(ctx context.Context, userID string, consentCode *string) (apikyc.UserRepresentation, error)
 	GetUserByUsernameInSocialRealm(ctx context.Context, username string) (apikyc.UserRepresentation, error)
 	GetUser(ctx context.Context, realmName string, userID string, consentCode *string) (apikyc.UserRepresentation, error)
@@ -85,6 +93,7 @@ type component struct {
 	tokenProvider        toolbox.OidcTokenProvider
 	socialRealmName      string
 	keycloakClient       KeycloakClient
+	profileCache         UserProfileCache
 	archiveDBModule      ArchiveDBModule
 	configDBModule       ConfigDBModule
 	eventsDBModule       EventsDBModule
@@ -98,11 +107,12 @@ const (
 )
 
 // NewComponent returns the management component.
-func NewComponent(tokenProvider toolbox.OidcTokenProvider, socialRealmName string, keycloakClient KeycloakClient, archiveDBModule ArchiveDBModule, configDBModule ConfigDBModule, eventsDBModule EventsDBModule, accredsServiceClient AccreditationsServiceClient, glnVerifier GlnVerifier, logger keycloakb.Logger) Component {
+func NewComponent(tokenProvider toolbox.OidcTokenProvider, socialRealmName string, keycloakClient KeycloakClient, profileCache UserProfileCache, archiveDBModule ArchiveDBModule, configDBModule ConfigDBModule, eventsDBModule EventsDBModule, accredsServiceClient AccreditationsServiceClient, glnVerifier GlnVerifier, logger keycloakb.Logger) Component {
 	return &component{
 		tokenProvider:        tokenProvider,
 		socialRealmName:      socialRealmName,
 		keycloakClient:       keycloakClient,
+		profileCache:         profileCache,
 		archiveDBModule:      archiveDBModule,
 		configDBModule:       configDBModule,
 		eventsDBModule:       eventsDBModule,
@@ -235,6 +245,20 @@ func (c *component) consentRequired(rac configuration.RealmAdminConfiguration, t
 		return rac.ConsentRequiredSocial != nil && *rac.ConsentRequiredSocial
 	}
 	return rac.ConsentRequiredCorporate != nil && *rac.ConsentRequiredCorporate
+}
+
+func (c *component) GetUserProfileInSocialRealm(ctx context.Context) (apicommon.ProfileRepresentation, error) {
+	return c.GetUserProfile(ctx, c.socialRealmName)
+}
+
+func (c *component) GetUserProfile(ctx context.Context, realmName string) (apicommon.ProfileRepresentation, error) {
+	var profile, err = c.profileCache.GetRealmUserProfile(ctx, realmName)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Can't get users profile", "err", err.Error())
+		return apicommon.ProfileRepresentation{}, err
+	}
+
+	return apicommon.ProfileToApi(profile, apiName), nil
 }
 
 func (c *component) GetUserInSocialRealm(ctx context.Context, userID string, consentCode *string) (apikyc.UserRepresentation, error) {

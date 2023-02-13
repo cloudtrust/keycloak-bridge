@@ -1,0 +1,676 @@
+{
+	"attributes": [
+	  {
+		"name": "username",
+		"displayName": "${username}",
+		"validations": {
+		  "pattern": {
+			"pattern": "^[a-z0-9-_.]{1,128}$"
+		  }
+		},
+		"permissions": {
+		  "view": [
+			"user",
+			"admin"
+		  ],
+		  "edit": [
+			"admin",
+			"user"
+		  ]
+		},
+		"selector": {
+		  "scopes": []
+		},
+		"annotations": {
+			"kyc": "true",
+			"management": "true"
+		}
+	  },
+	  {
+		"name": "email",
+		"displayName": "${email}",
+		"validations": {
+		  "email": {},
+		  "length": {
+			"max": 255
+		  }
+		},
+		"annotations": {
+		  "register": "required",
+		  "account": "required",
+		  "kyc": "required",
+		  "management": "required"
+		},
+		"selector": {
+		  "scopes": []
+		},
+		"permissions": {
+		  "view": [
+			"user",
+			"admin"
+		  ],
+		  "edit": [
+			"admin",
+			"user"
+		  ]
+		}
+	  },
+	  {
+		"selector": {
+		  "scopes": []
+		},
+		"permissions": {
+		  "view": [
+			"user",
+			"admin"
+		  ],
+		  "edit": [
+			"user",
+			"admin"
+		  ]
+		},
+		"name": "emailToValidate",
+		"displayName": "${emailToValidate}",
+		"validations": {
+		  "email": {}
+		}
+	  },
+	  {
+		"name": "firstName",
+		"displayName": "${firstName}",
+		"required": {
+		  "roles": [
+			"user"
+		  ],
+		  "scopes": []
+		},
+		"permissions": {
+		  "view": [
+			"user",
+			"admin"
+		  ],
+		  "edit": [
+			"user",
+			"admin"
+		  ]
+		},
+		"validations": {
+		  "pattern": {
+			"pattern": "^([\\p{Lu}\\p{Ll}][\\p{Lu}\\p{Ll} /\\\\\\.',-]{0,127})$"
+		  }
+		},
+		"selector": {
+		  "scopes": []
+		},
+		"annotations": {
+		  "register": "true",
+		  "account": "true",
+		  "kyc": "true",
+		  "management": "true"
+		}
+	  },
+	  {
+		"name": "lastName",
+		"displayName": "${lastName}",
+		"permissions": {
+		  "view": [
+			"user",
+			"admin"
+		  ],
+		  "edit": [
+			"user",
+			"admin"
+		  ]
+		},
+		"validations": {
+		  "pattern": {
+			"pattern": "^([\\p{Lu}\\p{Ll}][\\p{Lu}\\p{Ll} /\\\\\\.',-]{0,127})$"
+		  }
+		},
+		"selector": {
+		  "scopes": []
+		},
+		"annotations": {
+		  "kyc": "true",
+		  "management": "true",
+		  "register": "true",
+		  "account": "true"
+		},
+		"required": {
+		  "roles": [
+			"user"
+		  ],
+		  "scopes": []
+		}
+	  },
+	  {
+		"selector": {
+		  "scopes": []
+		},
+		"permissions": {
+		  "view": [
+			"user",
+			"admin"
+		  ],
+		  "edit": [
+			"user",
+			"admin"
+		  ]
+		},
+		"name": "ENC_gender",
+		"displayName": "${gender}",
+		"validations": {
+		  "pattern": {
+			"pattern": "^[MFU]$"
+		  }
+		},
+		"annotations": {
+		  "account": "true",
+		  "register": "true",
+		  "kyc": "true",
+		  "management": "true",
+		  "values": "gender"
+		}
+	  },
+	  {
+		"selector": {
+		  "scopes": []
+		},
+		"permissions": {
+		  "view": [
+			"user",
+			"admin"
+		  ],
+		  "edit": [
+			"user",
+			"admin"
+		  ]
+		},
+		"name": "phoneNumber",
+		"displayName": "${phoneNumber}",
+		"validations": {
+		  "ct-phonenumber": {}
+		},
+		"annotations": {
+		  "register": "required",
+		  "kyc": "required",
+		  "management": "required",
+		  "account": "required",
+		  "example": "+41763456789"
+		}
+	  },
+	  {
+		"selector": {
+		  "scopes": []
+		},
+		"permissions": {
+		  "view": [
+			"user",
+			"admin"
+		  ],
+		  "edit": [
+			"user",
+			"admin"
+		  ]
+		},
+		"name": "phoneNumberToValidate",
+		"displayName": "${phoneNumberToValidate}",
+		"validations": {
+		  "ct-phonenumber": {}
+		}
+	  },
+	  {
+		"selector": {
+		  "scopes": []
+		},
+		"required": {
+		  "roles": [],
+		  "scopes": []
+		},
+		"permissions": {
+		  "view": [],
+		  "edit": []
+		},
+		"name": "label",
+		"displayName": "${label}",
+		"validations": {
+		  "length": {
+			"trim-disabled": "",
+			"min": "1",
+			"max": "255"
+		  }
+		}
+	  },
+	  {
+		"selector": {
+		  "scopes": []
+		},
+		"permissions": {
+		  "view": [
+			"user",
+			"admin"
+		  ],
+		  "edit": [
+			"user",
+			"admin"
+		  ]
+		},
+		"name": "ENC_birthDate",
+		"displayName": "${birthDate}",
+		"validations": {
+		  "ct-date": {
+			"past": "true",
+			"future": "",
+			"revalidate": "",
+			"locale": "fr_CH"
+		  }
+		},
+		"annotations": {
+		  "register": "true",
+		  "kyc": "true",
+		  "management": "true",
+		  "account": "true",
+		  "example": "${dateSample}"
+		}
+	  },
+	  {
+		"selector": {
+		  "scopes": []
+		},
+		"permissions": {
+		  "view": [
+			"user",
+			"admin"
+		  ],
+		  "edit": [
+			"user",
+			"admin"
+		  ]
+		},
+		"name": "ENC_birthLocation",
+		"displayName": "${birthLocation}",
+		"validations": {
+		  "pattern": {
+			"pattern": "^([\\p{Lu}\\p{Ll}][\\p{Lu}\\p{Ll}\\d ()/\\\\\\.\\*,'-]{0,49})$"
+		  }
+		},
+		"annotations": {
+		  "register": "true",
+		  "account": "true",
+		  "kyc": "true",
+		  "management": "true"
+		}
+	  },
+	  {
+		"selector": {
+		  "scopes": []
+		},
+		"permissions": {
+		  "view": [
+			"user",
+			"admin"
+		  ],
+		  "edit": [
+			"user",
+			"admin"
+		  ]
+		},
+		"name": "ENC_nationality",
+		"displayName": "${nationality}",
+		"validations": {
+		  "pattern": {
+			"pattern": "^\\w{2}$"
+		  }
+		},
+		"annotations": {
+		  "register": "true",
+		  "account": "true",
+		  "kyc": "true",
+		  "management": "true",
+		  "values": "country"
+		}
+	  },
+	  {
+		"selector": {
+		  "scopes": []
+		},
+		"permissions": {
+		  "view": [
+			"user",
+			"admin"
+		  ],
+		  "edit": [
+			"user",
+			"admin"
+		  ]
+		},
+		"name": "ENC_idDocumentType",
+		"displayName": "${idDocumentType}",
+		"validations": {
+		  "options": {
+			"options": [
+			  "ID_CARD",
+			  "PASSPORT",
+			  "RESIDENCE_PERMIT"
+			]
+		  }
+		},
+		"annotations": {
+		  "register": "true",
+		  "account": "true",
+		  "kyc": "true",
+		  "management": "true",
+		  "values": "idDocumentType"
+		}
+	  },
+	  {
+		"selector": {
+		  "scopes": []
+		},
+		"permissions": {
+		  "view": [
+			"user",
+			"admin"
+		  ],
+		  "edit": [
+			"user",
+			"admin"
+		  ]
+		},
+		"name": "ENC_idDocumentNumber",
+		"displayName": "${idDocumentNumber}",
+		"validations": {
+		  "pattern": {
+			"pattern": "^([\\w\\d]+([\\. -][\\w\\d]+)*){1,50}$"
+		  },
+		  "length": {
+			"trim-disabled": "",
+			"min": "1",
+			"max": "50"
+		  }
+		},
+		"annotations": {
+		  "register": "true",
+		  "account": "true",
+		  "kyc": "true",
+		  "management": "true"
+		}
+	  },
+	  {
+		"selector": {
+		  "scopes": []
+		},
+		"permissions": {
+		  "view": [
+			"user",
+			"admin"
+		  ],
+		  "edit": [
+			"user",
+			"admin"
+		  ]
+		},
+		"name": "ENC_idDocumentExpiration",
+		"displayName": "${idDocumentExpiration}",
+		"validations": {
+		  "ct-date": {
+			"past": "",
+			"future": "",
+			"revalidate": "",
+			"locale": "fr_CH"
+		  }
+		},
+		"annotations": {
+		  "register": "true",
+		  "account": "true",
+		  "kyc": "true",
+		  "management": "true",
+		  "example": "DD.MM.YYYY"
+		}
+	  },
+	  {
+		"selector": {
+		  "scopes": []
+		},
+		"permissions": {
+		  "view": [
+			"user",
+			"admin"
+		  ],
+		  "edit": [
+			"user",
+			"admin"
+		  ]
+		},
+		"name": "ENC_idDocumentCountry",
+		"displayName": "${idDocumentCountry}",
+		"validations": {
+		  "pattern": {
+			"pattern": "^\\w{2}$"
+		  }
+		},
+		"annotations": {
+		  "register": "true",
+		  "account": "true",
+		  "kyc": "true",
+		  "management": "true",
+		  "values": "country"
+		}
+	  },
+	  {
+		"selector": {
+		  "scopes": []
+		},
+		"permissions": {
+		  "view": [
+			"user",
+			"admin"
+		  ],
+		  "edit": [
+			"admin",
+			"user"
+		  ]
+		},
+		"name": "locale",
+		"displayName": "${locale}",
+		"validations": {
+		  "pattern": {
+			"pattern": "^[a-z]{2}$"
+		  }
+		},
+		"annotations": {
+		  "register": "true",
+		  "account": "true",
+		  "kyc": "true",
+		  "management": "true"
+		}
+	  },
+	  {
+		"selector": {
+		  "scopes": []
+		},
+		"permissions": {
+		  "view": [
+			"user",
+			"admin"
+		  ],
+		  "edit": [
+			"user",
+			"admin"
+		  ]
+		},
+		"name": "businessID",
+		"displayName": "${businessID}",
+		"validations": {
+		  "length": {
+			"trim-disabled": "",
+			"min": "1",
+			"max": "255"
+		  }
+		}
+	  },
+	  {
+		"selector": {
+		  "scopes": []
+		},
+		"permissions": {
+		  "view": [
+			"admin",
+			"user"
+		  ],
+		  "edit": [
+			"admin"
+		  ]
+		},
+		"name": "accreditations",
+		"displayName": "${accreditations}",
+		"validations": {}
+	  },
+	  {
+		"selector": {
+		  "scopes": []
+		},
+		"permissions": {
+		  "view": [
+			"admin",
+			"user"
+		  ],
+		  "edit": [
+			"admin"
+		  ]
+		},
+		"name": "onboardingCompleted",
+		"validations": {
+		  "options": {
+			"options": [
+			  "false",
+			  "true"
+			]
+		  }
+		}
+	  },
+	  {
+		"selector": {
+		  "scopes": []
+		},
+		"permissions": {
+		  "view": [
+			"user",
+			"admin"
+		  ],
+		  "edit": [
+			"admin"
+		  ]
+		},
+		"name": "pendingChecks"
+	  },
+	  {
+		"selector": {
+		  "scopes": []
+		},
+		"permissions": {
+		  "view": [
+			"user",
+			"admin"
+		  ],
+		  "edit": [
+			"admin"
+		  ]
+		},
+		"name": "phoneNumberVerified",
+		"validations": {
+		  "options": {
+			"options": [
+			  "false",
+			  "true"
+			]
+		  }
+		}
+	  },
+	  {
+		"selector": {
+		  "scopes": []
+		},
+		"permissions": {
+		  "view": [
+			"user",
+			"admin"
+		  ],
+		  "edit": [
+			"admin"
+		  ]
+		},
+		"name": "smsAttempts",
+		"validations": {
+		  "integer": {
+			"min": "0",
+			"max": "99"
+		  }
+		}
+	  },
+	  {
+		"selector": {
+		  "scopes": []
+		},
+		"permissions": {
+		  "view": [
+			"user",
+			"admin"
+		  ],
+		  "edit": [
+			"admin"
+		  ]
+		},
+		"name": "smsSent",
+		"validations": {
+		  "integer": {
+			"min": "1",
+			"max": "99"
+		  }
+		}
+	  },
+	  {
+		"selector": {
+		  "scopes": []
+		},
+		"permissions": {
+		  "view": [
+			"user",
+			"admin"
+		  ],
+		  "edit": [
+			"admin"
+		  ]
+		},
+		"name": "src"
+	  },
+	  {
+		"selector": {
+		  "scopes": []
+		},
+		"permissions": {
+		  "view": [
+			"admin"
+		  ],
+		  "edit": [
+			"admin"
+		  ]
+		},
+		"name": "trustIDAuthToken"
+	  },
+	  {
+		"selector": {
+		  "scopes": []
+		},
+		"permissions": {
+		  "view": [
+			"admin"
+		  ],
+		  "edit": [
+			"admin"
+		  ]
+		},
+		"name": "trustIDGroups"
+	  }
+	]
+  }
