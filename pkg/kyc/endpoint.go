@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	apiName = "management"
+	apiName = "kyc"
 )
 
 // Endpoints for self service
