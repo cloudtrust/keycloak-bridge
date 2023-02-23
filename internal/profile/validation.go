@@ -132,7 +132,7 @@ func validateAttributeEmail(attrb kc.ProfileAttrbRepresentation, validator kc.Pr
 func validateAttributeInteger(attrb kc.ProfileAttrbRepresentation, validator kc.ProfileAttrValidatorRepresentation, value interface{}) error {
 	var intValue = cs.ToInt(value, math.MinInt)
 	if intValue == math.MinInt {
-		cerrors.CreateBadRequestError(cerrors.MsgErrInvalidParam + "." + toErrName(*attrb.Name))
+		return cerrors.CreateBadRequestError(cerrors.MsgErrInvalidParam + "." + toErrName(*attrb.Name))
 	}
 	return validateRangeWithString(attrb, validator, intValue)
 }
@@ -142,7 +142,7 @@ func validateAttributeDouble(attrb kc.ProfileAttrbRepresentation, validator kc.P
 	var infinity = math.Inf(-1)
 	var floatValue = cs.ToFloat(value, infinity)
 	if floatValue == infinity {
-		cerrors.CreateBadRequestError(cerrors.MsgErrInvalidParam + "." + toErrName(*attrb.Name))
+		return cerrors.CreateBadRequestError(cerrors.MsgErrInvalidParam + "." + toErrName(*attrb.Name))
 	}
 	for k, v := range validator {
 		if k == "min" {

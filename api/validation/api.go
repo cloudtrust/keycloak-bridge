@@ -62,28 +62,11 @@ const (
 	prmUserIDDocumentNumber  = "user_idDocNumber"
 	prmUserIDDocumentCountry = "user_idDocCountry"
 
-	prmCheckOperator  = "check_operator"
-	prmCheckDatetime  = "check_datetime"
-	prmCheckStatus    = "check_status"
-	prmCheckType      = "check_type"
-	prmCheckNature    = "check_nature"
-	prmCheckProofType = "check_proof_type"
-	prmCheckTxnID     = "check_txn_id"
-
 	regExpAlphaNum255 = `[a-zA-Z0-9_-]{1,255}`
 	regExpOperator    = regExpAlphaNum255
 	regExpNature      = regExpAlphaNum255
 	regExpProofType   = regExpAlphaNum255
 	regExpStatus      = regExpAlphaNum255
-)
-
-var (
-	allowedGender    = map[string]bool{"M": true, "F": true}
-	allowedCheckType = map[string]bool{"IDENTITY_CHECK": true}
-	successStatus    = map[string]bool{
-		"SUCCESS":              true,
-		"SUCCESS_DATA_CHANGED": true,
-	}
 )
 
 // Validate validates an accreditation representation

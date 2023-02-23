@@ -557,7 +557,7 @@ func (c *component) GetUserProfile(ctx context.Context) (apicommon.ProfileRepres
 		return apicommon.ProfileRepresentation{}, err
 	}
 
-	return apicommon.ProfileToApi(profile, apiName), nil
+	return apicommon.ProfileToAPI(profile, apiName), nil
 }
 
 func (c *component) SendVerifyEmail(ctx context.Context) error {

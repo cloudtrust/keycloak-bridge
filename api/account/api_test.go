@@ -206,40 +206,6 @@ func TestValidateCredentialRepresentation(t *testing.T) {
 	}
 }
 
-func createValidAccountRepresentation() AccountRepresentation {
-	var validUserName = "bobby"
-	var validName = "Bobby"
-	var validEmail = "bobby@mail.com"
-	var validPhone = "+41221234567"
-	var validLocale = "fr"
-
-	return AccountRepresentation{
-		Username:    &validUserName,
-		FirstName:   &validName,
-		LastName:    &validName,
-		Email:       &validEmail,
-		PhoneNumber: &validPhone,
-		Locale:      &validLocale,
-	}
-}
-
-func createValidUpdatableAccountRepresentation() UpdatableAccountRepresentation {
-	var validUserName = "bobby"
-	var validName = "Bobby"
-	var validEmail = "bobby@mail.com"
-	var validPhone = "+41221234567"
-	var validLocale = "fr"
-
-	return UpdatableAccountRepresentation{
-		Username:    &validUserName,
-		FirstName:   &validName,
-		LastName:    &validName,
-		Email:       &validEmail,
-		PhoneNumber: &validPhone,
-		Locale:      &validLocale,
-	}
-}
-
 func createValidUpdatePasswordBody() UpdatePasswordBody {
 	password := "password"
 

@@ -20,7 +20,7 @@ import (
 
 func responseToString(input io.ReadCloser) string {
 	buf := new(bytes.Buffer)
-	buf.ReadFrom(input)
+	_, _ = buf.ReadFrom(input)
 	return buf.String()
 }
 

@@ -42,7 +42,7 @@ func TestKYCRegisterHandler(t *testing.T) {
 		assert.Equal(t, http.StatusOK, res.StatusCode)
 
 		buf := new(bytes.Buffer)
-		buf.ReadFrom(res.Body)
+		_, _ = buf.ReadFrom(res.Body)
 		assert.Equal(t, `"abcd0123-abcd-0123-xxxx-123456789012:my-username"`, buf.String())
 	})
 
