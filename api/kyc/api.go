@@ -247,90 +247,90 @@ func (u *UserRepresentation) Validate(ctx context.Context, upc profile.UserProfi
 }
 
 // GetField is used to validate a user against a UserProfile
-func (user *UserRepresentation) GetField(field string) interface{} {
+func (u *UserRepresentation) GetField(field string) interface{} {
 	switch field {
 	case fields.Username.Key():
-		return profile.IfNotNil(user.Username)
+		return profile.IfNotNil(u.Username)
 	case fields.Email.Key():
-		return profile.IfNotNil(user.Email)
+		return profile.IfNotNil(u.Email)
 	case fields.FirstName.Key():
-		return profile.IfNotNil(user.FirstName)
+		return profile.IfNotNil(u.FirstName)
 	case fields.LastName.Key():
-		return profile.IfNotNil(user.LastName)
+		return profile.IfNotNil(u.LastName)
 	case fields.Gender.AttributeName():
-		return profile.IfNotNil(user.Gender)
+		return profile.IfNotNil(u.Gender)
 	case fields.PhoneNumber.AttributeName():
-		return profile.IfNotNil(user.PhoneNumber)
+		return profile.IfNotNil(u.PhoneNumber)
 	case fields.BirthDate.AttributeName():
-		return profile.IfNotNil(user.BirthDate)
+		return profile.IfNotNil(u.BirthDate)
 	case fields.BirthLocation.AttributeName():
-		return profile.IfNotNil(user.BirthLocation)
+		return profile.IfNotNil(u.BirthLocation)
 	case fields.Nationality.AttributeName():
-		return profile.IfNotNil(user.Nationality)
+		return profile.IfNotNil(u.Nationality)
 	case fields.IDDocumentType.AttributeName():
-		return profile.IfNotNil(user.IDDocumentType)
+		return profile.IfNotNil(u.IDDocumentType)
 	case fields.IDDocumentNumber.AttributeName():
-		return profile.IfNotNil(user.IDDocumentNumber)
+		return profile.IfNotNil(u.IDDocumentNumber)
 	case fields.IDDocumentCountry.AttributeName():
-		return profile.IfNotNil(user.IDDocumentCountry)
+		return profile.IfNotNil(u.IDDocumentCountry)
 	case fields.IDDocumentExpiration.AttributeName():
-		return profile.IfNotNil(user.IDDocumentExpiration)
+		return profile.IfNotNil(u.IDDocumentExpiration)
 	case fields.Locale.AttributeName():
-		return profile.IfNotNil(user.Locale)
+		return profile.IfNotNil(u.Locale)
 	case fields.BusinessID.AttributeName():
-		return profile.IfNotNil(user.BusinessID)
+		return profile.IfNotNil(u.BusinessID)
 	default:
 		return nil
 	}
 }
 
 // SetField is used to validate a user against a UserProfile
-func (user *UserRepresentation) SetField(field string, value interface{}) {
+func (u *UserRepresentation) SetField(field string, value interface{}) {
 	switch field {
 	case fields.Username.Key():
-		user.Username = cs.ToStringPtr(value)
+		u.Username = cs.ToStringPtr(value)
 		break
 	case fields.Email.Key():
-		user.Email = cs.ToStringPtr(value)
+		u.Email = cs.ToStringPtr(value)
 		break
 	case fields.FirstName.Key():
-		user.FirstName = cs.ToStringPtr(value)
+		u.FirstName = cs.ToStringPtr(value)
 		break
 	case fields.LastName.Key():
-		user.LastName = cs.ToStringPtr(value)
+		u.LastName = cs.ToStringPtr(value)
 		break
 	case fields.Gender.AttributeName():
-		user.Gender = cs.ToStringPtr(value)
+		u.Gender = cs.ToStringPtr(value)
 		break
 	case fields.PhoneNumber.AttributeName():
-		user.PhoneNumber = cs.ToStringPtr(value)
+		u.PhoneNumber = cs.ToStringPtr(value)
 		break
 	case fields.BirthDate.AttributeName():
-		user.BirthDate = cs.ToStringPtr(value)
+		u.BirthDate = cs.ToStringPtr(value)
 		break
 	case fields.BirthLocation.AttributeName():
-		user.BirthLocation = cs.ToStringPtr(value)
+		u.BirthLocation = cs.ToStringPtr(value)
 		break
 	case fields.Nationality.AttributeName():
-		user.Nationality = cs.ToStringPtr(value)
+		u.Nationality = cs.ToStringPtr(value)
 		break
 	case fields.IDDocumentType.AttributeName():
-		user.IDDocumentType = cs.ToStringPtr(value)
+		u.IDDocumentType = cs.ToStringPtr(value)
 		break
 	case fields.IDDocumentNumber.AttributeName():
-		user.IDDocumentNumber = cs.ToStringPtr(value)
+		u.IDDocumentNumber = cs.ToStringPtr(value)
 		break
 	case fields.IDDocumentCountry.AttributeName():
-		user.IDDocumentCountry = cs.ToStringPtr(value)
+		u.IDDocumentCountry = cs.ToStringPtr(value)
 		break
 	case fields.IDDocumentExpiration.AttributeName():
-		user.IDDocumentExpiration = cs.ToStringPtr(value)
+		u.IDDocumentExpiration = cs.ToStringPtr(value)
 		break
 	case fields.Locale.AttributeName():
-		user.Locale = cs.ToStringPtr(value)
+		u.Locale = cs.ToStringPtr(value)
 		break
 	case fields.BusinessID.AttributeName():
-		user.BusinessID = cs.ToStringPtr(value)
+		u.BusinessID = cs.ToStringPtr(value)
 		break
 	}
 }

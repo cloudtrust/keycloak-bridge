@@ -77,7 +77,7 @@ func checkRecaptcha(ctx context.Context, recaptchaURL string, secret string, tok
 	}
 
 	buf := new(bytes.Buffer)
-	buf.ReadFrom(resp.Body)
+	_, _ = buf.ReadFrom(resp.Body)
 
 	var recaptchaResponse recaptchaResponse
 	err = json.Unmarshal(buf.Bytes(), &recaptchaResponse)

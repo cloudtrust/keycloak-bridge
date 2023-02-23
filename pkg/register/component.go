@@ -149,7 +149,7 @@ func (c *component) GetUserProfile(ctx context.Context, realmName string) (apico
 		return apicommon.ProfileRepresentation{}, err
 	}
 
-	return apicommon.ProfileToApi(profile, apiName), nil
+	return apicommon.ProfileToAPI(profile, apiName), nil
 }
 
 func (c *component) RegisterUser(ctx context.Context, targetRealmName string, customerRealmName string, user apiregister.UserRepresentation, contextKey *string) (string, error) {

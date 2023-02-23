@@ -44,7 +44,7 @@ func TestHTTPAccountHandler(t *testing.T) {
 		assert.Equal(t, http.StatusOK, res.StatusCode)
 
 		buf := new(bytes.Buffer)
-		buf.ReadFrom(res.Body)
+		_, _ = buf.ReadFrom(res.Body)
 		assert.Equal(t, "", buf.String())
 	}
 }

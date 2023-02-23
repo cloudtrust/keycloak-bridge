@@ -11,10 +11,10 @@ func ptr(value string) *string {
 	return &value
 }
 
-func TestProfileToApi(t *testing.T) {
+func TestProfileToAPI(t *testing.T) {
 	t.Run("Nil content", func(t *testing.T) {
 		var profile = kc.UserProfileRepresentation{Attributes: nil, Groups: nil}
-		var res = ProfileToApi(profile, "")
+		var res = ProfileToAPI(profile, "")
 		assert.Nil(t, res.Attributes)
 		assert.Nil(t, res.Groups)
 	})
@@ -23,7 +23,7 @@ func TestProfileToApi(t *testing.T) {
 			Attributes: make([]kc.ProfileAttrbRepresentation, 0),
 			Groups:     make([]kc.ProfileGroupRepresentation, 0),
 		}
-		var res = ProfileToApi(profile, "")
+		var res = ProfileToAPI(profile, "")
 		assert.NotNil(t, res.Attributes)
 		assert.Len(t, res.Attributes, 0)
 		assert.NotNil(t, res.Groups)
@@ -31,45 +31,45 @@ func TestProfileToApi(t *testing.T) {
 	})
 }
 
-func TestAttributesToApi(t *testing.T) {
+func TestAttributesToAPI(t *testing.T) {
 	t.Run("No attributes", func(t *testing.T) {
-		var res = AttributesToApi(nil, "")
+		var res = AttributesToAPI(nil, "")
 		assert.Nil(t, res)
 	})
 	t.Run("Two elements", func(t *testing.T) {
 		var attrbs = []kc.ProfileAttrbRepresentation{{}, {Name: ptr("dummy")}}
-		var res = AttributesToApi(attrbs, "")
+		var res = AttributesToAPI(attrbs, "")
 		assert.Len(t, res, len(attrbs))
 	})
 }
 
-func TestAttributeToApi(t *testing.T) {
+func TestAttributeToAPI(t *testing.T) {
 	t.Run("Non-editable element", func(t *testing.T) {
 		var attrb = kc.ProfileAttrbRepresentation{Permissions: &kc.ProfileAttrbPermissionsRepresentation{
 			Edit: []string{"not-a-user"},
 		}}
-		var res = AttributeToApi(attrb, "")
+		var res = AttributeToAPI(attrb, "")
 		assert.Nil(t, res)
 	})
 	t.Run("Non-required element", func(t *testing.T) {
 		var attrb = kc.ProfileAttrbRepresentation{Required: &kc.ProfileAttrbRequiredRepresentation{
 			Roles: []string{"not-a-user"},
 		}}
-		var res = AttributeToApi(attrb, "")
+		var res = AttributeToAPI(attrb, "")
 		assert.False(t, *res.Required)
 	})
 	t.Run("Required element", func(t *testing.T) {
 		var attrb = kc.ProfileAttrbRepresentation{Required: &kc.ProfileAttrbRequiredRepresentation{
 			Roles: []string{"user"},
 		}}
-		var res = AttributeToApi(attrb, "")
+		var res = AttributeToAPI(attrb, "")
 		assert.True(t, *res.Required)
 	})
 	t.Run("Not enabled for the given frontend", func(t *testing.T) {
 		var attrb = kc.ProfileAttrbRepresentation{Required: &kc.ProfileAttrbRequiredRepresentation{
 			Roles: []string{"user"},
 		}}
-		var res = AttributeToApi(attrb, "frontend")
+		var res = AttributeToAPI(attrb, "frontend")
 		assert.Nil(t, res)
 	})
 	t.Run("Enabled for the given frontend", func(t *testing.T) {
@@ -77,7 +77,7 @@ func TestAttributeToApi(t *testing.T) {
 			Required:    &kc.ProfileAttrbRequiredRepresentation{Roles: []string{"user"}},
 			Annotations: map[string]string{"frontend": "true"},
 		}
-		var res = AttributeToApi(attrb, "frontend")
+		var res = AttributeToAPI(attrb, "frontend")
 		assert.NotNil(t, res)
 	})
 	t.Run("Attribute is not globally required but required for the given API", func(t *testing.T) {
@@ -85,21 +85,21 @@ func TestAttributeToApi(t *testing.T) {
 			Required:    nil,
 			Annotations: map[string]string{"frontend": "required"},
 		}
-		var res = AttributeToApi(attrb, "frontend")
+		var res = AttributeToAPI(attrb, "frontend")
 		assert.NotNil(t, res)
 	})
 }
 
-func TestValidationsToApi(t *testing.T) {
+func TestValidationsToAPI(t *testing.T) {
 	t.Run("Nil value", func(t *testing.T) {
-		assert.Nil(t, ValidationsToApi(nil))
+		assert.Nil(t, ValidationsToAPI(nil))
 	})
 	t.Run("Three values", func(t *testing.T) {
 		var validation = kc.ProfileAttrbValidationRepresentation{}
 		validation["one"] = kc.ProfileAttrValidatorRepresentation{}
 		validation["two"] = kc.ProfileAttrValidatorRepresentation{}
 		validation["three"] = kc.ProfileAttrValidatorRepresentation{}
-		var res = ValidationsToApi(validation)
+		var res = ValidationsToAPI(validation)
 		assert.Len(t, res, 3)
 	})
 }
@@ -122,12 +122,12 @@ func TestToValidator(t *testing.T) {
 	})
 }
 
-func TestAttributeAnnotationsToApi(t *testing.T) {
+func TestAttributeAnnotationsToAPI(t *testing.T) {
 	t.Run("Nil value", func(t *testing.T) {
-		assert.Len(t, AttributeAnnotationsToApi(nil), 0)
+		assert.Len(t, AttributeAnnotationsToAPI(nil), 0)
 	})
 	t.Run("Not whitelisted annotations", func(t *testing.T) {
-		assert.Len(t, AttributeAnnotationsToApi(map[string]string{
+		assert.Len(t, AttributeAnnotationsToAPI(map[string]string{
 			"dummy":      "value",
 			"account":    "true",
 			"kyc":        "true",
@@ -136,13 +136,13 @@ func TestAttributeAnnotationsToApi(t *testing.T) {
 		}), 0)
 	})
 	t.Run("Not whitelisted annotations", func(t *testing.T) {
-		var res = AttributeAnnotationsToApi(map[string]string{"values": "value"})
+		var res = AttributeAnnotationsToAPI(map[string]string{"values": "value"})
 		assert.Len(t, res, 1)
 		assert.Equal(t, "value", res["values"])
 	})
 }
 
-func TestGroupsToApi(t *testing.T) {
+func TestGroupsToAPI(t *testing.T) {
 	var grps = []kc.ProfileGroupRepresentation{
 		{
 			Name:               ptr("name"),
@@ -153,7 +153,7 @@ func TestGroupsToApi(t *testing.T) {
 		{},
 		{},
 	}
-	var res = GroupsToApi(grps)
+	var res = GroupsToAPI(grps)
 	assert.Len(t, res, len(grps))
 	assert.Equal(t, grps[0].Name, res[0].Name)
 	assert.Equal(t, grps[0].DisplayHeader, res[0].DisplayHeader)

@@ -47,22 +47,22 @@ type ProfileGroupRepresentation struct {
 	Annotations        map[string]string `json:"annotations,omitempty"`
 }
 
-// ProfileToApi converts a KC UserProfile to its API version
-func ProfileToApi(profile kc.UserProfileRepresentation, frontend string) ProfileRepresentation {
+// ProfileToAPI converts a KC UserProfile to its API version
+func ProfileToAPI(profile kc.UserProfileRepresentation, frontend string) ProfileRepresentation {
 	return ProfileRepresentation{
-		Attributes: AttributesToApi(profile.Attributes, frontend),
-		Groups:     GroupsToApi(profile.Groups),
+		Attributes: AttributesToAPI(profile.Attributes, frontend),
+		Groups:     GroupsToAPI(profile.Groups),
 	}
 }
 
-// AttributesToApi converts a KC profile attribute to its API version
-func AttributesToApi(attrbs []kc.ProfileAttrbRepresentation, frontend string) []ProfileAttributeRepresentation {
+// AttributesToAPI converts a KC profile attribute to its API version
+func AttributesToAPI(attrbs []kc.ProfileAttrbRepresentation, frontend string) []ProfileAttributeRepresentation {
 	if attrbs == nil {
 		return nil
 	}
 	var res = []ProfileAttributeRepresentation{}
 	for _, attrb := range attrbs {
-		var newValue = AttributeToApi(attrb, frontend)
+		var newValue = AttributeToAPI(attrb, frontend)
 		if newValue != nil {
 			res = append(res, *newValue)
 		}
@@ -70,7 +70,7 @@ func AttributesToApi(attrbs []kc.ProfileAttrbRepresentation, frontend string) []
 	return res
 }
 
-func AttributeToApi(attrb kc.ProfileAttrbRepresentation, apiName string) *ProfileAttributeRepresentation {
+func AttributeToAPI(attrb kc.ProfileAttrbRepresentation, apiName string) *ProfileAttributeRepresentation {
 	if attrb.Permissions != nil && !validation.IsStringInSlice(attrb.Permissions.Edit, requesterType) {
 		// User has no permission to edit this field
 		// Component should not be aware of its existence
@@ -89,8 +89,8 @@ func AttributeToApi(attrb kc.ProfileAttrbRepresentation, apiName string) *Profil
 		DisplayName: attrb.DisplayName,
 		Group:       attrb.Group,
 		Required:    &required,
-		Validations: ValidationsToApi(attrb.Validations),
-		Annotations: AttributeAnnotationsToApi(attrb.Annotations),
+		Validations: ValidationsToAPI(attrb.Validations),
+		Annotations: AttributeAnnotationsToAPI(attrb.Annotations),
 	}
 }
 
@@ -102,8 +102,8 @@ func cleanUpName(name *string) *string {
 	return &res
 }
 
-// ValidationsToApi converts KC validators
-func ValidationsToApi(validations kc.ProfileAttrbValidationRepresentation) map[string]ProfileAttrbValidatorRepresentation {
+// ValidationsToAPI converts KC validators
+func ValidationsToAPI(validations kc.ProfileAttrbValidationRepresentation) map[string]ProfileAttrbValidatorRepresentation {
 	if validations == nil {
 		return nil
 	}
@@ -127,21 +127,19 @@ func ToValidator(validator kc.ProfileAttrValidatorRepresentation) ProfileAttrbVa
 	return res
 }
 
-// AttributeAnnotationsToApi converts a KC attribute annotations
-func AttributeAnnotationsToApi(annotations map[string]string) map[string]string {
+// AttributeAnnotationsToAPI converts a KC attribute annotations
+func AttributeAnnotationsToAPI(annotations map[string]string) map[string]string {
 	var res = make(map[string]string)
-	if annotations != nil {
-		for key, value := range annotations {
-			if allow, ok := allowAnnotation[key]; ok && allow {
-				res[key] = value
-			}
+	for key, value := range annotations {
+		if allow, ok := allowAnnotation[key]; ok && allow {
+			res[key] = value
 		}
 	}
 	return res
 }
 
-// GroupsToApi converts KC users profile groups to its API version
-func GroupsToApi(groups []kc.ProfileGroupRepresentation) []ProfileGroupRepresentation {
+// GroupsToAPI converts KC users profile groups to its API version
+func GroupsToAPI(groups []kc.ProfileGroupRepresentation) []ProfileGroupRepresentation {
 	if groups == nil {
 		return nil
 	}

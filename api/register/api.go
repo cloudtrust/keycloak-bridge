@@ -47,24 +47,6 @@ type ConfigurationRepresentation struct {
 	SelfRegisterEnabled              *bool     `json:"selfRegisterEnabled,omitempty"`
 }
 
-// Parameter references
-const (
-	prmUserGender               = "user_gender"
-	prmUserFirstName            = "user_firstName"
-	prmUserLastName             = "user_lastName"
-	prmUserEmail                = "user_emailAddress"
-	prmUserPhoneNumber          = "user_phoneNumber"
-	prmUserBirthDate            = "user_birthDate"
-	prmUserBirthLocation        = "user_birthLocation"
-	prmUserNationality          = "user_nationality"
-	prmUserIDDocumentType       = "user_idDocType"
-	prmUserIDDocumentNumber     = "user_idDocNumber"
-	prmUserIDDocumentExpiration = "user_idDocExpiration"
-	prmUserIDDocumentCountry    = "user_idDocCountry"
-	prmUserLocale               = "user_locale"
-	prmUserBusinessID           = "user_businessId"
-)
-
 // UserFromJSON creates a User using its json representation
 func UserFromJSON(jsonRep string) (UserRepresentation, error) {
 	var user UserRepresentation
@@ -162,52 +144,52 @@ func (u *UserRepresentation) GetField(field string) interface{} {
 }
 
 // SetField is used to validate a user against a UserProfile
-func (user *UserRepresentation) SetField(field string, value interface{}) {
+func (u *UserRepresentation) SetField(field string, value interface{}) {
 	switch field {
 	case fields.Username.Key():
-		user.Username = cs.ToStringPtr(value)
+		u.Username = cs.ToStringPtr(value)
 		break
 	case fields.Email.Key():
-		user.Email = cs.ToStringPtr(value)
+		u.Email = cs.ToStringPtr(value)
 		break
 	case fields.FirstName.Key():
-		user.FirstName = cs.ToStringPtr(value)
+		u.FirstName = cs.ToStringPtr(value)
 		break
 	case fields.LastName.Key():
-		user.LastName = cs.ToStringPtr(value)
+		u.LastName = cs.ToStringPtr(value)
 		break
 	case fields.Gender.AttributeName():
-		user.Gender = cs.ToStringPtr(value)
+		u.Gender = cs.ToStringPtr(value)
 		break
 	case fields.PhoneNumber.AttributeName():
-		user.PhoneNumber = cs.ToStringPtr(value)
+		u.PhoneNumber = cs.ToStringPtr(value)
 		break
 	case fields.BirthDate.AttributeName():
-		user.BirthDate = cs.ToStringPtr(value)
+		u.BirthDate = cs.ToStringPtr(value)
 		break
 	case fields.BirthLocation.AttributeName():
-		user.BirthLocation = cs.ToStringPtr(value)
+		u.BirthLocation = cs.ToStringPtr(value)
 		break
 	case fields.Nationality.AttributeName():
-		user.Nationality = cs.ToStringPtr(value)
+		u.Nationality = cs.ToStringPtr(value)
 		break
 	case fields.IDDocumentType.AttributeName():
-		user.IDDocumentType = cs.ToStringPtr(value)
+		u.IDDocumentType = cs.ToStringPtr(value)
 		break
 	case fields.IDDocumentNumber.AttributeName():
-		user.IDDocumentNumber = cs.ToStringPtr(value)
+		u.IDDocumentNumber = cs.ToStringPtr(value)
 		break
 	case fields.IDDocumentCountry.AttributeName():
-		user.IDDocumentCountry = cs.ToStringPtr(value)
+		u.IDDocumentCountry = cs.ToStringPtr(value)
 		break
 	case fields.IDDocumentExpiration.AttributeName():
-		user.IDDocumentExpiration = cs.ToStringPtr(value)
+		u.IDDocumentExpiration = cs.ToStringPtr(value)
 		break
 	case fields.Locale.AttributeName():
-		user.Locale = cs.ToStringPtr(value)
+		u.Locale = cs.ToStringPtr(value)
 		break
 	case fields.BusinessID.AttributeName():
-		user.BusinessID = cs.ToStringPtr(value)
+		u.BusinessID = cs.ToStringPtr(value)
 		break
 	}
 }

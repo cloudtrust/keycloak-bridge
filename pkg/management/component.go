@@ -2304,7 +2304,7 @@ func (c *component) GetRealmUserProfile(ctx context.Context, realmName string) (
 		return apicommon.ProfileRepresentation{}, err
 	}
 
-	return apicommon.ProfileToApi(profile, apiName), nil
+	return apicommon.ProfileToAPI(profile, apiName), nil
 }
 
 func (c *component) GetRealmBackOfficeConfiguration(ctx context.Context, realmName string, groupName string) (api.BackOfficeConfiguration, error) {

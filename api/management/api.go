@@ -925,7 +925,7 @@ func (user *UpdatableUserRepresentation) GetField(field string) interface{} {
 }
 
 func toOptionalStringPtr(opt csjson.OptionalString) interface{} {
-	if opt.Defined == false || opt.Value == nil {
+	if !opt.Defined || opt.Value == nil {
 		return nil
 	}
 	return opt.Value
@@ -1020,14 +1020,6 @@ func (user UpdatableUserRepresentation) Validate(ctx context.Context, upc profil
 	}
 
 	return v.Status()
-}
-
-// TO CLEAN WHEN WE WILL HAVE ATTRIBUTE MANAGEMENT
-func selectRegExp(standardRegExp string, corporateRegexp string, isStandard bool) string {
-	if isStandard {
-		return standardRegExp
-	}
-	return corporateRegexp
 }
 
 // Validate is a validator for RoleRepresentation
