@@ -1,0 +1,1 @@
+goBuildPipeline('keycloak_bridge', './cmd/keycloakb', 'back-keycloak-bridge', true, 'ssh://git@github.com/cloudtrust/keycloak-bridge')
