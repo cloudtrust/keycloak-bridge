@@ -95,9 +95,14 @@
 		  ]
 		},
 		"validations": {
-		  "pattern": {
-			"pattern": "^([\\p{Lu}\\p{Ll}][\\p{Lu}\\p{Ll} /\\\\\\.',-]{0,127})$"
-		  }
+			"pattern": {
+				"pattern": "^([\\p{Lu}\\p{Ll}][\\p{Lu}\\p{Ll} /\\\\\\.',-]+)$"
+			},
+			"length": {
+				"trim-disabled": "",
+				"min": "1",
+				"max": "128"
+			}
 		},
 		"selector": {
 		  "scopes": []
@@ -123,9 +128,14 @@
 		  ]
 		},
 		"validations": {
-		  "pattern": {
-			"pattern": "^([\\p{Lu}\\p{Ll}][\\p{Lu}\\p{Ll} /\\\\\\.',-]{0,127})$"
-		  }
+			"pattern": {
+				"pattern": "^([\\p{Lu}\\p{Ll}][\\p{Lu}\\p{Ll} /\\\\\\.',-]+)$"
+			},
+			"length": {
+				"trim-disabled": "",
+				"min": "1",
+				"max": "128"
+			}
 		},
 		"selector": {
 		  "scopes": []
@@ -290,9 +300,14 @@
 		"name": "ENC_birthLocation",
 		"displayName": "${birthLocation}",
 		"validations": {
-		  "pattern": {
-			"pattern": "^([\\p{Lu}\\p{Ll}][\\p{Lu}\\p{Ll}\\d ()/\\\\\\.\\*,'-]{0,49})$"
-		  }
+			"pattern": {
+				"pattern": "^([\\p{Lu}\\p{Ll}][\\p{Lu}\\p{Ll}\\d ()/\\\\\\.\\*,'-]+)$"
+				},
+			"length": {
+				"trim-disabled": "",
+				"min": "1",
+				"max": "50"
+			}
 		},
 		"annotations": {
 		  "register": "true",
