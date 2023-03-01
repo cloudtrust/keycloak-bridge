@@ -5,7 +5,12 @@
 		"displayName": "${username}",
 		"validations": {
 		  "pattern": {
-			"pattern": "^[a-z0-9-_.]{1,128}$"
+			"pattern": "^[a-z0-9-_.]+$"
+		  },
+		  "length": {
+			"trim-disabled": "",
+			"min": "1",
+			"max": "128"
 		  }
 		},
 		"permissions": {
