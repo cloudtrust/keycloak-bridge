@@ -539,7 +539,10 @@ func TestConvertRealmAdminConfiguration(t *testing.T) {
 		assert.Len(t, res.AvailableChecks, 3)
 		assert.False(t, *res.SelfRegisterEnabled)
 		assert.False(t, *res.ShowGlnEditing)
-		assert.Nil(t, res.Theme)
+		assert.Nil(t, res.BoTheme)
+		assert.Nil(t, res.SseTheme)
+		assert.Nil(t, res.RegisterTheme)
+		assert.Nil(t, res.SignerTheme)
 		assert.False(t, *res.VideoIdentificationVoucherEnabled)
 		assert.False(t, *res.VideoIdentificationAccountingEnabled)
 		assert.False(t, *res.VideoIdentificationPrepaymentRequired)
@@ -564,7 +567,10 @@ func TestConvertRealmAdminConfiguration(t *testing.T) {
 			Mode:                                  &mode,
 			AvailableChecks:                       map[string]bool{"true": true, "false": false},
 			SelfRegisterEnabled:                   &selfRegisterEnabled,
-			Theme:                                 ptr("trustid"),
+			BoTheme:                               ptr("trustid1"),
+			SseTheme:                              ptr("trustid2"),
+			RegisterTheme:                         ptr("trustid3"),
+			SignerTheme:                           ptr("trustid4"),
 			NeedVerifiedContact:                   &needVerifiedContact,
 			ConsentRequiredSocial:                 &consentRequiredSocial,
 			ConsentRequiredCorporate:              &consentRequiredCorporate,
@@ -583,7 +589,10 @@ func TestConvertRealmAdminConfiguration(t *testing.T) {
 		assert.False(t, res.AvailableChecks["false"])
 		assert.Equal(t, config, res.ConvertToDBStruct())
 		assert.True(t, *res.SelfRegisterEnabled)
-		assert.Equal(t, config.Theme, res.Theme)
+		assert.Equal(t, config.BoTheme, res.BoTheme)
+		assert.Equal(t, config.SseTheme, res.SseTheme)
+		assert.Equal(t, config.RegisterTheme, res.RegisterTheme)
+		assert.Equal(t, config.SignerTheme, res.SignerTheme)
 		assert.False(t, *res.NeedVerifiedContact)
 		assert.True(t, *res.ConsentRequiredSocial)
 		assert.True(t, *res.ShowGlnEditing)
@@ -813,7 +822,10 @@ func createValidRealmAdminConfiguration() RealmAdminConfiguration {
 	return RealmAdminConfiguration{
 		Mode:            ptr("trustID"),
 		AvailableChecks: map[string]bool{"IDNow": false, "physical-check": true},
-		Theme:           ptr("my-theme"),
+		BoTheme:         ptr("my-theme"),
+		SseTheme:        ptr("my-theme"),
+		RegisterTheme:   ptr("my-theme"),
+		SignerTheme:     ptr("my-theme"),
 	}
 }
 
@@ -842,9 +854,24 @@ func TestValidateRealmAdminConfiguration(t *testing.T) {
 		realmAdminConf.AvailableChecks["invalid-key"] = false
 		assert.NotNil(t, realmAdminConf.Validate())
 	})
-	t.Run("Invalid theme", func(t *testing.T) {
+	t.Run("Invalid BO theme", func(t *testing.T) {
 		var realmAdminConf = createValidRealmAdminConfiguration()
-		realmAdminConf.Theme = ptr("")
+		realmAdminConf.BoTheme = ptr("")
+		assert.NotNil(t, realmAdminConf.Validate())
+	})
+	t.Run("Invalid SSE theme", func(t *testing.T) {
+		var realmAdminConf = createValidRealmAdminConfiguration()
+		realmAdminConf.SseTheme = ptr("")
+		assert.NotNil(t, realmAdminConf.Validate())
+	})
+	t.Run("Invalid Register theme", func(t *testing.T) {
+		var realmAdminConf = createValidRealmAdminConfiguration()
+		realmAdminConf.RegisterTheme = ptr("")
+		assert.NotNil(t, realmAdminConf.Validate())
+	})
+	t.Run("Invalid Signer theme", func(t *testing.T) {
+		var realmAdminConf = createValidRealmAdminConfiguration()
+		realmAdminConf.SignerTheme = ptr("")
 		assert.NotNil(t, realmAdminConf.Validate())
 	})
 }

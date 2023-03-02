@@ -2389,7 +2389,13 @@ components:
           type: boolean
         consent_required_corporate:
           type: boolean
-        theme:
+        bo_theme:
+          type: string
+        sse_theme:
+          type: string
+        register_theme:
+          type: string
+        signer_theme:
           type: string
         need_verified_contact:
           type: boolean

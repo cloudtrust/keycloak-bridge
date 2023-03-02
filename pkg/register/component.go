@@ -136,7 +136,7 @@ func (c *component) GetConfiguration(ctx context.Context, realmName string) (api
 	return apiregister.ConfigurationRepresentation{
 		RedirectCancelledRegistrationURL: realmConf.RedirectCancelledRegistrationURL,
 		Mode:                             realmAdminConf.Mode,
-		Theme:                            realmAdminConf.Theme,
+		Theme:                            realmAdminConf.RegisterTheme,
 		SupportedLocales:                 supportedLocales,
 		SelfRegisterEnabled:              realmAdminConf.SelfRegisterEnabled,
 	}, nil

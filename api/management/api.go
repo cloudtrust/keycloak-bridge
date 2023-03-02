@@ -247,7 +247,10 @@ type RealmAdminConfiguration struct {
 	Mode                                  *string         `json:"mode"`
 	AvailableChecks                       map[string]bool `json:"available_checks"`
 	SelfRegisterEnabled                   *bool           `json:"self_register_enabled"`
-	Theme                                 *string         `json:"theme"`
+	BoTheme                               *string         `json:"bo_theme"`
+	SseTheme                              *string         `json:"sse_theme"`
+	RegisterTheme                         *string         `json:"register_theme"`
+	SignerTheme                           *string         `json:"signer_theme"`
 	NeedVerifiedContact                   *bool           `json:"need_verified_contact"`
 	ConsentRequiredSocial                 *bool           `json:"consent_required_social"`
 	ConsentRequiredCorporate              *bool           `json:"consent_required_corporate"`
@@ -721,7 +724,10 @@ func ConvertRealmAdminConfigurationFromDBStruct(conf configuration.RealmAdminCon
 		Mode:                                  defaultString(conf.Mode, "corporate"),
 		AvailableChecks:                       checks,
 		SelfRegisterEnabled:                   defaultBool(conf.SelfRegisterEnabled, false),
-		Theme:                                 conf.Theme,
+		BoTheme:                               conf.BoTheme,
+		SseTheme:                              conf.SseTheme,
+		RegisterTheme:                         conf.RegisterTheme,
+		SignerTheme:                           conf.SignerTheme,
 		NeedVerifiedContact:                   defaultBool(conf.NeedVerifiedContact, true),
 		ConsentRequiredSocial:                 defaultBool(conf.ConsentRequiredSocial, false),
 		ConsentRequiredCorporate:              defaultBool(conf.ConsentRequiredCorporate, false),
@@ -741,7 +747,10 @@ func (rac RealmAdminConfiguration) ConvertToDBStruct() configuration.RealmAdminC
 		Mode:                                  rac.Mode,
 		AvailableChecks:                       rac.AvailableChecks,
 		SelfRegisterEnabled:                   rac.SelfRegisterEnabled,
-		Theme:                                 rac.Theme,
+		BoTheme:                               rac.BoTheme,
+		SseTheme:                              rac.SseTheme,
+		RegisterTheme:                         rac.RegisterTheme,
+		SignerTheme:                           rac.SignerTheme,
 		NeedVerifiedContact:                   rac.NeedVerifiedContact,
 		ConsentRequiredSocial:                 rac.ConsentRequiredSocial,
 		ConsentRequiredCorporate:              rac.ConsentRequiredCorporate,
@@ -1068,7 +1077,10 @@ func (rac RealmAdminConfiguration) Validate() error {
 	return validation.NewParameterValidator().
 		ValidateParameterIn("mode", rac.Mode, allowedAdminConfMode, true).
 		ValidateParameterFunc(rac.validateAvailableChecks).
-		ValidateParameterRegExp("theme", rac.Theme, constants.RegExpTheme, false).
+		ValidateParameterRegExp("botheme", rac.BoTheme, constants.RegExpTheme, false).
+		ValidateParameterRegExp("ssetheme", rac.SseTheme, constants.RegExpTheme, false).
+		ValidateParameterRegExp("registertheme", rac.RegisterTheme, constants.RegExpTheme, false).
+		ValidateParameterRegExp("signertheme", rac.SignerTheme, constants.RegExpTheme, false).
 		Status()
 }
 
