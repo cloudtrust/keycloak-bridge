@@ -524,7 +524,7 @@ func (c *component) GetConfiguration(ctx context.Context, realmIDOverride string
 		RedirectSuccessfulRegistrationURL:     config.RedirectSuccessfulRegistrationURL,
 		BarcodeType:                           config.BarcodeType,
 		AvailableChecks:                       adminConfig.AvailableChecks,
-		Theme:                                 adminConfig.Theme,
+		Theme:                                 adminConfig.SseTheme,
 		SupportedLocales:                      supportedLocales,
 		ShowGlnEditing:                        adminConfig.ShowGlnEditing,
 		VideoIdentificationVoucherEnabled:     adminConfig.VideoIdentificationVoucherEnabled,
