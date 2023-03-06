@@ -101,7 +101,7 @@
 		},
 		"validations": {
 			"pattern": {
-				"pattern": "^([\\p{Lu}\\p{Ll}][\\p{Lu}\\p{Ll} /\\\\\\.',-]+)$"
+				"pattern": "^([\\p{Lu}\\p{Ll}][\\p{Lu}\\p{Ll} /\\\\\\.',-]*)$"
 			},
 			"length": {
 				"trim-disabled": "",
@@ -134,7 +134,7 @@
 		},
 		"validations": {
 			"pattern": {
-				"pattern": "^([\\p{Lu}\\p{Ll}][\\p{Lu}\\p{Ll} /\\\\\\.',-]+)$"
+				"pattern": "^([\\p{Lu}\\p{Ll}][\\p{Lu}\\p{Ll} /\\\\\\.',-]*)$"
 			},
 			"length": {
 				"trim-disabled": "",
@@ -306,7 +306,7 @@
 		"displayName": "${birthLocation}",
 		"validations": {
 			"pattern": {
-				"pattern": "^([\\p{Lu}\\p{Ll}][\\p{Lu}\\p{Ll}\\d ()/\\\\\\.\\*,'-]+)$"
+				"pattern": "^([\\p{Lu}\\p{Ll}][\\p{Lu}\\p{Ll}\\d ()/\\\\\\.\\*,'-]*)$"
 				},
 			"length": {
 				"trim-disabled": "",
