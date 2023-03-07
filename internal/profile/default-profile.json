@@ -100,12 +100,9 @@
 		  ]
 		},
 		"validations": {
-			"pattern": {
-				"pattern": "^([\\p{Lu}\\p{Ll}][\\p{Lu}\\p{Ll} /\\\\\\.',-]*)$"
-			},
 			"length": {
 				"trim-disabled": "",
-				"min": "1",
+				"min": "0",
 				"max": "128"
 			}
 		},
@@ -133,9 +130,6 @@
 		  ]
 		},
 		"validations": {
-			"pattern": {
-				"pattern": "^([\\p{Lu}\\p{Ll}][\\p{Lu}\\p{Ll} /\\\\\\.',-]*)$"
-			},
 			"length": {
 				"trim-disabled": "",
 				"min": "1",
@@ -148,7 +142,7 @@
 		"annotations": {
 		  "kyc": "true",
 		  "management": "true",
-		  "register": "true",
+		  "register": "required",
 		  "account": "true"
 		},
 		"required": {
@@ -207,10 +201,10 @@
 		  "ct-phonenumber": {}
 		},
 		"annotations": {
-		  "register": "required",
-		  "kyc": "required",
-		  "management": "required",
-		  "account": "required",
+		  "register": "true",
+		  "kyc": "true",
+		  "management": "true",
+		  "account": "true",
 		  "example": "+41763456789"
 		}
 	  },
