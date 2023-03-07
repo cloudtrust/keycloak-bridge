@@ -243,8 +243,12 @@
 		  "scopes": []
 		},
 		"permissions": {
-		  "view": [],
-		  "edit": []
+		  "view": [
+			"admin"
+		  ],
+		  "edit": [
+			"admin"
+		  ]
 		},
 		"name": "label",
 		"displayName": "${label}",
@@ -539,7 +543,8 @@
 			"user"
 		  ],
 		  "edit": [
-			"admin"
+			"admin",
+			"user"
 		  ]
 		},
 		"name": "accreditations",
@@ -556,7 +561,8 @@
 			"user"
 		  ],
 		  "edit": [
-			"admin"
+			"admin",
+			"user"
 		  ]
 		},
 		"name": "onboardingCompleted",
@@ -579,7 +585,8 @@
 			"admin"
 		  ],
 		  "edit": [
-			"admin"
+			"admin",
+			"user"
 		  ]
 		},
 		"name": "pendingChecks"
@@ -594,7 +601,8 @@
 			"admin"
 		  ],
 		  "edit": [
-			"admin"
+			"admin",
+			"user"
 		  ]
 		},
 		"name": "phoneNumberVerified",
@@ -617,7 +625,8 @@
 			"admin"
 		  ],
 		  "edit": [
-			"admin"
+			"admin",
+			"user"
 		  ]
 		},
 		"name": "smsAttempts",
@@ -638,7 +647,8 @@
 			"admin"
 		  ],
 		  "edit": [
-			"admin"
+			"admin",
+			"user"
 		  ]
 		},
 		"name": "smsSent",
@@ -659,7 +669,8 @@
 			"admin"
 		  ],
 		  "edit": [
-			"admin"
+			"admin",
+			"user"
 		  ]
 		},
 		"name": "src"
@@ -673,7 +684,8 @@
 			"admin"
 		  ],
 		  "edit": [
-			"admin"
+			"admin",
+			"user"
 		  ]
 		},
 		"name": "trustIDAuthToken"
@@ -687,7 +699,8 @@
 			"admin"
 		  ],
 		  "edit": [
-			"admin"
+			"admin",
+			"user"
 		  ]
 		},
 		"name": "trustIDGroups"
