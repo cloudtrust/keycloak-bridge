@@ -351,20 +351,28 @@ func TestValidatorLocalDate(t *testing.T) {
 
 func TestValidatorCtDate(t *testing.T) {
 	var (
-		nextYear    = time.Now().Year() + 1
-		attribute   = kc.ProfileAttrbRepresentation{Name: ptr("name")}
-		validator   = kc.ProfileAttrValidatorRepresentation{}
-		inThePast   = "01.01.2001"
-		inTheFuture = fmt.Sprintf("%d-12-31", nextYear)
+		nextYear        = time.Now().Year() + 1
+		attribute       = kc.ProfileAttrbRepresentation{Name: ptr("name")}
+		validator       = kc.ProfileAttrValidatorRepresentation{}
+		inThePast       = "01.01.2001"
+		inTheFuture     = fmt.Sprintf("%d-12-31", nextYear)
+		timeInThePast   = time.Now().Add(-2400 * time.Hour)
+		timeInTheFuture = time.Now().Add(2400 * time.Hour)
 	)
 	t.Run("invalid input type", func(t *testing.T) {
-		assert.NotNil(t, validateAttributeCtDate(attribute, validator, time.Now()))
+		assert.NotNil(t, validateAttributeCtDate(attribute, validator, time.Hour))
 	})
 	t.Run("valid, string pointer", func(t *testing.T) {
 		assert.Nil(t, validateAttributeCtDate(attribute, validator, ptr("2027-12-31")))
 	})
 	t.Run("valid, string", func(t *testing.T) {
 		assert.Nil(t, validateAttributeCtDate(attribute, validator, "29.02.2028"))
+	})
+	t.Run("valid, time.Time pointer", func(t *testing.T) {
+		assert.Nil(t, validateAttributeCtDate(attribute, validator, &timeInThePast))
+	})
+	t.Run("valid, time.Time", func(t *testing.T) {
+		assert.Nil(t, validateAttributeCtDate(attribute, validator, timeInThePast))
 	})
 	t.Run("invalid input", func(t *testing.T) {
 		assert.NotNil(t, validateAttributeCtDate(attribute, validator, "29.02.2029"))
@@ -375,8 +383,14 @@ func TestValidatorCtDate(t *testing.T) {
 		t.Run("success", func(t *testing.T) {
 			assert.Nil(t, validateAttributeCtDate(attribute, validator, inThePast))
 		})
+		t.Run("success", func(t *testing.T) {
+			assert.Nil(t, validateAttributeCtDate(attribute, validator, timeInThePast))
+		})
 		t.Run("failure", func(t *testing.T) {
 			assert.NotNil(t, validateAttributeCtDate(attribute, validator, inTheFuture))
+		})
+		t.Run("failure", func(t *testing.T) {
+			assert.NotNil(t, validateAttributeCtDate(attribute, validator, timeInTheFuture))
 		})
 	})
 	t.Run("Validation accepts only dates in the future", func(t *testing.T) {
@@ -384,8 +398,14 @@ func TestValidatorCtDate(t *testing.T) {
 		t.Run("success", func(t *testing.T) {
 			assert.Nil(t, validateAttributeCtDate(attribute, validator, inTheFuture))
 		})
+		t.Run("success", func(t *testing.T) {
+			assert.Nil(t, validateAttributeCtDate(attribute, validator, timeInTheFuture))
+		})
 		t.Run("failure", func(t *testing.T) {
 			assert.NotNil(t, validateAttributeCtDate(attribute, validator, inThePast))
+		})
+		t.Run("failure", func(t *testing.T) {
+			assert.NotNil(t, validateAttributeCtDate(attribute, validator, timeInThePast))
 		})
 	})
 }
