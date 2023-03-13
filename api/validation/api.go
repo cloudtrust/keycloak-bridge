@@ -248,7 +248,7 @@ func (u *UserRepresentation) Validate(ctx context.Context, upc profile.UserProfi
 	return validation.NewParameterValidator().
 		ValidateParameterRegExp(prmUserID, u.ID, constants.RegExpID, false).
 		ValidateParameterFunc(func() error {
-			return profile.Validate(ctx, upc, realm, u, "validation", true)
+			return profile.Validate(ctx, upc, realm, u, "validation", false)
 		}).
 		Status()
 }
