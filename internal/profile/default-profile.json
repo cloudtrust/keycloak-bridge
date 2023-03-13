@@ -232,10 +232,6 @@
 		"selector": {
 		  "scopes": []
 		},
-		"required": {
-		  "roles": [],
-		  "scopes": []
-		},
 		"permissions": {
 		  "view": [
 			"admin"

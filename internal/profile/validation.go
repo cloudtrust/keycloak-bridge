@@ -260,17 +260,23 @@ func validateRegexWithString(attrb kc.ProfileAttrbRepresentation, regex string, 
 }
 
 func validateAttributeCtDate(attrb kc.ProfileAttrbRepresentation, validator kc.ProfileAttrValidatorRepresentation, value interface{}) error {
-	var ctValidate = validation.NewParameterValidator()
-	var ptrDate *string
 	switch v := value.(type) {
 	case string:
-		ptrDate = &v
+		return validateAttributeCtDateFromPtrString(attrb, validator, &v)
 	case *string:
-		ptrDate = v
+		return validateAttributeCtDateFromPtrString(attrb, validator, v)
+	case time.Time:
+		return validateAttributeCtDateFromPtrTime(attrb, validator, &v)
+	case *time.Time:
+		return validateAttributeCtDateFromPtrTime(attrb, validator, v)
 	default:
 		// Should not happen if correctly implemented
 		return cerrors.CreateInternalServerError("unknownInputType")
 	}
+}
+
+func validateAttributeCtDateFromPtrString(attrb kc.ProfileAttrbRepresentation, validator kc.ProfileAttrValidatorRepresentation, ptrDate *string) error {
+	var ctValidate = validation.NewParameterValidator()
 	if cfg, ok := validator["past"]; ok && "true" == cfg.(string) {
 		ctValidate = ctValidate.ValidateParameterDateBeforeMultipleLayout(*attrb.Name, ptrDate, constants.SupportedDateLayouts, time.Now(), false)
 	} else if cfg, ok := validator["future"]; ok && "true" == cfg.(string) {
@@ -279,6 +285,20 @@ func validateAttributeCtDate(attrb kc.ProfileAttrbRepresentation, validator kc.P
 		ctValidate = ctValidate.ValidateParameterDateMultipleLayout(*attrb.Name, ptrDate, constants.SupportedDateLayouts, false)
 	}
 	return ctValidate.Status()
+}
+
+func validateAttributeCtDateFromPtrTime(attrb kc.ProfileAttrbRepresentation, validator kc.ProfileAttrValidatorRepresentation, ptrTime *time.Time) error {
+	// At this point, ptrTime is not supposed to be nil
+	var valid = true
+	if cfg, ok := validator["past"]; ok && "true" == cfg.(string) {
+		valid = time.Now().After(*ptrTime)
+	} else if cfg, ok := validator["future"]; ok && "true" == cfg.(string) {
+		valid = time.Now().Before(*ptrTime)
+	}
+	if !valid {
+		return cerrors.CreateBadRequestError(cerrors.MsgErrInvalidParam + "." + *attrb.Name)
+	}
+	return nil
 }
 
 func validateAttributeCtMultiRegex(attrb kc.ProfileAttrbRepresentation, validator kc.ProfileAttrValidatorRepresentation, value interface{}) error {
