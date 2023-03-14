@@ -18,7 +18,7 @@ paths:
         - BasicAuth: [recaptcha]
       parameters:
       - name: realm
-        in: query
+        in: path
         description: realm name (not id!) of a realm configured with a redirect URL for the end of the process
         required: true
         schema:
@@ -41,6 +41,25 @@ paths:
           description: Invalid information provided
         403:
           description: Invalid RECAPTCHA token
+  /register/user/profile:
+    get:
+      tags:
+      - Configuration
+      summary: Gets the definition of user attributes
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation. Returns the realm users profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
   /register/realms/{realm}/user:
     post:
       tags:
@@ -73,6 +92,25 @@ paths:
           description: Invalid information provided
         403:
           description: Invalid RECAPTCHA token
+  /register/realms/{realm}/user/profile:
+    get:
+      tags:
+      - Configuration
+      summary: Gets the definition of user attributes from the realm specified in URL path
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation. Returns the realm users profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
   /register/config:
     get:
       tags:
@@ -92,25 +130,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Configuration'
-  /register/profile:
-    get:
-      tags:
-      - Configuration
-      summary: Gets the definition of user attributes
-      parameters:
-      - name: realm
-        in: query
-        description: realm name (not id!)
-        required: true
-        schema:
-          type: string
-      responses:
-        200:
-          description: successful operation. Returns the realm users profile
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Profile'
 components:
   schemas:
     User:
