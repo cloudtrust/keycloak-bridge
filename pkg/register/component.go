@@ -37,7 +37,7 @@ type ExistingUserHandler func(username string, createdTimestamp int64, thirdPart
 type OnboardingModule interface {
 	SendOnboardingEmail(ctx context.Context, accessToken string, realmName string, userID string, username string, onboardingClientID string,
 		onboardingRedirectURI string, themeRealmName string, reminder bool, paramKV ...string) error
-	CreateUser(ctx context.Context, accessToken, realmName, targetRealmName string, kcUser *kc.UserRepresentation) (string, error)
+	CreateUser(ctx context.Context, accessToken, realmName, targetRealmName string, kcUser *kc.UserRepresentation, generateNameID bool) (string, error)
 	ProcessAlreadyExistingUserCases(ctx context.Context, accessToken string, targetRealmName string, userEmail string, requestingSource string, handler func(username string, createdTimestamp int64, thirdParty *string) error) error
 	ComputeRedirectURI(ctx context.Context, accessToken string, realmName string, userID string, username string,
 		onboardingClientID string, onboardingRedirectURI string) (string, error)
@@ -327,7 +327,7 @@ func (c *component) createUser(ctx context.Context, accessToken string, realmNam
 	}
 	kcUser.Groups = &groupIDs
 
-	_, err = c.onboardingModule.CreateUser(ctx, accessToken, realmName, realmName, &kcUser)
+	_, err = c.onboardingModule.CreateUser(ctx, accessToken, realmName, realmName, &kcUser, false)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Failed to update user through Keycloak API", "err", err.Error())
 		return kc.UserRepresentation{}, err

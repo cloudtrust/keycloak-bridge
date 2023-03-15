@@ -452,8 +452,8 @@ func TestCreateUser(t *testing.T) {
 	mocks.configurationDBModule.EXPECT().GetAdminConfiguration(gomock.Any(), gomock.Any()).Return(configuration.RealmAdminConfiguration{}, nil).AnyTimes()
 
 	t.Run("Create user with username generation, don't need terms of use", func(t *testing.T) {
-		mocks.onboardingModule.EXPECT().CreateUser(ctx, accessToken, realmName, socialRealmName, gomock.Any()).
-			DoAndReturn(func(_, _, _, _ interface{}, user *kc.UserRepresentation) (string, error) {
+		mocks.onboardingModule.EXPECT().CreateUser(ctx, accessToken, realmName, socialRealmName, gomock.Any(), false).
+			DoAndReturn(func(_, _, _, _ interface{}, user *kc.UserRepresentation, _ interface{}) (string, error) {
 				assert.NotNil(t, user)
 				assert.Nil(t, user.RequiredActions)
 				return "", anyError
@@ -465,8 +465,8 @@ func TestCreateUser(t *testing.T) {
 		assert.Equal(t, anyError, err)
 	})
 	t.Run("Create user with username generation, need terms of use", func(t *testing.T) {
-		mocks.onboardingModule.EXPECT().CreateUser(ctx, accessToken, realmName, socialRealmName, gomock.Any()).
-			DoAndReturn(func(_, _, _, _ interface{}, user *kc.UserRepresentation) (string, error) {
+		mocks.onboardingModule.EXPECT().CreateUser(ctx, accessToken, realmName, socialRealmName, gomock.Any(), true).
+			DoAndReturn(func(_, _, _, _ interface{}, user *kc.UserRepresentation, _ interface{}) (string, error) {
 				assert.NotNil(t, user)
 				assert.NotNil(t, user.RequiredActions)
 				assert.Len(t, *user.RequiredActions, 1)
@@ -475,7 +475,7 @@ func TestCreateUser(t *testing.T) {
 			})
 		mocks.logger.EXPECT().Warn(ctx, "err", gomock.Any())
 
-		_, err := managementComponent.CreateUser(ctx, socialRealmName, api.UserRepresentation{}, false, false, true)
+		_, err := managementComponent.CreateUser(ctx, socialRealmName, api.UserRepresentation{}, false, true, true)
 
 		assert.Equal(t, anyError, err)
 	})
@@ -488,7 +488,7 @@ func TestCreateUser(t *testing.T) {
 			Attributes: &attrbs,
 		}
 
-		mocks.keycloakClient.EXPECT().CreateUser(accessToken, realmName, targetRealmName, kcUserRep).Return(locationURL, nil)
+		mocks.keycloakClient.EXPECT().CreateUser(accessToken, realmName, targetRealmName, kcUserRep, "generateNameID", "false").Return(locationURL, nil)
 		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "API_ACCOUNT_CREATION", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 
 		var userRep = api.UserRepresentation{
@@ -507,7 +507,7 @@ func TestCreateUser(t *testing.T) {
 			Attributes: &attrbs,
 		}
 
-		mocks.keycloakClient.EXPECT().CreateUser(accessToken, realmName, realmName, kcUserRep).Return(locationURL, nil)
+		mocks.keycloakClient.EXPECT().CreateUser(accessToken, realmName, realmName, kcUserRep, "generateNameID", "false").Return(locationURL, nil)
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
@@ -552,8 +552,8 @@ func TestCreateUser(t *testing.T) {
 		var idDocumentExpiration = "23.12.2019"
 		var idDocumentCountry = "IT"
 
-		mocks.keycloakClient.EXPECT().CreateUser(accessToken, realmName, targetRealmName, gomock.Any()).DoAndReturn(
-			func(accessToken, realmName, targetRealmName string, kcUserRep kc.UserRepresentation) (string, error) {
+		mocks.keycloakClient.EXPECT().CreateUser(accessToken, realmName, targetRealmName, gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
+			func(accessToken, realmName, targetRealmName string, kcUserRep kc.UserRepresentation, _ ...interface{}) (string, error) {
 				assert.Equal(t, username, *kcUserRep.Username)
 				assert.Equal(t, email, *kcUserRep.Email)
 				assert.Equal(t, enabled, *kcUserRep.Enabled)
@@ -567,7 +567,6 @@ func TestCreateUser(t *testing.T) {
 				assert.Equal(t, gender, *kcUserRep.GetAttributeString(constants.AttrbGender))
 				assert.Equal(t, birthDate, *kcUserRep.GetAttributeString(constants.AttrbBirthDate))
 				assert.Equal(t, locale, *kcUserRep.GetAttributeString(constants.AttrbLocale))
-				assert.NotNil(t, kcUserRep.GetAttributeString(constants.AttrbNameID))
 				return locationURL, nil
 			})
 
@@ -613,7 +612,7 @@ func TestCreateUser(t *testing.T) {
 			Attributes: &attrbs,
 		}
 
-		mocks.keycloakClient.EXPECT().CreateUser(accessToken, realmName, targetRealmName, kcUserRep).Return("", fmt.Errorf("Invalid input"))
+		mocks.keycloakClient.EXPECT().CreateUser(accessToken, realmName, targetRealmName, kcUserRep, "generateNameID", "false").Return("", fmt.Errorf("Invalid input"))
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)

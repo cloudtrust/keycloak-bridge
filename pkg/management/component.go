@@ -24,7 +24,6 @@ import (
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/accreditationsclient"
 	kc "github.com/cloudtrust/keycloak-client/v2"
 	"github.com/cloudtrust/keycloak-client/v2/toolbox"
-	"github.com/google/uuid"
 	"github.com/pkg/errors"
 )
 
@@ -50,7 +49,7 @@ type KeycloakClient interface {
 	DeleteGroupFromUser(accessToken string, realmName, userID, groupID string) error
 	UpdateUser(accessToken string, realmName, userID string, user kc.UserRepresentation) error
 	GetUsers(accessToken string, reqRealmName, targetRealmName string, paramKV ...string) (kc.UsersPageRepresentation, error)
-	CreateUser(accessToken string, realmName string, targetRealmName string, user kc.UserRepresentation) (string, error)
+	CreateUser(accessToken string, realmName string, targetRealmName string, user kc.UserRepresentation, paramKV ...string) (string, error)
 	GetClientRoleMappings(accessToken string, realmName, userID, clientID string) ([]kc.RoleRepresentation, error)
 	AddClientRolesToUserRoleMapping(accessToken string, realmName, userID, clientID string, roles []kc.RoleRepresentation) error
 	DeleteClientRolesFromUserRoleMapping(accessToken string, realmName, userID, clientID string, roles []kc.RoleRepresentation) error
@@ -102,7 +101,7 @@ type OnboardingModule interface {
 	OnboardingAlreadyCompleted(kc.UserRepresentation) (bool, error)
 	SendOnboardingEmail(ctx context.Context, accessToken string, realmName string, userID string, username string, onboardingClientID string,
 		onboardingRedirectURI string, themeRealmName string, reminder bool, paramKV ...string) error
-	CreateUser(ctx context.Context, accessToken, realmName, targetRealmName string, kcUser *kc.UserRepresentation) (string, error)
+	CreateUser(ctx context.Context, accessToken, realmName, targetRealmName string, kcUser *kc.UserRepresentation, generateNameID bool) (string, error)
 	ProcessAlreadyExistingUserCases(ctx context.Context, accessToken string, targetRealmName string, userEmail string, requestingSource string, handler func(username string, createdTimestamp int64, thirdParty *string) error) error
 }
 
@@ -405,16 +404,6 @@ func (c *component) genericCreateUser(ctx context.Context, accessToken string, c
 		userRep.RequiredActions = &reqActions
 	}
 
-	if generateNameID {
-		var oneUUID, errUUID = uuid.NewUUID()
-		if errUUID != nil {
-			c.logger.Warn(ctx, "msg", "Can't generate UUID", "err", errUUID.Error())
-			return "", errUUID
-		}
-		var nameID = fmt.Sprintf("G-%s", oneUUID.String())
-		userRep.SetAttributeString(constants.AttrbNameID, nameID)
-	}
-
 	if glnErr := c.checkGLN(ctx, targetRealmName, true, user.BusinessID, &userRep); glnErr != nil {
 		return "", glnErr
 	}
@@ -431,10 +420,10 @@ func (c *component) genericCreateUser(ctx context.Context, accessToken string, c
 		}
 		// Ignore username and create a random one
 		userRep.Username = nil
-		locationURL, err = c.onboardingModule.CreateUser(ctx, accessToken, customerRealmName, targetRealmName, &userRep)
+		locationURL, err = c.onboardingModule.CreateUser(ctx, accessToken, customerRealmName, targetRealmName, &userRep, generateNameID)
 	} else {
 		// Store user in KC
-		locationURL, err = c.keycloakClient.CreateUser(accessToken, customerRealmName, targetRealmName, userRep)
+		locationURL, err = c.keycloakClient.CreateUser(accessToken, customerRealmName, targetRealmName, userRep, "generateNameID", strconv.FormatBool(generateNameID))
 	}
 	if err != nil {
 		c.logger.Warn(ctx, "err", err.Error())

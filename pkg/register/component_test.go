@@ -245,8 +245,8 @@ func TestRegisterUser(t *testing.T) {
 
 	t.Run("Failed to create new user", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetGroups(accessToken, targetRealmName).Return(groups, nil)
-		mocks.onboardingModule.EXPECT().CreateUser(ctx, accessToken, targetRealmName, targetRealmName, gomock.Any()).DoAndReturn(
-			func(_, _, _, _ interface{}, kcUser *kc.UserRepresentation) (string, error) {
+		mocks.onboardingModule.EXPECT().CreateUser(ctx, accessToken, targetRealmName, targetRealmName, gomock.Any(), false).DoAndReturn(
+			func(_, _, _, _ interface{}, kcUser *kc.UserRepresentation, _ interface{}) (string, error) {
 				assert.NotNil(t, kcUser.Attributes)
 				return "", errors.New("unexpected error")
 			})
@@ -255,8 +255,8 @@ func TestRegisterUser(t *testing.T) {
 		assert.NotNil(t, err)
 	})
 
-	mocks.onboardingModule.EXPECT().CreateUser(ctx, accessToken, targetRealmName, targetRealmName, gomock.Any()).DoAndReturn(
-		func(_, _, _, _ interface{}, kcUser *kc.UserRepresentation) (string, error) {
+	mocks.onboardingModule.EXPECT().CreateUser(ctx, accessToken, targetRealmName, targetRealmName, gomock.Any(), false).DoAndReturn(
+		func(_, _, _, _ interface{}, kcUser *kc.UserRepresentation, _ interface{}) (string, error) {
 			assert.NotNil(t, kcUser.Attributes)
 			var generatedUsername = "78564513"
 			kcUser.ID = &kcID
