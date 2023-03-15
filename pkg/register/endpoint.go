@@ -97,7 +97,7 @@ func MakeGetUserProfileEndpoint(component Component, socialRealm string) cs.Endp
 // MakeGetCorpUserProfileEndpoint endpoint creation
 func MakeGetCorpUserProfileEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
-		var realm = req.(map[string]string)[prmRealm]
+		var realm = req.(map[string]string)[prmCorpRealm]
 		return component.GetUserProfile(ctx, realm)
 	}
 }

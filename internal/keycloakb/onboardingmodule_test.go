@@ -221,14 +221,14 @@ func TestCreateUser(t *testing.T) {
 			Message: "keycloak.existing.username",
 		}
 
-		mocks.keycloakClient.EXPECT().CreateUser(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("", errExistingUsername).Times(10)
-		var _, err = onboarding.CreateUser(ctx, accessToken, realm, targetRealm, &kcUser)
+		mocks.keycloakClient.EXPECT().CreateUser(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), "generateNameID", "false").Return("", errExistingUsername).Times(10)
+		var _, err = onboarding.CreateUser(ctx, accessToken, realm, targetRealm, &kcUser, false)
 		assert.NotNil(t, err)
 		assert.Contains(t, err.Error(), "username.generation")
 	})
 	t.Run("User creation fails", func(t *testing.T) {
-		mocks.keycloakClient.EXPECT().CreateUser(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return("", errors.New("any error"))
-		var _, err = onboarding.CreateUser(ctx, accessToken, realm, targetRealm, &kcUser)
+		mocks.keycloakClient.EXPECT().CreateUser(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), "generateNameID", "true").Return("", errors.New("any error"))
+		var _, err = onboarding.CreateUser(ctx, accessToken, realm, targetRealm, &kcUser, true)
 		assert.NotNil(t, err)
 	})
 	t.Run("Success", func(t *testing.T) {
@@ -236,9 +236,9 @@ func TestCreateUser(t *testing.T) {
 		var location = "http://location/users/" + userID
 		kcUser.Username = nil
 
-		mocks.keycloakClient.EXPECT().CreateUser(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(location, nil)
+		mocks.keycloakClient.EXPECT().CreateUser(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), "generateNameID", "false").Return(location, nil)
 
-		var resPath, err = onboarding.CreateUser(ctx, accessToken, realm, targetRealm, &kcUser)
+		var resPath, err = onboarding.CreateUser(ctx, accessToken, realm, targetRealm, &kcUser, false)
 		assert.Nil(t, err)
 		var matched, errRegexp = regexp.Match(`^\d{8}$`, []byte(*kcUser.Username))
 		assert.True(t, matched && errRegexp == nil)

@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -34,7 +35,7 @@ type onboardingModule struct {
 type OnboardingKeycloakClient interface {
 	GetRealm(accessToken string, realmName string) (kc.RealmRepresentation, error)
 	GetUsers(accessToken string, reqRealmName, targetRealmName string, paramKV ...string) (kc.UsersPageRepresentation, error)
-	CreateUser(accessToken string, realmName string, targetRealmName string, user kc.UserRepresentation) (string, error)
+	CreateUser(accessToken string, realmName string, targetRealmName string, user kc.UserRepresentation, paramKV ...string) (string, error)
 	DeleteUser(accessToken string, realmName, userID string) error
 	ExecuteActionsEmail(accessToken string, reqRealmName string, targetRealmName string, userID string, actions []string, paramKV ...string) error
 	SendEmail(accessToken string, reqRealmName string, realmName string, emailRep kc.EmailRepresentation) error
@@ -46,7 +47,7 @@ type OnboardingModule interface {
 	OnboardingAlreadyCompleted(kc.UserRepresentation) (bool, error)
 	SendOnboardingEmail(ctx context.Context, accessToken string, realmName string, userID string, username string,
 		onboardingClientID string, onboardingRedirectURI string, themeRealmName string, reminder bool, paramKV ...string) error
-	CreateUser(ctx context.Context, accessToken, realmName, targetRealmName string, kcUser *kc.UserRepresentation) (string, error)
+	CreateUser(ctx context.Context, accessToken, realmName, targetRealmName string, kcUser *kc.UserRepresentation, generateNameID bool) (string, error)
 	ProcessAlreadyExistingUserCases(ctx context.Context, accessToken string, targetRealmName string, userEmail string, requestingSource string, handler func(username string, createdTimestamp int64, thirdParty *string) error) error
 	ComputeRedirectURI(ctx context.Context, accessToken string, realmName string, userID string, username string,
 		onboardingClientID string, onboardingRedirectURI string) (string, error)
@@ -144,7 +145,7 @@ func (om *onboardingModule) generateUsername(chars []rune, length int) string {
 	return b.String()
 }
 
-func (om *onboardingModule) CreateUser(ctx context.Context, accessToken, realmName, targetRealmName string, kcUser *kc.UserRepresentation) (string, error) {
+func (om *onboardingModule) CreateUser(ctx context.Context, accessToken, realmName, targetRealmName string, kcUser *kc.UserRepresentation, generateNameID bool) (string, error) {
 	var chars = []rune("0123456789")
 	var locationURL string
 	var username string
@@ -154,7 +155,7 @@ func (om *onboardingModule) CreateUser(ctx context.Context, accessToken, realmNa
 		username = om.generateUsername(chars, 8)
 		kcUser.Username = &username
 
-		locationURL, err = om.keycloakClient.CreateUser(accessToken, realmName, targetRealmName, *kcUser)
+		locationURL, err = om.keycloakClient.CreateUser(accessToken, realmName, targetRealmName, *kcUser, "generateNameID", strconv.FormatBool(generateNameID))
 
 		// Create success: just have to get the userID and exit this loop
 		if err == nil {
