@@ -113,7 +113,8 @@
 		  "register": "true",
 		  "account": "true",
 		  "kyc": "true",
-		  "management": "true"
+		  "management": "true",
+		  "validation": "true"
 		}
 	  },
 	  {
@@ -143,7 +144,8 @@
 		  "kyc": "true",
 		  "management": "true",
 		  "register": "required",
-		  "account": "true"
+		  "account": "true",
+		  "validation": "true"
 		},
 		"required": {
 		  "roles": [
@@ -178,6 +180,7 @@
 		  "register": "true",
 		  "kyc": "true",
 		  "management": "true",
+		  "validation": "true",
 		  "values": "gender"
 		}
 	  },
@@ -279,7 +282,8 @@
 		  "kyc": "true",
 		  "management": "true",
 		  "account": "true",
-		  "example": "${dateSample}"
+		  "example": "${dateSample}",
+		  "validation": "true"
 		}
 	  },
 	  {
@@ -312,7 +316,8 @@
 		  "register": "true",
 		  "account": "true",
 		  "kyc": "true",
-		  "management": "true"
+		  "management": "true",
+		  "validation": "true"
 		}
 	  },
 	  {
@@ -341,6 +346,7 @@
 		  "account": "true",
 		  "kyc": "true",
 		  "management": "true",
+		  "validation": "true",
 		  "values": "country"
 		}
 	  },
@@ -374,6 +380,7 @@
 		  "account": "true",
 		  "kyc": "true",
 		  "management": "true",
+		  "validation": "true",
 		  "values": "idDocumentType"
 		}
 	  },
@@ -407,7 +414,8 @@
 		  "register": "true",
 		  "account": "true",
 		  "kyc": "true",
-		  "management": "true"
+		  "management": "true",
+		  "validation": "true"
 		}
 	  },
 	  {
@@ -439,7 +447,8 @@
 		  "account": "true",
 		  "kyc": "true",
 		  "management": "true",
-		  "example": "DD.MM.YYYY"
+		  "example": "DD.MM.YYYY",
+		  "validation": "true"
 		}
 	  },
 	  {
@@ -468,6 +477,7 @@
 		  "account": "true",
 		  "kyc": "true",
 		  "management": "true",
+		  "validation": "true",
 		  "values": "country"
 		}
 	  },
