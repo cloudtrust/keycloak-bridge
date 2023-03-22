@@ -20,8 +20,8 @@ type authorizationComponentMW struct {
 	next                Component
 }
 
-// MakeAuthorizationRegisterComponentMW checks authorization and return an error if the action is not allowed.
-func MakeAuthorizationRegisterComponentMW(realmName string, authorizationManager security.AuthorizationManager, availabilityChecker middleware.EndpointAvailabilityChecker, logger log.Logger) func(Component) Component {
+// MakeAuthorizationKYCComponentMW checks authorization and return an error if the action is not allowed.
+func MakeAuthorizationKYCComponentMW(realmName string, authorizationManager security.AuthorizationManager, availabilityChecker middleware.EndpointAvailabilityChecker, logger log.Logger) func(Component) Component {
 	return func(next Component) Component {
 		return &authorizationComponentMW{
 			realmName:           realmName,

@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestMakeAuthorizationRegisterComponentMW(t *testing.T) {
+func TestMakeAuthorizationKYCComponentMW(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 
@@ -31,7 +31,7 @@ func TestMakeAuthorizationRegisterComponentMW(t *testing.T) {
 	var consentCode *string
 	var expectedErr = errors.New("")
 
-	var component = MakeAuthorizationRegisterComponentMW(realm, mockAuthManager, mockAvailabilityChecker, logger.NewNopLogger())(mockComponent)
+	var component = MakeAuthorizationKYCComponentMW(realm, mockAuthManager, mockAvailabilityChecker, logger.NewNopLogger())(mockComponent)
 
 	t.Run("GetActions", func(t *testing.T) {
 		t.Run("not authorized", func(t *testing.T) {
