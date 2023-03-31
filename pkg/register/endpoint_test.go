@@ -145,13 +145,13 @@ func TestMakeGetUserProfileEndpoint(t *testing.T) {
 	)
 
 	t.Run("MakeGetUserProfile", func(t *testing.T) {
-		mockRegisterComponent.EXPECT().GetUserProfile(gomock.Any(), realm).Return(apicommon.ProfileRepresentation{}, nil)
+		mockRegisterComponent.EXPECT().GetUserProfile(gomock.Any(), gomock.Any()).Return(apicommon.ProfileRepresentation{}, nil)
 		_, err := MakeGetUserProfileEndpoint(mockRegisterComponent, realm)(context.Background(), m)
 		assert.Nil(t, err)
 	})
 
 	t.Run("MakeGetCorpUserProfile", func(t *testing.T) {
-		mockRegisterComponent.EXPECT().GetUserProfile(gomock.Any(), realm).Return(apicommon.ProfileRepresentation{}, nil)
+		mockRegisterComponent.EXPECT().GetUserProfile(gomock.Any(), gomock.Any()).Return(apicommon.ProfileRepresentation{}, nil)
 		_, err := MakeGetCorpUserProfileEndpoint(mockRegisterComponent)(context.Background(), m)
 		assert.Nil(t, err)
 	})

@@ -172,7 +172,7 @@ func (c *component) RegisterUser(ctx context.Context, targetRealmName string, cu
 	var ctxOverride keycloakb.ContextKeyParameters
 	if contextKey != nil {
 		var ok bool
-		if ctxOverride, ok = c.contextKeyMgr.GetOverride(customerRealmName, *contextKey); !ok {
+		if ctxOverride, ok = c.contextKeyMgr.GetOverride(targetRealmName, *contextKey); !ok {
 			c.logger.Info(ctx, "msg", "Invalid context key", "context-key", *contextKey)
 			return "", errorhandler.CreateBadRequestError(errorhandler.MsgErrInvalidParam + ".context-key")
 		}
