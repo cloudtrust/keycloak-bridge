@@ -132,11 +132,11 @@ func TestRegisterUser(t *testing.T) {
 	var contextKeyNeutral = "key0"
 	var contextKeyRedirect = "key1"
 	var contextKeyInvalid = "invalid"
-	mocks.contextKeyMgr.EXPECT().GetOverride(customerRealmName, contextKeyNeutral).Return(keycloakb.ContextKeyParameters{
+	mocks.contextKeyMgr.EXPECT().GetOverride(targetRealmName, contextKeyNeutral).Return(keycloakb.ContextKeyParameters{
 		ID:    ptr(contextKeyRedirect),
 		Realm: &customerRealmName,
 	}, true).AnyTimes()
-	mocks.contextKeyMgr.EXPECT().GetOverride(customerRealmName, contextKeyRedirect).Return(keycloakb.ContextKeyParameters{
+	mocks.contextKeyMgr.EXPECT().GetOverride(targetRealmName, contextKeyRedirect).Return(keycloakb.ContextKeyParameters{
 		ID:           ptr(contextKeyRedirect),
 		Realm:        &customerRealmName,
 		RedirectMode: ptrBool(true),
@@ -159,7 +159,7 @@ func TestRegisterUser(t *testing.T) {
 
 	t.Run("Bad context key", func(t *testing.T) {
 		mocks.configDB.EXPECT().GetConfigurations(ctx, targetRealmName).Return(configuration.RealmConfiguration{}, realmAdminConf, nil)
-		mocks.contextKeyMgr.EXPECT().GetOverride(customerRealmName, contextKeyInvalid).Return(keycloakb.ContextKeyParameters{}, false)
+		mocks.contextKeyMgr.EXPECT().GetOverride(targetRealmName, contextKeyInvalid).Return(keycloakb.ContextKeyParameters{}, false)
 
 		_, err := component.RegisterUser(ctx, targetRealmName, customerRealmName, user, &contextKeyInvalid)
 		assert.NotNil(t, err)
