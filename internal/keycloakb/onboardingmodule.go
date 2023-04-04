@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cloudtrust/common-service/v2/configuration"
 	errorhandler "github.com/cloudtrust/common-service/v2/errors"
 	"github.com/cloudtrust/common-service/v2/log"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
@@ -51,6 +52,7 @@ type OnboardingModule interface {
 	ProcessAlreadyExistingUserCases(ctx context.Context, accessToken string, targetRealmName string, userEmail string, requestingSource string, handler func(username string, createdTimestamp int64, thirdParty *string) error) error
 	ComputeRedirectURI(ctx context.Context, accessToken string, realmName string, userID string, username string,
 		onboardingClientID string, onboardingRedirectURI string) (string, error)
+	ComputeOnboardingRedirectURI(ctx context.Context, targetRealmName string, customerRealmName string, realmConf configuration.RealmConfiguration) (string, error)
 }
 
 // NewOnboardingModule creates an onboarding module
@@ -265,4 +267,25 @@ func (om *onboardingModule) getUserByEmailIfDuplicateNotAllowed(ctx context.Cont
 	ConvertLegacyAttribute(&kcUser)
 
 	return &kcUser, nil
+}
+
+func (om *onboardingModule) ComputeOnboardingRedirectURI(ctx context.Context, targetRealmName string, customerRealmName string, realmConf configuration.RealmConfiguration) (string, error) {
+	if realmConf.OnboardingRedirectURI == nil {
+		om.logger.Warn(ctx, "msg", "onboardingRedirectURI is null")
+		return "", errorhandler.CreateInternalServerError("onboardingRedirectURI")
+	}
+	onboardingRedirectURI := *realmConf.OnboardingRedirectURI
+
+	if targetRealmName != customerRealmName {
+		urlOnboardingRedirectURI, err := url.Parse(onboardingRedirectURI)
+		if err != nil {
+			om.logger.Warn(ctx, "msg", "Failed to parse onboardingRedirectURI", "err", err.Error())
+			return "", err
+		}
+		queryParams := urlOnboardingRedirectURI.Query()
+		queryParams.Add("customerRealm", customerRealmName)
+		urlOnboardingRedirectURI.RawQuery = queryParams.Encode()
+		onboardingRedirectURI = urlOnboardingRedirectURI.String()
+	}
+	return onboardingRedirectURI, nil
 }

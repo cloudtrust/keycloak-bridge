@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cloudtrust/common-service/v2/configuration"
 	errorhandler "github.com/cloudtrust/common-service/v2/errors"
 	"github.com/cloudtrust/common-service/v2/log"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
@@ -389,5 +390,38 @@ func TestCanReplaceAccount(t *testing.T) {
 	})
 	t.Run("Can't replace user account created by other source", func(t *testing.T) {
 		assert.False(t, onboarding.canReplaceAccount(time.Now().Unix(), ptr("one-source"), "any-realm"))
+	})
+}
+
+func TestComputeOnboardingRedirectURI(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mocks = createOnboardingMocks(mockCtrl)
+	var onboarding = mocks.createOnboardingModule()
+
+	var ctx = context.Background()
+	var onboardingURI = "http://test.test?context=57a323d7-6da6-4c49-975e-4605ac8e101b"
+	var realmConf = configuration.RealmConfiguration{
+		OnboardingRedirectURI: &onboardingURI,
+	}
+
+	t.Run("RealmConfiguration is null", func(t *testing.T) {
+		_, err := onboarding.ComputeOnboardingRedirectURI(ctx, "target", "target", configuration.RealmConfiguration{})
+		assert.NotNil(t, err)
+	})
+
+	t.Run("Success, target == customer", func(t *testing.T) {
+		expectedURI := onboardingURI
+		onboardingRedirectURI, err := onboarding.ComputeOnboardingRedirectURI(ctx, "target", "target", realmConf)
+		assert.Nil(t, err)
+		assert.Equal(t, expectedURI, onboardingRedirectURI)
+	})
+
+	t.Run("Success, target != customer", func(t *testing.T) {
+		expectedURI := "http://test.test?context=57a323d7-6da6-4c49-975e-4605ac8e101b&customerRealm=customer"
+		onboardingRedirectURI, err := onboarding.ComputeOnboardingRedirectURI(ctx, "target", "customer", realmConf)
+		assert.Nil(t, err)
+		assert.Equal(t, expectedURI, onboardingRedirectURI)
 	})
 }

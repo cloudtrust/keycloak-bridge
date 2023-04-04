@@ -103,6 +103,7 @@ type OnboardingModule interface {
 		onboardingRedirectURI string, themeRealmName string, reminder bool, paramKV ...string) error
 	CreateUser(ctx context.Context, accessToken, realmName, targetRealmName string, kcUser *kc.UserRepresentation, generateNameID bool) (string, error)
 	ProcessAlreadyExistingUserCases(ctx context.Context, accessToken string, targetRealmName string, userEmail string, requestingSource string, handler func(username string, createdTimestamp int64, thirdParty *string) error) error
+	ComputeOnboardingRedirectURI(ctx context.Context, targetRealmName string, customerRealmName string, realmConf configuration.RealmConfiguration) (string, error)
 }
 
 // GlnVerifier interface allows to check validity of a GLN
@@ -1245,9 +1246,9 @@ func (c *component) genericSendOnboardingEmail(ctx context.Context, accessToken 
 		return errorhandler.CreateBadRequestError(constants.MsgErrAlreadyOnboardedUser)
 	}
 
-	var onboardingRedirectURI = *realmConf.OnboardingRedirectURI
-	if realmName != customerRealm {
-		onboardingRedirectURI += "?customerRealm=" + customerRealm
+	onboardingRedirectURI, err := c.onboardingModule.ComputeOnboardingRedirectURI(ctx, realmName, customerRealm, realmConf)
+	if err != nil {
+		return err
 	}
 
 	// Send email

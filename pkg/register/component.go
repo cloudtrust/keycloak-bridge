@@ -41,6 +41,7 @@ type OnboardingModule interface {
 	ProcessAlreadyExistingUserCases(ctx context.Context, accessToken string, targetRealmName string, userEmail string, requestingSource string, handler func(username string, createdTimestamp int64, thirdParty *string) error) error
 	ComputeRedirectURI(ctx context.Context, accessToken string, realmName string, userID string, username string,
 		onboardingClientID string, onboardingRedirectURI string) (string, error)
+	ComputeOnboardingRedirectURI(ctx context.Context, targetRealmName string, customerRealmName string, realmConf configuration.RealmConfiguration) (string, error)
 }
 
 // GlnVerifier interface allows to check validity of a GLN
@@ -205,10 +206,9 @@ func (c *component) RegisterUser(ctx context.Context, targetRealmName string, cu
 		user.BusinessID = nil
 	}
 
-	var onboardingRedirectURI = *realmConf.OnboardingRedirectURI
-
-	if targetRealmName != customerRealmName {
-		onboardingRedirectURI += "?customerRealm=" + customerRealmName
+	onboardingRedirectURI, err := c.onboardingModule.ComputeOnboardingRedirectURI(ctx, targetRealmName, customerRealmName, realmConf)
+	if err != nil {
+		return "", err
 	}
 
 	var redirectURL string

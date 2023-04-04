@@ -2919,9 +2919,11 @@ func TestSendOnboardingEmail(t *testing.T) {
 		}, nil)
 
 		mocks.onboardingModule.EXPECT().OnboardingAlreadyCompleted(gomock.Any()).Return(false, nil)
+		var computedOnboardingRedirectURI = onboardingRedirectURI + "?customerRealm=" + customerRealmName
+		mocks.onboardingModule.EXPECT().ComputeOnboardingRedirectURI(ctx, realmName, customerRealmName, gomock.Any()).Return(computedOnboardingRedirectURI, nil)
 
 		mocks.onboardingModule.EXPECT().SendOnboardingEmail(ctx, accessToken, realmName, userID, username,
-			onboardingClientID, onboardingRedirectURI+"?customerRealm="+customerRealmName, customerRealmName, true).Return(anyError)
+			onboardingClientID, computedOnboardingRedirectURI, customerRealmName, true).Return(anyError)
 
 		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, customerRealmName, true)
 		assert.NotNil(t, err)
@@ -2938,6 +2940,7 @@ func TestSendOnboardingEmail(t *testing.T) {
 			Username: &username,
 		}, nil)
 		mocks.onboardingModule.EXPECT().OnboardingAlreadyCompleted(gomock.Any()).Return(false, nil)
+		mocks.onboardingModule.EXPECT().ComputeOnboardingRedirectURI(ctx, realmName, realmName, gomock.Any()).Return(onboardingRedirectURI, nil)
 		mocks.onboardingModule.EXPECT().SendOnboardingEmail(ctx, accessToken, realmName, userID, username, onboardingClientID, onboardingRedirectURI, gomock.Any(), false).Return(nil)
 		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "EMAIL_ONBOARDING_SENT", "back-office", database.CtEventRealmName, realmName, database.CtEventUserID, userID).Return(nil)
 

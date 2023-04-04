@@ -189,7 +189,14 @@ func TestRegisterUser(t *testing.T) {
 	})
 	mocks.glnVerifier.EXPECT().ValidateGLN(*user.FirstName, *user.LastName, *user.BusinessID).Return(nil).AnyTimes()
 
+	t.Run("Failed to compute OnboardingRedirectURI", func(t *testing.T) {
+		mocks.onboardingModule.EXPECT().ComputeOnboardingRedirectURI(ctx, targetRealmName, customerRealmName, realmConf).Return("", anyError)
+		_, err := component.RegisterUser(ctx, targetRealmName, customerRealmName, user, &contextKeyNeutral)
+		assert.Equal(t, anyError, err)
+	})
+
 	t.Run("Failed to process already existing user", func(t *testing.T) {
+		mocks.onboardingModule.EXPECT().ComputeOnboardingRedirectURI(ctx, targetRealmName, customerRealmName, realmConf).Return(onboardingURI, nil)
 		mocks.onboardingModule.EXPECT().ProcessAlreadyExistingUserCases(gomock.Any(), accessToken, targetRealmName, *user.Email, "register", gomock.Any()).Return(anyError)
 
 		_, err := component.RegisterUser(ctx, targetRealmName, customerRealmName, user, nil)
@@ -200,6 +207,7 @@ func TestRegisterUser(t *testing.T) {
 		var username = "existing"
 		var createdTimestamp int64 = 1642697516274
 		var thirdParty = "third-party"
+		mocks.onboardingModule.EXPECT().ComputeOnboardingRedirectURI(ctx, targetRealmName, customerRealmName, realmConf).Return(onboardingURI, nil)
 		mocks.onboardingModule.EXPECT().ProcessAlreadyExistingUserCases(gomock.Any(), accessToken, targetRealmName, *user.Email, "register", gomock.Any()).
 			DoAndReturn(func(_, _, _, _, _ interface{}, handler func(username string, createdTimestamp int64, thirdParty *string) error) error {
 				return handler(username, createdTimestamp, &thirdParty)
@@ -213,6 +221,7 @@ func TestRegisterUser(t *testing.T) {
 	t.Run("Already onboarded user", func(t *testing.T) {
 		var username = "existing"
 		var createdTimestamp int64 = 1642697516274
+		mocks.onboardingModule.EXPECT().ComputeOnboardingRedirectURI(ctx, targetRealmName, customerRealmName, realmConf).Return(onboardingURI, nil)
 		mocks.onboardingModule.EXPECT().ProcessAlreadyExistingUserCases(gomock.Any(), accessToken, targetRealmName, *user.Email, "register", gomock.Any()).
 			DoAndReturn(func(_, _, _, _, _ interface{}, handler func(username string, createdTimestamp int64, thirdParty *string) error) error {
 				return handler(username, createdTimestamp, nil)
@@ -225,6 +234,7 @@ func TestRegisterUser(t *testing.T) {
 	mocks.onboardingModule.EXPECT().ProcessAlreadyExistingUserCases(gomock.Any(), accessToken, targetRealmName, *user.Email, "register", gomock.Any()).Return(nil).AnyTimes()
 
 	t.Run("Failed to retrieve groups in KC", func(t *testing.T) {
+		mocks.onboardingModule.EXPECT().ComputeOnboardingRedirectURI(ctx, targetRealmName, customerRealmName, realmConf).Return(onboardingURI, nil)
 		mocks.keycloakClient.EXPECT().GetGroups(accessToken, targetRealmName).Return(nil, errors.New("unexpected error"))
 
 		_, err := component.RegisterUser(ctx, targetRealmName, customerRealmName, user, nil)
@@ -232,6 +242,7 @@ func TestRegisterUser(t *testing.T) {
 	})
 
 	t.Run("Failed to convert all groupNames", func(t *testing.T) {
+		mocks.onboardingModule.EXPECT().ComputeOnboardingRedirectURI(ctx, targetRealmName, customerRealmName, realmConf).Return(onboardingURI, nil)
 		mocks.keycloakClient.EXPECT().GetGroups(accessToken, targetRealmName).Return([]kc.GroupRepresentation{
 			{
 				Name: &groupName1,
@@ -244,6 +255,7 @@ func TestRegisterUser(t *testing.T) {
 	})
 
 	t.Run("Failed to create new user", func(t *testing.T) {
+		mocks.onboardingModule.EXPECT().ComputeOnboardingRedirectURI(ctx, targetRealmName, customerRealmName, realmConf).Return(onboardingURI, nil)
 		mocks.keycloakClient.EXPECT().GetGroups(accessToken, targetRealmName).Return(groups, nil)
 		mocks.onboardingModule.EXPECT().CreateUser(ctx, accessToken, targetRealmName, targetRealmName, gomock.Any(), false).DoAndReturn(
 			func(_, _, _, _ interface{}, kcUser *kc.UserRepresentation, _ interface{}) (string, error) {
@@ -268,6 +280,7 @@ func TestRegisterUser(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetGroups(accessToken, targetRealmName).Return(groups, nil)
 
 		var onboardingRedirectURI = onboardingURI + "?customerRealm=" + customerRealmName
+		mocks.onboardingModule.EXPECT().ComputeOnboardingRedirectURI(ctx, targetRealmName, customerRealmName, realmConf).Return(onboardingRedirectURI, nil)
 		mocks.onboardingModule.EXPECT().SendOnboardingEmail(ctx, accessToken, targetRealmName, kcID,
 			gomock.Any(), clientID, onboardingRedirectURI, customerRealmName, false, gomock.Any()).Return(errors.New("unexpected error"))
 
@@ -279,6 +292,7 @@ func TestRegisterUser(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetGroups(accessToken, targetRealmName).Return(groups, nil)
 
 		var onboardingRedirectURI = onboardingURI + "?customerRealm=" + customerRealmName
+		mocks.onboardingModule.EXPECT().ComputeOnboardingRedirectURI(ctx, targetRealmName, customerRealmName, realmConf).Return(onboardingRedirectURI, nil)
 		mocks.onboardingModule.EXPECT().SendOnboardingEmail(ctx, accessToken, targetRealmName, kcID,
 			gomock.Any(), clientID, onboardingRedirectURI, customerRealmName, false, gomock.Any()).Return(nil)
 
@@ -294,6 +308,7 @@ func TestRegisterUser(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetGroups(accessToken, targetRealmName).Return(groups, nil)
 
 		var onboardingRedirectURI = onboardingURI + "?customerRealm=" + customerRealmName
+		mocks.onboardingModule.EXPECT().ComputeOnboardingRedirectURI(ctx, targetRealmName, customerRealmName, realmConf).Return(onboardingRedirectURI, nil)
 		mocks.onboardingModule.EXPECT().ComputeRedirectURI(ctx, accessToken, targetRealmName, kcID,
 			gomock.Any(), clientID, onboardingRedirectURI).Return(expectedURL, nil)
 
