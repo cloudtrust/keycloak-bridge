@@ -13,7 +13,7 @@ import (
 
 // AccreditationsServiceClient interface
 type AccreditationsServiceClient interface {
-	NotifyCheck(ctx context.Context, check CheckRepresentation) error
+	NotifyCheck(ctx context.Context, check CreationCheckRepresentation) error
 	NotifyUpdate(ctx context.Context, updateNotifyRequest UpdateNotificationRepresentation) ([]string, error)
 	GetChecks(ctx context.Context, realm string, userID string) ([]CheckRepresentation, error)
 	GetPendingChecks(ctx context.Context, realm string, userID string) ([]CheckRepresentation, error)
@@ -26,6 +26,21 @@ type UpdateNotificationRepresentation struct {
 	UpdatedFields []string `json:"updatedFields,omitempty"`
 }
 
+// CreationCheckRepresentation struct
+type CreationCheckRepresentation struct {
+	UserID    *string    `json:"userId,omitempty"`
+	RealmName *string    `json:"realmName,omitempty"`
+	Operator  *string    `json:"operator,omitempty"`
+	DateTime  *time.Time `json:"datetime,omitempty"`
+	Status    *string    `json:"status,omitempty"`
+	Type      *string    `json:"type,omitempty"`
+	Nature    *string    `json:"nature,omitempty"`
+	ProofData *[]byte    `json:"proofData,omitempty"`
+	ProofType *string    `json:"proofType,omitempty"`
+	Comment   *string    `json:"comment,omitempty"`
+	TxnID     *string    `json:"txnId,omitempty"`
+}
+
 // CheckRepresentation struct
 type CheckRepresentation struct {
 	UserID    *string    `json:"userId,omitempty"`
@@ -35,7 +50,6 @@ type CheckRepresentation struct {
 	Status    *string    `json:"status,omitempty"`
 	Type      *string    `json:"type,omitempty"`
 	Nature    *string    `json:"nature,omitempty"`
-	ProofData *[]byte    `json:"proofData,omitempty"`
 	ProofType *string    `json:"proofType,omitempty"`
 	Comment   *string    `json:"comment,omitempty"`
 	TxnID     *string    `json:"txnId,omitempty"`
@@ -72,7 +86,7 @@ func MakeAccreditationsServiceClient(httpClient HTTPClient) *accreditationsClien
 }
 
 // UpdateCheck informs the accreditations service that a new check should be registered
-func (ac *accreditationsClient) NotifyCheck(ctx context.Context, check CheckRepresentation) error {
+func (ac *accreditationsClient) NotifyCheck(ctx context.Context, check CreationCheckRepresentation) error {
 	var correlationID = ctx.Value(cs.CtContextCorrelationID).(string)
 	return ac.httpClient.Put(url.Path(updateCheckPath), headers.Set(hdrCorrID, correlationID), body.JSON(check))
 }

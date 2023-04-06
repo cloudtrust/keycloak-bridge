@@ -61,7 +61,7 @@ type GlnVerifier interface {
 
 // AccreditationsServiceClient interface
 type AccreditationsServiceClient interface {
-	NotifyCheck(ctx context.Context, check accreditationsclient.CheckRepresentation) error
+	NotifyCheck(ctx context.Context, check accreditationsclient.CreationCheckRepresentation) error
 }
 
 // UserProfileCache interface
@@ -352,7 +352,7 @@ func (c *component) validateUserBasicID(ctx context.Context, accessToken string,
 
 	// Notify the new check to accreditation service
 	txnID := uuid.New().String()
-	check := accreditationsclient.CheckRepresentation{
+	check := accreditationsclient.CreationCheckRepresentation{
 		UserID:    &userID,
 		RealmName: &targetRealm,
 		Operator:  &operatorName,
@@ -462,7 +462,7 @@ func (c *component) validateUser(ctx context.Context, accessToken string, confRe
 
 	// Notify the new check to accreditation service
 	txnID := uuid.New().String()
-	check := accreditationsclient.CheckRepresentation{
+	check := accreditationsclient.CreationCheckRepresentation{
 		UserID:    &userID,
 		RealmName: &targetRealm,
 		Operator:  &operatorName,

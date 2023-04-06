@@ -26,14 +26,14 @@ func TestNotifyCheck(t *testing.T) {
 	t.Run("SUCCESS", func(t *testing.T) {
 		mockHTTPClient.EXPECT().Put(gomock.Any(), gomock.Any(), gomock.Any())
 
-		err := accreditationsClient.NotifyCheck(ctx, CheckRepresentation{})
+		err := accreditationsClient.NotifyCheck(ctx, CreationCheckRepresentation{})
 		assert.Nil(t, err)
 	})
 
 	t.Run("FAILURE", func(t *testing.T) {
 		mockHTTPClient.EXPECT().Put(gomock.Any(), gomock.Any(), gomock.Any()).Return(expectedError)
 
-		err := accreditationsClient.NotifyCheck(ctx, CheckRepresentation{})
+		err := accreditationsClient.NotifyCheck(ctx, CreationCheckRepresentation{})
 		assert.NotNil(t, err)
 	})
 }
