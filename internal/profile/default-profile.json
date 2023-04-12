@@ -83,12 +83,6 @@
 	  {
 		"name": "firstName",
 		"displayName": "${firstName}",
-		"required": {
-		  "roles": [
-			"user"
-		  ],
-		  "scopes": []
-		},
 		"permissions": {
 		  "view": [
 			"user",
@@ -146,12 +140,6 @@
 		  "register": "required",
 		  "account": "true",
 		  "validation": "true"
-		},
-		"required": {
-		  "roles": [
-			"user"
-		  ],
-		  "scopes": []
 		}
 	  },
 	  {
