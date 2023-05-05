@@ -9,20 +9,41 @@ import (
 	"github.com/cloudtrust/common-service/v2/log"
 	"github.com/cloudtrust/common-service/v2/security"
 	api "github.com/cloudtrust/keycloak-bridge/api/statistics"
+	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/accreditationsclient"
 	"github.com/cloudtrust/keycloak-bridge/pkg/statistics/mock"
 	kc "github.com/cloudtrust/keycloak-client/v2"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 
+func ptr(value string) *string {
+	return &value
+}
+
+type componentMocks struct {
+	eventsDBModule *mock.EventsDBModule
+	keycloakClient *mock.KcClient
+	accredsService *mock.AccreditationsServiceClient
+}
+
+func newComponentMocks(mockCtrl *gomock.Controller) *componentMocks {
+	return &componentMocks{
+		eventsDBModule: mock.NewEventsDBModule(mockCtrl),
+		keycloakClient: mock.NewKcClient(mockCtrl),
+		accredsService: mock.NewAccreditationsServiceClient(mockCtrl),
+	}
+}
+
+func (cm *componentMocks) newComponent() *component {
+	return NewComponent(cm.eventsDBModule, cm.keycloakClient, cm.accredsService, log.NewNopLogger()).(*component)
+}
+
 func TestGetStatistics(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mockDBModule = mock.NewEventsDBModule(mockCtrl)
-	var mockKcClient = mock.NewKcClient(mockCtrl)
-	var mockLogger = log.NewNopLogger()
-	component := NewComponent(mockDBModule, mockKcClient, mockLogger)
+	var mocks = newComponentMocks(mockCtrl)
+	var component = mocks.newComponent()
 
 	var errDbModule = errors.New("Dummy error in db module")
 	var realm = "the_realm_name"
@@ -38,18 +59,18 @@ func TestGetStatistics(t *testing.T) {
 	}
 
 	t.Run("db.GetLastConnection fails", func(t *testing.T) {
-		mockDBModule.EXPECT().GetLastConnection(gomock.Any(), realm).Return(int64(0), errDbModule)
+		mocks.eventsDBModule.EXPECT().GetLastConnection(gomock.Any(), realm).Return(int64(0), errDbModule)
 		_, err := component.GetStatistics(context.TODO(), realm)
 		assert.Equal(t, errDbModule, err)
 	})
 
 	t.Run("success", func(t *testing.T) {
-		mockDBModule.EXPECT().GetLastConnection(gomock.Any(), realm).Return(expected.LastConnection, nil)
-		mockDBModule.EXPECT().GetTotalConnectionsCount(gomock.Any(), realm, "12 HOUR").Return(expected.TotalConnections.LastTwelveHours, nil)
-		mockDBModule.EXPECT().GetTotalConnectionsCount(gomock.Any(), realm, "1 DAY").Return(expected.TotalConnections.LastDay, nil)
-		mockDBModule.EXPECT().GetTotalConnectionsCount(gomock.Any(), realm, "1 WEEK").Return(expected.TotalConnections.LastWeek, nil)
-		mockDBModule.EXPECT().GetTotalConnectionsCount(gomock.Any(), realm, "1 MONTH").Return(expected.TotalConnections.LastMonth, nil)
-		mockDBModule.EXPECT().GetTotalConnectionsCount(gomock.Any(), realm, "1 YEAR").Return(expected.TotalConnections.LastYear, nil)
+		mocks.eventsDBModule.EXPECT().GetLastConnection(gomock.Any(), realm).Return(expected.LastConnection, nil)
+		mocks.eventsDBModule.EXPECT().GetTotalConnectionsCount(gomock.Any(), realm, "12 HOUR").Return(expected.TotalConnections.LastTwelveHours, nil)
+		mocks.eventsDBModule.EXPECT().GetTotalConnectionsCount(gomock.Any(), realm, "1 DAY").Return(expected.TotalConnections.LastDay, nil)
+		mocks.eventsDBModule.EXPECT().GetTotalConnectionsCount(gomock.Any(), realm, "1 WEEK").Return(expected.TotalConnections.LastWeek, nil)
+		mocks.eventsDBModule.EXPECT().GetTotalConnectionsCount(gomock.Any(), realm, "1 MONTH").Return(expected.TotalConnections.LastMonth, nil)
+		mocks.eventsDBModule.EXPECT().GetTotalConnectionsCount(gomock.Any(), realm, "1 YEAR").Return(expected.TotalConnections.LastYear, nil)
 		res, err := component.GetStatistics(context.TODO(), realm)
 		assert.Nil(t, err)
 		assert.Equal(t, expected, res)
@@ -60,26 +81,35 @@ func TestGetStatisticsIdentifications(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mockDBModule = mock.NewEventsDBModule(mockCtrl)
-	var mockKcClient = mock.NewKcClient(mockCtrl)
-	var mockLogger = log.NewNopLogger()
-	component := NewComponent(mockDBModule, mockKcClient, mockLogger)
+	var mocks = newComponentMocks(mockCtrl)
+	var component = mocks.newComponent()
 
 	var errDbModule = errors.New("Dummy error in db module")
 	var realm = "the_realm_name"
 	var expected = api.IdentificationStatisticsRepresentation{}
-	var videoIdentSearch = map[string]string{"realm": realm, "ctEventType": "VALIDATION_STORE_CHECK_SUCCESS"}
+	var ctx = context.Background()
 
-	t.Run("db.GetLastConnection fails", func(t *testing.T) {
-		mockDBModule.EXPECT().GetEventsCount(gomock.Any(), videoIdentSearch).Return(0, errDbModule)
-		_, err := component.GetStatisticsIdentifications(context.TODO(), realm)
-		assert.Equal(t, errDbModule, err)
+	t.Run("success", func(t *testing.T) {
+		mocks.accredsService.EXPECT().GetIdentityChecksByNature(ctx, realm).Return([]accreditationsclient.NatureCheckCount{}, errDbModule)
+
+		_, err := component.GetStatisticsIdentifications(ctx, realm)
+		assert.NotNil(t, err)
 	})
 
 	t.Run("success", func(t *testing.T) {
 		expected.VideoIdentifications = 100
-		mockDBModule.EXPECT().GetEventsCount(gomock.Any(), videoIdentSearch).Return(expected.VideoIdentifications, nil)
-		res, err := component.GetStatisticsIdentifications(context.TODO(), realm)
+		expected.AutoIdentifications = 33
+		expected.BasicIdentifications = 52
+		expected.PhysicalIdentifications = 21
+
+		mocks.accredsService.EXPECT().GetIdentityChecksByNature(ctx, realm).Return([]accreditationsclient.NatureCheckCount{
+			{Nature: ptr("PHYSICAL_CHECK"), Count: &expected.PhysicalIdentifications},
+			{Nature: ptr("BASIC_CHECK"), Count: &expected.BasicIdentifications},
+			{Nature: ptr("IDNOW_CHECK"), Count: &expected.VideoIdentifications},
+			{Nature: ptr("AUTO_IDENT_IDNOW_CHECK"), Count: &expected.AutoIdentifications},
+		}, nil)
+
+		res, err := component.GetStatisticsIdentifications(ctx, realm)
 		assert.Nil(t, err)
 		assert.Equal(t, expected, res)
 	})
@@ -89,10 +119,8 @@ func TestGetStatisticsUsers(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mockDBModule = mock.NewEventsDBModule(mockCtrl)
-	var mockKcClient = mock.NewKcClient(mockCtrl)
-	var mockLogger = log.NewNopLogger()
-	component := NewComponent(mockDBModule, mockKcClient, mockLogger)
+	var mocks = newComponentMocks(mockCtrl)
+	var component = mocks.newComponent()
 
 	var realm = "the_realm_name"
 	var accessToken = "TOKEN=="
@@ -110,14 +138,14 @@ func TestGetStatisticsUsers(t *testing.T) {
 	}
 
 	t.Run("fails", func(t *testing.T) {
-		mockKcClient.EXPECT().GetStatisticsUsers(accessToken, realm).Return(statisticsKC, errors.New("error"))
+		mocks.keycloakClient.EXPECT().GetStatisticsUsers(accessToken, realm).Return(statisticsKC, errors.New("error"))
 		res, err := component.GetStatisticsUsers(ctx, realm)
 		assert.NotNil(t, err)
 		assert.Equal(t, api.StatisticsUsersRepresentation{}, res)
 	})
 
 	t.Run("success", func(t *testing.T) {
-		mockKcClient.EXPECT().GetStatisticsUsers(accessToken, realm).Return(statisticsKC, nil)
+		mocks.keycloakClient.EXPECT().GetStatisticsUsers(accessToken, realm).Return(statisticsKC, nil)
 		res, err := component.GetStatisticsUsers(ctx, realm)
 		assert.Nil(t, err)
 		assert.Equal(t, expected, res)
@@ -128,10 +156,8 @@ func TestGetStatisticsAuthenticators(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mockDBModule = mock.NewEventsDBModule(mockCtrl)
-	var mockKcClient = mock.NewKcClient(mockCtrl)
-	var mockLogger = log.NewNopLogger()
-	component := NewComponent(mockDBModule, mockKcClient, mockLogger)
+	var mocks = newComponentMocks(mockCtrl)
+	var component = mocks.newComponent()
 
 	var realm = "the_realm_name"
 	var accessToken = "TOKEN=="
@@ -143,14 +169,14 @@ func TestGetStatisticsAuthenticators(t *testing.T) {
 	}
 
 	t.Run("fails", func(t *testing.T) {
-		mockKcClient.EXPECT().GetStatisticsAuthenticators(accessToken, realm).Return(statisticsKC, errors.New("error"))
+		mocks.keycloakClient.EXPECT().GetStatisticsAuthenticators(accessToken, realm).Return(statisticsKC, errors.New("error"))
 		res, err := component.GetStatisticsAuthenticators(ctx, realm)
 		assert.NotNil(t, err)
 		assert.Nil(t, res)
 	})
 
 	t.Run("success", func(t *testing.T) {
-		mockKcClient.EXPECT().GetStatisticsAuthenticators(accessToken, realm).Return(statisticsKC, nil)
+		mocks.keycloakClient.EXPECT().GetStatisticsAuthenticators(accessToken, realm).Return(statisticsKC, nil)
 		res, err := component.GetStatisticsAuthenticators(ctx, realm)
 		assert.Nil(t, err)
 		assert.Equal(t, statisticsKC, res)
@@ -161,10 +187,8 @@ func TestGetStatisticsAuthentications(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mockDBModule = mock.NewEventsDBModule(mockCtrl)
-	var mockKcClient = mock.NewKcClient(mockCtrl)
-	var mockLogger = log.NewNopLogger()
-	component := NewComponent(mockDBModule, mockKcClient, mockLogger)
+	var mocks = newComponentMocks(mockCtrl)
+	var component = mocks.newComponent()
 
 	var timeshift = 0
 	var realm = "the_realm_name"
@@ -181,19 +205,19 @@ func TestGetStatisticsAuthentications(t *testing.T) {
 	statisticsKC[1][1] = 11
 
 	t.Run("fails - statistics by hours", func(t *testing.T) {
-		mockDBModule.EXPECT().GetTotalConnectionsHoursCount(ctx, realm, gomock.Any(), timeshift).Return([][]int64{}, errors.New("error"))
+		mocks.eventsDBModule.EXPECT().GetTotalConnectionsHoursCount(ctx, realm, gomock.Any(), timeshift).Return([][]int64{}, errors.New("error"))
 		res, err := component.GetStatisticsAuthentications(ctx, realm, "hours", nil)
 		assert.NotNil(t, err)
 		assert.Nil(t, res)
 	})
 	t.Run("fails - statistics by days", func(t *testing.T) {
-		mockDBModule.EXPECT().GetTotalConnectionsDaysCount(ctx, realm, gomock.Any(), timeshift).Return([][]int64{}, errors.New("error"))
+		mocks.eventsDBModule.EXPECT().GetTotalConnectionsDaysCount(ctx, realm, gomock.Any(), timeshift).Return([][]int64{}, errors.New("error"))
 		res, err := component.GetStatisticsAuthentications(ctx, realm, "days", nil)
 		assert.NotNil(t, err)
 		assert.Nil(t, res)
 	})
 	t.Run("fails - statistics by months", func(t *testing.T) {
-		mockDBModule.EXPECT().GetTotalConnectionsMonthsCount(ctx, realm, gomock.Any(), timeshift).Return([][]int64{}, errors.New("error"))
+		mocks.eventsDBModule.EXPECT().GetTotalConnectionsMonthsCount(ctx, realm, gomock.Any(), timeshift).Return([][]int64{}, errors.New("error"))
 		res, err := component.GetStatisticsAuthentications(ctx, realm, "months", nil)
 		assert.NotNil(t, err)
 		assert.Nil(t, res)
@@ -205,7 +229,7 @@ func TestGetStatisticsAuthentications(t *testing.T) {
 	})
 
 	t.Run("success", func(t *testing.T) {
-		mockDBModule.EXPECT().GetTotalConnectionsDaysCount(ctx, realm, gomock.Any(), timeshift).Return(statisticsKC, nil)
+		mocks.eventsDBModule.EXPECT().GetTotalConnectionsDaysCount(ctx, realm, gomock.Any(), timeshift).Return(statisticsKC, nil)
 		res, err := component.GetStatisticsAuthentications(ctx, realm, "days", nil)
 		assert.Nil(t, err)
 		assert.Equal(t, statisticsKC, res)
@@ -216,10 +240,8 @@ func TestGetStatisticsAuthenticationsLog(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mockDBModule = mock.NewEventsDBModule(mockCtrl)
-	var mockKcClient = mock.NewKcClient(mockCtrl)
-	var mockLogger = log.NewNopLogger()
-	component := NewComponent(mockDBModule, mockKcClient, mockLogger)
+	var mocks = newComponentMocks(mockCtrl)
+	var component = mocks.newComponent()
 
 	var realm = "the_realm_name"
 	var accessToken = "TOKEN=="
@@ -231,13 +253,13 @@ func TestGetStatisticsAuthenticationsLog(t *testing.T) {
 	}
 
 	t.Run("fails", func(t *testing.T) {
-		mockDBModule.EXPECT().GetLastConnections(ctx, realm, "9").Return([]api.StatisticsConnectionRepresentation{}, errors.New("error"))
+		mocks.eventsDBModule.EXPECT().GetLastConnections(ctx, realm, "9").Return([]api.StatisticsConnectionRepresentation{}, errors.New("error"))
 		res, err := component.GetStatisticsAuthenticationsLog(ctx, realm, "9")
 		assert.NotNil(t, err)
 		assert.Nil(t, res)
 	})
 	t.Run("success", func(t *testing.T) {
-		mockDBModule.EXPECT().GetLastConnections(ctx, realm, "9").Return(resExpected, nil)
+		mocks.eventsDBModule.EXPECT().GetLastConnections(ctx, realm, "9").Return(resExpected, nil)
 		res, err := component.GetStatisticsAuthenticationsLog(ctx, realm, "9")
 
 		assert.Nil(t, err)
@@ -255,10 +277,8 @@ func TestGetActions(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mockDBModule = mock.NewEventsDBModule(mockCtrl)
-	var mockKcClient = mock.NewKcClient(mockCtrl)
-	var mockLogger = log.NewNopLogger()
-	component := NewComponent(mockDBModule, mockKcClient, mockLogger)
+	var mocks = newComponentMocks(mockCtrl)
+	var component = mocks.newComponent()
 
 	var realm = "the_realm_name"
 	var accessToken = "TOKEN=="

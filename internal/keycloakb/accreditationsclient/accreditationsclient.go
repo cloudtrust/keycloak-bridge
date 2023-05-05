@@ -17,6 +17,7 @@ type AccreditationsServiceClient interface {
 	NotifyUpdate(ctx context.Context, updateNotifyRequest UpdateNotificationRepresentation) ([]string, error)
 	GetChecks(ctx context.Context, realm string, userID string) ([]CheckRepresentation, error)
 	GetPendingChecks(ctx context.Context, realm string, userID string) ([]CheckRepresentation, error)
+	GetIdentityChecksByNature(ctx context.Context, realm string) ([]NatureCheckCount, error)
 }
 
 // UpdateNotificationRepresentation struct
@@ -41,6 +42,12 @@ type CheckRepresentation struct {
 	TxnID     *string    `json:"txnId,omitempty"`
 }
 
+// NatureCheckCount struct
+type NatureCheckCount struct {
+	Nature *string `json:"nature"`
+	Count  *int    `json:"count"`
+}
+
 // HTTPClient interface
 type HTTPClient interface {
 	Get(data interface{}, plugins ...plugin.Plugin) error
@@ -58,6 +65,7 @@ const (
 	updateNotifyPath     = apiPath + `/notify-update`
 	getChecksPath        = apiPath + `/realms/:realm/users/:userID/checks`
 	getPendingChecksPath = apiPath + `/realms/:realm/users/:userID/pending-checks`
+	getCheckByNaturePath = apiPath + `/realms/:realm/checks-by-nature`
 
 	hdrCorrID    = "X-Correlation-ID"
 	prmRealmName = "realm"
@@ -99,4 +107,12 @@ func (ac *accreditationsClient) GetPendingChecks(ctx context.Context, realm stri
 	var checks []CheckRepresentation
 	err := ac.httpClient.Get(&checks, url.Path(getPendingChecksPath), url.Param(prmRealmName, realm), url.Param(prmUserID, userID), headers.Set(hdrCorrID, correlationID))
 	return checks, err
+}
+
+func (ac *accreditationsClient) GetIdentityChecksByNature(ctx context.Context, realm string) ([]NatureCheckCount, error) {
+	var correlationID = ctx.Value(cs.CtContextCorrelationID).(string)
+
+	var stats []NatureCheckCount
+	err := ac.httpClient.Get(&stats, url.Path(getCheckByNaturePath), url.Param(prmRealmName, realm), headers.Set(hdrCorrID, correlationID))
+	return stats, err
 }

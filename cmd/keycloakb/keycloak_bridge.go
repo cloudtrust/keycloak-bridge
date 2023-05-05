@@ -674,7 +674,7 @@ func main() {
 		//module for reading events from the DB
 		eventsRODBModule := keycloakb.NewEventsDBModule(eventsRODBConn)
 
-		statisticsComponent := statistics.NewComponent(eventsRODBModule, keycloakClient, statisticsLogger)
+		statisticsComponent := statistics.NewComponent(eventsRODBModule, keycloakClient, accreditationsService, statisticsLogger)
 		statisticsComponent = statistics.MakeAuthorizationManagementComponentMW(log.With(statisticsLogger, "mw", "authorization"), authorizationManager)(statisticsComponent)
 
 		var rateLimitStatistics = rateLimit[RateKeyStatistics]

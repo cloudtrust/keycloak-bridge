@@ -122,3 +122,31 @@ func TestGetPendingChecks(t *testing.T) {
 		assert.NotNil(t, err)
 	})
 }
+
+func TestGetIdentityChecksByNature(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	mockHTTPClient := mock.NewHTTPClient(mockCtrl)
+	accreditationsClient := MakeAccreditationsServiceClient(mockHTTPClient)
+	var ctx = context.Background()
+	var expectedError = errors.New("Test error")
+	var correlationID = "TestCorrelationID"
+	var realm = "testRealm"
+
+	ctx = context.WithValue(ctx, cs.CtContextCorrelationID, correlationID)
+
+	t.Run("SUCCESS", func(t *testing.T) {
+		mockHTTPClient.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+
+		_, err := accreditationsClient.GetIdentityChecksByNature(ctx, realm)
+		assert.Nil(t, err)
+	})
+
+	t.Run("FAILURE", func(t *testing.T) {
+		mockHTTPClient.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(expectedError)
+
+		_, err := accreditationsClient.GetIdentityChecksByNature(ctx, realm)
+		assert.NotNil(t, err)
+	})
+}

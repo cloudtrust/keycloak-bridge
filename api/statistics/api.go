@@ -29,7 +29,10 @@ type StatisticsRepresentation struct {
 
 // IdentificationStatisticsRepresentation elements returned by GetStatistics
 type IdentificationStatisticsRepresentation struct {
-	VideoIdentifications int `json:"videoIdentifications"`
+	VideoIdentifications    int `json:"videoIdentifications"`
+	PhysicalIdentifications int `json:"physicalIdentifications"`
+	AutoIdentifications     int `json:"autoIdentifications"`
+	BasicIdentifications    int `json:"basicIdentifications"`
 }
 
 // StatisticsConnectionsRepresentation are elements used in StatisticsRepresentation

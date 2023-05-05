@@ -12,6 +12,7 @@ import (
 	api "github.com/cloudtrust/keycloak-bridge/api/statistics"
 	msg "github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
+	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/accreditationsclient"
 	kc "github.com/cloudtrust/keycloak-client/v2"
 )
 
@@ -34,17 +35,24 @@ type KeycloakClient interface {
 	GetStatisticsAuthenticators(accessToken string, realmName string) (map[string]int64, error)
 }
 
+// AccreditationsServiceClient interface
+type AccreditationsServiceClient interface {
+	GetIdentityChecksByNature(ctx context.Context, realm string) ([]accreditationsclient.NatureCheckCount, error)
+}
+
 type component struct {
 	db             keycloakb.EventsDBModule
 	keycloakClient KeycloakClient
+	accredsService AccreditationsServiceClient
 	logger         log.Logger
 }
 
 // NewComponent returns a component
-func NewComponent(db keycloakb.EventsDBModule, keycloakClient KeycloakClient, logger log.Logger) Component {
+func NewComponent(db keycloakb.EventsDBModule, keycloakClient KeycloakClient, accredsService AccreditationsServiceClient, logger log.Logger) Component {
 	return &component{
 		db:             db,
 		keycloakClient: keycloakClient,
+		accredsService: accredsService,
 		logger:         logger,
 	}
 }
@@ -94,13 +102,26 @@ func (ec *component) GetStatistics(ctx context.Context, realmName string) (api.S
 
 // Grabs identification statistics
 func (ec *component) GetStatisticsIdentifications(ctx context.Context, realmName string) (api.IdentificationStatisticsRepresentation, error) {
+	stats, err := ec.accredsService.GetIdentityChecksByNature(ctx, realmName)
+	if err != nil {
+		ec.logger.Warn(ctx, "msg", "Failed to retrieve identification statistics", "err", err.Error())
+	}
+
 	var res api.IdentificationStatisticsRepresentation
-	var err error
+	for _, stat := range stats {
+		switch *stat.Nature {
+		case "BASIC_CHECK":
+			res.BasicIdentifications = *stat.Count
+		case "PHYSICAL_CHECK":
+			res.PhysicalIdentifications = *stat.Count
+		case "IDNOW_CHECK":
+			res.VideoIdentifications = *stat.Count
+		case "AUTO_IDENT_IDNOW_CHECK":
+			res.AutoIdentifications = *stat.Count
+		}
+	}
 
-	var eventsParams = map[string]string{"realm": realmName, "ctEventType": "VALIDATION_STORE_CHECK_SUCCESS"}
-	res.VideoIdentifications, err = ec.db.GetEventsCount(ctx, eventsParams)
-
-	return res, err
+	return res, nil
 }
 
 // GetStatisticsUsers gives statistics on the total number of users and on those that are inactive or disabled
