@@ -1290,8 +1290,9 @@ func TestUpdateUser(t *testing.T) {
 			Email:         &oldEmail,
 			EmailVerified: userRep.EmailVerified,
 		}
-		var withoutEmailUser = userRep
+		var withoutEmailUser = createUpdateUser()
 		withoutEmailUser.Email = csjson.OptionalString{Defined: true, Value: nil}
+		withoutEmailUser.PhoneNumber.Defined = false
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, id).Return(oldkcUserRep, nil)
 		mocks.accreditationsClient.EXPECT().NotifyUpdate(ctx, gomock.Any()).Return(nil, nil)
 		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, realmName, id, gomock.Any()).DoAndReturn(

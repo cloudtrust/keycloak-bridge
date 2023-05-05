@@ -528,6 +528,15 @@ func (c *component) GetUser(ctx context.Context, realmName, userID string) (api.
 	return userRep, nil
 }
 
+func isEmailVerified(user kc.UserRepresentation) bool {
+	return user.EmailVerified != nil && *user.EmailVerified
+}
+
+func isPhoneNumberVerified(user kc.UserRepresentation) bool {
+	var value, err = user.GetAttributeBool(constants.AttrbPhoneNumberVerified)
+	return err == nil && value != nil && *value
+}
+
 func (c *component) UpdateUser(ctx context.Context, realmName, userID string, user api.UpdatableUserRepresentation) error {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 	var userRep kc.UserRepresentation
@@ -570,7 +579,12 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 			user.EmailVerified = &verified
 			removeAttributes = append(removeAttributes, constants.AttrbEmailToValidate)
 		} else if fieldsComparator.IsAnyFieldUpdated(fields.Email) {
-			oldUserKc.SetAttributeString(constants.AttrbEmailToValidate, *user.Email.Value)
+			if isEmailVerified(oldUserKc) {
+				oldUserKc.SetAttributeString(constants.AttrbEmailToValidate, *user.Email.Value)
+			} else {
+				oldUserKc.Email = user.Email.Value
+				oldUserKc.RemoveAttribute(constants.AttrbEmailToValidate)
+			}
 			actions = append(actions, actionVerifyEmail)
 		}
 	}
@@ -580,7 +594,12 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 		if user.PhoneNumber.Value == nil {
 			removeAttributes = append(removeAttributes, constants.AttrbPhoneNumber, constants.AttrbPhoneNumberVerified, constants.AttrbPhoneNumberToValidate)
 		} else if fieldsComparator.IsAnyFieldUpdated(fields.PhoneNumber) {
-			oldUserKc.SetAttributeString(constants.AttrbPhoneNumberToValidate, *user.PhoneNumber.Value)
+			if isPhoneNumberVerified(oldUserKc) {
+				oldUserKc.SetAttributeString(constants.AttrbPhoneNumberToValidate, *user.PhoneNumber.Value)
+			} else {
+				oldUserKc.SetAttributeString(constants.AttrbPhoneNumber, *user.PhoneNumber.Value)
+				oldUserKc.RemoveAttribute(constants.AttrbPhoneNumberToValidate)
+			}
 			if len(oldUserKc.GetFieldValues(fields.PhoneNumber)) > 0 {
 				actions = append(actions, actionVerifyPhoneNumber)
 			}
