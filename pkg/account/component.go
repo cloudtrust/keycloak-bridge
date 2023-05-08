@@ -194,6 +194,15 @@ func defaultString(value1, value2 *string) *string {
 	return value2
 }
 
+func isEmailVerified(user kc.UserRepresentation) bool {
+	return user.EmailVerified != nil && *user.EmailVerified
+}
+
+func isPhoneNumberVerified(user kc.UserRepresentation) bool {
+	var value, err = user.GetAttributeBool(constants.AttrbPhoneNumberVerified)
+	return err == nil && value != nil && *value
+}
+
 func (c *component) UpdateAccount(ctx context.Context, user api.UpdatableAccountRepresentation) error {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 	var realm = ctx.Value(cs.CtContextRealm).(string)
@@ -248,16 +257,28 @@ func (c *component) UpdateAccount(ctx context.Context, user api.UpdatableAccount
 	// manage email change
 	var prevEmail *string
 	if fieldsComparator.IsFieldUpdated(fields.Email) {
-		prevEmail = oldUserKc.Email
-		oldUserKc.SetAttributeString(constants.AttrbEmailToValidate, *user.Email)
 		actions = append(actions, ActionVerifyEmail)
-		profileChangesCount--
+		if isEmailVerified(oldUserKc) {
+			oldUserKc.SetAttributeString(constants.AttrbEmailToValidate, *user.Email)
+			prevEmail = oldUserKc.Email
+			profileChangesCount--
+		} else {
+			oldUserKc.Email = user.Email
+			oldUserKc.RemoveAttribute(constants.AttrbEmailToValidate)
+			prevEmail = nil
+			profileChangesCount = 0 // Mail won't be sent to unverified current email
+		}
 	}
 
 	// manage phone number change
 	if fieldsComparator.IsFieldUpdated(fields.PhoneNumber) {
-		oldUserKc.SetAttributeString(constants.AttrbPhoneNumberToValidate, *user.PhoneNumber)
 		actions = append(actions, ActionVerifyPhoneNumber)
+		if isPhoneNumberVerified(oldUserKc) {
+			oldUserKc.SetAttributeString(constants.AttrbPhoneNumberToValidate, *user.PhoneNumber)
+		} else {
+			oldUserKc.SetAttributeString(constants.AttrbPhoneNumber, *user.PhoneNumber)
+			oldUserKc.RemoveAttribute(constants.AttrbPhoneNumberToValidate)
+		}
 	}
 
 	userRep = api.ConvertToKCUser(user)
