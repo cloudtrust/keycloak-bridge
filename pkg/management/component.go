@@ -539,7 +539,6 @@ func isPhoneNumberVerified(user kc.UserRepresentation) bool {
 
 func (c *component) UpdateUser(ctx context.Context, realmName, userID string, user api.UpdatableUserRepresentation) error {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
-	var userRep kc.UserRepresentation
 	var removeAttributes []kc.AttributeKey
 
 	// get the "old" user representation
@@ -628,39 +627,38 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 	ap.RevokeTypes(revokeAccreds)
 	newAccreditations := ap.ToKeycloak()
 
-	userRep = api.ConvertUpdatableToKCUser(user)
-	if user.Email.Value != nil {
-		// Keep previous email value. Update is managed with emailToValidate
-		userRep.Email = oldUserKc.Email
+	var oldEnabled = oldUserKc.Enabled
+	api.MergeUpdatableUserWithoutEmailAndPhoneNumber(&oldUserKc, user)
+	if user.Email.Defined && user.Email.Value == nil {
+		// empty string to remove an email
+		oldUserKc.Email = user.Email.ToValue("")
 	}
 
-	// Merge the attributes coming from the old user representation and the updated user representation in order not to lose anything
-	var mergedAttributes = make(kc.Attributes)
-	mergedAttributes.Merge(oldUserKc.Attributes)
-	mergedAttributes.Merge(userRep.Attributes)
-	for _, key := range removeAttributes {
-		delete(mergedAttributes, key)
+	// Remove some attributes
+	if oldUserKc.Attributes != nil {
+		for _, key := range removeAttributes {
+			delete(*oldUserKc.Attributes, key)
+		}
 	}
 
-	userRep.Attributes = &mergedAttributes
 	if len(newAccreditations) > 0 {
-		userRep.SetFieldValues(fields.Accreditations, newAccreditations)
+		oldUserKc.SetFieldValues(fields.Accreditations, newAccreditations)
 	}
 
 	if glnUpdated {
-		if glnErr := c.checkGLN(ctx, realmName, user.BusinessID.Defined, user.BusinessID.Value, &userRep); glnErr != nil {
+		if glnErr := c.checkGLN(ctx, realmName, user.BusinessID.Defined, user.BusinessID.Value, &oldUserKc); glnErr != nil {
 			return glnErr
 		}
 	}
 
 	// Update in KC
-	if err = c.keycloakClient.UpdateUser(accessToken, realmName, userID, userRep); err != nil {
+	if err = c.keycloakClient.UpdateUser(accessToken, realmName, userID, oldUserKc); err != nil {
 		c.logger.Warn(ctx, "err", err.Error())
 		return err
 	}
 
 	//store the API call into the DB in case where user.Enable is present
-	if user.Enabled != nil && (oldUserKc.Enabled == nil || *user.Enabled != *oldUserKc.Enabled) {
+	if user.Enabled != nil && (oldEnabled == nil || *user.Enabled != *oldEnabled) {
 		c.reportLockEvent(ctx, realmName, userID, user.Username, *user.Enabled)
 	}
 

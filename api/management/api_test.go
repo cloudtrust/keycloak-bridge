@@ -203,51 +203,59 @@ func TestConvertToKCUser(t *testing.T) {
 
 }
 
-func TestConvertUpdatableToKCUser(t *testing.T) {
+func TestMergeUpdatableUser(t *testing.T) {
 	var user UpdatableUserRepresentation
+	var kcUser kc.UserRepresentation
 
-	assert.Nil(t, ConvertUpdatableToKCUser(user).Attributes)
-
-	t.Run("Email", func(t *testing.T) {
-		var email = "gerard@manjoue.ch"
-		user.Email = csjson.StringToOptional(email)
-		assert.Equal(t, email, *ConvertUpdatableToKCUser(user).Email)
-	})
+	MergeUpdatableUserWithoutEmailAndPhoneNumber(&kcUser, user)
+	assert.Nil(t, kcUser.Attributes)
 
 	t.Run("Label", func(t *testing.T) {
 		var label = "a label"
 		user.Label = &label
-		assert.Equal(t, label, (*ConvertUpdatableToKCUser(user).Attributes)[constants.AttrbLabel][0])
+		kcUser = kc.UserRepresentation{}
+		MergeUpdatableUserWithoutEmailAndPhoneNumber(&kcUser, user)
+		assert.Equal(t, label, (*kcUser.Attributes)[constants.AttrbLabel][0])
 	})
 
 	t.Run("Gender", func(t *testing.T) {
 		var gender = "a gender"
 		user.Gender = &gender
-		assert.Equal(t, gender, (*ConvertUpdatableToKCUser(user).Attributes)[constants.AttrbGender][0])
+		kcUser = kc.UserRepresentation{}
+		MergeUpdatableUserWithoutEmailAndPhoneNumber(&kcUser, user)
+		assert.Equal(t, gender, (*kcUser.Attributes)[constants.AttrbGender][0])
 	})
 
 	t.Run("Birthdate", func(t *testing.T) {
 		var date = "25/12/0"
 		user.BirthDate = &date
-		assert.Equal(t, date, (*ConvertUpdatableToKCUser(user).Attributes)[constants.AttrbBirthDate][0])
+		kcUser = kc.UserRepresentation{}
+		MergeUpdatableUserWithoutEmailAndPhoneNumber(&kcUser, user)
+		assert.Equal(t, date, (*kcUser.Attributes)[constants.AttrbBirthDate][0])
 	})
 
 	t.Run("PhoneNumberVerified", func(t *testing.T) {
 		var verified = true
 		user.PhoneNumberVerified = &verified
-		assert.Equal(t, "true", (*ConvertUpdatableToKCUser(user).Attributes)[constants.AttrbPhoneNumberVerified][0])
+		kcUser = kc.UserRepresentation{}
+		MergeUpdatableUserWithoutEmailAndPhoneNumber(&kcUser, user)
+		assert.Equal(t, "true", (*kcUser.Attributes)[constants.AttrbPhoneNumberVerified][0])
 	})
 
 	t.Run("Locale", func(t *testing.T) {
 		var locale = "it"
 		user.Locale = &locale
-		assert.Equal(t, locale, (*ConvertUpdatableToKCUser(user).Attributes)[constants.AttrbLocale][0])
+		kcUser = kc.UserRepresentation{}
+		MergeUpdatableUserWithoutEmailAndPhoneNumber(&kcUser, user)
+		assert.Equal(t, locale, (*kcUser.Attributes)[constants.AttrbLocale][0])
 	})
 
 	t.Run("Business ID", func(t *testing.T) {
 		var businessID = "123456789"
 		user.BusinessID = csjson.StringToOptional(businessID)
-		assert.Equal(t, businessID, *ConvertUpdatableToKCUser(user).Attributes.GetString(constants.AttrbBusinessID))
+		kcUser = kc.UserRepresentation{}
+		MergeUpdatableUserWithoutEmailAndPhoneNumber(&kcUser, user)
+		assert.Equal(t, businessID, *kcUser.Attributes.GetString(constants.AttrbBusinessID))
 	})
 }
 

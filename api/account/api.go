@@ -181,23 +181,36 @@ func convertToAccreditations(ctx context.Context, values []string, logger keyclo
 	return &accreds
 }
 
-// ConvertToKCUser creates a KC user representation from an API user
-func ConvertToKCUser(user UpdatableAccountRepresentation) kc.UserRepresentation {
-	var userRep kc.UserRepresentation
+func defaultStringPtr(value *string, defaultValue *string) *string {
+	if value != nil {
+		return value
+	}
+	return defaultValue
+}
 
-	userRep.Username = user.Username
-	userRep.Email = user.Email
-	userRep.FirstName = user.FirstName
-	userRep.LastName = user.LastName
+// MergeUserWithoutEmailAndPhoneNumber merge new values into existing KC user representation
+func MergeUserWithoutEmailAndPhoneNumber(userRep *kc.UserRepresentation, user UpdatableAccountRepresentation) {
+	// This merge function does not care about contacts (email, phoneNumber)
+	userRep.Username = defaultStringPtr(user.Username, userRep.Username)
+	userRep.FirstName = defaultStringPtr(user.FirstName, userRep.FirstName)
+	userRep.LastName = defaultStringPtr(user.LastName, userRep.LastName)
 
 	var attributes = make(kc.Attributes)
-	attributes.SetStringWhenNotNil(constants.AttrbPhoneNumber, user.PhoneNumber)
-	attributes.SetStringWhenNotNil(constants.AttrbLocale, user.Locale)
-	if user.BusinessID.Defined && user.BusinessID.Value != nil {
-		attributes.SetStringWhenNotNil(constants.AttrbBusinessID, user.BusinessID.Value)
+	if userRep.Attributes != nil {
+		attributes = *userRep.Attributes
 	}
+	attributes.SetStringWhenNotNil(constants.AttrbLocale, user.Locale)
+	if user.BusinessID.Defined {
+		if user.BusinessID.Value != nil {
+			attributes.SetStringWhenNotNil(constants.AttrbBusinessID, user.BusinessID.Value)
+		} else {
+			attributes.Remove(constants.AttrbBusinessID)
+		}
+	}
+	attributes.SetStringWhenNotNil(constants.AttrbBirthDate, user.BirthDate)
 	attributes.SetStringWhenNotNil(constants.AttrbBirthLocation, user.BirthLocation)
 	attributes.SetStringWhenNotNil(constants.AttrbNationality, user.Nationality)
+	attributes.SetStringWhenNotNil(constants.AttrbGender, user.Gender)
 	attributes.SetStringWhenNotNil(constants.AttrbIDDocumentType, user.IDDocumentType)
 	attributes.SetStringWhenNotNil(constants.AttrbIDDocumentNumber, user.IDDocumentNumber)
 	attributes.SetStringWhenNotNil(constants.AttrbIDDocumentExpiration, user.IDDocumentExpiration)
@@ -206,8 +219,6 @@ func ConvertToKCUser(user UpdatableAccountRepresentation) kc.UserRepresentation 
 	if len(attributes) > 0 {
 		userRep.Attributes = &attributes
 	}
-
-	return userRep
 }
 
 // Validators
