@@ -311,7 +311,7 @@ func (c *component) UpdateAccount(ctx context.Context, user api.UpdatableAccount
 		c.eventReporterModule.ReportEvent(ctx, events.NewEventOnUserFromContext(ctx, c.logger, c.originEvent, "EMAIL_CHANGED_EMAIL_SENT", realm, userID, username, nil))
 	}
 
-	if profileChangesCount > 0 && c.sendEmail(ctx, emailTemplateUpdatedProfile, emailSubjectUpdatedProfile, nil, attributes) == nil {
+	if profileChangesCount > 0 && isEmailVerified(oldUserKc) && c.sendEmail(ctx, emailTemplateUpdatedProfile, emailSubjectUpdatedProfile, nil, attributes) == nil {
 		c.eventReporterModule.ReportEvent(ctx, events.NewEventOnUserFromContext(ctx, c.logger, c.originEvent, "PROFILE_CHANGED_EMAIL_SENT", realm, userID, username, nil))
 	}
 
