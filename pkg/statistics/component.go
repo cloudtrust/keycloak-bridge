@@ -105,6 +105,7 @@ func (ec *component) GetStatisticsIdentifications(ctx context.Context, realmName
 	stats, err := ec.accredsService.GetIdentityChecksByNature(ctx, realmName)
 	if err != nil {
 		ec.logger.Warn(ctx, "msg", "Failed to retrieve identification statistics", "err", err.Error())
+		return api.IdentificationStatisticsRepresentation{}, err
 	}
 
 	var res api.IdentificationStatisticsRepresentation

@@ -89,7 +89,7 @@ func TestGetStatisticsIdentifications(t *testing.T) {
 	var expected = api.IdentificationStatisticsRepresentation{}
 	var ctx = context.Background()
 
-	t.Run("success", func(t *testing.T) {
+	t.Run("db error", func(t *testing.T) {
 		mocks.accredsService.EXPECT().GetIdentityChecksByNature(ctx, realm).Return([]accreditationsclient.NatureCheckCount{}, errDbModule)
 
 		_, err := component.GetStatisticsIdentifications(ctx, realm)
