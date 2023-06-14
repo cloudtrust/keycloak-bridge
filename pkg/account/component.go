@@ -208,7 +208,6 @@ func (c *component) UpdateAccount(ctx context.Context, user api.UpdatableAccount
 	var realm = ctx.Value(cs.CtContextRealm).(string)
 	var userID = ctx.Value(cs.CtContextUserID).(string)
 	var username = ctx.Value(cs.CtContextUsername).(string)
-	var userRep kc.UserRepresentation
 
 	// get the "old" user representation from Keycloak
 	oldUserKc, err := c.keycloakAccountClient.GetAccount(accessToken, realm)
@@ -281,40 +280,17 @@ func (c *component) UpdateAccount(ctx context.Context, user api.UpdatableAccount
 		}
 	}
 
-	userRep = api.ConvertToKCUser(user)
-
-	userRep.FirstName = defaultString(userRep.FirstName, oldUserKc.FirstName)
-	userRep.LastName = defaultString(userRep.LastName, oldUserKc.LastName)
-	userRep.Email = oldUserKc.Email // Don't touch email
-	userRep.EmailVerified = oldUserKc.EmailVerified
-
-	// Merge the attributes coming from the old user representation and the updated user representation in order not to lose anything
-	var mergedAttributes = c.duplicateAttributes(oldUserKc.Attributes)
-	mergedAttributes.SetStringWhenNotNil(constants.AttrbGender, user.Gender)
-	mergedAttributes.SetDateWhenNotNil(constants.AttrbBirthDate, user.BirthDate, constants.SupportedDateLayouts)
-	mergedAttributes.SetStringWhenNotNil(constants.AttrbLocale, user.Locale)
-	mergedAttributes.SetStringWhenNotNil(constants.AttrbBusinessID, user.BusinessID.Value)
-	if user.BusinessID.Defined && user.BusinessID.Value == nil {
-		mergedAttributes.Remove(constants.AttrbBusinessID)
-	}
-	mergedAttributes.SetStringWhenNotNil(constants.AttrbBirthLocation, user.BirthLocation)
-	mergedAttributes.SetStringWhenNotNil(constants.AttrbNationality, user.Nationality)
-	mergedAttributes.SetStringWhenNotNil(constants.AttrbIDDocumentType, user.IDDocumentType)
-	mergedAttributes.SetStringWhenNotNil(constants.AttrbIDDocumentNumber, user.IDDocumentNumber)
-	mergedAttributes.SetStringWhenNotNil(constants.AttrbIDDocumentExpiration, user.IDDocumentExpiration)
-	mergedAttributes.SetStringWhenNotNil(constants.AttrbIDDocumentCountry, user.IDDocumentCountry)
-
-	userRep.Attributes = &mergedAttributes
+	api.MergeUserWithoutEmailAndPhoneNumber(&oldUserKc, user)
 	if len(newAccreditations) > 0 {
-		userRep.SetFieldValues(fields.Accreditations, newAccreditations)
+		oldUserKc.SetFieldValues(fields.Accreditations, newAccreditations)
 	}
 
 	// GLN check
-	if err = c.checkGLN(ctx, user.BusinessID, &userRep); err != nil {
+	if err = c.checkGLN(ctx, user.BusinessID, &oldUserKc); err != nil {
 		return err
 	}
 	// Update keycloak account
-	err = c.keycloakAccountClient.UpdateAccount(accessToken, realm, userRep)
+	err = c.keycloakAccountClient.UpdateAccount(accessToken, realm, oldUserKc)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Can't update account", "err", err.Error())
 		return err
@@ -371,17 +347,6 @@ func (c *component) sendEmail(ctx context.Context, template, subject string, rec
 		return emailErr
 	}
 	return nil
-}
-
-func (c *component) duplicateAttributes(srcAttributes *kc.Attributes) kc.Attributes {
-	var copiedAttributes = make(kc.Attributes)
-	//Populate with the old attributes
-	if srcAttributes != nil {
-		for key, attribute := range *srcAttributes {
-			copiedAttributes[key] = attribute
-		}
-	}
-	return copiedAttributes
 }
 
 func (c *component) DeleteAccount(ctx context.Context) error {

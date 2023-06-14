@@ -95,17 +95,20 @@ func TestConvertToAPIAccount(t *testing.T) {
 	})
 }
 
-func TestConvertToKCUser(t *testing.T) {
+func TestMergeUser(t *testing.T) {
 	var apiUser = UpdatableAccountRepresentation{}
-	assert.Nil(t, ConvertToKCUser(apiUser).Attributes)
+	var kcUser kc.UserRepresentation
+	MergeUserWithoutEmailAndPhoneNumber(&kcUser, apiUser)
+	assert.Nil(t, kcUser.Attributes)
 
-	var phoneNumber = "+41221234567"
+	var gender = "X"
 	var locale = "fr"
 	var businessID = "123456789"
 	var business = csjson.OptionalString{Defined: true, Value: &businessID}
-	apiUser = UpdatableAccountRepresentation{PhoneNumber: &phoneNumber, Locale: &locale, BusinessID: business}
-	var kcUser = ConvertToKCUser(apiUser)
-	assert.Equal(t, phoneNumber, *kcUser.GetAttributeString(constants.AttrbPhoneNumber))
+	apiUser = UpdatableAccountRepresentation{Gender: &gender, Locale: &locale, BusinessID: business}
+	kcUser = kc.UserRepresentation{}
+	MergeUserWithoutEmailAndPhoneNumber(&kcUser, apiUser)
+	assert.Equal(t, gender, *kcUser.GetAttributeString(constants.AttrbGender))
 	assert.Equal(t, locale, *kcUser.GetAttributeString(constants.AttrbLocale))
 	assert.Equal(t, businessID, *kcUser.GetAttributeString(constants.AttrbBusinessID))
 }

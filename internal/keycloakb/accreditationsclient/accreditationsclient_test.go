@@ -137,14 +137,14 @@ func TestGetIdentityChecksByNature(t *testing.T) {
 	ctx = context.WithValue(ctx, cs.CtContextCorrelationID, correlationID)
 
 	t.Run("SUCCESS", func(t *testing.T) {
-		mockHTTPClient.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+		mockHTTPClient.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
 		_, err := accreditationsClient.GetIdentityChecksByNature(ctx, realm)
 		assert.Nil(t, err)
 	})
 
 	t.Run("FAILURE", func(t *testing.T) {
-		mockHTTPClient.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(expectedError)
+		mockHTTPClient.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(expectedError)
 
 		_, err := accreditationsClient.GetIdentityChecksByNature(ctx, realm)
 		assert.NotNil(t, err)

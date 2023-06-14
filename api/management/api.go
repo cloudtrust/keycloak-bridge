@@ -298,15 +298,23 @@ type IdentityProviderRepresentation struct {
 type RequiredAction string
 
 func defaultString(actual *string, defaultValue string) *string {
+	return defaultStringPtr(actual, &defaultValue)
+}
+
+func defaultStringPtr(actual *string, defaultValue *string) *string {
 	if actual == nil {
-		return &defaultValue
+		return defaultValue
 	}
 	return actual
 }
 
 func defaultBool(actual *bool, defaultValue bool) *bool {
+	return defaultBoolPtr(actual, &defaultValue)
+}
+
+func defaultBoolPtr(actual *bool, defaultValue *bool) *bool {
 	if actual == nil {
-		return &defaultValue
+		return defaultValue
 	}
 	return actual
 }
@@ -477,29 +485,26 @@ func ConvertToKCUser(user UserRepresentation) kc.UserRepresentation {
 	return userRep
 }
 
-// ConvertUpdatableToKCUser creates a KC user representation from an API user
-func ConvertUpdatableToKCUser(user UpdatableUserRepresentation) kc.UserRepresentation {
-	var userRep kc.UserRepresentation
-
-	userRep.Username = user.Username
-	if user.Email.Defined {
-		// empty string to remove an email
-		userRep.Email = user.Email.ToValue("")
+// MergeUpdatableUserWithoutEmailAndPhoneNumber update a KC user representation from an API user
+func MergeUpdatableUserWithoutEmailAndPhoneNumber(target *kc.UserRepresentation, user UpdatableUserRepresentation) {
+	// This merge function does not care about contacts (email, phoneNumber)
+	target.Username = defaultStringPtr(user.Username, target.Username)
+	target.FirstName = defaultStringPtr(user.FirstName, target.FirstName)
+	target.LastName = defaultStringPtr(user.LastName, target.LastName)
+	target.Enabled = defaultBoolPtr(user.Enabled, target.Enabled)
+	target.EmailVerified = defaultBoolPtr(user.EmailVerified, target.EmailVerified)
+	if user.Groups != nil {
+		target.Groups = user.Groups
 	}
-	userRep.Enabled = user.Enabled
-	userRep.EmailVerified = user.EmailVerified
-	userRep.FirstName = user.FirstName
-	userRep.LastName = user.LastName
-	userRep.Groups = user.Groups
-	userRep.RealmRoles = user.Roles
+	if user.Roles != nil {
+		target.RealmRoles = user.Roles
+	}
 
 	var attributes = make(kc.Attributes)
-
-	/* We don't directly update the phone number: it will be set in phoneNumberToValidate only if different from previous value
-	if user.PhoneNumber.Defined {
-		attributes.SetStringWhenNotNil(constants.AttrbPhoneNumber, user.PhoneNumber.Value)
+	if target.Attributes != nil {
+		attributes = *target.Attributes
 	}
-	*/
+
 	attributes.SetBoolWhenNotNil(constants.AttrbPhoneNumberVerified, user.PhoneNumberVerified)
 	attributes.SetStringWhenNotNil(constants.AttrbLabel, user.Label)
 	attributes.SetStringWhenNotNil(constants.AttrbGender, user.Gender)
@@ -516,10 +521,8 @@ func ConvertUpdatableToKCUser(user UpdatableUserRepresentation) kc.UserRepresent
 	}
 
 	if len(attributes) > 0 {
-		userRep.Attributes = &attributes
+		target.Attributes = &attributes
 	}
-
-	return userRep
 }
 
 // ConvertToAPIRole converts a role
