@@ -78,6 +78,7 @@ CT_BRIDGE_INFLUX_USERNAME | influx-username
 CT_BRIDGE_INFLUX_PASSWORD | influx-password
 CT_BRIDGE_SENTRY_DSN | sentry-dsn
 CT_BRIDGE_DB_ARCHIVE_AES_KEY | db-archive-aesgcm-key
+CT_EVENT_PRODUCER_KAFKA_CLIENT_SECRET | kafka-cloudtrust-client-secret
 
 ## Usage
 

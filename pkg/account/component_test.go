@@ -10,7 +10,6 @@ import (
 
 	cs "github.com/cloudtrust/common-service/v2"
 	"github.com/cloudtrust/common-service/v2/configuration"
-	"github.com/cloudtrust/common-service/v2/database"
 	csjson "github.com/cloudtrust/common-service/v2/json"
 	"github.com/cloudtrust/common-service/v2/log"
 	api "github.com/cloudtrust/keycloak-bridge/api/account"
@@ -24,29 +23,29 @@ import (
 )
 
 type componentMock struct {
-	keycloakAccountClient   *mock.KeycloakAccountClient
-	keycloakTechnicalClient *mock.KeycloakTechnicalClient
-	userProfileCache        *mock.UserProfileCache
-	eventDBModule           *mock.EventsDBModule
-	configurationDBModule   *mock.ConfigurationDBModule
-	glnVerifier             *mock.GlnVerifier
-	accreditationsClient    *mock.AccreditationsServiceClient
+	keycloakAccountClient     *mock.KeycloakAccountClient
+	keycloakTechnicalClient   *mock.KeycloakTechnicalClient
+	userProfileCache          *mock.UserProfileCache
+	auditEventsReporterModule *mock.AuditEventsReporterModule
+	configurationDBModule     *mock.ConfigurationDBModule
+	glnVerifier               *mock.GlnVerifier
+	accreditationsClient      *mock.AccreditationsServiceClient
 }
 
 func createComponentMocks(mockCtrl *gomock.Controller) *componentMock {
 	return &componentMock{
-		keycloakAccountClient:   mock.NewKeycloakAccountClient(mockCtrl),
-		keycloakTechnicalClient: mock.NewKeycloakTechnicalClient(mockCtrl),
-		userProfileCache:        mock.NewUserProfileCache(mockCtrl),
-		eventDBModule:           mock.NewEventsDBModule(mockCtrl),
-		configurationDBModule:   mock.NewConfigurationDBModule(mockCtrl),
-		glnVerifier:             mock.NewGlnVerifier(mockCtrl),
-		accreditationsClient:    mock.NewAccreditationsServiceClient(mockCtrl),
+		keycloakAccountClient:     mock.NewKeycloakAccountClient(mockCtrl),
+		keycloakTechnicalClient:   mock.NewKeycloakTechnicalClient(mockCtrl),
+		userProfileCache:          mock.NewUserProfileCache(mockCtrl),
+		auditEventsReporterModule: mock.NewAuditEventsReporterModule(mockCtrl),
+		configurationDBModule:     mock.NewConfigurationDBModule(mockCtrl),
+		glnVerifier:               mock.NewGlnVerifier(mockCtrl),
+		accreditationsClient:      mock.NewAccreditationsServiceClient(mockCtrl),
 	}
 }
 
 func (m *componentMock) createComponent() *component {
-	return NewComponent(m.keycloakAccountClient, m.keycloakTechnicalClient, m.userProfileCache, m.eventDBModule,
+	return NewComponent(m.keycloakAccountClient, m.keycloakTechnicalClient, m.userProfileCache, m.auditEventsReporterModule,
 		m.configurationDBModule, m.glnVerifier, m.accreditationsClient, log.NewNopLogger()).(*component)
 }
 
@@ -92,9 +91,9 @@ func TestUpdatePassword(t *testing.T) {
 		newPasswd := "a p@55w0rd"
 		confirmPasswd := "a p@55w0rd"
 		mocks.keycloakAccountClient.EXPECT().UpdatePassword(accessToken, realm, oldPasswd, newPasswd, confirmPasswd).Return("", nil)
-		mocks.eventDBModule.EXPECT().ReportEvent(gomock.Any(), "PASSWORD_RESET", "self-service", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+		mocks.auditEventsReporterModule.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
 		mocks.keycloakAccountClient.EXPECT().SendEmail(accessToken, realm, emailTemplateUpdatedPassword, emailSubjectUpdatedPassword, nil, gomock.Any()).Return(nil)
-		mocks.eventDBModule.EXPECT().ReportEvent(gomock.Any(), "UPDATED_PWD_EMAIL_SENT", "self-service", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+		mocks.auditEventsReporterModule.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
 		mocks.keycloakTechnicalClient.EXPECT().LogoutAllSessions(gomock.Any(), realm, userID).Return(anyError)
 
 		err := component.UpdatePassword(ctx, oldPasswd, newPasswd, confirmPasswd)
@@ -135,7 +134,7 @@ func TestUpdatePasswordWrongPwd(t *testing.T) {
 
 	t.Run("Password reset succeeded but storing the event failed", func(t *testing.T) {
 		mocks.keycloakAccountClient.EXPECT().UpdatePassword(accessToken, realm, oldPasswd, newPasswd, newPasswd).Return("", nil)
-		mocks.eventDBModule.EXPECT().ReportEvent(gomock.Any(), "PASSWORD_RESET", "self-service", database.CtEventRealmName, realm, database.CtEventUserID, userID, database.CtEventUsername, username).Return(errors.New("error"))
+		mocks.auditEventsReporterModule.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
 		mocks.keycloakAccountClient.EXPECT().SendEmail(accessToken, realm, emailTemplateUpdatedPassword, emailSubjectUpdatedPassword, nil, gomock.Any()).Return(errors.New(""))
 		mocks.keycloakTechnicalClient.EXPECT().LogoutAllSessions(gomock.Any(), realm, userID)
 
@@ -220,6 +219,8 @@ func TestUpdateAccount(t *testing.T) {
 	var one = 1
 	var searchedUsers = kc.UsersPageRepresentation{Count: &one, Users: []kc.UserRepresentation{kcUserRep}}
 
+	mocks.auditEventsReporterModule.EXPECT().ReportEvent(gomock.Any(), gomock.Any()).AnyTimes()
+
 	t.Run("GetAccount fails", func(t *testing.T) {
 		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kcUserRep, anError)
 
@@ -249,7 +250,6 @@ func TestUpdateAccount(t *testing.T) {
 	mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, realmName).Return(configuration.RealmAdminConfiguration{ShowGlnEditing: &bFalse}, nil).AnyTimes()
 
 	t.Run("Update account with succces", func(t *testing.T) {
-		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "UPDATE_ACCOUNT", "self-service", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
 		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kcUserRep, nil)
 		mocks.keycloakAccountClient.EXPECT().UpdateAccount(accessToken, realmName, gomock.Any()).DoAndReturn(
 			func(accessToken, realmName string, kcUserRep kc.UserRepresentation) error {
@@ -284,16 +284,11 @@ func TestUpdateAccount(t *testing.T) {
 				return nil
 			})
 		mocks.keycloakAccountClient.EXPECT().ExecuteActionsEmail(accessToken, realmName, []string{ActionVerifyEmail}).Return(nil)
-		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "ACTION_EMAIL", "self-service", database.CtEventRealmName, realmName,
-			database.CtEventUserID, userID, database.CtEventAdditionalInfo, gomock.Any()).Return(nil)
+		mocks.auditEventsReporterModule.EXPECT().ReportEvent(gomock.Any(), gomock.Any()).AnyTimes()
 		// Mail updated
 		mocks.keycloakAccountClient.EXPECT().SendEmail(accessToken, realmName, emailTemplateUpdatedEmail, emailSubjectUpdatedEmail, &oldEmail, gomock.Any()).Return(nil)
-		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "EMAIL_CHANGED_EMAIL_SENT", "self-service", database.CtEventRealmName, realmName,
-			database.CtEventUserID, userID, database.CtEventUsername, username).Return(nil)
 		// Profile updated
 		mocks.keycloakAccountClient.EXPECT().SendEmail(accessToken, realmName, emailTemplateUpdatedProfile, emailSubjectUpdatedProfile, nil, gomock.Any()).Return(nil)
-		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "PROFILE_CHANGED_EMAIL_SENT", "self-service", database.CtEventRealmName, realmName,
-			database.CtEventUserID, userID, database.CtEventUsername, username).Return(nil)
 
 		err := accountComponent.UpdateAccount(ctx, userRep)
 
@@ -328,9 +323,7 @@ func TestUpdateAccount(t *testing.T) {
 				return nil
 			})
 		mocks.keycloakAccountClient.EXPECT().ExecuteActionsEmail(accessToken, realmName, []string{ActionVerifyPhoneNumber}).Return(nil)
-		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "ACTION_EMAIL", "self-service", database.CtEventRealmName, realmName,
-			database.CtEventUserID, userID, database.CtEventAdditionalInfo, gomock.Any()).Return(nil)
-
+		mocks.auditEventsReporterModule.EXPECT().ReportEvent(gomock.Any(), gomock.Any()).AnyTimes()
 		err := accountComponent.UpdateAccount(ctx, userRep)
 
 		assert.Nil(t, err)
@@ -496,9 +489,9 @@ func TestUpdateAccountRevokeAccreditation(t *testing.T) {
 				assert.Equal(t, revokedAccred, kcUserRep.GetAttribute(constants.AttrbAccreditations))
 				return nil
 			})
-		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "UPDATE_ACCOUNT", "self-service", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+		mocks.auditEventsReporterModule.EXPECT().ReportEvent(ctx, gomock.Any())
 		mocks.keycloakAccountClient.EXPECT().SendEmail(accessToken, realmName, gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
-		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "PROFILE_CHANGED_EMAIL_SENT", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
+		mocks.auditEventsReporterModule.EXPECT().ReportEvent(ctx, gomock.Any())
 
 		err := accountComponent.UpdateAccount(ctx, userRepUpdate)
 		assert.Nil(t, err)
@@ -660,8 +653,7 @@ func TestGetUser(t *testing.T) {
 			Status:   ptr("PENDING"),
 			DateTime: &now,
 		}}, nil)
-		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "GET_DETAILS", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
-
+		mocks.auditEventsReporterModule.EXPECT().ReportEvent(gomock.Any(), gomock.Any()).AnyTimes()
 		apiUserRep, err := accountComponent.GetAccount(ctx)
 
 		assert.Nil(t, err)
@@ -691,15 +683,17 @@ func TestDeleteUser(t *testing.T) {
 	var accessToken = "TOKEN=="
 	var realmName = "master"
 	var username = "username"
+	var userID = "userID"
 	var anyError = errors.New("any error")
 
 	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 	ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
+	ctx = context.WithValue(ctx, cs.CtContextUserID, userID)
 	ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 
 	t.Run("Delete user with succces", func(t *testing.T) {
 		mocks.keycloakAccountClient.EXPECT().DeleteAccount(accessToken, realmName).Return(nil)
-		mocks.eventDBModule.EXPECT().ReportEvent(ctx, "SELF_DELETE_ACCOUNT", "self-service", gomock.Any(), gomock.Any()).Return(nil).AnyTimes()
+		mocks.auditEventsReporterModule.EXPECT().ReportEvent(gomock.Any(), gomock.Any()).AnyTimes()
 
 		err := accountComponent.DeleteAccount(ctx)
 
@@ -830,7 +824,7 @@ func TestUpdateLabelCredential(t *testing.T) {
 
 	t.Run("Success", func(t *testing.T) {
 		mocks.keycloakAccountClient.EXPECT().UpdateLabelCredential(accessToken, realm, credentialID, label).Return(nil)
-		mocks.eventDBModule.EXPECT().ReportEvent(gomock.Any(), "SELF_UPDATE_CREDENTIAL", "self-service", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+		mocks.auditEventsReporterModule.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
 
 		err := component.UpdateLabelCredential(ctx, credentialID, label)
 
@@ -878,7 +872,7 @@ func TestDeleteCredential(t *testing.T) {
 
 	t.Run("Success", func(t *testing.T) {
 		mocks.keycloakAccountClient.EXPECT().DeleteCredential(accessToken, realm, credentialID).Return(nil)
-		mocks.eventDBModule.EXPECT().ReportEvent(gomock.Any(), "SELF_DELETE_CREDENTIAL", "self-service", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+		mocks.auditEventsReporterModule.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
 
 		err := component.DeleteCredential(ctx, credentialID)
 
@@ -914,7 +908,7 @@ func TestMoveCredential(t *testing.T) {
 	previousCredentialID := "6589-7841"
 	{
 		mocks.keycloakAccountClient.EXPECT().MoveAfter(accessToken, realm, credentialID, previousCredentialID).Return(nil)
-		mocks.eventDBModule.EXPECT().ReportEvent(gomock.Any(), "SELF_MOVE_CREDENTIAL", "self-service", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+		mocks.auditEventsReporterModule.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
 
 		err := component.MoveCredential(ctx, credentialID, previousCredentialID)
 
@@ -923,7 +917,7 @@ func TestMoveCredential(t *testing.T) {
 
 	{
 		mocks.keycloakAccountClient.EXPECT().MoveToFirst(accessToken, realm, credentialID).Return(nil)
-		mocks.eventDBModule.EXPECT().ReportEvent(gomock.Any(), "SELF_MOVE_CREDENTIAL", "self-service", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+		mocks.auditEventsReporterModule.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
 
 		err := component.MoveCredential(ctx, credentialID, "null")
 
@@ -1073,14 +1067,16 @@ func TestSendVerify(t *testing.T) {
 		mocks     = createComponentMocks(mockCtrl)
 		component = mocks.createComponent()
 
-		accessToken   = "TOKEN=="
-		currentRealm  = "master"
-		currentUserID = "1234-789"
-		ctx           = context.TODO()
+		accessToken     = "TOKEN=="
+		currentRealm    = "master"
+		currentUserID   = "1234-789"
+		currentUsername = "username"
+		ctx             = context.TODO()
 	)
 
 	ctx = context.WithValue(ctx, cs.CtContextAccessToken, accessToken)
 	ctx = context.WithValue(ctx, cs.CtContextRealm, currentRealm)
+	ctx = context.WithValue(ctx, cs.CtContextUsername, currentUsername)
 	ctx = context.WithValue(ctx, cs.CtContextUserID, currentUserID)
 
 	// SendVerifyEmail
@@ -1093,8 +1089,7 @@ func TestSendVerify(t *testing.T) {
 	t.Run("SendVerifyEmail - success", func(t *testing.T) {
 		gomock.InOrder(
 			mocks.keycloakAccountClient.EXPECT().ExecuteActionsEmail(accessToken, currentRealm, []string{ActionVerifyEmail}).Return(nil),
-			mocks.eventDBModule.EXPECT().ReportEvent(ctx, "ACTION_EMAIL", "self-service", database.CtEventRealmName, currentRealm,
-				database.CtEventUserID, currentUserID, database.CtEventAdditionalInfo, gomock.Any()),
+			mocks.auditEventsReporterModule.EXPECT().ReportEvent(ctx, gomock.Any()),
 		)
 		assert.Nil(t, component.SendVerifyEmail(ctx))
 	})
@@ -1111,8 +1106,7 @@ func TestSendVerify(t *testing.T) {
 	t.Run("SendVerifyPhoneNumber - success", func(t *testing.T) {
 		gomock.InOrder(
 			mocks.keycloakAccountClient.EXPECT().ExecuteActionsEmail(accessToken, currentRealm, []string{ActionVerifyPhoneNumber}).Return(nil),
-			mocks.eventDBModule.EXPECT().ReportEvent(ctx, "ACTION_EMAIL", "self-service", database.CtEventRealmName, currentRealm,
-				database.CtEventUserID, currentUserID, database.CtEventAdditionalInfo, gomock.Any()),
+			mocks.auditEventsReporterModule.EXPECT().ReportEvent(ctx, gomock.Any()),
 		)
 		assert.Nil(t, component.SendVerifyPhoneNumber(ctx))
 	})
