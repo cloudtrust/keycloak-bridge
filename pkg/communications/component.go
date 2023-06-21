@@ -4,9 +4,11 @@ import (
 	"context"
 
 	cs "github.com/cloudtrust/common-service/v2"
+	cerrors "github.com/cloudtrust/common-service/v2/errors"
 	api "github.com/cloudtrust/keycloak-bridge/api/communications"
 	internal "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	kc "github.com/cloudtrust/keycloak-client/v2"
+	"github.com/cloudtrust/keycloak-client/v2/toolbox"
 )
 
 // KeycloakCommunicationsClient interface exposes methods we need to call to send requests to Keycloak communications API
@@ -25,20 +27,31 @@ type Component interface {
 
 type component struct {
 	keycloakCommunicationsClient KeycloakCommunicationsClient
+	tokenProvider                toolbox.OidcTokenProvider
 	logger                       internal.Logger
 }
 
 // NewComponent returns the communications component.
-func NewComponent(keycloakCommunicationsClient KeycloakCommunicationsClient, logger internal.Logger) Component {
+func NewComponent(keycloakCommunicationsClient KeycloakCommunicationsClient, tokenProvider toolbox.OidcTokenProvider, logger internal.Logger) Component {
 	return &component{
 		keycloakCommunicationsClient: keycloakCommunicationsClient,
+		tokenProvider:                tokenProvider,
 		logger:                       logger,
 	}
 }
 
 func (c *component) SendEmail(ctx context.Context, realmName string, emailRep api.EmailRepresentation) error {
-	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 	var ctxRealm = ctx.Value(cs.CtContextRealm).(string)
+
+	var accessToken string
+	{
+		var err error
+		accessToken, err = c.tokenProvider.ProvideTokenForRealm(ctx, realmName)
+		if err != nil {
+			c.logger.Error(ctx, "msg", "Can't get access token for technical user", "err", err.Error())
+			return cerrors.CreateInternalServerError("token")
+		}
+	}
 
 	var kcEmailRep = api.ExportEmailToKeycloak(&emailRep)
 	err := c.keycloakCommunicationsClient.SendEmail(accessToken, ctxRealm, realmName, *kcEmailRep)
@@ -50,8 +63,17 @@ func (c *component) SendEmail(ctx context.Context, realmName string, emailRep ap
 }
 
 func (c *component) SendEmailToUser(ctx context.Context, realmName string, userID string, emailRep api.EmailRepresentation) error {
-	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 	var ctxRealm = ctx.Value(cs.CtContextRealm).(string)
+
+	var accessToken string
+	{
+		var err error
+		accessToken, err = c.tokenProvider.ProvideTokenForRealm(ctx, realmName)
+		if err != nil {
+			c.logger.Error(ctx, "msg", "Can't get access token for technical user", "err", err.Error())
+			return cerrors.CreateInternalServerError("token")
+		}
+	}
 
 	var kcEmailRep = api.ExportEmailToKeycloak(&emailRep)
 	err := c.keycloakCommunicationsClient.SendEmailToUser(accessToken, ctxRealm, realmName, userID, *kcEmailRep)
@@ -63,7 +85,15 @@ func (c *component) SendEmailToUser(ctx context.Context, realmName string, userI
 }
 
 func (c *component) SendSMS(ctx context.Context, realmName string, smsRep api.SMSRepresentation) error {
-	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+	var accessToken string
+	{
+		var err error
+		accessToken, err = c.tokenProvider.ProvideTokenForRealm(ctx, realmName)
+		if err != nil {
+			c.logger.Error(ctx, "msg", "Can't get access token for technical user", "err", err.Error())
+			return cerrors.CreateInternalServerError("token")
+		}
+	}
 
 	var kcSmsRep = api.ExportSMSToKeycloak(&smsRep)
 	err := c.keycloakCommunicationsClient.SendSMS(accessToken, realmName, *kcSmsRep)

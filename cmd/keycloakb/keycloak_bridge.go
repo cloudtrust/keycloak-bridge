@@ -642,7 +642,7 @@ func main() {
 	{
 		var communicationsLogger = log.With(logger, "svc", "communications")
 
-		communicationsComponent := communications.NewComponent(keycloakClient, communicationsLogger)
+		communicationsComponent := communications.NewComponent(keycloakClient, technicalTokenProvider, communicationsLogger)
 		// MakeAuthorizationCommunicationsComponentMW not called !!??
 
 		var rateLimitCommunications = rateLimit[RateKeyCommunications]
