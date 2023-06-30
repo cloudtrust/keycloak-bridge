@@ -662,7 +662,9 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 		c.reportLockEvent(ctx, realmName, userID, user.Username, *user.Enabled)
 	}
 
-	if len(actions) > 0 {
+	if len(actions) > 0 && (isEmailVerified(oldUserKc) || isPhoneNumberVerified(oldUserKc)) {
+		// Don't send actions email if account has never been verified. In this case, actions will be part of the onboarding
+		// Consider account has never configured if email and phone number are not verified
 		var err = c.ExecuteActionsEmail(ctx, realmName, userID, actions)
 		if err != nil {
 			c.logger.Warn(ctx, "msg", "Can't execute actions", "err", err.Error(), "actions", actions)
