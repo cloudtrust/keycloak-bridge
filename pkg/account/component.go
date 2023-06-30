@@ -185,13 +185,6 @@ func (c *component) GetAccount(ctx context.Context) (api.AccountRepresentation, 
 	return userRep, nil
 }
 
-func defaultString(value1, value2 *string) *string {
-	if value1 != nil {
-		return value1
-	}
-	return value2
-}
-
 func isEmailVerified(user kc.UserRepresentation) bool {
 	return user.EmailVerified != nil && *user.EmailVerified
 }

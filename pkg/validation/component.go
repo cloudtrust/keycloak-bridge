@@ -17,10 +17,6 @@ import (
 	kc "github.com/cloudtrust/keycloak-client/v2"
 )
 
-var (
-	dateLayout = constants.SupportedDateLayouts[0]
-)
-
 // KeycloakClient are methods from keycloak-client used by this component
 type KeycloakClient interface {
 	UpdateUser(accessToken string, realmName, userID string, user kc.UserRepresentation) error
@@ -203,7 +199,7 @@ func (c *component) prepareUpdateUserKeycloak(validationCtx *validationContext, 
 		return nil, err
 	}
 	keycloakb.ConvertLegacyAttribute(kcUser)
-	fc = user.UpdateFieldsComparatorWithKCFields(fc, kcUser)
+	_ = user.UpdateFieldsComparatorWithKCFields(fc, kcUser)
 
 	user.ExportToKeycloak(kcUser)
 	return kcUser, nil
@@ -310,7 +306,7 @@ func (c *component) archiveUser(v *validationContext) {
 	}
 
 	var archiveUser = dto.ToArchiveUserRepresentation(*kcUser)
-	c.archiveDBModule.StoreUserDetails(v.ctx, v.realmName, archiveUser)
+	_ = c.archiveDBModule.StoreUserDetails(v.ctx, v.realmName, archiveUser)
 }
 
 func (c *component) GetGroupsOfUser(ctx context.Context, realmName, userID string) ([]api.GroupRepresentation, error) {

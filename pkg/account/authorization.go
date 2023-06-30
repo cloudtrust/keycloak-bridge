@@ -55,7 +55,7 @@ func (c *authorizationComponentMW) UpdatePassword(ctx context.Context, currentPa
 	var action = UpdatePassword
 	var currentRealm = ctx.Value(cs.CtContextRealm).(string)
 
-	var config = configuration.RealmConfiguration{}
+	var config configuration.RealmConfiguration
 	var err error
 
 	if config, err = c.configDBModule.GetConfiguration(ctx, currentRealm); err != nil {
@@ -103,7 +103,7 @@ func (c *authorizationComponentMW) DeleteCredential(ctx context.Context, credent
 	var action = DeleteCredential
 	var currentRealm = ctx.Value(cs.CtContextRealm).(string)
 
-	var config = configuration.RealmConfiguration{}
+	var config configuration.RealmConfiguration
 	var err error
 
 	if config, err = c.configDBModule.GetConfiguration(ctx, currentRealm); err != nil {
@@ -135,7 +135,7 @@ func (c *authorizationComponentMW) UpdateAccount(ctx context.Context, account ap
 	var action = UpdateAccount
 	var currentRealm = ctx.Value(cs.CtContextRealm).(string)
 
-	var config = configuration.RealmConfiguration{}
+	var config configuration.RealmConfiguration
 	var err error
 
 	if config, err = c.configDBModule.GetConfiguration(ctx, currentRealm); err != nil {

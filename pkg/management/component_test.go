@@ -4999,7 +4999,7 @@ func TestUpdateRealmAdminConfiguration(t *testing.T) {
 
 func createBackOfficeConfiguration(JSON string) dto.BackOfficeConfiguration {
 	var conf dto.BackOfficeConfiguration
-	json.Unmarshal([]byte(JSON), &conf)
+	_ = json.Unmarshal([]byte(JSON), &conf)
 	return conf
 }
 

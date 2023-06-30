@@ -25,14 +25,10 @@ var (
 	subjectKeyForTest        = "expiryreminder.subject"
 	subjectParametersForTest = []string{"my-value"}
 	templateForTest          = "expiry-reminder.ftl"
-	nameForTest              = "Romain"
-	resultForTest            = "negatif"
 	localeForTest            = "fr"
 	filename1ForTest         = "document.txt"
-	contentType1ForTest      = "text/plain"
 	content1ForTest          = "Q2VjaSBlc3QgdW4gZG9jdW1lbnQgdGV4dGUgYXR0YWNow6kgw6AgdW4gbWFpbA=="
 	filename2ForTest         = "empty.pdf"
-	contentType2ForTest      = "application/pdf"
 	content2ForTest          = "JVBERi0xLjQKJdPr6eEKMSAwIG9iago8PC9DcmVhdG9yIChNb3ppbGxhLzUuMCBcKFd"
 
 	themingForTest = api.EmailThemingRepresentation{

@@ -12,12 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const (
-	duration1 = "2y"
-	duration2 = "1w"
-	duration3 = "6m"
-)
-
 func TestHasActiveAccreditations(t *testing.T) {
 	t.Run("only active accreditations", func(t *testing.T) {
 		var accreds = []string{`{"type":"ONE","expiryDate":"01.01.2040"}`,
