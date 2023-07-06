@@ -57,8 +57,7 @@ func MakeGetUserEventsEndpoint(ec Component) cs.Endpoint {
 }
 
 func filterParameters(allParams map[string]string, paramNames ...string) map[string]string {
-	var res map[string]string
-	res = make(map[string]string)
+	var res = make(map[string]string)
 	for _, key := range paramNames {
 		if val, ok := allParams[key]; ok {
 			res[key] = val

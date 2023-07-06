@@ -73,7 +73,7 @@ const (
 )
 
 // MakeAccreditationsServiceClient creates the accreditations service client
-func MakeAccreditationsServiceClient(httpClient HTTPClient) *accreditationsClient {
+func MakeAccreditationsServiceClient(httpClient HTTPClient) AccreditationsServiceClient {
 	return &accreditationsClient{
 		httpClient: httpClient,
 	}

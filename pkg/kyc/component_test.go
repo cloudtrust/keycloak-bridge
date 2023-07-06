@@ -663,7 +663,7 @@ func TestZipAttachments(t *testing.T) {
 		rc, _ := f.Open()
 
 		content := make([]byte, len(*attachments[i].Content))
-		rc.Read(content)
+		_, _ = rc.Read(content)
 		assert.Equal(t, *attachments[i].Content, content)
 	}
 }

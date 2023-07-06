@@ -49,7 +49,7 @@ func encodeHTTPReply(_ context.Context, w http.ResponseWriter, res interface{}) 
 	}
 
 	w.WriteHeader(http.StatusOK)
-	w.Write(data)
+	_, _ = w.Write(data)
 	return nil
 }
 
@@ -57,5 +57,5 @@ func encodeHTTPReply(_ context.Context, w http.ResponseWriter, res interface{}) 
 func errorHandler(_ context.Context, err error, w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "application/octet-stream")
 	w.WriteHeader(http.StatusInternalServerError)
-	w.Write([]byte(keycloakb.ComponentName + "." + err.Error()))
+	_, _ = w.Write([]byte(keycloakb.ComponentName + "." + err.Error()))
 }

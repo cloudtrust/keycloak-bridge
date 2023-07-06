@@ -31,8 +31,7 @@ func TestHTTPManagementHandler(t *testing.T) {
 
 	// Get - 200 with JSON body returned
 	{
-		var params map[string]string
-		params = make(map[string]string)
+		var params = make(map[string]string)
 		params[prmPathRealm] = "master"
 
 		var eventsResp = api.AuditEventsRepresentation{}

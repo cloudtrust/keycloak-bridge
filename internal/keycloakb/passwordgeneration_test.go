@@ -14,7 +14,7 @@ func TestAppendCharacters(t *testing.T) {
 
 	rand.Seed(time.Now().Unix())
 	var pwdElems []string
-	var length int = rand.Intn(20)
+	var length = rand.Intn(20)
 
 	pwdElems = appendCharacters(pwdElems, lowerCase, length)
 	assert.Equal(t, len(pwdElems), length)
@@ -33,7 +33,7 @@ func TestAppendCharacters(t *testing.T) {
 func TestGeneratePasswordNoKeycloakPolicy(t *testing.T) {
 
 	rand.Seed(time.Now().Unix())
-	var length int = rand.Intn(20)
+	var length = rand.Intn(20)
 
 	pwd := GeneratePasswordNoKeycloakPolicy(length)
 	assert.Equal(t, len(pwd), length)

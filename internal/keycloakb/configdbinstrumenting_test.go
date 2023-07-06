@@ -53,12 +53,12 @@ func TestComponentInstrumentingMW(t *testing.T) {
 		mockComponent.EXPECT().GetConfiguration(ctx, realmID).Return(configuration.RealmConfiguration{}, nil).Times(1)
 		mockHistogram.EXPECT().With("correlation_id", corrID).Return(mockHistogram).Times(1)
 		mockHistogram.EXPECT().Observe(gomock.Any()).Return().Times(1)
-		m.GetConfiguration(ctx, realmID)
+		_, _ = m.GetConfiguration(ctx, realmID)
 	})
 	t.Run("Get configuration without correlation ID", func(t *testing.T) {
 		mockComponent.EXPECT().GetConfiguration(context.Background(), "realmID").Return(configuration.RealmConfiguration{}, nil).Times(1)
 		var f = func() {
-			m.GetConfiguration(context.Background(), "realmID")
+			_, _ = m.GetConfiguration(context.Background(), "realmID")
 		}
 		assert.Panics(t, f)
 	})
@@ -67,12 +67,12 @@ func TestComponentInstrumentingMW(t *testing.T) {
 		mockComponent.EXPECT().StoreOrUpdateConfiguration(ctx, "realmID", configuration.RealmConfiguration{}).Return(nil).Times(1)
 		mockHistogram.EXPECT().With("correlation_id", corrID).Return(mockHistogram).Times(1)
 		mockHistogram.EXPECT().Observe(gomock.Any()).Return().Times(1)
-		m.StoreOrUpdateConfiguration(ctx, "realmID", configuration.RealmConfiguration{})
+		_ = m.StoreOrUpdateConfiguration(ctx, "realmID", configuration.RealmConfiguration{})
 	})
 	t.Run("Update configuration without correlation ID", func(t *testing.T) {
 		mockComponent.EXPECT().StoreOrUpdateConfiguration(context.Background(), "realmID", configuration.RealmConfiguration{}).Return(nil).Times(1)
 		var f = func() {
-			m.StoreOrUpdateConfiguration(context.Background(), "realmID", configuration.RealmConfiguration{})
+			_ = m.StoreOrUpdateConfiguration(context.Background(), "realmID", configuration.RealmConfiguration{})
 		}
 		assert.Panics(t, f)
 	})
@@ -81,13 +81,13 @@ func TestComponentInstrumentingMW(t *testing.T) {
 		mockComponent.EXPECT().GetAdminConfiguration(ctx, "realmID").Return(adminConfig, nil).Times(1)
 		mockHistogram.EXPECT().With("correlation_id", corrID).Return(mockHistogram).Times(1)
 		mockHistogram.EXPECT().Observe(gomock.Any()).Return().Times(1)
-		m.GetAdminConfiguration(ctx, "realmID")
+		_, _ = m.GetAdminConfiguration(ctx, "realmID")
 	})
 
 	t.Run("Get admin configuration without correlation ID", func(t *testing.T) {
 		mockComponent.EXPECT().GetAdminConfiguration(context.Background(), "realmID").Return(adminConfig, nil).Times(1)
 		var f = func() {
-			m.GetAdminConfiguration(context.Background(), "realmID")
+			_, _ = m.GetAdminConfiguration(context.Background(), "realmID")
 		}
 		assert.Panics(t, f)
 	})
@@ -96,13 +96,13 @@ func TestComponentInstrumentingMW(t *testing.T) {
 		mockComponent.EXPECT().StoreOrUpdateAdminConfiguration(ctx, "realmID", gomock.Any()).Return(nil).Times(1)
 		mockHistogram.EXPECT().With("correlation_id", corrID).Return(mockHistogram).Times(1)
 		mockHistogram.EXPECT().Observe(gomock.Any()).Return().Times(1)
-		m.StoreOrUpdateAdminConfiguration(ctx, "realmID", configuration.RealmAdminConfiguration{})
+		_ = m.StoreOrUpdateAdminConfiguration(ctx, "realmID", configuration.RealmAdminConfiguration{})
 	})
 
 	t.Run("Update configuration without correlation ID", func(t *testing.T) {
 		mockComponent.EXPECT().StoreOrUpdateAdminConfiguration(context.Background(), "realmID", gomock.Any()).Return(nil).Times(1)
 		assert.Panics(t, func() {
-			m.StoreOrUpdateAdminConfiguration(context.Background(), "realmID", configuration.RealmAdminConfiguration{})
+			_ = m.StoreOrUpdateAdminConfiguration(context.Background(), "realmID", configuration.RealmAdminConfiguration{})
 		})
 	})
 
@@ -110,12 +110,12 @@ func TestComponentInstrumentingMW(t *testing.T) {
 		mockComponent.EXPECT().GetBackOfficeConfiguration(ctx, realmID, groupNames).Return(dto.BackOfficeConfiguration{}, nil)
 		mockHistogram.EXPECT().With("correlation_id", corrID).Return(mockHistogram).Times(1)
 		mockHistogram.EXPECT().Observe(gomock.Any()).Return().Times(1)
-		m.GetBackOfficeConfiguration(ctx, realmID, groupNames)
+		_, _ = m.GetBackOfficeConfiguration(ctx, realmID, groupNames)
 	})
 	t.Run("Get Back-office configuration without correlation ID", func(t *testing.T) {
 		mockComponent.EXPECT().GetBackOfficeConfiguration(context.Background(), realmID, groupNames).Return(dto.BackOfficeConfiguration{}, nil)
 		assert.Panics(t, func() {
-			m.GetBackOfficeConfiguration(context.Background(), realmID, groupNames)
+			_, _ = m.GetBackOfficeConfiguration(context.Background(), realmID, groupNames)
 		})
 	})
 
@@ -123,24 +123,24 @@ func TestComponentInstrumentingMW(t *testing.T) {
 		mockComponent.EXPECT().DeleteBackOfficeConfiguration(ctx, realmID, groupName, confType, nil, nil).Return(nil)
 		mockHistogram.EXPECT().With("correlation_id", corrID).Return(mockHistogram).Times(1)
 		mockHistogram.EXPECT().Observe(gomock.Any()).Return().Times(1)
-		m.DeleteBackOfficeConfiguration(ctx, realmID, groupName, confType, nil, nil)
+		_ = m.DeleteBackOfficeConfiguration(ctx, realmID, groupName, confType, nil, nil)
 	})
 	t.Run("Delete Back-office configuration without correlation ID", func(t *testing.T) {
 		mockComponent.EXPECT().DeleteBackOfficeConfiguration(context.Background(), realmID, groupName, confType, nil, nil).Return(nil)
 		assert.Panics(t, func() {
-			m.DeleteBackOfficeConfiguration(context.Background(), realmID, groupName, confType, nil, nil)
+			_ = m.DeleteBackOfficeConfiguration(context.Background(), realmID, groupName, confType, nil, nil)
 		})
 	})
 	t.Run("Insert Back-office configuration", func(t *testing.T) {
 		mockComponent.EXPECT().InsertBackOfficeConfiguration(ctx, realmID, groupName, confType, realmID, groupNames).Return(nil)
 		mockHistogram.EXPECT().With("correlation_id", corrID).Return(mockHistogram).Times(1)
 		mockHistogram.EXPECT().Observe(gomock.Any()).Return().Times(1)
-		m.InsertBackOfficeConfiguration(ctx, realmID, groupName, confType, realmID, groupNames)
+		_ = m.InsertBackOfficeConfiguration(ctx, realmID, groupName, confType, realmID, groupNames)
 	})
 	t.Run("Insert Back-office configuration without correlation ID", func(t *testing.T) {
 		mockComponent.EXPECT().InsertBackOfficeConfiguration(context.Background(), realmID, groupName, confType, realmID, groupNames).Return(nil)
 		assert.Panics(t, func() {
-			m.InsertBackOfficeConfiguration(context.Background(), realmID, groupName, confType, realmID, groupNames)
+			_ = m.InsertBackOfficeConfiguration(context.Background(), realmID, groupName, confType, realmID, groupNames)
 		})
 	})
 
@@ -148,13 +148,13 @@ func TestComponentInstrumentingMW(t *testing.T) {
 		mockComponent.EXPECT().AuthorizationExists(ctx, realmID, groupNames[0], realmID, gomock.Any(), action).Return(true, nil)
 		mockHistogram.EXPECT().With("correlation_id", corrID).Return(mockHistogram).Times(1)
 		mockHistogram.EXPECT().Observe(gomock.Any()).Return().Times(1)
-		m.AuthorizationExists(ctx, realmID, groupNames[0], realmID, &groupNames[1], action)
+		_, _ = m.AuthorizationExists(ctx, realmID, groupNames[0], realmID, &groupNames[1], action)
 	})
 
 	t.Run("Get Authorization without correlation ID", func(t *testing.T) {
 		mockComponent.EXPECT().AuthorizationExists(context.Background(), realmID, groupNames[0], realmID, gomock.Any(), action).Return(true, nil).Times(1)
 		var f = func() {
-			m.AuthorizationExists(context.Background(), realmID, groupNames[0], realmID, &groupNames[1], action)
+			_, _ = m.AuthorizationExists(context.Background(), realmID, groupNames[0], realmID, &groupNames[1], action)
 		}
 		assert.Panics(t, f)
 	})
@@ -163,13 +163,13 @@ func TestComponentInstrumentingMW(t *testing.T) {
 		mockComponent.EXPECT().DeleteAuthorization(ctx, realmID, groupNames[0], realmID, gomock.Any(), action).Return(nil)
 		mockHistogram.EXPECT().With("correlation_id", corrID).Return(mockHistogram).Times(1)
 		mockHistogram.EXPECT().Observe(gomock.Any()).Return().Times(1)
-		m.DeleteAuthorization(ctx, realmID, groupNames[0], realmID, &groupNames[1], action)
+		_ = m.DeleteAuthorization(ctx, realmID, groupNames[0], realmID, &groupNames[1], action)
 	})
 
 	t.Run("Delete Authorization without correlation ID", func(t *testing.T) {
 		mockComponent.EXPECT().DeleteAuthorization(context.Background(), realmID, groupNames[0], realmID, gomock.Any(), action).Return(nil)
 		assert.Panics(t, func() {
-			m.DeleteAuthorization(context.Background(), realmID, groupNames[0], realmID, &groupNames[1], action)
+			_ = m.DeleteAuthorization(context.Background(), realmID, groupNames[0], realmID, &groupNames[1], action)
 		})
 	})
 
@@ -177,13 +177,13 @@ func TestComponentInstrumentingMW(t *testing.T) {
 		mockComponent.EXPECT().CleanAuthorizationsActionForEveryRealms(ctx, realmID, groupNames[0], action).Return(nil)
 		mockHistogram.EXPECT().With("correlation_id", corrID).Return(mockHistogram).Times(1)
 		mockHistogram.EXPECT().Observe(gomock.Any()).Return().Times(1)
-		m.CleanAuthorizationsActionForEveryRealms(ctx, realmID, groupNames[0], action)
+		_ = m.CleanAuthorizationsActionForEveryRealms(ctx, realmID, groupNames[0], action)
 	})
 
 	t.Run("Clean every realms Authorization without correlation ID", func(t *testing.T) {
 		mockComponent.EXPECT().CleanAuthorizationsActionForEveryRealms(context.Background(), realmID, groupNames[0], action).Return(nil)
 		assert.Panics(t, func() {
-			m.CleanAuthorizationsActionForEveryRealms(context.Background(), realmID, groupNames[0], action)
+			_ = m.CleanAuthorizationsActionForEveryRealms(context.Background(), realmID, groupNames[0], action)
 		})
 	})
 
@@ -191,13 +191,13 @@ func TestComponentInstrumentingMW(t *testing.T) {
 		mockComponent.EXPECT().CleanAuthorizationsActionForEveryRealms(ctx, realmID, groupNames[0], action).Return(nil)
 		mockHistogram.EXPECT().With("correlation_id", corrID).Return(mockHistogram).Times(1)
 		mockHistogram.EXPECT().Observe(gomock.Any()).Return().Times(1)
-		m.CleanAuthorizationsActionForEveryRealms(ctx, realmID, groupNames[0], action)
+		_ = m.CleanAuthorizationsActionForEveryRealms(ctx, realmID, groupNames[0], action)
 	})
 
 	t.Run("Clean realm Authorization without correlation ID", func(t *testing.T) {
 		mockComponent.EXPECT().CleanAuthorizationsActionForRealm(context.Background(), realmID, groupNames[0], realmID, action).Return(nil)
 		assert.Panics(t, func() {
-			m.CleanAuthorizationsActionForRealm(context.Background(), realmID, groupNames[0], realmID, action)
+			_ = m.CleanAuthorizationsActionForRealm(context.Background(), realmID, groupNames[0], realmID, action)
 		})
 	})
 }
