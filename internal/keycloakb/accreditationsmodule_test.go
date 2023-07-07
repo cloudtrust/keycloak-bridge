@@ -17,6 +17,7 @@ func TestHasActiveAccreditations(t *testing.T) {
 		var accreds = []string{`{"type":"ONE","expiryDate":"01.01.2040"}`,
 			`{"type":"TWO","expiryDate":"01.01.2036"}`,
 			`{"type":"THREE","expiryDate":"01.01.2050"}`,
+			`{"type":"FOUR","creationMillis":"1669200527348","expiryDate":"23.11.2122"}`,
 		}
 		var ap, _ = NewAccreditationsProcessor(accreds)
 		assert.True(t, ap.HasActiveAccreditations())

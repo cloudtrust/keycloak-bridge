@@ -1,6 +1,6 @@
 module github.com/cloudtrust/keycloak-bridge
 
-go 1.17
+go 1.20
 
 require (
 	github.com/Shopify/sarama v1.32.0
