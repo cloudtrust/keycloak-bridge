@@ -4,8 +4,9 @@ import (
 	"context"
 
 	cs "github.com/cloudtrust/common-service/v2"
-	"github.com/cloudtrust/common-service/v2/events"
+	"github.com/cloudtrust/common-service/v2/database"
 	"github.com/cloudtrust/common-service/v2/log"
+	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/cloudtrust/keycloak-client/v2"
 )
 
@@ -20,26 +21,28 @@ type KeycloakClient interface {
 	GetExpiredTermsOfUseAcceptance(accessToken string) ([]keycloak.DeletableUserRepresentation, error)
 }
 
-// EventsReporterModule is the interface of the audit events module
-type EventsReporterModule interface {
-	ReportEvent(ctx context.Context, event events.Event)
-}
-
 type component struct {
-	keycloakClient      KeycloakClient
-	eventReporterModule EventsReporterModule
-	logger              log.Logger
-	originEvent         string
+	keycloakClient KeycloakClient
+	eventDBModule  database.EventsDBModule
+	logger         log.Logger
 }
 
 // NewComponent returns a component
-func NewComponent(keycloakClient KeycloakClient, eventReporterModule EventsReporterModule,
+func NewComponent(keycloakClient KeycloakClient, eventDBModule database.EventsDBModule,
 	logger log.Logger) Component {
 	return &component{
-		keycloakClient:      keycloakClient,
-		eventReporterModule: eventReporterModule,
-		logger:              logger,
-		originEvent:         "scheduled-tasks",
+		keycloakClient: keycloakClient,
+		eventDBModule:  eventDBModule,
+
+		logger: logger,
+	}
+}
+
+func (c *component) reportEvent(ctx context.Context, apiCall string, values ...string) {
+	errEvent := c.eventDBModule.ReportEvent(ctx, apiCall, "scheduled-tasks", values...)
+	if errEvent != nil {
+		//store in the logs also the event that failed to be stored in the DB
+		keycloakb.LogUnrecordedEvent(ctx, c.logger, apiCall, errEvent.Error(), values...)
 	}
 }
 
@@ -63,7 +66,7 @@ func (c *component) CleanUpAccordingToExpiredTermsOfUseAcceptance(ctx context.Co
 		} else {
 			c.logger.Info(ctx, "msg", "Removed user without terms and conditions acceptance", "realm", user.RealmName, "usr", user.UserID)
 			//store the API call into the DB
-			c.eventReporterModule.ReportEvent(ctx, events.NewEventOnUserFromContext(ctx, c.logger, c.originEvent, "API_ACCOUNT_DELETION", user.RealmName, user.UserID, user.Username, nil))
+			c.reportEvent(ctx, "API_ACCOUNT_DELETION", database.CtEventRealmName, user.RealmName, database.CtEventUserID, user.UserID)
 		}
 	}
 

@@ -14,13 +14,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Shopify/sarama"
 	cs "github.com/cloudtrust/common-service/v2"
 	"github.com/cloudtrust/common-service/v2/configuration"
 	"github.com/cloudtrust/common-service/v2/database"
 	"github.com/cloudtrust/common-service/v2/database/sqltypes"
 	errorhandler "github.com/cloudtrust/common-service/v2/errors"
-	csevents "github.com/cloudtrust/common-service/v2/events"
 	"github.com/cloudtrust/common-service/v2/healthcheck"
 	commonhttp "github.com/cloudtrust/common-service/v2/http"
 	"github.com/cloudtrust/common-service/v2/idgenerator"
@@ -167,8 +165,6 @@ const (
 	cfgAddrAccreditations       = "accreditations-api-uri"
 	cfgAccreditationsTimeout    = "accreditations-timeout"
 	cfgContextKeys              = "context-keys"
-	cfgKafkaCloudtrustPrefix    = "kafka-cloudtrust"
-	cfgKafkaCloudtrustTopic     = "kafka-cloudtrust-event-topic"
 
 	tokenProviderDefaultKey = "default"
 )
@@ -241,9 +237,6 @@ func main() {
 
 		// DB for archiving users
 		archiveRwDbParams = database.GetDbConfig(c, cfgArchiveRwDbParams)
-
-		cloudtrustEventKafkaConfig = csevents.GetKafkaProducerConfig(c, cfgKafkaCloudtrustPrefix)
-		cloudtrustEventTopic       = c.GetString(cfgKafkaCloudtrustTopic)
 
 		// Rate limiting
 		rateLimit = map[RateKey]int{
@@ -518,16 +511,6 @@ func main() {
 	// Users profile cache
 	profileCache := toolbox.NewUserProfileCache(keycloakClient, technicalTokenProvider, profile.DefaultProfile)
 
-	var eventProducer sarama.SyncProducer
-	{
-		var err error
-		eventProducer, err = csevents.NewEventKafkaProducer(ctx, cloudtrustEventKafkaConfig, logger)
-		if err != nil {
-			logger.Error(ctx, "msg", "could not instantiate kafka producer", "err", err)
-			return
-		}
-	}
-
 	// Health check configuration
 	var healthChecker = healthcheck.NewHealthChecker(keycloakb.ComponentName, logger)
 	var healthCheckCacheDuration = c.GetDuration("livenessprobe-cache-duration") * time.Millisecond
@@ -619,14 +602,14 @@ func main() {
 		var validationLogger = log.With(logger, "svc", "validation")
 
 		// module to store validation events API calls
-		auditEventsReporterModule := csevents.NewAuditEventReporterModule(eventProducer, cloudtrustEventTopic, validationLogger)
+		eventsDBModule := database.NewEventsDBModule(eventsDBConn)
 
 		// module for archiving users
 		var archiveDBModule = keycloakb.NewArchiveDBModule(archiveRwDBConn, archiveAesEncryption, validationLogger)
 
 		var configurationReaderDBModule = configuration.NewConfigurationReaderDBModule(configurationRoDBConn, validationLogger, authActions)
 
-		validationComponent := validation.NewComponent(keycloakClient, technicalTokenProvider, archiveDBModule, auditEventsReporterModule, accreditationsService, configurationReaderDBModule, validationLogger)
+		validationComponent := validation.NewComponent(keycloakClient, technicalTokenProvider, archiveDBModule, eventsDBModule, accreditationsService, configurationReaderDBModule, validationLogger)
 
 		var rateLimitValidation = rateLimit[RateKeyValidation]
 		validationEndpoints = validation.Endpoints{
@@ -659,10 +642,10 @@ func main() {
 		var tasksLogger = log.With(logger, "svc", "tasks")
 
 		// module to store validation events API calls
-		auditEventsReporterModule := csevents.NewAuditEventReporterModule(eventProducer, cloudtrustEventTopic, tasksLogger)
+		eventsDBModule := database.NewEventsDBModule(eventsDBConn)
 
-		tasksComponent := tasks.NewComponent(keycloakClient, auditEventsReporterModule, tasksLogger)
-		tasksComponent = tasks.MakeAuthorizationTasksComponentMW(log.With(tasksLogger, "mw", "endpoint"), authorizationManager)(tasksComponent)
+		tasksComponent := tasks.NewComponent(keycloakClient, eventsDBModule, tasksLogger)
+		tasksComponent = tasks.MakeAuthorizationTasksComponentMW(log.With(tasksLogger, "mw", "authorization"), authorizationManager)(tasksComponent)
 
 		var rateLimitTasks = rateLimit[RateKeyTasks]
 		tasksEndpoints = tasks.Endpoints{
@@ -736,7 +719,7 @@ func main() {
 		var managementLogger = log.With(logger, "svc", "management")
 
 		// module to store API calls of the back office to the DB
-		auditEventsReporterModule := csevents.NewAuditEventReporterModule(eventProducer, cloudtrustEventTopic, managementLogger)
+		eventsDBModule := database.NewEventsDBModule(eventsDBConn)
 
 		// module for storing and retrieving the custom configuration
 		var configDBModule = createConfigurationDBModule(configurationRwDBConn, influxMetrics, managementLogger)
@@ -765,9 +748,9 @@ func main() {
 				}
 			}
 			/* REMOVE_THIS_3901 : remove second parameter */
-			keycloakComponent = management.NewComponent(keycloakClient, keycloakConfig.URIProvider, profileCache, auditEventsReporterModule, configDBModule,
+			keycloakComponent = management.NewComponent(keycloakClient, keycloakConfig.URIProvider, profileCache, eventsDBModule, configDBModule,
 				onboardingModule, authorizationChecker, technicalTokenProvider, accreditationsService, trustIDGroups, registerRealm, glnVerifier, managementLogger)
-			keycloakComponent = management.MakeAuthorizationManagementComponentMW(log.With(managementLogger, "mw", "endpoint"), authorizationManager)(keycloakComponent)
+			keycloakComponent = management.MakeAuthorizationManagementComponentMW(log.With(managementLogger, "mw", "authorization"), authorizationManager)(keycloakComponent)
 		}
 
 		var rateLimitMgmt = rateLimit[RateKeyManagement]
@@ -867,7 +850,7 @@ func main() {
 		var accountLogger = log.With(logger, "svc", "account")
 
 		// Configure events db module
-		auditEventsReporterModule := csevents.NewAuditEventReporterModule(eventProducer, cloudtrustEventTopic, accountLogger)
+		eventsDBModule := database.NewEventsDBModule(eventsDBConn)
 
 		// module for retrieving the custom configuration
 		var configDBModule keycloakb.ConfigurationDBModule
@@ -885,7 +868,7 @@ func main() {
 		var logEndpoint = log.With(accountLogger, "mw", "endpoint")
 
 		// new module for account service
-		accountComponent := account.NewComponent(keycloakClient.AccountClient(), kcTechClient, profileCache, auditEventsReporterModule, configDBModule, glnVerifier, accreditationsService, accountLogger)
+		accountComponent := account.NewComponent(keycloakClient.AccountClient(), kcTechClient, profileCache, eventsDBModule, configDBModule, glnVerifier, accreditationsService, accountLogger)
 		accountComponent = account.MakeAuthorizationAccountComponentMW(logAuthorization, configDBModule)(accountComponent)
 
 		var rateLimitAccount = rateLimit[RateKeyAccount]
@@ -944,7 +927,7 @@ func main() {
 		var registerLogger = log.With(logger, "svc", "register")
 
 		// Configure events db module
-		auditEventsReporterModule := csevents.NewAuditEventReporterModule(eventProducer, cloudtrustEventTopic, registerLogger)
+		eventsDBModule := database.NewEventsDBModule(eventsDBConn)
 
 		// module for storing and retrieving the custom configuration
 		var configDBModule = createConfigurationDBModule(configurationRwDBConn, influxMetrics, registerLogger)
@@ -961,7 +944,7 @@ func main() {
 			return
 		}
 
-		registerComponent := register.NewComponent(keycloakClient, technicalTokenProvider, profileCache, configDBModule, auditEventsReporterModule, onboardingModule, glnVerifier, contextKeyManager, registerLogger)
+		registerComponent := register.NewComponent(keycloakClient, technicalTokenProvider, profileCache, configDBModule, eventsDBModule, onboardingModule, glnVerifier, contextKeyManager, registerLogger)
 		registerComponent = register.MakeAuthorizationRegisterComponentMW(log.With(registerLogger, "mw", "authorization"))(registerComponent)
 
 		var rateLimitRegister = rateLimit[RateKeyRegister]
@@ -985,7 +968,7 @@ func main() {
 		var kycLogger = log.With(logger, "svc", "kyc")
 
 		// Configure events db module
-		auditEventsReporterModule := csevents.NewAuditEventReporterModule(eventProducer, cloudtrustEventTopic, kycLogger)
+		eventsDBModule := database.NewEventsDBModule(eventsDBConn)
 
 		// module for archiving users
 		var archiveDBModule = keycloakb.NewArchiveDBModule(archiveRwDBConn, archiveAesEncryption, kycLogger)
@@ -994,7 +977,7 @@ func main() {
 		var configurationReaderDBModule = configuration.NewConfigurationReaderDBModule(configurationRoDBConn, kycLogger)
 
 		// new module for KYC service
-		kycComponent := kyc.NewComponent(technicalTokenProvider, registerRealm, keycloakClient, profileCache, archiveDBModule, configurationReaderDBModule, auditEventsReporterModule, accreditationsService, glnVerifier, kycLogger)
+		kycComponent := kyc.NewComponent(technicalTokenProvider, registerRealm, keycloakClient, profileCache, archiveDBModule, configurationReaderDBModule, eventsDBModule, accreditationsService, glnVerifier, kycLogger)
 		kycComponent = kyc.MakeAuthorizationKYCComponentMW(registerRealm, authorizationManager, endpointPhysicalCheckAvailabilityChecker, log.With(kycLogger, "mw", "authorization"))(kycComponent)
 
 		var rateLimitKyc = rateLimit[RateKeyKYC]
@@ -1695,9 +1678,6 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 
 	v.BindEnv(cfgDbArchiveAesGcmKey, "CT_BRIDGE_DB_ARCHIVE_AES_KEY")
 	censoredParameters[cfgDbArchiveAesGcmKey] = true
-
-	v.BindEnv(cfgKafkaCloudtrustPrefix+"-client-secret", "CT_EVENT_PRODUCER_KAFKA_CLIENT_SECRET")
-	censoredParameters[cfgKafkaCloudtrustPrefix+"-client-secret"] = true
 
 	// Load and log config.
 	v.SetConfigFile(v.GetString(cfgConfigFile))

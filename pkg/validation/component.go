@@ -5,10 +5,9 @@ import (
 	"time"
 
 	"github.com/cloudtrust/common-service/v2/configuration"
+	"github.com/cloudtrust/common-service/v2/database"
 	errorhandler "github.com/cloudtrust/common-service/v2/errors"
-	"github.com/cloudtrust/common-service/v2/events"
 	"github.com/cloudtrust/common-service/v2/fields"
-	"github.com/cloudtrust/common-service/v2/log"
 	api "github.com/cloudtrust/keycloak-bridge/api/validation"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
@@ -35,9 +34,10 @@ type ArchiveDBModule interface {
 	StoreUserDetails(ctx context.Context, realm string, user dto.ArchiveUserRepresentation) error
 }
 
-// EventsReporterModule is the interface of the audit events module
-type EventsReporterModule interface {
-	ReportEvent(ctx context.Context, event events.Event)
+// EventsDBModule is the interface of the audit events module
+type EventsDBModule interface {
+	Store(context.Context, map[string]string) error
+	ReportEvent(ctx context.Context, apiCall string, origin string, values ...string) error
 }
 
 // ConfigurationDBModule is the interface of the configuration module.
@@ -60,27 +60,25 @@ type Component interface {
 
 // Component is the management component.
 type component struct {
-	keycloakClient      KeycloakClient
-	tokenProvider       TokenProvider
-	archiveDBModule     ArchiveDBModule
-	eventReporterModule EventsReporterModule
-	accredsService      AccreditationsServiceClient
-	configDBModule      ConfigurationDBModule
-	logger              log.Logger
-	originEvent         string
+	keycloakClient  KeycloakClient
+	tokenProvider   TokenProvider
+	archiveDBModule ArchiveDBModule
+	eventsDBModule  database.EventsDBModule
+	accredsService  AccreditationsServiceClient
+	configDBModule  ConfigurationDBModule
+	logger          keycloakb.Logger
 }
 
 // NewComponent returns the management component.
-func NewComponent(keycloakClient KeycloakClient, tokenProvider TokenProvider, archiveDBModule ArchiveDBModule, eventReporterModule EventsReporterModule, accredsService AccreditationsServiceClient, configDBModule ConfigurationDBModule, logger log.Logger) Component {
+func NewComponent(keycloakClient KeycloakClient, tokenProvider TokenProvider, archiveDBModule ArchiveDBModule, eventsDBModule database.EventsDBModule, accredsService AccreditationsServiceClient, configDBModule ConfigurationDBModule, logger keycloakb.Logger) Component {
 	return &component{
-		keycloakClient:      keycloakClient,
-		tokenProvider:       tokenProvider,
-		archiveDBModule:     archiveDBModule,
-		eventReporterModule: eventReporterModule,
-		accredsService:      accredsService,
-		configDBModule:      configDBModule,
-		logger:              logger,
-		originEvent:         "back-office",
+		keycloakClient:  keycloakClient,
+		tokenProvider:   tokenProvider,
+		archiveDBModule: archiveDBModule,
+		eventsDBModule:  eventsDBModule,
+		accredsService:  accredsService,
+		configDBModule:  configDBModule,
+		logger:          logger,
 	}
 }
 
@@ -144,17 +142,11 @@ func (c *component) UpdateUser(ctx context.Context, realmName string, userID str
 		if err != nil {
 			return err
 		}
-		var username string
-		if user.Username != nil {
-			username = *user.Username
-		} else {
-			username = events.CtEventUnknownUsername
-		}
 		// store the API call into the DB
 		if txnID != nil {
-			c.eventReporterModule.ReportEvent(ctx, events.NewEventOnUserFromContext(ctx, c.logger, c.originEvent, "VALIDATION_UPDATE_USER", realmName, userID, username, map[string]string{"txn_id": *txnID}))
+			c.reportEvent(ctx, "VALIDATION_UPDATE_USER", database.CtEventRealmName, realmName, database.CtEventUserID, userID, "txn_id", *txnID)
 		} else {
-			c.eventReporterModule.ReportEvent(ctx, events.NewEventOnUserFromContext(ctx, c.logger, c.originEvent, "VALIDATION_UPDATE_USER", realmName, userID, username, nil))
+			c.reportEvent(ctx, "VALIDATION_UPDATE_USER", database.CtEventRealmName, realmName, database.CtEventUserID, userID)
 		}
 
 		// archive user
@@ -259,6 +251,14 @@ func (c *component) getAccessToken(v *validationContext) (string, error) {
 		}
 	}
 	return *v.accessToken, nil
+}
+
+func (c *component) reportEvent(ctx context.Context, apiCall string, values ...string) {
+	errEvent := c.eventsDBModule.ReportEvent(ctx, apiCall, "back-office", values...)
+	if errEvent != nil {
+		//store in the logs also the event that failed to be stored in the DB
+		keycloakb.LogUnrecordedEvent(ctx, c.logger, apiCall, errEvent.Error(), values...)
+	}
 }
 
 type validationContext struct {

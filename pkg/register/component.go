@@ -6,9 +6,8 @@ import (
 	"time"
 
 	"github.com/cloudtrust/common-service/v2/configuration"
+	"github.com/cloudtrust/common-service/v2/database"
 	errorhandler "github.com/cloudtrust/common-service/v2/errors"
-	"github.com/cloudtrust/common-service/v2/events"
-	"github.com/cloudtrust/common-service/v2/log"
 	"github.com/cloudtrust/common-service/v2/validation"
 	apicommon "github.com/cloudtrust/keycloak-bridge/api/common"
 	apiregister "github.com/cloudtrust/keycloak-bridge/api/register"
@@ -67,45 +66,38 @@ type Component interface {
 	GetUserProfile(ctx context.Context, realmName string) (apicommon.ProfileRepresentation, error)
 }
 
-// EventsReporterModule is the interface of the audit events module
-type EventsReporterModule interface {
-	ReportEvent(ctx context.Context, event events.Event)
-}
-
 var (
 	errAccountAlreadyExists = errors.New("")
 )
 
 // NewComponent returns component.
 func NewComponent(keycloakClient KeycloakClient, tokenProvider toolbox.OidcTokenProvider, profileCache UserProfileCache,
-	configDBModule ConfigurationDBModule, auditEventsReporterModule EventsReporterModule, onboardingModule OnboardingModule, glnVerifier GlnVerifier,
-	contextKeyManager ContextKeyManager, logger log.Logger) Component {
+	configDBModule ConfigurationDBModule, eventsDBModule database.EventsDBModule, onboardingModule OnboardingModule, glnVerifier GlnVerifier,
+	contextKeyManager ContextKeyManager, logger keycloakb.Logger) Component {
 	return &component{
-		keycloakClient:            keycloakClient,
-		tokenProvider:             tokenProvider,
-		profileCache:              profileCache,
-		configDBModule:            configDBModule,
-		auditEventsReporterModule: auditEventsReporterModule,
-		onboardingModule:          onboardingModule,
-		glnVerifier:               glnVerifier,
-		contextKeyMgr:             contextKeyManager,
-		logger:                    logger,
-		originEvent:               "back-office",
+		keycloakClient:   keycloakClient,
+		tokenProvider:    tokenProvider,
+		profileCache:     profileCache,
+		configDBModule:   configDBModule,
+		eventsDBModule:   eventsDBModule,
+		onboardingModule: onboardingModule,
+		glnVerifier:      glnVerifier,
+		contextKeyMgr:    contextKeyManager,
+		logger:           logger,
 	}
 }
 
 // Component is the management component.
 type component struct {
-	keycloakClient            KeycloakClient
-	tokenProvider             toolbox.OidcTokenProvider
-	profileCache              UserProfileCache
-	configDBModule            ConfigurationDBModule
-	auditEventsReporterModule EventsReporterModule
-	onboardingModule          OnboardingModule
-	glnVerifier               GlnVerifier
-	contextKeyMgr             ContextKeyManager
-	logger                    log.Logger
-	originEvent               string
+	keycloakClient   KeycloakClient
+	tokenProvider    toolbox.OidcTokenProvider
+	profileCache     UserProfileCache
+	configDBModule   ConfigurationDBModule
+	eventsDBModule   database.EventsDBModule
+	onboardingModule OnboardingModule
+	glnVerifier      GlnVerifier
+	contextKeyMgr    ContextKeyManager
+	logger           keycloakb.Logger
 }
 
 func (c *component) getSupportedLocales(ctx context.Context, realmName string) (*[]string, error) {
@@ -238,7 +230,7 @@ func (c *component) RegisterUser(ctx context.Context, targetRealmName string, cu
 	}
 
 	// store the API call into the DB
-	c.auditEventsReporterModule.ReportEvent(ctx, events.NewEventOnUserFromContext(ctx, c.logger, c.originEvent, "REGISTER_USER", targetRealmName, *kcUser.ID, *kcUser.Username, nil))
+	c.reportEvent(ctx, "REGISTER_USER", database.CtEventRealmName, targetRealmName, database.CtEventUserID, *kcUser.ID, database.CtEventUsername, *kcUser.Username)
 
 	return redirectURL, nil
 }
@@ -347,6 +339,14 @@ func (c *component) createUser(ctx context.Context, accessToken string, realmNam
 	}
 
 	return kcUser, nil
+}
+
+func (c *component) reportEvent(ctx context.Context, apiCall string, values ...string) {
+	errEvent := c.eventsDBModule.ReportEvent(ctx, apiCall, "back-office", values...)
+	if errEvent != nil {
+		//store in the logs also the event that failed to be stored in the DB
+		keycloakb.LogUnrecordedEvent(ctx, c.logger, apiCall, errEvent.Error(), values...)
+	}
 }
 
 func (c *component) convertGroupNamesToGroupIDs(accessToken string, realmName string, groupNames []string) ([]string, error) {

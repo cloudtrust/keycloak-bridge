@@ -10,6 +10,7 @@ import (
 
 	cs "github.com/cloudtrust/common-service/v2"
 	"github.com/cloudtrust/common-service/v2/configuration"
+	"github.com/cloudtrust/common-service/v2/database"
 	errorhandler "github.com/cloudtrust/common-service/v2/errors"
 	log "github.com/cloudtrust/common-service/v2/log"
 	apikyc "github.com/cloudtrust/keycloak-bridge/api/kyc"
@@ -26,8 +27,8 @@ type componentMocks struct {
 	userProfile    *mock.UserProfileCache
 	archiveDB      *mock.ArchiveDBModule
 	configDB       *mock.ConfigDBModule
+	eventsDB       *mock.EventsDBModule
 	accreditations *mock.AccreditationsServiceClient
-	eventsReporter *mock.AuditEventsReporterModule
 	glnVerifier    *mock.GlnVerifier
 }
 
@@ -42,7 +43,7 @@ func createComponentMocks(mockCtrl *gomock.Controller) *componentMocks {
 		userProfile:    mock.NewUserProfileCache(mockCtrl),
 		archiveDB:      mock.NewArchiveDBModule(mockCtrl),
 		configDB:       mock.NewConfigDBModule(mockCtrl),
-		eventsReporter: mock.NewAuditEventsReporterModule(mockCtrl),
+		eventsDB:       mock.NewEventsDBModule(mockCtrl),
 		accreditations: mock.NewAccreditationsServiceClient(mockCtrl),
 		glnVerifier:    mock.NewGlnVerifier(mockCtrl),
 	}
@@ -50,7 +51,7 @@ func createComponentMocks(mockCtrl *gomock.Controller) *componentMocks {
 
 func (m *componentMocks) NewComponent(realm string) *component {
 	return NewComponent(m.tokenProvider, realm, m.keycloakClient, m.userProfile, m.archiveDB, m.configDB,
-		m.eventsReporter, m.accreditations, m.glnVerifier, log.NewNopLogger()).(*component)
+		m.eventsDB, m.accreditations, m.glnVerifier, log.NewNopLogger()).(*component)
 }
 
 func TestCheckUserConsent(t *testing.T) {
@@ -394,7 +395,7 @@ func TestValidateUser(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, targetRealm, userID).Return(kcUser, nil)
 		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, targetRealm, userID, gomock.Any()).Return(nil)
 		mocks.accreditations.EXPECT().NotifyCheck(ctx, gomock.Any()).Return(nil)
-		mocks.eventsReporter.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
+		mocks.eventsDB.EXPECT().ReportEvent(gomock.Any(), "VALIDATE_USER", "back-office", gomock.Any())
 		mocks.archiveDB.EXPECT().StoreUserDetails(gomock.Any(), targetRealm, gomock.Any()).Return(errors.New("any error"))
 
 		var err = component.ValidateUserInSocialRealm(ctx, userID, validUser, nil)
@@ -405,7 +406,7 @@ func TestValidateUser(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, targetRealm, userID).Return(kcUser, nil)
 		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, targetRealm, userID, gomock.Any()).Return(nil)
 		mocks.accreditations.EXPECT().NotifyCheck(ctx, gomock.Any()).Return(nil)
-		mocks.eventsReporter.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
+		mocks.eventsDB.EXPECT().ReportEvent(gomock.Any(), "VALIDATE_USER", "back-office", gomock.Any()).Return(errors.New("report fails"))
 		mocks.archiveDB.EXPECT().StoreUserDetails(gomock.Any(), targetRealm, gomock.Any()).Return(nil)
 
 		var err = component.ValidateUserInSocialRealm(ctx, userID, validUser, nil)
@@ -419,7 +420,7 @@ func TestValidateUser(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, targetRealm, userID).Return(kcUser, nil)
 		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, targetRealm, userID, gomock.Any()).Return(nil)
 		mocks.accreditations.EXPECT().NotifyCheck(ctx, gomock.Any()).Return(nil)
-		mocks.eventsReporter.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
+		mocks.eventsDB.EXPECT().ReportEvent(gomock.Any(), "VALIDATE_USER", "back-office", gomock.Any())
 		mocks.archiveDB.EXPECT().StoreUserDetails(gomock.Any(), targetRealm, gomock.Any()).Return(nil)
 
 		var err = component.ValidateUser(ctx, targetRealm, userID, validUser, nil)
@@ -433,7 +434,7 @@ func TestValidateUser(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, targetRealm, userID).Return(kcUser, nil)
 		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, targetRealm, userID, gomock.Any()).Return(nil)
 		mocks.accreditations.EXPECT().NotifyCheck(ctx, gomock.Any()).Return(nil)
-		mocks.eventsReporter.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
+		mocks.eventsDB.EXPECT().ReportEvent(gomock.Any(), "VALIDATE_USER", "back-office", gomock.Any())
 		mocks.archiveDB.EXPECT().StoreUserDetails(gomock.Any(), targetRealm, gomock.Any()).Return(nil)
 
 		validUserWithAttachment := createValidUser()
@@ -449,7 +450,7 @@ func TestValidateUser(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, targetRealm, userID).Return(kcUser, nil)
 		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, targetRealm, userID, gomock.Any()).Return(nil)
 		mocks.accreditations.EXPECT().NotifyCheck(ctx, gomock.Any()).Return(nil)
-		mocks.eventsReporter.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
+		mocks.eventsDB.EXPECT().ReportEvent(gomock.Any(), "VALIDATE_USER", "back-office", gomock.Any())
 		mocks.archiveDB.EXPECT().StoreUserDetails(gomock.Any(), targetRealm, gomock.Any()).Return(nil)
 
 		validUserWithAttachment := createValidUser()
@@ -552,7 +553,7 @@ func TestSendSmsConsentCode(t *testing.T) {
 
 	t.Run("Social SendSmsConsentCode-Keycloak call fails", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().SendConsentCodeSMS(accessToken, component.socialRealmName, userID).Return(nil)
-		mocks.eventsReporter.EXPECT().ReportEvent(ctx, gomock.Any())
+		mocks.eventsDB.EXPECT().ReportEvent(ctx, "SMS_CONSENT", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 		err := component.SendSmsConsentCodeInSocialRealm(ctx, userID)
 		assert.Nil(t, err)
 	})
@@ -597,7 +598,7 @@ func TestSendSmsCode(t *testing.T) {
 	t.Run("Social SendSmsCode-Send new sms code", func(t *testing.T) {
 		var code = "1234"
 		mocks.keycloakClient.EXPECT().SendSmsCode(accessToken, component.socialRealmName, userID).Return(kc.SmsCodeRepresentation{Code: &code}, nil)
-		mocks.eventsReporter.EXPECT().ReportEvent(ctx, gomock.Any())
+		mocks.eventsDB.EXPECT().ReportEvent(ctx, "SMS_CHALLENGE", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
 		codeRes, err := component.SendSmsCodeInSocialRealm(ctx, userID)
 
@@ -608,7 +609,7 @@ func TestSendSmsCode(t *testing.T) {
 		var code = "1234"
 		mocks.keycloakClient.EXPECT().SendSmsCode(accessToken, component.socialRealmName, userID).Return(kc.SmsCodeRepresentation{Code: &code}, nil)
 
-		mocks.eventsReporter.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
+		mocks.eventsDB.EXPECT().ReportEvent(ctx, "SMS_CHALLENGE", "back-office", database.CtEventRealmName, component.socialRealmName, database.CtEventUserID, userID).Return(errors.New("error"))
 		codeRes, err := component.SendSmsCodeInSocialRealm(ctx, userID)
 
 		assert.Nil(t, err)
@@ -628,7 +629,7 @@ func TestSendSmsCode(t *testing.T) {
 	t.Run("Corporate SendSmsCode-Send new sms code", func(t *testing.T) {
 		var code = "1234"
 		mocks.keycloakClient.EXPECT().SendSmsCode(accessToken, targetRealm, userID).Return(kc.SmsCodeRepresentation{Code: &code}, nil)
-		mocks.eventsReporter.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
+		mocks.eventsDB.EXPECT().ReportEvent(ctx, "SMS_CHALLENGE", "back-office", gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
 		codeRes, err := component.SendSmsCode(ctx, targetRealm, userID)
 

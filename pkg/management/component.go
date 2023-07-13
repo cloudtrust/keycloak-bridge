@@ -12,10 +12,9 @@ import (
 
 	cs "github.com/cloudtrust/common-service/v2"
 	"github.com/cloudtrust/common-service/v2/configuration"
+	"github.com/cloudtrust/common-service/v2/database"
 	errorhandler "github.com/cloudtrust/common-service/v2/errors"
-	"github.com/cloudtrust/common-service/v2/events"
 	"github.com/cloudtrust/common-service/v2/fields"
-	"github.com/cloudtrust/common-service/v2/log"
 	"github.com/cloudtrust/common-service/v2/security"
 	apicommon "github.com/cloudtrust/keycloak-bridge/api/common"
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
@@ -209,33 +208,27 @@ type Component interface {
 	GetIdentityProviders(ctx context.Context, realmName string) ([]api.IdentityProviderRepresentation, error)
 }
 
-// EventsReporterModule is the interface of the audit events module
-type EventsReporterModule interface {
-	ReportEvent(ctx context.Context, event events.Event)
-}
-
 // Component is the management component.
 type component struct {
-	keycloakClient            KeycloakClient
-	kcURIProvider             KeycloakURIProvider /* REMOVE_THIS_3901 */
-	profileCache              UserProfileCache
-	auditEventsReporterModule EventsReporterModule
-	configDBModule            keycloakb.ConfigurationDBModule
-	onboardingModule          OnboardingModule
-	authChecker               AuthorizationChecker
-	tokenProvider             toolbox.OidcTokenProvider
-	authorizedTrustIDGroups   map[string]bool
-	socialRealmName           string
-	glnVerifier               GlnVerifier
-	accreditationsClient      AccreditationsServiceClient
-	logger                    log.Logger
-	originEvent               string
+	keycloakClient          KeycloakClient
+	kcURIProvider           KeycloakURIProvider /* REMOVE_THIS_3901 */
+	profileCache            UserProfileCache
+	eventDBModule           database.EventsDBModule
+	configDBModule          keycloakb.ConfigurationDBModule
+	onboardingModule        OnboardingModule
+	authChecker             AuthorizationChecker
+	tokenProvider           toolbox.OidcTokenProvider
+	authorizedTrustIDGroups map[string]bool
+	socialRealmName         string
+	glnVerifier             GlnVerifier
+	accreditationsClient    AccreditationsServiceClient
+	logger                  keycloakb.Logger
 }
 
 // NewComponent returns the management component.
-func NewComponent(keycloakClient KeycloakClient, kcURIProvider kc.KeycloakURIProvider, profileCache UserProfileCache, auditEventsReporterModule EventsReporterModule,
+func NewComponent(keycloakClient KeycloakClient, kcURIProvider kc.KeycloakURIProvider, profileCache UserProfileCache, eventDBModule database.EventsDBModule,
 	configDBModule keycloakb.ConfigurationDBModule, onboardingModule OnboardingModule, authChecker AuthorizationChecker, tokenProvider toolbox.OidcTokenProvider,
-	accreditationsClient AccreditationsServiceClient, authorizedTrustIDGroups []string, socialRealmName string, glnVerifier GlnVerifier, logger log.Logger) Component {
+	accreditationsClient AccreditationsServiceClient, authorizedTrustIDGroups []string, socialRealmName string, glnVerifier GlnVerifier, logger keycloakb.Logger) Component {
 	/* REMOVE_THIS_3901 : remove second provided parameter */
 
 	var authzedTrustIDGroups = make(map[string]bool)
@@ -244,20 +237,27 @@ func NewComponent(keycloakClient KeycloakClient, kcURIProvider kc.KeycloakURIPro
 	}
 
 	return &component{
-		keycloakClient:            keycloakClient,
-		kcURIProvider:             kcURIProvider, /* REMOVE_THIS_3901 */
-		profileCache:              profileCache,
-		auditEventsReporterModule: auditEventsReporterModule,
-		configDBModule:            configDBModule,
-		onboardingModule:          onboardingModule,
-		authChecker:               authChecker,
-		tokenProvider:             tokenProvider,
-		authorizedTrustIDGroups:   authzedTrustIDGroups,
-		socialRealmName:           socialRealmName,
-		accreditationsClient:      accreditationsClient,
-		glnVerifier:               glnVerifier,
-		logger:                    logger,
-		originEvent:               "back-office",
+		keycloakClient:          keycloakClient,
+		kcURIProvider:           kcURIProvider, /* REMOVE_THIS_3901 */
+		profileCache:            profileCache,
+		eventDBModule:           eventDBModule,
+		configDBModule:          configDBModule,
+		onboardingModule:        onboardingModule,
+		authChecker:             authChecker,
+		tokenProvider:           tokenProvider,
+		authorizedTrustIDGroups: authzedTrustIDGroups,
+		socialRealmName:         socialRealmName,
+		accreditationsClient:    accreditationsClient,
+		glnVerifier:             glnVerifier,
+		logger:                  logger,
+	}
+}
+
+func (c *component) reportEvent(ctx context.Context, apiCall string, values ...string) {
+	errEvent := c.eventDBModule.ReportEvent(ctx, apiCall, "back-office", values...)
+	if errEvent != nil {
+		//store in the logs also the event that failed to be stored in the DB
+		keycloakb.LogUnrecordedEvent(ctx, c.logger, apiCall, errEvent.Error(), values...)
 	}
 }
 
@@ -441,7 +441,7 @@ func (c *component) genericCreateUser(ctx context.Context, accessToken string, c
 	userID := string(reg.Find([]byte(locationURL)))
 
 	//store the API call into the DB
-	c.auditEventsReporterModule.ReportEvent(ctx, events.NewEventOnUserFromContext(ctx, c.logger, c.originEvent, "API_ACCOUNT_CREATION", targetRealmName, userID, username, nil))
+	c.reportEvent(ctx, "API_ACCOUNT_CREATION", database.CtEventRealmName, targetRealmName, database.CtEventUserID, userID, database.CtEventUsername, username)
 
 	return locationURL, nil
 }
@@ -491,7 +491,7 @@ func (c *component) DeleteUser(ctx context.Context, realmName, userID string) er
 	}
 
 	//store the API call into the DB
-	c.auditEventsReporterModule.ReportEvent(ctx, events.NewEventOnUserFromContext(ctx, c.logger, c.originEvent, "API_ACCOUNT_DELETION", realmName, userID, events.CtEventUnknownUsername, nil))
+	c.reportEvent(ctx, "API_ACCOUNT_DELETION", database.CtEventRealmName, realmName, database.CtEventUserID, userID)
 
 	return nil
 }
@@ -523,7 +523,7 @@ func (c *component) GetUser(ctx context.Context, realmName, userID string) (api.
 	userRep.PendingChecks = keycloakb.ConvertFromAccreditationChecks(pendingChecks).ToCheckNames()
 
 	//store the API call into the DB
-	c.auditEventsReporterModule.ReportEvent(ctx, events.NewEventOnUserFromContext(ctx, c.logger, c.originEvent, "GET_DETAILS", realmName, userID, username, nil))
+	c.reportEvent(ctx, "GET_DETAILS", database.CtEventRealmName, realmName, database.CtEventUserID, userID, database.CtEventUsername, username)
 
 	return userRep, nil
 }
@@ -690,7 +690,7 @@ func (c *component) reportLockEvent(ctx context.Context, realmName, userID strin
 		ctEventType = "LOCK_ACCOUNT"
 	}
 
-	c.auditEventsReporterModule.ReportEvent(ctx, events.NewEventOnUserFromContext(ctx, c.logger, c.originEvent, ctEventType, realmName, userID, *username, nil))
+	c.reportEvent(ctx, ctEventType, database.CtEventRealmName, realmName, database.CtEventUserID, userID, database.CtEventUsername, *username)
 }
 
 func (c *component) LockUser(ctx context.Context, realmName, userID string) error {
@@ -1150,7 +1150,7 @@ func (c *component) ResetPassword(ctx context.Context, realmName string, userID 
 	}
 
 	//store the API call into the DB
-	c.auditEventsReporterModule.ReportEvent(ctx, events.NewEventOnUserFromContext(ctx, c.logger, c.originEvent, "INIT_PASSWORD", realmName, userID, events.CtEventUnknownUsername, nil))
+	c.reportEvent(ctx, "INIT_PASSWORD", database.CtEventRealmName, realmName, database.CtEventUserID, userID)
 
 	return pwd, nil
 }
@@ -1163,20 +1163,15 @@ func (c *component) ExecuteActionsEmail(ctx context.Context, realmName string, u
 		actions = append(actions, string(requiredAction))
 		if string(requiredAction) == initPasswordAction {
 			//store the API call into the DB
-			c.auditEventsReporterModule.ReportEvent(ctx, events.NewEventOnUserFromContext(ctx, c.logger, c.originEvent, "INIT_PASSWORD", realmName, userID, events.CtEventUnknownUsername, nil))
+			c.reportEvent(ctx, "INIT_PASSWORD", database.CtEventRealmName, realmName, database.CtEventUserID, userID)
 		}
 	}
 
 	//store the API call into the DB with the parameters and the required actions
 	listActions := strings.Join(actions, ",")
 	values := append(paramKV, "required_actions", listActions)
-
-	details := map[string]string{}
-	for i := 0; i+1 < len(details); i += 2 {
-		details[values[i]] = values[i+1]
-	}
-
-	c.auditEventsReporterModule.ReportEvent(ctx, events.NewEventOnUserFromContext(ctx, c.logger, c.originEvent, "ACTION_EMAIL", realmName, userID, events.CtEventUnknownUsername, details))
+	additionalInfo := database.CreateAdditionalInfo(values...)
+	c.reportEvent(ctx, "ACTION_EMAIL", database.CtEventRealmName, realmName, database.CtEventUserID, userID, database.CtEventAdditionalInfo, additionalInfo)
 
 	err := c.keycloakClient.ExecuteActionsEmail(accessToken, realmName, realmName, userID, actions, paramKV...)
 
@@ -1219,7 +1214,7 @@ func (c *component) SendSmsCode(ctx context.Context, realmName string, userID st
 	}
 
 	// store the API call into the DB
-	c.auditEventsReporterModule.ReportEvent(ctx, events.NewEventOnUserFromContext(ctx, c.logger, c.originEvent, "SMS_CHALLENGE", realmName, userID, events.CtEventUnknownUsername, nil))
+	c.reportEvent(ctx, "SMS_CHALLENGE", database.CtEventRealmName, realmName, database.CtEventUserID, userID)
 
 	return *smsCodeKc.Code, err
 }
@@ -1283,7 +1278,7 @@ func (c *component) genericSendOnboardingEmail(ctx context.Context, accessToken 
 	}
 
 	// store the API call into the DB
-	c.auditEventsReporterModule.ReportEvent(ctx, events.NewEventOnUserFromContext(ctx, c.logger, c.originEvent, "EMAIL_ONBOARDING_SENT", realmName, userID, *kcUser.Username, nil))
+	c.reportEvent(ctx, "EMAIL_ONBOARDING_SENT", database.CtEventRealmName, realmName, database.CtEventUserID, userID)
 
 	return nil
 }
@@ -1324,7 +1319,7 @@ func (c *component) SendMigrationEmail(ctx context.Context, realmName string, us
 	}
 
 	// store the API call into the DB
-	c.auditEventsReporterModule.ReportEvent(ctx, events.NewEventOnUserFromContext(ctx, c.logger, c.originEvent, "EMAIL_MIGRATION_SENT", realmName, userID, *kcUser.Username, nil))
+	c.reportEvent(ctx, "EMAIL_MIGRATION_SENT", database.CtEventRealmName, realmName, database.CtEventUserID, userID)
 
 	return nil
 }
@@ -1417,7 +1412,7 @@ func (c *component) CreateRecoveryCode(ctx context.Context, realmName, userID st
 	}
 
 	// store the API call into the DB
-	c.auditEventsReporterModule.ReportEvent(ctx, events.NewEventOnUserFromContext(ctx, c.logger, c.originEvent, "CREATE_RECOVERY_CODE", realmName, userID, events.CtEventUnknownUsername, nil))
+	c.reportEvent(ctx, "CREATE_RECOVERY_CODE", database.CtEventRealmName, realmName, database.CtEventUserID, userID)
 
 	return *recoveryCodeKc.Code, err
 }
@@ -1433,7 +1428,7 @@ func (c *component) CreateActivationCode(ctx context.Context, realmName, userID 
 	}
 
 	// store the API call into the DB
-	c.auditEventsReporterModule.ReportEvent(ctx, events.NewEventOnUserFromContext(ctx, c.logger, c.originEvent, "CREATE_ACTIVATION_CODE", realmName, userID, events.CtEventUnknownUsername, nil))
+	c.reportEvent(ctx, "CREATE_ACTIVATION_CODE", database.CtEventRealmName, realmName, database.CtEventUserID, userID)
 
 	return *activationCodeKc.Code, err
 }
@@ -1473,7 +1468,7 @@ func (c *component) DeleteCredentialsForUser(ctx context.Context, realmName stri
 	}
 
 	// Call to CheckRemovableMFA ensures credential is a MFA: record the event 2ND_FACTOR_REMOVED in the audit DB
-	c.auditEventsReporterModule.ReportEvent(ctx, events.NewEventOnUserFromContext(ctx, c.logger, c.originEvent, "2ND_FACTOR_REMOVED", realmName, userID, events.CtEventUnknownUsername, nil))
+	c.reportEvent(ctx, "2ND_FACTOR_REMOVED", database.CtEventRealmName, realmName, database.CtEventUserID, userID)
 
 	return err
 }
@@ -1526,7 +1521,7 @@ func (c *component) ClearUserLoginFailures(ctx context.Context, realmName, userI
 		return err
 	}
 
-	c.auditEventsReporterModule.ReportEvent(ctx, events.NewEventOnUserFromContext(ctx, c.logger, c.originEvent, "LOGIN_FAILURE_CLEARED", realmName, userID, events.CtEventUnknownUsername, nil))
+	c.reportEvent(ctx, "LOGIN_FAILURE_CLEARED", database.CtEventRealmName, realmName, database.CtEventUserID, userID)
 
 	return nil
 }
@@ -1612,7 +1607,7 @@ func (c *component) CreateRole(ctx context.Context, realmName string, role api.R
 	roleID := string(reg.Find([]byte(locationURL)))
 
 	//store the API call into the DB
-	c.auditEventsReporterModule.ReportEvent(ctx, events.NewEventFromContext(ctx, c.logger, c.originEvent, "API_ROLE_CREATION", realmName, map[string]string{events.CtEventRoleID: roleID, events.CtEventRoleName: *role.Name}))
+	c.reportEvent(ctx, "API_ROLE_CREATION", database.CtEventRealmName, realmName, database.CtEventRoleID, roleID, database.CtEventRoleName, *role.Name)
 
 	return locationURL, nil
 }
@@ -1650,7 +1645,7 @@ func (c *component) UpdateRole(ctx context.Context, realmName string, roleID str
 	}
 
 	//store the API call into the DB
-	c.auditEventsReporterModule.ReportEvent(ctx, events.NewEventFromContext(ctx, c.logger, c.originEvent, "API_ROLE_UPDATE", realmName, map[string]string{events.CtEventRoleID: roleID, events.CtEventRoleName: *role.Name}))
+	c.reportEvent(ctx, "API_ROLE_UPDATE", database.CtEventRealmName, realmName, database.CtEventRoleName, *role.Name)
 
 	return nil
 }
@@ -1669,8 +1664,9 @@ func (c *component) DeleteRole(ctx context.Context, realmName string, roleID str
 		return err
 	}
 
+	var roleName = *role.Name
 	//store the API call into the DB
-	c.auditEventsReporterModule.ReportEvent(ctx, events.NewEventFromContext(ctx, c.logger, c.originEvent, "API_ROLE_DELETION", realmName, map[string]string{events.CtEventRoleID: roleID, events.CtEventRoleName: *role.Name}))
+	c.reportEvent(ctx, "API_ROLE_DELETION", database.CtEventRealmName, realmName, database.CtEventRoleName, roleName)
 
 	return nil
 }
@@ -1713,7 +1709,7 @@ func (c *component) CreateGroup(ctx context.Context, realmName string, group api
 	groupID := string(reg.Find([]byte(locationURL)))
 
 	//store the API call into the DB
-	c.auditEventsReporterModule.ReportEvent(ctx, events.NewEventFromContext(ctx, c.logger, c.originEvent, "API_GROUP_CREATION", realmName, map[string]string{events.CtEventGroupID: groupID, events.CtEventGroupName: *group.Name}))
+	c.reportEvent(ctx, "API_GROUP_CREATION", database.CtEventRealmName, realmName, database.CtEventGroupID, groupID, database.CtEventGroupName, *group.Name)
 
 	return locationURL, nil
 }
@@ -1742,7 +1738,7 @@ func (c *component) DeleteGroup(ctx context.Context, realmName, groupID string) 
 	}
 
 	//store the API call into the DB
-	c.auditEventsReporterModule.ReportEvent(ctx, events.NewEventFromContext(ctx, c.logger, c.originEvent, "API_GROUP_DELETION", realmName, map[string]string{events.CtEventGroupID: groupID, events.CtEventGroupName: *group.Name}))
+	c.reportEvent(ctx, "API_GROUP_DELETION", database.CtEventRealmName, realmName, database.CtEventGroupName, groupName)
 
 	return nil
 }
@@ -1811,7 +1807,7 @@ func (c *component) UpdateAuthorizations(ctx context.Context, realmName string, 
 		}
 	}
 
-	c.auditEventsReporterModule.ReportEvent(ctx, events.NewEventFromContext(ctx, c.logger, c.originEvent, "API_AUTHORIZATIONS_UPDATE", realmName, map[string]string{events.CtEventGroupName: groupName}))
+	c.reportEvent(ctx, "API_AUTHORIZATIONS_UPDATE", database.CtEventRealmName, realmName, database.CtEventGroupName, groupName)
 
 	return nil
 }
@@ -1895,7 +1891,8 @@ func (c *component) AddAuthorization(ctx context.Context, realmName string, grou
 			return err
 		}
 	}
-	c.auditEventsReporterModule.ReportEvent(ctx, events.NewEventFromContext(ctx, c.logger, c.originEvent, "API_AUTHORIZATIONS_PUT", realmName, map[string]string{events.CtEventGroupName: groupName}))
+
+	c.reportEvent(ctx, "API_AUTHORIZATIONS_PUT", database.CtEventRealmName, realmName, database.CtEventGroupName, groupName)
 
 	return nil
 }
@@ -2008,7 +2005,8 @@ func (c *component) DeleteAuthorization(ctx context.Context, realmName string, g
 			c.logger.Warn(ctx, "err", err.Error())
 			return err
 		}
-		c.auditEventsReporterModule.ReportEvent(ctx, events.NewEventFromContext(ctx, c.logger, c.originEvent, "API_AUTHORIZATION_DELETE", realmName, map[string]string{"action": *authz.Action}))
+
+		c.reportEvent(ctx, "API_AUTHORIZATION_DELETE", database.CtEventRealmName, realmName, database.CtEventGroupName, groupID, targetRealm, targetGroupID, actionReq)
 	}
 
 	return nil
