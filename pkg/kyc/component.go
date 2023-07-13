@@ -9,14 +9,12 @@ import (
 	"time"
 
 	"github.com/cloudtrust/common-service/v2/configuration"
-	"github.com/cloudtrust/common-service/v2/log"
 	"github.com/cloudtrust/common-service/v2/validation"
 	kc "github.com/cloudtrust/keycloak-client/v2"
 	"github.com/cloudtrust/keycloak-client/v2/toolbox"
 
-	"github.com/cloudtrust/common-service/v2/events"
-
 	cs "github.com/cloudtrust/common-service/v2"
+	"github.com/cloudtrust/common-service/v2/database"
 	errorhandler "github.com/cloudtrust/common-service/v2/errors"
 	"github.com/cloudtrust/common-service/v2/security"
 	apicommon "github.com/cloudtrust/keycloak-bridge/api/common"
@@ -50,9 +48,10 @@ type ConfigDBModule interface {
 	GetAdminConfiguration(ctx context.Context, realmID string) (configuration.RealmAdminConfiguration, error)
 }
 
-// EventsReporterModule is the interface of the audit events module
-type EventsReporterModule interface {
-	ReportEvent(ctx context.Context, event events.Event)
+// EventsDBModule is the interface of the audit events module
+type EventsDBModule interface {
+	Store(context.Context, map[string]string) error
+	ReportEvent(ctx context.Context, apiCall string, origin string, values ...string) error
 }
 
 // GlnVerifier interface allows to check validity of a GLN
@@ -91,17 +90,16 @@ type Component interface {
 
 // Component is the management component.
 type component struct {
-	tokenProvider             toolbox.OidcTokenProvider
-	socialRealmName           string
-	keycloakClient            KeycloakClient
-	profileCache              UserProfileCache
-	archiveDBModule           ArchiveDBModule
-	configDBModule            ConfigDBModule
-	auditEventsReporterModule EventsReporterModule
-	accredsServiceClient      AccreditationsServiceClient
-	glnVerifier               GlnVerifier
-	logger                    log.Logger
-	originEvent               string
+	tokenProvider        toolbox.OidcTokenProvider
+	socialRealmName      string
+	keycloakClient       KeycloakClient
+	profileCache         UserProfileCache
+	archiveDBModule      ArchiveDBModule
+	configDBModule       ConfigDBModule
+	eventsDBModule       EventsDBModule
+	accredsServiceClient AccreditationsServiceClient
+	glnVerifier          GlnVerifier
+	logger               keycloakb.Logger
 }
 
 const (
@@ -109,19 +107,18 @@ const (
 )
 
 // NewComponent returns the management component.
-func NewComponent(tokenProvider toolbox.OidcTokenProvider, socialRealmName string, keycloakClient KeycloakClient, profileCache UserProfileCache, archiveDBModule ArchiveDBModule, configDBModule ConfigDBModule, auditEventsReporterModule EventsReporterModule, accredsServiceClient AccreditationsServiceClient, glnVerifier GlnVerifier, logger log.Logger) Component {
+func NewComponent(tokenProvider toolbox.OidcTokenProvider, socialRealmName string, keycloakClient KeycloakClient, profileCache UserProfileCache, archiveDBModule ArchiveDBModule, configDBModule ConfigDBModule, eventsDBModule EventsDBModule, accredsServiceClient AccreditationsServiceClient, glnVerifier GlnVerifier, logger keycloakb.Logger) Component {
 	return &component{
-		tokenProvider:             tokenProvider,
-		socialRealmName:           socialRealmName,
-		keycloakClient:            keycloakClient,
-		profileCache:              profileCache,
-		archiveDBModule:           archiveDBModule,
-		configDBModule:            configDBModule,
-		auditEventsReporterModule: auditEventsReporterModule,
-		accredsServiceClient:      accredsServiceClient,
-		glnVerifier:               glnVerifier,
-		logger:                    logger,
-		originEvent:               "back-office",
+		tokenProvider:        tokenProvider,
+		socialRealmName:      socialRealmName,
+		keycloakClient:       keycloakClient,
+		profileCache:         profileCache,
+		archiveDBModule:      archiveDBModule,
+		configDBModule:       configDBModule,
+		eventsDBModule:       eventsDBModule,
+		accredsServiceClient: accredsServiceClient,
+		glnVerifier:          glnVerifier,
+		logger:               logger,
 	}
 }
 
@@ -389,7 +386,7 @@ func (c *component) validateUserBasicID(ctx context.Context, accessToken string,
 	}
 
 	// store the API call into the DB
-	c.auditEventsReporterModule.ReportEvent(ctx, events.NewEventOnUserFromContext(ctx, c.logger, c.originEvent, "BASIC_VALIDATE_USER", targetRealm, userID, *user.Username, nil))
+	c.reportEvent(ctx, "BASIC_VALIDATE_USER", database.CtEventRealmName, targetRealm, database.CtEventUserID, userID, database.CtEventUsername, *user.Username, "txn_id", *check.TxnID)
 
 	var archiveUser = dto.ToArchiveUserRepresentation(kcUser)
 	err = c.archiveDBModule.StoreUserDetails(ctx, targetRealm, archiveUser)
@@ -499,7 +496,7 @@ func (c *component) validateUser(ctx context.Context, accessToken string, confRe
 	}
 
 	// store the API call into the DB
-	c.auditEventsReporterModule.ReportEvent(ctx, events.NewEventOnUserFromContext(ctx, c.logger, c.originEvent, "VALIDATE_USER", targetRealm, userID, *user.Username, nil))
+	c.reportEvent(ctx, "VALIDATE_USER", database.CtEventRealmName, targetRealm, database.CtEventUserID, userID, database.CtEventUsername, *user.Username, "txn_id", *check.TxnID)
 
 	var archiveUser = dto.ToArchiveUserRepresentation(kcUser)
 	err = c.archiveDBModule.StoreUserDetails(ctx, targetRealm, archiveUser)
@@ -571,6 +568,14 @@ func (c *component) getUserByUsername(accessToken, reqRealmName, targetRealmName
 	return res, nil
 }
 
+func (c *component) reportEvent(ctx context.Context, apiCall string, values ...string) {
+	errEvent := c.eventsDBModule.ReportEvent(ctx, apiCall, "back-office", values...)
+	if errEvent != nil {
+		//store in the logs also the event that failed to be stored in the DB
+		keycloakb.LogUnrecordedEvent(ctx, c.logger, apiCall, errEvent.Error(), values...)
+	}
+}
+
 func ptr(value string) *string {
 	return &value
 }
@@ -606,7 +611,7 @@ func (c *component) sendSmsConsentCodeGeneric(ctx context.Context, accessToken s
 	}
 
 	// store the API call into the DB
-	c.auditEventsReporterModule.ReportEvent(ctx, events.NewEventOnUserFromContext(ctx, c.logger, c.originEvent, "SMS_CONSENT", targetRealm, userID, events.CtEventUnknownUsername, nil))
+	c.reportEvent(ctx, "SMS_CONSENT", database.CtEventRealmName, targetRealm, database.CtEventUserID, userID)
 
 	return nil
 }
@@ -634,7 +639,7 @@ func (c *component) sendSmsCodeGeneric(ctx context.Context, accessToken string, 
 	}
 
 	// store the API call into the DB
-	c.auditEventsReporterModule.ReportEvent(ctx, events.NewEventOnUserFromContext(ctx, c.logger, c.originEvent, "SMS_CHALLENGE", realm, userID, events.CtEventUnknownUsername, nil))
+	c.reportEvent(ctx, "SMS_CHALLENGE", database.CtEventRealmName, realm, database.CtEventUserID, userID)
 
 	return *smsCodeKc.Code, err
 }

@@ -20,7 +20,7 @@ import (
 type componentMocks struct {
 	keycloakClient *mock.KeycloakClient
 	archiveDB      *mock.ArchiveDBModule
-	eventsReporter *mock.AuditEventsReporterModule
+	eventsDB       *mock.EventsDBModule
 	tokenProvider  *mock.TokenProvider
 	accredsService *mock.AccreditationsServiceClient
 	configDB       *mock.ConfigurationDBModule
@@ -30,7 +30,7 @@ func createComponentMocks(mockCtrl *gomock.Controller) componentMocks {
 	return componentMocks{
 		keycloakClient: mock.NewKeycloakClient(mockCtrl),
 		archiveDB:      mock.NewArchiveDBModule(mockCtrl),
-		eventsReporter: mock.NewAuditEventsReporterModule(mockCtrl),
+		eventsDB:       mock.NewEventsDBModule(mockCtrl),
 		tokenProvider:  mock.NewTokenProvider(mockCtrl),
 		accredsService: mock.NewAccreditationsServiceClient(mockCtrl),
 		configDB:       mock.NewConfigurationDBModule(mockCtrl),
@@ -38,7 +38,7 @@ func createComponentMocks(mockCtrl *gomock.Controller) componentMocks {
 }
 
 func (m *componentMocks) createComponent() *component {
-	return NewComponent(m.keycloakClient, m.tokenProvider, m.archiveDB, m.eventsReporter, m.accredsService, m.configDB, log.NewNopLogger()).(*component)
+	return NewComponent(m.keycloakClient, m.tokenProvider, m.archiveDB, m.eventsDB, m.accredsService, m.configDB, log.NewNopLogger()).(*component)
 }
 
 func TestGetUserComponent(t *testing.T) {
@@ -160,6 +160,20 @@ func TestUpdateUser(t *testing.T) {
 	})
 	mocks.keycloakClient.EXPECT().UpdateUser(accessToken, targetRealm, userID, gomock.Any()).Return(nil).AnyTimes()
 
+	t.Run("Failure to store event", func(t *testing.T) {
+		var date = time.Now()
+		var user = api.UserRepresentation{
+			FirstName:            ptr("newFirstname"),
+			IDDocumentExpiration: &date,
+		}
+		var e = errors.New("error")
+		mocks.keycloakClient.EXPECT().GetUser(accessToken, targetRealm, userID).Return(kc.UserRepresentation{}, nil)
+		mocks.eventsDB.EXPECT().ReportEvent(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(e)
+		mocks.archiveDB.EXPECT().StoreUserDetails(ctx, targetRealm, gomock.Any()).Return(nil)
+		var err = component.UpdateUser(ctx, targetRealm, userID, user, &txnID)
+		assert.Nil(t, err)
+	})
+
 	t.Run("Failed to nofifyUpdate", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, targetRealm, userID).Return(kc.UserRepresentation{
 			Attributes: &kc.Attributes{
@@ -178,7 +192,7 @@ func TestUpdateUser(t *testing.T) {
 
 	t.Run("Successful update", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, targetRealm, userID).Return(kc.UserRepresentation{}, nil)
-		mocks.eventsReporter.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
+		mocks.eventsDB.EXPECT().ReportEvent(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 		mocks.archiveDB.EXPECT().StoreUserDetails(ctx, targetRealm, gomock.Any()).Return(nil)
 
 		var user = api.UserRepresentation{
@@ -196,7 +210,7 @@ func TestUpdateUser(t *testing.T) {
 			},
 		}, nil)
 		mocks.accredsService.EXPECT().NotifyUpdate(ctx, gomock.Any()).Return([]string{"ONE"}, nil)
-		mocks.eventsReporter.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
+		mocks.eventsDB.EXPECT().ReportEvent(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 		mocks.archiveDB.EXPECT().StoreUserDetails(ctx, targetRealm, gomock.Any()).Return(nil)
 
 		var user = api.UserRepresentation{
@@ -209,7 +223,7 @@ func TestUpdateUser(t *testing.T) {
 
 	t.Run("Successful update, txnid nil", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, targetRealm, userID).Return(kc.UserRepresentation{}, nil)
-		mocks.eventsReporter.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
+		mocks.eventsDB.EXPECT().ReportEvent(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 		mocks.archiveDB.EXPECT().StoreUserDetails(ctx, targetRealm, gomock.Any()).Return(nil)
 		var user = api.UserRepresentation{
 			FirstName:      ptr("newFirstname"),

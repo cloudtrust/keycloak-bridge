@@ -14,21 +14,21 @@ import (
 )
 
 type componentMocks struct {
-	kcClient       *mock.KeycloakClient
-	eventsReporter *mock.AuditEventsReporterModule
-	logger         log.Logger
+	kcClient *mock.KeycloakClient
+	dbEvents *mock.EventsDBModule
+	logger   log.Logger
 }
 
 func newMocks(mockCtrl *gomock.Controller) *componentMocks {
 	return &componentMocks{
-		kcClient:       mock.NewKeycloakClient(mockCtrl),
-		eventsReporter: mock.NewAuditEventsReporterModule(mockCtrl),
-		logger:         log.NewNopLogger(),
+		kcClient: mock.NewKeycloakClient(mockCtrl),
+		dbEvents: mock.NewEventsDBModule(mockCtrl),
+		logger:   log.NewNopLogger(),
 	}
 }
 
 func (m *componentMocks) createComponent() Component {
-	return NewComponent(m.kcClient, m.eventsReporter, m.logger)
+	return NewComponent(m.kcClient, m.dbEvents, m.logger)
 }
 
 func TestCleanUpAccordingToExpiredTermsOfUseAcceptance(t *testing.T) {
@@ -60,7 +60,7 @@ func TestCleanUpAccordingToExpiredTermsOfUseAcceptance(t *testing.T) {
 		mocks.kcClient.EXPECT().GetExpiredTermsOfUseAcceptance(accessToken).Return(eligibleUsers, nil)
 		mocks.kcClient.EXPECT().DeleteUser(accessToken, eligibleUsers[0].RealmName, eligibleUsers[0].UserID).Return(anyError)
 		mocks.kcClient.EXPECT().DeleteUser(accessToken, eligibleUsers[1].RealmName, eligibleUsers[1].UserID).Return(nil)
-		mocks.eventsReporter.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
+		mocks.dbEvents.EXPECT().ReportEvent(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(nil)
 		var err = component.CleanUpAccordingToExpiredTermsOfUseAcceptance(ctx)
 		assert.Equal(t, anyError, err)
 	})
@@ -74,7 +74,7 @@ func TestCleanUpAccordingToExpiredTermsOfUseAcceptance(t *testing.T) {
 		mocks.kcClient.EXPECT().GetExpiredTermsOfUseAcceptance(accessToken).Return(eligibleUsers, nil)
 		// User 1
 		mocks.kcClient.EXPECT().DeleteUser(accessToken, eligibleUsers[0].RealmName, eligibleUsers[0].UserID).Return(nil)
-		mocks.eventsReporter.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
+		mocks.dbEvents.EXPECT().ReportEvent(ctx, gomock.Any(), gomock.Any(), gomock.Any()).Return(altError)
 		// User 2
 		mocks.kcClient.EXPECT().DeleteUser(accessToken, eligibleUsers[1].RealmName, eligibleUsers[1].UserID).Return(altError)
 		// User 3

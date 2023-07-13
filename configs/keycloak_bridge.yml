@@ -169,16 +169,6 @@ rate-tasks: 10
 rate-kyc: 1000
 rate-mobile: 1000
 
-kafka-cloudtrust: true
-kafka-cloudtrust-version: "3.1.0"
-kafka-cloudtrust-tls-enabled: false
-kafka-cloudtrust-brokers:
- - "host.docker.internal:9093"
-kafka-cloudtrust-client-id: "kafka-client"
-kafka-cloudtrust-client-secret: "f211cf42-f01c-4c01-9e6a-b7bbfd0adf05"
-kafka-cloudtrust-token-url: "http://keycloak.local:8080/auth/realms/master/protocol/openid-connect/token"
-kafka-cloudtrust-event-topic: "cloudtrust-event"
-
 # Influx DB configs
 influx: false
 influx-host-port: 
