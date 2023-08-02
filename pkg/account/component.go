@@ -2,15 +2,15 @@ package account
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"strings"
 
 	"github.com/cloudtrust/common-service/v2/configuration"
+	"github.com/cloudtrust/common-service/v2/log"
 
 	cs "github.com/cloudtrust/common-service/v2"
-	"github.com/cloudtrust/common-service/v2/database"
 	errorhandler "github.com/cloudtrust/common-service/v2/errors"
+	"github.com/cloudtrust/common-service/v2/events"
 	"github.com/cloudtrust/common-service/v2/fields"
 	csjson "github.com/cloudtrust/common-service/v2/json"
 	api "github.com/cloudtrust/keycloak-bridge/api/account"
@@ -91,38 +91,36 @@ type AccreditationsServiceClient interface {
 	NotifyUpdate(ctx context.Context, updateNotifyRequest accreditationsclient.UpdateNotificationRepresentation) ([]string, error)
 }
 
+type EventsReporterModule interface {
+	ReportEvent(ctx context.Context, event events.Event)
+}
+
 // Component is the management component.
 type component struct {
 	keycloakAccountClient KeycloakAccountClient
 	keycloakTechClient    KeycloakTechnicalClient
 	profileCache          UserProfileCache
-	eventDBModule         database.EventsDBModule
+	eventReporterModule   EventsReporterModule
 	configDBModule        keycloakb.ConfigurationDBModule
 	glnVerifier           GlnVerifier
 	accreditationsClient  AccreditationsServiceClient
-	logger                keycloakb.Logger
+	logger                log.Logger
+	originEvent           string
 }
 
 // NewComponent returns the self-service component.
-func NewComponent(keycloakAccountClient KeycloakAccountClient, keycloakTechClient KeycloakTechnicalClient, profileCache UserProfileCache, eventDBModule database.EventsDBModule,
-	configDBModule keycloakb.ConfigurationDBModule, glnVerifier GlnVerifier, accreditationsClient AccreditationsServiceClient, logger keycloakb.Logger) Component {
+func NewComponent(keycloakAccountClient KeycloakAccountClient, keycloakTechClient KeycloakTechnicalClient, profileCache UserProfileCache, eventReporterModule EventsReporterModule,
+	configDBModule keycloakb.ConfigurationDBModule, glnVerifier GlnVerifier, accreditationsClient AccreditationsServiceClient, logger log.Logger) Component {
 	return &component{
 		keycloakAccountClient: keycloakAccountClient,
 		keycloakTechClient:    keycloakTechClient,
 		profileCache:          profileCache,
-		eventDBModule:         eventDBModule,
+		eventReporterModule:   eventReporterModule,
 		configDBModule:        configDBModule,
 		glnVerifier:           glnVerifier,
 		accreditationsClient:  accreditationsClient,
 		logger:                logger,
-	}
-}
-
-func (c *component) reportEvent(ctx context.Context, apiCall string, values ...string) {
-	errEvent := c.eventDBModule.ReportEvent(ctx, apiCall, "self-service", values...)
-	if errEvent != nil {
-		//store in the logs also the event that failed to be stored in the DB
-		keycloakb.LogUnrecordedEvent(ctx, c.logger, apiCall, errEvent.Error(), values...)
+		originEvent:           "self-service",
 	}
 }
 
@@ -148,11 +146,11 @@ func (c *component) UpdatePassword(ctx context.Context, currentPassword, newPass
 	// account.update.password should be "trustID: Security Alert"
 	var attributes = make(map[string]string)
 	if c.sendEmail(ctx, emailTemplateUpdatedPassword, emailSubjectUpdatedPassword, nil, attributes) == nil {
-		c.reportEvent(ctx, "UPDATED_PWD_EMAIL_SENT", database.CtEventRealmName, realm, database.CtEventUserID, userID, database.CtEventUsername, username)
+		c.eventReporterModule.ReportEvent(ctx, events.NewEventOnUserFromContext(ctx, c.logger, c.originEvent, "UPDATED_PWD_EMAIL_SENT", realm, userID, username, nil))
 	}
 
 	//store the API call into the DB
-	c.reportEvent(ctx, "PASSWORD_RESET", database.CtEventRealmName, realm, database.CtEventUserID, userID, database.CtEventUsername, username)
+	c.eventReporterModule.ReportEvent(ctx, events.NewEventOnUserFromContext(ctx, c.logger, c.originEvent, "PASSWORD_RESET", realm, userID, username, nil))
 
 	if err = c.keycloakTechClient.LogoutAllSessions(ctx, realm, userID); err != nil {
 		c.logger.Warn(ctx, "msg", "User updated his/her password but logout of sessions failed", "err", err.Error(), "realm", realm, "user", userID)
@@ -289,8 +287,8 @@ func (c *component) UpdateAccount(ctx context.Context, user api.UpdatableAccount
 		return err
 	}
 
-	// store the API call into the DB
-	c.reportEvent(ctx, "UPDATE_ACCOUNT", database.CtEventRealmName, realm, database.CtEventUserID, userID, database.CtEventUsername, username)
+	// store the API call into the DB - As user is partially update, report event even if database update fails
+	c.eventReporterModule.ReportEvent(ctx, events.NewEventOnUserFromContext(ctx, c.logger, c.originEvent, "UPDATE_ACCOUNT", realm, userID, username, nil))
 
 	if len(actions) > 0 {
 		err = c.executeActions(ctx, actions)
@@ -303,11 +301,11 @@ func (c *component) UpdateAccount(ctx context.Context, user api.UpdatableAccount
 
 	var attributes = make(map[string]string)
 	if prevEmail != nil && c.sendEmail(ctx, emailTemplateUpdatedEmail, emailSubjectUpdatedEmail, prevEmail, attributes) == nil {
-		c.reportEvent(ctx, "EMAIL_CHANGED_EMAIL_SENT", database.CtEventRealmName, realm, database.CtEventUserID, userID, database.CtEventUsername, username)
+		c.eventReporterModule.ReportEvent(ctx, events.NewEventOnUserFromContext(ctx, c.logger, c.originEvent, "EMAIL_CHANGED_EMAIL_SENT", realm, userID, username, nil))
 	}
 
 	if profileChangesCount > 0 && isEmailVerified(oldUserKc) && c.sendEmail(ctx, emailTemplateUpdatedProfile, emailSubjectUpdatedProfile, nil, attributes) == nil {
-		c.reportEvent(ctx, "PROFILE_CHANGED_EMAIL_SENT", database.CtEventRealmName, realm, database.CtEventUserID, userID, database.CtEventUsername, username)
+		c.eventReporterModule.ReportEvent(ctx, events.NewEventOnUserFromContext(ctx, c.logger, c.originEvent, "PROFILE_CHANGED_EMAIL_SENT", realm, userID, username, nil))
 	}
 
 	return err
@@ -346,6 +344,8 @@ func (c *component) sendEmail(ctx context.Context, template, subject string, rec
 func (c *component) DeleteAccount(ctx context.Context) error {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 	var realm = ctx.Value(cs.CtContextRealm).(string)
+	var userID = ctx.Value(cs.CtContextUserID).(string)
+	var username = ctx.Value(cs.CtContextUsername).(string)
 
 	err := c.keycloakAccountClient.DeleteAccount(accessToken, realm)
 
@@ -355,7 +355,7 @@ func (c *component) DeleteAccount(ctx context.Context) error {
 	}
 
 	//store the API call into the DB
-	c.reportEvent(ctx, "SELF_DELETE_ACCOUNT", database.CtEventRealmName, realm)
+	c.eventReporterModule.ReportEvent(ctx, events.NewEventOnUserFromContext(ctx, c.logger, c.originEvent, "SELF_DELETE_ACCOUNT", realm, userID, username, nil))
 
 	return nil
 }
@@ -408,10 +408,7 @@ func (c *component) UpdateLabelCredential(ctx context.Context, credentialID stri
 	}
 
 	//store the API call into the DB
-	// the error should be treated
-	additionalInfos, _ := json.Marshal(map[string]string{PrmCredentialID: credentialID, "label": label})
-
-	c.reportEvent(ctx, "SELF_UPDATE_CREDENTIAL", database.CtEventRealmName, currentRealm, database.CtEventUserID, userID, database.CtEventUsername, username, database.CtEventAdditionalInfo, string(additionalInfos))
+	c.eventReporterModule.ReportEvent(ctx, events.NewEventOnUserFromContext(ctx, c.logger, c.originEvent, "SELF_UPDATE_CREDENTIAL", currentRealm, userID, username, map[string]string{PrmCredentialID: credentialID, "label": label}))
 
 	return nil
 }
@@ -435,10 +432,8 @@ func (c *component) DeleteCredential(ctx context.Context, credentialID string) e
 		return err
 	}
 
-	additionalInfos, _ := json.Marshal(map[string]string{PrmCredentialID: credentialID})
-
 	//store the API call into the DB
-	c.reportEvent(ctx, "SELF_DELETE_CREDENTIAL", database.CtEventRealmName, currentRealm, database.CtEventUserID, userID, database.CtEventUsername, username, database.CtEventAdditionalInfo, string(additionalInfos))
+	c.eventReporterModule.ReportEvent(ctx, events.NewEventOnUserFromContext(ctx, c.logger, c.originEvent, "SELF_DELETE_CREDENTIAL", currentRealm, userID, username, map[string]string{PrmCredentialID: credentialID}))
 
 	return nil
 }
@@ -461,10 +456,8 @@ func (c *component) MoveCredential(ctx context.Context, credentialID string, pre
 		return err
 	}
 
-	additionalInfos, _ := json.Marshal(map[string]string{PrmCredentialID: credentialID, PrmPrevCredentialID: previousCredentialID})
-
 	//store the API call into the DB
-	c.reportEvent(ctx, "SELF_MOVE_CREDENTIAL", database.CtEventRealmName, currentRealm, database.CtEventUserID, userID, database.CtEventUsername, username, database.CtEventAdditionalInfo, string(additionalInfos))
+	c.eventReporterModule.ReportEvent(ctx, events.NewEventOnUserFromContext(ctx, c.logger, c.originEvent, "SELF_MOVE_CREDENTIAL", currentRealm, userID, username, map[string]string{PrmCredentialID: credentialID, PrmPrevCredentialID: previousCredentialID}))
 
 	return nil
 }
@@ -552,6 +545,7 @@ func (c *component) executeActions(ctx context.Context, actions []string) error 
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 	var currentRealm = ctx.Value(cs.CtContextRealm).(string)
 	var userID = ctx.Value(cs.CtContextUserID).(string)
+	var username = ctx.Value(cs.CtContextUsername).(string)
 	var err = c.keycloakAccountClient.ExecuteActionsEmail(accessToken, currentRealm, actions)
 
 	if err != nil {
@@ -559,10 +553,7 @@ func (c *component) executeActions(ctx context.Context, actions []string) error 
 		return err
 	}
 
-	var additionalInfos = map[string]string{"actions": strings.Join(actions, ",")}
-	var additionalBytes, _ = json.Marshal(additionalInfos)
-	var additionalString = string(additionalBytes)
-	c.reportEvent(ctx, "ACTION_EMAIL", database.CtEventRealmName, currentRealm, database.CtEventUserID, userID, database.CtEventAdditionalInfo, additionalString)
+	c.eventReporterModule.ReportEvent(ctx, events.NewEventOnUserFromContext(ctx, c.logger, c.originEvent, "ACTION_EMAIL", currentRealm, userID, username, map[string]string{"actions": strings.Join(actions, ",")}))
 
 	return err
 }

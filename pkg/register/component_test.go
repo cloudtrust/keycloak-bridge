@@ -7,7 +7,6 @@ import (
 
 	cs "github.com/cloudtrust/common-service/v2"
 	"github.com/cloudtrust/common-service/v2/configuration"
-	"github.com/cloudtrust/common-service/v2/database"
 	errorhandler "github.com/cloudtrust/common-service/v2/errors"
 	"github.com/cloudtrust/common-service/v2/log"
 	apiregister "github.com/cloudtrust/keycloak-bridge/api/register"
@@ -56,11 +55,12 @@ func createValidUser() apiregister.UserRepresentation {
 }
 
 type componentMocks struct {
-	keycloakClient   *mock.KeycloakClient
-	tokenProvider    *mock.OidcTokenProvider
-	profileCache     *mock.UserProfileCache
-	configDB         *mock.ConfigurationDBModule
-	eventsDB         *mock.EventsDBModule
+	keycloakClient *mock.KeycloakClient
+	tokenProvider  *mock.OidcTokenProvider
+	profileCache   *mock.UserProfileCache
+	configDB       *mock.ConfigurationDBModule
+
+	eventsReporter   *mock.AuditEventsReporterModule
 	glnVerifier      *mock.GlnVerifier
 	contextKeyMgr    *mock.ContextKeyManager
 	onboardingModule *mock.OnboardingModule
@@ -72,7 +72,7 @@ func createMocks(mockCtrl *gomock.Controller) *componentMocks {
 		tokenProvider:    mock.NewOidcTokenProvider(mockCtrl),
 		profileCache:     mock.NewUserProfileCache(mockCtrl),
 		configDB:         mock.NewConfigurationDBModule(mockCtrl),
-		eventsDB:         mock.NewEventsDBModule(mockCtrl),
+		eventsReporter:   mock.NewAuditEventsReporterModule(mockCtrl),
 		glnVerifier:      mock.NewGlnVerifier(mockCtrl),
 		contextKeyMgr:    mock.NewContextKeyManager(mockCtrl),
 		onboardingModule: mock.NewOnboardingModule(mockCtrl),
@@ -80,7 +80,7 @@ func createMocks(mockCtrl *gomock.Controller) *componentMocks {
 }
 
 func (mocks *componentMocks) createComponent() *component {
-	return NewComponent(mocks.keycloakClient, mocks.tokenProvider, mocks.profileCache, mocks.configDB, mocks.eventsDB,
+	return NewComponent(mocks.keycloakClient, mocks.tokenProvider, mocks.profileCache, mocks.configDB, mocks.eventsReporter,
 		mocks.onboardingModule, mocks.glnVerifier, mocks.contextKeyMgr, log.NewNopLogger()).(*component)
 }
 
@@ -296,8 +296,7 @@ func TestRegisterUser(t *testing.T) {
 		mocks.onboardingModule.EXPECT().SendOnboardingEmail(ctx, accessToken, targetRealmName, kcID,
 			gomock.Any(), clientID, onboardingRedirectURI, customerRealmName, false, gomock.Any()).Return(nil)
 
-		mocks.eventsDB.EXPECT().ReportEvent(ctx, "REGISTER_USER", "back-office", database.CtEventRealmName, targetRealmName,
-			database.CtEventUserID, kcID, database.CtEventUsername, gomock.Any()).Return(nil)
+		mocks.eventsReporter.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
 
 		_, err := component.RegisterUser(ctx, targetRealmName, customerRealmName, user, nil)
 		assert.Nil(t, err)
@@ -312,8 +311,7 @@ func TestRegisterUser(t *testing.T) {
 		mocks.onboardingModule.EXPECT().ComputeRedirectURI(ctx, accessToken, targetRealmName, kcID,
 			gomock.Any(), clientID, onboardingRedirectURI).Return(expectedURL, nil)
 
-		mocks.eventsDB.EXPECT().ReportEvent(ctx, "REGISTER_USER", "back-office", database.CtEventRealmName, targetRealmName,
-			database.CtEventUserID, kcID, database.CtEventUsername, gomock.Any()).Return(nil)
+		mocks.eventsReporter.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
 
 		url, err := component.RegisterUser(ctx, targetRealmName, customerRealmName, user, &contextKeyRedirect)
 		assert.Nil(t, err)
