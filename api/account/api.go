@@ -311,7 +311,7 @@ func (user *UpdatableAccountRepresentation) SetField(field string, value interfa
 		break
 	case fields.BusinessID.AttributeName():
 		user.BusinessID.Value = cs.ToStringPtr(value)
-		user.BusinessID.Defined = true
+		user.BusinessID.Defined = user.BusinessID.Value != nil
 		break
 	}
 }
