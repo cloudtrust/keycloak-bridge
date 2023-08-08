@@ -1355,6 +1355,25 @@ func TestUpdateUser(t *testing.T) {
 	})
 }
 
+func TestIsEmailVerified(t *testing.T) {
+	assert.False(t, isEmailVerified(kc.UserRepresentation{EmailVerified: nil}))
+	assert.False(t, isEmailVerified(kc.UserRepresentation{EmailVerified: ptrBool(false)}))
+	assert.True(t, isEmailVerified(kc.UserRepresentation{EmailVerified: ptrBool(true)}))
+}
+
+func TestIsPhoneNumberVerified(t *testing.T) {
+	assert.False(t, isPhoneNumberVerified(kc.UserRepresentation{}))
+	assert.False(t, isPhoneNumberVerified(kc.UserRepresentation{Attributes: &kc.Attributes{}}))
+	assert.False(t, isPhoneNumberVerified(kc.UserRepresentation{Attributes: &kc.Attributes{constants.AttrbPhoneNumberVerified: nil}}))
+	assert.False(t, isPhoneNumberVerified(kc.UserRepresentation{Attributes: &kc.Attributes{constants.AttrbPhoneNumberVerified: []string{}}}))
+	assert.False(t, isPhoneNumberVerified(kc.UserRepresentation{Attributes: &kc.Attributes{constants.AttrbPhoneNumberVerified: []string{""}}}))
+	assert.False(t, isPhoneNumberVerified(kc.UserRepresentation{Attributes: &kc.Attributes{constants.AttrbPhoneNumberVerified: []string{"", "true"}}}))
+	assert.False(t, isPhoneNumberVerified(kc.UserRepresentation{Attributes: &kc.Attributes{constants.AttrbPhoneNumberVerified: []string{"false", "true"}}}))
+	assert.True(t, isPhoneNumberVerified(kc.UserRepresentation{Attributes: &kc.Attributes{constants.AttrbPhoneNumberVerified: []string{"true", "false"}}}))
+	assert.False(t, isPhoneNumberVerified(kc.UserRepresentation{Attributes: &kc.Attributes{constants.AttrbPhoneNumberVerified: []string{"false"}}}))
+	assert.True(t, isPhoneNumberVerified(kc.UserRepresentation{Attributes: &kc.Attributes{constants.AttrbPhoneNumberVerified: []string{"true"}}}))
+}
+
 func TestLockUnlockUser(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
