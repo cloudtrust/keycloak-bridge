@@ -128,14 +128,14 @@ func (l *naReg) jsonToDetails(gln string, response naRegResult) GlnSearchResult 
 		}
 		result = append(result, GlnPerson{
 			Active:     &active,
-			Number:     &gln,
-			FirstName:  person.PersonFirstName,
-			LastName:   person.PersonLastName,
-			Canton:     canton,
-			ZipCode:    zipCode,
-			City:       city,
+			Number:     trim(&gln),
+			FirstName:  trim(person.PersonFirstName),
+			LastName:   trim(person.PersonLastName),
+			Canton:     trim(canton),
+			ZipCode:    trim(zipCode),
+			City:       trim(city),
 			Country:    nil,
-			Profession: person.CodeTranslationDiplomaProfessionLabel,
+			Profession: trim(person.CodeTranslationDiplomaProfessionLabel),
 		})
 	}
 	return GlnSearchResult{Persons: result, Error: nil}

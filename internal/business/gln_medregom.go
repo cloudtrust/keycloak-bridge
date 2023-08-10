@@ -112,14 +112,14 @@ func (l *medRegOm) responseToDetails(gln string, response MedRegResponse) GlnSea
 		}
 		result = append(result, GlnPerson{
 			Active:     &active,
-			Number:     &gln,
-			FirstName:  person.FirstName,
-			LastName:   person.LastName,
+			Number:     trim(&gln),
+			FirstName:  trim(person.FirstName),
+			LastName:   trim(person.LastName),
 			Canton:     nil,
-			ZipCode:    zipCode,
-			City:       city,
+			ZipCode:    trim(zipCode),
+			City:       trim(city),
 			Country:    nil,
-			Profession: person.Profession,
+			Profession: trim(person.Profession),
 		})
 	}
 	return GlnSearchResult{Persons: result, Error: nil}

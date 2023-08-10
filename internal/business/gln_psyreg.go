@@ -127,14 +127,14 @@ func (l *psyReg) jsonToDetails(gln string, response psyRegResponse) GlnSearchRes
 		}
 		result = append(result, GlnPerson{
 			Active:     &active,
-			Number:     &gln,
-			FirstName:  person.FirstName,
-			LastName:   person.LastName,
-			Canton:     canton,
-			ZipCode:    zipCode,
-			City:       city,
+			Number:     trim(&gln),
+			FirstName:  trim(person.FirstName),
+			LastName:   trim(person.LastName),
+			Canton:     trim(canton),
+			ZipCode:    trim(zipCode),
+			City:       trim(city),
 			Country:    nil,
-			Profession: profession,
+			Profession: trim(profession),
 		})
 	}
 	return GlnSearchResult{Persons: result, Error: nil}

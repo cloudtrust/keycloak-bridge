@@ -121,3 +121,24 @@ func TestGln(t *testing.T) {
 		time.Sleep(time.Second)
 	})
 }
+
+func TestCompare(t *testing.T) {
+	var verifier = &glnVerifier{}
+	var person = GlnPerson{Number: ptr("number"), FirstName: ptr("firstname"), LastName: ptr("lastname")}
+	assert.False(t, verifier.compare(person, "firstname", "lastname", "another"))
+	assert.False(t, verifier.compare(person, "firstname", "another", "number"))
+	assert.False(t, verifier.compare(person, "another", "lastname", "number"))
+	assert.True(t, verifier.compare(person, "firstname", "lastname", "number"))
+
+	person.Number = nil
+	assert.False(t, verifier.compare(person, "firstname", "lastname", ""))
+
+	person = GlnPerson{Number: ptr("number"), FirstName: ptr("firstname"), LastName: nil}
+	assert.True(t, verifier.compare(person, "firstname", "", "number"))
+
+	person = GlnPerson{Number: ptr("number"), FirstName: nil, LastName: ptr("lastname")}
+	assert.True(t, verifier.compare(person, "", "lastname", "number"))
+
+	person = GlnPerson{Number: ptr(" number "), FirstName: ptr(" firstname "), LastName: ptr(" lastname ")}
+	assert.True(t, verifier.compare(person, "  firstname", "lastname  ", "  number  "))
+}

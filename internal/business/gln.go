@@ -1,6 +1,8 @@
 package business
 
 import (
+	"strings"
+
 	errorhandler "github.com/cloudtrust/common-service/v2/errors"
 )
 
@@ -55,6 +57,14 @@ func initGln() {
 	}
 }
 
+func trim(value *string) *string {
+	if value == nil {
+		return nil
+	}
+	var res = strings.TrimSpace(*value)
+	return &res
+}
+
 // NewGlnVerifier creates a GLN verifier using given GLN lookup providers
 func NewGlnVerifier(providers ...GlnLookupProvider) GlnVerifier {
 	initGln()
@@ -101,7 +111,14 @@ func (v *glnVerifier) ValidateGLN(firstName, lastName, gln string) error {
 }
 
 func (v *glnVerifier) compare(glnPerson GlnPerson, firstName, lastName, gln string) bool {
-	return glnPerson.Number != nil && gln == *glnPerson.Number &&
-		((glnPerson.FirstName != nil && firstName == *glnPerson.FirstName) || (glnPerson.FirstName == nil && firstName == "")) &&
-		((glnPerson.LastName != nil && lastName == *glnPerson.LastName) || (glnPerson.LastName == nil && lastName == ""))
+	return glnPerson.Number != nil && v.compareTrim(glnPerson.Number, gln) && v.compareTrim(glnPerson.FirstName, firstName) && v.compareTrim(glnPerson.LastName, lastName)
+}
+
+func (v *glnVerifier) compareTrim(glnValue *string, value string) bool {
+	var trimmed = strings.TrimSpace(value)
+	if glnValue == nil {
+		return trimmed == ""
+	}
+	var glnTrimmed = strings.TrimSpace(*glnValue)
+	return glnTrimmed == trimmed
 }
