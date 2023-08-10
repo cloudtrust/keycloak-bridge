@@ -143,14 +143,14 @@ func (l *glnRefData) xmlToDetails(gln string, xmlContent []byte) GlnSearchResult
 		var active = item.Status != nil && *item.Status == "A"
 		result = append(result, GlnPerson{
 			Active:     &active,
-			Number:     item.GLN,
-			FirstName:  item.FirstName,
-			LastName:   item.LastName,
-			ZipCode:    item.Role.ZipCode,
-			City:       item.Role.City,
-			Canton:     item.Role.Canton,
-			Country:    item.Role.Country,
-			Profession: item.Role.Type,
+			Number:     trim(item.GLN),
+			FirstName:  trim(item.FirstName),
+			LastName:   trim(item.LastName),
+			ZipCode:    trim(item.Role.ZipCode),
+			City:       trim(item.Role.City),
+			Canton:     trim(item.Role.Canton),
+			Country:    trim(item.Role.Country),
+			Profession: trim(item.Role.Type),
 		})
 	}
 	return GlnSearchResult{
