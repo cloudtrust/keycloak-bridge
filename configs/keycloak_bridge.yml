@@ -179,6 +179,8 @@ kafka-cloudtrust-client-secret: "f211cf42-f01c-4c01-9e6a-b7bbfd0adf05"
 kafka-cloudtrust-token-url: "http://keycloak.local:8080/auth/realms/master/protocol/openid-connect/token"
 kafka-cloudtrust-event-topic: "cloudtrust-event"
 
+sarama-log-enabled: true
+
 # Influx DB configs
 influx: false
 influx-host-port: 
