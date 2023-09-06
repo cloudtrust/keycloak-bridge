@@ -14,7 +14,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 	cs "github.com/cloudtrust/common-service/v2"
 	"github.com/cloudtrust/common-service/v2/configuration"
 	"github.com/cloudtrust/common-service/v2/database"
@@ -169,6 +169,7 @@ const (
 	cfgContextKeys              = "context-keys"
 	cfgKafkaCloudtrustPrefix    = "kafka-cloudtrust"
 	cfgKafkaCloudtrustTopic     = "kafka-cloudtrust-event-topic"
+	cfgSaramaLogEnabled         = "sarama-log-enabled"
 
 	tokenProviderDefaultKey = "default"
 )
@@ -307,6 +308,8 @@ func main() {
 
 		// Onboarding realm overrides
 		onboardingRealmOverrides = c.GetStringMapString(cfgOnboardingRealmOverrides)
+
+		saramaLogEnabled = c.GetBool(cfgSaramaLogEnabled)
 	)
 
 	// Unique ID generator
@@ -518,6 +521,7 @@ func main() {
 	// Users profile cache
 	profileCache := toolbox.NewUserProfileCache(keycloakClient, technicalTokenProvider, profile.DefaultProfile)
 
+	sarama.Logger = csevents.NewSaramaLogger(logger, saramaLogEnabled)
 	var eventProducer sarama.SyncProducer
 	{
 		var err error
@@ -1660,6 +1664,9 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 	v.SetDefault(cfgGlnMedRegEnabled, false)
 	v.SetDefault(cfgGlnMedRegURI, "https://www.medregom.admin.ch")
 	v.SetDefault(cfgGlnMedRegTimeout, "10s")
+
+	// Sarama logs
+	v.SetDefault(cfgSaramaLogEnabled, true)
 
 	// Validation rules
 	v.SetDefault(cfgValidationRules, map[string]string{})
