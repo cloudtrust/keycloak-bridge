@@ -108,6 +108,8 @@ github.com/cloudtrust/common-service/v2 v2.6.12-0.20230905125607-f9544bc5743a h1
 github.com/cloudtrust/common-service/v2 v2.6.12-0.20230905125607-f9544bc5743a/go.mod h1:39hjJzmtXVrbPG/6gxzZXlsKWnBTxld8V7XGhEbrgSA=
 github.com/cloudtrust/common-service/v2 v2.6.12 h1:hAWUyPB3wBFQQ01RktmqKggDgbG6We6hocF7sgIA4Kg=
 github.com/cloudtrust/common-service/v2 v2.6.12/go.mod h1:39hjJzmtXVrbPG/6gxzZXlsKWnBTxld8V7XGhEbrgSA=
+github.com/cloudtrust/common-service/v2 v2.6.13-0.20230925125650-081d240ebeed h1:7cDwwsLb8VN2XIkiVpCUjzGYVT0vVL6N6AB8NX/C/mY=
+github.com/cloudtrust/common-service/v2 v2.6.13-0.20230925125650-081d240ebeed/go.mod h1:39hjJzmtXVrbPG/6gxzZXlsKWnBTxld8V7XGhEbrgSA=
 github.com/cloudtrust/httpclient v1.0.7 h1:nYv0cpEEuPvSHR8foXpKh7Mu78YxbJWUV8DvoDQpOwI=
 github.com/cloudtrust/httpclient v1.0.7/go.mod h1:gmlCco8tgJUz4sfrKDhZ1qdqngVTm69tNioBlBkKOow=
 github.com/cloudtrust/keycloak-client/v2 v2.6.2 h1:uyZFtxUYQIvO2Gosq3eaykwQSRS+kWuvhtk0mmmTjIo=

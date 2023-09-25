@@ -210,6 +210,7 @@ pprof-route-enabled: true
 # Liveness probe
 livenessprobe-http-timeout: 900
 livenessprobe-cache-duration: 500
+livenessprobe-audit-timeout: 3000
 healthcheck-endpoints:
   Keycloak: http://keycloak.internal.local:8080
 
