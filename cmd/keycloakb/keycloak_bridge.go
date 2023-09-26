@@ -1641,6 +1641,7 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 	// Liveness probe
 	v.SetDefault("livenessprobe-http-timeout", 900)
 	v.SetDefault("livenessprobe-cache-duration", 500)
+	v.SetDefault("livenessprobe-audit-timeout", 3000)
 
 	// Register parameters
 	v.SetDefault(cfgRegisterRealm, "trustid")
