@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/IBM/sarama v1.41.1
-	github.com/cloudtrust/common-service/v2 v2.6.12
+	github.com/cloudtrust/common-service/v2 v2.6.13
 	github.com/cloudtrust/httpclient v1.0.7
 	github.com/cloudtrust/keycloak-client/v2 v2.6.2
 	github.com/go-kit/kit v0.12.0
@@ -52,7 +52,7 @@ require (
 	github.com/klauspost/compress v1.16.7 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mitchellh/mapstructure v1.4.3 // indirect
-	github.com/nyaruka/phonenumbers v1.0.74 // indirect
+	github.com/nyaruka/phonenumbers v1.1.8 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/pelletier/go-toml v1.9.4 // indirect
 	github.com/pierrec/lz4/v4 v4.1.18 // indirect

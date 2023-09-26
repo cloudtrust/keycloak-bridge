@@ -79,6 +79,7 @@ type RateKey int
 const (
 	defaultPublishingIP = "0.0.0.0"
 	pathHealthCheck     = "/health/check"
+	pathHealthLive      = "/health/live"
 
 	RateKeyAccount          = iota
 	RateKeyCommunications   = iota
@@ -542,6 +543,10 @@ func main() {
 	healthChecker.AddDatabase("Config RO", configurationRoDBConn, healthCheckCacheDuration)
 	healthChecker.AddDatabase("Archive RO", archiveRwDBConn, healthCheckCacheDuration)
 	healthChecker.AddHTTPEndpoints(c.GetStringMapString("healthcheck-endpoints"), httpTimeout, 200, healthCheckCacheDuration)
+
+	var livenessChecker = healthcheck.NewHealthChecker(keycloakb.ComponentName, logger)
+	var livenessAuditTimeout = c.GetDuration("livenessprobe-audit-timeout") * time.Millisecond
+	livenessChecker.AddAuditEventsReporterModule("Audit Events Reporter", csevents.NewAuditEventReporterModule(eventProducer, cloudtrustEventTopic, logger), livenessAuditTimeout, healthCheckCacheDuration)
 
 	// Actions allowed in Authorization Manager
 	var authActions = security.Actions.GetActionNamesForService(security.BridgeService)
@@ -1039,6 +1044,7 @@ func main() {
 
 		route.Handle("/", commonhttp.MakeVersionHandler(keycloakb.ComponentName, ComponentID, keycloakb.Version, Environment, GitCommit))
 		route.Handle(pathHealthCheck, healthChecker.MakeHandler(limiter))
+		route.Handle(pathHealthLive, livenessChecker.MakeHandler(limiter))
 
 		errc <- http.ListenAndServe(httpAddrMonitoring, route)
 	}()
@@ -1635,6 +1641,7 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 	// Liveness probe
 	v.SetDefault("livenessprobe-http-timeout", 900)
 	v.SetDefault("livenessprobe-cache-duration", 500)
+	v.SetDefault("livenessprobe-audit-timeout", 3000)
 
 	// Register parameters
 	v.SetDefault(cfgRegisterRealm, "trustid")
