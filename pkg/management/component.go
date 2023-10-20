@@ -1172,7 +1172,7 @@ func (c *component) ExecuteActionsEmail(ctx context.Context, realmName string, u
 	values := append(paramKV, "required_actions", listActions)
 
 	details := map[string]string{}
-	for i := 0; i+1 < len(details); i += 2 {
+	for i := 0; i+1 < len(values); i += 2 {
 		details[values[i]] = values[i+1]
 	}
 
