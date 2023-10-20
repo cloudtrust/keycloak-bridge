@@ -37,8 +37,6 @@ import (
 	"github.com/cloudtrust/keycloak-bridge/internal/profile"
 	"github.com/cloudtrust/keycloak-bridge/pkg/account"
 	"github.com/cloudtrust/keycloak-bridge/pkg/communications"
-	"github.com/cloudtrust/keycloak-bridge/pkg/events"
-	"github.com/cloudtrust/keycloak-bridge/pkg/export"
 	"github.com/cloudtrust/keycloak-bridge/pkg/kyc"
 	"github.com/cloudtrust/keycloak-bridge/pkg/management"
 	mobile "github.com/cloudtrust/keycloak-bridge/pkg/mobile"
@@ -83,7 +81,6 @@ const (
 
 	RateKeyAccount          = iota
 	RateKeyCommunications   = iota
-	RateKeyEvents           = iota
 	RateKeyKYC              = iota
 	RateKeyManagement       = iota
 	RateKeyManagementStatus = iota
@@ -113,8 +110,6 @@ const (
 	cfgPprofRouteEnabled        = "pprof-route-enabled"
 	cfgInfluxWriteInterval      = "influx-write-interval"
 	cfgSentryDsn                = "sentry-dsn"
-	cfgAuditRwDbParams          = "db-audit-rw"
-	cfgAuditRoDbParams          = "db-audit-ro"
 	cfgConfigRwDbParams         = "db-config-rw"
 	cfgConfigRoDbParams         = "db-config-ro"
 	cfgRateKeyValidation        = "rate-validation"
@@ -125,7 +120,6 @@ const (
 	cfgRateKeyManagement        = "rate-management"
 	cfgRateKeyManagementStatus  = "rate-management-status"
 	cfgRateKeyStatistics        = "rate-statistics"
-	cfgRateKeyEvents            = "rate-events"
 	cfgRateKeyRegister          = "rate-register"
 	cfgRateKeySupport           = "rate-support"
 	cfgRateKeyTasks             = "rate-tasks"
@@ -231,12 +225,6 @@ func main() {
 		// Influx
 		influxWriteInterval = c.GetDuration(cfgInfluxWriteInterval)
 
-		// DB - for the moment used just for audit events
-		auditRwDbParams = database.GetDbConfig(c, cfgAuditRwDbParams)
-
-		// DB - Read only user for audit events
-		auditRoDbParams = database.GetDbConfig(c, cfgAuditRoDbParams)
-
 		// DB for custom configuration
 		configRwDbParams = database.GetDbConfig(c, cfgConfigRwDbParams)
 		configRoDbParams = database.GetDbConfig(c, cfgConfigRoDbParams)
@@ -257,7 +245,6 @@ func main() {
 			RateKeyManagement:       c.GetInt(cfgRateKeyManagement),
 			RateKeyManagementStatus: c.GetInt(cfgRateKeyManagementStatus),
 			RateKeyStatistics:       c.GetInt(cfgRateKeyStatistics),
-			RateKeyEvents:           c.GetInt(cfgRateKeyEvents),
 			RateKeyRegister:         c.GetInt(cfgRateKeyRegister),
 			RateKeySupport:          c.GetInt(cfgRateKeySupport),
 			RateKeyTasks:            c.GetInt(cfgRateKeyTasks),
@@ -457,26 +444,6 @@ func main() {
 		defer tracer.Close()
 	}
 
-	var eventsDBConn sqltypes.CloudtrustDB
-	{
-		var err error
-		eventsDBConn, err = database.NewReconnectableCloudtrustDB(auditRwDbParams, toDbLogger(logger, auditRwDbParams))
-		if err != nil {
-			logger.Error(ctx, "msg", "could not create R/W DB connection for audit events", "err", err)
-			return
-		}
-	}
-
-	var eventsRODBConn sqltypes.CloudtrustDB
-	{
-		var err error
-		eventsRODBConn, err = database.NewReconnectableCloudtrustDB(auditRoDbParams, toDbLogger(logger, auditRoDbParams))
-		if err != nil {
-			logger.Error(ctx, "msg", "could not create RO DB connection for audit events", "err", err)
-			return
-		}
-	}
-
 	var configurationRwDBConn sqltypes.CloudtrustDB
 	{
 		var err error
@@ -537,8 +504,6 @@ func main() {
 	var healthChecker = healthcheck.NewHealthChecker(keycloakb.ComponentName, logger)
 	var healthCheckCacheDuration = c.GetDuration("livenessprobe-cache-duration") * time.Millisecond
 	var httpTimeout = c.GetDuration("livenessprobe-http-timeout") * time.Millisecond
-	healthChecker.AddDatabase("Audit R/W", eventsDBConn, healthCheckCacheDuration)
-	healthChecker.AddDatabase("Audit RO", eventsRODBConn, healthCheckCacheDuration)
 	healthChecker.AddDatabase("Config R/W", configurationRwDBConn, healthCheckCacheDuration)
 	healthChecker.AddDatabase("Config RO", configurationRoDBConn, healthCheckCacheDuration)
 	healthChecker.AddDatabase("Archive RO", archiveRwDBConn, healthCheckCacheDuration)
@@ -697,45 +662,16 @@ func main() {
 	{
 		var statisticsLogger = log.With(logger, "svc", "statistics")
 
-		//module for reading events from the DB
-		eventsRODBModule := keycloakb.NewEventsDBModule(eventsRODBConn)
-
-		statisticsComponent := statistics.NewComponent(eventsRODBModule, keycloakClient, accreditationsService, statisticsLogger)
+		statisticsComponent := statistics.NewComponent(keycloakClient, accreditationsService, statisticsLogger)
 		statisticsComponent = statistics.MakeAuthorizationManagementComponentMW(log.With(statisticsLogger, "mw", "authorization"), authorizationManager)(statisticsComponent)
 
 		var rateLimitStatistics = rateLimit[RateKeyStatistics]
 		statisticsEndpoints = statistics.Endpoints{
-			GetActions:                      prepareEndpoint(statistics.MakeGetActionsEndpoint(statisticsComponent), "get_actions", influxMetrics, statisticsLogger, tracer, rateLimitStatistics),
-			GetStatistics:                   prepareEndpoint(statistics.MakeGetStatisticsEndpoint(statisticsComponent), "get_statistics", influxMetrics, statisticsLogger, tracer, rateLimitStatistics),
-			GetStatisticsIdentifications:    prepareEndpoint(statistics.MakeGetStatisticsIdentificationsEndpoint(statisticsComponent), "get_statistics_identifications", influxMetrics, statisticsLogger, tracer, rateLimitStatistics),
-			GetStatisticsUsers:              prepareEndpoint(statistics.MakeGetStatisticsUsersEndpoint(statisticsComponent), "get_statistics_users", influxMetrics, statisticsLogger, tracer, rateLimitStatistics),
-			GetStatisticsAuthentications:    prepareEndpoint(statistics.MakeGetStatisticsAuthenticationsEndpoint(statisticsComponent), "get_statistics_authentications", influxMetrics, statisticsLogger, tracer, rateLimitStatistics),
-			GetStatisticsAuthenticationsLog: prepareEndpoint(statistics.MakeGetStatisticsAuthenticationsLogEndpoint(statisticsComponent), "get_statistics_authentications_log", influxMetrics, statisticsLogger, tracer, rateLimitStatistics),
-			GetStatisticsAuthenticators:     prepareEndpoint(statistics.MakeGetStatisticsAuthenticatorsEndpoint(statisticsComponent), "get_statistics_authenticators", influxMetrics, statisticsLogger, tracer, rateLimitStatistics),
-			GetMigrationReport:              prepareEndpoint(statistics.MakeGetMigrationReportEndpoint(statisticsComponent), "get_migration_report", influxMetrics, statisticsLogger, tracer, rateLimitStatistics),
-		}
-	}
-
-	// Events service.
-	var eventsEndpoints events.Endpoints
-	{
-		var eventsLogger = log.With(logger, "svc", "events")
-
-		// module to store API calls of the back office to the DB
-		eventsRWDBModule := database.NewEventsDBModule(eventsDBConn)
-
-		//module for reading events from the DB
-		eventsRODBModule := keycloakb.NewEventsDBModule(eventsRODBConn)
-
-		eventsComponent := events.NewComponent(eventsRODBModule, eventsRWDBModule, eventsLogger)
-		eventsComponent = events.MakeAuthorizationManagementComponentMW(log.With(eventsLogger, "mw", "authorization"), authorizationManager)(eventsComponent)
-
-		var rateLimitEvents = rateLimit[RateKeyEvents]
-		eventsEndpoints = events.Endpoints{
-			GetActions:       prepareEndpoint(events.MakeGetActionsEndpoint(eventsComponent), "get_actions", influxMetrics, eventsLogger, tracer, rateLimitEvents),
-			GetEvents:        prepareEndpoint(events.MakeGetEventsEndpoint(eventsComponent), "get_events", influxMetrics, eventsLogger, tracer, rateLimitEvents),
-			GetEventsSummary: prepareEndpoint(events.MakeGetEventsSummaryEndpoint(eventsComponent), "get_events_summary", influxMetrics, eventsLogger, tracer, rateLimitEvents),
-			GetUserEvents:    prepareEndpoint(events.MakeGetUserEventsEndpoint(eventsComponent), "get_user_events", influxMetrics, eventsLogger, tracer, rateLimitEvents),
+			GetActions:                   prepareEndpoint(statistics.MakeGetActionsEndpoint(statisticsComponent), "get_actions", influxMetrics, statisticsLogger, tracer, rateLimitStatistics),
+			GetStatisticsIdentifications: prepareEndpoint(statistics.MakeGetStatisticsIdentificationsEndpoint(statisticsComponent), "get_statistics_identifications", influxMetrics, statisticsLogger, tracer, rateLimitStatistics),
+			GetStatisticsUsers:           prepareEndpoint(statistics.MakeGetStatisticsUsersEndpoint(statisticsComponent), "get_statistics_users", influxMetrics, statisticsLogger, tracer, rateLimitStatistics),
+			GetStatisticsAuthenticators:  prepareEndpoint(statistics.MakeGetStatisticsAuthenticatorsEndpoint(statisticsComponent), "get_statistics_authenticators", influxMetrics, statisticsLogger, tracer, rateLimitStatistics),
+			GetMigrationReport:           prepareEndpoint(statistics.MakeGetMigrationReportEndpoint(statisticsComponent), "get_migration_report", influxMetrics, statisticsLogger, tracer, rateLimitStatistics),
 		}
 	}
 
@@ -1026,14 +962,6 @@ func main() {
 		}
 	}
 
-	// Export configuration
-	var exportModule = export.NewModule(keycloakClient, logger)
-	var cfgStorageModule = export.NewConfigStorageModule(eventsDBConn)
-
-	var exportComponent = export.NewComponent(keycloakb.ComponentName, keycloakb.Version, logger, exportModule, cfgStorageModule)
-	var exportEndpoint = export.MakeExportEndpoint(exportComponent)
-	var exportSaveAndExportEndpoint = export.MakeStoreAndExportEndpoint(exportComponent)
-
 	// HTTP Monitoring (For monitoring probes, ...).
 	go func() {
 		var logger = log.With(logger, "transport", "http")
@@ -1049,16 +977,12 @@ func main() {
 		errc <- http.ListenAndServe(httpAddrMonitoring, route)
 	}()
 
-	// HTTP Internal Call Server (Export, Communications, Support, Tasks & Validation API).
+	// HTTP Internal Call Server (Communications, Support, Tasks & Validation API).
 	go func() {
 		var logger = log.With(logger, "transport", "http")
 		logger.Info(ctx, "addr", httpAddrInternal, "interface", "export-and-communication")
 
 		var route = mux.NewRouter()
-
-		// Export.
-		route.Handle("/export", export.MakeHTTPExportHandler(exportEndpoint)).Methods("GET")
-		route.Handle("/export", export.MakeHTTPExportHandler(exportSaveAndExportEndpoint)).Methods("POST")
 
 		// Validation (basic auth)
 		var getUserHandler = configureValidationHandler(keycloakb.ComponentName, ComponentID, idGenerator, validationExpectedAuthToken, tracer, logger)(validationEndpoints.GetUser)
@@ -1127,35 +1051,16 @@ func main() {
 		var configureStatisticsHandler = configureHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, statistics.MakeStatisticsHandler, logger)
 
 		var getStatisticsActionsHandler = configureStatisticsHandler(statisticsEndpoints.GetActions)
-		var getStatisticsHandler = configureStatisticsHandler(statisticsEndpoints.GetStatistics)
 		var getStatisticsIdentificationsHandler = configureStatisticsHandler(statisticsEndpoints.GetStatisticsIdentifications)
 		var getStatisticsUsersHandler = configureStatisticsHandler(statisticsEndpoints.GetStatisticsUsers)
 		var getStatisticsAuthenticatorsHandler = configureStatisticsHandler(statisticsEndpoints.GetStatisticsAuthenticators)
-		var getStatisticsAuthenticationsHandler = configureStatisticsHandler(statisticsEndpoints.GetStatisticsAuthentications)
-		var getStatisticsAuthenticationsLogHandler = configureStatisticsHandler(statisticsEndpoints.GetStatisticsAuthenticationsLog)
 		var getMigrationReportHandler = configureStatisticsHandler(statisticsEndpoints.GetMigrationReport)
 
 		route.Path("/statistics/actions").Methods("GET").Handler(getStatisticsActionsHandler)
-		route.Path("/statistics/realms/{realm}").Methods("GET").Handler(getStatisticsHandler)
 		route.Path("/statistics/realms/{realm}/identifications").Methods("GET").Handler(getStatisticsIdentificationsHandler)
 		route.Path("/statistics/realms/{realm}/users").Methods("GET").Handler(getStatisticsUsersHandler)
 		route.Path("/statistics/realms/{realm}/authenticators").Methods("GET").Handler(getStatisticsAuthenticatorsHandler)
-		route.Path("/statistics/realms/{realm}/authentications-graph").Methods("GET").Handler(getStatisticsAuthenticationsHandler)
-		route.Path("/statistics/realms/{realm}/authentications-log").Methods("GET").Handler(getStatisticsAuthenticationsLogHandler)
 		route.Path("/statistics/realms/{realm}/migration").Methods("GET").Handler(getMigrationReportHandler)
-
-		// Events
-		var configureEventsHandler = configureHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tracer, events.MakeEventsHandler, logger)
-
-		var getEventsActionsHandler = configureEventsHandler(eventsEndpoints.GetActions)
-		var getEventsHandler = configureEventsHandler(eventsEndpoints.GetEvents)
-		var getEventsSummaryHandler = configureEventsHandler(eventsEndpoints.GetEventsSummary)
-		var getUserEventsHandler = configureEventsHandler(eventsEndpoints.GetUserEvents)
-
-		route.Path("/events").Methods("GET").Handler(getEventsHandler)
-		route.Path("/events/actions").Methods("GET").Handler(getEventsActionsHandler)
-		route.Path("/events/summary").Methods("GET").Handler(getEventsSummaryHandler)
-		route.Path("/events/realms/{realm}/users/{userID}/events").Methods("GET").Handler(getUserEventsHandler)
 
 		// Management
 		var managementSubroute = route.PathPrefix("/management").Subrouter()
@@ -1581,13 +1486,6 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 	v.SetDefault(cfgAddrAccounting, "http://0.0.0.0:8940")
 	v.SetDefault(cfgAccountingTimeout, "5s")
 
-	// Storage events in DB (read/write)
-	database.ConfigureDbDefault(v, cfgAuditRwDbParams, "CT_BRIDGE_DB_AUDIT_RW_USERNAME", "CT_BRIDGE_DB_AUDIT_RW_PASSWORD")
-	v.SetDefault(cfgAuditRwDbParams+"-enabled", false)
-
-	// Storage events in DB (read only)
-	database.ConfigureDbDefault(v, cfgAuditRoDbParams, "CT_BRIDGE_DB_AUDIT_RO_USERNAME", "CT_BRIDGE_DB_AUDIT_RO_PASSWORD")
-
 	//Storage custom configuration in DB (read/write)
 	database.ConfigureDbDefault(v, cfgConfigRwDbParams, "CT_BRIDGE_DB_CONFIG_RW_USERNAME", "CT_BRIDGE_DB_CONFIG_RW_PASSWORD")
 
@@ -1606,7 +1504,6 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 	v.SetDefault(cfgRateKeyManagement, 1000)
 	v.SetDefault(cfgRateKeyManagementStatus, 3)
 	v.SetDefault(cfgRateKeyStatistics, 1000)
-	v.SetDefault(cfgRateKeyEvents, 1000)
 	v.SetDefault(cfgRateKeyRegister, 1000)
 	v.SetDefault(cfgRateKeyTasks, 10)
 	v.SetDefault(cfgRateKeySupport, 10)

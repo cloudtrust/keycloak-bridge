@@ -41,16 +41,6 @@ func (c *authorizationComponentMW) GetActions(ctx context.Context) ([]api.Action
 	return c.next.GetActions(ctx)
 }
 
-func (c *authorizationComponentMW) GetStatistics(ctx context.Context, realm string) (api.StatisticsRepresentation, error) {
-	var action = security.STGetStatistics.String()
-
-	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, realm); err != nil {
-		return api.StatisticsRepresentation{}, err
-	}
-
-	return c.next.GetStatistics(ctx, realm)
-}
-
 func (c *authorizationComponentMW) GetStatisticsIdentifications(ctx context.Context, realm string) (api.IdentificationStatisticsRepresentation, error) {
 	var action = security.STGetStatisticsIdentifications.String()
 
@@ -79,26 +69,6 @@ func (c *authorizationComponentMW) GetStatisticsAuthenticators(ctx context.Conte
 	}
 
 	return c.next.GetStatisticsAuthenticators(ctx, realm)
-}
-
-func (c *authorizationComponentMW) GetStatisticsAuthentications(ctx context.Context, realm string, unit string, timeshift *string) ([][]int64, error) {
-	var action = security.STGetStatisticsAuthentications.String()
-
-	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, realm); err != nil {
-		return nil, err
-	}
-
-	return c.next.GetStatisticsAuthentications(ctx, realm, unit, timeshift)
-}
-
-func (c *authorizationComponentMW) GetStatisticsAuthenticationsLog(ctx context.Context, realm string, max string) ([]api.StatisticsConnectionRepresentation, error) {
-	var action = security.STGetStatisticsAuthenticationsLog.String()
-
-	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, realm); err != nil {
-		return nil, err
-	}
-
-	return c.next.GetStatisticsAuthenticationsLog(ctx, realm, max)
 }
 
 func (c *authorizationComponentMW) GetMigrationReport(ctx context.Context, realm string) (map[string]bool, error) {

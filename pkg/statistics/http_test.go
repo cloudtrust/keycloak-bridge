@@ -21,7 +21,7 @@ func TestHTTPStatisticsHandler(t *testing.T) {
 	defer mockCtrl.Finish()
 	var mockComponent = mock.NewComponent(mockCtrl)
 
-	var managementHandler1 = MakeStatisticsHandler(keycloakb.ToGoKitEndpoint(MakeGetStatisticsEndpoint(mockComponent)), log.NewNopLogger())
+	var managementHandler1 = MakeStatisticsHandler(keycloakb.ToGoKitEndpoint(MakeGetStatisticsIdentificationsEndpoint(mockComponent)), log.NewNopLogger())
 
 	r := mux.NewRouter()
 	r.Handle("/statistics/realm/{realm}", managementHandler1)
@@ -34,10 +34,10 @@ func TestHTTPStatisticsHandler(t *testing.T) {
 		var params = make(map[string]string)
 		params[prmRealm] = "master"
 
-		var stats = api.StatisticsRepresentation{}
+		var stats = api.IdentificationStatisticsRepresentation{}
 		statsJSON, _ := json.MarshalIndent(stats, "", " ")
 
-		mockComponent.EXPECT().GetStatistics(gomock.Any(), gomock.Any()).Return(stats, nil).Times(1)
+		mockComponent.EXPECT().GetStatisticsIdentifications(gomock.Any(), gomock.Any()).Return(stats, nil).Times(1)
 
 		res, err := http.Get(ts.URL + "/statistics/realm/master")
 
