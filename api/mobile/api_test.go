@@ -26,6 +26,11 @@ func TestSetAccreditations(t *testing.T) {
 		assert.Nil(t, userInfo.Accreditations)
 	})
 
+	t.Run("Accreditations contains a single empty value", func(t *testing.T) {
+		userInfo.SetAccreditations(ctx, []string{""}, logger)
+		assert.Nil(t, userInfo.Accreditations)
+	})
+
 	t.Run("3 accreditations with one non-unmarshallable", func(t *testing.T) {
 		userInfo.SetAccreditations(ctx, []string{"{}", "{}", "{"}, logger)
 		assert.NotNil(t, userInfo.Accreditations)
