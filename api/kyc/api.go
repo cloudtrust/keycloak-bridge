@@ -173,7 +173,7 @@ func (u *UserRepresentation) ImportFromKeycloak(ctx context.Context, kcUser *kc.
 	if value, err := kcUser.GetAttributeBool(constants.AttrbPhoneNumberVerified); err == nil && value != nil {
 		phoneNumberVerified = value
 	}
-	if values := kcUser.GetAttribute(constants.AttrbAccreditations); len(values) > 0 {
+	if values := kcUser.GetAttribute(constants.AttrbAccreditations); len(values) > 1 || (len(values) == 1 && values[0] != "") {
 		var accreds []AccreditationRepresentation
 		var bFalse = false
 		for _, accredJSON := range values {

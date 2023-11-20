@@ -166,16 +166,18 @@ func ConvertToAPIAccount(ctx context.Context, userKc kc.UserRepresentation, logg
 func convertToAccreditations(ctx context.Context, values []string, logger keycloakb.Logger) *[]AccreditationRepresentation {
 	var accreds []AccreditationRepresentation
 	var bFalse = false
-	for _, accredJSON := range values {
-		var accred AccreditationRepresentation
-		if json.Unmarshal([]byte(accredJSON), &accred) == nil {
-			accred.Expired = keycloakb.IsDateInThePast(accred.ExpiryDate)
-			if accred.Revoked == nil {
-				accred.Revoked = &bFalse
+	if len(values) > 0 && !(len(values) == 1 && values[0] == "") {
+		for _, accredJSON := range values {
+			var accred AccreditationRepresentation
+			if json.Unmarshal([]byte(accredJSON), &accred) == nil {
+				accred.Expired = keycloakb.IsDateInThePast(accred.ExpiryDate)
+				if accred.Revoked == nil {
+					accred.Revoked = &bFalse
+				}
+				accreds = append(accreds, accred)
+			} else {
+				logger.Warn(ctx, "msg", "Can't unmarshall JSON", "json", accredJSON)
 			}
-			accreds = append(accreds, accred)
-		} else {
-			logger.Warn(ctx, "msg", "Can't unmarshall JSON", "json", accredJSON)
 		}
 	}
 	return &accreds
