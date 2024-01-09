@@ -7,10 +7,10 @@ Metrics such as time tracking,... are collected and saved to an InfluxDB Time Se
 Jaeger is used for distributed tracing and error tracking is managed with Sentry.
 
 ## Build
-Build the service for the environment \<env>:
+Build the service \<env>:
 
 ```bash
-./scripts/build.sh --env <env>
+go build ./...
 ```
 
 Note: \<env> is used for versioning.

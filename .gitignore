@@ -24,5 +24,6 @@ configs/DEV/*
 .idea/
 __debug_bin
 
+!.vscode/launch.json
 # Activate vendoring
 !vendor/modules.txt
