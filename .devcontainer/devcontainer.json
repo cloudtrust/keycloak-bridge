@@ -1,0 +1,13 @@
+{
+    "name": "keycloak-bridge-dev",
+    "dockerComposeFile": [
+        "${localEnv:TRUSTID_DEV_ENV_ROOT}/docker-compose.yml",
+        "./docker-compose.dev.yml"
+    ],
+    "service": "bridge", // The service in docker-compose.yml that we want vs code to use as a dev containers 
+    "shutdownAction": "none",
+    "runServices": [
+        "bridge"
+    ],
+    "workspaceFolder": "/workspace/"
+}
