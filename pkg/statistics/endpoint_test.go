@@ -26,24 +26,6 @@ func TestMakeGetActionsEndpoint(t *testing.T) {
 	assert.NotNil(t, res)
 }
 
-func TestMakeGetStatisticsEndpoint(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
-	defer mockCtrl.Finish()
-
-	var mockComponent = mock.NewComponent(mockCtrl)
-
-	var e = MakeGetStatisticsEndpoint(mockComponent)
-
-	var ctx = context.Background()
-	var req = make(map[string]string)
-	req[prmRealm] = prmRealm
-
-	mockComponent.EXPECT().GetStatistics(ctx, prmRealm).Return(api.StatisticsRepresentation{}, nil)
-	var res, err = e(ctx, req)
-	assert.Nil(t, err)
-	assert.NotNil(t, res)
-}
-
 func TestMakeGetStatisticsIdentificationsEndpoint(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -93,44 +75,6 @@ func TestMakeGetStatisticsAuthenticatorsEndpoint(t *testing.T) {
 	req[prmRealm] = "realm"
 
 	mockComponent.EXPECT().GetStatisticsAuthenticators(ctx, "realm").Return(map[string]int64{}, nil)
-	var res, err = e(ctx, req)
-	assert.Nil(t, err)
-	assert.NotNil(t, res)
-}
-
-func TestMakeGetStatisticsAuthenticationsEndpoint(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
-	defer mockCtrl.Finish()
-
-	var mockComponent = mock.NewComponent(mockCtrl)
-
-	var e = MakeGetStatisticsAuthenticationsEndpoint(mockComponent)
-
-	var ctx = context.Background()
-	var req = make(map[string]string)
-	req[prmRealm] = "realm"
-	req[prmQryUnit] = "hours"
-
-	mockComponent.EXPECT().GetStatisticsAuthentications(ctx, prmRealm, "hours", nil).Return([][]int64{}, nil)
-	var res, err = e(ctx, req)
-	assert.Nil(t, err)
-	assert.NotNil(t, res)
-}
-
-func TestMakeGetStatisticsAuthenticationsLogEndpoint(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
-	defer mockCtrl.Finish()
-
-	var mockComponent = mock.NewComponent(mockCtrl)
-
-	var e = MakeGetStatisticsAuthenticationsLogEndpoint(mockComponent)
-
-	var ctx = context.Background()
-	var req = make(map[string]string)
-	req[prmRealm] = prmRealm
-	req[prmQryMax] = "6"
-
-	mockComponent.EXPECT().GetStatisticsAuthenticationsLog(ctx, "realm", "6").Return([]api.StatisticsConnectionRepresentation{}, nil)
 	var res, err = e(ctx, req)
 	assert.Nil(t, err)
 	assert.NotNil(t, res)

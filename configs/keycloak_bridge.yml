@@ -79,37 +79,6 @@ accounting-timeout: 5s
 accreditations-api-uri: http://localhost:9023
 accreditations-api-timeout: 5s
 
-# DB Audit RW
-# db-audit-rw-enabled was previously named events-db
-db-audit-rw-enabled: true
-db-audit-rw-host-port: host.docker.internal:3306
-db-audit-rw-username: audit_writer
-db-audit-rw-password: password-to-be-defined
-db-audit-rw-database: audit
-db-audit-rw-protocol: tcp
-db-audit-rw-parameters: time_zone='%2B00:00'
-db-audit-rw-max-open-conns: 10
-db-audit-rw-max-idle-conns: 2
-db-audit-rw-conn-max-lifetime: 10
-db-audit-rw-migration: false
-db-audit-rw-migration-version: 0.1
-db-audit-rw-connection-check: false
-
-# DB Audit RO
-db-audit-ro-enabled: true
-db-audit-ro-host-port: host.docker.internal:3306
-db-audit-ro-username: audit_reader
-db-audit-ro-password: password2-to-be-defined
-db-audit-ro-database: audit
-db-audit-ro-protocol: tcp
-db-audit-ro-parameters: time_zone='%2B00:00'
-db-audit-ro-max-open-conns: 10
-db-audit-ro-max-idle-conns: 2
-db-audit-ro-conn-max-lifetime: 10
-db-audit-ro-migration: false
-db-audit-ro-migration-version: 0.1
-db-audit-ro-connection-check: false
-
 # DB Configuration RW
 db-config-rw-enabled: true
 db-config-rw-host-port: host.docker.internal:3306
@@ -162,7 +131,6 @@ rate-account: 1000
 rate-management: 1000
 rate-management-status: 2
 rate-statistics: 1000
-rate-events: 1000
 rate-register: 1000
 rate-support: 10
 rate-tasks: 10
