@@ -120,6 +120,8 @@ github.com/cloudtrust/keycloak-client/v2 v2.6.2 h1:uyZFtxUYQIvO2Gosq3eaykwQSRS+k
 github.com/cloudtrust/keycloak-client/v2 v2.6.2/go.mod h1:DF58RnSLz6axY1i2EiqQcTVvT4QeIpuwA25hyITtNt8=
 github.com/cloudtrust/keycloak-client/v2 v2.6.4 h1:dePGktkv9TpjPFiYyiStKMMJPtz9Huli+eQMT1yTTC4=
 github.com/cloudtrust/keycloak-client/v2 v2.6.4/go.mod h1:YQP99BJcecSRwQ+Wpz38tHPXjXjFiGVhBv+2hjCs/9o=
+github.com/cloudtrust/keycloak-client/v2 v2.6.5-0.20240222174648-d4fe0812b017 h1:v56KyF+4WToGHlGQysOQTkWVZ20WrJwNtFc+FWvTs9A=
+github.com/cloudtrust/keycloak-client/v2 v2.6.5-0.20240222174648-d4fe0812b017/go.mod h1:YQP99BJcecSRwQ+Wpz38tHPXjXjFiGVhBv+2hjCs/9o=
 github.com/cncf/udpa/go v0.0.0-20191209042840-269d4d468f6f/go.mod h1:M8M6+tZqaGXZJjfX53e64911xZQV5JYwmTeXPW+k8Sc=
 github.com/cncf/udpa/go v0.0.0-20200629203442-efcf912fb354/go.mod h1:WmhPx2Nbnhtbo57+VJT5O0JRkEi1Wbu0z5j0R8u5Hbk=
 github.com/cncf/udpa/go v0.0.0-20201120205902-5459f2c99403/go.mod h1:WmhPx2Nbnhtbo57+VJT5O0JRkEi1Wbu0z5j0R8u5Hbk=
