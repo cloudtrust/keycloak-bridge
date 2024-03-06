@@ -76,7 +76,7 @@ keycloak-timeout: 5s
 accounting-api-uri: http://0.0.0.0:8940
 accounting-timeout: 5s
 
-accreditations-api-uri: http://localhost:9023
+accreditations-api-uri: http://host.docker.internal:9023
 accreditations-api-timeout: 5s
 
 # DB Configuration RW

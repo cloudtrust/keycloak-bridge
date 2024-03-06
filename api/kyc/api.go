@@ -236,8 +236,9 @@ func (u *UserRepresentation) Validate(ctx context.Context, upc profile.UserProfi
 			if nbAttachments > maxNumberAttachments {
 				return cerrors.CreateBadRequestError(cerrors.MsgErrInvalidParam + "." + prmAttachments)
 			}
-			for _, attachment := range *u.Attachments {
-				if err := attachment.Validate(); err != nil {
+			// Validate modifies the element
+			for i := 0; i < len(*u.Attachments); i++ {
+				if err := (*u.Attachments)[i].Validate(); err != nil {
 					return err
 				}
 			}
