@@ -459,6 +459,8 @@ func (c *component) checkGLN(ctx context.Context, realm string, businessIDThere 
 	if adminConfig, err := c.configDBModule.GetAdminConfiguration(ctx, realm); err != nil {
 		c.logger.Warn(ctx, "msg", "Can't get realm admin configuration", "realm", realm, "err", err.Error())
 		return err
+	} else if adminConfig.BusinessIDIsNotGLN != nil && *adminConfig.BusinessIDIsNotGLN {
+		return nil
 	} else if adminConfig.ShowGlnEditing == nil || !*adminConfig.ShowGlnEditing {
 		// No GLN expected
 		kcUser.RemoveAttribute(constants.AttrbBusinessID)

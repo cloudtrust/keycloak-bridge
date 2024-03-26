@@ -4,7 +4,7 @@ go 1.21.0
 
 require (
 	github.com/IBM/sarama v1.41.1
-	github.com/cloudtrust/common-service/v2 v2.6.15
+	github.com/cloudtrust/common-service/v2 v2.6.16
 	github.com/cloudtrust/httpclient v1.2.0
 	github.com/cloudtrust/keycloak-client/v2 v2.6.4
 	github.com/go-kit/kit v0.13.0
