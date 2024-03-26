@@ -378,7 +378,7 @@ func (c *component) validateUserBasicID(ctx context.Context, accessToken string,
 			c.logger.Warn(ctx, "msg", "Zip creation failed", "err", err.Error())
 			return err
 		}
-		check.ProofType = ptr("zip")
+		check.ProofType = ptr("application/zip")
 		check.ProofData = &zipAttachments
 	}
 
@@ -488,7 +488,7 @@ func (c *component) validateUser(ctx context.Context, accessToken string, confRe
 			c.logger.Warn(ctx, "msg", "Zip creation failed", "err", err.Error())
 			return err
 		}
-		check.ProofType = ptr("zip")
+		check.ProofType = ptr("application/zip")
 		check.ProofData = &zipAttachments
 	}
 
