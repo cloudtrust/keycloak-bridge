@@ -132,6 +132,8 @@ func TestConvertToAPIUser(t *testing.T) {
 		assert.Nil(t, ConvertToAPIUser(ctx, kcUser, logger).Accreditations)
 		kcUser.SetAttribute("accreditations", []string{`{"type":"one", "creationMillis":1643380967867, "expiryDate":"05.04.2020"}`, `{"type":"two", "creationMillis":1643380967867, "expiryDate":"05.03.2022"}`, `{`})
 		assert.Len(t, *ConvertToAPIUser(ctx, kcUser, logger).Accreditations, 2)
+		kcUser.SetAttribute("accreditations", []string{``})
+		assert.Nil(t, *ConvertToAPIUser(ctx, kcUser, logger).Accreditations)
 	})
 	t.Run("Onboarding completed", func(t *testing.T) {
 		assert.Nil(t, ConvertToAPIUser(ctx, kcUser, logger).OnboardingCompleted)

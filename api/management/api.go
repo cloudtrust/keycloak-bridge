@@ -411,7 +411,7 @@ func ConvertToAPIUser(ctx context.Context, userKc kc.UserRepresentation, logger 
 	if value := userKc.GetAttribute(constants.AttrbTrustIDGroups); value != nil {
 		userRep.TrustIDGroups = &value
 	}
-	if values := userKc.GetAttribute(constants.AttrbAccreditations); len(values) > 0 {
+	if values := userKc.GetAttribute(constants.AttrbAccreditations); len(values) > 1 || (len(values) == 1 && values[0] != "") {
 		var accreds []AccreditationRepresentation
 		var bFalse = false
 		for _, accredJSON := range values {

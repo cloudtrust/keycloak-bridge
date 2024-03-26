@@ -36,7 +36,7 @@ type CheckRepresentation struct {
 
 // SetAccreditations sets the user accreditations
 func (u *UserInformationRepresentation) SetAccreditations(ctx context.Context, attrAccreditations []string, logger keycloakb.Logger) {
-	if len(attrAccreditations) == 0 {
+	if len(attrAccreditations) == 0 || (len(attrAccreditations) == 1 && attrAccreditations[0] == "") {
 		u.Accreditations = nil
 		return
 	}
