@@ -661,6 +661,17 @@ func TestCheckGLN(t *testing.T) {
 		var err = managementComponent.checkGLN(ctx, realmName, true, &gln, &kcUser)
 		assert.NotNil(t, err)
 	})
+	t.Run("BusinessID not used as a GLN", func(t *testing.T) {
+		kcUser.SetAttributeString(constants.AttrbBusinessID, gln)
+		var bTrue = true
+		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, realmName).Return(configuration.RealmAdminConfiguration{BusinessIDIsNotGLN: &bTrue}, nil)
+
+		var err = managementComponent.checkGLN(ctx, realmName, true, &gln, &kcUser)
+
+		assert.Nil(t, err)
+		assert.NotNil(t, kcUser.GetAttributeString(constants.AttrbBusinessID))
+		assert.Equal(t, gln, *kcUser.GetAttributeString(constants.AttrbBusinessID))
+	})
 	t.Run("GLN feature not activated", func(t *testing.T) {
 		kcUser.SetAttributeString(constants.AttrbBusinessID, gln)
 
