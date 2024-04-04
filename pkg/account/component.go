@@ -32,6 +32,9 @@ const (
 	emailSubjectUpdatedEmail     = "notifEmailChangeSubject"
 	emailTemplateUpdatedProfile  = "notif-profile-change.ftl"
 	emailSubjectUpdatedProfile   = "notifProfileChangeSubject"
+
+	eventCredentialID     = "credential_id"
+	eventPrevCredentialID = "previous_credential_id"
 )
 
 // KeycloakAccountClient interface exposes methods we need to call to send requests to Keycloak API of Account
@@ -236,7 +239,10 @@ func (c *component) UpdateAccount(ctx context.Context, user api.UpdatableAccount
 		return err
 	}
 	var ap, _ = keycloakb.NewAccreditationsProcessor(oldUserKc.GetFieldValues(fields.Accreditations))
-	ap.RevokeTypes(revokeAccreds)
+	var revokedAccreditations []keycloakb.AccreditationRepresentation
+	ap.RevokeTypes(revokeAccreds, func(accred keycloakb.AccreditationRepresentation) {
+		revokedAccreditations = append(revokedAccreditations, accred)
+	})
 	newAccreditations := ap.ToKeycloak()
 
 	oldUserKc.SetFieldValues(fields.Accreditations, newAccreditations)
@@ -289,6 +295,9 @@ func (c *component) UpdateAccount(ctx context.Context, user api.UpdatableAccount
 
 	// store the API call into the DB - As user is partially update, report event even if database update fails
 	c.eventReporterModule.ReportEvent(ctx, events.NewEventOnUserFromContext(ctx, c.logger, c.originEvent, "UPDATE_ACCOUNT", realm, userID, username, nil))
+	for _, accred := range revokedAccreditations {
+		c.eventReporterModule.ReportEvent(ctx, events.NewEventOnUserFromContext(ctx, c.logger, c.originEvent, "ACCREDITATION_REVOKED", realm, userID, username, accred.ToDetails()))
+	}
 
 	if len(actions) > 0 {
 		err = c.executeActions(ctx, actions)
@@ -408,7 +417,7 @@ func (c *component) UpdateLabelCredential(ctx context.Context, credentialID stri
 	}
 
 	//store the API call into the DB
-	c.eventReporterModule.ReportEvent(ctx, events.NewEventOnUserFromContext(ctx, c.logger, c.originEvent, "SELF_UPDATE_CREDENTIAL", currentRealm, userID, username, map[string]string{PrmCredentialID: credentialID, "label": label}))
+	c.eventReporterModule.ReportEvent(ctx, events.NewEventOnUserFromContext(ctx, c.logger, c.originEvent, "SELF_UPDATE_CREDENTIAL", currentRealm, userID, username, map[string]string{eventCredentialID: credentialID, "label": label}))
 
 	return nil
 }
@@ -433,7 +442,7 @@ func (c *component) DeleteCredential(ctx context.Context, credentialID string) e
 	}
 
 	//store the API call into the DB
-	c.eventReporterModule.ReportEvent(ctx, events.NewEventOnUserFromContext(ctx, c.logger, c.originEvent, "SELF_DELETE_CREDENTIAL", currentRealm, userID, username, map[string]string{PrmCredentialID: credentialID}))
+	c.eventReporterModule.ReportEvent(ctx, events.NewEventOnUserFromContext(ctx, c.logger, c.originEvent, "SELF_DELETE_CREDENTIAL", currentRealm, userID, username, map[string]string{eventCredentialID: credentialID}))
 
 	return nil
 }
@@ -457,7 +466,7 @@ func (c *component) MoveCredential(ctx context.Context, credentialID string, pre
 	}
 
 	//store the API call into the DB
-	c.eventReporterModule.ReportEvent(ctx, events.NewEventOnUserFromContext(ctx, c.logger, c.originEvent, "SELF_MOVE_CREDENTIAL", currentRealm, userID, username, map[string]string{PrmCredentialID: credentialID, PrmPrevCredentialID: previousCredentialID}))
+	c.eventReporterModule.ReportEvent(ctx, events.NewEventOnUserFromContext(ctx, c.logger, c.originEvent, "SELF_MOVE_CREDENTIAL", currentRealm, userID, username, map[string]string{eventCredentialID: credentialID, eventPrevCredentialID: previousCredentialID}))
 
 	return nil
 }

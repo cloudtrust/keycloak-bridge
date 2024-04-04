@@ -2,6 +2,7 @@ package keycloakb
 
 import (
 	"encoding/json"
+	"strconv"
 	"time"
 
 	"github.com/cloudtrust/common-service/v2/configuration"
@@ -37,12 +38,21 @@ type AccreditationRepresentation struct {
 	Revoked        *bool   `json:"revoked,omitempty"`
 }
 
+// ToDetails creates details for events
+func (ar *AccreditationRepresentation) ToDetails() map[string]string {
+	var details = map[string]string{"accreditation": *ar.Type, "expiration": *ar.ExpiryDate}
+	if ar.CreationMillis != nil {
+		details["creation"] = strconv.FormatInt(*ar.CreationMillis, 10)
+	}
+	return details
+}
+
 // RevokeAccreditations revokes active accreditations of the given user
-func RevokeAccreditations(kcUser *kc.UserRepresentation) bool {
+func RevokeAccreditations(kcUser *kc.UserRepresentation, notif func(AccreditationRepresentation)) bool {
 	var kcAccreds = kcUser.GetFieldValues(fields.Accreditations)
 	if len(kcAccreds) > 0 {
 		var accredProcessor, _ = NewAccreditationsProcessor(kcAccreds)
-		if accredProcessor.RevokeAll() {
+		if accredProcessor.RevokeAll(notif) {
 			kcUser.SetFieldValues(fields.Accreditations, accredProcessor.ToKeycloak())
 			return true
 		}
@@ -53,9 +63,9 @@ func RevokeAccreditations(kcUser *kc.UserRepresentation) bool {
 // AccreditationsProcessor interface
 type AccreditationsProcessor interface {
 	HasActiveAccreditations() bool
-	AddAccreditation(creationDate time.Time, name string, validity string)
-	RevokeAll() bool
-	RevokeTypes(accreditationsTypes []string) bool
+	AddAccreditation(creationDate time.Time, name string, validity string) AccreditationRepresentation
+	RevokeAll(notif func(AccreditationRepresentation)) bool
+	RevokeTypes(accreditationsTypes []string, notif func(AccreditationRepresentation))
 	ToKeycloak() []string
 }
 
@@ -97,7 +107,7 @@ func (ap *accredsProcessor) HasActiveAccreditations() bool {
 	return false
 }
 
-func (ap *accredsProcessor) AddAccreditation(creationDate time.Time, name string, validity string) {
+func (ap *accredsProcessor) AddAccreditation(creationDate time.Time, name string, validity string) AccreditationRepresentation {
 	creationMillis := creationDate.UnixNano() / int64(time.Millisecond)
 	expiryDate := validation.AddLargeDuration(creationDate, validity).UTC().Format(dateLayout)
 
@@ -117,19 +127,21 @@ func (ap *accredsProcessor) AddAccreditation(creationDate time.Time, name string
 		}
 	}
 	ap.accreditations[name] = append(newAccredSlice, newAccred)
+
+	return newAccred
 }
 
-func (ap *accredsProcessor) RevokeAll() bool {
+func (ap *accredsProcessor) RevokeAll(notif func(AccreditationRepresentation)) bool {
 	var res = false
 	for k := range ap.accreditations {
-		if ap.RevokeType(k) {
+		if ap.revokeType(k, notif) {
 			res = true
 		}
 	}
 	return res
 }
 
-func (ap *accredsProcessor) RevokeType(accreditationsType string) bool {
+func (ap *accredsProcessor) revokeType(accreditationsType string, notif func(AccreditationRepresentation)) bool {
 	var res = false
 	if slice, ok := ap.accreditations[accreditationsType]; ok {
 		var newSlice []AccreditationRepresentation
@@ -138,6 +150,7 @@ func (ap *accredsProcessor) RevokeType(accreditationsType string) bool {
 			if ap.isActive(accred) {
 				accred.Revoked = &bTrue
 				res = true
+				notif(accred)
 			}
 			newSlice = append(newSlice, accred)
 		}
@@ -146,14 +159,10 @@ func (ap *accredsProcessor) RevokeType(accreditationsType string) bool {
 	return res
 }
 
-func (ap *accredsProcessor) RevokeTypes(accreditationsTypes []string) bool {
-	var res = false
+func (ap *accredsProcessor) RevokeTypes(accreditationsTypes []string, notif func(AccreditationRepresentation)) {
 	for _, accredType := range accreditationsTypes {
-		if ap.RevokeType(accredType) {
-			res = true
-		}
+		ap.revokeType(accredType, notif)
 	}
-	return res
 }
 
 func (ap *accredsProcessor) isActive(accred AccreditationRepresentation) bool {

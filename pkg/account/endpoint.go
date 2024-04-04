@@ -46,7 +46,7 @@ func MakeUpdatePasswordEndpoint(component Component) cs.Endpoint {
 		var m = req.(map[string]string)
 		var body api.UpdatePasswordBody
 
-		err := json.Unmarshal([]byte(m[ReqBody]), &body)
+		err := json.Unmarshal([]byte(m[reqBody]), &body)
 		if err != nil {
 			return nil, errrorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Body)
 		}
@@ -80,7 +80,7 @@ func MakeUpdateLabelCredentialEndpoint(component Component) cs.Endpoint {
 
 		var body api.CredentialRepresentation
 
-		err := json.Unmarshal([]byte(m[ReqBody]), &body)
+		err := json.Unmarshal([]byte(m[reqBody]), &body)
 		if err != nil {
 			return nil, errrorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Body)
 		}
@@ -93,7 +93,7 @@ func MakeUpdateLabelCredentialEndpoint(component Component) cs.Endpoint {
 			return nil, errrorhandler.CreateBadRequestError(msg.MsgErrMissingParam + "." + msg.UserLabel)
 		}
 
-		return nil, component.UpdateLabelCredential(ctx, m[PrmCredentialID], *body.UserLabel)
+		return nil, component.UpdateLabelCredential(ctx, m[prmCredentialID], *body.UserLabel)
 	}
 }
 
@@ -102,7 +102,7 @@ func MakeDeleteCredentialEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return nil, component.DeleteCredential(ctx, m[PrmCredentialID])
+		return nil, component.DeleteCredential(ctx, m[prmCredentialID])
 	}
 }
 
@@ -111,7 +111,7 @@ func MakeMoveCredentialEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return nil, component.MoveCredential(ctx, m[PrmCredentialID], m[PrmPrevCredentialID])
+		return nil, component.MoveCredential(ctx, m[prmCredentialID], m[prmPrevCredentialID])
 	}
 }
 
@@ -129,7 +129,7 @@ func MakeUpdateAccountEndpoint(component Component, profileCache UserProfileCach
 		var realm = ctx.Value(cs.CtContextRealm).(string)
 		var body api.UpdatableAccountRepresentation
 
-		err := json.Unmarshal([]byte(m[ReqBody]), &body)
+		err := json.Unmarshal([]byte(m[reqBody]), &body)
 		if err != nil {
 			return nil, errrorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Body)
 		}
@@ -156,7 +156,7 @@ func MakeGetConfigurationEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 
-		return component.GetConfiguration(ctx, m[PrmQryRealmID])
+		return component.GetConfiguration(ctx, m[prmQryRealmID])
 	}
 }
 

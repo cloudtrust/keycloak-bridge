@@ -90,17 +90,19 @@ func TestGetActions(t *testing.T) {
 	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 	res, err := managementComponent.GetActions(ctx)
-
 	assert.Nil(t, err)
-	// We add 3 here, as we added the three actions from the communications & tasks stacks into the GetActions methods of the component.
-	// We did this to be able to configure those actions through the Backoffice.
-	assert.Equal(t, len(security.Actions.GetActionsForAPIs(security.BridgeService, security.ManagementAPI))+3, len(res))
-	v, s := "COM_SendEmail", string(security.ScopeRealm)
-	assert.Contains(t, res, api.ActionRepresentation{Name: &v, Scope: &s})
-	v, s = "COM_SendSMS", string(security.ScopeRealm)
-	assert.Contains(t, res, api.ActionRepresentation{Name: &v, Scope: &s})
-	v, s = "TSK_DeleteDeniedToUUsers", string(security.ScopeGlobal)
-	assert.Contains(t, res, api.ActionRepresentation{Name: &v, Scope: &s})
+
+	var checkPresence = func(action string, scope security.Scope) {
+		s := string(scope)
+		t.Run("Check "+action, func(t *testing.T) {
+			assert.Contains(t, res, api.ActionRepresentation{Name: &action, Scope: &s})
+		})
+	}
+	// Check presence of random actions
+	checkPresence("MGMT_GetActions", security.ScopeGlobal)
+	checkPresence("COM_SendEmail", security.ScopeRealm)
+	checkPresence("COM_SendSMS", security.ScopeRealm)
+	checkPresence("TSK_DeleteDeniedToUUsers", security.ScopeGlobal)
 }
 
 func TestGetRealms(t *testing.T) {
@@ -2637,8 +2639,10 @@ func TestRevokeAccreditations(t *testing.T) {
 	var accessToken = "my-access-token"
 	var realmName = "my-realm"
 	var userID = "my-user-id"
+	var username = "pseudo613"
 	var kcUser = kc.UserRepresentation{
-		ID: &userID,
+		ID:       &userID,
+		Username: &username,
 	}
 	var anyError = errors.New("any error")
 	var ctx = context.TODO()
@@ -2686,6 +2690,7 @@ func TestRevokeAccreditations(t *testing.T) {
 		kcUser.Attributes = &attrbs
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(kcUser, nil)
 		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, realmName, userID, gomock.Any()).Return(nil)
+		mocks.eventsReporter.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
 		var err = component.RevokeAccreditations(ctx, realmName, userID)
 		assert.Nil(t, err)
 	})

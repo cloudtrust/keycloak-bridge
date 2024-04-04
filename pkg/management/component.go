@@ -626,7 +626,9 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 		return err
 	}
 	var ap, _ = keycloakb.NewAccreditationsProcessor(oldUserKc.GetFieldValues(fields.Accreditations))
-	ap.RevokeTypes(revokeAccreds)
+	ap.RevokeTypes(revokeAccreds, func(accred keycloakb.AccreditationRepresentation) {
+		c.reportAccreditationRevokedEvent(ctx, realmName, userID, *user.Username, accred)
+	})
 	newAccreditations := ap.ToKeycloak()
 
 	var oldEnabled = oldUserKc.Enabled
@@ -674,6 +676,10 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 	}
 
 	return nil
+}
+
+func (c *component) reportAccreditationRevokedEvent(ctx context.Context, realmName string, userID string, username string, accred keycloakb.AccreditationRepresentation) {
+	c.auditEventsReporterModule.ReportEvent(ctx, events.NewEventOnUserFromContext(ctx, c.logger, c.originEvent, "ACCREDITATION_REVOKED", realmName, userID, username, accred.ToDetails()))
 }
 
 func (c *component) reportLockEvent(ctx context.Context, realmName, userID string, username *string, enabled bool) {
@@ -1198,16 +1204,25 @@ func (c *component) RevokeAccreditations(ctx context.Context, realmName string, 
 		return err
 	}
 	keycloakb.ConvertLegacyAttribute(&kcUser)
-	if !keycloakb.RevokeAccreditations(&kcUser) {
+	var revokedAccreditations []keycloakb.AccreditationRepresentation
+	var eventReporter = func(accred keycloakb.AccreditationRepresentation) {
+		revokedAccreditations = append(revokedAccreditations, accred)
+	}
+	if !keycloakb.RevokeAccreditations(&kcUser, eventReporter) {
 		return errorhandler.CreateNotFoundError("accreditations")
 	}
 
 	err = c.keycloakClient.UpdateUser(accessToken, realmName, userID, kcUser)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Failed to updated keycloak user", "err", err.Error())
+		return err
 	}
 
-	return err
+	for _, accred := range revokedAccreditations {
+		c.reportAccreditationRevokedEvent(ctx, realmName, userID, *kcUser.Username, accred)
+	}
+
+	return nil
 }
 
 func (c *component) SendSmsCode(ctx context.Context, realmName string, userID string) (string, error) {

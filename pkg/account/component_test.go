@@ -489,7 +489,7 @@ func TestUpdateAccountRevokeAccreditation(t *testing.T) {
 				assert.Equal(t, revokedAccred, kcUserRep.GetAttribute(constants.AttrbAccreditations))
 				return nil
 			})
-		mocks.auditEventsReporterModule.EXPECT().ReportEvent(ctx, gomock.Any())
+		mocks.auditEventsReporterModule.EXPECT().ReportEvent(ctx, gomock.Any()).Times(2)
 		mocks.keycloakAccountClient.EXPECT().SendEmail(accessToken, realmName, gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 		mocks.auditEventsReporterModule.EXPECT().ReportEvent(ctx, gomock.Any())
 
