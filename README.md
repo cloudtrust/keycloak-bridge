@@ -3,8 +3,7 @@
 The keycloak bridge has one purpose, being a bridge for all the interactions with keycloak.
 
 The service includes logging, metrics, tracing, and error tracking. The logs are written to stdout.
-Metrics such as time tracking,... are collected and saved to an InfluxDB Time Series Database.
-Jaeger is used for distributed tracing and error tracking is managed with Sentry.
+Metrics such as time tracking,... are collected and saved.
 
 ## Build
 Build the service \<env>:
@@ -20,7 +19,7 @@ Note: \<env> is used for versioning.
 Configuration is done with a YAML file, e.g. ```./configs/keycloak_bridge.yml```.
 Default configurations are provided, that is if an entry is not present in the configuration file, it will be set to its default value.
 
-The documentation for the [Influx](https://cloudtrust.github.io/doc/chapter-godevel/instrumenting.html), [Sentry](https://cloudtrust.github.io/doc/chapter-godevel/tracking.html), [Jaeger](https://cloudtrust.github.io/doc/chapter-godevel/tracing.html) and [Debug](https://cloudtrust.github.io/doc/chapter-godevel/debugging.html) configuration are common to all microservices and is provided in the Cloudtrust Gitbook.
+The documentation for the [Debug](https://cloudtrust.github.io/doc/chapter-godevel/debugging.html) configuration is common to all microservices and is provided in the Cloudtrust Gitbook.
 
 The configurations specific to the keycloak-bridge are described in the next sections.
 
@@ -70,9 +69,6 @@ CT_BRIDGE_DB_CONFIG_USERNAME | db-config-username
 CT_BRIDGE_DB_CONFIG_PASSWORD | db-config-password
 CT_BRIDGE_DB_ARCHIVE_RW_USERNAME | db-archive-rw-username
 CT_BRIDGE_DB_ARCHIVE_RW_PASSWORD | db-archive-rw-password
-CT_BRIDGE_INFLUX_USERNAME | influx-username
-CT_BRIDGE_INFLUX_PASSWORD | influx-password
-CT_BRIDGE_SENTRY_DSN | sentry-dsn
 CT_BRIDGE_DB_ARCHIVE_AES_KEY | db-archive-aesgcm-key
 CT_EVENT_PRODUCER_KAFKA_CLIENT_SECRET | kafka-cloudtrust-client-secret
 
@@ -118,22 +114,6 @@ Status example:
   }
  ]
 }
-```
-
-## About monitoring
-
-Each HTTP request will trigger a set of operations that are going to be logged, measured, tracked and traced. For those information to be usable, we must be able to link the logs, metrics, traces and error report together. We achieve that with a unique correlation ID. For a given request, the same correlation ID will appear on the logs, metrics, traces and error report.
-
-Note: InfluxDB indexes tags, so we put the correlation ID as tags to speed up queries. To query a tag, do not forget to simple quote it, otherwise it always returns empty results.
-
-```sql
-select * from "<measurement>" where "correlation_id" = '<correlation_id>';
-```
-
-Note: In Jaeger UI, to search traces with a given correlation ID you must copy the following in the "Tags" box:
-
-```sql
-correlation_id:<correlation_id>
 ```
 
 ## Tests

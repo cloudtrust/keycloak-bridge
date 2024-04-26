@@ -149,29 +149,6 @@ kafka-cloudtrust-event-topic: "cloudtrust-event"
 
 sarama-log-enabled: true
 
-# Influx DB configs
-influx: false
-influx-host-port: 
-influx-username: 
-influx-password: 
-influx-database: 
-influx-precision: s
-influx-retention-policy: ""
-influx-write-consistency: ""
-influx-write-interval: 1s
-
-# Sentry configs
-sentry: false
-sentry-dsn: 
-
-# Jaeger configs
-jaeger: false
-jaeger-sampler-type: const
-jaeger-sampler-param: 1
-jaeger-sampler-host-port: 
-jaeger-reporter-logspan: false
-jaeger-write-interval: 1s
-
 # Debug routes
 pprof-route-enabled: true
 
