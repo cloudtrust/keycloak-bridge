@@ -487,6 +487,13 @@ func (c *component) GetConfiguration(ctx context.Context, realmIDOverride string
 		supportedLocales = realmConf.SupportedLocales
 	}
 
+	allowedBackURLs := []string{}
+	if config.AllowedBackURL != nil {
+		allowedBackURLs = []string{*config.AllowedBackURL}
+	} else if config.AllowedBackURLs != nil {
+		allowedBackURLs = config.AllowedBackURLs
+	}
+
 	var apiConfig = api.Configuration{
 		EditingEnabled:                        config.APISelfAccountEditingEnabled,
 		ShowAuthenticatorsTab:                 config.ShowAuthenticatorsTab,
@@ -506,7 +513,7 @@ func (c *component) GetConfiguration(ctx context.Context, realmIDOverride string
 		AutoIdentificationVoucherEnabled:      adminConfig.AutoIdentificationVoucherEnabled,
 		AutoIdentificationAccountingEnabled:   adminConfig.AutoIdentificationAccountingEnabled,
 		AutoIdentificationPrepaymentRequired:  adminConfig.AutoIdentificationPrepaymentRequired,
-		AllowedBackURL:                        config.AllowedBackURL,
+		AllowedBackURLs:                       allowedBackURLs,
 	}
 
 	if realmIDOverride != "" {
