@@ -60,27 +60,33 @@ type Component interface {
 
 // Component is the management component.
 type component struct {
-	keycloakClient      KeycloakClient
-	tokenProvider       TokenProvider
-	archiveDBModule     ArchiveDBModule
-	eventReporterModule EventsReporterModule
-	accredsService      AccreditationsServiceClient
-	configDBModule      ConfigurationDBModule
-	logger              log.Logger
-	originEvent         string
+	keycloakClient       KeycloakClient
+	tokenProvider        TokenProvider
+	archiveDBModule      ArchiveDBModule
+	eventReporterModule  EventsReporterModule
+	accredsService       AccreditationsServiceClient
+	configDBModule       ConfigurationDBModule
+	logger               log.Logger
+	originEvent          string
+	unknownAgentRealm    string
+	unknownAgentUserID   string
+	unknownAgentUsername string
 }
 
 // NewComponent returns the management component.
 func NewComponent(keycloakClient KeycloakClient, tokenProvider TokenProvider, archiveDBModule ArchiveDBModule, eventReporterModule EventsReporterModule, accredsService AccreditationsServiceClient, configDBModule ConfigurationDBModule, logger log.Logger) Component {
 	return &component{
-		keycloakClient:      keycloakClient,
-		tokenProvider:       tokenProvider,
-		archiveDBModule:     archiveDBModule,
-		eventReporterModule: eventReporterModule,
-		accredsService:      accredsService,
-		configDBModule:      configDBModule,
-		logger:              logger,
-		originEvent:         "back-office",
+		keycloakClient:       keycloakClient,
+		tokenProvider:        tokenProvider,
+		archiveDBModule:      archiveDBModule,
+		eventReporterModule:  eventReporterModule,
+		accredsService:       accredsService,
+		configDBModule:       configDBModule,
+		logger:               logger,
+		originEvent:          "back-office",
+		unknownAgentRealm:    "N/A",
+		unknownAgentUserID:   "N/A",
+		unknownAgentUsername: "N/A",
 	}
 }
 
@@ -144,24 +150,30 @@ func (c *component) UpdateUser(ctx context.Context, realmName string, userID str
 		if err != nil {
 			return err
 		}
-		var username string
-		if user.Username != nil {
-			username = *user.Username
-		} else {
-			username = events.CtEventUnknownUsername
-		}
+		var username = c.findFirstNonNil(events.CtEventUnknownUsername, user.Username, kcUser.Username)
 		// store the API call into the DB
+		var details map[string]string
 		if txnID != nil {
-			c.eventReporterModule.ReportEvent(ctx, events.NewEventOnUserFromContext(ctx, c.logger, c.originEvent, "VALIDATION_UPDATE_USER", realmName, userID, username, map[string]string{"txn_id": *txnID}))
-		} else {
-			c.eventReporterModule.ReportEvent(ctx, events.NewEventOnUserFromContext(ctx, c.logger, c.originEvent, "VALIDATION_UPDATE_USER", realmName, userID, username, nil))
+			details = map[string]string{"txn_id": *txnID}
 		}
+		c.eventReporterModule.ReportEvent(ctx, events.NewEventOnUser(c.originEvent, "VALIDATION_UPDATE_USER",
+			c.unknownAgentRealm, c.unknownAgentUserID, c.unknownAgentUsername,
+			realmName, userID, username, details))
 
 		// archive user
 		c.archiveUser(validationCtx)
 	}
 
 	return nil
+}
+
+func (c *component) findFirstNonNil(defaultValue string, values ...*string) string {
+	for _, value := range values {
+		if value != nil {
+			return *value
+		}
+	}
+	return defaultValue
 }
 
 func (c *component) UpdateUserAccreditations(ctx context.Context, realmName string, userID string, userAccreds []api.AccreditationRepresentation) error {
@@ -179,18 +191,28 @@ func (c *component) UpdateUserAccreditations(ctx context.Context, realmName stri
 	keycloakb.ConvertLegacyAttribute(&kcUser)
 
 	var accreditations keycloakb.AccreditationsProcessor
+	var newAccreds []keycloakb.AccreditationRepresentation
 	accreditations, err = keycloakb.NewAccreditationsProcessor(kcUser.GetFieldValues(fields.Accreditations))
 	creationDate := time.Now().UTC()
 	for _, userAccred := range userAccreds {
-		accreditations.AddAccreditation(creationDate, *userAccred.Name, *userAccred.Validity)
+		newAccreds = append(newAccreds, accreditations.AddAccreditation(creationDate, *userAccred.Name, *userAccred.Validity))
 	}
 
 	kcUser.SetFieldValues(fields.Accreditations, accreditations.ToKeycloak())
 	err = c.keycloakClient.UpdateUser(accessToken, realmName, userID, kcUser)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Failed to update Keycloak user", "err", err.Error())
+		return err
 	}
-	return err
+
+	var username = c.findFirstNonNil(events.CtEventUnknownUsername, kcUser.Username)
+	for _, accred := range newAccreds {
+		c.eventReporterModule.ReportEvent(ctx, events.NewEventOnUser(c.originEvent, "ACCREDITATION_GRANTED",
+			c.unknownAgentRealm, c.unknownAgentUserID, c.unknownAgentUsername,
+			realmName, userID, username, accred.ToDetails()))
+	}
+
+	return nil
 }
 
 func (c *component) prepareUpdateUserKeycloak(validationCtx *validationContext, user api.UserRepresentation, fc fields.FieldsComparator) (*kc.UserRepresentation, error) {
@@ -220,7 +242,12 @@ func (c *component) notifyUpdate(validationCtx *validationContext, kcUser *kc.Us
 			c.logger.Warn(validationCtx.ctx, "msg", "Could not notify accreds service of updated fields", "uid", validationCtx.userID, "fields", notifyUpdate.UpdatedFields)
 			return err
 		}
-		ap.RevokeTypes(revokeAccreds)
+		var username = c.findFirstNonNil(events.CtEventUnknownUsername, kcUser.Username)
+		ap.RevokeTypes(revokeAccreds, func(accred keycloakb.AccreditationRepresentation) {
+			c.eventReporterModule.ReportEvent(validationCtx.ctx, events.NewEventOnUser(c.originEvent, "ACCREDITATION_REVOKED",
+				c.unknownAgentRealm, c.unknownAgentUserID, c.unknownAgentUsername,
+				validationCtx.realmName, validationCtx.userID, username, accred.ToDetails()))
+		})
 		validationCtx.kcUser.SetFieldValues(fields.Accreditations, ap.ToKeycloak())
 	}
 	return nil

@@ -14,12 +14,12 @@ import (
 
 // Parameter names
 const (
-	ReqBody = "body"
+	reqBody = "body"
 
-	PrmCredentialID     = "credentialID"
-	PrmPrevCredentialID = "previousCredentialID"
+	prmCredentialID     = "credentialID"
+	prmPrevCredentialID = "previousCredentialID"
 
-	PrmQryRealmID = "realm_id"
+	prmQryRealmID = "realm_id"
 )
 
 // MakeAccountHandler make an HTTP handler for an Account endpoint.
@@ -34,12 +34,12 @@ func MakeAccountHandler(e endpoint.Endpoint, logger log.Logger) *http_transport.
 // decodeEventsRequest gets the HTTP parameters and body content
 func decodeAccountRequest(ctx context.Context, req *http.Request) (interface{}, error) {
 	var pathParams = map[string]string{
-		PrmCredentialID:     constants.RegExpID,
-		PrmPrevCredentialID: account_api.RegExpIDNullable,
+		prmCredentialID:     constants.RegExpID,
+		prmPrevCredentialID: account_api.RegExpIDNullable,
 	}
 
 	var queryParams = map[string]string{
-		PrmQryRealmID: constants.RegExpRealmName,
+		prmQryRealmID: constants.RegExpRealmName,
 	}
 
 	return commonhttp.DecodeRequest(ctx, req, pathParams, queryParams)

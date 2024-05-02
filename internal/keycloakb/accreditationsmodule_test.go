@@ -12,6 +12,21 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestToDetails(t *testing.T) {
+	var accredType = "BASIC"
+	var now = time.Now().Unix()
+	var expiry = "31.12.2099"
+	var accred = AccreditationRepresentation{
+		Type:           &accredType,
+		CreationMillis: &now,
+		ExpiryDate:     &expiry,
+	}
+	assert.Len(t, accred.ToDetails(), 3)
+
+	accred.CreationMillis = nil
+	assert.Len(t, accred.ToDetails(), 2)
+}
+
 func TestHasActiveAccreditations(t *testing.T) {
 	t.Run("only active accreditations", func(t *testing.T) {
 		var accreds = []string{`{"type":"ONE","expiryDate":"01.01.2040"}`,
@@ -54,7 +69,7 @@ func TestRevokeAccreditations(t *testing.T) {
 
 	t.Run("No existing accreditations", func(t *testing.T) {
 		var user = kc.UserRepresentation{}
-		var updated = RevokeAccreditations(&user)
+		var updated = RevokeAccreditations(&user, func(AccreditationRepresentation) {})
 		assert.Len(t, user.GetAttribute(constants.AttrbAccreditations), 0)
 		assert.False(t, updated)
 	})
@@ -62,7 +77,7 @@ func TestRevokeAccreditations(t *testing.T) {
 		var user = kc.UserRepresentation{}
 		var accreds = []string{"a", "b", `{"type":"ONE", "expiryDate":"01.01.2015", "creationMillis":123456789, "revoked":true}`}
 		user.SetAttribute(constants.AttrbAccreditations, accreds)
-		var updated = RevokeAccreditations(&user)
+		var updated = RevokeAccreditations(&user, func(AccreditationRepresentation) {})
 		assert.Equal(t, accreds, user.GetAttribute(constants.AttrbAccreditations))
 		assert.False(t, updated)
 	})
@@ -73,7 +88,7 @@ func TestRevokeAccreditations(t *testing.T) {
 			`{"type":"THREE","expiryDate":"01.01.2025"}`,
 			`{"type":"THREE","expiryDate":"01.01.2032"}`}
 		user.SetAttribute(constants.AttrbAccreditations, accreds)
-		var updated = RevokeAccreditations(&user)
+		var updated = RevokeAccreditations(&user, func(AccreditationRepresentation) {})
 		assert.True(t, updated)
 		userAccreds := user.GetAttribute(constants.AttrbAccreditations)
 		for _, userAccred := range userAccreds {
@@ -93,7 +108,7 @@ func TestRevokeTypes(t *testing.T) {
 	}
 	var ap, _ = NewAccreditationsProcessor(accreds)
 	t.Run("Revoke 2 types", func(t *testing.T) {
-		ap.RevokeTypes([]string{"THREE", "ONE"})
+		ap.RevokeTypes([]string{"THREE", "ONE"}, func(AccreditationRepresentation) {})
 		var res = ap.ToKeycloak()
 		assert.Len(t, res, len(accreds))
 
@@ -107,7 +122,7 @@ func TestRevokeTypes(t *testing.T) {
 		}
 	})
 	t.Run("Revoke TWO", func(t *testing.T) {
-		ap.RevokeTypes([]string{"TWO"})
+		ap.RevokeTypes([]string{"TWO"}, func(AccreditationRepresentation) {})
 		var res = ap.ToKeycloak()
 		assert.Len(t, res, len(accreds))
 
@@ -128,7 +143,7 @@ func TestAddAccreditation(t *testing.T) {
 	//Add first accreditation
 	creationDate, _ := time.Parse("2006-Jan-02", "2027-Jan-01")
 	fmt.Println(creationDate)
-	ap.AddAccreditation(creationDate, "AAA", "4y")
+	_ = ap.AddAccreditation(creationDate, "AAA", "4y")
 	var res = ap.ToKeycloak()
 	assert.Len(t, res, 1)
 
@@ -138,7 +153,7 @@ func TestAddAccreditation(t *testing.T) {
 
 	//Add second accreditation, same type
 	creationDate, _ = time.Parse("2006-Jan-02", "2025-Jan-01")
-	ap.AddAccreditation(creationDate, "AAA", "7y")
+	_ = ap.AddAccreditation(creationDate, "AAA", "7y")
 	res = ap.ToKeycloak()
 	assert.Len(t, res, 2)
 
@@ -148,7 +163,7 @@ func TestAddAccreditation(t *testing.T) {
 
 	// Add third accreditation, new type
 	creationDate, _ = time.Parse("2006-Jan-02", "2028-Apr-17")
-	ap.AddAccreditation(creationDate, "BBB", "5y")
+	_ = ap.AddAccreditation(creationDate, "BBB", "5y")
 	res = ap.ToKeycloak()
 	assert.Len(t, res, 3)
 	assert.Contains(t, res, `{"type":"BBB","creationMillis":1839542400000,"expiryDate":"17.04.2033"}`)

@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	cs "github.com/cloudtrust/common-service/v2"
 	"github.com/cloudtrust/common-service/v2/configuration"
 	log "github.com/cloudtrust/common-service/v2/log"
 	api "github.com/cloudtrust/keycloak-bridge/api/validation"
@@ -102,9 +103,13 @@ func TestUpdateUser(t *testing.T) {
 
 	var targetRealm = "cloudtrust"
 	var userID = "abc789def"
+	var username = "pseudo88"
 	var accessToken = "abcdef"
 	var txnID = "transaction-id"
 	var ctx = context.TODO()
+	ctx = context.WithValue(ctx, cs.CtContextRealm, targetRealm)
+	ctx = context.WithValue(ctx, cs.CtContextUserID, userID)
+	ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 
 	var mocks = createComponentMocks(mockCtrl)
 	var component = mocks.createComponent()
@@ -191,12 +196,13 @@ func TestUpdateUser(t *testing.T) {
 
 	t.Run("Successful update - Current accreds not nil", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, targetRealm, userID).Return(kc.UserRepresentation{
+			Username: &username,
 			Attributes: &kc.Attributes{
 				"accreditations": []string{`{"type":"ONE","expiryDate":"01.01.2040"}`},
 			},
 		}, nil)
 		mocks.accredsService.EXPECT().NotifyUpdate(ctx, gomock.Any()).Return([]string{"ONE"}, nil)
-		mocks.eventsReporter.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
+		mocks.eventsReporter.EXPECT().ReportEvent(gomock.Any(), gomock.Any()).Times(2)
 		mocks.archiveDB.EXPECT().StoreUserDetails(ctx, targetRealm, gomock.Any()).Return(nil)
 
 		var user = api.UserRepresentation{
@@ -220,7 +226,7 @@ func TestUpdateUser(t *testing.T) {
 	})
 }
 
-func TestUpdateUserAccreditation(t *testing.T) {
+func TestUpdateUserAccreditations(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 
@@ -232,13 +238,14 @@ func TestUpdateUserAccreditation(t *testing.T) {
 	accessToken := "TOKEN=="
 	realmName := "testRealm"
 	userID := "testUserID"
+	username := "pseudo129"
 	userAccreds := []api.AccreditationRepresentation{
 		{
 			Name:     ptr("ONE"),
 			Validity: ptr("4y"),
 		},
 	}
-	user := kc.UserRepresentation{}
+	user := kc.UserRepresentation{Username: &username}
 
 	t.Run("Get access token - failed ", func(t *testing.T) {
 		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, expectedError)
@@ -268,6 +275,7 @@ func TestUpdateUserAccreditation(t *testing.T) {
 		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(user, nil)
 		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, realmName, userID, gomock.Any()).Return(nil)
+		mocks.eventsReporter.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
 
 		err := component.UpdateUserAccreditations(ctx, realmName, userID, userAccreds)
 		assert.Nil(t, err)

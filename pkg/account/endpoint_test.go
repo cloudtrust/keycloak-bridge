@@ -22,17 +22,17 @@ func TestMakeUpdatePasswordEndpoint(t *testing.T) {
 	mockAccountComponent.EXPECT().UpdatePassword(gomock.Any(), "password", "password2", "password2").Return(nil)
 
 	t.Run("Success", func(t *testing.T) {
-		var m = map[string]string{ReqBody: `{"currentPassword":"password", "newPassword":"password2", "confirmPassword":"password2"}`}
+		var m = map[string]string{reqBody: `{"currentPassword":"password", "newPassword":"password2", "confirmPassword":"password2"}`}
 		_, err := MakeUpdatePasswordEndpoint(mockAccountComponent)(context.Background(), m)
 		assert.Nil(t, err)
 	})
 	t.Run("Invalid JSON in body", func(t *testing.T) {
-		var m = map[string]string{ReqBody: `{`}
+		var m = map[string]string{reqBody: `{`}
 		_, err := MakeUpdatePasswordEndpoint(mockAccountComponent)(context.Background(), m)
 		assert.NotNil(t, err)
 	})
 	t.Run("Invalid parameter in body", func(t *testing.T) {
-		var m = map[string]string{ReqBody: `{"currentPassword":"", "newPassword":"password2", "confirmPassword":"password2"}`}
+		var m = map[string]string{reqBody: `{"currentPassword":"", "newPassword":"password2", "confirmPassword":"password2"}`}
 		_, err := MakeUpdatePasswordEndpoint(mockAccountComponent)(context.Background(), m)
 		assert.NotNil(t, err)
 	})
@@ -70,22 +70,22 @@ func TestMakeUpdateLabelCredentialEndpoint(t *testing.T) {
 	mockAccountComponent.EXPECT().UpdateLabelCredential(gomock.Any(), "id", "label").Return(nil)
 
 	t.Run("Success", func(t *testing.T) {
-		var m = map[string]string{ReqBody: `{"userLabel":"label"}`, PrmCredentialID: `id`}
+		var m = map[string]string{reqBody: `{"userLabel":"label"}`, prmCredentialID: `id`}
 		_, err := MakeUpdateLabelCredentialEndpoint(mockAccountComponent)(context.Background(), m)
 		assert.Nil(t, err)
 	})
 	t.Run("Invalid JSON in body", func(t *testing.T) {
-		var m = map[string]string{ReqBody: `{`}
+		var m = map[string]string{reqBody: `{`}
 		_, err := MakeUpdateLabelCredentialEndpoint(mockAccountComponent)(context.Background(), m)
 		assert.NotNil(t, err)
 	})
 	t.Run("Invalid ID", func(t *testing.T) {
-		var m = map[string]string{ReqBody: `{"id":"invalid"}`, PrmCredentialID: `id`}
+		var m = map[string]string{reqBody: `{"id":"invalid"}`, prmCredentialID: `id`}
 		_, err := MakeUpdateLabelCredentialEndpoint(mockAccountComponent)(context.Background(), m)
 		assert.NotNil(t, err)
 	})
 	t.Run("Missing user label", func(t *testing.T) {
-		var m = map[string]string{ReqBody: `{"phoneNumber":"label"}`, PrmCredentialID: `id`}
+		var m = map[string]string{reqBody: `{"phoneNumber":"label"}`, prmCredentialID: `id`}
 		_, err := MakeUpdateLabelCredentialEndpoint(mockAccountComponent)(context.Background(), m)
 		assert.NotNil(t, err)
 	})
@@ -100,7 +100,7 @@ func TestMakeDeleteCredentialEndpoint(t *testing.T) {
 
 	m := map[string]string{}
 
-	m[PrmCredentialID] = "id"
+	m[prmCredentialID] = "id"
 	_, err := MakeDeleteCredentialEndpoint(mockAccountComponent)(context.Background(), m)
 	assert.Nil(t, err)
 }
@@ -114,8 +114,8 @@ func TestMakeMoveCredentialEndpoint(t *testing.T) {
 
 	m := map[string]string{}
 
-	m[PrmCredentialID] = "id1"
-	m[PrmPrevCredentialID] = "id2"
+	m[prmCredentialID] = "id1"
+	m[prmPrevCredentialID] = "id2"
 	_, err := MakeMoveCredentialEndpoint(mockAccountComponent)(context.Background(), m)
 	assert.Nil(t, err)
 }
@@ -157,19 +157,19 @@ func TestMakeUpdateAccountEndpoint(t *testing.T) {
 	)
 
 	t.Run("Valid JSON body", func(t *testing.T) {
-		m := map[string]string{ReqBody: `{ "phoneNumber": "+41767815784"}`}
+		m := map[string]string{reqBody: `{ "phoneNumber": "+41767815784"}`}
 		mockProfileCache.EXPECT().GetRealmUserProfile(ctx, realm).Return(profile, nil)
 		mockAccountComponent.EXPECT().UpdateAccount(gomock.Any(), gomock.Any()).Return(nil)
 		_, err := endpoint(ctx, m)
 		assert.Nil(t, err)
 	})
 	t.Run("Invalid JSON body", func(t *testing.T) {
-		m := map[string]string{ReqBody: "{"}
+		m := map[string]string{reqBody: "{"}
 		_, err := endpoint(ctx, m)
 		assert.NotNil(t, err)
 	})
 	t.Run("Invalid body content", func(t *testing.T) {
-		m := map[string]string{ReqBody: `{ "phoneNumber": "ABCD"}`}
+		m := map[string]string{reqBody: `{ "phoneNumber": "ABCD"}`}
 		mockProfileCache.EXPECT().GetRealmUserProfile(ctx, realm).Return(profile, nil)
 		_, err := endpoint(ctx, m)
 		assert.NotNil(t, err)
