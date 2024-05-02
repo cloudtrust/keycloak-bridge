@@ -432,8 +432,8 @@ func (c *component) genericCreateUser(ctx context.Context, accessToken string, c
 	}
 
 	var username = ""
-	if user.Username != nil {
-		username = *user.Username
+	if userRep.Username != nil {
+		username = *userRep.Username
 	}
 
 	//retrieve the user ID
