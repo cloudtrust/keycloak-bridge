@@ -6,7 +6,7 @@ require (
 	github.com/IBM/sarama v1.41.1
 	github.com/cloudtrust/common-service/v2 v2.6.18
 	github.com/cloudtrust/httpclient v1.2.0
-	github.com/cloudtrust/keycloak-client/v2 v2.6.4
+	github.com/cloudtrust/keycloak-client/v2 v2.7.0
 	github.com/go-kit/kit v0.13.0
 	github.com/go-kit/log v0.2.1
 	github.com/go-sql-driver/mysql v1.8.1
