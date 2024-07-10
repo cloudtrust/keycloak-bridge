@@ -2,6 +2,7 @@ package management
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/cloudtrust/common-service/v2/configuration"
 	errorhandler "github.com/cloudtrust/common-service/v2/errors"
@@ -43,14 +44,14 @@ func checkTarget(authorizations []configuration.Authorization, allowedTargetReal
 		// Check TargetRealm
 		if auth.TargetRealmID != nil {
 			if _, ok := allowedTargetRealmsAndGroupNames[*auth.TargetRealmID]; !ok {
-				return errors.New("invalid target realm")
+				return fmt.Errorf("invalid target realm %s", *auth.TargetRealmID)
 			}
 		}
 
 		// Check TargetGroupName
 		if auth.TargetGroupName != nil {
 			if _, ok := allowedTargetRealmsAndGroupNames[*auth.TargetRealmID][*auth.TargetGroupName]; !ok {
-				return errors.New("invalid target group")
+				return fmt.Errorf("invalid target group %s.%s", *auth.TargetRealmID, *auth.TargetGroupName)
 			}
 		}
 	}
