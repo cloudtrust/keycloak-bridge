@@ -36,7 +36,6 @@ type ConfigurationDBModule interface {
 	GetAuthorizations(context context.Context, realmID string, groupName string) ([]configuration.Authorization, error)
 	AuthorizationExists(context context.Context, realmID string, groupName string, targetRealm string, targetGroupName *string, actionReq string) (bool, error)
 	CreateAuthorization(context context.Context, authz configuration.Authorization) error
-	DeleteAuthorizations(context context.Context, realmID string, groupName string) error
 	DeleteAuthorization(context context.Context, realmID string, groupName string, targetRealm string, targetGroupName *string, actionReq string) error
 	DeleteAllAuthorizationsWithGroup(context context.Context, realmName, groupName string) error
 	CleanAuthorizationsActionForEveryRealms(context context.Context, realmID string, groupName string, actionReq string) error
@@ -145,14 +144,6 @@ func (m *configDBModuleInstrumentingMW) CreateAuthorization(ctx context.Context,
 		m.h.With(KeyCorrelationID, ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
 	}(time.Now())
 	return m.next.CreateAuthorization(ctx, auth)
-}
-
-// configDBModuleInstrumentingMW implements Module.
-func (m *configDBModuleInstrumentingMW) DeleteAuthorizations(ctx context.Context, realmID string, groupID string) error {
-	defer func(begin time.Time) {
-		m.h.With(KeyCorrelationID, ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
-	}(time.Now())
-	return m.next.DeleteAuthorizations(ctx, realmID, groupID)
 }
 
 // configDBModuleInstrumentingMW implements Module.

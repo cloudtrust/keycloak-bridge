@@ -1786,7 +1786,7 @@ func (c *component) UpdateAuthorizations(ctx context.Context, realmName string, 
 
 	group, err := c.keycloakClient.GetGroup(accessToken, realmName, groupID)
 	if err != nil {
-		c.logger.Warn(ctx, "err", err.Error())
+		c.logger.Warn(ctx, "err", err.Error(), "realm", realmName, "group", groupID)
 		return err
 	}
 
@@ -1798,37 +1798,43 @@ func (c *component) UpdateAuthorizations(ctx context.Context, realmName string, 
 		return err
 	}
 
+	var dbAuthz []configuration.Authorization
+	dbAuthz, err = c.configDBModule.GetAuthorizations(ctx, realmName, groupName)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Can't get authorizations from database", "err", err.Error(), "realm", realmName, "group", groupName)
+		return err
+	}
+	var diff = Diff(dbAuthz, authorizations)
+
 	// Persists the new authorizations in DB
-	{
-		tx, err := c.configDBModule.NewTransaction(ctx)
+	var addAuthz = diff[Added]
+	var delAuthz = diff[Removed]
+	if len(addAuthz)+len(delAuthz) > 0 {
+		rawTx, err := c.configDBModule.NewTransaction(ctx)
 		if err != nil {
 			c.logger.Warn(ctx, "err", err.Error())
 			return err
 		}
+		tx := keycloakb.NewAuthorizationTransaction(rawTx)
 		defer tx.Close()
 
-		err = c.configDBModule.DeleteAuthorizations(ctx, realmName, groupName)
-		if err != nil {
-			c.logger.Warn(ctx, "err", err.Error())
+		if err := tx.CreateAuthorizations(ctx, addAuthz); err != nil {
+			c.logger.Warn(ctx, "mgs", "Failed creating authorizations", "err", err.Error())
+			return err
+		}
+		if err := tx.RemoveAuthorizations(ctx, delAuthz); err != nil {
+			c.logger.Warn(ctx, "mgs", "Failed deleting authorizations", "err", err.Error())
 			return err
 		}
 
-		for _, authorisation := range authorizations {
-			err = c.configDBModule.CreateAuthorization(ctx, authorisation)
-			if err != nil {
-				c.logger.Warn(ctx, "err", err.Error())
-				return err
-			}
-		}
-
-		err = tx.Commit()
-		if err != nil {
+		if err = tx.Commit(); err != nil {
 			c.logger.Warn(ctx, "err", err.Error())
 			return err
 		}
+		c.logger.Info(ctx, "msg", "Updated authorizations", "add_count", len(addAuthz), "del_count", len(delAuthz))
+
+		c.auditEventsReporterModule.ReportEvent(ctx, events.NewEventFromContext(ctx, c.logger, c.originEvent, "API_AUTHORIZATIONS_UPDATE", realmName, map[string]string{events.CtEventGroupName: groupName}))
 	}
-
-	c.auditEventsReporterModule.ReportEvent(ctx, events.NewEventFromContext(ctx, c.logger, c.originEvent, "API_AUTHORIZATIONS_UPDATE", realmName, map[string]string{events.CtEventGroupName: groupName}))
 
 	return nil
 }

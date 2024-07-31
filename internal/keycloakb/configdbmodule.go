@@ -61,13 +61,25 @@ const (
 	`
 	createAuthzStmt = `INSERT INTO authorizations (realm_id, group_name, action, target_realm_id, target_group_name) 
 		VALUES (?, ?, ?, ?, ?);`
-	deleteAuthzStmt             = `DELETE FROM authorizations WHERE realm_id = ? AND group_name = ?;`
 	deleteAllAuthzWithGroupStmt = `DELETE FROM authorizations WHERE (realm_id = ? AND group_name = ?) OR (target_realm_id = ? AND target_group_name = ?);`
 	deleteSingleAuthzStmt       = `DELETE FROM authorizations WHERE realm_id = ? AND group_name = ? AND action = ? AND target_realm_id = ? AND target_group_name = ?;`
 	deleteGlobalAuthzStmt       = `DELETE FROM authorizations WHERE realm_id = ? AND group_name = ? AND action = ? AND target_realm_id = ? AND target_group_name IS NULL;`
 	deleteAuthzEveryRealmsStmt  = `DELETE FROM authorizations WHERE realm_id = ? AND group_name = ? AND action = ?;`
 	deleteAuthzRealmStmt        = `DELETE FROM authorizations WHERE realm_id = ? AND group_name = ? AND action = ? AND target_realm_id = ?;`
 )
+
+type dbExecutable func(query string, args ...any) error
+
+func deleteAuthorization(executable dbExecutable, realmID string, groupName string, targetRealm string, targetGroupName *string, actionReq string) error {
+	var err error
+	if targetGroupName != nil {
+		err = executable(deleteSingleAuthzStmt, realmID, groupName, actionReq, targetRealm, targetGroupName)
+	} else {
+		err = executable(deleteGlobalAuthzStmt, realmID, groupName, actionReq, targetRealm)
+	}
+
+	return err
+}
 
 // Scanner used to get data from SQL cursors
 type Scanner interface {
@@ -87,6 +99,11 @@ func NewConfigurationDBModule(db sqltypes.CloudtrustDB, logger log.Logger, actio
 		db:                          db,
 		logger:                      logger,
 	}
+}
+
+func (c *configurationDBModule) execNoResult(query string, args ...any) error {
+	_, err := c.db.Exec(query, args...)
+	return err
 }
 
 func (c *configurationDBModule) GetConfigurations(ctx context.Context, realmID string) (configuration.RealmConfiguration, configuration.RealmAdminConfiguration, error) {
@@ -109,8 +126,7 @@ func (c *configurationDBModule) StoreOrUpdateConfiguration(context context.Conte
 	}
 
 	// update value in DB
-	_, err = c.db.Exec(updateConfigStmt, realmID, string(configJSON), string(configJSON))
-	return err
+	return c.execNoResult(updateConfigStmt, realmID, string(configJSON), string(configJSON))
 }
 
 func (c *configurationDBModule) GetConfiguration(ctx context.Context, realmID string) (configuration.RealmConfiguration, error) {
@@ -129,8 +145,7 @@ func (c *configurationDBModule) StoreOrUpdateAdminConfiguration(context context.
 	var bytes, _ = json.Marshal(config)
 	var configJSON = string(bytes)
 	// update value in DB
-	var _, err = c.db.Exec(updateAdminConfigStmt, realmID, configJSON, configJSON)
-	return err
+	return c.execNoResult(updateAdminConfigStmt, realmID, configJSON, configJSON)
 }
 
 func (c *configurationDBModule) GetAdminConfiguration(ctx context.Context, realmID string) (configuration.RealmAdminConfiguration, error) {
@@ -173,8 +188,7 @@ func (c *configurationDBModule) GetBackOfficeConfiguration(ctx context.Context, 
 }
 
 func (c *configurationDBModule) DeleteBackOfficeConfiguration(ctx context.Context, realmID, groupName, targetRealmID string, targetType *string, targetGroupName *string) error {
-	var _, err = c.db.Exec(deleteBOConfigStmt, realmID, groupName, targetRealmID, targetType, targetType, targetGroupName, targetGroupName)
-	if err != nil {
+	if err := c.execNoResult(deleteBOConfigStmt, realmID, groupName, targetRealmID, targetType, targetType, targetGroupName, targetGroupName); err != nil {
 		c.logger.Warn(ctx, "msg", "Can't delete back-office configuration", "err", err.Error(), "realmName", realmID, "group", groupName,
 			"targetRealmName", targetRealmID, "targetType", targetType, "group", targetGroupName)
 		return err
@@ -184,8 +198,7 @@ func (c *configurationDBModule) DeleteBackOfficeConfiguration(ctx context.Contex
 
 func (c *configurationDBModule) InsertBackOfficeConfiguration(ctx context.Context, realmID, groupName, targetRealmID, targetType string, targetGroupNames []string) error {
 	for _, targetGroupName := range targetGroupNames {
-		var _, err = c.db.Exec(insertBOConfigStmt, realmID, groupName, targetRealmID, targetType, targetGroupName)
-		if err != nil {
+		if err := c.execNoResult(insertBOConfigStmt, realmID, groupName, targetRealmID, targetType, targetGroupName); err != nil {
 			c.logger.Warn(ctx, "msg", "Can't insert into back-office configuration", "err", err.Error(), "realmID", realmID, "groupName", groupName,
 				"targetRealmName", targetRealmID, "targetType", targetType, "group", targetGroupName)
 			return err
@@ -238,40 +251,24 @@ func (c *configurationDBModule) AuthorizationExists(ctx context.Context, realmID
 }
 
 func (c *configurationDBModule) CreateAuthorization(context context.Context, auth configuration.Authorization) error {
-	_, err := c.db.Exec(createAuthzStmt, nullableString(auth.RealmID), nullableString(auth.GroupName),
+	return c.execNoResult(createAuthzStmt, nullableString(auth.RealmID), nullableString(auth.GroupName),
 		nullableString(auth.Action), nullableString(auth.TargetRealmID), nullableString(auth.TargetGroupName))
-	return err
-}
-
-func (c *configurationDBModule) DeleteAuthorizations(context context.Context, realmID string, groupName string) error {
-	_, err := c.db.Exec(deleteAuthzStmt, realmID, groupName)
-	return err
 }
 
 func (c *configurationDBModule) DeleteAuthorization(context context.Context, realmID string, groupName string, targetRealm string, targetGroupName *string, actionReq string) error {
-	var err error
-	if targetGroupName != nil {
-		_, err = c.db.Exec(deleteSingleAuthzStmt, realmID, groupName, actionReq, targetRealm, targetGroupName)
-	} else {
-		_, err = c.db.Exec(deleteGlobalAuthzStmt, realmID, groupName, actionReq, targetRealm)
-	}
-
-	return err
+	return deleteAuthorization(c.execNoResult, realmID, groupName, targetRealm, targetGroupName, actionReq)
 }
 
 func (c *configurationDBModule) DeleteAllAuthorizationsWithGroup(context context.Context, realmID, groupName string) error {
-	_, err := c.db.Exec(deleteAllAuthzWithGroupStmt, realmID, groupName, realmID, groupName)
-	return err
+	return c.execNoResult(deleteAllAuthzWithGroupStmt, realmID, groupName, realmID, groupName)
 }
 
 func (c *configurationDBModule) CleanAuthorizationsActionForEveryRealms(context context.Context, realmID string, groupName string, actionReq string) error {
-	_, err := c.db.Exec(deleteAuthzEveryRealmsStmt, realmID, groupName, actionReq)
-	return err
+	return c.execNoResult(deleteAuthzEveryRealmsStmt, realmID, groupName, actionReq)
 }
 
 func (c *configurationDBModule) CleanAuthorizationsActionForRealm(context context.Context, realmID string, groupName string, targetRealm string, actionReq string) error {
-	_, err := c.db.Exec(deleteAuthzRealmStmt, realmID, groupName, actionReq, targetRealm)
-	return err
+	return c.execNoResult(deleteAuthzRealmStmt, realmID, groupName, actionReq, targetRealm)
 }
 
 func (c *configurationDBModule) NewTransaction(context context.Context) (sqltypes.Transaction, error) {
