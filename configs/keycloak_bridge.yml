@@ -79,6 +79,9 @@ accounting-timeout: 5s
 accreditations-api-uri: http://host.docker.internal:9023
 accreditations-api-timeout: 5s
 
+idnow-service-api-uri: http://host.docker.internal:8755
+idnow-service-api-timeout: 5s
+
 # DB Configuration RW
 db-config-rw-enabled: true
 db-config-rw-host-port: host.docker.internal:3306

@@ -31,6 +31,7 @@ import (
 	"github.com/cloudtrust/keycloak-bridge/internal/business"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/accreditationsclient"
+	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/idnowclient"
 	"github.com/cloudtrust/keycloak-bridge/internal/profile"
 	"github.com/cloudtrust/keycloak-bridge/pkg/account"
 	"github.com/cloudtrust/keycloak-bridge/pkg/communications"
@@ -156,6 +157,8 @@ const (
 	cfgOnboardingRealmOverrides = "onboarding-realm-overrides"
 	cfgAddrAccreditations       = "accreditations-api-uri"
 	cfgAccreditationsTimeout    = "accreditations-timeout"
+	cfgAddrIdnow                = "idnow-service-api-uri"
+	cfgIdnowTimeout             = "idnow-service-timeout"
 	cfgContextKeys              = "context-keys"
 	cfgKafkaCloudtrustPrefix    = "kafka-cloudtrust"
 	cfgKafkaCloudtrustTopic     = "kafka-cloudtrust-event-topic"
@@ -535,11 +538,24 @@ func main() {
 			return technicalTokenProvider.ProvideToken(context.TODO())
 		})
 		if err != nil {
-			logger.Error(ctx, "msg", "could not initialize accounting client", "err", err)
+			logger.Error(ctx, "msg", "could not initialize accreditations client", "err", err)
 			return
 		}
 		// Accreditations service
 		accreditationsService = accreditationsclient.MakeAccreditationsServiceClient(httpClient)
+	}
+
+	var idnowService idnowclient.IdnowServiceClient
+	{
+		var httpClient, err = httpclient.NewBearerAuthClient(c.GetString(cfgAddrIdnow), c.GetDuration(cfgIdnowTimeout), func() (string, error) {
+			return technicalTokenProvider.ProvideToken(context.TODO())
+		})
+		if err != nil {
+			logger.Error(ctx, "msg", "could not initialize idnow service client", "err", err)
+			return
+		}
+		// Accreditations service
+		idnowService = idnowclient.MakeIdnowServiceClient(httpClient)
 	}
 
 	// Validation service.
@@ -617,7 +633,7 @@ func main() {
 	{
 		var statisticsLogger = log.With(logger, "svc", "statistics")
 
-		statisticsComponent := statistics.NewComponent(keycloakClient, accreditationsService, statisticsLogger)
+		statisticsComponent := statistics.NewComponent(keycloakClient, accreditationsService, idnowService, statisticsLogger)
 		statisticsComponent = statistics.MakeAuthorizationManagementComponentMW(log.With(statisticsLogger, "mw", "authorization"), authorizationManager)(statisticsComponent)
 
 		var rateLimitStatistics = rateLimit[RateKeyStatistics]

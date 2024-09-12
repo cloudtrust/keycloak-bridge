@@ -8,6 +8,7 @@ import (
 	"github.com/cloudtrust/common-service/v2/security"
 	api "github.com/cloudtrust/keycloak-bridge/api/statistics"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/accreditationsclient"
+	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/idnowclient"
 	kc "github.com/cloudtrust/keycloak-client/v2"
 )
 
@@ -32,17 +33,24 @@ type AccreditationsServiceClient interface {
 	GetIdentityChecksByNature(ctx context.Context, realm string) ([]accreditationsclient.NatureCheckCount, error)
 }
 
+// IdnowServiceClient interface
+type IdnowServiceClient interface {
+	GetIdentificationsByType(ctx context.Context, realm string) (idnowclient.IdentificationStatistics, error)
+}
+
 type component struct {
 	keycloakClient KeycloakClient
 	accredsService AccreditationsServiceClient
+	idnowService   IdnowServiceClient
 	logger         log.Logger
 }
 
 // NewComponent returns a component
-func NewComponent(keycloakClient KeycloakClient, accredsService AccreditationsServiceClient, logger log.Logger) Component {
+func NewComponent(keycloakClient KeycloakClient, accredsService AccreditationsServiceClient, idnowService IdnowServiceClient, logger log.Logger) Component {
 	return &component{
 		keycloakClient: keycloakClient,
 		accredsService: accredsService,
+		idnowService:   idnowService,
 		logger:         logger,
 	}
 }
@@ -66,25 +74,30 @@ func (ec *component) GetActions(ctx context.Context) ([]api.ActionRepresentation
 
 // Grabs identification statistics
 func (ec *component) GetStatisticsIdentifications(ctx context.Context, realmName string) (api.IdentificationStatisticsRepresentation, error) {
-	stats, err := ec.accredsService.GetIdentityChecksByNature(ctx, realmName)
+	accredStats, err := ec.accredsService.GetIdentityChecksByNature(ctx, realmName)
 	if err != nil {
-		ec.logger.Warn(ctx, "msg", "Failed to retrieve identification statistics", "err", err.Error())
+		ec.logger.Warn(ctx, "msg", "Failed to retrieve accreditations statistics", "err", err.Error())
 		return api.IdentificationStatisticsRepresentation{}, err
 	}
 
 	var res api.IdentificationStatisticsRepresentation
-	for _, stat := range stats {
+	for _, stat := range accredStats {
 		switch *stat.Nature {
 		case "BASIC_CHECK":
 			res.BasicIdentifications = *stat.Count
 		case "PHYSICAL_CHECK":
 			res.PhysicalIdentifications = *stat.Count
-		case "IDNOW_CHECK":
-			res.VideoIdentifications = *stat.Count
-		case "AUTO_IDENT_IDNOW_CHECK":
-			res.AutoIdentifications = *stat.Count
 		}
 	}
+
+	identStats, err := ec.idnowService.GetIdentificationsByType(ctx, realmName)
+	if err != nil {
+		ec.logger.Warn(ctx, "msg", "Failed to retrieve identifications statistics", "err", err.Error())
+		return api.IdentificationStatisticsRepresentation{}, err
+	}
+
+	res.VideoIdentifications = identStats.VideoIdentifications
+	res.AutoIdentifications = identStats.AutoIdentifications
 
 	return res, nil
 }
