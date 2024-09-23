@@ -28,7 +28,6 @@ type componentMocks struct {
 	configDB       *mock.ConfigDBModule
 	accreditations *mock.AccreditationsServiceClient
 	eventsReporter *mock.AuditEventsReporterModule
-	glnVerifier    *mock.GlnVerifier
 }
 
 func ptrBool(value bool) *bool {
@@ -44,13 +43,12 @@ func createComponentMocks(mockCtrl *gomock.Controller) *componentMocks {
 		configDB:       mock.NewConfigDBModule(mockCtrl),
 		eventsReporter: mock.NewAuditEventsReporterModule(mockCtrl),
 		accreditations: mock.NewAccreditationsServiceClient(mockCtrl),
-		glnVerifier:    mock.NewGlnVerifier(mockCtrl),
 	}
 }
 
 func (m *componentMocks) NewComponent(realm string) *component {
 	return NewComponent(m.tokenProvider, realm, m.keycloakClient, m.userProfile, m.archiveDB, m.configDB,
-		m.eventsReporter, m.accreditations, m.glnVerifier, log.NewNopLogger()).(*component)
+		m.eventsReporter, m.accreditations, log.NewNopLogger()).(*component)
 }
 
 func TestCheckUserConsent(t *testing.T) {
