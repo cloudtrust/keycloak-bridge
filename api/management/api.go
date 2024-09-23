@@ -255,7 +255,6 @@ type RealmAdminConfiguration struct {
 	ConsentRequiredSocial                 *bool           `json:"consent_required_social"`
 	ConsentRequiredCorporate              *bool           `json:"consent_required_corporate"`
 	ShowGlnEditing                        *bool           `json:"show_gln_editing"`
-	BusinessIDIsNotGLN                    *bool           `json:"business_id_is_not_gln"`
 	VideoIdentificationVoucherEnabled     *bool           `json:"video_identification_voucher_enabled"`
 	VideoIdentificationAccountingEnabled  *bool           `json:"video_identification_accounting_enabled"`
 	VideoIdentificationPrepaymentRequired *bool           `json:"video_identification_prepayment_required"`
@@ -743,7 +742,6 @@ func ConvertRealmAdminConfigurationFromDBStruct(conf configuration.RealmAdminCon
 		ConsentRequiredSocial:                 defaultBool(conf.ConsentRequiredSocial, false),
 		ConsentRequiredCorporate:              defaultBool(conf.ConsentRequiredCorporate, false),
 		ShowGlnEditing:                        defaultBool(conf.ShowGlnEditing, false),
-		BusinessIDIsNotGLN:                    defaultBool(conf.BusinessIDIsNotGLN, false),
 		VideoIdentificationVoucherEnabled:     defaultBool(conf.VideoIdentificationVoucherEnabled, false),
 		VideoIdentificationAccountingEnabled:  defaultBool(conf.VideoIdentificationAccountingEnabled, false),
 		VideoIdentificationPrepaymentRequired: defaultBool(conf.VideoIdentificationPrepaymentRequired, false),
@@ -767,7 +765,6 @@ func (rac RealmAdminConfiguration) ConvertToDBStruct() configuration.RealmAdminC
 		ConsentRequiredSocial:                 rac.ConsentRequiredSocial,
 		ConsentRequiredCorporate:              rac.ConsentRequiredCorporate,
 		ShowGlnEditing:                        rac.ShowGlnEditing,
-		BusinessIDIsNotGLN:                    rac.BusinessIDIsNotGLN,
 		VideoIdentificationVoucherEnabled:     rac.VideoIdentificationVoucherEnabled,
 		VideoIdentificationAccountingEnabled:  rac.VideoIdentificationAccountingEnabled,
 		VideoIdentificationPrepaymentRequired: rac.VideoIdentificationPrepaymentRequired,

@@ -61,7 +61,6 @@ type componentMocks struct {
 	configDB       *mock.ConfigurationDBModule
 
 	eventsReporter   *mock.AuditEventsReporterModule
-	glnVerifier      *mock.GlnVerifier
 	contextKeyMgr    *mock.ContextKeyManager
 	onboardingModule *mock.OnboardingModule
 }
@@ -73,7 +72,6 @@ func createMocks(mockCtrl *gomock.Controller) *componentMocks {
 		profileCache:     mock.NewUserProfileCache(mockCtrl),
 		configDB:         mock.NewConfigurationDBModule(mockCtrl),
 		eventsReporter:   mock.NewAuditEventsReporterModule(mockCtrl),
-		glnVerifier:      mock.NewGlnVerifier(mockCtrl),
 		contextKeyMgr:    mock.NewContextKeyManager(mockCtrl),
 		onboardingModule: mock.NewOnboardingModule(mockCtrl),
 	}
@@ -81,7 +79,7 @@ func createMocks(mockCtrl *gomock.Controller) *componentMocks {
 
 func (mocks *componentMocks) createComponent() *component {
 	return NewComponent(mocks.keycloakClient, mocks.tokenProvider, mocks.profileCache, mocks.configDB, mocks.eventsReporter,
-		mocks.onboardingModule, mocks.glnVerifier, mocks.contextKeyMgr, log.NewNopLogger()).(*component)
+		mocks.onboardingModule, mocks.contextKeyMgr, log.NewNopLogger()).(*component)
 }
 
 func TestRegisterUser(t *testing.T) {
@@ -181,13 +179,6 @@ func TestRegisterUser(t *testing.T) {
 		assert.Equal(t, "409 "+keycloakb.ComponentName+".disabledEndpoint."+constants.MsgErrNotConfigured, err.Error())
 	})
 	mocks.configDB.EXPECT().GetConfigurations(ctx, targetRealmName).Return(realmConf, realmAdminConf, nil).AnyTimes()
-
-	t.Run("GLN verification failed", func(t *testing.T) {
-		mocks.glnVerifier.EXPECT().ValidateGLN(*user.FirstName, *user.LastName, *user.BusinessID).Return(anyError)
-		_, err := component.RegisterUser(ctx, targetRealmName, customerRealmName, user, &contextKeyNeutral)
-		assert.Equal(t, anyError, err)
-	})
-	mocks.glnVerifier.EXPECT().ValidateGLN(*user.FirstName, *user.LastName, *user.BusinessID).Return(nil).AnyTimes()
 
 	t.Run("Failed to compute OnboardingRedirectURI", func(t *testing.T) {
 		mocks.onboardingModule.EXPECT().ComputeOnboardingRedirectURI(ctx, targetRealmName, customerRealmName, realmConf).Return("", anyError)

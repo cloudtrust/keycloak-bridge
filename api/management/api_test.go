@@ -553,7 +553,6 @@ func TestConvertRealmAdminConfiguration(t *testing.T) {
 		assert.Nil(t, res.SseTheme)
 		assert.Nil(t, res.RegisterTheme)
 		assert.Nil(t, res.SignerTheme)
-		assert.False(t, *res.BusinessIDIsNotGLN)
 		assert.False(t, *res.VideoIdentificationVoucherEnabled)
 		assert.False(t, *res.VideoIdentificationAccountingEnabled)
 		assert.False(t, *res.VideoIdentificationPrepaymentRequired)
@@ -568,7 +567,6 @@ func TestConvertRealmAdminConfiguration(t *testing.T) {
 		var consentRequiredSocial = true
 		var consentRequiredCorporate = false
 		var showGlnEditing = true
-		var businessIDIsNotGLN = true
 		var videoIdentificationVoucherEnabled = true
 		var videoIdentificationAccountingEnabled = true
 		var videoIdentificationPrepaymentRequired = true
@@ -587,7 +585,6 @@ func TestConvertRealmAdminConfiguration(t *testing.T) {
 			ConsentRequiredSocial:                 &consentRequiredSocial,
 			ConsentRequiredCorporate:              &consentRequiredCorporate,
 			ShowGlnEditing:                        &showGlnEditing,
-			BusinessIDIsNotGLN:                    &businessIDIsNotGLN,
 			VideoIdentificationVoucherEnabled:     &videoIdentificationVoucherEnabled,
 			VideoIdentificationAccountingEnabled:  &videoIdentificationAccountingEnabled,
 			VideoIdentificationPrepaymentRequired: &videoIdentificationPrepaymentRequired,
@@ -609,7 +606,6 @@ func TestConvertRealmAdminConfiguration(t *testing.T) {
 		assert.False(t, *res.NeedVerifiedContact)
 		assert.True(t, *res.ConsentRequiredSocial)
 		assert.True(t, *res.ShowGlnEditing)
-		assert.True(t, *res.BusinessIDIsNotGLN)
 		assert.True(t, *res.VideoIdentificationVoucherEnabled)
 		assert.True(t, *res.VideoIdentificationAccountingEnabled)
 		assert.True(t, *res.VideoIdentificationPrepaymentRequired)

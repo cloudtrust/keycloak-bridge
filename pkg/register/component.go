@@ -45,11 +45,6 @@ type OnboardingModule interface {
 	ComputeOnboardingRedirectURI(ctx context.Context, targetRealmName string, customerRealmName string, realmConf configuration.RealmConfiguration) (string, error)
 }
 
-// GlnVerifier interface allows to check validity of a GLN
-type GlnVerifier interface {
-	ValidateGLN(firstName, lastName, gln string) error
-}
-
 // UserProfileCache interface
 type UserProfileCache interface {
 	GetRealmUserProfile(ctx context.Context, realmName string) (kc.UserProfileRepresentation, error)
@@ -78,7 +73,7 @@ var (
 
 // NewComponent returns component.
 func NewComponent(keycloakClient KeycloakClient, tokenProvider toolbox.OidcTokenProvider, profileCache UserProfileCache,
-	configDBModule ConfigurationDBModule, auditEventsReporterModule EventsReporterModule, onboardingModule OnboardingModule, glnVerifier GlnVerifier,
+	configDBModule ConfigurationDBModule, auditEventsReporterModule EventsReporterModule, onboardingModule OnboardingModule,
 	contextKeyManager ContextKeyManager, logger log.Logger) Component {
 	return &component{
 		keycloakClient:            keycloakClient,
@@ -87,7 +82,6 @@ func NewComponent(keycloakClient KeycloakClient, tokenProvider toolbox.OidcToken
 		configDBModule:            configDBModule,
 		auditEventsReporterModule: auditEventsReporterModule,
 		onboardingModule:          onboardingModule,
-		glnVerifier:               glnVerifier,
 		contextKeyMgr:             contextKeyManager,
 		logger:                    logger,
 		originEvent:               "back-office",
@@ -102,7 +96,6 @@ type component struct {
 	configDBModule            ConfigurationDBModule
 	auditEventsReporterModule EventsReporterModule
 	onboardingModule          OnboardingModule
-	glnVerifier               GlnVerifier
 	contextKeyMgr             ContextKeyManager
 	logger                    log.Logger
 	originEvent               string
@@ -204,14 +197,6 @@ func (c *component) RegisterUser(ctx context.Context, targetRealmName string, cu
 		(realmConf.OnboardingRedirectURI == nil || *realmConf.OnboardingRedirectURI == "") ||
 		(realmConf.OnboardingClientID == nil || *realmConf.OnboardingClientID == "") {
 		return "", errorhandler.CreateEndpointNotEnabled(constants.MsgErrNotConfigured)
-	}
-
-	if realmAdminConf.ShowGlnEditing != nil && *realmAdminConf.ShowGlnEditing && user.BusinessID != nil {
-		if glnErr := c.glnVerifier.ValidateGLN(*user.FirstName, *user.LastName, *user.BusinessID); glnErr != nil {
-			return "", glnErr
-		}
-	} else {
-		user.BusinessID = nil
 	}
 
 	onboardingRedirectURI, err := c.onboardingModule.ComputeOnboardingRedirectURI(ctx, targetRealmName, customerRealmName, realmConf)
