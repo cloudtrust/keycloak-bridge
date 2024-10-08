@@ -68,7 +68,7 @@ func MakeManagementHandler(e endpoint.Endpoint, logger log.Logger) *http_transpo
 
 // decodeEventsRequest gets the HTTP parameters and body content
 func decodeManagementRequest(ctx context.Context, req *http.Request) (interface{}, error) {
-	var pathParams = map[string]string{
+	pathParams := map[string]string{
 		prmRealm:        constants.RegExpRealmName,
 		prmUserID:       constants.RegExpID,
 		prmClientID:     constants.RegExpClientID,
@@ -79,11 +79,11 @@ func decodeManagementRequest(ctx context.Context, req *http.Request) (interface{
 		prmAction:       constants.RegExpName,
 	}
 
-	var queryParams = map[string]string{
-		prmQryEmail:         constants.RegExpEmail,
+	queryParams := map[string]string{
+		prmQryEmail:         constants.RegExpSearch,
 		prmQryFirstName:     constants.RegExpSearch,
-		prmQryLastName:      constants.RegExpLastNameSearch,
-		prmQryUserName:      constants.RegExpUsername,
+		prmQryLastName:      constants.RegExpSearch,
+		prmQryUserName:      constants.RegExpSearch,
 		prmQrySearch:        constants.RegExpSearch,
 		prmQryClientID:      constants.RegExpClientID,
 		prmQryRedirectURI:   constants.RegExpRedirectURI,
