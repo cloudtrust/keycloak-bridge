@@ -22,7 +22,6 @@ const (
 	RegExpEmail               = `^.+\@.+\..+$`
 	RegExpNameSpecialChars    = `^([\p{Lu}\p{Ll}][\p{Lu}\p{Ll} /\\\.',-]{0,49})$`
 	RegExpNameSpecialChars128 = `^([\p{Lu}\p{Ll}][\p{Lu}\p{Ll} /\\\.',-]{0,127})$`
-	RegExpLastNameSearch      = `^[=%]?([\p{Lu}\p{Ll}][\p{Lu}\p{Ll} /\\\.'-]{0,127}[%]?)$`
 	RegExpPhoneNumber         = `^\+[1-9]\d{1,14}$`
 	RegExpLabel               = regExpLen255
 	RegExpGender              = `^[MFU]$`
@@ -55,7 +54,7 @@ const (
 	RegExpCustomValue = `^[A-Za-z\d_-]{0,50}$`
 	RegExpTxnID       = regExpLen255
 
-	//Corporate Regex TO CLEAN WHEN WE WILL HAVE ATTRIBUTE MANAGEMENT
+	// Corporate Regex TO CLEAN WHEN WE WILL HAVE ATTRIBUTE MANAGEMENT
 	regExpLen128OrEmpty      = `^.{0,128}$`
 	RegExpCorporateFirstName = regExpLen128OrEmpty
 	RegExpCorporateLastName  = regExpLen128
