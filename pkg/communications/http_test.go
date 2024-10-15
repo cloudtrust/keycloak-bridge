@@ -10,21 +10,21 @@ import (
 	"github.com/cloudtrust/common-service/v2/log"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/cloudtrust/keycloak-bridge/pkg/communications/mock"
-	"github.com/golang/mock/gomock"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func TestHTTPCommunicationsHandler(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	var mockComponent = mock.NewComponent(mockCtrl)
-	var mockLogger = log.NewNopLogger()
+	mockComponent := mock.NewComponent(mockCtrl)
+	mockLogger := log.NewNopLogger()
 
-	var realm = "example"
+	realm := "example"
 
-	var communicationsHandler = MakeCommunicationsHandler(keycloakb.ToGoKitEndpoint(MakeSendEmailEndpoint(mockComponent)), mockLogger)
-	var communicationsHandler2 = MakeCommunicationsHandler(keycloakb.ToGoKitEndpoint(MakeSendSMSEndpoint(mockComponent)), mockLogger)
+	communicationsHandler := MakeCommunicationsHandler(keycloakb.ToGoKitEndpoint(MakeSendEmailEndpoint(mockComponent)), mockLogger)
+	communicationsHandler2 := MakeCommunicationsHandler(keycloakb.ToGoKitEndpoint(MakeSendSMSEndpoint(mockComponent)), mockLogger)
 
 	r := mux.NewRouter()
 	r.Handle("/communications/realms/{realm}/send-mail", communicationsHandler)
@@ -38,7 +38,7 @@ func TestHTTPCommunicationsHandler(t *testing.T) {
 		mockComponent.EXPECT().SendEmail(gomock.Any(), realm, emailForTest).Return(nil).Times(1)
 
 		emailJSON, _ := json.Marshal(emailForTest)
-		var body = strings.NewReader(string(emailJSON))
+		body := strings.NewReader(string(emailJSON))
 		res, err := http.Post(ts.URL+"/communications/realms/example/send-mail", "application/json", body)
 
 		assert.Nil(t, err)
@@ -50,7 +50,7 @@ func TestHTTPCommunicationsHandler(t *testing.T) {
 		mockComponent.EXPECT().SendSMS(gomock.Any(), realm, smsForTest).Return(nil).Times(1)
 
 		smsJSON, _ := json.Marshal(smsForTest)
-		var body = strings.NewReader(string(smsJSON))
+		body := strings.NewReader(string(smsJSON))
 		res, err := http.Post(ts.URL+"/communications/realms/example/send-sms", "application/json", body)
 
 		assert.Nil(t, err)

@@ -9,33 +9,33 @@ import (
 	"github.com/cloudtrust/common-service/v2/log"
 	"github.com/cloudtrust/common-service/v2/security"
 	"github.com/cloudtrust/keycloak-bridge/pkg/communications/mock"
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func TestDeny(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mockLogger = log.NewNopLogger()
-	var mockCommunicationsComponent = mock.NewComponent(mockCtrl)
-	var mockKeycloakClient = mock.NewKcClientAuth(mockCtrl)
+	mockLogger := log.NewNopLogger()
+	mockCommunicationsComponent := mock.NewComponent(mockCtrl)
+	mockKeycloakClient := mock.NewKcClientAuth(mockCtrl)
 
-	var mockAuthorizationDBReader = mock.NewAuthorizationDBReader(mockCtrl)
+	mockAuthorizationDBReader := mock.NewAuthorizationDBReader(mockCtrl)
 	mockAuthorizationDBReader.EXPECT().GetAuthorizations(gomock.Any()).Return([]configuration.Authorization{}, nil)
 
-	var accessToken = "TOKEN=="
-	var groups = []string{"toe"}
-	var realmName = "realm"
-	var userID = "testerID"
+	accessToken := "TOKEN=="
+	groups := []string{"toe"}
+	realmName := "realm"
+	userID := "testerID"
 
 	{
-		var authorizations, err = security.NewAuthorizationManager(mockAuthorizationDBReader, mockKeycloakClient, mockLogger)
+		authorizations, err := security.NewAuthorizationManager(mockAuthorizationDBReader, mockKeycloakClient, mockLogger)
 		assert.Nil(t, err)
 
-		var authorizationMW = MakeAuthorizationCommunicationsComponentMW(mockLogger, authorizations)(mockCommunicationsComponent)
+		authorizationMW := MakeAuthorizationCommunicationsComponentMW(mockLogger, authorizations)(mockCommunicationsComponent)
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextGroups, groups)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, "master")
 
@@ -51,25 +51,25 @@ func TestDeny(t *testing.T) {
 }
 
 func TestAllow(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mockLogger = log.NewNopLogger()
-	var mockCommunicationsComponent = mock.NewComponent(mockCtrl)
-	var mockKeycloakClient = mock.NewKcClientAuth(mockCtrl)
+	mockLogger := log.NewNopLogger()
+	mockCommunicationsComponent := mock.NewComponent(mockCtrl)
+	mockKeycloakClient := mock.NewKcClientAuth(mockCtrl)
 
-	var mockAuthorizationDBReader = mock.NewAuthorizationDBReader(mockCtrl)
+	mockAuthorizationDBReader := mock.NewAuthorizationDBReader(mockCtrl)
 
-	var accessToken = "TOKEN=="
-	var groups = []string{"toe"}
-	var realmName = "master"
-	var toe = "toe"
-	var any = "*"
-	var userID = "testerID"
+	accessToken := "TOKEN=="
+	groups := []string{"toe"}
+	realmName := "master"
+	toe := "toe"
+	any := "*"
+	userID := "testerID"
 
-	var authorizations = []configuration.Authorization{}
+	authorizations := []configuration.Authorization{}
 	for _, action := range security.Actions.GetActionsForAPIs(security.BridgeService, security.CommunicationAPI) {
-		var action = string(action.Name)
+		action := string(action.Name)
 		authorizations = append(authorizations, configuration.Authorization{
 			RealmID:         &realmName,
 			GroupName:       &toe,
@@ -82,12 +82,12 @@ func TestAllow(t *testing.T) {
 	mockAuthorizationDBReader.EXPECT().GetAuthorizations(gomock.Any()).Return(authorizations, nil)
 
 	{
-		var authorizationManager, err = security.NewAuthorizationManager(mockAuthorizationDBReader, mockKeycloakClient, mockLogger)
+		authorizationManager, err := security.NewAuthorizationManager(mockAuthorizationDBReader, mockKeycloakClient, mockLogger)
 		assert.Nil(t, err)
 
-		var authorizationMW = MakeAuthorizationCommunicationsComponentMW(mockLogger, authorizationManager)(mockCommunicationsComponent)
+		authorizationMW := MakeAuthorizationCommunicationsComponentMW(mockLogger, authorizationManager)(mockCommunicationsComponent)
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextGroups, groups)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, "master")
 

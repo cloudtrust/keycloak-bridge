@@ -14,27 +14,27 @@ import (
 
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/mock"
 
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func TestComponentInstrumentingMW(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	var mockComponent = mock.NewConfigurationDBModule(mockCtrl)
-	var mockHistogram = mock.NewHistogram(mockCtrl)
+	mockComponent := mock.NewConfigurationDBModule(mockCtrl)
+	mockHistogram := mock.NewHistogram(mockCtrl)
 
-	var m = MakeConfigurationDBModuleInstrumentingMW(mockHistogram)(mockComponent)
+	m := MakeConfigurationDBModuleInstrumentingMW(mockHistogram)(mockComponent)
 
 	rand.Seed(time.Now().UnixNano())
-	var corrID = strconv.FormatUint(rand.Uint64(), 10)
-	var ctx = context.WithValue(context.Background(), cs.CtContextCorrelationID, corrID)
-	var realmID = "realmID"
-	var groupNames = []string{"group1", "group2", "group3"}
-	var groupName = groupNames[0]
-	var confType = "customers"
-	var action = "TestAction"
-	var adminConfig = configuration.RealmAdminConfiguration{}
+	corrID := strconv.FormatUint(rand.Uint64(), 10)
+	ctx := context.WithValue(context.Background(), cs.CtContextCorrelationID, corrID)
+	realmID := "realmID"
+	groupNames := []string{"group1", "group2", "group3"}
+	groupName := groupNames[0]
+	confType := "customers"
+	action := "TestAction"
+	adminConfig := configuration.RealmAdminConfiguration{}
 
 	t.Run("Get configurations", func(t *testing.T) {
 		mockComponent.EXPECT().GetConfigurations(ctx, realmID).Return(configuration.RealmConfiguration{}, configuration.RealmAdminConfiguration{}, nil)
@@ -57,7 +57,7 @@ func TestComponentInstrumentingMW(t *testing.T) {
 	})
 	t.Run("Get configuration without correlation ID", func(t *testing.T) {
 		mockComponent.EXPECT().GetConfiguration(context.Background(), "realmID").Return(configuration.RealmConfiguration{}, nil).Times(1)
-		var f = func() {
+		f := func() {
 			_, _ = m.GetConfiguration(context.Background(), "realmID")
 		}
 		assert.Panics(t, f)
@@ -71,7 +71,7 @@ func TestComponentInstrumentingMW(t *testing.T) {
 	})
 	t.Run("Update configuration without correlation ID", func(t *testing.T) {
 		mockComponent.EXPECT().StoreOrUpdateConfiguration(context.Background(), "realmID", configuration.RealmConfiguration{}).Return(nil).Times(1)
-		var f = func() {
+		f := func() {
 			_ = m.StoreOrUpdateConfiguration(context.Background(), "realmID", configuration.RealmConfiguration{})
 		}
 		assert.Panics(t, f)
@@ -86,7 +86,7 @@ func TestComponentInstrumentingMW(t *testing.T) {
 
 	t.Run("Get admin configuration without correlation ID", func(t *testing.T) {
 		mockComponent.EXPECT().GetAdminConfiguration(context.Background(), "realmID").Return(adminConfig, nil).Times(1)
-		var f = func() {
+		f := func() {
 			_, _ = m.GetAdminConfiguration(context.Background(), "realmID")
 		}
 		assert.Panics(t, f)
@@ -153,7 +153,7 @@ func TestComponentInstrumentingMW(t *testing.T) {
 
 	t.Run("Get Authorization without correlation ID", func(t *testing.T) {
 		mockComponent.EXPECT().AuthorizationExists(context.Background(), realmID, groupNames[0], realmID, gomock.Any(), action).Return(true, nil).Times(1)
-		var f = func() {
+		f := func() {
 			_, _ = m.AuthorizationExists(context.Background(), realmID, groupNames[0], realmID, &groupNames[1], action)
 		}
 		assert.Panics(t, f)

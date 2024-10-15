@@ -7,19 +7,19 @@ import (
 
 	cs "github.com/cloudtrust/common-service/v2"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/accreditationsclient/mock"
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func TestNotifyCheck(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
 	mockHTTPClient := mock.NewHTTPClient(mockCtrl)
 	accreditationsClient := MakeAccreditationsServiceClient(mockHTTPClient)
-	var ctx = context.Background()
-	var expectedError = errors.New("Test error")
-	var correlationID = "TestCorrelationID"
+	ctx := context.Background()
+	expectedError := errors.New("Test error")
+	correlationID := "TestCorrelationID"
 
 	ctx = context.WithValue(ctx, cs.CtContextCorrelationID, correlationID)
 
@@ -39,14 +39,14 @@ func TestNotifyCheck(t *testing.T) {
 }
 
 func TestNotifyUpdate(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
 	mockHTTPClient := mock.NewHTTPClient(mockCtrl)
 	accreditationsClient := MakeAccreditationsServiceClient(mockHTTPClient)
-	var ctx = context.Background()
-	var expectedError = errors.New("Test error")
-	var correlationID = "TestCorrelationID"
+	ctx := context.Background()
+	expectedError := errors.New("Test error")
+	correlationID := "TestCorrelationID"
 
 	ctx = context.WithValue(ctx, cs.CtContextCorrelationID, correlationID)
 
@@ -66,16 +66,16 @@ func TestNotifyUpdate(t *testing.T) {
 }
 
 func TestGetChecks(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
 	mockHTTPClient := mock.NewHTTPClient(mockCtrl)
 	accreditationsClient := MakeAccreditationsServiceClient(mockHTTPClient)
-	var ctx = context.Background()
-	var expectedError = errors.New("Test error")
-	var correlationID = "TestCorrelationID"
-	var realm = "testRealm"
-	var userID = "userID"
+	ctx := context.Background()
+	expectedError := errors.New("Test error")
+	correlationID := "TestCorrelationID"
+	realm := "testRealm"
+	userID := "userID"
 
 	ctx = context.WithValue(ctx, cs.CtContextCorrelationID, correlationID)
 
@@ -95,16 +95,16 @@ func TestGetChecks(t *testing.T) {
 }
 
 func TestGetPendingChecks(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
 	mockHTTPClient := mock.NewHTTPClient(mockCtrl)
 	accreditationsClient := MakeAccreditationsServiceClient(mockHTTPClient)
-	var ctx = context.Background()
-	var expectedError = errors.New("Test error")
-	var correlationID = "TestCorrelationID"
-	var realm = "testRealm"
-	var userID = "userID"
+	ctx := context.Background()
+	expectedError := errors.New("Test error")
+	correlationID := "TestCorrelationID"
+	realm := "testRealm"
+	userID := "userID"
 
 	ctx = context.WithValue(ctx, cs.CtContextCorrelationID, correlationID)
 
@@ -124,15 +124,15 @@ func TestGetPendingChecks(t *testing.T) {
 }
 
 func TestGetIdentityChecksByNature(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
 	mockHTTPClient := mock.NewHTTPClient(mockCtrl)
 	accreditationsClient := MakeAccreditationsServiceClient(mockHTTPClient)
-	var ctx = context.Background()
-	var expectedError = errors.New("Test error")
-	var correlationID = "TestCorrelationID"
-	var realm = "testRealm"
+	ctx := context.Background()
+	expectedError := errors.New("Test error")
+	correlationID := "TestCorrelationID"
+	realm := "testRealm"
 
 	ctx = context.WithValue(ctx, cs.CtContextCorrelationID, correlationID)
 

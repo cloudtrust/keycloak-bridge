@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	"github.com/cloudtrust/keycloak-bridge/pkg/communications/mock"
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 const (
@@ -16,18 +16,18 @@ const (
 )
 
 func TestSendEmailEndpoint(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mockCommunicationsComponent = mock.NewComponent(mockCtrl)
+	mockCommunicationsComponent := mock.NewComponent(mockCtrl)
 
-	var e = MakeSendEmailEndpoint(mockCommunicationsComponent)
+	e := MakeSendEmailEndpoint(mockCommunicationsComponent)
 
-	var realm = "master"
-	var ctx = context.Background()
+	realm := "master"
+	ctx := context.Background()
 
 	t.Run("No Error", func(t *testing.T) {
-		var req = make(map[string]string)
+		req := make(map[string]string)
 		req[reqScheme] = "https"
 		req[prmRealm] = realm
 
@@ -35,19 +35,19 @@ func TestSendEmailEndpoint(t *testing.T) {
 		req[reqBody] = string(emailJSON)
 
 		mockCommunicationsComponent.EXPECT().SendEmail(ctx, realm, emailForTest).Return(nil).Times(1)
-		var _, err = e(ctx, req)
+		_, err := e(ctx, req)
 		assert.Nil(t, err)
 	})
 
 	t.Run("Error - Cannot unmarshall", func(t *testing.T) {
-		var req = make(map[string]string)
+		req := make(map[string]string)
 		req[reqBody] = string("JSON")
 		_, err := e(ctx, req)
 		assert.NotNil(t, err)
 	})
 
 	t.Run("Error - Invalid emailRepresentation", func(t *testing.T) {
-		var req = make(map[string]string)
+		req := make(map[string]string)
 		req[reqBody] = string(`{
 			"Recipient":"toto",
 			"theming":{
@@ -64,7 +64,7 @@ func TestSendEmailEndpoint(t *testing.T) {
 	})
 
 	t.Run("Error - Keycloak client error", func(t *testing.T) {
-		var req = make(map[string]string)
+		req := make(map[string]string)
 		req[reqScheme] = "https"
 		req[prmRealm] = realm
 		emailJSON, _ := json.Marshal(emailForTest)
@@ -77,19 +77,19 @@ func TestSendEmailEndpoint(t *testing.T) {
 }
 
 func TestSendEmailToUserEndpoint(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mockCommunicationsComponent = mock.NewComponent(mockCtrl)
+	mockCommunicationsComponent := mock.NewComponent(mockCtrl)
 
-	var e = MakeSendEmailToUserEndpoint(mockCommunicationsComponent)
+	e := MakeSendEmailToUserEndpoint(mockCommunicationsComponent)
 
-	var realm = "test"
-	var userID = "testerID"
-	var ctx = context.Background()
+	realm := "test"
+	userID := "testerID"
+	ctx := context.Background()
 
 	t.Run("No Error", func(t *testing.T) {
-		var req = make(map[string]string)
+		req := make(map[string]string)
 		req[reqScheme] = "https"
 		req[prmRealm] = realm
 		req[prmUserID] = userID
@@ -98,19 +98,19 @@ func TestSendEmailToUserEndpoint(t *testing.T) {
 		req[reqBody] = string(emailJSON)
 
 		mockCommunicationsComponent.EXPECT().SendEmailToUser(ctx, realm, userID, emailForTest).Return(nil).Times(1)
-		var _, err = e(ctx, req)
+		_, err := e(ctx, req)
 		assert.Nil(t, err)
 	})
 
 	t.Run("Error - Cannot unmarshall", func(t *testing.T) {
-		var req = make(map[string]string)
+		req := make(map[string]string)
 		req[reqBody] = string("JSON")
 		_, err := e(ctx, req)
 		assert.NotNil(t, err)
 	})
 
 	t.Run("Error - Invalid emailRepresentation", func(t *testing.T) {
-		var req = make(map[string]string)
+		req := make(map[string]string)
 		req[reqBody] = string(`{
 			"Recipient":"toto",
 			"theming":{
@@ -127,7 +127,7 @@ func TestSendEmailToUserEndpoint(t *testing.T) {
 	})
 
 	t.Run("Error - Keycloak client error", func(t *testing.T) {
-		var req = make(map[string]string)
+		req := make(map[string]string)
 		req[reqScheme] = "https"
 		req[prmRealm] = realm
 		req[prmUserID] = userID
@@ -141,18 +141,18 @@ func TestSendEmailToUserEndpoint(t *testing.T) {
 }
 
 func TestSendSMSEndpoint(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mockCommunicationsComponent = mock.NewComponent(mockCtrl)
+	mockCommunicationsComponent := mock.NewComponent(mockCtrl)
 
-	var e = MakeSendSMSEndpoint(mockCommunicationsComponent)
+	e := MakeSendSMSEndpoint(mockCommunicationsComponent)
 
-	var realm = "master"
-	var ctx = context.Background()
+	realm := "master"
+	ctx := context.Background()
 
 	t.Run("No Error", func(t *testing.T) {
-		var req = make(map[string]string)
+		req := make(map[string]string)
 		req[reqScheme] = "https"
 		req[prmRealm] = realm
 
@@ -160,19 +160,19 @@ func TestSendSMSEndpoint(t *testing.T) {
 		req[reqBody] = string(smsJSON)
 
 		mockCommunicationsComponent.EXPECT().SendSMS(ctx, realm, smsForTest).Return(nil).Times(1)
-		var _, err = e(ctx, req)
+		_, err := e(ctx, req)
 		assert.Nil(t, err)
 	})
 
 	t.Run("Error - Cannot unmarshall", func(t *testing.T) {
-		var req = make(map[string]string)
+		req := make(map[string]string)
 		req[reqBody] = string("JSON")
 		_, err := e(ctx, req)
 		assert.NotNil(t, err)
 	})
 
 	t.Run("Error - Invalid SMSRepresentation", func(t *testing.T) {
-		var req = make(map[string]string)
+		req := make(map[string]string)
 		req[reqBody] = string(`{
 			"msidn":"notAPhoneNumber",
 			"theming":{}
@@ -182,7 +182,7 @@ func TestSendSMSEndpoint(t *testing.T) {
 	})
 
 	t.Run("Error - Keycloak client error", func(t *testing.T) {
-		var req = make(map[string]string)
+		req := make(map[string]string)
 		req[reqScheme] = "https"
 		req[prmRealm] = realm
 		smsJSON, _ := json.Marshal(smsForTest)

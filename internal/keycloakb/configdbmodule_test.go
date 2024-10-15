@@ -13,40 +13,40 @@ import (
 
 	msg "github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/mock"
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func TestConfigurationDBModule(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	var mockDB = mock.NewCloudtrustDB(mockCtrl)
-	var mockLogger = log.NewNopLogger()
+	mockDB := mock.NewCloudtrustDB(mockCtrl)
+	mockLogger := log.NewNopLogger()
 
 	mockDB.EXPECT().Exec(gomock.Any(), "realmId", gomock.Any(), gomock.Any()).Return(nil, nil).Times(1)
-	var configDBModule = NewConfigurationDBModule(mockDB, mockLogger)
-	var err = configDBModule.StoreOrUpdateConfiguration(context.Background(), "realmId", configuration.RealmConfiguration{})
+	configDBModule := NewConfigurationDBModule(mockDB, mockLogger)
+	err := configDBModule.StoreOrUpdateConfiguration(context.Background(), "realmId", configuration.RealmConfiguration{})
 	assert.Nil(t, err)
 }
 
 func toJSONString(value interface{}) string {
-	var jsonConfBytes, _ = json.Marshal(value)
+	jsonConfBytes, _ := json.Marshal(value)
 	return string(jsonConfBytes)
 }
 
 func TestGetConfigurations(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mockDB = mock.NewCloudtrustDB(mockCtrl)
-	var mockSQLRow = mock.NewSQLRow(mockCtrl)
-	var mockLogger = log.NewNopLogger()
+	mockDB := mock.NewCloudtrustDB(mockCtrl)
+	mockSQLRow := mock.NewSQLRow(mockCtrl)
+	mockLogger := log.NewNopLogger()
 
-	var configDBModule = NewConfigurationDBModule(mockDB, mockLogger)
-	var realmID = "myrealm"
-	var expectedError = errors.New("sql")
-	var expectedRealmConf = configuration.RealmConfiguration{BarcodeType: ptr("value")}
-	var expectedRealmAdminConf = configuration.RealmAdminConfiguration{Mode: ptr("trustID")}
+	configDBModule := NewConfigurationDBModule(mockDB, mockLogger)
+	realmID := "myrealm"
+	expectedError := errors.New("sql")
+	expectedRealmConf := configuration.RealmConfiguration{BarcodeType: ptr("value")}
+	expectedRealmAdminConf := configuration.RealmAdminConfiguration{Mode: ptr("trustID")}
 
 	t.Run("No error", func(t *testing.T) {
 		mockDB.EXPECT().QueryRow(gomock.Any(), realmID).Return(mockSQLRow)
@@ -79,19 +79,19 @@ func TestGetConfigurations(t *testing.T) {
 }
 
 func TestGetConfiguration(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mockDB = mock.NewCloudtrustDB(mockCtrl)
-	var mockSQLRow = mock.NewSQLRow(mockCtrl)
-	var mockLogger = log.NewNopLogger()
+	mockDB := mock.NewCloudtrustDB(mockCtrl)
+	mockSQLRow := mock.NewSQLRow(mockCtrl)
+	mockLogger := log.NewNopLogger()
 
-	var configDBModule = NewConfigurationDBModule(mockDB, mockLogger)
-	var realmID = "myrealm"
-	var expectedError = errors.New("sql")
+	configDBModule := NewConfigurationDBModule(mockDB, mockLogger)
+	realmID := "myrealm"
+	expectedError := errors.New("sql")
 
 	t.Run("No error", func(t *testing.T) {
-		var expectedResult = configuration.RealmConfiguration{DefaultRedirectURI: ptr("dummy://path/to/nothing")}
+		expectedResult := configuration.RealmConfiguration{DefaultRedirectURI: ptr("dummy://path/to/nothing")}
 		mockDB.EXPECT().QueryRow(gomock.Any(), realmID).Return(mockSQLRow)
 		mockSQLRow.EXPECT().Scan(gomock.Any()).DoAndReturn(func(ptrJSON *string) error {
 			*ptrJSON = toJSONString(expectedResult)
@@ -119,19 +119,19 @@ func TestGetConfiguration(t *testing.T) {
 }
 
 func TestStoreOrGetAdminConfiguration(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mockDB = mock.NewCloudtrustDB(mockCtrl)
-	var mockSQLRow = mock.NewSQLRow(mockCtrl)
-	var mockLogger = log.NewNopLogger()
+	mockDB := mock.NewCloudtrustDB(mockCtrl)
+	mockSQLRow := mock.NewSQLRow(mockCtrl)
+	mockLogger := log.NewNopLogger()
 
-	var configDBModule = NewConfigurationDBModule(mockDB, mockLogger)
-	var realmID = "myrealm"
+	configDBModule := NewConfigurationDBModule(mockDB, mockLogger)
+	realmID := "myrealm"
 	var adminConfig configuration.RealmAdminConfiguration
-	var adminConfigStr = toJSONString(adminConfig)
-	var sqlError = errors.New("sql")
-	var ctx = context.TODO()
+	adminConfigStr := toJSONString(adminConfig)
+	sqlError := errors.New("sql")
+	ctx := context.TODO()
 
 	t.Run("Store-SQL fails", func(t *testing.T) {
 		mockDB.EXPECT().Exec(gomock.Any(), gomock.Any()).Return(nil, sqlError)
@@ -144,14 +144,14 @@ func TestStoreOrGetAdminConfiguration(t *testing.T) {
 	t.Run("Get-SQL query fails", func(t *testing.T) {
 		mockDB.EXPECT().QueryRow(gomock.Any(), realmID).Return(mockSQLRow)
 		mockSQLRow.EXPECT().Scan(gomock.Any()).Return(sqlError)
-		var _, err = configDBModule.GetAdminConfiguration(ctx, realmID)
+		_, err := configDBModule.GetAdminConfiguration(ctx, realmID)
 		assert.Equal(t, sqlError, err)
 	})
 
 	t.Run("Get-SQL query returns no row", func(t *testing.T) {
 		mockDB.EXPECT().QueryRow(gomock.Any(), realmID).Return(mockSQLRow)
 		mockSQLRow.EXPECT().Scan(gomock.Any()).Return(sql.ErrNoRows)
-		var _, err = configDBModule.GetAdminConfiguration(ctx, realmID)
+		_, err := configDBModule.GetAdminConfiguration(ctx, realmID)
 		assert.NotNil(t, err)
 	})
 
@@ -161,40 +161,40 @@ func TestStoreOrGetAdminConfiguration(t *testing.T) {
 			*conf = adminConfigStr
 			return nil
 		})
-		var conf, err = configDBModule.GetAdminConfiguration(ctx, realmID)
+		conf, err := configDBModule.GetAdminConfiguration(ctx, realmID)
 		assert.Nil(t, err)
 		assert.Equal(t, adminConfig, conf)
 	})
 }
 
 func TestBackOfficeConfiguration(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mockDB = mock.NewCloudtrustDB(mockCtrl)
-	var mockSQLRows = mock.NewSQLRows(mockCtrl)
-	var mockLogger = log.NewNopLogger()
+	mockDB := mock.NewCloudtrustDB(mockCtrl)
+	mockSQLRows := mock.NewSQLRows(mockCtrl)
+	mockLogger := log.NewNopLogger()
 
-	var configDBModule = NewConfigurationDBModule(mockDB, mockLogger)
-	var expectedError = errors.New("error")
-	var realmID = "my-realm"
-	var groupName = "my-group"
-	var confType = "customers"
-	var targetRealmID = "the-realm"
-	var targetGroupName = "the-group"
-	var groupNames = []string{"group1", "group2"}
-	var ctx = context.TODO()
+	configDBModule := NewConfigurationDBModule(mockDB, mockLogger)
+	expectedError := errors.New("error")
+	realmID := "my-realm"
+	groupName := "my-group"
+	confType := "customers"
+	targetRealmID := "the-realm"
+	targetGroupName := "the-group"
+	groupNames := []string{"group1", "group2"}
+	ctx := context.TODO()
 
 	t.Run("GET-SQL query fails", func(t *testing.T) {
 		mockDB.EXPECT().Query(gomock.Any(), gomock.Any()).Return(nil, expectedError)
-		var _, err = configDBModule.GetBackOfficeConfiguration(ctx, realmID, groupNames)
+		_, err := configDBModule.GetBackOfficeConfiguration(ctx, realmID, groupNames)
 		assert.Equal(t, expectedError, err)
 	})
 	t.Run("GET-SQLRows is empty", func(t *testing.T) {
 		mockDB.EXPECT().Query(gomock.Any(), gomock.Any()).Return(mockSQLRows, nil)
 		mockSQLRows.EXPECT().Next().Return(false)
 		mockSQLRows.EXPECT().Close()
-		var conf, err = configDBModule.GetBackOfficeConfiguration(ctx, realmID, groupNames)
+		conf, err := configDBModule.GetBackOfficeConfiguration(ctx, realmID, groupNames)
 		assert.Nil(t, err)
 		assert.Len(t, conf, 0)
 	})
@@ -203,7 +203,7 @@ func TestBackOfficeConfiguration(t *testing.T) {
 		mockSQLRows.EXPECT().Next().Return(true)
 		mockSQLRows.EXPECT().Scan(gomock.Any()).Return(expectedError)
 		mockSQLRows.EXPECT().Close()
-		var _, err = configDBModule.GetBackOfficeConfiguration(ctx, realmID, groupNames)
+		_, err := configDBModule.GetBackOfficeConfiguration(ctx, realmID, groupNames)
 		assert.Equal(t, expectedError, err)
 	})
 	t.Run("GET-Scan ok", func(t *testing.T) {
@@ -228,51 +228,51 @@ func TestBackOfficeConfiguration(t *testing.T) {
 			mockSQLRows.EXPECT().Next().Return(false),
 			mockSQLRows.EXPECT().Close(),
 		)
-		var conf, err = configDBModule.GetBackOfficeConfiguration(ctx, realmID, groupNames)
+		conf, err := configDBModule.GetBackOfficeConfiguration(ctx, realmID, groupNames)
 		assert.Nil(t, err)
 		assert.Equal(t, []string{"c", "d"}, conf["a"]["b"])
 	})
 
 	t.Run("DELETE-Fails", func(t *testing.T) {
 		mockDB.EXPECT().Exec(gomock.Any(), gomock.Any()).Return(nil, expectedError)
-		var err = configDBModule.DeleteBackOfficeConfiguration(ctx, realmID, groupName, confType, &targetRealmID, &targetGroupName)
+		err := configDBModule.DeleteBackOfficeConfiguration(ctx, realmID, groupName, confType, &targetRealmID, &targetGroupName)
 		assert.Equal(t, expectedError, err)
 	})
 	t.Run("DELETE-Success", func(t *testing.T) {
 		mockDB.EXPECT().Exec(gomock.Any(), gomock.Any()).Return(nil, nil)
-		var err = configDBModule.DeleteBackOfficeConfiguration(ctx, realmID, groupName, confType, &targetRealmID, &targetGroupName)
+		err := configDBModule.DeleteBackOfficeConfiguration(ctx, realmID, groupName, confType, &targetRealmID, &targetGroupName)
 		assert.Nil(t, err)
 	})
 
 	t.Run("INSERT-Fails", func(t *testing.T) {
 		mockDB.EXPECT().Exec(gomock.Any(), gomock.Any()).Return(nil, expectedError)
-		var err = configDBModule.InsertBackOfficeConfiguration(ctx, realmID, groupName, confType, targetRealmID, groupNames)
+		err := configDBModule.InsertBackOfficeConfiguration(ctx, realmID, groupName, confType, targetRealmID, groupNames)
 		assert.Equal(t, expectedError, err)
 	})
 	t.Run("INSERT-Success", func(t *testing.T) {
 		mockDB.EXPECT().Exec(gomock.Any(), gomock.Any()).Return(nil, nil).Times(len(groupNames))
-		var err = configDBModule.InsertBackOfficeConfiguration(ctx, realmID, groupName, confType, targetRealmID, groupNames)
+		err := configDBModule.InsertBackOfficeConfiguration(ctx, realmID, groupName, confType, targetRealmID, groupNames)
 		assert.Nil(t, err)
 	})
 }
 
 func TestGetAuthorizations(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mockDB = mock.NewCloudtrustDB(mockCtrl)
-	var mockSQLRows = mock.NewSQLRows(mockCtrl)
-	var mockLogger = log.NewNopLogger()
+	mockDB := mock.NewCloudtrustDB(mockCtrl)
+	mockSQLRows := mock.NewSQLRows(mockCtrl)
+	mockLogger := log.NewNopLogger()
 
-	var configDBModule = NewConfigurationDBModule(mockDB, mockLogger)
-	var realmID = "my-realm"
-	var groupName = "my-group"
-	var sqlError = errors.New("sql")
-	var ctx = context.TODO()
+	configDBModule := NewConfigurationDBModule(mockDB, mockLogger)
+	realmID := "my-realm"
+	groupName := "my-group"
+	sqlError := errors.New("sql")
+	ctx := context.TODO()
 
 	t.Run("Call to Query fails", func(t *testing.T) {
 		mockDB.EXPECT().Query(selectAuthzStmt, gomock.Any()).Return(nil, sqlError)
-		var _, err = configDBModule.GetAuthorizations(ctx, realmID, groupName)
+		_, err := configDBModule.GetAuthorizations(ctx, realmID, groupName)
 		assert.NotNil(t, err)
 	})
 	t.Run("Scan fails", func(t *testing.T) {
@@ -282,7 +282,7 @@ func TestGetAuthorizations(t *testing.T) {
 			mockSQLRows.EXPECT().Scan(gomock.Any()).Return(sqlError),
 			mockSQLRows.EXPECT().Close(),
 		)
-		var _, err = configDBModule.GetAuthorizations(ctx, realmID, groupName)
+		_, err := configDBModule.GetAuthorizations(ctx, realmID, groupName)
 		assert.NotNil(t, err)
 	})
 	t.Run("Success", func(t *testing.T) {
@@ -295,41 +295,41 @@ func TestGetAuthorizations(t *testing.T) {
 			mockSQLRows.EXPECT().Next().Return(false),
 			mockSQLRows.EXPECT().Close(),
 		)
-		var res, err = configDBModule.GetAuthorizations(ctx, realmID, groupName)
+		res, err := configDBModule.GetAuthorizations(ctx, realmID, groupName)
 		assert.Nil(t, err)
 		assert.Len(t, res, 2)
 	})
 }
 
 func TestAuthorization(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mockDB = mock.NewCloudtrustDB(mockCtrl)
-	var mockSQLRow = mock.NewSQLRow(mockCtrl)
-	var mockLogger = log.NewNopLogger()
+	mockDB := mock.NewCloudtrustDB(mockCtrl)
+	mockSQLRow := mock.NewSQLRow(mockCtrl)
+	mockLogger := log.NewNopLogger()
 
-	var configDBModule = NewConfigurationDBModule(mockDB, mockLogger)
-	var expectedError = errors.New("error")
-	var sqlError = errors.New("sql")
-	var realmID = "my-realm"
-	var groupName = "my-group"
-	var targetRealmID = "the-realm"
-	var targetGroupName = "the-group"
-	var action = "ActionTest"
-	var ctx = context.TODO()
+	configDBModule := NewConfigurationDBModule(mockDB, mockLogger)
+	expectedError := errors.New("error")
+	sqlError := errors.New("sql")
+	realmID := "my-realm"
+	groupName := "my-group"
+	targetRealmID := "the-realm"
+	targetGroupName := "the-group"
+	action := "ActionTest"
+	ctx := context.TODO()
 
 	t.Run("Get-SQL query fails", func(t *testing.T) {
 		mockDB.EXPECT().QueryRow(gomock.Any(), realmID, groupName, action, targetRealmID, gomock.Any()).Return(mockSQLRow)
 		mockSQLRow.EXPECT().Scan(gomock.Any()).Return(sqlError)
-		var res, err = configDBModule.AuthorizationExists(ctx, realmID, groupName, targetRealmID, &targetGroupName, action)
+		res, err := configDBModule.AuthorizationExists(ctx, realmID, groupName, targetRealmID, &targetGroupName, action)
 		assert.False(t, res)
 		assert.NotNil(t, err)
 	})
 	t.Run("Get-SQL query returns no row", func(t *testing.T) {
 		mockDB.EXPECT().QueryRow(gomock.Any(), realmID, groupName, action, targetRealmID, gomock.Any()).Return(mockSQLRow)
 		mockSQLRow.EXPECT().Scan(gomock.Any()).Return(sql.ErrNoRows)
-		var res, err = configDBModule.AuthorizationExists(ctx, realmID, groupName, targetRealmID, &targetGroupName, action)
+		res, err := configDBModule.AuthorizationExists(ctx, realmID, groupName, targetRealmID, &targetGroupName, action)
 		assert.False(t, res)
 		assert.Nil(t, err)
 	})
@@ -337,7 +337,7 @@ func TestAuthorization(t *testing.T) {
 	t.Run("Get-SQL query succeeds", func(t *testing.T) {
 		mockDB.EXPECT().QueryRow(gomock.Any(), realmID, groupName, action, targetRealmID, gomock.Any()).Return(mockSQLRow)
 		mockSQLRow.EXPECT().Scan(gomock.Any()).Return(nil)
-		var res, err = configDBModule.AuthorizationExists(ctx, realmID, groupName, targetRealmID, &targetGroupName, action)
+		res, err := configDBModule.AuthorizationExists(ctx, realmID, groupName, targetRealmID, &targetGroupName, action)
 		assert.True(t, res)
 		assert.Nil(t, err)
 	})
@@ -345,22 +345,22 @@ func TestAuthorization(t *testing.T) {
 	t.Run("Get-SQL query succeeds", func(t *testing.T) {
 		mockDB.EXPECT().QueryRow(gomock.Any(), realmID, groupName, action, targetRealmID).Return(mockSQLRow)
 		mockSQLRow.EXPECT().Scan(gomock.Any()).Return(nil)
-		var res, err = configDBModule.AuthorizationExists(ctx, realmID, groupName, targetRealmID, nil, action)
+		res, err := configDBModule.AuthorizationExists(ctx, realmID, groupName, targetRealmID, nil, action)
 		assert.True(t, res)
 		assert.Nil(t, err)
 	})
 
 	t.Run("CreateAuthorization", func(t *testing.T) {
-		var auth = configuration.Authorization{}
+		auth := configuration.Authorization{}
 
 		t.Run("Failure", func(t *testing.T) {
 			mockDB.EXPECT().Exec(createAuthzStmt, gomock.Any()).Return(nil, sqlError)
-			var err = configDBModule.CreateAuthorization(ctx, auth)
+			err := configDBModule.CreateAuthorization(ctx, auth)
 			assert.NotNil(t, err)
 		})
 		t.Run("Success", func(t *testing.T) {
 			mockDB.EXPECT().Exec(createAuthzStmt, gomock.Any()).Return(nil, nil)
-			var err = configDBModule.CreateAuthorization(ctx, configuration.Authorization{})
+			err := configDBModule.CreateAuthorization(ctx, configuration.Authorization{})
 			assert.Nil(t, err)
 		})
 	})
@@ -368,17 +368,17 @@ func TestAuthorization(t *testing.T) {
 	t.Run("DeleteAuthorization", func(t *testing.T) {
 		t.Run("Exec fails", func(t *testing.T) {
 			mockDB.EXPECT().Exec(gomock.Any(), realmID, groupName, action, targetRealmID, gomock.Any()).Return(nil, expectedError)
-			var err = configDBModule.DeleteAuthorization(ctx, realmID, groupName, targetRealmID, &targetGroupName, action)
+			err := configDBModule.DeleteAuthorization(ctx, realmID, groupName, targetRealmID, &targetGroupName, action)
 			assert.Equal(t, expectedError, err)
 		})
 		t.Run("Success with non nil target group", func(t *testing.T) {
 			mockDB.EXPECT().Exec(gomock.Any(), realmID, groupName, action, targetRealmID, gomock.Any()).Return(nil, nil)
-			var err = configDBModule.DeleteAuthorization(ctx, realmID, groupName, targetRealmID, &targetGroupName, action)
+			err := configDBModule.DeleteAuthorization(ctx, realmID, groupName, targetRealmID, &targetGroupName, action)
 			assert.Nil(t, err)
 		})
 		t.Run("Success with nil target group", func(t *testing.T) {
 			mockDB.EXPECT().Exec(gomock.Any(), realmID, groupName, action, targetRealmID).Return(nil, nil)
-			var err = configDBModule.DeleteAuthorization(ctx, realmID, groupName, targetRealmID, nil, action)
+			err := configDBModule.DeleteAuthorization(ctx, realmID, groupName, targetRealmID, nil, action)
 			assert.Nil(t, err)
 		})
 	})
@@ -386,12 +386,12 @@ func TestAuthorization(t *testing.T) {
 	t.Run("DeleteAllAuthorizationsWithGroup", func(t *testing.T) {
 		t.Run("Fails", func(t *testing.T) {
 			mockDB.EXPECT().Exec(gomock.Any(), realmID, groupName, realmID, groupName).Return(nil, expectedError)
-			var err = configDBModule.DeleteAllAuthorizationsWithGroup(ctx, realmID, groupName)
+			err := configDBModule.DeleteAllAuthorizationsWithGroup(ctx, realmID, groupName)
 			assert.Equal(t, expectedError, err)
 		})
 		t.Run("Success", func(t *testing.T) {
 			mockDB.EXPECT().Exec(gomock.Any(), realmID, groupName, realmID, groupName).Return(nil, nil)
-			var err = configDBModule.DeleteAllAuthorizationsWithGroup(ctx, realmID, groupName)
+			err := configDBModule.DeleteAllAuthorizationsWithGroup(ctx, realmID, groupName)
 			assert.Nil(t, err)
 		})
 	})
@@ -399,12 +399,12 @@ func TestAuthorization(t *testing.T) {
 	t.Run("Clean every realms", func(t *testing.T) {
 		t.Run("Fails", func(t *testing.T) {
 			mockDB.EXPECT().Exec(gomock.Any(), realmID, groupName, action).Return(nil, expectedError)
-			var err = configDBModule.CleanAuthorizationsActionForEveryRealms(ctx, realmID, groupName, action)
+			err := configDBModule.CleanAuthorizationsActionForEveryRealms(ctx, realmID, groupName, action)
 			assert.Equal(t, expectedError, err)
 		})
 		t.Run("Clean every realms-Success", func(t *testing.T) {
 			mockDB.EXPECT().Exec(gomock.Any(), realmID, groupName, action).Return(nil, nil)
-			var err = configDBModule.CleanAuthorizationsActionForEveryRealms(ctx, realmID, groupName, action)
+			err := configDBModule.CleanAuthorizationsActionForEveryRealms(ctx, realmID, groupName, action)
 			assert.Nil(t, err)
 		})
 	})
@@ -412,12 +412,12 @@ func TestAuthorization(t *testing.T) {
 	t.Run("Clean realms", func(t *testing.T) {
 		t.Run("Fails", func(t *testing.T) {
 			mockDB.EXPECT().Exec(gomock.Any(), realmID, groupName, action, targetRealmID).Return(nil, expectedError)
-			var err = configDBModule.CleanAuthorizationsActionForRealm(ctx, realmID, groupName, targetRealmID, action)
+			err := configDBModule.CleanAuthorizationsActionForRealm(ctx, realmID, groupName, targetRealmID, action)
 			assert.Equal(t, expectedError, err)
 		})
 		t.Run("Success", func(t *testing.T) {
 			mockDB.EXPECT().Exec(gomock.Any(), realmID, groupName, action, targetRealmID).Return(nil, nil)
-			var err = configDBModule.CleanAuthorizationsActionForRealm(ctx, realmID, groupName, targetRealmID, action)
+			err := configDBModule.CleanAuthorizationsActionForRealm(ctx, realmID, groupName, targetRealmID, action)
 			assert.Nil(t, err)
 		})
 	})
@@ -425,12 +425,12 @@ func TestAuthorization(t *testing.T) {
 	t.Run("NewTransaction", func(t *testing.T) {
 		t.Run("Fails", func(t *testing.T) {
 			mockDB.EXPECT().BeginTx(gomock.Any(), gomock.Any()).Return(nil, expectedError)
-			var _, err = configDBModule.NewTransaction(ctx)
+			_, err := configDBModule.NewTransaction(ctx)
 			assert.Equal(t, expectedError, err)
 		})
 		t.Run("Success", func(t *testing.T) {
 			mockDB.EXPECT().BeginTx(gomock.Any(), gomock.Any()).Return(nil, nil)
-			var _, err = configDBModule.NewTransaction(ctx)
+			_, err := configDBModule.NewTransaction(ctx)
 			assert.Nil(t, err)
 		})
 	})

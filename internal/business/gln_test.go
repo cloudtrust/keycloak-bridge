@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 type mockLookup struct {
@@ -60,62 +60,64 @@ func (m *mockLookup) Lookup(gln string) GlnSearchResult {
 }
 
 func TestGln(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var anError = errors.New("an error")
-	var gln = "111111111"
-	var mockProviders = []GlnLookupProvider{newMockLookup(1, time.Millisecond*100, nil), newMockLookup(2, time.Millisecond*10, nil),
-		newMockLookup(3, time.Millisecond*10, nil)}
+	anError := errors.New("an error")
+	gln := "111111111"
+	mockProviders := []GlnLookupProvider{
+		newMockLookup(1, time.Millisecond*100, nil), newMockLookup(2, time.Millisecond*10, nil),
+		newMockLookup(3, time.Millisecond*10, nil),
+	}
 	mockProviders[0].(*mockLookup).Add(gln)
 
-	var glnNilFirstName = "888888888"
-	var glnNilLastName = "333333333"
+	glnNilFirstName := "888888888"
+	glnNilLastName := "333333333"
 	mockProviders[0].(*mockLookup).AddPerson(glnNilFirstName, nil, ptr("NameRandom1"))
 	mockProviders[0].(*mockLookup).AddPerson(glnNilLastName, ptr("NameRandom2"), nil)
 
-	var glnVerifier = NewGlnVerifier()
+	glnVerifier := NewGlnVerifier()
 	t.Run("No GLN Lookup", func(t *testing.T) {
-		var err = glnVerifier.ValidateGLN("Tom", "Tom", "123456789")
+		err := glnVerifier.ValidateGLN("Tom", "Tom", "123456789")
 		assert.Equal(t, ErrGLNNoLookupProvider, err)
 	})
 
 	glnVerifier = NewGlnVerifier(mockProviders...)
 
 	t.Run("Unknown GLN", func(t *testing.T) {
-		var err = glnVerifier.ValidateGLN("Tom", "Tom", "123456789")
+		err := glnVerifier.ValidateGLN("Tom", "Tom", "123456789")
 		assert.Equal(t, ErrGLNNotFound, err)
 	})
 	t.Run("Does not match", func(t *testing.T) {
-		var err = glnVerifier.ValidateGLN("Nana", "Dubidon", gln)
+		err := glnVerifier.ValidateGLN("Nana", "Dubidon", gln)
 		assert.Equal(t, ErrGLNDoesNotMatch, err)
 	})
 	t.Run("Matching GLN", func(t *testing.T) {
-		var err = glnVerifier.ValidateGLN("Nana", "Dubouchon", gln)
+		err := glnVerifier.ValidateGLN("Nana", "Dubouchon", gln)
 		assert.Nil(t, err)
 	})
 
 	t.Run("Matching GLN, firstname nil", func(t *testing.T) {
-		var err = glnVerifier.ValidateGLN("", "NameRandom1", glnNilFirstName)
+		err := glnVerifier.ValidateGLN("", "NameRandom1", glnNilFirstName)
 		assert.Nil(t, err)
 	})
 
 	t.Run("Matching GLN, lastname nil", func(t *testing.T) {
-		var err = glnVerifier.ValidateGLN("NameRandom2", "", glnNilLastName)
+		err := glnVerifier.ValidateGLN("NameRandom2", "", glnNilLastName)
 		assert.Nil(t, err)
 	})
 
 	t.Run("Lookup provider fails", func(t *testing.T) {
 		mockProviders = []GlnLookupProvider{newMockLookup(1, time.Millisecond, anError), newMockLookup(1, time.Millisecond*10, nil)}
 		glnVerifier = NewGlnVerifier(mockProviders...)
-		var err = glnVerifier.ValidateGLN("Tom", "Tom", "123456789")
+		err := glnVerifier.ValidateGLN("Tom", "Tom", "123456789")
 		assert.Equal(t, anError, err)
 	})
 	t.Run("Positive response comes much faster than other responses", func(t *testing.T) {
 		mockProviders = []GlnLookupProvider{newMockLookup(1, time.Millisecond*100, anError), newMockLookup(1, time.Millisecond, nil)}
 		mockProviders[1].(*mockLookup).Add(gln)
 		glnVerifier = NewGlnVerifier(mockProviders...)
-		var err = glnVerifier.ValidateGLN("Tom", "Thomaser", gln)
+		err := glnVerifier.ValidateGLN("Tom", "Thomaser", gln)
 		assert.Nil(t, err)
 		// ensure there is no panic
 		time.Sleep(time.Second)
@@ -123,8 +125,8 @@ func TestGln(t *testing.T) {
 }
 
 func TestCompare(t *testing.T) {
-	var verifier = &glnVerifier{}
-	var person = GlnPerson{Number: ptr("number"), FirstName: ptr("firstname"), LastName: ptr("lastname")}
+	verifier := &glnVerifier{}
+	person := GlnPerson{Number: ptr("number"), FirstName: ptr("firstname"), LastName: ptr("lastname")}
 	assert.False(t, verifier.compare(person, "firstname", "lastname", "another"))
 	assert.False(t, verifier.compare(person, "firstname", "another", "number"))
 	assert.False(t, verifier.compare(person, "another", "lastname", "number"))

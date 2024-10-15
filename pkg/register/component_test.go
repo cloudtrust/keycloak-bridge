@@ -14,8 +14,8 @@ import (
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/cloudtrust/keycloak-bridge/pkg/register/mock"
 	kc "github.com/cloudtrust/keycloak-client/v2"
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func createValidUser() apiregister.UserRepresentation {
@@ -85,26 +85,26 @@ func (mocks *componentMocks) createComponent() *component {
 }
 
 func TestRegisterUser(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var component = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	component := mocks.createComponent()
 
-	var ctx = context.TODO()
-	var targetRealmName = "trustid"
-	var customerRealmName = "customer"
-	var user = createValidUser()
-	var accessToken = "JWT_ACCESS_TOKEN"
+	ctx := context.TODO()
+	targetRealmName := "trustid"
+	customerRealmName := "customer"
+	user := createValidUser()
+	accessToken := "JWT_ACCESS_TOKEN"
 
-	var kcID = "98784-48764-5565"
+	kcID := "98784-48764-5565"
 
-	var groupNames = []string{"group1", "group2"}
-	var groupID1 = "1215-651-15654"
-	var groupName1 = "group1"
-	var groupID2 = "84457-4155164-45455"
-	var groupName2 = "group2"
-	var groups = []kc.GroupRepresentation{
+	groupNames := []string{"group1", "group2"}
+	groupID1 := "1215-651-15654"
+	groupName1 := "group1"
+	groupID2 := "84457-4155164-45455"
+	groupName2 := "group2"
+	groups := []kc.GroupRepresentation{
 		{
 			ID:   &groupID1,
 			Name: &groupName1,
@@ -114,24 +114,24 @@ func TestRegisterUser(t *testing.T) {
 			Name: &groupName2,
 		},
 	}
-	var clientID = "onboardingid"
-	var onboardingURI = "http://test.test"
-	var realmConf = configuration.RealmConfiguration{
+	clientID := "onboardingid"
+	onboardingURI := "http://test.test"
+	realmConf := configuration.RealmConfiguration{
 		SelfRegisterGroupNames: &groupNames,
 		OnboardingClientID:     &clientID,
 		OnboardingRedirectURI:  &onboardingURI,
 	}
-	var realmAdminConf = configuration.RealmAdminConfiguration{
+	realmAdminConf := configuration.RealmAdminConfiguration{
 		SelfRegisterEnabled: ptrBool(true),
 		ShowGlnEditing:      ptrBool(true),
 	}
-	var anyError = errors.New("any error")
+	anyError := errors.New("any error")
 
 	errorhandler.SetEmitter(keycloakb.ComponentName)
 
-	var contextKeyNeutral = "key0"
-	var contextKeyRedirect = "key1"
-	var contextKeyInvalid = "invalid"
+	contextKeyNeutral := "key0"
+	contextKeyRedirect := "key1"
+	contextKeyInvalid := "invalid"
 	mocks.contextKeyMgr.EXPECT().GetOverride(targetRealmName, contextKeyNeutral).Return(keycloakb.ContextKeyParameters{
 		ID:    ptr(contextKeyRedirect),
 		Realm: &customerRealmName,
@@ -204,9 +204,9 @@ func TestRegisterUser(t *testing.T) {
 	})
 
 	t.Run("Already existing user created by third party", func(t *testing.T) {
-		var username = "existing"
+		username := "existing"
 		var createdTimestamp int64 = 1642697516274
-		var thirdParty = "third-party"
+		thirdParty := "third-party"
 		mocks.onboardingModule.EXPECT().ComputeOnboardingRedirectURI(ctx, targetRealmName, customerRealmName, realmConf).Return(onboardingURI, nil)
 		mocks.onboardingModule.EXPECT().ProcessAlreadyExistingUserCases(gomock.Any(), accessToken, targetRealmName, *user.Email, "register", gomock.Any()).
 			DoAndReturn(func(_, _, _, _, _ interface{}, handler func(username string, createdTimestamp int64, thirdParty *string) error) error {
@@ -219,7 +219,7 @@ func TestRegisterUser(t *testing.T) {
 	})
 
 	t.Run("Already onboarded user", func(t *testing.T) {
-		var username = "existing"
+		username := "existing"
 		var createdTimestamp int64 = 1642697516274
 		mocks.onboardingModule.EXPECT().ComputeOnboardingRedirectURI(ctx, targetRealmName, customerRealmName, realmConf).Return(onboardingURI, nil)
 		mocks.onboardingModule.EXPECT().ProcessAlreadyExistingUserCases(gomock.Any(), accessToken, targetRealmName, *user.Email, "register", gomock.Any()).
@@ -270,7 +270,7 @@ func TestRegisterUser(t *testing.T) {
 	mocks.onboardingModule.EXPECT().CreateUser(ctx, accessToken, targetRealmName, targetRealmName, gomock.Any(), false).DoAndReturn(
 		func(_, _, _, _ interface{}, kcUser *kc.UserRepresentation, _ interface{}) (string, error) {
 			assert.NotNil(t, kcUser.Attributes)
-			var generatedUsername = "78564513"
+			generatedUsername := "78564513"
 			kcUser.ID = &kcID
 			kcUser.Username = &generatedUsername
 			return "http://server/path/to/generated/resource/" + kcID, nil
@@ -279,7 +279,7 @@ func TestRegisterUser(t *testing.T) {
 	t.Run("Failed to send onboarding email", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetGroups(accessToken, targetRealmName).Return(groups, nil)
 
-		var onboardingRedirectURI = onboardingURI + "?customerRealm=" + customerRealmName
+		onboardingRedirectURI := onboardingURI + "?customerRealm=" + customerRealmName
 		mocks.onboardingModule.EXPECT().ComputeOnboardingRedirectURI(ctx, targetRealmName, customerRealmName, realmConf).Return(onboardingRedirectURI, nil)
 		mocks.onboardingModule.EXPECT().SendOnboardingEmail(ctx, accessToken, targetRealmName, kcID,
 			gomock.Any(), clientID, onboardingRedirectURI, customerRealmName, false, gomock.Any()).Return(errors.New("unexpected error"))
@@ -291,7 +291,7 @@ func TestRegisterUser(t *testing.T) {
 	t.Run("Success", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetGroups(accessToken, targetRealmName).Return(groups, nil)
 
-		var onboardingRedirectURI = onboardingURI + "?customerRealm=" + customerRealmName
+		onboardingRedirectURI := onboardingURI + "?customerRealm=" + customerRealmName
 		mocks.onboardingModule.EXPECT().ComputeOnboardingRedirectURI(ctx, targetRealmName, customerRealmName, realmConf).Return(onboardingRedirectURI, nil)
 		mocks.onboardingModule.EXPECT().SendOnboardingEmail(ctx, accessToken, targetRealmName, kcID,
 			gomock.Any(), clientID, onboardingRedirectURI, customerRealmName, false, gomock.Any()).Return(nil)
@@ -306,7 +306,7 @@ func TestRegisterUser(t *testing.T) {
 		expectedURL := "an-url.com"
 		mocks.keycloakClient.EXPECT().GetGroups(accessToken, targetRealmName).Return(groups, nil)
 
-		var onboardingRedirectURI = onboardingURI + "?customerRealm=" + customerRealmName
+		onboardingRedirectURI := onboardingURI + "?customerRealm=" + customerRealmName
 		mocks.onboardingModule.EXPECT().ComputeOnboardingRedirectURI(ctx, targetRealmName, customerRealmName, realmConf).Return(onboardingRedirectURI, nil)
 		mocks.onboardingModule.EXPECT().ComputeRedirectURI(ctx, accessToken, targetRealmName, kcID,
 			gomock.Any(), clientID, onboardingRedirectURI).Return(expectedURL, nil)
@@ -320,87 +320,87 @@ func TestRegisterUser(t *testing.T) {
 }
 
 func TestGetSupportedLocales(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var component = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	component := mocks.createComponent()
 
-	var ctx = context.TODO()
-	var realm = "test"
-	var accessToken = "acce-ssto-ken!"
-	var supportedLocales = []string{"fr", "en"}
-	var realmConfig = kc.RealmRepresentation{
+	ctx := context.TODO()
+	realm := "test"
+	accessToken := "acce-ssto-ken!"
+	supportedLocales := []string{"fr", "en"}
+	realmConfig := kc.RealmRepresentation{
 		SupportedLocales: &supportedLocales,
 	}
-	var anyError = errors.New("any error")
+	anyError := errors.New("any error")
 
 	t.Run("Can't get access token", func(t *testing.T) {
 		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return("", anyError)
-		var _, err = component.getSupportedLocales(ctx, realm)
+		_, err := component.getSupportedLocales(ctx, realm)
 		assert.Equal(t, anyError, err)
 	})
 	t.Run("Can't get response from KC", func(t *testing.T) {
 		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
 		mocks.keycloakClient.EXPECT().GetRealm(accessToken, realm).Return(kc.RealmRepresentation{}, anyError)
-		var _, err = component.getSupportedLocales(ctx, realm)
+		_, err := component.getSupportedLocales(ctx, realm)
 		assert.Equal(t, anyError, err)
 	})
 	t.Run("Internationalization disabled (nil)", func(t *testing.T) {
 		realmConfig.InternationalizationEnabled = nil
 		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
 		mocks.keycloakClient.EXPECT().GetRealm(accessToken, realm).Return(realmConfig, nil)
-		var res, err = component.getSupportedLocales(ctx, realm)
+		res, err := component.getSupportedLocales(ctx, realm)
 		assert.Nil(t, err)
 		assert.Nil(t, res)
 	})
 	t.Run("Internationalization disabled (false)", func(t *testing.T) {
-		var bFalse = false
+		bFalse := false
 		realmConfig.InternationalizationEnabled = &bFalse
 		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
 		mocks.keycloakClient.EXPECT().GetRealm(accessToken, realm).Return(realmConfig, nil)
-		var res, err = component.getSupportedLocales(ctx, realm)
+		res, err := component.getSupportedLocales(ctx, realm)
 		assert.Nil(t, err)
 		assert.Nil(t, res)
 	})
 	t.Run("Internationalization enabled", func(t *testing.T) {
-		var bTrue = true
+		bTrue := true
 		realmConfig.InternationalizationEnabled = &bTrue
 		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
 		mocks.keycloakClient.EXPECT().GetRealm(accessToken, realm).Return(realmConfig, nil)
-		var res, err = component.getSupportedLocales(ctx, realm)
+		res, err := component.getSupportedLocales(ctx, realm)
 		assert.Nil(t, err)
 		assert.Len(t, *res, 2)
 	})
 }
 
 func TestGetConfiguration(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var ctx = context.TODO()
-	var confRealm = "test"
-	var accessToken = "acce-ssto-ken!"
-	var bTrue = true
-	var supportedLocales = []string{"fr", "en"}
-	var realmConfig = kc.RealmRepresentation{
+	ctx := context.TODO()
+	confRealm := "test"
+	accessToken := "acce-ssto-ken!"
+	bTrue := true
+	supportedLocales := []string{"fr", "en"}
+	realmConfig := kc.RealmRepresentation{
 		InternationalizationEnabled: &bTrue,
 		SupportedLocales:            &supportedLocales,
 	}
-	var anyError = errors.New("any error")
+	anyError := errors.New("any error")
 
-	var mocks = createMocks(mockCtrl)
-	var component = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	component := mocks.createComponent()
 
 	t.Run("Get configuration from DB fails", func(t *testing.T) {
 		mocks.configDB.EXPECT().GetConfigurations(gomock.Any(), gomock.Any()).Return(configuration.RealmConfiguration{}, configuration.RealmAdminConfiguration{}, errors.New("GetConfiguration fails"))
-		var _, err = component.GetConfiguration(ctx, confRealm)
+		_, err := component.GetConfiguration(ctx, confRealm)
 		assert.NotNil(t, err)
 	})
 	t.Run("Get realm configuration from KC fails", func(t *testing.T) {
 		mocks.configDB.EXPECT().GetConfigurations(gomock.Any(), gomock.Any()).Return(configuration.RealmConfiguration{}, configuration.RealmAdminConfiguration{}, nil)
 		mocks.tokenProvider.EXPECT().ProvideToken(gomock.Any()).Return(accessToken, anyError)
-		var _, err = component.GetConfiguration(ctx, confRealm)
+		_, err := component.GetConfiguration(ctx, confRealm)
 		assert.Equal(t, anyError, err)
 	})
 
@@ -408,52 +408,52 @@ func TestGetConfiguration(t *testing.T) {
 		mocks.configDB.EXPECT().GetConfigurations(gomock.Any(), gomock.Any()).Return(configuration.RealmConfiguration{}, configuration.RealmAdminConfiguration{}, nil)
 		mocks.tokenProvider.EXPECT().ProvideToken(gomock.Any()).Return(accessToken, nil)
 		mocks.keycloakClient.EXPECT().GetRealm(accessToken, confRealm).Return(realmConfig, nil)
-		var _, err = component.GetConfiguration(ctx, confRealm)
+		_, err := component.GetConfiguration(ctx, confRealm)
 		assert.Nil(t, err)
 	})
 }
 
 func TestGetUserProfile(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var component = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	component := mocks.createComponent()
 
-	var currentRealm = "my-realm"
-	var accessToken = "access-token"
-	var anyError = errors.New("any error")
-	var ctx = context.TODO()
+	currentRealm := "my-realm"
+	accessToken := "access-token"
+	anyError := errors.New("any error")
+	ctx := context.TODO()
 	ctx = context.WithValue(ctx, cs.CtContextAccessToken, accessToken)
 	ctx = context.WithValue(ctx, cs.CtContextRealm, currentRealm)
 
 	t.Run("Cache fails", func(t *testing.T) {
 		mocks.profileCache.EXPECT().GetRealmUserProfile(ctx, currentRealm).Return(kc.UserProfileRepresentation{}, anyError)
-		var _, err = component.GetUserProfile(ctx, currentRealm)
+		_, err := component.GetUserProfile(ctx, currentRealm)
 		assert.NotNil(t, err)
 	})
 	t.Run("Success", func(t *testing.T) {
 		mocks.profileCache.EXPECT().GetRealmUserProfile(ctx, currentRealm).Return(kc.UserProfileRepresentation{}, nil)
-		var _, err = component.GetUserProfile(ctx, currentRealm)
+		_, err := component.GetUserProfile(ctx, currentRealm)
 		assert.Nil(t, err)
 	})
 }
 
 func TestSendAlreadyExistsEmail(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var component = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	component := mocks.createComponent()
 
-	var ctx = context.TODO()
-	var accessToken = "123456789-123456-4567897654"
-	var reqRealmName = "requester"
-	var realmName = "social"
-	var user = createValidUser()
+	ctx := context.TODO()
+	accessToken := "123456789-123456-4567897654"
+	reqRealmName := "requester"
+	realmName := "social"
+	user := createValidUser()
 	var creationTimestamp int64 = 1631013255392
-	var templateName = "template.ftl"
-	var username = "12345678"
+	templateName := "template.ftl"
+	username := "12345678"
 	user.Username = &username
 
 	mocks.keycloakClient.EXPECT().SendEmail(accessToken, reqRealmName, realmName, gomock.Any()).DoAndReturn(func(_, _, _ interface{}, mailInfo kc.EmailRepresentation) error {
@@ -462,6 +462,6 @@ func TestSendAlreadyExistsEmail(t *testing.T) {
 		assert.Equal(t, "13:14:15", (*mailInfo.Theming.TemplateParameters)["creationHour"])
 		return nil
 	})
-	var err = component.sendAlreadyExistsEmail(ctx, accessToken, reqRealmName, realmName, user, username, creationTimestamp, templateName)
+	err := component.sendAlreadyExistsEmail(ctx, accessToken, reqRealmName, realmName, user, username, creationTimestamp, templateName)
 	assert.Nil(t, err)
 }

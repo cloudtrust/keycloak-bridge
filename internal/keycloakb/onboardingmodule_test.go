@@ -16,8 +16,8 @@ import (
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/mock"
 	kc "github.com/cloudtrust/keycloak-client/v2"
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 const (
@@ -27,9 +27,7 @@ const (
 	source             = "the-source"
 )
 
-var (
-	mapRealmsOverride = map[string]string{overridedRealmName: source}
-)
+var mapRealmsOverride = map[string]string{overridedRealmName: source}
 
 type onboardingMocks struct {
 	keycloakClient      *mock.OnboardingKeycloakClient
@@ -44,19 +42,19 @@ func createOnboardingMocks(mockCtrl *gomock.Controller) *onboardingMocks {
 }
 
 func (om *onboardingMocks) createOnboardingModule() *onboardingModule {
-	var mockLogger = log.NewNopLogger()
+	mockLogger := log.NewNopLogger()
 	return NewOnboardingModule(om.keycloakClient, om.keycloakURIProvider, duration, mapRealmsOverride, mockLogger).(*onboardingModule)
 }
 
 func TestOnboardingAlreadyCompleted(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createOnboardingMocks(mockCtrl)
-	var onboardingModule = mocks.createOnboardingModule()
+	mocks := createOnboardingMocks(mockCtrl)
+	onboardingModule := mocks.createOnboardingModule()
 
 	t.Run("No attributes", func(t *testing.T) {
-		var kcUser = kc.UserRepresentation{}
+		kcUser := kc.UserRepresentation{}
 		res, err := onboardingModule.OnboardingAlreadyCompleted(kcUser)
 
 		assert.Nil(t, err)
@@ -64,9 +62,9 @@ func TestOnboardingAlreadyCompleted(t *testing.T) {
 	})
 
 	t.Run("OnboardingCompleted attribute missing", func(t *testing.T) {
-		var attributes = make(kc.Attributes)
+		attributes := make(kc.Attributes)
 		attributes.SetString("test", "wrong")
-		var kcUser = kc.UserRepresentation{
+		kcUser := kc.UserRepresentation{
 			Attributes: &attributes,
 		}
 		res, err := onboardingModule.OnboardingAlreadyCompleted(kcUser)
@@ -76,9 +74,9 @@ func TestOnboardingAlreadyCompleted(t *testing.T) {
 	})
 
 	t.Run("OnboardingCompleted attribute with invalid value", func(t *testing.T) {
-		var attributes = make(kc.Attributes)
+		attributes := make(kc.Attributes)
 		attributes.SetString(constants.AttrbOnboardingCompleted, "wrong")
-		var kcUser = kc.UserRepresentation{
+		kcUser := kc.UserRepresentation{
 			Attributes: &attributes,
 		}
 		res, err := onboardingModule.OnboardingAlreadyCompleted(kcUser)
@@ -88,9 +86,9 @@ func TestOnboardingAlreadyCompleted(t *testing.T) {
 	})
 
 	t.Run("OnboardingCompleted is true", func(t *testing.T) {
-		var attributes = make(kc.Attributes)
+		attributes := make(kc.Attributes)
 		attributes.SetBool(constants.AttrbOnboardingCompleted, true)
-		var kcUser = kc.UserRepresentation{
+		kcUser := kc.UserRepresentation{
 			Attributes: &attributes,
 		}
 		res, err := onboardingModule.OnboardingAlreadyCompleted(kcUser)
@@ -100,9 +98,9 @@ func TestOnboardingAlreadyCompleted(t *testing.T) {
 	})
 
 	t.Run("OnboardingCompleted is false", func(t *testing.T) {
-		var attributes = make(kc.Attributes)
+		attributes := make(kc.Attributes)
 		attributes.SetBool(constants.AttrbOnboardingCompleted, false)
-		var kcUser = kc.UserRepresentation{
+		kcUser := kc.UserRepresentation{
 			Attributes: &attributes,
 		}
 		res, err := onboardingModule.OnboardingAlreadyCompleted(kcUser)
@@ -113,23 +111,23 @@ func TestOnboardingAlreadyCompleted(t *testing.T) {
 }
 
 func TestSendOnboardingEmail(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createOnboardingMocks(mockCtrl)
-	var onboardingModule = mocks.createOnboardingModule()
+	mocks := createOnboardingMocks(mockCtrl)
+	onboardingModule := mocks.createOnboardingModule()
 
-	var keycloakBaseURI = "http://keycloak.url"
-	var realmName = "realmName"
-	var themeRealmName = "themeRealmName"
-	var accessToken = "ACCESS_TOKEN"
-	var userID = "135-15641-546"
-	var username = "username"
-	var onboardingClientID = "onboardingid"
-	var onboardingRedirectURI = "http://redirect.test/test/example"
-	var expectedActionsNoReminder = []string{"VERIFY_EMAIL", "set-onboarding-token", "onboarding-action"}
-	var expectedActionsWithReminder = []string{"VERIFY_EMAIL", "set-onboarding-token", "onboarding-action", "reminder-action"}
-	var ctx = context.TODO()
+	keycloakBaseURI := "http://keycloak.url"
+	realmName := "realmName"
+	themeRealmName := "themeRealmName"
+	accessToken := "ACCESS_TOKEN"
+	userID := "135-15641-546"
+	username := "username"
+	onboardingClientID := "onboardingid"
+	onboardingRedirectURI := "http://redirect.test/test/example"
+	expectedActionsNoReminder := []string{"VERIFY_EMAIL", "set-onboarding-token", "onboarding-action"}
+	expectedActionsWithReminder := []string{"VERIFY_EMAIL", "set-onboarding-token", "onboarding-action", "reminder-action"}
+	ctx := context.TODO()
 
 	mocks.keycloakURIProvider.EXPECT().GetBaseURI(realmName).Return(keycloakBaseURI).AnyTimes()
 
@@ -149,9 +147,9 @@ func TestSendOnboardingEmail(t *testing.T) {
 	})
 
 	t.Run("Success", func(t *testing.T) {
-		var paramKV = []string{"customX", "valueX"}
-		var embeddedURI = url.QueryEscape(onboardingRedirectURI)
-		var expectedFullURI = "http://keycloak.url/auth/realms/" + realmName + "/protocol/openid-connect/auth?client_id=" + onboardingClientID + "&login_hint=" + username + "&redirect_uri=" + embeddedURI + "&response_type=code&scope=openid"
+		paramKV := []string{"customX", "valueX"}
+		embeddedURI := url.QueryEscape(onboardingRedirectURI)
+		expectedFullURI := "http://keycloak.url/auth/realms/" + realmName + "/protocol/openid-connect/auth?client_id=" + onboardingClientID + "&login_hint=" + username + "&redirect_uri=" + embeddedURI + "&response_type=code&scope=openid"
 		mocks.keycloakClient.EXPECT().ExecuteActionsEmail(accessToken, realmName, realmName, userID, expectedActionsNoReminder,
 			"client_id", onboardingClientID, "redirect_uri", gomock.Any(), "themeRealm", themeRealmName, "customX", "valueX").DoAndReturn(
 			func(_, _, _, _ string, _ []string, params ...string) error {
@@ -168,23 +166,23 @@ func TestSendOnboardingEmail(t *testing.T) {
 }
 
 func TestComputeRedirectURI(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createOnboardingMocks(mockCtrl)
-	var onboarding = mocks.createOnboardingModule()
+	mocks := createOnboardingMocks(mockCtrl)
+	onboarding := mocks.createOnboardingModule()
 
-	var keycloakBaseURI = "http://keycloak.url"
-	var realmName = "realmName"
-	var accessToken = "ACCESS_TOKEN"
-	var userID = "135-15641-546"
-	var username = "username"
-	var onboardingClientID = "onboardingid"
-	var onboardingRedirectURI = "http://redirect.test/test/example"
-	var onboardingRedirectURIEncoded = "http%3A%2F%2Fredirect.test%2Ftest%2Fexample"
-	var trustIDAuthToken = "plktqQ+H9sENTTyYv+9jQ4BwSCEF2agtohyrSZWSo3o="
-	var trustIDAuthTokenEncoded = "plktqQ%2BH9sENTTyYv%2B9jQ4BwSCEF2agtohyrSZWSo3o%3D"
-	var ctx = context.TODO()
+	keycloakBaseURI := "http://keycloak.url"
+	realmName := "realmName"
+	accessToken := "ACCESS_TOKEN"
+	userID := "135-15641-546"
+	username := "username"
+	onboardingClientID := "onboardingid"
+	onboardingRedirectURI := "http://redirect.test/test/example"
+	onboardingRedirectURIEncoded := "http%3A%2F%2Fredirect.test%2Ftest%2Fexample"
+	trustIDAuthToken := "plktqQ+H9sENTTyYv+9jQ4BwSCEF2agtohyrSZWSo3o="
+	trustIDAuthTokenEncoded := "plktqQ%2BH9sENTTyYv%2B9jQ4BwSCEF2agtohyrSZWSo3o%3D"
+	ctx := context.TODO()
 
 	mocks.keycloakURIProvider.EXPECT().GetBaseURI(realmName).Return(keycloakBaseURI).AnyTimes()
 
@@ -204,67 +202,67 @@ func TestComputeRedirectURI(t *testing.T) {
 }
 
 func TestCreateUser(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createOnboardingMocks(mockCtrl)
-	var onboarding = mocks.createOnboardingModule()
+	mocks := createOnboardingMocks(mockCtrl)
+	onboarding := mocks.createOnboardingModule()
 
-	var realm = "cloudtrust"
-	var targetRealm = "client"
-	var ctx = context.Background()
-	var accessToken = "__TOKEN__"
-	var kcUser = kc.UserRepresentation{}
+	realm := "cloudtrust"
+	targetRealm := "client"
+	ctx := context.Background()
+	accessToken := "__TOKEN__"
+	kcUser := kc.UserRepresentation{}
 
 	t.Run("Can't generate username", func(t *testing.T) {
-		var errExistingUsername = errorhandler.Error{
+		errExistingUsername := errorhandler.Error{
 			Status:  http.StatusConflict,
 			Message: "keycloak.existing.username",
 		}
 
 		mocks.keycloakClient.EXPECT().CreateUser(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), "generateNameID", "false").Return("", errExistingUsername).Times(10)
-		var _, err = onboarding.CreateUser(ctx, accessToken, realm, targetRealm, &kcUser, false)
+		_, err := onboarding.CreateUser(ctx, accessToken, realm, targetRealm, &kcUser, false)
 		assert.NotNil(t, err)
 		assert.Contains(t, err.Error(), "username.generation")
 	})
 	t.Run("User creation fails", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().CreateUser(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), "generateNameID", "true").Return("", errors.New("any error"))
-		var _, err = onboarding.CreateUser(ctx, accessToken, realm, targetRealm, &kcUser, true)
+		_, err := onboarding.CreateUser(ctx, accessToken, realm, targetRealm, &kcUser, true)
 		assert.NotNil(t, err)
 	})
 	t.Run("Success", func(t *testing.T) {
-		var userID = "12345678-abcd-9876"
-		var location = "http://location/users/" + userID
+		userID := "12345678-abcd-9876"
+		location := "http://location/users/" + userID
 		kcUser.Username = nil
 
 		mocks.keycloakClient.EXPECT().CreateUser(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), "generateNameID", "false").Return(location, nil)
 
-		var resPath, err = onboarding.CreateUser(ctx, accessToken, realm, targetRealm, &kcUser, false)
+		resPath, err := onboarding.CreateUser(ctx, accessToken, realm, targetRealm, &kcUser, false)
 		assert.Nil(t, err)
-		var matched, errRegexp = regexp.Match(`^\d{8}$`, []byte(*kcUser.Username))
+		matched, errRegexp := regexp.Match(`^\d{8}$`, []byte(*kcUser.Username))
 		assert.True(t, matched && errRegexp == nil)
 		assert.Contains(t, resPath, *kcUser.ID)
 	})
 }
 
 func TestProcessAlreadyExistingUserCases(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createOnboardingMocks(mockCtrl)
-	var onboarding = mocks.createOnboardingModule()
+	mocks := createOnboardingMocks(mockCtrl)
+	onboarding := mocks.createOnboardingModule()
 
-	var ctx = context.TODO()
-	var accessToken = "access-token"
-	var targetRealmName = "target-realm"
-	var userID = "user-id"
-	var username = "12345678"
-	var userEmail = "user@email.com"
-	var realmRep = kc.RealmRepresentation{}
-	var usersPageRep = kc.UsersPageRepresentation{}
-	var createdTimestamp = time.Now().Unix()
-	var anyError = errors.New("any error")
-	var notSupposedToBeCalled = func(pUsername string, pCreatedTimestamp int64, pThirdParty *string) error {
+	ctx := context.TODO()
+	accessToken := "access-token"
+	targetRealmName := "target-realm"
+	userID := "user-id"
+	username := "12345678"
+	userEmail := "user@email.com"
+	realmRep := kc.RealmRepresentation{}
+	usersPageRep := kc.UsersPageRepresentation{}
+	createdTimestamp := time.Now().Unix()
+	anyError := errors.New("any error")
+	notSupposedToBeCalled := func(pUsername string, pCreatedTimestamp int64, pThirdParty *string) error {
 		assert.Fail(t, "not supposed to be executed")
 		return nil
 	}
@@ -273,7 +271,7 @@ func TestProcessAlreadyExistingUserCases(t *testing.T) {
 	t.Run("Can't get realm from keycloak", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetRealm(accessToken, targetRealmName).Return(realmRep, anyError)
 
-		var err = onboarding.ProcessAlreadyExistingUserCases(ctx, accessToken, targetRealmName, userEmail, source, notSupposedToBeCalled)
+		err := onboarding.ProcessAlreadyExistingUserCases(ctx, accessToken, targetRealmName, userEmail, source, notSupposedToBeCalled)
 		assert.NotNil(t, err)
 	})
 
@@ -281,7 +279,7 @@ func TestProcessAlreadyExistingUserCases(t *testing.T) {
 		realmRep.DuplicateEmailsAllowed = ptrBool(true)
 		mocks.keycloakClient.EXPECT().GetRealm(accessToken, targetRealmName).Return(realmRep, nil)
 
-		var err = onboarding.ProcessAlreadyExistingUserCases(ctx, accessToken, targetRealmName, userEmail, source, notSupposedToBeCalled)
+		err := onboarding.ProcessAlreadyExistingUserCases(ctx, accessToken, targetRealmName, userEmail, source, notSupposedToBeCalled)
 		assert.Nil(t, err)
 	})
 
@@ -291,14 +289,14 @@ func TestProcessAlreadyExistingUserCases(t *testing.T) {
 	t.Run("GetUsers fails", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetUsers(accessToken, targetRealmName, targetRealmName, "email", "="+userEmail).Return(usersPageRep, anyError)
 
-		var err = onboarding.ProcessAlreadyExistingUserCases(ctx, accessToken, targetRealmName, userEmail, source, notSupposedToBeCalled)
+		err := onboarding.ProcessAlreadyExistingUserCases(ctx, accessToken, targetRealmName, userEmail, source, notSupposedToBeCalled)
 		assert.NotNil(t, err)
 	})
 
 	t.Run("No already existing user", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetUsers(accessToken, targetRealmName, targetRealmName, "email", "="+userEmail).Return(usersPageRep, nil)
 
-		var err = onboarding.ProcessAlreadyExistingUserCases(ctx, accessToken, targetRealmName, userEmail, source, notSupposedToBeCalled)
+		err := onboarding.ProcessAlreadyExistingUserCases(ctx, accessToken, targetRealmName, userEmail, source, notSupposedToBeCalled)
 		assert.Nil(t, err)
 	})
 
@@ -314,7 +312,7 @@ func TestProcessAlreadyExistingUserCases(t *testing.T) {
 		}}
 		mocks.keycloakClient.EXPECT().GetUsers(accessToken, targetRealmName, targetRealmName, "email", "="+userEmail).Return(usersPageRep, nil)
 
-		var err = onboarding.ProcessAlreadyExistingUserCases(ctx, accessToken, targetRealmName, userEmail, source, notSupposedToBeCalled)
+		err := onboarding.ProcessAlreadyExistingUserCases(ctx, accessToken, targetRealmName, userEmail, source, notSupposedToBeCalled)
 		assert.NotNil(t, err)
 	})
 
@@ -323,8 +321,8 @@ func TestProcessAlreadyExistingUserCases(t *testing.T) {
 		usersPageRep.Users[0].Attributes = &attrbs
 		mocks.keycloakClient.EXPECT().GetUsers(accessToken, targetRealmName, targetRealmName, "email", "="+userEmail).Return(usersPageRep, nil)
 
-		var errAlreadyOnboarded = errors.New("already onboarded")
-		var err = onboarding.ProcessAlreadyExistingUserCases(ctx, accessToken, targetRealmName, userEmail, source, func(pUsername string, pCreatedTimestamp int64, pThirdParty *string) error {
+		errAlreadyOnboarded := errors.New("already onboarded")
+		err := onboarding.ProcessAlreadyExistingUserCases(ctx, accessToken, targetRealmName, userEmail, source, func(pUsername string, pCreatedTimestamp int64, pThirdParty *string) error {
 			assert.Equal(t, username, pUsername)
 			assert.Equal(t, createdTimestamp, pCreatedTimestamp)
 			assert.Nil(t, pThirdParty)
@@ -334,14 +332,14 @@ func TestProcessAlreadyExistingUserCases(t *testing.T) {
 	})
 
 	t.Run("User already exists-Created by third party", func(t *testing.T) {
-		var thirdPartyName = "third-party-name"
+		thirdPartyName := "third-party-name"
 		attrbs[constants.AttrbOnboardingCompleted] = []string{"false"}
 		attrbs[constants.AttrbSource] = []string{thirdPartyName}
 		usersPageRep.Users[0].Attributes = &attrbs
 		mocks.keycloakClient.EXPECT().GetUsers(accessToken, targetRealmName, targetRealmName, "email", "="+userEmail).Return(usersPageRep, nil)
 
-		var errCreatedByThirdPart = errors.New("already onboarded")
-		var err = onboarding.ProcessAlreadyExistingUserCases(ctx, accessToken, targetRealmName, userEmail, source, func(pUsername string, pCreatedTimestamp int64, pThirdParty *string) error {
+		errCreatedByThirdPart := errors.New("already onboarded")
+		err := onboarding.ProcessAlreadyExistingUserCases(ctx, accessToken, targetRealmName, userEmail, source, func(pUsername string, pCreatedTimestamp int64, pThirdParty *string) error {
 			assert.Equal(t, username, pUsername)
 			assert.Equal(t, createdTimestamp, pCreatedTimestamp)
 			assert.Equal(t, thirdPartyName, *pThirdParty)
@@ -357,24 +355,24 @@ func TestProcessAlreadyExistingUserCases(t *testing.T) {
 	t.Run("User already exists-Cant remove Keycloak user", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().DeleteUser(accessToken, targetRealmName, userID).Return(anyError)
 
-		var err = onboarding.ProcessAlreadyExistingUserCases(ctx, accessToken, targetRealmName, userEmail, source, notSupposedToBeCalled)
+		err := onboarding.ProcessAlreadyExistingUserCases(ctx, accessToken, targetRealmName, userEmail, source, notSupposedToBeCalled)
 		assert.Equal(t, anyError, err)
 	})
 
 	t.Run("User already exists-Successfully removed", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().DeleteUser(accessToken, targetRealmName, userID).Return(nil)
 
-		var err = onboarding.ProcessAlreadyExistingUserCases(ctx, accessToken, targetRealmName, userEmail, source, notSupposedToBeCalled)
+		err := onboarding.ProcessAlreadyExistingUserCases(ctx, accessToken, targetRealmName, userEmail, source, notSupposedToBeCalled)
 		assert.Nil(t, err)
 	})
 }
 
 func TestCanReplaceAccount(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createOnboardingMocks(mockCtrl)
-	var onboarding = mocks.createOnboardingModule()
+	mocks := createOnboardingMocks(mockCtrl)
+	onboarding := mocks.createOnboardingModule()
 
 	t.Run("Too old account can be replaced", func(t *testing.T) {
 		assert.True(t, onboarding.canReplaceAccount(time.Now().Add(-2*duration).Unix(), ptr("one-source"), "any-realm"))
@@ -394,15 +392,15 @@ func TestCanReplaceAccount(t *testing.T) {
 }
 
 func TestComputeOnboardingRedirectURI(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createOnboardingMocks(mockCtrl)
-	var onboarding = mocks.createOnboardingModule()
+	mocks := createOnboardingMocks(mockCtrl)
+	onboarding := mocks.createOnboardingModule()
 
-	var ctx = context.Background()
-	var onboardingURI = "http://test.test?context=57a323d7-6da6-4c49-975e-4605ac8e101b"
-	var realmConf = configuration.RealmConfiguration{
+	ctx := context.Background()
+	onboardingURI := "http://test.test?context=57a323d7-6da6-4c49-975e-4605ac8e101b"
+	realmConf := configuration.RealmConfiguration{
 		OnboardingRedirectURI: &onboardingURI,
 	}
 

@@ -16,8 +16,8 @@ import (
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/pkg/kyc/mock"
 	kc "github.com/cloudtrust/keycloak-client/v2"
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 type componentMocks struct {
@@ -54,146 +54,146 @@ func (m *componentMocks) NewComponent(realm string) *component {
 }
 
 func TestCheckUserConsent(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createComponentMocks(mockCtrl)
-	var confRealm = "config-realm"
-	var targetRealm = "social-realm"
-	var component = mocks.NewComponent(targetRealm)
-	var accessToken = "==access--token=="
-	var userID = "user-iden-tif-ier"
-	var consentCode = "123456"
-	var ctx = context.WithValue(context.TODO(), cs.CtContextRealm, confRealm)
+	mocks := createComponentMocks(mockCtrl)
+	confRealm := "config-realm"
+	targetRealm := "social-realm"
+	component := mocks.NewComponent(targetRealm)
+	accessToken := "==access--token=="
+	userID := "user-iden-tif-ier"
+	consentCode := "123456"
+	ctx := context.WithValue(context.TODO(), cs.CtContextRealm, confRealm)
 
 	t.Run("Load realm admin config fails", func(t *testing.T) {
-		var anyError = errors.New("any error")
+		anyError := errors.New("any error")
 		mocks.configDB.EXPECT().GetAdminConfiguration(ctx, confRealm).Return(configuration.RealmAdminConfiguration{}, anyError)
-		var err = component.checkUserConsent(ctx, accessToken, confRealm, targetRealm, userID, &consentCode)
+		err := component.checkUserConsent(ctx, accessToken, confRealm, targetRealm, userID, &consentCode)
 		assert.NotNil(t, err)
 	})
 	t.Run("Consent not required", func(t *testing.T) {
 		mocks.configDB.EXPECT().GetAdminConfiguration(ctx, confRealm).Return(configuration.RealmAdminConfiguration{ConsentRequiredSocial: ptrBool(false)}, nil)
-		var err = component.checkUserConsent(ctx, accessToken, confRealm, targetRealm, userID, &consentCode)
+		err := component.checkUserConsent(ctx, accessToken, confRealm, targetRealm, userID, &consentCode)
 		assert.Nil(t, err)
 	})
 
 	mocks.configDB.EXPECT().GetAdminConfiguration(ctx, confRealm).Return(configuration.RealmAdminConfiguration{ConsentRequiredSocial: ptrBool(true)}, nil).AnyTimes()
 
 	t.Run("Consent required but not provided", func(t *testing.T) {
-		var err = component.checkUserConsent(ctx, accessToken, confRealm, targetRealm, userID, nil)
+		err := component.checkUserConsent(ctx, accessToken, confRealm, targetRealm, userID, nil)
 		assert.NotNil(t, err)
 		assert.Equal(t, 430, err.(errorhandler.Error).Status)
 	})
 	t.Run("Consent required but keycloak call fails", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().CheckConsentCodeSMS(accessToken, component.socialRealmName, userID, consentCode).Return(errors.New("any error"))
-		var err = component.checkUserConsent(ctx, accessToken, confRealm, targetRealm, userID, &consentCode)
+		err := component.checkUserConsent(ctx, accessToken, confRealm, targetRealm, userID, &consentCode)
 		assert.NotNil(t, err)
-		assert.Panics(t, func() { var _ = err.(errorhandler.Error) })
+		assert.Panics(t, func() { _ = err.(errorhandler.Error) })
 	})
 	t.Run("Consent required but provided code is invalid", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().CheckConsentCodeSMS(accessToken, component.socialRealmName, userID, consentCode).Return(kc.ClientDetailedError{HTTPStatus: 430})
-		var err = component.checkUserConsent(ctx, accessToken, confRealm, targetRealm, userID, &consentCode)
+		err := component.checkUserConsent(ctx, accessToken, confRealm, targetRealm, userID, &consentCode)
 		assert.NotNil(t, err)
 		assert.IsType(t, errorhandler.Error{}, err)
 		assert.Equal(t, 430, err.(errorhandler.Error).Status)
 	})
 	t.Run("Consent required and provided code is valid", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().CheckConsentCodeSMS(accessToken, component.socialRealmName, userID, consentCode).Return(nil)
-		var err = component.checkUserConsent(ctx, accessToken, confRealm, targetRealm, userID, &consentCode)
+		err := component.checkUserConsent(ctx, accessToken, confRealm, targetRealm, userID, &consentCode)
 		assert.Nil(t, err)
 	})
 }
 
 func TestGetActions(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createComponentMocks(mockCtrl)
-	var component = mocks.NewComponent("realm")
+	mocks := createComponentMocks(mockCtrl)
+	component := mocks.NewComponent("realm")
 
 	t.Run("GetActions", func(t *testing.T) {
-		var res, err = component.GetActions(context.TODO())
+		res, err := component.GetActions(context.TODO())
 		assert.Nil(t, err)
 		assert.NotEqual(t, 0, len(res))
 	})
 }
 
 func TestGetUserByUsername(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var accessToken = "abcd-1234"
-	var realm = "my-realm"
-	var username = "utr167x"
-	var userID = "1234567890"
-	var grpEndUserID = "11111-22222"
-	var grpEndUserName = "end_user"
-	var grpOtherID = "33333-44444"
-	var grpOtherName = "other_group"
-	var attrbs = make(kc.Attributes)
+	accessToken := "abcd-1234"
+	realm := "my-realm"
+	username := "utr167x"
+	userID := "1234567890"
+	grpEndUserID := "11111-22222"
+	grpEndUserName := "end_user"
+	grpOtherID := "33333-44444"
+	grpOtherName := "other_group"
+	attrbs := make(kc.Attributes)
 	attrbs.SetString(constants.AttrbPhoneNumber, "+417123123123")
-	var kcUser = kc.UserRepresentation{
+	kcUser := kc.UserRepresentation{
 		ID:         &userID,
 		Username:   &username,
 		Attributes: &attrbs,
 	}
-	var kcGroup1 = kc.GroupRepresentation{
+	kcGroup1 := kc.GroupRepresentation{
 		ID:   &grpOtherID,
 		Name: &grpOtherName,
 	}
-	var kcGroup2 = kc.GroupRepresentation{
+	kcGroup2 := kc.GroupRepresentation{
 		ID:   &grpEndUserID,
 		Name: &grpEndUserName,
 	}
-	var one = 1
-	var kcUsersSearch = kc.UsersPageRepresentation{Count: &one, Users: []kc.UserRepresentation{kcUser}}
-	var kcGroupSearch = []kc.GroupRepresentation{kcGroup1, kcGroup2}
-	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+	one := 1
+	kcUsersSearch := kc.UsersPageRepresentation{Count: &one, Users: []kc.UserRepresentation{kcUser}}
+	kcGroupSearch := []kc.GroupRepresentation{kcGroup1, kcGroup2}
+	ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
-	var mocks = createComponentMocks(mockCtrl)
-	var component = mocks.NewComponent(realm)
+	mocks := createComponentMocks(mockCtrl)
+	component := mocks.NewComponent(realm)
 
 	t.Run("Social-Failed to retrieve OIDC token", func(t *testing.T) {
-		var oidcError = errors.New("oidc error")
+		oidcError := errors.New("oidc error")
 		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return("", oidcError)
-		var _, err = component.GetUserByUsernameInSocialRealm(ctx, username)
+		_, err := component.GetUserByUsernameInSocialRealm(ctx, username)
 		assert.NotNil(t, err)
 	})
 	mocks.tokenProvider.EXPECT().ProvideToken(gomock.Any()).Return(accessToken, nil).AnyTimes()
 
 	t.Run("Social-Keycloak GetGroups fails", func(t *testing.T) {
-		var kcError = errors.New("kc error")
+		kcError := errors.New("kc error")
 		mocks.keycloakClient.EXPECT().GetGroups(accessToken, realm).Return(kcGroupSearch, kcError)
-		var _, err = component.GetUserByUsernameInSocialRealm(ctx, username)
+		_, err := component.GetUserByUsernameInSocialRealm(ctx, username)
 		assert.NotNil(t, err)
 	})
 
 	t.Run("Social-GetGroups: unknown group", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetGroups(accessToken, realm).Return([]kc.GroupRepresentation{}, nil)
-		var _, err = component.GetUserByUsernameInSocialRealm(ctx, username)
+		_, err := component.GetUserByUsernameInSocialRealm(ctx, username)
 		assert.NotNil(t, err)
 	})
 	mocks.keycloakClient.EXPECT().GetGroups(accessToken, realm).Return(kcGroupSearch, nil).AnyTimes()
 
 	t.Run("Social-Keycloak fails", func(t *testing.T) {
-		var kcError = errors.New("kc error")
+		kcError := errors.New("kc error")
 		mocks.keycloakClient.EXPECT().GetUsers(accessToken, realm, realm, prmQryUserName, username, "groupId", grpEndUserID).Return(kcUsersSearch, kcError)
-		var _, err = component.GetUserByUsernameInSocialRealm(ctx, username)
+		_, err := component.GetUserByUsernameInSocialRealm(ctx, username)
 		assert.NotNil(t, err)
 	})
 
 	t.Run("Social-No user found", func(t *testing.T) {
-		var none = 0
-		var searchNoResult = kc.UsersPageRepresentation{Count: &none, Users: []kc.UserRepresentation{}}
+		none := 0
+		searchNoResult := kc.UsersPageRepresentation{Count: &none, Users: []kc.UserRepresentation{}}
 		mocks.keycloakClient.EXPECT().GetUsers(accessToken, realm, realm, prmQryUserName, username, "groupId", grpEndUserID).Return(searchNoResult, nil)
-		var _, err = component.GetUserByUsernameInSocialRealm(ctx, username)
+		_, err := component.GetUserByUsernameInSocialRealm(ctx, username)
 		assert.NotNil(t, err)
 	})
 	mocks.keycloakClient.EXPECT().GetUsers(accessToken, realm, realm, prmQryUserName, username, "groupId", grpEndUserID).Return(kcUsersSearch, nil).AnyTimes()
 
 	t.Run("Social-Success", func(t *testing.T) {
-		var user, err = component.GetUserByUsernameInSocialRealm(ctx, username)
+		user, err := component.GetUserByUsernameInSocialRealm(ctx, username)
 		assert.Nil(t, err)
 		assert.NotNil(t, user)
 		assert.Nil(t, user.BirthLocation)
@@ -206,7 +206,7 @@ func TestGetUserByUsername(t *testing.T) {
 	t.Run("Corporate-Success", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetUsers(accessToken, realm, realm, prmQryUserName, username).Return(kcUsersSearch, nil).AnyTimes()
 		mocks.keycloakClient.EXPECT().GetGroupsOfUser(accessToken, realm, userID).Return([]kc.GroupRepresentation{kcGroup1}, nil)
-		var user, err = component.GetUserByUsername(ctx, realm, username)
+		user, err := component.GetUserByUsername(ctx, realm, username)
 		assert.Nil(t, err)
 		assert.NotNil(t, user)
 		assert.Nil(t, user.BirthLocation)
@@ -215,7 +215,7 @@ func TestGetUserByUsername(t *testing.T) {
 }
 
 func TestGetUserProfile(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
 	var (
@@ -223,67 +223,67 @@ func TestGetUserProfile(t *testing.T) {
 		ctx   = context.TODO()
 	)
 
-	var mocks = createComponentMocks(mockCtrl)
-	var component = mocks.NewComponent(realm)
+	mocks := createComponentMocks(mockCtrl)
+	component := mocks.NewComponent(realm)
 
 	t.Run("Error case", func(t *testing.T) {
 		mocks.userProfile.EXPECT().GetRealmUserProfile(ctx, component.socialRealmName).Return(kc.UserProfileRepresentation{}, errors.New("any error"))
-		var _, err = component.GetUserProfileInSocialRealm(ctx)
+		_, err := component.GetUserProfileInSocialRealm(ctx)
 		assert.NotNil(t, err)
 	})
 	t.Run("Success case", func(t *testing.T) {
 		mocks.userProfile.EXPECT().GetRealmUserProfile(ctx, component.socialRealmName).Return(kc.UserProfileRepresentation{}, nil)
-		var _, err = component.GetUserProfileInSocialRealm(ctx)
+		_, err := component.GetUserProfileInSocialRealm(ctx)
 		assert.Nil(t, err)
 	})
 }
 
 func TestGetUserComponent(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var accessToken = "abcd-1234"
-	var realm = "my-realm"
-	var username = "utr167x"
-	var userID = "1234567890"
-	var kcUser = kc.UserRepresentation{
+	accessToken := "abcd-1234"
+	realm := "my-realm"
+	username := "utr167x"
+	userID := "1234567890"
+	kcUser := kc.UserRepresentation{
 		ID:       &userID,
 		Username: &username,
 	}
-	var consentRealm = "consent-realm"
-	var anyError = errors.New("any error")
-	var realmAdminConfig = configuration.RealmAdminConfiguration{ConsentRequiredSocial: ptrBool(false)}
-	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+	consentRealm := "consent-realm"
+	anyError := errors.New("any error")
+	realmAdminConfig := configuration.RealmAdminConfiguration{ConsentRequiredSocial: ptrBool(false)}
+	ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 	ctx = context.WithValue(ctx, cs.CtContextRealm, consentRealm)
 
-	var mocks = createComponentMocks(mockCtrl)
-	var component = mocks.NewComponent(realm)
+	mocks := createComponentMocks(mockCtrl)
+	component := mocks.NewComponent(realm)
 
 	t.Run("Social-Failed to retrieve OIDC token", func(t *testing.T) {
-		var oidcError = errors.New("oidc error")
+		oidcError := errors.New("oidc error")
 		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return("", oidcError)
-		var _, err = component.GetUserInSocialRealm(ctx, userID, nil)
+		_, err := component.GetUserInSocialRealm(ctx, userID, nil)
 		assert.NotNil(t, err)
 	})
 	mocks.tokenProvider.EXPECT().ProvideToken(gomock.Any()).Return(accessToken, nil).AnyTimes()
 
 	t.Run("Social-Consent fails", func(t *testing.T) {
 		mocks.configDB.EXPECT().GetAdminConfiguration(ctx, consentRealm).Return(configuration.RealmAdminConfiguration{}, anyError)
-		var _, err = component.GetUserInSocialRealm(ctx, userID, nil)
+		_, err := component.GetUserInSocialRealm(ctx, userID, nil)
 		assert.NotNil(t, err)
 	})
 	mocks.configDB.EXPECT().GetAdminConfiguration(ctx, consentRealm).Return(realmAdminConfig, nil).AnyTimes()
 
 	t.Run("Social-Search in Keycloak fails", func(t *testing.T) {
-		var kcError = errors.New("kc error")
+		kcError := errors.New("kc error")
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realm, userID).Return(kc.UserRepresentation{}, kcError)
-		var _, err = component.GetUserInSocialRealm(ctx, userID, nil)
+		_, err := component.GetUserInSocialRealm(ctx, userID, nil)
 		assert.NotNil(t, err)
 	})
 
 	t.Run("Social-Success", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realm, userID).Return(kcUser, nil)
-		var user, err = component.GetUserInSocialRealm(ctx, userID, nil)
+		user, err := component.GetUserInSocialRealm(ctx, userID, nil)
 		assert.Nil(t, err)
 		assert.NotNil(t, user)
 	})
@@ -293,7 +293,7 @@ func TestGetUserComponent(t *testing.T) {
 
 	t.Run("Corporate-Consent fails", func(t *testing.T) {
 		mocks.configDB.EXPECT().GetAdminConfiguration(ctx, realm).Return(configuration.RealmAdminConfiguration{}, anyError)
-		var _, err = component.GetUser(ctx, realm, userID, nil)
+		_, err := component.GetUser(ctx, realm, userID, nil)
 		assert.NotNil(t, err)
 	})
 	realmAdminConfig.ConsentRequiredSocial = ptrBool(true)
@@ -302,17 +302,17 @@ func TestGetUserComponent(t *testing.T) {
 
 	t.Run("Corporate-Success", func(t *testing.T) {
 		mocks.configDB.EXPECT().GetAdminConfiguration(ctx, realm).Return(configuration.RealmAdminConfiguration{}, anyError)
-		var _, err = component.GetUser(ctx, realm, userID, nil)
+		_, err := component.GetUser(ctx, realm, userID, nil)
 		assert.NotNil(t, err)
 	})
 }
 
 func createUser(userID, username string, emailVerified bool, phoneNumberVerified bool) kc.UserRepresentation {
-	var pnv = "false"
+	pnv := "false"
 	if phoneNumberVerified {
 		pnv = "true"
 	}
-	var attributes = kc.Attributes{"phoneNumberVerified": []string{pnv}}
+	attributes := kc.Attributes{"phoneNumberVerified": []string{pnv}}
 	return kc.UserRepresentation{
 		ID:            &userID,
 		Username:      &username,
@@ -322,71 +322,71 @@ func createUser(userID, username string, emailVerified bool, phoneNumberVerified
 }
 
 func TestValidateUser(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var targetRealm = "cloudtrust"
-	var validUser = createValidUser()
-	var userID = "abc789def"
-	var username = "user_name"
-	var kcUser = createUser(userID, username, true, true)
-	var accessToken = "abcdef"
-	var cfgConsentNotRequired = configuration.RealmAdminConfiguration{ConsentRequiredSocial: ptrBool(false)}
-	var ctx = context.WithValue(context.TODO(), cs.CtContextRealm, targetRealm)
+	targetRealm := "cloudtrust"
+	validUser := createValidUser()
+	userID := "abc789def"
+	username := "user_name"
+	kcUser := createUser(userID, username, true, true)
+	accessToken := "abcdef"
+	cfgConsentNotRequired := configuration.RealmAdminConfiguration{ConsentRequiredSocial: ptrBool(false)}
+	ctx := context.WithValue(context.TODO(), cs.CtContextRealm, targetRealm)
 
-	var mocks = createComponentMocks(mockCtrl)
-	var component = mocks.NewComponent(targetRealm)
+	mocks := createComponentMocks(mockCtrl)
+	component := mocks.NewComponent(targetRealm)
 
 	ctx = context.WithValue(ctx, cs.CtContextUsername, "operator")
 
 	mocks.configDB.EXPECT().GetAdminConfiguration(gomock.Any(), gomock.Any()).Return(cfgConsentNotRequired, nil).AnyTimes()
 
 	t.Run("Failed to retrieve OIDC token", func(t *testing.T) {
-		var oidcError = errors.New("oidc error")
+		oidcError := errors.New("oidc error")
 		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return("", oidcError)
-		var err = component.ValidateUserInSocialRealm(ctx, userID, validUser, nil)
+		err := component.ValidateUserInSocialRealm(ctx, userID, validUser, nil)
 		assert.NotNil(t, err)
 	})
 	mocks.tokenProvider.EXPECT().ProvideToken(gomock.Any()).Return(accessToken, nil).AnyTimes()
 
 	t.Run("Call to keycloak fails", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, targetRealm, userID).Return(kc.UserRepresentation{}, errors.New("failure"))
-		var err = component.ValidateUserInSocialRealm(ctx, userID, validUser, nil)
+		err := component.ValidateUserInSocialRealm(ctx, userID, validUser, nil)
 		assert.NotNil(t, err)
 	})
 
 	t.Run("Email not verified", func(t *testing.T) {
-		var searchResult = createUser(userID, username, false, true)
+		searchResult := createUser(userID, username, false, true)
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, targetRealm, userID).Return(searchResult, nil)
 
-		var err = component.ValidateUserInSocialRealm(ctx, userID, validUser, nil)
+		err := component.ValidateUserInSocialRealm(ctx, userID, validUser, nil)
 		assert.NotNil(t, err)
 	})
 
 	t.Run("PhoneNumber not verified", func(t *testing.T) {
-		var searchResult = createUser(userID, username, true, false)
+		searchResult := createUser(userID, username, true, false)
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, targetRealm, userID).Return(searchResult, nil)
 
-		var err = component.ValidateUserInSocialRealm(ctx, userID, validUser, nil)
+		err := component.ValidateUserInSocialRealm(ctx, userID, validUser, nil)
 		assert.NotNil(t, err)
 	})
 
 	t.Run("Keycloak update fails", func(t *testing.T) {
-		var kcError = errors.New("keycloak error")
+		kcError := errors.New("keycloak error")
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, targetRealm, userID).Return(kcUser, nil)
 		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, targetRealm, userID, gomock.Any()).Return(kcError)
 
-		var err = component.ValidateUserInSocialRealm(ctx, userID, validUser, nil)
+		err := component.ValidateUserInSocialRealm(ctx, userID, validUser, nil)
 		assert.Equal(t, kcError, err)
 	})
 
 	t.Run("Notify check fails", func(t *testing.T) {
-		var dbError = errors.New("db update error")
+		dbError := errors.New("db update error")
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, targetRealm, userID).Return(kcUser, nil)
 		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, targetRealm, userID, gomock.Any()).Return(nil)
 		mocks.accreditations.EXPECT().NotifyCheck(ctx, gomock.Any()).Return(dbError)
 
-		var err = component.ValidateUserInSocialRealm(ctx, userID, validUser, nil)
+		err := component.ValidateUserInSocialRealm(ctx, userID, validUser, nil)
 		assert.Equal(t, dbError, err)
 	})
 
@@ -397,7 +397,7 @@ func TestValidateUser(t *testing.T) {
 		mocks.eventsReporter.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
 		mocks.archiveDB.EXPECT().StoreUserDetails(gomock.Any(), targetRealm, gomock.Any()).Return(errors.New("any error"))
 
-		var err = component.ValidateUserInSocialRealm(ctx, userID, validUser, nil)
+		err := component.ValidateUserInSocialRealm(ctx, userID, validUser, nil)
 		assert.Nil(t, err)
 	})
 
@@ -408,7 +408,7 @@ func TestValidateUser(t *testing.T) {
 		mocks.eventsReporter.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
 		mocks.archiveDB.EXPECT().StoreUserDetails(gomock.Any(), targetRealm, gomock.Any()).Return(nil)
 
-		var err = component.ValidateUserInSocialRealm(ctx, userID, validUser, nil)
+		err := component.ValidateUserInSocialRealm(ctx, userID, validUser, nil)
 		assert.Nil(t, err)
 	})
 
@@ -422,7 +422,7 @@ func TestValidateUser(t *testing.T) {
 		mocks.eventsReporter.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
 		mocks.archiveDB.EXPECT().StoreUserDetails(gomock.Any(), targetRealm, gomock.Any()).Return(nil)
 
-		var err = component.ValidateUser(ctx, targetRealm, userID, validUser, nil)
+		err := component.ValidateUser(ctx, targetRealm, userID, validUser, nil)
 		assert.Nil(t, err)
 	})
 
@@ -438,7 +438,7 @@ func TestValidateUser(t *testing.T) {
 
 		validUserWithAttachment := createValidUser()
 		validUserWithAttachment.Attachments = &[]apikyc.AttachmentRepresentation{createValidAttachment()}
-		var err = component.ValidateUser(ctx, targetRealm, userID, validUserWithAttachment, nil)
+		err := component.ValidateUser(ctx, targetRealm, userID, validUserWithAttachment, nil)
 		assert.Nil(t, err)
 	})
 
@@ -454,74 +454,74 @@ func TestValidateUser(t *testing.T) {
 
 		validUserWithAttachment := createValidUser()
 		validUserWithAttachment.Attachments = &[]apikyc.AttachmentRepresentation{createValidAttachment(), createValidAttachment()}
-		var err = component.ValidateUser(ctx, targetRealm, userID, validUserWithAttachment, nil)
+		err := component.ValidateUser(ctx, targetRealm, userID, validUserWithAttachment, nil)
 		assert.Nil(t, err)
 	})
 }
 
 func TestEnsureContactVerified(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var targetRealm = "cloudtrust"
-	var userID = "abc789def"
-	var username = "user_name"
-	var bFalse = false
-	var bTrue = true
-	var verifNotNeeded = configuration.RealmAdminConfiguration{NeedVerifiedContact: &bFalse}
-	var verifNeeded = configuration.RealmAdminConfiguration{NeedVerifiedContact: &bTrue}
-	var ctx = context.WithValue(context.TODO(), cs.CtContextRealm, targetRealm)
-	var anyError = errors.New("any error")
+	targetRealm := "cloudtrust"
+	userID := "abc789def"
+	username := "user_name"
+	bFalse := false
+	bTrue := true
+	verifNotNeeded := configuration.RealmAdminConfiguration{NeedVerifiedContact: &bFalse}
+	verifNeeded := configuration.RealmAdminConfiguration{NeedVerifiedContact: &bTrue}
+	ctx := context.WithValue(context.TODO(), cs.CtContextRealm, targetRealm)
+	anyError := errors.New("any error")
 
-	var mocks = createComponentMocks(mockCtrl)
-	var component = mocks.NewComponent(targetRealm)
+	mocks := createComponentMocks(mockCtrl)
+	component := mocks.NewComponent(targetRealm)
 
 	t.Run("Email and phone number are both verified", func(t *testing.T) {
-		var kcUser = createUser(userID, username, true, true)
-		var err = component.ensureContactVerified(ctx, kcUser)
+		kcUser := createUser(userID, username, true, true)
+		err := component.ensureContactVerified(ctx, kcUser)
 		assert.Nil(t, err)
 	})
 	t.Run("Can't get admin configuration", func(t *testing.T) {
-		var kcUser = createUser(userID, username, true, false)
+		kcUser := createUser(userID, username, true, false)
 		mocks.configDB.EXPECT().GetAdminConfiguration(ctx, targetRealm).Return(configuration.RealmAdminConfiguration{}, anyError)
-		var err = component.ensureContactVerified(ctx, kcUser)
+		err := component.ensureContactVerified(ctx, kcUser)
 		assert.Equal(t, anyError, err)
 	})
 	t.Run("Email and phone number verifications are not needed", func(t *testing.T) {
-		var kcUser = createUser(userID, username, false, false)
+		kcUser := createUser(userID, username, false, false)
 		mocks.configDB.EXPECT().GetAdminConfiguration(ctx, targetRealm).Return(verifNotNeeded, nil)
-		var err = component.ensureContactVerified(ctx, kcUser)
+		err := component.ensureContactVerified(ctx, kcUser)
 		assert.Nil(t, err)
 	})
 	t.Run("Email not verified", func(t *testing.T) {
-		var kcUser = createUser(userID, username, false, true)
+		kcUser := createUser(userID, username, false, true)
 		mocks.configDB.EXPECT().GetAdminConfiguration(ctx, targetRealm).Return(verifNeeded, nil)
-		var err = component.ensureContactVerified(ctx, kcUser)
+		err := component.ensureContactVerified(ctx, kcUser)
 		assert.NotNil(t, err)
 		assert.Contains(t, err.Error(), constants.Email)
 	})
 	t.Run("Phone number not verified", func(t *testing.T) {
-		var kcUser = createUser(userID, username, true, false)
+		kcUser := createUser(userID, username, true, false)
 		mocks.configDB.EXPECT().GetAdminConfiguration(ctx, targetRealm).Return(verifNeeded, nil)
-		var err = component.ensureContactVerified(ctx, kcUser)
+		err := component.ensureContactVerified(ctx, kcUser)
 		assert.NotNil(t, err)
 		assert.Contains(t, err.Error(), constants.PhoneNumber)
 	})
 }
 
 func TestSendSmsConsentCode(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var socialRealm = "social-realm"
-	var tokenRealm = "token-realm"
-	var mocks = createComponentMocks(mockCtrl)
-	var component = mocks.NewComponent(socialRealm)
+	socialRealm := "social-realm"
+	tokenRealm := "token-realm"
+	mocks := createComponentMocks(mockCtrl)
+	component := mocks.NewComponent(socialRealm)
 
-	var accessToken = "TOKEN=="
-	var userID = "1245-7854-8963"
-	var ctx = context.WithValue(context.TODO(), cs.CtContextRealm, tokenRealm)
-	var anyError = errors.New("any error")
+	accessToken := "TOKEN=="
+	userID := "1245-7854-8963"
+	ctx := context.WithValue(context.TODO(), cs.CtContextRealm, tokenRealm)
+	anyError := errors.New("any error")
 
 	t.Run("Social SendSmsConsentCode-Can't get access token", func(t *testing.T) {
 		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return("", anyError)
@@ -574,19 +574,19 @@ func TestSendSmsConsentCode(t *testing.T) {
 }
 
 func TestSendSmsCode(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var targetRealm = "cloudtrust"
-	var mocks = createComponentMocks(mockCtrl)
-	var component = mocks.NewComponent(targetRealm)
+	targetRealm := "cloudtrust"
+	mocks := createComponentMocks(mockCtrl)
+	component := mocks.NewComponent(targetRealm)
 
-	var accessToken = "TOKEN=="
-	var userID = "1245-7854-8963"
-	var ctx = context.TODO()
+	accessToken := "TOKEN=="
+	userID := "1245-7854-8963"
+	ctx := context.TODO()
 
 	t.Run("Social SendSmsCode-Can't get access token", func(t *testing.T) {
-		var tokenError = errors.New("token error")
+		tokenError := errors.New("token error")
 		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return("", tokenError)
 
 		_, err := component.SendSmsCodeInSocialRealm(ctx, userID)
@@ -595,7 +595,7 @@ func TestSendSmsCode(t *testing.T) {
 	mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil).AnyTimes()
 
 	t.Run("Social SendSmsCode-Send new sms code", func(t *testing.T) {
-		var code = "1234"
+		code := "1234"
 		mocks.keycloakClient.EXPECT().SendSmsCode(accessToken, component.socialRealmName, userID).Return(kc.SmsCodeRepresentation{Code: &code}, nil)
 		mocks.eventsReporter.EXPECT().ReportEvent(ctx, gomock.Any())
 
@@ -605,7 +605,7 @@ func TestSendSmsCode(t *testing.T) {
 		assert.Equal(t, "1234", codeRes)
 	})
 	t.Run("Social SendSmsCode-Send new sms code but have error when storing the event in the DB", func(t *testing.T) {
-		var code = "1234"
+		code := "1234"
 		mocks.keycloakClient.EXPECT().SendSmsCode(accessToken, component.socialRealmName, userID).Return(kc.SmsCodeRepresentation{Code: &code}, nil)
 
 		mocks.eventsReporter.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
@@ -626,7 +626,7 @@ func TestSendSmsCode(t *testing.T) {
 	ctx = context.WithValue(ctx, cs.CtContextRealm, targetRealm)
 
 	t.Run("Corporate SendSmsCode-Send new sms code", func(t *testing.T) {
-		var code = "1234"
+		code := "1234"
 		mocks.keycloakClient.EXPECT().SendSmsCode(accessToken, targetRealm, userID).Return(kc.SmsCodeRepresentation{Code: &code}, nil)
 		mocks.eventsReporter.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
 
@@ -646,14 +646,14 @@ func createValidAttachment() apikyc.AttachmentRepresentation {
 }
 
 func TestZipAttachments(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var targetRealm = "cloudtrust"
-	var mocks = createComponentMocks(mockCtrl)
-	var component = mocks.NewComponent(targetRealm)
+	targetRealm := "cloudtrust"
+	mocks := createComponentMocks(mockCtrl)
+	component := mocks.NewComponent(targetRealm)
 
-	var attachments = []apikyc.AttachmentRepresentation{createValidAttachment()}
+	attachments := []apikyc.AttachmentRepresentation{createValidAttachment()}
 	zipBytes, err := component.zipAttachments(attachments)
 	assert.Nil(t, err)
 

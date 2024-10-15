@@ -11,8 +11,8 @@ import (
 	apiregister "github.com/cloudtrust/keycloak-bridge/api/register"
 	"github.com/cloudtrust/keycloak-bridge/pkg/register/mock"
 	kc "github.com/cloudtrust/keycloak-client/v2"
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func TestMakeRegisterUserEndpoint(t *testing.T) {
@@ -46,7 +46,7 @@ func TestMakeRegisterUserEndpoint(t *testing.T) {
 	)
 
 	t.Run("No specified realm", func(t *testing.T) {
-		var bytes, _ = json.Marshal(user)
+		bytes, _ := json.Marshal(user)
 		m[reqBody] = string(bytes)
 		_, err := MakeRegisterUserEndpoint(mockRegisterComponent, socialRealm, mockProfileCache, logger)(context.Background(), m)
 		assert.NotNil(t, err)
@@ -58,7 +58,7 @@ func TestMakeRegisterUserEndpoint(t *testing.T) {
 		assert.NotNil(t, err)
 	})
 	t.Run("Input does not match user profile", func(t *testing.T) {
-		var bytes, _ = json.Marshal(user)
+		bytes, _ := json.Marshal(user)
 		m[prmRealm] = realm
 		m[reqBody] = string(bytes)
 		mockProfileCache.EXPECT().GetRealmUserProfile(gomock.Any(), realm).Return(kc.UserProfileRepresentation{
@@ -80,8 +80,8 @@ func TestMakeRegisterUserEndpoint(t *testing.T) {
 	mockProfileCache.EXPECT().GetRealmUserProfile(gomock.Any(), gomock.Any()).Return(kc.UserProfileRepresentation{}, nil).AnyTimes()
 
 	t.Run("Valid request", func(t *testing.T) {
-		var bytes, _ = json.Marshal(apiregister.UserRepresentation{})
-		var socialRealm = "realm-123456"
+		bytes, _ := json.Marshal(apiregister.UserRepresentation{})
+		socialRealm := "realm-123456"
 		m[prmRealm] = realm
 		m[reqBody] = string(bytes)
 		mockRegisterComponent.EXPECT().RegisterUser(gomock.Any(), socialRealm, realm, gomock.Any(), nil).Return("", nil)
@@ -98,7 +98,7 @@ func TestMakeRegisterUserEndpoint(t *testing.T) {
 
 	t.Run("RegisterCorpUser", func(t *testing.T) {
 		m[prmCorpRealm] = socialRealm
-		var bytes, _ = json.Marshal(apiregister.UserRepresentation{})
+		bytes, _ := json.Marshal(apiregister.UserRepresentation{})
 		m[reqBody] = string(bytes)
 		mockRegisterComponent.EXPECT().RegisterUser(gomock.Any(), socialRealm, socialRealm, gomock.Any(), nil).Return("", nil)
 		_, err := MakeRegisterCorpUserEndpoint(mockRegisterComponent, mockProfileCache, logger)(context.Background(), m)
@@ -106,9 +106,9 @@ func TestMakeRegisterUserEndpoint(t *testing.T) {
 	})
 
 	t.Run("Register with context key", func(t *testing.T) {
-		var bytes, _ = json.Marshal(apiregister.UserRepresentation{})
-		var socialRealm = "realm-123456"
-		var ctxKey = "context-key"
+		bytes, _ := json.Marshal(apiregister.UserRepresentation{})
+		socialRealm := "realm-123456"
+		ctxKey := "context-key"
 		m[prmRealm] = realm
 		m[reqBody] = string(bytes)
 		m[prmContextKey] = ctxKey
@@ -125,8 +125,8 @@ func TestMakeGetConfigurationEndpoint(t *testing.T) {
 	mockRegisterComponent := mock.NewComponent(mockCtrl)
 
 	t.Run("Success", func(t *testing.T) {
-		var realm = "my-realm"
-		var m = map[string]string{prmRealm: realm}
+		realm := "my-realm"
+		m := map[string]string{prmRealm: realm}
 		mockRegisterComponent.EXPECT().GetConfiguration(gomock.Any(), realm).Return(apiregister.ConfigurationRepresentation{}, nil)
 		_, err := MakeGetConfigurationEndpoint(mockRegisterComponent)(context.Background(), m)
 		assert.Nil(t, err)

@@ -11,9 +11,9 @@ import (
 	apicommon "github.com/cloudtrust/keycloak-bridge/api/common"
 	apiregister "github.com/cloudtrust/keycloak-bridge/api/register"
 	"github.com/cloudtrust/keycloak-bridge/pkg/register/mock"
-	"github.com/golang/mock/gomock"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func configureMock(mockResponse *mock.ResponseWriter, statusCode int, header http.Header) {
@@ -23,24 +23,24 @@ func configureMock(mockResponse *mock.ResponseWriter, statusCode int, header htt
 }
 
 func TestMakeHTTPRecaptchaValidationMW(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mockHTTPHandler = mock.NewHandler(mockCtrl)
-	var mockRecaptchaHandler = mock.NewHandler(mockCtrl)
-	var mockResponseWriter = mock.NewResponseWriter(mockCtrl)
+	mockHTTPHandler := mock.NewHandler(mockCtrl)
+	mockRecaptchaHandler := mock.NewHandler(mockCtrl)
+	mockResponseWriter := mock.NewResponseWriter(mockCtrl)
 
-	var recaptchaPath = "/recaptcha"
-	var recaptchaSecret = "thesecretfortherecaptchaverifyprocess"
+	recaptchaPath := "/recaptcha"
+	recaptchaSecret := "thesecretfortherecaptchaverifyprocess"
 	r := mux.NewRouter()
 	r.Handle(recaptchaPath, mockRecaptchaHandler)
 
 	ts := httptest.NewServer(r)
 	defer ts.Close()
 
-	var authHandler = MakeHTTPRecaptchaValidationMW(ts.URL+recaptchaPath, recaptchaSecret, logger.NewNopLogger())(mockHTTPHandler)
+	authHandler := MakeHTTPRecaptchaValidationMW(ts.URL+recaptchaPath, recaptchaSecret, logger.NewNopLogger())(mockHTTPHandler)
 
-	var req = http.Request{
+	req := http.Request{
 		Header: make(http.Header),
 	}
 
@@ -96,17 +96,17 @@ func TestMakeHTTPRecaptchaValidationMW(t *testing.T) {
 }
 
 func TestMakeAuthorizationRegisterComponentMW(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mockComponent = mock.NewComponent(mockCtrl)
-	var component = MakeAuthorizationRegisterComponentMW(logger.NewNopLogger())(mockComponent)
+	mockComponent := mock.NewComponent(mockCtrl)
+	component := MakeAuthorizationRegisterComponentMW(logger.NewNopLogger())(mockComponent)
 
-	var ctx = context.TODO()
-	var socialRealm = "social"
-	var realm = "my-realm"
-	var user = apiregister.UserRepresentation{}
-	var expectedErr = errors.New("")
+	ctx := context.TODO()
+	socialRealm := "social"
+	realm := "my-realm"
+	user := apiregister.UserRepresentation{}
+	expectedErr := errors.New("")
 
 	t.Run("RegisterUser", func(t *testing.T) {
 		mockComponent.EXPECT().RegisterUser(ctx, socialRealm, realm, user, nil).Return("", expectedErr)

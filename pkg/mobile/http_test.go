@@ -11,15 +11,15 @@ import (
 	api "github.com/cloudtrust/keycloak-bridge/api/mobile"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/cloudtrust/keycloak-bridge/pkg/mobile/mock"
-	"github.com/golang/mock/gomock"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func TestHTTPMobileHandler(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	var mockMobileComponent = mock.NewComponent(mockCtrl)
+	mockMobileComponent := mock.NewComponent(mockCtrl)
 
 	r := mux.NewRouter()
 	r.Handle("/path/to/account", MakeMobileHandler(keycloakb.ToGoKitEndpoint(MakeGetUserInformationEndpoint(mockMobileComponent)), log.NewNopLogger()))

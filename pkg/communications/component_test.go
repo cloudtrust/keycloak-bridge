@@ -10,8 +10,8 @@ import (
 	api "github.com/cloudtrust/keycloak-bridge/api/communications"
 	"github.com/cloudtrust/keycloak-bridge/pkg/communications/mock"
 	kc "github.com/cloudtrust/keycloak-client/v2"
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 type componentMocks struct {
@@ -139,7 +139,7 @@ func createComponent(mocks componentMocks) Component {
 }
 
 func TestSendEmail(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
 	var (
@@ -154,7 +154,7 @@ func TestSendEmail(t *testing.T) {
 	ctx = context.WithValue(ctx, cs.CtContextRealm, reqRealm)
 
 	t.Run("Can't get OIDC token", func(t *testing.T) {
-		var dummyErr = errors.New("dummy")
+		dummyErr := errors.New("dummy")
 		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(gomock.Any(), "targetRealm").Return("", dummyErr)
 		mocks.logger.EXPECT().Error(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 		err := communicationsComponent.SendEmail(ctx, "targetRealm", emailForTest)
@@ -178,19 +178,19 @@ func TestSendEmail(t *testing.T) {
 }
 
 func TestSendEmailToUser(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var communicationsComponent = createComponent(mocks)
+	mocks := createMocks(mockCtrl)
+	communicationsComponent := createComponent(mocks)
 
-	var accessToken = "TOKEN=="
-	var reqRealm = "reqRealm"
-	var userID = "testerID"
+	accessToken := "TOKEN=="
+	reqRealm := "reqRealm"
+	userID := "testerID"
 
 	t.Run("Can't get OIDC token", func(t *testing.T) {
-		var dummyErr = errors.New("dummy")
-		var ctx = context.WithValue(context.Background(), cs.CtContextRealm, reqRealm)
+		dummyErr := errors.New("dummy")
+		ctx := context.WithValue(context.Background(), cs.CtContextRealm, reqRealm)
 
 		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(gomock.Any(), "targetRealm").Return("", dummyErr)
 		mocks.logger.EXPECT().Error(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
@@ -203,7 +203,7 @@ func TestSendEmailToUser(t *testing.T) {
 	t.Run("Success", func(t *testing.T) {
 		mocks.keycloakCommunicationsClient.EXPECT().SendEmailToUser(accessToken, "reqRealm", "targetRealm", userID, emailForTestKC).Return(nil)
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, reqRealm)
 
 		err := communicationsComponent.SendEmailToUser(ctx, "targetRealm", userID, emailForTest)
@@ -213,7 +213,7 @@ func TestSendEmailToUser(t *testing.T) {
 	t.Run("Failure case", func(t *testing.T) {
 		mocks.keycloakCommunicationsClient.EXPECT().SendEmailToUser(accessToken, "reqRealm", "targetRealm", userID, emailForTestKC).Return(fmt.Errorf("Unexpected error"))
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, reqRealm)
 
 		mocks.logger.EXPECT().Warn(ctx, "err", "Unexpected error")
@@ -224,17 +224,17 @@ func TestSendEmailToUser(t *testing.T) {
 }
 
 func TestSendSMS(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var communicationsComponent = createComponent(mocks)
+	mocks := createMocks(mockCtrl)
+	communicationsComponent := createComponent(mocks)
 
-	var accessToken = "TOKEN=="
-	var reqRealm = "reqRealm"
+	accessToken := "TOKEN=="
+	reqRealm := "reqRealm"
 
 	t.Run("Can't get OIDC token", func(t *testing.T) {
-		var dummyErr = errors.New("dummy")
+		dummyErr := errors.New("dummy")
 		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(gomock.Any(), "targetRealm").Return("", dummyErr)
 		mocks.logger.EXPECT().Error(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 		err := communicationsComponent.SendSMS(context.TODO(), "targetRealm", smsForTest)
@@ -245,7 +245,7 @@ func TestSendSMS(t *testing.T) {
 	t.Run("Success", func(t *testing.T) {
 		mocks.keycloakCommunicationsClient.EXPECT().SendSMS(accessToken, "targetRealm", smsForTestKC).Return(nil)
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, reqRealm)
 
 		err := communicationsComponent.SendSMS(ctx, "targetRealm", smsForTest)
@@ -255,7 +255,7 @@ func TestSendSMS(t *testing.T) {
 	t.Run("Failure", func(t *testing.T) {
 		mocks.keycloakCommunicationsClient.EXPECT().SendSMS(accessToken, "targetRealm", smsForTestKC).Return(fmt.Errorf("Unexpected error"))
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, reqRealm)
 
 		mocks.logger.EXPECT().Warn(ctx, "err", "Unexpected error")

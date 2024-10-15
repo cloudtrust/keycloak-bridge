@@ -10,17 +10,17 @@ import (
 
 	"github.com/cloudtrust/common-service/v2/log"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
-	"github.com/golang/mock/gomock"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func TestHTTPMobileHandler(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var endpoint = func(ctx context.Context, req interface{}) (interface{}, error) {
-		var m = req.(map[string]string)
+	endpoint := func(ctx context.Context, req interface{}) (interface{}, error) {
+		m := req.(map[string]string)
 		return m[prmQryEmail], nil
 	}
 
@@ -31,8 +31,8 @@ func TestHTTPMobileHandler(t *testing.T) {
 	defer ts.Close()
 
 	{
-		var sampleEmail = "me@domain.net"
-		var doublequote = '"'
+		sampleEmail := "me@domain.net"
+		doublequote := '"'
 		res, err := http.Get(ts.URL + "/path/to/account?email=" + sampleEmail)
 
 		assert.Nil(t, err)

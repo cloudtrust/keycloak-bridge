@@ -11,17 +11,17 @@ import (
 	api "github.com/cloudtrust/keycloak-bridge/api/statistics"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/cloudtrust/keycloak-bridge/pkg/statistics/mock"
-	"github.com/golang/mock/gomock"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func TestHTTPStatisticsHandler(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	var mockComponent = mock.NewComponent(mockCtrl)
+	mockComponent := mock.NewComponent(mockCtrl)
 
-	var managementHandler1 = MakeStatisticsHandler(keycloakb.ToGoKitEndpoint(MakeGetStatisticsIdentificationsEndpoint(mockComponent)), log.NewNopLogger())
+	managementHandler1 := MakeStatisticsHandler(keycloakb.ToGoKitEndpoint(MakeGetStatisticsIdentificationsEndpoint(mockComponent)), log.NewNopLogger())
 
 	r := mux.NewRouter()
 	r.Handle("/statistics/realm/{realm}", managementHandler1)
@@ -31,10 +31,10 @@ func TestHTTPStatisticsHandler(t *testing.T) {
 
 	// Get - 200 with JSON body returned
 	{
-		var params = make(map[string]string)
+		params := make(map[string]string)
 		params[prmRealm] = "master"
 
-		var stats = api.IdentificationStatisticsRepresentation{}
+		stats := api.IdentificationStatisticsRepresentation{}
 		statsJSON, _ := json.MarshalIndent(stats, "", " ")
 
 		mockComponent.EXPECT().GetStatisticsIdentifications(gomock.Any(), gomock.Any()).Return(stats, nil).Times(1)

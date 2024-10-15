@@ -11,8 +11,8 @@ import (
 	apikyc "github.com/cloudtrust/keycloak-bridge/api/kyc"
 	"github.com/cloudtrust/keycloak-bridge/pkg/kyc/mock"
 	kc "github.com/cloudtrust/keycloak-client/v2"
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func TestMakeGetActionsEndpoint(t *testing.T) {
@@ -21,8 +21,8 @@ func TestMakeGetActionsEndpoint(t *testing.T) {
 
 	mockKYCComponent := mock.NewComponent(mockCtrl)
 
-	var m = map[string]string{}
-	var expectedError = errors.New("get-actions")
+	m := map[string]string{}
+	expectedError := errors.New("get-actions")
 
 	t.Run("GetActions - success case", func(t *testing.T) {
 		mockKYCComponent.EXPECT().GetActions(gomock.Any()).Return([]apikyc.ActionRepresentation{}, nil)
@@ -43,8 +43,8 @@ func TestGetRealmUserProfileEndpoint(t *testing.T) {
 
 	mockKYCComponent := mock.NewComponent(mockCtrl)
 
-	var m = map[string]string{}
-	var expectedError = errors.New("get-actions")
+	m := map[string]string{}
+	expectedError := errors.New("get-actions")
 
 	t.Run("Corp", func(t *testing.T) {
 		t.Run("Success case", func(t *testing.T) {
@@ -79,11 +79,11 @@ func TestMakeGetUserEndpoint(t *testing.T) {
 
 	mockKYCComponent := mock.NewComponent(mockCtrl)
 
-	var userID = "user1234"
-	var consentCode = "123456"
-	var m = map[string]string{prmUserID: userID}
-	var paramsWithConsentCode = map[string]string{prmUserID: userID, prmQryConsent: consentCode}
-	var expectedError = errors.New("get-user")
+	userID := "user1234"
+	consentCode := "123456"
+	m := map[string]string{prmUserID: userID}
+	paramsWithConsentCode := map[string]string{prmUserID: userID, prmQryConsent: consentCode}
+	expectedError := errors.New("get-user")
 
 	t.Run("Social - success case without consent code", func(t *testing.T) {
 		mockKYCComponent.EXPECT().GetUserInSocialRealm(gomock.Any(), userID, nil).Return(apikyc.UserRepresentation{}, nil)
@@ -101,7 +101,7 @@ func TestMakeGetUserEndpoint(t *testing.T) {
 		assert.Equal(t, expectedError, err)
 	})
 
-	var realm = "my-realm"
+	realm := "my-realm"
 
 	t.Run("Corporate - success case without consent code", func(t *testing.T) {
 		m[prmRealm] = realm
@@ -123,9 +123,9 @@ func TestMakeGetUserByUsernameEndpoint(t *testing.T) {
 
 	mockKYCComponent := mock.NewComponent(mockCtrl)
 
-	var username = "user1234"
-	var m = map[string]string{prmQryUserName: username}
-	var expectedError = errors.New("get-user")
+	username := "user1234"
+	m := map[string]string{prmQryUserName: username}
+	expectedError := errors.New("get-user")
 
 	t.Run("Social - success case", func(t *testing.T) {
 		mockKYCComponent.EXPECT().GetUserByUsernameInSocialRealm(gomock.Any(), username).Return(apikyc.UserRepresentation{}, nil)
@@ -138,7 +138,7 @@ func TestMakeGetUserByUsernameEndpoint(t *testing.T) {
 		assert.Equal(t, expectedError, err)
 	})
 
-	var realm = "my-realm"
+	realm := "my-realm"
 	m[prmRealm] = realm
 
 	t.Run("Corporate - success case", func(t *testing.T) {
@@ -235,7 +235,7 @@ func TestMakeValidateUserEndpoint(t *testing.T) {
 		assert.Nil(t, err)
 	})
 	t.Run("Success with consent code", func(t *testing.T) {
-		var consent = "123456"
+		consent := "123456"
 		m[prmQryConsent] = consent
 		mockProfileCache.EXPECT().GetRealmUserProfile(ctx, realmName).Return(kc.UserProfileRepresentation{}, nil)
 		mockKYCComponent.EXPECT().ValidateUser(gomock.Any(), realmName, userID, gomock.Any(), &consent).Return(nil)
@@ -250,8 +250,8 @@ func TestMakeSendSmsConsentCodeEndpoint(t *testing.T) {
 
 	mockKYCComponent := mock.NewComponent(mockCtrl)
 
-	var userID = "ux467913"
-	var m = map[string]string{prmUserID: userID}
+	userID := "ux467913"
+	m := map[string]string{prmUserID: userID}
 
 	t.Run("Social", func(t *testing.T) {
 		mockKYCComponent.EXPECT().SendSmsConsentCodeInSocialRealm(gomock.Any(), userID).Return(nil)
@@ -259,7 +259,7 @@ func TestMakeSendSmsConsentCodeEndpoint(t *testing.T) {
 		assert.Nil(t, err)
 	})
 	t.Run("Corporate", func(t *testing.T) {
-		var realm = "my-realm"
+		realm := "my-realm"
 		m[prmRealm] = realm
 		mockKYCComponent.EXPECT().SendSmsConsentCode(gomock.Any(), realm, userID).Return(nil)
 		_, err := MakeSendSmsConsentCodeEndpoint(mockKYCComponent)(context.Background(), m)
@@ -301,29 +301,29 @@ func createValidUser() apikyc.UserRepresentation {
 }
 
 func TestMakeSendSmsCodeEndpoint(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var userID = "123-456-789"
-	var ctx = context.Background()
-	var req = make(map[string]string)
+	userID := "123-456-789"
+	ctx := context.Background()
+	req := make(map[string]string)
 	req[prmUserID] = userID
 
-	var mockKYCComponent = mock.NewComponent(mockCtrl)
+	mockKYCComponent := mock.NewComponent(mockCtrl)
 
 	t.Run("Social", func(t *testing.T) {
 		mockKYCComponent.EXPECT().SendSmsCodeInSocialRealm(ctx, userID).Return("1234", nil)
 
-		var res, err = MakeSendSmsCodeInSocialRealmEndpoint(mockKYCComponent)(ctx, req)
+		res, err := MakeSendSmsCodeInSocialRealmEndpoint(mockKYCComponent)(ctx, req)
 		assert.Nil(t, err)
 		assert.Equal(t, map[string]string{"code": "1234"}, res)
 	})
 	t.Run("Corporate", func(t *testing.T) {
-		var realm = "my-realm"
+		realm := "my-realm"
 		req[prmRealm] = realm
 		mockKYCComponent.EXPECT().SendSmsCode(ctx, realm, userID).Return("1234", nil)
 
-		var res, err = MakeSendSmsCodeEndpoint(mockKYCComponent)(ctx, req)
+		res, err := MakeSendSmsCodeEndpoint(mockKYCComponent)(ctx, req)
 		assert.Nil(t, err)
 		assert.Equal(t, map[string]string{"code": "1234"}, res)
 	})

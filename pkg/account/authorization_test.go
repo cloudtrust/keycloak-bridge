@@ -13,8 +13,8 @@ import (
 	apicommon "github.com/cloudtrust/keycloak-bridge/api/common"
 
 	"github.com/cloudtrust/keycloak-bridge/pkg/account/mock"
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func TestNoRestrictions(t *testing.T) {

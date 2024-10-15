@@ -10,22 +10,20 @@ import (
 	"github.com/cloudtrust/common-service/v2/security"
 	api "github.com/cloudtrust/keycloak-bridge/api/statistics"
 	"github.com/cloudtrust/keycloak-bridge/pkg/statistics/mock"
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
-var (
-	WithoutAuthorization = []configuration.Authorization{}
-)
+var WithoutAuthorization = []configuration.Authorization{}
 
 func WithAuthorization() []configuration.Authorization {
-	var realmName = "master"
-	var toe = "toe"
-	var any = "*"
+	realmName := "master"
+	toe := "toe"
+	any := "*"
 
-	var authorizations = []configuration.Authorization{}
+	authorizations := []configuration.Authorization{}
 	for _, action := range security.Actions.GetActionsForAPIs(security.BridgeService, security.StatisticAPI) {
-		var action = string(action.Name)
+		action := string(action.Name)
 		authorizations = append(authorizations, configuration.Authorization{
 			RealmID:         &realmName,
 			GroupName:       &toe,
@@ -39,28 +37,28 @@ func WithAuthorization() []configuration.Authorization {
 }
 
 func testAuthorization(t *testing.T, authz []configuration.Authorization, tester func(Component, *mock.Component, context.Context, map[string]string)) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	var mockLogger = log.NewNopLogger()
+	mockLogger := log.NewNopLogger()
 
 	mockKeycloakClient := mock.NewKeycloakClient(mockCtrl)
-	var mockAuthorizationDBReader = mock.NewAuthorizationDBReader(mockCtrl)
+	mockAuthorizationDBReader := mock.NewAuthorizationDBReader(mockCtrl)
 	mockAuthorizationDBReader.EXPECT().GetAuthorizations(gomock.Any()).Return(authz, nil)
 
-	var authorizations, err = security.NewAuthorizationManager(mockAuthorizationDBReader, mockKeycloakClient, mockLogger)
+	authorizations, err := security.NewAuthorizationManager(mockAuthorizationDBReader, mockKeycloakClient, mockLogger)
 	assert.Nil(t, err)
 
 	mockComponent := mock.NewComponent(mockCtrl)
 
-	var authorizationMW = MakeAuthorizationManagementComponentMW(mockLogger, authorizations)(mockComponent)
+	authorizationMW := MakeAuthorizationManagementComponentMW(mockLogger, authorizations)(mockComponent)
 
-	var accessToken = "TOKEN=="
-	var groups = []string{"toe"}
-	var realmName = "master"
-	var userID = "123-456-789"
-	var groupName = "titi"
+	accessToken := "TOKEN=="
+	groups := []string{"toe"}
+	realmName := "master"
+	userID := "123-456-789"
+	groupName := "titi"
 
-	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+	ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 	ctx = context.WithValue(ctx, cs.CtContextGroups, groups)
 	ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 

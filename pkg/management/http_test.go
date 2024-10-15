@@ -13,9 +13,9 @@ import (
 	"github.com/cloudtrust/common-service/v2/log"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	kc_client "github.com/cloudtrust/keycloak-client/v2"
-	"github.com/golang/mock/gomock"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func responseToString(input io.ReadCloser) string {
@@ -25,20 +25,20 @@ func responseToString(input io.ReadCloser) string {
 }
 
 func responseToMap(input io.ReadCloser) map[string]string {
-	var bytes = []byte(responseToString(input))
+	bytes := []byte(responseToString(input))
 	var res map[string]string
 	_ = json.Unmarshal(bytes, &res)
 	return res
 }
 
 func TestHTTPManagementHandler(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
 	var (
 		url      = "http://api.domain.ch/users/123456-7890-abcd-efghijkl"
 		endpoint = func(ctx context.Context, req interface{}) (interface{}, error) {
-			var m = req.(map[string]string)
+			m := req.(map[string]string)
 			if realm, ok := m["realm"]; ok {
 				if realm == "notfound" {
 					return nil, errorhandler.CreateNotFoundError("realm")
@@ -71,12 +71,12 @@ func TestHTTPManagementHandler(t *testing.T) {
 		assert.Equal(t, http.StatusNotFound, res.StatusCode)
 	})
 	t.Run("Success with JSON response", func(t *testing.T) {
-		var email = "toto@toto.com"
+		email := "toto@toto.com"
 		res, err := http.Get(ts.URL + "/realms/master?email=" + email)
 		assert.Nil(t, err)
 		assert.Equal(t, http.StatusOK, res.StatusCode)
 
-		var resp = responseToMap(res.Body)
+		resp := responseToMap(res.Body)
 		assert.Equal(t, email, resp["email"])
 	})
 	t.Run("Invalid input parameter", func(t *testing.T) {
@@ -89,7 +89,7 @@ func TestHTTPManagementHandler(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Equal(t, http.StatusBadGateway, res.StatusCode)
 
-		var resp = responseToString(res.Body)
+		resp := responseToString(res.Body)
 		assert.Equal(t, "keycloak-bridge.unknowError", resp)
 	})
 	t.Run("location test case", func(t *testing.T) {

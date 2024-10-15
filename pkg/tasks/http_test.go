@@ -10,16 +10,16 @@ import (
 
 	"github.com/cloudtrust/common-service/v2/log"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
-	"github.com/golang/mock/gomock"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func TestHTTPMobileHandler(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var endpoint = func(ctx context.Context, _ interface{}) (interface{}, error) {
+	endpoint := func(ctx context.Context, _ interface{}) (interface{}, error) {
 		return []string{}, nil
 	}
 

@@ -6,8 +6,8 @@ import (
 
 	api "github.com/cloudtrust/keycloak-bridge/api/mobile"
 	"github.com/cloudtrust/keycloak-bridge/pkg/mobile/mock"
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func TestMakeGetUserInformationEndpoint(t *testing.T) {

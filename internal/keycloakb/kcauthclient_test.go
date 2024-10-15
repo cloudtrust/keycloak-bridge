@@ -10,8 +10,8 @@ import (
 
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/mock"
 	kc "github.com/cloudtrust/keycloak-client/v2"
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 const (
@@ -22,10 +22,10 @@ const (
 )
 
 func testKeycloakAuthClient(t *testing.T, testable func(t *testing.T, mockKeycloak *mock.KeycloakClient, authClient security.KeycloakClient)) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	var mockLogger = log.NewNopLogger()
-	var mockKeycloak = mock.NewKeycloakClient(mockCtrl)
+	mockLogger := log.NewNopLogger()
+	mockKeycloak := mock.NewKeycloakClient(mockCtrl)
 
 	testable(t, mockKeycloak, NewKeycloakAuthClient(mockKeycloak, mockLogger))
 }
@@ -50,8 +50,8 @@ func TestGetGroupNamesOfUserNilGroups(t *testing.T) {
 func TestGetGroupNamesOfUserSuccess(t *testing.T) {
 	// GetGroupNamesOfUser: success with one valid groupname
 	testKeycloakAuthClient(t, func(t *testing.T, mockKeycloak *mock.KeycloakClient, authClient security.KeycloakClient) {
-		var groupname = "name of group"
-		var groups = []kc.GroupRepresentation{
+		groupname := "name of group"
+		groups := []kc.GroupRepresentation{
 			{Name: nil},
 			{Name: &groupname},
 		}
@@ -80,7 +80,7 @@ func TestGetGroupName(t *testing.T) {
 	})
 	t.Run("Success", func(t *testing.T) {
 		testKeycloakAuthClient(t, func(t *testing.T, mockKeycloak *mock.KeycloakClient, authClient security.KeycloakClient) {
-			var groupname = "the name"
+			groupname := "the name"
 			mockKeycloak.EXPECT().GetGroup(accessToken, realm, groupID).Return(kc.GroupRepresentation{Name: &groupname}, nil).Times(1)
 			res, err := authClient.GetGroupName(context.TODO(), accessToken, realm, groupID)
 			assert.Nil(t, err)
@@ -90,11 +90,11 @@ func TestGetGroupName(t *testing.T) {
 }
 
 func TestGetID(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mockKeycloak = mock.NewKeycloakClient(mockCtrl)
-	var idRetriever = NewRealmIDRetriever(mockKeycloak)
+	mockKeycloak := mock.NewKeycloakClient(mockCtrl)
+	idRetriever := NewRealmIDRetriever(mockKeycloak)
 
 	t.Run("Error", func(t *testing.T) {
 		mockKeycloak.EXPECT().GetRealm(accessToken, realm).Return(kc.RealmRepresentation{}, errors.New("error"))
@@ -108,7 +108,7 @@ func TestGetID(t *testing.T) {
 		assert.Equal(t, "", id)
 	})
 	t.Run("Success", func(t *testing.T) {
-		var id = "the-realm-identifier"
+		id := "the-realm-identifier"
 		mockKeycloak.EXPECT().GetRealm(accessToken, realm).Return(kc.RealmRepresentation{ID: &id}, nil)
 		res, err := idRetriever.GetID(accessToken, realm)
 		assert.Nil(t, err)

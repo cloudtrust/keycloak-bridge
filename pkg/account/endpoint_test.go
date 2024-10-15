@@ -10,8 +10,8 @@ import (
 	apicommon "github.com/cloudtrust/keycloak-bridge/api/common"
 	"github.com/cloudtrust/keycloak-bridge/pkg/account/mock"
 	kc "github.com/cloudtrust/keycloak-client/v2"
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func TestMakeUpdatePasswordEndpoint(t *testing.T) {
@@ -22,17 +22,17 @@ func TestMakeUpdatePasswordEndpoint(t *testing.T) {
 	mockAccountComponent.EXPECT().UpdatePassword(gomock.Any(), "password", "password2", "password2").Return(nil)
 
 	t.Run("Success", func(t *testing.T) {
-		var m = map[string]string{reqBody: `{"currentPassword":"password", "newPassword":"password2", "confirmPassword":"password2"}`}
+		m := map[string]string{reqBody: `{"currentPassword":"password", "newPassword":"password2", "confirmPassword":"password2"}`}
 		_, err := MakeUpdatePasswordEndpoint(mockAccountComponent)(context.Background(), m)
 		assert.Nil(t, err)
 	})
 	t.Run("Invalid JSON in body", func(t *testing.T) {
-		var m = map[string]string{reqBody: `{`}
+		m := map[string]string{reqBody: `{`}
 		_, err := MakeUpdatePasswordEndpoint(mockAccountComponent)(context.Background(), m)
 		assert.NotNil(t, err)
 	})
 	t.Run("Invalid parameter in body", func(t *testing.T) {
-		var m = map[string]string{reqBody: `{"currentPassword":"", "newPassword":"password2", "confirmPassword":"password2"}`}
+		m := map[string]string{reqBody: `{"currentPassword":"", "newPassword":"password2", "confirmPassword":"password2"}`}
 		_, err := MakeUpdatePasswordEndpoint(mockAccountComponent)(context.Background(), m)
 		assert.NotNil(t, err)
 	})
@@ -70,22 +70,22 @@ func TestMakeUpdateLabelCredentialEndpoint(t *testing.T) {
 	mockAccountComponent.EXPECT().UpdateLabelCredential(gomock.Any(), "id", "label").Return(nil)
 
 	t.Run("Success", func(t *testing.T) {
-		var m = map[string]string{reqBody: `{"userLabel":"label"}`, prmCredentialID: `id`}
+		m := map[string]string{reqBody: `{"userLabel":"label"}`, prmCredentialID: `id`}
 		_, err := MakeUpdateLabelCredentialEndpoint(mockAccountComponent)(context.Background(), m)
 		assert.Nil(t, err)
 	})
 	t.Run("Invalid JSON in body", func(t *testing.T) {
-		var m = map[string]string{reqBody: `{`}
+		m := map[string]string{reqBody: `{`}
 		_, err := MakeUpdateLabelCredentialEndpoint(mockAccountComponent)(context.Background(), m)
 		assert.NotNil(t, err)
 	})
 	t.Run("Invalid ID", func(t *testing.T) {
-		var m = map[string]string{reqBody: `{"id":"invalid"}`, prmCredentialID: `id`}
+		m := map[string]string{reqBody: `{"id":"invalid"}`, prmCredentialID: `id`}
 		_, err := MakeUpdateLabelCredentialEndpoint(mockAccountComponent)(context.Background(), m)
 		assert.NotNil(t, err)
 	})
 	t.Run("Missing user label", func(t *testing.T) {
-		var m = map[string]string{reqBody: `{"phoneNumber":"label"}`, prmCredentialID: `id`}
+		m := map[string]string{reqBody: `{"phoneNumber":"label"}`, prmCredentialID: `id`}
 		_, err := MakeUpdateLabelCredentialEndpoint(mockAccountComponent)(context.Background(), m)
 		assert.NotNil(t, err)
 	})
@@ -177,16 +177,16 @@ func TestMakeUpdateAccountEndpoint(t *testing.T) {
 }
 
 func TestSimpleEndpoints(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mockAccountComponent = mock.NewComponent(mockCtrl)
-	var m = map[string]string{}
+	mockAccountComponent := mock.NewComponent(mockCtrl)
+	m := map[string]string{}
 
 	t.Run("MakeDeleteAccountEndpoint", func(t *testing.T) {
 		mockAccountComponent.EXPECT().DeleteAccount(gomock.Any()).Return(nil)
 
-		var _, err = MakeDeleteAccountEndpoint(mockAccountComponent)(context.Background(), m)
+		_, err := MakeDeleteAccountEndpoint(mockAccountComponent)(context.Background(), m)
 		assert.Nil(t, err)
 	})
 

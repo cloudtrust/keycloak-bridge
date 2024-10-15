@@ -13,8 +13,8 @@ import (
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/idnowclient"
 	"github.com/cloudtrust/keycloak-bridge/pkg/statistics/mock"
 	kc "github.com/cloudtrust/keycloak-client/v2"
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 type componentMocks struct {
@@ -36,16 +36,16 @@ func (cm *componentMocks) newComponent() *component {
 }
 
 func TestGetStatisticsIdentifications(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = newComponentMocks(mockCtrl)
-	var component = mocks.newComponent()
+	mocks := newComponentMocks(mockCtrl)
+	component := mocks.newComponent()
 
-	var testError = errors.New("test error")
-	var realm = "the_realm_name"
-	var expected = api.IdentificationStatisticsRepresentation{}
-	var ctx = context.Background()
+	testError := errors.New("test error")
+	realm := "the_realm_name"
+	expected := api.IdentificationStatisticsRepresentation{}
+	ctx := context.Background()
 
 	t.Run("accreditation service error", func(t *testing.T) {
 		mocks.accredsService.EXPECT().GetIdentityChecksByNature(ctx, realm).Return([]accreditationsclient.NatureCheckCount{}, testError)
@@ -87,15 +87,15 @@ func TestGetStatisticsIdentifications(t *testing.T) {
 }
 
 func TestGetStatisticsUsers(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = newComponentMocks(mockCtrl)
-	var component = mocks.newComponent()
+	mocks := newComponentMocks(mockCtrl)
+	component := mocks.newComponent()
 
-	var realm = "the_realm_name"
-	var accessToken = "TOKEN=="
-	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+	realm := "the_realm_name"
+	accessToken := "TOKEN=="
+	ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 	ctx = context.WithValue(ctx, cs.CtContextRealm, realm)
 	statisticsKC := kc.StatisticsUsersRepresentation{
 		Total:    3,
@@ -124,15 +124,15 @@ func TestGetStatisticsUsers(t *testing.T) {
 }
 
 func TestGetStatisticsAuthenticators(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = newComponentMocks(mockCtrl)
-	var component = mocks.newComponent()
+	mocks := newComponentMocks(mockCtrl)
+	component := mocks.newComponent()
 
-	var realm = "the_realm_name"
-	var accessToken = "TOKEN=="
-	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+	realm := "the_realm_name"
+	accessToken := "TOKEN=="
+	ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 	ctx = context.WithValue(ctx, cs.CtContextRealm, realm)
 	statisticsKC := map[string]int64{
 		"password": 3,
@@ -155,15 +155,15 @@ func TestGetStatisticsAuthenticators(t *testing.T) {
 }
 
 func TestGetActions(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = newComponentMocks(mockCtrl)
-	var component = mocks.newComponent()
+	mocks := newComponentMocks(mockCtrl)
+	component := mocks.newComponent()
 
-	var realm = "the_realm_name"
-	var accessToken = "TOKEN=="
-	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+	realm := "the_realm_name"
+	accessToken := "TOKEN=="
+	ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 	ctx = context.WithValue(ctx, cs.CtContextRealm, realm)
 
 	res, err := component.GetActions(ctx)

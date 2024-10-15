@@ -8,23 +8,23 @@ import (
 	errorhandler "github.com/cloudtrust/common-service/v2/errors"
 	api "github.com/cloudtrust/keycloak-bridge/api/support"
 	"github.com/cloudtrust/keycloak-bridge/pkg/support/mock"
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func TestMakeGetSupportInformationEndpoint(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mockSupportComponent = mock.NewComponent(mockCtrl)
-	var endpoint = MakeGetSupportInformationEndpoint(mockSupportComponent)
+	mockSupportComponent := mock.NewComponent(mockCtrl)
+	endpoint := MakeGetSupportInformationEndpoint(mockSupportComponent)
 
-	var email = "name@domain.ch"
-	var ctx = context.TODO()
-	var request = map[string]string{}
+	email := "name@domain.ch"
+	ctx := context.TODO()
+	request := map[string]string{}
 
 	t.Run("Error", func(t *testing.T) {
-		var _, err = endpoint(ctx, request)
+		_, err := endpoint(ctx, request)
 		assert.NotNil(t, err)
 		assert.IsType(t, errorhandler.Error{}, err)
 		assert.Equal(t, http.StatusBadRequest, err.(errorhandler.Error).Status)
@@ -32,7 +32,7 @@ func TestMakeGetSupportInformationEndpoint(t *testing.T) {
 	t.Run("Success", func(t *testing.T) {
 		request[prmQryEmail] = email
 		mockSupportComponent.EXPECT().GetSupportInformation(gomock.Any(), email).Return([]api.EmailInfo{}, nil)
-		var res, err = endpoint(ctx, request)
+		res, err := endpoint(ctx, request)
 		assert.Nil(t, err)
 		assert.NotNil(t, res)
 		assert.Len(t, res, 0)

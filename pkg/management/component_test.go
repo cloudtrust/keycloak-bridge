@@ -23,8 +23,8 @@ import (
 
 	"github.com/cloudtrust/keycloak-bridge/pkg/management/mock"
 	kc "github.com/cloudtrust/keycloak-client/v2"
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 type componentMocks struct {
@@ -57,9 +57,7 @@ func createMocks(mockCtrl *gomock.Controller) *componentMocks {
 	}
 }
 
-var (
-	allowedTrustIDGroups = []string{"grp1", "grp2"}
-)
+var allowedTrustIDGroups = []string{"grp1", "grp2"}
 
 const (
 	socialRealmName = "social"
@@ -80,19 +78,19 @@ func ptrBool(value bool) *bool {
 }
 
 func TestGetActions(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var managementComponent = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	managementComponent := mocks.createComponent()
 
-	var accessToken = "TOKEN=="
-	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+	accessToken := "TOKEN=="
+	ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 	res, err := managementComponent.GetActions(ctx)
 	assert.Nil(t, err)
 
-	var checkPresence = func(action string, scope security.Scope) {
+	checkPresence := func(action string, scope security.Scope) {
 		s := string(scope)
 		t.Run("Check "+action, func(t *testing.T) {
 			assert.Contains(t, res, api.ActionRepresentation{Name: &action, Scope: &s})
@@ -106,24 +104,24 @@ func TestGetActions(t *testing.T) {
 }
 
 func TestGetRealms(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var managementComponent = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	managementComponent := mocks.createComponent()
 
-	var accessToken = "TOKEN=="
+	accessToken := "TOKEN=="
 
 	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
 
 	t.Run("Get realms with succces", func(t *testing.T) {
-		var id = "1245"
-		var keycloakVersion = "4.8.3"
-		var realm = "master"
-		var displayName = "Master"
-		var enabled = true
+		id := "1245"
+		keycloakVersion := "4.8.3"
+		realm := "master"
+		displayName := "Master"
+		enabled := true
 
-		var kcRealmRep = kc.RealmRepresentation{
+		kcRealmRep := kc.RealmRepresentation{
 			ID:              &id,
 			KeycloakVersion: &keycloakVersion,
 			Realm:           &realm,
@@ -136,11 +134,11 @@ func TestGetRealms(t *testing.T) {
 
 		mocks.keycloakClient.EXPECT().GetRealms(accessToken).Return(kcRealmsRep, nil)
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		apiRealmsRep, err := managementComponent.GetRealms(ctx)
 
-		var expectedAPIRealmRep = api.RealmRepresentation{
+		expectedAPIRealmRep := api.RealmRepresentation{
 			ID:              &id,
 			KeycloakVersion: &keycloakVersion,
 			Realm:           &realm,
@@ -158,7 +156,7 @@ func TestGetRealms(t *testing.T) {
 	t.Run("Error", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetRealms(accessToken).Return([]kc.RealmRepresentation{}, fmt.Errorf("Unexpected error"))
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		_, err := managementComponent.GetRealms(ctx)
 
@@ -167,26 +165,26 @@ func TestGetRealms(t *testing.T) {
 }
 
 func TestGetRealm(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var managementComponent = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	managementComponent := mocks.createComponent()
 
-	var accessToken = "TOKEN=="
-	var realmName = "master"
-	var username = "username"
+	accessToken := "TOKEN=="
+	realmName := "master"
+	username := "username"
 
 	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
 
 	t.Run("Get realm with succces", func(t *testing.T) {
-		var id = "1245"
-		var keycloakVersion = "4.8.3"
-		var realm = "master"
-		var displayName = "Master"
-		var enabled = true
+		id := "1245"
+		keycloakVersion := "4.8.3"
+		realm := "master"
+		displayName := "Master"
+		enabled := true
 
-		var kcRealmRep = kc.RealmRepresentation{
+		kcRealmRep := kc.RealmRepresentation{
 			ID:              &id,
 			KeycloakVersion: &keycloakVersion,
 			Realm:           &realm,
@@ -196,13 +194,13 @@ func TestGetRealm(t *testing.T) {
 
 		mocks.keycloakClient.EXPECT().GetRealm(accessToken, realmName).Return(kcRealmRep, nil)
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 
 		apiRealmRep, err := managementComponent.GetRealm(ctx, "master")
 
-		var expectedAPIRealmRep = api.RealmRepresentation{
+		expectedAPIRealmRep := api.RealmRepresentation{
 			ID:              &id,
 			KeycloakVersion: &keycloakVersion,
 			Realm:           &realm,
@@ -217,7 +215,7 @@ func TestGetRealm(t *testing.T) {
 	t.Run("Error", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetRealm(accessToken, realmName).Return(kc.RealmRepresentation{}, fmt.Errorf("Unexpected error"))
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		_, err := managementComponent.GetRealm(ctx, "master")
 
@@ -226,27 +224,27 @@ func TestGetRealm(t *testing.T) {
 }
 
 func TestGetClient(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var managementComponent = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	managementComponent := mocks.createComponent()
 
-	var accessToken = "TOKEN=="
-	var realmName = "master"
+	accessToken := "TOKEN=="
+	realmName := "master"
 
 	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
 
 	t.Run("Get client with succces", func(t *testing.T) {
-		var id = "1245-1245-4578"
-		var name = "clientName"
-		var baseURL = "http://toto.com"
-		var clientID = "client-id"
-		var protocol = "saml"
-		var enabled = true
-		var username = "username"
+		id := "1245-1245-4578"
+		name := "clientName"
+		baseURL := "http://toto.com"
+		clientID := "client-id"
+		protocol := "saml"
+		enabled := true
+		username := "username"
 
-		var kcClientRep = kc.ClientRepresentation{
+		kcClientRep := kc.ClientRepresentation{
 			ID:       &id,
 			Name:     &name,
 			BaseURL:  &baseURL,
@@ -257,13 +255,13 @@ func TestGetClient(t *testing.T) {
 
 		mocks.keycloakClient.EXPECT().GetClient(accessToken, realmName, id).Return(kcClientRep, nil)
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 
 		apiClientRep, err := managementComponent.GetClient(ctx, "master", id)
 
-		var expectedAPIClientRep = api.ClientRepresentation{
+		expectedAPIClientRep := api.ClientRepresentation{
 			ID:       &id,
 			Name:     &name,
 			BaseURL:  &baseURL,
@@ -277,10 +275,10 @@ func TestGetClient(t *testing.T) {
 	})
 
 	t.Run("Error", func(t *testing.T) {
-		var id = "1234-79894-7594"
+		id := "1234-79894-7594"
 		mocks.keycloakClient.EXPECT().GetClient(accessToken, realmName, id).Return(kc.ClientRepresentation{}, fmt.Errorf("Unexpected error"))
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		_, err := managementComponent.GetClient(ctx, "master", id)
 
@@ -289,26 +287,26 @@ func TestGetClient(t *testing.T) {
 }
 
 func TestGetClients(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var managementComponent = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	managementComponent := mocks.createComponent()
 
-	var accessToken = "TOKEN=="
-	var realmName = "master"
+	accessToken := "TOKEN=="
+	realmName := "master"
 
 	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
 
 	t.Run("Get clients with succces", func(t *testing.T) {
-		var id = "1234-7894-58"
-		var name = "clientName"
-		var baseURL = "http://toto.com"
-		var clientID = "client-id"
-		var protocol = "saml"
-		var enabled = true
+		id := "1234-7894-58"
+		name := "clientName"
+		baseURL := "http://toto.com"
+		clientID := "client-id"
+		protocol := "saml"
+		enabled := true
 
-		var kcClientRep = kc.ClientRepresentation{
+		kcClientRep := kc.ClientRepresentation{
 			ID:       &id,
 			Name:     &name,
 			BaseURL:  &baseURL,
@@ -322,11 +320,11 @@ func TestGetClients(t *testing.T) {
 
 		mocks.keycloakClient.EXPECT().GetClients(accessToken, realmName).Return(kcClientsRep, nil)
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		apiClientsRep, err := managementComponent.GetClients(ctx, "master")
 
-		var expectedAPIClientRep = api.ClientRepresentation{
+		expectedAPIClientRep := api.ClientRepresentation{
 			ID:       &id,
 			Name:     &name,
 			BaseURL:  &baseURL,
@@ -345,7 +343,7 @@ func TestGetClients(t *testing.T) {
 	t.Run("Error", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetClients(accessToken, realmName).Return([]kc.ClientRepresentation{}, fmt.Errorf("Unexpected error"))
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		_, err := managementComponent.GetClients(ctx, "master")
 
@@ -354,31 +352,31 @@ func TestGetClients(t *testing.T) {
 }
 
 func TestGetRequiredActions(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var managementComponent = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	managementComponent := mocks.createComponent()
 
-	var accessToken = "TOKEN=="
-	var realmName = "master"
+	accessToken := "TOKEN=="
+	realmName := "master"
 
 	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
 
 	t.Run("Get required actions with succces", func(t *testing.T) {
-		var alias = "ALIAS"
-		var name = "name"
-		var boolTrue = true
-		var boolFalse = false
+		alias := "ALIAS"
+		name := "name"
+		boolTrue := true
+		boolFalse := false
 
-		var kcRa = kc.RequiredActionProviderRepresentation{
+		kcRa := kc.RequiredActionProviderRepresentation{
 			Alias:         &alias,
 			Name:          &name,
 			Enabled:       &boolTrue,
 			DefaultAction: &boolTrue,
 		}
 
-		var kcDisabledRa = kc.RequiredActionProviderRepresentation{
+		kcDisabledRa := kc.RequiredActionProviderRepresentation{
 			Alias:         &alias,
 			Name:          &name,
 			Enabled:       &boolFalse,
@@ -390,11 +388,11 @@ func TestGetRequiredActions(t *testing.T) {
 
 		mocks.keycloakClient.EXPECT().GetRequiredActions(accessToken, realmName).Return(kcRasRep, nil)
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		apiRasRep, err := managementComponent.GetRequiredActions(ctx, "master")
 
-		var expectedAPIRaRep = api.RequiredActionRepresentation{
+		expectedAPIRaRep := api.RequiredActionRepresentation{
 			Alias:         &alias,
 			Name:          &name,
 			DefaultAction: &boolTrue,
@@ -410,7 +408,7 @@ func TestGetRequiredActions(t *testing.T) {
 	t.Run("Error", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetRequiredActions(accessToken, realmName).Return([]kc.RequiredActionProviderRepresentation{}, fmt.Errorf("Unexpected error"))
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		_, err := managementComponent.GetRequiredActions(ctx, "master")
 
@@ -419,26 +417,26 @@ func TestGetRequiredActions(t *testing.T) {
 }
 
 func TestCreateUser(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var managementComponent = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	managementComponent := mocks.createComponent()
 
-	var accessToken = "TOKEN=="
-	var username = "test"
-	var realmName = "master"
-	var targetRealmName = "DEP"
-	var userID = "41dbf4a8-32a9-4000-8c17-edc854c31231"
-	var locationURL = "http://toto.com/realms/" + userID
-	var anyError = errors.New("any error")
-	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+	accessToken := "TOKEN=="
+	username := "test"
+	realmName := "master"
+	targetRealmName := "DEP"
+	userID := "41dbf4a8-32a9-4000-8c17-edc854c31231"
+	locationURL := "http://toto.com/realms/" + userID
+	anyError := errors.New("any error")
+	ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 	ctx = context.WithValue(ctx, cs.CtContextUserID, userID)
 	ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 	ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 
 	t.Run("Invalid GLN provided", func(t *testing.T) {
-		var businessID = "123456789"
+		businessID := "123456789"
 
 		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, socialRealmName).Return(configuration.RealmAdminConfiguration{}, anyError)
 		mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any())
@@ -478,10 +476,10 @@ func TestCreateUser(t *testing.T) {
 		assert.Equal(t, anyError, err)
 	})
 
-	var attrbs = make(kc.Attributes)
+	attrbs := make(kc.Attributes)
 	attrbs[constants.AttrbSource] = []string{"api"}
 	t.Run("Create with minimum properties", func(t *testing.T) {
-		var kcUserRep = kc.UserRepresentation{
+		kcUserRep := kc.UserRepresentation{
 			Username:   &username,
 			Attributes: &attrbs,
 		}
@@ -489,7 +487,7 @@ func TestCreateUser(t *testing.T) {
 		mocks.keycloakClient.EXPECT().CreateUser(accessToken, realmName, targetRealmName, kcUserRep, "generateNameID", "false").Return(locationURL, nil)
 		mocks.eventsReporter.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
 
-		var userRep = api.UserRepresentation{
+		userRep := api.UserRepresentation{
 			Username: &username,
 		}
 
@@ -500,28 +498,28 @@ func TestCreateUser(t *testing.T) {
 	})
 
 	t.Run("Create with all properties allowed by Bridge API", func(t *testing.T) {
-		var email = "toto@elca.ch"
-		var enabled = true
-		var emailVerified = true
-		var firstName = "Titi"
-		var lastName = "Tutu"
-		var phoneNumber = "+41789456"
-		var phoneNumberVerified = true
-		var label = "Label"
-		var gender = "M"
-		var birthDate = "01/01/1988"
-		var locale = "de"
+		email := "toto@elca.ch"
+		enabled := true
+		emailVerified := true
+		firstName := "Titi"
+		lastName := "Tutu"
+		phoneNumber := "+41789456"
+		phoneNumberVerified := true
+		label := "Label"
+		gender := "M"
+		birthDate := "01/01/1988"
+		locale := "de"
 
-		var groups = []string{"145-784-545251"}
-		var trustIDGroups = []string{"l1_support_agent"}
-		var roles = []string{"445-4545-751515"}
+		groups := []string{"145-784-545251"}
+		trustIDGroups := []string{"l1_support_agent"}
+		roles := []string{"445-4545-751515"}
 
-		var birthLocation = "Rolle"
-		var nationality = "CH"
-		var idDocumentType = "Card ID"
-		var idDocumentNumber = "1234-4567-VD-3"
-		var idDocumentExpiration = "23.12.2019"
-		var idDocumentCountry = "IT"
+		birthLocation := "Rolle"
+		nationality := "CH"
+		idDocumentType := "Card ID"
+		idDocumentNumber := "1234-4567-VD-3"
+		idDocumentExpiration := "23.12.2019"
+		idDocumentCountry := "IT"
 
 		mocks.keycloakClient.EXPECT().CreateUser(accessToken, realmName, targetRealmName, gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
 			func(accessToken, realmName, targetRealmName string, kcUserRep kc.UserRepresentation, _ ...interface{}) (string, error) {
@@ -541,12 +539,12 @@ func TestCreateUser(t *testing.T) {
 				return locationURL, nil
 			})
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 		ctx = context.WithValue(ctx, cs.CtContextUserID, userID)
 		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 
-		var userRep = api.UserRepresentation{
+		userRep := api.UserRepresentation{
 			ID:                   &userID,
 			Username:             &username,
 			Email:                &email,
@@ -578,16 +576,16 @@ func TestCreateUser(t *testing.T) {
 	})
 
 	t.Run("Error from KC client", func(t *testing.T) {
-		var kcUserRep = kc.UserRepresentation{
+		kcUserRep := kc.UserRepresentation{
 			Attributes: &attrbs,
 		}
 
 		mocks.keycloakClient.EXPECT().CreateUser(accessToken, realmName, targetRealmName, kcUserRep, "generateNameID", "false").Return("", fmt.Errorf("Invalid input"))
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 
-		var userRep = api.UserRepresentation{}
+		userRep := api.UserRepresentation{}
 		mocks.logger.EXPECT().Warn(ctx, "err", "Invalid input")
 
 		location, err := managementComponent.CreateUser(ctx, targetRealmName, userRep, false, false, false)
@@ -599,21 +597,21 @@ func TestCreateUser(t *testing.T) {
 
 func TestCreateUserInSocialRealm(t *testing.T) {
 	// Only test branches not reached by TestCreateUserInSocialRealm
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var managementComponent = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	managementComponent := mocks.createComponent()
 
-	var accessToken = "TOKEN=="
-	var username = "test"
-	var realmName = "my-realm"
-	var email = "user@domain.com"
-	var anyError = errors.New("any error")
-	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+	accessToken := "TOKEN=="
+	username := "test"
+	realmName := "my-realm"
+	email := "user@domain.com"
+	anyError := errors.New("any error")
+	ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 	ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 	ctx = context.WithValue(ctx, cs.CtContextUsername, username)
-	var userRep = api.UserRepresentation{
+	userRep := api.UserRepresentation{
 		Email: &email,
 	}
 	mocks.logger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
@@ -633,42 +631,42 @@ func TestCreateUserInSocialRealm(t *testing.T) {
 		assert.Equal(t, anyError, err)
 	})
 	t.Run("onAlreadyExistsUser", func(t *testing.T) {
-		var err = managementComponent.onAlreadyExistsUser("", 0, ptr(""))
+		err := managementComponent.onAlreadyExistsUser("", 0, ptr(""))
 		assert.IsType(t, errorhandler.Error{}, err)
-		var errWithDetails = err.(errorhandler.Error)
+		errWithDetails := err.(errorhandler.Error)
 		assert.Equal(t, http.StatusConflict, errWithDetails.Status)
 	})
 }
 
 func TestCheckGLN(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var managementComponent = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	managementComponent := mocks.createComponent()
 
-	var realmName = "my-realm"
-	var gln = "123456789"
-	var firstName = "first"
-	var lastName = "last"
-	var kcUser = kc.UserRepresentation{FirstName: &firstName, LastName: &lastName}
-	var anyError = errors.New("any error")
-	var ctx = context.WithValue(context.TODO(), cs.CtContextRealm, realmName)
+	realmName := "my-realm"
+	gln := "123456789"
+	firstName := "first"
+	lastName := "last"
+	kcUser := kc.UserRepresentation{FirstName: &firstName, LastName: &lastName}
+	anyError := errors.New("any error")
+	ctx := context.WithValue(context.TODO(), cs.CtContextRealm, realmName)
 
 	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
 
 	t.Run("GetRealmAdminConfiguration fails", func(t *testing.T) {
 		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, realmName).Return(configuration.RealmAdminConfiguration{}, anyError)
 
-		var err = managementComponent.checkGLN(ctx, realmName, true, &gln, &kcUser)
+		err := managementComponent.checkGLN(ctx, realmName, true, &gln, &kcUser)
 		assert.NotNil(t, err)
 	})
 	t.Run("BusinessID not used as a GLN", func(t *testing.T) {
 		kcUser.SetAttributeString(constants.AttrbBusinessID, gln)
-		var bTrue = true
+		bTrue := true
 		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, realmName).Return(configuration.RealmAdminConfiguration{BusinessIDIsNotGLN: &bTrue}, nil)
 
-		var err = managementComponent.checkGLN(ctx, realmName, true, &gln, &kcUser)
+		err := managementComponent.checkGLN(ctx, realmName, true, &gln, &kcUser)
 
 		assert.Nil(t, err)
 		assert.NotNil(t, kcUser.GetAttributeString(constants.AttrbBusinessID))
@@ -679,19 +677,19 @@ func TestCheckGLN(t *testing.T) {
 
 		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, realmName).Return(configuration.RealmAdminConfiguration{}, nil)
 
-		var err = managementComponent.checkGLN(ctx, realmName, true, &gln, &kcUser)
+		err := managementComponent.checkGLN(ctx, realmName, true, &gln, &kcUser)
 		assert.Nil(t, err)
 		assert.Nil(t, kcUser.GetAttributeString(constants.AttrbBusinessID))
 	})
 
-	var bTrue = true
-	var confWithGLN = configuration.RealmAdminConfiguration{ShowGlnEditing: &bTrue}
+	bTrue := true
+	confWithGLN := configuration.RealmAdminConfiguration{ShowGlnEditing: &bTrue}
 	mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, realmName).Return(confWithGLN, nil).AnyTimes()
 
 	t.Run("Removing GLN", func(t *testing.T) {
 		kcUser.SetAttributeString(constants.AttrbBusinessID, gln)
 
-		var err = managementComponent.checkGLN(ctx, realmName, true, nil, &kcUser)
+		err := managementComponent.checkGLN(ctx, realmName, true, nil, &kcUser)
 		assert.Nil(t, err)
 		assert.Nil(t, kcUser.GetAttributeString(constants.AttrbBusinessID))
 	})
@@ -700,7 +698,7 @@ func TestCheckGLN(t *testing.T) {
 
 		mocks.glnVerifier.EXPECT().ValidateGLN(firstName, lastName, gln).Return(anyError)
 
-		var err = managementComponent.checkGLN(ctx, realmName, true, &gln, &kcUser)
+		err := managementComponent.checkGLN(ctx, realmName, true, &gln, &kcUser)
 		assert.NotNil(t, err)
 	})
 	t.Run("Using valid GLN", func(t *testing.T) {
@@ -708,33 +706,33 @@ func TestCheckGLN(t *testing.T) {
 
 		mocks.glnVerifier.EXPECT().ValidateGLN(firstName, lastName, gln).Return(nil)
 
-		var err = managementComponent.checkGLN(ctx, realmName, true, &gln, &kcUser)
+		err := managementComponent.checkGLN(ctx, realmName, true, &gln, &kcUser)
 		assert.Nil(t, err)
 	})
 	t.Run("No change asked for GLN field", func(t *testing.T) {
 		kcUser.SetAttributeString(constants.AttrbBusinessID, gln)
 
-		var err = managementComponent.checkGLN(ctx, realmName, false, nil, &kcUser)
+		err := managementComponent.checkGLN(ctx, realmName, false, nil, &kcUser)
 		assert.Nil(t, err)
 	})
 }
 
 func TestDeleteUser(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var managementComponent = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	managementComponent := mocks.createComponent()
 
-	var accessToken = "TOKEN=="
-	var userID = "41dbf4a8-32a9-4000-8c17-edc854c31231"
-	var realmName = "master"
-	var username = "username"
+	accessToken := "TOKEN=="
+	userID := "41dbf4a8-32a9-4000-8c17-edc854c31231"
+	realmName := "master"
+	username := "username"
 
 	t.Run("Delete user with success", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().DeleteUser(accessToken, realmName, userID).Return(nil)
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 		ctx = context.WithValue(ctx, cs.CtContextUserID, userID)
 		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
@@ -748,7 +746,7 @@ func TestDeleteUser(t *testing.T) {
 	t.Run("Error from KC client", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().DeleteUser(accessToken, realmName, userID).Return(fmt.Errorf("Invalid input"))
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		mocks.logger.EXPECT().Warn(ctx, "err", "Invalid input")
 
 		err := managementComponent.DeleteUser(ctx, "master", userID)
@@ -758,40 +756,40 @@ func TestDeleteUser(t *testing.T) {
 }
 
 func TestGetUser(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var managementComponent = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	managementComponent := mocks.createComponent()
 
-	var accessToken = "TOKEN=="
-	var realmName = "master"
-	var id = "41dbf4a8-32a9-4000-8c17-edc854c31231"
-	var username = "username"
+	accessToken := "TOKEN=="
+	realmName := "master"
+	id := "41dbf4a8-32a9-4000-8c17-edc854c31231"
+	username := "username"
 
 	t.Run("Get user with succces", func(t *testing.T) {
-		var email = "toto@elca.ch"
-		var enabled = true
-		var emailVerified = true
-		var firstName = "Titi"
-		var lastName = "Tutu"
-		var phoneNumber = "+41789456"
-		var phoneNumberVerified = true
-		var label = "Label"
-		var gender = "M"
-		var birthDate = "01/01/1988"
-		var nationality = "AU"
-		var now = time.Now().UTC()
-		var createdTimestamp = now.Unix()
-		var locale = "it"
-		var trustIDGroups = []string{"grp1", "grp2"}
-		var birthLocation = "Rolle"
-		var idDocumentType = "Card ID"
-		var idDocumentNumber = "1234-4567-VD-3"
-		var idDocumentExpiration = "23.12.2019"
-		var idDocumentCountry = "MX"
+		email := "toto@elca.ch"
+		enabled := true
+		emailVerified := true
+		firstName := "Titi"
+		lastName := "Tutu"
+		phoneNumber := "+41789456"
+		phoneNumberVerified := true
+		label := "Label"
+		gender := "M"
+		birthDate := "01/01/1988"
+		nationality := "AU"
+		now := time.Now().UTC()
+		createdTimestamp := now.Unix()
+		locale := "it"
+		trustIDGroups := []string{"grp1", "grp2"}
+		birthLocation := "Rolle"
+		idDocumentType := "Card ID"
+		idDocumentNumber := "1234-4567-VD-3"
+		idDocumentExpiration := "23.12.2019"
+		idDocumentCountry := "MX"
 
-		var attributes = make(kc.Attributes)
+		attributes := make(kc.Attributes)
 		attributes.SetString(constants.AttrbPhoneNumber, phoneNumber)
 		attributes.SetString(constants.AttrbLabel, label)
 		attributes.SetString(constants.AttrbGender, gender)
@@ -806,7 +804,7 @@ func TestGetUser(t *testing.T) {
 		attributes.SetString(constants.AttrbIDDocumentExpiration, idDocumentExpiration)
 		attributes.SetString(constants.AttrbIDDocumentCountry, idDocumentCountry)
 
-		var kcUserRep = kc.UserRepresentation{
+		kcUserRep := kc.UserRepresentation{
 			ID:               &id,
 			Username:         &username,
 			Email:            &email,
@@ -820,7 +818,7 @@ func TestGetUser(t *testing.T) {
 
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, id).Return(kcUserRep, nil)
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 		ctx = context.WithValue(ctx, cs.CtContextUserID, id)
 		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
@@ -859,22 +857,22 @@ func TestGetUser(t *testing.T) {
 	})
 
 	t.Run("Get user with succces with empty user info", func(t *testing.T) {
-		var email = "toto@elca.ch"
-		var enabled = true
-		var emailVerified = true
-		var firstName = "Titi"
-		var lastName = "Tutu"
-		var phoneNumber = "+41789456"
-		var phoneNumberVerified = true
-		var label = "Label"
-		var gender = "M"
-		var birthDate = "01/01/1988"
-		var now = time.Now().UTC()
-		var createdTimestamp = now.Unix()
-		var locale = "it"
-		var trustIDGroups = []string{"grp1", "grp2"}
+		email := "toto@elca.ch"
+		enabled := true
+		emailVerified := true
+		firstName := "Titi"
+		lastName := "Tutu"
+		phoneNumber := "+41789456"
+		phoneNumberVerified := true
+		label := "Label"
+		gender := "M"
+		birthDate := "01/01/1988"
+		now := time.Now().UTC()
+		createdTimestamp := now.Unix()
+		locale := "it"
+		trustIDGroups := []string{"grp1", "grp2"}
 
-		var attributes = make(kc.Attributes)
+		attributes := make(kc.Attributes)
 		attributes.SetString(constants.AttrbPhoneNumber, phoneNumber)
 		attributes.SetString(constants.AttrbLabel, label)
 		attributes.SetString(constants.AttrbGender, gender)
@@ -883,7 +881,7 @@ func TestGetUser(t *testing.T) {
 		attributes.SetString(constants.AttrbLocale, locale)
 		attributes.Set(constants.AttrbTrustIDGroups, trustIDGroups)
 
-		var kcUserRep = kc.UserRepresentation{
+		kcUserRep := kc.UserRepresentation{
 			ID:               &id,
 			Username:         &username,
 			Email:            &email,
@@ -897,7 +895,7 @@ func TestGetUser(t *testing.T) {
 
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, id).Return(kcUserRep, nil)
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 		ctx = context.WithValue(ctx, cs.CtContextUserID, id)
 		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
@@ -936,13 +934,13 @@ func TestGetUser(t *testing.T) {
 	})
 
 	t.Run("Retrieve checks fails", func(t *testing.T) {
-		var kcUserRep = kc.UserRepresentation{
+		kcUserRep := kc.UserRepresentation{
 			ID:       &id,
 			Username: &username,
 		}
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, id).Return(kcUserRep, nil)
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		mocks.accreditationsClient.EXPECT().GetPendingChecks(ctx, realmName, id).Return([]accreditationsclient.CheckRepresentation{}, fmt.Errorf("SQL Error"))
 		mocks.logger.EXPECT().Warn(ctx, "msg", "Can't get pending checks", "err", "SQL Error")
@@ -953,10 +951,10 @@ func TestGetUser(t *testing.T) {
 	})
 
 	t.Run("Error with KC", func(t *testing.T) {
-		var id = "1234-79894-7594"
+		id := "1234-79894-7594"
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, id).Return(kc.UserRepresentation{}, fmt.Errorf("Unexpected error"))
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		mocks.logger.EXPECT().Warn(ctx, "err", "Unexpected error")
 
 		_, err := managementComponent.GetUser(ctx, "master", id)
@@ -966,17 +964,17 @@ func TestGetUser(t *testing.T) {
 }
 
 func createUpdateUser() api.UpdatableUserRepresentation {
-	var username = "username"
-	var email = "toto@elca.ch"
-	var emailVerified = true
-	var firstName = "Titi"
-	var lastName = "Tutu"
-	var phoneNumber = "+41789456"
-	var phoneNumberVerified = true
-	var label = "Label"
-	var gender = "M"
-	var birthDate = "01/01/1988"
-	var locale = "de"
+	username := "username"
+	email := "toto@elca.ch"
+	emailVerified := true
+	firstName := "Titi"
+	lastName := "Tutu"
+	phoneNumber := "+41789456"
+	phoneNumberVerified := true
+	label := "Label"
+	gender := "M"
+	birthDate := "01/01/1988"
+	locale := "de"
 
 	return api.UpdatableUserRepresentation{
 		Username:            &username,
@@ -994,11 +992,11 @@ func createUpdateUser() api.UpdatableUserRepresentation {
 }
 
 func TestUpdateUser(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var managementComponent = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	managementComponent := mocks.createComponent()
 
 	var (
 		accessToken = "TOKEN=="
@@ -1018,7 +1016,7 @@ func TestUpdateUser(t *testing.T) {
 		userRep              = createUpdateUser()
 	)
 
-	var attributes = make(kc.Attributes)
+	attributes := make(kc.Attributes)
 	attributes.SetString(constants.AttrbPhoneNumber, *userRep.PhoneNumber.Value)
 	attributes.SetString(constants.AttrbLabel, *userRep.Label)
 	attributes.SetString(constants.AttrbGender, *userRep.Gender)
@@ -1032,7 +1030,7 @@ func TestUpdateUser(t *testing.T) {
 	attributes.SetString(constants.AttrbIDDocumentExpiration, idDocumentExpiration)
 	attributes.SetString(constants.AttrbIDDocumentCountry, idDocumentCountry)
 
-	var kcUserRep = kc.UserRepresentation{
+	kcUserRep := kc.UserRepresentation{
 		ID:               &id,
 		Username:         userRep.Username,
 		Email:            userRep.Email.Value,
@@ -1044,7 +1042,7 @@ func TestUpdateUser(t *testing.T) {
 		CreatedTimestamp: &createdTimestamp,
 	}
 
-	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+	ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 	ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 	ctx = context.WithValue(ctx, cs.CtContextUserID, id)
 	ctx = context.WithValue(ctx, cs.CtContextUsername, *userRep.Username)
@@ -1052,8 +1050,8 @@ func TestUpdateUser(t *testing.T) {
 	mocks.logger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
 
 	t.Run("Accreditations evaluation fails", func(t *testing.T) {
-		var newUsername = "new-username"
-		var userWithNewUsername = createUpdateUser()
+		newUsername := "new-username"
+		userWithNewUsername := createUpdateUser()
 		userWithNewUsername.Username = &newUsername
 
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, socialRealmName, id).Return(kcUserRep, nil)
@@ -1066,8 +1064,8 @@ func TestUpdateUser(t *testing.T) {
 	})
 
 	t.Run("Update user in realm with self register enabled", func(t *testing.T) {
-		var newUsername = "new-username"
-		var userWithNewUsername = createUpdateUser()
+		newUsername := "new-username"
+		userWithNewUsername := createUpdateUser()
 		userWithNewUsername.Username = &newUsername
 
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, socialRealmName, id).Return(kcUserRep, nil)
@@ -1131,7 +1129,7 @@ func TestUpdateUser(t *testing.T) {
 			}).Times(2)
 
 		newIDDocumentExpiration := "21.12.2030"
-		var userAPI = createUpdateUser()
+		userAPI := createUpdateUser()
 		userAPI.IDDocumentExpiration = &newIDDocumentExpiration
 
 		err := managementComponent.UpdateUser(ctx, realmName, id, userAPI)
@@ -1174,7 +1172,7 @@ func TestUpdateUser(t *testing.T) {
 				return nil
 			})
 
-		var userRepLocked = createUpdateUser()
+		userRepLocked := createUpdateUser()
 		userRepLocked.Enabled = &disabled
 
 		mocks.eventsReporter.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
@@ -1190,7 +1188,7 @@ func TestUpdateUser(t *testing.T) {
 		mocks.accreditationsClient.EXPECT().NotifyUpdate(ctx, gomock.Any()).Return(nil, nil)
 		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, realmName, id, gomock.Any()).Return(nil)
 
-		var userRepLocked = createUpdateUser()
+		userRepLocked := createUpdateUser()
 		userRepLocked.Enabled = &enabled
 
 		mocks.eventsReporter.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
@@ -1201,8 +1199,8 @@ func TestUpdateUser(t *testing.T) {
 	})
 
 	t.Run("Update by changing the email address", func(t *testing.T) {
-		var oldEmail = "toti@elca.ch"
-		var oldkcUserRep = kc.UserRepresentation{
+		oldEmail := "toti@elca.ch"
+		oldkcUserRep := kc.UserRepresentation{
 			ID:            &id,
 			Email:         &oldEmail,
 			EmailVerified: userRep.EmailVerified,
@@ -1224,13 +1222,13 @@ func TestUpdateUser(t *testing.T) {
 	})
 
 	t.Run("Update by removing the email address", func(t *testing.T) {
-		var oldEmail = "toti@elca.ch"
-		var oldkcUserRep = kc.UserRepresentation{
+		oldEmail := "toti@elca.ch"
+		oldkcUserRep := kc.UserRepresentation{
 			ID:            &id,
 			Email:         &oldEmail,
 			EmailVerified: userRep.EmailVerified,
 		}
-		var withoutEmailUser = createUpdateUser()
+		withoutEmailUser := createUpdateUser()
 		withoutEmailUser.Email = csjson.OptionalString{Defined: true, Value: nil}
 		withoutEmailUser.PhoneNumber.Defined = false
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, id).Return(oldkcUserRep, nil)
@@ -1250,11 +1248,11 @@ func TestUpdateUser(t *testing.T) {
 	})
 
 	t.Run("Update by changing the phone number", func(t *testing.T) {
-		var oldNumber = "+41789467"
-		var oldAttributes = make(kc.Attributes)
+		oldNumber := "+41789467"
+		oldAttributes := make(kc.Attributes)
 		oldAttributes.SetString(constants.AttrbPhoneNumber, oldNumber)
 		oldAttributes.SetBool(constants.AttrbPhoneNumberVerified, *userRep.PhoneNumberVerified)
-		var oldkcUserRep2 = kc.UserRepresentation{
+		oldkcUserRep2 := kc.UserRepresentation{
 			ID:         &id,
 			Attributes: &oldAttributes,
 		}
@@ -1277,15 +1275,15 @@ func TestUpdateUser(t *testing.T) {
 	})
 
 	t.Run("Update by removing the phone number", func(t *testing.T) {
-		var oldNumber = "+41789467"
-		var oldAttributes = make(kc.Attributes)
+		oldNumber := "+41789467"
+		oldAttributes := make(kc.Attributes)
 		oldAttributes.SetString(constants.AttrbPhoneNumber, oldNumber)
 		oldAttributes.SetBool(constants.AttrbPhoneNumberVerified, *userRep.PhoneNumberVerified)
-		var oldkcUserRep2 = kc.UserRepresentation{
+		oldkcUserRep2 := kc.UserRepresentation{
 			ID:         &id,
 			Attributes: &oldAttributes,
 		}
-		var withoutPhoneNumberUser = userRep
+		withoutPhoneNumberUser := userRep
 		withoutPhoneNumberUser.PhoneNumber = csjson.OptionalString{Defined: true, Value: nil}
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, id).Return(oldkcUserRep2, nil)
 		mocks.accreditationsClient.EXPECT().NotifyUpdate(ctx, gomock.Any()).Return(nil, nil)
@@ -1306,18 +1304,18 @@ func TestUpdateUser(t *testing.T) {
 	})
 
 	t.Run("Update without attributes", func(t *testing.T) {
-		var userRepWithoutAttr = api.UpdatableUserRepresentation{
+		userRepWithoutAttr := api.UpdatableUserRepresentation{
 			Username:  userRep.Username,
 			Email:     userRep.Email,
 			FirstName: userRep.FirstName,
 			LastName:  userRep.LastName,
 		}
 
-		var oldNumber = "+41789467"
-		var oldAttributes = make(kc.Attributes)
+		oldNumber := "+41789467"
+		oldAttributes := make(kc.Attributes)
 		oldAttributes.SetString(constants.AttrbPhoneNumber, oldNumber)
 		oldAttributes.SetBool(constants.AttrbPhoneNumberVerified, *userRep.PhoneNumberVerified)
-		var oldkcUserRep2 = kc.UserRepresentation{
+		oldkcUserRep2 := kc.UserRepresentation{
 			ID:         &id,
 			Attributes: &oldAttributes,
 		}
@@ -1340,10 +1338,10 @@ func TestUpdateUser(t *testing.T) {
 	})
 
 	t.Run("Error - get user KC", func(t *testing.T) {
-		var id = "1234-79894-7594"
+		id := "1234-79894-7594"
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, id).Return(kc.UserRepresentation{}, fmt.Errorf("Unexpected error"))
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		mocks.logger.EXPECT().Warn(ctx, "err", "Unexpected error")
 		err := managementComponent.UpdateUser(ctx, "master", id, api.UpdatableUserRepresentation{})
 
@@ -1351,11 +1349,11 @@ func TestUpdateUser(t *testing.T) {
 	})
 
 	t.Run("Error - update user KC", func(t *testing.T) {
-		var id = "1234-79894-7594"
-		var kcUserRep = kc.UserRepresentation{
+		id := "1234-79894-7594"
+		kcUserRep := kc.UserRepresentation{
 			ID: &id,
 		}
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, id).Return(kcUserRep, nil).AnyTimes()
 		mocks.accreditationsClient.EXPECT().NotifyUpdate(ctx, gomock.Any()).Return(nil, nil)
@@ -1388,92 +1386,92 @@ func TestIsPhoneNumberVerified(t *testing.T) {
 }
 
 func TestLockUnlockUser(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var managementComponent = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	managementComponent := mocks.createComponent()
 
-	var accessToken = "TOKEN=="
-	var realmName = "myrealm"
-	var userID = "41dbf4a8-32a9-4000-8c17-edc854c31231"
-	var anyError = errors.New("any")
-	var bTrue = true
-	var bFalse = false
-	var ctx = context.TODO()
+	accessToken := "TOKEN=="
+	realmName := "myrealm"
+	userID := "41dbf4a8-32a9-4000-8c17-edc854c31231"
+	anyError := errors.New("any")
+	bTrue := true
+	bFalse := false
+	ctx := context.TODO()
 	ctx = context.WithValue(ctx, cs.CtContextAccessToken, accessToken)
 
 	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
 
 	t.Run("GetUser fails", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(kc.UserRepresentation{}, anyError)
-		var err = managementComponent.LockUser(ctx, realmName, userID)
+		err := managementComponent.LockUser(ctx, realmName, userID)
 		assert.Equal(t, anyError, err)
 	})
 	t.Run("Can't lock disabled user", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(kc.UserRepresentation{Enabled: &bFalse}, nil)
-		var err = managementComponent.LockUser(ctx, realmName, userID)
+		err := managementComponent.LockUser(ctx, realmName, userID)
 		assert.Nil(t, err)
 	})
 	t.Run("UpdateUser fails", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(kc.UserRepresentation{Enabled: &bFalse}, nil)
 		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, realmName, userID, gomock.Any()).Return(anyError)
-		var err = managementComponent.UnlockUser(ctx, realmName, userID)
+		err := managementComponent.UnlockUser(ctx, realmName, userID)
 		assert.Equal(t, anyError, err)
 	})
 	t.Run("Lock success", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(kc.UserRepresentation{Enabled: &bTrue}, nil)
 		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, realmName, userID, gomock.Any()).Return(nil)
 		mocks.eventsReporter.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
-		var err = managementComponent.LockUser(ctx, realmName, userID)
+		err := managementComponent.LockUser(ctx, realmName, userID)
 		assert.Nil(t, err)
 	})
 	t.Run("Unlock success", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(kc.UserRepresentation{Enabled: &bFalse}, nil)
 		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, realmName, userID, gomock.Any()).Return(nil)
 		mocks.eventsReporter.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
-		var err = managementComponent.UnlockUser(ctx, realmName, userID)
+		err := managementComponent.UnlockUser(ctx, realmName, userID)
 		assert.Nil(t, err)
 	})
 }
 
 func TestGetUsers(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var managementComponent = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	managementComponent := mocks.createComponent()
 
-	var accessToken = "TOKEN=="
-	var realmName = "master"
-	var targetRealmName = "DEP"
+	accessToken := "TOKEN=="
+	realmName := "master"
+	targetRealmName := "DEP"
 
 	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
 
 	t.Run("Get user with succces", func(t *testing.T) {
-		var id = "1234-7454-4516"
-		var username = "username"
-		var email = "toto@elca.ch"
-		var enabled = true
-		var emailVerified = true
-		var firstName = "Titi"
-		var lastName = "Tutu"
-		var phoneNumber = "+41789456"
-		var phoneNumberVerified = true
-		var label = "Label"
-		var gender = "M"
-		var birthDate = "01/01/1988"
-		var createdTimestamp = time.Now().UTC().Unix()
+		id := "1234-7454-4516"
+		username := "username"
+		email := "toto@elca.ch"
+		enabled := true
+		emailVerified := true
+		firstName := "Titi"
+		lastName := "Tutu"
+		phoneNumber := "+41789456"
+		phoneNumberVerified := true
+		label := "Label"
+		gender := "M"
+		birthDate := "01/01/1988"
+		createdTimestamp := time.Now().UTC().Unix()
 
-		var attributes = make(kc.Attributes)
+		attributes := make(kc.Attributes)
 		attributes.SetString(constants.AttrbPhoneNumber, phoneNumber)
 		attributes.SetString(constants.AttrbLabel, label)
 		attributes.SetString(constants.AttrbGender, gender)
 		attributes.SetString(constants.AttrbBirthDate, birthDate)
 		attributes.SetBool(constants.AttrbPhoneNumberVerified, phoneNumberVerified)
 
-		var count = 10
-		var kcUserRep = kc.UserRepresentation{
+		count := 10
+		kcUserRep := kc.UserRepresentation{
 			ID:               &id,
 			Username:         &username,
 			Email:            &email,
@@ -1484,21 +1482,21 @@ func TestGetUsers(t *testing.T) {
 			Attributes:       &attributes,
 			CreatedTimestamp: &createdTimestamp,
 		}
-		var kcUsersRep = kc.UsersPageRepresentation{
+		kcUsersRep := kc.UsersPageRepresentation{
 			Count: &count,
 			Users: []kc.UserRepresentation{kcUserRep},
 		}
 
 		mocks.keycloakClient.EXPECT().GetUsers(accessToken, realmName, targetRealmName, "groupId", "123-456-789").Return(kcUsersRep, nil)
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextUserID, id)
 		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, "master")
 
 		apiUsersRep, err := managementComponent.GetUsers(ctx, "DEP", []string{"123-456-789"})
 
-		var apiUserRep = apiUsersRep.Users[0]
+		apiUserRep := apiUsersRep.Users[0]
 		assert.Nil(t, err)
 		assert.Equal(t, username, *apiUserRep.Username)
 		assert.Equal(t, email, *apiUserRep.Email)
@@ -1518,7 +1516,7 @@ func TestGetUsers(t *testing.T) {
 	t.Run("Error", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetUsers(accessToken, realmName, targetRealmName, "groupId", "123-456-789").Return(kc.UsersPageRepresentation{}, fmt.Errorf("Unexpected error"))
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, "master")
 
 		_, err := managementComponent.GetUsers(ctx, "DEP", []string{"123-456-789"})
@@ -1528,16 +1526,16 @@ func TestGetUsers(t *testing.T) {
 }
 
 func TestGetUserChecks(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var managementComponent = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	managementComponent := mocks.createComponent()
 
-	var accessToken = "TOKEN=="
-	var realmName = "aRealm"
-	var userID = "789-789-456"
-	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+	accessToken := "TOKEN=="
+	realmName := "aRealm"
+	userID := "789-789-456"
+	ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
 
@@ -1547,11 +1545,11 @@ func TestGetUserChecks(t *testing.T) {
 		assert.NotNil(t, err)
 	})
 	t.Run("GetChecks returns a check", func(t *testing.T) {
-		var operator = "The Operator"
-		var dbCheck = accreditationsclient.CheckRepresentation{
+		operator := "The Operator"
+		dbCheck := accreditationsclient.CheckRepresentation{
 			Operator: &operator,
 		}
-		var dbChecks = []accreditationsclient.CheckRepresentation{dbCheck, dbCheck}
+		dbChecks := []accreditationsclient.CheckRepresentation{dbCheck, dbCheck}
 		mocks.accreditationsClient.EXPECT().GetChecks(ctx, realmName, userID).Return(dbChecks, nil)
 		res, err := managementComponent.GetUserChecks(ctx, realmName, userID)
 		assert.Nil(t, err)
@@ -1561,23 +1559,23 @@ func TestGetUserChecks(t *testing.T) {
 }
 
 func TestGetUserAccountStatus(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var managementComponent = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	managementComponent := mocks.createComponent()
 
-	var accessToken = "TOKEN=="
-	var realmReq = "master"
-	var realmName = "aRealm"
-	var userID = "789-789-456"
+	accessToken := "TOKEN=="
+	realmReq := "master"
+	realmName := "aRealm"
+	userID := "789-789-456"
 
 	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
 
 	t.Run("GetUser returns an error", func(t *testing.T) {
 		var userRep kc.UserRepresentation
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(userRep, fmt.Errorf("Unexpected error"))
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		_, err := managementComponent.GetUserAccountStatus(ctx, realmName, userID)
 		assert.NotNil(t, err)
 	})
@@ -1587,7 +1585,7 @@ func TestGetUserAccountStatus(t *testing.T) {
 		enabled := false
 		userRep.Enabled = &enabled
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(userRep, nil)
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		status, err := managementComponent.GetUserAccountStatus(ctx, realmName, userID)
 		assert.Nil(t, err)
 		assert.False(t, status["enabled"])
@@ -1599,7 +1597,7 @@ func TestGetUserAccountStatus(t *testing.T) {
 		userRep.Enabled = &enabled
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(userRep, nil)
 		mocks.keycloakClient.EXPECT().GetCredentials(accessToken, realmName, userID).Return(nil, fmt.Errorf("Unexpected error"))
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmReq)
 		_, err := managementComponent.GetUserAccountStatus(ctx, realmName, userID)
 		assert.NotNil(t, err)
@@ -1611,7 +1609,7 @@ func TestGetUserAccountStatus(t *testing.T) {
 		userRep.Enabled = &enabled
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(userRep, nil)
 		mocks.keycloakClient.EXPECT().GetCredentials(accessToken, realmName, userID).Return([]kc.CredentialRepresentation{}, nil)
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmReq)
 		status, err := managementComponent.GetUserAccountStatus(ctx, realmName, userID)
 		assert.Nil(t, err)
@@ -1625,7 +1623,7 @@ func TestGetUserAccountStatus(t *testing.T) {
 		userRep.Enabled = &enabled
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(userRep, nil)
 		mocks.keycloakClient.EXPECT().GetCredentials(accessToken, realmName, userID).Return([]kc.CredentialRepresentation{creds1, creds2}, nil)
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmReq)
 		status, err := managementComponent.GetUserAccountStatus(ctx, realmName, userID)
 		assert.Nil(t, err)
@@ -1634,19 +1632,19 @@ func TestGetUserAccountStatus(t *testing.T) {
 }
 
 func TestGetUserAccountStatusByEmail(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var managementComponent = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	managementComponent := mocks.createComponent()
 
-	var accessToken = "TOKEN=="
-	var realmReq = "master"
-	var realmName = "aRealm"
-	var userID = "1234-abcd-5678"
-	var email = "user@domain.ch"
-	var anyError = errors.New("any error")
-	var searchedUser = kc.UserRepresentation{
+	accessToken := "TOKEN=="
+	realmReq := "master"
+	realmName := "aRealm"
+	userID := "1234-abcd-5678"
+	email := "user@domain.ch"
+	anyError := errors.New("any error")
+	searchedUser := kc.UserRepresentation{
 		ID:      &userID,
 		Email:   &email,
 		Enabled: ptrBool(true),
@@ -1655,7 +1653,7 @@ func TestGetUserAccountStatusByEmail(t *testing.T) {
 			constants.AttrbOnboardingCompleted: []string{"true"},
 		},
 	}
-	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+	ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 	ctx = context.WithValue(ctx, cs.CtContextRealm, realmReq)
 
 	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
@@ -1675,8 +1673,8 @@ func TestGetUserAccountStatusByEmail(t *testing.T) {
 		assert.NotNil(t, err)
 	})
 	t.Run("Found users does not match exactly the given email", func(t *testing.T) {
-		var users = []kc.UserRepresentation{{}, {}, {}}
-		var count = len(users)
+		users := []kc.UserRepresentation{{}, {}, {}}
+		count := len(users)
 		users[0].Email = nil
 		users[1].Email = ptrString("a" + email)
 		users[2].Email = ptrString("b" + email)
@@ -1690,9 +1688,9 @@ func TestGetUserAccountStatusByEmail(t *testing.T) {
 		assert.NotNil(t, err)
 	})
 	t.Run("Found too many users", func(t *testing.T) {
-		var user1 = kc.UserRepresentation{Email: &email}
-		var users = []kc.UserRepresentation{user1, user1, user1}
-		var count = len(users)
+		user1 := kc.UserRepresentation{Email: &email}
+		users := []kc.UserRepresentation{user1, user1, user1}
+		count := len(users)
 		mocks.keycloakClient.EXPECT().GetUsers(accessToken, realmReq, realmName, "email", "="+email).Return(kc.UsersPageRepresentation{
 			Count: &count,
 			Users: users,
@@ -1703,8 +1701,8 @@ func TestGetUserAccountStatusByEmail(t *testing.T) {
 		assert.NotNil(t, err)
 	})
 
-	var users = []kc.UserRepresentation{searchedUser}
-	var count = len(users)
+	users := []kc.UserRepresentation{searchedUser}
+	count := len(users)
 	mocks.keycloakClient.EXPECT().GetUsers(accessToken, realmReq, realmName, "email", "="+email).Return(kc.UsersPageRepresentation{
 		Count: &count,
 		Users: users,
@@ -1719,7 +1717,7 @@ func TestGetUserAccountStatusByEmail(t *testing.T) {
 	})
 
 	t.Run("Success", func(t *testing.T) {
-		var anyCredential = kc.CredentialRepresentation{}
+		anyCredential := kc.CredentialRepresentation{}
 		mocks.keycloakClient.EXPECT().GetCredentials(gomock.Any(), realmName, userID).Return([]kc.CredentialRepresentation{anyCredential, anyCredential}, nil)
 		mocks.onboardingModule.EXPECT().OnboardingAlreadyCompleted(gomock.Any()).Return(true, nil)
 
@@ -1735,28 +1733,28 @@ func TestGetUserAccountStatusByEmail(t *testing.T) {
 }
 
 func TestGetClientRolesForUser(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var managementComponent = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	managementComponent := mocks.createComponent()
 
-	var accessToken = "TOKEN=="
-	var realmName = "master"
-	var userID = "789-789-456"
-	var clientID = "456-789-147"
+	accessToken := "TOKEN=="
+	realmName := "master"
+	userID := "789-789-456"
+	clientID := "456-789-147"
 
 	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
 
 	t.Run("Get role with succces", func(t *testing.T) {
-		var id = "1234-7454-4516"
-		var composite = false
-		var containerID = "containerId"
-		var description = "description role"
-		var clientRole = true
-		var name = "client name"
+		id := "1234-7454-4516"
+		composite := false
+		containerID := "containerId"
+		description := "description role"
+		clientRole := true
+		name := "client name"
 
-		var kcRoleRep = kc.RoleRepresentation{
+		kcRoleRep := kc.RoleRepresentation{
 			ID:          &id,
 			Name:        &name,
 			ClientRole:  &clientRole,
@@ -1770,11 +1768,11 @@ func TestGetClientRolesForUser(t *testing.T) {
 
 		mocks.keycloakClient.EXPECT().GetClientRoleMappings(accessToken, realmName, userID, clientID).Return(kcRolesRep, nil)
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		apiRolesRep, err := managementComponent.GetClientRolesForUser(ctx, "master", userID, clientID)
 
-		var apiRoleRep = apiRolesRep[0]
+		apiRoleRep := apiRolesRep[0]
 		assert.Nil(t, err)
 		assert.Equal(t, id, *apiRoleRep.ID)
 		assert.Equal(t, name, *apiRoleRep.Name)
@@ -1787,7 +1785,7 @@ func TestGetClientRolesForUser(t *testing.T) {
 	t.Run("Error", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetClientRoleMappings(accessToken, realmName, userID, clientID).Return([]kc.RoleRepresentation{}, fmt.Errorf("Unexpected error"))
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		_, err := managementComponent.GetClientRolesForUser(ctx, "master", userID, clientID)
 
@@ -1796,30 +1794,30 @@ func TestGetClientRolesForUser(t *testing.T) {
 }
 
 func TestAddClientRolesToUser(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var managementComponent = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	managementComponent := mocks.createComponent()
 
-	var accessToken = "TOKEN=="
-	var realmName = "master"
-	var userID = "789-789-456"
-	var clientID = "456-789-147"
+	accessToken := "TOKEN=="
+	realmName := "master"
+	userID := "789-789-456"
+	clientID := "456-789-147"
 
 	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
 
 	t.Run("Add role with succces", func(t *testing.T) {
-		var id = "1234-7454-4516"
-		var composite = false
-		var containerID = "containerId"
-		var description = "description role"
-		var clientRole = true
-		var name = "client name"
+		id := "1234-7454-4516"
+		composite := false
+		containerID := "containerId"
+		description := "description role"
+		clientRole := true
+		name := "client name"
 
 		mocks.keycloakClient.EXPECT().AddClientRolesToUserRoleMapping(accessToken, realmName, userID, clientID, gomock.Any()).DoAndReturn(
 			func(accessToken, realmName, userID, clientID string, roles []kc.RoleRepresentation) error {
-				var role = roles[0]
+				role := roles[0]
 				assert.Equal(t, id, *role.ID)
 				assert.Equal(t, name, *role.Name)
 				assert.Equal(t, clientRole, *role.ClientRole)
@@ -1829,9 +1827,9 @@ func TestAddClientRolesToUser(t *testing.T) {
 				return nil
 			})
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
-		var roleRep = api.RoleRepresentation{
+		roleRep := api.RoleRepresentation{
 			ID:          &id,
 			Name:        &name,
 			ClientRole:  &clientRole,
@@ -1850,7 +1848,7 @@ func TestAddClientRolesToUser(t *testing.T) {
 	t.Run("Error", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().AddClientRolesToUserRoleMapping(accessToken, realmName, userID, clientID, gomock.Any()).Return(fmt.Errorf("Unexpected error"))
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		err := managementComponent.AddClientRolesToUser(ctx, "master", userID, clientID, []api.RoleRepresentation{})
 
@@ -1859,26 +1857,26 @@ func TestAddClientRolesToUser(t *testing.T) {
 }
 
 func TestDeleteClientRolesFromUser(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var managementComponent = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	managementComponent := mocks.createComponent()
 
-	var accessToken = "TOKEN=="
-	var realmName = "master"
-	var userID = "789-789-456"
-	var clientID = "456-789-147"
+	accessToken := "TOKEN=="
+	realmName := "master"
+	userID := "789-789-456"
+	clientID := "456-789-147"
 
 	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
 
 	t.Run("Delete role with succces", func(t *testing.T) {
-		var id = "1234-7454-4516"
-		var name = "client name"
+		id := "1234-7454-4516"
+		name := "client name"
 
 		mocks.keycloakClient.EXPECT().DeleteClientRolesFromUserRoleMapping(accessToken, realmName, userID, clientID, gomock.Any()).Return(nil)
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		err := managementComponent.DeleteClientRolesFromUser(ctx, realmName, userID, clientID, id, name)
 
 		assert.Nil(t, err)
@@ -1887,7 +1885,7 @@ func TestDeleteClientRolesFromUser(t *testing.T) {
 	t.Run("Error", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().DeleteClientRolesFromUserRoleMapping(accessToken, realmName, userID, clientID, gomock.Any()).Return(fmt.Errorf("Unexpected error"))
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		err := managementComponent.DeleteClientRolesFromUser(ctx, "master", userID, clientID, "", "")
 
@@ -1896,27 +1894,27 @@ func TestDeleteClientRolesFromUser(t *testing.T) {
 }
 
 func TestGetRolesOfUser(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var managementComponent = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	managementComponent := mocks.createComponent()
 
-	var accessToken = "TOKEN=="
-	var realmName = "master"
-	var userID = "789-789-456"
+	accessToken := "TOKEN=="
+	realmName := "master"
+	userID := "789-789-456"
 
 	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
 
 	t.Run("Get role with succces", func(t *testing.T) {
-		var id = "1234-7454-4516"
-		var composite = false
-		var containerID = "containerId"
-		var description = "description role"
-		var clientRole = false
-		var name = "client name"
+		id := "1234-7454-4516"
+		composite := false
+		containerID := "containerId"
+		description := "description role"
+		clientRole := false
+		name := "client name"
 
-		var kcRoleRep = kc.RoleRepresentation{
+		kcRoleRep := kc.RoleRepresentation{
 			ID:          &id,
 			Name:        &name,
 			ClientRole:  &clientRole,
@@ -1925,7 +1923,7 @@ func TestGetRolesOfUser(t *testing.T) {
 			Description: &description,
 		}
 
-		var kcRoleRepWithAttributes = kc.RoleRepresentation{
+		kcRoleRepWithAttributes := kc.RoleRepresentation{
 			ID:          &id,
 			Name:        &name,
 			ClientRole:  &clientRole,
@@ -1943,11 +1941,11 @@ func TestGetRolesOfUser(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetRealmLevelRoleMappings(accessToken, realmName, userID).Return(kcRolesRep, nil)
 		mocks.keycloakClient.EXPECT().GetRole(accessToken, realmName, *kcRoleRep.ID).Return(kcRoleRepWithAttributes, nil)
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		apiRolesRep, err := managementComponent.GetRolesOfUser(ctx, "master", userID)
 
-		var apiRoleRep = apiRolesRep[0]
+		apiRoleRep := apiRolesRep[0]
 		assert.Nil(t, err)
 		assert.Equal(t, id, *apiRoleRep.ID)
 		assert.Equal(t, name, *apiRoleRep.Name)
@@ -1957,12 +1955,12 @@ func TestGetRolesOfUser(t *testing.T) {
 		assert.Equal(t, description, *apiRoleRep.Description)
 	})
 	t.Run("GetNonBusinessRole", func(t *testing.T) {
-		var id = "1234-7454-4516"
-		var kcRoleRep = kc.RoleRepresentation{ID: &id}
+		id := "1234-7454-4516"
+		kcRoleRep := kc.RoleRepresentation{ID: &id}
 		mocks.keycloakClient.EXPECT().GetRealmLevelRoleMappings(accessToken, realmName, userID).Return([]kc.RoleRepresentation{kcRoleRep}, nil)
 		mocks.keycloakClient.EXPECT().GetRole(accessToken, realmName, *kcRoleRep.ID).Return(kcRoleRep, nil)
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		res, err := managementComponent.GetRolesOfUser(ctx, "master", userID)
 
@@ -1971,12 +1969,12 @@ func TestGetRolesOfUser(t *testing.T) {
 	})
 
 	t.Run("Error GetRole", func(t *testing.T) {
-		var id = "1234-7454-4516"
-		var kcRoleRep = kc.RoleRepresentation{ID: &id}
+		id := "1234-7454-4516"
+		kcRoleRep := kc.RoleRepresentation{ID: &id}
 		mocks.keycloakClient.EXPECT().GetRealmLevelRoleMappings(accessToken, realmName, userID).Return([]kc.RoleRepresentation{kcRoleRep}, nil)
 		mocks.keycloakClient.EXPECT().GetRole(accessToken, realmName, *kcRoleRep.ID).Return(kcRoleRep, fmt.Errorf("Unexpected error"))
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		_, err := managementComponent.GetRolesOfUser(ctx, "master", userID)
 
@@ -1986,7 +1984,7 @@ func TestGetRolesOfUser(t *testing.T) {
 	t.Run("Error", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetRealmLevelRoleMappings(accessToken, realmName, userID).Return([]kc.RoleRepresentation{}, fmt.Errorf("Unexpected error"))
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		_, err := managementComponent.GetRolesOfUser(ctx, "master", userID)
 
@@ -1995,20 +1993,20 @@ func TestGetRolesOfUser(t *testing.T) {
 }
 
 func TestAddRoleOfUser(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var managementComponent = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	managementComponent := mocks.createComponent()
 
-	var accessToken = "TOKEN=="
-	var realmName = "master"
-	var userID = "789-789-456"
-	var roleID1 = "rol-rol-rol-111"
-	var roleID2 = "rol-rol-rol-222"
-	var anyError = errors.New("any error")
-	var knownRoles = []kc.RoleRepresentation{{ID: &roleID1, Attributes: &map[string][]string{"BUSINESS_ROLE_FLAG": {"true"}}}, {ID: &roleID2}}
-	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+	accessToken := "TOKEN=="
+	realmName := "master"
+	userID := "789-789-456"
+	roleID1 := "rol-rol-rol-111"
+	roleID2 := "rol-rol-rol-222"
+	anyError := errors.New("any error")
+	knownRoles := []kc.RoleRepresentation{{ID: &roleID1, Attributes: &map[string][]string{"BUSINESS_ROLE_FLAG": {"true"}}}, {ID: &roleID2}}
+	ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 	mocks.logger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
 
@@ -2056,23 +2054,23 @@ func TestAddRoleOfUser(t *testing.T) {
 }
 
 func TestDeleteRoleForUser(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var managementComponent = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	managementComponent := mocks.createComponent()
 
-	var accessToken = "TOKEN=="
-	var realmName = "master"
-	var userID = "789-789-456"
-	var roleID1 = "rol-rol-rol-111"
-	var roleID2 = "rol-rol-rol-222"
-	var notOwnedRoleID = "not-a-owned-role"
-	var anyError = errors.New("any error")
-	var role1 = kc.RoleRepresentation{ID: &roleID1, Attributes: &map[string][]string{"BUSINESS_ROLE_FLAG": {"true"}}}
-	var role2 = kc.RoleRepresentation{ID: &roleID2}
-	var knownRoles = []kc.RoleRepresentation{role1, role2}
-	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+	accessToken := "TOKEN=="
+	realmName := "master"
+	userID := "789-789-456"
+	roleID1 := "rol-rol-rol-111"
+	roleID2 := "rol-rol-rol-222"
+	notOwnedRoleID := "not-a-owned-role"
+	anyError := errors.New("any error")
+	role1 := kc.RoleRepresentation{ID: &roleID1, Attributes: &map[string][]string{"BUSINESS_ROLE_FLAG": {"true"}}}
+	role2 := kc.RoleRepresentation{ID: &roleID2}
+	knownRoles := []kc.RoleRepresentation{role1, role2}
+	ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 	mocks.logger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
 
@@ -2127,23 +2125,23 @@ func TestDeleteRoleForUser(t *testing.T) {
 }
 
 func TestGetGroupsOfUser(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var managementComponent = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	managementComponent := mocks.createComponent()
 
-	var accessToken = "TOKEN=="
-	var realmName = "master"
-	var userID = "789-789-456"
+	accessToken := "TOKEN=="
+	realmName := "master"
+	userID := "789-789-456"
 
 	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
 
 	t.Run("Get groups with succces", func(t *testing.T) {
-		var id = "1234-7454-4516"
-		var name = "client name"
+		id := "1234-7454-4516"
+		name := "client name"
 
-		var kcGroupRep = kc.GroupRepresentation{
+		kcGroupRep := kc.GroupRepresentation{
 			ID:   &id,
 			Name: &name,
 		}
@@ -2153,11 +2151,11 @@ func TestGetGroupsOfUser(t *testing.T) {
 
 		mocks.keycloakClient.EXPECT().GetGroupsOfUser(accessToken, realmName, userID).Return(kcGroupsRep, nil)
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		apiGroupsRep, err := managementComponent.GetGroupsOfUser(ctx, "master", userID)
 
-		var apiGroupRep = apiGroupsRep[0]
+		apiGroupRep := apiGroupsRep[0]
 		assert.Nil(t, err)
 		assert.Equal(t, id, *apiGroupRep.ID)
 		assert.Equal(t, name, *apiGroupRep.Name)
@@ -2166,7 +2164,7 @@ func TestGetGroupsOfUser(t *testing.T) {
 	t.Run("Error", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetGroupsOfUser(accessToken, realmName, userID).Return([]kc.GroupRepresentation{}, fmt.Errorf("Unexpected error"))
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		_, err := managementComponent.GetGroupsOfUser(ctx, "master", userID)
 
@@ -2175,84 +2173,84 @@ func TestGetGroupsOfUser(t *testing.T) {
 }
 
 func TestSetGroupsToUser(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var managementComponent = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	managementComponent := mocks.createComponent()
 
-	var accessToken = "a-valid-access-token"
-	var realmName = "my-realm"
-	var userID = "USER-IDEN-IFIE-R123"
-	var groupID = "user-group-1"
-	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+	accessToken := "a-valid-access-token"
+	realmName := "my-realm"
+	userID := "USER-IDEN-IFIE-R123"
+	groupID := "user-group-1"
+	ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 	t.Run("AddGroupToUser: KC fails", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().AddGroupToUser(accessToken, realmName, userID, groupID).Return(errors.New("kc error"))
-		var err = managementComponent.AddGroupToUser(ctx, realmName, userID, groupID)
+		err := managementComponent.AddGroupToUser(ctx, realmName, userID, groupID)
 		assert.NotNil(t, err)
 	})
 	t.Run("DeleteGroupForUser: KC fails", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().DeleteGroupFromUser(accessToken, realmName, userID, groupID).Return(errors.New("kc error"))
-		var err = managementComponent.DeleteGroupForUser(ctx, realmName, userID, groupID)
+		err := managementComponent.DeleteGroupForUser(ctx, realmName, userID, groupID)
 		assert.NotNil(t, err)
 	})
 	t.Run("AddGroupToUser: Success", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().AddGroupToUser(accessToken, realmName, userID, groupID).Return(nil)
-		var err = managementComponent.AddGroupToUser(ctx, realmName, userID, groupID)
+		err := managementComponent.AddGroupToUser(ctx, realmName, userID, groupID)
 		assert.Nil(t, err)
 	})
 	t.Run("DeleteGroupForUser: Success", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().DeleteGroupFromUser(accessToken, realmName, userID, groupID).Return(nil)
-		var err = managementComponent.DeleteGroupForUser(ctx, realmName, userID, groupID)
+		err := managementComponent.DeleteGroupForUser(ctx, realmName, userID, groupID)
 		assert.Nil(t, err)
 	})
 }
 
 func TestGetAvailableTrustIDGroups(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var component = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	component := mocks.createComponent()
 
-	var realmName = "master"
+	realmName := "master"
 
-	var res, err = component.GetAvailableTrustIDGroups(context.TODO(), realmName)
+	res, err := component.GetAvailableTrustIDGroups(context.TODO(), realmName)
 	assert.Nil(t, err)
 	assert.Len(t, res, len(allowedTrustIDGroups))
 }
 
 func TestGetTrustIDGroupsOfUser(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var component = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	component := mocks.createComponent()
 
-	var groups = []string{"some", "/groups"}
-	var accessToken = "TOKEN=="
-	var realmName = "master"
-	var userID = "789-789-456"
-	var attrbs = kc.Attributes{constants.AttrbTrustIDGroups: groups}
-	var ctx = context.WithValue(context.TODO(), cs.CtContextAccessToken, accessToken)
+	groups := []string{"some", "/groups"}
+	accessToken := "TOKEN=="
+	realmName := "master"
+	userID := "789-789-456"
+	attrbs := kc.Attributes{constants.AttrbTrustIDGroups: groups}
+	ctx := context.WithValue(context.TODO(), cs.CtContextAccessToken, accessToken)
 
 	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
 
 	t.Run("Keycloak fails", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(kc.UserRepresentation{}, errors.New("kc error"))
-		var _, err = component.GetTrustIDGroupsOfUser(ctx, realmName, userID)
+		_, err := component.GetTrustIDGroupsOfUser(ctx, realmName, userID)
 		assert.NotNil(t, err)
 	})
 	t.Run("User without attributes", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(kc.UserRepresentation{}, nil)
-		var res, err = component.GetTrustIDGroupsOfUser(ctx, realmName, userID)
+		res, err := component.GetTrustIDGroupsOfUser(ctx, realmName, userID)
 		assert.Nil(t, err)
 		assert.Len(t, res, 0)
 	})
 	t.Run("User has attributes", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(kc.UserRepresentation{Attributes: &attrbs}, nil)
-		var res, err = component.GetTrustIDGroupsOfUser(ctx, realmName, userID)
+		res, err := component.GetTrustIDGroupsOfUser(ctx, realmName, userID)
 		assert.Nil(t, err)
 		assert.Equal(t, "some", res[0])
 		assert.Equal(t, "groups", res[1]) // Without heading slash
@@ -2260,36 +2258,36 @@ func TestGetTrustIDGroupsOfUser(t *testing.T) {
 }
 
 func TestSetTrustIDGroupsToUser(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var managementComponent = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	managementComponent := mocks.createComponent()
 
-	var accessToken = "TOKEN=="
+	accessToken := "TOKEN=="
 
-	var username = "user"
-	var realmName = "master"
-	var userID = "789-1234-5678"
+	username := "user"
+	realmName := "master"
+	userID := "789-1234-5678"
 
 	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
 
 	t.Run("Set groups with success", func(t *testing.T) {
-		var kcUserRep = kc.UserRepresentation{
+		kcUserRep := kc.UserRepresentation{
 			Username: &username,
 		}
 		grpNames := []string{"grp1", "grp2"}
 		extGrpNames := []string{"/grp1", "/grp2"}
 		attrs := make(kc.Attributes)
 		attrs.Set(constants.AttrbTrustIDGroups, extGrpNames)
-		var kcUserRep2 = kc.UserRepresentation{
+		kcUserRep2 := kc.UserRepresentation{
 			Username:   &username,
 			Attributes: &attrs,
 		}
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(kcUserRep, nil)
 		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, realmName, userID, kcUserRep2).Return(nil)
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		err := managementComponent.SetTrustIDGroupsToUser(ctx, realmName, userID, grpNames)
 
@@ -2301,7 +2299,7 @@ func TestSetTrustIDGroupsToUser(t *testing.T) {
 		attrs := make(map[string][]string)
 		attrs["trustIDGroups"] = grpNames
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		err := managementComponent.SetTrustIDGroupsToUser(ctx, realmName, userID, grpNames)
 
@@ -2312,7 +2310,7 @@ func TestSetTrustIDGroupsToUser(t *testing.T) {
 		grpNames := []string{"grp1", "grp2"}
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(kc.UserRepresentation{}, fmt.Errorf("Unexpected error"))
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		err := managementComponent.SetTrustIDGroupsToUser(ctx, realmName, userID, grpNames)
 
@@ -2320,21 +2318,21 @@ func TestSetTrustIDGroupsToUser(t *testing.T) {
 	})
 
 	t.Run("Error while update user", func(t *testing.T) {
-		var kcUserRep = kc.UserRepresentation{
+		kcUserRep := kc.UserRepresentation{
 			Username: &username,
 		}
 		grpNames := []string{"grp1", "grp2"}
 		extGrpNames := []string{"/grp1", "/grp2"}
 		attrs := make(kc.Attributes)
 		attrs.Set(constants.AttrbTrustIDGroups, extGrpNames)
-		var kcUserRep2 = kc.UserRepresentation{
+		kcUserRep2 := kc.UserRepresentation{
 			Username:   &username,
 			Attributes: &attrs,
 		}
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(kcUserRep, nil)
 		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, realmName, userID, kcUserRep2).Return(fmt.Errorf("Unexpected error"))
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		err := managementComponent.SetTrustIDGroupsToUser(ctx, realmName, userID, grpNames)
 
@@ -2343,35 +2341,35 @@ func TestSetTrustIDGroupsToUser(t *testing.T) {
 }
 
 func TestResetPassword(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var managementComponent = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	managementComponent := mocks.createComponent()
 
-	var accessToken = "TOKEN=="
-	var realmName = "master"
-	var userID = "41dbf4a8-32a9-4000-8c17-edc854c31231"
-	var password = "P@ssw0rd"
-	var typePassword = "password"
-	var username = "username"
+	accessToken := "TOKEN=="
+	realmName := "master"
+	userID := "41dbf4a8-32a9-4000-8c17-edc854c31231"
+	password := "P@ssw0rd"
+	typePassword := "password"
+	username := "username"
 
 	t.Run("Change password", func(t *testing.T) {
-		var kcCredRep = kc.CredentialRepresentation{
+		kcCredRep := kc.CredentialRepresentation{
 			Type:  &typePassword,
 			Value: &password,
 		}
 
 		mocks.keycloakClient.EXPECT().ResetPassword(accessToken, realmName, userID, kcCredRep).Return(nil)
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 		ctx = context.WithValue(ctx, cs.CtContextUserID, userID)
 
 		mocks.eventsReporter.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
 
-		var passwordRep = api.PasswordRepresentation{
+		passwordRep := api.PasswordRepresentation{
 			Value: &password,
 		}
 
@@ -2380,14 +2378,14 @@ func TestResetPassword(t *testing.T) {
 		assert.Nil(t, err)
 	})
 	t.Run("No password offered", func(t *testing.T) {
-		var id = "master_id"
-		var keycloakVersion = "4.8.3"
-		var realm = "master"
-		var displayName = "Master"
-		var enabled = true
+		id := "master_id"
+		keycloakVersion := "4.8.3"
+		realm := "master"
+		displayName := "Master"
+		enabled := true
 
-		var policy = "forceExpiredPasswordChange(365) and specialChars(1) and upperCase(1) and lowerCase(1) and length(4) and digits(1) and notUsername(undefined)"
-		var kcRealmRep = kc.RealmRepresentation{
+		policy := "forceExpiredPasswordChange(365) and specialChars(1) and upperCase(1) and lowerCase(1) and length(4) and digits(1) and notUsername(undefined)"
+		kcRealmRep := kc.RealmRepresentation{
 			ID:              &id,
 			KeycloakVersion: &keycloakVersion,
 			Realm:           &realm,
@@ -2399,14 +2397,14 @@ func TestResetPassword(t *testing.T) {
 		mocks.keycloakClient.EXPECT().ResetPassword(accessToken, realmName, userID, gomock.Any()).Return(nil)
 		mocks.keycloakClient.EXPECT().GetRealm(accessToken, realmName).Return(kcRealmRep, nil).AnyTimes()
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 		ctx = context.WithValue(ctx, cs.CtContextUserID, userID)
 
 		mocks.eventsReporter.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
 
-		var passwordRep = api.PasswordRepresentation{
+		passwordRep := api.PasswordRepresentation{
 			Value: nil,
 		}
 
@@ -2416,23 +2414,23 @@ func TestResetPassword(t *testing.T) {
 		assert.NotNil(t, pwd)
 	})
 	t.Run("No password offered, no keycloak policy", func(t *testing.T) {
-		var id = "master_id"
+		id := "master_id"
 
-		var kcRealmRep = kc.RealmRepresentation{
+		kcRealmRep := kc.RealmRepresentation{
 			ID: &id,
 		}
 
 		mocks.keycloakClient.EXPECT().ResetPassword(accessToken, realmName, userID, gomock.Any()).Return(nil)
 		mocks.keycloakClient.EXPECT().GetRealm(accessToken, realmName).Return(kcRealmRep, nil).AnyTimes()
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 		ctx = context.WithValue(ctx, cs.CtContextUserID, userID)
 
 		mocks.eventsReporter.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
 
-		var passwordRep = api.PasswordRepresentation{
+		passwordRep := api.PasswordRepresentation{
 			Value: nil,
 		}
 
@@ -2444,9 +2442,9 @@ func TestResetPassword(t *testing.T) {
 	t.Run("Error", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().ResetPassword(accessToken, realmName, userID, gomock.Any()).Return(fmt.Errorf("Invalid input"))
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
-		var passwordRep = api.PasswordRepresentation{
+		passwordRep := api.PasswordRepresentation{
 			Value: &password,
 		}
 		mocks.logger.EXPECT().Warn(gomock.Any(), "err", "Invalid input")
@@ -2457,26 +2455,26 @@ func TestResetPassword(t *testing.T) {
 }
 
 func TestRecoveryCode(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var managementComponent = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	managementComponent := mocks.createComponent()
 
-	var accessToken = "TOKEN=="
-	var realmName = "master"
-	var userID = "41dbf4a8-32a9-4000-8c17-edc854c31231"
-	var username = "username"
-	var code = "123456"
+	accessToken := "TOKEN=="
+	realmName := "master"
+	userID := "41dbf4a8-32a9-4000-8c17-edc854c31231"
+	username := "username"
+	code := "123456"
 
 	t.Run("RecoveryCode", func(t *testing.T) {
-		var kcCodeRep = kc.RecoveryCodeRepresentation{
+		kcCodeRep := kc.RecoveryCodeRepresentation{
 			Code: &code,
 		}
 
 		mocks.keycloakClient.EXPECT().CreateRecoveryCode(accessToken, realmName, userID).Return(kcCodeRep, nil)
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 		ctx = context.WithValue(ctx, cs.CtContextUserID, userID)
@@ -2490,15 +2488,15 @@ func TestRecoveryCode(t *testing.T) {
 	})
 
 	t.Run("RecoveryCode already exists", func(t *testing.T) {
-		var err409 = kc.HTTPError{
+		err409 := kc.HTTPError{
 			HTTPStatus: 409,
 			Message:    "Conflict",
 		}
-		var kcCodeRep = kc.RecoveryCodeRepresentation{}
+		kcCodeRep := kc.RecoveryCodeRepresentation{}
 
 		mocks.keycloakClient.EXPECT().CreateRecoveryCode(accessToken, realmName, userID).Return(kcCodeRep, err409)
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 		ctx = context.WithValue(ctx, cs.CtContextUserID, userID)
@@ -2510,10 +2508,10 @@ func TestRecoveryCode(t *testing.T) {
 	})
 
 	t.Run("Error", func(t *testing.T) {
-		var kcCodeRep = kc.RecoveryCodeRepresentation{}
+		kcCodeRep := kc.RecoveryCodeRepresentation{}
 		mocks.keycloakClient.EXPECT().CreateRecoveryCode(accessToken, realmName, userID).Return(kcCodeRep, fmt.Errorf("Error"))
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 		ctx = context.WithValue(ctx, cs.CtContextUserID, userID)
@@ -2526,26 +2524,26 @@ func TestRecoveryCode(t *testing.T) {
 }
 
 func TestActivationCode(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var managementComponent = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	managementComponent := mocks.createComponent()
 
-	var accessToken = "TOKEN=="
-	var realmName = "master"
-	var userID = "41dbf4a8-32a9-4000-8c17-edc854c31231"
-	var username = "username"
-	var code = "123456"
+	accessToken := "TOKEN=="
+	realmName := "master"
+	userID := "41dbf4a8-32a9-4000-8c17-edc854c31231"
+	username := "username"
+	code := "123456"
 
 	t.Run("ActivationCode", func(t *testing.T) {
-		var kcCodeRep = kc.ActivationCodeRepresentation{
+		kcCodeRep := kc.ActivationCodeRepresentation{
 			Code: &code,
 		}
 
 		mocks.keycloakClient.EXPECT().CreateActivationCode(accessToken, realmName, userID).Return(kcCodeRep, nil)
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 		ctx = context.WithValue(ctx, cs.CtContextUserID, userID)
@@ -2559,10 +2557,10 @@ func TestActivationCode(t *testing.T) {
 	})
 
 	t.Run("Error", func(t *testing.T) {
-		var kcCodeRep = kc.ActivationCodeRepresentation{}
+		kcCodeRep := kc.ActivationCodeRepresentation{}
 		mocks.keycloakClient.EXPECT().CreateActivationCode(accessToken, realmName, userID).Return(kcCodeRep, fmt.Errorf("Error"))
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 		ctx = context.WithValue(ctx, cs.CtContextUserID, userID)
@@ -2575,28 +2573,28 @@ func TestActivationCode(t *testing.T) {
 }
 
 func TestExecuteActionsEmail(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var managementComponent = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	managementComponent := mocks.createComponent()
 
-	var accessToken = "TOKEN=="
-	var realmName = "master"
-	var userID = "1245-7854-8963"
-	var reqActions = []api.RequiredAction{initPasswordAction, "action1", "action2"}
-	var actions = []string{initPasswordAction, "action1", "action2"}
-	var key1 = "key1"
-	var value1 = "value1"
-	var key2 = "key2"
-	var value2 = "value2"
+	accessToken := "TOKEN=="
+	realmName := "master"
+	userID := "1245-7854-8963"
+	reqActions := []api.RequiredAction{initPasswordAction, "action1", "action2"}
+	actions := []string{initPasswordAction, "action1", "action2"}
+	key1 := "key1"
+	value1 := "value1"
+	key2 := "key2"
+	value2 := "value2"
 
 	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
 
 	t.Run("Send email actions", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().ExecuteActionsEmail(accessToken, realmName, realmName, userID, actions, key1, value1, key2, value2).Return(nil)
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		mocks.eventsReporter.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
 		mocks.eventsReporter.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
 
@@ -2607,7 +2605,7 @@ func TestExecuteActionsEmail(t *testing.T) {
 	t.Run("Error", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().ExecuteActionsEmail(accessToken, realmName, realmName, userID, actions).Return(fmt.Errorf("Invalid input"))
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		mocks.eventsReporter.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
 		mocks.eventsReporter.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
 
@@ -2616,11 +2614,11 @@ func TestExecuteActionsEmail(t *testing.T) {
 		assert.NotNil(t, err)
 	})
 	t.Run("Send email actions, but not sms-password-set", func(t *testing.T) {
-		var actions2 = []string{"action1", "action2"}
-		var reqActions2 = []api.RequiredAction{"action1", "action2"}
+		actions2 := []string{"action1", "action2"}
+		reqActions2 := []api.RequiredAction{"action1", "action2"}
 		mocks.keycloakClient.EXPECT().ExecuteActionsEmail(accessToken, realmName, realmName, userID, actions2, key1, value1, key2, value2).Return(nil)
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		mocks.eventsReporter.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
 
 		err := managementComponent.ExecuteActionsEmail(ctx, "master", userID, reqActions2, key1, value1, key2, value2)
@@ -2630,89 +2628,89 @@ func TestExecuteActionsEmail(t *testing.T) {
 }
 
 func TestRevokeAccreditations(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var component = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	component := mocks.createComponent()
 
-	var accessToken = "my-access-token"
-	var realmName = "my-realm"
-	var userID = "my-user-id"
-	var username = "pseudo613"
-	var kcUser = kc.UserRepresentation{
+	accessToken := "my-access-token"
+	realmName := "my-realm"
+	userID := "my-user-id"
+	username := "pseudo613"
+	kcUser := kc.UserRepresentation{
 		ID:       &userID,
 		Username: &username,
 	}
-	var anyError = errors.New("any error")
-	var ctx = context.TODO()
+	anyError := errors.New("any error")
+	ctx := context.TODO()
 	ctx = context.WithValue(ctx, cs.CtContextAccessToken, accessToken)
 
 	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
 
 	t.Run("Can't get keycloak user", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(kc.UserRepresentation{}, anyError)
-		var err = component.RevokeAccreditations(ctx, realmName, userID)
+		err := component.RevokeAccreditations(ctx, realmName, userID)
 		assert.Equal(t, anyError, err)
 	})
 	t.Run("User has no accreditation", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(kcUser, nil)
-		var err = component.RevokeAccreditations(ctx, realmName, userID)
+		err := component.RevokeAccreditations(ctx, realmName, userID)
 		assert.NotNil(t, err)
 		assert.IsType(t, errorhandler.Error{}, err)
 		assert.Equal(t, http.StatusNotFound, err.(errorhandler.Error).Status)
 	})
 	t.Run("User has no active accreditation", func(t *testing.T) {
-		var attrbs = kc.Attributes{
+		attrbs := kc.Attributes{
 			constants.AttrbAccreditations: []string{`{"type":"DEP","expiryDate":"31.12.2059","creationMillis":1643700000000,"revoked":true}`},
 		}
 		kcUser.Attributes = &attrbs
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(kcUser, nil)
-		var err = component.RevokeAccreditations(ctx, realmName, userID)
+		err := component.RevokeAccreditations(ctx, realmName, userID)
 		assert.NotNil(t, err)
 		assert.IsType(t, errorhandler.Error{}, err)
 		assert.Equal(t, http.StatusNotFound, err.(errorhandler.Error).Status)
 	})
 	t.Run("Fails to update keycloak user", func(t *testing.T) {
-		var attrbs = kc.Attributes{
+		attrbs := kc.Attributes{
 			constants.AttrbAccreditations: []string{`{"type":"DEP","expiryDate":"31.12.2059","creationMillis":1643700000000}`},
 		}
 		kcUser.Attributes = &attrbs
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(kcUser, nil)
 		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, realmName, userID, gomock.Any()).Return(anyError)
-		var err = component.RevokeAccreditations(ctx, realmName, userID)
+		err := component.RevokeAccreditations(ctx, realmName, userID)
 		assert.Equal(t, anyError, err)
 	})
 	t.Run("Success", func(t *testing.T) {
-		var attrbs = kc.Attributes{
+		attrbs := kc.Attributes{
 			constants.AttrbAccreditations: []string{`{"type":"DEP","expiryDate":"31.12.2059","creationMillis":1643700000000}`},
 		}
 		kcUser.Attributes = &attrbs
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(kcUser, nil)
 		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, realmName, userID, gomock.Any()).Return(nil)
 		mocks.eventsReporter.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
-		var err = component.RevokeAccreditations(ctx, realmName, userID)
+		err := component.RevokeAccreditations(ctx, realmName, userID)
 		assert.Nil(t, err)
 	})
 }
 
 func TestSendSmsCode(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var managementComponent = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	managementComponent := mocks.createComponent()
 
-	var accessToken = "TOKEN=="
-	var realmName = "master"
-	var username = "userName"
-	var userID = "1245-7854-8963"
+	accessToken := "TOKEN=="
+	realmName := "master"
+	username := "userName"
+	userID := "1245-7854-8963"
 
 	t.Run("Send new sms code", func(t *testing.T) {
-		var code = "1234"
+		code := "1234"
 		mocks.keycloakClient.EXPECT().SendSmsCode(accessToken, realmName, userID).Return(kc.SmsCodeRepresentation{Code: &code}, nil)
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 		ctx = context.WithValue(ctx, cs.CtContextUserID, userID)
@@ -2727,7 +2725,7 @@ func TestSendSmsCode(t *testing.T) {
 	t.Run("Error", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().SendSmsCode(accessToken, realmName, userID).Return(kc.SmsCodeRepresentation{}, fmt.Errorf("Invalid input"))
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		mocks.logger.EXPECT().Warn(gomock.Any(), "err", "Invalid input")
 		_, err := managementComponent.SendSmsCode(ctx, "master", userID)
 
@@ -2736,23 +2734,23 @@ func TestSendSmsCode(t *testing.T) {
 }
 
 func TestSendOnboardingEmail(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var managementComponent = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	managementComponent := mocks.createComponent()
 
-	var onboardingRedirectURI = "http://successURL"
-	var onboardingClientID = "onboardingid"
-	var accessToken = "TOKEN=="
-	var realmName = "master"
-	var customerRealmName = "customer"
-	var userID = "1245-7854-8963"
-	var username = "username"
-	var ctx = context.Background()
+	onboardingRedirectURI := "http://successURL"
+	onboardingClientID := "onboardingid"
+	accessToken := "TOKEN=="
+	realmName := "master"
+	customerRealmName := "customer"
+	userID := "1245-7854-8963"
+	username := "username"
+	ctx := context.Background()
 	ctx = context.WithValue(ctx, cs.CtContextAccessToken, accessToken)
 	ctx = context.WithValue(ctx, cs.CtContextRealm, customerRealmName)
-	var anyError = errors.New("unexpected error")
+	anyError := errors.New("unexpected error")
 
 	mocks.logger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
 	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
@@ -2794,7 +2792,7 @@ func TestSendOnboardingEmail(t *testing.T) {
 	})
 
 	t.Run("User with invalid onboardingCOmpleted attribute", func(t *testing.T) {
-		var attributes = make(kc.Attributes)
+		attributes := make(kc.Attributes)
 		attributes.SetString(constants.AttrbOnboardingCompleted, "wrong")
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(kc.UserRepresentation{
 			ID:         &userID,
@@ -2808,7 +2806,7 @@ func TestSendOnboardingEmail(t *testing.T) {
 	})
 
 	t.Run("User already onboarded", func(t *testing.T) {
-		var attributes = make(kc.Attributes)
+		attributes := make(kc.Attributes)
 		attributes.SetBool(constants.AttrbOnboardingCompleted, true)
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(kc.UserRepresentation{
 			ID:         &userID,
@@ -2828,7 +2826,7 @@ func TestSendOnboardingEmail(t *testing.T) {
 		}, nil)
 
 		mocks.onboardingModule.EXPECT().OnboardingAlreadyCompleted(gomock.Any()).Return(false, nil)
-		var computedOnboardingRedirectURI = onboardingRedirectURI + "?customerRealm=" + customerRealmName
+		computedOnboardingRedirectURI := onboardingRedirectURI + "?customerRealm=" + customerRealmName
 		mocks.onboardingModule.EXPECT().ComputeOnboardingRedirectURI(ctx, realmName, customerRealmName, gomock.Any()).Return(computedOnboardingRedirectURI, nil)
 
 		mocks.onboardingModule.EXPECT().SendOnboardingEmail(ctx, accessToken, realmName, userID, username,
@@ -2859,29 +2857,29 @@ func TestSendOnboardingEmail(t *testing.T) {
 }
 
 func TestSendReminderEmail(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var managementComponent = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	managementComponent := mocks.createComponent()
 
-	var accessToken = "TOKEN=="
-	var realmName = "master"
-	var userID = "1245-7854-8963"
+	accessToken := "TOKEN=="
+	realmName := "master"
+	userID := "1245-7854-8963"
 
-	var key1 = "key1"
-	var value1 = "value1"
-	var key2 = "key2"
-	var value2 = "value2"
-	var key3 = "key3"
-	var value3 = "value3"
+	key1 := "key1"
+	value1 := "value1"
+	key2 := "key2"
+	value2 := "value2"
+	key3 := "key3"
+	value3 := "value3"
 
 	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
 
 	t.Run("Send email", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().SendReminderEmail(accessToken, realmName, userID, key1, value1, key2, value2, key3, value3).Return(nil)
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		err := managementComponent.SendReminderEmail(ctx, "master", userID, key1, value1, key2, value2, key3, value3)
 
@@ -2891,7 +2889,7 @@ func TestSendReminderEmail(t *testing.T) {
 	t.Run("Error", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().SendReminderEmail(accessToken, realmName, userID).Return(fmt.Errorf("Invalid input"))
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		err := managementComponent.SendReminderEmail(ctx, "master", userID)
 
@@ -2900,29 +2898,29 @@ func TestSendReminderEmail(t *testing.T) {
 }
 
 func TestResetSmsCounter(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var managementComponent = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	managementComponent := mocks.createComponent()
 
-	var accessToken = "TOKEN=="
-	var realmName = "master"
-	var userID = "1245-7854-8963"
-	var id = "1234-7454-4516"
-	var username = "username"
-	var email = "toto@elca.ch"
-	var enabled = true
-	var emailVerified = true
-	var firstName = "Titi"
-	var lastName = "Tutu"
-	var phoneNumber = "+41789456"
-	var phoneNumberVerified = true
-	var label = "Label"
-	var gender = "M"
-	var birthDate = "01/01/1988"
-	var createdTimestamp = time.Now().UTC().Unix()
-	var attributes = make(kc.Attributes)
+	accessToken := "TOKEN=="
+	realmName := "master"
+	userID := "1245-7854-8963"
+	id := "1234-7454-4516"
+	username := "username"
+	email := "toto@elca.ch"
+	enabled := true
+	emailVerified := true
+	firstName := "Titi"
+	lastName := "Tutu"
+	phoneNumber := "+41789456"
+	phoneNumberVerified := true
+	label := "Label"
+	gender := "M"
+	birthDate := "01/01/1988"
+	createdTimestamp := time.Now().UTC().Unix()
+	attributes := make(kc.Attributes)
 	attributes.SetString(constants.AttrbPhoneNumber, phoneNumber)
 	attributes.SetString(constants.AttrbLabel, label)
 	attributes.SetString(constants.AttrbGender, gender)
@@ -2931,7 +2929,7 @@ func TestResetSmsCounter(t *testing.T) {
 	attributes.SetInt(constants.AttrbSmsSent, 5)
 	attributes.SetInt(constants.AttrbSmsAttempts, 5)
 
-	var kcUserRep = kc.UserRepresentation{
+	kcUserRep := kc.UserRepresentation{
 		ID:               &id,
 		Username:         &username,
 		Email:            &email,
@@ -2949,7 +2947,7 @@ func TestResetSmsCounter(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(kcUserRep, nil)
 		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, realmName, userID, kcUserRep).Return(nil)
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		err := managementComponent.ResetSmsCounter(ctx, "master", userID)
 
@@ -2959,7 +2957,7 @@ func TestResetSmsCounter(t *testing.T) {
 	t.Run("Error at GetUser", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(kc.UserRepresentation{}, fmt.Errorf("error"))
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		err := managementComponent.ResetSmsCounter(ctx, "master", userID)
 
 		assert.NotNil(t, err)
@@ -2969,7 +2967,7 @@ func TestResetSmsCounter(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(kcUserRep, nil)
 		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, realmName, userID, kcUserRep).Return(fmt.Errorf("error"))
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		err := managementComponent.ResetSmsCounter(ctx, "master", userID)
 
 		assert.NotNil(t, err)
@@ -2977,21 +2975,21 @@ func TestResetSmsCounter(t *testing.T) {
 }
 
 func TestGetCredentialsForUser(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var managementComponent = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	managementComponent := mocks.createComponent()
 
-	var accessToken = "TOKEN=="
-	var realmReq = "master"
-	var realmName = "otherRealm"
-	var userID = "1245-7854-8963"
+	accessToken := "TOKEN=="
+	realmReq := "master"
+	realmName := "otherRealm"
+	userID := "1245-7854-8963"
 
 	t.Run("Get credentials for user", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetCredentials(accessToken, realmName, userID).Return([]kc.CredentialRepresentation{}, nil)
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmReq)
 
 		_, err := managementComponent.GetCredentialsForUser(ctx, realmName, userID)
@@ -3001,19 +2999,19 @@ func TestGetCredentialsForUser(t *testing.T) {
 }
 
 func TestDeleteCredentialsForUser(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var managementComponent = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	managementComponent := mocks.createComponent()
 
-	var accessToken = "TOKEN=="
-	var realmReq = "master"
-	var realmName = "master"
-	var userID = "1245-7854-8963"
-	var credMfa1 = kc.CredentialRepresentation{ID: ptr("cred-mfa-1"), Type: ptr("any-mfa")}
-	var credMfa2 = kc.CredentialRepresentation{ID: ptr("cred-mfa-2"), Type: ptr("any-mfa")}
-	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+	accessToken := "TOKEN=="
+	realmReq := "master"
+	realmName := "master"
+	userID := "1245-7854-8963"
+	credMfa1 := kc.CredentialRepresentation{ID: ptr("cred-mfa-1"), Type: ptr("any-mfa")}
+	credMfa2 := kc.CredentialRepresentation{ID: ptr("cred-mfa-2"), Type: ptr("any-mfa")}
+	ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 	ctx = context.WithValue(ctx, cs.CtContextRealm, realmReq)
 
 	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
@@ -3047,135 +3045,135 @@ func TestDeleteCredentialsForUser(t *testing.T) {
 }
 
 func TestUnlockCredentialForUser(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var managementComponent = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	managementComponent := mocks.createComponent()
 
-	var accessToken = "TOKEN=="
-	var realmName = "master"
-	var userID = "1245-7854-8963"
-	var credentialID = "987-654-321"
-	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+	accessToken := "TOKEN=="
+	realmName := "master"
+	userID := "1245-7854-8963"
+	credentialID := "987-654-321"
+	ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 	mocks.logger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
 
 	t.Run("Detect credential type-Keycloak call fails", func(t *testing.T) {
-		var kcErr = errors.New("keycloak error")
+		kcErr := errors.New("keycloak error")
 		mocks.keycloakClient.EXPECT().GetCredentials(accessToken, realmName, userID).Return(nil, kcErr)
 
-		var err = managementComponent.ResetCredentialFailuresForUser(ctx, realmName, userID, credentialID)
+		err := managementComponent.ResetCredentialFailuresForUser(ctx, realmName, userID, credentialID)
 		assert.Equal(t, kcErr, err)
 	})
 
 	t.Run("Detect credential type-Credential not found", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetCredentials(accessToken, realmName, userID).Return(nil, nil)
 
-		var err = managementComponent.ResetCredentialFailuresForUser(ctx, realmName, userID, credentialID)
+		err := managementComponent.ResetCredentialFailuresForUser(ctx, realmName, userID, credentialID)
 		assert.NotNil(t, err)
 	})
 
-	var foundCredType = "ctpapercard"
-	var credentials = []kc.CredentialRepresentation{{ID: &credentialID, Type: &foundCredType}}
+	foundCredType := "ctpapercard"
+	credentials := []kc.CredentialRepresentation{{ID: &credentialID, Type: &foundCredType}}
 	mocks.keycloakClient.EXPECT().GetCredentials(accessToken, realmName, userID).Return(credentials, nil).AnyTimes()
 
 	t.Run("Detect credential type-Credential found", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().ResetPapercardFailures(accessToken, realmName, userID, credentialID).Return(nil)
 
-		var err = managementComponent.ResetCredentialFailuresForUser(ctx, realmName, userID, credentialID)
+		err := managementComponent.ResetCredentialFailuresForUser(ctx, realmName, userID, credentialID)
 		assert.Nil(t, err)
 	})
 
 	t.Run("Can't unlock paper card", func(t *testing.T) {
-		var unlockErr = errors.New("unlock error")
+		unlockErr := errors.New("unlock error")
 		mocks.keycloakClient.EXPECT().ResetPapercardFailures(accessToken, realmName, userID, credentialID).Return(unlockErr)
 
-		var err = managementComponent.ResetCredentialFailuresForUser(ctx, realmName, userID, credentialID)
+		err := managementComponent.ResetCredentialFailuresForUser(ctx, realmName, userID, credentialID)
 		assert.Equal(t, unlockErr, err)
 	})
 }
 
 func TestClearUserLoginFailures(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var component = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	component := mocks.createComponent()
 
-	var accessToken = "TOKEN=="
-	var realm = "master"
-	var userID = "1245-7854-8963"
-	var ctx = context.WithValue(context.TODO(), cs.CtContextAccessToken, accessToken)
+	accessToken := "TOKEN=="
+	realm := "master"
+	userID := "1245-7854-8963"
+	ctx := context.WithValue(context.TODO(), cs.CtContextAccessToken, accessToken)
 
 	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
 
 	t.Run("Error occured", func(t *testing.T) {
-		var expectedError = errors.New("kc error")
+		expectedError := errors.New("kc error")
 		mocks.keycloakClient.EXPECT().ClearUserLoginFailures(accessToken, realm, userID).Return(expectedError)
-		var err = component.ClearUserLoginFailures(ctx, realm, userID)
+		err := component.ClearUserLoginFailures(ctx, realm, userID)
 		assert.Equal(t, expectedError, err)
 	})
 	t.Run("Success", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().ClearUserLoginFailures(accessToken, realm, userID).Return(nil)
 		mocks.eventsReporter.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
-		var err = component.ClearUserLoginFailures(ctx, realm, userID)
+		err := component.ClearUserLoginFailures(ctx, realm, userID)
 		assert.Nil(t, err)
 	})
 }
 
 func TestGetAttackDetectionStatus(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var component = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	component := mocks.createComponent()
 
-	var accessToken = "TOKEN=="
-	var realm = "master"
-	var userID = "1245-7854-8963"
-	var ctx = context.WithValue(context.TODO(), cs.CtContextAccessToken, accessToken)
-	var kcResult = map[string]interface{}{}
+	accessToken := "TOKEN=="
+	realm := "master"
+	userID := "1245-7854-8963"
+	ctx := context.WithValue(context.TODO(), cs.CtContextAccessToken, accessToken)
+	kcResult := map[string]interface{}{}
 
 	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
 
 	t.Run("Error occured", func(t *testing.T) {
-		var expectedError = errors.New("kc error")
+		expectedError := errors.New("kc error")
 		mocks.keycloakClient.EXPECT().GetAttackDetectionStatus(accessToken, realm, userID).Return(kcResult, expectedError)
-		var _, err = component.GetAttackDetectionStatus(ctx, realm, userID)
+		_, err := component.GetAttackDetectionStatus(ctx, realm, userID)
 		assert.Equal(t, expectedError, err)
 	})
 	t.Run("Success", func(t *testing.T) {
 		var expectedFailures int64 = 57
 		kcResult["numFailures"] = expectedFailures
 		mocks.keycloakClient.EXPECT().GetAttackDetectionStatus(accessToken, realm, userID).Return(kcResult, nil)
-		var res, err = component.GetAttackDetectionStatus(ctx, realm, userID)
+		res, err := component.GetAttackDetectionStatus(ctx, realm, userID)
 		assert.Nil(t, err)
 		assert.Equal(t, expectedFailures, *res.NumFailures)
 	})
 }
 
 func TestGetRoles(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var managementComponent = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	managementComponent := mocks.createComponent()
 
-	var accessToken = "TOKEN=="
-	var realmName = "master"
+	accessToken := "TOKEN=="
+	realmName := "master"
 
 	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
 
 	t.Run("Get roles with succces", func(t *testing.T) {
-		var id = "1234-7454-4516"
-		var composite = false
-		var containerID = "containerId"
-		var description = "description role"
-		var clientRole = false
-		var name = "name"
+		id := "1234-7454-4516"
+		composite := false
+		containerID := "containerId"
+		description := "description role"
+		clientRole := false
+		name := "name"
 
-		var kcRoleRep = kc.RoleRepresentation{
+		kcRoleRep := kc.RoleRepresentation{
 			ID:          &id,
 			Name:        &name,
 			ClientRole:  &clientRole,
@@ -3192,11 +3190,11 @@ func TestGetRoles(t *testing.T) {
 
 		mocks.keycloakClient.EXPECT().GetRolesWithAttributes(accessToken, realmName).Return(kcRolesRep, nil)
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		apiRolesRep, err := managementComponent.GetRoles(ctx, "master")
 
-		var apiRoleRep = apiRolesRep[0]
+		apiRoleRep := apiRolesRep[0]
 		assert.Nil(t, err)
 		assert.Equal(t, id, *apiRoleRep.ID)
 		assert.Equal(t, name, *apiRoleRep.Name)
@@ -3207,11 +3205,11 @@ func TestGetRoles(t *testing.T) {
 	})
 
 	t.Run("NonBusinessRole are not returned", func(t *testing.T) {
-		var id = "1234-7454-4516"
-		var kcRoleRep = kc.RoleRepresentation{ID: &id}
+		id := "1234-7454-4516"
+		kcRoleRep := kc.RoleRepresentation{ID: &id}
 		mocks.keycloakClient.EXPECT().GetRolesWithAttributes(accessToken, realmName).Return([]kc.RoleRepresentation{kcRoleRep}, nil)
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		apiRolesRep, err := managementComponent.GetRoles(ctx, "master")
 
@@ -3222,7 +3220,7 @@ func TestGetRoles(t *testing.T) {
 	t.Run("Error", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetRolesWithAttributes(accessToken, realmName).Return([]kc.RoleRepresentation{}, fmt.Errorf("Unexpected error"))
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		_, err := managementComponent.GetRoles(ctx, "master")
 
@@ -3231,26 +3229,26 @@ func TestGetRoles(t *testing.T) {
 }
 
 func TestGetRole(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var managementComponent = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	managementComponent := mocks.createComponent()
 
-	var accessToken = "TOKEN=="
-	var realmName = "master"
+	accessToken := "TOKEN=="
+	realmName := "master"
 
 	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
 
 	t.Run("Get roles with succces", func(t *testing.T) {
-		var id = "1234-7454-4516"
-		var composite = false
-		var containerID = "containerId"
-		var description = "description role"
-		var clientRole = false
-		var name = "name"
+		id := "1234-7454-4516"
+		composite := false
+		containerID := "containerId"
+		description := "description role"
+		clientRole := false
+		name := "name"
 
-		var kcRoleRep = kc.RoleRepresentation{
+		kcRoleRep := kc.RoleRepresentation{
 			ID:          &id,
 			Name:        &name,
 			ClientRole:  &clientRole,
@@ -3264,7 +3262,7 @@ func TestGetRole(t *testing.T) {
 
 		mocks.keycloakClient.EXPECT().GetRole(accessToken, realmName, id).Return(kcRoleRep, nil)
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		apiRoleRep, err := managementComponent.GetRole(ctx, "master", id)
 
@@ -3278,11 +3276,11 @@ func TestGetRole(t *testing.T) {
 	})
 
 	t.Run("NonBusinessRole is not returned", func(t *testing.T) {
-		var id = "1234-7454-4516"
-		var kcRoleRep = kc.RoleRepresentation{ID: &id}
+		id := "1234-7454-4516"
+		kcRoleRep := kc.RoleRepresentation{ID: &id}
 		mocks.keycloakClient.EXPECT().GetRole(accessToken, realmName, id).Return(kcRoleRep, nil)
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		_, err := managementComponent.GetRole(ctx, "master", id)
 
@@ -3290,10 +3288,10 @@ func TestGetRole(t *testing.T) {
 	})
 
 	t.Run("Error", func(t *testing.T) {
-		var id = "1234-7454-4516"
+		id := "1234-7454-4516"
 		mocks.keycloakClient.EXPECT().GetRole(accessToken, realmName, id).Return(kc.RoleRepresentation{}, fmt.Errorf("Unexpected error"))
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		_, err := managementComponent.GetRole(ctx, "master", id)
 
@@ -3302,36 +3300,36 @@ func TestGetRole(t *testing.T) {
 }
 
 func TestCreateRole(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var managementComponent = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	managementComponent := mocks.createComponent()
 
-	var accessToken = "TOKEN=="
-	var username = "username"
-	var userID = "testUserID"
-	var name = "test"
-	var realmName = "master"
-	var roleID = "41dbf4a8-32a9-4000-8c17-edc854c31231"
-	var locationURL = "http://toto.com/realms/" + roleID
+	accessToken := "TOKEN=="
+	username := "username"
+	userID := "testUserID"
+	name := "test"
+	realmName := "master"
+	roleID := "41dbf4a8-32a9-4000-8c17-edc854c31231"
+	locationURL := "http://toto.com/realms/" + roleID
 
 	t.Run("Create", func(t *testing.T) {
-		var kcRoleRep = kc.RoleRepresentation{
+		kcRoleRep := kc.RoleRepresentation{
 			Name:       &name,
 			Attributes: &map[string][]string{"BUSINESS_ROLE_FLAG": {"true"}},
 		}
 
 		mocks.keycloakClient.EXPECT().CreateRole(accessToken, realmName, kcRoleRep).Return(locationURL, nil)
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 		ctx = context.WithValue(ctx, cs.CtContextUserID, userID)
 
 		mocks.eventsReporter.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
 
-		var roleRep = api.RoleRepresentation{
+		roleRep := api.RoleRepresentation{
 			Name: &name,
 		}
 
@@ -3342,16 +3340,16 @@ func TestCreateRole(t *testing.T) {
 	})
 
 	t.Run("Error from KC client", func(t *testing.T) {
-		var kcRoleRep = kc.RoleRepresentation{
+		kcRoleRep := kc.RoleRepresentation{
 			Attributes: &map[string][]string{"BUSINESS_ROLE_FLAG": {"true"}},
 		}
 
 		mocks.keycloakClient.EXPECT().CreateRole(accessToken, realmName, kcRoleRep).Return("", fmt.Errorf("Invalid input"))
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 
-		var roleRep = api.RoleRepresentation{}
+		roleRep := api.RoleRepresentation{}
 		mocks.logger.EXPECT().Warn(ctx, "err", "Invalid input")
 
 		location, err := managementComponent.CreateRole(ctx, realmName, roleRep)
@@ -3362,29 +3360,29 @@ func TestCreateRole(t *testing.T) {
 }
 
 func TestUpdateRole(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var component = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	component := mocks.createComponent()
 
-	var accessToken = "TOKEN=="
-	var roleID = "41dbf4a8-32a9-4000-8c17-edc854c31231"
-	var roleName = "roleName"
-	var realmName = "master"
-	var username = "username"
-	var attributes = map[string][]string{
+	accessToken := "TOKEN=="
+	roleID := "41dbf4a8-32a9-4000-8c17-edc854c31231"
+	roleName := "roleName"
+	realmName := "master"
+	username := "username"
+	attributes := map[string][]string{
 		"BUSINESS_ROLE_FLAG": {"true"},
 	}
 
-	var role = kc.RoleRepresentation{
+	role := kc.RoleRepresentation{
 		ID:         &roleID,
 		Name:       &roleName,
 		Attributes: &attributes,
 	}
-	var inputRole = api.RoleRepresentation{Name: &roleName}
-	var anyError = errors.New("any error")
-	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+	inputRole := api.RoleRepresentation{Name: &roleName}
+	anyError := errors.New("any error")
+	ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 	ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 	ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 
@@ -3417,24 +3415,24 @@ func TestUpdateRole(t *testing.T) {
 }
 
 func TestDeleteRole(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var managementComponent = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	managementComponent := mocks.createComponent()
 
-	var accessToken = "TOKEN=="
-	var roleID = "41dbf4a8-32a9-4000-8c17-edc854c31231"
-	var roleName = "roleName"
-	var realmName = "master"
-	var username = "username"
-	var userID = "testUserID"
+	accessToken := "TOKEN=="
+	roleID := "41dbf4a8-32a9-4000-8c17-edc854c31231"
+	roleName := "roleName"
+	realmName := "master"
+	username := "username"
+	userID := "testUserID"
 
 	attributes := map[string][]string{
 		"BUSINESS_ROLE_FLAG": {"true"},
 	}
 
-	var role = kc.RoleRepresentation{
+	role := kc.RoleRepresentation{
 		ID:         &roleID,
 		Name:       &roleName,
 		Attributes: &attributes,
@@ -3444,7 +3442,7 @@ func TestDeleteRole(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetRole(accessToken, realmName, roleID).Return(role, nil)
 		mocks.keycloakClient.EXPECT().DeleteRole(accessToken, realmName, roleID).Return(nil)
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 		ctx = context.WithValue(ctx, cs.CtContextUserID, userID)
@@ -3457,7 +3455,7 @@ func TestDeleteRole(t *testing.T) {
 	})
 
 	t.Run("Error from KC client", func(t *testing.T) {
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		mocks.logger.EXPECT().Warn(ctx, "err", "Error")
 		mocks.keycloakClient.EXPECT().GetRole(accessToken, realmName, roleID).Return(kc.RoleRepresentation{}, errors.New("Error"))
 
@@ -3474,24 +3472,24 @@ func TestDeleteRole(t *testing.T) {
 }
 
 func TestGetGroups(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var managementComponent = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	managementComponent := mocks.createComponent()
 
-	var accessToken = "TOKEN=="
-	var realmName = "master"
+	accessToken := "TOKEN=="
+	realmName := "master"
 
 	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
 
 	t.Run("Get groups with succces, non empty result", func(t *testing.T) {
-		var id = "1234-7454-4516"
-		var path = "path_group"
-		var name = "group1"
-		var realmRoles = []string{"role1"}
+		id := "1234-7454-4516"
+		path := "path_group"
+		name := "group1"
+		realmRoles := []string{"role1"}
 
-		var kcGroupRep = kc.GroupRepresentation{
+		kcGroupRep := kc.GroupRepresentation{
 			ID:         &id,
 			Name:       &name,
 			Path:       &path,
@@ -3503,11 +3501,11 @@ func TestGetGroups(t *testing.T) {
 
 		mocks.keycloakClient.EXPECT().GetGroups(accessToken, realmName).Return(kcGroupsRep, nil)
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		apiGroupsRep, err := managementComponent.GetGroups(ctx, "master")
 
-		var apiGroupRep = apiGroupsRep[0]
+		apiGroupRep := apiGroupsRep[0]
 		assert.Nil(t, err)
 		assert.Equal(t, id, *apiGroupRep.ID)
 		assert.Equal(t, name, *apiGroupRep.Name)
@@ -3517,7 +3515,7 @@ func TestGetGroups(t *testing.T) {
 		var kcGroupsRep []kc.GroupRepresentation
 		mocks.keycloakClient.EXPECT().GetGroups(accessToken, realmName).Return(kcGroupsRep, nil)
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		apiGroupsRep, err := managementComponent.GetGroups(ctx, "master")
 
 		assert.Nil(t, err)
@@ -3528,7 +3526,7 @@ func TestGetGroups(t *testing.T) {
 	t.Run("Error", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetGroups(accessToken, realmName).Return([]kc.GroupRepresentation{}, fmt.Errorf("Unexpected error"))
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		_, err := managementComponent.GetGroups(ctx, "master")
 
@@ -3537,36 +3535,36 @@ func TestGetGroups(t *testing.T) {
 }
 
 func TestCreateGroup(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var managementComponent = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	managementComponent := mocks.createComponent()
 
-	var accessToken = "TOKEN=="
-	var username = "username"
-	var userID = "testUserID"
-	var name = "test"
-	var realmName = "master"
-	var targetRealmName = "DEP"
-	var groupID = "41dbf4a8-32a9-4000-8c17-edc854c31231"
-	var locationURL = "http://toto.com/realms/" + groupID
+	accessToken := "TOKEN=="
+	username := "username"
+	userID := "testUserID"
+	name := "test"
+	realmName := "master"
+	targetRealmName := "DEP"
+	groupID := "41dbf4a8-32a9-4000-8c17-edc854c31231"
+	locationURL := "http://toto.com/realms/" + groupID
 
 	t.Run("Create", func(t *testing.T) {
-		var kcGroupRep = kc.GroupRepresentation{
+		kcGroupRep := kc.GroupRepresentation{
 			Name: &name,
 		}
 
 		mocks.keycloakClient.EXPECT().CreateGroup(accessToken, targetRealmName, kcGroupRep).Return(locationURL, nil)
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 		ctx = context.WithValue(ctx, cs.CtContextUserID, userID)
 
 		mocks.eventsReporter.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
 
-		var groupRep = api.GroupRepresentation{
+		groupRep := api.GroupRepresentation{
 			Name: &name,
 		}
 
@@ -3577,14 +3575,14 @@ func TestCreateGroup(t *testing.T) {
 	})
 
 	t.Run("Error from KC client", func(t *testing.T) {
-		var kcGroupRep = kc.GroupRepresentation{}
+		kcGroupRep := kc.GroupRepresentation{}
 
 		mocks.keycloakClient.EXPECT().CreateGroup(accessToken, targetRealmName, kcGroupRep).Return("", fmt.Errorf("Invalid input"))
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 
-		var groupRep = api.GroupRepresentation{}
+		groupRep := api.GroupRepresentation{}
 		mocks.logger.EXPECT().Warn(ctx, "err", "Invalid input")
 
 		location, err := managementComponent.CreateGroup(ctx, targetRealmName, groupRep)
@@ -3595,21 +3593,21 @@ func TestCreateGroup(t *testing.T) {
 }
 
 func TestDeleteGroup(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var managementComponent = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	managementComponent := mocks.createComponent()
 
-	var accessToken = "TOKEN=="
-	var groupID = "41dbf4a8-32a9-4000-8c17-edc854c31231"
-	var groupName = "groupName"
-	var targetRealmName = "DEP"
-	var realmName = "master"
-	var username = "username"
-	var userID = "testUserID"
+	accessToken := "TOKEN=="
+	groupID := "41dbf4a8-32a9-4000-8c17-edc854c31231"
+	groupName := "groupName"
+	targetRealmName := "DEP"
+	realmName := "master"
+	username := "username"
+	userID := "testUserID"
 
-	var group = kc.GroupRepresentation{
+	group := kc.GroupRepresentation{
 		ID:   &groupID,
 		Name: &groupName,
 	}
@@ -3618,7 +3616,7 @@ func TestDeleteGroup(t *testing.T) {
 		mocks.keycloakClient.EXPECT().DeleteGroup(accessToken, targetRealmName, groupID).Return(nil)
 		mocks.keycloakClient.EXPECT().GetGroup(accessToken, targetRealmName, groupID).Return(group, nil)
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 		ctx = context.WithValue(ctx, cs.CtContextUserID, userID)
@@ -3635,7 +3633,7 @@ func TestDeleteGroup(t *testing.T) {
 		mocks.keycloakClient.EXPECT().DeleteGroup(accessToken, targetRealmName, groupID).Return(nil)
 		mocks.keycloakClient.EXPECT().GetGroup(accessToken, targetRealmName, groupID).Return(group, nil)
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 
@@ -3648,7 +3646,7 @@ func TestDeleteGroup(t *testing.T) {
 	})
 
 	t.Run("Error from KC client", func(t *testing.T) {
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		mocks.logger.EXPECT().Warn(ctx, "err", "Error")
 		mocks.keycloakClient.EXPECT().GetGroup(accessToken, targetRealmName, groupID).Return(kc.GroupRepresentation{}, errors.New("Error"))
 
@@ -3665,27 +3663,27 @@ func TestDeleteGroup(t *testing.T) {
 }
 
 func TestGetAuthorizations(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var managementComponent = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	managementComponent := mocks.createComponent()
 
-	var accessToken = "TOKEN=="
-	var realmName = "master"
-	var targetRealmname = "DEP"
-	var groupID = "41dbf4a8-32a9-4000-8c17-edc854c31231"
-	var groupName = "groupName"
-	var username = "username"
-	var action = "action"
+	accessToken := "TOKEN=="
+	realmName := "master"
+	targetRealmname := "DEP"
+	groupID := "41dbf4a8-32a9-4000-8c17-edc854c31231"
+	groupName := "groupName"
+	username := "username"
+	action := "action"
 
-	var group = kc.GroupRepresentation{
+	group := kc.GroupRepresentation{
 		ID:   &groupID,
 		Name: &groupName,
 	}
 
 	t.Run("Get authorizations with succces", func(t *testing.T) {
-		var configurationAuthz = []configuration.Authorization{
+		configurationAuthz := []configuration.Authorization{
 			{
 				RealmID:   &realmName,
 				GroupName: &groupName,
@@ -3693,7 +3691,7 @@ func TestGetAuthorizations(t *testing.T) {
 			},
 		}
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 
@@ -3702,11 +3700,11 @@ func TestGetAuthorizations(t *testing.T) {
 
 		apiAuthorizationRep, err := managementComponent.GetAuthorizations(ctx, targetRealmname, groupID)
 
-		var matrix = map[string]map[string]map[string]struct{}{
+		matrix := map[string]map[string]map[string]struct{}{
 			"action": {},
 		}
 
-		var expectedAPIAuthorization = api.AuthorizationsRepresentation{
+		expectedAPIAuthorization := api.AuthorizationsRepresentation{
 			Matrix: &matrix,
 		}
 
@@ -3718,7 +3716,7 @@ func TestGetAuthorizations(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetGroup(accessToken, targetRealmname, groupID).Return(group, nil)
 		mocks.configurationDBModule.EXPECT().GetAuthorizations(gomock.Any(), targetRealmname, groupName).Return([]configuration.Authorization{}, fmt.Errorf("Error"))
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		mocks.logger.EXPECT().Warn(ctx, "err", "Error")
 
 		_, err := managementComponent.GetAuthorizations(ctx, targetRealmname, groupID)
@@ -3727,7 +3725,7 @@ func TestGetAuthorizations(t *testing.T) {
 	})
 
 	t.Run("Error with KC", func(t *testing.T) {
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		mocks.keycloakClient.EXPECT().GetGroup(accessToken, targetRealmname, groupID).Return(kc.GroupRepresentation{}, errors.New("Error"))
 		mocks.logger.EXPECT().Warn(ctx, "err", "Error")
@@ -3737,41 +3735,41 @@ func TestGetAuthorizations(t *testing.T) {
 }
 
 func TestUpdateAuthorizations(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var managementComponent = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	managementComponent := mocks.createComponent()
 
-	var accessToken = "TOKEN=="
-	var realmName = "customer1"
-	var targetRealmName = "DEP"
-	var groupID = "41dbf4a8-32a9-4000-8c17-edc854c31231"
-	var groupName = "groupName"
-	var username = "username"
+	accessToken := "TOKEN=="
+	realmName := "customer1"
+	targetRealmName := "DEP"
+	groupID := "41dbf4a8-32a9-4000-8c17-edc854c31231"
+	groupName := "groupName"
+	username := "username"
 
-	var realm = kc.RealmRepresentation{
+	realm := kc.RealmRepresentation{
 		ID:    &targetRealmName,
 		Realm: &targetRealmName,
 	}
-	var realms = []kc.RealmRepresentation{realm}
+	realms := []kc.RealmRepresentation{realm}
 
-	var group = kc.GroupRepresentation{
+	group := kc.GroupRepresentation{
 		ID:   &groupID,
 		Name: &groupName,
 	}
-	var groups = []kc.GroupRepresentation{group}
+	groups := []kc.GroupRepresentation{group}
 
-	var action = "MGMT_action"
-	var matrix = map[string]map[string]map[string]struct{}{
+	action := "MGMT_action"
+	matrix := map[string]map[string]map[string]struct{}{
 		action: {},
 	}
 
-	var apiAuthorizations = api.AuthorizationsRepresentation{
+	apiAuthorizations := api.AuthorizationsRepresentation{
 		Matrix: &matrix,
 	}
 
-	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+	ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 	ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 	ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 
@@ -3887,7 +3885,7 @@ func TestUpdateAuthorizations(t *testing.T) {
 	})
 
 	t.Run("Authorizations provided not valid", func(t *testing.T) {
-		var jsonMatrix = `{
+		jsonMatrix := `{
 			"Action1": {},
 			"Action2": {"*": {}, "realm1": {}}
 		}`
@@ -3897,11 +3895,11 @@ func TestUpdateAuthorizations(t *testing.T) {
 			assert.Fail(t, "")
 		}
 
-		var apiAuthorizations = api.AuthorizationsRepresentation{
+		apiAuthorizations := api.AuthorizationsRepresentation{
 			Matrix: &matrix,
 		}
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 
@@ -3914,45 +3912,45 @@ func TestUpdateAuthorizations(t *testing.T) {
 }
 
 func TestAddAuthorization(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var managementComponent = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	managementComponent := mocks.createComponent()
 
-	var accessToken = "TOKEN=="
-	var realmName = "master"
-	var targetRealmName = "DEP"
-	var groupID = "41dbf4a8-32a9-4000-8c17-edc854c31231"
-	var groupName = "groupName"
-	var targetGroupName = "targetGroup"
-	var targetGroupID = "124352"
-	var action = "MGMT_DeleteUser"
-	var actionRealm = "MGMT_GetRealm"
-	var username = "username"
-	var userID = "TestUserID"
-	var star = "*"
+	accessToken := "TOKEN=="
+	realmName := "master"
+	targetRealmName := "DEP"
+	groupID := "41dbf4a8-32a9-4000-8c17-edc854c31231"
+	groupName := "groupName"
+	targetGroupName := "targetGroup"
+	targetGroupID := "124352"
+	action := "MGMT_DeleteUser"
+	actionRealm := "MGMT_GetRealm"
+	username := "username"
+	userID := "TestUserID"
+	star := "*"
 
-	var expectedErr = errors.New("test error")
+	expectedErr := errors.New("test error")
 
-	var group = kc.GroupRepresentation{
+	group := kc.GroupRepresentation{
 		ID:   &groupID,
 		Name: &groupName,
 	}
-	var groups = []kc.GroupRepresentation{
+	groups := []kc.GroupRepresentation{
 		{
 			ID:   &targetGroupID,
 			Name: &targetGroupName,
 		},
 	}
 
-	var realm = kc.RealmRepresentation{
+	realm := kc.RealmRepresentation{
 		ID:    &targetRealmName,
 		Realm: &targetRealmName,
 	}
-	var realms = []kc.RealmRepresentation{realm}
+	realms := []kc.RealmRepresentation{realm}
 
-	var matrix = map[string]map[string]map[string]struct{}{
+	matrix := map[string]map[string]map[string]struct{}{
 		action: {targetRealmName: {targetGroupName: {}}},
 	}
 	apiAuthz := api.AuthorizationsRepresentation{Matrix: &matrix}
@@ -3963,7 +3961,7 @@ func TestAddAuthorization(t *testing.T) {
 		TargetRealmID:   &targetRealmName,
 		TargetGroupName: &targetGroupName,
 	}
-	var matrixRealm = map[string]map[string]map[string]struct{}{
+	matrixRealm := map[string]map[string]map[string]struct{}{
 		actionRealm: {targetRealmName: {star: {}}},
 	}
 	apiAuthzRealm := api.AuthorizationsRepresentation{Matrix: &matrixRealm}
@@ -3974,7 +3972,7 @@ func TestAddAuthorization(t *testing.T) {
 		TargetRealmID:   &targetRealmName,
 		TargetGroupName: &star,
 	}
-	var parent = configuration.Authorization{
+	parent := configuration.Authorization{
 		RealmID:         &realmName,
 		GroupName:       group.Name,
 		Action:          &action,
@@ -3982,7 +3980,7 @@ func TestAddAuthorization(t *testing.T) {
 		TargetGroupName: &star,
 	}
 
-	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+	ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 	ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 	ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 	ctx = context.WithValue(ctx, cs.CtContextUserID, userID)
@@ -4083,7 +4081,7 @@ func TestAddAuthorization(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetGroups(accessToken, targetRealmName).Return(groups, nil)
 
 		mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any(), gomock.Any())
-		var global = "MGMT_GetActions"
+		global := "MGMT_GetActions"
 		authorizations := []configuration.Authorization{
 			{
 				RealmID:         &realmName,
@@ -4168,45 +4166,45 @@ func TestAddAuthorization(t *testing.T) {
 }
 
 func TestGetAuthorization(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var managementComponent = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	managementComponent := mocks.createComponent()
 
-	var accessToken = "TOKEN=="
-	var realmName = "master"
-	var targetRealmName = "DEP"
-	var groupID = "41dbf4a8-32a9-4000-8c17-edc854c31231"
-	var groupName = "groupName"
-	var targetGroupName = "targetGroup"
-	var targetGroupID = "124352"
-	var action = "MGMT_DeleteUser"
-	var globalAction = "MGMT_GetActions"
-	var realmAction = "MGMT_GetRealm"
-	var username = "username"
-	var star = "*"
+	accessToken := "TOKEN=="
+	realmName := "master"
+	targetRealmName := "DEP"
+	groupID := "41dbf4a8-32a9-4000-8c17-edc854c31231"
+	groupName := "groupName"
+	targetGroupName := "targetGroup"
+	targetGroupID := "124352"
+	action := "MGMT_DeleteUser"
+	globalAction := "MGMT_GetActions"
+	realmAction := "MGMT_GetRealm"
+	username := "username"
+	star := "*"
 
-	var expectedErr = errors.New("test error")
+	expectedErr := errors.New("test error")
 
-	var group = kc.GroupRepresentation{
+	group := kc.GroupRepresentation{
 		ID:   &groupID,
 		Name: &groupName,
 	}
 
-	var targetGroup = kc.GroupRepresentation{
+	targetGroup := kc.GroupRepresentation{
 		ID:   &targetGroupID,
 		Name: &targetGroupName,
 	}
 
-	var extpectedAuthzNegativeMsg = api.AuthorizationMessage{
+	extpectedAuthzNegativeMsg := api.AuthorizationMessage{
 		Authorized: false,
 	}
-	var extpectedAuthzPositiveMsg = api.AuthorizationMessage{
+	extpectedAuthzPositiveMsg := api.AuthorizationMessage{
 		Authorized: true,
 	}
 
-	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+	ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 	ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 	ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 
@@ -4306,31 +4304,31 @@ func TestGetAuthorization(t *testing.T) {
 }
 
 func TestDeleteAuthorization(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var managementComponent = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	managementComponent := mocks.createComponent()
 
-	var accessToken = "TOKEN=="
-	var realmName = "master"
-	var targetRealmName = "DEP"
-	var groupID = "41dbf4a8-32a9-4000-8c17-edc854c31231"
-	var groupName = "groupName"
-	var targetGroupName = "targetGroup"
-	var targetGroupID = "124352"
-	var action = "MGMT_DeleteUser"
-	var username = "username"
-	var userID = "testUserID"
-	var star = "*"
+	accessToken := "TOKEN=="
+	realmName := "master"
+	targetRealmName := "DEP"
+	groupID := "41dbf4a8-32a9-4000-8c17-edc854c31231"
+	groupName := "groupName"
+	targetGroupName := "targetGroup"
+	targetGroupID := "124352"
+	action := "MGMT_DeleteUser"
+	username := "username"
+	userID := "testUserID"
+	star := "*"
 
-	var expectedErr = errors.New("test error")
+	expectedErr := errors.New("test error")
 
-	var group = kc.GroupRepresentation{
+	group := kc.GroupRepresentation{
 		ID:   &groupID,
 		Name: &groupName,
 	}
-	var targetGroup = kc.GroupRepresentation{
+	targetGroup := kc.GroupRepresentation{
 		ID:   &targetGroupID,
 		Name: &targetGroupName,
 	}
@@ -4343,7 +4341,7 @@ func TestDeleteAuthorization(t *testing.T) {
 		TargetGroupName: &targetGroupName,
 	}
 
-	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+	ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 	ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 	ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 	ctx = context.WithValue(ctx, cs.CtContextUserID, userID)
@@ -4363,7 +4361,7 @@ func TestDeleteAuthorization(t *testing.T) {
 	})
 
 	t.Run("Delete global authorization, no parent, no child - SUCCESS", func(t *testing.T) {
-		var globalAction = "MGMT_GetActions"
+		globalAction := "MGMT_GetActions"
 		mocks.keycloakClient.EXPECT().GetGroup(accessToken, realmName, groupID).Return(group, nil)
 		mocks.configurationDBModule.EXPECT().AuthorizationExists(ctx, realmName, groupName, star, nil, globalAction).Return(true, nil)
 
@@ -4445,27 +4443,27 @@ func TestDeleteAuthorization(t *testing.T) {
 }
 
 func TestGetClientRoles(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var managementComponent = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	managementComponent := mocks.createComponent()
 
-	var accessToken = "TOKEN=="
-	var realmName = "master"
-	var clientID = "15436-464-4"
+	accessToken := "TOKEN=="
+	realmName := "master"
+	clientID := "15436-464-4"
 
 	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
 
 	t.Run("Get roles with succces", func(t *testing.T) {
-		var id = "1234-7454-4516"
-		var composite = false
-		var containerID = "containerId"
-		var description = "description role"
-		var clientRole = true
-		var name = "name"
+		id := "1234-7454-4516"
+		composite := false
+		containerID := "containerId"
+		description := "description role"
+		clientRole := true
+		name := "name"
 
-		var kcRoleRep = kc.RoleRepresentation{
+		kcRoleRep := kc.RoleRepresentation{
 			ID:          &id,
 			Name:        &name,
 			ClientRole:  &clientRole,
@@ -4479,11 +4477,11 @@ func TestGetClientRoles(t *testing.T) {
 
 		mocks.keycloakClient.EXPECT().GetClientRoles(accessToken, realmName, clientID).Return(kcRolesRep, nil)
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		apiRolesRep, err := managementComponent.GetClientRoles(ctx, "master", clientID)
 
-		var apiRoleRep = apiRolesRep[0]
+		apiRoleRep := apiRolesRep[0]
 		assert.Nil(t, err)
 		assert.Equal(t, id, *apiRoleRep.ID)
 		assert.Equal(t, name, *apiRoleRep.Name)
@@ -4496,7 +4494,7 @@ func TestGetClientRoles(t *testing.T) {
 	t.Run("Error", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetClientRoles(accessToken, realmName, clientID).Return([]kc.RoleRepresentation{}, fmt.Errorf("Unexpected error"))
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		_, err := managementComponent.GetClientRoles(ctx, "master", clientID)
 
@@ -4505,27 +4503,27 @@ func TestGetClientRoles(t *testing.T) {
 }
 
 func TestCreateClientRole(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var managementComponent = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	managementComponent := mocks.createComponent()
 
-	var accessToken = "TOKEN=="
-	var realmName = "master"
-	var clientID = "456-789-147"
+	accessToken := "TOKEN=="
+	realmName := "master"
+	clientID := "456-789-147"
 
 	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
 
 	t.Run("Add role with succces", func(t *testing.T) {
-		var id = "1234-7454-4516"
-		var composite = false
-		var containerID = "containerId"
-		var description = "description role"
-		var clientRole = true
-		var name = "client name"
+		id := "1234-7454-4516"
+		composite := false
+		containerID := "containerId"
+		description := "description role"
+		clientRole := true
+		name := "client name"
 
-		var locationURL = "http://location.url"
+		locationURL := "http://location.url"
 
 		mocks.keycloakClient.EXPECT().CreateClientRole(accessToken, realmName, clientID, gomock.Any()).DoAndReturn(
 			func(accessToken, realmName, clientID string, role kc.RoleRepresentation) (string, error) {
@@ -4538,9 +4536,9 @@ func TestCreateClientRole(t *testing.T) {
 				return locationURL, nil
 			})
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
-		var roleRep = api.RoleRepresentation{
+		roleRep := api.RoleRepresentation{
 			ID:          &id,
 			Name:        &name,
 			ClientRole:  &clientRole,
@@ -4558,7 +4556,7 @@ func TestCreateClientRole(t *testing.T) {
 	t.Run("Error", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().CreateClientRole(accessToken, realmName, clientID, gomock.Any()).Return("", fmt.Errorf("Unexpected error"))
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		_, err := managementComponent.CreateClientRole(ctx, "master", clientID, api.RoleRepresentation{})
 
@@ -4567,18 +4565,18 @@ func TestCreateClientRole(t *testing.T) {
 }
 
 func TestDeleteClientRole(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var managementComponent = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	managementComponent := mocks.createComponent()
 
-	var accessToken = "TOKEN=="
-	var realmName = "test"
-	var clientID = "456-789-147"
-	var roleID = "123-456-789"
+	accessToken := "TOKEN=="
+	realmName := "test"
+	clientID := "456-789-147"
+	roleID := "123-456-789"
 
-	var role = kc.RoleRepresentation{
+	role := kc.RoleRepresentation{
 		ID:          ptrString("1234-7454-4516"),
 		Name:        ptrString("name"),
 		ClientRole:  ptrBool(true),
@@ -4587,7 +4585,7 @@ func TestDeleteClientRole(t *testing.T) {
 		Description: ptrString("description role"),
 	}
 
-	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+	ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
 
@@ -4615,7 +4613,7 @@ func TestDeleteClientRole(t *testing.T) {
 	})
 
 	t.Run("Delete not a client role", func(t *testing.T) {
-		var role = kc.RoleRepresentation{
+		role := kc.RoleRepresentation{
 			ID:          ptrString("1234-7454-4516"),
 			Name:        ptrString("name"),
 			ClientRole:  ptrBool(false),
@@ -4632,7 +4630,7 @@ func TestDeleteClientRole(t *testing.T) {
 	})
 
 	t.Run("Delete clientID != containerID", func(t *testing.T) {
-		var role = kc.RoleRepresentation{
+		role := kc.RoleRepresentation{
 			ID:          ptrString("1234-7454-4516"),
 			Name:        ptrString("name"),
 			ClientRole:  ptrBool(true),
@@ -4650,26 +4648,26 @@ func TestDeleteClientRole(t *testing.T) {
 }
 
 func TestGetRealmCustomConfiguration(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var managementComponent = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	managementComponent := mocks.createComponent()
 
-	var accessToken = "TOKEN=="
-	var realmID = "master_id"
+	accessToken := "TOKEN=="
+	realmID := "master_id"
 
 	mocks.logger.EXPECT().Error(gomock.Any(), gomock.Any()).AnyTimes()
 	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
 
 	t.Run("Get existing config", func(t *testing.T) {
-		var id = realmID
-		var keycloakVersion = "4.8.3"
-		var realm = "master"
-		var displayName = "Master"
-		var enabled = true
+		id := realmID
+		keycloakVersion := "4.8.3"
+		realm := "master"
+		displayName := "Master"
+		enabled := true
 
-		var kcRealmRep = kc.RealmRepresentation{
+		kcRealmRep := kc.RealmRepresentation{
 			ID:              &id,
 			KeycloakVersion: &keycloakVersion,
 			Realm:           &realm,
@@ -4679,15 +4677,15 @@ func TestGetRealmCustomConfiguration(t *testing.T) {
 
 		mocks.keycloakClient.EXPECT().GetRealm(accessToken, realmID).Return(kcRealmRep, nil)
 
-		var clientID = "ClientID"
-		var redirectURI = "http://redirect.url.com/test"
+		clientID := "ClientID"
+		redirectURI := "http://redirect.url.com/test"
 
-		var realmConfig = configuration.RealmConfiguration{
+		realmConfig := configuration.RealmConfiguration{
 			DefaultClientID:    &clientID,
 			DefaultRedirectURI: &redirectURI,
 		}
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		mocks.configurationDBModule.EXPECT().GetConfiguration(ctx, realmID).Return(realmConfig, nil)
 
 		configJSON, err := managementComponent.GetRealmCustomConfiguration(ctx, realmID)
@@ -4698,13 +4696,13 @@ func TestGetRealmCustomConfiguration(t *testing.T) {
 	})
 
 	t.Run("Get empty config", func(t *testing.T) {
-		var id = realmID
-		var keycloakVersion = "4.8.3"
-		var realm = "master"
-		var displayName = "Master"
-		var enabled = true
+		id := realmID
+		keycloakVersion := "4.8.3"
+		realm := "master"
+		displayName := "Master"
+		enabled := true
 
-		var kcRealmRep = kc.RealmRepresentation{
+		kcRealmRep := kc.RealmRepresentation{
 			ID:              &id,
 			KeycloakVersion: &keycloakVersion,
 			Realm:           &realm,
@@ -4714,7 +4712,7 @@ func TestGetRealmCustomConfiguration(t *testing.T) {
 
 		mocks.keycloakClient.EXPECT().GetRealm(accessToken, realmID).Return(kcRealmRep, nil)
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		mocks.configurationDBModule.EXPECT().GetConfiguration(ctx, realmID).Return(configuration.RealmConfiguration{}, errorhandler.Error{})
 
 		configJSON, err := managementComponent.GetRealmCustomConfiguration(ctx, realmID)
@@ -4725,13 +4723,13 @@ func TestGetRealmCustomConfiguration(t *testing.T) {
 	})
 
 	t.Run("Unknown realm", func(t *testing.T) {
-		var id = realmID
-		var keycloakVersion = "4.8.3"
-		var realm = "master"
-		var displayName = "Master"
-		var enabled = true
+		id := realmID
+		keycloakVersion := "4.8.3"
+		realm := "master"
+		displayName := "Master"
+		enabled := true
 
-		var kcRealmRep = kc.RealmRepresentation{
+		kcRealmRep := kc.RealmRepresentation{
 			ID:              &id,
 			KeycloakVersion: &keycloakVersion,
 			Realm:           &realm,
@@ -4741,7 +4739,7 @@ func TestGetRealmCustomConfiguration(t *testing.T) {
 
 		mocks.keycloakClient.EXPECT().GetRealm(accessToken, realmID).Return(kcRealmRep, errors.New("error"))
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 		_, err := managementComponent.GetRealmCustomConfiguration(ctx, realmID)
 
@@ -4749,13 +4747,13 @@ func TestGetRealmCustomConfiguration(t *testing.T) {
 	})
 
 	t.Run("DB error", func(t *testing.T) {
-		var id = realmID
-		var keycloakVersion = "4.8.3"
-		var realm = "master"
-		var displayName = "Master"
-		var enabled = true
+		id := realmID
+		keycloakVersion := "4.8.3"
+		realm := "master"
+		displayName := "Master"
+		enabled := true
 
-		var kcRealmRep = kc.RealmRepresentation{
+		kcRealmRep := kc.RealmRepresentation{
 			ID:              &id,
 			KeycloakVersion: &keycloakVersion,
 			Realm:           &realm,
@@ -4765,7 +4763,7 @@ func TestGetRealmCustomConfiguration(t *testing.T) {
 
 		mocks.keycloakClient.EXPECT().GetRealm(accessToken, realmID).Return(kcRealmRep, nil)
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		mocks.configurationDBModule.EXPECT().GetConfiguration(ctx, realmID).Return(configuration.RealmConfiguration{}, errors.New("error"))
 
 		_, err := managementComponent.GetRealmCustomConfiguration(ctx, realmID)
@@ -4775,22 +4773,22 @@ func TestGetRealmCustomConfiguration(t *testing.T) {
 }
 
 func TestUpdateRealmCustomConfiguration(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var managementComponent = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	managementComponent := mocks.createComponent()
 
-	var accessToken = "TOKEN=="
-	var realmID = "master_id"
+	accessToken := "TOKEN=="
+	realmID := "master_id"
 
-	var id = realmID
-	var keycloakVersion = "4.8.3"
-	var realm = "master"
-	var displayName = "Master"
-	var enabled = true
+	id := realmID
+	keycloakVersion := "4.8.3"
+	realm := "master"
+	displayName := "Master"
+	enabled := true
 
-	var kcRealmRep = kc.RealmRepresentation{
+	kcRealmRep := kc.RealmRepresentation{
 		ID:              &id,
 		KeycloakVersion: &keycloakVersion,
 		Realm:           &realm,
@@ -4798,13 +4796,13 @@ func TestUpdateRealmCustomConfiguration(t *testing.T) {
 		Enabled:         &enabled,
 	}
 
-	var clients = make([]kc.ClientRepresentation, 2)
-	var clientID1 = "clientID1"
-	var clientName1 = "clientName1"
-	var redirectURIs1 = []string{"https://www.cloudtrust.io/*", "https://www.cloudtrust-old.com/*"}
-	var clientID2 = "clientID2"
-	var clientName2 = "clientName2"
-	var redirectURIs2 = []string{"https://www.cloudtrust2.io/*", "https://www.cloudtrust2-old.com/*"}
+	clients := make([]kc.ClientRepresentation, 2)
+	clientID1 := "clientID1"
+	clientName1 := "clientName1"
+	redirectURIs1 := []string{"https://www.cloudtrust.io/*", "https://www.cloudtrust-old.com/*"}
+	clientID2 := "clientID2"
+	clientName2 := "clientName2"
+	redirectURIs2 := []string{"https://www.cloudtrust2.io/*", "https://www.cloudtrust2-old.com/*"}
 	clients[0] = kc.ClientRepresentation{
 		ClientID:     &clientID1,
 		Name:         &clientName1,
@@ -4816,10 +4814,10 @@ func TestUpdateRealmCustomConfiguration(t *testing.T) {
 		RedirectUris: &redirectURIs2,
 	}
 
-	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
-	var clientID = "clientID1"
-	var redirectURI = "https://www.cloudtrust.io/test"
-	var configInit = api.RealmCustomConfiguration{
+	ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+	clientID := "clientID1"
+	redirectURI := "https://www.cloudtrust.io/test"
+	configInit := api.RealmCustomConfiguration{
 		DefaultClientID:    &clientID,
 		DefaultRedirectURI: &redirectURI,
 	}
@@ -4839,9 +4837,9 @@ func TestUpdateRealmCustomConfiguration(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetRealm(accessToken, realmID).Return(kcRealmRep, nil)
 		mocks.keycloakClient.EXPECT().GetClients(accessToken, realmID).Return(clients, nil)
 
-		var clientID = "clientID1Nok"
-		var redirectURI = "https://www.cloudtrust.io/test"
-		var configInit = api.RealmCustomConfiguration{
+		clientID := "clientID1Nok"
+		redirectURI := "https://www.cloudtrust.io/test"
+		configInit := api.RealmCustomConfiguration{
 			DefaultClientID:    &clientID,
 			DefaultRedirectURI: &redirectURI,
 		}
@@ -4857,9 +4855,9 @@ func TestUpdateRealmCustomConfiguration(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetRealm(accessToken, realmID).Return(kcRealmRep, nil)
 		mocks.keycloakClient.EXPECT().GetClients(accessToken, realmID).Return(clients, nil)
 
-		var clientID = "clientID1"
-		var redirectURI = "https://www.cloudtrustnok.io/test"
-		var configInit = api.RealmCustomConfiguration{
+		clientID := "clientID1"
+		redirectURI := "https://www.cloudtrustnok.io/test"
+		configInit := api.RealmCustomConfiguration{
 			DefaultClientID:    &clientID,
 			DefaultRedirectURI: &redirectURI,
 		}
@@ -4875,9 +4873,9 @@ func TestUpdateRealmCustomConfiguration(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetRealm(accessToken, realmID).Return(kcRealmRep, nil)
 		mocks.keycloakClient.EXPECT().GetClients(accessToken, realmID).Return(clients, nil)
 
-		var clientID = "clientID1"
-		var redirectURI = "https://wwwacloudtrust.io/test"
-		var configInit = api.RealmCustomConfiguration{
+		clientID := "clientID1"
+		redirectURI := "https://wwwacloudtrust.io/test"
+		configInit := api.RealmCustomConfiguration{
 			DefaultClientID:    &clientID,
 			DefaultRedirectURI: &redirectURI,
 		}
@@ -4906,73 +4904,73 @@ func TestUpdateRealmCustomConfiguration(t *testing.T) {
 }
 
 func TestGetRealmAdminConfiguration(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var component = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	component := mocks.createComponent()
 
-	var realmName = "myrealm"
-	var realmID = "1234-5678"
-	var accessToken = "acce-ssto-ken"
-	var expectedError = errors.New("expectedError")
+	realmName := "myrealm"
+	realmID := "1234-5678"
+	accessToken := "acce-ssto-ken"
+	expectedError := errors.New("expectedError")
 	var dbAdminConfig configuration.RealmAdminConfiguration
-	var apiAdminConfig = api.ConvertRealmAdminConfigurationFromDBStruct(dbAdminConfig)
-	var ctx = context.WithValue(context.TODO(), cs.CtContextAccessToken, accessToken)
+	apiAdminConfig := api.ConvertRealmAdminConfigurationFromDBStruct(dbAdminConfig)
+	ctx := context.WithValue(context.TODO(), cs.CtContextAccessToken, accessToken)
 
 	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
 
 	t.Run("Request to Keycloak client fails", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetRealm(accessToken, realmName).Return(kc.RealmRepresentation{}, expectedError)
-		var _, err = component.GetRealmAdminConfiguration(ctx, realmName)
+		_, err := component.GetRealmAdminConfiguration(ctx, realmName)
 		assert.Equal(t, expectedError, err)
 	})
 	t.Run("Request to database fails", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetRealm(accessToken, realmName).Return(kc.RealmRepresentation{ID: &realmID}, nil)
 		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, gomock.Any()).Return(dbAdminConfig, expectedError)
-		var _, err = component.GetRealmAdminConfiguration(ctx, realmName)
+		_, err := component.GetRealmAdminConfiguration(ctx, realmName)
 		assert.Equal(t, expectedError, err)
 	})
 	t.Run("Success", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetRealm(accessToken, realmName).Return(kc.RealmRepresentation{ID: &realmID}, nil)
 		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, realmID).Return(dbAdminConfig, nil)
-		var res, err = component.GetRealmAdminConfiguration(ctx, realmName)
+		res, err := component.GetRealmAdminConfiguration(ctx, realmName)
 		assert.Nil(t, err)
 		assert.Equal(t, apiAdminConfig, res)
 	})
 }
 
 func TestUpdateRealmAdminConfiguration(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var component = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	component := mocks.createComponent()
 
-	var realmName = "myrealm"
-	var realmID = "1234-5678"
-	var accessToken = "acce-ssto-ken"
-	var expectedError = errors.New("expectedError")
-	var ctx = context.WithValue(context.TODO(), cs.CtContextAccessToken, accessToken)
+	realmName := "myrealm"
+	realmID := "1234-5678"
+	accessToken := "acce-ssto-ken"
+	expectedError := errors.New("expectedError")
+	ctx := context.WithValue(context.TODO(), cs.CtContextAccessToken, accessToken)
 	var adminConfig api.RealmAdminConfiguration
 
 	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
 
 	t.Run("Request to Keycloak client fails", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetRealm(accessToken, realmName).Return(kc.RealmRepresentation{}, expectedError)
-		var err = component.UpdateRealmAdminConfiguration(ctx, realmName, adminConfig)
+		err := component.UpdateRealmAdminConfiguration(ctx, realmName, adminConfig)
 		assert.Equal(t, expectedError, err)
 	})
 	t.Run("Request to database fails", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetRealm(accessToken, realmName).Return(kc.RealmRepresentation{ID: &realmID}, nil)
 		mocks.configurationDBModule.EXPECT().StoreOrUpdateAdminConfiguration(ctx, realmID, gomock.Any()).Return(expectedError)
-		var err = component.UpdateRealmAdminConfiguration(ctx, realmName, adminConfig)
+		err := component.UpdateRealmAdminConfiguration(ctx, realmName, adminConfig)
 		assert.Equal(t, expectedError, err)
 	})
 	t.Run("Success", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetRealm(accessToken, realmName).Return(kc.RealmRepresentation{ID: &realmID}, nil)
 		mocks.configurationDBModule.EXPECT().StoreOrUpdateAdminConfiguration(ctx, realmID, gomock.Any()).Return(nil)
-		var err = component.UpdateRealmAdminConfiguration(ctx, realmName, adminConfig)
+		err := component.UpdateRealmAdminConfiguration(ctx, realmName, adminConfig)
 		assert.Nil(t, err)
 	})
 }
@@ -4984,17 +4982,17 @@ func createBackOfficeConfiguration(JSON string) dto.BackOfficeConfiguration {
 }
 
 func TestRealmBackOfficeConfiguration(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var component = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	component := mocks.createComponent()
 
-	var realmID = "master_id"
-	var groupName = "the.group"
-	var config = api.BackOfficeConfiguration{}
-	var ctx = context.WithValue(context.TODO(), cs.CtContextGroups, []string{"grp1", "grp2"})
-	var largeConf = `
+	realmID := "master_id"
+	groupName := "the.group"
+	config := api.BackOfficeConfiguration{}
+	ctx := context.WithValue(context.TODO(), cs.CtContextGroups, []string{"grp1", "grp2"})
+	largeConf := `
 		{
 			"realm1": {
 				"a": [ "grp1" ]
@@ -5006,7 +5004,7 @@ func TestRealmBackOfficeConfiguration(t *testing.T) {
 			}
 		}
 	`
-	var smallConf = `
+	smallConf := `
 		{
 			"realm2": {
 				"a": [ "grp1" ],
@@ -5018,93 +5016,93 @@ func TestRealmBackOfficeConfiguration(t *testing.T) {
 	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
 
 	t.Run("UpdateRealmBackOfficeConfiguration - db.GetBackOfficeConfiguration fails", func(t *testing.T) {
-		var expectedError = errors.New("db error")
+		expectedError := errors.New("db error")
 		mocks.configurationDBModule.EXPECT().GetBackOfficeConfiguration(ctx, realmID, []string{groupName}).Return(nil, expectedError)
-		var err = component.UpdateRealmBackOfficeConfiguration(ctx, realmID, groupName, config)
+		err := component.UpdateRealmBackOfficeConfiguration(ctx, realmID, groupName, config)
 		assert.Equal(t, expectedError, err)
 	})
 
 	t.Run("UpdateRealmBackOfficeConfiguration - remove items", func(t *testing.T) {
-		var dbConf = createBackOfficeConfiguration(largeConf)
-		var requestConf, _ = api.NewBackOfficeConfigurationFromJSON(smallConf)
+		dbConf := createBackOfficeConfiguration(largeConf)
+		requestConf, _ := api.NewBackOfficeConfigurationFromJSON(smallConf)
 		mocks.configurationDBModule.EXPECT().GetBackOfficeConfiguration(ctx, realmID, []string{groupName}).Return(dbConf, nil)
 		mocks.configurationDBModule.EXPECT().DeleteBackOfficeConfiguration(ctx, realmID, groupName, "realm1", nil, nil).Return(nil)
 		mocks.configurationDBModule.EXPECT().DeleteBackOfficeConfiguration(ctx, realmID, groupName, "realm2", gomock.Not(nil), nil).Return(nil)
 		mocks.configurationDBModule.EXPECT().DeleteBackOfficeConfiguration(ctx, realmID, groupName, "realm2", gomock.Not(nil), gomock.Not(nil)).Return(nil)
-		var err = component.UpdateRealmBackOfficeConfiguration(ctx, realmID, groupName, requestConf)
+		err := component.UpdateRealmBackOfficeConfiguration(ctx, realmID, groupName, requestConf)
 		assert.Nil(t, err)
 	})
 
 	t.Run("UpdateRealmBackOfficeConfiguration - add items", func(t *testing.T) {
-		var dbConf = createBackOfficeConfiguration(smallConf)
-		var requestConf, _ = api.NewBackOfficeConfigurationFromJSON(largeConf)
+		dbConf := createBackOfficeConfiguration(smallConf)
+		requestConf, _ := api.NewBackOfficeConfigurationFromJSON(largeConf)
 		mocks.configurationDBModule.EXPECT().GetBackOfficeConfiguration(ctx, realmID, []string{groupName}).Return(dbConf, nil)
 		mocks.configurationDBModule.EXPECT().InsertBackOfficeConfiguration(ctx, realmID, groupName, "realm1", "a", []string{"grp1"}).Return(nil)
 		mocks.configurationDBModule.EXPECT().InsertBackOfficeConfiguration(ctx, realmID, groupName, "realm2", "b", []string{"grp2"}).Return(nil)
 		mocks.configurationDBModule.EXPECT().InsertBackOfficeConfiguration(ctx, realmID, groupName, "realm2", "c", []string{"grp1"}).Return(nil)
-		var err = component.UpdateRealmBackOfficeConfiguration(ctx, realmID, groupName, requestConf)
+		err := component.UpdateRealmBackOfficeConfiguration(ctx, realmID, groupName, requestConf)
 		assert.Nil(t, err)
 	})
 
 	t.Run("GetRealmBackOfficeConfiguration - error", func(t *testing.T) {
-		var dbConf = createBackOfficeConfiguration(smallConf)
-		var expectedError = errors.New("db error")
+		dbConf := createBackOfficeConfiguration(smallConf)
+		expectedError := errors.New("db error")
 		mocks.configurationDBModule.EXPECT().GetBackOfficeConfiguration(ctx, realmID, []string{groupName}).Return(dbConf, expectedError)
-		var res, err = component.GetRealmBackOfficeConfiguration(ctx, realmID, groupName)
+		res, err := component.GetRealmBackOfficeConfiguration(ctx, realmID, groupName)
 		assert.Equal(t, expectedError, err)
 		assert.Nil(t, res)
 	})
 
 	t.Run("GetRealmBackOfficeConfiguration - success", func(t *testing.T) {
-		var dbConf = createBackOfficeConfiguration(smallConf)
+		dbConf := createBackOfficeConfiguration(smallConf)
 		mocks.configurationDBModule.EXPECT().GetBackOfficeConfiguration(ctx, realmID, []string{groupName}).Return(dbConf, nil)
-		var res, err = component.GetRealmBackOfficeConfiguration(ctx, realmID, groupName)
+		res, err := component.GetRealmBackOfficeConfiguration(ctx, realmID, groupName)
 		assert.Nil(t, err)
 		assert.Equal(t, api.BackOfficeConfiguration(dbConf), res)
 	})
 
 	t.Run("GetUserRealmBackOfficeConfiguration - db error", func(t *testing.T) {
-		var dbError = errors.New("db error")
-		var groups = ctx.Value(cs.CtContextGroups).([]string)
+		dbError := errors.New("db error")
+		groups := ctx.Value(cs.CtContextGroups).([]string)
 		mocks.configurationDBModule.EXPECT().GetBackOfficeConfiguration(ctx, realmID, groups).Return(nil, dbError)
-		var _, err = component.GetUserRealmBackOfficeConfiguration(ctx, realmID)
+		_, err := component.GetUserRealmBackOfficeConfiguration(ctx, realmID)
 		assert.Equal(t, dbError, err)
 	})
 
 	t.Run("GetUserRealmBackOfficeConfiguration - success", func(t *testing.T) {
-		var dbConf = createBackOfficeConfiguration(smallConf)
-		var groups = ctx.Value(cs.CtContextGroups).([]string)
+		dbConf := createBackOfficeConfiguration(smallConf)
+		groups := ctx.Value(cs.CtContextGroups).([]string)
 		mocks.configurationDBModule.EXPECT().GetBackOfficeConfiguration(ctx, realmID, groups).Return(dbConf, nil)
-		var res, err = component.GetUserRealmBackOfficeConfiguration(ctx, realmID)
+		res, err := component.GetUserRealmBackOfficeConfiguration(ctx, realmID)
 		assert.Nil(t, err)
 		assert.Equal(t, api.BackOfficeConfiguration(dbConf), res)
 	})
 }
 
 func TestGetFederatedIdentities(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var managementComponent = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	managementComponent := mocks.createComponent()
 
-	var accessToken = "TOKEN=="
-	var realmName = "master"
-	var userID = "41dbf4a8-32a9-4000-8c17-edc854c31231"
-	var username = "username"
-	var idpName = "idpName"
-	var ctx = context.WithValue(context.TODO(), cs.CtContextAccessToken, accessToken)
+	accessToken := "TOKEN=="
+	realmName := "master"
+	userID := "41dbf4a8-32a9-4000-8c17-edc854c31231"
+	username := "username"
+	idpName := "idpName"
+	ctx := context.WithValue(context.TODO(), cs.CtContextAccessToken, accessToken)
 
 	t.Run("Call to keycloak fails", func(t *testing.T) {
-		var anyError = errors.New("any error")
+		anyError := errors.New("any error")
 		mocks.logger.EXPECT().Warn(ctx, gomock.Any())
 		mocks.keycloakClient.EXPECT().GetFederatedIdentities(accessToken, realmName, userID).Return(nil, anyError)
-		var _, err = managementComponent.GetFederatedIdentities(ctx, realmName, userID)
+		_, err := managementComponent.GetFederatedIdentities(ctx, realmName, userID)
 		assert.Equal(t, anyError, err)
 	})
 	t.Run("Success - Result is empty", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetFederatedIdentities(accessToken, realmName, userID).Return([]kc.FederatedIdentityRepresentation{}, nil)
-		var res, err = managementComponent.GetFederatedIdentities(ctx, realmName, userID)
+		res, err := managementComponent.GetFederatedIdentities(ctx, realmName, userID)
 		assert.Nil(t, err)
 		assert.NotNil(t, res)
 		assert.Len(t, res, 0)
@@ -5113,7 +5111,7 @@ func TestGetFederatedIdentities(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetFederatedIdentities(accessToken, realmName, userID).Return([]kc.FederatedIdentityRepresentation{
 			{UserID: &userID, UserName: &username, IdentityProvider: &idpName},
 		}, nil)
-		var res, err = managementComponent.GetFederatedIdentities(ctx, realmName, userID)
+		res, err := managementComponent.GetFederatedIdentities(ctx, realmName, userID)
 		assert.Nil(t, err)
 		assert.Len(t, res, 1)
 		assert.Equal(t, userID, *res[0].UserID)
@@ -5123,17 +5121,17 @@ func TestGetFederatedIdentities(t *testing.T) {
 }
 
 func TestLinkShadowUser(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var managementComponent = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	managementComponent := mocks.createComponent()
 
-	var accessToken = "TOKEN=="
-	var username = "test"
-	var realmName = "master"
-	var userID = "41dbf4a8-32a9-4000-8c17-edc854c31231"
-	var provider = "provider"
+	accessToken := "TOKEN=="
+	username := "test"
+	realmName := "master"
+	userID := "41dbf4a8-32a9-4000-8c17-edc854c31231"
+	provider := "provider"
 
 	// Create shadow user
 	t.Run("Create shadow user successfully", func(t *testing.T) {
@@ -5142,7 +5140,7 @@ func TestLinkShadowUser(t *testing.T) {
 
 		mocks.keycloakClient.EXPECT().LinkShadowUser(accessToken, realmName, userID, provider, fedIDKC).Return(nil)
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 
@@ -5158,7 +5156,7 @@ func TestLinkShadowUser(t *testing.T) {
 
 		mocks.keycloakClient.EXPECT().LinkShadowUser(accessToken, realmName, userID, provider, fedIDKC).Return(fmt.Errorf("error"))
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 
@@ -5170,16 +5168,16 @@ func TestLinkShadowUser(t *testing.T) {
 }
 
 func TestGetIdentityProviders(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mocks = createMocks(mockCtrl)
-	var managementComponent = mocks.createComponent()
+	mocks := createMocks(mockCtrl)
+	managementComponent := mocks.createComponent()
 
-	var accessToken = "TOKEN=="
-	var realmName = "test"
+	accessToken := "TOKEN=="
+	realmName := "test"
 
-	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+	ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 	t.Run("Get identity providers success", func(t *testing.T) {
 		kcIdp := kc.IdentityProviderRepresentation{
@@ -5210,7 +5208,7 @@ func TestGetIdentityProviders(t *testing.T) {
 		assert.Nil(t, err)
 		assert.NotNil(t, res)
 		assert.Len(t, res, 0)
-		var bytes, _ = json.Marshal(res)
+		bytes, _ := json.Marshal(res)
 		assert.Equal(t, "[]", string(bytes))
 	})
 	t.Run("Get identity providers error", func(t *testing.T) {

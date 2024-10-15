@@ -7,20 +7,20 @@ import (
 
 	cs "github.com/cloudtrust/common-service/v2"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/mock"
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func TestGetIdentificationsByType(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
 	mockHTTPClient := mock.NewHTTPClient(mockCtrl)
 	idnowClient := MakeIdnowServiceClient(mockHTTPClient)
-	var ctx = context.Background()
-	var expectedError = errors.New("Test error")
-	var correlationID = "TestCorrelationID"
-	var realm = "testRealm"
+	ctx := context.Background()
+	expectedError := errors.New("Test error")
+	correlationID := "TestCorrelationID"
+	realm := "testRealm"
 
 	ctx = context.WithValue(ctx, cs.CtContextCorrelationID, correlationID)
 

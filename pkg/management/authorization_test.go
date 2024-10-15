@@ -11,8 +11,8 @@ import (
 	"github.com/cloudtrust/common-service/v2/security"
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
 	"github.com/cloudtrust/keycloak-bridge/pkg/management/mock"
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func ignoreFirst(_ interface{}, err error) error {
@@ -20,79 +20,79 @@ func ignoreFirst(_ interface{}, err error) error {
 }
 
 func TestDeny(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var mockLogger = log.NewNopLogger()
-	var mockKeycloakClient = mock.NewKcClientAuth(mockCtrl)
-	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
-	var mockAuthorizationDBReader = mock.NewAuthorizationDBReader(mockCtrl)
+	mockLogger := log.NewNopLogger()
+	mockKeycloakClient := mock.NewKcClientAuth(mockCtrl)
+	mockManagementComponent := mock.NewManagementComponent(mockCtrl)
+	mockAuthorizationDBReader := mock.NewAuthorizationDBReader(mockCtrl)
 
-	var accessToken = "TOKEN=="
-	var realmName = "master"
-	var customerRealm = "customer"
-	var targetRealm = "master"
-	var groups = []string{"toe"}
+	accessToken := "TOKEN=="
+	realmName := "master"
+	customerRealm := "customer"
+	targetRealm := "master"
+	groups := []string{"toe"}
 
-	var userID = "123-456-789"
-	var clientID = "789-789-741"
-	var roleID = "456-852-785"
-	var credentialID = "741-865-741"
-	var userUsername = "toto"
-	var email = "toto@domain.ch"
+	userID := "123-456-789"
+	clientID := "789-789-741"
+	roleID := "456-852-785"
+	credentialID := "741-865-741"
+	userUsername := "toto"
+	email := "toto@domain.ch"
 
-	var roleName = "role"
+	roleName := "role"
 
-	var groupID = "123-789-454"
-	var targetGroupID = "123-789-454"
-	var groupIDs = []string{groupID}
-	var groupName = "titi"
-	var grpNames = []string{"grp1", "grp2"}
+	groupID := "123-789-454"
+	targetGroupID := "123-789-454"
+	groupIDs := []string{groupID}
+	groupName := "titi"
+	grpNames := []string{"grp1", "grp2"}
 
-	var authzMatrix = map[string]map[string]map[string]struct{}{}
-	var action = "TestAction"
+	authzMatrix := map[string]map[string]map[string]struct{}{}
+	action := "TestAction"
 
-	var pass = "P@ssw0rd"
-	var clientURI = "https://wwww.cloudtrust.io"
+	pass := "P@ssw0rd"
+	clientURI := "https://wwww.cloudtrust.io"
 
-	var provider = "provider"
+	provider := "provider"
 	mockAuthorizationDBReader.EXPECT().GetAuthorizations(gomock.Any()).Return([]configuration.Authorization{}, nil)
 
 	mockKeycloakClient.EXPECT().GetGroupNamesOfUser(gomock.Any(), accessToken, realmName, userID).Return([]string{
 		groupName,
 	}, nil).AnyTimes()
 
-	var user = api.UserRepresentation{
+	user := api.UserRepresentation{
 		ID:       &userID,
 		Username: &userUsername,
 		Groups:   &groupIDs,
 	}
-	var updatableUser = api.UpdatableUserRepresentation{
+	updatableUser := api.UpdatableUserRepresentation{
 		ID:       &userID,
 		Username: &userUsername,
 		Groups:   &groupIDs,
 	}
 
-	var role = api.RoleRepresentation{
+	role := api.RoleRepresentation{
 		ID:   &roleID,
 		Name: &roleName,
 	}
 
-	var roles = []api.RoleRepresentation{role}
+	roles := []api.RoleRepresentation{role}
 
-	var group = api.GroupRepresentation{
+	group := api.GroupRepresentation{
 		Name: &groupName,
 	}
 
-	var authz = api.AuthorizationsRepresentation{
+	authz := api.AuthorizationsRepresentation{
 		Matrix: &authzMatrix,
 	}
 
-	var password = api.PasswordRepresentation{
+	password := api.PasswordRepresentation{
 		Value: &pass,
 	}
 
-	var customConfig = api.RealmCustomConfiguration{
+	customConfig := api.RealmCustomConfiguration{
 		DefaultClientID:    &clientID,
 		DefaultRedirectURI: &clientURI,
 	}
@@ -100,25 +100,25 @@ func TestDeny(t *testing.T) {
 	var boConfig api.BackOfficeConfiguration
 	var adminConfig api.RealmAdminConfiguration
 
-	var fedID = api.FederatedIdentityRepresentation{
+	fedID := api.FederatedIdentityRepresentation{
 		UserID:   &userID,
 		Username: &userUsername,
 	}
 
 	// Nothing allowed
 	{
-		var authorizations, err = security.NewAuthorizationManager(mockAuthorizationDBReader, mockKeycloakClient, log.NewNopLogger())
+		authorizations, err := security.NewAuthorizationManager(mockAuthorizationDBReader, mockKeycloakClient, log.NewNopLogger())
 		assert.Nil(t, err)
 
-		var authorizationMW = MakeAuthorizationManagementComponentMW(mockLogger, authorizations)(mockManagementComponent)
+		authorizationMW := MakeAuthorizationManagementComponentMW(mockLogger, authorizations)(mockManagementComponent)
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextGroups, groups)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, "master")
 
 		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), gomock.Any(), realmName, groupID).Return(groupName, nil).AnyTimes()
 
-		var tests = map[string]error{
+		tests := map[string]error{
 			"GetActions":                          ignoreFirst(authorizationMW.GetActions(ctx)),
 			"GetRealms":                           ignoreFirst(authorizationMW.GetRealms(ctx)),
 			"GetRealm":                            ignoreFirst(authorizationMW.GetRealm(ctx, realmName)),
@@ -198,94 +198,94 @@ func TestDeny(t *testing.T) {
 }
 
 func TestAllowed(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	var mockLogger = log.NewNopLogger()
-	var mockKeycloakClient = mock.NewKcClientAuth(mockCtrl)
-	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
-	var mockAuthorizationDBReader = mock.NewAuthorizationDBReader(mockCtrl)
+	mockLogger := log.NewNopLogger()
+	mockKeycloakClient := mock.NewKcClientAuth(mockCtrl)
+	mockManagementComponent := mock.NewManagementComponent(mockCtrl)
+	mockAuthorizationDBReader := mock.NewAuthorizationDBReader(mockCtrl)
 
-	var accessToken = "TOKEN=="
-	var realmName = "master"
-	var customerRealm = "customer"
-	var targetRealm = "master"
-	var groups = []string{"toe"}
+	accessToken := "TOKEN=="
+	realmName := "master"
+	customerRealm := "customer"
+	targetRealm := "master"
+	groups := []string{"toe"}
 
-	var userID = "123-456-789"
-	var clientID = "789-789-741"
-	var roleID = "456-852-785"
-	var credentialID = "7845-785-1545"
-	var userUsername = "toto"
-	var email = "toto@domain.ch"
+	userID := "123-456-789"
+	clientID := "789-789-741"
+	roleID := "456-852-785"
+	credentialID := "7845-785-1545"
+	userUsername := "toto"
+	email := "toto@domain.ch"
 
-	var roleName = "role"
-	var toe = "toe"
-	var any = "*"
+	roleName := "role"
+	toe := "toe"
+	any := "*"
 
-	var groupID = "123-789-454"
-	var targetGroupID = "123-789-454"
-	var groupIDs = []string{groupID}
-	var groupName = "titi"
-	var grpNames = []string{"grp1", "grp2"}
+	groupID := "123-789-454"
+	targetGroupID := "123-789-454"
+	groupIDs := []string{groupID}
+	groupName := "titi"
+	grpNames := []string{"grp1", "grp2"}
 
-	var authzMatrix = map[string]map[string]map[string]struct{}{}
-	var action = "TestAction"
+	authzMatrix := map[string]map[string]map[string]struct{}{}
+	action := "TestAction"
 
-	var pass = "P@ssw0rd"
-	var clientURI = "https://wwww.cloudtrust.io"
+	pass := "P@ssw0rd"
+	clientURI := "https://wwww.cloudtrust.io"
 
-	var provider = "provider"
+	provider := "provider"
 
 	mockKeycloakClient.EXPECT().GetGroupNamesOfUser(gomock.Any(), accessToken, realmName, userID).Return([]string{groupName}, nil).AnyTimes()
 
-	var user = api.UserRepresentation{
+	user := api.UserRepresentation{
 		ID:       &userID,
 		Username: &userUsername,
 		Groups:   &groupIDs,
 	}
-	var updatableUser = api.UpdatableUserRepresentation{
+	updatableUser := api.UpdatableUserRepresentation{
 		ID:       &userID,
 		Username: &userUsername,
 		Groups:   &groupIDs,
 	}
 
-	var role = api.RoleRepresentation{
+	role := api.RoleRepresentation{
 		ID:   &roleID,
 		Name: &roleName,
 	}
 
-	var roles = []api.RoleRepresentation{role}
+	roles := []api.RoleRepresentation{role}
 
-	var group = api.GroupRepresentation{
+	group := api.GroupRepresentation{
 		Name: &groupName,
 	}
 
-	var authz = api.AuthorizationsRepresentation{
+	authz := api.AuthorizationsRepresentation{
 		Matrix: &authzMatrix,
 	}
 
-	var password = api.PasswordRepresentation{
+	password := api.PasswordRepresentation{
 		Value: &pass,
 	}
 
-	var customConfig = api.RealmCustomConfiguration{
+	customConfig := api.RealmCustomConfiguration{
 		DefaultClientID:    &clientID,
 		DefaultRedirectURI: &clientURI,
 	}
 	var config api.BackOfficeConfiguration
 	var adminConfig api.RealmAdminConfiguration
 
-	var fedID = api.FederatedIdentityRepresentation{
+	fedID := api.FederatedIdentityRepresentation{
 		UserID:   &userID,
 		Username: &userUsername,
 	}
 
-	var idp = api.IdentityProviderRepresentation{}
-	var idps = []api.IdentityProviderRepresentation{idp}
+	idp := api.IdentityProviderRepresentation{}
+	idps := []api.IdentityProviderRepresentation{idp}
 
-	var authorizations = []configuration.Authorization{}
+	authorizations := []configuration.Authorization{}
 	for _, action := range security.Actions.GetActionsForAPIs(security.BridgeService, security.ManagementAPI) {
-		var action = string(action.Name)
+		action := string(action.Name)
 		authorizations = append(authorizations, configuration.Authorization{
 			RealmID:         &realmName,
 			GroupName:       &toe,
@@ -298,12 +298,12 @@ func TestAllowed(t *testing.T) {
 
 	// Anything allowed
 	{
-		var authorizationManager, err = security.NewAuthorizationManager(mockAuthorizationDBReader, mockKeycloakClient, log.NewNopLogger())
+		authorizationManager, err := security.NewAuthorizationManager(mockAuthorizationDBReader, mockKeycloakClient, log.NewNopLogger())
 		assert.Nil(t, err)
 
-		var authorizationMW = MakeAuthorizationManagementComponentMW(mockLogger, authorizationManager)(mockManagementComponent)
+		authorizationMW := MakeAuthorizationManagementComponentMW(mockLogger, authorizationManager)(mockManagementComponent)
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextGroups, groups)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, "master")
 
@@ -598,20 +598,20 @@ func TestAllowed(t *testing.T) {
 }
 
 func TestGetGroupsOutput(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
+	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	var mockLogger = log.NewNopLogger()
-	var mockKeycloakClient = mock.NewKcClientAuth(mockCtrl)
-	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
-	var mockAuthorizationDBReader = mock.NewAuthorizationDBReader(mockCtrl)
+	mockLogger := log.NewNopLogger()
+	mockKeycloakClient := mock.NewKcClientAuth(mockCtrl)
+	mockManagementComponent := mock.NewManagementComponent(mockCtrl)
+	mockAuthorizationDBReader := mock.NewAuthorizationDBReader(mockCtrl)
 
-	var accessToken = "TOKEN=="
-	var realm = "TestRealm"
-	var includedGroup1 = "IncludedGroup1"
-	var includedGroup2 = "IncludedGroup2"
-	var notIncludedGroup = "NotIncludedGroup"
-	var all = "*"
-	var groups = []api.GroupRepresentation{
+	accessToken := "TOKEN=="
+	realm := "TestRealm"
+	includedGroup1 := "IncludedGroup1"
+	includedGroup2 := "IncludedGroup2"
+	notIncludedGroup := "NotIncludedGroup"
+	all := "*"
+	groups := []api.GroupRepresentation{
 		{
 			Name: &includedGroup1,
 		}, {
@@ -619,7 +619,7 @@ func TestGetGroupsOutput(t *testing.T) {
 		},
 	}
 
-	var authorizations = []configuration.Authorization{
+	authorizations := []configuration.Authorization{
 		{
 			RealmID:         &realm,
 			GroupName:       &includedGroup1,
@@ -643,7 +643,7 @@ func TestGetGroupsOutput(t *testing.T) {
 		},
 	}
 
-	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+	ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 	ctx = context.WithValue(ctx, cs.CtContextGroups, []string{includedGroup1})
 	ctx = context.WithValue(ctx, cs.CtContextRealm, realm)
 
@@ -651,8 +651,8 @@ func TestGetGroupsOutput(t *testing.T) {
 		mockAuthorizationDBReader.EXPECT().GetAuthorizations(gomock.Any()).Return(authorizations, nil)
 		mockManagementComponent.EXPECT().GetGroups(ctx, realm).Return(groups, nil)
 
-		var authorizationManager, _ = security.NewAuthorizationManager(mockAuthorizationDBReader, mockKeycloakClient, mockLogger)
-		var authorizationMW = MakeAuthorizationManagementComponentMW(mockLogger, authorizationManager)(mockManagementComponent)
+		authorizationManager, _ := security.NewAuthorizationManager(mockAuthorizationDBReader, mockKeycloakClient, mockLogger)
+		authorizationMW := MakeAuthorizationManagementComponentMW(mockLogger, authorizationManager)(mockManagementComponent)
 
 		result, err := authorizationMW.GetGroups(ctx, realm)
 		assert.Nil(t, err)
@@ -664,8 +664,8 @@ func TestGetGroupsOutput(t *testing.T) {
 		mockAuthorizationDBReader.EXPECT().GetAuthorizations(gomock.Any()).Return(authorizations, nil)
 		mockManagementComponent.EXPECT().GetGroups(ctx, realm).Return(groups, nil)
 
-		var authorizationManager, _ = security.NewAuthorizationManager(mockAuthorizationDBReader, mockKeycloakClient, mockLogger)
-		var authorizationMW = MakeAuthorizationManagementComponentMW(mockLogger, authorizationManager)(mockManagementComponent)
+		authorizationManager, _ := security.NewAuthorizationManager(mockAuthorizationDBReader, mockKeycloakClient, mockLogger)
+		authorizationMW := MakeAuthorizationManagementComponentMW(mockLogger, authorizationManager)(mockManagementComponent)
 
 		result, err := authorizationMW.GetGroups(ctx, realm)
 		assert.Nil(t, err)
