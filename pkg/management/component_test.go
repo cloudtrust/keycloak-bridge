@@ -478,6 +478,7 @@ func TestCreateUser(t *testing.T) {
 
 	attrbs := make(kc.Attributes)
 	attrbs[constants.AttrbSource] = []string{"api"}
+	attrbs[constants.AttrbOnboardingStatus] = []string{"user_created_by_api"}
 	t.Run("Create with minimum properties", func(t *testing.T) {
 		kcUserRep := kc.UserRepresentation{
 			Username:   &username,
@@ -521,6 +522,8 @@ func TestCreateUser(t *testing.T) {
 		idDocumentExpiration := "23.12.2019"
 		idDocumentCountry := "IT"
 
+		onboardingStatus := "user_created_by_api"
+
 		mocks.keycloakClient.EXPECT().CreateUser(accessToken, realmName, targetRealmName, gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
 			func(accessToken, realmName, targetRealmName string, kcUserRep kc.UserRepresentation, _ ...interface{}) (string, error) {
 				assert.Equal(t, username, *kcUserRep.Username)
@@ -536,6 +539,7 @@ func TestCreateUser(t *testing.T) {
 				assert.Equal(t, gender, *kcUserRep.GetAttributeString(constants.AttrbGender))
 				assert.Equal(t, birthDate, *kcUserRep.GetAttributeString(constants.AttrbBirthDate))
 				assert.Equal(t, locale, *kcUserRep.GetAttributeString(constants.AttrbLocale))
+				assert.Equal(t, onboardingStatus, *kcUserRep.GetAttributeString(constants.AttrbOnboardingStatus))
 				return locationURL, nil
 			})
 
@@ -788,6 +792,7 @@ func TestGetUser(t *testing.T) {
 		idDocumentNumber := "1234-4567-VD-3"
 		idDocumentExpiration := "23.12.2019"
 		idDocumentCountry := "MX"
+		onboardingStatus := "user_created_by_api"
 
 		attributes := make(kc.Attributes)
 		attributes.SetString(constants.AttrbPhoneNumber, phoneNumber)
@@ -803,6 +808,7 @@ func TestGetUser(t *testing.T) {
 		attributes.SetString(constants.AttrbIDDocumentNumber, idDocumentNumber)
 		attributes.SetString(constants.AttrbIDDocumentExpiration, idDocumentExpiration)
 		attributes.SetString(constants.AttrbIDDocumentCountry, idDocumentCountry)
+		attributes.SetString(constants.AttrbOnboardingStatus, onboardingStatus)
 
 		kcUserRep := kc.UserRepresentation{
 			ID:               &id,
@@ -854,6 +860,7 @@ func TestGetUser(t *testing.T) {
 		assert.Equal(t, idDocumentNumber, *apiUserRep.IDDocumentNumber)
 		assert.Equal(t, idDocumentType, *apiUserRep.IDDocumentType)
 		assert.Equal(t, idDocumentCountry, *apiUserRep.IDDocumentCountry)
+		assert.Equal(t, onboardingStatus, *apiUserRep.OnboardingStatus)
 	})
 
 	t.Run("Get user with succces with empty user info", func(t *testing.T) {
@@ -931,6 +938,7 @@ func TestGetUser(t *testing.T) {
 		assert.Nil(t, apiUserRep.IDDocumentNumber)
 		assert.Nil(t, apiUserRep.IDDocumentType)
 		assert.Nil(t, apiUserRep.IDDocumentCountry)
+		assert.Nil(t, apiUserRep.OnboardingStatus)
 	})
 
 	t.Run("Retrieve checks fails", func(t *testing.T) {

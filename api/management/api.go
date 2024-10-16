@@ -52,6 +52,7 @@ type UserRepresentation struct {
 	NameID                *string                        `json:"nameId,omitempty"`
 	OnboardingCompleted   *bool                          `json:"onboardingCompleted,omitempty"`
 	CreatedTimestamp      *int64                         `json:"createdTimestamp,omitempty"`
+	OnboardingStatus      *string                        `json:"onboardingStatus,omitempty"`
 }
 
 // UpdatableUserRepresentation struct
@@ -84,6 +85,7 @@ type UpdatableUserRepresentation struct {
 	PendingChecks        *[]string                      `json:"pendingChecks,omitempty"`
 	Accreditations       *[]AccreditationRepresentation `json:"accreditations,omitempty"`
 	CreatedTimestamp     *int64                         `json:"createdTimestamp,omitempty"`
+	OnboardingStatus     *string                        `json:"onboardingStatus,omitempty"`
 }
 
 // UserCheck is a representation of a user check
@@ -398,6 +400,7 @@ func ConvertToAPIUser(ctx context.Context, userKc kc.UserRepresentation, logger 
 	userRep.IDDocumentNumber = userKc.GetAttributeString(constants.AttrbIDDocumentNumber)
 	userRep.IDDocumentExpiration = userKc.GetAttributeString(constants.AttrbIDDocumentExpiration)
 	userRep.IDDocumentCountry = userKc.GetAttributeString(constants.AttrbIDDocumentCountry)
+	userRep.OnboardingStatus = userKc.GetAttributeString(constants.AttrbOnboardingStatus)
 
 	if value, err := userKc.GetAttributeBool(constants.AttrbPhoneNumberVerified); err == nil && value != nil {
 		userRep.PhoneNumberVerified = value
@@ -413,7 +416,7 @@ func ConvertToAPIUser(ctx context.Context, userKc kc.UserRepresentation, logger 
 	}
 	if values := userKc.GetAttribute(constants.AttrbAccreditations); len(values) > 1 || (len(values) == 1 && values[0] != "") {
 		var accreds []AccreditationRepresentation
-		var bFalse = false
+		bFalse := false
 		for _, accredJSON := range values {
 			var accred AccreditationRepresentation
 			if json.Unmarshal([]byte(accredJSON), &accred) == nil {
@@ -434,8 +437,8 @@ func ConvertToAPIUser(ctx context.Context, userKc kc.UserRepresentation, logger 
 
 // ConvertToAPIUsersPage converts paged users results from KC model to API one
 func ConvertToAPIUsersPage(ctx context.Context, users kc.UsersPageRepresentation, logger keycloakb.Logger) UsersPageRepresentation {
-	var slice = []UserRepresentation{}
-	var count = 0
+	slice := []UserRepresentation{}
+	count := 0
 
 	for _, u := range users.Users {
 		slice = append(slice, ConvertToAPIUser(ctx, u, logger))
@@ -463,7 +466,7 @@ func ConvertToKCUser(user UserRepresentation) kc.UserRepresentation {
 	userRep.Groups = user.Groups
 	userRep.RealmRoles = user.Roles
 
-	var attributes = make(kc.Attributes)
+	attributes := make(kc.Attributes)
 
 	attributes.SetStringWhenNotNil(constants.AttrbPhoneNumber, user.PhoneNumber)
 	attributes.SetBoolWhenNotNil(constants.AttrbPhoneNumberVerified, user.PhoneNumberVerified)
@@ -478,6 +481,7 @@ func ConvertToKCUser(user UserRepresentation) kc.UserRepresentation {
 	attributes.SetStringWhenNotNil(constants.AttrbIDDocumentNumber, user.IDDocumentNumber)
 	attributes.SetStringWhenNotNil(constants.AttrbIDDocumentExpiration, user.IDDocumentExpiration)
 	attributes.SetStringWhenNotNil(constants.AttrbIDDocumentCountry, user.IDDocumentCountry)
+	attributes.SetStringWhenNotNil(constants.AttrbOnboardingStatus, user.OnboardingStatus)
 
 	if len(attributes) > 0 {
 		userRep.Attributes = &attributes
@@ -501,7 +505,7 @@ func MergeUpdatableUserWithoutEmailAndPhoneNumber(target *kc.UserRepresentation,
 		target.RealmRoles = user.Roles
 	}
 
-	var attributes = make(kc.Attributes)
+	attributes := make(kc.Attributes)
 	if target.Attributes != nil {
 		attributes = *target.Attributes
 	}
@@ -517,6 +521,7 @@ func MergeUpdatableUserWithoutEmailAndPhoneNumber(target *kc.UserRepresentation,
 	attributes.SetStringWhenNotNil(constants.AttrbIDDocumentNumber, user.IDDocumentNumber)
 	attributes.SetStringWhenNotNil(constants.AttrbIDDocumentExpiration, user.IDDocumentExpiration)
 	attributes.SetStringWhenNotNil(constants.AttrbIDDocumentCountry, user.IDDocumentCountry)
+	attributes.SetStringWhenNotNil(constants.AttrbOnboardingStatus, user.OnboardingStatus)
 	if user.BusinessID.Defined {
 		attributes.SetStringWhenNotNil(constants.AttrbBusinessID, user.BusinessID.Value)
 	}
@@ -559,7 +564,7 @@ func ConvertToKCGroup(group GroupRepresentation) kc.GroupRepresentation {
 
 // ConvertToAPIAuthorizations creates a API authorization representation from an array of DB Authorization
 func ConvertToAPIAuthorizations(authorizations []configuration.Authorization) AuthorizationsRepresentation {
-	var matrix = make(map[string]map[string]map[string]struct{})
+	matrix := make(map[string]map[string]map[string]struct{})
 
 	for _, authz := range authorizations {
 		_, ok := matrix[*authz.Action]
@@ -586,12 +591,11 @@ func ConvertToAPIAuthorizations(authorizations []configuration.Authorization) Au
 	return AuthorizationsRepresentation{
 		Matrix: &matrix,
 	}
-
 }
 
 // ConvertToDBAuthorizations creates an array of DB Authorization from an API AuthorizationsRepresentation
 func ConvertToDBAuthorizations(realmID, groupName string, apiAuthorizations AuthorizationsRepresentation) []configuration.Authorization {
-	var authorizations = []configuration.Authorization{}
+	authorizations := []configuration.Authorization{}
 
 	if apiAuthorizations.Matrix == nil {
 		return authorizations
@@ -599,7 +603,7 @@ func ConvertToDBAuthorizations(realmID, groupName string, apiAuthorizations Auth
 
 	for action, u := range *apiAuthorizations.Matrix {
 		if len(u) == 0 {
-			var act = string(action)
+			act := string(action)
 			authorizations = append(authorizations, configuration.Authorization{
 				RealmID:   &realmID,
 				GroupName: &groupName,
@@ -610,8 +614,8 @@ func ConvertToDBAuthorizations(realmID, groupName string, apiAuthorizations Auth
 
 		for targetRealmID, v := range u {
 			if len(v) == 0 {
-				var act = string(action)
-				var targetRealm = string(targetRealmID)
+				act := string(action)
+				targetRealm := string(targetRealmID)
 				authorizations = append(authorizations, configuration.Authorization{
 					RealmID:       &realmID,
 					GroupName:     &groupName,
@@ -622,9 +626,9 @@ func ConvertToDBAuthorizations(realmID, groupName string, apiAuthorizations Auth
 			}
 
 			for targetGroupName := range v {
-				var act = string(action)
-				var targetRealm = string(targetRealmID)
-				var targetGroup = string(targetGroupName)
+				act := string(action)
+				targetRealm := string(targetRealmID)
+				targetGroup := string(targetGroupName)
 				authorizations = append(authorizations, configuration.Authorization{
 					RealmID:         &realmID,
 					GroupName:       &groupName,
@@ -694,7 +698,7 @@ func ConvertRealmCustomConfigurationFromDBStruct(config configuration.RealmConfi
 		allowedBackURLs = config.AllowedBackURLs
 	}
 
-	var emptyArray = []string{}
+	emptyArray := []string{}
 	return RealmCustomConfiguration{
 		DefaultClientID:                     config.DefaultClientID,
 		DefaultRedirectURI:                  config.DefaultRedirectURI,
@@ -724,7 +728,7 @@ func CreateDefaultRealmAdminConfiguration() RealmAdminConfiguration {
 
 // ConvertRealmAdminConfigurationFromDBStruct converts a RealmAdminConfiguration from DB struct to API struct
 func ConvertRealmAdminConfigurationFromDBStruct(conf configuration.RealmAdminConfiguration) RealmAdminConfiguration {
-	var checks = conf.AvailableChecks
+	checks := conf.AvailableChecks
 	if checks == nil {
 		checks = make(map[string]bool)
 		checks[configuration.CheckKeyIDNow] = false
@@ -782,12 +786,12 @@ func (rac RealmAdminConfiguration) ConvertToDBStruct() configuration.RealmAdminC
 // NewBackOfficeConfigurationFromJSON creates and validates a new BackOfficeConfiguration from a JSON value
 func NewBackOfficeConfigurationFromJSON(confJSON string) (BackOfficeConfiguration, error) {
 	var boConf BackOfficeConfiguration
-	var err = json.Unmarshal([]byte(confJSON), &boConf)
+	err := json.Unmarshal([]byte(confJSON), &boConf)
 	if err != nil {
 		return BackOfficeConfiguration{}, errorhandler.CreateBadRequestError(errorhandler.MsgErrInvalidQueryParam + ".body")
 	}
 
-	var validator = validation.NewParameterValidator()
+	validator := validation.NewParameterValidator()
 	for _, realmConf := range boConf {
 		for keyBoConf, valueBoConf := range realmConf {
 			validator = validator.ValidateParameterIn("body.userType", &keyBoConf, allowedBoConfKeys, true).
@@ -831,6 +835,8 @@ func (user *UserRepresentation) GetField(field string) interface{} {
 		return profile.IfNotNil(user.Locale)
 	case fields.BusinessID.AttributeName():
 		return profile.IfNotNil(user.BusinessID)
+	case fields.OnboardingStatus.AttributeName():
+		return profile.IfNotNil(user.OnboardingStatus)
 	default:
 		return nil
 	}
@@ -884,12 +890,15 @@ func (user *UserRepresentation) SetField(field string, value interface{}) {
 	case fields.BusinessID.AttributeName():
 		user.BusinessID = cs.ToStringPtr(value)
 		break
+	case fields.OnboardingStatus.AttributeName():
+		user.OnboardingStatus = cs.ToStringPtr(value)
+		break
 	}
 }
 
 // Validate is a validator for UserRepresentation
 func (user UserRepresentation) Validate(ctx context.Context, upc profile.UserProfile, realm string, checkMandatory bool) error {
-	var v = validation.NewParameterValidator().
+	v := validation.NewParameterValidator().
 		ValidateParameterFunc(func() error {
 			return profile.Validate(ctx, upc, realm, &user, "management", checkMandatory)
 		})
@@ -941,6 +950,8 @@ func (user *UpdatableUserRepresentation) GetField(field string) interface{} {
 		return profile.IfNotNil(user.Locale)
 	case fields.BusinessID.AttributeName():
 		return toOptionalStringPtr(user.BusinessID)
+	case fields.OnboardingStatus.AttributeName():
+		return profile.IfNotNil(user.OnboardingStatus)
 	default:
 		return nil
 	}
@@ -1019,12 +1030,14 @@ func (user *UpdatableUserRepresentation) SetField(field string, value interface{
 			user.BusinessID.Value = cs.ToStringPtr(value)
 		}
 		break
+	case fields.OnboardingStatus.AttributeName():
+		user.OnboardingStatus = cs.ToStringPtr(value)
 	}
 }
 
 // Validate is a validator for UpdatableUserRepresentation
 func (user UpdatableUserRepresentation) Validate(ctx context.Context, upc profile.UserProfile, realm string) error {
-	var v = validation.NewParameterValidator().
+	v := validation.NewParameterValidator().
 		ValidateParameterFunc(func() error {
 			return profile.Validate(ctx, upc, realm, &user, "management", false)
 		})
@@ -1123,7 +1136,7 @@ func (acc RealmAdminAccreditation) Validate() error {
 // Validate is a validator for RequiredAction
 func (requiredAction RequiredAction) Validate() error {
 	if requiredAction != "" {
-		var value = string(requiredAction)
+		value := string(requiredAction)
 		return validation.NewParameterValidator().
 			ValidateParameterRegExp(constants.RequiredAction, &value, constants.RegExpRequiredAction, true).
 			Status()
@@ -1149,7 +1162,7 @@ func ConvertToAPIUserChecks(checks []accreditationsclient.CheckRepresentation) [
 	for _, check := range checks {
 		var checkDate *string
 		if check.DateTime != nil {
-			var date = check.DateTime.Format(constants.SupportedDateLayouts[0])
+			date := check.DateTime.Format(constants.SupportedDateLayouts[0])
 			checkDate = &date
 		}
 

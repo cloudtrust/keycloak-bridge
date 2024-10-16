@@ -20,20 +20,21 @@ import (
 
 func createValidUser() apiregister.UserRepresentation {
 	var (
-		gender        = "M"
-		firstName     = "Marc"
-		lastName      = "El-Bichoun"
-		email         = "marcel.bichon@elca.ch"
-		phoneNumber   = "00 33 686 550011"
-		birthDate     = "31.03.2001"
-		birthLocation = "Montreux"
-		nationality   = "CH"
-		docType       = "ID_CARD"
-		docNumber     = "MEL123789654ABC"
-		docExp        = "28.02.2050"
-		docCountry    = "AT"
-		locale        = "fr"
-		gln           = "123456789"
+		gender           = "M"
+		firstName        = "Marc"
+		lastName         = "El-Bichoun"
+		email            = "marcel.bichon@elca.ch"
+		phoneNumber      = "00 33 686 550011"
+		birthDate        = "31.03.2001"
+		birthLocation    = "Montreux"
+		nationality      = "CH"
+		docType          = "ID_CARD"
+		docNumber        = "MEL123789654ABC"
+		docExp           = "28.02.2050"
+		docCountry       = "AT"
+		locale           = "fr"
+		gln              = "123456789"
+		onboardingStatus = "self_registration_form_completed"
 	)
 
 	return apiregister.UserRepresentation{
@@ -51,6 +52,7 @@ func createValidUser() apiregister.UserRepresentation {
 		IDDocumentCountry:    &docCountry,
 		Locale:               &locale,
 		BusinessID:           &gln,
+		OnboardingStatus:     &onboardingStatus,
 	}
 }
 
@@ -260,6 +262,7 @@ func TestRegisterUser(t *testing.T) {
 		mocks.onboardingModule.EXPECT().CreateUser(ctx, accessToken, targetRealmName, targetRealmName, gomock.Any(), false).DoAndReturn(
 			func(_, _, _, _ interface{}, kcUser *kc.UserRepresentation, _ interface{}) (string, error) {
 				assert.NotNil(t, kcUser.Attributes)
+				assert.Equal(t, "self_registration_form_completed", *kcUser.GetAttributeString(constants.AttrbOnboardingStatus))
 				return "", errors.New("unexpected error")
 			})
 
@@ -270,6 +273,7 @@ func TestRegisterUser(t *testing.T) {
 	mocks.onboardingModule.EXPECT().CreateUser(ctx, accessToken, targetRealmName, targetRealmName, gomock.Any(), false).DoAndReturn(
 		func(_, _, _, _ interface{}, kcUser *kc.UserRepresentation, _ interface{}) (string, error) {
 			assert.NotNil(t, kcUser.Attributes)
+			assert.Equal(t, "self_registration_form_completed", *kcUser.GetAttributeString(constants.AttrbOnboardingStatus))
 			generatedUsername := "78564513"
 			kcUser.ID = &kcID
 			kcUser.Username = &generatedUsername

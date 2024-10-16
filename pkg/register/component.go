@@ -72,14 +72,13 @@ type EventsReporterModule interface {
 	ReportEvent(ctx context.Context, event events.Event)
 }
 
-var (
-	errAccountAlreadyExists = errors.New("")
-)
+var errAccountAlreadyExists = errors.New("")
 
 // NewComponent returns component.
 func NewComponent(keycloakClient KeycloakClient, tokenProvider toolbox.OidcTokenProvider, profileCache UserProfileCache,
 	configDBModule ConfigurationDBModule, auditEventsReporterModule EventsReporterModule, onboardingModule OnboardingModule, glnVerifier GlnVerifier,
-	contextKeyManager ContextKeyManager, logger log.Logger) Component {
+	contextKeyManager ContextKeyManager, logger log.Logger,
+) Component {
 	return &component{
 		keycloakClient:            keycloakClient,
 		tokenProvider:             tokenProvider,
@@ -131,7 +130,7 @@ func (c *component) getSupportedLocales(ctx context.Context, realmName string) (
 
 func (c *component) GetConfiguration(ctx context.Context, realmName string) (apiregister.ConfigurationRepresentation, error) {
 	// Get Realm configuration from database
-	var realmConf, realmAdminConf, err = c.configDBModule.GetConfigurations(ctx, realmName)
+	realmConf, realmAdminConf, err := c.configDBModule.GetConfigurations(ctx, realmName)
 	if err != nil {
 		c.logger.Info(ctx, "msg", "Can't get realm configuration from database", "err", err.Error())
 		return apiregister.ConfigurationRepresentation{}, err
@@ -152,7 +151,7 @@ func (c *component) GetConfiguration(ctx context.Context, realmName string) (api
 }
 
 func (c *component) GetUserProfile(ctx context.Context, realmName string) (apicommon.ProfileRepresentation, error) {
-	var profile, err = c.profileCache.GetRealmUserProfile(ctx, realmName)
+	profile, err := c.profileCache.GetRealmUserProfile(ctx, realmName)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Can't get user profile", "err", err.Error())
 		return apicommon.ProfileRepresentation{}, err
@@ -177,7 +176,7 @@ func (c *component) RegisterUser(ctx context.Context, targetRealmName string, cu
 		return "", err
 	}
 
-	var redirect = false
+	redirect := false
 	var ctxOverride keycloakb.ContextKeyParameters
 	if contextKey != nil {
 		var ok bool
@@ -261,14 +260,13 @@ func (c *component) registerUser(ctx context.Context, accessToken string, target
 	}
 
 	// Create new user
-
 	kcUser, err := c.createUser(ctx, accessToken, targetRealmName, user, *realmConf.SelfRegisterGroupNames, false)
 	if err != nil {
 		return kc.UserRepresentation{}, err
 	}
 
 	// Send email
-	var paramKV = []string{"lifespan", "3600"} // 1 hour
+	paramKV := []string{"lifespan", "3600"} // 1 hour
 	return kcUser, c.onboardingModule.SendOnboardingEmail(ctx, accessToken, targetRealmName, *kcUser.ID, *kcUser.Username,
 		*realmConf.OnboardingClientID, onboardingRedirectURI, customerRealmName, false, paramKV...)
 }
@@ -284,16 +282,17 @@ func (c *component) registerUserRedirectMode(ctx context.Context, accessToken st
 }
 
 func (c *component) sendAlreadyExistsEmail(ctx context.Context, accessToken string, reqRealmName string, realmName string,
-	user apiregister.UserRepresentation, username string, creationTimestamp int64, templateName string, paramKV ...string) error {
-	var cantRegisterSubjectKey = "cantRegisterSubject"
-	var params = make(map[string]string)
+	user apiregister.UserRepresentation, username string, creationTimestamp int64, templateName string, paramKV ...string,
+) error {
+	cantRegisterSubjectKey := "cantRegisterSubject"
+	params := make(map[string]string)
 
 	for i := 0; i+1 < len(paramKV); i += 2 {
 		params[paramKV[i]] = paramKV[i+1]
 	}
 
 	// Add creation date
-	var creation = time.Unix(creationTimestamp/1000, 0)
+	creation := time.Unix(creationTimestamp/1000, 0)
 	switzerlandLocation, err := time.LoadLocation("Europe/Zurich")
 	if err != nil {
 		creation = creation.UTC()
@@ -319,7 +318,7 @@ func (c *component) sendAlreadyExistsEmail(ctx context.Context, accessToken stri
 }
 
 func (c *component) createUser(ctx context.Context, accessToken string, realmName string, user apiregister.UserRepresentation, groupNames []string, needEmailToValidate bool) (kc.UserRepresentation, error) {
-	var kcUser = user.ConvertToKeycloak()
+	kcUser := user.ConvertToKeycloak()
 	kcUser.SetAttributeString(constants.AttrbSource, "register")
 
 	if needEmailToValidate {
@@ -335,14 +334,12 @@ func (c *component) createUser(ctx context.Context, accessToken string, realmNam
 	}
 	kcUser.Groups = &groupIDs
 
+	// Set onboarding status
+	kcUser.SetAttributeString(constants.AttrbOnboardingStatus, "self_registration_form_completed")
+
 	_, err = c.onboardingModule.CreateUser(ctx, accessToken, realmName, realmName, &kcUser, false)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Failed to update user through Keycloak API", "err", err.Error())
-		return kc.UserRepresentation{}, err
-	}
-
-	if err != nil {
-		c.logger.Warn(ctx, "msg", "Can't store user details in database", "err", err.Error())
 		return kc.UserRepresentation{}, err
 	}
 
