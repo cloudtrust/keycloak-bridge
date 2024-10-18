@@ -57,8 +57,6 @@ github.com/chzyer/test v0.0.0-20180213035817-a1ea475d72b1/go.mod h1:Q3SI9o4m/ZMn
 github.com/client9/misspell v0.3.4/go.mod h1:qj6jICC3Q7zFZvVWo7KLAzC3yx5G7kyvSDkc90ppPyw=
 github.com/cloudtrust/common-service/v2 v2.6.18 h1:WqdymVt+oz5YISpDStQxMp4SvBlfuxiVggJphIBYUZY=
 github.com/cloudtrust/common-service/v2 v2.6.18/go.mod h1:YruU4kJidPCOczCWCXntE5E98RGxUnEGiPbQ3w4/oYg=
-github.com/cloudtrust/common-service/v2 v2.6.19-0.20241017073621-d43adcccf625 h1:F+GKSHNGVQZ+nRn8kG0/BkiUaBeft+9HkjVAYKyT1jQ=
-github.com/cloudtrust/common-service/v2 v2.6.19-0.20241017073621-d43adcccf625/go.mod h1:YruU4kJidPCOczCWCXntE5E98RGxUnEGiPbQ3w4/oYg=
 github.com/cloudtrust/httpclient v1.2.0 h1:0QIhjiVnLSp/K5tb8ifUauw2M2JgckGBqjwJaSMbrIE=
 github.com/cloudtrust/httpclient v1.2.0/go.mod h1:i/MJ4vGvWxf62AOnVimisiJv8a6pJaCS9WLA7cIwvpI=
 github.com/cloudtrust/keycloak-client/v2 v2.6.4 h1:dePGktkv9TpjPFiYyiStKMMJPtz9Huli+eQMT1yTTC4=
