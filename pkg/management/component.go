@@ -388,6 +388,7 @@ func (c *component) genericCreateUser(ctx context.Context, accessToken string, c
 	user api.UserRepresentation, generateUsername bool, generateNameID bool, termsOfUse bool, useOnboardingCheckForExistingUser bool) (string, error) {
 	var userRep = api.ConvertToKCUser(user)
 	userRep.SetAttributeString(constants.AttrbSource, source)
+	userRep.SetAttributeString(constants.AttrbOnboardingStatus, "user_created_by_api")
 
 	if termsOfUse {
 		var reqActions []string

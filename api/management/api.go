@@ -52,6 +52,7 @@ type UserRepresentation struct {
 	NameID                *string                        `json:"nameId,omitempty"`
 	OnboardingCompleted   *bool                          `json:"onboardingCompleted,omitempty"`
 	CreatedTimestamp      *int64                         `json:"createdTimestamp,omitempty"`
+	OnboardingStatus      *string                        `json:"onboardingStatus,omitempty"`
 }
 
 // UpdatableUserRepresentation struct
@@ -84,6 +85,7 @@ type UpdatableUserRepresentation struct {
 	PendingChecks        *[]string                      `json:"pendingChecks,omitempty"`
 	Accreditations       *[]AccreditationRepresentation `json:"accreditations,omitempty"`
 	CreatedTimestamp     *int64                         `json:"createdTimestamp,omitempty"`
+	OnboardingStatus     *string                        `json:"onboardingStatus,omitempty"`
 }
 
 // UserCheck is a representation of a user check
@@ -397,6 +399,7 @@ func ConvertToAPIUser(ctx context.Context, userKc kc.UserRepresentation, logger 
 	userRep.IDDocumentNumber = userKc.GetAttributeString(constants.AttrbIDDocumentNumber)
 	userRep.IDDocumentExpiration = userKc.GetAttributeString(constants.AttrbIDDocumentExpiration)
 	userRep.IDDocumentCountry = userKc.GetAttributeString(constants.AttrbIDDocumentCountry)
+	userRep.OnboardingStatus = userKc.GetAttributeString(constants.AttrbOnboardingStatus)
 
 	if value, err := userKc.GetAttributeBool(constants.AttrbPhoneNumberVerified); err == nil && value != nil {
 		userRep.PhoneNumberVerified = value
@@ -477,6 +480,7 @@ func ConvertToKCUser(user UserRepresentation) kc.UserRepresentation {
 	attributes.SetStringWhenNotNil(constants.AttrbIDDocumentNumber, user.IDDocumentNumber)
 	attributes.SetStringWhenNotNil(constants.AttrbIDDocumentExpiration, user.IDDocumentExpiration)
 	attributes.SetStringWhenNotNil(constants.AttrbIDDocumentCountry, user.IDDocumentCountry)
+	attributes.SetStringWhenNotNil(constants.AttrbOnboardingStatus, user.OnboardingStatus)
 
 	if len(attributes) > 0 {
 		userRep.Attributes = &attributes
@@ -516,6 +520,8 @@ func MergeUpdatableUserWithoutEmailAndPhoneNumber(target *kc.UserRepresentation,
 	attributes.SetStringWhenNotNil(constants.AttrbIDDocumentNumber, user.IDDocumentNumber)
 	attributes.SetStringWhenNotNil(constants.AttrbIDDocumentExpiration, user.IDDocumentExpiration)
 	attributes.SetStringWhenNotNil(constants.AttrbIDDocumentCountry, user.IDDocumentCountry)
+	attributes.SetStringWhenNotNil(constants.AttrbOnboardingStatus, user.OnboardingStatus)
+
 	if user.BusinessID.Defined {
 		attributes.SetStringWhenNotNil(constants.AttrbBusinessID, user.BusinessID.Value)
 	}
@@ -828,6 +834,8 @@ func (user *UserRepresentation) GetField(field string) interface{} {
 		return profile.IfNotNil(user.Locale)
 	case fields.BusinessID.AttributeName():
 		return profile.IfNotNil(user.BusinessID)
+	case fields.OnboardingStatus.AttributeName():
+		return profile.IfNotNil(user.OnboardingStatus)
 	default:
 		return nil
 	}
@@ -880,6 +888,9 @@ func (user *UserRepresentation) SetField(field string, value interface{}) {
 		break
 	case fields.BusinessID.AttributeName():
 		user.BusinessID = cs.ToStringPtr(value)
+		break
+	case fields.OnboardingStatus.AttributeName():
+		user.OnboardingStatus = cs.ToStringPtr(value)
 		break
 	}
 }
@@ -938,6 +949,8 @@ func (user *UpdatableUserRepresentation) GetField(field string) interface{} {
 		return profile.IfNotNil(user.Locale)
 	case fields.BusinessID.AttributeName():
 		return toOptionalStringPtr(user.BusinessID)
+	case fields.OnboardingStatus.AttributeName():
+		return profile.IfNotNil(user.OnboardingStatus)
 	default:
 		return nil
 	}
@@ -1015,6 +1028,9 @@ func (user *UpdatableUserRepresentation) SetField(field string, value interface{
 			user.BusinessID.Defined = true
 			user.BusinessID.Value = cs.ToStringPtr(value)
 		}
+		break
+	case fields.OnboardingStatus.AttributeName():
+		user.OnboardingStatus = cs.ToStringPtr(value)
 		break
 	}
 }

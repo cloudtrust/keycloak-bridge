@@ -320,6 +320,9 @@ func (c *component) createUser(ctx context.Context, accessToken string, realmNam
 	}
 	kcUser.Groups = &groupIDs
 
+	// Set onboarding status
+	kcUser.SetAttributeString(constants.AttrbOnboardingStatus, "self_registration_form_completed")
+
 	_, err = c.onboardingModule.CreateUser(ctx, accessToken, realmName, realmName, &kcUser, false)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Failed to update user through Keycloak API", "err", err.Error())
