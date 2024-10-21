@@ -18,6 +18,8 @@ import (
 	"github.com/cloudtrust/keycloak-client/v2/toolbox"
 )
 
+const registerOnboardingStatus = "self-registration-form-completed"
+
 // KeycloakClient are methods from keycloak-client used by this component
 type KeycloakClient interface {
 	GetRealm(accessToken string, realmName string) (kc.RealmRepresentation, error)
@@ -321,7 +323,7 @@ func (c *component) createUser(ctx context.Context, accessToken string, realmNam
 	kcUser.Groups = &groupIDs
 
 	// Set onboarding status
-	kcUser.SetAttributeString(constants.AttrbOnboardingStatus, "self_registration_form_completed")
+	kcUser.SetAttributeString(constants.AttrbOnboardingStatus, registerOnboardingStatus)
 
 	_, err = c.onboardingModule.CreateUser(ctx, accessToken, realmName, realmName, &kcUser, false)
 	if err != nil {

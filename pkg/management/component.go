@@ -34,6 +34,8 @@ const (
 
 	actionVerifyEmail       = "ct-verify-email"
 	actionVerifyPhoneNumber = "mobilephone-validation"
+
+	managementOnboardingStatus = "user-created-by-api"
 )
 
 // KeycloakClient are methods from keycloak-client used by this component
@@ -388,7 +390,7 @@ func (c *component) genericCreateUser(ctx context.Context, accessToken string, c
 	user api.UserRepresentation, generateUsername bool, generateNameID bool, termsOfUse bool, useOnboardingCheckForExistingUser bool) (string, error) {
 	var userRep = api.ConvertToKCUser(user)
 	userRep.SetAttributeString(constants.AttrbSource, source)
-	userRep.SetAttributeString(constants.AttrbOnboardingStatus, "user_created_by_api")
+	userRep.SetAttributeString(constants.AttrbOnboardingStatus, managementOnboardingStatus)
 
 	if termsOfUse {
 		var reqActions []string
