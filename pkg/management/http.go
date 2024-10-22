@@ -80,10 +80,10 @@ func decodeManagementRequest(ctx context.Context, req *http.Request) (interface{
 	}
 
 	var queryParams = map[string]string{
-		prmQryEmail:         constants.RegExpEmail,
+		prmQryEmail:         constants.RegExpSearch,
 		prmQryFirstName:     constants.RegExpSearch,
-		prmQryLastName:      constants.RegExpLastNameSearch,
-		prmQryUserName:      constants.RegExpUsername,
+		prmQryLastName:      constants.RegExpSearch,
+		prmQryUserName:      constants.RegExpSearch,
 		prmQrySearch:        constants.RegExpSearch,
 		prmQryClientID:      constants.RegExpClientID,
 		prmQryRedirectURI:   constants.RegExpRedirectURI,

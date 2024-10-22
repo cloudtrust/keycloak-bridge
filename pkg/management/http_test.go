@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	errorhandler "github.com/cloudtrust/common-service/v2/errors"
@@ -80,7 +81,7 @@ func TestHTTPManagementHandler(t *testing.T) {
 		assert.Equal(t, email, resp["email"])
 	})
 	t.Run("Invalid input parameter", func(t *testing.T) {
-		res, err := http.Get(ts.URL + "/realms/master?email=not_an_email")
+		res, err := http.Get(ts.URL + "/realms/master?email=" + strings.Repeat("A", 129))
 		assert.Nil(t, err)
 		assert.Equal(t, http.StatusBadRequest, res.StatusCode)
 	})
