@@ -12,7 +12,6 @@ import (
 	errorhandler "github.com/cloudtrust/common-service/v2/errors"
 	"github.com/cloudtrust/common-service/v2/events"
 	"github.com/cloudtrust/common-service/v2/fields"
-	csjson "github.com/cloudtrust/common-service/v2/json"
 	api "github.com/cloudtrust/keycloak-bridge/api/account"
 	apicommon "github.com/cloudtrust/keycloak-bridge/api/common"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
@@ -60,11 +59,6 @@ type KeycloakTechnicalClient interface {
 	LogoutAllSessions(ctx context.Context, realmName string, userID string) error
 }
 
-// GlnVerifier interface allows to check validity of a GLN
-type GlnVerifier interface {
-	ValidateGLN(firstName, lastName, gln string) error
-}
-
 // Component interface exposes methods used by the bridge API
 type Component interface {
 	UpdatePassword(ctx context.Context, currentPassword, newPassword, confirmPassword string) error
@@ -105,7 +99,6 @@ type component struct {
 	profileCache          UserProfileCache
 	eventReporterModule   EventsReporterModule
 	configDBModule        keycloakb.ConfigurationDBModule
-	glnVerifier           GlnVerifier
 	accreditationsClient  AccreditationsServiceClient
 	logger                log.Logger
 	originEvent           string
@@ -113,14 +106,13 @@ type component struct {
 
 // NewComponent returns the self-service component.
 func NewComponent(keycloakAccountClient KeycloakAccountClient, keycloakTechClient KeycloakTechnicalClient, profileCache UserProfileCache, eventReporterModule EventsReporterModule,
-	configDBModule keycloakb.ConfigurationDBModule, glnVerifier GlnVerifier, accreditationsClient AccreditationsServiceClient, logger log.Logger) Component {
+	configDBModule keycloakb.ConfigurationDBModule, accreditationsClient AccreditationsServiceClient, logger log.Logger) Component {
 	return &component{
 		keycloakAccountClient: keycloakAccountClient,
 		keycloakTechClient:    keycloakTechClient,
 		profileCache:          profileCache,
 		eventReporterModule:   eventReporterModule,
 		configDBModule:        configDBModule,
-		glnVerifier:           glnVerifier,
 		accreditationsClient:  accreditationsClient,
 		logger:                logger,
 		originEvent:           "self-service",
@@ -282,10 +274,6 @@ func (c *component) UpdateAccount(ctx context.Context, user api.UpdatableAccount
 		oldUserKc.SetFieldValues(fields.Accreditations, newAccreditations)
 	}
 
-	// GLN check
-	if err = c.checkGLN(ctx, user.BusinessID, &oldUserKc); err != nil {
-		return err
-	}
 	// Update keycloak account
 	err = c.keycloakAccountClient.UpdateAccount(accessToken, realm, oldUserKc)
 	if err != nil {
@@ -318,26 +306,6 @@ func (c *component) UpdateAccount(ctx context.Context, user api.UpdatableAccount
 	}
 
 	return err
-}
-
-func (c *component) checkGLN(ctx context.Context, businessID csjson.OptionalString, kcUser *kc.UserRepresentation) error {
-	var realm = ctx.Value(cs.CtContextRealm).(string)
-
-	if adminConfig, err := c.configDBModule.GetAdminConfiguration(ctx, realm); err != nil {
-		c.logger.Warn(ctx, "msg", "Can't get realm admin configuration", "realm", realm, "err", err.Error())
-		return err
-	} else if adminConfig.ShowGlnEditing == nil || !*adminConfig.ShowGlnEditing {
-		// No GLN expected
-		kcUser.RemoveAttribute(constants.AttrbBusinessID)
-	} else if businessID.Defined {
-		// GLN enabled for this realm
-		if businessID.Value == nil {
-			kcUser.RemoveAttribute(constants.AttrbBusinessID)
-		} else {
-			return c.glnVerifier.ValidateGLN(*kcUser.FirstName, *kcUser.LastName, *businessID.Value)
-		}
-	}
-	return nil
 }
 
 func (c *component) sendEmail(ctx context.Context, template, subject string, recipient *string, attributes map[string]string) error {

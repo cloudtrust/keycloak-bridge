@@ -36,7 +36,6 @@ type componentMocks struct {
 	authChecker           *mock.AuthorizationManager
 	tokenProvider         *mock.OidcTokenProvider
 	transaction           *mock.Transaction
-	glnVerifier           *mock.GlnVerifier
 	logger                *mock.Logger
 	accreditationsClient  *mock.AccreditationsServiceClient
 }
@@ -51,7 +50,6 @@ func createMocks(mockCtrl *gomock.Controller) *componentMocks {
 		authChecker:           mock.NewAuthorizationManager(mockCtrl),
 		tokenProvider:         mock.NewOidcTokenProvider(mockCtrl),
 		transaction:           mock.NewTransaction(mockCtrl),
-		glnVerifier:           mock.NewGlnVerifier(mockCtrl),
 		logger:                mock.NewLogger(mockCtrl),
 		accreditationsClient:  mock.NewAccreditationsServiceClient(mockCtrl),
 	}
@@ -68,7 +66,7 @@ const (
 func (m *componentMocks) createComponent() *component {
 	/* REMOVE_THIS_3901 : remove second parameter (nil) */
 	return NewComponent(m.keycloakClient, nil, m.profileCache, m.eventsReporter, m.configurationDBModule, m.onboardingModule, m.authChecker,
-		m.tokenProvider, m.accreditationsClient, allowedTrustIDGroups, socialRealmName, m.glnVerifier, m.logger).(*component)
+		m.tokenProvider, m.accreditationsClient, allowedTrustIDGroups, socialRealmName, m.logger).(*component)
 }
 
 func ptrString(value string) *string {
@@ -437,16 +435,6 @@ func TestCreateUser(t *testing.T) {
 	ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 	ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 
-	t.Run("Invalid GLN provided", func(t *testing.T) {
-		var businessID = "123456789"
-
-		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, socialRealmName).Return(configuration.RealmAdminConfiguration{}, anyError)
-		mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any())
-
-		_, err := managementComponent.CreateUser(ctx, socialRealmName, api.UserRepresentation{BusinessID: &businessID}, false, false, false)
-
-		assert.Equal(t, anyError, err)
-	})
 	mocks.configurationDBModule.EXPECT().GetAdminConfiguration(gomock.Any(), gomock.Any()).Return(configuration.RealmAdminConfiguration{}, nil).AnyTimes()
 
 	t.Run("Create user with username generation, don't need terms of use", func(t *testing.T) {
@@ -637,85 +625,6 @@ func TestCreateUserInSocialRealm(t *testing.T) {
 		assert.IsType(t, errorhandler.Error{}, err)
 		var errWithDetails = err.(errorhandler.Error)
 		assert.Equal(t, http.StatusConflict, errWithDetails.Status)
-	})
-}
-
-func TestCheckGLN(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
-	defer mockCtrl.Finish()
-
-	var mocks = createMocks(mockCtrl)
-	var managementComponent = mocks.createComponent()
-
-	var realmName = "my-realm"
-	var gln = "123456789"
-	var firstName = "first"
-	var lastName = "last"
-	var kcUser = kc.UserRepresentation{FirstName: &firstName, LastName: &lastName}
-	var anyError = errors.New("any error")
-	var ctx = context.WithValue(context.TODO(), cs.CtContextRealm, realmName)
-
-	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
-
-	t.Run("GetRealmAdminConfiguration fails", func(t *testing.T) {
-		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, realmName).Return(configuration.RealmAdminConfiguration{}, anyError)
-
-		var err = managementComponent.checkGLN(ctx, realmName, true, &gln, &kcUser)
-		assert.NotNil(t, err)
-	})
-	t.Run("BusinessID not used as a GLN", func(t *testing.T) {
-		kcUser.SetAttributeString(constants.AttrbBusinessID, gln)
-		var bTrue = true
-		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, realmName).Return(configuration.RealmAdminConfiguration{BusinessIDIsNotGLN: &bTrue}, nil)
-
-		var err = managementComponent.checkGLN(ctx, realmName, true, &gln, &kcUser)
-
-		assert.Nil(t, err)
-		assert.NotNil(t, kcUser.GetAttributeString(constants.AttrbBusinessID))
-		assert.Equal(t, gln, *kcUser.GetAttributeString(constants.AttrbBusinessID))
-	})
-	t.Run("GLN feature not activated", func(t *testing.T) {
-		kcUser.SetAttributeString(constants.AttrbBusinessID, gln)
-
-		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, realmName).Return(configuration.RealmAdminConfiguration{}, nil)
-
-		var err = managementComponent.checkGLN(ctx, realmName, true, &gln, &kcUser)
-		assert.Nil(t, err)
-		assert.Nil(t, kcUser.GetAttributeString(constants.AttrbBusinessID))
-	})
-
-	var bTrue = true
-	var confWithGLN = configuration.RealmAdminConfiguration{ShowGlnEditing: &bTrue}
-	mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, realmName).Return(confWithGLN, nil).AnyTimes()
-
-	t.Run("Removing GLN", func(t *testing.T) {
-		kcUser.SetAttributeString(constants.AttrbBusinessID, gln)
-
-		var err = managementComponent.checkGLN(ctx, realmName, true, nil, &kcUser)
-		assert.Nil(t, err)
-		assert.Nil(t, kcUser.GetAttributeString(constants.AttrbBusinessID))
-	})
-	t.Run("Using invalid GLN", func(t *testing.T) {
-		kcUser.SetAttributeString(constants.AttrbBusinessID, gln)
-
-		mocks.glnVerifier.EXPECT().ValidateGLN(firstName, lastName, gln).Return(anyError)
-
-		var err = managementComponent.checkGLN(ctx, realmName, true, &gln, &kcUser)
-		assert.NotNil(t, err)
-	})
-	t.Run("Using valid GLN", func(t *testing.T) {
-		kcUser.SetAttributeString(constants.AttrbBusinessID, gln)
-
-		mocks.glnVerifier.EXPECT().ValidateGLN(firstName, lastName, gln).Return(nil)
-
-		var err = managementComponent.checkGLN(ctx, realmName, true, &gln, &kcUser)
-		assert.Nil(t, err)
-	})
-	t.Run("No change asked for GLN field", func(t *testing.T) {
-		kcUser.SetAttributeString(constants.AttrbBusinessID, gln)
-
-		var err = managementComponent.checkGLN(ctx, realmName, false, nil, &kcUser)
-		assert.Nil(t, err)
 	})
 }
 

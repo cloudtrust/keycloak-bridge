@@ -28,7 +28,6 @@ type componentMock struct {
 	userProfileCache          *mock.UserProfileCache
 	auditEventsReporterModule *mock.AuditEventsReporterModule
 	configurationDBModule     *mock.ConfigurationDBModule
-	glnVerifier               *mock.GlnVerifier
 	accreditationsClient      *mock.AccreditationsServiceClient
 }
 
@@ -39,14 +38,13 @@ func createComponentMocks(mockCtrl *gomock.Controller) *componentMock {
 		userProfileCache:          mock.NewUserProfileCache(mockCtrl),
 		auditEventsReporterModule: mock.NewAuditEventsReporterModule(mockCtrl),
 		configurationDBModule:     mock.NewConfigurationDBModule(mockCtrl),
-		glnVerifier:               mock.NewGlnVerifier(mockCtrl),
 		accreditationsClient:      mock.NewAccreditationsServiceClient(mockCtrl),
 	}
 }
 
 func (m *componentMock) createComponent() *component {
 	return NewComponent(m.keycloakAccountClient, m.keycloakTechnicalClient, m.userProfileCache, m.auditEventsReporterModule,
-		m.configurationDBModule, m.glnVerifier, m.accreditationsClient, log.NewNopLogger()).(*component)
+		m.configurationDBModule, m.accreditationsClient, log.NewNopLogger()).(*component)
 }
 
 func ptr(value string) *string {
@@ -241,7 +239,7 @@ func TestUpdateAccount(t *testing.T) {
 
 	t.Run("GetAdminConfiguration fails", func(t *testing.T) {
 		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kcUserRep, nil)
-		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, realmName).Return(configuration.RealmAdminConfiguration{}, anError)
+		mocks.keycloakAccountClient.EXPECT().UpdateAccount(accessToken, realmName, gomock.Any()).Return(errors.New("unexpected error"))
 
 		err := accountComponent.UpdateAccount(ctx, userRep)
 
@@ -424,7 +422,6 @@ func TestUpdateAccountRevokeAccreditation(t *testing.T) {
 		idDocNumber         = "ABC123-DEF456"
 		idDocExpiration     = "01.01.2050"
 		idDocCountry        = "CH"
-		bFalse              = false
 		createdTimestamp    = time.Now().UTC().Unix()
 	)
 
@@ -478,7 +475,6 @@ func TestUpdateAccountRevokeAccreditation(t *testing.T) {
 
 		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kcUserRep, nil)
 		mocks.accreditationsClient.EXPECT().NotifyUpdate(ctx, gomock.Any()).Return(revokedTypes, nil)
-		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, realmName).Return(configuration.RealmAdminConfiguration{ShowGlnEditing: &bFalse}, nil)
 		mocks.keycloakAccountClient.EXPECT().UpdateAccount(accessToken, realmName, gomock.Any()).DoAndReturn(
 			func(accessToken, realmName string, kcUserRep kc.UserRepresentation) error {
 				assert.Equal(t, username, *kcUserRep.Username)
@@ -494,75 +490,6 @@ func TestUpdateAccountRevokeAccreditation(t *testing.T) {
 		mocks.auditEventsReporterModule.EXPECT().ReportEvent(ctx, gomock.Any())
 
 		err := accountComponent.UpdateAccount(ctx, userRepUpdate)
-		assert.Nil(t, err)
-	})
-}
-
-func TestCheckGLN(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
-	defer mockCtrl.Finish()
-
-	var mocks = createComponentMocks(mockCtrl)
-	var accountComponent = mocks.createComponent()
-
-	var realmName = "my-realm"
-	var gln = "123456789"
-	var firstName = "first"
-	var lastName = "last"
-	var newGLN = csjson.OptionalString{Defined: true, Value: &gln}
-	var removeGLN = csjson.OptionalString{Defined: true, Value: nil}
-	var noGLNChange = csjson.OptionalString{Defined: false}
-	var kcUser = kc.UserRepresentation{FirstName: &firstName, LastName: &lastName}
-	var anyError = errors.New("any error")
-	var ctx = context.WithValue(context.TODO(), cs.CtContextRealm, realmName)
-
-	t.Run("GetRealmAdminConfiguration fails", func(t *testing.T) {
-		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, realmName).Return(configuration.RealmAdminConfiguration{}, anyError)
-
-		var err = accountComponent.checkGLN(ctx, newGLN, &kcUser)
-		assert.NotNil(t, err)
-	})
-	t.Run("GLN feature not activated", func(t *testing.T) {
-		kcUser.SetAttributeString(constants.AttrbBusinessID, gln)
-
-		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, realmName).Return(configuration.RealmAdminConfiguration{}, nil)
-
-		var err = accountComponent.checkGLN(ctx, newGLN, &kcUser)
-		assert.Nil(t, err)
-		assert.Nil(t, kcUser.GetAttributeString(constants.AttrbBusinessID))
-	})
-
-	var bTrue = true
-	var confWithGLN = configuration.RealmAdminConfiguration{ShowGlnEditing: &bTrue}
-	mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, realmName).Return(confWithGLN, nil).AnyTimes()
-
-	t.Run("Removing GLN", func(t *testing.T) {
-		kcUser.SetAttributeString(constants.AttrbBusinessID, gln)
-
-		var err = accountComponent.checkGLN(ctx, removeGLN, &kcUser)
-		assert.Nil(t, err)
-		assert.Nil(t, kcUser.GetAttributeString(constants.AttrbBusinessID))
-	})
-	t.Run("Using invalid GLN", func(t *testing.T) {
-		kcUser.SetAttributeString(constants.AttrbBusinessID, gln)
-
-		mocks.glnVerifier.EXPECT().ValidateGLN(firstName, lastName, gln).Return(anyError)
-
-		var err = accountComponent.checkGLN(ctx, newGLN, &kcUser)
-		assert.NotNil(t, err)
-	})
-	t.Run("Using valid GLN", func(t *testing.T) {
-		kcUser.SetAttributeString(constants.AttrbBusinessID, gln)
-
-		mocks.glnVerifier.EXPECT().ValidateGLN(firstName, lastName, gln).Return(nil)
-
-		var err = accountComponent.checkGLN(ctx, newGLN, &kcUser)
-		assert.Nil(t, err)
-	})
-	t.Run("No change asked for GLN field", func(t *testing.T) {
-		kcUser.SetAttributeString(constants.AttrbBusinessID, gln)
-
-		var err = accountComponent.checkGLN(ctx, noGLNChange, &kcUser)
 		assert.Nil(t, err)
 	})
 }

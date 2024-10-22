@@ -107,11 +107,6 @@ type OnboardingModule interface {
 	ComputeOnboardingRedirectURI(ctx context.Context, targetRealmName string, customerRealmName string, realmConf configuration.RealmConfiguration) (string, error)
 }
 
-// GlnVerifier interface allows to check validity of a GLN
-type GlnVerifier interface {
-	ValidateGLN(firstName, lastName, gln string) error
-}
-
 // AuthorizationChecker interface
 type AuthorizationChecker interface {
 	CheckAuthorizationForGroupsOnTargetRealm(realm string, groups []string, action, targetRealm string) error
@@ -226,7 +221,6 @@ type component struct {
 	tokenProvider             toolbox.OidcTokenProvider
 	authorizedTrustIDGroups   map[string]bool
 	socialRealmName           string
-	glnVerifier               GlnVerifier
 	accreditationsClient      AccreditationsServiceClient
 	logger                    log.Logger
 	originEvent               string
@@ -235,7 +229,7 @@ type component struct {
 // NewComponent returns the management component.
 func NewComponent(keycloakClient KeycloakClient, kcURIProvider kc.KeycloakURIProvider, profileCache UserProfileCache, auditEventsReporterModule EventsReporterModule,
 	configDBModule keycloakb.ConfigurationDBModule, onboardingModule OnboardingModule, authChecker AuthorizationChecker, tokenProvider toolbox.OidcTokenProvider,
-	accreditationsClient AccreditationsServiceClient, authorizedTrustIDGroups []string, socialRealmName string, glnVerifier GlnVerifier, logger log.Logger) Component {
+	accreditationsClient AccreditationsServiceClient, authorizedTrustIDGroups []string, socialRealmName string, logger log.Logger) Component {
 	/* REMOVE_THIS_3901 : remove second provided parameter */
 
 	var authzedTrustIDGroups = make(map[string]bool)
@@ -255,7 +249,6 @@ func NewComponent(keycloakClient KeycloakClient, kcURIProvider kc.KeycloakURIPro
 		authorizedTrustIDGroups:   authzedTrustIDGroups,
 		socialRealmName:           socialRealmName,
 		accreditationsClient:      accreditationsClient,
-		glnVerifier:               glnVerifier,
 		logger:                    logger,
 		originEvent:               "back-office",
 	}
@@ -405,10 +398,6 @@ func (c *component) genericCreateUser(ctx context.Context, accessToken string, c
 		userRep.RequiredActions = &reqActions
 	}
 
-	if glnErr := c.checkGLN(ctx, targetRealmName, true, user.BusinessID, &userRep); glnErr != nil {
-		return "", glnErr
-	}
-
 	var locationURL string
 	var err error
 	if targetRealmName == c.socialRealmName || generateUsername {
@@ -453,34 +442,6 @@ func (c *component) onAlreadyExistsUser(_ string, _ int64, _ *string) error {
 		Status:  http.StatusConflict,
 		Message: "keycloak.existing.username",
 	}
-}
-
-func (c *component) checkGLN(ctx context.Context, realm string, businessIDThere bool, businessID *string, kcUser *kc.UserRepresentation) error {
-	if adminConfig, err := c.configDBModule.GetAdminConfiguration(ctx, realm); err != nil {
-		c.logger.Warn(ctx, "msg", "Can't get realm admin configuration", "realm", realm, "err", err.Error())
-		return err
-	} else if adminConfig.BusinessIDIsNotGLN != nil && *adminConfig.BusinessIDIsNotGLN {
-		return nil
-	} else if adminConfig.ShowGlnEditing == nil || !*adminConfig.ShowGlnEditing {
-		// No GLN expected
-		kcUser.RemoveAttribute(constants.AttrbBusinessID)
-	} else if businessIDThere {
-		// GLN enabled for this realm
-		if businessID == nil {
-			kcUser.RemoveAttribute(constants.AttrbBusinessID)
-		} else {
-			var firsName, lastName string
-			if kcUser.FirstName != nil {
-				firsName = *kcUser.FirstName
-			}
-			if kcUser.LastName != nil {
-				lastName = *kcUser.LastName
-			}
-
-			return c.glnVerifier.ValidateGLN(firsName, lastName, *businessID)
-		}
-	}
-	return nil
 }
 
 func (c *component) DeleteUser(ctx context.Context, realmName, userID string) error {
@@ -607,14 +568,6 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 		}
 	}
 
-	var oldGlnValue = oldUserKc.GetAttributeString(constants.AttrbBusinessID)
-	// Check if GLN validity should be re-evaluated
-	var glnUpdated = fieldsComparator.IsAnyFieldUpdated(fields.FirstName, fields.LastName, fields.BusinessID)
-	if oldGlnValue != nil && user.BusinessID.Defined && user.BusinessID.Value == nil {
-		glnUpdated = true
-		removeAttributes = append(removeAttributes, constants.AttrbBusinessID)
-	}
-
 	var updateRequest = accreditationsclient.UpdateNotificationRepresentation{
 		UserID:        &userID,
 		RealmName:     &realmName,
@@ -647,12 +600,6 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 
 	if len(newAccreditations) > 0 {
 		oldUserKc.SetFieldValues(fields.Accreditations, newAccreditations)
-	}
-
-	if glnUpdated {
-		if glnErr := c.checkGLN(ctx, realmName, user.BusinessID.Defined, user.BusinessID.Value, &oldUserKc); glnErr != nil {
-			return glnErr
-		}
 	}
 
 	// Update in KC

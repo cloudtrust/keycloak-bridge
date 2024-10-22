@@ -55,11 +55,6 @@ type EventsReporterModule interface {
 	ReportEvent(ctx context.Context, event events.Event)
 }
 
-// GlnVerifier interface allows to check validity of a GLN
-type GlnVerifier interface {
-	ValidateGLN(firstName, lastName, gln string) error
-}
-
 // AccreditationsServiceClient interface
 type AccreditationsServiceClient interface {
 	NotifyCheck(ctx context.Context, check accreditationsclient.CheckRepresentation) error
@@ -99,7 +94,6 @@ type component struct {
 	configDBModule            ConfigDBModule
 	auditEventsReporterModule EventsReporterModule
 	accredsServiceClient      AccreditationsServiceClient
-	glnVerifier               GlnVerifier
 	logger                    log.Logger
 	originEvent               string
 }
@@ -109,7 +103,7 @@ const (
 )
 
 // NewComponent returns the management component.
-func NewComponent(tokenProvider toolbox.OidcTokenProvider, socialRealmName string, keycloakClient KeycloakClient, profileCache UserProfileCache, archiveDBModule ArchiveDBModule, configDBModule ConfigDBModule, auditEventsReporterModule EventsReporterModule, accredsServiceClient AccreditationsServiceClient, glnVerifier GlnVerifier, logger log.Logger) Component {
+func NewComponent(tokenProvider toolbox.OidcTokenProvider, socialRealmName string, keycloakClient KeycloakClient, profileCache UserProfileCache, archiveDBModule ArchiveDBModule, configDBModule ConfigDBModule, auditEventsReporterModule EventsReporterModule, accredsServiceClient AccreditationsServiceClient, logger log.Logger) Component {
 	return &component{
 		tokenProvider:             tokenProvider,
 		socialRealmName:           socialRealmName,
@@ -119,7 +113,6 @@ func NewComponent(tokenProvider toolbox.OidcTokenProvider, socialRealmName strin
 		configDBModule:            configDBModule,
 		auditEventsReporterModule: auditEventsReporterModule,
 		accredsServiceClient:      accredsServiceClient,
-		glnVerifier:               glnVerifier,
 		logger:                    logger,
 		originEvent:               "back-office",
 	}
@@ -419,17 +412,6 @@ func (c *component) validateUser(ctx context.Context, accessToken string, confRe
 	}
 	keycloakb.ConvertLegacyAttribute(&kcUser)
 
-	// GLN check
-	var realmAdminConfig configuration.RealmAdminConfiguration
-	realmAdminConfig, err = c.configDBModule.GetAdminConfiguration(ctx, confRealm)
-	if err != nil {
-		return err
-	}
-	var needGln = realmAdminConfig.ShowGlnEditing != nil && *realmAdminConfig.ShowGlnEditing
-	if !needGln {
-		user.BusinessID = nil
-	}
-
 	// Some parameters might not be updated by operator
 	user.ID = &userID
 	user.Email = nil
@@ -444,17 +426,6 @@ func (c *component) validateUser(ctx context.Context, accessToken string, confRe
 	}
 
 	user.ExportToKeycloak(&kcUser)
-
-	if needGln {
-		if kcUser.GetAttributeString(constants.AttrbBusinessID) == nil {
-			return errorhandler.CreateBadRequestError("missing.gln")
-		} else if user.BusinessID != nil {
-			// GLN required and business ID is trying to be updated
-			if glnErr := c.glnVerifier.ValidateGLN(*kcUser.FirstName, *kcUser.LastName, *user.BusinessID); glnErr != nil {
-				return glnErr
-			}
-		}
-	}
 
 	var now = time.Now()
 	err = c.keycloakClient.UpdateUser(accessToken, targetRealm, userID, kcUser)
