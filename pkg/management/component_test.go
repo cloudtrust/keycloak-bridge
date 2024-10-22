@@ -468,7 +468,7 @@ func TestCreateUser(t *testing.T) {
 
 	var attrbs = make(kc.Attributes)
 	attrbs[constants.AttrbSource] = []string{"api"}
-	attrbs[constants.AttrbOnboardingStatus] = []string{"user_created_by_api"}
+	attrbs[constants.AttrbOnboardingStatus] = []string{"user-created-by-api"}
 
 	t.Run("Create with minimum properties", func(t *testing.T) {
 		var kcUserRep = kc.UserRepresentation{
@@ -513,7 +513,7 @@ func TestCreateUser(t *testing.T) {
 		var idDocumentExpiration = "23.12.2019"
 		var idDocumentCountry = "IT"
 
-		var onboardingStatus = "user_created_by_api"
+		var onboardingStatus = "user-created-by-api"
 
 		mocks.keycloakClient.EXPECT().CreateUser(accessToken, realmName, targetRealmName, gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
 			func(accessToken, realmName, targetRealmName string, kcUserRep kc.UserRepresentation, _ ...interface{}) (string, error) {
@@ -704,7 +704,7 @@ func TestGetUser(t *testing.T) {
 		var idDocumentNumber = "1234-4567-VD-3"
 		var idDocumentExpiration = "23.12.2019"
 		var idDocumentCountry = "MX"
-		var onboardingStatus = "user_created_by_api"
+		var onboardingStatus = "user-created-by-api"
 
 		var attributes = make(kc.Attributes)
 		attributes.SetString(constants.AttrbPhoneNumber, phoneNumber)

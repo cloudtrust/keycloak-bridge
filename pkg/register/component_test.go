@@ -34,7 +34,7 @@ func createValidUser() apiregister.UserRepresentation {
 		docCountry       = "AT"
 		locale           = "fr"
 		gln              = "123456789"
-		onboardingStatus = "self_registration_form_completed"
+		onboardingStatus = "self-registration-form-completed"
 	)
 
 	return apiregister.UserRepresentation{
@@ -253,7 +253,7 @@ func TestRegisterUser(t *testing.T) {
 		mocks.onboardingModule.EXPECT().CreateUser(ctx, accessToken, targetRealmName, targetRealmName, gomock.Any(), false).DoAndReturn(
 			func(_, _, _, _ interface{}, kcUser *kc.UserRepresentation, _ interface{}) (string, error) {
 				assert.NotNil(t, kcUser.Attributes)
-				assert.Equal(t, "self_registration_form_completed", *kcUser.GetAttributeString(constants.AttrbOnboardingStatus))
+				assert.Equal(t, "self-registration-form-completed", *kcUser.GetAttributeString(constants.AttrbOnboardingStatus))
 				return "", errors.New("unexpected error")
 			})
 
@@ -264,7 +264,7 @@ func TestRegisterUser(t *testing.T) {
 	mocks.onboardingModule.EXPECT().CreateUser(ctx, accessToken, targetRealmName, targetRealmName, gomock.Any(), false).DoAndReturn(
 		func(_, _, _, _ interface{}, kcUser *kc.UserRepresentation, _ interface{}) (string, error) {
 			assert.NotNil(t, kcUser.Attributes)
-			assert.Equal(t, "self_registration_form_completed", *kcUser.GetAttributeString(constants.AttrbOnboardingStatus))
+			assert.Equal(t, "self-registration-form-completed", *kcUser.GetAttributeString(constants.AttrbOnboardingStatus))
 			var generatedUsername = "78564513"
 			kcUser.ID = &kcID
 			kcUser.Username = &generatedUsername
