@@ -36,6 +36,7 @@ const (
 	actionVerifyPhoneNumber = "mobilephone-validation"
 
 	managementOnboardingStatus = "user-created-by-api"
+	eventCredentialID          = "credential_id"
 )
 
 // KeycloakClient are methods from keycloak-client used by this component
@@ -1439,8 +1440,11 @@ func (c *component) DeleteCredentialsForUser(ctx context.Context, realmName stri
 		return err
 	}
 
+	details := map[string]string{}
+	details[eventCredentialID] = credentialID
+
 	// Call to CheckRemovableMFA ensures credential is a MFA: record the event 2ND_FACTOR_REMOVED in the audit DB
-	c.auditEventsReporterModule.ReportEvent(ctx, events.NewEventOnUserFromContext(ctx, c.logger, c.originEvent, "2ND_FACTOR_REMOVED", realmName, userID, events.CtEventUnknownUsername, nil))
+	c.auditEventsReporterModule.ReportEvent(ctx, events.NewEventOnUserFromContext(ctx, c.logger, c.originEvent, "2ND_FACTOR_REMOVED", realmName, userID, events.CtEventUnknownUsername, details))
 
 	return err
 }
