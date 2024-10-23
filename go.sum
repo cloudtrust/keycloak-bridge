@@ -57,6 +57,10 @@ github.com/chzyer/test v0.0.0-20180213035817-a1ea475d72b1/go.mod h1:Q3SI9o4m/ZMn
 github.com/client9/misspell v0.3.4/go.mod h1:qj6jICC3Q7zFZvVWo7KLAzC3yx5G7kyvSDkc90ppPyw=
 github.com/cloudtrust/common-service/v2 v2.6.18 h1:WqdymVt+oz5YISpDStQxMp4SvBlfuxiVggJphIBYUZY=
 github.com/cloudtrust/common-service/v2 v2.6.18/go.mod h1:YruU4kJidPCOczCWCXntE5E98RGxUnEGiPbQ3w4/oYg=
+github.com/cloudtrust/common-service/v2 v2.6.19-0.20241017073621-d43adcccf625 h1:F+GKSHNGVQZ+nRn8kG0/BkiUaBeft+9HkjVAYKyT1jQ=
+github.com/cloudtrust/common-service/v2 v2.6.19-0.20241017073621-d43adcccf625/go.mod h1:YruU4kJidPCOczCWCXntE5E98RGxUnEGiPbQ3w4/oYg=
+github.com/cloudtrust/common-service/v2 v2.7.0 h1:YSZKa/d5Jooot6Cq/3NPz+B/Wijqtwi5siJUAZsWWhM=
+github.com/cloudtrust/common-service/v2 v2.7.0/go.mod h1:YeQOWn5xZdlUCc/mvuQbrK3u4qC/eV8iT3zXU+Q3Qvk=
 github.com/cloudtrust/httpclient v1.2.0 h1:0QIhjiVnLSp/K5tb8ifUauw2M2JgckGBqjwJaSMbrIE=
 github.com/cloudtrust/httpclient v1.2.0/go.mod h1:i/MJ4vGvWxf62AOnVimisiJv8a6pJaCS9WLA7cIwvpI=
 github.com/cloudtrust/keycloak-client/v2 v2.6.4 h1:dePGktkv9TpjPFiYyiStKMMJPtz9Huli+eQMT1yTTC4=
@@ -149,6 +153,8 @@ github.com/google/btree v0.0.0-20180813153112-4030bb1f1f0c/go.mod h1:lNA+9X1NB3Z
 github.com/google/btree v1.0.0/go.mod h1:lNA+9X1NB3Zf8V7Ke586lFgjr2dZNuvo3lPJSGZ5JPQ=
 github.com/google/flatbuffers v23.5.26+incompatible h1:M9dgRyhJemaM4Sw8+66GHBu8ioaQmyPLg1b8VwK5WJg=
 github.com/google/flatbuffers v23.5.26+incompatible/go.mod h1:1AeVuKshWv4vARoZatz6mlQ0JxURH0Kv5+zNeJKJCa8=
+github.com/google/flatbuffers v24.3.25+incompatible h1:CX395cjN9Kke9mmalRoL3d81AtFUxJM+yDthflgJGkI=
+github.com/google/flatbuffers v24.3.25+incompatible/go.mod h1:1AeVuKshWv4vARoZatz6mlQ0JxURH0Kv5+zNeJKJCa8=
 github.com/google/go-cmp v0.2.0/go.mod h1:oXzfMopK8JAjlY9xF4vHSVASa0yLyX7SntLO5aqRK0M=
 github.com/google/go-cmp v0.3.0/go.mod h1:8QqcDgzrUqlUb/G2PQTWiueGozuR1884gddMywk6iLU=
 github.com/google/go-cmp v0.3.1/go.mod h1:8QqcDgzrUqlUb/G2PQTWiueGozuR1884gddMywk6iLU=

@@ -4,7 +4,7 @@ go 1.21.0
 
 require (
 	github.com/IBM/sarama v1.41.1
-	github.com/cloudtrust/common-service/v2 v2.6.18
+	github.com/cloudtrust/common-service/v2 v2.7.0
 	github.com/cloudtrust/httpclient v1.2.0
 	github.com/cloudtrust/keycloak-client/v2 v2.7.0
 	github.com/go-kit/kit v0.13.0
@@ -39,7 +39,7 @@ require (
 	github.com/go-logfmt/logfmt v0.6.0 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
-	github.com/google/flatbuffers v23.5.26+incompatible // indirect
+	github.com/google/flatbuffers v24.3.25+incompatible // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/go-uuid v1.0.3 // indirect
