@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/cloudtrust/keycloak-bridge/pkg/communications/mock"
-	"github.com/golang/mock/gomock"
+	"go.uber.org/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 

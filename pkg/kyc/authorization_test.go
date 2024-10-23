@@ -11,7 +11,7 @@ import (
 	apicommon "github.com/cloudtrust/keycloak-bridge/api/common"
 	apikyc "github.com/cloudtrust/keycloak-bridge/api/kyc"
 	"github.com/cloudtrust/keycloak-bridge/pkg/kyc/mock"
-	"github.com/golang/mock/gomock"
+	"go.uber.org/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 
