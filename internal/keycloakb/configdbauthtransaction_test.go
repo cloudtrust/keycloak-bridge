@@ -8,7 +8,7 @@ import (
 
 	"github.com/cloudtrust/common-service/v2/configuration"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/mock"
-	"github.com/golang/mock/gomock"
+	"go.uber.org/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 

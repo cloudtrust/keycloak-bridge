@@ -7,7 +7,7 @@ import (
 
 	commonhttp "github.com/cloudtrust/common-service/v2/http"
 	"github.com/cloudtrust/keycloak-bridge/pkg/tasks/mock"
-	"github.com/golang/mock/gomock"
+	"go.uber.org/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 

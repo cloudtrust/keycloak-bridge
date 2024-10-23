@@ -7,7 +7,7 @@ import (
 
 	cs "github.com/cloudtrust/common-service/v2"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/mock"
-	"github.com/golang/mock/gomock"
+	"go.uber.org/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/h2non/gentleman.v2/plugin"
 )

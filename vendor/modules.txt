@@ -8,8 +8,6 @@ github.com/IBM/sarama
 # github.com/VividCortex/gohistogram v1.0.0
 ## explicit
 github.com/VividCortex/gohistogram
-# github.com/certifi/gocertifi v0.0.0-20210507211836-431795d63e8d
-## explicit; go 1.12
 # github.com/cloudtrust/common-service/v2 v2.7.0
 ## explicit; go 1.21.0
 github.com/cloudtrust/common-service/v2
@@ -59,8 +57,6 @@ github.com/fsnotify/fsnotify
 # github.com/gbrlsnchs/jwt/v2 v2.0.0
 ## explicit
 github.com/gbrlsnchs/jwt/v2
-# github.com/getsentry/raven-go v0.2.0
-## explicit
 # github.com/go-kit/kit v0.13.0
 ## explicit; go 1.17
 github.com/go-kit/kit/endpoint
@@ -85,10 +81,7 @@ github.com/go-logfmt/logfmt
 github.com/go-sql-driver/mysql
 # github.com/golang/mock v1.6.0
 ## explicit; go 1.11
-github.com/golang/mock/gomock
 github.com/golang/mock/mockgen/model
-# github.com/golang/protobuf v1.5.4
-## explicit; go 1.17
 # github.com/golang/snappy v0.0.4
 ## explicit
 github.com/golang/snappy
@@ -257,8 +250,6 @@ github.com/spf13/afero/mem
 # github.com/spf13/cast v1.6.0
 ## explicit; go 1.19
 github.com/spf13/cast
-# github.com/spf13/jwalterweatherman v1.1.0
-## explicit
 # github.com/spf13/pflag v1.0.5
 ## explicit; go 1.12
 github.com/spf13/pflag
@@ -306,6 +297,9 @@ github.com/uber/jaeger-lib/metrics
 # go.uber.org/atomic v1.11.0
 ## explicit; go 1.18
 go.uber.org/atomic
+# go.uber.org/mock v0.5.0
+## explicit; go 1.22
+go.uber.org/mock/gomock
 # go.uber.org/multierr v1.9.0
 ## explicit; go 1.19
 go.uber.org/multierr
@@ -355,8 +349,6 @@ golang.org/x/text/unicode/norm
 # golang.org/x/time v0.5.0
 ## explicit; go 1.18
 golang.org/x/time/rate
-# google.golang.org/appengine v1.6.8
-## explicit; go 1.11
 # google.golang.org/protobuf v1.34.0
 ## explicit; go 1.17
 google.golang.org/protobuf/encoding/prototext

@@ -8,7 +8,7 @@ import (
 	errorhandler "github.com/cloudtrust/common-service/v2/errors"
 	api "github.com/cloudtrust/keycloak-bridge/api/support"
 	"github.com/cloudtrust/keycloak-bridge/pkg/support/mock"
-	"github.com/golang/mock/gomock"
+	"go.uber.org/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 
