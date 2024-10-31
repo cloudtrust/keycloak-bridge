@@ -37,5 +37,4 @@ var (
 	AttrbIDDocumentNumber      = kc.AttributeKey(fields.IDDocumentNumber.AttributeName())
 	AttrbIDDocumentExpiration  = kc.AttributeKey(fields.IDDocumentExpiration.AttributeName())
 	AttrbIDDocumentCountry     = kc.AttributeKey(fields.IDDocumentCountry.AttributeName())
-	AttrbOnboardingStatus      = kc.AttributeKey(fields.OnboardingStatus.AttributeName())
 )

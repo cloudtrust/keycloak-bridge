@@ -36,7 +36,6 @@ type UserRepresentation struct {
 	IDDocumentCountry    *string `json:"idDocumentCountry,omitempty"`
 	Locale               *string `json:"locale,omitempty"`
 	BusinessID           *string `json:"businessId,omitempty"`
-	OnboardingStatus     *string `json:"onboardingStatus,omitempty"`
 }
 
 // ConfigurationRepresentation representation
@@ -85,7 +84,6 @@ func (u *UserRepresentation) ConvertToKeycloak() kc.UserRepresentation {
 	attributes.SetStringWhenNotNil(constants.AttrbIDDocumentNumber, u.IDDocumentNumber)
 	attributes.SetStringWhenNotNil(constants.AttrbIDDocumentExpiration, u.IDDocumentExpiration)
 	attributes.SetStringWhenNotNil(constants.AttrbIDDocumentCountry, u.IDDocumentCountry)
-	attributes.SetStringWhenNotNil(constants.AttrbOnboardingStatus, u.OnboardingStatus)
 
 	return kc.UserRepresentation{
 		Username:      u.Username,
@@ -140,8 +138,6 @@ func (u *UserRepresentation) GetField(field string) interface{} {
 		return profile.IfNotNil(u.Locale)
 	case fields.BusinessID.AttributeName():
 		return profile.IfNotNil(u.BusinessID)
-	case fields.OnboardingStatus.AttributeName():
-		return profile.IfNotNil(u.OnboardingStatus)
 	default:
 		return nil
 	}
@@ -194,9 +190,6 @@ func (u *UserRepresentation) SetField(field string, value interface{}) {
 		break
 	case fields.BusinessID.AttributeName():
 		u.BusinessID = cs.ToStringPtr(value)
-		break
-	case fields.OnboardingStatus.AttributeName():
-		u.OnboardingStatus = cs.ToStringPtr(value)
 		break
 	}
 }
