@@ -263,6 +263,7 @@ type RealmAdminConfiguration struct {
 	AutoIdentificationVoucherEnabled      *bool           `json:"auto_identification_voucher_enabled"`
 	AutoIdentificationAccountingEnabled   *bool           `json:"auto_identification_accounting_enabled"`
 	AutoIdentificationPrepaymentRequired  *bool           `json:"auto_identification_prepayment_required"`
+	OnboardingStatusEnabled               *bool           `json:"onboarding_status_enabled"`
 }
 
 // RealmAdminAccreditation struct
@@ -754,6 +755,7 @@ func ConvertRealmAdminConfigurationFromDBStruct(conf configuration.RealmAdminCon
 		AutoIdentificationVoucherEnabled:      defaultBool(conf.AutoIdentificationVoucherEnabled, false),
 		AutoIdentificationAccountingEnabled:   defaultBool(conf.AutoIdentificationAccountingEnabled, false),
 		AutoIdentificationPrepaymentRequired:  defaultBool(conf.AutoIdentificationPrepaymentRequired, false),
+		OnboardingStatusEnabled:               defaultBool(conf.OnboardingStatusEnabled, false),
 	}
 }
 
@@ -777,6 +779,7 @@ func (rac RealmAdminConfiguration) ConvertToDBStruct() configuration.RealmAdminC
 		AutoIdentificationVoucherEnabled:      rac.AutoIdentificationVoucherEnabled,
 		AutoIdentificationAccountingEnabled:   rac.AutoIdentificationAccountingEnabled,
 		AutoIdentificationPrepaymentRequired:  rac.AutoIdentificationPrepaymentRequired,
+		OnboardingStatusEnabled:               rac.OnboardingStatusEnabled,
 	}
 }
 

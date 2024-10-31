@@ -559,6 +559,7 @@ func TestConvertRealmAdminConfiguration(t *testing.T) {
 		assert.False(t, *res.AutoIdentificationVoucherEnabled)
 		assert.False(t, *res.AutoIdentificationAccountingEnabled)
 		assert.False(t, *res.AutoIdentificationPrepaymentRequired)
+		assert.False(t, *res.OnboardingStatusEnabled)
 	})
 	t.Run("Non-empty values", func(t *testing.T) {
 		var mode = "mode"
@@ -573,6 +574,7 @@ func TestConvertRealmAdminConfiguration(t *testing.T) {
 		var autoIdentificationVoucherEnabled = true
 		var autoIdentificationAccountingEnabled = true
 		var autoIdentificationPrepaymentRequired = true
+		var onBoardingStatusEnabled = true
 		var config = configuration.RealmAdminConfiguration{
 			Mode:                                  &mode,
 			AvailableChecks:                       map[string]bool{"true": true, "false": false},
@@ -591,6 +593,7 @@ func TestConvertRealmAdminConfiguration(t *testing.T) {
 			AutoIdentificationVoucherEnabled:      &autoIdentificationVoucherEnabled,
 			AutoIdentificationAccountingEnabled:   &autoIdentificationAccountingEnabled,
 			AutoIdentificationPrepaymentRequired:  &autoIdentificationPrepaymentRequired,
+			OnboardingStatusEnabled:               &onBoardingStatusEnabled,
 		}
 		var res = ConvertRealmAdminConfigurationFromDBStruct(config)
 		assert.Equal(t, mode, *res.Mode)
@@ -612,6 +615,7 @@ func TestConvertRealmAdminConfiguration(t *testing.T) {
 		assert.True(t, *res.AutoIdentificationVoucherEnabled)
 		assert.True(t, *res.AutoIdentificationAccountingEnabled)
 		assert.True(t, *res.AutoIdentificationPrepaymentRequired)
+		assert.True(t, *res.OnboardingStatusEnabled)
 	})
 }
 

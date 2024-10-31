@@ -391,7 +391,17 @@ func (c *component) genericCreateUser(ctx context.Context, accessToken string, c
 	user api.UserRepresentation, generateUsername bool, generateNameID bool, termsOfUse bool, useOnboardingCheckForExistingUser bool) (string, error) {
 	var userRep = api.ConvertToKCUser(user)
 	userRep.SetAttributeString(constants.AttrbSource, source)
-	userRep.SetAttributeString(constants.AttrbOnboardingStatus, managementOnboardingStatus)
+
+	realm := ctx.Value(cs.CtContextRealm).(string)
+
+	realmAdminConfig, err := c.configDBModule.GetAdminConfiguration(ctx, realm)
+	if err != nil {
+		c.logger.Info(ctx, "err", err.Error())
+	}
+
+	if realmAdminConfig.OnboardingStatusEnabled != nil && *realmAdminConfig.OnboardingStatusEnabled {
+		userRep.SetAttributeString(constants.AttrbOnboardingStatus, managementOnboardingStatus)
+	}
 
 	if termsOfUse {
 		var reqActions []string
@@ -403,7 +413,6 @@ func (c *component) genericCreateUser(ctx context.Context, accessToken string, c
 	}
 
 	var locationURL string
-	var err error
 	if targetRealmName == c.socialRealmName || generateUsername {
 		if useOnboardingCheckForExistingUser {
 			err = c.onboardingModule.ProcessAlreadyExistingUserCases(ctx, accessToken, targetRealmName, *user.Email, customerRealmName, c.onAlreadyExistsUser)

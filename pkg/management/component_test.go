@@ -23,8 +23,8 @@ import (
 
 	"github.com/cloudtrust/keycloak-bridge/pkg/management/mock"
 	kc "github.com/cloudtrust/keycloak-client/v2"
-	"go.uber.org/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 type componentMocks struct {
@@ -435,9 +435,10 @@ func TestCreateUser(t *testing.T) {
 	ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 	ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 
-	mocks.configurationDBModule.EXPECT().GetAdminConfiguration(gomock.Any(), gomock.Any()).Return(configuration.RealmAdminConfiguration{}, nil).AnyTimes()
-
 	t.Run("Create user with username generation, don't need terms of use", func(t *testing.T) {
+		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, realmName).Return(configuration.RealmAdminConfiguration{
+			OnboardingStatusEnabled: ptrBool(false),
+		}, nil)
 		mocks.onboardingModule.EXPECT().CreateUser(ctx, accessToken, realmName, socialRealmName, gomock.Any(), false).
 			DoAndReturn(func(_, _, _, _ interface{}, user *kc.UserRepresentation, _ interface{}) (string, error) {
 				assert.NotNil(t, user)
@@ -451,6 +452,9 @@ func TestCreateUser(t *testing.T) {
 		assert.Equal(t, anyError, err)
 	})
 	t.Run("Create user with username generation, need terms of use", func(t *testing.T) {
+		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, realmName).Return(configuration.RealmAdminConfiguration{
+			OnboardingStatusEnabled: ptrBool(false),
+		}, nil)
 		mocks.onboardingModule.EXPECT().CreateUser(ctx, accessToken, realmName, socialRealmName, gomock.Any(), true).
 			DoAndReturn(func(_, _, _, _ interface{}, user *kc.UserRepresentation, _ interface{}) (string, error) {
 				assert.NotNil(t, user)
@@ -468,7 +472,6 @@ func TestCreateUser(t *testing.T) {
 
 	var attrbs = make(kc.Attributes)
 	attrbs[constants.AttrbSource] = []string{"api"}
-	attrbs[constants.AttrbOnboardingStatus] = []string{"user-created-by-api"}
 
 	t.Run("Create with minimum properties", func(t *testing.T) {
 		var kcUserRep = kc.UserRepresentation{
@@ -476,6 +479,9 @@ func TestCreateUser(t *testing.T) {
 			Attributes: &attrbs,
 		}
 
+		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, realmName).Return(configuration.RealmAdminConfiguration{
+			OnboardingStatusEnabled: ptrBool(false),
+		}, nil)
 		mocks.keycloakClient.EXPECT().CreateUser(accessToken, realmName, targetRealmName, kcUserRep, "generateNameID", "false").Return(locationURL, nil)
 		mocks.eventsReporter.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
 
@@ -488,6 +494,8 @@ func TestCreateUser(t *testing.T) {
 		assert.Nil(t, err)
 		assert.Equal(t, locationURL, location)
 	})
+
+	attrbs[constants.AttrbOnboardingStatus] = []string{"user-created-by-api"}
 
 	t.Run("Create with all properties allowed by Bridge API", func(t *testing.T) {
 		var email = "toto@elca.ch"
@@ -515,6 +523,14 @@ func TestCreateUser(t *testing.T) {
 
 		var onboardingStatus = "user-created-by-api"
 
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
+		ctx = context.WithValue(ctx, cs.CtContextUserID, userID)
+		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
+
+		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, realmName).Return(configuration.RealmAdminConfiguration{
+			OnboardingStatusEnabled: ptrBool(true),
+		}, nil)
 		mocks.keycloakClient.EXPECT().CreateUser(accessToken, realmName, targetRealmName, gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
 			func(accessToken, realmName, targetRealmName string, kcUserRep kc.UserRepresentation, _ ...interface{}) (string, error) {
 				assert.Equal(t, username, *kcUserRep.Username)
@@ -533,11 +549,6 @@ func TestCreateUser(t *testing.T) {
 				assert.Equal(t, onboardingStatus, *kcUserRep.GetAttributeString(constants.AttrbOnboardingStatus))
 				return locationURL, nil
 			})
-
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
-		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
-		ctx = context.WithValue(ctx, cs.CtContextUserID, userID)
-		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 
 		var userRep = api.UserRepresentation{
 			ID:                   &userID,
@@ -575,10 +586,13 @@ func TestCreateUser(t *testing.T) {
 			Attributes: &attrbs,
 		}
 
-		mocks.keycloakClient.EXPECT().CreateUser(accessToken, realmName, targetRealmName, kcUserRep, "generateNameID", "false").Return("", fmt.Errorf("Invalid input"))
-
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
+
+		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, realmName).Return(configuration.RealmAdminConfiguration{
+			OnboardingStatusEnabled: ptrBool(true),
+		}, nil)
+		mocks.keycloakClient.EXPECT().CreateUser(accessToken, realmName, targetRealmName, kcUserRep, "generateNameID", "false").Return("", fmt.Errorf("Invalid input"))
 
 		var userRep = api.UserRepresentation{}
 		mocks.logger.EXPECT().Warn(ctx, "err", "Invalid input")
@@ -611,7 +625,6 @@ func TestCreateUserInSocialRealm(t *testing.T) {
 	}
 	mocks.logger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
 	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
-	mocks.configurationDBModule.EXPECT().GetAdminConfiguration(gomock.Any(), managementComponent.socialRealmName).Return(configuration.RealmAdminConfiguration{}, nil).AnyTimes()
 
 	t.Run("Can't get JWT token", func(t *testing.T) {
 		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return("", anyError)
@@ -620,6 +633,7 @@ func TestCreateUserInSocialRealm(t *testing.T) {
 		assert.Equal(t, anyError, err)
 	})
 	t.Run("Process already existing user cases calls handler", func(t *testing.T) {
+		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, realmName).Return(configuration.RealmAdminConfiguration{}, nil)
 		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
 		mocks.onboardingModule.EXPECT().ProcessAlreadyExistingUserCases(ctx, accessToken, managementComponent.socialRealmName, email, realmName, gomock.Any()).Return(anyError)
 		_, err := managementComponent.CreateUserInSocialRealm(ctx, userRep, false)
