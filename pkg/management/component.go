@@ -394,7 +394,8 @@ func (c *component) genericCreateUser(ctx context.Context, accessToken string, c
 
 	realmAdminConfig, err := c.configDBModule.GetAdminConfiguration(ctx, targetRealmName)
 	if err != nil {
-		c.logger.Info(ctx, "err", err.Error())
+		c.logger.Warn(ctx, "msg", "Failed to retrieve realm admin configuration", "err", err.Error())
+		return "", err
 	}
 
 	if realmAdminConfig.OnboardingStatusEnabled != nil && *realmAdminConfig.OnboardingStatusEnabled {

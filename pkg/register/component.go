@@ -325,7 +325,8 @@ func (c *component) createUser(ctx context.Context, accessToken string, realmNam
 	// Set onboarding status
 	_, realmAdminConfig, err := c.configDBModule.GetConfigurations(ctx, realmName)
 	if err != nil {
-		c.logger.Info(ctx, "err", err.Error())
+		c.logger.Warn(ctx, "msg", "Failed to retrieve realm admin configuration", "err", err.Error())
+		return kc.UserRepresentation{}, err
 	}
 
 	if realmAdminConfig.OnboardingStatusEnabled != nil && *realmAdminConfig.OnboardingStatusEnabled {

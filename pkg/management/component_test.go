@@ -435,6 +435,15 @@ func TestCreateUser(t *testing.T) {
 	ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 	ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 
+	t.Run("Create user failed - can't retrieve admin configuration", func(t *testing.T) {
+		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, socialRealmName).Return(configuration.RealmAdminConfiguration{}, anyError)
+		mocks.logger.EXPECT().Warn(ctx, "msg", "Failed to retrieve realm admin configuration", "err", anyError.Error())
+
+		_, err := managementComponent.CreateUser(ctx, socialRealmName, api.UserRepresentation{}, false, false, false)
+
+		assert.Equal(t, anyError, err)
+	})
+
 	t.Run("Create user with username generation, don't need terms of use", func(t *testing.T) {
 		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, socialRealmName).Return(configuration.RealmAdminConfiguration{
 			OnboardingStatusEnabled: ptrBool(false),
