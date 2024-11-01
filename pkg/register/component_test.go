@@ -14,8 +14,8 @@ import (
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/cloudtrust/keycloak-bridge/pkg/register/mock"
 	kc "github.com/cloudtrust/keycloak-client/v2"
-	"go.uber.org/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func createValidUser() apiregister.UserRepresentation {
@@ -122,8 +122,9 @@ func TestRegisterUser(t *testing.T) {
 		OnboardingRedirectURI:  &onboardingURI,
 	}
 	var realmAdminConf = configuration.RealmAdminConfiguration{
-		SelfRegisterEnabled: ptrBool(true),
-		ShowGlnEditing:      ptrBool(true),
+		OnboardingStatusEnabled: ptrBool(true),
+		SelfRegisterEnabled:     ptrBool(true),
+		ShowGlnEditing:          ptrBool(true),
 	}
 	var anyError = errors.New("any error")
 

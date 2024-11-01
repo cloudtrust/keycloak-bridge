@@ -323,7 +323,15 @@ func (c *component) createUser(ctx context.Context, accessToken string, realmNam
 	kcUser.Groups = &groupIDs
 
 	// Set onboarding status
-	kcUser.SetAttributeString(constants.AttrbOnboardingStatus, registerOnboardingStatus)
+	_, realmAdminConfig, err := c.configDBModule.GetConfigurations(ctx, realmName)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Failed to retrieve realm admin configuration", "err", err.Error())
+		return kc.UserRepresentation{}, err
+	}
+
+	if realmAdminConfig.OnboardingStatusEnabled != nil && *realmAdminConfig.OnboardingStatusEnabled {
+		kcUser.SetAttributeString(constants.AttrbOnboardingStatus, registerOnboardingStatus)
+	}
 
 	_, err = c.onboardingModule.CreateUser(ctx, accessToken, realmName, realmName, &kcUser, false)
 	if err != nil {
