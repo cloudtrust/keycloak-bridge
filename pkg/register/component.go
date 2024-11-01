@@ -5,7 +5,6 @@ import (
 	"errors"
 	"time"
 
-	cs "github.com/cloudtrust/common-service/v2"
 	"github.com/cloudtrust/common-service/v2/configuration"
 	errorhandler "github.com/cloudtrust/common-service/v2/errors"
 	"github.com/cloudtrust/common-service/v2/events"
@@ -324,9 +323,7 @@ func (c *component) createUser(ctx context.Context, accessToken string, realmNam
 	kcUser.Groups = &groupIDs
 
 	// Set onboarding status
-	realm := ctx.Value(cs.CtContextRealm).(string)
-
-	_, realmAdminConfig, err := c.configDBModule.GetConfigurations(ctx, realm)
+	_, realmAdminConfig, err := c.configDBModule.GetConfigurations(ctx, realmName)
 	if err != nil {
 		c.logger.Info(ctx, "err", err.Error())
 	}

@@ -91,11 +91,11 @@ func TestRegisterUser(t *testing.T) {
 	var mocks = createMocks(mockCtrl)
 	var component = mocks.createComponent()
 
+	var ctx = context.TODO()
 	var targetRealmName = "trustid"
 	var customerRealmName = "customer"
 	var user = createValidUser()
 	var accessToken = "JWT_ACCESS_TOKEN"
-	var ctx = context.WithValue(context.Background(), cs.CtContextRealm, targetRealmName)
 
 	var kcID = "98784-48764-5565"
 

@@ -392,9 +392,7 @@ func (c *component) genericCreateUser(ctx context.Context, accessToken string, c
 	var userRep = api.ConvertToKCUser(user)
 	userRep.SetAttributeString(constants.AttrbSource, source)
 
-	realm := ctx.Value(cs.CtContextRealm).(string)
-
-	realmAdminConfig, err := c.configDBModule.GetAdminConfiguration(ctx, realm)
+	realmAdminConfig, err := c.configDBModule.GetAdminConfiguration(ctx, targetRealmName)
 	if err != nil {
 		c.logger.Info(ctx, "err", err.Error())
 	}

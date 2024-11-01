@@ -436,7 +436,7 @@ func TestCreateUser(t *testing.T) {
 	ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 
 	t.Run("Create user with username generation, don't need terms of use", func(t *testing.T) {
-		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, realmName).Return(configuration.RealmAdminConfiguration{
+		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, socialRealmName).Return(configuration.RealmAdminConfiguration{
 			OnboardingStatusEnabled: ptrBool(false),
 		}, nil)
 		mocks.onboardingModule.EXPECT().CreateUser(ctx, accessToken, realmName, socialRealmName, gomock.Any(), false).
@@ -452,7 +452,7 @@ func TestCreateUser(t *testing.T) {
 		assert.Equal(t, anyError, err)
 	})
 	t.Run("Create user with username generation, need terms of use", func(t *testing.T) {
-		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, realmName).Return(configuration.RealmAdminConfiguration{
+		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, socialRealmName).Return(configuration.RealmAdminConfiguration{
 			OnboardingStatusEnabled: ptrBool(false),
 		}, nil)
 		mocks.onboardingModule.EXPECT().CreateUser(ctx, accessToken, realmName, socialRealmName, gomock.Any(), true).
@@ -479,7 +479,7 @@ func TestCreateUser(t *testing.T) {
 			Attributes: &attrbs,
 		}
 
-		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, realmName).Return(configuration.RealmAdminConfiguration{
+		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, targetRealmName).Return(configuration.RealmAdminConfiguration{
 			OnboardingStatusEnabled: ptrBool(false),
 		}, nil)
 		mocks.keycloakClient.EXPECT().CreateUser(accessToken, realmName, targetRealmName, kcUserRep, "generateNameID", "false").Return(locationURL, nil)
@@ -528,7 +528,7 @@ func TestCreateUser(t *testing.T) {
 		ctx = context.WithValue(ctx, cs.CtContextUserID, userID)
 		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 
-		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, realmName).Return(configuration.RealmAdminConfiguration{
+		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, targetRealmName).Return(configuration.RealmAdminConfiguration{
 			OnboardingStatusEnabled: ptrBool(true),
 		}, nil)
 		mocks.keycloakClient.EXPECT().CreateUser(accessToken, realmName, targetRealmName, gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
@@ -589,7 +589,7 @@ func TestCreateUser(t *testing.T) {
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 
-		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, realmName).Return(configuration.RealmAdminConfiguration{
+		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, targetRealmName).Return(configuration.RealmAdminConfiguration{
 			OnboardingStatusEnabled: ptrBool(true),
 		}, nil)
 		mocks.keycloakClient.EXPECT().CreateUser(accessToken, realmName, targetRealmName, kcUserRep, "generateNameID", "false").Return("", fmt.Errorf("Invalid input"))
@@ -633,7 +633,7 @@ func TestCreateUserInSocialRealm(t *testing.T) {
 		assert.Equal(t, anyError, err)
 	})
 	t.Run("Process already existing user cases calls handler", func(t *testing.T) {
-		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, realmName).Return(configuration.RealmAdminConfiguration{}, nil)
+		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, socialRealmName).Return(configuration.RealmAdminConfiguration{}, nil)
 		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
 		mocks.onboardingModule.EXPECT().ProcessAlreadyExistingUserCases(ctx, accessToken, managementComponent.socialRealmName, email, realmName, gomock.Any()).Return(anyError)
 		_, err := managementComponent.CreateUserInSocialRealm(ctx, userRep, false)
