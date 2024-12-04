@@ -161,12 +161,14 @@ const (
 	cfgIdnowTimeout             = "idnow-service-timeout"
 	cfgContextKeys              = "context-keys"
 	cfgSaramaLogEnabled         = "sarama-log-enabled"
+	cfgLogEventRate             = "log-events-rate"
 
 	tokenProviderDefaultKey = "default"
 
 	// Kafka
-	kafkaReloadAuth    = "auth-reload-producer"
-	kafkaEventProducer = "event-producer"
+	kafkaReloadAuthProducer = "auth-reload-producer"
+	kafkaReloadAuthConsumer = "auth-reload-consumer"
+	kafkaEventProducer      = "event-producer"
 )
 
 func init() {
@@ -254,7 +256,8 @@ func main() {
 			Debug:            c.GetBool(cfgDebug),
 		}
 
-		logLevel = c.GetString(cfgLogLevel)
+		logLevel     = c.GetString(cfgLogLevel)
+		logEventRate = c.GetInt64(cfgLogEventRate)
 
 		// Access logs
 		accessLogsEnabled = c.GetBool(cfgAccessLogsEnabled)
@@ -444,48 +447,6 @@ func main() {
 	// Users profile cache
 	profileCache := toolbox.NewUserProfileCache(keycloakClient, technicalTokenProvider, profile.DefaultProfile)
 
-	// Kafka
-	var kafkaUniverse *kafkauniverse.KafkaUniverse
-	{
-		var kafkaLogger = log.With(logger, "svc", "kafka")
-
-		var err error
-		kafkaUniverse, err = kafkauniverse.NewKafkaUniverse(ctx, kafkaLogger, "CT_KAFKA_", func(value any) error {
-			return c.UnmarshalKey("kafka", value)
-		})
-		if err != nil {
-			kafkaLogger.Error(ctx, "msg", "could not configure Kafka", "err", err)
-			return
-		}
-		logger.Info(ctx, "msg", "Kafka configuration loaded")
-	}
-	defer kafkaUniverse.Close()
-
-	if err := kafkaUniverse.InitializeProducers(kafkaReloadAuth); err != nil {
-		logger.Error(ctx, "msg", "can't initialize kafka producers", "err", err)
-		return
-	}
-
-	authReloadProducer := kafkaUniverse.GetProducer(kafkaReloadAuth)
-	eventProducer := kafkaUniverse.GetProducer(kafkaEventProducer)
-
-	// Health check configuration
-	var healthChecker = healthcheck.NewHealthChecker(keycloakb.ComponentName, logger)
-	var healthCheckCacheDuration = c.GetDuration("livenessprobe-cache-duration") * time.Millisecond
-	var httpTimeout = c.GetDuration("livenessprobe-http-timeout") * time.Millisecond
-	healthChecker.AddDatabase("Config R/W", configurationRwDBConn, healthCheckCacheDuration)
-	healthChecker.AddDatabase("Config RO", configurationRoDBConn, healthCheckCacheDuration)
-	healthChecker.AddDatabase("Archive RO", archiveRwDBConn, healthCheckCacheDuration)
-	healthChecker.AddHTTPEndpoints(c.GetStringMapString("healthcheck-endpoints"), httpTimeout, 200, healthCheckCacheDuration)
-
-	var livenessChecker = healthcheck.NewHealthChecker(keycloakb.ComponentName, logger)
-	var livenessAuditTimeout = c.GetDuration("livenessprobe-audit-timeout") * time.Millisecond
-	livenessChecker.AddAuditEventsReporterModule("Audit Events Reporter", csevents.NewAuditEventReporterModule(eventProducer, logger), livenessAuditTimeout, healthCheckCacheDuration)
-
-	// Actions allowed in Authorization Manager
-	var authActions = security.Actions.GetActionNamesForService(security.BridgeService)
-	authActions = mobile.AppendIDNowActions(authActions)
-
 	// Authorization Manager
 	var authorizationManager security.AuthorizationManager
 	{
@@ -504,6 +465,66 @@ func main() {
 			return
 		}
 	}
+
+	// Kafka
+	var kafkaUniverse *kafkauniverse.KafkaUniverse
+	{
+		var kafkaLogger = log.With(logger, "svc", "kafka")
+
+		var err error
+		kafkaUniverse, err = kafkauniverse.NewKafkaUniverse(ctx, kafkaLogger, "CT_KAFKA_", func(value any) error {
+			return c.UnmarshalKey("kafka", value)
+		})
+		if err != nil {
+			kafkaLogger.Error(ctx, "msg", "could not configure Kafka", "err", err)
+			return
+		}
+		logger.Info(ctx, "msg", "Kafka configuration loaded")
+	}
+	defer kafkaUniverse.Close()
+
+	if err := kafkaUniverse.InitializeConsumers(kafkaReloadAuthConsumer); err != nil {
+		logger.Error(ctx, "msg", "can't initialize kafka producers", "err", err)
+		return
+	}
+
+	var contextInitializer = func(ctx context.Context) context.Context {
+		return context.WithValue(ctx, cs.CtContextCorrelationID, idGenerator.NextID())
+	}
+
+	kafkaUniverse.GetConsumer(kafkaReloadAuthConsumer).
+		SetContextInitializer(contextInitializer).
+		SetLogEventRate(logEventRate).
+		SetHandler(func(ctx context.Context, message kafkauniverse.KafkaMessage) error {
+			return authorizationManager.ReloadAuthorizations(ctx)
+		})
+
+	kafkaUniverse.StartConsumers(kafkaReloadAuthConsumer)
+
+	if err := kafkaUniverse.InitializeProducers(kafkaReloadAuthProducer); err != nil {
+		logger.Error(ctx, "msg", "can't initialize kafka producers", "err", err)
+		return
+	}
+
+	authReloadProducer := kafkaUniverse.GetProducer(kafkaReloadAuthProducer)
+	eventProducer := kafkaUniverse.GetProducer(kafkaEventProducer)
+
+	// Health check configuration
+	var healthChecker = healthcheck.NewHealthChecker(keycloakb.ComponentName, logger)
+	var healthCheckCacheDuration = c.GetDuration("livenessprobe-cache-duration") * time.Millisecond
+	var httpTimeout = c.GetDuration("livenessprobe-http-timeout") * time.Millisecond
+	healthChecker.AddDatabase("Config R/W", configurationRwDBConn, healthCheckCacheDuration)
+	healthChecker.AddDatabase("Config RO", configurationRoDBConn, healthCheckCacheDuration)
+	healthChecker.AddDatabase("Archive RO", archiveRwDBConn, healthCheckCacheDuration)
+	healthChecker.AddHTTPEndpoints(c.GetStringMapString("healthcheck-endpoints"), httpTimeout, 200, healthCheckCacheDuration)
+
+	var livenessChecker = healthcheck.NewHealthChecker(keycloakb.ComponentName, logger)
+	var livenessAuditTimeout = c.GetDuration("livenessprobe-audit-timeout") * time.Millisecond
+	livenessChecker.AddAuditEventsReporterModule("Audit Events Reporter", csevents.NewAuditEventReporterModule(eventProducer, logger), livenessAuditTimeout, healthCheckCacheDuration)
+
+	// Actions allowed in Authorization Manager
+	var authActions = security.Actions.GetActionNamesForService(security.BridgeService)
+	authActions = mobile.AppendIDNowActions(authActions)
 
 	// GLN verifier
 	var glnLookupProviders []business.GlnLookupProvider
@@ -1412,6 +1433,7 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 
 	// Log level
 	v.SetDefault(cfgLogLevel, "info")
+	v.SetDefault(cfgLogEventRate, 1000)
 
 	// Access Logs
 	v.SetDefault(cfgAccessLogsEnabled, true)

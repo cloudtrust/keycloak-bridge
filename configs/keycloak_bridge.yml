@@ -15,6 +15,7 @@ monitoring-http-host-port: 0.0.0.0:8899
 #   - info: log error, warn, info log levels
 #   - debug: log error, warn, info, debug log levels
 log-level: debug
+log-events-rate: 1
 
 # Access logs
 access-logs: true
@@ -205,3 +206,7 @@ kafka:
     topic: auth-reload
   - id: event-producer
     topic: cloudtrust-event
+  consumers:
+  - id: auth-reload-consumer
+    topic: auth-reload
+    group-id: <uuid>
