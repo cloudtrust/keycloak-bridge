@@ -10,6 +10,8 @@ github.com/cloudtrust/common-service/v2 v2.8.1 h1:EnMErDKS9vmKcb9/pefAjFHBc/j6tr
 github.com/cloudtrust/common-service/v2 v2.8.1/go.mod h1:etnqp92zVIsMLG/TXfJadJxfy6jzn/24r98/sU3s9mw=
 github.com/cloudtrust/httpclient v1.3.0 h1:+oQSw0WKksVyA5Us+w9KKGmV0yGmvWRK8VPYmDx4AYU=
 github.com/cloudtrust/httpclient v1.3.0/go.mod h1:/CH8im07zB0/mOTngQeid+XOVLdEU+Li1mP3bBOfs/4=
+github.com/cloudtrust/kafka-client v1.3.0 h1:u7NG+Lr2rk2XwUwYnTibiobp93cKwzGC67VKBLthsJA=
+github.com/cloudtrust/kafka-client v1.3.0/go.mod h1:dYj2Cts+VfwjiBRzRBFntw9eaQSINa+FhWRSOV2ew2k=
 github.com/cloudtrust/keycloak-client/v2 v2.8.0 h1:lT+pJ9wepCzopln7rHT4OjujtN0ZX1qYHiyLK0t35fA=
 github.com/cloudtrust/keycloak-client/v2 v2.8.0/go.mod h1:pXIiXTpPUWet+t1U8i5CLzhJJKU2mbCijsCjX3//Qjg=
 github.com/coreos/go-oidc v2.2.1+incompatible h1:mh48q/BqXqgjVHpy2ZY7WnWAbenxRjsz9N1i1YxjHAk=

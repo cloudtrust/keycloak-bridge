@@ -14,7 +14,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/IBM/sarama"
 	cs "github.com/cloudtrust/common-service/v2"
 	"github.com/cloudtrust/common-service/v2/configuration"
 	"github.com/cloudtrust/common-service/v2/database"
@@ -28,6 +27,7 @@ import (
 	"github.com/cloudtrust/common-service/v2/middleware"
 	"github.com/cloudtrust/common-service/v2/security"
 	"github.com/cloudtrust/httpclient"
+	kafkauniverse "github.com/cloudtrust/kafka-client"
 	"github.com/cloudtrust/keycloak-bridge/internal/business"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/accreditationsclient"
@@ -160,11 +160,13 @@ const (
 	cfgAddrIdnow                = "idnow-service-api-uri"
 	cfgIdnowTimeout             = "idnow-service-timeout"
 	cfgContextKeys              = "context-keys"
-	cfgKafkaCloudtrustPrefix    = "kafka-cloudtrust"
-	cfgKafkaCloudtrustTopic     = "kafka-cloudtrust-event-topic"
 	cfgSaramaLogEnabled         = "sarama-log-enabled"
 
 	tokenProviderDefaultKey = "default"
+
+	// Kafka
+	kafkaReloadAuth    = "auth-reload-producer"
+	kafkaEventProducer = "event-producer"
 )
 
 func init() {
@@ -227,9 +229,6 @@ func main() {
 		// DB for archiving users
 		archiveRwDbParams = database.GetDbConfig(c, cfgArchiveRwDbParams)
 
-		cloudtrustEventKafkaConfig = csevents.GetKafkaProducerConfig(c, cfgKafkaCloudtrustPrefix)
-		cloudtrustEventTopic       = c.GetString(cfgKafkaCloudtrustTopic)
-
 		// Rate limiting
 		rateLimit = map[RateKey]int{
 			RateKeyValidation:       c.GetInt(cfgRateKeyValidation),
@@ -291,8 +290,6 @@ func main() {
 
 		// Onboarding realm overrides
 		onboardingRealmOverrides = c.GetStringMapString(cfgOnboardingRealmOverrides)
-
-		saramaLogEnabled = c.GetBool(cfgSaramaLogEnabled)
 	)
 
 	// Unique ID generator
@@ -447,16 +444,30 @@ func main() {
 	// Users profile cache
 	profileCache := toolbox.NewUserProfileCache(keycloakClient, technicalTokenProvider, profile.DefaultProfile)
 
-	sarama.Logger = csevents.NewSaramaLogger(logger, saramaLogEnabled)
-	var eventProducer sarama.SyncProducer
+	// Kafka
+	var kafkaUniverse *kafkauniverse.KafkaUniverse
 	{
+		var kafkaLogger = log.With(logger, "svc", "kafka")
+
 		var err error
-		eventProducer, err = csevents.NewEventKafkaProducer(ctx, cloudtrustEventKafkaConfig, logger)
+		kafkaUniverse, err = kafkauniverse.NewKafkaUniverse(ctx, kafkaLogger, "CT_KAFKA_", func(value any) error {
+			return c.UnmarshalKey("kafka", value)
+		})
 		if err != nil {
-			logger.Error(ctx, "msg", "could not instantiate kafka producer", "err", err)
+			kafkaLogger.Error(ctx, "msg", "could not configure Kafka", "err", err)
 			return
 		}
+		logger.Info(ctx, "msg", "Kafka configuration loaded")
 	}
+	defer kafkaUniverse.Close()
+
+	if err := kafkaUniverse.InitializeProducers(kafkaReloadAuth); err != nil {
+		logger.Error(ctx, "msg", "can't initialize kafka producers", "err", err)
+		return
+	}
+
+	authReloadProducer := kafkaUniverse.GetProducer(kafkaReloadAuth)
+	eventProducer := kafkaUniverse.GetProducer(kafkaEventProducer)
 
 	// Health check configuration
 	var healthChecker = healthcheck.NewHealthChecker(keycloakb.ComponentName, logger)
@@ -469,7 +480,7 @@ func main() {
 
 	var livenessChecker = healthcheck.NewHealthChecker(keycloakb.ComponentName, logger)
 	var livenessAuditTimeout = c.GetDuration("livenessprobe-audit-timeout") * time.Millisecond
-	livenessChecker.AddAuditEventsReporterModule("Audit Events Reporter", csevents.NewAuditEventReporterModule(eventProducer, cloudtrustEventTopic, logger), livenessAuditTimeout, healthCheckCacheDuration)
+	livenessChecker.AddAuditEventsReporterModule("Audit Events Reporter", csevents.NewAuditEventReporterModule(eventProducer, logger), livenessAuditTimeout, healthCheckCacheDuration)
 
 	// Actions allowed in Authorization Manager
 	var authActions = security.Actions.GetActionNamesForService(security.BridgeService)
@@ -566,7 +577,7 @@ func main() {
 		var validationLogger = log.With(logger, "svc", "validation")
 
 		// module to store validation events API calls
-		auditEventsReporterModule := csevents.NewAuditEventReporterModule(eventProducer, cloudtrustEventTopic, validationLogger)
+		auditEventsReporterModule := csevents.NewAuditEventReporterModule(eventProducer, validationLogger)
 
 		// module for archiving users
 		var archiveDBModule = keycloakb.NewArchiveDBModule(archiveRwDBConn, archiveAesEncryption, validationLogger)
@@ -606,7 +617,7 @@ func main() {
 		var tasksLogger = log.With(logger, "svc", "tasks")
 
 		// module to store validation events API calls
-		auditEventsReporterModule := csevents.NewAuditEventReporterModule(eventProducer, cloudtrustEventTopic, tasksLogger)
+		auditEventsReporterModule := csevents.NewAuditEventReporterModule(eventProducer, tasksLogger)
 
 		tasksComponent := tasks.NewComponent(keycloakClient, auditEventsReporterModule, tasksLogger)
 		tasksComponent = tasks.MakeAuthorizationTasksComponentMW(log.With(tasksLogger, "mw", "endpoint"), authorizationManager)(tasksComponent)
@@ -654,7 +665,7 @@ func main() {
 		var managementLogger = log.With(logger, "svc", "management")
 
 		// module to store API calls of the back office to the DB
-		auditEventsReporterModule := csevents.NewAuditEventReporterModule(eventProducer, cloudtrustEventTopic, managementLogger)
+		auditEventsReporterModule := csevents.NewAuditEventReporterModule(eventProducer, managementLogger)
 
 		// module for storing and retrieving the custom configuration
 		var configDBModule = createConfigurationDBModule(configurationRwDBConn, managementLogger)
@@ -684,7 +695,7 @@ func main() {
 			}
 			/* REMOVE_THIS_3901 : remove second parameter */
 			keycloakComponent = management.NewComponent(keycloakClient, keycloakConfig.URIProvider, profileCache, auditEventsReporterModule, configDBModule,
-				onboardingModule, authorizationChecker, technicalTokenProvider, accreditationsService, trustIDGroups, registerRealm, managementLogger)
+				onboardingModule, authorizationChecker, technicalTokenProvider, accreditationsService, trustIDGroups, registerRealm, managementLogger, authReloadProducer)
 			keycloakComponent = management.MakeAuthorizationManagementComponentMW(log.With(managementLogger, "mw", "endpoint"), authorizationManager)(keycloakComponent)
 		}
 
@@ -785,7 +796,7 @@ func main() {
 		var accountLogger = log.With(logger, "svc", "account")
 
 		// Configure events db module
-		auditEventsReporterModule := csevents.NewAuditEventReporterModule(eventProducer, cloudtrustEventTopic, accountLogger)
+		auditEventsReporterModule := csevents.NewAuditEventReporterModule(eventProducer, accountLogger)
 
 		// module for retrieving the custom configuration
 		var configDBModule = keycloakb.NewConfigurationDBModule(configurationRoDBConn, accountLogger)
@@ -854,7 +865,7 @@ func main() {
 		var registerLogger = log.With(logger, "svc", "register")
 
 		// Configure events db module
-		auditEventsReporterModule := csevents.NewAuditEventReporterModule(eventProducer, cloudtrustEventTopic, registerLogger)
+		auditEventsReporterModule := csevents.NewAuditEventReporterModule(eventProducer, registerLogger)
 
 		// module for storing and retrieving the custom configuration
 		var configDBModule = createConfigurationDBModule(configurationRwDBConn, registerLogger)
@@ -895,7 +906,7 @@ func main() {
 		var kycLogger = log.With(logger, "svc", "kyc")
 
 		// Configure events db module
-		auditEventsReporterModule := csevents.NewAuditEventReporterModule(eventProducer, cloudtrustEventTopic, kycLogger)
+		auditEventsReporterModule := csevents.NewAuditEventReporterModule(eventProducer, kycLogger)
 
 		// module for archiving users
 		var archiveDBModule = keycloakb.NewArchiveDBModule(archiveRwDBConn, archiveAesEncryption, kycLogger)
@@ -1534,9 +1545,6 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 
 	v.BindEnv(cfgDbArchiveAesGcmKey, "CT_BRIDGE_DB_ARCHIVE_AES_KEY")
 	censoredParameters[cfgDbArchiveAesGcmKey] = true
-
-	v.BindEnv(cfgKafkaCloudtrustPrefix+"-client-secret", "CT_EVENT_PRODUCER_KAFKA_CLIENT_SECRET")
-	censoredParameters[cfgKafkaCloudtrustPrefix+"-client-secret"] = true
 
 	// Load and log config.
 	v.SetConfigFile(v.GetString(cfgConfigFile))
