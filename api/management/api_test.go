@@ -714,11 +714,6 @@ func TestValidateUpdatableUserRepresentation(t *testing.T) {
 		user := createValidUpdatableUserRepresentation()
 		assert.Nil(t, user.Validate(ctx, mup, realm))
 	})
-	t.Run("Invalid groups", func(t *testing.T) {
-		user := createValidUpdatableUserRepresentation()
-		user.Groups = &[]string{"inval1d", "7767ed7c-0a1d-4eee-9bb8-669c6f89c007"}
-		assert.NotNil(t, user.Validate(ctx, mup, realm))
-	})
 	t.Run("Valid role", func(t *testing.T) {
 		user := createValidUpdatableUserRepresentation()
 		user.Roles = &[]string{"inval1d", "7767ed7c-0a1d-4eee-9bb8-669c6f898888"}
@@ -951,7 +946,6 @@ func createValidUserRepresentation() UserRepresentation {
 }
 
 func createValidUpdatableUserRepresentation() UpdatableUserRepresentation {
-	var groups = []string{"f467ed7c-0a1d-4eee-9bb8-669c6f89c0ee", "7767ed7c-0a1d-4eee-9bb8-669c6f89c007"}
 	var roles = []string{"abcded7c-0a1d-4eee-9bb8-669c6f89c0ee", "7767ed7c-0a1d-4eee-9bb8-669c6f898888"}
 
 	boolTrue := true
@@ -969,7 +963,6 @@ func createValidUpdatableUserRepresentation() UpdatableUserRepresentation {
 	user.Label = ptr("label")
 	user.Gender = ptr("F")
 	user.BirthDate = ptr("1990-12-28")
-	user.Groups = &groups
 	user.Roles = &roles
 	user.Locale = ptr("en")
 
