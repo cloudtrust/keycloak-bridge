@@ -171,6 +171,10 @@ components:
         businessId:
           type: string
           description: Business identifier (can be GLN)
+        onBoardingStatus:
+          type: string
+          enum: ["", self-registration-form-completed, user-created-by-api, email-verified, password-set, phone-verified, 2fa-set, completed]
+          description: user onboarding flow status
     Configuration:
       type: object
       properties:
