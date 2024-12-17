@@ -2184,6 +2184,10 @@ components:
         createdTimestamp:
           type: integer
           format: int64
+        onBoardingStatus:
+          type: string
+          enum: ["", self-registration-form-completed, user-created-by-api, email-verified, password-set, phone-verified, 2fa-set, completed]
+          description: user onboarding flow status
     UserCheck:
       type: object
       properties:
