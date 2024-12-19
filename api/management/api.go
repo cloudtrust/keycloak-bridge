@@ -73,7 +73,6 @@ type UpdatableUserRepresentation struct {
 	IDDocumentNumber     *string                        `json:"idDocumentNumber,omitempty"`
 	IDDocumentExpiration *string                        `json:"idDocumentExpiration,omitempty"`
 	IDDocumentCountry    *string                        `json:"idDocumentCountry,omitempty"`
-	Groups               *[]string                      `json:"groups,omitempty"`
 	TrustIDGroups        *[]string                      `json:"trustIdGroups,omitempty"`
 	Roles                *[]string                      `json:"roles,omitempty"`
 	Locale               *string                        `json:"locale,omitempty"`
@@ -498,9 +497,7 @@ func MergeUpdatableUserWithoutEmailAndPhoneNumber(target *kc.UserRepresentation,
 	target.LastName = defaultStringPtr(user.LastName, target.LastName)
 	target.Enabled = defaultBoolPtr(user.Enabled, target.Enabled)
 	target.EmailVerified = defaultBoolPtr(user.EmailVerified, target.EmailVerified)
-	if user.Groups != nil {
-		target.Groups = user.Groups
-	}
+
 	if user.Roles != nil {
 		target.RealmRoles = user.Roles
 	}
@@ -1044,12 +1041,6 @@ func (user UpdatableUserRepresentation) Validate(ctx context.Context, upc profil
 		ValidateParameterFunc(func() error {
 			return profile.Validate(ctx, upc, realm, &user, "management", false)
 		})
-
-	if user.Groups != nil {
-		for _, groupID := range *(user.Groups) {
-			v = v.ValidateParameterRegExp(constants.GroupID, &groupID, constants.RegExpID, true)
-		}
-	}
 
 	if user.Roles != nil {
 		for _, roleID := range *(user.Roles) {
