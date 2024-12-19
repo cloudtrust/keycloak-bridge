@@ -140,18 +140,6 @@ rate-tasks: 10
 rate-kyc: 1000
 rate-mobile: 1000
 
-kafka-cloudtrust: true
-kafka-cloudtrust-version: "3.1.0"
-kafka-cloudtrust-tls-enabled: false
-kafka-cloudtrust-brokers:
- - "host.docker.internal:9093"
-kafka-cloudtrust-client-id: "kafka-client"
-kafka-cloudtrust-client-secret: "f211cf42-f01c-4c01-9e6a-b7bbfd0adf05"
-kafka-cloudtrust-token-url: "http://keycloak.local:8080/auth/realms/master/protocol/openid-connect/token"
-kafka-cloudtrust-event-topic: "cloudtrust-event"
-
-sarama-log-enabled: true
-
 # Debug routes
 pprof-route-enabled: true
 
@@ -199,3 +187,27 @@ context-keys:
   onboardingRedirectURI: http://localhost/
   onboardingClientID: onboarding
   redirectMode: false
+
+# Kafka config
+kafka:
+- id: cluster1
+  enabled: true
+  version: "3.1.0"
+  tls-enabled: false
+  brokers:
+  - "kafka:29093"
+  security:
+    client-id: kafka-client
+    client-secret: f211cf42-f01c-4c01-9e6a-b7bbfd0adf05
+    token-url: http://keycloak.internal.local:8080/auth/realms/master/protocol/openid-connect/token
+  producers:
+  - id: auth-reload-producer
+    topic: auth-reload
+  - id: event-producer
+    topic: cloudtrust-event
+  consumers:
+  - id: auth-reload-consumer
+    topic: auth-reload
+    consumer-group-name: <UUID>
+
+log-events-rate: 1

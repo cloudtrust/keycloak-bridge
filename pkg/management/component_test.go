@@ -38,6 +38,7 @@ type componentMocks struct {
 	transaction           *mock.Transaction
 	logger                *mock.Logger
 	accreditationsClient  *mock.AccreditationsServiceClient
+	producer              *mock.Producer
 }
 
 func createMocks(mockCtrl *gomock.Controller) *componentMocks {
@@ -52,6 +53,7 @@ func createMocks(mockCtrl *gomock.Controller) *componentMocks {
 		transaction:           mock.NewTransaction(mockCtrl),
 		logger:                mock.NewLogger(mockCtrl),
 		accreditationsClient:  mock.NewAccreditationsServiceClient(mockCtrl),
+		producer:              mock.NewProducer(mockCtrl),
 	}
 }
 
@@ -66,7 +68,7 @@ const (
 func (m *componentMocks) createComponent() *component {
 	/* REMOVE_THIS_3901 : remove second parameter (nil) */
 	return NewComponent(m.keycloakClient, nil, m.profileCache, m.eventsReporter, m.configurationDBModule, m.onboardingModule, m.authChecker,
-		m.tokenProvider, m.accreditationsClient, allowedTrustIDGroups, socialRealmName, m.logger).(*component)
+		m.tokenProvider, m.accreditationsClient, allowedTrustIDGroups, socialRealmName, m.logger, m.producer).(*component)
 }
 
 func ptrString(value string) *string {
@@ -3820,6 +3822,7 @@ func TestUpdateAuthorizations(t *testing.T) {
 			mocks.configurationDBModule.EXPECT().NewTransaction(ctx).Return(mocks.transaction, nil),
 			mocks.transaction.EXPECT().Exec(gomock.Any(), gomock.Any()).Return(nil, nil), // Add authorizations
 			mocks.transaction.EXPECT().Commit().Return(nil),
+			mocks.producer.EXPECT().SendMessageBytes(gomock.Any()),
 			mocks.eventsReporter.EXPECT().ReportEvent(ctx, gomock.Any()),
 			mocks.transaction.EXPECT().Close(),
 		)
