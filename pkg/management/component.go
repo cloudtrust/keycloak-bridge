@@ -212,6 +212,10 @@ type EventsReporterModule interface {
 	ReportEvent(ctx context.Context, event events.Event)
 }
 
+type KafkaProducer interface {
+	SendMessageBytes(value []byte) error
+}
+
 // Component is the management component.
 type component struct {
 	keycloakClient            KeycloakClient
@@ -227,12 +231,13 @@ type component struct {
 	accreditationsClient      AccreditationsServiceClient
 	logger                    log.Logger
 	originEvent               string
+	kafkaAuthReloadProducer   KafkaProducer
 }
 
 // NewComponent returns the management component.
 func NewComponent(keycloakClient KeycloakClient, kcURIProvider kc.KeycloakURIProvider, profileCache UserProfileCache, auditEventsReporterModule EventsReporterModule,
 	configDBModule keycloakb.ConfigurationDBModule, onboardingModule OnboardingModule, authChecker AuthorizationChecker, tokenProvider toolbox.OidcTokenProvider,
-	accreditationsClient AccreditationsServiceClient, authorizedTrustIDGroups []string, socialRealmName string, logger log.Logger) Component {
+	accreditationsClient AccreditationsServiceClient, authorizedTrustIDGroups []string, socialRealmName string, logger log.Logger, kafkaAuthReloadProducer KafkaProducer) Component {
 	/* REMOVE_THIS_3901 : remove second provided parameter */
 
 	var authzedTrustIDGroups = make(map[string]bool)
@@ -254,6 +259,7 @@ func NewComponent(keycloakClient KeycloakClient, kcURIProvider kc.KeycloakURIPro
 		accreditationsClient:      accreditationsClient,
 		logger:                    logger,
 		originEvent:               "back-office",
+		kafkaAuthReloadProducer:   kafkaAuthReloadProducer,
 	}
 }
 
@@ -1794,6 +1800,11 @@ func (c *component) UpdateAuthorizations(ctx context.Context, realmName string, 
 			return err
 		}
 		c.logger.Info(ctx, "msg", "Updated authorizations", "add_count", len(addAuthz), "del_count", len(delAuthz))
+
+		err = c.kafkaAuthReloadProducer.SendMessageBytes([]byte{})
+		if err != nil {
+			c.logger.Warn(ctx, "kafka", "Failed to send message", "err", err.Error())
+		}
 
 		c.auditEventsReporterModule.ReportEvent(ctx, events.NewEventFromContext(ctx, c.logger, c.originEvent, "API_AUTHORIZATIONS_UPDATE", realmName, map[string]string{events.CtEventGroupName: groupName}))
 	}
