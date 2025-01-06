@@ -43,6 +43,34 @@ func (m *Component) EXPECT() *ComponentMockRecorder {
 	return m.recorder
 }
 
+// CancelEmailChange mocks base method.
+func (m *Component) CancelEmailChange(ctx context.Context) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CancelEmailChange", ctx)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CancelEmailChange indicates an expected call of CancelEmailChange.
+func (mr *ComponentMockRecorder) CancelEmailChange(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CancelEmailChange", reflect.TypeOf((*Component)(nil).CancelEmailChange), ctx)
+}
+
+// CancelPhoneNumberChange mocks base method.
+func (m *Component) CancelPhoneNumberChange(ctx context.Context) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CancelPhoneNumberChange", ctx)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CancelPhoneNumberChange indicates an expected call of CancelPhoneNumberChange.
+func (mr *ComponentMockRecorder) CancelPhoneNumberChange(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CancelPhoneNumberChange", reflect.TypeOf((*Component)(nil).CancelPhoneNumberChange), ctx)
+}
+
 // DeleteAccount mocks base method.
 func (m *Component) DeleteAccount(arg0 context.Context) error {
 	m.ctrl.T.Helper()

@@ -849,6 +849,8 @@ func main() {
 			GetProfile:                prepareEndpoint(account.MakeGetUserProfileEndpoint(accountComponent), "get_profile", accountLogger, rateLimitAccount),
 			SendVerifyEmail:           prepareEndpoint(account.MakeSendVerifyEmailEndpoint(accountComponent), "send_verify_email", accountLogger, rateLimitAccount),
 			SendVerifyPhoneNumber:     prepareEndpoint(account.MakeSendVerifyPhoneNumberEndpoint(accountComponent), "send_verify_phone_number", accountLogger, rateLimitAccount),
+			CancelEmailChange:         prepareEndpoint(account.MakeCancelEmailChangeEndpoint(accountComponent), "cancel_email_change", accountLogger, rateLimitAccount),
+			CancelPhoneNumberChange:   prepareEndpoint(account.MakeCancelPhoneNumberChangeEndpoint(accountComponent), "cancel_phone_number_change", accountLogger, rateLimitAccount),
 		}
 	}
 
@@ -1329,6 +1331,8 @@ func main() {
 		var getProfileHandler = configureAccountHandler(accountEndpoints.GetProfile)
 		var sendVerifyEmailHandler = configureAccountHandler(accountEndpoints.SendVerifyEmail)
 		var sendVerifyPhoneNumberHandler = configureAccountHandler(accountEndpoints.SendVerifyPhoneNumber)
+		var cancelEmailChangeHandler = configureAccountHandler(accountEndpoints.CancelEmailChange)
+		var cancelPhoneNumberChangeHandler = configureAccountHandler(accountEndpoints.CancelPhoneNumberChange)
 
 		route.Path("/account").Methods("GET").Handler(getAccountHandler)
 		route.Path("/account").Methods("POST").Handler(updateAccountHandler)
@@ -1346,6 +1350,9 @@ func main() {
 
 		route.Path("/account/verify-email").Methods("PUT").Handler(sendVerifyEmailHandler)
 		route.Path("/account/verify-phone-number").Methods("PUT").Handler(sendVerifyPhoneNumberHandler)
+
+		route.Path("/account/cancel-email-change").Methods("PUT").Handler(cancelEmailChangeHandler)
+		route.Path("/account/cancel-phone-number-change").Methods("PUT").Handler(cancelPhoneNumberChangeHandler)
 
 		var handler http.Handler = route
 

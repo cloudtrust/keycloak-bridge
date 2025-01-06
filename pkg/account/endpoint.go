@@ -31,6 +31,8 @@ type Endpoints struct {
 	GetProfile                endpoint.Endpoint
 	SendVerifyEmail           endpoint.Endpoint
 	SendVerifyPhoneNumber     endpoint.Endpoint
+	CancelEmailChange         endpoint.Endpoint
+	CancelPhoneNumberChange   endpoint.Endpoint
 }
 
 // UpdatePasswordBody is the definition of the expected body content of UpdatePassword method
@@ -178,5 +180,19 @@ func MakeSendVerifyEmailEndpoint(component Component) cs.Endpoint {
 func MakeSendVerifyPhoneNumberEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, _ interface{}) (interface{}, error) {
 		return nil, component.SendVerifyPhoneNumber(ctx)
+	}
+}
+
+// MakeCancelEmailChangeEndpoint makes the CancelEmailChange endpoint
+func MakeCancelEmailChangeEndpoint(component Component) cs.Endpoint {
+	return func(ctx context.Context, _ interface{}) (interface{}, error) {
+		return nil, component.CancelEmailChange(ctx)
+	}
+}
+
+// MakeCancelEmailChangeEndpoint makes the CancelPhoneNumberChange endpoint
+func MakeCancelPhoneNumberChangeEndpoint(component Component) cs.Endpoint {
+	return func(ctx context.Context, _ interface{}) (interface{}, error) {
+		return nil, component.CancelPhoneNumberChange(ctx)
 	}
 }

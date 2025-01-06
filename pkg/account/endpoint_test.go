@@ -10,8 +10,8 @@ import (
 	apicommon "github.com/cloudtrust/keycloak-bridge/api/common"
 	"github.com/cloudtrust/keycloak-bridge/pkg/account/mock"
 	kc "github.com/cloudtrust/keycloak-client/v2"
-	"go.uber.org/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func TestMakeUpdatePasswordEndpoint(t *testing.T) {
@@ -209,6 +209,18 @@ func TestSimpleEndpoints(t *testing.T) {
 
 	t.Run("MakeSendVerifyPhoneNumberEndpoint", func(t *testing.T) {
 		mockAccountComponent.EXPECT().SendVerifyPhoneNumber(gomock.Any()).Return(nil)
+		_, err := MakeSendVerifyPhoneNumberEndpoint(mockAccountComponent)(context.Background(), m)
+		assert.Nil(t, err)
+	})
+
+	t.Run("MakeCancelEmailChangeEndpoint", func(t *testing.T) {
+		mockAccountComponent.EXPECT().CancelEmailChange(gomock.Any()).Return(nil)
+		_, err := MakeSendVerifyPhoneNumberEndpoint(mockAccountComponent)(context.Background(), m)
+		assert.Nil(t, err)
+	})
+
+	t.Run("MakeCancelPhoneNumberChangeEndpoint", func(t *testing.T) {
+		mockAccountComponent.EXPECT().CancelPhoneNumberChange(gomock.Any()).Return(nil)
 		_, err := MakeSendVerifyPhoneNumberEndpoint(mockAccountComponent)(context.Background(), m)
 		assert.Nil(t, err)
 	})
