@@ -215,13 +215,13 @@ func TestSimpleEndpoints(t *testing.T) {
 
 	t.Run("MakeCancelEmailChangeEndpoint", func(t *testing.T) {
 		mockAccountComponent.EXPECT().CancelEmailChange(gomock.Any()).Return(nil)
-		_, err := MakeSendVerifyPhoneNumberEndpoint(mockAccountComponent)(context.Background(), m)
+		_, err := MakeCancelEmailChangeEndpoint(mockAccountComponent)(context.Background(), m)
 		assert.Nil(t, err)
 	})
 
 	t.Run("MakeCancelPhoneNumberChangeEndpoint", func(t *testing.T) {
 		mockAccountComponent.EXPECT().CancelPhoneNumberChange(gomock.Any()).Return(nil)
-		_, err := MakeSendVerifyPhoneNumberEndpoint(mockAccountComponent)(context.Background(), m)
+		_, err := MakeCancelPhoneNumberChangeEndpoint(mockAccountComponent)(context.Background(), m)
 		assert.Nil(t, err)
 	})
 }

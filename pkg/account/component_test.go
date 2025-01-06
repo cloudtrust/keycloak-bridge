@@ -1041,3 +1041,127 @@ func TestSendVerify(t *testing.T) {
 		assert.Nil(t, component.SendVerifyPhoneNumber(ctx))
 	})
 }
+
+func TestCancelEmailChange(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var (
+		mocks     = createComponentMocks(mockCtrl)
+		component = mocks.createComponent()
+
+		accessToken     = "TOKEN=="
+		currentRealm    = "master"
+		ctx             = context.TODO()
+		testError       = errors.New("testError")
+		id              = "testID"
+		email           = "testEmail"
+		emailToValidate = "testEmailToValidate"
+	)
+
+	ctx = context.WithValue(ctx, cs.CtContextAccessToken, accessToken)
+	ctx = context.WithValue(ctx, cs.CtContextRealm, currentRealm)
+
+	attributes := make(kc.Attributes)
+	attributes.SetString(constants.AttrbEmailToValidate, emailToValidate)
+
+	kcUserRep := kc.UserRepresentation{
+		ID:         &id,
+		Email:      &email,
+		Attributes: &attributes,
+	}
+
+	attributesModified := make(kc.Attributes)
+	attributesModified.SetString(constants.AttrbEmailToValidate, "")
+
+	kcUserRepModified := kc.UserRepresentation{
+		ID:         &id,
+		Email:      &email,
+		Attributes: &attributesModified,
+	}
+
+	t.Run("GetAccount fails", func(t *testing.T) {
+		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, currentRealm).Return(kc.UserRepresentation{}, testError)
+
+		err := component.CancelEmailChange(ctx)
+		assert.NotNil(t, err)
+	})
+
+	t.Run("UpdateAccount fails", func(t *testing.T) {
+		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, currentRealm).Return(kcUserRep, nil)
+		mocks.keycloakAccountClient.EXPECT().UpdateAccount(accessToken, currentRealm, kcUserRepModified).Return(testError)
+
+		err := component.CancelEmailChange(ctx)
+		assert.NotNil(t, err)
+	})
+
+	t.Run("Success", func(t *testing.T) {
+		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, currentRealm).Return(kcUserRep, nil)
+		mocks.keycloakAccountClient.EXPECT().UpdateAccount(accessToken, currentRealm, kcUserRepModified).Return(nil)
+
+		err := component.CancelEmailChange(ctx)
+		assert.Nil(t, err)
+	})
+}
+
+func TestCancelPhoneNumberChange(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var (
+		mocks     = createComponentMocks(mockCtrl)
+		component = mocks.createComponent()
+
+		accessToken     = "TOKEN=="
+		currentRealm    = "master"
+		ctx             = context.TODO()
+		testError       = errors.New("testError")
+		id              = "testID"
+		phone           = "testPhone"
+		phoneToValidate = "testPhoneToValidate"
+	)
+
+	attributes := make(kc.Attributes)
+	attributes.SetString(constants.AttrbPhoneNumber, phone)
+	attributes.SetString(constants.AttrbPhoneNumberToValidate, phoneToValidate)
+
+	kcUserRep := kc.UserRepresentation{
+		ID:         &id,
+		Attributes: &attributes,
+	}
+
+	attributesModified := make(kc.Attributes)
+	attributesModified.SetString(constants.AttrbPhoneNumber, phone)
+	attributesModified.SetString(constants.AttrbPhoneNumberToValidate, "")
+
+	kcUserRepModified := kc.UserRepresentation{
+		ID:         &id,
+		Attributes: &attributesModified,
+	}
+
+	ctx = context.WithValue(ctx, cs.CtContextAccessToken, accessToken)
+	ctx = context.WithValue(ctx, cs.CtContextRealm, currentRealm)
+
+	t.Run("GetAccount fails", func(t *testing.T) {
+		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, currentRealm).Return(kc.UserRepresentation{}, testError)
+
+		err := component.CancelPhoneNumberChange(ctx)
+		assert.NotNil(t, err)
+	})
+
+	t.Run("UpdateAccount fails", func(t *testing.T) {
+		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, currentRealm).Return(kcUserRep, nil)
+		mocks.keycloakAccountClient.EXPECT().UpdateAccount(accessToken, currentRealm, kcUserRepModified).Return(testError)
+
+		err := component.CancelPhoneNumberChange(ctx)
+		assert.NotNil(t, err)
+	})
+
+	t.Run("Success", func(t *testing.T) {
+		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, currentRealm).Return(kcUserRep, nil)
+		mocks.keycloakAccountClient.EXPECT().UpdateAccount(accessToken, currentRealm, kcUserRepModified).Return(nil)
+
+		err := component.CancelPhoneNumberChange(ctx)
+		assert.Nil(t, err)
+	})
+}
