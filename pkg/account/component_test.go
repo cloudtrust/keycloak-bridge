@@ -15,8 +15,8 @@ import (
 	api "github.com/cloudtrust/keycloak-bridge/api/account"
 	"github.com/cloudtrust/keycloak-bridge/pkg/account/mock"
 	kc "github.com/cloudtrust/keycloak-client/v2"
-	"go.uber.org/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/accreditationsclient"
@@ -455,9 +455,12 @@ func TestUpdateAccountRevokeAccreditation(t *testing.T) {
 		Attributes:       &attributes,
 		CreatedTimestamp: &createdTimestamp,
 	}
-	var accred = []string{`{"type":"ONE", "expiryDate":"01.01.2025"}`}
+	timeFormat := "02.01.2006"
+	year := 365 * 24 * time.Hour
+	inFiveYears := time.Now().Add(5 * year).Format(timeFormat)
+	var accred = []string{`{"type":"ONE", "expiryDate":"` + inFiveYears + `"}`}
 	var revokedTypes = []string{"ONE"}
-	var revokedAccred = []string{`{"type":"ONE","expiryDate":"01.01.2025","revoked":true}`}
+	var revokedAccred = []string{`{"type":"ONE","expiryDate":"` + inFiveYears + `","revoked":true}`}
 	kcUserRep.SetAttribute(constants.AttrbAccreditations, accred)
 
 	t.Run("Update account with succces - revoke accreditation", func(t *testing.T) {
