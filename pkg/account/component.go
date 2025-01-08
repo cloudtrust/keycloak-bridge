@@ -545,49 +545,42 @@ func (c *component) executeActions(ctx context.Context, actions []string) error 
 }
 
 func (c *component) CancelEmailChange(ctx context.Context) error {
-	accessToken := ctx.Value(cs.CtContextAccessToken).(string)
-	realm := ctx.Value(cs.CtContextRealm).(string)
-
-	// Get the "old" user representation from Keycloak
-	oldUserKc, err := c.keycloakAccountClient.GetAccount(accessToken, realm)
-	if err != nil {
-		c.logger.Warn(ctx, "msg", "Can't get account", "err", err.Error())
-		return err
-	}
-	keycloakb.ConvertLegacyAttribute(&oldUserKc)
-
-	oldUserKc.SetAttributeString(constants.AttrbEmailToValidate, "")
-
-	// Update keycloak account
-	err = c.keycloakAccountClient.UpdateAccount(accessToken, realm, oldUserKc)
-	if err != nil {
-		c.logger.Warn(ctx, "msg", "Can't update account", "err", err.Error())
-		return err
-	}
-
-	return nil
+	return c.removeStringAttributeFromUser(ctx, constants.AttrbEmailToValidate)
 }
 
 func (c *component) CancelPhoneNumberChange(ctx context.Context) error {
+	return c.removeStringAttributeFromUser(ctx, constants.AttrbPhoneNumberToValidate)
+}
+
+func (c *component) removeStringAttributeFromUser(ctx context.Context, attr kc.AttributeKey) error {
 	accessToken := ctx.Value(cs.CtContextAccessToken).(string)
 	realm := ctx.Value(cs.CtContextRealm).(string)
 
-	// Get the "old" user representation from Keycloak
-	oldUserKc, err := c.keycloakAccountClient.GetAccount(accessToken, realm)
+	// Get the user representation from Keycloak
+	userKc, err := c.keycloakAccountClient.GetAccount(accessToken, realm)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Can't get account", "err", err.Error())
 		return err
 	}
-	keycloakb.ConvertLegacyAttribute(&oldUserKc)
+	keycloakb.ConvertLegacyAttribute(&userKc)
 
-	oldUserKc.SetAttributeString(constants.AttrbPhoneNumberToValidate, "")
+	if userKc.GetAttributeString(attr) == nil {
+		// Attribute is already missing, no reason to update the user
+		return nil
+	}
+
+	userKc.RemoveAttribute(attr)
 
 	// Update keycloak account
-	err = c.keycloakAccountClient.UpdateAccount(accessToken, realm, oldUserKc)
+	err = c.keycloakAccountClient.UpdateAccount(accessToken, realm, userKc)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Can't update account", "err", err.Error())
 		return err
 	}
+
+	userID := ctx.Value(cs.CtContextUserID).(string)
+	username := ctx.Value(cs.CtContextUsername).(string)
+	c.eventReporterModule.ReportEvent(ctx, events.NewEventOnUserFromContext(ctx, c.logger, c.originEvent, "UPDATE_ACCOUNT", realm, userID, username, nil))
 
 	return nil
 }

@@ -1053,14 +1053,17 @@ func TestCancelEmailChange(t *testing.T) {
 		accessToken     = "TOKEN=="
 		currentRealm    = "master"
 		ctx             = context.TODO()
-		testError       = errors.New("testError")
 		id              = "testID"
 		email           = "testEmail"
 		emailToValidate = "testEmailToValidate"
+		userID          = "testUserID"
+		username        = "testUsername"
 	)
 
 	ctx = context.WithValue(ctx, cs.CtContextAccessToken, accessToken)
 	ctx = context.WithValue(ctx, cs.CtContextRealm, currentRealm)
+	ctx = context.WithValue(ctx, cs.CtContextUserID, userID)
+	ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 
 	attributes := make(kc.Attributes)
 	attributes.SetString(constants.AttrbEmailToValidate, emailToValidate)
@@ -1072,7 +1075,6 @@ func TestCancelEmailChange(t *testing.T) {
 	}
 
 	attributesModified := make(kc.Attributes)
-	attributesModified.SetString(constants.AttrbEmailToValidate, "")
 
 	kcUserRepModified := kc.UserRepresentation{
 		ID:         &id,
@@ -1080,31 +1082,63 @@ func TestCancelEmailChange(t *testing.T) {
 		Attributes: &attributesModified,
 	}
 
-	t.Run("GetAccount fails", func(t *testing.T) {
-		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, currentRealm).Return(kc.UserRepresentation{}, testError)
+	mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, currentRealm).Return(kcUserRep, nil)
+	mocks.keycloakAccountClient.EXPECT().UpdateAccount(accessToken, currentRealm, kcUserRepModified).Return(nil)
+	mocks.auditEventsReporterModule.EXPECT().ReportEvent(ctx, gomock.Any())
 
-		err := component.CancelEmailChange(ctx)
-		assert.NotNil(t, err)
-	})
-
-	t.Run("UpdateAccount fails", func(t *testing.T) {
-		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, currentRealm).Return(kcUserRep, nil)
-		mocks.keycloakAccountClient.EXPECT().UpdateAccount(accessToken, currentRealm, kcUserRepModified).Return(testError)
-
-		err := component.CancelEmailChange(ctx)
-		assert.NotNil(t, err)
-	})
-
-	t.Run("Success", func(t *testing.T) {
-		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, currentRealm).Return(kcUserRep, nil)
-		mocks.keycloakAccountClient.EXPECT().UpdateAccount(accessToken, currentRealm, kcUserRepModified).Return(nil)
-
-		err := component.CancelEmailChange(ctx)
-		assert.Nil(t, err)
-	})
+	err := component.CancelEmailChange(ctx)
+	assert.Nil(t, err)
 }
 
 func TestCancelPhoneNumberChange(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var (
+		mocks     = createComponentMocks(mockCtrl)
+		component = mocks.createComponent()
+
+		accessToken     = "TOKEN=="
+		currentRealm    = "master"
+		ctx             = context.TODO()
+		id              = "testID"
+		phone           = "testPhone"
+		phoneToValidate = "testPhoneToValidate"
+		userID          = "testUserID"
+		username        = "testUsername"
+	)
+
+	ctx = context.WithValue(ctx, cs.CtContextAccessToken, accessToken)
+	ctx = context.WithValue(ctx, cs.CtContextRealm, currentRealm)
+	ctx = context.WithValue(ctx, cs.CtContextUserID, userID)
+	ctx = context.WithValue(ctx, cs.CtContextUsername, username)
+
+	attributes := make(kc.Attributes)
+	attributes.SetString(constants.AttrbPhoneNumber, phone)
+	attributes.SetString(constants.AttrbPhoneNumberToValidate, phoneToValidate)
+
+	kcUserRep := kc.UserRepresentation{
+		ID:         &id,
+		Attributes: &attributes,
+	}
+
+	attributesModified := make(kc.Attributes)
+	attributesModified.SetString(constants.AttrbPhoneNumber, phone)
+
+	kcUserRepModified := kc.UserRepresentation{
+		ID:         &id,
+		Attributes: &attributesModified,
+	}
+
+	mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, currentRealm).Return(kcUserRep, nil)
+	mocks.keycloakAccountClient.EXPECT().UpdateAccount(accessToken, currentRealm, kcUserRepModified).Return(nil)
+	mocks.auditEventsReporterModule.EXPECT().ReportEvent(ctx, gomock.Any())
+
+	err := component.CancelPhoneNumberChange(ctx)
+	assert.Nil(t, err)
+}
+
+func TestRemoveStringAttributeFromUser(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
@@ -1119,49 +1153,69 @@ func TestCancelPhoneNumberChange(t *testing.T) {
 		id              = "testID"
 		phone           = "testPhone"
 		phoneToValidate = "testPhoneToValidate"
+		userID          = "testUserID"
+		username        = "testUsername"
 	)
 
-	attributes := make(kc.Attributes)
-	attributes.SetString(constants.AttrbPhoneNumber, phone)
-	attributes.SetString(constants.AttrbPhoneNumberToValidate, phoneToValidate)
-
-	kcUserRep := kc.UserRepresentation{
-		ID:         &id,
-		Attributes: &attributes,
-	}
+	ctx = context.WithValue(ctx, cs.CtContextAccessToken, accessToken)
+	ctx = context.WithValue(ctx, cs.CtContextRealm, currentRealm)
+	ctx = context.WithValue(ctx, cs.CtContextUserID, userID)
+	ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 
 	attributesModified := make(kc.Attributes)
 	attributesModified.SetString(constants.AttrbPhoneNumber, phone)
-	attributesModified.SetString(constants.AttrbPhoneNumberToValidate, "")
 
 	kcUserRepModified := kc.UserRepresentation{
 		ID:         &id,
 		Attributes: &attributesModified,
 	}
 
-	ctx = context.WithValue(ctx, cs.CtContextAccessToken, accessToken)
-	ctx = context.WithValue(ctx, cs.CtContextRealm, currentRealm)
-
 	t.Run("GetAccount fails", func(t *testing.T) {
 		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, currentRealm).Return(kc.UserRepresentation{}, testError)
 
-		err := component.CancelPhoneNumberChange(ctx)
+		err := component.removeStringAttributeFromUser(ctx, constants.AttrbPhoneNumberToValidate)
 		assert.NotNil(t, err)
 	})
 
+	t.Run("Attribute is already missing", func(t *testing.T) {
+		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, currentRealm).Return(kcUserRepModified, nil)
+
+		err := component.removeStringAttributeFromUser(ctx, constants.AttrbPhoneNumberToValidate)
+		assert.Nil(t, err)
+	})
+
 	t.Run("UpdateAccount fails", func(t *testing.T) {
+		attributes := make(kc.Attributes)
+		attributes.SetString(constants.AttrbPhoneNumber, phone)
+		attributes.SetString(constants.AttrbPhoneNumberToValidate, phoneToValidate)
+
+		kcUserRep := kc.UserRepresentation{
+			ID:         &id,
+			Attributes: &attributes,
+		}
+
 		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, currentRealm).Return(kcUserRep, nil)
 		mocks.keycloakAccountClient.EXPECT().UpdateAccount(accessToken, currentRealm, kcUserRepModified).Return(testError)
 
-		err := component.CancelPhoneNumberChange(ctx)
+		err := component.removeStringAttributeFromUser(ctx, constants.AttrbPhoneNumberToValidate)
 		assert.NotNil(t, err)
 	})
 
 	t.Run("Success", func(t *testing.T) {
+		attributes := make(kc.Attributes)
+		attributes.SetString(constants.AttrbPhoneNumber, phone)
+		attributes.SetString(constants.AttrbPhoneNumberToValidate, phoneToValidate)
+
+		kcUserRep := kc.UserRepresentation{
+			ID:         &id,
+			Attributes: &attributes,
+		}
+
 		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, currentRealm).Return(kcUserRep, nil)
 		mocks.keycloakAccountClient.EXPECT().UpdateAccount(accessToken, currentRealm, kcUserRepModified).Return(nil)
+		mocks.auditEventsReporterModule.EXPECT().ReportEvent(ctx, gomock.Any())
 
-		err := component.CancelPhoneNumberChange(ctx)
+		err := component.removeStringAttributeFromUser(ctx, constants.AttrbPhoneNumberToValidate)
 		assert.Nil(t, err)
 	})
 }
