@@ -28,14 +28,14 @@ github.com/cloudtrust/common-service/v2/middleware
 github.com/cloudtrust/common-service/v2/security
 github.com/cloudtrust/common-service/v2/tracing
 github.com/cloudtrust/common-service/v2/validation
-# github.com/cloudtrust/httpclient v1.3.0
+# github.com/cloudtrust/httpclient v1.3.1
 ## explicit; go 1.22
 github.com/cloudtrust/httpclient
 # github.com/cloudtrust/kafka-client v1.4.0
 ## explicit; go 1.22
 github.com/cloudtrust/kafka-client
 github.com/cloudtrust/kafka-client/misc
-# github.com/cloudtrust/keycloak-client/v2 v2.8.0
+# github.com/cloudtrust/keycloak-client/v2 v2.8.1
 ## explicit; go 1.22
 github.com/cloudtrust/keycloak-client/v2
 github.com/cloudtrust/keycloak-client/v2/api
@@ -84,6 +84,9 @@ github.com/go-logfmt/logfmt
 # github.com/go-sql-driver/mysql v1.8.1
 ## explicit; go 1.18
 github.com/go-sql-driver/mysql
+# github.com/golang-jwt/jwt/v5 v5.2.1
+## explicit; go 1.18
+github.com/golang-jwt/jwt/v5
 # github.com/golang/mock v1.6.0
 ## explicit; go 1.11
 github.com/golang/mock/mockgen/model
@@ -325,7 +328,7 @@ golang.org/x/net/http2/hpack
 golang.org/x/net/internal/socks
 golang.org/x/net/proxy
 golang.org/x/net/publicsuffix
-# golang.org/x/oauth2 v0.24.0
+# golang.org/x/oauth2 v0.25.0
 ## explicit; go 1.18
 golang.org/x/oauth2
 golang.org/x/oauth2/clientcredentials
@@ -350,7 +353,7 @@ golang.org/x/text/language/display
 golang.org/x/text/runes
 golang.org/x/text/transform
 golang.org/x/text/unicode/norm
-# golang.org/x/time v0.8.0
+# golang.org/x/time v0.9.0
 ## explicit; go 1.18
 golang.org/x/time/rate
 # google.golang.org/protobuf v1.35.1
