@@ -3,7 +3,7 @@ module github.com/cloudtrust/keycloak-bridge
 go 1.22.0
 
 require (
-	github.com/cloudtrust/common-service/v2 v2.8.5
+	github.com/cloudtrust/common-service/v2 v2.8.6
 	github.com/cloudtrust/httpclient v1.3.1
 	github.com/cloudtrust/kafka-client v1.4.1
 	github.com/cloudtrust/keycloak-client/v2 v2.8.1
@@ -35,7 +35,6 @@ require (
 	github.com/eapache/go-xerial-snappy v0.0.0-20230731223053-c322873962e3 // indirect
 	github.com/eapache/queue v1.1.0 // indirect
 	github.com/fsnotify/fsnotify v1.8.0 // indirect
-	github.com/gbrlsnchs/jwt/v2 v2.0.0 // indirect
 	github.com/go-logfmt/logfmt v0.6.0 // indirect
 	github.com/golang-jwt/jwt/v5 v5.2.1 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
@@ -53,7 +52,7 @@ require (
 	github.com/klauspost/compress v1.17.11 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
-	github.com/nyaruka/phonenumbers v1.4.3 // indirect
+	github.com/nyaruka/phonenumbers v1.4.4 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.3 // indirect
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
