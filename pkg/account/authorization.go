@@ -204,6 +204,16 @@ func (c *authorizationComponentMW) SendVerifyPhoneNumber(ctx context.Context) er
 	return c.next.SendVerifyPhoneNumber(ctx)
 }
 
+func (c *authorizationComponentMW) CancelEmailChange(ctx context.Context) error {
+	// No restriction for this call
+	return c.next.CancelEmailChange(ctx)
+}
+
+func (c *authorizationComponentMW) CancelPhoneNumberChange(ctx context.Context) error {
+	// No restriction for this call
+	return c.next.CancelPhoneNumberChange(ctx)
+}
+
 func isEnabled(booleanPtr *bool) bool {
 	return booleanPtr != nil && *booleanPtr
 }

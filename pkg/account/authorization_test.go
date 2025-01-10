@@ -13,8 +13,8 @@ import (
 	apicommon "github.com/cloudtrust/keycloak-bridge/api/common"
 
 	"github.com/cloudtrust/keycloak-bridge/pkg/account/mock"
-	"go.uber.org/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func TestNoRestrictions(t *testing.T) {
@@ -89,6 +89,18 @@ func TestNoRestrictions(t *testing.T) {
 		t.Run("SendVerifyPhoneNumber", func(t *testing.T) {
 			mockAccountComponent.EXPECT().SendVerifyPhoneNumber(ctx).Return(nil)
 			err = authorizationMW.SendVerifyPhoneNumber(ctx)
+			assert.Nil(t, err)
+		})
+
+		t.Run("CancelEmailChange", func(t *testing.T) {
+			mockAccountComponent.EXPECT().CancelEmailChange(ctx).Return(nil)
+			err = authorizationMW.CancelEmailChange(ctx)
+			assert.Nil(t, err)
+		})
+
+		t.Run("CancelPhoneNumberChange", func(t *testing.T) {
+			mockAccountComponent.EXPECT().CancelPhoneNumberChange(ctx).Return(nil)
+			err = authorizationMW.CancelPhoneNumberChange(ctx)
 			assert.Nil(t, err)
 		})
 	}

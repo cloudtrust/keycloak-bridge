@@ -74,6 +74,8 @@ type Component interface {
 	GetUserProfile(context.Context) (apicommon.ProfileRepresentation, error)
 	SendVerifyEmail(ctx context.Context) error
 	SendVerifyPhoneNumber(ctx context.Context) error
+	CancelEmailChange(ctx context.Context) error
+	CancelPhoneNumberChange(ctx context.Context) error
 }
 
 // UserProfileCache interface
@@ -540,4 +542,45 @@ func (c *component) executeActions(ctx context.Context, actions []string) error 
 	c.eventReporterModule.ReportEvent(ctx, events.NewEventOnUserFromContext(ctx, c.logger, c.originEvent, "ACTION_EMAIL", currentRealm, userID, username, map[string]string{"actions": strings.Join(actions, ",")}))
 
 	return err
+}
+
+func (c *component) CancelEmailChange(ctx context.Context) error {
+	return c.removeAttributeFromUser(ctx, constants.AttrbEmailToValidate)
+}
+
+func (c *component) CancelPhoneNumberChange(ctx context.Context) error {
+	return c.removeAttributeFromUser(ctx, constants.AttrbPhoneNumberToValidate)
+}
+
+func (c *component) removeAttributeFromUser(ctx context.Context, attr kc.AttributeKey) error {
+	accessToken := ctx.Value(cs.CtContextAccessToken).(string)
+	realm := ctx.Value(cs.CtContextRealm).(string)
+
+	// Get the user representation from Keycloak
+	userKc, err := c.keycloakAccountClient.GetAccount(accessToken, realm)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Can't get account", "err", err.Error())
+		return err
+	}
+	keycloakb.ConvertLegacyAttribute(&userKc)
+
+	if userKc.GetAttributeString(attr) == nil {
+		// Attribute is already missing, no reason to update the user
+		return nil
+	}
+
+	userKc.RemoveAttribute(attr)
+
+	// Update keycloak account
+	err = c.keycloakAccountClient.UpdateAccount(accessToken, realm, userKc)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Can't update account", "err", err.Error())
+		return err
+	}
+
+	userID := ctx.Value(cs.CtContextUserID).(string)
+	username := ctx.Value(cs.CtContextUsername).(string)
+	c.eventReporterModule.ReportEvent(ctx, events.NewEventOnUserFromContext(ctx, c.logger, c.originEvent, "UPDATE_ACCOUNT", realm, userID, username, nil))
+
+	return nil
 }

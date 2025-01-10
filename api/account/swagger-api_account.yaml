@@ -188,6 +188,22 @@ paths:
       responses:
         200:
           description: successful operation
+  /account/cancel-email-change:
+    put:
+      tags:
+      - Account
+      summary: Cancels a change of email address
+      responses:
+        200:
+          description: successful operation
+  /account/cancel-phone-number-change:
+    put:
+      tags:
+      - Account
+      summary: Cancels a change of phone number
+      responses:
+        200:
+          description: successful operation
 components:
   schemas:
     UpdatePassword:
