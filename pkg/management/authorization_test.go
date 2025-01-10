@@ -11,8 +11,8 @@ import (
 	"github.com/cloudtrust/common-service/v2/security"
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
 	"github.com/cloudtrust/keycloak-bridge/pkg/management/mock"
-	"go.uber.org/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func ignoreFirst(_ interface{}, err error) error {
@@ -70,7 +70,6 @@ func TestDeny(t *testing.T) {
 	var updatableUser = api.UpdatableUserRepresentation{
 		ID:       &userID,
 		Username: &userUsername,
-		Groups:   &groupIDs,
 	}
 
 	var role = api.RoleRepresentation{
@@ -246,7 +245,6 @@ func TestAllowed(t *testing.T) {
 	var updatableUser = api.UpdatableUserRepresentation{
 		ID:       &userID,
 		Username: &userUsername,
-		Groups:   &groupIDs,
 	}
 
 	var role = api.RoleRepresentation{
