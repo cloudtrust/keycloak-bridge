@@ -545,14 +545,14 @@ func (c *component) executeActions(ctx context.Context, actions []string) error 
 }
 
 func (c *component) CancelEmailChange(ctx context.Context) error {
-	return c.removeStringAttributeFromUser(ctx, constants.AttrbEmailToValidate)
+	return c.removeAttributeFromUser(ctx, constants.AttrbEmailToValidate)
 }
 
 func (c *component) CancelPhoneNumberChange(ctx context.Context) error {
-	return c.removeStringAttributeFromUser(ctx, constants.AttrbPhoneNumberToValidate)
+	return c.removeAttributeFromUser(ctx, constants.AttrbPhoneNumberToValidate)
 }
 
-func (c *component) removeStringAttributeFromUser(ctx context.Context, attr kc.AttributeKey) error {
+func (c *component) removeAttributeFromUser(ctx context.Context, attr kc.AttributeKey) error {
 	accessToken := ctx.Value(cs.CtContextAccessToken).(string)
 	realm := ctx.Value(cs.CtContextRealm).(string)
 

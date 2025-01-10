@@ -1138,7 +1138,7 @@ func TestCancelPhoneNumberChange(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func TestRemoveStringAttributeFromUser(t *testing.T) {
+func TestRemoveAttributeFromUser(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
@@ -1173,14 +1173,14 @@ func TestRemoveStringAttributeFromUser(t *testing.T) {
 	t.Run("GetAccount fails", func(t *testing.T) {
 		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, currentRealm).Return(kc.UserRepresentation{}, testError)
 
-		err := component.removeStringAttributeFromUser(ctx, constants.AttrbPhoneNumberToValidate)
+		err := component.removeAttributeFromUser(ctx, constants.AttrbPhoneNumberToValidate)
 		assert.NotNil(t, err)
 	})
 
 	t.Run("Attribute is already missing", func(t *testing.T) {
 		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, currentRealm).Return(kcUserRepModified, nil)
 
-		err := component.removeStringAttributeFromUser(ctx, constants.AttrbPhoneNumberToValidate)
+		err := component.removeAttributeFromUser(ctx, constants.AttrbPhoneNumberToValidate)
 		assert.Nil(t, err)
 	})
 
@@ -1197,7 +1197,7 @@ func TestRemoveStringAttributeFromUser(t *testing.T) {
 		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, currentRealm).Return(kcUserRep, nil)
 		mocks.keycloakAccountClient.EXPECT().UpdateAccount(accessToken, currentRealm, kcUserRepModified).Return(testError)
 
-		err := component.removeStringAttributeFromUser(ctx, constants.AttrbPhoneNumberToValidate)
+		err := component.removeAttributeFromUser(ctx, constants.AttrbPhoneNumberToValidate)
 		assert.NotNil(t, err)
 	})
 
@@ -1215,7 +1215,7 @@ func TestRemoveStringAttributeFromUser(t *testing.T) {
 		mocks.keycloakAccountClient.EXPECT().UpdateAccount(accessToken, currentRealm, kcUserRepModified).Return(nil)
 		mocks.auditEventsReporterModule.EXPECT().ReportEvent(ctx, gomock.Any())
 
-		err := component.removeStringAttributeFromUser(ctx, constants.AttrbPhoneNumberToValidate)
+		err := component.removeAttributeFromUser(ctx, constants.AttrbPhoneNumberToValidate)
 		assert.Nil(t, err)
 	})
 }
