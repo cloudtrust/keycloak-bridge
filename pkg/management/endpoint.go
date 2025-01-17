@@ -171,8 +171,7 @@ func MakeCreateUserEndpoint(component Component, profileCache UserProfileCache, 
 		}
 
 		// Get the UserProfile
-		var realm = ctx.Value(cs.CtContextRealm).(string)
-		if err = user.Validate(ctx, profileCache, realm, true); err != nil {
+		if err = user.Validate(ctx, profileCache, m[prmRealm], true); err != nil {
 			// Validate input request
 			logger.Warn(ctx, "msg", "Invalid incoming data", "err", err.Error())
 			return nil, err
@@ -205,7 +204,7 @@ func MakeCreateUserEndpoint(component Component, profileCache UserProfileCache, 
 }
 
 // MakeCreateUserInSocialRealmEndpoint makes the endpoint to create a user in the social realm.
-func MakeCreateUserInSocialRealmEndpoint(component Component, profileCache UserProfileCache, logger keycloakb.Logger) cs.Endpoint {
+func MakeCreateUserInSocialRealmEndpoint(component Component, profileCache UserProfileCache, socialRealmName string, logger keycloakb.Logger) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 		var err error
@@ -217,8 +216,7 @@ func MakeCreateUserInSocialRealmEndpoint(component Component, profileCache UserP
 		}
 
 		// Get the UserProfile
-		var realm = ctx.Value(cs.CtContextRealm).(string)
-		if err = user.Validate(ctx, profileCache, realm, true); err != nil {
+		if err = user.Validate(ctx, profileCache, socialRealmName, true); err != nil {
 			// Validate input request
 			logger.Warn(ctx, "msg", "Invalid incoming data", "err", err.Error())
 			return nil, err
@@ -278,8 +276,7 @@ func MakeUpdateUserEndpoint(component Component, profileCache UserProfileCache, 
 		}
 
 		// Get the UserProfile
-		var realm = ctx.Value(cs.CtContextRealm).(string)
-		if err := user.Validate(ctx, profileCache, realm); err != nil {
+		if err := user.Validate(ctx, profileCache, m[prmRealm]); err != nil {
 			// Validate input request
 			logger.Warn(ctx, "msg", "Invalid incoming data", "err", err.Error())
 			return nil, err

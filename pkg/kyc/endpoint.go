@@ -107,7 +107,7 @@ func MakeGetUserEndpoint(component Component) cs.Endpoint {
 }
 
 // MakeValidateUserInSocialRealmEndpoint endpoint creation
-func MakeValidateUserInSocialRealmEndpoint(component Component, profileCache UserProfileCache, logger keycloakb.Logger) cs.Endpoint {
+func MakeValidateUserInSocialRealmEndpoint(component Component, profileCache UserProfileCache, socialRealmName string, logger keycloakb.Logger) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 		var user, err = apikyc.UserFromJSON(m[reqBody])
@@ -116,8 +116,7 @@ func MakeValidateUserInSocialRealmEndpoint(component Component, profileCache Use
 		}
 
 		// Validate user
-		var realm = ctx.Value(cs.CtContextRealm).(string)
-		if err := user.Validate(ctx, profileCache, realm); err != nil {
+		if err := user.Validate(ctx, profileCache, socialRealmName); err != nil {
 			return nil, err
 		}
 
@@ -132,7 +131,7 @@ func MakeValidateUserInSocialRealmEndpoint(component Component, profileCache Use
 
 /********************* (BEGIN) Temporary basic identity (TO BE REMOVED WHEN MULTI-ACCREDITATION WILL BE IMPLEMENTED) *********************/
 // MakeValidateUserBasicIDEndpoint creates an endpoint for ValidateUserBasicID
-func MakeValidateUserBasicIDEndpoint(component Component, profileCache UserProfileCache, logger keycloakb.Logger) cs.Endpoint {
+func MakeValidateUserBasicIDEndpoint(component Component, profileCache UserProfileCache, socialRealmName string, logger keycloakb.Logger) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {
 		var m = req.(map[string]string)
 		var user, err = apikyc.UserFromJSON(m[reqBody])
@@ -141,8 +140,7 @@ func MakeValidateUserBasicIDEndpoint(component Component, profileCache UserProfi
 		}
 
 		// Validate user
-		var realm = ctx.Value(cs.CtContextRealm).(string)
-		if err := user.Validate(ctx, profileCache, realm); err != nil {
+		if err := user.Validate(ctx, profileCache, socialRealmName); err != nil {
 			return nil, err
 		}
 
@@ -162,8 +160,7 @@ func MakeValidateUserEndpoint(component Component, profileCache UserProfileCache
 		}
 
 		// Validate user
-		var realm = ctx.Value(cs.CtContextRealm).(string)
-		if err := user.Validate(ctx, profileCache, realm); err != nil {
+		if err := user.Validate(ctx, profileCache, m[prmRealm]); err != nil {
 			return nil, err
 		}
 

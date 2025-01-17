@@ -18,8 +18,8 @@ import (
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
 	"github.com/cloudtrust/keycloak-bridge/pkg/management/mock"
 	kc "github.com/cloudtrust/keycloak-client/v2"
-	"go.uber.org/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func TestGetActionsEndpoint(t *testing.T) {
@@ -143,20 +143,24 @@ func TestCreateUserEndpoint(t *testing.T) {
 
 		e = MakeCreateUserEndpoint(mockManagementComponent, mockProfileCache, log.NewNopLogger())
 
-		realm    = "master"
-		location = "https://location.url/auth/admin/master/users/123456"
-		ctx      = context.WithValue(context.TODO(), cs.CtContextRealm, realm)
-		groups   = []string{"f467ed7c-0a1d-4eee-9bb8-669c6f89c0ee"}
-		anyError = errors.New("any")
+		realm       = "master"
+		targetRealm = "targetRealm"
+		location    = "https://location.url/auth/admin/master/users/123456"
+		ctx         = context.WithValue(context.TODO(), cs.CtContextRealm, realm)
+		groups      = []string{"f467ed7c-0a1d-4eee-9bb8-669c6f89c0ee"}
+		anyError    = errors.New("any")
 	)
 
 	t.Run("GetRealmUserProfile fails", func(t *testing.T) {
-		var req = map[string]string{reqBody: "{}"}
-		mockProfileCache.EXPECT().GetRealmUserProfile(ctx, realm).Return(kc.UserProfileRepresentation{}, anyError)
+		var req = map[string]string{
+			prmRealm: targetRealm,
+			reqBody:  "{}",
+		}
+		mockProfileCache.EXPECT().GetRealmUserProfile(ctx, targetRealm).Return(kc.UserProfileRepresentation{}, anyError)
 		_, err := e(ctx, req)
 		assert.NotNil(t, err)
 	})
-	mockProfileCache.EXPECT().GetRealmUserProfile(ctx, realm).Return(kc.UserProfileRepresentation{
+	mockProfileCache.EXPECT().GetRealmUserProfile(ctx, targetRealm).Return(kc.UserProfileRepresentation{
 		Attributes: []kc.ProfileAttrbRepresentation{
 			{
 				Name: ptr("gender"),
@@ -177,11 +181,11 @@ func TestCreateUserEndpoint(t *testing.T) {
 		var req = map[string]string{
 			reqScheme: "https",
 			reqHost:   "elca.ch",
-			prmRealm:  realm,
+			prmRealm:  targetRealm,
 			reqBody:   string(userJSON),
 		}
 
-		mockManagementComponent.EXPECT().CreateUser(ctx, realm, user, false, false, false).Return(location, nil)
+		mockManagementComponent.EXPECT().CreateUser(ctx, targetRealm, user, false, false, false).Return(location, nil)
 		res, err := e(ctx, req)
 		assert.Nil(t, err)
 
@@ -197,13 +201,18 @@ func TestCreateUserEndpoint(t *testing.T) {
 	})
 
 	t.Run("Error - Invalid body", func(t *testing.T) {
-		var req = map[string]string{reqBody: `{}`}
+		var req = map[string]string{
+			prmRealm: targetRealm,
+			reqBody:  `{}`,
+		}
 		_, err := e(ctx, req)
 		assert.NotNil(t, err)
 	})
 
 	t.Run("Error - Missing groups", func(t *testing.T) {
-		var req = make(map[string]string)
+		var req = map[string]string{
+			prmRealm: targetRealm,
+		}
 		userJSON, _ := json.Marshal(api.UserRepresentation{Groups: nil})
 		req[reqBody] = string(userJSON)
 		_, err := e(ctx, req)
@@ -214,11 +223,11 @@ func TestCreateUserEndpoint(t *testing.T) {
 		var req = make(map[string]string)
 		req[reqScheme] = "https"
 		req[reqHost] = "elca.ch"
-		req[prmRealm] = realm
+		req[prmRealm] = targetRealm
 		userJSON, _ := json.Marshal(api.UserRepresentation{Groups: &groups})
 		req[reqBody] = string(userJSON)
 
-		mockManagementComponent.EXPECT().CreateUser(ctx, realm, gomock.Any(), false, false, false).Return("", fmt.Errorf("Error"))
+		mockManagementComponent.EXPECT().CreateUser(ctx, targetRealm, gomock.Any(), false, false, false).Return("", fmt.Errorf("Error"))
 		_, err := e(ctx, req)
 		assert.NotNil(t, err)
 	})
@@ -227,11 +236,11 @@ func TestCreateUserEndpoint(t *testing.T) {
 		var req = make(map[string]string)
 		req[reqScheme] = "https"
 		req[reqHost] = "elca.ch"
-		req[prmRealm] = realm
+		req[prmRealm] = targetRealm
 		userJSON, _ := json.Marshal(api.UserRepresentation{Groups: &groups})
 		req[reqBody] = string(userJSON)
 
-		mockManagementComponent.EXPECT().CreateUser(ctx, realm, api.UserRepresentation{Groups: &groups}, false, false, false).Return("/unrecognized/location", nil)
+		mockManagementComponent.EXPECT().CreateUser(ctx, targetRealm, api.UserRepresentation{Groups: &groups}, false, false, false).Return("/unrecognized/location", nil)
 		res, err := e(ctx, req)
 		assert.Nil(t, err)
 		assert.IsType(t, LocationHeader{}, res)
@@ -248,22 +257,26 @@ func TestCreateUserInSocialRealmEndpoint(t *testing.T) {
 		mockProfileCache        = mock.NewUserProfileCache(mockCtrl)
 		mockManagementComponent = mock.NewManagementComponent(mockCtrl)
 
-		e = MakeCreateUserInSocialRealmEndpoint(mockManagementComponent, mockProfileCache, log.NewNopLogger())
+		e = MakeCreateUserInSocialRealmEndpoint(mockManagementComponent, mockProfileCache, socialRealmName, log.NewNopLogger())
 
-		realm    = "master"
-		location = "https://location.url/auth/admin/master/users/123456"
-		ctx      = context.WithValue(context.TODO(), cs.CtContextRealm, realm)
-		groups   = []string{"f467ed7c-0a1d-4eee-9bb8-669c6f89c0ee"}
-		anyError = errors.New("any")
+		realm       = "master"
+		targetRealm = "targetRealm"
+		location    = "https://location.url/auth/admin/master/users/123456"
+		ctx         = context.WithValue(context.TODO(), cs.CtContextRealm, realm)
+		groups      = []string{"f467ed7c-0a1d-4eee-9bb8-669c6f89c0ee"}
+		anyError    = errors.New("any")
 	)
 
 	t.Run("GetRealmUserProfile fails", func(t *testing.T) {
-		var req = map[string]string{reqBody: "{}"}
-		mockProfileCache.EXPECT().GetRealmUserProfile(ctx, realm).Return(kc.UserProfileRepresentation{}, anyError)
+		var req = map[string]string{
+			prmRealm: targetRealm,
+			reqBody:  "{}",
+		}
+		mockProfileCache.EXPECT().GetRealmUserProfile(ctx, socialRealmName).Return(kc.UserProfileRepresentation{}, anyError)
 		_, err := e(ctx, req)
 		assert.NotNil(t, err)
 	})
-	mockProfileCache.EXPECT().GetRealmUserProfile(ctx, realm).Return(kc.UserProfileRepresentation{
+	mockProfileCache.EXPECT().GetRealmUserProfile(ctx, socialRealmName).Return(kc.UserProfileRepresentation{
 		Attributes: []kc.ProfileAttrbRepresentation{
 			{
 				Name: ptr("gender"),
@@ -282,7 +295,7 @@ func TestCreateUserInSocialRealmEndpoint(t *testing.T) {
 		var req = map[string]string{
 			reqScheme: "https",
 			reqHost:   "elca.ch",
-			prmRealm:  realm,
+			prmRealm:  targetRealm,
 		}
 		var user = api.UserRepresentation{Gender: ptr("M"), Groups: &groups}
 
@@ -304,13 +317,18 @@ func TestCreateUserInSocialRealmEndpoint(t *testing.T) {
 	})
 
 	t.Run("Error - Invalid body", func(t *testing.T) {
-		var req = map[string]string{reqBody: `{"email":""}`}
+		var req = map[string]string{
+			prmRealm: targetRealm,
+			reqBody:  `{"email":""}`,
+		}
 		_, err := e(ctx, req)
 		assert.NotNil(t, err)
 	})
 
 	t.Run("Error - Missing groups", func(t *testing.T) {
-		var req = make(map[string]string)
+		var req = map[string]string{
+			prmRealm: targetRealm,
+		}
 		userJSON, _ := json.Marshal(api.UserRepresentation{Groups: nil})
 		req[reqBody] = string(userJSON)
 		_, err := e(ctx, req)
@@ -321,7 +339,7 @@ func TestCreateUserInSocialRealmEndpoint(t *testing.T) {
 		var req = make(map[string]string)
 		req[reqScheme] = "https"
 		req[reqHost] = "elca.ch"
-		req[prmRealm] = realm
+		req[prmRealm] = targetRealm
 		userJSON, _ := json.Marshal(api.UserRepresentation{Groups: &groups})
 		req[reqBody] = string(userJSON)
 
@@ -334,7 +352,7 @@ func TestCreateUserInSocialRealmEndpoint(t *testing.T) {
 		var req = make(map[string]string)
 		req[reqScheme] = "https"
 		req[reqHost] = "elca.ch"
-		req[prmRealm] = realm
+		req[prmRealm] = targetRealm
 		userJSON, _ := json.Marshal(api.UserRepresentation{Groups: &groups})
 		req[reqBody] = string(userJSON)
 
@@ -399,20 +417,24 @@ func TestUpdateUserEndpoint(t *testing.T) {
 
 		e = MakeUpdateUserEndpoint(mockManagementComponent, mockProfileCache, log.NewNopLogger())
 
-		realm    = "the-realm"
-		userID   = "1234-452-4578"
-		theUser  = api.UserRepresentation{Gender: ptr("M")}
-		ctx      = context.WithValue(context.TODO(), cs.CtContextRealm, realm)
-		anyError = errors.New("any")
+		realm       = "the-realm"
+		targetRealm = "targetRealm"
+		userID      = "1234-452-4578"
+		theUser     = api.UserRepresentation{Gender: ptr("M")}
+		ctx         = context.WithValue(context.TODO(), cs.CtContextRealm, realm)
+		anyError    = errors.New("any")
 	)
 
 	t.Run("GetRealmUserProfile fails", func(t *testing.T) {
-		var req = map[string]string{reqBody: "{}"}
-		mockProfileCache.EXPECT().GetRealmUserProfile(ctx, realm).Return(kc.UserProfileRepresentation{}, anyError)
+		var req = map[string]string{
+			prmRealm: targetRealm,
+			reqBody:  "{}",
+		}
+		mockProfileCache.EXPECT().GetRealmUserProfile(ctx, targetRealm).Return(kc.UserProfileRepresentation{}, anyError)
 		_, err := e(ctx, req)
 		assert.NotNil(t, err)
 	})
-	mockProfileCache.EXPECT().GetRealmUserProfile(ctx, realm).Return(kc.UserProfileRepresentation{
+	mockProfileCache.EXPECT().GetRealmUserProfile(ctx, targetRealm).Return(kc.UserProfileRepresentation{
 		Attributes: []kc.ProfileAttrbRepresentation{
 			{
 				Name: ptr("gender"),
@@ -429,12 +451,12 @@ func TestUpdateUserEndpoint(t *testing.T) {
 
 	t.Run("No error", func(t *testing.T) {
 		var req = make(map[string]string)
-		req[prmRealm] = realm
+		req[prmRealm] = targetRealm
 		req[prmUserID] = userID
 		userJSON, _ := json.Marshal(theUser)
 		req[reqBody] = string(userJSON)
 
-		mockManagementComponent.EXPECT().UpdateUser(ctx, realm, userID, gomock.Any()).Return(nil)
+		mockManagementComponent.EXPECT().UpdateUser(ctx, targetRealm, userID, gomock.Any()).Return(nil)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Nil(t, res)
@@ -442,7 +464,7 @@ func TestUpdateUserEndpoint(t *testing.T) {
 
 	t.Run("Error - JSON unmarshalling error", func(t *testing.T) {
 		var req = make(map[string]string)
-		req[prmRealm] = realm
+		req[prmRealm] = targetRealm
 		req[prmUserID] = userID
 		req[reqBody] = string("userJSON")
 
