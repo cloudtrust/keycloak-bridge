@@ -11,9 +11,11 @@ import (
 	apikyc "github.com/cloudtrust/keycloak-bridge/api/kyc"
 	"github.com/cloudtrust/keycloak-bridge/pkg/kyc/mock"
 	kc "github.com/cloudtrust/keycloak-client/v2"
-	"go.uber.org/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
+
+const socialRealmName = "socialRealm"
 
 func TestMakeGetActionsEndpoint(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
@@ -161,7 +163,7 @@ func TestMakeValidateUserInSocialRealmEndpoint(t *testing.T) {
 		mockKYCComponent = mock.NewComponent(mockCtrl)
 		mockProfileCache = mock.NewUserProfileCache(mockCtrl)
 		logger           = log.NewNopLogger()
-		endpoint         = MakeValidateUserInSocialRealmEndpoint(mockKYCComponent, mockProfileCache, logger)
+		endpoint         = MakeValidateUserInSocialRealmEndpoint(mockKYCComponent, mockProfileCache, socialRealmName, logger)
 
 		userID      = "ux467913"
 		consentCode = "987654"
@@ -178,12 +180,12 @@ func TestMakeValidateUserInSocialRealmEndpoint(t *testing.T) {
 	})
 	t.Run("GetRealmUserProfile fails", func(t *testing.T) {
 		m[reqBody] = `{}`
-		mockProfileCache.EXPECT().GetRealmUserProfile(ctx, realm).Return(kc.UserProfileRepresentation{}, anyError)
+		mockProfileCache.EXPECT().GetRealmUserProfile(ctx, socialRealmName).Return(kc.UserProfileRepresentation{}, anyError)
 		_, err := endpoint(ctx, m)
 		assert.NotNil(t, err)
 	})
 
-	mockProfileCache.EXPECT().GetRealmUserProfile(ctx, realm).Return(kc.UserProfileRepresentation{}, nil).AnyTimes()
+	mockProfileCache.EXPECT().GetRealmUserProfile(ctx, socialRealmName).Return(kc.UserProfileRepresentation{}, nil).AnyTimes()
 
 	t.Run("Success case without consent code", func(t *testing.T) {
 		m[reqBody] = `{}`

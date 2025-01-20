@@ -733,7 +733,7 @@ func main() {
 			GetRequiredActions: prepareEndpoint(management.MakeGetRequiredActionsEndpoint(keycloakComponent), "get_required-actions_endpoint", managementLogger, rateLimitMgmt),
 
 			CreateUser:                  prepareEndpoint(management.MakeCreateUserEndpoint(keycloakComponent, profileCache, managementLogger), "create_user_endpoint", managementLogger, rateLimitMgmt),
-			CreateUserInSocialRealm:     prepareEndpoint(management.MakeCreateUserInSocialRealmEndpoint(keycloakComponent, profileCache, managementLogger), "create_user_in_social_realm_endpoint", managementLogger, rateLimitMgmt),
+			CreateUserInSocialRealm:     prepareEndpoint(management.MakeCreateUserInSocialRealmEndpoint(keycloakComponent, profileCache, registerRealm, managementLogger), "create_user_in_social_realm_endpoint", managementLogger, rateLimitMgmt),
 			GetUser:                     prepareEndpoint(management.MakeGetUserEndpoint(keycloakComponent), "get_user_endpoint", managementLogger, rateLimitMgmt),
 			UpdateUser:                  prepareEndpoint(management.MakeUpdateUserEndpoint(keycloakComponent, profileCache, managementLogger), "update_user_endpoint", managementLogger, rateLimitMgmt),
 			LockUser:                    prepareEndpoint(management.MakeLockUserEndpoint(keycloakComponent), "lock_user_endpoint", managementLogger, rateLimitMgmt),
@@ -947,7 +947,7 @@ func main() {
 			GetUserInSocialRealm:            prepareEndpoint(kyc.MakeGetUserInSocialRealmEndpoint(kycComponent), "get_user_in_social_realm", kycLogger, rateLimitKyc),
 			GetUserProfileInSocialRealm:     prepareEndpoint(kyc.MakeGetUserProfileInSocialRealmEndpoint(kycComponent), "get_user_profile_in_social_realm", kycLogger, rateLimitKyc),
 			GetUserByUsernameInSocialRealm:  prepareEndpoint(kyc.MakeGetUserByUsernameInSocialRealmEndpoint(kycComponent), "get_user_by_username_in_social_realm", kycLogger, rateLimitKyc),
-			ValidateUserInSocialRealm:       prepareEndpoint(kyc.MakeValidateUserInSocialRealmEndpoint(kycComponent, profileCache, kycLogger), "validate_user_in_social_realm", kycLogger, rateLimitKyc),
+			ValidateUserInSocialRealm:       prepareEndpoint(kyc.MakeValidateUserInSocialRealmEndpoint(kycComponent, profileCache, registerRealm, kycLogger), "validate_user_in_social_realm", kycLogger, rateLimitKyc),
 			SendSMSConsentCodeInSocialRealm: prepareEndpoint(kyc.MakeSendSmsConsentCodeInSocialRealmEndpoint(kycComponent), "send_sms_consent_code_in_social_realm", kycLogger, rateLimitKyc),
 			SendSMSCodeInSocialRealm:        prepareEndpoint(kyc.MakeSendSmsCodeInSocialRealmEndpoint(kycComponent), "send_sms_code_in_social_realm", kycLogger, rateLimitKyc),
 			GetUser:                         prepareEndpoint(kyc.MakeGetUserEndpoint(kycComponent), "get_user", kycLogger, rateLimitKyc),
@@ -957,7 +957,7 @@ func main() {
 			SendSMSConsentCode:              prepareEndpoint(kyc.MakeSendSmsConsentCodeEndpoint(kycComponent), "send_sms_consent_code", kycLogger, rateLimitKyc),
 			SendSMSCode:                     prepareEndpoint(kyc.MakeSendSmsCodeEndpoint(kycComponent), "send_sms_code", kycLogger, rateLimitKyc),
 
-			ValidateUserBasic: prepareEndpoint(kyc.MakeValidateUserBasicIDEndpoint(kycComponent, profileCache, kycLogger), "basic_validate_user", kycLogger, rateLimitKyc), /***TO BE REMOVED WHEN MULTI-ACCREDITATION WILL BE IMPLEMENTED***/
+			ValidateUserBasic: prepareEndpoint(kyc.MakeValidateUserBasicIDEndpoint(kycComponent, profileCache, registerRealm, kycLogger), "basic_validate_user", kycLogger, rateLimitKyc), /***TO BE REMOVED WHEN MULTI-ACCREDITATION WILL BE IMPLEMENTED***/
 		}
 	}
 
