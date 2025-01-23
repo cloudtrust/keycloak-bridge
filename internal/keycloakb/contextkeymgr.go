@@ -5,6 +5,7 @@ type ContextKeyParameters struct {
 	ID                    *string `mapstructure:"id"`
 	Realm                 *string `mapstructure:"realm"`
 	OnboardingRedirectURI *string `mapstructure:"onboardingRedirectURI,omitempty"`
+	IdentificationURI     *string `mapstructure:"identificationURI,omitempty"`
 	OnboardingClientID    *string `mapstructure:"onboardingClientID,omitempty"`
 	RedirectMode          *bool   `mapstructure:"redirectMode,omitempty"`
 }

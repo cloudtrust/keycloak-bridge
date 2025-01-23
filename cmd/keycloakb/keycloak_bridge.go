@@ -35,6 +35,7 @@ import (
 	"github.com/cloudtrust/keycloak-bridge/internal/profile"
 	"github.com/cloudtrust/keycloak-bridge/pkg/account"
 	"github.com/cloudtrust/keycloak-bridge/pkg/communications"
+	conf "github.com/cloudtrust/keycloak-bridge/pkg/configuration"
 	"github.com/cloudtrust/keycloak-bridge/pkg/kyc"
 	"github.com/cloudtrust/keycloak-bridge/pkg/management"
 	mobile "github.com/cloudtrust/keycloak-bridge/pkg/mobile"
@@ -97,6 +98,7 @@ const (
 	cfgHTTPAddrRegister         = "register-http-host-port"
 	cfgHTTPAddrMobile           = "mobile-http-host-port"
 	cfgHTTPAddrMonitoring       = "monitoring-http-host-port"
+	cfgHTTPAddrConfiguration    = "configuration-http-host-port"
 	cfgAddrTokenProviderMap     = "keycloak-oidc-uri-map"
 	cfgAddrAPI                  = "keycloak-api-uri"
 	cfgTimeout                  = "keycloak-timeout"
@@ -214,12 +216,13 @@ func main() {
 	var c = config(ctx, log.With(logger, "unit", "config"))
 	var (
 		// Publishing
-		httpAddrInternal   = c.GetString(cfgHTTPAddrInternal)
-		httpAddrManagement = c.GetString(cfgHTTPAddrManagement)
-		httpAddrAccount    = c.GetString(cfgHTTPAddrAccount)
-		httpAddrRegister   = c.GetString(cfgHTTPAddrRegister)
-		httpAddrMobile     = c.GetString(cfgHTTPAddrMobile)
-		httpAddrMonitoring = c.GetString(cfgHTTPAddrMonitoring)
+		httpAddrInternal      = c.GetString(cfgHTTPAddrInternal)
+		httpAddrManagement    = c.GetString(cfgHTTPAddrManagement)
+		httpAddrAccount       = c.GetString(cfgHTTPAddrAccount)
+		httpAddrRegister      = c.GetString(cfgHTTPAddrRegister)
+		httpAddrMobile        = c.GetString(cfgHTTPAddrMobile)
+		httpAddrMonitoring    = c.GetString(cfgHTTPAddrMonitoring)
+		httpAddrConfiguration = c.GetString(cfgHTTPAddrConfiguration)
 
 		// Enabled units
 		pprofRouteEnabled = c.GetBool(cfgPprofRouteEnabled)
@@ -918,6 +921,28 @@ func main() {
 		}
 	}
 
+	// Configuration service.
+	var configurationEndpoints conf.Endpoints
+	{
+		configurationLogger := log.With(logger, "svc", "configuration")
+
+		// context keys
+		contextKeyManager, err := keycloakb.MakeContextKeyManager(func(config interface{}) error {
+			return c.UnmarshalKey(cfgContextKeys, config)
+		})
+		if err != nil {
+			logger.Error(ctx, "msg", "Could not initialize context key manager", "err", err)
+			return
+		}
+
+		configurationComponent := conf.NewComponent(contextKeyManager, configurationLogger)
+
+		rateLimitRegister := rateLimit[RateKeyRegister]
+		configurationEndpoints = conf.Endpoints{
+			GetIdentificationURI: prepareEndpoint(conf.MakeGetIdentificationURIEndpoint(configurationComponent), "get_identification_uri", configurationLogger, rateLimitRegister),
+		}
+	}
+
 	// Tools for endpoint middleware
 	var idRetriever = keycloakb.NewRealmIDRetriever(keycloakClient)
 	var configurationReaderDBModule = configuration.NewConfigurationReaderDBModule(configurationRoDBConn, logger)
@@ -1426,6 +1451,28 @@ func main() {
 		errc <- http.ListenAndServe(httpAddrRegister, handler)
 	}()
 
+	// HTTP configuration server (Configuration API)
+	go func() {
+		logger := log.With(logger, "transport", "http")
+		logger.Info(ctx, "addr", httpAddrConfiguration, "interface", "configuration")
+
+		route := mux.NewRouter()
+
+		getIdentificationURIHandler := configurePublicConfigurationHandler(keycloakb.ComponentName, ComponentID, idGenerator, logger)(configurationEndpoints.GetIdentificationURI)
+		route.Path("/configuration/realms/{realm}/identification").Methods("GET").Handler(getIdentificationURIHandler)
+
+		var handler http.Handler = route
+
+		if accessLogsEnabled {
+			handler = commonhttp.MakeAccessLogHandler(accessLogger, handler)
+		}
+
+		c := cors.New(corsOptions)
+		handler = c.Handler(handler)
+
+		errc <- http.ListenAndServe(httpAddrConfiguration, handler)
+	}()
+
 	logger.Info(ctx, "msg", "Started")
 	logger.Error(ctx, "err", <-errc)
 }
@@ -1452,6 +1499,7 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 	v.SetDefault(cfgHTTPAddrRegister, defaultPublishingIP+":8855")
 	v.SetDefault(cfgHTTPAddrMobile, defaultPublishingIP+":8844")
 	v.SetDefault(cfgHTTPAddrMonitoring, defaultPublishingIP+":8899")
+	v.SetDefault(cfgHTTPAddrConfiguration, defaultPublishingIP+":8833")
 
 	// Security - Audience check
 	v.SetDefault(cfgAudienceRequired, "")
@@ -1664,6 +1712,16 @@ func configurePublicRegisterHandler(ComponentName string, ComponentID string, id
 	return func(endpoint endpoint.Endpoint) http.Handler {
 		var handler http.Handler
 		handler = register.MakeRegisterHandler(endpoint, logger)
+		handler = middleware.MakeHTTPCorrelationIDMW(idGenerator, nil, logger, ComponentName, ComponentID)(handler)
+		return handler
+	}
+}
+
+// configurePublicRegisterHandler is a public handler. No authorization is checked here
+func configurePublicConfigurationHandler(ComponentName string, ComponentID string, idGenerator idgenerator.IDGenerator, logger log.Logger) func(endpoint endpoint.Endpoint) http.Handler {
+	return func(endpoint endpoint.Endpoint) http.Handler {
+		var handler http.Handler
+		handler = conf.MakeConfigurationHandler(endpoint, logger)
 		handler = middleware.MakeHTTPCorrelationIDMW(idGenerator, nil, logger, ComponentName, ComponentID)(handler)
 		return handler
 	}
