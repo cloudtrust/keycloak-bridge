@@ -1,50 +1,59 @@
 package configuration
 
 import (
-	"io"
+	"bytes"
+	"context"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"github.com/cloudtrust/common-service/v2/log"
-	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
-	"github.com/cloudtrust/keycloak-bridge/pkg/configuration/mock"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
 
+const (
+	realm      = "trustid"
+	contextKey = "19251660-f869-11ec-b939-0242ac120002"
+)
+
 func TestHTTPConfigurationHandler(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	mockConfigurationComponent := mock.NewComponent(mockCtrl)
-
-	const (
-		realm             = "trustid"
-		contextKey        = "19251660-f869-11ec-b939-0242ac120002"
-		identificationURI = "http://identification-uri"
-	)
 
 	r := mux.NewRouter()
-	r.Handle("/configuration/realms/{realm}/identification", MakeConfigurationHandler(keycloakb.ToGoKitEndpoint(MakeGetIdentificationURIEndpoint(mockConfigurationComponent)), log.NewNopLogger()))
+	r.Handle("/configuration/realms/{realm}/identification", MakeConfigurationHandler(
+		func(ctx context.Context, request interface{}) (response interface{}, err error) {
+			var m = request.(map[string]string)
+			return m[prmRealmName] + ":" + m[prmContextKey], nil
+		}, log.NewNopLogger()))
 
 	ts := httptest.NewServer(r)
 	defer ts.Close()
 
-	{
-		mockConfigurationComponent.EXPECT().GetIdentificationURI(gomock.Any(), realm, contextKey).Return(identificationURI, nil)
-
+	t.Run("Success", func(t *testing.T) {
 		res, err := http.Get(ts.URL + "/configuration/realms/" + realm + "/identification?context-key=" + contextKey)
 
 		assert.Nil(t, err)
 		assert.Equal(t, http.StatusOK, res.StatusCode)
 
-		body, err := io.ReadAll(res.Body)
-		assert.Nil(t, err)
+		buf := new(bytes.Buffer)
+		_, _ = buf.ReadFrom(res.Body)
+		assert.Equal(t, `"trustid:19251660-f869-11ec-b939-0242ac120002"`, buf.String())
+	})
 
-		// Remove quotes from the server response
-		result := strings.Trim(string(body), "\"")
-		assert.Equal(t, identificationURI, result)
-	}
+	t.Run("Invalid context-key", func(t *testing.T) {
+		res, err := http.Get(ts.URL + "/configuration/realms/" + realm + "/identification?context-key=a")
+
+		assert.Nil(t, err)
+		assert.Equal(t, http.StatusBadRequest, res.StatusCode)
+	})
+
+	t.Run("Invalid realm name", func(t *testing.T) {
+		res, err := http.Get(ts.URL + "/configuration/realms/realm!/identification?context-key=" + contextKey)
+
+		assert.Nil(t, err)
+		assert.Equal(t, http.StatusBadRequest, res.StatusCode)
+	})
 }

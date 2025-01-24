@@ -18,22 +18,14 @@ const (
 
 // MakeConfigurationHandler makes an HTTP handler for the configuration endpoint
 func MakeConfigurationHandler(e endpoint.Endpoint, logger log.Logger) *http_transport.Server {
+	pathParams := map[string]string{prmRealmName: constants.RegExpRealmName}
+	queryParams := map[string]string{prmContextKey: constants.RegExpID}
+
 	return http_transport.NewServer(e,
-		decodeConfigurationRequest,
+		func(ctx context.Context, req *http.Request) (interface{}, error) {
+			return commonhttp.DecodeRequest(ctx, req, pathParams, queryParams)
+		},
 		commonhttp.EncodeReply,
 		http_transport.ServerErrorEncoder(commonhttp.ErrorHandler(logger)),
 	)
-}
-
-// decodeConfigurationRequest gets the HTTP parameters and body content
-func decodeConfigurationRequest(ctx context.Context, req *http.Request) (interface{}, error) {
-	pathParams := map[string]string{
-		prmRealmName: constants.RegExpRealmName,
-	}
-	
-	queryParams := map[string]string{
-		prmContextKey: constants.RegExpID,
-	}
-
-	return commonhttp.DecodeRequest(ctx, req, pathParams, queryParams)
 }

@@ -3,7 +3,7 @@ module github.com/cloudtrust/keycloak-bridge
 go 1.22.0
 
 require (
-	github.com/cloudtrust/common-service/v2 v2.8.6
+	github.com/cloudtrust/common-service/v2 v2.8.7
 	github.com/cloudtrust/httpclient v1.3.1
 	github.com/cloudtrust/kafka-client v1.4.1
 	github.com/cloudtrust/keycloak-client/v2 v2.8.1
@@ -79,5 +79,3 @@ require (
 	gopkg.in/square/go-jose.v2 v2.6.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace github.com/cloudtrust/common-service/v2 => ../../common-service

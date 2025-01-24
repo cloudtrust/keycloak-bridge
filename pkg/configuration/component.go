@@ -34,12 +34,12 @@ func (c *component) GetIdentificationURI(ctx context.Context, realm string, cont
 	ctxOverride, ok := c.contextKeyMgr.GetOverride(realm, contextKey)
 	if !ok {
 		c.logger.Info(ctx, "msg", "Invalid (context-key, realm) pair", "context-key", contextKey, "realm", realm)
-		return "", errorhandler.CreateBadRequestError(errorhandler.MsgErrInvalidParam + ".context-key")
+		return "", errorhandler.CreateBadRequestError(errorhandler.MsgErrInvalidParam + ".realm-and-context-key")
 	}
 
 	if ctxOverride.IdentificationURI == nil {
 		c.logger.Info(ctx, "msg", "Empty identification URI", "context-key", contextKey, "realm", realm)
-		return "", errorhandler.CreateBadRequestError(errorhandler.MsgErrInvalidParam + ".context-key")
+		return "", errorhandler.CreateNotFoundError(errorhandler.MsgErrInvalidParam + ".realm-and-context-key")
 	}
 
 	return *ctxOverride.IdentificationURI, nil

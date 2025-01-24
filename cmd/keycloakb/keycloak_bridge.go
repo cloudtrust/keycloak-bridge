@@ -1499,7 +1499,7 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 	v.SetDefault(cfgHTTPAddrRegister, defaultPublishingIP+":8855")
 	v.SetDefault(cfgHTTPAddrMobile, defaultPublishingIP+":8844")
 	v.SetDefault(cfgHTTPAddrMonitoring, defaultPublishingIP+":8899")
-	v.SetDefault(cfgHTTPAddrConfiguration, defaultPublishingIP+":8833")
+	v.SetDefault(cfgHTTPAddrConfiguration, defaultPublishingIP+":8870")
 
 	// Security - Audience check
 	v.SetDefault(cfgAudienceRequired, "")
