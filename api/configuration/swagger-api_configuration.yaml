@@ -1,0 +1,35 @@
+openapi: 3.0.1
+info:
+  title: Swagger Cloudtrust Management
+  description: 'Configuration API for Cloudtrust.'
+  version: 1.0.0
+servers:
+- url: http://localhost:8833
+paths:
+  /configuration/realms/{realm}/identification:
+    get:
+      tags:
+      - Configuration
+      summary: Get identification URI for a realm and a context-key
+      parameters:
+      - name: realm
+        in: path
+        description: realm name
+        required: true
+        schema:
+          type: string
+      - name: context-key
+        in: query
+        description: context-key
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation
+          content:
+            text/plain:
+              schema:
+                type: string
+        400:
+          description: invalid information provided (invalid realm, context-key pair or empty identification URI)
