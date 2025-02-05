@@ -21,7 +21,7 @@ require (
 	github.com/spf13/viper v1.19.0
 	github.com/stretchr/testify v1.10.0
 	go.uber.org/mock v0.5.0
-	golang.org/x/time v0.9.0
+	golang.org/x/time v0.10.0
 	gopkg.in/h2non/gentleman.v2 v2.0.5
 )
 
