@@ -45,8 +45,9 @@ func TestGetIdentificationURI(t *testing.T) {
 
 	t.Run("No identification URI", func(t *testing.T) {
 		mocks.contextKeyMgr.EXPECT().GetOverride(realm, contextKey).Return(keycloakb.ContextKeyParameters{
-			ID:    ptr(contextKey),
-			Realm: &realm,
+			ID:                ptr(contextKey),
+			Realm:             &realm,
+			IdentificationURI: nil,
 		}, true)
 
 		_, err := component.GetIdentificationURI(context.Background(), realm, contextKey)
