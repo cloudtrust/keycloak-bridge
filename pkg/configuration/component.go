@@ -37,9 +37,9 @@ func (c *component) GetIdentificationURI(ctx context.Context, realm string, cont
 		return "", errorhandler.CreateBadRequestError(errorhandler.MsgErrInvalidParam + ".realm-and-context-key")
 	}
 
-	if ctxOverride.IdentificationURI == nil {
+	if ctxOverride.IdentificationURI == nil || *ctxOverride.IdentificationURI == "" {
 		c.logger.Info(ctx, "msg", "Empty identification URI", "context-key", contextKey, "realm", realm)
-		return "", errorhandler.CreateNotFoundError(errorhandler.MsgErrInvalidParam + ".realm-and-context-key")
+		return "", errorhandler.CreateBadRequestError(errorhandler.MsgErrInvalidParam + ".realm-and-context-key")
 	}
 
 	return *ctxOverride.IdentificationURI, nil

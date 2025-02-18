@@ -4,7 +4,7 @@ info:
   description: 'Configuration API for Cloudtrust.'
   version: 1.0.0
 servers:
-- url: http://localhost:8833
+- url: http://localhost:8870
 paths:
   /configuration/realms/{realm}/identification:
     get:
