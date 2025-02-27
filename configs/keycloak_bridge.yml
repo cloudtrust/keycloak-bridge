@@ -195,6 +195,7 @@ kafka:
   enabled: true
   version: "3.1.0"
   tls-enabled: false
+  sarama-log-enabled: true
   brokers:
   - "kafka:29093"
   security:
