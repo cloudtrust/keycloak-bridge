@@ -162,7 +162,6 @@ const (
 	cfgAddrIdnow                = "idnow-service-api-uri"
 	cfgIdnowTimeout             = "idnow-service-timeout"
 	cfgContextKeys              = "context-keys"
-	cfgSaramaLogEnabled         = "sarama-log-enabled"
 	cfgLogEventRate             = "log-events-rate"
 
 	tokenProviderDefaultKey = "default"
@@ -1591,9 +1590,6 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 	v.SetDefault(cfgGlnMedRegEnabled, false)
 	v.SetDefault(cfgGlnMedRegURI, "https://www.medregom.admin.ch")
 	v.SetDefault(cfgGlnMedRegTimeout, "10s")
-
-	// Sarama logs
-	v.SetDefault(cfgSaramaLogEnabled, true)
 
 	// Validation rules
 	v.SetDefault(cfgValidationRules, map[string]string{})
