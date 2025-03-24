@@ -1,6 +1,8 @@
 module github.com/cloudtrust/keycloak-bridge
 
-go 1.22.0
+go 1.23.0
+
+toolchain go1.24.1
 
 require (
 	github.com/cloudtrust/common-service/v2 v2.8.9
@@ -21,7 +23,7 @@ require (
 	github.com/spf13/viper v1.20.0
 	github.com/stretchr/testify v1.10.0
 	go.uber.org/mock v0.5.0
-	golang.org/x/time v0.10.0
+	golang.org/x/time v0.11.0
 	gopkg.in/h2non/gentleman.v2 v2.0.5
 )
 
