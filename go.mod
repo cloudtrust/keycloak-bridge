@@ -18,7 +18,7 @@ require (
 	github.com/rs/cors v1.11.1
 	github.com/spf13/cast v1.7.1
 	github.com/spf13/pflag v1.0.6
-	github.com/spf13/viper v1.20.0
+	github.com/spf13/viper v1.20.1
 	github.com/stretchr/testify v1.10.0
 	go.uber.org/mock v0.5.0
 	golang.org/x/time v0.10.0
