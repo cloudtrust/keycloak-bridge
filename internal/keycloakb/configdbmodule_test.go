@@ -13,8 +13,8 @@ import (
 
 	msg "github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/mock"
-	"go.uber.org/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func TestConfigurationDBModule(t *testing.T) {
@@ -193,6 +193,7 @@ func TestBackOfficeConfiguration(t *testing.T) {
 	t.Run("GET-SQLRows is empty", func(t *testing.T) {
 		mockDB.EXPECT().Query(gomock.Any(), gomock.Any()).Return(mockSQLRows, nil)
 		mockSQLRows.EXPECT().Next().Return(false)
+		mockSQLRows.EXPECT().Err()
 		mockSQLRows.EXPECT().Close()
 		var conf, err = configDBModule.GetBackOfficeConfiguration(ctx, realmID, groupNames)
 		assert.Nil(t, err)
@@ -202,6 +203,14 @@ func TestBackOfficeConfiguration(t *testing.T) {
 		mockDB.EXPECT().Query(gomock.Any(), gomock.Any()).Return(mockSQLRows, nil)
 		mockSQLRows.EXPECT().Next().Return(true)
 		mockSQLRows.EXPECT().Scan(gomock.Any()).Return(expectedError)
+		mockSQLRows.EXPECT().Close()
+		var _, err = configDBModule.GetBackOfficeConfiguration(ctx, realmID, groupNames)
+		assert.Equal(t, expectedError, err)
+	})
+	t.Run("iteration fails", func(t *testing.T) {
+		mockDB.EXPECT().Query(gomock.Any(), gomock.Any()).Return(mockSQLRows, nil)
+		mockSQLRows.EXPECT().Next().Return(false)
+		mockSQLRows.EXPECT().Err().Return(expectedError)
 		mockSQLRows.EXPECT().Close()
 		var _, err = configDBModule.GetBackOfficeConfiguration(ctx, realmID, groupNames)
 		assert.Equal(t, expectedError, err)
@@ -226,6 +235,7 @@ func TestBackOfficeConfiguration(t *testing.T) {
 				return nil
 			}),
 			mockSQLRows.EXPECT().Next().Return(false),
+			mockSQLRows.EXPECT().Err(),
 			mockSQLRows.EXPECT().Close(),
 		)
 		var conf, err = configDBModule.GetBackOfficeConfiguration(ctx, realmID, groupNames)
@@ -285,6 +295,16 @@ func TestGetAuthorizations(t *testing.T) {
 		var _, err = configDBModule.GetAuthorizations(ctx, realmID, groupName)
 		assert.NotNil(t, err)
 	})
+	t.Run("iteration fails", func(t *testing.T) {
+		gomock.InOrder(
+			mockDB.EXPECT().Query(selectAuthzStmt, gomock.Any()).Return(mockSQLRows, nil),
+			mockSQLRows.EXPECT().Next().Return(false),
+			mockSQLRows.EXPECT().Err().Return(sqlError),
+			mockSQLRows.EXPECT().Close(),
+		)
+		var _, err = configDBModule.GetAuthorizations(ctx, realmID, groupName)
+		assert.NotNil(t, err)
+	})
 	t.Run("Success", func(t *testing.T) {
 		gomock.InOrder(
 			mockDB.EXPECT().Query(selectAuthzStmt, gomock.Any()).Return(mockSQLRows, nil),
@@ -293,6 +313,7 @@ func TestGetAuthorizations(t *testing.T) {
 			mockSQLRows.EXPECT().Next().Return(true),
 			mockSQLRows.EXPECT().Scan(gomock.Any()).Return(nil),
 			mockSQLRows.EXPECT().Next().Return(false),
+			mockSQLRows.EXPECT().Err(),
 			mockSQLRows.EXPECT().Close(),
 		)
 		var res, err = configDBModule.GetAuthorizations(ctx, realmID, groupName)
