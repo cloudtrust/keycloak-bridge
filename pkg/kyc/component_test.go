@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"testing"
 
 	cs "github.com/cloudtrust/common-service/v2"
@@ -16,8 +17,8 @@ import (
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/pkg/kyc/mock"
 	kc "github.com/cloudtrust/keycloak-client/v2"
-	"go.uber.org/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 type componentMocks struct {
@@ -351,6 +352,18 @@ func TestValidateUser(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, targetRealm, userID).Return(kc.UserRepresentation{}, errors.New("failure"))
 		var err = component.ValidateUserInSocialRealm(ctx, userID, validUser, nil)
 		assert.NotNil(t, err)
+	})
+
+	t.Run("Keycloak user not found", func(t *testing.T) {
+		var kcNotFoundError = kc.HTTPError{HTTPStatus: 404, Message: "User not found"}
+		mocks.keycloakClient.EXPECT().GetUser(accessToken, targetRealm, userID).Return(kc.UserRepresentation{}, kcNotFoundError)
+
+		var err = component.ValidateUserInSocialRealm(ctx, userID, validUser, nil)
+		assert.NotNil(t, err)
+
+		var errHandler, ok = err.(errorhandler.Error)
+		assert.True(t, ok)
+		assert.Equal(t, http.StatusNotFound, errHandler.Status)
 	})
 
 	t.Run("Email not verified", func(t *testing.T) {

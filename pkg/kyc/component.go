@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -408,6 +409,10 @@ func (c *component) validateUser(ctx context.Context, accessToken string, confRe
 	kcUser, err = c.keycloakClient.GetUser(accessToken, targetRealm, userID)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Can't get user/accreditations", "err", err.Error())
+		var httpErr kc.HTTPError
+		if errors.As(err, &httpErr) && httpErr.HTTPStatus == 404 {
+			return errorhandler.CreateNotFoundError("user")
+		}
 		return err
 	}
 	keycloakb.ConvertLegacyAttribute(&kcUser)
