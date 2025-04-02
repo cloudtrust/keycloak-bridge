@@ -183,6 +183,10 @@ func (c *configurationDBModule) GetBackOfficeConfiguration(ctx context.Context, 
 			res[targetRealmID][targetType] = append(realmSubConf, targetGroupName)
 		}
 	}
+	if err = rows.Err(); err != nil {
+		c.logger.Warn(ctx, "msg", "Can't get row from back-office configuration", "err", err.Error(), "realmID", realmID, "groups", strings.Join(groupNames, ","))
+		return nil, err
+	}
 
 	return res, nil
 }
@@ -225,6 +229,10 @@ func (c *configurationDBModule) GetAuthorizations(ctx context.Context, realmID s
 			return nil, err
 		}
 		res = append(res, authz)
+	}
+	if err = rows.Err(); err != nil {
+		c.logger.Warn(ctx, "msg", "Can't get authorizations. Failed to iterate on every items.", "err", err.Error(), "realmID", realmID, "groupName", groupName)
+		return nil, err
 	}
 
 	return res, nil
