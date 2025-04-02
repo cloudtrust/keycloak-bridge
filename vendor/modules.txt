@@ -28,8 +28,8 @@ github.com/cloudtrust/common-service/v2/middleware
 github.com/cloudtrust/common-service/v2/security
 github.com/cloudtrust/common-service/v2/tracing
 github.com/cloudtrust/common-service/v2/validation
-# github.com/cloudtrust/httpclient v1.3.1
-## explicit; go 1.22
+# github.com/cloudtrust/httpclient v1.4.0
+## explicit; go 1.24.1
 github.com/cloudtrust/httpclient
 # github.com/cloudtrust/kafka-client v1.5.1
 ## explicit; go 1.22
@@ -85,7 +85,7 @@ github.com/go-sql-driver/mysql
 ## explicit; go 1.18
 github.com/go-viper/mapstructure/v2
 github.com/go-viper/mapstructure/v2/internal/errors
-# github.com/golang-jwt/jwt/v5 v5.2.1
+# github.com/golang-jwt/jwt/v5 v5.2.2
 ## explicit; go 1.18
 github.com/golang-jwt/jwt/v5
 # github.com/golang/mock v1.6.0

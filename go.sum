@@ -8,8 +8,8 @@ github.com/VividCortex/gohistogram v1.0.0 h1:6+hBz+qvs0JOrrNhhmR7lFxo5sINxBCGXrd
 github.com/VividCortex/gohistogram v1.0.0/go.mod h1:Pf5mBqqDxYaXu3hDrrU+w6nw50o/4+TcAqDqk/vUH7g=
 github.com/cloudtrust/common-service/v2 v2.8.9 h1:jsbYQz8Re9YyYfPaPrPWUNQkQWPxQGs82JOxnODZKKA=
 github.com/cloudtrust/common-service/v2 v2.8.9/go.mod h1:l8tMto4+t9uG7O7dqE/waBziVwrpmX9sqwUU3MC5sww=
-github.com/cloudtrust/httpclient v1.3.1 h1:b9FSxu38R59SqiJgIPDieG9oDFnwH6zhWWfBvnVUrt8=
-github.com/cloudtrust/httpclient v1.3.1/go.mod h1:n8brsqi9vYvJpnuwMHykfc9jmD05t0KD/4kX+0iOWKk=
+github.com/cloudtrust/httpclient v1.4.0 h1:uuJsL+UYVOpEWD8c2DKxKioKP38kH63yuLse7ar5zb8=
+github.com/cloudtrust/httpclient v1.4.0/go.mod h1:97G7ASVuD0xxB2cZsZHS0luMWdTuzlAwHtK9/tKLrK0=
 github.com/cloudtrust/kafka-client v1.5.1 h1:ShPXmaWQX7rHKBsELLPK9UeOlfVYwJ/H4jAHXzxOcIg=
 github.com/cloudtrust/kafka-client v1.5.1/go.mod h1:cjSb+fQ62tkpeBw+xCC2lhoca8ZjXlzro8Yxj1uE2QA=
 github.com/cloudtrust/keycloak-client/v2 v2.8.1 h1:DdFJxf1QJdi2K+Ob8wQgb7yXbV53u0iZhjwzNYCm3nM=
@@ -42,8 +42,8 @@ github.com/go-sql-driver/mysql v1.8.1 h1:LedoTUt/eveggdHS9qUFC1EFSa8bU2+1pZjSRpv
 github.com/go-sql-driver/mysql v1.8.1/go.mod h1:wEBSXgmK//2ZFJyE+qWnIsVGmvmEKlqwuVSjsCm7DZg=
 github.com/go-viper/mapstructure/v2 v2.2.1 h1:ZAaOCxANMuZx5RCeg0mBdEZk7DZasvvZIxtHqx8aGss=
 github.com/go-viper/mapstructure/v2 v2.2.1/go.mod h1:oJDH3BJKyqBA2TXFhDsKDGDTlndYOZ6rGS0BRZIxGhM=
-github.com/golang-jwt/jwt/v5 v5.2.1 h1:OuVbFODueb089Lh128TAcimifWaLhJwVflnrgM17wHk=
-github.com/golang-jwt/jwt/v5 v5.2.1/go.mod h1:pqrtFR0X4osieyHYxtmOUWsAWrfe1Q5UVIyoH402zdk=
+github.com/golang-jwt/jwt/v5 v5.2.2 h1:Rl4B7itRWVtYIHFrSNd7vhTiz9UpLdi6gZhZ3wEeDy8=
+github.com/golang-jwt/jwt/v5 v5.2.2/go.mod h1:pqrtFR0X4osieyHYxtmOUWsAWrfe1Q5UVIyoH402zdk=
 github.com/golang/mock v1.6.0 h1:ErTB+efbowRARo13NNdxyJji2egdxLGQhRaY+DUumQc=
 github.com/golang/mock v1.6.0/go.mod h1:p6yTPP+5HYm5mzsMV8JkE6ZKdX+/wYM6Hr+LicevLPs=
 github.com/golang/snappy v0.0.4 h1:yAGX7huGHXlcLOEtBnF4w7FQwA26wojNCwOYAEhLjQM=
