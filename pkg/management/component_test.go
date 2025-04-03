@@ -3192,6 +3192,9 @@ func TestGetRole(t *testing.T) {
 		var description = "description role"
 		var clientRole = false
 		var name = "name"
+		var attributes = map[string][]string{
+			"BUSINESS_ROLE_FLAG": {"true"},
+		}
 
 		var kcRoleRep = kc.RoleRepresentation{
 			ID:          &id,
@@ -3200,9 +3203,7 @@ func TestGetRole(t *testing.T) {
 			Composite:   &composite,
 			ContainerID: &containerID,
 			Description: &description,
-			Attributes: &map[string][]string{
-				"BUSINESS_ROLE_FLAG": {"true"},
-			},
+			Attributes:  &attributes,
 		}
 
 		mocks.keycloakClient.EXPECT().GetRole(accessToken, realmName, id).Return(kcRoleRep, nil)
@@ -3218,6 +3219,7 @@ func TestGetRole(t *testing.T) {
 		assert.Equal(t, composite, *apiRoleRep.Composite)
 		assert.Equal(t, containerID, *apiRoleRep.ContainerID)
 		assert.Equal(t, description, *apiRoleRep.Description)
+		assert.Equal(t, attributes, *apiRoleRep.Attributes)
 	})
 
 	t.Run("NonBusinessRole is not returned", func(t *testing.T) {
