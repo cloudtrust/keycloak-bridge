@@ -2268,6 +2268,12 @@ components:
           type: string
         containerId:
           type: string
+        attributes:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
     Group:
       type: object
       properties:
