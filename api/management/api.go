@@ -159,12 +159,13 @@ type AttackDetectionStatusRepresentation struct {
 
 // RoleRepresentation struct
 type RoleRepresentation struct {
-	ClientRole  *bool   `json:"clientRole,omitempty"`
-	Composite   *bool   `json:"composite,omitempty"`
-	ContainerID *string `json:"containerId,omitempty"`
-	Description *string `json:"description,omitempty"`
-	ID          *string `json:"id,omitempty"`
-	Name        *string `json:"name,omitempty"`
+	ClientRole  *bool                `json:"clientRole,omitempty"`
+	Composite   *bool                `json:"composite,omitempty"`
+	ContainerID *string              `json:"containerId,omitempty"`
+	Description *string              `json:"description,omitempty"`
+	ID          *string              `json:"id,omitempty"`
+	Name        *string              `json:"name,omitempty"`
+	Attributes  *map[string][]string `json:"attributes,omitempty"`
 }
 
 // GroupRepresentation struct
