@@ -1574,10 +1574,10 @@ func (c *component) GetRole(ctx context.Context, realmName string, roleID string
 	roleRep.Description = roleKc.Description
 
 	// Filter out the business role flag
-	attributes := roleKc.Attributes
-	delete(*attributes, "BUSINESS_ROLE_FLAG")
-
-	roleRep.Attributes = attributes
+	if roleKc.Attributes != nil {
+		roleRep.Attributes = roleKc.Attributes
+		delete(*roleRep.Attributes, "BUSINESS_ROLE_FLAG")
+	}
 
 	return roleRep, nil
 }
