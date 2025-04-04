@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -407,6 +408,11 @@ func (c *component) validateUser(ctx context.Context, accessToken string, confRe
 	var kcUser kc.UserRepresentation
 	kcUser, err = c.keycloakClient.GetUser(accessToken, targetRealm, userID)
 	if err != nil {
+		var httpErr kc.HTTPError
+		if errors.As(err, &httpErr) && httpErr.HTTPStatus == 404 {
+			c.logger.Info(ctx, "msg", "User does not exist", "userID", userID)
+			return errorhandler.CreateNotFoundError("user")
+		}
 		c.logger.Warn(ctx, "msg", "Can't get user/accreditations", "err", err.Error())
 		return err
 	}
