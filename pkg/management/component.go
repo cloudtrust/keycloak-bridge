@@ -1576,7 +1576,7 @@ func (c *component) GetRole(ctx context.Context, realmName string, roleID string
 	// Filter out the business role flag
 	if roleKc.Attributes != nil {
 		roleRep.Attributes = roleKc.Attributes
-		delete(*roleRep.Attributes, "BUSINESS_ROLE_FLAG")
+		delete(*roleRep.Attributes, businessRoleFlag)
 	}
 
 	return roleRep, nil
@@ -1634,6 +1634,11 @@ func (c *component) UpdateRole(ctx context.Context, realmName string, roleID str
 	kcRole.Composite = role.Composite
 	kcRole.ContainerID = role.ContainerID
 	kcRole.Description = role.Description
+
+	// We update the attributes but keep the business role flag
+	businessRoleFlagValue := (*kcRole.Attributes)[businessRoleFlag]
+	kcRole.Attributes = role.Attributes
+	(*kcRole.Attributes)[businessRoleFlag] = businessRoleFlagValue
 
 	if err = c.keycloakClient.UpdateRole(accessToken, realmName, roleID, kcRole); err != nil {
 		c.logger.Warn(ctx, "msg", "Could not update role", "realm", realmName, "role", roleID, "err", err.Error())
