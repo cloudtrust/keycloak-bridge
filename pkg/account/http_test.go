@@ -3,7 +3,7 @@ package account
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -12,9 +12,9 @@ import (
 	account_api "github.com/cloudtrust/keycloak-bridge/api/account"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/cloudtrust/keycloak-bridge/pkg/account/mock"
-	"go.uber.org/mock/gomock"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func TestHTTPAccountHandler(t *testing.T) {
@@ -38,7 +38,7 @@ func TestHTTPAccountHandler(t *testing.T) {
 
 		mockAccountComponent.EXPECT().UpdatePassword(gomock.Any(), body.CurrentPassword, body.NewPassword, body.ConfirmPassword).Return(nil).Times(1)
 
-		res, err := http.Post(ts.URL+"/path/to/master/password", "application/json", ioutil.NopCloser(bytes.NewBuffer(json)))
+		res, err := http.Post(ts.URL+"/path/to/master/password", "application/json", io.NopCloser(bytes.NewBuffer(json)))
 
 		assert.Nil(t, err)
 		assert.Equal(t, http.StatusOK, res.StatusCode)
