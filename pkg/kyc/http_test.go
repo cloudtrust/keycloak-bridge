@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -36,7 +36,7 @@ func TestKYCRegisterHandler(t *testing.T) {
 	var json, _ = json.Marshal(body)
 
 	t.Run("HTTP 200", func(t *testing.T) {
-		res, err := http.Post(ts.URL+URL+"/abcd0123-abcd-0123-xxxx-123456789012?username=my-username", "application/json", ioutil.NopCloser(bytes.NewBuffer(json)))
+		res, err := http.Post(ts.URL+URL+"/abcd0123-abcd-0123-xxxx-123456789012?username=my-username", "application/json", io.NopCloser(bytes.NewBuffer(json)))
 
 		assert.Nil(t, err)
 		assert.Equal(t, http.StatusOK, res.StatusCode)
@@ -47,7 +47,7 @@ func TestKYCRegisterHandler(t *testing.T) {
 	})
 
 	t.Run("HTTP 400", func(t *testing.T) {
-		res, err := http.Post(ts.URL+URL+"/abcd0123", "application/json", ioutil.NopCloser(bytes.NewBuffer(json)))
+		res, err := http.Post(ts.URL+URL+"/abcd0123", "application/json", io.NopCloser(bytes.NewBuffer(json)))
 
 		assert.Nil(t, err)
 		assert.Equal(t, http.StatusBadRequest, res.StatusCode)
