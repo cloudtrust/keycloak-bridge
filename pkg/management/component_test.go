@@ -3325,7 +3325,12 @@ func TestUpdateRole(t *testing.T) {
 		Name:       &roleName,
 		Attributes: &attributes,
 	}
-	var inputRole = api.RoleRepresentation{Name: &roleName}
+	var inputRole = api.RoleRepresentation{
+		Name: &roleName,
+		Attributes: &map[string][]string{
+			"attribute": {"value"},
+		},
+	}
 	var anyError = errors.New("any error")
 	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 	ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
@@ -3349,8 +3354,16 @@ func TestUpdateRole(t *testing.T) {
 		assert.Equal(t, anyError, err)
 	})
 	t.Run("Success", func(t *testing.T) {
+		expectedRole := kc.RoleRepresentation{
+			ID:   &roleID,
+			Name: &roleName,
+			Attributes: &map[string][]string{
+				"BUSINESS_ROLE_FLAG": {"true"},
+				"attribute":          {"value"},
+			},
+		}
 		mocks.keycloakClient.EXPECT().GetRole(accessToken, realmName, roleID).Return(role, nil)
-		mocks.keycloakClient.EXPECT().UpdateRole(accessToken, realmName, roleID, gomock.Any()).Return(nil)
+		mocks.keycloakClient.EXPECT().UpdateRole(accessToken, realmName, roleID, expectedRole).Return(nil)
 		mocks.eventsReporter.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
 
 		err := component.UpdateRole(ctx, realmName, roleID, inputRole)
