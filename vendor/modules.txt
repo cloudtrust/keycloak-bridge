@@ -31,7 +31,7 @@ github.com/cloudtrust/common-service/v2/validation
 # github.com/cloudtrust/httpclient v1.4.0
 ## explicit; go 1.24.1
 github.com/cloudtrust/httpclient
-# github.com/cloudtrust/kafka-client v1.6.0
+# github.com/cloudtrust/kafka-client v1.6.1
 ## explicit; go 1.24.1
 github.com/cloudtrust/kafka-client
 github.com/cloudtrust/kafka-client/misc
@@ -299,7 +299,7 @@ golang.org/x/net/http2/hpack
 golang.org/x/net/internal/socks
 golang.org/x/net/proxy
 golang.org/x/net/publicsuffix
-# golang.org/x/oauth2 v0.28.0
+# golang.org/x/oauth2 v0.29.0
 ## explicit; go 1.23.0
 golang.org/x/oauth2
 golang.org/x/oauth2/clientcredentials
