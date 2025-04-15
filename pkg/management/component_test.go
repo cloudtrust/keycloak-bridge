@@ -3370,6 +3370,26 @@ func TestUpdateRole(t *testing.T) {
 
 		assert.Nil(t, err)
 	})
+
+	t.Run("Success no attribute", func(t *testing.T) {
+		roleWithoutAttribute := api.RoleRepresentation{
+			Name: &roleName,
+		}
+		expectedRole := kc.RoleRepresentation{
+			ID:   &roleID,
+			Name: &roleName,
+			Attributes: &map[string][]string{
+				"BUSINESS_ROLE_FLAG": {"true"},
+			},
+		}
+		mocks.keycloakClient.EXPECT().GetRole(accessToken, realmName, roleID).Return(role, nil)
+		mocks.keycloakClient.EXPECT().UpdateRole(accessToken, realmName, roleID, expectedRole).Return(nil)
+		mocks.eventsReporter.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
+
+		err := component.UpdateRole(ctx, realmName, roleID, roleWithoutAttribute)
+
+		assert.Nil(t, err)
+	})
 }
 
 func TestDeleteRole(t *testing.T) {

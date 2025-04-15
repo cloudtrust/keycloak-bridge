@@ -1637,7 +1637,11 @@ func (c *component) UpdateRole(ctx context.Context, realmName string, roleID str
 
 	// We update the attributes but keep the business role flag
 	businessRoleFlagValue := (*kcRole.Attributes)[businessRoleFlag]
-	kcRole.Attributes = role.Attributes
+	if role.Attributes != nil {
+		kcRole.Attributes = role.Attributes
+	} else {
+		kcRole.Attributes = &map[string][]string{}
+	}
 	(*kcRole.Attributes)[businessRoleFlag] = businessRoleFlagValue
 
 	if err = c.keycloakClient.UpdateRole(accessToken, realmName, roleID, kcRole); err != nil {
