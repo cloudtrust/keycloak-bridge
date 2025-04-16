@@ -211,5 +211,6 @@ kafka:
   - id: auth-reload-consumer
     topic: auth-reload
     consumer-group-name: <UUID>
+    initial-offset: newest
 
 log-events-rate: 1
