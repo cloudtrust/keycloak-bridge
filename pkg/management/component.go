@@ -37,8 +37,6 @@ const (
 
 	managementOnboardingStatus = "user-created-by-api"
 	eventCredentialID          = "credential_id"
-
-	authReloadPartition = "auth-reload"
 )
 
 // KeycloakClient are methods from keycloak-client used by this component
@@ -215,7 +213,6 @@ type EventsReporterModule interface {
 }
 
 type KafkaProducer interface {
-	SendPartitionedMessageBytes(partitionKey string, value []byte) error
 	SendMessageBytes(value []byte) error
 }
 
@@ -1819,7 +1816,7 @@ func (c *component) UpdateAuthorizations(ctx context.Context, realmName string, 
 		}
 		c.logger.Info(ctx, "msg", "Updated authorizations", "add_count", len(addAuthz), "del_count", len(delAuthz))
 
-		err = c.kafkaAuthReloadProducer.SendPartitionedMessageBytes(authReloadPartition, []byte{})
+		err = c.kafkaAuthReloadProducer.SendMessageBytes([]byte{})
 		if err != nil {
 			c.logger.Warn(ctx, "kafka", "Failed to send message", "err", err.Error())
 		}
@@ -1907,11 +1904,6 @@ func (c *component) AddAuthorization(ctx context.Context, realmName string, grou
 		if err != nil {
 			c.logger.Warn(ctx, "err", err.Error())
 			return err
-		}
-
-		err = c.kafkaAuthReloadProducer.SendPartitionedMessageBytes(authReloadPartition, []byte{})
-		if err != nil {
-			c.logger.Warn(ctx, "kafka", "Failed to send message", "err", err.Error())
 		}
 	}
 	c.auditEventsReporterModule.ReportEvent(ctx, events.NewEventFromContext(ctx, c.logger, c.originEvent, "API_AUTHORIZATIONS_PUT", realmName, map[string]string{events.CtEventGroupName: groupName}))
@@ -2027,12 +2019,6 @@ func (c *component) DeleteAuthorization(ctx context.Context, realmName string, g
 			c.logger.Warn(ctx, "err", err.Error())
 			return err
 		}
-
-		err = c.kafkaAuthReloadProducer.SendPartitionedMessageBytes(authReloadPartition, []byte{})
-		if err != nil {
-			c.logger.Warn(ctx, "kafka", "Failed to send message", "err", err.Error())
-		}
-
 		c.auditEventsReporterModule.ReportEvent(ctx, events.NewEventFromContext(ctx, c.logger, c.originEvent, "API_AUTHORIZATION_DELETE", realmName, map[string]string{"action": *authz.Action}))
 	}
 

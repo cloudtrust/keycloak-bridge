@@ -5,11 +5,11 @@ go 1.24.1
 require (
 	github.com/cloudtrust/common-service/v2 v2.9.2
 	github.com/cloudtrust/httpclient v1.4.0
-	github.com/cloudtrust/kafka-client v1.6.1
+	github.com/cloudtrust/kafka-client v1.6.0
 	github.com/cloudtrust/keycloak-client/v2 v2.9.0
 	github.com/go-kit/kit v0.13.0
 	github.com/go-kit/log v0.2.1
-	github.com/go-sql-driver/mysql v1.9.1
+	github.com/go-sql-driver/mysql v1.8.1
 	github.com/golang/mock v1.6.0
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/mux v1.8.1
@@ -68,7 +68,7 @@ require (
 	golang.org/x/crypto v0.36.0 // indirect
 	golang.org/x/exp v0.0.0-20250305212735-054e65f0b394 // indirect
 	golang.org/x/net v0.38.0 // indirect
-	golang.org/x/oauth2 v0.29.0 // indirect
+	golang.org/x/oauth2 v0.28.0 // indirect
 	golang.org/x/sys v0.31.0 // indirect
 	golang.org/x/text v0.23.0 // indirect
 	google.golang.org/protobuf v1.36.5 // indirect
