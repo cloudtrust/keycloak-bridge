@@ -5,14 +5,12 @@ import (
 	"math/rand"
 	"regexp"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestAppendCharacters(t *testing.T) {
 
-	rand.Seed(time.Now().Unix())
 	var pwdElems []string
 	var length = rand.Intn(20)
 
@@ -32,7 +30,6 @@ func TestAppendCharacters(t *testing.T) {
 
 func TestGeneratePasswordNoKeycloakPolicy(t *testing.T) {
 
-	rand.Seed(time.Now().Unix())
 	var length = rand.Intn(20)
 
 	pwd := GeneratePasswordNoKeycloakPolicy(length)

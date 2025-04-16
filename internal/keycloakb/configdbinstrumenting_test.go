@@ -5,7 +5,6 @@ import (
 	"math/rand"
 	"strconv"
 	"testing"
-	"time"
 
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 
@@ -14,8 +13,8 @@ import (
 
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/mock"
 
-	"go.uber.org/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func TestComponentInstrumentingMW(t *testing.T) {
@@ -26,7 +25,6 @@ func TestComponentInstrumentingMW(t *testing.T) {
 
 	var m = MakeConfigurationDBModuleInstrumentingMW(mockHistogram)(mockComponent)
 
-	rand.Seed(time.Now().UnixNano())
 	var corrID = strconv.FormatUint(rand.Uint64(), 10)
 	var ctx = context.WithValue(context.Background(), cs.CtContextCorrelationID, corrID)
 	var realmID = "realmID"

@@ -73,10 +73,6 @@ const (
 	inactiveNumbers = `WyI3NjAxMDAwNDYwNzkwIiwiNzYwMTAwMDMyMzk1OCIsIjc2MDEwMDA3ODUwODQiLCI3NjAxMDAwMjgxNTU1IiwiNzYwMTAwMDMyMzkzNCIsIjc2MDEwMDAyMzU2NDAiLCI3NjAxMDAwMzk2MjExIiwiNzYwMTAwMDI3ODI5NiJd`
 )
 
-func init() {
-	rand.Seed(time.Now().UTC().UnixNano())
-}
-
 func choose(input string) string {
 	var bytes, _ = base64.StdEncoding.DecodeString(input)
 	var numbers []string

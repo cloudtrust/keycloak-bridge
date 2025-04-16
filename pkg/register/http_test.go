@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -42,7 +42,7 @@ func TestHTTPRegisterHandler(t *testing.T) {
 	var json, _ = json.Marshal(body)
 
 	t.Run("HTTP 200", func(t *testing.T) {
-		res, err := http.Post(ts.URL+URL+"?realm=my-realm", "application/json", ioutil.NopCloser(bytes.NewBuffer(json)))
+		res, err := http.Post(ts.URL+URL+"?realm=my-realm", "application/json", io.NopCloser(bytes.NewBuffer(json)))
 
 		assert.Nil(t, err)
 		assert.Equal(t, http.StatusOK, res.StatusCode)
@@ -53,7 +53,7 @@ func TestHTTPRegisterHandler(t *testing.T) {
 	})
 
 	t.Run("HTTP 400", func(t *testing.T) {
-		res, err := http.Post(ts.URL+URL+"?realm=fail", "application/json", ioutil.NopCloser(bytes.NewBuffer(json)))
+		res, err := http.Post(ts.URL+URL+"?realm=fail", "application/json", io.NopCloser(bytes.NewBuffer(json)))
 
 		assert.Nil(t, err)
 		assert.Equal(t, http.StatusBadRequest, res.StatusCode)
