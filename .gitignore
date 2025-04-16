@@ -21,7 +21,7 @@ bin/*
 **/*.coverprofile
 configs/DEV/*
 .idea/
-__debug_bin
+*__debug_bin*
 
 !.vscode/launch.json
 # Activate vendoring

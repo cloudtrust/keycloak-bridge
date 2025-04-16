@@ -3889,7 +3889,7 @@ func TestUpdateAuthorizations(t *testing.T) {
 			mocks.configurationDBModule.EXPECT().NewTransaction(ctx).Return(mocks.transaction, nil),
 			mocks.transaction.EXPECT().Exec(gomock.Any(), gomock.Any()).Return(nil, nil), // Add authorizations
 			mocks.transaction.EXPECT().Commit().Return(nil),
-			mocks.producer.EXPECT().SendMessageBytes(gomock.Any()),
+			mocks.producer.EXPECT().SendPartitionedMessageBytes("auth-reload", gomock.Any()),
 			mocks.eventsReporter.EXPECT().ReportEvent(ctx, gomock.Any()),
 			mocks.transaction.EXPECT().Close(),
 		)
@@ -4010,6 +4010,7 @@ func TestAddAuthorization(t *testing.T) {
 		mocks.transaction.EXPECT().Commit().Return(nil)
 		mocks.transaction.EXPECT().Close()
 
+		mocks.producer.EXPECT().SendPartitionedMessageBytes("auth-reload", gomock.Any())
 		mocks.eventsReporter.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
 
 		err := managementComponent.AddAuthorization(ctx, realmName, groupID, apiAuthz)
@@ -4030,6 +4031,7 @@ func TestAddAuthorization(t *testing.T) {
 		mocks.transaction.EXPECT().Commit().Return(nil)
 		mocks.transaction.EXPECT().Close()
 
+		mocks.producer.EXPECT().SendPartitionedMessageBytes("auth-reload", gomock.Any())
 		mocks.eventsReporter.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
 
 		err := managementComponent.AddAuthorization(ctx, realmName, groupID, apiAuthzRealm)
@@ -4048,6 +4050,7 @@ func TestAddAuthorization(t *testing.T) {
 		mocks.transaction.EXPECT().Commit().Return(nil)
 		mocks.transaction.EXPECT().Close()
 
+		mocks.producer.EXPECT().SendPartitionedMessageBytes("auth-reload", gomock.Any())
 		mocks.eventsReporter.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
 
 		err := managementComponent.AddAuthorization(ctx, realmName, groupID, apiAuthz)
@@ -4366,6 +4369,7 @@ func TestDeleteAuthorization(t *testing.T) {
 
 		mocks.configurationDBModule.EXPECT().DeleteAuthorization(ctx, realmName, groupName, targetRealmName, gomock.Any(), action)
 
+		mocks.producer.EXPECT().SendPartitionedMessageBytes("auth-reload", gomock.Any())
 		mocks.eventsReporter.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
 
 		err := managementComponent.DeleteAuthorization(ctx, realmName, groupID, targetRealmName, targetGroupID, action)
@@ -4380,6 +4384,7 @@ func TestDeleteAuthorization(t *testing.T) {
 
 		mocks.configurationDBModule.EXPECT().DeleteAuthorization(ctx, realmName, groupName, star, nil, globalAction)
 
+		mocks.producer.EXPECT().SendPartitionedMessageBytes("auth-reload", gomock.Any())
 		mocks.eventsReporter.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
 
 		err := managementComponent.DeleteAuthorization(ctx, realmName, groupID, star, "", globalAction)
