@@ -34,6 +34,7 @@ type ContainsFields interface {
 	SetField(name string, value interface{})
 }
 
+// GlnVerifier used to check GLN
 var GlnVerifier business.GlnVerifier
 
 func toErrName(value string) string {
@@ -367,14 +368,16 @@ func validateRangeWithString(attrb kc.ProfileAttrbRepresentation, validator kc.P
 	return nil
 }
 
-func IfNotNil(value *string) interface{} {
+// IfNotNil is a workaround for weird conversions between types
+func IfNotNil(value *string) any {
 	if value == nil {
 		return nil
 	}
 	return value
 }
 
-func IfTimePtrNotNil(value *time.Time) interface{} {
+// IfTimePtrNotNil is a workaround for weird conversions between types
+func IfTimePtrNotNil(value *time.Time) any {
 	if value == nil {
 		return nil
 	}

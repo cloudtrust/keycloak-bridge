@@ -19,14 +19,19 @@ const (
 	hdrCorrID    = "X-Correlation-ID"
 )
 
-// AccountingClient struct
+// AccountingClient interface
+type AccountingClient interface {
+	GetBalance(ctx context.Context, realmName string, userID string, service string) (float64, error)
+}
+
+// accountingClient struct
 type accountingClient struct {
 	httpClient HTTPClient
 }
 
 // HTTPClient interface
 type HTTPClient interface {
-	Get(data interface{}, plugins ...plugin.Plugin) error
+	Get(data any, plugins ...plugin.Plugin) error
 }
 
 // AccountingBalance struct
@@ -35,7 +40,7 @@ type AccountingBalance struct {
 }
 
 // MakeAccountingClient creates the accounting client
-func MakeAccountingClient(httpClient HTTPClient) *accountingClient {
+func MakeAccountingClient(httpClient HTTPClient) AccountingClient {
 	return &accountingClient{
 		httpClient: httpClient,
 	}

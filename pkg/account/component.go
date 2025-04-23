@@ -90,6 +90,7 @@ type AccreditationsServiceClient interface {
 	NotifyUpdate(ctx context.Context, updateNotifyRequest accreditationsclient.UpdateNotificationRepresentation) ([]string, error)
 }
 
+// EventsReporterModule interface
 type EventsReporterModule interface {
 	ReportEvent(ctx context.Context, event events.Event)
 }
@@ -191,6 +192,7 @@ func isPhoneNumberVerified(user kc.UserRepresentation) bool {
 	return err == nil && value != nil && *value
 }
 
+// UpdateAccount updates an user account
 func (c *component) UpdateAccount(ctx context.Context, user api.UpdatableAccountRepresentation) error {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 	var realm = ctx.Value(cs.CtContextRealm).(string)

@@ -36,14 +36,14 @@ type Endpoints struct {
 
 // MakeGetActionsEndpoint creates an endpoint for GetActions
 func MakeGetActionsEndpoint(component Component) cs.Endpoint {
-	return func(ctx context.Context, _ interface{}) (interface{}, error) {
+	return func(ctx context.Context, _ any) (any, error) {
 		return component.GetActions(ctx)
 	}
 }
 
 // MakeGetUserByUsernameInSocialRealmEndpoint endpoint creation
 func MakeGetUserByUsernameInSocialRealmEndpoint(component Component) cs.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, req any) (any, error) {
 		var m = req.(map[string]string)
 		var user = m[prmQryUserName]
 
@@ -53,7 +53,7 @@ func MakeGetUserByUsernameInSocialRealmEndpoint(component Component) cs.Endpoint
 
 // MakeGetUserByUsernameEndpoint endpoint creation
 func MakeGetUserByUsernameEndpoint(component Component) cs.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, req any) (any, error) {
 		var m = req.(map[string]string)
 		var realm = m[prmRealm]
 		var user = m[prmQryUserName]
@@ -64,14 +64,14 @@ func MakeGetUserByUsernameEndpoint(component Component) cs.Endpoint {
 
 // MakeGetUserProfileInSocialRealmEndpoint endpoint creation
 func MakeGetUserProfileInSocialRealmEndpoint(component Component) cs.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, req any) (any, error) {
 		return component.GetUserProfileInSocialRealm(ctx)
 	}
 }
 
 // MakeGetUserProfileEndpoint endpoint creation
 func MakeGetUserProfileEndpoint(component Component) cs.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, req any) (any, error) {
 		var m = req.(map[string]string)
 		var realm = m[prmRealm]
 		return component.GetUserProfile(ctx, realm)
@@ -80,7 +80,7 @@ func MakeGetUserProfileEndpoint(component Component) cs.Endpoint {
 
 // MakeGetUserInSocialRealmEndpoint endpoint creation
 func MakeGetUserInSocialRealmEndpoint(component Component) cs.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, req any) (any, error) {
 		var m = req.(map[string]string)
 		var consentCode *string
 
@@ -94,7 +94,7 @@ func MakeGetUserInSocialRealmEndpoint(component Component) cs.Endpoint {
 
 // MakeGetUserEndpoint endpoint creation
 func MakeGetUserEndpoint(component Component) cs.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, req any) (any, error) {
 		var m = req.(map[string]string)
 		var consentCode *string
 
@@ -108,7 +108,7 @@ func MakeGetUserEndpoint(component Component) cs.Endpoint {
 
 // MakeValidateUserInSocialRealmEndpoint endpoint creation
 func MakeValidateUserInSocialRealmEndpoint(component Component, profileCache UserProfileCache, socialRealmName string, logger keycloakb.Logger) cs.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, req any) (any, error) {
 		var m = req.(map[string]string)
 		var user, err = apikyc.UserFromJSON(m[reqBody])
 		if err != nil {
@@ -130,9 +130,10 @@ func MakeValidateUserInSocialRealmEndpoint(component Component, profileCache Use
 }
 
 /********************* (BEGIN) Temporary basic identity (TO BE REMOVED WHEN MULTI-ACCREDITATION WILL BE IMPLEMENTED) *********************/
+
 // MakeValidateUserBasicIDEndpoint creates an endpoint for ValidateUserBasicID
 func MakeValidateUserBasicIDEndpoint(component Component, profileCache UserProfileCache, socialRealmName string, logger keycloakb.Logger) cs.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, req any) (any, error) {
 		var m = req.(map[string]string)
 		var user, err = apikyc.UserFromJSON(m[reqBody])
 		if err != nil {
@@ -152,7 +153,7 @@ func MakeValidateUserBasicIDEndpoint(component Component, profileCache UserProfi
 
 // MakeValidateUserEndpoint endpoint creation
 func MakeValidateUserEndpoint(component Component, profileCache UserProfileCache, logger keycloakb.Logger) cs.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, req any) (any, error) {
 		var m = req.(map[string]string)
 		var user, err = apikyc.UserFromJSON(m[reqBody])
 		if err != nil {
@@ -175,7 +176,7 @@ func MakeValidateUserEndpoint(component Component, profileCache UserProfileCache
 
 // MakeSendSmsConsentCodeInSocialRealmEndpoint creates an endpoint for SendSmsConsentCodeInSocialRealm
 func MakeSendSmsConsentCodeInSocialRealmEndpoint(component Component) cs.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, req any) (any, error) {
 		var m = req.(map[string]string)
 
 		return nil, component.SendSmsConsentCodeInSocialRealm(ctx, m[prmUserID])
@@ -184,7 +185,7 @@ func MakeSendSmsConsentCodeInSocialRealmEndpoint(component Component) cs.Endpoin
 
 // MakeSendSmsConsentCodeEndpoint creates an endpoint for SendSmsConsentCode
 func MakeSendSmsConsentCodeEndpoint(component Component) cs.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, req any) (any, error) {
 		var m = req.(map[string]string)
 
 		return nil, component.SendSmsConsentCode(ctx, m[prmRealm], m[prmUserID])
@@ -193,7 +194,7 @@ func MakeSendSmsConsentCodeEndpoint(component Component) cs.Endpoint {
 
 // MakeSendSmsCodeInSocialRealmEndpoint creates an endpoint for SendSmsCodeInSocialRealm
 func MakeSendSmsCodeInSocialRealmEndpoint(component Component) cs.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, req any) (any, error) {
 		var m = req.(map[string]string)
 
 		code, err := component.SendSmsCodeInSocialRealm(ctx, m[prmUserID])
@@ -203,7 +204,7 @@ func MakeSendSmsCodeInSocialRealmEndpoint(component Component) cs.Endpoint {
 
 // MakeSendSmsCodeEndpoint creates an endpoint for SendSmsCode
 func MakeSendSmsCodeEndpoint(component Component) cs.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, req any) (any, error) {
 		var m = req.(map[string]string)
 
 		code, err := component.SendSmsCode(ctx, m[prmRealm], m[prmUserID])

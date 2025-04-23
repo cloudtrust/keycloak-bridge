@@ -13,6 +13,7 @@ type component struct {
 	logger        log.Logger
 }
 
+// Component interface
 type Component interface {
 	GetIdentificationURI(ctx context.Context, realm string, contextKey string) (string, error)
 }
@@ -22,6 +23,7 @@ type ContextKeyManager interface {
 	GetOverride(realm string, contextKey string) (keycloakb.ContextKeyParameters, bool)
 }
 
+// NewComponent creates a new Component
 func NewComponent(contextKeyManager ContextKeyManager, logger log.Logger) Component {
 	return &component{
 		contextKeyMgr: contextKeyManager,
