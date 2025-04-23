@@ -46,6 +46,7 @@ type ConfigurationRepresentation struct {
 	Theme                            *string   `json:"theme,omitempty"`
 	SupportedLocales                 *[]string `json:"supportedLocales,omitempty"`
 	SelfRegisterEnabled              *bool     `json:"selfRegisterEnabled,omitempty"`
+	ContextKey                       *string   `json:"contextKey,omitempty"`
 }
 
 // UserFromJSON creates a User using its json representation

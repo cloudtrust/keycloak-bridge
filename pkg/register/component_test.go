@@ -399,13 +399,26 @@ func TestGetConfiguration(t *testing.T) {
 		var _, err = component.GetConfiguration(ctx, confRealm)
 		assert.Equal(t, anyError, err)
 	})
-
-	t.Run("Retrieve configuration successfully", func(t *testing.T) {
+	t.Run("Cannot find context", func(t *testing.T) {
 		mocks.configDB.EXPECT().GetConfigurations(gomock.Any(), gomock.Any()).Return(configuration.RealmConfiguration{}, configuration.RealmAdminConfiguration{}, nil)
 		mocks.tokenProvider.EXPECT().ProvideToken(gomock.Any()).Return(accessToken, nil)
 		mocks.keycloakClient.EXPECT().GetRealm(accessToken, confRealm).Return(realmConfig, nil)
-		var _, err = component.GetConfiguration(ctx, confRealm)
+		mocks.contextKeyMgr.EXPECT().GetContextByRegistrationRealm(confRealm).Return(keycloakb.ContextKeyParameters{}, false)
+		var conf, err = component.GetConfiguration(ctx, confRealm)
 		assert.Nil(t, err)
+		assert.Nil(t, conf.ContextKey)
+	})
+
+	t.Run("Retrieve configuration successfully", func(t *testing.T) {
+		var key = "context-key"
+		mocks.configDB.EXPECT().GetConfigurations(gomock.Any(), gomock.Any()).Return(configuration.RealmConfiguration{}, configuration.RealmAdminConfiguration{}, nil)
+		mocks.tokenProvider.EXPECT().ProvideToken(gomock.Any()).Return(accessToken, nil)
+		mocks.keycloakClient.EXPECT().GetRealm(accessToken, confRealm).Return(realmConfig, nil)
+		mocks.contextKeyMgr.EXPECT().GetContextByRegistrationRealm(confRealm).Return(keycloakb.ContextKeyParameters{ID: ptr(key)}, true)
+		var conf, err = component.GetConfiguration(ctx, confRealm)
+		assert.Nil(t, err)
+		assert.NotNil(t, conf.ContextKey)
+		assert.Equal(t, key, *conf.ContextKey)
 	})
 }
 

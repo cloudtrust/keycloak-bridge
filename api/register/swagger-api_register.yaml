@@ -192,6 +192,9 @@ components:
         selfRegisterEnabled:
           type: boolean
           description: true if self register is enabled for the specified realm
+        contextKey:
+          type: string
+          description: context key of the specified realm
     Profile:
       type: object
       properties:

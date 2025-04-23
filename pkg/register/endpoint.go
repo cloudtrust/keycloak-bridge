@@ -27,7 +27,7 @@ type Endpoints struct {
 
 // MakeRegisterUserEndpoint endpoint creation
 func MakeRegisterUserEndpoint(component Component, socialRealm string, profileCache UserProfileCache, logger log.Logger) cs.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, req any) (any, error) {
 		var m = req.(map[string]string)
 		var realm = m[prmRealm]
 		if realm == "" {
@@ -45,7 +45,7 @@ func MakeRegisterUserEndpoint(component Component, socialRealm string, profileCa
 
 // MakeRegisterCorpUserEndpoint endpoint creation
 func MakeRegisterCorpUserEndpoint(component Component, profileCache UserProfileCache, logger log.Logger) cs.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, req any) (any, error) {
 		var m = req.(map[string]string)
 		var realm = m[prmCorpRealm]
 
@@ -58,7 +58,7 @@ func MakeRegisterCorpUserEndpoint(component Component, profileCache UserProfileC
 	}
 }
 
-func registerUser(ctx context.Context, component Component, profileCache UserProfileCache, logger log.Logger, corpRealm string, realm string, body string, contextKey *string) (interface{}, error) {
+func registerUser(ctx context.Context, component Component, profileCache UserProfileCache, logger log.Logger, corpRealm string, realm string, body string, contextKey *string) (any, error) {
 	var user, err = apiregister.UserFromJSON(body)
 	if err != nil {
 		return nil, commonerrors.CreateBadRequestError(commonerrors.MsgErrInvalidParam + "." + msg.BodyContent)
@@ -81,7 +81,7 @@ func registerUser(ctx context.Context, component Component, profileCache UserPro
 
 // MakeGetConfigurationEndpoint endpoint creation
 func MakeGetConfigurationEndpoint(component Component) cs.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, req any) (any, error) {
 		var realm = req.(map[string]string)[prmRealm]
 		return component.GetConfiguration(ctx, realm)
 	}
@@ -89,14 +89,14 @@ func MakeGetConfigurationEndpoint(component Component) cs.Endpoint {
 
 // MakeGetUserProfileEndpoint endpoint creation
 func MakeGetUserProfileEndpoint(component Component, socialRealm string) cs.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, req any) (any, error) {
 		return component.GetUserProfile(ctx, socialRealm)
 	}
 }
 
 // MakeGetCorpUserProfileEndpoint endpoint creation
 func MakeGetCorpUserProfileEndpoint(component Component) cs.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, req any) (any, error) {
 		var realm = req.(map[string]string)[prmCorpRealm]
 		return component.GetUserProfile(ctx, realm)
 	}
