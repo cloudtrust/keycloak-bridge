@@ -1,4 +1,4 @@
-FROM docker.artifactory.svc.elca.ch/redhat/ubi8-minimal:8.10-1216 AS build-env
+FROM docker.artifactory.svc.elca.ch/redhat/ubi8-minimal:8.10-1255 AS build-env
 
 LABEL name="ephemeral/ct-keycloak-bridge" releaseName="ct-keycloak-bridge" repository="prj-cloudtrust-docker" releaseRepository="prj-cloudtrust-docker"
 
