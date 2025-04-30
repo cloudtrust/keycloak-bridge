@@ -1,6 +1,7 @@
 package profile
 
 import (
+	// Import used to embed default-profile.json file in local variable
 	_ "embed"
 	"encoding/json"
 

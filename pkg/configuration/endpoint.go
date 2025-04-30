@@ -7,6 +7,7 @@ import (
 	"github.com/go-kit/kit/endpoint"
 )
 
+// Endpoints struct
 type Endpoints struct {
 	GetIdentificationURI endpoint.Endpoint
 }

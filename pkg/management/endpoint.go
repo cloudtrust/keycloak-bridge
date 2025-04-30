@@ -632,6 +632,7 @@ func getCustomValues(queryParameters map[string]string) []string {
 }
 
 /* REMOVE_THIS_3901 : start */
+
 // MakeSendMigrationEmailEndpoint creates an endpoint for SendMigrationEmail
 func MakeSendMigrationEmailEndpoint(component Component, maxLifeSpan int) cs.Endpoint {
 	return func(ctx context.Context, req interface{}) (interface{}, error) {

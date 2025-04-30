@@ -212,6 +212,7 @@ type EventsReporterModule interface {
 	ReportEvent(ctx context.Context, event events.Event)
 }
 
+// KafkaProducer interface
 type KafkaProducer interface {
 	SendMessageBytes(value []byte) error
 }
@@ -1271,11 +1272,13 @@ func (c *component) genericSendOnboardingEmail(ctx context.Context, accessToken 
 }
 
 /* REMOVE_THIS_3901 : start */
+
 // KeycloakURIProvider interface
 type KeycloakURIProvider interface {
 	GetBaseURI(realm string) string
 }
 
+// SendMigrationEmail sends a migration email
 func (c *component) SendMigrationEmail(ctx context.Context, realmName string, userID string, customerRealm string, reminder bool, lifespan *int) error {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 

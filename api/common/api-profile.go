@@ -70,6 +70,7 @@ func AttributesToAPI(attrbs []kc.ProfileAttrbRepresentation, frontend string) []
 	return res
 }
 
+// AttributeToAPI converts an attribute
 func AttributeToAPI(attrb kc.ProfileAttrbRepresentation, apiName string) *ProfileAttributeRepresentation {
 	if attrb.Permissions != nil && !validation.IsStringInSlice(attrb.Permissions.Edit, requesterType) {
 		// User has no permission to edit this field

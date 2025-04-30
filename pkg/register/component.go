@@ -55,6 +55,7 @@ type UserProfileCache interface {
 // ContextKeyManager interface
 type ContextKeyManager interface {
 	GetOverride(realm string, contextKey string) (keycloakb.ContextKeyParameters, bool)
+	GetContextByRegistrationRealm(realm string) (keycloakb.ContextKeyParameters, bool)
 }
 
 // Component is the register component interface.
@@ -137,12 +138,18 @@ func (c *component) GetConfiguration(ctx context.Context, realmName string) (api
 		return apiregister.ConfigurationRepresentation{}, err
 	}
 
+	var contextKey *string
+	if context, ok := c.contextKeyMgr.GetContextByRegistrationRealm(realmName); ok {
+		contextKey = context.ID
+	}
+
 	return apiregister.ConfigurationRepresentation{
 		RedirectCancelledRegistrationURL: realmConf.RedirectCancelledRegistrationURL,
 		Mode:                             realmAdminConf.Mode,
 		Theme:                            realmAdminConf.RegisterTheme,
 		SupportedLocales:                 supportedLocales,
 		SelfRegisterEnabled:              realmAdminConf.SelfRegisterEnabled,
+		ContextKey:                       contextKey,
 	}, nil
 }
 
@@ -336,11 +343,6 @@ func (c *component) createUser(ctx context.Context, accessToken string, realmNam
 	_, err = c.onboardingModule.CreateUser(ctx, accessToken, realmName, realmName, &kcUser, false)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Failed to update user through Keycloak API", "err", err.Error())
-		return kc.UserRepresentation{}, err
-	}
-
-	if err != nil {
-		c.logger.Warn(ctx, "msg", "Can't store user details in database", "err", err.Error())
 		return kc.UserRepresentation{}, err
 	}
 
