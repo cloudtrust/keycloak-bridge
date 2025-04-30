@@ -3252,31 +3252,29 @@ func TestCreateRole(t *testing.T) {
 	var managementComponent = mocks.createComponent()
 
 	var accessToken = "TOKEN=="
-	var username = "username"
-	var userID = "testUserID"
 	var name = "test"
 	var realmName = "master"
 	var roleID = "41dbf4a8-32a9-4000-8c17-edc854c31231"
+	var kcLocationURL = "http://toto.com/realms/" + name
 	var locationURL = "http://toto.com/realms/" + roleID
+	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+	ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
+	ctx = context.WithValue(ctx, cs.CtContextUsername, "username")
+	ctx = context.WithValue(ctx, cs.CtContextUserID, "userID")
 
 	t.Run("Create", func(t *testing.T) {
 		var kcRoleRep = kc.RoleRepresentation{
 			Name:       &name,
-			Attributes: &map[string][]string{"BUSINESS_ROLE_FLAG": {"true"}},
+			Attributes: &map[string][]string{businessRoleFlag: {"true"}},
 		}
-
-		mocks.keycloakClient.EXPECT().CreateRole(accessToken, realmName, kcRoleRep).Return(locationURL, nil)
-
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
-		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
-		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
-		ctx = context.WithValue(ctx, cs.CtContextUserID, userID)
-
-		mocks.eventsReporter.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
-
 		var roleRep = api.RoleRepresentation{
 			Name: &name,
 		}
+
+		mocks.keycloakClient.EXPECT().CreateRole(accessToken, realmName, kcRoleRep).Return(kcLocationURL, nil)
+		kcRoleRep.ID = &roleID
+		mocks.keycloakClient.EXPECT().GetRoles(accessToken, realmName).Return([]kc.RoleRepresentation{kcRoleRep}, nil)
+		mocks.eventsReporter.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
 
 		location, err := managementComponent.CreateRole(ctx, realmName, roleRep)
 
@@ -3284,17 +3282,34 @@ func TestCreateRole(t *testing.T) {
 		assert.Equal(t, locationURL, location)
 	})
 
-	t.Run("Error from KC client", func(t *testing.T) {
+	t.Run("Error from KC client - CreateRole failed", func(t *testing.T) {
 		var kcRoleRep = kc.RoleRepresentation{
-			Attributes: &map[string][]string{"BUSINESS_ROLE_FLAG": {"true"}},
+			Attributes: &map[string][]string{businessRoleFlag: {"true"}},
 		}
 
 		mocks.keycloakClient.EXPECT().CreateRole(accessToken, realmName, kcRoleRep).Return("", fmt.Errorf("Invalid input"))
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
-		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
-
 		var roleRep = api.RoleRepresentation{}
+		mocks.logger.EXPECT().Warn(ctx, "err", "Invalid input")
+
+		location, err := managementComponent.CreateRole(ctx, realmName, roleRep)
+
+		assert.NotNil(t, err)
+		assert.Equal(t, "", location)
+	})
+
+	t.Run("Error from KC client - GetRoles failed", func(t *testing.T) {
+		var kcRoleRep = kc.RoleRepresentation{
+			Name:       &name,
+			Attributes: &map[string][]string{businessRoleFlag: {"true"}},
+		}
+		var roleRep = api.RoleRepresentation{
+			Name: &name,
+		}
+
+		mocks.keycloakClient.EXPECT().CreateRole(accessToken, realmName, kcRoleRep).Return(kcLocationURL, nil)
+		kcRoleRep.ID = &roleID
+		mocks.keycloakClient.EXPECT().GetRoles(accessToken, realmName).Return([]kc.RoleRepresentation{}, fmt.Errorf("Invalid input"))
 		mocks.logger.EXPECT().Warn(ctx, "err", "Invalid input")
 
 		location, err := managementComponent.CreateRole(ctx, realmName, roleRep)

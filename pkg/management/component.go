@@ -1601,13 +1601,26 @@ func (c *component) CreateRole(ctx context.Context, realmName string, role api.R
 		return "", err
 	}
 
-	//retrieve the role ID
-	reg := regexp.MustCompile(`[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}`)
-	roleID := string(reg.Find([]byte(locationURL)))
+	roles, err := c.keycloakClient.GetRoles(accessToken, realmName)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return "", err
+	}
+
+	// Search for role ID
+	var roleID string
+	for _, r := range roles {
+		if *r.Name == *role.Name {
+			roleID = *r.ID
+			break
+		}
+	}
 
 	//store the API call into the DB
 	c.auditEventsReporterModule.ReportEvent(ctx, events.NewEventFromContext(ctx, c.logger, c.originEvent, "API_ROLE_CREATION", realmName, map[string]string{events.CtEventRoleID: roleID, events.CtEventRoleName: *role.Name}))
 
+	urlSplice := strings.Split(locationURL, "/")
+	locationURL = strings.Join(urlSplice[:len(urlSplice)-1], "/") + "/" + roleID
 	return locationURL, nil
 }
 
