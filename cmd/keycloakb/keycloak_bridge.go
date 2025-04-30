@@ -172,10 +172,6 @@ const (
 	kafkaEventProducer      = "event-producer"
 )
 
-func init() {
-	rand.Seed(time.Now().UTC().UnixNano())
-}
-
 func main() {
 	ComponentID := strconv.FormatUint(rand.Uint64(), 10)
 	ctx := context.Background()

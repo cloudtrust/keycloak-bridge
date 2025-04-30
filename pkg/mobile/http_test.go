@@ -2,7 +2,7 @@ package mobilepkg
 
 import (
 	"bytes"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -11,9 +11,9 @@ import (
 	api "github.com/cloudtrust/keycloak-bridge/api/mobile"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/cloudtrust/keycloak-bridge/pkg/mobile/mock"
-	"go.uber.org/mock/gomock"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func TestHTTPMobileHandler(t *testing.T) {
@@ -31,7 +31,7 @@ func TestHTTPMobileHandler(t *testing.T) {
 		mockMobileComponent.EXPECT().GetUserInformation(gomock.Any()).Return(api.UserInformationRepresentation{}, nil).Times(1)
 
 		var input []byte
-		res, err := http.Post(ts.URL+"/path/to/account", "application/json", ioutil.NopCloser(bytes.NewBuffer(input)))
+		res, err := http.Post(ts.URL+"/path/to/account", "application/json", io.NopCloser(bytes.NewBuffer(input)))
 
 		assert.Nil(t, err)
 		assert.Equal(t, http.StatusOK, res.StatusCode)
