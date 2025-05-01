@@ -3290,7 +3290,7 @@ func TestCreateRole(t *testing.T) {
 		mocks.keycloakClient.EXPECT().CreateRole(accessToken, realmName, kcRoleRep).Return("", fmt.Errorf("Invalid input"))
 
 		var roleRep = api.RoleRepresentation{}
-		mocks.logger.EXPECT().Warn(ctx, "err", "Invalid input")
+		mocks.logger.EXPECT().Warn(ctx, "msg", "Could not create role", "err", "Invalid input", "realm", realmName, "role", kcRoleRep)
 
 		location, err := managementComponent.CreateRole(ctx, realmName, roleRep)
 
@@ -3310,7 +3310,26 @@ func TestCreateRole(t *testing.T) {
 		mocks.keycloakClient.EXPECT().CreateRole(accessToken, realmName, kcRoleRep).Return(kcLocationURL, nil)
 		kcRoleRep.ID = &roleID
 		mocks.keycloakClient.EXPECT().GetRoles(accessToken, realmName).Return([]kc.RoleRepresentation{}, fmt.Errorf("Invalid input"))
-		mocks.logger.EXPECT().Warn(ctx, "err", "Invalid input")
+		mocks.logger.EXPECT().Warn(ctx, "msg", "Could not get roles from Keycloak", "err", "Invalid input", "realm", realmName)
+
+		location, err := managementComponent.CreateRole(ctx, realmName, roleRep)
+
+		assert.NotNil(t, err)
+		assert.Equal(t, "", location)
+	})
+
+	t.Run("Could not find roleID", func(t *testing.T) {
+		var kcRoleRep = kc.RoleRepresentation{
+			Name:       &name,
+			Attributes: &map[string][]string{businessRoleFlag: {"true"}},
+		}
+		var roleRep = api.RoleRepresentation{
+			Name: &name,
+		}
+
+		mocks.keycloakClient.EXPECT().CreateRole(accessToken, realmName, kcRoleRep).Return(kcLocationURL, nil)
+		mocks.keycloakClient.EXPECT().GetRoles(accessToken, realmName).Return([]kc.RoleRepresentation{}, nil)
+		mocks.logger.EXPECT().Warn(ctx, "msg", "Could not find role ID", "realm", realmName, "role", kcRoleRep)
 
 		location, err := managementComponent.CreateRole(ctx, realmName, roleRep)
 

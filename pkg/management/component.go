@@ -1597,13 +1597,13 @@ func (c *component) CreateRole(ctx context.Context, realmName string, role api.R
 
 	locationURL, err := c.keycloakClient.CreateRole(accessToken, realmName, roleRep)
 	if err != nil {
-		c.logger.Warn(ctx, "err", err.Error())
+		c.logger.Warn(ctx, "msg", "Could not create role", "err", err.Error(), "realm", realmName, "role", roleRep)
 		return "", err
 	}
 
 	roles, err := c.keycloakClient.GetRoles(accessToken, realmName)
 	if err != nil {
-		c.logger.Warn(ctx, "err", err.Error())
+		c.logger.Warn(ctx, "msg", "Could not get roles from Keycloak", "err", err.Error(), "realm", realmName)
 		return "", err
 	}
 
@@ -1614,6 +1614,10 @@ func (c *component) CreateRole(ctx context.Context, realmName string, role api.R
 			roleID = *r.ID
 			break
 		}
+	}
+	if roleID == "" {
+		c.logger.Warn(ctx, "msg", "Could not find role ID", "realm", realmName, "role", roleRep)
+		return "", errors.New("Could not find role ID")
 	}
 
 	//store the API call into the DB
