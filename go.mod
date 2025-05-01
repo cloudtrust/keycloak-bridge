@@ -4,7 +4,7 @@ go 1.24.1
 
 require (
 	github.com/cloudtrust/common-service/v2 v2.9.2
-	github.com/cloudtrust/httpclient v1.4.0
+	github.com/cloudtrust/httpclient v1.5.0
 	github.com/cloudtrust/kafka-client v1.6.0
 	github.com/cloudtrust/keycloak-client/v2 v2.9.0
 	github.com/go-kit/kit v0.13.0
