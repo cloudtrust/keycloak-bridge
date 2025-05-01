@@ -28,7 +28,7 @@ github.com/cloudtrust/common-service/v2/middleware
 github.com/cloudtrust/common-service/v2/security
 github.com/cloudtrust/common-service/v2/tracing
 github.com/cloudtrust/common-service/v2/validation
-# github.com/cloudtrust/httpclient v1.4.0
+# github.com/cloudtrust/httpclient v1.5.0
 ## explicit; go 1.24.1
 github.com/cloudtrust/httpclient
 # github.com/cloudtrust/kafka-client v1.6.0
