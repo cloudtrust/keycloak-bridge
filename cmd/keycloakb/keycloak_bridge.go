@@ -443,7 +443,7 @@ func main() {
 	}
 
 	// Users profile cache
-	profileCache := toolbox.NewUserProfileCache(keycloakClient, technicalTokenProvider, profile.DefaultProfile)
+	profileCache := toolbox.NewUserProfileCache(keycloakClient, technicalTokenProvider)
 
 	// Actions allowed in Authorization Manager
 	var authActions = security.Actions.GetActionNamesForService(security.BridgeService)

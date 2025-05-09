@@ -9,8 +9,8 @@ import (
 
 	"github.com/cloudtrust/keycloak-bridge/internal/profile/mock"
 	kc "github.com/cloudtrust/keycloak-client/v2"
-	"go.uber.org/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func ptr(value string) *string {
@@ -18,7 +18,7 @@ func ptr(value string) *string {
 }
 
 type getfield struct {
-	returnValue interface{}
+	returnValue any
 }
 
 var (
@@ -45,7 +45,7 @@ type UserRepresentation struct {
 }
 
 // GetField implements ContainsFields.
-func (ur UserRepresentation) GetField(name string) interface{} {
+func (ur UserRepresentation) GetField(name string) any {
 	switch name {
 	case "firstName":
 		return ur.FirstName
@@ -57,7 +57,7 @@ func (ur UserRepresentation) GetField(name string) interface{} {
 }
 
 // SetField implements ContainsFields.
-func (ur UserRepresentation) SetField(name string, value interface{}) {
+func (ur UserRepresentation) SetField(name string, value any) {
 	switch name {
 	case "firstName":
 		ur.FirstName = value.(*string)
@@ -66,14 +66,14 @@ func (ur UserRepresentation) SetField(name string, value interface{}) {
 	}
 }
 
-func (gf *getfield) GetField(name string) interface{} {
+func (gf *getfield) GetField(name string) any {
 	if attributeName == name {
 		return gf.returnValue
 	}
 	return nil
 }
 
-func (gf *getfield) SetField(name string, value interface{}) {
+func (gf *getfield) SetField(name string, value any) {
 	if attributeName == name {
 		gf.returnValue = value
 	}
@@ -356,7 +356,7 @@ func TestValidatorPattern(t *testing.T) {
 func TestValidatorOptions(t *testing.T) {
 	var (
 		attribute = kc.ProfileAttrbRepresentation{Name: ptr("name")}
-		validator = kc.ProfileAttrValidatorRepresentation{"options": []interface{}{"one", "two", "tree", "viva", "l'algerie"}}
+		validator = kc.ProfileAttrValidatorRepresentation{"options": []any{"one", "two", "tree", "viva", "l'algerie"}}
 	)
 	t.Run("invalid input type", func(t *testing.T) {
 		assert.NotNil(t, validateAttributeOptions(attribute, validator, time.Now(), nil))
