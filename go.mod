@@ -6,7 +6,7 @@ require (
 	github.com/cloudtrust/common-service/v2 v2.9.3
 	github.com/cloudtrust/httpclient v1.5.0
 	github.com/cloudtrust/kafka-client v1.6.1
-	github.com/cloudtrust/keycloak-client/v2 v2.9.1
+	github.com/cloudtrust/keycloak-client/v2 v2.10.0
 	github.com/go-kit/kit v0.13.0
 	github.com/go-kit/log v0.2.1
 	github.com/go-sql-driver/mysql v1.9.1
@@ -68,7 +68,7 @@ require (
 	golang.org/x/crypto v0.37.0 // indirect
 	golang.org/x/exp v0.0.0-20250305212735-054e65f0b394 // indirect
 	golang.org/x/net v0.39.0 // indirect
-	golang.org/x/oauth2 v0.29.0 // indirect
+	golang.org/x/oauth2 v0.30.0 // indirect
 	golang.org/x/sys v0.32.0 // indirect
 	golang.org/x/text v0.24.0 // indirect
 	google.golang.org/protobuf v1.36.5 // indirect
