@@ -99,9 +99,6 @@ const (
 	cfgHTTPAddrMobile           = "mobile-http-host-port"
 	cfgHTTPAddrMonitoring       = "monitoring-http-host-port"
 	cfgHTTPAddrConfiguration    = "configuration-http-host-port"
-	cfgAddrTokenProviderMap     = "keycloak-oidc-uri-map"
-	cfgAddrAPI                  = "keycloak-api-uri"
-	cfgTimeout                  = "keycloak-timeout"
 	cfgAddrAccounting           = "accounting-api-uri"
 	cfgAccountingTimeout        = "accounting-timeout"
 	cfgAudienceRequired         = "audience-required"
@@ -163,8 +160,6 @@ const (
 	cfgIdnowTimeout             = "idnow-service-timeout"
 	cfgContextKeys              = "context-keys"
 	cfgLogEventRate             = "log-events-rate"
-
-	tokenProviderDefaultKey = "default"
 
 	// Kafka
 	kafkaReloadAuthProducer = "auth-reload-producer"
@@ -363,20 +358,15 @@ func main() {
 	var trustIDGroups = c.GetStringSlice(cfgTrustIDGroups)
 
 	// Keycloak
-	var tokenProviderMap = c.GetStringMapString(cfgAddrTokenProviderMap)
-	var uriProvider keycloak.KeycloakURIProvider
+	var keycloakConfig keycloak.Config
 	{
-		uriProvider, err = toolbox.NewKeycloakURIProvider(tokenProviderMap, tokenProviderDefaultKey)
+		keycloakConfig, err = toolbox.NewConfig(func(value any) error {
+			return c.UnmarshalKey("keycloak", value)
+		})
 		if err != nil {
-			logger.Error(ctx, "msg", "can't create Keycloak URI provider", "err", err)
+			logger.Error(ctx, "msg", "could not get Keycloak configuration", "err", err)
 			return
 		}
-	}
-	var keycloakConfig = keycloak.Config{
-		AddrTokenProvider: uriProvider.GetAllBaseURIs(),
-		URIProvider:       uriProvider,
-		AddrAPI:           c.GetString(cfgAddrAPI),
-		Timeout:           c.GetDuration(cfgTimeout),
 	}
 
 	// Keycloak client.
@@ -434,12 +424,11 @@ func main() {
 	var technicalTokenProvider toolbox.OidcTokenProvider
 	{
 		technicalTokenProvider = toolbox.NewOidcTokenProvider(keycloakConfig, technicalRealm, technicalUsername, technicalPassword, technicalClientID, logger)
-		for realm := range tokenProviderMap {
-			var _, err = technicalTokenProvider.ProvideTokenForRealm(context.Background(), realm)
-			if err != nil {
+		keycloakConfig.URIProvider.ForEachContextURI(func(realm, _, _ string) {
+			if _, err := technicalTokenProvider.ProvideTokenForRealm(context.Background(), realm); err != nil {
 				logger.Warn(context.Background(), "msg", "OIDC token provider validation failed for technical user", "err", err.Error(), "realm", realm)
 			}
-		}
+		})
 	}
 
 	// Users profile cache
@@ -1517,11 +1506,6 @@ func config(ctx context.Context, logger log.Logger) *viper.Viper {
 	v.SetDefault(cfgAllowedHeaders, []string{})
 	v.SetDefault(cfgExposedHeaders, []string{})
 	v.SetDefault(cfgDebug, false)
-
-	// Keycloak default.
-	v.SetDefault(cfgAddrAPI, "http://127.0.0.1:8080")
-	v.SetDefault(cfgAddrTokenProviderMap, map[string]string{"default": "http://127.0.0.1:8080", "_local": "http://localhost:8080"})
-	v.SetDefault(cfgTimeout, "5s")
 
 	// Accounting default.
 	v.SetDefault(cfgAddrAccounting, "http://0.0.0.0:8940")
