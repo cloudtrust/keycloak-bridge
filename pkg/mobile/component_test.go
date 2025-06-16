@@ -16,8 +16,8 @@ import (
 	"github.com/cloudtrust/common-service/v2/log"
 	"github.com/cloudtrust/keycloak-bridge/pkg/mobile/mock"
 	kc "github.com/cloudtrust/keycloak-client/v2"
-	"go.uber.org/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 type componentMocks struct {
@@ -101,13 +101,13 @@ func TestGetUser(t *testing.T) {
 
 	t.Run("Can't get access token", func(t *testing.T) {
 		var tokenError = errors.New("token error")
-		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return("", tokenError)
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realm).Return("", tokenError)
 		var _, err = component.GetUserInformation(ctx)
 		assert.Equal(t, tokenError, err)
 	})
 
 	// Now, token provider will always be successful
-	mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil).AnyTimes()
+	mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realm).Return(accessToken, nil).AnyTimes()
 
 	t.Run("Can't get realm from keycloak", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetRealm(accessToken, realm).Return(kc.RealmRepresentation{}, anyError)

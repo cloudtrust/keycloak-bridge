@@ -385,7 +385,7 @@ func (c *component) CreateUser(ctx context.Context, realmName string, user api.U
 }
 
 func (c *component) CreateUserInSocialRealm(ctx context.Context, user api.UserRepresentation, generateNameID bool) (string, error) {
-	var accessToken, err = c.tokenProvider.ProvideToken(ctx)
+	var accessToken, err = c.tokenProvider.ProvideTokenForRealm(ctx, c.socialRealmName)
 	if err != nil {
 		c.logger.Info(ctx, "msg", "Fails to get OIDC token from keycloak", "err", err.Error())
 		return "", err
@@ -1215,7 +1215,7 @@ func (c *component) SendOnboardingEmail(ctx context.Context, realmName string, u
 }
 
 func (c *component) SendOnboardingEmailInSocialRealm(ctx context.Context, userID string, customerRealm string, reminder bool, paramKV ...string) error {
-	var accessToken, err = c.tokenProvider.ProvideToken(ctx)
+	var accessToken, err = c.tokenProvider.ProvideTokenForRealm(ctx, c.socialRealmName)
 	if err != nil {
 		c.logger.Info(ctx, "msg", "Fails to get OIDC token from keycloak", "err", err.Error())
 		return err

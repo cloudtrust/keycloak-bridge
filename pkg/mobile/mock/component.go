@@ -80,19 +80,19 @@ func (m *TokenProvider) EXPECT() *TokenProviderMockRecorder {
 	return m.recorder
 }
 
-// ProvideToken mocks base method.
-func (m *TokenProvider) ProvideToken(ctx context.Context) (string, error) {
+// ProvideTokenForRealm mocks base method.
+func (m *TokenProvider) ProvideTokenForRealm(ctx context.Context, realm string) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ProvideToken", ctx)
+	ret := m.ctrl.Call(m, "ProvideTokenForRealm", ctx, realm)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// ProvideToken indicates an expected call of ProvideToken.
-func (mr *TokenProviderMockRecorder) ProvideToken(ctx any) *gomock.Call {
+// ProvideTokenForRealm indicates an expected call of ProvideTokenForRealm.
+func (mr *TokenProviderMockRecorder) ProvideTokenForRealm(ctx, realm any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProvideToken", reflect.TypeOf((*TokenProvider)(nil).ProvideToken), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ProvideTokenForRealm", reflect.TypeOf((*TokenProvider)(nil).ProvideTokenForRealm), ctx, realm)
 }
 
 // AccountingClient is a mock of AccountingClient interface.

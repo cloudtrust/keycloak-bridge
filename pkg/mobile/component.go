@@ -73,7 +73,7 @@ type AccreditationsServiceClient interface {
 
 // TokenProvider is the interface to retrieve accessToken to access KC
 type TokenProvider interface {
-	ProvideToken(ctx context.Context) (string, error)
+	ProvideTokenForRealm(ctx context.Context, realm string) (string, error)
 }
 
 // AuthorizationManager is the interface to check authorizations of a user
@@ -119,7 +119,7 @@ func (c *component) GetUserInformation(ctx context.Context) (api.UserInformation
 
 	// Get an OIDC token to be able to request Keycloak
 	var techAccessToken string
-	techAccessToken, err := c.tokenProvider.ProvideToken(ctx)
+	techAccessToken, err := c.tokenProvider.ProvideTokenForRealm(ctx, realm)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Can't get OIDC token", "err", err.Error())
 		return api.UserInformationRepresentation{}, err

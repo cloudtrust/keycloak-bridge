@@ -155,11 +155,11 @@ func TestGetUserByUsername(t *testing.T) {
 
 	t.Run("Social-Failed to retrieve OIDC token", func(t *testing.T) {
 		var oidcError = errors.New("oidc error")
-		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return("", oidcError)
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realm).Return("", oidcError)
 		var _, err = component.GetUserByUsernameInSocialRealm(ctx, username)
 		assert.NotNil(t, err)
 	})
-	mocks.tokenProvider.EXPECT().ProvideToken(gomock.Any()).Return(accessToken, nil).AnyTimes()
+	mocks.tokenProvider.EXPECT().ProvideTokenForRealm(gomock.Any(), realm).Return(accessToken, nil).AnyTimes()
 
 	t.Run("Social-Keycloak GetGroups fails", func(t *testing.T) {
 		var kcError = errors.New("kc error")
@@ -260,11 +260,11 @@ func TestGetUserComponent(t *testing.T) {
 
 	t.Run("Social-Failed to retrieve OIDC token", func(t *testing.T) {
 		var oidcError = errors.New("oidc error")
-		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return("", oidcError)
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realm).Return("", oidcError)
 		var _, err = component.GetUserInSocialRealm(ctx, userID, nil)
 		assert.NotNil(t, err)
 	})
-	mocks.tokenProvider.EXPECT().ProvideToken(gomock.Any()).Return(accessToken, nil).AnyTimes()
+	mocks.tokenProvider.EXPECT().ProvideTokenForRealm(gomock.Any(), realm).Return(accessToken, nil).AnyTimes()
 
 	t.Run("Social-Consent fails", func(t *testing.T) {
 		mocks.configDB.EXPECT().GetAdminConfiguration(ctx, consentRealm).Return(configuration.RealmAdminConfiguration{}, anyError)
@@ -342,11 +342,11 @@ func TestValidateUser(t *testing.T) {
 
 	t.Run("Failed to retrieve OIDC token", func(t *testing.T) {
 		var oidcError = errors.New("oidc error")
-		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return("", oidcError)
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, targetRealm).Return("", oidcError)
 		var err = component.ValidateUserInSocialRealm(ctx, userID, validUser, nil)
 		assert.NotNil(t, err)
 	})
-	mocks.tokenProvider.EXPECT().ProvideToken(gomock.Any()).Return(accessToken, nil).AnyTimes()
+	mocks.tokenProvider.EXPECT().ProvideTokenForRealm(gomock.Any(), targetRealm).Return(accessToken, nil).AnyTimes()
 
 	t.Run("Call to keycloak fails", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, targetRealm, userID).Return(kc.UserRepresentation{}, errors.New("failure"))
@@ -535,12 +535,12 @@ func TestSendSmsConsentCode(t *testing.T) {
 	var anyError = errors.New("any error")
 
 	t.Run("Social SendSmsConsentCode-Can't get access token", func(t *testing.T) {
-		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return("", anyError)
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, socialRealm).Return("", anyError)
 
 		err := component.SendSmsConsentCodeInSocialRealm(ctx, userID)
 		assert.Equal(t, anyError, err)
 	})
-	mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil).AnyTimes()
+	mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, socialRealm).Return(accessToken, nil).AnyTimes()
 
 	t.Run("Social SendSmsConsentCode-Can't get realm admin configuration", func(t *testing.T) {
 		mocks.configDB.EXPECT().GetAdminConfiguration(gomock.Any(), tokenRealm).Return(configuration.RealmAdminConfiguration{}, anyError)
@@ -598,12 +598,12 @@ func TestSendSmsCode(t *testing.T) {
 
 	t.Run("Social SendSmsCode-Can't get access token", func(t *testing.T) {
 		var tokenError = errors.New("token error")
-		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return("", tokenError)
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, targetRealm).Return("", tokenError)
 
 		_, err := component.SendSmsCodeInSocialRealm(ctx, userID)
 		assert.Equal(t, tokenError, err)
 	})
-	mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil).AnyTimes()
+	mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, targetRealm).Return(accessToken, nil).AnyTimes()
 
 	t.Run("Social SendSmsCode-Send new sms code", func(t *testing.T) {
 		var code = "1234"

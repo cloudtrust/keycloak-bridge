@@ -14,8 +14,8 @@ import (
 	"github.com/cloudtrust/keycloak-bridge/pkg/validation/mock"
 
 	kc "github.com/cloudtrust/keycloak-client/v2"
-	"go.uber.org/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 type componentMocks struct {
@@ -57,13 +57,13 @@ func TestGetUserComponent(t *testing.T) {
 
 	t.Run("Fails to retrieve token for technical user", func(t *testing.T) {
 		var kcError = errors.New("kc error")
-		mocks.tokenProvider.EXPECT().ProvideToken(gomock.Any()).Return("", kcError)
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(gomock.Any(), realm).Return("", kcError)
 		var _, err = component.GetUser(ctx, realm, userID)
 		assert.NotNil(t, err)
 	})
 
 	t.Run("GetUser from Keycloak fails", func(t *testing.T) {
-		mocks.tokenProvider.EXPECT().ProvideToken(gomock.Any()).Return(accessToken, nil)
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(gomock.Any(), realm).Return(accessToken, nil)
 		var kcError = errors.New("kc error")
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realm, userID).Return(kc.UserRepresentation{}, kcError)
 		var _, err = component.GetUser(ctx, realm, userID)
@@ -71,7 +71,7 @@ func TestGetUserComponent(t *testing.T) {
 	})
 
 	t.Run("GetAdminConfiguration fails", func(t *testing.T) {
-		mocks.tokenProvider.EXPECT().ProvideToken(gomock.Any()).Return(accessToken, nil)
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(gomock.Any(), realm).Return(accessToken, nil)
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realm, userID).Return(kc.UserRepresentation{}, nil)
 		mocks.configDB.EXPECT().GetAdminConfiguration(ctx, realm).Return(configuration.RealmAdminConfiguration{}, anyError)
 		var _, err = component.GetUser(ctx, realm, userID)
@@ -80,7 +80,7 @@ func TestGetUserComponent(t *testing.T) {
 
 	t.Run("Missing GLN", func(t *testing.T) {
 		var bTrue = true
-		mocks.tokenProvider.EXPECT().ProvideToken(gomock.Any()).Return(accessToken, nil)
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(gomock.Any(), realm).Return(accessToken, nil)
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realm, userID).Return(kc.UserRepresentation{}, nil)
 		mocks.configDB.EXPECT().GetAdminConfiguration(ctx, realm).Return(configuration.RealmAdminConfiguration{ShowGlnEditing: &bTrue}, nil)
 		var _, err = component.GetUser(ctx, realm, userID)
@@ -89,7 +89,7 @@ func TestGetUserComponent(t *testing.T) {
 	mocks.configDB.EXPECT().GetAdminConfiguration(ctx, realm).Return(configuration.RealmAdminConfiguration{}, nil).AnyTimes()
 
 	t.Run("Happy path", func(t *testing.T) {
-		mocks.tokenProvider.EXPECT().ProvideToken(gomock.Any()).Return(accessToken, nil)
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(gomock.Any(), realm).Return(accessToken, nil)
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realm, userID).Return(kc.UserRepresentation{}, nil)
 		var _, err = component.GetUser(ctx, realm, userID)
 		assert.Nil(t, err)
@@ -119,11 +119,11 @@ func TestUpdateUser(t *testing.T) {
 			FirstName: ptr("newFirstname"),
 		}
 		var kcError = errors.New("kc error")
-		mocks.tokenProvider.EXPECT().ProvideToken(gomock.Any()).Return("", kcError)
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(gomock.Any(), targetRealm).Return("", kcError)
 		var err = component.UpdateUser(ctx, targetRealm, userID, user, &txnID)
 		assert.NotNil(t, err)
 	})
-	mocks.tokenProvider.EXPECT().ProvideToken(gomock.Any()).Return(accessToken, nil).AnyTimes()
+	mocks.tokenProvider.EXPECT().ProvideTokenForRealm(gomock.Any(), targetRealm).Return(accessToken, nil).AnyTimes()
 
 	t.Run("No update needed", func(t *testing.T) {
 		var user = api.UserRepresentation{}
@@ -248,14 +248,14 @@ func TestUpdateUserAccreditations(t *testing.T) {
 	user := kc.UserRepresentation{Username: &username}
 
 	t.Run("Get access token - failed ", func(t *testing.T) {
-		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, expectedError)
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(gomock.Any(), realmName).Return(accessToken, expectedError)
 
 		err := component.UpdateUserAccreditations(ctx, realmName, userID, userAccreds)
 		assert.NotNil(t, err)
 	})
 
 	t.Run("Get User failed", func(t *testing.T) {
-		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(gomock.Any(), realmName).Return(accessToken, nil)
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(user, expectedError)
 
 		err := component.UpdateUserAccreditations(ctx, realmName, userID, userAccreds)
@@ -263,7 +263,7 @@ func TestUpdateUserAccreditations(t *testing.T) {
 	})
 
 	t.Run("Update User failed", func(t *testing.T) {
-		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(gomock.Any(), realmName).Return(accessToken, nil)
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(user, nil)
 		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, realmName, userID, gomock.Any()).Return(expectedError)
 
@@ -272,7 +272,7 @@ func TestUpdateUserAccreditations(t *testing.T) {
 	})
 
 	t.Run("Success", func(t *testing.T) {
-		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(gomock.Any(), realmName).Return(accessToken, nil)
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(user, nil)
 		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, realmName, userID, gomock.Any()).Return(nil)
 		mocks.eventsReporter.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
@@ -300,12 +300,12 @@ func TestValidationContext(t *testing.T) {
 
 	t.Run("updateKeycloakUser", func(t *testing.T) {
 		t.Run("Fails to get access token", func(t *testing.T) {
-			mocks.tokenProvider.EXPECT().ProvideToken(validationCtx.ctx).Return("", anyError)
+			mocks.tokenProvider.EXPECT().ProvideTokenForRealm(validationCtx.ctx, validationCtx.realmName).Return("", anyError)
 			var err = component.updateKeycloakUser(validationCtx)
 			assert.Equal(t, anyError, err)
 		})
 		t.Run("Fails to update user", func(t *testing.T) {
-			mocks.tokenProvider.EXPECT().ProvideToken(validationCtx.ctx).Return(accessToken, nil)
+			mocks.tokenProvider.EXPECT().ProvideTokenForRealm(validationCtx.ctx, validationCtx.realmName).Return(accessToken, nil)
 			mocks.keycloakClient.EXPECT().UpdateUser(accessToken, validationCtx.realmName, validationCtx.userID, gomock.Any()).Return(anyError)
 			var err = component.updateKeycloakUser(validationCtx)
 			assert.NotNil(t, err)
@@ -358,7 +358,7 @@ func TestGetGroupsOfUser(t *testing.T) {
 		var kcGroupsRep []kc.GroupRepresentation
 		kcGroupsRep = append(kcGroupsRep, kcGroupRep)
 
-		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(gomock.Any(), realmName).Return(accessToken, nil)
 		mocks.keycloakClient.EXPECT().GetGroupsOfUser(accessToken, realmName, userID).Return(kcGroupsRep, nil)
 
 		apiGroupsRep, err := component.GetGroupsOfUser(ctx, "master", userID)
@@ -370,13 +370,13 @@ func TestGetGroupsOfUser(t *testing.T) {
 	})
 
 	t.Run("Error accessToken", func(t *testing.T) {
-		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, fmt.Errorf("Unexpected error"))
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(gomock.Any(), realmName).Return(accessToken, fmt.Errorf("Unexpected error"))
 
 		_, err := component.GetGroupsOfUser(ctx, "master", userID)
 		assert.NotNil(t, err)
 	})
 	t.Run("Error accessToken", func(t *testing.T) {
-		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(gomock.Any(), realmName).Return(accessToken, nil)
 		mocks.keycloakClient.EXPECT().GetGroupsOfUser(accessToken, realmName, userID).Return([]kc.GroupRepresentation{}, fmt.Errorf("Unexpected error"))
 
 		_, err := component.GetGroupsOfUser(ctx, "master", userID)
