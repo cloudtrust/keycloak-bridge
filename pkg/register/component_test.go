@@ -332,19 +332,19 @@ func TestGetSupportedLocales(t *testing.T) {
 	var anyError = errors.New("any error")
 
 	t.Run("Can't get access token", func(t *testing.T) {
-		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return("", anyError)
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realm).Return("", anyError)
 		var _, err = component.getSupportedLocales(ctx, realm)
 		assert.Equal(t, anyError, err)
 	})
 	t.Run("Can't get response from KC", func(t *testing.T) {
-		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realm).Return(accessToken, nil)
 		mocks.keycloakClient.EXPECT().GetRealm(accessToken, realm).Return(kc.RealmRepresentation{}, anyError)
 		var _, err = component.getSupportedLocales(ctx, realm)
 		assert.Equal(t, anyError, err)
 	})
 	t.Run("Internationalization disabled (nil)", func(t *testing.T) {
 		realmConfig.InternationalizationEnabled = nil
-		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realm).Return(accessToken, nil)
 		mocks.keycloakClient.EXPECT().GetRealm(accessToken, realm).Return(realmConfig, nil)
 		var res, err = component.getSupportedLocales(ctx, realm)
 		assert.Nil(t, err)
@@ -353,7 +353,7 @@ func TestGetSupportedLocales(t *testing.T) {
 	t.Run("Internationalization disabled (false)", func(t *testing.T) {
 		var bFalse = false
 		realmConfig.InternationalizationEnabled = &bFalse
-		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realm).Return(accessToken, nil)
 		mocks.keycloakClient.EXPECT().GetRealm(accessToken, realm).Return(realmConfig, nil)
 		var res, err = component.getSupportedLocales(ctx, realm)
 		assert.Nil(t, err)
@@ -362,7 +362,7 @@ func TestGetSupportedLocales(t *testing.T) {
 	t.Run("Internationalization enabled", func(t *testing.T) {
 		var bTrue = true
 		realmConfig.InternationalizationEnabled = &bTrue
-		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realm).Return(accessToken, nil)
 		mocks.keycloakClient.EXPECT().GetRealm(accessToken, realm).Return(realmConfig, nil)
 		var res, err = component.getSupportedLocales(ctx, realm)
 		assert.Nil(t, err)
@@ -395,13 +395,13 @@ func TestGetConfiguration(t *testing.T) {
 	})
 	t.Run("Get realm configuration from KC fails", func(t *testing.T) {
 		mocks.configDB.EXPECT().GetConfigurations(gomock.Any(), gomock.Any()).Return(configuration.RealmConfiguration{}, configuration.RealmAdminConfiguration{}, nil)
-		mocks.tokenProvider.EXPECT().ProvideToken(gomock.Any()).Return(accessToken, anyError)
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(gomock.Any(), confRealm).Return(accessToken, anyError)
 		var _, err = component.GetConfiguration(ctx, confRealm)
 		assert.Equal(t, anyError, err)
 	})
 	t.Run("Cannot find context", func(t *testing.T) {
 		mocks.configDB.EXPECT().GetConfigurations(gomock.Any(), gomock.Any()).Return(configuration.RealmConfiguration{}, configuration.RealmAdminConfiguration{}, nil)
-		mocks.tokenProvider.EXPECT().ProvideToken(gomock.Any()).Return(accessToken, nil)
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(gomock.Any(), confRealm).Return(accessToken, nil)
 		mocks.keycloakClient.EXPECT().GetRealm(accessToken, confRealm).Return(realmConfig, nil)
 		mocks.contextKeyMgr.EXPECT().GetContextByRegistrationRealm(confRealm).Return(keycloakb.ContextKeyParameters{}, false)
 		var conf, err = component.GetConfiguration(ctx, confRealm)
@@ -412,7 +412,7 @@ func TestGetConfiguration(t *testing.T) {
 	t.Run("Retrieve configuration successfully", func(t *testing.T) {
 		var key = "context-key"
 		mocks.configDB.EXPECT().GetConfigurations(gomock.Any(), gomock.Any()).Return(configuration.RealmConfiguration{}, configuration.RealmAdminConfiguration{}, nil)
-		mocks.tokenProvider.EXPECT().ProvideToken(gomock.Any()).Return(accessToken, nil)
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(gomock.Any(), confRealm).Return(accessToken, nil)
 		mocks.keycloakClient.EXPECT().GetRealm(accessToken, confRealm).Return(realmConfig, nil)
 		mocks.contextKeyMgr.EXPECT().GetContextByRegistrationRealm(confRealm).Return(keycloakb.ContextKeyParameters{ID: ptr(key)}, true)
 		var conf, err = component.GetConfiguration(ctx, confRealm)

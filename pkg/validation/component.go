@@ -27,7 +27,7 @@ type KeycloakClient interface {
 
 // TokenProvider is the interface to retrieve accessToken to access KC
 type TokenProvider interface {
-	ProvideToken(ctx context.Context) (string, error)
+	ProvideTokenForRealm(ctx context.Context, realm string) (string, error)
 }
 
 // ArchiveDBModule is the interface from the archive module
@@ -91,7 +91,7 @@ func NewComponent(keycloakClient KeycloakClient, tokenProvider TokenProvider, ar
 }
 
 func (c *component) getKeycloakUser(ctx context.Context, realmName string, userID string) (kc.UserRepresentation, error) {
-	accessToken, err := c.tokenProvider.ProvideToken(ctx)
+	accessToken, err := c.tokenProvider.ProvideTokenForRealm(ctx, realmName)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "getKeycloakUser: can't get accessToken for technical user", "err", err.Error())
 		return kc.UserRepresentation{}, errorhandler.CreateInternalServerError("keycloak")
@@ -177,7 +177,7 @@ func (c *component) findFirstNonNil(defaultValue string, values ...*string) stri
 }
 
 func (c *component) UpdateUserAccreditations(ctx context.Context, realmName string, userID string, userAccreds []api.AccreditationRepresentation) error {
-	var accessToken, err = c.tokenProvider.ProvideToken(ctx)
+	var accessToken, err = c.tokenProvider.ProvideTokenForRealm(ctx, realmName)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Can't get accessToken for technical user", "err", err.Error())
 		return errorhandler.CreateInternalServerError("keycloak")
@@ -278,7 +278,7 @@ func needKcProcessing(user api.UserRepresentation) bool {
 
 func (c *component) getAccessToken(v *validationContext) (string, error) {
 	if v.accessToken == nil {
-		if accessToken, err := c.tokenProvider.ProvideToken(v.ctx); err == nil {
+		if accessToken, err := c.tokenProvider.ProvideTokenForRealm(v.ctx, v.realmName); err == nil {
 			v.accessToken = &accessToken
 		} else {
 			c.logger.Warn(v.ctx, "msg", "Can't get access token", "err", err.Error(), "realm", v.realmName, "user", v.userID)
@@ -337,7 +337,7 @@ func (c *component) archiveUser(v *validationContext) {
 }
 
 func (c *component) GetGroupsOfUser(ctx context.Context, realmName, userID string) ([]api.GroupRepresentation, error) {
-	var accessToken, err = c.tokenProvider.ProvideToken(ctx)
+	var accessToken, err = c.tokenProvider.ProvideTokenForRealm(ctx, realmName)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Can't get accessToken for technical user", "err", err.Error())
 		return nil, err

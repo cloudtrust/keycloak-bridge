@@ -556,7 +556,7 @@ func main() {
 	var accreditationsService accreditationsclient.AccreditationsServiceClient
 	{
 		var httpClient, err = httpclient.NewBearerAuthClient(c.GetString(cfgAddrAccreditations), c.GetDuration(cfgAccreditationsTimeout), func() (string, error) {
-			return technicalTokenProvider.ProvideToken(context.TODO())
+			return technicalTokenProvider.ProvideTokenForRealm(context.TODO(), "master")
 		})
 		if err != nil {
 			logger.Error(ctx, "msg", "could not initialize accreditations client", "err", err)
@@ -569,7 +569,7 @@ func main() {
 	var idnowService idnowclient.IdnowServiceClient
 	{
 		var httpClient, err = httpclient.NewBearerAuthClient(c.GetString(cfgAddrIdnow), c.GetDuration(cfgIdnowTimeout), func() (string, error) {
-			return technicalTokenProvider.ProvideToken(context.TODO())
+			return technicalTokenProvider.ProvideTokenForRealm(context.TODO(), "master")
 		})
 		if err != nil {
 			logger.Error(ctx, "msg", "could not initialize idnow service client", "err", err)
@@ -850,7 +850,7 @@ func main() {
 		var configDBModule = keycloakb.NewConfigurationDBModule(configurationRoDBConn, mobileLogger)
 
 		var httpClient, err = httpclient.NewBearerAuthClient(c.GetString(cfgAddrAccounting), c.GetDuration(cfgAccountingTimeout), func() (string, error) {
-			return technicalTokenProvider.ProvideToken(context.TODO())
+			return technicalTokenProvider.ProvideTokenForRealm(context.TODO(), "master")
 		})
 		if err != nil {
 			logger.Error(ctx, "msg", "could not initialize accounting client", "err", err)

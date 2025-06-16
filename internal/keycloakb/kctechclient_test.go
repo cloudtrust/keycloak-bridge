@@ -7,8 +7,8 @@ import (
 
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/mock"
 	kc "github.com/cloudtrust/keycloak-client/v2"
-	"go.uber.org/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 type keycloakTechnicalClientMocks struct {
@@ -43,13 +43,13 @@ func TestGetRealm(t *testing.T) {
 	mocks.logger.EXPECT().Error(gomock.Any(), gomock.Any()).AnyTimes()
 
 	t.Run("Token provider fails", func(t *testing.T) {
-		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return("", anyError)
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realm).Return("", anyError)
 
 		var _, err = kcTechClient.GetRealm(ctx, realm)
 		assert.Equal(t, anyError, err)
 	})
 	t.Run("Success", func(t *testing.T) {
-		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realm).Return(accessToken, nil)
 		mocks.kcClient.EXPECT().GetRealm(accessToken, realm).Return(kc.RealmRepresentation{}, nil)
 
 		var _, err = kcTechClient.GetRealm(ctx, realm)
@@ -72,13 +72,13 @@ func TestGetUsers(t *testing.T) {
 	mocks.logger.EXPECT().Error(gomock.Any(), gomock.Any()).AnyTimes()
 
 	t.Run("Token provider fails", func(t *testing.T) {
-		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return("", anyError)
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, targetRealm).Return("", anyError)
 
 		var _, err = kcTechClient.GetUsers(ctx, targetRealm)
 		assert.Equal(t, anyError, err)
 	})
 	t.Run("Success", func(t *testing.T) {
-		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, targetRealm).Return(accessToken, nil)
 		mocks.kcClient.EXPECT().GetUsers(accessToken, kcTechClient.tokenRealm, targetRealm).Return(kc.UsersPageRepresentation{}, nil)
 
 		var _, err = kcTechClient.GetUsers(ctx, targetRealm)
@@ -101,13 +101,13 @@ func TestLogoutAllSessions(t *testing.T) {
 	mocks.logger.EXPECT().Error(gomock.Any(), gomock.Any()).AnyTimes()
 
 	t.Run("Token provider fails", func(t *testing.T) {
-		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return("", anyError)
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realm).Return("", anyError)
 
 		var err = kcTechClient.LogoutAllSessions(ctx, realm, userID)
 		assert.Equal(t, anyError, err)
 	})
 	t.Run("Success", func(t *testing.T) {
-		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realm).Return(accessToken, nil)
 		mocks.kcClient.EXPECT().LogoutAllSessions(accessToken, realm, userID).Return(nil)
 
 		var err = kcTechClient.LogoutAllSessions(ctx, realm, userID)

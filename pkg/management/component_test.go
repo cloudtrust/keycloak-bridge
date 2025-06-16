@@ -638,14 +638,14 @@ func TestCreateUserInSocialRealm(t *testing.T) {
 	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
 
 	t.Run("Can't get JWT token", func(t *testing.T) {
-		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return("", anyError)
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, socialRealmName).Return("", anyError)
 
 		_, err := managementComponent.CreateUserInSocialRealm(ctx, userRep, false)
 		assert.Equal(t, anyError, err)
 	})
 	t.Run("Process already existing user cases calls handler", func(t *testing.T) {
 		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, socialRealmName).Return(configuration.RealmAdminConfiguration{}, nil)
-		mocks.tokenProvider.EXPECT().ProvideToken(ctx).Return(accessToken, nil)
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, socialRealmName).Return(accessToken, nil)
 		mocks.onboardingModule.EXPECT().ProcessAlreadyExistingUserCases(ctx, accessToken, managementComponent.socialRealmName, email, realmName, gomock.Any()).Return(anyError)
 		_, err := managementComponent.CreateUserInSocialRealm(ctx, userRep, false)
 		assert.Equal(t, anyError, err)
@@ -2701,14 +2701,14 @@ func TestSendOnboardingEmail(t *testing.T) {
 	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
 
 	t.Run("InSocialRealm-Can't get oidc token", func(t *testing.T) {
-		mocks.tokenProvider.EXPECT().ProvideToken(gomock.Any()).Return("", anyError)
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, socialRealmName).Return("", anyError)
 
 		err := managementComponent.SendOnboardingEmailInSocialRealm(ctx, userID, realmName, false)
 		assert.NotNil(t, err)
 	})
 
 	t.Run("InSocialRealm-Fails to retrieve realm configuration", func(t *testing.T) {
-		mocks.tokenProvider.EXPECT().ProvideToken(gomock.Any()).Return(accessToken, nil)
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, socialRealmName).Return(accessToken, nil)
 		mocks.configurationDBModule.EXPECT().GetConfiguration(ctx, customerRealmName).Return(configuration.RealmConfiguration{}, anyError)
 
 		err := managementComponent.SendOnboardingEmailInSocialRealm(ctx, userID, customerRealmName, false)

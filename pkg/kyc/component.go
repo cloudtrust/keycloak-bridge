@@ -136,7 +136,7 @@ func (c *component) GetActions(ctx context.Context) ([]apikyc.ActionRepresentati
 }
 
 func (c *component) GetUserByUsernameInSocialRealm(ctx context.Context, username string) (apikyc.UserRepresentation, error) {
-	accessToken, err := c.tokenProvider.ProvideToken(ctx)
+	accessToken, err := c.tokenProvider.ProvideTokenForRealm(ctx, c.socialRealmName)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Can't get OIDC token", "err", err.Error())
 		return apikyc.UserRepresentation{}, err
@@ -259,7 +259,7 @@ func (c *component) GetUserProfile(ctx context.Context, realmName string) (apico
 }
 
 func (c *component) GetUserInSocialRealm(ctx context.Context, userID string, consentCode *string) (apikyc.UserRepresentation, error) {
-	accessToken, err := c.tokenProvider.ProvideToken(ctx)
+	accessToken, err := c.tokenProvider.ProvideTokenForRealm(ctx, c.socialRealmName)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Can't get OIDC token", "err", err.Error())
 		return apikyc.UserRepresentation{}, err
@@ -296,7 +296,7 @@ func (c *component) ValidateUser(ctx context.Context, realmName string, userID s
 }
 
 func (c *component) ValidateUserInSocialRealm(ctx context.Context, userID string, user apikyc.UserRepresentation, consentCode *string) error {
-	accessToken, err := c.tokenProvider.ProvideToken(ctx)
+	accessToken, err := c.tokenProvider.ProvideTokenForRealm(ctx, c.socialRealmName)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Can't get OIDC token", "err", err.Error())
 		return err
@@ -308,7 +308,7 @@ func (c *component) ValidateUserInSocialRealm(ctx context.Context, userID string
 
 /********************* (BEGIN) Temporary basic identity (TO BE REMOVED WHEN MULTI-ACCREDITATION WILL BE IMPLEMENTED) *********************/
 func (c *component) ValidateUserBasicID(ctx context.Context, userID string, user apikyc.UserRepresentation) error {
-	accessToken, err := c.tokenProvider.ProvideToken(ctx)
+	accessToken, err := c.tokenProvider.ProvideTokenForRealm(ctx, c.socialRealmName)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Can't get OIDC token", "err", err.Error())
 		return err
@@ -553,7 +553,7 @@ func ptr(value string) *string {
 }
 
 func (c *component) SendSmsConsentCodeInSocialRealm(ctx context.Context, userID string) error {
-	var accessToken, err = c.tokenProvider.ProvideToken(ctx)
+	var accessToken, err = c.tokenProvider.ProvideTokenForRealm(ctx, c.socialRealmName)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Can't get OIDC token", "err", err.Error())
 		return err
@@ -589,7 +589,7 @@ func (c *component) sendSmsConsentCodeGeneric(ctx context.Context, accessToken s
 }
 
 func (c *component) SendSmsCodeInSocialRealm(ctx context.Context, userID string) (string, error) {
-	var accessToken, err = c.tokenProvider.ProvideToken(ctx)
+	var accessToken, err = c.tokenProvider.ProvideTokenForRealm(ctx, c.socialRealmName)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Can't get OIDC token", "err", err.Error())
 		return "", err

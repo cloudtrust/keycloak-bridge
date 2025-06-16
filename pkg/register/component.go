@@ -109,7 +109,7 @@ func (c *component) getSupportedLocales(ctx context.Context, realmName string) (
 	var err error
 
 	// Get an OIDC token to be able to request Keycloak
-	if accessToken, err = c.tokenProvider.ProvideToken(ctx); err != nil {
+	if accessToken, err = c.tokenProvider.ProvideTokenForRealm(ctx, realmName); err != nil {
 		c.logger.Warn(ctx, "msg", "Can't get OIDC token", "err", err.Error())
 		return nil, err
 	}

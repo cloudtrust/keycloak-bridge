@@ -39,7 +39,7 @@ func NewKeycloakTechnicalClient(tokenProvider toolbox.OidcTokenProvider, tokenRe
 }
 
 func (tc *kcTechnicalClient) GetRealm(ctx context.Context, realmName string) (kc.RealmRepresentation, error) {
-	var accessToken, err = tc.tokenProvider.ProvideToken(ctx)
+	var accessToken, err = tc.tokenProvider.ProvideTokenForRealm(ctx, realmName)
 	if err != nil {
 		tc.logger.Error(ctx, "msg", "Can't get access token", "err", err.Error())
 		return kc.RealmRepresentation{}, err
@@ -49,7 +49,7 @@ func (tc *kcTechnicalClient) GetRealm(ctx context.Context, realmName string) (kc
 }
 
 func (tc *kcTechnicalClient) GetUsers(ctx context.Context, targetRealmName string, paramKV ...string) (kc.UsersPageRepresentation, error) {
-	var accessToken, err = tc.tokenProvider.ProvideToken(ctx)
+	var accessToken, err = tc.tokenProvider.ProvideTokenForRealm(ctx, targetRealmName)
 	if err != nil {
 		tc.logger.Error(ctx, "msg", "Can't get access token", "err", err.Error())
 		return kc.UsersPageRepresentation{}, err
@@ -59,7 +59,7 @@ func (tc *kcTechnicalClient) GetUsers(ctx context.Context, targetRealmName strin
 }
 
 func (tc *kcTechnicalClient) LogoutAllSessions(ctx context.Context, realmName string, userID string) error {
-	var accessToken, err = tc.tokenProvider.ProvideToken(ctx)
+	var accessToken, err = tc.tokenProvider.ProvideTokenForRealm(ctx, realmName)
 	if err != nil {
 		tc.logger.Error(ctx, "msg", "Can't get access token", "err", err.Error())
 		return err
