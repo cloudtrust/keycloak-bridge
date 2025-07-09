@@ -5185,6 +5185,53 @@ func TestLinkShadowUser(t *testing.T) {
 	})
 }
 
+func TestUnlinkShadowUser(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mocks = createMocks(mockCtrl)
+	var managementComponent = mocks.createComponent()
+
+	var accessToken = "TOKEN=="
+	var username = "test"
+	var realmName = "master"
+	var userID = "41dbf4a8-32a9-4000-8c17-edc854c31231"
+	var provider = "provider"
+
+	// Create shadow user
+	t.Run("Create shadow user successfully", func(t *testing.T) {
+		// fedIDKC := kc.FederatedIdentityRepresentation{UserName: &username, UserID: &userID}
+		// fedID := api.FederatedIdentityRepresentation{Username: &username, UserID: &userID}
+
+		mocks.keycloakClient.EXPECT().UnlinkShadowUser(accessToken, realmName, userID, provider).Return(nil)
+
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
+		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
+
+		err := managementComponent.UnlinkShadowUser(ctx, realmName, userID, provider)
+
+		assert.Nil(t, err)
+	})
+
+	// Error from KC client
+	t.Run("Create shadow user - error at KC client", func(t *testing.T) {
+		// fedIDKC := kc.FederatedIdentityRepresentation{UserName: &username, UserID: &userID}
+		// fedID := api.FederatedIdentityRepresentation{Username: &username, UserID: &userID}
+
+		mocks.keycloakClient.EXPECT().UnlinkShadowUser(accessToken, realmName, userID, provider).Return(fmt.Errorf("error"))
+
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
+		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
+
+		mocks.logger.EXPECT().Warn(ctx, gomock.Any())
+		err := managementComponent.UnlinkShadowUser(ctx, realmName, userID, provider)
+
+		assert.NotNil(t, err)
+	})
+}
+
 func TestGetIdentityProviders(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
