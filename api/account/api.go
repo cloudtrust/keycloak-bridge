@@ -80,6 +80,16 @@ type CredentialRepresentation struct {
 	Temporary      *bool   `json:"temporary,omitempty"`
 }
 
+// LinkedAccountRepresentation struct
+type LinkedAccountRepresentation struct {
+	Connected      *bool   `json:"connected,omitempty"`
+	Social         *bool   `json:"social,omitempty"`
+	ProviderAlias  *string `json:"providerAlias,omitempty"`
+	ProviderName   *string `json:"providerName,omitempty"`
+	DisplayName    *string `json:"displayName,omitempty"`
+	LinkedUsername *string `json:"linkedUsername,omitempty"`
+}
+
 // Configuration struct
 type Configuration struct {
 	EditingEnabled                        *bool           `json:"editing_enabled"`
@@ -87,6 +97,7 @@ type Configuration struct {
 	ShowPasswordTab                       *bool           `json:"show_password_tab"`
 	ShowProfileTab                        *bool           `json:"show_profile_tab"`
 	ShowAccountDeletionButton             *bool           `json:"show_account_deletion_button"`
+	ShowIDPLinksTab                       *bool           `json:"show_idplinks_tab"`
 	SelfServiceDefaultTab                 *string         `json:"self_service_default_tab"`
 	RedirectSuccessfulRegistrationURL     *string         `json:"redirect_successful_registration_url"`
 	AvailableChecks                       map[string]bool `json:"available-checks"`
@@ -161,6 +172,20 @@ func ConvertToAPIAccount(ctx context.Context, userKc kc.UserRepresentation, logg
 	}
 
 	return userRep
+}
+
+// ConvertAPILinkedAccount creates an API linked account from a KC linked account
+func ConvertAPILinkedAccount(accountKc *kc.LinkedAccountRepresentation) LinkedAccountRepresentation {
+	var account LinkedAccountRepresentation
+
+	account.Connected = accountKc.Connected
+	account.Social = accountKc.Social
+	account.ProviderAlias = accountKc.ProviderAlias
+	account.ProviderName = accountKc.ProviderName
+	account.DisplayName = accountKc.DisplayName
+	account.LinkedUsername = accountKc.LinkedUsername
+
+	return account
 }
 
 func convertToAccreditations(ctx context.Context, values []string, logger keycloakb.Logger) *[]AccreditationRepresentation {

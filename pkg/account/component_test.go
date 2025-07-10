@@ -887,12 +887,14 @@ func TestGetConfiguration(t *testing.T) {
 		APISelfAccountEditingEnabled:        &falseBool,
 		APISelfAccountDeletionEnabled:       &falseBool,
 		APISelfPasswordChangeEnabled:        &falseBool,
+		APISelfIDPLinksManagementEnabled:    &falseBool,
 		DefaultClientID:                     new(string),
 		DefaultRedirectURI:                  new(string),
 		ShowAuthenticatorsTab:               &trueBool,
 		ShowAccountDeletionButton:           &trueBool,
 		ShowPasswordTab:                     &trueBool,
 		ShowProfileTab:                      &trueBool,
+		ShowIDPLinksTab:                     &trueBool,
 	}
 	var adminConfig configuration.RealmAdminConfiguration
 	var supportedLocales = []string{"fr", "en", "es"}
@@ -914,6 +916,7 @@ func TestGetConfiguration(t *testing.T) {
 		assert.Equal(t, *config.ShowAccountDeletionButton, *resConfig.ShowAccountDeletionButton)
 		assert.Equal(t, *config.ShowPasswordTab, *resConfig.ShowPasswordTab)
 		assert.Equal(t, *config.ShowProfileTab, *resConfig.ShowProfileTab)
+		assert.Equal(t, *config.ShowIDPLinksTab, *resConfig.ShowIDPLinksTab)
 	})
 
 	t.Run("Get configuration with override realm with succces", func(t *testing.T) {
@@ -934,6 +937,7 @@ func TestGetConfiguration(t *testing.T) {
 		assert.Equal(t, *config.ShowAccountDeletionButton, *resConfig.ShowAccountDeletionButton)
 		assert.Equal(t, *config.ShowProfileTab, *resConfig.ShowProfileTab)
 		assert.Equal(t, *config.ShowPasswordTab, *resConfig.ShowPasswordTab)
+		assert.Equal(t, *config.ShowIDPLinksTab, *resConfig.ShowIDPLinksTab)
 		assert.Equal(t, successURL, *resConfig.RedirectSuccessfulRegistrationURL)
 	})
 
@@ -1217,5 +1221,92 @@ func TestRemoveAttributeFromUser(t *testing.T) {
 
 		err := component.removeAttributeFromUser(ctx, constants.AttrbPhoneNumberToValidate)
 		assert.Nil(t, err)
+	})
+}
+
+func TestGetLinkedAccounts(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mocks = createComponentMocks(mockCtrl)
+	var component = mocks.createComponent()
+
+	var accessToken = "TOKEN=="
+	var currentRealm = "test-community"
+	var anyError = errors.New("any error")
+
+	t.Run("Get linked accounts with succces", func(t *testing.T) {
+		var providerAlias = "idp"
+
+		var kcAccountRep = kc.LinkedAccountRepresentation{
+			ProviderAlias: &providerAlias,
+		}
+
+		var kcAccountsRep []kc.LinkedAccountRepresentation
+		kcAccountsRep = append(kcAccountsRep, kcAccountRep)
+
+		mocks.keycloakAccountClient.EXPECT().GetLinkedAccounts(accessToken, currentRealm).Return(kcAccountsRep, nil)
+
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx = context.WithValue(ctx, cs.CtContextRealm, currentRealm)
+
+		apiAccountsRep, err := component.GetLinkedAccounts(ctx)
+
+		var expectedAPIAccountRep = api.LinkedAccountRepresentation{
+			ProviderAlias: &providerAlias,
+		}
+
+		var expectedAPIAccountsRep []api.LinkedAccountRepresentation
+		expectedAPIAccountsRep = append(expectedAPIAccountsRep, expectedAPIAccountRep)
+
+		assert.Nil(t, err)
+		assert.Equal(t, expectedAPIAccountsRep, apiAccountsRep)
+	})
+
+	t.Run("Error", func(t *testing.T) {
+		mocks.keycloakAccountClient.EXPECT().GetLinkedAccounts(accessToken, currentRealm).Return([]kc.LinkedAccountRepresentation{}, anyError)
+
+		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+		ctx = context.WithValue(ctx, cs.CtContextRealm, currentRealm)
+
+		_, err := component.GetLinkedAccounts(ctx)
+
+		assert.NotNil(t, err)
+	})
+}
+
+func TestDeleteLinkedAccount(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mocks = createComponentMocks(mockCtrl)
+	var accountComponent = mocks.createComponent()
+
+	var accessToken = "TOKEN=="
+	var realmName = "test-community"
+	var username = "username"
+	var userID = "userID"
+	var providerAlias = "idp"
+	var anyError = errors.New("any error")
+
+	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+	ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
+	ctx = context.WithValue(ctx, cs.CtContextUserID, userID)
+	ctx = context.WithValue(ctx, cs.CtContextUsername, username)
+
+	t.Run("Delete linked account with succces", func(t *testing.T) {
+		mocks.keycloakAccountClient.EXPECT().DeleteLinkedAccount(accessToken, realmName, providerAlias).Return(nil)
+		mocks.auditEventsReporterModule.EXPECT().ReportEvent(gomock.Any(), gomock.Any()).AnyTimes()
+
+		err := accountComponent.DeleteLinkedAccount(ctx, providerAlias)
+
+		assert.Nil(t, err)
+	})
+
+	t.Run("Delete linked account fails", func(t *testing.T) {
+		mocks.keycloakAccountClient.EXPECT().DeleteLinkedAccount(accessToken, realmName, providerAlias).Return(anyError)
+		err := accountComponent.DeleteLinkedAccount(ctx, providerAlias)
+
+		assert.NotNil(t, err)
 	})
 }

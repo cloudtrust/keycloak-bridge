@@ -203,10 +203,12 @@ type RealmCustomConfiguration struct {
 	APISelfPasswordChangeEnabled        *bool     `json:"api_self_password_change_enabled"`
 	APISelfAccountEditingEnabled        *bool     `json:"api_self_account_editing_enabled"`
 	APISelfAccountDeletionEnabled       *bool     `json:"api_self_account_deletion_enabled"`
+	APISelfIDPLinksManagementEnabled    *bool     `json:"api_self_idplinks_management_enabled"`
 	ShowAuthenticatorsTab               *bool     `json:"show_authenticators_tab"`
 	ShowPasswordTab                     *bool     `json:"show_password_tab"`
 	ShowProfileTab                      *bool     `json:"show_profile_tab"`
 	ShowAccountDeletionButton           *bool     `json:"show_account_deletion_button"`
+	ShowIDPLinksTab                     *bool     `json:"show_idplinks_tab"`
 	SelfServiceDefaultTab               *string   `json:"self_service_default_tab"`
 	RedirectCancelledRegistrationURL    *string   `json:"redirect_cancelled_registration_url"`
 	RedirectSuccessfulRegistrationURL   *string   `json:"redirect_successful_registration_url"`
@@ -706,10 +708,12 @@ func ConvertRealmCustomConfigurationFromDBStruct(config configuration.RealmConfi
 		APISelfPasswordChangeEnabled:        defaultBool(config.APISelfPasswordChangeEnabled, false),
 		APISelfAccountEditingEnabled:        defaultBool(config.APISelfAccountEditingEnabled, false),
 		APISelfAccountDeletionEnabled:       defaultBool(config.APISelfAccountDeletionEnabled, false),
+		APISelfIDPLinksManagementEnabled:    defaultBool(config.APISelfIDPLinksManagementEnabled, false),
 		ShowAuthenticatorsTab:               defaultBool(config.ShowAuthenticatorsTab, false),
 		ShowPasswordTab:                     defaultBool(config.ShowPasswordTab, false),
 		ShowProfileTab:                      defaultBool(config.ShowProfileTab, false),
 		ShowAccountDeletionButton:           defaultBool(config.ShowAccountDeletionButton, false),
+		ShowIDPLinksTab:                     defaultBool(config.ShowIDPLinksTab, false),
 		SelfServiceDefaultTab:               config.SelfServiceDefaultTab,
 		RedirectCancelledRegistrationURL:    config.RedirectCancelledRegistrationURL,
 		RedirectSuccessfulRegistrationURL:   config.RedirectSuccessfulRegistrationURL,
