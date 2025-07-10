@@ -82,4 +82,10 @@ const (
 	IdentityProvider                  = "identityProvider"
 	TrustIDGroupName                  = "trustIDGroupName"
 	AllowedBackURL                    = "allowedBackURL"
+	ThemeName						  = "themeName"
+	Color                             = "color"
+	MenuTheme                         = "menuTheme"
+	FontFamily                        = "fontFamily"
+	Logo                              = "logo"
+	Favicon                           = "favicon"
 )

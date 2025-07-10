@@ -855,3 +855,27 @@ func (c *authorizationComponentMW) GetIdentityProviders(ctx context.Context, rea
 
 	return c.next.GetIdentityProviders(ctx, realmName)
 }
+
+func (c *authorizationComponentMW) GetThemeConfiguration(ctx context.Context, realmName string) (api.ThemeConfiguration, error) {
+	var action = security.MGMTGetThemeConfiguration.String()
+	var targetRealm = realmName
+
+	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
+		return api.ThemeConfiguration{}, err
+	}
+
+	themeConfig, err := c.next.GetThemeConfiguration(ctx, realmName)
+
+	return themeConfig, err
+}
+
+func (c *authorizationComponentMW) UpdateThemeConfiguration(ctx context.Context, realmName string, themeConfig api.UpdatableThemeConfiguration) error {
+
+	var action = security.MGMTUpdateThemeConfiguration.String()
+	var targetRealm = realmName
+
+	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
+		return err
+	}
+	return c.next.UpdateThemeConfiguration(ctx, targetRealm, themeConfig)
+}

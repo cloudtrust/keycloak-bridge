@@ -724,6 +724,21 @@ func (mr *ManagementComponentMockRecorder) GetRolesOfUser(ctx, realmName, userID
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRolesOfUser", reflect.TypeOf((*ManagementComponent)(nil).GetRolesOfUser), ctx, realmName, userID)
 }
 
+// GetThemeConfiguration mocks base method.
+func (m *ManagementComponent) GetThemeConfiguration(ctx context.Context, realmName string) (apimanagement.ThemeConfiguration, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetThemeConfiguration", ctx, realmName)
+	ret0, _ := ret[0].(apimanagement.ThemeConfiguration)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetThemeConfiguration indicates an expected call of GetThemeConfiguration.
+func (mr *ManagementComponentMockRecorder) GetThemeConfiguration(ctx, realmName any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetThemeConfiguration", reflect.TypeOf((*ManagementComponent)(nil).GetThemeConfiguration), ctx, realmName)
+}
+
 // GetTrustIDGroupsOfUser mocks base method.
 func (m *ManagementComponent) GetTrustIDGroupsOfUser(ctx context.Context, realmName, userID string) ([]string, error) {
 	m.ctrl.T.Helper()
@@ -1101,6 +1116,20 @@ func (m *ManagementComponent) UpdateRole(ctx context.Context, realmName, roleID 
 func (mr *ManagementComponentMockRecorder) UpdateRole(ctx, realmName, roleID, role any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateRole", reflect.TypeOf((*ManagementComponent)(nil).UpdateRole), ctx, realmName, roleID, role)
+}
+
+// UpdateThemeConfiguration mocks base method.
+func (m *ManagementComponent) UpdateThemeConfiguration(ctx context.Context, realmName string, themeConf apimanagement.UpdatableThemeConfiguration) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateThemeConfiguration", ctx, realmName, themeConf)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateThemeConfiguration indicates an expected call of UpdateThemeConfiguration.
+func (mr *ManagementComponentMockRecorder) UpdateThemeConfiguration(ctx, realmName, themeConf any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateThemeConfiguration", reflect.TypeOf((*ManagementComponent)(nil).UpdateThemeConfiguration), ctx, realmName, themeConf)
 }
 
 // UpdateUser mocks base method.
