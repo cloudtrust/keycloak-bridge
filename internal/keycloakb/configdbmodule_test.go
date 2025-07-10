@@ -456,3 +456,28 @@ func TestAuthorization(t *testing.T) {
 		})
 	})
 }
+
+func TestGetThemeConfiguration(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+	var mockDB = mock.NewCloudtrustDB(mockCtrl)
+	var mockSQLRow = mock.NewSQLRow(mockCtrl)
+	var mockLogger = log.NewNopLogger()
+	var configDBModule = NewConfigurationDBModule(mockDB, mockLogger)
+	var themeName = "my-theme"
+	t.Run("GetThemeConfiguration success", func(t *testing.T) {
+		var expectedThemeConf = configuration.ThemeConfiguration{
+			Color:     ptr("#13a538"),
+			MenuTheme: ptr("dark"),
+		}
+		mockDB.EXPECT().QueryRow(selectThemeConfigStmt, themeName).Return(mockSQLRow)
+		mockSQLRow.EXPECT().Scan(gomock.Any()).DoAndReturn(func(params ...interface{}) error {
+			*params[0].(**string) = expectedThemeConf.Color
+			*params[1].(**string) = expectedThemeConf.MenuTheme
+			return nil
+		})
+		conf, err := configDBModule.GetThemeConfiguration(context.TODO(), themeName)
+		assert.Nil(t, err)
+		assert.Equal(t, expectedThemeConf, conf)
+	})
+}

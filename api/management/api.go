@@ -2,7 +2,9 @@ package apimanagement
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
+	"fmt"
 
 	cs "github.com/cloudtrust/common-service/v2"
 	"github.com/cloudtrust/common-service/v2/configuration"
@@ -239,6 +241,7 @@ var (
 	allowedBoConfKeys    = map[string]bool{BOConfKeyCustomers: true, BOConfKeyTeams: true}
 	allowedAdminConfMode = map[string]bool{"trustID": true, "corporate": true}
 	allowedBarcodeType   = map[string]bool{"CODE128": true}
+	allowedMenuThemes    = map[string]bool{"light": true, "dark": true, "primary": true}
 )
 
 // BackOfficeConfiguration type
@@ -295,6 +298,29 @@ type IdentityProviderRepresentation struct {
 	ProviderID                *string                 `json:"providerId,omitempty"`
 	StoreToken                *bool                   `json:"storeToken,omitempty"`
 	TrustEmail                *bool                   `json:"trustEmail,omitempty"`
+}
+
+// ThemeConfiguration struct
+type ThemeConfiguration struct {
+	Color      *string `json:"color,omitempty"`
+	MenuTheme  *string `json:"menuTheme,omitempty"`
+	FontFamily *string `json:"fontFamily,omitempty"`
+	Logo       *string `json:"logo,omitempty"`
+	Favicon    *string `json:"favicon,omitempty"`
+}
+
+// UpdatableThemeConfiguration struct
+type UpdatableThemeConfiguration struct {
+	ThemeName     *string `json:"themeName,omitempty"`
+	Color         *string `json:"color,omitempty"`
+	MenuTheme     *string `json:"menuTheme,omitempty"`
+	FontFamily    *string `json:"fontFamily,omitempty"`
+	Logo          *[]byte `json:"logo,omitempty"`
+	Favicon       *[]byte `json:"favicon,omitempty"`
+	TranslationEN *string `json:"translation_en,omitempty"`
+	TranslationDE *string `json:"translation_de,omitempty"`
+	TranslationFR *string `json:"translation_fr,omitempty"`
+	TranslationIT *string `json:"translation_it,omitempty"`
 }
 
 // RequiredAction type
@@ -1172,4 +1198,59 @@ func ConvertToAPIUserChecks(checks []accreditationsclient.CheckRepresentation) [
 		})
 	}
 	return res
+}
+
+// Validate is a validator for UpdatableThemeConfiguration
+func (themeConf UpdatableThemeConfiguration) Validate() error {
+	return validation.NewParameterValidator().
+		ValidateParameterLength(constants.ThemeName, themeConf.ThemeName, 1, 255, true).
+		ValidateParameterRegExp(constants.Color, themeConf.Color, constants.RegExpColor, false).
+		ValidateParameterIn(constants.MenuTheme, themeConf.MenuTheme, allowedMenuThemes, false).
+		ValidateParameterLength(constants.FontFamily, themeConf.FontFamily, 1, 25, false).
+		Status()
+}
+
+// ConvertToThemeConfiguration converts a theme configuration from DB struct to API struct
+func ConvertToThemeConfiguration(themeConf configuration.ThemeConfiguration) ThemeConfiguration {
+	// convert logo from blob to base64 data string
+	var logo *string
+	if themeConf.Logo != nil {
+		// Detect mime type
+		var mimeType string
+		// Check first bytes of the file to determine mime type (https://en.wikipedia.org/wiki/List_of_file_signatures)
+		if len(*themeConf.Logo) > 2 {
+			switch {
+			case (*themeConf.Logo)[0] == 0xFF && (*themeConf.Logo)[1] == 0xD8:
+				mimeType = "image/jpeg"
+			case (*themeConf.Logo)[0] == 0x89 && (*themeConf.Logo)[1] == 0x50:
+				mimeType = "image/png"
+			case (*themeConf.Logo)[0] == 0x47 && (*themeConf.Logo)[1] == 0x49:
+				mimeType = "image/gif"
+			case ((*themeConf.Logo)[0] == 0x3C && (*themeConf.Logo)[1] == 0x73) || ((*themeConf.Logo)[0] == 0x3C && (*themeConf.Logo)[1] == 0x3F):
+				mimeType = "image/svg+xml"
+			default:
+				mimeType = "application/octet-stream"
+			}
+		} else {
+			mimeType = "application/octet-stream"
+		}
+
+		var logoBase64 = base64.StdEncoding.EncodeToString(*themeConf.Logo)
+		dataURL := fmt.Sprintf("data:%s;base64,%s", mimeType, logoBase64)
+		logo = &dataURL
+	}
+
+	var favicon *string
+	if themeConf.Favicon != nil {
+		faviconBase64 := fmt.Sprintf("data:image/svg+xml;base64,%s", base64.StdEncoding.EncodeToString(*themeConf.Favicon))
+		favicon = &faviconBase64
+	}
+
+	return ThemeConfiguration{
+		Color:      themeConf.Color,
+		MenuTheme:  themeConf.MenuTheme,
+		FontFamily: themeConf.FontFamily,
+		Logo:       logo,
+		Favicon:    favicon,
+	}
 }

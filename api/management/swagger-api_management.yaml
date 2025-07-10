@@ -2527,3 +2527,8 @@ components:
 security:
   - openId:
     - todo
+
+
+# TODO add docs for GetThemeConfiguration
+# TODO add docs for UpdateThemeConfiguration
+# TDO check scope of UpdateThemeConfiguration -> Global
