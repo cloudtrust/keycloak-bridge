@@ -69,6 +69,20 @@ func (mr *KeycloakAccountClientMockRecorder) DeleteCredential(accessToken, realm
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteCredential", reflect.TypeOf((*KeycloakAccountClient)(nil).DeleteCredential), accessToken, realmName, credentialID)
 }
 
+// DeleteLinkedAccount mocks base method.
+func (m *KeycloakAccountClient) DeleteLinkedAccount(accessToken, realmName, providerAlias string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteLinkedAccount", accessToken, realmName, providerAlias)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteLinkedAccount indicates an expected call of DeleteLinkedAccount.
+func (mr *KeycloakAccountClientMockRecorder) DeleteLinkedAccount(accessToken, realmName, providerAlias any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteLinkedAccount", reflect.TypeOf((*KeycloakAccountClient)(nil).DeleteLinkedAccount), accessToken, realmName, providerAlias)
+}
+
 // ExecuteActionsEmail mocks base method.
 func (m *KeycloakAccountClient) ExecuteActionsEmail(accessToken, realmName string, actions []string) error {
 	m.ctrl.T.Helper()
@@ -126,6 +140,21 @@ func (m *KeycloakAccountClient) GetCredentials(accessToken, realmName string) ([
 func (mr *KeycloakAccountClientMockRecorder) GetCredentials(accessToken, realmName any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCredentials", reflect.TypeOf((*KeycloakAccountClient)(nil).GetCredentials), accessToken, realmName)
+}
+
+// GetLinkedAccounts mocks base method.
+func (m *KeycloakAccountClient) GetLinkedAccounts(accessToken, realmName string) ([]keycloak.LinkedAccountRepresentation, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetLinkedAccounts", accessToken, realmName)
+	ret0, _ := ret[0].([]keycloak.LinkedAccountRepresentation)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetLinkedAccounts indicates an expected call of GetLinkedAccounts.
+func (mr *KeycloakAccountClientMockRecorder) GetLinkedAccounts(accessToken, realmName any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLinkedAccounts", reflect.TypeOf((*KeycloakAccountClient)(nil).GetLinkedAccounts), accessToken, realmName)
 }
 
 // MoveAfter mocks base method.

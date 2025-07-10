@@ -50,6 +50,8 @@ type KeycloakAccountClient interface {
 	DeleteAccount(accessToken, realm string) error
 	ExecuteActionsEmail(accessToken string, realmName string, actions []string) error
 	SendEmail(accessToken, realmName, template, subject string, recipient *string, attributes map[string]string) error
+	GetLinkedAccounts(accessToken string, realmName string) ([]kc.LinkedAccountRepresentation, error)
+	DeleteLinkedAccount(accessToken string, realmName string, providerAlias string) error
 }
 
 // KeycloakTechnicalClient interface exposes methods called by a technical account
@@ -76,6 +78,8 @@ type Component interface {
 	SendVerifyPhoneNumber(ctx context.Context) error
 	CancelEmailChange(ctx context.Context) error
 	CancelPhoneNumberChange(ctx context.Context) error
+	GetLinkedAccounts(ctx context.Context) ([]api.LinkedAccountRepresentation, error)
+	DeleteLinkedAccount(ctx context.Context, providerAlias string) error
 }
 
 // UserProfileCache interface
@@ -481,6 +485,7 @@ func (c *component) GetConfiguration(ctx context.Context, realmIDOverride string
 		ShowAccountDeletionButton:             config.ShowAccountDeletionButton,
 		ShowPasswordTab:                       config.ShowPasswordTab,
 		ShowProfileTab:                        config.ShowProfileTab,
+		ShowIDPLinksTab:                       config.ShowIDPLinksTab,
 		SelfServiceDefaultTab:                 config.SelfServiceDefaultTab,
 		RedirectSuccessfulRegistrationURL:     config.RedirectSuccessfulRegistrationURL,
 		BarcodeType:                           config.BarcodeType,
@@ -583,6 +588,37 @@ func (c *component) removeAttributeFromUser(ctx context.Context, attr kc.Attribu
 	userID := ctx.Value(cs.CtContextUserID).(string)
 	username := ctx.Value(cs.CtContextUsername).(string)
 	c.eventReporterModule.ReportEvent(ctx, events.NewEventOnUserFromContext(ctx, c.logger, c.originEvent, "UPDATE_ACCOUNT", realm, userID, username, nil))
+
+	return nil
+}
+
+func (c *component) GetLinkedAccounts(ctx context.Context) ([]api.LinkedAccountRepresentation, error) {
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+	var currentRealm = ctx.Value(cs.CtContextRealm).(string)
+
+	accountsKc, err := c.keycloakAccountClient.GetLinkedAccounts(accessToken, currentRealm)
+
+	var accountsRep = []api.LinkedAccountRepresentation{}
+	for _, accountKc := range accountsKc {
+		var accountRep = api.ConvertAPILinkedAccount(&accountKc)
+		accountsRep = append(accountsRep, accountRep)
+	}
+
+	return accountsRep, err
+}
+
+func (c *component) DeleteLinkedAccount(ctx context.Context, providerAlias string) error {
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+	var currentRealm = ctx.Value(cs.CtContextRealm).(string)
+	var userID = ctx.Value(cs.CtContextUserID).(string)
+	var username = ctx.Value(cs.CtContextUsername).(string)
+
+	if err := c.keycloakAccountClient.DeleteLinkedAccount(accessToken, currentRealm, providerAlias); err != nil {
+		c.logger.Warn(ctx, "msg", "Can't delete linked account", "err", err.Error())
+		return err
+	}
+
+	c.eventReporterModule.ReportEvent(ctx, events.NewEventOnUserFromContext(ctx, c.logger, c.originEvent, "SELF_DELETE_LINKED_ACCOUNT", currentRealm, userID, username, map[string]string{"providerAlias": providerAlias}))
 
 	return nil
 }

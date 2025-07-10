@@ -18,6 +18,7 @@ const (
 
 	prmCredentialID     = "credentialID"
 	prmPrevCredentialID = "previousCredentialID"
+	prmProviderAlias    = "providerAlias"
 
 	prmQryRealmID = "realm_id"
 )
@@ -31,11 +32,12 @@ func MakeAccountHandler(e endpoint.Endpoint, logger log.Logger) *http_transport.
 	)
 }
 
-// decodeEventsRequest gets the HTTP parameters and body content
+// decodeAccountRequest gets the HTTP parameters and body content
 func decodeAccountRequest(ctx context.Context, req *http.Request) (interface{}, error) {
 	var pathParams = map[string]string{
 		prmCredentialID:     constants.RegExpID,
 		prmPrevCredentialID: account_api.RegExpIDNullable,
+		prmProviderAlias:    constants.RegExpName,
 	}
 
 	var queryParams = map[string]string{
