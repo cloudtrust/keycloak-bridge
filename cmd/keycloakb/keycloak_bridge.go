@@ -800,6 +800,10 @@ func main() {
 			LinkShadowUser:         prepareEndpoint(management.MakeLinkShadowUserEndpoint(keycloakComponent), "link_shadow_user_endpoint", managementLogger, rateLimitMgmt),
 			UnlinkShadowUser:       prepareEndpoint(management.MakeUnlinkShadowUserEndpoint(keycloakComponent), "unlink_shadow_user_endpoint", managementLogger, rateLimitMgmt),
 			GetIdentityProviders:   prepareEndpoint(management.MakeGetIdentityProvidersEndpoint(keycloakComponent), "get_identity_providers_endpoint", managementLogger, rateLimitMgmt),
+
+			GetThemeConfiguration:    prepareEndpoint(management.MakeGetThemeConfigurationEndpoint(keycloakComponent), "get_theme_configuration_endpoint", managementLogger, rateLimitMgmt),
+			UpdateThemeConfiguration: prepareEndpoint(management.MakeUpdateThemeConfigurationEndpoint(keycloakComponent), "update_theme_configuration_endpoint", managementLogger, rateLimitMgmt),
+			GetThemeTranslation:      prepareEndpoint(management.MakeGetThemeTranslationEndpoint(keycloakComponent), "get_theme_translations_endpoint", managementLogger, rateLimitMgmt),
 		}
 	}
 
@@ -1201,6 +1205,10 @@ func main() {
 
 		var getIdentityProvidersHandler = configureManagementHandler(managementEndpoints.GetIdentityProviders)
 
+		var getThemeConfigurationHandler = configureManagementHandler(managementEndpoints.GetThemeConfiguration)
+		var updateThemeConfigurationHandler = configureManagementHandler(managementEndpoints.UpdateThemeConfiguration)
+		var getThemeTranslationHandler = configureManagementHandler(managementEndpoints.GetThemeTranslation)
+
 		// actions
 		managementSubroute.Path("/actions").Methods("GET").Handler(getManagementActionsHandler)
 
@@ -1303,6 +1311,10 @@ func main() {
 		managementSubroute.Path("/realms/{realm}/users/{userID}/federated-identity/{provider}").Methods("DELETE").Handler(unlinkShadowUserHandler)
 
 		managementSubroute.Path("/realms/{realm}/identity-providers").Methods("GET").Handler(getIdentityProvidersHandler)
+
+		managementSubroute.Path("/realms/{realm}/theme-configuration").Methods("GET").Handler(getThemeConfigurationHandler)
+		managementSubroute.Path("/realms/{realm}/theme-configuration").Methods("PUT").Handler(updateThemeConfigurationHandler)
+		managementSubroute.Path("/realms/{realm}/theme-translation/{language}").Methods("GET").Handler(getThemeTranslationHandler)
 
 		// Accreditations
 		route.Path("/accreditations/realms/{realm}/users/{userID}/revoke-accreditations").Methods("PUT").Handler(revokeAccreditationsHandler)

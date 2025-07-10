@@ -66,6 +66,23 @@ const (
 	deleteGlobalAuthzStmt       = `DELETE FROM authorizations WHERE realm_id = ? AND group_name = ? AND action = ? AND target_realm_id = ? AND target_group_name IS NULL;`
 	deleteAuthzEveryRealmsStmt  = `DELETE FROM authorizations WHERE realm_id = ? AND group_name = ? AND action = ?;`
 	deleteAuthzRealmStmt        = `DELETE FROM authorizations WHERE realm_id = ? AND group_name = ? AND action = ? AND target_realm_id = ?;`
+
+	selectThemeConfigStmt = `SELECT color, menu_theme, font_family, logo, favicon FROM theme_configuration WHERE theme_name = ?;`
+	updateThemeConfigStmt = `
+		INSERT INTO theme_configuration (theme_name, color, menu_theme, font_family, logo, favicon, translation_en, translation_de, translation_fr, translation_it)
+		VALUES (?,?,?,?,?,?,?,?,?,?)
+		ON DUPLICATE KEY UPDATE
+			color = VALUES(color),
+			menu_theme = VALUES(menu_theme),
+			font_family = VALUES(font_family),
+			logo = VALUES(logo),
+			favicon = VALUES(favicon),
+			translation_en = VALUES(translation_en),
+			translation_de = VALUES(translation_de),
+			translation_fr = VALUES(translation_fr),
+			translation_it = VALUES(translation_it);
+	`
+	selectTranslationStmt = `SELECT ??? FROM theme_configuration WHERE theme_name = ?;`
 )
 
 type dbExecutable func(query string, args ...any) error
@@ -312,6 +329,66 @@ func (c *configurationDBModule) scanAuthorization(scanner Scanner) (configuratio
 	}
 
 	return authz, nil
+}
+
+func (c *configurationDBModule) GetThemeConfiguration(ctx context.Context, themeName string) (configuration.ThemeConfiguration, error) {
+	var themeConfig configuration.ThemeConfiguration
+	row := c.db.QueryRow(selectThemeConfigStmt, themeName)
+	err := row.Scan(&themeConfig.Color, &themeConfig.MenuTheme, &themeConfig.FontFamily, &themeConfig.Logo, &themeConfig.Favicon)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return themeConfig, errorhandler.Error{
+				Status:  404,
+				Message: ComponentName + "." + msg.MsgErrNotConfigured + "." + themeName,
+			}
+		}
+		c.logger.Warn(ctx, "msg", "Failed to get theme configuration", "err", err.Error(), "themeName", themeName)
+		return themeConfig, err
+	}
+	return themeConfig, nil
+}
+
+func (c *configurationDBModule) UpdateThemeConfiguration(ctx context.Context, themeConfig configuration.ThemeConfiguration) error {
+	// Prepare the values for the SQL statement
+	args := []interface{}{
+		themeConfig.ThemeName,
+		themeConfig.Color,
+		themeConfig.MenuTheme,
+		themeConfig.FontFamily,
+		themeConfig.Logo,
+		themeConfig.Favicon,
+		themeConfig.TranslationEN,
+		themeConfig.TranslationDE,
+		themeConfig.TranslationFR,
+		themeConfig.TranslationIT,
+	}
+
+	// Execute the update/insert statement
+	err := c.execNoResult(updateThemeConfigStmt, args...)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Failed to update theme configuration", "err", err.Error(), "themeName", themeConfig.ThemeName)
+		return err
+	}
+	return nil
+}
+
+func (c *configurationDBModule) GetThemeTranslation(ctx context.Context, themeName string, language string) (string, error) {
+	var translation string
+	rowName := "translation_" + strings.ToLower(language)
+	statement := strings.Replace(selectTranslationStmt, "???", rowName, 1)
+	row := c.db.QueryRow(statement, themeName)
+	err := row.Scan(&translation)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return "", errorhandler.Error{
+				Status:  404,
+				Message: ComponentName + "." + msg.MsgErrNotConfigured + "." + themeName + "." + language,
+			}
+		}
+		c.logger.Warn(ctx, "msg", "Failed to get theme translation", "err", err.Error(), "themeName", themeName, "language", language)
+		return "", err
+	}
+	return translation, nil
 }
 
 func nullableString(value *string) interface{} {
