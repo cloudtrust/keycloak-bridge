@@ -1909,11 +1909,42 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/FederatedIdentity'
-  /realms/{realm}/users/{userID}/federated-identity/{provider}:
+  /realms/{realm}/users/{userID}/federated-identity/{providerID}:
     post:
       tags:
       - Brokering
       summary: Add a login provider to a user.
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
+      - name: providerID
+        in: path
+        description: Login provider id
+        required: true
+        schema:
+          type: string        
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FederatedIdentity'
+      responses:
+        200:
+          description: successful operation  
+    delete:
+      tags:
+      - Brokering
+      summary: Remove a login provider from a user.
       parameters:
       - name: realm
         in: path
@@ -1933,14 +1964,9 @@ paths:
         required: true
         schema:
           type: string        
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/FederatedIdentity'
       responses:
         200:
-          description: successful operation  
+          description: successful operation
   /realms/{realm}/identity-providers:
     get:
       tags:
