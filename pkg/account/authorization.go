@@ -27,6 +27,8 @@ const (
 	UpdateAccount             = "UpdateAccount"
 	DeleteAccount             = "DeleteAccount"
 	GetConfiguration          = "GetConfiguration"
+	GetLinkedAccounts         = "GetLinkedAccounts"
+	DeleteLinkedAccount       = "DeleteLinkedAccount"
 
 	infosAction       = "Action"
 	infosCurrentRealm = "currentRealm"
@@ -216,4 +218,56 @@ func (c *authorizationComponentMW) CancelPhoneNumberChange(ctx context.Context) 
 
 func isEnabled(booleanPtr *bool) bool {
 	return booleanPtr != nil && *booleanPtr
+}
+
+func (c *authorizationComponentMW) GetLinkedAccounts(ctx context.Context) ([]api.LinkedAccountRepresentation, error) {
+	var action = GetLinkedAccounts
+	var currentRealm = ctx.Value(cs.CtContextRealm).(string)
+
+	var err error
+	var config = configuration.RealmConfiguration{}
+
+	if config, err = c.configDBModule.GetConfiguration(ctx, currentRealm); err != nil {
+		infos, _ := json.Marshal(map[string]string{
+			infosCurrentRealm: currentRealm,
+		})
+		c.logger.Error(ctx, "err", "Configuration not found", "infos", string(infos))
+		return []api.LinkedAccountRepresentation{}, err
+	}
+
+	if !isEnabled(config.APISelfIDPLinksManagementEnabled) {
+		infos, _ := json.Marshal(map[string]string{
+			infosAction:       action,
+			infosCurrentRealm: currentRealm,
+		})
+		c.logger.Debug(ctx, "err", "Forbidden: linked accounts retrieval disabled", "infos", string(infos))
+		return []api.LinkedAccountRepresentation{}, security.ForbiddenError{}
+	}
+	return c.next.GetLinkedAccounts(ctx)
+}
+
+func (c *authorizationComponentMW) DeleteLinkedAccount(ctx context.Context, providerAlias string) error {
+	var action = DeleteLinkedAccount
+	var currentRealm = ctx.Value(cs.CtContextRealm).(string)
+
+	var err error
+	var config = configuration.RealmConfiguration{}
+
+	if config, err = c.configDBModule.GetConfiguration(ctx, currentRealm); err != nil {
+		infos, _ := json.Marshal(map[string]string{
+			infosCurrentRealm: currentRealm,
+		})
+		c.logger.Error(ctx, "err", "Configuration not found", "infos", string(infos))
+		return err
+	}
+
+	if !isEnabled(config.APISelfIDPLinksManagementEnabled) {
+		infos, _ := json.Marshal(map[string]string{
+			infosAction:       action,
+			infosCurrentRealm: currentRealm,
+		})
+		c.logger.Debug(ctx, "err", "Forbidden: linked account deletion disabled", "infos", string(infos))
+		return security.ForbiddenError{}
+	}
+	return c.next.DeleteLinkedAccount(ctx, providerAlias)
 }

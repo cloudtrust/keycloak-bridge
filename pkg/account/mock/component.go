@@ -99,6 +99,20 @@ func (mr *ComponentMockRecorder) DeleteCredential(ctx, credentialID any) *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteCredential", reflect.TypeOf((*Component)(nil).DeleteCredential), ctx, credentialID)
 }
 
+// DeleteLinkedAccount mocks base method.
+func (m *Component) DeleteLinkedAccount(ctx context.Context, providerAlias string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteLinkedAccount", ctx, providerAlias)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteLinkedAccount indicates an expected call of DeleteLinkedAccount.
+func (mr *ComponentMockRecorder) DeleteLinkedAccount(ctx, providerAlias any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteLinkedAccount", reflect.TypeOf((*Component)(nil).DeleteLinkedAccount), ctx, providerAlias)
+}
+
 // GetAccount mocks base method.
 func (m *Component) GetAccount(ctx context.Context) (apiaccount.AccountRepresentation, error) {
 	m.ctrl.T.Helper()
@@ -157,6 +171,21 @@ func (m *Component) GetCredentials(ctx context.Context) ([]apiaccount.Credential
 func (mr *ComponentMockRecorder) GetCredentials(ctx any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCredentials", reflect.TypeOf((*Component)(nil).GetCredentials), ctx)
+}
+
+// GetLinkedAccounts mocks base method.
+func (m *Component) GetLinkedAccounts(ctx context.Context) ([]apiaccount.LinkedAccountRepresentation, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetLinkedAccounts", ctx)
+	ret0, _ := ret[0].([]apiaccount.LinkedAccountRepresentation)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetLinkedAccounts indicates an expected call of GetLinkedAccounts.
+func (mr *ComponentMockRecorder) GetLinkedAccounts(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLinkedAccounts", reflect.TypeOf((*Component)(nil).GetLinkedAccounts), ctx)
 }
 
 // GetUserProfile mocks base method.
