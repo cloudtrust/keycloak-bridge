@@ -2160,6 +2160,30 @@ func TestLinkShadowUserEndpoint(t *testing.T) {
 	})
 }
 
+func TestUnlinkShadowUserEndpoint(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
+
+	var e = MakeUnlinkShadowUserEndpoint(mockManagementComponent)
+
+	var realm = "master"
+	var ctx = context.Background()
+	var userID = "abcdefgh-1234-ijkl-5678-mnopqrstuvwx"
+	var provider = "provider"
+
+	var req = make(map[string]string)
+	req[prmRealm] = realm
+	req[prmUserID] = userID
+	req[prmProvider] = provider
+
+	mockManagementComponent.EXPECT().UnlinkShadowUser(ctx, realm, userID, provider).Return(nil)
+	var res, err = e(ctx, req)
+	assert.Nil(t, err)
+	assert.Nil(t, res)
+}
+
 func TestGetIdentityProvidersEndpoint(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()

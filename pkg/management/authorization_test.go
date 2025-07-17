@@ -186,6 +186,7 @@ func TestDeny(t *testing.T) {
 			"GetUserRealmBackOfficeConfiguration": ignoreFirst(authorizationMW.GetUserRealmBackOfficeConfiguration(ctx, realmName)),
 			"GetFederatedIdentities":              ignoreFirst(authorizationMW.GetFederatedIdentities(ctx, realmName, userID)),
 			"LinkShadowUser":                      authorizationMW.LinkShadowUser(ctx, realmName, userID, provider, fedID),
+			"UnlinkShadowUser":                    authorizationMW.UnlinkShadowUser(ctx, realmName, userID, provider),
 			"GetIdentityProviders":                ignoreFirst(authorizationMW.GetIdentityProviders(ctx, realmName)),
 		}
 		for testName, testResult := range tests {
@@ -587,6 +588,10 @@ func TestAllowed(t *testing.T) {
 
 		mockManagementComponent.EXPECT().LinkShadowUser(ctx, realmName, userID, provider, fedID).Return(nil)
 		err = authorizationMW.LinkShadowUser(ctx, realmName, userID, provider, fedID)
+		assert.Nil(t, err)
+
+		mockManagementComponent.EXPECT().UnlinkShadowUser(ctx, realmName, userID, provider).Return(nil)
+		err = authorizationMW.UnlinkShadowUser(ctx, realmName, userID, provider)
 		assert.Nil(t, err)
 
 		mockManagementComponent.EXPECT().GetIdentityProviders(ctx, realmName).Return(idps, nil)
