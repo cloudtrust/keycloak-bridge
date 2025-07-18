@@ -24,6 +24,13 @@ func ptr(value string) *string {
 func boolPtr(value bool) *bool {
 	return &value
 }
+func intPtr(value int) *int {
+	return &value
+}
+
+func int64Ptr(value int64) *int64 {
+	return &value
+}
 
 func TestConvertCredential(t *testing.T) {
 	var credKc kc.CredentialRepresentation
@@ -259,6 +266,63 @@ func TestMergeUpdatableUser(t *testing.T) {
 		MergeUpdatableUserWithoutEmailAndPhoneNumber(&kcUser, user)
 		assert.Equal(t, businessID, *kcUser.Attributes.GetString(constants.AttrbBusinessID))
 	})
+}
+
+func TestMarshalUserRepresentation(t *testing.T) {
+	userJSON := `{"id":"251d6e49-7b91-4677-889d-8e43a093bdf3","username":"50000003","gender":"M","firstName":"Jordan","lastName":"Peele","email":"testtrustid+jordan+peele@gmail.com","emailVerified":true,"phoneNumber":"+41780000000","phoneNumberVerified":true,"birthDate":"25.10.1978","birthLocation":"Haddonfield NJ","nationality":"CH","idDocumentType":"ID_CARD","idDocumentNumber":"A1234567","idDocumentExpiration":"20.06.2033","idDocumentCountry":"CH","locale":"en","smsSent":0,"smsAttempts":0,"enabled":true,"accreditations":[{"type":"DEP","expiryDate":"11.07.2029","revoked":false,"expired":false}],"onboardingCompleted":true,"createdTimestamp":1746715933372,"dynamicAttribute":"custom"}`
+
+	user := UserRepresentation{
+		ID:                   ptr("251d6e49-7b91-4677-889d-8e43a093bdf3"),
+		Username:             ptr("50000003"),
+		Gender:               ptr("M"),
+		FirstName:            ptr("Jordan"),
+		LastName:             ptr("Peele"),
+		Email:                ptr("testtrustid+jordan+peele@gmail.com"),
+		EmailVerified:        boolPtr(true),
+		PhoneNumber:          ptr("+41780000000"),
+		PhoneNumberVerified:  boolPtr(true),
+		BirthDate:            ptr("25.10.1978"),
+		BirthLocation:        ptr("Haddonfield NJ"),
+		Nationality:          ptr("CH"),
+		IDDocumentType:       ptr("ID_CARD"),
+		IDDocumentNumber:     ptr("A1234567"),
+		IDDocumentExpiration: ptr("20.06.2033"),
+		IDDocumentCountry:    ptr("CH"),
+		Locale:               ptr("en"),
+		SmsSent:              intPtr(0),
+		SmsAttempts:          intPtr(0),
+		Enabled:              boolPtr(true),
+		Accreditations: &[]AccreditationRepresentation{
+			{
+				Type:       ptr("DEP"),
+				ExpiryDate: ptr("11.07.2029"),
+				Revoked:    boolPtr(false),
+				Expired:    boolPtr(false),
+			},
+		},
+		OnboardingCompleted: boolPtr(true),
+		CreatedTimestamp:    int64Ptr(1746715933372),
+		Dynamic: map[string]any{
+			"dynamicAttribute": "custom",
+		},
+	}
+
+	var u UserRepresentation
+
+	assert.Nil(t, json.Unmarshal([]byte(userJSON), &u))
+	assert.Equal(t, user, u)
+
+	valueJSON, err := json.Marshal(user)
+	assert.Nil(t, err)
+	pointerJSON, err := json.Marshal(&user)
+	assert.Nil(t, err)
+
+	var userFromValue UserRepresentation
+	var userFromPointer UserRepresentation
+	assert.Nil(t, json.Unmarshal(valueJSON, &userFromValue))
+	assert.Nil(t, json.Unmarshal(pointerJSON, &userFromPointer))
+	assert.Equal(t, user, userFromValue)
+	assert.Equal(t, userFromValue, userFromPointer)
 }
 
 func TestConvertAPIRole(t *testing.T) {

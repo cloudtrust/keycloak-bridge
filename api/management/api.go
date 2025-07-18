@@ -53,6 +53,26 @@ type UserRepresentation struct {
 	OnboardingCompleted   *bool                          `json:"onboardingCompleted,omitempty"`
 	CreatedTimestamp      *int64                         `json:"createdTimestamp,omitempty"`
 	OnboardingStatus      *string                        `json:"onboardingStatus,omitempty"`
+	Dynamic               map[string]any                 `json:"-"`
+}
+
+type userAlias UserRepresentation
+
+func (u *userAlias) GetDynamicFields() map[string]any {
+	return u.Dynamic
+}
+
+func (u *userAlias) SetDynamicFields(dynamicFields map[string]any) {
+	u.Dynamic = dynamicFields
+}
+
+func (u UserRepresentation) MarshalJSON() ([]byte, error) {
+	alias := userAlias(u)
+	return keycloakb.DynamicallyMarshalJSON(&alias)
+}
+
+func (u *UserRepresentation) UnmarshalJSON(data []byte) error {
+	return keycloakb.DynamicallyUnmarshallJSON(data, (*userAlias)(u))
 }
 
 // UpdatableUserRepresentation struct
@@ -426,10 +446,20 @@ func ConvertToAPIUser(ctx context.Context, userKc kc.UserRepresentation, logger 
 				}
 				accreds = append(accreds, accred)
 			} else {
-				logger.Warn(ctx, "msg", "Can't unmarshall JSON", "json", accredJSON)
+				logger.Warn(ctx, "msg", "Can't unmarshal JSON", "json", accredJSON)
 			}
 		}
 		userRep.Accreditations = &accreds
+	}
+
+	userRep.Dynamic = map[string]any{}
+	if userKc.Attributes != nil {
+		for key, values := range map[kc.AttributeKey][]string(*userKc.Attributes) {
+			// Hypothesis : all dynamic attributes are string
+			if !constants.StaticAttributes[key] {
+				userRep.Dynamic[string(key)] = values[0]
+			}
+		}
 	}
 
 	return userRep
@@ -482,6 +512,10 @@ func ConvertToKCUser(user UserRepresentation) kc.UserRepresentation {
 	attributes.SetStringWhenNotNil(constants.AttrbIDDocumentExpiration, user.IDDocumentExpiration)
 	attributes.SetStringWhenNotNil(constants.AttrbIDDocumentCountry, user.IDDocumentCountry)
 	attributes.SetStringWhenNotNil(constants.AttrbOnboardingStatus, user.OnboardingStatus)
+
+	for k, v := range user.Dynamic {
+		attributes.Set(kc.AttributeKey(k), []string{v.(string)})
+	}
 
 	if len(attributes) > 0 {
 		userRep.Attributes = &attributes
