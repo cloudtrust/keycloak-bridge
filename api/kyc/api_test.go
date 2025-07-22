@@ -17,7 +17,7 @@ func ptr(value string) *string {
 	return &value
 }
 
-func createValidUser() UserRepresentation {
+func createValidUser(dynamicAttribute string) UserRepresentation {
 	var (
 		bFalse          = false
 		username        = "46791834"
@@ -38,6 +38,7 @@ func createValidUser() UserRepresentation {
 		accred2         = AccreditationRepresentation{Type: ptr("long"), ExpiryDate: ptr("31.12.2039")}
 		creds           = []AccreditationRepresentation{accred1, accred2}
 		attachments     = []AttachmentRepresentation{createValidAttachment()}
+		dynamicValue    = "customValue"
 	)
 
 	return UserRepresentation{
@@ -60,6 +61,7 @@ func createValidUser() UserRepresentation {
 		BusinessID:           &businessID,
 		Accreditations:       &creds,
 		Attachments:          &attachments,
+		Dynamic:              map[string]any{dynamicAttribute: dynamicValue},
 	}
 }
 
@@ -71,7 +73,7 @@ func createValidAttachment() AttachmentRepresentation {
 	return AttachmentRepresentation{Filename: ptr("filename.pdf"), ContentType: ptr("application/pdf"), Content: &contentBytes}
 }
 
-func createValidKeycloakUser() kc.UserRepresentation {
+func createValidKeycloakUser(dynamicAttribute string) kc.UserRepresentation {
 	var (
 		bTrue      = true
 		firstName  = "Marc"
@@ -85,6 +87,7 @@ func createValidKeycloakUser() kc.UserRepresentation {
 			constants.AttrbAccreditations:      []string{`{"type":"one","expiryDate":"05.04.2020"}`, `{"type":"two","expiryDate":"05.03.2022"}`},
 			constants.AttrbLocale:              []string{"de"},
 			constants.AttrbBusinessID:          []string{"123456789"},
+			kc.AttributeKey(dynamicAttribute):  []string{"customValue"},
 		}
 	)
 
@@ -97,26 +100,22 @@ func createValidKeycloakUser() kc.UserRepresentation {
 	}
 }
 
-func TestJSON(t *testing.T) {
-	var user1 = createValidUser()
-	var j = user1.UserToJSON()
-
-	var user2, err = UserFromJSON(j)
-	assert.Nil(t, err)
-	assert.Equal(t, user1, user2)
-
-	_, err = UserFromJSON(`{gender="M",`)
-	assert.NotNil(t, err)
-	_, err = UserFromJSON(`{gender="M", unknownField=5}`)
-	assert.NotNil(t, err)
-}
-
 func TestExportToKeycloak(t *testing.T) {
+	customAttribute := "customAttribute"
+	profile := kc.UserProfileRepresentation{
+		Attributes: []kc.ProfileAttrbRepresentation{
+			{
+				Name:        &customAttribute,
+				Annotations: map[string]string{"dynamic": "true"},
+			},
+		},
+	}
+	profile.InitDynamicAttributes()
 	t.Run("Empty user from Keycloak", func(t *testing.T) {
-		var user = createValidUser()
+		var user = createValidUser(customAttribute)
 		var kcUser = kc.UserRepresentation{}
 
-		user.ExportToKeycloak(&kcUser)
+		user.ExportToKeycloak(&kcUser, profile)
 
 		assert.Equal(t, user.FirstName, kcUser.FirstName)
 		assert.Equal(t, user.LastName, kcUser.LastName)
@@ -129,13 +128,14 @@ func TestExportToKeycloak(t *testing.T) {
 		assert.Equal(t, user.IDDocumentNumber, kcUser.Attributes.GetString(constants.AttrbIDDocumentNumber))
 		assert.Equal(t, user.IDDocumentType, kcUser.Attributes.GetString(constants.AttrbIDDocumentType))
 		assert.Equal(t, user.Nationality, kcUser.Attributes.GetString(constants.AttrbNationality))
+		assert.Equal(t, user.Dynamic[customAttribute], kcUser.GetDynamicAttributes(profile)[customAttribute])
 	})
 
 	t.Run("Empty user from API", func(t *testing.T) {
 		var user = UserRepresentation{}
-		var kcUser = createValidKeycloakUser()
+		var kcUser = createValidKeycloakUser(customAttribute)
 
-		user.ExportToKeycloak(&kcUser)
+		user.ExportToKeycloak(&kcUser, profile)
 
 		assert.True(t, *kcUser.EmailVerified)
 		assert.Equal(t, "true", (*kcUser.Attributes)["phoneNumberVerified"][0])
@@ -143,8 +143,8 @@ func TestExportToKeycloak(t *testing.T) {
 	})
 
 	t.Run("Updates both email and phone", func(t *testing.T) {
-		var user = createValidUser()
-		var kcUser = createValidKeycloakUser()
+		var user = createValidUser(customAttribute)
+		var kcUser = createValidKeycloakUser(customAttribute)
 		var newEmail = "new-address@cloudtrust.io"
 		var newPhoneNumber = "00 41 22 345 45 78"
 		var verified = true
@@ -154,7 +154,7 @@ func TestExportToKeycloak(t *testing.T) {
 		user.EmailVerified = &verified
 		user.PhoneNumberVerified = &verified
 
-		user.ExportToKeycloak(&kcUser)
+		user.ExportToKeycloak(&kcUser, profile)
 
 		assert.Equal(t, user.FirstName, kcUser.FirstName)
 		assert.Equal(t, user.LastName, kcUser.LastName)
@@ -171,7 +171,17 @@ func TestImportFromKeycloak(t *testing.T) {
 	var ctx = context.TODO()
 	var logger = log.NewNopLogger()
 
-	var kcUser = createValidKeycloakUser()
+	customAttribute := "customAttribute"
+	profile := kc.UserProfileRepresentation{
+		Attributes: []kc.ProfileAttrbRepresentation{
+			{
+				Name:        &customAttribute,
+				Annotations: map[string]string{"dynamic": "true"},
+			},
+		},
+	}
+	profile.InitDynamicAttributes()
+	var kcUser = createValidKeycloakUser(customAttribute)
 	kcUser.SetAttributeBool(constants.AttrbPhoneNumberVerified, true)
 
 	// Add an invalid JSON accreditation: it will be ignored
@@ -180,13 +190,15 @@ func TestImportFromKeycloak(t *testing.T) {
 	assert.Equal(t, 3, len(kcUser.Attributes.Get(constants.AttrbAccreditations)))
 
 	var imported = UserRepresentation{}
-	imported.ImportFromKeycloak(ctx, &kcUser, logger)
+
+	imported.ImportFromKeycloak(ctx, &kcUser, profile, logger)
 
 	assert.Equal(t, *kcUser.FirstName, *imported.FirstName)
 	assert.Equal(t, *kcUser.LastName, *imported.LastName)
 	assert.Equal(t, *kcUser.GetAttributeString(constants.AttrbGender), *imported.Gender)
 	assert.Len(t, *imported.Accreditations, 2)
 	assert.True(t, *imported.PhoneNumberVerified)
+	assert.Equal(t, kcUser.GetDynamicAttributes(profile)[customAttribute], imported.Dynamic[customAttribute])
 }
 
 type mockUserProfile struct {
@@ -204,20 +216,20 @@ func TestValidateUserRepresentation(t *testing.T) {
 
 	t.Run("UserProfile fails", func(t *testing.T) {
 		var mupFails = &mockUserProfile{err: errors.New("any error")}
-		var user = createValidUser()
+		var user = createValidUser("")
 		assert.NotNil(t, user.Validate(ctx, mupFails, realm), "User is expected to be valid")
 	})
 	t.Run("Valid users with an attachment", func(t *testing.T) {
-		var user = createValidUser()
+		var user = createValidUser("")
 		assert.Nil(t, user.Validate(ctx, mup, realm), "User is expected to be valid")
 	})
 	t.Run("Valid users without attachment", func(t *testing.T) {
-		var user = createValidUser()
+		var user = createValidUser("")
 		user.Attachments = nil
 		assert.Nil(t, user.Validate(ctx, mup, realm), "User is expected to be valid")
 	})
 	t.Run("Valid users with max attachments", func(t *testing.T) {
-		var user = createValidUser()
+		var user = createValidUser("")
 		var attachment []AttachmentRepresentation
 		for i := 0; i < maxNumberAttachments; i++ {
 			attachment = append(attachment, createValidAttachment())
@@ -226,7 +238,7 @@ func TestValidateUserRepresentation(t *testing.T) {
 		assert.Nil(t, user.Validate(ctx, mup, realm), "User is expected to be valid")
 	})
 	t.Run("Valid users with too many attachments", func(t *testing.T) {
-		var user = createValidUser()
+		var user = createValidUser("")
 		var attachment []AttachmentRepresentation
 		for i := 0; i < maxNumberAttachments+1; i++ {
 			attachment = append(attachment, createValidAttachment())

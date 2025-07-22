@@ -53,6 +53,26 @@ type UserRepresentation struct {
 	OnboardingCompleted   *bool                          `json:"onboardingCompleted,omitempty"`
 	CreatedTimestamp      *int64                         `json:"createdTimestamp,omitempty"`
 	OnboardingStatus      *string                        `json:"onboardingStatus,omitempty"`
+	Dynamic               map[string]any                 `json:"-"`
+}
+
+type userAlias UserRepresentation
+
+func (u *userAlias) GetDynamicFields() map[string]any {
+	return u.Dynamic
+}
+
+func (u *userAlias) SetDynamicFields(dynamicFields map[string]any) {
+	u.Dynamic = dynamicFields
+}
+
+func (u UserRepresentation) MarshalJSON() ([]byte, error) {
+	alias := userAlias(u)
+	return keycloakb.DynamicallyMarshalJSON(&alias)
+}
+
+func (u *UserRepresentation) UnmarshalJSON(data []byte) error {
+	return keycloakb.DynamicallyUnmarshalJSON(data, (*userAlias)(u))
 }
 
 // UpdatableUserRepresentation struct
@@ -85,6 +105,26 @@ type UpdatableUserRepresentation struct {
 	Accreditations       *[]AccreditationRepresentation `json:"accreditations,omitempty"`
 	CreatedTimestamp     *int64                         `json:"createdTimestamp,omitempty"`
 	OnboardingStatus     *string                        `json:"onboardingStatus,omitempty"`
+	Dynamic              map[string]any                 `json:"-"`
+}
+
+type updatableUserAlias UpdatableUserRepresentation
+
+func (u *updatableUserAlias) GetDynamicFields() map[string]any {
+	return u.Dynamic
+}
+
+func (u *updatableUserAlias) SetDynamicFields(dynamicFields map[string]any) {
+	u.Dynamic = dynamicFields
+}
+
+func (u UpdatableUserRepresentation) MarshalJSON() ([]byte, error) {
+	alias := updatableUserAlias(u)
+	return keycloakb.DynamicallyMarshalJSON(&alias)
+}
+
+func (u *UpdatableUserRepresentation) UnmarshalJSON(data []byte) error {
+	return keycloakb.DynamicallyUnmarshalJSON(data, (*updatableUserAlias)(u))
 }
 
 // UserCheck is a representation of a user check
@@ -373,7 +413,7 @@ func convertEntryToInt64(status *map[string]interface{}, key string) *int64 {
 }
 
 // ConvertToAPIUser creates an API user representation from  a KC user representation
-func ConvertToAPIUser(ctx context.Context, userKc kc.UserRepresentation, logger keycloakb.Logger) UserRepresentation {
+func ConvertToAPIUser(ctx context.Context, userKc kc.UserRepresentation, profile kc.UserProfileRepresentation, logger keycloakb.Logger) UserRepresentation {
 	var userRep UserRepresentation
 
 	userRep.ID = userKc.ID
@@ -426,22 +466,23 @@ func ConvertToAPIUser(ctx context.Context, userKc kc.UserRepresentation, logger 
 				}
 				accreds = append(accreds, accred)
 			} else {
-				logger.Warn(ctx, "msg", "Can't unmarshall JSON", "json", accredJSON)
+				logger.Warn(ctx, "msg", "Can't unmarshal JSON", "json", accredJSON)
 			}
 		}
 		userRep.Accreditations = &accreds
 	}
+	userRep.Dynamic = userKc.GetDynamicAttributes(profile)
 
 	return userRep
 }
 
 // ConvertToAPIUsersPage converts paged users results from KC model to API one
-func ConvertToAPIUsersPage(ctx context.Context, users kc.UsersPageRepresentation, logger keycloakb.Logger) UsersPageRepresentation {
+func ConvertToAPIUsersPage(ctx context.Context, users kc.UsersPageRepresentation, profile kc.UserProfileRepresentation, logger keycloakb.Logger) UsersPageRepresentation {
 	var slice = []UserRepresentation{}
 	var count = 0
 
 	for _, u := range users.Users {
-		slice = append(slice, ConvertToAPIUser(ctx, u, logger))
+		slice = append(slice, ConvertToAPIUser(ctx, u, profile, logger))
 	}
 
 	if users.Count != nil {
@@ -454,7 +495,7 @@ func ConvertToAPIUsersPage(ctx context.Context, users kc.UsersPageRepresentation
 }
 
 // ConvertToKCUser creates a KC user representation from an API user
-func ConvertToKCUser(user UserRepresentation) kc.UserRepresentation {
+func ConvertToKCUser(user UserRepresentation, profile kc.UserProfileRepresentation) kc.UserRepresentation {
 	var userRep kc.UserRepresentation
 
 	userRep.Username = user.Username
@@ -482,6 +523,7 @@ func ConvertToKCUser(user UserRepresentation) kc.UserRepresentation {
 	attributes.SetStringWhenNotNil(constants.AttrbIDDocumentExpiration, user.IDDocumentExpiration)
 	attributes.SetStringWhenNotNil(constants.AttrbIDDocumentCountry, user.IDDocumentCountry)
 	attributes.SetStringWhenNotNil(constants.AttrbOnboardingStatus, user.OnboardingStatus)
+	attributes.SetDynamicAttributes(user.Dynamic, profile)
 
 	if len(attributes) > 0 {
 		userRep.Attributes = &attributes
@@ -491,7 +533,7 @@ func ConvertToKCUser(user UserRepresentation) kc.UserRepresentation {
 }
 
 // MergeUpdatableUserWithoutEmailAndPhoneNumber update a KC user representation from an API user
-func MergeUpdatableUserWithoutEmailAndPhoneNumber(target *kc.UserRepresentation, user UpdatableUserRepresentation) {
+func MergeUpdatableUserWithoutEmailAndPhoneNumber(target *kc.UserRepresentation, user UpdatableUserRepresentation, profile kc.UserProfileRepresentation) {
 	// This merge function does not care about contacts (email, phoneNumber)
 	target.Username = defaultStringPtr(user.Username, target.Username)
 	target.FirstName = defaultStringPtr(user.FirstName, target.FirstName)
@@ -520,6 +562,7 @@ func MergeUpdatableUserWithoutEmailAndPhoneNumber(target *kc.UserRepresentation,
 	attributes.SetStringWhenNotNil(constants.AttrbIDDocumentExpiration, user.IDDocumentExpiration)
 	attributes.SetStringWhenNotNil(constants.AttrbIDDocumentCountry, user.IDDocumentCountry)
 	attributes.SetStringWhenNotNil(constants.AttrbOnboardingStatus, user.OnboardingStatus)
+	attributes.SetDynamicAttributes(user.Dynamic, profile)
 
 	if user.BusinessID.Defined {
 		attributes.SetStringWhenNotNil(constants.AttrbBusinessID, user.BusinessID.Value)

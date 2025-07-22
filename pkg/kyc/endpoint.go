@@ -2,6 +2,7 @@ package kyc
 
 import (
 	"context"
+	"encoding/json"
 
 	cs "github.com/cloudtrust/common-service/v2"
 	commonerrors "github.com/cloudtrust/common-service/v2/errors"
@@ -110,7 +111,8 @@ func MakeGetUserEndpoint(component Component) cs.Endpoint {
 func MakeValidateUserInSocialRealmEndpoint(component Component, profileCache UserProfileCache, socialRealmName string, logger keycloakb.Logger) cs.Endpoint {
 	return func(ctx context.Context, req any) (any, error) {
 		var m = req.(map[string]string)
-		var user, err = apikyc.UserFromJSON(m[reqBody])
+		var user apikyc.UserRepresentation
+		err := json.Unmarshal([]byte(m[reqBody]), &user)
 		if err != nil {
 			return nil, commonerrors.CreateBadRequestError(commonerrors.MsgErrInvalidParam + "." + msg.BodyContent)
 		}
@@ -135,7 +137,8 @@ func MakeValidateUserInSocialRealmEndpoint(component Component, profileCache Use
 func MakeValidateUserBasicIDEndpoint(component Component, profileCache UserProfileCache, socialRealmName string, logger keycloakb.Logger) cs.Endpoint {
 	return func(ctx context.Context, req any) (any, error) {
 		var m = req.(map[string]string)
-		var user, err = apikyc.UserFromJSON(m[reqBody])
+		var user apikyc.UserRepresentation
+		err := json.Unmarshal([]byte(m[reqBody]), &user)
 		if err != nil {
 			return nil, commonerrors.CreateBadRequestError(commonerrors.MsgErrInvalidParam + "." + msg.BodyContent)
 		}
@@ -155,7 +158,8 @@ func MakeValidateUserBasicIDEndpoint(component Component, profileCache UserProfi
 func MakeValidateUserEndpoint(component Component, profileCache UserProfileCache, logger keycloakb.Logger) cs.Endpoint {
 	return func(ctx context.Context, req any) (any, error) {
 		var m = req.(map[string]string)
-		var user, err = apikyc.UserFromJSON(m[reqBody])
+		var user apikyc.UserRepresentation
+		err := json.Unmarshal([]byte(m[reqBody]), &user)
 		if err != nil {
 			return nil, commonerrors.CreateBadRequestError(commonerrors.MsgErrInvalidParam + "." + msg.BodyContent)
 		}

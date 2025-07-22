@@ -37,6 +37,26 @@ type AccountRepresentation struct {
 	BusinessID            *string                        `json:"businessId,omitempty"`
 	PendingChecks         *[]string                      `json:"pendingChecks,omitempty"`
 	Accreditations        *[]AccreditationRepresentation `json:"accreditations,omitempty"`
+	Dynamic               map[string]any                 `json:"-"`
+}
+
+type accountAlias AccountRepresentation
+
+func (u *accountAlias) GetDynamicFields() map[string]any {
+	return u.Dynamic
+}
+
+func (u *accountAlias) SetDynamicFields(dynamicFields map[string]any) {
+	u.Dynamic = dynamicFields
+}
+
+func (u AccountRepresentation) MarshalJSON() ([]byte, error) {
+	alias := accountAlias(u)
+	return keycloakb.DynamicallyMarshalJSON(&alias)
+}
+
+func (u *AccountRepresentation) UnmarshalJSON(data []byte) error {
+	return keycloakb.DynamicallyUnmarshalJSON(data, (*accountAlias)(u))
 }
 
 // UpdatableAccountRepresentation struct
@@ -59,6 +79,26 @@ type UpdatableAccountRepresentation struct {
 	Locale               *string                        `json:"locale,omitempty"`
 	BusinessID           csjson.OptionalString          `json:"businessId,omitempty"`
 	Accreditations       *[]AccreditationRepresentation `json:"accreditations,omitempty"`
+	Dynamic              map[string]any                 `json:"-"`
+}
+
+type updatableAccountAlias UpdatableAccountRepresentation
+
+func (u *updatableAccountAlias) GetDynamicFields() map[string]any {
+	return u.Dynamic
+}
+
+func (u *updatableAccountAlias) SetDynamicFields(dynamicFields map[string]any) {
+	u.Dynamic = dynamicFields
+}
+
+func (u UpdatableAccountRepresentation) MarshalJSON() ([]byte, error) {
+	alias := updatableAccountAlias(u)
+	return keycloakb.DynamicallyMarshalJSON(&alias)
+}
+
+func (u *UpdatableAccountRepresentation) UnmarshalJSON(data []byte) error {
+	return keycloakb.DynamicallyUnmarshalJSON(data, (*updatableAccountAlias)(u))
 }
 
 // AccreditationRepresentation is a representation of accreditations
@@ -129,7 +169,7 @@ func ConvertCredential(credKc *kc.CredentialRepresentation) CredentialRepresenta
 }
 
 // ConvertToAPIAccount creates an API account representation from a KC user representation
-func ConvertToAPIAccount(ctx context.Context, userKc kc.UserRepresentation, logger keycloakb.Logger) AccountRepresentation {
+func ConvertToAPIAccount(ctx context.Context, userKc kc.UserRepresentation, profile kc.UserProfileRepresentation, logger keycloakb.Logger) AccountRepresentation {
 	var userRep AccountRepresentation
 
 	userRep.Username = userKc.Username
@@ -159,6 +199,7 @@ func ConvertToAPIAccount(ctx context.Context, userKc kc.UserRepresentation, logg
 	if values := userKc.GetAttribute(constants.AttrbAccreditations); len(values) > 0 {
 		userRep.Accreditations = convertToAccreditations(ctx, values, logger)
 	}
+	userRep.Dynamic = userKc.GetDynamicAttributes(profile)
 
 	return userRep
 }
@@ -191,7 +232,7 @@ func defaultStringPtr(value *string, defaultValue *string) *string {
 }
 
 // MergeUserWithoutEmailAndPhoneNumber merge new values into existing KC user representation
-func MergeUserWithoutEmailAndPhoneNumber(userRep *kc.UserRepresentation, user UpdatableAccountRepresentation) {
+func MergeUserWithoutEmailAndPhoneNumber(userRep *kc.UserRepresentation, user UpdatableAccountRepresentation, profile kc.UserProfileRepresentation) {
 	// This merge function does not care about contacts (email, phoneNumber)
 	userRep.Username = defaultStringPtr(user.Username, userRep.Username)
 	userRep.FirstName = defaultStringPtr(user.FirstName, userRep.FirstName)
@@ -217,6 +258,7 @@ func MergeUserWithoutEmailAndPhoneNumber(userRep *kc.UserRepresentation, user Up
 	attributes.SetStringWhenNotNil(constants.AttrbIDDocumentNumber, user.IDDocumentNumber)
 	attributes.SetStringWhenNotNil(constants.AttrbIDDocumentExpiration, user.IDDocumentExpiration)
 	attributes.SetStringWhenNotNil(constants.AttrbIDDocumentCountry, user.IDDocumentCountry)
+	attributes.SetDynamicAttributes(user.Dynamic, profile)
 
 	if len(attributes) > 0 {
 		userRep.Attributes = &attributes

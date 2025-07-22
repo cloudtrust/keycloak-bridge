@@ -4,10 +4,11 @@ import (
 	"strings"
 	"testing"
 
+	kc "github.com/cloudtrust/keycloak-client/v2"
 	"github.com/stretchr/testify/assert"
 )
 
-func createValidUser() UserRepresentation {
+func createValidUser(customAttribute string) UserRepresentation {
 	var (
 		gender          = "M"
 		firstName       = "Marc"
@@ -22,6 +23,7 @@ func createValidUser() UserRepresentation {
 		idDocExpiration = "23.02.2039"
 		idDocCountry    = "FR"
 		locale          = "de"
+		customValue     = "customValue"
 	)
 
 	return UserRepresentation{
@@ -38,32 +40,30 @@ func createValidUser() UserRepresentation {
 		IDDocumentExpiration: &idDocExpiration,
 		IDDocumentCountry:    &idDocCountry,
 		Locale:               &locale,
+		Dynamic:              map[string]any{customAttribute: customValue},
 	}
 }
 
-func TestJSON(t *testing.T) {
-	var user1 = createValidUser()
-	var j = user1.UserToJSON()
-
-	var user2, err = UserFromJSON(j)
-	assert.Nil(t, err)
-	assert.Equal(t, user1, user2)
-
-	_, err = UserFromJSON(`{gender="M",`)
-	assert.NotNil(t, err)
-	_, err = UserFromJSON(`{gender="M", unknownField=5}`)
-	assert.NotNil(t, err)
-}
-
 func TestConvertToKeycloak(t *testing.T) {
-	var user = createValidUser()
-	var kcUser = user.ConvertToKeycloak()
+	customAttribute := "customAttribute"
+	profile := kc.UserProfileRepresentation{
+		Attributes: []kc.ProfileAttrbRepresentation{
+			{
+				Name:        &customAttribute,
+				Annotations: map[string]string{"dynamic": "true"},
+			},
+		},
+	}
+	profile.InitDynamicAttributes()
+	var user = createValidUser(customAttribute)
+	var kcUser = user.ConvertToKeycloak(profile)
 
 	assert.Equal(t, user.FirstName, kcUser.FirstName)
 	assert.Equal(t, user.LastName, kcUser.LastName)
 	assert.Equal(t, user.Email, kcUser.Email)
 	assert.False(t, *kcUser.EmailVerified)
 	assert.True(t, *kcUser.Enabled)
+	assert.Equal(t, user.Dynamic[customAttribute], kcUser.GetDynamicAttributes(profile)[customAttribute])
 }
 
 func TestGetSetUserField(t *testing.T) {

@@ -184,8 +184,14 @@ func (c *component) getUserByUsernameGeneric(ctx context.Context, accessToken st
 	}
 	keycloakb.ConvertLegacyAttribute(&kcUser)
 
+	profile, err := c.profileCache.GetRealmUserProfile(ctx, realmName)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "failed to load user profile")
+		return apikyc.UserRepresentation{}, err
+	}
+
 	var res apikyc.UserRepresentation
-	res.ImportFromKeycloak(ctx, &kcUser, c.logger)
+	res.ImportFromKeycloak(ctx, &kcUser, profile, c.logger)
 	// At this point, we shall not provide too many information
 	res = apikyc.UserRepresentation{
 		ID:                  res.ID,
@@ -285,8 +291,15 @@ func (c *component) getUserGeneric(ctx context.Context, accessToken string, conf
 		return apikyc.UserRepresentation{}, errorhandler.CreateInternalServerError("keycloak")
 	}
 	keycloakb.ConvertLegacyAttribute(&kcUser)
+
+	profile, err := c.profileCache.GetRealmUserProfile(ctx, targetRealm)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "failed to load user profile")
+		return apikyc.UserRepresentation{}, err
+	}
+
 	var res apikyc.UserRepresentation
-	res.ImportFromKeycloak(ctx, &kcUser, c.logger)
+	res.ImportFromKeycloak(ctx, &kcUser, profile, c.logger)
 	return res, nil
 }
 
@@ -338,7 +351,13 @@ func (c *component) validateUserBasicID(ctx context.Context, accessToken string,
 	user.PhoneNumberVerified = nil
 	user.Username = kcUser.Username
 
-	user.ExportToKeycloak(&kcUser)
+	profile, err := c.profileCache.GetRealmUserProfile(ctx, targetRealm)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "failed to load user profile")
+		return err
+	}
+
+	user.ExportToKeycloak(&kcUser, profile)
 
 	var now = time.Now()
 	err = c.keycloakClient.UpdateUser(accessToken, targetRealm, userID, kcUser)
@@ -431,7 +450,13 @@ func (c *component) validateUser(ctx context.Context, accessToken string, confRe
 		return err
 	}
 
-	user.ExportToKeycloak(&kcUser)
+	profile, err := c.profileCache.GetRealmUserProfile(ctx, targetRealm)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "failed to load user profile")
+		return err
+	}
+
+	user.ExportToKeycloak(&kcUser, profile)
 
 	var now = time.Now()
 	err = c.keycloakClient.UpdateUser(accessToken, targetRealm, userID, kcUser)
