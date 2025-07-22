@@ -52,32 +52,51 @@ func MakeAuthorizationAccountComponentMW(logger log.Logger, configDBModule keycl
 	}
 }
 
-// authorizationComponentMW implements Component.
-func (c *authorizationComponentMW) UpdatePassword(ctx context.Context, currentPassword, newPassword, confirmPassword string) error {
-	var action = UpdatePassword
-	var currentRealm = ctx.Value(cs.CtContextRealm).(string)
+func (c *authorizationComponentMW) getRealmConfiguration(ctx context.Context) (configuration.RealmConfiguration, error) {
+	currentRealm := ctx.Value(cs.CtContextRealm).(string)
 
-	var config configuration.RealmConfiguration
-	var err error
-
-	if config, err = c.configDBModule.GetConfiguration(ctx, currentRealm); err != nil {
+	config, err := c.configDBModule.GetConfiguration(ctx, currentRealm)
+	if err != nil {
 		infos, _ := json.Marshal(map[string]string{
 			infosCurrentRealm: currentRealm,
 		})
 		c.logger.Error(ctx, "err", "Configuration not found", "infos", string(infos))
-		return err
 	}
 
-	if !isEnabled(config.APISelfPasswordChangeEnabled) {
+	return config, err
+}
+
+func (c *authorizationComponentMW) checkFlagEnabled(ctx context.Context, flagEnabled *bool, action string, disabledMessage string,
+) error {
+	currentRealm := ctx.Value(cs.CtContextRealm).(string)
+
+	if !isEnabled(flagEnabled) {
 		infos, _ := json.Marshal(map[string]string{
 			infosAction:       action,
 			infosCurrentRealm: currentRealm,
 		})
-		c.logger.Debug(ctx, "err", "Forbidden: password change disabled", "infos", string(infos))
+		c.logger.Debug(ctx, "err", disabledMessage, "infos", string(infos))
 		return security.ForbiddenError{}
+	}
+	return nil
+}
+
+// authorizationComponentMW implements Component.
+func (c *authorizationComponentMW) UpdatePassword(ctx context.Context, currentPassword, newPassword, confirmPassword string) error {
+	if err := c.checkAPISelfPasswordChangeEnabled(ctx); err != nil {
+		return err
 	}
 
 	return c.next.UpdatePassword(ctx, currentPassword, newPassword, confirmPassword)
+}
+
+func (c *authorizationComponentMW) checkAPISelfPasswordChangeEnabled(ctx context.Context) error {
+	config, err := c.getRealmConfiguration(ctx)
+	if err != nil {
+		return err
+	}
+
+	return c.checkFlagEnabled(ctx, config.APISelfPasswordChangeEnabled, UpdatePassword, "Forbidden: password change disabled")
 }
 
 // authorizationComponentMW implements Component.
@@ -102,30 +121,20 @@ func (c *authorizationComponentMW) MoveCredential(ctx context.Context, credentia
 }
 
 func (c *authorizationComponentMW) DeleteCredential(ctx context.Context, credentialID string) error {
-	var action = DeleteCredential
-	var currentRealm = ctx.Value(cs.CtContextRealm).(string)
-
-	var config configuration.RealmConfiguration
-	var err error
-
-	if config, err = c.configDBModule.GetConfiguration(ctx, currentRealm); err != nil {
-		infos, _ := json.Marshal(map[string]string{
-			infosCurrentRealm: currentRealm,
-		})
-		c.logger.Error(ctx, "err", "Configuration not found", "infos", string(infos))
+	if err := c.checkAPISelfAuthenticatorDeletionEnabled(ctx); err != nil {
 		return err
 	}
 
-	if !isEnabled(config.APISelfAuthenticatorDeletionEnabled) {
-		infos, _ := json.Marshal(map[string]string{
-			infosAction:       action,
-			infosCurrentRealm: currentRealm,
-		})
-		c.logger.Debug(ctx, "err", "Forbidden: authenticator deletion disabled", "infos", string(infos))
-		return security.ForbiddenError{}
+	return c.next.DeleteCredential(ctx, credentialID)
+}
+
+func (c *authorizationComponentMW) checkAPISelfAuthenticatorDeletionEnabled(ctx context.Context) error {
+	config, err := c.getRealmConfiguration(ctx)
+	if err != nil {
+		return err
 	}
 
-	return c.next.DeleteCredential(ctx, credentialID)
+	return c.checkFlagEnabled(ctx, config.APISelfAuthenticatorDeletionEnabled, DeleteCredential, "Forbidden: authenticator deletion disabled")
 }
 
 func (c *authorizationComponentMW) GetAccount(ctx context.Context) (api.AccountRepresentation, error) {
@@ -134,56 +143,37 @@ func (c *authorizationComponentMW) GetAccount(ctx context.Context) (api.AccountR
 }
 
 func (c *authorizationComponentMW) UpdateAccount(ctx context.Context, account api.UpdatableAccountRepresentation) error {
-	var action = UpdateAccount
-	var currentRealm = ctx.Value(cs.CtContextRealm).(string)
-
-	var config configuration.RealmConfiguration
-	var err error
-
-	if config, err = c.configDBModule.GetConfiguration(ctx, currentRealm); err != nil {
-		infos, _ := json.Marshal(map[string]string{
-			infosCurrentRealm: currentRealm,
-		})
-		c.logger.Error(ctx, "err", "Configuration not found", "infos", string(infos))
+	if err := c.checkAPISelfAccountEditingEnabled(ctx); err != nil {
 		return err
-	}
-
-	if !isEnabled(config.APISelfAccountEditingEnabled) {
-		infos, _ := json.Marshal(map[string]string{
-			infosAction:       action,
-			infosCurrentRealm: currentRealm,
-		})
-		c.logger.Debug(ctx, "err", "Forbidden: account edition disabled", "infos", string(infos))
-		return security.ForbiddenError{}
 	}
 
 	return c.next.UpdateAccount(ctx, account)
 }
 
-func (c *authorizationComponentMW) DeleteAccount(ctx context.Context) error {
-	var action = DeleteAccount
-	var currentRealm = ctx.Value(cs.CtContextRealm).(string)
-
-	var err error
-	var config = configuration.RealmConfiguration{}
-
-	if config, err = c.configDBModule.GetConfiguration(ctx, currentRealm); err != nil {
-		infos, _ := json.Marshal(map[string]string{
-			infosCurrentRealm: currentRealm,
-		})
-		c.logger.Error(ctx, "err", "Configuration not found", "infos", string(infos))
+func (c *authorizationComponentMW) checkAPISelfAccountEditingEnabled(ctx context.Context) error {
+	config, err := c.getRealmConfiguration(ctx)
+	if err != nil {
 		return err
 	}
 
-	if !isEnabled(config.APISelfAccountDeletionEnabled) {
-		infos, _ := json.Marshal(map[string]string{
-			infosAction:       action,
-			infosCurrentRealm: currentRealm,
-		})
-		c.logger.Debug(ctx, "err", "Forbidden: account deletion disabled", "infos", string(infos))
-		return security.ForbiddenError{}
+	return c.checkFlagEnabled(ctx, config.APISelfAccountEditingEnabled, UpdateAccount, "Forbidden: account edition disabled")
+}
+
+func (c *authorizationComponentMW) DeleteAccount(ctx context.Context) error {
+	if err := c.checkAPISelfAccountDeletionEnabled(ctx); err != nil {
+		return err
 	}
+
 	return c.next.DeleteAccount(ctx)
+}
+
+func (c *authorizationComponentMW) checkAPISelfAccountDeletionEnabled(ctx context.Context) error {
+	config, err := c.getRealmConfiguration(ctx)
+	if err != nil {
+		return err
+	}
+
+	return c.checkFlagEnabled(ctx, config.APISelfAccountDeletionEnabled, DeleteAccount, "Forbidden: account deletion disabled")
 }
 
 func (c *authorizationComponentMW) GetConfiguration(ctx context.Context, realmIDOverride string) (api.Configuration, error) {
@@ -221,53 +211,26 @@ func isEnabled(booleanPtr *bool) bool {
 }
 
 func (c *authorizationComponentMW) GetLinkedAccounts(ctx context.Context) ([]api.LinkedAccountRepresentation, error) {
-	var action = GetLinkedAccounts
-	var currentRealm = ctx.Value(cs.CtContextRealm).(string)
-
-	var err error
-	var config = configuration.RealmConfiguration{}
-
-	if config, err = c.configDBModule.GetConfiguration(ctx, currentRealm); err != nil {
-		infos, _ := json.Marshal(map[string]string{
-			infosCurrentRealm: currentRealm,
-		})
-		c.logger.Error(ctx, "err", "Configuration not found", "infos", string(infos))
+	if err := c.checkAPISelfIDPLinksManagementEnabled(ctx, GetLinkedAccounts); err != nil {
 		return []api.LinkedAccountRepresentation{}, err
 	}
 
-	if !isEnabled(config.APISelfIDPLinksManagementEnabled) {
-		infos, _ := json.Marshal(map[string]string{
-			infosAction:       action,
-			infosCurrentRealm: currentRealm,
-		})
-		c.logger.Debug(ctx, "err", "Forbidden: linked accounts retrieval disabled", "infos", string(infos))
-		return []api.LinkedAccountRepresentation{}, security.ForbiddenError{}
-	}
 	return c.next.GetLinkedAccounts(ctx)
 }
 
 func (c *authorizationComponentMW) DeleteLinkedAccount(ctx context.Context, providerAlias string) error {
-	var action = DeleteLinkedAccount
-	var currentRealm = ctx.Value(cs.CtContextRealm).(string)
-
-	var err error
-	var config = configuration.RealmConfiguration{}
-
-	if config, err = c.configDBModule.GetConfiguration(ctx, currentRealm); err != nil {
-		infos, _ := json.Marshal(map[string]string{
-			infosCurrentRealm: currentRealm,
-		})
-		c.logger.Error(ctx, "err", "Configuration not found", "infos", string(infos))
+	if err := c.checkAPISelfIDPLinksManagementEnabled(ctx, DeleteLinkedAccount); err != nil {
 		return err
 	}
 
-	if !isEnabled(config.APISelfIDPLinksManagementEnabled) {
-		infos, _ := json.Marshal(map[string]string{
-			infosAction:       action,
-			infosCurrentRealm: currentRealm,
-		})
-		c.logger.Debug(ctx, "err", "Forbidden: linked account deletion disabled", "infos", string(infos))
-		return security.ForbiddenError{}
-	}
 	return c.next.DeleteLinkedAccount(ctx, providerAlias)
+}
+
+func (c *authorizationComponentMW) checkAPISelfIDPLinksManagementEnabled(ctx context.Context, action string) error {
+	config, err := c.getRealmConfiguration(ctx)
+	if err != nil {
+		return err
+	}
+
+	return c.checkFlagEnabled(ctx, config.APISelfIDPLinksManagementEnabled, action, "Forbidden: linked accounts management disabled")
 }

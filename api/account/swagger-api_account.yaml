@@ -1,15 +1,15 @@
 openapi: 3.0.1
 info:
   title: Swagger Cloudtrust Management
-  description: "API Self service for Cloudtrust."
+  description: 'API Self service for Cloudtrust.'
   version: 1.0.0
 servers:
-  - url: http://localhost:8888
+- url: http://localhost:8888
 paths:
   /account:
     get:
       tags:
-        - Account
+      - Account
       summary: Get account representation of the current user
       responses:
         200:
@@ -17,22 +17,22 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Account"
+                $ref: '#/components/schemas/Account'
     post:
       tags:
-        - Account
+      - Account
       summary: Update account representation of the current user
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/Account"
+              $ref: '#/components/schemas/Account'
       responses:
         200:
           description: successful operation
     delete:
       tags:
-        - Account
+      - Account
       summary: Delete account
       responses:
         200:
@@ -40,25 +40,25 @@ paths:
   /account/configuration:
     get:
       tags:
-        - Credentials
+      - Credentials
       summary: Get self-service configuration. Realm query parameter is used to override some configuration parameters with the value specified for the realm
       parameters:
-        - name: realm_id
-          in: query
-          schema:
-            type: string
-          allowEmptyValue: true
+      - name: realm_id
+        in: query
+        schema:
+          type: string
+        allowEmptyValue: true
       responses:
         200:
           description: successful operation
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Configuration"
+                $ref: '#/components/schemas/Configuration'
   /account/credentials:
     get:
       tags:
-        - Credentials
+      - Credentials
       summary: Get list of credentials of the user.
       responses:
         200:
@@ -73,16 +73,16 @@ paths:
                   credentials:
                     type: array
                     items:
-                      $ref: "#/components/schemas/Credential"
+                      $ref: '#/components/schemas/Credential'
   /account/credentials/password:
     post:
       tags:
-        - Credentials
+      - Credentials
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/UpdatePassword"
+              $ref: '#/components/schemas/UpdatePassword'
       summary: Update password
       responses:
         200:
@@ -94,7 +94,7 @@ paths:
   /account/credentials/registrators:
     get:
       tags:
-        - Credentials
+      - Credentials
       summary: Get all registrators available for the user
       responses:
         200:
@@ -104,66 +104,66 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/RegistratorId"
+                  $ref: '#/components/schemas/RegistratorId'
   /account/credentials/{credentialId}:
     put:
       tags:
-        - Credentials
+      - Credentials
       summary: Update UserLabel of credential (all other attributes will be ignored)
       parameters:
-        - name: credentialId
-          in: path
-          description: id of the credential
-          required: true
-          schema:
-            type: string
+      - name: credentialId
+        in: path
+        description: id of the credential
+        required: true
+        schema:
+          type: string
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/Credential"
+              $ref: '#/components/schemas/Credential'
       responses:
         200:
           description: Successfuly updated.
     delete:
       tags:
-        - Credentials
+      - Credentials
       summary: Delete the credential
       parameters:
-        - name: credentialId
-          in: path
-          description: id of the credential
-          required: true
-          schema:
-            type: string
+      - name: credentialId
+        in: path
+        description: id of the credential
+        required: true
+        schema:
+          type: string
       responses:
         200:
           description: successful operation
   /account/credentials/{credentialId}/after/{previousCredentialId}:
     post:
       tags:
-        - Credentials
+      - Credentials
       summary: Change priority order among credentials
       parameters:
-        - name: credentialId
-          in: path
-          description: id of the credential to move
-          required: true
-          schema:
-            type: string
-        - name: previousCredentialId
-          in: path
-          description: id of the credential before the moved one. Use 'null' to move the credential at the top of the list.
-          required: true
-          schema:
-            type: string
+      - name: credentialId
+        in: path
+        description: id of the credential to move
+        required: true
+        schema:
+          type: string
+      - name: previousCredentialId
+        in: path
+        description: id of the credential before the moved one. Use 'null' to move the credential at the top of the list.
+        required: true
+        schema:
+          type: string
       responses:
         200:
           description: Successful operation.
   /account/profile:
     get:
       tags:
-        - Profile
+      - Profile
       summary: Gets the definition of user attributes
       responses:
         200:
@@ -171,11 +171,11 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Profile"
+                $ref: '#/components/schemas/Profile'
   /account/verify-email:
     put:
       tags:
-        - Account
+      - Account
       summary: Request an email verification
       responses:
         200:
@@ -183,7 +183,7 @@ paths:
   /account/verify-phone-number:
     put:
       tags:
-        - Account
+      - Account
       summary: Request a phone number verification
       responses:
         200:
@@ -191,7 +191,7 @@ paths:
   /account/cancel-email-change:
     put:
       tags:
-        - Account
+      - Account
       summary: Cancels a change of email address
       responses:
         200:
@@ -199,7 +199,7 @@ paths:
   /account/cancel-phone-number-change:
     put:
       tags:
-        - Account
+      - Account
       summary: Cancels a change of phone number
       responses:
         200:
@@ -207,7 +207,7 @@ paths:
   /account/linked-accounts:
     get:
       tags:
-        - Account
+      - Account
       summary: Get the list of accounts linked to the current user
       responses:
         200:
@@ -217,12 +217,11 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/LinkedAccount"
-
+                  $ref: '#/components/schemas/LinkedAccount'
   /account/linked-accounts/{providerAlias}:
     delete:
       tags:
-        - Account
+      - Account
       summary: Delete the linked account
       parameters:
         - name: providerAlias
@@ -396,11 +395,11 @@ components:
         attributes:
           type: array
           items:
-            $ref: "#/components/schemas/ProfileAttribute"
+            $ref: '#/components/schemas/ProfileAttribute'
         groups:
           type: array
           items:
-            $ref: "#/components/schemas/ProfileGroup"
+            $ref: '#/components/schemas/ProfileGroup'
           description: groups are used to gather user attributes by themes
     ProfileAttribute:
       type: object
@@ -415,7 +414,7 @@ components:
         required:
           type: boolean
         validations:
-          $ref: "#/components/schemas/ProfileAttributeValidations"
+          $ref: '#/components/schemas/ProfileAttributeValidations'
     ProfileAttributeValidations:
       description: >
         Here is a list of known validators :
@@ -431,7 +430,7 @@ components:
         person-name-prohibited-characters: error-message (string)
       type: object
       additionalProperties:
-        $ref: "#/components/schemas/ProfileAttributeValidator"
+        $ref: '#/components/schemas/ProfileAttributeValidator'
     ProfileAttributeValidator:
       type: object
       additionalProperties:
@@ -455,4 +454,4 @@ components:
       openIdConnectUrl: http://toto.com/.well-known/openid-configuration
 security:
   - openId:
-      - todo
+    - todo

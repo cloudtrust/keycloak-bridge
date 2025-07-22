@@ -1235,29 +1235,25 @@ func TestGetLinkedAccounts(t *testing.T) {
 	var currentRealm = "test-community"
 	var anyError = errors.New("any error")
 
-	t.Run("Get linked accounts with succces", func(t *testing.T) {
-		var providerAlias = "idp"
-
-		var kcAccountRep = kc.LinkedAccountRepresentation{
+	var providerAlias = "idp"
+	var kcAccountsRep = []kc.LinkedAccountRepresentation{
+		{
 			ProviderAlias: &providerAlias,
-		}
+		},
+	}
+	var expectedAPIAccountsRep = []api.LinkedAccountRepresentation{
+		{
+			ProviderAlias: &providerAlias,
+		},
+	}
 
-		var kcAccountsRep []kc.LinkedAccountRepresentation
-		kcAccountsRep = append(kcAccountsRep, kcAccountRep)
+	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+	ctx = context.WithValue(ctx, cs.CtContextRealm, currentRealm)
 
+	t.Run("Get linked accounts with succces", func(t *testing.T) {
 		mocks.keycloakAccountClient.EXPECT().GetLinkedAccounts(accessToken, currentRealm).Return(kcAccountsRep, nil)
 
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
-		ctx = context.WithValue(ctx, cs.CtContextRealm, currentRealm)
-
 		apiAccountsRep, err := component.GetLinkedAccounts(ctx)
-
-		var expectedAPIAccountRep = api.LinkedAccountRepresentation{
-			ProviderAlias: &providerAlias,
-		}
-
-		var expectedAPIAccountsRep []api.LinkedAccountRepresentation
-		expectedAPIAccountsRep = append(expectedAPIAccountsRep, expectedAPIAccountRep)
 
 		assert.Nil(t, err)
 		assert.Equal(t, expectedAPIAccountsRep, apiAccountsRep)
@@ -1265,9 +1261,6 @@ func TestGetLinkedAccounts(t *testing.T) {
 
 	t.Run("Error", func(t *testing.T) {
 		mocks.keycloakAccountClient.EXPECT().GetLinkedAccounts(accessToken, currentRealm).Return([]kc.LinkedAccountRepresentation{}, anyError)
-
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
-		ctx = context.WithValue(ctx, cs.CtContextRealm, currentRealm)
 
 		_, err := component.GetLinkedAccounts(ctx)
 

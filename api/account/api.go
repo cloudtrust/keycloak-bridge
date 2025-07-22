@@ -176,16 +176,14 @@ func ConvertToAPIAccount(ctx context.Context, userKc kc.UserRepresentation, logg
 
 // ConvertAPILinkedAccount creates an API linked account from a KC linked account
 func ConvertAPILinkedAccount(accountKc *kc.LinkedAccountRepresentation) LinkedAccountRepresentation {
-	var account LinkedAccountRepresentation
-
-	account.Connected = accountKc.Connected
-	account.Social = accountKc.Social
-	account.ProviderAlias = accountKc.ProviderAlias
-	account.ProviderName = accountKc.ProviderName
-	account.DisplayName = accountKc.DisplayName
-	account.LinkedUsername = accountKc.LinkedUsername
-
-	return account
+	return LinkedAccountRepresentation{
+		Connected:      accountKc.Connected,
+		Social:         accountKc.Social,
+		ProviderAlias:  accountKc.ProviderAlias,
+		ProviderName:   accountKc.ProviderName,
+		DisplayName:    accountKc.DisplayName,
+		LinkedUsername: accountKc.LinkedUsername,
+	}
 }
 
 func convertToAccreditations(ctx context.Context, values []string, logger keycloakb.Logger) *[]AccreditationRepresentation {
