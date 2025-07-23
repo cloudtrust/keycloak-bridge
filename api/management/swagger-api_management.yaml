@@ -1,24 +1,24 @@
 openapi: 3.0.1
 info:
   title: Swagger Cloudtrust Management
-  description: "Management API for Cloudtrust"
+  description: 'Management API for Cloudtrust'
   version: 1.0.0
 servers:
-  - url: http://localhost:8888/management
+- url: http://localhost:8888/management
 tags:
-  - name: Realms
-    description: Realms management
-  - name: Clients
-    description: Clients management
-  - name: Users
-    description: Users management
-  - name: Roles
-    description: Roles management
+- name: Realms
+  description: Realms management
+- name: Clients
+  description: Clients management
+- name: Users
+  description: Users management
+- name: Roles
+  description: Roles management
 paths:
   /actions:
     get:
       tags:
-        - Actions
+      - Actions
       summary: Get the list of all possible actions
       responses:
         200:
@@ -28,38 +28,38 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/Actions"
+                  $ref: '#/components/schemas/Actions'
   /realms/{realm}:
     get:
       tags:
-        - Realms
+      - Realms
       summary: Get the top-level representation of the realm It will not include nested information like User and Client representations.
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
       responses:
         200:
           description: successful operation
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Realm"
+                $ref: '#/components/schemas/Realm'
   /realms/{realm}/clients:
     get:
       tags:
-        - Clients
+      - Clients
       summary: Get clients belonging to the realm.
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
       responses:
         200:
           description: Returns a list of clients belonging to the realm.
@@ -68,19 +68,19 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/Client"
+                  $ref: '#/components/schemas/Client'
   /realms/{realm}/required-actions:
     get:
       tags:
-        - Required Actions
+      - Required Actions
       summary: Get required actions available for the realm.
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
       responses:
         200:
           description: Returns a list of required actions enabled in the realm.
@@ -89,44 +89,44 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/RequiredAction"
+                  $ref: '#/components/schemas/RequiredAction'
   /realms/{realm}/clients/{clientID}:
     get:
       tags:
-        - Clients
+      - Clients
       summary: Get representation of the client
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
-        - name: clientID
-          in: path
-          description: id of client (not client-id)
-          required: true
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: clientID
+        in: path
+        description: id of client (not client-id)
+        required: true
+        schema:
+          type: string
       responses:
         200:
           description: successful operation
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Client"
+                $ref: '#/components/schemas/Client'
   /realms/{realm}/trustIdGroups:
     get:
       tags:
-        - Users
+      - Users
       summary: Get available trustID groups
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
       responses:
         200:
           description: successful operation
@@ -136,45 +136,46 @@ paths:
                 type: array
                 items:
                   type: string
-                example: ["product_administrator", "registration_officer"]
+                example:
+                  ["product_administrator","registration_officer"]
   /realms/{realm}/users:
     post:
       tags:
-        - Users
+      - Users
       summary: >
         Create a new user.
         Username must be unique.
         Role and Groups can be assigned thanks to their ID.
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
-        - name: generateUsername
-          in: query
-          description: tells if a username should be generated
-          required: false
-          schema:
-            type: boolean
-        - name: generateNameID
-          in: query
-          description: tells if a NameID should be generated
-          required: false
-          schema:
-            type: boolean
-        - name: termsOfUse
-          in: query
-          description: tells if terms of use are required (default false)
-          required: false
-          schema:
-            type: boolean
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: generateUsername
+        in: query
+        description: tells if a username should be generated
+        required: false
+        schema:
+          type: boolean
+      - name: generateNameID
+        in: query
+        description: tells if a NameID should be generated
+        required: false
+        schema:
+          type: boolean
+      - name: termsOfUse
+        in: query
+        description: tells if terms of use are required (default false)
+        required: false
+        schema:
+          type: boolean
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/User"
+              $ref: '#/components/schemas/User'
       responses:
         201:
           description: successful operation
@@ -185,59 +186,59 @@ paths:
               description: URL of the new resource.
     get:
       tags:
-        - Users
+      - Users
       summary: >
         Get users.
         Returns a list of users, filtered according to query parameters.
         BirthLocation, and ID documents fields are not returned by this call.
       parameters:
-        - name: realm
-          in: path
-          description: Name of the realm
-          required: true
-          schema:
-            type: string
-        - name: groupIds
-          in: query
-          description: list of groupId the users may belong to (list comma seperated)
-          required: true
-          schema:
-            type: string
-        - name: email
-          in: query
-          schema:
-            type: string
-          allowEmptyValue: true
-        - name: firstName
-          in: query
-          schema:
-            type: string
-          allowEmptyValue: true
-        - name: lastName
-          in: query
-          schema:
-            type: string
-          allowEmptyValue: true
-        - name: username
-          in: query
-          schema:
-            type: string
-          allowEmptyValue: true
-        - name: search
-          in: query
-          schema:
-            type: string
-          allowEmptyValue: true
-        - name: first
-          in: query
-          schema:
-            type: number
-          allowEmptyValue: true
-        - name: max
-          in: query
-          schema:
-            type: number
-          allowEmptyValue: true
+      - name: realm
+        in: path
+        description: Name of the realm
+        required: true
+        schema:
+          type: string
+      - name: groupIds
+        in: query
+        description: list of groupId the users may belong to (list comma seperated)
+        required: true
+        schema:
+          type: string
+      - name: email
+        in: query
+        schema:
+          type: string
+        allowEmptyValue: true
+      - name: firstName
+        in: query
+        schema:
+          type: string
+        allowEmptyValue: true
+      - name: lastName
+        in: query
+        schema:
+          type: string
+        allowEmptyValue: true
+      - name: username
+        in: query
+        schema:
+          type: string
+        allowEmptyValue: true
+      - name: search
+        in: query
+        schema:
+          type: string
+        allowEmptyValue: true
+      - name: first
+        in: query
+        schema:
+          type: number
+        allowEmptyValue: true
+      - name: max
+        in: query
+        schema:
+          type: number
+        allowEmptyValue: true
       responses:
         200:
           description: successful operation
@@ -251,191 +252,191 @@ paths:
                   users:
                     type: array
                     items:
-                      $ref: "#/components/schemas/User"
+                      $ref: '#/components/schemas/User'
   /realms/{realm}/users/{userID}:
     get:
       tags:
-        - Users
+      - Users
       summary: Get representation of the user
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
-        - name: userID
-          in: path
-          description: User id
-          required: true
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
       responses:
         200:
           description: successful operation
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/User"
+                $ref: '#/components/schemas/User'
     put:
       tags:
-        - Users
+      - Users
       summary: >
         Update an existing user.
         By default, missing or null fields make existing values be unmodified except if specified on the description of the User object.
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
-        - name: userID
-          in: path
-          description: User id
-          required: true
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/User"
+              $ref: '#/components/schemas/User'
       responses:
         200:
           description: successful operation
     delete:
       tags:
-        - Users
+      - Users
       summary: Delete the user
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
-        - name: userID
-          in: path
-          description: User id
-          required: true
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
       responses:
         200:
           description: successful operation
   /realms/{realm}/users/{userID}/lock:
     put:
       tags:
-        - Users
+      - Users
       summary: Lock an existing user.
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
-        - name: userID
-          in: path
-          description: User id
-          required: true
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
       responses:
         200:
           description: successful operation
   /realms/{realm}/users/{userID}/unlock:
     put:
       tags:
-        - Users
+      - Users
       summary: Unlock an existing user.
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
-        - name: userID
-          in: path
-          description: User id
-          required: true
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
       responses:
         200:
           description: successful operation
   /realms/{realm}/users/{userID}/status:
     get:
       tags:
-        - Users
+      - Users
       summary: Get the account status for the user (User enabled and has a second factor)
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
-        - name: userID
-          in: path
-          description: User id
-          required: true
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
       responses:
         200:
           description: successful operation
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/DeprecatedUserStatus"
+                $ref: '#/components/schemas/DeprecatedUserStatus'
   /realms/{realm}/users/status:
     get:
       tags:
-        - Users
+      - Users
       summary: Returns current status of user
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
-        - name: email
-          in: query
-          schema:
-            type: string
-          required: true
-          allowEmptyValue: false
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: email
+        in: query
+        schema:
+          type: string
+        required: true
+        allowEmptyValue: false
       responses:
         200:
           description: successful operation
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UserStatus"
+                $ref: '#/components/schemas/UserStatus'
         404:
           description: user not found
   /realms/{realm}/users/{userID}/roles:
     get:
       tags:
-        - Users
+      - Users
       summary: Get roles of user
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
-        - name: userID
-          in: path
-          description: User id
-          required: true
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
       responses:
         200:
           description: successful operation
@@ -444,31 +445,31 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/Role"
+                  $ref: '#/components/schemas/Role'
   /realms/{realm}/users/{userID}/roles/{roleID}:
     post:
       tags:
-        - Users
+      - Users
       summary: Add role to user
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
-        - name: userID
-          in: path
-          description: User id
-          required: true
-          schema:
-            type: string
-        - name: roleID
-          in: path
-          description: Role id
-          required: true
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
+      - name: roleID
+        in: path
+        description: Role id
+        required: true
+        schema:
+          type: string
       responses:
         204:
           description: successful operation
@@ -476,27 +477,27 @@ paths:
           description: role not found
     delete:
       tags:
-        - Users
+      - Users
       summary: Remove role for user
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
-        - name: userID
-          in: path
-          description: User id
-          required: true
-          schema:
-            type: string
-        - name: roleID
-          in: path
-          description: Role id
-          required: true
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
+      - name: roleID
+        in: path
+        description: Role id
+        required: true
+        schema:
+          type: string
       responses:
         204:
           description: successful operation
@@ -505,21 +506,21 @@ paths:
   /realms/{realm}/users/{userID}/groups:
     get:
       tags:
-        - Users
+      - Users
       summary: Get groups of user
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
-        - name: userID
-          in: path
-          description: User id
-          required: true
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
       responses:
         200:
           description: successful operation
@@ -528,78 +529,78 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/Group"
+                  $ref: '#/components/schemas/Group'
   /realms/{realm}/users/{userID}/groups/{groupID}:
     post:
       tags:
-        - Users
+      - Users
       summary: Add group to user
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
-        - name: userID
-          in: path
-          description: User id
-          required: true
-          schema:
-            type: string
-        - name: groupID
-          in: path
-          description: Group id
-          required: true
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
+      - name: groupID
+        in: path
+        description: Group id
+        required: true
+        schema:
+          type: string
       responses:
         200:
           description: successful operation
     delete:
       tags:
-        - Users
+      - Users
       summary: Remove group for user
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
-        - name: userID
-          in: path
-          description: User id
-          required: true
-          schema:
-            type: string
-        - name: groupID
-          in: path
-          description: Group id
-          required: true
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
+      - name: groupID
+        in: path
+        description: Group id
+        required: true
+        schema:
+          type: string
       responses:
         200:
           description: successful operation
   /realms/{realm}/users/{userID}/trustIdGroups:
     get:
       tags:
-        - Users
+      - Users
       summary: Get the trustID groups for the user
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
-        - name: userID
-          in: path
-          description: User id
-          required: true
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
       responses:
         200:
           description: successful operation
@@ -609,24 +610,25 @@ paths:
                 type: array
                 items:
                   type: string
-                example: ["product_administrator", "registration_officer"]
+                example:
+                  ["product_administrator","registration_officer"]
     put:
       tags:
-        - Users
+      - Users
       summary: Set the trustID groups for the user
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
-        - name: userID
-          in: path
-          description: User id
-          required: true
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
       requestBody:
         description: trustID groups
         content:
@@ -635,28 +637,29 @@ paths:
               type: array
               items:
                 type: string
-              example: ["product_administrator", "registration_officer"]
+              example:
+                ["product_administrator","registration_officer"]
       responses:
         200:
           description: successful operation
   /realms/{realm}/users/{userID}/checks:
     get:
       tags:
-        - Users
+      - Users
       summary: Get checks of the user
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
-        - name: userID
-          in: path
-          description: User id
-          required: true
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
       responses:
         200:
           description: successful operation
@@ -665,31 +668,31 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/UserCheck"
+                  $ref: '#/components/schemas/UserCheck'
   /realms/{realm}/users/{userID}/role-mappings/clients/{clientID}:
     get:
       tags:
-        - Users
+      - Users
       summary: Get client-level roles for the user and the client
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
-        - name: userID
-          in: path
-          description: User id
-          required: true
-          schema:
-            type: string
-        - name: clientID
-          in: path
-          description: Client id
-          required: true
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
+      - name: clientID
+        in: path
+        description: Client id
+        required: true
+        schema:
+          type: string
       responses:
         200:
           description: successful operation
@@ -698,107 +701,107 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/Role"
+                  $ref: '#/components/schemas/Role'
     post:
       tags:
-        - Users
+      - Users
       summary: Add client-level roles to the user.
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
-        - name: userID
-          in: path
-          description: User id
-          required: true
-          schema:
-            type: string
-        - name: clientID
-          in: path
-          description: Client id
-          required: true
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
+      - name: clientID
+        in: path
+        description: Client id
+        required: true
+        schema:
+          type: string
       requestBody:
         content:
           application/json:
             schema:
               type: array
               items:
-                $ref: "#/components/schemas/Role"
+                $ref: '#/components/schemas/Role'
       responses:
         200:
           description: successful operation
   /realms/{realm}/users/{userID}/role-mappings/clients/{clientID}/roles/{roleID}:
     delete:
       tags:
-        - Users
+      - Users
       summary: Delete client-level roles from the user
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
-        - name: userID
-          in: path
-          description: User id
-          required: true
-          schema:
-            type: string
-        - name: clientID
-          in: path
-          description: Client id
-          required: true
-          schema:
-            type: string
-        - name: roleID
-          in: path
-          description: role ID
-          required: true
-          schema:
-            type: string
-        - name: roleName
-          in: query
-          description: name of the role
-          required: true
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
+      - name: clientID
+        in: path
+        description: Client id
+        required: true
+        schema:
+          type: string
+      - name: roleID
+        in: path
+        description: role ID
+        required: true
+        schema:
+          type: string
+      - name: roleName
+        in: query
+        description: name of the role
+        required: true
+        schema:
+          type: string
       responses:
         200:
           description: successful operation
-
+      
   /realms/{realm}/users/{userID}/reset-password:
     put:
       tags:
-        - Users
+      - Users
       summary: >
         Set up a new password for the user. The value of the password is optional. 
         If no password is provided (i.e. the body is an empty JSON), a password is generated and returned in the response.
         The generated password is a string that either follows the password policy imposed by the realm or has length 8 and contains letters (upper case, lower case) and numbers.
         The password does not contain the following ambiguous characters - l, i,1, 0, o, O, 5, s, S.
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
-        - name: userID
-          in: path
-          description: User id
-          required: true
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/Password"
+              $ref: '#/components/schemas/Password'
       responses:
         200:
           description: successful operation
@@ -809,61 +812,61 @@ paths:
   /realms/{realm}/users/{userID}/execute-actions-email:
     put:
       tags:
-        - Users
+      - Users
       summary: >
         Send a update account email to the user An email contains a link the user can click to perform a set of required actions.
         The redirectUri and clientId parameters are optional.
         If no redirect is given, then there will be no link back to click after actions have completed.
         Redirect uri must be a valid uri for the particular clientId.
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
-        - name: userID
-          in: path
-          description: User id
-          required: true
-          schema:
-            type: string
-        - name: client_id
-          in: query
-          schema:
-            type: string
-          allowEmptyValue: true
-        - name: lifespan
-          in: query
-          description: Number of seconds after which the generated token expires
-          schema:
-            type: string
-          allowEmptyValue: true
-        - name: redirect_uri
-          in: query
-          schema:
-            type: string
-          allowEmptyValue: true
-        - name: custom1
-          in: query
-          schema:
-            type: string
-        - name: custom2
-          in: query
-          schema:
-            type: string
-        - name: custom3
-          in: query
-          schema:
-            type: string
-        - name: custom4
-          in: query
-          schema:
-            type: string
-        - name: custom5
-          in: query
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
+      - name: client_id
+        in: query
+        schema:
+          type: string
+        allowEmptyValue: true
+      - name: lifespan
+        in: query
+        description: Number of seconds after which the generated token expires
+        schema:
+          type: string
+        allowEmptyValue: true
+      - name: redirect_uri
+        in: query
+        schema:
+          type: string
+        allowEmptyValue: true
+      - name: custom1
+        in: query
+        schema:
+          type: string
+      - name: custom2
+        in: query
+        schema:
+          type: string
+      - name: custom3
+        in: query
+        schema:
+          type: string
+      - name: custom4
+        in: query
+        schema:
+          type: string
+      - name: custom5
+        in: query
+        schema:
+          type: string
       requestBody:
         content:
           application/json:
@@ -877,23 +880,23 @@ paths:
   /realms/{realm}/users/{userID}/revoke-accreditations:
     put:
       tags:
-        - Users
+      - Users
       summary: >
         Revoke accreditations.
         NOTE: method is placed in /accreditations/realms/{realm}/users/{userID}/revoke-accreditations (not in /management)
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
-        - name: userID
-          in: path
-          description: User id
-          required: true
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
       responses:
         204:
           description: accreditations have been revoked
@@ -902,22 +905,22 @@ paths:
   /realms/{realm}/users/{userID}/send-sms-code:
     post:
       tags:
-        - Users
+      - Users
       summary: >
         Send an sms code to a user and returns the value to the requester. This can be used by support to ensure the person claiming for something really owns the mobile as a proof of its identity.
       parameters:
-        - name: realm
-          in: path
-          description: Realm name (not id!)
-          required: true
-          schema:
-            type: string
-        - name: userID
-          in: path
-          description: User id
-          required: true
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: Realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
       responses:
         200:
           description: "Code correctly sent by SMS"
@@ -935,59 +938,59 @@ paths:
   /realms/{realm}/users/{userID}/send-onboarding-email:
     post:
       tags:
-        - Users
+      - Users
       summary: >
         Send an onboarding email to the user. He will receives an email to start the onboarding process. At the end of the process, he will be authenticated.
       parameters:
-        - name: realm
-          in: path
-          description: Realm name (not id!)
-          required: true
-          schema:
-            type: string
-        - name: userID
-          in: path
-          description: User id
-          required: true
-          schema:
-            type: string
-        - name: lifespan
-          in: query
-          description: validity duration of the link sent in the mail in seconds. If value exceeds the configured max life span, you can get a HTTP status 400.
-          required: false
-          schema:
-            type: integer
-        - name: reminder
-          in: query
-          required: false
-          schema:
-            type: boolean
-        - name: customerRealm
-          in: query
-          description: Customer realm name
-          required: false
-          schema:
-            type: string
-        - name: custom1
-          in: query
-          schema:
-            type: string
-        - name: custom2
-          in: query
-          schema:
-            type: string
-        - name: custom3
-          in: query
-          schema:
-            type: string
-        - name: custom4
-          in: query
-          schema:
-            type: string
-        - name: custom5
-          in: query
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: Realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
+      - name: lifespan
+        in: query
+        description: validity duration of the link sent in the mail in seconds. If value exceeds the configured max life span, you can get a HTTP status 400.
+        required: false
+        schema:
+          type: integer
+      - name: reminder
+        in: query
+        required: false
+        schema:
+          type: boolean
+      - name: customerRealm
+        in: query
+        description: Customer realm name
+        required: false
+        schema:
+          type: string
+      - name: custom1
+        in: query
+        schema:
+          type: string
+      - name: custom2
+        in: query
+        schema:
+          type: string
+      - name: custom3
+        in: query
+        schema:
+          type: string
+      - name: custom4
+        in: query
+        schema:
+          type: string
+      - name: custom5
+        in: query
+        schema:
+          type: string
       responses:
         200:
           description: Onboarding email sent
@@ -1002,36 +1005,36 @@ paths:
   /realms/{realm}/users/{userID}/send-reminder-email:
     post:
       tags:
-        - Users
+      - Users
       summary: Send a reminder email for a particular userID.
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
-        - name: userID
-          in: path
-          description: User id
-          required: true
-          schema:
-            type: string
-        - name: client_id
-          in: query
-          schema:
-            type: string
-          allowEmptyValue: true
-        - name: redirect_uri
-          in: query
-          schema:
-            type: string
-          allowEmptyValue: true
-        - name: lifespan
-          in: query
-          schema:
-            type: string
-          allowEmptyValue: true
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
+      - name: client_id
+        in: query
+        schema:
+          type: string
+        allowEmptyValue: true
+      - name: redirect_uri
+        in: query
+        schema:
+          type: string
+        allowEmptyValue: true
+      - name: lifespan
+        in: query
+        schema:
+          type: string          
+        allowEmptyValue: true
       responses:
         200:
           description: Mail successfully sent
@@ -1040,46 +1043,46 @@ paths:
         401:
           description: Not authenticated
         403:
-          description: No permission to call this operation
+          description: No permission to call this operation  
   /realms/{realm}/users/{userID}/reset-sms-counter:
     put:
       tags:
-        - Users
+      - Users
       summary: Reset the smsSent and smsAttempts attributes of the user to value 0.
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
-        - name: userID
-          in: path
-          description: User id
-          required: true
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
       responses:
         200:
-          description: successful operation
+          description: successful operation          
   /realms/{realm}/users/{userID}/credentials:
     get:
       tags:
-        - Credentials
+      - Credentials
       summary: Get all credentials for the user
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
-        - name: userID
-          in: path
-          description: User id
-          required: true
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
       responses:
         200:
           description: successful operation
@@ -1088,59 +1091,59 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/Credential"
+                  $ref: '#/components/schemas/Credential'
   /realms/{realm}/users/{userID}/credentials/{credentialID}:
     delete:
       tags:
-        - Credentials
+      - Credentials
       summary: Delete the credentials for the user
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
-        - name: userID
-          in: path
-          description: User id
-          required: true
-          schema:
-            type: string
-        - name: credentialID
-          in: path
-          description: Credential id
-          required: true
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
+      - name: credentialID
+        in: path
+        description: Credential id
+        required: true
+        schema:
+          type: string
       responses:
         200:
           description: successful operation
   /realms/{realm}/users/{userID}/credentials/{credentialID}/reset-failures:
     put:
       tags:
-        - Credentials
+      - Credentials
       summary: >
         Reset a locked credential for the user (ex: paper card with too many wrong errors)
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
-        - name: userID
-          in: path
-          description: User id
-          required: true
-          schema:
-            type: string
-        - name: credentialID
-          in: path
-          description: Credential id
-          required: true
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
+      - name: credentialID
+        in: path
+        description: Credential id
+        required: true
+        schema:
+          type: string
       responses:
         200:
           description: successful operation
@@ -1149,21 +1152,21 @@ paths:
   /realms/{realm}/users/{userID}/attack-detection-status:
     get:
       tags:
-        - login-failures
+      - login-failures
       summary: Get the credential brute force status for the user
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
-        - name: userID
-          in: path
-          description: User id
-          required: true
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
       responses:
         200:
           description: successful operation
@@ -1172,46 +1175,46 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/AttackDetectionStatus"
+                  $ref: '#/components/schemas/AttackDetectionStatus'
   /realms/{realm}/users/{userID}/clear-login-failures:
     delete:
       tags:
-        - login-failures
+      - login-failures
       summary: Delete the login failures for the user
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
-        - name: userID
-          in: path
-          description: User id
-          required: true
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
       responses:
         200:
           description: successful operation
   /realms/{realm}/users/{userID}/recovery-code:
     post:
       tags:
-        - Credentials
+      - Credentials
       summary: Set a recovery code for the user
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
-        - name: userID
-          in: path
-          description: User id
-          required: true
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
       responses:
         201:
           description: successful operation
@@ -1224,21 +1227,21 @@ paths:
   /realms/{realm}/users/{userID}/activation-code:
     post:
       tags:
-        - Credentials
+      - Credentials
       summary: Create or replace an activation code for the user
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
-        - name: userID
-          in: path
-          description: User id
-          required: true
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
       responses:
         201:
           description: successful operation
@@ -1249,15 +1252,15 @@ paths:
   /realms/{realm}/roles:
     get:
       tags:
-        - Roles
+      - Roles
       summary: Get all roles for the realm
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
       responses:
         200:
           description: successful operation
@@ -1266,23 +1269,23 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/Role"
+                  $ref: '#/components/schemas/Role'
     post:
       tags:
-        - Roles
+      - Roles
       summary: Create a new role into the realm
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/Role"
+              $ref: '#/components/schemas/Role'
       responses:
         201:
           description: successful operation
@@ -1294,116 +1297,116 @@ paths:
   /realms/{realm}/roles/{roleID}:
     get:
       tags:
-        - Roles
+      - Roles
       summary: Get a specific role
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
-        - name: roleID
-          in: path
-          description: id of role
-          required: true
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: roleID
+        in: path
+        description: id of role
+        required: true
+        schema:
+          type: string
       responses:
         200:
           description: successful operation
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Role"
+                $ref: '#/components/schemas/Role'
     put:
       tags:
-        - Roles
+      - Roles
       summary: Update a role
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
-        - name: roleID
-          in: path
-          description: role id
-          required: true
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: roleID
+        in: path
+        description: role id
+        required: true
+        schema:
+          type: string
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/Role"
+              $ref: '#/components/schemas/Role'
       responses:
         204:
           description: successful operation
     delete:
       tags:
-        - Roles
+      - Roles
       summary: Delete the role
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
-        - name: roleID
-          in: path
-          description: role id
-          required: true
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: roleID
+        in: path
+        description: role id
+        required: true
+        schema:
+          type: string
       responses:
         204:
           description: successful operation
   /realms/{realm}/roles-by-id/{roleID}:
     get:
       tags:
-        - Roles
+      - Roles
       summary: DEPRECATED. Use GET /realms/{realm}/roles/{roleID}
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
-        - name: roleID
-          in: path
-          description: id of role
-          required: true
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: roleID
+        in: path
+        description: id of role
+        required: true
+        schema:
+          type: string
       responses:
         200:
           description: successful operation
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Role"
+                $ref: '#/components/schemas/Role'
   /realms/{realm}/clients/{clientID}/roles:
     get:
       tags:
-        - Roles
+      - Roles
       summary: Get all clients roles
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
-        - name: clientID
-          in: path
-          description: id of client (not client-id)
-          required: true
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: clientID
+        in: path
+        description: id of client (not client-id)
+        required: true
+        schema:
+          type: string
       responses:
         200:
           description: successful operation
@@ -1412,29 +1415,29 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/Role"
+                  $ref: '#/components/schemas/Role'
     post:
       tags:
-        - Roles
+      - Roles
       summary: Create a new role for the realm or client
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
-        - name: clientID
-          in: path
-          description: id of client (not client-id)
-          required: true
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: clientID
+        in: path
+        description: id of client (not client-id)
+        required: true
+        schema:
+          type: string
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/Role"
+              $ref: '#/components/schemas/Role'
       responses:
         201:
           description: successful operation
@@ -1446,27 +1449,27 @@ paths:
   /realms/{realm}/clients/{clientID}/roles/{roleID}:
     delete:
       tags:
-        - Roles
+      - Roles
       summary: Delete a client role
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
-        - name: clientID
-          in: path
-          description: id of client (not client-id)
-          required: true
-          schema:
-            type: string
-        - name: roleID
-          in: path
-          description: id of the role
-          required: true
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: clientID
+        in: path
+        description: id of client (not client-id)
+        required: true
+        schema:
+          type: string
+      - name: roleID
+        in: path
+        description: id of the role
+        required: true
+        schema:
+          type: string
       responses:
         204:
           description: successful operation
@@ -1475,15 +1478,15 @@ paths:
   /realms/{realm}/groups:
     get:
       tags:
-        - Groups
+      - Groups
       summary: Get the groups available for the realm
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
       responses:
         200:
           description: successful operation
@@ -1492,23 +1495,23 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/Group"
+                  $ref: '#/components/schemas/Group'
     post:
       tags:
-        - Groups
+      - Groups
       summary: Create a new group into the realm
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/Group"
+              $ref: '#/components/schemas/Group'
       responses:
         201:
           description: successful operation
@@ -1520,157 +1523,157 @@ paths:
   /realms/{realm}/groups/{groupID}:
     delete:
       tags:
-        - Groups
+      - Groups
       summary: Delete the group
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
-        - name: groupID
-          in: path
-          description: group id
-          required: true
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: groupID
+        in: path
+        description: group id
+        required: true
+        schema:
+          type: string
       responses:
         200:
           description: successful operation
   /realms/{realm}/groups/{groupID}/authorizations:
     get:
       tags:
-        - Groups
+      - Groups
       summary: Get the authorizations of the group
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
-        - name: groupID
-          in: path
-          description: group id
-          required: true
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: groupID
+        in: path
+        description: group id
+        required: true
+        schema:
+          type: string
       responses:
         200:
           description: successful operation
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Authorizations"
+                  $ref: '#/components/schemas/Authorizations'
     put:
       tags:
-        - Groups
+      - Groups
       summary: Update the authorizations of the group
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
-        - name: groupID
-          in: path
-          description: group id
-          required: true
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: groupID
+        in: path
+        description: group id
+        required: true
+        schema:
+          type: string
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/Authorizations"
+              $ref: '#/components/schemas/Authorizations'    
       responses:
         200:
           description: successful operation
   /realms/{realm}/groups/{groupID}/actions/{action}/authorizations:
     get:
       tags:
-        - Groups
+      - Groups
       summary: Get an authorization of the group on a specific action. The authorization might be for a specific group (targetGroup) and/or specific realm (targetRealm).
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
-        - name: groupID
-          in: path
-          description: group id
-          required: true
-          schema:
-            type: string
-        - name: action
-          in: path
-          description: action
-          required: true
-          schema:
-            type: string
-        - name: targetRealm
-          in: query
-          description: realm name (not id!)
-          required: false
-          schema:
-            type: string
-        - name: targetGroupID
-          in: query
-          description: target group id
-          required: false
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: groupID
+        in: path
+        description: group id
+        required: true
+        schema:
+          type: string
+      - name: action
+        in: path
+        description: action
+        required: true
+        schema:
+          type: string
+      - name: targetRealm
+        in: query
+        description: realm name (not id!)
+        required: false
+        schema:
+          type: string
+      - name: targetGroupID
+        in: query
+        description: target group id
+        required: false
+        schema:
+          type: string
       responses:
         200:
           description: successful operation
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AuthorizationResponse"
+                  $ref: '#/components/schemas/AuthorizationResponse'
         400:
           description: invalid information provided
         404:
           description: not found
     delete:
       tags:
-        - Groups
+      - Groups
       summary: Remove the authorization of the group on a specific action. The authorization might be for specific group (targetGroup) and/or specific realm (targetRealm).
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
-        - name: groupID
-          in: path
-          description: group id
-          required: true
-          schema:
-            type: string
-        - name: action
-          in: path
-          description: action
-          required: true
-          schema:
-            type: string
-        - name: targetRealm
-          in: query
-          description: realm name (not id!)
-          required: false
-          schema:
-            type: string
-        - name: targetGroupID
-          in: query
-          description: target group id
-          required: false
-          schema:
-            type: string
-
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: groupID
+        in: path
+        description: group id
+        required: true
+        schema:
+          type: string
+      - name: action
+        in: path
+        description: action
+        required: true
+        schema:
+          type: string
+      - name: targetRealm
+        in: query
+        description: realm name (not id!)
+        required: false
+        schema:
+          type: string
+      - name: targetGroupID
+        in: query
+        description: target group id
+        required: false
+        schema:
+          type: string
+      
       responses:
         200:
           description: successful operation
@@ -1678,32 +1681,32 @@ paths:
           description: invalid information provided
     put:
       tags:
-        - Groups
+      - Groups
       summary: Add an authorization to the group with a partial matrix
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
-        - name: groupID
-          in: path
-          description: group id
-          required: true
-          schema:
-            type: string
-        - name: action
-          in: path
-          description: action
-          required: true
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: groupID
+        in: path
+        description: group id
+        required: true
+        schema:
+          type: string
+      - name: action
+        in: path
+        description: action
+        required: true
+        schema:
+          type: string
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/PartialAuthorizations"
+              $ref: '#/components/schemas/PartialAuthorizations'    
       responses:
         200:
           description: successful operation
@@ -1712,57 +1715,57 @@ paths:
   /realms/{realm}/profile:
     get:
       tags:
-        - Configuration
+      - Configuration
       summary: Get the realm users profile
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
       responses:
         200:
           description: successful operation
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Profile"
+                $ref: '#/components/schemas/Profile'
   /realms/{realm}/configuration:
     get:
       tags:
-        - Configuration
+      - Configuration
       summary: Get the current configuration
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
       responses:
         200:
           description: successful operation
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Configuration"
+                $ref: '#/components/schemas/Configuration'
     put:
       tags:
-        - Configuration
+      - Configuration
       summary: Update the configuration for the given realm
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/Configuration"
+              $ref: '#/components/schemas/Configuration'
       responses:
         200:
           description: successful operation
@@ -1771,38 +1774,38 @@ paths:
   /realms/{realm}/admin-configuration:
     get:
       tags:
-        - Configuration
+      - Configuration
       summary: Get the admin configuration of the specified realm
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
       responses:
         200:
           description: successful operation
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AdminConfiguration"
+                $ref: '#/components/schemas/AdminConfiguration'
     put:
       tags:
-        - Configuration
+      - Configuration
       summary: Update the admin configuration for the given realm
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/AdminConfiguration"
+              $ref: '#/components/schemas/AdminConfiguration'
       responses:
         200:
           description: successful operation
@@ -1811,69 +1814,69 @@ paths:
   /realms/{realm}/backoffice-configuration:
     get:
       tags:
-        - Configuration
+      - Configuration
       summary: Get the current backoffice configuration. Result is an aggregation of configurations from all the user's groups.
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
       responses:
         200:
           description: successful operation
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/BackOfficeConfiguration"
+                $ref: '#/components/schemas/BackOfficeConfiguration'
   /realms/{realm}/backoffice-configuration/groups:
     get:
       tags:
-        - Configuration
+      - Configuration
       summary: Get the backoffice configuration for the given realmID/groupName
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
-        - name: groupName
-          in: query
-          description: group name
-          required: true
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: groupName
+        in: query
+        description: group name
+        required: true
+        schema:
+          type: string
       responses:
         200:
           description: successful operation
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/BackOfficeConfiguration"
+                $ref: '#/components/schemas/BackOfficeConfiguration'
     put:
       tags:
-        - Configuration
+      - Configuration
       summary: Update the backoffice configuration for the given realmID/groupName
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
-        - name: groupName
-          in: query
-          description: group name
-          required: true
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: groupName
+        in: query
+        description: group name
+        required: true
+        schema:
+          type: string
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/BackOfficeConfiguration"
+              $ref: '#/components/schemas/BackOfficeConfiguration'
       responses:
         200:
           description: successful operation
@@ -1882,21 +1885,21 @@ paths:
   /realms/{realm}/users/{userID}/federated-identity:
     get:
       tags:
-        - Brokering
+      - Brokering
       summary: Gets a user's federated identities.
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
-        - name: userID
-          in: path
-          description: User id
-          required: true
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
       responses:
         200:
           description: successful operation
@@ -1905,77 +1908,77 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/FederatedIdentity"
+                  $ref: '#/components/schemas/FederatedIdentity'
   /realms/{realm}/users/{userID}/federated-identity/{provider}:
     post:
       tags:
-        - Brokering
+      - Brokering
       summary: Add a login provider to a user.
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
-        - name: userID
-          in: path
-          description: User id
-          required: true
-          schema:
-            type: string
-        - name: provider
-          in: path
-          description: Login provider alias
-          required: true
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
+      - name: provider
+        in: path
+        description: Login provider id
+        required: true
+        schema:
+          type: string        
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/FederatedIdentity"
+              $ref: '#/components/schemas/FederatedIdentity'
       responses:
         200:
-          description: successful operation
+          description: successful operation  
     delete:
       tags:
-        - Brokering
+      - Brokering
       summary: Remove a login provider from a user.
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
-        - name: userID
-          in: path
-          description: User id
-          required: true
-          schema:
-            type: string
-        - name: provider
-          in: path
-          description: Login provider alias
-          required: true
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
+      - name: provider
+        in: path
+        description: Login provider id
+        required: true
+        schema:
+          type: string        
       responses:
         200:
           description: successful operation
   /realms/{realm}/identity-providers:
     get:
       tags:
-        - Brokering
+      - Brokering
       summary: Get the list of all IDPs in the realm
       parameters:
-        - name: realm
-          in: path
-          description: realm name (not id!)
-          required: true
-          schema:
-            type: string
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
       responses:
         200:
           description: Login provider id
@@ -1984,27 +1987,27 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/IdentityProvider"
+                  $ref: '#/components/schemas/IdentityProvider'
   /social/users:
     post:
       tags:
-        - Users
+      - Users
       summary: >
         Create a new user in the social realm
         Username must be unique.
         Role and Groups can be assigned thanks to their ID.
       parameters:
-        - name: generateNameID
-          in: query
-          description: tells if a NameID should be generated
-          required: false
-          schema:
-            type: boolean
+      - name: generateNameID
+        in: query
+        description: tells if a NameID should be generated
+        required: false
+        schema:
+          type: boolean
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/User"
+              $ref: '#/components/schemas/User'
       responses:
         201:
           description: successful operation
@@ -2016,53 +2019,53 @@ paths:
   /social/users/{userID}/send-onboarding-email:
     post:
       tags:
-        - Users
+      - Users
       summary: >
         Send an onboarding email to the user. He will receives an email to start the onboarding process. At the end of the process, he will be authenticated.
       parameters:
-        - name: userID
-          in: path
-          description: User id
-          required: true
-          schema:
-            type: string
-        - name: lifespan
-          in: query
-          description: validity duration of the link sent in the mail in seconds. If value exceeds the configured max life span, you can get a HTTP status 400.
-          required: false
-          schema:
-            type: integer
-        - name: reminder
-          in: query
-          required: false
-          schema:
-            type: boolean
-        - name: customerRealm
-          in: query
-          description: Customer realm name
-          required: false
-          schema:
-            type: string
-        - name: custom1
-          in: query
-          schema:
-            type: string
-        - name: custom2
-          in: query
-          schema:
-            type: string
-        - name: custom3
-          in: query
-          schema:
-            type: string
-        - name: custom4
-          in: query
-          schema:
-            type: string
-        - name: custom5
-          in: query
-          schema:
-            type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
+      - name: lifespan
+        in: query
+        description: validity duration of the link sent in the mail in seconds. If value exceeds the configured max life span, you can get a HTTP status 400.
+        required: false
+        schema:
+          type: integer
+      - name: reminder
+        in: query
+        required: false
+        schema:
+          type: boolean
+      - name: customerRealm
+        in: query
+        description: Customer realm name
+        required: false
+        schema:
+          type: string
+      - name: custom1
+        in: query
+        schema:
+          type: string
+      - name: custom2
+        in: query
+        schema:
+          type: string
+      - name: custom3
+        in: query
+        schema:
+          type: string
+      - name: custom4
+        in: query
+        schema:
+          type: string
+      - name: custom5
+        in: query
+        schema:
+          type: string
       responses:
         200:
           description: Onboarding email sent
@@ -2106,7 +2109,7 @@ components:
           type: string
         gender:
           type: string
-          enum: [M, F, U]
+          enum: [M,F,U]
           description: Male, Female or Undefined
         firstName:
           type: string
@@ -2209,17 +2212,7 @@ components:
           format: int64
         onBoardingStatus:
           type: string
-          enum:
-            [
-              "",
-              self-registration-form-completed,
-              user-created-by-api,
-              email-verified,
-              password-set,
-              phone-verified,
-              2fa-set,
-              completed,
-            ]
+          enum: ["", self-registration-form-completed, user-created-by-api, email-verified, password-set, phone-verified, 2fa-set, completed]
           description: user onboarding flow status
     UserCheck:
       type: object
@@ -2339,7 +2332,7 @@ components:
     AuthorizationResponse:
       type: object
       properties:
-        Authorized:
+        Authorized: 
           type: boolean
     Password:
       type: object
@@ -2468,43 +2461,43 @@ components:
     IdentityProvider:
       type: object
       properties:
-        AddReadTokenRoleOnCreate:
-          type: boolean
-        Alias:
-          type: string
-        AuthenticateByDefault:
-          type: boolean
-        Config:
-          type: object
-        DisplayName:
-          type: string
-        Enabled:
-          type: boolean
-        FirstBrokerLoginFlowAlias:
-          type: string
-        InternalID:
-          type: string
-        LinkOnly:
-          type: boolean
-        PostBrokerLoginFlowAlias:
-          type: string
-        ProviderID:
-          type: string
-        StoreToken:
-          type: boolean
-        TrustEmail:
-          type: boolean
+          AddReadTokenRoleOnCreate: 
+            type: boolean
+          Alias: 
+            type: string
+          AuthenticateByDefault: 
+            type: boolean
+          Config:
+            type: object
+          DisplayName:
+            type: string
+          Enabled:
+            type: boolean
+          FirstBrokerLoginFlowAlias:
+            type: string
+          InternalID:
+            type: string
+          LinkOnly:
+            type: boolean
+          PostBrokerLoginFlowAlias:
+            type: string
+          ProviderID:
+            type: string
+          StoreToken:
+            type: boolean
+          TrustEmail:
+            type: boolean
     Profile:
       type: object
       properties:
         attributes:
           type: array
           items:
-            $ref: "#/components/schemas/ProfileAttribute"
+            $ref: '#/components/schemas/ProfileAttribute'
         groups:
           type: array
           items:
-            $ref: "#/components/schemas/ProfileGroup"
+            $ref: '#/components/schemas/ProfileGroup'
           description: groups are used to gather user attributes by themes
     ProfileAttribute:
       type: object
@@ -2519,7 +2512,7 @@ components:
         required:
           type: boolean
         validations:
-          $ref: "#/components/schemas/ProfileAttributeValidations"
+          $ref: '#/components/schemas/ProfileAttributeValidations'
     ProfileAttributeValidations:
       description: >
         Here is a list of known validators :
@@ -2535,7 +2528,7 @@ components:
         person-name-prohibited-characters: error-message (string)
       type: object
       additionalProperties:
-        $ref: "#/components/schemas/ProfileAttributeValidator"
+        $ref: '#/components/schemas/ProfileAttributeValidator'
     ProfileAttributeValidator:
       type: object
       additionalProperties:
@@ -2559,4 +2552,4 @@ components:
       openIdConnectUrl: http://toto.com/.well-known/openid-configuration
 security:
   - openId:
-      - todo
+    - todo

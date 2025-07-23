@@ -2512,9 +2512,7 @@ func (c *component) LinkShadowUser(ctx context.Context, realmName string, userID
 func (c *component) UnlinkShadowUser(ctx context.Context, realmName string, userID string, provider string) error {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 
-	err := c.keycloakClient.UnlinkShadowUser(accessToken, realmName, userID, provider)
-
-	if err != nil {
+	if err := c.keycloakClient.UnlinkShadowUser(accessToken, realmName, userID, provider); err != nil {
 		c.logger.Warn(ctx, "msg", "Can't unlink shadow user", "err", err.Error())
 		return err
 	}
