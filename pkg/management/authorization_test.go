@@ -55,7 +55,9 @@ func TestDeny(t *testing.T) {
 	var pass = "P@ssw0rd"
 	var clientURI = "https://wwww.cloudtrust.io"
 
-	var provider = "provider"
+	var idpAlias = "trustid-idp"
+	var idpDisplayName = "MyTrustID"
+
 	mockAuthorizationDBReader.EXPECT().GetAuthorizations(gomock.Any()).Return([]configuration.Authorization{}, nil)
 
 	mockKeycloakClient.EXPECT().GetGroupNamesOfUser(gomock.Any(), accessToken, realmName, userID).Return([]string{
@@ -102,6 +104,11 @@ func TestDeny(t *testing.T) {
 	var fedID = api.FederatedIdentityRepresentation{
 		UserID:   &userID,
 		Username: &userUsername,
+	}
+
+	var idp = api.IdentityProviderRepresentation{
+		Alias:       &idpAlias,
+		DisplayName: &idpDisplayName,
 	}
 
 	// Nothing allowed
@@ -185,8 +192,12 @@ func TestDeny(t *testing.T) {
 			"UpdateRealmBackOfficeConfiguration":  authorizationMW.UpdateRealmBackOfficeConfiguration(ctx, realmName, groupID, boConfig),
 			"GetUserRealmBackOfficeConfiguration": ignoreFirst(authorizationMW.GetUserRealmBackOfficeConfiguration(ctx, realmName)),
 			"GetFederatedIdentities":              ignoreFirst(authorizationMW.GetFederatedIdentities(ctx, realmName, userID)),
-			"LinkShadowUser":                      authorizationMW.LinkShadowUser(ctx, realmName, userID, provider, fedID),
+			"LinkShadowUser":                      authorizationMW.LinkShadowUser(ctx, realmName, userID, idpAlias, fedID),
 			"GetIdentityProviders":                ignoreFirst(authorizationMW.GetIdentityProviders(ctx, realmName)),
+			"GetIdentityProvider":                 ignoreFirst(authorizationMW.GetIdentityProvider(ctx, realmName, idpAlias)),
+			"CreateIdentityProvider":              authorizationMW.CreateIdentityProvider(ctx, realmName, idp),
+			"UpdateIdentityProvider":              authorizationMW.UpdateIdentityProvider(ctx, realmName, idpAlias, idp),
+			"DeleteIdentityProvider":              authorizationMW.DeleteIdentityProvider(ctx, realmName, idpAlias),
 		}
 		for testName, testResult := range tests {
 			t.Run(testName, func(t *testing.T) {
@@ -233,7 +244,7 @@ func TestAllowed(t *testing.T) {
 	var pass = "P@ssw0rd"
 	var clientURI = "https://wwww.cloudtrust.io"
 
-	var provider = "provider"
+	var idpAlias = "trustid-idp"
 
 	mockKeycloakClient.EXPECT().GetGroupNamesOfUser(gomock.Any(), accessToken, realmName, userID).Return([]string{groupName}, nil).AnyTimes()
 
@@ -585,12 +596,28 @@ func TestAllowed(t *testing.T) {
 		_, err = authorizationMW.GetFederatedIdentities(ctx, realmName, userID)
 		assert.Nil(t, err)
 
-		mockManagementComponent.EXPECT().LinkShadowUser(ctx, realmName, userID, provider, fedID).Return(nil)
-		err = authorizationMW.LinkShadowUser(ctx, realmName, userID, provider, fedID)
+		mockManagementComponent.EXPECT().LinkShadowUser(ctx, realmName, userID, idpAlias, fedID).Return(nil)
+		err = authorizationMW.LinkShadowUser(ctx, realmName, userID, idpAlias, fedID)
 		assert.Nil(t, err)
 
 		mockManagementComponent.EXPECT().GetIdentityProviders(ctx, realmName).Return(idps, nil)
 		_, err = authorizationMW.GetIdentityProviders(ctx, realmName)
+		assert.Nil(t, err)
+
+		mockManagementComponent.EXPECT().GetIdentityProvider(ctx, realmName, idpAlias).Return(idp, nil)
+		_, err = authorizationMW.GetIdentityProvider(ctx, realmName, idpAlias)
+		assert.Nil(t, err)
+
+		mockManagementComponent.EXPECT().CreateIdentityProvider(ctx, realmName, idp).Return(nil)
+		err = authorizationMW.CreateIdentityProvider(ctx, realmName, idp)
+		assert.Nil(t, err)
+
+		mockManagementComponent.EXPECT().UpdateIdentityProvider(ctx, realmName, idpAlias, idp).Return(nil)
+		err = authorizationMW.UpdateIdentityProvider(ctx, realmName, idpAlias, idp)
+		assert.Nil(t, err)
+
+		mockManagementComponent.EXPECT().DeleteIdentityProvider(ctx, realmName, idpAlias).Return(nil)
+		err = authorizationMW.DeleteIdentityProvider(ctx, realmName, idpAlias)
 		assert.Nil(t, err)
 	}
 }
