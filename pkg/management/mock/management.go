@@ -159,6 +159,20 @@ func (mr *ManagementComponentMockRecorder) CreateGroup(ctx, realmName, group any
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateGroup", reflect.TypeOf((*ManagementComponent)(nil).CreateGroup), ctx, realmName, group)
 }
 
+// CreateIdentityProvider mocks base method.
+func (m *ManagementComponent) CreateIdentityProvider(ctx context.Context, realmName string, provider apimanagement.IdentityProviderRepresentation) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateIdentityProvider", ctx, realmName, provider)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateIdentityProvider indicates an expected call of CreateIdentityProvider.
+func (mr *ManagementComponentMockRecorder) CreateIdentityProvider(ctx, realmName, provider any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateIdentityProvider", reflect.TypeOf((*ManagementComponent)(nil).CreateIdentityProvider), ctx, realmName, provider)
+}
+
 // CreateRecoveryCode mocks base method.
 func (m *ManagementComponent) CreateRecoveryCode(ctx context.Context, realmName, userID string) (string, error) {
 	m.ctrl.T.Helper()
@@ -301,6 +315,20 @@ func (m *ManagementComponent) DeleteGroupForUser(ctx context.Context, realmName,
 func (mr *ManagementComponentMockRecorder) DeleteGroupForUser(ctx, realmName, userID, groupID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteGroupForUser", reflect.TypeOf((*ManagementComponent)(nil).DeleteGroupForUser), ctx, realmName, userID, groupID)
+}
+
+// DeleteIdentityProvider mocks base method.
+func (m *ManagementComponent) DeleteIdentityProvider(ctx context.Context, realmName, providerID string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteIdentityProvider", ctx, realmName, providerID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteIdentityProvider indicates an expected call of DeleteIdentityProvider.
+func (mr *ManagementComponentMockRecorder) DeleteIdentityProvider(ctx, realmName, providerID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteIdentityProvider", reflect.TypeOf((*ManagementComponent)(nil).DeleteIdentityProvider), ctx, realmName, providerID)
 }
 
 // DeleteRole mocks base method.
@@ -557,6 +585,21 @@ func (m *ManagementComponent) GetGroupsOfUser(ctx context.Context, realmName, us
 func (mr *ManagementComponentMockRecorder) GetGroupsOfUser(ctx, realmName, userID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGroupsOfUser", reflect.TypeOf((*ManagementComponent)(nil).GetGroupsOfUser), ctx, realmName, userID)
+}
+
+// GetIdentityProvider mocks base method.
+func (m *ManagementComponent) GetIdentityProvider(ctx context.Context, realmName, providerID string) (apimanagement.IdentityProviderRepresentation, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetIdentityProvider", ctx, realmName, providerID)
+	ret0, _ := ret[0].(apimanagement.IdentityProviderRepresentation)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetIdentityProvider indicates an expected call of GetIdentityProvider.
+func (mr *ManagementComponentMockRecorder) GetIdentityProvider(ctx, realmName, providerID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetIdentityProvider", reflect.TypeOf((*ManagementComponent)(nil).GetIdentityProvider), ctx, realmName, providerID)
 }
 
 // GetIdentityProviders mocks base method.
@@ -1061,6 +1104,20 @@ func (mr *ManagementComponentMockRecorder) UpdateAuthorizations(ctx, realmName, 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateAuthorizations", reflect.TypeOf((*ManagementComponent)(nil).UpdateAuthorizations), ctx, realmName, groupID, group)
 }
 
+// UpdateIdentityProvider mocks base method.
+func (m *ManagementComponent) UpdateIdentityProvider(ctx context.Context, realmName, providerID string, provider apimanagement.IdentityProviderRepresentation) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateIdentityProvider", ctx, realmName, providerID, provider)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateIdentityProvider indicates an expected call of UpdateIdentityProvider.
+func (mr *ManagementComponentMockRecorder) UpdateIdentityProvider(ctx, realmName, providerID, provider any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateIdentityProvider", reflect.TypeOf((*ManagementComponent)(nil).UpdateIdentityProvider), ctx, realmName, providerID, provider)
+}
+
 // UpdateRealmAdminConfiguration mocks base method.
 func (m *ManagementComponent) UpdateRealmAdminConfiguration(ctx context.Context, realmID string, adminConfig apimanagement.RealmAdminConfiguration) error {
 	m.ctrl.T.Helper()
@@ -1270,6 +1327,20 @@ func (mr *KeycloakClientMockRecorder) CreateGroup(accessToken, realmName, group 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateGroup", reflect.TypeOf((*KeycloakClient)(nil).CreateGroup), accessToken, realmName, group)
 }
 
+// CreateIdp mocks base method.
+func (m *KeycloakClient) CreateIdp(accessToken, realmName string, idpRep keycloak.IdentityProviderRepresentation) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateIdp", accessToken, realmName, idpRep)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateIdp indicates an expected call of CreateIdp.
+func (mr *KeycloakClientMockRecorder) CreateIdp(accessToken, realmName, idpRep any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateIdp", reflect.TypeOf((*KeycloakClient)(nil).CreateIdp), accessToken, realmName, idpRep)
+}
+
 // CreateRecoveryCode mocks base method.
 func (m *KeycloakClient) CreateRecoveryCode(accessToken, realmName, userID string) (keycloak.RecoveryCodeRepresentation, error) {
 	m.ctrl.T.Helper()
@@ -1374,6 +1445,20 @@ func (m *KeycloakClient) DeleteGroupFromUser(accessToken, realmName, userID, gro
 func (mr *KeycloakClientMockRecorder) DeleteGroupFromUser(accessToken, realmName, userID, groupID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteGroupFromUser", reflect.TypeOf((*KeycloakClient)(nil).DeleteGroupFromUser), accessToken, realmName, userID, groupID)
+}
+
+// DeleteIdp mocks base method.
+func (m *KeycloakClient) DeleteIdp(accessToken, realmName, idpAlias string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteIdp", accessToken, realmName, idpAlias)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteIdp indicates an expected call of DeleteIdp.
+func (mr *KeycloakClientMockRecorder) DeleteIdp(accessToken, realmName, idpAlias any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteIdp", reflect.TypeOf((*KeycloakClient)(nil).DeleteIdp), accessToken, realmName, idpAlias)
 }
 
 // DeleteRealmLevelRoleMappings mocks base method.
@@ -1620,6 +1705,21 @@ func (m *KeycloakClient) GetGroupsOfUser(accessToken, realmName, userID string) 
 func (mr *KeycloakClientMockRecorder) GetGroupsOfUser(accessToken, realmName, userID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGroupsOfUser", reflect.TypeOf((*KeycloakClient)(nil).GetGroupsOfUser), accessToken, realmName, userID)
+}
+
+// GetIdp mocks base method.
+func (m *KeycloakClient) GetIdp(accessToken, realmName, idpAlias string) (keycloak.IdentityProviderRepresentation, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetIdp", accessToken, realmName, idpAlias)
+	ret0, _ := ret[0].(keycloak.IdentityProviderRepresentation)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetIdp indicates an expected call of GetIdp.
+func (mr *KeycloakClientMockRecorder) GetIdp(accessToken, realmName, idpAlias any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetIdp", reflect.TypeOf((*KeycloakClient)(nil).GetIdp), accessToken, realmName, idpAlias)
 }
 
 // GetIdps mocks base method.
@@ -1879,6 +1979,20 @@ func (m *KeycloakClient) UnlinkShadowUser(accessToken, realmName, userID, provid
 func (mr *KeycloakClientMockRecorder) UnlinkShadowUser(accessToken, realmName, userID, provider any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UnlinkShadowUser", reflect.TypeOf((*KeycloakClient)(nil).UnlinkShadowUser), accessToken, realmName, userID, provider)
+}
+
+// UpdateIdp mocks base method.
+func (m *KeycloakClient) UpdateIdp(accessToken, realmName, idpAlias string, idpRep keycloak.IdentityProviderRepresentation) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateIdp", accessToken, realmName, idpAlias, idpRep)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateIdp indicates an expected call of UpdateIdp.
+func (mr *KeycloakClientMockRecorder) UpdateIdp(accessToken, realmName, idpAlias, idpRep any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateIdp", reflect.TypeOf((*KeycloakClient)(nil).UpdateIdp), accessToken, realmName, idpAlias, idpRep)
 }
 
 // UpdateLabelCredential mocks base method.

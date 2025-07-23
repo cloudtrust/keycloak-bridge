@@ -795,7 +795,11 @@ func main() {
 			GetFederatedIdentities: prepareEndpoint(management.MakeGetFederatedIdentitiesEndpoint(keycloakComponent), "get_federated_identities_endpoint", managementLogger, rateLimitMgmt),
 			LinkShadowUser:         prepareEndpoint(management.MakeLinkShadowUserEndpoint(keycloakComponent), "link_shadow_user_endpoint", managementLogger, rateLimitMgmt),
 			UnlinkShadowUser:       prepareEndpoint(management.MakeUnlinkShadowUserEndpoint(keycloakComponent), "unlink_shadow_user_endpoint", managementLogger, rateLimitMgmt),
-			GetIdentityProviders:   prepareEndpoint(management.MakeGetIdentityProvidersEndpoint(keycloakComponent), "get_identiy_providers_endpoint", managementLogger, rateLimitMgmt),
+			GetIdentityProviders:   prepareEndpoint(management.MakeGetIdentityProvidersEndpoint(keycloakComponent), "get_identity_providers_endpoint", managementLogger, rateLimitMgmt),
+			GetIdentityProvider:    prepareEndpoint(management.MakeGetIdentityProviderEndpoint(keycloakComponent), "get_identity_provider_endpoint", managementLogger, rateLimitMgmt),
+			CreateIdentityProvider: prepareEndpoint(management.MakeCreateIdentityProviderEndpoint(keycloakComponent), "create_identity_providers_endpoint", managementLogger, rateLimitMgmt),
+			UpdateIdentityProvider: prepareEndpoint(management.MakeUpdateIdentityProviderEndpoint(keycloakComponent), "update_identity_provider_endpoint", managementLogger, rateLimitMgmt),
+			DeleteIdentityProvider: prepareEndpoint(management.MakeDeleteIdentityProviderEndpoint(keycloakComponent), "delete_identity_providers_endpoint", managementLogger, rateLimitMgmt),
 		}
 	}
 
@@ -1167,6 +1171,10 @@ func main() {
 		var unlinkShadowUserHandler = configureManagementHandler(managementEndpoints.UnlinkShadowUser)
 
 		var getIdentityProvidersHandler = configureManagementHandler(managementEndpoints.GetIdentityProviders)
+		var getIdentityProviderHandler = configureManagementHandler(managementEndpoints.GetIdentityProvider)
+		var createIdentityProviderHandler = configureManagementHandler(managementEndpoints.CreateIdentityProvider)
+		var updateIdentityProviderHandler = configureManagementHandler(managementEndpoints.UpdateIdentityProvider)
+		var deleteIdentityProviderHandler = configureManagementHandler(managementEndpoints.DeleteIdentityProvider)
 
 		// actions
 		managementSubroute.Path("/actions").Methods("GET").Handler(getManagementActionsHandler)
@@ -1270,6 +1278,10 @@ func main() {
 		managementSubroute.Path("/realms/{realm}/users/{userID}/federated-identity/{provider}").Methods("DELETE").Handler(unlinkShadowUserHandler)
 
 		managementSubroute.Path("/realms/{realm}/identity-providers").Methods("GET").Handler(getIdentityProvidersHandler)
+		managementSubroute.Path("/realms/{realm}/identity-providers").Methods("POST").Handler(createIdentityProviderHandler)
+		managementSubroute.Path("/realms/{realm}/identity-providers/{provider}").Methods("GET").Handler(getIdentityProviderHandler)
+		managementSubroute.Path("/realms/{realm}/identity-providers/{provider}").Methods("PUT").Handler(updateIdentityProviderHandler)
+		managementSubroute.Path("/realms/{realm}/identity-providers/{provider}").Methods("DELETE").Handler(deleteIdentityProviderHandler)
 
 		// Accreditations
 		route.Path("/accreditations/realms/{realm}/users/{userID}/revoke-accreditations").Methods("PUT").Handler(revokeAccreditationsHandler)
