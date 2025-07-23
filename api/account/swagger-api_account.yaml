@@ -204,6 +204,35 @@ paths:
       responses:
         200:
           description: successful operation
+  /account/linked-accounts:
+    get:
+      tags:
+      - Account
+      summary: Get the list of accounts linked to the current user
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LinkedAccount'
+  /account/linked-accounts/{providerAlias}:
+    delete:
+      tags:
+      - Account
+      summary: Delete the linked account
+      parameters:
+        - name: providerAlias
+          in: path
+          description: alias of the login provider
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: successful operation
 components:
   schemas:
     UpdatePassword:
@@ -324,6 +353,8 @@ components:
           type: boolean
         show_account_deletion_button:
           type: boolean
+        show_idplinks_tab:
+          type: boolean
         self_service_default_tab:
           type: string
         redirect_successful_registration_url:
@@ -343,6 +374,21 @@ components:
             type: string
         show_gln_editing:
           type: boolean
+    LinkedAccount:
+      type: object
+      properties:
+        connected:
+          type: boolean
+        social:
+          type: boolean
+        providerAlias:
+          type: string
+        providerName:
+          type: string
+        displayName:
+          type: string
+        linkedUsername:
+          type: string
     Profile:
       type: object
       properties:

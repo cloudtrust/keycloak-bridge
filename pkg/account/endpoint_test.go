@@ -176,6 +176,32 @@ func TestMakeUpdateAccountEndpoint(t *testing.T) {
 	})
 }
 
+func TestMakeGetLinkedAccountsEndpoint(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	mockAccountComponent := mock.NewComponent(mockCtrl)
+	mockAccountComponent.EXPECT().GetLinkedAccounts(gomock.Any()).Return([]account_api.LinkedAccountRepresentation{}, nil)
+
+	m := map[string]string{}
+	_, err := MakeGetLinkedAccountsEndpoint(mockAccountComponent)(context.Background(), m)
+	assert.Nil(t, err)
+}
+
+func TestMakeDeleteLinkedAccountEndpoint(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	mockAccountComponent := mock.NewComponent(mockCtrl)
+	mockAccountComponent.EXPECT().DeleteLinkedAccount(gomock.Any(), "idp").Return(nil)
+
+	m := map[string]string{}
+
+	m[prmProviderAlias] = "idp"
+	_, err := MakeDeleteLinkedAccountEndpoint(mockAccountComponent)(context.Background(), m)
+	assert.Nil(t, err)
+}
+
 func TestSimpleEndpoints(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
