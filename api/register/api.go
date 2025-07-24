@@ -2,13 +2,12 @@ package apiregister
 
 import (
 	"context"
-	"encoding/json"
-	"strings"
 
 	cs "github.com/cloudtrust/common-service/v2"
 	"github.com/cloudtrust/common-service/v2/fields"
 	"github.com/cloudtrust/common-service/v2/validation"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
+	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/cloudtrust/keycloak-bridge/internal/profile"
 	kc "github.com/cloudtrust/keycloak-client/v2"
 )
@@ -21,22 +20,42 @@ type ActionRepresentation struct {
 
 // UserRepresentation representation
 type UserRepresentation struct {
-	Username             *string `json:"username,omitempty"`
-	Gender               *string `json:"gender,omitempty"`
-	FirstName            *string `json:"firstName,omitempty"`
-	LastName             *string `json:"lastName,omitempty"`
-	Email                *string `json:"email,omitempty"`
-	PhoneNumber          *string `json:"phoneNumber,omitempty"`
-	BirthDate            *string `json:"birthDate,omitempty"`
-	BirthLocation        *string `json:"birthLocation,omitempty"`
-	Nationality          *string `json:"nationality,omitempty"`
-	IDDocumentType       *string `json:"idDocumentType,omitempty"`
-	IDDocumentNumber     *string `json:"idDocumentNumber,omitempty"`
-	IDDocumentExpiration *string `json:"idDocumentExpiration,omitempty"`
-	IDDocumentCountry    *string `json:"idDocumentCountry,omitempty"`
-	Locale               *string `json:"locale,omitempty"`
-	BusinessID           *string `json:"businessId,omitempty"`
-	OnboardingStatus     *string `json:"onboardingStatus,omitempty"`
+	Username             *string        `json:"username,omitempty"`
+	Gender               *string        `json:"gender,omitempty"`
+	FirstName            *string        `json:"firstName,omitempty"`
+	LastName             *string        `json:"lastName,omitempty"`
+	Email                *string        `json:"email,omitempty"`
+	PhoneNumber          *string        `json:"phoneNumber,omitempty"`
+	BirthDate            *string        `json:"birthDate,omitempty"`
+	BirthLocation        *string        `json:"birthLocation,omitempty"`
+	Nationality          *string        `json:"nationality,omitempty"`
+	IDDocumentType       *string        `json:"idDocumentType,omitempty"`
+	IDDocumentNumber     *string        `json:"idDocumentNumber,omitempty"`
+	IDDocumentExpiration *string        `json:"idDocumentExpiration,omitempty"`
+	IDDocumentCountry    *string        `json:"idDocumentCountry,omitempty"`
+	Locale               *string        `json:"locale,omitempty"`
+	BusinessID           *string        `json:"businessId,omitempty"`
+	OnboardingStatus     *string        `json:"onboardingStatus,omitempty"`
+	Dynamic              map[string]any `json:"-"`
+}
+
+type userAlias UserRepresentation
+
+func (u *userAlias) GetDynamicFields() map[string]any {
+	return u.Dynamic
+}
+
+func (u *userAlias) SetDynamicFields(dynamicFields map[string]any) {
+	u.Dynamic = dynamicFields
+}
+
+func (u UserRepresentation) MarshalJSON() ([]byte, error) {
+	alias := userAlias(u)
+	return keycloakb.DynamicallyMarshalJSON(&alias)
+}
+
+func (u *UserRepresentation) UnmarshalJSON(data []byte) error {
+	return keycloakb.DynamicallyUnmarshalJSON(data, (*userAlias)(u))
 }
 
 // ConfigurationRepresentation representation
@@ -49,23 +68,8 @@ type ConfigurationRepresentation struct {
 	ContextKey                       *string   `json:"contextKey,omitempty"`
 }
 
-// UserFromJSON creates a User using its json representation
-func UserFromJSON(jsonRep string) (UserRepresentation, error) {
-	var user UserRepresentation
-	dec := json.NewDecoder(strings.NewReader(jsonRep))
-	dec.DisallowUnknownFields()
-	err := dec.Decode(&user)
-	return user, err
-}
-
-// UserToJSON returns a json representation of a given User
-func (u *UserRepresentation) UserToJSON() string {
-	var bytes, _ = json.Marshal(u)
-	return string(bytes)
-}
-
 // ConvertToKeycloak converts a given User to a Keycloak UserRepresentation
-func (u *UserRepresentation) ConvertToKeycloak() kc.UserRepresentation {
+func (u *UserRepresentation) ConvertToKeycloak(profile kc.UserProfileRepresentation) kc.UserRepresentation {
 	var (
 		bTrue      = true
 		bFalse     = false
@@ -87,6 +91,7 @@ func (u *UserRepresentation) ConvertToKeycloak() kc.UserRepresentation {
 	attributes.SetStringWhenNotNil(constants.AttrbIDDocumentExpiration, u.IDDocumentExpiration)
 	attributes.SetStringWhenNotNil(constants.AttrbIDDocumentCountry, u.IDDocumentCountry)
 	attributes.SetStringWhenNotNil(constants.AttrbOnboardingStatus, u.OnboardingStatus)
+	attributes.SetDynamicAttributes(u.Dynamic, profile)
 
 	return kc.UserRepresentation{
 		Username:      u.Username,

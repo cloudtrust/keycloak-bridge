@@ -45,6 +45,26 @@ type UserRepresentation struct {
 	Comment              *string                        `json:"comment,omitempty"`
 	Accreditations       *[]AccreditationRepresentation `json:"accreditations,omitempty"`
 	Attachments          *[]AttachmentRepresentation    `json:"attachments,omitempty"`
+	Dynamic              map[string]any                 `json:"-"`
+}
+
+type userAlias UserRepresentation
+
+func (u *userAlias) GetDynamicFields() map[string]any {
+	return u.Dynamic
+}
+
+func (u *userAlias) SetDynamicFields(dynamicFields map[string]any) {
+	u.Dynamic = dynamicFields
+}
+
+func (u UserRepresentation) MarshalJSON() ([]byte, error) {
+	alias := userAlias(u)
+	return keycloakb.DynamicallyMarshalJSON(&alias)
+}
+
+func (u *UserRepresentation) UnmarshalJSON(data []byte) error {
+	return keycloakb.DynamicallyUnmarshalJSON(data, (*userAlias)(u))
 }
 
 // AccreditationRepresentation is a representation of accreditations
@@ -94,23 +114,8 @@ var knownContentTypes = map[string]string{
 	"pdf":  "application/pdf",
 }
 
-// UserFromJSON creates a User using its json representation
-func UserFromJSON(jsonRep string) (UserRepresentation, error) {
-	var user UserRepresentation
-	dec := json.NewDecoder(strings.NewReader(jsonRep))
-	dec.DisallowUnknownFields()
-	err := dec.Decode(&user)
-	return user, err
-}
-
-// UserToJSON returns a json representation of a given User
-func (u *UserRepresentation) UserToJSON() string {
-	var bytes, _ = json.Marshal(u)
-	return string(bytes)
-}
-
 // ExportToKeycloak exports user details into a Keycloak UserRepresentation
-func (u *UserRepresentation) ExportToKeycloak(kcUser *kc.UserRepresentation) {
+func (u *UserRepresentation) ExportToKeycloak(kcUser *kc.UserRepresentation, profile kc.UserProfileRepresentation) {
 	var bFalse = false
 	var bTrue = true
 	var attributes = make(kc.Attributes)
@@ -135,6 +140,7 @@ func (u *UserRepresentation) ExportToKeycloak(kcUser *kc.UserRepresentation) {
 	attributes.SetStringWhenNotNil(constants.AttrbIDDocumentNumber, u.IDDocumentNumber)
 	attributes.SetStringWhenNotNil(constants.AttrbIDDocumentExpiration, u.IDDocumentExpiration)
 	attributes.SetStringWhenNotNil(constants.AttrbIDDocumentCountry, u.IDDocumentCountry)
+	attributes.SetDynamicAttributes(u.Dynamic, profile)
 
 	if u.Username != nil {
 		kcUser.Username = u.Username
@@ -154,7 +160,7 @@ func (u *UserRepresentation) ExportToKeycloak(kcUser *kc.UserRepresentation) {
 }
 
 // ImportFromKeycloak import details from Keycloak
-func (u *UserRepresentation) ImportFromKeycloak(ctx context.Context, kcUser *kc.UserRepresentation, logger keycloakb.Logger) {
+func (u *UserRepresentation) ImportFromKeycloak(ctx context.Context, kcUser *kc.UserRepresentation, profile kc.UserProfileRepresentation, logger keycloakb.Logger) {
 	var phoneNumber = defaultIfNil(kcUser.GetAttributeString(constants.AttrbPhoneNumber), u.PhoneNumber)
 	var gender = defaultIfNil(kcUser.GetAttributeString(constants.AttrbGender), u.Gender)
 	var birthdate = defaultIfNil(kcUser.GetAttributeString(constants.AttrbBirthDate), u.BirthDate)
@@ -210,6 +216,7 @@ func (u *UserRepresentation) ImportFromKeycloak(ctx context.Context, kcUser *kc.
 	u.IDDocumentNumber = idDocumentNumber
 	u.IDDocumentExpiration = idDocumentExpiration
 	u.IDDocumentCountry = idDocumentCountry
+	u.Dynamic = kcUser.GetDynamicAttributes(profile)
 }
 
 func defaultIfNil(value *string, defaultValue *string) *string {

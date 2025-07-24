@@ -437,6 +437,8 @@ func TestCreateUser(t *testing.T) {
 	ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 	ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 
+	mocks.profileCache.EXPECT().GetRealmUserProfile(gomock.Any(), gomock.Any()).Return(kc.UserProfileRepresentation{}, nil).AnyTimes()
+
 	t.Run("Create user failed - can't retrieve admin configuration", func(t *testing.T) {
 		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, socialRealmName).Return(configuration.RealmAdminConfiguration{}, anyError)
 		mocks.logger.EXPECT().Warn(ctx, "msg", "Failed to retrieve realm admin configuration", "err", anyError.Error())
@@ -645,6 +647,7 @@ func TestCreateUserInSocialRealm(t *testing.T) {
 	})
 	t.Run("Process already existing user cases calls handler", func(t *testing.T) {
 		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, socialRealmName).Return(configuration.RealmAdminConfiguration{}, nil)
+		mocks.profileCache.EXPECT().GetRealmUserProfile(gomock.Any(), gomock.Any()).Return(kc.UserProfileRepresentation{}, nil).AnyTimes()
 		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, socialRealmName).Return(accessToken, nil)
 		mocks.onboardingModule.EXPECT().ProcessAlreadyExistingUserCases(ctx, accessToken, managementComponent.socialRealmName, email, realmName, gomock.Any()).Return(anyError)
 		_, err := managementComponent.CreateUserInSocialRealm(ctx, userRep, false)
@@ -759,12 +762,13 @@ func TestGetUser(t *testing.T) {
 			CreatedTimestamp: &createdTimestamp,
 		}
 
-		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, id).Return(kcUserRep, nil)
-
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 		ctx = context.WithValue(ctx, cs.CtContextUserID, id)
 		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
+
+		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, id).Return(kcUserRep, nil)
+		mocks.profileCache.EXPECT().GetRealmUserProfile(ctx, realmName).Return(kc.UserProfileRepresentation{}, nil)
 
 		mocks.accreditationsClient.EXPECT().GetPendingChecks(ctx, realmName, id).Return([]accreditationsclient.CheckRepresentation{{
 			Nature:   ptr("nature"),
@@ -837,12 +841,13 @@ func TestGetUser(t *testing.T) {
 			CreatedTimestamp: &createdTimestamp,
 		}
 
-		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, id).Return(kcUserRep, nil)
-
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 		ctx = context.WithValue(ctx, cs.CtContextUserID, id)
 		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
+
+		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, id).Return(kcUserRep, nil)
+		mocks.profileCache.EXPECT().GetRealmUserProfile(ctx, realmName).Return(kc.UserProfileRepresentation{}, nil)
 
 		mocks.accreditationsClient.EXPECT().GetPendingChecks(ctx, realmName, id).Return([]accreditationsclient.CheckRepresentation{{
 			Nature:   ptr("nature"),
@@ -883,9 +888,10 @@ func TestGetUser(t *testing.T) {
 			ID:       &id,
 			Username: &username,
 		}
-		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, id).Return(kcUserRep, nil)
-
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+
+		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, id).Return(kcUserRep, nil)
+		mocks.profileCache.EXPECT().GetRealmUserProfile(ctx, realmName).Return(kc.UserProfileRepresentation{}, nil)
 
 		mocks.accreditationsClient.EXPECT().GetPendingChecks(ctx, realmName, id).Return([]accreditationsclient.CheckRepresentation{}, fmt.Errorf("SQL Error"))
 		mocks.logger.EXPECT().Warn(ctx, "msg", "Can't get pending checks", "err", "SQL Error")
@@ -993,6 +999,7 @@ func TestUpdateUser(t *testing.T) {
 	ctx = context.WithValue(ctx, cs.CtContextUsername, *userRep.Username)
 
 	mocks.logger.EXPECT().Info(gomock.Any(), gomock.Any()).AnyTimes()
+	mocks.profileCache.EXPECT().GetRealmUserProfile(gomock.Any(), gomock.Any()).Return(kc.UserProfileRepresentation{}, nil).AnyTimes()
 
 	t.Run("Accreditations evaluation fails", func(t *testing.T) {
 		var newUsername = "new-username"
@@ -1432,14 +1439,15 @@ func TestGetUsers(t *testing.T) {
 			Users: []kc.UserRepresentation{kcUserRep},
 		}
 
-		mocks.keycloakClient.EXPECT().GetUsers(accessToken, realmName, targetRealmName, "groupId", "123-456-789").Return(kcUsersRep, nil)
-
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextUserID, id)
 		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, "master")
 
-		apiUsersRep, err := managementComponent.GetUsers(ctx, "DEP", []string{"123-456-789"})
+		mocks.keycloakClient.EXPECT().GetUsers(accessToken, realmName, targetRealmName, "groupId", "123-456-789").Return(kcUsersRep, nil)
+		mocks.profileCache.EXPECT().GetRealmUserProfile(ctx, targetRealmName).Return(kc.UserProfileRepresentation{}, nil)
+
+		apiUsersRep, err := managementComponent.GetUsers(ctx, targetRealmName, []string{"123-456-789"})
 
 		var apiUserRep = apiUsersRep.Users[0]
 		assert.Nil(t, err)

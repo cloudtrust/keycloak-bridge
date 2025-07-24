@@ -313,7 +313,12 @@ func (c *component) sendAlreadyExistsEmail(ctx context.Context, accessToken stri
 }
 
 func (c *component) createUser(ctx context.Context, accessToken string, realmName string, user apiregister.UserRepresentation, groupNames []string, needEmailToValidate bool) (kc.UserRepresentation, error) {
-	var kcUser = user.ConvertToKeycloak()
+	profile, err := c.profileCache.GetRealmUserProfile(ctx, realmName)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "failed to load user profile")
+		return kc.UserRepresentation{}, err
+	}
+	kcUser := user.ConvertToKeycloak(profile)
 	kcUser.SetAttributeString(constants.AttrbSource, "register")
 
 	if needEmailToValidate {

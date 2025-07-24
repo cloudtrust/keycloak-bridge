@@ -398,7 +398,13 @@ func (c *component) CreateUserInSocialRealm(ctx context.Context, user api.UserRe
 
 func (c *component) genericCreateUser(ctx context.Context, accessToken string, customerRealmName string, targetRealmName string, source string,
 	user api.UserRepresentation, generateUsername bool, generateNameID bool, termsOfUse bool, useOnboardingCheckForExistingUser bool) (string, error) {
-	var userRep = api.ConvertToKCUser(user)
+	profile, err := c.profileCache.GetRealmUserProfile(ctx, targetRealmName)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "failed to load user profile")
+		return "", err
+	}
+
+	var userRep = api.ConvertToKCUser(user, profile)
 	userRep.SetAttributeString(constants.AttrbSource, source)
 
 	realmAdminConfig, err := c.configDBModule.GetAdminConfiguration(ctx, targetRealmName)
@@ -492,7 +498,12 @@ func (c *component) GetUser(ctx context.Context, realmName, userID string) (api.
 	}
 	keycloakb.ConvertLegacyAttribute(&userKc)
 
-	userRep = api.ConvertToAPIUser(ctx, userKc, c.logger)
+	profile, err := c.profileCache.GetRealmUserProfile(ctx, realmName)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "failed to load user profile")
+		return userRep, err
+	}
+	userRep = api.ConvertToAPIUser(ctx, userKc, profile, c.logger)
 
 	var username = ""
 	if userKc.Username != nil {
@@ -606,7 +617,13 @@ func (c *component) UpdateUser(ctx context.Context, realmName, userID string, us
 	newAccreditations := ap.ToKeycloak()
 
 	var oldEnabled = oldUserKc.Enabled
-	api.MergeUpdatableUserWithoutEmailAndPhoneNumber(&oldUserKc, user)
+
+	profile, err := c.profileCache.GetRealmUserProfile(ctx, realmName)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "failed to load user profile")
+		return err
+	}
+	api.MergeUpdatableUserWithoutEmailAndPhoneNumber(&oldUserKc, user, profile)
 	if user.Email.Defined && user.Email.Value == nil {
 		// empty string to remove an email
 		oldUserKc.Email = user.Email.ToValue("")
@@ -723,7 +740,12 @@ func (c *component) GetUsers(ctx context.Context, realmName string, groupIDs []s
 	for i := 0; i < len(usersKc.Users); i++ {
 		keycloakb.ConvertLegacyAttribute(&usersKc.Users[i])
 	}
-	return api.ConvertToAPIUsersPage(ctx, usersKc, c.logger), nil
+	profile, err := c.profileCache.GetRealmUserProfile(ctx, realmName)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "failed to load user profile")
+		return api.UsersPageRepresentation{}, err
+	}
+	return api.ConvertToAPIUsersPage(ctx, usersKc, profile, c.logger), nil
 }
 
 func (c *component) GetUserChecks(ctx context.Context, realmName, userID string) ([]api.UserCheck, error) {

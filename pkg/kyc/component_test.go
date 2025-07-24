@@ -153,6 +153,8 @@ func TestGetUserByUsername(t *testing.T) {
 	var mocks = createComponentMocks(mockCtrl)
 	var component = mocks.NewComponent(realm)
 
+	mocks.userProfile.EXPECT().GetRealmUserProfile(gomock.Any(), gomock.Any()).Return(kc.UserProfileRepresentation{}, nil).AnyTimes()
+
 	t.Run("Social-Failed to retrieve OIDC token", func(t *testing.T) {
 		var oidcError = errors.New("oidc error")
 		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realm).Return("", oidcError)
@@ -258,6 +260,8 @@ func TestGetUserComponent(t *testing.T) {
 	var mocks = createComponentMocks(mockCtrl)
 	var component = mocks.NewComponent(realm)
 
+	mocks.userProfile.EXPECT().GetRealmUserProfile(gomock.Any(), gomock.Any()).Return(kc.UserProfileRepresentation{}, nil).AnyTimes()
+
 	t.Run("Social-Failed to retrieve OIDC token", func(t *testing.T) {
 		var oidcError = errors.New("oidc error")
 		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realm).Return("", oidcError)
@@ -339,6 +343,7 @@ func TestValidateUser(t *testing.T) {
 	ctx = context.WithValue(ctx, cs.CtContextUsername, "operator")
 
 	mocks.configDB.EXPECT().GetAdminConfiguration(gomock.Any(), gomock.Any()).Return(cfgConsentNotRequired, nil).AnyTimes()
+	mocks.userProfile.EXPECT().GetRealmUserProfile(gomock.Any(), gomock.Any()).Return(kc.UserProfileRepresentation{}, nil).AnyTimes()
 
 	t.Run("Failed to retrieve OIDC token", func(t *testing.T) {
 		var oidcError = errors.New("oidc error")

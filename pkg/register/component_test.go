@@ -142,6 +142,7 @@ func TestRegisterUser(t *testing.T) {
 		Realm:        &customerRealmName,
 		RedirectMode: ptrBool(true),
 	}, true).AnyTimes()
+	mocks.profileCache.EXPECT().GetRealmUserProfile(gomock.Any(), gomock.Any()).Return(kc.UserProfileRepresentation{}, nil).AnyTimes()
 
 	t.Run("Failed to retrieve token", func(t *testing.T) {
 		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, gomock.Any()).Return("", errors.New("unexpected error"))

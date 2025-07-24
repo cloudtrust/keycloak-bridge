@@ -2,6 +2,7 @@ package register
 
 import (
 	"context"
+	"encoding/json"
 
 	cs "github.com/cloudtrust/common-service/v2"
 	commonerrors "github.com/cloudtrust/common-service/v2/errors"
@@ -59,7 +60,8 @@ func MakeRegisterCorpUserEndpoint(component Component, profileCache UserProfileC
 }
 
 func registerUser(ctx context.Context, component Component, profileCache UserProfileCache, logger log.Logger, corpRealm string, realm string, body string, contextKey *string) (any, error) {
-	var user, err = apiregister.UserFromJSON(body)
+	var user apiregister.UserRepresentation
+	err := json.Unmarshal([]byte(body), &user)
 	if err != nil {
 		return nil, commonerrors.CreateBadRequestError(commonerrors.MsgErrInvalidParam + "." + msg.BodyContent)
 	}

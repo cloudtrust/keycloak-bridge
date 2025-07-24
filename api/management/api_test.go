@@ -24,6 +24,13 @@ func ptr(value string) *string {
 func boolPtr(value bool) *bool {
 	return &value
 }
+func intPtr(value int) *int {
+	return &value
+}
+
+func int64Ptr(value int64) *int64 {
+	return &value
+}
 
 func TestConvertCredential(t *testing.T) {
 	var credKc kc.CredentialRepresentation
@@ -70,93 +77,112 @@ func TestConvertAttackDetectionStatus(t *testing.T) {
 func TestConvertToAPIUser(t *testing.T) {
 	var ctx = context.TODO()
 	var logger = log.NewNopLogger()
+	profile := kc.UserProfileRepresentation{}
 
 	var kcUser kc.UserRepresentation
 	m := make(kc.Attributes)
 
 	t.Run("Phone number", func(t *testing.T) {
-		assert.Nil(t, ConvertToAPIUser(ctx, kcUser, logger).PhoneNumber)
+		assert.Nil(t, ConvertToAPIUser(ctx, kcUser, profile, logger).PhoneNumber)
 		kcUser.Attributes = &m
 		m.SetString(constants.AttrbPhoneNumber, "+4122555555")
-		assert.NotNil(t, ConvertToAPIUser(ctx, kcUser, logger).PhoneNumber)
+		assert.NotNil(t, ConvertToAPIUser(ctx, kcUser, profile, logger).PhoneNumber)
 	})
 	t.Run("Label", func(t *testing.T) {
-		assert.Nil(t, ConvertToAPIUser(ctx, kcUser, logger).Label)
+		assert.Nil(t, ConvertToAPIUser(ctx, kcUser, profile, logger).Label)
 		kcUser.Attributes = &m
 		m.SetString(constants.AttrbLabel, "a label")
-		assert.NotNil(t, ConvertToAPIUser(ctx, kcUser, logger).Label)
+		assert.NotNil(t, ConvertToAPIUser(ctx, kcUser, profile, logger).Label)
 	})
 	t.Run("Gender", func(t *testing.T) {
-		assert.Nil(t, ConvertToAPIUser(ctx, kcUser, logger).Gender)
+		assert.Nil(t, ConvertToAPIUser(ctx, kcUser, profile, logger).Gender)
 		kcUser.Attributes = &m
 		m.SetString(constants.AttrbGender, "a gender")
-		assert.NotNil(t, ConvertToAPIUser(ctx, kcUser, logger).Gender)
+		assert.NotNil(t, ConvertToAPIUser(ctx, kcUser, profile, logger).Gender)
 	})
 	t.Run("Birthdate", func(t *testing.T) {
-		assert.Nil(t, ConvertToAPIUser(ctx, kcUser, logger).BirthDate)
+		assert.Nil(t, ConvertToAPIUser(ctx, kcUser, profile, logger).BirthDate)
 		kcUser.Attributes = &m
 		m.SetString(constants.AttrbBirthDate, "25/12/0")
-		assert.NotNil(t, ConvertToAPIUser(ctx, kcUser, logger).BirthDate)
+		assert.NotNil(t, ConvertToAPIUser(ctx, kcUser, profile, logger).BirthDate)
 	})
 	t.Run("Phone number verified", func(t *testing.T) {
-		assert.Nil(t, ConvertToAPIUser(ctx, kcUser, logger).PhoneNumberVerified)
+		assert.Nil(t, ConvertToAPIUser(ctx, kcUser, profile, logger).PhoneNumberVerified)
 		kcUser.Attributes = &m
 		m.SetBool(constants.AttrbPhoneNumberVerified, true)
-		assert.True(t, *ConvertToAPIUser(ctx, kcUser, logger).PhoneNumberVerified)
+		assert.True(t, *ConvertToAPIUser(ctx, kcUser, profile, logger).PhoneNumberVerified)
 	})
 	t.Run("Locale", func(t *testing.T) {
-		assert.Nil(t, ConvertToAPIUser(ctx, kcUser, logger).Locale)
+		assert.Nil(t, ConvertToAPIUser(ctx, kcUser, profile, logger).Locale)
 		kcUser.Attributes = &m
 		m.SetString(constants.AttrbLocale, "en")
-		assert.NotNil(t, *ConvertToAPIUser(ctx, kcUser, logger).Locale)
+		assert.NotNil(t, *ConvertToAPIUser(ctx, kcUser, profile, logger).Locale)
 	})
 	t.Run("SMS sent", func(t *testing.T) {
-		assert.Nil(t, ConvertToAPIUser(ctx, kcUser, logger).SmsSent)
+		assert.Nil(t, ConvertToAPIUser(ctx, kcUser, profile, logger).SmsSent)
 		kcUser.Attributes = &m
 		m.SetInt(constants.AttrbSmsSent, 0)
-		assert.NotNil(t, *ConvertToAPIUser(ctx, kcUser, logger).SmsSent)
+		assert.NotNil(t, *ConvertToAPIUser(ctx, kcUser, profile, logger).SmsSent)
 	})
 	t.Run("SMS failed attempts", func(t *testing.T) {
-		assert.Nil(t, ConvertToAPIUser(ctx, kcUser, logger).SmsAttempts)
+		assert.Nil(t, ConvertToAPIUser(ctx, kcUser, profile, logger).SmsAttempts)
 		kcUser.Attributes = &m
 		m.SetInt(constants.AttrbSmsAttempts, 0)
-		assert.NotNil(t, *ConvertToAPIUser(ctx, kcUser, logger).SmsAttempts)
+		assert.NotNil(t, *ConvertToAPIUser(ctx, kcUser, profile, logger).SmsAttempts)
 	})
 	t.Run("trustID groups", func(t *testing.T) {
-		assert.Nil(t, ConvertToAPIUser(ctx, kcUser, logger).TrustIDGroups)
+		assert.Nil(t, ConvertToAPIUser(ctx, kcUser, profile, logger).TrustIDGroups)
 		kcUser.Attributes = &m
 		m.SetString(constants.AttrbTrustIDGroups, "en")
-		assert.NotNil(t, *ConvertToAPIUser(ctx, kcUser, logger).TrustIDGroups)
+		assert.NotNil(t, *ConvertToAPIUser(ctx, kcUser, profile, logger).TrustIDGroups)
 	})
 	t.Run("Accreditations", func(t *testing.T) {
-		assert.Nil(t, ConvertToAPIUser(ctx, kcUser, logger).Accreditations)
+		assert.Nil(t, ConvertToAPIUser(ctx, kcUser, profile, logger).Accreditations)
 		kcUser.SetAttribute("accreditations", []string{`{"type":"one", "creationMillis":1643380967867, "expiryDate":"05.04.2020"}`, `{"type":"two", "creationMillis":1643380967867, "expiryDate":"05.03.2022"}`, `{`})
-		assert.Len(t, *ConvertToAPIUser(ctx, kcUser, logger).Accreditations, 2)
+		assert.Len(t, *ConvertToAPIUser(ctx, kcUser, profile, logger).Accreditations, 2)
 		kcUser.SetAttribute("accreditations", []string{``})
-		assert.Nil(t, ConvertToAPIUser(ctx, kcUser, logger).Accreditations)
+		assert.Nil(t, ConvertToAPIUser(ctx, kcUser, profile, logger).Accreditations)
 	})
 	t.Run("Onboarding completed", func(t *testing.T) {
-		assert.Nil(t, ConvertToAPIUser(ctx, kcUser, logger).OnboardingCompleted)
+		assert.Nil(t, ConvertToAPIUser(ctx, kcUser, profile, logger).OnboardingCompleted)
 		kcUser.SetAttributeBool("onboardingCompleted", true)
-		assert.True(t, *ConvertToAPIUser(ctx, kcUser, logger).OnboardingCompleted)
+		assert.True(t, *ConvertToAPIUser(ctx, kcUser, profile, logger).OnboardingCompleted)
+	})
+	t.Run("Dynamic attributes", func(t *testing.T) {
+		customAttribute := "customAttribute"
+		profile := kc.UserProfileRepresentation{
+			Attributes: []kc.ProfileAttrbRepresentation{
+				{
+					Name:        &customAttribute,
+					Annotations: map[string]string{"dynamic": "true"},
+				},
+			},
+		}
+		profile.InitDynamicAttributes()
+
+		assert.Len(t, ConvertToAPIUser(ctx, kcUser, profile, logger).Dynamic, 0)
+		kcUser.Attributes = &m
+		m.SetString(kc.AttributeKey(customAttribute), "customValue")
+		assert.Len(t, ConvertToAPIUser(ctx, kcUser, profile, logger).Dynamic, 1)
 	})
 }
 
 func TestConvertToAPIUsersPage(t *testing.T) {
 	var ctx = context.TODO()
 	var logger = log.NewNopLogger()
+	profile := kc.UserProfileRepresentation{}
 
 	t.Run("With content", func(t *testing.T) {
 		var count = 10
 		var input = kc.UsersPageRepresentation{Count: &count, Users: []kc.UserRepresentation{{}, {}}}
-		var output = ConvertToAPIUsersPage(ctx, input, logger)
+		var output = ConvertToAPIUsersPage(ctx, input, profile, logger)
 		assert.Equal(t, count, *output.Count)
 		assert.Equal(t, len(input.Users), len(output.Users))
 	})
 
 	t.Run("Empty set", func(t *testing.T) {
 		var input = kc.UsersPageRepresentation{Count: nil, Users: nil}
-		var output = ConvertToAPIUsersPage(ctx, input, logger)
+		var output = ConvertToAPIUsersPage(ctx, input, profile, logger)
 		assert.NotNil(t, output.Users)
 		assert.NotNil(t, output.Count)
 		assert.Equal(t, 0, len(output.Users))
@@ -171,52 +197,71 @@ func TestConvertToAPIUsersPage(t *testing.T) {
 
 func TestConvertToKCUser(t *testing.T) {
 	var user UserRepresentation
+	profile := kc.UserProfileRepresentation{}
 
-	// Phone number
-	assert.Nil(t, ConvertToKCUser(user).Attributes)
-	var phoneNumber = "+4122555555"
-	user.PhoneNumber = &phoneNumber
-	assert.Equal(t, phoneNumber, (*ConvertToKCUser(user).Attributes)[constants.AttrbPhoneNumber][0])
+	t.Run("Phone number", func(t *testing.T) {
+		assert.Nil(t, ConvertToKCUser(user, profile).Attributes)
+		var phoneNumber = "+4122555555"
+		user.PhoneNumber = &phoneNumber
+		assert.Equal(t, phoneNumber, (*ConvertToKCUser(user, profile).Attributes)[constants.AttrbPhoneNumber][0])
+	})
+	t.Run("Label", func(t *testing.T) {
+		var label = "a label"
+		user.Label = &label
+		assert.Equal(t, label, (*ConvertToKCUser(user, profile).Attributes)[constants.AttrbLabel][0])
+	})
+	t.Run("Gender", func(t *testing.T) {
+		var gender = "a gender"
+		user.Gender = &gender
+		assert.Equal(t, gender, (*ConvertToKCUser(user, profile).Attributes)[constants.AttrbGender][0])
+	})
+	t.Run("Birthdate", func(t *testing.T) {
+		var date = "25/12/0"
+		user.BirthDate = &date
+		assert.Equal(t, date, (*ConvertToKCUser(user, profile).Attributes)[constants.AttrbBirthDate][0])
+	})
+	t.Run("PhoneNumberVerified", func(t *testing.T) {
+		var verified = true
+		user.PhoneNumberVerified = &verified
+		assert.Equal(t, "true", (*ConvertToKCUser(user, profile).Attributes)[constants.AttrbPhoneNumberVerified][0])
+	})
+	t.Run("Locale", func(t *testing.T) {
+		var locale = "it"
+		user.Locale = &locale
+		assert.Equal(t, locale, (*ConvertToKCUser(user, profile).Attributes)[constants.AttrbLocale][0])
+	})
+	t.Run("Dynamic attribute", func(t *testing.T) {
+		customAttribute := "customAttribute"
+		profile := kc.UserProfileRepresentation{
+			Attributes: []kc.ProfileAttrbRepresentation{
+				{
+					Name:        &customAttribute,
+					Annotations: map[string]string{"dynamic": "true"},
+				},
+			},
+		}
+		profile.InitDynamicAttributes()
 
-	// Label
-	var label = "a label"
-	user.Label = &label
-	assert.Equal(t, label, (*ConvertToKCUser(user).Attributes)[constants.AttrbLabel][0])
-
-	// Gender
-	var gender = "a gender"
-	user.Gender = &gender
-	assert.Equal(t, gender, (*ConvertToKCUser(user).Attributes)[constants.AttrbGender][0])
-
-	// Birthdate
-	var date = "25/12/0"
-	user.BirthDate = &date
-	assert.Equal(t, date, (*ConvertToKCUser(user).Attributes)[constants.AttrbBirthDate][0])
-
-	// PhoneNumberVerified
-	var verified = true
-	user.PhoneNumberVerified = &verified
-	assert.Equal(t, "true", (*ConvertToKCUser(user).Attributes)[constants.AttrbPhoneNumberVerified][0])
-
-	// Locale
-	var locale = "it"
-	user.Locale = &locale
-	assert.Equal(t, locale, (*ConvertToKCUser(user).Attributes)[constants.AttrbLocale][0])
-
+		value := "customValue"
+		user.Dynamic = map[string]any{customAttribute: value}
+		kcUser := ConvertToKCUser(user, profile)
+		assert.Equal(t, value, kcUser.GetDynamicAttributes(profile)[customAttribute])
+	})
 }
 
 func TestMergeUpdatableUser(t *testing.T) {
 	var user UpdatableUserRepresentation
 	var kcUser kc.UserRepresentation
+	profile := kc.UserProfileRepresentation{}
 
-	MergeUpdatableUserWithoutEmailAndPhoneNumber(&kcUser, user)
+	MergeUpdatableUserWithoutEmailAndPhoneNumber(&kcUser, user, profile)
 	assert.Nil(t, kcUser.Attributes)
 
 	t.Run("Label", func(t *testing.T) {
 		var label = "a label"
 		user.Label = &label
 		kcUser = kc.UserRepresentation{}
-		MergeUpdatableUserWithoutEmailAndPhoneNumber(&kcUser, user)
+		MergeUpdatableUserWithoutEmailAndPhoneNumber(&kcUser, user, profile)
 		assert.Equal(t, label, (*kcUser.Attributes)[constants.AttrbLabel][0])
 	})
 
@@ -224,7 +269,7 @@ func TestMergeUpdatableUser(t *testing.T) {
 		var gender = "a gender"
 		user.Gender = &gender
 		kcUser = kc.UserRepresentation{}
-		MergeUpdatableUserWithoutEmailAndPhoneNumber(&kcUser, user)
+		MergeUpdatableUserWithoutEmailAndPhoneNumber(&kcUser, user, profile)
 		assert.Equal(t, gender, (*kcUser.Attributes)[constants.AttrbGender][0])
 	})
 
@@ -232,7 +277,7 @@ func TestMergeUpdatableUser(t *testing.T) {
 		var date = "25/12/0"
 		user.BirthDate = &date
 		kcUser = kc.UserRepresentation{}
-		MergeUpdatableUserWithoutEmailAndPhoneNumber(&kcUser, user)
+		MergeUpdatableUserWithoutEmailAndPhoneNumber(&kcUser, user, profile)
 		assert.Equal(t, date, (*kcUser.Attributes)[constants.AttrbBirthDate][0])
 	})
 
@@ -240,7 +285,7 @@ func TestMergeUpdatableUser(t *testing.T) {
 		var verified = true
 		user.PhoneNumberVerified = &verified
 		kcUser = kc.UserRepresentation{}
-		MergeUpdatableUserWithoutEmailAndPhoneNumber(&kcUser, user)
+		MergeUpdatableUserWithoutEmailAndPhoneNumber(&kcUser, user, profile)
 		assert.Equal(t, "true", (*kcUser.Attributes)[constants.AttrbPhoneNumberVerified][0])
 	})
 
@@ -248,7 +293,7 @@ func TestMergeUpdatableUser(t *testing.T) {
 		var locale = "it"
 		user.Locale = &locale
 		kcUser = kc.UserRepresentation{}
-		MergeUpdatableUserWithoutEmailAndPhoneNumber(&kcUser, user)
+		MergeUpdatableUserWithoutEmailAndPhoneNumber(&kcUser, user, profile)
 		assert.Equal(t, locale, (*kcUser.Attributes)[constants.AttrbLocale][0])
 	})
 
@@ -256,9 +301,66 @@ func TestMergeUpdatableUser(t *testing.T) {
 		var businessID = "123456789"
 		user.BusinessID = csjson.StringToOptional(businessID)
 		kcUser = kc.UserRepresentation{}
-		MergeUpdatableUserWithoutEmailAndPhoneNumber(&kcUser, user)
+		MergeUpdatableUserWithoutEmailAndPhoneNumber(&kcUser, user, profile)
 		assert.Equal(t, businessID, *kcUser.Attributes.GetString(constants.AttrbBusinessID))
 	})
+}
+
+func TestMarshalUserRepresentation(t *testing.T) {
+	userJSON := `{"id":"251d6e49-7b91-4677-889d-8e43a093bdf3","username":"50000003","gender":"M","firstName":"Jordan","lastName":"Peele","email":"testtrustid+jordan+peele@gmail.com","emailVerified":true,"phoneNumber":"+41780000000","phoneNumberVerified":true,"birthDate":"25.10.1978","birthLocation":"Haddonfield NJ","nationality":"CH","idDocumentType":"ID_CARD","idDocumentNumber":"A1234567","idDocumentExpiration":"20.06.2033","idDocumentCountry":"CH","locale":"en","smsSent":0,"smsAttempts":0,"enabled":true,"accreditations":[{"type":"DEP","expiryDate":"11.07.2029","revoked":false,"expired":false}],"onboardingCompleted":true,"createdTimestamp":1746715933372,"dynamicAttribute":"custom"}`
+
+	user := UserRepresentation{
+		ID:                   ptr("251d6e49-7b91-4677-889d-8e43a093bdf3"),
+		Username:             ptr("50000003"),
+		Gender:               ptr("M"),
+		FirstName:            ptr("Jordan"),
+		LastName:             ptr("Peele"),
+		Email:                ptr("testtrustid+jordan+peele@gmail.com"),
+		EmailVerified:        boolPtr(true),
+		PhoneNumber:          ptr("+41780000000"),
+		PhoneNumberVerified:  boolPtr(true),
+		BirthDate:            ptr("25.10.1978"),
+		BirthLocation:        ptr("Haddonfield NJ"),
+		Nationality:          ptr("CH"),
+		IDDocumentType:       ptr("ID_CARD"),
+		IDDocumentNumber:     ptr("A1234567"),
+		IDDocumentExpiration: ptr("20.06.2033"),
+		IDDocumentCountry:    ptr("CH"),
+		Locale:               ptr("en"),
+		SmsSent:              intPtr(0),
+		SmsAttempts:          intPtr(0),
+		Enabled:              boolPtr(true),
+		Accreditations: &[]AccreditationRepresentation{
+			{
+				Type:       ptr("DEP"),
+				ExpiryDate: ptr("11.07.2029"),
+				Revoked:    boolPtr(false),
+				Expired:    boolPtr(false),
+			},
+		},
+		OnboardingCompleted: boolPtr(true),
+		CreatedTimestamp:    int64Ptr(1746715933372),
+		Dynamic: map[string]any{
+			"dynamicAttribute": "custom",
+		},
+	}
+
+	var u UserRepresentation
+
+	assert.Nil(t, json.Unmarshal([]byte(userJSON), &u))
+	assert.Equal(t, user, u)
+
+	valueJSON, err := json.Marshal(user)
+	assert.Nil(t, err)
+	pointerJSON, err := json.Marshal(&user)
+	assert.Nil(t, err)
+
+	var userFromValue UserRepresentation
+	var userFromPointer UserRepresentation
+	assert.Nil(t, json.Unmarshal(valueJSON, &userFromValue))
+	assert.Nil(t, json.Unmarshal(pointerJSON, &userFromPointer))
+	assert.Equal(t, user, userFromValue)
+	assert.Equal(t, userFromValue, userFromPointer)
 }
 
 func TestConvertAPIRole(t *testing.T) {

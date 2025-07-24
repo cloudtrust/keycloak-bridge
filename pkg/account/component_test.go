@@ -218,6 +218,7 @@ func TestUpdateAccount(t *testing.T) {
 	var searchedUsers = kc.UsersPageRepresentation{Count: &one, Users: []kc.UserRepresentation{kcUserRep}}
 
 	mocks.auditEventsReporterModule.EXPECT().ReportEvent(gomock.Any(), gomock.Any()).AnyTimes()
+	mocks.userProfileCache.EXPECT().GetRealmUserProfile(gomock.Any(), gomock.Any()).Return(kc.UserProfileRepresentation{}, nil).AnyTimes()
 
 	t.Run("GetAccount fails", func(t *testing.T) {
 		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kcUserRep, anError)
@@ -463,6 +464,8 @@ func TestUpdateAccountRevokeAccreditation(t *testing.T) {
 	var revokedAccred = []string{`{"type":"ONE","expiryDate":"` + inFiveYears + `","revoked":true}`}
 	kcUserRep.SetAttribute(constants.AttrbAccreditations, accred)
 
+	mocks.userProfileCache.EXPECT().GetRealmUserProfile(gomock.Any(), gomock.Any()).Return(kc.UserProfileRepresentation{}, nil).AnyTimes()
+
 	t.Run("Update account with succces - revoke accreditation", func(t *testing.T) {
 		var otherLastName = "Toto"
 		var userRepUpdate = api.UpdatableAccountRepresentation{
@@ -514,6 +517,8 @@ func TestGetUser(t *testing.T) {
 	ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 	ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 	ctx = context.WithValue(ctx, cs.CtContextUserID, userID)
+
+	mocks.userProfileCache.EXPECT().GetRealmUserProfile(gomock.Any(), gomock.Any()).Return(kc.UserProfileRepresentation{}, nil).AnyTimes()
 
 	t.Run("Call to Keycloak fails", func(t *testing.T) {
 		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kc.UserRepresentation{}, anyError)
