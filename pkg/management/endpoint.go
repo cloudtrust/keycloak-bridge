@@ -99,6 +99,7 @@ type Endpoints struct {
 
 	GetFederatedIdentities endpoint.Endpoint
 	LinkShadowUser         endpoint.Endpoint
+	UnlinkShadowUser       endpoint.Endpoint
 
 	GetIdentityProviders endpoint.Endpoint
 }
@@ -1138,6 +1139,15 @@ func MakeLinkShadowUserEndpoint(component Component) cs.Endpoint {
 		}
 
 		return nil, nil
+	}
+}
+
+// MakeUnlinkShadowUserEndpoint makes the endpoint to remove a login provider from a user.
+func MakeUnlinkShadowUserEndpoint(component Component) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+
+		return nil, component.UnlinkShadowUser(ctx, m[prmRealm], m[prmUserID], m[prmProvider])
 	}
 }
 
