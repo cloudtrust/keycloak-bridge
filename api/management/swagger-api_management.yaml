@@ -1941,6 +1941,32 @@ paths:
       responses:
         200:
           description: successful operation  
+    delete:
+      tags:
+      - Brokering
+      summary: Remove a login provider from a user.
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: User id
+        required: true
+        schema:
+          type: string
+      - name: provider
+        in: path
+        description: Login provider id
+        required: true
+        schema:
+          type: string        
+      responses:
+        200:
+          description: successful operation
   /realms/{realm}/identity-providers:
     get:
       tags:
@@ -2357,6 +2383,8 @@ components:
           type: boolean
         api_self_account_deletion_enabled:
           type: boolean
+        api_self_idplinks_management_enabled:
+          type: boolean
         show_authenticators_tab:
           type: boolean
         show_password_tab:
@@ -2364,6 +2392,8 @@ components:
         show_profile_tab:
           type: boolean
         show_account_deletion_button:
+          type: boolean
+        show_idplinks_tab:
           type: boolean
         self_service_default_tab:
           type: string

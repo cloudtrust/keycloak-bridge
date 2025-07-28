@@ -90,6 +90,7 @@ type KeycloakClient interface {
 	ResetPapercardFailures(accessToken string, realmName string, userID string, credentialID string) error
 	GetFederatedIdentities(accessToken string, realmName string, userID string) ([]kc.FederatedIdentityRepresentation, error)
 	LinkShadowUser(accessToken string, realmName string, userID string, provider string, fedID kc.FederatedIdentityRepresentation) error
+	UnlinkShadowUser(accessToken string, realmName string, userID string, provider string) error
 	ClearUserLoginFailures(accessToken string, realmName, userID string) error
 	GetAttackDetectionStatus(accessToken string, realmName, userID string) (map[string]interface{}, error)
 	GetIdps(accessToken string, realmName string) ([]kc.IdentityProviderRepresentation, error)
@@ -205,6 +206,7 @@ type Component interface {
 
 	GetFederatedIdentities(ctx context.Context, realmName string, userID string) ([]api.FederatedIdentityRepresentation, error)
 	LinkShadowUser(ctx context.Context, realmName string, userID string, provider string, fedID api.FederatedIdentityRepresentation) error
+	UnlinkShadowUser(ctx context.Context, realmName string, userID string, provider string) error
 
 	GetIdentityProviders(ctx context.Context, realmName string) ([]api.IdentityProviderRepresentation, error)
 }
@@ -2277,10 +2279,12 @@ func (c *component) UpdateRealmCustomConfiguration(ctx context.Context, realmNam
 		APISelfPasswordChangeEnabled:        customConfig.APISelfPasswordChangeEnabled,
 		APISelfAccountEditingEnabled:        customConfig.APISelfAccountEditingEnabled,
 		APISelfAccountDeletionEnabled:       customConfig.APISelfAccountDeletionEnabled,
+		APISelfIDPLinksManagementEnabled:    customConfig.APISelfIDPLinksManagementEnabled,
 		ShowAuthenticatorsTab:               customConfig.ShowAuthenticatorsTab,
 		ShowPasswordTab:                     customConfig.ShowPasswordTab,
 		ShowProfileTab:                      customConfig.ShowProfileTab,
 		ShowAccountDeletionButton:           customConfig.ShowAccountDeletionButton,
+		ShowIDPLinksTab:                     customConfig.ShowIDPLinksTab,
 		SelfServiceDefaultTab:               customConfig.SelfServiceDefaultTab,
 		RedirectCancelledRegistrationURL:    customConfig.RedirectCancelledRegistrationURL,
 		RedirectSuccessfulRegistrationURL:   customConfig.RedirectSuccessfulRegistrationURL,
@@ -2524,6 +2528,16 @@ func (c *component) LinkShadowUser(ctx context.Context, realmName string, userID
 
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Can't link shadow user", "err", err.Error())
+		return err
+	}
+	return nil
+}
+
+func (c *component) UnlinkShadowUser(ctx context.Context, realmName string, userID string, provider string) error {
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+
+	if err := c.keycloakClient.UnlinkShadowUser(accessToken, realmName, userID, provider); err != nil {
+		c.logger.Warn(ctx, "msg", "Can't unlink shadow user", "err", err.Error())
 		return err
 	}
 	return nil

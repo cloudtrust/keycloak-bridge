@@ -846,6 +846,16 @@ func (c *authorizationComponentMW) LinkShadowUser(ctx context.Context, realmName
 	return c.next.LinkShadowUser(ctx, realmName, userID, provider, fedID)
 }
 
+func (c *authorizationComponentMW) UnlinkShadowUser(ctx context.Context, realmName string, userID string, provider string) error {
+	var action = security.MGMTUnlinkShadowUser.String()
+	var targetRealm = realmName
+	if err := c.authManager.CheckAuthorizationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
+		return err
+	}
+
+	return c.next.UnlinkShadowUser(ctx, realmName, userID, provider)
+}
+
 func (c *authorizationComponentMW) GetIdentityProviders(ctx context.Context, realmName string) ([]api.IdentityProviderRepresentation, error) {
 	var action = security.MGMTGetIdentityProviders.String()
 	var targetRealm = realmName

@@ -1019,6 +1019,20 @@ func (mr *ManagementComponentMockRecorder) SetTrustIDGroupsToUser(ctx, realmName
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetTrustIDGroupsToUser", reflect.TypeOf((*ManagementComponent)(nil).SetTrustIDGroupsToUser), ctx, realmName, userID, groupNames)
 }
 
+// UnlinkShadowUser mocks base method.
+func (m *ManagementComponent) UnlinkShadowUser(ctx context.Context, realmName, userID, provider string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UnlinkShadowUser", ctx, realmName, userID, provider)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UnlinkShadowUser indicates an expected call of UnlinkShadowUser.
+func (mr *ManagementComponentMockRecorder) UnlinkShadowUser(ctx, realmName, userID, provider any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UnlinkShadowUser", reflect.TypeOf((*ManagementComponent)(nil).UnlinkShadowUser), ctx, realmName, userID, provider)
+}
+
 // UnlockUser mocks base method.
 func (m *ManagementComponent) UnlockUser(ctx context.Context, realmName, userID string) error {
 	m.ctrl.T.Helper()
@@ -1851,6 +1865,20 @@ func (m *KeycloakClient) SendSmsCode(accessToken, realmName, userID string) (key
 func (mr *KeycloakClientMockRecorder) SendSmsCode(accessToken, realmName, userID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendSmsCode", reflect.TypeOf((*KeycloakClient)(nil).SendSmsCode), accessToken, realmName, userID)
+}
+
+// UnlinkShadowUser mocks base method.
+func (m *KeycloakClient) UnlinkShadowUser(accessToken, realmName, userID, provider string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UnlinkShadowUser", accessToken, realmName, userID, provider)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UnlinkShadowUser indicates an expected call of UnlinkShadowUser.
+func (mr *KeycloakClientMockRecorder) UnlinkShadowUser(accessToken, realmName, userID, provider any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UnlinkShadowUser", reflect.TypeOf((*KeycloakClient)(nil).UnlinkShadowUser), accessToken, realmName, userID, provider)
 }
 
 // UpdateLabelCredential mocks base method.

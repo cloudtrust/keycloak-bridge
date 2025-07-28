@@ -119,6 +119,7 @@ func TestDeny(t *testing.T) {
 
 	var falseBool = false
 	var credentialID = "786-5684-6464"
+	var providerAlias = "idp"
 
 	var realmConfig = configuration.RealmConfiguration{
 		DefaultClientID:                     new(string),
@@ -127,6 +128,7 @@ func TestDeny(t *testing.T) {
 		APISelfAccountEditingEnabled:        &falseBool,
 		APISelfAccountDeletionEnabled:       &falseBool,
 		APISelfPasswordChangeEnabled:        &falseBool,
+		APISelfIDPLinksManagementEnabled:    &falseBool,
 	}
 
 	var authorizationMW = MakeAuthorizationAccountComponentMW(mockLogger, mockConfigurationDBModule)(mockAccountComponent)
@@ -152,6 +154,14 @@ func TestDeny(t *testing.T) {
 		err = authorizationMW.DeleteAccount(ctx)
 		assert.Equal(t, security.ForbiddenError{}, err)
 	})
+	t.Run("GetLinkedAccounts not allowed", func(t *testing.T) {
+		_, err = authorizationMW.GetLinkedAccounts(ctx)
+		assert.Equal(t, security.ForbiddenError{}, err)
+	})
+	t.Run("DeleteLinkedAccount not allowed", func(t *testing.T) {
+		err = authorizationMW.DeleteLinkedAccount(ctx, providerAlias)
+		assert.Equal(t, security.ForbiddenError{}, err)
+	})
 }
 
 func TestAllowed(t *testing.T) {
@@ -167,6 +177,7 @@ func TestAllowed(t *testing.T) {
 
 	var trueBool = true
 	var credentialID = "786-5684-6464"
+	var providerAlias = "idp"
 
 	var realmConfig = configuration.RealmConfiguration{
 		DefaultClientID:                     new(string),
@@ -175,6 +186,7 @@ func TestAllowed(t *testing.T) {
 		APISelfAccountEditingEnabled:        &trueBool,
 		APISelfAccountDeletionEnabled:       &trueBool,
 		APISelfPasswordChangeEnabled:        &trueBool,
+		APISelfIDPLinksManagementEnabled:    &trueBool,
 	}
 
 	mockConfigurationDBModule.EXPECT().GetConfiguration(gomock.Any(), realmName).Return(realmConfig, nil).AnyTimes()
@@ -204,6 +216,14 @@ func TestAllowed(t *testing.T) {
 		err = authorizationMW.DeleteAccount(ctx)
 		assert.Nil(t, err)
 
+		mockAccountComponent.EXPECT().GetLinkedAccounts(ctx).Return([]api.LinkedAccountRepresentation{}, nil)
+		_, err = authorizationMW.GetLinkedAccounts(ctx)
+		assert.Nil(t, err)
+
+		mockAccountComponent.EXPECT().DeleteLinkedAccount(ctx, providerAlias).Return(nil)
+		err = authorizationMW.DeleteLinkedAccount(ctx, providerAlias)
+		assert.Nil(t, err)
+
 	}
 }
 
@@ -219,6 +239,7 @@ func TestError(t *testing.T) {
 	var realmName = "master"
 
 	var credentialID = "786-5684-6464"
+	var providerAlias = "idp"
 
 	var realmConfig = configuration.RealmConfiguration{}
 
@@ -243,6 +264,12 @@ func TestError(t *testing.T) {
 		assert.NotNil(t, err)
 
 		err = authorizationMW.DeleteAccount(ctx)
+		assert.NotNil(t, err)
+
+		_, err = authorizationMW.GetLinkedAccounts(ctx)
+		assert.NotNil(t, err)
+
+		err = authorizationMW.DeleteLinkedAccount(ctx, providerAlias)
 		assert.NotNil(t, err)
 	}
 }

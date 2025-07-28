@@ -794,6 +794,7 @@ func main() {
 
 			GetFederatedIdentities: prepareEndpoint(management.MakeGetFederatedIdentitiesEndpoint(keycloakComponent), "get_federated_identities_endpoint", managementLogger, rateLimitMgmt),
 			LinkShadowUser:         prepareEndpoint(management.MakeLinkShadowUserEndpoint(keycloakComponent), "link_shadow_user_endpoint", managementLogger, rateLimitMgmt),
+			UnlinkShadowUser:       prepareEndpoint(management.MakeUnlinkShadowUserEndpoint(keycloakComponent), "unlink_shadow_user_endpoint", managementLogger, rateLimitMgmt),
 			GetIdentityProviders:   prepareEndpoint(management.MakeGetIdentityProvidersEndpoint(keycloakComponent), "get_identiy_providers_endpoint", managementLogger, rateLimitMgmt),
 		}
 	}
@@ -838,6 +839,8 @@ func main() {
 			SendVerifyPhoneNumber:     prepareEndpoint(account.MakeSendVerifyPhoneNumberEndpoint(accountComponent), "send_verify_phone_number", accountLogger, rateLimitAccount),
 			CancelEmailChange:         prepareEndpoint(account.MakeCancelEmailChangeEndpoint(accountComponent), "cancel_email_change", accountLogger, rateLimitAccount),
 			CancelPhoneNumberChange:   prepareEndpoint(account.MakeCancelPhoneNumberChangeEndpoint(accountComponent), "cancel_phone_number_change", accountLogger, rateLimitAccount),
+			GetLinkedAccounts:         prepareEndpoint(account.MakeGetLinkedAccountsEndpoint(accountComponent), "get_linked_accounts", accountLogger, rateLimitAccount),
+			DeleteLinkedAccount:       prepareEndpoint(account.MakeDeleteLinkedAccountEndpoint(accountComponent), "delete_linked_account", accountLogger, rateLimitAccount),
 		}
 	}
 
@@ -1161,6 +1164,7 @@ func main() {
 
 		var getFederatedIdentitiesHandler = configureManagementHandler(managementEndpoints.GetFederatedIdentities)
 		var linkShadowUserHandler = configureManagementHandler(managementEndpoints.LinkShadowUser)
+		var unlinkShadowUserHandler = configureManagementHandler(managementEndpoints.UnlinkShadowUser)
 
 		var getIdentityProvidersHandler = configureManagementHandler(managementEndpoints.GetIdentityProviders)
 
@@ -1263,6 +1267,7 @@ func main() {
 		// brokering - shadow users
 		managementSubroute.Path("/realms/{realm}/users/{userID}/federated-identity").Methods("GET").Handler(getFederatedIdentitiesHandler)
 		managementSubroute.Path("/realms/{realm}/users/{userID}/federated-identity/{provider}").Methods("POST").Handler(linkShadowUserHandler)
+		managementSubroute.Path("/realms/{realm}/users/{userID}/federated-identity/{provider}").Methods("DELETE").Handler(unlinkShadowUserHandler)
 
 		managementSubroute.Path("/realms/{realm}/identity-providers").Methods("GET").Handler(getIdentityProvidersHandler)
 
@@ -1342,6 +1347,8 @@ func main() {
 		var sendVerifyPhoneNumberHandler = configureAccountHandler(accountEndpoints.SendVerifyPhoneNumber)
 		var cancelEmailChangeHandler = configureAccountHandler(accountEndpoints.CancelEmailChange)
 		var cancelPhoneNumberChangeHandler = configureAccountHandler(accountEndpoints.CancelPhoneNumberChange)
+		var getLinkedAccountsHandler = configureAccountHandler(accountEndpoints.GetLinkedAccounts)
+		var deleteLinkedAccountHandler = configureAccountHandler(accountEndpoints.DeleteLinkedAccount)
 
 		route.Path("/account").Methods("GET").Handler(getAccountHandler)
 		route.Path("/account").Methods("POST").Handler(updateAccountHandler)
@@ -1362,6 +1369,9 @@ func main() {
 
 		route.Path("/account/cancel-email-change").Methods("PUT").Handler(cancelEmailChangeHandler)
 		route.Path("/account/cancel-phone-number-change").Methods("PUT").Handler(cancelPhoneNumberChangeHandler)
+
+		route.Path("/account/linked-accounts").Methods("GET").Handler(getLinkedAccountsHandler)
+		route.Path("/account/linked-accounts/{providerAlias}").Methods("DELETE").Handler(deleteLinkedAccountHandler)
 
 		var handler http.Handler = route
 

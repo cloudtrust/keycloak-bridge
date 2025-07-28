@@ -5193,6 +5193,40 @@ func TestLinkShadowUser(t *testing.T) {
 	})
 }
 
+func TestUnlinkShadowUser(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mocks = createMocks(mockCtrl)
+	var managementComponent = mocks.createComponent()
+
+	var accessToken = "TOKEN=="
+	var realmName = "master"
+	var userID = "41dbf4a8-32a9-4000-8c17-edc854c31231"
+	var provider = "provider"
+
+	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+	ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
+
+	// Error from KC client
+	t.Run("Unlink shadow user - error at KC client", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().UnlinkShadowUser(accessToken, realmName, userID, provider).Return(fmt.Errorf("error"))
+		mocks.logger.EXPECT().Warn(ctx, gomock.Any())
+
+		err := managementComponent.UnlinkShadowUser(ctx, realmName, userID, provider)
+
+		assert.NotNil(t, err)
+	})
+
+	t.Run("Unlink shadow user - success", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().UnlinkShadowUser(accessToken, realmName, userID, provider).Return(nil)
+
+		err := managementComponent.UnlinkShadowUser(ctx, realmName, userID, provider)
+
+		assert.Nil(t, err)
+	})
+}
+
 func TestGetIdentityProviders(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
