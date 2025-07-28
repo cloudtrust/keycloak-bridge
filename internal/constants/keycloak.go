@@ -38,4 +38,32 @@ var (
 	AttrbIDDocumentExpiration  = kc.AttributeKey(fields.IDDocumentExpiration.AttributeName())
 	AttrbIDDocumentCountry     = kc.AttributeKey(fields.IDDocumentCountry.AttributeName())
 	AttrbOnboardingStatus      = kc.AttributeKey(fields.OnboardingStatus.AttributeName())
+
+	StaticAttributes = map[kc.AttributeKey]bool{
+		AttrbAccreditations:        true,
+		AttrbBirthDate:             true,
+		AttrbBusinessID:            true,
+		AttrbPendingChecks:         true,
+		AttrbGender:                true,
+		AttrbLabel:                 true,
+		AttrbLocale:                true,
+		AttrbNameID:                true,
+		AttrbOnboardingCompleted:   true,
+		AttrbPhoneNumber:           true,
+		AttrbPhoneNumberVerified:   true,
+		AttrbPhoneNumberToValidate: true,
+		AttrbEmailToValidate:       true,
+		AttrbSmsSent:               true,
+		AttrbSmsAttempts:           true,
+		AttrbSource:                true,
+		AttrbTrustIDAuthToken:      true,
+		AttrbTrustIDGroups:         true,
+		AttrbBirthLocation:         true,
+		AttrbNationality:           true,
+		AttrbIDDocumentType:        true,
+		AttrbIDDocumentNumber:      true,
+		AttrbIDDocumentExpiration:  true,
+		AttrbIDDocumentCountry:     true,
+		AttrbOnboardingStatus:      true,
+	}
 )

@@ -38,12 +38,23 @@ func TestConvertToAPIAccount(t *testing.T) {
 	var logger = log.NewNopLogger()
 
 	var kcUser = kc.UserRepresentation{}
-	assert.Nil(t, nil, ConvertToAPIAccount(ctx, kcUser, logger))
+	customAttribute := "customAttribute"
+	profile := kc.UserProfileRepresentation{
+		Attributes: []kc.ProfileAttrbRepresentation{
+			{
+				Name:        &customAttribute,
+				Annotations: map[string]string{"dynamic": "true"},
+			},
+		},
+	}
+	profile.InitDynamicAttributes()
+
+	assert.Nil(t, nil, ConvertToAPIAccount(ctx, kcUser, profile, logger))
 
 	t.Run("Empty attributes", func(t *testing.T) {
 		var attributes = make(kc.Attributes)
 		kcUser = kc.UserRepresentation{Attributes: &attributes}
-		assert.Nil(t, nil, ConvertToAPIAccount(ctx, kcUser, logger).PhoneNumber)
+		assert.Nil(t, nil, ConvertToAPIAccount(ctx, kcUser, profile, logger).PhoneNumber)
 	})
 
 	var attributes = kc.Attributes{
@@ -54,11 +65,12 @@ func TestConvertToAPIAccount(t *testing.T) {
 		constants.AttrbPhoneNumberVerified: []string{"true"},
 		constants.AttrbAccreditations:      []string{`{"type":"one","expiryDate":"05.04.2020"}`, `{"type":"two","expiryDate":"05.03.2032"}`},
 		constants.AttrbBusinessID:          []string{"123456789"},
+		kc.AttributeKey(customAttribute):   []string{"customValue"},
 	}
 
 	t.Run("Check attributes are copied", func(t *testing.T) {
 		kcUser = kc.UserRepresentation{Attributes: &attributes}
-		var user = ConvertToAPIAccount(ctx, kcUser, logger)
+		var user = ConvertToAPIAccount(ctx, kcUser, profile, logger)
 		assert.Equal(t, "+41221234567", *user.PhoneNumber)
 		assert.Equal(t, "M", *user.Gender)
 		assert.Equal(t, "15.02.1920", *user.BirthDate)
@@ -69,18 +81,20 @@ func TestConvertToAPIAccount(t *testing.T) {
 		assert.False(t, *(*user.Accreditations)[1].Revoked)
 		assert.False(t, *(*user.Accreditations)[1].Expired)
 		assert.Equal(t, "123456789", *user.BusinessID)
+		assert.Len(t, user.Dynamic, 1)
+		assert.Equal(t, "customValue", user.Dynamic[customAttribute])
 	})
 
 	t.Run("PhoneNumberVerified is invalid", func(t *testing.T) {
 		attributes.SetString(constants.AttrbPhoneNumberVerified, "vielleicht")
-		var user = ConvertToAPIAccount(ctx, kcUser, logger)
+		var user = ConvertToAPIAccount(ctx, kcUser, profile, logger)
 		assert.Nil(t, user.PhoneNumberVerified)
 
 		attributes.SetString(constants.AttrbPhoneNumberVerified, "true")
 	})
 	t.Run("Accreditations are revoked", func(t *testing.T) {
 		attributes.Set(constants.AttrbAccreditations, []string{`{"type":"one","expiryDate":"05.04.2020"}`, `{"type":"two","expiryDate":"05.03.2039", "revoked": true}`})
-		var user = ConvertToAPIAccount(ctx, kcUser, logger)
+		var user = ConvertToAPIAccount(ctx, kcUser, profile, logger)
 		assert.Len(t, *user.Accreditations, 2)
 		assert.False(t, *(*user.Accreditations)[0].Revoked)
 		assert.True(t, *(*user.Accreditations)[0].Expired)
@@ -90,7 +104,7 @@ func TestConvertToAPIAccount(t *testing.T) {
 
 	t.Run("Accreditations are invalid", func(t *testing.T) {
 		attributes.SetString(constants.AttrbAccreditations, "{")
-		var user = ConvertToAPIAccount(ctx, kcUser, logger)
+		var user = ConvertToAPIAccount(ctx, kcUser, profile, logger)
 		assert.Len(t, *user.Accreditations, 0)
 	})
 }
@@ -98,7 +112,8 @@ func TestConvertToAPIAccount(t *testing.T) {
 func TestMergeUser(t *testing.T) {
 	var apiUser = UpdatableAccountRepresentation{}
 	var kcUser kc.UserRepresentation
-	MergeUserWithoutEmailAndPhoneNumber(&kcUser, apiUser)
+	profile := kc.UserProfileRepresentation{}
+	MergeUserWithoutEmailAndPhoneNumber(&kcUser, apiUser, profile)
 	assert.Nil(t, kcUser.Attributes)
 
 	var gender = "X"
@@ -107,7 +122,7 @@ func TestMergeUser(t *testing.T) {
 	var business = csjson.OptionalString{Defined: true, Value: &businessID}
 	apiUser = UpdatableAccountRepresentation{Gender: &gender, Locale: &locale, BusinessID: business}
 	kcUser = kc.UserRepresentation{}
-	MergeUserWithoutEmailAndPhoneNumber(&kcUser, apiUser)
+	MergeUserWithoutEmailAndPhoneNumber(&kcUser, apiUser, profile)
 	assert.Equal(t, gender, *kcUser.GetAttributeString(constants.AttrbGender))
 	assert.Equal(t, locale, *kcUser.GetAttributeString(constants.AttrbLocale))
 	assert.Equal(t, businessID, *kcUser.GetAttributeString(constants.AttrbBusinessID))

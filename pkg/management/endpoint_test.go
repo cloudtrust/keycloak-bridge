@@ -185,7 +185,12 @@ func TestCreateUserEndpoint(t *testing.T) {
 			reqBody:   string(userJSON),
 		}
 
-		mockManagementComponent.EXPECT().CreateUser(ctx, targetRealm, user, false, false, false).Return(location, nil)
+		mockManagementComponent.EXPECT().CreateUser(ctx, targetRealm, gomock.Any(), false, false, false).DoAndReturn(
+			func(ctx context.Context, targetRealm string, user api.UserRepresentation, generateUsername bool, generateNameID bool, termsOfUse bool) (string, error) {
+				assert.Equal(t, "M", *user.Gender)
+				assert.Equal(t, groups, *user.Groups)
+				return location, nil
+			})
 		res, err := e(ctx, req)
 		assert.Nil(t, err)
 
@@ -240,7 +245,11 @@ func TestCreateUserEndpoint(t *testing.T) {
 		userJSON, _ := json.Marshal(api.UserRepresentation{Groups: &groups})
 		req[reqBody] = string(userJSON)
 
-		mockManagementComponent.EXPECT().CreateUser(ctx, targetRealm, api.UserRepresentation{Groups: &groups}, false, false, false).Return("/unrecognized/location", nil)
+		mockManagementComponent.EXPECT().CreateUser(ctx, targetRealm, gomock.Any(), false, false, false).DoAndReturn(
+			func(ctx context.Context, targetRealm string, user api.UserRepresentation, generateUsername bool, generateNameID bool, termsOfUse bool) (string, error) {
+				assert.Equal(t, groups, *user.Groups)
+				return "/unrecognized/location", nil
+			})
 		res, err := e(ctx, req)
 		assert.Nil(t, err)
 		assert.IsType(t, LocationHeader{}, res)
@@ -302,7 +311,12 @@ func TestCreateUserInSocialRealmEndpoint(t *testing.T) {
 		userJSON, _ := json.Marshal(user)
 		req[reqBody] = string(userJSON)
 
-		mockManagementComponent.EXPECT().CreateUserInSocialRealm(ctx, user, false).Return(location, nil)
+		mockManagementComponent.EXPECT().CreateUserInSocialRealm(ctx, gomock.Any(), false).DoAndReturn(
+			func(ctx context.Context, user api.UserRepresentation, generateNameID bool) (string, error) {
+				assert.Equal(t, "M", *user.Gender)
+				assert.Equal(t, groups, *user.Groups)
+				return location, nil
+			})
 		res, err := e(ctx, req)
 		assert.Nil(t, err)
 
@@ -356,7 +370,11 @@ func TestCreateUserInSocialRealmEndpoint(t *testing.T) {
 		userJSON, _ := json.Marshal(api.UserRepresentation{Groups: &groups})
 		req[reqBody] = string(userJSON)
 
-		mockManagementComponent.EXPECT().CreateUserInSocialRealm(ctx, api.UserRepresentation{Groups: &groups}, false).Return("/unrecognized/location", nil)
+		mockManagementComponent.EXPECT().CreateUserInSocialRealm(ctx, gomock.Any(), false).DoAndReturn(
+			func(ctx context.Context, user api.UserRepresentation, generateNameID bool) (string, error) {
+				assert.Equal(t, groups, *user.Groups)
+				return "/unrecognized/location", nil
+			})
 		res, err := e(ctx, req)
 		assert.Nil(t, err)
 		assert.IsType(t, LocationHeader{}, res)

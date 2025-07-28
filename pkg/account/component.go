@@ -181,7 +181,13 @@ func (c *component) GetAccount(ctx context.Context) (api.AccountRepresentation, 
 		return userRep, err
 	}
 
-	userRep = api.ConvertToAPIAccount(ctx, userKc, c.logger)
+	profile, err := c.profileCache.GetRealmUserProfile(ctx, realm)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "failed to load user profile")
+		return userRep, err
+	}
+
+	userRep = api.ConvertToAPIAccount(ctx, userKc, profile, c.logger)
 	userRep.PendingChecks = keycloakb.ConvertFromAccreditationChecks(pendingChecks).ToCheckNames()
 
 	return userRep, nil
@@ -277,7 +283,13 @@ func (c *component) UpdateAccount(ctx context.Context, user api.UpdatableAccount
 		}
 	}
 
-	api.MergeUserWithoutEmailAndPhoneNumber(&oldUserKc, user)
+	profile, err := c.profileCache.GetRealmUserProfile(ctx, realm)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "failed to load user profile")
+		return err
+	}
+
+	api.MergeUserWithoutEmailAndPhoneNumber(&oldUserKc, user, profile)
 	if len(newAccreditations) > 0 {
 		oldUserKc.SetFieldValues(fields.Accreditations, newAccreditations)
 	}
