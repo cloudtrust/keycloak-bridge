@@ -15,7 +15,7 @@ RUN curl -s https://artifactory.svc.elca.ch:443/artifactory/prj_cloudtrust_gener
 COPY ./bin/keycloak_bridge /usr/bin/keycloak_bridge
 RUN chmod +x /usr/bin/keycloak_bridge
 
-FROM docker.artifactory.svc.elca.ch/redhat/ubi8-micro:8.10-1752574873
+FROM docker.artifactory.svc.elca.ch/redhat/ubi8-micro:8.10-1753712722
 
 COPY --from=build-env /etc/pki /etc/pki
 COPY --from=build-env /etc/ssl /etc/ssl
