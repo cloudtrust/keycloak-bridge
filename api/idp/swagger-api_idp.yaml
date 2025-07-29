@@ -1,0 +1,149 @@
+openapi: 3.0.1
+info:
+  title: Swagger Cloudtrust Identity Providers
+  description: 'Identity Providers API for Cloudtrust'
+  version: 1.0.0
+servers:
+- url: http://localhost:8888/idp
+tags:
+- name: Email
+  description: Send Emails
+- name: SMS
+  description: Send SMS
+paths:
+  /idp/realms/{realm}/identity-providers:
+    post:
+      tags:
+      - Identity providers
+      summary: Create an identity provider
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IdentityProviderRepresentation'
+      responses:
+        200:
+          description: successful operation
+  /idp/realms/{realm}/identity-providers/{provider}:
+    get:
+      tags:
+      - Identity providers
+      summary: Get an identity provider
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: provider
+        in: path
+        description: alias of the provider
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdentityProviderRepresentation'
+        404:
+          description: provider not found
+    put:
+      tags:
+      - Identity providers
+      summary: Update an existing identity provider
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: provider
+        in: path
+        description: alias of the provider
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IdentityProviderRepresentation'
+      responses:
+        200:
+          description: successful operation
+        404:
+          description: provider not found
+    delete:
+      tags:
+      - Identity providers
+      summary: Delete an identity provider
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: provider
+        in: path
+        description: alias of the provider
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation
+        404:
+          description: provider not found
+
+components:
+  schemas:
+    IdentityProviderRepresentation:
+      type: object
+      properties:
+          AddReadTokenRoleOnCreate: 
+            type: boolean
+          Alias: 
+            type: string
+          AuthenticateByDefault: 
+            type: boolean
+          Config:
+            type: object
+          DisplayName:
+            type: string
+          Enabled:
+            type: boolean
+          FirstBrokerLoginFlowAlias:
+            type: string
+          InternalID:
+            type: string
+          LinkOnly:
+            type: boolean
+          PostBrokerLoginFlowAlias:
+            type: string
+          ProviderID:
+            type: string
+          StoreToken:
+            type: boolean
+          TrustEmail:
+            type: boolean
+
+  securitySchemes:
+    openId:
+      type: openIdConnect
+      openIdConnectUrl: http://toto.com/.well-known/openid-configuration
+security:
+  - openId:
+    - todo

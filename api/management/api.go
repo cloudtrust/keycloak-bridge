@@ -684,25 +684,6 @@ func ConvertToAPIIdentityProvider(idp kc.IdentityProviderRepresentation) Identit
 	}
 }
 
-// ConvertToKCIdentityProvider creates a KC IdentityProviderRepresentation from an API IdentityProviderRepresentation
-func ConvertToKCIdentityProvider(idp IdentityProviderRepresentation) kc.IdentityProviderRepresentation {
-	return kc.IdentityProviderRepresentation{
-		AddReadTokenRoleOnCreate:  idp.AddReadTokenRoleOnCreate,
-		Alias:                     idp.Alias,
-		AuthenticateByDefault:     idp.AuthenticateByDefault,
-		Config:                    idp.Config,
-		DisplayName:               idp.DisplayName,
-		Enabled:                   idp.Enabled,
-		FirstBrokerLoginFlowAlias: idp.FirstBrokerLoginFlowAlias,
-		InternalID:                idp.InternalID,
-		LinkOnly:                  idp.LinkOnly,
-		PostBrokerLoginFlowAlias:  idp.PostBrokerLoginFlowAlias,
-		ProviderID:                idp.ProviderID,
-		StoreToken:                idp.StoreToken,
-		TrustEmail:                idp.TrustEmail,
-	}
-}
-
 // CreateDefaultRealmCustomConfiguration creates a default custom configuration
 func CreateDefaultRealmCustomConfiguration() RealmCustomConfiguration {
 	return ConvertRealmCustomConfigurationFromDBStruct(configuration.RealmConfiguration{})
@@ -1193,18 +1174,4 @@ func ConvertToAPIUserChecks(checks []accreditationsclient.CheckRepresentation) [
 		})
 	}
 	return res
-}
-
-// Validate is a validator for IdentityProviderRepresentation
-func (idp IdentityProviderRepresentation) Validate() error {
-	// validate config
-
-	return validation.NewParameterValidator().
-		ValidateParameterRegExp("alias", idp.Alias, constants.RegExpFederatedUserID, true).
-		ValidateParameterRegExp("displayName", idp.DisplayName, constants.RegExpFederatedUsername, true).
-		ValidateParameterRegExp("firstBrokerLoginFlowAlias", idp.FirstBrokerLoginFlowAlias, constants.RegExpFederatedUsername, true).
-		ValidateParameterRegExp("internalId", idp.InternalID, constants.RegExpFederatedUsername, true).
-		ValidateParameterRegExp("postBrokerLoginFlowAlias", idp.PostBrokerLoginFlowAlias, constants.RegExpFederatedUsername, true).
-		ValidateParameterRegExp("providerId", idp.ProviderID, constants.RegExpFederatedUsername, true).
-		Status()
 }
