@@ -64,11 +64,11 @@ func ConvertToKCIdentityProvider(idp IdentityProviderRepresentation) kc.Identity
 // Validate is a validator for IdentityProviderRepresentation
 func (idp IdentityProviderRepresentation) Validate() error {
 	return validation.NewParameterValidator().
-		ValidateParameterRegExp("alias", idp.Alias, constants.RegExpFederatedUsername, true).
-		ValidateParameterRegExp("displayName", idp.DisplayName, constants.RegExpFederatedUsername, true).
-		ValidateParameterRegExp("firstBrokerLoginFlowAlias", idp.FirstBrokerLoginFlowAlias, constants.RegExpFederatedUsername, true).
+		ValidateParameterRegExp("alias", idp.Alias, constants.RegExpAlias, true).
+		ValidateParameterRegExp("displayName", idp.DisplayName, constants.RegExpDisplayName, true).
+		ValidateParameterRegExp("firstBrokerLoginFlowAlias", idp.FirstBrokerLoginFlowAlias, constants.RegExpFirstBrokerLoginFlowAlias, true).
 		ValidateParameterRegExp("internalId", idp.InternalID, constants.RegExpID, true).
-		ValidateParameterRegExp("postBrokerLoginFlowAlias", idp.PostBrokerLoginFlowAlias, constants.RegExpFederatedUsername, true).
-		ValidateParameterRegExp("providerId", idp.ProviderID, constants.RegExpFederatedUsername, true).
+		ValidateParameterRegExp("postBrokerLoginFlowAlias", idp.PostBrokerLoginFlowAlias, constants.RegExpPostBrokerLoginFlowAlias, true).
+		ValidateParameterRegExp("providerId", idp.ProviderID, constants.RegExpProviderID, true).
 		Status()
 }

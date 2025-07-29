@@ -58,6 +58,13 @@ const (
 	regExpLen128OrEmpty      = `^.{0,128}$`
 	RegExpCorporateFirstName = regExpLen128OrEmpty
 	RegExpCorporateLastName  = regExpLen128
+
+	// Identity provider
+	RegExpAlias                     = regExpLen128
+	RegExpDisplayName               = regExpLen128
+	RegExpFirstBrokerLoginFlowAlias = regExpLen128
+	RegExpPostBrokerLoginFlowAlias  = regExpLen128
+	RegExpProviderID                = regExpLen128
 )
 
 // Overridable user details regex and document types

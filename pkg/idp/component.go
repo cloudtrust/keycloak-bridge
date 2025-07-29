@@ -42,7 +42,7 @@ func NewComponent(keycloakIdpClient KeycloakIdpClient, tokenProvider toolbox.Oid
 	}
 }
 
-func HandleKeycloakIdpError(ctx context.Context, err error, logger internal.Logger) error {
+func handleKeycloakIdpError(ctx context.Context, err error, logger internal.Logger) error {
 	if err != nil {
 		switch e := err.(type) {
 		case kc.HTTPError:
@@ -65,7 +65,7 @@ func (c *component) GetIdentityProvider(ctx context.Context, realmName string, p
 	}
 
 	idp, err := c.keycloakIdpClient.GetIdp(accessToken, realmName, providerAlias)
-	if err := HandleKeycloakIdpError(ctx, err, c.logger); err != nil {
+	if err := handleKeycloakIdpError(ctx, err, c.logger); err != nil {
 		return api.IdentityProviderRepresentation{}, err
 	}
 
@@ -93,7 +93,7 @@ func (c *component) UpdateIdentityProvider(ctx context.Context, realmName string
 
 	idpKc := api.ConvertToKCIdentityProvider(provider)
 	err = c.keycloakIdpClient.UpdateIdp(accessToken, realmName, providerAlias, idpKc)
-	if err := HandleKeycloakIdpError(ctx, err, c.logger); err != nil {
+	if err := handleKeycloakIdpError(ctx, err, c.logger); err != nil {
 		return err
 	}
 
@@ -109,7 +109,7 @@ func (c *component) DeleteIdentityProvider(ctx context.Context, realmName string
 	}
 
 	err = c.keycloakIdpClient.DeleteIdp(accessToken, realmName, providerAlias)
-	if err := HandleKeycloakIdpError(ctx, err, c.logger); err != nil {
+	if err := handleKeycloakIdpError(ctx, err, c.logger); err != nil {
 		return err
 	}
 
