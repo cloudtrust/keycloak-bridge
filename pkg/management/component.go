@@ -94,10 +94,6 @@ type KeycloakClient interface {
 	ClearUserLoginFailures(accessToken string, realmName, userID string) error
 	GetAttackDetectionStatus(accessToken string, realmName, userID string) (map[string]interface{}, error)
 	GetIdps(accessToken string, realmName string) ([]kc.IdentityProviderRepresentation, error)
-	GetIdp(accessToken string, realmName string, idpAlias string) (kc.IdentityProviderRepresentation, error)
-	CreateIdp(accessToken string, realmName string, idpRep kc.IdentityProviderRepresentation) error
-	UpdateIdp(accessToken string, realmName, idpAlias string, idpRep kc.IdentityProviderRepresentation) error
-	DeleteIdp(accessToken string, realmName string, idpAlias string) error
 }
 
 // AccreditationsServiceClient interface
@@ -213,10 +209,6 @@ type Component interface {
 	UnlinkShadowUser(ctx context.Context, realmName string, userID string, provider string) error
 
 	GetIdentityProviders(ctx context.Context, realmName string) ([]api.IdentityProviderRepresentation, error)
-	GetIdentityProvider(ctx context.Context, realmName string, providerID string) (api.IdentityProviderRepresentation, error)
-	CreateIdentityProvider(ctx context.Context, realmName string, provider api.IdentityProviderRepresentation) error
-	UpdateIdentityProvider(ctx context.Context, realmName string, providerID string, provider api.IdentityProviderRepresentation) error
-	DeleteIdentityProvider(ctx context.Context, realmName string, providerID string) error
 }
 
 // EventsReporterModule is the interface of the audit events module
@@ -2543,53 +2535,4 @@ func (c *component) GetIdentityProviders(ctx context.Context, realmName string) 
 	}
 
 	return apiIdps, nil
-}
-
-func (c *component) GetIdentityProvider(ctx context.Context, realmName string, providerID string) (api.IdentityProviderRepresentation, error) {
-	accessToken, err := c.tokenProvider.ProvideTokenForRealm(ctx, realmName)
-	if err != nil {
-		c.logger.Warn(ctx, "msg", "Failed to get OIDC token from keycloak", "err", err.Error())
-		return api.IdentityProviderRepresentation{}, err
-	}
-
-	idp, err := c.keycloakClient.GetIdp(accessToken, realmName, providerID)
-	if err != nil {
-		c.logger.Warn(ctx, "msg", "Failed to get identity provider from keycloak", "err", err.Error())
-		return api.IdentityProviderRepresentation{}, err
-	}
-
-	return api.ConvertToAPIIdentityProvider(idp), nil
-}
-
-func (c *component) CreateIdentityProvider(ctx context.Context, realmName string, provider api.IdentityProviderRepresentation) error {
-	accessToken, err := c.tokenProvider.ProvideTokenForRealm(ctx, realmName)
-	if err != nil {
-		c.logger.Warn(ctx, "msg", "Failed to get OIDC token from keycloak", "err", err.Error())
-		return err
-	}
-
-	idpKc := api.ConvertToKCIdentityProvider(provider)
-	return c.keycloakClient.CreateIdp(accessToken, realmName, idpKc)
-
-}
-
-func (c *component) UpdateIdentityProvider(ctx context.Context, realmName string, providerID string, provider api.IdentityProviderRepresentation) error {
-	accessToken, err := c.tokenProvider.ProvideTokenForRealm(ctx, realmName)
-	if err != nil {
-		c.logger.Warn(ctx, "msg", "Failed to get OIDC token from keycloak", "err", err.Error())
-		return err
-	}
-
-	idpKc := api.ConvertToKCIdentityProvider(provider)
-	return c.keycloakClient.UpdateIdp(accessToken, realmName, providerID, idpKc)
-}
-
-func (c *component) DeleteIdentityProvider(ctx context.Context, realmName string, providerID string) error {
-	accessToken, err := c.tokenProvider.ProvideTokenForRealm(ctx, realmName)
-	if err != nil {
-		c.logger.Warn(ctx, "msg", "Failed to get OIDC token from keycloak", "err", err.Error())
-		return err
-	}
-
-	return c.keycloakClient.DeleteIdp(accessToken, realmName, providerID)
 }

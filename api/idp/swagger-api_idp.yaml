@@ -1,0 +1,157 @@
+openapi: 3.0.1
+info:
+  title: Swagger Cloudtrust Identity Providers
+  description: 'Identity Providers API for Cloudtrust'
+  version: 1.0.0
+servers:
+- url: http://localhost:8888/idp
+tags:
+- name: Email
+  description: Send Emails
+- name: SMS
+  description: Send SMS
+paths:
+  /actions:
+    get:
+      tags:
+      - Actions
+      summary: Get the list of all possible actions
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Actions'
+  /realms/{realm}/send-mail:
+    post:
+      tags:
+      - Email
+      summary: Send an email to a user
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailRepresentation'
+      responses:
+        204:
+          description: successful operation
+  /realms/{realm}/users/{userID}/send-mail:
+    post:
+      tags:
+      - Email
+      summary: Send an email to a user (specified by userID)
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: userID
+        in: path
+        description: user id
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailRepresentation'
+      responses:
+        204:
+          description: successful operation
+  /realms/{realm}/send-sms:
+    post:
+      tags:
+      - SMS
+      summary: Send SMS to the user
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SMSRepresentation'
+      responses:
+        200:
+          description: successful operation
+
+components:
+  schemas:
+    Actions:
+      type: object
+      properties:
+        name:
+          type: string
+        scope:
+          type: string
+    EmailRepresentation:
+      type: object
+      properties:
+        recipient:
+          type: string
+        theming:
+          type: object
+          properties:
+            subjectKey:
+              type: string
+            subjectParameters:
+              type: array
+              items:
+                type: string
+            template:
+              type: string
+            templateParameters:
+              type: object
+            locale:
+              type: string
+            themeRealmName:
+              type: string
+        attachments:
+          type: object
+          properties:
+            filename:
+              type: string
+            contentType:
+              type: string
+            content:
+              type: string
+    SMSRepresentation:
+      type: object
+      properties:
+        msisdn:
+          type: string
+        theming:
+          type: object
+          properties:
+            messageKey:
+              type: string
+            messageParameters:
+              type: array
+              items:
+                type: string
+            locale:
+              type: string
+  securitySchemes:
+    openId:
+      type: openIdConnect
+      openIdConnectUrl: http://toto.com/.well-known/openid-configuration
+security:
+  - openId:
+    - todo
