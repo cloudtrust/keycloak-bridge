@@ -67,6 +67,15 @@ func TestValidateIdentityProviderRepresentation(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
+	t.Run("invalid alias", func(t *testing.T) {
+		idp := testIDP()
+
+		*idp.Alias = "`!not a valid alias!`"
+
+		err := idp.Validate()
+		assert.Error(t, err)
+	})
+
 	t.Run("invalid providerId", func(t *testing.T) {
 		idp := testIDP()
 

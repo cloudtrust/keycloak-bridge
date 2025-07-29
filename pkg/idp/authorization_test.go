@@ -121,10 +121,6 @@ func TestAllowed(t *testing.T) {
 		ctx = context.WithValue(ctx, cs.CtContextGroups, groups)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, "master")
 
-		// mockIdpComponent.EXPECT().GetActions(ctx).Return([]api.ActionRepresentation{}, nil)
-		// _, err = authorizationMW.GetActions(ctx)
-		// assert.Nil(t, err)
-
 		mockIdpComponent.EXPECT().GetIdentityProvider(ctx, realmName, idpAlias).Return(idp, nil)
 		_, err = authorizationMW.GetIdentityProvider(ctx, realmName, idpAlias)
 		assert.Nil(t, err)
