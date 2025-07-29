@@ -36,6 +36,7 @@ import (
 	"github.com/cloudtrust/keycloak-bridge/pkg/account"
 	"github.com/cloudtrust/keycloak-bridge/pkg/communications"
 	conf "github.com/cloudtrust/keycloak-bridge/pkg/configuration"
+	"github.com/cloudtrust/keycloak-bridge/pkg/idp"
 	"github.com/cloudtrust/keycloak-bridge/pkg/kyc"
 	"github.com/cloudtrust/keycloak-bridge/pkg/management"
 	mobile "github.com/cloudtrust/keycloak-bridge/pkg/mobile"
@@ -90,6 +91,7 @@ const (
 	RateKeySupport          = iota
 	RateKeyTasks            = iota
 	RateKeyValidation       = iota
+	RateKeyIDP              = iota
 
 	cfgConfigFile               = "config-file"
 	cfgHTTPAddrInternal         = "internal-http-host-port"
@@ -119,6 +121,7 @@ const (
 	cfgRateKeySupport           = "rate-support"
 	cfgRateKeyTasks             = "rate-tasks"
 	cfgRateKeyKYC               = "rate-kyc"
+	cfgRateKeyIDP               = "rate-idp"
 	cfgAllowedOrigins           = "cors-allowed-origins"
 	cfgAllowedMethods           = "cors-allowed-methods"
 	cfgAllowCredentials         = "cors-allow-credentials"
@@ -238,6 +241,7 @@ func main() {
 			RateKeySupport:          c.GetInt(cfgRateKeySupport),
 			RateKeyTasks:            c.GetInt(cfgRateKeyTasks),
 			RateKeyKYC:              c.GetInt(cfgRateKeyKYC),
+			RateKeyIDP:              c.GetInt(cfgRateKeyIDP),
 		}
 
 		corsOptions = cors.Options{
@@ -795,7 +799,7 @@ func main() {
 			GetFederatedIdentities: prepareEndpoint(management.MakeGetFederatedIdentitiesEndpoint(keycloakComponent), "get_federated_identities_endpoint", managementLogger, rateLimitMgmt),
 			LinkShadowUser:         prepareEndpoint(management.MakeLinkShadowUserEndpoint(keycloakComponent), "link_shadow_user_endpoint", managementLogger, rateLimitMgmt),
 			UnlinkShadowUser:       prepareEndpoint(management.MakeUnlinkShadowUserEndpoint(keycloakComponent), "unlink_shadow_user_endpoint", managementLogger, rateLimitMgmt),
-			GetIdentityProviders:   prepareEndpoint(management.MakeGetIdentityProvidersEndpoint(keycloakComponent), "get_identiy_providers_endpoint", managementLogger, rateLimitMgmt),
+			GetIdentityProviders:   prepareEndpoint(management.MakeGetIdentityProvidersEndpoint(keycloakComponent), "get_identity_providers_endpoint", managementLogger, rateLimitMgmt),
 		}
 	}
 
@@ -973,6 +977,22 @@ func main() {
 		}
 	}
 
+	// Identity providers service.
+	var idpEndpoints idp.Endpoints
+	{
+		var idpLogger = log.With(logger, "svc", "identity-providers")
+
+		idpComponent := idp.NewComponent(keycloakClient, technicalTokenProvider, idpLogger)
+
+		var rateLimitIdp = rateLimit[RateKeyIDP]
+		idpEndpoints = idp.Endpoints{
+			GetIdentityProvider:    prepareEndpoint(idp.MakeGetIdentityProviderEndpoint(idpComponent), "get_identity_provider_endpoint", idpLogger, rateLimitIdp),
+			CreateIdentityProvider: prepareEndpoint(idp.MakeCreateIdentityProviderEndpoint(idpComponent), "create_identity_providers_endpoint", idpLogger, rateLimitIdp),
+			UpdateIdentityProvider: prepareEndpoint(idp.MakeUpdateIdentityProviderEndpoint(idpComponent), "update_identity_provider_endpoint", idpLogger, rateLimitIdp),
+			DeleteIdentityProvider: prepareEndpoint(idp.MakeDeleteIdentityProviderEndpoint(idpComponent), "delete_identity_providers_endpoint", idpLogger, rateLimitIdp),
+		}
+	}
+
 	// HTTP Monitoring (For monitoring probes, ...).
 	go func() {
 		var logger = log.With(logger, "transport", "http")
@@ -988,7 +1008,7 @@ func main() {
 		errc <- http.ListenAndServe(httpAddrMonitoring, route)
 	}()
 
-	// HTTP Internal Call Server (Communications, Support, Tasks & Validation API).
+	// HTTP Internal Call Server (Communications, Support, Tasks, Validation & IDP API).
 	go func() {
 		var logger = log.With(logger, "transport", "http")
 		logger.Info(ctx, "addr", httpAddrInternal, "interface", "export-and-communication")
@@ -1028,6 +1048,19 @@ func main() {
 		var deniedToUUsersHandler = configureHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, tasks.MakeTasksHandler, logger)(tasksEndpoints.DeleteDeniedToUUsers)
 
 		route.PathPrefix("/tasks/denied-terms-of-use-users").Methods("DELETE").Handler(deniedToUUsersHandler)
+
+		// Identity providers (bearer auth)
+		var getIdentityProviderHandler = configureHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, idp.MakeIdpHandler, logger)(idpEndpoints.GetIdentityProvider)
+		var createIdentityProviderHandler = configureHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, idp.MakeIdpHandler, logger)(idpEndpoints.CreateIdentityProvider)
+		var updateIdentityProviderHandler = configureHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, idp.MakeIdpHandler, logger)(idpEndpoints.UpdateIdentityProvider)
+		var deleteIdentityProviderHandler = configureHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, idp.MakeIdpHandler, logger)(idpEndpoints.DeleteIdentityProvider)
+
+		var idpSubroute = route.PathPrefix("/idp").Subrouter()
+
+		idpSubroute.Path("/realms/{realm}/identity-providers").Methods("POST").Handler(createIdentityProviderHandler)
+		idpSubroute.Path("/realms/{realm}/identity-providers/{provider}").Methods("GET").Handler(getIdentityProviderHandler)
+		idpSubroute.Path("/realms/{realm}/identity-providers/{provider}").Methods("PUT").Handler(updateIdentityProviderHandler)
+		idpSubroute.Path("/realms/{realm}/identity-providers/{provider}").Methods("DELETE").Handler(deleteIdentityProviderHandler)
 
 		// Debug.
 		if pprofRouteEnabled {

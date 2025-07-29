@@ -63,6 +63,7 @@ var (
 
 const (
 	socialRealmName = "social"
+	idpAlias        = "testIDP"
 )
 
 func (m *componentMocks) createComponent() *component {
@@ -5226,6 +5227,23 @@ func TestUnlinkShadowUser(t *testing.T) {
 		assert.Nil(t, err)
 	})
 }
+func testKcIdp() kc.IdentityProviderRepresentation {
+	return kc.IdentityProviderRepresentation{
+		AddReadTokenRoleOnCreate:  ptrBool(false),
+		Alias:                     ptr(idpAlias),
+		AuthenticateByDefault:     ptrBool(false),
+		Config:                    &map[string]interface{}{},
+		DisplayName:               ptr("TEST"),
+		Enabled:                   ptrBool(false),
+		FirstBrokerLoginFlowAlias: ptr("first broker login"),
+		InternalID:                ptr("0da3e7b1-6a99-4f73-92aa-86be96f4c2c5"),
+		LinkOnly:                  ptrBool(false),
+		PostBrokerLoginFlowAlias:  ptr("post broker login"),
+		ProviderID:                ptr("oidc"),
+		StoreToken:                ptrBool(false),
+		TrustEmail:                ptrBool(false),
+	}
+}
 
 func TestGetIdentityProviders(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
@@ -5240,21 +5258,7 @@ func TestGetIdentityProviders(t *testing.T) {
 	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 	t.Run("Get identity providers success", func(t *testing.T) {
-		kcIdp := kc.IdentityProviderRepresentation{
-			AddReadTokenRoleOnCreate:  ptrBool(false),
-			Alias:                     ptr("testIDP"),
-			AuthenticateByDefault:     ptrBool(false),
-			Config:                    &map[string]interface{}{},
-			DisplayName:               ptr("TEST"),
-			Enabled:                   ptrBool(false),
-			FirstBrokerLoginFlowAlias: ptr("first broker login"),
-			InternalID:                ptr("0da3e7b1-6a99-4f73-92aa-86be96f4c2c5"),
-			LinkOnly:                  ptrBool(false),
-			PostBrokerLoginFlowAlias:  ptr("post broker login"),
-			ProviderID:                ptr("oidc"),
-			StoreToken:                ptrBool(false),
-			TrustEmail:                ptrBool(false),
-		}
+		kcIdp := testKcIdp()
 		mocks.keycloakClient.EXPECT().GetIdps(accessToken, realmName).Return([]kc.IdentityProviderRepresentation{kcIdp}, nil)
 
 		res, err := managementComponent.GetIdentityProviders(ctx, realmName)
