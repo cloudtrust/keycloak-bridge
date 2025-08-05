@@ -2135,7 +2135,7 @@ func (c *component) GetActions(ctx context.Context) ([]api.ActionRepresentation,
 
 	// The communications API and some tasks are published internally only.
 	// To be able to configure the rights from the BO we add them here.
-	for _, action := range security.Actions.GetActionsForAPIs(security.BridgeService, security.ManagementAPI, security.CommunicationAPI, security.TaskAPI) {
+	for _, action := range security.Actions.GetActionsForAPIs(security.BridgeService, security.ManagementAPI, security.CommunicationAPI, security.TaskAPI, security.IdpAPI) {
 		var name = action.Name
 		var scope = string(action.Scope)
 
