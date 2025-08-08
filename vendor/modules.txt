@@ -8,7 +8,7 @@ github.com/IBM/sarama
 # github.com/VividCortex/gohistogram v1.0.0
 ## explicit
 github.com/VividCortex/gohistogram
-# github.com/cloudtrust/common-service/v2 v2.11.2
+# github.com/cloudtrust/common-service/v2 v2.11.3-0.20250804133105-992cda238ac2
 ## explicit; go 1.24.1
 github.com/cloudtrust/common-service/v2
 github.com/cloudtrust/common-service/v2/configuration
@@ -83,8 +83,8 @@ github.com/go-sql-driver/mysql
 ## explicit; go 1.18
 github.com/go-viper/mapstructure/v2
 github.com/go-viper/mapstructure/v2/internal/errors
-# github.com/golang-jwt/jwt/v5 v5.2.3
-## explicit; go 1.18
+# github.com/golang-jwt/jwt/v5 v5.3.0
+## explicit; go 1.21
 github.com/golang-jwt/jwt/v5
 # github.com/golang/mock v1.6.0
 ## explicit; go 1.11
