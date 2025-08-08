@@ -5234,19 +5234,21 @@ func TestUnlinkShadowUser(t *testing.T) {
 }
 func testKcIdp() kc.IdentityProviderRepresentation {
 	return kc.IdentityProviderRepresentation{
-		AddReadTokenRoleOnCreate:  ptrBool(false),
-		Alias:                     ptr(idpAlias),
-		AuthenticateByDefault:     ptrBool(false),
-		Config:                    &map[string]interface{}{},
-		DisplayName:               ptr("TEST"),
-		Enabled:                   ptrBool(false),
-		FirstBrokerLoginFlowAlias: ptr("first broker login"),
-		InternalID:                ptr("0da3e7b1-6a99-4f73-92aa-86be96f4c2c5"),
-		LinkOnly:                  ptrBool(false),
-		PostBrokerLoginFlowAlias:  ptr("post broker login"),
-		ProviderID:                ptr("oidc"),
-		StoreToken:                ptrBool(false),
-		TrustEmail:                ptrBool(false),
+		AddReadTokenRoleOnCreate:    ptrBool(false),
+		Alias:                       ptr(idpAlias),
+		AuthenticateByDefault:       ptrBool(false),
+		Config:                      &map[string]interface{}{},
+		DisplayName:                 ptr("TEST"),
+		Enabled:                     ptrBool(false),
+		FirstBrokerLoginFlowAlias:   ptr("first broker login"),
+		HideOnLogin:                 ptrBool(true),
+		InternalID:                  ptr("0da3e7b1-6a99-4f73-92aa-86be96f4c2c5"),
+		LinkOnly:                    ptrBool(false),
+		PostBrokerLoginFlowAlias:    ptr("post broker login"),
+		ProviderID:                  ptr("oidc"),
+		StoreToken:                  ptrBool(false),
+		TrustEmail:                  ptrBool(false),
+		UpdateProfileFirstLoginMode: ptr("on"),
 	}
 }
 
