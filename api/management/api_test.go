@@ -563,21 +563,20 @@ func TestFederatedIdentityRepresentation(t *testing.T) {
 
 func TestConvertToAPIIdentityProvider(t *testing.T) {
 	kcIdp := kc.IdentityProviderRepresentation{
-		AddReadTokenRoleOnCreate:    boolPtr(false),
-		Alias:                       ptr("testIDP"),
-		AuthenticateByDefault:       boolPtr(false),
-		Config:                      &map[string]interface{}{},
-		DisplayName:                 ptr("TEST"),
-		Enabled:                     boolPtr(false),
-		FirstBrokerLoginFlowAlias:   ptr("first broker login"),
-		HideOnLogin:                 boolPtr(true),
-		InternalID:                  ptr("0da3e7b1-6a99-4f73-92aa-86be96f4c2c5"),
-		LinkOnly:                    boolPtr(false),
-		PostBrokerLoginFlowAlias:    ptr("post broker login"),
-		ProviderID:                  ptr("oidc"),
-		StoreToken:                  boolPtr(false),
-		TrustEmail:                  boolPtr(false),
-		UpdateProfileFirstLoginMode: ptr("on"),
+		AddReadTokenRoleOnCreate:  boolPtr(false),
+		Alias:                     ptr("testIDP"),
+		AuthenticateByDefault:     boolPtr(false),
+		Config:                    &map[string]interface{}{},
+		DisplayName:               ptr("TEST"),
+		Enabled:                   boolPtr(false),
+		FirstBrokerLoginFlowAlias: ptr("first broker login"),
+		HideOnLogin:               boolPtr(true),
+		InternalID:                ptr("0da3e7b1-6a99-4f73-92aa-86be96f4c2c5"),
+		LinkOnly:                  boolPtr(false),
+		PostBrokerLoginFlowAlias:  ptr("post broker login"),
+		ProviderID:                ptr("oidc"),
+		StoreToken:                boolPtr(false),
+		TrustEmail:                boolPtr(false),
 	}
 	res := ConvertToAPIIdentityProvider(kcIdp)
 	assert.Equal(t, kcIdp.AddReadTokenRoleOnCreate, res.AddReadTokenRoleOnCreate)
@@ -593,7 +592,6 @@ func TestConvertToAPIIdentityProvider(t *testing.T) {
 	assert.Equal(t, kcIdp.ProviderID, res.ProviderID)
 	assert.Equal(t, kcIdp.StoreToken, res.StoreToken)
 	assert.Equal(t, kcIdp.TrustEmail, res.TrustEmail)
-	assert.Equal(t, kcIdp.UpdateProfileFirstLoginMode, res.UpdateProfileFirstLoginMode)
 }
 
 func TestConvertRealmCustomConfiguration(t *testing.T) {

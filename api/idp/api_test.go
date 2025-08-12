@@ -7,20 +7,19 @@ import (
 )
 
 var (
-	addReadTokenRoleOnCreate    = false
-	alias                       = "trustid-idp"
-	authenticateByDefault       = true
-	displayName                 = "MyTrustID"
-	enabled                     = true
-	firstBrokerLoginFlowAlias   = "TID - first broker login"
-	hideOnLogin                 = true
-	internalID                  = "92546c68-c5df-439d-85f6-fe296165517b"
-	linkOnly                    = false
-	postBrokerLoginFlowAlias    = "TID - post login"
-	providerID                  = "oidc"
-	storeToken                  = false
-	trustEmail                  = false
-	updateProfileFirstLoginMode = "on"
+	addReadTokenRoleOnCreate  = false
+	alias                     = "trustid-idp"
+	authenticateByDefault     = true
+	displayName               = "MyTrustID"
+	enabled                   = true
+	firstBrokerLoginFlowAlias = "TID - first broker login"
+	hideOnLogin               = true
+	internalID                = "92546c68-c5df-439d-85f6-fe296165517b"
+	linkOnly                  = false
+	postBrokerLoginFlowAlias  = "TID - post login"
+	providerID                = "oidc"
+	storeToken                = false
+	trustEmail                = false
 )
 
 func testIDP() IdentityProviderRepresentation {
@@ -48,17 +47,16 @@ func testIDP() IdentityProviderRepresentation {
 			"userInfoUrl":                        "http://keycloak.local:8080/auth/realms/trustid/protocol/openid-connect/userinfo",
 			"validateSignature":                  "true",
 		},
-		DisplayName:                 &displayName,
-		Enabled:                     &enabled,
-		FirstBrokerLoginFlowAlias:   &firstBrokerLoginFlowAlias,
-		HideOnLogin:                 &hideOnLogin,
-		InternalID:                  &internalID,
-		LinkOnly:                    &linkOnly,
-		PostBrokerLoginFlowAlias:    &postBrokerLoginFlowAlias,
-		ProviderID:                  &providerID,
-		StoreToken:                  &storeToken,
-		TrustEmail:                  &trustEmail,
-		UpdateProfileFirstLoginMode: &updateProfileFirstLoginMode,
+		DisplayName:               &displayName,
+		Enabled:                   &enabled,
+		FirstBrokerLoginFlowAlias: &firstBrokerLoginFlowAlias,
+		HideOnLogin:               &hideOnLogin,
+		InternalID:                &internalID,
+		LinkOnly:                  &linkOnly,
+		PostBrokerLoginFlowAlias:  &postBrokerLoginFlowAlias,
+		ProviderID:                &providerID,
+		StoreToken:                &storeToken,
+		TrustEmail:                &trustEmail,
 	}
 }
 
