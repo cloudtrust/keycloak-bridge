@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"testing"
 	"time"
 
@@ -141,7 +142,31 @@ func TestUpdateUser(t *testing.T) {
 		assert.NotNil(t, err)
 	})
 
-	t.Run("Fails to update user in KC", func(t *testing.T) {
+	t.Run("Fails to update user in KC with err=400", func(t *testing.T) {
+		var date = time.Now()
+		var user = api.UserRepresentation{
+			BirthDate: &date,
+		}
+		var kcError = kc.ClientDetailedError{HTTPStatus: http.StatusBadRequest, Message: "message-from-keycloak"}
+		mocks.keycloakClient.EXPECT().GetUser(accessToken, targetRealm, userID).Return(kc.UserRepresentation{}, nil)
+		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, targetRealm, userID, gomock.Any()).Return(kcError)
+		var err = component.UpdateUser(ctx, targetRealm, userID, user, &txnID)
+		assert.NotNil(t, err)
+		assert.Equal(t, kcError, err)
+	})
+	t.Run("Fails to update user in KC with err=404", func(t *testing.T) {
+		var date = time.Now()
+		var user = api.UserRepresentation{
+			BirthDate: &date,
+		}
+		var kcError = kc.ClientDetailedError{HTTPStatus: http.StatusNotFound, Message: "message-from-keycloak"}
+		mocks.keycloakClient.EXPECT().GetUser(accessToken, targetRealm, userID).Return(kc.UserRepresentation{}, nil)
+		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, targetRealm, userID, gomock.Any()).Return(kcError)
+		var err = component.UpdateUser(ctx, targetRealm, userID, user, &txnID)
+		assert.NotNil(t, err)
+		assert.NotEqual(t, kcError, err)
+	})
+	t.Run("Fails to update user in KC with other error than ClientDetailedError", func(t *testing.T) {
 		var date = time.Now()
 		var user = api.UserRepresentation{
 			BirthDate: &date,

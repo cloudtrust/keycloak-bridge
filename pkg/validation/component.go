@@ -2,6 +2,7 @@ package validation
 
 import (
 	"context"
+	"net/http"
 	"time"
 
 	"github.com/cloudtrust/common-service/v2/configuration"
@@ -321,6 +322,12 @@ func (c *component) updateKeycloakUser(v *validationContext) error {
 	err = c.keycloakClient.UpdateUser(accessToken, v.realmName, v.userID, *v.kcUser)
 	if err != nil {
 		c.logger.Warn(v.ctx, "msg", "updateKeycloakUser: can't update user in KC", "err", err.Error(), "realmName", v.realmName, "userID", v.userID)
+		switch v := err.(type) {
+		case kc.ClientDetailedError:
+			if v.HTTPStatus == http.StatusBadRequest {
+				return err
+			}
+		}
 		return errorhandler.CreateInternalServerError("keycloak")
 	}
 	return nil
