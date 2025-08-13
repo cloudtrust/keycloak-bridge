@@ -766,7 +766,7 @@ func main() {
 			AddClientRoleToUser:      prepareEndpoint(management.MakeAddClientRolesToUserEndpoint(keycloakComponent), "get_client_roles_for_user_endpoint", managementLogger, rateLimitMgmt),
 			DeleteClientRoleFromUser: prepareEndpoint(management.MakeDeleteClientRolesFromUserEndpoint(keycloakComponent), "delete_client_roles_from_user_endpoint", managementLogger, rateLimitMgmt),
 
-			ResetPassword:                    prepareEndpointWithoutLogging(management.MakeResetPasswordEndpoint(keycloakComponent), "reset_password_endpoint", rateLimitMgmt),
+			ResetPassword:                    prepareEndpointWithoutLogging(management.MakeResetPasswordEndpoint(keycloakComponent), rateLimitMgmt),
 			ExecuteActionsEmail:              prepareEndpoint(management.MakeExecuteActionsEmailEndpoint(keycloakComponent), "execute_actions_email_endpoint", managementLogger, rateLimitMgmt),
 			RevokeAccreditations:             prepareEndpoint(management.MakeRevokeAccreditationsEndpoint(keycloakComponent), "revoke_accreditations_endpoint", managementLogger, rateLimitMgmt),
 			SendOnboardingEmail:              prepareEndpoint(management.MakeSendOnboardingEmailEndpoint(keycloakComponent, maxLifeSpan), "send_onboarding_email_endpoint", managementLogger, rateLimitMgmt),
@@ -831,7 +831,7 @@ func main() {
 			GetAccount:                prepareEndpoint(account.MakeGetAccountEndpoint(accountComponent), "get_account", accountLogger, rateLimitAccount),
 			UpdateAccount:             prepareEndpoint(account.MakeUpdateAccountEndpoint(accountComponent, profileCache, logEndpoint), "update_account", accountLogger, rateLimitAccount),
 			DeleteAccount:             prepareEndpoint(account.MakeDeleteAccountEndpoint(accountComponent), "delete_account", accountLogger, rateLimitAccount),
-			UpdatePassword:            prepareEndpointWithoutLogging(account.MakeUpdatePasswordEndpoint(accountComponent), "update_password", rateLimitAccount),
+			UpdatePassword:            prepareEndpointWithoutLogging(account.MakeUpdatePasswordEndpoint(accountComponent), rateLimitAccount),
 			GetCredentials:            prepareEndpoint(account.MakeGetCredentialsEndpoint(accountComponent), "get_credentials", accountLogger, rateLimitAccount),
 			GetCredentialRegistrators: prepareEndpoint(account.MakeGetCredentialRegistratorsEndpoint(accountComponent), "get_credential_registrators", accountLogger, rateLimitAccount),
 			DeleteCredential:          prepareEndpoint(account.MakeDeleteCredentialEndpoint(accountComponent), "delete_credential", accountLogger, rateLimitAccount),
@@ -1755,10 +1755,10 @@ func createConfigurationDBModule(configDBConn sqltypes.CloudtrustDB, logger log.
 }
 
 func prepareEndpoint(e cs.Endpoint, endpointName string, logger log.Logger, rateLimit int) endpoint.Endpoint {
-	e = middleware.MakeEndpointLoggingMW(log.With(logger, "mw", "request"))(e)
+	e = middleware.MakeEndpointLoggingMW(log.With(log.With(logger, "mw", "request"), "endpoint", endpointName))(e)
 	return keycloakb.LimitRate(e, rateLimit)
 }
 
-func prepareEndpointWithoutLogging(e cs.Endpoint, endpointName string, rateLimit int) endpoint.Endpoint {
+func prepareEndpointWithoutLogging(e cs.Endpoint, rateLimit int) endpoint.Endpoint {
 	return keycloakb.LimitRate(e, rateLimit)
 }
