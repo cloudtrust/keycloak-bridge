@@ -3,6 +3,7 @@ package validation
 import (
 	"context"
 	"net/http"
+	"slices"
 	"time"
 
 	"github.com/cloudtrust/common-service/v2/configuration"
@@ -72,6 +73,33 @@ type component struct {
 	unknownAgentRealm    string
 	unknownAgentUserID   string
 	unknownAgentUsername string
+}
+
+// filterKeycloakError: These two functions can be moved as static functions in keycloak-client to be used in other interfaces (internal ones only !!!)
+func filterKeycloakError(err error, arrStatus ...int) error {
+	if err == nil {
+		return nil
+	}
+	if httpErr, ok := err.(kc.HTTPError); ok {
+		if slices.Contains(arrStatus, httpErr.HTTPStatus) {
+			// If kept as HTTPError, error would be blocked by HTTP error handler
+			// As this is an internal interface, there is no information leaking issue if we
+			// map the error to a ClientDetailedError
+			return kc.ClientDetailedError{HTTPStatus: httpErr.HTTPStatus, Message: httpErr.Message}
+		}
+	} else {
+		if cde, ok := err.(kc.ClientDetailedError); ok {
+			if slices.Contains(arrStatus, cde.HTTPStatus) {
+				return err
+			}
+		}
+	}
+	return errorhandler.CreateInternalServerError("keycloak")
+}
+
+func filterKeycloakErrorDefault(err error) error {
+	// By default, we let StatusBadRequest errors be transmitted to the caller
+	return filterKeycloakError(err, http.StatusBadRequest)
 }
 
 // NewComponent returns the management component.
@@ -203,7 +231,7 @@ func (c *component) UpdateUserAccreditations(ctx context.Context, realmName stri
 	err = c.keycloakClient.UpdateUser(accessToken, realmName, userID, kcUser)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Failed to update Keycloak user", "err", err.Error())
-		return err
+		return filterKeycloakErrorDefault(err)
 	}
 
 	var username = c.findFirstNonNil(events.CtEventUnknownUsername, kcUser.Username)
@@ -322,10 +350,7 @@ func (c *component) updateKeycloakUser(v *validationContext) error {
 	err = c.keycloakClient.UpdateUser(accessToken, v.realmName, v.userID, *v.kcUser)
 	if err != nil {
 		c.logger.Warn(v.ctx, "msg", "updateKeycloakUser: can't update user in KC", "err", err.Error(), "realmName", v.realmName, "userID", v.userID)
-		if cde, ok := err.(kc.ClientDetailedError); ok && cde.HTTPStatus == http.StatusBadRequest {
-			return err
-		}
-		return errorhandler.CreateInternalServerError("keycloak")
+		return filterKeycloakErrorDefault(err)
 	}
 	return nil
 }
