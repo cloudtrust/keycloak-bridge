@@ -10,6 +10,7 @@ import (
 
 	cs "github.com/cloudtrust/common-service/v2"
 	"github.com/cloudtrust/common-service/v2/configuration"
+	errorhandler "github.com/cloudtrust/common-service/v2/errors"
 	log "github.com/cloudtrust/common-service/v2/log"
 	api "github.com/cloudtrust/keycloak-bridge/api/validation"
 	"github.com/cloudtrust/keycloak-bridge/pkg/validation/mock"
@@ -41,6 +42,53 @@ func createComponentMocks(mockCtrl *gomock.Controller) componentMocks {
 
 func (m *componentMocks) createComponent() *component {
 	return NewComponent(m.keycloakClient, m.tokenProvider, m.archiveDB, m.eventsReporter, m.accredsService, m.configDB, log.NewNopLogger()).(*component)
+}
+
+func TestFilterKeycloakError(t *testing.T) {
+	var isInternalServerError = func(err error) bool {
+		if v, ok := err.(errorhandler.Error); ok {
+			return v.Status == http.StatusInternalServerError
+		}
+		return false
+	}
+
+	t.Run("Nil error", func(t *testing.T) {
+		assert.Nil(t, filterKeycloakError(nil))
+	})
+	t.Run("Expected HTTPError", func(t *testing.T) {
+		var expectedMessage = "abcdef"
+		var inErr = kc.HTTPError{HTTPStatus: http.StatusBadGateway, Message: expectedMessage}
+		var outErr = filterKeycloakError(inErr, http.StatusBadGateway)
+		assert.NotNil(t, outErr)
+		assert.Contains(t, outErr.Error(), expectedMessage)
+		assert.IsType(t, kc.ClientDetailedError{}, outErr)
+	})
+	t.Run("Unexpected HTTPError", func(t *testing.T) {
+		var expectedMessage = "abcdef"
+		var inErr = kc.HTTPError{HTTPStatus: http.StatusNotImplemented, Message: expectedMessage}
+		var outErr = filterKeycloakError(inErr, http.StatusBadGateway)
+		assert.NotNil(t, outErr)
+		assert.True(t, isInternalServerError(outErr))
+	})
+	t.Run("Expected ClientDetailedError", func(t *testing.T) {
+		var expectedMessage = "abcdef"
+		var inErr = kc.ClientDetailedError{HTTPStatus: http.StatusBadGateway, Message: expectedMessage}
+		var outErr = filterKeycloakError(inErr, http.StatusBadGateway)
+		assert.NotNil(t, outErr)
+		assert.Equal(t, outErr, inErr)
+	})
+	t.Run("Unexpected ClientDetailedError", func(t *testing.T) {
+		var expectedMessage = "abcdef"
+		var inErr = kc.ClientDetailedError{HTTPStatus: http.StatusNotImplemented, Message: expectedMessage}
+		var outErr = filterKeycloakError(inErr, http.StatusBadGateway)
+		assert.NotNil(t, outErr)
+		assert.True(t, isInternalServerError(outErr))
+	})
+	t.Run("Unknown source error", func(t *testing.T) {
+		var inErr = errors.New("unknown source error")
+		var outErr = filterKeycloakError(inErr, http.StatusInternalServerError)
+		assert.True(t, isInternalServerError(outErr))
+	})
 }
 
 func TestGetUserComponent(t *testing.T) {
