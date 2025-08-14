@@ -257,6 +257,7 @@ type RealmCustomConfiguration struct {
 	SelfRegisterGroupNames              *[]string `json:"self_register_group_names"`
 	BarcodeType                         *string   `json:"barcode_type"`
 	AllowedBackURLs                     []string  `json:"allowed_back_urls"`
+	OnboardingUserEditingEnabled        *bool     `json:"onboarding_user_editing_enabled"`
 }
 
 // UserStatus struct
@@ -763,6 +764,7 @@ func ConvertRealmCustomConfigurationFromDBStruct(config configuration.RealmConfi
 		SelfRegisterGroupNames:              defaultStringArray(config.SelfRegisterGroupNames, emptyArray),
 		BarcodeType:                         config.BarcodeType,
 		AllowedBackURLs:                     allowedBackURLs,
+		OnboardingUserEditingEnabled:        defaultBool(config.OnboardingUserEditingEnabled, false),
 	}
 }
 

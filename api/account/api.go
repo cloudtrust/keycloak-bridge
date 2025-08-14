@@ -142,6 +142,7 @@ type Configuration struct {
 	RedirectSuccessfulRegistrationURL     *string         `json:"redirect_successful_registration_url"`
 	AvailableChecks                       map[string]bool `json:"available-checks"`
 	BarcodeType                           *string         `json:"barcode_type"`
+	OnboardingUserEditingEnabled          *bool           `json:"onboarding_user_editing_enabled"`
 	Theme                                 *string         `json:"theme"`
 	SupportedLocales                      *[]string       `json:"supportedLocales,omitempty"`
 	ShowGlnEditing                        *bool           `json:"show_gln_editing,omitempty"`

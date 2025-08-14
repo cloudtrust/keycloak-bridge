@@ -366,6 +366,8 @@ components:
         barcode_type:
           type: string
           enum: [CODE128]
+        onboarding_user_editing_enabled:
+          type: boolean
         theme:
           type: string
         supportedLocales:

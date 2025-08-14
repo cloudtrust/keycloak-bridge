@@ -615,6 +615,7 @@ func TestConvertRealmCustomConfiguration(t *testing.T) {
 		assert.Len(t, *res.SelfRegisterGroupNames, 0)
 		assert.Nil(t, res.BarcodeType)
 		assert.Len(t, res.AllowedBackURLs, 0)
+		assert.False(t, *res.OnboardingUserEditingEnabled)
 	})
 	t.Run("Non empty struct", func(t *testing.T) {
 		var bTrue = true
@@ -630,6 +631,7 @@ func TestConvertRealmCustomConfiguration(t *testing.T) {
 			SelfRegisterGroupNames:            &groups,
 			BarcodeType:                       ptr("barcodetype"),
 			AllowedBackURL:                    ptr("back-url"),
+			OnboardingUserEditingEnabled:      &bTrue,
 		}
 		var res = ConvertRealmCustomConfigurationFromDBStruct(config)
 		assert.Equal(t, config.DefaultClientID, res.DefaultClientID)
@@ -642,6 +644,7 @@ func TestConvertRealmCustomConfiguration(t *testing.T) {
 		assert.Len(t, *res.SelfRegisterGroupNames, len(groups))
 		assert.Equal(t, config.BarcodeType, res.BarcodeType)
 		assert.Equal(t, *config.AllowedBackURL, res.AllowedBackURLs[0])
+		assert.True(t, *res.OnboardingUserEditingEnabled)
 	})
 }
 
