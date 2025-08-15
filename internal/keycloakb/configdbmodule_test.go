@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/cloudtrust/common-service/v2/configuration"
+	errorhandler "github.com/cloudtrust/common-service/v2/errors"
 	"github.com/cloudtrust/common-service/v2/log"
 
 	msg "github.com/cloudtrust/keycloak-bridge/internal/constants"
@@ -453,6 +454,149 @@ func TestAuthorization(t *testing.T) {
 			mockDB.EXPECT().BeginTx(gomock.Any(), gomock.Any()).Return(nil, nil)
 			var _, err = configDBModule.NewTransaction(ctx)
 			assert.Nil(t, err)
+		})
+	})
+}
+
+func TestThemeConfiguration(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockDB = mock.NewCloudtrustDB(mockCtrl)
+	var mockSQLRow = mock.NewSQLRow(mockCtrl)
+	var mockLogger = log.NewNopLogger()
+	var configDBModule = NewConfigurationDBModule(mockDB, mockLogger)
+
+	var themeName = "my-theme"
+	var color = "#13a538"
+	var menuTheme = "dark"
+	var fontFamily = "Lato"
+	var logo = []byte{
+		0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+		0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52,
+	}
+	var favicon = []byte{
+		0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+		0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52,
+	}
+	var translationEN = `{"key": "value"}`
+	var translationDE = `{"schlüssel": "wert"}`
+	var translationFR = `{"clé": "valeur"}`
+	var translationIT = `{"chiave": "valore"}`
+	var ctx = context.TODO()
+	var sqlError = errors.New("sql error")
+
+	t.Run("GetThemeConfiguration", func(t *testing.T) {
+		t.Run("Success", func(t *testing.T) {
+			mockDB.EXPECT().QueryRow(selectThemeConfigStmt, themeName).Return(mockSQLRow)
+			mockSQLRow.EXPECT().Scan(gomock.Any()).DoAndReturn(func(args ...interface{}) error {
+				*(args[0].(**string)) = &color
+				*(args[1].(**string)) = &menuTheme
+				*(args[2].(**string)) = &fontFamily
+				*(args[3].(**[]byte)) = &logo
+				*(args[4].(**[]byte)) = &favicon
+				return nil
+			})
+			conf, err := configDBModule.GetThemeConfiguration(ctx, themeName)
+			assert.Nil(t, err)
+			assert.Equal(t, &color, conf.Color)
+			assert.Equal(t, &menuTheme, conf.MenuTheme)
+			assert.Equal(t, &fontFamily, conf.FontFamily)
+			assert.Equal(t, &logo, conf.Logo)
+			assert.Equal(t, &favicon, conf.Favicon)
+		})
+
+		t.Run("Not found", func(t *testing.T) {
+			mockDB.EXPECT().QueryRow(selectThemeConfigStmt, themeName).Return(mockSQLRow)
+			mockSQLRow.EXPECT().Scan(gomock.Any()).Return(sql.ErrNoRows)
+			_, err := configDBModule.GetThemeConfiguration(ctx, themeName)
+			assert.NotNil(t, err)
+			assert.True(t, strings.Contains(err.Error(), msg.MsgErrNotConfigured))
+		})
+
+		t.Run("SQL error", func(t *testing.T) {
+			mockDB.EXPECT().QueryRow(selectThemeConfigStmt, themeName).Return(mockSQLRow)
+			mockSQLRow.EXPECT().Scan(gomock.Any()).Return(sqlError)
+			_, err := configDBModule.GetThemeConfiguration(ctx, themeName)
+			assert.Equal(t, sqlError, err)
+		})
+	})
+
+	t.Run("UpdateThemeConfiguration", func(t *testing.T) {
+		var themeConfig = configuration.ThemeConfiguration{
+			ThemeName:     ptr(themeName),
+			Color:         ptr(color),
+			MenuTheme:     ptr(menuTheme),
+			FontFamily:    ptr(fontFamily),
+			Logo:          &logo,
+			Favicon:       &favicon,
+			TranslationEN: ptr(translationEN),
+			TranslationDE: ptr(translationDE),
+			TranslationFR: ptr(translationFR),
+			TranslationIT: ptr(translationIT),
+		}
+
+		var args = []interface{}{
+			ptr(themeName), ptr(color), ptr(menuTheme), ptr(fontFamily), &logo, &favicon,
+			ptr(translationEN), ptr(translationDE), ptr(translationFR), ptr(translationIT),
+		}
+
+		t.Run("Success", func(t *testing.T) {
+			mockDB.EXPECT().Exec(updateThemeConfigStmt, args...).Return(nil, nil)
+			err := configDBModule.UpdateThemeConfiguration(ctx, themeConfig)
+			assert.Nil(t, err)
+		})
+
+		t.Run("SQL error", func(t *testing.T) {
+			mockDB.EXPECT().Exec(updateThemeConfigStmt, args...).Return(nil, sqlError)
+			err := configDBModule.UpdateThemeConfiguration(ctx, themeConfig)
+			assert.Equal(t, sqlError, err)
+		})
+	})
+
+	t.Run("GetThemeTranslation", func(t *testing.T) {
+		var language = "EN"
+		var expectedTranslation = translationEN
+
+		t.Run("Success", func(t *testing.T) {
+			mockDB.EXPECT().QueryRow(gomock.Any(), themeName).Return(mockSQLRow)
+			mockSQLRow.EXPECT().Scan(gomock.Any()).DoAndReturn(func(translation *string) error {
+				*translation = expectedTranslation
+				return nil
+			})
+			translation, err := configDBModule.GetThemeTranslation(ctx, themeName, language)
+			assert.Nil(t, err)
+			assert.Equal(t, expectedTranslation, translation)
+		})
+
+		t.Run("Not found", func(t *testing.T) {
+			mockDB.EXPECT().QueryRow(gomock.Any(), themeName).Return(mockSQLRow)
+			mockSQLRow.EXPECT().Scan(gomock.Any()).Return(sql.ErrNoRows)
+			_, err := configDBModule.GetThemeTranslation(ctx, themeName, language)
+			assert.Equal(t, errorhandler.Error{
+				Status:  404,
+				Message: "keycloak-bridge.notConfigured.my-theme.EN",
+			}, err)
+		})
+
+		t.Run("Different languages", func(t *testing.T) {
+			languages := []string{"DE", "FR", "IT"}
+			translations := map[string]string{
+				"DE": translationDE,
+				"FR": translationFR,
+				"IT": translationIT,
+			}
+
+			for _, lang := range languages {
+				mockDB.EXPECT().QueryRow(gomock.Any(), themeName).Return(mockSQLRow)
+				mockSQLRow.EXPECT().Scan(gomock.Any()).DoAndReturn(func(translation *string) error {
+					*translation = translations[lang]
+					return nil
+				})
+				translation, err := configDBModule.GetThemeTranslation(ctx, themeName, lang)
+				assert.Nil(t, err)
+				assert.Equal(t, translations[lang], translation)
+			}
 		})
 	})
 }

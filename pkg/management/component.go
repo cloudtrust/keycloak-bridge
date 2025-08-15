@@ -3,6 +3,8 @@ package management
 import (
 	"context"
 	"database/sql"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -209,6 +211,10 @@ type Component interface {
 	UnlinkShadowUser(ctx context.Context, realmName string, userID string, provider string) error
 
 	GetIdentityProviders(ctx context.Context, realmName string) ([]api.IdentityProviderRepresentation, error)
+
+	GetThemeConfiguration(ctx context.Context, realmName string) (api.ThemeConfiguration, error)
+	UpdateThemeConfiguration(ctx context.Context, realmName string, themeConf api.UpdatableThemeConfiguration) error
+	GetThemeTranslation(ctx context.Context, realmName string, language string) (interface{}, error)
 }
 
 // EventsReporterModule is the interface of the audit events module
@@ -2557,4 +2563,120 @@ func (c *component) GetIdentityProviders(ctx context.Context, realmName string) 
 	}
 
 	return apiIdps, nil
+}
+
+func (c *component) GetThemeConfiguration(ctx context.Context, realmName string) (api.ThemeConfiguration, error) {
+	// get the realm config from Keycloak
+	backofficeConfig, err := c.configDBModule.GetAdminConfiguration(ctx, realmName)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return api.ThemeConfiguration{}, err
+	}
+
+	if backofficeConfig.BoTheme == nil {
+		c.logger.Warn(ctx, "msg", "No theme configured for realm")
+		return api.ThemeConfiguration{}, errorhandler.CreateNotFoundError("theme")
+	}
+
+	config, err := c.configDBModule.GetThemeConfiguration(ctx, *backofficeConfig.BoTheme)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return api.ThemeConfiguration{}, err
+	}
+
+	// Convert the configuration to API representation
+	configAPI := api.ConvertToThemeConfiguration(config)
+
+	return configAPI, nil
+}
+
+func (c *component) UpdateThemeConfiguration(ctx context.Context, realmName string, themeConfig api.UpdatableThemeConfiguration) error {
+
+	// Convert the API representation to the database representation
+	config := configuration.ThemeConfiguration{
+		ThemeName:  themeConfig.ThemeName,
+		Color:      themeConfig.Color,
+		MenuTheme:  themeConfig.MenuTheme,
+		FontFamily: themeConfig.FontFamily,
+		Logo:       themeConfig.Logo,
+		Favicon:    themeConfig.Favicon,
+	}
+
+	// Decode base64 translations if provided
+	if themeConfig.TranslationEN != nil {
+		decodedEN, err := base64.StdEncoding.DecodeString(*themeConfig.TranslationEN)
+		if err != nil {
+			c.logger.Warn(ctx, "msg", "Invalid base64 for EN translation", "err", err.Error())
+			return errorhandler.CreateBadRequestError("invalid_base64.translationEN")
+		}
+		translationEN := string(decodedEN)
+		config.TranslationEN = &translationEN
+	}
+
+	if themeConfig.TranslationDE != nil {
+		decodedDE, err := base64.StdEncoding.DecodeString(*themeConfig.TranslationDE)
+		if err != nil {
+			c.logger.Warn(ctx, "msg", "Invalid base64 for DE translation", "err", err.Error())
+			return errorhandler.CreateBadRequestError("invalid_base64.translationDE")
+		}
+		translationDE := string(decodedDE)
+		config.TranslationDE = &translationDE
+	}
+
+	if themeConfig.TranslationFR != nil {
+		decodedFR, err := base64.StdEncoding.DecodeString(*themeConfig.TranslationFR)
+		if err != nil {
+			c.logger.Warn(ctx, "msg", "Invalid base64 for FR translation", "err", err.Error())
+			return errorhandler.CreateBadRequestError("invalid_base64.translationFR")
+		}
+		translationFR := string(decodedFR)
+		config.TranslationFR = &translationFR
+	}
+
+	if themeConfig.TranslationIT != nil {
+		decodedIT, err := base64.StdEncoding.DecodeString(*themeConfig.TranslationIT)
+		if err != nil {
+			c.logger.Warn(ctx, "msg", "Invalid base64 for IT translation", "err", err.Error())
+			return errorhandler.CreateBadRequestError("invalid_base64.translationIT")
+		}
+		translationIT := string(decodedIT)
+		config.TranslationIT = &translationIT
+	}
+
+	// Update the theme configuration in the database
+	err := c.configDBModule.UpdateThemeConfiguration(ctx, config)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return err
+	}
+
+	return nil
+}
+
+func (c *component) GetThemeTranslation(ctx context.Context, realmName string, language string) (interface{}, error) {
+	// get the realm config from Keycloak
+	backofficeConfig, err := c.configDBModule.GetAdminConfiguration(ctx, realmName)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return "", err
+	}
+
+	if backofficeConfig.BoTheme == nil {
+		c.logger.Warn(ctx, "msg", "No theme configured for realm")
+		return "", errorhandler.CreateNotFoundError("theme")
+	}
+
+	translationStr, err := c.configDBModule.GetThemeTranslation(ctx, *backofficeConfig.BoTheme, language)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return "", err
+	}
+
+	var translation interface{}
+	if err := json.Unmarshal([]byte(translationStr), &translation); err != nil {
+		c.logger.Warn(ctx, "msg", "Failed to parse theme translation JSON", "err", err.Error())
+		return nil, errorhandler.CreateInternalServerError("invalid.json.format")
+	}
+
+	return translation, nil
 }
