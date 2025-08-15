@@ -288,24 +288,27 @@ type BackOfficeConfiguration map[string]map[string][]string
 
 // RealmAdminConfiguration struct
 type RealmAdminConfiguration struct {
-	Mode                                  *string         `json:"mode"`
-	AvailableChecks                       map[string]bool `json:"available_checks"`
-	SelfRegisterEnabled                   *bool           `json:"self_register_enabled"`
-	BoTheme                               *string         `json:"bo_theme"`
-	SseTheme                              *string         `json:"sse_theme"`
-	RegisterTheme                         *string         `json:"register_theme"`
-	SignerTheme                           *string         `json:"signer_theme"`
-	NeedVerifiedContact                   *bool           `json:"need_verified_contact"`
-	ConsentRequiredSocial                 *bool           `json:"consent_required_social"`
-	ConsentRequiredCorporate              *bool           `json:"consent_required_corporate"`
-	ShowGlnEditing                        *bool           `json:"show_gln_editing"`
-	VideoIdentificationVoucherEnabled     *bool           `json:"video_identification_voucher_enabled"`
-	VideoIdentificationAccountingEnabled  *bool           `json:"video_identification_accounting_enabled"`
-	VideoIdentificationPrepaymentRequired *bool           `json:"video_identification_prepayment_required"`
-	AutoIdentificationVoucherEnabled      *bool           `json:"auto_identification_voucher_enabled"`
-	AutoIdentificationAccountingEnabled   *bool           `json:"auto_identification_accounting_enabled"`
-	AutoIdentificationPrepaymentRequired  *bool           `json:"auto_identification_prepayment_required"`
-	OnboardingStatusEnabled               *bool           `json:"onboarding_status_enabled"`
+	Mode                                           *string         `json:"mode"`
+	AvailableChecks                                map[string]bool `json:"available_checks"`
+	SelfRegisterEnabled                            *bool           `json:"self_register_enabled"`
+	BoTheme                                        *string         `json:"bo_theme"`
+	SseTheme                                       *string         `json:"sse_theme"`
+	RegisterTheme                                  *string         `json:"register_theme"`
+	SignerTheme                                    *string         `json:"signer_theme"`
+	NeedVerifiedContact                            *bool           `json:"need_verified_contact"`
+	ConsentRequiredSocial                          *bool           `json:"consent_required_social"`
+	ConsentRequiredCorporate                       *bool           `json:"consent_required_corporate"`
+	ShowGlnEditing                                 *bool           `json:"show_gln_editing"`
+	VideoIdentificationVoucherEnabled              *bool           `json:"video_identification_voucher_enabled"`
+	VideoIdentificationAccountingEnabled           *bool           `json:"video_identification_accounting_enabled"`
+	VideoIdentificationPrepaymentRequired          *bool           `json:"video_identification_prepayment_required"`
+	AuxiliaryVideoIdentificationVoucherEnabled     *bool           `json:"auxiliary_video_identification_voucher_enabled"`
+	AuxiliaryVideoIdentificationAccountingEnabled  *bool           `json:"auxiliary_video_identification_accounting_enabled"`
+	AuxiliaryVideoIdentificationPrepaymentRequired *bool           `json:"auxiliary_video_identification_prepayment_required"`
+	AutoIdentificationVoucherEnabled               *bool           `json:"auto_identification_voucher_enabled"`
+	AutoIdentificationAccountingEnabled            *bool           `json:"auto_identification_accounting_enabled"`
+	AutoIdentificationPrepaymentRequired           *bool           `json:"auto_identification_prepayment_required"`
+	OnboardingStatusEnabled                        *bool           `json:"onboarding_status_enabled"`
 }
 
 // RealmAdminAccreditation struct
@@ -795,10 +798,13 @@ func ConvertRealmAdminConfigurationFromDBStruct(conf configuration.RealmAdminCon
 		VideoIdentificationVoucherEnabled:     defaultBool(conf.VideoIdentificationVoucherEnabled, false),
 		VideoIdentificationAccountingEnabled:  defaultBool(conf.VideoIdentificationAccountingEnabled, false),
 		VideoIdentificationPrepaymentRequired: defaultBool(conf.VideoIdentificationPrepaymentRequired, false),
-		AutoIdentificationVoucherEnabled:      defaultBool(conf.AutoIdentificationVoucherEnabled, false),
-		AutoIdentificationAccountingEnabled:   defaultBool(conf.AutoIdentificationAccountingEnabled, false),
-		AutoIdentificationPrepaymentRequired:  defaultBool(conf.AutoIdentificationPrepaymentRequired, false),
-		OnboardingStatusEnabled:               defaultBool(conf.OnboardingStatusEnabled, false),
+		AuxiliaryVideoIdentificationVoucherEnabled:     defaultBool(conf.AuxiliaryVideoIdentificationVoucherEnabled, false),
+		AuxiliaryVideoIdentificationAccountingEnabled:  defaultBool(conf.AuxiliaryVideoIdentificationAccountingEnabled, false),
+		AuxiliaryVideoIdentificationPrepaymentRequired: defaultBool(conf.AuxiliaryVideoIdentificationPrepaymentRequired, false),
+		AutoIdentificationVoucherEnabled:               defaultBool(conf.AutoIdentificationVoucherEnabled, false),
+		AutoIdentificationAccountingEnabled:            defaultBool(conf.AutoIdentificationAccountingEnabled, false),
+		AutoIdentificationPrepaymentRequired:           defaultBool(conf.AutoIdentificationPrepaymentRequired, false),
+		OnboardingStatusEnabled:                        defaultBool(conf.OnboardingStatusEnabled, false),
 	}
 }
 
@@ -819,10 +825,13 @@ func (rac RealmAdminConfiguration) ConvertToDBStruct() configuration.RealmAdminC
 		VideoIdentificationVoucherEnabled:     rac.VideoIdentificationVoucherEnabled,
 		VideoIdentificationAccountingEnabled:  rac.VideoIdentificationAccountingEnabled,
 		VideoIdentificationPrepaymentRequired: rac.VideoIdentificationPrepaymentRequired,
-		AutoIdentificationVoucherEnabled:      rac.AutoIdentificationVoucherEnabled,
-		AutoIdentificationAccountingEnabled:   rac.AutoIdentificationAccountingEnabled,
-		AutoIdentificationPrepaymentRequired:  rac.AutoIdentificationPrepaymentRequired,
-		OnboardingStatusEnabled:               rac.OnboardingStatusEnabled,
+		AuxiliaryVideoIdentificationVoucherEnabled:     rac.AuxiliaryVideoIdentificationVoucherEnabled,
+		AuxiliaryVideoIdentificationAccountingEnabled:  rac.AuxiliaryVideoIdentificationAccountingEnabled,
+		AuxiliaryVideoIdentificationPrepaymentRequired: rac.AuxiliaryVideoIdentificationPrepaymentRequired,
+		AutoIdentificationVoucherEnabled:               rac.AutoIdentificationVoucherEnabled,
+		AutoIdentificationAccountingEnabled:            rac.AutoIdentificationAccountingEnabled,
+		AutoIdentificationPrepaymentRequired:           rac.AutoIdentificationPrepaymentRequired,
+		OnboardingStatusEnabled:                        rac.OnboardingStatusEnabled,
 	}
 }
 

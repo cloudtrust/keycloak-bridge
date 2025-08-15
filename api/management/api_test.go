@@ -667,37 +667,28 @@ func TestConvertRealmAdminConfiguration(t *testing.T) {
 	})
 	t.Run("Non-empty values", func(t *testing.T) {
 		var mode = "mode"
-		var selfRegisterEnabled = true
-		var needVerifiedContact = false
-		var consentRequiredSocial = true
-		var consentRequiredCorporate = false
-		var showGlnEditing = true
-		var videoIdentificationVoucherEnabled = true
-		var videoIdentificationAccountingEnabled = true
-		var videoIdentificationPrepaymentRequired = true
-		var autoIdentificationVoucherEnabled = true
-		var autoIdentificationAccountingEnabled = true
-		var autoIdentificationPrepaymentRequired = true
-		var onBoardingStatusEnabled = true
 		var config = configuration.RealmAdminConfiguration{
 			Mode:                                  &mode,
 			AvailableChecks:                       map[string]bool{"true": true, "false": false},
-			SelfRegisterEnabled:                   &selfRegisterEnabled,
+			SelfRegisterEnabled:                   boolPtr(true),
 			BoTheme:                               ptr("trustid1"),
 			SseTheme:                              ptr("trustid2"),
 			RegisterTheme:                         ptr("trustid3"),
 			SignerTheme:                           ptr("trustid4"),
-			NeedVerifiedContact:                   &needVerifiedContact,
-			ConsentRequiredSocial:                 &consentRequiredSocial,
-			ConsentRequiredCorporate:              &consentRequiredCorporate,
-			ShowGlnEditing:                        &showGlnEditing,
-			VideoIdentificationVoucherEnabled:     &videoIdentificationVoucherEnabled,
-			VideoIdentificationAccountingEnabled:  &videoIdentificationAccountingEnabled,
-			VideoIdentificationPrepaymentRequired: &videoIdentificationPrepaymentRequired,
-			AutoIdentificationVoucherEnabled:      &autoIdentificationVoucherEnabled,
-			AutoIdentificationAccountingEnabled:   &autoIdentificationAccountingEnabled,
-			AutoIdentificationPrepaymentRequired:  &autoIdentificationPrepaymentRequired,
-			OnboardingStatusEnabled:               &onBoardingStatusEnabled,
+			NeedVerifiedContact:                   boolPtr(false),
+			ConsentRequiredSocial:                 boolPtr(true),
+			ConsentRequiredCorporate:              boolPtr(false),
+			ShowGlnEditing:                        boolPtr(true),
+			VideoIdentificationVoucherEnabled:     boolPtr(true),
+			VideoIdentificationAccountingEnabled:  boolPtr(true),
+			VideoIdentificationPrepaymentRequired: boolPtr(true),
+			AuxiliaryVideoIdentificationVoucherEnabled:     boolPtr(true),
+			AuxiliaryVideoIdentificationAccountingEnabled:  boolPtr(true),
+			AuxiliaryVideoIdentificationPrepaymentRequired: boolPtr(true),
+			AutoIdentificationVoucherEnabled:               boolPtr(true),
+			AutoIdentificationAccountingEnabled:            boolPtr(true),
+			AutoIdentificationPrepaymentRequired:           boolPtr(true),
+			OnboardingStatusEnabled:                        boolPtr(true),
 		}
 		var res = ConvertRealmAdminConfigurationFromDBStruct(config)
 		assert.Equal(t, mode, *res.Mode)
