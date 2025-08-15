@@ -12,10 +12,10 @@ github.com/cloudtrust/httpclient v1.5.0 h1:r7bDcM4U/WzCsGxf7J+9fBArJUQEB4y0Gldnn
 github.com/cloudtrust/httpclient v1.5.0/go.mod h1:70/EAxPQYEsZhsncvMKB0imj6fbKYh5ykZx6X02lvHc=
 github.com/cloudtrust/kafka-client v1.6.1 h1:Z4JjnEdVbmj+B43VzPT5Q1aabOiyQjVGDl+Dfi9/Nqw=
 github.com/cloudtrust/kafka-client v1.6.1/go.mod h1:V3Fn7PfeIRPPTby3vGdx1Rp9fDVoTu4DlnmDwYCqZPo=
-github.com/cloudtrust/keycloak-client/v2 v2.12.2 h1:h6jrsNm+mdB/5nKGBJRHhSkLGX3bwf8d/iUymwSO/U0=
-github.com/cloudtrust/keycloak-client/v2 v2.12.2/go.mod h1:8jzdfDo8jt93brs0IcHDyVDE+GQMvMvoiDFHH3oNyHw=
-github.com/coreos/go-oidc v2.3.0+incompatible h1:+5vEsrgprdLjjQ9FzIKAzQz1wwPD+83hQRfUIPh7rO0=
-github.com/coreos/go-oidc v2.3.0+incompatible/go.mod h1:CgnwVTmzoESiwO9qyAFEMiHoZ1nMCKZlZ9V6mm3/LKc=
+github.com/cloudtrust/keycloak-client/v2 v2.13.0 h1:mGoaxn621bLDFV1lPcpgIxqMsmPk2KCy4S5yawAUx9s=
+github.com/cloudtrust/keycloak-client/v2 v2.13.0/go.mod h1:hNLGlVEfm1W+t4VXXct8PABMWx98tJZ03NymDp4DgwI=
+github.com/coreos/go-oidc v2.4.0+incompatible h1:xjdlhLWXcINyUJgLQ9I76g7osgC2goiL6JDXS6Fegjk=
+github.com/coreos/go-oidc v2.4.0+incompatible/go.mod h1:CgnwVTmzoESiwO9qyAFEMiHoZ1nMCKZlZ9V6mm3/LKc=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc h1:U9qPSI2PIWSS1VwoXQT9A3Wy9MM3WgvqSxFWenqJduM=

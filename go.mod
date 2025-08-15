@@ -6,7 +6,7 @@ require (
 	github.com/cloudtrust/common-service/v2 v2.12.0
 	github.com/cloudtrust/httpclient v1.5.0
 	github.com/cloudtrust/kafka-client v1.6.1
-	github.com/cloudtrust/keycloak-client/v2 v2.12.2
+	github.com/cloudtrust/keycloak-client/v2 v2.13.0
 	github.com/go-kit/kit v0.13.0
 	github.com/go-kit/log v0.2.1
 	github.com/go-sql-driver/mysql v1.9.3
@@ -29,7 +29,7 @@ require (
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/IBM/sarama v1.45.2 // indirect
 	github.com/VividCortex/gohistogram v1.0.0 // indirect
-	github.com/coreos/go-oidc v2.3.0+incompatible // indirect
+	github.com/coreos/go-oidc v2.4.0+incompatible // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/eapache/go-resiliency v1.7.0 // indirect
 	github.com/eapache/go-xerial-snappy v0.0.0-20230731223053-c322873962e3 // indirect

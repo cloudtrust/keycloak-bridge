@@ -13,6 +13,7 @@ var (
 	displayName               = "MyTrustID"
 	enabled                   = true
 	firstBrokerLoginFlowAlias = "TID - first broker login"
+	hideOnLogin               = true
 	internalID                = "92546c68-c5df-439d-85f6-fe296165517b"
 	linkOnly                  = false
 	postBrokerLoginFlowAlias  = "TID - post login"
@@ -49,6 +50,7 @@ func testIDP() IdentityProviderRepresentation {
 		DisplayName:               &displayName,
 		Enabled:                   &enabled,
 		FirstBrokerLoginFlowAlias: &firstBrokerLoginFlowAlias,
+		HideOnLogin:               &hideOnLogin,
 		InternalID:                &internalID,
 		LinkOnly:                  &linkOnly,
 		PostBrokerLoginFlowAlias:  &postBrokerLoginFlowAlias,

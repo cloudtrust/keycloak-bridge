@@ -15,6 +15,7 @@ type IdentityProviderRepresentation struct {
 	DisplayName               *string                 `json:"displayName,omitempty"`
 	Enabled                   *bool                   `json:"enabled,omitempty"`
 	FirstBrokerLoginFlowAlias *string                 `json:"firstBrokerLoginFlowAlias,omitempty"`
+	HideOnLogin               *bool                   `json:"hideOnLogin,omitempty"`
 	InternalID                *string                 `json:"internalId,omitempty"`
 	LinkOnly                  *bool                   `json:"linkOnly,omitempty"`
 	PostBrokerLoginFlowAlias  *string                 `json:"postBrokerLoginFlowAlias,omitempty"`
@@ -33,6 +34,7 @@ func ConvertToAPIIdentityProvider(idp kc.IdentityProviderRepresentation) Identit
 		DisplayName:               idp.DisplayName,
 		Enabled:                   idp.Enabled,
 		FirstBrokerLoginFlowAlias: idp.FirstBrokerLoginFlowAlias,
+		HideOnLogin:               idp.HideOnLogin,
 		InternalID:                idp.InternalID,
 		LinkOnly:                  idp.LinkOnly,
 		PostBrokerLoginFlowAlias:  idp.PostBrokerLoginFlowAlias,
@@ -52,6 +54,7 @@ func ConvertToKCIdentityProvider(idp IdentityProviderRepresentation) kc.Identity
 		DisplayName:               idp.DisplayName,
 		Enabled:                   idp.Enabled,
 		FirstBrokerLoginFlowAlias: idp.FirstBrokerLoginFlowAlias,
+		HideOnLogin:               idp.HideOnLogin,
 		InternalID:                idp.InternalID,
 		LinkOnly:                  idp.LinkOnly,
 		PostBrokerLoginFlowAlias:  idp.PostBrokerLoginFlowAlias,

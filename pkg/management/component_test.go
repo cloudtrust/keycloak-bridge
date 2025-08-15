@@ -5241,6 +5241,7 @@ func testKcIdp() kc.IdentityProviderRepresentation {
 		DisplayName:               ptr("TEST"),
 		Enabled:                   ptrBool(false),
 		FirstBrokerLoginFlowAlias: ptr("first broker login"),
+		HideOnLogin:               ptrBool(true),
 		InternalID:                ptr("0da3e7b1-6a99-4f73-92aa-86be96f4c2c5"),
 		LinkOnly:                  ptrBool(false),
 		PostBrokerLoginFlowAlias:  ptr("post broker login"),

@@ -570,6 +570,7 @@ func TestConvertToAPIIdentityProvider(t *testing.T) {
 		DisplayName:               ptr("TEST"),
 		Enabled:                   boolPtr(false),
 		FirstBrokerLoginFlowAlias: ptr("first broker login"),
+		HideOnLogin:               boolPtr(true),
 		InternalID:                ptr("0da3e7b1-6a99-4f73-92aa-86be96f4c2c5"),
 		LinkOnly:                  boolPtr(false),
 		PostBrokerLoginFlowAlias:  ptr("post broker login"),
@@ -584,6 +585,7 @@ func TestConvertToAPIIdentityProvider(t *testing.T) {
 	assert.Equal(t, kcIdp.Config, res.Config)
 	assert.Equal(t, kcIdp.DisplayName, res.DisplayName)
 	assert.Equal(t, kcIdp.Enabled, res.Enabled)
+	assert.Equal(t, kcIdp.HideOnLogin, res.HideOnLogin)
 	assert.Equal(t, kcIdp.InternalID, res.InternalID)
 	assert.Equal(t, kcIdp.LinkOnly, res.LinkOnly)
 	assert.Equal(t, kcIdp.PostBrokerLoginFlowAlias, res.PostBrokerLoginFlowAlias)

@@ -35,12 +35,12 @@ github.com/cloudtrust/httpclient
 ## explicit; go 1.24.1
 github.com/cloudtrust/kafka-client
 github.com/cloudtrust/kafka-client/misc
-# github.com/cloudtrust/keycloak-client/v2 v2.12.2
+# github.com/cloudtrust/keycloak-client/v2 v2.13.0
 ## explicit; go 1.24.1
 github.com/cloudtrust/keycloak-client/v2
 github.com/cloudtrust/keycloak-client/v2/api
 github.com/cloudtrust/keycloak-client/v2/toolbox
-# github.com/coreos/go-oidc v2.3.0+incompatible
+# github.com/coreos/go-oidc v2.4.0+incompatible
 ## explicit
 github.com/coreos/go-oidc
 # github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc

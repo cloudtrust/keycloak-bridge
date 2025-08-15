@@ -9,5 +9,12 @@
     "runServices": [
         "bridge"
     ],
-    "workspaceFolder": "/workspace/"
+    "workspaceFolder": "/workspace/",
+    "customizations": {
+        "vscode": {
+            "settings": {
+                "remote.autoForwardPorts": false
+            }
+        }
+    }
 }
