@@ -2414,6 +2414,8 @@ components:
           enum: [CODE128]
         allowed_back_url:
           type: string
+        onboarding_user_editing_enabled:
+          type: boolean
     AdminConfiguration:
       type: object
       properties:
