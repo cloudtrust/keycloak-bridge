@@ -54,6 +54,16 @@ func IsAttributeRequired(attrb kc.ProfileAttrbRepresentation, frontend string) b
 	return validation.IsStringInSlice(attrb.Required.Roles, requesterType)
 }
 
+// IsAttributeRequired tells if attribute is read-only
+func IsAttributeReadOnly(attrb kc.ProfileAttrbRepresentation, frontend string) bool {
+	if attrb.AnnotationMatches(frontend, func(value string) bool {
+		return strings.EqualFold(value, "read-only")
+	}) {
+		return true
+	}
+	return false
+}
+
 // Validate validates an incoming account against a user profile
 func Validate(ctx context.Context, upc UserProfile, realm string, input ContainsFields, apiName string, checkMandatory bool) error {
 	// Get the UserProfile
@@ -70,7 +80,7 @@ func Validate(ctx context.Context, upc UserProfile, realm string, input Contains
 func ValidateUser(profile kc.UserProfileRepresentation, input ContainsFields, apiName string, checkMandatory bool) error {
 	for _, attrb := range profile.Attributes {
 		if !attrb.AnnotationMatches(apiName, func(value string) bool {
-			return strings.EqualFold(value, "true") || strings.EqualFold(value, "required")
+			return strings.EqualFold(value, "true") || strings.EqualFold(value, "required") || strings.EqualFold(value, "read-only")
 		}) {
 			// Attribute is not supposed to be provided for this frontend type
 			input.SetField(*attrb.Name, nil)

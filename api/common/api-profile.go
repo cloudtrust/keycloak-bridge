@@ -32,6 +32,7 @@ type ProfileAttributeRepresentation struct {
 	DisplayName *string                                        `json:"displayName,omitempty"`
 	Group       *string                                        `json:"group,omitempty"`
 	Required    *bool                                          `json:"required,omitempty"`
+	ReadOnly    *bool                                          `json:"readOnly,omitempty"`
 	Validations map[string]ProfileAttrbValidatorRepresentation `json:"validations,omitempty"`
 	Annotations map[string]string                              `json:"annotations,omitempty"`
 }
@@ -77,19 +78,24 @@ func AttributeToAPI(attrb kc.ProfileAttrbRepresentation, apiName string) *Profil
 		// Component should not be aware of its existence
 		return nil
 	}
+
 	// By default, attributes are not shown for a given frontend
 	if apiName != "" && (!attrb.AnnotationMatches(apiName, func(value string) bool {
-		return strings.EqualFold(value, "true") || strings.EqualFold(value, "required")
+		return strings.EqualFold(value, "true") || strings.EqualFold(value, "required") || strings.EqualFold(value, "read-only")
 	})) {
 		// Attribute is not declared to be used by the given frontend
 		return nil
 	}
-	var required = profile.IsAttributeRequired(attrb, apiName)
+
+	required := profile.IsAttributeRequired(attrb, apiName)
+	readOnly := profile.IsAttributeReadOnly(attrb, apiName)
+
 	return &ProfileAttributeRepresentation{
 		Name:        cleanUpName(attrb.Name),
 		DisplayName: attrb.DisplayName,
 		Group:       attrb.Group,
 		Required:    &required,
+		ReadOnly:    &readOnly,
 		Validations: ValidationsToAPI(attrb.Validations),
 		Annotations: AttributeAnnotationsToAPI(attrb.Annotations),
 	}
