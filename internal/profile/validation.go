@@ -54,7 +54,7 @@ func IsAttributeRequired(attrb kc.ProfileAttrbRepresentation, frontend string) b
 	return validation.IsStringInSlice(attrb.Required.Roles, requesterType)
 }
 
-// IsAttributeRequired tells if attribute is read-only
+// IsAttributeReadOnly tells if attribute is read-only
 func IsAttributeReadOnly(attrb kc.ProfileAttrbRepresentation, frontend string) bool {
 	if attrb.AnnotationMatches(frontend, func(value string) bool {
 		return strings.EqualFold(value, "read-only")
