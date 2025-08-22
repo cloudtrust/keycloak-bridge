@@ -59,6 +59,7 @@ type KeycloakTechnicalClient interface {
 	GetRealm(ctx context.Context, realmName string) (kc.RealmRepresentation, error)
 	GetUsers(ctx context.Context, targetRealmName string, paramKV ...string) (kc.UsersPageRepresentation, error)
 	LogoutAllSessions(ctx context.Context, realmName string, userID string) error
+	ResetPassword(ctx context.Context, realmName string, userID string, cred kc.CredentialRepresentation) error
 }
 
 // Component interface exposes methods used by the bridge API
@@ -132,17 +133,47 @@ func (c *component) UpdatePassword(ctx context.Context, currentPassword, newPass
 	var userID = ctx.Value(cs.CtContextUserID).(string)
 	var username = ctx.Value(cs.CtContextUsername).(string)
 
-	if currentPassword == newPassword || newPassword != confirmPassword {
-		return errorhandler.Error{
-			Status:  http.StatusBadRequest,
-			Message: keycloakb.ComponentName + "." + "invalidValues",
+	if currentPassword == "" {
+		// Current password is empty, meaning the user wants to set their password. Then, we need to check they do not have a password credential
+		credentialsKc, err := c.keycloakAccountClient.GetCredentials(accessToken, realm)
+		if err != nil {
+			c.logger.Warn(ctx, "msg", "Can't get credentials", "err", err.Error())
+			return err
 		}
-	}
 
-	_, err := c.keycloakAccountClient.UpdatePassword(accessToken, realm, currentPassword, newPassword, confirmPassword)
-	if err != nil {
-		c.logger.Warn(ctx, "msg", "Can't update password", "err", err.Error())
-		return err
+		for _, cred := range credentialsKc {
+			if *cred.Type == "password" {
+				c.logger.Warn(ctx, "msg", "Can't set password", "err", "user has a password credential")
+				return errorhandler.CreateBadRequestError("invalidParameter.currentPassword")
+			}
+		}
+
+		temporary := false
+		setPassword := kc.CredentialRepresentation{
+			Type:      cs.ToStringPtr("password"),
+			Value:     cs.ToStringPtr(newPassword),
+			Temporary: &temporary,
+		}
+
+		err = c.keycloakTechClient.ResetPassword(ctx, realm, userID, setPassword)
+		if err != nil {
+			c.logger.Warn(ctx, "msg", "Can't set password", "err", err.Error())
+			return err
+		}
+	} else {
+		// Password update when the user has a current password
+		if currentPassword == newPassword || newPassword != confirmPassword {
+			return errorhandler.Error{
+				Status:  http.StatusBadRequest,
+				Message: keycloakb.ComponentName + "." + "invalidValues",
+			}
+		}
+
+		_, err := c.keycloakAccountClient.UpdatePassword(accessToken, realm, currentPassword, newPassword, confirmPassword)
+		if err != nil {
+			c.logger.Warn(ctx, "msg", "Can't update password", "err", err.Error())
+			return err
+		}
 	}
 
 	// account.update.password should be "trustID: Security Alert"
@@ -151,10 +182,10 @@ func (c *component) UpdatePassword(ctx context.Context, currentPassword, newPass
 		c.eventReporterModule.ReportEvent(ctx, events.NewEventOnUserFromContext(ctx, c.logger, c.originEvent, "UPDATED_PWD_EMAIL_SENT", realm, userID, username, nil))
 	}
 
-	//store the API call into the DB
+	// Store the API call into the DB
 	c.eventReporterModule.ReportEvent(ctx, events.NewEventOnUserFromContext(ctx, c.logger, c.originEvent, "PASSWORD_RESET", realm, userID, username, nil))
 
-	if err = c.keycloakTechClient.LogoutAllSessions(ctx, realm, userID); err != nil {
+	if err := c.keycloakTechClient.LogoutAllSessions(ctx, realm, userID); err != nil {
 		c.logger.Warn(ctx, "msg", "User updated his/her password but logout of sessions failed", "err", err.Error(), "realm", realm, "user", userID)
 	}
 
