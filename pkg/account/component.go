@@ -234,6 +234,28 @@ func (c *component) UpdateAccount(ctx context.Context, user api.UpdatableAccount
 		CompareValueAndFunctionForUpdate(fields.IDDocumentExpiration, user.IDDocumentExpiration, oldUserKc.GetFieldValues).
 		CompareValueAndFunctionForUpdate(fields.IDDocumentCountry, user.IDDocumentCountry, oldUserKc.GetFieldValues)
 
+	// Create a set of updated attributes
+	updatedFieldsSet := make(map[string]struct{})
+	for _, field := range fieldsComparator.UpdatedFields() {
+		updatedFieldsSet[field] = struct{}{}
+	}
+
+	profile, err := c.profileCache.GetRealmUserProfile(ctx, realm)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "failed to load user profile")
+		return err
+	}
+
+	// Check that no read-only field were updated
+	for _, attr := range profile.Attributes {
+		if attr.Annotations[apiName] == "read-only" {
+			if _, ok := updatedFieldsSet[*attr.Name]; ok {
+				c.logger.Warn(ctx, "msg", "Failed to update account", "err", "Tried to update a read-only field")
+				return errorhandler.CreateBadRequestError("update-read-only-field")
+			}
+		}
+	}
+
 	var updateRequest = accreditationsclient.UpdateNotificationRepresentation{
 		UserID:        &userID,
 		RealmName:     &realm,
@@ -281,12 +303,6 @@ func (c *component) UpdateAccount(ctx context.Context, user api.UpdatableAccount
 			oldUserKc.SetAttributeString(constants.AttrbPhoneNumber, *user.PhoneNumber)
 			oldUserKc.RemoveAttribute(constants.AttrbPhoneNumberToValidate)
 		}
-	}
-
-	profile, err := c.profileCache.GetRealmUserProfile(ctx, realm)
-	if err != nil {
-		c.logger.Warn(ctx, "msg", "failed to load user profile")
-		return err
 	}
 
 	api.MergeUserWithoutEmailAndPhoneNumber(&oldUserKc, user, profile)
