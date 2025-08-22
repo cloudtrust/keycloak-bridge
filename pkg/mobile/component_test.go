@@ -174,9 +174,7 @@ func TestGetUser(t *testing.T) {
 		var bFalse = false
 		var availableChecks = map[string]bool{"physical": true, "IDNow": true}
 		var adminConf = configuration.RealmAdminConfiguration{AvailableChecks: availableChecks, VideoIdentificationAccountingEnabled: &bFalse, VideoIdentificationPrepaymentRequired: &bFalse}
-		var bTrue = true
-		adminConf.ShowGlnEditing = &bTrue
-		var expectedActionsCount = len(availableChecks) - 1
+		var expectedActionsCount = len(availableChecks)
 
 		mocks.accreditationsClient.EXPECT().GetChecks(ctx, realm, userID).Return(checks, nil)
 		mocks.accreditationsClient.EXPECT().GetPendingChecks(ctx, realm, userID).Return([]accreditationsclient.CheckRepresentation{}, nil)
@@ -195,7 +193,7 @@ func TestGetUser(t *testing.T) {
 		var checks = []accreditationsclient.CheckRepresentation{{}, {}}
 		var bFalse = false
 		var availableChecks = map[string]bool{"physical": true, "IDNow": true}
-		var adminConf = configuration.RealmAdminConfiguration{AvailableChecks: availableChecks, ShowGlnEditing: &bFalse, VideoIdentificationAccountingEnabled: &bFalse, VideoIdentificationPrepaymentRequired: &bFalse}
+		var adminConf = configuration.RealmAdminConfiguration{AvailableChecks: availableChecks, VideoIdentificationAccountingEnabled: &bFalse, VideoIdentificationPrepaymentRequired: &bFalse}
 		var expectedActionsCount = len(availableChecks) - 1
 
 		mocks.accreditationsClient.EXPECT().GetChecks(ctx, realm, userID).Return(checks, nil)
@@ -215,7 +213,7 @@ func TestGetUser(t *testing.T) {
 		var checks = []accreditationsclient.CheckRepresentation{{}, {}}
 		var bFalse = false
 		var availableChecks = map[string]bool{"physical": true, "IDNow": true}
-		var adminConf = configuration.RealmAdminConfiguration{AvailableChecks: availableChecks, ShowGlnEditing: &bFalse, VideoIdentificationAccountingEnabled: &bFalse, VideoIdentificationPrepaymentRequired: &bFalse}
+		var adminConf = configuration.RealmAdminConfiguration{AvailableChecks: availableChecks, VideoIdentificationAccountingEnabled: &bFalse, VideoIdentificationPrepaymentRequired: &bFalse}
 		var expectedActionsCount = len(availableChecks)
 
 		mocks.accreditationsClient.EXPECT().GetChecks(ctx, realm, userID).Return(checks, nil)
@@ -235,7 +233,7 @@ func TestGetUser(t *testing.T) {
 		var checks = []accreditationsclient.CheckRepresentation{{}, {}}
 		var bFalse = false
 		var availableChecks = map[string]bool{"check-2": true, "check-3": true}
-		var adminConf = configuration.RealmAdminConfiguration{AvailableChecks: availableChecks, ShowGlnEditing: &bFalse, VideoIdentificationAccountingEnabled: &bFalse, VideoIdentificationPrepaymentRequired: &bFalse}
+		var adminConf = configuration.RealmAdminConfiguration{AvailableChecks: availableChecks, VideoIdentificationAccountingEnabled: &bFalse, VideoIdentificationPrepaymentRequired: &bFalse}
 
 		mocks.accreditationsClient.EXPECT().GetChecks(ctx, realm, userID).Return(checks, nil)
 		pendingAction := "check-2"

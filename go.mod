@@ -3,7 +3,7 @@ module github.com/cloudtrust/keycloak-bridge
 go 1.24.1
 
 require (
-	github.com/cloudtrust/common-service/v2 v2.12.0
+	github.com/cloudtrust/common-service/v2 v2.12.1
 	github.com/cloudtrust/httpclient v1.5.0
 	github.com/cloudtrust/kafka-client v1.6.1
 	github.com/cloudtrust/keycloak-client/v2 v2.13.0
@@ -19,7 +19,7 @@ require (
 	github.com/spf13/cast v1.9.2
 	github.com/spf13/pflag v1.0.7
 	github.com/spf13/viper v1.20.1
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.0
 	go.uber.org/mock v0.6.0
 	golang.org/x/time v0.12.0
 	gopkg.in/h2non/gentleman.v2 v2.0.5

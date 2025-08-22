@@ -8,7 +8,7 @@ github.com/IBM/sarama
 # github.com/VividCortex/gohistogram v1.0.0
 ## explicit
 github.com/VividCortex/gohistogram
-# github.com/cloudtrust/common-service/v2 v2.12.0
+# github.com/cloudtrust/common-service/v2 v2.12.1
 ## explicit; go 1.24.1
 github.com/cloudtrust/common-service/v2
 github.com/cloudtrust/common-service/v2/configuration
@@ -246,7 +246,7 @@ github.com/spf13/viper/internal/encoding/json
 github.com/spf13/viper/internal/encoding/toml
 github.com/spf13/viper/internal/encoding/yaml
 github.com/spf13/viper/internal/features
-# github.com/stretchr/testify v1.10.0
+# github.com/stretchr/testify v1.11.0
 ## explicit; go 1.17
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/assert/yaml
