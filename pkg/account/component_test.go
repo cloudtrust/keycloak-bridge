@@ -309,6 +309,7 @@ func TestUpdateAccount(t *testing.T) {
 		var oldEmail = "toti@elca.ch"
 		var oldkcUserRep = kc.UserRepresentation{
 			ID:            &id,
+			FirstName:     &firstName,
 			Email:         &oldEmail,
 			EmailVerified: &emailVerified,
 		}
@@ -347,6 +348,7 @@ func TestUpdateAccount(t *testing.T) {
 	oldAttributes[constants.AttrbPhoneNumberVerified] = []string{strconv.FormatBool(phoneNumberVerified)}
 	var oldkcUserRep2 = kc.UserRepresentation{
 		ID:         &id,
+		FirstName:  &firstName,
 		Email:      &email,
 		Attributes: &oldAttributes,
 	}
