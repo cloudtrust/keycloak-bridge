@@ -299,7 +299,6 @@ type RealmAdminConfiguration struct {
 	NeedVerifiedContact                            *bool           `json:"need_verified_contact"`
 	ConsentRequiredSocial                          *bool           `json:"consent_required_social"`
 	ConsentRequiredCorporate                       *bool           `json:"consent_required_corporate"`
-	ShowGlnEditing                                 *bool           `json:"show_gln_editing"`
 	VideoIdentificationVoucherEnabled              *bool           `json:"video_identification_voucher_enabled"`
 	VideoIdentificationAccountingEnabled           *bool           `json:"video_identification_accounting_enabled"`
 	VideoIdentificationPrepaymentRequired          *bool           `json:"video_identification_prepayment_required"`
@@ -798,7 +797,6 @@ func ConvertRealmAdminConfigurationFromDBStruct(conf configuration.RealmAdminCon
 		NeedVerifiedContact:                   defaultBool(conf.NeedVerifiedContact, true),
 		ConsentRequiredSocial:                 defaultBool(conf.ConsentRequiredSocial, false),
 		ConsentRequiredCorporate:              defaultBool(conf.ConsentRequiredCorporate, false),
-		ShowGlnEditing:                        defaultBool(conf.ShowGlnEditing, false),
 		VideoIdentificationVoucherEnabled:     defaultBool(conf.VideoIdentificationVoucherEnabled, false),
 		VideoIdentificationAccountingEnabled:  defaultBool(conf.VideoIdentificationAccountingEnabled, false),
 		VideoIdentificationPrepaymentRequired: defaultBool(conf.VideoIdentificationPrepaymentRequired, false),
@@ -825,7 +823,6 @@ func (rac RealmAdminConfiguration) ConvertToDBStruct() configuration.RealmAdminC
 		NeedVerifiedContact:                   rac.NeedVerifiedContact,
 		ConsentRequiredSocial:                 rac.ConsentRequiredSocial,
 		ConsentRequiredCorporate:              rac.ConsentRequiredCorporate,
-		ShowGlnEditing:                        rac.ShowGlnEditing,
 		VideoIdentificationVoucherEnabled:     rac.VideoIdentificationVoucherEnabled,
 		VideoIdentificationAccountingEnabled:  rac.VideoIdentificationAccountingEnabled,
 		VideoIdentificationPrepaymentRequired: rac.VideoIdentificationPrepaymentRequired,
