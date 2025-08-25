@@ -72,8 +72,8 @@ func TestUpdatePassword(t *testing.T) {
 	anError := errors.New("any error")
 	temporary := false
 	setPassword := kc.CredentialRepresentation{
-		Type:      cs.ToStringPtr("password"),
-		Value:     cs.ToStringPtr(newPasswd),
+		Type:      ptr("password"),
+		Value:     ptr(newPasswd),
 		Temporary: &temporary,
 	}
 
@@ -113,7 +113,7 @@ func TestUpdatePassword(t *testing.T) {
 
 	t.Run("Set password: user has a current password", func(t *testing.T) {
 		cred := kc.CredentialRepresentation{
-			Type: cs.ToStringPtr("password"),
+			Type: ptr("password"),
 		}
 		mocks.keycloakAccountClient.EXPECT().GetCredentials(accessToken, realm).Return([]kc.CredentialRepresentation{cred}, nil)
 

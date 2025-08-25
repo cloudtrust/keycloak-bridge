@@ -143,7 +143,7 @@ func (c *component) UpdatePassword(ctx context.Context, currentPassword, newPass
 
 		for _, cred := range credentialsKc {
 			if *cred.Type == "password" {
-				c.logger.Warn(ctx, "msg", "Can't set password", "err", "user has a password credential")
+				c.logger.Warn(ctx, "msg", "Can't set initial password as user already owns one")
 				return errorhandler.CreateBadRequestError("invalidParameter.currentPassword")
 			}
 		}
