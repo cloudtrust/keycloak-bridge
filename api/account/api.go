@@ -396,7 +396,7 @@ func (user *UpdatableAccountRepresentation) Validate(ctx context.Context, upc pr
 // Validate is a validator for UpdatePasswordBody
 func (updatePwd UpdatePasswordBody) Validate() error {
 	return validation.NewParameterValidator().
-		ValidateParameterRegExp(constants.CurrentPassword, &updatePwd.CurrentPassword, constants.RegExpPassword, true).
+		ValidateParameterRegExp(constants.CurrentPassword, &updatePwd.CurrentPassword, constants.RegExpPasswordOrEmpty, true).
 		ValidateParameterRegExp(constants.NewPassword, &updatePwd.NewPassword, constants.RegExpPassword, true).
 		ValidateParameterRegExp(constants.ConfirmPassword, &updatePwd.ConfirmPassword, constants.RegExpPassword, true).
 		Status()

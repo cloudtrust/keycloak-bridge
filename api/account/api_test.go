@@ -177,7 +177,7 @@ func TestValidateUpdatePasswordRepresentation(t *testing.T) {
 	{
 		password := createValidUpdatePasswordBody()
 		password.CurrentPassword = value
-		assert.NotNil(t, password.Validate())
+		assert.Nil(t, password.Validate())
 	}
 
 	{
