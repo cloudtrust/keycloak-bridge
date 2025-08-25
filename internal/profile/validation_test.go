@@ -139,6 +139,25 @@ func TestIsAttributeRequired(t *testing.T) {
 	})
 }
 
+func TestIsAttributeReadOnly(t *testing.T) {
+	frontend := "frontend"
+
+	t.Run("ReadOnly is nil", func(t *testing.T) {
+		attrb := kc.ProfileAttrbRepresentation{}
+		assert.False(t, IsAttributeReadOnly(attrb, frontend))
+	})
+
+	t.Run("Attribute is not read-only", func(t *testing.T) {
+		attrb := kc.ProfileAttrbRepresentation{Annotations: map[string]string{frontend: "true"}}
+		assert.False(t, IsAttributeReadOnly(attrb, frontend))
+	})
+
+	t.Run("Attribute is read-only for the given api", func(t *testing.T) {
+		attrb := kc.ProfileAttrbRepresentation{Annotations: map[string]string{frontend: "read-only"}}
+		assert.True(t, IsAttributeReadOnly(attrb, frontend))
+	})
+}
+
 func TestValidate(t *testing.T) {
 	var user getfield
 	var realm = "the-realm"
