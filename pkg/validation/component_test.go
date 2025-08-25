@@ -9,7 +9,6 @@ import (
 	"time"
 
 	cs "github.com/cloudtrust/common-service/v2"
-	"github.com/cloudtrust/common-service/v2/configuration"
 	errorhandler "github.com/cloudtrust/common-service/v2/errors"
 	log "github.com/cloudtrust/common-service/v2/log"
 	api "github.com/cloudtrust/keycloak-bridge/api/validation"
@@ -98,7 +97,6 @@ func TestGetUserComponent(t *testing.T) {
 	var accessToken = "abcd-1234"
 	var realm = "my-realm"
 	var userID = ""
-	var anyError = errors.New("an error")
 	var ctx = context.Background()
 
 	var mocks = createComponentMocks(mockCtrl)
@@ -118,24 +116,6 @@ func TestGetUserComponent(t *testing.T) {
 		var _, err = component.GetUser(ctx, realm, userID)
 		assert.NotNil(t, err)
 	})
-
-	t.Run("GetAdminConfiguration fails", func(t *testing.T) {
-		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(gomock.Any(), realm).Return(accessToken, nil)
-		mocks.keycloakClient.EXPECT().GetUser(accessToken, realm, userID).Return(kc.UserRepresentation{}, nil)
-		mocks.configDB.EXPECT().GetAdminConfiguration(ctx, realm).Return(configuration.RealmAdminConfiguration{}, anyError)
-		var _, err = component.GetUser(ctx, realm, userID)
-		assert.NotNil(t, err)
-	})
-
-	t.Run("Missing GLN", func(t *testing.T) {
-		var bTrue = true
-		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(gomock.Any(), realm).Return(accessToken, nil)
-		mocks.keycloakClient.EXPECT().GetUser(accessToken, realm, userID).Return(kc.UserRepresentation{}, nil)
-		mocks.configDB.EXPECT().GetAdminConfiguration(ctx, realm).Return(configuration.RealmAdminConfiguration{ShowGlnEditing: &bTrue}, nil)
-		var _, err = component.GetUser(ctx, realm, userID)
-		assert.NotNil(t, err)
-	})
-	mocks.configDB.EXPECT().GetAdminConfiguration(ctx, realm).Return(configuration.RealmAdminConfiguration{}, nil).AnyTimes()
 
 	t.Run("Happy path", func(t *testing.T) {
 		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(gomock.Any(), realm).Return(accessToken, nil)

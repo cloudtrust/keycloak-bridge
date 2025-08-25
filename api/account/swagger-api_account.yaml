@@ -374,8 +374,6 @@ components:
           type: array
           items:
             type: string
-        show_gln_editing:
-          type: boolean
     LinkedAccount:
       type: object
       properties:

@@ -12,7 +12,6 @@ import (
 	"github.com/cloudtrust/common-service/v2/fields"
 	"github.com/cloudtrust/common-service/v2/log"
 	api "github.com/cloudtrust/keycloak-bridge/api/validation"
-	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/accreditationsclient"
@@ -140,14 +139,6 @@ func (c *component) GetUser(ctx context.Context, realmName string, userID string
 		return api.UserRepresentation{}, err
 	}
 	keycloakb.ConvertLegacyAttribute(&kcUser)
-
-	if adminConfiguration, err := c.configDBModule.GetAdminConfiguration(ctx, realmName); err != nil {
-		return api.UserRepresentation{}, err
-	} else if adminConfiguration.ShowGlnEditing != nil && *adminConfiguration.ShowGlnEditing {
-		if gln := kcUser.GetAttributeString(constants.AttrbBusinessID); gln == nil {
-			return api.UserRepresentation{}, errorhandler.CreateBadRequestError("missing.gln")
-		}
-	}
 
 	var res = api.UserRepresentation{}
 	res.ImportFromKeycloak(kcUser)

@@ -124,7 +124,6 @@ func TestRegisterUser(t *testing.T) {
 	var realmAdminConf = configuration.RealmAdminConfiguration{
 		OnboardingStatusEnabled: ptrBool(true),
 		SelfRegisterEnabled:     ptrBool(true),
-		ShowGlnEditing:          ptrBool(true),
 	}
 	var anyError = errors.New("any error")
 
