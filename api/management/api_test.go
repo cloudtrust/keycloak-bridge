@@ -657,7 +657,6 @@ func TestConvertRealmAdminConfiguration(t *testing.T) {
 		assert.Equal(t, "corporate", *res.Mode)
 		assert.Len(t, res.AvailableChecks, 3)
 		assert.False(t, *res.SelfRegisterEnabled)
-		assert.False(t, *res.ShowGlnEditing)
 		assert.Nil(t, res.BoTheme)
 		assert.Nil(t, res.SseTheme)
 		assert.Nil(t, res.RegisterTheme)
@@ -683,7 +682,6 @@ func TestConvertRealmAdminConfiguration(t *testing.T) {
 			NeedVerifiedContact:                   boolPtr(false),
 			ConsentRequiredSocial:                 boolPtr(true),
 			ConsentRequiredCorporate:              boolPtr(false),
-			ShowGlnEditing:                        boolPtr(true),
 			VideoIdentificationVoucherEnabled:     boolPtr(true),
 			VideoIdentificationAccountingEnabled:  boolPtr(true),
 			VideoIdentificationPrepaymentRequired: boolPtr(true),
@@ -708,7 +706,6 @@ func TestConvertRealmAdminConfiguration(t *testing.T) {
 		assert.Equal(t, config.SignerTheme, res.SignerTheme)
 		assert.False(t, *res.NeedVerifiedContact)
 		assert.True(t, *res.ConsentRequiredSocial)
-		assert.True(t, *res.ShowGlnEditing)
 		assert.True(t, *res.VideoIdentificationVoucherEnabled)
 		assert.True(t, *res.VideoIdentificationAccountingEnabled)
 		assert.True(t, *res.VideoIdentificationPrepaymentRequired)

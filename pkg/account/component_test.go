@@ -170,7 +170,6 @@ func TestUpdateAccount(t *testing.T) {
 		idDocNumber         = "ABC123-DEF456"
 		idDocExpiration     = "01.01.2050"
 		idDocCountry        = "CH"
-		bFalse              = false
 		createdTimestamp    = time.Now().UTC().Unix()
 		anError             = errors.New("any error")
 	)
@@ -246,7 +245,6 @@ func TestUpdateAccount(t *testing.T) {
 
 		assert.NotNil(t, err)
 	})
-	mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, realmName).Return(configuration.RealmAdminConfiguration{ShowGlnEditing: &bFalse}, nil).AnyTimes()
 
 	t.Run("Update account with succces", func(t *testing.T) {
 		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kcUserRep, nil)

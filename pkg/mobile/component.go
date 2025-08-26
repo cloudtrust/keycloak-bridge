@@ -114,7 +114,6 @@ func (c *component) GetUserInformation(ctx context.Context) (api.UserInformation
 	var realm = ctx.Value(cs.CtContextRealm).(string)
 	var userID = ctx.Value(cs.CtContextUserID).(string)
 	var userInfo api.UserInformationRepresentation
-	var gln *string
 	var pendingChecks *string
 
 	// Get an OIDC token to be able to request Keycloak
@@ -135,7 +134,6 @@ func (c *component) GetUserInformation(ctx context.Context) (api.UserInformation
 	if userKc, err := c.keycloakClient.GetUser(techAccessToken, realm, userID); err == nil {
 		keycloakb.ConvertLegacyAttribute(&userKc)
 		userInfo.SetAccreditations(ctx, userKc.GetAttribute(constants.AttrbAccreditations), c.logger)
-		gln = userKc.GetAttributeString(constants.AttrbBusinessID)
 	} else {
 		c.logger.Warn(ctx, "err", err.Error())
 		return api.UserInformationRepresentation{}, err
@@ -157,10 +155,6 @@ func (c *component) GetUserInformation(ctx context.Context) (api.UserInformation
 
 	if realmAdminConfig, err := c.configDBModule.GetAdminConfiguration(ctx, realm); err == nil {
 		var availableChecks = realmAdminConfig.AvailableChecks
-		if gln == nil && realmAdminConfig.ShowGlnEditing != nil && *realmAdminConfig.ShowGlnEditing {
-			delete(availableChecks, actionIDNowVideoIdent)
-			delete(availableChecks, actionIDNowAutoIdent)
-		}
 		// User can't execute GetGroupNamesOfUser... use a technical account
 		if !c.isIDNowVideoIdentAvailableForUser(ctx, techAccessToken) {
 			c.logger.Debug(ctx, "msg", "User is not allowed to access video identification", "id", ctx.Value(cs.CtContextUserID))

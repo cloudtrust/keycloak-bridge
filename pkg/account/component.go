@@ -504,7 +504,6 @@ func (c *component) GetConfiguration(ctx context.Context, realmIDOverride string
 		AvailableChecks:                       adminConfig.AvailableChecks,
 		Theme:                                 adminConfig.SseTheme,
 		SupportedLocales:                      supportedLocales,
-		ShowGlnEditing:                        adminConfig.ShowGlnEditing,
 		VideoIdentificationVoucherEnabled:     adminConfig.VideoIdentificationVoucherEnabled,
 		VideoIdentificationAccountingEnabled:  adminConfig.VideoIdentificationAccountingEnabled,
 		VideoIdentificationPrepaymentRequired: adminConfig.VideoIdentificationPrepaymentRequired,
