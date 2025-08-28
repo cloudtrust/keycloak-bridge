@@ -81,7 +81,7 @@ func ValidateUser(profile kc.UserProfileRepresentation, input ContainsFields, ap
 	for _, attrb := range profile.Attributes {
 		if !attrb.AnnotationMatches(apiName, func(value string) bool {
 			// Account is the only API supporting read-only
-			return strings.EqualFold(value, "true") || strings.EqualFold(value, "required") || (apiName == "account" && strings.EqualFold(value, "read-only"))
+			return strings.EqualFold(value, "true") || strings.EqualFold(value, "required") || strings.EqualFold(value, "read-only")
 		}) {
 			// Attribute is not supposed to be provided for this frontend type
 			input.SetField(*attrb.Name, nil)

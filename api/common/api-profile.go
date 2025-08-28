@@ -81,7 +81,7 @@ func AttributeToAPI(attrb kc.ProfileAttrbRepresentation, apiName string) *Profil
 
 	// By default, attributes are not shown for a given frontend. Account is the only API supporting read-only
 	if apiName != "" && (!attrb.AnnotationMatches(apiName, func(value string) bool {
-		return strings.EqualFold(value, "true") || strings.EqualFold(value, "required") || (apiName == "account" && strings.EqualFold(value, "read-only"))
+		return strings.EqualFold(value, "true") || strings.EqualFold(value, "required") || strings.EqualFold(value, "read-only")
 	})) {
 		// Attribute is not declared to be used by the given frontend
 		return nil
