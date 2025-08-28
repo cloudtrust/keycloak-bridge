@@ -72,6 +72,15 @@ func TestAttributeToAPI(t *testing.T) {
 		var res = AttributeToAPI(attrb, "frontend")
 		assert.Nil(t, res)
 	})
+	t.Run("Read-only element", func(t *testing.T) {
+		var attrb = kc.ProfileAttrbRepresentation{
+			Required:    &kc.ProfileAttrbRequiredRepresentation{Roles: []string{"user"}},
+			Annotations: map[string]string{"frontend": "read-only"},
+		}
+		var res = AttributeToAPI(attrb, "frontend")
+		assert.NotNil(t, res)
+		assert.True(t, *res.ReadOnly)
+	})
 	t.Run("Enabled for the given frontend", func(t *testing.T) {
 		var attrb = kc.ProfileAttrbRepresentation{
 			Required:    &kc.ProfileAttrbRequiredRepresentation{Roles: []string{"user"}},
@@ -79,6 +88,7 @@ func TestAttributeToAPI(t *testing.T) {
 		}
 		var res = AttributeToAPI(attrb, "frontend")
 		assert.NotNil(t, res)
+		assert.False(t, *res.ReadOnly)
 	})
 	t.Run("Attribute is not globally required but required for the given API", func(t *testing.T) {
 		var attrb = kc.ProfileAttrbRepresentation{
@@ -87,6 +97,7 @@ func TestAttributeToAPI(t *testing.T) {
 		}
 		var res = AttributeToAPI(attrb, "frontend")
 		assert.NotNil(t, res)
+		assert.False(t, *res.ReadOnly)
 	})
 }
 

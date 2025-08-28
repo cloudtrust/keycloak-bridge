@@ -204,20 +204,31 @@ func TestUpdateAccount(t *testing.T) {
 		CreatedTimestamp: &createdTimestamp,
 	}
 	var userRep = api.UpdatableAccountRepresentation{
-		Username:    &username,
-		Email:       &email,
-		FirstName:   &firstName,
-		LastName:    &lastName,
-		Gender:      &gender,
-		PhoneNumber: &phoneNumber,
-		BirthDate:   &birthDate,
-		Locale:      &locale,
+		Username:      &username,
+		Email:         &email,
+		FirstName:     &firstName,
+		LastName:      &lastName,
+		Gender:        &gender,
+		PhoneNumber:   &phoneNumber,
+		BirthDate:     &birthDate,
+		BirthLocation: cs.ToStringPtr("newBirthLocation"),
+		Locale:        &locale,
 	}
 	var one = 1
 	var searchedUsers = kc.UsersPageRepresentation{Count: &one, Users: []kc.UserRepresentation{kcUserRep}}
 
+	profileRep := kc.UserProfileRepresentation{
+		Attributes: []kc.ProfileAttrbRepresentation{
+			{
+				Name: cs.ToStringPtr("firstName"),
+				Annotations: map[string]string{
+					"account": "read-only",
+				},
+			},
+		},
+	}
+
 	mocks.auditEventsReporterModule.EXPECT().ReportEvent(gomock.Any(), gomock.Any()).AnyTimes()
-	mocks.userProfileCache.EXPECT().GetRealmUserProfile(gomock.Any(), gomock.Any()).Return(kc.UserProfileRepresentation{}, nil).AnyTimes()
 
 	t.Run("GetAccount fails", func(t *testing.T) {
 		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kcUserRep, anError)
@@ -227,18 +238,46 @@ func TestUpdateAccount(t *testing.T) {
 		assert.Equal(t, anError, err)
 	})
 
-	t.Run("Call to accreditations service fails", func(t *testing.T) {
+	t.Run("GetUserProfile fails - GetRealmUserProfile failure", func(t *testing.T) {
 		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kcUserRep, nil)
+		mocks.userProfileCache.EXPECT().GetRealmUserProfile(ctx, realmName).Return(kc.UserProfileRepresentation{}, anError)
+
+		err := accountComponent.UpdateAccount(ctx, userRep)
+
+		assert.Equal(t, anError, err)
+	})
+
+	t.Run("Modifying a read-only value", func(t *testing.T) {
+		profileRepReadOnly := profileRep
+		profileRepReadOnly.Attributes = append(profileRepReadOnly.Attributes, kc.ProfileAttrbRepresentation{
+			Name: cs.ToStringPtr("birthLocation"),
+			Annotations: map[string]string{
+				"account": "read-only",
+			},
+		})
+
+		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kcUserRep, nil)
+		mocks.userProfileCache.EXPECT().GetRealmUserProfile(ctx, realmName).Return(profileRepReadOnly, nil)
+
+		err := accountComponent.UpdateAccount(ctx, userRep)
+
+		assert.NotNil(t, err)
+	})
+
+	t.Run("NotifyUpdate fails", func(t *testing.T) {
+		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kcUserRep, nil)
+		mocks.userProfileCache.EXPECT().GetRealmUserProfile(ctx, realmName).Return(profileRep, nil)
 		mocks.accreditationsClient.EXPECT().NotifyUpdate(ctx, gomock.Any()).Return(nil, anError)
 
 		err := accountComponent.UpdateAccount(ctx, userRep)
 
 		assert.Equal(t, anError, err)
 	})
-	mocks.accreditationsClient.EXPECT().NotifyUpdate(ctx, gomock.Any()).Return(nil, nil).AnyTimes()
 
 	t.Run("GetAdminConfiguration fails", func(t *testing.T) {
 		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kcUserRep, nil)
+		mocks.userProfileCache.EXPECT().GetRealmUserProfile(ctx, realmName).Return(profileRep, nil)
+		mocks.accreditationsClient.EXPECT().NotifyUpdate(ctx, gomock.Any()).Return(nil, nil)
 		mocks.keycloakAccountClient.EXPECT().UpdateAccount(accessToken, realmName, gomock.Any()).Return(errors.New("unexpected error"))
 
 		err := accountComponent.UpdateAccount(ctx, userRep)
@@ -248,6 +287,8 @@ func TestUpdateAccount(t *testing.T) {
 
 	t.Run("Update account with succces", func(t *testing.T) {
 		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kcUserRep, nil)
+		mocks.userProfileCache.EXPECT().GetRealmUserProfile(ctx, realmName).Return(profileRep, nil)
+		mocks.accreditationsClient.EXPECT().NotifyUpdate(ctx, gomock.Any()).Return(nil, nil)
 		mocks.keycloakAccountClient.EXPECT().UpdateAccount(accessToken, realmName, gomock.Any()).DoAndReturn(
 			func(accessToken, realmName string, kcUserRep kc.UserRepresentation) error {
 				assert.Equal(t, username, *kcUserRep.Username)
@@ -268,10 +309,13 @@ func TestUpdateAccount(t *testing.T) {
 		var oldEmail = "toti@elca.ch"
 		var oldkcUserRep = kc.UserRepresentation{
 			ID:            &id,
+			FirstName:     &firstName,
 			Email:         &oldEmail,
 			EmailVerified: &emailVerified,
 		}
 		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(oldkcUserRep, nil)
+		mocks.userProfileCache.EXPECT().GetRealmUserProfile(ctx, realmName).Return(profileRep, nil)
+		mocks.accreditationsClient.EXPECT().NotifyUpdate(ctx, gomock.Any()).Return(nil, nil)
 		mocks.keycloakAccountClient.EXPECT().UpdateAccount(accessToken, realmName, gomock.Any()).DoAndReturn(
 			func(accessToken, realmName string, kcUserRep kc.UserRepresentation) error {
 				// Email has not been updated...
@@ -304,6 +348,7 @@ func TestUpdateAccount(t *testing.T) {
 	oldAttributes[constants.AttrbPhoneNumberVerified] = []string{strconv.FormatBool(phoneNumberVerified)}
 	var oldkcUserRep2 = kc.UserRepresentation{
 		ID:         &id,
+		FirstName:  &firstName,
 		Email:      &email,
 		Attributes: &oldAttributes,
 	}
@@ -311,6 +356,8 @@ func TestUpdateAccount(t *testing.T) {
 	t.Run("Update by changing the phone number", func(t *testing.T) {
 		userRep.Email = nil
 		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(oldkcUserRep2, nil)
+		mocks.userProfileCache.EXPECT().GetRealmUserProfile(ctx, realmName).Return(profileRep, nil)
+		mocks.accreditationsClient.EXPECT().NotifyUpdate(ctx, gomock.Any()).Return(nil, nil)
 		mocks.keycloakAccountClient.EXPECT().UpdateAccount(accessToken, realmName, gomock.Any()).DoAndReturn(
 			func(accessToken, realmName string, kcUserRep kc.UserRepresentation) error {
 				// Phone number has not been updated...
@@ -331,6 +378,8 @@ func TestUpdateAccount(t *testing.T) {
 		var anError = errors.New("any error")
 		userRep.Email = nil
 		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(oldkcUserRep2, nil)
+		mocks.userProfileCache.EXPECT().GetRealmUserProfile(ctx, realmName).Return(profileRep, nil)
+		mocks.accreditationsClient.EXPECT().NotifyUpdate(ctx, gomock.Any()).Return(nil, nil)
 		mocks.keycloakAccountClient.EXPECT().UpdateAccount(accessToken, realmName, gomock.Any()).DoAndReturn(
 			func(accessToken, realmName string, kcUserRep kc.UserRepresentation) error {
 				// Phone number has not been updated...
@@ -356,6 +405,8 @@ func TestUpdateAccount(t *testing.T) {
 		}
 
 		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(oldkcUserRep2, nil)
+		mocks.userProfileCache.EXPECT().GetRealmUserProfile(ctx, realmName).Return(profileRep, nil)
+		mocks.accreditationsClient.EXPECT().NotifyUpdate(ctx, gomock.Any()).Return(nil, nil)
 		mocks.keycloakAccountClient.EXPECT().UpdateAccount(accessToken, realmName, gomock.Any()).DoAndReturn(
 			func(accessToken, realmName string, kcUserRep kc.UserRepresentation) error {
 				verified, _ := kcUserRep.GetAttributeBool(constants.AttrbPhoneNumberVerified)
@@ -383,6 +434,8 @@ func TestUpdateAccount(t *testing.T) {
 			ID: &id,
 		}
 		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kcUserRep, nil).AnyTimes()
+		mocks.userProfileCache.EXPECT().GetRealmUserProfile(ctx, realmName).Return(profileRep, nil)
+		mocks.accreditationsClient.EXPECT().NotifyUpdate(ctx, gomock.Any()).Return(nil, nil)
 		mocks.keycloakAccountClient.EXPECT().UpdateAccount(accessToken, realmName, gomock.Any()).Return(fmt.Errorf("Unexpected error"))
 
 		err := accountComponent.UpdateAccount(ctx, api.UpdatableAccountRepresentation{})
