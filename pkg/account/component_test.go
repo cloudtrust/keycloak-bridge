@@ -70,12 +70,6 @@ func TestUpdatePassword(t *testing.T) {
 	oldPasswd := "prev10u5"
 	newPasswd := "a p@55w0rd"
 	anError := errors.New("any error")
-	temporary := false
-	setPassword := kc.CredentialRepresentation{
-		Type:      ptr("password"),
-		Value:     ptr(newPasswd),
-		Temporary: &temporary,
-	}
 
 	t.Run("Update password: no change", func(t *testing.T) {
 		oldPassword := "a p@55w0rd"
@@ -121,9 +115,9 @@ func TestUpdatePassword(t *testing.T) {
 		assert.NotNil(t, err)
 	})
 
-	t.Run("Set password: ResetPassword fails", func(t *testing.T) {
+	t.Run("Set password: UpdatePassword fails", func(t *testing.T) {
 		mocks.keycloakAccountClient.EXPECT().GetCredentials(accessToken, realm).Return([]kc.CredentialRepresentation{}, nil)
-		mocks.keycloakTechnicalClient.EXPECT().ResetPassword(ctx, realm, userID, setPassword).Return(anError)
+		mocks.keycloakAccountClient.EXPECT().UpdatePassword(accessToken, realm, "", newPasswd, newPasswd).Return("", anError)
 
 		err := component.UpdatePassword(ctx, "", newPasswd, newPasswd)
 		assert.NotNil(t, err)
@@ -131,11 +125,11 @@ func TestUpdatePassword(t *testing.T) {
 
 	t.Run("Set password: success", func(t *testing.T) {
 		mocks.keycloakAccountClient.EXPECT().GetCredentials(accessToken, realm).Return([]kc.CredentialRepresentation{}, nil)
-		mocks.keycloakTechnicalClient.EXPECT().ResetPassword(ctx, realm, userID, setPassword).Return(nil)
+		mocks.keycloakAccountClient.EXPECT().UpdatePassword(accessToken, realm, "", newPasswd, newPasswd).Return("", nil)
 		mocks.auditEventsReporterModule.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
 		mocks.keycloakAccountClient.EXPECT().SendEmail(accessToken, realm, emailTemplateUpdatedPassword, emailSubjectUpdatedPassword, nil, gomock.Any()).Return(nil)
 		mocks.auditEventsReporterModule.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
-		mocks.keycloakTechnicalClient.EXPECT().LogoutAllSessions(gomock.Any(), realm, userID).Return(anError)
+		mocks.keycloakTechnicalClient.EXPECT().LogoutAllSessions(gomock.Any(), realm, userID).Return(nil)
 
 		err := component.UpdatePassword(ctx, "", newPasswd, newPasswd)
 		assert.Nil(t, err)

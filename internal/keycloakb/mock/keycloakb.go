@@ -487,20 +487,6 @@ func (mr *KeycloakForTechnicalClientMockRecorder) LogoutAllSessions(accessToken,
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LogoutAllSessions", reflect.TypeOf((*KeycloakForTechnicalClient)(nil).LogoutAllSessions), accessToken, realmName, userID)
 }
 
-// ResetPassword mocks base method.
-func (m *KeycloakForTechnicalClient) ResetPassword(accessToken, realmName, userID string, cred keycloak.CredentialRepresentation) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ResetPassword", accessToken, realmName, userID, cred)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// ResetPassword indicates an expected call of ResetPassword.
-func (mr *KeycloakForTechnicalClientMockRecorder) ResetPassword(accessToken, realmName, userID, cred any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResetPassword", reflect.TypeOf((*KeycloakForTechnicalClient)(nil).ResetPassword), accessToken, realmName, userID, cred)
-}
-
 // Logger is a mock of Logger interface.
 type Logger struct {
 	ctrl     *gomock.Controller

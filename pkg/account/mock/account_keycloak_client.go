@@ -314,17 +314,3 @@ func (mr *KeycloakTechnicalClientMockRecorder) LogoutAllSessions(ctx, realmName,
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LogoutAllSessions", reflect.TypeOf((*KeycloakTechnicalClient)(nil).LogoutAllSessions), ctx, realmName, userID)
 }
-
-// ResetPassword mocks base method.
-func (m *KeycloakTechnicalClient) ResetPassword(ctx context.Context, realmName, userID string, cred keycloak.CredentialRepresentation) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ResetPassword", ctx, realmName, userID, cred)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// ResetPassword indicates an expected call of ResetPassword.
-func (mr *KeycloakTechnicalClientMockRecorder) ResetPassword(ctx, realmName, userID, cred any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResetPassword", reflect.TypeOf((*KeycloakTechnicalClient)(nil).ResetPassword), ctx, realmName, userID, cred)
-}
