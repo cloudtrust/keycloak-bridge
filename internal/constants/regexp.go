@@ -30,7 +30,8 @@ const (
 	RegExpBusinessID          = regExpLen255
 
 	// Password
-	RegExpPassword = regExpLen255
+	RegExpPassword        = regExpLen255
+	RegExpPasswordOrEmpty = regExpLen255OrEmpty
 
 	// RealmCustomConfiguration/RealmAdminConfiguration
 	RegExpRedirectURI    = `^\w+:(\/?\/?)[^\s]+$`
