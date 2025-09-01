@@ -17,12 +17,19 @@ import (
 func TestMakeUpdatePasswordEndpoint(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-
 	mockAccountComponent := mock.NewComponent(mockCtrl)
-	mockAccountComponent.EXPECT().UpdatePassword(gomock.Any(), "password", "password2", "password2").Return(nil)
 
 	t.Run("Success", func(t *testing.T) {
+		mockAccountComponent.EXPECT().UpdatePassword(gomock.Any(), "password", "password2", "password2").Return(nil)
+
 		var m = map[string]string{reqBody: `{"currentPassword":"password", "newPassword":"password2", "confirmPassword":"password2"}`}
+		_, err := MakeUpdatePasswordEndpoint(mockAccountComponent)(context.Background(), m)
+		assert.Nil(t, err)
+	})
+	t.Run("Empty currentPassword", func(t *testing.T) {
+		mockAccountComponent.EXPECT().UpdatePassword(gomock.Any(), "", "password2", "password2").Return(nil)
+
+		var m = map[string]string{reqBody: `{"currentPassword":"", "newPassword":"password2", "confirmPassword":"password2"}`}
 		_, err := MakeUpdatePasswordEndpoint(mockAccountComponent)(context.Background(), m)
 		assert.Nil(t, err)
 	})
@@ -32,7 +39,7 @@ func TestMakeUpdatePasswordEndpoint(t *testing.T) {
 		assert.NotNil(t, err)
 	})
 	t.Run("Invalid parameter in body", func(t *testing.T) {
-		var m = map[string]string{reqBody: `{"currentPassword":"", "newPassword":"password2", "confirmPassword":"password2"}`}
+		var m = map[string]string{reqBody: `{"currentPassword":"password", "newPassword":"", "confirmPassword":"password2"}`}
 		_, err := MakeUpdatePasswordEndpoint(mockAccountComponent)(context.Background(), m)
 		assert.NotNil(t, err)
 	})

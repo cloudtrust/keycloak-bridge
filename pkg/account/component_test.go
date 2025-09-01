@@ -67,16 +67,18 @@ func TestUpdatePassword(t *testing.T) {
 	ctx = context.WithValue(ctx, cs.CtContextUserID, userID)
 	ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 
+	oldPasswd := "prev10u5"
+	newPasswd := "a p@55w0rd"
+	anError := errors.New("any error")
+
 	t.Run("Update password: no change", func(t *testing.T) {
-		oldPasswd := "a p@55w0rd"
-		err := component.UpdatePassword(ctx, oldPasswd, oldPasswd, oldPasswd)
+		oldPassword := "a p@55w0rd"
+		err := component.UpdatePassword(ctx, oldPassword, oldPassword, oldPassword)
 
 		assert.NotNil(t, err)
 	})
 
 	t.Run("Update password: bad confirm", func(t *testing.T) {
-		oldPasswd := "prev10u5"
-		newPasswd := "a p@55w0rd"
 		confirmPasswd := "bad one"
 		err := component.UpdatePassword(ctx, oldPasswd, newPasswd, confirmPasswd)
 
@@ -84,18 +86,52 @@ func TestUpdatePassword(t *testing.T) {
 	})
 
 	t.Run("Update password: success", func(t *testing.T) {
-		anyError := errors.New("any error")
-		oldPasswd := "prev10u5"
-		newPasswd := "a p@55w0rd"
 		confirmPasswd := "a p@55w0rd"
 		mocks.keycloakAccountClient.EXPECT().UpdatePassword(accessToken, realm, oldPasswd, newPasswd, confirmPasswd).Return("", nil)
 		mocks.auditEventsReporterModule.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
 		mocks.keycloakAccountClient.EXPECT().SendEmail(accessToken, realm, emailTemplateUpdatedPassword, emailSubjectUpdatedPassword, nil, gomock.Any()).Return(nil)
 		mocks.auditEventsReporterModule.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
-		mocks.keycloakTechnicalClient.EXPECT().LogoutAllSessions(gomock.Any(), realm, userID).Return(anyError)
+		mocks.keycloakTechnicalClient.EXPECT().LogoutAllSessions(gomock.Any(), realm, userID).Return(anError)
 
 		err := component.UpdatePassword(ctx, oldPasswd, newPasswd, confirmPasswd)
 
+		assert.Nil(t, err)
+	})
+
+	t.Run("Set password: GetCredentials fails", func(t *testing.T) {
+		mocks.keycloakAccountClient.EXPECT().GetCredentials(accessToken, realm).Return([]kc.CredentialRepresentation{}, anError)
+
+		err := component.UpdatePassword(ctx, "", newPasswd, newPasswd)
+		assert.NotNil(t, err)
+	})
+
+	t.Run("Set password: user has a current password", func(t *testing.T) {
+		cred := kc.CredentialRepresentation{
+			Type: ptr("password"),
+		}
+		mocks.keycloakAccountClient.EXPECT().GetCredentials(accessToken, realm).Return([]kc.CredentialRepresentation{cred}, nil)
+
+		err := component.UpdatePassword(ctx, "", newPasswd, newPasswd)
+		assert.NotNil(t, err)
+	})
+
+	t.Run("Set password: UpdatePassword fails", func(t *testing.T) {
+		mocks.keycloakAccountClient.EXPECT().GetCredentials(accessToken, realm).Return([]kc.CredentialRepresentation{}, nil)
+		mocks.keycloakAccountClient.EXPECT().UpdatePassword(accessToken, realm, "", newPasswd, newPasswd).Return("", anError)
+
+		err := component.UpdatePassword(ctx, "", newPasswd, newPasswd)
+		assert.NotNil(t, err)
+	})
+
+	t.Run("Set password: success", func(t *testing.T) {
+		mocks.keycloakAccountClient.EXPECT().GetCredentials(accessToken, realm).Return([]kc.CredentialRepresentation{}, nil)
+		mocks.keycloakAccountClient.EXPECT().UpdatePassword(accessToken, realm, "", newPasswd, newPasswd).Return("", nil)
+		mocks.auditEventsReporterModule.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
+		mocks.keycloakAccountClient.EXPECT().SendEmail(accessToken, realm, emailTemplateUpdatedPassword, emailSubjectUpdatedPassword, nil, gomock.Any()).Return(nil)
+		mocks.auditEventsReporterModule.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
+		mocks.keycloakTechnicalClient.EXPECT().LogoutAllSessions(gomock.Any(), realm, userID).Return(nil)
+
+		err := component.UpdatePassword(ctx, "", newPasswd, newPasswd)
 		assert.Nil(t, err)
 	})
 }
