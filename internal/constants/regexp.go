@@ -52,8 +52,10 @@ const (
 	RegExpContainerID     = regExpLen255
 	RegExpRoleDescription = regExpLen255OrEmpty
 
-	RegExpCustomValue = `^[A-Za-z\d_-]{0,50}$`
-	RegExpTxnID       = regExpLen255
+	RegExpCustomValue   = `^[A-Za-z\d_-]{0,50}$`
+	RegExpAccreditation = `^[A-Za-z\d_-]{1,50}$`
+	RegExpServiceType   = `^[\w_-]+$`
+	RegExpTxnID         = regExpLen255
 
 	// Corporate Regex TO CLEAN WHEN WE WILL HAVE ATTRIBUTE MANAGEMENT
 	regExpLen128OrEmpty      = `^.{0,128}$`

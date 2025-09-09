@@ -46,7 +46,7 @@ func TestGetIdentificationURI(t *testing.T) {
 	t.Run("No identification URI", func(t *testing.T) {
 		mocks.contextKeyMgr.EXPECT().GetOverride(realm, contextKey).Return(keycloakb.ContextKeyParameters{
 			ID:                ptr(contextKey),
-			Realm:             &realm,
+			IdentitiesRealm:   &realm,
 			IdentificationURI: nil,
 		}, true)
 
@@ -57,7 +57,7 @@ func TestGetIdentificationURI(t *testing.T) {
 	t.Run("Empty identification URI", func(t *testing.T) {
 		mocks.contextKeyMgr.EXPECT().GetOverride(realm, contextKey).Return(keycloakb.ContextKeyParameters{
 			ID:                ptr(contextKey),
-			Realm:             &realm,
+			IdentitiesRealm:   &realm,
 			IdentificationURI: ptr(""),
 		}, true)
 
@@ -68,7 +68,7 @@ func TestGetIdentificationURI(t *testing.T) {
 	t.Run("Success", func(t *testing.T) {
 		mocks.contextKeyMgr.EXPECT().GetOverride(realm, contextKey).Return(keycloakb.ContextKeyParameters{
 			ID:                ptr(contextKey),
-			Realm:             &realm,
+			IdentitiesRealm:   &realm,
 			IdentificationURI: ptr(identificationURI),
 		}, true)
 
