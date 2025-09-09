@@ -3,6 +3,7 @@ package apimanagement
 import (
 	"context"
 	"encoding/json"
+	"errors"
 
 	cs "github.com/cloudtrust/common-service/v2"
 	"github.com/cloudtrust/common-service/v2/configuration"
@@ -66,11 +67,13 @@ func (u *userAlias) SetDynamicFields(dynamicFields map[string]any) {
 	u.Dynamic = dynamicFields
 }
 
+// MarshalJSON converts representation to JSON
 func (u UserRepresentation) MarshalJSON() ([]byte, error) {
 	alias := userAlias(u)
 	return keycloakb.DynamicallyMarshalJSON(&alias)
 }
 
+// UnmarshalJSON creates representation from JSON
 func (u *UserRepresentation) UnmarshalJSON(data []byte) error {
 	return keycloakb.DynamicallyUnmarshalJSON(data, (*userAlias)(u))
 }
@@ -118,11 +121,13 @@ func (u *updatableUserAlias) SetDynamicFields(dynamicFields map[string]any) {
 	u.Dynamic = dynamicFields
 }
 
+// MarshalJSON converts representation to JSON
 func (u UpdatableUserRepresentation) MarshalJSON() ([]byte, error) {
 	alias := updatableUserAlias(u)
 	return keycloakb.DynamicallyMarshalJSON(&alias)
 }
 
+// UnmarshalJSON creates representation from JSON
 func (u *UpdatableUserRepresentation) UnmarshalJSON(data []byte) error {
 	return keycloakb.DynamicallyUnmarshalJSON(data, (*updatableUserAlias)(u))
 }
@@ -341,6 +346,43 @@ type IdentityProviderRepresentation struct {
 	ProviderID                *string                 `json:"providerId,omitempty"`
 	StoreToken                *bool                   `json:"storeToken,omitempty"`
 	TrustEmail                *bool                   `json:"trustEmail,omitempty"`
+}
+
+// RealmContextKeyRepresentation struct
+type RealmContextKeyRepresentation struct {
+	ID              *string                     `json:"id"`
+	Label           *string                     `json:"label"`
+	IdentitiesRealm *string                     `json:"identitiesRealm"`
+	CustomerRealm   *string                     `json:"customerRealm"`
+	Config          *CtxKeyConfigRepresentation `json:"config"`
+}
+
+// CtxKeyConfigRepresentation struct
+type CtxKeyConfigRepresentation struct {
+	IdentificationURI *string                            `json:"identificationUri"`
+	Onboarding        *CtxKeyOnboardingRepresentation    `json:"onboarding"`
+	Accreditation     *CtxKeyAccreditationRepresentation `json:"accreditation"`
+	AutoVoucher       *CtxKeyAutoVoucherRepresentation   `json:"autovoucher"`
+}
+
+// CtxKeyOnboardingRepresentation struct
+type CtxKeyOnboardingRepresentation struct {
+	ClientID     *string `json:"clientId"`
+	RedirectURI  *string `json:"redirectUri"`
+	RedirectMode *string `json:"redirectMode"`
+}
+
+// CtxKeyAccreditationRepresentation struct
+type CtxKeyAccreditationRepresentation struct {
+	EmailThemeRealm *string `json:"emailThemeRealm"`
+}
+
+// CtxKeyAutoVoucherRepresentation struct
+type CtxKeyAutoVoucherRepresentation struct {
+	ServiceType            *string `json:"serviceType"`
+	Validity               *string `json:"validity"`
+	AccreditationRequested *string `json:"accreditationRequested"`
+	BilledRealm            *string `json:"billedRealm"`
 }
 
 // RequiredAction type
@@ -902,52 +944,36 @@ func (user *UserRepresentation) SetField(field string, value interface{}) {
 	switch field {
 	case fields.Username.Key():
 		user.Username = cs.ToStringPtr(value)
-		break
 	case fields.Email.Key():
 		user.Email = cs.ToStringPtr(value)
-		break
 	case fields.FirstName.Key():
 		user.FirstName = cs.ToStringPtr(value)
-		break
 	case fields.LastName.Key():
 		user.LastName = cs.ToStringPtr(value)
-		break
 	case fields.Gender.AttributeName():
 		user.Gender = cs.ToStringPtr(value)
-		break
 	case fields.PhoneNumber.AttributeName():
 		user.PhoneNumber = cs.ToStringPtr(value)
-		break
 	case fields.BirthDate.AttributeName():
 		user.BirthDate = cs.ToStringPtr(value)
-		break
 	case fields.BirthLocation.AttributeName():
 		user.BirthLocation = cs.ToStringPtr(value)
-		break
 	case fields.Nationality.AttributeName():
 		user.Nationality = cs.ToStringPtr(value)
-		break
 	case fields.IDDocumentType.AttributeName():
 		user.IDDocumentType = cs.ToStringPtr(value)
-		break
 	case fields.IDDocumentNumber.AttributeName():
 		user.IDDocumentNumber = cs.ToStringPtr(value)
-		break
 	case fields.IDDocumentCountry.AttributeName():
 		user.IDDocumentCountry = cs.ToStringPtr(value)
-		break
 	case fields.IDDocumentExpiration.AttributeName():
 		user.IDDocumentExpiration = cs.ToStringPtr(value)
-		break
 	case fields.Locale.AttributeName():
 		user.Locale = cs.ToStringPtr(value)
-		break
 	case fields.BusinessID.AttributeName():
 		user.BusinessID = cs.ToStringPtr(value)
-		break
 	case fields.OnboardingStatus.AttributeName():
 		user.OnboardingStatus = cs.ToStringPtr(value)
-		break
 	}
 }
 
@@ -1024,7 +1050,6 @@ func (user *UpdatableUserRepresentation) SetField(field string, value interface{
 	switch field {
 	case fields.Username.Key():
 		user.Username = cs.ToStringPtr(value)
-		break
 	case fields.Email.Key():
 		if value == nil {
 			user.Email.Defined = false
@@ -1033,16 +1058,12 @@ func (user *UpdatableUserRepresentation) SetField(field string, value interface{
 			user.Email.Defined = true
 			user.Email.Value = cs.ToStringPtr(value)
 		}
-		break
 	case fields.FirstName.Key():
 		user.FirstName = cs.ToStringPtr(value)
-		break
 	case fields.LastName.Key():
 		user.LastName = cs.ToStringPtr(value)
-		break
 	case fields.Gender.AttributeName():
 		user.Gender = cs.ToStringPtr(value)
-		break
 	case fields.PhoneNumber.AttributeName():
 		if value == nil {
 			user.PhoneNumber.Defined = false
@@ -1051,31 +1072,22 @@ func (user *UpdatableUserRepresentation) SetField(field string, value interface{
 			user.PhoneNumber.Defined = true
 			user.PhoneNumber.Value = cs.ToStringPtr(value)
 		}
-		break
 	case fields.BirthDate.AttributeName():
 		user.BirthDate = cs.ToStringPtr(value)
-		break
 	case fields.BirthLocation.AttributeName():
 		user.BirthLocation = cs.ToStringPtr(value)
-		break
 	case fields.Nationality.AttributeName():
 		user.Nationality = cs.ToStringPtr(value)
-		break
 	case fields.IDDocumentType.AttributeName():
 		user.IDDocumentType = cs.ToStringPtr(value)
-		break
 	case fields.IDDocumentNumber.AttributeName():
 		user.IDDocumentNumber = cs.ToStringPtr(value)
-		break
 	case fields.IDDocumentCountry.AttributeName():
 		user.IDDocumentCountry = cs.ToStringPtr(value)
-		break
 	case fields.IDDocumentExpiration.AttributeName():
 		user.IDDocumentExpiration = cs.ToStringPtr(value)
-		break
 	case fields.Locale.AttributeName():
 		user.Locale = cs.ToStringPtr(value)
-		break
 	case fields.BusinessID.AttributeName():
 		if value == nil {
 			user.BusinessID.Defined = false
@@ -1084,10 +1096,8 @@ func (user *UpdatableUserRepresentation) SetField(field string, value interface{
 			user.BusinessID.Defined = true
 			user.BusinessID.Value = cs.ToStringPtr(value)
 		}
-		break
 	case fields.OnboardingStatus.AttributeName():
 		user.OnboardingStatus = cs.ToStringPtr(value)
-		break
 	}
 }
 
@@ -1227,4 +1237,193 @@ func ConvertToAPIUserChecks(checks []accreditationsclient.CheckRepresentation) [
 		})
 	}
 	return res
+}
+
+// ConvertToAPIContextKey converts context key from database model to API model
+func ConvertToAPIContextKey(contextKey configuration.RealmContextKey) RealmContextKeyRepresentation {
+	var apiConfig = ConvertToAPIContextKeyConfig(contextKey.Config)
+	return RealmContextKeyRepresentation{
+		ID:              &contextKey.ID,
+		Label:           &contextKey.Label,
+		IdentitiesRealm: &contextKey.IdentitiesRealm,
+		CustomerRealm:   &contextKey.CustomerRealm,
+		Config:          &apiConfig,
+	}
+}
+
+// ToDatabaseModel converts a realm context key to the database model
+func (rck *RealmContextKeyRepresentation) ToDatabaseModel() configuration.RealmContextKey {
+	var config configuration.ContextKeyConfiguration
+	if rck.Config != nil {
+		config = rck.Config.ToDatabaseModel()
+	}
+	return configuration.RealmContextKey{
+		ID:              *rck.ID,
+		Label:           *rck.Label,
+		IdentitiesRealm: *rck.IdentitiesRealm,
+		CustomerRealm:   *rck.CustomerRealm,
+		Config:          config,
+	}
+}
+
+// Validate is a validator for RealmContextKeyRepresentation
+func (rck *RealmContextKeyRepresentation) Validate() error {
+	return validation.NewParameterValidator().
+		ValidateParameterRegExp(constants.Label, rck.Label, constants.RegExpLabel, true).
+		ValidateParameterRegExp("identitiesRealm", rck.IdentitiesRealm, constants.RegExpRealmName, true).
+		ValidateParameterRegExp("customerRealm", rck.CustomerRealm, constants.RegExpRealmName, true).
+		ValidateParameter(constants.Config, rck.Config, true).
+		Status()
+}
+
+// ConvertToAPIContextKeys converts context keys from database model to API model
+func ConvertToAPIContextKeys(configs []configuration.RealmContextKey) []RealmContextKeyRepresentation {
+	var res []RealmContextKeyRepresentation
+	for _, config := range configs {
+		res = append(res, ConvertToAPIContextKey(config))
+	}
+	return res
+}
+
+// ConvertToDTOContextKeys converts context keys from API model to database model
+func ConvertToDTOContextKeys(contextKeys []RealmContextKeyRepresentation) []configuration.RealmContextKey {
+	var res []configuration.RealmContextKey
+	for _, config := range contextKeys {
+		res = append(res, config.ToDatabaseModel())
+	}
+	return res
+}
+
+// ValidateRealmContextKeys is a validator for a slice of RealmContextKeyRepresentation
+func ValidateRealmContextKeys(contextKeys []RealmContextKeyRepresentation, canBeEmpty bool) error {
+	if len(contextKeys) == 0 && !canBeEmpty {
+		return errors.New("validation not implemented")
+	}
+	for _, ck := range contextKeys {
+		if err := ck.Validate(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// ConvertToAPIContextKeyConfig converts context key configuration from database model to API model
+func ConvertToAPIContextKeyConfig(config configuration.ContextKeyConfiguration) CtxKeyConfigRepresentation {
+	return CtxKeyConfigRepresentation{
+		IdentificationURI: config.IdentificationURI,
+		Onboarding:        ConvertToAPIContextKeyOnboarding(config.Onboarding),
+		Accreditation:     ConvertToAPIContextKeyAccreditation(config.Accreditation),
+		AutoVoucher:       ConvertToAPIContextKeyAutovoucher(config.AutoVoucher),
+	}
+}
+
+// ToDatabaseModel converts a context key configuration to the database model
+func (c *CtxKeyConfigRepresentation) ToDatabaseModel() configuration.ContextKeyConfiguration {
+	var onboarding configuration.ContextKeyConfOnboarding
+	if c.Onboarding != nil {
+		onboarding = c.Onboarding.ToDatabaseModel()
+	}
+	var accreditation configuration.ContextKeyConfAccreditation
+	if c.Accreditation != nil {
+		accreditation = c.Accreditation.ToDatabaseModel()
+	}
+	var autovoucher configuration.ContextKeyConfAutovoucher
+	if c.AutoVoucher != nil {
+		autovoucher = c.AutoVoucher.ToDatabaseModel()
+	}
+
+	return configuration.ContextKeyConfiguration{
+		IdentificationURI: c.IdentificationURI,
+		Onboarding:        &onboarding,
+		Accreditation:     &accreditation,
+		AutoVoucher:       &autovoucher,
+	}
+}
+
+// Validate is a validator for CtxKeyConfigRepresentation
+func (c *CtxKeyConfigRepresentation) Validate() error {
+	return validation.NewParameterValidator().
+		ValidateParameterRegExp("identificationUri", c.IdentificationURI, constants.RegExpRedirectURI, true).
+		ValidateParameter("onboarding", c.Onboarding, true).
+		ValidateParameter("accreditation", c.Accreditation, true).
+		ValidateParameter("autovoucher", c.AutoVoucher, true).
+		Status()
+}
+
+// ConvertToAPIContextKeyOnboarding converts context key onboarding configuration from database model to API model
+func ConvertToAPIContextKeyOnboarding(onboardingCfg *configuration.ContextKeyConfOnboarding) *CtxKeyOnboardingRepresentation {
+	return &CtxKeyOnboardingRepresentation{
+		ClientID:     onboardingCfg.ClientID,
+		RedirectURI:  onboardingCfg.RedirectURI,
+		RedirectMode: onboardingCfg.RedirectMode,
+	}
+}
+
+// ToDatabaseModel converts a context key onboarding configuration to the database model
+func (c *CtxKeyOnboardingRepresentation) ToDatabaseModel() configuration.ContextKeyConfOnboarding {
+	return configuration.ContextKeyConfOnboarding{
+		ClientID:     c.ClientID,
+		RedirectURI:  c.RedirectURI,
+		RedirectMode: c.RedirectMode,
+	}
+}
+
+// Validate is a validator for CtxKeyOnboardingRepresentation
+func (c *CtxKeyOnboardingRepresentation) Validate() error {
+	return validation.NewParameterValidator().
+		ValidateParameterRegExp("clientId", c.ClientID, constants.RegExpClientID, true).
+		ValidateParameterRegExp("redirectUri", c.RedirectURI, constants.RegExpRedirectURI, true).
+		ValidateParameterRegExp("redirectMode", c.RedirectMode, "^not implemented$", true).
+		Status()
+}
+
+// ConvertToAPIContextKeyAccreditation converts context key accreditation configuration from database model to API model
+func ConvertToAPIContextKeyAccreditation(accreditationCfg *configuration.ContextKeyConfAccreditation) *CtxKeyAccreditationRepresentation {
+	return &CtxKeyAccreditationRepresentation{
+		EmailThemeRealm: accreditationCfg.EmailThemeRealm,
+	}
+}
+
+// ToDatabaseModel converts a context key accreditation configuration to the database model
+func (c *CtxKeyAccreditationRepresentation) ToDatabaseModel() configuration.ContextKeyConfAccreditation {
+	return configuration.ContextKeyConfAccreditation{
+		EmailThemeRealm: c.EmailThemeRealm,
+	}
+}
+
+// Validate is a validator for CtxKeyAccreditationRepresentation
+func (c *CtxKeyAccreditationRepresentation) Validate() error {
+	return validation.NewParameterValidator().
+		ValidateParameterRegExp("emailThemeRealm", c.EmailThemeRealm, constants.RegExpRealmName, true).
+		Status()
+}
+
+// ConvertToAPIContextKeyAutovoucher converts context key autovoucher configuration from database model to API model
+func ConvertToAPIContextKeyAutovoucher(autovoucherCfg *configuration.ContextKeyConfAutovoucher) *CtxKeyAutoVoucherRepresentation {
+	return &CtxKeyAutoVoucherRepresentation{
+		ServiceType:            autovoucherCfg.ServiceType,
+		Validity:               autovoucherCfg.Validity,
+		AccreditationRequested: autovoucherCfg.AccreditationRequested,
+		BilledRealm:            autovoucherCfg.BilledRealm,
+	}
+}
+
+// ToDatabaseModel converts a context key autovoucher configuration to the database model
+func (c *CtxKeyAutoVoucherRepresentation) ToDatabaseModel() configuration.ContextKeyConfAutovoucher {
+	return configuration.ContextKeyConfAutovoucher{
+		ServiceType:            c.ServiceType,
+		Validity:               c.Validity,
+		AccreditationRequested: c.AccreditationRequested,
+		BilledRealm:            c.BilledRealm,
+	}
+}
+
+// Validate is a validator for CtxKeyAutoVoucherRepresentation
+func (c *CtxKeyAutoVoucherRepresentation) Validate() error {
+	return validation.NewParameterValidator().
+		ValidateParameterRegExp("serviceType", c.ServiceType, "^not implemented$", true).
+		ValidateParameterRegExp("validity", c.Validity, "^not implemented$", true).
+		ValidateParameterRegExp("accreditationRequested", c.AccreditationRequested, "^not implemented$", true).
+		ValidateParameterRegExp("billedRealm", c.BilledRealm, "^not implemented$", true).
+		Status()
 }

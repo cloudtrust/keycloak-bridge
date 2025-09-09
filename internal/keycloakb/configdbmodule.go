@@ -38,6 +38,12 @@ const (
 		  AND (? IS NULL OR target_type=?)
 		  AND (? IS NULL OR target_group_name=?)
 	`
+	deleteContextKeyStmt = `DELETE from context_key_configuration WHERE id = ? and customer_realm = ifnull(?, customer_realm)`
+	storeContextKeyStmt  = `
+		INSERT INTO context_key_configuration (id, label, identities_realm, customer_realm, configuration)
+		VALUES (?, ?, ?, ?, ?)
+		ON DUPLICATE KEY UPDATE id=?, label=?, identities_realm=?, customer_realm=?, configuration=?
+	`
 	selectAuthzStmt       = `SELECT realm_id, group_name, action, target_realm_id, target_group_name FROM authorizations WHERE realm_id = ? AND group_name = ?;`
 	selectSingleAuthzStmt = `
 		SELECT
@@ -208,6 +214,46 @@ func (c *configurationDBModule) InsertBackOfficeConfiguration(ctx context.Contex
 			return err
 		}
 	}
+	return nil
+}
+
+func (c *configurationDBModule) GetContextKeyConfiguration(ctx context.Context, customerRealm string) ([]configuration.RealmContextKey, error) {
+	return c.ConfigurationReaderDBModule.GetContextKeyConfiguration(ctx, customerRealm)
+}
+
+// DeleteContextKeyConfiguration deletes the specified context key configuration for a given customer realm
+func (c *configurationDBModule) DeleteContextKeyConfiguration(ctx context.Context, tx sqltypes.Transaction, customerRealm string, ID string) error {
+	var err error
+	if tx == nil {
+		err = c.execNoResult(deleteContextKeyStmt, ID, customerRealm)
+	} else {
+		_, err = tx.Exec(deleteContextKeyStmt, ID, customerRealm)
+	}
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Can't delete a context key configuration", "realm", customerRealm, "id", ID, "err", err.Error())
+		return err
+	}
+	return nil
+}
+
+// StoreContextKeyConfiguration sets a context key configuration for a given customer realm
+func (c *configurationDBModule) StoreContextKeyConfiguration(ctx context.Context, tx sqltypes.Transaction, contextKey configuration.RealmContextKey) error {
+	configJSON, err := json.Marshal(contextKey.Config)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "JSON marshaling failed")
+		return err
+	}
+
+	if tx != nil {
+		_, err = tx.Exec(storeContextKeyStmt, contextKey.ID, contextKey.Label, contextKey.IdentitiesRealm, contextKey.CustomerRealm, configJSON)
+	} else {
+		_, err = c.db.Exec(storeContextKeyStmt, contextKey.ID, contextKey.Label, contextKey.IdentitiesRealm, contextKey.CustomerRealm, configJSON)
+	}
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Can't set context key in db", "realm", contextKey.CustomerRealm, "id", contextKey.ID, "err", err.Error())
+		return err
+	}
+
 	return nil
 }
 
