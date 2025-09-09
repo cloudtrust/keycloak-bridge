@@ -795,6 +795,8 @@ func main() {
 			GetRealmBackOfficeConfiguration:     prepareEndpoint(management.MakeGetRealmBackOfficeConfigurationEndpoint(keycloakComponent), "get_realm_back_office_config_endpoint", managementLogger, rateLimitMgmt),
 			UpdateRealmBackOfficeConfiguration:  prepareEndpoint(management.MakeUpdateRealmBackOfficeConfigurationEndpoint(keycloakComponent), "update_realm_back_office_config_endpoint", managementLogger, rateLimitMgmt),
 			GetUserRealmBackOfficeConfiguration: prepareEndpoint(management.MakeGetUserRealmBackOfficeConfigurationEndpoint(keycloakComponent), "get_user_realm_back_office_config_endpoint", managementLogger, rateLimitMgmt),
+			GetRealmContextKeysConfiguration:    prepareEndpoint(management.MakeGetRealmContextKeysConfigurationEndpoint(keycloakComponent), "get_realm_ctx_keys_config_endpoint", managementLogger, rateLimitMgmt),
+			SetRealmContextKeysConfiguration:    prepareEndpoint(management.MakeSetRealmContextKeysConfigurationEndpoint(keycloakComponent), "set_realm_ctx_keys_config_endpoint", managementLogger, rateLimitMgmt),
 
 			GetFederatedIdentities: prepareEndpoint(management.MakeGetFederatedIdentitiesEndpoint(keycloakComponent), "get_federated_identities_endpoint", managementLogger, rateLimitMgmt),
 			LinkShadowUser:         prepareEndpoint(management.MakeLinkShadowUserEndpoint(keycloakComponent), "link_shadow_user_endpoint", managementLogger, rateLimitMgmt),
@@ -1194,6 +1196,8 @@ func main() {
 		var getRealmBackOfficeConfigurationHandler = configureManagementHandler(managementEndpoints.GetRealmBackOfficeConfiguration)
 		var updateRealmBackOfficeConfigurationHandler = configureManagementHandler(managementEndpoints.UpdateRealmBackOfficeConfiguration)
 		var getUserRealmBackOfficeConfigurationHandler = configureManagementHandler(managementEndpoints.GetUserRealmBackOfficeConfiguration)
+		var getRealmContextKeysConfigurationHandler = configureManagementHandler(managementEndpoints.GetRealmContextKeysConfiguration)
+		var setRealmContextKeysConfigurationHandler = configureManagementHandler(managementEndpoints.SetRealmContextKeysConfiguration)
 
 		var getFederatedIdentitiesHandler = configureManagementHandler(managementEndpoints.GetFederatedIdentities)
 		var linkShadowUserHandler = configureManagementHandler(managementEndpoints.LinkShadowUser)
@@ -1296,6 +1300,8 @@ func main() {
 		managementSubroute.Path("/realms/{realm}/backoffice-configuration/groups").Methods("GET").Handler(getRealmBackOfficeConfigurationHandler)
 		managementSubroute.Path("/realms/{realm}/backoffice-configuration/groups").Methods("PUT").Handler(updateRealmBackOfficeConfigurationHandler)
 		managementSubroute.Path("/realms/{realm}/backoffice-configuration").Methods("GET").Handler(getUserRealmBackOfficeConfigurationHandler)
+		managementSubroute.Path("/realms/{realm}/context-keys").Methods("GET").Handler(getRealmContextKeysConfigurationHandler)
+		managementSubroute.Path("/realms/{realm}/context-keys").Methods("POST").Handler(setRealmContextKeysConfigurationHandler)
 
 		// brokering - shadow users
 		managementSubroute.Path("/realms/{realm}/users/{userID}/federated-identity").Methods("GET").Handler(getFederatedIdentitiesHandler)

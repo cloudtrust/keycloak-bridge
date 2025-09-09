@@ -44,88 +44,88 @@ func (m *ConfigurationDBModule) EXPECT() *ConfigurationDBModuleMockRecorder {
 }
 
 // AuthorizationExists mocks base method.
-func (m *ConfigurationDBModule) AuthorizationExists(context context.Context, realmID, groupName, targetRealm string, targetGroupName *string, actionReq string) (bool, error) {
+func (m *ConfigurationDBModule) AuthorizationExists(arg0 context.Context, realmID, groupName, targetRealm string, targetGroupName *string, actionReq string) (bool, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AuthorizationExists", context, realmID, groupName, targetRealm, targetGroupName, actionReq)
+	ret := m.ctrl.Call(m, "AuthorizationExists", arg0, realmID, groupName, targetRealm, targetGroupName, actionReq)
 	ret0, _ := ret[0].(bool)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // AuthorizationExists indicates an expected call of AuthorizationExists.
-func (mr *ConfigurationDBModuleMockRecorder) AuthorizationExists(context, realmID, groupName, targetRealm, targetGroupName, actionReq any) *gomock.Call {
+func (mr *ConfigurationDBModuleMockRecorder) AuthorizationExists(arg0, realmID, groupName, targetRealm, targetGroupName, actionReq any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AuthorizationExists", reflect.TypeOf((*ConfigurationDBModule)(nil).AuthorizationExists), context, realmID, groupName, targetRealm, targetGroupName, actionReq)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AuthorizationExists", reflect.TypeOf((*ConfigurationDBModule)(nil).AuthorizationExists), arg0, realmID, groupName, targetRealm, targetGroupName, actionReq)
 }
 
 // CleanAuthorizationsActionForEveryRealms mocks base method.
-func (m *ConfigurationDBModule) CleanAuthorizationsActionForEveryRealms(context context.Context, realmID, groupName, actionReq string) error {
+func (m *ConfigurationDBModule) CleanAuthorizationsActionForEveryRealms(arg0 context.Context, realmID, groupName, actionReq string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CleanAuthorizationsActionForEveryRealms", context, realmID, groupName, actionReq)
+	ret := m.ctrl.Call(m, "CleanAuthorizationsActionForEveryRealms", arg0, realmID, groupName, actionReq)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // CleanAuthorizationsActionForEveryRealms indicates an expected call of CleanAuthorizationsActionForEveryRealms.
-func (mr *ConfigurationDBModuleMockRecorder) CleanAuthorizationsActionForEveryRealms(context, realmID, groupName, actionReq any) *gomock.Call {
+func (mr *ConfigurationDBModuleMockRecorder) CleanAuthorizationsActionForEveryRealms(arg0, realmID, groupName, actionReq any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CleanAuthorizationsActionForEveryRealms", reflect.TypeOf((*ConfigurationDBModule)(nil).CleanAuthorizationsActionForEveryRealms), context, realmID, groupName, actionReq)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CleanAuthorizationsActionForEveryRealms", reflect.TypeOf((*ConfigurationDBModule)(nil).CleanAuthorizationsActionForEveryRealms), arg0, realmID, groupName, actionReq)
 }
 
 // CleanAuthorizationsActionForRealm mocks base method.
-func (m *ConfigurationDBModule) CleanAuthorizationsActionForRealm(context context.Context, realmID, groupName, targetRealm, actionReq string) error {
+func (m *ConfigurationDBModule) CleanAuthorizationsActionForRealm(arg0 context.Context, realmID, groupName, targetRealm, actionReq string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CleanAuthorizationsActionForRealm", context, realmID, groupName, targetRealm, actionReq)
+	ret := m.ctrl.Call(m, "CleanAuthorizationsActionForRealm", arg0, realmID, groupName, targetRealm, actionReq)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // CleanAuthorizationsActionForRealm indicates an expected call of CleanAuthorizationsActionForRealm.
-func (mr *ConfigurationDBModuleMockRecorder) CleanAuthorizationsActionForRealm(context, realmID, groupName, targetRealm, actionReq any) *gomock.Call {
+func (mr *ConfigurationDBModuleMockRecorder) CleanAuthorizationsActionForRealm(arg0, realmID, groupName, targetRealm, actionReq any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CleanAuthorizationsActionForRealm", reflect.TypeOf((*ConfigurationDBModule)(nil).CleanAuthorizationsActionForRealm), context, realmID, groupName, targetRealm, actionReq)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CleanAuthorizationsActionForRealm", reflect.TypeOf((*ConfigurationDBModule)(nil).CleanAuthorizationsActionForRealm), arg0, realmID, groupName, targetRealm, actionReq)
 }
 
 // CreateAuthorization mocks base method.
-func (m *ConfigurationDBModule) CreateAuthorization(context context.Context, authz configuration.Authorization) error {
+func (m *ConfigurationDBModule) CreateAuthorization(arg0 context.Context, authz configuration.Authorization) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateAuthorization", context, authz)
+	ret := m.ctrl.Call(m, "CreateAuthorization", arg0, authz)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // CreateAuthorization indicates an expected call of CreateAuthorization.
-func (mr *ConfigurationDBModuleMockRecorder) CreateAuthorization(context, authz any) *gomock.Call {
+func (mr *ConfigurationDBModuleMockRecorder) CreateAuthorization(arg0, authz any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateAuthorization", reflect.TypeOf((*ConfigurationDBModule)(nil).CreateAuthorization), context, authz)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateAuthorization", reflect.TypeOf((*ConfigurationDBModule)(nil).CreateAuthorization), arg0, authz)
 }
 
 // DeleteAllAuthorizationsWithGroup mocks base method.
-func (m *ConfigurationDBModule) DeleteAllAuthorizationsWithGroup(context context.Context, realmName, groupName string) error {
+func (m *ConfigurationDBModule) DeleteAllAuthorizationsWithGroup(arg0 context.Context, realmName, groupName string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteAllAuthorizationsWithGroup", context, realmName, groupName)
+	ret := m.ctrl.Call(m, "DeleteAllAuthorizationsWithGroup", arg0, realmName, groupName)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // DeleteAllAuthorizationsWithGroup indicates an expected call of DeleteAllAuthorizationsWithGroup.
-func (mr *ConfigurationDBModuleMockRecorder) DeleteAllAuthorizationsWithGroup(context, realmName, groupName any) *gomock.Call {
+func (mr *ConfigurationDBModuleMockRecorder) DeleteAllAuthorizationsWithGroup(arg0, realmName, groupName any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteAllAuthorizationsWithGroup", reflect.TypeOf((*ConfigurationDBModule)(nil).DeleteAllAuthorizationsWithGroup), context, realmName, groupName)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteAllAuthorizationsWithGroup", reflect.TypeOf((*ConfigurationDBModule)(nil).DeleteAllAuthorizationsWithGroup), arg0, realmName, groupName)
 }
 
 // DeleteAuthorization mocks base method.
-func (m *ConfigurationDBModule) DeleteAuthorization(context context.Context, realmID, groupName, targetRealm string, targetGroupName *string, actionReq string) error {
+func (m *ConfigurationDBModule) DeleteAuthorization(arg0 context.Context, realmID, groupName, targetRealm string, targetGroupName *string, actionReq string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteAuthorization", context, realmID, groupName, targetRealm, targetGroupName, actionReq)
+	ret := m.ctrl.Call(m, "DeleteAuthorization", arg0, realmID, groupName, targetRealm, targetGroupName, actionReq)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // DeleteAuthorization indicates an expected call of DeleteAuthorization.
-func (mr *ConfigurationDBModuleMockRecorder) DeleteAuthorization(context, realmID, groupName, targetRealm, targetGroupName, actionReq any) *gomock.Call {
+func (mr *ConfigurationDBModuleMockRecorder) DeleteAuthorization(arg0, realmID, groupName, targetRealm, targetGroupName, actionReq any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteAuthorization", reflect.TypeOf((*ConfigurationDBModule)(nil).DeleteAuthorization), context, realmID, groupName, targetRealm, targetGroupName, actionReq)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteAuthorization", reflect.TypeOf((*ConfigurationDBModule)(nil).DeleteAuthorization), arg0, realmID, groupName, targetRealm, targetGroupName, actionReq)
 }
 
 // DeleteBackOfficeConfiguration mocks base method.
@@ -140,6 +140,20 @@ func (m *ConfigurationDBModule) DeleteBackOfficeConfiguration(arg0 context.Conte
 func (mr *ConfigurationDBModuleMockRecorder) DeleteBackOfficeConfiguration(arg0, arg1, arg2, arg3, arg4, arg5 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteBackOfficeConfiguration", reflect.TypeOf((*ConfigurationDBModule)(nil).DeleteBackOfficeConfiguration), arg0, arg1, arg2, arg3, arg4, arg5)
+}
+
+// DeleteContextKeyConfiguration mocks base method.
+func (m *ConfigurationDBModule) DeleteContextKeyConfiguration(ctx context.Context, tx sqltypes.Transaction, customerRealm, ID string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteContextKeyConfiguration", ctx, tx, customerRealm, ID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteContextKeyConfiguration indicates an expected call of DeleteContextKeyConfiguration.
+func (mr *ConfigurationDBModuleMockRecorder) DeleteContextKeyConfiguration(ctx, tx, customerRealm, ID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteContextKeyConfiguration", reflect.TypeOf((*ConfigurationDBModule)(nil).DeleteContextKeyConfiguration), ctx, tx, customerRealm, ID)
 }
 
 // GetAdminConfiguration mocks base method.
@@ -158,18 +172,18 @@ func (mr *ConfigurationDBModuleMockRecorder) GetAdminConfiguration(arg0, arg1 an
 }
 
 // GetAuthorizations mocks base method.
-func (m *ConfigurationDBModule) GetAuthorizations(context context.Context, realmID, groupName string) ([]configuration.Authorization, error) {
+func (m *ConfigurationDBModule) GetAuthorizations(arg0 context.Context, realmID, groupName string) ([]configuration.Authorization, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAuthorizations", context, realmID, groupName)
+	ret := m.ctrl.Call(m, "GetAuthorizations", arg0, realmID, groupName)
 	ret0, _ := ret[0].([]configuration.Authorization)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetAuthorizations indicates an expected call of GetAuthorizations.
-func (mr *ConfigurationDBModuleMockRecorder) GetAuthorizations(context, realmID, groupName any) *gomock.Call {
+func (mr *ConfigurationDBModuleMockRecorder) GetAuthorizations(arg0, realmID, groupName any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAuthorizations", reflect.TypeOf((*ConfigurationDBModule)(nil).GetAuthorizations), context, realmID, groupName)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAuthorizations", reflect.TypeOf((*ConfigurationDBModule)(nil).GetAuthorizations), arg0, realmID, groupName)
 }
 
 // GetBackOfficeConfiguration mocks base method.
@@ -218,6 +232,21 @@ func (mr *ConfigurationDBModuleMockRecorder) GetConfigurations(arg0, arg1 any) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConfigurations", reflect.TypeOf((*ConfigurationDBModule)(nil).GetConfigurations), arg0, arg1)
 }
 
+// GetContextKeyConfiguration mocks base method.
+func (m *ConfigurationDBModule) GetContextKeyConfiguration(ctx context.Context, customerRealm string) ([]configuration.RealmContextKey, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetContextKeyConfiguration", ctx, customerRealm)
+	ret0, _ := ret[0].([]configuration.RealmContextKey)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetContextKeyConfiguration indicates an expected call of GetContextKeyConfiguration.
+func (mr *ConfigurationDBModuleMockRecorder) GetContextKeyConfiguration(ctx, customerRealm any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetContextKeyConfiguration", reflect.TypeOf((*ConfigurationDBModule)(nil).GetContextKeyConfiguration), ctx, customerRealm)
+}
+
 // InsertBackOfficeConfiguration mocks base method.
 func (m *ConfigurationDBModule) InsertBackOfficeConfiguration(arg0 context.Context, arg1, arg2, arg3, arg4 string, arg5 []string) error {
 	m.ctrl.T.Helper()
@@ -233,18 +262,32 @@ func (mr *ConfigurationDBModuleMockRecorder) InsertBackOfficeConfiguration(arg0,
 }
 
 // NewTransaction mocks base method.
-func (m *ConfigurationDBModule) NewTransaction(context context.Context) (sqltypes.Transaction, error) {
+func (m *ConfigurationDBModule) NewTransaction(arg0 context.Context) (sqltypes.Transaction, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NewTransaction", context)
+	ret := m.ctrl.Call(m, "NewTransaction", arg0)
 	ret0, _ := ret[0].(sqltypes.Transaction)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // NewTransaction indicates an expected call of NewTransaction.
-func (mr *ConfigurationDBModuleMockRecorder) NewTransaction(context any) *gomock.Call {
+func (mr *ConfigurationDBModuleMockRecorder) NewTransaction(arg0 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewTransaction", reflect.TypeOf((*ConfigurationDBModule)(nil).NewTransaction), context)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewTransaction", reflect.TypeOf((*ConfigurationDBModule)(nil).NewTransaction), arg0)
+}
+
+// StoreContextKeyConfiguration mocks base method.
+func (m *ConfigurationDBModule) StoreContextKeyConfiguration(ctx context.Context, tx sqltypes.Transaction, contextKeys configuration.RealmContextKey) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "StoreContextKeyConfiguration", ctx, tx, contextKeys)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// StoreContextKeyConfiguration indicates an expected call of StoreContextKeyConfiguration.
+func (mr *ConfigurationDBModuleMockRecorder) StoreContextKeyConfiguration(ctx, tx, contextKeys any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StoreContextKeyConfiguration", reflect.TypeOf((*ConfigurationDBModule)(nil).StoreContextKeyConfiguration), ctx, tx, contextKeys)
 }
 
 // StoreOrUpdateAdminConfiguration mocks base method.

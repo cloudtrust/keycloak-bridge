@@ -22,6 +22,10 @@ type configDBModuleInstrumentingMW struct {
 	next ConfigurationDBModule
 }
 
+// Executable interface is used as a common descriptor for both DBModule and Transaction
+type Executable interface {
+}
+
 // ConfigurationDBModule is the interface of the configuration module.
 type ConfigurationDBModule interface {
 	NewTransaction(context context.Context) (sqltypes.Transaction, error)
@@ -33,6 +37,9 @@ type ConfigurationDBModule interface {
 	GetBackOfficeConfiguration(context.Context, string, []string) (dto.BackOfficeConfiguration, error)
 	DeleteBackOfficeConfiguration(context.Context, string, string, string, *string, *string) error
 	InsertBackOfficeConfiguration(context.Context, string, string, string, string, []string) error
+	GetContextKeyConfiguration(ctx context.Context, customerRealm string) ([]configuration.RealmContextKey, error)
+	DeleteContextKeyConfiguration(ctx context.Context, tx sqltypes.Transaction, customerRealm string, ID string) error
+	StoreContextKeyConfiguration(ctx context.Context, tx sqltypes.Transaction, contextKeys configuration.RealmContextKey) error
 	GetAuthorizations(context context.Context, realmID string, groupName string) ([]configuration.Authorization, error)
 	AuthorizationExists(context context.Context, realmID string, groupName string, targetRealm string, targetGroupName *string, actionReq string) (bool, error)
 	CreateAuthorization(context context.Context, authz configuration.Authorization) error
@@ -120,6 +127,27 @@ func (m *configDBModuleInstrumentingMW) InsertBackOfficeConfiguration(ctx contex
 		m.h.With(KeyCorrelationID, ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
 	}(time.Now())
 	return m.next.InsertBackOfficeConfiguration(ctx, realmID, groupName, confType, targetRealmID, targetGroupNames)
+}
+
+func (m *configDBModuleInstrumentingMW) GetContextKeyConfiguration(ctx context.Context, customerRealm string) ([]configuration.RealmContextKey, error) {
+	defer func(begin time.Time) {
+		m.h.With(KeyCorrelationID, ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
+	}(time.Now())
+	return m.next.GetContextKeyConfiguration(ctx, customerRealm)
+}
+
+func (m *configDBModuleInstrumentingMW) DeleteContextKeyConfiguration(ctx context.Context, tx sqltypes.Transaction, customerRealm string, ID string) error {
+	defer func(begin time.Time) {
+		m.h.With(KeyCorrelationID, ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
+	}(time.Now())
+	return m.next.DeleteContextKeyConfiguration(ctx, tx, customerRealm, ID)
+}
+
+func (m *configDBModuleInstrumentingMW) StoreContextKeyConfiguration(ctx context.Context, tx sqltypes.Transaction, contextKey configuration.RealmContextKey) error {
+	defer func(begin time.Time) {
+		m.h.With(KeyCorrelationID, ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
+	}(time.Now())
+	return m.next.StoreContextKeyConfiguration(ctx, tx, contextKey)
 }
 
 // configDBModuleInstrumentingMW implements Module.
