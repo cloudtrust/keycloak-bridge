@@ -722,6 +722,37 @@ func TestConvertRealmAdminConfiguration(t *testing.T) {
 	})
 }
 
+func createValidRealmAdminAccreditation() RealmAdminAccreditation {
+	return RealmAdminAccreditation{
+		Type:      nil,
+		Validity:  ptr("3y"),
+		Condition: ptr(configuration.CheckKeyIDNow),
+	}
+}
+
+func TestValidateRealmAdminAccreditation(t *testing.T) {
+	t.Run("Valid configuration", func(t *testing.T) {
+		config := createValidRealmAdminAccreditation()
+		assert.Nil(t, config.Validate())
+	})
+
+	var accreds []RealmAdminAccreditation
+	for range 4 {
+		accreds = append(accreds, createValidRealmAdminAccreditation())
+	}
+
+	accreds[0].Validity = nil
+	accreds[1].Validity = ptr("9z")
+	accreds[2].Condition = nil
+	accreds[3].Condition = ptr("NotAValidValue")
+
+	for idx, accred := range accreds {
+		t.Run(fmt.Sprintf("Invalid case #%d", idx+1), func(t *testing.T) {
+			assert.NotNil(t, accred.Validate())
+		})
+	}
+}
+
 func TestNewBackOfficeConfigurationFromJSON(t *testing.T) {
 	t.Run("Invalid JSON", func(t *testing.T) {
 		var _, err = NewBackOfficeConfigurationFromJSON(`{"shop":{"shelves":{"articles":{"books": [1, 2, 3], "chairs": [4, 5, 6]}}}}`)
@@ -741,7 +772,7 @@ func TestNewBackOfficeConfigurationFromJSON(t *testing.T) {
 		assert.Len(t, boConf["realm1"]["customers"], 3)
 		assert.Len(t, boConf["realm1"]["teams"], 2)
 	})
-	t.Run("Inalid configuration", func(t *testing.T) {
+	t.Run("Invalid configuration", func(t *testing.T) {
 		var _, err = NewBackOfficeConfigurationFromJSON(`
 			{
 				"not-a-valid-value": {
@@ -910,7 +941,7 @@ func TestValidateRealmCustomConfiguration(t *testing.T) {
 	})
 
 	var configs []RealmCustomConfiguration
-	for i := 0; i < 8; i++ {
+	for range 8 {
 		configs = append(configs, createValidRealmCustomConfiguration())
 	}
 
@@ -1144,4 +1175,224 @@ func TestConvertToAPIUserChecks(t *testing.T) {
 	converted = ConvertToAPIUserChecks(checks)
 	assert.Len(t, converted, len(checks))
 	assert.Equal(t, checkDate, *converted[0].CheckDate)
+}
+
+func createValidRealmContextKey() RealmContextKeyRepresentation {
+	return RealmContextKeyRepresentation{
+		ID:                ptr("id"),
+		Label:             ptr("label"),
+		IdentitiesRealm:   ptr("identities-realm"),
+		CustomerRealm:     ptr("customer-realm"),
+		Config:            createValidContextKeyConfig(),
+		IsRegisterDefault: boolPtr(false),
+	}
+}
+
+func createValidContextKeyConfig() *CtxKeyConfigRepresentation {
+	return &CtxKeyConfigRepresentation{
+		IdentificationURI: ptr("http://host/path/to/identification"),
+		Onboarding:        createValidContextKeyOnboarding(),
+		Accreditation:     createValidContextKeyAccreditation(),
+		AutoVoucher:       createValidContextKeyAutoVoucher(),
+	}
+}
+
+func createValidContextKeyOnboarding() *CtxKeyOnboardingRepresentation {
+	return &CtxKeyOnboardingRepresentation{
+		ClientID:       ptr("onboardingid-client"),
+		RedirectURI:    ptr("http://host/full/path"),
+		IsRedirectMode: boolPtr(true),
+	}
+}
+
+func createValidContextKeyAccreditation() *CtxKeyAccreditationRepresentation {
+	return &CtxKeyAccreditationRepresentation{
+		EmailThemeRealm: ptr("theme-realm"),
+	}
+}
+
+func createValidContextKeyAutoVoucher() *CtxKeyAutoVoucherRepresentation {
+	return &CtxKeyAutoVoucherRepresentation{
+		ServiceType:            ptr("AUTO_IDENTIFICATION"),
+		Validity:               ptr("3y"),
+		AccreditationRequested: ptr("DEP"),
+		BilledRealm:            ptr("billed-realm"),
+	}
+}
+
+func TestValidateRealmContextKeyRepresentation(t *testing.T) {
+	t.Run("Valid configuration", func(t *testing.T) {
+		config := createValidRealmContextKey()
+		assert.Nil(t, config.Validate())
+	})
+
+	var configs []RealmContextKeyRepresentation
+	for range 8 {
+		configs = append(configs, createValidRealmContextKey())
+	}
+
+	configs[0].ID = nil
+	configs[1].Label = nil
+	configs[2].Label = ptr("")
+	configs[3].IdentitiesRealm = nil
+	configs[4].IdentitiesRealm = ptr("")
+	configs[5].CustomerRealm = nil
+	configs[6].CustomerRealm = ptr("")
+	configs[7].Config = nil
+
+	for idx, config := range configs {
+		t.Run(fmt.Sprintf("Invalid case #%d", idx+1), func(t *testing.T) {
+			assert.NotNil(t, config.Validate())
+		})
+	}
+}
+
+func TestContextKeyConvertions(t *testing.T) {
+	t.Run("Default case", func(t *testing.T) {
+		var initialValue = createValidRealmContextKey()
+		var dtoConverted = ConvertToDBContextKeys([]RealmContextKeyRepresentation{initialValue})
+		var valueConvertedFromDTO = ConvertToAPIContextKeys(dtoConverted)[0]
+		assert.Equal(t, initialValue, valueConvertedFromDTO)
+	})
+	t.Run("Config fields are nil", func(t *testing.T) {
+		var config = ConvertToAPIContextKeyConfig(configuration.ContextKeyConfiguration{
+			Onboarding:        nil,
+			IdentificationURI: nil,
+			AutoVoucher:       nil,
+			Accreditation:     nil,
+		})
+		assert.Nil(t, config.Accreditation)
+		assert.Nil(t, config.AutoVoucher)
+		assert.Nil(t, config.IdentificationURI)
+		assert.Nil(t, config.Onboarding)
+	})
+}
+
+func TestValidateRealmContextKeys(t *testing.T) {
+	t.Run("Valid configuration slice", func(t *testing.T) {
+		config := []RealmContextKeyRepresentation{createValidRealmContextKey()}
+		assert.Nil(t, ValidateRealmContextKeys(config, true))
+		assert.Nil(t, ValidateRealmContextKeys(config, false))
+		config[0].Label = nil
+		assert.NotNil(t, ValidateRealmContextKeys(config, true))
+		assert.NotNil(t, ValidateRealmContextKeys(config, false))
+	})
+	t.Run("Valid empty configuration slice", func(t *testing.T) {
+		config := []RealmContextKeyRepresentation{}
+		assert.Nil(t, ValidateRealmContextKeys(config, true))
+		assert.NotNil(t, ValidateRealmContextKeys(config, false))
+	})
+	t.Run("Duplicated identities realm", func(t *testing.T) {
+		config := []RealmContextKeyRepresentation{createValidRealmContextKey(), createValidRealmContextKey()}
+		err := ValidateRealmContextKeys(config, true)
+		assert.NotNil(t, err)
+		assert.Contains(t, err.Error(), "duplicate")
+	})
+	t.Run("Too many default context keys", func(t *testing.T) {
+		config := []RealmContextKeyRepresentation{createValidRealmContextKey(), createValidRealmContextKey()}
+		config[0].IsRegisterDefault = boolPtr(true)
+		config[1].IsRegisterDefault = boolPtr(true)
+		config[1].IdentitiesRealm = ptr("second-identities-realm")
+		err := ValidateRealmContextKeys(config, true)
+		assert.NotNil(t, err)
+		assert.Contains(t, err.Error(), "toomany")
+	})
+}
+
+func TestValidateCtxKeyConfigRepresentation(t *testing.T) {
+	t.Run("Valid configuration", func(t *testing.T) {
+		config := createValidRealmContextKey()
+		assert.Nil(t, config.Validate())
+	})
+
+	var configs []RealmContextKeyRepresentation
+	for range 7 {
+		configs = append(configs, createValidRealmContextKey())
+	}
+
+	configs[0].Label = nil
+	configs[1].Label = ptr("")
+	configs[2].IdentitiesRealm = nil
+	configs[3].IdentitiesRealm = ptr("")
+	configs[4].CustomerRealm = nil
+	configs[5].CustomerRealm = ptr("")
+	configs[6].Config = nil
+
+	for idx, config := range configs {
+		t.Run(fmt.Sprintf("Invalid case #%d", idx+1), func(t *testing.T) {
+			assert.NotNil(t, config.Validate())
+		})
+	}
+}
+
+func TestValidateCtxKeyOnboardingRepresentation(t *testing.T) {
+	t.Run("Valid configuration", func(t *testing.T) {
+		config := createValidContextKeyOnboarding()
+		assert.Nil(t, config.Validate())
+	})
+
+	var configs []CtxKeyOnboardingRepresentation
+	for range 5 {
+		configs = append(configs, *createValidContextKeyOnboarding())
+	}
+
+	configs[0].ClientID = nil
+	configs[1].ClientID = ptr("")
+	configs[2].RedirectURI = nil
+	configs[3].RedirectURI = ptr("not.a.uri")
+	configs[4].IsRedirectMode = nil
+
+	for idx, config := range configs {
+		t.Run(fmt.Sprintf("Invalid case #%d", idx+1), func(t *testing.T) {
+			assert.NotNil(t, config.Validate())
+		})
+	}
+}
+
+func TestValidateCtxKeyAccreditationRepresentation(t *testing.T) {
+	t.Run("Valid configuration", func(t *testing.T) {
+		config := createValidContextKeyAccreditation()
+		assert.Nil(t, config.Validate())
+	})
+
+	var configs []CtxKeyAccreditationRepresentation
+	for range 2 {
+		configs = append(configs, *createValidContextKeyAccreditation())
+	}
+
+	configs[0].EmailThemeRealm = nil
+	configs[1].EmailThemeRealm = ptr("")
+
+	for idx, config := range configs {
+		t.Run(fmt.Sprintf("Invalid case #%d", idx+1), func(t *testing.T) {
+			assert.NotNil(t, config.Validate())
+		})
+	}
+}
+
+func TestValidateCtxKeyAutoVoucherRepresentation(t *testing.T) {
+	t.Run("Valid configuration", func(t *testing.T) {
+		config := createValidContextKeyAutoVoucher()
+		assert.Nil(t, config.Validate())
+	})
+
+	var configs []CtxKeyAutoVoucherRepresentation
+	for range 8 {
+		configs = append(configs, *createValidContextKeyAutoVoucher())
+	}
+
+	configs[0].ServiceType = nil
+	configs[1].ServiceType = ptr("")
+	configs[2].Validity = nil
+	configs[3].Validity = ptr("")
+	configs[4].AccreditationRequested = nil
+	configs[5].AccreditationRequested = ptr("")
+	configs[6].BilledRealm = nil
+	configs[7].BilledRealm = ptr("")
+
+	for idx, config := range configs {
+		t.Run(fmt.Sprintf("Invalid case #%d", idx+1), func(t *testing.T) {
+			assert.NotNil(t, config.Validate())
+		})
+	}
 }

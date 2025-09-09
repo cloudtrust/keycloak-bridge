@@ -795,6 +795,8 @@ func main() {
 			GetRealmBackOfficeConfiguration:     prepareEndpoint(management.MakeGetRealmBackOfficeConfigurationEndpoint(keycloakComponent), "get_realm_back_office_config_endpoint", managementLogger, rateLimitMgmt),
 			UpdateRealmBackOfficeConfiguration:  prepareEndpoint(management.MakeUpdateRealmBackOfficeConfigurationEndpoint(keycloakComponent), "update_realm_back_office_config_endpoint", managementLogger, rateLimitMgmt),
 			GetUserRealmBackOfficeConfiguration: prepareEndpoint(management.MakeGetUserRealmBackOfficeConfigurationEndpoint(keycloakComponent), "get_user_realm_back_office_config_endpoint", managementLogger, rateLimitMgmt),
+			GetRealmContextKeysConfiguration:    prepareEndpoint(management.MakeGetRealmContextKeysConfigurationEndpoint(keycloakComponent), "get_realm_ctx_keys_config_endpoint", managementLogger, rateLimitMgmt),
+			SetRealmContextKeysConfiguration:    prepareEndpoint(management.MakeSetRealmContextKeysConfigurationEndpoint(keycloakComponent), "set_realm_ctx_keys_config_endpoint", managementLogger, rateLimitMgmt),
 
 			GetFederatedIdentities: prepareEndpoint(management.MakeGetFederatedIdentitiesEndpoint(keycloakComponent), "get_federated_identities_endpoint", managementLogger, rateLimitMgmt),
 			LinkShadowUser:         prepareEndpoint(management.MakeLinkShadowUserEndpoint(keycloakComponent), "link_shadow_user_endpoint", managementLogger, rateLimitMgmt),
@@ -890,18 +892,13 @@ func main() {
 
 		// module for storing and retrieving the custom configuration
 		var configDBModule = createConfigurationDBModule(configurationRwDBConn, registerLogger)
+		var configurationReaderDBModule = configuration.NewConfigurationReaderDBModule(configurationRoDBConn, registerLogger, authActions)
 
 		// module for onboarding process
 		var onboardingModule = keycloakb.NewOnboardingModule(keycloakClient, keycloakConfig.URIProvider, registerInactiveLockDuration, onboardingRealmOverrides, registerLogger)
 
 		// context keys
-		contextKeyManager, err := keycloakb.MakeContextKeyManager(func(config interface{}) error {
-			return c.UnmarshalKey(cfgContextKeys, config)
-		})
-		if err != nil {
-			logger.Error(ctx, "msg", "Could not initialize context key manager", "err", err)
-			return
-		}
+		contextKeyManager := keycloakb.MakeContextKeyManager(configurationReaderDBModule)
 
 		registerComponent := register.NewComponent(keycloakClient, technicalTokenProvider, profileCache, configDBModule, auditEventsReporterModule, onboardingModule, contextKeyManager, registerLogger)
 		registerComponent = register.MakeAuthorizationRegisterComponentMW(log.With(registerLogger, "mw", "authorization"))(registerComponent)
@@ -922,13 +919,8 @@ func main() {
 		configurationLogger := log.With(logger, "svc", "configuration")
 
 		// context keys
-		contextKeyManager, err := keycloakb.MakeContextKeyManager(func(config interface{}) error {
-			return c.UnmarshalKey(cfgContextKeys, config)
-		})
-		if err != nil {
-			logger.Error(ctx, "msg", "Could not initialize context key manager", "err", err)
-			return
-		}
+		var configurationReaderDBModule = configuration.NewConfigurationReaderDBModule(configurationRoDBConn, configurationLogger, authActions)
+		contextKeyManager := keycloakb.MakeContextKeyManager(configurationReaderDBModule)
 
 		configurationComponent := conf.NewComponent(contextKeyManager, configurationLogger)
 
@@ -1198,6 +1190,8 @@ func main() {
 		var getRealmBackOfficeConfigurationHandler = configureManagementHandler(managementEndpoints.GetRealmBackOfficeConfiguration)
 		var updateRealmBackOfficeConfigurationHandler = configureManagementHandler(managementEndpoints.UpdateRealmBackOfficeConfiguration)
 		var getUserRealmBackOfficeConfigurationHandler = configureManagementHandler(managementEndpoints.GetUserRealmBackOfficeConfiguration)
+		var getRealmContextKeysConfigurationHandler = configureManagementHandler(managementEndpoints.GetRealmContextKeysConfiguration)
+		var setRealmContextKeysConfigurationHandler = configureManagementHandler(managementEndpoints.SetRealmContextKeysConfiguration)
 
 		var getFederatedIdentitiesHandler = configureManagementHandler(managementEndpoints.GetFederatedIdentities)
 		var linkShadowUserHandler = configureManagementHandler(managementEndpoints.LinkShadowUser)
@@ -1304,6 +1298,8 @@ func main() {
 		managementSubroute.Path("/realms/{realm}/backoffice-configuration/groups").Methods("GET").Handler(getRealmBackOfficeConfigurationHandler)
 		managementSubroute.Path("/realms/{realm}/backoffice-configuration/groups").Methods("PUT").Handler(updateRealmBackOfficeConfigurationHandler)
 		managementSubroute.Path("/realms/{realm}/backoffice-configuration").Methods("GET").Handler(getUserRealmBackOfficeConfigurationHandler)
+		managementSubroute.Path("/realms/{realm}/context-keys").Methods("GET").Handler(getRealmContextKeysConfigurationHandler)
+		managementSubroute.Path("/realms/{realm}/context-keys").Methods("POST").Handler(setRealmContextKeysConfigurationHandler)
 
 		// brokering - shadow users
 		managementSubroute.Path("/realms/{realm}/users/{userID}/federated-identity").Methods("GET").Handler(getFederatedIdentitiesHandler)

@@ -18,6 +18,7 @@ import (
 	"github.com/cloudtrust/common-service/v2/security"
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
+	msg "github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/accreditationsclient"
 
@@ -70,6 +71,15 @@ func (m *componentMocks) createComponent() *component {
 	/* REMOVE_THIS_3901 : remove second parameter (nil) */
 	return NewComponent(m.keycloakClient, nil, m.profileCache, m.eventsReporter, m.configurationDBModule, m.onboardingModule, m.authChecker,
 		m.tokenProvider, m.accreditationsClient, allowedTrustIDGroups, socialRealmName, m.logger, m.producer).(*component)
+}
+
+func (m *componentMocks) configureSetRealmContextKeys(ctx context.Context, customerRealm string, existingKey string) {
+	m.configurationDBModule.EXPECT().GetContextKeysForCustomerRealm(ctx, customerRealm).Return([]configuration.RealmContextKey{
+		{ID: existingKey},
+	}, nil)
+	m.configurationDBModule.EXPECT().GetAllContextKeyID(ctx).Return(nil, nil)
+	m.configurationDBModule.EXPECT().NewTransaction(ctx).Return(m.transaction, nil)
+	m.transaction.EXPECT().Close()
 }
 
 func ptrString(value string) *string {
@@ -653,7 +663,7 @@ func TestCreateUserInSocialRealm(t *testing.T) {
 	})
 	t.Run("Process already existing user cases calls handler", func(t *testing.T) {
 		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, socialRealmName).Return(configuration.RealmAdminConfiguration{}, nil)
-		mocks.profileCache.EXPECT().GetRealmUserProfile(gomock.Any(), gomock.Any()).Return(kc.UserProfileRepresentation{}, nil).AnyTimes()
+		mocks.profileCache.EXPECT().GetRealmUserProfile(gomock.Any(), gomock.Any()).Return(kc.UserProfileRepresentation{}, nil)
 		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, socialRealmName).Return(accessToken, nil)
 		mocks.onboardingModule.EXPECT().ProcessAlreadyExistingUserCases(ctx, accessToken, managementComponent.socialRealmName, email, realmName, gomock.Any()).Return(anyError)
 		_, err := managementComponent.CreateUserInSocialRealm(ctx, userRep, false)
@@ -1313,7 +1323,7 @@ func TestUpdateUser(t *testing.T) {
 		}
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
-		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, id).Return(kcUserRep, nil).AnyTimes()
+		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, id).Return(kcUserRep, nil)
 		mocks.accreditationsClient.EXPECT().NotifyUpdate(ctx, gomock.Any()).Return(nil, nil)
 		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, realmName, id, gomock.Any()).Return(fmt.Errorf("Unexpected error"))
 		mocks.logger.EXPECT().Warn(gomock.Any(), "err", "Unexpected error")
@@ -5108,6 +5118,124 @@ func TestRealmBackOfficeConfiguration(t *testing.T) {
 		var res, err = component.GetUserRealmBackOfficeConfiguration(ctx, realmID)
 		assert.Nil(t, err)
 		assert.Equal(t, api.BackOfficeConfiguration(dbConf), res)
+	})
+}
+
+func TestGetRealmContextKeysConfiguration(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mocks = createMocks(mockCtrl)
+	var mgmtComponent = mocks.createComponent()
+
+	var customerRealm = "customer-realm"
+	var ctx = context.TODO()
+
+	t.Run("Call to database fails", func(t *testing.T) {
+		var dbError = errors.New("db error")
+		mocks.configurationDBModule.EXPECT().GetContextKeysForCustomerRealm(ctx, customerRealm).Return(nil, dbError)
+
+		var _, err = mgmtComponent.GetRealmContextKeysConfiguration(ctx, customerRealm)
+		assert.Equal(t, dbError, err)
+	})
+	t.Run("Success", func(t *testing.T) {
+		mocks.configurationDBModule.EXPECT().GetContextKeysForCustomerRealm(ctx, customerRealm).Return(nil, nil)
+		var res, err = mgmtComponent.GetRealmContextKeysConfiguration(ctx, customerRealm)
+		assert.Nil(t, err)
+		assert.Len(t, res, 0)
+	})
+}
+
+func TestSetRealmContextKeysConfiguration(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mocks = createMocks(mockCtrl)
+	var mgmtComponent = mocks.createComponent()
+
+	var customerRealm = "customer-realm"
+	var existingKey = "existing-key"
+	var ctx = context.TODO()
+
+	mocks.logger.EXPECT().Warn(ctx, gomock.Any()).AnyTimes()
+
+	t.Run("Call to database fails", func(t *testing.T) {
+		var dbError = errors.New("db error")
+		mocks.configurationDBModule.EXPECT().GetContextKeysForCustomerRealm(ctx, customerRealm).Return(nil, dbError)
+
+		var err = mgmtComponent.SetRealmContextKeysConfiguration(ctx, customerRealm, nil)
+		assert.Equal(t, dbError, err)
+	})
+	t.Run("Can't get all context key ids", func(t *testing.T) {
+		var dbError = errors.New("db error")
+		mocks.configurationDBModule.EXPECT().GetContextKeysForCustomerRealm(ctx, customerRealm).Return(nil, nil)
+		mocks.configurationDBModule.EXPECT().GetAllContextKeyID(ctx).Return(nil, dbError)
+
+		var err = mgmtComponent.SetRealmContextKeysConfiguration(ctx, customerRealm, nil)
+		assert.Equal(t, dbError, err)
+	})
+	t.Run("Using ID from another customer realm", func(t *testing.T) {
+		mocks.configurationDBModule.EXPECT().GetContextKeysForCustomerRealm(ctx, customerRealm).Return(nil, nil)
+		mocks.configurationDBModule.EXPECT().GetAllContextKeyID(ctx).Return([]string{"new-id"}, nil)
+
+		var err = mgmtComponent.SetRealmContextKeysConfiguration(ctx, customerRealm, []api.RealmContextKeyRepresentation{
+			{ID: ptr("new-id"), Label: ptr(""), IdentitiesRealm: ptr(""), CustomerRealm: ptr(""), Config: &api.CtxKeyConfigRepresentation{}},
+		})
+		assert.NotNil(t, err)
+		assert.Contains(t, err.Error(), msg.MsgErrInvalidParam)
+	})
+
+	t.Run("Begin transaction fails", func(t *testing.T) {
+		var txError = errors.New("transaction error")
+		mocks.configurationDBModule.EXPECT().GetContextKeysForCustomerRealm(ctx, customerRealm).Return(nil, nil)
+		mocks.configurationDBModule.EXPECT().GetAllContextKeyID(ctx).Return(nil, nil)
+		mocks.configurationDBModule.EXPECT().NewTransaction(ctx).Return(nil, txError)
+
+		var err = mgmtComponent.SetRealmContextKeysConfiguration(ctx, customerRealm, nil)
+		assert.Equal(t, txError, err)
+	})
+
+	t.Run("Delete fails", func(t *testing.T) {
+		var delError = errors.New("delete error")
+		mocks.configureSetRealmContextKeys(ctx, customerRealm, existingKey)
+		mocks.configurationDBModule.EXPECT().DeleteContextKeyConfiguration(ctx, mocks.transaction, customerRealm, existingKey).Return(delError)
+
+		var err = mgmtComponent.SetRealmContextKeysConfiguration(ctx, customerRealm, nil)
+		assert.Equal(t, delError, err)
+	})
+	t.Run("Update fails", func(t *testing.T) {
+		var updError = errors.New("update error")
+		mocks.configureSetRealmContextKeys(ctx, customerRealm, existingKey)
+		mocks.configurationDBModule.EXPECT().StoreContextKeyConfiguration(ctx, mocks.transaction, gomock.Any()).Return(updError)
+
+		var err = mgmtComponent.SetRealmContextKeysConfiguration(ctx, customerRealm, []api.RealmContextKeyRepresentation{
+			{ID: &existingKey, Label: ptr("label"), IdentitiesRealm: ptr("identities"), CustomerRealm: &customerRealm, Config: &api.CtxKeyConfigRepresentation{}},
+		})
+		assert.Equal(t, updError, err)
+	})
+
+	t.Run("Insert success but commit fails", func(t *testing.T) {
+		var commitError = errors.New("commit error")
+		mocks.configureSetRealmContextKeys(ctx, customerRealm, existingKey)
+		mocks.configurationDBModule.EXPECT().DeleteContextKeyConfiguration(ctx, mocks.transaction, customerRealm, existingKey).Return(nil)
+		mocks.configurationDBModule.EXPECT().StoreContextKeyConfiguration(ctx, mocks.transaction, gomock.Any()).Return(nil)
+		mocks.transaction.EXPECT().Commit().Return(commitError)
+
+		var err = mgmtComponent.SetRealmContextKeysConfiguration(ctx, customerRealm, []api.RealmContextKeyRepresentation{
+			{ID: ptr("new-id"), Label: ptr("label"), IdentitiesRealm: ptr("identities"), CustomerRealm: &customerRealm, Config: &api.CtxKeyConfigRepresentation{}},
+		})
+		assert.Equal(t, commitError, err)
+	})
+	t.Run("Success case", func(t *testing.T) {
+		mocks.configureSetRealmContextKeys(ctx, customerRealm, existingKey)
+		mocks.configurationDBModule.EXPECT().DeleteContextKeyConfiguration(ctx, mocks.transaction, customerRealm, existingKey).Return(nil)
+		mocks.configurationDBModule.EXPECT().StoreContextKeyConfiguration(ctx, mocks.transaction, gomock.Any()).Return(nil)
+		mocks.transaction.EXPECT().Commit().Return(nil)
+
+		var err = mgmtComponent.SetRealmContextKeysConfiguration(ctx, customerRealm, []api.RealmContextKeyRepresentation{
+			{ID: ptr("new-id"), Label: ptr("label"), IdentitiesRealm: ptr("identities"), CustomerRealm: &customerRealm, Config: &api.CtxKeyConfigRepresentation{}},
+		})
+		assert.Nil(t, err)
 	})
 }
 

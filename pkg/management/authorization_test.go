@@ -15,7 +15,7 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-func ignoreFirst(_ interface{}, err error) error {
+func ignoreFirst(_ any, err error) error {
 	return err
 }
 
@@ -187,6 +187,8 @@ func TestDeny(t *testing.T) {
 			"GetRealmBackOfficeConfiguration":     ignoreFirst(authorizationMW.GetRealmBackOfficeConfiguration(ctx, realmName, groupID)),
 			"UpdateRealmBackOfficeConfiguration":  authorizationMW.UpdateRealmBackOfficeConfiguration(ctx, realmName, groupID, boConfig),
 			"GetUserRealmBackOfficeConfiguration": ignoreFirst(authorizationMW.GetUserRealmBackOfficeConfiguration(ctx, realmName)),
+			"GetRealmContextKeyConfiguration":     ignoreFirst(authorizationMW.GetRealmContextKeysConfiguration(ctx, realmName)),
+			"SetRealmContextKeyConfiguration":     authorizationMW.SetRealmContextKeysConfiguration(ctx, realmName, []api.RealmContextKeyRepresentation{}),
 			"GetFederatedIdentities":              ignoreFirst(authorizationMW.GetFederatedIdentities(ctx, realmName, userID)),
 			"LinkShadowUser":                      authorizationMW.LinkShadowUser(ctx, realmName, userID, idpAlias, fedID),
 			"UnlinkShadowUser":                    authorizationMW.UnlinkShadowUser(ctx, realmName, userID, idpAlias),
@@ -588,6 +590,14 @@ func TestAllowed(t *testing.T) {
 
 		mockManagementComponent.EXPECT().GetUserRealmBackOfficeConfiguration(ctx, realmName).Return(config, nil)
 		_, err = authorizationMW.GetUserRealmBackOfficeConfiguration(ctx, realmName)
+		assert.Nil(t, err)
+
+		mockManagementComponent.EXPECT().GetRealmContextKeysConfiguration(ctx, realmName).Return([]api.RealmContextKeyRepresentation{}, nil)
+		_, err = authorizationMW.GetRealmContextKeysConfiguration(ctx, realmName)
+		assert.Nil(t, err)
+
+		mockManagementComponent.EXPECT().SetRealmContextKeysConfiguration(ctx, realmName, gomock.Any()).Return(nil)
+		err = authorizationMW.SetRealmContextKeysConfiguration(ctx, realmName, []api.RealmContextKeyRepresentation{})
 		assert.Nil(t, err)
 
 		mockManagementComponent.EXPECT().GetFederatedIdentities(ctx, realmName, userID).Return(nil, nil)

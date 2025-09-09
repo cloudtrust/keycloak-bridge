@@ -14,9 +14,9 @@ import (
 	"github.com/cloudtrust/common-service/v2/log"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	kc_client "github.com/cloudtrust/keycloak-client/v2"
-	"go.uber.org/mock/gomock"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func responseToString(input io.ReadCloser) string {
@@ -41,14 +41,15 @@ func TestHTTPManagementHandler(t *testing.T) {
 		endpoint = func(ctx context.Context, req interface{}) (interface{}, error) {
 			var m = req.(map[string]string)
 			if realm, ok := m["realm"]; ok {
-				if realm == "notfound" {
+				switch realm {
+				case "notfound":
 					return nil, errorhandler.CreateNotFoundError("realm")
-				} else if realm == "kcclienterror" {
+				case "kcclienterror":
 					return nil, kc_client.HTTPError{
 						HTTPStatus: http.StatusBadGateway,
 						Message:    "kc_client error",
 					}
-				} else if realm == "create" {
+				case "create":
 					return LocationHeader{
 						URL: url,
 					}, nil

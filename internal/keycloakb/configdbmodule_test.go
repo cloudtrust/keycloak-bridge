@@ -18,6 +18,35 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
+type dbMocks struct {
+	mockCtrl *gomock.Controller
+	db       *mock.CloudtrustDB
+	sqlRow   *mock.SQLRow
+	sqlRows  *mock.SQLRows
+	tx       *mock.Transaction
+	logger   log.Logger
+}
+
+func newDbMocks(t *testing.T) *dbMocks {
+	var mockCtrl = gomock.NewController(t)
+	return &dbMocks{
+		mockCtrl: mockCtrl,
+		db:       mock.NewCloudtrustDB(mockCtrl),
+		sqlRow:   mock.NewSQLRow(mockCtrl),
+		sqlRows:  mock.NewSQLRows(mockCtrl),
+		tx:       mock.NewTransaction(mockCtrl),
+		logger:   log.NewNopLogger(),
+	}
+}
+
+func (m *dbMocks) NewConfigurationDBModule(actions ...[]string) ConfigurationDBModule {
+	return NewConfigurationDBModule(m.db, m.logger)
+}
+
+func (m *dbMocks) Finish() {
+	m.mockCtrl.Finish()
+}
+
 func TestConfigurationDBModule(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -264,6 +293,111 @@ func TestBackOfficeConfiguration(t *testing.T) {
 		mockDB.EXPECT().Exec(gomock.Any(), gomock.Any()).Return(nil, nil).Times(len(groupNames))
 		var err = configDBModule.InsertBackOfficeConfiguration(ctx, realmID, groupName, confType, targetRealmID, groupNames)
 		assert.Nil(t, err)
+	})
+}
+
+func TestContextKeyConfiguration(t *testing.T) {
+	var mocks = newDbMocks(t)
+	defer mocks.Finish()
+
+	var customerRealm = "customer-realm"
+	var realmContext1 = configuration.RealmContextKey{
+		ID:              "uuid1",
+		Label:           "label1",
+		IdentitiesRealm: "identities-realm",
+		Config:          configuration.ContextKeyConfiguration{},
+	}
+	var contextKeyID = "context-key-id"
+	var ctx = context.TODO()
+
+	var module = mocks.NewConfigurationDBModule()
+
+	t.Run("GetAllContextKeyID", func(t *testing.T) {
+		t.Run("GetAllContextKeyID query fails", func(t *testing.T) {
+			var sqlError = errors.New("SQL error")
+			mocks.db.EXPECT().Query(selectAllContextKeyID).Return(nil, sqlError)
+
+			var _, err = module.GetAllContextKeyID(ctx)
+			assert.Equal(t, sqlError, err)
+		})
+		t.Run("Scan fails", func(t *testing.T) {
+			var scanError = errors.New("scan error")
+			mocks.db.EXPECT().Query(selectAllContextKeyID).Return(mocks.sqlRows, nil)
+			mocks.sqlRows.EXPECT().Next().Return(true)
+			mocks.sqlRows.EXPECT().Scan(gomock.Any()).Return(scanError)
+			mocks.sqlRows.EXPECT().Close()
+
+			var _, err = module.GetAllContextKeyID(ctx)
+			assert.Equal(t, scanError, err)
+		})
+		t.Run("SQL error after fetching all rows", func(t *testing.T) {
+			var rowsError = errors.New("scan error")
+			mocks.db.EXPECT().Query(selectAllContextKeyID).Return(mocks.sqlRows, nil)
+			mocks.sqlRows.EXPECT().Next().Return(false)
+			mocks.sqlRows.EXPECT().Err().Return(rowsError)
+			mocks.sqlRows.EXPECT().Close()
+
+			var _, err = module.GetAllContextKeyID(ctx)
+			assert.Equal(t, rowsError, err)
+		})
+		t.Run("Success case", func(t *testing.T) {
+			gomock.InOrder(
+				mocks.db.EXPECT().Query(selectAllContextKeyID).Return(mocks.sqlRows, nil),
+				mocks.sqlRows.EXPECT().Next().Return(true),
+				mocks.sqlRows.EXPECT().Scan(gomock.Any()).DoAndReturn(func(ptr any) error {
+					*(ptr.(*string)) = "value"
+					return nil
+				}),
+				mocks.sqlRows.EXPECT().Next().Return(false),
+				mocks.sqlRows.EXPECT().Err().Return(nil),
+				mocks.sqlRows.EXPECT().Close(),
+			)
+
+			var res, err = module.GetAllContextKeyID(ctx)
+			assert.Nil(t, err)
+			assert.Len(t, res, 1)
+			assert.Equal(t, "value", res[0])
+		})
+	})
+
+	t.Run("Select query fails", func(t *testing.T) {
+		var sqlError = errors.New("SQL error")
+		mocks.db.EXPECT().Query(gomock.Any(), nil, &customerRealm).Return(nil, sqlError)
+
+		var _, err = module.GetDefaultContextKeyConfiguration(ctx, customerRealm)
+		assert.Equal(t, sqlError, err)
+	})
+
+	t.Run("Delete", func(t *testing.T) {
+		t.Run("Delete query fails", func(t *testing.T) {
+			var deleteError = errors.New("deeelt eorrr")
+			mocks.tx.EXPECT().Exec(deleteContextKeyStmt, contextKeyID, customerRealm).Return(nil, deleteError)
+
+			var err = module.DeleteContextKeyConfiguration(ctx, mocks.tx, customerRealm, contextKeyID)
+			assert.Equal(t, deleteError, err)
+		})
+		t.Run("Delete success", func(t *testing.T) {
+			mocks.db.EXPECT().Exec(deleteContextKeyStmt, contextKeyID, customerRealm).Return(nil, nil)
+
+			var err = module.DeleteContextKeyConfiguration(ctx, nil, customerRealm, contextKeyID)
+			assert.Nil(t, err)
+		})
+	})
+
+	t.Run("Insert/Update", func(t *testing.T) {
+		t.Run("Creation/update failure", func(t *testing.T) {
+			var creationError = errors.New("craetoin eorrr")
+			mocks.db.EXPECT().Exec(storeContextKeyStmt, gomock.Any()).Return(nil, creationError)
+
+			var err = module.StoreContextKeyConfiguration(ctx, nil, realmContext1)
+			assert.Equal(t, creationError, err)
+		})
+		t.Run("Creation/update success", func(t *testing.T) {
+			mocks.tx.EXPECT().Exec(storeContextKeyStmt, gomock.Any()).Return(nil, nil)
+
+			var err = module.StoreContextKeyConfiguration(ctx, mocks.tx, realmContext1)
+			assert.Nil(t, err)
+		})
 	})
 }
 

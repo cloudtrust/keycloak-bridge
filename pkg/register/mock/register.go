@@ -237,34 +237,34 @@ func (m *ContextKeyManager) EXPECT() *ContextKeyManagerMockRecorder {
 	return m.recorder
 }
 
-// GetContextByRegistrationRealm mocks base method.
-func (m *ContextKeyManager) GetContextByRegistrationRealm(realm string) (keycloakb.ContextKeyParameters, bool) {
+// GetDefaultContextKeyByCustomerRealm mocks base method.
+func (m *ContextKeyManager) GetDefaultContextKeyByCustomerRealm(ctx context.Context, realm string) (keycloakb.ContextKeyParameters, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetContextByRegistrationRealm", realm)
+	ret := m.ctrl.Call(m, "GetDefaultContextKeyByCustomerRealm", ctx, realm)
 	ret0, _ := ret[0].(keycloakb.ContextKeyParameters)
-	ret1, _ := ret[1].(bool)
+	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetContextByRegistrationRealm indicates an expected call of GetContextByRegistrationRealm.
-func (mr *ContextKeyManagerMockRecorder) GetContextByRegistrationRealm(realm any) *gomock.Call {
+// GetDefaultContextKeyByCustomerRealm indicates an expected call of GetDefaultContextKeyByCustomerRealm.
+func (mr *ContextKeyManagerMockRecorder) GetDefaultContextKeyByCustomerRealm(ctx, realm any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetContextByRegistrationRealm", reflect.TypeOf((*ContextKeyManager)(nil).GetContextByRegistrationRealm), realm)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDefaultContextKeyByCustomerRealm", reflect.TypeOf((*ContextKeyManager)(nil).GetDefaultContextKeyByCustomerRealm), ctx, realm)
 }
 
 // GetOverride mocks base method.
-func (m *ContextKeyManager) GetOverride(realm, contextKey string) (keycloakb.ContextKeyParameters, bool) {
+func (m *ContextKeyManager) GetOverride(ctx context.Context, contextKey, realm string) (keycloakb.ContextKeyParameters, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetOverride", realm, contextKey)
+	ret := m.ctrl.Call(m, "GetOverride", ctx, contextKey, realm)
 	ret0, _ := ret[0].(keycloakb.ContextKeyParameters)
-	ret1, _ := ret[1].(bool)
+	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetOverride indicates an expected call of GetOverride.
-func (mr *ContextKeyManagerMockRecorder) GetOverride(realm, contextKey any) *gomock.Call {
+func (mr *ContextKeyManagerMockRecorder) GetOverride(ctx, contextKey, realm any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOverride", reflect.TypeOf((*ContextKeyManager)(nil).GetOverride), realm, contextKey)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOverride", reflect.TypeOf((*ContextKeyManager)(nil).GetOverride), ctx, contextKey, realm)
 }
 
 // OnboardingModule is a mock of OnboardingModule interface.
