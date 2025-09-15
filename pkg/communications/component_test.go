@@ -10,8 +10,8 @@ import (
 	api "github.com/cloudtrust/keycloak-bridge/api/communications"
 	"github.com/cloudtrust/keycloak-bridge/pkg/communications/mock"
 	kc "github.com/cloudtrust/keycloak-client/v2"
-	"go.uber.org/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 type componentMocks struct {
@@ -163,13 +163,13 @@ func TestSendEmail(t *testing.T) {
 	mocks.tokenProvider.EXPECT().ProvideTokenForRealm(gomock.Any(), "targetRealm").Return(accessToken, nil).AnyTimes()
 
 	t.Run("Success", func(t *testing.T) {
-		mocks.keycloakCommunicationsClient.EXPECT().SendEmail(accessToken, "reqRealm", "targetRealm", emailForTestKC).Return(nil)
+		mocks.keycloakCommunicationsClient.EXPECT().SendEmail(accessToken, "targetRealm", "targetRealm", emailForTestKC).Return(nil)
 		err := communicationsComponent.SendEmail(ctx, "targetRealm", emailForTest)
 		assert.Nil(t, err)
 	})
 
 	t.Run("Failure", func(t *testing.T) {
-		mocks.keycloakCommunicationsClient.EXPECT().SendEmail(accessToken, "reqRealm", "targetRealm", emailForTestKC).Return(fmt.Errorf("Unexpected error"))
+		mocks.keycloakCommunicationsClient.EXPECT().SendEmail(accessToken, "targetRealm", "targetRealm", emailForTestKC).Return(fmt.Errorf("Unexpected error"))
 		mocks.logger.EXPECT().Warn(ctx, "err", "Unexpected error")
 
 		err := communicationsComponent.SendEmail(ctx, "targetRealm", emailForTest)
@@ -201,7 +201,7 @@ func TestSendEmailToUser(t *testing.T) {
 	mocks.tokenProvider.EXPECT().ProvideTokenForRealm(gomock.Any(), "targetRealm").Return(accessToken, nil).AnyTimes()
 
 	t.Run("Success", func(t *testing.T) {
-		mocks.keycloakCommunicationsClient.EXPECT().SendEmailToUser(accessToken, "reqRealm", "targetRealm", userID, emailForTestKC).Return(nil)
+		mocks.keycloakCommunicationsClient.EXPECT().SendEmailToUser(accessToken, "targetRealm", "targetRealm", userID, emailForTestKC).Return(nil)
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, reqRealm)
@@ -211,7 +211,7 @@ func TestSendEmailToUser(t *testing.T) {
 	})
 
 	t.Run("Failure case", func(t *testing.T) {
-		mocks.keycloakCommunicationsClient.EXPECT().SendEmailToUser(accessToken, "reqRealm", "targetRealm", userID, emailForTestKC).Return(fmt.Errorf("Unexpected error"))
+		mocks.keycloakCommunicationsClient.EXPECT().SendEmailToUser(accessToken, "targetRealm", "targetRealm", userID, emailForTestKC).Return(fmt.Errorf("Unexpected error"))
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, reqRealm)

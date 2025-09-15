@@ -3,7 +3,6 @@ package communications
 import (
 	"context"
 
-	cs "github.com/cloudtrust/common-service/v2"
 	cerrors "github.com/cloudtrust/common-service/v2/errors"
 	api "github.com/cloudtrust/keycloak-bridge/api/communications"
 	internal "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
@@ -41,8 +40,6 @@ func NewComponent(keycloakCommunicationsClient KeycloakCommunicationsClient, tok
 }
 
 func (c *component) SendEmail(ctx context.Context, realmName string, emailRep api.EmailRepresentation) error {
-	var ctxRealm = ctx.Value(cs.CtContextRealm).(string)
-
 	var accessToken string
 	{
 		var err error
@@ -54,7 +51,7 @@ func (c *component) SendEmail(ctx context.Context, realmName string, emailRep ap
 	}
 
 	var kcEmailRep = api.ExportEmailToKeycloak(&emailRep)
-	err := c.keycloakCommunicationsClient.SendEmail(accessToken, ctxRealm, realmName, *kcEmailRep)
+	err := c.keycloakCommunicationsClient.SendEmail(accessToken, realmName, realmName, *kcEmailRep)
 	if err != nil {
 		c.logger.Warn(ctx, "err", err.Error())
 		return err
@@ -63,8 +60,6 @@ func (c *component) SendEmail(ctx context.Context, realmName string, emailRep ap
 }
 
 func (c *component) SendEmailToUser(ctx context.Context, realmName string, userID string, emailRep api.EmailRepresentation) error {
-	var ctxRealm = ctx.Value(cs.CtContextRealm).(string)
-
 	var accessToken string
 	{
 		var err error
@@ -76,7 +71,7 @@ func (c *component) SendEmailToUser(ctx context.Context, realmName string, userI
 	}
 
 	var kcEmailRep = api.ExportEmailToKeycloak(&emailRep)
-	err := c.keycloakCommunicationsClient.SendEmailToUser(accessToken, ctxRealm, realmName, userID, *kcEmailRep)
+	err := c.keycloakCommunicationsClient.SendEmailToUser(accessToken, realmName, realmName, userID, *kcEmailRep)
 	if err != nil {
 		c.logger.Warn(ctx, "err", err.Error())
 		return err
