@@ -3,6 +3,7 @@ package constants
 // Regular expressions for parameters validation
 const (
 	regExpLen255OrEmpty = `^.{0,255}$`
+	regExpLen36         = `^.{1,36}$`
 	regExpLen255        = `^.{1,255}$`
 	regExpLen128        = `^.{1,128}$`
 
@@ -57,7 +58,7 @@ const (
 	RegExpServiceType   = `^[\w_-]+$`
 	RegExpTxnID         = regExpLen255
 
-	RegExpColor	  = `^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$`
+	RegExpColor = `^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$`
 
 	// Corporate Regex TO CLEAN WHEN WE WILL HAVE ATTRIBUTE MANAGEMENT
 	regExpLen128OrEmpty      = `^.{0,128}$`
@@ -65,7 +66,7 @@ const (
 	RegExpCorporateLastName  = regExpLen128
 
 	// Identity provider
-	RegExpAlias                     = RegExpRealmName
+	RegExpAlias                     = `^[a-zA-Z0-9_-]{1,43}$`
 	RegExpDisplayName               = `^[a-zA-Z0-9 _-]{1,128}$`
 	RegExpFirstBrokerLoginFlowAlias = `^[a-zA-Z0-9 _-]{1,128}$`
 	RegExpPostBrokerLoginFlowAlias  = `^[a-zA-Z0-9 _-]{1,128}$`

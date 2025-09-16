@@ -22,7 +22,7 @@ func TestHTTPIdpHandler(t *testing.T) {
 	var mockLogger = log.NewNopLogger()
 
 	var realm = "example"
-	var apiIdp = testApiIdp()
+	var apiIdp = createTestApiIdp()
 
 	var idpHandler = MakeIdpHandler(keycloakb.ToGoKitEndpoint(MakeCreateIdentityProviderEndpoint(mockComponent)), mockLogger)
 	var idpHandler2 = MakeIdpHandler(keycloakb.ToGoKitEndpoint(MakeGetIdentityProviderEndpoint(mockComponent)), mockLogger)
@@ -34,24 +34,24 @@ func TestHTTPIdpHandler(t *testing.T) {
 	ts := httptest.NewServer(r)
 	defer ts.Close()
 
-	{
+	t.Run("Create identity provider", func(t *testing.T) {
 		mockComponent.EXPECT().CreateIdentityProvider(gomock.Any(), realm, apiIdp).Return(nil).Times(1)
 
 		idpJSON, _ := json.Marshal(apiIdp)
-		var body = strings.NewReader(string(idpJSON))
+		body := strings.NewReader(string(idpJSON))
+
 		res, err := http.Post(ts.URL+"/idp/realms/"+realm+"/identity-providers", "application/json", body)
 
 		assert.Nil(t, err)
 		assert.Equal(t, http.StatusOK, res.StatusCode)
-	}
+	})
 
-	{
+	t.Run("Get identity provider", func(t *testing.T) {
 		mockComponent.EXPECT().GetIdentityProvider(gomock.Any(), realm, idpAlias).Return(apiIdp, nil).Times(1)
 
 		res, err := http.Get(ts.URL + "/idp/realms/" + realm + "/identity-providers/" + idpAlias)
 
 		assert.Nil(t, err)
 		assert.Equal(t, http.StatusOK, res.StatusCode)
-	}
-
+	})
 }
