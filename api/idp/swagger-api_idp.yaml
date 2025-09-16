@@ -5,11 +5,6 @@ info:
   version: 1.0.0
 servers:
 - url: http://localhost:8888/idp
-tags:
-- name: Email
-  description: Send Emails
-- name: SMS
-  description: Send SMS
 paths:
   /idp/realms/{realm}/identity-providers:
     post:
@@ -139,6 +134,16 @@ components:
             type: boolean
           TrustEmail:
             type: boolean
+          HrdSettings:
+            type: object
+            $ref: '#/components/schemas/HrdSettingModel'
+    HrdSettingModel:
+      type: object
+      properties:
+          IPRangesList: 
+            type: string
+          Priority: 
+            type: integer
 
   securitySchemes:
     openId:

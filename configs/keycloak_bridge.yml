@@ -187,6 +187,12 @@ onboarding-realm-overrides:
   realmName-hp: realmName
   realmName-institution: realmName
 
+# HRD
+hrd:
+  provider-type: org.keycloak.services.ui.extend.UiTabProvider
+  provider-id: Home-realm discovery settings
+  config-name: hrdSettings
+
 # Kafka config
 kafka:
 - id: cluster1

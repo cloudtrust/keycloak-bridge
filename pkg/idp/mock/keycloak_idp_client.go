@@ -42,6 +42,20 @@ func (m *KeycloakIdpClient) EXPECT() *KeycloakIdpClientMockRecorder {
 	return m.recorder
 }
 
+// CreateComponent mocks base method.
+func (m *KeycloakIdpClient) CreateComponent(accessToken, realmName string, comp keycloak.ComponentRepresentation) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateComponent", accessToken, realmName, comp)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateComponent indicates an expected call of CreateComponent.
+func (mr *KeycloakIdpClientMockRecorder) CreateComponent(accessToken, realmName, comp any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateComponent", reflect.TypeOf((*KeycloakIdpClient)(nil).CreateComponent), accessToken, realmName, comp)
+}
+
 // CreateIdp mocks base method.
 func (m *KeycloakIdpClient) CreateIdp(accessToken, realmName string, idpRep keycloak.IdentityProviderRepresentation) error {
 	m.ctrl.T.Helper()
@@ -70,6 +84,26 @@ func (mr *KeycloakIdpClientMockRecorder) DeleteIdp(accessToken, realmName, idpAl
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteIdp", reflect.TypeOf((*KeycloakIdpClient)(nil).DeleteIdp), accessToken, realmName, idpAlias)
 }
 
+// GetComponents mocks base method.
+func (m *KeycloakIdpClient) GetComponents(accessToken, realmName string, paramKV ...string) ([]keycloak.ComponentRepresentation, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{accessToken, realmName}
+	for _, a := range paramKV {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetComponents", varargs...)
+	ret0, _ := ret[0].([]keycloak.ComponentRepresentation)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetComponents indicates an expected call of GetComponents.
+func (mr *KeycloakIdpClientMockRecorder) GetComponents(accessToken, realmName any, paramKV ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{accessToken, realmName}, paramKV...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetComponents", reflect.TypeOf((*KeycloakIdpClient)(nil).GetComponents), varargs...)
+}
+
 // GetIdp mocks base method.
 func (m *KeycloakIdpClient) GetIdp(accessToken, realmName, idpAlias string) (keycloak.IdentityProviderRepresentation, error) {
 	m.ctrl.T.Helper()
@@ -83,6 +117,20 @@ func (m *KeycloakIdpClient) GetIdp(accessToken, realmName, idpAlias string) (key
 func (mr *KeycloakIdpClientMockRecorder) GetIdp(accessToken, realmName, idpAlias any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetIdp", reflect.TypeOf((*KeycloakIdpClient)(nil).GetIdp), accessToken, realmName, idpAlias)
+}
+
+// UpdateComponent mocks base method.
+func (m *KeycloakIdpClient) UpdateComponent(accessToken, realmName, compID string, comp keycloak.ComponentRepresentation) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateComponent", accessToken, realmName, compID, comp)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateComponent indicates an expected call of UpdateComponent.
+func (mr *KeycloakIdpClientMockRecorder) UpdateComponent(accessToken, realmName, compID, comp any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateComponent", reflect.TypeOf((*KeycloakIdpClient)(nil).UpdateComponent), accessToken, realmName, compID, comp)
 }
 
 // UpdateIdp mocks base method.

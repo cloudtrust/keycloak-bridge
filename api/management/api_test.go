@@ -566,7 +566,7 @@ func TestConvertToAPIIdentityProvider(t *testing.T) {
 		AddReadTokenRoleOnCreate:  boolPtr(false),
 		Alias:                     ptr("testIDP"),
 		AuthenticateByDefault:     boolPtr(false),
-		Config:                    &map[string]interface{}{},
+		Config:                    map[string]string{},
 		DisplayName:               ptr("TEST"),
 		Enabled:                   boolPtr(false),
 		FirstBrokerLoginFlowAlias: ptr("first broker login"),

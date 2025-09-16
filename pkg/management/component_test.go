@@ -5365,7 +5365,7 @@ func testKcIdp() kc.IdentityProviderRepresentation {
 		AddReadTokenRoleOnCreate:  ptrBool(false),
 		Alias:                     ptr(idpAlias),
 		AuthenticateByDefault:     ptrBool(false),
-		Config:                    &map[string]interface{}{},
+		Config:                    map[string]string{},
 		DisplayName:               ptr("TEST"),
 		Enabled:                   ptrBool(false),
 		FirstBrokerLoginFlowAlias: ptr("first broker login"),
