@@ -1327,7 +1327,7 @@ func TestGetLinkedAccounts(t *testing.T) {
 	var currentRealm = "test-community"
 	var anyError = errors.New("any error")
 
-	var providerAlias = "idp"
+	var providerAlias = "EXTIDP-12345678-abcd-efgh-ijkl-012345678901"
 	var kcAccountsRep = []kc.LinkedAccountRepresentation{
 		{
 			ProviderAlias: &providerAlias,
@@ -1371,7 +1371,7 @@ func TestDeleteLinkedAccount(t *testing.T) {
 	var realmName = "test-community"
 	var username = "username"
 	var userID = "userID"
-	var providerAlias = "idp"
+	var providerAlias = "EXTIDP-12345678-abcd-efgh-ijkl-012345678901"
 	var anyError = errors.New("any error")
 
 	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)

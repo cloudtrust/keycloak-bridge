@@ -55,7 +55,7 @@ func TestDeny(t *testing.T) {
 	var pass = "P@ssw0rd"
 	var clientURI = "https://wwww.cloudtrust.io"
 
-	var idpAlias = "trustid-idp"
+	var idpAlias = "EXTIDP-12345678-abcd-efgh-ijkl-012345678901"
 
 	mockAuthorizationDBReader.EXPECT().GetAuthorizations(gomock.Any()).Return([]configuration.Authorization{}, nil)
 
@@ -235,7 +235,7 @@ func TestAllowed(t *testing.T) {
 	var pass = "P@ssw0rd"
 	var clientURI = "https://wwww.cloudtrust.io"
 
-	var idpAlias = "trustid-idp"
+	var idpAlias = "EXTIDP-12345678-abcd-efgh-ijkl-012345678901"
 
 	mockKeycloakClient.EXPECT().GetGroupNamesOfUser(gomock.Any(), accessToken, realmName, userID).Return([]string{groupName}, nil).AnyTimes()
 

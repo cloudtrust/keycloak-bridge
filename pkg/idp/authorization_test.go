@@ -35,7 +35,7 @@ func TestDeny(t *testing.T) {
 	var groupID = "123-789-454"
 	var groupName = "titi"
 
-	var idpAlias = "trustid-idp"
+	var idpAlias = "EXTIDP-12345678-abcd-efgh-ijkl-012345678901"
 	var idpDisplayName = "MyTrustID"
 
 	mockAuthorizationDBReader.EXPECT().GetAuthorizations(gomock.Any()).Return([]configuration.Authorization{}, nil)

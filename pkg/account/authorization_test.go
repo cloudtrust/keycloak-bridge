@@ -119,7 +119,7 @@ func TestDeny(t *testing.T) {
 
 	var falseBool = false
 	var credentialID = "786-5684-6464"
-	var providerAlias = "idp"
+	var providerAlias = "EXTIDP-12345678-abcd-efgh-ijkl-012345678901"
 
 	var realmConfig = configuration.RealmConfiguration{
 		DefaultClientID:                     new(string),
@@ -177,7 +177,7 @@ func TestAllowed(t *testing.T) {
 
 	var trueBool = true
 	var credentialID = "786-5684-6464"
-	var providerAlias = "idp"
+	var providerAlias = "EXTIDP-12345678-abcd-efgh-ijkl-012345678901"
 
 	var realmConfig = configuration.RealmConfiguration{
 		DefaultClientID:                     new(string),
@@ -239,7 +239,7 @@ func TestError(t *testing.T) {
 	var realmName = "master"
 
 	var credentialID = "786-5684-6464"
-	var providerAlias = "idp"
+	var providerAlias = "EXTIDP-12345678-abcd-efgh-ijkl-012345678901"
 
 	var realmConfig = configuration.RealmConfiguration{}
 
