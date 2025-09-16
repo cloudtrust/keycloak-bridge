@@ -564,7 +564,7 @@ func TestFederatedIdentityRepresentation(t *testing.T) {
 func TestConvertToAPIIdentityProvider(t *testing.T) {
 	kcIdp := kc.IdentityProviderRepresentation{
 		AddReadTokenRoleOnCreate:  boolPtr(false),
-		Alias:                     ptr("testIDP"),
+		Alias:                     ptr("EXTIDP-12345678-abcd-efgh-ijkl-012345678901"),
 		AuthenticateByDefault:     boolPtr(false),
 		Config:                    &map[string]interface{}{},
 		DisplayName:               ptr("TEST"),

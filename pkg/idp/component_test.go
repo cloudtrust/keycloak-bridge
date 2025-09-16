@@ -28,7 +28,7 @@ func createMocks(mockCtrl *gomock.Controller) componentMocks {
 }
 
 const (
-	idpAlias = "testIDP"
+	idpAlias = "EXTIDP-12345678-abcd-efgh-ijkl-012345678901"
 )
 
 func createComponent(mocks componentMocks) Component {

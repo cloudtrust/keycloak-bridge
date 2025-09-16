@@ -3,6 +3,7 @@ package constants
 // Regular expressions for parameters validation
 const (
 	regExpLen255OrEmpty = `^.{0,255}$`
+	regExpLen36         = `^.{1,36}$`
 	regExpLen255        = `^.{1,255}$`
 	regExpLen128        = `^.{1,128}$`
 
@@ -63,11 +64,19 @@ const (
 	RegExpCorporateLastName  = regExpLen128
 
 	// Identity provider
-	RegExpAlias                     = RegExpRealmName
+	RegExpAlias                     = `^EXTIDP-[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}$`
 	RegExpDisplayName               = `^[a-zA-Z0-9 _-]{1,128}$`
 	RegExpFirstBrokerLoginFlowAlias = `^[a-zA-Z0-9 _-]{1,128}$`
 	RegExpPostBrokerLoginFlowAlias  = `^[a-zA-Z0-9 _-]{1,128}$`
 	RegExpProviderID                = `^[a-z0-9\-]{1,36}$`
+
+	// Component
+	RegExpComponentID           = RegExpID
+	RegExpComponentName         = regExpLen255OrEmpty
+	RegExpComponentParentID     = RegExpRealmName
+	RegExpComponentProviderID   = regExpLen36
+	RegExpComponentProviderType = regExpLen255
+	RegExpComponentSubType      = regExpLen255OrEmpty
 )
 
 // Overridable user details regex and document types

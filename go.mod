@@ -3,10 +3,10 @@ module github.com/cloudtrust/keycloak-bridge
 go 1.24.1
 
 require (
-	github.com/cloudtrust/common-service/v2 v2.12.2
+	github.com/cloudtrust/common-service/v2 v2.12.3-0.20250926073604-9564e0bf06a0
 	github.com/cloudtrust/httpclient v1.5.0
 	github.com/cloudtrust/kafka-client v1.6.1
-	github.com/cloudtrust/keycloak-client/v2 v2.13.0
+	github.com/cloudtrust/keycloak-client/v2 v2.13.1-0.20250926073809-ab3c708a5b97
 	github.com/go-kit/kit v0.13.0
 	github.com/go-kit/log v0.2.1
 	github.com/go-sql-driver/mysql v1.9.3
@@ -65,11 +65,10 @@ require (
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.42.0 // indirect
 	golang.org/x/exp v0.0.0-20250305212735-054e65f0b394 // indirect
 	golang.org/x/net v0.44.0 // indirect
-	golang.org/x/oauth2 v0.30.0 // indirect
+	golang.org/x/oauth2 v0.31.0 // indirect
 	golang.org/x/sys v0.36.0 // indirect
 	golang.org/x/text v0.29.0 // indirect
 	google.golang.org/protobuf v1.36.5 // indirect

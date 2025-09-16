@@ -70,7 +70,7 @@ func (idp IdentityProviderRepresentation) Validate() error {
 		ValidateParameterRegExp("alias", idp.Alias, constants.RegExpAlias, true).
 		ValidateParameterRegExp("displayName", idp.DisplayName, constants.RegExpDisplayName, true).
 		ValidateParameterRegExp("firstBrokerLoginFlowAlias", idp.FirstBrokerLoginFlowAlias, constants.RegExpFirstBrokerLoginFlowAlias, true).
-		ValidateParameterRegExp("internalId", idp.InternalID, constants.RegExpID, true).
+		// ValidateParameterRegExp("internalId", idp.InternalID, constants.RegExpID, true).
 		ValidateParameterRegExp("postBrokerLoginFlowAlias", idp.PostBrokerLoginFlowAlias, constants.RegExpPostBrokerLoginFlowAlias, true).
 		ValidateParameterRegExp("providerId", idp.ProviderID, constants.RegExpProviderID, true).
 		Status()
