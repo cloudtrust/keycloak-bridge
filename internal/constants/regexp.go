@@ -61,7 +61,7 @@ const (
 	RegExpCorporateLastName  = regExpLen128
 
 	// Identity provider
-	RegExpAlias                     = RegExpRealmName
+	RegExpAlias                     = `^EXTIDP-[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}$`
 	RegExpDisplayName               = `^[a-zA-Z0-9 _-]{1,128}$`
 	RegExpFirstBrokerLoginFlowAlias = `^[a-zA-Z0-9 _-]{1,128}$`
 	RegExpPostBrokerLoginFlowAlias  = `^[a-zA-Z0-9 _-]{1,128}$`

@@ -63,7 +63,7 @@ var (
 
 const (
 	socialRealmName = "social"
-	idpAlias        = "testIDP"
+	idpAlias        = "EXTIDP-12345678-abcd-efgh-ijkl-012345678901"
 )
 
 func (m *componentMocks) createComponent() *component {
