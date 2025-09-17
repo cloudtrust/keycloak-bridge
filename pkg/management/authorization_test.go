@@ -57,6 +57,8 @@ func TestDeny(t *testing.T) {
 
 	var idpAlias = "trustid-idp"
 
+	var translationLang = "en"
+
 	mockAuthorizationDBReader.EXPECT().GetAuthorizations(gomock.Any()).Return([]configuration.Authorization{}, nil)
 
 	mockKeycloakClient.EXPECT().GetGroupNamesOfUser(gomock.Any(), accessToken, realmName, userID).Return([]string{
@@ -189,6 +191,9 @@ func TestDeny(t *testing.T) {
 			"LinkShadowUser":                      authorizationMW.LinkShadowUser(ctx, realmName, userID, idpAlias, fedID),
 			"UnlinkShadowUser":                    authorizationMW.UnlinkShadowUser(ctx, realmName, userID, idpAlias),
 			"GetIdentityProviders":                ignoreFirst(authorizationMW.GetIdentityProviders(ctx, realmName)),
+			"GetThemeConfiguration":               ignoreFirst(authorizationMW.GetThemeConfiguration(ctx, realmName)),
+			"UpdateThemeConfiguration":            authorizationMW.UpdateThemeConfiguration(ctx, realmName, api.UpdatableThemeConfiguration{}),
+			"GetThemeTranslation":                 ignoreFirst(authorizationMW.GetThemeTranslation(ctx, realmName, translationLang)),
 		}
 		for testName, testResult := range tests {
 			t.Run(testName, func(t *testing.T) {
@@ -236,6 +241,8 @@ func TestAllowed(t *testing.T) {
 	var clientURI = "https://wwww.cloudtrust.io"
 
 	var idpAlias = "trustid-idp"
+
+	var translationLang = "en"
 
 	mockKeycloakClient.EXPECT().GetGroupNamesOfUser(gomock.Any(), accessToken, realmName, userID).Return([]string{groupName}, nil).AnyTimes()
 
@@ -598,6 +605,19 @@ func TestAllowed(t *testing.T) {
 		mockManagementComponent.EXPECT().GetIdentityProviders(ctx, realmName).Return(idps, nil)
 		_, err = authorizationMW.GetIdentityProviders(ctx, realmName)
 		assert.Nil(t, err)
+
+		mockManagementComponent.EXPECT().GetThemeConfiguration(ctx, realmName).Return(api.ThemeConfiguration{}, nil)
+		_, err = authorizationMW.GetThemeConfiguration(ctx, realmName)
+		assert.Nil(t, err)
+
+		mockManagementComponent.EXPECT().UpdateThemeConfiguration(ctx, realmName, gomock.Any()).Return(nil)
+		err = authorizationMW.UpdateThemeConfiguration(ctx, realmName, api.UpdatableThemeConfiguration{})
+		assert.Nil(t, err)
+
+		mockManagementComponent.EXPECT().GetThemeTranslation(ctx, realmName, translationLang).Return(api.UpdatableThemeConfiguration{}, nil)
+		_, err = authorizationMW.GetThemeTranslation(ctx, realmName, translationLang)
+		assert.Nil(t, err)
+
 	}
 }
 

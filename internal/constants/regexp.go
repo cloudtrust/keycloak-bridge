@@ -55,6 +55,8 @@ const (
 	RegExpCustomValue = `^[A-Za-z\d_-]{0,50}$`
 	RegExpTxnID       = regExpLen255
 
+	RegExpColor	  = `^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$`
+
 	// Corporate Regex TO CLEAN WHEN WE WILL HAVE ATTRIBUTE MANAGEMENT
 	regExpLen128OrEmpty      = `^.{0,128}$`
 	RegExpCorporateFirstName = regExpLen128OrEmpty

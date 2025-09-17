@@ -220,6 +220,36 @@ func (mr *ConfigurationDBModuleMockRecorder) GetConfigurations(arg0, arg1 any) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConfigurations", reflect.TypeOf((*ConfigurationDBModule)(nil).GetConfigurations), arg0, arg1)
 }
 
+// GetThemeConfiguration mocks base method.
+func (m *ConfigurationDBModule) GetThemeConfiguration(ctx context.Context, themeName string) (configuration.ThemeConfiguration, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetThemeConfiguration", ctx, themeName)
+	ret0, _ := ret[0].(configuration.ThemeConfiguration)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetThemeConfiguration indicates an expected call of GetThemeConfiguration.
+func (mr *ConfigurationDBModuleMockRecorder) GetThemeConfiguration(ctx, themeName any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetThemeConfiguration", reflect.TypeOf((*ConfigurationDBModule)(nil).GetThemeConfiguration), ctx, themeName)
+}
+
+// GetThemeTranslation mocks base method.
+func (m *ConfigurationDBModule) GetThemeTranslation(ctx context.Context, themeName, language string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetThemeTranslation", ctx, themeName, language)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetThemeTranslation indicates an expected call of GetThemeTranslation.
+func (mr *ConfigurationDBModuleMockRecorder) GetThemeTranslation(ctx, themeName, language any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetThemeTranslation", reflect.TypeOf((*ConfigurationDBModule)(nil).GetThemeTranslation), ctx, themeName, language)
+}
+
 // InsertBackOfficeConfiguration mocks base method.
 func (m *ConfigurationDBModule) InsertBackOfficeConfiguration(arg0 context.Context, arg1, arg2, arg3, arg4 string, arg5 []string) error {
 	m.ctrl.T.Helper()
@@ -275,6 +305,20 @@ func (m *ConfigurationDBModule) StoreOrUpdateConfiguration(arg0 context.Context,
 func (mr *ConfigurationDBModuleMockRecorder) StoreOrUpdateConfiguration(arg0, arg1, arg2 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StoreOrUpdateConfiguration", reflect.TypeOf((*ConfigurationDBModule)(nil).StoreOrUpdateConfiguration), arg0, arg1, arg2)
+}
+
+// UpdateThemeConfiguration mocks base method.
+func (m *ConfigurationDBModule) UpdateThemeConfiguration(ctx context.Context, themeConfig configuration.ThemeConfiguration) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateThemeConfiguration", ctx, themeConfig)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateThemeConfiguration indicates an expected call of UpdateThemeConfiguration.
+func (mr *ConfigurationDBModuleMockRecorder) UpdateThemeConfiguration(ctx, themeConfig any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateThemeConfiguration", reflect.TypeOf((*ConfigurationDBModule)(nil).UpdateThemeConfiguration), ctx, themeConfig)
 }
 
 // AccredsKeycloakClient is a mock of AccredsKeycloakClient interface.
