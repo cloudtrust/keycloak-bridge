@@ -33,6 +33,7 @@ func TestComponentInstrumentingMW(t *testing.T) {
 	var confType = "customers"
 	var action = "TestAction"
 	var adminConfig = configuration.RealmAdminConfiguration{}
+	var ctxID = "context-id"
 
 	t.Run("Get configurations", func(t *testing.T) {
 		mockComponent.EXPECT().GetConfigurations(ctx, realmID).Return(configuration.RealmConfiguration{}, configuration.RealmAdminConfiguration{}, nil)
@@ -139,6 +140,49 @@ func TestComponentInstrumentingMW(t *testing.T) {
 		mockComponent.EXPECT().InsertBackOfficeConfiguration(context.Background(), realmID, groupName, confType, realmID, groupNames).Return(nil)
 		assert.Panics(t, func() {
 			_ = m.InsertBackOfficeConfiguration(context.Background(), realmID, groupName, confType, realmID, groupNames)
+		})
+	})
+
+	t.Run("Get all context key ids", func(t *testing.T) {
+		mockComponent.EXPECT().GetAllContextKeyID(ctx).Return([]string{}, nil)
+		mockHistogram.EXPECT().With("correlation_id", corrID).Return(mockHistogram)
+		mockHistogram.EXPECT().Observe(gomock.Any()).Return()
+		_, _ = m.GetAllContextKeyID(ctx)
+	})
+	t.Run("Get context key configuration", func(t *testing.T) {
+		mockComponent.EXPECT().GetContextKeyConfiguration(ctx, realmID).Return([]configuration.RealmContextKey{}, nil)
+		mockHistogram.EXPECT().With("correlation_id", corrID).Return(mockHistogram)
+		mockHistogram.EXPECT().Observe(gomock.Any()).Return()
+		_, _ = m.GetContextKeyConfiguration(ctx, realmID)
+	})
+	t.Run("Get context key configuration without correlation ID", func(t *testing.T) {
+		mockComponent.EXPECT().GetContextKeyConfiguration(context.Background(), realmID).Return([]configuration.RealmContextKey{}, nil)
+		assert.Panics(t, func() {
+			_, _ = m.GetContextKeyConfiguration(context.Background(), realmID)
+		})
+	})
+	t.Run("Delete context key configuration", func(t *testing.T) {
+		mockComponent.EXPECT().DeleteContextKeyConfiguration(ctx, nil, realmID, ctxID).Return(nil)
+		mockHistogram.EXPECT().With("correlation_id", corrID).Return(mockHistogram)
+		mockHistogram.EXPECT().Observe(gomock.Any()).Return()
+		_ = m.DeleteContextKeyConfiguration(ctx, nil, realmID, ctxID)
+	})
+	t.Run("Delete context key configuration without correlation ID", func(t *testing.T) {
+		mockComponent.EXPECT().DeleteContextKeyConfiguration(context.Background(), nil, realmID, ctxID).Return(nil)
+		assert.Panics(t, func() {
+			_ = m.DeleteContextKeyConfiguration(context.Background(), nil, realmID, ctxID)
+		})
+	})
+	t.Run("Store context key configuration", func(t *testing.T) {
+		mockComponent.EXPECT().StoreContextKeyConfiguration(ctx, nil, gomock.Any()).Return(nil)
+		mockHistogram.EXPECT().With("correlation_id", corrID).Return(mockHistogram)
+		mockHistogram.EXPECT().Observe(gomock.Any()).Return()
+		_ = m.StoreContextKeyConfiguration(ctx, nil, configuration.RealmContextKey{})
+	})
+	t.Run("Store context key configuration without correlation ID", func(t *testing.T) {
+		mockComponent.EXPECT().StoreContextKeyConfiguration(context.Background(), nil, gomock.Any()).Return(nil)
+		assert.Panics(t, func() {
+			_ = m.StoreContextKeyConfiguration(context.Background(), nil, configuration.RealmContextKey{})
 		})
 	})
 
