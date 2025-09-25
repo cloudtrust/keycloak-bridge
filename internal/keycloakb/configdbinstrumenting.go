@@ -40,6 +40,9 @@ type ConfigurationDBModule interface {
 	DeleteAllAuthorizationsWithGroup(context context.Context, realmName, groupName string) error
 	CleanAuthorizationsActionForEveryRealms(context context.Context, realmID string, groupName string, actionReq string) error
 	CleanAuthorizationsActionForRealm(context context.Context, realmID string, groupName string, targetRealm string, actionReq string) error
+	GetThemeConfiguration(ctx context.Context, realmName string) (configuration.ThemeConfiguration, error)
+	UpdateThemeConfiguration(ctx context.Context, themeConfig configuration.ThemeConfiguration) error
+	GetThemeTranslation(ctx context.Context, realmName string, language string) (string, error)
 }
 
 // MakeConfigurationDBModuleInstrumentingMW makes an instrumenting middleware at module level.
@@ -174,4 +177,25 @@ func (m *configDBModuleInstrumentingMW) CleanAuthorizationsActionForRealm(ctx co
 		m.h.With(KeyCorrelationID, ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
 	}(time.Now())
 	return m.next.CleanAuthorizationsActionForRealm(ctx, realmID, groupName, targetRealm, actionReq)
+}
+
+func (m *configDBModuleInstrumentingMW) GetThemeConfiguration(ctx context.Context, realmName string) (configuration.ThemeConfiguration, error) {
+	defer func(begin time.Time) {
+		m.h.With(KeyCorrelationID, ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
+	}(time.Now())
+	return m.next.GetThemeConfiguration(ctx, realmName)
+}
+
+func (m *configDBModuleInstrumentingMW) UpdateThemeConfiguration(ctx context.Context, themeConfig configuration.ThemeConfiguration) error {
+	defer func(begin time.Time) {
+		m.h.With(KeyCorrelationID, ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
+	}(time.Now())
+	return m.next.UpdateThemeConfiguration(ctx, themeConfig)
+}
+
+func (m *configDBModuleInstrumentingMW) GetThemeTranslation(ctx context.Context, realmName string, language string) (string, error) {
+	defer func(begin time.Time) {
+		m.h.With(KeyCorrelationID, ctx.Value(cs.CtContextCorrelationID).(string)).Observe(time.Since(begin).Seconds())
+	}(time.Now())
+	return m.next.GetThemeTranslation(ctx, realmName, language)
 }

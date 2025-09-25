@@ -1,4 +1,5 @@
-openapi: 3.0.1
+# yaml-language-server: $schema=https://json-schema.org/draft/2020-12/schema
+openapi: 3.0.3
 info:
   title: Swagger Cloudtrust Management
   description: 'Management API for Cloudtrust'
@@ -1988,6 +1989,99 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/IdentityProvider'
+  /realms/{realm}/theme-configuration:
+    get:
+      tags:
+      - Configuration
+      summary: >
+        Get the theme configuration for the Backoffice
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: Theme Configuration
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  settings:
+                    type: object
+                    description: Various settings for the theme
+                    properties:
+                      color:
+                        type: string
+                        description: Hex color code (e.g. \#FFFFFF)
+                      menuTheme:
+                        type: string
+                        description: Name of the menu theme to use (either 'light', 'dark' or 'primary')
+                      fontFamily:
+                        type: string
+                        description: Font family to use for the theme
+                  logo:
+                    type: string
+                    description: data URI of the logo image in base64 format
+                  favicon:
+                    type: string
+                    description: data URI of the favicon image in base64 format
+    put:
+      tags:
+      - Configuration
+      summary: >
+        Update the theme configuration for the Backoffice
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ThemeConfiguration'
+      responses:
+        200:
+          description: Theme Configuration
+          content:
+            application/json:
+              schema:
+                
+  /realms/{realm}/theme-translation/{language}:
+    get:
+      tags:
+      - Configuration
+      summary: >
+        Get the theme translation for the Backoffice in the specified language
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: language
+        in: path
+        description: Language code (e.g. 'en', 'fr', 'de', 'it')
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: Theme Translation
+          content:
+            application/json:
+              schema:
+                type: object
+                description: Translation file in JSON format
+                additionalProperties:
+                  type: string
   /social/users:
     post:
       tags:
@@ -2550,6 +2644,55 @@ components:
           type: object
           additionalProperties:
             type: string
+    ThemeConfiguration:
+      type: object
+      properties:
+        realmName:
+          type: string
+          description: Name of the theme to use
+          required: true
+        settings:
+          type: object
+          properties:
+            color:
+              type: string
+              description: Hex color code (e.g. \#FFFFFF)
+              required: true
+            menuTheme:
+              type: string
+              description: Name of the menu theme to use (either 'light', 'dark' or 'primary')
+              required: true
+            fontFamily:
+              type: string
+              description: Font family to use for the theme (either 'lato' or 'roboto')
+              required: false
+        logo:
+          type: string
+          description: logo image in base64 format
+          required: false
+        favicon:
+          type: string
+          description: svg favicon image in base64 format
+          required: false
+        translations:
+          type: object
+          properties:
+            en:
+              type: string
+              description: English translation file in JSON format
+              required: false
+            fr:
+              type: string
+              description: French translation file in JSON format
+              required: false
+            it:
+              type: string
+              description: Italian translation file in JSON format
+              required: false
+            de:
+              type: string
+              description: German translation file in JSON format
+              required: false
   securitySchemes:
     openId:
       type: openIdConnect

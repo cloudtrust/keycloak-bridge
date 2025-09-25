@@ -29,6 +29,7 @@ const (
 	prmCredentialID = "credentialID"
 	prmProvider     = "provider"
 	prmAction       = "action"
+	prmQryLanguage  = "language"
 
 	prmQryEmail         = "email"
 	prmQryFirstName     = "firstName"
@@ -77,6 +78,7 @@ func decodeManagementRequest(ctx context.Context, req *http.Request) (interface{
 		prmCredentialID: constants.RegExpID,
 		prmProvider:     constants.RegExpName,
 		prmAction:       constants.RegExpName,
+		prmQryLanguage:  constants.RegExpLocale,
 	}
 
 	var queryParams = map[string]string{

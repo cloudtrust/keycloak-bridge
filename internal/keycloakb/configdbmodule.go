@@ -66,6 +66,18 @@ const (
 	deleteGlobalAuthzStmt       = `DELETE FROM authorizations WHERE realm_id = ? AND group_name = ? AND action = ? AND target_realm_id = ? AND target_group_name IS NULL;`
 	deleteAuthzEveryRealmsStmt  = `DELETE FROM authorizations WHERE realm_id = ? AND group_name = ? AND action = ?;`
 	deleteAuthzRealmStmt        = `DELETE FROM authorizations WHERE realm_id = ? AND group_name = ? AND action = ? AND target_realm_id = ?;`
+
+	selectThemeConfigStmt = `SELECT settings, logo, favicon FROM theme_configuration WHERE realm_name = ?;`
+	updateThemeConfigStmt = `
+		INSERT INTO theme_configuration (realm_name, settings, logo, favicon, translations)
+		VALUES (?,?,?,?,?)
+		ON DUPLICATE KEY UPDATE
+			settings = VALUES(settings),
+			logo = VALUES(logo),
+			favicon = VALUES(favicon),
+			translations = VALUES(translations);
+	`
+	selectTranslationStmt = `SELECT json_extract(translations, '$.???') FROM theme_configuration WHERE realm_name = ?;`
 )
 
 type dbExecutable func(query string, args ...any) error
@@ -312,6 +324,76 @@ func (c *configurationDBModule) scanAuthorization(scanner Scanner) (configuratio
 	}
 
 	return authz, nil
+}
+
+func (c *configurationDBModule) GetThemeConfiguration(ctx context.Context, realmName string) (configuration.ThemeConfiguration, error) {
+	var themeConfig configuration.ThemeConfiguration
+	var settings []byte
+	row := c.db.QueryRow(selectThemeConfigStmt, realmName)
+	err := row.Scan(&settings, &themeConfig.Logo, &themeConfig.Favicon)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return themeConfig, errorhandler.Error{
+				Status:  404,
+				Message: ComponentName + "." + msg.MsgErrNotConfigured + "." + realmName,
+			}
+		}
+		c.logger.Warn(ctx, "msg", "Failed to get theme configuration", "err", err.Error(), "realmName", realmName)
+		return themeConfig, err
+	}
+	err = json.Unmarshal(settings, &themeConfig.Settings)
+	if err != nil {
+		return themeConfig, err
+	}
+	return themeConfig, nil
+}
+
+func (c *configurationDBModule) UpdateThemeConfiguration(ctx context.Context, themeConfig configuration.ThemeConfiguration) error {
+
+	var bytes, _ = json.Marshal(themeConfig.Settings)
+	var settingsJSON = string(bytes)
+
+	bytes, _ = json.Marshal(themeConfig.Translations)
+	var translationsJSON = string(bytes)
+
+	// Prepare the values for the SQL statement
+	args := []any{
+		themeConfig.RealmName,
+		settingsJSON,
+		themeConfig.Logo,
+		themeConfig.Favicon,
+		translationsJSON,
+	}
+
+	// Execute the update/insert statement
+	err := c.execNoResult(updateThemeConfigStmt, args...)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Failed to update theme configuration", "err", err.Error(), "realmName", themeConfig.RealmName)
+		return err
+	}
+	return nil
+}
+
+func (c *configurationDBModule) GetThemeTranslation(ctx context.Context, realmName string, language string) (string, error) {
+	var translation sql.NullString
+	var sqlRequest = strings.Replace(selectTranslationStmt, "???", language, 1)
+	row := c.db.QueryRow(sqlRequest, realmName)
+	err := row.Scan(&translation)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return "", errorhandler.Error{
+				Status:  404,
+				Message: ComponentName + "." + msg.MsgErrNotConfigured + "." + realmName + "." + language,
+			}
+		}
+		c.logger.Warn(ctx, "msg", "Failed to get theme translation", "err", err.Error(), "realmName", realmName, "language", language)
+		return "", err
+	}
+
+	if !translation.Valid {
+		return "{}", nil
+	}
+	return translation.String, nil
 }
 
 func nullableString(value *string) interface{} {
