@@ -3,6 +3,7 @@ package management
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -209,6 +210,10 @@ type Component interface {
 	UnlinkShadowUser(ctx context.Context, realmName string, userID string, provider string) error
 
 	GetIdentityProviders(ctx context.Context, realmName string) ([]api.IdentityProviderRepresentation, error)
+
+	GetThemeConfiguration(ctx context.Context, realmName string) (api.ThemeConfiguration, error)
+	UpdateThemeConfiguration(ctx context.Context, realmName string, themeConf api.UpdatableThemeConfiguration) error
+	GetThemeTranslation(ctx context.Context, realmName string, language string) (any, error)
 }
 
 // EventsReporterModule is the interface of the audit events module
@@ -2558,4 +2563,59 @@ func (c *component) GetIdentityProviders(ctx context.Context, realmName string) 
 	}
 
 	return apiIdps, nil
+}
+
+func (c *component) GetThemeConfiguration(ctx context.Context, realmName string) (api.ThemeConfiguration, error) {
+	config, err := c.configDBModule.GetThemeConfiguration(ctx, realmName)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return api.ThemeConfiguration{}, err
+	}
+
+	// Convert the configuration to API representation
+	configAPI := api.ConvertToThemeConfiguration(config)
+
+	return configAPI, nil
+}
+
+func (c *component) UpdateThemeConfiguration(ctx context.Context, realmName string, themeConfig api.UpdatableThemeConfiguration) error {
+
+	// Convert the configuration to DB representation
+	themeConfigDB := configuration.ThemeConfiguration{
+		RealmName: themeConfig.RealmName,
+		Settings: &configuration.ThemeConfigurationSettings{
+			Color:      themeConfig.Settings.Color,
+			MenuTheme:  themeConfig.Settings.MenuTheme,
+			FontFamily: themeConfig.Settings.FontFamily,
+		},
+		Logo:         themeConfig.Logo,
+		Favicon:      themeConfig.Favicon,
+		Translations: themeConfig.Translations,
+	}
+
+	// Update the theme configuration in the database
+	err := c.configDBModule.UpdateThemeConfiguration(ctx, themeConfigDB)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return err
+	}
+
+	return nil
+}
+
+func (c *component) GetThemeTranslation(ctx context.Context, realmName string, language string) (any, error) {
+
+	translationStr, err := c.configDBModule.GetThemeTranslation(ctx, realmName, language)
+	if err != nil {
+		c.logger.Warn(ctx, "err", err.Error())
+		return "", err
+	}
+
+	var translation interface{}
+	if err := json.Unmarshal([]byte(translationStr), &translation); err != nil {
+		c.logger.Warn(ctx, "msg", "Failed to parse theme translation JSON", "err", err.Error())
+		return nil, errorhandler.CreateInternalServerError("invalid.json.format")
+	}
+
+	return translation, nil
 }

@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/cloudtrust/common-service/v2/configuration"
+	errorhandler "github.com/cloudtrust/common-service/v2/errors"
 	"github.com/cloudtrust/common-service/v2/log"
 
 	msg "github.com/cloudtrust/keycloak-bridge/internal/constants"
@@ -453,6 +454,165 @@ func TestAuthorization(t *testing.T) {
 			mockDB.EXPECT().BeginTx(gomock.Any(), gomock.Any()).Return(nil, nil)
 			var _, err = configDBModule.NewTransaction(ctx)
 			assert.Nil(t, err)
+		})
+	})
+}
+
+func TestThemeConfiguration(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockDB = mock.NewCloudtrustDB(mockCtrl)
+	var mockSQLRow = mock.NewSQLRow(mockCtrl)
+	var mockLogger = log.NewNopLogger()
+	var configDBModule = NewConfigurationDBModule(mockDB, mockLogger)
+
+	var realmName = "my-realm"
+	var color = "#13a538"
+	var menuTheme = "dark"
+	var fontFamily = "Lato"
+	var settings = configuration.ThemeConfigurationSettings{
+		Color:      &color,
+		MenuTheme:  &menuTheme,
+		FontFamily: &fontFamily,
+	}
+
+	var logo = []byte{
+		0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+		0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52,
+	}
+	var favicon = []byte{
+		0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+		0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52,
+	}
+	var translationEN = map[string]any{
+		"key":     "value",
+		"welcome": "Welcome",
+	}
+	var translationFR = map[string]any{
+		"key":     "valeur",
+		"welcome": "Bienvenue",
+	}
+	var translationIT = map[string]any{
+		"key":     "valore",
+		"welcome": "Benvenuto",
+	}
+	var translationDE = map[string]any{
+		"key":     "wert",
+		"welcome": "Willkommen",
+	}
+	var translations = map[string]any{
+		"EN": translationEN,
+		"FR": translationFR,
+		"IT": translationIT,
+		"DE": translationDE,
+	}
+	var ctx = context.TODO()
+	var sqlError = errors.New("sql error")
+
+	t.Run("GetThemeConfiguration", func(t *testing.T) {
+		t.Run("Success", func(t *testing.T) {
+			var settingsJSON = `{"color":"#13a538","menu_theme":"dark","font_family":"Lato"}`
+			mockDB.EXPECT().QueryRow(selectThemeConfigStmt, realmName).Return(mockSQLRow)
+			mockSQLRow.EXPECT().Scan(gomock.Any()).DoAndReturn(func(args ...any) error {
+				*(args[0].(*[]byte)) = []byte(settingsJSON)
+				*(args[1].(*[]byte)) = logo
+				*(args[2].(*[]byte)) = favicon
+				return nil
+			})
+			conf, err := configDBModule.GetThemeConfiguration(ctx, realmName)
+			assert.Nil(t, err)
+			assert.Equal(t, &settings, conf.Settings)
+			assert.Equal(t, logo, conf.Logo)
+			assert.Equal(t, favicon, conf.Favicon)
+		})
+
+		t.Run("Not found", func(t *testing.T) {
+			mockDB.EXPECT().QueryRow(selectThemeConfigStmt, realmName).Return(mockSQLRow)
+			mockSQLRow.EXPECT().Scan(gomock.Any()).Return(sql.ErrNoRows)
+			_, err := configDBModule.GetThemeConfiguration(ctx, realmName)
+			assert.NotNil(t, err)
+			assert.True(t, strings.Contains(err.Error(), msg.MsgErrNotConfigured))
+		})
+
+		t.Run("SQL error", func(t *testing.T) {
+			mockDB.EXPECT().QueryRow(selectThemeConfigStmt, realmName).Return(mockSQLRow)
+			mockSQLRow.EXPECT().Scan(gomock.Any()).Return(sqlError)
+			_, err := configDBModule.GetThemeConfiguration(ctx, realmName)
+			assert.Equal(t, sqlError, err)
+		})
+	})
+
+	t.Run("UpdateThemeConfiguration", func(t *testing.T) {
+		var themeConfig = configuration.ThemeConfiguration{
+			RealmName:    ptr(realmName),
+			Settings:     &settings,
+			Logo:         logo,
+			Favicon:      favicon,
+			Translations: translations,
+		}
+
+		var settingsJSON = `{"color":"#13a538","menu_theme":"dark","font_family":"Lato"}`
+		var translationsJSON = `{"DE":{"key":"wert","welcome":"Willkommen"},"EN":{"key":"value","welcome":"Welcome"},"FR":{"key":"valeur","welcome":"Bienvenue"},"IT":{"key":"valore","welcome":"Benvenuto"}}`
+
+		t.Run("Success", func(t *testing.T) {
+			mockDB.EXPECT().Exec(updateThemeConfigStmt, ptr(realmName), settingsJSON, logo, favicon, translationsJSON).Return(nil, nil)
+			err := configDBModule.UpdateThemeConfiguration(ctx, themeConfig)
+			assert.Nil(t, err)
+		})
+
+		t.Run("SQL error", func(t *testing.T) {
+			mockDB.EXPECT().Exec(updateThemeConfigStmt, ptr(realmName), settingsJSON, logo, favicon, translationsJSON).Return(nil, sqlError)
+			err := configDBModule.UpdateThemeConfiguration(ctx, themeConfig)
+			assert.Equal(t, sqlError, err)
+		})
+	})
+
+	t.Run("GetThemeTranslation", func(t *testing.T) {
+		var language = "EN"
+		var expectedTranslation = `{"key":"value","welcome":"Welcome"}`
+
+		t.Run("Success", func(t *testing.T) {
+			mockDB.EXPECT().QueryRow(gomock.Any(), realmName).Return(mockSQLRow)
+			mockSQLRow.EXPECT().Scan(gomock.Any()).DoAndReturn(func(dest *sql.NullString) error {
+				dest.String = expectedTranslation
+				dest.Valid = true
+				return nil
+			})
+			translation, err := configDBModule.GetThemeTranslation(ctx, realmName, language)
+			assert.Nil(t, err)
+			assert.Equal(t, expectedTranslation, translation)
+		})
+
+		t.Run("Not found", func(t *testing.T) {
+			mockDB.EXPECT().QueryRow(gomock.Any(), realmName).Return(mockSQLRow)
+			mockSQLRow.EXPECT().Scan(gomock.Any()).Return(sql.ErrNoRows)
+			_, err := configDBModule.GetThemeTranslation(ctx, realmName, language)
+			assert.Equal(t, errorhandler.Error{
+				Status:  404,
+				Message: "keycloak-bridge.notConfigured.my-realm.EN",
+			}, err)
+		})
+
+		t.Run("Different languages", func(t *testing.T) {
+			languages := []string{"DE", "FR", "IT"}
+			translations := map[string]string{
+				"DE": `{"key":"wert","welcome":"Willkommen"}`,
+				"FR": `{"key":"valeur","welcome":"Bienvenue"}`,
+				"IT": `{"key":"valore","welcome":"Benvenuto"}`,
+			}
+
+			for _, lang := range languages {
+				mockDB.EXPECT().QueryRow(gomock.Any(), realmName).Return(mockSQLRow)
+				mockSQLRow.EXPECT().Scan(gomock.Any()).DoAndReturn(func(dest *sql.NullString) error {
+					dest.String = translations[lang]
+					dest.Valid = true
+					return nil
+				})
+				translation, err := configDBModule.GetThemeTranslation(ctx, realmName, lang)
+				assert.Nil(t, err)
+				assert.Equal(t, translations[lang], translation)
+			}
 		})
 	})
 }

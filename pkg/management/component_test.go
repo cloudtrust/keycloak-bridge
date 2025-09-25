@@ -5288,3 +5288,178 @@ func TestGetIdentityProviders(t *testing.T) {
 		assert.NotNil(t, err)
 	})
 }
+
+func createValidThemeConfiguration() api.ThemeConfiguration {
+	return api.ThemeConfiguration{
+		Settings: &api.ThemeConfigurationSettings{
+			Color:      ptr("#000000"),
+			MenuTheme:  ptr("dark"),
+			FontFamily: ptr("Lato"),
+		},
+	}
+}
+
+func TestGetThemeConfiguration(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+	var mocks = createMocks(mockCtrl)
+	var managementComponent = mocks.createComponent()
+	var accessToken = "TOKEN=="
+	var realmName = "test"
+
+	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
+
+	t.Run("Get theme configuration success", func(t *testing.T) {
+		var expectedConfig = createValidThemeConfiguration()
+		mocks.configurationDBModule.EXPECT().GetThemeConfiguration(ctx, realmName).Return(configuration.ThemeConfiguration{
+			Settings: &configuration.ThemeConfigurationSettings{
+				Color:      ptr("#000000"),
+				MenuTheme:  ptr("dark"),
+				FontFamily: ptr("Lato"),
+			},
+		}, nil)
+		config, err := managementComponent.GetThemeConfiguration(ctx, realmName)
+		assert.Nil(t, err)
+		assert.Equal(t, expectedConfig, config)
+	})
+
+	t.Run("Get theme configuration error db", func(t *testing.T) {
+		var expectedError = errors.New("db error")
+		mocks.configurationDBModule.EXPECT().GetThemeConfiguration(ctx, realmName).Return(configuration.ThemeConfiguration{}, expectedError)
+		config, err := managementComponent.GetThemeConfiguration(ctx, realmName)
+		assert.NotNil(t, err)
+		assert.Equal(t, api.ThemeConfiguration{}, config)
+	})
+}
+
+func TestUpdateThemeConfiguration(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+	var mocks = createMocks(mockCtrl)
+	var managementComponent = mocks.createComponent()
+	var accessToken = "TOKEN=="
+	var realmName = "test"
+
+	var translations = map[string]any{
+		"EN": map[string]any{
+			"key":     "value",
+			"welcome": "Welcome",
+		},
+		"FR": map[string]any{
+			"key":     "valeur",
+			"welcome": "Bienvenue",
+		},
+	}
+
+	configurationThemeConfig := api.UpdatableThemeConfiguration{
+		RealmName: &realmName,
+		Settings: &api.ThemeConfigurationSettings{
+			Color:      ptr("#000000"),
+			MenuTheme:  ptr("dark"),
+			FontFamily: ptr("Lato"),
+		},
+		Translations: translations,
+	}
+
+	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
+	t.Run("Update theme configuration success", func(t *testing.T) {
+		expectedConfig := configuration.ThemeConfiguration{
+			RealmName: &realmName,
+			Settings: &configuration.ThemeConfigurationSettings{
+				Color:      ptr("#000000"),
+				MenuTheme:  ptr("dark"),
+				FontFamily: ptr("Lato"),
+			},
+			Translations: translations,
+		}
+		mocks.configurationDBModule.EXPECT().UpdateThemeConfiguration(ctx, expectedConfig).Return(nil)
+		err := managementComponent.UpdateThemeConfiguration(ctx, realmName, configurationThemeConfig)
+		assert.Nil(t, err)
+	})
+
+}
+
+func TestGetThemeTranslation(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+	var mocks = createMocks(mockCtrl)
+	var managementComponent = mocks.createComponent()
+	var accessToken = "TOKEN=="
+	var realmName = "test"
+	var language = "EN"
+	var translationJSON = `{"key": "value", "welcome": "Welcome"}`
+	var expectedTranslation = map[string]any{
+		"key":     "value",
+		"welcome": "Welcome",
+	}
+
+	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
+
+	t.Run("Get theme translation success", func(t *testing.T) {
+		mocks.configurationDBModule.EXPECT().GetThemeTranslation(ctx, realmName, language).Return(translationJSON, nil)
+		translation, err := managementComponent.GetThemeTranslation(ctx, realmName, language)
+		assert.Nil(t, err)
+		assert.Equal(t, expectedTranslation, translation)
+	})
+
+	t.Run("No theme configured", func(t *testing.T) {
+		mocks.configurationDBModule.EXPECT().GetThemeTranslation(ctx, realmName, language).Return("", errorhandler.Error{Status: 404})
+		translation, err := managementComponent.GetThemeTranslation(ctx, realmName, language)
+		assert.NotNil(t, err)
+		assert.Equal(t, "", translation)
+		assert.IsType(t, errorhandler.Error{}, err)
+		e := err.(errorhandler.Error)
+		assert.Equal(t, 404, e.Status)
+	})
+
+	t.Run("Get theme translation from DB fails", func(t *testing.T) {
+		var expectedError = errors.New("db error")
+		mocks.configurationDBModule.EXPECT().GetThemeTranslation(ctx, realmName, language).Return("", expectedError)
+		translation, err := managementComponent.GetThemeTranslation(ctx, realmName, language)
+		assert.Equal(t, expectedError, err)
+		assert.Equal(t, "", translation)
+	})
+
+	t.Run("Invalid JSON format", func(t *testing.T) {
+		var invalidJSON = `{"key": "value", "invalid": }`
+		mocks.configurationDBModule.EXPECT().GetThemeTranslation(ctx, realmName, language).Return(invalidJSON, nil)
+		translation, err := managementComponent.GetThemeTranslation(ctx, realmName, language)
+		assert.NotNil(t, err)
+		assert.Nil(t, translation)
+		assert.IsType(t, errorhandler.Error{}, err)
+		e := err.(errorhandler.Error)
+		assert.Equal(t, 500, e.Status)
+	})
+
+	t.Run("Different languages", func(t *testing.T) {
+		var languages = []string{"DE", "FR", "IT"}
+		var translations = map[string]string{
+			"DE": `{"schlüssel": "wert"}`,
+			"FR": `{"clé": "valeur"}`,
+			"IT": `{"chiave": "valore"}`,
+		}
+		var expectedTranslations = map[string]any{
+			"DE": map[string]any{"schlüssel": "wert"},
+			"FR": map[string]any{"clé": "valeur"},
+			"IT": map[string]any{"chiave": "valore"},
+		}
+
+		for _, lang := range languages {
+			mocks.configurationDBModule.EXPECT().GetThemeTranslation(ctx, realmName, lang).Return(translations[lang], nil)
+			translation, err := managementComponent.GetThemeTranslation(ctx, realmName, lang)
+			assert.Nil(t, err)
+			assert.Equal(t, expectedTranslations[lang], translation)
+		}
+	})
+
+	t.Run("Empty translation JSON", func(t *testing.T) {
+		var emptyJSON = `{}`
+		mocks.configurationDBModule.EXPECT().GetThemeTranslation(ctx, realmName, language).Return(emptyJSON, nil)
+		translation, err := managementComponent.GetThemeTranslation(ctx, realmName, language)
+		assert.Nil(t, err)
+		assert.Equal(t, map[string]any{}, translation)
+	})
+}

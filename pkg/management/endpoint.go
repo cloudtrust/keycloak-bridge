@@ -102,6 +102,10 @@ type Endpoints struct {
 	UnlinkShadowUser       endpoint.Endpoint
 
 	GetIdentityProviders endpoint.Endpoint
+
+	GetThemeConfiguration    endpoint.Endpoint
+	UpdateThemeConfiguration endpoint.Endpoint
+	GetThemeTranslation      endpoint.Endpoint
 }
 
 const (
@@ -1157,6 +1161,46 @@ func MakeGetIdentityProvidersEndpoint(component Component) cs.Endpoint {
 		var m = req.(map[string]string)
 
 		return component.GetIdentityProviders(ctx, m[prmRealm])
+	}
+}
+
+// MakeGetThemeConfigurationEndpoint creates an endpoint for GetThemeConfiguration
+func MakeGetThemeConfigurationEndpoint(component Component) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+
+		return component.GetThemeConfiguration(ctx, m[prmRealm])
+	}
+}
+
+// MakeUpdateThemeConfigurationEndpoint creates an endpoint for UpdateThemeConfiguration
+func MakeUpdateThemeConfigurationEndpoint(component Component) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+		var err error
+
+		configJSON := []byte(m[reqBody])
+
+		var themeConfig api.UpdatableThemeConfiguration
+
+		if err = json.Unmarshal(configJSON, &themeConfig); err != nil {
+			return nil, errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Body)
+		}
+
+		if err = themeConfig.Validate(); err != nil {
+			return nil, err
+		}
+
+		return nil, component.UpdateThemeConfiguration(ctx, m[prmRealm], themeConfig)
+	}
+}
+
+// MakeGetThemeTranslationEndpoint creates an endpoint for GetThemeTranslation
+func MakeGetThemeTranslationEndpoint(component Component) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+
+		return component.GetThemeTranslation(ctx, m[prmRealm], m[prmQryLanguage])
 	}
 }
 
