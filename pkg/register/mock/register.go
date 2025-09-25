@@ -237,19 +237,19 @@ func (m *ContextKeyManager) EXPECT() *ContextKeyManagerMockRecorder {
 	return m.recorder
 }
 
-// GetContextByRegistrationRealm mocks base method.
-func (m *ContextKeyManager) GetContextByRegistrationRealm(realm string) (keycloakb.ContextKeyParameters, bool) {
+// GetContextByCustomerRealm mocks base method.
+func (m *ContextKeyManager) GetContextByCustomerRealm(realm string) (keycloakb.ContextKeyParameters, bool) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetContextByRegistrationRealm", realm)
+	ret := m.ctrl.Call(m, "GetContextByCustomerRealm", realm)
 	ret0, _ := ret[0].(keycloakb.ContextKeyParameters)
 	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }
 
-// GetContextByRegistrationRealm indicates an expected call of GetContextByRegistrationRealm.
-func (mr *ContextKeyManagerMockRecorder) GetContextByRegistrationRealm(realm any) *gomock.Call {
+// GetContextByCustomerRealm indicates an expected call of GetContextByCustomerRealm.
+func (mr *ContextKeyManagerMockRecorder) GetContextByCustomerRealm(realm any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetContextByRegistrationRealm", reflect.TypeOf((*ContextKeyManager)(nil).GetContextByRegistrationRealm), realm)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetContextByCustomerRealm", reflect.TypeOf((*ContextKeyManager)(nil).GetContextByCustomerRealm), realm)
 }
 
 // GetOverride mocks base method.

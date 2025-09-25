@@ -55,7 +55,7 @@ type UserProfileCache interface {
 // ContextKeyManager interface
 type ContextKeyManager interface {
 	GetOverride(realm string, contextKey string) (keycloakb.ContextKeyParameters, bool)
-	GetContextByRegistrationRealm(realm string) (keycloakb.ContextKeyParameters, bool)
+	GetContextByCustomerRealm(realm string) (keycloakb.ContextKeyParameters, bool)
 }
 
 // Component is the register component interface.
@@ -139,7 +139,7 @@ func (c *component) GetConfiguration(ctx context.Context, realmName string) (api
 	}
 
 	var contextKey *string
-	if context, ok := c.contextKeyMgr.GetContextByRegistrationRealm(realmName); ok {
+	if context, ok := c.contextKeyMgr.GetContextByCustomerRealm(realmName); ok {
 		contextKey = context.ID
 	}
 
@@ -193,8 +193,8 @@ func (c *component) RegisterUser(ctx context.Context, targetRealmName string, cu
 		if ctxOverride.OnboardingRedirectURI != nil {
 			realmConf.OnboardingRedirectURI = ctxOverride.OnboardingRedirectURI
 		}
-		if ctxOverride.RedirectMode != nil {
-			redirect = *ctxOverride.RedirectMode
+		if ctxOverride.IsRedirectMode != nil {
+			redirect = *ctxOverride.IsRedirectMode
 		}
 	}
 
@@ -216,7 +216,7 @@ func (c *component) RegisterUser(ctx context.Context, targetRealmName string, cu
 	var redirectURL string
 	var kcUser kc.UserRepresentation
 	if redirect {
-		kcUser, err = c.registerUserRedirectMode(ctx, accessToken, targetRealmName, customerRealmName, user, realmConf, onboardingRedirectURI)
+		kcUser, err = c.registerUserRedirectMode(ctx, accessToken, targetRealmName, user, realmConf)
 		if err != nil {
 			return "", err
 		}
@@ -267,7 +267,7 @@ func (c *component) registerUser(ctx context.Context, accessToken string, target
 		*realmConf.OnboardingClientID, onboardingRedirectURI, customerRealmName, false, paramKV...)
 }
 
-func (c *component) registerUserRedirectMode(ctx context.Context, accessToken string, targetRealmName string, customerRealmName string, user apiregister.UserRepresentation, realmConf configuration.RealmConfiguration, onboardingRedirectURI string) (kc.UserRepresentation, error) {
+func (c *component) registerUserRedirectMode(ctx context.Context, accessToken string, targetRealmName string, user apiregister.UserRepresentation, realmConf configuration.RealmConfiguration) (kc.UserRepresentation, error) {
 	// Create new user
 	kcUser, err := c.createUser(ctx, accessToken, targetRealmName, user, *realmConf.SelfRegisterGroupNames, true)
 	if err != nil {
