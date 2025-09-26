@@ -8,7 +8,7 @@ import (
 
 var (
 	addReadTokenRoleOnCreate  = false
-	alias                     = "trustid-idp"
+	alias                     = "EXTIDP-12345678-abcd-efgh-ijkl-012345678901"
 	authenticateByDefault     = true
 	displayName               = "MyTrustID"
 	enabled                   = true

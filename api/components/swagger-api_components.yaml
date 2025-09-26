@@ -1,0 +1,109 @@
+openapi: 3.0.1
+info:
+  title: Swagger Cloudtrust Components
+  description: 'Components API for Cloudtrust'
+  version: 1.0.0
+servers:
+- url: http://localhost:8888/components
+paths:
+  /realms/{realm}/components:
+    get:
+      tags:
+      - Components
+      summary: Get components (fiter by type)
+      parameters:
+      - name: type
+        in: query
+        description: provider type of the components
+        required: false
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ComponentRepresentation'
+        403:
+          description: No permission to call this operation
+
+    post:
+      tags:
+      - Components
+      summary: Create a component
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ComponentRepresentation'
+      responses:
+        200:
+          description: successful operation
+        403:
+          description: No permission to call this operation
+  /realms/{realm}/components/{id}:
+    put:
+      tags:
+      - Components
+      summary: Update an existing component
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: id
+        in: path
+        description: ID of the component
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ComponentRepresentation'
+      responses:
+        200:
+          description: successful operation
+        404:
+          description: component not found
+        403:
+          description: No permission to call this operation
+components:
+  schemas:
+    ComponentRepresentation:
+      type: object
+      properties:
+          Config: 
+            type: object
+          ID: 
+            type: string
+          Name: 
+            type: string
+          ParentID:
+            type: string
+          ProviderID:
+            type: string
+          ProviderType:
+            type: string
+          SubType:
+            type: string
+  securitySchemes:
+    openId:
+      type: openIdConnect
+      openIdConnectUrl: http://toto.com/.well-known/openid-configuration
+security:
+  - openId:
+    - todo

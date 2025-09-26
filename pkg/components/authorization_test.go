@@ -1,4 +1,4 @@
-package idp
+package components
 
 import (
 	"context"
@@ -9,8 +9,8 @@ import (
 	cs "github.com/cloudtrust/common-service/v2"
 	"github.com/cloudtrust/common-service/v2/log"
 	"github.com/cloudtrust/common-service/v2/security"
-	api "github.com/cloudtrust/keycloak-bridge/api/idp"
-	"github.com/cloudtrust/keycloak-bridge/pkg/idp/mock"
+	api "github.com/cloudtrust/keycloak-bridge/api/components"
+	"github.com/cloudtrust/keycloak-bridge/pkg/components/mock"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
@@ -25,7 +25,7 @@ func TestDeny(t *testing.T) {
 
 	var mockLogger = log.NewNopLogger()
 	var mockKeycloakClient = mock.NewKcClientAuth(mockCtrl)
-	var mockIdpComponent = mock.NewComponent(mockCtrl)
+	var mockCompComponent = mock.NewComponent(mockCtrl)
 	var mockAuthorizationDBReader = mock.NewAuthorizationDBReader(mockCtrl)
 
 	var accessToken = "TOKEN=="
@@ -35,14 +35,15 @@ func TestDeny(t *testing.T) {
 	var groupID = "123-789-454"
 	var groupName = "titi"
 
-	var idpAlias = "EXTIDP-12345678-abcd-efgh-ijkl-012345678901"
-	var idpDisplayName = "MyTrustID"
+	var compID = "b5fd6854-ac8e-415b-8779-d89e6b6de3f4"
+	var compName = "MyTrustID"
+	var providerType = "org.keycloak.services.ui.extend.UiTabProvider"
 
 	mockAuthorizationDBReader.EXPECT().GetAuthorizations(gomock.Any()).Return([]configuration.Authorization{}, nil)
 
-	var idp = api.IdentityProviderRepresentation{
-		Alias:       &idpAlias,
-		DisplayName: &idpDisplayName,
+	var comp = api.ComponentRepresentation{
+		ID:   &compID,
+		Name: &compName,
 	}
 
 	// Nothing allowed
@@ -50,7 +51,7 @@ func TestDeny(t *testing.T) {
 		var authorizations, err = security.NewAuthorizationManager(mockAuthorizationDBReader, mockKeycloakClient, log.NewNopLogger())
 		assert.Nil(t, err)
 
-		var authorizationMW = MakeAuthorizationIdpComponentMW(mockLogger, authorizations)(mockIdpComponent)
+		var authorizationMW = MakeAuthorizationCompComponentMW(mockLogger, authorizations)(mockCompComponent)
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextGroups, groups)
@@ -59,10 +60,9 @@ func TestDeny(t *testing.T) {
 		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), gomock.Any(), realmName, groupID).Return(groupName, nil).AnyTimes()
 
 		var tests = map[string]error{
-			"GetIdentityProvider":    ignoreFirst(authorizationMW.GetIdentityProvider(ctx, realmName, idpAlias)),
-			"CreateIdentityProvider": authorizationMW.CreateIdentityProvider(ctx, realmName, idp),
-			"UpdateIdentityProvider": authorizationMW.UpdateIdentityProvider(ctx, realmName, idpAlias, idp),
-			"DeleteIdentityProvider": authorizationMW.DeleteIdentityProvider(ctx, realmName, idpAlias),
+			"GetComponents":   ignoreFirst(authorizationMW.GetComponents(ctx, realmName, &providerType)),
+			"CreateComponent": authorizationMW.CreateComponent(ctx, realmName, comp),
+			"UpdateComponent": authorizationMW.UpdateComponent(ctx, realmName, compID, comp),
 		}
 		for testName, testResult := range tests {
 			t.Run(testName, func(t *testing.T) {
@@ -77,7 +77,7 @@ func TestAllowed(t *testing.T) {
 	defer mockCtrl.Finish()
 	var mockLogger = log.NewNopLogger()
 	var mockKeycloakClient = mock.NewKcClientAuth(mockCtrl)
-	var mockIdpComponent = mock.NewComponent(mockCtrl)
+	var mockCompComponent = mock.NewComponent(mockCtrl)
 	var mockAuthorizationDBReader = mock.NewAuthorizationDBReader(mockCtrl)
 
 	var accessToken = "TOKEN=="
@@ -91,14 +91,15 @@ func TestAllowed(t *testing.T) {
 
 	var groupName = "titi"
 
-	var idpAlias = "trustid-idp"
+	var compID = "trustid-idp"
+	var providerType = "org.keycloak.services.ui.extend.UiTabProvider"
 
 	mockKeycloakClient.EXPECT().GetGroupNamesOfUser(gomock.Any(), accessToken, realmName, userID).Return([]string{groupName}, nil).AnyTimes()
 
-	var idp = api.IdentityProviderRepresentation{}
+	var comp = api.ComponentRepresentation{}
 
 	var authorizations = []configuration.Authorization{}
-	for _, action := range security.Actions.GetActionsForAPIs(security.BridgeService, security.IdpAPI) {
+	for _, action := range security.Actions.GetActionsForAPIs(security.BridgeService, security.ComponentsAPI) {
 		var action = string(action.Name)
 		authorizations = append(authorizations, configuration.Authorization{
 			RealmID:         &realmName,
@@ -115,26 +116,22 @@ func TestAllowed(t *testing.T) {
 		var authorizationManager, err = security.NewAuthorizationManager(mockAuthorizationDBReader, mockKeycloakClient, log.NewNopLogger())
 		assert.Nil(t, err)
 
-		var authorizationMW = MakeAuthorizationIdpComponentMW(mockLogger, authorizationManager)(mockIdpComponent)
+		var authorizationMW = MakeAuthorizationCompComponentMW(mockLogger, authorizationManager)(mockCompComponent)
 
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextGroups, groups)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, "master")
 
-		mockIdpComponent.EXPECT().GetIdentityProvider(ctx, realmName, idpAlias).Return(idp, nil)
-		_, err = authorizationMW.GetIdentityProvider(ctx, realmName, idpAlias)
+		mockCompComponent.EXPECT().GetComponents(ctx, realmName, &providerType).Return([]api.ComponentRepresentation{comp}, nil)
+		_, err = authorizationMW.GetComponents(ctx, realmName, &providerType)
 		assert.Nil(t, err)
 
-		mockIdpComponent.EXPECT().CreateIdentityProvider(ctx, realmName, idp).Return(nil)
-		err = authorizationMW.CreateIdentityProvider(ctx, realmName, idp)
+		mockCompComponent.EXPECT().CreateComponent(ctx, realmName, comp).Return(nil)
+		err = authorizationMW.CreateComponent(ctx, realmName, comp)
 		assert.Nil(t, err)
 
-		mockIdpComponent.EXPECT().UpdateIdentityProvider(ctx, realmName, idpAlias, idp).Return(nil)
-		err = authorizationMW.UpdateIdentityProvider(ctx, realmName, idpAlias, idp)
-		assert.Nil(t, err)
-
-		mockIdpComponent.EXPECT().DeleteIdentityProvider(ctx, realmName, idpAlias).Return(nil)
-		err = authorizationMW.DeleteIdentityProvider(ctx, realmName, idpAlias)
+		mockCompComponent.EXPECT().UpdateComponent(ctx, realmName, compID, comp).Return(nil)
+		err = authorizationMW.UpdateComponent(ctx, realmName, compID, comp)
 		assert.Nil(t, err)
 	}
 }

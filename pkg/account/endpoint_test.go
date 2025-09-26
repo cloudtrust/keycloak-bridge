@@ -200,11 +200,11 @@ func TestMakeDeleteLinkedAccountEndpoint(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	mockAccountComponent := mock.NewComponent(mockCtrl)
-	mockAccountComponent.EXPECT().DeleteLinkedAccount(gomock.Any(), "idp").Return(nil)
+	mockAccountComponent.EXPECT().DeleteLinkedAccount(gomock.Any(), "EXTIDP-12345678-abcd-efgh-ijkl-012345678901").Return(nil)
 
 	m := map[string]string{}
 
-	m[prmProviderAlias] = "idp"
+	m[prmProviderAlias] = "EXTIDP-12345678-abcd-efgh-ijkl-012345678901"
 	_, err := MakeDeleteLinkedAccountEndpoint(mockAccountComponent)(context.Background(), m)
 	assert.Nil(t, err)
 }

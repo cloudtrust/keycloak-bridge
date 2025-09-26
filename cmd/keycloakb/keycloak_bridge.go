@@ -35,6 +35,7 @@ import (
 	"github.com/cloudtrust/keycloak-bridge/internal/profile"
 	"github.com/cloudtrust/keycloak-bridge/pkg/account"
 	"github.com/cloudtrust/keycloak-bridge/pkg/communications"
+	"github.com/cloudtrust/keycloak-bridge/pkg/components"
 	conf "github.com/cloudtrust/keycloak-bridge/pkg/configuration"
 	"github.com/cloudtrust/keycloak-bridge/pkg/idp"
 	"github.com/cloudtrust/keycloak-bridge/pkg/kyc"
@@ -92,6 +93,7 @@ const (
 	RateKeyTasks            = iota
 	RateKeyValidation       = iota
 	RateKeyIDP              = iota
+	RateKeyComponents       = iota
 
 	cfgConfigFile               = "config-file"
 	cfgHTTPAddrInternal         = "internal-http-host-port"
@@ -122,6 +124,7 @@ const (
 	cfgRateKeyTasks             = "rate-tasks"
 	cfgRateKeyKYC               = "rate-kyc"
 	cfgRateKeyIDP               = "rate-idp"
+	cfgRateKeyComponents        = "rate-components"
 	cfgAllowedOrigins           = "cors-allowed-origins"
 	cfgAllowedMethods           = "cors-allowed-methods"
 	cfgAllowCredentials         = "cors-allow-credentials"
@@ -242,6 +245,7 @@ func main() {
 			RateKeyTasks:            c.GetInt(cfgRateKeyTasks),
 			RateKeyKYC:              c.GetInt(cfgRateKeyKYC),
 			RateKeyIDP:              c.GetInt(cfgRateKeyIDP),
+			RateKeyComponents:       c.GetInt(cfgRateKeyComponents),
 		}
 
 		corsOptions = cors.Options{
@@ -997,6 +1001,21 @@ func main() {
 		}
 	}
 
+	// Components service.
+	var componentsEndpoints components.Endpoints
+	{
+		var compLogger = log.With(logger, "svc", "components")
+
+		compComponent := components.NewComponent(keycloakClient, technicalTokenProvider, compLogger)
+
+		var rateLimitComp = rateLimit[RateKeyComponents]
+		componentsEndpoints = components.Endpoints{
+			GetComponents:   prepareEndpoint(components.MakeGetComponentsEndpoint(compComponent), "get_components_endpoint", compLogger, rateLimitComp),
+			CreateComponent: prepareEndpoint(components.MakeCreateComponentEndpoint(compComponent), "create_components_endpoint", compLogger, rateLimitComp),
+			UpdateComponent: prepareEndpoint(components.MakeUpdateComponentEndpoint(compComponent), "update_component_endpoint", compLogger, rateLimitComp),
+		}
+	}
+
 	// HTTP Monitoring (For monitoring probes, ...).
 	go func() {
 		var logger = log.With(logger, "transport", "http")
@@ -1012,7 +1031,7 @@ func main() {
 		errc <- http.ListenAndServe(httpAddrMonitoring, route)
 	}()
 
-	// HTTP Internal Call Server (Communications, Support, Tasks, Validation & IDP API).
+	// HTTP Internal Call Server (Communications, Support, Tasks, Validation, IDP & Components API).
 	go func() {
 		var logger = log.With(logger, "transport", "http")
 		logger.Info(ctx, "addr", httpAddrInternal, "interface", "export-and-communication")
@@ -1065,6 +1084,17 @@ func main() {
 		idpSubroute.Path("/realms/{realm}/identity-providers/{provider}").Methods("GET").Handler(getIdentityProviderHandler)
 		idpSubroute.Path("/realms/{realm}/identity-providers/{provider}").Methods("PUT").Handler(updateIdentityProviderHandler)
 		idpSubroute.Path("/realms/{realm}/identity-providers/{provider}").Methods("DELETE").Handler(deleteIdentityProviderHandler)
+
+		// Components (bearer auth)
+		var getComponentsHandler = configureHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, components.MakeComponentsHandler, logger)(componentsEndpoints.GetComponents)
+		var createComponentHandler = configureHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, components.MakeComponentsHandler, logger)(componentsEndpoints.CreateComponent)
+		var updateComponentHandler = configureHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, components.MakeComponentsHandler, logger)(componentsEndpoints.UpdateComponent)
+
+		var componentsSubroute = route.PathPrefix("/components").Subrouter()
+
+		componentsSubroute.Path("/realms/{realm}/components").Methods("GET").Handler(getComponentsHandler)
+		componentsSubroute.Path("/realms/{realm}/components").Methods("POST").Handler(createComponentHandler)
+		componentsSubroute.Path("/realms/{realm}/components/{id}").Methods("PUT").Handler(updateComponentHandler)
 
 		// Debug.
 		if pprofRouteEnabled {

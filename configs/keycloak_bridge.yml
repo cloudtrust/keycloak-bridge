@@ -145,6 +145,7 @@ rate-tasks: 10
 rate-kyc: 1000
 rate-mobile: 1000
 rate-idp: 1000
+rate-components: 1000
 
 # Debug routes
 pprof-route-enabled: true
