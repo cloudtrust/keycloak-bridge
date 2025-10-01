@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -21,6 +22,7 @@ import (
 	apicommon "github.com/cloudtrust/keycloak-bridge/api/common"
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
+	msg "github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/dto"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/accreditationsclient"
@@ -197,13 +199,15 @@ type Component interface {
 	DeleteAuthorization(ctx context.Context, realmName string, groupID string, targetRealm string, targetGroupID string, actionReq string) error
 
 	GetRealmCustomConfiguration(ctx context.Context, realmName string) (api.RealmCustomConfiguration, error)
-	UpdateRealmCustomConfiguration(ctx context.Context, realmID string, customConfig api.RealmCustomConfiguration) error
+	UpdateRealmCustomConfiguration(ctx context.Context, realmName string, customConfig api.RealmCustomConfiguration) error
 	GetRealmAdminConfiguration(ctx context.Context, realmName string) (api.RealmAdminConfiguration, error)
-	UpdateRealmAdminConfiguration(ctx context.Context, realmID string, adminConfig api.RealmAdminConfiguration) error
-	GetRealmUserProfile(ctx context.Context, realmID string) (apicommon.ProfileRepresentation, error)
-	GetRealmBackOfficeConfiguration(ctx context.Context, realmID string, groupName string) (api.BackOfficeConfiguration, error)
-	UpdateRealmBackOfficeConfiguration(ctx context.Context, realmID string, groupName string, config api.BackOfficeConfiguration) error
-	GetUserRealmBackOfficeConfiguration(ctx context.Context, realmID string) (api.BackOfficeConfiguration, error)
+	UpdateRealmAdminConfiguration(ctx context.Context, realmName string, adminConfig api.RealmAdminConfiguration) error
+	GetRealmUserProfile(ctx context.Context, realmName string) (apicommon.ProfileRepresentation, error)
+	GetRealmBackOfficeConfiguration(ctx context.Context, realmName string, groupName string) (api.BackOfficeConfiguration, error)
+	UpdateRealmBackOfficeConfiguration(ctx context.Context, realmName string, groupName string, config api.BackOfficeConfiguration) error
+	GetUserRealmBackOfficeConfiguration(ctx context.Context, realmName string) (api.BackOfficeConfiguration, error)
+	GetRealmContextKeysConfiguration(ctx context.Context, customerRealm string) ([]api.RealmContextKeyRepresentation, error)
+	SetRealmContextKeysConfiguration(ctx context.Context, customerRealm string, contextKeys []api.RealmContextKeyRepresentation) error
 
 	GetFederatedIdentities(ctx context.Context, realmName string, userID string) ([]api.FederatedIdentityRepresentation, error)
 	LinkShadowUser(ctx context.Context, realmName string, userID string, provider string, fedID api.FederatedIdentityRepresentation) error
@@ -2319,7 +2323,7 @@ func (c *component) matchClients(customConfig api.RealmCustomConfiguration, clie
 			// escape the regex-specific characters (dots for intance)...
 			matcher := regexp.QuoteMeta(redirectURI)
 			// ... but keep the stars
-			matcher = strings.Replace(matcher, "\\*", "*", -1)
+			matcher = strings.ReplaceAll(matcher, "\\*", "*")
 			if match, _ := regexp.MatchString(matcher, *customConfig.DefaultRedirectURI); match {
 				return true
 			}
@@ -2404,20 +2408,20 @@ func (c *component) GetRealmBackOfficeConfiguration(ctx context.Context, realmNa
 	return api.BackOfficeConfiguration(dbResult), nil
 }
 
-func (c *component) UpdateRealmBackOfficeConfiguration(ctx context.Context, realmID string, groupName string, configuration api.BackOfficeConfiguration) error {
-	var dbResult, err = c.configDBModule.GetBackOfficeConfiguration(ctx, realmID, []string{groupName})
+func (c *component) UpdateRealmBackOfficeConfiguration(ctx context.Context, realmName string, groupName string, configuration api.BackOfficeConfiguration) error {
+	var dbResult, err = c.configDBModule.GetBackOfficeConfiguration(ctx, realmName, []string{groupName})
 	if err != nil {
 		c.logger.Warn(ctx, "err", err.Error())
 		return err
 	}
 
-	err = c.removeObsoleteItemsFromBackOfficeConfiguration(ctx, realmID, groupName, dbResult, configuration)
+	err = c.removeObsoleteItemsFromBackOfficeConfiguration(ctx, realmName, groupName, dbResult, configuration)
 	if err != nil {
 		c.logger.Warn(ctx, "err", err.Error())
 		return err
 	}
 
-	err = c.addBackOfficeConfigurationNewItems(ctx, realmID, groupName, dbResult, configuration)
+	err = c.addBackOfficeConfigurationNewItems(ctx, realmName, groupName, dbResult, configuration)
 	if err != nil {
 		c.logger.Warn(ctx, "err", err.Error())
 	}
@@ -2444,7 +2448,7 @@ func (c *component) removeObsoleteItemsFromBackOfficeConfiguration(ctx context.C
 					}
 				} else {
 					for _, existingGroupName := range existingTypeConf {
-						if !c.findString(newTypeConf, existingGroupName) {
+						if !slices.Contains(newTypeConf, existingGroupName) {
 							err = c.configDBModule.DeleteBackOfficeConfiguration(ctx, realmID, groupName, existingRealm, &existingType, &existingGroupName)
 							if err != nil {
 								return err
@@ -2480,7 +2484,7 @@ func (c *component) addBackOfficeConfigurationNewItems(ctx context.Context, real
 					}
 				} else {
 					for _, newGroupName := range newGroups {
-						if !c.findString(oldGroups, newGroupName) {
+						if !slices.Contains(oldGroups, newGroupName) {
 							err = c.configDBModule.InsertBackOfficeConfiguration(ctx, realmID, groupName, newRealmID, newTypeConf, []string{newGroupName})
 							if err != nil {
 								return err
@@ -2494,13 +2498,85 @@ func (c *component) addBackOfficeConfigurationNewItems(ctx context.Context, real
 	return nil
 }
 
-func (c *component) findString(groups []string, searchGroup string) bool {
-	for _, aGroup := range groups {
-		if aGroup == searchGroup {
-			return true
+// Retrieve the context keys for the given customer realm from database
+func (c *component) GetRealmContextKeysConfiguration(ctx context.Context, customerRealm string) ([]api.RealmContextKeyRepresentation, error) {
+	var conf, err = c.configDBModule.GetContextKeysForCustomerRealm(ctx, customerRealm)
+	if err != nil {
+		return nil, err
+	}
+	return api.ConvertToAPIContextKeys(conf), nil
+}
+
+// Store the context keys for the given customer realm in database
+func (c *component) SetRealmContextKeysConfiguration(ctx context.Context, customerRealm string, contextKeys []api.RealmContextKeyRepresentation) error {
+	var contextKeysDTO = api.ConvertToDBContextKeys(contextKeys)
+
+	providedKeys := c.getContextKeyUUIDSet(contextKeysDTO)
+	existingKeys, err := c.getExistingContextKeyUUID(ctx, customerRealm)
+	if err != nil {
+		return err
+	}
+	allIDs, err := c.configDBModule.GetAllContextKeyID(ctx)
+	if err != nil {
+		return err
+	}
+	for _, id := range allIDs {
+		if _, isInCustomerRealm := existingKeys[id]; !isInCustomerRealm {
+			// ID comes from another customer realm
+			if _, isInIncomingAPICall := providedKeys[id]; isInIncomingAPICall {
+				// Should not insert/update a context key with an ID from another customer realm
+				return errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + ".id")
+			}
 		}
 	}
-	return false
+
+	tx, err := c.configDBModule.NewTransaction(ctx)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Can't start transaction to set context key", "realm", customerRealm, "err", err.Error())
+		return err
+	}
+	defer tx.Close()
+
+	for existingKey := range existingKeys {
+		if _, ok := providedKeys[existingKey]; !ok {
+			if err := c.configDBModule.DeleteContextKeyConfiguration(ctx, tx, customerRealm, existingKey); err != nil {
+				c.logger.Warn(ctx, "msg", "Can't delete a context key configuration", "id", existingKey, "err", err.Error())
+				return err
+			}
+		}
+	}
+
+	for _, ck := range contextKeysDTO {
+		ck.CustomerRealm = customerRealm
+		if err := c.configDBModule.StoreContextKeyConfiguration(ctx, tx, ck); err != nil {
+			c.logger.Warn(ctx, "msg", "Can't set context key in db", "realm", customerRealm, "id", ck.ID, "err", err.Error())
+			return err
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		c.logger.Warn(ctx, "msg", "Can't set context key in db. Commit transaction failed", "realm", customerRealm, "err", err.Error())
+		return err
+	}
+
+	return nil
+}
+
+func (c *component) getContextKeyUUIDSet(contextKeys []configuration.RealmContextKey) map[string]struct{} {
+	existingKeys := map[string]struct{}{}
+	for _, ctxKey := range contextKeys {
+		existingKeys[ctxKey.ID] = struct{}{}
+	}
+	return existingKeys
+}
+
+func (c *component) getExistingContextKeyUUID(ctx context.Context, customerRealm string) (map[string]struct{}, error) {
+	existing, err := c.configDBModule.GetContextKeysForCustomerRealm(ctx, customerRealm)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Can't get existing context key configuration", "realm", customerRealm, "err", err.Error())
+		return nil, err
+	}
+	return c.getContextKeyUUIDSet(existing), nil
 }
 
 func (c *component) GetFederatedIdentities(ctx context.Context, realmName string, userID string) ([]api.FederatedIdentityRepresentation, error) {

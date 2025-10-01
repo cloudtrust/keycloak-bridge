@@ -760,6 +760,25 @@ func (c *authorizationComponentMW) UpdateRealmCustomConfiguration(ctx context.Co
 	return c.next.UpdateRealmCustomConfiguration(ctx, realmName, customConfig)
 }
 
+func (c *authorizationComponentMW) GetRealmContextKeysConfiguration(ctx context.Context, customerRealm string) ([]api.RealmContextKeyRepresentation, error) {
+	var action = security.MGMTGetRealmContextKeysConfiguration.String()
+
+	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, customerRealm); err != nil {
+		return nil, err
+	}
+
+	return c.next.GetRealmContextKeysConfiguration(ctx, customerRealm)
+}
+
+func (c *authorizationComponentMW) SetRealmContextKeysConfiguration(ctx context.Context, customerRealm string, contextKeys []api.RealmContextKeyRepresentation) error {
+	var action = security.MGMTSetRealmContextKeysConfiguration.String()
+
+	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, customerRealm); err != nil {
+		return err
+	}
+
+	return c.next.SetRealmContextKeysConfiguration(ctx, customerRealm, contextKeys)
+}
 func (c *authorizationComponentMW) GetRealmAdminConfiguration(ctx context.Context, realmName string) (api.RealmAdminConfiguration, error) {
 	var action = security.MGMTGetRealmAdminConfiguration.String()
 	var targetRealm = realmName

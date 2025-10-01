@@ -2111,6 +2111,56 @@ func TestUpdateRealmAdminConfigurationEndpoint(t *testing.T) {
 	})
 }
 
+func TestGetRealmContextKeysConfigurationEndpoint(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
+
+	var e = MakeGetRealmContextKeysConfigurationEndpoint(mockManagementComponent)
+	var ctx = context.Background()
+	var customerRealm = "customer-realm"
+	var req = map[string]string{prmRealm: customerRealm}
+	var anError = errors.New("error at component level")
+
+	mockManagementComponent.EXPECT().GetRealmContextKeysConfiguration(ctx, customerRealm).Return([]api.RealmContextKeyRepresentation{}, anError)
+	var _, err = e(ctx, req)
+	assert.NotNil(t, err)
+}
+
+func TestSetRealmContextKeysConfigurationEndpoint(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
+
+	var e = MakeSetRealmContextKeysConfigurationEndpoint(mockManagementComponent)
+	var ctx = context.Background()
+	var customerRealm = "customer-realm"
+	var req = map[string]string{prmRealm: customerRealm}
+
+	t.Run("Body is not a JSON value", func(t *testing.T) {
+		req[reqBody] = "{invalid"
+		var _, err = e(ctx, req)
+		assert.NotNil(t, err)
+	})
+	t.Run("Body is a valid JSON but one of its items is invalid", func(t *testing.T) {
+		var invalidJSONBytes, _ = json.Marshal([]api.RealmContextKeyRepresentation{{}})
+		req[reqBody] = string(invalidJSONBytes)
+		var _, err = e(ctx, req)
+		assert.NotNil(t, err)
+	})
+	t.Run("Returns result from underlying layer", func(t *testing.T) {
+		var componentError = errors.New("component error")
+		var conf = []api.RealmContextKeyRepresentation{}
+		var bodyBytes, _ = json.Marshal(conf)
+		req[reqBody] = string(bodyBytes)
+		mockManagementComponent.EXPECT().SetRealmContextKeysConfiguration(ctx, customerRealm, conf).Return(componentError)
+		var _, err = e(ctx, req)
+		assert.Equal(t, componentError, err)
+	})
+}
+
 func TestGetFederatedIdentitiesEndpoint(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()

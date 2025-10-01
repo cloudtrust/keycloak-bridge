@@ -1883,6 +1883,57 @@ paths:
           description: successful operation
         400:
           description: invalid information provided
+  /realms/{realm}/context-keys:
+    get:
+      summary: Get the context keys
+      description: Returns the list of context keys for a given realm
+      parameters:
+        - name: realm
+          in: path
+          required: true
+          description: Name of the realm
+          schema:
+            type: string
+      responses:
+        200:
+          description: List of all context keys linked to the customer
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RealmContextKeyRepresentation'
+        401:
+          description: unauthorized access
+        403:
+          description: forbidden access
+    post:
+      summary: Create or update a set of context-keys
+      description: Define the context keys for the given customer
+      parameters:
+        - name: realm
+          in: path
+          required: true
+          description: Realm name of the customer
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/RealmContextKeyRepresentation'
+      responses:
+        201:
+          description: successful operation  
+        400:
+          description: invalid information provided
+        401:
+          description: unauthorized access
+        403:
+          description: forbidden access
   /realms/{realm}/users/{userID}/federated-identity:
     get:
       tags:
@@ -2546,6 +2597,59 @@ components:
             type: array
             items:
               type: string
+    RealmContextKeyRepresentation:
+      type: object
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+        identitiesRealm:
+          type: string
+        customerRealm:
+          type: string
+        config:
+          $ref: '#/components/schemas/CtxKeyConfigRepresentation'
+        isRegisterDefault:
+          type: boolean
+    CtxKeyConfigRepresentation:
+      type: object
+      properties:
+        identificationUri:
+          type: string
+          format: uri
+        onboarding:
+          $ref: '#/components/schemas/CtxKeyOnboardingRepresentation'
+        accreditation:
+          $ref: '#/components/schemas/CtxKeyAccreditationRepresentation'
+        autovoucher:
+          $ref: '#/components/schemas/CtxKeyAutoVoucherRepresentation'
+    CtxKeyOnboardingRepresentation:
+      type: object
+      properties:
+        clientId:
+          type: string
+        redirectUri:
+          type: string
+          format: uri
+        redirectMode:
+          type: string
+    CtxKeyAccreditationRepresentation:
+      type: object
+      properties:
+        emailThemeRealm:
+          type: string
+    CtxKeyAutoVoucherRepresentation:
+      type: object
+      properties:
+        serviceType:
+          type: string
+        validity:
+          type: string
+        accreditationRequested:
+          type: string
+        billedRealm:
+          type: string
     FederatedIdentity:
       type: object
       properties:

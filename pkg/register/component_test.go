@@ -132,15 +132,15 @@ func TestRegisterUser(t *testing.T) {
 	var contextKeyNeutral = "key0"
 	var contextKeyRedirect = "key1"
 	var contextKeyInvalid = "invalid"
-	mocks.contextKeyMgr.EXPECT().GetOverride(targetRealmName, contextKeyNeutral).Return(keycloakb.ContextKeyParameters{
-		ID:    ptr(contextKeyRedirect),
-		Realm: &customerRealmName,
-	}, true).AnyTimes()
-	mocks.contextKeyMgr.EXPECT().GetOverride(targetRealmName, contextKeyRedirect).Return(keycloakb.ContextKeyParameters{
-		ID:           ptr(contextKeyRedirect),
-		Realm:        &customerRealmName,
-		RedirectMode: ptrBool(true),
-	}, true).AnyTimes()
+	mocks.contextKeyMgr.EXPECT().GetOverride(ctx, targetRealmName, contextKeyNeutral).Return(keycloakb.ContextKeyParameters{
+		ID:            ptr(contextKeyRedirect),
+		CustomerRealm: &customerRealmName,
+	}, nil).AnyTimes()
+	mocks.contextKeyMgr.EXPECT().GetOverride(ctx, targetRealmName, contextKeyRedirect).Return(keycloakb.ContextKeyParameters{
+		ID:             ptr(contextKeyRedirect),
+		CustomerRealm:  &customerRealmName,
+		IsRedirectMode: ptrBool(true),
+	}, nil).AnyTimes()
 	mocks.profileCache.EXPECT().GetRealmUserProfile(gomock.Any(), gomock.Any()).Return(kc.UserProfileRepresentation{}, nil).AnyTimes()
 
 	t.Run("Failed to retrieve token", func(t *testing.T) {
@@ -160,7 +160,7 @@ func TestRegisterUser(t *testing.T) {
 
 	t.Run("Bad context key", func(t *testing.T) {
 		mocks.configDB.EXPECT().GetConfigurations(ctx, targetRealmName).Return(configuration.RealmConfiguration{}, realmAdminConf, nil)
-		mocks.contextKeyMgr.EXPECT().GetOverride(targetRealmName, contextKeyInvalid).Return(keycloakb.ContextKeyParameters{}, false)
+		mocks.contextKeyMgr.EXPECT().GetOverride(ctx, targetRealmName, contextKeyInvalid).Return(keycloakb.ContextKeyParameters{}, errors.New("dummy"))
 
 		_, err := component.RegisterUser(ctx, targetRealmName, customerRealmName, user, &contextKeyInvalid)
 		assert.NotNil(t, err)
@@ -403,7 +403,7 @@ func TestGetConfiguration(t *testing.T) {
 		mocks.configDB.EXPECT().GetConfigurations(gomock.Any(), gomock.Any()).Return(configuration.RealmConfiguration{}, configuration.RealmAdminConfiguration{}, nil)
 		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(gomock.Any(), confRealm).Return(accessToken, nil)
 		mocks.keycloakClient.EXPECT().GetRealm(accessToken, confRealm).Return(realmConfig, nil)
-		mocks.contextKeyMgr.EXPECT().GetContextByRegistrationRealm(confRealm).Return(keycloakb.ContextKeyParameters{}, false)
+		mocks.contextKeyMgr.EXPECT().GetDefaultContextKeyByCustomerRealm(ctx, confRealm).Return(keycloakb.ContextKeyParameters{}, errors.New("context key error"))
 		var conf, err = component.GetConfiguration(ctx, confRealm)
 		assert.Nil(t, err)
 		assert.Nil(t, conf.ContextKey)
@@ -414,7 +414,7 @@ func TestGetConfiguration(t *testing.T) {
 		mocks.configDB.EXPECT().GetConfigurations(gomock.Any(), gomock.Any()).Return(configuration.RealmConfiguration{}, configuration.RealmAdminConfiguration{}, nil)
 		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(gomock.Any(), confRealm).Return(accessToken, nil)
 		mocks.keycloakClient.EXPECT().GetRealm(accessToken, confRealm).Return(realmConfig, nil)
-		mocks.contextKeyMgr.EXPECT().GetContextByRegistrationRealm(confRealm).Return(keycloakb.ContextKeyParameters{ID: ptr(key)}, true)
+		mocks.contextKeyMgr.EXPECT().GetDefaultContextKeyByCustomerRealm(ctx, confRealm).Return(keycloakb.ContextKeyParameters{ID: ptr(key)}, nil)
 		var conf, err = component.GetConfiguration(ctx, confRealm)
 		assert.Nil(t, err)
 		assert.NotNil(t, conf.ContextKey)

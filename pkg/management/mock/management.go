@@ -605,18 +605,33 @@ func (mr *ManagementComponentMockRecorder) GetRealmAdminConfiguration(ctx, realm
 }
 
 // GetRealmBackOfficeConfiguration mocks base method.
-func (m *ManagementComponent) GetRealmBackOfficeConfiguration(ctx context.Context, realmID, groupName string) (apimanagement.BackOfficeConfiguration, error) {
+func (m *ManagementComponent) GetRealmBackOfficeConfiguration(ctx context.Context, realmName, groupName string) (apimanagement.BackOfficeConfiguration, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetRealmBackOfficeConfiguration", ctx, realmID, groupName)
+	ret := m.ctrl.Call(m, "GetRealmBackOfficeConfiguration", ctx, realmName, groupName)
 	ret0, _ := ret[0].(apimanagement.BackOfficeConfiguration)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetRealmBackOfficeConfiguration indicates an expected call of GetRealmBackOfficeConfiguration.
-func (mr *ManagementComponentMockRecorder) GetRealmBackOfficeConfiguration(ctx, realmID, groupName any) *gomock.Call {
+func (mr *ManagementComponentMockRecorder) GetRealmBackOfficeConfiguration(ctx, realmName, groupName any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRealmBackOfficeConfiguration", reflect.TypeOf((*ManagementComponent)(nil).GetRealmBackOfficeConfiguration), ctx, realmID, groupName)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRealmBackOfficeConfiguration", reflect.TypeOf((*ManagementComponent)(nil).GetRealmBackOfficeConfiguration), ctx, realmName, groupName)
+}
+
+// GetRealmContextKeysConfiguration mocks base method.
+func (m *ManagementComponent) GetRealmContextKeysConfiguration(ctx context.Context, customerRealm string) ([]apimanagement.RealmContextKeyRepresentation, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRealmContextKeysConfiguration", ctx, customerRealm)
+	ret0, _ := ret[0].([]apimanagement.RealmContextKeyRepresentation)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRealmContextKeysConfiguration indicates an expected call of GetRealmContextKeysConfiguration.
+func (mr *ManagementComponentMockRecorder) GetRealmContextKeysConfiguration(ctx, customerRealm any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRealmContextKeysConfiguration", reflect.TypeOf((*ManagementComponent)(nil).GetRealmContextKeysConfiguration), ctx, customerRealm)
 }
 
 // GetRealmCustomConfiguration mocks base method.
@@ -635,18 +650,18 @@ func (mr *ManagementComponentMockRecorder) GetRealmCustomConfiguration(ctx, real
 }
 
 // GetRealmUserProfile mocks base method.
-func (m *ManagementComponent) GetRealmUserProfile(ctx context.Context, realmID string) (apicommon.ProfileRepresentation, error) {
+func (m *ManagementComponent) GetRealmUserProfile(ctx context.Context, realmName string) (apicommon.ProfileRepresentation, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetRealmUserProfile", ctx, realmID)
+	ret := m.ctrl.Call(m, "GetRealmUserProfile", ctx, realmName)
 	ret0, _ := ret[0].(apicommon.ProfileRepresentation)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetRealmUserProfile indicates an expected call of GetRealmUserProfile.
-func (mr *ManagementComponentMockRecorder) GetRealmUserProfile(ctx, realmID any) *gomock.Call {
+func (mr *ManagementComponentMockRecorder) GetRealmUserProfile(ctx, realmName any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRealmUserProfile", reflect.TypeOf((*ManagementComponent)(nil).GetRealmUserProfile), ctx, realmID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRealmUserProfile", reflect.TypeOf((*ManagementComponent)(nil).GetRealmUserProfile), ctx, realmName)
 }
 
 // GetRealms mocks base method.
@@ -830,18 +845,18 @@ func (mr *ManagementComponentMockRecorder) GetUserChecks(ctx, realmName, userID 
 }
 
 // GetUserRealmBackOfficeConfiguration mocks base method.
-func (m *ManagementComponent) GetUserRealmBackOfficeConfiguration(ctx context.Context, realmID string) (apimanagement.BackOfficeConfiguration, error) {
+func (m *ManagementComponent) GetUserRealmBackOfficeConfiguration(ctx context.Context, realmName string) (apimanagement.BackOfficeConfiguration, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetUserRealmBackOfficeConfiguration", ctx, realmID)
+	ret := m.ctrl.Call(m, "GetUserRealmBackOfficeConfiguration", ctx, realmName)
 	ret0, _ := ret[0].(apimanagement.BackOfficeConfiguration)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetUserRealmBackOfficeConfiguration indicates an expected call of GetUserRealmBackOfficeConfiguration.
-func (mr *ManagementComponentMockRecorder) GetUserRealmBackOfficeConfiguration(ctx, realmID any) *gomock.Call {
+func (mr *ManagementComponentMockRecorder) GetUserRealmBackOfficeConfiguration(ctx, realmName any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserRealmBackOfficeConfiguration", reflect.TypeOf((*ManagementComponent)(nil).GetUserRealmBackOfficeConfiguration), ctx, realmID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserRealmBackOfficeConfiguration", reflect.TypeOf((*ManagementComponent)(nil).GetUserRealmBackOfficeConfiguration), ctx, realmName)
 }
 
 // GetUsers mocks base method.
@@ -1035,6 +1050,20 @@ func (mr *ManagementComponentMockRecorder) SendSmsCode(ctx, realmName, userID an
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendSmsCode", reflect.TypeOf((*ManagementComponent)(nil).SendSmsCode), ctx, realmName, userID)
 }
 
+// SetRealmContextKeysConfiguration mocks base method.
+func (m *ManagementComponent) SetRealmContextKeysConfiguration(ctx context.Context, customerRealm string, contextKeys []apimanagement.RealmContextKeyRepresentation) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetRealmContextKeysConfiguration", ctx, customerRealm, contextKeys)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetRealmContextKeysConfiguration indicates an expected call of SetRealmContextKeysConfiguration.
+func (mr *ManagementComponentMockRecorder) SetRealmContextKeysConfiguration(ctx, customerRealm, contextKeys any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetRealmContextKeysConfiguration", reflect.TypeOf((*ManagementComponent)(nil).SetRealmContextKeysConfiguration), ctx, customerRealm, contextKeys)
+}
+
 // SetTrustIDGroupsToUser mocks base method.
 func (m *ManagementComponent) SetTrustIDGroupsToUser(ctx context.Context, realmName, userID string, groupNames []string) error {
 	m.ctrl.T.Helper()
@@ -1092,45 +1121,45 @@ func (mr *ManagementComponentMockRecorder) UpdateAuthorizations(ctx, realmName, 
 }
 
 // UpdateRealmAdminConfiguration mocks base method.
-func (m *ManagementComponent) UpdateRealmAdminConfiguration(ctx context.Context, realmID string, adminConfig apimanagement.RealmAdminConfiguration) error {
+func (m *ManagementComponent) UpdateRealmAdminConfiguration(ctx context.Context, realmName string, adminConfig apimanagement.RealmAdminConfiguration) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateRealmAdminConfiguration", ctx, realmID, adminConfig)
+	ret := m.ctrl.Call(m, "UpdateRealmAdminConfiguration", ctx, realmName, adminConfig)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // UpdateRealmAdminConfiguration indicates an expected call of UpdateRealmAdminConfiguration.
-func (mr *ManagementComponentMockRecorder) UpdateRealmAdminConfiguration(ctx, realmID, adminConfig any) *gomock.Call {
+func (mr *ManagementComponentMockRecorder) UpdateRealmAdminConfiguration(ctx, realmName, adminConfig any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateRealmAdminConfiguration", reflect.TypeOf((*ManagementComponent)(nil).UpdateRealmAdminConfiguration), ctx, realmID, adminConfig)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateRealmAdminConfiguration", reflect.TypeOf((*ManagementComponent)(nil).UpdateRealmAdminConfiguration), ctx, realmName, adminConfig)
 }
 
 // UpdateRealmBackOfficeConfiguration mocks base method.
-func (m *ManagementComponent) UpdateRealmBackOfficeConfiguration(ctx context.Context, realmID, groupName string, config apimanagement.BackOfficeConfiguration) error {
+func (m *ManagementComponent) UpdateRealmBackOfficeConfiguration(ctx context.Context, realmName, groupName string, config apimanagement.BackOfficeConfiguration) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateRealmBackOfficeConfiguration", ctx, realmID, groupName, config)
+	ret := m.ctrl.Call(m, "UpdateRealmBackOfficeConfiguration", ctx, realmName, groupName, config)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // UpdateRealmBackOfficeConfiguration indicates an expected call of UpdateRealmBackOfficeConfiguration.
-func (mr *ManagementComponentMockRecorder) UpdateRealmBackOfficeConfiguration(ctx, realmID, groupName, config any) *gomock.Call {
+func (mr *ManagementComponentMockRecorder) UpdateRealmBackOfficeConfiguration(ctx, realmName, groupName, config any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateRealmBackOfficeConfiguration", reflect.TypeOf((*ManagementComponent)(nil).UpdateRealmBackOfficeConfiguration), ctx, realmID, groupName, config)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateRealmBackOfficeConfiguration", reflect.TypeOf((*ManagementComponent)(nil).UpdateRealmBackOfficeConfiguration), ctx, realmName, groupName, config)
 }
 
 // UpdateRealmCustomConfiguration mocks base method.
-func (m *ManagementComponent) UpdateRealmCustomConfiguration(ctx context.Context, realmID string, customConfig apimanagement.RealmCustomConfiguration) error {
+func (m *ManagementComponent) UpdateRealmCustomConfiguration(ctx context.Context, realmName string, customConfig apimanagement.RealmCustomConfiguration) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateRealmCustomConfiguration", ctx, realmID, customConfig)
+	ret := m.ctrl.Call(m, "UpdateRealmCustomConfiguration", ctx, realmName, customConfig)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // UpdateRealmCustomConfiguration indicates an expected call of UpdateRealmCustomConfiguration.
-func (mr *ManagementComponentMockRecorder) UpdateRealmCustomConfiguration(ctx, realmID, customConfig any) *gomock.Call {
+func (mr *ManagementComponentMockRecorder) UpdateRealmCustomConfiguration(ctx, realmName, customConfig any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateRealmCustomConfiguration", reflect.TypeOf((*ManagementComponent)(nil).UpdateRealmCustomConfiguration), ctx, realmID, customConfig)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateRealmCustomConfiguration", reflect.TypeOf((*ManagementComponent)(nil).UpdateRealmCustomConfiguration), ctx, realmName, customConfig)
 }
 
 // UpdateRole mocks base method.

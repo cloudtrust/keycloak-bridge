@@ -2,6 +2,7 @@ package configuration
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/cloudtrust/common-service/v2/log"
@@ -35,44 +36,45 @@ func TestGetIdentificationURI(t *testing.T) {
 	realm := "realm"
 	contextKey := "context-key"
 	identificationURI := "identification-uri"
+	ctx := context.TODO()
 
 	t.Run("Invalid context key", func(t *testing.T) {
-		mocks.contextKeyMgr.EXPECT().GetOverride(realm, contextKey).Return(keycloakb.ContextKeyParameters{}, false)
+		mocks.contextKeyMgr.EXPECT().GetOverride(ctx, realm, contextKey).Return(keycloakb.ContextKeyParameters{}, errors.New("dummy"))
 
-		_, err := component.GetIdentificationURI(context.Background(), realm, contextKey)
+		_, err := component.GetIdentificationURI(ctx, realm, contextKey)
 		assert.NotNil(t, err)
 	})
 
 	t.Run("No identification URI", func(t *testing.T) {
-		mocks.contextKeyMgr.EXPECT().GetOverride(realm, contextKey).Return(keycloakb.ContextKeyParameters{
+		mocks.contextKeyMgr.EXPECT().GetOverride(ctx, realm, contextKey).Return(keycloakb.ContextKeyParameters{
 			ID:                ptr(contextKey),
-			Realm:             &realm,
+			IdentitiesRealm:   &realm,
 			IdentificationURI: nil,
-		}, true)
+		}, nil)
 
-		_, err := component.GetIdentificationURI(context.Background(), realm, contextKey)
+		_, err := component.GetIdentificationURI(ctx, realm, contextKey)
 		assert.NotNil(t, err)
 	})
 
 	t.Run("Empty identification URI", func(t *testing.T) {
-		mocks.contextKeyMgr.EXPECT().GetOverride(realm, contextKey).Return(keycloakb.ContextKeyParameters{
+		mocks.contextKeyMgr.EXPECT().GetOverride(ctx, realm, contextKey).Return(keycloakb.ContextKeyParameters{
 			ID:                ptr(contextKey),
-			Realm:             &realm,
+			IdentitiesRealm:   &realm,
 			IdentificationURI: ptr(""),
-		}, true)
+		}, nil)
 
-		_, err := component.GetIdentificationURI(context.Background(), realm, contextKey)
+		_, err := component.GetIdentificationURI(ctx, realm, contextKey)
 		assert.NotNil(t, err)
 	})
 
 	t.Run("Success", func(t *testing.T) {
-		mocks.contextKeyMgr.EXPECT().GetOverride(realm, contextKey).Return(keycloakb.ContextKeyParameters{
+		mocks.contextKeyMgr.EXPECT().GetOverride(ctx, realm, contextKey).Return(keycloakb.ContextKeyParameters{
 			ID:                ptr(contextKey),
-			Realm:             &realm,
+			IdentitiesRealm:   &realm,
 			IdentificationURI: ptr(identificationURI),
-		}, true)
+		}, nil)
 
-		uri, err := component.GetIdentificationURI(context.Background(), realm, contextKey)
+		uri, err := component.GetIdentificationURI(ctx, realm, contextKey)
 		assert.Nil(t, err)
 		assert.Equal(t, identificationURI, uri)
 	})
