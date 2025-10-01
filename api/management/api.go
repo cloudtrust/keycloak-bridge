@@ -390,7 +390,6 @@ type RealmContextKeyRepresentation struct {
 	ID                *string                     `json:"id,omitempty"`
 	Label             *string                     `json:"label,omitempty"`
 	IdentitiesRealm   *string                     `json:"identitiesRealm,omitempty"`
-	CustomerRealm     *string                     `json:"customerRealm,omitempty"`
 	Config            *CtxKeyConfigRepresentation `json:"config,omitempty"`
 	IsRegisterDefault *bool                       `json:"isRegisterDefault,omitempty"`
 }
@@ -1369,14 +1368,13 @@ func ConvertToAPIContextKey(contextKey configuration.RealmContextKey) RealmConte
 		ID:                &contextKey.ID,
 		Label:             &contextKey.Label,
 		IdentitiesRealm:   &contextKey.IdentitiesRealm,
-		CustomerRealm:     &contextKey.CustomerRealm,
 		Config:            &apiConfig,
 		IsRegisterDefault: &contextKey.IsRegisterDefault,
 	}
 }
 
 // ToDatabaseModel converts a realm context key to the database model
-func (rck *RealmContextKeyRepresentation) ToDatabaseModel() configuration.RealmContextKey {
+func (rck *RealmContextKeyRepresentation) ToDatabaseModel(customerRealm string) configuration.RealmContextKey {
 	var config configuration.ContextKeyConfiguration
 	if rck.Config != nil {
 		config = rck.Config.ToDatabaseModel()
@@ -1385,7 +1383,7 @@ func (rck *RealmContextKeyRepresentation) ToDatabaseModel() configuration.RealmC
 		ID:                *rck.ID,
 		Label:             *rck.Label,
 		IdentitiesRealm:   *rck.IdentitiesRealm,
-		CustomerRealm:     *rck.CustomerRealm,
+		CustomerRealm:     customerRealm,
 		Config:            config,
 		IsRegisterDefault: rck.IsRegisterDefault != nil && *rck.IsRegisterDefault,
 	}
@@ -1397,7 +1395,6 @@ func (rck *RealmContextKeyRepresentation) Validate() error {
 		ValidateParameterNotNil(constants.ID, rck.ID).
 		ValidateParameterRegExp(constants.Label, rck.Label, constants.RegExpLabel, true).
 		ValidateParameterRegExp("identitiesRealm", rck.IdentitiesRealm, constants.RegExpRealmName, true).
-		ValidateParameterRegExp("customerRealm", rck.CustomerRealm, constants.RegExpRealmName, true).
 		ValidateParameter(constants.Config, rck.Config, true).
 		Status()
 }
@@ -1412,10 +1409,10 @@ func ConvertToAPIContextKeys(configs []configuration.RealmContextKey) []RealmCon
 }
 
 // ConvertToDBContextKeys converts context keys from API model to database model
-func ConvertToDBContextKeys(contextKeys []RealmContextKeyRepresentation) []configuration.RealmContextKey {
+func ConvertToDBContextKeys(contextKeys []RealmContextKeyRepresentation, customerRealm string) []configuration.RealmContextKey {
 	var res []configuration.RealmContextKey
 	for _, config := range contextKeys {
-		res = append(res, config.ToDatabaseModel())
+		res = append(res, config.ToDatabaseModel(customerRealm))
 	}
 	return res
 }

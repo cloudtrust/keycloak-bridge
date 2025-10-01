@@ -1182,7 +1182,6 @@ func createValidRealmContextKey() RealmContextKeyRepresentation {
 		ID:                ptr("id"),
 		Label:             ptr("label"),
 		IdentitiesRealm:   ptr("identities-realm"),
-		CustomerRealm:     ptr("customer-realm"),
 		Config:            createValidContextKeyConfig(),
 		IsRegisterDefault: boolPtr(false),
 	}
@@ -1227,7 +1226,7 @@ func TestValidateRealmContextKeyRepresentation(t *testing.T) {
 	})
 
 	var configs []RealmContextKeyRepresentation
-	for range 8 {
+	for range 6 {
 		configs = append(configs, createValidRealmContextKey())
 	}
 
@@ -1236,9 +1235,7 @@ func TestValidateRealmContextKeyRepresentation(t *testing.T) {
 	configs[2].Label = ptr("")
 	configs[3].IdentitiesRealm = nil
 	configs[4].IdentitiesRealm = ptr("")
-	configs[5].CustomerRealm = nil
-	configs[6].CustomerRealm = ptr("")
-	configs[7].Config = nil
+	configs[5].Config = nil
 
 	for idx, config := range configs {
 		t.Run(fmt.Sprintf("Invalid case #%d", idx+1), func(t *testing.T) {
@@ -1248,9 +1245,12 @@ func TestValidateRealmContextKeyRepresentation(t *testing.T) {
 }
 
 func TestContextKeyConvertions(t *testing.T) {
+	var customerRealm = "customer-realm"
+
 	t.Run("Default case", func(t *testing.T) {
 		var initialValue = createValidRealmContextKey()
-		var dtoConverted = ConvertToDBContextKeys([]RealmContextKeyRepresentation{initialValue})
+		var dtoConverted = ConvertToDBContextKeys([]RealmContextKeyRepresentation{initialValue}, customerRealm)
+		assert.Equal(t, customerRealm, dtoConverted[0].CustomerRealm)
 		var valueConvertedFromDTO = ConvertToAPIContextKeys(dtoConverted)[0]
 		assert.Equal(t, initialValue, valueConvertedFromDTO)
 	})
@@ -1306,7 +1306,7 @@ func TestValidateCtxKeyConfigRepresentation(t *testing.T) {
 	})
 
 	var configs []RealmContextKeyRepresentation
-	for range 7 {
+	for range 5 {
 		configs = append(configs, createValidRealmContextKey())
 	}
 
@@ -1314,9 +1314,7 @@ func TestValidateCtxKeyConfigRepresentation(t *testing.T) {
 	configs[1].Label = ptr("")
 	configs[2].IdentitiesRealm = nil
 	configs[3].IdentitiesRealm = ptr("")
-	configs[4].CustomerRealm = nil
-	configs[5].CustomerRealm = ptr("")
-	configs[6].Config = nil
+	configs[4].Config = nil
 
 	for idx, config := range configs {
 		t.Run(fmt.Sprintf("Invalid case #%d", idx+1), func(t *testing.T) {

@@ -2606,8 +2606,6 @@ components:
           type: string
         identitiesRealm:
           type: string
-        customerRealm:
-          type: string
         config:
           $ref: '#/components/schemas/CtxKeyConfigRepresentation'
         isRegisterDefault:

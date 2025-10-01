@@ -5179,7 +5179,7 @@ func TestSetRealmContextKeysConfiguration(t *testing.T) {
 		mocks.configurationDBModule.EXPECT().GetAllContextKeyID(ctx).Return([]string{"new-id"}, nil)
 
 		var err = mgmtComponent.SetRealmContextKeysConfiguration(ctx, customerRealm, []api.RealmContextKeyRepresentation{
-			{ID: ptr("new-id"), Label: ptr(""), IdentitiesRealm: ptr(""), CustomerRealm: ptr(""), Config: &api.CtxKeyConfigRepresentation{}},
+			{ID: ptr("new-id"), Label: ptr(""), IdentitiesRealm: ptr(""), Config: &api.CtxKeyConfigRepresentation{}},
 		})
 		assert.NotNil(t, err)
 		assert.Contains(t, err.Error(), msg.MsgErrInvalidParam)
@@ -5209,7 +5209,7 @@ func TestSetRealmContextKeysConfiguration(t *testing.T) {
 		mocks.configurationDBModule.EXPECT().StoreContextKeyConfiguration(ctx, mocks.transaction, gomock.Any()).Return(updError)
 
 		var err = mgmtComponent.SetRealmContextKeysConfiguration(ctx, customerRealm, []api.RealmContextKeyRepresentation{
-			{ID: &existingKey, Label: ptr("label"), IdentitiesRealm: ptr("identities"), CustomerRealm: &customerRealm, Config: &api.CtxKeyConfigRepresentation{}},
+			{ID: &existingKey, Label: ptr("label"), IdentitiesRealm: ptr("identities"), Config: &api.CtxKeyConfigRepresentation{}},
 		})
 		assert.Equal(t, updError, err)
 	})
@@ -5222,7 +5222,7 @@ func TestSetRealmContextKeysConfiguration(t *testing.T) {
 		mocks.transaction.EXPECT().Commit().Return(commitError)
 
 		var err = mgmtComponent.SetRealmContextKeysConfiguration(ctx, customerRealm, []api.RealmContextKeyRepresentation{
-			{ID: ptr("new-id"), Label: ptr("label"), IdentitiesRealm: ptr("identities"), CustomerRealm: &customerRealm, Config: &api.CtxKeyConfigRepresentation{}},
+			{ID: ptr("new-id"), Label: ptr("label"), IdentitiesRealm: ptr("identities"), Config: &api.CtxKeyConfigRepresentation{}},
 		})
 		assert.Equal(t, commitError, err)
 	})
@@ -5233,7 +5233,7 @@ func TestSetRealmContextKeysConfiguration(t *testing.T) {
 		mocks.transaction.EXPECT().Commit().Return(nil)
 
 		var err = mgmtComponent.SetRealmContextKeysConfiguration(ctx, customerRealm, []api.RealmContextKeyRepresentation{
-			{ID: ptr("new-id"), Label: ptr("label"), IdentitiesRealm: ptr("identities"), CustomerRealm: &customerRealm, Config: &api.CtxKeyConfigRepresentation{}},
+			{ID: ptr("new-id"), Label: ptr("label"), IdentitiesRealm: ptr("identities"), Config: &api.CtxKeyConfigRepresentation{}},
 		})
 		assert.Nil(t, err)
 	})
