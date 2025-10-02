@@ -2509,7 +2509,7 @@ func (c *component) GetRealmContextKeysConfiguration(ctx context.Context, custom
 
 // Store the context keys for the given customer realm in database
 func (c *component) SetRealmContextKeysConfiguration(ctx context.Context, customerRealm string, contextKeys []api.RealmContextKeyRepresentation) error {
-	var contextKeysDTO = api.ConvertToDBContextKeys(contextKeys)
+	var contextKeysDTO = api.ConvertToDBContextKeys(contextKeys, customerRealm)
 
 	providedKeys := c.getContextKeyUUIDSet(contextKeysDTO)
 	existingKeys, err := c.getExistingContextKeyUUID(ctx, customerRealm)
