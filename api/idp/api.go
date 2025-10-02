@@ -8,20 +8,26 @@ import (
 
 // IdentityProviderRepresentation struct
 type IdentityProviderRepresentation struct {
-	AddReadTokenRoleOnCreate  *bool                   `json:"addReadTokenRoleOnCreate,omitempty"`
-	Alias                     *string                 `json:"alias,omitempty"`
-	AuthenticateByDefault     *bool                   `json:"authenticateByDefault,omitempty"`
-	Config                    *map[string]interface{} `json:"config,omitempty"`
-	DisplayName               *string                 `json:"displayName,omitempty"`
-	Enabled                   *bool                   `json:"enabled,omitempty"`
-	FirstBrokerLoginFlowAlias *string                 `json:"firstBrokerLoginFlowAlias,omitempty"`
-	HideOnLogin               *bool                   `json:"hideOnLogin,omitempty"`
-	InternalID                *string                 `json:"internalId,omitempty"`
-	LinkOnly                  *bool                   `json:"linkOnly,omitempty"`
-	PostBrokerLoginFlowAlias  *string                 `json:"postBrokerLoginFlowAlias,omitempty"`
-	ProviderID                *string                 `json:"providerId,omitempty"`
-	StoreToken                *bool                   `json:"storeToken,omitempty"`
-	TrustEmail                *bool                   `json:"trustEmail,omitempty"`
+	AddReadTokenRoleOnCreate  *bool            `json:"addReadTokenRoleOnCreate,omitempty"`
+	Alias                     *string          `json:"alias,omitempty"`
+	AuthenticateByDefault     *bool            `json:"authenticateByDefault,omitempty"`
+	Config                    map[string]any   `json:"config,omitempty"`
+	DisplayName               *string          `json:"displayName,omitempty"`
+	Enabled                   *bool            `json:"enabled,omitempty"`
+	FirstBrokerLoginFlowAlias *string          `json:"firstBrokerLoginFlowAlias,omitempty"`
+	HideOnLogin               *bool            `json:"hideOnLogin,omitempty"`
+	InternalID                *string          `json:"internalId,omitempty"`
+	LinkOnly                  *bool            `json:"linkOnly,omitempty"`
+	PostBrokerLoginFlowAlias  *string          `json:"postBrokerLoginFlowAlias,omitempty"`
+	ProviderID                *string          `json:"providerId,omitempty"`
+	StoreToken                *bool            `json:"storeToken,omitempty"`
+	TrustEmail                *bool            `json:"trustEmail,omitempty"`
+	HrdSettings               *HrdSettingModel `json:"hrdSettings,omitempty"`
+}
+
+type HrdSettingModel struct {
+	IPRangesList string `json:"ipRangesList"`
+	Priority     int    `json:"priority"`
 }
 
 // ConvertToAPIIdentityProvider creates an API IdentityProviderRepresentation from a KC IdentityProviderRepresentation
@@ -70,7 +76,6 @@ func (idp IdentityProviderRepresentation) Validate() error {
 		ValidateParameterRegExp("alias", idp.Alias, constants.RegExpAlias, true).
 		ValidateParameterRegExp("displayName", idp.DisplayName, constants.RegExpDisplayName, true).
 		ValidateParameterRegExp("firstBrokerLoginFlowAlias", idp.FirstBrokerLoginFlowAlias, constants.RegExpFirstBrokerLoginFlowAlias, true).
-		ValidateParameterRegExp("internalId", idp.InternalID, constants.RegExpID, true).
 		ValidateParameterRegExp("postBrokerLoginFlowAlias", idp.PostBrokerLoginFlowAlias, constants.RegExpPostBrokerLoginFlowAlias, true).
 		ValidateParameterRegExp("providerId", idp.ProviderID, constants.RegExpProviderID, true).
 		Status()

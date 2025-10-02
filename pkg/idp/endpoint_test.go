@@ -45,7 +45,11 @@ func TestCreateIdentityProviderEndpoint(t *testing.T) {
 	var req = make(map[string]string)
 	req[prmRealm] = realm
 
-	idp := testApiIdp()
+	idp := createTestApiIdp()
+	idp.HrdSettings = &api.HrdSettingModel{
+		IPRangesList: "192.168.0.1/24,127.0.0.1/8",
+	}
+
 	idpJSON, _ := json.Marshal(idp)
 	req[reqBody] = string(idpJSON)
 
@@ -69,7 +73,11 @@ func TestUpdateIdentityProviderEndpoint(t *testing.T) {
 	req[prmRealm] = realm
 	req[prmProvider] = idpAlias
 
-	idp := testApiIdp()
+	idp := createTestApiIdp()
+	idp.HrdSettings = &api.HrdSettingModel{
+		IPRangesList: "192.168.1.1/24",
+	}
+
 	idpJSON, _ := json.Marshal(idp)
 	req[reqBody] = string(idpJSON)
 

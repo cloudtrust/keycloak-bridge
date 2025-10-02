@@ -27,7 +27,7 @@ func testIDP() IdentityProviderRepresentation {
 		AddReadTokenRoleOnCreate: &addReadTokenRoleOnCreate,
 		Alias:                    &alias,
 		AuthenticateByDefault:    &authenticateByDefault,
-		Config: &map[string]interface{}{
+		Config: map[string]any{
 			"acceptsPromptNoneForwardFromClient": "false",
 			"authorizationUrl":                   "http://keycloak.local:8080/auth/realms/trustid/protocol/openid-connect/auth",
 			"backchannelSupported":               "true",
@@ -57,6 +57,9 @@ func testIDP() IdentityProviderRepresentation {
 		ProviderID:                &providerID,
 		StoreToken:                &storeToken,
 		TrustEmail:                &trustEmail,
+		HrdSettings: &HrdSettingModel{
+			IPRangesList: "192.168.0.1/24,127.0.0.1/8",
+		},
 	}
 }
 
