@@ -3,6 +3,7 @@ package constants
 // Regular expressions for parameters validation
 const (
 	regExpLen255OrEmpty = `^.{0,255}$`
+	regExpLen36         = `^.{1,36}$`
 	regExpLen255        = `^.{1,255}$`
 	regExpLen128        = `^.{1,128}$`
 
@@ -57,7 +58,7 @@ const (
 	RegExpServiceType   = `^[\w_-]+$`
 	RegExpTxnID         = regExpLen255
 
-	RegExpColor	  = `^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$`
+	RegExpColor = `^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$`
 
 	// Corporate Regex TO CLEAN WHEN WE WILL HAVE ATTRIBUTE MANAGEMENT
 	regExpLen128OrEmpty      = `^.{0,128}$`
@@ -65,11 +66,18 @@ const (
 	RegExpCorporateLastName  = regExpLen128
 
 	// Identity provider
-	RegExpAlias                     = RegExpRealmName
+	RegExpAlias                     = `^[a-zA-Z0-9_-]{1,43}$`
 	RegExpDisplayName               = `^[a-zA-Z0-9 _-]{1,128}$`
 	RegExpFirstBrokerLoginFlowAlias = `^[a-zA-Z0-9 _-]{1,128}$`
 	RegExpPostBrokerLoginFlowAlias  = `^[a-zA-Z0-9 _-]{1,128}$`
 	RegExpProviderID                = `^[a-z0-9\-]{1,36}$`
+
+	// IP ranges
+	RegExpOctet        = `(?:25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9][0-9]|[0-9])` // IPv4 octet, 0-255
+	RegExpIpv4         = `(?:` + RegExpOctet + `\.){3}` + RegExpOctet         // IPv4 address (192.168.0.1)
+	RegExpCidrSuffix   = `(?:\/(?:[0-9]|[1-2][0-9]|3[0-2]))`                  // CIDR suffix (/24)
+	RegExpCidr         = RegExpIpv4 + RegExpCidrSuffix                        // IP range (192.168.0.1/24)
+	RegExpIpRangesList = `^` + RegExpCidr + `(?:,` + RegExpCidr + `)*$`       // IP ranges list (192.168.0.1/24,127.0.0.1/8)
 )
 
 // Overridable user details regex and document types

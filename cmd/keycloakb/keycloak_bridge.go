@@ -168,6 +168,9 @@ const (
 	kafkaReloadAuthProducer = "auth-reload-producer"
 	kafkaReloadAuthConsumer = "auth-reload-consumer"
 	kafkaEventProducer      = "event-producer"
+
+	// HRD
+	cfgHrd = "hrd"
 )
 
 func main() {
@@ -978,7 +981,21 @@ func main() {
 	{
 		var idpLogger = log.With(logger, "svc", "identity-providers")
 
-		idpComponent := idp.NewComponent(keycloakClient, technicalTokenProvider, idpLogger)
+		// HRD configuration
+		var hrdConfig toolbox.ComponentConfig
+		{
+			if err := c.UnmarshalKey(cfgHrd, &hrdConfig); err != nil {
+				logger.Error(ctx, "msg", "Can't get HRD component tool configuration for "+cfgHrd)
+			}
+		}
+
+		// HRD component tool
+		var hrdTool toolbox.ComponentTool
+		{
+			hrdTool = toolbox.NewComponentTool(hrdConfig)
+		}
+
+		idpComponent := idp.NewComponent(keycloakClient, technicalTokenProvider, hrdTool, idpLogger)
 
 		var rateLimitIdp = rateLimit[RateKeyIDP]
 		idpEndpoints = idp.Endpoints{

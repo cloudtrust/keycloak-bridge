@@ -16,6 +16,7 @@ import (
 type componentMocks struct {
 	keycloakIdpClient *mock.KeycloakIdpClient
 	tokenProvider     *mock.OidcTokenProvider
+	hrdTool           *mock.ComponentTool
 	logger            *mock.Logger
 }
 
@@ -23,28 +24,35 @@ func createMocks(mockCtrl *gomock.Controller) componentMocks {
 	return componentMocks{
 		keycloakIdpClient: mock.NewKeycloakIdpClient(mockCtrl),
 		tokenProvider:     mock.NewOidcTokenProvider(mockCtrl),
+		hrdTool:           mock.NewComponentTool(mockCtrl),
 		logger:            mock.NewLogger(mockCtrl),
 	}
 }
 
 const (
+	realmName = "test"
+
 	idpAlias = "testIDP"
+
+	compID           = "5b3f0a5d-a59d-4aff-8932-aa70f2806f04"
+	compProviderType = "org.keycloak.services.ui.extend.UiTabProvider"
+	compProviderID   = "Home-realm discovery settings"
+	compConfigName   = "hrdSettings"
 )
 
 func createComponent(mocks componentMocks) Component {
-	return NewComponent(mocks.keycloakIdpClient, mocks.tokenProvider, mocks.logger)
+	return NewComponent(mocks.keycloakIdpClient, mocks.tokenProvider, mocks.hrdTool, mocks.logger)
 }
 
 func ptrBool(value bool) *bool {
 	return &value
 }
 
-func testKcIdp() kc.IdentityProviderRepresentation {
+func createTestKcIdp() kc.IdentityProviderRepresentation {
 	return kc.IdentityProviderRepresentation{
 		AddReadTokenRoleOnCreate:  ptrBool(false),
 		Alias:                     ptr(idpAlias),
 		AuthenticateByDefault:     ptrBool(false),
-		Config:                    &map[string]interface{}{},
 		DisplayName:               ptr("TEST"),
 		Enabled:                   ptrBool(false),
 		FirstBrokerLoginFlowAlias: ptr("first broker login"),
@@ -58,12 +66,11 @@ func testKcIdp() kc.IdentityProviderRepresentation {
 	}
 }
 
-func testApiIdp() api.IdentityProviderRepresentation {
+func createTestApiIdp() api.IdentityProviderRepresentation {
 	return api.IdentityProviderRepresentation{
 		AddReadTokenRoleOnCreate:  ptrBool(false),
 		Alias:                     ptr(idpAlias),
 		AuthenticateByDefault:     ptrBool(false),
-		Config:                    &map[string]interface{}{},
 		DisplayName:               ptr("TEST"),
 		Enabled:                   ptrBool(false),
 		FirstBrokerLoginFlowAlias: ptr("first broker login"),
@@ -75,6 +82,30 @@ func testApiIdp() api.IdentityProviderRepresentation {
 		StoreToken:                ptrBool(false),
 		TrustEmail:                ptrBool(false),
 	}
+}
+
+func createTestComponent() kc.ComponentRepresentation {
+	config := map[string][]string{
+		compConfigName: {
+			"[{\"value\":\"{\\\"ipRangesList\\\":\\\"192.168.1.0/24\\\"}\",\"key\":\"EXTIDP-12345678-abcd-efgh-ijkl-012345678900\"}]",
+		},
+	}
+
+	return kc.ComponentRepresentation{
+		Config:       config,
+		ID:           ptr(compID),
+		ParentID:     ptr(realmName),
+		ProviderID:   ptr(compProviderID),
+		ProviderType: ptr(compProviderType),
+	}
+}
+
+func createTestUpdatedComponent(comp kc.ComponentRepresentation) kc.ComponentRepresentation {
+	comp.Config[compConfigName] = []string{
+		"[{\"value\":\"{\\\"ipRangesList\\\":\\\"192.168.1.0/24\\\"}\",\"key\":\"EXTIDP-12345678-abcd-efgh-ijkl-012345678900\"}]",
+		"[{\"value\":\"{\\\"ipRangesList\\\":\\\"192.168.67.0/24\\\"}\",\"key\":\"EXTIDP-12345678-abcd-efgh-ijkl-012345678901\"}]",
+	}
+	return comp
 }
 
 func TestGetIdentityProvider(t *testing.T) {
@@ -86,7 +117,6 @@ func TestGetIdentityProvider(t *testing.T) {
 
 	var accessToken = "TOKEN=="
 	var technicalAccessToken = "abcd-1234"
-	var realmName = "test"
 	var idpAlias = "trustid-idp"
 	var anyError = errors.New("any error")
 
@@ -94,8 +124,8 @@ func TestGetIdentityProvider(t *testing.T) {
 
 	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
 
-	kcIdp := testKcIdp()
-	apiIdp := testApiIdp()
+	kcIdp := createTestKcIdp()
+	apiIdp := createTestApiIdp()
 
 	t.Run("Get identity provider - failed to get technical access token", func(t *testing.T) {
 		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return("", anyError)
@@ -131,15 +161,27 @@ func TestCreateIdentityProvider(t *testing.T) {
 
 	var accessToken = "TOKEN=="
 	var technicalAccessToken = "abcd-1234"
-	var realmName = "test"
 	var anyError = errors.New("any error")
 
 	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
 
-	kcIdp := testKcIdp()
-	apiIdp := testApiIdp()
+	emptySettings := api.HrdSettingModel{}
+	settings := api.HrdSettingModel{
+		IPRangesList: "192.168.0.1/24,127.0.0.1/8",
+	}
+
+	kcIdp := createTestKcIdp()
+	apiIdp := createTestApiIdp()
+	apiIdp.HrdSettings = &settings
+
+	providerType := compProviderType
+	comp := createTestComponent()
+	comps := []kc.ComponentRepresentation{comp}
+
+	updatedComp := createTestUpdatedComponent(comp)
+	additionalParams := []any{"type", compProviderType}
 
 	t.Run("Create identity provider - failed to get technical access token", func(t *testing.T) {
 		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return("", anyError)
@@ -156,9 +198,87 @@ func TestCreateIdentityProvider(t *testing.T) {
 		assert.NotNil(t, err)
 	})
 
+	t.Run("Create identity provider - GetComponents failed", func(t *testing.T) {
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return(technicalAccessToken, nil)
+		mocks.keycloakIdpClient.EXPECT().CreateIdp(technicalAccessToken, realmName, kcIdp).Return(nil)
+		mocks.hrdTool.EXPECT().GetProviderType().Return(providerType)
+		mocks.keycloakIdpClient.EXPECT().GetComponents(technicalAccessToken, realmName, additionalParams...).Return([]kc.ComponentRepresentation{}, anyError)
+
+		err := idpComponent.CreateIdentityProvider(ctx, realmName, apiIdp)
+		assert.NotNil(t, err)
+	})
+
+	// HRD component already exists
+	t.Run("Create identity provider - GetComponentEntry failed", func(t *testing.T) {
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return(technicalAccessToken, nil)
+		mocks.keycloakIdpClient.EXPECT().CreateIdp(technicalAccessToken, realmName, kcIdp).Return(nil)
+		mocks.hrdTool.EXPECT().GetProviderType().Return(providerType)
+		mocks.keycloakIdpClient.EXPECT().GetComponents(technicalAccessToken, realmName, additionalParams...).Return(comps, nil)
+		mocks.hrdTool.EXPECT().FindComponent(comps).Return(&comp)
+		mocks.hrdTool.EXPECT().GetComponentEntry(&comp, idpAlias, &emptySettings).Return(anyError)
+
+		err := idpComponent.CreateIdentityProvider(ctx, realmName, apiIdp)
+		assert.NotNil(t, err)
+	})
+
+	t.Run("Create identity provider - UpdateComponentEntry failed", func(t *testing.T) {
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return(technicalAccessToken, nil)
+		mocks.keycloakIdpClient.EXPECT().CreateIdp(technicalAccessToken, realmName, kcIdp).Return(nil)
+		mocks.hrdTool.EXPECT().GetProviderType().Return(providerType)
+		mocks.keycloakIdpClient.EXPECT().GetComponents(technicalAccessToken, realmName, additionalParams...).Return(comps, nil)
+		mocks.hrdTool.EXPECT().FindComponent(comps).Return(&comp)
+		mocks.hrdTool.EXPECT().GetComponentEntry(&comp, idpAlias, &emptySettings).Return(nil)
+		mocks.hrdTool.EXPECT().UpdateComponentEntry(&comp, idpAlias, settings).Return(anyError)
+
+		err := idpComponent.CreateIdentityProvider(ctx, realmName, apiIdp)
+		assert.NotNil(t, err)
+	})
+
+	t.Run("Create identity provider - UpdateComponent failed", func(t *testing.T) {
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return(technicalAccessToken, nil)
+		mocks.keycloakIdpClient.EXPECT().CreateIdp(technicalAccessToken, realmName, kcIdp).Return(nil)
+		mocks.hrdTool.EXPECT().GetProviderType().Return(providerType)
+		mocks.keycloakIdpClient.EXPECT().GetComponents(technicalAccessToken, realmName, additionalParams...).Return(comps, nil)
+		mocks.hrdTool.EXPECT().FindComponent(comps).Return(&comp)
+		mocks.hrdTool.EXPECT().GetComponentEntry(&comp, idpAlias, &emptySettings).Return(nil)
+		mocks.hrdTool.EXPECT().UpdateComponentEntry(&comp, idpAlias, settings).Return(nil)
+		mocks.keycloakIdpClient.EXPECT().UpdateComponent(technicalAccessToken, realmName, *updatedComp.ID, updatedComp).Return(anyError)
+
+		err := idpComponent.CreateIdentityProvider(ctx, realmName, apiIdp)
+		assert.NotNil(t, err)
+	})
+
+	// HRD component does not exist yet
+	t.Run("Create identity provider - InitializeComponent failed", func(t *testing.T) {
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return(technicalAccessToken, nil)
+		mocks.keycloakIdpClient.EXPECT().CreateIdp(technicalAccessToken, realmName, kcIdp).Return(nil)
+		mocks.hrdTool.EXPECT().GetProviderType().Return(providerType)
+		mocks.keycloakIdpClient.EXPECT().GetComponents(technicalAccessToken, realmName, additionalParams...).Return([]kc.ComponentRepresentation{}, nil)
+		mocks.hrdTool.EXPECT().InitializeComponent(realmName, idpAlias, apiIdp.HrdSettings).Return(kc.ComponentRepresentation{}, anyError)
+
+		err := idpComponent.CreateIdentityProvider(ctx, realmName, apiIdp)
+		assert.NotNil(t, err)
+	})
+
+	t.Run("Create identity provider - CreateComponent failed", func(t *testing.T) {
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return(technicalAccessToken, nil)
+		mocks.keycloakIdpClient.EXPECT().CreateIdp(technicalAccessToken, realmName, kcIdp).Return(nil)
+		mocks.hrdTool.EXPECT().GetProviderType().Return(providerType)
+		mocks.keycloakIdpClient.EXPECT().GetComponents(technicalAccessToken, realmName, additionalParams...).Return([]kc.ComponentRepresentation{}, nil)
+		mocks.hrdTool.EXPECT().InitializeComponent(realmName, idpAlias, apiIdp.HrdSettings).Return(comp, nil)
+		mocks.keycloakIdpClient.EXPECT().CreateComponent(technicalAccessToken, realmName, comp).Return(anyError)
+
+		err := idpComponent.CreateIdentityProvider(ctx, realmName, apiIdp)
+		assert.NotNil(t, err)
+	})
+
 	t.Run("Create identity provider - success", func(t *testing.T) {
 		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return(technicalAccessToken, nil)
 		mocks.keycloakIdpClient.EXPECT().CreateIdp(technicalAccessToken, realmName, kcIdp).Return(nil)
+		mocks.hrdTool.EXPECT().GetProviderType().Return(providerType)
+		mocks.keycloakIdpClient.EXPECT().GetComponents(technicalAccessToken, realmName, additionalParams...).Return([]kc.ComponentRepresentation{}, nil)
+		mocks.hrdTool.EXPECT().InitializeComponent(realmName, idpAlias, apiIdp.HrdSettings).Return(comp, nil)
+		mocks.keycloakIdpClient.EXPECT().CreateComponent(technicalAccessToken, realmName, comp).Return(nil)
 
 		err := idpComponent.CreateIdentityProvider(ctx, realmName, apiIdp)
 		assert.Nil(t, err)
@@ -174,15 +294,19 @@ func TestUpdateIdentityProvider(t *testing.T) {
 
 	var accessToken = "TOKEN=="
 	var technicalAccessToken = "abcd-1234"
-	var realmName = "test"
 	var anyError = errors.New("any error")
 
 	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
 
-	kcIdp := testKcIdp()
-	apiIdp := testApiIdp()
+	settings := api.HrdSettingModel{
+		IPRangesList: "192.168.0.1/24,127.0.0.1/8",
+	}
+
+	kcIdp := createTestKcIdp()
+	apiIdp := createTestApiIdp()
+	apiIdp.HrdSettings = &settings
 
 	t.Run("Update identity provider - failed to get technical access token", func(t *testing.T) {
 		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return("", anyError)
@@ -217,21 +341,18 @@ func TestDeleteIdentityProvider(t *testing.T) {
 
 	var accessToken = "TOKEN=="
 	var technicalAccessToken = "abcd-1234"
-	var realmName = "test"
 	var anyError = errors.New("any error")
+
+	comp := createTestComponent()
+	comps := []kc.ComponentRepresentation{comp}
+	updatedComp := createTestUpdatedComponent(comp)
+	additionalParams := []any{"type", compProviderType}
 
 	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 
 	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
 
 	t.Run("Delete identity provider - failed to get technical access token", func(t *testing.T) {
-		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return("", anyError)
-
-		err := idpComponent.DeleteIdentityProvider(ctx, realmName, idpAlias)
-		assert.NotNil(t, err)
-	})
-
-	t.Run("Delete identity provider - failed to get idp", func(t *testing.T) {
 		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return("", anyError)
 
 		err := idpComponent.DeleteIdentityProvider(ctx, realmName, idpAlias)
@@ -246,9 +367,49 @@ func TestDeleteIdentityProvider(t *testing.T) {
 		assert.NotNil(t, err)
 	})
 
+	t.Run("Delete identity provider - failed to get components", func(t *testing.T) {
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return(technicalAccessToken, nil)
+		mocks.keycloakIdpClient.EXPECT().DeleteIdp(technicalAccessToken, realmName, idpAlias).Return(nil)
+		mocks.hrdTool.EXPECT().GetProviderType().Return(compProviderType)
+		mocks.keycloakIdpClient.EXPECT().GetComponents(technicalAccessToken, realmName, additionalParams...).Return([]kc.ComponentRepresentation{}, anyError)
+
+		err := idpComponent.DeleteIdentityProvider(ctx, realmName, idpAlias)
+		assert.NotNil(t, err)
+	})
+
+	t.Run("Delete identity provider - failed to delete component entry", func(t *testing.T) {
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return(technicalAccessToken, nil)
+		mocks.keycloakIdpClient.EXPECT().DeleteIdp(technicalAccessToken, realmName, idpAlias).Return(nil)
+		mocks.hrdTool.EXPECT().GetProviderType().Return(compProviderType)
+		mocks.keycloakIdpClient.EXPECT().GetComponents(technicalAccessToken, realmName, additionalParams...).Return(comps, nil)
+		mocks.hrdTool.EXPECT().FindComponent(comps).Return(&comp)
+		mocks.hrdTool.EXPECT().DeleteComponentEntry(&comp, idpAlias).Return(false, anyError)
+
+		err := idpComponent.DeleteIdentityProvider(ctx, realmName, idpAlias)
+		assert.NotNil(t, err)
+	})
+
+	t.Run("Delete identity provider - failed to update component", func(t *testing.T) {
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return(technicalAccessToken, nil)
+		mocks.keycloakIdpClient.EXPECT().DeleteIdp(technicalAccessToken, realmName, idpAlias).Return(nil)
+		mocks.hrdTool.EXPECT().GetProviderType().Return(compProviderType)
+		mocks.keycloakIdpClient.EXPECT().GetComponents(technicalAccessToken, realmName, additionalParams...).Return(comps, nil)
+		mocks.hrdTool.EXPECT().FindComponent(comps).Return(&comp)
+		mocks.hrdTool.EXPECT().DeleteComponentEntry(&comp, idpAlias).Return(true, nil)
+		mocks.keycloakIdpClient.EXPECT().UpdateComponent(technicalAccessToken, realmName, *updatedComp.ID, updatedComp).Return(anyError)
+
+		err := idpComponent.DeleteIdentityProvider(ctx, realmName, idpAlias)
+		assert.NotNil(t, err)
+	})
+
 	t.Run("Delete identity provider - success", func(t *testing.T) {
 		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return(technicalAccessToken, nil)
 		mocks.keycloakIdpClient.EXPECT().DeleteIdp(technicalAccessToken, realmName, idpAlias).Return(nil)
+		mocks.hrdTool.EXPECT().GetProviderType().Return(compProviderType)
+		mocks.keycloakIdpClient.EXPECT().GetComponents(technicalAccessToken, realmName, additionalParams...).Return(comps, nil)
+		mocks.hrdTool.EXPECT().FindComponent(comps).Return(&comp)
+		mocks.hrdTool.EXPECT().DeleteComponentEntry(&comp, idpAlias).Return(true, nil)
+		mocks.keycloakIdpClient.EXPECT().UpdateComponent(technicalAccessToken, realmName, *updatedComp.ID, updatedComp).Return(nil)
 
 		err := idpComponent.DeleteIdentityProvider(ctx, realmName, idpAlias)
 		assert.Nil(t, err)

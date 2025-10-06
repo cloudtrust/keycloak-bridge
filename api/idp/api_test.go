@@ -1,6 +1,7 @@
 package apiidp
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -22,31 +23,46 @@ var (
 	trustEmail                = false
 )
 
-func testIDP() IdentityProviderRepresentation {
+func createTestIdpConfig() map[string]string {
+	return map[string]string{
+		"postBindingLogout":              "true",
+		"postBindingResponse":            "true",
+		"backchannelSupported":           "false",
+		"caseSensitiveOriginalUsername":  "false",
+		"idpEntityId":                    "value-tbd",
+		"useMetadataDescriptorUrl":       "false",
+		"loginHint":                      "false",
+		"allowCreate":                    "true",
+		"authnContextComparisonType":     "exact",
+		"syncMode":                       "LEGACY",
+		"singleSignOnServiceUrl":         "https://saml.sso.url/",
+		"wantAuthnRequestsSigned":        "false",
+		"allowedClockSkew":               "0",
+		"artifactBindingResponse":        "false",
+		"validateSignature":              "true",
+		"signingCertificate":             "certificate",
+		"nameIDPolicyFormat":             "urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified",
+		"entityId":                       "https://idp-staging.dev.trustid.ch/auth/realms/test",
+		"signSpMetadata":                 "false",
+		"wantAssertionsEncrypted":        "false",
+		"sendClientIdOnLogout":           "false",
+		"wantAssertionsSigned":           "true",
+		"sendIdTokenOnLogout":            "true",
+		"postBindingAuthnRequest":        "true",
+		"forceAuthn":                     "false",
+		"attributeConsumingServiceIndex": "0",
+		"principalType":                  "SUBJECT",
+	}
+}
+
+func createTestApiIdp() IdentityProviderRepresentation {
+	config := createTestIdpConfig()
+
 	return IdentityProviderRepresentation{
-		AddReadTokenRoleOnCreate: &addReadTokenRoleOnCreate,
-		Alias:                    &alias,
-		AuthenticateByDefault:    &authenticateByDefault,
-		Config: &map[string]interface{}{
-			"acceptsPromptNoneForwardFromClient": "false",
-			"authorizationUrl":                   "http://keycloak.local:8080/auth/realms/trustid/protocol/openid-connect/auth",
-			"backchannelSupported":               "true",
-			"clientAuthMethod":                   "client_secret_basic",
-			"clientId":                           "test-community-sp",
-			"clientSecret":                       "**********",
-			"disableUserInfo":                    "false",
-			"issuer":                             "http://keycloak.local:8080/auth/realms/trustid",
-			"jwksUrl":                            "http://keycloak.local:8080/auth/realms/trustid/protocol/openid-connect/certs",
-			"logoutUrl":                          "http://keycloak.local:8080/auth/realms/trustid/protocol/openid-connect/logout",
-			"metadataDescriptorUrl":              "http://keycloak.local:8080/auth/realms/trustid/.well-known/openid-configuration",
-			"pkceEnabled":                        "true",
-			"pkceMethod":                         "S256",
-			"syncMode":                           "FORCE",
-			"tokenUrl":                           "http://keycloak.local:8080/auth/realms/trustid/protocol/openid-connect/token",
-			"useJwksUrl":                         "true",
-			"userInfoUrl":                        "http://keycloak.local:8080/auth/realms/trustid/protocol/openid-connect/userinfo",
-			"validateSignature":                  "true",
-		},
+		AddReadTokenRoleOnCreate:  &addReadTokenRoleOnCreate,
+		Alias:                     &alias,
+		AuthenticateByDefault:     &authenticateByDefault,
+		Config:                    config,
 		DisplayName:               &displayName,
 		Enabled:                   &enabled,
 		FirstBrokerLoginFlowAlias: &firstBrokerLoginFlowAlias,
@@ -57,20 +73,23 @@ func testIDP() IdentityProviderRepresentation {
 		ProviderID:                &providerID,
 		StoreToken:                &storeToken,
 		TrustEmail:                &trustEmail,
+		HrdSettings: &HrdSettingModel{
+			IPRangesList: "192.168.0.1/24,127.0.0.1/8",
+		},
 	}
 }
 
 func TestValidateIdentityProviderRepresentation(t *testing.T) {
 
 	t.Run("valid OIDC provider", func(t *testing.T) {
-		idp := testIDP()
+		idp := createTestApiIdp()
 
 		err := idp.Validate()
 		assert.NoError(t, err)
 	})
 
 	t.Run("invalid alias", func(t *testing.T) {
-		idp := testIDP()
+		idp := createTestApiIdp()
 
 		*idp.Alias = "`!not a valid alias!`"
 
@@ -79,9 +98,39 @@ func TestValidateIdentityProviderRepresentation(t *testing.T) {
 	})
 
 	t.Run("invalid providerId", func(t *testing.T) {
-		idp := testIDP()
+		idp := createTestApiIdp()
 
 		*idp.InternalID = "not an ID"
+
+		err := idp.Validate()
+		assert.Error(t, err)
+	})
+
+	t.Run("invalid config", func(t *testing.T) {
+		idp := createTestApiIdp()
+
+		n := 1000000
+		idp.Config = map[string]string{
+			"singleSignOnServiceUrl": strings.Repeat("A", n),
+		}
+
+		err := idp.Validate()
+		assert.Error(t, err)
+	})
+
+	t.Run("invalid HRD IP ranges list", func(t *testing.T) {
+		idp := createTestApiIdp()
+
+		idp.HrdSettings.IPRangesList = "not a list of IP ranges"
+
+		err := idp.Validate()
+		assert.Error(t, err)
+	})
+
+	t.Run("invalid HRD priority score", func(t *testing.T) {
+		idp := createTestApiIdp()
+
+		idp.HrdSettings.Priority = -250
 
 		err := idp.Validate()
 		assert.Error(t, err)
