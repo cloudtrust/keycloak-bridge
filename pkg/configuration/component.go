@@ -33,7 +33,7 @@ func NewComponent(contextKeyManager ContextKeyManager, logger log.Logger) Compon
 
 // GetIdentificationURI returns the identification URI for a given context key and realm
 func (c *component) GetIdentificationURI(ctx context.Context, realm string, contextKey string) (string, error) {
-	ctxOverride, err := c.contextKeyMgr.GetOverride(ctx, realm, contextKey)
+	ctxOverride, err := c.contextKeyMgr.GetOverride(ctx, contextKey, realm)
 	if err != nil {
 		c.logger.Info(ctx, "msg", "Invalid (context-key, realm) pair", "context-key", contextKey, "realm", realm, "err", err.Error())
 		return "", errorhandler.CreateBadRequestError(errorhandler.MsgErrInvalidParam + ".realm-and-context-key")
