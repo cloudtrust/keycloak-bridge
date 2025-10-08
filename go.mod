@@ -5,7 +5,7 @@ go 1.24.1
 require (
 	github.com/cloudtrust/common-service/v2 v2.13.0
 	github.com/cloudtrust/httpclient v1.5.0
-	github.com/cloudtrust/kafka-client v1.6.1
+	github.com/cloudtrust/kafka-client v1.6.2
 	github.com/cloudtrust/keycloak-client/v2 v2.14.1
 	github.com/go-kit/kit v0.13.0
 	github.com/go-kit/log v0.2.1
@@ -27,7 +27,7 @@ require (
 
 require (
 	filippo.io/edwards25519 v1.1.0 // indirect
-	github.com/IBM/sarama v1.45.2 // indirect
+	github.com/IBM/sarama v1.46.1 // indirect
 	github.com/VividCortex/gohistogram v1.0.0 // indirect
 	github.com/coreos/go-oidc v2.4.0+incompatible // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
@@ -40,8 +40,6 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.3.0 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/flatbuffers v25.2.10+incompatible // indirect
-	github.com/hashicorp/errwrap v1.1.0 // indirect
-	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/go-uuid v1.0.3 // indirect
 	github.com/influxdata/influxdb1-client v0.0.0-20220302092344-a9ab5670611c // indirect
 	github.com/jcmturner/aescts/v2 v2.0.0 // indirect
@@ -56,7 +54,7 @@ require (
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/pquerna/cachecontrol v0.2.0 // indirect
-	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
+	github.com/rcrowley/go-metrics v0.0.0-20250401214520-65e299d6c5c9 // indirect
 	github.com/sagikazarmark/locafero v0.11.0 // indirect
 	github.com/sourcegraph/conc v0.3.1-0.20240121214520-5f936abd7ae8 // indirect
 	github.com/spf13/afero v1.15.0 // indirect
