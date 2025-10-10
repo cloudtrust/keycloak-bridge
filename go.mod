@@ -3,7 +3,7 @@ module github.com/cloudtrust/keycloak-bridge
 go 1.24.1
 
 require (
-	github.com/cloudtrust/common-service/v2 v2.13.0
+	github.com/cloudtrust/common-service/v2 v2.13.1
 	github.com/cloudtrust/httpclient v1.5.0
 	github.com/cloudtrust/kafka-client v1.6.2
 	github.com/cloudtrust/keycloak-client/v2 v2.14.1
@@ -39,7 +39,7 @@ require (
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/golang-jwt/jwt/v5 v5.3.0 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
-	github.com/google/flatbuffers v25.2.10+incompatible // indirect
+	github.com/google/flatbuffers v25.9.23+incompatible // indirect
 	github.com/hashicorp/go-uuid v1.0.3 // indirect
 	github.com/influxdata/influxdb1-client v0.0.0-20220302092344-a9ab5670611c // indirect
 	github.com/jcmturner/aescts/v2 v2.0.0 // indirect
