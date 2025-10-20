@@ -41,9 +41,9 @@ const (
 	selectAllContextKeyID = `select id from context_key_configuration`
 	deleteContextKeyStmt  = `DELETE from context_key_configuration WHERE id = ? and customer_realm = ifnull(?, customer_realm)`
 	storeContextKeyStmt   = `
-		INSERT INTO context_key_configuration (id, label, identities_realm, customer_realm, configuration)
-		VALUES (?, ?, ?, ?, ?)
-		ON DUPLICATE KEY UPDATE label=VALUES(label), identities_realm=VALUES(identities_realm), configuration=VALUES(configuration)
+		INSERT INTO context_key_configuration (id, label, identities_realm, customer_realm, configuration, is_register_default)
+		VALUES (?, ?, ?, ?, ?, ?)
+		ON DUPLICATE KEY UPDATE label=VALUES(label), identities_realm=VALUES(identities_realm), configuration=VALUES(configuration), is_register_default=VALUES(is_register_default)
 	`
 	selectAuthzStmt       = `SELECT realm_id, group_name, action, target_realm_id, target_group_name FROM authorizations WHERE realm_id = ? AND group_name = ?;`
 	selectSingleAuthzStmt = `
