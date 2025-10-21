@@ -70,6 +70,20 @@ func (mr *KeycloakIdpClientMockRecorder) CreateIdp(accessToken, realmName, idpRe
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateIdp", reflect.TypeOf((*KeycloakIdpClient)(nil).CreateIdp), accessToken, realmName, idpRep)
 }
 
+// CreateIdpMapper mocks base method.
+func (m *KeycloakIdpClient) CreateIdpMapper(accessToken, realmName, idpAlias string, mapperRep keycloak.IdentityProviderMapperRepresentation) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateIdpMapper", accessToken, realmName, idpAlias, mapperRep)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateIdpMapper indicates an expected call of CreateIdpMapper.
+func (mr *KeycloakIdpClientMockRecorder) CreateIdpMapper(accessToken, realmName, idpAlias, mapperRep any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateIdpMapper", reflect.TypeOf((*KeycloakIdpClient)(nil).CreateIdpMapper), accessToken, realmName, idpAlias, mapperRep)
+}
+
 // DeleteIdp mocks base method.
 func (m *KeycloakIdpClient) DeleteIdp(accessToken, realmName, idpAlias string) error {
 	m.ctrl.T.Helper()
@@ -82,6 +96,20 @@ func (m *KeycloakIdpClient) DeleteIdp(accessToken, realmName, idpAlias string) e
 func (mr *KeycloakIdpClientMockRecorder) DeleteIdp(accessToken, realmName, idpAlias any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteIdp", reflect.TypeOf((*KeycloakIdpClient)(nil).DeleteIdp), accessToken, realmName, idpAlias)
+}
+
+// DeleteIdpMapper mocks base method.
+func (m *KeycloakIdpClient) DeleteIdpMapper(accessToken, realmName, idpAlias, mapperID string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteIdpMapper", accessToken, realmName, idpAlias, mapperID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteIdpMapper indicates an expected call of DeleteIdpMapper.
+func (mr *KeycloakIdpClientMockRecorder) DeleteIdpMapper(accessToken, realmName, idpAlias, mapperID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteIdpMapper", reflect.TypeOf((*KeycloakIdpClient)(nil).DeleteIdpMapper), accessToken, realmName, idpAlias, mapperID)
 }
 
 // GetComponents mocks base method.
@@ -119,6 +147,21 @@ func (mr *KeycloakIdpClientMockRecorder) GetIdp(accessToken, realmName, idpAlias
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetIdp", reflect.TypeOf((*KeycloakIdpClient)(nil).GetIdp), accessToken, realmName, idpAlias)
 }
 
+// GetIdpMappers mocks base method.
+func (m *KeycloakIdpClient) GetIdpMappers(accessToken, realmName, idpAlias string) ([]keycloak.IdentityProviderMapperRepresentation, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetIdpMappers", accessToken, realmName, idpAlias)
+	ret0, _ := ret[0].([]keycloak.IdentityProviderMapperRepresentation)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetIdpMappers indicates an expected call of GetIdpMappers.
+func (mr *KeycloakIdpClientMockRecorder) GetIdpMappers(accessToken, realmName, idpAlias any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetIdpMappers", reflect.TypeOf((*KeycloakIdpClient)(nil).GetIdpMappers), accessToken, realmName, idpAlias)
+}
+
 // UpdateComponent mocks base method.
 func (m *KeycloakIdpClient) UpdateComponent(accessToken, realmName, compID string, comp keycloak.ComponentRepresentation) error {
 	m.ctrl.T.Helper()
@@ -145,6 +188,20 @@ func (m *KeycloakIdpClient) UpdateIdp(accessToken, realmName, idpAlias string, i
 func (mr *KeycloakIdpClientMockRecorder) UpdateIdp(accessToken, realmName, idpAlias, idpRep any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateIdp", reflect.TypeOf((*KeycloakIdpClient)(nil).UpdateIdp), accessToken, realmName, idpAlias, idpRep)
+}
+
+// UpdateIdpMapper mocks base method.
+func (m *KeycloakIdpClient) UpdateIdpMapper(accessToken, realmName, idpAlias, mapperID string, mapperRep keycloak.IdentityProviderMapperRepresentation) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateIdpMapper", accessToken, realmName, idpAlias, mapperID, mapperRep)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateIdpMapper indicates an expected call of UpdateIdpMapper.
+func (mr *KeycloakIdpClientMockRecorder) UpdateIdpMapper(accessToken, realmName, idpAlias, mapperID, mapperRep any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateIdpMapper", reflect.TypeOf((*KeycloakIdpClient)(nil).UpdateIdpMapper), accessToken, realmName, idpAlias, mapperID, mapperRep)
 }
 
 // Component is a mock of Component interface.
@@ -185,6 +242,20 @@ func (mr *ComponentMockRecorder) CreateIdentityProvider(ctx, realmName, provider
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateIdentityProvider", reflect.TypeOf((*Component)(nil).CreateIdentityProvider), ctx, realmName, provider)
 }
 
+// CreateIdentityProviderMapper mocks base method.
+func (m *Component) CreateIdentityProviderMapper(ctx context.Context, realmName, idpAlias string, apiMapper apiidp.IdentityProviderMapperRepresentation) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateIdentityProviderMapper", ctx, realmName, idpAlias, apiMapper)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateIdentityProviderMapper indicates an expected call of CreateIdentityProviderMapper.
+func (mr *ComponentMockRecorder) CreateIdentityProviderMapper(ctx, realmName, idpAlias, apiMapper any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateIdentityProviderMapper", reflect.TypeOf((*Component)(nil).CreateIdentityProviderMapper), ctx, realmName, idpAlias, apiMapper)
+}
+
 // DeleteIdentityProvider mocks base method.
 func (m *Component) DeleteIdentityProvider(ctx context.Context, realmName, providerAlias string) error {
 	m.ctrl.T.Helper()
@@ -197,6 +268,20 @@ func (m *Component) DeleteIdentityProvider(ctx context.Context, realmName, provi
 func (mr *ComponentMockRecorder) DeleteIdentityProvider(ctx, realmName, providerAlias any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteIdentityProvider", reflect.TypeOf((*Component)(nil).DeleteIdentityProvider), ctx, realmName, providerAlias)
+}
+
+// DeleteIdentityProviderMapper mocks base method.
+func (m *Component) DeleteIdentityProviderMapper(ctx context.Context, realmName, idpAlias, mapperID string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteIdentityProviderMapper", ctx, realmName, idpAlias, mapperID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteIdentityProviderMapper indicates an expected call of DeleteIdentityProviderMapper.
+func (mr *ComponentMockRecorder) DeleteIdentityProviderMapper(ctx, realmName, idpAlias, mapperID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteIdentityProviderMapper", reflect.TypeOf((*Component)(nil).DeleteIdentityProviderMapper), ctx, realmName, idpAlias, mapperID)
 }
 
 // GetIdentityProvider mocks base method.
@@ -214,6 +299,21 @@ func (mr *ComponentMockRecorder) GetIdentityProvider(ctx, realmName, providerAli
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetIdentityProvider", reflect.TypeOf((*Component)(nil).GetIdentityProvider), ctx, realmName, providerAlias)
 }
 
+// GetIdentityProviderMappers mocks base method.
+func (m *Component) GetIdentityProviderMappers(ctx context.Context, realmName, idpAlias string) ([]apiidp.IdentityProviderMapperRepresentation, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetIdentityProviderMappers", ctx, realmName, idpAlias)
+	ret0, _ := ret[0].([]apiidp.IdentityProviderMapperRepresentation)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetIdentityProviderMappers indicates an expected call of GetIdentityProviderMappers.
+func (mr *ComponentMockRecorder) GetIdentityProviderMappers(ctx, realmName, idpAlias any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetIdentityProviderMappers", reflect.TypeOf((*Component)(nil).GetIdentityProviderMappers), ctx, realmName, idpAlias)
+}
+
 // UpdateIdentityProvider mocks base method.
 func (m *Component) UpdateIdentityProvider(ctx context.Context, realmName, providerAlias string, provider apiidp.IdentityProviderRepresentation) error {
 	m.ctrl.T.Helper()
@@ -226,4 +326,18 @@ func (m *Component) UpdateIdentityProvider(ctx context.Context, realmName, provi
 func (mr *ComponentMockRecorder) UpdateIdentityProvider(ctx, realmName, providerAlias, provider any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateIdentityProvider", reflect.TypeOf((*Component)(nil).UpdateIdentityProvider), ctx, realmName, providerAlias, provider)
+}
+
+// UpdateIdentityProviderMapper mocks base method.
+func (m *Component) UpdateIdentityProviderMapper(ctx context.Context, realmName, idpAlias, mapperID string, apiMapper apiidp.IdentityProviderMapperRepresentation) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateIdentityProviderMapper", ctx, realmName, idpAlias, mapperID, apiMapper)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateIdentityProviderMapper indicates an expected call of UpdateIdentityProviderMapper.
+func (mr *ComponentMockRecorder) UpdateIdentityProviderMapper(ctx, realmName, idpAlias, mapperID, apiMapper any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateIdentityProviderMapper", reflect.TypeOf((*Component)(nil).UpdateIdentityProviderMapper), ctx, realmName, idpAlias, mapperID, apiMapper)
 }

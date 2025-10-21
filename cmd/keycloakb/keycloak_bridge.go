@@ -999,10 +999,14 @@ func main() {
 
 		var rateLimitIdp = rateLimit[RateKeyIDP]
 		idpEndpoints = idp.Endpoints{
-			GetIdentityProvider:    prepareEndpoint(idp.MakeGetIdentityProviderEndpoint(idpComponent), "get_identity_provider_endpoint", idpLogger, rateLimitIdp),
-			CreateIdentityProvider: prepareEndpoint(idp.MakeCreateIdentityProviderEndpoint(idpComponent), "create_identity_providers_endpoint", idpLogger, rateLimitIdp),
-			UpdateIdentityProvider: prepareEndpoint(idp.MakeUpdateIdentityProviderEndpoint(idpComponent), "update_identity_provider_endpoint", idpLogger, rateLimitIdp),
-			DeleteIdentityProvider: prepareEndpoint(idp.MakeDeleteIdentityProviderEndpoint(idpComponent), "delete_identity_providers_endpoint", idpLogger, rateLimitIdp),
+			GetIdentityProvider:          prepareEndpoint(idp.MakeGetIdentityProviderEndpoint(idpComponent), "get_identity_provider_endpoint", idpLogger, rateLimitIdp),
+			CreateIdentityProvider:       prepareEndpoint(idp.MakeCreateIdentityProviderEndpoint(idpComponent), "create_identity_provider_endpoint", idpLogger, rateLimitIdp),
+			UpdateIdentityProvider:       prepareEndpoint(idp.MakeUpdateIdentityProviderEndpoint(idpComponent), "update_identity_provider_endpoint", idpLogger, rateLimitIdp),
+			DeleteIdentityProvider:       prepareEndpoint(idp.MakeDeleteIdentityProviderEndpoint(idpComponent), "delete_identity_provider_endpoint", idpLogger, rateLimitIdp),
+			GetIdentityProviderMappers:   prepareEndpoint(idp.MakeGetIdentityProviderMappersEndpoint(idpComponent), "get_identity_provider_mappers_endpoint", idpLogger, rateLimitIdp),
+			CreateIdentityProviderMapper: prepareEndpoint(idp.MakeCreateIdentityProviderMapperEndpoint(idpComponent), "create_identity_provider_mapper_endpoint", idpLogger, rateLimitIdp),
+			UpdateIdentityProviderMapper: prepareEndpoint(idp.MakeUpdateIdentityProviderMapperEndpoint(idpComponent), "update_identity_provider_mapper_endpoint", idpLogger, rateLimitIdp),
+			DeleteIdentityProviderMapper: prepareEndpoint(idp.MakeDeleteIdentityProviderMapperEndpoint(idpComponent), "delete_identity_provider_mapper_endpoint", idpLogger, rateLimitIdp),
 		}
 	}
 
@@ -1067,6 +1071,10 @@ func main() {
 		var createIdentityProviderHandler = configureHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, idp.MakeIdpHandler, logger)(idpEndpoints.CreateIdentityProvider)
 		var updateIdentityProviderHandler = configureHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, idp.MakeIdpHandler, logger)(idpEndpoints.UpdateIdentityProvider)
 		var deleteIdentityProviderHandler = configureHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, idp.MakeIdpHandler, logger)(idpEndpoints.DeleteIdentityProvider)
+		var getIdentityProviderMappersHandler = configureHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, idp.MakeIdpHandler, logger)(idpEndpoints.GetIdentityProviderMappers)
+		var createIdentityProviderMapperHandler = configureHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, idp.MakeIdpHandler, logger)(idpEndpoints.CreateIdentityProviderMapper)
+		var updateIdentityProviderMapperHandler = configureHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, idp.MakeIdpHandler, logger)(idpEndpoints.UpdateIdentityProviderMapper)
+		var deleteIdentityProviderMapperHandler = configureHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, idp.MakeIdpHandler, logger)(idpEndpoints.DeleteIdentityProviderMapper)
 
 		var idpSubroute = route.PathPrefix("/idp").Subrouter()
 
@@ -1074,6 +1082,10 @@ func main() {
 		idpSubroute.Path("/realms/{realm}/identity-providers/{provider}").Methods("GET").Handler(getIdentityProviderHandler)
 		idpSubroute.Path("/realms/{realm}/identity-providers/{provider}").Methods("PUT").Handler(updateIdentityProviderHandler)
 		idpSubroute.Path("/realms/{realm}/identity-providers/{provider}").Methods("DELETE").Handler(deleteIdentityProviderHandler)
+		idpSubroute.Path("/realms/{realm}/identity-providers/{provider}/mappers").Methods("GET").Handler(getIdentityProviderMappersHandler)
+		idpSubroute.Path("/realms/{realm}/identity-providers/{provider}/mappers").Methods("POST").Handler(createIdentityProviderMapperHandler)
+		idpSubroute.Path("/realms/{realm}/identity-providers/{provider}/mappers/{mapper}").Methods("PUT").Handler(updateIdentityProviderMapperHandler)
+		idpSubroute.Path("/realms/{realm}/identity-providers/{provider}/mappers/{mapper}").Methods("DELETE").Handler(deleteIdentityProviderMapperHandler)
 
 		// Debug.
 		if pprofRouteEnabled {

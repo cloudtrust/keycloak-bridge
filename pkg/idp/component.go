@@ -22,6 +22,10 @@ type KeycloakIdpClient interface {
 	GetComponents(accessToken string, realmName string, paramKV ...string) ([]kc.ComponentRepresentation, error)
 	CreateComponent(accessToken string, realmName string, comp kc.ComponentRepresentation) error
 	UpdateComponent(accessToken string, realmName, compID string, comp kc.ComponentRepresentation) error
+	GetIdpMappers(accessToken string, realmName string, idpAlias string) ([]kc.IdentityProviderMapperRepresentation, error)
+	CreateIdpMapper(accessToken string, realmName string, idpAlias string, mapperRep kc.IdentityProviderMapperRepresentation) error
+	UpdateIdpMapper(accessToken string, realmName string, idpAlias string, mapperID string, mapperRep kc.IdentityProviderMapperRepresentation) error
+	DeleteIdpMapper(accessToken string, realmName string, idpAlias string, mapperID string) error
 }
 
 // Component interface exposes methods used by the bridge API
@@ -30,6 +34,10 @@ type Component interface {
 	CreateIdentityProvider(ctx context.Context, realmName string, provider api.IdentityProviderRepresentation) error
 	UpdateIdentityProvider(ctx context.Context, realmName string, providerAlias string, provider api.IdentityProviderRepresentation) error
 	DeleteIdentityProvider(ctx context.Context, realmName string, providerAlias string) error
+	GetIdentityProviderMappers(ctx context.Context, realmName string, idpAlias string) ([]api.IdentityProviderMapperRepresentation, error)
+	CreateIdentityProviderMapper(ctx context.Context, realmName string, idpAlias string, apiMapper api.IdentityProviderMapperRepresentation) error
+	UpdateIdentityProviderMapper(ctx context.Context, realmName string, idpAlias string, mapperID string, apiMapper api.IdentityProviderMapperRepresentation) error
+	DeleteIdentityProviderMapper(ctx context.Context, realmName string, idpAlias string, mapperID string) error
 }
 
 type component struct {
@@ -100,7 +108,6 @@ func (c *component) CreateIdentityProvider(ctx context.Context, realmName string
 	}
 
 	return nil
-
 }
 
 func (c *component) UpdateIdentityProvider(ctx context.Context, realmName string, idpAlias string, idp api.IdentityProviderRepresentation) error {
@@ -117,7 +124,6 @@ func (c *component) UpdateIdentityProvider(ctx context.Context, realmName string
 	}
 
 	return nil
-
 }
 
 func (c *component) DeleteIdentityProvider(ctx context.Context, realmName string, idpAlias string) error {
@@ -230,7 +236,69 @@ func (c *component) deleteHrdConfigKeyValue(ctx context.Context, accessToken str
 	}
 
 	if err = c.keycloakIdpClient.UpdateComponent(accessToken, realmName, *comp.ID, *comp); err != nil {
-		c.logger.Warn(ctx, "msg", "Can't delete entry", "realm", realmName, "idp", idpAlias, "err", err.Error())
+		c.logger.Warn(ctx, "msg", "Can't update component", "realm", realmName, "idp", idpAlias, "err", err.Error())
+		return err
+	}
+
+	return nil
+}
+
+func (c *component) GetIdentityProviderMappers(ctx context.Context, realmName string, idpAlias string) ([]api.IdentityProviderMapperRepresentation, error) {
+	accessToken, err := c.tokenProvider.ProvideTokenForRealm(ctx, realmName)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Failed to get OIDC token from keycloak", "err", err.Error())
+		return []api.IdentityProviderMapperRepresentation{}, err
+	}
+
+	kcMappers, err := c.keycloakIdpClient.GetIdpMappers(accessToken, realmName, idpAlias)
+	if err = handleKeycloakIdpError(ctx, err, c.logger); err != nil {
+		return []api.IdentityProviderMapperRepresentation{}, err
+	}
+
+	return api.ConvertToAPIIdentityProviderMappers(kcMappers), nil
+}
+
+func (c *component) CreateIdentityProviderMapper(ctx context.Context, realmName string, idpAlias string, apiMapper api.IdentityProviderMapperRepresentation) error {
+	accessToken, err := c.tokenProvider.ProvideTokenForRealm(ctx, realmName)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Failed to get OIDC token from keycloak", "err", err.Error())
+		return err
+	}
+
+	kcMapper := api.ConvertToKCIdentityProviderMapper(apiMapper)
+	err = c.keycloakIdpClient.CreateIdpMapper(accessToken, realmName, idpAlias, kcMapper)
+	if err = handleKeycloakIdpError(ctx, err, c.logger); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *component) UpdateIdentityProviderMapper(ctx context.Context, realmName string, idpAlias string, mapperID string, apiMapper api.IdentityProviderMapperRepresentation) error {
+	accessToken, err := c.tokenProvider.ProvideTokenForRealm(ctx, realmName)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Failed to get OIDC token from keycloak", "err", err.Error())
+		return err
+	}
+
+	kcMapper := api.ConvertToKCIdentityProviderMapper(apiMapper)
+	err = c.keycloakIdpClient.UpdateIdpMapper(accessToken, realmName, idpAlias, mapperID, kcMapper)
+	if err = handleKeycloakIdpError(ctx, err, c.logger); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *component) DeleteIdentityProviderMapper(ctx context.Context, realmName string, idpAlias string, mapperID string) error {
+	accessToken, err := c.tokenProvider.ProvideTokenForRealm(ctx, realmName)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Failed to get OIDC token from keycloak", "err", err.Error())
+		return err
+	}
+
+	err = c.keycloakIdpClient.DeleteIdpMapper(accessToken, realmName, idpAlias, mapperID)
+	if err = handleKeycloakIdpError(ctx, err, c.logger); err != nil {
 		return err
 	}
 
