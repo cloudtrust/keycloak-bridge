@@ -23,13 +23,16 @@ func TestHTTPIdpHandler(t *testing.T) {
 
 	var realm = "example"
 	var apiIdp = createTestApiIdp()
+	var apiMapper = createTestApiIdpMapper()
 
 	var idpHandler = MakeIdpHandler(keycloakb.ToGoKitEndpoint(MakeCreateIdentityProviderEndpoint(mockComponent)), mockLogger)
 	var idpHandler2 = MakeIdpHandler(keycloakb.ToGoKitEndpoint(MakeGetIdentityProviderEndpoint(mockComponent)), mockLogger)
+	var idpHandler3 = MakeIdpHandler(keycloakb.ToGoKitEndpoint(MakeCreateIdentityProviderMapperEndpoint(mockComponent)), mockLogger)
 
 	r := mux.NewRouter()
 	r.Handle("/idp/realms/{realm}/identity-providers", idpHandler)
 	r.Handle("/idp/realms/{realm}/identity-providers/{provider}", idpHandler2)
+	r.Handle("/idp/realms/{realm}/identity-providers/{provider}/mappers", idpHandler3)
 
 	ts := httptest.NewServer(r)
 	defer ts.Close()
@@ -50,6 +53,18 @@ func TestHTTPIdpHandler(t *testing.T) {
 		mockComponent.EXPECT().GetIdentityProvider(gomock.Any(), realm, idpAlias).Return(apiIdp, nil).Times(1)
 
 		res, err := http.Get(ts.URL + "/idp/realms/" + realm + "/identity-providers/" + idpAlias)
+
+		assert.Nil(t, err)
+		assert.Equal(t, http.StatusOK, res.StatusCode)
+	})
+
+	t.Run("Create identity provider mapper", func(t *testing.T) {
+		mockComponent.EXPECT().CreateIdentityProviderMapper(gomock.Any(), realm, idpAlias, apiMapper).Return(nil).Times(1)
+
+		mapperJSON, _ := json.Marshal(apiMapper)
+		body := strings.NewReader(string(mapperJSON))
+
+		res, err := http.Post(ts.URL+"/idp/realms/"+realm+"/identity-providers/"+idpAlias+"/mappers", "application/json", body)
 
 		assert.Nil(t, err)
 		assert.Equal(t, http.StatusOK, res.StatusCode)

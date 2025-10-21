@@ -3,10 +3,10 @@ module github.com/cloudtrust/keycloak-bridge
 go 1.25.3
 
 require (
-	github.com/cloudtrust/common-service/v2 v2.14.0
+	github.com/cloudtrust/common-service/v2 v2.14.1-0.20251027143455-230a42caea44
 	github.com/cloudtrust/httpclient v1.6.0
 	github.com/cloudtrust/kafka-client v1.7.0
-	github.com/cloudtrust/keycloak-client/v2 v2.15.0
+	github.com/cloudtrust/keycloak-client/v2 v2.15.1-0.20251028095810-198b137f6eef
 	github.com/go-kit/kit v0.13.0
 	github.com/go-kit/log v0.2.1
 	github.com/go-sql-driver/mysql v1.9.3
