@@ -295,7 +295,7 @@ func (c *configurationDBModule) StoreContextKeyConfiguration(ctx context.Context
 		return err
 	}
 
-	_, err = c.chooseExecutableSQL(tx).Exec(storeContextKeyStmt, contextKey.ID, contextKey.Label, contextKey.IdentitiesRealm, contextKey.CustomerRealm, configJSON)
+	_, err = c.chooseExecutableSQL(tx).Exec(storeContextKeyStmt, contextKey.ID, contextKey.Label, contextKey.IdentitiesRealm, contextKey.CustomerRealm, configJSON, contextKey.IsRegisterDefault)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Can't set context key in db", "realm", contextKey.CustomerRealm, "id", contextKey.ID, "err", err.Error())
 		return err
