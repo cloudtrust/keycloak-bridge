@@ -1283,14 +1283,16 @@ func ConvertToAPIUserChecks(checks []accreditationsclient.CheckRepresentation) [
 // Validate is a validator for UpdatableThemeConfiguration
 func (themeConf UpdatableThemeConfiguration) Validate() error {
 
-	var logoLen int
+	var logoLen *int
 	if themeConf.Logo != nil {
-		logoLen = len(themeConf.Logo)
+		logoLen = new(int)
+		*logoLen = len(themeConf.Logo)
 	}
 
-	var faviconLen int
+	var faviconLen *int
 	if themeConf.Favicon != nil {
-		faviconLen = len(themeConf.Favicon)
+		faviconLen = new(int)
+		*faviconLen = len(themeConf.Favicon)
 	}
 	// validate translations JSON
 	var translationsJSON []byte
@@ -1302,9 +1304,10 @@ func (themeConf UpdatableThemeConfiguration) Validate() error {
 		}
 	}
 
-	var translationsLen int
+	var translationsLen *int
 	if themeConf.Translations != nil {
-		translationsLen = len(translationsJSON)
+		translationsLen = new(int)
+		*translationsLen = len(translationsJSON)
 	}
 
 	return validation.NewParameterValidator().
@@ -1312,11 +1315,11 @@ func (themeConf UpdatableThemeConfiguration) Validate() error {
 		ValidateParameterRegExp(constants.Color, themeConf.Settings.Color, constants.RegExpColor, false).
 		ValidateParameterIn(constants.MenuTheme, themeConf.Settings.MenuTheme, allowedMenuThemes, false).
 		ValidateParameterIn(constants.FontFamily, themeConf.Settings.FontFamily, allowedFontFamilies, false).
-		ValidateParameterIntBetween(constants.Logo, &logoLen, minLogoImageSize, maxLogoImageSize, false).
+		ValidateParameterIntBetween(constants.Logo, logoLen, minLogoImageSize, maxLogoImageSize, false).
 		ValidateParameterImageMimeType(constants.Logo, themeConf.Logo, allowedLogoImageTypes, false).
-		ValidateParameterIntBetween(constants.Favicon, &faviconLen, minFaviconImageSize, maxFaviconImageSize, false).
+		ValidateParameterIntBetween(constants.Favicon, faviconLen, minFaviconImageSize, maxFaviconImageSize, false).
 		ValidateParameterImageMimeType(constants.Favicon, themeConf.Favicon, allowedFaviconImageTypes, false).
-		ValidateParameterIntBetween(constants.Translations, &translationsLen, minTranslationsSize, maxTranslationsSize, false).
+		ValidateParameterIntBetween(constants.Translations, translationsLen, minTranslationsSize, maxTranslationsSize, false).
 		ValidateParameterOnlyStrings(constants.Translations, themeConf.Translations, false).
 		Status()
 
