@@ -182,8 +182,8 @@ func (c *component) RegisterUser(ctx context.Context, targetRealmName string, cu
 	var redirect = false
 	var ctxOverride keycloakb.ContextKeyParameters
 	if contextKey != nil {
-		if ctxOverride, err = c.contextKeyMgr.GetOverride(ctx, *contextKey, targetRealmName); err != nil {
-			c.logger.Info(ctx, "msg", "Invalid context key", "context-key", *contextKey, "err", err.Error(), "realm", targetRealmName)
+		if ctxOverride, err = c.contextKeyMgr.GetOverride(ctx, *contextKey, customerRealmName); err != nil {
+			c.logger.Info(ctx, "msg", "Invalid context key", "context-key", *contextKey, "err", err.Error(), "realm", customerRealmName)
 			return "", errorhandler.CreateBadRequestError(errorhandler.MsgErrInvalidParam + ".context-key")
 		}
 		if ctxOverride.OnboardingClientID != nil {
