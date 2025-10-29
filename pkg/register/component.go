@@ -150,6 +150,7 @@ func (c *component) GetConfiguration(ctx context.Context, realmName string) (api
 		SupportedLocales:                 supportedLocales,
 		SelfRegisterEnabled:              realmAdminConf.SelfRegisterEnabled,
 		ContextKey:                       contextKey,
+		RegisterMode:                     realmAdminConf.RegisterMode,
 	}, nil
 }
 
