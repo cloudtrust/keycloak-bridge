@@ -66,6 +66,7 @@ type ConfigurationRepresentation struct {
 	SupportedLocales                 *[]string `json:"supportedLocales,omitempty"`
 	SelfRegisterEnabled              *bool     `json:"selfRegisterEnabled,omitempty"`
 	ContextKey                       *string   `json:"contextKey,omitempty"`
+	RegisterMode                     *string   `json:"registerMode,omitempty"`
 }
 
 // ConvertToKeycloak converts a given User to a Keycloak UserRepresentation
