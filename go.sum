@@ -8,6 +8,8 @@ github.com/VividCortex/gohistogram v1.0.0 h1:6+hBz+qvs0JOrrNhhmR7lFxo5sINxBCGXrd
 github.com/VividCortex/gohistogram v1.0.0/go.mod h1:Pf5mBqqDxYaXu3hDrrU+w6nw50o/4+TcAqDqk/vUH7g=
 github.com/cloudtrust/common-service/v2 v2.14.0 h1:8ytqedawsxPzPWB9/7UQZudEOTtnfUtnYLQgVuxCPAg=
 github.com/cloudtrust/common-service/v2 v2.14.0/go.mod h1:Larx2LeVhy+vHrX6XXOlCtvk/boH9FhCt1YYUtUw+5k=
+github.com/cloudtrust/common-service/v2 v2.14.1-0.20251029114504-472b8972e44b h1:q8FBoWf7iR44qIt+/J2BCLwRhCnf+p7zH+1+BNnvYr0=
+github.com/cloudtrust/common-service/v2 v2.14.1-0.20251029114504-472b8972e44b/go.mod h1:Larx2LeVhy+vHrX6XXOlCtvk/boH9FhCt1YYUtUw+5k=
 github.com/cloudtrust/httpclient v1.6.0 h1:/E/y2wZNyUIjADbP3RLI2pLTWdNvcFSLe1MeRD6RlN4=
 github.com/cloudtrust/httpclient v1.6.0/go.mod h1:CK0idOHAQ2CiN2GFOwIYP5hDl2tfUgGdTI9n7Ygbnrs=
 github.com/cloudtrust/kafka-client v1.7.0 h1:h3iMOzt0GU6Es0lx+LsrbLCHXwC6wAayE84JAWSN6Rg=
