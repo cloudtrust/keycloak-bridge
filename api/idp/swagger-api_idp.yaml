@@ -102,6 +102,120 @@ paths:
           description: successful operation
         404:
           description: provider not found
+  /idp/realms/{realm}/identity-providers/{provider}/mappers:
+    get:
+      tags:
+      - Identity providers
+      summary: Get the list of mappers of an identity provider
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: provider
+        in: path
+        description: alias of the provider
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/IdentityProviderMapperRepresentation'
+    post:
+      tags:
+      - Identity providers
+      summary: Create an identity provider mapper
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: provider
+        in: path
+        description: alias of the provider
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IdentityProviderMapperRepresentation'
+      responses:
+        200:
+          description: successful operation
+  /idp/realms/{realm}/identity-providers/{provider}/mappers/{id}:
+    put:
+      tags:
+      - Identity providers
+      summary: Update an identity provider mapper
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: provider
+        in: path
+        description: alias of the provider
+        required: true
+        schema:
+          type: string
+      - name: id
+        in: path
+        description: ID of the mapper
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IdentityProviderMapperRepresentation'
+      responses:
+        200:
+          description: successful operation
+        404:
+          description: mapper not found
+    delete:
+      tags:
+      - Identity providers
+      summary: Delete an identity provider mapper
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: provider
+        in: path
+        description: alias of the provider
+        required: true
+        schema:
+          type: string
+      - name: id
+        in: path
+        description: ID of the mapper
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation
+        404:
+          description: mapper not found
 
 components:
   schemas:
@@ -144,7 +258,19 @@ components:
             type: string
           Priority: 
             type: integer
-
+    IdentityProviderMapperRepresentation:
+      type: object
+      properties:
+          Config:
+            type: object
+          ID: 
+            type: string
+          IdentityProviderAlias: 
+            type: string
+          IdentityProviderMapper: 
+            type: string
+          Name:
+            type: string
   securitySchemes:
     openId:
       type: openIdConnect

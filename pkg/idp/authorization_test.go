@@ -38,11 +38,20 @@ func TestDeny(t *testing.T) {
 	var idpAlias = "trustid-idp"
 	var idpDisplayName = "MyTrustID"
 
+	var mapperID = "trustid-mapper"
+	var mapperName = "TrustID Mapper"
+
 	mockAuthorizationDBReader.EXPECT().GetAuthorizations(gomock.Any()).Return([]configuration.Authorization{}, nil)
 
 	var idp = api.IdentityProviderRepresentation{
 		Alias:       &idpAlias,
 		DisplayName: &idpDisplayName,
+	}
+
+	var mapper = api.IdentityProviderMapperRepresentation{
+		ID:                    &mapperID,
+		IdentityProviderAlias: &idpAlias,
+		Name:                  &mapperName,
 	}
 
 	// Nothing allowed
@@ -59,10 +68,14 @@ func TestDeny(t *testing.T) {
 		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), gomock.Any(), realmName, groupID).Return(groupName, nil).AnyTimes()
 
 		var tests = map[string]error{
-			"GetIdentityProvider":    ignoreFirst(authorizationMW.GetIdentityProvider(ctx, realmName, idpAlias)),
-			"CreateIdentityProvider": authorizationMW.CreateIdentityProvider(ctx, realmName, idp),
-			"UpdateIdentityProvider": authorizationMW.UpdateIdentityProvider(ctx, realmName, idpAlias, idp),
-			"DeleteIdentityProvider": authorizationMW.DeleteIdentityProvider(ctx, realmName, idpAlias),
+			"GetIdentityProvider":          ignoreFirst(authorizationMW.GetIdentityProvider(ctx, realmName, idpAlias)),
+			"CreateIdentityProvider":       authorizationMW.CreateIdentityProvider(ctx, realmName, idp),
+			"UpdateIdentityProvider":       authorizationMW.UpdateIdentityProvider(ctx, realmName, idpAlias, idp),
+			"DeleteIdentityProvider":       authorizationMW.DeleteIdentityProvider(ctx, realmName, idpAlias),
+			"GetIdentityProviderMappers":   ignoreFirst(authorizationMW.GetIdentityProviderMappers(ctx, realmName, idpAlias)),
+			"CreateIdentityProviderMapper": authorizationMW.CreateIdentityProviderMapper(ctx, realmName, idpAlias, mapper),
+			"UpdateIdentityProviderMapper": authorizationMW.UpdateIdentityProviderMapper(ctx, realmName, idpAlias, mapperID, mapper),
+			"DeleteIdentityProviderMapper": authorizationMW.DeleteIdentityProviderMapper(ctx, realmName, idpAlias, mapperID),
 		}
 		for testName, testResult := range tests {
 			t.Run(testName, func(t *testing.T) {
@@ -92,10 +105,12 @@ func TestAllowed(t *testing.T) {
 	var groupName = "titi"
 
 	var idpAlias = "trustid-idp"
+	var mapperID = "trustid-mapper"
 
 	mockKeycloakClient.EXPECT().GetGroupNamesOfUser(gomock.Any(), accessToken, realmName, userID).Return([]string{groupName}, nil).AnyTimes()
 
 	var idp = api.IdentityProviderRepresentation{}
+	var mapper = api.IdentityProviderMapperRepresentation{}
 
 	var authorizations = []configuration.Authorization{}
 	for _, action := range security.Actions.GetActionsForAPIs(security.BridgeService, security.IdpAPI) {
@@ -136,5 +151,22 @@ func TestAllowed(t *testing.T) {
 		mockIdpComponent.EXPECT().DeleteIdentityProvider(ctx, realmName, idpAlias).Return(nil)
 		err = authorizationMW.DeleteIdentityProvider(ctx, realmName, idpAlias)
 		assert.Nil(t, err)
+
+		mockIdpComponent.EXPECT().GetIdentityProviderMappers(ctx, realmName, idpAlias).Return([]api.IdentityProviderMapperRepresentation{mapper}, nil)
+		_, err = authorizationMW.GetIdentityProviderMappers(ctx, realmName, idpAlias)
+		assert.Nil(t, err)
+
+		mockIdpComponent.EXPECT().CreateIdentityProviderMapper(ctx, realmName, idpAlias, mapper).Return(nil)
+		err = authorizationMW.CreateIdentityProviderMapper(ctx, realmName, idpAlias, mapper)
+		assert.Nil(t, err)
+
+		mockIdpComponent.EXPECT().UpdateIdentityProviderMapper(ctx, realmName, idpAlias, mapperID, mapper).Return(nil)
+		err = authorizationMW.UpdateIdentityProviderMapper(ctx, realmName, idpAlias, mapperID, mapper)
+		assert.Nil(t, err)
+
+		mockIdpComponent.EXPECT().DeleteIdentityProviderMapper(ctx, realmName, idpAlias, mapperID).Return(nil)
+		err = authorizationMW.DeleteIdentityProviderMapper(ctx, realmName, idpAlias, mapperID)
+		assert.Nil(t, err)
+
 	}
 }

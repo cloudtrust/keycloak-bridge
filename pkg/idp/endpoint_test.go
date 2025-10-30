@@ -105,3 +105,93 @@ func TestDeleteIdentityProviderEndpoint(t *testing.T) {
 	_, err := e(ctx, req)
 	assert.Nil(t, err)
 }
+
+func TestGetIdentityProviderMappersEndpoint(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockIdpComponent = mock.NewComponent(mockCtrl)
+
+	var e = MakeGetIdentityProviderMappersEndpoint(mockIdpComponent)
+
+	var realm = "test-community"
+	var ctx = context.Background()
+
+	var req = make(map[string]string)
+	req[prmRealm] = realm
+	req[prmProvider] = idpAlias
+
+	mockIdpComponent.EXPECT().GetIdentityProviderMappers(ctx, realm, idpAlias).Return([]api.IdentityProviderMapperRepresentation{}, nil)
+	_, err := e(ctx, req)
+	assert.Nil(t, err)
+}
+
+func TestCreateIdentityProviderMapperEndpoint(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockIdpComponent = mock.NewComponent(mockCtrl)
+
+	var e = MakeCreateIdentityProviderMapperEndpoint(mockIdpComponent)
+
+	var realm = "test-community"
+	var ctx = context.Background()
+
+	var req = make(map[string]string)
+	req[prmRealm] = realm
+	req[prmProvider] = idpAlias
+
+	mapper := createTestApiIdpMapper()
+	mapperJSON, _ := json.Marshal(mapper)
+	req[reqBody] = string(mapperJSON)
+
+	mockIdpComponent.EXPECT().CreateIdentityProviderMapper(ctx, realm, idpAlias, mapper).Return(nil)
+	_, err := e(ctx, req)
+	assert.Nil(t, err)
+}
+
+func TestUpdateIdentityProviderMapperEndpoint(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockIdpComponent = mock.NewComponent(mockCtrl)
+
+	var e = MakeUpdateIdentityProviderMapperEndpoint(mockIdpComponent)
+
+	var realm = "test-community"
+	var ctx = context.Background()
+
+	var req = make(map[string]string)
+	req[prmRealm] = realm
+	req[prmProvider] = idpAlias
+	req[prmMapper] = mapperID
+
+	mapper := createTestApiIdpMapper()
+	mapperJSON, _ := json.Marshal(mapper)
+	req[reqBody] = string(mapperJSON)
+
+	mockIdpComponent.EXPECT().UpdateIdentityProviderMapper(ctx, realm, idpAlias, mapperID, mapper).Return(nil)
+	_, err := e(ctx, req)
+	assert.Nil(t, err)
+}
+
+func TestDeleteIdentityProviderMapperEndpoint(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockIdpComponent = mock.NewComponent(mockCtrl)
+
+	var e = MakeDeleteIdentityProviderMapperEndpoint(mockIdpComponent)
+
+	var realm = "test-community"
+	var ctx = context.Background()
+
+	var req = make(map[string]string)
+	req[prmRealm] = realm
+	req[prmProvider] = idpAlias
+	req[prmMapper] = mapperID
+
+	mockIdpComponent.EXPECT().DeleteIdentityProviderMapper(ctx, realm, idpAlias, mapperID).Return(nil)
+	_, err := e(ctx, req)
+	assert.Nil(t, err)
+}
