@@ -1394,3 +1394,111 @@ func TestValidateCtxKeyAutoVoucherRepresentation(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateUpdatableThemeConfiguration(t *testing.T) {
+	t.Run("Valid complete configuration", func(t *testing.T) {
+		config := UpdatableThemeConfiguration{
+			RealmName: ptr("realmName"),
+			Settings: &ThemeConfigurationSettings{
+				Color:      ptr("#FFFFFF"),
+				MenuTheme:  ptr("light"),
+				FontFamily: ptr("Lato"),
+			},
+			// mock assets at least 1KB long and starting with correct bytes
+			Logo: func() []byte {
+				b := make([]byte, 1024)
+				b[0] = 0x89
+				b[1] = 0x50
+				return b
+			}(),
+			Favicon: func() []byte {
+				b := make([]byte, 1024)
+				b[0] = 0x3C
+				b[1] = 0x73
+				return b
+			}(),
+			Translations: map[string]any{
+				"test": "test value",
+				"test2": map[string]any{
+					"subkey": "subvalue",
+				},
+			},
+		}
+		assert.Nil(t, config.Validate())
+	})
+
+	t.Run("valid minimal configurations", func(t *testing.T) {
+		config := UpdatableThemeConfiguration{
+			RealmName: ptr("realmName"),
+			Settings:  &ThemeConfigurationSettings{},
+		}
+		assert.Nil(t, config.Validate())
+	})
+
+	t.Run("Invalid configurations", func(t *testing.T) {
+		var configs []UpdatableThemeConfiguration
+		for range 10 {
+			configs = append(configs, UpdatableThemeConfiguration{
+				RealmName: ptr("realmName"),
+				Settings:  &ThemeConfigurationSettings{},
+			})
+		}
+
+		configs[0].RealmName = nil
+		configs[1].RealmName = ptr("")
+		configs[2].Settings.Color = ptr("not-a-hex-color-code")
+		configs[3].Settings.MenuTheme = ptr("not.a.valid.theme")        // not "light", "dark" or primary
+		configs[4].Settings.FontFamily = ptr("not-a-valid-font-family") // not Lato or Roboto
+		configs[5].Logo = []byte{0x89, 0x50}                            // too small
+		configs[6].Logo = make([]byte, 1024)                            // not a png, jpeg or svg
+		configs[7].Favicon = []byte{0x3C, 0x73}                         // too small
+		configs[8].Favicon = func() []byte {
+			b := make([]byte, 1024)
+			b[0] = 0x89
+			b[1] = 0x50
+			return b
+		}() // not an svg
+		configs[9].Translations = map[string]any{
+			"key": map[string]any{
+				"subkey": 12345,
+			},
+		} // invalid type
+
+		for idx, config := range configs {
+			t.Run(fmt.Sprintf("Invalid case #%d", idx), func(t *testing.T) {
+				assert.NotNil(t, config.Validate())
+			})
+		}
+	})
+}
+
+func TestConvertToThemeConfiguration(t *testing.T) {
+	t.Run("Empty struct", func(t *testing.T) {
+		var config = configuration.ThemeConfiguration{}
+		var res = ConvertToThemeConfiguration(config)
+		assert.Nil(t, res.Settings)
+		assert.Nil(t, res.Logo)
+		assert.Nil(t, res.Favicon)
+	})
+
+	t.Run("Non-empty values", func(t *testing.T) {
+		var config = configuration.ThemeConfiguration{
+			Settings: &configuration.ThemeConfigurationSettings{
+				Color:      ptr("#FFFFFF"),
+				MenuTheme:  ptr("light"),
+				FontFamily: ptr("Lato"),
+			},
+			Logo:    []byte{0x89, 0x50, 0x4E, 0x47},
+			Favicon: []byte{0x3C, 0x73, 0x76, 0x67},
+		}
+		const expectedLogo = "data:image/png;base64,iVBORw=="
+		const expectedFavicon = "data:image/svg+xml;base64,PHN2Zw=="
+		var res = ConvertToThemeConfiguration(config)
+		assert.NotNil(t, res.Settings)
+		assert.Equal(t, config.Settings.Color, res.Settings.Color)
+		assert.Equal(t, config.Settings.MenuTheme, res.Settings.MenuTheme)
+		assert.Equal(t, config.Settings.FontFamily, res.Settings.FontFamily)
+		assert.Equal(t, expectedLogo, *res.Logo)
+		assert.Equal(t, expectedFavicon, *res.Favicon)
+	})
+}
