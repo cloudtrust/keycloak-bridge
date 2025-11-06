@@ -110,10 +110,17 @@ func (c *component) UpdateIdentityProvider(ctx context.Context, realmName string
 		return err
 	}
 
-	idpKc := api.ConvertToKCIdentityProvider(idp)
-	err = c.keycloakIdpClient.UpdateIdp(accessToken, realmName, idpAlias, idpKc)
+	kcIdp := api.ConvertToKCIdentityProvider(idp)
+	err = c.keycloakIdpClient.UpdateIdp(accessToken, realmName, idpAlias, kcIdp)
 	if err = handleKeycloakIdpError(ctx, err, c.logger); err != nil {
 		return err
+	}
+
+	if idp.HrdSettings != nil {
+		if err = c.updateHrdConfig(ctx, accessToken, realmName, idp); err != nil {
+			c.logger.Warn(ctx, "msg", "Can't update HRD configuration", "realm", realmName, "idp", *idp.Alias, "err", err.Error())
+			return err
+		}
 	}
 
 	return nil
