@@ -35,14 +35,14 @@ github.com/cloudtrust/httpclient
 ## explicit; go 1.25.3
 github.com/cloudtrust/kafka-client
 github.com/cloudtrust/kafka-client/misc
-# github.com/cloudtrust/keycloak-client/v2 v2.15.0
+# github.com/cloudtrust/keycloak-client/v2 v2.16.0
 ## explicit; go 1.25.3
 github.com/cloudtrust/keycloak-client/v2
 github.com/cloudtrust/keycloak-client/v2/api
 github.com/cloudtrust/keycloak-client/v2/toolbox
-# github.com/coreos/go-oidc v2.4.0+incompatible
-## explicit
-github.com/coreos/go-oidc
+# github.com/coreos/go-oidc/v3 v3.16.0
+## explicit; go 1.24.0
+github.com/coreos/go-oidc/v3/oidc
 # github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
 ## explicit
 github.com/davecgh/go-spew/spew
@@ -59,6 +59,11 @@ github.com/eapache/queue
 ## explicit; go 1.17
 github.com/fsnotify/fsnotify
 github.com/fsnotify/fsnotify/internal
+# github.com/go-jose/go-jose/v4 v4.1.3
+## explicit; go 1.24.0
+github.com/go-jose/go-jose/v4
+github.com/go-jose/go-jose/v4/cipher
+github.com/go-jose/go-jose/v4/json
 # github.com/go-kit/kit v0.13.0
 ## explicit; go 1.17
 github.com/go-kit/kit/endpoint
@@ -200,10 +205,6 @@ github.com/pkg/errors
 # github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2
 ## explicit
 github.com/pmezard/go-difflib/difflib
-# github.com/pquerna/cachecontrol v0.2.0
-## explicit; go 1.16
-github.com/pquerna/cachecontrol
-github.com/pquerna/cachecontrol/cacheobject
 # github.com/rcrowley/go-metrics v0.0.0-20250401214520-65e299d6c5c9
 ## explicit
 github.com/rcrowley/go-metrics
@@ -280,7 +281,6 @@ go.uber.org/mock/gomock
 go.yaml.in/yaml/v3
 # golang.org/x/crypto v0.42.0
 ## explicit; go 1.24.0
-golang.org/x/crypto/ed25519
 golang.org/x/crypto/md4
 golang.org/x/crypto/pbkdf2
 # golang.org/x/exp v0.0.0-20250305212735-054e65f0b394
@@ -349,11 +349,6 @@ google.golang.org/protobuf/reflect/protoreflect
 google.golang.org/protobuf/reflect/protoregistry
 google.golang.org/protobuf/runtime/protoiface
 google.golang.org/protobuf/runtime/protoimpl
-# gopkg.in/go-jose/go-jose.v2 v2.6.3
-## explicit
-gopkg.in/go-jose/go-jose.v2
-gopkg.in/go-jose/go-jose.v2/cipher
-gopkg.in/go-jose/go-jose.v2/json
 # gopkg.in/h2non/gentleman.v2 v2.0.5
 ## explicit
 gopkg.in/h2non/gentleman.v2
