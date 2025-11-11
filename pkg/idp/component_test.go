@@ -33,6 +33,7 @@ const (
 	realmName = "test"
 
 	idpAlias = "testIDP"
+	mapperID = "5b3f0a5d-a59d-4aff-8932-aa70f2806f01"
 
 	compID           = "5b3f0a5d-a59d-4aff-8932-aa70f2806f04"
 	compProviderType = "org.keycloak.services.ui.extend.UiTabProvider"
@@ -81,6 +82,36 @@ func createTestApiIdp() api.IdentityProviderRepresentation {
 		ProviderID:                ptr("oidc"),
 		StoreToken:                ptrBool(false),
 		TrustEmail:                ptrBool(false),
+	}
+}
+
+func createTestKcIdpMapper() kc.IdentityProviderMapperRepresentation {
+	return kc.IdentityProviderMapperRepresentation{
+		ID:                     ptr(mapperID),
+		Name:                   ptr("deviceId"),
+		IdentityProviderAlias:  ptr(idpAlias),
+		IdentityProviderMapper: ptr("ct-saml-in-memory-attribute-auth-idp-mapper"),
+		Config: map[string]string{
+			"syncMode":       "FORCE",
+			"auth.note.name": "deviceId",
+			"type":           "STRING",
+			"attribute.name": "deviceId",
+		},
+	}
+}
+
+func createTestApiIdpMapper() api.IdentityProviderMapperRepresentation {
+	return api.IdentityProviderMapperRepresentation{
+		ID:                     ptr(mapperID),
+		Name:                   ptr("deviceId"),
+		IdentityProviderAlias:  ptr(idpAlias),
+		IdentityProviderMapper: ptr("ct-saml-in-memory-attribute-auth-idp-mapper"),
+		Config: map[string]string{
+			"syncMode":       "FORCE",
+			"auth.note.name": "deviceId",
+			"type":           "STRING",
+			"attribute.name": "deviceId",
+		},
 	}
 }
 
@@ -414,4 +445,173 @@ func TestDeleteIdentityProvider(t *testing.T) {
 		err := idpComponent.DeleteIdentityProvider(ctx, realmName, idpAlias)
 		assert.Nil(t, err)
 	})
+}
+
+func TestGetIdentityProviderMappers(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mocks = createMocks(mockCtrl)
+	var idpComponent = createComponent(mocks)
+
+	var accessToken = "TOKEN=="
+	var technicalAccessToken = "abcd-1234"
+	var idpAlias = "trustid-idp"
+	var anyError = errors.New("any error")
+
+	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+
+	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
+
+	kcMapper := createTestKcIdpMapper()
+	apiMapper := createTestApiIdpMapper()
+
+	t.Run("Get identity provider mappers - failed to get technical access token", func(t *testing.T) {
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return("", anyError)
+
+		_, err := idpComponent.GetIdentityProviderMappers(ctx, realmName, idpAlias)
+		assert.NotNil(t, err)
+	})
+
+	t.Run("Get identity provider mappers - failed to get mappers", func(t *testing.T) {
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return(technicalAccessToken, nil)
+		mocks.keycloakIdpClient.EXPECT().GetIdpMappers(technicalAccessToken, realmName, idpAlias).Return([]kc.IdentityProviderMapperRepresentation{}, anyError)
+
+		_, err := idpComponent.GetIdentityProviderMappers(ctx, realmName, idpAlias)
+		assert.NotNil(t, err)
+	})
+
+	t.Run("Get identity provider mappers - success", func(t *testing.T) {
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return(technicalAccessToken, nil)
+		mocks.keycloakIdpClient.EXPECT().GetIdpMappers(technicalAccessToken, realmName, idpAlias).Return([]kc.IdentityProviderMapperRepresentation{kcMapper}, nil)
+
+		mappers, err := idpComponent.GetIdentityProviderMappers(ctx, realmName, idpAlias)
+		assert.Nil(t, err)
+		assert.Len(t, mappers, 1)
+		assert.Equal(t, apiMapper, mappers[0])
+	})
+}
+
+func TestCreateIdentityProviderMapper(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mocks = createMocks(mockCtrl)
+	var idpComponent = createComponent(mocks)
+
+	var accessToken = "TOKEN=="
+	var technicalAccessToken = "abcd-1234"
+	var anyError = errors.New("any error")
+
+	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+
+	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
+
+	kcMapper := createTestKcIdpMapper()
+	apiMapper := createTestApiIdpMapper()
+
+	t.Run("Create identity provider mapper - failed to get technical access token", func(t *testing.T) {
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return("", anyError)
+
+		err := idpComponent.CreateIdentityProviderMapper(ctx, realmName, idpAlias, apiMapper)
+		assert.NotNil(t, err)
+	})
+
+	t.Run("Create identity provider mapper - failed to create mapper", func(t *testing.T) {
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return(technicalAccessToken, nil)
+		mocks.keycloakIdpClient.EXPECT().CreateIdpMapper(technicalAccessToken, realmName, idpAlias, kcMapper).Return(anyError)
+
+		err := idpComponent.CreateIdentityProviderMapper(ctx, realmName, idpAlias, apiMapper)
+		assert.NotNil(t, err)
+	})
+
+	t.Run("Create identity provider mapper - success", func(t *testing.T) {
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return(technicalAccessToken, nil)
+		mocks.keycloakIdpClient.EXPECT().CreateIdpMapper(technicalAccessToken, realmName, idpAlias, kcMapper).Return(nil)
+
+		err := idpComponent.CreateIdentityProviderMapper(ctx, realmName, idpAlias, apiMapper)
+		assert.Nil(t, err)
+	})
+}
+
+func TestUpdateIdentityProviderMapper(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mocks = createMocks(mockCtrl)
+	var idpComponent = createComponent(mocks)
+
+	var accessToken = "TOKEN=="
+	var technicalAccessToken = "abcd-1234"
+	var anyError = errors.New("any error")
+
+	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+
+	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
+
+	kcMapper := createTestKcIdpMapper()
+	apiMapper := createTestApiIdpMapper()
+
+	t.Run("Update identity provider mapper - failed to get technical access token", func(t *testing.T) {
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return("", anyError)
+
+		err := idpComponent.UpdateIdentityProviderMapper(ctx, realmName, idpAlias, mapperID, apiMapper)
+		assert.NotNil(t, err)
+	})
+
+	t.Run("Update identity provider mapper - failed to update mapper", func(t *testing.T) {
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return(technicalAccessToken, nil)
+		mocks.keycloakIdpClient.EXPECT().UpdateIdpMapper(technicalAccessToken, realmName, idpAlias, mapperID, kcMapper).Return(anyError)
+
+		err := idpComponent.UpdateIdentityProviderMapper(ctx, realmName, idpAlias, mapperID, apiMapper)
+		assert.NotNil(t, err)
+	})
+
+	t.Run("Update identity provider mapper - success", func(t *testing.T) {
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return(technicalAccessToken, nil)
+		mocks.keycloakIdpClient.EXPECT().UpdateIdpMapper(technicalAccessToken, realmName, idpAlias, mapperID, kcMapper).Return(nil)
+
+		err := idpComponent.UpdateIdentityProviderMapper(ctx, realmName, idpAlias, mapperID, apiMapper)
+		assert.Nil(t, err)
+	})
+}
+
+func TestDeleteIdentityProviderMapper(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mocks = createMocks(mockCtrl)
+	var idpComponent = createComponent(mocks)
+
+	var accessToken = "TOKEN=="
+	var technicalAccessToken = "abcd-1234"
+	var anyError = errors.New("any error")
+
+	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+
+	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
+
+	t.Run("Delete identity provider - failed to get technical access token", func(t *testing.T) {
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return("", anyError)
+
+		err := idpComponent.DeleteIdentityProviderMapper(ctx, realmName, idpAlias, mapperID)
+		assert.NotNil(t, err)
+	})
+
+	t.Run("Delete identity provider - failed to delete idp", func(t *testing.T) {
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return(technicalAccessToken, nil)
+		mocks.keycloakIdpClient.EXPECT().DeleteIdpMapper(technicalAccessToken, realmName, idpAlias, mapperID).Return(anyError)
+
+		err := idpComponent.DeleteIdentityProviderMapper(ctx, realmName, idpAlias, mapperID)
+		assert.NotNil(t, err)
+	})
+
+	t.Run("Delete identity provider - success", func(t *testing.T) {
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return(technicalAccessToken, nil)
+		mocks.keycloakIdpClient.EXPECT().DeleteIdpMapper(technicalAccessToken, realmName, idpAlias, mapperID).Return(nil)
+
+		err := idpComponent.DeleteIdentityProviderMapper(ctx, realmName, idpAlias, mapperID)
+		assert.Nil(t, err)
+	})
+
 }

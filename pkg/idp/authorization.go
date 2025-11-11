@@ -65,3 +65,43 @@ func (c *authorizationComponentMW) DeleteIdentityProvider(ctx context.Context, r
 
 	return c.next.DeleteIdentityProvider(ctx, realmName, providerAlias)
 }
+
+func (c *authorizationComponentMW) GetIdentityProviderMappers(ctx context.Context, realmName string, idpAlias string) ([]api.IdentityProviderMapperRepresentation, error) {
+	var action = security.IDPGetIdentityProviderMapper.String()
+	var targetRealm = realmName
+	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
+		return []api.IdentityProviderMapperRepresentation{}, err
+	}
+
+	return c.next.GetIdentityProviderMappers(ctx, realmName, idpAlias)
+}
+
+func (c *authorizationComponentMW) CreateIdentityProviderMapper(ctx context.Context, realmName string, idpAlias string, mapperRep api.IdentityProviderMapperRepresentation) error {
+	var action = security.IDPCreateIdentityProviderMapper.String()
+	var targetRealm = realmName
+	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
+		return err
+	}
+
+	return c.next.CreateIdentityProviderMapper(ctx, realmName, idpAlias, mapperRep)
+}
+
+func (c *authorizationComponentMW) UpdateIdentityProviderMapper(ctx context.Context, realmName string, idpAlias string, mapperID string, mapperRep api.IdentityProviderMapperRepresentation) error {
+	var action = security.IDPUpdateIdentityProviderMapper.String()
+	var targetRealm = realmName
+	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
+		return err
+	}
+
+	return c.next.UpdateIdentityProviderMapper(ctx, realmName, idpAlias, mapperID, mapperRep)
+}
+
+func (c *authorizationComponentMW) DeleteIdentityProviderMapper(ctx context.Context, realmName string, idpAlias string, mapperID string) error {
+	var action = security.IDPDeleteIdentityProviderMapper.String()
+	var targetRealm = realmName
+	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
+		return err
+	}
+
+	return c.next.DeleteIdentityProviderMapper(ctx, realmName, idpAlias, mapperID)
+}

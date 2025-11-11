@@ -32,6 +32,15 @@ type HrdSettingModel struct {
 	Priority     int    `json:"priority"`
 }
 
+// IdentityProviderMapperRepresentation struct
+type IdentityProviderMapperRepresentation struct {
+	Config                 map[string]string `json:"config,omitempty"`
+	ID                     *string           `json:"id,omitempty"`
+	IdentityProviderAlias  *string           `json:"identityProviderAlias,omitempty"`
+	IdentityProviderMapper *string           `json:"identityProviderMapper,omitempty"`
+	Name                   *string           `json:"name,omitempty"`
+}
+
 func (settings HrdSettingModel) Validate() error {
 	return validation.NewParameterValidator().
 		ValidateParameterRegExp("ipRangesList", &settings.IPRangesList, constants.RegExpIpRangesList, true).
@@ -104,5 +113,56 @@ func (idp IdentityProviderRepresentation) Validate() error {
 		})
 	}
 
+	return v.Status()
+}
+
+// convertToAPIIdentityProviderMapper creates an API IdentityProviderMapperRepresentation from a KC IdentityProviderMapperRepresentation
+func convertToAPIIdentityProviderMapper(kcMapper kc.IdentityProviderMapperRepresentation) IdentityProviderMapperRepresentation {
+	return IdentityProviderMapperRepresentation{
+		Config:                 kcMapper.Config,
+		ID:                     kcMapper.ID,
+		IdentityProviderAlias:  kcMapper.IdentityProviderAlias,
+		IdentityProviderMapper: kcMapper.IdentityProviderMapper,
+		Name:                   kcMapper.Name,
+	}
+}
+
+// ConvertToAPIIdentityProviderMappers creates API IdentityProviderMapperRepresentations from KC IdentityProviderMapperRepresentations
+func ConvertToAPIIdentityProviderMappers(kcMappers []kc.IdentityProviderMapperRepresentation) []IdentityProviderMapperRepresentation {
+	apiMappers := make([]IdentityProviderMapperRepresentation, len(kcMappers))
+	for i := range kcMappers {
+		apiMappers[i] = convertToAPIIdentityProviderMapper(kcMappers[i])
+	}
+
+	return apiMappers
+}
+
+// ConvertToKCIdentityProviderMapper creates a KC IdentityProviderMapperRepresentation from an API IdentityProviderMapperRepresentation
+func ConvertToKCIdentityProviderMapper(apiMapper IdentityProviderMapperRepresentation) kc.IdentityProviderMapperRepresentation {
+	return kc.IdentityProviderMapperRepresentation{
+		Config:                 apiMapper.Config,
+		ID:                     apiMapper.ID,
+		IdentityProviderAlias:  apiMapper.IdentityProviderAlias,
+		IdentityProviderMapper: apiMapper.IdentityProviderMapper,
+		Name:                   apiMapper.Name,
+	}
+}
+
+// Validate is a validator for IdentityProviderRepresentation
+func (mapperRep IdentityProviderMapperRepresentation) Validate() error {
+	v := validation.NewParameterValidator().
+		ValidateParameterRegExp("id", mapperRep.ID, constants.RegExpID, false).
+		ValidateParameterRegExp("identityProviderAlias", mapperRep.IdentityProviderAlias, constants.RegExpAlias, true).
+		ValidateParameterRegExp("identityProviderMapper", mapperRep.IdentityProviderMapper, constants.RegExpAlias, true).
+		ValidateParameterRegExp("name", mapperRep.Name, constants.RegExpDisplayName, true)
+
+	if len(mapperRep.Config) != 0 {
+		configJSON, err := json.Marshal(mapperRep.Config)
+		if err != nil {
+			return err
+		}
+		configStr := string(configJSON)
+		v = v.ValidateParameterLength("config", &configStr, 0, 10000, false)
+	}
 	return v.Status()
 }

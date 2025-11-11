@@ -16,6 +16,7 @@ const (
 	reqBody     = "body"
 	prmRealm    = "realm"
 	prmProvider = "provider"
+	prmMapper   = "mapper"
 )
 
 // MakeIdpHandler make an HTTP handler for a Identity Providers endpoint.
@@ -28,10 +29,11 @@ func MakeIdpHandler(e endpoint.Endpoint, logger log.Logger) *http_transport.Serv
 }
 
 // decodeIdpRequest gets the HTTP parameters and body content
-func decodeIdpRequest(ctx context.Context, req *http.Request) (interface{}, error) {
+func decodeIdpRequest(ctx context.Context, req *http.Request) (any, error) {
 	var pathParams = map[string]string{
 		prmRealm:    constants.RegExpRealmName,
 		prmProvider: constants.RegExpName,
+		prmMapper:   constants.RegExpID,
 	}
 
 	var queryParams = map[string]string{}
