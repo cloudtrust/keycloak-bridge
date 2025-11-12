@@ -152,6 +152,7 @@ type Configuration struct {
 	AutoIdentificationAccountingEnabled   *bool           `json:"auto_identification_accounting_enabled"`
 	AutoIdentificationPrepaymentRequired  *bool           `json:"auto_identification_prepayment_required"`
 	AllowedBackURLs                       []string        `json:"allowed_back_urls"`
+	AllowInitialPasswordDefinition        *bool           `json:"allow_initial_password_definition"`
 }
 
 // UpdatePasswordBody is the definition of the expected body content of UpdatePassword method

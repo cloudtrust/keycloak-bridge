@@ -542,6 +542,7 @@ func (c *component) GetConfiguration(ctx context.Context, realmIDOverride string
 		AutoIdentificationPrepaymentRequired:  adminConfig.AutoIdentificationPrepaymentRequired,
 		AllowedBackURLs:                       allowedBackURLs,
 		OnboardingUserEditingEnabled:          config.OnboardingUserEditingEnabled,
+		AllowInitialPasswordDefinition:        config.APISelfInitialPasswordDefinitionAllowed,
 	}
 
 	if realmIDOverride != "" {
