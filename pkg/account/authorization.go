@@ -83,20 +83,30 @@ func (c *authorizationComponentMW) checkFlagEnabled(ctx context.Context, flagEna
 
 // authorizationComponentMW implements Component.
 func (c *authorizationComponentMW) UpdatePassword(ctx context.Context, currentPassword, newPassword, confirmPassword string) error {
-	if err := c.checkAPISelfPasswordChangeEnabled(ctx); err != nil {
-		return err
-	}
-
-	return c.next.UpdatePassword(ctx, currentPassword, newPassword, confirmPassword)
-}
-
-func (c *authorizationComponentMW) checkAPISelfPasswordChangeEnabled(ctx context.Context) error {
 	config, err := c.getRealmConfiguration(ctx)
 	if err != nil {
 		return err
 	}
 
+	if err := c.checkAPISelfPasswordChangeEnabled(ctx, config); err != nil {
+		return err
+	}
+
+	if currentPassword == "" {
+		if err := c.checkAPISelfInitialPasswordDefinitionAllowed(ctx, config); err != nil {
+			return err
+		}
+	}
+
+	return c.next.UpdatePassword(ctx, currentPassword, newPassword, confirmPassword)
+}
+
+func (c *authorizationComponentMW) checkAPISelfPasswordChangeEnabled(ctx context.Context, config configuration.RealmConfiguration) error {
 	return c.checkFlagEnabled(ctx, config.APISelfPasswordChangeEnabled, UpdatePassword, "Forbidden: password change disabled")
+}
+
+func (c *authorizationComponentMW) checkAPISelfInitialPasswordDefinitionAllowed(ctx context.Context, config configuration.RealmConfiguration) error {
+	return c.checkFlagEnabled(ctx, config.APISelfInitialPasswordDefinitionAllowed, UpdatePassword, "Forbidden: initial password definition disabled")
 }
 
 // authorizationComponentMW implements Component.
