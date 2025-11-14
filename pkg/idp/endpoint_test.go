@@ -48,7 +48,7 @@ func TestCreateIdentityProviderEndpoint(t *testing.T) {
 
 	idp := createTestApiIdp()
 	idp.HrdSettings = &api.HrdSettingModel{
-		IPRangesList: "192.168.0.1/24,127.0.0.1/8",
+		IPRangesList: ptr("192.168.0.1/24,127.0.0.1/8"),
 	}
 
 	idpJSON, _ := json.Marshal(idp)
@@ -76,7 +76,7 @@ func TestUpdateIdentityProviderEndpoint(t *testing.T) {
 
 	idp := createTestApiIdp()
 	idp.HrdSettings = &api.HrdSettingModel{
-		IPRangesList: "192.168.1.1/24",
+		IPRangesList: ptr("192.168.1.1/24"),
 	}
 
 	idpJSON, _ := json.Marshal(idp)
