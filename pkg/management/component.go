@@ -113,7 +113,7 @@ type OnboardingModule interface {
 		onboardingRedirectURI string, themeRealmName string, reminder bool, paramKV ...string) error
 	CreateUser(ctx context.Context, accessToken, realmName, targetRealmName string, kcUser *kc.UserRepresentation, generateNameID bool) (string, error)
 	ProcessAlreadyExistingUserCases(ctx context.Context, accessToken string, targetRealmName string, userEmail string, requestingSource string, handler func(username string, createdTimestamp int64, thirdParty *string) error) error
-	ComputeOnboardingRedirectURI(ctx context.Context, targetRealmName string, customerRealmName string, realmConf configuration.RealmConfiguration) (string, error)
+	ComputeOnboardingRedirectURI(ctx context.Context, targetRealmName string, customerRealmName string, realmConf configuration.RealmConfiguration, contextKey *string) (string, error)
 }
 
 // AuthorizationChecker interface
@@ -1288,7 +1288,32 @@ func (c *component) genericSendOnboardingEmail(ctx context.Context, accessToken 
 		return errorhandler.CreateBadRequestError(constants.MsgErrAlreadyOnboardedUser)
 	}
 
-	onboardingRedirectURI, err := c.onboardingModule.ComputeOnboardingRedirectURI(ctx, realmName, customerRealm, realmConf)
+	// get param context-key
+	var contextKey *string
+	for i := 0; i+1 < len(paramKV); i += 2 {
+		if paramKV[i] == "context-key" {
+			contextKey = &paramKV[i+1]
+			break
+		}
+	}
+	if contextKey != nil {
+		// if a context key is provided, check if it it part of the realm context keys
+		contextKeys, err := c.GetRealmContextKeysConfiguration(ctx, customerRealm)
+		if err != nil {
+			return err
+		}
+		found := false
+		for _, validContextKey := range contextKeys {
+			if *contextKey == *validContextKey.ID {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return errorhandler.CreateNotFoundError(constants.MsgErrInvalidContextKey)
+		}
+	}
+	onboardingRedirectURI, err := c.onboardingModule.ComputeOnboardingRedirectURI(ctx, realmName, customerRealm, realmConf, contextKey)
 	if err != nil {
 		return err
 	}

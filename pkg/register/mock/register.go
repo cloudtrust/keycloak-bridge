@@ -292,18 +292,18 @@ func (m *OnboardingModule) EXPECT() *OnboardingModuleMockRecorder {
 }
 
 // ComputeOnboardingRedirectURI mocks base method.
-func (m *OnboardingModule) ComputeOnboardingRedirectURI(ctx context.Context, targetRealmName, customerRealmName string, realmConf configuration.RealmConfiguration) (string, error) {
+func (m *OnboardingModule) ComputeOnboardingRedirectURI(ctx context.Context, targetRealmName, customerRealmName string, realmConf configuration.RealmConfiguration, contextKey *string) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ComputeOnboardingRedirectURI", ctx, targetRealmName, customerRealmName, realmConf)
+	ret := m.ctrl.Call(m, "ComputeOnboardingRedirectURI", ctx, targetRealmName, customerRealmName, realmConf, contextKey)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ComputeOnboardingRedirectURI indicates an expected call of ComputeOnboardingRedirectURI.
-func (mr *OnboardingModuleMockRecorder) ComputeOnboardingRedirectURI(ctx, targetRealmName, customerRealmName, realmConf any) *gomock.Call {
+func (mr *OnboardingModuleMockRecorder) ComputeOnboardingRedirectURI(ctx, targetRealmName, customerRealmName, realmConf, contextKey any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ComputeOnboardingRedirectURI", reflect.TypeOf((*OnboardingModule)(nil).ComputeOnboardingRedirectURI), ctx, targetRealmName, customerRealmName, realmConf)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ComputeOnboardingRedirectURI", reflect.TypeOf((*OnboardingModule)(nil).ComputeOnboardingRedirectURI), ctx, targetRealmName, customerRealmName, realmConf, contextKey)
 }
 
 // ComputeRedirectURI mocks base method.

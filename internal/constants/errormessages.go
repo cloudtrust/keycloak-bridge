@@ -16,6 +16,7 @@ const (
 	MsgErrUnknown              = "unknowError"
 	MsgErrNotConfigured        = "notConfigured"
 	MsgErrUnverified           = "unverifiedFlag"
+	MsgErrInvalidContextKey    = "invalidContextKey"
 
 	BodyContent                       = "bodyContent"
 	RealmConfiguration                = "realmConfiguration"

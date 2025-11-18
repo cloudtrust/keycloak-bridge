@@ -2796,7 +2796,7 @@ func TestSendOnboardingEmail(t *testing.T) {
 
 		mocks.onboardingModule.EXPECT().OnboardingAlreadyCompleted(gomock.Any()).Return(false, nil)
 		var computedOnboardingRedirectURI = onboardingRedirectURI + "?customerRealm=" + customerRealmName
-		mocks.onboardingModule.EXPECT().ComputeOnboardingRedirectURI(ctx, realmName, customerRealmName, gomock.Any()).Return(computedOnboardingRedirectURI, nil)
+		mocks.onboardingModule.EXPECT().ComputeOnboardingRedirectURI(ctx, realmName, customerRealmName, gomock.Any(), nil).Return(computedOnboardingRedirectURI, nil)
 
 		mocks.onboardingModule.EXPECT().SendOnboardingEmail(ctx, accessToken, realmName, userID, username,
 			onboardingClientID, computedOnboardingRedirectURI, customerRealmName, true).Return(anyError)
@@ -2816,13 +2816,44 @@ func TestSendOnboardingEmail(t *testing.T) {
 			Username: &username,
 		}, nil)
 		mocks.onboardingModule.EXPECT().OnboardingAlreadyCompleted(gomock.Any()).Return(false, nil)
-		mocks.onboardingModule.EXPECT().ComputeOnboardingRedirectURI(ctx, realmName, realmName, gomock.Any()).Return(onboardingRedirectURI, nil)
+		mocks.onboardingModule.EXPECT().ComputeOnboardingRedirectURI(ctx, realmName, realmName, gomock.Any(), nil).Return(onboardingRedirectURI, nil)
 		mocks.onboardingModule.EXPECT().SendOnboardingEmail(ctx, accessToken, realmName, userID, username, onboardingClientID, onboardingRedirectURI, gomock.Any(), false).Return(nil)
 		mocks.eventsReporter.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
 
 		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, realmName, false)
 		assert.Nil(t, err)
 	})
+
+	t.Run("Invalid context key", func(t *testing.T) {
+		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(kc.UserRepresentation{
+			ID:       &userID,
+			Username: &username,
+		}, nil)
+		mocks.onboardingModule.EXPECT().OnboardingAlreadyCompleted(gomock.Any()).Return(false, nil)
+		mocks.configurationDBModule.EXPECT().GetContextKeysForCustomerRealm(ctx, realmName).Return([]configuration.RealmContextKey{}, nil)
+
+		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, realmName, false, []string{"context-key", "my-invalid-key"}...)
+		assert.NotNil(t, err)
+	})
+
+	t.Run("Success valid context key", func(t *testing.T) {
+		contextKey := "valid-key"
+		configurationKey := configuration.RealmContextKey{ID: contextKey}
+		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(kc.UserRepresentation{
+			ID:       &userID,
+			Username: &username,
+		}, nil)
+		mocks.onboardingModule.EXPECT().OnboardingAlreadyCompleted(gomock.Any()).Return(false, nil)
+		mocks.configurationDBModule.EXPECT().GetContextKeysForCustomerRealm(ctx, realmName).Return([]configuration.RealmContextKey{{ID: "random-key"}, configurationKey}, nil)
+
+		mocks.onboardingModule.EXPECT().ComputeOnboardingRedirectURI(ctx, realmName, realmName, gomock.Any(), &configurationKey.ID).Return(onboardingRedirectURI, nil)
+		mocks.onboardingModule.EXPECT().SendOnboardingEmail(ctx, accessToken, realmName, userID, username, onboardingClientID, onboardingRedirectURI, gomock.Any(), false, gomock.Any()).Return(nil)
+		mocks.eventsReporter.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
+
+		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, realmName, false, []string{"context-key", contextKey}...)
+		assert.Nil(t, err)
+	})
+
 }
 
 func TestSendReminderEmail(t *testing.T) {

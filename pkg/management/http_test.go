@@ -100,4 +100,14 @@ func TestHTTPManagementHandler(t *testing.T) {
 		assert.Equal(t, http.StatusCreated, res.StatusCode)
 		assert.Equal(t, url, res.Header.Get("Location"))
 	})
+	t.Run("Invalid context-key param", func(t *testing.T) {
+		res, err := http.Get(ts.URL + "/realms/master?context-key=invalid-uuid")
+		assert.Nil(t, err)
+		assert.Equal(t, http.StatusBadRequest, res.StatusCode)
+	})
+	t.Run("Valid context-key param", func(t *testing.T) {
+		res, err := http.Get(ts.URL + "/realms/master?context-key=122b6480-9dc2-4a03-91de-e63b2f129518")
+		assert.Nil(t, err)
+		assert.Equal(t, http.StatusOK, res.StatusCode)
+	})
 }

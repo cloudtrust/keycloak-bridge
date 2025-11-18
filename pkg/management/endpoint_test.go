@@ -18,6 +18,7 @@ import (
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
 	"github.com/cloudtrust/keycloak-bridge/pkg/management/mock"
 	kc "github.com/cloudtrust/keycloak-client/v2"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
@@ -1145,6 +1146,18 @@ func TestSendOnboardingEmailEndpoint(t *testing.T) {
 		req[prmQryCustom1] = "value1"
 		req[prmQryCustom4] = "value4"
 		var expectedParamKV = []string{prmQryCustom1, "value1", prmQryCustom4, "value4"}
+		mockManagementComponent.EXPECT().SendOnboardingEmail(ctx, realm, userID, customerRealm, false, expectedParamKV).Return(nil)
+		var res, err = e(ctx, req)
+		assert.Nil(t, err)
+		assert.Nil(t, res)
+	})
+	t.Run("Valid context-key parameter", func(t *testing.T) {
+		delete(req, prmQryLifespan)
+		delete(req, prmQryCustom1)
+		delete(req, prmQryCustom4)
+		uuidVal := uuid.New().String()
+		req[prmQryContextKey] = uuidVal
+		var expectedParamKV = []string{prmQryContextKey, uuidVal}
 		mockManagementComponent.EXPECT().SendOnboardingEmail(ctx, realm, userID, customerRealm, false, expectedParamKV).Return(nil)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
