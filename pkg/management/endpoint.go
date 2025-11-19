@@ -586,13 +586,12 @@ func MakeSendOnboardingEmailEndpoint(component Component, maxLifeSpan int) cs.En
 			paramKV = append(paramKV, "lifespan", *value)
 		}
 		// Context key parameter
-		if value, err := getContextKeyValue(m); err != nil {
-			return nil, err
-		} else if value != nil {
-			paramKV = append(paramKV, prmQryContextKey, *value)
+		var contextKey *string
+		if value, ok := m[prmQryContextKey]; ok {
+			contextKey = &value
 		}
 
-		return nil, component.SendOnboardingEmail(ctx, m[prmRealm], m[prmUserID], customerRealmName, reminder, paramKV...)
+		return nil, component.SendOnboardingEmail(ctx, m[prmRealm], m[prmUserID], customerRealmName, reminder, contextKey, paramKV...)
 	}
 }
 
@@ -629,13 +628,6 @@ func getLifespanValue(queryParameters map[string]string, maxLifeSpan int) (*stri
 			return &value, nil
 		}
 		return nil, errorhandler.CreateInvalidQueryParameterError(prmQryLifespan)
-	}
-	return nil, nil
-}
-
-func getContextKeyValue(queryParameters map[string]string) (*string, error) {
-	if value, ok := queryParameters[prmQryContextKey]; ok {
-		return &value, nil
 	}
 	return nil, nil
 }

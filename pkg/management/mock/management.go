@@ -979,9 +979,9 @@ func (mr *ManagementComponentMockRecorder) SendMigrationEmail(ctx, realmName, us
 }
 
 // SendOnboardingEmail mocks base method.
-func (m *ManagementComponent) SendOnboardingEmail(ctx context.Context, realmName, userID, customerRealm string, reminder bool, paramKV ...string) error {
+func (m *ManagementComponent) SendOnboardingEmail(ctx context.Context, realmName, userID, customerRealm string, reminder bool, contextKey *string, paramKV ...string) error {
 	m.ctrl.T.Helper()
-	varargs := []any{ctx, realmName, userID, customerRealm, reminder}
+	varargs := []any{ctx, realmName, userID, customerRealm, reminder, contextKey}
 	for _, a := range paramKV {
 		varargs = append(varargs, a)
 	}
@@ -991,9 +991,9 @@ func (m *ManagementComponent) SendOnboardingEmail(ctx context.Context, realmName
 }
 
 // SendOnboardingEmail indicates an expected call of SendOnboardingEmail.
-func (mr *ManagementComponentMockRecorder) SendOnboardingEmail(ctx, realmName, userID, customerRealm, reminder any, paramKV ...any) *gomock.Call {
+func (mr *ManagementComponentMockRecorder) SendOnboardingEmail(ctx, realmName, userID, customerRealm, reminder, contextKey any, paramKV ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]any{ctx, realmName, userID, customerRealm, reminder}, paramKV...)
+	varargs := append([]any{ctx, realmName, userID, customerRealm, reminder, contextKey}, paramKV...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendOnboardingEmail", reflect.TypeOf((*ManagementComponent)(nil).SendOnboardingEmail), varargs...)
 }
 

@@ -166,7 +166,7 @@ type Component interface {
 	ExecuteActionsEmail(ctx context.Context, realmName string, userID string, actions []api.RequiredAction, paramKV ...string) error
 	RevokeAccreditations(ctx context.Context, realmName string, userID string) error
 	SendSmsCode(ctx context.Context, realmName string, userID string) (string, error)
-	SendOnboardingEmail(ctx context.Context, realmName string, userID string, customerRealm string, reminder bool, paramKV ...string) error
+	SendOnboardingEmail(ctx context.Context, realmName string, userID string, customerRealm string, reminder bool, contextKey *string, paramKV ...string) error
 	SendOnboardingEmailInSocialRealm(ctx context.Context, userID string, customerRealm string, reminder bool, paramKV ...string) error
 	/* REMOVE_THIS_3901 : start */
 	SendMigrationEmail(ctx context.Context, realmName string, userID string, customerRealm string, reminder bool, lifespan *int) error
@@ -1242,9 +1242,9 @@ func (c *component) SendSmsCode(ctx context.Context, realmName string, userID st
 	return *smsCodeKc.Code, err
 }
 
-func (c *component) SendOnboardingEmail(ctx context.Context, realmName string, userID string, customerRealm string, reminder bool, paramKV ...string) error {
+func (c *component) SendOnboardingEmail(ctx context.Context, realmName string, userID string, customerRealm string, reminder bool, contextKey *string, paramKV ...string) error {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
-	return c.genericSendOnboardingEmail(ctx, accessToken, realmName, userID, customerRealm, reminder, paramKV...)
+	return c.genericSendOnboardingEmail(ctx, accessToken, realmName, userID, customerRealm, reminder, contextKey, paramKV...)
 }
 
 func (c *component) SendOnboardingEmailInSocialRealm(ctx context.Context, userID string, customerRealm string, reminder bool, paramKV ...string) error {
@@ -1254,10 +1254,10 @@ func (c *component) SendOnboardingEmailInSocialRealm(ctx context.Context, userID
 		return err
 	}
 
-	return c.genericSendOnboardingEmail(ctx, accessToken, c.socialRealmName, userID, customerRealm, reminder, paramKV...)
+	return c.genericSendOnboardingEmail(ctx, accessToken, c.socialRealmName, userID, customerRealm, reminder, nil, paramKV...)
 }
 
-func (c *component) genericSendOnboardingEmail(ctx context.Context, accessToken string, realmName string, userID string, customerRealm string, reminder bool, paramKV ...string) error {
+func (c *component) genericSendOnboardingEmail(ctx context.Context, accessToken string, realmName string, userID string, customerRealm string, reminder bool, contextKey *string, paramKV ...string) error {
 	// Get Realm configuration from database
 	realmConf, err := c.configDBModule.GetConfiguration(ctx, customerRealm)
 	if err != nil {
@@ -1288,31 +1288,10 @@ func (c *component) genericSendOnboardingEmail(ctx context.Context, accessToken 
 		return errorhandler.CreateBadRequestError(constants.MsgErrAlreadyOnboardedUser)
 	}
 
-	// get param context-key
-	var contextKey *string
-	for i := 0; i+1 < len(paramKV); i += 2 {
-		if paramKV[i] == "context-key" {
-			contextKey = &paramKV[i+1]
-			break
-		}
+	if err := c.validateContextKey(ctx, customerRealm, contextKey); err != nil {
+		return err
 	}
-	if contextKey != nil {
-		// if a context key is provided, check if it it part of the realm context keys
-		contextKeys, err := c.GetRealmContextKeysConfiguration(ctx, customerRealm)
-		if err != nil {
-			return err
-		}
-		found := false
-		for _, validContextKey := range contextKeys {
-			if *contextKey == *validContextKey.ID {
-				found = true
-				break
-			}
-		}
-		if !found {
-			return errorhandler.CreateNotFoundError(constants.MsgErrInvalidContextKey)
-		}
-	}
+
 	onboardingRedirectURI, err := c.onboardingModule.ComputeOnboardingRedirectURI(ctx, realmName, customerRealm, realmConf, contextKey)
 	if err != nil {
 		return err
@@ -1328,6 +1307,24 @@ func (c *component) genericSendOnboardingEmail(ctx context.Context, accessToken 
 	// store the API call into the DB
 	c.auditEventsReporterModule.ReportEvent(ctx, events.NewEventOnUserFromContext(ctx, c.logger, c.originEvent, "EMAIL_ONBOARDING_SENT", realmName, userID, *kcUser.Username, nil))
 
+	return nil
+}
+
+func (c *component) validateContextKey(ctx context.Context, customerRealm string, contextKey *string) error {
+	if contextKey != nil {
+		// if a context key is provided, check if it is part of the realm context keys
+		contextKeys, err := c.GetRealmContextKeysConfiguration(ctx, customerRealm)
+		if err != nil {
+			return err
+		}
+		for _, validContextKey := range contextKeys {
+			if *contextKey == *validContextKey.ID {
+				return nil
+			}
+		}
+		return errorhandler.CreateNotFoundError("context-key")
+
+	}
 	return nil
 }
 

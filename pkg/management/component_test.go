@@ -2744,7 +2744,7 @@ func TestSendOnboardingEmail(t *testing.T) {
 			OnboardingRedirectURI: &onboardingRedirectURI,
 		}, nil)
 
-		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, customerRealmName, false)
+		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, customerRealmName, false, nil)
 		assert.NotNil(t, err)
 	})
 
@@ -2756,7 +2756,7 @@ func TestSendOnboardingEmail(t *testing.T) {
 	t.Run("Fails to retrieve user in KC", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, userID).Return(kc.UserRepresentation{}, anyError)
 
-		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, customerRealmName, false)
+		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, customerRealmName, false, nil)
 		assert.NotNil(t, err)
 	})
 
@@ -2770,7 +2770,7 @@ func TestSendOnboardingEmail(t *testing.T) {
 		}, nil)
 		mocks.onboardingModule.EXPECT().OnboardingAlreadyCompleted(gomock.Any()).Return(false, anyError)
 
-		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, customerRealmName, false)
+		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, customerRealmName, false, nil)
 		assert.NotNil(t, err)
 	})
 
@@ -2784,7 +2784,7 @@ func TestSendOnboardingEmail(t *testing.T) {
 		}, nil)
 		mocks.onboardingModule.EXPECT().OnboardingAlreadyCompleted(gomock.Any()).Return(true, nil)
 
-		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, customerRealmName, false)
+		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, customerRealmName, false, nil)
 		assert.NotNil(t, err)
 	})
 
@@ -2801,7 +2801,7 @@ func TestSendOnboardingEmail(t *testing.T) {
 		mocks.onboardingModule.EXPECT().SendOnboardingEmail(ctx, accessToken, realmName, userID, username,
 			onboardingClientID, computedOnboardingRedirectURI, customerRealmName, true).Return(anyError)
 
-		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, customerRealmName, true)
+		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, customerRealmName, true, nil)
 		assert.NotNil(t, err)
 	})
 
@@ -2820,7 +2820,7 @@ func TestSendOnboardingEmail(t *testing.T) {
 		mocks.onboardingModule.EXPECT().SendOnboardingEmail(ctx, accessToken, realmName, userID, username, onboardingClientID, onboardingRedirectURI, gomock.Any(), false).Return(nil)
 		mocks.eventsReporter.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
 
-		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, realmName, false)
+		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, realmName, false, nil)
 		assert.Nil(t, err)
 	})
 
@@ -2832,7 +2832,7 @@ func TestSendOnboardingEmail(t *testing.T) {
 		mocks.onboardingModule.EXPECT().OnboardingAlreadyCompleted(gomock.Any()).Return(false, nil)
 		mocks.configurationDBModule.EXPECT().GetContextKeysForCustomerRealm(ctx, realmName).Return([]configuration.RealmContextKey{}, nil)
 
-		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, realmName, false, []string{"context-key", "my-invalid-key"}...)
+		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, realmName, false, ptr("my-invalid-context-key"))
 		assert.NotNil(t, err)
 	})
 
@@ -2850,7 +2850,7 @@ func TestSendOnboardingEmail(t *testing.T) {
 		mocks.onboardingModule.EXPECT().SendOnboardingEmail(ctx, accessToken, realmName, userID, username, onboardingClientID, onboardingRedirectURI, gomock.Any(), false, gomock.Any()).Return(nil)
 		mocks.eventsReporter.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
 
-		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, realmName, false, []string{"context-key", contextKey}...)
+		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, realmName, false, &contextKey)
 		assert.Nil(t, err)
 	})
 
