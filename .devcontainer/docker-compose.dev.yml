@@ -9,6 +9,7 @@ services:
       - "8866:8866"
       - "8855:8855"
       - "8844:8844"
+      - "8870:8870"
     volumes:
       - ${BRIDGE_REPOSITORY_FOLDER}:/workspace:cached
     # Overrides default command so things don't shut down after the process ends.
