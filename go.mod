@@ -3,7 +3,7 @@ module github.com/cloudtrust/keycloak-bridge
 go 1.25.3
 
 require (
-	github.com/cloudtrust/common-service/v2 v2.14.2
+	github.com/cloudtrust/common-service/v2 v2.14.3-0.20251119091539-5574b3bbd50e
 	github.com/cloudtrust/httpclient v1.6.0
 	github.com/cloudtrust/kafka-client v1.7.0
 	github.com/cloudtrust/keycloak-client/v2 v2.16.0
@@ -49,7 +49,7 @@ require (
 	github.com/jcmturner/gokrb5/v8 v8.4.4 // indirect
 	github.com/jcmturner/rpc/v2 v2.0.3 // indirect
 	github.com/klauspost/compress v1.18.0 // indirect
-	github.com/nyaruka/phonenumbers v1.6.6 // indirect
+	github.com/nyaruka/phonenumbers v1.6.7 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect

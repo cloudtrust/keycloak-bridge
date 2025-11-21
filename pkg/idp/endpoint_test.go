@@ -7,18 +7,15 @@ import (
 	"testing"
 
 	api "github.com/cloudtrust/keycloak-bridge/api/idp"
-	"github.com/cloudtrust/keycloak-bridge/pkg/idp/mock"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
 
 func TestGetIdentityProviderEndpoint(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
-	defer mockCtrl.Finish()
+	var mocks = createMocks(t)
+	defer mocks.finish()
 
-	var mockIdpComponent = mock.NewComponent(mockCtrl)
-
-	var e = MakeGetIdentityProviderEndpoint(mockIdpComponent)
+	var e = MakeGetIdentityProviderEndpoint(mocks.component)
 
 	var realm = "test-community"
 	var ctx = context.Background()
@@ -27,18 +24,16 @@ func TestGetIdentityProviderEndpoint(t *testing.T) {
 	req[prmRealm] = realm
 	req[prmProvider] = idpAlias
 
-	mockIdpComponent.EXPECT().GetIdentityProvider(ctx, realm, idpAlias).Return(api.IdentityProviderRepresentation{}, nil)
+	mocks.component.EXPECT().GetIdentityProvider(ctx, realm, idpAlias).Return(api.IdentityProviderRepresentation{}, nil)
 	_, err := e(ctx, req)
 	assert.Nil(t, err)
 }
 
 func TestCreateIdentityProviderEndpoint(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
-	defer mockCtrl.Finish()
+	var mocks = createMocks(t)
+	defer mocks.finish()
 
-	var mockIdpComponent = mock.NewComponent(mockCtrl)
-
-	var e = MakeCreateIdentityProviderEndpoint(mockIdpComponent)
+	var e = mocks.newEndpoints().CreateIdentityProvider
 
 	var realm = "test-community"
 	var ctx = context.Background()
@@ -46,7 +41,7 @@ func TestCreateIdentityProviderEndpoint(t *testing.T) {
 	var req = make(map[string]string)
 	req[prmRealm] = realm
 
-	idp := createTestApiIdp()
+	idp := createTestAPIIdp()
 	idp.HrdSettings = &api.HrdSettingModel{
 		IPRangesList: "192.168.0.1/24,127.0.0.1/8",
 	}
@@ -54,18 +49,14 @@ func TestCreateIdentityProviderEndpoint(t *testing.T) {
 	idpJSON, _ := json.Marshal(idp)
 	req[reqBody] = string(idpJSON)
 
-	mockIdpComponent.EXPECT().CreateIdentityProvider(ctx, realm, idp).Return(nil)
+	mocks.component.EXPECT().CreateIdentityProvider(ctx, realm, idp).Return(nil)
 	_, err := e(ctx, req)
 	assert.Nil(t, err)
 }
 
 func TestUpdateIdentityProviderEndpoint(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
-	defer mockCtrl.Finish()
-
-	var mockIdpComponent = mock.NewComponent(mockCtrl)
-
-	var e = MakeUpdateIdentityProviderEndpoint(mockIdpComponent)
+	var mocks = createMocks(t)
+	defer mocks.finish()
 
 	var realm = "test-community"
 	var ctx = context.Background()
@@ -74,7 +65,7 @@ func TestUpdateIdentityProviderEndpoint(t *testing.T) {
 	req[prmRealm] = realm
 	req[prmProvider] = idpAlias
 
-	idp := createTestApiIdp()
+	idp := createTestAPIIdp()
 	idp.HrdSettings = &api.HrdSettingModel{
 		IPRangesList: "192.168.1.1/24",
 	}
@@ -82,18 +73,14 @@ func TestUpdateIdentityProviderEndpoint(t *testing.T) {
 	idpJSON, _ := json.Marshal(idp)
 	req[reqBody] = string(idpJSON)
 
-	mockIdpComponent.EXPECT().UpdateIdentityProvider(ctx, realm, idpAlias, idp).Return(nil)
-	_, err := e(ctx, req)
+	mocks.component.EXPECT().UpdateIdentityProvider(ctx, realm, idpAlias, idp).Return(nil)
+	_, err := mocks.newEndpoints().UpdateIdentityProvider(ctx, req)
 	assert.Nil(t, err)
 }
 
 func TestDeleteIdentityProviderEndpoint(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
-	defer mockCtrl.Finish()
-
-	var mockIdpComponent = mock.NewComponent(mockCtrl)
-
-	var e = MakeDeleteIdentityProviderEndpoint(mockIdpComponent)
+	var mocks = createMocks(t)
+	defer mocks.finish()
 
 	var realm = "test-community"
 	var ctx = context.Background()
@@ -102,18 +89,14 @@ func TestDeleteIdentityProviderEndpoint(t *testing.T) {
 	req[prmRealm] = realm
 	req[prmProvider] = idpAlias
 
-	mockIdpComponent.EXPECT().DeleteIdentityProvider(ctx, realm, idpAlias).Return(nil)
-	_, err := e(ctx, req)
+	mocks.component.EXPECT().DeleteIdentityProvider(ctx, realm, idpAlias).Return(nil)
+	_, err := mocks.newEndpoints().DeleteIdentityProvider(ctx, req)
 	assert.Nil(t, err)
 }
 
 func TestGetIdentityProviderMappersEndpoint(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
-	defer mockCtrl.Finish()
-
-	var mockIdpComponent = mock.NewComponent(mockCtrl)
-
-	var e = MakeGetIdentityProviderMappersEndpoint(mockIdpComponent)
+	var mocks = createMocks(t)
+	defer mocks.finish()
 
 	var realm = "test-community"
 	var ctx = context.Background()
@@ -126,25 +109,21 @@ func TestGetIdentityProviderMappersEndpoint(t *testing.T) {
 	anyError := errors.New("any-error")
 
 	t.Run("CreateIdentGetIdentityProviderMappersityProviderMapper - failure", func(t *testing.T) {
-		mockIdpComponent.EXPECT().GetIdentityProviderMappers(ctx, realm, idpAlias).Return([]api.IdentityProviderMapperRepresentation{}, anyError)
-		_, err := e(ctx, req)
+		mocks.component.EXPECT().GetIdentityProviderMappers(ctx, realm, idpAlias).Return([]api.IdentityProviderMapperRepresentation{}, anyError)
+		_, err := mocks.newEndpoints().GetIdentityProviderMappers(ctx, req)
 		assert.Equal(t, anyError, err)
 	})
 
 	t.Run("CreateIdentGetIdentityProviderMappersityProviderMapper - failure", func(t *testing.T) {
-		mockIdpComponent.EXPECT().GetIdentityProviderMappers(ctx, realm, idpAlias).Return([]api.IdentityProviderMapperRepresentation{}, nil)
-		_, err := e(ctx, req)
+		mocks.component.EXPECT().GetIdentityProviderMappers(ctx, realm, idpAlias).Return([]api.IdentityProviderMapperRepresentation{}, nil)
+		_, err := mocks.newEndpoints().GetIdentityProviderMappers(ctx, req)
 		assert.Nil(t, err)
 	})
 }
 
 func TestCreateIdentityProviderMapperEndpoint(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
-	defer mockCtrl.Finish()
-
-	var mockIdpComponent = mock.NewComponent(mockCtrl)
-
-	var e = MakeCreateIdentityProviderMapperEndpoint(mockIdpComponent)
+	var mocks = createMocks(t)
+	defer mocks.finish()
 
 	var realm = "test-community"
 	var ctx = context.Background()
@@ -154,21 +133,21 @@ func TestCreateIdentityProviderMapperEndpoint(t *testing.T) {
 		prmProvider: idpAlias,
 	}
 
-	mapper := createTestApiIdpMapper()
+	mapper := createTestAPIIdpMapper()
 	req[reqBody] = toJSON(mapper)
 
 	anyError := errors.New("any-error")
 
 	t.Run("Invalid JSON", func(t *testing.T) {
 		req[reqBody] = "{-"
-		_, err := e(ctx, req)
+		_, err := mocks.newEndpoints().CreateIdentityProviderMapper(ctx, req)
 		assert.NotNil(t, err)
 	})
 
 	t.Run("Invalid mapper IDP alias", func(t *testing.T) {
 		*mapper.IdentityProviderAlias = "not an alias"
 		req[reqBody] = toJSON(mapper)
-		_, err := e(ctx, req)
+		_, err := mocks.newEndpoints().CreateIdentityProviderMapper(ctx, req)
 		assert.NotNil(t, err)
 		*mapper.IdentityProviderAlias = idpAlias
 	})
@@ -176,33 +155,29 @@ func TestCreateIdentityProviderMapperEndpoint(t *testing.T) {
 	t.Run("Invalid mapper name", func(t *testing.T) {
 		*mapper.Name = "&$@"
 		req[reqBody] = toJSON(mapper)
-		_, err := e(ctx, req)
+		_, err := mocks.newEndpoints().CreateIdentityProviderMapper(ctx, req)
 		assert.NotNil(t, err)
 		*mapper.Name = "deviceId"
 	})
 
 	t.Run("CreateIdentityProviderMapper - failure", func(t *testing.T) {
 		req[reqBody] = toJSON(mapper)
-		mockIdpComponent.EXPECT().CreateIdentityProviderMapper(ctx, realm, idpAlias, mapper).Return(anyError)
-		_, err := e(ctx, req)
+		mocks.component.EXPECT().CreateIdentityProviderMapper(ctx, realm, idpAlias, mapper).Return(anyError)
+		_, err := mocks.newEndpoints().CreateIdentityProviderMapper(ctx, req)
 		assert.Equal(t, anyError, err)
 	})
 
 	t.Run("CreateIdentityProviderMapper - success", func(t *testing.T) {
 		req[reqBody] = toJSON(mapper)
-		mockIdpComponent.EXPECT().CreateIdentityProviderMapper(ctx, realm, idpAlias, mapper).Return(nil)
-		_, err := e(ctx, req)
+		mocks.component.EXPECT().CreateIdentityProviderMapper(ctx, realm, idpAlias, mapper).Return(nil)
+		_, err := mocks.newEndpoints().CreateIdentityProviderMapper(ctx, req)
 		assert.Nil(t, err)
 	})
 }
 
 func TestUpdateIdentityProviderMapperEndpoint(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
-	defer mockCtrl.Finish()
-
-	var mockIdpComponent = mock.NewComponent(mockCtrl)
-
-	var e = MakeUpdateIdentityProviderMapperEndpoint(mockIdpComponent)
+	var mocks = createMocks(t)
+	defer mocks.finish()
 
 	var realm = "test-community"
 	var ctx = context.Background()
@@ -213,7 +188,7 @@ func TestUpdateIdentityProviderMapperEndpoint(t *testing.T) {
 		prmMapper:   mapperID,
 	}
 
-	mapper := createTestApiIdpMapper()
+	mapper := createTestAPIIdpMapper()
 	mapperJSON, _ := json.Marshal(mapper)
 	req[reqBody] = string(mapperJSON)
 
@@ -221,14 +196,14 @@ func TestUpdateIdentityProviderMapperEndpoint(t *testing.T) {
 
 	t.Run("Invalid JSON", func(t *testing.T) {
 		req[reqBody] = "{-"
-		_, err := e(ctx, req)
+		_, err := mocks.newEndpoints().UpdateIdentityProviderMapper(ctx, req)
 		assert.NotNil(t, err)
 	})
 
 	t.Run("Invalid mapper IDP alias", func(t *testing.T) {
 		*mapper.IdentityProviderAlias = "not an alias"
 		req[reqBody] = toJSON(mapper)
-		_, err := e(ctx, req)
+		_, err := mocks.newEndpoints().UpdateIdentityProviderMapper(ctx, req)
 		assert.NotNil(t, err)
 		*mapper.IdentityProviderAlias = idpAlias
 	})
@@ -236,7 +211,7 @@ func TestUpdateIdentityProviderMapperEndpoint(t *testing.T) {
 	t.Run("invalid mapper name", func(t *testing.T) {
 		*mapper.Name = "&$@"
 		req[reqBody] = toJSON(mapper)
-		_, err := e(ctx, req)
+		_, err := mocks.newEndpoints().UpdateIdentityProviderMapper(ctx, req)
 		assert.NotNil(t, err)
 		*mapper.Name = "deviceId"
 	})
@@ -244,33 +219,29 @@ func TestUpdateIdentityProviderMapperEndpoint(t *testing.T) {
 	t.Run("invalid mapper ID", func(t *testing.T) {
 		*mapper.ID = "not an ID"
 		req[reqBody] = toJSON(mapper)
-		_, err := e(ctx, req)
+		_, err := mocks.newEndpoints().UpdateIdentityProviderMapper(ctx, req)
 		assert.NotNil(t, err)
 		*mapper.ID = mapperID
 	})
 
 	t.Run("UpdateIdentityProviderMapper - failure", func(t *testing.T) {
 		req[reqBody] = toJSON(mapper)
-		mockIdpComponent.EXPECT().UpdateIdentityProviderMapper(ctx, realm, idpAlias, mapperID, mapper).Return(anyError)
-		_, err := e(ctx, req)
+		mocks.component.EXPECT().UpdateIdentityProviderMapper(ctx, realm, idpAlias, mapperID, mapper).Return(anyError)
+		_, err := mocks.newEndpoints().UpdateIdentityProviderMapper(ctx, req)
 		assert.NotNil(t, err)
 	})
 
 	t.Run("UpdateIdentityProviderMapper - success", func(t *testing.T) {
 		req[reqBody] = toJSON(mapper)
-		mockIdpComponent.EXPECT().UpdateIdentityProviderMapper(ctx, realm, idpAlias, mapperID, mapper).Return(nil)
-		_, err := e(ctx, req)
+		mocks.component.EXPECT().UpdateIdentityProviderMapper(ctx, realm, idpAlias, mapperID, mapper).Return(nil)
+		_, err := mocks.newEndpoints().UpdateIdentityProviderMapper(ctx, req)
 		assert.Nil(t, err)
 	})
 }
 
 func TestDeleteIdentityProviderMapperEndpoint(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
-	defer mockCtrl.Finish()
-
-	var mockIdpComponent = mock.NewComponent(mockCtrl)
-
-	var e = MakeDeleteIdentityProviderMapperEndpoint(mockIdpComponent)
+	var mocks = createMocks(t)
+	defer mocks.finish()
 
 	var realm = "test-community"
 	var ctx = context.Background()
@@ -284,15 +255,69 @@ func TestDeleteIdentityProviderMapperEndpoint(t *testing.T) {
 	anyError := errors.New("any-error")
 
 	t.Run("DeleteIdentityProviderMapper - failure", func(t *testing.T) {
-		mockIdpComponent.EXPECT().DeleteIdentityProviderMapper(ctx, realm, idpAlias, mapperID).Return(anyError)
-		_, err := e(ctx, req)
+		mocks.component.EXPECT().DeleteIdentityProviderMapper(ctx, realm, idpAlias, mapperID).Return(anyError)
+		_, err := mocks.newEndpoints().DeleteIdentityProviderMapper(ctx, req)
 		assert.NotNil(t, err)
 	})
 
 	t.Run("DeleteIdentityProviderMapper - success", func(t *testing.T) {
-		mockIdpComponent.EXPECT().DeleteIdentityProviderMapper(ctx, realm, idpAlias, mapperID).Return(nil)
-		_, err := e(ctx, req)
+		mocks.component.EXPECT().DeleteIdentityProviderMapper(ctx, realm, idpAlias, mapperID).Return(nil)
+		_, err := mocks.newEndpoints().DeleteIdentityProviderMapper(ctx, req)
 		assert.Nil(t, err)
 	})
+}
 
+func TestGetUsersWithAttributeEndpoint(t *testing.T) {
+	var mocks = createMocks(t)
+	defer mocks.finish()
+
+	var realm = "test-community"
+	var ctx = context.TODO()
+	var result = []api.UserRepresentation{{}, {}, {}, {}}
+
+	req := map[string]string{
+		prmRealm:       realm,
+		prmGroupName:   "group-name",
+		prmAttribKey:   "key",
+		prmAttribValue: "value",
+	}
+
+	t.Run("Missing mandatory parameter", func(t *testing.T) {
+		_, err := mocks.newEndpoints().GetUsersWithAttribute(ctx, map[string]string{})
+		assert.Error(t, err)
+	})
+	t.Run("Missing mandatory parameter", func(t *testing.T) {
+		mocks.component.EXPECT().GetUsersWithAttribute(ctx, realm, req[prmGroupName], req[prmAttribKey], req[prmAttribValue]).Return(result, nil)
+		res, err := mocks.newEndpoints().GetUsersWithAttribute(ctx, req)
+		assert.NoError(t, err)
+		assert.Len(t, res, len(result))
+	})
+}
+
+func TestDeleteUserEndpoint(t *testing.T) {
+	var mocks = createMocks(t)
+	defer mocks.finish()
+
+	var (
+		realm  = "test-community"
+		ctx    = context.TODO()
+		userID = "user-id"
+		req    = map[string]string{
+			prmRealm:     realm,
+			prmUser:      userID,
+			prmGroupName: "group-name",
+		}
+		errDummy = errors.New("dummy")
+	)
+
+	t.Run("Missing optional parameter", func(t *testing.T) {
+		mocks.component.EXPECT().DeleteUser(ctx, realm, userID, nil).Return(errDummy)
+		_, err := mocks.newEndpoints().DeleteUser(ctx, map[string]string{prmRealm: realm, prmUser: userID})
+		assert.Error(t, err)
+	})
+	t.Run("Missing mandatory parameter", func(t *testing.T) {
+		mocks.component.EXPECT().DeleteUser(ctx, realm, userID, gomock.Not(nil)).Return(nil)
+		_, err := mocks.newEndpoints().DeleteUser(ctx, req)
+		assert.NoError(t, err)
+	})
 }
