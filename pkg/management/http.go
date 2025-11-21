@@ -56,6 +56,7 @@ const (
 	prmQryCustom3       = "custom3"
 	prmQryCustom4       = "custom4"
 	prmQryCustom5       = "custom5"
+	prmQryContextKey    = "context-key"
 )
 
 // MakeManagementHandler make an HTTP handler for a Management endpoint.
@@ -107,6 +108,7 @@ func decodeManagementRequest(ctx context.Context, req *http.Request) (any, error
 		prmQryCustom3:       constants.RegExpCustomValue,
 		prmQryCustom4:       constants.RegExpCustomValue,
 		prmQryCustom5:       constants.RegExpCustomValue,
+		prmQryContextKey:    constants.RegExpContextKey,
 	}
 
 	return commonhttp.DecodeRequest(ctx, req, pathParams, queryParams)

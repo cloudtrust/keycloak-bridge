@@ -979,9 +979,9 @@ func (mr *ManagementComponentMockRecorder) SendMigrationEmail(ctx, realmName, us
 }
 
 // SendOnboardingEmail mocks base method.
-func (m *ManagementComponent) SendOnboardingEmail(ctx context.Context, realmName, userID, customerRealm string, reminder bool, paramKV ...string) error {
+func (m *ManagementComponent) SendOnboardingEmail(ctx context.Context, realmName, userID, customerRealm string, reminder bool, contextKey *string, paramKV ...string) error {
 	m.ctrl.T.Helper()
-	varargs := []any{ctx, realmName, userID, customerRealm, reminder}
+	varargs := []any{ctx, realmName, userID, customerRealm, reminder, contextKey}
 	for _, a := range paramKV {
 		varargs = append(varargs, a)
 	}
@@ -991,9 +991,9 @@ func (m *ManagementComponent) SendOnboardingEmail(ctx context.Context, realmName
 }
 
 // SendOnboardingEmail indicates an expected call of SendOnboardingEmail.
-func (mr *ManagementComponentMockRecorder) SendOnboardingEmail(ctx, realmName, userID, customerRealm, reminder any, paramKV ...any) *gomock.Call {
+func (mr *ManagementComponentMockRecorder) SendOnboardingEmail(ctx, realmName, userID, customerRealm, reminder, contextKey any, paramKV ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]any{ctx, realmName, userID, customerRealm, reminder}, paramKV...)
+	varargs := append([]any{ctx, realmName, userID, customerRealm, reminder, contextKey}, paramKV...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendOnboardingEmail", reflect.TypeOf((*ManagementComponent)(nil).SendOnboardingEmail), varargs...)
 }
 
@@ -2021,18 +2021,18 @@ func (m *OnboardingModule) EXPECT() *OnboardingModuleMockRecorder {
 }
 
 // ComputeOnboardingRedirectURI mocks base method.
-func (m *OnboardingModule) ComputeOnboardingRedirectURI(ctx context.Context, targetRealmName, customerRealmName string, realmConf configuration.RealmConfiguration) (string, error) {
+func (m *OnboardingModule) ComputeOnboardingRedirectURI(ctx context.Context, targetRealmName, customerRealmName string, realmConf configuration.RealmConfiguration, contextKey *string) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ComputeOnboardingRedirectURI", ctx, targetRealmName, customerRealmName, realmConf)
+	ret := m.ctrl.Call(m, "ComputeOnboardingRedirectURI", ctx, targetRealmName, customerRealmName, realmConf, contextKey)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ComputeOnboardingRedirectURI indicates an expected call of ComputeOnboardingRedirectURI.
-func (mr *OnboardingModuleMockRecorder) ComputeOnboardingRedirectURI(ctx, targetRealmName, customerRealmName, realmConf any) *gomock.Call {
+func (mr *OnboardingModuleMockRecorder) ComputeOnboardingRedirectURI(ctx, targetRealmName, customerRealmName, realmConf, contextKey any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ComputeOnboardingRedirectURI", reflect.TypeOf((*OnboardingModule)(nil).ComputeOnboardingRedirectURI), ctx, targetRealmName, customerRealmName, realmConf)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ComputeOnboardingRedirectURI", reflect.TypeOf((*OnboardingModule)(nil).ComputeOnboardingRedirectURI), ctx, targetRealmName, customerRealmName, realmConf, contextKey)
 }
 
 // CreateUser mocks base method.

@@ -52,6 +52,7 @@ const (
 	RegExpNumber          = `^\d+$`
 	RegExpContainerID     = regExpLen255
 	RegExpRoleDescription = regExpLen255OrEmpty
+	RegExpContextKey      = RegExpID
 
 	RegExpCustomValue   = `^[A-Za-z\d_-]{0,50}$`
 	RegExpAccreditation = `^[A-Za-z\d_-]{1,50}$`

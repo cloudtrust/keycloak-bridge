@@ -18,6 +18,7 @@ import (
 	api "github.com/cloudtrust/keycloak-bridge/api/management"
 	"github.com/cloudtrust/keycloak-bridge/pkg/management/mock"
 	kc "github.com/cloudtrust/keycloak-client/v2"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
@@ -1094,21 +1095,21 @@ func TestSendOnboardingEmailEndpoint(t *testing.T) {
 	req[prmUserID] = userID
 
 	t.Run("Without reminder or customerRealm parameter", func(t *testing.T) {
-		mockManagementComponent.EXPECT().SendOnboardingEmail(ctx, realm, userID, realm, false, gomock.Any()).Return(nil)
+		mockManagementComponent.EXPECT().SendOnboardingEmail(ctx, realm, userID, realm, false, nil, gomock.Any()).Return(nil)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Nil(t, res)
 	})
 	t.Run("Reminder is false", func(t *testing.T) {
 		req[prmQryReminder] = "FALse"
-		mockManagementComponent.EXPECT().SendOnboardingEmail(ctx, realm, userID, realm, false, gomock.Any()).Return(nil)
+		mockManagementComponent.EXPECT().SendOnboardingEmail(ctx, realm, userID, realm, false, nil, gomock.Any()).Return(nil)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Nil(t, res)
 	})
 	t.Run("Reminder is true", func(t *testing.T) {
 		req[prmQryReminder] = "TruE"
-		mockManagementComponent.EXPECT().SendOnboardingEmail(ctx, realm, userID, realm, true, gomock.Any()).Return(nil)
+		mockManagementComponent.EXPECT().SendOnboardingEmail(ctx, realm, userID, realm, true, nil, gomock.Any()).Return(nil)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Nil(t, res)
@@ -1116,7 +1117,7 @@ func TestSendOnboardingEmailEndpoint(t *testing.T) {
 	t.Run("Reminder is valid, lifespan not used", func(t *testing.T) {
 		req[prmQryReminder] = "false"
 		req[prmQryRealm] = customerRealm
-		mockManagementComponent.EXPECT().SendOnboardingEmail(ctx, realm, userID, customerRealm, false, gomock.Any()).Return(nil)
+		mockManagementComponent.EXPECT().SendOnboardingEmail(ctx, realm, userID, customerRealm, false, nil, gomock.Any()).Return(nil)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Nil(t, res)
@@ -1135,7 +1136,7 @@ func TestSendOnboardingEmailEndpoint(t *testing.T) {
 		var lifespan = strconv.Itoa(int(3 * 24 * time.Hour / time.Second))
 		req[prmQryLifespan] = lifespan
 		var expectedParamKV = []string{prmQryLifespan, lifespan}
-		mockManagementComponent.EXPECT().SendOnboardingEmail(ctx, realm, userID, customerRealm, false, expectedParamKV).Return(nil)
+		mockManagementComponent.EXPECT().SendOnboardingEmail(ctx, realm, userID, customerRealm, false, nil, expectedParamKV).Return(nil)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Nil(t, res)
@@ -1145,7 +1146,19 @@ func TestSendOnboardingEmailEndpoint(t *testing.T) {
 		req[prmQryCustom1] = "value1"
 		req[prmQryCustom4] = "value4"
 		var expectedParamKV = []string{prmQryCustom1, "value1", prmQryCustom4, "value4"}
-		mockManagementComponent.EXPECT().SendOnboardingEmail(ctx, realm, userID, customerRealm, false, expectedParamKV).Return(nil)
+		mockManagementComponent.EXPECT().SendOnboardingEmail(ctx, realm, userID, customerRealm, false, nil, expectedParamKV).Return(nil)
+		var res, err = e(ctx, req)
+		assert.Nil(t, err)
+		assert.Nil(t, res)
+	})
+	t.Run("Valid context-key parameter", func(t *testing.T) {
+		req = make(map[string]string)
+		req[prmRealm] = realm
+		req[prmUserID] = userID
+		req[prmQryRealm] = customerRealm
+		uuidVal := uuid.New().String()
+		req[prmQryContextKey] = uuidVal
+		mockManagementComponent.EXPECT().SendOnboardingEmail(ctx, realm, userID, customerRealm, false, &uuidVal, gomock.Any()).Return(nil)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.Nil(t, res)
