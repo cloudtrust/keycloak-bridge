@@ -88,6 +88,15 @@ func TestValidateIdentityProviderRepresentation(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
+	t.Run("valid alias", func(t *testing.T) {
+		idp := createTestApiIdp()
+
+		*idp.Alias = "0123456789abcdef0123456789abcdef"
+
+		err := idp.Validate()
+		assert.NoError(t, err)
+	})
+
 	t.Run("invalid alias", func(t *testing.T) {
 		idp := createTestApiIdp()
 
