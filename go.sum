@@ -8,6 +8,8 @@ github.com/VividCortex/gohistogram v1.0.0 h1:6+hBz+qvs0JOrrNhhmR7lFxo5sINxBCGXrd
 github.com/VividCortex/gohistogram v1.0.0/go.mod h1:Pf5mBqqDxYaXu3hDrrU+w6nw50o/4+TcAqDqk/vUH7g=
 github.com/cloudtrust/common-service/v2 v2.14.2 h1:oscKM2hhIeBhTuJdf1vSOciWonUK6xU++nop6YgoJC4=
 github.com/cloudtrust/common-service/v2 v2.14.2/go.mod h1:NuatMdGu3aVIjuDsejswE8GoYS2c9/1v5wZYEvvu1V4=
+github.com/cloudtrust/common-service/v2 v2.14.3-0.20251119091539-5574b3bbd50e h1:jPNqnqHp93CpRgGstF3C2BJ/aa6R0ZoJVrPliVJFYTI=
+github.com/cloudtrust/common-service/v2 v2.14.3-0.20251119091539-5574b3bbd50e/go.mod h1:4j7Yn7X96u5k6f4DYTnemH5pRmB+aDjgmQaIYgyi+eQ=
 github.com/cloudtrust/httpclient v1.6.0 h1:/E/y2wZNyUIjADbP3RLI2pLTWdNvcFSLe1MeRD6RlN4=
 github.com/cloudtrust/httpclient v1.6.0/go.mod h1:CK0idOHAQ2CiN2GFOwIYP5hDl2tfUgGdTI9n7Ygbnrs=
 github.com/cloudtrust/kafka-client v1.7.1 h1:ARcg89+q4AhbcoDrKoeqE4gcscGOavoS+P8z9AnKmxk=
@@ -89,6 +91,8 @@ github.com/nbio/st v0.0.0-20140626010706-e9e8d9816f32 h1:W6apQkHrMkS0Muv8G/TipAy
 github.com/nbio/st v0.0.0-20140626010706-e9e8d9816f32/go.mod h1:9wM+0iRr9ahx58uYLpLIr5fm8diHn0JbqRycJi6w0Ms=
 github.com/nyaruka/phonenumbers v1.6.6 h1:cZv5/vslJh65zuOrLjdVDHKHzVEwVuUsXAPQi3bjGJU=
 github.com/nyaruka/phonenumbers v1.6.6/go.mod h1:7gjs+Lchqm49adhAKB5cdcng5ZXgt6x7Jgvi0ZorUtU=
+github.com/nyaruka/phonenumbers v1.6.7 h1:WmebT8TNEzNaui5QlrGqbccRC6dZkEkYc+MGQoILSSo=
+github.com/nyaruka/phonenumbers v1.6.7/go.mod h1:7gjs+Lchqm49adhAKB5cdcng5ZXgt6x7Jgvi0ZorUtU=
 github.com/opentracing/opentracing-go v1.2.0 h1:uEJPy/1a5RIPAJ0Ov+OIO8OxWu77jEv+1B0VhjKrZUs=
 github.com/opentracing/opentracing-go v1.2.0/go.mod h1:GxEUsuufX4nBwe+T+Wl9TAgYrxe9dPLANfrWvHYVTgc=
 github.com/pelletier/go-toml/v2 v2.2.4 h1:mye9XuhQ6gvn5h28+VilKrrPoQVanw5PMw/TB0t5Ec4=
