@@ -114,11 +114,6 @@ func TestGetActions(t *testing.T) {
 	checkPresence("COM_SendEmail", security.ScopeRealm)
 	checkPresence("COM_SendSMS", security.ScopeRealm)
 	checkPresence("TSK_DeleteDeniedToUUsers", security.ScopeGlobal)
-	checkPresence("IDP_GetIdentityProvider", security.ScopeRealm)
-	checkPresence("IDP_CreateIdentityProvider", security.ScopeRealm)
-	checkPresence("IDP_UpdateIdentityProvider", security.ScopeRealm)
-	checkPresence("IDP_DeleteIdentityProvider", security.ScopeRealm)
-
 }
 
 func TestGetRealms(t *testing.T) {

@@ -216,6 +216,76 @@ paths:
           description: successful operation
         404:
           description: mapper not found
+  /idp/realms/{realm}/users:
+    get:
+      tags:
+      - Identity providers
+      summary: Search users having a given attribute set to a given value
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: groupName
+        in: query
+        description: name of a group in which searched users are linked to
+        required: true
+        schema:
+          type: string
+      - name: attributeKey
+        in: query
+        description: key of the attribute the searched users have to own
+        required: true
+        schema:
+          type: string
+      - name: attributeValue
+        in: query
+        description: value of the attribute
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        404:
+          description: user not found
+  /idp/realms/{realm}/users/{user}:
+    delete:
+      tags:
+      - Identity providers
+      summary: Delete a user
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: user
+        in: path
+        description: id of a user
+        required: true
+        schema:
+          type: string
+      - name: groupName
+        in: query
+        description: group the user might be in
+        required: false
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation
+        404:
+          description: user not found
 
 components:
   schemas:
@@ -271,6 +341,22 @@ components:
             type: string
           Name:
             type: string
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+        enabled:
+          type: boolean
+          default: true
   securitySchemes:
     openId:
       type: openIdConnect

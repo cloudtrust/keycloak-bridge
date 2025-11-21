@@ -8,6 +8,7 @@ account-http-host-port: 0.0.0.0:8866
 register-http-host-port: 0.0.0.0:8855
 mobile-http-host-port: 0.0.0.0:8844
 monitoring-http-host-port: 0.0.0.0:8899
+configuration-http-host-port: 0.0.0.0:8870
 
 # Log level
 #   - error: log only error log level

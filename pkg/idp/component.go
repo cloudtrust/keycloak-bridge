@@ -8,6 +8,7 @@ import (
 
 	errorhandler "github.com/cloudtrust/common-service/v2/errors"
 	api "github.com/cloudtrust/keycloak-bridge/api/idp"
+	msg "github.com/cloudtrust/keycloak-bridge/internal/constants"
 	internal "github.com/cloudtrust/keycloak-bridge/internal/keycloakb"
 	kc "github.com/cloudtrust/keycloak-client/v2"
 	"github.com/cloudtrust/keycloak-client/v2/toolbox"
@@ -15,13 +16,22 @@ import (
 
 // KeycloakIdpClient interface exposes methods we need to call to send requests to Keycloak identity providers API
 type KeycloakIdpClient interface {
+	// Groups
+	GetGroups(accessToken string, realmName string) ([]kc.GroupRepresentation, error)
+	// Users
+	GetUsers(accessToken string, reqRealmName, targetRealmName string, paramKV ...string) (kc.UsersPageRepresentation, error)
+	DeleteUser(accessToken string, realmName, userID string) error
+	GetGroupsOfUser(accessToken string, realmName, userID string) ([]kc.GroupRepresentation, error)
+	// IDP
 	GetIdp(accessToken string, realmName string, idpAlias string) (kc.IdentityProviderRepresentation, error)
 	CreateIdp(accessToken string, realmName string, idpRep kc.IdentityProviderRepresentation) error
 	UpdateIdp(accessToken string, realmName, idpAlias string, idpRep kc.IdentityProviderRepresentation) error
 	DeleteIdp(accessToken string, realmName string, idpAlias string) error
+	// Components
 	GetComponents(accessToken string, realmName string, paramKV ...string) ([]kc.ComponentRepresentation, error)
 	CreateComponent(accessToken string, realmName string, comp kc.ComponentRepresentation) error
 	UpdateComponent(accessToken string, realmName, compID string, comp kc.ComponentRepresentation) error
+	// IDP mappers
 	GetIdpMappers(accessToken string, realmName string, idpAlias string) ([]kc.IdentityProviderMapperRepresentation, error)
 	CreateIdpMapper(accessToken string, realmName string, idpAlias string, mapperRep kc.IdentityProviderMapperRepresentation) error
 	UpdateIdpMapper(accessToken string, realmName string, idpAlias string, mapperID string, mapperRep kc.IdentityProviderMapperRepresentation) error
@@ -38,6 +48,8 @@ type Component interface {
 	CreateIdentityProviderMapper(ctx context.Context, realmName string, idpAlias string, apiMapper api.IdentityProviderMapperRepresentation) error
 	UpdateIdentityProviderMapper(ctx context.Context, realmName string, idpAlias string, mapperID string, apiMapper api.IdentityProviderMapperRepresentation) error
 	DeleteIdentityProviderMapper(ctx context.Context, realmName string, idpAlias string, mapperID string) error
+	GetUsersWithAttribute(ctx context.Context, realmName string, groupName string, attributeKey string, attributeValue string) ([]api.UserRepresentation, error)
+	DeleteUser(ctx context.Context, realmName string, userID string, groupName *string) error
 }
 
 type component struct {
@@ -58,12 +70,16 @@ func NewComponent(keycloakIdpClient KeycloakIdpClient, tokenProvider toolbox.Oid
 }
 
 func handleKeycloakIdpError(ctx context.Context, err error, logger internal.Logger) error {
+	return handleKeycloakError(ctx, err, "idp", logger)
+}
+
+func handleKeycloakError(ctx context.Context, err error, messageKey string, logger internal.Logger) error {
 	if err != nil {
 		switch e := err.(type) {
 		case kc.HTTPError:
 			if e.HTTPStatus == http.StatusNotFound {
 				logger.Warn(ctx, "msg", "Failed to get identity provider from keycloak", "err", err.Error())
-				return errorhandler.CreateNotFoundError("idp")
+				return errorhandler.CreateNotFoundError(messageKey)
 			}
 		default:
 			return err
@@ -94,7 +110,7 @@ func (c *component) CreateIdentityProvider(ctx context.Context, realmName string
 		return err
 	}
 
-	kcIdp := api.ConvertToKCIdentityProvider(idp)
+	kcIdp := idp.ConvertToKCIdentityProvider()
 	err = c.keycloakIdpClient.CreateIdp(accessToken, realmName, kcIdp)
 	if err != nil {
 		return err
@@ -117,7 +133,7 @@ func (c *component) UpdateIdentityProvider(ctx context.Context, realmName string
 		return err
 	}
 
-	kcIdp := api.ConvertToKCIdentityProvider(idp)
+	kcIdp := idp.ConvertToKCIdentityProvider()
 	err = c.keycloakIdpClient.UpdateIdp(accessToken, realmName, idpAlias, kcIdp)
 	if err = handleKeycloakIdpError(ctx, err, c.logger); err != nil {
 		return err
@@ -272,7 +288,7 @@ func (c *component) CreateIdentityProviderMapper(ctx context.Context, realmName 
 		return err
 	}
 
-	kcMapper := api.ConvertToKCIdentityProviderMapper(apiMapper)
+	kcMapper := apiMapper.ConvertToKCIdentityProviderMapper()
 	err = c.keycloakIdpClient.CreateIdpMapper(accessToken, realmName, idpAlias, kcMapper)
 	if err = handleKeycloakIdpError(ctx, err, c.logger); err != nil {
 		return err
@@ -288,7 +304,7 @@ func (c *component) UpdateIdentityProviderMapper(ctx context.Context, realmName 
 		return err
 	}
 
-	kcMapper := api.ConvertToKCIdentityProviderMapper(apiMapper)
+	kcMapper := apiMapper.ConvertToKCIdentityProviderMapper()
 	err = c.keycloakIdpClient.UpdateIdpMapper(accessToken, realmName, idpAlias, mapperID, kcMapper)
 	if err = handleKeycloakIdpError(ctx, err, c.logger); err != nil {
 		return err
@@ -310,4 +326,82 @@ func (c *component) DeleteIdentityProviderMapper(ctx context.Context, realmName 
 	}
 
 	return nil
+}
+
+func (c *component) DeleteUser(ctx context.Context, realmName string, userID string, groupName *string) error {
+	accessToken, err := c.tokenProvider.ProvideTokenForRealm(ctx, realmName)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Failed to get OIDC token from keycloak", "err", err.Error())
+		return err
+	}
+
+	// If groupName is provided, first check the user is in the given group
+	if groupName != nil {
+		err := c.checkUserIsInGroup(ctx, accessToken, realmName, userID, *groupName)
+		if err != nil {
+			return err
+		}
+	}
+
+	err = c.keycloakIdpClient.DeleteUser(accessToken, realmName, userID)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Failed to get user from keycloak", "err", err.Error(), "realm", realmName, "user", userID)
+		return err
+	}
+
+	return nil
+}
+
+func (c *component) checkUserIsInGroup(ctx context.Context, accessToken string, realmName string, userID string, groupName string) error {
+	expectedGroup, err := c.getGroup(ctx, accessToken, realmName, groupName)
+	if err != nil {
+		return err
+	}
+	groups, err := c.keycloakIdpClient.GetGroupsOfUser(accessToken, realmName, userID)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Failed to get user groups from keycloak", "err", err.Error(), "realm", realmName, "user", userID)
+		return handleKeycloakError(ctx, err, "user", c.logger)
+	}
+	for _, group := range groups {
+		if *group.ID == *expectedGroup.ID {
+			return nil
+		}
+	}
+	return errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + ".group")
+}
+
+func (c *component) getGroup(ctx context.Context, accessToken string, realmName string, groupName string) (*kc.GroupRepresentation, error) {
+	var groups []kc.GroupRepresentation
+	var err error
+	if groups, err = c.keycloakIdpClient.GetGroups(accessToken, realmName); err != nil {
+		c.logger.Warn(ctx, "msg", "Keycloak failed to get groups", "err", err.Error())
+		return nil, err
+	}
+	for _, group := range groups {
+		if *group.Name == groupName {
+			return &group, nil
+		}
+	}
+	return nil, errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + ".group")
+}
+
+func (c *component) GetUsersWithAttribute(ctx context.Context, realmName string, groupName string, attributeKey string, attributeValue string) ([]api.UserRepresentation, error) {
+	accessToken, err := c.tokenProvider.ProvideTokenForRealm(ctx, realmName)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Failed to get OIDC token from keycloak", "err", err.Error())
+		return nil, err
+	}
+
+	group, err := c.getGroup(ctx, accessToken, realmName, groupName)
+	if err != nil {
+		return nil, err
+	}
+
+	usersPage, err := c.keycloakIdpClient.GetUsers(accessToken, "master", realmName, "groupId", *group.ID, "q", fmt.Sprintf("%s:%s", attributeKey, attributeValue))
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Keycloak failed to search users", "err", err.Error(), "realm", realmName, "group", *group.ID)
+		return nil, err
+	}
+
+	return api.ConvertToAPIUserRepresentations(usersPage.Users), nil
 }

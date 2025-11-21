@@ -7,27 +7,10 @@ import (
 
 	cs "github.com/cloudtrust/common-service/v2"
 	api "github.com/cloudtrust/keycloak-bridge/api/idp"
-	"github.com/cloudtrust/keycloak-bridge/pkg/idp/mock"
 	kc "github.com/cloudtrust/keycloak-client/v2"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
-
-type componentMocks struct {
-	keycloakIdpClient *mock.KeycloakIdpClient
-	tokenProvider     *mock.OidcTokenProvider
-	hrdTool           *mock.ComponentTool
-	logger            *mock.Logger
-}
-
-func createMocks(mockCtrl *gomock.Controller) componentMocks {
-	return componentMocks{
-		keycloakIdpClient: mock.NewKeycloakIdpClient(mockCtrl),
-		tokenProvider:     mock.NewOidcTokenProvider(mockCtrl),
-		hrdTool:           mock.NewComponentTool(mockCtrl),
-		logger:            mock.NewLogger(mockCtrl),
-	}
-}
 
 const (
 	realmName = "test"
@@ -40,10 +23,6 @@ const (
 	compProviderID   = "Home-realm discovery settings"
 	compConfigName   = "hrdSettings"
 )
-
-func createComponent(mocks componentMocks) Component {
-	return NewComponent(mocks.keycloakIdpClient, mocks.tokenProvider, mocks.hrdTool, mocks.logger)
-}
 
 func ptrBool(value bool) *bool {
 	return &value
@@ -67,7 +46,7 @@ func createTestKcIdp() kc.IdentityProviderRepresentation {
 	}
 }
 
-func createTestApiIdp() api.IdentityProviderRepresentation {
+func createTestAPIIdp() api.IdentityProviderRepresentation {
 	return api.IdentityProviderRepresentation{
 		AddReadTokenRoleOnCreate:  ptrBool(false),
 		Alias:                     ptr(idpAlias),
@@ -100,7 +79,7 @@ func createTestKcIdpMapper() kc.IdentityProviderMapperRepresentation {
 	}
 }
 
-func createTestApiIdpMapper() api.IdentityProviderMapperRepresentation {
+func createTestAPIIdpMapper() api.IdentityProviderMapperRepresentation {
 	return api.IdentityProviderMapperRepresentation{
 		ID:                     ptr(mapperID),
 		Name:                   ptr("deviceId"),
@@ -140,11 +119,10 @@ func createTestUpdatedComponent(comp kc.ComponentRepresentation) kc.ComponentRep
 }
 
 func TestGetIdentityProvider(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
-	defer mockCtrl.Finish()
+	var mocks = createMocks(t)
+	defer mocks.finish()
 
-	var mocks = createMocks(mockCtrl)
-	var idpComponent = createComponent(mocks)
+	var idpComponent = mocks.createComponent()
 
 	var accessToken = "TOKEN=="
 	var technicalAccessToken = "abcd-1234"
@@ -156,7 +134,7 @@ func TestGetIdentityProvider(t *testing.T) {
 	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
 
 	kcIdp := createTestKcIdp()
-	apiIdp := createTestApiIdp()
+	apiIdp := createTestAPIIdp()
 
 	t.Run("Get identity provider - failed to get technical access token", func(t *testing.T) {
 		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return("", anyError)
@@ -184,11 +162,10 @@ func TestGetIdentityProvider(t *testing.T) {
 }
 
 func TestCreateIdentityProvider(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
-	defer mockCtrl.Finish()
+	var mocks = createMocks(t)
+	defer mocks.finish()
 
-	var mocks = createMocks(mockCtrl)
-	var idpComponent = createComponent(mocks)
+	var idpComponent = mocks.createComponent()
 
 	var accessToken = "TOKEN=="
 	var technicalAccessToken = "abcd-1234"
@@ -204,7 +181,7 @@ func TestCreateIdentityProvider(t *testing.T) {
 	}
 
 	kcIdp := createTestKcIdp()
-	apiIdp := createTestApiIdp()
+	apiIdp := createTestAPIIdp()
 	apiIdp.HrdSettings = &settings
 
 	providerType := compProviderType
@@ -317,11 +294,10 @@ func TestCreateIdentityProvider(t *testing.T) {
 }
 
 func TestUpdateIdentityProvider(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
-	defer mockCtrl.Finish()
+	var mocks = createMocks(t)
+	defer mocks.finish()
 
-	var mocks = createMocks(mockCtrl)
-	var idpComponent = createComponent(mocks)
+	var idpComponent = mocks.createComponent()
 
 	var accessToken = "TOKEN=="
 	var technicalAccessToken = "abcd-1234"
@@ -337,7 +313,7 @@ func TestUpdateIdentityProvider(t *testing.T) {
 	}
 
 	kcIdp := createTestKcIdp()
-	apiIdp := createTestApiIdp()
+	apiIdp := createTestAPIIdp()
 	apiIdp.HrdSettings = &settings
 
 	providerType := compProviderType
@@ -432,11 +408,10 @@ func TestUpdateIdentityProvider(t *testing.T) {
 }
 
 func TestDeleteIdentityProvider(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
-	defer mockCtrl.Finish()
+	var mocks = createMocks(t)
+	defer mocks.finish()
 
-	var mocks = createMocks(mockCtrl)
-	var idpComponent = createComponent(mocks)
+	var idpComponent = mocks.createComponent()
 
 	var accessToken = "TOKEN=="
 	var technicalAccessToken = "abcd-1234"
@@ -516,11 +491,10 @@ func TestDeleteIdentityProvider(t *testing.T) {
 }
 
 func TestGetIdentityProviderMappers(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
-	defer mockCtrl.Finish()
+	var mocks = createMocks(t)
+	defer mocks.finish()
 
-	var mocks = createMocks(mockCtrl)
-	var idpComponent = createComponent(mocks)
+	var idpComponent = mocks.createComponent()
 
 	var accessToken = "TOKEN=="
 	var technicalAccessToken = "abcd-1234"
@@ -532,7 +506,7 @@ func TestGetIdentityProviderMappers(t *testing.T) {
 	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
 
 	kcMapper := createTestKcIdpMapper()
-	apiMapper := createTestApiIdpMapper()
+	apiMapper := createTestAPIIdpMapper()
 
 	t.Run("Get identity provider mappers - failed to get technical access token", func(t *testing.T) {
 		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return("", anyError)
@@ -561,11 +535,10 @@ func TestGetIdentityProviderMappers(t *testing.T) {
 }
 
 func TestCreateIdentityProviderMapper(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
-	defer mockCtrl.Finish()
+	var mocks = createMocks(t)
+	defer mocks.finish()
 
-	var mocks = createMocks(mockCtrl)
-	var idpComponent = createComponent(mocks)
+	var idpComponent = mocks.createComponent()
 
 	var accessToken = "TOKEN=="
 	var technicalAccessToken = "abcd-1234"
@@ -576,7 +549,7 @@ func TestCreateIdentityProviderMapper(t *testing.T) {
 	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
 
 	kcMapper := createTestKcIdpMapper()
-	apiMapper := createTestApiIdpMapper()
+	apiMapper := createTestAPIIdpMapper()
 
 	t.Run("Create identity provider mapper - failed to get technical access token", func(t *testing.T) {
 		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return("", anyError)
@@ -603,11 +576,10 @@ func TestCreateIdentityProviderMapper(t *testing.T) {
 }
 
 func TestUpdateIdentityProviderMapper(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
-	defer mockCtrl.Finish()
+	var mocks = createMocks(t)
+	defer mocks.finish()
 
-	var mocks = createMocks(mockCtrl)
-	var idpComponent = createComponent(mocks)
+	var idpComponent = mocks.createComponent()
 
 	var accessToken = "TOKEN=="
 	var technicalAccessToken = "abcd-1234"
@@ -618,7 +590,7 @@ func TestUpdateIdentityProviderMapper(t *testing.T) {
 	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
 
 	kcMapper := createTestKcIdpMapper()
-	apiMapper := createTestApiIdpMapper()
+	apiMapper := createTestAPIIdpMapper()
 
 	t.Run("Update identity provider mapper - failed to get technical access token", func(t *testing.T) {
 		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return("", anyError)
@@ -645,11 +617,10 @@ func TestUpdateIdentityProviderMapper(t *testing.T) {
 }
 
 func TestDeleteIdentityProviderMapper(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
-	defer mockCtrl.Finish()
+	var mocks = createMocks(t)
+	defer mocks.finish()
 
-	var mocks = createMocks(mockCtrl)
-	var idpComponent = createComponent(mocks)
+	var idpComponent = mocks.createComponent()
 
 	var accessToken = "TOKEN=="
 	var technicalAccessToken = "abcd-1234"
@@ -681,5 +652,138 @@ func TestDeleteIdentityProviderMapper(t *testing.T) {
 		err := idpComponent.DeleteIdentityProviderMapper(ctx, realmName, idpAlias, mapperID)
 		assert.Nil(t, err)
 	})
+}
 
+func TestDeleteUser(t *testing.T) {
+	var mocks = createMocks(t)
+	defer mocks.finish()
+
+	var (
+		idpComponent = mocks.createComponent()
+		accessToken  = "TOKEN=="
+		userID       = "user-id"
+		groupName    = "the-group"
+		anyError     = errors.New("any error")
+		ctx          = context.TODO()
+	)
+
+	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
+
+	t.Run("Failed to get technical access token", func(t *testing.T) {
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return("", anyError)
+		err := idpComponent.DeleteUser(ctx, realmName, userID, nil)
+		assert.Error(t, err)
+	})
+	t.Run("Failed to check group", func(t *testing.T) {
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return(accessToken, nil)
+		mocks.keycloakIdpClient.EXPECT().GetGroups(accessToken, realmName).Return(nil, anyError)
+		err := idpComponent.DeleteUser(ctx, realmName, userID, &groupName)
+		assert.Error(t, err)
+	})
+	t.Run("Failed to delete user", func(t *testing.T) {
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return(accessToken, nil)
+		mocks.keycloakIdpClient.EXPECT().DeleteUser(accessToken, realmName, userID).Return(anyError)
+		err := idpComponent.DeleteUser(ctx, realmName, userID, nil)
+		assert.Error(t, err)
+	})
+	t.Run("Failed to delete user", func(t *testing.T) {
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return(accessToken, nil)
+		mocks.keycloakIdpClient.EXPECT().DeleteUser(accessToken, realmName, userID).Return(nil)
+		err := idpComponent.DeleteUser(ctx, realmName, userID, nil)
+		assert.NoError(t, err)
+	})
+}
+
+func TestCheckUserIsInGroup(t *testing.T) {
+	var mocks = createMocks(t)
+	defer mocks.finish()
+
+	var (
+		idpComponent = mocks.createComponent()
+		accessToken  = "TOKEN=="
+		userID       = "user-id"
+		group1       = kc.GroupRepresentation{ID: ptr("group-id-1"), Name: ptr("group #1")}
+		group2       = kc.GroupRepresentation{ID: ptr("group-id-2"), Name: ptr("group #2")}
+		group3       = kc.GroupRepresentation{ID: ptr("group-id-3"), Name: ptr("group #3")}
+		groupName    = *group2.Name
+		anyError     = errors.New("any error")
+		ctx          = context.TODO()
+	)
+
+	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
+
+	t.Run("Fails to get groups", func(t *testing.T) {
+		mocks.keycloakIdpClient.EXPECT().GetGroups(accessToken, realmName).Return(nil, anyError)
+		err := idpComponent.checkUserIsInGroup(ctx, accessToken, realmName, userID, groupName)
+		assert.Error(t, err)
+	})
+	t.Run("GetGroups returns a result without the expected group", func(t *testing.T) {
+		mocks.keycloakIdpClient.EXPECT().GetGroups(accessToken, realmName).Return([]kc.GroupRepresentation{group1, group3}, nil)
+		err := idpComponent.checkUserIsInGroup(ctx, accessToken, realmName, userID, groupName)
+		assert.Error(t, err)
+	})
+	t.Run("Fails to GetGroupsOfUser", func(t *testing.T) {
+		mocks.keycloakIdpClient.EXPECT().GetGroups(accessToken, realmName).Return([]kc.GroupRepresentation{group1, group2, group3}, nil)
+		mocks.keycloakIdpClient.EXPECT().GetGroupsOfUser(accessToken, realmName, userID).Return(nil, anyError)
+		err := idpComponent.checkUserIsInGroup(ctx, accessToken, realmName, userID, groupName)
+		assert.Error(t, err)
+	})
+	t.Run("User is not in the expected group", func(t *testing.T) {
+		mocks.keycloakIdpClient.EXPECT().GetGroups(accessToken, realmName).Return([]kc.GroupRepresentation{group1, group2, group3}, nil)
+		mocks.keycloakIdpClient.EXPECT().GetGroupsOfUser(accessToken, realmName, userID).Return([]kc.GroupRepresentation{group3}, nil)
+		err := idpComponent.checkUserIsInGroup(ctx, accessToken, realmName, userID, groupName)
+		assert.Error(t, err)
+	})
+	t.Run("Success", func(t *testing.T) {
+		mocks.keycloakIdpClient.EXPECT().GetGroups(accessToken, realmName).Return([]kc.GroupRepresentation{group1, group2, group3}, nil)
+		mocks.keycloakIdpClient.EXPECT().GetGroupsOfUser(accessToken, realmName, userID).Return([]kc.GroupRepresentation{group2}, nil)
+		err := idpComponent.checkUserIsInGroup(ctx, accessToken, realmName, userID, groupName)
+		assert.NoError(t, err)
+	})
+}
+
+func TestGetUsersWithAttribute(t *testing.T) {
+	var mocks = createMocks(t)
+	defer mocks.finish()
+
+	var (
+		idpComponent   = mocks.createComponent()
+		accessToken    = "TOKEN=="
+		group          = kc.GroupRepresentation{ID: ptr("the-group-id"), Name: ptr("the-group-name")}
+		attribKey      = "the-key"
+		attribValue    = "the-value"
+		kcUser         = kc.UserRepresentation{}
+		kcSearchResult = kc.UsersPageRepresentation{Users: []kc.UserRepresentation{kcUser, kcUser}}
+		anyError       = errors.New("any error")
+		ctx            = context.TODO()
+	)
+
+	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
+
+	t.Run("Fails to get technical access token", func(t *testing.T) {
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return("", anyError)
+		_, err := idpComponent.GetUsersWithAttribute(ctx, realmName, *group.Name, attribKey, attribValue)
+		assert.Error(t, err)
+	})
+	t.Run("Fails to check group", func(t *testing.T) {
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return(accessToken, nil)
+		mocks.keycloakIdpClient.EXPECT().GetGroups(accessToken, realmName).Return(nil, anyError)
+		_, err := idpComponent.GetUsersWithAttribute(ctx, realmName, *group.Name, attribKey, attribValue)
+		assert.Error(t, err)
+	})
+	t.Run("Fails to search for users", func(t *testing.T) {
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return(accessToken, nil)
+		mocks.keycloakIdpClient.EXPECT().GetGroups(accessToken, realmName).Return([]kc.GroupRepresentation{group}, nil)
+		mocks.keycloakIdpClient.EXPECT().GetUsers(accessToken, "master", realmName, "groupId", *group.ID, "q", gomock.Any()).Return(kcSearchResult, anyError)
+		_, err := idpComponent.GetUsersWithAttribute(ctx, realmName, *group.Name, attribKey, attribValue)
+		assert.Error(t, err)
+	})
+	t.Run("Success", func(t *testing.T) {
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return(accessToken, nil)
+		mocks.keycloakIdpClient.EXPECT().GetGroups(accessToken, realmName).Return([]kc.GroupRepresentation{group}, nil)
+		mocks.keycloakIdpClient.EXPECT().GetUsers(accessToken, "master", realmName, "groupId", *group.ID, "q", gomock.Any()).Return(kcSearchResult, nil)
+		res, err := idpComponent.GetUsersWithAttribute(ctx, realmName, *group.Name, attribKey, attribValue)
+		assert.NoError(t, err)
+		assert.Len(t, res, 2)
+	})
 }
