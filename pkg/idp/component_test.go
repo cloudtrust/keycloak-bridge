@@ -32,7 +32,7 @@ func createMocks(mockCtrl *gomock.Controller) componentMocks {
 const (
 	realmName = "test"
 
-	idpAlias = "testIDP"
+	idpAlias = "0123456789abcdef0123456789abcdef"
 	mapperID = "5b3f0a5d-a59d-4aff-8932-aa70f2806f01"
 
 	compID           = "5b3f0a5d-a59d-4aff-8932-aa70f2806f04"
@@ -90,7 +90,7 @@ func createTestKcIdpMapper() kc.IdentityProviderMapperRepresentation {
 		ID:                     ptr(mapperID),
 		Name:                   ptr("deviceId"),
 		IdentityProviderAlias:  ptr(idpAlias),
-		IdentityProviderMapper: ptr("ct-saml-in-memory-attribute-auth-idp-mapper"),
+		IdentityProviderMapper: ptr("ct-saml-in-memory-attribute-idp-mapper"),
 		Config: map[string]string{
 			"syncMode":       "FORCE",
 			"auth.note.name": "deviceId",
@@ -105,7 +105,7 @@ func createTestApiIdpMapper() api.IdentityProviderMapperRepresentation {
 		ID:                     ptr(mapperID),
 		Name:                   ptr("deviceId"),
 		IdentityProviderAlias:  ptr(idpAlias),
-		IdentityProviderMapper: ptr("ct-saml-in-memory-attribute-auth-idp-mapper"),
+		IdentityProviderMapper: ptr("ct-saml-in-memory-attribute-idp-mapper"),
 		Config: map[string]string{
 			"syncMode":       "FORCE",
 			"auth.note.name": "deviceId",
@@ -118,7 +118,7 @@ func createTestApiIdpMapper() api.IdentityProviderMapperRepresentation {
 func createTestComponent() kc.ComponentRepresentation {
 	config := map[string][]string{
 		compConfigName: {
-			"[{\"value\":\"{\\\"ipRangesList\\\":\\\"192.168.1.0/24\\\"}\",\"key\":\"EXTIDP-12345678-abcd-efgh-ijkl-012345678900\"}]",
+			"[{\"value\":\"{\\\"ipRangesList\\\":\\\"192.168.1.0/24\\\"}\",\"key\":\"0123456789abcdef0123456789abcdef\"}]",
 		},
 	}
 
@@ -133,8 +133,8 @@ func createTestComponent() kc.ComponentRepresentation {
 
 func createTestUpdatedComponent(comp kc.ComponentRepresentation) kc.ComponentRepresentation {
 	comp.Config[compConfigName] = []string{
-		"[{\"value\":\"{\\\"ipRangesList\\\":\\\"192.168.1.0/24\\\"}\",\"key\":\"EXTIDP-12345678-abcd-efgh-ijkl-012345678900\"}]",
-		"[{\"value\":\"{\\\"ipRangesList\\\":\\\"192.168.67.0/24\\\"}\",\"key\":\"EXTIDP-12345678-abcd-efgh-ijkl-012345678901\"}]",
+		"[{\"value\":\"{\\\"ipRangesList\\\":\\\"192.168.1.0/24\\\"}\",\"key\":\"0123456789abcdef0123456789abcdef\"}]",
+		"[{\"value\":\"{\\\"ipRangesList\\\":\\\"192.168.67.0/24\\\"}\",\"key\":\"0123456789abcdef0123456789abcdee\"}]",
 	}
 	return comp
 }
@@ -346,7 +346,7 @@ func TestUpdateIdentityProvider(t *testing.T) {
 
 	updatedComp := comp
 	updatedComp.Config[compConfigName] = []string{
-		"[{\"value\":\"{\\\"ipRangesList\\\":\\\"192.168.0.1/24,127.0.0.1/8\\\"}\",\"key\":\"EXTIDP-12345678-abcd-efgh-ijkl-012345678900\"}]",
+		"[{\"value\":\"{\\\"ipRangesList\\\":\\\"192.168.0.1/24,127.0.0.1/8\\\"}\",\"key\":\"0123456789abcdef0123456789abcdef\"}]",
 	}
 
 	additionalParams := []any{"type", compProviderType}
