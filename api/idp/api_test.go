@@ -57,6 +57,8 @@ func createTestIdpConfig() map[string]string {
 
 func createTestApiIdp() IdentityProviderRepresentation {
 	config := createTestIdpConfig()
+	ipRangesList := "192.168.0.1/24,127.0.0.1/8"
+	priority := 0
 
 	return IdentityProviderRepresentation{
 		AddReadTokenRoleOnCreate:  &addReadTokenRoleOnCreate,
@@ -74,7 +76,8 @@ func createTestApiIdp() IdentityProviderRepresentation {
 		StoreToken:                &storeToken,
 		TrustEmail:                &trustEmail,
 		HrdSettings: &HrdSettingModel{
-			IPRangesList: "192.168.0.1/24,127.0.0.1/8",
+			IPRangesList: &ipRangesList,
+			Priority:     &priority,
 		},
 	}
 }
@@ -121,7 +124,7 @@ func TestValidateIdentityProviderRepresentation(t *testing.T) {
 	t.Run("invalid HRD IP ranges list", func(t *testing.T) {
 		idp := createTestApiIdp()
 
-		idp.HrdSettings.IPRangesList = "not a list of IP ranges"
+		*idp.HrdSettings.IPRangesList = "not a list of IP ranges"
 
 		err := idp.Validate()
 		assert.Error(t, err)
@@ -130,7 +133,7 @@ func TestValidateIdentityProviderRepresentation(t *testing.T) {
 	t.Run("invalid HRD priority score", func(t *testing.T) {
 		idp := createTestApiIdp()
 
-		idp.HrdSettings.Priority = -250
+		*idp.HrdSettings.Priority = -250
 
 		err := idp.Validate()
 		assert.Error(t, err)

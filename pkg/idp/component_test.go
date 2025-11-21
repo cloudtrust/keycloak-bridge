@@ -200,7 +200,7 @@ func TestCreateIdentityProvider(t *testing.T) {
 
 	emptySettings := api.HrdSettingModel{}
 	settings := api.HrdSettingModel{
-		IPRangesList: "192.168.0.1/24,127.0.0.1/8",
+		IPRangesList: ptr("192.168.0.1/24,127.0.0.1/8"),
 	}
 
 	kcIdp := createTestKcIdp()
@@ -333,7 +333,7 @@ func TestUpdateIdentityProvider(t *testing.T) {
 
 	emptySettings := api.HrdSettingModel{}
 	settings := api.HrdSettingModel{
-		IPRangesList: "192.168.0.1/24,127.0.0.1/8",
+		IPRangesList: ptr("192.168.0.1/24,127.0.0.1/8"),
 	}
 
 	kcIdp := createTestKcIdp()
