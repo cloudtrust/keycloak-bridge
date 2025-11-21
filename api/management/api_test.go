@@ -604,6 +604,7 @@ func TestConvertRealmCustomConfiguration(t *testing.T) {
 		assert.False(t, *res.APISelfAccountEditingEnabled)
 		assert.False(t, *res.APISelfAccountDeletionEnabled)
 		assert.False(t, *res.APISelfIDPLinksManagementEnabled)
+		assert.False(t, *res.APISelfInitialPasswordDefinitionAllowed)
 		assert.False(t, *res.ShowAuthenticatorsTab)
 		assert.False(t, *res.ShowPasswordTab)
 		assert.False(t, *res.ShowProfileTab)
