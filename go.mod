@@ -5,7 +5,7 @@ go 1.25.3
 require (
 	github.com/cloudtrust/common-service/v2 v2.14.2
 	github.com/cloudtrust/httpclient v1.6.0
-	github.com/cloudtrust/kafka-client v1.7.0
+	github.com/cloudtrust/kafka-client v1.7.1
 	github.com/cloudtrust/keycloak-client/v2 v2.16.0
 	github.com/go-kit/kit v0.13.0
 	github.com/go-kit/log v0.2.1
