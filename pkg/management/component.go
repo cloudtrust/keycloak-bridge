@@ -2099,16 +2099,24 @@ func (c *component) checkAllowedTargetRealmsAndGroupNames(ctx context.Context, r
 	{
 		// Retrieve the info needed for validation
 		{
-			realms, err := c.keycloakClient.GetRealms(accessToken)
-			if err != nil {
-				c.logger.Warn(ctx, "err", err.Error())
-				return err
-			}
-
-			// * is allowed as targetRealm only for master
+			var realms []kc.RealmRepresentation
 			if realmName == "master" {
+				var err error
+				realms, err = c.keycloakClient.GetRealms(accessToken)
+				if err != nil {
+					c.logger.Warn(ctx, "err", err.Error())
+					return err
+				}
+				// * is allowed as targetRealm only for master
 				allowedTargetRealmsAndGroupNames["*"] = make(map[string]struct{})
 				allowedTargetRealmsAndGroupNames["*"]["*"] = struct{}{}
+			} else {
+				kcRealm, err := c.keycloakClient.GetRealm(accessToken, realmName)
+				if err != nil {
+					c.logger.Warn(ctx, "msg", "GetRealm failed", "err", err.Error(), "realm", realmName)
+					return err
+				}
+				realms = append(realms, kcRealm)
 			}
 
 			for _, realm := range realms {
