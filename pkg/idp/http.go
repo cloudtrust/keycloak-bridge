@@ -13,10 +13,14 @@ import (
 )
 
 const (
-	reqBody     = "body"
-	prmRealm    = "realm"
-	prmProvider = "provider"
-	prmMapper   = "mapper"
+	reqBody        = "body"
+	prmRealm       = "realm"
+	prmProvider    = "provider"
+	prmMapper      = "mapper"
+	prmUser        = "user"
+	prmGroupName   = "groupName"
+	prmAttribKey   = "attributeKey"
+	prmAttribValue = "attributeValue"
 )
 
 // MakeIdpHandler make an HTTP handler for a Identity Providers endpoint.
@@ -34,9 +38,14 @@ func decodeIdpRequest(ctx context.Context, req *http.Request) (any, error) {
 		prmRealm:    constants.RegExpRealmName,
 		prmProvider: constants.RegExpName,
 		prmMapper:   constants.RegExpID,
+		prmUser:     constants.RegExpID,
 	}
 
-	var queryParams = map[string]string{}
+	var queryParams = map[string]string{
+		prmGroupName:   constants.RegExpName,
+		prmAttribKey:   constants.RegExpName,
+		prmAttribValue: constants.RegExpDescription,
+	}
 
 	return commonhttp.DecodeRequest(ctx, req, pathParams, queryParams)
 }

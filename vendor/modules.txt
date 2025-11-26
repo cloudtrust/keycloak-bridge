@@ -8,7 +8,7 @@ github.com/IBM/sarama
 # github.com/VividCortex/gohistogram v1.0.0
 ## explicit
 github.com/VividCortex/gohistogram
-# github.com/cloudtrust/common-service/v2 v2.14.2
+# github.com/cloudtrust/common-service/v2 v2.14.3-0.20251119091539-5574b3bbd50e
 ## explicit; go 1.25.3
 github.com/cloudtrust/common-service/v2
 github.com/cloudtrust/common-service/v2/configuration
@@ -177,7 +177,7 @@ github.com/klauspost/compress/zstd/internal/xxhash
 github.com/lib/pq
 github.com/lib/pq/oid
 github.com/lib/pq/scram
-# github.com/nyaruka/phonenumbers v1.6.6
+# github.com/nyaruka/phonenumbers v1.6.7
 ## explicit; go 1.23.0
 github.com/nyaruka/phonenumbers
 # github.com/opentracing/opentracing-go v1.2.0
