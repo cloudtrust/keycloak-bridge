@@ -16,8 +16,8 @@ import (
 	"github.com/cloudtrust/keycloak-bridge/internal/constants"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/mock"
 	kc "github.com/cloudtrust/keycloak-client/v2"
-	"go.uber.org/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 const (
@@ -407,20 +407,35 @@ func TestComputeOnboardingRedirectURI(t *testing.T) {
 	}
 
 	t.Run("RealmConfiguration is null", func(t *testing.T) {
-		_, err := onboarding.ComputeOnboardingRedirectURI(ctx, "target", "target", configuration.RealmConfiguration{})
+		_, err := onboarding.ComputeOnboardingRedirectURI(ctx, "target", "target", configuration.RealmConfiguration{}, nil)
 		assert.NotNil(t, err)
 	})
 
 	t.Run("Success, target == customer", func(t *testing.T) {
 		expectedURI := onboardingURI
-		onboardingRedirectURI, err := onboarding.ComputeOnboardingRedirectURI(ctx, "target", "target", realmConf)
+		onboardingRedirectURI, err := onboarding.ComputeOnboardingRedirectURI(ctx, "target", "target", realmConf, nil)
 		assert.Nil(t, err)
 		assert.Equal(t, expectedURI, onboardingRedirectURI)
 	})
 
 	t.Run("Success, target != customer", func(t *testing.T) {
 		expectedURI := "http://test.test?context=57a323d7-6da6-4c49-975e-4605ac8e101b&customerRealm=customer"
-		onboardingRedirectURI, err := onboarding.ComputeOnboardingRedirectURI(ctx, "target", "customer", realmConf)
+		onboardingRedirectURI, err := onboarding.ComputeOnboardingRedirectURI(ctx, "target", "customer", realmConf, nil)
+		assert.Nil(t, err)
+		assert.Equal(t, expectedURI, onboardingRedirectURI)
+	})
+
+	t.Run("Success, with empty contextKey in base conf", func(t *testing.T) {
+		expectedURI := "http://test.test?context=custom-context-key&customerRealm=customer"
+		realmConf.OnboardingRedirectURI = ptr("http://test.test?customerRealm=customer")
+		onboardingRedirectURI, err := onboarding.ComputeOnboardingRedirectURI(ctx, "target", "customer", realmConf, ptr("custom-context-key"))
+		assert.Nil(t, err)
+		assert.Equal(t, expectedURI, onboardingRedirectURI)
+	})
+
+	t.Run("Success, with override contextKey", func(t *testing.T) {
+		expectedURI := "http://test.test?context=custom-context-key&customerRealm=customer"
+		onboardingRedirectURI, err := onboarding.ComputeOnboardingRedirectURI(ctx, "target", "customer", realmConf, ptr("custom-context-key"))
 		assert.Nil(t, err)
 		assert.Equal(t, expectedURI, onboardingRedirectURI)
 	})

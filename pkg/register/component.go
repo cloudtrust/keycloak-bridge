@@ -44,7 +44,7 @@ type OnboardingModule interface {
 	ProcessAlreadyExistingUserCases(ctx context.Context, accessToken string, targetRealmName string, userEmail string, requestingSource string, handler func(username string, createdTimestamp int64, thirdParty *string) error) error
 	ComputeRedirectURI(ctx context.Context, accessToken string, realmName string, userID string, username string,
 		onboardingClientID string, onboardingRedirectURI string) (string, error)
-	ComputeOnboardingRedirectURI(ctx context.Context, targetRealmName string, customerRealmName string, realmConf configuration.RealmConfiguration) (string, error)
+	ComputeOnboardingRedirectURI(ctx context.Context, targetRealmName string, customerRealmName string, realmConf configuration.RealmConfiguration, contextKey *string) (string, error)
 }
 
 // UserProfileCache interface
@@ -208,7 +208,7 @@ func (c *component) RegisterUser(ctx context.Context, targetRealmName string, cu
 		return "", errorhandler.CreateEndpointNotEnabled(constants.MsgErrNotConfigured)
 	}
 
-	onboardingRedirectURI, err := c.onboardingModule.ComputeOnboardingRedirectURI(ctx, targetRealmName, customerRealmName, realmConf)
+	onboardingRedirectURI, err := c.onboardingModule.ComputeOnboardingRedirectURI(ctx, targetRealmName, customerRealmName, realmConf, nil)
 	if err != nil {
 		return "", err
 	}
