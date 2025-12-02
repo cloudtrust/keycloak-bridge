@@ -209,6 +209,8 @@ func (c *component) updateHrdConfig(ctx context.Context, accessToken string, rea
 		}
 
 		settings.IPRangesList = idp.HrdSettings.IPRangesList
+		settings.Priority = idp.HrdSettings.Priority
+		settings.DomainsList = idp.HrdSettings.DomainsList
 
 		if err = c.hrdTool.UpdateComponentEntry(hrdComp, *idp.Alias, settings); err != nil {
 			c.logger.Warn(ctx, "msg", "Can't update component entry", "realm", realmName, "idp", idp.Alias, "err", err.Error())

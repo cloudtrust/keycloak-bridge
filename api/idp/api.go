@@ -29,8 +29,9 @@ type IdentityProviderRepresentation struct {
 
 // HrdSettingModel struct
 type HrdSettingModel struct {
-	IPRangesList string `json:"ipRangesList"`
-	Priority     int    `json:"priority"`
+	IPRangesList *string `json:"ipRangesList,omitempty"`
+	DomainsList  *string `json:"domainsList,omitempty"`
+	Priority     int     `json:"priority"`
 }
 
 // IdentityProviderMapperRepresentation struct
@@ -76,8 +77,9 @@ func validateConfig(config map[string]string) func() error {
 // Validate validates a HrdSettingModel
 func (settings HrdSettingModel) Validate() error {
 	return validation.NewParameterValidator().
-		ValidateParameterRegExp("ipRangesList", &settings.IPRangesList, constants.RegExpIpRangesList, true).
-		ValidateParameterIntBetween("priority", &settings.Priority, -100, 0, false).
+		ValidateParameterRegExp("ipRangesList", settings.IPRangesList, constants.RegExpIpRangesList, false).
+		ValidateParameterRegExp("domainsList", settings.DomainsList, constants.RegExpDomainsList, false).
+		ValidateParameterIntBetween("priority", &settings.Priority, -1000, 1000, true).
 		Status()
 }
 

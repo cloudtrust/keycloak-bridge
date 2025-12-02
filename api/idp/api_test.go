@@ -62,12 +62,15 @@ func createTestIdpConfig() map[string]string {
 		"forceAuthn":                     "false",
 		"attributeConsumingServiceIndex": "0",
 		"principalType":                  "SUBJECT",
+		"iprangesList":                   "192.168.0.1/24,127.0.0.1/8",
+		"priority":                       "0",
 	}
 }
 
 func createValideHrdSettings() HrdSettingModel {
 	return HrdSettingModel{
-		IPRangesList: "192.168.0.1/24,127.0.0.1/8",
+		IPRangesList: ptr("192.168.0.1/24,127.0.0.1/8"),
+		Priority:     0,
 	}
 }
 
@@ -141,8 +144,8 @@ func TestHRDSettingValidate(t *testing.T) {
 	for range 4 {
 		items = append(items, createValideHrdSettings())
 	}
-	items[0].IPRangesList = ""
-	items[1].IPRangesList = "`!not a valid ipRangesList!`"
+	items[0].IPRangesList = ptr("")
+	items[1].IPRangesList = ptr("`!not a valid ipRangesList!`")
 	items[2].Priority = -10571
 	items[3].Priority = 27903
 
@@ -172,6 +175,15 @@ func TestValidateIdentityProviderRepresentation(t *testing.T) {
 		idp := createTestAPIIdp()
 
 		*idp.Alias = "0123456789abcdef0123456789abcdef"
+
+		err := idp.Validate()
+		assert.NoError(t, err)
+	})
+
+	t.Run("valid domains list", func(t *testing.T) {
+		idp := createTestAPIIdp()
+
+		idp.HrdSettings.DomainsList = ptr("example.com,example.org")
 
 		err := idp.Validate()
 		assert.NoError(t, err)
@@ -210,7 +222,16 @@ func TestValidateIdentityProviderRepresentation(t *testing.T) {
 	t.Run("invalid HRD IP ranges list", func(t *testing.T) {
 		idp := createTestAPIIdp()
 
-		idp.HrdSettings.IPRangesList = "not a list of IP ranges"
+		idp.HrdSettings.IPRangesList = ptr("not a list of IP ranges")
+
+		err := idp.Validate()
+		assert.Error(t, err)
+	})
+
+	t.Run("invalid HRD domains list", func(t *testing.T) {
+		idp := createTestAPIIdp()
+
+		idp.HrdSettings.DomainsList = ptr("not a list of domains")
 
 		err := idp.Validate()
 		assert.Error(t, err)
@@ -219,7 +240,7 @@ func TestValidateIdentityProviderRepresentation(t *testing.T) {
 	t.Run("invalid HRD priority score", func(t *testing.T) {
 		idp := createTestAPIIdp()
 
-		idp.HrdSettings.Priority = -250
+		idp.HrdSettings.Priority = -2500
 
 		err := idp.Validate()
 		assert.Error(t, err)
