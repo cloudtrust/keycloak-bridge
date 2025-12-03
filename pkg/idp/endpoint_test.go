@@ -321,3 +321,37 @@ func TestDeleteUserEndpoint(t *testing.T) {
 		assert.NoError(t, err)
 	})
 }
+
+func TestGetUserFederatedIdentitiesEndpoint(t *testing.T) {
+	mocks := createMocks(t)
+	defer mocks.finish()
+
+	var (
+		realm  = "test-community"
+		ctx    = context.TODO()
+		userID = "user-id-123"
+		req    = map[string]string{
+			prmRealm: realm,
+			prmUser:  userID,
+		}
+		result   = createTestApiFedIdentities()
+		errDummy = errors.New("dummy")
+	)
+
+	t.Run("GetUserFederatedIdentities fails", func(t *testing.T) {
+		mocks.component.EXPECT().GetUserFederatedIdentities(ctx, realm, userID).Return(nil, errDummy)
+		_, err := mocks.newEndpoints().GetUserFederatedIdentities(ctx, req)
+		assert.Equal(t, errDummy, err)
+	})
+
+	t.Run("Success", func(t *testing.T) {
+		mocks.component.EXPECT().GetUserFederatedIdentities(ctx, realm, userID).Return(result, nil)
+
+		res, err := mocks.newEndpoints().GetUserFederatedIdentities(ctx, req)
+		assert.NoError(t, err)
+
+		resSlice, ok := res.([]api.FederatedIdentityRepresentation)
+		assert.True(t, ok)
+		assert.ElementsMatch(t, result, resSlice)
+	})
+}

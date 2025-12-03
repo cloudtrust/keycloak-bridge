@@ -286,6 +286,29 @@ paths:
           description: successful operation
         404:
           description: user not found
+  /idp/realms/{realm}/users/{user}/federated-identities:
+    get:
+      tags:
+      - Identity providers
+      summary: Get federated identities linked to a user
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: user
+        in: path
+        description: id of a user
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation
+        404:
+          description: user not found
 
 components:
   schemas:

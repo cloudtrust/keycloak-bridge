@@ -169,7 +169,7 @@ func TestValidateIdentityProviderRepresentation(t *testing.T) {
 	})
 
 	t.Run("valid alias", func(t *testing.T) {
-		idp := createTestApiIdp()
+		idp := createTestAPIIdp()
 
 		*idp.Alias = "0123456789abcdef0123456789abcdef"
 
@@ -178,7 +178,7 @@ func TestValidateIdentityProviderRepresentation(t *testing.T) {
 	})
 
 	t.Run("invalid alias", func(t *testing.T) {
-		idp := createTestApiIdp()
+		idp := createTestAPIIdp()
 
 		*idp.Alias = "`!not a valid alias!`"
 
@@ -187,7 +187,7 @@ func TestValidateIdentityProviderRepresentation(t *testing.T) {
 	})
 
 	t.Run("invalid providerId", func(t *testing.T) {
-		idp := createTestApiIdp()
+		idp := createTestAPIIdp()
 
 		*idp.InternalID = "not an ID"
 
@@ -196,7 +196,7 @@ func TestValidateIdentityProviderRepresentation(t *testing.T) {
 	})
 
 	t.Run("invalid config", func(t *testing.T) {
-		idp := createTestApiIdp()
+		idp := createTestAPIIdp()
 
 		n := 1000000
 		idp.Config = map[string]string{
@@ -208,7 +208,7 @@ func TestValidateIdentityProviderRepresentation(t *testing.T) {
 	})
 
 	t.Run("invalid HRD IP ranges list", func(t *testing.T) {
-		idp := createTestApiIdp()
+		idp := createTestAPIIdp()
 
 		idp.HrdSettings.IPRangesList = "not a list of IP ranges"
 
@@ -217,7 +217,7 @@ func TestValidateIdentityProviderRepresentation(t *testing.T) {
 	})
 
 	t.Run("invalid HRD priority score", func(t *testing.T) {
-		idp := createTestApiIdp()
+		idp := createTestAPIIdp()
 
 		idp.HrdSettings.Priority = -250
 

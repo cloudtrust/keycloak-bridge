@@ -27,6 +27,7 @@ type KeycloakIdpClient interface {
 	CreateIdp(accessToken string, realmName string, idpRep kc.IdentityProviderRepresentation) error
 	UpdateIdp(accessToken string, realmName, idpAlias string, idpRep kc.IdentityProviderRepresentation) error
 	DeleteIdp(accessToken string, realmName string, idpAlias string) error
+	GetFederatedIdentities(accessToken string, realmName string, userID string) ([]kc.FederatedIdentityRepresentation, error)
 	// Components
 	GetComponents(accessToken string, realmName string, paramKV ...string) ([]kc.ComponentRepresentation, error)
 	CreateComponent(accessToken string, realmName string, comp kc.ComponentRepresentation) error
@@ -50,6 +51,7 @@ type Component interface {
 	DeleteIdentityProviderMapper(ctx context.Context, realmName string, idpAlias string, mapperID string) error
 	GetUsersWithAttribute(ctx context.Context, realmName string, groupName string, attributeKey string, attributeValue string) ([]api.UserRepresentation, error)
 	DeleteUser(ctx context.Context, realmName string, userID string, groupName *string) error
+	GetUserFederatedIdentities(ctx context.Context, realmName string, userID string) ([]api.FederatedIdentityRepresentation, error)
 }
 
 type component struct {
@@ -404,4 +406,28 @@ func (c *component) GetUsersWithAttribute(ctx context.Context, realmName string,
 	}
 
 	return api.ConvertToAPIUserRepresentations(usersPage.Users), nil
+}
+
+func (c *component) GetUserFederatedIdentities(ctx context.Context, realmName string, userID string) ([]api.FederatedIdentityRepresentation, error) {
+	accessToken, err := c.tokenProvider.ProvideTokenForRealm(ctx, realmName)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Failed to get OIDC token from keycloak", "err", err.Error())
+		return nil, err
+	}
+
+	kcFedIdentities, err := c.keycloakIdpClient.GetFederatedIdentities(accessToken, realmName, userID)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Keycloak failed to get federated identities", "err", err.Error(), "realm", realmName, "user", userID)
+		return nil, err
+	}
+
+	var federatedIdentities []api.FederatedIdentityRepresentation
+	for _, kcFedIdentity := range kcFedIdentities {
+		federatedIdentities = append(federatedIdentities, api.FederatedIdentityRepresentation{
+			UserID:           kcFedIdentity.UserID,
+			Username:         kcFedIdentity.UserName,
+			IdentityProvider: kcFedIdentity.IdentityProvider,
+		})
+	}
+	return federatedIdentities, nil
 }

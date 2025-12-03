@@ -146,6 +146,21 @@ func (mr *KeycloakIdpClientMockRecorder) GetComponents(accessToken, realmName an
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetComponents", reflect.TypeOf((*KeycloakIdpClient)(nil).GetComponents), varargs...)
 }
 
+// GetFederatedIdentities mocks base method.
+func (m *KeycloakIdpClient) GetFederatedIdentities(accessToken, realmName, userID string) ([]keycloak.FederatedIdentityRepresentation, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetFederatedIdentities", accessToken, realmName, userID)
+	ret0, _ := ret[0].([]keycloak.FederatedIdentityRepresentation)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetFederatedIdentities indicates an expected call of GetFederatedIdentities.
+func (mr *KeycloakIdpClientMockRecorder) GetFederatedIdentities(accessToken, realmName, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFederatedIdentities", reflect.TypeOf((*KeycloakIdpClient)(nil).GetFederatedIdentities), accessToken, realmName, userID)
+}
+
 // GetGroups mocks base method.
 func (m *KeycloakIdpClient) GetGroups(accessToken, realmName string) ([]keycloak.GroupRepresentation, error) {
 	m.ctrl.T.Helper()
@@ -390,6 +405,21 @@ func (m *Component) GetIdentityProviderMappers(ctx context.Context, realmName, i
 func (mr *ComponentMockRecorder) GetIdentityProviderMappers(ctx, realmName, idpAlias any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetIdentityProviderMappers", reflect.TypeOf((*Component)(nil).GetIdentityProviderMappers), ctx, realmName, idpAlias)
+}
+
+// GetUserFederatedIdentities mocks base method.
+func (m *Component) GetUserFederatedIdentities(ctx context.Context, realmName, userID string) ([]apiidp.FederatedIdentityRepresentation, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUserFederatedIdentities", ctx, realmName, userID)
+	ret0, _ := ret[0].([]apiidp.FederatedIdentityRepresentation)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUserFederatedIdentities indicates an expected call of GetUserFederatedIdentities.
+func (mr *ComponentMockRecorder) GetUserFederatedIdentities(ctx, realmName, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserFederatedIdentities", reflect.TypeOf((*Component)(nil).GetUserFederatedIdentities), ctx, realmName, userID)
 }
 
 // GetUsersWithAttribute mocks base method.

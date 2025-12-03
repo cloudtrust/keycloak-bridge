@@ -52,6 +52,13 @@ type UserRepresentation struct {
 	Enabled   *bool   `json:"enabled,omitempty"`
 }
 
+// FederatedIdentityRepresentation struct
+type FederatedIdentityRepresentation struct {
+	UserID           *string `json:"userID,omitempty"`
+	Username         *string `json:"username,omitempty"`
+	IdentityProvider *string `json:"identityProvider,omitempty"`
+}
+
 func validateConfig(config map[string]string) func() error {
 	return func() error {
 		if len(config) != 0 {

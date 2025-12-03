@@ -22,6 +22,14 @@ const (
 	compProviderType = "org.keycloak.services.ui.extend.UiTabProvider"
 	compProviderID   = "Home-realm discovery settings"
 	compConfigName   = "hrdSettings"
+
+	accessToken  = "TOKEN=="
+	fedUserID1   = "fed-user-1"
+	fedUserID2   = "fed-user-2"
+	fedUsername1 = "federated-user-1"
+	fedUsername2 = "federated-user-2"
+	fedProvider1 = "provider-1"
+	fedProvider2 = "provider-2"
 )
 
 func ptrBool(value bool) *bool {
@@ -116,6 +124,34 @@ func createTestUpdatedComponent(comp kc.ComponentRepresentation) kc.ComponentRep
 		"[{\"value\":\"{\\\"ipRangesList\\\":\\\"192.168.67.0/24\\\"}\",\"key\":\"0123456789abcdef0123456789abcdee\"}]",
 	}
 	return comp
+}
+
+func createTestKcFedIdentities() []kc.FederatedIdentityRepresentation {
+	kcFedIdentity1 := kc.FederatedIdentityRepresentation{
+		UserID:           ptr(fedUserID1),
+		UserName:         ptr(fedUsername1),
+		IdentityProvider: ptr(fedProvider1),
+	}
+	kcFedIdentity2 := kc.FederatedIdentityRepresentation{
+		UserID:           ptr(fedUserID2),
+		UserName:         ptr(fedUsername2),
+		IdentityProvider: ptr(fedProvider2),
+	}
+	return []kc.FederatedIdentityRepresentation{kcFedIdentity1, kcFedIdentity2}
+}
+
+func createTestApiFedIdentities() []api.FederatedIdentityRepresentation {
+	apiFedIdentity1 := api.FederatedIdentityRepresentation{
+		UserID:           ptr(fedUserID1),
+		Username:         ptr(fedUsername1),
+		IdentityProvider: ptr(fedProvider1),
+	}
+	apiFedIdentity2 := api.FederatedIdentityRepresentation{
+		UserID:           ptr(fedUserID2),
+		Username:         ptr(fedUsername2),
+		IdentityProvider: ptr(fedProvider2),
+	}
+	return []api.FederatedIdentityRepresentation{apiFedIdentity1, apiFedIdentity2}
 }
 
 func TestGetIdentityProvider(t *testing.T) {
@@ -660,7 +696,6 @@ func TestDeleteUser(t *testing.T) {
 
 	var (
 		idpComponent = mocks.createComponent()
-		accessToken  = "TOKEN=="
 		userID       = "user-id"
 		groupName    = "the-group"
 		anyError     = errors.New("any error")
@@ -700,7 +735,6 @@ func TestCheckUserIsInGroup(t *testing.T) {
 
 	var (
 		idpComponent = mocks.createComponent()
-		accessToken  = "TOKEN=="
 		userID       = "user-id"
 		group1       = kc.GroupRepresentation{ID: ptr("group-id-1"), Name: ptr("group #1")}
 		group2       = kc.GroupRepresentation{ID: ptr("group-id-2"), Name: ptr("group #2")}
@@ -748,7 +782,6 @@ func TestGetUsersWithAttribute(t *testing.T) {
 
 	var (
 		idpComponent   = mocks.createComponent()
-		accessToken    = "TOKEN=="
 		group          = kc.GroupRepresentation{ID: ptr("the-group-id"), Name: ptr("the-group-name")}
 		attribKey      = "the-key"
 		attribValue    = "the-value"
@@ -765,12 +798,14 @@ func TestGetUsersWithAttribute(t *testing.T) {
 		_, err := idpComponent.GetUsersWithAttribute(ctx, realmName, *group.Name, attribKey, attribValue)
 		assert.Error(t, err)
 	})
+
 	t.Run("Fails to check group", func(t *testing.T) {
 		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return(accessToken, nil)
 		mocks.keycloakIdpClient.EXPECT().GetGroups(accessToken, realmName).Return(nil, anyError)
 		_, err := idpComponent.GetUsersWithAttribute(ctx, realmName, *group.Name, attribKey, attribValue)
 		assert.Error(t, err)
 	})
+
 	t.Run("Fails to search for users", func(t *testing.T) {
 		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return(accessToken, nil)
 		mocks.keycloakIdpClient.EXPECT().GetGroups(accessToken, realmName).Return([]kc.GroupRepresentation{group}, nil)
@@ -778,6 +813,7 @@ func TestGetUsersWithAttribute(t *testing.T) {
 		_, err := idpComponent.GetUsersWithAttribute(ctx, realmName, *group.Name, attribKey, attribValue)
 		assert.Error(t, err)
 	})
+
 	t.Run("Success", func(t *testing.T) {
 		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return(accessToken, nil)
 		mocks.keycloakIdpClient.EXPECT().GetGroups(accessToken, realmName).Return([]kc.GroupRepresentation{group}, nil)
@@ -785,5 +821,46 @@ func TestGetUsersWithAttribute(t *testing.T) {
 		res, err := idpComponent.GetUsersWithAttribute(ctx, realmName, *group.Name, attribKey, attribValue)
 		assert.NoError(t, err)
 		assert.Len(t, res, 2)
+	})
+}
+
+func TestGetUserFederatedIdentities(t *testing.T) {
+	mocks := createMocks(t)
+	defer mocks.finish()
+
+	var (
+		idpComponent = mocks.createComponent()
+		userID       = "user-id-123"
+		anyError     = errors.New("any error")
+		ctx          = context.TODO()
+	)
+
+	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
+
+	kcFedIdentities := createTestKcFedIdentities()
+	expectedResult := createTestApiFedIdentities()
+
+	t.Run("Failed to get technical access token", func(t *testing.T) {
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return("", anyError)
+
+		_, err := idpComponent.GetUserFederatedIdentities(ctx, realmName, userID)
+		assert.Error(t, err)
+	})
+
+	t.Run("Failed to get federated identities", func(t *testing.T) {
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return(accessToken, nil)
+		mocks.keycloakIdpClient.EXPECT().GetFederatedIdentities(accessToken, realmName, userID).Return(nil, anyError)
+
+		_, err := idpComponent.GetUserFederatedIdentities(ctx, realmName, userID)
+		assert.Error(t, err)
+	})
+
+	t.Run("Success", func(t *testing.T) {
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return(accessToken, nil)
+		mocks.keycloakIdpClient.EXPECT().GetFederatedIdentities(accessToken, realmName, userID).Return(kcFedIdentities, nil)
+
+		res, err := idpComponent.GetUserFederatedIdentities(ctx, realmName, userID)
+		assert.NoError(t, err)
+		assert.ElementsMatch(t, expectedResult, res)
 	})
 }

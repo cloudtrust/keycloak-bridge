@@ -25,6 +25,7 @@ type Endpoints struct {
 	DeleteIdentityProviderMapper endpoint.Endpoint
 	GetUsersWithAttribute        endpoint.Endpoint
 	DeleteUser                   endpoint.Endpoint
+	GetUserFederatedIdentities   endpoint.Endpoint
 }
 
 // NewEndpoints creates an Endpoints instance
@@ -40,6 +41,7 @@ func NewEndpoints(component Component, endpointUpdater func(endpoint cs.Endpoint
 		DeleteIdentityProviderMapper: endpointUpdater(MakeDeleteIdentityProviderMapperEndpoint(component), "delete_identity_provider_mapper_endpoint"),
 		GetUsersWithAttribute:        endpointUpdater(MakeGetUsersWithAttributeEndpoint(component), "get_users_with_attribute_endpoint"),
 		DeleteUser:                   endpointUpdater(MakeDeleteUserEndpoint(component), "delete_user_endpoint"),
+		GetUserFederatedIdentities:   endpointUpdater(MakeGetUserFederatedIdentitiesEndpoint(component), "get_user_federated_identities_endpoint"),
 	}
 }
 
@@ -190,5 +192,13 @@ func MakeDeleteUserEndpoint(component Component) cs.Endpoint {
 			grpName = &value
 		}
 		return nil, component.DeleteUser(ctx, m[prmRealm], m[prmUser], grpName)
+	}
+}
+
+// MakeGetUserFederatedIdentitiesEndpoint creates an endpoint for GetUserFederatedIdentities
+func MakeGetUserFederatedIdentitiesEndpoint(component Component) cs.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		var m = req.(map[string]string)
+		return component.GetUserFederatedIdentities(ctx, m[prmRealm], m[prmUser])
 	}
 }
