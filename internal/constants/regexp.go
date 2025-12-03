@@ -3,7 +3,6 @@ package constants
 // Regular expressions for parameters validation
 const (
 	regExpLen255OrEmpty = `^.{0,255}$`
-	regExpLen36         = `^.{1,36}$`
 	regExpLen255        = `^.{1,255}$`
 	regExpLen128        = `^.{1,128}$`
 
@@ -53,10 +52,8 @@ const (
 	RegExpContainerID     = regExpLen255
 	RegExpRoleDescription = regExpLen255OrEmpty
 
-	RegExpCustomValue   = `^[A-Za-z\d_-]{0,50}$`
-	RegExpAccreditation = `^[A-Za-z\d_-]{1,50}$`
-	RegExpServiceType   = `^[\w_-]+$`
-	RegExpTxnID         = regExpLen255
+	RegExpCustomValue = `^[A-Za-z\d_-]{0,50}$`
+	RegExpTxnID       = regExpLen255
 
 	RegExpColor = `^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$`
 
@@ -71,6 +68,13 @@ const (
 	RegExpFirstBrokerLoginFlowAlias = `^[a-zA-Z0-9 _-]{1,128}$`
 	RegExpPostBrokerLoginFlowAlias  = `^[a-zA-Z0-9 _-]{1,128}$`
 	RegExpProviderID                = `^[a-z0-9\-]{1,36}$`
+
+	// Context key configuration
+	RegExpRealmNameOrEmpty     = `^[a-zA-Z0-9_-]{0,36}$`
+	RegExpClientIDOrEmpty      = `^[a-zA-Z0-9-_.]{0,255}$`
+	RegExpRedirectURIOrEmpty   = `^(\w+:(\/?\/?)[^\s]+)?$`
+	RegExpServiceTypeOrEmpty   = `^[\w_-]*$`
+	RegExpAccreditationOrEmpty = `^[A-Za-z\d_-]{0,50}$`
 
 	// IP ranges
 	RegExpOctet        = `(?:25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9][0-9]|[0-9])` // IPv4 octet, 0-255

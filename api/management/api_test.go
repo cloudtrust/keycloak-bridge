@@ -1255,18 +1255,67 @@ func TestContextKeyConvertions(t *testing.T) {
 		var valueConvertedFromDTO = ConvertToAPIContextKeys(dtoConverted)[0]
 		assert.Equal(t, initialValue, valueConvertedFromDTO)
 	})
-	t.Run("Config fields are nil", func(t *testing.T) {
-		var config = ConvertToAPIContextKeyConfig(configuration.ContextKeyConfiguration{
+
+	t.Run("Nil config fields are converted to empty strings in JSON", func(t *testing.T) {
+		var cfg = ConvertToAPIContextKeyConfig(configuration.ContextKeyConfiguration{
 			Onboarding:        nil,
 			IdentificationURI: nil,
 			AutoVoucher:       nil,
 			Accreditation:     nil,
 		})
-		assert.Nil(t, config.Accreditation)
-		assert.Nil(t, config.AutoVoucher)
-		assert.Nil(t, config.IdentificationURI)
-		assert.Nil(t, config.Onboarding)
+		assert.NotNil(t, cfg.Onboarding)
+		assert.NotNil(t, cfg.Accreditation)
+		assert.NotNil(t, cfg.AutoVoucher)
+
+		apiKey := RealmContextKeyRepresentation{
+			ID:              ptr("id"),
+			Label:           ptr("label"),
+			IdentitiesRealm: ptr("identities"),
+			Config:          &cfg,
+		}
+		b, _ := json.Marshal(apiKey)
+		js := string(b)
+		assert.Contains(t, js, `"identificationUri":""`)
+		assert.Contains(t, js, `"onboarding":{"clientId":"","redirectUri":"","isRedirectMode":false}`)
+		assert.Contains(t, js, `"accreditation":{"emailThemeRealm":""}`)
+		assert.Contains(t, js, `"autovoucher":{"serviceType":"","validity":"","accreditationRequested":"","billedRealm":""}`)
 	})
+
+	t.Run("Config with some empty fields", func(t *testing.T) {
+		// When DB has values, they should be preserved (not replaced with empty strings)
+		var cfg = ConvertToAPIContextKeyConfig(configuration.ContextKeyConfiguration{
+			IdentificationURI: ptr("http://host/path"),
+			Onboarding: &configuration.ContextKeyConfOnboarding{
+				ClientID:       ptr("client-123"),
+				IsRedirectMode: boolPtr(true),
+			},
+			Accreditation: &configuration.ContextKeyConfAccreditation{
+				EmailThemeRealm: ptr(""),
+			},
+			AutoVoucher: &configuration.ContextKeyConfAutovoucher{
+				ServiceType: ptr("AUTO_ID"),
+				Validity:    ptr("3y"),
+				BilledRealm: ptr(""),
+			},
+		})
+		assert.Equal(t, "http://host/path", *cfg.IdentificationURI)
+		assert.Equal(t, "client-123", *cfg.Onboarding.ClientID)
+		assert.Equal(t, "", *cfg.Onboarding.RedirectURI)
+		assert.True(t, *cfg.Onboarding.IsRedirectMode)
+		assert.Equal(t, "", *cfg.Accreditation.EmailThemeRealm)
+		assert.Equal(t, "AUTO_ID", *cfg.AutoVoucher.ServiceType)
+		assert.Equal(t, "3y", *cfg.AutoVoucher.Validity)
+		assert.Equal(t, "", *cfg.AutoVoucher.AccreditationRequested)
+		assert.Equal(t, "", *cfg.AutoVoucher.BilledRealm)
+	})
+}
+
+func TestConvertToAPIContextKeysEmptySlice(t *testing.T) {
+	// Ensure it returns a non-nil empty slice when input is empty
+	var input []configuration.RealmContextKey
+	res := ConvertToAPIContextKeys(input)
+	assert.NotNil(t, res)
+	assert.Len(t, res, 0)
 }
 
 func TestValidateRealmContextKeys(t *testing.T) {
@@ -1336,7 +1385,7 @@ func TestValidateCtxKeyOnboardingRepresentation(t *testing.T) {
 	}
 
 	configs[0].ClientID = nil
-	configs[1].ClientID = ptr("")
+	configs[1].ClientID = ptr("*")
 	configs[2].RedirectURI = nil
 	configs[3].RedirectURI = ptr("not.a.uri")
 	configs[4].IsRedirectMode = nil
@@ -1360,7 +1409,7 @@ func TestValidateCtxKeyAccreditationRepresentation(t *testing.T) {
 	}
 
 	configs[0].EmailThemeRealm = nil
-	configs[1].EmailThemeRealm = ptr("")
+	configs[1].EmailThemeRealm = ptr("*")
 
 	for idx, config := range configs {
 		t.Run(fmt.Sprintf("Invalid case #%d", idx+1), func(t *testing.T) {
@@ -1381,13 +1430,13 @@ func TestValidateCtxKeyAutoVoucherRepresentation(t *testing.T) {
 	}
 
 	configs[0].ServiceType = nil
-	configs[1].ServiceType = ptr("")
+	configs[1].ServiceType = ptr("*")
 	configs[2].Validity = nil
-	configs[3].Validity = ptr("")
+	configs[3].Validity = ptr("*")
 	configs[4].AccreditationRequested = nil
-	configs[5].AccreditationRequested = ptr("")
+	configs[5].AccreditationRequested = ptr("*")
 	configs[6].BilledRealm = nil
-	configs[7].BilledRealm = ptr("")
+	configs[7].BilledRealm = ptr("*")
 
 	for idx, config := range configs {
 		t.Run(fmt.Sprintf("Invalid case #%d", idx+1), func(t *testing.T) {

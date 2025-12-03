@@ -456,6 +456,12 @@ func defaultStringArray(actual *[]string, defaultValue []string) *[]string {
 	return actual
 }
 
+// emptyStringPtr returns a pointer to an empty string for defaulting nil fields
+func emptyStringPtr() *string {
+	empty := ""
+	return &empty
+}
+
 // ConvertCredential creates an API credential from a KC credential
 func ConvertCredential(credKc *kc.CredentialRepresentation) CredentialRepresentation {
 	var cred CredentialRepresentation
@@ -1409,7 +1415,7 @@ func (rck *RealmContextKeyRepresentation) Validate() error {
 
 // ConvertToAPIContextKeys converts context keys from database model to API model
 func ConvertToAPIContextKeys(configs []configuration.RealmContextKey) []RealmContextKeyRepresentation {
-	var res []RealmContextKeyRepresentation
+	res := []RealmContextKeyRepresentation{}
 	for _, config := range configs {
 		res = append(res, ConvertToAPIContextKey(config))
 	}
@@ -1453,7 +1459,7 @@ func ValidateRealmContextKeys(contextKeys []RealmContextKeyRepresentation, canBe
 // ConvertToAPIContextKeyConfig converts context key configuration from database model to API model
 func ConvertToAPIContextKeyConfig(config configuration.ContextKeyConfiguration) CtxKeyConfigRepresentation {
 	return CtxKeyConfigRepresentation{
-		IdentificationURI: config.IdentificationURI,
+		IdentificationURI: defaultStringPtr(config.IdentificationURI, emptyStringPtr()),
 		Onboarding:        ConvertToAPIContextKeyOnboarding(config.Onboarding),
 		Accreditation:     ConvertToAPIContextKeyAccreditation(config.Accreditation),
 		AutoVoucher:       ConvertToAPIContextKeyAutovoucher(config.AutoVoucher),
@@ -1486,7 +1492,7 @@ func (c *CtxKeyConfigRepresentation) ToDatabaseModel() configuration.ContextKeyC
 // Validate is a validator for CtxKeyConfigRepresentation
 func (c *CtxKeyConfigRepresentation) Validate() error {
 	return validation.NewParameterValidator().
-		ValidateParameterRegExp("identificationUri", c.IdentificationURI, constants.RegExpRedirectURI, false).
+		ValidateParameterRegExp("identificationUri", c.IdentificationURI, constants.RegExpRedirectURIOrEmpty, false).
 		ValidateParameter("onboarding", c.Onboarding, false).
 		ValidateParameter("accreditation", c.Accreditation, false).
 		ValidateParameter("autovoucher", c.AutoVoucher, false).
@@ -1495,13 +1501,18 @@ func (c *CtxKeyConfigRepresentation) Validate() error {
 
 // ConvertToAPIContextKeyOnboarding converts context key onboarding configuration from database model to API model
 func ConvertToAPIContextKeyOnboarding(onboardingCfg *configuration.ContextKeyConfOnboarding) *CtxKeyOnboardingRepresentation {
+	falseVal := false
 	if onboardingCfg == nil {
-		return nil
+		return &CtxKeyOnboardingRepresentation{
+			ClientID:       emptyStringPtr(),
+			RedirectURI:    emptyStringPtr(),
+			IsRedirectMode: &falseVal,
+		}
 	}
 	return &CtxKeyOnboardingRepresentation{
-		ClientID:       onboardingCfg.ClientID,
-		RedirectURI:    onboardingCfg.RedirectURI,
-		IsRedirectMode: onboardingCfg.IsRedirectMode,
+		ClientID:       defaultStringPtr(onboardingCfg.ClientID, emptyStringPtr()),
+		RedirectURI:    defaultStringPtr(onboardingCfg.RedirectURI, emptyStringPtr()),
+		IsRedirectMode: defaultBoolPtr(onboardingCfg.IsRedirectMode, &falseVal),
 	}
 }
 
@@ -1517,8 +1528,8 @@ func (c *CtxKeyOnboardingRepresentation) ToDatabaseModel() *configuration.Contex
 // Validate is a validator for CtxKeyOnboardingRepresentation
 func (c *CtxKeyOnboardingRepresentation) Validate() error {
 	return validation.NewParameterValidator().
-		ValidateParameterRegExp("clientId", c.ClientID, constants.RegExpClientID, true).
-		ValidateParameterRegExp("redirectUri", c.RedirectURI, constants.RegExpRedirectURI, true).
+		ValidateParameterRegExp("clientId", c.ClientID, constants.RegExpClientIDOrEmpty, true).
+		ValidateParameterRegExp("redirectUri", c.RedirectURI, constants.RegExpRedirectURIOrEmpty, true).
 		ValidateParameterNotNil("isRedirectMode", c.IsRedirectMode).
 		Status()
 }
@@ -1526,10 +1537,12 @@ func (c *CtxKeyOnboardingRepresentation) Validate() error {
 // ConvertToAPIContextKeyAccreditation converts context key accreditation configuration from database model to API model
 func ConvertToAPIContextKeyAccreditation(accreditationCfg *configuration.ContextKeyConfAccreditation) *CtxKeyAccreditationRepresentation {
 	if accreditationCfg == nil {
-		return nil
+		return &CtxKeyAccreditationRepresentation{
+			EmailThemeRealm: emptyStringPtr(),
+		}
 	}
 	return &CtxKeyAccreditationRepresentation{
-		EmailThemeRealm: accreditationCfg.EmailThemeRealm,
+		EmailThemeRealm: defaultStringPtr(accreditationCfg.EmailThemeRealm, emptyStringPtr()),
 	}
 }
 
@@ -1543,20 +1556,25 @@ func (c *CtxKeyAccreditationRepresentation) ToDatabaseModel() *configuration.Con
 // Validate is a validator for CtxKeyAccreditationRepresentation
 func (c *CtxKeyAccreditationRepresentation) Validate() error {
 	return validation.NewParameterValidator().
-		ValidateParameterRegExp("emailThemeRealm", c.EmailThemeRealm, constants.RegExpRealmName, true).
+		ValidateParameterRegExp("emailThemeRealm", c.EmailThemeRealm, constants.RegExpRealmNameOrEmpty, true).
 		Status()
 }
 
 // ConvertToAPIContextKeyAutovoucher converts context key autovoucher configuration from database model to API model
 func ConvertToAPIContextKeyAutovoucher(autovoucherCfg *configuration.ContextKeyConfAutovoucher) *CtxKeyAutoVoucherRepresentation {
 	if autovoucherCfg == nil {
-		return nil
+		return &CtxKeyAutoVoucherRepresentation{
+			ServiceType:            emptyStringPtr(),
+			Validity:               emptyStringPtr(),
+			AccreditationRequested: emptyStringPtr(),
+			BilledRealm:            emptyStringPtr(),
+		}
 	}
 	return &CtxKeyAutoVoucherRepresentation{
-		ServiceType:            autovoucherCfg.ServiceType,
-		Validity:               autovoucherCfg.Validity,
-		AccreditationRequested: autovoucherCfg.AccreditationRequested,
-		BilledRealm:            autovoucherCfg.BilledRealm,
+		ServiceType:            defaultStringPtr(autovoucherCfg.ServiceType, emptyStringPtr()),
+		Validity:               defaultStringPtr(autovoucherCfg.Validity, emptyStringPtr()),
+		AccreditationRequested: defaultStringPtr(autovoucherCfg.AccreditationRequested, emptyStringPtr()),
+		BilledRealm:            defaultStringPtr(autovoucherCfg.BilledRealm, emptyStringPtr()),
 	}
 }
 
@@ -1573,9 +1591,9 @@ func (c *CtxKeyAutoVoucherRepresentation) ToDatabaseModel() *configuration.Conte
 // Validate is a validator for CtxKeyAutoVoucherRepresentation
 func (c *CtxKeyAutoVoucherRepresentation) Validate() error {
 	return validation.NewParameterValidator().
-		ValidateParameterRegExp("serviceType", c.ServiceType, constants.RegExpServiceType, true).
+		ValidateParameterRegExp("serviceType", c.ServiceType, constants.RegExpServiceTypeOrEmpty, true).
 		ValidateParameterLargeDuration("validity", c.Validity, true).
-		ValidateParameterRegExp("accreditationRequested", c.AccreditationRequested, constants.RegExpAccreditation, true).
-		ValidateParameterRegExp("billedRealm", c.BilledRealm, constants.RegExpRealmName, true).
+		ValidateParameterRegExp("accreditationRequested", c.AccreditationRequested, constants.RegExpAccreditationOrEmpty, true).
+		ValidateParameterRegExp("billedRealm", c.BilledRealm, constants.RegExpRealmNameOrEmpty, true).
 		Status()
 }
