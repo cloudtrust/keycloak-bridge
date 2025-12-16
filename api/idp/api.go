@@ -27,6 +27,7 @@ type IdentityProviderRepresentation struct {
 	HrdSettings               *HrdSettingModel  `json:"hrdSettings,omitempty"`
 }
 
+// HrdSettingModel struct
 type HrdSettingModel struct {
 	IPRangesList string `json:"ipRangesList"`
 	Priority     int    `json:"priority"`
@@ -41,6 +42,38 @@ type IdentityProviderMapperRepresentation struct {
 	Name                   *string           `json:"name,omitempty"`
 }
 
+// UserRepresentation struct
+type UserRepresentation struct {
+	ID        *string `json:"id,omitempty"`
+	Username  *string `json:"username,omitempty"`
+	FirstName *string `json:"firstName,omitempty"`
+	LastName  *string `json:"lastName,omitempty"`
+	Email     *string `json:"email,omitempty"`
+	Enabled   *bool   `json:"enabled,omitempty"`
+}
+
+// FederatedIdentityRepresentation struct
+type FederatedIdentityRepresentation struct {
+	UserID           *string `json:"userID,omitempty"`
+	Username         *string `json:"username,omitempty"`
+	IdentityProvider *string `json:"identityProvider,omitempty"`
+}
+
+func validateConfig(config map[string]string) func() error {
+	return func() error {
+		if len(config) != 0 {
+			configJSON, err := json.Marshal(config)
+			if err != nil {
+				return err
+			}
+			configStr := string(configJSON)
+			return validation.NewParameterValidator().ValidateParameterLength("config", &configStr, 0, 10000, false).Status()
+		}
+		return nil
+	}
+}
+
+// Validate validates a HrdSettingModel
 func (settings HrdSettingModel) Validate() error {
 	return validation.NewParameterValidator().
 		ValidateParameterRegExp("ipRangesList", &settings.IPRangesList, constants.RegExpIpRangesList, true).
@@ -69,7 +102,7 @@ func ConvertToAPIIdentityProvider(idp kc.IdentityProviderRepresentation) Identit
 }
 
 // ConvertToKCIdentityProvider creates a KC IdentityProviderRepresentation from an API IdentityProviderRepresentation
-func ConvertToKCIdentityProvider(idp IdentityProviderRepresentation) kc.IdentityProviderRepresentation {
+func (idp IdentityProviderRepresentation) ConvertToKCIdentityProvider() kc.IdentityProviderRepresentation {
 	return kc.IdentityProviderRepresentation{
 		AddReadTokenRoleOnCreate:  idp.AddReadTokenRoleOnCreate,
 		Alias:                     idp.Alias,
@@ -90,30 +123,16 @@ func ConvertToKCIdentityProvider(idp IdentityProviderRepresentation) kc.Identity
 
 // Validate is a validator for IdentityProviderRepresentation
 func (idp IdentityProviderRepresentation) Validate() error {
-	v := validation.NewParameterValidator().
+	return validation.NewParameterValidator().
 		ValidateParameterRegExp("alias", idp.Alias, constants.RegExpAlias, true).
 		ValidateParameterRegExp("displayName", idp.DisplayName, constants.RegExpDisplayName, true).
 		ValidateParameterRegExp("firstBrokerLoginFlowAlias", idp.FirstBrokerLoginFlowAlias, constants.RegExpFirstBrokerLoginFlowAlias, true).
 		ValidateParameterRegExp("internalId", idp.InternalID, constants.RegExpID, false).
 		ValidateParameterRegExp("postBrokerLoginFlowAlias", idp.PostBrokerLoginFlowAlias, constants.RegExpPostBrokerLoginFlowAlias, true).
-		ValidateParameterRegExp("providerId", idp.ProviderID, constants.RegExpProviderID, true)
-
-	if len(idp.Config) != 0 {
-		configJSON, err := json.Marshal(idp.Config)
-		if err != nil {
-			return err
-		}
-		configStr := string(configJSON)
-		v = v.ValidateParameterLength("config", &configStr, 0, 10000, false)
-	}
-
-	if idp.HrdSettings != nil {
-		v = v.ValidateParameterFunc(func() error {
-			return idp.HrdSettings.Validate()
-		})
-	}
-
-	return v.Status()
+		ValidateParameterRegExp("providerId", idp.ProviderID, constants.RegExpProviderID, true).
+		ValidateParameterFunc(validateConfig(idp.Config)).
+		ValidateParameter("hrdSettings", idp.HrdSettings, false).
+		Status()
 }
 
 // convertToAPIIdentityProviderMapper creates an API IdentityProviderMapperRepresentation from a KC IdentityProviderMapperRepresentation
@@ -138,31 +157,56 @@ func ConvertToAPIIdentityProviderMappers(kcMappers []kc.IdentityProviderMapperRe
 }
 
 // ConvertToKCIdentityProviderMapper creates a KC IdentityProviderMapperRepresentation from an API IdentityProviderMapperRepresentation
-func ConvertToKCIdentityProviderMapper(apiMapper IdentityProviderMapperRepresentation) kc.IdentityProviderMapperRepresentation {
+func (mapperRep IdentityProviderMapperRepresentation) ConvertToKCIdentityProviderMapper() kc.IdentityProviderMapperRepresentation {
 	return kc.IdentityProviderMapperRepresentation{
-		Config:                 apiMapper.Config,
-		ID:                     apiMapper.ID,
-		IdentityProviderAlias:  apiMapper.IdentityProviderAlias,
-		IdentityProviderMapper: apiMapper.IdentityProviderMapper,
-		Name:                   apiMapper.Name,
+		Config:                 mapperRep.Config,
+		ID:                     mapperRep.ID,
+		IdentityProviderAlias:  mapperRep.IdentityProviderAlias,
+		IdentityProviderMapper: mapperRep.IdentityProviderMapper,
+		Name:                   mapperRep.Name,
 	}
 }
 
 // Validate is a validator for IdentityProviderRepresentation
 func (mapperRep IdentityProviderMapperRepresentation) Validate() error {
-	v := validation.NewParameterValidator().
+	return validation.NewParameterValidator().
 		ValidateParameterRegExp("id", mapperRep.ID, constants.RegExpID, false).
 		ValidateParameterRegExp("identityProviderAlias", mapperRep.IdentityProviderAlias, constants.RegExpAlias, true).
 		ValidateParameterRegExp("identityProviderMapper", mapperRep.IdentityProviderMapper, constants.RegExpAlias, true).
-		ValidateParameterRegExp("name", mapperRep.Name, constants.RegExpDisplayName, true)
+		ValidateParameterRegExp("name", mapperRep.Name, constants.RegExpDisplayName, true).
+		ValidateParameterFunc(validateConfig(mapperRep.Config)).
+		Status()
+}
 
-	if len(mapperRep.Config) != 0 {
-		configJSON, err := json.Marshal(mapperRep.Config)
-		if err != nil {
-			return err
-		}
-		configStr := string(configJSON)
-		v = v.ValidateParameterLength("config", &configStr, 0, 10000, false)
+// ConvertToAPIUserRepresentations converts a slice of KC user representation to a slice of API UserRepresentation
+func ConvertToAPIUserRepresentations(kcUsers []kc.UserRepresentation) []UserRepresentation {
+	var res []UserRepresentation
+	for _, user := range kcUsers {
+		res = append(res, ConvertToAPIUserRepresentation(user))
 	}
-	return v.Status()
+	return res
+}
+
+// ConvertToAPIUserRepresentation converts a KC user representation to an API UserRepresentation
+func ConvertToAPIUserRepresentation(kcUser kc.UserRepresentation) UserRepresentation {
+	return UserRepresentation{
+		ID:        kcUser.ID,
+		Username:  kcUser.Username,
+		FirstName: kcUser.FirstName,
+		LastName:  kcUser.LastName,
+		Email:     kcUser.Email,
+		Enabled:   kcUser.Enabled,
+	}
+}
+
+// ConvertToKCUserRepresentation converts an API UserRepresentation to a KC UserRepresentation
+func (u UserRepresentation) ConvertToKCUserRepresentation() kc.UserRepresentation {
+	return kc.UserRepresentation{
+		ID:        u.ID,
+		Username:  u.Username,
+		FirstName: u.FirstName,
+		LastName:  u.LastName,
+		Email:     u.Email,
+		Enabled:   u.Enabled,
+	}
 }

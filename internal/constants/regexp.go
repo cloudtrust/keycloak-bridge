@@ -3,7 +3,6 @@ package constants
 // Regular expressions for parameters validation
 const (
 	regExpLen255OrEmpty = `^.{0,255}$`
-	regExpLen36         = `^.{1,36}$`
 	regExpLen255        = `^.{1,255}$`
 	regExpLen128        = `^.{1,128}$`
 

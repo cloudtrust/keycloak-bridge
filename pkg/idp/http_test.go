@@ -22,8 +22,8 @@ func TestHTTPIdpHandler(t *testing.T) {
 	var mockLogger = log.NewNopLogger()
 
 	var realm = "example"
-	var apiIdp = createTestApiIdp()
-	var apiMapper = createTestApiIdpMapper()
+	var apiIdp = createTestAPIIdp()
+	var apiMapper = createTestAPIIdpMapper()
 
 	var idpHandler = MakeIdpHandler(keycloakb.ToGoKitEndpoint(MakeCreateIdentityProviderEndpoint(mockComponent)), mockLogger)
 	var idpHandler2 = MakeIdpHandler(keycloakb.ToGoKitEndpoint(MakeGetIdentityProviderEndpoint(mockComponent)), mockLogger)
