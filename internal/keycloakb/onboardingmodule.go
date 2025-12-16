@@ -43,7 +43,7 @@ type OnboardingKeycloakClient interface {
 	GenerateTrustIDAuthToken(accessToken string, reqRealmName string, realmName string, userID string) (string, error)
 }
 
-//OnboardingModule interface
+// OnboardingModule interface
 type OnboardingModule interface {
 	OnboardingAlreadyCompleted(kc.UserRepresentation) (bool, error)
 	SendOnboardingEmail(ctx context.Context, accessToken string, realmName string, userID string, username string,
@@ -52,7 +52,7 @@ type OnboardingModule interface {
 	ProcessAlreadyExistingUserCases(ctx context.Context, accessToken string, targetRealmName string, userEmail string, requestingSource string, handler func(username string, createdTimestamp int64, thirdParty *string) error) error
 	ComputeRedirectURI(ctx context.Context, accessToken string, realmName string, userID string, username string,
 		onboardingClientID string, onboardingRedirectURI string) (string, error)
-	ComputeOnboardingRedirectURI(ctx context.Context, targetRealmName string, customerRealmName string, realmConf configuration.RealmConfiguration) (string, error)
+	ComputeOnboardingRedirectURI(ctx context.Context, targetRealmName string, customerRealmName string, realmConf configuration.RealmConfiguration, contextKey *string) (string, error)
 }
 
 // NewOnboardingModule creates an onboarding module
@@ -269,7 +269,7 @@ func (om *onboardingModule) getUserByEmailIfDuplicateNotAllowed(ctx context.Cont
 	return &kcUser, nil
 }
 
-func (om *onboardingModule) ComputeOnboardingRedirectURI(ctx context.Context, targetRealmName string, customerRealmName string, realmConf configuration.RealmConfiguration) (string, error) {
+func (om *onboardingModule) ComputeOnboardingRedirectURI(ctx context.Context, targetRealmName string, customerRealmName string, realmConf configuration.RealmConfiguration, contextKeyParam *string) (string, error) {
 	if realmConf.OnboardingRedirectURI == nil {
 		om.logger.Warn(ctx, "msg", "onboardingRedirectURI is null")
 		return "", errorhandler.CreateInternalServerError("onboardingRedirectURI")
@@ -283,7 +283,18 @@ func (om *onboardingModule) ComputeOnboardingRedirectURI(ctx context.Context, ta
 			return "", err
 		}
 		queryParams := urlOnboardingRedirectURI.Query()
-		queryParams.Add("customerRealm", customerRealmName)
+		queryParams.Set("customerRealm", customerRealmName)
+		urlOnboardingRedirectURI.RawQuery = queryParams.Encode()
+		onboardingRedirectURI = urlOnboardingRedirectURI.String()
+	}
+	if contextKeyParam != nil {
+		urlOnboardingRedirectURI, err := url.Parse(onboardingRedirectURI)
+		if err != nil {
+			om.logger.Warn(ctx, "msg", "Failed to parse onboardingRedirectURI", "err", err.Error())
+			return "", err
+		}
+		queryParams := urlOnboardingRedirectURI.Query()
+		queryParams.Set("context", *contextKeyParam)
 		urlOnboardingRedirectURI.RawQuery = queryParams.Encode()
 		onboardingRedirectURI = urlOnboardingRedirectURI.String()
 	}

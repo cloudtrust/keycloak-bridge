@@ -438,7 +438,7 @@ func (c *authorizationComponentMW) SendSmsCode(ctx context.Context, realmName st
 	return c.next.SendSmsCode(ctx, realmName, userID)
 }
 
-func (c *authorizationComponentMW) SendOnboardingEmail(ctx context.Context, realmName string, userID string, customerRealm string, reminder bool, paramKV ...string) error {
+func (c *authorizationComponentMW) SendOnboardingEmail(ctx context.Context, realmName string, userID string, customerRealm string, reminder bool, contextKey *string, paramKV ...string) error {
 	var action = security.MGMTSendOnboardingEmail.String()
 	var targetRealm = realmName
 
@@ -446,7 +446,7 @@ func (c *authorizationComponentMW) SendOnboardingEmail(ctx context.Context, real
 		return err
 	}
 
-	return c.next.SendOnboardingEmail(ctx, realmName, userID, customerRealm, reminder, paramKV...)
+	return c.next.SendOnboardingEmail(ctx, realmName, userID, customerRealm, reminder, contextKey, paramKV...)
 }
 
 func (c *authorizationComponentMW) SendOnboardingEmailInSocialRealm(ctx context.Context, userID string, customerRealm string, reminder bool, paramKV ...string) error {

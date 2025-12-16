@@ -992,6 +992,11 @@ paths:
         in: query
         schema:
           type: string
+      - name: context-key
+        in: query
+        description: Context key to be used in the onboarding redirect URI (overrides default context key if any)
+        schema:
+          type: string
       responses:
         200:
           description: Onboarding email sent

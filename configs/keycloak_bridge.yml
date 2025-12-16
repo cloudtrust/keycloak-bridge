@@ -72,9 +72,6 @@ keycloak:
   internal-uri: http://keycloak.internal.local:8080
   realm-public-uri-map:
     default: http://keycloak.local:8080
-    trustid: http://keycloak.trustid.local:8080
-    bern: http://keycloak.bern.local:8080
-    ticino: http://keycloak.tessin.local:8080
   default-key: default
   timeout: 5s
 

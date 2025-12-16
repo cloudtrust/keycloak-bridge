@@ -1488,6 +1488,9 @@ func (c *CtxKeyConfigRepresentation) Validate() error {
 
 // ConvertToAPIContextKeyOnboarding converts context key onboarding configuration from database model to API model
 func ConvertToAPIContextKeyOnboarding(onboardingCfg *configuration.ContextKeyConfOnboarding) CtxKeyOnboardingRepresentation {
+	if onboardingCfg == nil {
+		return CtxKeyOnboardingRepresentation{}
+	}
 	return CtxKeyOnboardingRepresentation{
 		ClientID:       onboardingCfg.ClientID,
 		RedirectURI:    onboardingCfg.RedirectURI,
@@ -1515,6 +1518,9 @@ func (c *CtxKeyOnboardingRepresentation) Validate() error {
 
 // ConvertToAPIContextKeyAccreditation converts context key accreditation configuration from database model to API model
 func ConvertToAPIContextKeyAccreditation(accreditationCfg *configuration.ContextKeyConfAccreditation) CtxKeyAccreditationRepresentation {
+	if accreditationCfg == nil {
+		return CtxKeyAccreditationRepresentation{}
+	}
 	return CtxKeyAccreditationRepresentation{
 		EmailThemeRealm: accreditationCfg.EmailThemeRealm,
 	}
@@ -1536,6 +1542,9 @@ func (c *CtxKeyAccreditationRepresentation) Validate() error {
 
 // ConvertToAPIContextKeyAutovoucher converts context key autovoucher configuration from database model to API model
 func ConvertToAPIContextKeyAutovoucher(autovoucherCfg *configuration.ContextKeyConfAutovoucher) CtxKeyAutoVoucherRepresentation {
+	if autovoucherCfg == nil {
+		return CtxKeyAutoVoucherRepresentation{}
+	}
 	return CtxKeyAutoVoucherRepresentation{
 		ServiceType:            autovoucherCfg.ServiceType,
 		Validity:               autovoucherCfg.Validity,
