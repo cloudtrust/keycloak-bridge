@@ -77,6 +77,11 @@ const (
 	RegExpCidrSuffix   = `(?:\/(?:[0-9]|[1-2][0-9]|3[0-2]))`                  // CIDR suffix (/24)
 	RegExpCidr         = RegExpIpv4 + RegExpCidrSuffix                        // IP range (192.168.0.1/24)
 	RegExpIpRangesList = `^` + RegExpCidr + `(?:,` + RegExpCidr + `)*$`       // IP ranges list (192.168.0.1/24,127.0.0.1/8)
+
+	// Domains
+	regExpIncludesDomain = `(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}`                                 // Includes domain pattern
+	RegExpDomain         = `^` + regExpIncludesDomain + `$`                                   // Domain (example.com)
+	RegExpDomainsList    = `^` + regExpIncludesDomain + `(?:,` + regExpIncludesDomain + `)*$` // Domains list (example.com,example.org)
 )
 
 // Overridable user details regex and document types
