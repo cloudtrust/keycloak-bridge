@@ -13,7 +13,7 @@ var (
 	addReadTokenRoleOnCreate  = false
 	alias                     = "trustid-idp"
 	authenticateByDefault     = true
-	displayName               = "MyTrustID"
+	displayName               = "Númënôr IDP"
 	enabled                   = true
 	firstBrokerLoginFlowAlias = "TID - first broker login"
 	hideOnLogin               = true

@@ -66,7 +66,8 @@ const (
 
 	// Identity provider
 	RegExpAlias                     = `^[a-zA-Z0-9_-]{1,43}$`
-	RegExpDisplayName               = `^[a-zA-Z0-9 _-]{1,128}$`
+	RegExpIdpDisplayName            = `^[\p{L}0-9 _-]{1,255}$`
+	RegExpDisplayName               = `^[a-zA-Z0-9 _-]{1,255}$`
 	RegExpFirstBrokerLoginFlowAlias = `^[a-zA-Z0-9 _-]{1,128}$`
 	RegExpPostBrokerLoginFlowAlias  = `^[a-zA-Z0-9 _-]{1,128}$`
 	RegExpProviderID                = `^[a-z0-9\-]{1,36}$`
