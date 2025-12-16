@@ -1198,22 +1198,22 @@ func createValidContextKeyConfig() *CtxKeyConfigRepresentation {
 	}
 }
 
-func createValidContextKeyOnboarding() *CtxKeyOnboardingRepresentation {
-	return &CtxKeyOnboardingRepresentation{
+func createValidContextKeyOnboarding() CtxKeyOnboardingRepresentation {
+	return CtxKeyOnboardingRepresentation{
 		ClientID:       ptr("onboardingid-client"),
 		RedirectURI:    ptr("http://host/full/path"),
 		IsRedirectMode: boolPtr(true),
 	}
 }
 
-func createValidContextKeyAccreditation() *CtxKeyAccreditationRepresentation {
-	return &CtxKeyAccreditationRepresentation{
+func createValidContextKeyAccreditation() CtxKeyAccreditationRepresentation {
+	return CtxKeyAccreditationRepresentation{
 		EmailThemeRealm: ptr("theme-realm"),
 	}
 }
 
-func createValidContextKeyAutoVoucher() *CtxKeyAutoVoucherRepresentation {
-	return &CtxKeyAutoVoucherRepresentation{
+func createValidContextKeyAutoVoucher() CtxKeyAutoVoucherRepresentation {
+	return CtxKeyAutoVoucherRepresentation{
 		ServiceType:            ptr("AUTO_IDENTIFICATION"),
 		Validity:               ptr("3y"),
 		AccreditationRequested: ptr("DEP"),
@@ -1258,15 +1258,20 @@ func TestContextKeyConvertions(t *testing.T) {
 	})
 	t.Run("Config fields are nil", func(t *testing.T) {
 		var config = ConvertToAPIContextKeyConfig(configuration.ContextKeyConfiguration{
-			Onboarding:        nil,
+			Onboarding:        &configuration.ContextKeyConfOnboarding{},
 			IdentificationURI: nil,
-			AutoVoucher:       nil,
-			Accreditation:     nil,
+			AutoVoucher:       &configuration.ContextKeyConfAutovoucher{},
+			Accreditation:     &configuration.ContextKeyConfAccreditation{},
 		})
-		assert.Nil(t, config.Accreditation)
-		assert.Nil(t, config.AutoVoucher)
+		assert.Nil(t, config.Accreditation.EmailThemeRealm)
+		assert.Nil(t, config.AutoVoucher.ServiceType)
+		assert.Nil(t, config.AutoVoucher.Validity)
+		assert.Nil(t, config.AutoVoucher.AccreditationRequested)
+		assert.Nil(t, config.AutoVoucher.BilledRealm)
 		assert.Nil(t, config.IdentificationURI)
-		assert.Nil(t, config.Onboarding)
+		assert.Nil(t, config.Onboarding.ClientID)
+		assert.Nil(t, config.Onboarding.RedirectURI)
+		assert.Nil(t, config.Onboarding.IsRedirectMode)
 	})
 }
 
@@ -1332,15 +1337,13 @@ func TestValidateCtxKeyOnboardingRepresentation(t *testing.T) {
 	})
 
 	var configs []CtxKeyOnboardingRepresentation
-	for range 5 {
-		configs = append(configs, *createValidContextKeyOnboarding())
+	for range 3 {
+		configs = append(configs, createValidContextKeyOnboarding())
 	}
 
-	configs[0].ClientID = nil
-	configs[1].ClientID = ptr("")
-	configs[2].RedirectURI = nil
-	configs[3].RedirectURI = ptr("not.a.uri")
-	configs[4].IsRedirectMode = nil
+	configs[0].ClientID = ptr("")
+	configs[1].RedirectURI = ptr("")
+	configs[2].RedirectURI = ptr("not.a.uri")
 
 	for idx, config := range configs {
 		t.Run(fmt.Sprintf("Invalid case #%d", idx+1), func(t *testing.T) {
@@ -1355,19 +1358,12 @@ func TestValidateCtxKeyAccreditationRepresentation(t *testing.T) {
 		assert.Nil(t, config.Validate())
 	})
 
-	var configs []CtxKeyAccreditationRepresentation
-	for range 2 {
-		configs = append(configs, *createValidContextKeyAccreditation())
-	}
-
-	configs[0].EmailThemeRealm = nil
-	configs[1].EmailThemeRealm = ptr("")
-
-	for idx, config := range configs {
-		t.Run(fmt.Sprintf("Invalid case #%d", idx+1), func(t *testing.T) {
-			assert.NotNil(t, config.Validate())
-		})
-	}
+	t.Run("Invalid case", func(t *testing.T) {
+		config := CtxKeyAccreditationRepresentation{
+			EmailThemeRealm: ptr(""),
+		}
+		assert.NotNil(t, config.Validate())
+	})
 }
 
 func TestValidateCtxKeyAutoVoucherRepresentation(t *testing.T) {
@@ -1377,18 +1373,14 @@ func TestValidateCtxKeyAutoVoucherRepresentation(t *testing.T) {
 	})
 
 	var configs []CtxKeyAutoVoucherRepresentation
-	for range 8 {
-		configs = append(configs, *createValidContextKeyAutoVoucher())
+	for range 4 {
+		configs = append(configs, createValidContextKeyAutoVoucher())
 	}
 
-	configs[0].ServiceType = nil
-	configs[1].ServiceType = ptr("")
-	configs[2].Validity = nil
-	configs[3].Validity = ptr("")
-	configs[4].AccreditationRequested = nil
-	configs[5].AccreditationRequested = ptr("")
-	configs[6].BilledRealm = nil
-	configs[7].BilledRealm = ptr("")
+	configs[0].ServiceType = ptr("")
+	configs[1].Validity = ptr("")
+	configs[2].AccreditationRequested = ptr("")
+	configs[3].BilledRealm = ptr("")
 
 	for idx, config := range configs {
 		t.Run(fmt.Sprintf("Invalid case #%d", idx+1), func(t *testing.T) {
