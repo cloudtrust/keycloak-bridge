@@ -1273,6 +1273,19 @@ func TestContextKeyConvertions(t *testing.T) {
 		assert.Nil(t, config.Onboarding.RedirectURI)
 		assert.Nil(t, config.Onboarding.IsRedirectMode)
 	})
+
+	t.Run("Config fields are nil empty config", func(t *testing.T) {
+		var config = ConvertToAPIContextKeyConfig(configuration.ContextKeyConfiguration{})
+		assert.Nil(t, config.Accreditation.EmailThemeRealm)
+		assert.Nil(t, config.AutoVoucher.ServiceType)
+		assert.Nil(t, config.AutoVoucher.Validity)
+		assert.Nil(t, config.AutoVoucher.AccreditationRequested)
+		assert.Nil(t, config.AutoVoucher.BilledRealm)
+		assert.Nil(t, config.IdentificationURI)
+		assert.Nil(t, config.Onboarding.ClientID)
+		assert.Nil(t, config.Onboarding.RedirectURI)
+		assert.Nil(t, config.Onboarding.IsRedirectMode)
+	})
 }
 
 func TestValidateRealmContextKeys(t *testing.T) {

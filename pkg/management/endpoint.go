@@ -585,8 +585,13 @@ func MakeSendOnboardingEmailEndpoint(component Component, maxLifeSpan int) cs.En
 		} else if value != nil {
 			paramKV = append(paramKV, "lifespan", *value)
 		}
+		// Context key parameter
+		var contextKey *string
+		if value, ok := m[prmQryContextKey]; ok {
+			contextKey = &value
+		}
 
-		return nil, component.SendOnboardingEmail(ctx, m[prmRealm], m[prmUserID], customerRealmName, reminder, paramKV...)
+		return nil, component.SendOnboardingEmail(ctx, m[prmRealm], m[prmUserID], customerRealmName, reminder, contextKey, paramKV...)
 	}
 }
 
