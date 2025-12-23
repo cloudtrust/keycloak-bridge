@@ -134,6 +134,10 @@ func (c *authorizationComponentMW) GetUser(ctx context.Context, realmName string
 		return apikyc.UserRepresentation{}, err
 	}
 
+	if err := c.authManager.CheckIdentificationRoleAuthorizationOnTargetUser(ctx, action, realmName, userID); err != nil {
+		return apikyc.UserRepresentation{}, err
+	}
+
 	return c.next.GetUser(ctx, realmName, userID, consentCode)
 }
 
@@ -162,6 +166,10 @@ func (c *authorizationComponentMW) ValidateUser(ctx context.Context, realmName s
 	var targetRealm = realmName
 
 	if err = c.authManager.CheckAuthorizationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
+		return err
+	}
+
+	if err := c.authManager.CheckIdentificationRoleAuthorizationOnTargetUser(ctx, action, realmName, userID); err != nil {
 		return err
 	}
 
