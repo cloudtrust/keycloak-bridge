@@ -1072,7 +1072,9 @@ func main() {
 		var deleteIdentityProviderMapperHandler = configureIDPHandler(idpEndpoints.DeleteIdentityProviderMapper)
 		var getIDPUsersWithAttributeHandler = configureIDPHandler(idpEndpoints.GetUsersWithAttribute)
 		var deleteIDPUserHandler = configureIDPHandler(idpEndpoints.DeleteUser)
-		var getUserFederatedIdentities = configureIDPHandler(idpEndpoints.GetUserFederatedIdentities)
+		var addIDPUserAttributesHandler = configureIDPHandler(idpEndpoints.AddUserAttributes)
+		var deleteIDPUserAttributesHandler = configureIDPHandler(idpEndpoints.DeleteUserAttributes)
+		var getUserFederatedIdentitiesHandler = configureIDPHandler(idpEndpoints.GetUserFederatedIdentities)
 
 		var idpSubroute = route.PathPrefix("/idp").Subrouter()
 
@@ -1086,7 +1088,9 @@ func main() {
 		idpSubroute.Path("/realms/{realm}/identity-providers/{provider}/mappers/{mapper}").Methods("DELETE").Handler(deleteIdentityProviderMapperHandler)
 		idpSubroute.Path("/realms/{realm}/users").Methods("GET").Handler(getIDPUsersWithAttributeHandler)
 		idpSubroute.Path("/realms/{realm}/users/{user}").Methods("DELETE").Handler(deleteIDPUserHandler)
-		idpSubroute.Path("/realms/{realm}/users/{user}/federated-identities").Methods("GET").Handler(getUserFederatedIdentities)
+		idpSubroute.Path("/realms/{realm}/users/{user}/attributes").Methods("PUT").Handler(addIDPUserAttributesHandler)
+		idpSubroute.Path("/realms/{realm}/users/{user}/attributes").Methods("DELETE").Handler(deleteIDPUserAttributesHandler)
+		idpSubroute.Path("/realms/{realm}/users/{user}/federated-identities").Methods("GET").Handler(getUserFederatedIdentitiesHandler)
 
 		// Debug.
 		if pprofRouteEnabled {

@@ -273,27 +273,87 @@ func TestGetUsersWithAttributeEndpoint(t *testing.T) {
 	var mocks = createMocks(t)
 	defer mocks.finish()
 
-	var realm = "test-community"
-	var ctx = context.TODO()
-	var result = []api.UserRepresentation{{}, {}, {}, {}}
+	var (
+		realm  = "test-community"
+		ctx    = context.TODO()
+		result = []api.UserRepresentation{{}, {}, {}, {}}
+		req    = map[string]string{
+			prmRealm:       realm,
+			prmGroupName:   "group-name",
+			prmAttribKey:   "key",
+			prmAttribValue: "value",
+		}
+		anyError = errors.New("any-error")
+	)
 
-	req := map[string]string{
-		prmRealm:       realm,
-		prmGroupName:   "group-name",
-		prmAttribKey:   "key",
-		prmAttribValue: "value",
-	}
-
-	t.Run("Missing mandatory parameter", func(t *testing.T) {
+	t.Run("Missing both username and groups", func(t *testing.T) {
 		_, err := mocks.newEndpoints().GetUsersWithAttribute(ctx, map[string]string{})
 		assert.Error(t, err)
 	})
-	t.Run("Missing mandatory parameter", func(t *testing.T) {
-		mocks.component.EXPECT().GetUsersWithAttribute(ctx, realm, req[prmGroupName], req[prmAttribKey], req[prmAttribValue]).Return(result, nil)
+	t.Run("Attribute key provided when attribute value is missing", func(t *testing.T) {
+		_, err := mocks.newEndpoints().GetUsersWithAttribute(ctx, map[string]string{prmRealm: realm, prmUsername: "user", prmAttribKey: "a-key"})
+		assert.Error(t, err)
+	})
+	t.Run("Attribute value provided when attribute key is missing", func(t *testing.T) {
+		_, err := mocks.newEndpoints().GetUsersWithAttribute(ctx, map[string]string{prmRealm: realm, prmUsername: "user", prmAttribValue: "a-value"})
+		assert.Error(t, err)
+	})
+	t.Run("Error when requesting username without roles", func(t *testing.T) {
+		mocks.component.EXPECT().GetUsersWithAttribute(ctx, realm, gomock.Any(), nil, gomock.Any(), ptrBool(false)).Return(nil, anyError)
+		_, err := mocks.newEndpoints().GetUsersWithAttribute(ctx, map[string]string{prmRealm: realm, prmUsername: "user", prmNeedRoles: "false"})
+		assert.Error(t, err)
+	})
+	t.Run("Error when requesting username with roles", func(t *testing.T) {
+		mocks.component.EXPECT().GetUsersWithAttribute(ctx, realm, gomock.Any(), nil, gomock.Any(), ptrBool(true)).Return(nil, anyError)
+		_, err := mocks.newEndpoints().GetUsersWithAttribute(ctx, map[string]string{prmRealm: realm, prmUsername: "user", prmNeedRoles: "true"})
+		assert.Error(t, err)
+	})
+	t.Run("Success searching with attributes", func(t *testing.T) {
+		mocks.component.EXPECT().GetUsersWithAttribute(ctx, realm, nil, ptr(req[prmGroupName]), map[string]string{req[prmAttribKey]: req[prmAttribValue]}, nil).Return(result, nil)
 		res, err := mocks.newEndpoints().GetUsersWithAttribute(ctx, req)
 		assert.NoError(t, err)
 		assert.Len(t, res, len(result))
 	})
+}
+
+func TestAddUserAttributesEndpoint(t *testing.T) {
+	var mocks = createMocks(t)
+	defer mocks.finish()
+
+	var (
+		realm  = "the-realm"
+		userID = "the-user-id"
+		ctx    = context.TODO()
+	)
+
+	t.Run("Missing body", func(t *testing.T) {
+		_, err := mocks.newEndpoints().AddUserAttributes(ctx, map[string]string{})
+		assert.Error(t, err)
+	})
+	t.Run("Body is not a JSON value for a string", func(t *testing.T) {
+		_, err := mocks.newEndpoints().AddUserAttributes(ctx, map[string]string{prmRealm: realm, reqBody: `"string-instead-of-map"`})
+		assert.Error(t, err)
+	})
+	t.Run("Success", func(t *testing.T) {
+		mocks.component.EXPECT().AddUserAttributes(ctx, realm, userID, map[string][]string{"key": {"attribute-value"}}).Return(nil)
+		_, err := mocks.newEndpoints().AddUserAttributes(ctx, map[string]string{prmRealm: realm, prmUser: userID, reqBody: `{"key": ["attribute-value"]}`})
+		assert.NoError(t, err)
+	})
+}
+
+func TestDeleteUserAttributesEndpoint(t *testing.T) {
+	var mocks = createMocks(t)
+	defer mocks.finish()
+
+	var (
+		realm  = "the-realm"
+		userID = "the-user-id"
+		ctx    = context.TODO()
+	)
+
+	mocks.component.EXPECT().DeleteUserAttributes(ctx, realm, userID, []string{"key"}).Return(nil)
+	_, err := mocks.newEndpoints().DeleteUserAttributes(ctx, map[string]string{prmRealm: realm, prmUser: userID, reqBody: `["key"]`})
+	assert.NoError(t, err)
 }
 
 func TestDeleteUserEndpoint(t *testing.T) {
@@ -336,7 +396,7 @@ func TestGetUserFederatedIdentitiesEndpoint(t *testing.T) {
 			prmRealm: realm,
 			prmUser:  userID,
 		}
-		result   = createTestApiFedIdentities()
+		result   = createTestAPIFedIdentities()
 		errDummy = errors.New("dummy")
 	)
 

@@ -109,12 +109,13 @@ func createValidIdpMapper() IdentityProviderMapperRepresentation {
 
 func createValidUserRepresentation() UserRepresentation {
 	return UserRepresentation{
-		ID:        ptr("user-id"),
-		Username:  ptr("username"),
-		FirstName: ptr("first name"),
-		LastName:  ptr("last name"),
-		Email:     ptr("em@il.ch"),
-		Enabled:   ptrBool(true),
+		ID:         ptr("user-id"),
+		Username:   ptr("username"),
+		FirstName:  ptr("first name"),
+		LastName:   ptr("last name"),
+		Email:      ptr("em@il.ch"),
+		Enabled:    ptrBool(true),
+		RealmRoles: []string{"role1", "role2"},
 	}
 }
 

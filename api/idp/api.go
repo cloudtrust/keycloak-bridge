@@ -45,12 +45,13 @@ type IdentityProviderMapperRepresentation struct {
 
 // UserRepresentation struct
 type UserRepresentation struct {
-	ID        *string `json:"id,omitempty"`
-	Username  *string `json:"username,omitempty"`
-	FirstName *string `json:"firstName,omitempty"`
-	LastName  *string `json:"lastName,omitempty"`
-	Email     *string `json:"email,omitempty"`
-	Enabled   *bool   `json:"enabled,omitempty"`
+	ID         *string  `json:"id,omitempty"`
+	Username   *string  `json:"username,omitempty"`
+	FirstName  *string  `json:"firstName,omitempty"`
+	LastName   *string  `json:"lastName,omitempty"`
+	Email      *string  `json:"email,omitempty"`
+	Enabled    *bool    `json:"enabled,omitempty"`
+	RealmRoles []string `json:"roles,omitempty"`
 }
 
 // FederatedIdentityRepresentation struct
@@ -191,24 +192,34 @@ func ConvertToAPIUserRepresentations(kcUsers []kc.UserRepresentation) []UserRepr
 
 // ConvertToAPIUserRepresentation converts a KC user representation to an API UserRepresentation
 func ConvertToAPIUserRepresentation(kcUser kc.UserRepresentation) UserRepresentation {
+	var realmRoles []string
+	if kcUser.RealmRoles != nil && len(*kcUser.RealmRoles) > 0 {
+		realmRoles = *kcUser.RealmRoles
+	}
 	return UserRepresentation{
-		ID:        kcUser.ID,
-		Username:  kcUser.Username,
-		FirstName: kcUser.FirstName,
-		LastName:  kcUser.LastName,
-		Email:     kcUser.Email,
-		Enabled:   kcUser.Enabled,
+		ID:         kcUser.ID,
+		Username:   kcUser.Username,
+		FirstName:  kcUser.FirstName,
+		LastName:   kcUser.LastName,
+		Email:      kcUser.Email,
+		Enabled:    kcUser.Enabled,
+		RealmRoles: realmRoles,
 	}
 }
 
 // ConvertToKCUserRepresentation converts an API UserRepresentation to a KC UserRepresentation
 func (u UserRepresentation) ConvertToKCUserRepresentation() kc.UserRepresentation {
+	var realmRoles *[]string
+	if len(u.RealmRoles) > 0 {
+		realmRoles = &u.RealmRoles
+	}
 	return kc.UserRepresentation{
-		ID:        u.ID,
-		Username:  u.Username,
-		FirstName: u.FirstName,
-		LastName:  u.LastName,
-		Email:     u.Email,
-		Enabled:   u.Enabled,
+		ID:         u.ID,
+		Username:   u.Username,
+		FirstName:  u.FirstName,
+		LastName:   u.LastName,
+		Email:      u.Email,
+		Enabled:    u.Enabled,
+		RealmRoles: realmRoles,
 	}
 }
