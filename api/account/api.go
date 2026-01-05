@@ -132,27 +132,31 @@ type LinkedAccountRepresentation struct {
 
 // Configuration struct
 type Configuration struct {
-	EditingEnabled                        *bool           `json:"editing_enabled"`
-	ShowAuthenticatorsTab                 *bool           `json:"show_authenticators_tab"`
-	ShowPasswordTab                       *bool           `json:"show_password_tab"`
-	ShowProfileTab                        *bool           `json:"show_profile_tab"`
-	ShowAccountDeletionButton             *bool           `json:"show_account_deletion_button"`
-	ShowIDPLinksTab                       *bool           `json:"show_idplinks_tab"`
-	SelfServiceDefaultTab                 *string         `json:"self_service_default_tab"`
-	RedirectSuccessfulRegistrationURL     *string         `json:"redirect_successful_registration_url"`
-	AvailableChecks                       map[string]bool `json:"available-checks"`
-	BarcodeType                           *string         `json:"barcode_type"`
-	OnboardingUserEditingEnabled          *bool           `json:"onboarding_user_editing_enabled"`
-	Theme                                 *string         `json:"theme"`
-	SupportedLocales                      *[]string       `json:"supportedLocales,omitempty"`
-	VideoIdentificationVoucherEnabled     *bool           `json:"video_identification_voucher_enabled"`
-	VideoIdentificationAccountingEnabled  *bool           `json:"video_identification_accounting_enabled"`
-	VideoIdentificationPrepaymentRequired *bool           `json:"video_identification_prepayment_required"`
-	AutoIdentificationVoucherEnabled      *bool           `json:"auto_identification_voucher_enabled"`
-	AutoIdentificationAccountingEnabled   *bool           `json:"auto_identification_accounting_enabled"`
-	AutoIdentificationPrepaymentRequired  *bool           `json:"auto_identification_prepayment_required"`
-	AllowedBackURLs                       []string        `json:"allowed_back_urls"`
-	AllowInitialPasswordDefinition        *bool           `json:"allow_initial_password_definition"`
+	EditingEnabled                           *bool           `json:"editing_enabled"`
+	ShowAuthenticatorsTab                    *bool           `json:"show_authenticators_tab"`
+	ShowPasswordTab                          *bool           `json:"show_password_tab"`
+	ShowProfileTab                           *bool           `json:"show_profile_tab"`
+	ShowAccountDeletionButton                *bool           `json:"show_account_deletion_button"`
+	ShowIDPLinksTab                          *bool           `json:"show_idplinks_tab"`
+	SelfServiceDefaultTab                    *string         `json:"self_service_default_tab"`
+	RedirectSuccessfulRegistrationURL        *string         `json:"redirect_successful_registration_url"`
+	AvailableChecks                          map[string]bool `json:"available-checks"`
+	BarcodeType                              *string         `json:"barcode_type"`
+	OnboardingUserEditingEnabled             *bool           `json:"onboarding_user_editing_enabled"`
+	Theme                                    *string         `json:"theme"`
+	SupportedLocales                         *[]string       `json:"supportedLocales,omitempty"`
+	VideoIdentificationVoucherEnabled        *bool           `json:"video_identification_voucher_enabled"`
+	VideoIdentificationAccountingEnabled     *bool           `json:"video_identification_accounting_enabled"`
+	VideoIdentificationPrepaymentRequired    *bool           `json:"video_identification_prepayment_required"`
+	AutoIdentificationVoucherEnabled         *bool           `json:"auto_identification_voucher_enabled"`
+	AutoIdentificationAccountingEnabled      *bool           `json:"auto_identification_accounting_enabled"`
+	AutoIdentificationPrepaymentRequired     *bool           `json:"auto_identification_prepayment_required"`
+	VideoIdentificationAllowedRoles          []string        `json:"video_identification_allowed_roles"`
+	AuxiliaryVideoIdentificationAllowedRoles []string        `json:"auxiliary_video_identification_allowed_roles"`
+	AutoIdentificationAllowedRoles           []string        `json:"auto_identification_allowed_roles"`
+	PhysicalIdentificationAllowedRoles       []string        `json:"physical_identification_allowed_roles"`
+	AllowedBackURLs                          []string        `json:"allowed_back_urls"`
+	AllowInitialPasswordDefinition           *bool           `json:"allow_initial_password_definition"`
 }
 
 // UpdatePasswordBody is the definition of the expected body content of UpdatePassword method

@@ -108,3 +108,17 @@ func (mr *AuthorizationManagerMockRecorder) CheckAuthorizationOnTargetUser(ctx, 
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckAuthorizationOnTargetUser", reflect.TypeOf((*AuthorizationManager)(nil).CheckAuthorizationOnTargetUser), ctx, action, targetRealm, userID)
 }
+
+// CheckIdentificationRoleAuthorizationOnTargetUser mocks base method.
+func (m *AuthorizationManager) CheckIdentificationRoleAuthorizationOnTargetUser(ctx context.Context, initIdentAction, targetRealm, userID string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CheckIdentificationRoleAuthorizationOnTargetUser", ctx, initIdentAction, targetRealm, userID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CheckIdentificationRoleAuthorizationOnTargetUser indicates an expected call of CheckIdentificationRoleAuthorizationOnTargetUser.
+func (mr *AuthorizationManagerMockRecorder) CheckIdentificationRoleAuthorizationOnTargetUser(ctx, initIdentAction, targetRealm, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckIdentificationRoleAuthorizationOnTargetUser", reflect.TypeOf((*AuthorizationManager)(nil).CheckIdentificationRoleAuthorizationOnTargetUser), ctx, initIdentAction, targetRealm, userID)
+}

@@ -138,6 +138,34 @@ func (mr *AuthorizationManagerMockRecorder) CheckAuthorizationOnTargetUser(ctx, 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckAuthorizationOnTargetUser", reflect.TypeOf((*AuthorizationManager)(nil).CheckAuthorizationOnTargetUser), ctx, action, targetRealm, userID)
 }
 
+// CheckIdentificationRoleAuthorizationOnSelfUser mocks base method.
+func (m *AuthorizationManager) CheckIdentificationRoleAuthorizationOnSelfUser(ctx context.Context, action string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CheckIdentificationRoleAuthorizationOnSelfUser", ctx, action)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CheckIdentificationRoleAuthorizationOnSelfUser indicates an expected call of CheckIdentificationRoleAuthorizationOnSelfUser.
+func (mr *AuthorizationManagerMockRecorder) CheckIdentificationRoleAuthorizationOnSelfUser(ctx, action any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckIdentificationRoleAuthorizationOnSelfUser", reflect.TypeOf((*AuthorizationManager)(nil).CheckIdentificationRoleAuthorizationOnSelfUser), ctx, action)
+}
+
+// CheckIdentificationRoleAuthorizationOnTargetUser mocks base method.
+func (m *AuthorizationManager) CheckIdentificationRoleAuthorizationOnTargetUser(ctx context.Context, action, targetRealm, userID string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CheckIdentificationRoleAuthorizationOnTargetUser", ctx, action, targetRealm, userID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CheckIdentificationRoleAuthorizationOnTargetUser indicates an expected call of CheckIdentificationRoleAuthorizationOnTargetUser.
+func (mr *AuthorizationManagerMockRecorder) CheckIdentificationRoleAuthorizationOnTargetUser(ctx, action, targetRealm, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckIdentificationRoleAuthorizationOnTargetUser", reflect.TypeOf((*AuthorizationManager)(nil).CheckIdentificationRoleAuthorizationOnTargetUser), ctx, action, targetRealm, userID)
+}
+
 // GetRightsOfCurrentUser mocks base method.
 func (m *AuthorizationManager) GetRightsOfCurrentUser(ctx context.Context) map[string]map[string]map[string]map[string]struct{} {
 	m.ctrl.T.Helper()
