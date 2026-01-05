@@ -69,3 +69,18 @@ func (mr *KcClientAuthMockRecorder) GetGroupNamesOfUser(ctx, accessToken, realmN
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGroupNamesOfUser", reflect.TypeOf((*KcClientAuth)(nil).GetGroupNamesOfUser), ctx, accessToken, realmName, userID)
 }
+
+// GetRoleNamesOfUser mocks base method.
+func (m *KcClientAuth) GetRoleNamesOfUser(ctx context.Context, accessToken, realmName, userID string) ([]string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRoleNamesOfUser", ctx, accessToken, realmName, userID)
+	ret0, _ := ret[0].([]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRoleNamesOfUser indicates an expected call of GetRoleNamesOfUser.
+func (mr *KcClientAuthMockRecorder) GetRoleNamesOfUser(ctx, accessToken, realmName, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRoleNamesOfUser", reflect.TypeOf((*KcClientAuth)(nil).GetRoleNamesOfUser), ctx, accessToken, realmName, userID)
+}

@@ -202,7 +202,7 @@ func (c *component) RegisterUser(ctx context.Context, targetRealmName string, cu
 		return "", errorhandler.CreateEndpointNotEnabled("selfRegister")
 	}
 
-	if (realmConf.SelfRegisterGroupNames == nil || len(*realmConf.SelfRegisterGroupNames) == 0) ||
+	if (realmConf.SelfRegisterGroupNames == nil || len(realmConf.SelfRegisterGroupNames) == 0) ||
 		(realmConf.OnboardingRedirectURI == nil || *realmConf.OnboardingRedirectURI == "") ||
 		(realmConf.OnboardingClientID == nil || *realmConf.OnboardingClientID == "") {
 		return "", errorhandler.CreateEndpointNotEnabled(constants.MsgErrNotConfigured)
@@ -256,7 +256,7 @@ func (c *component) registerUser(ctx context.Context, accessToken string, target
 
 	// Create new user
 
-	kcUser, err := c.createUser(ctx, accessToken, targetRealmName, user, *realmConf.SelfRegisterGroupNames, false)
+	kcUser, err := c.createUser(ctx, accessToken, targetRealmName, user, realmConf.SelfRegisterGroupNames, false)
 	if err != nil {
 		return kc.UserRepresentation{}, err
 	}
@@ -269,7 +269,7 @@ func (c *component) registerUser(ctx context.Context, accessToken string, target
 
 func (c *component) registerUserRedirectMode(ctx context.Context, accessToken string, targetRealmName string, user apiregister.UserRepresentation, realmConf configuration.RealmConfiguration) (kc.UserRepresentation, error) {
 	// Create new user
-	kcUser, err := c.createUser(ctx, accessToken, targetRealmName, user, *realmConf.SelfRegisterGroupNames, true)
+	kcUser, err := c.createUser(ctx, accessToken, targetRealmName, user, realmConf.SelfRegisterGroupNames, true)
 	if err != nil {
 		return kc.UserRepresentation{}, err
 	}

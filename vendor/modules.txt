@@ -8,7 +8,7 @@ github.com/IBM/sarama
 # github.com/VividCortex/gohistogram v1.0.0
 ## explicit
 github.com/VividCortex/gohistogram
-# github.com/cloudtrust/common-service/v2 v2.15.0
+# github.com/cloudtrust/common-service/v2 v2.15.1-0.20260105095735-3c14c22007d5
 ## explicit; go 1.25.3
 github.com/cloudtrust/common-service/v2
 github.com/cloudtrust/common-service/v2/configuration
@@ -40,7 +40,7 @@ github.com/cloudtrust/kafka-client/misc
 github.com/cloudtrust/keycloak-client/v2
 github.com/cloudtrust/keycloak-client/v2/api
 github.com/cloudtrust/keycloak-client/v2/toolbox
-# github.com/coreos/go-oidc/v3 v3.16.0
+# github.com/coreos/go-oidc/v3 v3.17.0
 ## explicit; go 1.24.0
 github.com/coreos/go-oidc/v3/oidc
 # github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc

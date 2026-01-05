@@ -79,6 +79,7 @@ type TokenProvider interface {
 // AuthorizationManager is the interface to check authorizations of a user
 type AuthorizationManager interface {
 	CheckAuthorizationOnTargetUser(ctx context.Context, action, targetRealm, userID string) error
+	CheckIdentificationRoleAuthorizationOnTargetUser(ctx context.Context, initIdentAction string, targetRealm string, userID string) error
 }
 
 // AccountingClient interface
@@ -206,7 +207,11 @@ func (c *component) isIDNowVideoIdentAvailableForUser(ctx context.Context, techn
 	var userID = ctx.Value(cs.CtContextUserID).(string)
 	var technicalUserContext = context.WithValue(ctx, cs.CtContextAccessToken, technicalUserAccessToken)
 
-	return c.authManager.CheckAuthorizationOnTargetUser(technicalUserContext, idNowInitAuth, realm, userID) == nil
+	if err := c.authManager.CheckAuthorizationOnTargetUser(technicalUserContext, idNowInitAuth, realm, userID); err != nil {
+		return false
+	}
+
+	return c.authManager.CheckIdentificationRoleAuthorizationOnTargetUser(technicalUserContext, idNowInitAuth, realm, userID) == nil
 }
 
 func (c *component) isIDNowAutoIdentAvailableForUser(ctx context.Context, technicalUserAccessToken string) bool {
@@ -214,5 +219,9 @@ func (c *component) isIDNowAutoIdentAvailableForUser(ctx context.Context, techni
 	var userID = ctx.Value(cs.CtContextUserID).(string)
 	var technicalUserContext = context.WithValue(ctx, cs.CtContextAccessToken, technicalUserAccessToken)
 
-	return c.authManager.CheckAuthorizationOnTargetUser(technicalUserContext, idNowAutoIdentInitAuth, realm, userID) == nil
+	if err := c.authManager.CheckAuthorizationOnTargetUser(technicalUserContext, idNowAutoIdentInitAuth, realm, userID); err != nil {
+		return false
+	}
+
+	return c.authManager.CheckIdentificationRoleAuthorizationOnTargetUser(technicalUserContext, idNowAutoIdentInitAuth, realm, userID) == nil
 }
