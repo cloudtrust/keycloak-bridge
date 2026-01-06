@@ -71,21 +71,6 @@ func (mr *KcClientAuthMockRecorder) GetGroupNamesOfUser(ctx, accessToken, realmN
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGroupNamesOfUser", reflect.TypeOf((*KcClientAuth)(nil).GetGroupNamesOfUser), ctx, accessToken, realmName, userID)
 }
 
-// GetRoleNamesOfUser mocks base method.
-func (m *KcClientAuth) GetRoleNamesOfUser(ctx context.Context, accessToken, realmName, userID string) ([]string, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetRoleNamesOfUser", ctx, accessToken, realmName, userID)
-	ret0, _ := ret[0].([]string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetRoleNamesOfUser indicates an expected call of GetRoleNamesOfUser.
-func (mr *KcClientAuthMockRecorder) GetRoleNamesOfUser(ctx, accessToken, realmName, userID any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRoleNamesOfUser", reflect.TypeOf((*KcClientAuth)(nil).GetRoleNamesOfUser), ctx, accessToken, realmName, userID)
-}
-
 // AuthorizationDBReader is a mock of AuthorizationDBReader interface.
 type AuthorizationDBReader struct {
 	ctrl     *gomock.Controller
@@ -108,21 +93,6 @@ func NewAuthorizationDBReader(ctrl *gomock.Controller) *AuthorizationDBReader {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *AuthorizationDBReader) EXPECT() *AuthorizationDBReaderMockRecorder {
 	return m.recorder
-}
-
-// GetAdminConfiguration mocks base method.
-func (m *AuthorizationDBReader) GetAdminConfiguration(ctx context.Context, realmID string) (configuration.RealmAdminConfiguration, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAdminConfiguration", ctx, realmID)
-	ret0, _ := ret[0].(configuration.RealmAdminConfiguration)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetAdminConfiguration indicates an expected call of GetAdminConfiguration.
-func (mr *AuthorizationDBReaderMockRecorder) GetAdminConfiguration(ctx, realmID any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAdminConfiguration", reflect.TypeOf((*AuthorizationDBReader)(nil).GetAdminConfiguration), ctx, realmID)
 }
 
 // GetAuthorizations mocks base method.
@@ -260,34 +230,6 @@ func (m *AuthorizationManager) CheckAuthorizationOnTargetUser(ctx context.Contex
 func (mr *AuthorizationManagerMockRecorder) CheckAuthorizationOnTargetUser(ctx, action, targetRealm, userID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckAuthorizationOnTargetUser", reflect.TypeOf((*AuthorizationManager)(nil).CheckAuthorizationOnTargetUser), ctx, action, targetRealm, userID)
-}
-
-// CheckIdentificationRoleAuthorizationOnSelfUser mocks base method.
-func (m *AuthorizationManager) CheckIdentificationRoleAuthorizationOnSelfUser(ctx context.Context, action string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CheckIdentificationRoleAuthorizationOnSelfUser", ctx, action)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// CheckIdentificationRoleAuthorizationOnSelfUser indicates an expected call of CheckIdentificationRoleAuthorizationOnSelfUser.
-func (mr *AuthorizationManagerMockRecorder) CheckIdentificationRoleAuthorizationOnSelfUser(ctx, action any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckIdentificationRoleAuthorizationOnSelfUser", reflect.TypeOf((*AuthorizationManager)(nil).CheckIdentificationRoleAuthorizationOnSelfUser), ctx, action)
-}
-
-// CheckIdentificationRoleAuthorizationOnTargetUser mocks base method.
-func (m *AuthorizationManager) CheckIdentificationRoleAuthorizationOnTargetUser(ctx context.Context, action, targetRealm, userID string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CheckIdentificationRoleAuthorizationOnTargetUser", ctx, action, targetRealm, userID)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// CheckIdentificationRoleAuthorizationOnTargetUser indicates an expected call of CheckIdentificationRoleAuthorizationOnTargetUser.
-func (mr *AuthorizationManagerMockRecorder) CheckIdentificationRoleAuthorizationOnTargetUser(ctx, action, targetRealm, userID any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckIdentificationRoleAuthorizationOnTargetUser", reflect.TypeOf((*AuthorizationManager)(nil).CheckIdentificationRoleAuthorizationOnTargetUser), ctx, action, targetRealm, userID)
 }
 
 // GetRightsOfCurrentUser mocks base method.

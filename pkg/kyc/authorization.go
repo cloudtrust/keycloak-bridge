@@ -15,17 +15,22 @@ import (
 type authorizationComponentMW struct {
 	realmName           string
 	authManager         security.AuthorizationManager
+	identAuthManager    security.IdentificationAuthorizationManager
 	availabilityChecker middleware.EndpointAvailabilityChecker
 	logger              log.Logger
 	next                Component
 }
 
 // MakeAuthorizationKYCComponentMW checks authorization and return an error if the action is not allowed.
-func MakeAuthorizationKYCComponentMW(realmName string, authorizationManager security.AuthorizationManager, availabilityChecker middleware.EndpointAvailabilityChecker, logger log.Logger) func(Component) Component {
+func MakeAuthorizationKYCComponentMW(realmName string, authorizationManager security.AuthorizationManager,
+	identAuthManager security.IdentificationAuthorizationManager, availabilityChecker middleware.EndpointAvailabilityChecker,
+	logger log.Logger) func(Component) Component {
+
 	return func(next Component) Component {
 		return &authorizationComponentMW{
 			realmName:           realmName,
 			authManager:         authorizationManager,
+			identAuthManager:    identAuthManager,
 			availabilityChecker: availabilityChecker,
 			logger:              logger,
 			next:                next,
@@ -134,7 +139,7 @@ func (c *authorizationComponentMW) GetUser(ctx context.Context, realmName string
 		return apikyc.UserRepresentation{}, err
 	}
 
-	if err := c.authManager.CheckIdentificationRoleAuthorizationOnTargetUser(ctx, action, realmName, userID); err != nil {
+	if err := c.identAuthManager.CheckRoleAuthorizationOnTargetUser(ctx, action, realmName, userID); err != nil {
 		return apikyc.UserRepresentation{}, err
 	}
 
@@ -169,7 +174,7 @@ func (c *authorizationComponentMW) ValidateUser(ctx context.Context, realmName s
 		return err
 	}
 
-	if err := c.authManager.CheckIdentificationRoleAuthorizationOnTargetUser(ctx, action, realmName, userID); err != nil {
+	if err := c.identAuthManager.CheckRoleAuthorizationOnTargetUser(ctx, action, realmName, userID); err != nil {
 		return err
 	}
 

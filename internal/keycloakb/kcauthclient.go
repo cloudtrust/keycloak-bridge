@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/cloudtrust/common-service/v2/middleware"
-	"github.com/cloudtrust/common-service/v2/security"
 	kc "github.com/cloudtrust/keycloak-client/v2"
 )
 
@@ -26,7 +25,7 @@ type idretriever struct {
 }
 
 // NewKeycloakAuthClient creates an adaptor for Authorization management to access Keycloak
-func NewKeycloakAuthClient(client KeycloakClient, logger Logger) security.KeycloakClient {
+func NewKeycloakAuthClient(client KeycloakClient, logger Logger) *kcAuthClient {
 	return &kcAuthClient{
 		keycloak: client,
 		logger:   logger,
