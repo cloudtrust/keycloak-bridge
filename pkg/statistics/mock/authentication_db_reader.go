@@ -41,21 +41,6 @@ func (m *AuthorizationDBReader) EXPECT() *AuthorizationDBReaderMockRecorder {
 	return m.recorder
 }
 
-// GetAdminConfiguration mocks base method.
-func (m *AuthorizationDBReader) GetAdminConfiguration(ctx context.Context, realmID string) (configuration.RealmAdminConfiguration, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAdminConfiguration", ctx, realmID)
-	ret0, _ := ret[0].(configuration.RealmAdminConfiguration)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetAdminConfiguration indicates an expected call of GetAdminConfiguration.
-func (mr *AuthorizationDBReaderMockRecorder) GetAdminConfiguration(ctx, realmID any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAdminConfiguration", reflect.TypeOf((*AuthorizationDBReader)(nil).GetAdminConfiguration), ctx, realmID)
-}
-
 // GetAuthorizations mocks base method.
 func (m *AuthorizationDBReader) GetAuthorizations(arg0 context.Context) ([]configuration.Authorization, error) {
 	m.ctrl.T.Helper()

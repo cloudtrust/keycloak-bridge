@@ -71,21 +71,6 @@ func (mr *KcClientAuthMockRecorder) GetGroupNamesOfUser(ctx, accessToken, realmN
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGroupNamesOfUser", reflect.TypeOf((*KcClientAuth)(nil).GetGroupNamesOfUser), ctx, accessToken, realmName, userID)
 }
 
-// GetRoleNamesOfUser mocks base method.
-func (m *KcClientAuth) GetRoleNamesOfUser(ctx context.Context, accessToken, realmName, userID string) ([]string, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetRoleNamesOfUser", ctx, accessToken, realmName, userID)
-	ret0, _ := ret[0].([]string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetRoleNamesOfUser indicates an expected call of GetRoleNamesOfUser.
-func (mr *KcClientAuthMockRecorder) GetRoleNamesOfUser(ctx, accessToken, realmName, userID any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRoleNamesOfUser", reflect.TypeOf((*KcClientAuth)(nil).GetRoleNamesOfUser), ctx, accessToken, realmName, userID)
-}
-
 // AuthorizationDBReader is a mock of AuthorizationDBReader interface.
 type AuthorizationDBReader struct {
 	ctrl     *gomock.Controller
@@ -108,21 +93,6 @@ func NewAuthorizationDBReader(ctrl *gomock.Controller) *AuthorizationDBReader {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *AuthorizationDBReader) EXPECT() *AuthorizationDBReaderMockRecorder {
 	return m.recorder
-}
-
-// GetAdminConfiguration mocks base method.
-func (m *AuthorizationDBReader) GetAdminConfiguration(ctx context.Context, realmID string) (configuration.RealmAdminConfiguration, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAdminConfiguration", ctx, realmID)
-	ret0, _ := ret[0].(configuration.RealmAdminConfiguration)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetAdminConfiguration indicates an expected call of GetAdminConfiguration.
-func (mr *AuthorizationDBReaderMockRecorder) GetAdminConfiguration(ctx, realmID any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAdminConfiguration", reflect.TypeOf((*AuthorizationDBReader)(nil).GetAdminConfiguration), ctx, realmID)
 }
 
 // GetAuthorizations mocks base method.

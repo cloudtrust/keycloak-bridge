@@ -447,6 +447,7 @@ func main() {
 
 	// Authorization Manager
 	var authorizationManager security.AuthorizationManager
+	var identAuthorizationManager security.IdentificationAuthorizationManager
 	{
 		var authorizationLogger = log.With(logger, "svc", "authorization")
 
@@ -457,11 +458,12 @@ func main() {
 
 		var err error
 		authorizationManager, err = security.NewAuthorizationManager(configurationReaderDBModule, commonKcAdaptor, authorizationLogger)
-
 		if err != nil {
 			logger.Error(ctx, "msg", "could not load authorizations", "err", err)
 			return
 		}
+
+		identAuthorizationManager = security.NewIdentificationAuthorizationManager(configurationReaderDBModule, commonKcAdaptor, authorizationLogger)
 	}
 
 	// Kafka
@@ -876,7 +878,7 @@ func main() {
 		var accountingClient = keycloakb.MakeAccountingClient(httpClient)
 
 		// new module for mobile service
-		mobileComponent := mobile.NewComponent(keycloakClient, configDBModule, accreditationsService, technicalTokenProvider, authorizationManager, accountingClient, mobileLogger)
+		mobileComponent := mobile.NewComponent(keycloakClient, configDBModule, accreditationsService, technicalTokenProvider, authorizationManager, identAuthorizationManager, accountingClient, mobileLogger)
 		mobileComponent = mobile.MakeAuthorizationMobileComponentMW(log.With(mobileLogger, "mw", "authorization"))(mobileComponent)
 
 		var rateLimitMobile = rateLimit[RateKeyMobile]
@@ -954,7 +956,7 @@ func main() {
 
 		// new module for KYC service
 		kycComponent := kyc.NewComponent(technicalTokenProvider, registerRealm, keycloakClient, profileCache, archiveDBModule, configurationReaderDBModule, auditEventsReporterModule, accreditationsService, kycLogger)
-		kycComponent = kyc.MakeAuthorizationKYCComponentMW(registerRealm, authorizationManager, endpointPhysicalCheckAvailabilityChecker, log.With(kycLogger, "mw", "authorization"))(kycComponent)
+		kycComponent = kyc.MakeAuthorizationKYCComponentMW(registerRealm, authorizationManager, identAuthorizationManager, endpointPhysicalCheckAvailabilityChecker, log.With(kycLogger, "mw", "authorization"))(kycComponent)
 
 		var rateLimitKyc = rateLimit[RateKeyKYC]
 		kycEndpoints = kyc.Endpoints{
