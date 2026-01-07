@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/cloudtrust/common-service/v2/middleware"
-	"github.com/cloudtrust/common-service/v2/security"
 	kc "github.com/cloudtrust/keycloak-client/v2"
 )
 
@@ -13,6 +12,7 @@ type KeycloakClient interface {
 	GetGroupsOfUser(accessToken string, realmName, userID string) ([]kc.GroupRepresentation, error)
 	GetGroup(accessToken string, realmName, groupID string) (kc.GroupRepresentation, error)
 	GetRealm(accessToken string, realmName string) (kc.RealmRepresentation, error)
+	GetRealmLevelRoleMappings(accessToken string, realmName, userID string) ([]kc.RoleRepresentation, error)
 }
 
 type kcAuthClient struct {
@@ -25,7 +25,7 @@ type idretriever struct {
 }
 
 // NewKeycloakAuthClient creates an adaptor for Authorization management to access Keycloak
-func NewKeycloakAuthClient(client KeycloakClient, logger Logger) security.KeycloakClient {
+func NewKeycloakAuthClient(client KeycloakClient, logger Logger) *kcAuthClient {
 	return &kcAuthClient{
 		keycloak: client,
 		logger:   logger,
@@ -64,6 +64,22 @@ func (k *kcAuthClient) GetGroupName(ctx context.Context, accessToken string, rea
 	}
 
 	return *(grp.Name), nil
+}
+
+func (k *kcAuthClient) GetRoleNamesOfUser(ctx context.Context, accessToken string, realmName, userID string) ([]string, error) {
+	roles, err := k.keycloak.GetRealmLevelRoleMappings(accessToken, realmName, userID)
+	if err != nil {
+		k.logger.Warn(ctx, "msg", "Can't get role names of user", "err", err.Error(), "realm", realmName, "user", userID)
+		return nil, err
+	}
+
+	var res []string
+	for _, role := range roles {
+		if role.Name != nil {
+			res = append(res, *(role.Name))
+		}
+	}
+	return res, nil
 }
 
 // NewRealmIDRetriever is a tool use to convert a realm name in a realm ID

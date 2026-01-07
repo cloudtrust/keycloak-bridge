@@ -975,20 +975,37 @@ func TestGetConfiguration(t *testing.T) {
 	var falseBool = false
 	var trueBool = true
 	var config = configuration.RealmConfiguration{
-		APISelfAuthenticatorDeletionEnabled: &falseBool,
-		APISelfAccountEditingEnabled:        &falseBool,
-		APISelfAccountDeletionEnabled:       &falseBool,
-		APISelfPasswordChangeEnabled:        &falseBool,
-		APISelfIDPLinksManagementEnabled:    &falseBool,
-		DefaultClientID:                     new(string),
-		DefaultRedirectURI:                  new(string),
-		ShowAuthenticatorsTab:               &trueBool,
-		ShowAccountDeletionButton:           &trueBool,
-		ShowPasswordTab:                     &trueBool,
-		ShowProfileTab:                      &trueBool,
-		ShowIDPLinksTab:                     &trueBool,
+		APISelfAuthenticatorDeletionEnabled:     &falseBool,
+		APISelfAccountEditingEnabled:            &falseBool,
+		APISelfAccountDeletionEnabled:           &falseBool,
+		APISelfPasswordChangeEnabled:            &falseBool,
+		APISelfIDPLinksManagementEnabled:        &falseBool,
+		DefaultClientID:                         new(string),
+		DefaultRedirectURI:                      new(string),
+		ShowAuthenticatorsTab:                   &trueBool,
+		ShowAccountDeletionButton:               &trueBool,
+		ShowPasswordTab:                         &trueBool,
+		ShowProfileTab:                          &trueBool,
+		ShowIDPLinksTab:                         &trueBool,
+		SelfServiceDefaultTab:                   ptr("default-tab"),
+		RedirectSuccessfulRegistrationURL:       ptr("successful-url"),
+		BarcodeType:                             ptr("barcode"),
+		OnboardingUserEditingEnabled:            &falseBool,
+		APISelfInitialPasswordDefinitionAllowed: &falseBool,
 	}
-	var adminConfig configuration.RealmAdminConfiguration
+	var adminConfig = configuration.RealmAdminConfiguration{
+		AvailableChecks:                          map[string]bool{"IDNow": false, "physical-check": true},
+		SseTheme:                                 ptr("my-theme"),
+		VideoIdentificationVoucherEnabled:        &falseBool,
+		VideoIdentificationAccountingEnabled:     &falseBool,
+		VideoIdentificationPrepaymentRequired:    &falseBool,
+		AutoIdentificationVoucherEnabled:         &falseBool,
+		AutoIdentificationAccountingEnabled:      &falseBool,
+		AutoIdentificationPrepaymentRequired:     &falseBool,
+		VideoIdentificationAllowedRoles:          []string{"video-role"},
+		AuxiliaryVideoIdentificationAllowedRoles: []string{"auxiliary-role"},
+		AutoIdentificationAllowedRoles:           []string{"auto-role"},
+	}
 	var supportedLocales = []string{"fr", "en", "es"}
 	var realmConfig = kc.RealmRepresentation{InternationalizationEnabled: &trueBool, SupportedLocales: &supportedLocales}
 	var anyError = errors.New("any error")
@@ -1004,11 +1021,27 @@ func TestGetConfiguration(t *testing.T) {
 		resConfig, err := component.GetConfiguration(ctx, "")
 
 		assert.Nil(t, err)
+		assert.Equal(t, *config.APISelfAccountEditingEnabled, *resConfig.EditingEnabled)
 		assert.Equal(t, *config.ShowAuthenticatorsTab, *resConfig.ShowAuthenticatorsTab)
 		assert.Equal(t, *config.ShowAccountDeletionButton, *resConfig.ShowAccountDeletionButton)
 		assert.Equal(t, *config.ShowPasswordTab, *resConfig.ShowPasswordTab)
 		assert.Equal(t, *config.ShowProfileTab, *resConfig.ShowProfileTab)
 		assert.Equal(t, *config.ShowIDPLinksTab, *resConfig.ShowIDPLinksTab)
+		assert.Equal(t, *config.SelfServiceDefaultTab, *resConfig.SelfServiceDefaultTab)
+		assert.Equal(t, *config.RedirectSuccessfulRegistrationURL, *resConfig.RedirectSuccessfulRegistrationURL)
+		assert.Equal(t, *config.BarcodeType, *resConfig.BarcodeType)
+		assert.Equal(t, adminConfig.AvailableChecks, resConfig.AvailableChecks)
+		assert.Equal(t, *adminConfig.SseTheme, *resConfig.Theme)
+		assert.Equal(t, *realmConfig.SupportedLocales, *resConfig.SupportedLocales)
+		assert.Equal(t, *adminConfig.VideoIdentificationVoucherEnabled, *resConfig.VideoIdentificationVoucherEnabled)
+		assert.Equal(t, *adminConfig.VideoIdentificationAccountingEnabled, *resConfig.VideoIdentificationAccountingEnabled)
+		assert.Equal(t, *adminConfig.VideoIdentificationPrepaymentRequired, *resConfig.VideoIdentificationPrepaymentRequired)
+		assert.Equal(t, *adminConfig.AutoIdentificationVoucherEnabled, *resConfig.AutoIdentificationVoucherEnabled)
+		assert.Equal(t, *adminConfig.AutoIdentificationAccountingEnabled, *resConfig.AutoIdentificationAccountingEnabled)
+		assert.Equal(t, *adminConfig.AutoIdentificationPrepaymentRequired, *resConfig.AutoIdentificationPrepaymentRequired)
+		assert.Equal(t, adminConfig.VideoIdentificationAllowedRoles, resConfig.VideoIdentificationAllowedRoles)
+		assert.Equal(t, adminConfig.AuxiliaryVideoIdentificationAllowedRoles, resConfig.AuxiliaryVideoIdentificationAllowedRoles)
+		assert.Equal(t, adminConfig.AutoIdentificationAllowedRoles, resConfig.AutoIdentificationAllowedRoles)
 	})
 
 	t.Run("Get configuration with override realm with succces", func(t *testing.T) {
@@ -1025,12 +1058,26 @@ func TestGetConfiguration(t *testing.T) {
 		resConfig, err := component.GetConfiguration(ctx, overrideRealm)
 
 		assert.Nil(t, err)
+		assert.Equal(t, *config.APISelfAccountEditingEnabled, *resConfig.EditingEnabled)
 		assert.Equal(t, *config.ShowAuthenticatorsTab, *resConfig.ShowAuthenticatorsTab)
 		assert.Equal(t, *config.ShowAccountDeletionButton, *resConfig.ShowAccountDeletionButton)
 		assert.Equal(t, *config.ShowProfileTab, *resConfig.ShowProfileTab)
 		assert.Equal(t, *config.ShowPasswordTab, *resConfig.ShowPasswordTab)
 		assert.Equal(t, *config.ShowIDPLinksTab, *resConfig.ShowIDPLinksTab)
 		assert.Equal(t, successURL, *resConfig.RedirectSuccessfulRegistrationURL)
+		assert.Equal(t, *config.SelfServiceDefaultTab, *resConfig.SelfServiceDefaultTab)
+		assert.Equal(t, adminConfig.AvailableChecks, resConfig.AvailableChecks)
+		assert.Equal(t, *adminConfig.SseTheme, *resConfig.Theme)
+		assert.Equal(t, *realmConfig.SupportedLocales, *resConfig.SupportedLocales)
+		assert.Equal(t, *adminConfig.VideoIdentificationVoucherEnabled, *resConfig.VideoIdentificationVoucherEnabled)
+		assert.Equal(t, *adminConfig.VideoIdentificationAccountingEnabled, *resConfig.VideoIdentificationAccountingEnabled)
+		assert.Equal(t, *adminConfig.VideoIdentificationPrepaymentRequired, *resConfig.VideoIdentificationPrepaymentRequired)
+		assert.Equal(t, *adminConfig.AutoIdentificationVoucherEnabled, *resConfig.AutoIdentificationVoucherEnabled)
+		assert.Equal(t, *adminConfig.AutoIdentificationAccountingEnabled, *resConfig.AutoIdentificationAccountingEnabled)
+		assert.Equal(t, *adminConfig.AutoIdentificationPrepaymentRequired, *resConfig.AutoIdentificationPrepaymentRequired)
+		assert.Equal(t, adminConfig.VideoIdentificationAllowedRoles, resConfig.VideoIdentificationAllowedRoles)
+		assert.Equal(t, adminConfig.AuxiliaryVideoIdentificationAllowedRoles, resConfig.AuxiliaryVideoIdentificationAllowedRoles)
+		assert.Equal(t, adminConfig.AutoIdentificationAllowedRoles, resConfig.AutoIdentificationAllowedRoles)
 	})
 
 	t.Run("Error on GetConfiguration", func(t *testing.T) {

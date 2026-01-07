@@ -31,6 +31,7 @@ cors-allowed-origins:
   - "http://localhost:4600" # register
   - "http://localhost:4700" # signer
   - "http://localhost:4800" # support
+  - "http://localhost:4402" # specific-hin
 cors-allowed-methods:
   - "GET"
   - "POST"

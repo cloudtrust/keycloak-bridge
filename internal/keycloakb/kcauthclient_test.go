@@ -6,12 +6,11 @@ import (
 	"testing"
 
 	"github.com/cloudtrust/common-service/v2/log"
-	"github.com/cloudtrust/common-service/v2/security"
 
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/mock"
 	kc "github.com/cloudtrust/keycloak-client/v2"
-	"go.uber.org/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 const (
@@ -21,7 +20,7 @@ const (
 	groupID     = "group.ID"
 )
 
-func testKeycloakAuthClient(t *testing.T, testable func(t *testing.T, mockKeycloak *mock.KeycloakClient, authClient security.KeycloakClient)) {
+func testKeycloakAuthClient(t *testing.T, testable func(t *testing.T, mockKeycloak *mock.KeycloakClient, authClient *kcAuthClient)) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 	var mockLogger = log.NewNopLogger()
@@ -31,16 +30,16 @@ func testKeycloakAuthClient(t *testing.T, testable func(t *testing.T, mockKeyclo
 }
 
 func TestGetGroupNamesOfUserError(t *testing.T) {
-	testKeycloakAuthClient(t, func(t *testing.T, mockKeycloak *mock.KeycloakClient, authClient security.KeycloakClient) {
-		mockKeycloak.EXPECT().GetGroupsOfUser(accessToken, realm, user).Return([]kc.GroupRepresentation{}, errors.New("error")).Times(1)
+	testKeycloakAuthClient(t, func(t *testing.T, mockKeycloak *mock.KeycloakClient, authClient *kcAuthClient) {
+		mockKeycloak.EXPECT().GetGroupsOfUser(accessToken, realm, user).Return([]kc.GroupRepresentation{}, errors.New("error"))
 		_, err := authClient.GetGroupNamesOfUser(context.TODO(), accessToken, realm, user)
 		assert.NotNil(t, err)
 	})
 }
 
 func TestGetGroupNamesOfUserNilGroups(t *testing.T) {
-	testKeycloakAuthClient(t, func(t *testing.T, mockKeycloak *mock.KeycloakClient, authClient security.KeycloakClient) {
-		mockKeycloak.EXPECT().GetGroupsOfUser(accessToken, realm, user).Return(nil, nil).Times(1)
+	testKeycloakAuthClient(t, func(t *testing.T, mockKeycloak *mock.KeycloakClient, authClient *kcAuthClient) {
+		mockKeycloak.EXPECT().GetGroupsOfUser(accessToken, realm, user).Return(nil, nil)
 		res, err := authClient.GetGroupNamesOfUser(context.TODO(), accessToken, realm, user)
 		assert.Nil(t, err)
 		assert.Equal(t, 0, len(res))
@@ -49,13 +48,13 @@ func TestGetGroupNamesOfUserNilGroups(t *testing.T) {
 
 func TestGetGroupNamesOfUserSuccess(t *testing.T) {
 	// GetGroupNamesOfUser: success with one valid groupname
-	testKeycloakAuthClient(t, func(t *testing.T, mockKeycloak *mock.KeycloakClient, authClient security.KeycloakClient) {
+	testKeycloakAuthClient(t, func(t *testing.T, mockKeycloak *mock.KeycloakClient, authClient *kcAuthClient) {
 		var groupname = "name of group"
 		var groups = []kc.GroupRepresentation{
 			{Name: nil},
 			{Name: &groupname},
 		}
-		mockKeycloak.EXPECT().GetGroupsOfUser(accessToken, realm, user).Return(groups, nil).Times(1)
+		mockKeycloak.EXPECT().GetGroupsOfUser(accessToken, realm, user).Return(groups, nil)
 		res, err := authClient.GetGroupNamesOfUser(context.TODO(), accessToken, realm, user)
 		assert.Nil(t, err)
 		assert.Equal(t, 1, len(res))
@@ -64,27 +63,56 @@ func TestGetGroupNamesOfUserSuccess(t *testing.T) {
 
 func TestGetGroupName(t *testing.T) {
 	t.Run("Error", func(t *testing.T) {
-		testKeycloakAuthClient(t, func(t *testing.T, mockKeycloak *mock.KeycloakClient, authClient security.KeycloakClient) {
-			mockKeycloak.EXPECT().GetGroup(accessToken, realm, groupID).Return(kc.GroupRepresentation{}, errors.New("error")).Times(1)
+		testKeycloakAuthClient(t, func(t *testing.T, mockKeycloak *mock.KeycloakClient, authClient *kcAuthClient) {
+			mockKeycloak.EXPECT().GetGroup(accessToken, realm, groupID).Return(kc.GroupRepresentation{}, errors.New("error"))
 			_, err := authClient.GetGroupName(context.TODO(), accessToken, realm, groupID)
 			assert.NotNil(t, err)
 		})
 	})
 	t.Run("Nil name", func(t *testing.T) {
-		testKeycloakAuthClient(t, func(t *testing.T, mockKeycloak *mock.KeycloakClient, authClient security.KeycloakClient) {
-			mockKeycloak.EXPECT().GetGroup(accessToken, realm, groupID).Return(kc.GroupRepresentation{Name: nil}, nil).Times(1)
+		testKeycloakAuthClient(t, func(t *testing.T, mockKeycloak *mock.KeycloakClient, authClient *kcAuthClient) {
+			mockKeycloak.EXPECT().GetGroup(accessToken, realm, groupID).Return(kc.GroupRepresentation{Name: nil}, nil)
 			res, err := authClient.GetGroupName(context.TODO(), accessToken, realm, groupID)
 			assert.Nil(t, err)
 			assert.Equal(t, "", res)
 		})
 	})
 	t.Run("Success", func(t *testing.T) {
-		testKeycloakAuthClient(t, func(t *testing.T, mockKeycloak *mock.KeycloakClient, authClient security.KeycloakClient) {
+		testKeycloakAuthClient(t, func(t *testing.T, mockKeycloak *mock.KeycloakClient, authClient *kcAuthClient) {
 			var groupname = "the name"
-			mockKeycloak.EXPECT().GetGroup(accessToken, realm, groupID).Return(kc.GroupRepresentation{Name: &groupname}, nil).Times(1)
+			mockKeycloak.EXPECT().GetGroup(accessToken, realm, groupID).Return(kc.GroupRepresentation{Name: &groupname}, nil)
 			res, err := authClient.GetGroupName(context.TODO(), accessToken, realm, groupID)
 			assert.Nil(t, err)
 			assert.Equal(t, groupname, res)
+		})
+	})
+}
+
+func TestGetRoleNamesOfUser(t *testing.T) {
+	t.Run("Error", func(t *testing.T) {
+		testKeycloakAuthClient(t, func(t *testing.T, mockKeycloak *mock.KeycloakClient, authClient *kcAuthClient) {
+			mockKeycloak.EXPECT().GetRealmLevelRoleMappings(accessToken, realm, user).Return([]kc.RoleRepresentation{}, errors.New("error"))
+			_, err := authClient.GetRoleNamesOfUser(context.TODO(), accessToken, realm, user)
+			assert.Error(t, err)
+		})
+	})
+
+	t.Run("Nil roles", func(t *testing.T) {
+		testKeycloakAuthClient(t, func(t *testing.T, mockKeycloak *mock.KeycloakClient, authClient *kcAuthClient) {
+			mockKeycloak.EXPECT().GetRealmLevelRoleMappings(accessToken, realm, user).Return(nil, nil)
+			res, err := authClient.GetRoleNamesOfUser(context.TODO(), accessToken, realm, user)
+			assert.NoError(t, err)
+			assert.Nil(t, res)
+		})
+	})
+
+	t.Run("Success", func(t *testing.T) {
+		testKeycloakAuthClient(t, func(t *testing.T, mockKeycloak *mock.KeycloakClient, authClient *kcAuthClient) {
+			roleName := "role-name"
+			mockKeycloak.EXPECT().GetRealmLevelRoleMappings(accessToken, realm, user).Return([]kc.RoleRepresentation{{Name: &roleName}}, nil)
+			res, err := authClient.GetRoleNamesOfUser(context.TODO(), accessToken, realm, user)
+			assert.NoError(t, err)
+			assert.Equal(t, []string{roleName}, res)
 		})
 	})
 }
