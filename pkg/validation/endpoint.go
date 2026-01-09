@@ -19,6 +19,7 @@ type Endpoints struct {
 	UpdateUserAccreditations endpoint.Endpoint
 	CreateCheck              endpoint.Endpoint
 	GetGroupsOfUser          endpoint.Endpoint
+	GetRolesOfUser           endpoint.Endpoint
 	//CreatePendingCheck       endpoint.Endpoint
 }
 
@@ -89,5 +90,14 @@ func MakeGetGroupsOfUserEndpoint(component Component) cs.Endpoint {
 		var m = req.(map[string]string)
 
 		return component.GetGroupsOfUser(ctx, m[prmRealm], m[prmUserID])
+	}
+}
+
+// MakeGetRolesOfUserEndpoint creates an endpoint for GetRolesOfUser
+func MakeGetRolesOfUserEndpoint(component Component) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+
+		return component.GetRolesOfUser(ctx, m[prmRealm], m[prmUserID])
 	}
 }
