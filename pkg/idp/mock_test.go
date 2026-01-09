@@ -19,6 +19,10 @@ func ptr(value string) *string {
 	return &value
 }
 
+func ptrInt(value int) *int {
+	return &value
+}
+
 func toJSON(data any) string {
 	bytes, _ := json.Marshal(data)
 	return string(bytes)
@@ -50,6 +54,10 @@ func (m *componentMocks) finish() {
 }
 
 func (m *componentMocks) createComponent() *component {
+	return m.createComponentWithAllowedAttributes("known-realm", []string{"attribute-key"})
+}
+
+func (m *componentMocks) createComponentWithAllowedAttributes(realmName string, allowed []string) *component {
 	return NewComponent(m.keycloakIdpClient, m.tokenProvider, m.hrdTool, m.logger).(*component)
 }
 

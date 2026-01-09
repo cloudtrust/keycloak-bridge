@@ -8,6 +8,8 @@ github.com/VividCortex/gohistogram v1.0.0 h1:6+hBz+qvs0JOrrNhhmR7lFxo5sINxBCGXrd
 github.com/VividCortex/gohistogram v1.0.0/go.mod h1:Pf5mBqqDxYaXu3hDrrU+w6nw50o/4+TcAqDqk/vUH7g=
 github.com/cloudtrust/common-service/v2 v2.15.0 h1:EwklWdmhJdoIBi+bT297jTnj3Ku66Pnmv0XRddXTb3o=
 github.com/cloudtrust/common-service/v2 v2.15.0/go.mod h1:bEx34213f6+0+ZiysMi6wc6axYLKS/mn0EtMlVd59Dk=
+github.com/cloudtrust/common-service/v2 v2.15.1 h1:GHyh70sc7YcJTdXaYY6p+0T8b6XOPF4IBalwrKXaMRo=
+github.com/cloudtrust/common-service/v2 v2.15.1/go.mod h1:BM0tcPuLU2wXtYZgFITwkWfjDFHZZLUb6PtHnOFwCDc=
 github.com/cloudtrust/httpclient v1.6.0 h1:/E/y2wZNyUIjADbP3RLI2pLTWdNvcFSLe1MeRD6RlN4=
 github.com/cloudtrust/httpclient v1.6.0/go.mod h1:CK0idOHAQ2CiN2GFOwIYP5hDl2tfUgGdTI9n7Ygbnrs=
 github.com/cloudtrust/kafka-client v1.7.1 h1:ARcg89+q4AhbcoDrKoeqE4gcscGOavoS+P8z9AnKmxk=
@@ -52,6 +54,8 @@ github.com/golang/snappy v0.0.4 h1:yAGX7huGHXlcLOEtBnF4w7FQwA26wojNCwOYAEhLjQM=
 github.com/golang/snappy v0.0.4/go.mod h1:/XxbfmMg8lxefKM7IXC3fBNl/7bRcc72aCRzEWrmP2Q=
 github.com/google/flatbuffers v25.9.23+incompatible h1:rGZKv+wOb6QPzIdkM2KxhBZCDrA0DeN6DNmRDrqIsQU=
 github.com/google/flatbuffers v25.9.23+incompatible/go.mod h1:1AeVuKshWv4vARoZatz6mlQ0JxURH0Kv5+zNeJKJCa8=
+github.com/google/flatbuffers v25.12.19+incompatible h1:haMV2JRRJCe1998HeW/p0X9UaMTK6SDo0ffLn2+DbLs=
+github.com/google/flatbuffers v25.12.19+incompatible/go.mod h1:1AeVuKshWv4vARoZatz6mlQ0JxURH0Kv5+zNeJKJCa8=
 github.com/google/go-cmp v0.6.0 h1:ofyhxvXcZhMsU5ulbFiLKl/XBFqE1GSq7atu8tAmTRI=
 github.com/google/go-cmp v0.6.0/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeNGIjoY=
 github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=

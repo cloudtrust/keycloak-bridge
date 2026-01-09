@@ -221,6 +221,36 @@ func (mr *KeycloakIdpClientMockRecorder) GetIdpMappers(accessToken, realmName, i
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetIdpMappers", reflect.TypeOf((*KeycloakIdpClient)(nil).GetIdpMappers), accessToken, realmName, idpAlias)
 }
 
+// GetRealmLevelRoleMappings mocks base method.
+func (m *KeycloakIdpClient) GetRealmLevelRoleMappings(accessToken, realmName, userID string) ([]keycloak.RoleRepresentation, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRealmLevelRoleMappings", accessToken, realmName, userID)
+	ret0, _ := ret[0].([]keycloak.RoleRepresentation)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRealmLevelRoleMappings indicates an expected call of GetRealmLevelRoleMappings.
+func (mr *KeycloakIdpClientMockRecorder) GetRealmLevelRoleMappings(accessToken, realmName, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRealmLevelRoleMappings", reflect.TypeOf((*KeycloakIdpClient)(nil).GetRealmLevelRoleMappings), accessToken, realmName, userID)
+}
+
+// GetUser mocks base method.
+func (m *KeycloakIdpClient) GetUser(accessToken, realmName, userID string) (keycloak.UserRepresentation, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUser", accessToken, realmName, userID)
+	ret0, _ := ret[0].(keycloak.UserRepresentation)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUser indicates an expected call of GetUser.
+func (mr *KeycloakIdpClientMockRecorder) GetUser(accessToken, realmName, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUser", reflect.TypeOf((*KeycloakIdpClient)(nil).GetUser), accessToken, realmName, userID)
+}
+
 // GetUsers mocks base method.
 func (m *KeycloakIdpClient) GetUsers(accessToken, reqRealmName, targetRealmName string, paramKV ...string) (keycloak.UsersPageRepresentation, error) {
 	m.ctrl.T.Helper()
@@ -283,6 +313,20 @@ func (mr *KeycloakIdpClientMockRecorder) UpdateIdpMapper(accessToken, realmName,
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateIdpMapper", reflect.TypeOf((*KeycloakIdpClient)(nil).UpdateIdpMapper), accessToken, realmName, idpAlias, mapperID, mapperRep)
 }
 
+// UpdateUser mocks base method.
+func (m *KeycloakIdpClient) UpdateUser(accessToken, realmName, userID string, user keycloak.UserRepresentation) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateUser", accessToken, realmName, userID, user)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateUser indicates an expected call of UpdateUser.
+func (mr *KeycloakIdpClientMockRecorder) UpdateUser(accessToken, realmName, userID, user any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateUser", reflect.TypeOf((*KeycloakIdpClient)(nil).UpdateUser), accessToken, realmName, userID, user)
+}
+
 // Component is a mock of Component interface.
 type Component struct {
 	ctrl     *gomock.Controller
@@ -305,6 +349,20 @@ func NewComponent(ctrl *gomock.Controller) *Component {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *Component) EXPECT() *ComponentMockRecorder {
 	return m.recorder
+}
+
+// AddUserAttributes mocks base method.
+func (m *Component) AddUserAttributes(ctx context.Context, realmName, userID string, attributes map[string][]string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddUserAttributes", ctx, realmName, userID, attributes)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddUserAttributes indicates an expected call of AddUserAttributes.
+func (mr *ComponentMockRecorder) AddUserAttributes(ctx, realmName, userID, attributes any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddUserAttributes", reflect.TypeOf((*Component)(nil).AddUserAttributes), ctx, realmName, userID, attributes)
 }
 
 // CreateIdentityProvider mocks base method.
@@ -377,6 +435,20 @@ func (mr *ComponentMockRecorder) DeleteUser(ctx, realmName, userID, groupName an
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteUser", reflect.TypeOf((*Component)(nil).DeleteUser), ctx, realmName, userID, groupName)
 }
 
+// DeleteUserAttributes mocks base method.
+func (m *Component) DeleteUserAttributes(ctx context.Context, realmName, userID string, attributeKeys []string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteUserAttributes", ctx, realmName, userID, attributeKeys)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteUserAttributes indicates an expected call of DeleteUserAttributes.
+func (mr *ComponentMockRecorder) DeleteUserAttributes(ctx, realmName, userID, attributeKeys any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteUserAttributes", reflect.TypeOf((*Component)(nil).DeleteUserAttributes), ctx, realmName, userID, attributeKeys)
+}
+
 // GetIdentityProvider mocks base method.
 func (m *Component) GetIdentityProvider(ctx context.Context, realmName, providerAlias string) (apiidp.IdentityProviderRepresentation, error) {
 	m.ctrl.T.Helper()
@@ -423,18 +495,18 @@ func (mr *ComponentMockRecorder) GetUserFederatedIdentities(ctx, realmName, user
 }
 
 // GetUsersWithAttribute mocks base method.
-func (m *Component) GetUsersWithAttribute(ctx context.Context, realmName, groupName, attributeKey, attributeValue string) ([]apiidp.UserRepresentation, error) {
+func (m *Component) GetUsersWithAttribute(ctx context.Context, realmName string, username, groupName *string, expectedAttributes map[string]string, needRoles *bool) ([]apiidp.UserRepresentation, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetUsersWithAttribute", ctx, realmName, groupName, attributeKey, attributeValue)
+	ret := m.ctrl.Call(m, "GetUsersWithAttribute", ctx, realmName, username, groupName, expectedAttributes, needRoles)
 	ret0, _ := ret[0].([]apiidp.UserRepresentation)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetUsersWithAttribute indicates an expected call of GetUsersWithAttribute.
-func (mr *ComponentMockRecorder) GetUsersWithAttribute(ctx, realmName, groupName, attributeKey, attributeValue any) *gomock.Call {
+func (mr *ComponentMockRecorder) GetUsersWithAttribute(ctx, realmName, username, groupName, expectedAttributes, needRoles any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUsersWithAttribute", reflect.TypeOf((*Component)(nil).GetUsersWithAttribute), ctx, realmName, groupName, attributeKey, attributeValue)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUsersWithAttribute", reflect.TypeOf((*Component)(nil).GetUsersWithAttribute), ctx, realmName, username, groupName, expectedAttributes, needRoles)
 }
 
 // UpdateIdentityProvider mocks base method.

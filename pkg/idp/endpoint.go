@@ -3,9 +3,11 @@ package idp
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	cs "github.com/cloudtrust/common-service/v2"
 	errorhandler "github.com/cloudtrust/common-service/v2/errors"
+	commonhttp "github.com/cloudtrust/common-service/v2/http"
 	api "github.com/cloudtrust/keycloak-bridge/api/idp"
 	msg "github.com/cloudtrust/keycloak-bridge/internal/constants"
 
@@ -25,6 +27,8 @@ type Endpoints struct {
 	DeleteIdentityProviderMapper endpoint.Endpoint
 	GetUsersWithAttribute        endpoint.Endpoint
 	DeleteUser                   endpoint.Endpoint
+	AddUserAttributes            endpoint.Endpoint
+	DeleteUserAttributes         endpoint.Endpoint
 	GetUserFederatedIdentities   endpoint.Endpoint
 }
 
@@ -41,6 +45,8 @@ func NewEndpoints(component Component, endpointUpdater func(endpoint cs.Endpoint
 		DeleteIdentityProviderMapper: endpointUpdater(MakeDeleteIdentityProviderMapperEndpoint(component), "delete_identity_provider_mapper_endpoint"),
 		GetUsersWithAttribute:        endpointUpdater(MakeGetUsersWithAttributeEndpoint(component), "get_users_with_attribute_endpoint"),
 		DeleteUser:                   endpointUpdater(MakeDeleteUserEndpoint(component), "delete_user_endpoint"),
+		AddUserAttributes:            endpointUpdater(MakeAddUserAttributesEndpoint(component), "add_user_attributes_endpoint"),
+		DeleteUserAttributes:         endpointUpdater(MakeDeleteUserAttributesEndpoint(component), "delete_user_attributes_endpoint"),
 		GetUserFederatedIdentities:   endpointUpdater(MakeGetUserFederatedIdentitiesEndpoint(component), "get_user_federated_identities_endpoint"),
 	}
 }
@@ -162,24 +168,41 @@ func MakeDeleteIdentityProviderMapperEndpoint(component Component) cs.Endpoint {
 	}
 }
 
-func checkMandatoryParameters(req map[string]string, paramNames []string) error {
-	for _, param := range paramNames {
-		if _, ok := req[param]; !ok {
-			return errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + param)
-		}
-	}
-	return nil
-}
-
 // MakeGetUsersWithAttributeEndpoint creates an endpoint for GetUsersWithAttribute
 func MakeGetUsersWithAttributeEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req any) (any, error) {
 		var m = req.(map[string]string)
-		var err = checkMandatoryParameters(m, []string{prmGroupName, prmAttribKey, prmAttribValue})
-		if err != nil {
-			return nil, err
+		var username *string
+		if value, ok := m[prmUsername]; ok {
+			username = &value
 		}
-		return component.GetUsersWithAttribute(ctx, m[prmRealm], m[prmGroupName], m[prmAttribKey], m[prmAttribValue])
+		var groupName *string
+		if value, ok := m[prmGroupName]; ok {
+			groupName = &value
+		}
+		// Code is ready to handle multiple expected attributes, but for now we only support receiving one key-value pair
+		var expectedAttributes map[string]string
+		if attrKey, ok := m[prmAttribKey]; ok {
+			if attrValue, ok := m[prmAttribValue]; ok {
+				expectedAttributes = map[string]string{
+					attrKey: attrValue,
+				}
+			} else {
+				return nil, errorhandler.CreateBadRequestError(msg.MsgErrMissingParam + "." + prmAttribValue)
+			}
+		} else if _, ok := m[prmAttribValue]; ok {
+			return nil, errorhandler.CreateBadRequestError(msg.MsgErrMissingParam + "." + prmAttribKey)
+		}
+		// At least one of username, groupName or expectedAttributes must be provided
+		if username == nil && groupName == nil && len(expectedAttributes) == 0 {
+			return nil, errorhandler.CreateBadRequestError(fmt.Sprintf("%s.%sor%sor%s", msg.MsgErrMissingParam, prmUsername, prmGroupName, prmAttribKey))
+		}
+		var needRoles *bool
+		if needRolesStr, ok := m[prmNeedRoles]; ok {
+			var needRolesVal = needRolesStr == "true"
+			needRoles = &needRolesVal
+		}
+		return component.GetUsersWithAttribute(ctx, m[prmRealm], username, groupName, expectedAttributes, needRoles)
 	}
 }
 
@@ -192,6 +215,38 @@ func MakeDeleteUserEndpoint(component Component) cs.Endpoint {
 			grpName = &value
 		}
 		return nil, component.DeleteUser(ctx, m[prmRealm], m[prmUser], grpName)
+	}
+}
+
+// MakeAddUserAttributesEndpoint creates an endpoint for AddUserAttributes
+func MakeAddUserAttributesEndpoint(component Component) cs.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		var m = req.(map[string]string)
+		var attributes map[string][]string
+		if body, ok := m[reqBody]; ok {
+			if err := json.Unmarshal([]byte(body), &attributes); err != nil {
+				return nil, errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Body)
+			}
+		} else {
+			return nil, errorhandler.CreateBadRequestError(msg.MsgErrMissingParam + "." + msg.Body)
+		}
+		return commonhttp.StatusNoContent{}, component.AddUserAttributes(ctx, m[prmRealm], m[prmUser], attributes)
+	}
+}
+
+// MakeDeleteUserAttributesEndpoint creates an endpoint for DeleteUserAttributes
+func MakeDeleteUserAttributesEndpoint(component Component) cs.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		var m = req.(map[string]string)
+		var keys []string
+		if body, ok := m[reqBody]; ok {
+			if err := json.Unmarshal([]byte(body), &keys); err != nil {
+				return nil, errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + "." + msg.Body)
+			}
+		} else {
+			return nil, errorhandler.CreateBadRequestError(msg.MsgErrMissingParam + "." + msg.Body)
+		}
+		return commonhttp.StatusNoContent{}, component.DeleteUserAttributes(ctx, m[prmRealm], m[prmUser], keys)
 	}
 }
 

@@ -220,7 +220,7 @@ paths:
     get:
       tags:
       - Identity providers
-      summary: Search users having a given attribute set to a given value
+      summary: Search users having a given attribute set to a given value or having a given username
       parameters:
       - name: realm
         in: path
@@ -228,24 +228,36 @@ paths:
         required: true
         schema:
           type: string
+      - name: username
+        in: query
+        description: username of the user. Parameter is required if groupName is not provided
+        required: false
+        schema:
+          type: string
       - name: groupName
         in: query
-        description: name of a group in which searched users are linked to
-        required: true
+        description: name of a group in which searched users are linked to. Parameter is required if username is not provided
+        required: false
         schema:
           type: string
       - name: attributeKey
         in: query
-        description: key of the attribute the searched users have to own
-        required: true
+        description: key of the attribute the searched users have to own. If set, attributeValue is mandatory
+        required: false
         schema:
           type: string
       - name: attributeValue
         in: query
-        description: value of the attribute
-        required: true
+        description: value of the attribute. If set, attributeKey is mandatory
+        required: false
         schema:
           type: string
+      - name: needRoles
+        in: query
+        description: tells that the response must include realm roles of the users. Default is false
+        required: false
+        schema:
+          type: boolean
       responses:
         200:
           description: successful operation
@@ -283,6 +295,67 @@ paths:
           type: string
       responses:
         200:
+          description: successful operation
+        404:
+          description: user not found
+  /idp/realms/{realm}/users/{user}/attributes:
+    put:
+      tags:
+      - Identity provider users
+      summary: Updates a user attribute
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: user
+        in: path
+        description: id of a user
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties:
+                type: array
+                items:
+                  type: string
+      responses:
+        204:
+          description: successful operation
+        404:
+          description: user not found
+    delete:
+      tags:
+      - Identity provider users
+      summary: Delete a user
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: user
+        in: path
+        description: id of a user
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: string
+      responses:
+        204:
           description: successful operation
         404:
           description: user not found
