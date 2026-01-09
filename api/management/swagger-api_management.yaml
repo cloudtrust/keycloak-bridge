@@ -2592,6 +2592,48 @@ components:
         need_verified_contact:
           type: boolean
           description: if true, email and phone number have to be verified to allow validation of the account in KYC
+        video_identification_voucher_enabled: 
+          type: boolean
+        video_identification_accounting_enabled:
+          type: boolean
+        video_identification_prepayment_required:
+          type: boolean
+        auxiliary_video_identification_voucher_enabled: 
+          type: boolean
+        auxiliary_video_identification_accounting_enabled:
+          type: boolean
+        auxiliary_video_identification_prepayment_required:
+          type: boolean
+        auto_identification_voucher_enabled:
+          type: boolean
+        auto_identification_accounting_enabled:
+          type: boolean
+        auto_identification_prepayment_required:
+          type: boolean
+        video_identification_allowed_roles:
+          type: array
+          items:
+            type: string
+        auxiliary_video_identification_allowed_roles:
+          type: array
+          items:
+            type: string
+        auto_identification_allowed_roles:
+          type: array
+          items:
+            type: string
+        physical_identification_allowed_roles:
+          type: array
+          items:
+            type: string
+        onboarding_status_enabled:
+          type: boolean
+        auto_generated_username_enabled:
+          type: boolean
+        auto_generated_username_toggle_enabled:
+          type: boolean
+        register_mode:
+          type: string
     BackOfficeConfiguration:
       type: object
       additionalProperties:
