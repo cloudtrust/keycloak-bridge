@@ -120,7 +120,7 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Group'
-  validation/realms/{realm}/users/{userID}/roles:
+  /validation/realms/{realm}/users/{userID}/roles:
     get:
       tags:
       - UserData
