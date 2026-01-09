@@ -609,6 +609,7 @@ func main() {
 			UpdateUser:               prepareEndpoint(validation.MakeUpdateUserEndpoint(validationComponent, profileCache), "update_user", validationLogger, rateLimitValidation),
 			UpdateUserAccreditations: prepareEndpoint(validation.MakeUpdateUserAccreditationsEndpoint(validationComponent), "update_user_accreditations", validationLogger, rateLimitValidation),
 			GetGroupsOfUser:          prepareEndpoint(validation.MakeGetGroupsOfUserEndpoint(validationComponent), "get_user_groups", validationLogger, rateLimitValidation),
+			GetRolesOfUser:           prepareEndpoint(validation.MakeGetRolesOfUserEndpoint(validationComponent), "get_user_roles", validationLogger, rateLimitValidation),
 		}
 	}
 
@@ -1030,6 +1031,7 @@ func main() {
 		var updateUserHandler = configureValidationHandler(keycloakb.ComponentName, ComponentID, idGenerator, validationExpectedAuthToken, logger)(validationEndpoints.UpdateUser)
 		var updateUserAccreditationsHandler = configureValidationHandler(keycloakb.ComponentName, ComponentID, idGenerator, validationExpectedAuthToken, logger)(validationEndpoints.UpdateUserAccreditations)
 		var getGroupsForUserHandler = configureValidationHandler(keycloakb.ComponentName, ComponentID, idGenerator, validationExpectedAuthToken, logger)(validationEndpoints.GetGroupsOfUser)
+		var getRolesForUserHandler = configureValidationHandler(keycloakb.ComponentName, ComponentID, idGenerator, validationExpectedAuthToken, logger)(validationEndpoints.GetRolesOfUser)
 
 		var validationSubroute = route.PathPrefix("/validation").Subrouter()
 
@@ -1037,6 +1039,7 @@ func main() {
 		validationSubroute.Path("/realms/{realm}/users/{userID}").Methods("PUT").Handler(updateUserHandler)
 		validationSubroute.Path("/realms/{realm}/users/{userID}/accreditations").Methods("PUT").Handler(updateUserAccreditationsHandler)
 		validationSubroute.Path("/realms/{realm}/users/{userID}/groups").Methods("GET").Handler(getGroupsForUserHandler)
+		validationSubroute.Path("/realms/{realm}/users/{userID}/roles").Methods("GET").Handler(getRolesForUserHandler)
 
 		// Communications (bearer auth)
 		var sendMailHandler = configureHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, communications.MakeCommunicationsHandler, logger)(communicationsEndpoints.SendEmail)

@@ -9,8 +9,8 @@ import (
 	api "github.com/cloudtrust/keycloak-bridge/api/validation"
 	"github.com/cloudtrust/keycloak-bridge/pkg/validation/mock"
 	kc "github.com/cloudtrust/keycloak-client/v2"
-	"go.uber.org/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func TestGetUserEndpoint(t *testing.T) {
@@ -158,6 +158,30 @@ func TestGetGroupsOfUserEndpoint(t *testing.T) {
 		req[prmUserID] = userID
 
 		mockComponent.EXPECT().GetGroupsOfUser(ctx, realm, userID).Return([]api.GroupRepresentation{}, nil)
+		var res, err = e(ctx, req)
+		assert.Nil(t, err)
+		assert.NotNil(t, res)
+	}
+}
+
+func TestGetRolessOfUserEndpoint(t *testing.T) {
+	var mockCtrl = gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	var mockComponent = mock.NewComponent(mockCtrl)
+
+	var e = MakeGetRolesOfUserEndpoint(mockComponent)
+
+	// No error
+	{
+		var realm = "master"
+		var userID = "123-123-456"
+		var ctx = context.Background()
+		var req = make(map[string]string)
+		req[prmRealm] = realm
+		req[prmUserID] = userID
+
+		mockComponent.EXPECT().GetRolesOfUser(ctx, realm, userID).Return([]api.RoleRepresentation{}, nil)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.NotNil(t, res)

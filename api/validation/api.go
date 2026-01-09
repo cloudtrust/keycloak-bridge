@@ -45,6 +45,12 @@ type GroupRepresentation struct {
 	Name *string `json:"name,omitempty"`
 }
 
+// RoleRepresentation struct
+type RoleRepresentation struct {
+	ID   *string `json:"id,omitempty"`
+	Name *string `json:"name,omitempty"`
+}
+
 // Parameter references
 const (
 	prmAccreditationName     = "accred_name"

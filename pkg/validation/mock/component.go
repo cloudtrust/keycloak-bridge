@@ -59,6 +59,21 @@ func (mr *ComponentMockRecorder) GetGroupsOfUser(ctx, realmName, userID any) *go
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGroupsOfUser", reflect.TypeOf((*Component)(nil).GetGroupsOfUser), ctx, realmName, userID)
 }
 
+// GetRolesOfUser mocks base method.
+func (m *Component) GetRolesOfUser(ctx context.Context, realmName, userID string) ([]apivalidation.RoleRepresentation, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRolesOfUser", ctx, realmName, userID)
+	ret0, _ := ret[0].([]apivalidation.RoleRepresentation)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRolesOfUser indicates an expected call of GetRolesOfUser.
+func (mr *ComponentMockRecorder) GetRolesOfUser(ctx, realmName, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRolesOfUser", reflect.TypeOf((*Component)(nil).GetRolesOfUser), ctx, realmName, userID)
+}
+
 // GetUser mocks base method.
 func (m *Component) GetUser(ctx context.Context, realmName, userID string) (apivalidation.UserRepresentation, error) {
 	m.ctrl.T.Helper()
@@ -154,6 +169,21 @@ func (m *KeycloakClient) GetRealm(accessToken, realmName string) (keycloak.Realm
 func (mr *KeycloakClientMockRecorder) GetRealm(accessToken, realmName any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRealm", reflect.TypeOf((*KeycloakClient)(nil).GetRealm), accessToken, realmName)
+}
+
+// GetRealmLevelRoleMappings mocks base method.
+func (m *KeycloakClient) GetRealmLevelRoleMappings(accessToken, realmName, userID string) ([]keycloak.RoleRepresentation, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRealmLevelRoleMappings", accessToken, realmName, userID)
+	ret0, _ := ret[0].([]keycloak.RoleRepresentation)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRealmLevelRoleMappings indicates an expected call of GetRealmLevelRoleMappings.
+func (mr *KeycloakClientMockRecorder) GetRealmLevelRoleMappings(accessToken, realmName, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRealmLevelRoleMappings", reflect.TypeOf((*KeycloakClient)(nil).GetRealmLevelRoleMappings), accessToken, realmName, userID)
 }
 
 // GetUser mocks base method.

@@ -24,6 +24,7 @@ type KeycloakClient interface {
 	GetUser(accessToken string, realmName, userID string) (kc.UserRepresentation, error)
 	GetRealm(accessToken string, realmName string) (kc.RealmRepresentation, error)
 	GetGroupsOfUser(accessToken string, realmName, userID string) ([]kc.GroupRepresentation, error)
+	GetRealmLevelRoleMappings(accessToken string, realmName, userID string) ([]kc.RoleRepresentation, error)
 }
 
 // TokenProvider is the interface to retrieve accessToken to access KC
@@ -57,6 +58,7 @@ type Component interface {
 	UpdateUser(ctx context.Context, realmName string, userID string, user api.UserRepresentation, txnID *string) error
 	UpdateUserAccreditations(ctx context.Context, realmName string, userID string, userAccreds []api.AccreditationRepresentation) error
 	GetGroupsOfUser(ctx context.Context, realmName, userID string) ([]api.GroupRepresentation, error)
+	GetRolesOfUser(ctx context.Context, realmName, userID string) ([]api.RoleRepresentation, error)
 }
 
 // Component is the management component.
@@ -380,4 +382,28 @@ func (c *component) GetGroupsOfUser(ctx context.Context, realmName, userID strin
 	}
 
 	return groupsRep, nil
+}
+
+func (c *component) GetRolesOfUser(ctx context.Context, realmName, userID string) ([]api.RoleRepresentation, error) {
+	accessToken, err := c.tokenProvider.ProvideTokenForRealm(ctx, realmName)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Can't get accessToken for technical user", "err", err.Error())
+		return nil, err
+	}
+
+	roles, err := c.keycloakClient.GetRealmLevelRoleMappings(accessToken, realmName, userID)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Can't get realm level role mappings", "err", err.Error(), "realm", realmName, "user", userID)
+		return nil, err
+	}
+
+	rolesRep := []api.RoleRepresentation{}
+	for _, role := range roles {
+		rolesRep = append(rolesRep, api.RoleRepresentation{
+			ID:   role.ID,
+			Name: role.Name,
+		})
+	}
+
+	return rolesRep, nil
 }
