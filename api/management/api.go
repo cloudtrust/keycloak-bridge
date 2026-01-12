@@ -1438,9 +1438,6 @@ func ValidateRealmContextKeys(contextKeys []RealmContextKeyRepresentation, canBe
 		if err := ck.Validate(); err != nil {
 			return err
 		}
-		if _, ok := identitiesRealm[*ck.IdentitiesRealm]; ok {
-			return errorhandler.CreateBadRequestError("identitiesrealm.duplicate")
-		}
 		identitiesRealm[*ck.IdentitiesRealm] = struct{}{}
 		if ck.IsRegisterDefault != nil && *ck.IsRegisterDefault {
 			if foundDefault {
