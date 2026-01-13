@@ -8,7 +8,7 @@ github.com/IBM/sarama
 # github.com/VividCortex/gohistogram v1.0.0
 ## explicit
 github.com/VividCortex/gohistogram
-# github.com/cloudtrust/common-service/v2 v2.15.1-0.20260106131555-84d7d8cc29bd
+# github.com/cloudtrust/common-service/v2 v2.15.1-0.20260113080904-0e8848528553
 ## explicit; go 1.25.3
 github.com/cloudtrust/common-service/v2
 github.com/cloudtrust/common-service/v2/configuration

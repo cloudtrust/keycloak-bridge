@@ -445,26 +445,25 @@ func main() {
 	var authActions = security.Actions.GetActionNamesForService(security.BridgeService)
 	authActions = mobile.AppendIDNowActions(authActions)
 
+	// Tools for authorization manager
+	var authorizationLogger = log.With(logger, "svc", "authorization")
+	var authConfigurationReaderDBModule *configuration.ConfigurationReaderDBModule
+	{
+		authConfigurationReaderDBModule = configuration.NewConfigurationReaderDBModule(configurationRoDBConn, authorizationLogger, authActions)
+	}
+
 	// Authorization Manager
 	var authorizationManager security.AuthorizationManager
-	var identAuthorizationManager security.IdentificationAuthorizationManager
 	{
-		var authorizationLogger = log.With(logger, "svc", "authorization")
-
-		var configurationReaderDBModule *configuration.ConfigurationReaderDBModule
-		{
-			configurationReaderDBModule = configuration.NewConfigurationReaderDBModule(configurationRoDBConn, authorizationLogger, authActions)
-		}
-
 		var err error
-		authorizationManager, err = security.NewAuthorizationManager(configurationReaderDBModule, commonKcAdaptor, authorizationLogger)
+		authorizationManager, err = security.NewAuthorizationManager(authConfigurationReaderDBModule, commonKcAdaptor, authorizationLogger)
 		if err != nil {
 			logger.Error(ctx, "msg", "could not load authorizations", "err", err)
 			return
 		}
-
-		identAuthorizationManager = security.NewIdentificationAuthorizationManager(configurationReaderDBModule, commonKcAdaptor, authorizationLogger)
 	}
+
+	var roleBasedAuthorizationManager = security.NewRoleBasedAuthorizationManager(authConfigurationReaderDBModule, commonKcAdaptor, authorizationLogger)
 
 	// Kafka
 	var kafkaUniverse *kafkauniverse.KafkaUniverse
@@ -604,13 +603,9 @@ func main() {
 		validationComponent := validation.NewComponent(keycloakClient, technicalTokenProvider, archiveDBModule, auditEventsReporterModule, accreditationsService, configurationReaderDBModule, validationLogger)
 
 		var rateLimitValidation = rateLimit[RateKeyValidation]
-		validationEndpoints = validation.Endpoints{
-			GetUser:                  prepareEndpoint(validation.MakeGetUserEndpoint(validationComponent), "get_user", validationLogger, rateLimitValidation),
-			UpdateUser:               prepareEndpoint(validation.MakeUpdateUserEndpoint(validationComponent, profileCache), "update_user", validationLogger, rateLimitValidation),
-			UpdateUserAccreditations: prepareEndpoint(validation.MakeUpdateUserAccreditationsEndpoint(validationComponent), "update_user_accreditations", validationLogger, rateLimitValidation),
-			GetGroupsOfUser:          prepareEndpoint(validation.MakeGetGroupsOfUserEndpoint(validationComponent), "get_user_groups", validationLogger, rateLimitValidation),
-			GetRolesOfUser:           prepareEndpoint(validation.MakeGetRolesOfUserEndpoint(validationComponent), "get_user_roles", validationLogger, rateLimitValidation),
-		}
+		validationEndpoints = validation.NewEndpoints(validationComponent, profileCache, func(endpoint cs.Endpoint, name string) endpoint.Endpoint {
+			return prepareEndpoint(endpoint, name, validationLogger, rateLimitValidation)
+		})
 	}
 
 	// Communications service.
@@ -879,7 +874,7 @@ func main() {
 		var accountingClient = keycloakb.MakeAccountingClient(httpClient)
 
 		// new module for mobile service
-		mobileComponent := mobile.NewComponent(keycloakClient, configDBModule, accreditationsService, technicalTokenProvider, authorizationManager, identAuthorizationManager, accountingClient, mobileLogger)
+		mobileComponent := mobile.NewComponent(keycloakClient, configDBModule, accreditationsService, technicalTokenProvider, authorizationManager, roleBasedAuthorizationManager, accountingClient, mobileLogger)
 		mobileComponent = mobile.MakeAuthorizationMobileComponentMW(log.With(mobileLogger, "mw", "authorization"))(mobileComponent)
 
 		var rateLimitMobile = rateLimit[RateKeyMobile]
@@ -957,7 +952,7 @@ func main() {
 
 		// new module for KYC service
 		kycComponent := kyc.NewComponent(technicalTokenProvider, registerRealm, keycloakClient, profileCache, archiveDBModule, configurationReaderDBModule, auditEventsReporterModule, accreditationsService, kycLogger)
-		kycComponent = kyc.MakeAuthorizationKYCComponentMW(registerRealm, authorizationManager, identAuthorizationManager, endpointPhysicalCheckAvailabilityChecker, log.With(kycLogger, "mw", "authorization"))(kycComponent)
+		kycComponent = kyc.MakeAuthorizationKYCComponentMW(registerRealm, authorizationManager, roleBasedAuthorizationManager, endpointPhysicalCheckAvailabilityChecker, log.With(kycLogger, "mw", "authorization"))(kycComponent)
 
 		var rateLimitKyc = rateLimit[RateKeyKYC]
 		kycEndpoints = kyc.Endpoints{

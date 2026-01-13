@@ -21,7 +21,7 @@ func TestMakeAuthorizationKYCComponentMW(t *testing.T) {
 
 	var mockComponent = mock.NewComponent(mockCtrl)
 	var mockAuthManager = mock.NewAuthorizationManager(mockCtrl)
-	var mockIdentAuthManager = mock.NewIdentificationAuthorizationManager(mockCtrl)
+	var mockIdentAuthManager = mock.NewRoleBasedAuthorizationManager(mockCtrl)
 	var mockAvailabilityChecker = mock.NewEndpointAvailabilityChecker(mockCtrl)
 
 	var realm = "master"

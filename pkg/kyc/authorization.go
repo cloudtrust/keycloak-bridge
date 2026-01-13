@@ -15,7 +15,7 @@ import (
 type authorizationComponentMW struct {
 	realmName           string
 	authManager         security.AuthorizationManager
-	identAuthManager    security.IdentificationAuthorizationManager
+	roleAuthManager     security.RoleBasedAuthorizationManager
 	availabilityChecker middleware.EndpointAvailabilityChecker
 	logger              log.Logger
 	next                Component
@@ -23,14 +23,14 @@ type authorizationComponentMW struct {
 
 // MakeAuthorizationKYCComponentMW checks authorization and return an error if the action is not allowed.
 func MakeAuthorizationKYCComponentMW(realmName string, authorizationManager security.AuthorizationManager,
-	identAuthManager security.IdentificationAuthorizationManager, availabilityChecker middleware.EndpointAvailabilityChecker,
+	roleAuthManager security.RoleBasedAuthorizationManager, availabilityChecker middleware.EndpointAvailabilityChecker,
 	logger log.Logger) func(Component) Component {
 
 	return func(next Component) Component {
 		return &authorizationComponentMW{
 			realmName:           realmName,
 			authManager:         authorizationManager,
-			identAuthManager:    identAuthManager,
+			roleAuthManager:     roleAuthManager,
 			availabilityChecker: availabilityChecker,
 			logger:              logger,
 			next:                next,
@@ -139,7 +139,7 @@ func (c *authorizationComponentMW) GetUser(ctx context.Context, realmName string
 		return apikyc.UserRepresentation{}, err
 	}
 
-	if err := c.identAuthManager.CheckRoleAuthorizationOnTargetUser(ctx, action, realmName, userID); err != nil {
+	if err := c.roleAuthManager.CheckRoleAuthorizationOnTargetUser(ctx, action, realmName, userID); err != nil {
 		return apikyc.UserRepresentation{}, err
 	}
 
@@ -174,7 +174,7 @@ func (c *authorizationComponentMW) ValidateUser(ctx context.Context, realmName s
 		return err
 	}
 
-	if err := c.identAuthManager.CheckRoleAuthorizationOnTargetUser(ctx, action, realmName, userID); err != nil {
+	if err := c.roleAuthManager.CheckRoleAuthorizationOnTargetUser(ctx, action, realmName, userID); err != nil {
 		return err
 	}
 
