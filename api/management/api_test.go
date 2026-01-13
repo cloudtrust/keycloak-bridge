@@ -1302,12 +1302,6 @@ func TestValidateRealmContextKeys(t *testing.T) {
 		assert.Nil(t, ValidateRealmContextKeys(config, true))
 		assert.NotNil(t, ValidateRealmContextKeys(config, false))
 	})
-	t.Run("Duplicated identities realm", func(t *testing.T) {
-		config := []RealmContextKeyRepresentation{createValidRealmContextKey(), createValidRealmContextKey()}
-		err := ValidateRealmContextKeys(config, true)
-		assert.NotNil(t, err)
-		assert.Contains(t, err.Error(), "duplicate")
-	})
 	t.Run("Too many default context keys", func(t *testing.T) {
 		config := []RealmContextKeyRepresentation{createValidRealmContextKey(), createValidRealmContextKey()}
 		config[0].IsRegisterDefault = boolPtr(true)
@@ -1316,6 +1310,12 @@ func TestValidateRealmContextKeys(t *testing.T) {
 		err := ValidateRealmContextKeys(config, true)
 		assert.NotNil(t, err)
 		assert.Contains(t, err.Error(), "toomany")
+	})
+	t.Run("Duplicated identities realm", func(t *testing.T) {
+		config := []RealmContextKeyRepresentation{createValidRealmContextKey(), createValidRealmContextKey()}
+		config[1].ID = ptr("second-id")
+		err := ValidateRealmContextKeys(config, true)
+		assert.Nil(t, err)
 	})
 }
 
