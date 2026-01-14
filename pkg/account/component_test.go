@@ -974,6 +974,7 @@ func TestGetConfiguration(t *testing.T) {
 	var currentUserID = "1234-789"
 	var falseBool = false
 	var trueBool = true
+	var identificationUrl = "identification.url.com"
 	var config = configuration.RealmConfiguration{
 		APISelfAuthenticatorDeletionEnabled:     &falseBool,
 		APISelfAccountEditingEnabled:            &falseBool,
@@ -992,6 +993,7 @@ func TestGetConfiguration(t *testing.T) {
 		BarcodeType:                             ptr("barcode"),
 		OnboardingUserEditingEnabled:            &falseBool,
 		APISelfInitialPasswordDefinitionAllowed: &falseBool,
+		IdentificationURL:                       &identificationUrl,
 	}
 	var adminConfig = configuration.RealmAdminConfiguration{
 		AvailableChecks:                          map[string]bool{"IDNow": false, "physical-check": true},
@@ -1030,6 +1032,7 @@ func TestGetConfiguration(t *testing.T) {
 		assert.Equal(t, *config.SelfServiceDefaultTab, *resConfig.SelfServiceDefaultTab)
 		assert.Equal(t, *config.RedirectSuccessfulRegistrationURL, *resConfig.RedirectSuccessfulRegistrationURL)
 		assert.Equal(t, *config.BarcodeType, *resConfig.BarcodeType)
+		assert.Equal(t, *config.IdentificationURL, *resConfig.IdentificationURL)
 		assert.Equal(t, adminConfig.AvailableChecks, resConfig.AvailableChecks)
 		assert.Equal(t, *adminConfig.SseTheme, *resConfig.Theme)
 		assert.Equal(t, *realmConfig.SupportedLocales, *resConfig.SupportedLocales)
