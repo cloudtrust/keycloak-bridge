@@ -243,29 +243,29 @@ type PasswordRepresentation struct {
 
 // RealmCustomConfiguration struct
 type RealmCustomConfiguration struct {
-	DefaultClientID                         *string   `json:"default_client_id"`
-	DefaultRedirectURI                      *string   `json:"default_redirect_uri"`
-	APISelfAuthenticatorDeletionEnabled     *bool     `json:"api_self_authenticator_deletion_enabled"`
-	APISelfPasswordChangeEnabled            *bool     `json:"api_self_password_change_enabled"`
-	APISelfAccountEditingEnabled            *bool     `json:"api_self_account_editing_enabled"`
-	APISelfAccountDeletionEnabled           *bool     `json:"api_self_account_deletion_enabled"`
-	APISelfIDPLinksManagementEnabled        *bool     `json:"api_self_idplinks_management_enabled"`
-	APISelfInitialPasswordDefinitionAllowed *bool     `json:"api_self_initial_password_definition_allowed"`
-	ShowAuthenticatorsTab                   *bool     `json:"show_authenticators_tab"`
-	ShowPasswordTab                         *bool     `json:"show_password_tab"`
-	ShowProfileTab                          *bool     `json:"show_profile_tab"`
-	ShowAccountDeletionButton               *bool     `json:"show_account_deletion_button"`
-	ShowIDPLinksTab                         *bool     `json:"show_idplinks_tab"`
-	SelfServiceDefaultTab                   *string   `json:"self_service_default_tab"`
-	RedirectCancelledRegistrationURL        *string   `json:"redirect_cancelled_registration_url"`
-	RedirectSuccessfulRegistrationURL       *string   `json:"redirect_successful_registration_url"`
-	OnboardingRedirectURI                   *string   `json:"onboarding_redirect_uri"`
-	OnboardingClientID                      *string   `json:"onboarding_client_id"`
-	SelfRegisterGroupNames                  *[]string `json:"self_register_group_names"`
-	BarcodeType                             *string   `json:"barcode_type"`
-	AllowedBackURLs                         []string  `json:"allowed_back_urls"`
-	OnboardingUserEditingEnabled            *bool     `json:"onboarding_user_editing_enabled"`
-	IdentificationURL                       *string   `json:"identification_url"`
+	DefaultClientID                         *string  `json:"default_client_id"`
+	DefaultRedirectURI                      *string  `json:"default_redirect_uri"`
+	APISelfAuthenticatorDeletionEnabled     *bool    `json:"api_self_authenticator_deletion_enabled"`
+	APISelfPasswordChangeEnabled            *bool    `json:"api_self_password_change_enabled"`
+	APISelfAccountEditingEnabled            *bool    `json:"api_self_account_editing_enabled"`
+	APISelfAccountDeletionEnabled           *bool    `json:"api_self_account_deletion_enabled"`
+	APISelfIDPLinksManagementEnabled        *bool    `json:"api_self_idplinks_management_enabled"`
+	APISelfInitialPasswordDefinitionAllowed *bool    `json:"api_self_initial_password_definition_allowed"`
+	ShowAuthenticatorsTab                   *bool    `json:"show_authenticators_tab"`
+	ShowPasswordTab                         *bool    `json:"show_password_tab"`
+	ShowProfileTab                          *bool    `json:"show_profile_tab"`
+	ShowAccountDeletionButton               *bool    `json:"show_account_deletion_button"`
+	ShowIDPLinksTab                         *bool    `json:"show_idplinks_tab"`
+	SelfServiceDefaultTab                   *string  `json:"self_service_default_tab"`
+	RedirectCancelledRegistrationURL        *string  `json:"redirect_cancelled_registration_url"`
+	RedirectSuccessfulRegistrationURL       *string  `json:"redirect_successful_registration_url"`
+	OnboardingRedirectURI                   *string  `json:"onboarding_redirect_uri"`
+	OnboardingClientID                      *string  `json:"onboarding_client_id"`
+	SelfRegisterGroupNames                  []string `json:"self_register_group_names"`
+	BarcodeType                             *string  `json:"barcode_type"`
+	AllowedBackURLs                         []string `json:"allowed_back_urls"`
+	OnboardingUserEditingEnabled            *bool    `json:"onboarding_user_editing_enabled"`
+	IdentificationURL                       *string  `json:"identification_url"`
 }
 
 // UserStatus struct
