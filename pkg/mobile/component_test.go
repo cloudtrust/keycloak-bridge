@@ -26,6 +26,7 @@ type componentMocks struct {
 	tokenProvider        *mock.TokenProvider
 	accreditationsClient *mock.AccreditationsServiceClient
 	authManager          *mock.AuthorizationManager
+	roleAuthManager      *mock.RoleBasedAuthorizationManager
 	accountingClient     *mock.AccountingClient
 	logger               log.Logger
 }
@@ -37,13 +38,14 @@ func newComponentMocks(mockCtrl *gomock.Controller) *componentMocks {
 		tokenProvider:        mock.NewTokenProvider(mockCtrl),
 		accreditationsClient: mock.NewAccreditationsServiceClient(mockCtrl),
 		authManager:          mock.NewAuthorizationManager(mockCtrl),
+		roleAuthManager:      mock.NewRoleBasedAuthorizationManager(mockCtrl),
 		accountingClient:     mock.NewAccountingClient(mockCtrl),
 		logger:               log.NewNopLogger(),
 	}
 }
 
 func (cm *componentMocks) newComponent() Component {
-	return NewComponent(cm.keycloakClient, cm.configDBModule, cm.accreditationsClient, cm.tokenProvider, cm.authManager, cm.accountingClient, cm.logger)
+	return NewComponent(cm.keycloakClient, cm.configDBModule, cm.accreditationsClient, cm.tokenProvider, cm.authManager, cm.roleAuthManager, cm.accountingClient, cm.logger)
 }
 
 func TestToActionNames(t *testing.T) {
@@ -160,7 +162,9 @@ func TestGetUser(t *testing.T) {
 		mocks.accreditationsClient.EXPECT().GetPendingChecks(ctx, realm, userID).Return([]accreditationsclient.CheckRepresentation{}, nil)
 		mocks.configDBModule.EXPECT().GetAdminConfiguration(ctx, realm).Return(adminConf, nil)
 		mocks.authManager.EXPECT().CheckAuthorizationOnTargetUser(gomock.Any(), idNowInitAuth, realm, userID).Return(nil)
+		mocks.roleAuthManager.EXPECT().CheckRoleAuthorizationOnTargetUser(gomock.Any(), idNowInitAuth, realm, userID).Return(nil)
 		mocks.authManager.EXPECT().CheckAuthorizationOnTargetUser(gomock.Any(), idNowAutoIdentInitAuth, realm, userID).Return(nil)
+		mocks.roleAuthManager.EXPECT().CheckRoleAuthorizationOnTargetUser(gomock.Any(), idNowAutoIdentInitAuth, realm, userID).Return(nil)
 
 		var userInfo, err = component.GetUserInformation(ctx)
 		assert.Nil(t, err)
@@ -180,7 +184,9 @@ func TestGetUser(t *testing.T) {
 		mocks.accreditationsClient.EXPECT().GetPendingChecks(ctx, realm, userID).Return([]accreditationsclient.CheckRepresentation{}, nil)
 		mocks.configDBModule.EXPECT().GetAdminConfiguration(ctx, realm).Return(adminConf, nil)
 		mocks.authManager.EXPECT().CheckAuthorizationOnTargetUser(gomock.Any(), idNowInitAuth, realm, userID).Return(nil)
+		mocks.roleAuthManager.EXPECT().CheckRoleAuthorizationOnTargetUser(gomock.Any(), idNowInitAuth, realm, userID).Return(nil)
 		mocks.authManager.EXPECT().CheckAuthorizationOnTargetUser(gomock.Any(), idNowAutoIdentInitAuth, realm, userID).Return(nil)
+		mocks.roleAuthManager.EXPECT().CheckRoleAuthorizationOnTargetUser(gomock.Any(), idNowAutoIdentInitAuth, realm, userID).Return(nil)
 
 		var userInfo, err = component.GetUserInformation(ctx)
 		assert.Nil(t, err)
@@ -209,6 +215,28 @@ func TestGetUser(t *testing.T) {
 		assert.Len(t, *userInfo.Actions, expectedActionsCount)
 	})
 
+	t.Run("Success-User has no rights for IDNow because of roles", func(t *testing.T) {
+		var checks = []accreditationsclient.CheckRepresentation{{}, {}}
+		var bFalse = false
+		var availableChecks = map[string]bool{"physical": true, "IDNow": true}
+		var adminConf = configuration.RealmAdminConfiguration{AvailableChecks: availableChecks, VideoIdentificationAccountingEnabled: &bFalse, VideoIdentificationPrepaymentRequired: &bFalse}
+		var expectedActionsCount = len(availableChecks) - 1
+
+		mocks.accreditationsClient.EXPECT().GetChecks(ctx, realm, userID).Return(checks, nil)
+		mocks.accreditationsClient.EXPECT().GetPendingChecks(ctx, realm, userID).Return([]accreditationsclient.CheckRepresentation{}, nil)
+		mocks.configDBModule.EXPECT().GetAdminConfiguration(ctx, realm).Return(adminConf, nil)
+		mocks.authManager.EXPECT().CheckAuthorizationOnTargetUser(gomock.Any(), idNowInitAuth, realm, userID).Return(nil)
+		mocks.roleAuthManager.EXPECT().CheckRoleAuthorizationOnTargetUser(gomock.Any(), idNowInitAuth, realm, userID).Return(errors.New("any error"))
+		mocks.authManager.EXPECT().CheckAuthorizationOnTargetUser(gomock.Any(), idNowAutoIdentInitAuth, realm, userID).Return(nil)
+		mocks.roleAuthManager.EXPECT().CheckRoleAuthorizationOnTargetUser(gomock.Any(), idNowAutoIdentInitAuth, realm, userID).Return(errors.New("any error"))
+
+		var userInfo, err = component.GetUserInformation(ctx)
+		assert.Nil(t, err)
+		assert.Len(t, *userInfo.Accreditations, 2)
+		assert.Len(t, *userInfo.Checks, len(checks))
+		assert.Len(t, *userInfo.Actions, expectedActionsCount)
+	})
+
 	t.Run("Success-User has rights for IDNow", func(t *testing.T) {
 		var checks = []accreditationsclient.CheckRepresentation{{}, {}}
 		var bFalse = false
@@ -220,7 +248,9 @@ func TestGetUser(t *testing.T) {
 		mocks.accreditationsClient.EXPECT().GetPendingChecks(ctx, realm, userID).Return([]accreditationsclient.CheckRepresentation{}, nil)
 		mocks.configDBModule.EXPECT().GetAdminConfiguration(ctx, realm).Return(adminConf, nil)
 		mocks.authManager.EXPECT().CheckAuthorizationOnTargetUser(gomock.Any(), idNowInitAuth, realm, userID).Return(nil)
+		mocks.roleAuthManager.EXPECT().CheckRoleAuthorizationOnTargetUser(gomock.Any(), idNowInitAuth, realm, userID).Return(nil)
 		mocks.authManager.EXPECT().CheckAuthorizationOnTargetUser(gomock.Any(), idNowAutoIdentInitAuth, realm, userID).Return(nil)
+		mocks.roleAuthManager.EXPECT().CheckRoleAuthorizationOnTargetUser(gomock.Any(), idNowAutoIdentInitAuth, realm, userID).Return(nil)
 
 		var userInfo, err = component.GetUserInformation(ctx)
 		assert.Nil(t, err)
@@ -242,7 +272,9 @@ func TestGetUser(t *testing.T) {
 		mocks.accreditationsClient.EXPECT().GetPendingChecks(ctx, realm, userID).Return([]accreditationsclient.CheckRepresentation{{Nature: &pendingAction, Status: &pending, DateTime: &now}}, nil)
 		mocks.configDBModule.EXPECT().GetAdminConfiguration(ctx, realm).Return(adminConf, nil)
 		mocks.authManager.EXPECT().CheckAuthorizationOnTargetUser(gomock.Any(), idNowInitAuth, realm, userID).Return(nil)
+		mocks.roleAuthManager.EXPECT().CheckRoleAuthorizationOnTargetUser(gomock.Any(), idNowInitAuth, realm, userID).Return(nil)
 		mocks.authManager.EXPECT().CheckAuthorizationOnTargetUser(gomock.Any(), idNowAutoIdentInitAuth, realm, userID).Return(nil)
+		mocks.roleAuthManager.EXPECT().CheckRoleAuthorizationOnTargetUser(gomock.Any(), idNowAutoIdentInitAuth, realm, userID).Return(nil)
 
 		var userInfo, err = component.GetUserInformation(ctx)
 		assert.Nil(t, err)
@@ -263,7 +295,9 @@ func TestGetUser(t *testing.T) {
 		mocks.accreditationsClient.EXPECT().GetPendingChecks(ctx, realm, userID).Return([]accreditationsclient.CheckRepresentation{}, nil)
 		mocks.configDBModule.EXPECT().GetAdminConfiguration(ctx, realm).Return(adminConf, nil)
 		mocks.authManager.EXPECT().CheckAuthorizationOnTargetUser(gomock.Any(), idNowInitAuth, realm, userID).Return(nil)
+		mocks.roleAuthManager.EXPECT().CheckRoleAuthorizationOnTargetUser(gomock.Any(), idNowInitAuth, realm, userID).Return(nil)
 		mocks.authManager.EXPECT().CheckAuthorizationOnTargetUser(gomock.Any(), idNowAutoIdentInitAuth, realm, userID).Return(nil)
+		mocks.roleAuthManager.EXPECT().CheckRoleAuthorizationOnTargetUser(gomock.Any(), idNowAutoIdentInitAuth, realm, userID).Return(nil)
 		mocks.accountingClient.EXPECT().GetBalance(ctx, realm, userID, "VIDEO_IDENTIFICATION").Return(float64(10), nil).Times(1)
 
 		var userInfo, err = component.GetUserInformation(ctx)
@@ -283,7 +317,9 @@ func TestGetUser(t *testing.T) {
 		mocks.accreditationsClient.EXPECT().GetPendingChecks(ctx, realm, userID).Return([]accreditationsclient.CheckRepresentation{}, nil)
 		mocks.configDBModule.EXPECT().GetAdminConfiguration(ctx, realm).Return(adminConf, nil)
 		mocks.authManager.EXPECT().CheckAuthorizationOnTargetUser(gomock.Any(), idNowInitAuth, realm, userID).Return(nil)
+		mocks.roleAuthManager.EXPECT().CheckRoleAuthorizationOnTargetUser(gomock.Any(), idNowInitAuth, realm, userID).Return(nil)
 		mocks.authManager.EXPECT().CheckAuthorizationOnTargetUser(gomock.Any(), idNowAutoIdentInitAuth, realm, userID).Return(nil)
+		mocks.roleAuthManager.EXPECT().CheckRoleAuthorizationOnTargetUser(gomock.Any(), idNowAutoIdentInitAuth, realm, userID).Return(nil)
 		mocks.accountingClient.EXPECT().GetBalance(ctx, realm, userID, "VIDEO_IDENTIFICATION").Return(float64(0), nil).Times(1)
 
 		var userInfo, err = component.GetUserInformation(ctx)

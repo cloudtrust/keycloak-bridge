@@ -81,6 +81,11 @@ type AuthorizationManager interface {
 	CheckAuthorizationOnTargetUser(ctx context.Context, action, targetRealm, userID string) error
 }
 
+// RoleBasedAuthorizationManager is the interface to check identification role authorizations of a user
+type RoleBasedAuthorizationManager interface {
+	CheckRoleAuthorizationOnTargetUser(ctx context.Context, initIdentAction string, targetRealm string, userID string) error
+}
+
 // AccountingClient interface
 type AccountingClient interface {
 	GetBalance(ctx context.Context, realmName string, userID string, service string) (float64, error)
@@ -93,18 +98,23 @@ type component struct {
 	accreditationsClient AccreditationsServiceClient
 	tokenProvider        TokenProvider
 	authManager          AuthorizationManager
+	roleAuthManager      RoleBasedAuthorizationManager
 	accountingClient     AccountingClient
 	logger               keycloakb.Logger
 }
 
 // NewComponent returns the self-service component.
-func NewComponent(keycloakClient KeycloakClient, configDBModule keycloakb.ConfigurationDBModule, accreditationsClient AccreditationsServiceClient, tokenProvider TokenProvider, authManager AuthorizationManager, accountingClient AccountingClient, logger keycloakb.Logger) Component {
+func NewComponent(keycloakClient KeycloakClient, configDBModule keycloakb.ConfigurationDBModule, accreditationsClient AccreditationsServiceClient,
+	tokenProvider TokenProvider, authManager AuthorizationManager, roleAuthManager RoleBasedAuthorizationManager, accountingClient AccountingClient,
+	logger keycloakb.Logger) Component {
+
 	return &component{
 		keycloakClient:       keycloakClient,
 		configDBModule:       configDBModule,
 		accreditationsClient: accreditationsClient,
 		tokenProvider:        tokenProvider,
 		authManager:          authManager,
+		roleAuthManager:      roleAuthManager,
 		accountingClient:     accountingClient,
 		logger:               logger,
 	}
@@ -206,7 +216,11 @@ func (c *component) isIDNowVideoIdentAvailableForUser(ctx context.Context, techn
 	var userID = ctx.Value(cs.CtContextUserID).(string)
 	var technicalUserContext = context.WithValue(ctx, cs.CtContextAccessToken, technicalUserAccessToken)
 
-	return c.authManager.CheckAuthorizationOnTargetUser(technicalUserContext, idNowInitAuth, realm, userID) == nil
+	if err := c.authManager.CheckAuthorizationOnTargetUser(technicalUserContext, idNowInitAuth, realm, userID); err != nil {
+		return false
+	}
+
+	return c.roleAuthManager.CheckRoleAuthorizationOnTargetUser(technicalUserContext, idNowInitAuth, realm, userID) == nil
 }
 
 func (c *component) isIDNowAutoIdentAvailableForUser(ctx context.Context, technicalUserAccessToken string) bool {
@@ -214,5 +228,9 @@ func (c *component) isIDNowAutoIdentAvailableForUser(ctx context.Context, techni
 	var userID = ctx.Value(cs.CtContextUserID).(string)
 	var technicalUserContext = context.WithValue(ctx, cs.CtContextAccessToken, technicalUserAccessToken)
 
-	return c.authManager.CheckAuthorizationOnTargetUser(technicalUserContext, idNowAutoIdentInitAuth, realm, userID) == nil
+	if err := c.authManager.CheckAuthorizationOnTargetUser(technicalUserContext, idNowAutoIdentInitAuth, realm, userID); err != nil {
+		return false
+	}
+
+	return c.roleAuthManager.CheckRoleAuthorizationOnTargetUser(technicalUserContext, idNowAutoIdentInitAuth, realm, userID) == nil
 }

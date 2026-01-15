@@ -460,3 +460,62 @@ func TestGetGroupsOfUser(t *testing.T) {
 		assert.NotNil(t, err)
 	})
 }
+
+func TestGetRolesOfUser(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	mocks := createComponentMocks(mockCtrl)
+	component := mocks.createComponent()
+
+	accessToken := "TOKEN=="
+	realmName := "master"
+	userID := "789-789-456"
+	ctx := context.Background()
+	testError := errors.New("Test error")
+
+	t.Run("ProvideTokenForRealm fails", func(t *testing.T) {
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return("", testError)
+
+		_, err := component.GetRolesOfUser(ctx, realmName, userID)
+		assert.Error(t, err)
+	})
+
+	t.Run("GetRealmLevelRoleMappings fails", func(t *testing.T) {
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return(accessToken, nil)
+		mocks.keycloakClient.EXPECT().GetRealmLevelRoleMappings(accessToken, realmName, userID).Return([]kc.RoleRepresentation{}, testError)
+
+		_, err := component.GetRolesOfUser(ctx, realmName, userID)
+		assert.Error(t, err)
+	})
+
+	t.Run("Success", func(t *testing.T) {
+		roles := []kc.RoleRepresentation{
+			{
+				ID:   ptr("role-id-1"),
+				Name: ptr("role-name-1"),
+			},
+			{
+				ID:   ptr("role-id-2"),
+				Name: ptr("role-name-2"),
+			}}
+
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return(accessToken, nil)
+		mocks.keycloakClient.EXPECT().GetRealmLevelRoleMappings(accessToken, realmName, userID).Return(roles, nil)
+
+		expectedResult := []api.RoleRepresentation{
+			{
+				ID:   ptr("role-id-1"),
+				Name: ptr("role-name-1"),
+			},
+			{
+				ID:   ptr("role-id-2"),
+				Name: ptr("role-name-2"),
+			}}
+
+		result, err := component.GetRolesOfUser(ctx, realmName, userID)
+		assert.NoError(t, err)
+		assert.Len(t, result, 2)
+		assert.ElementsMatch(t, expectedResult, result)
+	})
+}

@@ -11,8 +11,8 @@ import (
 	apicommon "github.com/cloudtrust/keycloak-bridge/api/common"
 	apikyc "github.com/cloudtrust/keycloak-bridge/api/kyc"
 	"github.com/cloudtrust/keycloak-bridge/pkg/kyc/mock"
-	"go.uber.org/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func TestMakeAuthorizationKYCComponentMW(t *testing.T) {
@@ -21,6 +21,7 @@ func TestMakeAuthorizationKYCComponentMW(t *testing.T) {
 
 	var mockComponent = mock.NewComponent(mockCtrl)
 	var mockAuthManager = mock.NewAuthorizationManager(mockCtrl)
+	var mockIdentAuthManager = mock.NewRoleBasedAuthorizationManager(mockCtrl)
 	var mockAvailabilityChecker = mock.NewEndpointAvailabilityChecker(mockCtrl)
 
 	var realm = "master"
@@ -31,7 +32,7 @@ func TestMakeAuthorizationKYCComponentMW(t *testing.T) {
 	var consentCode *string
 	var expectedErr = errors.New("")
 
-	var component = MakeAuthorizationKYCComponentMW(realm, mockAuthManager, mockAvailabilityChecker, logger.NewNopLogger())(mockComponent)
+	var component = MakeAuthorizationKYCComponentMW(realm, mockAuthManager, mockIdentAuthManager, mockAvailabilityChecker, logger.NewNopLogger())(mockComponent)
 
 	t.Run("GetActions", func(t *testing.T) {
 		t.Run("not authorized", func(t *testing.T) {
@@ -104,9 +105,17 @@ func TestMakeAuthorizationKYCComponentMW(t *testing.T) {
 			var _, err = component.GetUser(ctx, realm, userID, consentCode)
 			assert.Equal(t, expectedErr, err)
 		})
+		t.Run("not authorized because of roles", func(t *testing.T) {
+			mockAvailabilityChecker.EXPECT().CheckAvailabilityForRealm(ctx, realm, gomock.Any()).Return(ctx, nil)
+			mockAuthManager.EXPECT().CheckAuthorizationOnTargetUser(ctx, security.KYCGetUser.String(), realm, userID).Return(nil)
+			mockIdentAuthManager.EXPECT().CheckRoleAuthorizationOnTargetUser(ctx, security.KYCGetUser.String(), realm, userID).Return(expectedErr)
+			var _, err = component.GetUser(ctx, realm, userID, consentCode)
+			assert.Equal(t, expectedErr, err)
+		})
 		t.Run("authorized", func(t *testing.T) {
 			mockAvailabilityChecker.EXPECT().CheckAvailabilityForRealm(ctx, realm, gomock.Any()).Return(ctx, nil)
 			mockAuthManager.EXPECT().CheckAuthorizationOnTargetUser(ctx, security.KYCGetUser.String(), realm, userID).Return(nil)
+			mockIdentAuthManager.EXPECT().CheckRoleAuthorizationOnTargetUser(ctx, security.KYCGetUser.String(), realm, userID).Return(nil)
 			mockComponent.EXPECT().GetUser(ctx, realm, userID, consentCode).Return(apikyc.UserRepresentation{}, expectedErr)
 			var _, err = component.GetUser(ctx, realm, userID, consentCode)
 			assert.Equal(t, expectedErr, err)
@@ -183,9 +192,17 @@ func TestMakeAuthorizationKYCComponentMW(t *testing.T) {
 			var err = component.ValidateUser(ctx, realm, userID, user, consentCode)
 			assert.Equal(t, expectedErr, err)
 		})
+		t.Run("not authorized because of roles", func(t *testing.T) {
+			mockAvailabilityChecker.EXPECT().CheckAvailabilityForRealm(ctx, realm, gomock.Any()).Return(ctx, nil)
+			mockAuthManager.EXPECT().CheckAuthorizationOnTargetUser(ctx, security.KYCValidateUser.String(), realm, userID).Return(nil)
+			mockIdentAuthManager.EXPECT().CheckRoleAuthorizationOnTargetUser(ctx, security.KYCValidateUser.String(), realm, userID).Return(expectedErr)
+			var err = component.ValidateUser(ctx, realm, userID, user, consentCode)
+			assert.Equal(t, expectedErr, err)
+		})
 		t.Run("authorized", func(t *testing.T) {
 			mockAvailabilityChecker.EXPECT().CheckAvailabilityForRealm(ctx, realm, gomock.Any()).Return(ctx, nil)
 			mockAuthManager.EXPECT().CheckAuthorizationOnTargetUser(ctx, security.KYCValidateUser.String(), realm, userID).Return(nil)
+			mockIdentAuthManager.EXPECT().CheckRoleAuthorizationOnTargetUser(ctx, security.KYCValidateUser.String(), realm, userID).Return(nil)
 			mockComponent.EXPECT().ValidateUser(ctx, realm, userID, user, consentCode).Return(expectedErr)
 			var err = component.ValidateUser(ctx, realm, userID, user, consentCode)
 			assert.Equal(t, expectedErr, err)

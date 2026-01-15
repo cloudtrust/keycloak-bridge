@@ -19,12 +19,24 @@ type Endpoints struct {
 	UpdateUserAccreditations endpoint.Endpoint
 	CreateCheck              endpoint.Endpoint
 	GetGroupsOfUser          endpoint.Endpoint
+	GetRolesOfUser           endpoint.Endpoint
 	//CreatePendingCheck       endpoint.Endpoint
 }
 
 // UserProfileCache interface
 type UserProfileCache interface {
 	GetRealmUserProfile(ctx context.Context, realmName string) (kc.UserProfileRepresentation, error)
+}
+
+// NewEndpoints creates an Endpoints instance
+func NewEndpoints(component Component, profileCache UserProfileCache, endpointWrapper func(endpoint cs.Endpoint, name string) endpoint.Endpoint) Endpoints {
+	return Endpoints{
+		GetUser:                  endpointWrapper(MakeGetUserEndpoint(component), "get_user"),
+		UpdateUser:               endpointWrapper(MakeUpdateUserEndpoint(component, profileCache), "update_user"),
+		UpdateUserAccreditations: endpointWrapper(MakeUpdateUserAccreditationsEndpoint(component), "update_user_accreditations"),
+		GetGroupsOfUser:          endpointWrapper(MakeGetGroupsOfUserEndpoint(component), "get_user_groups"),
+		GetRolesOfUser:           endpointWrapper(MakeGetRolesOfUserEndpoint(component), "get_user_roles"),
+	}
 }
 
 // MakeGetUserEndpoint endpoint creation
@@ -89,5 +101,14 @@ func MakeGetGroupsOfUserEndpoint(component Component) cs.Endpoint {
 		var m = req.(map[string]string)
 
 		return component.GetGroupsOfUser(ctx, m[prmRealm], m[prmUserID])
+	}
+}
+
+// MakeGetRolesOfUserEndpoint creates an endpoint for GetRolesOfUser
+func MakeGetRolesOfUserEndpoint(component Component) cs.Endpoint {
+	return func(ctx context.Context, req interface{}) (interface{}, error) {
+		var m = req.(map[string]string)
+
+		return component.GetRolesOfUser(ctx, m[prmRealm], m[prmUserID])
 	}
 }

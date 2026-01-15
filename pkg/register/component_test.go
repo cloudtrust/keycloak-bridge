@@ -117,7 +117,7 @@ func TestRegisterUser(t *testing.T) {
 	var clientID = "onboardingid"
 	var onboardingURI = "http://test.test"
 	var realmConf = configuration.RealmConfiguration{
-		SelfRegisterGroupNames: &groupNames,
+		SelfRegisterGroupNames: groupNames,
 		OnboardingClientID:     &clientID,
 		OnboardingRedirectURI:  &onboardingURI,
 	}
