@@ -5,7 +5,7 @@ go 1.25.3
 require (
 	github.com/cloudtrust/common-service/v2 v2.15.1-0.20260113080904-0e8848528553
 	github.com/cloudtrust/httpclient v1.6.0
-	github.com/cloudtrust/kafka-client v1.7.1
+	github.com/cloudtrust/kafka-client v1.7.2
 	github.com/cloudtrust/keycloak-client/v2 v2.16.0
 	github.com/go-kit/kit v0.13.0
 	github.com/go-kit/log v0.2.1
@@ -27,7 +27,7 @@ require (
 
 require (
 	filippo.io/edwards25519 v1.1.0 // indirect
-	github.com/IBM/sarama v1.46.1 // indirect
+	github.com/IBM/sarama v1.46.3 // indirect
 	github.com/VividCortex/gohistogram v1.0.0 // indirect
 	github.com/coreos/go-oidc/v3 v3.17.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
@@ -48,7 +48,7 @@ require (
 	github.com/jcmturner/gofork v1.7.6 // indirect
 	github.com/jcmturner/gokrb5/v8 v8.4.4 // indirect
 	github.com/jcmturner/rpc/v2 v2.0.3 // indirect
-	github.com/klauspost/compress v1.18.0 // indirect
+	github.com/klauspost/compress v1.18.1 // indirect
 	github.com/nyaruka/phonenumbers v1.6.7 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
