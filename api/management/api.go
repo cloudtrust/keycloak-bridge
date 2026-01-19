@@ -265,6 +265,7 @@ type RealmCustomConfiguration struct {
 	BarcodeType                             *string  `json:"barcode_type"`
 	AllowedBackURLs                         []string `json:"allowed_back_urls"`
 	OnboardingUserEditingEnabled            *bool    `json:"onboarding_user_editing_enabled"`
+	IdentificationURL                       *string  `json:"identification_url"`
 }
 
 // UserStatus struct
@@ -856,6 +857,7 @@ func ConvertRealmCustomConfigurationFromDBStruct(config configuration.RealmConfi
 		BarcodeType:                             config.BarcodeType,
 		AllowedBackURLs:                         allowedBackURLs,
 		OnboardingUserEditingEnabled:            defaultBool(config.OnboardingUserEditingEnabled, false),
+		IdentificationURL:                       config.IdentificationURL,
 	}
 }
 
@@ -1215,6 +1217,7 @@ func (config RealmCustomConfiguration) Validate() error {
 		ValidateParameterRegExp(constants.OnboardingClientID, config.OnboardingClientID, constants.RegExpClientID, false).
 		ValidateParameterRegExpSlice(constants.AllowedBackURL, config.AllowedBackURLs, constants.RegExpAllowedBackURL, false).
 		ValidateParameterIn(constants.BarcodeType, config.BarcodeType, allowedBarcodeType, false).
+		ValidateParameterRegExp(constants.IdentificationURL, config.IdentificationURL, constants.RegExpRedirectURI, false).
 		Status()
 }
 

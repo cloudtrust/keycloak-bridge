@@ -89,4 +89,5 @@ const (
 	Logo                              = "logo"
 	Favicon                           = "favicon"
 	Translations                      = "translations"
+	IdentificationURL                 = "identificationURL"
 )
