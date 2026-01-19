@@ -2334,6 +2334,7 @@ func (c *component) UpdateRealmCustomConfiguration(ctx context.Context, realmNam
 		BarcodeType:                             customConfig.BarcodeType,
 		AllowedBackURLs:                         customConfig.AllowedBackURLs,
 		OnboardingUserEditingEnabled:            customConfig.OnboardingUserEditingEnabled,
+		IdentificationURL:                       customConfig.IdentificationURL,
 	}
 
 	// from the realm ID, update the custom configuration in the DB
