@@ -477,10 +477,10 @@ func (c *component) GetUsersWithAttribute(ctx context.Context, realmName string,
 func (c *component) AddUserAttributes(ctx context.Context, realmName string, userID string, attributes map[string][]string) error {
 	// For now, we don't check which attributes are allowed to be set. If needed, we should use UserProfile feature and
 	// check if annotations tell that the attribute is writable or not for the given interface.
-	return c.updateUser(ctx, realmName, userID, func(user kc.UserRepresentation) bool {
+	return c.updateUser(ctx, realmName, userID, func(user *kc.UserRepresentation) bool {
 		var updated = false
 		for attributeKey, attributeValues := range attributes {
-			if c.addUserAttribute(user, attributeKey, attributeValues) {
+			if c.addUserAttribute(ctx, user, attributeKey, attributeValues) {
 				updated = true
 			}
 		}
@@ -488,7 +488,7 @@ func (c *component) AddUserAttributes(ctx context.Context, realmName string, use
 	})
 }
 
-func (c *component) addUserAttribute(user kc.UserRepresentation, attributeKey string, attributeValues []string) bool {
+func (c *component) addUserAttribute(ctx context.Context, user *kc.UserRepresentation, attributeKey string, attributeValues []string) bool {
 	var key = kc.AttributeKey(attributeKey)
 	if user.Attributes == nil {
 		var attributes = make(kc.Attributes)
@@ -507,7 +507,7 @@ func (c *component) addUserAttribute(user kc.UserRepresentation, attributeKey st
 func (c *component) DeleteUserAttributes(ctx context.Context, realmName string, userID string, attributeKeys []string) error {
 	// For now, we don't check which attributes are allowed to be removed. If needed, we should use UserProfile feature and
 	// check if annotations tell that the attribute is writable or not for the given interface.
-	return c.updateUser(ctx, realmName, userID, func(user kc.UserRepresentation) bool {
+	return c.updateUser(ctx, realmName, userID, func(user *kc.UserRepresentation) bool {
 		var count = 0
 		for _, attributeKey := range attributeKeys {
 			var key = kc.AttributeKey(attributeKey)
@@ -523,7 +523,7 @@ func (c *component) DeleteUserAttributes(ctx context.Context, realmName string, 
 	})
 }
 
-func (c *component) updateUser(ctx context.Context, realmName string, userID string, updateFunc func(user kc.UserRepresentation) bool) error {
+func (c *component) updateUser(ctx context.Context, realmName string, userID string, updateFunc func(user *kc.UserRepresentation) bool) error {
 	accessToken, err := c.tokenProvider.ProvideTokenForRealm(ctx, realmName)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Failed to get OIDC token from keycloak", "err", err.Error())
@@ -534,7 +534,7 @@ func (c *component) updateUser(ctx context.Context, realmName string, userID str
 		c.logger.Warn(ctx, "msg", "Failed to get Keycloak user", "err", err.Error(), "realm", realmName, "user", userID)
 		return err
 	}
-	if updateFunc(user) {
+	if updateFunc(&user) {
 		err = overrideKeycloakError(c.keycloakIdpClient.UpdateUser(accessToken, realmName, userID, user), "attribute")
 		if err != nil {
 			c.logger.Warn(ctx, "msg", "Failed to update user from keycloak", "err", err.Error(), "realm", realmName, "user", userID)

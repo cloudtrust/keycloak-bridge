@@ -39,6 +39,27 @@ func ptrBool(value bool) *bool {
 	return &value
 }
 
+type hasSingleAttributeValue struct {
+	Key   string
+	Value string
+}
+
+func (h hasSingleAttributeValue) Matches(x any) bool {
+	var user, ok = x.(kc.UserRepresentation)
+	if !ok || user.Attributes == nil {
+		return false
+	}
+	var currValue = user.Attributes.Get(kc.AttributeKey(h.Key))
+	if len(currValue) != 1 {
+		return false
+	}
+	return currValue[0] == h.Value
+}
+
+func (h hasSingleAttributeValue) String() string {
+	return fmt.Sprintf("hasSingleAttributeValue{Key: %s, Value: %s}", h.Key, h.Value)
+}
+
 func createTestKcIdp() kc.IdentityProviderRepresentation {
 	return kc.IdentityProviderRepresentation{
 		AddReadTokenRoleOnCreate:  ptrBool(false),
@@ -922,14 +943,14 @@ func TestAddDeleteUserAttributes(t *testing.T) {
 		t.Run("Success adding first attribute", func(t *testing.T) {
 			mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return(accessToken, nil)
 			mocks.keycloakIdpClient.EXPECT().GetUser(accessToken, realmName, userID).Return(kc.UserRepresentation{Attributes: nil}, nil)
-			mocks.keycloakIdpClient.EXPECT().UpdateUser(accessToken, realmName, userID, gomock.Any()).Return(nil)
+			mocks.keycloakIdpClient.EXPECT().UpdateUser(accessToken, realmName, userID, hasSingleAttributeValue{Key: attribKey, Value: attribValue}).Return(nil)
 			err := idpComponent.AddUserAttributes(ctx, realmName, userID, map[string][]string{attribKey: {attribValue}})
 			assert.NoError(t, err)
 		})
 		t.Run("Success adding not yet existing attribute", func(t *testing.T) {
 			mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return(accessToken, nil)
 			mocks.keycloakIdpClient.EXPECT().GetUser(accessToken, realmName, userID).Return(kc.UserRepresentation{Attributes: &kc.Attributes{}}, nil)
-			mocks.keycloakIdpClient.EXPECT().UpdateUser(accessToken, realmName, userID, gomock.Any()).Return(nil)
+			mocks.keycloakIdpClient.EXPECT().UpdateUser(accessToken, realmName, userID, hasSingleAttributeValue{Key: attribKey, Value: attribValue}).Return(nil)
 			err := idpComponent.AddUserAttributes(ctx, realmName, userID, map[string][]string{attribKey: {attribValue}})
 			assert.NoError(t, err)
 		})
@@ -937,7 +958,7 @@ func TestAddDeleteUserAttributes(t *testing.T) {
 			kcUser := kc.UserRepresentation{Attributes: &kc.Attributes{kc.AttributeKey(attribKey): []string{"some-other-value"}}}
 			mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return(accessToken, nil)
 			mocks.keycloakIdpClient.EXPECT().GetUser(accessToken, realmName, userID).Return(kcUser, nil)
-			mocks.keycloakIdpClient.EXPECT().UpdateUser(accessToken, realmName, userID, gomock.Any()).Return(nil)
+			mocks.keycloakIdpClient.EXPECT().UpdateUser(accessToken, realmName, userID, hasSingleAttributeValue{Key: attribKey, Value: attribValue}).Return(nil)
 			err := idpComponent.AddUserAttributes(ctx, realmName, userID, map[string][]string{attribKey: {attribValue}})
 			assert.NoError(t, err)
 		})
