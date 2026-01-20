@@ -45,6 +45,7 @@ type EventsReporterModule interface {
 // ConfigurationDBModule is the interface of the configuration module.
 type ConfigurationDBModule interface {
 	GetAdminConfiguration(context.Context, string) (configuration.RealmAdminConfiguration, error)
+	GetContextKeysForCustomerRealm(ctx context.Context, customerRealm string) ([]configuration.RealmContextKey, error)
 }
 
 // AccreditationsServiceClient interface

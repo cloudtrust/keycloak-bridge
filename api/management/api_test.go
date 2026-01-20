@@ -1277,6 +1277,7 @@ func TestContextKeyConvertions(t *testing.T) {
 			IdentificationURI: nil,
 			AutoVoucher:       &configuration.ContextKeyConfAutovoucher{},
 			Accreditation:     &configuration.ContextKeyConfAccreditation{},
+			IDNow:             &configuration.ContextKeyConfIDNow{},
 		})
 		assert.Nil(t, config.Accreditation.EmailThemeRealm)
 		assert.Nil(t, config.AutoVoucher.ServiceType)
@@ -1287,6 +1288,7 @@ func TestContextKeyConvertions(t *testing.T) {
 		assert.Nil(t, config.Onboarding.ClientID)
 		assert.Nil(t, config.Onboarding.RedirectURI)
 		assert.Nil(t, config.Onboarding.IsRedirectMode)
+		assert.Nil(t, config.IDNow.DesktopRedirectURI)
 	})
 
 	t.Run("Config fields are nil empty config", func(t *testing.T) {
@@ -1300,6 +1302,7 @@ func TestContextKeyConvertions(t *testing.T) {
 		assert.Nil(t, config.Onboarding.ClientID)
 		assert.Nil(t, config.Onboarding.RedirectURI)
 		assert.Nil(t, config.Onboarding.IsRedirectMode)
+		assert.Nil(t, config.IDNow.DesktopRedirectURI)
 	})
 }
 
@@ -1522,5 +1525,35 @@ func TestConvertToThemeConfiguration(t *testing.T) {
 		assert.Equal(t, config.Settings.FontFamily, res.Settings.FontFamily)
 		assert.Equal(t, expectedLogo, *res.Logo)
 		assert.Equal(t, expectedFavicon, *res.Favicon)
+	})
+}
+
+func TestContextKeyIDNowConversions(t *testing.T) {
+	idnowConfig := configuration.ContextKeyConfIDNow{
+		DesktopRedirectURI: ptr("http://redirect.uri/after/idnow"),
+	}
+
+	apiConfig := ConvertToAPIContextKeyIDNow(&idnowConfig)
+	assert.Equal(t, idnowConfig.DesktopRedirectURI, apiConfig.DesktopRedirectURI)
+
+	dbConfig := apiConfig.ToDatabaseModel()
+	assert.Equal(t, idnowConfig.DesktopRedirectURI, dbConfig.DesktopRedirectURI)
+}
+
+func TestValidateCtxKeyIDNowRepresentation(t *testing.T) {
+	t.Run("Valid configuration", func(t *testing.T) {
+		config := configuration.ContextKeyConfIDNow{
+			DesktopRedirectURI: ptr("http://redirect.uri?theme=mytheme"),
+		}
+		apiConfig := ConvertToAPIContextKeyIDNow(&config)
+		assert.Nil(t, apiConfig.Validate())
+	})
+
+	t.Run("Invalid configuration", func(t *testing.T) {
+		config := configuration.ContextKeyConfIDNow{
+			DesktopRedirectURI: ptr("not.a.valid.uri"),
+		}
+		apiConfig := ConvertToAPIContextKeyIDNow(&config)
+		assert.NotNil(t, apiConfig.Validate())
 	})
 }

@@ -331,6 +331,21 @@ func (mr *ConfigurationDBModuleMockRecorder) GetAdminConfiguration(arg0, arg1 an
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAdminConfiguration", reflect.TypeOf((*ConfigurationDBModule)(nil).GetAdminConfiguration), arg0, arg1)
 }
 
+// GetContextKeysForCustomerRealm mocks base method.
+func (m *ConfigurationDBModule) GetContextKeysForCustomerRealm(ctx context.Context, customerRealm string) ([]configuration.RealmContextKey, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetContextKeysForCustomerRealm", ctx, customerRealm)
+	ret0, _ := ret[0].([]configuration.RealmContextKey)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetContextKeysForCustomerRealm indicates an expected call of GetContextKeysForCustomerRealm.
+func (mr *ConfigurationDBModuleMockRecorder) GetContextKeysForCustomerRealm(ctx, customerRealm any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetContextKeysForCustomerRealm", reflect.TypeOf((*ConfigurationDBModule)(nil).GetContextKeysForCustomerRealm), ctx, customerRealm)
+}
+
 // UserProfileCache is a mock of UserProfileCache interface.
 type UserProfileCache struct {
 	ctrl     *gomock.Controller

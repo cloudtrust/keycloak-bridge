@@ -408,6 +408,7 @@ type CtxKeyConfigRepresentation struct {
 	Onboarding        CtxKeyOnboardingRepresentation    `json:"onboarding"`
 	Accreditation     CtxKeyAccreditationRepresentation `json:"accreditation"`
 	AutoVoucher       CtxKeyAutoVoucherRepresentation   `json:"autovoucher"`
+	IDNow             CtxKeyIDNowRepresentation         `json:"idnow"`
 }
 
 // CtxKeyOnboardingRepresentation struct
@@ -428,6 +429,11 @@ type CtxKeyAutoVoucherRepresentation struct {
 	Validity               *string `json:"validity"`
 	AccreditationRequested *string `json:"accreditationRequested"`
 	BilledRealm            *string `json:"billedRealm"`
+}
+
+// CtxKeyIDNowRepresentation struct
+type CtxKeyIDNowRepresentation struct {
+	DesktopRedirectURI *string `json:"desktopRedirectUri"`
 }
 
 // RequiredAction type
@@ -1472,6 +1478,7 @@ func ConvertToAPIContextKeyConfig(config configuration.ContextKeyConfiguration) 
 		Onboarding:        ConvertToAPIContextKeyOnboarding(config.Onboarding),
 		Accreditation:     ConvertToAPIContextKeyAccreditation(config.Accreditation),
 		AutoVoucher:       ConvertToAPIContextKeyAutovoucher(config.AutoVoucher),
+		IDNow:             ConvertToAPIContextKeyIDNow(config.IDNow),
 	}
 }
 
@@ -1480,12 +1487,14 @@ func (c *CtxKeyConfigRepresentation) ToDatabaseModel() configuration.ContextKeyC
 	onboarding := c.Onboarding.ToDatabaseModel()
 	accreditation := c.Accreditation.ToDatabaseModel()
 	autovoucher := c.AutoVoucher.ToDatabaseModel()
+	idnow := c.IDNow.ToDatabaseModel()
 
 	return configuration.ContextKeyConfiguration{
 		IdentificationURI: c.IdentificationURI,
 		Onboarding:        onboarding,
 		Accreditation:     accreditation,
 		AutoVoucher:       autovoucher,
+		IDNow:             idnow,
 	}
 }
 
@@ -1583,5 +1592,29 @@ func (c *CtxKeyAutoVoucherRepresentation) Validate() error {
 		ValidateParameterLargeDuration("validity", c.Validity, false).
 		ValidateParameterRegExp("accreditationRequested", c.AccreditationRequested, constants.RegExpAccreditation, false).
 		ValidateParameterRegExp("billedRealm", c.BilledRealm, constants.RegExpRealmName, false).
+		Status()
+}
+
+// ConvertToAPIContextKeyIDNow converts context key idnow configuration from database model to API model
+func ConvertToAPIContextKeyIDNow(idnowCfg *configuration.ContextKeyConfIDNow) CtxKeyIDNowRepresentation {
+	if idnowCfg == nil {
+		return CtxKeyIDNowRepresentation{}
+	}
+	return CtxKeyIDNowRepresentation{
+		DesktopRedirectURI: idnowCfg.DesktopRedirectURI,
+	}
+}
+
+// ToDatabaseModel converts a context key autovoucher configuration to the database model
+func (c *CtxKeyIDNowRepresentation) ToDatabaseModel() *configuration.ContextKeyConfIDNow {
+	return &configuration.ContextKeyConfIDNow{
+		DesktopRedirectURI: c.DesktopRedirectURI,
+	}
+}
+
+// Validate is a validator for CtxKeyAutoVoucherRepresentation
+func (c *CtxKeyIDNowRepresentation) Validate() error {
+	return validation.NewParameterValidator().
+		ValidateParameterRegExp("desktopRedirectUri", c.DesktopRedirectURI, constants.RegExpRedirectURI, false).
 		Status()
 }
