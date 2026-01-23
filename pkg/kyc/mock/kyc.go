@@ -75,6 +75,21 @@ func (mr *ComponentMockRecorder) GetUser(ctx, realmName, userID, consentCode any
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUser", reflect.TypeOf((*Component)(nil).GetUser), ctx, realmName, userID, consentCode)
 }
 
+// GetUserAuxiliary mocks base method.
+func (m *Component) GetUserAuxiliary(ctx context.Context, realmName, userID string, consentCode *string) (apikyc.UserRepresentation, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUserAuxiliary", ctx, realmName, userID, consentCode)
+	ret0, _ := ret[0].(apikyc.UserRepresentation)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUserAuxiliary indicates an expected call of GetUserAuxiliary.
+func (mr *ComponentMockRecorder) GetUserAuxiliary(ctx, realmName, userID, consentCode any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserAuxiliary", reflect.TypeOf((*Component)(nil).GetUserAuxiliary), ctx, realmName, userID, consentCode)
+}
+
 // GetUserByUsername mocks base method.
 func (m *Component) GetUserByUsername(ctx context.Context, realmName, username string) (apikyc.UserRepresentation, error) {
 	m.ctrl.T.Helper()
@@ -133,6 +148,21 @@ func (m *Component) GetUserProfile(ctx context.Context, realmName string) (apico
 func (mr *ComponentMockRecorder) GetUserProfile(ctx, realmName any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserProfile", reflect.TypeOf((*Component)(nil).GetUserProfile), ctx, realmName)
+}
+
+// GetUserProfileAuxiliary mocks base method.
+func (m *Component) GetUserProfileAuxiliary(ctx context.Context, realmName string) (apicommon.ProfileRepresentation, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUserProfileAuxiliary", ctx, realmName)
+	ret0, _ := ret[0].(apicommon.ProfileRepresentation)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUserProfileAuxiliary indicates an expected call of GetUserProfileAuxiliary.
+func (mr *ComponentMockRecorder) GetUserProfileAuxiliary(ctx, realmName any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserProfileAuxiliary", reflect.TypeOf((*Component)(nil).GetUserProfileAuxiliary), ctx, realmName)
 }
 
 // GetUserProfileInSocialRealm mocks base method.
@@ -220,6 +250,20 @@ func (m *Component) ValidateUser(ctx context.Context, realm, userID string, user
 func (mr *ComponentMockRecorder) ValidateUser(ctx, realm, userID, user, consentCode any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ValidateUser", reflect.TypeOf((*Component)(nil).ValidateUser), ctx, realm, userID, user, consentCode)
+}
+
+// ValidateUserAuxiliary mocks base method.
+func (m *Component) ValidateUserAuxiliary(ctx context.Context, realmName, userID string, user apikyc.UserRepresentation, consentCode *string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ValidateUserAuxiliary", ctx, realmName, userID, user, consentCode)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ValidateUserAuxiliary indicates an expected call of ValidateUserAuxiliary.
+func (mr *ComponentMockRecorder) ValidateUserAuxiliary(ctx, realmName, userID, user, consentCode any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ValidateUserAuxiliary", reflect.TypeOf((*Component)(nil).ValidateUserAuxiliary), ctx, realmName, userID, user, consentCode)
 }
 
 // ValidateUserBasicID mocks base method.
