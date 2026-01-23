@@ -77,6 +77,16 @@ func (c *authorizationComponentMW) GetUserProfileInSocialRealm(ctx context.Conte
 	return c.next.GetUserProfileInSocialRealm(ctx)
 }
 
+func (c *authorizationComponentMW) GetUserProfileAuxiliary(ctx context.Context, realmName string) (apicommon.ProfileRepresentation, error) {
+	var action = security.KYCGetRealmUserProfileAuxiliary.String()
+
+	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, realmName); err != nil {
+		return apicommon.ProfileRepresentation{}, err
+	}
+
+	return c.next.GetUserProfileAuxiliary(ctx, realmName)
+}
+
 func (c *authorizationComponentMW) GetUserByUsernameInSocialRealm(ctx context.Context, username string) (apikyc.UserRepresentation, error) {
 	var action = security.KYCGetUserByUsernameInSocialRealm.String()
 
@@ -128,22 +138,19 @@ func (c *authorizationComponentMW) GetUserInSocialRealm(ctx context.Context, use
 }
 
 func (c *authorizationComponentMW) GetUser(ctx context.Context, realmName string, userID string, consentCode *string) (apikyc.UserRepresentation, error) {
-	var err error
-	ctx, err = c.availabilityChecker.CheckAvailabilityForRealm(ctx, realmName, c.logger)
-	if err != nil {
-		return apikyc.UserRepresentation{}, err
-	}
-
-	var action = security.KYCGetUser.String()
-	if err = c.authManager.CheckAuthorizationOnTargetUser(ctx, action, realmName, userID); err != nil {
-		return apikyc.UserRepresentation{}, err
-	}
-
-	if err := c.roleAuthManager.CheckRoleAuthorizationOnTargetUser(ctx, action, realmName, userID); err != nil {
+	if err := c.checkAvailabilityAndAuthorization(ctx, realmName, userID, security.KYCGetUser.String()); err != nil {
 		return apikyc.UserRepresentation{}, err
 	}
 
 	return c.next.GetUser(ctx, realmName, userID, consentCode)
+}
+
+func (c *authorizationComponentMW) GetUserAuxiliary(ctx context.Context, realmName string, userID string, consentCode *string) (apikyc.UserRepresentation, error) {
+	if err := c.checkAvailabilityAndAuthorization(ctx, realmName, userID, security.KYCGetUserAuxiliary.String()); err != nil {
+		return apikyc.UserRepresentation{}, err
+	}
+
+	return c.next.GetUserAuxiliary(ctx, realmName, userID, consentCode)
 }
 
 func (c *authorizationComponentMW) ValidateUserInSocialRealm(ctx context.Context, userID string, user apikyc.UserRepresentation, consentCode *string) error {
@@ -161,16 +168,28 @@ func (c *authorizationComponentMW) ValidateUserInSocialRealm(ctx context.Context
 }
 
 func (c *authorizationComponentMW) ValidateUser(ctx context.Context, realmName string, userID string, user apikyc.UserRepresentation, consentCode *string) error {
-	var err error
-	ctx, err = c.availabilityChecker.CheckAvailabilityForRealm(ctx, realmName, c.logger)
+	if err := c.checkAvailabilityAndAuthorization(ctx, realmName, userID, security.KYCValidateUser.String()); err != nil {
+		return err
+	}
+
+	return c.next.ValidateUser(ctx, realmName, userID, user, consentCode)
+}
+
+func (c *authorizationComponentMW) ValidateUserAuxiliary(ctx context.Context, realmName string, userID string, user apikyc.UserRepresentation, consentCode *string) error {
+	if err := c.checkAvailabilityAndAuthorization(ctx, realmName, userID, security.KYCValidateUserAuxiliary.String()); err != nil {
+		return err
+	}
+
+	return c.next.ValidateUserAuxiliary(ctx, realmName, userID, user, consentCode)
+}
+
+func (c *authorizationComponentMW) checkAvailabilityAndAuthorization(ctx context.Context, realmName string, userID string, action string) error {
+	ctx, err := c.availabilityChecker.CheckAvailabilityForRealm(ctx, realmName, c.logger)
 	if err != nil {
 		return err
 	}
 
-	var action = security.KYCValidateUser.String()
-	var targetRealm = realmName
-
-	if err = c.authManager.CheckAuthorizationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
+	if err := c.authManager.CheckAuthorizationOnTargetUser(ctx, action, realmName, userID); err != nil {
 		return err
 	}
 
@@ -178,7 +197,7 @@ func (c *authorizationComponentMW) ValidateUser(ctx context.Context, realmName s
 		return err
 	}
 
-	return c.next.ValidateUser(ctx, realmName, userID, user, consentCode)
+	return nil
 }
 
 /********************* (BEGIN) Temporary basic identity (TO BE REMOVED WHEN MULTI-ACCREDITATION WILL BE IMPLEMENTED) *********************/

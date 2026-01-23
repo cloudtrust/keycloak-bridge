@@ -142,6 +142,7 @@ func TestAttributeAnnotationsToAPI(t *testing.T) {
 			"dummy":      "value",
 			"account":    "true",
 			"kyc":        "true",
+			"aux-kyc":    "true",
 			"management": "true",
 			"register":   "true",
 		}), 0)
