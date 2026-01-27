@@ -969,6 +969,9 @@ func main() {
 			ValidateUser:                    prepareEndpoint(kyc.MakeValidateUserEndpoint(kycComponent, profileCache, kycLogger), "validate_user", kycLogger, rateLimitKyc),
 			SendSMSConsentCode:              prepareEndpoint(kyc.MakeSendSmsConsentCodeEndpoint(kycComponent), "send_sms_consent_code", kycLogger, rateLimitKyc),
 			SendSMSCode:                     prepareEndpoint(kyc.MakeSendSmsCodeEndpoint(kycComponent), "send_sms_code", kycLogger, rateLimitKyc),
+			GetUserProfileAuxiliary:         prepareEndpoint(kyc.MakeGetUserProfileAuxiliaryEndpoint(kycComponent), "get_user_profile_auxiliary", kycLogger, rateLimitKyc),
+			GetUserAuxiliary:                prepareEndpoint(kyc.MakeGetUserAuxiliaryEndpoint(kycComponent), "get_user_auxiliary", kycLogger, rateLimitKyc),
+			ValidateUserAuxiliary:           prepareEndpoint(kyc.MakeValidateUserAuxiliaryEndpoint(kycComponent, profileCache, kycLogger), "validate_user_auxiliary", kycLogger, rateLimitKyc),
 
 			ValidateUserBasic: prepareEndpoint(kyc.MakeValidateUserBasicIDEndpoint(kycComponent, profileCache, registerRealm, kycLogger), "basic_validate_user", kycLogger, rateLimitKyc), /***TO BE REMOVED WHEN MULTI-ACCREDITATION WILL BE IMPLEMENTED***/
 		}
@@ -1350,6 +1353,8 @@ func main() {
 		route.Path("/accreditations/realms/{realm}/users/{userID}/revoke-accreditations").Methods("PUT").Handler(revokeAccreditationsHandler)
 
 		// KYC handlers
+		var kycSubroute = route.PathPrefix("/kyc").Subrouter()
+
 		var kycGetActionsHandler = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, endpointPhysicalCheckAvailabilityChecker, false, logger)(kycEndpoints.GetActions)
 		var kycGetUserInSocialRealmHandler = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, endpointPhysicalCheckAvailabilityChecker, true, logger)(kycEndpoints.GetUserInSocialRealm)
 		var kycGetUserProfileInSocialRealmHandler = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, endpointPhysicalCheckAvailabilityChecker, false, logger)(kycEndpoints.GetUserProfileInSocialRealm)
@@ -1363,21 +1368,27 @@ func main() {
 		var kycValidateUserHandler = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, endpointPhysicalCheckAvailabilityChecker, false, logger)(kycEndpoints.ValidateUser)
 		var kycSendSMSConsentCodeHandler = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, endpointPhysicalCheckAvailabilityChecker, false, logger)(kycEndpoints.SendSMSConsentCode)
 		var kycSendSMSCodeHandler = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, endpointPhysicalCheckAvailabilityChecker, false, logger)(kycEndpoints.SendSMSCode)
+		var kycGetUserProfileAuxiliaryHandler = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, endpointPhysicalCheckAvailabilityChecker, false, logger)(kycEndpoints.GetUserProfileAuxiliary)
+		var kycGetUserAuxiliaryHandler = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, endpointPhysicalCheckAvailabilityChecker, true, logger)(kycEndpoints.GetUserAuxiliary)
+		var kycValidateUserAuxiliaryHandler = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, endpointPhysicalCheckAvailabilityChecker, false, logger)(kycEndpoints.ValidateUserAuxiliary)
 
 		// KYC methods
-		route.Path("/kyc/actions").Methods("GET").Handler(kycGetActionsHandler)
-		route.Path("/kyc/social/users").Methods("GET").Handler(kycGetUserByUsernameInSocialRealmHandler)
-		route.Path("/kyc/social/users/profile").Methods("GET").Handler(kycGetUserProfileInSocialRealmHandler)
-		route.Path("/kyc/social/users/{userID}").Methods("GET").Handler(kycGetUserInSocialRealmHandler)
-		route.Path("/kyc/social/users/{userID}").Methods("PUT").Handler(kycValidateUserInSocialRealmHandler)
-		route.Path("/kyc/social/users/{userID}/send-consent-code").Methods("POST").Handler(kycSendSMSConsentCodeInSocialRealmHandler)
-		route.Path("/kyc/social/users/{userID}/send-sms-code").Methods("POST").Handler(kycSendSMSCodeInSocialRealmHandler)
-		route.Path("/kyc/realms/{realm}/users").Methods("GET").Handler(kycGetUserByUsernameHandler)
-		route.Path("/kyc/realms/{realm}/users/profile").Methods("GET").Handler(kycGetUserProfileHandler)
-		route.Path("/kyc/realms/{realm}/users/{userID}").Methods("GET").Handler(kycGetUserHandler)
-		route.Path("/kyc/realms/{realm}/users/{userID}").Methods("PUT").Handler(kycValidateUserHandler)
-		route.Path("/kyc/realms/{realm}/users/{userID}/send-consent-code").Methods("POST").Handler(kycSendSMSConsentCodeHandler)
-		route.Path("/kyc/realms/{realm}/users/{userID}/send-sms-code").Methods("POST").Handler(kycSendSMSCodeHandler)
+		kycSubroute.Path("/actions").Methods("GET").Handler(kycGetActionsHandler)
+		kycSubroute.Path("/social/users").Methods("GET").Handler(kycGetUserByUsernameInSocialRealmHandler)
+		kycSubroute.Path("/social/users/profile").Methods("GET").Handler(kycGetUserProfileInSocialRealmHandler)
+		kycSubroute.Path("/social/users/{userID}").Methods("GET").Handler(kycGetUserInSocialRealmHandler)
+		kycSubroute.Path("/social/users/{userID}").Methods("PUT").Handler(kycValidateUserInSocialRealmHandler)
+		kycSubroute.Path("/social/users/{userID}/send-consent-code").Methods("POST").Handler(kycSendSMSConsentCodeInSocialRealmHandler)
+		kycSubroute.Path("/social/users/{userID}/send-sms-code").Methods("POST").Handler(kycSendSMSCodeInSocialRealmHandler)
+		kycSubroute.Path("/realms/{realm}/users").Methods("GET").Handler(kycGetUserByUsernameHandler)
+		kycSubroute.Path("/realms/{realm}/users/profile").Methods("GET").Handler(kycGetUserProfileHandler)
+		kycSubroute.Path("/realms/{realm}/users/{userID}").Methods("GET").Handler(kycGetUserHandler)
+		kycSubroute.Path("/realms/{realm}/users/{userID}").Methods("PUT").Handler(kycValidateUserHandler)
+		kycSubroute.Path("/realms/{realm}/users/{userID}/send-consent-code").Methods("POST").Handler(kycSendSMSConsentCodeHandler)
+		kycSubroute.Path("/realms/{realm}/users/{userID}/send-sms-code").Methods("POST").Handler(kycSendSMSCodeHandler)
+		kycSubroute.Path("/auxiliary/realms/{realm}/users/profile").Methods("GET").Handler(kycGetUserProfileAuxiliaryHandler)
+		kycSubroute.Path("/auxiliary/realms/{realm}/users/{userID}").Methods("GET").Handler(kycGetUserAuxiliaryHandler)
+		kycSubroute.Path("/auxiliary/realms/{realm}/users/{userID}").Methods("PUT").Handler(kycValidateUserAuxiliaryHandler)
 
 		/********************* (BEGIN) Temporary basic identity (TO BE REMOVED WHEN MULTI-ACCREDITATION WILL BE IMPLEMENTED) *********************/
 		var kycValidateUserBasicIDHandler = configureKYCHandler(keycloakb.ComponentName, ComponentID, idGenerator, keycloakClient, audienceRequired, endpointPhysicalCheckAvailabilityChecker, false, logger)(kycEndpoints.ValidateUserBasic)

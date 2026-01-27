@@ -16,6 +16,7 @@ var allowAnnotation = map[string]bool{
 	"values":     true,
 	"account":    false,
 	"kyc":        false,
+	"aux-kyc":    false,
 	"management": false,
 	"register":   false,
 }
