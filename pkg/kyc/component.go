@@ -71,12 +71,15 @@ type Component interface {
 	GetActions(ctx context.Context) ([]apikyc.ActionRepresentation, error)
 	GetUserProfile(ctx context.Context, realmName string) (apicommon.ProfileRepresentation, error)
 	GetUserProfileInSocialRealm(ctx context.Context) (apicommon.ProfileRepresentation, error)
+	GetUserProfileAuxiliary(ctx context.Context, realmName string) (apicommon.ProfileRepresentation, error)
 	GetUserInSocialRealm(ctx context.Context, userID string, consentCode *string) (apikyc.UserRepresentation, error)
 	GetUserByUsernameInSocialRealm(ctx context.Context, username string) (apikyc.UserRepresentation, error)
 	GetUser(ctx context.Context, realmName string, userID string, consentCode *string) (apikyc.UserRepresentation, error)
+	GetUserAuxiliary(ctx context.Context, realmName string, userID string, consentCode *string) (apikyc.UserRepresentation, error)
 	GetUserByUsername(ctx context.Context, realmName string, username string) (apikyc.UserRepresentation, error)
 	ValidateUserInSocialRealm(ctx context.Context, userID string, user apikyc.UserRepresentation, consentCode *string) error
 	ValidateUser(ctx context.Context, realm string, userID string, user apikyc.UserRepresentation, consentCode *string) error
+	ValidateUserAuxiliary(ctx context.Context, realmName string, userID string, user apikyc.UserRepresentation, consentCode *string) error
 	SendSmsConsentCodeInSocialRealm(ctx context.Context, userID string) error
 	SendSmsConsentCode(ctx context.Context, realmName string, userID string) error
 	SendSmsCodeInSocialRealm(ctx context.Context, userID string) (string, error)
@@ -217,14 +220,15 @@ func (c *component) createConsentError(errorType string) error {
 	}
 }
 
-func (c *component) checkUserConsent(ctx context.Context, accessToken string, confRealm string, targetRealm string, userID string, consentCode *string) error {
+func (c *component) checkUserConsent(ctx context.Context, accessToken string, confRealm string, targetRealm string, userID string,
+	consentCode *string, isAuxiliary bool) error {
 	var rac, err = c.configDBModule.GetAdminConfiguration(ctx, confRealm)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Can't get realm admin configuration", "realm", confRealm, "err", err.Error())
 		return err
 	}
 
-	if c.consentRequired(rac, targetRealm) {
+	if c.consentRequired(rac, targetRealm, isAuxiliary) {
 		// Consent is required
 		if consentCode == nil {
 			return c.createConsentError(errorhandler.MsgErrMissingParam)
@@ -243,7 +247,11 @@ func (c *component) checkUserConsent(ctx context.Context, accessToken string, co
 	return nil
 }
 
-func (c *component) consentRequired(rac configuration.RealmAdminConfiguration, targetRealm string) bool {
+func (c *component) consentRequired(rac configuration.RealmAdminConfiguration, targetRealm string, isAuxiliary bool) bool {
+	if isAuxiliary {
+		return rac.ConsentRequiredCorporateAuxiliary != nil && *rac.ConsentRequiredCorporateAuxiliary
+	}
+
 	if targetRealm == c.socialRealmName {
 		return rac.ConsentRequiredSocial != nil && *rac.ConsentRequiredSocial
 	}
@@ -264,6 +272,16 @@ func (c *component) GetUserProfile(ctx context.Context, realmName string) (apico
 	return apicommon.ProfileToAPI(profile, apiName), nil
 }
 
+func (c *component) GetUserProfileAuxiliary(ctx context.Context, realmName string) (apicommon.ProfileRepresentation, error) {
+	var profile, err = c.profileCache.GetRealmUserProfile(ctx, realmName)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Can't get users profile", "err", err.Error())
+		return apicommon.ProfileRepresentation{}, err
+	}
+
+	return apicommon.ProfileToAPI(profile, auxiliaryApiName), nil
+}
+
 func (c *component) GetUserInSocialRealm(ctx context.Context, userID string, consentCode *string) (apikyc.UserRepresentation, error) {
 	accessToken, err := c.tokenProvider.ProvideTokenForRealm(ctx, c.socialRealmName)
 	if err != nil {
@@ -271,16 +289,23 @@ func (c *component) GetUserInSocialRealm(ctx context.Context, userID string, con
 		return apikyc.UserRepresentation{}, err
 	}
 	var confRealm = ctx.Value(cs.CtContextRealm).(string)
-	return c.getUserGeneric(ctx, accessToken, confRealm, c.socialRealmName, userID, true, consentCode)
+	return c.getUserGeneric(ctx, accessToken, confRealm, c.socialRealmName, userID, consentCode, false)
 }
 
 func (c *component) GetUser(ctx context.Context, realmName string, userID string, consentCode *string) (apikyc.UserRepresentation, error) {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
-	return c.getUserGeneric(ctx, accessToken, realmName, realmName, userID, false, consentCode)
+	return c.getUserGeneric(ctx, accessToken, realmName, realmName, userID, consentCode, false)
 }
 
-func (c *component) getUserGeneric(ctx context.Context, accessToken string, confRealm string, targetRealm string, userID string, social bool, consentCode *string) (apikyc.UserRepresentation, error) {
-	err := c.checkUserConsent(ctx, accessToken, confRealm, targetRealm, userID, consentCode)
+func (c *component) GetUserAuxiliary(ctx context.Context, realmName string, userID string, consentCode *string) (apikyc.UserRepresentation, error) {
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+	return c.getUserGeneric(ctx, accessToken, realmName, realmName, userID, consentCode, true)
+}
+
+func (c *component) getUserGeneric(ctx context.Context, accessToken string, confRealm string, targetRealm string, userID string,
+	consentCode *string, isAuxiliary bool) (apikyc.UserRepresentation, error) {
+
+	err := c.checkUserConsent(ctx, accessToken, confRealm, targetRealm, userID, consentCode, isAuxiliary)
 	if err != nil {
 		return apikyc.UserRepresentation{}, err
 	}
@@ -305,7 +330,7 @@ func (c *component) getUserGeneric(ctx context.Context, accessToken string, conf
 
 func (c *component) ValidateUser(ctx context.Context, realmName string, userID string, user apikyc.UserRepresentation, consentCode *string) error {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
-	return c.validateUser(ctx, accessToken, realmName, realmName, userID, user, consentCode)
+	return c.validateUser(ctx, accessToken, realmName, realmName, userID, user, consentCode, false)
 }
 
 func (c *component) ValidateUserInSocialRealm(ctx context.Context, userID string, user apikyc.UserRepresentation, consentCode *string) error {
@@ -316,7 +341,12 @@ func (c *component) ValidateUserInSocialRealm(ctx context.Context, userID string
 	}
 
 	var confRealm = ctx.Value(cs.CtContextRealm).(string)
-	return c.validateUser(ctx, accessToken, confRealm, c.socialRealmName, userID, user, consentCode)
+	return c.validateUser(ctx, accessToken, confRealm, c.socialRealmName, userID, user, consentCode, false)
+}
+
+func (c *component) ValidateUserAuxiliary(ctx context.Context, realmName string, userID string, user apikyc.UserRepresentation, consentCode *string) error {
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+	return c.validateUser(ctx, accessToken, realmName, realmName, userID, user, consentCode, true)
 }
 
 /********************* (BEGIN) Temporary basic identity (TO BE REMOVED WHEN MULTI-ACCREDITATION WILL BE IMPLEMENTED) *********************/
@@ -327,11 +357,10 @@ func (c *component) ValidateUserBasicID(ctx context.Context, userID string, user
 		return err
 	}
 
-	var confRealm = ctx.Value(cs.CtContextRealm).(string)
-	return c.validateUserBasicID(ctx, accessToken, confRealm, c.socialRealmName, userID, user)
+	return c.validateUserBasicID(ctx, accessToken, c.socialRealmName, userID, user)
 }
 
-func (c *component) validateUserBasicID(ctx context.Context, accessToken string, confRealm string, targetRealm string, userID string, user apikyc.UserRepresentation) error {
+func (c *component) validateUserBasicID(ctx context.Context, accessToken string, targetRealm string, userID string, user apikyc.UserRepresentation) error {
 	var operatorName = ctx.Value(cs.CtContextUsername).(string)
 
 	// Get the user from Keycloak
@@ -415,10 +444,11 @@ func (c *component) validateUserBasicID(ctx context.Context, accessToken string,
 
 /********************* (END) Temporary basic identity (TO BE REMOVED WHEN MULTI-ACCREDITATION WILL BE IMPLEMENTED) *********************/
 
-func (c *component) validateUser(ctx context.Context, accessToken string, confRealm string, targetRealm string, userID string, user apikyc.UserRepresentation, consentCode *string) error {
+func (c *component) validateUser(ctx context.Context, accessToken string, confRealm string, targetRealm string, userID string,
+	user apikyc.UserRepresentation, consentCode *string, isAuxiliary bool) error {
 	var operatorName = ctx.Value(cs.CtContextUsername).(string)
 
-	var err = c.checkUserConsent(ctx, accessToken, confRealm, targetRealm, userID, consentCode)
+	var err = c.checkUserConsent(ctx, accessToken, confRealm, targetRealm, userID, consentCode, isAuxiliary)
 	if err != nil {
 		return err
 	}
@@ -445,7 +475,7 @@ func (c *component) validateUser(ctx context.Context, accessToken string, confRe
 	user.PhoneNumberVerified = nil
 	user.Username = kcUser.Username
 
-	err = c.ensureContactVerified(ctx, kcUser)
+	err = c.ensureContactVerified(ctx, kcUser, isAuxiliary)
 	if err != nil {
 		return err
 	}
@@ -474,11 +504,16 @@ func (c *component) validateUser(ctx context.Context, accessToken string, confRe
 		DateTime:  &now,
 		Status:    ptr("VERIFIED"),
 		Type:      ptr("IDENTITY_CHECK"),
-		Nature:    ptr("PHYSICAL_CHECK"),
 		Comment:   user.Comment,
 		ProofType: nil,
 		ProofData: nil,
 		TxnID:     &txnID,
+	}
+
+	if isAuxiliary {
+		check.Nature = ptr("AUXILIARY_PHYSICAL_CHECK")
+	} else {
+		check.Nature = ptr("PHYSICAL_CHECK")
 	}
 
 	if user.Attachments != nil && len(*user.Attachments) == 1 {
@@ -512,7 +547,7 @@ func (c *component) validateUser(ctx context.Context, accessToken string, confRe
 	return nil
 }
 
-func (c *component) ensureContactVerified(ctx context.Context, kcUser kc.UserRepresentation) error {
+func (c *component) ensureContactVerified(ctx context.Context, kcUser kc.UserRepresentation, isAuxiliary bool) error {
 	var emailVerifiedMissing = kcUser.EmailVerified == nil || !*kcUser.EmailVerified
 	var phoneNumberVerifiedMissing = false
 	if verified, verifiedErr := kcUser.GetAttributeBool(constants.AttrbPhoneNumberVerified); verifiedErr != nil || verified == nil || !*verified {
@@ -528,7 +563,8 @@ func (c *component) ensureContactVerified(ctx context.Context, kcUser kc.UserRep
 	if config, err := c.configDBModule.GetAdminConfiguration(ctx, realmName); err != nil {
 		c.logger.Warn(ctx, "msg", "Can't get admin configuration", "realm", realmName, "err", err.Error())
 		return err
-	} else if config.NeedVerifiedContact != nil && !*config.NeedVerifiedContact {
+	} else if (isAuxiliary && config.NeedVerifiedContactAuxiliary != nil && !*config.NeedVerifiedContactAuxiliary) ||
+		(!isAuxiliary && config.NeedVerifiedContact != nil && !*config.NeedVerifiedContact) {
 		return nil
 	}
 
@@ -596,7 +632,7 @@ func (c *component) sendSmsConsentCodeGeneric(ctx context.Context, accessToken s
 	if rac, err := c.configDBModule.GetAdminConfiguration(ctx, confRealm); err != nil {
 		c.logger.Warn(ctx, "msg", "Can't get realm admin configuration", "realm", confRealm, "err", err.Error())
 		return err
-	} else if !c.consentRequired(rac, targetRealm) {
+	} else if !c.consentRequired(rac, targetRealm, false) {
 		c.logger.Warn(ctx, "msg", "Consent feature is not activated for this realm", "realm", confRealm)
 		return errorhandler.CreateEndpointNotEnabled("consent")
 	}

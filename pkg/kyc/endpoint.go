@@ -13,7 +13,8 @@ import (
 )
 
 var (
-	apiName = "kyc"
+	apiName          = "kyc"
+	auxiliaryApiName = "aux-kyc"
 )
 
 // Endpoints for self service
@@ -23,10 +24,13 @@ type Endpoints struct {
 	GetUserProfileInSocialRealm     endpoint.Endpoint
 	GetUserByUsernameInSocialRealm  endpoint.Endpoint
 	GetUser                         endpoint.Endpoint
+	GetUserAuxiliary                endpoint.Endpoint
 	GetUserProfile                  endpoint.Endpoint
+	GetUserProfileAuxiliary         endpoint.Endpoint
 	GetUserByUsername               endpoint.Endpoint
 	ValidateUserInSocialRealm       endpoint.Endpoint
 	ValidateUser                    endpoint.Endpoint
+	ValidateUserAuxiliary           endpoint.Endpoint
 	SendSMSConsentCodeInSocialRealm endpoint.Endpoint
 	SendSMSConsentCode              endpoint.Endpoint
 	SendSMSCodeInSocialRealm        endpoint.Endpoint
@@ -79,6 +83,15 @@ func MakeGetUserProfileEndpoint(component Component) cs.Endpoint {
 	}
 }
 
+// MakeGetUserProfileAuxiliaryEndpoint creates an endpoint for GetUserProfileAuxiliary
+func MakeGetUserProfileAuxiliaryEndpoint(component Component) cs.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		var m = req.(map[string]string)
+		var realm = m[prmRealm]
+		return component.GetUserProfileAuxiliary(ctx, realm)
+	}
+}
+
 // MakeGetUserInSocialRealmEndpoint endpoint creation
 func MakeGetUserInSocialRealmEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req any) (any, error) {
@@ -104,6 +117,20 @@ func MakeGetUserEndpoint(component Component) cs.Endpoint {
 		}
 
 		return component.GetUser(ctx, m[prmRealm], m[prmUserID], consentCode)
+	}
+}
+
+// MakeGetUserAuxiliaryEndpoint creates an endpoint for GetUserAuxiliary
+func MakeGetUserAuxiliaryEndpoint(component Component) cs.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		var m = req.(map[string]string)
+		var consentCode *string
+
+		if value, ok := m[prmQryConsent]; ok {
+			consentCode = &value
+		}
+
+		return component.GetUserAuxiliary(ctx, m[prmRealm], m[prmUserID], consentCode)
 	}
 }
 
@@ -175,6 +202,30 @@ func MakeValidateUserEndpoint(component Component, profileCache UserProfileCache
 		}
 
 		return nil, component.ValidateUser(ctx, m[prmRealm], m[prmUserID], user, consentCode)
+	}
+}
+
+// MakeValidateUserAuxiliaryEndpoint creates an endpoint for ValidateUserAuxiliary
+func MakeValidateUserAuxiliaryEndpoint(component Component, profileCache UserProfileCache, logger keycloakb.Logger) cs.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		var m = req.(map[string]string)
+		var user apikyc.UserRepresentation
+		err := json.Unmarshal([]byte(m[reqBody]), &user)
+		if err != nil {
+			return nil, commonerrors.CreateBadRequestError(commonerrors.MsgErrInvalidParam + "." + msg.BodyContent)
+		}
+
+		// Validate user
+		if err := user.Validate(ctx, profileCache, m[prmRealm]); err != nil {
+			return nil, err
+		}
+
+		var consentCode *string
+		if value, ok := m[prmQryConsent]; ok {
+			consentCode = &value
+		}
+
+		return nil, component.ValidateUserAuxiliary(ctx, m[prmRealm], m[prmUserID], user, consentCode)
 	}
 }
 
