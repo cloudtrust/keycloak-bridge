@@ -844,7 +844,7 @@ func TestGetUsersWithAttribute(t *testing.T) {
 	t.Run("Fails to search for users", func(t *testing.T) {
 		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return(accessToken, nil)
 		mocks.keycloakIdpClient.EXPECT().GetGroups(accessToken, realmName).Return([]kc.GroupRepresentation{group}, nil)
-		mocks.keycloakIdpClient.EXPECT().GetUsers(accessToken, "master", realmName, "groupId", *group.ID).Return(kcSearchResult, anyError)
+		mocks.keycloakIdpClient.EXPECT().GetUsers(accessToken, realmName, realmName, "groupId", *group.ID).Return(kcSearchResult, anyError)
 		_, err := idpComponent.GetUsersWithAttribute(ctx, realmName, nil, group.Name, map[string]string{}, nil)
 		assert.Error(t, err)
 	})
@@ -853,7 +853,7 @@ func TestGetUsersWithAttribute(t *testing.T) {
 		var emptySearchResult = kc.UsersPageRepresentation{Count: ptrInt(0), Users: []kc.UserRepresentation{kcUser, kcUser}}
 		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return(accessToken, nil)
 		mocks.keycloakIdpClient.EXPECT().GetGroups(accessToken, realmName).Return([]kc.GroupRepresentation{group}, nil)
-		mocks.keycloakIdpClient.EXPECT().GetUsers(accessToken, "master", realmName, "groupId", *group.ID).Return(emptySearchResult, nil)
+		mocks.keycloakIdpClient.EXPECT().GetUsers(accessToken, realmName, realmName, "groupId", *group.ID).Return(emptySearchResult, nil)
 		res, err := idpComponent.GetUsersWithAttribute(ctx, realmName, nil, group.Name, map[string]string{}, nil)
 		assert.NoError(t, err)
 		assert.Len(t, res, 0)
@@ -870,7 +870,7 @@ func TestGetUsersWithAttribute(t *testing.T) {
 		)
 		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return(accessToken, nil)
 		mocks.keycloakIdpClient.EXPECT().GetGroups(accessToken, realmName).Return([]kc.GroupRepresentation{group}, nil)
-		mocks.keycloakIdpClient.EXPECT().GetUsers(accessToken, "master", realmName, gomock.Any()).DoAndReturn(func(_, _, _ any, args ...any) (kc.UsersPageRepresentation, error) {
+		mocks.keycloakIdpClient.EXPECT().GetUsers(accessToken, realmName, realmName, gomock.Any()).DoAndReturn(func(_, _, _ any, args ...any) (kc.UsersPageRepresentation, error) {
 			querySearch := args[3].(string)
 			if querySearch != query1 && querySearch != query2 {
 				t.Errorf("Expected query to be '%s' or '%s', but got '%s'", query1, query2, querySearch)
@@ -886,7 +886,7 @@ func TestGetUsersWithAttribute(t *testing.T) {
 		kcSearchResult = kc.UsersPageRepresentation{Count: ptrInt(1), Users: []kc.UserRepresentation{kcUser}}
 		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return(accessToken, nil)
 		mocks.keycloakIdpClient.EXPECT().GetGroups(accessToken, realmName).Return([]kc.GroupRepresentation{group}, nil)
-		mocks.keycloakIdpClient.EXPECT().GetUsers(accessToken, "master", realmName, gomock.Any()).Return(kcSearchResult, nil)
+		mocks.keycloakIdpClient.EXPECT().GetUsers(accessToken, realmName, realmName, gomock.Any()).Return(kcSearchResult, nil)
 		mocks.keycloakIdpClient.EXPECT().GetRealmLevelRoleMappings(accessToken, realmName, *kcSearchResult.Users[0].ID).Return(nil, anyError)
 		_, err := idpComponent.GetUsersWithAttribute(ctx, realmName, kcUser.Username, group.Name, map[string]string{}, ptrBool(true))
 		assert.Error(t, err)
@@ -896,7 +896,7 @@ func TestGetUsersWithAttribute(t *testing.T) {
 		kcSearchResult = kc.UsersPageRepresentation{Count: ptrInt(1), Users: []kc.UserRepresentation{kcUser}}
 		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return(accessToken, nil)
 		mocks.keycloakIdpClient.EXPECT().GetGroups(accessToken, realmName).Return([]kc.GroupRepresentation{group}, nil)
-		mocks.keycloakIdpClient.EXPECT().GetUsers(accessToken, "master", realmName, gomock.Any()).Return(kcSearchResult, nil)
+		mocks.keycloakIdpClient.EXPECT().GetUsers(accessToken, realmName, realmName, gomock.Any()).Return(kcSearchResult, nil)
 		mocks.keycloakIdpClient.EXPECT().GetRealmLevelRoleMappings(accessToken, realmName, *kcSearchResult.Users[0].ID).Return([]kc.RoleRepresentation{{ID: ptr("role-id-1"), Name: ptr("role #1")}, {ID: ptr("role-id-2"), Name: ptr("role #2")}}, nil)
 		res, err := idpComponent.GetUsersWithAttribute(ctx, realmName, nil, group.Name, map[string]string{}, ptrBool(true))
 		assert.NoError(t, err)
