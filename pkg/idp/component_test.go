@@ -727,6 +727,59 @@ func TestDeleteIdentityProviderMapper(t *testing.T) {
 	})
 }
 
+func TestGetUser(t *testing.T) {
+	var mocks = createMocks(t)
+	defer mocks.finish()
+
+	var (
+		idpComponent  = mocks.createComponent()
+		userID        = "user-id"
+		expectedGroup = kc.GroupRepresentation{Name: ptr("the-group")}
+		anotherGroup  = kc.GroupRepresentation{Name: ptr("another-group")}
+		token         = "technical-access-token"
+		anyError      = errors.New("any error")
+		ctx           = context.TODO()
+	)
+
+	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
+
+	t.Run("Fails to get technical access token", func(t *testing.T) {
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return("", anyError)
+		_, err := idpComponent.GetUser(ctx, realmName, userID, *expectedGroup.Name)
+		assert.Error(t, err)
+	})
+	t.Run("Fails to get user from Keycloak", func(t *testing.T) {
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return(token, nil)
+		mocks.keycloakIdpClient.EXPECT().GetUser(token, realmName, userID).Return(kc.UserRepresentation{}, anyError)
+		_, err := idpComponent.GetUser(ctx, realmName, userID, *expectedGroup.Name)
+		assert.Error(t, err)
+	})
+	t.Run("Fails to get user groups from Keycloak", func(t *testing.T) {
+		user := kc.UserRepresentation{Groups: &[]string{"not-the-expected-group"}}
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return(token, nil)
+		mocks.keycloakIdpClient.EXPECT().GetUser(token, realmName, userID).Return(user, nil)
+		mocks.keycloakIdpClient.EXPECT().GetGroupsOfUser(token, realmName, userID).Return(nil, anyError)
+		_, err := idpComponent.GetUser(ctx, realmName, userID, *expectedGroup.Name)
+		assert.Error(t, err)
+	})
+	t.Run("User does not own the group", func(t *testing.T) {
+		user := kc.UserRepresentation{Groups: &[]string{"not-the-expected-group"}}
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return(token, nil)
+		mocks.keycloakIdpClient.EXPECT().GetUser(token, realmName, userID).Return(user, nil)
+		mocks.keycloakIdpClient.EXPECT().GetGroupsOfUser(token, realmName, userID).Return([]kc.GroupRepresentation{anotherGroup}, anyError)
+		_, err := idpComponent.GetUser(ctx, realmName, userID, *expectedGroup.Name)
+		assert.Error(t, err)
+	})
+	t.Run("Success", func(t *testing.T) {
+		user := kc.UserRepresentation{Groups: &[]string{"not-the-expected-group", *expectedGroup.Name, "another-group"}}
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return(token, nil)
+		mocks.keycloakIdpClient.EXPECT().GetUser(token, realmName, userID).Return(user, nil)
+		mocks.keycloakIdpClient.EXPECT().GetGroupsOfUser(token, realmName, userID).Return([]kc.GroupRepresentation{anotherGroup, expectedGroup}, nil)
+		_, err := idpComponent.GetUser(ctx, realmName, userID, *expectedGroup.Name)
+		assert.NoError(t, err)
+	})
+}
+
 func TestDeleteUser(t *testing.T) {
 	var mocks = createMocks(t)
 	defer mocks.finish()

@@ -45,13 +45,14 @@ type IdentityProviderMapperRepresentation struct {
 
 // UserRepresentation struct
 type UserRepresentation struct {
-	ID         *string  `json:"id,omitempty"`
-	Username   *string  `json:"username,omitempty"`
-	FirstName  *string  `json:"firstName,omitempty"`
-	LastName   *string  `json:"lastName,omitempty"`
-	Email      *string  `json:"email,omitempty"`
-	Enabled    *bool    `json:"enabled,omitempty"`
-	RealmRoles []string `json:"roles,omitempty"`
+	ID         *string             `json:"id,omitempty"`
+	Username   *string             `json:"username,omitempty"`
+	FirstName  *string             `json:"firstName,omitempty"`
+	LastName   *string             `json:"lastName,omitempty"`
+	Email      *string             `json:"email,omitempty"`
+	Enabled    *bool               `json:"enabled,omitempty"`
+	RealmRoles []string            `json:"roles,omitempty"`
+	Attributes map[string][]string `json:"attributes,omitempty"`
 }
 
 // FederatedIdentityRepresentation struct
@@ -204,7 +205,19 @@ func ConvertToAPIUserRepresentation(kcUser kc.UserRepresentation) UserRepresenta
 		Email:      kcUser.Email,
 		Enabled:    kcUser.Enabled,
 		RealmRoles: realmRoles,
+		Attributes: convertToAttributesMap(kcUser.Attributes),
 	}
+}
+
+func convertToAttributesMap(kcAttributes *kc.Attributes) map[string][]string {
+	if kcAttributes == nil {
+		return nil
+	}
+	var res = make(map[string][]string)
+	for key, value := range *kcAttributes {
+		res[string(key)] = value
+	}
+	return res
 }
 
 // ConvertToKCUserRepresentation converts an API UserRepresentation to a KC UserRepresentation
@@ -221,5 +234,17 @@ func (u UserRepresentation) ConvertToKCUserRepresentation() kc.UserRepresentatio
 		Email:      u.Email,
 		Enabled:    u.Enabled,
 		RealmRoles: realmRoles,
+		Attributes: convertToKCAttributes(u.Attributes),
 	}
+}
+
+func convertToKCAttributes(attributes map[string][]string) *kc.Attributes {
+	if attributes == nil {
+		return nil
+	}
+	var res = make(kc.Attributes)
+	for key, value := range attributes {
+		res[kc.AttributeKey(key)] = value
+	}
+	return &res
 }

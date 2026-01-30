@@ -479,6 +479,21 @@ func (mr *ComponentMockRecorder) GetIdentityProviderMappers(ctx, realmName, idpA
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetIdentityProviderMappers", reflect.TypeOf((*Component)(nil).GetIdentityProviderMappers), ctx, realmName, idpAlias)
 }
 
+// GetUser mocks base method.
+func (m *Component) GetUser(ctx context.Context, realmName, userID, groupName string) (apiidp.UserRepresentation, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUser", ctx, realmName, userID, groupName)
+	ret0, _ := ret[0].(apiidp.UserRepresentation)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUser indicates an expected call of GetUser.
+func (mr *ComponentMockRecorder) GetUser(ctx, realmName, userID, groupName any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUser", reflect.TypeOf((*Component)(nil).GetUser), ctx, realmName, userID, groupName)
+}
+
 // GetUserFederatedIdentities mocks base method.
 func (m *Component) GetUserFederatedIdentities(ctx context.Context, realmName, userID string) ([]apiidp.FederatedIdentityRepresentation, error) {
 	m.ctrl.T.Helper()

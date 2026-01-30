@@ -356,6 +356,34 @@ func TestDeleteUserAttributesEndpoint(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestGetUserEndpoint(t *testing.T) {
+	var mocks = createMocks(t)
+	defer mocks.finish()
+
+	var (
+		realm  = "test-community"
+		ctx    = context.TODO()
+		userID = "user-id"
+	)
+
+	t.Run("Missing mandatory parameter", func(t *testing.T) {
+		_, err := mocks.newEndpoints().GetUser(ctx, map[string]string{
+			prmRealm: realm,
+			prmUser:  userID,
+		})
+		assert.Error(t, err)
+	})
+	t.Run("Success", func(t *testing.T) {
+		mocks.component.EXPECT().GetUser(ctx, realm, userID, gomock.Not(nil)).Return(api.UserRepresentation{}, nil)
+		_, err := mocks.newEndpoints().GetUser(ctx, map[string]string{
+			prmRealm:     realm,
+			prmUser:      userID,
+			prmGroupName: "group-name",
+		})
+		assert.NoError(t, err)
+	})
+}
+
 func TestDeleteUserEndpoint(t *testing.T) {
 	var mocks = createMocks(t)
 	defer mocks.finish()

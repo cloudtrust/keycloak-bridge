@@ -56,6 +56,7 @@ type Component interface {
 	UpdateIdentityProviderMapper(ctx context.Context, realmName string, idpAlias string, mapperID string, apiMapper api.IdentityProviderMapperRepresentation) error
 	DeleteIdentityProviderMapper(ctx context.Context, realmName string, idpAlias string, mapperID string) error
 	GetUsersWithAttribute(ctx context.Context, realmName string, username *string, groupName *string, expectedAttributes map[string]string, needRoles *bool) ([]api.UserRepresentation, error)
+	GetUser(ctx context.Context, realmName string, userID string, groupName string) (api.UserRepresentation, error)
 	DeleteUser(ctx context.Context, realmName string, userID string, groupName *string) error
 	AddUserAttributes(ctx context.Context, realmName string, userID string, attributes map[string][]string) error
 	DeleteUserAttributes(ctx context.Context, realmName string, userID string, attributeKeys []string) error
@@ -359,6 +360,39 @@ func (c *component) DeleteIdentityProviderMapper(ctx context.Context, realmName 
 	return nil
 }
 
+func (c *component) GetUser(ctx context.Context, realmName string, userID string, groupName string) (api.UserRepresentation, error) {
+	accessToken, err := c.tokenProvider.ProvideTokenForRealm(ctx, realmName)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Failed to get OIDC token from keycloak", "err", err.Error())
+		return api.UserRepresentation{}, err
+	}
+	user, err := c.keycloakIdpClient.GetUser(accessToken, realmName, userID)
+	if err = handleKeycloakError(err, "user"); err != nil {
+		c.logger.Warn(ctx, "msg", "Failed to get user from keycloak", "err", err.Error(), "realm", realmName, "user", userID)
+		return api.UserRepresentation{}, err
+	}
+	// Get groups of the user
+	groups, err := c.keycloakIdpClient.GetGroupsOfUser(accessToken, realmName, userID)
+	if err = handleKeycloakError(err, "user.groups"); err != nil {
+		c.logger.Warn(ctx, "msg", "Failed to get user groups from keycloak", "err", err.Error(), "realm", realmName, "user", userID)
+		return api.UserRepresentation{}, err
+	}
+	var userGroups []string
+	for _, group := range groups {
+		userGroups = append(userGroups, *group.Name)
+	}
+	// Note that groups are copied to user representation from Keycloak but they are not part of the API structure
+	// It can be easily added if needed in the future just by updating api package
+	user.Groups = &userGroups
+	// Check if the user is in the expected group
+	if user.Groups == nil || !slices.Contains(*user.Groups, groupName) {
+		c.logger.Warn(ctx, "msg", "User is not in the expected group", "realm", realmName, "user", userID, "group", groupName)
+		return api.UserRepresentation{}, errorhandler.CreateBadRequestError(msg.MsgErrInvalidParam + ".group")
+	}
+
+	return api.ConvertToAPIUserRepresentation(user), nil
+}
+
 func (c *component) DeleteUser(ctx context.Context, realmName string, userID string, groupName *string) error {
 	accessToken, err := c.tokenProvider.ProvideTokenForRealm(ctx, realmName)
 	if err != nil {
@@ -488,7 +522,7 @@ func (c *component) AddUserAttributes(ctx context.Context, realmName string, use
 	})
 }
 
-func (c *component) addUserAttribute(ctx context.Context, user *kc.UserRepresentation, attributeKey string, attributeValues []string) bool {
+func (c *component) addUserAttribute(_ context.Context, user *kc.UserRepresentation, attributeKey string, attributeValues []string) bool {
 	var key = kc.AttributeKey(attributeKey)
 	if user.Attributes == nil {
 		var attributes = make(kc.Attributes)
