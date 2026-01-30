@@ -446,7 +446,7 @@ func (c *component) GetUsersWithAttribute(ctx context.Context, realmName string,
 		paramKV = append(paramKV, "q", strings.Join(queryAttribute, " "))
 	}
 
-	usersPage, err := c.keycloakIdpClient.GetUsers(accessToken, "master", realmName, paramKV...)
+	usersPage, err := c.keycloakIdpClient.GetUsers(accessToken, realmName, realmName, paramKV...)
 	if err != nil {
 		c.logger.Warn(ctx, "msg", "Keycloak failed to search users", "err", err.Error(), "realm", realmName)
 		return nil, err
