@@ -26,6 +26,7 @@ type Endpoints struct {
 	UpdateIdentityProviderMapper endpoint.Endpoint
 	DeleteIdentityProviderMapper endpoint.Endpoint
 	GetUsersWithAttribute        endpoint.Endpoint
+	GetUser                      endpoint.Endpoint
 	DeleteUser                   endpoint.Endpoint
 	AddUserAttributes            endpoint.Endpoint
 	DeleteUserAttributes         endpoint.Endpoint
@@ -44,6 +45,7 @@ func NewEndpoints(component Component, endpointUpdater func(endpoint cs.Endpoint
 		UpdateIdentityProviderMapper: endpointUpdater(MakeUpdateIdentityProviderMapperEndpoint(component), "update_identity_provider_mapper_endpoint"),
 		DeleteIdentityProviderMapper: endpointUpdater(MakeDeleteIdentityProviderMapperEndpoint(component), "delete_identity_provider_mapper_endpoint"),
 		GetUsersWithAttribute:        endpointUpdater(MakeGetUsersWithAttributeEndpoint(component), "get_users_with_attribute_endpoint"),
+		GetUser:                      endpointUpdater(MakeGetUserEndpoint(component), "get_user_endpoint"),
 		DeleteUser:                   endpointUpdater(MakeDeleteUserEndpoint(component), "delete_user_endpoint"),
 		AddUserAttributes:            endpointUpdater(MakeAddUserAttributesEndpoint(component), "add_user_attributes_endpoint"),
 		DeleteUserAttributes:         endpointUpdater(MakeDeleteUserAttributesEndpoint(component), "delete_user_attributes_endpoint"),
@@ -203,6 +205,20 @@ func MakeGetUsersWithAttributeEndpoint(component Component) cs.Endpoint {
 			needRoles = &needRolesVal
 		}
 		return component.GetUsersWithAttribute(ctx, m[prmRealm], username, groupName, expectedAttributes, needRoles)
+	}
+}
+
+// MakeGetUserEndpoint creates an endpoint for GetUser
+func MakeGetUserEndpoint(component Component) cs.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		var m = req.(map[string]string)
+		var grpName string
+		if value, ok := m[prmGroupName]; ok {
+			grpName = value
+		} else {
+			return nil, errorhandler.CreateMissingParameterError(prmGroupName)
+		}
+		return component.GetUser(ctx, m[prmRealm], m[prmUser], grpName)
 	}
 }
 

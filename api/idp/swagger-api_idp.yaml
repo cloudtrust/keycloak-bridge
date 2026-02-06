@@ -264,12 +264,46 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/User'
+                $ref: '#/components/schemas/User'
         404:
           description: user not found
   /idp/realms/{realm}/users/{user}:
+    get:
+      tags:
+      - Identity providers
+      summary: Gets a user
+      parameters:
+      - name: realm
+        in: path
+        description: realm name (not id!)
+        required: true
+        schema:
+          type: string
+      - name: user
+        in: path
+        description: id of a user
+        required: true
+        schema:
+          type: string
+      - name: groupName
+        in: query
+        description: group the user might be in
+        required: true
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        400:
+          description: invalid or missing parameter
+        404:
+          description: user not found
     delete:
       tags:
       - Identity providers
@@ -455,6 +489,16 @@ components:
         enabled:
           type: boolean
           default: true
+        roles:
+          type: array
+          items:
+            type: string
+        attributes:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
   securitySchemes:
     openId:
       type: openIdConnect

@@ -116,6 +116,7 @@ func createValidUserRepresentation() UserRepresentation {
 		Email:      ptr("em@il.ch"),
 		Enabled:    ptrBool(true),
 		RealmRoles: []string{"role1", "role2"},
+		Attributes: map[string][]string{"key": []string{"value1", "value2"}},
 	}
 }
 
@@ -295,6 +296,9 @@ func TestIdentityProviderMapperValidate(t *testing.T) {
 }
 
 func TestUserRepresentationConversions(t *testing.T) {
+	assert.Nil(t, convertToAttributesMap(nil))
+	assert.Nil(t, convertToKCAttributes(nil))
+
 	t.Run("Nil slice", func(t *testing.T) {
 		assert.Nil(t, ConvertToAPIUserRepresentations(nil))
 	})
@@ -305,7 +309,9 @@ func TestUserRepresentationConversions(t *testing.T) {
 		// We don't check
 		user := createValidUserRepresentation().ConvertToKCUserRepresentation()
 		kcSlice := []kc.UserRepresentation{user, user, user}
-		assert.Len(t, ConvertToAPIUserRepresentations(kcSlice), len(kcSlice))
+		apiConverted := ConvertToAPIUserRepresentations(kcSlice)
+		assert.Len(t, apiConverted, len(kcSlice))
+		assert.Len(t, apiConverted[0].Attributes, len(*kcSlice[0].Attributes))
 	})
 	t.Run("Single element conversion", func(t *testing.T) {
 		apiUser := createValidUserRepresentation()
