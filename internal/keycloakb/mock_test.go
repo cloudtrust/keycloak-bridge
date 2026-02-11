@@ -4,7 +4,6 @@ import (
 	_ "github.com/golang/mock/mockgen/model"
 )
 
-//go:generate mockgen --build_flags=--mod=mod -destination=./mock/instrumenting.go -package=mock -mock_names=Histogram=Histogram github.com/cloudtrust/common-service/v2/metrics Histogram
 //go:generate mockgen --build_flags=--mod=mod -destination=./mock/sqltypes.go -package=mock -mock_names=CloudtrustDB=CloudtrustDB,SQLRow=SQLRow,SQLRows=SQLRows,Transaction=Transaction github.com/cloudtrust/common-service/v2/database/sqltypes CloudtrustDB,SQLRow,SQLRows,Transaction
 //go:generate mockgen --build_flags=--mod=mod -destination=./mock/security.go -package=mock -mock_names=EncrypterDecrypter=EncrypterDecrypter github.com/cloudtrust/common-service/v2/security EncrypterDecrypter
 //go:generate mockgen --build_flags=--mod=mod -destination=./mock/keycloakb.go -package=mock -mock_names=ConfigurationDBModule=ConfigurationDBModule,AccredsKeycloakClient=AccredsKeycloakClient,KeycloakClient=KeycloakClient,KeycloakForTechnicalClient=KeycloakForTechnicalClient,Logger=Logger,HTTPClient=HTTPClient,OnboardingKeycloakClient=OnboardingKeycloakClient,KeycloakURIProvider=KeycloakURIProvider,ContextKeyLoader=ContextKeyLoader github.com/cloudtrust/keycloak-bridge/internal/keycloakb ConfigurationDBModule,AccredsKeycloakClient,KeycloakClient,KeycloakForTechnicalClient,Logger,HTTPClient,OnboardingKeycloakClient,KeycloakURIProvider,ContextKeyLoader
