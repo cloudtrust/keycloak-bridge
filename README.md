@@ -1,4 +1,4 @@
-# Keycloak bridge [![Build Status][ci-img]][ci] [![Coverage Status][cov-img]][cov] [![GoDoc][godoc-img]][godoc] [![Go Report Card][report-img]][report] [![OpenTracing Badge][opentracing-img]][opentracing]
+# Keycloak bridge [![Build Status][ci-img]][ci] [![Coverage Status][cov-img]][cov] [![GoDoc][godoc-img]][godoc] [![Go Report Card][report-img]][report]
 
 The keycloak bridge has one purpose, being a bridge for all the interactions with keycloak.
 
@@ -136,5 +136,3 @@ The ```keycloak_bridge.go``` is mostly just the main function doing all the wiri
 [godoc]: https://godoc.org/github.com/cloudtrust/keycloak-bridge
 [report-img]: https://goreportcard.com/badge/github.com/cloudtrust/keycloak-bridge
 [report]: https://goreportcard.com/report/github.com/cloudtrust/keycloak-bridge
-[opentracing-img]: https://img.shields.io/badge/OpenTracing-enabled-blue.svg
-[opentracing]: http://opentracing.io
