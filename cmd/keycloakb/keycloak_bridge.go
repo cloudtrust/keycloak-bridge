@@ -54,7 +54,6 @@ import (
 	kit_level "github.com/go-kit/log/level"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
-	_ "github.com/lib/pq"
 	"github.com/rs/cors"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -1729,7 +1728,7 @@ func configureHandler(ComponentName string, ComponentID string, idGenerator idge
 	return func(endpoint endpoint.Endpoint) http.Handler {
 		var handler http.Handler
 		handler = baseHandler(endpoint, logger)
-		handler = middleware.MakeHTTPCorrelationIDMW(idGenerator, nil, logger, ComponentName, ComponentID)(handler)
+		handler = middleware.MakeHTTPCorrelationIDMW(idGenerator, ComponentName, ComponentID)(handler)
 		handler = middleware.MakeHTTPOIDCTokenValidationMW(keycloakClient, audienceRequired, logger)(handler)
 		return handler
 	}
@@ -1740,7 +1739,7 @@ func configureValidationHandler(ComponentName string, ComponentID string, idGene
 	return func(endpoint endpoint.Endpoint) http.Handler {
 		var handler http.Handler
 		handler = validation.MakeValidationHandler(endpoint, logger)
-		handler = middleware.MakeHTTPCorrelationIDMW(idGenerator, nil, logger, ComponentName, ComponentID)(handler)
+		handler = middleware.MakeHTTPCorrelationIDMW(idGenerator, ComponentName, ComponentID)(handler)
 		handler = middleware.MakeHTTPBasicAuthenticationMW(expectedToken, logger)(handler)
 		return handler
 	}
@@ -1749,7 +1748,7 @@ func configureValidationHandler(ComponentName string, ComponentID string, idGene
 func configureRightsHandler(ComponentName string, ComponentID string, idGenerator idgenerator.IDGenerator, authorizationManager security.AuthorizationManager, keycloakClient *keycloakapi.Client, audienceRequired string, logger log.Logger) http.Handler {
 	var handler http.Handler
 	handler = commonhttp.MakeRightsHandler(authorizationManager)
-	handler = middleware.MakeHTTPCorrelationIDMW(idGenerator, nil, logger, ComponentName, ComponentID)(handler)
+	handler = middleware.MakeHTTPCorrelationIDMW(idGenerator, ComponentName, ComponentID)(handler)
 	handler = middleware.MakeHTTPOIDCTokenValidationMW(keycloakClient, audienceRequired, logger)(handler)
 	return handler
 }
@@ -1764,7 +1763,7 @@ func configureKYCHandler(ComponentName string, ComponentID string, idGenerator i
 		if verifyAvailableChecks {
 			handler = middleware.MakeEndpointAvailableCheckMW(availabilityChecker, logger)(handler)
 		}
-		handler = middleware.MakeHTTPCorrelationIDMW(idGenerator, nil, logger, ComponentName, ComponentID)(handler)
+		handler = middleware.MakeHTTPCorrelationIDMW(idGenerator, ComponentName, ComponentID)(handler)
 		handler = middleware.MakeHTTPOIDCTokenValidationMW(keycloakClient, audienceRequired, logger)(handler)
 		return handler
 	}
@@ -1775,7 +1774,7 @@ func configureRegisterHandler(ComponentName string, ComponentID string, idGenera
 	return func(endpoint endpoint.Endpoint) http.Handler {
 		var handler http.Handler
 		handler = register.MakeRegisterHandler(endpoint, logger)
-		handler = middleware.MakeHTTPCorrelationIDMW(idGenerator, nil, logger, ComponentName, ComponentID)(handler)
+		handler = middleware.MakeHTTPCorrelationIDMW(idGenerator, ComponentName, ComponentID)(handler)
 		handler = register.MakeHTTPRecaptchaValidationMW(recaptchaURL, recaptchaSecret, logger)(handler)
 		return handler
 	}
@@ -1786,7 +1785,7 @@ func configurePublicRegisterHandler(ComponentName string, ComponentID string, id
 	return func(endpoint endpoint.Endpoint) http.Handler {
 		var handler http.Handler
 		handler = register.MakeRegisterHandler(endpoint, logger)
-		handler = middleware.MakeHTTPCorrelationIDMW(idGenerator, nil, logger, ComponentName, ComponentID)(handler)
+		handler = middleware.MakeHTTPCorrelationIDMW(idGenerator, ComponentName, ComponentID)(handler)
 		return handler
 	}
 }
@@ -1796,7 +1795,7 @@ func configurePublicConfigurationHandler(ComponentName string, ComponentID strin
 	return func(endpoint endpoint.Endpoint) http.Handler {
 		var handler http.Handler
 		handler = conf.MakeConfigurationHandler(endpoint, logger)
-		handler = middleware.MakeHTTPCorrelationIDMW(idGenerator, nil, logger, ComponentName, ComponentID)(handler)
+		handler = middleware.MakeHTTPCorrelationIDMW(idGenerator, ComponentName, ComponentID)(handler)
 		return handler
 	}
 }
