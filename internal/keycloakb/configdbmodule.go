@@ -116,6 +116,34 @@ type configurationDBModule struct {
 	logger log.Logger
 }
 
+// ConfigurationDBModule is the interface of the configuration module.
+type ConfigurationDBModule interface {
+	NewTransaction(context context.Context) (sqltypes.Transaction, error)
+	GetConfigurations(context.Context, string) (configuration.RealmConfiguration, configuration.RealmAdminConfiguration, error)
+	StoreOrUpdateConfiguration(context.Context, string, configuration.RealmConfiguration) error
+	GetConfiguration(context.Context, string) (configuration.RealmConfiguration, error)
+	StoreOrUpdateAdminConfiguration(context.Context, string, configuration.RealmAdminConfiguration) error
+	GetAdminConfiguration(context.Context, string) (configuration.RealmAdminConfiguration, error)
+	GetBackOfficeConfiguration(context.Context, string, []string) (dto.BackOfficeConfiguration, error)
+	DeleteBackOfficeConfiguration(context.Context, string, string, string, *string, *string) error
+	InsertBackOfficeConfiguration(context.Context, string, string, string, string, []string) error
+	GetAllContextKeyID(ctx context.Context) ([]string, error)
+	GetContextKeysForCustomerRealm(ctx context.Context, customerRealm string) ([]configuration.RealmContextKey, error)
+	GetDefaultContextKeyConfiguration(ctx context.Context, customerRealm string) (configuration.RealmContextKey, error)
+	DeleteContextKeyConfiguration(ctx context.Context, tx sqltypes.Transaction, customerRealm string, ID string) error
+	StoreContextKeyConfiguration(ctx context.Context, tx sqltypes.Transaction, contextKeys configuration.RealmContextKey) error
+	GetAuthorizations(context context.Context, realmID string, groupName string) ([]configuration.Authorization, error)
+	AuthorizationExists(context context.Context, realmID string, groupName string, targetRealm string, targetGroupName *string, actionReq string) (bool, error)
+	CreateAuthorization(context context.Context, authz configuration.Authorization) error
+	DeleteAuthorization(context context.Context, realmID string, groupName string, targetRealm string, targetGroupName *string, actionReq string) error
+	DeleteAllAuthorizationsWithGroup(context context.Context, realmName, groupName string) error
+	CleanAuthorizationsActionForEveryRealms(context context.Context, realmID string, groupName string, actionReq string) error
+	CleanAuthorizationsActionForRealm(context context.Context, realmID string, groupName string, targetRealm string, actionReq string) error
+	GetThemeConfiguration(ctx context.Context, realmName string) (configuration.ThemeConfiguration, error)
+	UpdateThemeConfiguration(ctx context.Context, themeConfig configuration.ThemeConfiguration) error
+	GetThemeTranslation(ctx context.Context, realmName string, language string) (string, error)
+}
+
 // NewConfigurationDBModule returns a ConfigurationDB module.
 func NewConfigurationDBModule(db sqltypes.CloudtrustDB, logger log.Logger, actions ...[]string) ConfigurationDBModule {
 	return &configurationDBModule{
