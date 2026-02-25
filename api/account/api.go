@@ -157,7 +157,8 @@ type Configuration struct {
 	PhysicalIdentificationAllowedRoles       []string        `json:"physical_identification_allowed_roles"`
 	AllowedBackURLs                          []string        `json:"allowed_back_urls"`
 	AllowInitialPasswordDefinition           *bool           `json:"allow_initial_password_definition"`
-		IdentificationURL                     *string         `json:"identification_url"`
+	IdentificationURL                        *string         `json:"identification_url"`
+	BOExternalIDPManagementEnabled           *bool           `json:"bo_external_idp_management_enabled"`
 }
 
 // UpdatePasswordBody is the definition of the expected body content of UpdatePassword method
