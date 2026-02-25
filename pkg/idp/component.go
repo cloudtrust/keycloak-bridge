@@ -34,6 +34,7 @@ type KeycloakIdpClient interface {
 	UpdateIdp(accessToken string, realmName, idpAlias string, idpRep kc.IdentityProviderRepresentation) error
 	DeleteIdp(accessToken string, realmName string, idpAlias string) error
 	GetFederatedIdentities(accessToken string, realmName string, userID string) ([]kc.FederatedIdentityRepresentation, error)
+	UnlinkShadowUser(accessToken string, realmName string, userID string, provider string) error
 	// Components
 	GetComponents(accessToken string, realmName string, paramKV ...string) ([]kc.ComponentRepresentation, error)
 	CreateComponent(accessToken string, realmName string, comp kc.ComponentRepresentation) error
@@ -61,6 +62,7 @@ type Component interface {
 	AddUserAttributes(ctx context.Context, realmName string, userID string, attributes map[string][]string) error
 	DeleteUserAttributes(ctx context.Context, realmName string, userID string, attributeKeys []string) error
 	GetUserFederatedIdentities(ctx context.Context, realmName string, userID string) ([]api.FederatedIdentityRepresentation, error)
+	UnlinkShadowUser(ctx context.Context, realmName string, userID string, provider string) error
 }
 
 type component struct {
@@ -600,4 +602,19 @@ func (c *component) GetUserFederatedIdentities(ctx context.Context, realmName st
 		})
 	}
 	return federatedIdentities, nil
+}
+
+func (c *component) UnlinkShadowUser(ctx context.Context, realmName string, userID string, provider string) error {
+	accessToken, err := c.tokenProvider.ProvideTokenForRealm(ctx, realmName)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Failed to get OIDC token from keycloak", "err", err.Error())
+		return err
+	}
+
+	if err := c.keycloakIdpClient.UnlinkShadowUser(accessToken, realmName, userID, provider); err != nil {
+		c.logger.Warn(ctx, "msg", "Can't unlink shadow user", "err", err.Error())
+		return err
+	}
+
+	return nil
 }

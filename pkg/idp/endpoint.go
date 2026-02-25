@@ -31,6 +31,7 @@ type Endpoints struct {
 	AddUserAttributes            endpoint.Endpoint
 	DeleteUserAttributes         endpoint.Endpoint
 	GetUserFederatedIdentities   endpoint.Endpoint
+	UnlinkShadowUser             endpoint.Endpoint
 }
 
 // NewEndpoints creates an Endpoints instance
@@ -50,6 +51,7 @@ func NewEndpoints(component Component, endpointUpdater func(endpoint cs.Endpoint
 		AddUserAttributes:            endpointUpdater(MakeAddUserAttributesEndpoint(component), "add_user_attributes_endpoint"),
 		DeleteUserAttributes:         endpointUpdater(MakeDeleteUserAttributesEndpoint(component), "delete_user_attributes_endpoint"),
 		GetUserFederatedIdentities:   endpointUpdater(MakeGetUserFederatedIdentitiesEndpoint(component), "get_user_federated_identities_endpoint"),
+		UnlinkShadowUser:             endpointUpdater(MakeUnlinkShadowUserEndpoint(component), "unlink_shadow_user_endpoint"),
 	}
 }
 
@@ -271,5 +273,13 @@ func MakeGetUserFederatedIdentitiesEndpoint(component Component) cs.Endpoint {
 	return func(ctx context.Context, req any) (any, error) {
 		var m = req.(map[string]string)
 		return component.GetUserFederatedIdentities(ctx, m[prmRealm], m[prmUser])
+	}
+}
+
+// MakeUnlinkShadowUserEndpoint creates an endpoint for UnlinkShadowUser
+func MakeUnlinkShadowUserEndpoint(component Component) cs.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		var m = req.(map[string]string)
+		return nil, component.UnlinkShadowUser(ctx, m[prmRealm], m[prmUser], m[prmProvider])
 	}
 }
