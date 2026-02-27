@@ -1095,3 +1095,41 @@ func TestGetUserFederatedIdentities(t *testing.T) {
 		assert.ElementsMatch(t, expectedResult, res)
 	})
 }
+
+func TestUnlinkShadowUser(t *testing.T) {
+	mocks := createMocks(t)
+	defer mocks.finish()
+
+	var (
+		idpComponent = mocks.createComponent()
+		userID       = "user-id-123"
+		provider     = "test-provider"
+		anyError     = errors.New("any error")
+		ctx          = context.TODO()
+	)
+
+	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
+
+	t.Run("Failed to get technical access token", func(t *testing.T) {
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return("", anyError)
+
+		_, err := idpComponent.GetUserFederatedIdentities(ctx, realmName, userID)
+		assert.Error(t, err)
+	})
+
+	t.Run("Failed to unlink shadow user", func(t *testing.T) {
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return(accessToken, nil)
+		mocks.keycloakIdpClient.EXPECT().UnlinkShadowUser(accessToken, realmName, userID, provider).Return(anyError)
+
+		err := idpComponent.UnlinkShadowUser(ctx, realmName, userID, provider)
+		assert.Error(t, err)
+	})
+
+	t.Run("Success", func(t *testing.T) {
+		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return(accessToken, nil)
+		mocks.keycloakIdpClient.EXPECT().UnlinkShadowUser(accessToken, realmName, userID, provider).Return(nil)
+
+		err := idpComponent.UnlinkShadowUser(ctx, realmName, userID, provider)
+		assert.NoError(t, err)
+	})
+}

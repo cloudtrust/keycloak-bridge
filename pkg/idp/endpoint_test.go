@@ -445,3 +445,34 @@ func TestGetUserFederatedIdentitiesEndpoint(t *testing.T) {
 		assert.ElementsMatch(t, result, resSlice)
 	})
 }
+
+func TestUnlinkShadowUserEndpoint(t *testing.T) {
+	mocks := createMocks(t)
+	defer mocks.finish()
+
+	var (
+		realm    = "test-community"
+		ctx      = context.TODO()
+		userID   = "user-id-123"
+		provider = "test-provider"
+		req      = map[string]string{
+			prmRealm:    realm,
+			prmUser:     userID,
+			prmProvider: provider,
+		}
+		errDummy = errors.New("dummy")
+	)
+
+	t.Run("UnlinkShadowUser fails", func(t *testing.T) {
+		mocks.component.EXPECT().UnlinkShadowUser(ctx, realm, userID, provider).Return(errDummy)
+		_, err := mocks.newEndpoints().UnlinkShadowUser(ctx, req)
+		assert.Error(t, err)
+	})
+
+	t.Run("Success", func(t *testing.T) {
+		mocks.component.EXPECT().UnlinkShadowUser(ctx, realm, userID, provider).Return(nil)
+
+		_, err := mocks.newEndpoints().UnlinkShadowUser(ctx, req)
+		assert.NoError(t, err)
+	})
+}

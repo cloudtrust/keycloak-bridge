@@ -416,7 +416,33 @@ paths:
           description: successful operation
         404:
           description: user not found
-
+    /idp/realms/{realm}/users/{user}/federated-identities/{provider}:
+      delete:
+        tags:
+        - Identity providers
+        summary: Remove a federated identity link from a user
+        parameters:
+        - name: realm
+          in: path
+          description: realm name (not id!)
+          required: true
+          schema:
+            type: string
+        - name: userID
+          in: path
+          description: User id
+          required: true
+          schema:
+            type: string
+        - name: provider
+          in: path
+          description: Login provider id
+          required: true
+          schema:
+            type: string        
+        responses:
+          200:
+            description: successful operation
 components:
   schemas:
     IdentityProviderRepresentation:

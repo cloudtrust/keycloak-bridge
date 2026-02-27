@@ -271,6 +271,20 @@ func (mr *KeycloakIdpClientMockRecorder) GetUsers(accessToken, reqRealmName, tar
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUsers", reflect.TypeOf((*KeycloakIdpClient)(nil).GetUsers), varargs...)
 }
 
+// UnlinkShadowUser mocks base method.
+func (m *KeycloakIdpClient) UnlinkShadowUser(accessToken, realmName, userID, provider string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UnlinkShadowUser", accessToken, realmName, userID, provider)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UnlinkShadowUser indicates an expected call of UnlinkShadowUser.
+func (mr *KeycloakIdpClientMockRecorder) UnlinkShadowUser(accessToken, realmName, userID, provider any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UnlinkShadowUser", reflect.TypeOf((*KeycloakIdpClient)(nil).UnlinkShadowUser), accessToken, realmName, userID, provider)
+}
+
 // UpdateComponent mocks base method.
 func (m *KeycloakIdpClient) UpdateComponent(accessToken, realmName, compID string, comp keycloak.ComponentRepresentation) error {
 	m.ctrl.T.Helper()
@@ -522,6 +536,20 @@ func (m *Component) GetUsersWithAttribute(ctx context.Context, realmName string,
 func (mr *ComponentMockRecorder) GetUsersWithAttribute(ctx, realmName, username, groupName, expectedAttributes, needRoles any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUsersWithAttribute", reflect.TypeOf((*Component)(nil).GetUsersWithAttribute), ctx, realmName, username, groupName, expectedAttributes, needRoles)
+}
+
+// UnlinkShadowUser mocks base method.
+func (m *Component) UnlinkShadowUser(ctx context.Context, realmName, userID, provider string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UnlinkShadowUser", ctx, realmName, userID, provider)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UnlinkShadowUser indicates an expected call of UnlinkShadowUser.
+func (mr *ComponentMockRecorder) UnlinkShadowUser(ctx, realmName, userID, provider any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UnlinkShadowUser", reflect.TypeOf((*Component)(nil).UnlinkShadowUser), ctx, realmName, userID, provider)
 }
 
 // UpdateIdentityProvider mocks base method.

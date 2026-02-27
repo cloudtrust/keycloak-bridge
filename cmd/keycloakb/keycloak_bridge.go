@@ -1078,6 +1078,7 @@ func main() {
 		var addIDPUserAttributesHandler = configureIDPHandler(idpEndpoints.AddUserAttributes)
 		var deleteIDPUserAttributesHandler = configureIDPHandler(idpEndpoints.DeleteUserAttributes)
 		var getUserFederatedIdentitiesHandler = configureIDPHandler(idpEndpoints.GetUserFederatedIdentities)
+		var unlinkShadowUserHandler = configureIDPHandler(idpEndpoints.UnlinkShadowUser)
 
 		var idpSubroute = route.PathPrefix("/idp").Subrouter()
 
@@ -1095,6 +1096,7 @@ func main() {
 		idpSubroute.Path("/realms/{realm}/users/{user}/attributes").Methods("PUT").Handler(addIDPUserAttributesHandler)
 		idpSubroute.Path("/realms/{realm}/users/{user}/attributes").Methods("DELETE").Handler(deleteIDPUserAttributesHandler)
 		idpSubroute.Path("/realms/{realm}/users/{user}/federated-identities").Methods("GET").Handler(getUserFederatedIdentitiesHandler)
+		idpSubroute.Path("/realms/{realm}/users/{user}/federated-identities/{provider}").Methods("DELETE").Handler(unlinkShadowUserHandler)
 
 		// Debug.
 		if pprofRouteEnabled {
