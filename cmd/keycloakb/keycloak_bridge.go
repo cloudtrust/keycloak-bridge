@@ -771,7 +771,6 @@ func main() {
 			RevokeAccreditations:             prepareEndpoint(management.MakeRevokeAccreditationsEndpoint(keycloakComponent), "revoke_accreditations_endpoint", managementLogger, rateLimitMgmt),
 			SendOnboardingEmail:              prepareEndpoint(management.MakeSendOnboardingEmailEndpoint(keycloakComponent, maxLifeSpan), "send_onboarding_email_endpoint", managementLogger, rateLimitMgmt),
 			SendOnboardingEmailInSocialRealm: prepareEndpoint(management.MakeSendOnboardingEmailInSocialRealmEndpoint(keycloakComponent, maxLifeSpan), "send_onboarding_email_in_social_realm_endpoint", managementLogger, rateLimitMgmt),
-			SendReminderEmail:                prepareEndpoint(management.MakeSendReminderEmailEndpoint(keycloakComponent), "send_reminder_email_endpoint", managementLogger, rateLimitMgmt),
 			SendSmsCode:                      prepareEndpoint(management.MakeSendSmsCodeEndpoint(keycloakComponent), "send_sms_code_endpoint", managementLogger, rateLimitMgmt),
 			ResetSmsCounter:                  prepareEndpoint(management.MakeResetSmsCounterEndpoint(keycloakComponent), "reset_sms_counter_endpoint", managementLogger, rateLimitMgmt),
 			CreateRecoveryCode:               prepareEndpoint(management.MakeCreateRecoveryCodeEndpoint(keycloakComponent), "create_recovery_code_endpoint", managementLogger, rateLimitMgmt),
@@ -1205,7 +1204,6 @@ func main() {
 		var sendSmsCodeHandler = configureManagementHandler(managementEndpoints.SendSmsCode)
 		var sendOnboardingEmailHandler = configureManagementHandler(managementEndpoints.SendOnboardingEmail)
 		var sendOnboardingEmailInSocialRealmHandler = configureManagementHandler(managementEndpoints.SendOnboardingEmailInSocialRealm)
-		var sendReminderEmailHandler = configureManagementHandler(managementEndpoints.SendReminderEmail)
 		var resetSmsCounterHandler = configureManagementHandler(managementEndpoints.ResetSmsCounter)
 		var createRecoveryCodeHandler = configureManagementHandler(managementEndpoints.CreateRecoveryCode)
 		var createActivationCodeHandler = configureManagementHandler(managementEndpoints.CreateActivationCode)
@@ -1295,7 +1293,6 @@ func main() {
 		/* REMOVE_THIS_3901 : start */
 		managementSubroute.Path("/realms/{realm}/users/{userID}/send-migration-email").Methods("POST").Handler(sendMigrationEmail)
 		/* REMOVE_THIS_3901 : end */
-		managementSubroute.Path("/realms/{realm}/users/{userID}/send-reminder-email").Methods("POST").Handler(sendReminderEmailHandler)
 		managementSubroute.Path("/realms/{realm}/users/{userID}/reset-sms-counter").Methods("PUT").Handler(resetSmsCounterHandler)
 		managementSubroute.Path("/realms/{realm}/users/{userID}/recovery-code").Methods("POST").Handler(createRecoveryCodeHandler)
 		managementSubroute.Path("/realms/{realm}/users/{userID}/activation-code").Methods("POST").Handler(createActivationCodeHandler)

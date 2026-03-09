@@ -1233,42 +1233,6 @@ func TestSendOnboardingEmailInSocialRealmEndpoint(t *testing.T) {
 	})
 }
 
-func TestSendReminderEmailEndpoint(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
-	defer mockCtrl.Finish()
-
-	var mockManagementComponent = mock.NewManagementComponent(mockCtrl)
-
-	var e = MakeSendReminderEmailEndpoint(mockManagementComponent)
-
-	var realm = "master"
-	var userID = "123-456-789"
-	var ctx = context.Background()
-	var req = make(map[string]string)
-	req[prmRealm] = realm
-	req[prmUserID] = userID
-
-	t.Run("No error - Without param", func(t *testing.T) {
-		mockManagementComponent.EXPECT().SendReminderEmail(ctx, realm, userID).Return(nil)
-		var res, err = e(ctx, req)
-		assert.Nil(t, err)
-		assert.Nil(t, res)
-	})
-
-	t.Run("No error - With params", func(t *testing.T) {
-		req[prmQryClientID] = "123789"
-		req[prmQryRedirectURI] = "http://redirect.com"
-		req[prmQryLifespan] = strconv.Itoa(3600)
-		req["toto"] = "tutu" // Check this param is not transmitted
-
-		mockManagementComponent.EXPECT().SendReminderEmail(ctx, realm, userID, prmQryClientID, req[prmQryClientID], prmQryRedirectURI, req[prmQryRedirectURI], prmQryLifespan, req[prmQryLifespan]).Return(nil)
-		var res, err = e(ctx, req)
-		assert.Nil(t, err)
-		assert.Nil(t, res)
-		// the mock does not except to be called with req["toto"]; as the test passes it means that e has filtered out req["tutu"] and it is not transmitted to SendReminderEmail
-	})
-}
-
 func TestResetSmsCounterEndpoint(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
