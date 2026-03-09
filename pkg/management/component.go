@@ -70,7 +70,6 @@ type KeycloakClient interface {
 	SendSmsCode(accessToken string, realmName string, userID string) (kc.SmsCodeRepresentation, error)
 	CreateRecoveryCode(accessToken string, realmName string, userID string) (kc.RecoveryCodeRepresentation, error)
 	CreateActivationCode(accessToken string, realmName string, userID string) (kc.ActivationCodeRepresentation, error)
-	SendReminderEmail(accessToken string, realmName string, userID string, paramKV ...string) error
 	GetRoles(accessToken string, realmName string) ([]kc.RoleRepresentation, error)
 	GetRolesWithAttributes(accessToken string, realmName string) ([]kc.RoleRepresentation, error)
 	GetRole(accessToken string, realmName string, roleID string) (kc.RoleRepresentation, error)
@@ -171,7 +170,6 @@ type Component interface {
 	/* REMOVE_THIS_3901 : start */
 	SendMigrationEmail(ctx context.Context, realmName string, userID string, customerRealm string, reminder bool, lifespan *int) error
 	/* REMOVE_THIS_3901 : end */
-	SendReminderEmail(ctx context.Context, realmName string, userID string, paramKV ...string) error
 	ResetSmsCounter(ctx context.Context, realmName string, userID string) error
 	CreateRecoveryCode(ctx context.Context, realmName string, userID string) (string, error)
 	CreateActivationCode(ctx context.Context, realmName string, userID string) (string, error)
@@ -1407,18 +1405,6 @@ func (c *component) sendMigrationEmail(ctx context.Context, accessToken string, 
 }
 
 /* REMOVE_THIS_3901 : end */
-
-func (c *component) SendReminderEmail(ctx context.Context, realmName string, userID string, paramKV ...string) error {
-	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
-
-	err := c.keycloakClient.SendReminderEmail(accessToken, realmName, userID, paramKV...)
-
-	if err != nil {
-		c.logger.Warn(ctx, "err", err.Error())
-	}
-
-	return err
-}
 
 func (c *component) ResetSmsCounter(ctx context.Context, realmName, userID string) error {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)

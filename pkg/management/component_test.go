@@ -2858,47 +2858,6 @@ func TestSendOnboardingEmail(t *testing.T) {
 
 }
 
-func TestSendReminderEmail(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
-	defer mockCtrl.Finish()
-
-	var mocks = createMocks(mockCtrl)
-	var managementComponent = mocks.createComponent()
-
-	var accessToken = "TOKEN=="
-	var realmName = "master"
-	var userID = "1245-7854-8963"
-
-	var key1 = "key1"
-	var value1 = "value1"
-	var key2 = "key2"
-	var value2 = "value2"
-	var key3 = "key3"
-	var value3 = "value3"
-
-	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
-
-	t.Run("Send email", func(t *testing.T) {
-		mocks.keycloakClient.EXPECT().SendReminderEmail(accessToken, realmName, userID, key1, value1, key2, value2, key3, value3).Return(nil)
-
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
-
-		err := managementComponent.SendReminderEmail(ctx, "master", userID, key1, value1, key2, value2, key3, value3)
-
-		assert.Nil(t, err)
-	})
-
-	t.Run("Error", func(t *testing.T) {
-		mocks.keycloakClient.EXPECT().SendReminderEmail(accessToken, realmName, userID).Return(fmt.Errorf("Invalid input"))
-
-		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
-
-		err := managementComponent.SendReminderEmail(ctx, "master", userID)
-
-		assert.NotNil(t, err)
-	})
-}
-
 func TestResetSmsCounter(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()

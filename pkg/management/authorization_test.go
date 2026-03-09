@@ -155,7 +155,6 @@ func TestDeny(t *testing.T) {
 			"SendSmsCode":                         ignoreFirst(authorizationMW.SendSmsCode(ctx, realmName, userID)),
 			"SendOnboardingEmail":                 authorizationMW.SendOnboardingEmail(ctx, realmName, userID, customerRealm, false, nil),
 			"SendOnboardingEmailInSocialRealm":    authorizationMW.SendOnboardingEmailInSocialRealm(ctx, userID, customerRealm, false),
-			"SendReminderEmail":                   authorizationMW.SendReminderEmail(ctx, realmName, userID),
 			"ResetSmsCounter":                     authorizationMW.ResetSmsCounter(ctx, realmName, userID),
 			"CreateRecoveryCode":                  ignoreFirst(authorizationMW.CreateRecoveryCode(ctx, realmName, userID)),
 			"CreateActivationCode":                ignoreFirst(authorizationMW.CreateActivationCode(ctx, realmName, userID)),
@@ -442,10 +441,6 @@ func TestAllowed(t *testing.T) {
 
 		mockManagementComponent.EXPECT().SendOnboardingEmailInSocialRealm(ctx, userID, customerRealm, false).Return(nil)
 		err = authorizationMW.SendOnboardingEmailInSocialRealm(ctx, userID, customerRealm, false)
-		assert.Nil(t, err)
-
-		mockManagementComponent.EXPECT().SendReminderEmail(ctx, realmName, userID).Return(nil)
-		err = authorizationMW.SendReminderEmail(ctx, realmName, userID)
 		assert.Nil(t, err)
 
 		mockManagementComponent.EXPECT().ResetSmsCounter(ctx, realmName, userID).Return(nil)
