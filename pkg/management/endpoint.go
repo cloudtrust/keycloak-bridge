@@ -55,7 +55,6 @@ type Endpoints struct {
 	SendSmsCode                      endpoint.Endpoint
 	SendOnboardingEmail              endpoint.Endpoint
 	SendOnboardingEmailInSocialRealm endpoint.Endpoint
-	SendReminderEmail                endpoint.Endpoint
 	ResetSmsCounter                  endpoint.Endpoint
 	CreateRecoveryCode               endpoint.Endpoint
 	CreateActivationCode             endpoint.Endpoint
@@ -673,22 +672,6 @@ func MakeSendMigrationEmailEndpoint(component Component, maxLifeSpan int) cs.End
 }
 
 /* REMOVE_THIS_3901 : end */
-
-// MakeSendReminderEmailEndpoint creates an endpoint for SendReminderEmail
-func MakeSendReminderEmailEndpoint(component Component) cs.Endpoint {
-	return func(ctx context.Context, req any) (any, error) {
-		var m = req.(map[string]string)
-
-		var paramKV []string
-		for _, key := range []string{prmQryClientID, prmQryRedirectURI, prmQryLifespan} {
-			if m[key] != "" {
-				paramKV = append(paramKV, key, m[key])
-			}
-		}
-
-		return nil, component.SendReminderEmail(ctx, m[prmRealm], m[prmUserID], paramKV...)
-	}
-}
 
 // MakeResetSmsCounterEndpoint creates an endpoint for ResetSmsCounter
 func MakeResetSmsCounterEndpoint(component Component) cs.Endpoint {

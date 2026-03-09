@@ -478,17 +478,6 @@ func (c *authorizationComponentMW) SendMigrationEmail(ctx context.Context, realm
 
 /* REMOVE_THIS_3901 : end */
 
-func (c *authorizationComponentMW) SendReminderEmail(ctx context.Context, realmName string, userID string, paramKV ...string) error {
-	var action = security.MGMTSendReminderEmail.String()
-	var targetRealm = realmName
-
-	if err := c.authManager.CheckAuthorizationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
-		return err
-	}
-
-	return c.next.SendReminderEmail(ctx, realmName, userID, paramKV...)
-}
-
 func (c *authorizationComponentMW) ResetSmsCounter(ctx context.Context, realmName string, userID string) error {
 	var action = security.MGMTResetSmsCounter.String()
 	var targetRealm = realmName
