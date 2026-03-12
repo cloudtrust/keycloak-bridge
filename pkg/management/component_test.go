@@ -665,7 +665,7 @@ func TestCreateUserInSocialRealm(t *testing.T) {
 		assert.Equal(t, anyError, err)
 	})
 	t.Run("onAlreadyExistsUser", func(t *testing.T) {
-		var err = managementComponent.onAlreadyExistsUser("", 0, ptr(""))
+		var err = managementComponent.onAlreadyExistsUser("", "", 0, ptr(""))
 		assert.IsType(t, errorhandler.Error{}, err)
 		var errWithDetails = err.(errorhandler.Error)
 		assert.Equal(t, http.StatusConflict, errWithDetails.Status)

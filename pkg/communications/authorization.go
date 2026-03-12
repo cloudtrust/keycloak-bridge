@@ -26,17 +26,6 @@ func MakeAuthorizationCommunicationsComponentMW(logger log.Logger, authorization
 	}
 }
 
-func (c *authorizationComponentMW) SendEmail(ctx context.Context, realmName string, emailRep api.EmailRepresentation) error {
-	var action = security.COMSendEmail.String()
-	var targetRealm = realmName
-
-	if err := c.authManager.CheckAuthorizationOnTargetRealm(ctx, action, targetRealm); err != nil {
-		return err
-	}
-
-	return c.next.SendEmail(ctx, realmName, emailRep)
-}
-
 func (c *authorizationComponentMW) SendEmailToUser(ctx context.Context, realmName string, userID string, emailRep api.EmailRepresentation) error {
 	var action = security.COMSendEmail.String()
 	var targetRealm = realmName
