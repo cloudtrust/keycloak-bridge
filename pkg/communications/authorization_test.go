@@ -9,8 +9,8 @@ import (
 	"github.com/cloudtrust/common-service/v2/log"
 	"github.com/cloudtrust/common-service/v2/security"
 	"github.com/cloudtrust/keycloak-bridge/pkg/communications/mock"
-	"go.uber.org/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func TestDeny(t *testing.T) {
@@ -38,9 +38,6 @@ func TestDeny(t *testing.T) {
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextGroups, groups)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, "master")
-
-		err = authorizationMW.SendEmail(ctx, realmName, emailForTest)
-		assert.Equal(t, security.ForbiddenError{}, err)
 
 		err = authorizationMW.SendEmailToUser(ctx, realmName, userID, emailForTest)
 		assert.Equal(t, security.ForbiddenError{}, err)
@@ -90,10 +87,6 @@ func TestAllow(t *testing.T) {
 		var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 		ctx = context.WithValue(ctx, cs.CtContextGroups, groups)
 		ctx = context.WithValue(ctx, cs.CtContextRealm, "master")
-
-		mockCommunicationsComponent.EXPECT().SendEmail(ctx, realmName, emailForTest).Return(nil).Times(1)
-		err = authorizationMW.SendEmail(ctx, realmName, emailForTest)
-		assert.Nil(t, err)
 
 		mockCommunicationsComponent.EXPECT().SendEmailToUser(ctx, realmName, userID, emailForTest).Return(nil).Times(1)
 		err = authorizationMW.SendEmailToUser(ctx, realmName, userID, emailForTest)

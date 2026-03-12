@@ -12,7 +12,6 @@ import (
 
 // KeycloakCommunicationsClient interface exposes methods we need to call to send requests to Keycloak communications API
 type KeycloakCommunicationsClient interface {
-	SendEmail(accessToken string, reqRealmName string, realmName string, emailRep kc.EmailRepresentation) error
 	SendEmailToUser(accessToken string, reqRealmName string, realmName string, userID string, emailRep kc.EmailRepresentation) error
 	SendSMS(accessToken string, realmName string, smsRep kc.SMSRepresentation) error
 }
@@ -20,7 +19,6 @@ type KeycloakCommunicationsClient interface {
 // Component interface exposes methods used by the bridge API
 type Component interface {
 	SendEmailToUser(ctx context.Context, realmName string, userID string, emailRep api.EmailRepresentation) error
-	SendEmail(ctx context.Context, realmName string, emailRep api.EmailRepresentation) error
 	SendSMS(ctx context.Context, realmName string, smsRep api.SMSRepresentation) error
 }
 
@@ -37,26 +35,6 @@ func NewComponent(keycloakCommunicationsClient KeycloakCommunicationsClient, tok
 		tokenProvider:                tokenProvider,
 		logger:                       logger,
 	}
-}
-
-func (c *component) SendEmail(ctx context.Context, realmName string, emailRep api.EmailRepresentation) error {
-	var accessToken string
-	{
-		var err error
-		accessToken, err = c.tokenProvider.ProvideTokenForRealm(ctx, realmName)
-		if err != nil {
-			c.logger.Error(ctx, "msg", "Can't get access token for technical user", "err", err.Error())
-			return cerrors.CreateInternalServerError("token")
-		}
-	}
-
-	var kcEmailRep = api.ExportEmailToKeycloak(&emailRep)
-	err := c.keycloakCommunicationsClient.SendEmail(accessToken, realmName, realmName, *kcEmailRep)
-	if err != nil {
-		c.logger.Warn(ctx, "err", err.Error())
-		return err
-	}
-	return nil
 }
 
 func (c *component) SendEmailToUser(ctx context.Context, realmName string, userID string, emailRep api.EmailRepresentation) error {

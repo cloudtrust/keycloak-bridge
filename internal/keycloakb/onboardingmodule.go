@@ -39,7 +39,6 @@ type OnboardingKeycloakClient interface {
 	CreateUser(accessToken string, realmName string, targetRealmName string, user kc.UserRepresentation, paramKV ...string) (string, error)
 	DeleteUser(accessToken string, realmName, userID string) error
 	ExecuteActionsEmail(accessToken string, reqRealmName string, targetRealmName string, userID string, actions []string, paramKV ...string) error
-	SendEmail(accessToken string, reqRealmName string, realmName string, emailRep kc.EmailRepresentation) error
 	GenerateTrustIDAuthToken(accessToken string, reqRealmName string, realmName string, userID string) (string, error)
 }
 
@@ -49,7 +48,7 @@ type OnboardingModule interface {
 	SendOnboardingEmail(ctx context.Context, accessToken string, realmName string, userID string, username string,
 		onboardingClientID string, onboardingRedirectURI string, themeRealmName string, reminder bool, paramKV ...string) error
 	CreateUser(ctx context.Context, accessToken, realmName, targetRealmName string, kcUser *kc.UserRepresentation, generateNameID bool) (string, error)
-	ProcessAlreadyExistingUserCases(ctx context.Context, accessToken string, targetRealmName string, userEmail string, requestingSource string, handler func(username string, createdTimestamp int64, thirdParty *string) error) error
+	ProcessAlreadyExistingUserCases(ctx context.Context, accessToken string, targetRealmName string, userEmail string, requestingSource string, handler func(userID string, username string, createdTimestamp int64, thirdParty *string) error) error
 	ComputeRedirectURI(ctx context.Context, accessToken string, realmName string, userID string, username string,
 		onboardingClientID string, onboardingRedirectURI string) (string, error)
 	ComputeOnboardingRedirectURI(ctx context.Context, targetRealmName string, customerRealmName string, realmConf configuration.RealmConfiguration, contextKey *string) (string, error)
@@ -184,7 +183,7 @@ func (om *onboardingModule) CreateUser(ctx context.Context, accessToken, realmNa
 }
 
 func (om *onboardingModule) ProcessAlreadyExistingUserCases(ctx context.Context, accessToken string, targetRealmName string, userEmail string,
-	requestingSource string, handler func(username string, createdTimestamp int64, thirdParty *string) error) error {
+	requestingSource string, handler func(userID string, username string, createdTimestamp int64, thirdParty *string) error) error {
 	kcUser, err := om.getUserByEmailIfDuplicateNotAllowed(ctx, accessToken, targetRealmName, userEmail)
 	if err != nil {
 		return err
@@ -200,11 +199,11 @@ func (om *onboardingModule) ProcessAlreadyExistingUserCases(ctx context.Context,
 
 		// Error if user is already onboarded
 		if alreadyOnboarded {
-			return handler(*kcUser.Username, *kcUser.CreatedTimestamp, nil)
+			return handler(*kcUser.ID, *kcUser.Username, *kcUser.CreatedTimestamp, nil)
 		}
 
 		if attrb := kcUser.GetAttributeString(constants.AttrbSource); !om.canReplaceAccount(*kcUser.CreatedTimestamp, attrb, requestingSource) {
-			return handler(*kcUser.Username, *kcUser.CreatedTimestamp, attrb)
+			return handler(*kcUser.ID, *kcUser.Username, *kcUser.CreatedTimestamp, attrb)
 		}
 
 		// Else delete this not fully onboarded user to be able to perform a fully new onboarding

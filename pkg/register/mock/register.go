@@ -144,18 +144,18 @@ func (mr *KeycloakClientMockRecorder) GetRealm(accessToken, realmName any) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRealm", reflect.TypeOf((*KeycloakClient)(nil).GetRealm), accessToken, realmName)
 }
 
-// SendEmail mocks base method.
-func (m *KeycloakClient) SendEmail(accessToken, reqRealmName, realmName string, emailRep keycloak.EmailRepresentation) error {
+// SendEmailToUser mocks base method.
+func (m *KeycloakClient) SendEmailToUser(accessToken, reqRealmName, realmName, userID string, emailRep keycloak.EmailRepresentation) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SendEmail", accessToken, reqRealmName, realmName, emailRep)
+	ret := m.ctrl.Call(m, "SendEmailToUser", accessToken, reqRealmName, realmName, userID, emailRep)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// SendEmail indicates an expected call of SendEmail.
-func (mr *KeycloakClientMockRecorder) SendEmail(accessToken, reqRealmName, realmName, emailRep any) *gomock.Call {
+// SendEmailToUser indicates an expected call of SendEmailToUser.
+func (mr *KeycloakClientMockRecorder) SendEmailToUser(accessToken, reqRealmName, realmName, userID, emailRep any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendEmail", reflect.TypeOf((*KeycloakClient)(nil).SendEmail), accessToken, reqRealmName, realmName, emailRep)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendEmailToUser", reflect.TypeOf((*KeycloakClient)(nil).SendEmailToUser), accessToken, reqRealmName, realmName, userID, emailRep)
 }
 
 // ConfigurationDBModule is a mock of ConfigurationDBModule interface.
@@ -337,7 +337,7 @@ func (mr *OnboardingModuleMockRecorder) CreateUser(ctx, accessToken, realmName, 
 }
 
 // ProcessAlreadyExistingUserCases mocks base method.
-func (m *OnboardingModule) ProcessAlreadyExistingUserCases(ctx context.Context, accessToken, targetRealmName, userEmail, requestingSource string, handler func(string, int64, *string) error) error {
+func (m *OnboardingModule) ProcessAlreadyExistingUserCases(ctx context.Context, accessToken, targetRealmName, userEmail, requestingSource string, handler func(string, string, int64, *string) error) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ProcessAlreadyExistingUserCases", ctx, accessToken, targetRealmName, userEmail, requestingSource, handler)
 	ret0, _ := ret[0].(error)

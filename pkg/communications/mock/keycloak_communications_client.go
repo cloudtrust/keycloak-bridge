@@ -42,20 +42,6 @@ func (m *KeycloakCommunicationsClient) EXPECT() *KeycloakCommunicationsClientMoc
 	return m.recorder
 }
 
-// SendEmail mocks base method.
-func (m *KeycloakCommunicationsClient) SendEmail(accessToken, reqRealmName, realmName string, emailRep keycloak.EmailRepresentation) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SendEmail", accessToken, reqRealmName, realmName, emailRep)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// SendEmail indicates an expected call of SendEmail.
-func (mr *KeycloakCommunicationsClientMockRecorder) SendEmail(accessToken, reqRealmName, realmName, emailRep any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendEmail", reflect.TypeOf((*KeycloakCommunicationsClient)(nil).SendEmail), accessToken, reqRealmName, realmName, emailRep)
-}
-
 // SendEmailToUser mocks base method.
 func (m *KeycloakCommunicationsClient) SendEmailToUser(accessToken, reqRealmName, realmName, userID string, emailRep keycloak.EmailRepresentation) error {
 	m.ctrl.T.Helper()
@@ -106,20 +92,6 @@ func NewComponent(ctrl *gomock.Controller) *Component {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *Component) EXPECT() *ComponentMockRecorder {
 	return m.recorder
-}
-
-// SendEmail mocks base method.
-func (m *Component) SendEmail(ctx context.Context, realmName string, emailRep apicommunications.EmailRepresentation) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SendEmail", ctx, realmName, emailRep)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// SendEmail indicates an expected call of SendEmail.
-func (mr *ComponentMockRecorder) SendEmail(ctx, realmName, emailRep any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendEmail", reflect.TypeOf((*Component)(nil).SendEmail), ctx, realmName, emailRep)
 }
 
 // SendEmailToUser mocks base method.

@@ -2066,7 +2066,7 @@ func (mr *OnboardingModuleMockRecorder) OnboardingAlreadyCompleted(arg0 any) *go
 }
 
 // ProcessAlreadyExistingUserCases mocks base method.
-func (m *OnboardingModule) ProcessAlreadyExistingUserCases(ctx context.Context, accessToken, targetRealmName, userEmail, requestingSource string, handler func(string, int64, *string) error) error {
+func (m *OnboardingModule) ProcessAlreadyExistingUserCases(ctx context.Context, accessToken, targetRealmName, userEmail, requestingSource string, handler func(string, string, int64, *string) error) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ProcessAlreadyExistingUserCases", ctx, accessToken, targetRealmName, userEmail, requestingSource, handler)
 	ret0, _ := ret[0].(error)

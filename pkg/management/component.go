@@ -112,7 +112,7 @@ type OnboardingModule interface {
 	SendOnboardingEmail(ctx context.Context, accessToken string, realmName string, userID string, username string, onboardingClientID string,
 		onboardingRedirectURI string, themeRealmName string, reminder bool, paramKV ...string) error
 	CreateUser(ctx context.Context, accessToken, realmName, targetRealmName string, kcUser *kc.UserRepresentation, generateNameID bool) (string, error)
-	ProcessAlreadyExistingUserCases(ctx context.Context, accessToken string, targetRealmName string, userEmail string, requestingSource string, handler func(username string, createdTimestamp int64, thirdParty *string) error) error
+	ProcessAlreadyExistingUserCases(ctx context.Context, accessToken string, targetRealmName string, userEmail string, requestingSource string, handler func(userID string, username string, createdTimestamp int64, thirdParty *string) error) error
 	ComputeOnboardingRedirectURI(ctx context.Context, targetRealmName string, customerRealmName string, realmConf configuration.RealmConfiguration, contextKey *string) (string, error)
 }
 
@@ -475,7 +475,7 @@ func (c *component) genericCreateUser(ctx context.Context, accessToken string, c
 
 // this function is called by onboardingModule.ProcessAlreadyExistingUserCases when an account already exists for a given email
 // register interface sends an email to the user... In management, we only return an error
-func (c *component) onAlreadyExistsUser(_ string, _ int64, _ *string) error {
+func (c *component) onAlreadyExistsUser(_ string, _ string, _ int64, _ *string) error {
 	return errorhandler.Error{
 		Status:  http.StatusConflict,
 		Message: "keycloak.existing.username",

@@ -56,12 +56,6 @@ var (
 		Attachments: &attachmentsForTest,
 	}
 
-	emailForTestNilAttachments = api.EmailRepresentation{
-		Recipient:   &recipientForTest,
-		Theming:     &themingForTest,
-		Attachments: nil,
-	}
-
 	themingForTestKC = kc.EmailThemingRepresentation{
 		SubjectKey:        &subjectKeyForTest,
 		SubjectParameters: &subjectParametersForTest,
@@ -86,12 +80,6 @@ var (
 		Theming:     &themingForTestKC,
 		Attachments: &attachmentsForTestKC,
 	}
-
-	emailForTestNilAttachmentsKC = kc.EmailRepresentation{
-		Recipient:   &recipientForTest,
-		Theming:     &themingForTestKC,
-		Attachments: nil,
-	}
 )
 
 var (
@@ -107,10 +95,6 @@ var (
 			Locale:            &localeForTest,
 		},
 	}
-	smsForTestNilTheming = api.SMSRepresentation{
-		MSISDN:  &msisdnForTest,
-		Theming: nil,
-	}
 
 	smsForTestKC = kc.SMSRepresentation{
 		MSISDN: &msisdnForTest,
@@ -119,10 +103,6 @@ var (
 			MessageParameters: &messageParametersForTest,
 			Locale:            &localeForTest,
 		},
-	}
-	smsForTestNilThemingKC = kc.SMSRepresentation{
-		MSISDN:  &msisdnForTest,
-		Theming: nil,
 	}
 )
 
@@ -136,45 +116,6 @@ func createMocks(mockCtrl *gomock.Controller) componentMocks {
 
 func createComponent(mocks componentMocks) Component {
 	return NewComponent(mocks.keycloakCommunicationsClient, mocks.tokenProvider, mocks.logger)
-}
-
-func TestSendEmail(t *testing.T) {
-	var mockCtrl = gomock.NewController(t)
-	defer mockCtrl.Finish()
-
-	var (
-		mocks                   = createMocks(mockCtrl)
-		communicationsComponent = createComponent(mocks)
-
-		accessToken = "TOKEN=="
-		reqRealm    = "reqRealm"
-		ctx         = context.TODO()
-	)
-	ctx = context.WithValue(ctx, cs.CtContextAccessToken, accessToken)
-	ctx = context.WithValue(ctx, cs.CtContextRealm, reqRealm)
-
-	t.Run("Can't get OIDC token", func(t *testing.T) {
-		var dummyErr = errors.New("dummy")
-		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(gomock.Any(), "targetRealm").Return("", dummyErr)
-		mocks.logger.EXPECT().Error(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
-		err := communicationsComponent.SendEmail(ctx, "targetRealm", emailForTest)
-		assert.NotNil(t, err)
-	})
-	mocks.tokenProvider.EXPECT().ProvideTokenForRealm(gomock.Any(), "targetRealm").Return(accessToken, nil).AnyTimes()
-
-	t.Run("Success", func(t *testing.T) {
-		mocks.keycloakCommunicationsClient.EXPECT().SendEmail(accessToken, "targetRealm", "targetRealm", emailForTestKC).Return(nil)
-		err := communicationsComponent.SendEmail(ctx, "targetRealm", emailForTest)
-		assert.Nil(t, err)
-	})
-
-	t.Run("Failure", func(t *testing.T) {
-		mocks.keycloakCommunicationsClient.EXPECT().SendEmail(accessToken, "targetRealm", "targetRealm", emailForTestKC).Return(fmt.Errorf("Unexpected error"))
-		mocks.logger.EXPECT().Warn(ctx, "err", "Unexpected error")
-
-		err := communicationsComponent.SendEmail(ctx, "targetRealm", emailForTest)
-		assert.NotNil(t, err)
-	})
 }
 
 func TestSendEmailToUser(t *testing.T) {
