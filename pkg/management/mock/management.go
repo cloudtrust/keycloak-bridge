@@ -1016,25 +1016,6 @@ func (mr *ManagementComponentMockRecorder) SendOnboardingEmailInSocialRealm(ctx,
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendOnboardingEmailInSocialRealm", reflect.TypeOf((*ManagementComponent)(nil).SendOnboardingEmailInSocialRealm), varargs...)
 }
 
-// SendReminderEmail mocks base method.
-func (m *ManagementComponent) SendReminderEmail(ctx context.Context, realmName, userID string, paramKV ...string) error {
-	m.ctrl.T.Helper()
-	varargs := []any{ctx, realmName, userID}
-	for _, a := range paramKV {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "SendReminderEmail", varargs...)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// SendReminderEmail indicates an expected call of SendReminderEmail.
-func (mr *ManagementComponentMockRecorder) SendReminderEmail(ctx, realmName, userID any, paramKV ...any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]any{ctx, realmName, userID}, paramKV...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendReminderEmail", reflect.TypeOf((*ManagementComponent)(nil).SendReminderEmail), varargs...)
-}
-
 // SendSmsCode mocks base method.
 func (m *ManagementComponent) SendSmsCode(ctx context.Context, realmName, userID string) (string, error) {
 	m.ctrl.T.Helper()
@@ -1906,25 +1887,6 @@ func (mr *KeycloakClientMockRecorder) ResetPassword(accessToken, realmName, user
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResetPassword", reflect.TypeOf((*KeycloakClient)(nil).ResetPassword), accessToken, realmName, userID, cred)
 }
 
-// SendReminderEmail mocks base method.
-func (m *KeycloakClient) SendReminderEmail(accessToken, realmName, userID string, paramKV ...string) error {
-	m.ctrl.T.Helper()
-	varargs := []any{accessToken, realmName, userID}
-	for _, a := range paramKV {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "SendReminderEmail", varargs...)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// SendReminderEmail indicates an expected call of SendReminderEmail.
-func (mr *KeycloakClientMockRecorder) SendReminderEmail(accessToken, realmName, userID any, paramKV ...any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]any{accessToken, realmName, userID}, paramKV...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendReminderEmail", reflect.TypeOf((*KeycloakClient)(nil).SendReminderEmail), varargs...)
-}
-
 // SendSmsCode mocks base method.
 func (m *KeycloakClient) SendSmsCode(accessToken, realmName, userID string) (keycloak.SmsCodeRepresentation, error) {
 	m.ctrl.T.Helper()
@@ -2066,7 +2028,7 @@ func (mr *OnboardingModuleMockRecorder) OnboardingAlreadyCompleted(arg0 any) *go
 }
 
 // ProcessAlreadyExistingUserCases mocks base method.
-func (m *OnboardingModule) ProcessAlreadyExistingUserCases(ctx context.Context, accessToken, targetRealmName, userEmail, requestingSource string, handler func(string, int64, *string) error) error {
+func (m *OnboardingModule) ProcessAlreadyExistingUserCases(ctx context.Context, accessToken, targetRealmName, userEmail, requestingSource string, handler func(string, string, int64, *string) error) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ProcessAlreadyExistingUserCases", ctx, accessToken, targetRealmName, userEmail, requestingSource, handler)
 	ret0, _ := ret[0].(error)

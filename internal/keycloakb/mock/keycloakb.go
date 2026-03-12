@@ -881,20 +881,6 @@ func (mr *OnboardingKeycloakClientMockRecorder) GetUsers(accessToken, reqRealmNa
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUsers", reflect.TypeOf((*OnboardingKeycloakClient)(nil).GetUsers), varargs...)
 }
 
-// SendEmail mocks base method.
-func (m *OnboardingKeycloakClient) SendEmail(accessToken, reqRealmName, realmName string, emailRep keycloak.EmailRepresentation) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SendEmail", accessToken, reqRealmName, realmName, emailRep)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// SendEmail indicates an expected call of SendEmail.
-func (mr *OnboardingKeycloakClientMockRecorder) SendEmail(accessToken, reqRealmName, realmName, emailRep any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendEmail", reflect.TypeOf((*OnboardingKeycloakClient)(nil).SendEmail), accessToken, reqRealmName, realmName, emailRep)
-}
-
 // KeycloakURIProvider is a mock of KeycloakURIProvider interface.
 type KeycloakURIProvider struct {
 	ctrl     *gomock.Controller

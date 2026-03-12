@@ -264,7 +264,7 @@ func TestProcessAlreadyExistingUserCases(t *testing.T) {
 	var usersPageRep = kc.UsersPageRepresentation{}
 	var createdTimestamp = time.Now().Unix()
 	var anyError = errors.New("any error")
-	var notSupposedToBeCalled = func(pUsername string, pCreatedTimestamp int64, pThirdParty *string) error {
+	var notSupposedToBeCalled = func(pUserID string, pUsername string, pCreatedTimestamp int64, pThirdParty *string) error {
 		assert.Fail(t, "not supposed to be executed")
 		return nil
 	}
@@ -324,7 +324,8 @@ func TestProcessAlreadyExistingUserCases(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetUsers(accessToken, targetRealmName, targetRealmName, "email", "="+userEmail).Return(usersPageRep, nil)
 
 		var errAlreadyOnboarded = errors.New("already onboarded")
-		var err = onboarding.ProcessAlreadyExistingUserCases(ctx, accessToken, targetRealmName, userEmail, source, func(pUsername string, pCreatedTimestamp int64, pThirdParty *string) error {
+		var err = onboarding.ProcessAlreadyExistingUserCases(ctx, accessToken, targetRealmName, userEmail, source, func(pUserID string, pUsername string, pCreatedTimestamp int64, pThirdParty *string) error {
+			assert.Equal(t, userID, pUserID)
 			assert.Equal(t, username, pUsername)
 			assert.Equal(t, createdTimestamp, pCreatedTimestamp)
 			assert.Nil(t, pThirdParty)
@@ -341,7 +342,8 @@ func TestProcessAlreadyExistingUserCases(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetUsers(accessToken, targetRealmName, targetRealmName, "email", "="+userEmail).Return(usersPageRep, nil)
 
 		var errCreatedByThirdPart = errors.New("already onboarded")
-		var err = onboarding.ProcessAlreadyExistingUserCases(ctx, accessToken, targetRealmName, userEmail, source, func(pUsername string, pCreatedTimestamp int64, pThirdParty *string) error {
+		var err = onboarding.ProcessAlreadyExistingUserCases(ctx, accessToken, targetRealmName, userEmail, source, func(pUserID string, pUsername string, pCreatedTimestamp int64, pThirdParty *string) error {
+			assert.Equal(t, userID, pUserID)
 			assert.Equal(t, username, pUsername)
 			assert.Equal(t, createdTimestamp, pCreatedTimestamp)
 			assert.Equal(t, thirdPartyName, *pThirdParty)
