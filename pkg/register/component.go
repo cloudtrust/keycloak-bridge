@@ -24,7 +24,7 @@ const registerOnboardingStatus = "self-registration-form-completed"
 type KeycloakClient interface {
 	GetRealm(accessToken string, realmName string) (kc.RealmRepresentation, error)
 	GetGroups(accessToken string, realmName string) ([]kc.GroupRepresentation, error)
-	SendEmail(accessToken string, reqRealmName string, realmName string, emailRep kc.EmailRepresentation) error
+	SendEmailToUser(accessToken string, reqRealmName string, realmName string, userID string, emailRep kc.EmailRepresentation) error
 }
 
 // ConfigurationDBModule is the interface of the configuration module.
@@ -41,7 +41,7 @@ type OnboardingModule interface {
 	SendOnboardingEmail(ctx context.Context, accessToken string, realmName string, userID string, username string, onboardingClientID string,
 		onboardingRedirectURI string, themeRealmName string, reminder bool, paramKV ...string) error
 	CreateUser(ctx context.Context, accessToken, realmName, targetRealmName string, kcUser *kc.UserRepresentation, generateNameID bool) (string, error)
-	ProcessAlreadyExistingUserCases(ctx context.Context, accessToken string, targetRealmName string, userEmail string, requestingSource string, handler func(username string, createdTimestamp int64, thirdParty *string) error) error
+	ProcessAlreadyExistingUserCases(ctx context.Context, accessToken string, targetRealmName string, userEmail string, requestingSource string, handler func(userID string, username string, createdTimestamp int64, thirdParty *string) error) error
 	ComputeRedirectURI(ctx context.Context, accessToken string, realmName string, userID string, username string,
 		onboardingClientID string, onboardingRedirectURI string) (string, error)
 	ComputeOnboardingRedirectURI(ctx context.Context, targetRealmName string, customerRealmName string, realmConf configuration.RealmConfiguration, contextKey *string) (string, error)
@@ -202,7 +202,7 @@ func (c *component) RegisterUser(ctx context.Context, targetRealmName string, cu
 		return "", errorhandler.CreateEndpointNotEnabled("selfRegister")
 	}
 
-	if (realmConf.SelfRegisterGroupNames == nil || len(realmConf.SelfRegisterGroupNames) == 0) ||
+	if len(realmConf.SelfRegisterGroupNames) == 0 ||
 		(realmConf.OnboardingRedirectURI == nil || *realmConf.OnboardingRedirectURI == "") ||
 		(realmConf.OnboardingClientID == nil || *realmConf.OnboardingClientID == "") {
 		return "", errorhandler.CreateEndpointNotEnabled(constants.MsgErrNotConfigured)
@@ -238,12 +238,12 @@ func (c *component) RegisterUser(ctx context.Context, targetRealmName string, cu
 }
 
 func (c *component) registerUser(ctx context.Context, accessToken string, targetRealmName string, customerRealmName string, user apiregister.UserRepresentation, realmConf configuration.RealmConfiguration, onboardingRedirectURI string) (kc.UserRepresentation, error) {
-	err := c.onboardingModule.ProcessAlreadyExistingUserCases(ctx, accessToken, targetRealmName, *user.Email, "register", func(username string, createdTimestamp int64, thirdParty *string) error {
+	err := c.onboardingModule.ProcessAlreadyExistingUserCases(ctx, accessToken, targetRealmName, *user.Email, "register", func(userID string, username string, createdTimestamp int64, thirdParty *string) error {
 		var err error
 		if thirdParty == nil {
-			err = c.sendAlreadyExistsEmail(ctx, accessToken, targetRealmName, customerRealmName, user, username, createdTimestamp, "register-already-onboarded.ftl")
+			err = c.sendAlreadyExistsEmail(ctx, accessToken, targetRealmName, customerRealmName, user, userID, username, createdTimestamp, "register-already-onboarded.ftl")
 		} else {
-			err = c.sendAlreadyExistsEmail(ctx, accessToken, targetRealmName, customerRealmName, user, username, createdTimestamp, "register-thirdparty-created.ftl", "src", *thirdParty)
+			err = c.sendAlreadyExistsEmail(ctx, accessToken, targetRealmName, customerRealmName, user, userID, username, createdTimestamp, "register-thirdparty-created.ftl", "src", *thirdParty)
 		}
 		if err != nil {
 			return err
@@ -278,7 +278,7 @@ func (c *component) registerUserRedirectMode(ctx context.Context, accessToken st
 }
 
 func (c *component) sendAlreadyExistsEmail(ctx context.Context, accessToken string, reqRealmName string, realmName string,
-	user apiregister.UserRepresentation, username string, creationTimestamp int64, templateName string, paramKV ...string) error {
+	user apiregister.UserRepresentation, userID string, username string, creationTimestamp int64, templateName string, paramKV ...string) error {
 	var cantRegisterSubjectKey = "cantRegisterSubject"
 	var params = make(map[string]string)
 
@@ -300,7 +300,8 @@ func (c *component) sendAlreadyExistsEmail(ctx context.Context, accessToken stri
 	}
 
 	c.logger.Info(ctx, "msg", "User is trying to register again", "user", username)
-	return c.keycloakClient.SendEmail(accessToken, reqRealmName, realmName, kc.EmailRepresentation{
+
+	return c.keycloakClient.SendEmailToUser(accessToken, reqRealmName, realmName, userID, kc.EmailRepresentation{
 		Recipient: user.Email,
 		Theming: &kc.EmailThemingRepresentation{
 			SubjectKey:         &cantRegisterSubjectKey,
