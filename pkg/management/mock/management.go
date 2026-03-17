@@ -964,20 +964,6 @@ func (mr *ManagementComponentMockRecorder) RevokeAccreditations(ctx, realmName, 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RevokeAccreditations", reflect.TypeOf((*ManagementComponent)(nil).RevokeAccreditations), ctx, realmName, userID)
 }
 
-// SendMigrationEmail mocks base method.
-func (m *ManagementComponent) SendMigrationEmail(ctx context.Context, realmName, userID, customerRealm string, reminder bool, lifespan *int) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SendMigrationEmail", ctx, realmName, userID, customerRealm, reminder, lifespan)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// SendMigrationEmail indicates an expected call of SendMigrationEmail.
-func (mr *ManagementComponentMockRecorder) SendMigrationEmail(ctx, realmName, userID, customerRealm, reminder, lifespan any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendMigrationEmail", reflect.TypeOf((*ManagementComponent)(nil).SendMigrationEmail), ctx, realmName, userID, customerRealm, reminder, lifespan)
-}
-
 // SendOnboardingEmail mocks base method.
 func (m *ManagementComponent) SendOnboardingEmail(ctx context.Context, realmName, userID, customerRealm string, reminder bool, contextKey *string, paramKV ...string) error {
 	m.ctrl.T.Helper()

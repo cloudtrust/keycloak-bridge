@@ -68,8 +68,7 @@ const (
 )
 
 func (m *componentMocks) createComponent() *component {
-	/* REMOVE_THIS_3901 : remove second parameter (nil) */
-	return NewComponent(m.keycloakClient, nil, m.profileCache, m.eventsReporter, m.configurationDBModule, m.onboardingModule, m.authChecker,
+	return NewComponent(m.keycloakClient, m.profileCache, m.eventsReporter, m.configurationDBModule, m.onboardingModule, m.authChecker,
 		m.tokenProvider, m.accreditationsClient, allowedTrustIDGroups, socialRealmName, m.logger, m.producer).(*component)
 }
 
