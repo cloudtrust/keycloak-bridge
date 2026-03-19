@@ -860,9 +860,9 @@ func (mr *ManagementComponentMockRecorder) GetUserRealmBackOfficeConfiguration(c
 }
 
 // GetUsers mocks base method.
-func (m *ManagementComponent) GetUsers(ctx context.Context, realmName string, groupIDs []string, paramKV ...string) (apimanagement.UsersPageRepresentation, error) {
+func (m *ManagementComponent) GetUsers(ctx context.Context, realmName string, groupIDs, roleIDs []string, paramKV ...string) (apimanagement.UsersPageRepresentation, error) {
 	m.ctrl.T.Helper()
-	varargs := []any{ctx, realmName, groupIDs}
+	varargs := []any{ctx, realmName, groupIDs, roleIDs}
 	for _, a := range paramKV {
 		varargs = append(varargs, a)
 	}
@@ -873,9 +873,9 @@ func (m *ManagementComponent) GetUsers(ctx context.Context, realmName string, gr
 }
 
 // GetUsers indicates an expected call of GetUsers.
-func (mr *ManagementComponentMockRecorder) GetUsers(ctx, realmName, groupIDs any, paramKV ...any) *gomock.Call {
+func (mr *ManagementComponentMockRecorder) GetUsers(ctx, realmName, groupIDs, roleIDs any, paramKV ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]any{ctx, realmName, groupIDs}, paramKV...)
+	varargs := append([]any{ctx, realmName, groupIDs, roleIDs}, paramKV...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUsers", reflect.TypeOf((*ManagementComponent)(nil).GetUsers), varargs...)
 }
 

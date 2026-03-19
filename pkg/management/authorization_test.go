@@ -46,6 +46,7 @@ func TestDeny(t *testing.T) {
 	var groupID = "123-789-454"
 	var targetGroupID = "123-789-454"
 	var groupIDs = []string{groupID}
+	var roleIDs = []string{roleID}
 	var groupName = "titi"
 	var grpNames = []string{"grp1", "grp2"}
 
@@ -132,7 +133,7 @@ func TestDeny(t *testing.T) {
 			"UpdateUser":                          authorizationMW.UpdateUser(ctx, realmName, userID, updatableUser),
 			"LockUser":                            authorizationMW.LockUser(ctx, realmName, userID),
 			"UnlockUser":                          authorizationMW.UnlockUser(ctx, realmName, userID),
-			"GetUsers":                            ignoreFirst(authorizationMW.GetUsers(ctx, realmName, groupIDs)),
+			"GetUsers":                            ignoreFirst(authorizationMW.GetUsers(ctx, realmName, groupIDs, roleIDs)),
 			"CreateUser":                          ignoreFirst(authorizationMW.CreateUser(ctx, realmName, user, false, false, false)),
 			"CreateUserInSocialRealm":             ignoreFirst(authorizationMW.CreateUserInSocialRealm(ctx, user, false)),
 			"GetUserChecks":                       ignoreFirst(authorizationMW.GetUserChecks(ctx, realmName, userID)),
@@ -232,6 +233,7 @@ func TestAllowed(t *testing.T) {
 	var groupID = "123-789-454"
 	var targetGroupID = "123-789-454"
 	var groupIDs = []string{groupID}
+	var roleIDs = []string{roleID}
 	var groupName = "titi"
 	var grpNames = []string{"grp1", "grp2"}
 
@@ -360,8 +362,8 @@ func TestAllowed(t *testing.T) {
 		assert.Nil(t, err)
 
 		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), gomock.Any(), realmName, groupID).Return(groupName, nil)
-		mockManagementComponent.EXPECT().GetUsers(ctx, realmName, groupIDs).Return(api.UsersPageRepresentation{}, nil)
-		_, err = authorizationMW.GetUsers(ctx, realmName, groupIDs)
+		mockManagementComponent.EXPECT().GetUsers(ctx, realmName, groupIDs, roleIDs).Return(api.UsersPageRepresentation{}, nil)
+		_, err = authorizationMW.GetUsers(ctx, realmName, groupIDs, roleIDs)
 		assert.Nil(t, err)
 
 		mockKeycloakClient.EXPECT().GetGroupName(gomock.Any(), gomock.Any(), realmName, groupID).Return(groupName, nil)
