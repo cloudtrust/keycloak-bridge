@@ -704,8 +704,8 @@ func main() {
 					return
 				}
 			}
-			/* REMOVE_THIS_3901 : remove second parameter */
-			keycloakComponent = management.NewComponent(keycloakClient, keycloakConfig.URIProvider, profileCache, auditEventsReporterModule, configDBModule,
+
+			keycloakComponent = management.NewComponent(keycloakClient, profileCache, auditEventsReporterModule, configDBModule,
 				onboardingModule, authorizationChecker, technicalTokenProvider, accreditationsService, trustIDGroups, registerRealm, managementLogger, authReloadProducer)
 			keycloakComponent = management.MakeAuthorizationManagementComponentMW(log.With(managementLogger, "mw", "endpoint"), authorizationManager)(keycloakComponent)
 		}
@@ -779,10 +779,6 @@ func main() {
 			ResetCredentialFailuresForUser:   prepareEndpoint(management.MakeResetCredentialFailuresForUserEndpoint(keycloakComponent), "reset_credential_failures_for_user_endpoint", managementLogger, rateLimitMgmt),
 			ClearUserLoginFailures:           prepareEndpoint(management.MakeClearUserLoginFailures(keycloakComponent), "clear_user_login_failures_endpoint", managementLogger, rateLimitMgmt),
 			GetAttackDetectionStatus:         prepareEndpoint(management.MakeGetAttackDetectionStatus(keycloakComponent), "get_attack_detection_status_endpoint", managementLogger, rateLimitMgmt),
-
-			/* REMOVE_THIS_3901 : start */
-			SendMigrationEmail: prepareEndpoint(management.MakeSendMigrationEmailEndpoint(keycloakComponent, maxLifeSpan), "send_migration_email_endpoint", managementLogger, rateLimitMgmt),
-			/* REMOVE_THIS_3901 : end */
 
 			GetRealmCustomConfiguration:    prepareEndpoint(management.MakeGetRealmCustomConfigurationEndpoint(keycloakComponent), "get_realm_custom_config_endpoint", managementLogger, rateLimitMgmt),
 			UpdateRealmCustomConfiguration: prepareEndpoint(management.MakeUpdateRealmCustomConfigurationEndpoint(keycloakComponent), "update_realm_custom_config_endpoint", managementLogger, rateLimitMgmt),
@@ -1205,10 +1201,6 @@ func main() {
 		var createRecoveryCodeHandler = configureManagementHandler(managementEndpoints.CreateRecoveryCode)
 		var createActivationCodeHandler = configureManagementHandler(managementEndpoints.CreateActivationCode)
 
-		/* REMOVE_THIS_3901 : start */
-		var sendMigrationEmail = configureManagementHandler(managementEndpoints.SendMigrationEmail)
-		/* REMOVE_THIS_3901 : end */
-
 		var getCredentialsForUserHandler = configureManagementHandler(managementEndpoints.GetCredentialsForUser)
 		var deleteCredentialsForUserHandler = configureManagementHandler(managementEndpoints.DeleteCredentialsForUser)
 		var resetCredentialFailuresForUserHandler = configureManagementHandler(managementEndpoints.ResetCredentialFailuresForUser)
@@ -1287,9 +1279,6 @@ func main() {
 		managementSubroute.Path("/realms/{realm}/users/{userID}/send-sms-code").Methods("POST").Handler(sendSmsCodeHandler)
 		managementSubroute.Path("/realms/{realm}/users/{userID}/send-onboarding-email").Methods("POST").Handler(sendOnboardingEmailHandler)
 		managementSubroute.Path("/social/users/{userID}/send-onboarding-email").Methods("POST").Handler(sendOnboardingEmailInSocialRealmHandler)
-		/* REMOVE_THIS_3901 : start */
-		managementSubroute.Path("/realms/{realm}/users/{userID}/send-migration-email").Methods("POST").Handler(sendMigrationEmail)
-		/* REMOVE_THIS_3901 : end */
 		managementSubroute.Path("/realms/{realm}/users/{userID}/reset-sms-counter").Methods("PUT").Handler(resetSmsCounterHandler)
 		managementSubroute.Path("/realms/{realm}/users/{userID}/recovery-code").Methods("POST").Handler(createRecoveryCodeHandler)
 		managementSubroute.Path("/realms/{realm}/users/{userID}/activation-code").Methods("POST").Handler(createActivationCodeHandler)

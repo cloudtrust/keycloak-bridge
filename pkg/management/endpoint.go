@@ -64,10 +64,6 @@ type Endpoints struct {
 	ClearUserLoginFailures           endpoint.Endpoint
 	GetAttackDetectionStatus         endpoint.Endpoint
 
-	/* REMOVE_THIS_3901 : start */
-	SendMigrationEmail endpoint.Endpoint
-	/* REMOVE_THIS_3901 : end */
-
 	GetRoles         endpoint.Endpoint
 	GetRole          endpoint.Endpoint
 	CreateRole       endpoint.Endpoint
@@ -641,37 +637,6 @@ func getCustomValues(queryParameters map[string]string) []string {
 	}
 	return paramKV
 }
-
-/* REMOVE_THIS_3901 : start */
-
-// MakeSendMigrationEmailEndpoint creates an endpoint for SendMigrationEmail
-func MakeSendMigrationEmailEndpoint(component Component, maxLifeSpan int) cs.Endpoint {
-	return func(ctx context.Context, req any) (any, error) {
-		var m = req.(map[string]string)
-		var reminder = isParameterTrue(m, prmQryReminder)
-
-		var customerRealmName = m[prmRealm]
-		if value, ok := m[prmQryRealm]; ok && value != "" {
-			customerRealmName = value
-		}
-
-		var lifespan *int
-		if value, ok := m[prmQryLifespan]; ok {
-			if iValue, err := strconv.Atoi(value); err == nil {
-				if iValue > maxLifeSpan {
-					return nil, errorhandler.CreateInvalidQueryParameterError(prmQryLifespan)
-				}
-				lifespan = &iValue
-			} else {
-				return nil, errorhandler.CreateInvalidQueryParameterError(prmQryLifespan)
-			}
-		}
-
-		return nil, component.SendMigrationEmail(ctx, m[prmRealm], m[prmUserID], customerRealmName, reminder, lifespan)
-	}
-}
-
-/* REMOVE_THIS_3901 : end */
 
 // MakeResetSmsCounterEndpoint creates an endpoint for ResetSmsCounter
 func MakeResetSmsCounterEndpoint(component Component) cs.Endpoint {

@@ -463,21 +463,6 @@ func (c *authorizationComponentMW) SendOnboardingEmailInSocialRealm(ctx context.
 	return c.next.SendOnboardingEmailInSocialRealm(ctx, userID, customerRealm, reminder, paramKV...)
 }
 
-/* REMOVE_THIS_3901 : start */
-func (c *authorizationComponentMW) SendMigrationEmail(ctx context.Context, realmName string, userID string, customerRealm string, reminder bool, lifespan *int) error {
-	// let's use SendOnboardingEmail action
-	var action = security.MGMTSendOnboardingEmail.String()
-	var targetRealm = realmName
-
-	if err := c.authManager.CheckAuthorizationOnTargetUser(ctx, action, targetRealm, userID); err != nil {
-		return err
-	}
-
-	return c.next.SendMigrationEmail(ctx, realmName, userID, customerRealm, reminder, lifespan)
-}
-
-/* REMOVE_THIS_3901 : end */
-
 func (c *authorizationComponentMW) ResetSmsCounter(ctx context.Context, realmName string, userID string) error {
 	var action = security.MGMTResetSmsCounter.String()
 	var targetRealm = realmName
