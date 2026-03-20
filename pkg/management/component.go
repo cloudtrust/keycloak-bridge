@@ -140,7 +140,7 @@ type Component interface {
 	UpdateUser(ctx context.Context, realmName, userID string, user api.UpdatableUserRepresentation) error
 	LockUser(ctx context.Context, realmName, userID string) error
 	UnlockUser(ctx context.Context, realmName, userID string) error
-	GetUsers(ctx context.Context, realmName string, groupIDs []string, paramKV ...string) (api.UsersPageRepresentation, error)
+	GetUsers(ctx context.Context, realmName string, groupIDs []string, roleIDs []string, paramKV ...string) (api.UsersPageRepresentation, error)
 	CreateUser(ctx context.Context, realmName string, user api.UserRepresentation, generateUsername bool, generateNameID bool, termsOfUse bool) (string, error)
 	CreateUserInSocialRealm(ctx context.Context, user api.UserRepresentation, generateNameID bool) (string, error)
 	GetUserChecks(ctx context.Context, realmName, userID string) ([]api.UserCheck, error)
@@ -723,12 +723,16 @@ func (c *component) setUserLock(ctx context.Context, realmName, userID string, l
 	return nil
 }
 
-func (c *component) GetUsers(ctx context.Context, realmName string, groupIDs []string, paramKV ...string) (api.UsersPageRepresentation, error) {
+func (c *component) GetUsers(ctx context.Context, realmName string, groupIDs []string, roleIDs []string, paramKV ...string) (api.UsersPageRepresentation, error) {
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 	var ctxRealm = ctx.Value(cs.CtContextRealm).(string)
 
 	for _, groupID := range groupIDs {
 		paramKV = append(paramKV, "groupId", groupID)
+	}
+
+	for _, roleID := range roleIDs {
+		paramKV = append(paramKV, "roleId", roleID)
 	}
 
 	usersKc, err := c.keycloakClient.GetUsers(accessToken, ctxRealm, realmName, paramKV...)

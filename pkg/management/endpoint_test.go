@@ -553,12 +553,14 @@ func TestGetUsersEndpoint(t *testing.T) {
 		var groupID1 = "123-784dsf-sdf567"
 		var groupID2 = "789-741-753"
 		var groupIDs = groupID1 + "," + groupID2
+		var roleID1 = "123-784dsf-sdf567"
 		var ctx = context.Background()
 		var req = make(map[string]string)
 		req[prmRealm] = realm
 		req[prmQryGroupIDs] = groupIDs
+		req[prmQryRoleIDs] = roleID1
 
-		mockManagementComponent.EXPECT().GetUsers(ctx, realm, []string{groupID1, groupID2}).Return(api.UsersPageRepresentation{}, nil)
+		mockManagementComponent.EXPECT().GetUsers(ctx, realm, []string{groupID1, groupID2}, []string{roleID1}).Return(api.UsersPageRepresentation{}, nil)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.NotNil(t, res)
@@ -576,8 +578,9 @@ func TestGetUsersEndpoint(t *testing.T) {
 		req[prmQryUserName] = "username"
 		req["toto"] = "tutu" // Check this param is not transmitted
 		req[prmQryGroupIDs] = "123-784dsf-sdf567"
+		req[prmQryRoleIDs] = "789-741-753"
 
-		mockManagementComponent.EXPECT().GetUsers(ctx, realm, []string{req[prmQryGroupIDs]}, "email", req[prmQryEmail], "firstName", req[prmQryFirstName], "lastName", req[prmQryLastName], "username", req[prmQryUserName], "search", req[prmQrySearch]).Return(api.UsersPageRepresentation{}, nil)
+		mockManagementComponent.EXPECT().GetUsers(ctx, realm, []string{req[prmQryGroupIDs]}, []string{req[prmQryRoleIDs]}, "email", req[prmQryEmail], "firstName", req[prmQryFirstName], "lastName", req[prmQryLastName], "username", req[prmQryUserName], "search", req[prmQrySearch]).Return(api.UsersPageRepresentation{}, nil)
 		var res, err = e(ctx, req)
 		assert.Nil(t, err)
 		assert.NotNil(t, res)

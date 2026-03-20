@@ -205,6 +205,11 @@ paths:
         required: true
         schema:
           type: string
+      - name: roleIds
+        in: query
+        description: list of roleIds the users may belong to (list comma seperated)
+        schema:
+          type: string
       - name: email
         in: query
         schema:

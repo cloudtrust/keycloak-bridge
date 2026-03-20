@@ -156,7 +156,7 @@ func (c *authorizationComponentMW) UnlockUser(ctx context.Context, realmName, us
 	return c.next.UnlockUser(ctx, realmName, userID)
 }
 
-func (c *authorizationComponentMW) GetUsers(ctx context.Context, realmName string, groupIDs []string, paramKV ...string) (api.UsersPageRepresentation, error) {
+func (c *authorizationComponentMW) GetUsers(ctx context.Context, realmName string, groupIDs []string, roleIDs []string, paramKV ...string) (api.UsersPageRepresentation, error) {
 	var action = security.MGMTGetUsers.String()
 	var targetRealm = realmName
 
@@ -166,7 +166,7 @@ func (c *authorizationComponentMW) GetUsers(ctx context.Context, realmName strin
 		}
 	}
 
-	return c.next.GetUsers(ctx, realmName, groupIDs, paramKV...)
+	return c.next.GetUsers(ctx, realmName, groupIDs, roleIDs, paramKV...)
 }
 
 func (c *authorizationComponentMW) CreateUser(ctx context.Context, realmName string, user api.UserRepresentation, generateUsername bool,

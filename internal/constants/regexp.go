@@ -47,7 +47,9 @@ const (
 	RegExpTargetGroupID   = `^([a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}|\*){1}$`
 	RegExpSearch          = regExpLen128
 	RegExpLifespan        = `^[0-9]{1,10}$`
-	RegExpGroupIds        = `^([a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12})(,[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}){0,20}$`
+	regExpUUIDList        = `^([a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12})(,[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}){0,20}$`
+	RegExpGroupIds        = regExpUUIDList
+	RegExpRoleIds         = regExpUUIDList
 	RegExpNumber          = `^\d+$`
 	RegExpContainerID     = regExpLen255
 	RegExpRoleDescription = regExpLen255OrEmpty

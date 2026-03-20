@@ -40,6 +40,7 @@ const (
 	prmQryRedirectURI   = "redirect_uri"
 	prmQryLifespan      = "lifespan"
 	prmQryGroupIDs      = "groupIds"
+	prmQryRoleIDs       = "roleIds"
 	prmQryFirst         = "first"
 	prmQryMax           = "max"
 	prmQryGroupName     = "groupName"
@@ -92,6 +93,7 @@ func decodeManagementRequest(ctx context.Context, req *http.Request) (any, error
 		prmQryRedirectURI:   constants.RegExpRedirectURI,
 		prmQryLifespan:      constants.RegExpLifespan,
 		prmQryGroupIDs:      constants.RegExpGroupIds,
+		prmQryRoleIDs:       constants.RegExpRoleIds,
 		prmQryFirst:         constants.RegExpNumber,
 		prmQryMax:           constants.RegExpNumber,
 		prmQryGroupName:     constants.RegExpName,

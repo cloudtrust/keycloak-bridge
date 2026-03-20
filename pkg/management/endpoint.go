@@ -325,7 +325,13 @@ func MakeGetUsersEndpoint(component Component) cs.Endpoint {
 
 		groupIDs := strings.Split(m[prmQryGroupIDs], ",")
 
-		return component.GetUsers(ctx, m[prmRealm], groupIDs, paramKV...)
+		var roleIDs []string
+		_, ok = m[prmQryRoleIDs]
+		if ok {
+			roleIDs = strings.Split(m[prmQryRoleIDs], ",")
+		}
+
+		return component.GetUsers(ctx, m[prmRealm], groupIDs, roleIDs, paramKV...)
 	}
 }
 
