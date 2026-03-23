@@ -26,8 +26,8 @@ github.com/cloudtrust/common-service/v2/validation
 # github.com/cloudtrust/httpclient v1.6.0
 ## explicit; go 1.25.3
 github.com/cloudtrust/httpclient
-# github.com/cloudtrust/kafka-client v1.7.2
-## explicit; go 1.25.3
+# github.com/cloudtrust/kafka-client v1.8.1
+## explicit; go 1.26.1
 github.com/cloudtrust/kafka-client
 github.com/cloudtrust/kafka-client/misc
 # github.com/cloudtrust/keycloak-client/v2 v2.18.1
