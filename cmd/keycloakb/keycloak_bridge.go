@@ -845,6 +845,7 @@ func main() {
 			CancelPhoneNumberChange:   prepareEndpoint(account.MakeCancelPhoneNumberChangeEndpoint(accountComponent), "cancel_phone_number_change", accountLogger, rateLimitAccount),
 			GetLinkedAccounts:         prepareEndpoint(account.MakeGetLinkedAccountsEndpoint(accountComponent), "get_linked_accounts", accountLogger, rateLimitAccount),
 			DeleteLinkedAccount:       prepareEndpoint(account.MakeDeleteLinkedAccountEndpoint(accountComponent), "delete_linked_account", accountLogger, rateLimitAccount),
+			CanIdentify:               prepareEndpoint(account.MakeCanIdentifyEndpoint(accountComponent), "can_identify", accountLogger, rateLimitAccount),
 		}
 	}
 
@@ -1421,6 +1422,7 @@ func main() {
 		var cancelPhoneNumberChangeHandler = configureAccountHandler(accountEndpoints.CancelPhoneNumberChange)
 		var getLinkedAccountsHandler = configureAccountHandler(accountEndpoints.GetLinkedAccounts)
 		var deleteLinkedAccountHandler = configureAccountHandler(accountEndpoints.DeleteLinkedAccount)
+		var canIdentifyHandler = configureAccountHandler(accountEndpoints.CanIdentify)
 
 		route.Path("/account").Methods("GET").Handler(getAccountHandler)
 		route.Path("/account").Methods("POST").Handler(updateAccountHandler)
@@ -1444,6 +1446,8 @@ func main() {
 
 		route.Path("/account/linked-accounts").Methods("GET").Handler(getLinkedAccountsHandler)
 		route.Path("/account/linked-accounts/{providerAlias}").Methods("DELETE").Handler(deleteLinkedAccountHandler)
+
+		route.Path("/account/can-identify").Methods("GET").Handler(canIdentifyHandler)
 
 		var handler http.Handler = route
 

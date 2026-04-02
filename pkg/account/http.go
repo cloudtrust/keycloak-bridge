@@ -20,7 +20,8 @@ const (
 	prmPrevCredentialID = "previousCredentialID"
 	prmProviderAlias    = "providerAlias"
 
-	prmQryRealmID = "realm_id"
+	prmQryRealmID      = "realm_id"
+	prmQueryContextKey = "context-key"
 )
 
 // MakeAccountHandler make an HTTP handler for an Account endpoint.
@@ -41,7 +42,8 @@ func decodeAccountRequest(ctx context.Context, req *http.Request) (interface{}, 
 	}
 
 	var queryParams = map[string]string{
-		prmQryRealmID: constants.RegExpRealmName,
+		prmQryRealmID:      constants.RegExpRealmName,
+		prmQueryContextKey: constants.RegExpContextKey,
 	}
 
 	return commonhttp.DecodeRequest(ctx, req, pathParams, queryParams)

@@ -321,6 +321,7 @@ type RealmAdminConfiguration struct {
 	ConsentRequiredSocial                          *bool           `json:"consent_required_social"`
 	ConsentRequiredCorporate                       *bool           `json:"consent_required_corporate"`
 	ConsentRequiredCorporateAuxiliary              *bool           `json:"consent_required_corporate_auxiliary"`
+	AccreditationRenewalWindowDays                 *int            `json:"accreditation_renewal_window_days"`
 	VideoIdentificationVoucherEnabled              *bool           `json:"video_identification_voucher_enabled"`
 	VideoIdentificationAccountingEnabled           *bool           `json:"video_identification_accounting_enabled"`
 	VideoIdentificationPrepaymentRequired          *bool           `json:"video_identification_prepayment_required"`
@@ -466,6 +467,17 @@ func defaultBoolPtr(actual *bool, defaultValue *bool) *bool {
 }
 
 func defaultStringArray(actual []string, defaultValue []string) []string {
+	if actual == nil {
+		return defaultValue
+	}
+	return actual
+}
+
+func defaultInt(actual *int, defaultValue int) *int {
+	return defaultIntPtr(actual, &defaultValue)
+}
+
+func defaultIntPtr(actual *int, defaultValue *int) *int {
 	if actual == nil {
 		return defaultValue
 	}
@@ -899,6 +911,7 @@ func ConvertRealmAdminConfigurationFromDBStruct(conf configuration.RealmAdminCon
 		ConsentRequiredSocial:                          defaultBool(conf.ConsentRequiredSocial, false),
 		ConsentRequiredCorporate:                       defaultBool(conf.ConsentRequiredCorporate, false),
 		ConsentRequiredCorporateAuxiliary:              defaultBool(conf.ConsentRequiredCorporateAuxiliary, false),
+		AccreditationRenewalWindowDays:                 defaultInt(conf.AccreditationRenewalWindowDays, 30),
 		VideoIdentificationVoucherEnabled:              defaultBool(conf.VideoIdentificationVoucherEnabled, false),
 		VideoIdentificationAccountingEnabled:           defaultBool(conf.VideoIdentificationAccountingEnabled, false),
 		VideoIdentificationPrepaymentRequired:          defaultBool(conf.VideoIdentificationPrepaymentRequired, false),
@@ -936,6 +949,7 @@ func (rac RealmAdminConfiguration) ConvertToDBStruct() configuration.RealmAdminC
 		ConsentRequiredSocial:                          rac.ConsentRequiredSocial,
 		ConsentRequiredCorporate:                       rac.ConsentRequiredCorporate,
 		ConsentRequiredCorporateAuxiliary:              rac.ConsentRequiredCorporateAuxiliary,
+		AccreditationRenewalWindowDays:                 rac.AccreditationRenewalWindowDays,
 		VideoIdentificationVoucherEnabled:              rac.VideoIdentificationVoucherEnabled,
 		VideoIdentificationAccountingEnabled:           rac.VideoIdentificationAccountingEnabled,
 		VideoIdentificationPrepaymentRequired:          rac.VideoIdentificationPrepaymentRequired,

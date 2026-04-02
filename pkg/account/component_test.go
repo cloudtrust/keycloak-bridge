@@ -2,6 +2,7 @@ package account
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
@@ -1443,5 +1444,119 @@ func TestDeleteLinkedAccount(t *testing.T) {
 		err := accountComponent.DeleteLinkedAccount(ctx, providerAlias)
 
 		assert.NotNil(t, err)
+	})
+}
+
+func TestCanIdentify(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	mocks := createComponentMocks(mockCtrl)
+	accountComponent := mocks.createComponent()
+
+	accessToken := "TOKEN=="
+	anyError := errors.New("any error")
+	contextKeyID := "context-key"
+	realmName := "test-community"
+
+	ctx := context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
+	ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
+
+	accredAdvanced1, _ := json.Marshal(api.AccreditationRepresentation{
+		Type:       new("ADVANCED"),
+		ExpiryDate: new("2025-12-31"),
+	})
+	accredAdvanced2, _ := json.Marshal(api.AccreditationRepresentation{
+		Type:       new("ADVANCED"),
+		ExpiryDate: new("2025-12-31"),
+	})
+	accredBasic, _ := json.Marshal(api.AccreditationRepresentation{
+		Type:       new("BASIC"),
+		ExpiryDate: new("2025-12-31"),
+	})
+	userAccreditationsStr := []string{string(accredAdvanced1), string(accredAdvanced2), string(accredBasic)}
+
+	t.Run("GetContextKeysForCustomerRealm fails", func(t *testing.T) {
+		mocks.configurationDBModule.EXPECT().GetContextKeysForCustomerRealm(ctx, realmName).Return([]configuration.RealmContextKey{}, anyError)
+
+		_, err := accountComponent.CanIdentify(ctx, &contextKeyID)
+		assert.Error(t, err)
+	})
+
+	t.Run("GetAccount fails", func(t *testing.T) {
+		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kc.UserRepresentation{}, anyError)
+
+		_, err := accountComponent.CanIdentify(ctx, nil)
+		assert.Error(t, err)
+	})
+
+	t.Run("Success - user has no accreditations", func(t *testing.T) {
+		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kc.UserRepresentation{}, nil)
+
+		canIdentify, err := accountComponent.CanIdentify(ctx, nil)
+		assert.NoError(t, err)
+		assert.True(t, canIdentify)
+	})
+
+	t.Run("Success - user has no accreditations", func(t *testing.T) {
+		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kc.UserRepresentation{}, nil)
+
+		canIdentify, err := accountComponent.CanIdentify(ctx, nil)
+		assert.NoError(t, err)
+		assert.True(t, canIdentify)
+	})
+
+	t.Run("GetAdminConfiguration fails", func(t *testing.T) {
+		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kc.UserRepresentation{
+			Attributes: &kc.Attributes{
+				constants.AttrbAccreditations: userAccreditationsStr,
+			},
+		}, nil)
+		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, realmName).Return(configuration.RealmAdminConfiguration{}, anyError)
+
+		_, err := accountComponent.CanIdentify(ctx, nil)
+		assert.Error(t, err)
+	})
+
+	t.Run("Success - user has no accreditations of the same type", func(t *testing.T) {
+		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kc.UserRepresentation{
+			Attributes: &kc.Attributes{
+				constants.AttrbAccreditations: userAccreditationsStr,
+			},
+		}, nil)
+		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, realmName).Return(configuration.RealmAdminConfiguration{
+			AccreditationRenewalWindowDays: new(30),
+		}, nil)
+
+		_, err := accountComponent.CanIdentify(ctx, nil)
+		assert.Error(t, err)
+	})
+
+	t.Run("Success - user has a soon expiring accreditation", func(t *testing.T) {
+		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kc.UserRepresentation{
+			Attributes: &kc.Attributes{
+				constants.AttrbAccreditations: userAccreditationsStr,
+			},
+		}, nil)
+		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, realmName).Return(configuration.RealmAdminConfiguration{
+			AccreditationRenewalWindowDays: new(30),
+		}, nil)
+
+		_, err := accountComponent.CanIdentify(ctx, nil) // TODO: Change context key
+		assert.Error(t, err)
+	})
+
+	t.Run("Success - user is already accredited", func(t *testing.T) {
+		mocks.keycloakAccountClient.EXPECT().GetAccount(accessToken, realmName).Return(kc.UserRepresentation{
+			Attributes: &kc.Attributes{
+				constants.AttrbAccreditations: userAccreditationsStr,
+			},
+		}, nil)
+		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, realmName).Return(configuration.RealmAdminConfiguration{
+			AccreditationRenewalWindowDays: new(30),
+		}, nil)
+
+		_, err := accountComponent.CanIdentify(ctx, nil) // TODO: Change context key
+		assert.Error(t, err)
 	})
 }

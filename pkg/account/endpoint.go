@@ -35,6 +35,7 @@ type Endpoints struct {
 	CancelPhoneNumberChange   endpoint.Endpoint
 	GetLinkedAccounts         endpoint.Endpoint
 	DeleteLinkedAccount       endpoint.Endpoint
+	CanIdentify               endpoint.Endpoint
 }
 
 // UpdatePasswordBody is the definition of the expected body content of UpdatePassword method
@@ -212,5 +213,17 @@ func MakeDeleteLinkedAccountEndpoint(component Component) cs.Endpoint {
 		var m = req.(map[string]string)
 
 		return nil, component.DeleteLinkedAccount(ctx, m[prmProviderAlias])
+	}
+}
+
+func MakeCanIdentifyEndpoint(component Component) cs.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		m := req.(map[string]string)
+		var contextKey *string
+		if val, ok := m[prmQueryContextKey]; ok {
+			contextKey = &val
+		}
+
+		return component.CanIdentify(ctx, contextKey)
 	}
 }

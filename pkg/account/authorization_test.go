@@ -103,6 +103,12 @@ func TestNoRestrictions(t *testing.T) {
 			err = authorizationMW.CancelPhoneNumberChange(ctx)
 			assert.Nil(t, err)
 		})
+
+		t.Run("CanIdentify", func(t *testing.T) {
+			mockAccountComponent.EXPECT().CanIdentify(ctx, nil).Return(true, nil)
+			_, err = authorizationMW.CanIdentify(ctx, nil)
+			assert.Nil(t, err)
+		})
 	}
 }
 

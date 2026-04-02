@@ -43,6 +43,21 @@ func (m *Component) EXPECT() *ComponentMockRecorder {
 	return m.recorder
 }
 
+// CanIdentify mocks base method.
+func (m *Component) CanIdentify(ctx context.Context, contextKey *string) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CanIdentify", ctx, contextKey)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CanIdentify indicates an expected call of CanIdentify.
+func (mr *ComponentMockRecorder) CanIdentify(ctx, contextKey any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CanIdentify", reflect.TypeOf((*Component)(nil).CanIdentify), ctx, contextKey)
+}
+
 // CancelEmailChange mocks base method.
 func (m *Component) CancelEmailChange(ctx context.Context) error {
 	m.ctrl.T.Helper()
