@@ -209,6 +209,20 @@ func TestMakeDeleteLinkedAccountEndpoint(t *testing.T) {
 	assert.Nil(t, err)
 }
 
+func TestMakeGetCanIdentifyEndpoint(t *testing.T) {
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+
+	mockAccountComponent := mock.NewComponent(mockCtrl)
+	mockAccountComponent.EXPECT().GetCanIdentify(gomock.Any(), gomock.Any()).Return(true, nil)
+
+	m := map[string]string{}
+
+	m[prmQueryContextKey] = "context-key"
+	_, err := MakeGetCanIdentifyEndpoint(mockAccountComponent)(context.Background(), m)
+	assert.Nil(t, err)
+}
+
 func TestSimpleEndpoints(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()

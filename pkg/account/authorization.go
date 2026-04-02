@@ -29,6 +29,7 @@ const (
 	GetConfiguration          = "GetConfiguration"
 	GetLinkedAccounts         = "GetLinkedAccounts"
 	DeleteLinkedAccount       = "DeleteLinkedAccount"
+	CanIdentify               = "CanIdentify"
 
 	infosAction       = "Action"
 	infosCurrentRealm = "currentRealm"
@@ -243,4 +244,9 @@ func (c *authorizationComponentMW) checkAPISelfIDPLinksManagementEnabled(ctx con
 	}
 
 	return c.checkFlagEnabled(ctx, config.APISelfIDPLinksManagementEnabled, action, "Forbidden: linked accounts management disabled")
+}
+
+func (c *authorizationComponentMW) GetCanIdentify(ctx context.Context, contextKey *string) (bool, error) {
+	// No restriction for this call
+	return c.next.GetCanIdentify(ctx, contextKey)
 }

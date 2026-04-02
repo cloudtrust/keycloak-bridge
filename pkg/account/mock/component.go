@@ -128,6 +128,21 @@ func (mr *ComponentMockRecorder) GetAccount(ctx any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAccount", reflect.TypeOf((*Component)(nil).GetAccount), ctx)
 }
 
+// GetCanIdentify mocks base method.
+func (m *Component) GetCanIdentify(ctx context.Context, contextKey *string) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetCanIdentify", ctx, contextKey)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetCanIdentify indicates an expected call of GetCanIdentify.
+func (mr *ComponentMockRecorder) GetCanIdentify(ctx, contextKey any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCanIdentify", reflect.TypeOf((*Component)(nil).GetCanIdentify), ctx, contextKey)
+}
+
 // GetConfiguration mocks base method.
 func (m *Component) GetConfiguration(arg0 context.Context, arg1 string) (apiaccount.Configuration, error) {
 	m.ctrl.T.Helper()

@@ -701,6 +701,7 @@ func TestConvertRealmAdminConfiguration(t *testing.T) {
 			ConsentRequiredSocial:                          boolPtr(true),
 			ConsentRequiredCorporate:                       boolPtr(false),
 			ConsentRequiredCorporateAuxiliary:              boolPtr(false),
+			AccreditationRenewalWindowDays:                 intPtr(30),
 			VideoIdentificationVoucherEnabled:              boolPtr(true),
 			VideoIdentificationAccountingEnabled:           boolPtr(true),
 			VideoIdentificationPrepaymentRequired:          boolPtr(true),

@@ -4,6 +4,8 @@ github.com/IBM/sarama v1.47.0 h1:GcQFEd12+KzfPYeLgN69Fh7vLCtYRhVIx0rO4TZO318=
 github.com/IBM/sarama v1.47.0/go.mod h1:7gLLIU97nznOmA6TX++Qds+DRxH89P2XICY2KAQUzAY=
 github.com/cloudtrust/common-service/v2 v2.18.1 h1:WV7kdxVNckjk/ucNHO7BrJ8J/Cfb4oIlWjebvJW+EQs=
 github.com/cloudtrust/common-service/v2 v2.18.1/go.mod h1:wLHEAV6fW2MnpI/LKeDmXOMrRKiTCYec/rdArYt1ozY=
+github.com/cloudtrust/common-service/v2 v2.18.2-0.20260402083019-bd82fd649fd2 h1:NtnNaIaA3MEyLJO0jQSzqiBsP+6wwZHNQswRnXIlIcY=
+github.com/cloudtrust/common-service/v2 v2.18.2-0.20260402083019-bd82fd649fd2/go.mod h1:kuhSeVph6FBDgxC7Q2yM8kicmTwx4YTmmJ4koggZTIo=
 github.com/cloudtrust/httpclient v1.6.0 h1:/E/y2wZNyUIjADbP3RLI2pLTWdNvcFSLe1MeRD6RlN4=
 github.com/cloudtrust/httpclient v1.6.0/go.mod h1:CK0idOHAQ2CiN2GFOwIYP5hDl2tfUgGdTI9n7Ygbnrs=
 github.com/cloudtrust/kafka-client v1.8.1 h1:kbc9XsOaYszEBI1RiIeCze3litfVl8zLah7op0B94nc=
@@ -77,6 +79,8 @@ github.com/nbio/st v0.0.0-20140626010706-e9e8d9816f32 h1:W6apQkHrMkS0Muv8G/TipAy
 github.com/nbio/st v0.0.0-20140626010706-e9e8d9816f32/go.mod h1:9wM+0iRr9ahx58uYLpLIr5fm8diHn0JbqRycJi6w0Ms=
 github.com/nyaruka/phonenumbers v1.6.12 h1:aeGHjGQnfLhdN5/mZPevhoYMs13FWcQ0Vus0YQHh1Ec=
 github.com/nyaruka/phonenumbers v1.6.12/go.mod h1:IUu45lj2bSeYXQuxDyyuzOrdV10tyRa1YSsfH8EKN5c=
+github.com/nyaruka/phonenumbers v1.7.1 h1:k8FHBMLegwW2tEIhsurC5YJk5Dix++H1k6liu1LUruY=
+github.com/nyaruka/phonenumbers v1.7.1/go.mod h1:fsKPJ70O9JetEA4ggnJadYTFWwtGPvu/lETTXNXq6Cs=
 github.com/pelletier/go-toml/v2 v2.2.4 h1:mye9XuhQ6gvn5h28+VilKrrPoQVanw5PMw/TB0t5Ec4=
 github.com/pelletier/go-toml/v2 v2.2.4/go.mod h1:2gIqNv+qfxSVS7cM2xJQKtLSTLUE9V8t9Stt+h56mCY=
 github.com/pierrec/lz4/v4 v4.1.26 h1:GrpZw1gZttORinvzBdXPUXATeqlJjqUG/D87TKMnhjY=
