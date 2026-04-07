@@ -217,3 +217,5 @@ kafka:
     initial-offset: newest
 
 log-events-rate: 1
+
+default-renewal-window-days: 30

@@ -162,6 +162,7 @@ const (
 	cfgIdnowTimeout             = "idnow-service-timeout"
 	cfgContextKeys              = "context-keys"
 	cfgLogEventRate             = "log-events-rate"
+	cfgDefaultRenewalWindowDays = "default-renewal-window-days"
 
 	// Kafka
 	kafkaReloadAuthProducer = "auth-reload-producer"
@@ -823,7 +824,7 @@ func main() {
 		var logEndpoint = log.With(accountLogger, "mw", "endpoint")
 
 		// new module for account service
-		accountComponent := account.NewComponent(keycloakClient.AccountClient(), kcTechClient, profileCache, auditEventsReporterModule, configDBModule, accreditationsService, accountLogger)
+		accountComponent := account.NewComponent(keycloakClient.AccountClient(), kcTechClient, profileCache, auditEventsReporterModule, configDBModule, accreditationsService, c.GetInt(cfgDefaultRenewalWindowDays), accountLogger)
 		accountComponent = account.MakeAuthorizationAccountComponentMW(logAuthorization, configDBModule)(accountComponent)
 
 		var rateLimitAccount = rateLimit[RateKeyAccount]

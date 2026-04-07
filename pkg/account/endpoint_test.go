@@ -214,7 +214,7 @@ func TestMakeGetCanIdentifyEndpoint(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	mockAccountComponent := mock.NewComponent(mockCtrl)
-	mockAccountComponent.EXPECT().GetCanIdentify(gomock.Any(), gomock.Any()).Return(true, nil)
+	mockAccountComponent.EXPECT().GetCanIdentify(gomock.Any(), gomock.Any()).Return(true, nil) // TODO: verify the context key is passed correctly
 
 	m := map[string]string{}
 

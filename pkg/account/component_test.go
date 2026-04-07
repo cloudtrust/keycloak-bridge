@@ -45,7 +45,7 @@ func createComponentMocks(mockCtrl *gomock.Controller) *componentMock {
 
 func (m *componentMock) createComponent() *component {
 	return NewComponent(m.keycloakAccountClient, m.keycloakTechnicalClient, m.userProfileCache, m.auditEventsReporterModule,
-		m.configurationDBModule, m.accreditationsClient, log.NewNopLogger()).(*component)
+		m.configurationDBModule, m.accreditationsClient, 30, log.NewNopLogger()).(*component)
 }
 
 func ptr(value string) *string {

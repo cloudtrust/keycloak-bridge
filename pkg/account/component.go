@@ -103,28 +103,30 @@ type EventsReporterModule interface {
 
 // Component is the management component.
 type component struct {
-	keycloakAccountClient KeycloakAccountClient
-	keycloakTechClient    KeycloakTechnicalClient
-	profileCache          UserProfileCache
-	eventReporterModule   EventsReporterModule
-	configDBModule        keycloakb.ConfigurationDBModule
-	accreditationsClient  AccreditationsServiceClient
-	logger                log.Logger
-	originEvent           string
+	keycloakAccountClient    KeycloakAccountClient
+	keycloakTechClient       KeycloakTechnicalClient
+	profileCache             UserProfileCache
+	eventReporterModule      EventsReporterModule
+	configDBModule           keycloakb.ConfigurationDBModule
+	accreditationsClient     AccreditationsServiceClient
+	defaultRenewalWindowDays int
+	logger                   log.Logger
+	originEvent              string
 }
 
 // NewComponent returns the self-service component.
 func NewComponent(keycloakAccountClient KeycloakAccountClient, keycloakTechClient KeycloakTechnicalClient, profileCache UserProfileCache, eventReporterModule EventsReporterModule,
-	configDBModule keycloakb.ConfigurationDBModule, accreditationsClient AccreditationsServiceClient, logger log.Logger) Component {
+	configDBModule keycloakb.ConfigurationDBModule, accreditationsClient AccreditationsServiceClient, defaultRenewalWindowDays int, logger log.Logger) Component {
 	return &component{
-		keycloakAccountClient: keycloakAccountClient,
-		keycloakTechClient:    keycloakTechClient,
-		profileCache:          profileCache,
-		eventReporterModule:   eventReporterModule,
-		configDBModule:        configDBModule,
-		accreditationsClient:  accreditationsClient,
-		logger:                logger,
-		originEvent:           "self-service",
+		keycloakAccountClient:    keycloakAccountClient,
+		keycloakTechClient:       keycloakTechClient,
+		profileCache:             profileCache,
+		eventReporterModule:      eventReporterModule,
+		configDBModule:           configDBModule,
+		accreditationsClient:     accreditationsClient,
+		defaultRenewalWindowDays: defaultRenewalWindowDays,
+		logger:                   logger,
+		originEvent:              "self-service",
 	}
 }
 
@@ -720,7 +722,7 @@ func (c *component) GetCanIdentify(ctx context.Context, contextKey *string) (boo
 		return false, err
 	}
 
-	renewalWindowDays := 30 // TODO: add in configuration
+	renewalWindowDays := c.defaultRenewalWindowDays
 	if adminConfig.AccreditationRenewalWindowDays != nil {
 		renewalWindowDays = *adminConfig.AccreditationRenewalWindowDays
 	}
