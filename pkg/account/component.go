@@ -103,30 +103,33 @@ type EventsReporterModule interface {
 
 // Component is the management component.
 type component struct {
-	keycloakAccountClient    KeycloakAccountClient
-	keycloakTechClient       KeycloakTechnicalClient
-	profileCache             UserProfileCache
-	eventReporterModule      EventsReporterModule
-	configDBModule           keycloakb.ConfigurationDBModule
-	accreditationsClient     AccreditationsServiceClient
-	defaultRenewalWindowDays int
-	logger                   log.Logger
-	originEvent              string
+	keycloakAccountClient         KeycloakAccountClient
+	keycloakTechClient            KeycloakTechnicalClient
+	profileCache                  UserProfileCache
+	eventReporterModule           EventsReporterModule
+	configDBModule                keycloakb.ConfigurationDBModule
+	accreditationsClient          AccreditationsServiceClient
+	defaultAccreditationRequested string
+	defaultRenewalWindowDays      int
+	logger                        log.Logger
+	originEvent                   string
 }
 
 // NewComponent returns the self-service component.
-func NewComponent(keycloakAccountClient KeycloakAccountClient, keycloakTechClient KeycloakTechnicalClient, profileCache UserProfileCache, eventReporterModule EventsReporterModule,
-	configDBModule keycloakb.ConfigurationDBModule, accreditationsClient AccreditationsServiceClient, defaultRenewalWindowDays int, logger log.Logger) Component {
+func NewComponent(keycloakAccountClient KeycloakAccountClient, keycloakTechClient KeycloakTechnicalClient, profileCache UserProfileCache,
+	eventReporterModule EventsReporterModule, configDBModule keycloakb.ConfigurationDBModule, accreditationsClient AccreditationsServiceClient,
+	defaultAccreditationRequested string, defaultRenewalWindowDays int, logger log.Logger) Component {
 	return &component{
-		keycloakAccountClient:    keycloakAccountClient,
-		keycloakTechClient:       keycloakTechClient,
-		profileCache:             profileCache,
-		eventReporterModule:      eventReporterModule,
-		configDBModule:           configDBModule,
-		accreditationsClient:     accreditationsClient,
-		defaultRenewalWindowDays: defaultRenewalWindowDays,
-		logger:                   logger,
-		originEvent:              "self-service",
+		keycloakAccountClient:         keycloakAccountClient,
+		keycloakTechClient:            keycloakTechClient,
+		profileCache:                  profileCache,
+		eventReporterModule:           eventReporterModule,
+		configDBModule:                configDBModule,
+		accreditationsClient:          accreditationsClient,
+		defaultAccreditationRequested: defaultAccreditationRequested,
+		defaultRenewalWindowDays:      defaultRenewalWindowDays,
+		logger:                        logger,
+		originEvent:                   "self-service",
 	}
 }
 
@@ -680,7 +683,7 @@ func (c *component) GetCanIdentify(ctx context.Context, contextKey *string) (boo
 	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
 	currentRealm := ctx.Value(cs.CtContextRealm).(string)
 
-	accreditationType := "DEP"
+	accreditationType := c.defaultAccreditationRequested
 	if contextKey != nil {
 		confs, err := c.configDBModule.GetContextKeysForCustomerRealm(ctx, currentRealm)
 		if err != nil {
@@ -731,7 +734,7 @@ func (c *component) GetCanIdentify(ctx context.Context, contextKey *string) (boo
 	hasAccreditationOfType := false
 	latestExpiration := time.Time{}
 	for _, accred := range accreditations {
-		if accred.Type != nil && *accred.Type == accreditationType && !*accred.Revoked {
+		if accred.Type != nil && *accred.Type == accreditationType && (accred.Revoked == nil || !*accred.Revoked) {
 			hasAccreditationOfType = true
 			if accred.ExpiryDate != nil {
 				expiry, err := time.Parse(constants.SupportedDateLayouts[0], *accred.ExpiryDate)

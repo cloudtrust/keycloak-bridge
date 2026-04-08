@@ -214,11 +214,15 @@ func TestMakeGetCanIdentifyEndpoint(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	mockAccountComponent := mock.NewComponent(mockCtrl)
-	mockAccountComponent.EXPECT().GetCanIdentify(gomock.Any(), gomock.Any()).Return(true, nil) // TODO: verify the context key is passed correctly
+	mockAccountComponent.EXPECT().GetCanIdentify(gomock.Any(), gomock.Any()).DoAndReturn(func(ctx context.Context, contextKey *string) (bool, error) {
+		assert.Equal(t, "context-key", *contextKey)
+		return true, nil
+	})
 
-	m := map[string]string{}
+	m := map[string]string{
+		prmQueryContextKey: "context-key",
+	}
 
-	m[prmQueryContextKey] = "context-key"
 	_, err := MakeGetCanIdentifyEndpoint(mockAccountComponent)(context.Background(), m)
 	assert.Nil(t, err)
 }

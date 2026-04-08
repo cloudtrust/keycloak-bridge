@@ -473,17 +473,6 @@ func defaultStringArray(actual []string, defaultValue []string) []string {
 	return actual
 }
 
-func defaultInt(actual *int, defaultValue int) *int {
-	return defaultIntPtr(actual, &defaultValue)
-}
-
-func defaultIntPtr(actual *int, defaultValue *int) *int {
-	if actual == nil {
-		return defaultValue
-	}
-	return actual
-}
-
 // ConvertCredential creates an API credential from a KC credential
 func ConvertCredential(credKc *kc.CredentialRepresentation) CredentialRepresentation {
 	var cred CredentialRepresentation
@@ -911,7 +900,7 @@ func ConvertRealmAdminConfigurationFromDBStruct(conf configuration.RealmAdminCon
 		ConsentRequiredSocial:                          defaultBool(conf.ConsentRequiredSocial, false),
 		ConsentRequiredCorporate:                       defaultBool(conf.ConsentRequiredCorporate, false),
 		ConsentRequiredCorporateAuxiliary:              defaultBool(conf.ConsentRequiredCorporateAuxiliary, false),
-		AccreditationRenewalWindowDays:                 defaultInt(conf.AccreditationRenewalWindowDays, 30),
+		AccreditationRenewalWindowDays:                 conf.AccreditationRenewalWindowDays,
 		VideoIdentificationVoucherEnabled:              defaultBool(conf.VideoIdentificationVoucherEnabled, false),
 		VideoIdentificationAccountingEnabled:           defaultBool(conf.VideoIdentificationAccountingEnabled, false),
 		VideoIdentificationPrepaymentRequired:          defaultBool(conf.VideoIdentificationPrepaymentRequired, false),
