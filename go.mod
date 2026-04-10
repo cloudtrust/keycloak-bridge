@@ -3,7 +3,7 @@ module github.com/cloudtrust/keycloak-bridge
 go 1.26.1
 
 require (
-	github.com/cloudtrust/common-service/v2 v2.18.1
+	github.com/cloudtrust/common-service/v2 v2.19.0
 	github.com/cloudtrust/httpclient v1.6.0
 	github.com/cloudtrust/kafka-client v1.8.1
 	github.com/cloudtrust/keycloak-client/v2 v2.18.1
@@ -44,7 +44,7 @@ require (
 	github.com/jcmturner/gokrb5/v8 v8.4.4 // indirect
 	github.com/jcmturner/rpc/v2 v2.0.3 // indirect
 	github.com/klauspost/compress v1.18.4 // indirect
-	github.com/nyaruka/phonenumbers v1.6.12 // indirect
+	github.com/nyaruka/phonenumbers v1.7.1 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
 	github.com/pierrec/lz4/v4 v4.1.26 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
@@ -53,12 +53,11 @@ require (
 	github.com/spf13/afero v1.15.0 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/crypto v0.49.0 // indirect
-	golang.org/x/exp v0.0.0-20260312153236-7ab1446f8b90 // indirect
-	golang.org/x/net v0.52.0 // indirect
+	golang.org/x/crypto v0.50.0 // indirect
+	golang.org/x/net v0.53.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
-	golang.org/x/sys v0.42.0 // indirect
-	golang.org/x/text v0.35.0 // indirect
+	golang.org/x/sys v0.43.0 // indirect
+	golang.org/x/text v0.36.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

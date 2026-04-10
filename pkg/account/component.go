@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/cloudtrust/common-service/v2/configuration"
 	"github.com/cloudtrust/common-service/v2/log"
@@ -80,6 +81,7 @@ type Component interface {
 	CancelPhoneNumberChange(ctx context.Context) error
 	GetLinkedAccounts(ctx context.Context) ([]api.LinkedAccountRepresentation, error)
 	DeleteLinkedAccount(ctx context.Context, providerAlias string) error
+	GetCanIdentify(ctx context.Context, contextKey *string) (bool, error)
 }
 
 // UserProfileCache interface
@@ -101,28 +103,33 @@ type EventsReporterModule interface {
 
 // Component is the management component.
 type component struct {
-	keycloakAccountClient KeycloakAccountClient
-	keycloakTechClient    KeycloakTechnicalClient
-	profileCache          UserProfileCache
-	eventReporterModule   EventsReporterModule
-	configDBModule        keycloakb.ConfigurationDBModule
-	accreditationsClient  AccreditationsServiceClient
-	logger                log.Logger
-	originEvent           string
+	keycloakAccountClient         KeycloakAccountClient
+	keycloakTechClient            KeycloakTechnicalClient
+	profileCache                  UserProfileCache
+	eventReporterModule           EventsReporterModule
+	configDBModule                keycloakb.ConfigurationDBModule
+	accreditationsClient          AccreditationsServiceClient
+	defaultAccreditationRequested string
+	defaultRenewalWindowDays      int
+	logger                        log.Logger
+	originEvent                   string
 }
 
 // NewComponent returns the self-service component.
-func NewComponent(keycloakAccountClient KeycloakAccountClient, keycloakTechClient KeycloakTechnicalClient, profileCache UserProfileCache, eventReporterModule EventsReporterModule,
-	configDBModule keycloakb.ConfigurationDBModule, accreditationsClient AccreditationsServiceClient, logger log.Logger) Component {
+func NewComponent(keycloakAccountClient KeycloakAccountClient, keycloakTechClient KeycloakTechnicalClient, profileCache UserProfileCache,
+	eventReporterModule EventsReporterModule, configDBModule keycloakb.ConfigurationDBModule, accreditationsClient AccreditationsServiceClient,
+	defaultAccreditationRequested string, defaultRenewalWindowDays int, logger log.Logger) Component {
 	return &component{
-		keycloakAccountClient: keycloakAccountClient,
-		keycloakTechClient:    keycloakTechClient,
-		profileCache:          profileCache,
-		eventReporterModule:   eventReporterModule,
-		configDBModule:        configDBModule,
-		accreditationsClient:  accreditationsClient,
-		logger:                logger,
-		originEvent:           "self-service",
+		keycloakAccountClient:         keycloakAccountClient,
+		keycloakTechClient:            keycloakTechClient,
+		profileCache:                  profileCache,
+		eventReporterModule:           eventReporterModule,
+		configDBModule:                configDBModule,
+		accreditationsClient:          accreditationsClient,
+		defaultAccreditationRequested: defaultAccreditationRequested,
+		defaultRenewalWindowDays:      defaultRenewalWindowDays,
+		logger:                        logger,
+		originEvent:                   "self-service",
 	}
 }
 
@@ -670,4 +677,79 @@ func (c *component) DeleteLinkedAccount(ctx context.Context, providerAlias strin
 	c.eventReporterModule.ReportEvent(ctx, events.NewEventOnUserFromContext(ctx, c.logger, c.originEvent, "SELF_DELETE_LINKED_ACCOUNT", currentRealm, userID, username, map[string]string{"providerAlias": providerAlias}))
 
 	return nil
+}
+
+func (c *component) GetCanIdentify(ctx context.Context, contextKey *string) (bool, error) {
+	var accessToken = ctx.Value(cs.CtContextAccessToken).(string)
+	currentRealm := ctx.Value(cs.CtContextRealm).(string)
+
+	accreditationType := c.defaultAccreditationRequested
+	if contextKey != nil {
+		confs, err := c.configDBModule.GetContextKeysForCustomerRealm(ctx, currentRealm)
+		if err != nil {
+			c.logger.Warn(ctx, "msg", "Can't get default context key keys for realm", "err", err.Error(), "realm", currentRealm)
+			return false, err
+		}
+
+		contextKeyFound := false
+		for _, conf := range confs {
+			if conf.ID == *contextKey {
+				accreditationType = *conf.Config.AutoVoucher.AccreditationRequested
+				contextKeyFound = true
+				break
+			}
+		}
+
+		if !contextKeyFound {
+			c.logger.Warn(ctx, "msg", "Context key not found in configuration, using default accreditation type", "contextKey", *contextKey, "realm", currentRealm)
+		}
+	}
+
+	userKc, err := c.keycloakAccountClient.GetAccount(accessToken, currentRealm)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Can't get account", "err", err.Error())
+		return false, err
+	}
+
+	accreditations := []api.AccreditationRepresentation{}
+	if values := userKc.GetAttribute(constants.AttrbAccreditations); len(values) > 0 {
+		accreditations = *api.ConvertToAccreditations(ctx, values, c.logger)
+	}
+	if len(accreditations) == 0 {
+		return true, nil
+	}
+
+	adminConfig, err := c.configDBModule.GetAdminConfiguration(ctx, currentRealm)
+	if err != nil {
+		c.logger.Warn(ctx, "msg", "Can't get admin configuration", "err", err.Error(), "realm", currentRealm)
+		return false, err
+	}
+
+	renewalWindowDays := c.defaultRenewalWindowDays
+	if adminConfig.AccreditationRenewalWindowDays != nil {
+		renewalWindowDays = *adminConfig.AccreditationRenewalWindowDays
+	}
+	deadline := time.Now().AddDate(0, 0, renewalWindowDays)
+
+	hasAccreditationOfType := false
+	latestExpiration := time.Time{}
+	for _, accred := range accreditations {
+		if accred.Type != nil && *accred.Type == accreditationType && (accred.Revoked == nil || !*accred.Revoked) {
+			hasAccreditationOfType = true
+			if accred.ExpiryDate != nil {
+				expiry, err := time.Parse(constants.SupportedDateLayouts[0], *accred.ExpiryDate)
+				if err != nil {
+					c.logger.Warn(ctx, "msg", "Can't parse accreditation expiry date", "err", err.Error(), "expiryDate", *accred.ExpiryDate)
+					return false, err
+				} else if expiry.After(latestExpiration) {
+					latestExpiration = expiry
+				}
+			}
+		}
+	}
+	if !hasAccreditationOfType {
+		return true, nil
+	}
+
+	return latestExpiration.Before(deadline), nil
 }

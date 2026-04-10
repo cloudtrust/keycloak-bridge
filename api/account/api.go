@@ -215,7 +215,7 @@ func ConvertToAPIAccount(ctx context.Context, userKc kc.UserRepresentation, prof
 		userRep.BirthDate = value
 	}
 	if values := userKc.GetAttribute(constants.AttrbAccreditations); len(values) > 0 {
-		userRep.Accreditations = convertToAccreditations(ctx, values, logger)
+		userRep.Accreditations = ConvertToAccreditations(ctx, values, logger)
 	}
 	userRep.Dynamic = userKc.GetDynamicAttributes(profile)
 
@@ -234,7 +234,7 @@ func ConvertAPILinkedAccount(accountKc *kc.LinkedAccountRepresentation) LinkedAc
 	}
 }
 
-func convertToAccreditations(ctx context.Context, values []string, logger keycloakb.Logger) *[]AccreditationRepresentation {
+func ConvertToAccreditations(ctx context.Context, values []string, logger keycloakb.Logger) *[]AccreditationRepresentation {
 	var accreds []AccreditationRepresentation
 	var bFalse = false
 	if len(values) > 0 && !(len(values) == 1 && values[0] == "") {
@@ -343,50 +343,35 @@ func (user *UpdatableAccountRepresentation) SetField(field string, value interfa
 	switch field {
 	case fields.Username.Key():
 		user.Username = cs.ToStringPtr(value)
-		break
 	case fields.Email.Key():
 		user.Email = cs.ToStringPtr(value)
-		break
 	case fields.FirstName.Key():
 		user.FirstName = cs.ToStringPtr(value)
-		break
 	case fields.LastName.Key():
 		user.LastName = cs.ToStringPtr(value)
-		break
 	case fields.Gender.AttributeName():
 		user.Gender = cs.ToStringPtr(value)
-		break
 	case fields.PhoneNumber.AttributeName():
 		user.PhoneNumber = cs.ToStringPtr(value)
-		break
 	case fields.BirthDate.AttributeName():
 		user.BirthDate = cs.ToStringPtr(value)
-		break
 	case fields.BirthLocation.AttributeName():
 		user.BirthLocation = cs.ToStringPtr(value)
-		break
 	case fields.Nationality.AttributeName():
 		user.Nationality = cs.ToStringPtr(value)
-		break
 	case fields.IDDocumentType.AttributeName():
 		user.IDDocumentType = cs.ToStringPtr(value)
-		break
 	case fields.IDDocumentNumber.AttributeName():
 		user.IDDocumentNumber = cs.ToStringPtr(value)
-		break
 	case fields.IDDocumentCountry.AttributeName():
 		user.IDDocumentCountry = cs.ToStringPtr(value)
-		break
 	case fields.IDDocumentExpiration.AttributeName():
 		user.IDDocumentExpiration = cs.ToStringPtr(value)
-		break
 	case fields.Locale.AttributeName():
 		user.Locale = cs.ToStringPtr(value)
-		break
 	case fields.BusinessID.AttributeName():
 		user.BusinessID.Value = cs.ToStringPtr(value)
 		user.BusinessID.Defined = user.BusinessID.Value != nil
-		break
 	}
 }
 

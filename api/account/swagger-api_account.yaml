@@ -233,6 +233,25 @@ paths:
       responses:
         200:
           description: successful operation
+  /account/can-identify:
+    get:
+      tags:
+      - Account
+      summary: Get if the user can be identified (with a soon expiring accreditation or not accredited)
+      parameters:
+      - name: context-key
+        in: query
+        description: context key to check the accreditation for. If not provided, DEP will be used
+        required: false
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: boolean
 components:
   schemas:
     UpdatePassword:

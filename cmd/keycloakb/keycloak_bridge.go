@@ -163,6 +163,10 @@ const (
 	cfgContextKeys              = "context-keys"
 	cfgLogEventRate             = "log-events-rate"
 
+	// Accreditation renewal
+	cfgDefaultAccreditationRequested = "default-accreditation-requested"
+	cfgDefaultRenewalWindowDays      = "default-renewal-window-days"
+
 	// Kafka
 	kafkaReloadAuthProducer = "auth-reload-producer"
 	kafkaReloadAuthConsumer = "auth-reload-consumer"
@@ -823,7 +827,8 @@ func main() {
 		var logEndpoint = log.With(accountLogger, "mw", "endpoint")
 
 		// new module for account service
-		accountComponent := account.NewComponent(keycloakClient.AccountClient(), kcTechClient, profileCache, auditEventsReporterModule, configDBModule, accreditationsService, accountLogger)
+		accountComponent := account.NewComponent(keycloakClient.AccountClient(), kcTechClient, profileCache, auditEventsReporterModule, configDBModule,
+			accreditationsService, c.GetString(cfgDefaultAccreditationRequested), c.GetInt(cfgDefaultRenewalWindowDays), accountLogger)
 		accountComponent = account.MakeAuthorizationAccountComponentMW(logAuthorization, configDBModule)(accountComponent)
 
 		var rateLimitAccount = rateLimit[RateKeyAccount]
@@ -845,6 +850,7 @@ func main() {
 			CancelPhoneNumberChange:   prepareEndpoint(account.MakeCancelPhoneNumberChangeEndpoint(accountComponent), "cancel_phone_number_change", accountLogger, rateLimitAccount),
 			GetLinkedAccounts:         prepareEndpoint(account.MakeGetLinkedAccountsEndpoint(accountComponent), "get_linked_accounts", accountLogger, rateLimitAccount),
 			DeleteLinkedAccount:       prepareEndpoint(account.MakeDeleteLinkedAccountEndpoint(accountComponent), "delete_linked_account", accountLogger, rateLimitAccount),
+			GetCanIdentify:            prepareEndpoint(account.MakeGetCanIdentifyEndpoint(accountComponent), "get_can_identify", accountLogger, rateLimitAccount),
 		}
 	}
 
@@ -1421,6 +1427,7 @@ func main() {
 		var cancelPhoneNumberChangeHandler = configureAccountHandler(accountEndpoints.CancelPhoneNumberChange)
 		var getLinkedAccountsHandler = configureAccountHandler(accountEndpoints.GetLinkedAccounts)
 		var deleteLinkedAccountHandler = configureAccountHandler(accountEndpoints.DeleteLinkedAccount)
+		var getCanIdentifyHandler = configureAccountHandler(accountEndpoints.GetCanIdentify)
 
 		route.Path("/account").Methods("GET").Handler(getAccountHandler)
 		route.Path("/account").Methods("POST").Handler(updateAccountHandler)
@@ -1444,6 +1451,8 @@ func main() {
 
 		route.Path("/account/linked-accounts").Methods("GET").Handler(getLinkedAccountsHandler)
 		route.Path("/account/linked-accounts/{providerAlias}").Methods("DELETE").Handler(deleteLinkedAccountHandler)
+
+		route.Path("/account/can-identify").Methods("GET").Handler(getCanIdentifyHandler)
 
 		var handler http.Handler = route
 
