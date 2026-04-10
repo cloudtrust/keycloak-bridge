@@ -219,4 +219,4 @@ kafka:
 log-events-rate: 1
 
 default-accreditation-requested: "DEP"
-default-renewal-window-days: 60
+default-renewal-window-days: 65
