@@ -693,7 +693,7 @@ func (c *component) GetCanIdentify(ctx context.Context, contextKey *string) (boo
 
 		contextKeyFound := false
 		for _, conf := range confs {
-			if conf.ID == *contextKey {
+			if conf.ID == *contextKey && conf.Config.AutoVoucher != nil && conf.Config.AutoVoucher.AccreditationRequested != nil {
 				accreditationType = *conf.Config.AutoVoucher.AccreditationRequested
 				contextKeyFound = true
 				break
