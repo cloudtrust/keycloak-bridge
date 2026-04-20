@@ -92,7 +92,7 @@ type KeycloakClient interface {
 	LinkShadowUser(accessToken string, realmName string, userID string, provider string, fedID kc.FederatedIdentityRepresentation) error
 	UnlinkShadowUser(accessToken string, realmName string, userID string, provider string) error
 	ClearUserLoginFailures(accessToken string, realmName, userID string) error
-	GetAttackDetectionStatus(accessToken string, realmName, userID string) (map[string]interface{}, error)
+	GetAttackDetectionStatus(accessToken string, realmName, userID string) (map[string]any, error)
 	GetIdps(accessToken string, realmName string) ([]kc.IdentityProviderRepresentation, error)
 }
 
@@ -2621,7 +2621,7 @@ func (c *component) GetThemeTranslation(ctx context.Context, realmName string, l
 		return "", err
 	}
 
-	var translation interface{}
+	var translation any
 	if err := json.Unmarshal([]byte(translationStr), &translation); err != nil {
 		c.logger.Warn(ctx, "msg", "Failed to parse theme translation JSON", "err", err.Error())
 		return nil, errorhandler.CreateInternalServerError("invalid.json.format")

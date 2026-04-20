@@ -41,7 +41,7 @@ func NewEndpoints(component Component, profileCache UserProfileCache, endpointWr
 
 // MakeGetUserEndpoint endpoint creation
 func MakeGetUserEndpoint(component Component) cs.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, req any) (any, error) {
 		var m = req.(map[string]string)
 
 		return component.GetUser(ctx, m[prmRealm], m[prmUserID])
@@ -50,7 +50,7 @@ func MakeGetUserEndpoint(component Component) cs.Endpoint {
 
 // MakeUpdateUserEndpoint endpoint creation
 func MakeUpdateUserEndpoint(component Component, profileCache UserProfileCache) cs.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, req any) (any, error) {
 		var m = req.(map[string]string)
 		var realm = m[prmRealm]
 		var err error
@@ -75,7 +75,7 @@ func MakeUpdateUserEndpoint(component Component, profileCache UserProfileCache) 
 
 // MakeUpdateUserAccreditationsEndpoint endpoint creation
 func MakeUpdateUserAccreditationsEndpoint(component Component) cs.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, req any) (any, error) {
 		var m = req.(map[string]string)
 		var err error
 
@@ -97,7 +97,7 @@ func MakeUpdateUserAccreditationsEndpoint(component Component) cs.Endpoint {
 
 // MakeGetGroupsOfUserEndpoint creates an endpoint for GetGroupsOfUser
 func MakeGetGroupsOfUserEndpoint(component Component) cs.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, req any) (any, error) {
 		var m = req.(map[string]string)
 
 		return component.GetGroupsOfUser(ctx, m[prmRealm], m[prmUserID])
@@ -106,7 +106,7 @@ func MakeGetGroupsOfUserEndpoint(component Component) cs.Endpoint {
 
 // MakeGetRolesOfUserEndpoint creates an endpoint for GetRolesOfUser
 func MakeGetRolesOfUserEndpoint(component Component) cs.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, req any) (any, error) {
 		var m = req.(map[string]string)
 
 		return component.GetRolesOfUser(ctx, m[prmRealm], m[prmUserID])

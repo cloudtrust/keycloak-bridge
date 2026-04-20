@@ -14,7 +14,7 @@ type Endpoints struct {
 
 // MakeGetIdentificationURIEndpoint creates an endpoint for GetIdentificationURI
 func MakeGetIdentificationURIEndpoint(component Component) cs.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, req any) (any, error) {
 		m := req.(map[string]string)
 
 		return component.GetIdentificationURI(ctx, m[prmRealmName], m[prmContextKey])

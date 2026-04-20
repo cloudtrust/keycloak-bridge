@@ -19,7 +19,7 @@ func TestHTTPMobileHandler(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	var endpoint = func(ctx context.Context, _ interface{}) (interface{}, error) {
+	var endpoint = func(ctx context.Context, _ any) (any, error) {
 		return []string{}, nil
 	}
 

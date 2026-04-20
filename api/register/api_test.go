@@ -79,7 +79,7 @@ func TestGetSetUserField(t *testing.T) {
 	assert.Nil(t, user.GetField("not-existing-field"))
 }
 
-func testGetSetUserField(t *testing.T, fieldName string, value interface{}) {
+func testGetSetUserField(t *testing.T, fieldName string, value any) {
 	var user UserRepresentation
 	t.Run("Field "+fieldName, func(t *testing.T) {
 		assert.Nil(t, user.GetField(fieldName))

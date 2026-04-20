@@ -7,8 +7,8 @@ import (
 
 	cs "github.com/cloudtrust/common-service/v2"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/mock"
-	"go.uber.org/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 	"gopkg.in/h2non/gentleman.v2/plugin"
 )
 
@@ -30,7 +30,7 @@ func TestGetBalance(t *testing.T) {
 	ctx = context.WithValue(ctx, cs.CtContextCorrelationID, correlationID)
 
 	t.Run("SUCCESS", func(t *testing.T) {
-		mockHTTPClient.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(func(data interface{}, plugins ...plugin.Plugin) error {
+		mockHTTPClient.EXPECT().Get(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(func(data any, plugins ...plugin.Plugin) error {
 			data.(*AccountingBalance).Balance = &expectedBalance
 			return nil
 		}).Times(1)

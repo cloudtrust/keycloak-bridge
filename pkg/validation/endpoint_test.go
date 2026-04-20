@@ -72,7 +72,7 @@ func TestUpdateUserEndpoint(t *testing.T) {
 	})
 
 	t.Run("Invalid input", func(t *testing.T) {
-		userJSON, _ := json.Marshal(api.UserRepresentation{Gender: ptr("unknown")})
+		userJSON, _ := json.Marshal(api.UserRepresentation{Gender: new("unknown")})
 		var req = map[string]string{prmRealm: realm, prmUserID: userID, reqBody: string(userJSON)}
 
 		mockProfileCache.EXPECT().GetRealmUserProfile(gomock.Any(), realm).Return(kc.UserProfileRepresentation{}, errors.New(""))
@@ -104,8 +104,8 @@ func TestUpdateUserAccreditationEndpoint(t *testing.T) {
 	t.Run("No error", func(t *testing.T) {
 		accreditations := []api.AccreditationRepresentation{
 			{
-				Name:     ptr("test"),
-				Validity: ptr("4y"),
+				Name:     new("test"),
+				Validity: new("4y"),
 			},
 		}
 		accreditationsJSON, _ := json.Marshal(accreditations)
@@ -120,8 +120,8 @@ func TestUpdateUserAccreditationEndpoint(t *testing.T) {
 	t.Run("Invalid input", func(t *testing.T) {
 		accreditationsJSON, _ := json.Marshal([]api.AccreditationRepresentation{
 			{
-				Name:     ptr("test"),
-				Validity: ptr("4"),
+				Name:     new("test"),
+				Validity: new("4"),
 			},
 		})
 		var req = map[string]string{prmRealm: realm, prmUserID: userID, reqBody: string(accreditationsJSON)}

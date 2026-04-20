@@ -24,9 +24,9 @@ func TestContextKeyManager(t *testing.T) {
 			IdentitiesRealm: "the-first",
 			CustomerRealm:   "first-customer-realm", Config: configuration.ContextKeyConfiguration{
 				Onboarding: &configuration.ContextKeyConfOnboarding{
-					RedirectURI:    ptr("http://localhost/"),
-					ClientID:       ptr("the-client-1"),
-					IsRedirectMode: ptrBool(true),
+					RedirectURI:    new("http://localhost/"),
+					ClientID:       new("the-client-1"),
+					IsRedirectMode: new(true),
 				},
 			},
 		}

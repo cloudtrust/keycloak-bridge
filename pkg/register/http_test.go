@@ -22,7 +22,7 @@ func TestHTTPRegisterHandler(t *testing.T) {
 	var errorMessage = "error-message"
 
 	r := mux.NewRouter()
-	r.Handle(URL, MakeRegisterHandler(func(ctx context.Context, request interface{}) (response interface{}, err error) {
+	r.Handle(URL, MakeRegisterHandler(func(ctx context.Context, request any) (response any, err error) {
 		var m = request.(map[string]string)
 		if m[prmRealm] != "fail" {
 			return m[prmRealm], nil

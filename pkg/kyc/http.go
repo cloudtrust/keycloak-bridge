@@ -31,7 +31,7 @@ func MakeKYCHandler(e endpoint.Endpoint, logger log.Logger) *http_transport.Serv
 	queryParams := map[string]string{prmQryUserName: RegExpUserName, prmQryConsent: constants.RegExpNumber}
 
 	return http_transport.NewServer(e,
-		func(ctx context.Context, req *http.Request) (interface{}, error) {
+		func(ctx context.Context, req *http.Request) (any, error) {
 			return commonhttp.DecodeRequest(ctx, req, pathParams, queryParams)
 		},
 		commonhttp.EncodeReply,

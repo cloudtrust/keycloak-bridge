@@ -8,13 +8,13 @@ import (
 
 	"github.com/cloudtrust/common-service/v2/configuration"
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/mock"
-	"go.uber.org/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func createAuthSlice(auth configuration.Authorization, count int) []configuration.Authorization {
 	var res []configuration.Authorization
-	for idx := 0; idx < count; idx++ {
+	for range count {
 		res = append(res, auth)
 	}
 	return res
@@ -29,11 +29,11 @@ func TestTransaction(t *testing.T) {
 	var anError = errors.New("error")
 	var ctx = context.TODO()
 	var auth = configuration.Authorization{
-		RealmID:         ptr("realm"),
-		GroupName:       ptr("name"),
-		Action:          ptr("action"),
-		TargetRealmID:   ptr("target-realm"),
-		TargetGroupName: ptr("target-group"),
+		RealmID:         new("realm"),
+		GroupName:       new("name"),
+		Action:          new("action"),
+		TargetRealmID:   new("target-realm"),
+		TargetGroupName: new("target-group"),
 	}
 
 	t.Run("Close", func(t *testing.T) {

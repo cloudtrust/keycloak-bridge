@@ -43,7 +43,7 @@ func TestCreateIdentityProviderEndpoint(t *testing.T) {
 
 	idp := createTestAPIIdp()
 	idp.HrdSettings = &api.HrdSettingModel{
-		IPRangesList: ptr("192.168.0.1/24,127.0.0.1/8"),
+		IPRangesList: new("192.168.0.1/24,127.0.0.1/8"),
 		Priority:     0,
 	}
 
@@ -68,7 +68,7 @@ func TestUpdateIdentityProviderEndpoint(t *testing.T) {
 
 	idp := createTestAPIIdp()
 	idp.HrdSettings = &api.HrdSettingModel{
-		IPRangesList: ptr("192.168.1.1/24"),
+		IPRangesList: new("192.168.1.1/24"),
 		Priority:     0,
 	}
 
@@ -299,17 +299,17 @@ func TestGetUsersWithAttributeEndpoint(t *testing.T) {
 		assert.Error(t, err)
 	})
 	t.Run("Error when requesting username without roles", func(t *testing.T) {
-		mocks.component.EXPECT().GetUsersWithAttribute(ctx, realm, gomock.Any(), nil, gomock.Any(), ptrBool(false)).Return(nil, anyError)
+		mocks.component.EXPECT().GetUsersWithAttribute(ctx, realm, gomock.Any(), nil, gomock.Any(), new(false)).Return(nil, anyError)
 		_, err := mocks.newEndpoints().GetUsersWithAttribute(ctx, map[string]string{prmRealm: realm, prmUsername: "user", prmNeedRoles: "false"})
 		assert.Error(t, err)
 	})
 	t.Run("Error when requesting username with roles", func(t *testing.T) {
-		mocks.component.EXPECT().GetUsersWithAttribute(ctx, realm, gomock.Any(), nil, gomock.Any(), ptrBool(true)).Return(nil, anyError)
+		mocks.component.EXPECT().GetUsersWithAttribute(ctx, realm, gomock.Any(), nil, gomock.Any(), new(true)).Return(nil, anyError)
 		_, err := mocks.newEndpoints().GetUsersWithAttribute(ctx, map[string]string{prmRealm: realm, prmUsername: "user", prmNeedRoles: "true"})
 		assert.Error(t, err)
 	})
 	t.Run("Success searching with attributes", func(t *testing.T) {
-		mocks.component.EXPECT().GetUsersWithAttribute(ctx, realm, nil, ptr(req[prmGroupName]), map[string]string{req[prmAttribKey]: req[prmAttribValue]}, nil).Return(result, nil)
+		mocks.component.EXPECT().GetUsersWithAttribute(ctx, realm, nil, new(req[prmGroupName]), map[string]string{req[prmAttribKey]: req[prmAttribValue]}, nil).Return(result, nil)
 		res, err := mocks.newEndpoints().GetUsersWithAttribute(ctx, req)
 		assert.NoError(t, err)
 		assert.Len(t, res, len(result))

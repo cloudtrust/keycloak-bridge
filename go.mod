@@ -3,10 +3,10 @@ module github.com/cloudtrust/keycloak-bridge
 go 1.26.1
 
 require (
-	github.com/cloudtrust/common-service/v2 v2.19.0
+	github.com/cloudtrust/common-service/v2 v2.19.1-0.20260420113102-5b80753a783c
 	github.com/cloudtrust/httpclient v1.6.0
-	github.com/cloudtrust/kafka-client v1.8.1
-	github.com/cloudtrust/keycloak-client/v2 v2.18.1
+	github.com/cloudtrust/kafka-client v1.8.2-0.20260420114314-31210cdb05a3
+	github.com/cloudtrust/keycloak-client/v2 v2.18.2-0.20260420113722-1382a41c3266
 	github.com/go-kit/kit v0.13.0
 	github.com/go-kit/log v0.2.1
 	github.com/go-sql-driver/mysql v1.9.3
@@ -27,12 +27,12 @@ require (
 require (
 	filippo.io/edwards25519 v1.2.0 // indirect
 	github.com/IBM/sarama v1.47.0 // indirect
-	github.com/coreos/go-oidc/v3 v3.17.0 // indirect
+	github.com/coreos/go-oidc/v3 v3.18.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/eapache/go-resiliency v1.7.0 // indirect
 	github.com/eapache/queue v1.1.0 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
-	github.com/go-jose/go-jose/v4 v4.1.3 // indirect
+	github.com/go-jose/go-jose/v4 v4.1.4 // indirect
 	github.com/go-logfmt/logfmt v0.6.1 // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
 	github.com/golang-jwt/jwt/v5 v5.3.1 // indirect

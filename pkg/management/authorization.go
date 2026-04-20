@@ -883,7 +883,7 @@ func (c *authorizationComponentMW) UpdateThemeConfiguration(ctx context.Context,
 	return c.next.UpdateThemeConfiguration(ctx, targetRealm, themeConfig)
 }
 
-func (c *authorizationComponentMW) GetThemeTranslation(ctx context.Context, realmName string, locale string) (interface{}, error) {
+func (c *authorizationComponentMW) GetThemeTranslation(ctx context.Context, realmName string, locale string) (any, error) {
 	var action = security.MGMTGetThemeTranslations.String()
 	var targetRealm = realmName
 

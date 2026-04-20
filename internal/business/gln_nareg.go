@@ -24,8 +24,8 @@ const (
 type naRegResult struct {
 	Data             []naRegData `json:"Data"`
 	Total            *int        `json:"Total"`
-	AggregateResults interface{} `json:"AggregateResults"`
-	Errors           interface{} `json:"Errors"`
+	AggregateResults any         `json:"AggregateResults"`
+	Errors           any         `json:"Errors"`
 }
 
 type naRegData struct {
@@ -33,7 +33,7 @@ type naRegData struct {
 	PersonLastName                        *string        `json:"PersonLastName"`
 	PersonIsAnonymized                    *bool          `json:"PersonIsAnonymized"`
 	PersonID                              *int           `json:"PersonId"`
-	DuplicatePersonID                     interface{}    `json:"DuplicatePersonId"`
+	DuplicatePersonID                     any            `json:"DuplicatePersonId"`
 	DuplicateMode                         *bool          `json:"DuplicateMode"`
 	PersonGlnNumber                       *string        `json:"PersonGlnNumber"`
 	PersonFirstName                       *string        `json:"PersonFirstName"`
@@ -41,15 +41,15 @@ type naRegData struct {
 	CodeTranslationLicenceCantonLabel     *string        `json:"CodeTranslationLicenceCantonLabel"`
 	CodeTranslationDiplomaProfessionLabel *string        `json:"CodeTranslationDiplomaProfessionLabel"`
 	CodePersonSexID                       *int           `json:"CodePersonSexId"`
-	CodeLicenceStatusID                   interface{}    `json:"CodeLicenceStatusId"`
-	CodeLicenceProfessionID               interface{}    `json:"CodeLicenceProfessionId"`
-	CodeLicenceLicenceTypeID              interface{}    `json:"CodeLicenceLicenceTypeId"`
+	CodeLicenceStatusID                   any            `json:"CodeLicenceStatusId"`
+	CodeLicenceProfessionID               any            `json:"CodeLicenceProfessionId"`
+	CodeLicenceLicenceTypeID              any            `json:"CodeLicenceLicenceTypeId"`
 	CodeLicenceCantonID                   *int           `json:"CodeLicenceCantonId"`
 	CodeDiplomaProfessionID               *int           `json:"CodeDiplomaProfessionId"`
-	AddressZip                            interface{}    `json:"AddressZip"`
-	AddressStreet                         interface{}    `json:"AddressStreet"`
-	AddressPlace                          interface{}    `json:"AddressPlace"`
-	AddressID                             interface{}    `json:"AddressId"`
+	AddressZip                            any            `json:"AddressZip"`
+	AddressStreet                         any            `json:"AddressStreet"`
+	AddressPlace                          any            `json:"AddressPlace"`
+	AddressID                             any            `json:"AddressId"`
 }
 
 type naRegAddress struct {

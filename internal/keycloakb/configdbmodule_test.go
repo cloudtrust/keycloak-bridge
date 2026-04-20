@@ -59,7 +59,7 @@ func TestConfigurationDBModule(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func toJSONString(value interface{}) string {
+func toJSONString(value any) string {
 	var jsonConfBytes, _ = json.Marshal(value)
 	return string(jsonConfBytes)
 }
@@ -75,12 +75,12 @@ func TestGetConfigurations(t *testing.T) {
 	var configDBModule = NewConfigurationDBModule(mockDB, mockLogger)
 	var realmID = "myrealm"
 	var expectedError = errors.New("sql")
-	var expectedRealmConf = configuration.RealmConfiguration{BarcodeType: ptr("value")}
-	var expectedRealmAdminConf = configuration.RealmAdminConfiguration{Mode: ptr("trustID")}
+	var expectedRealmConf = configuration.RealmConfiguration{BarcodeType: new("value")}
+	var expectedRealmAdminConf = configuration.RealmAdminConfiguration{Mode: new("trustID")}
 
 	t.Run("No error", func(t *testing.T) {
 		mockDB.EXPECT().QueryRow(gomock.Any(), realmID).Return(mockSQLRow)
-		mockSQLRow.EXPECT().Scan(gomock.Any(), gomock.Any()).DoAndReturn(func(params ...interface{}) error {
+		mockSQLRow.EXPECT().Scan(gomock.Any(), gomock.Any()).DoAndReturn(func(params ...any) error {
 			// ptrConfJSON *string, ptrAdminConfJSON *string
 			*(params[0].(*string)) = toJSONString(expectedRealmConf)
 			*(params[1].(*string)) = toJSONString(expectedRealmAdminConf)
@@ -121,7 +121,7 @@ func TestGetConfiguration(t *testing.T) {
 	var expectedError = errors.New("sql")
 
 	t.Run("No error", func(t *testing.T) {
-		var expectedResult = configuration.RealmConfiguration{DefaultRedirectURI: ptr("dummy://path/to/nothing")}
+		var expectedResult = configuration.RealmConfiguration{DefaultRedirectURI: new("dummy://path/to/nothing")}
 		mockDB.EXPECT().QueryRow(gomock.Any(), realmID).Return(mockSQLRow)
 		mockSQLRow.EXPECT().Scan(gomock.Any()).DoAndReturn(func(ptrJSON *string) error {
 			*ptrJSON = toJSONString(expectedResult)
@@ -249,7 +249,7 @@ func TestBackOfficeConfiguration(t *testing.T) {
 		gomock.InOrder(
 			mockDB.EXPECT().Query(gomock.Any(), gomock.Any()).Return(mockSQLRows, nil),
 			mockSQLRows.EXPECT().Next().Return(true),
-			mockSQLRows.EXPECT().Scan(gomock.Any()).DoAndReturn(func(params ...interface{}) error {
+			mockSQLRows.EXPECT().Scan(gomock.Any()).DoAndReturn(func(params ...any) error {
 				// confType *string, realm *string, group *string
 				*(params[0].(*string)) = "a"
 				*(params[1].(*string)) = "b"
@@ -257,7 +257,7 @@ func TestBackOfficeConfiguration(t *testing.T) {
 				return nil
 			}),
 			mockSQLRows.EXPECT().Next().Return(true),
-			mockSQLRows.EXPECT().Scan(gomock.Any()).DoAndReturn(func(params ...interface{}) error {
+			mockSQLRows.EXPECT().Scan(gomock.Any()).DoAndReturn(func(params ...any) error {
 				// confType *string, realm *string, group *string
 				*(params[0].(*string)) = "a"
 				*(params[1].(*string)) = "b"
@@ -679,7 +679,7 @@ func TestThemeConfiguration(t *testing.T) {
 
 	t.Run("UpdateThemeConfiguration", func(t *testing.T) {
 		var themeConfig = configuration.ThemeConfiguration{
-			RealmName:    ptr(realmName),
+			RealmName:    new(realmName),
 			Settings:     &settings,
 			Logo:         logo,
 			Favicon:      favicon,
@@ -690,13 +690,13 @@ func TestThemeConfiguration(t *testing.T) {
 		var translationsJSON = `{"DE":{"key":"wert","welcome":"Willkommen"},"EN":{"key":"value","welcome":"Welcome"},"FR":{"key":"valeur","welcome":"Bienvenue"},"IT":{"key":"valore","welcome":"Benvenuto"}}`
 
 		t.Run("Success", func(t *testing.T) {
-			mockDB.EXPECT().Exec(updateThemeConfigStmt, ptr(realmName), settingsJSON, logo, favicon, translationsJSON).Return(nil, nil)
+			mockDB.EXPECT().Exec(updateThemeConfigStmt, new(realmName), settingsJSON, logo, favicon, translationsJSON).Return(nil, nil)
 			err := configDBModule.UpdateThemeConfiguration(ctx, themeConfig)
 			assert.Nil(t, err)
 		})
 
 		t.Run("SQL error", func(t *testing.T) {
-			mockDB.EXPECT().Exec(updateThemeConfigStmt, ptr(realmName), settingsJSON, logo, favicon, translationsJSON).Return(nil, sqlError)
+			mockDB.EXPECT().Exec(updateThemeConfigStmt, new(realmName), settingsJSON, logo, favicon, translationsJSON).Return(nil, sqlError)
 			err := configDBModule.UpdateThemeConfiguration(ctx, themeConfig)
 			assert.Equal(t, sqlError, err)
 		})

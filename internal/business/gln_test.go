@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"go.uber.org/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 type mockLookup struct {
@@ -14,10 +14,6 @@ type mockLookup struct {
 	glnList map[string]GlnSearchResult
 	delay   time.Duration
 	err     error
-}
-
-func ptr(value string) *string {
-	return &value
 }
 
 func newMockLookup(id int, delay time.Duration, err error) *mockLookup {
@@ -32,8 +28,8 @@ func newMockLookup(id int, delay time.Duration, err error) *mockLookup {
 func (m *mockLookup) Add(gln string) {
 	m.glnList[gln] = GlnSearchResult{
 		Persons: []GlnPerson{
-			{Number: ptr(gln), FirstName: ptr("Tom"), LastName: ptr("Thomaser")},
-			{Number: ptr(gln), FirstName: ptr("Nana"), LastName: ptr("Dubouchon")},
+			{Number: new(gln), FirstName: new("Tom"), LastName: new("Thomaser")},
+			{Number: new(gln), FirstName: new("Nana"), LastName: new("Dubouchon")},
 		},
 		Error: nil,
 	}
@@ -42,7 +38,7 @@ func (m *mockLookup) Add(gln string) {
 func (m *mockLookup) AddPerson(gln string, firstName *string, lastName *string) {
 	m.glnList[gln] = GlnSearchResult{
 		Persons: []GlnPerson{
-			{Number: ptr(gln), FirstName: firstName, LastName: lastName},
+			{Number: new(gln), FirstName: firstName, LastName: lastName},
 		},
 		Error: nil,
 	}
@@ -71,8 +67,8 @@ func TestGln(t *testing.T) {
 
 	var glnNilFirstName = "888888888"
 	var glnNilLastName = "333333333"
-	mockProviders[0].(*mockLookup).AddPerson(glnNilFirstName, nil, ptr("NameRandom1"))
-	mockProviders[0].(*mockLookup).AddPerson(glnNilLastName, ptr("NameRandom2"), nil)
+	mockProviders[0].(*mockLookup).AddPerson(glnNilFirstName, nil, new("NameRandom1"))
+	mockProviders[0].(*mockLookup).AddPerson(glnNilLastName, new("NameRandom2"), nil)
 
 	var glnVerifier = NewGlnVerifier()
 	t.Run("No GLN Lookup", func(t *testing.T) {
@@ -124,7 +120,7 @@ func TestGln(t *testing.T) {
 
 func TestCompare(t *testing.T) {
 	var verifier = &glnVerifier{}
-	var person = GlnPerson{Number: ptr("number"), FirstName: ptr("firstname"), LastName: ptr("lastname")}
+	var person = GlnPerson{Number: new("number"), FirstName: new("firstname"), LastName: new("lastname")}
 	assert.False(t, verifier.compare(person, "firstname", "lastname", "another"))
 	assert.False(t, verifier.compare(person, "firstname", "another", "number"))
 	assert.False(t, verifier.compare(person, "another", "lastname", "number"))
@@ -133,12 +129,12 @@ func TestCompare(t *testing.T) {
 	person.Number = nil
 	assert.False(t, verifier.compare(person, "firstname", "lastname", ""))
 
-	person = GlnPerson{Number: ptr("number"), FirstName: ptr("firstname"), LastName: nil}
+	person = GlnPerson{Number: new("number"), FirstName: new("firstname"), LastName: nil}
 	assert.True(t, verifier.compare(person, "firstname", "", "number"))
 
-	person = GlnPerson{Number: ptr("number"), FirstName: nil, LastName: ptr("lastname")}
+	person = GlnPerson{Number: new("number"), FirstName: nil, LastName: new("lastname")}
 	assert.True(t, verifier.compare(person, "", "lastname", "number"))
 
-	person = GlnPerson{Number: ptr(" number "), FirstName: ptr(" firstname "), LastName: ptr(" lastname ")}
+	person = GlnPerson{Number: new(" number "), FirstName: new(" firstname "), LastName: new(" lastname ")}
 	assert.True(t, verifier.compare(person, "  firstname", "lastname  ", "  number  "))
 }

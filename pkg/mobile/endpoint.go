@@ -14,7 +14,7 @@ type Endpoints struct {
 
 // MakeGetUserInformationEndpoint makes the GetUserInformation endpoint
 func MakeGetUserInformationEndpoint(component Component) cs.Endpoint {
-	return func(ctx context.Context, _ interface{}) (interface{}, error) {
+	return func(ctx context.Context, _ any) (any, error) {
 		return component.GetUserInformation(ctx)
 	}
 }

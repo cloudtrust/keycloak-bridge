@@ -49,10 +49,10 @@ func TestAuthorizationSetApply(t *testing.T) {
 	}
 
 	var authz = []configuration.Authorization{
-		{RealmID: ptr("realm11"), GroupName: ptr("group11"), Action: ptr("action1"), TargetRealmID: ptr("realm21"), TargetGroupName: ptr("group21")},
-		{RealmID: ptr("realm11"), GroupName: ptr("group11"), Action: ptr("action2"), TargetRealmID: ptr("realm22"), TargetGroupName: ptr("group22")},
-		{RealmID: ptr("realm11"), GroupName: ptr("group12"), Action: ptr("action1"), TargetRealmID: ptr("realm21"), TargetGroupName: ptr("group21")},
-		{RealmID: ptr("realm31"), GroupName: ptr("group11"), Action: ptr("action3"), TargetRealmID: ptr("realm23"), TargetGroupName: ptr("group22")},
+		{RealmID: new("realm11"), GroupName: new("group11"), Action: new("action1"), TargetRealmID: new("realm21"), TargetGroupName: new("group21")},
+		{RealmID: new("realm11"), GroupName: new("group11"), Action: new("action2"), TargetRealmID: new("realm22"), TargetGroupName: new("group22")},
+		{RealmID: new("realm11"), GroupName: new("group12"), Action: new("action1"), TargetRealmID: new("realm21"), TargetGroupName: new("group21")},
+		{RealmID: new("realm31"), GroupName: new("group11"), Action: new("action3"), TargetRealmID: new("realm23"), TargetGroupName: new("group22")},
 	}
 	var emptySet = []configuration.Authorization{}
 
