@@ -38,7 +38,7 @@ func TestHTTPManagementHandler(t *testing.T) {
 
 	var (
 		url      = "http://api.domain.ch/users/123456-7890-abcd-efghijkl"
-		endpoint = func(ctx context.Context, req interface{}) (interface{}, error) {
+		endpoint = func(ctx context.Context, req any) (any, error) {
 			var m = req.(map[string]string)
 			if realm, ok := m["realm"]; ok {
 				switch realm {

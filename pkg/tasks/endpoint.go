@@ -16,7 +16,7 @@ type Endpoints struct {
 
 // MakeDeleteUsersWithExpiredTermsOfUseAcceptanceEndpoint creates an endpoint for DeleteUsersWithExpiredTermsOfUseAcceptance
 func MakeDeleteUsersWithExpiredTermsOfUseAcceptanceEndpoint(component Component) cs.Endpoint {
-	return func(ctx context.Context, _ interface{}) (interface{}, error) {
+	return func(ctx context.Context, _ any) (any, error) {
 		return commonhttp.StatusNoContent{}, component.CleanUpAccordingToExpiredTermsOfUseAcceptance(ctx)
 	}
 }

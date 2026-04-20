@@ -15,7 +15,7 @@ type Endpoints struct {
 
 // MakeGetSupportInformationEndpoint creates an endpoint for GetSupportInformation
 func MakeGetSupportInformationEndpoint(component Component) cs.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, req any) (any, error) {
 		var email = req.(map[string]string)[prmQryEmail]
 		if email == "" {
 			return nil, errorhandler.CreateMissingParameterError(prmQryEmail)

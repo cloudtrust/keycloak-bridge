@@ -9,7 +9,7 @@ import (
 )
 
 func makeDummyEndpoint() cs.Endpoint {
-	return func(_ context.Context, _ interface{}) (response interface{}, err error) {
+	return func(_ context.Context, _ any) (response any, err error) {
 		return "dummy", nil
 	}
 }

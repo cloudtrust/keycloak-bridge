@@ -32,10 +32,6 @@ type componentMocks struct {
 	eventsReporter *mock.AuditEventsReporterModule
 }
 
-func ptrBool(value bool) *bool {
-	return &value
-}
-
 func createComponentMocks(mockCtrl *gomock.Controller) *componentMocks {
 	return &componentMocks{
 		tokenProvider:  mock.NewOidcTokenProvider(mockCtrl),
@@ -73,14 +69,14 @@ func TestCheckUserConsent(t *testing.T) {
 		assert.NotNil(t, err)
 	})
 	t.Run("Consent not required", func(t *testing.T) {
-		mocks.configDB.EXPECT().GetAdminConfiguration(ctx, confRealm).Return(configuration.RealmAdminConfiguration{ConsentRequiredSocial: ptrBool(false)}, nil)
+		mocks.configDB.EXPECT().GetAdminConfiguration(ctx, confRealm).Return(configuration.RealmAdminConfiguration{ConsentRequiredSocial: new(false)}, nil)
 		var err = component.checkUserConsent(ctx, accessToken, confRealm, targetRealm, userID, &consentCode, false)
 		assert.Nil(t, err)
 	})
 
 	mocks.configDB.EXPECT().GetAdminConfiguration(ctx, confRealm).Return(configuration.RealmAdminConfiguration{
-		ConsentRequiredSocial:             ptrBool(true),
-		ConsentRequiredCorporateAuxiliary: ptrBool(true),
+		ConsentRequiredSocial:             new(true),
+		ConsentRequiredCorporateAuxiliary: new(true),
 	}, nil).AnyTimes()
 
 	t.Run("Consent required but not provided", func(t *testing.T) {
@@ -354,7 +350,7 @@ func TestValidateUser(t *testing.T) {
 	var username = "user_name"
 	var kcUser = createUser(userID, username, true, true)
 	var accessToken = "abcdef"
-	var cfgConsentNotRequired = configuration.RealmAdminConfiguration{ConsentRequiredSocial: ptrBool(false), ConsentRequiredCorporateAuxiliary: ptrBool(false)}
+	var cfgConsentNotRequired = configuration.RealmAdminConfiguration{ConsentRequiredSocial: new(false), ConsentRequiredCorporateAuxiliary: new(false)}
 	var ctx = context.WithValue(context.TODO(), cs.CtContextRealm, targetRealm)
 
 	var mocks = createComponentMocks(mockCtrl)
@@ -595,7 +591,7 @@ func TestSendSmsConsentCode(t *testing.T) {
 		err := component.SendSmsConsentCodeInSocialRealm(ctx, userID)
 		assert.NotNil(t, err)
 	})
-	mocks.configDB.EXPECT().GetAdminConfiguration(ctx, tokenRealm).Return(configuration.RealmAdminConfiguration{ConsentRequiredSocial: ptrBool(true)}, nil).AnyTimes()
+	mocks.configDB.EXPECT().GetAdminConfiguration(ctx, tokenRealm).Return(configuration.RealmAdminConfiguration{ConsentRequiredSocial: new(true)}, nil).AnyTimes()
 
 	t.Run("Social SendSmsConsentCode-Keycloak call fails", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().SendConsentCodeSMS(accessToken, component.socialRealmName, userID).Return(anyError)
@@ -617,7 +613,7 @@ func TestSendSmsConsentCode(t *testing.T) {
 		err := component.SendSmsConsentCode(ctx, tokenRealm, userID)
 		assert.NotNil(t, err)
 	})
-	mocks.configDB.EXPECT().GetAdminConfiguration(ctx, tokenRealm).Return(configuration.RealmAdminConfiguration{ConsentRequiredCorporate: ptrBool(true)}, nil).AnyTimes()
+	mocks.configDB.EXPECT().GetAdminConfiguration(ctx, tokenRealm).Return(configuration.RealmAdminConfiguration{ConsentRequiredCorporate: new(true)}, nil).AnyTimes()
 
 	t.Run("Corporate SendSmsConsentCode-Keycloak call fails", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().SendConsentCodeSMS(accessToken, tokenRealm, userID).Return(anyError)
@@ -695,7 +691,7 @@ func createValidAttachment() apikyc.AttachmentRepresentation {
 		contentBase  = "basicvalueofsomecharacters"
 		contentBytes = []byte(contentBase + contentBase + contentBase + contentBase)
 	)
-	return apikyc.AttachmentRepresentation{Filename: ptr("filename.pdf"), ContentType: ptr("application/pdf"), Content: &contentBytes}
+	return apikyc.AttachmentRepresentation{Filename: new("filename.pdf"), ContentType: new("application/pdf"), Content: &contentBytes}
 }
 
 func TestZipAttachments(t *testing.T) {

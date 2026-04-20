@@ -35,10 +35,6 @@ const (
 	fedProvider2 = "provider-2"
 )
 
-func ptrBool(value bool) *bool {
-	return &value
-}
-
 type hasSingleAttributeValue struct {
 	Key   string
 	Value string
@@ -62,46 +58,46 @@ func (h hasSingleAttributeValue) String() string {
 
 func createTestKcIdp() kc.IdentityProviderRepresentation {
 	return kc.IdentityProviderRepresentation{
-		AddReadTokenRoleOnCreate:  ptrBool(false),
-		Alias:                     ptr(idpAlias),
-		AuthenticateByDefault:     ptrBool(false),
-		DisplayName:               ptr("TEST"),
-		Enabled:                   ptrBool(false),
-		FirstBrokerLoginFlowAlias: ptr("first broker login"),
-		HideOnLogin:               ptrBool(true),
-		InternalID:                ptr("0da3e7b1-6a99-4f73-92aa-86be96f4c2c5"),
-		LinkOnly:                  ptrBool(false),
-		PostBrokerLoginFlowAlias:  ptr("post broker login"),
-		ProviderID:                ptr("oidc"),
-		StoreToken:                ptrBool(false),
-		TrustEmail:                ptrBool(false),
+		AddReadTokenRoleOnCreate:  new(false),
+		Alias:                     new(idpAlias),
+		AuthenticateByDefault:     new(false),
+		DisplayName:               new("TEST"),
+		Enabled:                   new(false),
+		FirstBrokerLoginFlowAlias: new("first broker login"),
+		HideOnLogin:               new(true),
+		InternalID:                new("0da3e7b1-6a99-4f73-92aa-86be96f4c2c5"),
+		LinkOnly:                  new(false),
+		PostBrokerLoginFlowAlias:  new("post broker login"),
+		ProviderID:                new("oidc"),
+		StoreToken:                new(false),
+		TrustEmail:                new(false),
 	}
 }
 
 func createTestAPIIdp() api.IdentityProviderRepresentation {
 	return api.IdentityProviderRepresentation{
-		AddReadTokenRoleOnCreate:  ptrBool(false),
-		Alias:                     ptr(idpAlias),
-		AuthenticateByDefault:     ptrBool(false),
-		DisplayName:               ptr("TEST"),
-		Enabled:                   ptrBool(false),
-		FirstBrokerLoginFlowAlias: ptr("first broker login"),
-		HideOnLogin:               ptrBool(true),
-		InternalID:                ptr("0da3e7b1-6a99-4f73-92aa-86be96f4c2c5"),
-		LinkOnly:                  ptrBool(false),
-		PostBrokerLoginFlowAlias:  ptr("post broker login"),
-		ProviderID:                ptr("oidc"),
-		StoreToken:                ptrBool(false),
-		TrustEmail:                ptrBool(false),
+		AddReadTokenRoleOnCreate:  new(false),
+		Alias:                     new(idpAlias),
+		AuthenticateByDefault:     new(false),
+		DisplayName:               new("TEST"),
+		Enabled:                   new(false),
+		FirstBrokerLoginFlowAlias: new("first broker login"),
+		HideOnLogin:               new(true),
+		InternalID:                new("0da3e7b1-6a99-4f73-92aa-86be96f4c2c5"),
+		LinkOnly:                  new(false),
+		PostBrokerLoginFlowAlias:  new("post broker login"),
+		ProviderID:                new("oidc"),
+		StoreToken:                new(false),
+		TrustEmail:                new(false),
 	}
 }
 
 func createTestKcIdpMapper() kc.IdentityProviderMapperRepresentation {
 	return kc.IdentityProviderMapperRepresentation{
-		ID:                     ptr(mapperID),
-		Name:                   ptr("deviceId"),
-		IdentityProviderAlias:  ptr(idpAlias),
-		IdentityProviderMapper: ptr("ct-saml-in-memory-attribute-idp-mapper"),
+		ID:                     new(mapperID),
+		Name:                   new("deviceId"),
+		IdentityProviderAlias:  new(idpAlias),
+		IdentityProviderMapper: new("ct-saml-in-memory-attribute-idp-mapper"),
 		Config: map[string]string{
 			"syncMode":       "FORCE",
 			"auth.note.name": "deviceId",
@@ -113,10 +109,10 @@ func createTestKcIdpMapper() kc.IdentityProviderMapperRepresentation {
 
 func createTestAPIIdpMapper() api.IdentityProviderMapperRepresentation {
 	return api.IdentityProviderMapperRepresentation{
-		ID:                     ptr(mapperID),
-		Name:                   ptr("deviceId"),
-		IdentityProviderAlias:  ptr(idpAlias),
-		IdentityProviderMapper: ptr("ct-saml-in-memory-attribute-idp-mapper"),
+		ID:                     new(mapperID),
+		Name:                   new("deviceId"),
+		IdentityProviderAlias:  new(idpAlias),
+		IdentityProviderMapper: new("ct-saml-in-memory-attribute-idp-mapper"),
 		Config: map[string]string{
 			"syncMode":       "FORCE",
 			"auth.note.name": "deviceId",
@@ -135,10 +131,10 @@ func createTestComponent() kc.ComponentRepresentation {
 
 	return kc.ComponentRepresentation{
 		Config:       config,
-		ID:           ptr(compID),
-		ParentID:     ptr(realmName),
-		ProviderID:   ptr(compProviderID),
-		ProviderType: ptr(compProviderType),
+		ID:           new(compID),
+		ParentID:     new(realmName),
+		ProviderID:   new(compProviderID),
+		ProviderType: new(compProviderType),
 	}
 }
 
@@ -152,28 +148,28 @@ func createTestUpdatedComponent(comp kc.ComponentRepresentation) kc.ComponentRep
 
 func createTestKcFedIdentities() []kc.FederatedIdentityRepresentation {
 	kcFedIdentity1 := kc.FederatedIdentityRepresentation{
-		UserID:           ptr(fedUserID1),
-		UserName:         ptr(fedUsername1),
-		IdentityProvider: ptr(fedProvider1),
+		UserID:           new(fedUserID1),
+		UserName:         new(fedUsername1),
+		IdentityProvider: new(fedProvider1),
 	}
 	kcFedIdentity2 := kc.FederatedIdentityRepresentation{
-		UserID:           ptr(fedUserID2),
-		UserName:         ptr(fedUsername2),
-		IdentityProvider: ptr(fedProvider2),
+		UserID:           new(fedUserID2),
+		UserName:         new(fedUsername2),
+		IdentityProvider: new(fedProvider2),
 	}
 	return []kc.FederatedIdentityRepresentation{kcFedIdentity1, kcFedIdentity2}
 }
 
 func createTestAPIFedIdentities() []api.FederatedIdentityRepresentation {
 	apiFedIdentity1 := api.FederatedIdentityRepresentation{
-		UserID:           ptr(fedUserID1),
-		Username:         ptr(fedUsername1),
-		IdentityProvider: ptr(fedProvider1),
+		UserID:           new(fedUserID1),
+		Username:         new(fedUsername1),
+		IdentityProvider: new(fedProvider1),
 	}
 	apiFedIdentity2 := api.FederatedIdentityRepresentation{
-		UserID:           ptr(fedUserID2),
-		Username:         ptr(fedUsername2),
-		IdentityProvider: ptr(fedProvider2),
+		UserID:           new(fedUserID2),
+		Username:         new(fedUsername2),
+		IdentityProvider: new(fedProvider2),
 	}
 	return []api.FederatedIdentityRepresentation{apiFedIdentity1, apiFedIdentity2}
 }
@@ -248,7 +244,7 @@ func TestCreateIdentityProvider(t *testing.T) {
 
 	emptySettings := api.HrdSettingModel{}
 	settings := api.HrdSettingModel{
-		IPRangesList: ptr("192.168.0.1/24,127.0.0.1/8"),
+		IPRangesList: new("192.168.0.1/24,127.0.0.1/8"),
 		Priority:     0,
 	}
 
@@ -381,7 +377,7 @@ func TestUpdateIdentityProvider(t *testing.T) {
 
 	emptySettings := api.HrdSettingModel{}
 	settings := api.HrdSettingModel{
-		IPRangesList: ptr("192.168.0.1/24,127.0.0.1/8"),
+		IPRangesList: new("192.168.0.1/24,127.0.0.1/8"),
 		Priority:     0,
 	}
 
@@ -734,8 +730,8 @@ func TestGetUser(t *testing.T) {
 	var (
 		idpComponent  = mocks.createComponent()
 		userID        = "user-id"
-		expectedGroup = kc.GroupRepresentation{Name: ptr("the-group")}
-		anotherGroup  = kc.GroupRepresentation{Name: ptr("another-group")}
+		expectedGroup = kc.GroupRepresentation{Name: new("the-group")}
+		anotherGroup  = kc.GroupRepresentation{Name: new("another-group")}
 		token         = "technical-access-token"
 		anyError      = errors.New("any error")
 		ctx           = context.TODO()
@@ -826,9 +822,9 @@ func TestCheckUserIsInGroup(t *testing.T) {
 	var (
 		idpComponent = mocks.createComponent()
 		userID       = "user-id"
-		group1       = kc.GroupRepresentation{ID: ptr("group-id-1"), Name: ptr("group #1")}
-		group2       = kc.GroupRepresentation{ID: ptr("group-id-2"), Name: ptr("group #2")}
-		group3       = kc.GroupRepresentation{ID: ptr("group-id-3"), Name: ptr("group #3")}
+		group1       = kc.GroupRepresentation{ID: new("group-id-1"), Name: new("group #1")}
+		group2       = kc.GroupRepresentation{ID: new("group-id-2"), Name: new("group #2")}
+		group3       = kc.GroupRepresentation{ID: new("group-id-3"), Name: new("group #3")}
 		groupName    = *group2.Name
 		anyError     = errors.New("any error")
 		ctx          = context.TODO()
@@ -872,9 +868,9 @@ func TestGetUsersWithAttribute(t *testing.T) {
 
 	var (
 		idpComponent   = mocks.createComponent()
-		group          = kc.GroupRepresentation{ID: ptr("the-group-id"), Name: ptr("the-group-name")}
-		kcUser         = kc.UserRepresentation{ID: ptr("the-user-id"), Username: ptr("the-username")}
-		kcSearchResult = kc.UsersPageRepresentation{Count: ptrInt(2), Users: []kc.UserRepresentation{kcUser, kcUser}}
+		group          = kc.GroupRepresentation{ID: new("the-group-id"), Name: new("the-group-name")}
+		kcUser         = kc.UserRepresentation{ID: new("the-user-id"), Username: new("the-username")}
+		kcSearchResult = kc.UsersPageRepresentation{Count: new(2), Users: []kc.UserRepresentation{kcUser, kcUser}}
 		anyError       = errors.New("any error")
 		ctx            = context.TODO()
 	)
@@ -903,7 +899,7 @@ func TestGetUsersWithAttribute(t *testing.T) {
 	})
 
 	t.Run("UserPage count is 0 even if kcUser is not empty", func(t *testing.T) {
-		var emptySearchResult = kc.UsersPageRepresentation{Count: ptrInt(0), Users: []kc.UserRepresentation{kcUser, kcUser}}
+		var emptySearchResult = kc.UsersPageRepresentation{Count: new(0), Users: []kc.UserRepresentation{kcUser, kcUser}}
 		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return(accessToken, nil)
 		mocks.keycloakIdpClient.EXPECT().GetGroups(accessToken, realmName).Return([]kc.GroupRepresentation{group}, nil)
 		mocks.keycloakIdpClient.EXPECT().GetUsers(accessToken, realmName, realmName, "groupId", *group.ID).Return(emptySearchResult, nil)
@@ -930,28 +926,28 @@ func TestGetUsersWithAttribute(t *testing.T) {
 			}
 			return kcSearchResult, nil
 		})
-		res, err := idpComponent.GetUsersWithAttribute(ctx, realmName, nil, group.Name, map[string]string{key1: value1, key2: value2}, ptrBool(false))
+		res, err := idpComponent.GetUsersWithAttribute(ctx, realmName, nil, group.Name, map[string]string{key1: value1, key2: value2}, new(false))
 		assert.NoError(t, err)
 		assert.Len(t, res, 2)
 	})
 
 	t.Run("Can't get roles", func(t *testing.T) {
-		kcSearchResult = kc.UsersPageRepresentation{Count: ptrInt(1), Users: []kc.UserRepresentation{kcUser}}
+		kcSearchResult = kc.UsersPageRepresentation{Count: new(1), Users: []kc.UserRepresentation{kcUser}}
 		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return(accessToken, nil)
 		mocks.keycloakIdpClient.EXPECT().GetGroups(accessToken, realmName).Return([]kc.GroupRepresentation{group}, nil)
 		mocks.keycloakIdpClient.EXPECT().GetUsers(accessToken, realmName, realmName, gomock.Any()).Return(kcSearchResult, nil)
 		mocks.keycloakIdpClient.EXPECT().GetRealmLevelRoleMappings(accessToken, realmName, *kcSearchResult.Users[0].ID).Return(nil, anyError)
-		_, err := idpComponent.GetUsersWithAttribute(ctx, realmName, kcUser.Username, group.Name, map[string]string{}, ptrBool(true))
+		_, err := idpComponent.GetUsersWithAttribute(ctx, realmName, kcUser.Username, group.Name, map[string]string{}, new(true))
 		assert.Error(t, err)
 	})
 
 	t.Run("Success with roles", func(t *testing.T) {
-		kcSearchResult = kc.UsersPageRepresentation{Count: ptrInt(1), Users: []kc.UserRepresentation{kcUser}}
+		kcSearchResult = kc.UsersPageRepresentation{Count: new(1), Users: []kc.UserRepresentation{kcUser}}
 		mocks.tokenProvider.EXPECT().ProvideTokenForRealm(ctx, realmName).Return(accessToken, nil)
 		mocks.keycloakIdpClient.EXPECT().GetGroups(accessToken, realmName).Return([]kc.GroupRepresentation{group}, nil)
 		mocks.keycloakIdpClient.EXPECT().GetUsers(accessToken, realmName, realmName, gomock.Any()).Return(kcSearchResult, nil)
-		mocks.keycloakIdpClient.EXPECT().GetRealmLevelRoleMappings(accessToken, realmName, *kcSearchResult.Users[0].ID).Return([]kc.RoleRepresentation{{ID: ptr("role-id-1"), Name: ptr("role #1")}, {ID: ptr("role-id-2"), Name: ptr("role #2")}}, nil)
-		res, err := idpComponent.GetUsersWithAttribute(ctx, realmName, nil, group.Name, map[string]string{}, ptrBool(true))
+		mocks.keycloakIdpClient.EXPECT().GetRealmLevelRoleMappings(accessToken, realmName, *kcSearchResult.Users[0].ID).Return([]kc.RoleRepresentation{{ID: new("role-id-1"), Name: new("role #1")}, {ID: new("role-id-2"), Name: new("role #2")}}, nil)
+		res, err := idpComponent.GetUsersWithAttribute(ctx, realmName, nil, group.Name, map[string]string{}, new(true))
 		assert.NoError(t, err)
 		assert.Len(t, res, 1)
 		assert.Len(t, res[0].RealmRoles, 2)

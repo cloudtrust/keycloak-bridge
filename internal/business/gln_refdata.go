@@ -34,10 +34,10 @@ var (
 )
 
 type soapPartnerResponse struct {
-	XMLName xml.Name    `xml:"http://schemas.xmlsoap.org/soap/envelope/ Envelope"`
-	XSI     *string     `xml:"xmlns:xsi,attr"`
-	XSD     *string     `xml:"xmlns:xsd,attr"`
-	Header  interface{} `xml:"http://schemas.xmlsoap.org/soap/envelope/ Header"`
+	XMLName xml.Name `xml:"http://schemas.xmlsoap.org/soap/envelope/ Envelope"`
+	XSI     *string  `xml:"xmlns:xsi,attr"`
+	XSD     *string  `xml:"xmlns:xsd,attr"`
+	Header  any      `xml:"http://schemas.xmlsoap.org/soap/envelope/ Header"`
 	Body    struct {
 		Partner struct {
 			Creation  *string `xml:"CREATION_DATETIME,attr"`

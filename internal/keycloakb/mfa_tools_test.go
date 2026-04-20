@@ -18,9 +18,9 @@ func TestCheckRemovableMFA(t *testing.T) {
 	var passwordCredentialID = "cred-password"
 	var otherMFACredentialID = "cred-mfa2"
 	var anyError = errors.New("any error")
-	var credMyMFA = kc.CredentialRepresentation{ID: &myMFACredentialID, Type: ptr("any_mfa")}
-	var credPassword = kc.CredentialRepresentation{ID: &passwordCredentialID, Type: ptr("password")}
-	var credOtherMFA = kc.CredentialRepresentation{ID: &otherMFACredentialID, Type: ptr("any_mfa")}
+	var credMyMFA = kc.CredentialRepresentation{ID: &myMFACredentialID, Type: new("any_mfa")}
+	var credPassword = kc.CredentialRepresentation{ID: &passwordCredentialID, Type: new("password")}
+	var credOtherMFA = kc.CredentialRepresentation{ID: &otherMFACredentialID, Type: new("any_mfa")}
 
 	t.Run("Can't get credentials", func(t *testing.T) {
 		var err = CheckRemovableMFA(ctx, myMFACredentialID, false, func() ([]kc.CredentialRepresentation, error) { return nil, anyError }, logger)

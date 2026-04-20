@@ -86,9 +86,9 @@ type UpdatableUserRepresentation struct {
 	Gender               *string                        `json:"gender,omitempty"`
 	FirstName            *string                        `json:"firstName,omitempty"`
 	LastName             *string                        `json:"lastName,omitempty"`
-	Email                csjson.OptionalString          `json:"email,omitempty"`
+	Email                csjson.OptionalString          `json:"email"`
 	EmailVerified        *bool                          `json:"emailVerified,omitempty"`
-	PhoneNumber          csjson.OptionalString          `json:"phoneNumber,omitempty"`
+	PhoneNumber          csjson.OptionalString          `json:"phoneNumber"`
 	PhoneNumberVerified  *bool                          `json:"phoneNumberVerified,omitempty"`
 	BirthDate            *string                        `json:"birthDate,omitempty"`
 	BirthLocation        *string                        `json:"birthLocation,omitempty"`
@@ -100,7 +100,7 @@ type UpdatableUserRepresentation struct {
 	TrustIDGroups        *[]string                      `json:"trustIdGroups,omitempty"`
 	Roles                *[]string                      `json:"roles,omitempty"`
 	Locale               *string                        `json:"locale,omitempty"`
-	BusinessID           csjson.OptionalString          `json:"businessId,omitempty"`
+	BusinessID           csjson.OptionalString          `json:"businessId"`
 	SmsSent              *int                           `json:"smsSent,omitempty"`
 	SmsAttempts          *int                           `json:"smsAttempts,omitempty"`
 	Enabled              *bool                          `json:"enabled,omitempty"`
@@ -488,7 +488,7 @@ func ConvertCredential(credKc *kc.CredentialRepresentation) CredentialRepresenta
 }
 
 // ConvertAttackDetectionStatus creates a brute force status from a map
-func ConvertAttackDetectionStatus(status map[string]interface{}) AttackDetectionStatusRepresentation {
+func ConvertAttackDetectionStatus(status map[string]any) AttackDetectionStatusRepresentation {
 	var res AttackDetectionStatusRepresentation
 
 	res.NumFailures = convertEntryToInt64(&status, "numFailures")
@@ -507,7 +507,7 @@ func ConvertAttackDetectionStatus(status map[string]interface{}) AttackDetection
 	return res
 }
 
-func convertEntryToInt64(status *map[string]interface{}, key string) *int64 {
+func convertEntryToInt64(status *map[string]any, key string) *int64 {
 	if value, ok := (*status)[key]; ok && value != nil {
 		if conv, err := cast.ToInt64E(value); err == nil {
 			return &conv
@@ -983,7 +983,7 @@ func NewBackOfficeConfigurationFromJSON(confJSON string) (BackOfficeConfiguratio
 }
 
 // GetField is used to validate a user against a UserProfile
-func (user *UserRepresentation) GetField(field string) interface{} {
+func (user *UserRepresentation) GetField(field string) any {
 	switch field {
 	case fields.Username.Key():
 		return profile.IfNotNil(user.Username)
@@ -1023,7 +1023,7 @@ func (user *UserRepresentation) GetField(field string) interface{} {
 }
 
 // SetField is used to validate a user against a UserProfile
-func (user *UserRepresentation) SetField(field string, value interface{}) {
+func (user *UserRepresentation) SetField(field string, value any) {
 	switch field {
 	case fields.Username.Key():
 		user.Username = cs.ToStringPtr(value)
@@ -1082,7 +1082,7 @@ func (user UserRepresentation) Validate(ctx context.Context, upc profile.UserPro
 }
 
 // GetField is used to validate a user against a UserProfile
-func (user *UpdatableUserRepresentation) GetField(field string) interface{} {
+func (user *UpdatableUserRepresentation) GetField(field string) any {
 	switch field {
 	case fields.Username.Key():
 		return profile.IfNotNil(user.Username)
@@ -1121,7 +1121,7 @@ func (user *UpdatableUserRepresentation) GetField(field string) interface{} {
 	}
 }
 
-func toOptionalStringPtr(opt csjson.OptionalString) interface{} {
+func toOptionalStringPtr(opt csjson.OptionalString) any {
 	if !opt.Defined || opt.Value == nil {
 		return nil
 	}
@@ -1129,7 +1129,7 @@ func toOptionalStringPtr(opt csjson.OptionalString) interface{} {
 }
 
 // SetField is used to validate a user against a UserProfile
-func (user *UpdatableUserRepresentation) SetField(field string, value interface{}) {
+func (user *UpdatableUserRepresentation) SetField(field string, value any) {
 	switch field {
 	case fields.Username.Key():
 		user.Username = cs.ToStringPtr(value)

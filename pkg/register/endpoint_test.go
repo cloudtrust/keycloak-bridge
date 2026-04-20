@@ -11,8 +11,8 @@ import (
 	apiregister "github.com/cloudtrust/keycloak-bridge/api/register"
 	"github.com/cloudtrust/keycloak-bridge/pkg/register/mock"
 	kc "github.com/cloudtrust/keycloak-client/v2"
-	"go.uber.org/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 func TestMakeRegisterUserEndpoint(t *testing.T) {
@@ -25,19 +25,19 @@ func TestMakeRegisterUserEndpoint(t *testing.T) {
 		realm       = "my-realm"
 		socialRealm = "social-realm"
 		user        = apiregister.UserRepresentation{
-			FirstName:            ptr("John"),
-			LastName:             ptr("Doe"),
-			Gender:               ptr("M"),
-			Email:                ptr("email@domain.com"),
-			PhoneNumber:          ptr("+41220123456"),
-			BirthDate:            ptr("20.12.2012"),
-			BirthLocation:        ptr("Bern"),
-			Nationality:          ptr("CH"),
-			IDDocumentType:       ptr("PASSPORT"),
-			IDDocumentNumber:     ptr("012345678901234"),
-			IDDocumentExpiration: ptr("31.12.2059"),
-			IDDocumentCountry:    ptr("CH"),
-			Locale:               ptr("fr"),
+			FirstName:            new("John"),
+			LastName:             new("Doe"),
+			Gender:               new("M"),
+			Email:                new("email@domain.com"),
+			PhoneNumber:          new("+41220123456"),
+			BirthDate:            new("20.12.2012"),
+			BirthLocation:        new("Bern"),
+			Nationality:          new("CH"),
+			IDDocumentType:       new("PASSPORT"),
+			IDDocumentNumber:     new("012345678901234"),
+			IDDocumentExpiration: new("31.12.2059"),
+			IDDocumentCountry:    new("CH"),
+			Locale:               new("fr"),
 		}
 		anyError         = errors.New("any error")
 		m                = map[string]string{}
@@ -64,7 +64,7 @@ func TestMakeRegisterUserEndpoint(t *testing.T) {
 		mockProfileCache.EXPECT().GetRealmUserProfile(gomock.Any(), realm).Return(kc.UserProfileRepresentation{
 			Attributes: []kc.ProfileAttrbRepresentation{
 				{
-					Name: ptr("firstName"),
+					Name: new("firstName"),
 					Validations: kc.ProfileAttrbValidationRepresentation{
 						"ct-phonenumber": kc.ProfileAttrValidatorRepresentation{},
 					},

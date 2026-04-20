@@ -21,7 +21,7 @@ type Endpoints struct {
 
 // MakeSendEmailToUserEndpoint makes the SendEmailToUser Endpoint
 func MakeSendEmailToUserEndpoint(component Component) cs.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, req any) (any, error) {
 		var m = req.(map[string]string)
 		var body api.EmailRepresentation
 
@@ -40,7 +40,7 @@ func MakeSendEmailToUserEndpoint(component Component) cs.Endpoint {
 
 // MakeSendSMSEndpoint makes the SendSMS Endpoint
 func MakeSendSMSEndpoint(component Component) cs.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, req any) (any, error) {
 		var m = req.(map[string]string)
 		var body api.SMSRepresentation
 

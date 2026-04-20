@@ -153,7 +153,7 @@ func TestMakeUpdateAccountEndpoint(t *testing.T) {
 		profile = kc.UserProfileRepresentation{
 			Attributes: []kc.ProfileAttrbRepresentation{
 				{
-					Name:        ptr("phoneNumber"),
+					Name:        new("phoneNumber"),
 					Annotations: map[string]string{apiName: "true"},
 					Validations: kc.ProfileAttrbValidationRepresentation{
 						"pattern": kc.ProfileAttrValidatorRepresentation{"pattern": `^\+\d+$`},

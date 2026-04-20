@@ -255,7 +255,7 @@ func (u *UserRepresentation) Validate(ctx context.Context, upc profile.UserProfi
 }
 
 // GetField is used to validate a user against a UserProfile
-func (u *UserRepresentation) GetField(field string) interface{} {
+func (u *UserRepresentation) GetField(field string) any {
 	switch field {
 	case fields.Username.Key():
 		return profile.IfNotNil(u.Username)
@@ -293,7 +293,7 @@ func (u *UserRepresentation) GetField(field string) interface{} {
 }
 
 // SetField is used to validate a user against a UserProfile
-func (u *UserRepresentation) SetField(field string, value interface{}) {
+func (u *UserRepresentation) SetField(field string, value any) {
 	switch field {
 	case fields.Username.Key():
 		u.Username = cs.ToStringPtr(value)

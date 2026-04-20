@@ -164,7 +164,7 @@ func TestCreateUserEndpoint(t *testing.T) {
 	mockProfileCache.EXPECT().GetRealmUserProfile(ctx, targetRealm).Return(kc.UserProfileRepresentation{
 		Attributes: []kc.ProfileAttrbRepresentation{
 			{
-				Name: ptr("gender"),
+				Name: new("gender"),
 				Required: &kc.ProfileAttrbRequiredRepresentation{
 					Roles: []string{"admin"},
 				},
@@ -177,7 +177,7 @@ func TestCreateUserEndpoint(t *testing.T) {
 	}, nil).AnyTimes()
 
 	t.Run("No error", func(t *testing.T) {
-		var user = api.UserRepresentation{Gender: ptr("M"), Groups: &groups}
+		var user = api.UserRepresentation{Gender: new("M"), Groups: &groups}
 		userJSON, _ := json.Marshal(user)
 		var req = map[string]string{
 			reqScheme: "https",
@@ -289,7 +289,7 @@ func TestCreateUserInSocialRealmEndpoint(t *testing.T) {
 	mockProfileCache.EXPECT().GetRealmUserProfile(ctx, socialRealmName).Return(kc.UserProfileRepresentation{
 		Attributes: []kc.ProfileAttrbRepresentation{
 			{
-				Name: ptr("gender"),
+				Name: new("gender"),
 				Required: &kc.ProfileAttrbRequiredRepresentation{
 					Roles: []string{"admin"},
 				},
@@ -307,7 +307,7 @@ func TestCreateUserInSocialRealmEndpoint(t *testing.T) {
 			reqHost:   "elca.ch",
 			prmRealm:  targetRealm,
 		}
-		var user = api.UserRepresentation{Gender: ptr("M"), Groups: &groups}
+		var user = api.UserRepresentation{Gender: new("M"), Groups: &groups}
 
 		userJSON, _ := json.Marshal(user)
 		req[reqBody] = string(userJSON)
@@ -439,7 +439,7 @@ func TestUpdateUserEndpoint(t *testing.T) {
 		realm       = "the-realm"
 		targetRealm = "targetRealm"
 		userID      = "1234-452-4578"
-		theUser     = api.UserRepresentation{Gender: ptr("M")}
+		theUser     = api.UserRepresentation{Gender: new("M")}
 		ctx         = context.WithValue(context.TODO(), cs.CtContextRealm, realm)
 		anyError    = errors.New("any")
 	)
@@ -456,7 +456,7 @@ func TestUpdateUserEndpoint(t *testing.T) {
 	mockProfileCache.EXPECT().GetRealmUserProfile(ctx, targetRealm).Return(kc.UserProfileRepresentation{
 		Attributes: []kc.ProfileAttrbRepresentation{
 			{
-				Name: ptr("gender"),
+				Name: new("gender"),
 				Required: &kc.ProfileAttrbRequiredRepresentation{
 					Roles: []string{"admin"},
 				},

@@ -1154,7 +1154,7 @@ func MakeGetIdentityProvidersEndpoint(component Component) cs.Endpoint {
 
 // MakeGetThemeConfigurationEndpoint creates an endpoint for GetThemeConfiguration
 func MakeGetThemeConfigurationEndpoint(component Component) cs.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, req any) (any, error) {
 		var m = req.(map[string]string)
 
 		return component.GetThemeConfiguration(ctx, m[prmRealm])
@@ -1163,7 +1163,7 @@ func MakeGetThemeConfigurationEndpoint(component Component) cs.Endpoint {
 
 // MakeUpdateThemeConfigurationEndpoint creates an endpoint for UpdateThemeConfiguration
 func MakeUpdateThemeConfigurationEndpoint(component Component) cs.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, req any) (any, error) {
 		var m = req.(map[string]string)
 		var err error
 
@@ -1185,7 +1185,7 @@ func MakeUpdateThemeConfigurationEndpoint(component Component) cs.Endpoint {
 
 // MakeGetThemeTranslationEndpoint creates an endpoint for GetThemeTranslation
 func MakeGetThemeTranslationEndpoint(component Component) cs.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, req any) (any, error) {
 		var m = req.(map[string]string)
 
 		return component.GetThemeTranslation(ctx, m[prmRealm], m[prmQryLanguage])

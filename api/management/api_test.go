@@ -18,20 +18,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func ptr(value string) *string {
-	return &value
-}
-func boolPtr(value bool) *bool {
-	return &value
-}
-func intPtr(value int) *int {
-	return &value
-}
-
-func int64Ptr(value int64) *int64 {
-	return &value
-}
-
 func TestConvertCredential(t *testing.T) {
 	var credKc kc.CredentialRepresentation
 	var credType = "password"
@@ -53,11 +39,11 @@ func TestConvertCredential(t *testing.T) {
 
 func TestConvertAttackDetectionStatus(t *testing.T) {
 	t.Run("missing keys", func(t *testing.T) {
-		var status = map[string]interface{}{}
+		var status = map[string]any{}
 		assert.Equal(t, AttackDetectionStatusRepresentation{}, ConvertAttackDetectionStatus(status))
 	})
 	t.Run("nil values", func(t *testing.T) {
-		var status = map[string]interface{}{"numFailures": nil, "disabled": nil, "lastIPFailure": nil, "lastFailure": nil}
+		var status = map[string]any{"numFailures": nil, "disabled": nil, "lastIPFailure": nil, "lastFailure": nil}
 		var res = ConvertAttackDetectionStatus(status)
 		assert.Nil(t, res.NumFailures)
 		assert.Nil(t, res.Disabled)
@@ -65,7 +51,7 @@ func TestConvertAttackDetectionStatus(t *testing.T) {
 		assert.Nil(t, res.LastFailure)
 	})
 	t.Run("success", func(t *testing.T) {
-		var status = map[string]interface{}{"numFailures": "57", "disabled": "true", "lastIPFailure": "127.0.0.1", "lastFailure": "7"}
+		var status = map[string]any{"numFailures": "57", "disabled": "true", "lastIPFailure": "127.0.0.1", "lastFailure": "7"}
 		var res = ConvertAttackDetectionStatus(status)
 		assert.Equal(t, int64(57), *res.NumFailures)
 		assert.True(t, *res.Disabled)
@@ -310,36 +296,36 @@ func TestMarshalUserRepresentation(t *testing.T) {
 	userJSON := `{"id":"251d6e49-7b91-4677-889d-8e43a093bdf3","username":"50000003","gender":"M","firstName":"Jordan","lastName":"Peele","email":"testtrustid+jordan+peele@gmail.com","emailVerified":true,"phoneNumber":"+41780000000","phoneNumberVerified":true,"birthDate":"25.10.1978","birthLocation":"Haddonfield NJ","nationality":"CH","idDocumentType":"ID_CARD","idDocumentNumber":"A1234567","idDocumentExpiration":"20.06.2033","idDocumentCountry":"CH","locale":"en","smsSent":0,"smsAttempts":0,"enabled":true,"accreditations":[{"type":"DEP","expiryDate":"11.07.2029","revoked":false,"expired":false}],"onboardingCompleted":true,"createdTimestamp":1746715933372,"dynamicAttribute":"custom"}`
 
 	user := UserRepresentation{
-		ID:                   ptr("251d6e49-7b91-4677-889d-8e43a093bdf3"),
-		Username:             ptr("50000003"),
-		Gender:               ptr("M"),
-		FirstName:            ptr("Jordan"),
-		LastName:             ptr("Peele"),
-		Email:                ptr("testtrustid+jordan+peele@gmail.com"),
-		EmailVerified:        boolPtr(true),
-		PhoneNumber:          ptr("+41780000000"),
-		PhoneNumberVerified:  boolPtr(true),
-		BirthDate:            ptr("25.10.1978"),
-		BirthLocation:        ptr("Haddonfield NJ"),
-		Nationality:          ptr("CH"),
-		IDDocumentType:       ptr("ID_CARD"),
-		IDDocumentNumber:     ptr("A1234567"),
-		IDDocumentExpiration: ptr("20.06.2033"),
-		IDDocumentCountry:    ptr("CH"),
-		Locale:               ptr("en"),
-		SmsSent:              intPtr(0),
-		SmsAttempts:          intPtr(0),
-		Enabled:              boolPtr(true),
+		ID:                   new("251d6e49-7b91-4677-889d-8e43a093bdf3"),
+		Username:             new("50000003"),
+		Gender:               new("M"),
+		FirstName:            new("Jordan"),
+		LastName:             new("Peele"),
+		Email:                new("testtrustid+jordan+peele@gmail.com"),
+		EmailVerified:        new(true),
+		PhoneNumber:          new("+41780000000"),
+		PhoneNumberVerified:  new(true),
+		BirthDate:            new("25.10.1978"),
+		BirthLocation:        new("Haddonfield NJ"),
+		Nationality:          new("CH"),
+		IDDocumentType:       new("ID_CARD"),
+		IDDocumentNumber:     new("A1234567"),
+		IDDocumentExpiration: new("20.06.2033"),
+		IDDocumentCountry:    new("CH"),
+		Locale:               new("en"),
+		SmsSent:              new(0),
+		SmsAttempts:          new(0),
+		Enabled:              new(true),
 		Accreditations: &[]AccreditationRepresentation{
 			{
-				Type:       ptr("DEP"),
-				ExpiryDate: ptr("11.07.2029"),
-				Revoked:    boolPtr(false),
-				Expired:    boolPtr(false),
+				Type:       new("DEP"),
+				ExpiryDate: new("11.07.2029"),
+				Revoked:    new(false),
+				Expired:    new(false),
 			},
 		},
-		OnboardingCompleted: boolPtr(true),
-		CreatedTimestamp:    int64Ptr(1746715933372),
+		OnboardingCompleted: new(true),
+		CreatedTimestamp:    new(int64(1746715933372)),
 		Dynamic: map[string]any{
 			"dynamicAttribute": "custom",
 		},
@@ -526,8 +512,8 @@ func TestConvertRequiredAction(t *testing.T) {
 	var raKc kc.RequiredActionProviderRepresentation
 	var boolTrue = true
 
-	raKc.Alias = ptr("alias")
-	raKc.Name = ptr("name")
+	raKc.Alias = new("alias")
+	raKc.Name = new("name")
 	raKc.DefaultAction = &boolTrue
 
 	assert.Equal(t, raKc.Alias, ConvertRequiredAction(&raKc).Alias)
@@ -563,20 +549,20 @@ func TestFederatedIdentityRepresentation(t *testing.T) {
 
 func TestConvertToAPIIdentityProvider(t *testing.T) {
 	kcIdp := kc.IdentityProviderRepresentation{
-		AddReadTokenRoleOnCreate:  boolPtr(false),
-		Alias:                     ptr("testIDP"),
-		AuthenticateByDefault:     boolPtr(false),
+		AddReadTokenRoleOnCreate:  new(false),
+		Alias:                     new("testIDP"),
+		AuthenticateByDefault:     new(false),
 		Config:                    map[string]string{},
-		DisplayName:               ptr("TEST"),
-		Enabled:                   boolPtr(false),
-		FirstBrokerLoginFlowAlias: ptr("first broker login"),
-		HideOnLogin:               boolPtr(true),
-		InternalID:                ptr("0da3e7b1-6a99-4f73-92aa-86be96f4c2c5"),
-		LinkOnly:                  boolPtr(false),
-		PostBrokerLoginFlowAlias:  ptr("post broker login"),
-		ProviderID:                ptr("oidc"),
-		StoreToken:                boolPtr(false),
-		TrustEmail:                boolPtr(false),
+		DisplayName:               new("TEST"),
+		Enabled:                   new(false),
+		FirstBrokerLoginFlowAlias: new("first broker login"),
+		HideOnLogin:               new(true),
+		InternalID:                new("0da3e7b1-6a99-4f73-92aa-86be96f4c2c5"),
+		LinkOnly:                  new(false),
+		PostBrokerLoginFlowAlias:  new("post broker login"),
+		ProviderID:                new("oidc"),
+		StoreToken:                new(false),
+		TrustEmail:                new(false),
 	}
 	res := ConvertToAPIIdentityProvider(kcIdp)
 	assert.Equal(t, kcIdp.AddReadTokenRoleOnCreate, res.AddReadTokenRoleOnCreate)
@@ -625,18 +611,18 @@ func TestConvertRealmCustomConfiguration(t *testing.T) {
 		var bTrue = true
 		var groups = []string{"grp1", "grp2"}
 		var config = configuration.RealmConfiguration{
-			DefaultClientID:                   ptr("account"),
-			DefaultRedirectURI:                ptr("redirect-uri"),
+			DefaultClientID:                   new("account"),
+			DefaultRedirectURI:                new("redirect-uri"),
 			APISelfAccountEditingEnabled:      &bTrue,
-			RedirectCancelledRegistrationURL:  ptr("cancelled"),
-			RedirectSuccessfulRegistrationURL: ptr("successful"),
-			OnboardingRedirectURI:             ptr("onboarding"),
-			OnboardingClientID:                ptr("client"),
+			RedirectCancelledRegistrationURL:  new("cancelled"),
+			RedirectSuccessfulRegistrationURL: new("successful"),
+			OnboardingRedirectURI:             new("onboarding"),
+			OnboardingClientID:                new("client"),
 			SelfRegisterGroupNames:            groups,
-			BarcodeType:                       ptr("barcodetype"),
-			AllowedBackURL:                    ptr("back-url"),
+			BarcodeType:                       new("barcodetype"),
+			AllowedBackURL:                    new("back-url"),
 			OnboardingUserEditingEnabled:      &bTrue,
-			IdentificationURL:                 ptr("identification-url"),
+			IdentificationURL:                 new("identification-url"),
 		}
 		var res = ConvertRealmCustomConfigurationFromDBStruct(config)
 		assert.Equal(t, config.DefaultClientID, res.DefaultClientID)
@@ -691,36 +677,36 @@ func TestConvertRealmAdminConfiguration(t *testing.T) {
 		var config = configuration.RealmAdminConfiguration{
 			Mode:                                           &mode,
 			AvailableChecks:                                map[string]bool{"true": true, "false": false},
-			SelfRegisterEnabled:                            boolPtr(true),
-			BoTheme:                                        ptr("trustid1"),
-			SseTheme:                                       ptr("trustid2"),
-			RegisterTheme:                                  ptr("trustid3"),
-			SignerTheme:                                    ptr("trustid4"),
-			NeedVerifiedContact:                            boolPtr(false),
-			NeedVerifiedContactAuxiliary:                   boolPtr(false),
-			ConsentRequiredSocial:                          boolPtr(true),
-			ConsentRequiredCorporate:                       boolPtr(false),
-			ConsentRequiredCorporateAuxiliary:              boolPtr(false),
+			SelfRegisterEnabled:                            new(true),
+			BoTheme:                                        new("trustid1"),
+			SseTheme:                                       new("trustid2"),
+			RegisterTheme:                                  new("trustid3"),
+			SignerTheme:                                    new("trustid4"),
+			NeedVerifiedContact:                            new(false),
+			NeedVerifiedContactAuxiliary:                   new(false),
+			ConsentRequiredSocial:                          new(true),
+			ConsentRequiredCorporate:                       new(false),
+			ConsentRequiredCorporateAuxiliary:              new(false),
 			AccreditationRenewalWindowDays:                 new(30),
-			VideoIdentificationVoucherEnabled:              boolPtr(true),
-			VideoIdentificationAccountingEnabled:           boolPtr(true),
-			VideoIdentificationPrepaymentRequired:          boolPtr(true),
-			AuxiliaryVideoIdentificationVoucherEnabled:     boolPtr(true),
-			AuxiliaryVideoIdentificationAccountingEnabled:  boolPtr(true),
-			AuxiliaryVideoIdentificationPrepaymentRequired: boolPtr(true),
-			AutoIdentificationVoucherEnabled:               boolPtr(true),
-			AutoIdentificationAccountingEnabled:            boolPtr(true),
-			AutoIdentificationPrepaymentRequired:           boolPtr(true),
+			VideoIdentificationVoucherEnabled:              new(true),
+			VideoIdentificationAccountingEnabled:           new(true),
+			VideoIdentificationPrepaymentRequired:          new(true),
+			AuxiliaryVideoIdentificationVoucherEnabled:     new(true),
+			AuxiliaryVideoIdentificationAccountingEnabled:  new(true),
+			AuxiliaryVideoIdentificationPrepaymentRequired: new(true),
+			AutoIdentificationVoucherEnabled:               new(true),
+			AutoIdentificationAccountingEnabled:            new(true),
+			AutoIdentificationPrepaymentRequired:           new(true),
 			VideoIdentificationAllowedRoles:                []string{"role1"},
 			AuxiliaryVideoIdentificationAllowedRoles:       []string{"role2"},
 			AutoIdentificationAllowedRoles:                 []string{"role3"},
 			PhysicalIdentificationAllowedRoles:             []string{"role4"},
 			AuxiliaryPhysicalIdentificationAllowedRoles:    []string{"role5"},
-			OnboardingStatusEnabled:                        boolPtr(true),
-			AutoGeneratedUsernameEnabled:                   boolPtr(true),
-			AutoGeneratedUsernameToggleEnabled:             boolPtr(true),
-			BOExternalIDPManagementEnabled:                 boolPtr(true),
-			RegisterMode:                                   ptr("default"),
+			OnboardingStatusEnabled:                        new(true),
+			AutoGeneratedUsernameEnabled:                   new(true),
+			AutoGeneratedUsernameToggleEnabled:             new(true),
+			BOExternalIDPManagementEnabled:                 new(true),
+			RegisterMode:                                   new("default"),
 		}
 		var res = ConvertRealmAdminConfigurationFromDBStruct(config)
 		assert.Equal(t, mode, *res.Mode)
@@ -759,8 +745,8 @@ func TestConvertRealmAdminConfiguration(t *testing.T) {
 func createValidRealmAdminAccreditation() RealmAdminAccreditation {
 	return RealmAdminAccreditation{
 		Type:      nil,
-		Validity:  ptr("3y"),
-		Condition: ptr(configuration.CheckKeyIDNow),
+		Validity:  new("3y"),
+		Condition: new(configuration.CheckKeyIDNow),
 	}
 }
 
@@ -776,9 +762,9 @@ func TestValidateRealmAdminAccreditation(t *testing.T) {
 	}
 
 	accreds[0].Validity = nil
-	accreds[1].Validity = ptr("9z")
+	accreds[1].Validity = new("9z")
 	accreds[2].Condition = nil
-	accreds[3].Condition = ptr("NotAValidValue")
+	accreds[3].Condition = new("NotAValidValue")
 
 	for idx, accred := range accreds {
 		t.Run(fmt.Sprintf("Invalid case #%d", idx+1), func(t *testing.T) {
@@ -862,7 +848,7 @@ func TestGetSetUserField(t *testing.T) {
 	assert.Nil(t, user.GetField("not-existing-field"))
 }
 
-func testGetSetUserField(t *testing.T, fieldName string, value interface{}) {
+func testGetSetUserField(t *testing.T, fieldName string, value any) {
 	var user UserRepresentation
 	t.Run("Field "+fieldName, func(t *testing.T) {
 		assert.Nil(t, user.GetField(fieldName))
@@ -902,7 +888,7 @@ func TestGetSetUpdatableUserField(t *testing.T) {
 	assert.Nil(t, user.GetField("not-existing-field"))
 }
 
-func testGetSetUpdatableUserField(t *testing.T, fieldName string, value interface{}) {
+func testGetSetUpdatableUserField(t *testing.T, fieldName string, value any) {
 	var user UpdatableUserRepresentation
 	t.Run("Field "+fieldName, func(t *testing.T) {
 		assert.Nil(t, user.GetField(fieldName))
@@ -918,17 +904,17 @@ func TestValidateRoleRepresentation(t *testing.T) {
 	}
 
 	var roles []RoleRepresentation
-	for i := 0; i < 4; i++ {
+	for range 4 {
 		roles = append(roles, createValidRoleRepresentation())
 	}
 
 	var sixtyTwoCharsLong = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 	var tooLongDescription = strings.Join([]string{sixtyTwoCharsLong, sixtyTwoCharsLong, sixtyTwoCharsLong, sixtyTwoCharsLong, sixtyTwoCharsLong}, "")
 
-	roles[0].ID = ptr("f467ed7c")
-	roles[1].Name = ptr("name *")
+	roles[0].ID = new("f467ed7c")
+	roles[1].Name = new("name *")
 	roles[2].Description = &tooLongDescription
-	roles[3].ContainerID = ptr("")
+	roles[3].ContainerID = new("")
 
 	for _, role := range roles {
 		assert.NotNil(t, role.Validate())
@@ -942,12 +928,12 @@ func TestValidateGroupRepresentation(t *testing.T) {
 	}
 
 	var groups []GroupRepresentation
-	for i := 0; i < 2; i++ {
+	for range 2 {
 		groups = append(groups, createValidGroupRepresentation())
 	}
 
-	groups[0].ID = ptr("f467ed7c")
-	groups[1].Name = ptr("name *")
+	groups[0].ID = new("f467ed7c")
+	groups[1].Name = new("name *")
 
 	for _, group := range groups {
 		assert.NotNil(t, group.Validate())
@@ -979,13 +965,13 @@ func TestValidateRealmCustomConfiguration(t *testing.T) {
 		configs = append(configs, createValidRealmCustomConfiguration())
 	}
 
-	configs[0].DefaultClientID = ptr("something$invalid")
-	configs[1].DefaultRedirectURI = ptr("ht//tp://company.com")
-	configs[2].SelfServiceDefaultTab = ptr("")                      // Can't be empty
-	configs[3].SelfServiceDefaultTab = ptr("-abc-def")              // No heading dash
-	configs[4].SelfServiceDefaultTab = ptr("abc--def")              // Two dash in a row
-	configs[5].SelfServiceDefaultTab = ptr("abc-def-")              // No final dash
-	configs[6].SelfServiceDefaultTab = ptr("abcdefghijabcdefghijx") // Too long
+	configs[0].DefaultClientID = new("something$invalid")
+	configs[1].DefaultRedirectURI = new("ht//tp://company.com")
+	configs[2].SelfServiceDefaultTab = new("")                      // Can't be empty
+	configs[3].SelfServiceDefaultTab = new("-abc-def")              // No heading dash
+	configs[4].SelfServiceDefaultTab = new("abc--def")              // Two dash in a row
+	configs[5].SelfServiceDefaultTab = new("abc-def-")              // No final dash
+	configs[6].SelfServiceDefaultTab = new("abcdefghijabcdefghijx") // Too long
 	configs[7].AllowedBackURLs = []string{"ht//tp://company.com"}
 
 	for idx, config := range configs {
@@ -997,12 +983,12 @@ func TestValidateRealmCustomConfiguration(t *testing.T) {
 
 func createValidRealmAdminConfiguration() RealmAdminConfiguration {
 	return RealmAdminConfiguration{
-		Mode:            ptr("trustID"),
+		Mode:            new("trustID"),
 		AvailableChecks: map[string]bool{"IDNow": false, "physical-check": true},
-		BoTheme:         ptr("my-theme"),
-		SseTheme:        ptr("my-theme"),
-		RegisterTheme:   ptr("my-theme"),
-		SignerTheme:     ptr("my-theme"),
+		BoTheme:         new("my-theme"),
+		SseTheme:        new("my-theme"),
+		RegisterTheme:   new("my-theme"),
+		SignerTheme:     new("my-theme"),
 	}
 }
 
@@ -1033,22 +1019,22 @@ func TestValidateRealmAdminConfiguration(t *testing.T) {
 	})
 	t.Run("Invalid BO theme", func(t *testing.T) {
 		var realmAdminConf = createValidRealmAdminConfiguration()
-		realmAdminConf.BoTheme = ptr("")
+		realmAdminConf.BoTheme = new("")
 		assert.NotNil(t, realmAdminConf.Validate())
 	})
 	t.Run("Invalid SSE theme", func(t *testing.T) {
 		var realmAdminConf = createValidRealmAdminConfiguration()
-		realmAdminConf.SseTheme = ptr("")
+		realmAdminConf.SseTheme = new("")
 		assert.NotNil(t, realmAdminConf.Validate())
 	})
 	t.Run("Invalid Register theme", func(t *testing.T) {
 		var realmAdminConf = createValidRealmAdminConfiguration()
-		realmAdminConf.RegisterTheme = ptr("")
+		realmAdminConf.RegisterTheme = new("")
 		assert.NotNil(t, realmAdminConf.Validate())
 	})
 	t.Run("Invalid Signer theme", func(t *testing.T) {
 		var realmAdminConf = createValidRealmAdminConfiguration()
-		realmAdminConf.SignerTheme = ptr("")
+		realmAdminConf.SignerTheme = new("")
 		assert.NotNil(t, realmAdminConf.Validate())
 	})
 }
@@ -1094,21 +1080,21 @@ func createValidUserRepresentation() UserRepresentation {
 	boolTrue := true
 
 	var user = UserRepresentation{}
-	user.ID = ptr("f467ed7c-0a1d-4eee-9bb8-669c6f89c0ee")
-	user.Username = ptr("username")
-	user.Email = ptr("username@company.com")
+	user.ID = new("f467ed7c-0a1d-4eee-9bb8-669c6f89c0ee")
+	user.Username = new("username")
+	user.Email = new("username@company.com")
 	user.Enabled = &boolTrue
 	user.EmailVerified = &boolTrue
-	user.PhoneNumber = ptr("+415174234")
+	user.PhoneNumber = new("+415174234")
 	user.PhoneNumberVerified = &boolTrue
-	user.FirstName = ptr("Firstname")
-	user.LastName = ptr("Lastname")
-	user.Label = ptr("label")
-	user.Gender = ptr("F")
-	user.BirthDate = ptr("1990-12-28")
+	user.FirstName = new("Firstname")
+	user.LastName = new("Lastname")
+	user.Label = new("label")
+	user.Gender = new("F")
+	user.BirthDate = new("1990-12-28")
 	user.Groups = &groups
 	user.Roles = &roles
-	user.Locale = ptr("en")
+	user.Locale = new("en")
 
 	return user
 }
@@ -1119,20 +1105,20 @@ func createValidUpdatableUserRepresentation() UpdatableUserRepresentation {
 	boolTrue := true
 
 	var user = UpdatableUserRepresentation{}
-	user.ID = ptr("f467ed7c-0a1d-4eee-9bb8-669c6f89c0ee")
-	user.Username = ptr("username")
+	user.ID = new("f467ed7c-0a1d-4eee-9bb8-669c6f89c0ee")
+	user.Username = new("username")
 	user.Email = csjson.StringToOptional("username@company.com")
 	user.Enabled = &boolTrue
 	user.EmailVerified = &boolTrue
 	user.PhoneNumber = csjson.StringToOptional("+415174234")
 	user.PhoneNumberVerified = &boolTrue
-	user.FirstName = ptr("Firstname")
-	user.LastName = ptr("Lastname")
-	user.Label = ptr("label")
-	user.Gender = ptr("F")
-	user.BirthDate = ptr("1990-12-28")
+	user.FirstName = new("Firstname")
+	user.LastName = new("Lastname")
+	user.Label = new("label")
+	user.Gender = new("F")
+	user.BirthDate = new("1990-12-28")
 	user.Roles = &roles
-	user.Locale = ptr("en")
+	user.Locale = new("en")
 
 	return user
 }
@@ -1141,10 +1127,10 @@ func createValidRoleRepresentation() RoleRepresentation {
 	boolTrue := true
 
 	var role = RoleRepresentation{}
-	role.ID = ptr("f467ed7c-0a1d-4eee-9bb8-669c6f89c0ee")
-	role.Name = ptr("name")
-	role.Description = ptr("description")
-	role.ContainerID = ptr("12345678-abcd-beef-feed-123456781234")
+	role.ID = new("f467ed7c-0a1d-4eee-9bb8-669c6f89c0ee")
+	role.Name = new("name")
+	role.Description = new("description")
+	role.ContainerID = new("12345678-abcd-beef-feed-123456781234")
 	role.ClientRole = &boolTrue
 	role.Composite = &boolTrue
 
@@ -1190,13 +1176,13 @@ func TestConvertToAPIUserChecks(t *testing.T) {
 	assert.Len(t, ConvertToAPIUserChecks([]accreditationsclient.CheckRepresentation{}), 0)
 
 	var check = accreditationsclient.CheckRepresentation{
-		Operator:  ptr("operator"),
+		Operator:  new("operator"),
 		DateTime:  nil,
-		Status:    ptr("status"),
-		Type:      ptr("type"),
-		Nature:    ptr("nature"),
-		ProofType: ptr("ZIP"),
-		Comment:   ptr("comment"),
+		Status:    new("status"),
+		Type:      new("type"),
+		Nature:    new("nature"),
+		ProofType: new("ZIP"),
+		Comment:   new("comment"),
 	}
 	var checks = []accreditationsclient.CheckRepresentation{check, check, check}
 	var converted = ConvertToAPIUserChecks(checks)
@@ -1213,17 +1199,17 @@ func TestConvertToAPIUserChecks(t *testing.T) {
 
 func createValidRealmContextKey() RealmContextKeyRepresentation {
 	return RealmContextKeyRepresentation{
-		ID:                ptr("id"),
-		Label:             ptr("label"),
-		IdentitiesRealm:   ptr("identities-realm"),
+		ID:                new("id"),
+		Label:             new("label"),
+		IdentitiesRealm:   new("identities-realm"),
 		Config:            createValidContextKeyConfig(),
-		IsRegisterDefault: boolPtr(false),
+		IsRegisterDefault: new(false),
 	}
 }
 
 func createValidContextKeyConfig() *CtxKeyConfigRepresentation {
 	return &CtxKeyConfigRepresentation{
-		IdentificationURI: ptr("http://host/path/to/identification"),
+		IdentificationURI: new("http://host/path/to/identification"),
 		Onboarding:        createValidContextKeyOnboarding(),
 		Accreditation:     createValidContextKeyAccreditation(),
 		AutoVoucher:       createValidContextKeyAutoVoucher(),
@@ -1232,24 +1218,24 @@ func createValidContextKeyConfig() *CtxKeyConfigRepresentation {
 
 func createValidContextKeyOnboarding() CtxKeyOnboardingRepresentation {
 	return CtxKeyOnboardingRepresentation{
-		ClientID:       ptr("onboardingid-client"),
-		RedirectURI:    ptr("http://host/full/path"),
-		IsRedirectMode: boolPtr(true),
+		ClientID:       new("onboardingid-client"),
+		RedirectURI:    new("http://host/full/path"),
+		IsRedirectMode: new(true),
 	}
 }
 
 func createValidContextKeyAccreditation() CtxKeyAccreditationRepresentation {
 	return CtxKeyAccreditationRepresentation{
-		EmailThemeRealm: ptr("theme-realm"),
+		EmailThemeRealm: new("theme-realm"),
 	}
 }
 
 func createValidContextKeyAutoVoucher() CtxKeyAutoVoucherRepresentation {
 	return CtxKeyAutoVoucherRepresentation{
-		ServiceType:            ptr("AUTO_IDENTIFICATION"),
-		Validity:               ptr("3y"),
-		AccreditationRequested: ptr("DEP"),
-		BilledRealm:            ptr("billed-realm"),
+		ServiceType:            new("AUTO_IDENTIFICATION"),
+		Validity:               new("3y"),
+		AccreditationRequested: new("DEP"),
+		BilledRealm:            new("billed-realm"),
 	}
 }
 
@@ -1266,9 +1252,9 @@ func TestValidateRealmContextKeyRepresentation(t *testing.T) {
 
 	configs[0].ID = nil
 	configs[1].Label = nil
-	configs[2].Label = ptr("")
+	configs[2].Label = new("")
 	configs[3].IdentitiesRealm = nil
-	configs[4].IdentitiesRealm = ptr("")
+	configs[4].IdentitiesRealm = new("")
 	configs[5].Config = nil
 
 	for idx, config := range configs {
@@ -1339,16 +1325,16 @@ func TestValidateRealmContextKeys(t *testing.T) {
 	})
 	t.Run("Too many default context keys", func(t *testing.T) {
 		config := []RealmContextKeyRepresentation{createValidRealmContextKey(), createValidRealmContextKey()}
-		config[0].IsRegisterDefault = boolPtr(true)
-		config[1].IsRegisterDefault = boolPtr(true)
-		config[1].IdentitiesRealm = ptr("second-identities-realm")
+		config[0].IsRegisterDefault = new(true)
+		config[1].IsRegisterDefault = new(true)
+		config[1].IdentitiesRealm = new("second-identities-realm")
 		err := ValidateRealmContextKeys(config, true)
 		assert.NotNil(t, err)
 		assert.Contains(t, err.Error(), "toomany")
 	})
 	t.Run("Duplicated identities realm", func(t *testing.T) {
 		config := []RealmContextKeyRepresentation{createValidRealmContextKey(), createValidRealmContextKey()}
-		config[1].ID = ptr("second-id")
+		config[1].ID = new("second-id")
 		err := ValidateRealmContextKeys(config, true)
 		assert.Nil(t, err)
 	})
@@ -1366,9 +1352,9 @@ func TestValidateCtxKeyConfigRepresentation(t *testing.T) {
 	}
 
 	configs[0].Label = nil
-	configs[1].Label = ptr("")
+	configs[1].Label = new("")
 	configs[2].IdentitiesRealm = nil
-	configs[3].IdentitiesRealm = ptr("")
+	configs[3].IdentitiesRealm = new("")
 	configs[4].Config = nil
 
 	for idx, config := range configs {
@@ -1389,9 +1375,9 @@ func TestValidateCtxKeyOnboardingRepresentation(t *testing.T) {
 		configs = append(configs, createValidContextKeyOnboarding())
 	}
 
-	configs[0].ClientID = ptr("")
-	configs[1].RedirectURI = ptr("")
-	configs[2].RedirectURI = ptr("not.a.uri")
+	configs[0].ClientID = new("")
+	configs[1].RedirectURI = new("")
+	configs[2].RedirectURI = new("not.a.uri")
 
 	for idx, config := range configs {
 		t.Run(fmt.Sprintf("Invalid case #%d", idx+1), func(t *testing.T) {
@@ -1408,7 +1394,7 @@ func TestValidateCtxKeyAccreditationRepresentation(t *testing.T) {
 
 	t.Run("Invalid case", func(t *testing.T) {
 		config := CtxKeyAccreditationRepresentation{
-			EmailThemeRealm: ptr(""),
+			EmailThemeRealm: new(""),
 		}
 		assert.NotNil(t, config.Validate())
 	})
@@ -1425,10 +1411,10 @@ func TestValidateCtxKeyAutoVoucherRepresentation(t *testing.T) {
 		configs = append(configs, createValidContextKeyAutoVoucher())
 	}
 
-	configs[0].ServiceType = ptr("")
-	configs[1].Validity = ptr("")
-	configs[2].AccreditationRequested = ptr("")
-	configs[3].BilledRealm = ptr("")
+	configs[0].ServiceType = new("")
+	configs[1].Validity = new("")
+	configs[2].AccreditationRequested = new("")
+	configs[3].BilledRealm = new("")
 
 	for idx, config := range configs {
 		t.Run(fmt.Sprintf("Invalid case #%d", idx+1), func(t *testing.T) {
@@ -1440,11 +1426,11 @@ func TestValidateCtxKeyAutoVoucherRepresentation(t *testing.T) {
 func TestValidateUpdatableThemeConfiguration(t *testing.T) {
 	t.Run("Valid complete configuration", func(t *testing.T) {
 		config := UpdatableThemeConfiguration{
-			RealmName: ptr("realmName"),
+			RealmName: new("realmName"),
 			Settings: &ThemeConfigurationSettings{
-				Color:      ptr("#FFFFFF"),
-				MenuTheme:  ptr("light"),
-				FontFamily: ptr("Lato"),
+				Color:      new("#FFFFFF"),
+				MenuTheme:  new("light"),
+				FontFamily: new("Lato"),
 			},
 			// mock assets at least 1KB long and starting with correct bytes
 			Logo: func() []byte {
@@ -1471,7 +1457,7 @@ func TestValidateUpdatableThemeConfiguration(t *testing.T) {
 
 	t.Run("valid minimal configurations", func(t *testing.T) {
 		config := UpdatableThemeConfiguration{
-			RealmName: ptr("realmName"),
+			RealmName: new("realmName"),
 			Settings:  &ThemeConfigurationSettings{},
 		}
 		assert.Nil(t, config.Validate())
@@ -1481,16 +1467,16 @@ func TestValidateUpdatableThemeConfiguration(t *testing.T) {
 		var configs []UpdatableThemeConfiguration
 		for range 10 {
 			configs = append(configs, UpdatableThemeConfiguration{
-				RealmName: ptr("realmName"),
+				RealmName: new("realmName"),
 				Settings:  &ThemeConfigurationSettings{},
 			})
 		}
 
 		configs[0].RealmName = nil
-		configs[1].RealmName = ptr("")
-		configs[2].Settings.Color = ptr("not-a-hex-color-code")
-		configs[3].Settings.MenuTheme = ptr("not.a.valid.theme")        // not "light", "dark" or primary
-		configs[4].Settings.FontFamily = ptr("not-a-valid-font-family") // not Lato or Roboto
+		configs[1].RealmName = new("")
+		configs[2].Settings.Color = new("not-a-hex-color-code")
+		configs[3].Settings.MenuTheme = new("not.a.valid.theme")        // not "light", "dark" or primary
+		configs[4].Settings.FontFamily = new("not-a-valid-font-family") // not Lato or Roboto
 		configs[5].Logo = []byte{0x89, 0x50}                            // too small
 		configs[6].Logo = make([]byte, 1024)                            // not a png, jpeg or svg
 		configs[7].Favicon = []byte{0x3C, 0x73}                         // too small
@@ -1526,9 +1512,9 @@ func TestConvertToThemeConfiguration(t *testing.T) {
 	t.Run("Non-empty values", func(t *testing.T) {
 		var config = configuration.ThemeConfiguration{
 			Settings: &configuration.ThemeConfigurationSettings{
-				Color:      ptr("#FFFFFF"),
-				MenuTheme:  ptr("light"),
-				FontFamily: ptr("Lato"),
+				Color:      new("#FFFFFF"),
+				MenuTheme:  new("light"),
+				FontFamily: new("Lato"),
 			},
 			Logo:    []byte{0x89, 0x50, 0x4E, 0x47},
 			Favicon: []byte{0x3C, 0x73, 0x76, 0x67},
@@ -1547,7 +1533,7 @@ func TestConvertToThemeConfiguration(t *testing.T) {
 
 func TestContextKeyIDNowConversions(t *testing.T) {
 	idnowConfig := configuration.ContextKeyConfIDNow{
-		DesktopRedirectURI: ptr("http://redirect.uri/after/idnow"),
+		DesktopRedirectURI: new("http://redirect.uri/after/idnow"),
 	}
 
 	apiConfig := ConvertToAPIContextKeyIDNow(&idnowConfig)
@@ -1560,7 +1546,7 @@ func TestContextKeyIDNowConversions(t *testing.T) {
 func TestValidateCtxKeyIDNowRepresentation(t *testing.T) {
 	t.Run("Valid configuration", func(t *testing.T) {
 		config := configuration.ContextKeyConfIDNow{
-			DesktopRedirectURI: ptr("http://redirect.uri?theme=mytheme"),
+			DesktopRedirectURI: new("http://redirect.uri?theme=mytheme"),
 		}
 		apiConfig := ConvertToAPIContextKeyIDNow(&config)
 		assert.Nil(t, apiConfig.Validate())
@@ -1568,7 +1554,7 @@ func TestValidateCtxKeyIDNowRepresentation(t *testing.T) {
 
 	t.Run("Invalid configuration", func(t *testing.T) {
 		config := configuration.ContextKeyConfIDNow{
-			DesktopRedirectURI: ptr("not.a.valid.uri"),
+			DesktopRedirectURI: new("not.a.valid.uri"),
 		}
 		apiConfig := ConvertToAPIContextKeyIDNow(&config)
 		assert.NotNil(t, apiConfig.Validate())

@@ -7,10 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func ptr(value string) *string {
-	return &value
-}
-
 func TestProfileToAPI(t *testing.T) {
 	t.Run("Nil content", func(t *testing.T) {
 		var profile = kc.UserProfileRepresentation{Attributes: nil, Groups: nil}
@@ -37,7 +33,7 @@ func TestAttributesToAPI(t *testing.T) {
 		assert.Nil(t, res)
 	})
 	t.Run("Two elements", func(t *testing.T) {
-		var attrbs = []kc.ProfileAttrbRepresentation{{}, {Name: ptr("dummy")}}
+		var attrbs = []kc.ProfileAttrbRepresentation{{}, {Name: new("dummy")}}
 		var res = AttributesToAPI(attrbs, "")
 		assert.Len(t, res, len(attrbs))
 	})
@@ -157,9 +153,9 @@ func TestAttributeAnnotationsToAPI(t *testing.T) {
 func TestGroupsToAPI(t *testing.T) {
 	var grps = []kc.ProfileGroupRepresentation{
 		{
-			Name:               ptr("name"),
-			DisplayHeader:      ptr("display header"),
-			DisplayDescription: ptr("display description"),
+			Name:               new("name"),
+			DisplayHeader:      new("display header"),
+			DisplayDescription: new("display description"),
 			Annotations:        map[string]string{"key1": "value1", "key2": "value2"},
 		},
 		{},

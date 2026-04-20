@@ -107,7 +107,7 @@ func deleteAuthorization(executable dbExecutable, realmID string, groupName stri
 
 // Scanner used to get data from SQL cursors
 type Scanner interface {
-	Scan(...interface{}) error
+	Scan(...any) error
 }
 
 type configurationDBModule struct {
@@ -213,7 +213,7 @@ func (c *configurationDBModule) GetAdminConfiguration(ctx context.Context, realm
 
 func (c *configurationDBModule) GetBackOfficeConfiguration(ctx context.Context, realmID string, groupNames []string) (dto.BackOfficeConfiguration, error) {
 	var sqlRequest = strings.Replace(selectBOConfigStmt, "???", "?"+strings.Repeat(",?", len(groupNames)-1), 1)
-	var args = []interface{}{realmID}
+	var args = []any{realmID}
 	for _, grp := range groupNames {
 		args = append(args, grp)
 	}
@@ -505,7 +505,7 @@ func (c *configurationDBModule) GetThemeTranslation(ctx context.Context, realmNa
 	return translation.String, nil
 }
 
-func nullableString(value *string) interface{} {
+func nullableString(value *string) any {
 	if value != nil {
 		return value
 	}

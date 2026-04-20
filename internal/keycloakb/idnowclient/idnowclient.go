@@ -30,7 +30,7 @@ type IdentificationStatistics struct {
 
 // HTTPClient interface
 type HTTPClient interface {
-	Get(data interface{}, plugins ...plugin.Plugin) error
+	Get(data any, plugins ...plugin.Plugin) error
 }
 
 type idnowClient struct {

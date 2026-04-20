@@ -81,14 +81,6 @@ func (m *componentMocks) configureSetRealmContextKeys(ctx context.Context, custo
 	m.transaction.EXPECT().Close()
 }
 
-func ptrString(value string) *string {
-	return &value
-}
-
-func ptrBool(value bool) *bool {
-	return &value
-}
-
 func TestGetActions(t *testing.T) {
 	var mockCtrl = gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -460,10 +452,10 @@ func TestCreateUser(t *testing.T) {
 
 	t.Run("Create user with username generation, don't need terms of use", func(t *testing.T) {
 		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, socialRealmName).Return(configuration.RealmAdminConfiguration{
-			OnboardingStatusEnabled: ptrBool(false),
+			OnboardingStatusEnabled: new(false),
 		}, nil)
 		mocks.onboardingModule.EXPECT().CreateUser(ctx, accessToken, realmName, socialRealmName, gomock.Any(), false).
-			DoAndReturn(func(_, _, _, _ interface{}, user *kc.UserRepresentation, _ interface{}) (string, error) {
+			DoAndReturn(func(_, _, _, _ any, user *kc.UserRepresentation, _ any) (string, error) {
 				assert.NotNil(t, user)
 				assert.Nil(t, user.RequiredActions)
 				return "", anyError
@@ -476,10 +468,10 @@ func TestCreateUser(t *testing.T) {
 	})
 	t.Run("Create user with username generation, need terms of use", func(t *testing.T) {
 		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, socialRealmName).Return(configuration.RealmAdminConfiguration{
-			OnboardingStatusEnabled: ptrBool(false),
+			OnboardingStatusEnabled: new(false),
 		}, nil)
 		mocks.onboardingModule.EXPECT().CreateUser(ctx, accessToken, realmName, socialRealmName, gomock.Any(), true).
-			DoAndReturn(func(_, _, _, _ interface{}, user *kc.UserRepresentation, _ interface{}) (string, error) {
+			DoAndReturn(func(_, _, _, _ any, user *kc.UserRepresentation, _ any) (string, error) {
 				assert.NotNil(t, user)
 				assert.NotNil(t, user.RequiredActions)
 				assert.Len(t, *user.RequiredActions, 1)
@@ -503,7 +495,7 @@ func TestCreateUser(t *testing.T) {
 		}
 
 		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, targetRealmName).Return(configuration.RealmAdminConfiguration{
-			OnboardingStatusEnabled: ptrBool(false),
+			OnboardingStatusEnabled: new(false),
 		}, nil)
 		mocks.keycloakClient.EXPECT().CreateUser(accessToken, realmName, targetRealmName, kcUserRep, "generateNameID", "false").Return(locationURL, nil)
 		mocks.eventsReporter.EXPECT().ReportEvent(gomock.Any(), gomock.Any())
@@ -552,10 +544,10 @@ func TestCreateUser(t *testing.T) {
 		ctx = context.WithValue(ctx, cs.CtContextUsername, username)
 
 		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, targetRealmName).Return(configuration.RealmAdminConfiguration{
-			OnboardingStatusEnabled: ptrBool(true),
+			OnboardingStatusEnabled: new(true),
 		}, nil)
 		mocks.keycloakClient.EXPECT().CreateUser(accessToken, realmName, targetRealmName, gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
-			func(accessToken, realmName, targetRealmName string, kcUserRep kc.UserRepresentation, _ ...interface{}) (string, error) {
+			func(accessToken, realmName, targetRealmName string, kcUserRep kc.UserRepresentation, _ ...any) (string, error) {
 				assert.Equal(t, username, *kcUserRep.Username)
 				assert.Equal(t, email, *kcUserRep.Email)
 				assert.Equal(t, enabled, *kcUserRep.Enabled)
@@ -613,7 +605,7 @@ func TestCreateUser(t *testing.T) {
 		ctx = context.WithValue(ctx, cs.CtContextRealm, realmName)
 
 		mocks.configurationDBModule.EXPECT().GetAdminConfiguration(ctx, targetRealmName).Return(configuration.RealmAdminConfiguration{
-			OnboardingStatusEnabled: ptrBool(true),
+			OnboardingStatusEnabled: new(true),
 		}, nil)
 		mocks.keycloakClient.EXPECT().CreateUser(accessToken, realmName, targetRealmName, kcUserRep, "generateNameID", "false").Return("", fmt.Errorf("Invalid input"))
 
@@ -664,7 +656,7 @@ func TestCreateUserInSocialRealm(t *testing.T) {
 		assert.Equal(t, anyError, err)
 	})
 	t.Run("onAlreadyExistsUser", func(t *testing.T) {
-		var err = managementComponent.onAlreadyExistsUser("", "", 0, ptr(""))
+		var err = managementComponent.onAlreadyExistsUser("", "", 0, new(""))
 		assert.IsType(t, errorhandler.Error{}, err)
 		var errWithDetails = err.(errorhandler.Error)
 		assert.Equal(t, http.StatusConflict, errWithDetails.Status)
@@ -781,8 +773,8 @@ func TestGetUser(t *testing.T) {
 		mocks.profileCache.EXPECT().GetRealmUserProfile(ctx, realmName).Return(kc.UserProfileRepresentation{}, nil)
 
 		mocks.accreditationsClient.EXPECT().GetPendingChecks(ctx, realmName, id).Return([]accreditationsclient.CheckRepresentation{{
-			Nature:   ptr("nature"),
-			Status:   ptr("PENDING"),
+			Nature:   new("nature"),
+			Status:   new("PENDING"),
 			DateTime: &now,
 		}}, nil)
 
@@ -860,8 +852,8 @@ func TestGetUser(t *testing.T) {
 		mocks.profileCache.EXPECT().GetRealmUserProfile(ctx, realmName).Return(kc.UserProfileRepresentation{}, nil)
 
 		mocks.accreditationsClient.EXPECT().GetPendingChecks(ctx, realmName, id).Return([]accreditationsclient.CheckRepresentation{{
-			Nature:   ptr("nature"),
-			Status:   ptr("PENDING"),
+			Nature:   new("nature"),
+			Status:   new("PENDING"),
 			DateTime: &now,
 		}}, nil)
 
@@ -1032,7 +1024,7 @@ func TestUpdateUser(t *testing.T) {
 
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, socialRealmName, id).Return(kcUserRep, nil)
 		mocks.accreditationsClient.EXPECT().NotifyUpdate(ctx, gomock.Any()).Return(nil, nil)
-		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, socialRealmName, id, gomock.Any()).DoAndReturn(func(_, _, _ interface{}, updUser kc.UserRepresentation) error {
+		mocks.keycloakClient.EXPECT().UpdateUser(accessToken, socialRealmName, id, gomock.Any()).DoAndReturn(func(_, _, _ any, updUser kc.UserRepresentation) error {
 			assert.NotEqual(t, userWithNewUsername.Username, updUser.Username)
 			assert.Equal(t, userRep.Username, updUser.Username)
 			return anyError
@@ -1043,7 +1035,7 @@ func TestUpdateUser(t *testing.T) {
 
 		assert.Equal(t, anyError, err)
 	})
-	mocks.configurationDBModule.EXPECT().GetAdminConfiguration(gomock.Any(), gomock.Any()).Return(configuration.RealmAdminConfiguration{SelfRegisterEnabled: ptrBool(false)}, nil).AnyTimes()
+	mocks.configurationDBModule.EXPECT().GetAdminConfiguration(gomock.Any(), gomock.Any()).Return(configuration.RealmAdminConfiguration{SelfRegisterEnabled: new(false)}, nil).AnyTimes()
 
 	t.Run("Update user with succces (without user info update)", func(t *testing.T) {
 		mocks.keycloakClient.EXPECT().GetUser(accessToken, realmName, id).Return(kcUserRep, nil)
@@ -1330,8 +1322,8 @@ func TestUpdateUser(t *testing.T) {
 
 func TestIsEmailVerified(t *testing.T) {
 	assert.False(t, isEmailVerified(kc.UserRepresentation{EmailVerified: nil}))
-	assert.False(t, isEmailVerified(kc.UserRepresentation{EmailVerified: ptrBool(false)}))
-	assert.True(t, isEmailVerified(kc.UserRepresentation{EmailVerified: ptrBool(true)}))
+	assert.False(t, isEmailVerified(kc.UserRepresentation{EmailVerified: new(false)}))
+	assert.True(t, isEmailVerified(kc.UserRepresentation{EmailVerified: new(true)}))
 }
 
 func TestIsPhoneNumberVerified(t *testing.T) {
@@ -1610,7 +1602,7 @@ func TestGetUserAccountStatusByEmail(t *testing.T) {
 	var searchedUser = kc.UserRepresentation{
 		ID:      &userID,
 		Email:   &email,
-		Enabled: ptrBool(true),
+		Enabled: new(true),
 		Attributes: &kc.Attributes{
 			constants.AttrbPhoneNumberVerified: []string{"true"},
 			constants.AttrbOnboardingCompleted: []string{"true"},
@@ -1639,8 +1631,8 @@ func TestGetUserAccountStatusByEmail(t *testing.T) {
 		var users = []kc.UserRepresentation{{}, {}, {}}
 		var count = len(users)
 		users[0].Email = nil
-		users[1].Email = ptrString("a" + email)
-		users[2].Email = ptrString("b" + email)
+		users[1].Email = new("a" + email)
+		users[2].Email = new("b" + email)
 		mocks.keycloakClient.EXPECT().GetUsers(accessToken, realmReq, realmName, "email", "="+email).Return(kc.UsersPageRepresentation{
 			Count: &count,
 			Users: users,
@@ -2826,7 +2818,7 @@ func TestSendOnboardingEmail(t *testing.T) {
 		mocks.onboardingModule.EXPECT().OnboardingAlreadyCompleted(gomock.Any()).Return(false, nil)
 		mocks.configurationDBModule.EXPECT().GetContextKeysForCustomerRealm(ctx, realmName).Return([]configuration.RealmContextKey{}, nil)
 
-		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, realmName, false, ptr("my-invalid-context-key"))
+		err := managementComponent.SendOnboardingEmail(ctx, realmName, userID, realmName, false, new("my-invalid-context-key"))
 		assert.NotNil(t, err)
 	})
 
@@ -2969,8 +2961,8 @@ func TestDeleteCredentialsForUser(t *testing.T) {
 	var realmReq = "master"
 	var realmName = "master"
 	var userID = "1245-7854-8963"
-	var credMfa1 = kc.CredentialRepresentation{ID: ptr("cred-mfa-1"), Type: ptr("any-mfa")}
-	var credMfa2 = kc.CredentialRepresentation{ID: ptr("cred-mfa-2"), Type: ptr("any-mfa")}
+	var credMfa1 = kc.CredentialRepresentation{ID: new("cred-mfa-1"), Type: new("any-mfa")}
+	var credMfa2 = kc.CredentialRepresentation{ID: new("cred-mfa-2"), Type: new("any-mfa")}
 	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
 	ctx = context.WithValue(ctx, cs.CtContextRealm, realmReq)
 
@@ -3093,7 +3085,7 @@ func TestGetAttackDetectionStatus(t *testing.T) {
 	var realm = "master"
 	var userID = "1245-7854-8963"
 	var ctx = context.WithValue(context.TODO(), cs.CtContextAccessToken, accessToken)
-	var kcResult = map[string]interface{}{}
+	var kcResult = map[string]any{}
 
 	mocks.logger.EXPECT().Warn(gomock.Any(), gomock.Any()).AnyTimes()
 
@@ -3873,7 +3865,7 @@ func TestUpdateAuthorizations(t *testing.T) {
 			mocks.keycloakClient.EXPECT().GetRealm(accessToken, targetRealmName).Return(realms[0], nil),
 			mocks.keycloakClient.EXPECT().GetGroups(accessToken, targetRealmName).Return(groups, nil),
 			mocks.configurationDBModule.EXPECT().GetAuthorizations(gomock.Any(), targetRealmName, groupName).Return([]configuration.Authorization{
-				{RealmID: ptr("realm"), GroupName: ptr("group"), Action: ptr("action"), TargetRealmID: ptr("target-realm"), TargetGroupName: ptr("target-group")},
+				{RealmID: new("realm"), GroupName: new("group"), Action: new("action"), TargetRealmID: new("target-realm"), TargetGroupName: new("target-group")},
 			}, nil),
 			mocks.configurationDBModule.EXPECT().NewTransaction(ctx).Return(mocks.transaction, nil),
 			// Add authorizations
@@ -4616,12 +4608,12 @@ func TestDeleteClientRole(t *testing.T) {
 	var roleID = "123-456-789"
 
 	var role = kc.RoleRepresentation{
-		ID:          ptrString("1234-7454-4516"),
-		Name:        ptrString("name"),
-		ClientRole:  ptrBool(true),
-		Composite:   ptrBool(false),
-		ContainerID: ptrString("456-789-147"),
-		Description: ptrString("description role"),
+		ID:          new("1234-7454-4516"),
+		Name:        new("name"),
+		ClientRole:  new(true),
+		Composite:   new(false),
+		ContainerID: new("456-789-147"),
+		Description: new("description role"),
 	}
 
 	var ctx = context.WithValue(context.Background(), cs.CtContextAccessToken, accessToken)
@@ -4653,12 +4645,12 @@ func TestDeleteClientRole(t *testing.T) {
 
 	t.Run("Delete not a client role", func(t *testing.T) {
 		var role = kc.RoleRepresentation{
-			ID:          ptrString("1234-7454-4516"),
-			Name:        ptrString("name"),
-			ClientRole:  ptrBool(false),
-			Composite:   ptrBool(false),
-			ContainerID: ptrString(""),
-			Description: ptrString("description role"),
+			ID:          new("1234-7454-4516"),
+			Name:        new("name"),
+			ClientRole:  new(false),
+			Composite:   new(false),
+			ContainerID: new(""),
+			Description: new("description role"),
 		}
 
 		mocks.keycloakClient.EXPECT().GetRole(accessToken, realmName, roleID).Return(role, nil)
@@ -4670,12 +4662,12 @@ func TestDeleteClientRole(t *testing.T) {
 
 	t.Run("Delete clientID != containerID", func(t *testing.T) {
 		var role = kc.RoleRepresentation{
-			ID:          ptrString("1234-7454-4516"),
-			Name:        ptrString("name"),
-			ClientRole:  ptrBool(true),
-			Composite:   ptrBool(false),
-			ContainerID: ptrString("otherCLIENT"),
-			Description: ptrString("description role"),
+			ID:          new("1234-7454-4516"),
+			Name:        new("name"),
+			ClientRole:  new(true),
+			Composite:   new(false),
+			ContainerID: new("otherCLIENT"),
+			Description: new("description role"),
 		}
 
 		mocks.keycloakClient.EXPECT().GetRole(accessToken, realmName, roleID).Return(role, nil)
@@ -5176,7 +5168,7 @@ func TestSetRealmContextKeysConfiguration(t *testing.T) {
 		mocks.configurationDBModule.EXPECT().GetAllContextKeyID(ctx).Return([]string{"new-id"}, nil)
 
 		var err = mgmtComponent.SetRealmContextKeysConfiguration(ctx, customerRealm, []api.RealmContextKeyRepresentation{
-			{ID: ptr("new-id"), Label: ptr(""), IdentitiesRealm: ptr(""), Config: &api.CtxKeyConfigRepresentation{}},
+			{ID: new("new-id"), Label: new(""), IdentitiesRealm: new(""), Config: &api.CtxKeyConfigRepresentation{}},
 		})
 		assert.NotNil(t, err)
 		assert.Contains(t, err.Error(), msg.MsgErrInvalidParam)
@@ -5206,7 +5198,7 @@ func TestSetRealmContextKeysConfiguration(t *testing.T) {
 		mocks.configurationDBModule.EXPECT().StoreContextKeyConfiguration(ctx, mocks.transaction, gomock.Any()).Return(updError)
 
 		var err = mgmtComponent.SetRealmContextKeysConfiguration(ctx, customerRealm, []api.RealmContextKeyRepresentation{
-			{ID: &existingKey, Label: ptr("label"), IdentitiesRealm: ptr("identities"), Config: &api.CtxKeyConfigRepresentation{}},
+			{ID: &existingKey, Label: new("label"), IdentitiesRealm: new("identities"), Config: &api.CtxKeyConfigRepresentation{}},
 		})
 		assert.Equal(t, updError, err)
 	})
@@ -5219,7 +5211,7 @@ func TestSetRealmContextKeysConfiguration(t *testing.T) {
 		mocks.transaction.EXPECT().Commit().Return(commitError)
 
 		var err = mgmtComponent.SetRealmContextKeysConfiguration(ctx, customerRealm, []api.RealmContextKeyRepresentation{
-			{ID: ptr("new-id"), Label: ptr("label"), IdentitiesRealm: ptr("identities"), Config: &api.CtxKeyConfigRepresentation{}},
+			{ID: new("new-id"), Label: new("label"), IdentitiesRealm: new("identities"), Config: &api.CtxKeyConfigRepresentation{}},
 		})
 		assert.Equal(t, commitError, err)
 	})
@@ -5230,7 +5222,7 @@ func TestSetRealmContextKeysConfiguration(t *testing.T) {
 		mocks.transaction.EXPECT().Commit().Return(nil)
 
 		var err = mgmtComponent.SetRealmContextKeysConfiguration(ctx, customerRealm, []api.RealmContextKeyRepresentation{
-			{ID: ptr("new-id"), Label: ptr("label"), IdentitiesRealm: ptr("identities"), Config: &api.CtxKeyConfigRepresentation{}},
+			{ID: new("new-id"), Label: new("label"), IdentitiesRealm: new("identities"), Config: &api.CtxKeyConfigRepresentation{}},
 		})
 		assert.Nil(t, err)
 	})
@@ -5359,20 +5351,20 @@ func TestUnlinkShadowUser(t *testing.T) {
 }
 func testKcIdp() kc.IdentityProviderRepresentation {
 	return kc.IdentityProviderRepresentation{
-		AddReadTokenRoleOnCreate:  ptrBool(false),
-		Alias:                     ptr(idpAlias),
-		AuthenticateByDefault:     ptrBool(false),
+		AddReadTokenRoleOnCreate:  new(false),
+		Alias:                     new(idpAlias),
+		AuthenticateByDefault:     new(false),
 		Config:                    map[string]string{},
-		DisplayName:               ptr("TEST"),
-		Enabled:                   ptrBool(false),
-		FirstBrokerLoginFlowAlias: ptr("first broker login"),
-		HideOnLogin:               ptrBool(true),
-		InternalID:                ptr("0da3e7b1-6a99-4f73-92aa-86be96f4c2c5"),
-		LinkOnly:                  ptrBool(false),
-		PostBrokerLoginFlowAlias:  ptr("post broker login"),
-		ProviderID:                ptr("oidc"),
-		StoreToken:                ptrBool(false),
-		TrustEmail:                ptrBool(false),
+		DisplayName:               new("TEST"),
+		Enabled:                   new(false),
+		FirstBrokerLoginFlowAlias: new("first broker login"),
+		HideOnLogin:               new(true),
+		InternalID:                new("0da3e7b1-6a99-4f73-92aa-86be96f4c2c5"),
+		LinkOnly:                  new(false),
+		PostBrokerLoginFlowAlias:  new("post broker login"),
+		ProviderID:                new("oidc"),
+		StoreToken:                new(false),
+		TrustEmail:                new(false),
 	}
 }
 
@@ -5417,9 +5409,9 @@ func TestGetIdentityProviders(t *testing.T) {
 func createValidThemeConfiguration() api.ThemeConfiguration {
 	return api.ThemeConfiguration{
 		Settings: &api.ThemeConfigurationSettings{
-			Color:      ptr("#000000"),
-			MenuTheme:  ptr("dark"),
-			FontFamily: ptr("Lato"),
+			Color:      new("#000000"),
+			MenuTheme:  new("dark"),
+			FontFamily: new("Lato"),
 		},
 	}
 }
@@ -5439,9 +5431,9 @@ func TestGetThemeConfiguration(t *testing.T) {
 		var expectedConfig = createValidThemeConfiguration()
 		mocks.configurationDBModule.EXPECT().GetThemeConfiguration(ctx, realmName).Return(configuration.ThemeConfiguration{
 			Settings: &configuration.ThemeConfigurationSettings{
-				Color:      ptr("#000000"),
-				MenuTheme:  ptr("dark"),
-				FontFamily: ptr("Lato"),
+				Color:      new("#000000"),
+				MenuTheme:  new("dark"),
+				FontFamily: new("Lato"),
 			},
 		}, nil)
 		config, err := managementComponent.GetThemeConfiguration(ctx, realmName)
@@ -5480,9 +5472,9 @@ func TestUpdateThemeConfiguration(t *testing.T) {
 	configurationThemeConfig := api.UpdatableThemeConfiguration{
 		RealmName: &realmName,
 		Settings: &api.ThemeConfigurationSettings{
-			Color:      ptr("#000000"),
-			MenuTheme:  ptr("dark"),
-			FontFamily: ptr("Lato"),
+			Color:      new("#000000"),
+			MenuTheme:  new("dark"),
+			FontFamily: new("Lato"),
 		},
 		Translations: translations,
 	}
@@ -5493,9 +5485,9 @@ func TestUpdateThemeConfiguration(t *testing.T) {
 		expectedConfig := configuration.ThemeConfiguration{
 			RealmName: &realmName,
 			Settings: &configuration.ThemeConfigurationSettings{
-				Color:      ptr("#000000"),
-				MenuTheme:  ptr("dark"),
-				FontFamily: ptr("Lato"),
+				Color:      new("#000000"),
+				MenuTheme:  new("dark"),
+				FontFamily: new("Lato"),
 			},
 			Translations: translations,
 		}

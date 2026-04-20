@@ -13,8 +13,8 @@ import (
 	"github.com/cloudtrust/keycloak-bridge/internal/keycloakb/idnowclient"
 	"github.com/cloudtrust/keycloak-bridge/pkg/statistics/mock"
 	kc "github.com/cloudtrust/keycloak-client/v2"
-	"go.uber.org/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
 type componentMocks struct {
@@ -69,10 +69,10 @@ func TestGetStatisticsIdentifications(t *testing.T) {
 		expected.PhysicalIdentifications = 21
 
 		mocks.accredsService.EXPECT().GetIdentityChecksByNature(ctx, realm).Return([]accreditationsclient.NatureCheckCount{
-			{Nature: ptr("PHYSICAL_CHECK"), Count: &expected.PhysicalIdentifications},
-			{Nature: ptr("BASIC_CHECK"), Count: &expected.BasicIdentifications},
-			{Nature: ptr("IDNOW_CHECK"), Count: intPtr(48)},
-			{Nature: ptr("AUTO_IDENT_IDNOW_CHECK"), Count: intPtr(19)},
+			{Nature: new("PHYSICAL_CHECK"), Count: &expected.PhysicalIdentifications},
+			{Nature: new("BASIC_CHECK"), Count: &expected.BasicIdentifications},
+			{Nature: new("IDNOW_CHECK"), Count: new(48)},
+			{Nature: new("AUTO_IDENT_IDNOW_CHECK"), Count: new(19)},
 		}, nil)
 
 		mocks.idnowService.EXPECT().GetIdentificationsByType(ctx, realm).Return(idnowclient.IdentificationStatistics{

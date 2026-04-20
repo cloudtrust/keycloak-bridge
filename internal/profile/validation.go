@@ -30,8 +30,8 @@ type UserProfile interface {
 
 // ContainsFields interface
 type ContainsFields interface {
-	GetField(name string) interface{}
-	SetField(name string, value interface{})
+	GetField(name string) any
+	SetField(name string, value any)
 }
 
 // GlnVerifier used to check GLN
@@ -99,7 +99,7 @@ func ValidateUser(profile kc.UserProfileRepresentation, input ContainsFields, ap
 	return nil
 }
 
-var mapNameToValidator = map[string]func(kc.ProfileAttrbRepresentation, kc.ProfileAttrValidatorRepresentation, interface{}, ContainsFields) error{
+var mapNameToValidator = map[string]func(kc.ProfileAttrbRepresentation, kc.ProfileAttrValidatorRepresentation, any, ContainsFields) error{
 	// Keycloak validators
 	"email":                             validateAttributeEmail,
 	"integer":                           validateAttributeInteger,
@@ -118,7 +118,7 @@ var mapNameToValidator = map[string]func(kc.ProfileAttrbRepresentation, kc.Profi
 	"ct-gln":         validateAttributeCtGLN,
 }
 
-func validateAttribute(attrb kc.ProfileAttrbRepresentation, value interface{}, input ContainsFields) error {
+func validateAttribute(attrb kc.ProfileAttrbRepresentation, value any, input ContainsFields) error {
 	for key, validator := range attrb.Validations {
 		if fn, ok := mapNameToValidator[key]; ok {
 			if err := fn(attrb, validator, value, input); err != nil {
@@ -132,7 +132,7 @@ func validateAttribute(attrb kc.ProfileAttrbRepresentation, value interface{}, i
 }
 
 // Ensure value is not nil before calling this
-func validateAttributeEmail(attrb kc.ProfileAttrbRepresentation, validator kc.ProfileAttrValidatorRepresentation, value interface{}, input ContainsFields) error {
+func validateAttributeEmail(attrb kc.ProfileAttrbRepresentation, validator kc.ProfileAttrValidatorRepresentation, value any, input ContainsFields) error {
 	switch v := value.(type) {
 	case string:
 		return validateRegexWithString(attrb, regexEmail, v)
@@ -145,7 +145,7 @@ func validateAttributeEmail(attrb kc.ProfileAttrbRepresentation, validator kc.Pr
 }
 
 // Ensure value is not nil before calling this
-func validateAttributeInteger(attrb kc.ProfileAttrbRepresentation, validator kc.ProfileAttrValidatorRepresentation, value interface{}, input ContainsFields) error {
+func validateAttributeInteger(attrb kc.ProfileAttrbRepresentation, validator kc.ProfileAttrValidatorRepresentation, value any, input ContainsFields) error {
 	var intValue = cs.ToInt(value, math.MinInt)
 	if intValue == math.MinInt {
 		return cerrors.CreateBadRequestError(cerrors.MsgErrInvalidParam + "." + toErrName(*attrb.Name))
@@ -154,7 +154,7 @@ func validateAttributeInteger(attrb kc.ProfileAttrbRepresentation, validator kc.
 }
 
 // Ensure value is not nil before calling this
-func validateAttributeDouble(attrb kc.ProfileAttrbRepresentation, validator kc.ProfileAttrValidatorRepresentation, value interface{}, input ContainsFields) error {
+func validateAttributeDouble(attrb kc.ProfileAttrbRepresentation, validator kc.ProfileAttrValidatorRepresentation, value any, input ContainsFields) error {
 	var infinity = math.Inf(-1)
 	var floatValue = cs.ToFloat(value, infinity)
 	if floatValue == infinity {
@@ -175,7 +175,7 @@ func validateAttributeDouble(attrb kc.ProfileAttrbRepresentation, validator kc.P
 }
 
 // Ensure value is not nil before calling this
-func validateAttributeLength(attrb kc.ProfileAttrbRepresentation, validator kc.ProfileAttrValidatorRepresentation, value interface{}, input ContainsFields) error {
+func validateAttributeLength(attrb kc.ProfileAttrbRepresentation, validator kc.ProfileAttrValidatorRepresentation, value any, input ContainsFields) error {
 	switch v := value.(type) {
 	case string:
 		return validateRangeWithString(attrb, validator, len(v))
@@ -188,7 +188,7 @@ func validateAttributeLength(attrb kc.ProfileAttrbRepresentation, validator kc.P
 }
 
 // Ensure value is not nil before calling this
-func validateAttributePattern(attrb kc.ProfileAttrbRepresentation, validator kc.ProfileAttrValidatorRepresentation, value interface{}, input ContainsFields) error {
+func validateAttributePattern(attrb kc.ProfileAttrbRepresentation, validator kc.ProfileAttrValidatorRepresentation, value any, input ContainsFields) error {
 	var regex = validator["pattern"].(string)
 	switch v := value.(type) {
 	case string:
@@ -202,21 +202,21 @@ func validateAttributePattern(attrb kc.ProfileAttrbRepresentation, validator kc.
 }
 
 // Ensure value is not nil before calling this
-func validateAttributeUsernameProhibitedChars(attrb kc.ProfileAttrbRepresentation, validator kc.ProfileAttrValidatorRepresentation, value interface{}, input ContainsFields) error {
+func validateAttributeUsernameProhibitedChars(attrb kc.ProfileAttrbRepresentation, validator kc.ProfileAttrValidatorRepresentation, value any, input ContainsFields) error {
 	return validateAttributePattern(attrb, kc.ProfileAttrValidatorRepresentation{
 		"pattern": regexUsernameProhibited,
 	}, value, input)
 }
 
 // Ensure value is not nil before calling this
-func validateAttributePersonNameProhibitedChars(attrb kc.ProfileAttrbRepresentation, validator kc.ProfileAttrValidatorRepresentation, value interface{}, input ContainsFields) error {
+func validateAttributePersonNameProhibitedChars(attrb kc.ProfileAttrbRepresentation, validator kc.ProfileAttrValidatorRepresentation, value any, input ContainsFields) error {
 	return validateAttributePattern(attrb, kc.ProfileAttrValidatorRepresentation{
 		"pattern": regexPersonNameProhibitedChars,
 	}, value, input)
 }
 
 // Ensure value is not nil before calling this
-func validateAttributeOptions(attrb kc.ProfileAttrbRepresentation, validator kc.ProfileAttrValidatorRepresentation, value interface{}, input ContainsFields) error {
+func validateAttributeOptions(attrb kc.ProfileAttrbRepresentation, validator kc.ProfileAttrValidatorRepresentation, value any, input ContainsFields) error {
 	var valueStr string
 	switch v := value.(type) {
 	case string:
@@ -227,7 +227,7 @@ func validateAttributeOptions(attrb kc.ProfileAttrbRepresentation, validator kc.
 		// Should not happen if correctly implemented
 		return cerrors.CreateInternalServerError("unknownInputType")
 	}
-	for _, opt := range validator["options"].([]interface{}) {
+	for _, opt := range validator["options"].([]any) {
 		if valueStr == opt.(string) {
 			return nil
 		}
@@ -236,7 +236,7 @@ func validateAttributeOptions(attrb kc.ProfileAttrbRepresentation, validator kc.
 }
 
 // Ensure value is not nil before calling this
-func validateAttributeURI(attrb kc.ProfileAttrbRepresentation, validator kc.ProfileAttrValidatorRepresentation, value interface{}, input ContainsFields) error {
+func validateAttributeURI(attrb kc.ProfileAttrbRepresentation, validator kc.ProfileAttrValidatorRepresentation, value any, input ContainsFields) error {
 	switch v := value.(type) {
 	case string:
 		return validateRegexWithString(attrb, constants.RegExpRedirectURI, v)
@@ -249,7 +249,7 @@ func validateAttributeURI(attrb kc.ProfileAttrbRepresentation, validator kc.Prof
 }
 
 // Ensure value is not nil before calling this
-func validateAttributeLocalDate(attrb kc.ProfileAttrbRepresentation, validator kc.ProfileAttrValidatorRepresentation, value interface{}, input ContainsFields) error {
+func validateAttributeLocalDate(attrb kc.ProfileAttrbRepresentation, validator kc.ProfileAttrValidatorRepresentation, value any, input ContainsFields) error {
 	var ctValidate = validation.NewParameterValidator()
 	switch v := value.(type) {
 	case string:
@@ -275,7 +275,7 @@ func validateRegexWithString(attrb kc.ProfileAttrbRepresentation, regex string, 
 	return nil
 }
 
-func validateAttributeCtDate(attrb kc.ProfileAttrbRepresentation, validator kc.ProfileAttrValidatorRepresentation, value interface{}, input ContainsFields) error {
+func validateAttributeCtDate(attrb kc.ProfileAttrbRepresentation, validator kc.ProfileAttrValidatorRepresentation, value any, input ContainsFields) error {
 	switch v := value.(type) {
 	case string:
 		return validateAttributeCtDateFromPtrString(attrb, validator, &v)
@@ -317,7 +317,7 @@ func validateAttributeCtDateFromPtrTime(attrb kc.ProfileAttrbRepresentation, val
 	return nil
 }
 
-func validateAttributeCtMultiRegex(attrb kc.ProfileAttrbRepresentation, validator kc.ProfileAttrValidatorRepresentation, value interface{}, input ContainsFields) error {
+func validateAttributeCtMultiRegex(attrb kc.ProfileAttrbRepresentation, validator kc.ProfileAttrValidatorRepresentation, value any, input ContainsFields) error {
 	var regex string
 	if value, ok := validator["pattern.go"]; ok {
 		regex = value.(string)
@@ -335,7 +335,7 @@ func validateAttributeCtMultiRegex(attrb kc.ProfileAttrbRepresentation, validato
 	}
 }
 
-func validateAttributeCtPhoneNumber(attrb kc.ProfileAttrbRepresentation, validator kc.ProfileAttrValidatorRepresentation, value interface{}, input ContainsFields) error {
+func validateAttributeCtPhoneNumber(attrb kc.ProfileAttrbRepresentation, validator kc.ProfileAttrValidatorRepresentation, value any, input ContainsFields) error {
 	var ctValidate = validation.NewParameterValidator()
 	switch v := value.(type) {
 	case string:
@@ -348,7 +348,7 @@ func validateAttributeCtPhoneNumber(attrb kc.ProfileAttrbRepresentation, validat
 	}
 }
 
-func validateAttributeCtGLN(attrb kc.ProfileAttrbRepresentation, validator kc.ProfileAttrValidatorRepresentation, value interface{}, input ContainsFields) error {
+func validateAttributeCtGLN(attrb kc.ProfileAttrbRepresentation, validator kc.ProfileAttrValidatorRepresentation, value any, input ContainsFields) error {
 	firstName := *input.GetField("firstName").(*string)
 	lastName := *input.GetField("lastName").(*string)
 	switch v := value.(type) {

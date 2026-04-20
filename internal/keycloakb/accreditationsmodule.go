@@ -2,6 +2,7 @@ package keycloakb
 
 import (
 	"encoding/json"
+	"slices"
 	"strconv"
 	"time"
 
@@ -98,10 +99,8 @@ func NewAccreditationsProcessor(accreditations []string) (AccreditationsProcesso
 
 func (ap *accredsProcessor) HasActiveAccreditations() bool {
 	for _, slice := range ap.accreditations {
-		for _, oldAccred := range slice {
-			if ap.isActive(oldAccred) {
-				return true
-			}
+		if slices.ContainsFunc(slice, ap.isActive) {
+			return true
 		}
 	}
 	return false

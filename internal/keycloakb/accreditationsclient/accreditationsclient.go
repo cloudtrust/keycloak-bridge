@@ -50,8 +50,8 @@ type NatureCheckCount struct {
 
 // HTTPClient interface
 type HTTPClient interface {
-	Get(data interface{}, plugins ...plugin.Plugin) error
-	Post(data interface{}, plugins ...plugin.Plugin) (string, error)
+	Get(data any, plugins ...plugin.Plugin) error
+	Post(data any, plugins ...plugin.Plugin) (string, error)
 	Put(plugins ...plugin.Plugin) error
 }
 
