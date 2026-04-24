@@ -94,7 +94,7 @@ func (v *glnVerifier) ValidateGLN(firstName, lastName, gln string) error {
 		}(provider)
 	}
 	var defaultError = ErrGLNNotFound
-	for i := 0; i < size; i++ {
+	for range size {
 		var details = <-resultsChan
 		if details.Error == nil {
 			for _, person := range details.Persons {

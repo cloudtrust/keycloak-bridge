@@ -5,7 +5,7 @@ filippo.io/edwards25519/field
 # github.com/IBM/sarama v1.47.0
 ## explicit; go 1.25.0
 github.com/IBM/sarama
-# github.com/cloudtrust/common-service/v2 v2.19.0
+# github.com/cloudtrust/common-service/v2 v2.19.1-0.20260420113102-5b80753a783c
 ## explicit; go 1.26.1
 github.com/cloudtrust/common-service/v2
 github.com/cloudtrust/common-service/v2/configuration
@@ -26,17 +26,17 @@ github.com/cloudtrust/common-service/v2/validation
 # github.com/cloudtrust/httpclient v1.6.0
 ## explicit; go 1.25.3
 github.com/cloudtrust/httpclient
-# github.com/cloudtrust/kafka-client v1.8.1
+# github.com/cloudtrust/kafka-client v1.8.2-0.20260420114314-31210cdb05a3
 ## explicit; go 1.26.1
 github.com/cloudtrust/kafka-client
 github.com/cloudtrust/kafka-client/misc
-# github.com/cloudtrust/keycloak-client/v2 v2.18.1
+# github.com/cloudtrust/keycloak-client/v2 v2.18.2-0.20260420113722-1382a41c3266
 ## explicit; go 1.26.1
 github.com/cloudtrust/keycloak-client/v2
 github.com/cloudtrust/keycloak-client/v2/api
 github.com/cloudtrust/keycloak-client/v2/toolbox
-# github.com/coreos/go-oidc/v3 v3.17.0
-## explicit; go 1.24.0
+# github.com/coreos/go-oidc/v3 v3.18.0
+## explicit; go 1.25.0
 github.com/coreos/go-oidc/v3/oidc
 # github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
 ## explicit
@@ -51,7 +51,7 @@ github.com/eapache/queue
 ## explicit; go 1.17
 github.com/fsnotify/fsnotify
 github.com/fsnotify/fsnotify/internal
-# github.com/go-jose/go-jose/v4 v4.1.3
+# github.com/go-jose/go-jose/v4 v4.1.4
 ## explicit; go 1.24.0
 github.com/go-jose/go-jose/v4
 github.com/go-jose/go-jose/v4/cipher

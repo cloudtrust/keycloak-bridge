@@ -18,14 +18,14 @@ type Endpoints struct {
 
 // MakeGetActionsEndpoint creates an endpoint for GetActions
 func MakeGetActionsEndpoint(ec Component) cs.Endpoint {
-	return func(ctx context.Context, _ interface{}) (interface{}, error) {
+	return func(ctx context.Context, _ any) (any, error) {
 		return ec.GetActions(ctx)
 	}
 }
 
 // MakeGetStatisticsIdentificationsEndpoint makes the identification statistic summary endpoint.
 func MakeGetStatisticsIdentificationsEndpoint(ec Component) cs.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, req any) (any, error) {
 		var m = req.(map[string]string)
 		return ec.GetStatisticsIdentifications(ctx, m[prmRealm])
 	}
@@ -33,7 +33,7 @@ func MakeGetStatisticsIdentificationsEndpoint(ec Component) cs.Endpoint {
 
 // MakeGetStatisticsUsersEndpoint makes the statistic users summary endpoint.
 func MakeGetStatisticsUsersEndpoint(ec Component) cs.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, req any) (any, error) {
 		var m = req.(map[string]string)
 		return ec.GetStatisticsUsers(ctx, m[prmRealm])
 	}
@@ -41,7 +41,7 @@ func MakeGetStatisticsUsersEndpoint(ec Component) cs.Endpoint {
 
 // MakeGetStatisticsAuthenticatorsEndpoint makes the statistic authenticators summary endpoint.
 func MakeGetStatisticsAuthenticatorsEndpoint(ec Component) cs.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, req any) (any, error) {
 		var m = req.(map[string]string)
 		return ec.GetStatisticsAuthenticators(ctx, m[prmRealm])
 	}
@@ -49,7 +49,7 @@ func MakeGetStatisticsAuthenticatorsEndpoint(ec Component) cs.Endpoint {
 
 // MakeGetMigrationReportEndpoint makes the migration reporting endpoint.
 func MakeGetMigrationReportEndpoint(ec Component) cs.Endpoint {
-	return func(ctx context.Context, req interface{}) (interface{}, error) {
+	return func(ctx context.Context, req any) (any, error) {
 		var m = req.(map[string]string)
 		return ec.GetMigrationReport(ctx, m[prmRealm])
 	}

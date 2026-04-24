@@ -20,7 +20,7 @@ const (
 // appendCharacters appends a number of characters from a certain alphabet to a string array
 func appendCharacters(pwdElems []string, alphabet string, length int) []string {
 
-	for j := 0; j < length; j++ {
+	for range length {
 		nBig, _ := crand.Int(crand.Reader, big.NewInt(int64(len(alphabet))))
 		index := int(nBig.Int64())
 		pwdElems = append(pwdElems, string(alphabet[index]))
@@ -71,7 +71,7 @@ func GeneratePasswordFromKeycloakPolicy(policy string) (string, error) {
 		return !unicode.IsLetter(c) && !unicode.IsNumber(c)
 	}
 
-	for i := 0; i < len(policyItems); i++ {
+	for i := range policyItems {
 		keyValueItem := strings.FieldsFunc(policyItems[i], f)
 		minRequired, err := strconv.Atoi(keyValueItem[1])
 		switch keyValueItem[0] {

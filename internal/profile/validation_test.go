@@ -13,10 +13,6 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-func ptr(value string) *string {
-	return &value
-}
-
 type getfield struct {
 	returnValue any
 }
@@ -192,11 +188,11 @@ func TestValidateUser(t *testing.T) {
 		assert.Nil(t, ValidateUser(createProfile("", nil, frontend, true), input, frontend, false))
 	})
 	t.Run("Validation success", func(t *testing.T) {
-		input.returnValue = ptr("value")
+		input.returnValue = new("value")
 		assert.Nil(t, ValidateUser(createProfile("", nil, frontend, true), input, frontend, false))
 	})
 	t.Run("Validation fails", func(t *testing.T) {
-		input.returnValue = ptr("x")
+		input.returnValue = new("x")
 		assert.NotNil(t, ValidateUser(createProfile("", nil, frontend, true), input, frontend, false))
 	})
 }
@@ -224,21 +220,21 @@ func TestValidateAttribute(t *testing.T) {
 		assert.NotNil(t, validateAttribute(attribute, input, nil))
 	})
 	t.Run("Validation success", func(t *testing.T) {
-		input.returnValue = ptr("xxx")
+		input.returnValue = new("xxx")
 		assert.NotNil(t, validateAttribute(attribute, input, nil))
 	})
 }
 
 func TestValidatorEmail(t *testing.T) {
 	var (
-		attribute = kc.ProfileAttrbRepresentation{Name: ptr("name")}
+		attribute = kc.ProfileAttrbRepresentation{Name: new("name")}
 		validator = kc.ProfileAttrValidatorRepresentation{}
 	)
 	t.Run("invalid input", func(t *testing.T) {
 		assert.NotNil(t, validateAttributeEmail(attribute, validator, time.Now(), nil))
 	})
 	t.Run("email is valid", func(t *testing.T) {
-		assert.Nil(t, validateAttributeEmail(attribute, validator, ptr("name@domain.ch"), nil))
+		assert.Nil(t, validateAttributeEmail(attribute, validator, new("name@domain.ch"), nil))
 	})
 	t.Run("email is invalid", func(t *testing.T) {
 		assert.NotNil(t, validateAttributeEmail(attribute, validator, "name#domain.ch", nil))
@@ -247,7 +243,7 @@ func TestValidatorEmail(t *testing.T) {
 
 func TestValidatorInteger(t *testing.T) {
 	var (
-		attribute = kc.ProfileAttrbRepresentation{Name: ptr("name")}
+		attribute = kc.ProfileAttrbRepresentation{Name: new("name")}
 		validator = kc.ProfileAttrValidatorRepresentation{"min": 5, "max": 20}
 	)
 	t.Run("invalid input", func(t *testing.T) {
@@ -266,7 +262,7 @@ func TestValidatorInteger(t *testing.T) {
 
 func TestValidatorDouble(t *testing.T) {
 	var (
-		attribute = kc.ProfileAttrbRepresentation{Name: ptr("name")}
+		attribute = kc.ProfileAttrbRepresentation{Name: new("name")}
 		validator = kc.ProfileAttrValidatorRepresentation{"min": 5, "max": 20}
 	)
 	t.Run("invalid input", func(t *testing.T) {
@@ -285,12 +281,12 @@ func TestValidatorDouble(t *testing.T) {
 
 func TestValidatorLength(t *testing.T) {
 	var (
-		attribute = kc.ProfileAttrbRepresentation{Name: ptr("name")}
+		attribute = kc.ProfileAttrbRepresentation{Name: new("name")}
 	)
 	t.Run("No min, no max", func(t *testing.T) {
 		var validator = kc.ProfileAttrValidatorRepresentation{}
 		t.Run("input is string pointer", func(t *testing.T) {
-			assert.Nil(t, validateAttributeLength(attribute, validator, ptr("123"), nil))
+			assert.Nil(t, validateAttributeLength(attribute, validator, new("123"), nil))
 		})
 		t.Run("input is string", func(t *testing.T) {
 			assert.Nil(t, validateAttributeLength(attribute, validator, "123", nil))
@@ -302,7 +298,7 @@ func TestValidatorLength(t *testing.T) {
 	t.Run("Min length is 5", func(t *testing.T) {
 		var validator = kc.ProfileAttrValidatorRepresentation{"min": 5}
 		t.Run("valid input, value is a string pointer", func(t *testing.T) {
-			assert.Nil(t, validateAttributeLength(attribute, validator, ptr("12345678"), nil))
+			assert.Nil(t, validateAttributeLength(attribute, validator, new("12345678"), nil))
 		})
 		t.Run("too short input, value is a string", func(t *testing.T) {
 			assert.NotNil(t, validateAttributeLength(attribute, validator, "123", nil))
@@ -311,7 +307,7 @@ func TestValidatorLength(t *testing.T) {
 	t.Run("Min length is 5, Max length is 7", func(t *testing.T) {
 		var validator = kc.ProfileAttrValidatorRepresentation{"min": "5", "max": 7}
 		t.Run("too long input, value is a string pointer", func(t *testing.T) {
-			assert.NotNil(t, validateAttributeLength(attribute, validator, ptr("12345678"), nil))
+			assert.NotNil(t, validateAttributeLength(attribute, validator, new("12345678"), nil))
 		})
 		t.Run("too short input, value is a string", func(t *testing.T) {
 			assert.NotNil(t, validateAttributeLength(attribute, validator, "123", nil))
@@ -324,7 +320,7 @@ func TestValidatorLength(t *testing.T) {
 
 func TestValidatorPattern(t *testing.T) {
 	var (
-		attribute = kc.ProfileAttrbRepresentation{Name: ptr("name")}
+		attribute = kc.ProfileAttrbRepresentation{Name: new("name")}
 		validator = kc.ProfileAttrValidatorRepresentation{"pattern": `^\d\w\d$`}
 	)
 	t.Run("Generic pattern", func(t *testing.T) {
@@ -332,10 +328,10 @@ func TestValidatorPattern(t *testing.T) {
 			assert.NotNil(t, validateAttributePattern(attribute, validator, "abc", nil))
 		})
 		t.Run("valid, string pointer", func(t *testing.T) {
-			assert.Nil(t, validateAttributePattern(attribute, validator, ptr("1a1"), nil))
+			assert.Nil(t, validateAttributePattern(attribute, validator, new("1a1"), nil))
 		})
 		t.Run("valid, string", func(t *testing.T) {
-			assert.Nil(t, validateAttributePattern(attribute, validator, ptr("2b2"), nil))
+			assert.Nil(t, validateAttributePattern(attribute, validator, new("2b2"), nil))
 		})
 		t.Run("invalid input type", func(t *testing.T) {
 			assert.NotNil(t, validateAttributePattern(attribute, validator, 12, nil))
@@ -346,7 +342,7 @@ func TestValidatorPattern(t *testing.T) {
 			assert.NotNil(t, validateAttributeURI(attribute, validator, "abc", nil))
 		})
 		t.Run("valid", func(t *testing.T) {
-			assert.Nil(t, validateAttributeURI(attribute, validator, ptr("https://elca.ch/path"), nil))
+			assert.Nil(t, validateAttributeURI(attribute, validator, new("https://elca.ch/path"), nil))
 		})
 		t.Run("invalid input type", func(t *testing.T) {
 			assert.NotNil(t, validateAttributeURI(attribute, validator, 12, nil))
@@ -374,14 +370,14 @@ func TestValidatorPattern(t *testing.T) {
 
 func TestValidatorOptions(t *testing.T) {
 	var (
-		attribute = kc.ProfileAttrbRepresentation{Name: ptr("name")}
+		attribute = kc.ProfileAttrbRepresentation{Name: new("name")}
 		validator = kc.ProfileAttrValidatorRepresentation{"options": []any{"one", "two", "tree", "viva", "l'algerie"}}
 	)
 	t.Run("invalid input type", func(t *testing.T) {
 		assert.NotNil(t, validateAttributeOptions(attribute, validator, time.Now(), nil))
 	})
 	t.Run("valid, string pointer", func(t *testing.T) {
-		assert.Nil(t, validateAttributeOptions(attribute, validator, ptr("two"), nil))
+		assert.Nil(t, validateAttributeOptions(attribute, validator, new("two"), nil))
 	})
 	t.Run("valid, string", func(t *testing.T) {
 		assert.Nil(t, validateAttributeOptions(attribute, validator, "viva", nil))
@@ -393,14 +389,14 @@ func TestValidatorOptions(t *testing.T) {
 
 func TestValidatorLocalDate(t *testing.T) {
 	var (
-		attribute = kc.ProfileAttrbRepresentation{Name: ptr("name")}
+		attribute = kc.ProfileAttrbRepresentation{Name: new("name")}
 		validator = kc.ProfileAttrValidatorRepresentation{}
 	)
 	t.Run("invalid input type", func(t *testing.T) {
 		assert.NotNil(t, validateAttributeLocalDate(attribute, validator, time.Now(), nil))
 	})
 	t.Run("valid, string pointer", func(t *testing.T) {
-		assert.Nil(t, validateAttributeLocalDate(attribute, validator, ptr("31.12.2027"), nil))
+		assert.Nil(t, validateAttributeLocalDate(attribute, validator, new("31.12.2027"), nil))
 	})
 	t.Run("valid, string", func(t *testing.T) {
 		assert.Nil(t, validateAttributeLocalDate(attribute, validator, "29.02.2028", nil))
@@ -413,7 +409,7 @@ func TestValidatorLocalDate(t *testing.T) {
 func TestValidatorCtDate(t *testing.T) {
 	var (
 		nextYear        = time.Now().Year() + 1
-		attribute       = kc.ProfileAttrbRepresentation{Name: ptr("name")}
+		attribute       = kc.ProfileAttrbRepresentation{Name: new("name")}
 		validator       = kc.ProfileAttrValidatorRepresentation{}
 		inThePast       = "01.01.2001"
 		inTheFuture     = fmt.Sprintf("%d-12-31", nextYear)
@@ -424,7 +420,7 @@ func TestValidatorCtDate(t *testing.T) {
 		assert.NotNil(t, validateAttributeCtDate(attribute, validator, time.Hour, nil))
 	})
 	t.Run("valid, string pointer", func(t *testing.T) {
-		assert.Nil(t, validateAttributeCtDate(attribute, validator, ptr("2027-12-31"), nil))
+		assert.Nil(t, validateAttributeCtDate(attribute, validator, new("2027-12-31"), nil))
 	})
 	t.Run("valid, string", func(t *testing.T) {
 		assert.Nil(t, validateAttributeCtDate(attribute, validator, "29.02.2028", nil))
@@ -472,7 +468,7 @@ func TestValidatorCtDate(t *testing.T) {
 }
 
 func TestValidateAttributeCtMultiRegex(t *testing.T) {
-	var attribute = kc.ProfileAttrbRepresentation{Name: ptr("name")}
+	var attribute = kc.ProfileAttrbRepresentation{Name: new("name")}
 
 	t.Run("Ensure pattern.go is choosen first", func(t *testing.T) {
 		var validator = kc.ProfileAttrValidatorRepresentation{"pattern": `^wxc$`}
@@ -488,7 +484,7 @@ func TestValidateAttributeCtMultiRegex(t *testing.T) {
 		assert.NotNil(t, validateAttributeCtMultiRegex(attribute, validator, time.Now(), nil))
 	})
 	t.Run("Valid string pointer", func(t *testing.T) {
-		assert.Nil(t, validateAttributeCtMultiRegex(attribute, validator, ptr("123"), nil))
+		assert.Nil(t, validateAttributeCtMultiRegex(attribute, validator, new("123"), nil))
 	})
 	t.Run("Valid string", func(t *testing.T) {
 		assert.Nil(t, validateAttributeCtMultiRegex(attribute, validator, "123", nil))
@@ -499,14 +495,14 @@ func TestValidateAttributeCtMultiRegex(t *testing.T) {
 }
 
 func TestValidateAttributeCtPhoneNumber(t *testing.T) {
-	var attribute = kc.ProfileAttrbRepresentation{Name: ptr("name")}
+	var attribute = kc.ProfileAttrbRepresentation{Name: new("name")}
 	var validator = kc.ProfileAttrValidatorRepresentation{}
 
 	t.Run("invalid input type", func(t *testing.T) {
 		assert.NotNil(t, validateAttributeCtPhoneNumber(attribute, validator, time.Now(), nil))
 	})
 	t.Run("Valid string pointer", func(t *testing.T) {
-		assert.Nil(t, validateAttributeCtPhoneNumber(attribute, validator, ptr("+41763111122"), nil))
+		assert.Nil(t, validateAttributeCtPhoneNumber(attribute, validator, new("+41763111122"), nil))
 	})
 	t.Run("Valid string", func(t *testing.T) {
 		assert.Nil(t, validateAttributeCtPhoneNumber(attribute, validator, "+41763111122", nil))
@@ -523,11 +519,11 @@ func TestValidateAttributeCtGLN(t *testing.T) {
 	var mockGlnVerifier = mock.NewGlnVerifier(mockCtrl)
 	GlnVerifier = mockGlnVerifier
 
-	var attribute = kc.ProfileAttrbRepresentation{Name: ptr("name")}
+	var attribute = kc.ProfileAttrbRepresentation{Name: new("name")}
 	var validator = kc.ProfileAttrValidatorRepresentation{}
 	var input = UserRepresentation{
-		FirstName: ptr("John"),
-		LastName:  ptr("Doe"),
+		FirstName: new("John"),
+		LastName:  new("Doe"),
 	}
 
 	t.Run("Invalid GLN", func(t *testing.T) {
@@ -542,18 +538,18 @@ func TestValidateAttributeCtGLN(t *testing.T) {
 
 	t.Run("Invalid GLN pointer", func(t *testing.T) {
 		mockGlnVerifier.EXPECT().ValidateGLN("John", "Doe", "000").Return(errors.New("invalid GLN"))
-		assert.NotNil(t, validateAttributeCtGLN(attribute, validator, ptr("000"), input))
+		assert.NotNil(t, validateAttributeCtGLN(attribute, validator, new("000"), input))
 	})
 
 	t.Run("Valid GLN pointer", func(t *testing.T) {
 		mockGlnVerifier.EXPECT().ValidateGLN("John", "Doe", "7612345000000").Return(nil)
-		assert.Nil(t, validateAttributeCtGLN(attribute, validator, ptr("7612345000000"), input))
+		assert.Nil(t, validateAttributeCtGLN(attribute, validator, new("7612345000000"), input))
 	})
 }
 
 func TestIfNotNil(t *testing.T) {
 	assert.Nil(t, IfNotNil(nil))
-	assert.NotNil(t, IfNotNil(ptr("111")))
+	assert.NotNil(t, IfNotNil(new("111")))
 }
 
 func TestIfTimePtrNotNil(t *testing.T) {

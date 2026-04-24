@@ -24,7 +24,7 @@ func TestHTTPConfigurationHandler(t *testing.T) {
 
 	r := mux.NewRouter()
 	r.Handle("/configuration/realms/{realm}/identification", MakeConfigurationHandler(
-		func(ctx context.Context, request interface{}) (response interface{}, err error) {
+		func(ctx context.Context, request any) (response any, err error) {
 			var m = request.(map[string]string)
 			return m[prmRealmName] + ":" + m[prmContextKey], nil
 		}, log.NewNopLogger()))

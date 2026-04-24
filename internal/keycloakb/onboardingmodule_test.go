@@ -278,14 +278,14 @@ func TestProcessAlreadyExistingUserCases(t *testing.T) {
 	})
 
 	t.Run("Duplicate emails allowed", func(t *testing.T) {
-		realmRep.DuplicateEmailsAllowed = ptrBool(true)
+		realmRep.DuplicateEmailsAllowed = new(true)
 		mocks.keycloakClient.EXPECT().GetRealm(accessToken, targetRealmName).Return(realmRep, nil)
 
 		var err = onboarding.ProcessAlreadyExistingUserCases(ctx, accessToken, targetRealmName, userEmail, source, notSupposedToBeCalled)
 		assert.Nil(t, err)
 	})
 
-	realmRep.DuplicateEmailsAllowed = ptrBool(false)
+	realmRep.DuplicateEmailsAllowed = new(false)
 	mocks.keycloakClient.EXPECT().GetRealm(accessToken, targetRealmName).Return(realmRep, nil).AnyTimes()
 
 	t.Run("GetUsers fails", func(t *testing.T) {
@@ -304,7 +304,7 @@ func TestProcessAlreadyExistingUserCases(t *testing.T) {
 
 	t.Run("User already exists-Onboarding completed is invalid", func(t *testing.T) {
 		attrbs[constants.AttrbOnboardingCompleted] = []string{"failure"}
-		usersPageRep.Count = ptrInt(1)
+		usersPageRep.Count = new(1)
 		usersPageRep.Users = []kc.UserRepresentation{{
 			ID:               &userID,
 			Username:         &username,
@@ -379,19 +379,19 @@ func TestCanReplaceAccount(t *testing.T) {
 	var onboarding = mocks.createOnboardingModule()
 
 	t.Run("Too old account can be replaced", func(t *testing.T) {
-		assert.True(t, onboarding.canReplaceAccount(time.Now().Add(-2*duration).Unix(), ptr("one-source"), "any-realm"))
+		assert.True(t, onboarding.canReplaceAccount(time.Now().Add(-2*duration).Unix(), new("one-source"), "any-realm"))
 	})
 	t.Run("Can replace user account created without src attribute", func(t *testing.T) {
 		assert.True(t, onboarding.canReplaceAccount(time.Now().Unix(), nil, ""))
 	})
 	t.Run("Can replace user account created by register", func(t *testing.T) {
-		assert.True(t, onboarding.canReplaceAccount(time.Now().Unix(), ptr("register"), "any-realm"))
+		assert.True(t, onboarding.canReplaceAccount(time.Now().Unix(), new("register"), "any-realm"))
 	})
 	t.Run("Can replace user account created by same source", func(t *testing.T) {
-		assert.True(t, onboarding.canReplaceAccount(time.Now().Unix(), ptr("same-source"), "same-source"))
+		assert.True(t, onboarding.canReplaceAccount(time.Now().Unix(), new("same-source"), "same-source"))
 	})
 	t.Run("Can't replace user account created by other source", func(t *testing.T) {
-		assert.False(t, onboarding.canReplaceAccount(time.Now().Unix(), ptr("one-source"), "any-realm"))
+		assert.False(t, onboarding.canReplaceAccount(time.Now().Unix(), new("one-source"), "any-realm"))
 	})
 }
 
@@ -429,15 +429,15 @@ func TestComputeOnboardingRedirectURI(t *testing.T) {
 
 	t.Run("Success, with empty contextKey in base conf", func(t *testing.T) {
 		expectedURI := "http://test.test?context=custom-context-key&customerRealm=customer"
-		realmConf.OnboardingRedirectURI = ptr("http://test.test?customerRealm=customer")
-		onboardingRedirectURI, err := onboarding.ComputeOnboardingRedirectURI(ctx, "target", "customer", realmConf, ptr("custom-context-key"))
+		realmConf.OnboardingRedirectURI = new("http://test.test?customerRealm=customer")
+		onboardingRedirectURI, err := onboarding.ComputeOnboardingRedirectURI(ctx, "target", "customer", realmConf, new("custom-context-key"))
 		assert.Nil(t, err)
 		assert.Equal(t, expectedURI, onboardingRedirectURI)
 	})
 
 	t.Run("Success, with override contextKey", func(t *testing.T) {
 		expectedURI := "http://test.test?context=custom-context-key&customerRealm=customer"
-		onboardingRedirectURI, err := onboarding.ComputeOnboardingRedirectURI(ctx, "target", "customer", realmConf, ptr("custom-context-key"))
+		onboardingRedirectURI, err := onboarding.ComputeOnboardingRedirectURI(ctx, "target", "customer", realmConf, new("custom-context-key"))
 		assert.Nil(t, err)
 		assert.Equal(t, expectedURI, onboardingRedirectURI)
 	})

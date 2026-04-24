@@ -13,10 +13,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func ptr(value string) *string {
-	return &value
-}
-
 func createValidUser(dynamicAttribute string) UserRepresentation {
 	var (
 		bFalse          = false
@@ -34,8 +30,8 @@ func createValidUser(dynamicAttribute string) UserRepresentation {
 		idDocExpiration = "23.02.2039"
 		locale          = "fr"
 		businessID      = "123456789"
-		accred1         = AccreditationRepresentation{Type: ptr("short"), ExpiryDate: ptr("31.12.2024")}
-		accred2         = AccreditationRepresentation{Type: ptr("long"), ExpiryDate: ptr("31.12.2039")}
+		accred1         = AccreditationRepresentation{Type: new("short"), ExpiryDate: new("31.12.2024")}
+		accred2         = AccreditationRepresentation{Type: new("long"), ExpiryDate: new("31.12.2039")}
 		creds           = []AccreditationRepresentation{accred1, accred2}
 		attachments     = []AttachmentRepresentation{createValidAttachment()}
 		dynamicValue    = "customValue"
@@ -70,7 +66,7 @@ func createValidAttachment() AttachmentRepresentation {
 		contentBase  = "basicvalueofsomecharacters"
 		contentBytes = []byte(contentBase + contentBase + contentBase + contentBase)
 	)
-	return AttachmentRepresentation{Filename: ptr("filename.pdf"), ContentType: ptr("application/pdf"), Content: &contentBytes}
+	return AttachmentRepresentation{Filename: new("filename.pdf"), ContentType: new("application/pdf"), Content: &contentBytes}
 }
 
 func createValidKeycloakUser(dynamicAttribute string) kc.UserRepresentation {
@@ -231,7 +227,7 @@ func TestValidateUserRepresentation(t *testing.T) {
 	t.Run("Valid users with max attachments", func(t *testing.T) {
 		var user = createValidUser("")
 		var attachment []AttachmentRepresentation
-		for i := 0; i < maxNumberAttachments; i++ {
+		for range maxNumberAttachments {
 			attachment = append(attachment, createValidAttachment())
 		}
 		user.Attachments = &attachment
@@ -240,7 +236,7 @@ func TestValidateUserRepresentation(t *testing.T) {
 	t.Run("Valid users with too many attachments", func(t *testing.T) {
 		var user = createValidUser("")
 		var attachment []AttachmentRepresentation
-		for i := 0; i < maxNumberAttachments+1; i++ {
+		for range maxNumberAttachments + 1 {
 			attachment = append(attachment, createValidAttachment())
 		}
 		user.Attachments = &attachment
@@ -271,7 +267,7 @@ func TestGetSetField(t *testing.T) {
 	assert.Nil(t, user.GetField("not-existing-field"))
 }
 
-func testGetSetField(t *testing.T, fieldName string, value interface{}) {
+func testGetSetField(t *testing.T, fieldName string, value any) {
 	var user UserRepresentation
 	t.Run("Field "+fieldName, func(t *testing.T) {
 		assert.Nil(t, user.GetField(fieldName))
@@ -287,7 +283,7 @@ func TestValidateAttachment(t *testing.T) {
 	})
 	t.Run("Successful evaluation of content type", func(t *testing.T) {
 		var attachment = createValidAttachment()
-		attachment.Filename = ptr("image.JPG")
+		attachment.Filename = new("image.JPG")
 		attachment.ContentType = nil
 		assert.Nil(t, attachment.Validate())
 		assert.Equal(t, "image/jpeg", *attachment.ContentType)
@@ -300,19 +296,19 @@ func TestValidateAttachment(t *testing.T) {
 	})
 	t.Run("Invalid content type", func(t *testing.T) {
 		var attachment = createValidAttachment()
-		attachment.ContentType = ptr("not-a-valid-content-type")
+		attachment.ContentType = new("not-a-valid-content-type")
 		assert.NotNil(t, attachment.Validate())
 	})
 	t.Run("Can't find known content type from filename", func(t *testing.T) {
 		var attachment = createValidAttachment()
-		attachment.Filename = ptr("image.gif")
+		attachment.Filename = new("image.gif")
 		attachment.ContentType = nil
 		assert.NotNil(t, attachment.Validate())
 	})
 	t.Run("Unsupported content type", func(t *testing.T) {
 		var attachment = createValidAttachment()
 		attachment.Filename = nil
-		attachment.ContentType = ptr("text/plain")
+		attachment.ContentType = new("text/plain")
 		assert.NotNil(t, attachment.Validate())
 	})
 	t.Run("Invalid content length", func(t *testing.T) {

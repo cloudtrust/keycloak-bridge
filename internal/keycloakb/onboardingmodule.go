@@ -138,7 +138,7 @@ func (om *onboardingModule) ComputeRedirectURI(ctx context.Context, accessToken 
 func (om *onboardingModule) generateUsername(chars []rune, length int) string {
 	var b strings.Builder
 
-	for j := 0; j < length; j++ {
+	for range length {
 		nBig, _ := rand.Int(rand.Reader, big.NewInt(int64(len(chars))))
 		index := int(nBig.Int64())
 		b.WriteRune(chars[index])
@@ -152,7 +152,7 @@ func (om *onboardingModule) CreateUser(ctx context.Context, accessToken, realmNa
 	var username string
 	var err error
 
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		username = om.generateUsername(chars, 8)
 		kcUser.Username = &username
 

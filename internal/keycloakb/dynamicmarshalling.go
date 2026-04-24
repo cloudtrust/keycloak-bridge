@@ -3,6 +3,7 @@ package keycloakb
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 )
 
 // DynamicRepresentation defines an interface that any struct with dynamic JSON fields must implement.
@@ -39,9 +40,7 @@ func DynamicallyMarshalJSON(toBeMarshalled DynamicRepresentation) ([]byte, error
 	}
 
 	// Inject dynamic fields
-	for k, v := range toBeMarshalled.GetDynamicFields() {
-		result[k] = v
-	}
+	maps.Copy(result, toBeMarshalled.GetDynamicFields())
 
 	// Final JSON encoding with both known + dynamic fields
 	return json.Marshal(result)

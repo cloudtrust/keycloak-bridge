@@ -12,7 +12,7 @@ import (
 
 // ToGoKitEndpoint converts endpoints
 func ToGoKitEndpoint(e cs.Endpoint) endpoint.Endpoint {
-	return func(ctx context.Context, request interface{}) (response interface{}, err error) {
+	return func(ctx context.Context, request any) (response any, err error) {
 		return e(ctx, request)
 	}
 }

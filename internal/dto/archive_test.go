@@ -10,20 +10,16 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func ptr(value string) *string {
-	return &value
-}
-
 func TestToArchiveUserRepresentation(t *testing.T) {
 	var attrbs = make(kc.Attributes)
 	var bFalse = false
 	var kcUser = kc.UserRepresentation{
-		ID:         ptr("user-id"),
+		ID:         new("user-id"),
 		Attributes: &attrbs,
 	}
 	var accred = ArchiveAccreditationRepresentation{
-		Type:       ptr("DEP"),
-		ExpiryDate: ptr("20.02.2029"),
+		Type:       new("DEP"),
+		ExpiryDate: new("20.02.2029"),
 		Revoked:    &bFalse,
 	}
 	var accredBytes, _ = json.Marshal(accred)
