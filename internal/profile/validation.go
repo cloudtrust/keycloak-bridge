@@ -87,8 +87,8 @@ func ValidateUser(profile kc.UserProfileRepresentation, input ContainsFields, ap
 			input.SetField(*attrb.Name, nil)
 		} else {
 			var value = input.GetField(*attrb.Name)
-			if value == nil {
-				if checkMandatory && IsAttributeRequired(attrb, apiName) {
+			if value == nil || (!IsAttributeRequired(attrb, apiName) && isEmptyString(value)) {
+				if value == nil && checkMandatory && IsAttributeRequired(attrb, apiName) {
 					return cerrors.CreateBadRequestError(cerrors.MsgErrMissingParam + "." + toErrName(*attrb.Name))
 				}
 			} else if err := validateAttribute(attrb, value, input); err != nil {
@@ -97,6 +97,17 @@ func ValidateUser(profile kc.UserProfileRepresentation, input ContainsFields, ap
 		}
 	}
 	return nil
+}
+
+func isEmptyString(value any) bool {
+	switch v := value.(type) {
+	case string:
+		return v == ""
+	case *string:
+		return v != nil && *v == ""
+	default:
+		return false
+	}
 }
 
 var mapNameToValidator = map[string]func(kc.ProfileAttrbRepresentation, kc.ProfileAttrValidatorRepresentation, any, ContainsFields) error{
